@@ -95,7 +95,8 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: "node_modules" },
-    exclude: { path: "(^|/)(__fixtures__|dist)/" },
+    // dist neo vào build của workspace: `(^|/)dist/` từng loại cả cạnh tới gói npm (`node_modules/hono/dist/…`).
+    exclude: { path: "(^|/)__fixtures__/|^(apps|packages|tools)/[^/]+/dist/" },
     tsPreCompilationDeps: true,
     builtInModules: { add: ["bun", "bun:test", "bun:sqlite", "bun:ffi"] },
     enhancedResolveOptions: {
