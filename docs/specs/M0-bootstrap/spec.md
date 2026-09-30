@@ -320,6 +320,9 @@ Nguồn `r#n` = `readiness.md` lần 1 mục n. Áp mặc định; chỗ khác m
 - T8 · `migrations-dev` sinh bằng `drizzle-kit generate --custom --name=hub_stub --dialect=postgresql --schema=./src/schema/admin.ts --out=./migrations-dev` (truyền `--out` thì drizzle-kit bỏ qua `drizzle.config.ts`, phải khai `--dialect`/`--schema`; không cần `drizzle.dev.config.ts`). `biome.json` thêm `!**/migrations-dev/meta` (file sinh ra, cùng lý do như `migrations/meta`).
 - T8 · Ràng buộc stub đặt tên tường minh (`agent_grants_subject_type_check`, `usage_logs_billing_check`, `usage_logs_input_tokens_check`, `usage_logs_output_tokens_check`, `*_pkey`) để lỗi dễ đọc; DDL dùng `IF NOT EXISTS`.
 - T8 · `bunfig.int.toml` bỏ `timeout = 30000`: Bun 1.3.14 không đọc key này (test vẫn hết hạn ở 5000 ms). Script `test:int` thêm cờ `--timeout 30000`.
+- T9 · Middleware kịch bản dùng chung (`scenarioMiddleware`, `readJsonObject` trong `tools/mocks/src/scenario.ts`); Hub đăng ký `GET /health` **trước** middleware nên không qua kịch bản. Method không có (vd `DELETE /internal/test-run`) → 404 như §3.4 (Hono không trả 405).
+- T9 · `Authorization: Bearer ` (token toàn khoảng trắng) coi như không có token → `unauthorized` (cùng nhánh với `Bearer`, test-plan §6.2 #2).
+- T9 · `server.ts` của mock đặt `idleTimeout: 0` cho `Bun.serve`: mặc định Bun cắt kết nối rảnh sau 10 s, ngắn hơn `MOCK_TIMEOUT_MS` mặc định 30000 → kịch bản `timeout` sẽ bị server tự đóng thay vì trả 200. `loadMockEnv` coi chuỗi rỗng là vắng (dòng `KEY=`).
 - T4 · `server.ts` gặp env sai → log `error` một dòng `Env không hợp lệ: <tên biến>` rồi `exit 1` (không in giá trị, không stack).
 
 ## 10. Tranh chấp test
