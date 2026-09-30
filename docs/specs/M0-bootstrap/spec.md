@@ -314,6 +314,9 @@ Nguồn `r#n` = `readiness.md` lần 1 mục n. Áp mặc định; chỗ khác m
 - T4 · Logger bỏ mức `info` khi `NODE_ENV=test` (bun test tự đặt) để đầu ra test gọn; `warn`/`error` vẫn in. Không thêm biến env mới.
 - T5 · Mailpit ghim `axllent/mailpit:v1.31.3` (release mới nhất 2026-09-27, GitHub `axllent/mailpit`). Healthcheck redis viết `CMD-SHELL redis-cli ping | grep -q PONG` để kiểm đúng chuỗi `PONG` như plan.
 - T5 · Ghi nhận cho qc (không sửa test): trên Windows, `docker compose ps --format json | bun -e '…Bun.stdin.text()…'` (test-plan §4 `ac02`) lỗi `EUNKNOWN … read` (Bun 1.3.14 đọc pipe từ tiến trình native); chuyển hướng qua file (`> f; bun -e … < f`) hoặc `new Response(Bun.stdin.stream()).text()` thì chạy. Kết quả AC02 xanh khi chạy qua file.
+- T7 · `runMigrations` mở kết nối riêng `max: 1` và luôn `end()` trong `finally`; đếm bảng theo dõi bằng `to_regclass` rồi `count(*)`. Hai lần `migrate()` truyền tường minh `migrationsTable` (`__drizzle_migrations` / `__drizzle_migrations_dev`, schema mặc định `drizzle`).
+- T7 · SQL `0000_init_schemas` tách từng câu bằng `--> statement-breakpoint` (migrator Drizzle chạy từng đoạn qua extended protocol, không nhận nhiều câu một lần); khối `DO $$…$$` tạo hai role là một đoạn.
+- T7 · Lỗi CLI `migrate.ts`: `db:migrate lỗi: <code>: <message>` + gợi ý `docker compose up -d --wait` khi `ECONNREFUSED`; message của postgres.js chỉ có host:cổng, không có mật khẩu. Script gốc `db:migrate`/`db:generate` thêm ở T7 (cần cho lệnh T8). Đã kiểm: `bun --env-file=<file vắng>` không lỗi → CI không cần bọc.
 - T4 · `server.ts` gặp env sai → log `error` một dòng `Env không hợp lệ: <tên biến>` rồi `exit 1` (không in giá trị, không stack).
 
 ## 10. Tranh chấp test

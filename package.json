@@ -15,7 +15,9 @@
     "test": "bun test",
     "check:bundle": "turbo run check:bundle",
     "e2e": "playwright test",
-    "keys:dev": "bun tools/scripts/src/keys-dev.ts"
+    "keys:dev": "bun tools/scripts/src/keys-dev.ts",
+    "db:generate": "bun run --cwd packages/db generate",
+    "db:migrate": "bun --env-file=.env.local packages/db/src/migrate.ts"
   },
   "devDependencies": {
     "@ai/contracts": "workspace:*",
