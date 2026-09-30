@@ -1,12 +1,13 @@
 # ADM-NFR-06 · hạ tầng dev (spec M0 §7). Chỉ dịch vụ có trạng thái; mock chạy bằng `bun run mocks`.
 # Lệnh chuẩn: `docker compose up -d --wait` (chờ healthy).
+# Cổng chỉ bind 127.0.0.1 (mật khẩu dev cố định, không mở ra LAN).
 name: ai-system
 
 services:
   postgres:
     image: postgres:16-alpine
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ai
       POSTGRES_PASSWORD: ai_dev_pw
@@ -24,7 +25,7 @@ services:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
       interval: 5s
@@ -36,8 +37,8 @@ services:
   mailpit:
     image: axllent/mailpit:v1.31.3
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: "1"
       MP_SMTP_AUTH_ALLOW_INSECURE: "1"
