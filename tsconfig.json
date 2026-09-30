@@ -1,0 +1,5 @@
+{
+  "extends": "./packages/config/tsconfig/bun.json",
+  "files": [],
+  "include": []
+}

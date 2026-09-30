@@ -305,7 +305,8 @@ Nguồn `r#n` = `readiness.md` lần 1 mục n. Áp mặc định; chỗ khác m
 | mâu thuẫn BA Hub §8 | Task D1: docs-architect sửa `ba-agent-hub.md` §8 ghi Admin được **đọc** 3 bảng `hub.agent_workflows`, `hub.agent_grants`, `hub.usage_logs` (khớp `GRANT SELECT … TO admin_rw` ở §4.2). |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- T1 · `turbo.json` thêm `"agentGuidance": false`: Turbo 2.11.5 tự ghi `AGENTS.md` ở gốc khi phát hiện agent (key có trong `node_modules/turbo/schema.json`); luật agent đã nằm ở `CLAUDE.md`, tránh file untracked sinh lại mỗi lần chạy.
+- T1 · `bunfig.int.toml` lặp `[install] linker = "isolated"`: `--config` thay hẳn `bunfig.toml`, giữ cùng linker nếu ai đó chạy `bun install` với file này.
 
 ## 10. Tranh chấp test
 - (không)

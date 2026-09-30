@@ -1,0 +1,7 @@
+[install]
+# Ghi tường minh: gốc repo chỉ thấy dependency khai ở package.json gốc (plan.md R8).
+linker = "isolated"
+
+[test]
+# e2e chạy bằng Playwright, test tích hợp chạy bằng `bun run test:int` (bunfig.int.toml).
+pathIgnorePatterns = ["e2e/**", "**/*.int.test.ts", "**/node_modules/**"]

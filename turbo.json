@@ -1,0 +1,40 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "agentGuidance": false,
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "JWT_PRIVATE_KEY",
+    "JWT_PUBLIC_KEY",
+    "SECRET_MASTER_KEY",
+    "SMTP_URL",
+    "SEED_ADMIN_USERNAME",
+    "SEED_ADMIN_PASSWORD",
+    "CORS_ORIGINS",
+    "APP_ENV",
+    "PORT",
+    "TEST_DATABASE_URL",
+    "REDIS_URL",
+    "JWT_KID",
+    "DIFY_BASE_URL",
+    "HUB_BASE_URL",
+    "MOCK_TIMEOUT_MS",
+    "DIFY_MOCK_PORT",
+    "HUB_MOCK_PORT"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "outputs": []
+    },
+    "test": {
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

@@ -1,0 +1,6 @@
+[install]
+linker = "isolated"
+
+[test]
+pathIgnorePatterns = ["e2e/**", "**/node_modules/**"]
+timeout = 30000
