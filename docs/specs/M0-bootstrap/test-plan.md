@@ -932,7 +932,7 @@ test("ADM-NFR-06 · M0-AC18 · mở / thấy Admin Console", async ({ page }) =>
   const logo = page.getByRole("img", { name: "EvoluConsulting" });
   await expect(logo).toBeVisible();
   await expect
-    .poll(() => logo.evaluate((el) => (el as HTMLImageElement).naturalWidth))
+    .poll(() => logo.evaluate((el) => (el as unknown as { naturalWidth: number }).naturalWidth))
     .toBeGreaterThan(0);
 
   await expect(page).toHaveTitle("Admin Console");
@@ -996,6 +996,10 @@ Hằng dùng lại: `U = "00000000-0000-7000-8000-0000000000c1"` (user_id hợp 
 **I. Hub — `X-Mock-Scenario` và `timeout`**
 1. Như D1–D3 với token `mock-*` trên `POST /internal/test-run` (lạ/rỗng/sai hoa thường → bỏ qua, chọn theo token).
 2. `Bearer mock-timeout` + `RUN_BODY` qua `Bun.serve({ port: 0, fetch: createHubMock({ timeoutMs: 50 }).fetch })` + `AbortSignal.timeout(20)` → reject (như E1); không huỷ → 200 body G1 sau ≥ 45 ms; `Bearer mock-timeout` + `{}` → 400 `command không hợp lệ` sau ≥ 45 ms.
+
+**J. Path / method không tồn tại (spec §3.4; thêm ở Q2)**
+1. `Bearer app-mock-ok` `GET /v1/khong-co` (Dify), `Bearer mock-ok` `GET /khong-co` và `DELETE /internal/test-run` (Hub) → 404 `{error:{code:"NOT_FOUND", message:"Not found"}}`.
+2. Kịch bản xét trước 404: `Bearer app-mock-401` `GET /v1/khong-co` → 401 `D401`; `Bearer mock-401` `GET /khong-co` → 401 `H401`.
 
 Ghi chú: `timeoutMs` bắt buộc (spec §7, qc#8); không test giá trị mặc định 30000 ở in-process (thuộc `tools/mocks/src/env.test.ts` của backend-lead). Ngưỡng 45 ms (< 50) chừa sai số đồng hồ.
 
@@ -1176,6 +1180,13 @@ console.log(`ac07.check OK (${dirs.length} workspace)`);
 - AC trong `spec.md` §8: **19/19** có cách kiểm tự động rõ ràng — bun test (acceptance/int): AC03, 04, 08, 09, 11, 13, 14, 15, 16, 17; e2e: AC18; lệnh kiểm mục 4: AC01, 02, 05, 06, 07, 10, 12, 19 (AC03, 04, 08, 09, 11, 13, 14, 15, 16 có cả hai).
 - Số file khoá dự kiến (khớp `tasks.md` Q2/Q3): 11 file `tests/acceptance/ADM-NFR-06/**` (`_helpers.ts`, `health.test.ts`, `server.int.test.ts`, `migrate.int.test.ts`, `check-size.test.ts`, `test-lock.test.ts`, `trace.test.ts`, `ci-workflow.test.ts`, `mocks.test.ts`, `i18n-check.test.ts`, `ac07.check.ts`) + `e2e/smoke.spec.ts` = 12 → `test:lock OK (12 file)` (con số thật chốt lúc LOCK).
 - Trạng thái kỳ vọng trước BUILD: tất cả đỏ vì thiếu code (import không resolve, script chưa có). `tsc -p tsconfig.tests.json` (T19) chỉ chạy được sau T3/T8/T9/FE-5 (cần `@ai/contracts`, `@ai/db`, `tools/mocks`, `@playwright/test`); trước đó qc kiểm cú pháp test bằng `bunx tsc --noEmit -p tsconfig.tests.json` ngay khi file này có.
+
+### 5.1 Nhật ký Q2 / Q3 (qc, 2026-10-01, sau Gate M0)
+
+- **Q2 xong:** 12 file khoá đã tạo (11 dưới `tests/acceptance/ADM-NFR-06/` + `e2e/smoke.spec.ts`). Các file mục 3.1–3.9 và `ac07.check.ts` trích nguyên văn từ test-plan này, sau đó chạy `bunx biome check --write tests e2e` (chỉ sửa an toàn: sắp xếp import, ngắt dòng) để pre-commit không chặn — khác nguyên văn chỉ ở định dạng. `mocks.test.ts` (34 test, nhóm A–J) và `i18n-check.test.ts` (9 test) viết theo đặc tả mục 3.10.
+- Khác nguyên văn có nghĩa (2 chỗ, đều do lỗi kiểu của chính file test): (1) `e2e/smoke.spec.ts` đổi `el as HTMLImageElement` → `el as unknown as { naturalWidth: number }` vì `tsconfig.tests.json` không có lib DOM (TS2304); (2) `mocks.test.ts` hàm `abortedName` trả `err?.name ?? "khong-bi-huy"` để `toContain` nhận `string`. Nhóm J (spec §3.4) thêm vào mục 3.10 để phủ contract đã duyệt.
+- Trạng thái lúc khoá: `tsc -p tsconfig.tests.json` chỉ còn TS2307 (module chưa có: `@ai/db`, `postgres`, `packages/db/src/test-db`, `tools/mocks/src/{dify,hub}`) và TS7006 kéo theo — không lỗi cú pháp/kiểu của test. `bun test tests/acceptance`: `health.test.ts` 11/11 xanh (T4 đã có), còn lại đỏ vì thiếu script/module (`Module not found tools/scripts/src/*.ts`, `ENOENT .github/workflows/ci.yml`, `Cannot find module tools/mocks/src/dify`).
+- **Q3 — lock đầu tiên tạo tay:** `test:lock:write` chưa có (T12), nên `tests/.lock` được sinh bằng một lệnh `bun -e` một dòng theo đúng T-LOCK-1/2 (tập = `git ls-files --cached --others --exclude-standard -- tests/acceptance e2e`; sha256 sau `\r\n`→`\n`; header nguyên văn; `<sha256>  <path>` sắp tăng dần; `\n` cuối) → 13 dòng (header + 12 file), tự kiểm lại hash khớp 12/12. Khi T12 xong, `bun run test:lock:verify` phải in `test:lock OK (12 file)`; nếu lệch định dạng thì lỗi thuộc bên nào xử lý qua mục 10 "Tranh chấp test" của spec, qc ghi lại bằng `bun run test:lock:write`.
 
 ## 6. Cần bổ sung (agent: việc)
 
