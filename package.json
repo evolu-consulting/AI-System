@@ -24,7 +24,9 @@
     "depcruise": "bun tools/scripts/src/depcruise.ts",
     "test:lock:verify": "bun tools/scripts/src/test-lock.ts verify",
     "test:lock:write": "bun tools/scripts/src/test-lock.ts write",
-    "trace": "bun tools/scripts/src/trace.ts"
+    "trace": "bun tools/scripts/src/trace.ts",
+    "i18n:check": "bun tools/scripts/src/i18n-check.ts",
+    "check": "biome ci --changed --no-errors-on-unmatched && bun run check:size && bun run depcruise && bun run i18n:check"
   },
   "devDependencies": {
     "@ai/contracts": "workspace:*",
