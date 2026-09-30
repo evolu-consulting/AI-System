@@ -1,0 +1,20 @@
+{
+  "name": "@ai/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@ai/config": "workspace:*",
+    "@types/bun": "1.3.14",
+    "typescript": "6.0.3"
+  }
+}
