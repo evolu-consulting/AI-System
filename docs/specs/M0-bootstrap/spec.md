@@ -323,6 +323,7 @@ Nguồn `r#n` = `readiness.md` lần 1 mục n. Áp mặc định; chỗ khác m
 - T9 · Middleware kịch bản dùng chung (`scenarioMiddleware`, `readJsonObject` trong `tools/mocks/src/scenario.ts`); Hub đăng ký `GET /health` **trước** middleware nên không qua kịch bản. Method không có (vd `DELETE /internal/test-run`) → 404 như §3.4 (Hono không trả 405).
 - T9 · `Authorization: Bearer ` (token toàn khoảng trắng) coi như không có token → `unauthorized` (cùng nhánh với `Bearer`, test-plan §6.2 #2).
 - T9 · `server.ts` của mock đặt `idleTimeout: 0` cho `Bun.serve`: mặc định Bun cắt kết nối rảnh sau 10 s, ngắn hơn `MOCK_TIMEOUT_MS` mặc định 30000 → kịch bản `timeout` sẽ bị server tự đóng thay vì trả 200. `loadMockEnv` coi chuỗi rỗng là vắng (dòng `KEY=`).
+- T10 · `lib/git.ts` thêm `toRepoPath(cwd, root, p)` (ghép `git rev-parse --show-prefix`) và `notIgnored` (`git check-ignore --stdin`): trên Windows `os.tmpdir()` có thể là tên 8.3 (`MSIVN~1`) còn `--show-toplevel` trả tên dài, `path.relative` sẽ ra `../..`. `--files` cũng bỏ file bị `.gitignore` (T-SIZE-3). `listFiles(cwd, pathspecs)` nhận pathspec git thay cho glob. `k` trong `check:size OK (<k> file)` = số file code thực sự bị kiểm (sau miễn trừ, còn tồn tại).
 - T4 · `server.ts` gặp env sai → log `error` một dòng `Env không hợp lệ: <tên biến>` rồi `exit 1` (không in giá trị, không stack).
 
 ## 10. Tranh chấp test

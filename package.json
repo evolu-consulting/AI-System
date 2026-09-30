@@ -19,7 +19,8 @@
     "keys:dev": "bun tools/scripts/src/keys-dev.ts",
     "db:generate": "bun run --cwd packages/db generate",
     "db:migrate": "bun --env-file=.env.local packages/db/src/migrate.ts",
-    "mocks": "bun tools/mocks/src/server.ts"
+    "mocks": "bun tools/mocks/src/server.ts",
+    "check:size": "bun tools/scripts/src/check-size.ts"
   },
   "devDependencies": {
     "@ai/contracts": "workspace:*",

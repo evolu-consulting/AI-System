@@ -3,3 +3,5 @@ pre-commit:
   jobs:
     - name: biome
       run: bunx biome check --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+    - name: check-size
+      run: bun tools/scripts/src/check-size.ts --files {staged_files}
