@@ -72,6 +72,9 @@ jobs:
       - name: Unit + acceptance
         run: bun test
 
+      - name: AC07 (mỗi workspace có code thì có test)
+        run: bun tests/acceptance/ADM-NFR-06/ac07.check.ts
+
       - name: Playwright browser
         run: bunx playwright install --with-deps chromium
 
