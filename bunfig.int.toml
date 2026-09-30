@@ -3,4 +3,4 @@ linker = "isolated"
 
 [test]
 # Timeout 30 s đặt bằng cờ `--timeout` trong script `test:int` (Bun 1.3.14 bỏ qua key timeout ở đây).
-pathIgnorePatterns = ["e2e/**", "**/node_modules/**"]
+pathIgnorePatterns = ["e2e/**", "**/node_modules/**", "**/__fixtures__/**"]

@@ -20,7 +20,8 @@
     "db:generate": "bun run --cwd packages/db generate",
     "db:migrate": "bun --env-file=.env.local packages/db/src/migrate.ts",
     "mocks": "bun tools/mocks/src/server.ts",
-    "check:size": "bun tools/scripts/src/check-size.ts"
+    "check:size": "bun tools/scripts/src/check-size.ts",
+    "depcruise": "bun tools/scripts/src/depcruise.ts"
   },
   "devDependencies": {
     "@ai/contracts": "workspace:*",
