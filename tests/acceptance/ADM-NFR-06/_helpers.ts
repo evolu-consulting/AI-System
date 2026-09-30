@@ -55,3 +55,17 @@ export async function waitFor(
   }
   throw new Error(`Hết ${timeoutMs} ms chờ: ${what}`);
 }
+
+/**
+ * true nếu `q` bị từ chối (ném lỗi), false nếu thành công.
+ * Dùng thay `await expect(sqlQuery).rejects.toThrow()`: trong Bun 1.3.14 + postgres.js,
+ * dạng đó treo khi đứng ngay sau một truy vấn thành công (spec M0 §10 TT-1).
+ */
+export async function fails(q: PromiseLike<unknown>): Promise<boolean> {
+  try {
+    await q;
+    return false;
+  } catch {
+    return true;
+  }
+}

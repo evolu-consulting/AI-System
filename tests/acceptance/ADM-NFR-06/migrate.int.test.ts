@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { runMigrations } from "@ai/db";
 import postgres from "postgres";
 import { resetTestDb } from "../../../packages/db/src/test-db";
-import { ROOT, run } from "./_helpers";
+import { fails, ROOT, run } from "./_helpers";
 
 const URL = process.env.TEST_DATABASE_URL;
 if (!URL) {
@@ -92,16 +92,20 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
     }
     const A = "00000000-0000-7000-8000-0000000000a1";
     const T = "00000000-0000-7000-8000-0000000000b1";
-    await expect(
-      sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
-          values (${A}, ${T}, 'team', ${A})`,
-    ).rejects.toThrow();
-    await expect(
-      sql`insert into hub.usage_logs (tenant_id, billing) values (${T}, 'khac')`,
-    ).rejects.toThrow();
-    await expect(
-      sql`insert into hub.usage_logs (tenant_id, billing, input_tokens) values (${T}, 'api', -1)`,
-    ).rejects.toThrow();
+    expect(
+      await fails(
+        sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
+            values (${A}, ${T}, 'team', ${A})`,
+      ),
+    ).toBe(true);
+    expect(
+      await fails(sql`insert into hub.usage_logs (tenant_id, billing) values (${T}, 'khac')`),
+    ).toBe(true);
+    expect(
+      await fails(
+        sql`insert into hub.usage_logs (tenant_id, billing, input_tokens) values (${T}, 'api', -1)`,
+      ),
+    ).toBe(true);
     const [row] = await sql<{ input_tokens: number; overage: boolean; cost_usd: string | null }[]>`
       insert into hub.usage_logs (tenant_id, billing) values (${T}, 'dify')
       returning input_tokens, overage, cost_usd`;
