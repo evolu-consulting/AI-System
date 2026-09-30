@@ -1,0 +1,221 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Access.dc.html": {
+      "expand": "fill",
+      "h": 1040,
+      "title": "7.15 Phân quyền · tenant admin",
+      "w": 1440,
+      "x": 1520,
+      "y": 3120
+    },
+    "Audit.dc.html": {
+      "expand": "fill",
+      "h": 1060,
+      "title": "6 Nhật ký · timeline + diff + khôi phục",
+      "w": 1440,
+      "x": 7600,
+      "y": 4580
+    },
+    "ChangePassword.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "title": "8 Đổi mật khẩu bắt buộc + bước TOTP",
+      "w": 1440,
+      "x": 1520,
+      "y": 6800
+    },
+    "Commands.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "title": "7.4 Command editor",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "Enable2FA.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "title": "9 2FA · 3 bước bật",
+      "w": 1440,
+      "x": 3040,
+      "y": 6800
+    },
+    "Groups.dc.html": {
+      "expand": "fill",
+      "h": 940,
+      "title": "7.14 Group · tenant admin",
+      "w": 1440,
+      "x": 0,
+      "y": 3120
+    },
+    "ImportPreview.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "title": "7 Import · bước Xem trước",
+      "w": 1440,
+      "x": 0,
+      "y": 6800
+    },
+    "Login.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "7.1 Đăng nhập",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "title": "7.2 Tổng quan · platform admin",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Secrets.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "title": "5 Secrets · Thay giá trị",
+      "w": 1440,
+      "x": 6080,
+      "y": 4580
+    },
+    "Sidebar.dc.html": {
+      "h": 1000,
+      "title": "Sidebar (component dùng chung)",
+      "w": 248,
+      "x": 3040,
+      "y": 1660
+    },
+    "States.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "title": "10 Bộ trạng thái chung",
+      "w": 1440,
+      "x": 4560,
+      "y": 6800
+    },
+    "TenantCreate.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "title": "2 Tạo tenant + mật khẩu tạm",
+      "w": 1440,
+      "x": 1520,
+      "y": 4580
+    },
+    "TenantOverview.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "title": "1 Tổng quan · tenant admin + banner quota",
+      "w": 1440,
+      "x": 0,
+      "y": 4580
+    },
+    "TenantQuota.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "title": "3 Tenant chi tiết · tab Quota",
+      "w": 1440,
+      "x": 3040,
+      "y": 4580
+    },
+    "Usage.dc.html": {
+      "expand": "fill",
+      "h": 1040,
+      "title": "7.16 Chi phí & quota",
+      "w": 1440,
+      "x": 1520,
+      "y": 1660
+    },
+    "Users.dc.html": {
+      "expand": "fill",
+      "h": 1800,
+      "title": "4 Users · danh sách + drawer",
+      "w": 1440,
+      "x": 4560,
+      "y": 4580
+    },
+    "Workflows.dc.html": {
+      "expand": "fill",
+      "h": 940,
+      "title": "7.6 Workflows (catalog dùng chung)",
+      "w": 1440,
+      "x": 0,
+      "y": 1660
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-01T10:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "rowAdd1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Bổ sung — tenant, user, secret, nhật ký",
+      "w": 240,
+      "x": 0,
+      "y": 4280
+    },
+    "rowAdd2": {
+      "kind": "title1",
+      "maxW": 6000,
+      "text": "Bổ sung — import, mật khẩu, 2FA, trạng thái chung",
+      "w": 240,
+      "x": 0,
+      "y": 6500
+    },
+    "rowCatalog": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Platform admin — catalog workflow, chi phí & quota",
+      "w": 240,
+      "x": 0,
+      "y": 1360
+    },
+    "rowPlatform": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Platform admin — đăng nhập, tổng quan, tạo command",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "rowTenant": {
+      "kind": "title1",
+      "maxW": 2960,
+      "text": "Tenant admin — group và phân quyền",
+      "w": 240,
+      "x": 0,
+      "y": 2820
+    }
+  },
+  "order": [
+    "Login.dc.html",
+    "Main.dc.html",
+    "Commands.dc.html",
+    "Workflows.dc.html",
+    "Usage.dc.html",
+    "Sidebar.dc.html",
+    "Groups.dc.html",
+    "Access.dc.html",
+    "TenantOverview.dc.html",
+    "TenantCreate.dc.html",
+    "TenantQuota.dc.html",
+    "Users.dc.html",
+    "Secrets.dc.html",
+    "Audit.dc.html",
+    "ImportPreview.dc.html",
+    "ChangePassword.dc.html",
+    "Enable2FA.dc.html",
+    "States.dc.html"
+  ],
+  "pages": [],
+  "title": "Admin UI — đề xuất v0.4"
+}

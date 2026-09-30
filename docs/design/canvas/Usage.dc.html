@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Chi phí và quota · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.tbl{border-collapse:collapse;width:100%}
+.tbl th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 16px;border-bottom:1px solid #E6E3EE}
+.tbl td{font-size:14px;padding:12px 16px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.kpi{padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.kpi .l{font-size:13px;color:#635C78}.kpi .v{font-size:26px;font-weight:700}.kpi .d{font-size:12px;color:#635C78}
+.sel{height:34px;border:1px solid #D9D5E3;border-radius:8px;padding:0 10px;font:14px 'Be Vietnam Pro',sans-serif;background:#FFFFFF;color:#1D1733}
+</style>
+</helmet>
+<div style="display: flex; min-height: 100vh; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<dc-import name="Sidebar" active="usage" role="platform" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<span style="color: #635C78">Chi phí &amp; quota</span>
+<div style="flex-grow: 1"></div>
+<span class="badge b-info">Nền tảng</span>
+</header>
+<main style="padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; max-width: 1280px; box-sizing: border-box; width: 100%">
+<div style="display: flex; align-items: flex-end; gap: 12px">
+<div style="flex-grow: 1">
+<h1 style="margin: 0; font-size: 24px; font-weight: 700">Chi phí &amp; quota</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Tháng 9/2026 · dữ liệu mẫu. Vượt quota không chặn, phần vượt được tính phí riêng.</p>
+</div>
+<label style="font-size: 13px; color: #635C78; display: flex; align-items: center; gap: 8px">Tenant<select class="sel"><option>Tất cả tenant</option></select></label>
+<label style="font-size: 13px; color: #635C78; display: flex; align-items: center; gap: 8px">Kỳ<select class="sel"><option>Tháng này</option></select></label>
+<a class="btn" href="#">Xuất CSV</a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px">
+<div class="card kpi"><span class="l">Số run</span><span class="v">48.210</span><span class="d">▲ 18% so với tháng 8</span></div>
+<div class="card kpi"><span class="l">Token</span><span class="v">61,4M</span><span class="d">▲ 22%</span></div>
+<div class="card kpi"><span class="l">Số thu · billable_usd</span><span class="v">$3.812</span><span class="d">▲ 15%</span></div>
+<div class="card kpi"><span class="l">Chi phí thật · cost_usd</span><span class="v">$1.204</span><span class="d">41% token qua subscription</span></div>
+<div class="card kpi" style="background: #2E2150; border-color: #2E2150"><span class="l" style="color: #D6CBEF">Biên</span><span class="v" style="color: #FFFFFF">$2.608</span><span class="d" style="color: #D6CBEF">68% số thu</span></div>
+</div>
+<section class="card" style="padding: 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 16px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">Số thu theo ngày</h2>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #635C78"><span style="width: 10px; height: 10px; border-radius: 2px; background: #6B4FA0"></span>Trong quota</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #635C78"><span style="width: 10px; height: 10px; border-radius: 2px; background: repeating-linear-gradient(135deg, #C2410C 0 3px, #F59E0B 3px 6px)"></span>Vượt quota</span>
+</div>
+<div style="display: flex; gap: 12px">
+<div style="display: flex; flex-direction: column; justify-content: space-between; height: 180px; font-size: 11px; color: #635C78; text-align: right; width: 36px"><span>$200</span><span>$100</span><span>$0</span></div>
+<div style="flex-grow: 1; height: 180px; display: flex; align-items: flex-end; gap: 6px; border-bottom: 1px solid #E6E3EE; background: repeating-linear-gradient(to top, transparent 0 89px, #F0EEF4 89px 90px)">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="30">
+<div title="{{b.tip}}" style="flex-grow: 1; display: flex; flex-direction: column-reverse; height: 100%">
+<div style="{{b.inStyle}}"></div>
+<div style="{{b.overStyle}}"></div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; padding-left: 48px; font-size: 11px; color: #635C78"><span>1/9</span><span>8/9</span><span>15/9</span><span>22/9</span><span>30/9</span></div>
+</section>
+<div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px">
+<section class="card" style="overflow: hidden">
+<div style="padding: 16px 18px 8px"><h2 style="margin: 0; font-size: 16px; font-weight: 600">Theo tenant</h2></div>
+<table class="tbl">
+<thead><tr><th>Tenant</th><th style="width: 34%">Quota tháng</th><th>Số thu</th><th>Chi phí thật</th><th>Slot subscription</th></tr></thead>
+<tbody>
+<tr><td><div style="font-weight: 600">Acme Việt Nam</div><span class="badge b-err">Vượt 12%</span></td><td><div style="height: 8px; border-radius: 999px; background: #EFEDF3; overflow: hidden; display: flex"><div style="width: 89%; background: #6B4FA0"></div><div style="width: 11%; background: repeating-linear-gradient(135deg, #C2410C 0 4px, #F59E0B 4px 8px)"></div></div><div style="font-size: 12px; color: #635C78; margin-top: 4px">1.120 / 1.000 run</div></td><td class="mono">$1.284</td><td class="mono">$402</td><td style="font-size: 13px">2 / 2</td></tr>
+<tr><td><div style="font-weight: 600">Globex</div><span class="badge b-warn">84%</span></td><td><div style="height: 8px; border-radius: 999px; background: #EFEDF3; overflow: hidden"><div style="width: 84%; height: 100%; background: #B45309"></div></div><div style="font-size: 12px; color: #635C78; margin-top: 4px">4.200 / 5.000 run</div></td><td class="mono">$912</td><td class="mono">$288</td><td style="font-size: 13px">1 / không giới hạn</td></tr>
+<tr><td><div style="font-weight: 600">Initech</div><span class="badge b-ok">41%</span></td><td><div style="height: 8px; border-radius: 999px; background: #EFEDF3; overflow: hidden"><div style="width: 41%; height: 100%; background: #6B4FA0"></div></div><div style="font-size: 12px; color: #635C78; margin-top: 4px">820 / 2.000 run</div></td><td class="mono">$356</td><td class="mono">$131</td><td style="font-size: 13px">0 / 1</td></tr>
+<tr><td><div style="font-weight: 600">Umbrella</div><span class="badge b-off">Không giới hạn</span></td><td style="font-size: 12px; color: #635C78">3.460 run · không đặt quota</td><td class="mono">$780</td><td class="mono">$240</td><td style="font-size: 13px">1 / không giới hạn</td></tr>
+</tbody>
+</table>
+</section>
+<section class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Top feature theo số thu</h2>
+<div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+<div><div style="display: flex; justify-content: space-between"><span>Kế toán</span><span class="mono">$1.420</span></div><div style="height: 8px; margin-top: 4px; border-radius: 4px; background: #6B4FA0; width: 100%"></div></div>
+<div><div style="display: flex; justify-content: space-between"><span>core</span><span class="mono">$1.105</span></div><div style="height: 8px; margin-top: 4px; border-radius: 4px; background: #6B4FA0; width: 78%"></div></div>
+<div><div style="display: flex; justify-content: space-between"><span>Kinh doanh</span><span class="mono">$690</span></div><div style="height: 8px; margin-top: 4px; border-radius: 4px; background: #6B4FA0; width: 49%"></div></div>
+<div><div style="display: flex; justify-content: space-between"><span>Chat với agent (không qua feature)</span><span class="mono">$597</span></div><div style="height: 8px; margin-top: 4px; border-radius: 4px; background: #9C89C9; width: 42%"></div></div>
+</div>
+<p style="margin: 0; font-size: 12px; color: #635C78">Run qua agent chat không gắn feature nào nên đứng riêng một dòng.</p>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+renderVals() {
+const vals = [84, 92, 101, 96, 60, 44, 110, 118, 121, 115, 108, 58, 49, 126, 131, 128, 140, 137, 70, 55, 146, 150, 158, 162, 171, 80, 66, 178, 186, 190];
+const over = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 20, 26, 30];
+const bars = vals.map((v, i) => ({
+tip: 'Ngày ' + (i + 1) + '/9 · $' + (v + over[i]),
+inStyle: 'height: ' + (v / 200 * 100) + '%; background: #6B4FA0; border-radius: ' + (over[i] ? '0' : '3px 3px 0 0'),
+overStyle: 'height: ' + (over[i] / 200 * 100) + '%; border-radius: 3px 3px 0 0; margin-bottom: ' + (over[i] ? '2px' : '0') + '; background: repeating-linear-gradient(135deg, #C2410C 0 3px, #F59E0B 3px 6px)'
+}));
+return { bars };
+}
+}
+</script>
+</body>
+</html>

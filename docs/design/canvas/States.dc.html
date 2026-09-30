@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Trạng thái chung · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box;white-space:nowrap}
+.btn-primary{background:#6B4FA0;border-color:#6B4FA0;color:#FFFFFF}
+.btn-danger{background:#B42318;border-color:#B42318;color:#FFFFFF}
+.btn[disabled]{opacity:0.5;cursor:not-allowed}
+.btn-sm{height:30px;padding:0 10px;font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.tbl{border-collapse:collapse;width:100%}
+.tbl th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 16px;border-bottom:1px solid #E6E3EE}
+.tbl td{font-size:14px;padding:11px 16px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.input{width:100%;height:36px;border:1px solid #D9D5E3;border-radius:8px;padding:0 12px;font:14px 'Be Vietnam Pro',sans-serif;color:#1D1733;background:#FFFFFF;box-sizing:border-box}
+.input[readonly]{background:#F7F6FA;color:#4F4865}
+.lbl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#1D1733}
+.hint{font-size:12px;font-weight:400;color:#635C78}
+.err{font-size:12px;font-weight:400;color:#9B1C1C}
+.sel{height:34px;border:1px solid #D9D5E3;border-radius:8px;padding:0 10px;font:14px 'Be Vietnam Pro',sans-serif;background:#FFFFFF;color:#1D1733}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;border:1px solid #D9D5E3;background:#FFFFFF;font:500 13px 'Be Vietnam Pro',sans-serif;color:#3B3450;text-decoration:none;cursor:pointer}
+.fchip-on{background:#2E2150;border-color:#2E2150;color:#FFFFFF}
+.av{width:28px;height:28px;border-radius:999px;background:#EDE6FB;color:#4A3278;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.bar{height:8px;border-radius:999px;background:#EFEDF3;overflow:hidden;display:flex}
+.bar>span{display:block;height:100%;background:#6B4FA0}
+.more{border:0;background:transparent;cursor:pointer;color:#635C78;font-size:14px}
+.tabs{display:flex;gap:24px;border-bottom:1px solid #E6E3EE;font-size:14px}
+.tabs a{padding:8px 0 12px;color:#635C78;text-decoration:none}
+.tabs a[aria-current]{border-bottom:2px solid #6B4FA0;color:#1D1733;font-weight:600}
+.h2{margin:0;font-size:16px;font-weight:600}
+.muted{color:#635C78}
+.toast{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:#1D1733;color:#FFFFFF;font-size:14px;box-shadow:0 8px 24px rgba(29,23,51,0.25)}
+.toast a,.toast button{color:#C9B8FF;font:600 14px 'Be Vietnam Pro',sans-serif;background:transparent;border:0;cursor:pointer;text-decoration:none}
+.scrim{position:absolute;left:0;right:0;bottom:0;top:0;background:rgba(29,23,51,0.42)}
+.sheet{position:absolute;right:0;top:0;bottom:0;background:#FFFFFF;border-left:1px solid #E6E3EE;box-shadow:-12px 0 32px rgba(29,23,51,0.18);display:flex;flex-direction:column;box-sizing:border-box}
+.dlg{background:#FFFFFF;border-radius:12px;box-shadow:0 20px 48px rgba(29,23,51,0.28);display:flex;flex-direction:column;gap:14px;padding:22px;box-sizing:border-box}
+.sk{display:block;background:#EFEDF3;border-radius:6px}
+.cap{font-size:12px;font-weight:600;letter-spacing:0.08em;color:#7A7390;text-transform:uppercase}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px}
+.chk input{width:16px;height:16px;accent-color:#6B4FA0;margin:0}
+.row{display:flex;align-items:center;gap:10px}
+</style>
+</helmet>
+<div style="display: flex; min-height: 100vh; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<dc-import name="Sidebar" active="users" role="tenant" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 8px"><span style="font-weight: 500">Trạng thái chung</span></nav>
+<div style="flex-grow: 1"></div>
+<label style="display: flex; align-items: center; gap: 8px; width: 300px; height: 36px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box; color: #635C78; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg>
+<input aria-label="Tìm kiếm" placeholder="Tìm user, group…" style="border: 0; outline: 0; flex-grow: 1; min-width: 0; font: 14px 'Be Vietnam Pro', sans-serif; color: #1D1733; background: transparent">
+<span class="mono" style="font-size: 11px; padding: 2px 6px; border: 1px solid #E6E3EE; border-radius: 4px">Ctrl K</span>
+</label>
+<span class="badge b-info">Acme Việt Nam · acme</span>
+<span class="badge b-off mono">config v43</span>
+<button aria-label="Tài khoản của bạn" style="width: 32px; height: 32px; border: 0; border-radius: 999px; background: #2E2150; color: #FFFFFF; font: 600 12px 'Be Vietnam Pro', sans-serif; cursor: pointer">TH</button>
+</header>
+<main style="flex-grow: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; max-width: 1280px; width: 100%; box-sizing: border-box">
+<div>
+<h1 style="margin: 0; font-size: 24px; font-weight: 700">Bộ trạng thái chung</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Tất cả nằm trong vùng nội dung; sidebar và topbar luôn dùng được. Ví dụ lấy trên danh sách Users.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch">
+
+<section aria-label="Đang tải" style="grid-column: span 2; display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.1 Đang tải</span>
+<div class="card" aria-busy="true" style="overflow: hidden; flex-grow: 1">
+<span role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Đang tải</span>
+<table class="tbl">
+<thead><tr><th>Tên đăng nhập</th><th>Tên hiển thị</th><th>Role</th><th>Groups</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr style="height: 40px"><td><span class="sk" style="width: 80px; height: 12px"></span></td><td><span class="sk" style="width: 110px; height: 12px"></span></td><td><span class="sk" style="width: 60px; height: 12px"></span></td><td><span class="sk" style="width: 90px; height: 12px"></span></td><td><span class="sk" style="width: 70px; height: 12px"></span></td></tr>
+<tr style="height: 40px"><td><span class="sk" style="width: 64px; height: 12px"></span></td><td><span class="sk" style="width: 96px; height: 12px"></span></td><td><span class="sk" style="width: 60px; height: 12px"></span></td><td><span class="sk" style="width: 70px; height: 12px"></span></td><td><span class="sk" style="width: 70px; height: 12px"></span></td></tr>
+<tr style="height: 40px"><td><span class="sk" style="width: 90px; height: 12px"></span></td><td><span class="sk" style="width: 120px; height: 12px"></span></td><td><span class="sk" style="width: 60px; height: 12px"></span></td><td><span class="sk" style="width: 100px; height: 12px"></span></td><td><span class="sk" style="width: 70px; height: 12px"></span></td></tr>
+<tr style="height: 40px"><td><span class="sk" style="width: 72px; height: 12px"></span></td><td><span class="sk" style="width: 88px; height: 12px"></span></td><td><span class="sk" style="width: 60px; height: 12px"></span></td><td><span class="sk" style="width: 60px; height: 12px"></span></td><td><span class="sk" style="width: 70px; height: 12px"></span></td></tr>
+</tbody>
+</table>
+<div style="padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #635C78"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2"></path></svg><span style="flex-grow: 1">Vẫn đang tải…</span><button type="button" class="btn btn-sm">Thử lại</button></div>
+</div>
+<span class="hint">Bảng: header thật + 8 hàng skeleton cao 40px (rút gọn còn 4). Sau 10 giây mới hiện dòng “Vẫn đang tải…”.</span>
+</section>
+
+<section aria-label="Rỗng" style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.2 Rỗng</span>
+<div class="card" style="flex-grow: 1; padding: 28px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center">
+<span style="color: #9C89C9"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg></span>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #3B3450">Chưa có người dùng nào ngoài bạn. Tạo user để mời đồng nghiệp dùng Chat App.</p>
+<button type="button" class="btn btn-primary">+ Tạo user</button>
+</div>
+</section>
+
+<section aria-label="Rỗng do lọc" style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.2 Rỗng do bộ lọc</span>
+<div class="card" style="flex-grow: 1; padding: 28px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center">
+<span style="color: #9C89C9"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg></span>
+<p style="margin: 0; font-size: 14px; color: #3B3450">Không có kết quả cho 'nguyen.x'</p>
+<button type="button" class="btn">Xoá bộ lọc</button>
+<span class="hint">Không có từ khoá mà có chip lọc: “Không có mục nào khớp bộ lọc”.</span>
+</div>
+</section>
+
+<section aria-label="Lỗi tải" style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.3 Lỗi tải</span>
+<div class="card" style="flex-grow: 1; padding: 20px; display: flex; flex-direction: column; justify-content: center">
+<div role="alert" style="display: flex; gap: 12px; padding: 14px; border-radius: 8px; background: #FDE8E8; color: #9B1C1C">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px">
+<b style="font-size: 14px">Không tải được dữ liệu</b>
+<span style="font-size: 13px">Không kết nối được máy chủ (mã <span class="mono">NETWORK_ERROR</span>)</span>
+<button type="button" class="btn btn-sm" style="align-self: flex-start; margin-top: 4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"></path></svg>Thử lại</button>
+</div>
+</div>
+</div>
+</section>
+
+<section aria-label="Không có quyền" style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.4 Không có quyền · 403</span>
+<div class="card" style="flex-grow: 1; padding: 28px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center">
+<span style="width: 48px; height: 48px; border-radius: 999px; background: #EDE6FB; color: #4A3278; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">Bạn không có quyền xem trang này</h2>
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #635C78">Trang này chỉ dành cho quản trị nền tảng. Nếu cần, hãy liên hệ người quản trị của bạn.</p>
+<a class="btn" href="TenantOverview.dc.html">Về Tổng quan</a>
+</div>
+</section>
+
+<section aria-label="Có người vừa lưu bản mới hơn" style="grid-column: span 2; display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.5 Xung đột · 409 VERSION_CONFLICT (đã mở Xem khác biệt)</span>
+<div style="flex-grow: 1; padding: 24px; border-radius: 12px; background: rgba(29,23,51,0.42); display: flex; align-items: center; justify-content: center">
+<div role="alertdialog" aria-labelledby="cf-title" class="dlg" style="width: 100%; max-width: 640px">
+<h2 id="cf-title" style="margin: 0; font-size: 18px; font-weight: 700">Có người vừa lưu bản mới hơn</h2>
+<p style="margin: 0; font-size: 14px; color: #3B3450">thu.ha vừa sửa command này lúc 10:42 (v44). Bản của bạn dựa trên v43.</p>
+<table class="tbl" style="border: 1px solid #E6E3EE; border-radius: 8px; border-collapse: separate; border-spacing: 0; overflow: hidden">
+<thead><tr><th>Trường</th><th>Bản của bạn</th><th>Bản mới nhất (v44)</th></tr></thead>
+<tbody>
+<tr><td style="font-weight: 500">description.vi</td><td style="font-size: 13px">Dịch nhanh văn bản</td><td style="font-size: 13px; background: #E3F4EC">Dịch văn bản sang ngôn ngữ khác</td></tr>
+<tr><td class="mono" style="font-size: 13px">args[1].default</td><td class="mono" style="font-size: 13px">"en"</td><td class="mono" style="font-size: 13px; background: #E3F4EC">"vi"</td></tr>
+</tbody>
+</table>
+<div style="display: flex; gap: 10px; justify-content: flex-end"><button type="button" class="btn" aria-expanded="true">Xem khác biệt</button><button type="button" class="btn">Ghi đè</button><button type="button" class="btn btn-primary">Tải bản mới</button></div>
+<div role="alertdialog" aria-labelledby="ow-title" style="padding: 14px; border-radius: 10px; border: 1px solid #E6E3EE; background: #FBFAFD; display: flex; flex-direction: column; gap: 10px">
+<span class="cap">Khi bấm Ghi đè</span>
+<h3 id="ow-title" style="margin: 0; font-size: 15px; font-weight: 600">Ghi đè thay đổi của thu.ha?</h3>
+<p style="margin: 0; font-size: 13px; color: #3B3450">Bản v44 sẽ bị thay bằng bản của bạn (thành v45). Lịch sử vẫn giữ v44.</p>
+<div style="display: flex; justify-content: flex-end; gap: 10px"><button type="button" class="btn btn-sm">Huỷ</button><button type="button" class="btn btn-sm btn-danger">Ghi đè</button></div>
+</div>
+</div>
+</div>
+</section>
+
+<section aria-label="Không tìm thấy" style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.4 Không tìm thấy · 404</span>
+<div class="card" style="flex-grow: 1; padding: 28px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center">
+<span style="width: 48px; height: 48px; border-radius: 999px; background: #EFEDF3; color: #4F4865; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg></span>
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">Không tìm thấy</h2>
+<p style="margin: 0; font-size: 13px; color: #635C78">Mục này không tồn tại hoặc đã bị xoá.</p>
+<a class="btn" href="Users.dc.html">Về danh sách</a>
+<div role="status" class="toast" style="margin-top: 12px; font-size: 13px; text-align: left"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span>Bạn không còn quyền thực hiện thao tác này</span></div>
+</div>
+</section>
+
+<section aria-label="Mất kết nối" style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.6 Mất kết nối</span>
+<div class="card" style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div role="status" style="display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 8px; background: #FDF0DF; color: #7F3C04; font-size: 13px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M2 2l20 20M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 5.2-2.7M19 12.5a10 10 0 0 0-2.4-1.8M12 20h.01"></path></svg><span>Mất kết nối, thay đổi chưa được lưu</span></div>
+<div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end">
+<span role="tooltip" style="padding: 6px 10px; border-radius: 6px; background: #1D1733; color: #FFFFFF; font-size: 12px">Đang chờ kết nối lại</span>
+<button type="button" class="btn btn-primary" disabled="disabled">Lưu</button>
+</div>
+<div role="status" style="display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 8px; background: #E3F4EC; color: #05603F; font-size: 13px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M5 12l5 5 9-10"></path></svg><span>Đã kết nối lại</span></div>
+<span class="hint">Banner xanh hiện 3 giây rồi tự ẩn; dữ liệu tự tải lại.</span>
+</div>
+</section>
+
+<section aria-label="Phiên đăng nhập đã hết hạn" style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.7 Phiên hết hạn</span>
+<div style="flex-grow: 1; padding: 16px; border-radius: 12px; background: rgba(29,23,51,0.42); display: flex; align-items: center">
+<div role="dialog" aria-labelledby="se-title" class="dlg" style="width: 100%; padding: 18px">
+<h2 id="se-title" style="margin: 0; font-size: 16px; font-weight: 700">Phiên đăng nhập đã hết hạn</h2>
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #3B3450">Đăng nhập lại để tiếp tục. Dữ liệu đang nhập được giữ nguyên.</p>
+<div class="mono" style="font-size: 12px; color: #635C78">acme · thu.ha</div>
+<label class="lbl">Mật khẩu<input class="input" type="password" autocomplete="current-password"></label>
+<button type="button" class="btn btn-primary">Đăng nhập</button>
+</div>
+</div>
+</section>
+
+<section aria-label="Bỏ thay đổi" style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">12.7 Rời trang khi chưa lưu</span>
+<div style="flex-grow: 1; padding: 16px; border-radius: 12px; background: rgba(29,23,51,0.42); display: flex; align-items: center">
+<div role="alertdialog" aria-labelledby="dc-title" class="dlg" style="width: 100%; padding: 18px">
+<h2 id="dc-title" style="margin: 0; font-size: 16px; font-weight: 700">Bỏ thay đổi?</h2>
+<p style="margin: 0; font-size: 13px; color: #3B3450">Các thay đổi chưa lưu sẽ mất.</p>
+<div style="display: flex; justify-content: flex-end; gap: 10px"><button type="button" class="btn">Ở lại</button><button type="button" class="btn btn-danger">Bỏ thay đổi</button></div>
+</div>
+</div>
+</section>
+
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+return { yes: true, no: false };
+}
+}
+</script>
+</body>
+</html>

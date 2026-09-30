@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sidebar Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<nav aria-label="Điều hướng chính" style="width: 248px; height: 100%; min-height: 1000px; box-sizing: border-box; display: flex; flex-direction: column; background: #FCFBFE; border-right: 1px solid #E6E3EE; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<div style="padding: 14px 16px 6px 8px; display: flex; flex-direction: column; gap: 2px">
+<img src="/_blob/ff996c7f180f52c5c553f42e51a0a2e4" alt="EvoluConsulting" style="width: 212px; height: 65px; object-fit: contain; object-position: left center">
+<div style="margin-left: 16px; display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 999px; background: #F1ECFB; color: #553C85; font-size: 12px; font-weight: 600">Admin Console</div>
+</div>
+<div style="flex-grow: 1; padding: 12px 12px; display: flex; flex-direction: column; gap: 16px">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<sc-if value="{{g.hasTitle}}" hint-placeholder-val="{{yes}}">
+<div style="padding: 0 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: #7A7390">{{g.title}}</div>
+</sc-if>
+<sc-for list="{{g.items}}" as="item" hint-placeholder-count="3">
+<a href="{{item.href}}" style="{{item.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{item.d}}"></path></svg>
+<span style="flex-grow: 1">{{item.label}}</span>
+<sc-if value="{{item.hasCount}}" hint-placeholder-val="{{no}}">
+<span style="font-size: 12px; color: #7A7390">{{item.count}}</span>
+</sc-if>
+</a>
+</sc-for>
+</div>
+</sc-for>
+</div>
+<div style="padding: 12px; border-top: 1px solid #E6E3EE; display: flex; flex-direction: column; gap: 10px">
+<sc-if value="{{isPlatform}}" hint-placeholder-val="{{yes}}">
+<a href="#" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 36px; border-radius: 8px; border: 1px solid #D9D5E3; background: #FFFFFF; color: #3B3450; font-size: 13px; font-weight: 500; text-decoration: none">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"></path></svg>
+Agent Studio
+</a>
+</sc-if>
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 2px">
+<div style="width: 32px; height: 32px; border-radius: 999px; background: #2E2150; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600">{{initials}}</div>
+<div style="display: flex; flex-direction: column; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">{{userName}}</span>
+<span style="font-size: 12px; color: #635C78">{{roleLabel}}</span>
+</div>
+</div>
+</div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["overview","features","commands","workflows","tenants","users","groups","access","secrets","auth","usage","audit","transfer"],"default":"overview"},"role":{"editor":"enum","options":["platform","tenant"],"default":"platform"},"$preview":{"width":248,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+const role = this.props.role ?? 'platform';
+const active = this.props.active ?? 'overview';
+const P = role === 'platform';
+const I = {
+home: 'M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z',
+features: 'M21 8 12 3 3 8v8l9 5 9-5V8zM3 8l9 5 9-5M12 13v8',
+commands: 'M4 17l6-5-6-5M12 19h8',
+workflows: 'M4 4h6v6H4zM14 14h6v6h-6zM7 10v4a3 3 0 0 0 3 3h4',
+tenants: 'M4 21V4h10v17M14 9h6v12M8 8h2M8 12h2M8 16h2M3 21h18',
+users: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+groups: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-5-6.7',
+access: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
+secrets: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
+auth: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.8-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3.2 15H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9 4.2V4a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V11a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
+usage: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+audit: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
+transfer: 'M12 3v12M7 10l5 5 5-5M5 21h14'
+};
+const it = (k, label, href, count) => ({ k, label, href, d: I[k], count: count || '', hasCount: !!count });
+const groups = [
+{ title: '', items: [it('home', 'Tổng quan', P ? 'Main.dc.html' : 'TenantOverview.dc.html')] },
+P ? { title: 'CHỨC NĂNG', items: [it('features', 'Features', '#', '9'), it('commands', 'Commands', 'Commands.dc.html', '24'), it('workflows', 'Workflows', 'Workflows.dc.html', '18')] } : null,
+{ title: 'TRUY CẬP', items: [P ? it('tenants', 'Tenants', 'TenantCreate.dc.html', '6') : null, it('users', 'Users', 'Users.dc.html', P ? '' : '48'), it('groups', 'Groups', 'Groups.dc.html', P ? '' : '5'), it('access', 'Phân quyền', 'Access.dc.html')].filter(Boolean) },
+P ? { title: 'BẢO MẬT', items: [it('secrets', 'Secrets', 'Secrets.dc.html'), it('auth', 'Cài đặt đăng nhập', '#')] } : null,
+{ title: 'HỆ THỐNG', items: [it('usage', 'Chi phí & quota', 'Usage.dc.html'), it('audit', 'Nhật ký', 'Audit.dc.html'), P ? it('transfer', 'Import / Export', 'ImportPreview.dc.html') : null].filter(Boolean) }
+].filter(Boolean).map((g) => ({
+hasTitle: !!g.title,
+title: g.title,
+items: g.items.map((x) => {
+const on = (x.k === 'home' ? 'overview' : x.k) === active;
+return { ...x, style: 'display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 8px; text-decoration: none; font-size: 14px; ' + (on ? 'background: #EDE6FB; color: #4A3278; font-weight: 600;' : 'color: #3B3450; font-weight: 500;') };
+})
+}));
+return {
+groups,
+isPlatform: P,
+yes: true,
+no: false,
+initials: P ? 'PA' : 'TH',
+userName: P ? 'platform.admin' : 'thu.ha',
+roleLabel: P ? 'platform_admin · Nền tảng' : 'tenant_admin · acme'
+};
+}
+}
+</script>
+</body>
+</html>

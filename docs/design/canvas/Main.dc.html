@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tổng quan · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.btn-primary{background:#6B4FA0;border-color:#6B4FA0;color:#FFFFFF}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.tbl{border-collapse:collapse;width:100%}
+.tbl th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 16px;border-bottom:1px solid #E6E3EE}
+.tbl td{font-size:14px;padding:12px 16px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.input{height:36px;border:1px solid #D9D5E3;border-radius:8px;padding:0 12px;font:14px 'Be Vietnam Pro',sans-serif;color:#1D1733;background:#FFFFFF;box-sizing:border-box}
+</style>
+</helmet>
+<div style="display: flex; min-height: 100vh; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<dc-import name="Sidebar" active="overview" role="platform" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 16px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE">
+<div style="font-size: 14px; color: #635C78">Tổng quan</div>
+<div style="flex-grow: 1"></div>
+<label style="display: flex; align-items: center; gap: 8px; width: 320px; height: 36px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box; color: #635C78; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg>
+<input aria-label="Tìm kiếm" placeholder="Tìm command, workflow, tenant, user…" style="border: 0; outline: 0; flex-grow: 1; font: 14px 'Be Vietnam Pro', sans-serif; color: #1D1733; background: transparent">
+<span class="mono" style="font-size: 11px; padding: 2px 6px; border: 1px solid #E6E3EE; border-radius: 4px">Ctrl K</span>
+</label>
+<span class="badge b-info">Nền tảng</span>
+<span class="badge b-off mono">config v43</span>
+</header>
+<main style="flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 24px; max-width: 1280px; width: 100%; box-sizing: border-box">
+<div style="display: flex; align-items: flex-end; gap: 16px">
+<div style="flex-grow: 1">
+<h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.01em">Tổng quan</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Toàn bộ nền tảng · 6 tenant · cập nhật lúc 10:42</p>
+</div>
+<a class="btn" href="#">Tạo tenant</a>
+<a class="btn btn-primary" href="Commands.dc.html">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+Tạo command</a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px">
+<div class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #635C78">Tenant đang hoạt động</span>
+<span style="font-size: 28px; font-weight: 700">6</span>
+<span style="font-size: 12px; color: #635C78">+1 trong tháng này</span>
+</div>
+<div class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #635C78">Commands đang bật</span>
+<span style="font-size: 28px; font-weight: 700">24</span>
+<span style="font-size: 12px; color: #635C78">trong 9 feature</span>
+</div>
+<div class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #635C78">Workflows</span>
+<span style="font-size: 28px; font-weight: 700">18</span>
+<span style="font-size: 12px"><span class="badge b-warn">3 chưa gắn</span></span>
+</div>
+<div class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #635C78">Users đang hoạt động</span>
+<span style="font-size: 28px; font-weight: 700">214</span>
+<span style="font-size: 12px; color: #635C78">▲ 12 so với tháng trước</span>
+</div>
+<div class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #635C78">Số run 24 giờ</span>
+<span style="font-size: 28px; font-weight: 700">1.842</span>
+<span style="font-size: 12px; color: #635C78">2,1% lỗi</span>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<section class="card" style="grid-column: span 2; display: flex; flex-direction: column">
+<div style="padding: 16px 18px 8px; display: flex; align-items: center; gap: 8px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">Tenant sắp hoặc đã vượt quota</h2>
+<a href="Usage.dc.html" style="font-size: 13px">Xem Chi phí &amp; quota</a>
+</div>
+<table class="tbl">
+<thead><tr><th>Tenant</th><th style="width: 40%">Quota tháng · run</th><th>Số thu tháng</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr>
+<td><div style="font-weight: 600">Acme Việt Nam</div><div class="mono" style="font-size: 12px; color: #635C78">acme</div></td>
+<td><div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 8px; border-radius: 999px; background: #EFEDF3; overflow: hidden; display: flex"><div style="width: 89%; background: #6B4FA0"></div><div style="width: 11%; background: repeating-linear-gradient(135deg, #C2410C 0 4px, #F59E0B 4px 8px)"></div></div><span style="font-size: 12px; color: #635C78">1.120 / 1.000 run · vượt 12%</span></div></td>
+<td class="mono">$1.284</td>
+<td><span class="badge b-err">Vượt quota</span></td>
+</tr>
+<tr>
+<td><div style="font-weight: 600">Globex</div><div class="mono" style="font-size: 12px; color: #635C78">globex</div></td>
+<td><div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 8px; border-radius: 999px; background: #EFEDF3; overflow: hidden"><div style="width: 84%; height: 100%; background: #B45309"></div></div><span style="font-size: 12px; color: #635C78">4.200 / 5.000 run · 84%</span></div></td>
+<td class="mono">$912</td>
+<td><span class="badge b-warn">80% quota</span></td>
+</tr>
+<tr>
+<td><div style="font-weight: 600">Initech</div><div class="mono" style="font-size: 12px; color: #635C78">initech</div></td>
+<td><div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 8px; border-radius: 999px; background: #EFEDF3; overflow: hidden"><div style="width: 41%; height: 100%; background: #6B4FA0"></div></div><span style="font-size: 12px; color: #635C78">820 / 2.000 run · 41%</span></div></td>
+<td class="mono">$356</td>
+<td><span class="badge b-ok">ok</span></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; background: #2E2150; border-color: #2E2150; color: #FFFFFF">
+<div style="display: flex; align-items: center; gap: 10px">
+<img src="/_blob/a565b653b03cf498bb910a4cf10f8a60" alt="" style="width: 36px; height: 36px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Agent Studio</h2>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #E4DCF7">Agent, Coordinator, model và vận hành nằm ở Agent Studio. Agent chọn workflow từ catalog của Admin.</p>
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<div style="display: flex; align-items: center; gap: 8px"><span class="badge b-warn">cần xử lý</span><span>gemini-sub · logged_out</span></div>
+<div style="display: flex; align-items: center; gap: 8px"><span class="badge b-ok">ok</span><span>7 agent đang bật</span></div>
+</div>
+<div style="flex-grow: 1"></div>
+<a class="btn" href="#" style="justify-content: center; background: #FFFFFF; border-color: #FFFFFF; color: #2E2150">Mở Agent Studio</a>
+</section>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<section class="card" style="display: flex; flex-direction: column">
+<div style="padding: 16px 18px 8px"><h2 style="margin: 0; font-size: 16px; font-weight: 600">Command lỗi nhiều nhất 24 giờ</h2></div>
+<table class="tbl">
+<thead><tr><th>Command</th><th>Run</th><th>Tỉ lệ lỗi</th><th>Lỗi chính</th></tr></thead>
+<tbody>
+<tr><td class="mono" style="font-weight: 500">/kiemtra-hoadon</td><td>212</td><td><span class="badge b-err">9,4%</span></td><td style="font-size: 13px; color: #635C78">UPSTREAM_ERROR</td></tr>
+<tr><td class="mono" style="font-weight: 500">/tom</td><td>480</td><td><span class="badge b-warn">3,1%</span></td><td style="font-size: 13px; color: #635C78">TIMEOUT</td></tr>
+<tr><td class="mono" style="font-weight: 500">/dich</td><td>931</td><td><span class="badge b-off">0,4%</span></td><td style="font-size: 13px; color: #635C78">CMD_MISSING_ARG</td></tr>
+</tbody>
+</table>
+</section>
+<section class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center"><h2 style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">Thay đổi gần đây</h2><a href="#" style="font-size: 13px">Nhật ký</a></div>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px">
+<li style="display: flex; gap: 12px"><span style="width: 8px; height: 8px; margin-top: 6px; border-radius: 999px; background: #6B4FA0; flex-shrink: 0"></span><div style="font-size: 14px"><b>platform.admin</b> cấp feature <b>Kế toán</b> cho tenant <span class="mono">acme</span><div style="font-size: 12px; color: #635C78">10:38 · v43</div></div></li>
+<li style="display: flex; gap: 12px"><span style="width: 8px; height: 8px; margin-top: 6px; border-radius: 999px; background: #6B4FA0; flex-shrink: 0"></span><div style="font-size: 14px"><b>thu.ha</b> (acme) thêm 6 người vào group <b>Kế toán</b><div style="font-size: 12px; color: #635C78">10:21</div></div></li>
+<li style="display: flex; gap: 12px"><span style="width: 8px; height: 8px; margin-top: 6px; border-radius: 999px; background: #CFC7E2; flex-shrink: 0"></span><div style="font-size: 14px"><b>builder.dev</b> khai báo workflow <span class="mono">report-tax</span> <span class="badge b-warn">Chưa gắn</span><div style="font-size: 12px; color: #635C78">09:55 · v42</div></div></li>
+</ol>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

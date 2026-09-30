@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Command /dich · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.btn-primary{background:#6B4FA0;border-color:#6B4FA0;color:#FFFFFF}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.input{height:36px;border:1px solid #D9D5E3;border-radius:8px;padding:0 12px;font:14px 'Be Vietnam Pro',sans-serif;color:#1D1733;background:#FFFFFF;box-sizing:border-box;width:100%}
+.lbl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500}
+.step{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600}
+.num{width:24px;height:24px;border-radius:999px;background:#EDE6FB;color:#4A3278;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 6px 0 10px;border-radius:6px;background:#F3F1F7;border:1px solid #E6E3EE;font-size:13px}
+.x{border:0;background:transparent;color:#635C78;cursor:pointer;width:20px;height:20px;padding:0;font-size:14px;line-height:20px}
+.row{display:grid;grid-template-columns:minmax(0,1.3fr) 24px minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:center}
+</style>
+</helmet>
+<div style="display: flex; min-height: 100vh; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<dc-import name="Sidebar" active="commands" role="platform" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<a href="#" style="color: #635C78; text-decoration: none">Commands</a>
+<span style="color: #B3ADC4">/</span>
+<span class="mono" style="font-weight: 500">/dich</span>
+<div style="flex-grow: 1"></div>
+<span class="badge b-info">Nền tảng</span>
+<span class="badge b-off mono">config v43</span>
+</header>
+<div style="padding: 24px 28px 0; display: flex; align-items: center; gap: 14px">
+<h1 class="mono" style="margin: 0; font-size: 24px; font-weight: 600">/dich</h1>
+<span class="badge b-ok">Bật</span>
+<span style="font-size: 13px; color: #635C78">alias translate, tr</span>
+<div style="flex-grow: 1"></div>
+<a class="btn" href="#">Nhân bản</a>
+<a class="btn" href="#">Lịch sử</a>
+</div>
+<nav aria-label="Các tab" style="padding: 16px 28px 0; display: flex; gap: 24px; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<a href="#" aria-current="page" style="padding: 8px 0 12px; border-bottom: 2px solid #6B4FA0; color: #1D1733; font-weight: 600; text-decoration: none">Cấu hình</a>
+<a href="#" style="padding: 8px 0 12px; color: #635C78; text-decoration: none">Ai dùng được <span class="badge b-off">3 tenant · 142 user</span></a>
+</nav>
+<div style="flex-grow: 1; display: grid; grid-template-columns: minmax(0, 58fr) minmax(0, 42fr); gap: 24px; padding: 24px 28px 96px; align-items: start">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div class="step"><span class="num">1</span>Đặt tên và gói chức năng</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+<label class="lbl">Tên command<input class="input mono" value="dich"></label>
+<div class="lbl">Alias<div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 36px"><span class="chip mono">translate<button class="x" aria-label="Bỏ alias translate">×</button></span><span class="chip mono">tr<button class="x" aria-label="Bỏ alias tr">×</button></span><a href="#" style="font-size: 13px">+ Thêm</a></div></div>
+</div>
+<label class="lbl">Mô tả cho người dùng
+<input class="input" value="Dịch đoạn văn sang ngôn ngữ khác. Bôi đen văn bản rồi gõ /dich en">
+<span style="font-size: 12px; font-weight: 400; color: #635C78"><span class="badge b-off">VI</span> <span class="badge b-warn">EN thiếu</span></span>
+</label>
+<div class="lbl">Feature <span style="font-weight: 400; color: #635C78">quyết định ai thấy lệnh này</span>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center"><span class="chip">core · mọi tenant<button class="x" aria-label="Bỏ feature core">×</button></span><span class="chip">Kinh doanh<button class="x" aria-label="Bỏ feature Kinh doanh">×</button></span><a href="#" style="font-size: 13px">+ Thêm feature</a></div>
+</div>
+</section>
+<section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div class="step"><span class="num">2</span>Chọn workflow</div>
+<button style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid #D9D5E3; border-radius: 8px; background: #FFFFFF; text-align: left; cursor: pointer; font: inherit; color: inherit">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B4FA0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4zM14 14h6v6h-6zM7 10v4a3 3 0 0 0 3 3h4"></path></svg>
+<span style="flex-grow: 1; display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 14px">Dịch văn bản <span class="mono" style="font-weight: 400; color: #635C78">translate</span></span><span style="font-size: 12px; color: #635C78">Dùng khi cần dịch một đoạn văn giữa tiếng Việt, Anh, Nhật…</span></span>
+<span class="badge b-off">2 command · 1 agent</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#635C78" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+</section>
+<section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div class="step"><span class="num">3</span>Người dùng gõ gì</div>
+<div class="mono" style="padding: 10px 12px; border-radius: 8px; background: #F7F6FA; font-size: 14px">/dich <span style="color: #6B4FA0">&lt;lang = vi&gt;</span> <span style="color: #6B4FA0">&lt;text…&gt;</span></div>
+<div style="display: grid; grid-template-columns: 16px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 70px; gap: 10px; font-size: 12px; color: #635C78"><span></span><span>Tham số</span><span>Mặc định</span><span>Nếu trống lấy</span><span>Nuốt phần còn lại</span></div>
+<div style="display: grid; grid-template-columns: 16px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 70px; gap: 10px; align-items: center"><span style="color: #B3ADC4">⋮⋮</span><input class="input mono" value="lang"><input class="input mono" value="vi"><input class="input" placeholder="—"><input type="checkbox" aria-label="lang nuốt phần còn lại" disabled="{{yes}}"></div>
+<div style="display: grid; grid-template-columns: 16px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 70px; gap: 10px; align-items: center"><span style="color: #B3ADC4">⋮⋮</span><input class="input mono" value="text"><input class="input" placeholder="—"><input class="input mono" value="$selection"><input type="checkbox" aria-label="text nuốt phần còn lại" checked="{{yes}}"></div>
+</section>
+<section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<div class="step"><span class="num">4</span>Đưa vào workflow</div>
+<div class="row" style="font-size: 12px; color: #635C78"><span>Input của workflow</span><span></span><span>Nguồn</span><span>Giá trị</span></div>
+<div class="row"><span class="mono" style="font-size: 14px">source_text <span style="color: #9B1C1C">*</span> <span style="color: #635C78">text</span></span><span style="color: #635C78">←</span><select class="input" aria-label="Nguồn source_text"><option>$args.text</option></select><input class="input" placeholder="—"></div>
+<div class="row"><span class="mono" style="font-size: 14px">target_lang <span style="color: #9B1C1C">*</span> <span style="color: #635C78">select</span></span><span style="color: #635C78">←</span><select class="input" aria-label="Nguồn target_lang"><option>$args.lang</option></select><input class="input mono" value="vi"></div>
+<div class="row"><span class="mono" style="font-size: 14px">tone <span style="color: #635C78">text</span></span><span style="color: #635C78">←</span><select class="input" aria-label="Nguồn tone"><option>Giá trị cố định</option></select><input class="input" value="tự nhiên"></div>
+</section>
+<section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div class="step"><span class="num">5</span>Hiển thị kết quả</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+<label class="lbl">Output field<input class="input mono" value="result"></label>
+<label class="lbl">Hiển thị<select class="input"><option>Markdown</option></select></label>
+<label class="lbl">Timeout (giây)<input class="input" value="60"></label>
+</div>
+<div role="radiogroup" aria-label="Chế độ chạy" style="display: inline-flex; align-self: flex-start; padding: 3px; border-radius: 8px; background: #F3F1F7; gap: 2px">
+<button role="radio" aria-checked="true" style="height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: #FFFFFF; font: 600 13px 'Be Vietnam Pro'; color: #1D1733; box-shadow: 0 1px 2px rgba(29,23,51,0.12)">sync</button>
+<button role="radio" aria-checked="false" style="height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: transparent; font: 500 13px 'Be Vietnam Pro'; color: #635C78">async</button>
+</div>
+</section>
+</div>
+<aside class="card" aria-label="Chạy thử" style="padding: 20px; display: flex; flex-direction: column; gap: 14px; position: sticky; top: 16px">
+<div style="display: flex; align-items: center; gap: 8px"><h2 style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">Chạy thử</h2><span class="badge b-info">dùng bản đang sửa</span></div>
+<label class="lbl">lang<input class="input mono" value="en"></label>
+<label class="lbl">text<textarea class="input" style="height: 72px; padding: 8px 12px; resize: none">Xin chào, hẹn gặp bạn tại buổi demo thứ Sáu.</textarea></label>
+<details style="font-size: 13px"><summary style="cursor: pointer; color: #635C78">Giả lập ngữ cảnh: đoạn bôi đen, URL trang, file</summary></details>
+<label class="lbl">Chạy với tư cách user<select class="input"><option>thu.ha · acme</option></select><span style="font-size: 12px; font-weight: 400; color: #05603F">Có quyền qua feature core</span></label>
+<button class="btn btn-primary" style="height: 40px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"></path></svg>
+Chạy thử <span class="mono" style="font-size: 11px; opacity: 0.8">Ctrl Enter</span></button>
+<div style="border: 1px solid #E6E3EE; border-radius: 10px; overflow: hidden">
+<div style="display: flex; gap: 16px; padding: 0 14px; border-bottom: 1px solid #E6E3EE; font-size: 13px">
+<a href="#" style="padding: 10px 0; border-bottom: 2px solid #6B4FA0; color: #1D1733; font-weight: 600; text-decoration: none">Kết quả</a>
+<a href="#" style="padding: 10px 0; color: #635C78; text-decoration: none">Raw</a>
+<a href="#" style="padding: 10px 0; color: #635C78; text-decoration: none">Trace</a>
+<span style="flex-grow: 1"></span>
+<span style="align-self: center; color: #635C78" class="mono">1,2s · dify · 184 token</span>
+</div>
+<div aria-live="polite" style="padding: 14px; font-size: 15px; line-height: 1.55">Hello, see you at Friday's demo.</div>
+</div>
+<p style="margin: 0; font-size: 12px; color: #635C78">5 lần chạy gần nhất được giữ trong phiên này.</p>
+</aside>
+</div>
+<div style="position: sticky; bottom: 0; height: 64px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-top: 1px solid #E6E3EE">
+<span style="width: 8px; height: 8px; border-radius: 999px; background: #B45309"></span>
+<span style="font-size: 14px">Chưa lưu thay đổi</span>
+<span style="font-size: 13px; color: #635C78">· đã chạy thử bản này</span>
+<div style="flex-grow: 1"></div>
+<button class="btn">Huỷ</button>
+<button class="btn btn-primary">Lưu <span class="mono" style="font-size: 11px; opacity: 0.8">Ctrl S</span></button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+renderVals() {
+return { yes: true };
+}
+}
+</script>
+</body>
+</html>

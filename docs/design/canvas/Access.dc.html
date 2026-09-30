@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Phân quyền · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.btn-primary{background:#6B4FA0;border-color:#6B4FA0;color:#FFFFFF}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.mx{border-collapse:collapse;width:100%}
+.mx th{font-size:12px;font-weight:500;color:#635C78;padding:10px 12px;border-bottom:1px solid #E6E3EE;text-align:center}
+.mx th:first-child,.mx td:first-child{text-align:left;padding-left:18px}
+.mx td{padding:12px;border-bottom:1px solid #F0EEF4;text-align:center;font-size:14px}
+.mx input{width:18px;height:18px;accent-color:#6B4FA0}
+.res{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid #E6E3EE;border-radius:10px}
+</style>
+</helmet>
+<div style="display: flex; min-height: 100vh; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<dc-import name="Sidebar" active="access" role="tenant" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<span style="color: #635C78">Phân quyền</span>
+<div style="flex-grow: 1"></div>
+<span class="badge b-info">Acme Việt Nam · acme</span>
+</header>
+<main style="padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; max-width: 1280px; box-sizing: border-box; width: 100%">
+<div>
+<h1 style="margin: 0; font-size: 24px; font-weight: 700">Phân quyền</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Cấp feature cho từng group. Chỉ cấp được feature mà công ty đã được nền tảng mở.</p>
+</div>
+<section class="card" style="overflow: hidden">
+<div style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #E6E3EE">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">Ma trận feature × group</h2>
+<span style="font-size: 13px; color: #635C78">2 thay đổi chưa lưu</span>
+<button class="btn">Huỷ</button>
+<button class="btn btn-primary">Lưu</button>
+</div>
+<table class="mx">
+<thead><tr><th>Feature</th><sc-for list="{{groups}}" as="g" hint-placeholder-count="5"><th scope="col">{{g}}</th></sc-for></tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<tr style="{{r.rowStyle}}">
+<td><div style="display: flex; align-items: center; gap: 8px"><span style="font-weight: 600">{{r.name}}</span><sc-if value="{{r.hasBadge}}" hint-placeholder-val="{{no}}"><span class="{{r.badgeClass}}">{{r.badge}}</span></sc-if></div><div style="font-size: 12px; color: #635C78">{{r.desc}}</div></td>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="5">
+<td><input type="checkbox" checked="{{c.on}}" disabled="{{c.locked}}" aria-label="{{c.label}}" title="{{c.tip}}"></td>
+</sc-for>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+<section class="card" style="padding: 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">Kiểm tra quyền</h2>
+<span style="font-size: 13px; color: #635C78">Trả lời "sao tôi không thấy lệnh X"</span>
+</div>
+<label style="display: flex; align-items: center; gap: 8px; max-width: 420px; height: 38px; padding: 0 12px; border: 1px solid #6B4FA0; border-radius: 8px; box-shadow: 0 0 0 3px #EDE6FB">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#635C78" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg>
+<input aria-label="Username cần kiểm tra" value="lan.tran" class="mono" style="border: 0; outline: 0; flex-grow: 1; font-size: 14px">
+<span style="font-size: 12px; color: #635C78">Kế toán · Ban giám đốc</span>
+</label>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div class="res"><span class="badge b-ok">✓ Thấy</span><div><div class="mono" style="font-weight: 500">/kiemtra-hoadon</div><div style="font-size: 13px; color: #635C78">qua feature Kế toán · group Kế toán</div></div></div>
+<div class="res"><span class="badge b-ok">✓ Thấy</span><div><div class="mono" style="font-weight: 500">/dich</div><div style="font-size: 13px; color: #635C78">qua feature core · mọi người</div></div></div>
+<div class="res" style="border-color: #F3C7C7; background: #FFFAFA"><span class="badge b-err">✕ Không thấy</span><div style="flex-grow: 1"><div class="mono" style="font-weight: 500">/bao-gia</div><div style="font-size: 13px; color: #635C78">Feature Kinh doanh chưa cấp cho lan.tran hay group nào của lan.tran.</div><a class="btn" href="#" style="margin-top: 10px; height: 32px; font-size: 13px">Cấp Kinh doanh cho group…</a></div></div>
+<div class="res"><span class="badge b-ok">✓ Được dùng</span><div><div style="font-weight: 500">Agent: Trợ lý hoá đơn</div><div style="font-size: 13px; color: #635C78">qua group Kế toán · Coordinator có thể giao việc</div></div></div>
+<div class="res" style="border-color: #F3C7C7; background: #FFFAFA"><span class="badge b-err">✕ Không thấy</span><div><div class="mono" style="font-weight: 500">/rasoat-hopdong</div><div style="font-size: 13px; color: #635C78">Feature Pháp chế chưa được mở cho công ty. Liên hệ nền tảng để mở.</div></div></div>
+</div>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+renderVals() {
+const groups = ['Kế toán', 'Kinh doanh', 'Nhân sự', 'Ban giám đốc', 'beta-testers'];
+const mk = (name, desc, onList, opts) => {
+const o = opts || {};
+return {
+name, desc,
+hasBadge: !!o.badge, badge: o.badge || '', badgeClass: 'badge ' + (o.badgeClass || 'b-off'),
+rowStyle: o.locked ? 'background: #FAF9FC; color: #8A839E' : (o.changed ? 'background: #FBF8FF' : ''),
+cells: groups.map((g, i) => ({
+on: !!onList[i], locked: !!o.locked,
+label: name + ' cho group ' + g,
+tip: o.locked ? 'Công ty chưa được mở feature này' : (onList[i] ? 'Đã cấp' : 'Chưa cấp')
+}))
+};
+};
+const rows = [
+mk('core', 'Mọi người đều có · /dich, /tom', [1, 1, 1, 1, 1], { badge: 'Mặc định', locked: false }),
+mk('Kế toán', '/kiemtra-hoadon, /xuat-bctc', [1, 0, 0, 1, 0], {}),
+mk('Kinh doanh', '/bao-gia, /tom-khach-hang', [0, 1, 0, 1, 0], { changed: true, badge: 'Chưa lưu', badgeClass: 'b-warn' }),
+mk('Nhân sự', '/jd, /sang-loc-cv', [0, 0, 1, 0, 1], { badge: 'Beta', badgeClass: 'b-info' }),
+mk('Pháp chế', 'Chưa được nền tảng mở cho acme', [0, 0, 0, 0, 0], { locked: true, badge: 'Chưa mở', badgeClass: 'b-off' })
+];
+return { groups, rows, no: false };
+}
+}
+</script>
+</body>
+</html>

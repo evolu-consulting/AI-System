@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Workflows · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.btn-primary{background:#6B4FA0;border-color:#6B4FA0;color:#FFFFFF}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.tbl{border-collapse:collapse;width:100%}
+.tbl th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 16px;border-bottom:1px solid #E6E3EE}
+.tbl td{font-size:14px;padding:12px 16px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;border:1px solid #D9D5E3;background:#FFFFFF;font:500 13px 'Be Vietnam Pro',sans-serif;color:#3B3450;text-decoration:none}
+</style>
+</helmet>
+<div style="display: flex; min-height: 100vh; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<dc-import name="Sidebar" active="workflows" role="platform" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<span style="color: #635C78">Workflows</span>
+<div style="flex-grow: 1"></div>
+<span class="badge b-info">Nền tảng</span>
+<span class="badge b-off mono">config v43</span>
+</header>
+<main style="padding: 24px 28px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start">
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<div style="display: flex; align-items: flex-end; gap: 12px">
+<div style="flex-grow: 1">
+<h1 style="margin: 0; font-size: 24px; font-weight: 700">Workflows</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Catalog dùng chung. Command và agent đều chọn workflow từ đây. Khai báo trước, gắn sau cũng được.</p>
+</div>
+<a class="btn btn-primary" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Khai báo workflow</a>
+</div>
+<ol aria-label="Cách đưa workflow vào sử dụng" style="margin: 0; padding: 14px 16px; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; border-radius: 12px; background: #FFFFFF; border: 1px dashed #CFC7E2">
+<li style="display: flex; gap: 10px; align-items: flex-start"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 999px; background: #EDE6FB; color: #4A3278; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">1</span><span style="font-size: 13px; line-height: 1.45"><b>Tạo trên Dify</b><br><span style="color: #635C78">Dựng workflow bằng Claude session, lấy app key</span></span></li>
+<li style="display: flex; gap: 10px; align-items: flex-start"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 999px; background: #EDE6FB; color: #4A3278; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span><span style="font-size: 13px; line-height: 1.45"><b>Khai báo ở đây</b><br><span style="color: #635C78">Dán key, lấy input, viết mô tả. Chưa gắn cũng được</span></span></li>
+<li style="display: flex; gap: 10px; align-items: flex-start"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 999px; background: #EDE6FB; color: #4A3278; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">3</span><span style="font-size: 13px; line-height: 1.45"><b>Gắn cho command hoặc agent</b><br><span style="color: #635C78">Command ở Admin · agent ở Agent Studio</span></span></li>
+</ol>
+<div style="display: flex; gap: 8px; align-items: center">
+<a class="fchip" href="#" aria-current="true" style="background: #2E2150; border-color: #2E2150; color: #FFFFFF">Tất cả · 18</a>
+<a class="fchip" href="#">Bật · 14</a>
+<a class="fchip" href="#">Tắt · 1</a>
+<a class="fchip" href="#">Chưa gắn · 3</a>
+<div style="flex-grow: 1"></div>
+<label style="display: flex; align-items: center; gap: 8px; width: 260px; height: 34px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box; background: #FFFFFF; color: #635C78">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg>
+<input aria-label="Tìm workflow" placeholder="Tìm workflow…" style="border: 0; outline: 0; flex-grow: 1; font: 14px 'Be Vietnam Pro', sans-serif; background: transparent">
+</label>
+</div>
+<section class="card" style="overflow: hidden">
+<table class="tbl">
+<thead><tr><th>Workflow</th><th>Loại</th><th>Đang được dùng bởi</th><th>Trạng thái</th><th style="width: 32px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Thao tác</span></th></tr></thead>
+<tbody>
+<tr style="background: #F8F5FE">
+<td><div style="font-weight: 600">Dịch văn bản</div><div class="mono" style="font-size: 12px; color: #635C78">translate</div></td>
+<td><span class="badge b-off">workflow</span></td>
+<td style="font-size: 13px"><a href="Commands.dc.html">2 command</a> · <a href="#">1 agent</a></td>
+<td><span class="badge b-ok">Bật</span></td>
+<td><button aria-label="Thao tác cho translate" style="border: 0; background: transparent; cursor: pointer; color: #635C78">•••</button></td>
+</tr>
+<tr>
+<td><div style="font-weight: 600">Kiểm tra hoá đơn</div><div class="mono" style="font-size: 12px; color: #635C78">invoice-check</div></td>
+<td><span class="badge b-off">workflow</span></td>
+<td style="font-size: 13px"><a href="#">1 command</a> · <a href="#">1 agent</a></td>
+<td><span class="badge b-ok">Bật</span></td>
+<td><button aria-label="Thao tác cho invoice-check" style="border: 0; background: transparent; cursor: pointer; color: #635C78">•••</button></td>
+</tr>
+<tr>
+<td><div style="font-weight: 600">Tạo thẻ Trello</div><div class="mono" style="font-size: 12px; color: #635C78">trello-create</div></td>
+<td><span class="badge b-off">workflow</span></td>
+<td style="font-size: 13px"><a href="#">1 agent</a></td>
+<td><span class="badge b-ok">Bật</span></td>
+<td><button aria-label="Thao tác cho trello-create" style="border: 0; background: transparent; cursor: pointer; color: #635C78">•••</button></td>
+</tr>
+<tr>
+<td><div style="font-weight: 600">Tóm tắt trang web</div><div class="mono" style="font-size: 12px; color: #635C78">summarize-page</div></td>
+<td><span class="badge b-off">chat</span></td>
+<td style="font-size: 13px"><a href="#">1 command</a></td>
+<td><span class="badge b-ok">Bật</span></td>
+<td><button aria-label="Thao tác cho summarize-page" style="border: 0; background: transparent; cursor: pointer; color: #635C78">•••</button></td>
+</tr>
+<tr>
+<td><div style="font-weight: 600">Báo cáo thuế tháng</div><div class="mono" style="font-size: 12px; color: #635C78">report-tax</div></td>
+<td><span class="badge b-off">workflow</span></td>
+<td><span class="badge b-warn">Chưa gắn</span></td>
+<td><span class="badge b-ok">Bật</span></td>
+<td><button aria-label="Thao tác cho report-tax" style="border: 0; background: transparent; cursor: pointer; color: #635C78">•••</button></td>
+</tr>
+<tr>
+<td><div style="font-weight: 600">Tra cứu CRM</div><div class="mono" style="font-size: 12px; color: #635C78">crm-lookup</div></td>
+<td><span class="badge b-off">agent</span></td>
+<td><span class="badge b-warn">Chưa gắn</span></td>
+<td><span class="badge b-off">Tắt</span></td>
+<td><button aria-label="Thao tác cho crm-lookup" style="border: 0; background: transparent; cursor: pointer; color: #635C78">•••</button></td>
+</tr>
+</tbody>
+</table>
+</section>
+</div>
+<aside class="card" aria-label="Chi tiết translate" style="padding: 18px; display: flex; flex-direction: column; gap: 14px; position: sticky; top: 16px">
+<div style="display: flex; align-items: center; gap: 8px"><h2 style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">translate</h2><span class="badge b-ok">✓ Kết nối được</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; font-weight: 500">Mô tả <span style="color: #9B1C1C">*</span></span>
+<div style="font-size: 14px; line-height: 1.5; padding: 10px 12px; border: 1px solid #D9D5E3; border-radius: 8px">Dùng khi cần dịch một đoạn văn giữa tiếng Việt, Anh, Nhật. Không dùng để tóm tắt hay viết lại văn phong.</div>
+<span style="font-size: 12px; color: #635C78">Agent đọc nguyên văn mô tả này để biết khi nào gọi workflow · 108/400</span>
+</div>
+<div style="display: flex; gap: 16px; border-bottom: 1px solid #E6E3EE; font-size: 13px">
+<a href="#" style="padding: 8px 0; color: #635C78; text-decoration: none">Input</a>
+<a href="#" style="padding: 8px 0; color: #635C78; text-decoration: none">JSON</a>
+<a href="#" aria-current="true" style="padding: 8px 0; border-bottom: 2px solid #6B4FA0; color: #1D1733; font-weight: 600; text-decoration: none">Model thấy gì</a>
+</div>
+<pre class="mono" style="margin: 0; padding: 12px; border-radius: 8px; background: #1D1733; color: #E4DCF7; font-size: 12px; line-height: 1.55; white-space: pre-wrap">{
+  "name": "translate",
+  "description": "Dùng khi cần dịch một đoạn văn…",
+  "parameters": {
+    "source_text": { "type": "string",
+      "description": "Đoạn văn cần dịch" },
+    "target_lang": { "enum": ["vi","en","ja"],
+      "description": "Ngôn ngữ đích" }
+  }
+}</pre>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 500">Đang được dùng bởi</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px"><a class="mono" href="Commands.dc.html">/dich</a><a class="mono" href="#">/tr-nhanh</a><span style="color: #B3ADC4">·</span><a href="#">Trợ lý dịch (agent)</a></div>
+</div>
+<a class="btn" href="Commands.dc.html">Tạo command từ workflow này</a>
+</aside>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

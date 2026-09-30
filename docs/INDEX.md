@@ -20,7 +20,7 @@
 | Agent Hub (`HUB-*`) | `design/agent-hub/ba-agent-hub.md` | `design/agent-hub/ui-agent-studio.md`, `design/agent-hub/ui-operations.md` |
 | Worker (`WRK-*`) | `design/worker/ba-worker.md` | — |
 | Chat & Extension | — | `design/chat-app/ui-chat-extension.md` |
-| Design đã duyệt hướng | Canvas: https://claude.ai/artifact/FTSiKuF9ax5DkMBVKMdHDB | 8 artboard Admin |
+| Design đã duyệt (Gate M0) | Canvas: https://claude.ai/artifact/FTSiKuF9ax5DkMBVKMdHDB · bản sao nguồn `design/canvas/` | 18 artboard Admin · token `design/canvas/tokens-map.md` |
 
 Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DEBT.md`).
 

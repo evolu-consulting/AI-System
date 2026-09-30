@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tạo tenant · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box;white-space:nowrap}
+.btn-primary{background:#6B4FA0;border-color:#6B4FA0;color:#FFFFFF}
+.btn-danger{background:#B42318;border-color:#B42318;color:#FFFFFF}
+.btn[disabled]{opacity:0.5;cursor:not-allowed}
+.btn-sm{height:30px;padding:0 10px;font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.tbl{border-collapse:collapse;width:100%}
+.tbl th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 16px;border-bottom:1px solid #E6E3EE}
+.tbl td{font-size:14px;padding:11px 16px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.input{width:100%;height:36px;border:1px solid #D9D5E3;border-radius:8px;padding:0 12px;font:14px 'Be Vietnam Pro',sans-serif;color:#1D1733;background:#FFFFFF;box-sizing:border-box}
+.input[readonly]{background:#F7F6FA;color:#4F4865}
+.lbl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#1D1733}
+.hint{font-size:12px;font-weight:400;color:#635C78}
+.err{font-size:12px;font-weight:400;color:#9B1C1C}
+.sel{height:34px;border:1px solid #D9D5E3;border-radius:8px;padding:0 10px;font:14px 'Be Vietnam Pro',sans-serif;background:#FFFFFF;color:#1D1733}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;border:1px solid #D9D5E3;background:#FFFFFF;font:500 13px 'Be Vietnam Pro',sans-serif;color:#3B3450;text-decoration:none;cursor:pointer}
+.fchip-on{background:#2E2150;border-color:#2E2150;color:#FFFFFF}
+.av{width:28px;height:28px;border-radius:999px;background:#EDE6FB;color:#4A3278;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.bar{height:8px;border-radius:999px;background:#EFEDF3;overflow:hidden;display:flex}
+.bar>span{display:block;height:100%;background:#6B4FA0}
+.more{border:0;background:transparent;cursor:pointer;color:#635C78;font-size:14px}
+.tabs{display:flex;gap:24px;border-bottom:1px solid #E6E3EE;font-size:14px}
+.tabs a{padding:8px 0 12px;color:#635C78;text-decoration:none}
+.tabs a[aria-current]{border-bottom:2px solid #6B4FA0;color:#1D1733;font-weight:600}
+.h2{margin:0;font-size:16px;font-weight:600}
+.muted{color:#635C78}
+.toast{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:#1D1733;color:#FFFFFF;font-size:14px;box-shadow:0 8px 24px rgba(29,23,51,0.25)}
+.toast a,.toast button{color:#C9B8FF;font:600 14px 'Be Vietnam Pro',sans-serif;background:transparent;border:0;cursor:pointer;text-decoration:none}
+.scrim{position:absolute;left:0;right:0;bottom:0;top:0;background:rgba(29,23,51,0.42)}
+.sheet{position:absolute;right:0;top:0;bottom:0;background:#FFFFFF;border-left:1px solid #E6E3EE;box-shadow:-12px 0 32px rgba(29,23,51,0.18);display:flex;flex-direction:column;box-sizing:border-box}
+.dlg{background:#FFFFFF;border-radius:12px;box-shadow:0 20px 48px rgba(29,23,51,0.28);display:flex;flex-direction:column;gap:14px;padding:22px;box-sizing:border-box}
+.sk{display:block;background:#EFEDF3;border-radius:6px}
+.cap{font-size:12px;font-weight:600;letter-spacing:0.08em;color:#7A7390;text-transform:uppercase}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px}
+.chk input{width:16px;height:16px;accent-color:#6B4FA0;margin:0}
+.row{display:flex;align-items:center;gap:10px}
+</style>
+</helmet>
+<div style="position: relative; display: flex; min-height: 100vh; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<dc-import name="Sidebar" active="tenants" role="platform" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 8px"><a href="#" style="color: #635C78; text-decoration: none">Tenants</a><span style="color: #B3ADC4">/</span><span style="font-weight: 500">Tạo tenant</span></nav>
+<div style="flex-grow: 1"></div>
+<label style="display: flex; align-items: center; gap: 8px; width: 300px; height: 36px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box; color: #635C78; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg>
+<input aria-label="Tìm kiếm" placeholder="Tìm command, workflow, tenant, user…" style="border: 0; outline: 0; flex-grow: 1; min-width: 0; font: 14px 'Be Vietnam Pro', sans-serif; color: #1D1733; background: transparent">
+<span class="mono" style="font-size: 11px; padding: 2px 6px; border: 1px solid #E6E3EE; border-radius: 4px">Ctrl K</span>
+</label>
+<span class="badge b-info">Nền tảng</span>
+<span class="badge b-off mono">config v43</span>
+<button aria-label="Tài khoản của bạn" style="width: 32px; height: 32px; border: 0; border-radius: 999px; background: #2E2150; color: #FFFFFF; font: 600 12px 'Be Vietnam Pro', sans-serif; cursor: pointer">MP</button>
+</header>
+<main style="flex-grow: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; max-width: 760px; width: 100%; box-sizing: border-box">
+<div>
+<h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.01em">Tạo tenant</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Công ty khách hàng dùng nền tảng. Mỗi tenant có user, group và quota riêng.</p>
+</div>
+<form style="display: flex; flex-direction: column; gap: 16px">
+<section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<h2 class="h2">Công ty</h2>
+<label class="lbl">Mã công ty
+<input class="input mono" value="acme" autocomplete="off">
+<span class="hint">Người dùng gõ mã này khi đăng nhập. Không đổi được sau khi tạo.</span>
+</label>
+<label class="lbl">Tên công ty
+<input class="input" value="Acme Việt Nam">
+</label>
+<label class="lbl">Giới hạn slot subscription
+<input class="input" type="number" value="5" style="width: 160px">
+<span class="hint">Để trống = không giới hạn</span>
+</label>
+</section>
+<section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<h2 class="h2">Tenant admin đầu tiên</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<label class="lbl">Tên đăng nhập
+<input class="input mono" value="thu.ha" autocomplete="off">
+</label>
+<label class="lbl">Tên hiển thị
+<input class="input" value="Hà Thu">
+</label>
+<label class="lbl">Email
+<input class="input" type="email" value="thu.ha@acme.vn">
+</label>
+<label class="lbl">Ngôn ngữ
+<select class="input"><option>Tiếng Việt</option><option>English</option></select>
+</label>
+</div>
+</section>
+<div style="display: flex; justify-content: flex-end; gap: 10px">
+<a class="btn" href="#">Huỷ</a>
+<button type="submit" class="btn btn-primary">Tạo tenant</button>
+</div>
+</form>
+</main>
+</div>
+<div class="scrim"></div>
+<div style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; padding-left: 248px">
+<div role="dialog" aria-modal="true" aria-labelledby="tp-title" class="dlg" style="width: 520px">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 36px; height: 36px; border-radius: 999px; background: #E3F4EC; color: #05603F; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M5 12l5 5 9-10"></path></svg></span>
+<h2 id="tp-title" style="margin: 0; font-size: 18px; font-weight: 700">Đã tạo tenant acme</h2>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #3B3450">Gửi thông tin sau cho khách qua kênh riêng. Mật khẩu tạm chỉ hiện một lần.</p>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 10px; background: #F7F6FA; border: 1px solid #E6E3EE">
+<label class="lbl" style="font-weight: 400; color: #635C78">Mã công ty<input class="input mono" readonly="readonly" value="acme"></label>
+<label class="lbl" style="font-weight: 400; color: #635C78">Tên đăng nhập<input class="input mono" readonly="readonly" value="thu.ha"></label>
+<label class="lbl" style="font-weight: 400; color: #635C78">Mật khẩu tạm<input class="input mono" readonly="readonly" value="Xk7p-2mQa-9vLr-t4Ne" style="font-size: 16px; letter-spacing: 0.04em; color: #1D1733; background: #FFFFFF"></label>
+<button type="button" class="btn" style="align-self: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Sao chép tất cả</button>
+</div>
+<label class="chk"><input type="checkbox" checked="{{yes}}">Tôi đã lưu mật khẩu tạm</label>
+<div style="display: flex; justify-content: flex-end">
+<a class="btn btn-primary" href="TenantQuota.dc.html">Đi tới tenant</a>
+</div>
+</div>
+</div>
+<div role="status" class="toast" style="position: absolute; right: 28px; bottom: 28px; max-width: 460px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M5 12l5 5 9-10"></path></svg><span>Đã copy mật khẩu tạm, hãy gửi cho người dùng qua kênh riêng.</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return { yes: true, no: false };
+}
+}
+</script>
+</body>
+</html>

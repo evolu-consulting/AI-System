@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Xác thực hai bước · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box;white-space:nowrap}
+.btn-primary{background:#6B4FA0;border-color:#6B4FA0;color:#FFFFFF}
+.btn-danger{background:#B42318;border-color:#B42318;color:#FFFFFF}
+.btn[disabled]{opacity:0.5;cursor:not-allowed}
+.btn-sm{height:30px;padding:0 10px;font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.tbl{border-collapse:collapse;width:100%}
+.tbl th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 16px;border-bottom:1px solid #E6E3EE}
+.tbl td{font-size:14px;padding:11px 16px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.input{width:100%;height:36px;border:1px solid #D9D5E3;border-radius:8px;padding:0 12px;font:14px 'Be Vietnam Pro',sans-serif;color:#1D1733;background:#FFFFFF;box-sizing:border-box}
+.input[readonly]{background:#F7F6FA;color:#4F4865}
+.lbl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#1D1733}
+.hint{font-size:12px;font-weight:400;color:#635C78}
+.err{font-size:12px;font-weight:400;color:#9B1C1C}
+.sel{height:34px;border:1px solid #D9D5E3;border-radius:8px;padding:0 10px;font:14px 'Be Vietnam Pro',sans-serif;background:#FFFFFF;color:#1D1733}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;border:1px solid #D9D5E3;background:#FFFFFF;font:500 13px 'Be Vietnam Pro',sans-serif;color:#3B3450;text-decoration:none;cursor:pointer}
+.fchip-on{background:#2E2150;border-color:#2E2150;color:#FFFFFF}
+.av{width:28px;height:28px;border-radius:999px;background:#EDE6FB;color:#4A3278;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.bar{height:8px;border-radius:999px;background:#EFEDF3;overflow:hidden;display:flex}
+.bar>span{display:block;height:100%;background:#6B4FA0}
+.more{border:0;background:transparent;cursor:pointer;color:#635C78;font-size:14px}
+.tabs{display:flex;gap:24px;border-bottom:1px solid #E6E3EE;font-size:14px}
+.tabs a{padding:8px 0 12px;color:#635C78;text-decoration:none}
+.tabs a[aria-current]{border-bottom:2px solid #6B4FA0;color:#1D1733;font-weight:600}
+.h2{margin:0;font-size:16px;font-weight:600}
+.muted{color:#635C78}
+.toast{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:#1D1733;color:#FFFFFF;font-size:14px;box-shadow:0 8px 24px rgba(29,23,51,0.25)}
+.toast a,.toast button{color:#C9B8FF;font:600 14px 'Be Vietnam Pro',sans-serif;background:transparent;border:0;cursor:pointer;text-decoration:none}
+.scrim{position:absolute;left:0;right:0;bottom:0;top:0;background:rgba(29,23,51,0.42)}
+.sheet{position:absolute;right:0;top:0;bottom:0;background:#FFFFFF;border-left:1px solid #E6E3EE;box-shadow:-12px 0 32px rgba(29,23,51,0.18);display:flex;flex-direction:column;box-sizing:border-box}
+.dlg{background:#FFFFFF;border-radius:12px;box-shadow:0 20px 48px rgba(29,23,51,0.28);display:flex;flex-direction:column;gap:14px;padding:22px;box-sizing:border-box}
+.sk{display:block;background:#EFEDF3;border-radius:6px}
+.cap{font-size:12px;font-weight:600;letter-spacing:0.08em;color:#7A7390;text-transform:uppercase}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px}
+.chk input{width:16px;height:16px;accent-color:#6B4FA0;margin:0}
+.row{display:flex;align-items:center;gap:10px}
+</style>
+</helmet>
+<div style="display: flex; min-height: 100vh; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<dc-import name="Sidebar" active="account" role="tenant" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 8px"><a href="#" style="color: #635C78; text-decoration: none">Tài khoản</a><span style="color: #B3ADC4">/</span><span style="font-weight: 500">Xác thực hai bước</span></nav>
+<div style="flex-grow: 1"></div>
+<label style="display: flex; align-items: center; gap: 8px; width: 300px; height: 36px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box; color: #635C78; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg>
+<input aria-label="Tìm kiếm" placeholder="Tìm user, group…" style="border: 0; outline: 0; flex-grow: 1; min-width: 0; font: 14px 'Be Vietnam Pro', sans-serif; color: #1D1733; background: transparent">
+<span class="mono" style="font-size: 11px; padding: 2px 6px; border: 1px solid #E6E3EE; border-radius: 4px">Ctrl K</span>
+</label>
+<span class="badge b-info">Acme Việt Nam · acme</span>
+<span class="badge b-off mono">config v43</span>
+<button aria-label="Tài khoản của bạn" style="width: 32px; height: 32px; border: 0; border-radius: 999px; background: #2E2150; color: #FFFFFF; font: 600 12px 'Be Vietnam Pro', sans-serif; cursor: pointer">TH</button>
+</header>
+<main style="flex-grow: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; max-width: 1280px; width: 100%; box-sizing: border-box">
+<div>
+<h1 style="margin: 0; font-size: 24px; font-weight: 700">Xác thực hai bước</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Mỗi lần đăng nhập, bạn nhập thêm mã 6 số từ ứng dụng xác thực trên điện thoại.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 560px)); gap: 16px; align-items: start">
+<section class="card" aria-labelledby="st0" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+<div class="row"><span class="cap" style="flex-grow: 1">Trạng thái ban đầu</span></div>
+<div class="row"><h2 id="st0" class="h2" style="flex-grow: 1">Xác thực hai bước</h2><span class="badge b-off">Chưa bật</span></div>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #3B3450">Mỗi lần đăng nhập, bạn nhập thêm mã 6 số từ ứng dụng xác thực trên điện thoại.</p>
+<button type="button" class="btn btn-primary" style="align-self: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path></svg>Bật xác thực hai bước</button>
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid #F0EEF4">
+<span style="font-size: 13px; font-weight: 500">Nhập mật khẩu để tiếp tục</span>
+<label class="lbl" style="font-weight: 400">Mật khẩu hiện tại<input class="input" type="password" value="••••••••••••"></label>
+<button type="button" class="btn" style="align-self: flex-start">Tiếp tục</button>
+</div>
+</section>
+<section class="card" aria-labelledby="st1" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+<div class="row"><span class="badge b-info">Bước 1/3</span></div>
+<h2 id="st1" class="h2">Quét mã QR bằng ứng dụng xác thực</h2>
+<div style="display: flex; gap: 20px; align-items: flex-start">
+<svg role="img" aria-label="Mã QR để thêm tài khoản vào ứng dụng xác thực" width="200" height="200" viewBox="0 0 25 25" style="flex-shrink: 0; border: 1px solid #E6E3EE; border-radius: 8px; padding: 8px; box-sizing: border-box; background: #FFFFFF" shape-rendering="crispEdges">
+<path fill="#1D1733" d="M0 0h7v7H0zM1 1v5h5V1zM2 2h3v3H2zM18 0h7v7h-7zM19 1v5h5V1zM20 2h3v3h-3zM0 18h7v7H0zM1 19v5h5v-5zM2 20h3v3H2zM8 0h1v1H8zM10 0h2v1h-2zM13 1h2v1h-2zM9 2h1v2H9zM11 3h3v1h-3zM15 3h1v3h-1zM8 5h2v1H8zM12 5h2v2h-2zM0 8h2v1H0zM3 8h3v1H3zM8 8h4v1H8zM13 8h1v2h-1zM16 8h3v1h-3zM21 8h4v1h-4zM1 10h2v2H1zM5 10h3v1H5zM10 10h2v1h-2zM15 10h2v2h-2zM19 10h1v3h-1zM22 10h2v1h-2zM0 13h3v1H0zM6 12h2v2H6zM9 12h3v1H9zM13 12h1v3h-1zM21 12h3v1h-3zM2 15h4v1H2zM8 14h2v2H8zM11 15h1v2h-1zM16 14h2v1h-2zM20 14h1v2h-1zM23 14h2v1h-2zM9 18h3v1H9zM14 17h2v2h-2zM18 17h2v1h-2zM22 17h1v2h-1zM8 20h1v3H8zM10 21h3v1h-3zM15 20h3v1h-3zM19 20h3v2h-3zM23 21h2v1h-2zM11 23h2v2h-2zM14 23h3v1h-3zM18 23h1v2h-1zM21 24h4v1h-4z"></path>
+</svg>
+<div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px">
+<span style="color: #3B3450">Không quét được? Nhập khoá thủ công:</span>
+<div class="row"><span class="mono" style="font-size: 15px; font-weight: 500; letter-spacing: 0.04em">JBSW Y3DP EHPK 3PXP</span></div>
+<button type="button" class="btn btn-sm" style="align-self: flex-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Sao chép</button>
+<span style="font-size: 12px; color: #635C78">Tên tài khoản trong ứng dụng</span>
+<span class="mono" style="font-size: 13px">AI System (acme · thu.ha)</span>
+</div>
+</div>
+<button type="button" class="btn btn-primary" style="align-self: flex-end">Tiếp tục</button>
+</section>
+<section class="card" aria-labelledby="st2" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+<div class="row"><span class="badge b-info">Bước 2/3</span></div>
+<h2 id="st2" class="h2">Nhập mã 6 số đang hiện trong ứng dụng</h2>
+<label for="otp2" style="font-size: 13px; font-weight: 500">Mã xác thực</label>
+<div style="position: relative; width: 360px">
+<input id="otp2" class="mono" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="1735" style="position: absolute; left: 0; width: 100%; height: 52px; opacity: 0; border: 0">
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px">
+<span class="mono" style="height: 52px; border: 1px solid #D9D5E3; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px">1</span>
+<span class="mono" style="height: 52px; border: 1px solid #D9D5E3; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px">7</span>
+<span class="mono" style="height: 52px; border: 1px solid #D9D5E3; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px">3</span>
+<span class="mono" style="height: 52px; border: 1px solid #D9D5E3; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px">5</span>
+<span class="mono" style="height: 52px; border: 2px solid #6B4FA0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-sizing: border-box"></span>
+<span class="mono" style="height: 52px; border: 1px solid #D9D5E3; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px"></span>
+</div>
+</div>
+<span class="err">Mã không đúng. Kiểm tra giờ trên điện thoại và thử lại.</span>
+<button type="button" class="btn btn-primary" style="align-self: flex-end">Xác nhận và bật</button>
+</section>
+<section class="card" aria-labelledby="st3" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+<div class="row"><span class="badge b-info">Bước 3/3</span></div>
+<h2 id="st3" class="h2">Lưu mã dự phòng</h2>
+<ul aria-label="Mã dự phòng" class="mono" style="margin: 0; padding: 14px; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; border-radius: 8px; background: #F7F6FA; border: 1px solid #E6E3EE; font-size: 14px">
+<li>k7p2-9xqm</li><li>r3vd-8tnb</li><li>a9wz-4kce</li><li>m2hf-6yjp</li><li>q8sl-3gux</li><li>t5nb-7rdw</li><li>e4cj-2mvk</li><li>h6yq-9pzs</li><li>w3ra-5lfe</li><li>z7gm-1xth</li>
+</ul>
+<div class="row"><button type="button" class="btn btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>Tải xuống (.txt)</button><button type="button" class="btn btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Sao chép</button></div>
+<div role="note" style="display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #FDF0DF; color: #7F3C04; font-size: 13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span>Mỗi mã dùng được một lần khi bạn mất điện thoại. Mã chỉ hiện một lần.</span></div>
+<label class="chk"><input type="checkbox" checked="{{yes}}">Tôi đã lưu mã dự phòng ở nơi an toàn</label>
+<button type="button" class="btn btn-primary" style="align-self: flex-end">Hoàn tất</button>
+</section>
+<section class="card" aria-labelledby="st4" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+<div class="row"><span class="cap" style="flex-grow: 1">Sau khi hoàn tất</span></div>
+<div class="row"><h2 id="st4" class="h2" style="flex-grow: 1">Xác thực hai bước</h2><span class="badge b-ok">Đã bật</span></div>
+<p style="margin: 0; font-size: 14px; color: #3B3450">Bật từ 30/09/2026 · còn 8 mã dự phòng</p>
+<div class="row"><button type="button" class="btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"></path></svg>Tạo lại mã dự phòng</button><button type="button" class="btn" style="color: #9B1C1C">Tắt xác thực hai bước</button></div>
+<div role="status" class="toast" style="align-self: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M5 12l5 5 9-10"></path></svg><span>Đã bật xác thực hai bước</span></div>
+</section>
+<section class="card" aria-labelledby="st5" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+<span class="cap">Khi bấm Tắt xác thực hai bước</span>
+<div role="alertdialog" aria-labelledby="st5" style="display: flex; flex-direction: column; gap: 12px">
+<h2 id="st5" class="h2">Tắt xác thực hai bước?</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #3B3450">Đăng nhập sẽ chỉ cần mật khẩu. Nhập mật khẩu và mã hiện tại để xác nhận.</p>
+<label class="lbl">Mật khẩu hiện tại<input class="input" type="password" value="••••••••••••"></label>
+<label class="lbl">Mã xác thực<input class="input mono" inputmode="numeric" autocomplete="one-time-code" placeholder="6 số"></label>
+<div style="display: flex; justify-content: flex-end; gap: 10px"><button type="button" class="btn">Huỷ</button><button type="button" class="btn btn-danger">Tắt xác thực hai bước</button></div>
+</div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+renderVals() {
+return { yes: true, no: false };
+}
+}
+</script>
+</body>
+</html>

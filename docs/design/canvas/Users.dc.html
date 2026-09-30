@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Users · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box;white-space:nowrap}
+.btn-primary{background:#6B4FA0;border-color:#6B4FA0;color:#FFFFFF}
+.btn-danger{background:#B42318;border-color:#B42318;color:#FFFFFF}
+.btn[disabled]{opacity:0.5;cursor:not-allowed}
+.btn-sm{height:30px;padding:0 10px;font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.tbl{border-collapse:collapse;width:100%}
+.tbl th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 16px;border-bottom:1px solid #E6E3EE}
+.tbl td{font-size:14px;padding:11px 16px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.input{width:100%;height:36px;border:1px solid #D9D5E3;border-radius:8px;padding:0 12px;font:14px 'Be Vietnam Pro',sans-serif;color:#1D1733;background:#FFFFFF;box-sizing:border-box}
+.input[readonly]{background:#F7F6FA;color:#4F4865}
+.lbl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#1D1733}
+.hint{font-size:12px;font-weight:400;color:#635C78}
+.err{font-size:12px;font-weight:400;color:#9B1C1C}
+.sel{height:34px;border:1px solid #D9D5E3;border-radius:8px;padding:0 10px;font:14px 'Be Vietnam Pro',sans-serif;background:#FFFFFF;color:#1D1733}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;border:1px solid #D9D5E3;background:#FFFFFF;font:500 13px 'Be Vietnam Pro',sans-serif;color:#3B3450;text-decoration:none;cursor:pointer}
+.fchip-on{background:#2E2150;border-color:#2E2150;color:#FFFFFF}
+.av{width:28px;height:28px;border-radius:999px;background:#EDE6FB;color:#4A3278;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.bar{height:8px;border-radius:999px;background:#EFEDF3;overflow:hidden;display:flex}
+.bar>span{display:block;height:100%;background:#6B4FA0}
+.more{border:0;background:transparent;cursor:pointer;color:#635C78;font-size:14px}
+.tabs{display:flex;gap:24px;border-bottom:1px solid #E6E3EE;font-size:14px}
+.tabs a{padding:8px 0 12px;color:#635C78;text-decoration:none}
+.tabs a[aria-current]{border-bottom:2px solid #6B4FA0;color:#1D1733;font-weight:600}
+.h2{margin:0;font-size:16px;font-weight:600}
+.muted{color:#635C78}
+.toast{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:#1D1733;color:#FFFFFF;font-size:14px;box-shadow:0 8px 24px rgba(29,23,51,0.25)}
+.toast a,.toast button{color:#C9B8FF;font:600 14px 'Be Vietnam Pro',sans-serif;background:transparent;border:0;cursor:pointer;text-decoration:none}
+.scrim{position:absolute;left:0;right:0;bottom:0;top:0;background:rgba(29,23,51,0.42)}
+.sheet{position:absolute;right:0;top:0;bottom:0;background:#FFFFFF;border-left:1px solid #E6E3EE;box-shadow:-12px 0 32px rgba(29,23,51,0.18);display:flex;flex-direction:column;box-sizing:border-box}
+.dlg{background:#FFFFFF;border-radius:12px;box-shadow:0 20px 48px rgba(29,23,51,0.28);display:flex;flex-direction:column;gap:14px;padding:22px;box-sizing:border-box}
+.sk{display:block;background:#EFEDF3;border-radius:6px}
+.cap{font-size:12px;font-weight:600;letter-spacing:0.08em;color:#7A7390;text-transform:uppercase}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px}
+.chk input{width:16px;height:16px;accent-color:#6B4FA0;margin:0}
+.row{display:flex;align-items:center;gap:10px}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<div style="position: relative; display: flex; min-height: 1000px">
+<dc-import name="Sidebar" active="users" role="tenant" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 8px"><span style="font-weight: 500">Users</span></nav>
+<div style="flex-grow: 1"></div>
+<label style="display: flex; align-items: center; gap: 8px; width: 300px; height: 36px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box; color: #635C78; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg>
+<input aria-label="Tìm kiếm" placeholder="Tìm user, group…" style="border: 0; outline: 0; flex-grow: 1; min-width: 0; font: 14px 'Be Vietnam Pro', sans-serif; color: #1D1733; background: transparent">
+<span class="mono" style="font-size: 11px; padding: 2px 6px; border: 1px solid #E6E3EE; border-radius: 4px">Ctrl K</span>
+</label>
+<span class="badge b-info">Acme Việt Nam · acme</span>
+<span class="badge b-off mono">config v43</span>
+<button aria-label="Tài khoản của bạn" style="width: 32px; height: 32px; border: 0; border-radius: 999px; background: #2E2150; color: #FFFFFF; font: 600 12px 'Be Vietnam Pro', sans-serif; cursor: pointer">TH</button>
+</header>
+<main style="flex-grow: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px; max-width: 1280px; width: 100%; box-sizing: border-box">
+<div style="display: flex; align-items: flex-end; gap: 12px">
+<div style="flex-grow: 1">
+<h1 style="margin: 0; font-size: 24px; font-weight: 700">Users</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Người dùng của Acme Việt Nam. Không có trang tự đăng ký — tạo tài khoản ở đây.</p>
+</div>
+<button type="button" class="btn btn-primary">+ Tạo user</button>
+</div>
+<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+<label style="display: flex; align-items: center; gap: 8px; width: 300px; height: 34px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box; background: #FFFFFF; color: #635C78">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg>
+<input type="search" aria-label="Tìm theo tên đăng nhập, tên, email…" placeholder="Tìm theo tên đăng nhập, tên, email…" style="border: 0; outline: 0; flex-grow: 1; min-width: 0; font: 14px 'Be Vietnam Pro', sans-serif; background: transparent">
+</label>
+<div role="radiogroup" aria-label="Trạng thái" style="display: flex; gap: 6px">
+<button type="button" role="radio" aria-checked="true" class="fchip fchip-on">Tất cả 120</button>
+<button type="button" role="radio" aria-checked="false" class="fchip">Đang hoạt động 118</button>
+<button type="button" role="radio" aria-checked="false" class="fchip">Đã khoá 2</button>
+</div>
+<select class="sel" aria-label="Role"><option>Tất cả role</option><option>tenant_admin</option><option>member</option></select>
+<select class="sel" aria-label="Group"><option>Tất cả group</option><option>Kế toán</option><option>beta-testers</option><option>Kinh doanh</option></select>
+<button type="button" class="fchip">Chưa đăng nhập</button>
+</div>
+<section class="card" style="overflow: hidden">
+<table class="tbl" aria-label="Users">
+<thead><tr><th>Tên đăng nhập</th><th>Tên hiển thị</th><th>Role</th><th>Groups</th><th>Đăng nhập gần nhất</th><th>Trạng thái</th><th style="width: 40px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Thao tác</span></th></tr></thead>
+<tbody>
+<tr><td><span class="mono" style="font-weight: 500">thu.ha</span> <span style="font-size: 12px; color: #635C78">(bạn)</span></td><td>Hà Thu</td><td><span class="badge b-info">tenant_admin</span></td><td class="muted">—</td><td style="font-size: 13px; color: #635C78">5 phút trước</td><td><span class="badge b-ok">Đang hoạt động</span></td><td><button type="button" class="more" aria-label="Thao tác khác">•••</button></td></tr>
+<tr style="background: #F8F5FE"><td class="mono" style="font-weight: 500">lan.tran</td><td>Trần Lan</td><td><span class="badge b-off">member</span></td><td><span class="badge b-off">Kế toán</span> <span class="badge b-off">beta-testers</span></td><td style="font-size: 13px; color: #635C78">Hôm qua 17:05</td><td><span class="badge b-ok">Đang hoạt động</span></td><td><button type="button" class="more" aria-label="Thao tác khác">•••</button></td></tr>
+<tr><td class="mono" style="font-weight: 500">an</td><td>Nguyễn An</td><td><span class="badge b-off">member</span></td><td><span class="badge b-off">Kinh doanh</span></td><td style="font-size: 13px; color: #635C78">Hôm nay 08:31</td><td><span class="badge b-ok">Đang hoạt động</span></td><td><button type="button" class="more" aria-label="Thao tác khác">•••</button></td></tr>
+<tr><td class="mono" style="font-weight: 500">binh.vo</td><td>Võ Bình</td><td><span class="badge b-off">member</span></td><td><span class="badge b-off">Kế toán</span></td><td><span class="badge b-warn">Chưa đăng nhập</span></td><td><span class="badge b-ok">Đang hoạt động</span></td><td><button type="button" class="more" aria-label="Thao tác khác">•••</button></td></tr>
+<tr><td class="mono" style="font-weight: 500">cuong.le</td><td>Lê Cường</td><td><span class="badge b-off">member</span></td><td><span class="badge b-off">Kinh doanh</span></td><td style="font-size: 13px; color: #635C78">12/09/2026</td><td><span class="badge b-err">Đã khoá</span></td><td><button type="button" class="more" aria-label="Thao tác khác">•••</button></td></tr>
+</tbody>
+</table>
+<div style="padding: 12px 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #635C78"><span style="flex-grow: 1">1–5 / 120</span><button type="button" class="btn btn-sm">Trước</button><button type="button" class="btn btn-sm">Sau</button></div>
+</section>
+</main>
+</div>
+<div class="scrim"></div>
+<aside role="dialog" aria-modal="true" aria-labelledby="ud-title" class="sheet" style="width: 520px">
+<div style="padding: 18px 20px 0; display: flex; align-items: center; gap: 10px">
+<span class="av" style="width: 36px; height: 36px">LT</span>
+<h2 id="ud-title" style="margin: 0; font-size: 18px; font-weight: 700; flex-grow: 1"><span class="mono">lan.tran</span> · Trần Lan</h2>
+<button type="button" class="more" aria-label="Đóng"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+<nav aria-label="Các tab" class="tabs" style="padding: 12px 20px 0">
+<a href="#">Thông tin</a>
+<a href="#" aria-current="page">Quyền hiệu lực</a>
+</nav>
+<div style="flex-grow: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 18px; overflow: hidden">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">Feature</span>
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #E6E3EE; border-radius: 8px"><span style="flex-grow: 1; font-size: 14px"><b>Kế toán</b><br><span style="font-size: 12px; color: #635C78">qua group Kế toán</span></span><span class="badge b-ok">Bật</span></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #E6E3EE; border-radius: 8px"><span style="flex-grow: 1; font-size: 14px"><b>Báo cáo</b><br><span style="font-size: 12px; color: #635C78">qua group beta-testers</span></span><span class="badge b-warn">Beta</span></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #E6E3EE; border-radius: 8px"><span style="flex-grow: 1; font-size: 14px"><b>Cơ bản</b> <span class="mono" style="font-size: 12px; color: #635C78">core</span><br><span style="font-size: 12px; color: #635C78">qua feature core (mặc định cho mọi người)</span></span><span class="badge b-info">Mặc định</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">Command</span>
+<div style="display: flex; flex-direction: column; border: 1px solid #E6E3EE; border-radius: 8px">
+<div style="padding: 10px 12px; border-bottom: 1px solid #F0EEF4; font-size: 14px"><span class="mono" style="font-weight: 500">/kiemtra-hoadon</span><div style="font-size: 12px; color: #635C78">qua feature Kế toán · group Kế toán</div></div>
+<div style="padding: 10px 12px; border-bottom: 1px solid #F0EEF4; font-size: 14px"><span class="mono" style="font-weight: 500">/dich</span><div style="font-size: 12px; color: #635C78">qua feature core (mặc định cho mọi người)</div></div>
+<div style="padding: 10px 12px; font-size: 14px"><span class="mono" style="font-weight: 500">/tom-tat</span><div style="font-size: 12px; color: #635C78">qua feature core (mặc định cho mọi người)</div></div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span class="cap">Agent</span>
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px dashed #CFC7E2; border-radius: 8px; font-size: 13px; color: #635C78"><span class="badge b-off">Chưa khả dụng</span></div>
+</div>
+<a href="Access.dc.html" style="font-size: 14px; font-weight: 500">Mở Kiểm tra quyền</a>
+</div>
+</aside>
+</div>
+<section aria-label="Các trạng thái khác của drawer" style="flex-grow: 1; padding: 40px 28px 48px; display: flex; flex-direction: column; gap: 16px; background: #EFEDF3; border-top: 1px solid #E6E3EE">
+<div>
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">Drawer — trạng thái khác</h2>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Bên trái: tạo user (chỉ form, không tab). Bên phải: sau khi tạo hoặc reset mật khẩu, form được thay bằng khối mật khẩu tạm.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div role="dialog" aria-labelledby="uc-title" class="card" style="width: 520px; display: flex; flex-direction: column; box-shadow: 0 12px 32px rgba(29,23,51,0.12)">
+<div style="padding: 18px 20px; display: flex; align-items: center; border-bottom: 1px solid #E6E3EE"><h2 id="uc-title" style="margin: 0; font-size: 18px; font-weight: 700; flex-grow: 1">Tạo user</h2><button type="button" class="more" aria-label="Đóng"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></div>
+<form style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+<label class="lbl">Tên đăng nhập<input class="input mono" value="lan.tran"></label>
+<label class="lbl">Tên hiển thị<input class="input" value="Trần Lan"></label>
+<label class="lbl">Email<input class="input" type="email" placeholder="Không bắt buộc với member"></label>
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="font-size: 13px; font-weight: 500; margin-bottom: 8px">Role</legend>
+<label class="chk"><input type="radio" name="role" checked="{{yes}}">member</label>
+<label class="chk"><input type="radio" name="role">tenant_admin</label>
+</fieldset>
+<label class="lbl">Groups
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 36px; padding: 4px 8px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box"><span class="badge b-off">Kế toán ×</span><span class="badge b-off">beta-testers ×</span><input role="combobox" aria-label="Groups" placeholder="Thêm group…" style="border: 0; outline: 0; flex-grow: 1; font: 14px 'Be Vietnam Pro', sans-serif"></div>
+</label>
+<label class="lbl">Ngôn ngữ<select class="input"><option>Tiếng Việt</option><option>English</option></select></label>
+<div style="display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #EDE6FB; color: #4A3278; font-size: 13px; line-height: 1.45"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 8h.01M11 12h1v5h1"></path></svg><span>Mật khẩu tạm được sinh tự động và chỉ hiện một lần. Người dùng phải đổi mật khẩu ở lần đăng nhập đầu.</span></div>
+</form>
+<div style="padding: 14px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #E6E3EE"><button type="button" class="btn">Huỷ</button><button type="submit" class="btn btn-primary">Tạo user</button></div>
+</div>
+<div role="dialog" aria-labelledby="ut-title" class="card" style="width: 520px; display: flex; flex-direction: column; box-shadow: 0 12px 32px rgba(29,23,51,0.12)">
+<div style="padding: 18px 20px; display: flex; align-items: center; border-bottom: 1px solid #E6E3EE"><h2 id="ut-title" style="margin: 0; font-size: 18px; font-weight: 700; flex-grow: 1">Đã tạo lan.tran</h2><button type="button" class="more" aria-label="Đóng"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></div>
+<div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 10px; background: #F7F6FA; border: 1px solid #E6E3EE">
+<label class="lbl" style="font-weight: 400; color: #635C78">Mã công ty<input class="input mono" readonly="readonly" value="acme"></label>
+<label class="lbl" style="font-weight: 400; color: #635C78">Tên đăng nhập<input class="input mono" readonly="readonly" value="lan.tran"></label>
+<label class="lbl" style="font-weight: 400; color: #635C78">Mật khẩu tạm<input class="input mono" readonly="readonly" value="Qm4t-8Rzw-2hLp-v7Ka" style="font-size: 16px; letter-spacing: 0.04em; color: #1D1733; background: #FFFFFF"></label>
+<button type="button" class="btn" style="align-self: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M9 9h11v11H9zM5 15H4V4h11v1"></path></svg>Sao chép tất cả</button>
+</div>
+<div role="note" style="display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #FDF0DF; color: #7F3C04; font-size: 13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span>Sau khi đóng, bạn không xem lại được mật khẩu này.</span></div>
+</div>
+<div style="padding: 14px 20px; display: flex; justify-content: flex-end; border-top: 1px solid #E6E3EE"><button type="button" class="btn btn-primary">Đóng</button></div>
+<div role="alertdialog" aria-labelledby="uu-title" style="margin: 0 20px 20px; padding: 16px; border-radius: 10px; border: 1px solid #E6E3EE; background: #FBFAFD; display: flex; flex-direction: column; gap: 12px">
+<span class="cap">Nếu bấm Đóng khi chưa sao chép</span>
+<h3 id="uu-title" style="margin: 0; font-size: 15px; font-weight: 600">Đóng mà chưa sao chép mật khẩu tạm?</h3>
+<div style="display: flex; justify-content: flex-end; gap: 10px"><button type="button" class="btn">Quay lại</button><button type="button" class="btn btn-danger">Đóng</button></div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1800}}'>
+class Component extends DCLogic {
+renderVals() {
+return { yes: true, no: false };
+}
+}
+</script>
+</body>
+</html>

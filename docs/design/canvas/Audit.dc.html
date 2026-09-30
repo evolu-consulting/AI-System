@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nhật ký thay đổi · Admin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;font:500 14px 'Be Vietnam Pro',sans-serif;border:1px solid #D9D5E3;background:#FFFFFF;color:#1D1733;cursor:pointer;text-decoration:none;box-sizing:border-box;white-space:nowrap}
+.btn-primary{background:#6B4FA0;border-color:#6B4FA0;color:#FFFFFF}
+.btn-danger{background:#B42318;border-color:#B42318;color:#FFFFFF}
+.btn[disabled]{opacity:0.5;cursor:not-allowed}
+.btn-sm{height:30px;padding:0 10px;font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-off{background:#EFEDF3;color:#4F4865}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-err{background:#FDE8E8;color:#9B1C1C}
+.card{background:#FFFFFF;border:1px solid #E6E3EE;border-radius:12px}
+.tbl{border-collapse:collapse;width:100%}
+.tbl th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 16px;border-bottom:1px solid #E6E3EE}
+.tbl td{font-size:14px;padding:11px 16px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.input{width:100%;height:36px;border:1px solid #D9D5E3;border-radius:8px;padding:0 12px;font:14px 'Be Vietnam Pro',sans-serif;color:#1D1733;background:#FFFFFF;box-sizing:border-box}
+.input[readonly]{background:#F7F6FA;color:#4F4865}
+.lbl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#1D1733}
+.hint{font-size:12px;font-weight:400;color:#635C78}
+.err{font-size:12px;font-weight:400;color:#9B1C1C}
+.sel{height:34px;border:1px solid #D9D5E3;border-radius:8px;padding:0 10px;font:14px 'Be Vietnam Pro',sans-serif;background:#FFFFFF;color:#1D1733}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;border:1px solid #D9D5E3;background:#FFFFFF;font:500 13px 'Be Vietnam Pro',sans-serif;color:#3B3450;text-decoration:none;cursor:pointer}
+.fchip-on{background:#2E2150;border-color:#2E2150;color:#FFFFFF}
+.av{width:28px;height:28px;border-radius:999px;background:#EDE6FB;color:#4A3278;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.bar{height:8px;border-radius:999px;background:#EFEDF3;overflow:hidden;display:flex}
+.bar>span{display:block;height:100%;background:#6B4FA0}
+.more{border:0;background:transparent;cursor:pointer;color:#635C78;font-size:14px}
+.tabs{display:flex;gap:24px;border-bottom:1px solid #E6E3EE;font-size:14px}
+.tabs a{padding:8px 0 12px;color:#635C78;text-decoration:none}
+.tabs a[aria-current]{border-bottom:2px solid #6B4FA0;color:#1D1733;font-weight:600}
+.h2{margin:0;font-size:16px;font-weight:600}
+.muted{color:#635C78}
+.toast{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:#1D1733;color:#FFFFFF;font-size:14px;box-shadow:0 8px 24px rgba(29,23,51,0.25)}
+.toast a,.toast button{color:#C9B8FF;font:600 14px 'Be Vietnam Pro',sans-serif;background:transparent;border:0;cursor:pointer;text-decoration:none}
+.scrim{position:absolute;left:0;right:0;bottom:0;top:0;background:rgba(29,23,51,0.42)}
+.sheet{position:absolute;right:0;top:0;bottom:0;background:#FFFFFF;border-left:1px solid #E6E3EE;box-shadow:-12px 0 32px rgba(29,23,51,0.18);display:flex;flex-direction:column;box-sizing:border-box}
+.dlg{background:#FFFFFF;border-radius:12px;box-shadow:0 20px 48px rgba(29,23,51,0.28);display:flex;flex-direction:column;gap:14px;padding:22px;box-sizing:border-box}
+.sk{display:block;background:#EFEDF3;border-radius:6px}
+.cap{font-size:12px;font-weight:600;letter-spacing:0.08em;color:#7A7390;text-transform:uppercase}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px}
+.chk input{width:16px;height:16px;accent-color:#6B4FA0;margin:0}
+.row{display:flex;align-items:center;gap:10px}
+</style>
+</helmet>
+<div style="position: relative; display: flex; min-height: 100vh; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733">
+<dc-import name="Sidebar" active="audit" role="platform" hint-size="248px,1000px"></dc-import>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 12px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE; font-size: 14px">
+<nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 8px"><span style="font-weight: 500">Nhật ký</span></nav>
+<div style="flex-grow: 1"></div>
+<label style="display: flex; align-items: center; gap: 8px; width: 300px; height: 36px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box; color: #635C78; font-size: 14px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg>
+<input aria-label="Tìm kiếm" placeholder="Tìm command, workflow, tenant, user…" style="border: 0; outline: 0; flex-grow: 1; min-width: 0; font: 14px 'Be Vietnam Pro', sans-serif; color: #1D1733; background: transparent">
+<span class="mono" style="font-size: 11px; padding: 2px 6px; border: 1px solid #E6E3EE; border-radius: 4px">Ctrl K</span>
+</label>
+<span class="badge b-info">Nền tảng</span>
+<span class="badge b-off mono">config v43</span>
+<button aria-label="Tài khoản của bạn" style="width: 32px; height: 32px; border: 0; border-radius: 999px; background: #2E2150; color: #FFFFFF; font: 600 12px 'Be Vietnam Pro', sans-serif; cursor: pointer">MP</button>
+</header>
+<main style="flex-grow: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px; max-width: 1280px; width: 100%; box-sizing: border-box">
+<div>
+<h1 style="margin: 0; font-size: 24px; font-weight: 700">Nhật ký thay đổi</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #635C78">Mọi thay đổi cấu hình, người dùng, group, quyền và quota.</p>
+</div>
+<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+<label style="font-size: 13px; color: #635C78; display: flex; align-items: center; gap: 8px">Tenant<select class="sel" aria-label="Tenant"><option>Tất cả tenant</option><option>Toàn hệ thống</option><option>acme</option><option>globex</option></select></label>
+<select class="sel" aria-label="Loại"><option>Loại</option><option>Command</option><option>Workflow</option><option>Feature</option><option>Secret</option><option>Tenant</option><option>User</option><option>Group</option><option>Grant</option><option>Quota</option></select>
+<select class="sel" aria-label="Hành động"><option>Hành động</option><option>Tạo</option><option>Sửa</option><option>Xoá</option><option>Khoá</option><option>Mở khoá</option><option>Cấp</option><option>Thu hồi</option><option>Khôi phục</option><option>Import</option></select>
+<select class="sel" aria-label="Người thực hiện"><option>Người thực hiện</option><option>minh.pham</option><option>thu.ha</option></select>
+<button type="button" class="btn btn-sm" style="height: 34px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2"></path></svg>Thời gian: 30 ngày</button>
+<label style="display: flex; align-items: center; gap: 8px; flex-grow: 1; min-width: 200px; height: 34px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; box-sizing: border-box; background: #FFFFFF; color: #635C78">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"></path></svg>
+<input type="search" aria-label="Tìm theo tên thực thể…" placeholder="Tìm theo tên thực thể…" style="border: 0; outline: 0; flex-grow: 1; min-width: 0; font: 14px 'Be Vietnam Pro', sans-serif; background: transparent">
+</label>
+</div>
+<section class="card" style="padding: 8px 18px 16px">
+<ul aria-label="Nhật ký thay đổi" style="margin: 0; padding: 0; list-style: none">
+<li style="padding: 12px 0 6px" class="cap">Hôm nay</li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F0EEF4; background: #F8F5FE; margin: 0 -18px; padding-left: 18px; padding-right: 18px"><span class="mono" style="width: 92px; font-size: 13px; color: #635C78">10:42</span><span class="av">MP</span><span style="flex-grow: 1; font-size: 14px"><b>minh.pham</b> đã sửa command <span class="mono">/dich</span></span><span class="badge b-off">Command</span><span class="badge b-info mono">v43</span><button type="button" class="btn btn-sm">Xem thay đổi</button></li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F0EEF4"><span class="mono" style="width: 92px; font-size: 13px; color: #635C78">10:15</span><span class="av">TH</span><span style="flex-grow: 1; font-size: 14px"><b>thu.ha</b> đã cấp Kế toán cho group Kế toán <span class="muted">(acme)</span></span><span class="badge b-off">Grant</span><span class="badge b-info mono">v42</span><button type="button" class="btn btn-sm">Xem thay đổi</button></li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F0EEF4"><span class="mono" style="width: 92px; font-size: 13px; color: #635C78">09:58</span><span class="av">MP</span><span style="flex-grow: 1; font-size: 14px"><b>minh.pham</b> đã thay giá trị secret <span class="mono">DIFY_TRANSLATE_KEY</span></span><span class="badge b-off">Secret</span><span class="badge b-info mono">v41</span><button type="button" class="btn btn-sm">Xem thay đổi</button></li>
+<li style="padding: 16px 0 6px" class="cap">Hôm qua</li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F0EEF4"><span class="mono" style="width: 92px; font-size: 13px; color: #635C78">17:20</span><span class="av">TH</span><span style="flex-grow: 1; font-size: 14px"><b>thu.ha</b> đã khoá user <span class="mono">cuong.le</span> <span class="muted">(acme)</span></span><span class="badge b-off">User</span><button type="button" class="btn btn-sm">Xem thay đổi</button></li>
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0"><span class="mono" style="width: 92px; font-size: 13px; color: #635C78">16:02</span><span class="av">MP</span><span style="flex-grow: 1; font-size: 14px"><b>minh.pham</b> đã import <span class="mono">config-v39.yaml</span> (Thêm 3 · Sửa 2)</span><span class="badge b-off">Import</span><button type="button" class="btn btn-sm">Xem thay đổi</button></li>
+</ul>
+<div style="display: flex; justify-content: center; padding-top: 12px"><button type="button" class="btn">Tải thêm</button></div>
+</section>
+</main>
+</div>
+<div class="scrim"></div>
+<aside role="dialog" aria-modal="true" aria-labelledby="ad-title" class="sheet" style="width: 640px">
+<div style="padding: 18px 20px; display: flex; align-items: flex-start; gap: 10px; border-bottom: 1px solid #E6E3EE">
+<div style="flex-grow: 1">
+<h2 id="ad-title" style="margin: 0; font-size: 18px; font-weight: 700">minh.pham đã sửa command <span class="mono">/dich</span></h2>
+<p style="margin: 4px 0 0; font-size: 13px; color: #635C78">30/09/2026 10:42 · <span class="mono">v43</span> · Toàn hệ thống</p>
+</div>
+<button type="button" class="more" aria-label="Đóng"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+<div style="flex-grow: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+<table class="tbl" aria-label="Thay đổi" style="border: 1px solid #E6E3EE; border-radius: 8px; border-collapse: separate; border-spacing: 0; overflow: hidden">
+<thead><tr><th style="width: 30%">Trường</th><th>Trước</th><th>Sau</th></tr></thead>
+<tbody>
+<tr><td><span style="font-weight: 500">description.vi</span><div style="font-size: 11px; color: #7A7390">đã đổi</div></td><td style="background: #FDE8E8; font-size: 13px">Dịch văn bản</td><td style="background: #E3F4EC; font-size: 13px">Dịch văn bản sang ngôn ngữ khác</td></tr>
+<tr><td class="mono" style="font-size: 13px">args[1].default<div style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 11px; color: #7A7390">đã đổi</div></td><td class="mono" style="background: #FDE8E8; font-size: 13px">"en"</td><td class="mono" style="background: #E3F4EC; font-size: 13px">"vi"</td></tr>
+<tr><td><span style="font-weight: 500">aliases</span><div style="font-size: 11px; color: #7A7390">đã đổi</div></td><td class="mono" style="background: #FDE8E8; font-size: 13px">[]</td><td class="mono" style="background: #E3F4EC; font-size: 13px">["tr"]</td></tr>
+</tbody>
+</table>
+<button type="button" class="btn btn-sm" style="align-self: flex-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M6 9l6 6 6-6"></path></svg>12 trường không đổi · Hiện</button>
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 8px; background: #F7F6FA; border: 1px dashed #CFC7E2">
+<span class="cap">Với secret (vd v41)</span>
+<span style="font-size: 14px">Giá trị: đã thay đổi</span>
+</div>
+</div>
+<div style="padding: 14px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #E6E3EE">
+<button type="button" class="btn">Đóng</button>
+<button type="button" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"></path></svg>Khôi phục bản trước</button>
+</div>
+</aside>
+<div style="position: absolute; left: 300px; bottom: 120px; width: 440px">
+<div role="alertdialog" aria-modal="true" aria-labelledby="rs-title" class="dlg">
+<h2 id="rs-title" style="margin: 0; font-size: 17px; font-weight: 700">Khôi phục <span class="mono">/dich</span> về trạng thái trước v43?</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #3B3450">Tạo phiên bản mới v44 với nội dung trước thay đổi này. Lịch sử cũ được giữ nguyên.</p>
+<div style="display: flex; justify-content: flex-end; gap: 10px"><button type="button" class="btn">Huỷ</button><button type="button" class="btn btn-primary">Khôi phục</button></div>
+</div>
+<div role="status" class="toast" style="margin-top: 16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M5 12l5 5 9-10"></path></svg><span>Đã khôi phục <span class="mono">/dich</span> · v44</span></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+renderVals() {
+return { yes: true, no: false };
+}
+}
+</script>
+</body>
+</html>
