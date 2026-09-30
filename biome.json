@@ -7,7 +7,14 @@
     "defaultBranch": "main"
   },
   "files": {
-    "includes": ["**", "!**/migrations/meta", "!docs", "!**/components/ui", "!**/routeTree.gen.ts"]
+    "includes": [
+      "**",
+      "!**/migrations/meta",
+      "!**/migrations-dev/meta",
+      "!docs",
+      "!**/components/ui",
+      "!**/routeTree.gen.ts"
+    ]
   },
   "formatter": {
     "enabled": true,
