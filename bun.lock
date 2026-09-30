@@ -45,6 +45,15 @@
         "typescript": "6.0.3",
       },
     },
+    "tools/scripts": {
+      "name": "@ai/scripts",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@ai/config": "workspace:*",
+        "@types/bun": "1.3.14",
+        "typescript": "6.0.3",
+      },
+    },
   },
   "packages": {
     "@ai/admin-api": ["@ai/admin-api@workspace:apps/admin-api"],
@@ -52,6 +61,8 @@
     "@ai/config": ["@ai/config@workspace:packages/config"],
 
     "@ai/contracts": ["@ai/contracts@workspace:packages/contracts"],
+
+    "@ai/scripts": ["@ai/scripts@workspace:tools/scripts"],
 
     "@biomejs/biome": ["@biomejs/biome@2.5.15", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "2.5.15", "@biomejs/cli-darwin-x64": "2.5.15", "@biomejs/cli-linux-arm64": "2.5.15", "@biomejs/cli-linux-arm64-musl": "2.5.15", "@biomejs/cli-linux-x64": "2.5.15", "@biomejs/cli-linux-x64-musl": "2.5.15", "@biomejs/cli-win32-arm64": "2.5.15", "@biomejs/cli-win32-x64": "2.5.15" }, "bin": { "biome": "bin/biome" } }, "sha512-WZTW4slm/pdkh92K6t/3aEN++44JD1PQ7squ7RCMLI1flHGl43DVOIGXvCjHiZgBMO1V4uYxoFNtqrIA4qGuIQ=="],
 
