@@ -10,7 +10,7 @@ Bảng đặt tên cho theme Tailwind/shadcn. Giá trị lấy từ `tokens.md` 
 | `--card` / `--popover` | `#FFFFFF` | Card, drawer, dialog, topbar | 189 |
 | `--foreground` | `#1D1733` | Chữ chính | 110 |
 | `--muted-foreground` | `#635C78` | Chữ phụ, nhãn cột, mô tả | 275 |
-| `--subtle-foreground` | `#7A7390` | Tiêu đề nhóm sidebar, caption | 16 |
+| `--subtle-foreground` | `#736C89` | Tiêu đề nhóm sidebar, caption. Chỉnh cho AA, lệch canvas có chủ đích (canvas `#7A7390` = 4.17:1 trên nền, 4.48:1 trên trắng); `#736C89` = 4.61:1 trên `#F7F6FA`, 4.96:1 trên `#FFFFFF` | 16 |
 | `--placeholder` | `#B3ADC4` | Dấu `/` breadcrumb, giá trị trống "—" | 9 |
 | `--border` | `#E6E3EE` | Viền card, bảng, header | 122 |
 | `--input` | `#D9D5E3` | Viền ô nhập, nút phụ | 75 |

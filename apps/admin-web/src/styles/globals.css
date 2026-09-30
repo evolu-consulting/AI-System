@@ -20,7 +20,7 @@
   --muted: #efedf3;
   --muted-foreground: #635c78;
   --muted-strong-foreground: #4f4865;
-  --subtle-foreground: #7a7390;
+  --subtle-foreground: #736c89; /* canvas #7A7390, sẫm lại cho AA (tokens-map.md) */
   --placeholder: #b3adc4;
 
   /* Thương hiệu */
