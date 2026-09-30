@@ -65,6 +65,18 @@ e2e/<feature>.spec.ts                 # QC — Playwright, bị khoá
 
 E2E chọn phần tử theo **role + nhãn nguyên văn** trong spec (`getByRole('button', { name: 'Lưu' })`), không theo class/CSS. Chỉ dùng `data-testid` khi không có role/nhãn phù hợp và phải ghi trong spec.
 
+### Đuôi file test và tooling
+
+| Đuôi / vị trí | Ý nghĩa | Chạy bằng |
+|---|---|---|
+| `*.test.ts(x)` | unit/acceptance, không cần hạ tầng | `bun test` |
+| `*.int.test.ts` | cần Postgres/Redis thật (docker compose) | `bun run test:int` |
+| `*.check.ts` | script kiểm tra độc lập, exit code 0/≠0 | `bun <file>` (vd `ac07.check.ts`) |
+| `tools/*` | workspace công cụ dev (`mocks`, `scripts`), không deploy | `bun run <script>` |
+| `tsconfig.tests.json` (gốc) | typecheck `tests/**` và `e2e/**`, chạy trong `bun run typecheck` | `tsc -p` |
+
+Tên test: `"<mã> · mô tả"` (mã FR/NFR/AC) để `trace` nối test với yêu cầu (T-TRACE-2).
+
 ## 3. Đặt tên
 
 | Thứ | Quy tắc | Ví dụ |

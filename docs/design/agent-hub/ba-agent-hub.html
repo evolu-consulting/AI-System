@@ -309,7 +309,7 @@
     <tr><td><code>routing_test_runs</code></td><td>id, trigger (save/manual), config_draft_hash, passed, total, pass_rate, results (jsonb), accepted (bool), by, at</td></tr>
     <tr><td><code>attachments</code></td><td>id, tenant_id, user_id, filename, mime, size, storage_path, created_at</td></tr>
   </table></div>
-  <p>Hub chỉ <strong>đọc</strong> schema <code>admin</code>: <code>tenants</code>, <code>groups</code>, <code>group_members</code>, <code>features</code>, <code>feature_commands</code>, <code>feature_entitlements</code>, <code>feature_grants</code>, <code>tenant_quotas</code>, <code>commands</code>, <code>workflows</code> và secret của workflow. Hub <strong>ghi</strong> schema <code>hub</code> (cấu hình agent, quyền agent, bảng giá, dữ liệu runtime). Admin chỉ <strong>đọc</strong> <code>hub.agent_workflows</code>. <code>user_id</code>, <code>tenant_id</code>, <code>role</code> lấy từ JWT, không cần join sang bảng users mỗi request.</p>
+  <p>Hub chỉ <strong>đọc</strong> schema <code>admin</code>: <code>tenants</code>, <code>groups</code>, <code>group_members</code>, <code>features</code>, <code>feature_commands</code>, <code>feature_entitlements</code>, <code>feature_grants</code>, <code>tenant_quotas</code>, <code>commands</code>, <code>workflows</code> và secret của workflow. Hub <strong>ghi</strong> schema <code>hub</code> (cấu hình agent, quyền agent, bảng giá, dữ liệu runtime). Admin chỉ <strong>đọc</strong> (không ghi) 3 bảng <code>hub.agent_workflows</code>, <code>hub.agent_grants</code>, <code>hub.usage_logs</code>. <code>user_id</code>, <code>tenant_id</code>, <code>role</code> lấy từ JWT, không cần join sang bảng users mỗi request.</p>
 </section>
 
 <section id="s9">

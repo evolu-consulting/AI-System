@@ -260,7 +260,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | `routing_test_runs` | id, trigger (save/manual), config_draft_hash, passed, total, pass_rate, results (jsonb), accepted (bool), by, at |
 | `attachments` | id, tenant_id, user_id, filename, mime, size, storage_path, created_at |
 
-Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `features`, `feature_commands`, `feature_entitlements`, `feature_grants`, `tenant_quotas`, `commands`, `workflows` và secret của workflow. Hub **ghi** schema `hub` (cấu hình agent, quyền agent, bảng giá, dữ liệu runtime). Admin chỉ **đọc** `hub.agent_workflows`. `user_id`, `tenant_id`, `role` lấy từ JWT, không cần join sang bảng users mỗi request.
+Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `features`, `feature_commands`, `feature_entitlements`, `feature_grants`, `tenant_quotas`, `commands`, `workflows` và secret của workflow. Hub **ghi** schema `hub` (cấu hình agent, quyền agent, bảng giá, dữ liệu runtime). Admin chỉ **đọc** (không ghi) 3 bảng `hub.agent_workflows`, `hub.agent_grants`, `hub.usage_logs`. `user_id`, `tenant_id`, `role` lấy từ JWT, không cần join sang bảng users mỗi request.
 
 ## 9. API & sự kiện stream
 
