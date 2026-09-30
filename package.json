@@ -2,8 +2,13 @@
   "name": "ai-system",
   "private": true,
   "packageManager": "bun@1.3.14",
-  "workspaces": ["apps/*", "packages/*", "tools/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools/*"
+  ],
   "scripts": {
+    "postinstall": "lefthook install",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",

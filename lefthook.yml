@@ -1,0 +1,5 @@
+# Pre-commit (CONVENTIONS §1): chỉ kiểm file đã stage, không tự sửa — sai format thì chặn commit.
+pre-commit:
+  jobs:
+    - name: biome
+      run: bunx biome check --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
