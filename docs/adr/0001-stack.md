@@ -34,10 +34,11 @@ Nền tảng multi-tenant gồm Admin, Agent Hub, Worker, Chat App/Extension. Wo
 Phiên bản cụ thể: backend-lead/frontend-lead chốt ở M0 và ghi vào bảng dưới (dùng bản stable mới nhất tại thời điểm cài, khoá bằng `bun.lock`).
 
 Tra ngày 2026-10-01 bằng `npm view <pkg> version` (dist-tag `latest`). Ghim chính xác (không `^`) trong `package.json`. Cột "Latest" ghi khi bản chọn khác bản mới nhất.
+Đối chiếu `bun.lock` sau BUILD M0 (T16, 2026-10-01): phần gốc/backend khớp bảng — `turbo@2.11.5`, `typescript@6.0.3`, `@biomejs/biome@2.5.15`, `lefthook@2.1.15`, `dependency-cruiser@18.5.0`, `@types/bun@1.3.14`, `hono@4.13.12`, `zod@4.6.5`, `drizzle-orm@0.45.3`, `drizzle-kit@0.31.11`, `postgres@3.4.9`, `@playwright/test@1.63.0`; `bun --version` = 1.3.14. Dòng admin-web/i18n do frontend-lead đối chiếu sau FE-5.
 
 | Package | Phiên bản | Latest | Phần | Ghi chú |
 |---|---|---|---|---|
-| bun (runtime, `packageManager`) | 1.3.14 | 1.4.2 | toàn repo | Bản đang cài trên máy dev; nâng 1.4.2 chờ Gate M0 (spec M0 Câu hỏi 2) |
+| bun (runtime, `packageManager`) | 1.3.14 | 1.4.2 | toàn repo | Bản đang cài trên máy dev; Gate M0 giữ 1.3.14 (spec M0 Câu hỏi 2), nâng bằng task riêng |
 | @types/bun | 1.3.14 | 1.4.2 | toàn repo | Khớp runtime |
 | typescript | 6.0.3 | 7.0.2 | toàn repo | dependency-cruiser 18.5.0 chỉ nhận `>=2 <7` — ADR-0003 |
 | turbo | 2.11.5 | = | gốc | |
@@ -55,8 +56,11 @@ Tra ngày 2026-10-01 bằng `npm view <pkg> version` (dist-tag `latest`). Ghim c
 | @playwright/test | 1.63.0 | = | e2e (qc/frontend-lead) | |
 | Image `postgres` | `16-alpine` | — | compose, CI | Major theo quyết định Postgres 16 |
 | Image `redis` | `7-alpine` | — | compose | Major theo quyết định Redis 7 |
-| Image `axllent/mailpit` | _tag release mới nhất, ghi lúc BUILD M0 (task T16)_ | — | compose | Không dùng `latest` |
-| Action `actions/checkout`, `oven-sh/setup-bun` | _major mới nhất, ghi lúc BUILD M0 (task T16)_ | — | CI | |
+| Image `axllent/mailpit` | `v1.31.3` | — | compose | Release mới nhất 2026-09-27 (GitHub `axllent/mailpit`); không dùng `latest` |
+| Action `actions/checkout` | `v7` (v7.0.1) | — | CI | Major mới nhất 2026-10-01 |
+| Action `oven-sh/setup-bun` | `v2` (v2.2.0) | — | CI | `bun-version: 1.3.14` |
+| Action `actions/setup-node` | `v7` (v7.0.0) | — | CI | `node-version: 22` cho Rsbuild CLI |
+| Action `actions/upload-artifact` | `v7` (v7.0.1) | — | CI | Chỉ khi job lỗi (`playwright-report/`) |
 | @rsbuild/core | 2.2.11 | = | admin-web (dev) | Bin chạy bằng Node — cần Node ≥ 20.19 (engines TanStack) |
 | @rsbuild/plugin-react | 2.1.1 | = | admin-web (dev) | peer `@rsbuild/core ^2.0.0` |
 | react, react-dom | 18.3.1 | 19.3.0 | admin-web | Dòng "UI" ở trên chốt React 18 |
