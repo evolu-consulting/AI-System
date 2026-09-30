@@ -1,0 +1,14 @@
+{
+  "app": {
+    "meta": {
+      "title": "Admin Console"
+    }
+  },
+  "home": {
+    "page": {
+      "title": "Admin Console",
+      "subtitle": "Bảng quản trị nền tảng AI",
+      "logoAlt": "EvoluConsulting"
+    }
+  }
+}

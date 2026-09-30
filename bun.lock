@@ -35,6 +35,7 @@
       "name": "@ai/admin-web",
       "version": "0.0.0",
       "dependencies": {
+        "@ai/i18n": "workspace:*",
         "@fontsource-variable/jetbrains-mono": "5.3.0",
         "@fontsource/be-vietnam-pro": "5.3.0",
         "@tanstack/react-query": "5.104.0",
@@ -94,6 +95,15 @@
         "typescript": "6.0.3",
       },
     },
+    "packages/i18n": {
+      "name": "@ai/i18n",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@ai/config": "workspace:*",
+        "@types/bun": "1.3.14",
+        "typescript": "6.0.3",
+      },
+    },
     "tools/mocks": {
       "name": "@ai/mocks",
       "version": "0.0.0",
@@ -127,6 +137,8 @@
     "@ai/contracts": ["@ai/contracts@workspace:packages/contracts"],
 
     "@ai/db": ["@ai/db@workspace:packages/db"],
+
+    "@ai/i18n": ["@ai/i18n@workspace:packages/i18n"],
 
     "@ai/mocks": ["@ai/mocks@workspace:tools/mocks"],
 
