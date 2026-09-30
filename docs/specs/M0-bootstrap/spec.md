@@ -329,6 +329,7 @@ Nguồn `r#n` = `readiness.md` lần 1 mục n. Áp mặc định; chỗ khác m
 - T11 · Fixture sạch đặt ở thư mục riêng `__fixtures__/depcruise-clean/` (cwd riêng); `bunfig.toml`/`bunfig.int.toml` thêm `**/__fixtures__/**` vào `pathIgnorePatterns` để `bun test` không chạy `c.test.ts` của fixture. Wrapper in đầu ra depcruise ra stdout khi sạch, stderr khi vi phạm (T-CLI-1).
 - T13 · `docs/TRACE.md`: cột Code/Test ghi **số file** (`29 file`), không liệt kê path (ADM-NFR-06 có ~30 file mỗi cột); danh sách path xem bằng `bun run trace <mã>`. Cột Spec liệt kê path, nối `<br>`. Thứ tự dòng = thứ tự xuất hiện trong `ba-*.md` (file sắp theo path); mã trùng trong danh mục lấy dòng đầu. Không có `docs/TRACE.md` → dùng phần mở đầu mặc định.
 - T13 · Regex tên test thêm lookbehind `(?<![\w$.])` trước `it|test|describe` để `submit(`/`x.it(` không bị tính (siết T-TRACE-2, không nới).
+- T15 · Action ghim major mới nhất tại 2026-10-01 (GitHub releases): `actions/checkout@v7` (v7.0.1), `oven-sh/setup-bun@v2` (v2.2.0), `actions/setup-node@v7` (v7.0.0), `actions/upload-artifact@v7` (v7.0.1). Step tạo DB test (`psql … CREATE DATABASE ai_system_test`) đặt trước `bun install`; thêm `concurrency` huỷ lần chạy cũ cùng ref, `timeout-minutes: 30`.
 - T4 · `server.ts` gặp env sai → log `error` một dòng `Env không hợp lệ: <tên biến>` rồi `exit 1` (không in giá trị, không stack).
 
 ## 10. Tranh chấp test

@@ -1,0 +1,105 @@
+# ADM-NFR-06 · CI M0 (spec M0 §8 AC17, plan.md mục CI). Chỉ file — chưa push.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ai
+          POSTGRES_PASSWORD: ai_dev_pw
+          POSTGRES_DB: ai_system
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ai"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      # Giá trị dev như .env.example (không phải secret). CI không có .env.local.
+      APP_ENV: test
+      DATABASE_URL: postgres://ai:ai_dev_pw@localhost:5432/ai_system
+      TEST_DATABASE_URL: postgres://ai:ai_dev_pw@localhost:5432/ai_system_test
+      CORS_ORIGINS: http://localhost:3000
+      PORT: "3001"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Lịch sử đầy đủ: `biome ci --changed`, check:size, depcruise so với main (T-SIZE-4, T-DEP-8).
+          fetch-depth: 0
+
+      - name: Tạo nhánh local main (PR checkout ở HEAD tách rời)
+        if: github.ref != 'refs/heads/main'
+        run: git fetch origin main:main
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      # Rsbuild CLI của admin-web chạy bằng Node.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Tạo DB test (service container không mount được init script)
+        run: PGPASSWORD=ai_dev_pw psql -h localhost -U ai -d ai_system -c "CREATE DATABASE ai_system_test OWNER ai"
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Check (biome, size, depcruise, i18n)
+        run: bun run check
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Unit + acceptance
+        run: bun test
+
+      - name: Playwright browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Build admin-web
+        run: bun run --filter @ai/admin-web build
+
+      - name: Ngân sách bundle
+        run: bun run --filter @ai/admin-web check:bundle
+
+      - name: E2E
+        run: bunx playwright test
+
+      - name: Migrate
+        run: bun run db:migrate
+
+      - name: Test tích hợp
+        run: bun run test:int
+
+      - name: Khoá test
+        run: bun run test:lock:verify
+
+      - name: Truy vết
+        run: bun run trace --check
+
+      - name: Lưu báo cáo Playwright khi lỗi
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
