@@ -327,6 +327,8 @@ Nguồn `r#n` = `readiness.md` lần 1 mục n. Áp mặc định; chỗ khác m
 - T11 · `rules-must-be-pure` gồm **hai** mục cùng tên trong `forbidden` (một theo `to.path`, một theo `to.dependencyTypes: ["core"]`): trong một luật, `path` và `dependencyTypes` là điều kiện AND. Regex gói npm viết `(^|/)node_modules/(<tên>)/` — dạng có nhóm tuỳ chọn `(\.bun/[^/]+/node_modules/)?` bị dependency-cruiser từ chối là "unsafe regular expression".
 - T11 · `options.exclude` = `(^|/)(__fixtures__|dist)/` (thêm `dist/` để không quét bản build admin-web). **Không** exclude `node_modules` (exclude bỏ cả cạnh tới module đó → mất phát hiện import `hono`/`drizzle-orm`); `doNotFollow` đủ để không quét vào trong.
 - T11 · Fixture sạch đặt ở thư mục riêng `__fixtures__/depcruise-clean/` (cwd riêng); `bunfig.toml`/`bunfig.int.toml` thêm `**/__fixtures__/**` vào `pathIgnorePatterns` để `bun test` không chạy `c.test.ts` của fixture. Wrapper in đầu ra depcruise ra stdout khi sạch, stderr khi vi phạm (T-CLI-1).
+- T13 · `docs/TRACE.md`: cột Code/Test ghi **số file** (`29 file`), không liệt kê path (ADM-NFR-06 có ~30 file mỗi cột); danh sách path xem bằng `bun run trace <mã>`. Cột Spec liệt kê path, nối `<br>`. Thứ tự dòng = thứ tự xuất hiện trong `ba-*.md` (file sắp theo path); mã trùng trong danh mục lấy dòng đầu. Không có `docs/TRACE.md` → dùng phần mở đầu mặc định.
+- T13 · Regex tên test thêm lookbehind `(?<![\w$.])` trước `it|test|describe` để `submit(`/`x.it(` không bị tính (siết T-TRACE-2, không nới).
 - T4 · `server.ts` gặp env sai → log `error` một dòng `Env không hợp lệ: <tên biến>` rồi `exit 1` (không in giá trị, không stack).
 
 ## 10. Tranh chấp test

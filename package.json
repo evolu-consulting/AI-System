@@ -23,7 +23,8 @@
     "check:size": "bun tools/scripts/src/check-size.ts",
     "depcruise": "bun tools/scripts/src/depcruise.ts",
     "test:lock:verify": "bun tools/scripts/src/test-lock.ts verify",
-    "test:lock:write": "bun tools/scripts/src/test-lock.ts write"
+    "test:lock:write": "bun tools/scripts/src/test-lock.ts write",
+    "trace": "bun tools/scripts/src/trace.ts"
   },
   "devDependencies": {
     "@ai/contracts": "workspace:*",
