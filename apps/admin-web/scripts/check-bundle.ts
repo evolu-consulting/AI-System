@@ -8,12 +8,14 @@ export const CSS_BUDGET_BYTES = 25 * 1024;
 export type BundleReport = { jsKb: string; cssKb: string; errors: string[] };
 
 const TAG_RE = /<(script|link)\b([^>]*)>/gi;
-const ATTR_RE = /([\w-]+)\s*=\s*"([^"]*)"/g;
+// Giá trị nháy kép, nháy đơn hoặc không nháy (HTML cho phép cả ba).
+const ATTR_RE = /([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g;
 
 function attrs(raw: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const m of raw.matchAll(ATTR_RE)) {
-    const [, name, value] = m;
+    const [, name, dq, sq, bare] = m;
+    const value = dq ?? sq ?? bare;
     if (name && value !== undefined) out[name.toLowerCase()] = value;
   }
   return out;

@@ -39,6 +39,14 @@ describe("ADM-NFR-06 · M0-AC19 · check:bundle", () => {
     expect(initialAssets(page(["/a.js"], ["/a.css"]))).toEqual({ js: ["/a.js"], css: ["/a.css"] });
   });
 
+  test("thuộc tính nháy đơn và không nháy", () => {
+    const html =
+      "<html><head><link rel='stylesheet' href='/s.css'><link rel=stylesheet href=/b.css>" +
+      "<link rel=preload href=/p.js><script defer src='/a.js'></script>" +
+      "<script type=module src=/b.js></script><script>inline()</script></head></html>";
+    expect(initialAssets(html)).toEqual({ js: ["/a.js", "/b.js"], css: ["/s.css", "/b.css"] });
+  });
+
   test("dưới ngưỡng → không lỗi", () => {
     const dir = makeDist(page(["/static/js/a.js"], ["/static/css/a.css"]), {
       "static/js/a.js": "console.log(1);",
