@@ -21,7 +21,9 @@
     "db:migrate": "bun --env-file=.env.local packages/db/src/migrate.ts",
     "mocks": "bun tools/mocks/src/server.ts",
     "check:size": "bun tools/scripts/src/check-size.ts",
-    "depcruise": "bun tools/scripts/src/depcruise.ts"
+    "depcruise": "bun tools/scripts/src/depcruise.ts",
+    "test:lock:verify": "bun tools/scripts/src/test-lock.ts verify",
+    "test:lock:write": "bun tools/scripts/src/test-lock.ts write"
   },
   "devDependencies": {
     "@ai/contracts": "workspace:*",
