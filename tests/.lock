@@ -3,7 +3,7 @@
 f6c20a9e0371eb9c39baee469f9bd69288d9dd4398083f18c515daaff0f1eaa9  tests/acceptance/ADM-NFR-06/_helpers.ts
 f1c74f00b2c4700a15b95cf946bc7bd0d58e1a1a4f9fc4ec9a049e657ec19fc9  tests/acceptance/ADM-NFR-06/ac07.check.ts
 530550285ecfa8c3466c8373940584d5f61d87da34f637ae9dbe9c0914d57425  tests/acceptance/ADM-NFR-06/check-size.test.ts
-1510fe5aaae29a1ff945d26d69cade6d5a9379a120839e5c18e46c64e82d335a  tests/acceptance/ADM-NFR-06/ci-workflow.test.ts
+adea9edad1da42c433a021e262e5a996b3546d52fe792bbd2d4b3d285c4fcee8  tests/acceptance/ADM-NFR-06/ci-workflow.test.ts
 ab65fdffde1320c63a6c73576944c52ce7759d7f713b6576d8de47ea0190abb3  tests/acceptance/ADM-NFR-06/health.test.ts
 b91631853eb52d1f994195017a9fa636dc2e1bb06ab2c061e21efc29414f8827  tests/acceptance/ADM-NFR-06/i18n-check.test.ts
 182d441ab7b4bedc018bd877681fd61db4c34b526ecf34190daf0e7bb6ee5c30  tests/acceptance/ADM-NFR-06/migrate.int.test.ts

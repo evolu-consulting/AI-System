@@ -42,7 +42,7 @@ describe("ADM-NFR-06 · M0-AC17 · .github/workflows/ci.yml", () => {
   });
 
   it("ADM-NFR-06 · M0-AC17 · chạy trên pull_request và push nhánh main; quyền chỉ đọc", () => {
-    const on = (doc.on ?? (doc as unknown as Record<string, Record<string, unknown>>)["true"]) as
+    const on = (doc.on ?? (doc as unknown as Record<string, Record<string, unknown>>).true) as
       | Record<string, unknown>
       | undefined;
     expect(Object.keys(on ?? {})).toEqual(expect.arrayContaining(["pull_request", "push"]));
