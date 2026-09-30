@@ -1,6 +1,6 @@
 // ADM-NFR-06 · router file-based; cây route do @tanstack/router-plugin sinh vào routeTree.gen.ts.
 import { createRouter } from "@tanstack/react-router";
-import { routeTree } from "../routeTree.gen";
+import { routeTree } from "@/routeTree.gen";
 
 export const router = createRouter({ routeTree, defaultPreload: "intent" });
 
