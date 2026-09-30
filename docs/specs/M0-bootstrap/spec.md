@@ -309,6 +309,10 @@ Nguồn `r#n` = `readiness.md` lần 1 mục n. Áp mặc định; chỗ khác m
 - T1 · `bunfig.int.toml` lặp `[install] linker = "isolated"`: `--config` thay hẳn `bunfig.toml`, giữ cùng linker nếu ai đó chạy `bun install` với file này.
 - T2 · `biome.json` dùng `linter.rules.preset: "recommended"` thay `recommended: true` (Biome 2.5.15 báo DEPRECATED, sẽ bỏ ở major sau; giá trị enum `recommended|all|none` trong `configuration_schema.json`). Thư mục bỏ qua viết dạng `!docs`, `!**/migrations/meta`, `!**/components/ui` (không hậu tố `/**`, cú pháp thư mục của Biome 2).
 - T19 · Làm trước T4/T8/T9/Q2/FE-5 theo lệnh điều phối; devDep gốc `@ai/contracts: "workspace:*"` thêm ở T19 (thay vì T4) vì `tsc -p tsconfig.tests.json` cần resolve nó từ gốc. Chưa có file nào dưới `tests/**`, `e2e/**`, `playwright.config.ts` → `bun run typecheck` hiện exit 2 (`TS18003 No inputs were found`); hết khi Q2 tạo file khoá. Không thêm file giả để che lỗi.
+- T4 · Middleware request-id tự viết trong `app.ts` thay `hono/request-id`: bản Hono 4.13.12 thay id chứa ký tự ngoài `[\w\-=]` (từ chối `.` mà §3.1 cho phép, nhận `=` mà §3.1 cấm). Header `X-Request-Id` gắn **sau** `next()` nên có cả trên 404/500.
+- T4 · `healthRoutes(cfg: { version: string })` thay `Pick<AppConfig, "version">`: cùng kiểu, tránh `health.routes.ts` import ngược `app.ts` (vòng import, luật `no-circular`).
+- T4 · Logger bỏ mức `info` khi `NODE_ENV=test` (bun test tự đặt) để đầu ra test gọn; `warn`/`error` vẫn in. Không thêm biến env mới.
+- T4 · `server.ts` gặp env sai → log `error` một dòng `Env không hợp lệ: <tên biến>` rồi `exit 1` (không in giá trị, không stack).
 
 ## 10. Tranh chấp test
 - (không)
