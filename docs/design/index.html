@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI System Docs</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --surface: #ffffff; --text: #1d1d1f; --muted: #5f6368;
+    --border: #e2e2de; --accent: #4f46e5; --accent-soft: #eef2ff; --hover: #f1f1ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121214; --surface: #1b1b1f; --text: #ececf1; --muted: #a0a0ab;
+      --border: #2e2e35; --accent: #8b87ff; --accent-soft: #23223a; --hover: #232329;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121214; --surface: #1b1b1f; --text: #ececf1; --muted: #a0a0ab;
+    --border: #2e2e35; --accent: #8b87ff; --accent-soft: #23223a; --hover: #232329;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: grid; grid-template-columns: 280px 1fr; grid-template-rows: 100%;
+  }
+  aside {
+    background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .brand { padding: 18px 18px 10px; }
+  .brand h1 { margin: 0; font-size: 17px; letter-spacing: -0.01em; }
+  .brand p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+  .search { margin: 6px 14px 8px; }
+  .search input {
+    width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--text); font: inherit;
+  }
+  .search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  nav { overflow-y: auto; padding: 4px 10px 16px; flex: 1; }
+  .group { margin-top: 12px; }
+  .group-h {
+    display: flex; align-items: center; gap: 8px; padding: 4px 8px;
+    color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  }
+  .group-h .dot { width: 8px; height: 8px; border-radius: 2px; }
+  .item {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    padding: 7px 10px; margin: 1px 0; border: 0; border-radius: 7px; background: none;
+    color: var(--text); font: inherit; cursor: pointer;
+  }
+  .item:hover { background: var(--hover); }
+  .item.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .kind {
+    flex: none; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+    border: 1px solid var(--border); color: var(--muted); min-width: 30px; text-align: center;
+  }
+  .item.on .kind { border-color: var(--accent); color: var(--accent); }
+  .item .t { flex: 1; min-width: 0; }
+  .item .d { display: block; font-size: 11.5px; color: var(--muted); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .foot { border-top: 1px solid var(--border); padding: 10px 14px; display: flex; gap: 8px; align-items: center; }
+  .btn {
+    border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 7px;
+    padding: 5px 10px; font: inherit; font-size: 12.5px; cursor: pointer; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .bar {
+    display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .bar .crumb { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar .crumb b { color: var(--text); }
+  .bar .sp { flex: 1; }
+  .menu-btn { display: none; }
+  iframe { flex: 1; width: 100%; border: 0; background: var(--bg); }
+  .empty { color: var(--muted); padding: 10px; font-size: 13px; }
+  .scrim { display: none; }
+  @media (max-width: 860px) {
+    body { grid-template-columns: 1fr; }
+    aside {
+      position: fixed; inset: 0 auto 0 0; width: 86vw; max-width: 320px; z-index: 20;
+      transform: translateX(-100%); transition: transform .18s ease-out;
+    }
+    body.nav-open aside { transform: none; }
+    body.nav-open .scrim { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 10; }
+    .menu-btn { display: inline-block; }
+  }
+  @media (prefers-reduced-motion: reduce) { aside { transition: none; } }
+</style>
+</head>
+<body>
+<aside id="side">
+  <div class="brand">
+    <h1>AI System · Tài liệu</h1>
+    <p>BA &amp; UI/UX theo từng service · v0.4</p>
+  </div>
+  <div class="search"><input id="q" type="search" placeholder="Lọc tài liệu…  ( / )" aria-label="Lọc tài liệu"></div>
+  <nav id="nav" aria-label="Danh sách tài liệu"></nav>
+  <div class="foot">
+    <button class="btn" id="theme" type="button">◐ Giao diện</button>
+  </div>
+</aside>
+<div class="scrim" id="scrim"></div>
+<main>
+  <div class="bar">
+    <button class="btn menu-btn" id="menu" type="button" aria-label="Mở danh sách">☰</button>
+    <span class="crumb" id="crumb"></span>
+    <span class="sp"></span>
+    <button class="btn" id="prev" type="button" title="Tài liệu trước (Alt+←)">←</button>
+    <button class="btn" id="next" type="button" title="Tài liệu sau (Alt+→)">→</button>
+    <a class="btn" id="open" href="#" target="_blank" rel="noopener">Mở tab mới ↗</a>
+  </div>
+  <iframe id="view" title="Nội dung tài liệu"></iframe>
+</main>
+
+<script>
+const GROUPS = [
+  { name: 'Tổng quan', color: '#5f6368', docs: [
+    { path: 'architecture.html', title: 'Kiến trúc tổng thể', desc: 'Sơ đồ, quyết định đã chốt, diễn tiến', kind: 'ARCH' },
+  ]},
+  { name: 'Admin', color: '#2a78d6', docs: [
+    { path: 'admin/ba-admin.html', title: 'Admin — BA', desc: 'Tenant, user, group, feature, quota, command, workflow', kind: 'BA' },
+    { path: 'admin/ui-admin.html', title: 'Admin — UI/UX', desc: 'Khung, component, màn hình, phân quyền, chi phí', kind: 'UI' },
+  ]},
+  { name: 'Agent Hub', color: '#eb6834', docs: [
+    { path: 'agent-hub/ba-agent-hub.html', title: 'Agent Hub — BA', desc: 'Runtime, Coordinator, Studio config', kind: 'BA' },
+    { path: 'agent-hub/ui-agent-studio.html', title: 'Agent Studio — UI/UX', desc: 'Agents, Coordinator, workflow cho agent, quyền agent, Models', kind: 'UI' },
+    { path: 'agent-hub/ui-operations.html', title: 'Vận hành — UI/UX', desc: 'Runs, chi phí, jobs & worker', kind: 'UI' },
+  ]},
+  { name: 'Worker', color: '#1baf7a', docs: [
+    { path: 'worker/ba-worker.html', title: 'Worker — BA', desc: 'Job, subscription pool, runbook', kind: 'BA' },
+  ]},
+  { name: 'Chat App & Extension', color: '#e87ba4', docs: [
+    { path: 'chat-app/ui-chat-extension.html', title: 'Chat & Extension — UI/UX', desc: 'Composer, menu "/", các bước, ngữ cảnh', kind: 'UI' },
+  ]},
+];
+const ALL = GROUPS.flatMap(g => g.docs.map(d => ({ ...d, group: g.name })));
+const $ = id => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+let current = null;
+
+function renderNav(filter = '') {
+  const f = filter.trim().toLowerCase();
+  const nav = $('nav');
+  nav.innerHTML = '';
+  let shown = 0;
+  for (const g of GROUPS) {
+    const docs = g.docs.filter(d => !f || (g.name + ' ' + d.title + ' ' + d.desc).toLowerCase().includes(f));
+    if (!docs.length) continue;
+    const wrap = document.createElement('div');
+    wrap.className = 'group';
+    wrap.innerHTML = `<div class="group-h"><span class="dot" style="background:${g.color}"></span>${g.name}</div>`;
+    for (const d of docs) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'item' + (current && current.path === d.path ? ' on' : '');
+      b.dataset.path = d.path;
+      b.innerHTML = `<span class="kind">${d.kind}</span><span class="t">${d.title}<span class="d">${d.desc}</span></span>`;
+      b.addEventListener('click', () => { go(d.path); document.body.classList.remove('nav-open'); });
+      wrap.appendChild(b);
+      shown++;
+    }
+    nav.appendChild(wrap);
+  }
+  if (!shown) nav.innerHTML = '<div class="empty">Không có tài liệu khớp.</div>';
+}
+
+function markActive(path) {
+  const doc = ALL.find(d => d.path === path);
+  if (!doc) return;
+  current = doc;
+  document.querySelectorAll('.item').forEach(el => el.classList.toggle('on', el.dataset.path === path));
+  $('crumb').innerHTML = `${doc.group} / <b>${doc.title}</b>`;
+  $('open').href = doc.path;
+  document.title = doc.title + ' · AI System Docs';
+  store.set('aisys.doc', path);
+  if (location.hash.slice(1) !== path) history.replaceState(null, '', '#' + path);
+}
+
+function go(path, anchor = '') {
+  if (!ALL.some(d => d.path === path)) path = ALL[0].path;
+  markActive(path);
+  $('view').src = path + anchor;
+}
+
+function step(delta) {
+  const i = ALL.findIndex(d => current && d.path === current.path);
+  const n = ALL[(i + delta + ALL.length) % ALL.length];
+  go(n.path);
+}
+
+// Docs report their own path when loaded (also after in-doc link clicks)
+window.addEventListener('message', e => {
+  const p = e.data && e.data.aisysDoc;
+  if (typeof p !== 'string') return;
+  const hit = ALL.find(d => p.replace(/\\/g, '/').endsWith('/' + d.path) || p.endsWith(d.path));
+  if (hit && (!current || hit.path !== current.path)) markActive(hit.path);
+});
+
+$('q').addEventListener('input', e => renderNav(e.target.value));
+$('prev').addEventListener('click', () => step(-1));
+$('next').addEventListener('click', () => step(1));
+$('menu').addEventListener('click', () => document.body.classList.add('nav-open'));
+$('scrim').addEventListener('click', () => document.body.classList.remove('nav-open'));
+$('theme').addEventListener('click', () => {
+  const order = ['auto', 'light', 'dark'];
+  const cur = store.get('aisys.theme') || 'auto';
+  applyTheme(order[(order.indexOf(cur) + 1) % order.length]);
+});
+function applyTheme(t) {
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+  $('theme').textContent = { auto: '◐ Theo hệ thống', light: '☀ Sáng', dark: '☾ Tối' }[t];
+  store.set('aisys.theme', t);
+  try { $('view').contentWindow.postMessage({ aisysTheme: t }, '*'); } catch {}
+}
+$('view').addEventListener('load', () => applyTheme(store.get('aisys.theme') || 'auto'));
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== $('q')) { e.preventDefault(); $('q').focus(); }
+  if (e.altKey && e.key === 'ArrowLeft') step(-1);
+  if (e.altKey && e.key === 'ArrowRight') step(1);
+});
+window.addEventListener('hashchange', () => {
+  const p = location.hash.slice(1);
+  if (!current || p !== current.path) go(p);
+});
+
+applyTheme(store.get('aisys.theme') || 'auto');
+renderNav();
+go(location.hash.slice(1) || store.get('aisys.doc') || ALL[0].path);
+</script>
+</body>
+</html>

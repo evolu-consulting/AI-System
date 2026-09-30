@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BA — Admin Service</title>
+<link rel="stylesheet" href="../styles.css">
+<script>
+(function () {
+  if (window.self === window.top) return;
+  document.documentElement.classList.add('embedded');
+  try { parent.postMessage({ aisysDoc: location.pathname }, '*'); } catch (e) {}
+  window.addEventListener('message', function (e) {
+    var t = e.data && e.data.aisysTheme;
+    if (!t) return;
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+  });
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="docnav">
+  <a href="../architecture.html">Kiến trúc</a>
+  <a href="ba-admin.html" class="current">Admin</a>
+  <a href="ui-admin.html">UI/UX Admin</a>
+  <a href="../agent-hub/ui-operations.html">UI Vận hành</a>
+  <a href="../chat-app/ui-chat-extension.html">UI Chat &amp; Extension</a>
+  <a href="../agent-hub/ui-agent-studio.html">UI Agent Studio</a>
+  <a href="../agent-hub/ba-agent-hub.html">Agent Hub</a>
+  <a href="../worker/ba-worker.html">Worker</a>
+</nav>
+
+<header>
+  <h1>Admin Service — Business Requirements</h1>
+  <p>Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tảng AI multi-tenant</p>
+  <div class="meta"><span class="tag">v0.4 · draft</span><span class="tag">2026-10-01</span><span class="tag">Mã yêu cầu: ADM-*</span></div>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#s1">Mục đích &amp; phạm vi</a></li>
+    <li><a href="#s2">Actor</a></li>
+    <li><a href="#s3">Thuật ngữ</a></li>
+    <li><a href="#s4">User stories</a></li>
+    <li><a href="#s5">Yêu cầu chức năng</a></li>
+    <li><a href="#s6">Luật nghiệp vụ</a></li>
+    <li><a href="#s7">Mô hình dữ liệu</a></li>
+    <li><a href="#s8">API</a></li>
+    <li><a href="#s9">Màn hình</a></li>
+    <li><a href="#s10">Yêu cầu phi chức năng</a></li>
+    <li><a href="#s11">Tiêu chí nghiệm thu</a></li>
+    <li><a href="#s12">Ngoài phạm vi &amp; câu hỏi mở</a></li>
+  </ol>
+</nav>
+
+<section id="s1">
+  <h2>1. Mục đích &amp; phạm vi</h2>
+  <p><strong>Vấn đề cần giải quyết.</strong> Nếu mỗi client tự hardcode "command nào gọi workflow nào", thì mỗi lần thêm hoặc đổi workflow Dify lại phải sửa code và phát hành lại client. Các key cũng dễ bị rải khắp nơi. Từ v0.4, hệ thống phục vụ nhiều công ty khách hàng (tenant), nên còn cần một nơi quyết định <strong>tenant nào, nhóm nào, ai được dùng gì</strong> và <strong>dùng hết bao nhiêu</strong>. Admin gom toàn bộ việc này về một chỗ: người vận hành đổi được hành vi của hệ thống mà không cần deploy.</p>
+  <p><strong>Admin chịu trách nhiệm:</strong></p>
+  <ul>
+    <li>Danh tính: tenant, user, group, đăng nhập, phát và thu hồi token.</li>
+    <li>Phân quyền: 3 role quản trị, feature (gói command), entitlement theo tenant, cấp quyền cho group/user.</li>
+    <li>Catalog workflow Dify <strong>dùng chung</strong> cho cả command và agent, cùng các command trỏ tới workflow.</li>
+    <li>Quota và báo cáo chi phí theo tenant.</li>
+    <li>Lưu secret (app-key Dify) dưới dạng mã hoá.</li>
+    <li>Nhật ký thay đổi (audit log) và import/export cấu hình.</li>
+  </ul>
+  <div class="note warn"><strong>v0.4:</strong> hệ thống chuyển từ "chỉ nội bộ" sang <strong>multi-tenant cho công ty / khách hàng bên ngoài</strong>. Workflow trở thành catalog dùng chung: agent ở Agent Hub chọn workflow từ đây, không khai báo tool riêng nữa. Cấu hình agent, Coordinator, provider, model profile vẫn thuộc <a href="../agent-hub/ba-agent-hub.html" style="color:inherit">Agent Hub</a>.</div>
+  <p><strong>Admin không làm:</strong> không chạy workflow, không gọi LLM, không lưu hội thoại, không cấu hình agent. Những việc đó thuộc Agent Hub. Khi bấm nút "Test" trên Admin, Admin chỉ nhờ Hub chạy thử.</p>
+  <div class="note info"><strong>Giả định:</strong> command, workflow, secret, key Dify và API key <strong>dùng chung toàn hệ thống</strong>; tenant chỉ được cấp quyền dùng, không tự tạo. Dùng chung một Postgres với Agent Hub, trong đó Admin sở hữu schema <code>admin</code>.</div>
+</section>
+
+<section id="s2">
+  <h2>2. Actor</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Actor</th><th>Mô tả</th><th>Dùng Admin để</th></tr>
+    <tr><td><strong>Platform admin</strong> (người)</td><td>Người vận hành nền tảng, role <code>platform_admin</code>, thuộc tenant <code>platform</code></td><td>Quản lý tenant, workflow, command, feature, secret, entitlement, quota; xem mọi tenant</td></tr>
+    <tr><td><strong>Tenant admin</strong> (người)</td><td>Quản trị của một công ty khách hàng, role <code>tenant_admin</code></td><td>Quản lý user, group và cấp quyền trong tenant của mình; xem chi phí, quota, audit của tenant</td></tr>
+    <tr><td><strong>Member</strong> (người)</td><td>Nhân viên của tenant dùng Chat App hoặc Extension, role <code>member</code></td><td>Chỉ đăng nhập và đổi mật khẩu của chính mình</td></tr>
+    <tr><td><strong>Agent Hub</strong> (hệ thống)</td><td>Service điều phối</td><td>Đọc (read-only qua DB) tenant, group, feature, quyền, quota, command và workflow; nhận thông báo khi thay đổi; verify JWT</td></tr>
+    <tr><td><strong>Builder</strong> (người + Claude session)</td><td>Người tạo workflow trên Dify bằng Claude session</td><td>Khai báo workflow mới vào catalog (thường là platform admin)</td></tr>
+  </table></div>
+</section>
+
+<section id="s3">
+  <h2>3. Thuật ngữ</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Thuật ngữ</th><th>Định nghĩa</th></tr>
+    <tr><td>Tenant</td><td>Một công ty / khách hàng dùng nền tảng. Mọi user và dữ liệu runtime đều thuộc đúng một tenant. Công ty vận hành cũng là một tenant (<code>platform</code>)</td></tr>
+    <tr><td>Group</td><td>Nhóm user trong một tenant. Là đơn vị để cấp feature và agent</td></tr>
+    <tr><td>Workflow (catalog entry)</td><td>Bản khai báo một app Dify gồm tên, mô tả, loại app, input schema và secret app-key. Dùng chung cho command và agent. Có thể tạo sẵn mà chưa gắn vào đâu</td></tr>
+    <tr><td>Command</td><td>Lệnh bắt đầu bằng <code>/</code> mà user gõ trong chat. Mỗi command trỏ tới đúng một workflow và có luật map tham số sang input</td></tr>
+    <tr><td>Feature</td><td>Gói command để bật/tắt và cấp quyền. Feature không chạy gì</td></tr>
+    <tr><td>Entitlement</td><td>Tenant <strong>được phép có</strong> một feature (do platform admin cấp)</td></tr>
+    <tr><td>Grant</td><td>Group hoặc user trong tenant <strong>được dùng</strong> một feature (do tenant admin cấp, trong phạm vi entitlement)</td></tr>
+    <tr><td>Quota</td><td>Giới hạn mức dùng theo tháng của tenant (số run, token, USD). Vượt quota không bị chặn, chỉ cảnh báo và tính phí phần vượt</td></tr>
+    <tr><td>Secret</td><td>Giá trị nhạy cảm (key). Lưu mã hoá, UI chỉ hiện <code>••••</code> và 4 ký tự cuối</td></tr>
+  </table></div>
+</section>
+
+<section id="s4">
+  <h2>4. User stories</h2>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Là…</th><th>Tôi muốn…</th><th>Để…</th></tr>
+    <tr><td class="id">US-A01</td><td>Tenant admin</td><td>tạo tài khoản cho nhân viên và đặt mật khẩu tạm</td><td>họ đăng nhập được vào Chat App và Extension</td></tr>
+    <tr><td class="id">US-A02</td><td>Tenant admin</td><td>khoá tài khoản khi nhân viên nghỉ</td><td>người đó mất quyền truy cập ngay</td></tr>
+    <tr><td class="id">US-A03</td><td>Builder</td><td>khai báo một workflow Dify vừa tạo vào catalog, kể cả khi chưa biết dùng ở đâu</td><td>command hoặc agent dùng được nó sau này</td></tr>
+    <tr><td class="id">US-A04</td><td>Platform admin</td><td>tạo command <code>/dich</code> trỏ tới workflow translate và map tham số</td><td>user gõ <code>/dich</code> là chạy được, không cần sửa client</td></tr>
+    <tr><td class="id">US-A05</td><td>Platform admin</td><td>bấm Test với input mẫu ngay trên form</td><td>biết cấu hình chạy đúng trước khi mở cho mọi người</td></tr>
+    <tr><td class="id">US-A08</td><td>Platform admin</td><td>bật/tắt một command hoặc cả một feature</td><td>tạm ngưng một chức năng lỗi mà không phải xoá</td></tr>
+    <tr><td class="id">US-A09</td><td>Admin</td><td>xem ai đã sửa gì và khi nào, rồi khôi phục bản trước</td><td>truy vết và sửa sai nhanh</td></tr>
+    <tr><td class="id">US-A10</td><td>Platform admin</td><td>export toàn bộ cấu hình ra yaml và import lại</td><td>sao lưu, chuyển môi trường, hoặc để Claude session sinh cấu hình</td></tr>
+    <tr><td class="id">US-A11</td><td>Member</td><td>đổi mật khẩu của mình</td><td>thay mật khẩu tạm do admin cấp</td></tr>
+    <tr><td class="id">US-A12</td><td>Platform admin</td><td>tạo tenant mới và tạo tenant admin đầu tiên</td><td>onboard một công ty khách hàng</td></tr>
+    <tr><td class="id">US-A13</td><td>Platform admin</td><td>cấp cho tenant các feature theo gói đã bán</td><td>tenant chỉ thấy đúng những gì họ mua</td></tr>
+    <tr><td class="id">US-A14</td><td>Tenant admin</td><td>tạo group "Kế toán" và cấp feature "Kế toán" cho group đó</td><td>chỉ phòng kế toán thấy các lệnh kế toán</td></tr>
+    <tr><td class="id">US-A15</td><td>Tenant admin</td><td>xem một user đang thấy những command và agent nào, và vì sao</td><td>trả lời nhanh câu hỏi "sao tôi không thấy lệnh X"</td></tr>
+    <tr><td class="id">US-A16</td><td>Platform admin</td><td>đặt quota tháng cho tenant và xem chi phí theo tenant × feature</td><td>kiểm soát chi phí và tính tiền cho khách hàng</td></tr>
+    <tr><td class="id">US-A17</td><td>Tenant admin</td><td>nhận cảnh báo khi tenant dùng tới 80% và 100% quota</td><td>chủ động điều chỉnh trước khi bị tính phí vượt</td></tr>
+  </table></div>
+</section>
+
+<section id="s5">
+  <h2>5. Yêu cầu chức năng</h2>
+  <p><span class="pri must">MUST</span> bắt buộc cho v1 · <span class="pri should">SHOULD</span> nên có trong v1 · <span class="pri could">COULD</span> để sau</p>
+
+  <h3>5.1 Auth &amp; user</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">ADM-FR-01</td><td>Đăng nhập bằng <strong>mã công ty (tenant key) + username + password</strong>, trả về access token (JWT, 15 phút) và refresh token (30 ngày). JWT chứa <code>user_id</code>, <code>tenant_id</code>, <code>role</code></td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-02</td><td>Refresh: đổi refresh token lấy access token mới, xoay vòng refresh token (bản cũ mất hiệu lực)</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-03</td><td>Đăng xuất: thu hồi refresh token hiện tại</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-04</td><td>Admin tạo, sửa, khoá hoặc mở khoá user và đặt lại mật khẩu. <code>tenant_admin</code> chỉ thao tác trên user của tenant mình. Không có trang tự đăng ký</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-05</td><td>Khoá user thì thu hồi toàn bộ refresh token của user đó</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-06</td><td>User có cờ <code>must_change_password</code>. Khi bật, lần đăng nhập đầu bắt buộc phải đổi mật khẩu</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">ADM-FR-07</td><td>Sai mật khẩu 5 lần liên tiếp thì khoá tạm 15 phút</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">ADM-FR-08</td><td>2FA (TOTP) cho <code>platform_admin</code> và <code>tenant_admin</code></td><td><span class="pri should">SHOULD</span></td></tr>
+  </table></div>
+
+  <h3>5.2 Tenant &amp; group</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">ADM-FR-60</td><td>CRUD tenant (chỉ <code>platform_admin</code>): key (mã công ty), tên, trạng thái, giới hạn slot subscription <code>max_concurrent_sub</code> (trống = không giới hạn). Tạo tenant kèm tạo <code>tenant_admin</code> đầu tiên</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-61</td><td>Khoá tenant thì mọi user trong tenant bị khoá và thu hồi refresh token. Mở khoá thì khôi phục trạng thái trước đó của từng user</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-62</td><td>CRUD group trong tenant: key, tên (vi/en), mô tả. Thêm/bớt thành viên, hỗ trợ dán danh sách username để thêm hàng loạt. Không lồng group</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-63</td><td>Username duy nhất trong tenant (hai tenant có thể cùng có <code>an</code>)</td><td><span class="pri must">MUST</span></td></tr>
+  </table></div>
+
+  <h3>5.3 Catalog workflow</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">ADM-FR-10</td><td>CRUD workflow: key (slug), tên, <strong>mô tả (bắt buộc, 20–400 ký tự, nói rõ khi nào dùng)</strong>, loại app (<code>workflow</code> | <code>chat</code> | <code>agent</code>), base URL Dify, tham chiếu secret app-key, input schema, output field</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-11</td><td>Nhập input schema bằng tay (tên biến, kiểu, bắt buộc hay không, <strong>mô tả bắt buộc</strong>). Mô tả workflow và mô tả tham số được Agent Hub dùng nguyên văn làm tool cho model</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-12</td><td>Nút "Lấy schema từ Dify": gọi Dify để tự điền input schema từ app thật</td><td><span class="pri could">COULD</span></td></tr>
+    <tr><td class="id">ADM-FR-13</td><td>Không được xoá hoặc tắt workflow đang được command hoặc agent dùng. Hộp xác nhận liệt kê nơi đang dùng (đọc <code>hub.agent_workflows</code>)</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-14</td><td>Workflow <strong>chưa gắn</strong> vào command hay agent nào là hợp lệ. Danh sách có nhãn "Chưa gắn" và bộ lọc tương ứng</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-15</td><td>Cột "Đang được dùng bởi" liệt kê cả command (Admin) và agent (Agent Hub)</td><td><span class="pri must">MUST</span></td></tr>
+  </table></div>
+
+  <h3>5.4 Command</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">ADM-FR-20</td><td>CRUD command: tên, alias, mô tả, workflow, danh sách tham số, input map, output (field + kiểu hiển thị), chế độ sync/async, timeout, bật/tắt, <strong>feature (≥ 1, mặc định <code>core</code>)</strong></td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-21</td><td>Input map hỗ trợ các nguồn: <code>$args.&lt;tên&gt;</code>, <code>$selection</code> (đoạn bôi đen), <code>$page.url</code>, <code>$page.text</code>, <code>$attachment</code>, <code>$user.id</code>, <code>$tenant.id</code>, và giá trị hằng</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-22</td><td>Khi lưu phải validate: mọi input bắt buộc của workflow đều đã được map, và không map vào biến không tồn tại</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-23</td><td>Nút Test: nhập tham số mẫu, Admin nhờ Hub chạy thử <strong>bằng bản đang sửa (chưa cần lưu)</strong>, gửi cấu hình nháp trong body, rồi hiện kết quả, thời gian chạy và lỗi (nếu có). Có ô "Chạy với tư cách user…" để kiểm tra quyền</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-24</td><td>Tab "Ai dùng được": danh sách tenant, group và số user thấy command này, kèm lý do (qua feature nào, grant nào)</td><td><span class="pri should">SHOULD</span></td></tr>
+  </table></div>
+
+  <h3>5.5 Feature &amp; phân quyền</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">ADM-FR-30</td><td>CRUD feature (chỉ <code>platform_admin</code>): key, tên và mô tả (vi/en), icon, danh sách command, trạng thái <code>on</code> | <code>off</code> | <code>beta</code></td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-31</td><td><strong>Entitlement:</strong> <code>platform_admin</code> cấp hoặc thu hồi feature cho tenant</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-32</td><td><strong>Grant:</strong> <code>tenant_admin</code> cấp feature cho group hoặc user trong tenant, chỉ trong phạm vi feature đã được entitlement</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-33</td><td><strong>Kill switch:</strong> tắt feature thì mọi command bên trong biến khỏi menu trong ≤ 5 giây. Run đang chạy vẫn chạy xong</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-34</td><td>Trạng thái <code>beta</code>: feature chỉ hiện cho user thuộc group <code>beta-testers</code>, có nhãn "Beta" trong menu <code>/</code></td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">ADM-FR-35</td><td>Ma trận phân quyền feature × group, tick để cấp, thao tác hàng loạt</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">ADM-FR-36</td><td>Công cụ <strong>Kiểm tra quyền</strong>: chọn user, xem feature, command và agent user thấy được, kèm lý do. Dùng chung cho tab "Quyền hiệu lực" trên trang user</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-37</td><td>Trang group hiện cả agent được cấp cho group. Tenant admin cấp agent cho group ngay tại đây (dữ liệu ghi vào <code>hub.agent_grants</code> qua API của Hub)</td><td><span class="pri must">MUST</span></td></tr>
+  </table></div>
+
+  <h3>5.6 Quota &amp; chi phí</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">ADM-FR-40</td><td><code>platform_admin</code> đặt quota tháng cho tenant: số run, số token, số USD; chung cho cả tenant hoặc riêng từng feature. <strong>Mặc định không giới hạn</strong></td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-41</td><td><strong>Không chặn khi vượt quota.</strong> Khi đạt 80% và 100%, gửi cảnh báo cho <code>tenant_admin</code> (email + banner trong Admin). Phần vượt được Hub đánh dấu <code>overage</code> để tính phí riêng</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-42</td><td>Màn "Chi phí &amp; quota": KPI tháng theo tenant, thanh quota đã dùng / giới hạn, biểu đồ theo ngày, top feature, export CSV. <code>platform_admin</code> thấy cả chi phí thật (<code>cost_usd</code>) và số thu (<code>billable_usd</code>); <code>tenant_admin</code> chỉ thấy tenant mình và số thu</td><td><span class="pri must">MUST</span></td></tr>
+  </table></div>
+
+  <h3>5.7 Secret, audit, import/export</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">ADM-FR-50</td><td>CRUD secret (chỉ <code>platform_admin</code>): tên, giá trị (chỉ ghi, không đọc lại được), ghi chú. Mã hoá AES-256-GCM bằng master key lấy từ env</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-51</td><td>Mọi thay đổi cấu hình, user, group, quyền và quota đều ghi audit log: ai, lúc nào, tenant nào, thực thể nào, trước/sau. Secret chỉ ghi "đã đổi", không ghi giá trị. <code>tenant_admin</code> chỉ xem audit của tenant mình</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-52</td><td>Khôi phục một thực thể về trạng thái "trước" lấy từ audit log</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">ADM-FR-53</td><td>Mỗi lần lưu cấu hình hoặc quyền thì tăng <code>config_version</code> và gửi thông báo <code>config_changed</code> cho Hub (Postgres NOTIFY)</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-54</td><td>Export và import yaml cho workflow, command, feature, tenant, group và grant. Secret chỉ export tên, không export giá trị. Import có bước xem trước khác biệt (diff) trước khi áp dụng</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">ADM-FR-55</td><td><strong>Chống ghi đè</strong>: mỗi command, workflow, feature, group và user có trường <code>version</code>. Khi lưu phải gửi version đang sửa. Nếu lệch với DB thì trả 409 kèm bản mới nhất, và UI cho chọn Xem khác biệt / Ghi đè / Tải bản mới</td><td><span class="pri must">MUST</span></td></tr>
+  </table></div>
+</section>
+
+<section id="s6">
+  <h2>6. Luật nghiệp vụ</h2>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Luật</th></tr>
+    <tr><td class="id">ADM-BR-01</td><td>Tên command và alias là <strong>duy nhất toàn hệ thống</strong>, chỉ gồm chữ thường, số và <code>-</code>, không dấu. Ví dụ: <code>dich</code>, <code>kiemtra-hoadon</code></td></tr>
+    <tr><td class="id">ADM-BR-02</td><td>Một command trỏ tới <strong>đúng một</strong> workflow. Nhiều command và nhiều agent có thể dùng chung một workflow</td></tr>
+    <tr><td class="id">ADM-BR-04</td><td>Giá trị secret không bao giờ trả ra khỏi Admin qua API, UI hay export</td></tr>
+    <tr><td class="id">ADM-BR-05</td><td>Có 3 role: <code>platform_admin</code> (toàn hệ thống, kể cả Agent Studio), <code>tenant_admin</code> (trong tenant của mình, không vào Agent Studio), <code>member</code> (chỉ gọi <code>/auth/*</code> và đổi mật khẩu của mình)</td></tr>
+    <tr><td class="id">ADM-BR-06</td><td>Thực thể bị tắt thì vẫn lưu trong DB, nhưng Hub coi như không tồn tại: không hiện trong menu command, agent không gọi được</td></tr>
+    <tr><td class="id">ADM-BR-08</td><td>Admin không được tự khoá chính mình hoặc tự hạ role của mình. Luôn phải còn ít nhất một <code>platform_admin</code> active và mỗi tenant active còn ít nhất một <code>tenant_admin</code></td></tr>
+    <tr><td class="id">ADM-BR-09</td><td>Mọi truy vấn của <code>tenant_admin</code> bị giới hạn theo <code>tenant_id</code> của họ. Truy cập thực thể của tenant khác trả 404</td></tr>
+    <tr><td class="id">ADM-BR-10</td><td>Mỗi command phải thuộc ít nhất một feature. Feature <code>core</code> luôn tồn tại, được entitlement cho mọi tenant, không xoá được</td></tr>
+    <tr><td class="id">ADM-BR-11</td><td>User dùng được <code>/cmd</code> ⇔ cmd thuộc feature F ∧ F đang bật (hoặc <code>beta</code> và user thuộc <code>beta-testers</code>) ∧ F được entitlement cho tenant của user ∧ F được cấp cho user hoặc cho một group user thuộc về</td></tr>
+    <tr><td class="id">ADM-BR-12</td><td>Thu hồi entitlement của tenant thì các grant bên trong mất hiệu lực nhưng vẫn giữ lại, cấp lại entitlement thì grant có hiệu lực trở lại</td></tr>
+    <tr><td class="id">ADM-BR-13</td><td>Workflow không có quyền riêng. Quyền nằm ở nơi dùng nó: command (qua feature) hoặc agent (qua agent grant ở Hub)</td></tr>
+    <tr><td class="id">ADM-BR-14</td><td>Tenant không tự tạo command, workflow hay secret. Mọi tenant dùng chung catalog, key Dify và API key</td></tr>
+  </table></div>
+</section>
+
+<section id="s7">
+  <h2>7. Mô hình dữ liệu (schema <code>admin</code>)</h2>
+  <div class="note info">Dùng chung một Postgres. Admin <strong>ghi</strong> schema <code>admin</code>. Agent Hub có DB role <strong>chỉ đọc</strong> trên schema này để tính quyền, quota và chạy command/workflow. Admin có quyền <strong>chỉ đọc</strong> <code>hub.agent_workflows</code> (biết workflow nào đang được agent dùng), <code>hub.agent_grants</code> (hiện agent đã cấp cho group) và <code>hub.usage_logs</code> (màn Chi phí &amp; quota).</div>
+  <div class="table-scroll"><table>
+    <tr><th>Bảng</th><th>Trường chính</th></tr>
+    <tr><td><code>tenants</code></td><td>id, key (mã công ty, unique), name, active, max_concurrent_sub (null = không giới hạn), settings (jsonb), created_at, version</td></tr>
+    <tr><td><code>users</code></td><td>id, tenant_id, username, password_hash, display_name, role (<code>platform_admin</code> | <code>tenant_admin</code> | <code>member</code>), locale (vi|en), active, must_change_password, failed_logins, locked_until, totp_secret, version, created_at, updated_at · unique (tenant_id, username)</td></tr>
+    <tr><td><code>refresh_tokens</code></td><td>id, user_id, token_hash, expires_at, revoked_at, created_at, user_agent</td></tr>
+    <tr><td><code>groups</code></td><td>id, tenant_id, key, name (jsonb vi/en), description, version · unique (tenant_id, key)</td></tr>
+    <tr><td><code>group_members</code></td><td>group_id, user_id, added_by, added_at</td></tr>
+    <tr><td><code>secrets</code></td><td>id, name (unique), ciphertext, iv, last4, note, updated_by, updated_at</td></tr>
+    <tr><td><code>workflows</code></td><td>id, key (unique), name, description, app_type, base_url, secret_id, input_schema (jsonb, có mô tả từng tham số), output_field, enabled, version, timestamps</td></tr>
+    <tr><td><code>commands</code></td><td>id, name (unique), aliases (text[]), description, workflow_id, args (jsonb), input_map (jsonb), output (jsonb), mode, timeout_s, enabled, version, timestamps</td></tr>
+    <tr><td><code>features</code></td><td>id, key (unique), name (jsonb), description (jsonb), icon, status (<code>on</code> | <code>off</code> | <code>beta</code>), version</td></tr>
+    <tr><td><code>feature_commands</code></td><td>feature_id, command_id</td></tr>
+    <tr><td><code>feature_entitlements</code></td><td>feature_id, tenant_id, granted_by, granted_at, revoked_at</td></tr>
+    <tr><td><code>feature_grants</code></td><td>id, feature_id, tenant_id, subject_type (<code>group</code> | <code>user</code>), subject_id, granted_by, granted_at</td></tr>
+    <tr><td><code>tenant_quotas</code></td><td>id, tenant_id, feature_id (null = cả tenant), period (<code>month</code>), max_runs, max_tokens, max_usd, warn_pct (mặc định 80)</td></tr>
+    <tr><td><code>audit_log</code></td><td>id, tenant_id, actor_id, action, entity, entity_id, before (jsonb), after (jsonb), at</td></tr>
+    <tr><td><code>config_meta</code></td><td>config_version (int), updated_at</td></tr>
+  </table></div>
+<pre><code>tenants 1─* users ─*─* groups           (qua group_members)
+tenants 1─* tenant_quotas
+secrets 1─* workflows 1─* commands
+workflows 1─* hub.agent_workflows        (Hub ghi, Admin chỉ đọc)
+features *─* commands                   (qua feature_commands)
+features *─* tenants                    (qua feature_entitlements)
+features 1─* feature_grants ─▶ group | user
+users 1─* refresh_tokens</code></pre>
+</section>
+
+<section id="s8">
+  <h2>8. API</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Nhóm</th><th>Endpoint</th><th>Ai gọi</th></tr>
+    <tr><td>Auth</td><td><code>POST /auth/login</code> (tenant, username, password) · <code>POST /auth/refresh</code> · <code>POST /auth/logout</code> · <code>POST /auth/change-password</code> · <code>POST /auth/totp/*</code></td><td>Mọi client</td></tr>
+    <tr><td>Tenant</td><td><code>GET/POST /admin/tenants</code> · <code>PATCH /admin/tenants/:id</code> · <code>POST /admin/tenants/:id/lock</code></td><td>platform_admin</td></tr>
+    <tr><td>User</td><td><code>GET/POST /admin/users</code> · <code>PATCH /admin/users/:id</code> · <code>POST /admin/users/:id/reset-password</code> · <code>GET /admin/users/:id/effective-access</code></td><td>platform_admin, tenant_admin (trong tenant)</td></tr>
+    <tr><td>Group</td><td><code>GET/POST /admin/groups</code> · <code>PATCH/DELETE /admin/groups/:id</code> · <code>POST/DELETE /admin/groups/:id/members</code></td><td>platform_admin, tenant_admin</td></tr>
+    <tr><td>Catalog</td><td><code>GET/POST /admin/workflows</code> · <code>PATCH/DELETE /admin/workflows/:id</code> · <code>GET /admin/workflows/:id/usages</code></td><td>platform_admin</td></tr>
+    <tr><td>Command</td><td><code>GET/POST /admin/commands</code> · <code>PATCH/DELETE /admin/commands/:id</code> · <code>POST /admin/commands/:id/test</code></td><td>platform_admin</td></tr>
+    <tr><td>Feature</td><td><code>GET/POST /admin/features</code> · <code>PATCH/DELETE /admin/features/:id</code> · <code>PUT/DELETE /admin/features/:id/entitlements/:tenant_id</code></td><td>platform_admin</td></tr>
+    <tr><td>Grant</td><td><code>GET/POST/DELETE /admin/grants</code> (feature × group/user)</td><td>tenant_admin, platform_admin</td></tr>
+    <tr><td>Quota &amp; chi phí</td><td><code>GET/PUT /admin/tenants/:id/quotas</code> · <code>GET /admin/usage?tenant&amp;feature&amp;from&amp;to</code> (Admin đọc từ <code>hub.usage_logs</code>)</td><td>platform_admin; tenant_admin chỉ đọc tenant mình</td></tr>
+    <tr><td>Secret</td><td><code>GET /admin/secrets</code> (chỉ trả tên và last4) · <code>PUT /admin/secrets/:name</code></td><td>platform_admin</td></tr>
+    <tr><td>Khác</td><td><code>GET /admin/audit</code> · <code>POST /admin/audit/:id/restore</code> · <code>GET /admin/export</code> · <code>POST /admin/import?dry_run=1</code></td><td>platform_admin; tenant_admin chỉ đọc audit của tenant</td></tr>
+  </table></div>
+  <p>Mọi <code>PATCH</code> gửi kèm <code>version</code>; lệch thì trả <code>409 Conflict</code>. Endpoint <code>/test</code> của command nhận cấu hình nháp trong body và được Admin chuyển tiếp sang <code>POST hub/internal/test-run</code>, kèm service token và danh tính của admin đang thao tác. Cấp agent cho group được Admin UI gọi sang <code>hub/agent-grants</code> bằng JWT của tenant admin (Hub chỉ cho cấp agent đã được entitlement cho tenant đó).</p>
+</section>
+
+<section id="s9">
+  <h2>9. Màn hình</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Màn hình</th><th>Nội dung chính</th></tr>
+    <tr><td>Đăng nhập / đổi mật khẩu</td><td>Form mã công ty + username + password. Nếu <code>must_change_password</code> thì chuyển sang màn đổi mật khẩu</td></tr>
+    <tr><td>Tổng quan</td><td>platform_admin: số tenant, command, workflow, user; tenant vượt quota. tenant_admin: số user, group, mức dùng quota tháng. Các thay đổi gần đây</td></tr>
+    <tr><td>Features</td><td>Bảng feature với trạng thái, số command, số tenant được entitlement. Editor gồm command bên trong và tab Cấp quyền</td></tr>
+    <tr><td>Commands</td><td>Bảng command. Form gồm chọn workflow, input map, feature, khu Test ở bên phải, tab "Ai dùng được"</td></tr>
+    <tr><td>Workflows</td><td>Bảng catalog với nhãn "Chưa gắn". Form có trình sửa input schema (mô tả bắt buộc). Cột "Đang được dùng bởi" (command, agent)</td></tr>
+    <tr><td>Tenants</td><td>Danh sách tenant, số user, feature và agent được entitlement, quota, giới hạn slot subscription. Khoá tenant</td></tr>
+    <tr><td>Users</td><td>Bảng user (lọc theo role/trạng thái/group). Tạo user, reset mật khẩu, khoá/mở. Tab "Quyền hiệu lực"</td></tr>
+    <tr><td>Groups</td><td>Thành viên, feature được cấp, agent được cấp</td></tr>
+    <tr><td>Phân quyền</td><td>Ma trận feature × group, công cụ Kiểm tra quyền</td></tr>
+    <tr><td>Chi phí &amp; quota</td><td>KPI, thanh quota, biểu đồ theo ngày, top feature, export CSV</td></tr>
+    <tr><td>Secrets</td><td>Bảng tên, last4, ngày cập nhật. Nút "Thay giá trị"</td></tr>
+    <tr><td>Audit</td><td>Dòng thời gian thay đổi, xem diff trước/sau, nút Khôi phục</td></tr>
+  </table></div>
+</section>
+
+<section id="s10">
+  <h2>10. Yêu cầu phi chức năng</h2>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th></tr>
+    <tr><td class="id">ADM-NFR-01</td><td><strong>Bảo mật:</strong> mật khẩu hash bằng argon2id. Refresh token chỉ lưu dạng hash. JWT ký <strong>EdDSA (Ed25519)</strong>: Admin giữ private key, Hub verify bằng public key (xem ADR-0001). Master key mã hoá secret nằm trong env, không nằm trong DB</td></tr>
+    <tr><td class="id">ADM-NFR-02</td><td><strong>Lan truyền cấu hình và quyền:</strong> Hub nhận được thay đổi trong vòng ≤ 5 giây sau khi lưu</td></tr>
+    <tr><td class="id">ADM-NFR-03</td><td><strong>Hiệu năng:</strong> các trang CRUD phản hồi &lt; 300ms với vài nghìn bản ghi (nhiều tenant). Báo cáo chi phí một tháng &lt; 2 giây</td></tr>
+    <tr><td class="id">ADM-NFR-04</td><td><strong>Sẵn sàng:</strong> Admin chết thì Hub vẫn chạy bằng cấu hình và quyền đang cache, và vẫn verify JWT được. Chỉ không đăng nhập mới được và không sửa cấu hình được</td></tr>
+    <tr><td class="id">ADM-NFR-05</td><td><strong>Truy cập:</strong> Admin UI mở qua Internet cho tenant admin, bắt buộc HTTPS. API quản trị của <code>platform_admin</code> có thể giới hạn thêm theo IP/VPN</td></tr>
+    <tr><td class="id">ADM-NFR-06</td><td><strong>Migration:</strong> schema được quản lý bằng migration có version. Có seed tạo tenant <code>platform</code>, feature <code>core</code> và <code>platform_admin</code> đầu tiên từ env</td></tr>
+    <tr><td class="id">ADM-NFR-07</td><td><strong>Cách ly tenant:</strong> mọi truy vấn có <code>tenant_id</code> ở tầng repository, có test tự động chống truy cập chéo tenant</td></tr>
+  </table></div>
+</section>
+
+<section id="s11">
+  <h2>11. Tiêu chí nghiệm thu (các kịch bản chính)</h2>
+  <div class="ac"><b>AC-A01 · Đăng nhập</b><br>
+    Given user <code>an</code> của tenant <code>acme</code> đang active, When đăng nhập đúng mã công ty <code>acme</code> và mật khẩu, Then nhận access token (có <code>user_id</code>, <code>tenant_id</code>, <code>role</code>, hết hạn sau 15 phút) và refresh token.<br>
+    Given sai mật khẩu 5 lần, When thử lần thứ 6, Then bị từ chối với thông báo "tạm khoá đến HH:MM".</div>
+  <div class="ac"><b>AC-A02 · Khoá user</b><br>
+    Given user <code>an</code> đang đăng nhập trên Extension, When tenant admin khoá <code>an</code>, Then lần refresh tiếp theo thất bại, và chậm nhất sau 15 phút <code>an</code> mất quyền truy cập Hub.</div>
+  <div class="ac"><b>AC-A03 · Tạo command</b><br>
+    Given workflow <code>translate</code> có input bắt buộc <code>source_text</code>, <code>target_lang</code>, When tạo <code>/dich</code> mà chưa map <code>target_lang</code>, Then không lưu được và báo "thiếu input bắt buộc: target_lang".<br>
+    When map đủ, chọn feature <code>core</code> và lưu, Then trong ≤ 5 giây <code>/dich</code> xuất hiện trong menu <code>/</code> của mọi user.</div>
+  <div class="ac"><b>AC-A04 · Test command</b><br>
+    Given <code>/dich</code> đã lưu, When bấm Test với <code>text="hello", lang="vi"</code>, Then hiện kết quả trả về từ Dify cùng thời gian chạy. Nếu key sai thì hiện rõ lỗi của Dify (không nuốt lỗi).</div>
+  <div class="ac"><b>AC-A05 · Xoá workflow đang dùng</b><br>
+    Given <code>/dich</code> và agent "Trợ lý dịch" đang dùng workflow <code>translate</code>, When xoá <code>translate</code>, Then bị chặn và hiện danh sách gồm cả command lẫn agent đang dùng.</div>
+  <div class="ac"><b>AC-A06 · Secret</b><br>
+    When gọi <code>GET /admin/secrets</code> hoặc export, Then kết quả chỉ có tên và last4, tuyệt đối không có giá trị thật.</div>
+  <div class="ac"><b>AC-A07 · Hai admin cùng sửa</b><br>
+    Given admin A và B cùng mở <code>/dich</code> (version 7), When B lưu trước (version 8) rồi A bấm Lưu, Then A nhận thông báo xung đột kèm diff giữa bản của A và bản 8. Bản của B không bị ghi đè âm thầm.</div>
+  <div class="ac"><b>AC-A08 · Test bản nháp</b><br>
+    Given đang sửa input map của <code>/dich</code> nhưng chưa lưu, When bấm Test, Then kết quả phản ánh input map mới, và người dùng Chat vẫn chạy bản cũ cho đến khi Lưu.</div>
+  <div class="ac"><b>AC-A09 · Cách ly tenant</b><br>
+    Given tenant admin của <code>acme</code>, When gọi <code>GET /admin/users/:id</code> với id của user thuộc tenant <code>globex</code>, Then nhận 404.</div>
+  <div class="ac"><b>AC-A10 · Cấp feature theo group</b><br>
+    Given feature "Kế toán" (gồm <code>/kiemtra-hoadon</code>) được entitlement cho <code>acme</code>, When tenant admin cấp "Kế toán" cho group "Kế toán", Then trong ≤ 5 giây thành viên group thấy <code>/kiemtra-hoadon</code>, còn user khác trong <code>acme</code> không thấy và gõ lệnh thì nhận <code>CMD_NOT_FOUND</code>.</div>
+  <div class="ac"><b>AC-A11 · Thu hồi entitlement</b><br>
+    Given grant ở AC-A10, When platform admin thu hồi entitlement "Kế toán" của <code>acme</code>, Then <code>/kiemtra-hoadon</code> biến khỏi menu của cả group. When cấp lại entitlement, Then grant cũ có hiệu lực trở lại mà không phải cấp lại.</div>
+  <div class="ac"><b>AC-A12 · Vượt quota</b><br>
+    Given <code>acme</code> có quota 1.000 run/tháng và đã dùng 999, When user chạy thêm 2 run, Then cả 2 run đều chạy; tenant admin nhận cảnh báo 100%; run thứ 1.001 được đánh dấu <code>overage</code> trong báo cáo.</div>
+  <div class="ac"><b>AC-A13 · Workflow chưa gắn</b><br>
+    When builder khai báo workflow <code>report-tax</code> mà không tạo command hay gắn agent nào, Then lưu được, workflow có nhãn "Chưa gắn", và không user nào thấy hay chạy được nó.</div>
+</section>
+
+<section id="s12">
+  <h2>12. Ngoài phạm vi &amp; câu hỏi mở</h2>
+  <h3>Ngoài phạm vi v1</h3>
+  <ul>
+    <li>SSO, OAuth. Tenant tự tạo command, workflow hoặc mang key riêng (BYOK).</li>
+    <li>Group lồng nhau, đồng bộ group từ AD / Google Workspace.</li>
+    <li>Chặn cứng khi vượt quota (v1 chỉ cảnh báo).</li>
+    <li>Tạo workflow Dify từ Admin (việc này làm bằng Claude session).</li>
+  </ul>
+  <h3>Câu hỏi mở</h3>
+  <ol>
+    <li><s>JWT ký HS256 hay RS256?</s> Đã chốt 2026-10-01: <strong>EdDSA (Ed25519)</strong>.</li>
+    <li>Có cần môi trường nháp (draft/publish), hay lưu là áp dụng ngay, dựa vào Test và audit để khôi phục? v1 đang chọn lưu là áp dụng ngay.</li>
+    <li>Stack cụ thể (ngôn ngữ, framework UI) chưa chốt.</li>
+    <li>Kênh gửi cảnh báo quota ngoài email (webhook, Slack của tenant) có cần ở v1 không?</li>
+  </ol>
+</section>
+
+<footer>AI System · BA · Admin Service · v0.4 · 2026-10-01</footer>
+</div>
+</body>
+</html>

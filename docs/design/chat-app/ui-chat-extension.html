@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI/UX — Chat &amp; Extension</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .wf-scroll { overflow-x: auto; margin: 14px 0; }
+  .wf { min-width: 880px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--bg); font-size: 12.5px; line-height: 1.45; }
+  .wf.ext { min-width: 0; width: 400px; max-width: 100%; }
+  .row { display: flex; }
+  .side { width: 230px; flex: none; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 10px; }
+  .side .new { display: block; text-align: center; border: 1px solid var(--border); border-radius: 8px; padding: 6px; margin-bottom: 10px; background: var(--bg); }
+  .side .grp { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; margin: 10px 4px 4px; }
+  .side .it { padding: 6px 8px; border-radius: 6px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .side .it.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .side .foot { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 10px; display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .av { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; font-size: 11px; flex: none; }
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .top { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .sp { flex: 1; }
+  .thread { padding: 16px 20px; flex: 1; }
+  .msg { max-width: 640px; margin: 0 auto 14px; }
+  .u { background: var(--accent-soft); border-radius: 12px 12px 4px 12px; padding: 8px 12px; margin-left: auto; width: fit-content; max-width: 80%; }
+  .a { padding: 2px 0; }
+  .steps { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; background: var(--surface); }
+  .steps .s { display: flex; gap: 8px; align-items: center; margin: 3px 0; color: var(--muted); }
+  .steps .s.now { color: var(--text); font-weight: 600; }
+  .spin { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--accent); border-right-color: transparent; border-radius: 50%; }
+  .meta2 { color: var(--muted); font-size: 11.5px; margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .b { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .b.ok { background: var(--ok-soft); color: var(--ok); }
+  .b.warn { background: var(--warn-soft); color: var(--warn); }
+  .b.err { background: #fee2e2; color: #b91c1c; }
+  .b.info { background: var(--accent-soft); color: var(--accent); }
+  .b.off { background: var(--code-bg); color: var(--muted); }
+  .mono { font-family: ui-monospace, Consolas, monospace; }
+  .muted { color: var(--muted); }
+  .md table { border-collapse: collapse; margin: 6px 0; }
+  .md td, .md th { border: 1px solid var(--border); padding: 3px 8px; font-size: 12px; }
+  .card { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface); }
+  .card.err { border-color: #fca5a5; background: #fff5f5; }
+  :root[data-theme="dark"] .card.err { background: #2a1616; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .card.err { background: #2a1616; } }
+  .btn { display: inline-block; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 3px 10px; }
+  .btn.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip { display: inline-flex; gap: 4px; align-items: center; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; background: var(--surface); color: var(--muted); margin-right: 4px; }
+  .chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .composer-wrap { padding: 10px 20px 14px; position: relative; }
+  .composer { max-width: 680px; margin: 0 auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 8px 10px; }
+  .composer .ctx { margin-bottom: 6px; }
+  .composer .input { min-height: 34px; padding: 4px 2px; }
+  .composer .ghost { color: var(--muted); }
+  .composer .bar { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .send { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; }
+  .send.stop { background: var(--text); color: var(--bg); }
+  .menu { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); width: 680px; max-width: calc(100% - 40px); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.14); padding: 6px; margin-bottom: -4px; }
+  .menu .m { display: grid; grid-template-columns: 150px 1fr auto; gap: 10px; padding: 6px 8px; border-radius: 6px; align-items: center; }
+  .menu .m.on { background: var(--accent-soft); }
+  .menu .hd { color: var(--muted); font-size: 11px; padding: 4px 8px; }
+  .ask { border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; background: var(--accent-soft); }
+  .prog { height: 6px; border-radius: 999px; background: var(--code-bg); overflow: hidden; margin: 6px 0; }
+  .prog i { display: block; height: 6px; background: var(--accent); width: 45%; }
+  .caption { color: var(--muted); font-size: 13px; margin-top: -6px; }
+  .page { background: repeating-linear-gradient(0deg, var(--bg) 0 18px, var(--code-bg) 18px 19px); }
+  .hl { background: #fde68a; color: #1d1d1f; }
+  kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+</style>
+<script>
+(function () {
+  if (window.self === window.top) return;
+  document.documentElement.classList.add('embedded');
+  try { parent.postMessage({ aisysDoc: location.pathname }, '*'); } catch (e) {}
+  window.addEventListener('message', function (e) {
+    var t = e.data && e.data.aisysTheme;
+    if (!t) return;
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+  });
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="docnav">
+  <a href="../architecture.html">Kiến trúc</a>
+  <a href="../admin/ba-admin.html">Admin</a>
+  <a href="../admin/ui-admin.html">UI/UX Admin</a>
+  <a href="../agent-hub/ui-operations.html">UI Vận hành</a>
+  <a href="ui-chat-extension.html" class="current">UI Chat &amp; Extension</a>
+  <a href="../agent-hub/ui-agent-studio.html">UI Agent Studio</a>
+  <a href="../agent-hub/ba-agent-hub.html">Agent Hub</a>
+  <a href="../worker/ba-worker.html">Worker</a>
+</nav>
+
+<header>
+  <h1>Chat App &amp; Extension — Đặc tả UI/UX</h1>
+  <p>Giao diện người dùng cuối của Agent Hub: chat, command "/", ngữ cảnh trang, stream các bước, file đính kèm</p>
+  <div class="meta"><span class="tag">v0.4 · draft</span><span class="tag">2026-10-01</span><span class="tag">shadcn/ui · song ngữ VI/EN</span><span class="tag">Đáp ứng US-H01 → H08</span></div>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#s1">Phạm vi &amp; nguyên tắc</a></li>
+    <li><a href="#s2">Kiến trúc thông tin</a></li>
+    <li><a href="#s3">Chat App (web)</a></li>
+    <li><a href="#s4">Composer &amp; menu command</a></li>
+    <li><a href="#s5">Hiển thị câu trả lời</a></li>
+    <li><a href="#s6">Extension (side panel)</a></li>
+    <li><a href="#s7">Đăng nhập &amp; cài đặt</a></li>
+    <li><a href="#s8">Trạng thái &amp; lỗi</a></li>
+    <li><a href="#s9">Phím tắt</a></li>
+    <li><a href="#s10">Song ngữ</a></li>
+    <li><a href="#s11">Responsive &amp; accessibility</a></li>
+    <li><a href="#s12">Cấu trúc code &amp; câu hỏi mở</a></li>
+  </ol>
+</nav>
+
+<section id="s1">
+  <h2>1. Phạm vi &amp; nguyên tắc</h2>
+  <p>Có hai bề mặt, dùng <strong>chung một thư viện component</strong> (package <code>ui-chat</code>, dựng bằng shadcn) và chung API của Hub:</p>
+  <ul>
+    <li><strong>Chat App (web):</strong> desktop-first, có danh sách hội thoại, xem được trên điện thoại.</li>
+    <li><strong>Extension (Chrome side panel):</strong> một cột hẹp 360–480px, có thêm ngữ cảnh trang (đoạn bôi đen, nội dung trang).</li>
+  </ul>
+  <p>Từ v0.4, mỗi user thuộc một <strong>tenant</strong> (công ty). User đăng nhập bằng mã công ty, chỉ thấy hội thoại của mình và chỉ thấy command được cấp.</p>
+  <div class="table-scroll"><table>
+    <tr><th>#</th><th>Nguyên tắc</th><th>Thể hiện</th></tr>
+    <tr><td>C1</td><td><strong>Một ô nhập cho mọi thứ</strong></td><td>Gõ chữ bình thường là chat, gõ <code>/</code> là command. Không có tab hay nút riêng cho từng tính năng</td></tr>
+    <tr><td>C2</td><td><strong>Luôn biết hệ thống đang làm gì</strong></td><td>Các bước hiện trực tiếp ("Đang kiểm tra hoá đơn…"). Job dài có thanh tiến độ. Luôn có nút Dừng</td></tr>
+    <tr><td>C3</td><td><strong>Ngữ cảnh là thứ user chủ động chọn</strong></td><td>Đoạn bôi đen và nội dung trang hiện thành chip, bỏ được. Nội dung trang mặc định <em>không</em> gửi (theo HUB-BR-07)</td></tr>
+    <tr><td>C4</td><td><strong>Lỗi phải dẫn tới hành động</strong></td><td>Thẻ lỗi có câu dễ hiểu và nút [Thử lại], [Sửa lệnh] hoặc [Báo admin]</td></tr>
+    <tr><td>C5</td><td><strong>Không lộ chi tiết kỹ thuật</strong></td><td>Member thấy tên agent thân thiện và các bước. Provider, token, trace đầy đủ thì chỉ <code>platform_admin</code> thấy (trong Agent Studio › Vận hành)</td></tr>
+  </table></div>
+</section>
+
+<section id="s2">
+  <h2>2. Kiến trúc thông tin</h2>
+<pre><code>Chat App (web)                       Extension (side panel)
+├─ /login                            ├─ Đăng nhập
+├─ /c/new       (trang chào)         ├─ Chat (hội thoại hiện tại)
+├─ /c/:id       (hội thoại)          │   └─ ☰ danh sách hội thoại (sheet)
+└─ Cài đặt (dialog)                  └─ ⚙ Cài đặt (sheet)
+    ngôn ngữ · giao diện · tài khoản     + "Dùng nội dung trang" mặc định</code></pre>
+</section>
+
+<section id="s3">
+  <h2>3. Chat App (web)</h2>
+  <div class="wf-scroll"><div class="wf"><div class="row">
+    <div class="side">
+      <span class="new">＋ Hội thoại mới</span>
+      <div class="chip" style="width:100%;margin:0 0 6px">🔍 Tìm hội thoại</div>
+      <div class="grp">Hôm nay</div>
+      <div class="it on">Kiểm tra hoá đơn tháng 9</div>
+      <div class="it">Dịch hợp đồng Nhật</div>
+      <div class="grp">7 ngày qua</div>
+      <div class="it">Hàm chưa có test utils.ts</div>
+      <div class="it">Tóm tắt báo cáo Q3</div>
+      <div class="foot"><span class="av">AN</span>Nguyễn An <span class="sp"></span>⚙</div>
+    </div>
+    <div class="main">
+      <div class="top"><b>Kiểm tra hoá đơn tháng 9</b><span class="sp"></span><span class="muted">⋯</span></div>
+      <div class="thread">
+        <div class="msg"><div class="u">Kiểm tra 2 hoá đơn này, sai thì tạo thẻ Trello cho kế toán<br><span class="chip" style="margin-top:6px">📎 HD-0113.xml</span><span class="chip">📎 HD-0114.pdf</span></div></div>
+        <div class="msg a">
+          <div class="steps">
+            <div class="s">✓ Đã hiểu yêu cầu</div>
+            <div class="s">✓ Kiểm tra hoá đơn · <span class="muted">Trợ lý hoá đơn</span></div>
+            <div class="s now"><span class="spin"></span> Đang tạo thẻ Trello…</div>
+          </div>
+          <div class="md">Kết quả kiểm tra:
+            <table><tr><th>Hoá đơn</th><th>Kết quả</th><th>Ghi chú</th></tr>
+              <tr><td>HD-0113</td><td>✅ Hợp lệ</td><td>Khớp MISA</td></tr>
+              <tr><td>HD-0114</td><td>❌ Sai</td><td>Tổng tiền lệch 1.200.000đ</td></tr></table>
+          </div>
+        </div>
+      </div>
+      <div class="composer-wrap">
+        <div class="muted" style="max-width:680px;margin:0 auto 6px;font-size:11.5px;display:flex;gap:6px">ⓘ Công ty bạn đã dùng vượt hạn mức tháng này. Bạn vẫn dùng bình thường.<span class="sp"></span>✕</div>
+        <div class="composer">
+        <div class="input ghost">Nhắn tin hoặc gõ / để dùng lệnh…</div>
+        <div class="bar">📎 <span class="sp"></span><span class="muted" style="font-size:11px">Đang chạy… Esc để dừng</span><span class="send stop">■</span></div>
+      </div></div>
+    </div>
+  </div></div></div>
+  <p class="caption">Hình 3.1: Chat App. Sidebar hội thoại nhóm theo thời gian. Các bước hiện phía trên câu trả lời. Khi đang chạy, nút gửi đổi thành nút Dừng. Dòng xám trên composer là nhắc vượt quota (chỉ hiện khi tenant đã vượt, không chặn gửi).</p>
+  <div class="table-scroll"><table>
+    <tr><th>Vùng</th><th>Đặc tả</th></tr>
+    <tr><td>Sidebar</td><td>Rộng 260px, thu gọn được. Nút "Hội thoại mới" (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>). Ô tìm theo tiêu đề. Nhóm theo Hôm nay / 7 ngày qua / 30 ngày qua / Cũ hơn. Hover một mục thì hiện <code>⋯</code>: Đổi tên, Xoá (xác nhận). Tiêu đề tự đặt từ tin nhắn đầu (40 ký tự đầu), sửa được</td></tr>
+    <tr><td>Luồng tin</td><td>Rộng tối đa 720px, căn giữa. Tin của user căn phải, nền nhạt. Câu trả lời căn trái, không có khung (đọc như tài liệu). Tự cuộn xuống khi đang stream, <em>trừ khi</em> user đã cuộn lên, khi đó hiện nút "↓ Tin mới"</td></tr>
+    <tr><td>Trang chào (/c/new)</td><td>Lời chào theo tên, và 4 thẻ gợi ý lấy từ các command phổ biến <em>mà user được cấp</em> (<code>/dich</code>, <code>/tom</code>…) cùng ví dụ câu hỏi. User chưa được cấp lệnh nào thì chỉ hiện ví dụ câu hỏi. Click thẻ thì điền sẵn vào composer, không gửi ngay</td></tr>
+  </table></div>
+</section>
+
+<section id="s4">
+  <h2>4. Composer &amp; menu command</h2>
+  <div class="wf-scroll"><div class="wf" style="min-width:760px"><div class="main">
+    <div class="thread" style="height:190px"></div>
+    <div class="composer-wrap">
+      <div class="menu">
+        <div class="hd">Lệnh · ↑↓ chọn · Tab/Enter dùng · Esc đóng</div>
+        <div class="m on"><span class="mono"><b>/dich</b></span><span>Dịch đoạn văn sang ngôn ngữ khác</span><span class="mono muted">&lt;lang&gt; &lt;text…&gt;</span></div>
+        <div class="m"><span class="mono"><b>/di</b>en-giai</span><span>Diễn giải thuật ngữ</span><span class="mono muted">&lt;term&gt;</span></div>
+        <div class="m"><span class="mono">/tom</span><span>Tóm tắt nội dung trang</span><span class="mono muted">—</span></div>
+      </div>
+      <div class="composer">
+        <div class="ctx"><span class="chip on">✂ Đoạn đã chọn · 128 ký tự ✕</span></div>
+        <div class="input"><span class="mono">/di</span><span class="ghost">ch &lt;lang = vi&gt; &lt;text… | đoạn đã chọn&gt;</span></div>
+        <div class="bar">📎 <span class="sp"></span><span class="send">↑</span></div>
+      </div>
+    </div>
+  </div></div></div>
+  <p class="caption">Hình 4.1: gõ "/di" thì menu lọc gần đúng. Phần chữ mờ (ghost text) gợi ý cú pháp của lệnh đang chọn. Chip ngữ cảnh nằm ngay trong composer.</p>
+  <div class="table-scroll"><table>
+    <tr><th>Hành vi</th><th>Đặc tả</th></tr>
+    <tr><td>Mở menu</td><td>Gõ <code>/</code> ở đầu ô nhập. Danh sách lấy từ <code>GET /commands</code> (cache theo phiên, làm mới khi mở lại ứng dụng hoặc sau 5 phút). Hub chỉ trả <strong>command user được cấp</strong> (qua feature của user hoặc group). Menu không hiện lệnh bị khoá hay mờ: lệnh không có quyền thì không có trong danh sách. Lọc gần đúng theo tên, alias và mô tả (không phân biệt dấu). Cả alias cũng khớp: gõ <code>/tr</code> ra <code>/dich</code></td></tr>
+    <tr><td>Chọn lệnh</td><td><kbd>Tab</kbd> hoặc <kbd>Enter</kbd> hoàn tất tên lệnh và thêm một dấu cách. Sau đó ghost text hiện tham số tiếp theo ("&lt;lang = vi&gt;"), tự cập nhật khi user gõ đến tham số sau</td></tr>
+    <tr><td>Gửi command</td><td><kbd>Enter</kbd> gửi. Nếu thiếu tham số bắt buộc và không có fallback thì <em>không gửi</em>: ô nhập rung nhẹ và hiện "Thiếu &lt;text&gt;: nhập nội dung hoặc bôi đen một đoạn". Đây là kiểm tra phía client, Hub vẫn kiểm tra lại</td></tr>
+    <tr><td>Chat thường</td><td><kbd>Enter</kbd> gửi, <kbd>Shift</kbd>+<kbd>Enter</kbd> xuống dòng. Ô nhập tự giãn tối đa 8 dòng. Muốn gửi chữ bắt đầu bằng "/" thì gõ <code>//</code></td></tr>
+    <tr><td>Đính kèm</td><td>Nút 📎, kéo-thả vào vùng chat, hoặc dán ảnh. Chip file có tên, dung lượng, tiến độ upload và nút ✕. Tối đa 20MB/file, 5 file/tin. Sai định dạng hoặc quá dung lượng thì chip đỏ kèm lý do</td></tr>
+    <tr><td>Chip ngữ cảnh</td><td><span class="chip on">✂ Đoạn đã chọn · 128 ký tự</span> (chỉ Extension) và <span class="chip">🌐 Trang này</span> (bấm để bật/tắt). Hover chip thì xem trước 200 ký tự. Chip chỉ áp dụng cho <em>một</em> tin nhắn, gửi xong thì tự bỏ</td></tr>
+    <tr><td>Đang chạy</td><td>Nút gửi thành ■ Dừng (hoặc <kbd>Esc</kbd>). Trong lúc run đang chạy vẫn gõ trước được, nhưng không gửi được</td></tr>
+    <tr><td>Nháp</td><td>Nội dung đang gõ dở được lưu theo từng hội thoại (localStorage), chuyển qua lại hội thoại không mất</td></tr>
+    <tr><td>Quyền đổi giữa phiên</td><td>Quyền bị thu hồi thì Hub chặn ngay (≤ 5 giây), dù menu còn cache. Chạy lệnh đó sẽ nhận <code>CMD_NOT_FOUND</code>. Khi nhận mã này, client làm mới danh sách command ngay</td></tr>
+    <tr><td>Nhắc vượt quota</td><td>Khi tenant của user đã vượt quota tháng, phía trên composer hiện một dòng nhỏ màu xám: "Công ty bạn đã dùng vượt hạn mức tháng này. Bạn vẫn dùng bình thường." Không chặn gửi. Bấm ✕ để ẩn đến hết phiên</td></tr>
+  </table></div>
+</section>
+
+<section id="s5">
+  <h2>5. Hiển thị câu trả lời</h2>
+  <div class="wf-scroll"><div class="wf" style="min-width:760px"><div class="thread">
+    <div class="msg a">
+      <div class="chip" style="margin-bottom:6px"><span class="mono">/dich</span> · lang=en · từ đoạn đã chọn</div>
+      <div>Hello, see you again</div>
+      <div class="meta2"><span>⧉ Copy</span><span>↻ Chạy lại</span><span>1.1s</span></div>
+    </div>
+    <div class="msg a">
+      <div class="steps"><div class="s now"><span class="spin"></span> Đang kiểm tra hoá đơn (chạy nền)…</div>
+        <div class="prog"><i></i></div><div class="muted" style="font-size:11.5px">Đã xử lý 4/9 file · có thể rời trang, kết quả sẽ tự hiện</div></div>
+    </div>
+    <div class="msg a">
+      <div class="ask"><b>Cần xác nhận thêm:</b> Bạn muốn tạo thẻ Trello ở board nào?
+        <div style="margin-top:8px"><span class="chip">Kế toán</span><span class="chip">Mua hàng</span><span class="chip">Khác…</span></div></div>
+    </div>
+    <div class="msg a">
+      <div class="card err"><b>✕ Không chạy được /kiemtra-hoadon</b><br>Hệ thống xử lý quá lâu (hơn 60 giây).<div style="margin-top:8px"><span class="btn pri">↻ Thử lại</span> <span class="btn">Báo admin</span> <span class="muted" style="font-size:11px;margin-left:6px">Mã: TIMEOUT · run r_91c2</span></div></div>
+    </div>
+  </div></div></div>
+  <div class="table-scroll"><table>
+    <tr><th>Thành phần</th><th>Đặc tả</th></tr>
+    <tr><td>Khối các bước</td><td>Hiện ngay khi có <code>step.started</code>. Mỗi bước có icon trạng thái (spinner, ✓, ✕) và nhãn thân thiện lấy từ <code>label</code> của step. Xong run thì tự thu gọn thành một dòng "✓ 3 bước · 8.4s", bấm vào để mở lại. Command sync chạy dưới 1 giây thì không hiện khối này</td></tr>
+    <tr><td>Nội dung</td><td>Stream theo <code>delta</code>, render markdown GFM: bảng, code (có highlight và nút copy), link (mở tab mới), danh sách. Con trỏ nhấp nháy ở cuối trong lúc đang stream</td></tr>
+    <tr><td>Nhãn command</td><td>Kết quả của command có chip đầu: tên lệnh, tham số chính, nguồn ngữ cảnh. User nhờ đó biết kết quả đến từ lệnh nào</td></tr>
+    <tr><td>Job nền</td><td>Thanh tiến độ lấy từ <code>job.progress</code> (có percent thì hiện, không có thì chạy vô định). Dòng "có thể rời trang" chỉ hiện với job async. Nếu tab không được focus khi xong thì gửi browser notification (xin quyền ở lần đầu)</td></tr>
+    <tr><td>Hỏi lại (ask)</td><td>Thẻ viền màu primary. Có quick-reply chip nếu Hub gửi lựa chọn. Bấm chip thì gửi luôn câu trả lời. Có thể gõ tự do thay cho chip</td></tr>
+    <tr><td>Lỗi</td><td>Thẻ đỏ gồm tiêu đề, một câu giải thích theo mã lỗi (bảng ở mục 8), các nút hành động, và dòng nhỏ có mã lỗi và run id (để báo admin). [Báo admin] copy sẵn run id và mã lỗi vào clipboard</td></tr>
+    <tr><td>Hành động trên tin</td><td>Hover thì hiện: Copy · Chạy lại (gửi lại đúng yêu cầu đó) · (với command) Sửa lệnh (đưa lại vào composer)</td></tr>
+    <tr><td>Nhãn agent</td><td>Nếu Coordinator giao việc cho agent chuyên trách thì ghi tên hiển thị của agent trong khối các bước ("Trợ lý hoá đơn"). Member không thấy provider và token</td></tr>
+  </table></div>
+</section>
+
+<section id="s6">
+  <h2>6. Extension (side panel)</h2>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
+    <div class="wf page" style="min-width:0;flex:1 1 320px;padding:18px;height:420px">
+      <div style="max-width:320px;background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">
+        <b>Hợp đồng dịch vụ</b><p style="margin:6px 0">Điều 3. <span class="hl">Bên B có trách nhiệm bàn giao sản phẩm đúng hạn và chịu phạt 0,5% mỗi ngày chậm trễ.</span> Các bên…</p>
+        <span class="chip on" style="font-size:11px">✦ Hỏi AI</span>
+      </div>
+      <p class="muted" style="font-size:11.5px;max-width:320px">Trang web đang xem. Bôi đen xong thì nút nổi "✦ Hỏi AI" hiện cạnh đoạn chọn (COULD, có thể tắt trong Cài đặt)</p>
+    </div>
+    <div class="wf ext">
+      <div class="top"><span>☰</span><b>Hợp đồng dịch vụ</b><span class="sp"></span><span>＋</span><span>⚙</span></div>
+      <div class="thread" style="padding:12px">
+        <div class="msg"><div class="u"><span class="mono">/dich en</span></div></div>
+        <div class="msg a"><div class="chip" style="margin-bottom:6px"><span class="mono">/dich</span> · en · từ đoạn đã chọn</div>Party B shall deliver the product on time and bear a penalty of 0.5% per day of delay.<div class="meta2"><span>⧉</span><span>↻</span></div></div>
+      </div>
+      <div class="composer-wrap" style="padding:8px 10px 10px">
+        <div class="composer">
+          <div class="ctx"><span class="chip on">✂ 84 ký tự ✕</span><span class="chip">🌐 Trang này</span></div>
+          <div class="input ghost">Nhắn hoặc gõ /…</div>
+          <div class="bar">📎<span class="sp"></span><span class="send">↑</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="caption">Hình 6.1: Extension. Đoạn user bôi đen trên trang tự thành chip trong composer. Chip "Trang này" mặc định tắt.</p>
+  <div class="table-scroll"><table>
+    <tr><th>Hành vi</th><th>Đặc tả</th></tr>
+    <tr><td>Bố cục</td><td>Chrome Side Panel, một cột. Header: ☰ (mở sheet danh sách hội thoại), tiêu đề, ＋ (hội thoại mới), ⚙. Không có sidebar cố định</td></tr>
+    <tr><td>Bắt đoạn bôi đen</td><td>Content script lắng nghe việc chọn text (≥ 3 ký tự). Nếu panel đang mở thì chip "✂ Đoạn đã chọn" cập nhật ngay. Bôi đen đoạn khác thì chip thay theo. Bấm ✕ để bỏ. Không đọc được trang (chrome://, PDF viewer…) thì chip hiện gạch ngang kèm tooltip giải thích</td></tr>
+    <tr><td>Nội dung trang</td><td>Chip "🌐 Trang này" mặc định <em>tắt</em>. Bật thì gửi URL, tiêu đề và nội dung đọc được của trang. Command khai báo nguồn <code>$page.*</code> (như <code>/tom</code>) thì chip <em>tự bật</em> khi chọn lệnh đó, kèm tooltip "Lệnh này cần nội dung trang"</td></tr>
+    <tr><td>Hội thoại theo tab</td><td>Mặc định mỗi lần mở panel là tiếp tục hội thoại gần nhất. Tiêu đề hội thoại mới lấy từ tiêu đề trang</td></tr>
+    <tr><td>Nút nổi "Hỏi AI"</td><td>COULD. Hiện cạnh đoạn bôi đen, bấm thì mở panel với chip đã gắn sẵn. Tắt được trong Cài đặt</td></tr>
+    <tr><td>Phím tắt</td><td><kbd>Alt</kbd>+<kbd>J</kbd> (tuỳ chỉnh được) để mở/đóng panel và focus composer</td></tr>
+    <tr><td>Quyền</td><td>Chỉ xin <code>sidePanel</code>, <code>storage</code>, <code>activeTab</code> và <code>scripting</code>. Host permission là domain của Hub và Admin. Không xin <code>&lt;all_urls&gt;</code> thường trực</td></tr>
+  </table></div>
+</section>
+
+<section id="s7">
+  <h2>7. Đăng nhập &amp; cài đặt</h2>
+  <div class="wf-scroll"><div class="wf ext" style="padding:22px 20px">
+    <div style="text-align:center;margin-bottom:14px"><b style="font-size:15px">Đăng nhập</b><div class="muted" style="font-size:11.5px">AI System · Chat</div></div>
+    <div style="margin-bottom:10px"><div class="muted" style="font-size:11.5px;margin-bottom:3px">Mã công ty</div><div class="card mono" style="padding:6px 10px">acme</div><div style="font-size:11px;margin-top:3px;color:var(--accent)">Đổi công ty</div></div>
+    <div style="margin-bottom:10px"><div class="muted" style="font-size:11.5px;margin-bottom:3px">Tên đăng nhập</div><div class="card" style="padding:6px 10px">an.nguyen</div></div>
+    <div style="margin-bottom:10px"><div class="muted" style="font-size:11.5px;margin-bottom:3px">Mật khẩu</div><div class="card" style="padding:6px 10px">••••••••••</div></div>
+    <div class="card err" style="padding:6px 10px;font-size:12px;margin-bottom:10px">Sai mã công ty, tên đăng nhập hoặc mật khẩu</div>
+    <div style="text-align:center"><span class="btn pri" style="display:block;padding:6px">Đăng nhập</span></div>
+  </div></div>
+  <p class="caption">Hình 7.1: màn đăng nhập (web và Extension dùng chung). Ba ô: mã công ty, tên đăng nhập, mật khẩu.</p>
+  <ul>
+    <li><strong>Đăng nhập</strong> gọi <code>Admin /auth/login</code> với <strong>mã công ty (tenant key) + username + password</strong>. Giao diện giống bản của Admin (xem UI/UX Admin, mục 7.1). Username chỉ duy nhất trong một công ty, nên thiếu mã công ty thì không đăng nhập được.
+      <ul>
+        <li>Mã công ty được nhớ lại trên thiết bị (localStorage, hoặc <code>chrome.storage.local</code> với Extension) và điền sẵn ở lần sau. Có link "Đổi công ty" để sửa.</li>
+        <li>Sai bất kỳ ô nào thì chỉ báo chung: "Sai mã công ty, tên đăng nhập hoặc mật khẩu". Không nói ô nào sai.</li>
+        <li>Sai 5 lần thì khoá tạm 15 phút. User hoặc công ty bị khoá thì báo "Tài khoản đang bị khoá. Liên hệ quản trị viên công ty".</li>
+        <li>Lần đầu (<code>must_change_password</code>) thì đổi mật khẩu ngay trong app. Mật khẩu mới ≥ 10 ký tự.</li>
+        <li>Web lưu token trong bộ nhớ và refresh token trong cookie httpOnly. Extension lưu trong <code>chrome.storage.local</code>.</li>
+      </ul>
+    </li>
+    <li><strong>Hết phiên:</strong> tự refresh ngầm. Nếu refresh thất bại thì hiện modal đăng nhập và giữ nguyên hội thoại cùng bản nháp.</li>
+    <li><strong>Cài đặt</strong> (dialog trên web, sheet trên Extension):
+      <ul>
+        <li><em>Ngôn ngữ</em> VI/EN.</li>
+        <li><em>Giao diện</em> Sáng/Tối/Theo hệ thống.</li>
+        <li><em>Tài khoản</em>: tên, công ty, đổi mật khẩu, đăng xuất.</li>
+        <li>(Extension) <em>Nút nổi Hỏi AI</em> bật/tắt, <em>Phím tắt</em>.</li>
+        <li><em>Quyền riêng tư</em>: dòng cố định "Quản trị nền tảng có thể xem nội dung hội thoại để hỗ trợ và gỡ lỗi. Quản trị viên công ty bạn không xem được nội dung, chỉ xem mức sử dụng".</li>
+      </ul>
+    </li>
+  </ul>
+</section>
+
+<section id="s8">
+  <h2>8. Trạng thái &amp; lỗi</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Mã / tình huống</th><th>Câu hiển thị (VI)</th><th>Hành động</th></tr>
+    <tr><td><code>CMD_NOT_FOUND</code></td><td>Không có lệnh /dihc. Có phải bạn muốn: /dich? (chỉ gợi ý lệnh user được cấp)</td><td>Chip gợi ý, bấm để sửa lệnh. Lệnh có tồn tại nhưng user không có quyền cũng hiện câu này</td></tr>
+    <tr><td><code>CMD_MISSING_ARG</code></td><td>Lệnh /dich cần &lt;text&gt;: nhập nội dung hoặc bôi đen một đoạn</td><td>[Sửa lệnh]</td></tr>
+    <tr><td><code>NOT_CONFIGURED</code></td><td>Tính năng này chưa được cấu hình xong</td><td>[Báo admin]</td></tr>
+    <tr><td><code>UPSTREAM_ERROR</code></td><td>Dịch vụ AI đang gặp sự cố</td><td>[Thử lại]</td></tr>
+    <tr><td><code>ALL_PROVIDERS_EXHAUSTED</code></td><td>Hệ thống đang quá tải, hãy thử lại sau ít phút</td><td>[Thử lại] · [Báo admin]</td></tr>
+    <tr><td><code>BUDGET_EXCEEDED</code></td><td>Yêu cầu quá lớn để xử lý một lần. Hãy chia nhỏ ra</td><td>—</td></tr>
+    <tr><td><code>TIMEOUT</code></td><td>Hệ thống xử lý quá lâu</td><td>[Thử lại]</td></tr>
+    <tr><td><code>CANCELLED</code></td><td>Đã dừng</td><td>[Chạy lại] (hiện nhỏ, màu xám)</td></tr>
+    <tr><td>Mất mạng khi đang stream</td><td>Banner "Đang kết nối lại…", tự nối lại bằng <code>Last-Event-ID</code></td><td>Nối lại thành công thì ẩn banner</td></tr>
+    <tr><td>Chưa được cấp command nào</td><td>Menu "/" hiện "Bạn chưa được cấp lệnh nào. Liên hệ quản trị viên công ty"</td><td>—</td></tr>
+    <tr><td>Tenant vượt quota tháng</td><td>Dòng nhắc nhẹ trên composer (xem mục 4). Không phải lỗi, run vẫn chạy</td><td>[✕] ẩn</td></tr>
+    <tr><td>Tài khoản hoặc công ty bị khoá giữa phiên</td><td>Refresh thất bại, hiện modal đăng nhập kèm "Tài khoản đang bị khoá. Liên hệ quản trị viên công ty"</td><td>—</td></tr>
+    <tr><td>Hub không phản hồi</td><td>Banner đỏ "Không kết nối được máy chủ"</td><td>[Thử lại]</td></tr>
+  </table></div>
+  <p>Đang tải lịch sử thì hiện skeleton 3 tin. Hội thoại đã bị xoá thì hiện "Hội thoại không tồn tại" kèm nút về trang chào.</p>
+</section>
+
+<section id="s9">
+  <h2>9. Phím tắt</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Phím</th><th>Tác dụng</th></tr>
+    <tr><td><kbd>/</kbd> (ở đầu ô nhập)</td><td>Mở menu command</td></tr>
+    <tr><td><kbd>Enter</kbd> · <kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>Gửi · Xuống dòng</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Đóng menu, hoặc dừng run đang chạy</td></tr>
+    <tr><td><kbd>↑</kbd> (khi ô nhập trống)</td><td>Đưa lệnh gần nhất trở lại ô nhập để sửa</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd></td><td>Hội thoại mới</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>Tìm hội thoại (web)</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>J</kbd></td><td>Mở/đóng side panel (Extension)</td></tr>
+  </table></div>
+</section>
+
+<section id="s10">
+  <h2>10. Song ngữ</h2>
+  <ul>
+    <li><strong>Chuỗi giao diện:</strong> dùng i18n theo key (<code>chat.composer.placeholder</code>…). VI mặc định, EN là bản thứ hai. Thiếu bản EN thì dùng bản VI và ghi cảnh báo ở môi trường dev.</li>
+    <li><strong>Nội dung lấy từ cấu hình:</strong> mô tả command, mô tả tham số, tên hiển thị agent, nhãn step. Mỗi trường có bản <code>vi</code> và <code>en</code> (EN không bắt buộc, thiếu thì dùng VI). Hub trả đúng ngôn ngữ theo header <code>Accept-Language</code>.</li>
+    <li><strong>Câu trả lời của AI:</strong> theo ngôn ngữ user dùng trong tin nhắn, không theo ngôn ngữ giao diện.</li>
+    <li><strong>Định dạng:</strong> số, ngày và giờ theo locale. Mã lỗi và tên lệnh giữ nguyên.</li>
+    <li>Ngôn ngữ đã chọn lưu vào <code>users.locale</code>, nên đồng bộ giữa web, extension và Admin.</li>
+  </ul>
+</section>
+
+<section id="s11">
+  <h2>11. Responsive &amp; accessibility</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Kích thước</th><th>Chat App</th></tr>
+    <tr><td>≥ 1024px</td><td>Sidebar cố định cộng luồng tin</td></tr>
+    <tr><td>640–1023px</td><td>Sidebar thành sheet (☰)</td></tr>
+    <tr><td>&lt; 640px</td><td>Toàn màn hình. Composer dính đáy và né bàn phím ảo. Menu command chiếm toàn chiều rộng và mở từ dưới lên</td></tr>
+  </table></div>
+  <ul>
+    <li>Luồng tin là <code>role="log"</code> với <code>aria-live="polite"</code>. Chỉ đọc câu trả lời khi xong run, không đọc từng token.</li>
+    <li>Menu command là combobox đúng chuẩn ARIA (<code>aria-activedescendant</code>). Mọi thao tác đều làm được bằng bàn phím.</li>
+    <li>Icon trạng thái bước luôn đi kèm chữ. Tương phản chữ ≥ 4.5:1 ở cả hai theme. Chip có nhãn cho trình đọc màn hình ("Đoạn đã chọn, 128 ký tự, bấm để bỏ").</li>
+  </ul>
+</section>
+
+<section id="s12">
+  <h2>12. Cấu trúc code &amp; câu hỏi mở</h2>
+<pre><code>packages/ui-chat/        # dùng chung web + extension (shadcn + Tailwind)
+  Thread, Message, StepList, AskCard, ErrorCard, Composer, CommandMenu,
+  ContextChip, AttachmentChip, Markdown
+  hooks: useHubStream (SSE + reconnect), useCommands, useConversation
+apps/chat-web/           # Chat App: routing, sidebar, auth cookie
+apps/extension/          # WXT/MV3: side panel, content script (selection, page text)</code></pre>
+  <div class="table-scroll"><table>
+    <tr><th>shadcn component</th><th>Dùng cho</th></tr>
+    <tr><td>Command (cmdk) + Popover</td><td>Menu "/"</td></tr>
+    <tr><td>Textarea (tự giãn)</td><td>Composer</td></tr>
+    <tr><td>Sheet</td><td>Sidebar trên màn nhỏ, danh sách hội thoại và cài đặt của Extension</td></tr>
+    <tr><td>Dialog / AlertDialog</td><td>Cài đặt (web), xác nhận xoá hội thoại</td></tr>
+    <tr><td>Badge, Button, Tooltip, ScrollArea, Skeleton, Sonner</td><td>Chip, nút, gợi ý, cuộn, đang tải, toast</td></tr>
+    <tr><td>Collapsible</td><td>Khối các bước</td></tr>
+    <tr><td>Progress</td><td>Tiến độ job</td></tr>
+  </table></div>
+  <h3>Câu hỏi mở</h3>
+  <ol>
+    <li>Có cần Mobile app riêng (Expo), hay web responsive là đủ cho v1?</li>
+    <li>Có cho user <em>chia sẻ</em> một hội thoại cho đồng nghiệp cùng công ty xem không? (Hiện dữ liệu cách ly tuyệt đối theo tenant và user.)</li>
+    <li>Có cần nút đánh giá câu trả lời (👍/👎) để admin theo dõi chất lượng agent không?</li>
+    <li><s>Chat App biết tenant đã vượt quota bằng cách nào?</s> Đã chốt: sự kiện SSE <code>run.started</code> mang <code>quota: {state: ok|warn|over, pct}</code> (xem BA Agent Hub mục 9.2). Dòng nhắc hiện khi <code>state = over</code>.</li>
+    <li>Dòng nhắc chỉ hiện khi vượt 100%, hay cả khi chạm 80% như cảnh báo cho <code>tenant_admin</code>? Tạm chọn: chỉ khi vượt 100%.</li>
+    <li>Có cho đăng nhập bằng link chứa sẵn mã công ty (vd. <code>/login?tenant=acme</code>) không? Tạm chưa làm.</li>
+  </ol>
+</section>
+
+<footer>AI System · UI/UX · Chat &amp; Extension · v0.4</footer>
+</div>
+</body>
+</html>

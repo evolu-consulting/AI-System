@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BA — Worker</title>
+<link rel="stylesheet" href="../styles.css">
+<script>
+(function () {
+  if (window.self === window.top) return;
+  document.documentElement.classList.add('embedded');
+  try { parent.postMessage({ aisysDoc: location.pathname }, '*'); } catch (e) {}
+  window.addEventListener('message', function (e) {
+    var t = e.data && e.data.aisysTheme;
+    if (!t) return;
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+  });
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="docnav">
+  <a href="../architecture.html">Kiến trúc</a>
+  <a href="../admin/ba-admin.html">Admin</a>
+  <a href="../admin/ui-admin.html">UI/UX Admin</a>
+  <a href="../agent-hub/ui-operations.html">UI Vận hành</a>
+  <a href="../chat-app/ui-chat-extension.html">UI Chat &amp; Extension</a>
+  <a href="../agent-hub/ui-agent-studio.html">UI Agent Studio</a>
+  <a href="../agent-hub/ba-agent-hub.html">Agent Hub</a>
+  <a href="ba-worker.html" class="current">Worker</a>
+</nav>
+
+<header>
+  <h1>Worker — Business Requirements</h1>
+  <p>Chạy việc dài hoặc nặng ngoài luồng request, và là nơi chạy các CLI subscription (Claude Code, Codex, Gemini)</p>
+  <div class="meta"><span class="tag">v0.4 · draft</span><span class="tag">2026-10-01</span><span class="tag">Mã yêu cầu: WRK-*</span></div>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#s1">Mục đích &amp; phạm vi</a></li>
+    <li><a href="#s2">Loại job</a></li>
+    <li><a href="#s3">Vòng đời job</a></li>
+    <li><a href="#s4">Subscription Pool</a></li>
+    <li><a href="#s5">Yêu cầu chức năng</a></li>
+    <li><a href="#s6">Luật nghiệp vụ</a></li>
+    <li><a href="#s7">Dữ liệu &amp; giao tiếp</a></li>
+    <li><a href="#s8">Vận hành (runbook)</a></li>
+    <li><a href="#s9">Yêu cầu phi chức năng</a></li>
+    <li><a href="#s10">Tiêu chí nghiệm thu</a></li>
+    <li><a href="#s11">Ngoài phạm vi &amp; câu hỏi mở</a></li>
+  </ol>
+</nav>
+
+<section id="s1">
+  <h2>1. Mục đích &amp; phạm vi</h2>
+  <p><strong>Vấn đề cần giải quyết.</strong> Có hai loại việc không nên chạy trong request HTTP của Hub:</p>
+  <ul>
+    <li><strong>Việc chạy lâu</strong>, như workflow Dify mất vài phút hoặc agent làm nhiều bước.</li>
+    <li><strong>Việc gắn với một máy cụ thể</strong>: CLI subscription đã đăng nhập sẵn trên đúng một máy và chỉ chạy được 1–2 job cùng lúc.</li>
+  </ul>
+  <p>Worker lấy job từ hàng đợi, chạy, báo tiến độ, ghi kết quả. Nó cũng quản lý quota của các tài khoản subscription, và chia slot subscription công bằng giữa các tenant.</p>
+  <p><strong>Quan hệ với Hub:</strong> Worker dùng chung codebase với Hub nhưng chạy thành <strong>process riêng</strong>, có thể trên máy riêng (máy đã đăng nhập CLI). Worker không có API công khai: nó chỉ nói chuyện với Hub qua Redis và DB, và gọi MCP catalog của Hub.</p>
+  <p><strong>Worker không làm:</strong> không quyết định dùng agent nào (việc của Coordinator), không tự đọc cấu hình agent, không kiểm tra quyền hay quota của user (Hub đã kiểm tra trước khi tạo job). Mọi thông tin cần để chạy đã nằm sẵn trong payload của job, kể cả <code>tenant_id</code>.</p>
+</section>
+
+<section id="s2">
+  <h2>2. Loại job</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Type</th><th>Nguồn tạo</th><th>Việc</th><th>Retry tự động</th></tr>
+    <tr><td><code>workflow.async</code></td><td>Command <code>mode=async</code> hoặc agent <code>dify-workflow</code> chạy lâu</td><td>Gọi Dify workflow (dùng chế độ streaming hoặc poll), đẩy tiến độ về</td><td>Tối đa 2 lần, chỉ khi lỗi mạng hoặc 5xx</td></tr>
+    <tr><td><code>agent.cli</code></td><td>Agent runtime <code>agentic-cli</code></td><td>Chạy Claude Code (Agent SDK), Codex hoặc Gemini CLI với prompt, tool và MCP được cấp</td><td>Không retry. Hết quota thì dự phòng sang bước sau của profile</td></tr>
+    <tr><td><code>maint.probe</code></td><td>Lịch định kỳ (5 phút)</td><td>Kiểm tra từng CLI còn đăng nhập và còn quota không, rồi cập nhật <code>provider_state</code></td><td>—</td></tr>
+    <tr><td><code>maint.cleanup</code></td><td>Lịch định kỳ (mỗi giờ)</td><td>Xoá thư mục làm việc quá hạn và job treo</td><td>—</td></tr>
+  </table></div>
+</section>
+
+<section id="s3">
+  <h2>3. Vòng đời job</h2>
+<pre><code>            ┌──────────── cancel ─────────────┐
+            │                                 ▼
+ queued ──▶ running ──▶ succeeded         cancelled
+   ▲          │  │
+   │          │  ├──▶ failed      (lỗi không retry được / hết số lần retry)
+   │          │  ├──▶ timed_out   (vượt timeout_s)
+   │  retry   │  └──▶ fallback ──▶ tạo job mới với bước kế tiếp của profile
+   └──────────┘                    (job cũ = failed, reason=quota | tenant_slots)
+
+ heartbeat mất &gt; 60s khi đang running  ──▶  orphaned ──▶ workflow.async: requeue
+                                                        agent.cli:      failed</code></pre>
+</section>
+
+<section id="s4">
+  <h2>4. Subscription Pool</h2>
+  <p>Mỗi provider subscription (claude-sub, codex-sub, gemini-sub) tương ứng với <strong>một tài khoản đã đăng nhập trên máy Worker</strong>. Mỗi provider có <code>max_concurrency</code> slot (khai báo ở Agent Studio › Models › Providers, mặc định 1).</p>
+  <p>Pool <strong>dùng chung cho mọi tenant</strong>. Để một tenant không chiếm hết slot, mỗi tenant có thêm giới hạn <code>tenants.max_concurrent_sub</code>: số job subscription tenant đó được chạy cùng lúc, tính chung mọi provider subscription. <code>null</code> = không giới hạn (mặc định trong giai đoạn test). Giá trị này sửa ở Admin › Tenants.</p>
+  <div class="table-scroll"><table>
+    <tr><th>Trạng thái</th><th>Nghĩa</th><th>Chuyển sang khi</th></tr>
+    <tr><td><code>ok</code></td><td>Còn slot trống, nhận job được</td><td>—</td></tr>
+    <tr><td><code>busy</code></td><td>Mọi slot đang chạy. Job mới phải chờ trong hàng đợi của provider</td><td>Một job xong thì về <code>ok</code></td></tr>
+    <tr><td><code>cooldown</code></td><td>Hết quota. Không nhận job đến <code>cooldown_until</code></td><td>Nhận diện được thông báo hết quota hoặc rate limit từ CLI</td></tr>
+    <tr><td><code>logged_out</code></td><td>Phiên đăng nhập CLI đã hết hạn</td><td>Probe phát hiện ra. Cần người đăng nhập lại (runbook)</td></tr>
+    <tr><td><code>error</code></td><td>CLI lỗi lặp lại (không cài, crash…)</td><td>3 lần lỗi liên tiếp</td></tr>
+  </table></div>
+  <div class="note info"><strong>Nguyên tắc dự phòng:</strong> nếu provider ở trạng thái <code>cooldown</code>, <code>logged_out</code> hoặc <code>error</code>, hoặc đang <code>busy</code> quá <code>max_wait_s</code> (mặc định 30 giây), thì Worker <strong>không chờ</strong> mà chuyển job sang bước kế tiếp của profile. Bước kế tiếp có thể là CLI khác, hoặc chính Agent SDK chạy bằng API key. Tenant đã dùng hết <code>max_concurrent_sub</code> được xử lý như provider <code>busy</code> <em>với riêng tenant đó</em>: chờ tối đa <code>max_wait_s</code> rồi dự phòng (<code>reason=tenant_slots</code>). Profile luôn có bước API cuối nên job không bị kẹt.</div>
+  <div class="note warn"><strong>Lưu ý:</strong> cần xác nhận loại gói subscription đang dùng cho phép phục vụ nhiều khách hàng.</div>
+</section>
+
+<section id="s5">
+  <h2>5. Yêu cầu chức năng</h2>
+  <p><span class="pri must">MUST</span> bắt buộc cho v1 · <span class="pri should">SHOULD</span> nên có trong v1 · <span class="pri could">COULD</span> để sau</p>
+
+  <h3>5.1 Hàng đợi &amp; thực thi</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">WRK-FR-01</td><td>Lấy job từ Redis queue theo loại. Worker khai báo mình phục vụ những loại job và provider nào khi khởi động</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-02</td><td>Cập nhật <code>hub.jobs</code> khi chuyển trạng thái. Gửi heartbeat mỗi 15 giây khi đang chạy</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-03</td><td>Đẩy sự kiện <code>job.progress</code> và <code>delta</code> lên kênh Redis <code>run:&lt;run_id&gt;</code> để Hub chuyển tiếp qua SSE</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-04</td><td>Tôn trọng <code>timeout_s</code> của job. Quá hạn thì dừng tiến trình và đặt <code>timed_out</code></td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-05</td><td>Nghe tín hiệu huỷ (kênh <code>cancel:&lt;job_id&gt;</code>) và dừng tiến trình trong ≤ 5 giây (dừng nhẹ trước, ép dừng sau)</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-06</td><td>Retry theo chính sách của từng loại job (mục 2), với backoff 2 giây rồi 8 giây</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-07</td><td>Gọi Dify (<code>workflow.async</code>) với <code>user = &lt;tenant&gt;:&lt;user_id&gt;</code> để truy vết. Ghi token và chi phí từ metadata Dify nếu có, không có thì ghi thời gian chạy</td><td><span class="pri must">MUST</span></td></tr>
+  </table></div>
+
+  <h3>5.2 Agent CLI</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">WRK-FR-10</td><td>Claude Code chạy qua <strong>Claude Agent SDK</strong>. Codex và Gemini chạy qua CLI ở chế độ không tương tác, đọc output dạng JSON stream</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-11</td><td>Mỗi job có một thư mục làm việc riêng <code>work/&lt;job_id&gt;/</code>. File đính kèm của run được copy vào đây. CLI bị giới hạn trong thư mục này</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-12</td><td>Áp đúng danh sách tool được phép trong payload. Mặc định không có Bash và không có quyền ghi ra ngoài thư mục làm việc</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-13</td><td>Kết nối MCP tools của Hub bằng token của job (gắn <code>tenant_id</code> và <code>user_id</code>, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (<code>hub.agent_workflows</code>); tên tool là key của workflow. Chỉ những tool có trong payload</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-14</td><td>Giữ ngữ cảnh: có <code>session_id</code> cũ cùng provider thì resume, xong thì ghi <code>session_id</code> mới vào <code>hub.cli_sessions</code></td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-15</td><td>Nhận diện hết quota hoặc rate limit từ output/mã lỗi của từng CLI. Có thông tin thời điểm reset thì đặt cooldown đến lúc đó, không có thì mặc định 30 phút</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-16</td><td>Chuyển tiến trình của CLI (tool đang gọi, file đang đọc) thành <code>job.progress</code> có nhãn dễ hiểu</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">WRK-FR-17</td><td>Ghi usage vào <code>hub.usage_logs</code> cho mọi job: <code>tenant_id</code>, <code>feature_id</code>, provider, model, token vào/ra, <code>billing</code>, <code>cost_usd</code>, <code>billable_usd</code>. Với subscription: <code>billing=subscription</code>, <code>cost_usd=0</code>, vẫn ghi đủ token để tính <code>billable_usd</code> theo <code>hub.price_book</code>. Chưa có đơn giá thì để <code>billable_usd</code> trống, tính sau</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-18</td><td>File agent tạo ra trong thư mục <code>out/</code> được đính kèm vào câu trả lời</td><td><span class="pri could">COULD</span></td></tr>
+  </table></div>
+
+  <h3>5.3 Pool &amp; bảo trì</h3>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
+    <tr><td class="id">WRK-FR-20</td><td>Giới hạn số job chạy đồng thời theo <code>max_concurrency</code> của từng provider</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-21</td><td>Dự phòng: tạo job mới với bước kế tiếp của profile (có trong payload). Gửi <code>step.finished{status: fallback, reason}</code> để trace ghi lại</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-22</td><td>Probe định kỳ từng CLI (đã đăng nhập chưa, còn quota không) rồi ghi <code>hub.provider_state</code>. Agent Studio (Models và Vận hành) đọc trạng thái này để hiển thị</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">WRK-FR-23</td><td>Dọn thư mục làm việc sau 24 giờ. Đánh dấu job <code>orphaned</code> khi mất heartbeat quá 60 giây</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-24</td><td>Giới hạn slot subscription theo tenant: đếm job subscription đang chạy của từng tenant (bộ đếm Redis <code>sub_slots:&lt;tenant_id&gt;</code>), không cho vượt <code>tenants.max_concurrent_sub</code>. <code>null</code> = không giới hạn. Slot trả lại khi job xong, lỗi, huỷ hoặc orphaned. Đọc giới hạn từ <code>admin.tenants</code> (chỉ đọc, cache ≤ 5 giây)</td><td><span class="pri must">MUST</span></td></tr>
+  </table></div>
+</section>
+
+<section id="s6">
+  <h2>6. Luật nghiệp vụ</h2>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Luật</th></tr>
+    <tr><td class="id">WRK-BR-01</td><td>Tài khoản subscription <strong>dùng chung cho mọi tenant</strong>, tính phí theo token (<code>billable_usd</code>). Payload mang <code>tenant_id</code> và <code>user_id</code> để truy vết và tính phí. Lưu ý: xác nhận loại gói đang dùng cho phép phục vụ nhiều khách hàng</td></tr>
+    <tr><td class="id">WRK-BR-02</td><td>Không truyền secret của hệ thống (DB, master key, API key khác) vào môi trường của tiến trình CLI. Chỉ truyền đúng thứ provider cần</td></tr>
+    <tr><td class="id">WRK-BR-03</td><td>Khi dự phòng sang provider khác thì <strong>không thể</strong> resume session cũ. Job mới nhận tóm tắt N message gần nhất thay cho session</td></tr>
+    <tr><td class="id">WRK-BR-04</td><td>Không retry <code>agent.cli</code> tự động, vì agent có thể đã làm dở việc có tác dụng phụ. Chỉ dự phòng khi lỗi xảy ra <em>trước khi</em> agent bắt đầu gọi tool</td></tr>
+    <tr><td class="id">WRK-BR-05</td><td>Job của cùng một conversation và cùng agent chạy tuần tự, để không ghi đè session</td></tr>
+    <tr><td class="id">WRK-BR-06</td><td>Job chỉ chạm dữ liệu của đúng tenant trong payload: file đính kèm, session CLI và MCP token đều gắn <code>tenant_id</code>. Không resume session của tenant khác</td></tr>
+  </table></div>
+</section>
+
+<section id="s7">
+  <h2>7. Dữ liệu &amp; giao tiếp</h2>
+<pre><code>HUB ──enqueue(job)──▶ Redis queue ──▶ WORKER
+HUB ◀──pub run:&lt;run_id&gt; (progress/delta)── WORKER
+HUB ──pub cancel:&lt;job_id&gt;──────────────────▶ WORKER
+                       Postgres hub.*  ◀──── WORKER ghi jobs / cli_sessions / usage_logs (có tenant_id) / provider_state
+                       Postgres admin.tenants ──▶ WORKER đọc max_concurrent_sub (chỉ đọc)
+                       Redis sub_slots:&lt;tenant_id&gt; ◀──▶ WORKER đếm slot subscription theo tenant
+WORKER(agent CLI) ──MCP (token job)──▶ HUB /mcp ──▶ Dify workflows (workflow gắn cho agent)
+WORKER(workflow.async) ──user=&lt;tenant&gt;:&lt;user_id&gt;──▶ Dify</code></pre>
+  <h3>Payload job <code>agent.cli</code> (ví dụ)</h3>
+<pre><code>{
+  "job_id": "j_123", "run_id": "r_456",
+  "tenant_id": "t_acme", "user_id": "u_1", "feature_id": null,
+  "conversation_id": "c_9", "agent_key": "dev-helper",
+  "profile_steps": [
+    {"provider": "codex-sub"}, {"provider": "claude-sub"},
+    {"provider": "anthropic-api", "model": "claude-opus-5"}
+  ],
+  "step_index": 0,
+  "prompt": "...", "system_prompt": "...",
+  "allowed_tools": ["Read", "Grep", "Edit"],
+  "mcp": {"url": "https://hub/mcp", "token": "job-scoped", "tools": ["translate_text", "check_invoice"]},
+  "attachments": ["att_1"], "resume_session": "sess_abc",
+  "timeout_s": 600
+}</code></pre>
+  <p><code>feature_id</code> có giá trị khi job đến từ command (feature chứa command đó). Job của agent chat để <code>null</code>. <code>mcp.tools</code> là key của các workflow được gắn cho agent.</p>
+</section>
+
+<section id="s8">
+  <h2>8. Vận hành (runbook)</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Tình huống</th><th>Xử lý</th></tr>
+    <tr><td>Cài máy Worker mới</td><td>Cài các CLI và đăng nhập bằng tay từng cái (<code>claude</code>, <code>codex</code>, <code>gemini</code>) dưới user chạy Worker. Khai báo provider trong Agent Studio › Models › Providers. Chạy probe để xác nhận <code>ok</code></td></tr>
+    <tr><td>Provider báo <code>logged_out</code></td><td>SSH vào máy Worker và đăng nhập lại CLI tương ứng. Trong lúc chờ, job tự dự phòng sang API</td></tr>
+    <tr><td>Provider <code>cooldown</code> liên tục</td><td>Giảm <code>max_concurrency</code>, thêm tài khoản, hoặc đưa bước API lên trước trong profile</td></tr>
+    <tr><td>Một tenant chiếm gần hết slot subscription</td><td>Đặt <code>max_concurrent_sub</code> cho tenant đó ở Admin › Tenants. Xem slot theo tenant ở Agent Studio › Vận hành › Jobs &amp; Worker (tab pool)</td></tr>
+    <tr><td>Job treo</td><td>Xem <code>hub.jobs</code> theo <code>heartbeat_at</code>. Job cleanup tự đánh dấu orphaned. Có thể huỷ tay từ trace</td></tr>
+  </table></div>
+</section>
+
+<section id="s9">
+  <h2>9. Yêu cầu phi chức năng</h2>
+  <div class="table-scroll"><table>
+    <tr><th>ID</th><th>Yêu cầu</th></tr>
+    <tr><td class="id">WRK-NFR-01</td><td><strong>Thời gian nhận job:</strong> job bắt đầu chạy trong ≤ 2 giây sau khi vào queue (khi còn slot)</td></tr>
+    <tr><td class="id">WRK-NFR-02</td><td><strong>Cách ly:</strong> job này không đọc được thư mục làm việc của job khác, kể cả cùng tenant. Khi mở cho nhiều người hơn thì nâng lên container riêng cho từng job</td></tr>
+    <tr><td class="id">WRK-NFR-03</td><td><strong>Phục hồi:</strong> Worker khởi động lại thì không mất job <code>queued</code>. Job <code>running</code> được xử lý theo luật orphaned. Bộ đếm slot theo tenant được dựng lại từ các job đang <code>running</code></td></tr>
+    <tr><td class="id">WRK-NFR-04</td><td><strong>Quan sát:</strong> log có <code>job_id</code>, <code>run_id</code> và <code>tenant_id</code>. Lưu stdout/stderr của CLI 7 ngày để debug</td></tr>
+    <tr><td class="id">WRK-NFR-05</td><td><strong>Quy mô v1:</strong> 1 máy Worker, mỗi subscription 1–2 slot, 5 job <code>workflow.async</code> chạy đồng thời</td></tr>
+  </table></div>
+</section>
+
+<section id="s10">
+  <h2>10. Tiêu chí nghiệm thu</h2>
+  <div class="ac"><b>AC-W01 · Dự phòng khi hết quota</b><br>
+    Given <code>codex-sub</code> đang <code>cooldown</code>, When nhận job <code>agent.cli</code> có profile codex-sub → claude-sub, Then job chạy bằng claude-sub, và trace có một step <code>fallback(reason=quota)</code>.</div>
+  <div class="ac"><b>AC-W02 · Nhận diện hết quota giữa chừng</b><br>
+    Given claude-sub trả thông báo rate limit ngay khi bắt đầu, When Worker nhận diện được, Then provider chuyển sang <code>cooldown</code> kèm <code>cooldown_until</code>, và job được dự phòng sang bước API.</div>
+  <div class="ac"><b>AC-W03 · Huỷ</b><br>
+    Given job <code>agent.cli</code> đang chạy, When Hub gửi tín hiệu huỷ, Then trong ≤ 5 giây tiến trình không còn, job có trạng thái <code>cancelled</code>, và slot được trả lại (cả slot provider và slot tenant).</div>
+  <div class="ac"><b>AC-W04 · Giữ session</b><br>
+    Given lượt 1 của conversation c_9 với agent dev-helper chạy bằng claude-sub, When đến lượt 2 cùng provider, Then agent resume đúng session cũ (nhớ được ngữ cảnh lượt 1).</div>
+  <div class="ac"><b>AC-W05 · Cách ly thư mục</b><br>
+    When agent cố đọc <code>../</code> ra ngoài thư mục làm việc, Then bị từ chối, và step ghi lỗi quyền.</div>
+  <div class="ac"><b>AC-W06 · Worker crash</b><br>
+    Given job <code>workflow.async</code> đang chạy thì Worker bị kill, When đã quá 60 giây không có heartbeat, Then job được đưa lại vào queue và chạy xong ở lần sau.</div>
+  <div class="ac"><b>AC-W07 · Chia slot theo tenant</b><br>
+    Given claude-sub có 2 slot, tenant <code>acme</code> có <code>max_concurrent_sub = 1</code> và đang chạy 1 job trên claude-sub, When job subscription thứ hai của <code>acme</code> đến, Then job đó chờ tối đa <code>max_wait_s</code> rồi dự phòng sang bước API (<code>reason=tenant_slots</code>). Cùng lúc, job của tenant <code>beta-co</code> vẫn nhận slot còn trống của claude-sub.</div>
+  <div class="ac"><b>AC-W08 · Không giới hạn khi null</b><br>
+    Given tenant <code>beta-co</code> có <code>max_concurrent_sub = null</code>, When 2 job subscription của <code>beta-co</code> đến và claude-sub còn 2 slot, Then cả 2 job cùng chạy.</div>
+  <div class="ac"><b>AC-W09 · Ghi usage để tính phí</b><br>
+    Given job <code>agent.cli</code> của tenant <code>acme</code> chạy xong bằng claude-sub, When Worker ghi usage, Then <code>usage_logs</code> có <code>tenant_id = acme</code>, <code>billing = subscription</code>, <code>cost_usd = 0</code>, token vào/ra đầy đủ, và <code>billable_usd</code> = token × đơn giá trong <code>price_book</code> (hoặc trống nếu chưa có đơn giá).</div>
+</section>
+
+<section id="s11">
+  <h2>11. Ngoài phạm vi &amp; câu hỏi mở</h2>
+  <h3>Ngoài phạm vi v1</h3>
+  <ul>
+    <li>Container sandbox cho từng job (v1 chỉ cách ly bằng thư mục và danh sách tool).</li>
+    <li>Nhiều máy Worker, mỗi máy giữ một nhóm tài khoản subscription khác nhau.</li>
+    <li>Lập lịch chạy agent định kỳ theo yêu cầu của user.</li>
+    <li>Slot riêng cho từng tenant theo từng provider (v1 chỉ một giới hạn chung cho mọi provider subscription).</li>
+  </ul>
+  <h3>Câu hỏi mở</h3>
+  <ol>
+    <li>Máy Worker chạy Windows hay Linux? Việc cách ly và cách dừng tiến trình khác nhau giữa hai hệ.</li>
+    <li>Có cho agent <code>agentic-cli</code> dùng Bash ở v1 không, hay chỉ Read/Grep/Edit trong thư mục làm việc?</li>
+    <li>Thư viện queue cụ thể (ví dụ BullMQ nếu dùng TS) phụ thuộc vào stack chưa chốt.</li>
+    <li>Tenant chạm <code>max_concurrent_sub</code>: chờ <code>max_wait_s</code> rồi dự phòng (đang chọn), hay dự phòng sang API ngay?</li>
+    <li>Ai tính <code>billable_usd</code>: Worker tính lúc ghi usage (đang chọn), hay Hub tính lại theo lô? Cờ <code>overage</code> do Hub đánh dấu theo bộ đếm quota, Worker không kiểm quota. Cần chốt cùng BA Agent Hub.</li>
+    <li>Vì đã phục vụ tenant bên ngoài, có cần đưa container sandbox từng job lên sớm hơn v1 không?</li>
+  </ol>
+</section>
+
+<footer>AI System · BA · Worker · v0.4</footer>
+</div>
+</body>
+</html>

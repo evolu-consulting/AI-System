@@ -1,0 +1,12 @@
+node_modules/
+.turbo/
+dist/
+coverage/
+.env.local
+.env.*.local
+*.log
+test-results/
+playwright-report/
+blob-report/
+.DS_Store
+Thumbs.db

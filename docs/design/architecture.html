@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI System — Kiến trúc</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --surface: #ffffff; --text: #1d1d1f; --muted: #5f6368;
+    --border: #e2e2de; --accent: #4f46e5; --accent-soft: #eef2ff;
+    --warn: #b45309; --warn-soft: #fef3c7; --ok: #047857; --ok-soft: #d1fae5;
+    --code-bg: #f1f1ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121214; --surface: #1b1b1f; --text: #ececf1; --muted: #a0a0ab;
+      --border: #2e2e35; --accent: #8b87ff; --accent-soft: #23223a;
+      --warn: #fbbf24; --warn-soft: #3a2e12; --ok: #34d399; --ok-soft: #10302a;
+      --code-bg: #232329;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121214; --surface: #1b1b1f; --text: #ececf1; --muted: #a0a0ab;
+    --border: #2e2e35; --accent: #8b87ff; --accent-soft: #23223a;
+    --warn: #fbbf24; --warn-soft: #3a2e12; --ok: #34d399; --ok-soft: #10302a;
+    --code-bg: #232329;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 80px; }
+  header h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); }
+  nav.toc {
+    margin: 24px 0 8px; padding: 14px 18px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px;
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  section {
+    margin-top: 28px; padding: 22px 24px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px;
+  }
+  h2 { font-size: 20px; margin: 0 0 12px; }
+  h3 { font-size: 16px; margin: 20px 0 8px; }
+  p, li { max-width: 72ch; }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: 12.5px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace;
+    margin: 12px 0;
+  }
+  code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.92em;
+    background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  .note { padding: 10px 14px; border-radius: 8px; margin: 12px 0; }
+  .note.warn { background: var(--warn-soft); border-left: 3px solid var(--warn); }
+  .note.ok { background: var(--ok-soft); border-left: 3px solid var(--ok); }
+  .note.info { background: var(--accent-soft); border-left: 3px solid var(--accent); }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); margin-right: 4px; }
+  ul.decisions li { margin: 4px 0; }
+  footer { margin-top: 32px; color: var(--muted); font-size: 13px; text-align: center; }
+  @media (max-width: 640px) {
+    nav.toc ol { columns: 1; }
+    section { padding: 18px 16px; }
+    pre { font-size: 11px; }
+  }
+  .embedded .docnav { display: none !important; }
+</style>
+<script>
+(function () {
+  if (window.self === window.top) return;
+  document.documentElement.classList.add('embedded');
+  try { parent.postMessage({ aisysDoc: location.pathname }, '*'); } catch (e) {}
+  window.addEventListener('message', function (e) {
+    var t = e.data && e.data.aisysTheme;
+    if (!t) return;
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+  });
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="docnav" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;font-size:14px">
+  <a href="architecture.html" style="color:var(--accent);text-decoration:none;padding:4px 12px;border:1px solid var(--accent);border-radius:999px;background:var(--accent-soft)">Kiến trúc</a>
+  <a href="admin/ba-admin.html" style="color:var(--muted);text-decoration:none;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface)">Admin</a>
+  <a href="admin/ui-admin.html" style="color:var(--muted);text-decoration:none;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface)">UI/UX Admin</a>
+  <a href="agent-hub/ui-operations.html" style="color:var(--muted);text-decoration:none;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface)">UI Vận hành</a>
+  <a href="chat-app/ui-chat-extension.html" style="color:var(--muted);text-decoration:none;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface)">UI Chat &amp; Extension</a>
+  <a href="agent-hub/ui-agent-studio.html" style="color:var(--muted);text-decoration:none;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface)">UI Agent Studio</a>
+  <a href="agent-hub/ba-agent-hub.html" style="color:var(--muted);text-decoration:none;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface)">Agent Hub</a>
+  <a href="worker/ba-worker.html" style="color:var(--muted);text-decoration:none;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface)">Worker</a>
+</nav>
+
+<header>
+  <h1>AI System — Kiến trúc tổng thể</h1>
+  <p>Ghi lại kết quả thảo luận thiết kế · v0.4 · cập nhật 2026-10-01 · trạng thái: <strong>đang thảo luận, chưa code</strong></p>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#decisions">Các quyết định đã chốt</a></li>
+    <li><a href="#overview">Sơ đồ tổng</a></li>
+    <li><a href="#components">Thành phần &amp; trách nhiệm</a></li>
+    <li><a href="#admin">Admin (config + auth)</a></li>
+    <li><a href="#hub">Agent Hub</a></li>
+    <li><a href="#flows">Hai luồng chạy</a></li>
+    <li><a href="#runtimes">Runtime &amp; đa model</a></li>
+    <li><a href="#auth">Auth user/pass</a></li>
+    <li><a href="#data">Phân chia dữ liệu</a></li>
+    <li><a href="#open">Câu hỏi còn mở</a></li>
+    <li><a href="#history">Diễn tiến thảo luận</a></li>
+  </ol>
+</nav>
+
+<section>
+  <h2>Tài liệu BA từng service</h2>
+  <ul>
+    <li><a href="admin/ba-admin.html" style="color:var(--accent)"><strong>Admin</strong></a>: tenant, user và auth, group, feature và phân quyền, command, catalog workflow, secret, quota, audit (ADM-*)</li>
+    <li><a href="admin/ui-admin.html" style="color:var(--accent)"><strong>UI/UX Admin</strong></a>: đặc tả giao diện chi tiết (khung, thành phần, sitemap và các màn hình, luồng thao tác, trạng thái, microcopy)</li>
+    <li><a href="agent-hub/ui-agent-studio.html" style="color:var(--accent)"><strong>UI Agent Studio</strong></a>: UI của Agent Hub gồm agent, Coordinator, tool (chọn workflow từ catalog), quyền agent, model, Playground</li>
+    <li><a href="agent-hub/ui-operations.html" style="color:var(--accent)"><strong>UI Vận hành</strong></a>: Runs và trace, Chi phí và usage theo tenant, Jobs và Worker (một mục trong Agent Studio)</li>
+    <li><a href="chat-app/ui-chat-extension.html" style="color:var(--accent)"><strong>UI Chat &amp; Extension</strong></a>: UI người dùng cuối của Hub (đăng nhập, composer, menu "/", các bước, ngữ cảnh trang)</li>
+    <li><a href="agent-hub/ba-agent-hub.html" style="color:var(--accent)"><strong>Agent Hub</strong></a>: cấu hình agent (Agent Studio), kiểm tra quyền, command runner, Coordinator, runtime, Model Gateway, hội thoại, SSE, MCP (HUB-*)</li>
+    <li><a href="worker/ba-worker.html" style="color:var(--accent)"><strong>Worker</strong></a>: job async, agent CLI, Subscription Pool (slot theo tenant), dự phòng, runbook (WRK-*)</li>
+  </ul>
+</section>
+
+<section id="decisions">
+  <h2>1. Các quyết định đã chốt</h2>
+  <ul class="decisions">
+    <li><strong>2 service tự viết:</strong> <em>Admin</em> (backend + DB) và <em>Agent Hub</em>, cộng 1 <em>Worker</em> dùng chung code với Hub.</li>
+    <li><strong>Chat App, Extension, Mobile</strong> đều chỉ là client (FE).</li>
+    <li><strong>Không có Flow factory.</strong> Workflow Dify được tạo và sửa bằng <em>Claude session</em> (qua mcp-dify).</li>
+    <li><strong>Multi-tenant (v0.4):</strong> tenant là <strong>công ty / khách hàng bên ngoài</strong>. Công ty vận hành hệ thống cũng là một tenant (<code>platform</code>), nơi có <code>platform_admin</code>. Dữ liệu cách ly theo <code>tenant_id</code> + <code>user_id</code>. Truy cập sai tenant trả 404.</li>
+    <li><strong>Dùng chung toàn hệ thống:</strong> command, workflow, secret, key Dify, API key. Chỉ <code>platform_admin</code> tạo và sửa. Hub gửi <code>user = &lt;tenant&gt;:&lt;user_id&gt;</code> cho Dify để truy vết. Workflow không được dùng knowledge base hay bộ nhớ chứa dữ liệu của tenant khác.</li>
+    <li><strong>Chia quyền sở hữu cấu hình (v0.4):</strong> <em>Admin</em> giữ tenant, user/auth, group, feature, command, <strong>catalog workflow dùng chung</strong>, secret của workflow, quota. <em>Agent Hub</em> giữ <strong>cấu hình agent</strong>: agent, Coordinator, provider, model profile, secret provider, quyền agent. Workflow chỉ khai báo một nơi (ở Admin), nên rotate key một chỗ. Hub đọc workflow và secret từ schema <code>admin</code> (chỉ đọc).</li>
+    <li><strong>Workflow là catalog dùng chung (v0.4).</strong> Tạo sẵn được, chưa gắn đâu cũng được (nhãn "Chưa gắn"). Workflow không có quyền riêng. Có hai nơi dùng, độc lập nhau: <strong>command</strong> (user gõ <code>/lệnh</code>, quyền qua feature) và <strong>agent</strong> (dùng workflow làm tool khi chat, quyền qua agent grant). Agent không liên quan tới command.</li>
+    <li><strong>Agent chỉ chọn workflow</strong>, không đặt tên hay viết mô tả lại. Hub dùng luôn tên, mô tả và mô tả tham số của workflow làm tool cho model. Vì vậy mô tả workflow (20–400 ký tự, nói rõ khi nào dùng) và mô tả từng tham số là <strong>bắt buộc</strong>.</li>
+    <li><strong>Feature là gói command để cấp quyền.</strong> Mỗi command thuộc ít nhất 1 feature (mặc định <code>core</code>). Quyền có 2 tầng: <strong>entitlement</strong> (<code>platform_admin</code> cho tenant được có feature) và <strong>access</strong> (<code>tenant_admin</code> cấp cho group/user trong phạm vi entitlement). Tắt feature thì mọi command trong đó biến khỏi menu trong ≤ 5 giây.</li>
+    <li><strong>Quyền agent cũng 2 tầng:</strong> <code>platform_admin</code> entitlement agent cho tenant (trong Agent Studio), <code>tenant_admin</code> cấp cho group/user ngay trên trang Groups của Admin UI (Admin UI gọi <code>hub/agent-grants</code>). Coordinator chỉ thấy agent user được dùng.</li>
+    <li><strong>Agent Hub có UI riêng: Agent Studio</strong> (<code>/studio</code>). Studio chứa cả mục Vận hành (Runs, Chi phí, Jobs &amp; Worker). Đăng nhập bằng cùng JWT do Admin phát, yêu cầu role <code>platform_admin</code>.</li>
+    <li><strong>Mọi request từ client đều đi qua Agent Hub.</strong> Client không gọi thẳng Dify, nên không có key nào nằm trong client.</li>
+    <li><strong>Agent Hub có một Coordinator agent.</strong> Nó chọn agent chuyên trách để chat hoặc làm việc.</li>
+    <li><strong>Hỗ trợ nhiều model</strong> (không riêng Claude), qua cả <em>subscription</em> (CLI) lẫn <em>API</em>.</li>
+    <li><strong>Agent có thể chạy bằng Claude Code</strong> (Agent SDK), Codex hoặc Gemini CLI, coi như một loại runtime.</li>
+    <li><strong>Subscription là đường chính, API là dự phòng.</strong> Subscription CLI dùng chung cho mọi tenant, tính phí theo token. Mỗi tenant có giới hạn slot subscription để chia công bằng.</li>
+    <li><strong>Quyền: 3 role.</strong> <code>platform_admin</code> (toàn hệ thống), <code>tenant_admin</code> (trong tenant mình), <code>member</code> (dùng command/agent được cấp). Xem bảng ở phần 8.</li>
+    <li><strong>Chi phí và quota theo tenant (MUST).</strong> Mọi run ghi <code>tenant_id</code>, <code>feature_id</code> vào <code>usage_logs</code>. Quota mặc định không giới hạn (đang test). <strong>Không chặn khi vượt:</strong> cảnh báo ở 80% và 100%, phần vượt đánh dấu <code>overage</code> để tính phí.</li>
+    <li><strong>Tool của agent chỉ đi qua Dify</strong> (workflow hoặc agent app). Không có loại gọi HTTP trực tiếp.</li>
+    <li><strong>Bảo vệ định tuyến:</strong> có bộ câu kiểm thử. Mỗi lần lưu thay đổi ảnh hưởng tới Coordinator, bộ câu tự chạy với toàn bộ agent, và hệ thống chặn lưu nếu tỉ lệ đúng giảm.</li>
+    <li><strong>Chống ghi đè cấu hình:</strong> dùng trường <code>version</code> (trả 409 khi xung đột). Nút Test chạy được trên bản nháp chưa lưu.</li>
+    <li><strong>UI:</strong> dùng shadcn/ui, song ngữ VI/EN. Có ba giao diện: Admin UI (tenant, user, group, feature, command, workflow, chi phí &amp; quota), Agent Studio (agent, model, vận hành), và Chat App/Extension (người dùng cuối). Worker không có UI.</li>
+    <li><strong>Auth bằng user/pass.</strong> Đăng nhập bằng mã công ty (tenant key) + username + password. Admin phát JWT chứa <code>user_id</code>, <code>tenant_id</code>, <code>role</code> (không chứa danh sách quyền). Hub chỉ kiểm tra JWT và tự tính quyền.</li>
+    <li><strong>Dùng chung một Postgres:</strong> schema <code>admin</code> do Admin ghi, schema <code>hub</code> do Hub và Worker ghi. Hub đọc cấu hình trực tiếp từ schema <code>admin</code> (chỉ đọc), nên không cần API cấu hình nội bộ. Ngược lại, Admin đọc (chỉ đọc) <code>hub.agent_workflows</code>, <code>hub.agent_grants</code> và <code>hub.usage_logs</code> để hiện “đang được dùng bởi”, agent đã cấp và màn Chi phí &amp; quota.</li>
+    <li><strong>Hub nhận thay đổi cấu hình qua Postgres NOTIFY</strong> <code>config_changed</code>, cộng poll <code>config_version</code> mỗi 60 giây để phòng mất thông báo. Đổi quyền có hiệu lực trong ≤ 5 giây.</li>
+    <li><strong>Client chỉ gọi Admin để đăng nhập.</strong> Menu command lấy từ <code>GET hub/commands</code>, chỉ gồm lệnh user được dùng.</li>
+  </ul>
+</section>
+
+<section id="overview">
+  <h2>2. Sơ đồ tổng</h2>
+<pre><code>┌──────────── ADMIN (backend + DB, schema admin) ────────────┐   ┌────────────────── AGENT HUB (schema hub) ──────────────────┐
+│ Admin UI  (platform_admin · tenant_admin)                  │   │ Agent Studio UI  /studio  (platform_admin)                 │
+│  Tenants · Users · Groups · Phân quyền · Features ·        │   │  Agents · Coordinator · Tools(chọn workflow từ catalog)    │
+│  Commands · Workflows(catalog chung) · Secrets ·           │   │  · Quyền agent · Models · Secrets · Playground             │
+│  Chi phí &amp; quota · Nhật ký · Import/Export                 │   │  · Vận hành · Nhật ký                                      │
+│                                                            │   │                                                            │
+│ Auth API  /auth/login · /auth/refresh                      │   │ Runtime                                                    │
+│           → JWT{user_id, tenant_id, role}                  │   │  1. verify JWT → user_id, tenant_id, role; tính quyền      │
+│ Config API (CRUD tenants/users/groups/features/            │   │  2. Router  /cmd → Command Runner (lệnh user được cấp)     │
+│             commands/workflows/secrets/quotas)             │   │             chat → COORDINATOR → agent user được dùng      │
+│                                                            │   │  3. Runtime adapters: llm · dify-wf · dify-agent · cli     │
+│ DB: tenants · users · groups · features · grants ·         │──▶│  4. Model Gateway: profile → sub → hết quota → API         │
+│     commands · workflows · secrets · quotas · audit        │   │     ghi usage theo tenant (cost_usd, billable_usd)         │
+│     (Hub chỉ ĐỌC: quyền, command, workflow + secret)       │   │ DB: agents · agent_workflows · agent_grants · providers    │
+└───────────────┬────────────────────────────────────────────┘   │     · model_profiles · price_book · secrets                │
+                │ login → JWT                                    │     · conversations · runs · jobs · usage · audit          │
+                ▼                                                │                                                            │
+┌───────────────────────────┐   mọi request kèm JWT              └──────┬───────────────┬─────────────────┬───────────────────┘
+│ CHAT APP / Extension      │──────────────────────────────────────────▶│               │                 │
+│ lưu JWT, tự refresh       │◀──── SSE kết quả ──────────────────────── │               ▼                 ▼
+└───────────────────────────┘                                           ▼       Subscription CLI    Dify workflows
+                                                                     API models   (WORKER)        (catalog: command + agent)
+
+   CLAUDE SESSION (build-time) ── tạo/sửa workflow trên Dify ──▶ khai báo 1 lần ở catalog Admin (Workflows)
+   → dùng cho command (quyền qua feature) và/hoặc agent (quyền qua agent grant)</code></pre>
+</section>
+
+<section id="components">
+  <h2>3. Thành phần &amp; trách nhiệm</h2>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Thành phần</th><th>Loại</th><th>Sở hữu / làm</th><th>Không làm</th></tr>
+    <tr><td><strong>Admin</strong></td><td>Service (backend + DB + UI)</td><td>Tenant, user và đăng nhập (phát JWT), group, feature và phân quyền (entitlement, access), cấu hình <em>command</em>, catalog workflow dùng chung (cho command và agent), secret của workflow, quota. Màn Chi phí &amp; quota theo tenant</td><td>Không chạy workflow, không cấu hình agent</td></tr>
+    <tr><td><strong>Agent Hub</strong></td><td>Service + UI (Agent Studio)</td><td><strong>Sở hữu cấu hình agent</strong> (agent, Coordinator, provider, profile, secret provider, quyền agent, bảng giá bán). Agent chọn workflow từ catalog Admin. Chạy mọi thứ: kiểm tra quyền, Router, Command Runner, Coordinator, agent, Model Gateway. Lưu hội thoại, run, job, chi phí theo tenant</td><td>Không quản lý tenant, user, group. Không sửa command hay workflow</td></tr>
+    <tr><td><strong>Worker</strong></td><td>Process (chung code với Hub)</td><td>Job chạy lâu, retry, xếp hàng. Chạy các CLI subscription (claude, codex, gemini), giới hạn slot theo tenant</td><td>—</td></tr>
+    <tr><td><strong>Chat App / Extension / Mobile</strong></td><td>Client</td><td>Giao diện. Đăng nhập (có mã công ty), lấy menu command, gửi request lên Hub</td><td>Không gọi Dify hay model trực tiếp, không giữ key</td></tr>
+    <tr><td><strong>Dify</strong></td><td>External</td><td>Thực thi workflow</td><td>—</td></tr>
+    <tr><td><strong>Claude session</strong></td><td>Công cụ build-time</td><td>Tạo và sửa workflow trên Dify, thay cho Flow factory</td><td>—</td></tr>
+    <tr><td>Postgres, Redis</td><td>Hạ tầng</td><td>DB, hàng đợi, bộ đếm quota theo tháng</td><td>—</td></tr>
+  </table>
+  </div>
+</section>
+
+<section id="admin">
+  <h2>4. Admin — cấu hình + auth</h2>
+  <p>Admin là service riêng, có backend và DB. Nó quản lý tenant, user, group, feature và khai báo <strong>command nào trỏ tới workflow nào</strong>. Workflow là catalog dùng chung cho cả command và agent (v0.4). Cấu hình agent, provider và model thuộc Agent Hub (v0.3).</p>
+
+  <h3>Các bảng chính</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Bảng</th><th>Nội dung</th></tr>
+    <tr><td><code>tenants</code></td><td>key (mã công ty), tên, active, <code>max_concurrent_sub</code> (slot subscription, null = không giới hạn), settings</td></tr>
+    <tr><td><code>users</code></td><td>tenant_id, username (duy nhất trong tenant), password_hash, role (<code>platform_admin</code> | <code>tenant_admin</code> | <code>member</code>), active</td></tr>
+    <tr><td><code>groups</code>, <code>group_members</code></td><td>Group thuộc tenant. User ở nhiều group, không lồng group ở v1. Là đơn vị để gán feature và agent</td></tr>
+    <tr><td><code>workflows</code></td><td>Catalog dùng chung: tên, mô tả (bắt buộc), Dify app, loại (workflow/chat/agent), input schema kèm mô tả từng tham số (bắt buộc), tham chiếu secret app-key. Có thể chưa gắn đâu</td></tr>
+    <tr><td><code>commands</code></td><td><code>/aaa</code> → workflow X, alias, cách map input, cách hiển thị output, sync/async, timeout, bật/tắt</td></tr>
+    <tr><td><code>features</code>, <code>feature_commands</code></td><td>Gói command để cấp quyền. Trạng thái Bật / Tắt / Beta. Feature <code>core</code> luôn tồn tại, không xoá được</td></tr>
+    <tr><td><code>feature_entitlements</code>, <code>feature_grants</code></td><td>Tenant nào được có feature (entitlement). Feature cấp cho group/user nào trong tenant (access)</td></tr>
+    <tr><td><code>tenant_quotas</code></td><td>Quota theo tenant, có thể theo feature: số run, token, USD mỗi tháng, ngưỡng cảnh báo 80%</td></tr>
+    <tr><td><code>secrets</code></td><td>App-key Dify và API key, mã hoá. Không bao giờ trả về cho client</td></tr>
+    <tr><td><code>audit_log</code></td><td>Nhật ký thay đổi, kèm <code>tenant_id</code></td></tr>
+  </table>
+  </div>
+
+  <h3>Hai đường đọc cấu hình</h3>
+  <ul>
+    <li><strong>Client:</strong> lấy danh sách command, nhãn, form qua <code>GET hub/commands</code>. Chỉ có lệnh user được dùng. <strong>Không có secret.</strong></li>
+    <li><strong>Hub:</strong> không qua API. Hub đọc thẳng schema <code>admin</code> (chỉ đọc): tenant, group, feature, grant, quota, command, workflow và secret của workflow.</li>
+  </ul>
+
+  <h3>Form cấu hình một command (phác thảo)</h3>
+<pre><code>┌─ Command: /dich ─────────────────────────────────────┐
+│ Tên        [dich      ]  Alias [translate, tr     ]  │
+│ Mô tả      [Dịch đoạn văn                         ]  │
+│ Workflow   [translate (từ catalog)          ▼]       │
+│ Input map  source_text ← [$args.text    ▼]           │
+│            target_lang ← [$args.lang    ▼] mặc định vi│
+│ Output     [result] render [markdown ▼]              │
+│ Chế độ     (•) sync  ( ) async    Timeout [60]s      │
+│ Feature    [core                 ▼]   [x] Bật        │
+│                        [ Test ]  [ Lưu ]             │
+└──────────────────────────────────────────────────────┘</code></pre>
+
+  <h3>Ví dụ cấu hình (dạng yaml, để export/import/seed)</h3>
+<pre><code>commands:
+  - name: dich
+    aliases: [translate, tr]
+    workflow: translate                 # tham chiếu catalog
+    features: [core]                    # thuộc ít nhất 1 feature
+    args:
+      - { name: lang, default: vi }
+      - { name: text, rest: true, fallback: $selection }
+    inputs: { source_text: $args.text, target_lang: $args.lang }
+    output: { field: result, render: markdown }
+    mode: sync</code></pre>
+</section>
+
+<section id="hub">
+  <h2>5. Agent Hub</h2>
+  <p>Agent Hub là nơi điều phối agent. Nó quyết định dùng workflow hay agent nào để xử lý từng yêu cầu. Hub chạy theo kiểu <em>modular monolith</em>: một service nhưng chia module rõ ràng.</p>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Module</th><th>Việc</th></tr>
+    <tr><td><strong>Agent Studio (config)</strong></td><td>UI và API cấu hình agent, Coordinator, tool (chọn workflow từ catalog Admin), quyền agent, provider, model profile, secret provider, bảng giá bán. Chỉ <code>platform_admin</code>. Có audit riêng</td></tr>
+    <tr><td><strong>Auth guard</strong></td><td>Verify JWT bằng khoá chung với Admin, lấy ra <code>user_id</code>, <code>tenant_id</code> và <code>role</code></td></tr>
+    <tr><td><strong>Config cache</strong></td><td>Nạp command, workflow và secret, tenant, group, feature, grant, quota từ schema <code>admin</code> (chỉ đọc), cùng cấu hình agent của chính Hub. Làm mới qua NOTIFY. Từ đó tính quyền của user</td></tr>
+    <tr><td><strong>Router</strong></td><td>Tin nhắn bắt đầu bằng <code>/</code> thì đi Command Runner, còn lại đi Coordinator. Lệnh user không có quyền → <code>CMD_NOT_FOUND</code></td></tr>
+    <tr><td><strong>Command / Workflow Runner</strong></td><td>Là cổng duy nhất gọi Dify: map input, gọi workflow. Job chạy lâu thì đẩy sang Worker</td></tr>
+    <tr><td><strong>Coordinator agent</strong></td><td>Hiểu ý người dùng, chọn một hoặc nhiều agent trong số agent user được dùng, nối các bước, gộp kết quả. Không có agent nào thì tự trả lời</td></tr>
+    <tr><td><strong>Runtime adapters</strong></td><td><code>llm</code> · <code>dify-workflow</code> · <code>dify-agent</code> · <code>agentic-cli</code></td></tr>
+    <tr><td><strong>Model Gateway</strong></td><td>Một interface chung cho mọi hãng. Lo retry, dự phòng theo profile, ghi log token và chi phí theo tenant (<code>cost_usd</code>, <code>billable_usd</code>)</td></tr>
+    <tr><td><strong>Subscription Pool</strong></td><td>Theo dõi quota và trạng thái bận của từng CLI, xếp hàng job, giới hạn slot mỗi tenant. Hết quota thì chuyển sang API</td></tr>
+    <tr><td><strong>MCP tools</strong></td><td>Mở các tool của Hub ra dưới dạng MCP server, để agent CLI (Claude Code, Codex…) cũng gọi được workflow</td></tr>
+  </table>
+  </div>
+</section>
+
+<section id="flows">
+  <h2>6. Hai luồng chạy</h2>
+  <h3>A. Command — đường tắt, không cần suy luận</h3>
+<pre><code>User gõ "/aaa hello"
+ → Chat App gửi lên Agent Hub (kèm JWT)
+ → Router thấy "/aaa", kiểm tra quyền (feature), tra config: aaa → workflow X, map input
+ → Workflow Runner gọi Dify X
+ → trả kết quả về Chat App (SSE/WS)</code></pre>
+  <h3>B. Chat tự do — điều phối</h3>
+<pre><code>User gõ "kiểm tra hoá đơn này rồi tạo thẻ Trello"
+ → Agent Hub → Coordinator đọc danh sách agent user được dùng (cấu hình trong Agent Studio)
+ → chọn Agent HoáĐơn  → dùng workflow invoice (chọn từ catalog Admin)
+ → chọn Agent Trello  → dùng workflow trello-create
+ → Coordinator gộp kết quả, trả về Chat App</code></pre>
+  <div class="note info">Command và agent dùng chung catalog workflow nhưng độc lập nhau. Command gọi workflow qua <code>/lệnh</code>, quyền theo feature. Agent chọn workflow làm tool, quyền theo agent grant. Nếu agent có chọn workflow <code>translate</code>, gõ <code>/dich</code> hay chat "dịch giúp tôi" đều chạy cùng một workflow.</div>
+</section>
+
+<section id="runtimes">
+  <h2>7. Runtime &amp; đa model</h2>
+  <p>Agent và model được tách riêng. Agent chỉ trỏ tới một <em>model profile</em>. Profile quyết định dùng hãng nào, gọi qua subscription hay API, và dự phòng sang đâu khi lỗi.</p>
+<pre><code>  COORDINATOR → chọn agent
+     ▼
+  ┌──────────────── RUNTIME ADAPTERS ─────────────────────────────────────┐
+  │  llm-chat        dify-workflow      agentic-cli                       │
+  │     │                 │            (claude-code / codex / gemini-cli) │
+  └─────┼─────────────────┼──────────────────────┼────────────────────────┘
+        ▼                 ▼                      ▼
+  ┌────────────┐    ┌──────────┐     ┌──────────────────────────────┐
+  │ MODEL      │    │  Dify    │     │ SUBSCRIPTION POOL (Worker)   │
+  │ GATEWAY    │    └──────────┘     │ máy đã đăng nhập CLI         │
+  │ fallback,  │◀── dự phòng khi ────│ giới hạn job đồng thời       │
+  │ log chi phí│    hết quota        │ và slot mỗi tenant           │
+  └────────────┘                     └──────────────────────────────┘
+   anthropic · openai · gemini · openrouter · ollama</code></pre>
+
+  <div class="table-scroll">
+  <table>
+    <tr><th></th><th>API (trả theo token)</th><th>Subscription (Claude Pro/Max, ChatGPT, Gemini…)</th></tr>
+    <tr><td>Cách gọi</td><td>Gọi HTTP qua Model Gateway (có thể dùng LiteLLM hoặc Vercel AI SDK)</td><td>Qua CLI chính chủ của hãng (<code>claude</code>, <code>codex</code>, <code>gemini</code>), đã đăng nhập sẵn trên máy Worker</td></tr>
+    <tr><td>Chạy song song</td><td>Tốt, chỉ bị giới hạn bởi rate limit</td><td>Kém: vướng quota theo cửa sổ thời gian, chỉ nên chạy 1–2 job cùng lúc</td></tr>
+    <tr><td>Vai trò hiện tại</td><td>Dự phòng, và dùng cho việc cần phản hồi nhanh</td><td>Đường chính (đã trả tiền), cho việc agentic nặng. Dùng chung cho mọi tenant</td></tr>
+    <tr><td>Tính phí tenant</td><td>Token vào/ra × đơn giá bán trong <code>hub.price_book</code></td><td>Như API: token vào/ra × đơn giá bán. Chi phí thật <code>cost_usd</code> = 0</td></tr>
+  </table>
+  </div>
+
+  <ul>
+    <li>Subscription CLI <strong>dùng chung cho mọi tenant</strong>. Giới hạn slot mỗi tenant bằng <code>tenants.max_concurrent_sub</code> (null = không giới hạn, mặc định lúc test). Profile luôn có bước API dự phòng.</li>
+    <li><code>billable_usd</code> (số thu của tenant) tính theo <code>price_book</code>, dùng chung cho API và subscription. Chưa có đơn giá thì vẫn ghi token, tính sau. Workflow Dify ghi token/chi phí từ metadata Dify nếu có, không có thì ghi số run và thời gian.</li>
+  </ul>
+
+  <h3>Agent chạy bằng Claude Code</h3>
+  <ul>
+    <li>Nên dùng <strong>Claude Agent SDK</strong> (<code>@anthropic-ai/claude-agent-sdk</code>) thay vì tự sinh process <code>claude -p</code>. SDK có cùng vòng lặp agent, tool có sẵn, MCP, hook và session. Tài liệu: <code>code.claude.com/docs/en/agent-sdk</code>.</li>
+    <li>Chạy trên Worker theo kiểu async, stream tiến độ về Chat App.</li>
+    <li>Giới hạn danh sách tool được phép, chạy trong thư mục hoặc container riêng cho từng job, không mount secret vào.</li>
+    <li>Lưu ánh xạ <code>conversation_id → session_id</code> để lượt sau tiếp tục đúng session.</li>
+  </ul>
+
+  <div class="note warn"><strong>Lưu ý:</strong> xác nhận loại gói subscription đang dùng cho phép phục vụ nhiều khách hàng.</div>
+</section>
+
+<section id="auth">
+  <h2>8. Auth user/pass</h2>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Việc</th><th>Cách làm</th></tr>
+    <tr><td>Tạo user</td><td><code>platform_admin</code> tạo tenant. <code>platform_admin</code> hoặc <code>tenant_admin</code> tạo user trên Admin UI. Không có trang tự đăng ký</td></tr>
+    <tr><td>Lưu mật khẩu</td><td>Hash bằng argon2id, không lưu mật khẩu gốc. Mật khẩu ≥ 10 ký tự. Có cờ <code>must_change_password</code></td></tr>
+    <tr><td>Đăng nhập</td><td><code>POST /auth/login</code> với mã công ty (tenant key) + username + password. Trả về access token (JWT, 15 phút) và refresh token (30 ngày, xoay vòng). Sai 5 lần thì khoá tạm 15 phút</td></tr>
+    <tr><td>Hub kiểm tra</td><td>Verify chữ ký JWT bằng khoá chung. Không cần gọi sang Admin mỗi request. JWT chỉ chứa <code>user_id</code>, <code>tenant_id</code>, <code>role</code>. Quyền do Hub tự tính từ schema <code>admin</code> đang cache</td></tr>
+    <tr><td>Phân quyền</td><td><code>platform_admin</code>: toàn hệ thống (workflow, command, feature, secret, tenant, entitlement, quota, Agent Studio, trace mọi tenant). <code>tenant_admin</code>: trong tenant mình (user, group, cấp feature và agent trong phạm vi entitlement, xem chi phí &amp; quota, audit của tenant), không vào Agent Studio. <code>member</code>: dùng command/agent được cấp, đổi mật khẩu của mình</td></tr>
+    <tr><td>2FA</td><td>TOTP cho <code>platform_admin</code> và <code>tenant_admin</code> (SHOULD). SSO ngoài phạm vi v1</td></tr>
+    <tr><td>Khoá user</td><td>Đặt <code>active=false</code> và thu hồi refresh token. Access token hết hạn sau tối đa 15 phút</td></tr>
+    <tr><td>Khoá tenant</td><td>Khoá mọi user trong tenant và thu hồi refresh token</td></tr>
+    <tr><td>Extension</td><td>Có màn hình đăng nhập, lưu token trong <code>chrome.storage</code>, tự refresh</td></tr>
+  </table>
+  </div>
+</section>
+
+<section id="data">
+  <h2>9. Phân chia dữ liệu</h2>
+  <ul>
+    <li><strong>Admin:</strong> dữ liệu ít thay đổi, gồm tenant, user, group, feature, phân quyền, cấu hình, quota và secret.</li>
+    <li><strong>Agent Hub:</strong> dữ liệu thay đổi liên tục, gồm hội thoại, run, job, file đính kèm, session của CLI và log chi phí. Mọi bản ghi đều gắn <code>tenant_id</code> và <code>user_id</code> lấy từ JWT. Truy cập sai tenant trả 404.</li>
+    <li><strong>Xem trace:</strong> <code>platform_admin</code> xem mọi tenant. <code>tenant_admin</code> chỉ xem chi phí, không xem nội dung chat. Mỗi lần xem trace ghi audit <code>view_trace</code> kèm tenant.</li>
+  </ul>
+  <div class="note ok"><strong>Đã chốt:</strong> dùng chung một Postgres. Schema <code>admin</code> do Admin ghi, Hub chỉ đọc (kể cả workflow và secret của workflow). Schema <code>hub</code> do Hub và Worker ghi. Secret được mã hoá bằng master key trong env, dùng chung giữa Admin và Hub. Redis dùng cho hàng đợi, pub/sub sự kiện và bộ đếm quota theo tháng (đối soát với <code>usage_logs</code>).</div>
+</section>
+
+<section id="open">
+  <h2>10. Câu hỏi còn mở</h2>
+  <ol>
+    <li><s>Dùng chung một DB hay hai DB riêng?</s> Đã chốt: dùng chung, tách schema.</li>
+    <li><s>Hub cập nhật cấu hình bằng poll hay webhook?</s> Đã chốt: Postgres NOTIFY, cộng poll 60 giây dự phòng.</li>
+    <li>Dropdown chọn workflow trong catalog lấy dữ liệu từ đâu: dán tay app-key, hay Admin đăng nhập Dify Console API để tự list app và đọc input schema?</li>
+    <li>Coordinator và các agent <code>llm</code> chạy trong Hub (khuyên dùng), hay dùng app agent trên Dify?</li>
+    <li>Stack cụ thể (ngôn ngữ, framework) chưa chốt. Các câu hỏi mở riêng của từng service nằm trong tài liệu BA của service đó.</li>
+  </ol>
+</section>
+
+<section id="history">
+  <h2>11. Diễn tiến thảo luận (vì sao ra thiết kế này)</h2>
+  <ol>
+    <li><strong>Sơ đồ gốc:</strong> Chat App → Agent Hub → Dify workflow, và Chat App gửi "commands" thẳng sang Dify.</li>
+    <li><strong>Đề xuất ban đầu:</strong> Agent Hub + Worker + Flow factory (tuỳ chọn). Góp ý rằng client không nên gọi thẳng Dify vì sẽ lộ key. Đây là bài học từ auto-pilot, nơi 8 app-key Dify bị nhúng trong extension.</li>
+    <li><strong>Bỏ Flow factory</strong> vì workflow sẽ được tạo bằng Claude session. Bỏ auth ở giai đoạn đó. Cấu hình command lúc này là file <code>commands.yaml</code> trong Hub.</li>
+    <li><strong>Cần admin page:</strong> ban đầu hiểu nhầm admin page chỉ là giao diện của Hub. <em>Chốt lại:</em> Admin là service riêng, chứa cấu hình cho FE (command → workflow). Agent Hub là nơi điều phối agent.</li>
+    <li><strong>Chốt ba ý:</strong> Admin giữ catalog workflow dùng chung. Mọi request đi qua Agent Hub, trong đó Coordinator chọn agent. Admin có backend và DB.</li>
+    <li><strong>Agent dùng Claude Code:</strong> được, coi là runtime <code>agentic-cli</code> và nên dùng Agent SDK.</li>
+    <li><strong>Đa model, cả subscription lẫn API:</strong> thêm <code>providers</code>, <code>model_profiles</code>, Model Gateway và Subscription Pool.</li>
+    <li><strong>v0.3: cấu hình agent chuyển về Agent Hub.</strong> Hub tự khai báo workflow/tool cho agent, không tham chiếu command của Admin, và có UI riêng là Agent Studio (gồm cả Vận hành). <em>(v0.4 đổi lại phần workflow, xem bước 10.)</em></li>
+    <li><strong>Đối tượng người dùng:</strong> ban đầu gồm cả nội bộ lẫn bên ngoài, nên cần Policy theo audience, quota và BYOK. <em>Sau đó đơn giản hoá:</em> chỉ dùng nội bộ, đăng nhập bằng user/pass qua Admin. <em>(v0.4 mở lại cho khách hàng bên ngoài, xem bước 10.)</em></li>
+    <li><strong>v0.4: multi-tenant, feature, quota, workflow dùng chung.</strong> Tenant là công ty / khách hàng bên ngoài, cách ly theo <code>tenant_id</code>. Role đổi thành <code>platform_admin</code>, <code>tenant_admin</code>, <code>member</code>. Đăng nhập thêm mã công ty. Thêm group, feature (gói command, 2 tầng entitlement và access) và quyền agent 2 tầng. Workflow thành catalog dùng chung ở Admin: command và agent cùng chọn từ đó. Bỏ <code>hub.tools</code>, thay bằng <code>hub.agent_workflows</code>. Bỏ cờ cho agent dùng command như tool. Subscription dùng chung cho mọi tenant, tính phí theo token (<code>price_book</code>, <code>billable_usd</code>), giới hạn slot mỗi tenant. Quota theo tenant chỉ cảnh báo, không chặn.</li>
+  </ol>
+  <p><span class="tag">Tham khảo</span> Dự án <code>D:\AI\evoluconsulting\auto-pilot</code>: copilot-hub/api tương đương Agent Hub, DWC tương đương Flow factory (đã bỏ), RQ worker tương đương Worker. Các luật nên giữ lại từ đó: một cổng duy nhất gọi Dify, một Brain interface duy nhất cho reasoning, dữ liệu cách ly theo <code>user_id</code> (nay thêm <code>tenant_id</code>).</p>
+</section>
+
+<footer>AI System · tài liệu thiết kế · v0.4 · 2026-10-01</footer>
+</div>
+</body>
+</html>

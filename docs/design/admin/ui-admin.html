@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI/UX — Admin Page</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  /* ---------- wireframe kit ---------- */
+  .wf-scroll { overflow-x: auto; margin: 14px 0; }
+  .wf {
+    min-width: 860px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    background: var(--bg); font-size: 12.5px; line-height: 1.4; color: var(--text);
+  }
+  .wf.narrow { min-width: 380px; max-width: 420px; }
+  .wf-row { display: flex; }
+  .wf-side {
+    width: 190px; flex: none; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px;
+  }
+  .wf-logo { font-weight: 700; padding: 4px 8px 12px; }
+  .wf-grp { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; padding: 10px 8px 4px; }
+  .wf-nav { padding: 6px 8px; border-radius: 6px; color: var(--muted); display: flex; justify-content: space-between; }
+  .wf-nav.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .wf-body { flex: 1; min-width: 0; }
+  .wf-top {
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .wf-crumb { color: var(--muted); }
+  .wf-crumb b { color: var(--text); }
+  .wf-search { margin-left: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--muted); width: 220px; }
+  .wf-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; font-size: 11px; }
+  .wf-main { padding: 16px; }
+  .wf-h { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .wf-h h4 { margin: 0; font-size: 16px; }
+  .wf-h .sp { flex: 1; }
+  .wf-sub { color: var(--muted); margin: -8px 0 12px; }
+  .wf-btn { display: inline-block; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 4px 10px; white-space: nowrap; }
+  .wf-btn.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .wf-btn.dng { color: #dc2626; border-color: #fca5a5; }
+  .wf-btn.ghost { border-color: transparent; background: none; color: var(--muted); }
+  .wf-chip { display: inline-block; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; color: var(--muted); margin-right: 4px; }
+  .wf-chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .wf-tbl { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .wf-tbl th, .wf-tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 12.5px; }
+  .wf-tbl th { color: var(--muted); font-weight: 600; background: var(--bg); }
+  .wf-mono { font-family: ui-monospace, Consolas, monospace; }
+  .wf-muted { color: var(--muted); }
+  .b { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .b.ok { background: var(--ok-soft); color: var(--ok); }
+  .b.off { background: var(--code-bg); color: var(--muted); }
+  .b.warn { background: var(--warn-soft); color: var(--warn); }
+  .b.err { background: #fee2e2; color: #b91c1c; }
+  .b.info { background: var(--accent-soft); color: var(--accent); }
+  .wf-tog { display: inline-block; width: 28px; height: 16px; border-radius: 999px; background: var(--accent); position: relative; vertical-align: middle; }
+  .wf-tog::after { content: ""; position: absolute; right: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .wf-tog.off { background: var(--border); }
+  .wf-tog.off::after { right: auto; left: 2px; }
+  .wf-cols { display: grid; grid-template-columns: 1.35fr 1fr; gap: 14px; }
+  .wf-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+  .wf-card h5 { margin: 0 0 10px; font-size: 13px; }
+  .wf-f { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .wf-f label { color: var(--muted); }
+  .wf-in { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; background: var(--bg); min-height: 24px; }
+  .wf-in.ta { min-height: 52px; }
+  .wf-in.err { border-color: #dc2626; }
+  .wf-errtxt { color: #dc2626; font-size: 11px; grid-column: 2; margin-top: -4px; }
+  .wf-help { color: var(--muted); font-size: 11px; grid-column: 2; margin-top: -4px; }
+  .wf-map { display: grid; grid-template-columns: 1fr 26px 1.2fr 0.9fr; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .wf-map .arrow { text-align: center; color: var(--muted); }
+  .wf-req { color: #dc2626; }
+  .wf-result { background: var(--code-bg); border-radius: 6px; padding: 8px 10px; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; white-space: pre-wrap; }
+  .wf-tabs { display: flex; gap: 14px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+  .wf-tabs span { padding: 4px 0; color: var(--muted); }
+  .wf-tabs span.on { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 600; }
+  .wf-bar { display: flex; gap: 8px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+  .wf-bar .sp { flex: 1; }
+  .wf-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .wf-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .wf-kpi .n { font-size: 20px; font-weight: 700; }
+  .wf-kpi .l { color: var(--muted); }
+  .wf-step { display: flex; gap: 8px; align-items: center; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; background: var(--surface); }
+  .wf-step .grip { color: var(--muted); cursor: grab; }
+  .wf-drawer-wrap { position: relative; }
+  .wf-dim { position: absolute; inset: 0; background: rgba(0,0,0,.18); }
+  .wf-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 360px; background: var(--surface); border-left: 1px solid var(--border); padding: 14px 16px; }
+  .wf-modal { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .wf-tl { border-left: 2px solid var(--border); margin-left: 6px; padding-left: 12px; }
+  .wf-tl div { margin-bottom: 8px; position: relative; }
+  .wf-tl div::before { content: ""; position: absolute; left: -18px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .wf-diff .del { background: #fee2e2; color: #991b1b; }
+  .wf-diff .add { background: #dcfce7; color: #166534; }
+  .wf-center { display: grid; place-items: center; padding: 40px 16px; background: var(--bg); }
+  .wf-empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+  .wf-empty .ico { font-size: 28px; }
+  .wf-toast { position: absolute; right: 16px; bottom: 16px; background: var(--text); color: var(--bg); border-radius: 8px; padding: 8px 12px; font-size: 12px; }
+  .caption { color: var(--muted); font-size: 13px; margin-top: -6px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+  .sw { width: 130px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; font-size: 12px; }
+  .sw i { display: block; height: 40px; }
+  .sw span { display: block; padding: 6px 8px; }
+  kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+</style>
+<script>
+(function () {
+  if (window.self === window.top) return;
+  document.documentElement.classList.add('embedded');
+  try { parent.postMessage({ aisysDoc: location.pathname }, '*'); } catch (e) {}
+  window.addEventListener('message', function (e) {
+    var t = e.data && e.data.aisysTheme;
+    if (!t) return;
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+  });
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="docnav">
+  <a href="../architecture.html">Kiến trúc</a>
+  <a href="ba-admin.html">Admin</a>
+  <a href="ui-admin.html" class="current">UI/UX Admin</a>
+  <a href="../agent-hub/ui-operations.html">UI Vận hành</a>
+  <a href="../chat-app/ui-chat-extension.html">UI Chat &amp; Extension</a>
+  <a href="../agent-hub/ui-agent-studio.html">UI Agent Studio</a>
+  <a href="../agent-hub/ba-agent-hub.html">Agent Hub</a>
+  <a href="../worker/ba-worker.html">Worker</a>
+</nav>
+
+<header>
+  <h1>Admin Page — Đặc tả UI/UX</h1>
+  <p>Thiết kế chi tiết giao diện quản trị: bố cục, thành phần, từng màn hình, luồng thao tác, trạng thái và câu chữ</p>
+  <div class="meta"><span class="tag">v0.4 · draft</span><span class="tag">2026-10-01</span><span class="tag">shadcn/ui · song ngữ VI/EN</span><span class="tag">Dựa trên <a href="ba-admin.html" style="color:inherit">BA Admin</a> (ADM-*)</span></div>
+</header>
+
+<div class="note warn"><strong>v0.4:</strong> hệ thống thành <strong>multi-tenant</strong>. Admin UI thêm Features, Tenants, Groups, Phân quyền, Chi phí &amp; quota, và có 3 role (<code>platform_admin</code>, <code>tenant_admin</code>, <code>member</code>). Workflows là <strong>catalog dùng chung</strong> cho cả command và agent. Agents, Models và Vận hành vẫn ở <a href="../agent-hub/ui-agent-studio.html" style="color:inherit"><b>Agent Studio</b></a>; chỉ <code>platform_admin</code> thấy nút chuyển app "Admin ⇄ Agent Studio".</div>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#s1">Mục tiêu &amp; nguyên tắc UX</a></li>
+    <li><a href="#s2">Người dùng</a></li>
+    <li><a href="#s3">Kiến trúc thông tin</a></li>
+    <li><a href="#s4">Khung ứng dụng</a></li>
+    <li><a href="#s5">Design tokens</a></li>
+    <li><a href="#s6">Thư viện thành phần</a></li>
+    <li><a href="#s7">Màn hình chi tiết</a></li>
+    <li><a href="#s8">Luồng thao tác chính</a></li>
+    <li><a href="#s9">Trạng thái, validation, thông báo</a></li>
+    <li><a href="#s10">Phím tắt</a></li>
+    <li><a href="#s11">Responsive &amp; accessibility</a></li>
+    <li><a href="#s12">Câu chữ (microcopy)</a></li>
+    <li><a href="#s13">Truy vết yêu cầu &amp; câu hỏi mở</a></li>
+    <li><a href="#s14">Công nghệ UI: shadcn/ui</a></li>
+    <li><a href="#s15">Song ngữ VI/EN</a></li>
+  </ol>
+</nav>
+
+<!-- ======================================================= -->
+<section id="s1">
+  <h2>1. Mục tiêu &amp; nguyên tắc UX</h2>
+  <p><strong>Mục tiêu:</strong></p>
+  <ul>
+    <li>Một platform admin, không cần là dev sâu, phải thêm được một command mới trỏ tới workflow Dify, test và bật cho mọi người trong <strong>dưới 3 phút</strong>, mà không cần đọc tài liệu.</li>
+    <li>Một tenant admin phải tạo được group, thêm người và cấp một feature cho group đó trong <strong>dưới 2 phút</strong>, và trả lời được câu hỏi "sao tôi không thấy lệnh X" bằng một lần tra.</li>
+  </ul>
+  <div class="table-scroll"><table>
+    <tr><th>#</th><th>Nguyên tắc</th><th>Thể hiện trên UI</th></tr>
+    <tr><td>P1</td><td><strong>Test ngay tại chỗ</strong></td><td>Form command và workflow đều có <em>Test panel</em> cố định bên phải. Chạy thử được cả khi chưa lưu (dùng bản nháp)</td></tr>
+    <tr><td>P2</td><td><strong>Form tự dẫn đường</strong></td><td>Chọn workflow xong thì các dòng input map tự hiện đúng các biến của workflow, biến bắt buộc có dấu <span class="wf-req">*</span>. Không bao giờ bắt admin gõ tay tên biến</td></tr>
+    <tr><td>P3</td><td><strong>Thấy được phụ thuộc</strong></td><td>Mỗi workflow, feature và secret có cột "Đang được dùng bởi" (workflow liệt kê cả command lẫn agent). Xoá hay tắt thì hiện trước những gì sẽ bị ảnh hưởng</td></tr>
+    <tr><td>P4</td><td><strong>An toàn mặc định</strong></td><td>Secret chỉ ghi, không đọc lại được. Hành động nguy hiểm (xoá, khoá user, khoá tenant, thu hồi entitlement) phải xác nhận. Rời trang khi chưa lưu thì được cảnh báo</td></tr>
+    <tr><td>P8</td><td><strong>Quyền giải thích được</strong></td><td>Mọi chỗ hiện "ai dùng được" đều kèm lý do (qua feature nào, group nào). Tenant admin không bao giờ phải đoán vì sao một user không thấy lệnh</td></tr>
+    <tr><td>P9</td><td><strong>Chỉ thấy tenant của mình</strong></td><td>Tenant admin chỉ thấy dữ liệu tenant mình; menu ẩn hẳn các mục không có quyền (không hiện rồi khoá)</td></tr>
+    <tr><td>P5</td><td><strong>Thay đổi có hiệu lực ngay và rõ ràng</strong></td><td>Lưu thành công thì toast ghi "Đã áp dụng · v42". Topbar luôn hiện <code>config_version</code> hiện tại</td></tr>
+    <tr><td>P6</td><td><strong>Nhanh cho người dùng thạo</strong></td><td>Command palette <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Ctrl</kbd>+<kbd>S</kbd> để lưu, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> để chạy test, bảng lọc được bằng bàn phím</td></tr>
+    <tr><td>P7</td><td><strong>Lỗi nói tiếng người</strong></td><td>Hiện lỗi Dify hay provider nguyên văn trong khối "Chi tiết", kèm một câu tóm tắt và việc cần làm tiếp</td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================= -->
+<section id="s2">
+  <h2>2. Người dùng</h2>
+  <div class="cards">
+    <div class="card"><h3>Platform admin</h3><p>(<code>platform_admin</code>, tenant <code>platform</code>) Người vận hành nền tảng. Việc chính: thêm/sửa command và feature, onboard tenant, cấp entitlement, đặt quota, xem chi phí mọi tenant. Tần suất vài lần mỗi tuần.</p></div>
+    <div class="card"><h3>Builder</h3><p>Dev tạo workflow trên Dify bằng Claude session, thường có role <code>platform_admin</code>. Việc chính: khai báo workflow vào catalog (kể cả chưa biết dùng ở đâu), import/export yaml. Gắn workflow cho agent làm ở Agent Studio. Dùng nhiều phím tắt.</p></div>
+    <div class="card"><h3>Tenant admin</h3><p>(<code>tenant_admin</code>) Quản trị của một công ty khách hàng, thường không rành kỹ thuật. Việc chính: tạo user, tạo group, cấp feature và agent cho group, theo dõi quota. Chỉ thấy tenant của mình, không vào Agent Studio.</p></div>
+    <div class="card"><h3>Member</h3><p>Chỉ thấy màn hình đăng nhập và đổi mật khẩu. Đăng nhập xong được chuyển về Chat App (không vào được Admin UI).</p></div>
+  </div>
+</section>
+
+<!-- ======================================================= -->
+<section id="s3">
+  <h2>3. Kiến trúc thông tin (sitemap)</h2>
+<pre><code>Admin
+├─ Tổng quan                         /
+├─ CHỨC NĂNG
+│  ├─ Features *                     /features          · /features/new · /features/:id
+│  ├─ Commands *                     /commands          · /commands/new · /commands/:id
+│  └─ Workflows *                    /workflows         · /workflows/new· /workflows/:id  (dùng bởi command, agent; lọc Chưa gắn)
+├─ TRUY CẬP
+│  ├─ Tenants *                      /tenants           · /tenants/:id (entitlement, quota, slot subscription)
+│  ├─ Users                          /users             (drawer + tab Quyền hiệu lực)
+│  ├─ Groups                         /groups            · /groups/:id (thành viên, feature, agent)
+│  └─ Phân quyền                     /access            (ma trận feature × group, Kiểm tra quyền)
+├─ BẢO MẬT
+│  ├─ Secrets *                      /secrets           (drawer)
+│  └─ Cài đặt đăng nhập *            /auth-settings     (chính sách mật khẩu, 2FA)
+├─ HỆ THỐNG
+│  ├─ Chi phí &amp; quota                /usage             (theo tenant × feature × tháng)
+│  ├─ Nhật ký thay đổi (Audit)       /audit             · /audit/:id (diff)
+│  └─ Import / Export *              /transfer
+└─ (ngoài khung) Đăng nhập /login · Đổi mật khẩu /change-password
+
+* chỉ platform_admin. tenant_admin thấy: Tổng quan, TRUY CẬP (Tenants ẩn), Chi phí &amp; quota, Nhật ký — tất cả giới hạn trong tenant của mình.</code></pre>
+  <p><strong>Thứ tự menu theo tần suất dùng:</strong> với platform admin, Commands và Features dùng nhiều nhất; Workflows chủ yếu do Builder dùng. Với tenant admin, Users và Groups dùng nhiều nhất. Agent, model và vận hành nằm ở Agent Studio.</p>
+  <div class="table-scroll"><table>
+    <tr><th>Mẫu chỉnh sửa</th><th>Dùng cho</th><th>Lý do</th></tr>
+    <tr><td><strong>Trang riêng</strong> (list → editor toàn trang, có Test panel)</td><td>Command, Workflow</td><td>Nhiều trường, cần không gian cho Test panel</td></tr>
+    <tr><td><strong>Trang riêng có tab</strong> (Thông tin · Thành viên / Command · Cấp quyền)</td><td>Feature, Tenant, Group</td><td>Mỗi thực thể có nhiều danh sách con</td></tr>
+    <tr><td><strong>Drawer bên phải</strong> (list giữ nguyên phía sau)</td><td>Secret, User</td><td>Ít trường, thao tác nhanh, không mất ngữ cảnh danh sách</td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================= -->
+<section id="s4">
+  <h2>4. Khung ứng dụng (app shell)</h2>
+  <div class="wf-scroll"><div class="wf">
+    <div class="wf-row">
+      <div class="wf-side">
+        <div class="wf-logo">⚙ AI Admin</div>
+        <div class="wf-nav">Tổng quan</div>
+        <div class="wf-grp">Chức năng</div>
+        <div class="wf-nav">Features <span>6</span></div>
+        <div class="wf-nav on">Commands <span>12</span></div>
+        <div class="wf-nav">Workflows <span>9</span></div>
+        <div class="wf-grp">Truy cập</div>
+        <div class="wf-nav">Tenants <span>4</span></div>
+        <div class="wf-nav">Users <span>34</span></div>
+        <div class="wf-nav">Groups <span>5</span></div>
+        <div class="wf-nav">Phân quyền</div>
+        <div class="wf-grp">Bảo mật</div>
+        <div class="wf-nav">Secrets</div>
+        <div class="wf-nav">Cài đặt đăng nhập</div>
+        <div class="wf-grp">Hệ thống</div>
+        <div class="wf-nav">Chi phí &amp; quota</div>
+        <div class="wf-nav">Nhật ký thay đổi</div>
+        <div class="wf-nav">Import / Export</div>
+      </div>
+      <div class="wf-body">
+        <div class="wf-top">
+          <span class="wf-crumb">Chức năng / <b>Commands</b></span><span class="b info" style="margin-left:8px">Nền tảng</span><span class="wf-btn">⇄ Agent Studio</span>
+          <span class="wf-search">🔍 Tìm hoặc chạy lệnh…  Ctrl K</span>
+          <span class="b info">config v42</span>
+          <span class="wf-avatar">AN</span>
+        </div>
+        <div class="wf-main wf-muted">[ nội dung trang ]</div>
+      </div>
+    </div>
+  </div></div>
+  <p class="caption">Hình 4.1: khung ứng dụng. Nút "⇄ Agent Studio" (chỉ <code>platform_admin</code>) chuyển sang UI của Agent Hub, dùng chung phiên đăng nhập.</p>
+  <div class="table-scroll"><table>
+    <tr><th>Vùng</th><th>Đặc tả</th></tr>
+    <tr><td>Sidebar</td><td>Rộng 240px, thu gọn còn 64px (chỉ icon) bằng nút hoặc <kbd>[</kbd>. Nhớ trạng thái thu gọn trong localStorage. Mỗi mục có số lượng bản ghi đang bật. Chỉ hiện các mục role hiện tại có quyền</td></tr>
+    <tr><td>Topbar</td><td>Breadcrumb ở trái. Ô tìm kiếm (mở command palette). Badge tên tenant (với <code>tenant_admin</code>) hoặc "Nền tảng" (với <code>platform_admin</code>). Badge <code>config vN</code>, hover thì hiện "cập nhật lúc HH:MM bởi X". Banner vàng khi tenant đã dùng ≥ 80% quota tháng. Avatar mở menu: đổi mật khẩu, 2FA, đăng xuất</td></tr>
+    <tr><td>Bộ lọc tenant</td><td>Với <code>platform_admin</code>, các trang Users, Groups, Phân quyền, Chi phí &amp; quota và Nhật ký có ô chọn tenant ở đầu trang (lưu trên URL <code>?tenant=</code>). <code>tenant_admin</code> không có ô này</td></tr>
+    <tr><td>Nội dung</td><td>Rộng tối đa 1280px, padding 24px. Header trang gồm tiêu đề, mô tả ngắn một dòng, và nút hành động chính ở phải</td></tr>
+    <tr><td>Thanh lưu (editor)</td><td>Dính đáy màn hình trong trang editor. Bên trái là trạng thái ("Chưa lưu thay đổi" hoặc "Đã lưu · v42"), bên phải là [Huỷ] [Lưu]</td></tr>
+    <tr><td>Command palette</td><td>Tìm theo tên command, workflow, user. Có các lệnh nhanh: "Tạo command", "Đi tới Secrets"…</td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================= -->
+<section id="s5">
+  <h2>5. Design tokens</h2>
+  <h3>Màu</h3>
+  <div class="swatches">
+    <div class="sw"><i style="background:#4f46e5"></i><span><b>primary</b><br>#4f46e5 · nút chính, link</span></div>
+    <div class="sw"><i style="background:#047857"></i><span><b>success</b><br>#047857 · Bật, ok</span></div>
+    <div class="sw"><i style="background:#b45309"></i><span><b>warning</b><br>#b45309 · cooldown, busy</span></div>
+    <div class="sw"><i style="background:#dc2626"></i><span><b>danger</b><br>#dc2626 · lỗi, xoá</span></div>
+    <div class="sw"><i style="background:#5f6368"></i><span><b>muted</b><br>#5f6368 · text phụ, Tắt</span></div>
+    <div class="sw"><i style="background:#f7f7f5;border-bottom:1px solid #e2e2de"></i><span><b>bg / surface</b><br>#f7f7f5 / #ffffff</span></div>
+  </div>
+  <p>Có dark mode, tự đổi theo hệ điều hành và cho chuyển tay trong menu avatar. Token màu giống bộ đang dùng trong tài liệu này (<code>styles.css</code>).</p>
+  <div class="table-scroll"><table>
+    <tr><th>Token</th><th>Giá trị</th></tr>
+    <tr><td>Font</td><td>System UI (Segoe UI trên Windows). Mono: Cascadia Mono / Consolas, dùng cho tên command, key, id, JSON</td></tr>
+    <tr><td>Cỡ chữ</td><td>12 (caption) · 13 (bảng, nhãn) · 14 (body) · 16 (tiêu đề card) · 20 (tiêu đề trang)</td></tr>
+    <tr><td>Khoảng cách</td><td>Lưới 4px: 4 · 8 · 12 · 16 · 24 · 32</td></tr>
+    <tr><td>Bo góc</td><td>6px (input, nút) · 8px (card, bảng) · 12px (modal) · 999px (badge, chip)</td></tr>
+    <tr><td>Mật độ bảng</td><td>Hàng cao 40px (mặc định) hoặc 32px (chế độ gọn, bật trong menu avatar)</td></tr>
+    <tr><td>Chuyển động</td><td>Drawer và modal 150ms ease-out. Tắt khi người dùng bật <code>prefers-reduced-motion</code></td></tr>
+  </table></div>
+  <h3>Trạng thái chuẩn (dùng thống nhất toàn app)</h3>
+  <p>
+    <span class="b ok">Bật</span> <span class="b off">Tắt</span> <span class="b info">Beta</span> <span class="b warn">Chưa gắn</span> <span class="b off">Đã khoá</span>
+    <span class="b ok">ok</span> <span class="b warn">busy</span> <span class="b warn">cooldown đến 14:30</span>
+    <span class="b err">logged_out</span> <span class="b err">error</span>
+    <span class="b info">sync</span> <span class="b off">async</span>
+    <span class="b warn">80% quota</span> <span class="b err">Vượt quota</span>
+  </p>
+</section>
+
+<!-- ======================================================= -->
+<section id="s6">
+  <h2>6. Thư viện thành phần</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Thành phần</th><th>Hành vi</th></tr>
+    <tr><td><strong>DataTable</strong></td><td>Ô tìm kiếm tức thời (lọc phía client khi &lt; 500 dòng). Filter chip (Tất cả / Bật / Tắt, cộng filter riêng từng trang). Sort theo cột. Click hàng thì mở editor. Cuối hàng có menu <code>⋯</code>: Nhân bản, Bật/Tắt, Xoá. Toggle bật/tắt ngay trên hàng, có Hoàn tác trong toast 5 giây</td></tr>
+    <tr><td><strong>StatusBadge</strong></td><td>Theo bảng trạng thái chuẩn. Hover thì có tooltip giải thích (ví dụ "Hết quota, tự thử lại lúc 14:30")</td></tr>
+    <tr><td><strong>RefPicker</strong></td><td>Combobox chọn workflow, feature, group, user hoặc secret. Mỗi option có tên, key (mono) và mô tả một dòng. Cuối danh sách có "+ Tạo mới…", mở drawer tạo nhanh rồi tự chọn luôn bản vừa tạo. Bản đang tắt hiện mờ kèm nhãn "Tắt"</td></tr>
+    <tr><td><strong>SecretField</strong></td><td>Hiện <code>•••• 7f3a</code> (last4) cùng nút [Thay giá trị]. Bấm vào thì mở ô nhập kiểu password, có nút hiện/ẩn chỉ cho lúc đang gõ. Không bao giờ tự điền giá trị cũ. Chưa có secret thì hiện ô nhập ngay</td></tr>
+    <tr><td><strong>ArgsEditor</strong></td><td>Danh sách tham số của command, kéo để đổi thứ tự. Mỗi dòng: tên, mô tả, mặc định, fallback (<code>$selection</code>…), cờ <em>rest</em> (nuốt phần còn lại, chỉ tham số cuối được bật). Phía trên có dòng xem trước cú pháp: <code>/dich &lt;lang=vi&gt; &lt;text…&gt;</code></td></tr>
+    <tr><td><strong>InputMapper</strong></td><td>Mỗi input của workflow là một dòng: <em>tên biến + kiểu + dấu *</em> → <em>nguồn</em> (select: tham số, <code>$selection</code>, <code>$page.url</code>, <code>$page.text</code>, <code>$attachment</code>, <code>$user.id</code>, <code>$tenant.id</code>, Giá trị cố định) → <em>giá trị/mặc định</em>. Input bắt buộc chưa map thì viền đỏ. Workflow đổi schema thì hiện banner "Workflow đã thay đổi input, kiểm tra lại"</td></tr>
+    <tr><td><strong>SchemaEditor</strong></td><td>Bảng input của workflow: tên, kiểu (text/number/boolean/select/file), bắt buộc, <strong>mô tả (bắt buộc)</strong>, options (khi kiểu là select). Nút [Lấy từ Dify] điền tự động. Có tab "JSON" để sửa raw, và tab "Model thấy gì" hiện đúng tên tool, mô tả và JSON schema mà agent sẽ nhận</td></tr>
+    <tr><td><strong>TestPanel</strong></td><td>Cố định bên phải trong editor. Form tự sinh từ args. Có các ô giả lập context: đoạn bôi đen, URL trang, file đính kèm, và ô "Chạy với tư cách user…" để kiểm tra quyền. Nút [▶ Chạy thử] (<kbd>Ctrl</kbd>+<kbd>Enter</kbd>). Kết quả có 3 tab: <em>Kết quả</em> (render markdown) · <em>Raw</em> (JSON) · <em>Trace</em>. Header kết quả có thời gian chạy, provider và token. Nhớ 5 lần test gần nhất (theo phiên)</td></tr>
+    <tr><td><strong>TraceViewer</strong></td><td>Dòng thời gian các step: icon theo loại (delegate / workflow / model / tool), nhãn, thời gian, provider. Bấm vào step thì xem input/output. Step dự phòng có badge cam "fallback: quota"</td></tr>
+    <tr><td><strong>DependencyList</strong></td><td>Danh sách "Đang được dùng bởi" dạng link (command ở Admin, agent ở Agent Studio). Dùng trong editor và trong hộp xác nhận xoá</td></tr>
+    <tr><td><strong>GrantMatrix</strong></td><td>Bảng feature (hàng) × group (cột), mỗi ô là checkbox. Ô bị khoá kèm tooltip khi feature chưa được entitlement cho tenant. Có "Chọn cả hàng/cột". Lưu một lần cho mọi thay đổi, toast "Đã cấp 3, thu hồi 1"</td></tr>
+    <tr><td><strong>AccessExplainer</strong></td><td>Chọn một user → danh sách feature, command và agent user thấy được. Mỗi dòng có lý do: "qua feature Kế toán · group Kế toán". Command không thấy được thì bấm "Vì sao không?" để xem tầng nào chặn (feature tắt / chưa entitlement / chưa cấp)</td></tr>
+    <tr><td><strong>QuotaBar</strong></td><td>Thanh ngang "đã dùng / giới hạn" theo run, token hoặc USD. Màu trung tính dưới 80%, vàng từ 80%, cam khi vượt (kèm chữ "Vượt 12%", không chỉ dựa vào màu). Không giới hạn thì hiện "Không giới hạn" và chỉ ghi số đã dùng</td></tr>
+    <tr><td><strong>ConfirmDialog</strong></td><td>Ba mức. <em>Nhẹ</em> (tắt): chỉ cần toast có Hoàn tác. <em>Vừa</em> (khoá user, thu hồi grant): modal có [Huỷ] [Xác nhận]. <em>Nặng</em> (xoá, khoá tenant, thu hồi entitlement): modal bắt gõ lại key để xác nhận, kèm DependencyList hoặc số user bị ảnh hưởng</td></tr>
+    <tr><td><strong>DiffViewer</strong></td><td>So sánh trước/sau theo từng trường (không phải diff text thô). Trường secret chỉ hiện "đã thay đổi"</td></tr>
+    <tr><td><strong>Toast</strong></td><td>Hiện ở góc dưới phải. Thành công tự ẩn sau 4 giây. Lỗi phải bấm mới đóng. Có thể kèm nút [Hoàn tác] hoặc [Xem]</td></tr>
+    <tr><td><strong>UnsavedGuard</strong></td><td>Có thay đổi chưa lưu thì chặn điều hướng bằng modal "Bỏ thay đổi?", và chặn cả việc đóng tab (beforeunload)</td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================= -->
+<section id="s7">
+  <h2>7. Màn hình chi tiết</h2>
+
+  <!-- 7.1 -->
+  <h3>7.1 Đăng nhập &amp; đổi mật khẩu</h3>
+  <div class="wf-scroll"><div class="wf" style="min-width:420px"><div class="wf-center">
+    <div class="wf-card" style="width:320px">
+      <h5 style="font-size:15px">Đăng nhập AI Admin</h5>
+      <div class="wf-f" style="grid-template-columns:1fr"><label>Mã công ty</label><div class="wf-in wf-mono">acme</div></div>
+      <div class="wf-f" style="grid-template-columns:1fr"><label>Tên đăng nhập</label><div class="wf-in">an.nguyen</div></div>
+      <div class="wf-f" style="grid-template-columns:1fr"><label>Mật khẩu</label><div class="wf-in">••••••••  👁</div></div>
+      <div class="wf-errtxt" style="grid-column:1;margin:0 0 8px">Sai mã công ty, tên đăng nhập hoặc mật khẩu.</div>
+      <span class="wf-btn pri" style="display:block;text-align:center">Đăng nhập</span>
+      <p class="wf-muted" style="margin:10px 0 0;font-size:11px">Quên mật khẩu? Liên hệ quản trị viên.</p>
+    </div>
+  </div></div></div>
+  <ul>
+    <li>Form gồm <strong>Mã công ty</strong>, Username, Mật khẩu. Mã công ty nhớ trong localStorage cho lần sau, và điền sẵn nếu mở từ link <code>/login?tenant=acme</code>.</li>
+    <li>Thông báo lỗi <strong>không</strong> nói rõ sai mã công ty, username hay mật khẩu. <strong>Không</strong> hiện số lần thử còn lại (tránh lộ username có tồn tại). Bị khoá tạm thì ghi "Tạm khoá đến 14:45".</li>
+    <li>Nút Đăng nhập chuyển sang trạng thái loading và bị khoá trong lúc gửi, để không gửi hai lần. <kbd>Enter</kbd> để gửi.</li>
+    <li>Nếu <code>must_change_password</code> thì chuyển sang màn "Đặt mật khẩu mới": gồm mật khẩu mới, nhập lại, và gợi ý độ mạnh (tối thiểu 10 ký tự). Không bỏ qua được.</li>
+    <li>Admin đã bật 2FA thì sau mật khẩu có bước nhập mã TOTP 6 số.</li>
+    <li><code>member</code> đăng nhập thành công ở đây thì thấy thông báo "Tài khoản của bạn dùng Chat App", kèm link sang Chat App.</li>
+    <li>Access token hết hạn giữa chừng thì âm thầm refresh. Refresh thất bại thì hiện modal đăng nhập lại <em>ngay trên trang hiện tại</em>, giữ nguyên dữ liệu form đang nhập.</li>
+  </ul>
+
+  <!-- 7.2 -->
+  <h3>7.2 Tổng quan</h3>
+  <p>Nội dung khác nhau theo role:</p>
+  <div class="table-scroll"><table>
+    <tr><th>Role</th><th>Nội dung</th></tr>
+    <tr><td><code>platform_admin</code></td><td>KPI: Tenants active · Commands đang bật · Workflows (số "Chưa gắn") · Users active · Số run 24 giờ (lấy từ Hub). Card "Tenant sắp/đã vượt quota". Card "Command lỗi nhiều nhất 24 giờ" (top 5, click để mở editor). Card "Agent Studio": link và trạng thái tóm tắt ("1 provider cần xử lý"). Card "Thay đổi gần đây"</td></tr>
+    <tr><td><code>tenant_admin</code></td><td>KPI: Users active · Groups · Số run tháng này · QuotaBar của tenant. Card "Người dùng mới chưa đăng nhập". Card "Thay đổi gần đây" của tenant</td></tr>
+  </table></div>
+
+  <!-- 7.3 -->
+  <h3>7.3 Commands — danh sách</h3>
+  <div class="wf-scroll"><div class="wf"><div class="wf-main">
+    <div class="wf-h"><h4>Commands</h4><span class="sp"></span><span class="wf-btn">Export</span><span class="wf-btn pri">+ Tạo command</span></div>
+    <p class="wf-sub">Lệnh "/" mà người dùng gõ trong Chat App và Extension</p>
+    <div style="margin-bottom:10px"><span class="wf-in" style="display:inline-block;width:240px">🔍 Tìm theo tên, alias, mô tả…</span>
+      &nbsp;<span class="wf-chip on">Tất cả 14</span><span class="wf-chip">Bật 12</span><span class="wf-chip">Tắt 2</span><span class="wf-chip">Feature ▾</span><span class="wf-chip">Workflow ▾</span><span class="wf-chip">Chế độ ▾</span></div>
+    <table class="wf-tbl">
+      <tr><th>Command</th><th>Mô tả</th><th>Feature</th><th>Workflow</th><th>Chế độ</th><th>Cập nhật</th><th>Bật</th><th></th></tr>
+      <tr><td class="wf-mono"><b>/dich</b> <span class="wf-muted">tr, translate</span></td><td>Dịch đoạn văn</td><td><span class="wf-chip">core</span></td><td>translate</td><td><span class="b info">sync</span></td><td class="wf-muted">5 phút · an</td><td><span class="wf-tog"></span></td><td>⋯</td></tr>
+      <tr><td class="wf-mono"><b>/tom</b></td><td>Tóm tắt trang</td><td><span class="wf-chip">core</span><span class="wf-chip">Nghiên cứu</span></td><td>summarize</td><td><span class="b info">sync</span></td><td class="wf-muted">2 ngày · an</td><td><span class="wf-tog"></span></td><td>⋯</td></tr>
+      <tr><td class="wf-mono"><b>/kiemtra-hoadon</b></td><td>Kiểm tra hoá đơn</td><td><span class="wf-chip">Kế toán</span></td><td>invoice <span class="b off">Tắt</span></td><td><span class="b off">async</span></td><td class="wf-muted">1 tuần · binh</td><td><span class="wf-tog off"></span></td><td>⋯</td></tr>
+    </table>
+  </div></div></div>
+  <ul>
+    <li>Tên command có dấu <code>/</code> ở trước và dùng font mono. Alias hiện nhỏ, màu phụ, ngay cạnh.</li>
+    <li>Cột <strong>Feature</strong> liệt kê các feature chứa command (chip, bấm để mở feature). Filter theo feature.</li>
+    <li>Nếu workflow của command đang tắt thì hiện badge <span class="b off">Tắt</span> ở cột Workflow, và toggle của command bị khoá kèm tooltip "Bật workflow invoice trước".</li>
+    <li>Filter và từ khoá tìm kiếm được lưu trên URL (<code>?q=&amp;status=&amp;feature=</code>) để chia sẻ link được.</li>
+    <li>Trạng thái rỗng: "Chưa có command nào. Command giúp người dùng gọi workflow bằng một lệnh ngắn như <code>/dich</code>." kèm nút [+ Tạo command đầu tiên]. Nếu chưa có workflow nào thì nút chuyển thành [Khai báo workflow trước].</li>
+  </ul>
+
+  <!-- 7.4 -->
+  <h3>7.4 Command — editor (màn hình quan trọng nhất)</h3>
+  <div class="wf-scroll"><div class="wf">
+    <div class="wf-top"><span class="wf-crumb">Commands / <b>/dich</b></span><span class="b ok" style="margin-left:8px">Bật</span><span class="sp" style="flex:1"></span><span class="wf-btn ghost">Nhân bản</span><span class="wf-btn ghost">Lịch sử</span><span class="wf-btn dng">Xoá</span></div>
+    <div class="wf-main">
+      <div class="wf-tabs"><span class="on">Cấu hình</span><span>Ai dùng được</span></div>
+      <div class="wf-cols">
+        <div>
+          <div class="wf-card"><h5>① Thông tin</h5>
+            <div class="wf-f"><label>Tên <span class="wf-req">*</span></label><div class="wf-in wf-mono">/ dich</div></div>
+            <div class="wf-help">Chữ thường, số, dấu "-". Người dùng gõ <span class="wf-mono">/dich</span></div>
+            <div class="wf-f"><label>Alias</label><div class="wf-in"><span class="wf-chip">tr ×</span><span class="wf-chip">translate ×</span></div></div>
+            <div class="wf-f"><label>Mô tả <span class="wf-req">*</span></label><div class="wf-in">Dịch đoạn văn sang ngôn ngữ khác</div></div>
+            <div class="wf-help">Hiện trong menu "/" của Chat App</div>
+            <div class="wf-f"><label>Feature <span class="wf-req">*</span></label><div class="wf-in"><span class="wf-chip on">core ×</span> <span class="wf-muted">+ thêm feature ▾</span></div></div>
+            <div class="wf-help">Chọn nhiều được, mặc định <span class="wf-mono">core</span>. Command phải thuộc ít nhất một feature</div>
+          </div>
+          <div class="wf-card"><h5>② Workflow</h5>
+            <div class="wf-f"><label>Workflow <span class="wf-req">*</span></label><div class="wf-in">translate · <span class="wf-muted">Dịch văn bản (workflow)</span> ▾</div></div>
+          </div>
+          <div class="wf-card"><h5>③ Tham số người dùng gõ</h5>
+            <div class="wf-result" style="margin-bottom:8px">/dich &lt;lang = vi&gt; &lt;text… | đoạn bôi đen&gt;</div>
+            <div class="wf-map" style="grid-template-columns:18px 1fr 1fr 1fr 60px"><span class="wf-muted">⋮⋮</span><div class="wf-in wf-mono">lang</div><div class="wf-in">mặc định: vi</div><div class="wf-in wf-muted">fallback: —</div><span class="wf-muted">—</span></div>
+            <div class="wf-map" style="grid-template-columns:18px 1fr 1fr 1fr 60px"><span class="wf-muted">⋮⋮</span><div class="wf-in wf-mono">text</div><div class="wf-in wf-muted">mặc định: —</div><div class="wf-in">fallback: $selection</div><span class="b info">rest</span></div>
+            <span class="wf-btn ghost">+ Thêm tham số</span>
+          </div>
+          <div class="wf-card"><h5>④ Map vào input của workflow</h5>
+            <div class="wf-map"><div class="wf-mono">source_text <span class="wf-req">*</span> <span class="wf-muted">text</span></div><span class="arrow">←</span><div class="wf-in">Tham số: text ▾</div><div class="wf-in wf-muted">—</div></div>
+            <div class="wf-map"><div class="wf-mono">target_lang <span class="wf-req">*</span> <span class="wf-muted">select</span></div><span class="arrow">←</span><div class="wf-in err">— chọn nguồn — ▾</div><div class="wf-in wf-muted">—</div></div>
+            <div class="wf-errtxt" style="margin:0 0 6px">Input bắt buộc chưa được map</div>
+            <div class="wf-map"><div class="wf-mono">tone <span class="wf-muted">text</span></div><span class="arrow">←</span><div class="wf-in">Giá trị cố định ▾</div><div class="wf-in">formal</div></div>
+          </div>
+          <div class="wf-card"><h5>⑤ Kết quả &amp; chạy</h5>
+            <div class="wf-f"><label>Output field</label><div class="wf-in wf-mono">result ▾</div></div>
+            <div class="wf-f"><label>Hiển thị</label><div><span class="wf-chip on">Markdown</span><span class="wf-chip">Text</span><span class="wf-chip">JSON</span></div></div>
+            <div class="wf-f"><label>Chế độ</label><div><span class="wf-chip on">Sync</span><span class="wf-chip">Async (chạy nền)</span> &nbsp;Timeout <span class="wf-in" style="display:inline-block;width:50px">60</span> giây</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="wf-card" style="position:sticky;top:0"><h5>▶ Chạy thử <span class="wf-muted" style="font-weight:400">· dùng bản đang sửa</span></h5>
+            <div class="wf-f"><label>lang</label><div class="wf-in">en</div></div>
+            <div class="wf-f"><label>text</label><div class="wf-in ta wf-muted">(để trống → dùng đoạn bôi đen)</div></div>
+            <div class="wf-f"><label>Bôi đen giả lập</label><div class="wf-in">Xin chào, hẹn gặp lại</div></div>
+            <div class="wf-f"><label>Chạy với tư cách</label><div class="wf-in wf-muted">user… (mặc định: bạn) ▾</div></div>
+            <div class="wf-help">Chọn một user để Hub kiểm tra cả quyền của user đó</div>
+            <div style="text-align:right;margin-bottom:10px"><span class="wf-btn pri">▶ Chạy thử  Ctrl↵</span></div>
+            <div class="wf-tabs"><span class="on">Kết quả</span><span>Raw</span><span>Trace</span></div>
+            <div class="wf-muted" style="margin-bottom:6px"><span class="b ok">Thành công</span> · 1.2s · translate · 84 token</div>
+            <div class="wf-result">Hello, see you again</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-bar"><span class="wf-muted">● Chưa lưu thay đổi</span><span class="sp"></span><span class="wf-btn">Huỷ</span><span class="wf-btn pri">Lưu  Ctrl S</span></div>
+  </div></div>
+  <p class="caption">Hình 7.4: form chia 5 bước theo thứ tự admin suy nghĩ (đặt tên → chọn workflow → người dùng gõ gì → đưa vào đâu → hiển thị ra sao), cộng ô Feature ở bước ①. Test panel bên phải luôn hiện.</p>
+  <div class="table-scroll"><table>
+    <tr><th>Tương tác</th><th>Hành vi</th></tr>
+    <tr><td>Gõ tên</td><td>Tự đổi sang chữ thường và bỏ dấu (gõ "Dịch" thành <code>dich</code>). Kiểm tra trùng tên và alias ngay khi rời ô: "<code>/dich</code> đã được dùng bởi command khác"</td></tr>
+    <tr><td>Chọn feature</td><td>Multi-select, mặc định <code>core</code>. Bỏ hết feature thì báo "Command phải thuộc ít nhất một feature"</td></tr>
+    <tr><td>Chọn workflow</td><td>Tự sinh bước ④ theo input schema. Nếu một input trùng tên với tham số (<code>text</code> và <code>text</code>) thì tự map sẵn. Đổi sang workflow khác thì giữ các map còn hợp lệ và báo những map bị bỏ</td></tr>
+    <tr><td>Thêm tham số</td><td>Dòng xem trước cú pháp cập nhật ngay. Tham số vừa có tên thì xuất hiện luôn trong select nguồn ở bước ④</td></tr>
+    <tr><td>Chạy thử</td><td>Gửi <em>bản đang sửa</em> (chưa cần lưu) sang Hub. Hiện spinner, có nút [Dừng]. Lỗi hiện một dòng tóm tắt, bên dưới là "Chi tiết từ Dify" (thu gọn được). Chọn "Chạy với tư cách user…" thì Hub kiểm tra cả quyền của user đó</td></tr>
+    <tr><td>Lưu</td><td>Validate toàn form. Có lỗi thì cuộn tới lỗi đầu tiên và focus vào đó. Lưu thành công thì toast "Đã lưu và áp dụng · v43 · Chat App thấy sau vài giây"</td></tr>
+    <tr><td>Chưa từng test mà lưu</td><td>Vẫn cho lưu, nhưng hiện gợi ý (không chặn): "Bạn chưa chạy thử bản này"</td></tr>
+    <tr><td>Tab "Ai dùng được"</td><td>AccessExplainer theo chiều ngược: tenant và group thấy command này, số user, kèm lý do</td></tr>
+    <tr><td>Nhân bản</td><td>Mở editor mới với tên <code>dich-copy</code>, trạng thái Tắt, cùng feature</td></tr>
+    <tr><td>Lịch sử</td><td>Mở drawer liệt kê audit của riêng command này, kèm diff và nút Khôi phục</td></tr>
+  </table></div>
+
+  <!-- 7.5 -->
+  <div class="note info"><strong>7.5 Agents</strong> nằm ở <a href="../agent-hub/ui-agent-studio.html" style="color:inherit">Agent Studio</a>. Agent chọn workflow từ catalog ở mục 7.6.</div>
+
+  <!-- 7.6 -->
+  <h3>7.6 Workflows (catalog dùng chung)</h3>
+  <div class="wf-scroll"><div class="wf"><div class="wf-main">
+    <div class="wf-h"><h4>Workflows</h4><span class="sp"></span><span class="wf-btn pri">+ Khai báo workflow</span></div>
+    <p class="wf-sub">Catalog app Dify dùng chung cho command và agent</p>
+    <div style="margin-bottom:10px"><span class="wf-chip on">Tất cả 9</span><span class="wf-chip">Bật 8</span><span class="wf-chip">Tắt 1</span><span class="wf-chip">Chưa gắn 2</span><span class="wf-chip">Loại app ▾</span></div>
+    <table class="wf-tbl" style="margin-bottom:14px">
+      <tr><th>Workflow</th><th>Mô tả</th><th>Loại app</th><th>Đang được dùng bởi</th><th>Bật</th><th></th></tr>
+      <tr><td class="wf-mono"><b>translate</b></td><td>Dịch văn bản sang ngôn ngữ khác…</td><td>workflow</td><td>2 command · 1 agent</td><td><span class="wf-tog"></span></td><td>⋯</td></tr>
+      <tr><td class="wf-mono"><b>summarize</b></td><td>Tóm tắt một trang hoặc đoạn dài…</td><td>workflow</td><td>1 command</td><td><span class="wf-tog"></span></td><td>⋯</td></tr>
+      <tr><td class="wf-mono"><b>report-tax</b></td><td>Lập báo cáo thuế từ hoá đơn…</td><td>workflow</td><td><span class="b warn">Chưa gắn</span></td><td><span class="wf-tog"></span></td><td>⋯</td></tr>
+    </table>
+    <div class="wf-cols">
+    <div>
+      <div class="wf-card"><h5>Thông tin workflow · <span class="wf-mono">translate</span></h5>
+        <div class="wf-f"><label>Key <span class="wf-req">*</span></label><div class="wf-in wf-mono">translate</div></div>
+        <div class="wf-f"><label>Tên <span class="wf-req">*</span></label><div class="wf-in">Dịch văn bản</div></div>
+        <div class="wf-f"><label>Mô tả <span class="wf-req">*</span></label><div class="wf-in ta">Dùng khi cần dịch một đoạn văn sang ngôn ngữ khác. Không dùng để tóm tắt hay viết lại.</div></div>
+        <div class="wf-help">Viết như đang dặn một người mới: dùng khi nào, không dùng khi nào. · 86/400</div>
+        <div class="wf-f"><label>Loại app</label><div><span class="wf-chip on">workflow</span><span class="wf-chip">chat</span><span class="wf-chip">agent</span></div></div>
+        <div class="wf-f"><label>Dify base URL</label><div class="wf-in wf-mono">http://dify.local/v1</div></div>
+        <div class="wf-f"><label>App key</label><div><span class="wf-mono">•••• 7f3a</span> &nbsp;<span class="wf-btn">Thay giá trị</span> &nbsp;<span class="wf-btn ghost">Kiểm tra kết nối</span></div></div>
+      </div>
+      <div class="wf-card"><h5>Input schema <span class="wf-btn ghost" style="float:right">⟳ Lấy từ Dify</span></h5>
+        <div class="wf-tabs"><span class="on">Bảng</span><span>JSON</span><span>Model thấy gì</span></div>
+        <table class="wf-tbl">
+          <tr><th>Biến</th><th>Kiểu</th><th>Bắt buộc</th><th>Mô tả <span class="wf-req">*</span></th></tr>
+          <tr><td class="wf-mono">source_text</td><td>text</td><td>✓</td><td>Văn bản gốc cần dịch</td></tr>
+          <tr><td class="wf-mono">target_lang</td><td>select (vi,en,ja)</td><td>✓</td><td>Ngôn ngữ đích</td></tr>
+          <tr><td class="wf-mono">tone</td><td>text</td><td></td><td><div class="wf-in err">—</div></td></tr>
+        </table>
+        <div class="wf-errtxt" style="margin:6px 0 0">Thiếu mô tả cho tham số tone</div>
+      </div>
+    </div>
+    <div>
+      <div class="wf-card"><h5>Đang được dùng bởi</h5>
+        <div>⌘ <span class="wf-mono">/dich</span> · command</div>
+        <div>⌘ <span class="wf-mono">/tr-nhanh</span> · command</div>
+        <div>🤖 Trợ lý dịch · agent <span class="wf-muted">↗ Agent Studio</span></div>
+        <div style="margin-top:8px"><span class="wf-btn">+ Tạo command từ workflow này</span></div>
+      </div>
+      <div class="wf-card"><h5>▶ Gọi thử trực tiếp</h5>
+        <p class="wf-muted" style="margin:0 0 8px">Form sinh từ input schema, gọi thẳng workflow</p>
+        <div class="wf-f"><label>source_text</label><div class="wf-in">hello</div></div>
+        <div class="wf-f"><label>target_lang</label><div class="wf-in">vi ▾</div></div>
+        <div style="text-align:right"><span class="wf-btn pri">▶ Chạy</span></div>
+      </div>
+    </div>
+    </div>
+  </div></div></div>
+  <ul>
+    <li>Workflow là <strong>catalog dùng chung</strong> cho command (Admin) và agent (Agent Studio). Tạo sẵn mà chưa gắn vào đâu là hợp lệ: danh sách hiện badge <span class="b warn">Chưa gắn</span> và có filter chip "Chưa gắn" để dọn dẹp.</li>
+    <li>Cột <strong>Đang được dùng bởi</strong>: số command và số agent, hover thì liệt kê, bấm agent thì mở Agent Studio.</li>
+    <li><strong>Mô tả workflow</strong> (20–400 ký tự) và <strong>mô tả từng tham số</strong> là bắt buộc, vì agent dùng nguyên văn làm tool. Gợi ý dưới ô: "Viết như đang dặn một người mới: dùng khi nào, không dùng khi nào." Tab "Model thấy gì" hiện đúng tên tool và JSON schema.</li>
+    <li><strong>Kiểm tra kết nối</strong> nhờ Hub gọi Dify để lấy thông tin app. Kết quả hiện ngay cạnh nút: "✓ Kết nối được · app 'Translate'" hoặc "✗ Key không hợp lệ (401)".</li>
+    <li><strong>Lấy từ Dify</strong> (COULD) điền schema tự động, rồi hiện diff với schema hiện tại trước khi áp dụng. Nếu schema đổi làm hỏng các command hoặc agent đang dùng thì liệt kê từng nơi bị ảnh hưởng.</li>
+    <li>Xoá hoặc tắt workflow đang được dùng thì bị chặn, kèm DependencyList (command và agent).</li>
+    <li>Nút "Tạo command từ workflow này" mở Command editor với workflow đã chọn sẵn. Gắn cho agent thì làm ở Agent Studio.</li>
+    <li>Trạng thái rỗng của catalog hướng dẫn luồng làm việc: "Tạo workflow trên Dify (bằng Claude session) → dán app key vào đây → khai báo input và mô tả."</li>
+  </ul>
+
+  <!-- 7.7 -->
+  <div class="note info"><strong>7.7 Models</strong> (provider, profile) nằm ở <a href="../agent-hub/ui-agent-studio.html" style="color:inherit">Agent Studio</a>.</div>
+
+  <!-- 7.8 -->
+  <h3>7.8 Secrets</h3>
+  <div class="wf-scroll"><div class="wf"><div class="wf-drawer-wrap" style="height:300px">
+    <div class="wf-main">
+      <div class="wf-h"><h4>Secrets</h4><span class="sp"></span><span class="wf-btn pri">+ Thêm secret</span></div>
+      <table class="wf-tbl">
+        <tr><th>Tên</th><th>Giá trị</th><th>Dùng bởi</th><th>Cập nhật</th></tr>
+        <tr><td class="wf-mono">DIFY_TRANSLATE</td><td class="wf-mono">•••• 7f3a</td><td>1 workflow</td><td class="wf-muted">3 tháng · an</td></tr>
+        <tr><td class="wf-mono">DIFY_SUMMARIZE</td><td class="wf-mono">•••• q9Lz</td><td>1 workflow</td><td class="wf-muted">2 tuần · an</td></tr>
+      </table>
+    </div>
+    <div class="wf-dim"></div>
+    <div class="wf-drawer">
+      <h5 style="margin:0 0 12px;font-size:14px">Thay giá trị · <span class="wf-mono">DIFY_TRANSLATE</span></h5>
+      <div class="wf-f" style="grid-template-columns:1fr"><label>Giá trị mới</label><div class="wf-in">••••••••••••••••  👁</div></div>
+      <div class="wf-f" style="grid-template-columns:1fr"><label>Ghi chú</label><div class="wf-in">Rotate định kỳ Q3</div></div>
+      <div class="note warn" style="font-size:12px">Giá trị cũ bị thay ngay. 1 workflow đang dùng secret này sẽ chuyển sang giá trị mới.</div>
+      <div style="text-align:right"><span class="wf-btn">Huỷ</span> <span class="wf-btn pri">Lưu</span></div>
+    </div>
+  </div></div></div>
+  <ul>
+    <li>Chỉ <code>platform_admin</code>. Không có hành động "xem giá trị" ở bất cứ đâu. Không có nút copy giá trị.</li>
+    <li>Xoá secret đang được dùng thì bị chặn, kèm DependencyList.</li>
+    <li>Tên secret viết HOA_GẠCH_DƯỚI và tự chuẩn hoá khi gõ.</li>
+  </ul>
+
+  <!-- 7.9 -->
+  <h3>7.9 Users</h3>
+  <div class="wf-scroll"><div class="wf"><div class="wf-drawer-wrap" style="height:360px">
+    <div class="wf-main">
+      <div class="wf-h"><h4>Users</h4><span class="b info">acme</span><span class="sp"></span><span class="wf-btn pri">+ Tạo user</span></div>
+      <div style="margin-bottom:8px"><span class="wf-chip on">Tất cả 34</span><span class="wf-chip">Active 31</span><span class="wf-chip">Đã khoá 3</span><span class="wf-chip">tenant_admin 2</span><span class="wf-chip">Group ▾</span></div>
+      <table class="wf-tbl">
+        <tr><th>User</th><th>Role</th><th>Group</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th><th></th></tr>
+        <tr><td><b>an.nguyen</b> <span class="wf-muted">Nguyễn An (bạn)</span></td><td>tenant_admin</td><td><span class="wf-chip">Ban giám đốc</span></td><td><span class="b ok">Active</span></td><td class="wf-muted">vừa xong</td><td>⋯</td></tr>
+        <tr><td><b>binh.tran</b></td><td>member</td><td><span class="wf-chip">Kế toán</span><span class="wf-chip">beta-testers</span></td><td><span class="b ok">Active</span></td><td class="wf-muted">2 giờ</td><td>⋯</td></tr>
+        <tr><td><b>cuong.le</b></td><td>member</td><td><span class="wf-chip">Kinh doanh</span></td><td><span class="b off">Đã khoá</span></td><td class="wf-muted">12 ngày</td><td>⋯</td></tr>
+      </table>
+    </div>
+    <div class="wf-dim"></div>
+    <div class="wf-drawer">
+      <h5 style="margin:0 0 10px;font-size:14px">binh.tran · Trần Bình</h5>
+      <div class="wf-tabs"><span>Thông tin</span><span class="on">Quyền hiệu lực</span></div>
+      <div class="wf-muted" style="margin-bottom:4px">Feature</div>
+      <div><b>core</b> <span class="wf-muted">· mặc định cho mọi user</span></div>
+      <div style="margin-bottom:8px"><b>Kế toán</b> <span class="wf-muted">· qua group Kế toán</span></div>
+      <div class="wf-muted" style="margin-bottom:4px">Command</div>
+      <div><span class="wf-mono">/dich</span> <span class="wf-muted">· qua feature core</span></div>
+      <div><span class="wf-mono">/kiemtra-hoadon</span> <span class="wf-muted">· qua feature Kế toán · group Kế toán</span></div>
+      <div style="margin-bottom:8px"><span class="wf-mono wf-muted">/tom</span> <span class="b off">Không thấy</span> <span class="wf-btn ghost">Vì sao không?</span></div>
+      <div class="wf-muted" style="margin-bottom:4px">Agent</div>
+      <div>🤖 Trợ lý hoá đơn <span class="wf-muted">· qua group Kế toán</span></div>
+    </div>
+  </div></div></div>
+  <ul>
+    <li><code>tenant_admin</code> chỉ thấy user của tenant mình. <code>platform_admin</code> chọn tenant ở đầu trang.</li>
+    <li>Bảng có cột Group (chip) và filter theo group. Drawer tạo user có ô chọn group ngay khi tạo.</li>
+    <li>Tab <strong>Quyền hiệu lực</strong> trong drawer: AccessExplainer của user đó (feature, command, agent thấy được và lý do).</li>
+    <li>Mật khẩu tạm được sinh ngẫu nhiên và <strong>chỉ hiện một lần</strong>, lúc tạo hoặc reset. Sau khi đóng drawer thì không xem lại được. Toast nhắc: "Đã copy mật khẩu tạm, hãy gửi cho người dùng qua kênh riêng." Kèm mã công ty để người dùng biết đăng nhập vào đâu.</li>
+    <li>Menu <code>⋯</code> gồm: Sửa, Reset mật khẩu, Khoá/Mở khoá, Đăng xuất mọi thiết bị.</li>
+    <li>Khoá user dùng modal mức vừa: "Khoá <b>cuong.le</b>? Người này bị đăng xuất khỏi mọi thiết bị trong tối đa 15 phút."</li>
+    <li>Hàng của chính mình có nhãn "(bạn)". Menu của hàng này không có Khoá và không có Hạ role.</li>
+    <li>Role chọn được: <code>tenant_admin</code> chỉ gán <code>member</code> hoặc <code>tenant_admin</code>. <code>platform_admin</code> chỉ tồn tại trong tenant <code>platform</code>.</li>
+  </ul>
+
+  <!-- 7.10 -->
+  <h3>7.10 Nhật ký thay đổi (Audit)</h3>
+  <div class="wf-scroll"><div class="wf"><div class="wf-main"><div class="wf-cols">
+    <div class="wf-card"><h5>Dòng thời gian <span class="wf-muted" style="font-weight:400">· lọc: tenant · người · loại · thời gian</span></h5>
+      <div class="wf-tl">
+        <div><b>an</b> sửa command <span class="wf-mono">/dich</span> · 10:42 · v43</div>
+        <div><b>an</b> thay secret <span class="wf-mono">DIFY_TRANSLATE</span> · 10:40 · v42</div>
+        <div><b>lan</b> <span class="wf-muted">(acme)</span> cấp feature <b>Kế toán</b> cho group <b>Kế toán</b> · 10:05 · v41</div>
+        <div><b>binh</b> tạo workflow <span class="wf-mono">invoice-v2</span> · 09:15 · v40</div>
+      </div>
+    </div>
+    <div class="wf-card wf-diff"><h5>v43 · /dich · an · 10:42 <span class="wf-btn" style="float:right">Khôi phục bản trước</span></h5>
+      <table class="wf-tbl">
+        <tr><th>Trường</th><th>Trước</th><th>Sau</th></tr>
+        <tr><td>input_map.target_lang</td><td class="del">$args.lang</td><td class="add">$args.lang · mặc định "vi"</td></tr>
+        <tr><td>timeout_s</td><td class="del">30</td><td class="add">60</td></tr>
+      </table>
+    </div>
+  </div></div></div></div>
+  <ul>
+    <li><code>tenant_admin</code> chỉ thấy thay đổi trong tenant mình (user, group, grant). <code>platform_admin</code> thấy tất cả, lọc theo tenant.</li>
+    <li>Khôi phục <strong>không</strong> ghi đè lịch sử mà tạo một phiên bản mới (v44 = nội dung của v42), sau khi xác nhận bằng modal.</li>
+    <li>Thay đổi secret chỉ ghi "đã thay giá trị", không có diff.</li>
+  </ul>
+
+  <!-- 7.11 -->
+  <h3>7.11 Import / Export</h3>
+  <ul>
+    <li>Chỉ <code>platform_admin</code>.</li>
+    <li><strong>Export:</strong> chọn loại (checkbox: workflows, commands, features, tenants, groups, grants) rồi tải file <code>config-v43.yaml</code>. Secret chỉ export tên. Cấu hình agent export ở Agent Studio.</li>
+    <li><strong>Import:</strong> kéo-thả file yaml → hệ thống parse và validate → hiện <em>bản xem trước</em> 3 nhóm: <span class="b ok">Thêm 3</span> <span class="b warn">Sửa 2</span> <span class="b off">Không đổi 10</span>, bấm vào từng mục để xem diff → [Áp dụng]. Không bao giờ xoá những thực thể không có trong file (v1).</li>
+    <li>Nếu file tham chiếu secret chưa tồn tại thì hiện danh sách "Cần tạo secret" với ô nhập ngay tại chỗ. Chưa nhập đủ thì không áp dụng được.</li>
+  </ul>
+
+  <!-- 7.12 -->
+  <h3>7.12 Features</h3>
+  <ul>
+    <li>Chỉ <code>platform_admin</code>. Danh sách: tên, key, trạng thái (<span class="b ok">Bật</span> <span class="b off">Tắt</span> <span class="b info">Beta</span>), số command, số tenant được entitlement. Feature <code>core</code> có nhãn "Mặc định", không xoá và không tắt được.</li>
+    <li>Editor có 3 tab:
+      <ul>
+        <li><em>Thông tin</em>: key, tên và mô tả VI/EN, icon, trạng thái.</li>
+        <li><em>Commands</em>: danh sách command trong feature, thêm bằng RefPicker, bỏ bằng ✕. Command sắp không còn feature nào thì cảnh báo "<code>/tr-nhanh</code> sẽ không thuộc feature nào và biến khỏi menu".</li>
+        <li><em>Tenant</em>: bảng tenant được entitlement, nút [+ Cấp cho tenant], thu hồi dùng ConfirmDialog mức nặng kèm số user đang dùng.</li>
+      </ul>
+    </li>
+    <li>Tắt feature (kill switch) dùng ConfirmDialog mức vừa: "Tắt <b>Kế toán</b>? 3 command biến khỏi menu của 120 người trong vài giây. Run đang chạy vẫn chạy xong."</li>
+  </ul>
+
+  <!-- 7.13 -->
+  <h3>7.13 Tenants</h3>
+  <ul>
+    <li>Chỉ <code>platform_admin</code>. Danh sách: mã công ty, tên, số user, QuotaBar tháng này, trạng thái.</li>
+    <li>Tạo tenant: mã công ty (chữ thường, số, <code>-</code>), tên, rồi tạo luôn <code>tenant_admin</code> đầu tiên (mật khẩu tạm chỉ hiện một lần).</li>
+    <li>Trang chi tiết có các tab: <em>Thông tin</em> (tên, trạng thái, giới hạn slot subscription, để trống = không giới hạn) · <em>Feature</em> (entitlement) · <em>Agent</em> (entitlement agent, link sang Agent Studio) · <em>Quota</em> (theo run, token, USD; chung hoặc theo feature; để trống = không giới hạn) · <em>Users</em> (link sang trang Users đã lọc).</li>
+    <li>Khoá tenant dùng ConfirmDialog mức nặng (gõ lại mã công ty): "Mọi user của <b>acme</b> (120 người) bị đăng xuất và không đăng nhập được."</li>
+  </ul>
+
+  <!-- 7.14 -->
+  <h3>7.14 Groups</h3>
+  <ul>
+    <li>Danh sách group của tenant: tên, số thành viên, số feature, số agent được cấp.</li>
+    <li>Trang group có 3 tab:
+      <ul>
+        <li><em>Thành viên</em>: thêm bằng RefPicker hoặc dán danh sách username (mỗi dòng một người); username không tồn tại được liệt kê để sửa.</li>
+        <li><em>Feature</em>: danh sách feature được cấp, chỉ chọn được trong số feature tenant đã được entitlement.</li>
+        <li><em>Agent</em>: danh sách agent được cấp, chỉ chọn được trong số agent tenant đã được entitlement.</li>
+      </ul>
+    </li>
+    <li>Group <code>beta-testers</code> được tạo sẵn cho mỗi tenant, có nhãn giải thích "Thấy các feature đang Beta".</li>
+  </ul>
+
+  <!-- 7.15 -->
+  <h3>7.15 Phân quyền</h3>
+  <ul>
+    <li>Tab <em>Ma trận</em>: GrantMatrix feature × group của tenant. Tenant nhiều group thì cột cuộn ngang, cột đầu cố định.</li>
+    <li>Tab <em>Kiểm tra quyền</em>: AccessExplainer. Nhập username → kết quả kèm lý do. Đây là nơi trả lời "sao tôi không thấy lệnh X".</li>
+  </ul>
+
+  <!-- 7.16 -->
+  <h3>7.16 Chi phí &amp; quota</h3>
+  <ul>
+    <li>Hàng KPI: Số run · Token · Số thu (<code>billable_usd</code>) tháng này, kèm delta so với tháng trước. <code>platform_admin</code> có thêm tile Chi phí thật (<code>cost_usd</code>) và Biên (thu − chi).</li>
+    <li>QuotaBar cho từng quota của tenant. Không đặt quota thì hiện "Không giới hạn".</li>
+    <li>Biểu đồ cột theo ngày (số thu), bảng top feature và top user tốn nhất, export CSV theo bộ lọc.</li>
+    <li><code>platform_admin</code> có bảng xếp hạng tenant theo số thu và mức dùng quota. Quy tắc biểu đồ theo <a href="../agent-hub/ui-operations.html" style="color:var(--accent)">UI Vận hành</a> mục 7.</li>
+    <li>Vượt quota không chặn: dòng có badge <span class="b err">Vượt quota</span> và phần vượt được tô vân chéo trong biểu đồ.</li>
+  </ul>
+</section>
+
+<!-- ======================================================= -->
+<section id="s8">
+  <h2>8. Luồng thao tác chính</h2>
+  <h3>F1. Đưa một workflow mới vào sử dụng (luồng quan trọng nhất)</h3>
+<pre><code>Claude session tạo workflow trên Dify, lấy app key
+  → Workflows › + Khai báo workflow
+      dán key → [Kiểm tra kết nối] ✓ → [Lấy từ Dify] điền schema (hoặc nhập tay) → Lưu
+  → trong trang workflow bấm "Tạo command từ workflow này"
+      (mở Command editor, workflow đã chọn sẵn, input map tự điền)
+  → đặt tên /xxx, chọn feature (mặc định core), thêm tham số, map các input còn thiếu
+  → Test panel: [▶ Chạy thử] ✓
+  → Lưu (mặc định Bật) → toast "Đã áp dụng · v44"
+  → user có quyền với feature đó thấy /xxx trong menu sau ≤ 5 giây</code></pre>
+  <p>Chỉ tiêu: ≤ 3 phút và ≤ 25 thao tác click/gõ khi workflow có 2–3 input.</p>
+  <p>Workflow cũng có thể chỉ khai báo và <strong>để đó</strong> (badge <span class="b warn">Chưa gắn</span>), sau này mới tạo command hoặc gắn cho agent. <em>Gắn workflow cho agent và xử lý provider: xem Agent Studio.</em></p>
+
+  <h3>F2. Onboard một công ty khách hàng</h3>
+<pre><code>Tenants › + Tạo tenant: mã công ty "acme", tên → tạo tenant_admin đầu tiên (mật khẩu tạm hiện 1 lần)
+  → tab Feature: cấp các feature theo gói đã bán (core có sẵn)
+  → tab Agent: cấp agent (Agent Studio)   → tab Quota: để trống = không giới hạn
+  → gửi mã công ty + username + mật khẩu tạm cho khách qua kênh riêng</code></pre>
+
+  <h3>F3. Tenant admin mở chức năng cho một phòng ban</h3>
+<pre><code>Groups › + Tạo group "Kế toán" → tab Thành viên: dán danh sách username
+  → tab Feature: chọn "Kế toán" → tab Agent: chọn "Trợ lý hoá đơn" → Lưu
+  → thành viên thấy /kiemtra-hoadon và được Coordinator giao cho agent sau ≤ 5 giây</code></pre>
+  <p>Chỉ tiêu: ≤ 2 phút.</p>
+
+  <h3>F4. "Sao tôi không thấy lệnh X?"</h3>
+<pre><code>Phân quyền › Kiểm tra quyền › nhập username → tìm /kiemtra-hoadon → [Vì sao không?]
+  → "Feature Kế toán chưa được cấp cho bạn hay group nào của bạn" → [Cấp cho group…]</code></pre>
+
+  <h3>F5. Thay key (rotate)</h3>
+<pre><code>Secrets › chọn secret → [Thay giá trị] → dán key mới → Lưu
+  → toast có nút [Kiểm tra các workflow dùng secret này] → chạy thử nhanh từng cái</code></pre>
+
+  <h3>F6. Nhân viên nghỉ việc</h3>
+<pre><code>Users › tìm user › ⋯ Khoá → modal xác nhận → Khoá
+  → token bị thu hồi, trạng thái "Đã khoá", có ghi audit</code></pre>
+
+  <h3>F7. Tenant vượt quota</h3>
+<pre><code>Hub đếm mức dùng → đạt 80%: email + banner vàng cho tenant_admin
+  → đạt 100%: vẫn chạy, email + banner cam "Đang vượt quota, phần vượt được tính phí"
+  → Chi phí &amp; quota: xem feature nào tốn nhất → liên hệ platform admin nâng quota nếu cần</code></pre>
+</section>
+
+<!-- ======================================================= -->
+<section id="s9">
+  <h2>9. Trạng thái, validation, thông báo</h2>
+  <h3>Trạng thái màn hình</h3>
+  <div class="table-scroll"><table>
+    <tr><th>Trạng thái</th><th>Thiết kế</th></tr>
+    <tr><td>Đang tải</td><td>Skeleton theo đúng hình dạng bảng hoặc form. Không dùng spinner che cả trang. Quá 10 giây thì hiện "Vẫn đang tải…" kèm nút [Thử lại]</td></tr>
+    <tr><td>Rỗng</td><td>Icon, một câu giải thích <em>thực thể này dùng để làm gì</em>, và nút tạo mới. Rỗng do bộ lọc thì hiện "Không có kết quả cho 'abc'" kèm nút [Xoá bộ lọc]</td></tr>
+    <tr><td>Lỗi tải</td><td>Hiện một banner trong vùng nội dung: "Không tải được dữ liệu (mã). [Thử lại]". Sidebar và topbar vẫn dùng được</td></tr>
+    <tr><td>Đang lưu</td><td>Nút Lưu chuyển thành spinner và bị khoá. Form chưa bị khoá (sửa tiếp được, nhưng phần sửa thêm sẽ thành thay đổi mới)</td></tr>
+    <tr><td>Xung đột</td><td>Người khác đã lưu bản mới hơn (so theo version). Modal: "an vừa sửa command này lúc 10:42. [Xem khác biệt] [Ghi đè] [Tải bản mới]"</td></tr>
+    <tr><td>Mất kết nối</td><td>Banner vàng dính trên cùng: "Mất kết nối, thay đổi chưa được lưu". Nút Lưu bị khoá cho đến khi có mạng lại</td></tr>
+  </table></div>
+
+  <h3>Validation (hiện khi rời ô và khi bấm Lưu)</h3>
+  <div class="table-scroll"><table>
+    <tr><th>Trường</th><th>Luật</th><th>Câu báo lỗi</th></tr>
+    <tr><td>Tên command</td><td><code>^[a-z0-9-]{2,32}$</code>, không trùng tên hoặc alias khác</td><td>"Chỉ dùng chữ thường không dấu, số, dấu -" · "/dich đã được dùng bởi command khác"</td></tr>
+    <tr><td>Input map</td><td>Mọi input bắt buộc đều có nguồn</td><td>"Input bắt buộc chưa được map"</td></tr>
+    <tr><td>Tham số rest</td><td>Chỉ tham số cuối được bật</td><td>"Chỉ tham số cuối cùng mới được nhận phần còn lại"</td></tr>
+    <tr><td>Feature của command</td><td>≥ 1 feature</td><td>"Command phải thuộc ít nhất một feature"</td></tr>
+    <tr><td>Mô tả workflow</td><td>20–400 ký tự</td><td>"Mô tả quá ngắn, agent sẽ khó biết khi nào dùng workflow này"</td></tr>
+    <tr><td>Mô tả tham số workflow</td><td>Bắt buộc cho mọi tham số</td><td>"Thiếu mô tả cho tham số {tên}"</td></tr>
+    <tr><td>Timeout</td><td>5–3600 giây. Sync thì ≤ 120</td><td>"Command sync tối đa 120 giây, hãy chuyển sang Async"</td></tr>
+    <tr><td>Mã công ty</td><td><code>^[a-z0-9-]{2,32}$</code>, không trùng</td><td>"Mã công ty đã được dùng"</td></tr>
+    <tr><td>Key feature, key group</td><td><code>^[a-z0-9-]{2,32}$</code>, không trùng (group: trong tenant)</td><td>"Key đã được dùng"</td></tr>
+    <tr><td>Quota</td><td>Số nguyên dương hoặc để trống (không giới hạn)</td><td>"Nhập số lớn hơn 0 hoặc để trống"</td></tr>
+    <tr><td>Mật khẩu</td><td>≥ 10 ký tự, khác mật khẩu cũ</td><td>"Mật khẩu cần tối thiểu 10 ký tự"</td></tr>
+  </table></div>
+
+  <h3>Toast chuẩn</h3>
+  <div class="table-scroll"><table>
+    <tr><th>Tình huống</th><th>Nội dung</th></tr>
+    <tr><td>Lưu</td><td>"Đã lưu và áp dụng · v43"</td></tr>
+    <tr><td>Bật/Tắt nhanh</td><td>"Đã tắt /dich · [Hoàn tác]"</td></tr>
+    <tr><td>Xoá</td><td>"Đã xoá /tr-nhanh"</td></tr>
+    <tr><td>Lỗi lưu</td><td>"Không lưu được: {lý do}" (không tự ẩn)</td></tr>
+    <tr><td>Test lỗi</td><td>Không dùng toast. Lỗi hiện ngay trong Test panel</td></tr>
+    <tr><td>Cấp quyền</td><td>"Đã cấp Kế toán cho 2 group · có hiệu lực sau vài giây"</td></tr>
+    <tr><td>Thu hồi entitlement</td><td>"Đã thu hồi Kế toán của acme · [Hoàn tác]"</td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================= -->
+<section id="s10">
+  <h2>10. Phím tắt</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Phím</th><th>Tác dụng</th><th>Phạm vi</th></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>Command palette</td><td>Toàn app</td></tr>
+    <tr><td><kbd>/</kbd></td><td>Focus ô tìm của bảng</td><td>Trang danh sách</td></tr>
+    <tr><td><kbd>N</kbd></td><td>Tạo mới</td><td>Trang danh sách</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Lưu</td><td>Editor</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Chạy thử</td><td>Editor có Test panel</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Đóng drawer hoặc modal (hỏi lại nếu có thay đổi chưa lưu)</td><td>Toàn app</td></tr>
+    <tr><td><kbd>[</kbd></td><td>Thu gọn/mở sidebar</td><td>Toàn app</td></tr>
+    <tr><td><kbd>?</kbd></td><td>Hiện bảng phím tắt</td><td>Toàn app</td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================= -->
+<section id="s11">
+  <h2>11. Responsive &amp; accessibility</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Kích thước</th><th>Hành vi</th></tr>
+    <tr><td>≥ 1280px (chính)</td><td>Bố cục đầy đủ. Editor chia 2 cột (form ~58%, Test ~42%)</td></tr>
+    <tr><td>1024–1279px</td><td>Sidebar tự thu gọn còn icon. Editor vẫn 2 cột</td></tr>
+    <tr><td>768–1023px</td><td>Test panel chuyển thành tab "Chạy thử" nằm cạnh tab "Cấu hình". Drawer chiếm 100% chiều rộng</td></tr>
+    <tr><td>&lt; 768px (điện thoại)</td><td>Hỗ trợ <em>tác vụ khẩn</em>: xem Tổng quan và mức dùng quota, bật/tắt command hoặc feature, khoá user hoặc tenant. Editor phức tạp hiện gợi ý "Mở trên máy tính để chỉnh sửa đầy đủ", nhưng vẫn cho sửa được. Bảng chuyển thành danh sách thẻ</td></tr>
+  </table></div>
+  <ul>
+    <li>Đi hết mọi thao tác được bằng bàn phím, focus ring luôn nhìn thấy (2px màu primary). Drawer và modal giữ focus bên trong, đóng thì trả focus về nút đã mở nó.</li>
+    <li>Tương phản chữ ≥ 4.5:1 ở cả hai theme. Trạng thái không chỉ phân biệt bằng màu mà luôn có chữ trong badge.</li>
+    <li>Toggle có nhãn cho trình đọc màn hình ("Bật command /dich"). Lỗi form gắn vào ô bằng <code>aria-describedby</code>, và ô đầu tiên có lỗi được focus khi Lưu thất bại.</li>
+    <li>Kết quả Test cập nhật qua vùng <code>aria-live="polite"</code>.</li>
+  </ul>
+</section>
+
+<!-- ======================================================= -->
+<section id="s12">
+  <h2>12. Câu chữ (microcopy) — dùng thống nhất</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Dùng (VI)</th><th>EN</th><th>Không dùng</th><th>Ghi chú</th></tr>
+    <tr><td>Bật / Tắt</td><td>Enabled / Disabled</td><td>Enable / Disable, Kích hoạt</td><td>Cho mọi thực thể</td></tr>
+    <tr><td>Chạy thử</td><td>Test, Kiểm thử</td><td>Tên nút. Trong tài liệu kỹ thuật vẫn gọi là "Test panel"</td></tr>
+    <tr><td>Lưu</td><td>Lưu &amp; publish, Submit</td><td>Vì lưu là áp dụng ngay</td></tr>
+    <tr><td>Thay giá trị</td><td>Replace value</td><td>Sửa secret, Xem secret</td><td>Chỉ dành cho secret</td></tr>
+    <tr><td>Đang được dùng bởi</td><td>Used by</td><td>References, Liên kết</td><td></td></tr>
+    <tr><td>Khoá / Mở khoá</td><td>Lock / Unlock</td><td>Vô hiệu hoá, Ban</td><td>Cho user và tenant</td></tr>
+    <tr><td>Cấp / Thu hồi</td><td>Grant / Revoke</td><td>Phân, Gán quyền, Xoá quyền</td><td>Cho entitlement và grant</td></tr>
+    <tr><td>Mã công ty</td><td>Company code</td><td>Tenant ID, Mã tenant</td><td>Trên màn đăng nhập. Trong tài liệu kỹ thuật vẫn gọi là tenant key</td></tr>
+    <tr><td>Chưa gắn</td><td>Unused</td><td>Mồ côi, Rác</td><td>Badge của workflow chưa được command hay agent nào dùng</td></tr>
+    <tr><td>Dự phòng</td><td>Fallback</td><td>Fallback (trong UI)</td><td>Badge trong Trace được phép ghi "fallback" vì là thuật ngữ kỹ thuật</td></tr>
+    <tr><td>Command, Agent, Workflow, Feature, Tenant, Group, Provider, Profile</td><td>Command, Agent, Workflow, Feature, Tenant, Group, Provider, Profile</td><td>Lệnh, Tác tử, Luồng…</td><td>Giữ nguyên tiếng Anh, vì đội đã quen và khớp với tài liệu BA</td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================= -->
+<section id="s13">
+  <h2>13. Truy vết yêu cầu &amp; câu hỏi mở</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Màn hình</th><th>Đáp ứng</th></tr>
+    <tr><td>7.1 Đăng nhập</td><td>ADM-FR-01, 02, 03, 06, 07, 08</td></tr>
+    <tr><td>7.3–7.4 Commands</td><td>ADM-FR-20 → 24 · ADM-BR-01, 02, 06, 10</td></tr>
+    <tr><td>7.6 Workflows</td><td>ADM-FR-10 → 15 · ADM-BR-13</td></tr>
+    <tr><td>7.8 Secrets</td><td>ADM-FR-50 · ADM-BR-04, 14</td></tr>
+    <tr><td>7.9 Users</td><td>ADM-FR-04, 05, 63 · ADM-BR-05, 08, 09</td></tr>
+    <tr><td>7.10 Audit</td><td>ADM-FR-51, 52, 53</td></tr>
+    <tr><td>7.11 Import/Export</td><td>ADM-FR-54</td></tr>
+    <tr><td>7.12 Features</td><td>ADM-FR-30, 31, 33, 34 · ADM-BR-10, 12</td></tr>
+    <tr><td>7.13 Tenants</td><td>ADM-FR-60, 61, 40</td></tr>
+    <tr><td>7.14 Groups</td><td>ADM-FR-62, 32, 37</td></tr>
+    <tr><td>7.15 Phân quyền</td><td>ADM-FR-35, 36 · ADM-BR-11</td></tr>
+    <tr><td>7.16 Chi phí &amp; quota</td><td>ADM-FR-40, 41, 42</td></tr>
+  </table></div>
+  <div class="note ok"><strong>Đã chốt và cập nhật vào BA Admin:</strong> (1) chạy thử bằng <em>bản chưa lưu</em> (ADM-FR-23); (2) phát hiện xung đột khi hai admin cùng sửa bằng trường <code>version</code> (ADM-FR-55, AC-A07).</div>
+  <h3>Câu hỏi mở</h3>
+  <ol>
+    <li><s>Chỉ tiếng Việt hay song ngữ?</s> Đã chốt: <strong>song ngữ VI/EN</strong> (mục 15).</li>
+    <li><s>Có trang chi phí v1 không?</s> Đã chốt: <strong>có</strong>, chi phí vận hành chi tiết nằm trong Agent Studio (<a href="../agent-hub/ui-operations.html" style="color:var(--accent)">UI Vận hành</a>); chi phí &amp; quota theo tenant nằm ở Admin (mục 7.16).</li>
+    <li><s>Thư viện UI nào?</s> Đã chốt: <strong>shadcn/ui</strong> (mục 14).</li>
+    <li><s>Hai điểm bổ sung BA?</s> Đã chốt: có (ADM-FR-23, ADM-FR-55).</li>
+    <li><s>Role builder riêng?</s> Không. v0.4 có 3 role: <code>platform_admin</code> (Admin UI đầy đủ + Agent Studio), <code>tenant_admin</code> (phần của tenant mình), <code>member</code>.</li>
+    <li><s>Workflow chỉ dùng cho command?</s> Đã chốt v0.4: catalog dùng chung cho command và agent, tạo sẵn để đó được.</li>
+    <li>Có cần wireframe riêng cho các màn mới 7.12–7.16 không, hay dùng lại mẫu DataTable + trang có tab?</li>
+  </ol>
+</section>
+
+<section id="s14">
+  <h2>14. Công nghệ UI: shadcn/ui</h2>
+  <p>Dùng shadcn/ui (Radix + Tailwind), copy component vào repo (<code>components/ui</code>). Token màu ở mục 5 được khai báo thành CSS variable của theme shadcn (<code>--primary</code>, <code>--destructive</code>…), light và dark.</p>
+  <div class="table-scroll"><table>
+    <tr><th>Thành phần trong tài liệu này</th><th>shadcn / thư viện đi kèm</th></tr>
+    <tr><td>App shell, sidebar thu gọn</td><td><code>Sidebar</code> (SidebarProvider, collapsible="icon")</td></tr>
+    <tr><td>Command palette, RefPicker (combobox)</td><td><code>Command</code> (cmdk) + <code>Popover</code></td></tr>
+    <tr><td>DataTable</td><td><code>Table</code> + <strong>TanStack Table</strong> (sort, filter, row selection), <code>DropdownMenu</code> cho menu ⋯</td></tr>
+    <tr><td>Drawer (secret, user, provider)</td><td><code>Sheet</code> (side="right")</td></tr>
+    <tr><td>ConfirmDialog nhẹ, vừa, nặng</td><td>Toast có Hoàn tác, <code>AlertDialog</code>, <code>AlertDialog</code> kèm <code>Input</code> gõ lại key</td></tr>
+    <tr><td>Form, validation</td><td><code>Form</code> + <strong>react-hook-form</strong> + <strong>zod</strong> (dùng chung schema với API)</td></tr>
+    <tr><td>Toggle bật/tắt · chip lựa chọn · badge</td><td><code>Switch</code> · <code>ToggleGroup</code> · <code>Badge</code> (thêm các variant ok/warn/err/off/info)</td></tr>
+    <tr><td>Tabs của Test panel</td><td><code>Tabs</code></td></tr>
+    <tr><td>ArgsEditor (kéo-thả)</td><td><strong>dnd-kit</strong> (sortable)</td></tr>
+    <tr><td>Soạn prompt, JSON schema</td><td><code>Textarea</code>. Tab JSON dùng <strong>CodeMirror</strong> (nhẹ hơn Monaco)</td></tr>
+    <tr><td>Toast</td><td><code>Sonner</code></td></tr>
+    <tr><td>Skeleton, Tooltip, ScrollArea, Separator, Breadcrumb</td><td>Các component cùng tên</td></tr>
+  </table></div>
+</section>
+
+<section id="s15">
+  <h2>15. Song ngữ VI/EN</h2>
+  <ul>
+    <li><strong>Mặc định là VI.</strong> Đổi ngôn ngữ trong menu avatar. Lựa chọn lưu vào <code>users.locale</code>, dùng chung cho Admin, Chat và Extension.</li>
+    <li><strong>Chuỗi giao diện</strong> tổ chức theo key trong <code>messages/vi.json</code> và <code>messages/en.json</code> (next-intl hoặc i18next). CI chặn merge nếu thiếu key ở một trong hai file.</li>
+    <li><strong>Nội dung cấu hình mà user cuối nhìn thấy</strong> nhập được hai bản:
+      <ul>
+        <li>mô tả command, mô tả tham số;</li>
+        <li>tên hiển thị agent, nhãn step;</li>
+        <li>mô tả workflow (nếu hiện cho user);</li>
+        <li>tên và mô tả feature, tên group.</li>
+      </ul>
+      Trên form, các trường này có tab nhỏ <span class="tag">VI</span> <span class="tag">EN</span> ngay trên ô nhập. Ô EN để trống thì tự dùng bản VI, và list hiện icon "EN thiếu" để admin bổ sung sau.</li>
+    <li><strong>Không cần hai bản:</strong> key, tên command, system prompt, mô tả agent cho Coordinator (Coordinator đọc được cả hai thứ tiếng).</li>
+    <li><strong>Độ dài chữ:</strong> bản EN thường dài hơn khoảng 20–30%. Nút và nhãn không dùng chiều rộng cố định. Kiểm tra lại cả hai ngôn ngữ ở khổ 1024px.</li>
+    <li><strong>Định dạng:</strong> dùng <code>Intl</code> theo locale cho ngày, giờ, số và tiền. Thời gian tương đối ("5 phút trước" / "5 min ago") cũng theo locale.</li>
+    <li><strong>Ảnh hưởng tới BA Admin:</strong> thêm <code>users.locale</code>, và đổi các trường mô tả hoặc hiển thị thành jsonb <code>{vi, en}</code>.</li>
+  </ul>
+</section>
+
+<footer>AI System · UI/UX · Admin Page · v0.4 · 2026-10-01</footer>
+</div>
+</body>
+</html>

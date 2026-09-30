@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI/UX — Agent Studio</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  /* ---------- wireframe kit ---------- */
+  .wf-scroll { overflow-x: auto; margin: 14px 0; }
+  .wf {
+    min-width: 860px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    background: var(--bg); font-size: 12.5px; line-height: 1.4; color: var(--text);
+  }
+  .wf.narrow { min-width: 380px; max-width: 420px; }
+  .wf-row { display: flex; }
+  .wf-side {
+    width: 190px; flex: none; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px;
+  }
+  .wf-logo { font-weight: 700; padding: 4px 8px 12px; }
+  .wf-grp { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; padding: 10px 8px 4px; }
+  .wf-nav { padding: 6px 8px; border-radius: 6px; color: var(--muted); display: flex; justify-content: space-between; }
+  .wf-nav.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .wf-body { flex: 1; min-width: 0; }
+  .wf-top {
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .wf-crumb { color: var(--muted); }
+  .wf-crumb b { color: var(--text); }
+  .wf-search { margin-left: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--muted); width: 220px; }
+  .wf-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; font-size: 11px; }
+  .wf-main { padding: 16px; }
+  .wf-h { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .wf-h h4 { margin: 0; font-size: 16px; }
+  .wf-h .sp { flex: 1; }
+  .wf-sub { color: var(--muted); margin: -8px 0 12px; }
+  .wf-btn { display: inline-block; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 4px 10px; white-space: nowrap; }
+  .wf-btn.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .wf-btn.dng { color: #dc2626; border-color: #fca5a5; }
+  .wf-btn.ghost { border-color: transparent; background: none; color: var(--muted); }
+  .wf-chip { display: inline-block; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; color: var(--muted); margin-right: 4px; }
+  .wf-chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .wf-tbl { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .wf-tbl th, .wf-tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 12.5px; }
+  .wf-tbl th { color: var(--muted); font-weight: 600; background: var(--bg); }
+  .wf-mono { font-family: ui-monospace, Consolas, monospace; }
+  .wf-muted { color: var(--muted); }
+  .b { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .b.ok { background: var(--ok-soft); color: var(--ok); }
+  .b.off { background: var(--code-bg); color: var(--muted); }
+  .b.warn { background: var(--warn-soft); color: var(--warn); }
+  .b.err { background: #fee2e2; color: #b91c1c; }
+  .b.info { background: var(--accent-soft); color: var(--accent); }
+  .wf-tog { display: inline-block; width: 28px; height: 16px; border-radius: 999px; background: var(--accent); position: relative; vertical-align: middle; }
+  .wf-tog::after { content: ""; position: absolute; right: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .wf-tog.off { background: var(--border); }
+  .wf-tog.off::after { right: auto; left: 2px; }
+  .wf-cols { display: grid; grid-template-columns: 1.35fr 1fr; gap: 14px; }
+  .wf-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+  .wf-card h5 { margin: 0 0 10px; font-size: 13px; }
+  .wf-f { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .wf-f label { color: var(--muted); }
+  .wf-in { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; background: var(--bg); min-height: 24px; }
+  .wf-in.ta { min-height: 52px; }
+  .wf-in.err { border-color: #dc2626; }
+  .wf-errtxt { color: #dc2626; font-size: 11px; grid-column: 2; margin-top: -4px; }
+  .wf-help { color: var(--muted); font-size: 11px; grid-column: 2; margin-top: -4px; }
+  .wf-map { display: grid; grid-template-columns: 1fr 26px 1.2fr 0.9fr; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .wf-map .arrow { text-align: center; color: var(--muted); }
+  .wf-req { color: #dc2626; }
+  .wf-result { background: var(--code-bg); border-radius: 6px; padding: 8px 10px; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; white-space: pre-wrap; }
+  .wf-tabs { display: flex; gap: 14px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+  .wf-tabs span { padding: 4px 0; color: var(--muted); }
+  .wf-tabs span.on { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 600; }
+  .wf-bar { display: flex; gap: 8px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+  .wf-bar .sp { flex: 1; }
+  .wf-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .wf-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .wf-kpi .n { font-size: 20px; font-weight: 700; }
+  .wf-kpi .l { color: var(--muted); }
+  .wf-step { display: flex; gap: 8px; align-items: center; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; background: var(--surface); }
+  .wf-step .grip { color: var(--muted); cursor: grab; }
+  .wf-drawer-wrap { position: relative; }
+  .wf-dim { position: absolute; inset: 0; background: rgba(0,0,0,.18); }
+  .wf-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 360px; background: var(--surface); border-left: 1px solid var(--border); padding: 14px 16px; }
+  .wf-modal { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .wf-tl { border-left: 2px solid var(--border); margin-left: 6px; padding-left: 12px; }
+  .wf-tl div { margin-bottom: 8px; position: relative; }
+  .wf-tl div::before { content: ""; position: absolute; left: -18px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .wf-diff .del { background: #fee2e2; color: #991b1b; }
+  .wf-diff .add { background: #dcfce7; color: #166534; }
+  .wf-center { display: grid; place-items: center; padding: 40px 16px; background: var(--bg); }
+  .wf-empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+  .wf-empty .ico { font-size: 28px; }
+  .wf-toast { position: absolute; right: 16px; bottom: 16px; background: var(--text); color: var(--bg); border-radius: 8px; padding: 8px 12px; font-size: 12px; }
+  .caption { color: var(--muted); font-size: 13px; margin-top: -6px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+  .sw { width: 130px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; font-size: 12px; }
+  .sw i { display: block; height: 40px; }
+  .sw span { display: block; padding: 6px 8px; }
+  kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+</style>
+<script>
+(function () {
+  if (window.self === window.top) return;
+  document.documentElement.classList.add('embedded');
+  try { parent.postMessage({ aisysDoc: location.pathname }, '*'); } catch (e) {}
+  window.addEventListener('message', function (e) {
+    var t = e.data && e.data.aisysTheme;
+    if (!t) return;
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+  });
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="docnav">
+  <a href="../architecture.html">Kiến trúc</a>
+  <a href="../admin/ba-admin.html">Admin</a>
+  <a href="../admin/ui-admin.html">UI/UX Admin</a>
+  <a href="ui-agent-studio.html" class="current">UI Agent Studio</a>
+  <a href="ui-operations.html">UI Vận hành</a>
+  <a href="../chat-app/ui-chat-extension.html">UI Chat &amp; Extension</a>
+  <a href="ba-agent-hub.html">Agent Hub</a>
+  <a href="../worker/ba-worker.html">Worker</a>
+</nav>
+
+<header>
+  <h1>Agent Studio — Đặc tả UI/UX (Agent Hub)</h1>
+  <p>UI riêng của Agent Hub: cấu hình agent, Coordinator, chọn workflow làm tool, model và provider, cấp agent cho tenant; thử nghiệm bằng Playground; vận hành</p>
+  <div class="meta"><span class="tag">v0.4 · draft</span><span class="tag">2026-10-01</span><span class="tag">shadcn/ui · song ngữ VI/EN</span><span class="tag">Đáp ứng HUB-FR-60 → 73, 77, 78, 84</span></div>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#s1">Vai trò &amp; nguyên tắc</a></li>
+    <li><a href="#s2">Kiến trúc thông tin</a></li>
+    <li><a href="#s3">Khung ứng dụng</a></li>
+    <li><a href="#s4">Tổng quan</a></li>
+    <li><a href="#s5">Agents</a></li>
+    <li><a href="#s6">Coordinator</a></li>
+    <li><a href="#s7">Tools (chọn workflow)</a></li>
+    <li><a href="#s8">Models</a></li>
+    <li><a href="#s9">Quyền agent</a></li>
+    <li><a href="#s10">Playground</a></li>
+    <li><a href="#s11">Secrets, Nhật ký, Import/Export</a></li>
+    <li><a href="#s12">Luồng thao tác chính</a></li>
+    <li><a href="#s13">Validation &amp; trạng thái</a></li>
+    <li><a href="#s14">Truy vết &amp; câu hỏi mở</a></li>
+  </ol>
+</nav>
+
+<section id="s1">
+  <h2>1. Vai trò &amp; nguyên tắc</h2>
+  <p><strong>Agent Studio</strong> là nơi <code>platform_admin</code> thiết kế cách hệ thống <em>suy nghĩ và hành động</em>: có những agent nào, mỗi agent dùng model gì và được dùng workflow nào, Coordinator chọn agent ra sao, tenant nào được dùng agent nào. Studio được Hub phục vụ tại <code>/studio</code>, dùng chung design system (shadcn) và chung phiên đăng nhập với Admin UI. Chỉ <code>platform_admin</code> vào được. <code>tenant_admin</code> cấp agent cho group trong Admin (trang Groups), không vào Studio.</p>
+  <div class="table-scroll"><table>
+    <tr><th>#</th><th>Nguyên tắc</th><th>Thể hiện</th></tr>
+    <tr><td>S1</td><td><strong>Thấy điều LLM thấy</strong></td><td>Mô tả agent, tool (lấy từ workflow) và prompt của Coordinator đều có nút "Xem như model thấy", hiện đúng phần text và JSON schema sẽ gửi cho model. Chất lượng định tuyến phụ thuộc gần như hoàn toàn vào phần này</td></tr>
+    <tr><td>S2</td><td><strong>Thử trước khi tin</strong></td><td>Workflow có nút Chạy thử. Agent có Test panel. Coordinator có Dry-run định tuyến. Toàn hệ thống có Playground. Tất cả đều chạy được trên <em>bản nháp</em> chưa lưu</td></tr>
+    <tr><td>S3</td><td><strong>Trạng thái thật ngay tại chỗ</strong></td><td>Chỗ nào chọn provider hay profile là chỗ đó hiện trạng thái sống (ok/cooldown/logged_out) và ghi "lúc này sẽ chạy bằng …"</td></tr>
+    <tr><td>S4</td><td><strong>Workflow ở Admin, agent ở Studio</strong></td><td>Workflow là catalog dùng chung của Admin: Studio chỉ <em>chọn</em>, không tạo, không đặt tên, không viết lại mô tả. Không có ô nào tham chiếu command. Mọi cấu hình còn lại của agent thuộc Studio</td></tr>
+    <tr><td>S5</td><td><strong>Cùng ngôn ngữ thiết kế với Admin</strong></td><td>Dùng lại khung, DataTable, SecretField, TestPanel, ConfirmDialog, audit và phím tắt của <a href="../admin/ui-admin.html" style="color:var(--accent)">UI/UX Admin</a> (mục 4–6, 9–12, 14–15). Tài liệu này chỉ đặc tả phần riêng</td></tr>
+  </table></div>
+</section>
+
+<section id="s2">
+  <h2>2. Kiến trúc thông tin</h2>
+<pre><code>Agent Studio  (/studio · role=platform_admin)
+├─ Tổng quan                          /studio
+├─ CẤU HÌNH AGENT
+│  ├─ Agents                          /studio/agents        · /new · /:id
+│  ├─ Coordinator                     /studio/coordinator   (một trang, singleton)
+│  ├─ Tools                           /studio/tools         · /:workflow_id  (catalog workflow của Admin, chỉ đọc)
+│  ├─ Models                          /studio/models?tab=providers|profiles|prices
+│  └─ Secrets                         /studio/secrets       (drawer)
+├─ TRUY CẬP
+│  └─ Quyền agent                     /studio/access        (entitlement agent × tenant)
+├─ THỬ NGHIỆM
+│  └─ Playground                      /studio/playground
+├─ VẬN HÀNH                           (đặc tả: ui-operations.html)
+│  ├─ Runs · Chi phí &amp; usage · Jobs &amp; Worker
+└─ HỆ THỐNG
+   ├─ Nhật ký thay đổi                /studio/audit
+   └─ Import / Export                 /studio/transfer</code></pre>
+  <p>Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở <em>Tools</em> → gắn vào <em>Agents</em> → chỉnh <em>Coordinator</em> → cấp cho tenant ở <em>Quyền agent</em> → thử ở <em>Playground</em>. Trên menu, Agents đứng đầu vì được mở nhiều nhất.</p>
+</section>
+
+<section id="s3">
+  <h2>3. Khung ứng dụng</h2>
+  <div class="wf-scroll"><div class="wf"><div class="wf-row">
+    <div class="wf-side">
+      <div class="wf-logo">✦ Agent Studio</div>
+      <div class="wf-nav">Tổng quan</div>
+      <div class="wf-grp">Cấu hình agent</div>
+      <div class="wf-nav on">Agents <span>6</span></div>
+      <div class="wf-nav">Coordinator</div>
+      <div class="wf-nav">Tools <span>11</span></div>
+      <div class="wf-nav">Models <span class="b warn">2</span></div>
+      <div class="wf-nav">Secrets</div>
+      <div class="wf-grp">Truy cập</div>
+      <div class="wf-nav">Quyền agent</div>
+      <div class="wf-grp">Thử nghiệm</div>
+      <div class="wf-nav">Playground</div>
+      <div class="wf-grp">Vận hành</div>
+      <div class="wf-nav">Runs <span class="b info">3</span></div>
+      <div class="wf-nav">Chi phí &amp; usage</div>
+      <div class="wf-nav">Jobs &amp; Worker</div>
+      <div class="wf-grp">Hệ thống</div>
+      <div class="wf-nav">Nhật ký thay đổi</div>
+      <div class="wf-nav">Import / Export</div>
+    </div>
+    <div class="wf-body">
+      <div class="wf-top"><span class="wf-crumb">Cấu hình agent / <b>Agents</b></span><span class="wf-btn" style="margin-left:8px">⇄ Admin</span><span class="wf-search">🔍 Tìm hoặc chạy lệnh…  Ctrl K</span><span class="b info">hub config v18</span><span class="wf-avatar">AN</span></div>
+      <div class="wf-main wf-muted">[ nội dung trang ]</div>
+    </div>
+  </div></div></div>
+  <p class="caption">Hình 3.1: khung giống Admin UI, khác ở logo "✦ Agent Studio" và màu nhấn của logo, để admin biết mình đang ở app nào. Badge ở Runs là số run đang chạy, badge ở Models là số provider cần xử lý.</p>
+  <ul>
+    <li><strong>Nút chuyển app "⇄ Admin"</strong> ở topbar, dùng chung phiên (JWT). Chưa đăng nhập thì Studio chuyển sang trang đăng nhập (gọi <code>Admin /auth/login</code>) rồi quay lại <code>/studio</code>.</li>
+    <li>User không phải <code>platform_admin</code> mở <code>/studio</code> thì thấy trang "Bạn không có quyền vào Agent Studio" kèm nút về Chat App. Nút "⇄ Agent Studio" trong Admin chỉ hiện cho <code>platform_admin</code>.</li>
+    <li>Badge <code>hub config vN</code> là version riêng của cấu hình Hub, tách khỏi <code>config vN</code> của Admin.</li>
+  </ul>
+</section>
+
+<section id="s4">
+  <h2>4. Tổng quan</h2>
+  <div class="wf-scroll"><div class="wf"><div class="wf-main">
+    <div class="wf-kpis">
+      <div class="wf-kpi"><div class="n">6</div><div class="l">Agents đang bật</div></div>
+      <div class="wf-kpi"><div class="n">412</div><div class="l">Run 24 giờ · 2.1% lỗi</div></div>
+      <div class="wf-kpi"><div class="n">$1.84</div><div class="l">Chi phí API hôm nay</div></div>
+      <div class="wf-kpi"><div class="n">62%</div><div class="l">Token qua subscription</div></div>
+    </div>
+    <div class="wf-cols">
+      <div class="wf-card"><h5>Cần chú ý</h5>
+        <div style="margin-bottom:6px"><span class="b err">⚠ logged_out</span> gemini-sub · <span class="wf-btn">Hướng dẫn</span></div>
+        <div style="margin-bottom:6px"><span class="b warn">◔ cooldown</span> codex-sub còn 1:12 · profile <span class="wf-mono">coder</span> đang chạy bằng claude-sub</div>
+        <div style="margin-bottom:6px"><span class="b warn">!</span> Agent <b>reviewer</b> có tỉ lệ lỗi 18% trong 24 giờ · <span class="wf-btn ghost">Xem runs</span></div>
+        <div><span class="b warn">!</span> Agent <b>reviewer</b> đang bật nhưng chưa cấp cho tenant nào · <span class="wf-btn ghost">Cấp cho tenant…</span></div>
+      </div>
+      <div class="wf-card"><h5>Định tuyến của Coordinator (24 giờ)</h5>
+        <div class="wf-muted" style="margin-bottom:6px">Coordinator đã giao việc cho agent nào</div>
+        <div>chat (tự trả lời) · <b>54%</b></div><div>hoadon · <b>21%</b></div><div>dev-helper · <b>15%</b></div><div>trello · <b>7%</b></div><div>hỏi lại user · <b>3%</b></div>
+      </div>
+    </div>
+  </div></div></div>
+  <ul>
+    <li>Card <strong>Cần chú ý</strong> gom mọi thứ cần xử lý: provider hỏng, agent lỗi nhiều, workflow được gắn không kết nối được, agent đang bật nhưng chưa cấp cho tenant nào. Không có gì thì hiện "✓ Mọi thứ ổn".</li>
+    <li>Card <strong>Định tuyến</strong> cho biết Coordinator chọn agent có hợp lý không. Tỉ lệ "hỏi lại" cao là dấu hiệu mô tả agent chưa rõ. Click một dòng thì mở Runs đã lọc theo agent đó.</li>
+  </ul>
+</section>
+
+<section id="s5">
+  <h2>5. Agents</h2>
+  <h3>5.1 Danh sách</h3>
+  <div class="wf-scroll"><div class="wf"><div class="wf-main">
+    <div class="wf-h"><h4>Agents</h4><span class="sp"></span><span class="wf-btn pri">+ Tạo agent</span></div>
+    <table class="wf-tbl">
+      <tr><th>Agent</th><th>Mô tả (Coordinator đọc)</th><th>Runtime</th><th>Profile · đang chạy bằng</th><th>Workflow</th><th>Tenant</th><th>24 giờ</th><th>Bật</th></tr>
+      <tr><td><b>chat</b> <span class="wf-muted">Trợ lý chung</span></td><td>Câu hỏi chung, viết lách, giải thích…</td><td>llm</td><td>cheap · <span class="b ok">gemini-api</span></td><td>2</td><td>4</td><td>221 · 0.5%</td><td><span class="wf-tog"></span></td></tr>
+      <tr><td><b>hoadon</b> <span class="wf-muted">Trợ lý hoá đơn</span></td><td>Kiểm tra hoá đơn XML/PDF/ảnh…</td><td>dify-workflow</td><td>—</td><td>1</td><td>2</td><td>86 · 1.2%</td><td><span class="wf-tog"></span></td></tr>
+      <tr><td><b>dev-helper</b> <span class="wf-muted">Trợ lý kỹ thuật</span></td><td>Việc nhiều bước, xử lý file, code…</td><td>agentic-cli</td><td>coder · <span class="b warn">claude-sub (dự phòng)</span></td><td>3</td><td>1</td><td>62 · 3.2%</td><td><span class="wf-tog"></span></td></tr>
+      <tr><td><b>reviewer</b></td><td>Review tài liệu dài</td><td>llm</td><td>smart · <span class="b ok">anthropic-api</span></td><td>0</td><td><span class="b warn">Chưa cấp</span></td><td>11 · <span class="b warn">18%</span></td><td><span class="wf-tog"></span></td></tr>
+    </table>
+  </div></div></div>
+  <ul>
+    <li>Cột <strong>Profile · đang chạy bằng</strong> hiện bước của profile sẽ được dùng <em>ngay lúc này</em>. Bước đó là dự phòng thì badge màu cam.</li>
+    <li>Cột <strong>Workflow</strong> là số workflow được gắn. Cột <strong>Tenant</strong> là số tenant có entitlement. Bằng 0 thì badge "Chưa cấp": không user nào dùng được agent này. Click thì mở Quyền agent đã lọc theo agent.</li>
+    <li>Cột <strong>24 giờ</strong> gồm số run và tỉ lệ lỗi (lấy từ Vận hành). Lỗi ≥ 10% thì có badge cảnh báo. Click vào thì mở Runs đã lọc theo agent.</li>
+    <li>Menu <code>⋯</code> có: Nhân bản, Thử trong Playground, Cấp cho tenant…, Bật/Tắt, Xoá.</li>
+  </ul>
+  <h3>5.2 Editor</h3>
+  <div class="wf-scroll"><div class="wf">
+    <div class="wf-top"><span class="wf-crumb">Agents / <b>dev-helper</b></span><span class="b ok" style="margin-left:8px">Bật</span><span class="sp" style="flex:1"></span><span class="wf-btn ghost">Lịch sử</span><span class="wf-btn ghost">Nhân bản</span><span class="wf-btn dng">Xoá</span></div>
+    <div class="wf-main"><div class="wf-cols">
+      <div>
+        <div class="wf-card"><h5>① Danh tính</h5>
+          <div class="wf-f"><label>Key <span class="wf-req">*</span></label><div class="wf-in wf-mono">dev-helper</div></div>
+          <div class="wf-f"><label>Tên hiển thị</label><div class="wf-in"><span class="tag">VI</span> Trợ lý kỹ thuật &nbsp;<span class="wf-muted">|</span>&nbsp; <span class="tag">EN</span> Tech assistant</div></div>
+          <div class="wf-help">Hiện cho người dùng trong khối các bước ("Trợ lý kỹ thuật đang làm…")</div>
+          <div class="wf-f"><label>Mô tả <span class="wf-req">*</span></label><div class="wf-in ta">Dùng khi yêu cầu cần nhiều bước, đọc/sửa file đính kèm, phân tích code hoặc tài liệu dài. Không dùng cho câu hỏi ngắn hay tra cứu đơn giản.</div></div>
+          <div class="wf-help">Coordinator chỉ dựa vào mô tả này để chọn agent. Ghi rõ <b>khi nào dùng</b> / <b>khi nào không</b>. 128/400 · <a style="color:var(--accent)">Xem như Coordinator thấy</a></div>
+        </div>
+        <div class="wf-card"><h5>② Cách chạy</h5>
+          <div class="wf-f"><label>Runtime</label><div><span class="wf-chip">llm</span><span class="wf-chip">dify-workflow</span><span class="wf-chip">dify-agent</span><span class="wf-chip on">agentic-cli</span></div></div>
+          <div class="wf-f"><label>CLI</label><div><span class="wf-chip on">Claude Code</span><span class="wf-chip">Codex</span><span class="wf-chip">Gemini</span></div></div>
+          <div class="wf-f"><label>Model profile</label><div class="wf-in">coder ▾ <span class="wf-muted">· codex-sub → claude-sub → anthropic-api</span></div></div>
+          <div class="wf-help">Lúc này sẽ chạy bằng <b>claude-sub</b> (codex-sub đang cooldown đến 14:30)</div>
+          <div class="wf-f"><label>System prompt</label><div class="wf-in ta wf-mono">Bạn là trợ lý kỹ thuật nội bộ. Chỉ làm việc trong thư mục được cấp…</div></div>
+        </div>
+        <div class="wf-card"><h5>③ Workflow (tool) &amp; giới hạn</h5>
+          <div class="wf-f"><label>Workflow</label><div class="wf-in"><span class="wf-chip">translate ×</span><span class="wf-chip">check_invoice ×</span><span class="wf-chip">search_docs ×</span> + chọn từ catalog</div></div>
+          <div class="wf-help">Chọn từ catalog workflow của Admin. Tên, mô tả và tham số của tool lấy từ workflow, không sửa ở đây · <a style="color:var(--accent)">Xem như model thấy</a></div>
+          <div class="wf-f"><label>Tool có sẵn của CLI</label><div><span class="wf-chip on">Read</span><span class="wf-chip on">Grep</span><span class="wf-chip on">Edit</span><span class="wf-chip">Write</span><span class="wf-chip">Bash ⚠</span><span class="wf-chip">WebFetch</span></div></div>
+          <div class="wf-f"><label>Giới hạn</label><div>Timeout <span class="wf-in" style="display:inline-block;width:50px">600</span> giây · Ngân sách <span class="wf-in" style="display:inline-block;width:70px">200000</span> token</div></div>
+          <div class="wf-f"><label>Tenant được dùng</label><div><span class="wf-chip">platform</span> <span class="wf-muted">· sửa ở</span> <a style="color:var(--accent)">Quyền agent</a></div></div>
+        </div>
+      </div>
+      <div><div class="wf-card" style="position:sticky;top:0"><h5>▶ Chạy thử agent <span class="wf-muted" style="font-weight:400">· bản đang sửa, bỏ qua Coordinator</span></h5>
+        <div class="wf-in ta">Đọc file đính kèm và liệt kê các hàm chưa có test</div>
+        <div style="margin:8px 0"><span class="wf-chip">📎 utils.ts</span> <span class="wf-chip">Profile: coder ▾</span></div>
+        <div style="text-align:right;margin-bottom:10px"><span class="wf-btn pri">▶ Chạy thử  Ctrl↵</span></div>
+        <div class="wf-tabs"><span>Kết quả</span><span>Raw</span><span class="on">Trace</span></div>
+        <div class="wf-tl">
+          <div>job <span class="wf-mono">agent.cli</span> · <span class="b warn">dự phòng: quota</span> codex-sub → claude-sub</div>
+          <div>tool <b>Read</b> utils.ts · 0.3s</div>
+          <div>tool <b>Grep</b> "export function" · 0.1s</div>
+          <div>trả lời · 14.2s · 8.1k token</div>
+        </div>
+      </div></div>
+    </div></div>
+    <div class="wf-bar"><span class="wf-muted">● Chưa lưu thay đổi</span><span class="sp"></span><span class="wf-btn">Huỷ</span><span class="wf-btn pri">Lưu  Ctrl S</span></div>
+  </div></div>
+  <div class="table-scroll"><table>
+    <tr><th>Tương tác</th><th>Hành vi</th></tr>
+    <tr><td>Đổi runtime</td><td>Bước ② và ③ thay đổi theo runtime: 
+      <ul>
+        <li><code>llm</code>: profile, prompt, workflow được gắn.</li>
+        <li><code>dify-workflow</code>: chọn đúng một workflow loại <code>workflow</code> từ catalog, không có profile. Agent là lớp mỏng quanh workflow.</li>
+        <li><code>dify-agent</code>: chọn một workflow loại <code>agent</code> từ catalog.</li>
+        <li><code>agentic-cli</code>: như hình. Trường không còn áp dụng thì ẩn đi nhưng giữ giá trị đến khi lưu</li>
+      </ul>
+      </td></tr>
+    <tr><td>Chọn workflow</td><td>Ô ③ mở picker catalog: tìm theo key/tên, lọc loại app, mỗi dòng có mô tả và nút "Xem như model thấy". Chỉ hiện workflow đang bật. Không có ô đặt tên hay viết mô tả</td></tr>
+    <tr><td>Xem như Coordinator thấy</td><td>Popover hiện đúng đoạn Coordinator nhận về agent này: <code>- dev-helper: Dùng khi…</code>, kèm danh sách các agent khác để admin so sánh xem mô tả có bị trùng ý không</td></tr>
+    <tr><td>Chọn Bash</td><td>Cảnh báo inline và bắt tick "Tôi hiểu agent chạy được lệnh hệ thống trên máy Worker"</td></tr>
+    <tr><td>Chạy thử</td><td>Gọi thẳng agent (bỏ qua Coordinator) bằng bản nháp. Mặc định mở tab Trace. Đổi được profile cho lượt thử mà không lưu</td></tr>
+    <tr><td>Lưu agent mới</td><td>Lưu xong mà agent chưa cấp cho tenant nào thì toast nhắc "Chưa tenant nào dùng được agent này" kèm nút [Cấp cho tenant…]</td></tr>
+    <tr><td>Tắt agent</td><td>Toast có Hoàn tác, kèm nhắc: "Coordinator sẽ không còn chọn agent này. Các yêu cầu tương tự sẽ được chat tự trả lời"</td></tr>
+  </table></div>
+</section>
+
+<section id="s6">
+  <h2>6. Coordinator</h2>
+  <div class="wf-scroll"><div class="wf">
+    <div class="wf-top"><span class="wf-crumb">Cấu hình agent / <b>Coordinator</b></span><span class="sp" style="flex:1"></span><span class="wf-btn ghost">Lịch sử</span></div>
+    <div class="wf-main"><div class="wf-cols">
+      <div>
+        <div class="wf-card"><h5>① Model &amp; giới hạn</h5>
+          <div class="wf-f"><label>Model profile</label><div class="wf-in">smart ▾ <span class="wf-muted">· anthropic-api → openai-api</span></div></div>
+          <div class="wf-f"><label>Số bước tối đa</label><div><span class="wf-in" style="display:inline-block;width:50px">5</span> <span class="wf-muted">lượt giao việc mỗi run</span></div></div>
+          <div class="wf-f"><label>Ngân sách</label><div><span class="wf-in" style="display:inline-block;width:80px">100000</span> <span class="wf-muted">token mỗi run</span></div></div>
+          <div class="wf-f"><label>Lịch sử</label><div><span class="wf-in" style="display:inline-block;width:50px">10</span> <span class="wf-muted">message gần nhất</span></div></div>
+          <div class="wf-f"><label>Khi không khớp</label><div><span class="wf-chip on">Tự trả lời</span><span class="wf-chip">Hỏi lại user</span></div></div>
+        </div>
+        <div class="wf-card"><h5>② Hướng dẫn định tuyến (system prompt)</h5>
+          <div class="wf-in ta wf-mono" style="min-height:90px">Bạn là điều phối viên. Đọc yêu cầu và chọn agent phù hợp nhất trong danh sách. Nếu yêu cầu gồm nhiều việc, giao lần lượt. Nếu không rõ, hỏi lại một câu ngắn…</div>
+          <div class="wf-help" style="grid-column:1">Danh sách agent được tự động chèn vào cuối prompt (khi chạy thật: chỉ các agent user được dùng). <a style="color:var(--accent)">Xem prompt đầy đủ như model thấy</a></div>
+        </div>
+        <div class="wf-card"><h5>③ Agent đang bật (6) <span class="wf-muted" style="font-weight:400">· khi chạy thật chỉ gồm agent user được dùng</span></h5>
+          <table class="wf-tbl">
+            <tr><td><b>chat</b></td><td class="wf-muted">Câu hỏi chung, viết lách, giải thích…</td></tr>
+            <tr><td><b>hoadon</b></td><td class="wf-muted">Kiểm tra hoá đơn XML/PDF/ảnh…</td></tr>
+            <tr><td><b>dev-helper</b></td><td class="wf-muted">Việc nhiều bước, xử lý file…</td></tr>
+            <tr><td><b>reviewer</b> <span class="b warn">mô tả gần giống dev-helper</span></td><td class="wf-muted">Review tài liệu dài</td></tr>
+          </table>
+        </div>
+      </div>
+      <div><div class="wf-card" style="position:sticky;top:0"><h5>⇢ Dry-run định tuyến <span class="wf-muted" style="font-weight:400">· không chạy agent</span></h5>
+        <div class="wf-in ta">Kiểm tra hoá đơn đính kèm rồi tạo thẻ Trello nếu sai</div>
+        <div style="margin:8px 0"><span class="wf-chip">📎 có file đính kèm</span></div>
+        <div style="text-align:right;margin-bottom:10px"><span class="wf-btn pri">⇢ Xem sẽ chọn gì</span></div>
+        <div class="wf-tl">
+          <div>Bước 1 → <b>hoadon</b> · "kiểm tra hoá đơn đính kèm"</div>
+          <div>Bước 2 → <b>trello</b> (có điều kiện) · "nếu có hoá đơn sai"</div>
+        </div>
+        <div class="wf-result" style="margin-top:8px">Lý do: yêu cầu có 2 việc tách biệt; hoadon khớp "kiểm tra hoá đơn", trello khớp "tạo thẻ"</div>
+        <div class="wf-muted" style="margin-top:6px;font-size:11px">1.1s · anthropic-api · 1.4k token</div>
+        <div style="margin-top:8px"><span class="wf-btn ghost">+ Lưu làm câu kiểm thử</span></div>
+      </div></div>
+    </div></div>
+    <div class="wf-bar"><span class="wf-muted">Đã lưu · hub v18 · định tuyến <span class="b ok">8/9</span></span><span class="sp"></span><span class="wf-btn">Huỷ</span><span class="wf-btn pri">Lưu (tự kiểm thử)</span></div>
+  </div></div>
+  <ul>
+    <li><strong>Coordinator là một trang singleton</strong>, không nằm trong danh sách Agents và không tắt được. Nhờ vậy không thể rơi vào tình trạng "không có Coordinator" (HUB-BR-08).</li>
+    <li><strong>Agent Coordinator nhìn thấy:</strong> trang này và Dry-run dùng toàn bộ agent đang bật. Khi chạy thật, mỗi user chỉ đưa cho Coordinator các agent user đó được dùng (HUB-FR-77). Muốn xem theo một user thì dùng Playground với "Chạy như user".</li>
+    <li><strong>Phát hiện mô tả trùng ý:</strong> khi hai agent có mô tả quá giống nhau thì hiện badge cảnh báo. Có thể so bằng embedding, hoặc đơn giản là so trùng từ khoá ở v1.</li>
+    <li><strong>Bộ câu kiểm thử định tuyến</strong> (MUST, HUB-FR-73): tab "Kiểm thử" ngay trong trang Coordinator, gồm bảng các câu (nội dung, agent mong đợi, kết quả lần chạy gần nhất). Thêm câu bằng tay, hoặc từ nút [+ Lưu làm câu kiểm thử] ở Dry-run, Playground và Runs. Bộ câu chạy với toàn bộ agent, không lọc theo quyền.</li>
+    <li><strong>Tự chạy khi lưu:</strong> bấm Lưu ở Coordinator, hoặc lưu/bật/tắt/xoá một agent, thì nút Lưu chuyển thành "Đang kiểm thử định tuyến… 6/9" (các câu chạy song song, tối đa khoảng 30 giây). Kết quả:
+      <ul>
+        <li><span class="b ok">✓ 9/9 (≥ baseline 8/9)</span>: lưu, và toast ghi "Đã lưu · định tuyến 9/9".</li>
+        <li><span class="b err">✕ 7/9 (&lt; baseline 8/9)</span>: <strong>không lưu</strong>. Mở modal liệt kê từng câu sai (mong đợi → thực tế, kèm lý do Coordinator đưa ra). Có các nút [Sửa tiếp] và [Chỉnh câu kiểm thử…]. Chỉnh hay xoá câu kiểm thử phải ghi lý do, và việc đó được đưa vào audit.</li>
+      </ul>
+    </li>
+    <li>Bộ câu rỗng thì không chặn, nhưng hiện gợi ý "Thêm vài câu kiểm thử để tránh làm hỏng định tuyến". Mỗi lần kiểm thử đều gọi model thật, nên chi phí được tính vào Vận hành với nhãn <span class="b off">routing-test</span>.</li>
+  </ul>
+</section>
+
+<section id="s7">
+  <h2>7. Tools (chọn workflow từ catalog Admin)</h2>
+  <p>Tool của agent là một <strong>workflow trong catalog dùng chung của Admin</strong>. Studio không tạo tool và không viết mô tả cho model. Hub dùng luôn tên (sinh từ key workflow), mô tả và mô tả tham số của workflow làm tool. Vì vậy mô tả "khi nào dùng" và mô tả từng tham số được viết một lần, khi tạo workflow ở Admin (bắt buộc).</p>
+  <div class="wf-scroll"><div class="wf">
+    <div class="wf-top"><span class="wf-crumb">Cấu hình agent / <b>Tools</b></span><span class="wf-muted" style="margin-left:8px">Catalog workflow của Admin · chỉ đọc</span><span class="sp" style="flex:1"></span><span class="wf-btn ghost">Mở Admin › Workflows ↗</span></div>
+    <div class="wf-main"><div class="wf-cols">
+      <div>
+        <div style="margin-bottom:10px"><span class="wf-in" style="display:inline-block;width:200px">🔍 Tìm workflow…</span> &nbsp;<span class="wf-chip on">Tất cả 11</span><span class="wf-chip">Đã gắn cho agent 7</span><span class="wf-chip">Chưa gắn 4</span><span class="wf-chip">Loại: tất cả ▾</span></div>
+        <table class="wf-tbl">
+          <tr><th>Workflow · tên tool</th><th>Loại</th><th>Mô tả (model đọc)</th><th>Agent dùng</th></tr>
+          <tr style="background:var(--accent-soft)"><td><b>check_invoice</b> <span class="wf-muted wf-mono">check_invoice</span></td><td>workflow</td><td>Kiểm tra một hoá đơn điện tử (XML/PDF/ảnh)…</td><td>hoadon, dev-helper</td></tr>
+          <tr><td><b>translate</b> <span class="wf-muted wf-mono">translate</span></td><td>workflow</td><td>Dịch một đoạn văn sang ngôn ngữ đích…</td><td>chat</td></tr>
+          <tr><td><b>create-card</b> <span class="wf-muted wf-mono">create_card</span></td><td>workflow</td><td>Tạo thẻ Trello trong bảng của nhóm…</td><td>trello</td></tr>
+          <tr><td><b>search-docs</b> <span class="wf-muted wf-mono">search_docs</span></td><td>agent</td><td>Tra cứu tài liệu nội bộ…</td><td>dev-helper</td></tr>
+          <tr><td><b>summarize-contract</b> <span class="wf-muted wf-mono">summarize_contract</span></td><td>workflow</td><td>Tóm tắt hợp đồng và nêu điều khoản rủi ro…</td><td><span class="b off">Chưa gắn</span></td></tr>
+        </table>
+        <div class="wf-help" style="margin-top:6px">Tên tool sinh từ key workflow. Mô tả và mô tả tham số viết ở Admin khi tạo workflow (bắt buộc)</div>
+      </div>
+      <div>
+        <div class="wf-card"><h5>check_invoice <span class="b ok">Bật</span> <span class="wf-btn ghost" style="float:right">Sửa ở Admin ↗</span></h5>
+          <div class="wf-muted" style="margin-bottom:8px">Loại workflow · app-key: secret của Admin · dùng bởi 2 agent, 1 command</div>
+          <div><span class="wf-btn pri">Gắn cho agent… ▾</span></div>
+        </div>
+        <div class="wf-card"><h5>{ } Xem như model thấy</h5>
+<pre style="margin:0"><code>{
+  "name": "check_invoice",
+  "description": "Kiểm tra một hoá đơn điện tử…",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "file": {"type":"string","description":"Hoá đơn user đính kèm"},
+      "provider_hint": {"enum":["misa","fpt","auto"], …}
+    },
+    "required": ["file"]
+  }
+}</code></pre>
+          <div class="wf-help" style="grid-column:1">Lấy nguyên từ workflow. Không sửa được ở Studio</div>
+        </div>
+        <div class="wf-card"><h5>▶ Chạy thử workflow</h5>
+          <div class="wf-f"><label>file</label><div class="wf-in">📎 HD-0114.pdf</div></div>
+          <div class="wf-f"><label>provider_hint</label><div class="wf-in">auto ▾</div></div>
+          <div style="text-align:right"><span class="wf-btn pri">▶ Chạy</span></div>
+        </div>
+        <div class="wf-card"><h5>Được dùng bởi</h5><div>◎ agent hoadon</div><div>◎ agent dev-helper</div><div class="wf-muted">◎ 1 command (Admin)</div></div>
+      </div>
+    </div></div>
+  </div></div>
+  <ul>
+    <li><strong>Trang Tools là catalog chỉ đọc:</strong> bảng workflow của Admin (key, tên tool, loại app, mô tả, agent đang dùng). Bộ lọc: loại app, "Đã gắn cho agent" / "Chưa gắn". Chọn một dòng thì bên phải hiện chi tiết.</li>
+    <li><strong>Xem như model thấy:</strong> JSON tool đúng như model nhận (tên, mô tả, JSON schema với mô tả tham số), lấy từ workflow. Không sửa được tại đây.</li>
+    <li><strong>Chạy thử:</strong> nhập input mẫu và chạy workflow qua Hub, xem kết quả và thời gian. Dùng để kiểm tra trước khi gắn cho agent.</li>
+    <li><strong>Gắn cho agent:</strong> nút [Gắn cho agent… ▾] ngay ở trang này, hoặc chọn trong bước ③ của Agent editor. Cả hai đều ghi vào <code>hub.agent_workflows</code>.</li>
+    <li><strong>Sửa ở Admin ↗:</strong> muốn đổi mô tả, tham số, app-key hay tắt workflow thì mở trang workflow đó trong Admin. Sửa xong, Studio thấy bản mới trong ≤ 5 giây. Admin chặn xoá hay tắt workflow đang được agent dùng.</li>
+    <li><strong>Chỉ qua Dify</strong> (HUB-BR-12): catalog chỉ gồm app Dify. Muốn agent gọi hệ thống nội bộ thì tạo một workflow Dify có HTTP node (bằng Claude session), rồi thêm vào catalog ở Admin.</li>
+    <li>Tham số kiểu <code>file</code> được Hub tự nối với file đính kèm của run. Model chỉ truyền tham chiếu, không truyền nội dung file.</li>
+  </ul>
+</section>
+
+<section id="s8">
+  <h2>8. Models — Providers, Profiles, Đơn giá</h2>
+  <div class="wf-scroll"><div class="wf"><div class="wf-main">
+    <div class="wf-tabs"><span>Providers</span><span class="on">Profiles</span><span>Đơn giá</span></div>
+    <div class="wf-cols">
+      <div class="wf-card"><h5>Profile: <span class="wf-mono">coder</span></h5>
+        <div class="wf-step"><span class="grip">⋮⋮</span><b>1</b> codex-sub <span class="b warn">cooldown</span><span style="margin-left:auto"><span class="wf-chip on">quota</span><span class="wf-chip on">error</span><span class="wf-chip">timeout</span></span></div>
+        <div class="wf-step"><span class="grip">⋮⋮</span><b>2</b> claude-sub <span class="b ok">ok</span><span style="margin-left:auto"><span class="wf-chip on">quota</span><span class="wf-chip on">error</span><span class="wf-chip">timeout</span></span></div>
+        <div class="wf-step"><span class="grip">⋮⋮</span><b>3</b> anthropic-api <span class="b ok">ok</span> <span class="wf-mono">claude-opus-5</span><span style="margin-left:auto" class="wf-muted">bước cuối</span></div>
+        <span class="wf-btn ghost">+ Thêm bước</span>
+        <div class="note info" style="margin-top:10px">Thử <b>codex-sub</b> → nếu hết quota hoặc lỗi → <b>claude-sub</b> → nếu hết quota hoặc lỗi → <b>anthropic-api</b>. <b>Lúc này sẽ chạy bằng claude-sub.</b></div>
+      </div>
+      <div class="wf-card"><h5>Được dùng bởi</h5><div>◎ dev-helper</div><div>◎ reviewer</div></div>
+    </div>
+  </div></div></div>
+  <div class="table-scroll"><table>
+    <tr><th>Tab</th><th>Nội dung</th></tr>
+    <tr><td>Providers</td><td>Bảng: key, loại (<span class="b info">API</span> / <span class="b off">Subscription</span>), hãng, trạng thái sống, slot đang dùng/tổng, cooldown đến. Sửa trong Sheet. Loại API có SecretField và [Kiểm tra key]. Loại subscription có <code>max_concurrency</code>, hướng dẫn đăng nhập CLI (lấy từ runbook Worker) và [Kiểm tra lại]. Subscription dùng chung cho mọi tenant; giới hạn slot theo tenant đặt ở Admin (<code>tenants.max_concurrent_sub</code>)</td></tr>
+    <tr><td>Profiles</td><td>Danh sách profile bên trái, StepsEditor kéo-thả bên phải. Dòng tóm tắt luôn nói <em>lúc này</em> profile sẽ chạy bằng bước nào. Profile toàn subscription (không có bước API) thì cảnh báo</td></tr>
+    <tr><td>Đơn giá</td><td>Bảng <code>price_book</code>: provider, model, giá bán vào/ra (USD / 1 triệu token), hiệu lực từ. Thêm dòng mới thay vì sửa dòng cũ, để báo cáo cũ không đổi. Model đang được dùng mà chưa có đơn giá thì badge "Chưa có giá" (token vẫn được ghi, tính sau)</td></tr>
+  </table></div>
+</section>
+
+<section id="s9">
+  <h2>9. Quyền agent</h2>
+  <p>Agent có hai tầng quyền, giống feature. Studio làm tầng đầu: <strong>entitlement</strong> (tenant nào được có agent nào). Tầng sau là <strong>grant</strong> (group/user nào trong tenant được dùng): <code>tenant_admin</code> làm ở Admin › Groups. Studio chỉ xem grant.</p>
+  <div class="wf-scroll"><div class="wf"><div class="wf-drawer-wrap">
+    <div class="wf-top"><span class="wf-crumb">Truy cập / <b>Quyền agent</b></span></div>
+    <div class="wf-main" style="padding-right:380px">
+      <div style="margin-bottom:8px"><span class="wf-chip">Agent: tất cả ▾</span><span class="wf-chip">Tenant: tất cả ▾</span></div>
+      <div class="wf-sub" style="margin:0 0 10px">Bật ô = tenant được có agent (entitlement). Số trong ô là grant do tenant_admin cấp trong Admin › Groups</div>
+      <table class="wf-tbl">
+        <tr><th>Agent</th><th>platform</th><th>acme</th><th>beta</th><th>gamma</th></tr>
+        <tr><td><b>chat</b></td><td><span class="wf-tog"></span> <span class="wf-muted">1 group</span></td><td><span class="wf-tog"></span> <span class="wf-muted">3 group</span></td><td><span class="wf-tog"></span> <span class="wf-muted">1 group</span></td><td><span class="wf-tog"></span> <span class="b warn">0 grant</span></td></tr>
+        <tr style="background:var(--accent-soft)"><td><b>hoadon</b></td><td><span class="wf-tog"></span> <span class="wf-muted">1 group</span></td><td><span class="wf-tog"></span> <span class="wf-muted">2 group</span></td><td><span class="wf-tog off"></span></td><td><span class="wf-tog off"></span></td></tr>
+        <tr><td><b>dev-helper</b></td><td><span class="wf-tog"></span> <span class="wf-muted">1 user</span></td><td><span class="wf-tog off"></span></td><td><span class="wf-tog off"></span></td><td><span class="wf-tog off"></span></td></tr>
+        <tr><td><b>reviewer</b> <span class="b warn">Chưa cấp</span></td><td><span class="wf-tog off"></span></td><td><span class="wf-tog off"></span></td><td><span class="wf-tog off"></span></td><td><span class="wf-tog off"></span></td></tr>
+      </table>
+    </div>
+    <div class="wf-drawer">
+      <div class="wf-h"><h4>hoadon · acme</h4><span class="sp"></span><span class="wf-btn ghost">✕</span></div>
+      <div class="wf-f"><label>Entitlement</label><div><span class="wf-tog"></span> <span class="wf-muted">cấp 12/09 bởi an</span></div></div>
+      <div class="wf-card" style="margin-top:8px"><h5>Grant trong acme <span class="wf-muted" style="font-weight:400">· chỉ xem</span></h5>
+        <table class="wf-tbl">
+          <tr><td>group <b>ke-toan</b></td><td class="wf-muted">bởi minh (tenant_admin)</td></tr>
+          <tr><td>group <b>kiem-soat</b></td><td class="wf-muted">bởi minh (tenant_admin)</td></tr>
+        </table>
+        <div class="wf-help" style="grid-column:1;margin-top:6px">Grant do tenant_admin cấp trong Admin › Groups</div>
+      </div>
+      <div><span class="wf-btn dng">Thu hồi entitlement…</span></div>
+      <div class="wf-muted" style="margin-top:8px;font-size:11px">2 grant sẽ mất hiệu lực, được giữ lại để khôi phục khi cấp lại</div>
+    </div>
+  </div></div></div>
+  <ul>
+    <li><strong>Ma trận agent × tenant:</strong> mỗi ô là một công tắc entitlement. Ô đang bật hiện số grant trong tenant (ví dụ "2 group"). Lọc theo agent hoặc tenant. Tenant <code>platform</code> là một cột như mọi tenant khác.</li>
+    <li><strong>Click một ô</strong> thì mở drawer: ngày cấp, người cấp, và danh sách grant trong tenant đó (group/user, do ai cấp). Drawer chỉ xem grant, có dòng nhắc "Grant do tenant_admin cấp trong Admin › Groups".</li>
+    <li><strong>Thu hồi entitlement:</strong> ConfirmDialog ghi rõ "N grant trong tenant <code>acme</code> sẽ mất hiệu lực. Grant được giữ lại và tự có hiệu lực khi cấp lại". Hiệu lực ≤ 5 giây, run đang chạy vẫn xong.</li>
+    <li>Mọi thay đổi ghi audit và tăng <code>hub config vN</code>. Không chạy bộ câu kiểm thử định tuyến (bộ câu luôn dùng toàn bộ agent).</li>
+    <li>Cột agent đang tắt hiện mờ: entitlement vẫn giữ nhưng không ai dùng được cho tới khi bật lại.</li>
+  </ul>
+</section>
+
+<section id="s10">
+  <h2>10. Playground</h2>
+  <div class="wf-scroll"><div class="wf"><div class="wf-main"><div class="wf-cols">
+    <div class="wf-card" style="min-height:260px"><h5>Chat thử <span class="wf-muted" style="font-weight:400">· Đích: </span><span class="wf-chip on">Toàn hệ thống (Coordinator)</span><span class="wf-chip">Một agent ▾</span></h5>
+      <div style="background:var(--accent-soft);border-radius:10px;padding:6px 10px;margin:0 0 8px auto;width:fit-content">Kiểm tra hoá đơn này rồi tạo thẻ Trello nếu sai 📎</div>
+      <div class="wf-muted" style="margin-bottom:6px">✓ Kiểm tra hoá đơn · ⟳ Đang tạo thẻ Trello…</div>
+      <div>HD-0114 sai tổng tiền (lệch 1.200.000đ). Đã tạo thẻ…</div>
+      <div class="wf-in" style="margin-top:14px">Nhắn hoặc gõ /…</div>
+      <div style="margin-top:8px"><span class="wf-chip">Dùng bản nháp chưa lưu: ✓</span><span class="wf-chip">Profile override: — ▾</span><span class="wf-chip">Chạy như: acme / binh ▾</span></div>
+    </div>
+    <div class="wf-card"><h5>Trace trực tiếp</h5>
+      <div class="wf-tl">
+        <div>Coordinator → <b>hoadon</b> · 0.9s</div>
+        <div>tool <b>check_invoice</b> · 6.1s</div>
+        <div>Coordinator → <b>trello</b> · 0.7s</div>
+        <div>⟳ tool <b>create_card</b>…</div>
+      </div>
+      <div style="margin-top:8px"><span class="wf-btn ghost">Mở trong Runs</span> <span class="wf-btn ghost">+ Lưu làm câu kiểm thử</span></div>
+    </div>
+  </div></div></div></div>
+  <ul>
+    <li>Dùng lại chính component chat của Chat App (<code>packages/ui-chat</code>), nên thấy đúng những gì người dùng cuối thấy. Bên phải có thêm trace.</li>
+    <li><strong>Đích:</strong> toàn hệ thống (qua Coordinator) hoặc một agent cụ thể.</li>
+    <li><strong>Dùng bản nháp chưa lưu:</strong> áp các thay đổi chưa lưu của agent, workflow được gắn và Coordinator vào lượt thử, để thử trước khi áp dụng cho mọi người.</li>
+    <li><strong>Chạy như user</strong>: mặc định là chính admin. Chọn tenant rồi chọn user. Lượt thử áp đúng quyền command và agent của user đó: Coordinator chỉ thấy agent user được dùng, và "Một agent ▾" chỉ liệt kê các agent đó. Chỉ dùng để tái hiện ngữ cảnh (không truy cập được dữ liệu riêng của người khác) và có ghi audit.</li>
+    <li>Run trong Playground được gắn nhãn <span class="b off">playground</span> trong Runs, tính chi phí riêng (không tính vào quota hay số thu của tenant) và không tính vào thống kê định tuyến.</li>
+  </ul>
+</section>
+
+<section id="s11">
+  <h2>11. Secrets, Nhật ký, Import/Export</h2>
+  <p>Giống hệt mẫu của Admin (<a href="../admin/ui-admin.html#s7" style="color:var(--accent)">UI/UX Admin</a>, mục 7.8, 7.10, 7.11), chỉ khác phạm vi:</p>
+  <ul>
+    <li><strong>Secrets:</strong> chỉ API key của provider. Mã hoá bằng <code>HUB_SECRETS_KEY</code>. Chỉ ghi, không đọc lại. App-key của workflow là secret của Admin.</li>
+    <li><strong>Nhật ký:</strong> thay đổi của agent, workflow được gắn, Coordinator, entitlement agent, provider, profile, đơn giá và secret, có diff và khôi phục. Có thêm các sự kiện <code>view_trace</code> (kèm tenant) và <code>playground_run_as</code>.</li>
+    <li><strong>Import/Export:</strong> file <code>hub-config-v18.yaml</code> gồm agents (kèm key các workflow được gắn), coordinator, providers, profiles. <code>platform_admin</code> dùng file này để Claude session sinh hoặc sửa cấu hình agent hàng loạt, rồi import có xem diff. Key workflow không có trong catalog Admin thì import báo lỗi dòng đó.</li>
+  </ul>
+</section>
+
+<section id="s12">
+  <h2>12. Luồng thao tác chính</h2>
+  <h3>F1. Tạo agent mới từ một workflow Dify</h3>
+<pre><code>Claude session tạo workflow trên Dify → lấy app key
+  → Admin › Workflows › + Tạo: dán key → [Lấy từ Dify]
+      viết mô tả "khi nào dùng" + mô tả từng tham số (bắt buộc) → Lưu (nhãn "Chưa gắn")
+  → Studio › Tools: tìm workflow vừa tạo → [Xem như model thấy] → [▶ Chạy thử] ✓
+  → Agents › + Tạo agent: key, mô tả "Dùng khi… Không dùng khi…"
+      runtime llm + profile, ③ chọn workflow từ catalog → [▶ Chạy thử] ✓ → Lưu
+  → Coordinator › Dry-run 2–3 câu ví dụ → thấy chọn đúng agent mới → lưu các câu đó làm câu kiểm thử
+  → Quyền agent: bật entitlement cho các tenant cần dùng
+      (tenant_admin của từng tenant cấp cho group ở Admin › Groups)
+  → Playground: chạy như một user đã được cấp → thử end-to-end → xong</code></pre>
+  <h3>F2. Coordinator chọn sai agent</h3>
+<pre><code>Tổng quan: tỉ lệ "hỏi lại" tăng, hoặc user báo sai
+  → Runs › lọc run đó › xem bước Coordinator (lý do chọn)
+  → sửa mô tả agent (hoặc prompt Coordinator) → Dry-run câu đó
+  → [+ Lưu làm câu kiểm thử] cho câu bị sai → Lưu (bộ kiểm thử tự chạy, chặn nếu tỉ lệ đúng giảm)</code></pre>
+  <p>Nếu model chọn sai <em>tool</em> (không phải agent) thì sửa mô tả workflow ở Admin.</p>
+  <h3>F3. Provider hết phiên đăng nhập</h3>
+<pre><code>Badge ở Models / Cần chú ý: "gemini-sub logged_out"
+  → [Hướng dẫn] mở Sheet runbook (SSH vào Worker, chạy lệnh login, có nút copy)
+  → [Kiểm tra lại] → ok. Trong lúc chờ, các profile tự dự phòng sang API</code></pre>
+  <h3>F4. Đổi model cho cả nhóm agent</h3>
+<pre><code>Models › Profiles › smart › kéo anthropic-api lên đầu hoặc đổi model id → Lưu
+  → mọi agent dùng "smart" đổi theo ngay, không phải sửa từng agent</code></pre>
+  <h3>F5. Mở agent cho một tenant mới</h3>
+<pre><code>Admin › Tenants: tạo tenant "acme" (entitlement feature, quota, slot subscription)
+  → Studio › Quyền agent: lọc tenant acme → bật hoadon, chat
+  → tenant_admin của acme: Admin › Groups › ke-toan › cấp hoadon
+  → user trong ke-toan chat "kiểm tra hoá đơn…" → Coordinator chọn được hoadon</code></pre>
+</section>
+
+<section id="s13">
+  <h2>13. Validation &amp; trạng thái</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Trường</th><th>Luật</th><th>Câu báo lỗi</th></tr>
+    <tr><td>Key agent</td><td><code>^[a-z0-9-]{2,32}$</code>, không trùng</td><td>"Key đã được dùng bởi agent khác"</td></tr>
+    <tr><td>Mô tả agent</td><td>20–400 ký tự</td><td>"Mô tả quá ngắn, model sẽ khó chọn đúng"</td></tr>
+    <tr><td>Workflow gắn cho agent</td><td>Có trong catalog, đang bật, tên sinh từ key hợp lệ <code>^[a-z][a-z0-9_]{2,40}$</code>, có mô tả và mô tả tham số</td><td>"Workflow thiếu mô tả hoặc đang tắt. Sửa ở Admin trước khi gắn"</td></tr>
+    <tr><td>Agent runtime <code>llm</code></td><td>Phải có profile</td><td>"Chọn model profile"</td></tr>
+    <tr><td>Agent runtime <code>dify-workflow</code></td><td>Đúng một workflow loại <code>workflow</code></td><td>"Chọn workflow cho agent"</td></tr>
+    <tr><td>Profile</td><td>≥ 1 bước, bước cuối không có điều kiện chuyển</td><td>"Profile cần ít nhất 1 bước"</td></tr>
+    <tr><td>Xoá profile, provider, secret</td><td>Không được xoá khi đang được dùng</td><td>Hộp xác nhận hiện danh sách "Được dùng bởi"</td></tr>
+    <tr><td>Gỡ workflow khỏi agent</td><td>Được phép. Nếu là workflow duy nhất của agent <code>dify-workflow</code>/<code>dify-agent</code> thì phải chọn workflow khác trước</td><td>"Agent cần một workflow"</td></tr>
+    <tr><td>Thu hồi entitlement</td><td>Được phép, bắt xác nhận</td><td>Hộp xác nhận nêu số grant sẽ mất hiệu lực</td></tr>
+    <tr><td>Đơn giá</td><td>Giá ≥ 0, <code>effective_from</code> không trùng với dòng khác của cùng provider + model</td><td>"Đã có đơn giá hiệu lực từ ngày này"</td></tr>
+    <tr><td>Coordinator</td><td>Phải có profile hợp lệ, max_steps từ 1 đến 10</td><td>"Số bước tối đa từ 1 đến 10"</td></tr>
+  </table></div>
+  <p>Trạng thái đang tải, rỗng, lỗi, xung đột và mất kết nối dùng chung quy ước với Admin (UI/UX Admin, mục 9). Riêng trang rỗng:</p>
+  <ul>
+    <li><strong>Agents rỗng:</strong> "Chưa có agent nào. Coordinator sẽ tự trả lời mọi câu hỏi." kèm nút [+ Tạo agent đầu tiên].</li>
+    <li><strong>Tools rỗng:</strong> "Catalog chưa có workflow nào. Workflow được tạo ở Admin." kèm nút [Mở Admin › Workflows ↗].</li>
+    <li><strong>Quyền agent rỗng:</strong> "Chưa cấp agent cho tenant nào. User chỉ chat được với Coordinator." </li>
+  </ul>
+</section>
+
+<section id="s14">
+  <h2>14. Truy vết &amp; câu hỏi mở</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Màn hình</th><th>Đáp ứng</th></tr>
+    <tr><td>5 Agents</td><td>HUB-FR-60, 61 · HUB-BR-09</td></tr>
+    <tr><td>6 Coordinator</td><td>HUB-FR-62, 63, 73 · HUB-BR-08, 13</td></tr>
+    <tr><td>7 Tools</td><td>HUB-FR-64, 65 · HUB-BR-09, 10, 11, 12</td></tr>
+    <tr><td>8 Models</td><td>HUB-FR-66, 67, 84</td></tr>
+    <tr><td>9 Quyền agent</td><td>HUB-FR-77, 78 · HUB-BR-17</td></tr>
+    <tr><td>10 Playground</td><td>HUB-FR-70</td></tr>
+    <tr><td>11 Secrets / Nhật ký / Import-Export</td><td>HUB-FR-68, 69, 71</td></tr>
+    <tr><td>Khung, đăng nhập</td><td>HUB-FR-72</td></tr>
+  </table></div>
+  <h3>Đã chốt</h3>
+  <ul>
+    <li>Chỉ <code>platform_admin</code> vào Agent Studio. Không có role <code>builder</code> riêng. <code>tenant_admin</code> không vào Studio.</li>
+    <li>Studio cấp agent cho tenant (entitlement). <code>tenant_admin</code> cấp agent cho group/user trong Admin › Groups.</li>
+    <li>Tool của agent là workflow trong catalog Admin. Studio chỉ chọn, không tạo tool và không viết mô tả cho model.</li>
+    <li>Bộ câu kiểm thử định tuyến tự chạy mỗi lần lưu thay đổi định tuyến, chạy với toàn bộ agent, và chặn lưu nếu tỉ lệ đúng giảm.</li>
+    <li>Tool chỉ đi qua Dify, không có loại <code>http</code>.</li>
+  </ul>
+  <h3>Câu hỏi mở</h3>
+  <ol>
+    <li><code>platform_admin</code> có cần cấp grant (group/user) thay <code>tenant_admin</code> ngay trong Studio không? Tạm: không, Studio chỉ xem grant.</li>
+    <li>Tab Đơn giá đặt ở Models (tạm chọn) hay ở Vận hành › Chi phí?</li>
+    <li>Workflow dùng làm tool không có sync/async và timeout riêng. Tạm: gọi đồng bộ, timeout theo agent (xem câu hỏi mở 7 của BA Agent Hub).</li>
+  </ol>
+</section>
+
+<footer>AI System · UI/UX · Agent Studio · v0.4</footer>
+</div>
+</body>
+</html>

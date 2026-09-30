@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI/UX — Vận hành</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .viz {
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --other: #b7b6b0;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+    --grid: #e6e5e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz {
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --other: #6b6a65; --grid: #34342f;
+    }
+  }
+  :root[data-theme="dark"] .viz {
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --other: #6b6a65; --grid: #34342f;
+  }
+  .wf-scroll { overflow-x: auto; margin: 14px 0; }
+  .wf { min-width: 860px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--bg); font-size: 12.5px; line-height: 1.4; }
+  .wf-main { padding: 16px; }
+  .wf-top { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .wf-h { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .wf-h h4 { margin: 0; font-size: 16px; }
+  .sp { flex: 1; }
+  .wf-btn { display: inline-block; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 4px 10px; white-space: nowrap; }
+  .wf-btn.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .wf-btn.dng { color: #dc2626; border-color: #fca5a5; }
+  .wf-chip { display: inline-block; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; color: var(--muted); margin-right: 4px; background: var(--surface); }
+  .wf-chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .wf-tbl { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); }
+  .wf-tbl th, .wf-tbl td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 12.5px; }
+  .wf-tbl th { color: var(--muted); font-weight: 600; background: var(--bg); }
+  .num { text-align: right !important; font-variant-numeric: tabular-nums; }
+  .mono { font-family: ui-monospace, Consolas, monospace; }
+  .muted { color: var(--muted); }
+  .b { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .b.ok { background: var(--ok-soft); color: var(--ok); }
+  .b.off { background: var(--code-bg); color: var(--muted); }
+  .b.warn { background: var(--warn-soft); color: var(--warn); }
+  .b.err { background: #fee2e2; color: #b91c1c; }
+  .b.info { background: var(--accent-soft); color: var(--accent); }
+  .wf-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+  .wf-card h5 { margin: 0 0 10px; font-size: 13px; }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cols-trace { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .kpi .l { color: var(--muted); font-size: 12px; }
+  .kpi .n { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; }
+  .kpi .d { font-size: 11.5px; color: var(--muted); }
+  .spark { display: flex; align-items: flex-end; gap: 2px; height: 18px; margin-top: 4px; }
+  .spark i { flex: 1; background: var(--s1); border-radius: 1px; opacity: .55; }
+  /* stacked bar chart */
+  .chart { position: relative; height: 170px; display: flex; align-items: flex-end; gap: 6px; padding: 0 0 18px 34px; border-bottom: 1px solid var(--grid); }
+  .chart .ylab { position: absolute; left: 0; font-size: 10.5px; color: var(--muted); }
+  .chart .gl { position: absolute; left: 34px; right: 0; border-top: 1px dashed var(--grid); }
+  .bar { flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; position: relative; }
+  .bar i { display: block; }
+  .bar i:last-child { border-radius: 4px 4px 0 0; }
+  .bar .x { position: absolute; bottom: -17px; left: 0; right: 0; text-align: center; font-size: 10px; color: var(--muted); }
+  .bar.hover { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .tip { position: absolute; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 11.5px; box-shadow: 0 4px 14px rgba(0,0,0,.12); z-index: 2; white-space: nowrap; }
+  .tip .row { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; margin: 6px 0 10px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  /* horizontal bars */
+  .hbar { display: grid; grid-template-columns: 110px 1fr 64px; gap: 8px; align-items: center; margin-bottom: 7px; font-size: 12px; }
+  .hbar .track { height: 12px; }
+  .hbar .fill { height: 12px; background: var(--s1); border-radius: 0 4px 4px 0; }
+  .hbar .fill.other { background: var(--other); }
+  /* waterfall */
+  .wfall { font-size: 12px; }
+  .wfall .r { display: grid; grid-template-columns: 170px 1fr 58px; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .wfall .r.sel { background: var(--accent-soft); }
+  .wfall .lane { position: relative; height: 12px; }
+  .wfall .seg { position: absolute; top: 0; height: 12px; border-radius: 3px; }
+  .t-deleg { background: var(--s1); }
+  .t-wf { background: var(--s3); }
+  .t-model { background: var(--s2); }
+  .t-tool { background: var(--s5); }
+  .t-fb { background: repeating-linear-gradient(45deg, var(--serious) 0 3px, transparent 3px 6px); border: 1px solid var(--serious); }
+  .slots { display: inline-flex; gap: 3px; vertical-align: middle; }
+  .slots i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); background: var(--surface); }
+  .slots i.used { background: var(--accent); border-color: var(--accent); }
+  .ico { font-weight: 700; }
+  .caption { color: var(--muted); font-size: 13px; margin-top: -6px; }
+</style>
+<script>
+(function () {
+  if (window.self === window.top) return;
+  document.documentElement.classList.add('embedded');
+  try { parent.postMessage({ aisysDoc: location.pathname }, '*'); } catch (e) {}
+  window.addEventListener('message', function (e) {
+    var t = e.data && e.data.aisysTheme;
+    if (!t) return;
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+  });
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="docnav">
+  <a href="../architecture.html">Kiến trúc</a>
+  <a href="../admin/ba-admin.html">Admin</a>
+  <a href="../admin/ui-admin.html">UI/UX Admin</a>
+  <a href="ui-operations.html" class="current">UI Vận hành</a>
+  <a href="../chat-app/ui-chat-extension.html">UI Chat &amp; Extension</a>
+  <a href="ui-agent-studio.html">UI Agent Studio</a>
+  <a href="ba-agent-hub.html">Agent Hub</a>
+  <a href="../worker/ba-worker.html">Worker</a>
+</nav>
+
+<header>
+  <h1>Vận hành — Đặc tả UI/UX (Agent Hub + Worker)</h1>
+  <p>Màn hình quan sát và điều khiển runtime: run và trace, chi phí và usage, job và worker, subscription pool. Là một mục của <a href="ui-agent-studio.html" style="color:inherit">Agent Studio</a>, UI riêng của Agent Hub.</p>
+  <div class="meta"><span class="tag">v0.4 · draft</span><span class="tag">2026-10-01</span><span class="tag">shadcn/ui · song ngữ VI/EN</span></div>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#s1">Vị trí</a></li>
+    <li><a href="#s2">Sitemap &amp; nguồn dữ liệu</a></li>
+    <li><a href="#s3">Runs — danh sách</a></li>
+    <li><a href="#s4">Run — trace chi tiết</a></li>
+    <li><a href="#s5">Chi phí &amp; usage</a></li>
+    <li><a href="#s6">Jobs &amp; Worker</a></li>
+    <li><a href="#s7">Quy tắc biểu đồ</a></li>
+    <li><a href="#s8">Trạng thái, quyền, riêng tư</a></li>
+    <li><a href="#s9">Ảnh hưởng tới tài liệu BA</a></li>
+    <li><a href="#s10">Câu hỏi mở</a></li>
+  </ol>
+</nav>
+
+<section id="s1">
+  <h2>1. Vị trí</h2>
+  <p>Theo v0.3, Agent Hub có UI riêng là <strong>Agent Studio</strong>. Mục <strong>Vận hành</strong> là một phần của Studio, vì Hub sở hữu toàn bộ dữ liệu runtime (<code>hub.*</code>) và cấu hình agent. Worker không có UI: trạng thái của Worker hiện trong Vận hành.</p>
+  <p>Từ v0.4, hệ thống phục vụ nhiều <strong>tenant</strong> (công ty khách hàng). Vận hành nhìn toàn hệ thống và lọc được theo tenant. Chỉ <code>platform_admin</code> vào được.</p>
+  <div class="table-scroll"><table>
+    <tr><th>Service</th><th>Người dùng cuối (member)</th><th>Người vận hành (platform_admin)</th></tr>
+    <tr><td><strong>Agent Hub</strong></td><td><a href="../chat-app/ui-chat-extension.html" style="color:var(--accent)">Chat App &amp; Extension</a></td><td><a href="ui-agent-studio.html" style="color:var(--accent)">Agent Studio</a>: cấu hình agent, cộng với Vận hành (tài liệu này)</td></tr>
+    <tr><td><strong>Worker</strong></td><td>Không có. Member chỉ thấy tiến độ job trong Chat</td><td>Agent Studio › Vận hành › Jobs &amp; Worker</td></tr>
+  </table></div>
+  <div class="note info"><strong>tenant_admin</strong> không vào Studio. Họ xem chi phí và quota của tenant mình ở màn <strong>Chi phí &amp; quota</strong> của Admin (<code>/usage</code>, xem <a href="../admin/ui-admin.html" style="color:inherit">UI/UX Admin</a>). Màn đó không có nội dung chat.</div>
+</section>
+
+<section id="s2">
+  <h2>2. Sitemap &amp; nguồn dữ liệu</h2>
+<pre><code>Agent Studio sidebar
+├─ Tổng quan
+├─ CẤU HÌNH AGENT   Agents · Coordinator · Tools · Models · Secrets
+├─ THỬ NGHIỆM       Playground
+├─ VẬN HÀNH   ◀── tài liệu này
+│  ├─ Runs                    /studio/ops/runs          · /studio/ops/runs/:id
+│  ├─ Chi phí &amp; usage         /studio/ops/usage
+│  └─ Jobs &amp; Worker           /studio/ops/jobs?tab=queue|workers|pool
+└─ HỆ THỐNG         Nhật ký thay đổi · Import/Export</code></pre>
+  <div class="note info"><strong>Nguồn dữ liệu:</strong> Studio được Hub phục vụ ở <code>/studio</code> (cùng origin), nên gọi thẳng API của Hub bằng JWT của <code>platform_admin</code>. Không cần CORS.</div>
+  <div class="table-scroll"><table>
+    <tr><th>Endpoint Hub (mới hoặc mở rộng)</th><th>Dùng cho</th></tr>
+    <tr><td><code>GET /admin/runs?from&amp;to&amp;tenant&amp;user&amp;kind&amp;status&amp;agent&amp;provider&amp;billing&amp;q&amp;cursor</code></td><td>Danh sách run</td></tr>
+    <tr><td><code>GET /admin/runs/:id</code> (kèm steps, jobs, usage)</td><td>Trace chi tiết</td></tr>
+    <tr><td><code>POST /admin/runs/:id/cancel</code></td><td>Huỷ run đang chạy</td></tr>
+    <tr><td><code>GET /admin/usage?from&amp;to&amp;tenant&amp;group_by=day|tenant|feature|provider|agent|user|billing</code></td><td>Dashboard chi phí. Trả cả <code>cost_usd</code> và <code>billable_usd</code></td></tr>
+    <tr><td><code>GET /admin/jobs?status&amp;type&amp;tenant</code> · <code>POST /admin/jobs/:id/retry|cancel</code></td><td>Hàng đợi</td></tr>
+    <tr><td><code>GET /admin/workers</code></td><td>Worker và heartbeat</td></tr>
+    <tr><td><code>GET /admin/providers/state</code> · <code>POST /admin/providers/:key/probe</code></td><td>Subscription pool (theo provider)</td></tr>
+    <tr><td><code>GET /admin/providers/tenant-slots</code></td><td>Slot subscription theo tenant: đang chạy, đang chờ, giới hạn <code>max_concurrent_sub</code></td></tr>
+  </table></div>
+</section>
+
+<section id="s3">
+  <h2>3. Runs — danh sách</h2>
+  <div class="wf-scroll"><div class="wf"><div class="wf-main">
+    <div class="wf-h"><h4>Runs</h4><span class="b ok">● Live</span><span class="sp"></span><span class="wf-btn">Export CSV</span></div>
+    <div style="margin-bottom:10px">
+      <span class="wf-chip">Tenant: tất cả ▾</span><span class="wf-chip on">24 giờ ▾</span><span class="wf-chip">User ▾</span><span class="wf-chip">Loại: tất cả ▾</span><span class="wf-chip">Trạng thái ▾</span><span class="wf-chip">Agent ▾</span><span class="wf-chip">Provider ▾</span>
+      <span class="wf-chip" style="min-width:200px">🔍 run id / nội dung…</span>
+    </div>
+    <table class="wf-tbl">
+      <tr><th>Thời gian</th><th>Tenant</th><th>User</th><th>Yêu cầu</th><th>Loại</th><th>Agent / command</th><th class="num">Thời lượng</th><th class="num">Token</th><th class="num">Chi phí</th><th class="num">Thu</th><th>Trạng thái</th></tr>
+      <tr><td class="muted">10:42:05</td><td class="mono">acme</td><td>an</td><td>kiểm tra hoá đơn rồi tạo thẻ…</td><td>orchestrated</td><td>hoadon → trello</td><td class="num">8.4s</td><td class="num">3.2k</td><td class="num">$0.012</td><td class="num">$0.020</td><td><span class="b info">⟳ running</span></td></tr>
+      <tr><td class="muted">10:40:51</td><td class="mono">beta-co</td><td>binh</td><td class="mono">/dich en …</td><td>command</td><td class="mono">/dich</td><td class="num">1.1s</td><td class="num">84</td><td class="num">—</td><td class="num">—</td><td><span class="b ok">✓ ok</span></td></tr>
+      <tr><td class="muted">10:38:12</td><td class="mono">acme</td><td>an</td><td>liệt kê hàm chưa có test</td><td>orchestrated</td><td>dev-helper <span class="b warn">fallback</span></td><td class="num">14.2s</td><td class="num">8.1k</td><td class="num">$0 <span class="b off">sub</span></td><td class="num">$0.045 <span class="b warn">overage</span></td><td><span class="b ok">✓ ok</span></td></tr>
+      <tr><td class="muted">10:31:40</td><td class="mono">beta-co</td><td>cuong</td><td class="mono">/kiemtra-hoadon</td><td>command</td><td class="mono">/kiemtra-hoadon</td><td class="num">60.0s</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td><span class="b err">✕ TIMEOUT</span></td></tr>
+    </table>
+  </div></div></div>
+  <ul>
+    <li><strong>Live</strong>: bật thì tự thêm run mới vào đầu bảng (poll 5 giây) và cập nhật trạng thái các run đang chạy. Tự dừng Live khi admin đang cuộn xuống hoặc đang lọc theo khoảng thời gian trong quá khứ.</li>
+    <li>Filter <strong>Tenant</strong> đứng đầu hàng filter, mặc định "Tất cả tenant". Cột <em>Tenant</em> hiện key của tenant (vd. <code>acme</code>).</li>
+    <li>Cột <em>Chi phí</em> là <code>cost_usd</code> (chi phí thật). Run chạy bằng subscription có chi phí $0, kèm nhãn <span class="mono">sub</span>. Tooltip ghi rõ provider và <code>billing</code>.</li>
+    <li>Cột <em>Thu</em> là <code>billable_usd</code> (số thu của tenant). Run subscription vẫn có số thu, vì tính theo token × đơn giá bán. Chưa có đơn giá trong <code>price_book</code> thì hiện "chưa định giá".</li>
+    <li>Run nằm trong phần vượt quota tháng của tenant có nhãn <span class="b warn">overage</span> cạnh số thu. Run vẫn chạy bình thường.</li>
+    <li>Cột <em>Yêu cầu</em> chỉ hiện 60 ký tự đầu. Command hiện bằng font mono. Nội dung đầy đủ xem trong trace.</li>
+    <li>Trạng thái dùng icon cộng chữ (✓ ok · ⟳ running · ✕ mã lỗi · ⊘ cancelled), không chỉ dựa vào màu.</li>
+    <li>Click một hàng thì mở trang trace. Filter lưu trên URL để gửi link cho người khác.</li>
+    <li>Phân trang bằng cursor ("Tải thêm"). Mặc định xem 24 giờ gần nhất.</li>
+  </ul>
+</section>
+
+<section id="s4">
+  <h2>4. Run — trace chi tiết</h2>
+  <div class="wf-scroll"><div class="wf viz">
+    <div class="wf-top"><span class="muted">Runs /</span> <b class="mono">r_8f21</b> <span class="b ok">✓ ok</span><span class="muted">· an · 10:38:12 · 14.2s · 8.1k token · config v43</span><span class="sp"></span><span class="wf-btn">Copy ID</span><span class="wf-btn">Mở trong Playground</span></div>
+    <div class="wf-main">
+      <div class="wf-card"><b>Yêu cầu:</b> "Đọc file đính kèm và liệt kê các hàm chưa có test" · 📎 utils.ts</div>
+      <div class="cols-trace">
+        <div class="wf-card"><h5>Dòng thời gian</h5>
+          <div class="legend"><span><i class="dot t-deleg"></i>Delegate</span><span><i class="dot t-model"></i>Model</span><span><i class="dot t-tool"></i>Tool</span><span><i class="dot t-wf"></i>Workflow</span><span><i class="dot t-fb"></i>Dự phòng</span></div>
+          <div class="wfall">
+            <div class="r"><span>Coordinator · chọn agent</span><div class="lane"><i class="seg t-model" style="left:0;width:6%"></i></div><span class="num muted">0.8s</span></div>
+            <div class="r"><span>→ dev-helper (agent.cli)</span><div class="lane"><i class="seg t-deleg" style="left:6%;width:90%"></i></div><span class="num muted">12.9s</span></div>
+            <div class="r"><span>&nbsp;&nbsp;codex-sub · quota</span><div class="lane"><i class="seg t-fb" style="left:6%;width:3%"></i></div><span class="num muted">0.4s</span></div>
+            <div class="r sel"><span>&nbsp;&nbsp;claude-sub · Read utils.ts</span><div class="lane"><i class="seg t-tool" style="left:12%;width:3%"></i></div><span class="num muted">0.3s</span></div>
+            <div class="r"><span>&nbsp;&nbsp;claude-sub · Grep</span><div class="lane"><i class="seg t-tool" style="left:16%;width:2%"></i></div><span class="num muted">0.1s</span></div>
+            <div class="r"><span>&nbsp;&nbsp;claude-sub · trả lời</span><div class="lane"><i class="seg t-model" style="left:19%;width:77%"></i></div><span class="num muted">11.0s</span></div>
+            <div class="r"><span>Coordinator · tổng hợp</span><div class="lane"><i class="seg t-model" style="left:96%;width:4%"></i></div><span class="num muted">0.5s</span></div>
+          </div>
+        </div>
+        <div class="wf-card"><h5>Step: Read utils.ts</h5>
+          <div class="muted" style="margin-bottom:6px">tool · claude-sub · job <span class="mono">j_123</span> · 0.3s</div>
+          <div class="wf-chip on">Input</div><div class="wf-chip">Output</div><div class="wf-chip">Raw</div>
+          <pre style="margin-top:8px"><code>{ "file_path": "work/j_123/utils.ts" }</code></pre>
+          <div class="note warn" style="font-size:12px"><b>Dự phòng:</b> codex-sub hết quota (cooldown đến 14:30) → chuyển sang claude-sub</div>
+        </div>
+      </div>
+      <div class="wf-card"><h5>Câu trả lời cuối</h5><div class="muted">Có 3 hàm chưa có test: <span class="mono">parseArgs</span>, <span class="mono">mapInputs</span>, <span class="mono">retry</span>…</div></div>
+    </div>
+  </div></div>
+  <p class="caption">Hình 4.1: dòng thời gian dạng waterfall, dùng một trục thời gian chung. Step dự phòng được tô vân chéo (không chỉ khác màu) và có nhãn lý do.</p>
+  <ul>
+    <li>Waterfall lồng theo cấp: Coordinator → agent → step con. Click một hàng thì panel bên phải hiện Input/Output/Raw. Input đã được che secret (hiện <code>••••</code>).</li>
+    <li>Hover một đoạn trên thanh thì tooltip hiện: tên step, bắt đầu và kết thúc (ms tính từ lúc run bắt đầu), provider, token.</li>
+    <li>Run đang chạy thì trace cập nhật trực tiếp qua SSE <code>/runs/:id/events</code>, header có nút [Huỷ run] (modal xác nhận mức vừa).</li>
+    <li>Run lỗi thì hiện khối lỗi ngay đầu trang, gồm mã lỗi, thông điệp, gợi ý, và link tới step gây lỗi.</li>
+    <li><strong>Mở trong Playground</strong>: mở Playground của Studio với câu hỏi và file đã điền sẵn, để tái hiện lỗi.</li>
+    <li>Dữ liệu input/output quá 30 ngày đã bị xoá (theo HUB-NFR-05). Khi đó panel ghi "Nội dung đã hết hạn lưu trữ, chỉ còn metadata".</li>
+  </ul>
+</section>
+
+<section id="s5">
+  <h2>5. Chi phí &amp; usage</h2>
+  <div class="wf-scroll"><div class="wf viz"><div class="wf-main">
+    <div class="wf-h"><h4>Chi phí &amp; usage</h4><span class="sp"></span>
+      <span class="wf-chip">7 ngày</span><span class="wf-chip on">30 ngày</span><span class="wf-chip">90 ngày</span><span class="wf-chip">Tuỳ chọn…</span>
+      <span class="wf-chip">Tenant: tất cả ▾</span><span class="wf-chip">Provider ▾</span><span class="wf-chip">Agent ▾</span><span class="wf-chip">User ▾</span><span class="wf-btn">⊞ Xem dạng bảng</span><span class="wf-btn">CSV</span></div>
+    <div class="kpis" style="grid-template-columns:repeat(6,1fr)">
+      <div class="kpi"><div class="l">Chi phí thật</div><div class="n">$48.20</div><div class="d">▲ 12% so với 30 ngày trước</div><div class="spark"><i style="height:40%"></i><i style="height:55%"></i><i style="height:35%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:90%"></i><i style="height:75%"></i></div></div>
+      <div class="kpi"><div class="l">Số thu</div><div class="n">$131.60</div><div class="d">▲ 18% · gồm cả subscription</div></div>
+      <div class="kpi"><div class="l">Tổng token</div><div class="n">6.4M</div><div class="d">▲ 8%</div></div>
+      <div class="kpi"><div class="l">Tỉ lệ qua subscription</div><div class="n">62%</div><div class="d">theo token · ▼ 5 điểm</div></div>
+      <div class="kpi"><div class="l">Số run</div><div class="n">3,812</div><div class="d">▲ 15%</div></div>
+      <div class="kpi"><div class="l">Tỉ lệ lỗi</div><div class="n">2.1%</div><div class="d">▼ 0.4 điểm</div></div>
+    </div>
+    <div class="wf-card"><h5>Chi phí API theo ngày, chia theo provider</h5>
+      <div class="legend"><span><i class="dot" style="background:var(--s1)"></i>anthropic-api</span><span><i class="dot" style="background:var(--s2)"></i>openai-api</span><span><i class="dot" style="background:var(--s3)"></i>gemini-api</span><span><i class="dot" style="background:var(--other)"></i>Khác</span></div>
+      <div class="chart">
+        <span class="ylab" style="bottom:18px">$0</span><span class="ylab" style="bottom:93px">$2</span><span class="ylab" style="bottom:160px">$4</span>
+        <span class="gl" style="bottom:93px"></span><span class="gl" style="bottom:160px"></span>
+        <div class="bar"><i style="height:40px;background:var(--s1)"></i><i style="height:14px;background:var(--s2)"></i><i style="height:6px;background:var(--s3)"></i><span class="x">1</span></div>
+        <div class="bar"><i style="height:52px;background:var(--s1)"></i><i style="height:10px;background:var(--s2)"></i><i style="height:8px;background:var(--s3)"></i><span class="x"></span></div>
+        <div class="bar"><i style="height:30px;background:var(--s1)"></i><i style="height:8px;background:var(--s2)"></i><i style="height:4px;background:var(--s3)"></i><span class="x"></span></div>
+        <div class="bar"><i style="height:66px;background:var(--s1)"></i><i style="height:22px;background:var(--s2)"></i><i style="height:10px;background:var(--s3)"></i><i style="height:4px;background:var(--other)"></i><span class="x">8</span></div>
+        <div class="bar hover"><i style="height:78px;background:var(--s1)"></i><i style="height:30px;background:var(--s2)"></i><i style="height:12px;background:var(--s3)"></i><span class="x"></span>
+          <div class="tip" style="bottom:130px;left:-40px"><b>Th 5, 12/09</b><div class="row"><i class="dot" style="background:var(--s1)"></i>anthropic-api <b style="margin-left:auto">$2.08</b></div><div class="row"><i class="dot" style="background:var(--s2)"></i>openai-api <b style="margin-left:8px">$0.80</b></div><div class="row"><i class="dot" style="background:var(--s3)"></i>gemini-api <b style="margin-left:auto">$0.32</b></div><div class="row muted">Tổng $3.20</div></div></div>
+        <div class="bar"><i style="height:44px;background:var(--s1)"></i><i style="height:12px;background:var(--s2)"></i><i style="height:8px;background:var(--s3)"></i><span class="x"></span></div>
+        <div class="bar"><i style="height:20px;background:var(--s1)"></i><i style="height:6px;background:var(--s2)"></i><span class="x">15</span></div>
+        <div class="bar"><i style="height:58px;background:var(--s1)"></i><i style="height:18px;background:var(--s2)"></i><i style="height:10px;background:var(--s3)"></i><span class="x"></span></div>
+        <div class="bar"><i style="height:62px;background:var(--s1)"></i><i style="height:16px;background:var(--s2)"></i><i style="height:6px;background:var(--s3)"></i><i style="height:4px;background:var(--other)"></i><span class="x">22</span></div>
+        <div class="bar"><i style="height:48px;background:var(--s1)"></i><i style="height:14px;background:var(--s2)"></i><i style="height:8px;background:var(--s3)"></i><span class="x"></span></div>
+        <div class="bar"><i style="height:36px;background:var(--s1)"></i><i style="height:10px;background:var(--s2)"></i><span class="x">29</span></div>
+      </div>
+    </div>
+    <div class="cols2">
+      <div class="wf-card"><h5>Token theo cách tính phí</h5>
+        <div class="legend"><span><i class="dot" style="background:var(--s1)"></i>API · 2.4M</span><span><i class="dot" style="background:var(--s7,#4a3aa7)"></i>Subscription · 4.0M</span></div>
+        <div style="display:flex;height:14px;gap:2px"><i style="width:38%;background:var(--s1);border-radius:4px 0 0 4px"></i><i style="width:62%;background:#4a3aa7;border-radius:0 4px 4px 0"></i></div>
+        <p class="muted" style="margin:8px 0 0;font-size:12px">Subscription có chi phí thật $0 nên không cộng vào biểu đồ chi phí, nhưng token của nó vẫn tính vào số thu</p>
+      </div>
+      <div class="wf-card"><h5>Chi phí thật theo agent</h5>
+        <div class="hbar"><span>dev-helper</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="num">$19.40</span></div>
+        <div class="hbar"><span>router (Coord.)</span><div class="track"><div class="fill" style="width:58%"></div></div><span class="num">$11.30</span></div>
+        <div class="hbar"><span>chat</span><div class="track"><div class="fill" style="width:44%"></div></div><span class="num">$8.60</span></div>
+        <div class="hbar"><span>hoadon</span><div class="track"><div class="fill" style="width:22%"></div></div><span class="num">$4.20</span></div>
+        <div class="hbar"><span>Khác (3)</span><div class="track"><div class="fill other" style="width:24%"></div></div><span class="num">$4.70</span></div>
+        <div style="margin-top:8px"><span class="wf-chip">Theo tenant</span><span class="wf-chip">Theo feature</span><span class="wf-chip on">Theo agent</span><span class="wf-chip">Theo user</span><span class="wf-chip">Theo command</span></div>
+        <div style="margin-top:6px"><span class="wf-chip on">Chi phí thật</span><span class="wf-chip">Số thu</span></div>
+      </div>
+    </div>
+    <div class="wf-card"><h5>Theo tenant</h5>
+      <table class="wf-tbl">
+        <tr><th>Tenant</th><th class="num">Số run</th><th class="num">Token</th><th class="num">Chi phí thật</th><th class="num">Số thu</th><th class="num">Overage</th></tr>
+        <tr><td class="mono">acme</td><td class="num">1,920</td><td class="num">3.6M</td><td class="num">$21.40</td><td class="num">$74.10</td><td class="num">$6.20 <span class="b warn">overage</span></td></tr>
+        <tr><td class="mono">beta-co</td><td class="num">1,410</td><td class="num">2.2M</td><td class="num">$19.80</td><td class="num">$47.30</td><td class="num">—</td></tr>
+        <tr><td class="mono">platform</td><td class="num">482</td><td class="num">0.6M</td><td class="num">$7.00</td><td class="num">$10.20</td><td class="num">—</td></tr>
+      </table>
+    </div>
+  </div></div></div>
+  <p class="caption">Hình 5.1: một hàng KPI, một biểu đồ cột chồng theo ngày (một trục, chỉ đơn vị $), hai biểu đồ phụ và bảng theo tenant. Màu gắn cố định theo provider, không đổi khi lọc.</p>
+  <p><strong>Hai con số tiền.</strong> Mọi chỗ trong mục này tách rõ:</p>
+  <ul>
+    <li><code>cost_usd</code>: chi phí thật hệ thống phải trả cho provider API. Subscription = 0.</li>
+    <li><code>billable_usd</code>: số thu của tenant = token vào/ra × đơn giá bán trong <code>hub.price_book</code>. Tính cho cả API và subscription.</li>
+  </ul>
+  <div class="table-scroll"><table>
+    <tr><th>Khối</th><th>Câu hỏi nó trả lời</th><th>Dạng</th><th>Đặc tả</th></tr>
+    <tr><td>KPI row</td><td>Tháng này tốn bao nhiêu, thu bao nhiêu, tăng hay giảm?</td><td>6 stat tile: Chi phí thật · Số thu · Tổng token · Tỉ lệ qua subscription · Số run · Tỉ lệ lỗi</td><td>Giá trị kèm delta so với kỳ trước cùng độ dài. Tile chi phí có sparkline. Delta dùng chữ (▲▼) và màu chữ trung tính. Không tô xanh hay đỏ, vì chi phí tăng chưa chắc là xấu</td></tr>
+    <tr><td>Chi phí theo ngày</td><td>Tiền đi vào provider nào, ngày nào tăng vọt?</td><td>Cột chồng (stacked bar)</td><td>Chỉ tính <code>cost_usd</code> (tức chi phí API). Tối đa 4 provider có tên, phần còn lại gộp vào "Khác" (xám). Hover theo từng cột thì tooltip liệt kê từng provider và tổng. Có legend</td></tr>
+    <tr><td>Token theo cách tính phí</td><td>Đang tận dụng subscription tốt chưa?</td><td>Thanh 100% (2 phần)</td><td>Ghi tỉ lệ và số tuyệt đối ngay trên nhãn. Kết hợp với KPI "Tỉ lệ qua subscription"</td></tr>
+    <tr><td>Theo tenant / feature / agent / user / command</td><td>Ai hoặc cái gì tốn nhất?</td><td>Thanh ngang xếp hạng, 1 màu</td><td>Top 5 rồi đến "Khác (n)". Nhãn giá trị luôn hiện. Bộ chip đổi chiều phân tích. Công tắc đổi số đo giữa Chi phí thật và Số thu. Click một thanh thì áp filter đó cho toàn trang</td></tr>
+    <tr><td>Bảng theo tenant</td><td>Tenant nào tốn, thu được bao nhiêu?</td><td>Bảng</td><td>Cột: tenant, số run, token, chi phí thật, số thu, phần overage. Sắp theo số thu. Click một hàng thì lọc cả trang theo tenant đó</td></tr>
+    <tr><td>Xem dạng bảng</td><td>Cần số chính xác, cần copy</td><td>Bảng</td><td>Mỗi biểu đồ có một bảng tương đương. Export CSV theo filter hiện tại</td></tr>
+  </table></div>
+  <div class="note info"><strong>Cách tính chi phí:</strong> <code>cost_usd</code> lấy từ <code>usage_logs</code> (Hub ước tính theo bảng giá của từng provider và model). Tooltip của KPI ghi "Ước tính theo bảng giá niêm yết, có thể lệch với hoá đơn thật". <code>billable_usd</code> tính theo đơn giá của <code>hub.price_book</code> có hiệu lực lúc chạy. Run chưa có đơn giá vẫn đếm token, số thu hiện "chưa định giá" và không cộng vào KPI Số thu.</div>
+  <ul>
+    <li>Filter <strong>Tenant</strong> áp dụng cho cả trang. Chọn một tenant thì KPI có thêm dòng nhỏ về quota tháng (vd. "68% quota token"), lấy từ <code>admin.tenant_quotas</code>. Tenant không đặt quota (mặc định) thì ghi "Không giới hạn".</li>
+    <li>Dify workflow không có metadata token thì chỉ đếm số run và thời gian, không vào biểu đồ token.</li>
+  </ul>
+</section>
+
+<section id="s6">
+  <h2>6. Jobs &amp; Worker</h2>
+  <div class="wf-scroll"><div class="wf"><div class="wf-main">
+    <div class="wf-h"><h4>Jobs &amp; Worker</h4></div>
+    <div style="margin-bottom:10px"><span class="wf-chip">Hàng đợi · 3</span><span class="wf-chip">Workers · 1</span><span class="wf-chip on">Subscription pool</span></div>
+    <table class="wf-tbl">
+      <tr><th>Provider</th><th>Trạng thái</th><th>Slot</th><th>Chờ</th><th>Cooldown</th><th>Kiểm tra gần nhất</th><th></th></tr>
+      <tr><td class="mono">claude-sub</td><td><span class="b ok">✓ ok</span></td><td><span class="slots"><i class="used"></i><i></i></span> 1/2</td><td class="num">0</td><td class="muted">—</td><td class="muted">2 phút trước</td><td><span class="wf-btn">Kiểm tra</span></td></tr>
+      <tr><td class="mono">codex-sub</td><td><span class="b warn">◔ cooldown</span></td><td><span class="slots"><i></i></span> 0/1</td><td class="num">0</td><td>còn <b>1:12:04</b> <span class="muted">(14:30)</span></td><td class="muted">2 phút trước</td><td><span class="wf-btn">Kiểm tra</span></td></tr>
+      <tr><td class="mono">gemini-sub</td><td><span class="b err">⚠ logged_out</span></td><td><span class="slots"><i></i></span> 0/1</td><td class="num">—</td><td class="muted">—</td><td class="muted">2 phút trước</td><td><span class="wf-btn pri">Hướng dẫn đăng nhập</span></td></tr>
+    </table>
+    <div class="wf-card" style="margin-top:12px"><h5>Slot subscription theo tenant <span class="muted" style="font-weight:400">· sửa giới hạn ở Admin › Tenants</span></h5>
+      <table class="wf-tbl">
+        <tr><th>Tenant</th><th>Đang chạy</th><th class="num">Đang chờ</th><th>Giới hạn</th><th></th></tr>
+        <tr><td class="mono">acme</td><td><span class="slots"><i class="used"></i></span> 1/1 <span class="b warn">đủ slot</span></td><td class="num">1</td><td>1</td><td><span class="wf-btn">Sửa trong Admin</span></td></tr>
+        <tr><td class="mono">beta-co</td><td>0</td><td class="num">0</td><td class="muted">∞ không giới hạn</td><td><span class="wf-btn">Sửa trong Admin</span></td></tr>
+      </table>
+    </div>
+    <div class="cols2" style="margin-top:12px">
+      <div class="wf-card"><h5>Hàng đợi</h5>
+        <table class="wf-tbl">
+          <tr><th>Job</th><th>Loại</th><th>Trạng thái</th><th class="num">Thời gian</th><th></th></tr>
+          <tr><td class="mono">j_130</td><td>agent.cli</td><td><span class="b info">⟳ running</span></td><td class="num">0:42</td><td><span class="wf-btn dng">Huỷ</span></td></tr>
+          <tr><td class="mono">j_131</td><td>workflow.async</td><td><span class="b off">◷ queued</span></td><td class="num">0:05</td><td><span class="wf-btn dng">Huỷ</span></td></tr>
+          <tr><td class="mono">j_117</td><td>workflow.async</td><td><span class="b err">✕ failed</span></td><td class="num">1:00</td><td><span class="wf-btn">Chạy lại</span></td></tr>
+        </table>
+      </div>
+      <div class="wf-card"><h5>Workers</h5>
+        <table class="wf-tbl">
+          <tr><th>Worker</th><th>Nhận loại</th><th>Heartbeat</th><th>Đang chạy</th></tr>
+          <tr><td class="mono">wk-01 · win-srv</td><td>agent.cli, workflow.async</td><td><span class="b ok">✓ 4s</span></td><td>2</td></tr>
+        </table>
+        <p class="muted" style="font-size:12px;margin:8px 0 0">Heartbeat quá 60 giây thì báo <span class="b err">✕ mất kết nối</span> và badge đỏ hiện ở menu</p>
+      </div>
+    </div>
+  </div></div></div>
+  <ul>
+    <li><strong>Subscription pool</strong> là tab mặc định khi có provider không ổn. Slot vẽ thành các ô vuông, kèm chữ "1/2" để không phải đếm ô.</li>
+    <li><strong>Cooldown</strong> hiện đồng hồ đếm ngược, kèm giờ reset tuyệt đối trong ngoặc.</li>
+    <li><strong>Slot theo tenant</strong>: tab pool có thêm bảng "Slot subscription theo tenant" dưới bảng provider. Cột: tenant, đang chạy, đang chờ, giới hạn (<code>tenants.max_concurrent_sub</code>; null hiện "∞ không giới hạn"). Tenant chạm giới hạn thì có nhãn "đủ slot": job mới của tenant đó chờ hoặc dự phòng sang API (theo Worker), tenant khác không bị ảnh hưởng.</li>
+    <li>Giới hạn slot sửa ở Admin › Tenants (<code>/tenants/:id</code>). Ở đây chỉ xem, có link [Sửa trong Admin].</li>
+    <li><strong>Hướng dẫn đăng nhập</strong> mở một Sheet chứa runbook cho CLI đó (lấy từ tài liệu Worker, mục 8): các bước SSH, lệnh cần chạy (có nút copy), rồi nút [Kiểm tra lại] để gọi probe.</li>
+    <li><strong>Chạy lại</strong> chỉ có với <code>workflow.async</code>. Với <code>agent.cli</code>, nút bị khoá kèm tooltip "Agent có thể đã làm dở việc, hãy gửi lại yêu cầu từ Chat" (theo WRK-BR-04).</li>
+    <li>Tab Hàng đợi lọc được theo trạng thái và tenant. Click job id thì mở trace của run cha, nhảy đúng tới step đó.</li>
+  </ul>
+</section>
+
+<section id="s7">
+  <h2>7. Quy tắc biểu đồ (áp dụng cho toàn bộ mục Vận hành)</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Quy tắc</th><th>Chi tiết</th></tr>
+    <tr><td>Màu gắn theo thực thể</td><td>Mỗi provider API có một slot cố định: anthropic-api → slot 1 (xanh dương), openai-api → 2 (cam), gemini-api → 3 (ngọc), openrouter → 4 (vàng), ollama → 5 (hồng). "Khác" luôn là xám. Lọc bớt provider thì các provider còn lại <em>không đổi màu</em></td></tr>
+    <tr><td>Bảng màu</td><td>Dùng bảng categorical đã kiểm định (8 slot, có bản riêng cho light và dark), theo thứ tự cố định, không xoay vòng. Hơn 4 series thì gộp vào "Khác". Màu trạng thái (good/warning/serious/critical) dành riêng cho trạng thái, không dùng làm màu series</td></tr>
+    <tr><td>Một trục</td><td>Không dùng biểu đồ hai trục. Chi phí ($) và token là hai biểu đồ riêng</td></tr>
+    <tr><td>Nét vẽ</td><td>Cột có đầu bo 4px, các đoạn trong cột chồng cách nhau 2px. Lưới nhạt dạng nét đứt. Nhãn và giá trị dùng màu chữ, không dùng màu series</td></tr>
+    <tr><td>Hover</td><td>Mọi biểu đồ đều có tooltip. Cột chồng hover theo cả cột. Vùng hover lớn hơn chính cái cột</td></tr>
+    <tr><td>Không chỉ dựa vào màu</td><td>Luôn có legend khi ≥ 2 series. Trạng thái luôn có icon và chữ. Bước dự phòng có vân chéo. Mọi biểu đồ có chế độ xem bảng</td></tr>
+    <tr><td>Bộ lọc</td><td>Đặt trên một hàng phía trên biểu đồ, áp dụng cho cả trang, lưu trên URL</td></tr>
+    <tr><td>Thư viện</td><td>shadcn/ui <strong>Chart</strong> (dựa trên Recharts). Màu khai báo bằng CSS variable trong <code>ChartConfig</code>, có bộ riêng cho dark theme</td></tr>
+  </table></div>
+</section>
+
+<section id="s8">
+  <h2>8. Trạng thái, quyền, riêng tư</h2>
+  <ul>
+    <li><strong>Quyền:</strong> chỉ <code>platform_admin</code>. Hub kiểm tra role trên mọi <code>/admin/*</code>. <code>tenant_admin</code> và member không vào được Studio.</li>
+    <li><strong>Riêng tư:</strong> <code>platform_admin</code> đọc được nội dung chat của mọi tenant trong trace. <code>tenant_admin</code> không xem nội dung, chỉ xem chi phí ở Admin. Chat App có dòng thông báo cố định trong phần Cài đặt: "Quản trị nền tảng có thể xem nội dung để hỗ trợ và gỡ lỗi". Mỗi lần mở trace <em>của người khác</em> được ghi audit (<code>view_trace</code>), kèm <code>tenant_id</code> của run.</li>
+    <li><strong>Rỗng:</strong> Runs rỗng thì ghi "Chưa có run nào trong khoảng này", kèm nút [Mở rộng thời gian]. Usage rỗng thì ẩn biểu đồ và hiện tile "Chưa có dữ liệu".</li>
+    <li><strong>Mất kết nối tới Hub:</strong> Studio hiện banner "Mất kết nối, dữ liệu có thể đã cũ" và tự thử lại.</li>
+    <li><strong>Song ngữ:</strong> toàn bộ nhãn đều theo ngôn ngữ đang chọn. Số, tiền và ngày định dạng theo locale (<code>vi-VN</code>: 3.812 · 12/09. <code>en</code>: 3,812 · Sep 12). Mã lỗi (<code>TIMEOUT</code>…) giữ nguyên.</li>
+  </ul>
+</section>
+
+<section id="s9">
+  <h2>9. Ảnh hưởng tới tài liệu BA</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Tài liệu</th><th>Cần bổ sung</th></tr>
+    <tr><td>BA Agent Hub</td><td>Các endpoint ở mục 2 (đặt dưới <code>/studio/api/ops/*</code>), có filter <code>tenant</code>. <code>usage_logs</code> có <code>tenant_id</code>, <code>feature_id</code>, <code>billing</code>, <code>cost_usd</code>, <code>billable_usd</code>, <code>overage</code>. Bảng <code>hub.price_book</code>. Audit sự kiện <code>view_trace</code> kèm <code>tenant_id</code> (có thể ghi vào <code>admin.audit_log</code> qua một bảng trong schema hub)</td></tr>
+    <tr><td>BA Worker</td><td>Bảng <code>hub.workers</code> (id, host, loại job nhận, heartbeat_at, số job đang chạy). Endpoint probe theo yêu cầu. Bộ đếm slot subscription theo tenant, để endpoint <code>tenant-slots</code> đọc</td></tr>
+    <tr><td>BA Admin</td><td><code>tenants.max_concurrent_sub</code> sửa ở màn Tenants. Màn Chi phí &amp; quota (cho <code>tenant_admin</code>) dùng chung nguồn <code>usage_logs</code></td></tr>
+  </table></div>
+</section>
+
+<section id="s10">
+  <h2>10. Câu hỏi mở</h2>
+  <ol>
+    <li>Màn Chi phí &amp; quota của Admin có hiện <code>cost_usd</code> cho <code>tenant_admin</code> không? Spec chỉ nói <code>platform_admin</code> thấy cả hai số. Tạm giả định <code>tenant_admin</code> chỉ thấy số thu và quota.</li>
+    <li>Run "chưa định giá": khi thêm đơn giá sau thì tính lại cho run cũ, hay chỉ áp cho run mới? Tạm chọn: tính lại khi chốt báo cáo tháng.</li>
+    <li>Vận hành có cần export CSV theo tenant để lập hoá đơn, hay dùng export của Admin?</li>
+  </ol>
+</section>
+
+<footer>AI System · UI/UX · Vận hành · v0.4</footer>
+</div>
+</body>
+</html>
