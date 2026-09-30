@@ -62,7 +62,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | ADM-NFR-03 | — |  |  |  | chưa spec |
 | ADM-NFR-04 | — |  |  |  | chưa spec |
 | ADM-NFR-05 | — |  |  |  | chưa spec |
-| ADM-NFR-06 | — | docs/specs/M0-bootstrap/spec.md | 29 file | 27 file | có test |
+| ADM-NFR-06 | — | docs/specs/M0-bootstrap/spec.md | 30 file | 28 file | có test |
 | ADM-NFR-07 | — |  |  |  | chưa spec |
 | HUB-FR-01 | MUST |  |  |  | chưa spec |
 | HUB-FR-02 | MUST |  |  |  | chưa spec |
