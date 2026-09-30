@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": "Chỉ cho dependency-cruiser (.dependency-cruiser.cjs options.tsConfig). Alias theo tsconfig từng web app.",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": { "@/*": ["apps/admin-web/src/*"] }
+  },
+  "include": ["apps/admin-web/src"]
+}

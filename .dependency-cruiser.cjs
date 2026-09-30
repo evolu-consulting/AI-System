@@ -2,6 +2,7 @@
 // Regex phần `apps/…` không neo `^` để dùng lại trên fixture (tools/scripts/src/__fixtures__/depcruise).
 // Đường dẫn đã resolve luôn chứa `node_modules/<pkg>/` (kể cả store `.bun/` của linker isolated).
 const NPM = (names) => `(^|/)node_modules/(${names})/`;
+const { join } = require("node:path");
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -98,6 +99,9 @@ module.exports = {
     // dist neo vào build của workspace: `(^|/)dist/` từng loại cả cạnh tới gói npm (`node_modules/hono/dist/…`).
     exclude: { path: "(^|/)__fixtures__/|^(apps|packages|tools)/[^/]+/dist/" },
     tsPreCompilationDeps: true,
+    // Alias `@/*` → `apps/admin-web/src/*` (tsconfig admin-web). Đường dẫn tuyệt đối để chạy được từ cwd bất kỳ
+    // (fixture). Workspace khác không dùng `@/` nên không bị ảnh hưởng; thêm web app mới → gộp alias ở đây.
+    tsConfig: { fileName: join(__dirname, "tsconfig.depcruise.json") },
     builtInModules: { add: ["bun", "bun:test", "bun:sqlite", "bun:ffi"] },
     enhancedResolveOptions: {
       exportsFields: ["exports"],
