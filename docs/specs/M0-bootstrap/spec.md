@@ -307,6 +307,8 @@ Nguồn `r#n` = `readiness.md` lần 1 mục n. Áp mặc định; chỗ khác m
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - T1 · `turbo.json` thêm `"agentGuidance": false`: Turbo 2.11.5 tự ghi `AGENTS.md` ở gốc khi phát hiện agent (key có trong `node_modules/turbo/schema.json`); luật agent đã nằm ở `CLAUDE.md`, tránh file untracked sinh lại mỗi lần chạy.
 - T1 · `bunfig.int.toml` lặp `[install] linker = "isolated"`: `--config` thay hẳn `bunfig.toml`, giữ cùng linker nếu ai đó chạy `bun install` với file này.
+- T2 · `biome.json` dùng `linter.rules.preset: "recommended"` thay `recommended: true` (Biome 2.5.15 báo DEPRECATED, sẽ bỏ ở major sau; giá trị enum `recommended|all|none` trong `configuration_schema.json`). Thư mục bỏ qua viết dạng `!docs`, `!**/migrations/meta`, `!**/components/ui` (không hậu tố `/**`, cú pháp thư mục của Biome 2).
+- T19 · Làm trước T4/T8/T9/Q2/FE-5 theo lệnh điều phối; devDep gốc `@ai/contracts: "workspace:*"` thêm ở T19 (thay vì T4) vì `tsc -p tsconfig.tests.json` cần resolve nó từ gốc. Chưa có file nào dưới `tests/**`, `e2e/**`, `playwright.config.ts` → `bun run typecheck` hiện exit 2 (`TS18003 No inputs were found`); hết khi Q2 tạo file khoá. Không thêm file giả để che lỗi.
 
 ## 10. Tranh chấp test
 - (không)
