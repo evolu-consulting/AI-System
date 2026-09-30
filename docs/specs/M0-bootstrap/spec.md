@@ -312,6 +312,8 @@ Nguồn `r#n` = `readiness.md` lần 1 mục n. Áp mặc định; chỗ khác m
 - T4 · Middleware request-id tự viết trong `app.ts` thay `hono/request-id`: bản Hono 4.13.12 thay id chứa ký tự ngoài `[\w\-=]` (từ chối `.` mà §3.1 cho phép, nhận `=` mà §3.1 cấm). Header `X-Request-Id` gắn **sau** `next()` nên có cả trên 404/500.
 - T4 · `healthRoutes(cfg: { version: string })` thay `Pick<AppConfig, "version">`: cùng kiểu, tránh `health.routes.ts` import ngược `app.ts` (vòng import, luật `no-circular`).
 - T4 · Logger bỏ mức `info` khi `NODE_ENV=test` (bun test tự đặt) để đầu ra test gọn; `warn`/`error` vẫn in. Không thêm biến env mới.
+- T5 · Mailpit ghim `axllent/mailpit:v1.31.3` (release mới nhất 2026-09-27, GitHub `axllent/mailpit`). Healthcheck redis viết `CMD-SHELL redis-cli ping | grep -q PONG` để kiểm đúng chuỗi `PONG` như plan.
+- T5 · Ghi nhận cho qc (không sửa test): trên Windows, `docker compose ps --format json | bun -e '…Bun.stdin.text()…'` (test-plan §4 `ac02`) lỗi `EUNKNOWN … read` (Bun 1.3.14 đọc pipe từ tiến trình native); chuyển hướng qua file (`> f; bun -e … < f`) hoặc `new Response(Bun.stdin.stream()).text()` thì chạy. Kết quả AC02 xanh khi chạy qua file.
 - T4 · `server.ts` gặp env sai → log `error` một dòng `Env không hợp lệ: <tên biến>` rồi `exit 1` (không in giá trị, không stack).
 
 ## 10. Tranh chấp test
