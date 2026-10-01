@@ -205,7 +205,8 @@ export function deleteFeature(c: Call, id: string): Promise<void> {
   });
 }
 
-// ---- cho module commands (T6): chạy trong transaction của command, SAU khi đã khoá hàng command ----
+// ---- cho module commands (T6): chạy trong transaction của command, SAU khi đã khoá hàng command (PATCH) và đã ghi
+// `command_names` (khoá ngầm của unique index) — features luôn là bậc khoá cuối (plan §5.1, review M2 v2 #1) ----
 
 export const coreFeatureId = (tx: Tx): Promise<string> => repo.coreFeatureId(tx);
 export const featureRefsByCommands = m.featureRefsByCommands;

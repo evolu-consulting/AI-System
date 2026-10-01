@@ -151,7 +151,8 @@ export async function featureRefsByCommands(
     .from(featureCommands)
     .innerJoin(features, eq(features.id, featureCommands.featureId))
     .where(inArray(featureCommands.commandId, [...commandIds]))
-    .orderBy(sql`${features.key} <> ${CORE_FEATURE_KEY}`, asc(features.key));
+    // COLLATE "C" = so theo byte như JS (`byCoreThenKey`): GET và POST trả `features` cùng thứ tự.
+    .orderBy(sql`${features.key} <> ${CORE_FEATURE_KEY}`, sql`${features.key} collate "C"`);
   for (const r of rows) {
     const list = out.get(r.commandId) ?? [];
     list.push({

@@ -1,6 +1,7 @@
 // ADM-FR-20, ADM-FR-21, ADM-FR-22, ADM-BR-01, ADM-BR-02, ADM-BR-10 · nghiệp vụ commands (plan M2 §5 "Commands", §5.1).
-// Không biết HTTP; callback withScope chỉ làm việc DB (TECH-DEBT #13). Khoá: workflow SHARE → command NKU →
-// features NKU (id tăng, trong setCommandFeatures). Luật kiểm trên TRẠNG THÁI SAU KHI GHÉP, đúng thứ tự spec §3.
+// Không biết HTTP; callback withScope chỉ làm việc DB (TECH-DEBT #13). Khoá (POST và PATCH như nhau): workflow SHARE →
+// command NKU (PATCH) → ghi command + `command_names` (khoá ngầm của unique index: chờ tên = chờ cả transaction kia) →
+// features NKU (id tăng). Luật kiểm trên TRẠNG THÁI SAU KHI GHÉP, đúng thứ tự spec §3.
 import type {
   Command,
   CommandCreateRequest,
@@ -125,11 +126,10 @@ async function checkState(
   s: CommandState,
   wf: WorkflowRefLocked | null,
   selfId: string | null,
-  findMissing: (tx: Tx, ids: string[]) => Promise<string[]> = missingFeatureIds,
 ): Promise<WorkflowInput[]> {
   fail(checkCommandFeatures(s.featureIds));
   if (!wf) throw appError("INVALID_REFERENCE", { field: "workflow_id", ids: [s.workflowId] });
-  const missing = await findMissing(tx, s.featureIds);
+  const missing = await missingFeatureIds(tx, s.featureIds);
   if (missing.length > 0)
     throw appError("INVALID_REFERENCE", { field: "feature_ids", ids: missing });
   await failNameTaken(tx, s, selfId);
@@ -187,18 +187,17 @@ export function createCommand(c: Call, input: CommandCreateRequest): Promise<Com
       enabled: input.enabled,
       featureIds: input.feature_ids ?? [await coreFeatureId(tx)],
     };
-    // Command mới: khoá features ngay ở bước kiểm (workflow SHARE → features NKU; hàng command chưa tồn tại nên
-    // không đảo thứ tự khoá) và dùng lại FeatureRef cho response — bớt 3 lượt DB so với setCommandFeatures (perf).
-    let refs: FeatureRef[] = [];
-    await checkState(tx, s, wf, null, async (t, ids) => {
-      refs = await lockFeatureRefs(t, ids);
-      return ids.filter((x) => !refs.some((r) => r.id === x));
-    });
+    await checkState(tx, s, wf, null);
     const id = Bun.randomUUIDv7();
     await writeNames(tx, s, null, async (sp) => {
       await repo.insertCommand(sp, { ...valuesOf(s), id, actorId: c.actor.userId });
       await repo.insertNames(sp, id, commandNames(s));
     });
+    await afterLock(c.ctx.hooks, "command.save", "names");
+    // Khoá features SAU khi ghi tên (cùng thứ tự với PATCH, review M2 v2 #1); FeatureRef trả về dùng lại cho response.
+    const refs = await lockFeatureRefs(tx, s.featureIds);
+    const gone = s.featureIds.filter((x) => !refs.some((r) => r.id === x));
+    if (gone.length > 0) throw appError("INVALID_REFERENCE", { field: "feature_ids", ids: gone });
     await attachNewCommand(tx, {
       commandId: id,
       featureIds: s.featureIds,
@@ -282,6 +281,7 @@ export function updateCommand(c: Call, id: string, input: CommandUpdateRequest):
       if (changed.includes("name") || changed.includes("aliases"))
         await repo.syncNames(sp, id, commandNames(next));
     });
+    await afterLock(c.ctx.hooks, "command.save", "names");
     if (changed.includes("featureIds"))
       await setCommandFeatures(tx, {
         commandId: id,

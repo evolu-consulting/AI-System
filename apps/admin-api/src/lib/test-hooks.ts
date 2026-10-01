@@ -7,9 +7,15 @@ export type HookOp =
   | "feature.save"
   | "feature.delete"
   | "workflow.save";
-export type TestHooks = { afterLock?: (op: HookOp, step: "locked") => Promise<void> };
+/** `locked`: vừa giữ đủ khoá, trước kiểm luật/ghi. `names`: command vừa ghi `command_names` (giữ khoá ngầm của
+ * unique index), trước khi khoá features — để test thứ tự khoá tên → features (review M2 v2 #1). */
+export type HookStep = "locked" | "names";
+export type TestHooks = { afterLock?: (op: HookOp, step: HookStep) => Promise<void> };
 
-/** Gọi ngay sau khi đã giữ đủ khoá, trước bước kiểm luật/ghi. */
-export async function afterLock(hooks: TestHooks | undefined, op: HookOp): Promise<void> {
-  await hooks?.afterLock?.(op, "locked");
+export async function afterLock(
+  hooks: TestHooks | undefined,
+  op: HookOp,
+  step: HookStep = "locked",
+): Promise<void> {
+  await hooks?.afterLock?.(op, step);
 }

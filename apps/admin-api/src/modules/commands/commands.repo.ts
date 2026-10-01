@@ -220,12 +220,13 @@ export async function syncNames(tx: Tx, commandId: string, names: readonly strin
       .delete(commandNames)
       .where(and(eq(commandNames.commandId, commandId), inArray(commandNames.name, gone)));
   if (added.length > 0)
-    await tx.insert(commandNames).values(added.map((name) => ({ name, commandId })));
+    await tx.insert(commandNames).values([...added].sort().map((name) => ({ name, commandId })));
 }
 
 /** Command mới: chèn thẳng mọi tên (PK `command_names_pkey` bảo đảm unique). */
 export async function insertNames(tx: Tx, commandId: string, names: readonly string[]) {
-  await tx.insert(commandNames).values(names.map((name) => ({ name, commandId })));
+  // Sắp tên trước khi chèn: hai request có tập tên chéo nhau chờ nhau theo cùng thứ tự, không vòng (review M2 v2 #5).
+  await tx.insert(commandNames).values([...names].sort().map((name) => ({ name, commandId })));
 }
 
 export async function deleteCommand(tx: Tx, id: string): Promise<void> {

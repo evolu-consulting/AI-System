@@ -16,7 +16,7 @@ import * as usersRepo from "../modules/users/users.repo";
 import { type Call, createUser, lockUser, resetPassword } from "../modules/users/users.service";
 import { updateWorkflow } from "../modules/workflows/workflows.service";
 import { loadJwtKeys } from "./jwt";
-import type { HookOp, TestHooks } from "./test-hooks";
+import type { HookOp, HookStep, TestHooks } from "./test-hooks";
 
 const OWNER = process.env.TEST_DATABASE_URL;
 const API = process.env.TEST_ADMIN_API_DATABASE_URL;
@@ -211,7 +211,7 @@ const actor = {
 const m2 = (hooks?: TestHooks) => ({ ctx: { db, hooks }, actor, scope: platform });
 
 /** Hook dừng đúng một lần ở `target` sau khi đã giữ khoá; test mở bằng tay. */
-function barrier(target: HookOp) {
+function barrier(target: HookOp, step: HookStep = "locked") {
   let open: () => void = () => undefined;
   let reached: () => void = () => undefined;
   const opened = new Promise<void>((r) => {
@@ -222,8 +222,8 @@ function barrier(target: HookOp) {
   });
   let used = false;
   const hooks: TestHooks = {
-    afterLock: async (op) => {
-      if (op !== target || used) return;
+    afterLock: async (op, s) => {
+      if (op !== target || s !== step || used) return;
       used = true;
       reached();
       await opened;
@@ -345,6 +345,32 @@ describe("ADM-BR-10 · M2 plan §5.1 · khoá hàng catalog xen kẽ tất đị
     expect(r.ra.ok).toBe(true);
     expect(codeOf(r.rb)).toBe("INVALID_REFERENCE");
     expect(await featureCount()).toBe(1);
+    expect(r.deadlocks).toBe(0);
+    expect(r.ms).toBeLessThan(900);
+  });
+
+  test('ADM-BR-01 · (d) PATCH đổi tên → "x" + feature_ids [F] (dừng sau khi ghi command_names) ∥ POST "x" với F → không deadlock (thứ tự khoá tên → features ở cả hai)', async () => {
+    await owner`delete from admin.feature_commands where command_id = ${CMD} and feature_id = ${FEAT_F}`;
+    const b = barrier("command.save", "names");
+    const r = await m2Interleave(
+      () => updateCommand(m2(b.hooks), CMD, { version: 1, name: "x-race", feature_ids: [FEAT_F] }),
+      () =>
+        createCommand(m2(), {
+          name: "x-race",
+          aliases: [],
+          description: { vi: "Đua tên" },
+          workflow_id: WF,
+          args: [],
+          input_map: {},
+          output: { field: "t", render: "text" },
+          mode: "sync",
+          enabled: true,
+          feature_ids: [FEAT_F],
+        }),
+      b,
+    );
+    expect(r.ra.ok).toBe(true);
+    expect(codeOf(r.rb)).toBe("COMMAND_NAME_TAKEN");
     expect(r.deadlocks).toBe(0);
     expect(r.ms).toBeLessThan(900);
   });
