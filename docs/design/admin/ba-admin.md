@@ -120,7 +120,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 |---|---|---|
 | ADM-FR-30 | CRUD feature (chỉ `platform_admin`): key, tên và mô tả (vi/en), icon, danh sách command, trạng thái `on` \| `off` \| `beta` | **MUST** |
 | ADM-FR-31 | **Entitlement:** `platform_admin` cấp hoặc thu hồi feature cho tenant | **MUST** |
-| ADM-FR-32 | **Grant:** `tenant_admin` cấp feature cho group hoặc user trong tenant, chỉ trong phạm vi feature đã được entitlement | **MUST** |
+| ADM-FR-32 | **Grant:** `tenant_admin` cấp feature cho group hoặc user trong tenant, chỉ trong phạm vi feature đã được entitlement. *M3: UI chỉ cấp cho group; cấp cho user chỉ có API ([CR-017](../../CHANGE-REQUESTS.md))* | **MUST** |
 | ADM-FR-33 | **Kill switch:** tắt feature thì mọi command bên trong biến khỏi menu trong ≤ 5 giây. Run đang chạy vẫn chạy xong | **MUST** |
 | ADM-FR-34 | Trạng thái `beta`: feature chỉ hiện cho user thuộc group `beta-testers`, có nhãn "Beta" trong menu `/` | **SHOULD** |
 | ADM-FR-35 | Ma trận phân quyền feature × group, tick để cấp, thao tác hàng loạt | **SHOULD** |
@@ -255,7 +255,7 @@ Mọi `PATCH` gửi kèm `version`; lệch thì trả `409 Conflict`. Endpoint `
 > **AC-A03 · Tạo command**
 > Given workflow `translate` có input bắt buộc `source_text`, `target_lang`, When tạo `/dich` mà chưa map `target_lang`, Then không lưu được và báo "thiếu input bắt buộc: target_lang".
 > When map đủ, chọn feature `core` và lưu, Then trong ≤ 5 giây `/dich` xuất hiện trong menu `/` của mọi user.
-> *Chia vế ([CR-011](../../CHANGE-REQUESTS.md)): M2 kiểm phía Admin (vế 1 và "lưu được"); vế "≤ 5 giây trong menu" đo ở Hub cùng NOTIFY `config_changed` (FR-53) ở M3.*
+> *Chia vế ([CR-011](../../CHANGE-REQUESTS.md)): M2 kiểm phía Admin (vế 1 và "lưu được"); vế "≤ 5 giây trong menu" ở M3 kiểm mức NOTIFY `config_changed` ≤ 1 s sau commit + dữ liệu `hub_ro` ([CR-015](../../CHANGE-REQUESTS.md)); menu `/` của Hub chuyển M5.*
 
 > **AC-A04 · Test command**
 > Given `/dich` đã lưu, When bấm Test với `text="hello", lang="vi"`, Then hiện kết quả trả về từ Dify cùng thời gian chạy. Nếu key sai thì hiện rõ lỗi của Dify (không nuốt lỗi).
@@ -277,9 +277,11 @@ Mọi `PATCH` gửi kèm `version`; lệch thì trả `409 Conflict`. Endpoint `
 
 > **AC-A10 · Cấp feature theo group**
 > Given feature "Kế toán" (gồm `/kiemtra-hoadon`) được entitlement cho `acme`, When tenant admin cấp "Kế toán" cho group "Kế toán", Then trong ≤ 5 giây thành viên group thấy `/kiemtra-hoadon`, còn user khác trong `acme` không thấy và gõ lệnh thì nhận `CMD_NOT_FOUND`.
+> *Phía Admin ở M3 ([CR-015](../../CHANGE-REQUESTS.md)): NOTIFY `config_changed` ≤ 1 s sau commit + dữ liệu `hub_ro` đúng; vế menu và `CMD_NOT_FOUND` do Hub, chuyển M5.*
 
 > **AC-A11 · Thu hồi entitlement**
 > Given grant ở AC-A10, When platform admin thu hồi entitlement "Kế toán" của `acme`, Then `/kiemtra-hoadon` biến khỏi menu của cả group. When cấp lại entitlement, Then grant cũ có hiệu lực trở lại mà không phải cấp lại.
+> *Phía Admin ở M3 ([CR-015](../../CHANGE-REQUESTS.md)): kiểm bằng `effective-access`, truy vấn `hub_ro` và NOTIFY; menu Hub chuyển M5.*
 
 > **AC-A12 · Vượt quota**
 > Given `acme` có quota 1.000 run/tháng và đã dùng 999, When user chạy thêm 2 run, Then cả 2 run đều chạy; tenant admin nhận cảnh báo 100%; run thứ 1.001 được đánh dấu `overage` trong báo cáo.

@@ -356,7 +356,7 @@ Tab Thông tin:
 - `Tên hiển thị` (bắt buộc — Đề xuất, tối đa 64).
 - `Email` (bắt buộc khi role = tenant_admin, R#9; không bắt buộc với member).
 - `Role` (`RadioGroup`): member · tenant_admin. Tenant `platform`: chỉ `platform_admin` (không chọn được). Hàng của mình: disabled + gợi ý "Bạn không thể tự hạ role của mình." Hạ tenant_admin cuối cùng → lỗi "Tenant phải còn ít nhất một tenant_admin đang hoạt động" (BR-08, R#49).
-- `Groups` (multi `RefPicker`).
+- `Groups`: **M3 chỉ đọc (chip)**, sửa thành viên ở trang Group ([CR-017](../../CHANGE-REQUESTS.md)); artboard vẽ multi `RefPicker`.
 - `Ngôn ngữ` (Tiếng Việt / English).
 - Khi tạo: dòng thông tin "Mật khẩu tạm được sinh tự động và chỉ hiện một lần. Người dùng phải đổi mật khẩu ở lần đăng nhập đầu." (FR-06).
 - Chân: `Huỷ` · `Tạo user` / `Lưu`.
@@ -763,7 +763,7 @@ Tất cả nằm trong **vùng nội dung**; sidebar và topbar luôn dùng đư
 | Bạn không còn quyền thực hiện thao tác này | You no longer have permission to do this |
 
 ### 12.5 Xung đột 409 (`VERSION_CONFLICT`, FR-55, AC-A07)
-Server trả `{error:{code:"VERSION_CONFLICT",message,details:{current, updated_at}}}` (R#4 đã sửa theo [CR-008](../../CHANGE-REQUESTS.md)). **`updated_by` chỉ có từ M4**; trước đó modal không có tên người sửa, dùng câu thay thế "Bản này vừa được sửa lúc {time} (v{n}). Bản của bạn dựa trên v{mine}." (VI) / "This was just edited at {time} (v{n}). Your copy is based on v{mine}." (EN); nút "Ghi đè" hỏi lại "Ghi đè thay đổi mới nhất?". Câu có `{user}` bên dưới dùng từ M4. Nợ M3: xem `TECH-DEBT.md` #7.
+Server trả `{error:{code:"VERSION_CONFLICT",message,details:{current, updated_at}}}` (R#4 đã sửa theo [CR-008](../../CHANGE-REQUESTS.md)). **Chốt Gate M3 ([CR-016](../../CHANGE-REQUESTS.md)):** `{user}` hiện khi `current.updated_by` có (workflow, command, feature, group); user và tenant (chưa có `updated_by` tới M4) dùng câu thay thế "Bản này vừa được sửa lúc {time} (v{n}). Bản của bạn dựa trên v{mine}." (VI) / "This was just edited at {time} (v{n}). Your copy is based on v{mine}." (EN); nút "Ghi đè" hỏi lại "Ghi đè thay đổi mới nhất?". Bỏ vế "Lịch sử vẫn giữ v{n}" tới M4 (chưa có audit). Nợ M3 đã đóng: `TECH-DEBT.md` #7. Câu có `{user}` bên dưới dùng từ M4. Nợ M3: xem `TECH-DEBT.md` #7.
 - `AlertDialog` (không đóng bằng click nền): tiêu đề "Có người vừa lưu bản mới hơn" · "thu.ha vừa sửa command này lúc 10:42 (v44). Bản của bạn dựa trên v43." · 3 nút: `Xem khác biệt` · `Ghi đè` · `Tải bản mới`.
 - `Xem khác biệt` → mở rộng dialog thành DiffViewer 3 cột **Trường · Bản của bạn · Bản mới nhất (v44)**, chỉ các trường khác nhau.
 - `Ghi đè` → ConfirmDialog con "Ghi đè thay đổi của thu.ha?" "Bản v44 sẽ bị thay bằng bản của bạn (thành v45). Lịch sử vẫn giữ v44." · `Ghi đè` → gửi lại với `version` = `current.version`.
