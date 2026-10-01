@@ -43,4 +43,5 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 ## Specs
 | ID | Tên | Mốc | Trạng thái |
 |---|---|---|---|
-| — | (chưa tạo) | | |
+| `M0-bootstrap` | Khung repo, công cụ, hạ tầng dev | M0 | done (chờ merge) |
+| `M1-foundation-identity` | DB admin + RLS + seed, Auth, Tenants, Users, App shell | M1 | draft (spec + tasks khung) |
