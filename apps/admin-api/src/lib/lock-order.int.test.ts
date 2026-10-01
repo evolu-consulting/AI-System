@@ -1,4 +1,4 @@
-// ADM-FR-63, ADM-FR-05, ADM-FR-02 · review vòng 2 N1: khoá hàng khi ghi user (FOR NO KEY UPDATE) không deadlock với
+// ADM-FR-63, ADM-FR-05, ADM-FR-02, ADM-FR-20, ADM-FR-30 · review vòng 2 N1 + M2 plan §5.1/§6 (G8): khoá hàng khi ghi user (FOR NO KEY UPDATE) không deadlock với
 // INSERT refresh_tokens (FK lấy FOR KEY SHARE trên tenant/user). Hai transaction xen kẽ có chủ đích:
 // A giữ khoá hàng user rồi mới chèn refresh token; B (lockUser/resetPassword) chen vào giữa.
 // Deadlock thật thì Postgres chỉ phát hiện sau deadlock_timeout (1 s) rồi withScope chạy lại → kiểm cả thời gian
@@ -10,9 +10,13 @@ import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
 import * as authRepo from "../modules/auth/auth.repo";
 import { type AuthCtx, issueSession } from "../modules/auth/auth.session";
+import { createCommand, updateCommand } from "../modules/commands/commands.service";
+import { deleteFeature, updateFeature } from "../modules/features/features.service";
 import * as usersRepo from "../modules/users/users.repo";
 import { type Call, createUser, lockUser, resetPassword } from "../modules/users/users.service";
+import { updateWorkflow } from "../modules/workflows/workflows.service";
 import { loadJwtKeys } from "./jwt";
+import type { HookOp, TestHooks } from "./test-hooks";
 
 const OWNER = process.env.TEST_DATABASE_URL;
 const API = process.env.TEST_ADMIN_API_DATABASE_URL;
@@ -172,5 +176,165 @@ describe("ADM-FR-63 · FOR NO KEY UPDATE vẫn tuần tự hoá", () => {
     const [c] =
       await owner`select count(*)::int as n from admin.users where active and role = 'tenant_admin'`;
     expect(c?.n).toBe(1);
+  });
+});
+
+// ---- M2 (plan §5.1, §6, G8): ba ca xen kẽ TẤT ĐỊNH bằng testHooks.afterLock ----
+
+const PADM = "01900000-0000-7000-8000-0000000bb021";
+const SEC = "01900000-0000-7000-8000-0000000bb031";
+const WF = "01900000-0000-7000-8000-0000000bb041";
+const FEAT_F = "01900000-0000-7000-8000-0000000bb051";
+const FEAT_G = "01900000-0000-7000-8000-0000000bb052";
+const CORE = "01900000-0000-7000-8000-0000000bb053";
+const CMD = "01900000-0000-7000-8000-0000000bb061";
+const platform = { kind: "platform" } as const;
+const actor = {
+  userId: PADM,
+  tenantId: TID,
+  tenantKey: "lock",
+  role: "platform_admin",
+  sid: null,
+} as const;
+const m2 = (hooks?: TestHooks) => ({ ctx: { db, hooks }, actor, scope: platform });
+
+/** Hook dừng đúng một lần ở `target` sau khi đã giữ khoá; test mở bằng tay. */
+function barrier(target: HookOp) {
+  let open: () => void = () => undefined;
+  let reached: () => void = () => undefined;
+  const opened = new Promise<void>((r) => {
+    open = r;
+  });
+  const locked = new Promise<void>((r) => {
+    reached = r;
+  });
+  let used = false;
+  const hooks: TestHooks = {
+    afterLock: async (op) => {
+      if (op !== target || used) return;
+      used = true;
+      reached();
+      await opened;
+    },
+  };
+  return { hooks, locked, open: () => open() };
+}
+
+/** Chờ tới khi có ít nhất một backend đang đợi khoá hàng (wait_event_type = 'Lock'). */
+async function waitForLockWait(): Promise<void> {
+  const deadline = Date.now() + 3000;
+  while (Date.now() < deadline) {
+    const [r] = await owner`select count(*)::int as n from pg_stat_activity
+      where datname = current_database() and wait_event_type = 'Lock'`;
+    if ((r?.n ?? 0) >= 1) return;
+    await Bun.sleep(20);
+  }
+  throw new Error("không thấy request thứ hai chờ khoá");
+}
+
+type Settled = { ok: boolean; e?: unknown };
+const settle = (p: Promise<unknown>): Promise<Settled> =>
+  p.then(
+    () => ({ ok: true }),
+    (e) => ({ ok: false, e }),
+  );
+
+async function m2Interleave(
+  first: () => Promise<unknown>,
+  second: () => Promise<unknown>,
+  b: { locked: Promise<void>; open: () => void },
+) {
+  const before = await deadlocks();
+  const pa = settle(first());
+  await b.locked;
+  const pb = settle(second());
+  await waitForLockWait();
+  const t0 = performance.now();
+  b.open();
+  const [ra, rb] = await Promise.all([pa, pb]);
+  const ms = performance.now() - t0;
+  await Bun.sleep(600);
+  return { ra, rb, ms, deadlocks: (await deadlocks()) - before };
+}
+
+const featureCount = async (): Promise<number> => {
+  const [r] =
+    await owner`select count(*)::int as n from admin.feature_commands where command_id = ${CMD}`;
+  return Number(r?.n ?? 0);
+};
+const codeOf = (r: Settled) => (r.e as { code?: string } | undefined)?.code;
+
+describe("ADM-BR-10 · M2 plan §5.1 · khoá hàng catalog xen kẽ tất định (G8)", () => {
+  beforeEach(async () => {
+    await owner`insert into admin.users (id, tenant_id, username, password_hash, display_name, role)
+      values (${PADM}, ${TID}, 'padm', 'h', 'P', 'member')`;
+    await owner`insert into admin.secrets (id, name, ciphertext, iv, last4)
+      values (${SEC}, 'LOCK_KEY', ${Buffer.alloc(32)}, ${Buffer.alloc(12)}, 'abcd')`;
+    await owner`insert into admin.workflows (id, key, name, description, app_type, base_url, secret_id)
+      values (${WF}, 'lock-wf', 'W', ${"d".repeat(20)}, 'chat', 'https://x.test', ${SEC})`;
+    await owner`insert into admin.features (id, key, name) values
+      (${CORE}, 'core', '{"vi":"Cơ bản"}'::jsonb), (${FEAT_F}, 'f-one', '{"vi":"F"}'::jsonb),
+      (${FEAT_G}, 'g-two', '{"vi":"G"}'::jsonb)`;
+    await owner`insert into admin.commands (id, name, description, workflow_id, output)
+      values (${CMD}, 'lock-cmd', '{"vi":"x"}'::jsonb, ${WF}, '{"field":"t","render":"text"}'::jsonb)`;
+    await owner`insert into admin.command_names (name, command_id) values ('lock-cmd', ${CMD})`;
+    await owner`insert into admin.feature_commands (feature_id, command_id)
+      values (${FEAT_F}, ${CMD}), (${FEAT_G}, ${CMD})`;
+  });
+
+  test("ADM-BR-10 · (a) command PATCH bỏ G (dừng sau khoá) ∥ feature G PATCH bỏ cùng command (phải chờ) → đúng một thành công, command còn ≥ 1 feature", async () => {
+    const b = barrier("command.save");
+    const r = await m2Interleave(
+      () => updateCommand(m2(b.hooks), CMD, { version: 1, feature_ids: [FEAT_F] }),
+      () => updateFeature(m2(), FEAT_G, { version: 1, command_ids: [] }),
+      b,
+    );
+    expect([r.ra.ok, r.rb.ok]).toEqual([true, false]);
+    expect(["VERSION_CONFLICT", "COMMAND_NEEDS_FEATURE"]).toContain(codeOf(r.rb) ?? "");
+    expect(await featureCount()).toBe(1);
+    expect(r.deadlocks).toBe(0);
+    expect(r.ms).toBeLessThan(900);
+  });
+
+  test("ADM-BR-02 · (b) command POST enabled=true (dừng sau SHARE workflow) ∥ workflow PATCH enabled=false (phải chờ) → POST thành công, workflow nhận WORKFLOW_IN_USE", async () => {
+    const b = barrier("command.save");
+    const r = await m2Interleave(
+      () =>
+        createCommand(m2(b.hooks), {
+          name: "lock-new",
+          aliases: [],
+          description: { vi: "Mới" },
+          workflow_id: WF,
+          args: [],
+          input_map: {},
+          output: { field: "t", render: "text" },
+          mode: "sync",
+          enabled: true,
+          feature_ids: [FEAT_F],
+        }),
+      () => updateWorkflow(m2(), WF, { version: 1, enabled: false }),
+      b,
+    );
+    expect(r.ra.ok).toBe(true);
+    expect(codeOf(r.rb)).toBe("WORKFLOW_IN_USE");
+    const [bad] = await owner`select count(*)::int as n from admin.commands c
+      join admin.workflows w on w.id = c.workflow_id where c.enabled and not w.enabled`;
+    expect(bad?.n).toBe(0);
+    expect(r.deadlocks).toBe(0);
+    expect(r.ms).toBeLessThan(900);
+  });
+
+  test("ADM-BR-10 · (c) feature G DELETE (dừng sau khoá) ∥ command PATCH chỉ còn G (phải chờ) → xoá thành công, command nhận INVALID_REFERENCE, không mồ côi", async () => {
+    const b = barrier("feature.delete");
+    const r = await m2Interleave(
+      () => deleteFeature(m2(b.hooks), FEAT_G),
+      () => updateCommand(m2(), CMD, { version: 1, feature_ids: [FEAT_G] }),
+      b,
+    );
+    expect(r.ra.ok).toBe(true);
+    expect(codeOf(r.rb)).toBe("INVALID_REFERENCE");
+    expect(await featureCount()).toBe(1);
+    expect(r.deadlocks).toBe(0);
+    expect(r.ms).toBeLessThan(900);
   });
 });

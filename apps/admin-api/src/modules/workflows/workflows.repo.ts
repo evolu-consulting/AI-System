@@ -6,9 +6,9 @@ import {
   InputSchemaSchema,
   type WorkflowInput,
 } from "@ai/contracts";
-import { commands, secrets, type Tx, users, workflows } from "@ai/db";
+import { commands, secrets, type Tx, workflows } from "@ai/db";
 import { and, asc, count, eq, ilike, or, type SQL, sql } from "drizzle-orm";
-import { likeArg } from "../../lib/sql";
+import { likeArg, outer, usernameOf } from "../../lib/sql";
 import { agentCountExpr } from "./workflows.hub";
 
 export type AppType = "workflow" | "chat" | "agent";
@@ -33,7 +33,7 @@ export type WorkflowRow = {
 };
 
 const commandCount = sql<number>`(select count(*)::int from ${commands}
-  where ${commands.workflowId} = ${workflows.id})`;
+  where ${commands.workflowId} = ${outer(workflows.id)})`;
 
 function cols(readable: boolean) {
   return {
@@ -49,7 +49,7 @@ function cols(readable: boolean) {
     agentCount: agentCountExpr(readable, workflows.id),
     version: workflows.version,
     updatedAt: workflows.updatedAt,
-    updatedBy: users.username,
+    updatedBy: usernameOf(workflows.updatedBy),
     baseUrl: workflows.baseUrl,
     inputSchema: workflows.inputSchema,
     outputField: workflows.outputField,
@@ -100,7 +100,6 @@ export async function listWorkflows(tx: Tx, f: WorkflowFilter, readable: boolean
     .select({ ...cols(readable), total: sql<number>`count(*) over()`.mapWith(Number) })
     .from(workflows)
     .innerJoin(secrets, eq(secrets.id, workflows.secretId))
-    .leftJoin(users, eq(users.id, workflows.updatedBy))
     .where(and(baseWhere(f), chipWhere(f, readable)))
     .orderBy(asc(workflows.key))
     .limit(f.limit)
@@ -131,10 +130,18 @@ export async function findWorkflow(
     .select(cols(readable))
     .from(workflows)
     .innerJoin(secrets, eq(secrets.id, workflows.secretId))
-    .leftJoin(users, eq(users.id, workflows.updatedBy))
     .where(eq(workflows.id, id))
     .limit(1);
   return row ? toRow(row) : null;
+}
+
+/** Chỉ cột `input_schema` (đọc không khoá) — dùng tính cảnh báo của command. */
+export async function inputSchemaOf(tx: Tx, id: string): Promise<unknown> {
+  const [row] = await tx
+    .select({ s: workflows.inputSchema })
+    .from(workflows)
+    .where(eq(workflows.id, id));
+  return row?.s;
 }
 
 export async function lockWorkflow(

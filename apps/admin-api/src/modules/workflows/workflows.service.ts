@@ -209,6 +209,11 @@ export type WorkflowRefLocked = {
   inputSchema: WorkflowInput[];
 };
 
+/** Cho module commands: input_schema hiện tại (đọc không khoá) để tính `warnings` khi đọc command. */
+export async function readWorkflowSchema(tx: Tx, id: string): Promise<WorkflowInput[]> {
+  return InputSchemaSchema.parse((await repo.inputSchemaOf(tx, id)) ?? []);
+}
+
 /** Cho module commands: giữ workflow `FOR SHARE` tới khi commit (chặn tắt/đổi schema/xoá song song); thiếu → null. */
 export async function lockWorkflowRef(tx: Tx, id: string): Promise<WorkflowRefLocked | null> {
   const w = await repo.lockWorkflow(tx, id, "share");

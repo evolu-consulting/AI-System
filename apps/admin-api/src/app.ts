@@ -12,6 +12,7 @@ import type { SecretKey } from "./lib/secret-crypto";
 import type { TestHooks } from "./lib/test-hooks";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
+import { commandsRoutes } from "./modules/commands/commands.routes";
 import { featuresRoutes } from "./modules/features/features.routes";
 import { healthRoutes } from "./modules/health/health.routes";
 import { secretsRoutes } from "./modules/secrets/secrets.routes";
@@ -52,6 +53,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/secrets", secretsRoutes({ ...ctx, secretKey: deps.secretKey }));
   app.route("/admin/features", featuresRoutes({ ...ctx, hooks }));
   app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
+  app.route("/admin/commands", commandsRoutes({ ...ctx, hooks }));
 }
 
 export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {
