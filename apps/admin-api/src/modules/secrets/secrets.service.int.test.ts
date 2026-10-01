@@ -30,6 +30,13 @@ const call: Call = {
 };
 const VALUE = "sk-SERVICE-LEAK-0123456789";
 
+/** Lỗi bị ném (thay `expect(p).rejects`: treo với Bun 1.3.14 khi promise giữ transaction postgres-js). */
+const caught = (p: Promise<unknown>): Promise<unknown> =>
+  p.then(
+    () => null,
+    (e: unknown) => e,
+  );
+
 beforeAll(async () => {
   await resetTestDb(OWNER);
   await runMigrations({ url: OWNER, appEnv: "test" });
@@ -83,21 +90,26 @@ describe("ADM-FR-50 · secrets.service", () => {
     const s = await createSecret(call, { name: "USED_KEY", value: VALUE });
     await owner`insert into admin.workflows (id, key, name, description, app_type, base_url, secret_id)
       values (${Bun.randomUUIDv7()}, 'wf-a', 'W', ${"d".repeat(20)}, 'chat', 'https://x.test', ${s.id})`;
-    await expect(deleteSecret(call, "USED_KEY")).rejects.toMatchObject({
+    // used_by/counts của list (subquery tương quan trong câu một bảng — lỗi `used_by: []` ở T6).
+    const list = await listSecrets(call, { limit: 50, offset: 0 });
+    expect(list.items.find((x) => x.name === "USED_KEY")?.used_by).toEqual(["wf-a"]);
+    expect(list.counts.used).toBe(1);
+    expect((await listSecrets(call, { limit: 50, offset: 0, used: true })).total).toBe(1);
+    expect(await caught(deleteSecret(call, "USED_KEY"))).toMatchObject({
       code: "SECRET_IN_USE",
       details: { used_by: ["wf-a"] },
     });
-    await expect(createSecret(call, { name: "USED_KEY", value: VALUE })).rejects.toMatchObject({
+    expect(await caught(createSecret(call, { name: "USED_KEY", value: VALUE }))).toMatchObject({
       code: "SECRET_NAME_TAKEN",
     });
-    await expect(deleteSecret(call, "NO_SUCH")).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(await caught(deleteSecret(call, "NO_SUCH"))).toMatchObject({ code: "NOT_FOUND" });
   });
 
   test("ADM-NFR-01 · không có secretKey → lỗi thường (500), không ghi DB", async () => {
     const bare: Call = { ...call, ctx: { db } };
-    await expect(createSecret(bare, { name: "NOKEY", value: VALUE })).rejects.toThrow(
-      "secret key not configured",
-    );
+    expect(
+      String((await caught(createSecret(bare, { name: "NOKEY", value: VALUE }))) ?? ""),
+    ).toContain("secret key not configured");
     const [n] = await owner`select count(*)::int as n from admin.secrets where name = 'NOKEY'`;
     expect(n?.n).toBe(0);
   });

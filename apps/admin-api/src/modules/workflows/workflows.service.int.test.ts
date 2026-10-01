@@ -45,6 +45,13 @@ const base = {
   enabled: true,
 };
 
+/** Lỗi bị ném (thay `expect(p).rejects`: treo với Bun 1.3.14 khi promise giữ transaction postgres-js). */
+const caught = (p: Promise<unknown>): Promise<unknown> =>
+  p.then(
+    () => null,
+    (e: unknown) => e,
+  );
+
 beforeAll(async () => {
   await resetTestDb(OWNER);
   await runMigrations({ url: OWNER, appEnv: "test" });
@@ -71,14 +78,14 @@ describe("ADM-FR-13 · workflows.service", () => {
     await owner`insert into admin.commands (id, name, description, workflow_id, input_map, output)
       values (${cid}, 'dich', '{"vi":"x"}'::jsonb, ${w.id}, '{"text":{"source":"selection"}}'::jsonb,
         '{"field":"t","render":"text"}'::jsonb)`;
-    await expect(updateWorkflow(call, w.id, { version: 1, enabled: false })).rejects.toMatchObject({
+    expect(await caught(updateWorkflow(call, w.id, { version: 1, enabled: false }))).toMatchObject({
       code: "WORKFLOW_IN_USE",
       details: { action: "disable" },
     });
-    await expect(
-      updateWorkflow(call, w.id, { version: 1, input_schema: [input("other")] }),
-    ).rejects.toMatchObject({ code: "SCHEMA_BREAKS_COMMANDS" });
-    await expect(deleteWorkflow(call, w.id)).rejects.toMatchObject({ code: "WORKFLOW_IN_USE" });
+    expect(
+      await caught(updateWorkflow(call, w.id, { version: 1, input_schema: [input("other")] })),
+    ).toMatchObject({ code: "SCHEMA_BREAKS_COMMANDS" });
+    expect(await caught(deleteWorkflow(call, w.id))).toMatchObject({ code: "WORKFLOW_IN_USE" });
     await owner`delete from admin.commands where id = ${cid}`;
     await deleteWorkflow(call, w.id);
   });

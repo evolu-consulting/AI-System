@@ -1,8 +1,8 @@
 // ADM-FR-50, ADM-NFR-07 · truy vấn admin.secrets (scope platform, RLS). admin_rw KHÔNG có SELECT trên `ciphertext`/`iv`
 // (0004_catalog_rls): mọi select/returning phải liệt kê cột, không `select()` trần, không `.returning()` trần.
-import { secrets, type Tx, users, workflows } from "@ai/db";
+import { secrets, type Tx, workflows } from "@ai/db";
 import { and, asc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
-import { likeArg } from "../../lib/sql";
+import { likeArg, outer, usernameOf } from "../../lib/sql";
 
 export type SecretRow = {
   id: string;
@@ -16,8 +16,8 @@ export type SecretRow = {
 };
 
 const usedBy = sql<string[]>`array(select ${workflows.key} from ${workflows}
-  where ${workflows.secretId} = ${secrets.id} order by ${workflows.key})`;
-const isUsed = sql`exists(select 1 from ${workflows} where ${workflows.secretId} = ${secrets.id})`;
+  where ${workflows.secretId} = ${outer(secrets.id)} order by ${workflows.key})`;
+const isUsed = sql`exists(select 1 from ${workflows} where ${workflows.secretId} = ${outer(secrets.id)})`;
 
 const rowCols = {
   id: secrets.id,
@@ -27,7 +27,7 @@ const rowCols = {
   usedBy,
   createdAt: secrets.createdAt,
   updatedAt: secrets.updatedAt,
-  updatedBy: users.username,
+  updatedBy: usernameOf(secrets.updatedBy),
 };
 
 export type SecretFilter = { q?: string; used?: boolean; limit: number; offset: number };
@@ -43,7 +43,6 @@ export async function listSecrets(tx: Tx, f: SecretFilter) {
   const rows = await tx
     .select({ ...rowCols, total: sql<number>`count(*) over()`.mapWith(Number) })
     .from(secrets)
-    .leftJoin(users, eq(users.id, secrets.updatedBy))
     .where(and(baseWhere(f), used))
     .orderBy(asc(secrets.name))
     .limit(f.limit)
@@ -63,12 +62,7 @@ export async function listSecrets(tx: Tx, f: SecretFilter) {
 }
 
 export async function findSecretRow(tx: Tx, name: string): Promise<SecretRow | null> {
-  const [row] = await tx
-    .select(rowCols)
-    .from(secrets)
-    .leftJoin(users, eq(users.id, secrets.updatedBy))
-    .where(eq(secrets.name, name))
-    .limit(1);
+  const [row] = await tx.select(rowCols).from(secrets).where(eq(secrets.name, name)).limit(1);
   return (row as SecretRow | undefined) ?? null;
 }
 

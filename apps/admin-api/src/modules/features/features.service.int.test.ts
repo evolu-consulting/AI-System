@@ -37,6 +37,13 @@ const version = async (table: "commands" | "features", rid: string) =>
     (await owner.unsafe(`select version from admin.${table} where id = $1`, [rid]))[0]?.version,
   );
 
+/** Lỗi bị ném (thay `expect(p).rejects`: treo với Bun 1.3.14 khi promise giữ transaction postgres-js). */
+const caught = (p: Promise<unknown>): Promise<unknown> =>
+  p.then(
+    () => null,
+    (e: unknown) => e,
+  );
+
 beforeAll(async () => {
   await resetTestDb(OWNER);
   await runMigrations({ url: OWNER as string, appEnv: "test" });
@@ -67,12 +74,12 @@ beforeEach(async () => {
 
 describe("ADM-FR-30 · features.service", () => {
   test("ADM-BR-10 · core: status off → CORE_FEATURE_PROTECTED; xoá core → CORE_FEATURE_PROTECTED", async () => {
-    await expect(
-      updateFeature(call, CORE as string, { version: 1, status: "off" }),
-    ).rejects.toMatchObject({
+    expect(
+      await caught(updateFeature(call, CORE as string, { version: 1, status: "off" })),
+    ).toMatchObject({
       code: "CORE_FEATURE_PROTECTED",
     });
-    await expect(deleteFeature(call, CORE as string)).rejects.toMatchObject({
+    expect(await caught(deleteFeature(call, CORE as string))).toMatchObject({
       code: "CORE_FEATURE_PROTECTED",
     });
   });
@@ -99,9 +106,11 @@ describe("ADM-FR-30 · features.service", () => {
   });
 
   test("ADM-BR-10 · bỏ command chỉ thuộc core → COMMAND_NEEDS_FEATURE {commands}", async () => {
-    await expect(
-      updateFeature(call, CORE as string, { version: 1, command_ids: [C1 as string] }),
-    ).rejects.toMatchObject({
+    expect(
+      await caught(
+        updateFeature(call, CORE as string, { version: 1, command_ids: [C1 as string] }),
+      ),
+    ).toMatchObject({
       code: "COMMAND_NEEDS_FEATURE",
       details: { commands: [{ id: C2, name: "c-two" }] },
     });
@@ -124,7 +133,7 @@ describe("ADM-FR-30 · features.service", () => {
       await owner`select revoked_at from admin.feature_entitlements where feature_id = ${f.id}`;
     expect(rows).toHaveLength(1);
     expect(rows[0]?.revoked_at).toBeNull();
-    await expect(grantEntitlement(call, CORE as string, ACME as string)).rejects.toMatchObject({
+    expect(await caught(grantEntitlement(call, CORE as string, ACME as string))).toMatchObject({
       code: "CORE_FEATURE_PROTECTED",
     });
   });
@@ -148,14 +157,16 @@ describe("ADM-FR-30 · features.service", () => {
     expect([await version("features", f.id), await version("features", CORE as string)]).toEqual([
       2, 2,
     ]);
-    await expect(
-      withScope(db, call.scope, (tx) =>
-        setCommandFeatures(tx, {
-          commandId: C1 as string,
-          featureIds: [id(99)],
-          actorId: UID as string,
-        }),
+    expect(
+      await caught(
+        withScope(db, call.scope, (tx) =>
+          setCommandFeatures(tx, {
+            commandId: C1 as string,
+            featureIds: [id(99)],
+            actorId: UID as string,
+          }),
+        ),
       ),
-    ).rejects.toMatchObject({ code: "INVALID_REFERENCE", details: { field: "feature_ids" } });
+    ).toMatchObject({ code: "INVALID_REFERENCE", details: { field: "feature_ids" } });
   });
 });

@@ -3,6 +3,7 @@
 // (Hub có thể lên sau Admin). Cờ false → câu SQL không được nhắc tới bảng hub (tránh 42P01 lúc parse).
 import { agentWorkflows, type Tx } from "@ai/db";
 import { type AnyColumn, asc, eq, type SQL, sql } from "drizzle-orm";
+import { outer } from "../../lib/sql";
 
 export async function hubAgentsReadable(tx: Tx): Promise<boolean> {
   const rows = (await tx.execute(
@@ -14,7 +15,7 @@ export async function hubAgentsReadable(tx: Tx): Promise<boolean> {
 /** Biểu thức đếm agent của workflow (cột `workflowId` của câu ngoài); `0` khi không đọc được bảng. */
 export function agentCountExpr(readable: boolean, workflowId: AnyColumn): SQL<number> {
   return readable
-    ? sql<number>`(select count(*)::int from ${agentWorkflows} where ${agentWorkflows.workflowId} = ${workflowId})`
+    ? sql<number>`(select count(*)::int from ${agentWorkflows} where ${agentWorkflows.workflowId} = ${outer(workflowId)})`
     : sql<number>`0`;
 }
 

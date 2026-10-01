@@ -11,7 +11,7 @@ import {
 } from "@ai/contracts";
 import { featureCommands, featureEntitlements, features, type Tx, tenants, users } from "@ai/db";
 import { and, asc, desc, eq, ilike, isNull, or, type SQL, sql } from "drizzle-orm";
-import { likeArg } from "../../lib/sql";
+import { likeArg, outer, usernameOf } from "../../lib/sql";
 
 const NameSchema = LocalizedTextSchema(FEATURE_NAME_MAX);
 const DescSchema = LocalizedOptionalSchema(FEATURE_DESC_MAX);
@@ -32,9 +32,9 @@ export type FeatureRow = {
 };
 
 const commandCount = sql<number>`(select count(*) from ${featureCommands}
-  where ${featureCommands.featureId} = ${features.id})`.mapWith(Number);
+  where ${featureCommands.featureId} = ${outer(features.id)})`.mapWith(Number);
 const tenantCount = sql<number>`(select count(*) from ${featureEntitlements}
-  where ${featureEntitlements.featureId} = ${features.id} and ${featureEntitlements.revokedAt} is null)`.mapWith(
+  where ${featureEntitlements.featureId} = ${outer(features.id)} and ${featureEntitlements.revokedAt} is null)`.mapWith(
   Number,
 );
 
@@ -48,7 +48,7 @@ const rowCols = {
   version: features.version,
   createdAt: features.createdAt,
   updatedAt: features.updatedAt,
-  updatedBy: users.username,
+  updatedBy: usernameOf(features.updatedBy),
   commandCount,
   tenantCount,
 };
@@ -83,7 +83,6 @@ export async function listFeatures(tx: Tx, f: FeatureFilter) {
   const rows = await tx
     .select({ ...rowCols, total: sql<number>`count(*) over()`.mapWith(Number) })
     .from(features)
-    .leftJoin(users, eq(users.id, features.updatedBy))
     .where(and(baseWhere(f), f.status ? eq(features.status, f.status) : undefined))
     .orderBy(desc(sql`${features.key} = ${CORE_FEATURE_KEY}`), asc(features.key))
     .limit(f.limit)
@@ -104,12 +103,7 @@ export async function listFeatures(tx: Tx, f: FeatureFilter) {
 }
 
 export async function findFeature(tx: Tx, id: string): Promise<FeatureRow | null> {
-  const [row] = await tx
-    .select(rowCols)
-    .from(features)
-    .leftJoin(users, eq(users.id, features.updatedBy))
-    .where(eq(features.id, id))
-    .limit(1);
+  const [row] = await tx.select(rowCols).from(features).where(eq(features.id, id)).limit(1);
   return row ? toRow(row as RawRow) : null;
 }
 
@@ -140,7 +134,7 @@ export async function coreFeatureId(tx: Tx): Promise<string> {
 export async function affectedUserCount(tx: Tx, f: { id: string; key: string }): Promise<number> {
   const activeUser = and(eq(users.active, true), eq(users.lockedByTenant, false));
   const entitled = sql`exists(select 1 from ${featureEntitlements}
-    where ${featureEntitlements.featureId} = ${f.id} and ${featureEntitlements.tenantId} = ${users.tenantId}
+    where ${featureEntitlements.featureId} = ${f.id} and ${featureEntitlements.tenantId} = ${outer(users.tenantId)}
       and ${featureEntitlements.revokedAt} is null)`;
   const [r] = await tx
     .select({ n: sql<number>`count(*)`.mapWith(Number) })
@@ -227,7 +221,7 @@ export type EntitlementRow = {
 };
 
 const activeUserCount = sql<number>`(select count(*) from ${users}
-  where ${users.tenantId} = ${tenants.id} and ${users.active} and not ${users.lockedByTenant})`.mapWith(
+  where ${users.tenantId} = ${outer(tenants.id)} and ${users.active} and not ${users.lockedByTenant})`.mapWith(
   Number,
 );
 const entCols = {
@@ -237,7 +231,7 @@ const entCols = {
   tenantActive: tenants.active,
   activeUserCount,
   grantedAt: featureEntitlements.grantedAt,
-  grantedBy: users.username,
+  grantedBy: usernameOf(featureEntitlements.grantedBy),
 };
 
 export async function listEntitlements(
@@ -250,7 +244,6 @@ export async function listEntitlements(
     .select({ ...entCols, total: sql<number>`count(*) over()`.mapWith(Number) })
     .from(featureEntitlements)
     .innerJoin(tenants, eq(tenants.id, featureEntitlements.tenantId))
-    .leftJoin(users, eq(users.id, featureEntitlements.grantedBy))
     .where(
       and(
         eq(featureEntitlements.featureId, featureId),
@@ -273,7 +266,6 @@ export async function findEntitlement(
     .select(entCols)
     .from(featureEntitlements)
     .innerJoin(tenants, eq(tenants.id, featureEntitlements.tenantId))
-    .leftJoin(users, eq(users.id, featureEntitlements.grantedBy))
     .where(
       and(eq(featureEntitlements.featureId, featureId), eq(featureEntitlements.tenantId, tenantId)),
     )
