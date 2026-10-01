@@ -1,10 +1,40 @@
-// ADM-FR-04, ADM-FR-05, ADM-FR-63 · nghiệp vụ users (plan M1 §5 "Users"). Không biết HTTP.
-import type { Locale, User } from "@ai/contracts";
-import type { Tx } from "@ai/db";
+// ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-BR-08, ADM-BR-09 · nghiệp vụ users (plan M1 §5 "Users"). Không biết HTTP.
+// Mỗi hành động = một withScope theo scope của actor; repo vẫn lọc tenant_id (tenant_admin luôn tenant mình).
+import { randomBytes } from "node:crypto";
+import type {
+  Locale,
+  User,
+  UserCreateRequest,
+  UserCreateResponse,
+  UserListQuery,
+  UserListResponse,
+  UserUpdateRequest,
+} from "@ai/contracts";
+import { type Db, type DbScope, hashPassword, type Tx, withScope } from "@ai/db";
 import { appError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
+import { generateTempPassword } from "../auth/auth.rules";
+import { revokeUserSessions } from "../auth/auth.service";
+import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
 import type { UserRow } from "./users.repo";
 import * as repo from "./users.repo";
+import {
+  type Actor,
+  canSeeUser,
+  checkLastAdmin,
+  checkRoleAssignment,
+  checkRoleChange,
+  checkSelfAction,
+  isAdminRole,
+  isEmailRequired,
+  type Role,
+  type RuleError,
+  resolveTenantScope,
+  userStatus,
+} from "./users.rules";
+
+export type UsersCtx = { db: Db };
+export type Call = { ctx: UsersCtx; actor: Actor; scope: DbScope };
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
 
@@ -18,7 +48,7 @@ export function toUser(u: UserRow): User {
     email: u.email,
     role: u.role,
     locale: u.locale,
-    status: !u.active || u.lockedByTenant ? "locked" : "active",
+    status: userStatus(u),
     active: u.active,
     locked_by_tenant: u.lockedByTenant,
     locked_until: iso(u.lockedUntil),
@@ -38,6 +68,10 @@ export function mapUserConflict(err: unknown): never {
   throw err;
 }
 
+const fail = (e: RuleError | null): void => {
+  if (e) throw appError(e.code, e.details);
+};
+
 async function insertAndRead(tx: Tx, u: repo.NewUser): Promise<User> {
   // Savepoint để lỗi 23505 không làm hỏng transaction ngoài trước khi dịch mã lỗi.
   const id = await tx.transaction((sp) => repo.insertUser(sp, u)).catch(mapUserConflict);
@@ -52,15 +86,183 @@ export function createFirstAdmin(
   input: { tenantId: string; username: string; displayName: string; email: string; locale: Locale },
   passwordHash: string,
 ): Promise<User> {
-  return insertAndRead(tx, {
-    ...input,
-    role: "tenant_admin",
-    passwordHash,
-    lockedByTenant: false,
-  });
+  return insertAndRead(tx, { ...input, role: "tenant_admin", passwordHash, lockedByTenant: false });
 }
 
 /** Khoá/mở khoá tenant (FR-61, M1-R10): đặt/gỡ `locked_by_tenant` cho user của tenant. */
 export function setTenantLockFlags(tx: Tx, tenantId: string, locked: boolean): Promise<void> {
   return repo.setLockedByTenant(tx, tenantId, locked);
+}
+
+/** tenant_admin chỉ thấy tenant mình (BR-09); platform không lọc tenant (RLS scope platform vẫn áp). */
+const tenantFilter = (a: Actor) => (a.role === "platform_admin" ? null : a.tenantId);
+
+/** Không thấy (tenant khác, id lạ) → 404 cùng body (M1-R13). */
+async function mustFindUser(tx: Tx, a: Actor, id: string): Promise<UserRow> {
+  const u = await repo.findUserRow(tx, tenantFilter(a), id);
+  if (!u || !canSeeUser(a, u)) throw appError("NOT_FOUND");
+  return u;
+}
+
+async function reread(tx: Tx, u: { tenantId: string; id: string }): Promise<User> {
+  const row = await repo.findUserRow(tx, u.tenantId, u.id);
+  if (!row) throw appError("NOT_FOUND");
+  return toUser(row);
+}
+
+/** BR-08 dưới khoá hàng tenant của target (hai admin khoá nhau cùng lúc → đúng một thành công). */
+async function guardLastAdmin(
+  tx: Tx,
+  u: UserRow,
+  change: { active?: boolean; role?: Role },
+): Promise<UserRow> {
+  if (!isAdminRole(u.role)) return u;
+  await repo.findTenantBrief(tx, u.tenantId, { forUpdate: true });
+  // Đọc lại sau khi giữ khoá: request song song có thể vừa đổi target hoặc admin còn lại.
+  const fresh = (await repo.findUserRow(tx, u.tenantId, u.id)) ?? u;
+  const others = await repo.countOtherActiveAdmins(tx, {
+    role: fresh.role,
+    tenantId: fresh.tenantId,
+    excludeId: fresh.id,
+  });
+  fail(checkLastAdmin(fresh, change, others));
+  return fresh;
+}
+
+export async function listUsers(c: Call, q: UserListQuery): Promise<UserListResponse> {
+  const r = resolveTenantScope(c.actor, q.tenant_id, "read");
+  if ("code" in r) throw appError(r.code);
+  const f = { ...q, tenantId: r.tenantId };
+  const { rows, counts } = await withScope(c.ctx.db, c.scope, (tx) => repo.listUsers(tx, f));
+  return {
+    items: rows.map(({ total: _t, ...u }) => toUser(u)),
+    total: rows[0]?.total ?? 0,
+    counts,
+  };
+}
+
+export function getUser(c: Call, id: string): Promise<User> {
+  return withScope(c.ctx.db, c.scope, async (tx) => toUser(await mustFindUser(tx, c.actor, id)));
+}
+
+async function newTempPassword(): Promise<{ pw: string; hash: string }> {
+  const pw = generateTempPassword((n) => randomBytes(n));
+  return { pw, hash: await hashPassword(pw) };
+}
+
+/** FR-04: user mới luôn `must_change_password`; tenant đang khoá → `locked_by_tenant=true` (spec §3). */
+export async function createUser(
+  c: Call,
+  queryTenantId: string | undefined,
+  input: UserCreateRequest,
+): Promise<UserCreateResponse> {
+  const r = resolveTenantScope(c.actor, queryTenantId, "write");
+  if ("code" in r) throw appError(r.code);
+  const tenantId = r.tenantId as string;
+  const temp = await newTempPassword();
+  const user = await withScope(c.ctx.db, c.scope, async (tx) => {
+    const t = await repo.findTenantBrief(tx, tenantId);
+    if (!t) throw appError("NOT_FOUND");
+    fail(checkRoleAssignment(c.actor, t.key === PLATFORM_TENANT_KEY, input.role));
+    const email = input.email ?? null;
+    if (isEmailRequired(input.role) && !email) throw appError("EMAIL_REQUIRED");
+    return insertAndRead(tx, {
+      tenantId,
+      username: input.username,
+      displayName: input.display_name,
+      email,
+      role: input.role,
+      locale: input.locale,
+      passwordHash: temp.hash,
+      lockedByTenant: !t.active,
+    });
+  });
+  return { user, temp_password: temp.pw };
+}
+
+/** Chỉ trường gửi lên và khác giá trị hiện tại (G8: trùng hết → không tăng version). */
+function diffUser(u: UserRow, input: UserUpdateRequest): repo.UserSet {
+  const set: repo.UserSet = {};
+  if (input.display_name !== undefined && input.display_name !== u.displayName) {
+    set.displayName = input.display_name;
+  }
+  if (input.email !== undefined && input.email !== u.email) set.email = input.email;
+  if (input.role !== undefined && input.role !== u.role) set.role = input.role;
+  if (input.locale !== undefined && input.locale !== u.locale) set.locale = input.locale;
+  return set;
+}
+
+function checkUpdate(c: Call, u: UserRow, set: repo.UserSet): void {
+  if (set.role) {
+    fail(checkRoleChange(c.actor, u, set.role));
+    fail(checkRoleAssignment(c.actor, u.tenantKey === PLATFORM_TENANT_KEY, set.role));
+  }
+  const role = set.role ?? u.role;
+  const email = set.email !== undefined ? set.email : u.email;
+  if (isEmailRequired(role) && !email) throw appError("EMAIL_REQUIRED");
+}
+
+/** PATCH theo `version`: lệch → 409 {current, updated_at}. Đổi role kiểm BR-08 dưới khoá tenant. */
+export function updateUser(c: Call, id: string, input: UserUpdateRequest): Promise<User> {
+  return withScope(c.ctx.db, c.scope, async (tx) => {
+    const u = await mustFindUser(tx, c.actor, id);
+    if (u.version !== input.version) {
+      const current = toUser(u);
+      throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
+    }
+    const set = diffUser(u, input);
+    checkUpdate(c, u, set);
+    if (Object.keys(set).length === 0) return toUser(u);
+    if (set.role) await guardLastAdmin(tx, u, { role: set.role });
+    await tx.transaction((sp) => repo.updateUser(sp, u, set, true)).catch(mapUserConflict);
+    return reread(tx, u);
+  });
+}
+
+/** FR-05: khoá → `active=false` + thu hồi mọi refresh token; đã khoá → trả bản hiện tại, không ghi. */
+export function lockUser(c: Call, id: string): Promise<User> {
+  return withScope(c.ctx.db, c.scope, async (tx) => {
+    const found = await mustFindUser(tx, c.actor, id);
+    fail(checkSelfAction(c.actor, found.id, "lock"));
+    if (!found.active) return toUser(found);
+    const u = await guardLastAdmin(tx, found, { active: false });
+    if (!u.active) return toUser(u);
+    await repo.updateUser(tx, u, { active: false }, true);
+    await revokeUserSessions(tx, { tenantId: u.tenantId, userId: u.id, reason: "user_locked" });
+    return reread(tx, u);
+  });
+}
+
+/** Mở khoá: `active=true` + xoá khoá tạm; không gỡ `locked_by_tenant` (M1-R10). Lặp lại không tăng version. */
+export function unlockUser(c: Call, id: string): Promise<User> {
+  return withScope(c.ctx.db, c.scope, async (tx) => {
+    const u = await mustFindUser(tx, c.actor, id);
+    const clear = { failedLogins: 0, lockedUntil: null };
+    if (!u.active) await repo.updateUser(tx, u, { ...clear, active: true }, true);
+    else if (u.lockedUntil !== null) await repo.updateUser(tx, u, clear, false);
+    else return toUser(u);
+    return reread(tx, u);
+  });
+}
+
+/** Đăng xuất mọi thiết bị (FR-05): thu hồi refresh token, giữ `active`; access token đã cấp sống tới `exp`. */
+export function logoutAll(c: Call, id: string): Promise<void> {
+  return withScope(c.ctx.db, c.scope, async (tx) => {
+    const u = await mustFindUser(tx, c.actor, id);
+    await revokeUserSessions(tx, { tenantId: u.tenantId, userId: u.id, reason: "logout_all" });
+  });
+}
+
+/** Reset (M1-R17): mật khẩu tạm 16 ký tự trả một lần, bắt đổi, xoá khoá tạm, thu hồi mọi phiên. */
+export async function resetPassword(c: Call, id: string): Promise<{ temp_password: string }> {
+  // Chính mình luôn thấy được nên kiểm trước khi tra; băm (~22 ms) ngoài transaction.
+  fail(checkSelfAction(c.actor, id, "reset_password"));
+  const temp = await newTempPassword();
+  return withScope(c.ctx.db, c.scope, async (tx) => {
+    const u = await mustFindUser(tx, c.actor, id);
+    const set = { passwordHash: temp.hash, mustChangePassword: true, failedLogins: 0 };
+    await repo.updateUser(tx, u, { ...set, lockedUntil: null, passwordChanged: true }, true);
+    await revokeUserSessions(tx, { tenantId: u.tenantId, userId: u.id, reason: "password_reset" });
+    return { temp_password: temp.pw };
+  });
 }

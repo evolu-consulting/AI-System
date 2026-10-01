@@ -12,6 +12,7 @@ import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { healthRoutes } from "./modules/health/health.routes";
 import { tenantsRoutes } from "./modules/tenants/tenants.routes";
+import { usersRoutes } from "./modules/users/users.routes";
 
 export type AppConfig = { version: string; corsOrigins: string[] };
 export type AppDeps = {
@@ -37,6 +38,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/auth", authRoutes({ ...ctx, secureCookie, selfChange: selfChangeHandler(ctx) }));
   app.route("/auth", meRoutes(ctx));
   app.route("/admin/tenants", tenantsRoutes(ctx));
+  app.route("/admin/users", usersRoutes(ctx));
 }
 
 export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {

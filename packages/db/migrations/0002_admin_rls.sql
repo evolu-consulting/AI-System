@@ -1,5 +1,6 @@
 -- ADM-NFR-07 · RLS + role đăng nhập admin_api (spec M1 §4, plan §3.1). Migration custom: policy/hàm
 -- không khai trong schema Drizzle nên `db:generate` không sinh lệnh xoá chúng.
+-- Hàng tenant chỉ thấy khi app.scope = 'tenant' VÀ đúng app.tenant_id; scope lạ/thiếu → không thấy gì.
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'admin_api') THEN
@@ -20,21 +21,27 @@ ALTER TABLE admin.refresh_tokens ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
 CREATE POLICY tenants_admin_rw ON admin.tenants FOR ALL TO admin_rw
   USING (current_setting('app.scope', true) = 'platform'
-         OR id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+         OR (current_setting('app.scope', true) = 'tenant'
+             AND id = NULLIF(current_setting('app.tenant_id', true), '')::uuid))
   WITH CHECK (current_setting('app.scope', true) = 'platform'
-         OR id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+         OR (current_setting('app.scope', true) = 'tenant'
+             AND id = NULLIF(current_setting('app.tenant_id', true), '')::uuid));
 --> statement-breakpoint
 CREATE POLICY users_admin_rw ON admin.users FOR ALL TO admin_rw
   USING (current_setting('app.scope', true) = 'platform'
-         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+         OR (current_setting('app.scope', true) = 'tenant'
+             AND tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid))
   WITH CHECK (current_setting('app.scope', true) = 'platform'
-         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+         OR (current_setting('app.scope', true) = 'tenant'
+             AND tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid));
 --> statement-breakpoint
 CREATE POLICY refresh_tokens_admin_rw ON admin.refresh_tokens FOR ALL TO admin_rw
   USING (current_setting('app.scope', true) = 'platform'
-         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+         OR (current_setting('app.scope', true) = 'tenant'
+             AND tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid))
   WITH CHECK (current_setting('app.scope', true) = 'platform'
-         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+         OR (current_setting('app.scope', true) = 'tenant'
+             AND tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid));
 --> statement-breakpoint
 CREATE POLICY tenants_hub_ro ON admin.tenants FOR SELECT TO hub_ro USING (true);
 --> statement-breakpoint

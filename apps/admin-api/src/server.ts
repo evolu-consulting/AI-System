@@ -7,7 +7,7 @@ import { createApp } from "./app";
 import { loadEnv } from "./config/env";
 import { assertSafeDbRole } from "./lib/db-guard";
 import { loadJwtKeys } from "./lib/jwt";
-import { logger } from "./lib/logger";
+import { logger, setMinLevel } from "./lib/logger";
 import { createDummyHash } from "./modules/auth/auth.service";
 
 const errMsg = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -30,6 +30,7 @@ async function connect(url: string): Promise<Db> {
 }
 
 async function main(): Promise<void> {
+  setMinLevel("info");
   let env: ReturnType<typeof loadEnv>;
   try {
     env = loadEnv(process.env);

@@ -5,7 +5,12 @@ export type LogFields = Record<string, unknown>;
 const SENSITIVE = /pass|secret|token|key|authorization|cookie/i;
 const RANK: Record<Level, number> = { info: 0, warn: 1, error: 2 };
 // Dưới `bun test` (NODE_ENV=test) bỏ log info để đầu ra test gọn; warn/error vẫn in.
-const MIN_LEVEL: Level = Bun.env.NODE_ENV === "test" ? "warn" : "info";
+// Tiến trình server đặt lại "info" (con của `bun test` thừa hưởng NODE_ENV=test nhưng vẫn phải log request).
+let MIN_LEVEL: Level = Bun.env.NODE_ENV === "test" ? "warn" : "info";
+
+export function setMinLevel(level: Level): void {
+  MIN_LEVEL = level;
+}
 
 export function redact(fields: LogFields): LogFields {
   const out: LogFields = {};
