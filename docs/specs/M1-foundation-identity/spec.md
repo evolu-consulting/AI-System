@@ -45,7 +45,7 @@ Luật nghiệp vụ gốc: [BA §5.1–5.2, §6](../../design/admin/ba-admin.md
 | M1-R08 | Đăng xuất: thu hồi refresh token hiện tại (cookie/body); idempotent (token lạ/đã thu hồi vẫn 204) | FR-03 |
 | M1-R09 | Khoá user (`POST /admin/users/:id/lock`) → `active=false` + thu hồi mọi refresh token (FR-05). Access token đã cấp còn hiệu lực tối đa 15 phút — **không** có danh sách thu hồi access token. `logout-all` = thu hồi mọi refresh token, giữ `active` | FR-05, AC-A02 |
 | M1-R10 | Khoá tenant (cấm với `platform`, 409 `PLATFORM_TENANT_LOCKED`): `tenants.active=false`; mọi user đang `active=true` → `locked_by_tenant=true`; thu hồi mọi refresh token của tenant. Mở khoá: chỉ gỡ `locked_by_tenant`; user bị khoá riêng (`active=false` trước đó) vẫn khoá | FR-61, RD#21 |
-| M1-R11 | BR-08: không tự khoá/tự hạ role (403 `SELF_ACTION_FORBIDDEN`); khoá/hạ role/khoá tenant làm hết `platform_admin` active (toàn hệ thống) hoặc `tenant_admin` active (tenant active) → 409 `LAST_ADMIN`. `tenant_admin` khác được hạ role nếu tenant còn ≥ 1 | BR-08, RD#49 |
+| M1-R11 | BR-08: không tự khoá/tự hạ role (403 `SELF_ACTION_FORBIDDEN`); khoá/hạ role làm hết `platform_admin` active (toàn hệ thống) hoặc `tenant_admin` active (tenant active) → 409 `LAST_ADMIN`. `tenant_admin` khác được hạ role nếu tenant còn ≥ 1 | BR-08, RD#49 |
 | M1-R12 | Role gán được: `tenant_admin` chỉ gán `member`/`tenant_admin` trong tenant mình; `platform_admin` chỉ tồn tại trong tenant `platform`; `platform_admin` tạo user ở tenant nào cũng phải chỉ định tenant (M1-R14). `member`: mọi `/admin/*` → 403 `FORBIDDEN`. `tenant_admin` gọi endpoint chỉ-platform (Tenants) → 403 `FORBIDDEN` | BR-05, UI 7.9 |
 | M1-R13 | Cách ly: `tenant_admin` truy cập user/tenant của tenant khác → 404 `NOT_FOUND` (cùng body với id không tồn tại), cả GET/PATCH/POST. Tầng repository luôn lọc `tenant_id` **và** RLS bật (`app.tenant_id` đặt theo transaction) — cả hai (xem Mơ hồ B2) | BR-09, NFR-07, RD#17 |
 | M1-R14 | `platform_admin` chọn tenant bằng `?tenant_id=`; thiếu → list trả mọi tenant, thao tác ghi trả 400 `TENANT_REQUIRED` (URL web dùng `?tenant=<key>`) | RD#38 |
@@ -59,7 +59,6 @@ Luật nghiệp vụ gốc: [BA §5.1–5.2, §6](../../design/admin/ba-admin.md
 | M1-R22 | Chuỗi giao diện song ngữ: `packages/i18n/locales/vi.json` + `en.json` khớp key (`bun run i18n:check`); `users.locale` đổi qua `PATCH /auth/me`; mặc định `vi` | UI 15, M0 T-I18N-1 |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead -->
 File: `packages/contracts/src/{common,auth,tenants,users}.ts` (zod 4, export qua `index.ts`). Chi tiết hiện thực: [plan.md](plan.md) §2–§3.
 
 **Quy ước chung**
@@ -81,7 +80,7 @@ File: `packages/contracts/src/{common,auth,tenants,users}.ts` (zod 4, export qua
 - Tên schema export: `LoginRequestSchema`, `LoginResponseSchema`, `RefreshRequestSchema`, `RefreshResponseSchema`, `ChangePasswordRequestSchema`, `MeSchema`, `MeUpdateRequestSchema`, `TenantSchema`, `TenantDetailSchema`, `TenantListQuerySchema`, `TenantListResponseSchema`, `TenantCreateRequestSchema`, `TenantCreateResponseSchema`, `TenantUpdateRequestSchema`, `UserSchema`, `UserListQuerySchema`, `UserListResponseSchema`, `UserCreateRequestSchema`, `UserCreateResponseSchema`, `UserUpdateRequestSchema`, `TempPasswordResponseSchema`, helper `listResponseSchema(item)` → `ListResponse<T> = {items: T[], total, counts}`; kiểu TS cùng tên bỏ hậu tố `Schema`.
 - `Me = {id, tenant:{id, key, name}, username, display_name, email: string|null, role, locale, must_change_password: false}` (luôn `false` với người giữ access token).
 - `User = {id, tenant_id, tenant_key, username, display_name, email: string|null, role, locale, status, active, locked_by_tenant, locked_until: ISO|null (khoá tạm FR-07), must_change_password, last_login_at: ISO|null, created_at, updated_at, version}` — `status = "locked"` ⇔ `!active || locked_by_tenant`.
-- `Tenant = {id, key, name, active, status, max_concurrent_sub: int|null, user_count, created_at, updated_at, version}` · `TenantDetail = Tenant & {stats:{user_count, tenant_admin_count, locked_user_count}}`.
+- `Tenant = {id, key, name, active, status, max_concurrent_sub: int|null, user_count (mọi user của tenant, kể cả đang khoá), created_at, updated_at, version}` · `TenantDetail = Tenant & {stats:{user_count, tenant_admin_count, locked_user_count}}`.
 - `TokenGrant = {status:"authenticated", access_token, token_type:"Bearer", expires_in:900, user: Me, refresh_token?}` (`refresh_token` chỉ khi extension).
 - `PasswordChangeRequired = {status:"password_change_required", change_token, expires_in:300}`.
 - `LAST_ADMIN.details = {scope: "platform" | "tenant"}`.
@@ -126,7 +125,6 @@ Bảng mã lỗi → HTTP (`API_ERRORS` trong `common.ts`, nguồn duy nhất ch
 Sự kiện / NOTIFY: không có ở M1 (FR-53 = M3).
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead -->
 **Phạm vi bảng (B1):** M1 tạo `admin.tenants`, `admin.users` (không `totp_secret`, thêm `email`, `locked_by_tenant`, `last_login_at`, `password_changed_at`), `admin.refresh_tokens` (thêm `tenant_id`, `family_id`, `client`, `revoked_reason`, `replaced_by`), `admin.features` (A2: chỉ bảng + seed `core`, API ở M2). **Không** tạo ở M1: `groups`, `group_members` (M3), `config_meta` (M3), `secrets`, `workflows`, `commands`, `feature_*` (M2/M3), `tenant_quotas` (M4), `audit_log` (M4).
 Kiểu chung: `id uuid PK DEFAULT gen_random_uuid()` (app luôn truyền v7); `timestamptz`; `version integer NOT NULL DEFAULT 1 CHECK (version >= 1)`; `created_at`/`updated_at timestamptz NOT NULL DEFAULT now()` (`updated_at` đổi cùng `version`).
 
@@ -187,7 +185,6 @@ Kiểu chung: `id uuid PK DEFAULT gen_random_uuid()` (app luôn truyền v7); `t
 **Seed** (M1-R20): `packages/db/src/seed.ts`, chạy bằng `bun run db:seed` (owner `DATABASE_URL`), dev tiện dùng `bun run db:setup` (= `db:migrate && db:seed`). Một transaction, `INSERT … ON CONFLICT DO NOTHING` theo `tenants.key`, `features.key`, `(tenant_id, username)` → lần 2 không đổi gì (kể cả `password_hash`). Env `SEED_ADMIN_USERNAME` (khớp `Username`), `SEED_ADMIN_PASSWORD` (10–128) — thiếu/sai → exit 1 nêu tên biến, không in giá trị. Seed admin `display_name` = "Platform Admin", `email` null, `locale` vi, `must_change_password=false`.
 
 ## 5. UI (frontend-lead)
-<!-- frontend-lead -->
 Artboard có trong `docs/design/canvas/`: Login, ChangePassword, TenantCreate, Users, Sidebar, States, Main (shell). Màn không có artboard theo mẫu trong [admin-missing-screens](../_design/admin-missing-screens.md): Tenants danh sách §4.1, Tenant chi tiết §4.3 (chỉ tab Thông tin + Users; Feature/Agent/Quota hiện "Chưa khả dụng"), Users §5, Đổi mật khẩu tự đổi §9.2, Trạng thái chung §12. Câu chữ VI/EN nguyên văn nằm ở các mục đó; frontend-lead chép vào `locales/*.json`, ghi nhãn e2e vào bảng dưới. Menu M1: Tổng quan (tạm), Tenants (platform_admin), Users. Cắt phần 2FA, group, config badge (Mơ hồ C1–C3).
 
 Chi tiết đầy đủ (route, trạng thái từng màn, câu chữ VI/EN mới, nhãn e2e, validate, lỗi API → UI, hiệu năng, a11y): [plan-frontend.md](plan-frontend.md). Bảng dưới là tóm tắt; câu chữ nguyên văn ở `admin-missing-screens.md` (§4, 5, 9, 12) và [plan-frontend.md §7](plan-frontend.md).
@@ -207,7 +204,6 @@ Validate (khớp contract, câu lỗi ở plan-frontend §4): mã công ty `^[a-
 Quyết định FE đã chốt (chi tiết plan-frontend §0): C1–C3 như ghi ở trên · access token chỉ trong bộ nhớ, refresh cookie httpOnly · chống đua refresh nhiều tab bằng Web Locks + BroadcastChannel (B4) · bảng phân trang server, không virtualize/TanStack Table ở M1 · mật khẩu tạm hiện nguyên 16 ký tự, không chèn dấu `-` · ADR-0004 (Proposed: `sonner`, `@hookform/resolvers`) cần duyệt ở Gate.
 
 ## 6. Hiệu năng
-<!-- backend-lead -->
 Mặc định theo `CONVENTIONS.md` §6 và ADM-NFR-03 (CRUD < 300 ms). Bundle web: `check:bundle` giữ ngân sách M0 (JS ≤ 150 KB gzip ban đầu, route-split các màn).
 
 **argon2id:** `Bun.password` `{algorithm:"argon2id", memoryCost: 19456 (KiB), timeCost: 2}` (p=1) = mức khuyến nghị OWASP (m=19 MiB, t=2, p=1). Đo trên máy dev 2026-10-01 (Bun 1.3.14, 10 lần verify): 19456/2 = **22 ms**; 47104/1 = 31 ms; mặc định Bun 65536/2 = 84 ms. Chọn 19456/2 vì M1 không có rate-limit IP: bộ nhớ mỗi lần verify nhỏ (19 MiB) chịu được dồn đăng nhập. Verify đọc tham số từ chuỗi hash nên đổi tham số sau này không cần migrate. Hash giả cho M1-R01 tính một lần lúc khởi động với cùng tham số.
@@ -268,14 +264,14 @@ Ghi chú đọc AC: claim `user_id`/`tenant_id` ở AC-A01 = `sub`/`tid` theo M1
 | M1-AC07 | `member` gọi `GET /admin/users` → 403; username `an` tạo được ở cả `acme` và `globex`, trùng trong cùng tenant → 409 | BR-05, FR-63 |
 | M1-AC08 (e2e) | Đăng nhập admin web bằng seed → vào shell → Tenants → tạo tenant → thấy dialog mật khẩu tạm một lần → đăng xuất | FR-01, 60, 04 |
 
-Lệnh xong: `bun run typecheck && bun test && bun run test:int && bun run i18n:check && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check`
+Lệnh xong: `docker compose up -d --wait && bun run db:migrate && bun run db:seed && bun run check && bun run typecheck && bun test && bun run test:int && bun run i18n:check && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check`
 
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng)
 - Mọi mặc định trong [readiness 2026-10-01](../../readiness/2026-10-01-admin-m1-m4.md) được chấp nhận; áp dụng ở M1: #4 (định dạng lỗi), #5 (JWT EdDSA, claim), #14 (không có "Cài đặt đăng nhập"), #17 (RLS + repository + role), #21 (`locked_by_tenant`, cấm khoá `platform`), #22 (refresh reuse, cookie), #23 (`password_change_required`, đổi mật khẩu), #24 (mã lỗi, không "Còn N lần thử"), #25 (username), #38 (`?tenant_id=`), #39/#40 (env, thư viện), #47, #49, #53.
 - **Bỏ** "Còn N lần thử" (câu hỏi 1). **2FA và Import/Export không thuộc M1, để M4** (câu hỏi 2). **EdDSA** (câu hỏi 3).
 ### Đề xuất chờ Gate (docs-architect; không trả lời → áp dụng như ghi, đánh dấu `[ĐX]` ở §2)
-Các mặc định mới (`[ĐX]` ở M1-R01, 03, 04, 06, 15, 17, 20) và nguồn mặc định `admin-missing-screens.md` §15 (không có Xoá tenant; mã công ty/username bất biến; reset mật khẩu đăng xuất mọi thiết bị; mật khẩu tạm 16 ký tự nhóm 4 khi hiển thị). `admin-missing-screens.md` **chưa** được người dùng duyệt riêng — danh sách mơ hồ đầy đủ ở báo cáo bàn giao của docs-architect (A1–C3), tóm tắt:
+Các mặc định mới (`[ĐX]` ở M1-R01, 03, 04, 06, 15, 17, 20) và nguồn mặc định `admin-missing-screens.md` §15 (không có Xoá tenant; mã công ty/username bất biến; reset mật khẩu đăng xuất mọi thiết bị; mật khẩu tạm 16 ký tự; giao diện tách 4 nhóm bằng CSS (4 `<span>`), giá trị hiển thị/sao chép là chuỗi gốc 16 ký tự, không chèn `-`). `admin-missing-screens.md` **chưa** được người dùng duyệt riêng — danh sách mơ hồ đầy đủ ở báo cáo bàn giao của docs-architect (A1–C3), tóm tắt:
 - A1 FR-62 (Group) nằm trong dải "FR-60–63" của M1 nhưng ROADMAP M3 cũng liệt kê → M1 **không** làm Group.
 - A2 `features` cần cho seed `core` dù FR-30 thuộc M2 → bảng tạo ở M1, API M2.
 - A3 `PATCH` + `version` → 409 có sẵn từ M1, modal UI ở M3.

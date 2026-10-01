@@ -77,9 +77,13 @@ CREATE POLICY tenants_admin_rw ON admin.tenants FOR ALL TO admin_rw
 CREATE POLICY users_admin_rw ON admin.users FOR ALL TO admin_rw
   USING (current_setting('app.scope', true) = 'platform'
          OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
-  WITH CHECK (… cùng biểu thức …);
+  WITH CHECK (current_setting('app.scope', true) = 'platform'
+         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
 CREATE POLICY refresh_tokens_admin_rw ON admin.refresh_tokens FOR ALL TO admin_rw
-  USING (… tenant_id … như users …) WITH CHECK (… như USING …);
+  USING (current_setting('app.scope', true) = 'platform'
+         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+  WITH CHECK (current_setting('app.scope', true) = 'platform'
+         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
 CREATE POLICY tenants_hub_ro ON admin.tenants FOR SELECT TO hub_ro USING (true);
 CREATE POLICY users_hub_ro ON admin.users FOR SELECT TO hub_ro USING (true);
 --> statement-breakpoint
