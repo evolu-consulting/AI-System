@@ -391,3 +391,24 @@ Giữ nguyên các ca M1 (login ∥ lock/reset) và M2 a/b/c.
 | C10 | **Chấp nhận** | `GroupVersionConflictDetailsSchema = versionConflictDetailsSchema(GroupSchema)`; M2 đã export cho workflow/command/feature; tenant/user dùng `"tenant"`/`"user"` |
 | C11 | **Chấp nhận** | `BETA_GROUP_PROTECTED`, `NOT_ENTITLED` (+ `NotEntitledDetailsSchema`) |
 | C12 | **Chấp nhận** | `GROUP_KEY_RE`, `GROUP_NAME_MAX = 64`, `GROUP_DESC_MAX = 400`, `GROUP_PASTE_MAX = 500`, `GRANT_BATCH_MAX = 200`, `BETA_GROUP_KEY` |
+
+## 12. DB test riêng mỗi agent (test-plan G4, TECH-DEBT #17) — làm ở T0
+NOTIFY, `pg_stat_database.deadlocks` và hàng `config_meta` là trạng thái **chung của một database** → `notify.int`/`concurrency.int`/`lock-order.int` đỏ ngẫu nhiên khi nhiều agent cùng dùng `ai_system_test`. Role (`admin_rw`, `hub_ro`, `admin_api`) là của cả cluster nên dùng chung được; chỉ cần tách database.
+- `packages/db/src/test-db.ts` thêm hàm thuần `testDbName(tag): string` (tag khớp `^[a-z0-9_]{1,24}$`, sai → ném; kết quả `ai_system_<tag>_test`, luôn hậu tố `_test` để `resetTestDb` chấp nhận) và `withDatabase(url, name): string` (thay pathname, giữ user/mật khẩu/host/cổng).
+- `packages/db/src/test-db-cli.ts` (mới): `bun run db:test:create <tag>` = đọc `TEST_DATABASE_URL` từ `.env.local` → nối DB `postgres` cùng host bằng role owner → `CREATE DATABASE "ai_system_<tag>_test"` nếu chưa có (idempotent) → `runMigrations({url, appEnv: "test"})` (tạo role/quyền idempotent như M0) → ghi `.env.test-<tag>.local` = bản sao `.env.local` với `TEST_DATABASE_URL`, `TEST_ADMIN_API_DATABASE_URL` trỏ DB mới (file đã bị `.gitignore` `.env.*.local`) → in đường dẫn file. `bun run db:test:drop <tag>` = `DROP DATABASE IF EXISTS … WITH (FORCE)`, chỉ nhận tên do `testDbName` sinh (không bao giờ xoá DB không có hậu tố `_test`). Không bao giờ đụng `DATABASE_URL`.
+- Dùng: bun → `bun --env-file=.env.test-<tag>.local --config=bunfig.int.toml test --timeout 30000 <file…>`; Playwright (config chỉ nạp `.env.local` và **không ghi đè** biến đã có) → `set -a && . ./.env.test-<tag>.local && set +a && bunx playwright test …`. Test không đổi (chỉ đọc env). Lệnh mặc định `bun run test:int` giữ `ai_system_test` cho người chạy một mình.
+- Hướng dẫn: `packages/db/README.md` mục "DB test riêng" (lệnh trên + quy ước tag = tên agent/worktree, vd `be`, `fe`, `qc`). Đóng TECH-DEBT #17 ở D1 (docs-architect).
+- `package.json`: `"db:test:create": "bun --env-file=.env.local packages/db/src/test-db-cli.ts create"`, `"db:test:drop": "bun --env-file=.env.local packages/db/src/test-db-cli.ts drop"`. Test: `packages/db/src/test-db.test.ts` (tag hợp lệ/sai, hậu tố, `withDatabase` giữ thông tin đăng nhập).
+
+## 13. Trả lời lỗ hổng test-plan (test-plan §10, phần backend)
+| # | Kết luận |
+|---|---|
+| G1 | **Đúng: chỉ bảo vệ ở app.** Trigger `tenants_beta_group` chỉ **tạo** group, không chặn `DELETE`/đổi `key` bằng SQL. Xoá → 409 `BETA_GROUP_PROTECTED`; đổi key không có đường (PATCH strict không nhận `key`). Không thêm trigger chặn ở DB (R02 chỉ yêu cầu 409; owner/vận hành cần sửa tay được). qc không khẳng định chặn ở mức DB |
+| G4 | Chấp nhận: §12, làm ở T0 |
+| G6 | **Đúng:** không thao tác API nào ở M3 phát nhiều loại sự kiện trong một transaction (plan §5.3), nên `entity:"batch"` chỉ đạt được qua hàm thuần `configChangedPayload`. `notify` kỳ vọng entity theo bảng §5.3 |
+| G7 | Op M1/M2 **đã có trong code** (`apps/admin-api/src/lib/test-hooks.ts`): `command.save`, `command.delete`, `feature.save`, `feature.delete`, `workflow.save`, step `locked`, `names`. M3 thêm `group.save`, `group.delete`, `group.members`, `grant.save`, `grant.batch`, `entitlement.save`, `tenant.save`, `user.save`, `secret.save`, step `rows`, `bump`. Step `bump` có ở **mọi** op đi qua `configWrite` (kể cả op M2 sau T7). qc được dùng mọi op trong danh sách này |
+| G8 | Giới hạn 500 tính trên **số phần tử gửi lên, trước khi bỏ trùng** (zod `.max(500)` chạy trước transform) → 501 phần tử, dù trùng, → 400 |
+| G9 | **Đúng:** M2 `revokeEntitlement` = `UPDATE … SET revoked_at = now() WHERE … AND revoked_at IS NULL` → đã thu hồi / chưa từng cấp → 204, 0 hàng đổi. T7 chỉ `changed` khi số hàng > 0 → không bump, không NOTIFY |
+| G10 | Đúng như luật §4: user tenant `platform` thấy `core`; feature khác `missing` có `no_entitlement` (và `no_grant` nếu không có grant) |
+| G12 | Đúng: `matrix.groups` sắp `beta-testers` đầu rồi `key`; `GroupListResponse = {items, total}` không `counts` (đã ghi spec §3) |
+| G13 | Đúng: perf do backend đo ở `access.perf.int.test.ts` (T6), qc chạy lại ở VERIFY, không khoá |
