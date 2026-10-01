@@ -7,7 +7,7 @@ Nguồn luật: `spec.md` §2 (M1-Rnn). Làm theo thứ tự; task cùng phụ t
 |---|---|---|---|---|---|---|
 | P1 | `plan.md` backend (contract, dữ liệu, RLS vs role, quyết định Mơ hồ A–B) | backend-lead | `docs/specs/M1-foundation-identity/plan.md`, `spec.md` §3, 4, 6, 7, 9 | spec.md | spec-readiness đọc được | [x] |
 | P2 | `plan-frontend.md` (shell, route guard, i18n, màn M1) | frontend-lead | `docs/specs/M1-foundation-identity/plan-frontend.md` | spec.md | spec-readiness đọc được | [x] |
-| Q1 | `test-plan.md` (AC-A01, A02, A09 + M1-AC01…08) | qc | `docs/specs/M1-foundation-identity/test-plan.md` | P1, P2 | spec-readiness đọc được | [ ] |
+| Q1 | `test-plan.md` (AC-A01, A02, A09 + M1-AC01…08) | qc | `docs/specs/M1-foundation-identity/test-plan.md` | P1, P2 | spec-readiness đọc được | [x] |
 | G1 | spec-readiness + Gate (`docs/specs/M1-gate.md`, Luật 2b) | điều phối | `docs/specs/M1-foundation-identity/readiness.md`, `docs/specs/M1-gate.md` | P1, P2, Q1 | READY | [ ] |
 | Q2 | Viết test khoá (đỏ trước code) | qc | `tests/acceptance/M1/**`, `e2e/**` | G1 | `ls tests/acceptance/M1` | [ ] |
 | T1 | Contract `common/auth/tenants/users` + hằng/regex export + `API_ERRORS` (spec §3, plan §2) [ADM-FR-01] | backend-lead | `packages/contracts/src/{common,auth,tenants,users,index}.ts` + `*.test.ts` | G1 | `bun test packages/contracts && bun run --filter @ai/contracts typecheck` | [ ] |
