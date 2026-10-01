@@ -300,26 +300,21 @@ CI cần: `db:migrate` + `db:seed` **trước** e2e, env `ADMIN_API_DATABASE_URL
 
 ### 8.1 Mỗi file test chạy được (xanh) ở task nào
 
-Theo `tasks.md` mới. Q2 viết tất cả (đỏ); cột dưới là task sau đó file được kỳ vọng xanh. Dòng đánh dấu (*) do qc suy ra từ phụ thuộc task, điều phối chỉnh nếu khác.
+Khớp `tasks.md` (commit 30a9de5). Q2 viết tất cả (đỏ); cột dưới là task sau đó file được kỳ vọng xanh.
 
 | File | Xanh sau |
 |---|---|
-| `rules/contracts.test.ts` (R4) | T2 (đã chốt) |
-| `rules/auth.rules.test.ts` (R1) (*) | T4 |
-| `rules/tenants.rules.test.ts` (R3) (*) | T6 |
-| `rules/users.rules.test.ts` (R2) (*) | T7 |
-| `db-schema.int.test.ts`, `db-rls.int.test.ts` (D1 trừ ca D1.10 dùng app) (*) | T2 |
-| `seed.int.test.ts` (B1; có ca đăng nhập bằng env) | T5 (đã chốt) |
-| `db-guard.int.test.ts` (D3), `middleware.int.test.ts` (A6), `auth-login/refresh/password.int.test.ts` (A1–A3) (*) | T5 |
-| `tenants.int.test.ts` (A4) (*) | T6 |
-| `users.int.test.ts` (A5), `error-codes.int.test.ts` (A7) (*) | T7 |
-| `server.int.test.ts` (A8) | T7 (đã chốt) |
-| `i18n-labels.test.ts` (C1) | FE2 (đã chốt) |
-| `e2e/smoke.spec.ts` (M0, sửa) | FE3 (đã chốt) |
-| `e2e/auth.spec.ts` (E1) (*) | FE3 |
-| `e2e/tenants.spec.ts` (E2) (*) | FE4 |
-| `e2e/users.spec.ts` (E3), `e2e/m1-flow.spec.ts` (E4) (*) | FE5 |
-| `ADM-NFR-06/migrate.int.test.ts` (M0, sửa) (*) | T2 |
+| `rules/contracts.test.ts` (R4) | T2 |
+| `db-schema.int.test.ts` (D2), `ADM-NFR-06/migrate.int.test.ts` (M0, sửa) | T2 |
+| `rules/auth.rules.test.ts` (R1) | T4 |
+| `db-guard.int.test.ts` (D3), `auth-login.int.test.ts` (A1), `auth-password.int.test.ts` (A3), `seed.int.test.ts` (B1), `ADM-NFR-06/server.int.test.ts` (M0) | T5 |
+| `rules/tenants.rules.test.ts` (R3), `tenants.int.test.ts` (A4) | T6 |
+| `rules/users.rules.test.ts` (R2), `users.int.test.ts` (A5) | T7 |
+| `db-rls.int.test.ts` (D1), `auth-refresh.int.test.ts` (A2), `middleware.int.test.ts` (A6), `error-codes.int.test.ts` (A7), `server.int.test.ts` (A8) | T7 |
+| `i18n-labels.test.ts` (C1) | FE2 |
+| `e2e/smoke.spec.ts` (M0, sửa), `e2e/auth.spec.ts` (E1) | FE3 |
+| `e2e/tenants.spec.ts` (E2) | FE4 |
+| `e2e/users.spec.ts` (E3), `e2e/m1-flow.spec.ts` (E4) | FE5 |
 
 ## 9. Độ phủ kế hoạch
 
