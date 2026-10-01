@@ -49,7 +49,7 @@ async function findLoginUser(ctx: AuthCtx, tenantKey: string, username: string) 
   });
 }
 
-/** Ghi một lần sai dưới FOR UPDATE; đang khoá (request khác vừa khoá) thì không đụng. */
+/** Ghi một lần sai dưới FOR NO KEY UPDATE; đang khoá (request khác vừa khoá) thì không đụng. */
 export async function recordFailedLogin(ctx: AuthCtx, u: AuthUser, now: Date): Promise<void> {
   await withScope(ctx.db, tenantScope(u.tenantId), async (tx) => {
     const row = await repo.lockCounter(tx, u.tenantId, u.id);
@@ -60,7 +60,7 @@ export async function recordFailedLogin(ctx: AuthCtx, u: AuthUser, now: Date): P
 }
 
 /**
- * Mật khẩu đúng: trong transaction khoá hàng user (FOR UPDATE) và kiểm lại khoá tạm — ảnh chụp đọc trước verify có
+ * Mật khẩu đúng: trong transaction khoá hàng user (FOR NO KEY UPDATE) và kiểm lại khoá tạm — ảnh chụp đọc trước verify có
  * thể đã cũ vì request sai song song vừa khoá tài khoản (review vòng 1 #3). Đang khoá → 423; không thì đếm về 0.
  */
 async function confirmNotTempLocked<T>(
@@ -192,7 +192,7 @@ export async function logout(ctx: AuthCtx, token: string | undefined): Promise<v
 
 export type Actor = { userId: string; tenantId: string; sid: string | null };
 
-/** Ghi mật khẩu mới dưới FOR UPDATE; `expectPwc` (bắt buộc) chặn dùng lại change_token khi song song. */
+/** Ghi mật khẩu mới dưới FOR NO KEY UPDATE; `expectPwc` (bắt buộc) chặn dùng lại change_token khi song song. */
 async function writePassword(
   ctx: AuthCtx,
   u: AuthUser,

@@ -197,7 +197,7 @@ export async function updateUser(
     .where(and(eq(users.tenantId, t.tenantId), eq(users.id, t.id)));
 }
 
-/** Khoá hàng user (FOR UPDATE chỉ bảng users; Drizzle `of` in tên kèm schema nên viết SQL tay). */
+/** Khoá hàng user (FOR NO KEY UPDATE chỉ bảng users; Drizzle `of` in tên kèm schema nên viết SQL tay). */
 export async function lockUserRow(tx: Tx, tenantId: string, id: string): Promise<boolean> {
   const rows = await tx.execute(
     sql`select 1 from admin.users where tenant_id = ${tenantId} and id = ${id} for no key update`,
