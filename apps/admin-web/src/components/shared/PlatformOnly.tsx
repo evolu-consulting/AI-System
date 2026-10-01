@@ -5,5 +5,5 @@ import { ForbiddenState } from "./states/ForbiddenState";
 
 export function PlatformOnly({ children }: { children: ReactNode }) {
   const role = useSession((s) => s.me?.role);
-  return role === "platform_admin" ? <>{children}</> : <ForbiddenState />;
+  return role === "platform_admin" ? children : <ForbiddenState />;
 }

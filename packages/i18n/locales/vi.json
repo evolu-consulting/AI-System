@@ -38,7 +38,15 @@
     "on": "Bật",
     "off": "Tắt",
     "undo": "Hoàn tác",
-    "savedVersion": "Đã lưu · v{n}"
+    "savedVersion": "Đã lưu · v{n}",
+    "dependency": {
+      "command": "Command",
+      "agent": "Agent",
+      "workflow": "Workflow"
+    },
+    "localized": {
+      "enMissing": "EN thiếu"
+    }
   },
   "toast": {
     "saveFailed": "Không lưu được: {reason}",

@@ -38,7 +38,15 @@
     "on": "Enabled",
     "off": "Disabled",
     "undo": "Undo",
-    "savedVersion": "Saved · v{n}"
+    "savedVersion": "Saved · v{n}",
+    "dependency": {
+      "command": "Command",
+      "agent": "Agent",
+      "workflow": "Workflow"
+    },
+    "localized": {
+      "enMissing": "EN missing"
+    }
   },
   "toast": {
     "saveFailed": "Couldn't save: {reason}",
