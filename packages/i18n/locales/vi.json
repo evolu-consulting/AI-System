@@ -1,10 +1,22 @@
 {
   "common": {
+    "save": "Lưu",
     "cancel": "Huỷ",
     "close": "Đóng",
+    "confirm": "Xác nhận",
     "retry": "Thử lại",
+    "search": "Tìm…",
     "clearSearch": "Xoá từ khoá",
+    "clearFilters": "Xoá bộ lọc",
+    "all": "Tất cả",
+    "actions": "Thao tác",
+    "moreActions": "Thao tác khác",
     "copy": "Sao chép",
+    "copied": "Đã sao chép",
+    "unsaved": "Chưa lưu thay đổi",
+    "you": "(bạn)",
+    "unlimited": "Không giới hạn",
+    "unavailable": "Chưa khả dụng",
     "tenantPicker": {
       "label": "Tenant",
       "all": "Tất cả tenant",
@@ -12,6 +24,8 @@
     },
     "loading": "Đang tải",
     "stillLoading": "Vẫn đang tải…",
+    "saved": "Đã lưu",
+    "reload": "Tải lại",
     "pagination": {
       "range": "{from}–{to} / {total}",
       "prev": "Trước",
@@ -25,13 +39,26 @@
   "auth": {
     "login": {
       "title": "Đăng nhập",
+      "subtitle": "Dùng mã công ty và tài khoản do quản trị viên cấp.",
       "field": {
+        "tenant": "Mã công ty",
+        "tenantHint": "Được nhớ cho lần đăng nhập sau",
+        "username": "Tên đăng nhập",
         "password": "Mật khẩu"
       },
       "submit": "Đăng nhập",
-      "submitting": "Đang đăng nhập…"
+      "submitting": "Đang đăng nhập…",
+      "forgot": "Quên mật khẩu? Liên hệ quản trị viên công ty bạn để được đặt lại.",
+      "hero": {
+        "title": "Một nơi quản lý người dùng, quyền và chức năng AI của công ty bạn.",
+        "b1": "Cấp lệnh /dich, /tom theo từng phòng ban",
+        "b2": "Theo dõi mức dùng và quota trong tháng",
+        "b3": "Biết ngay vì sao một người không thấy một lệnh",
+        "footer": "EvoluConsulting · Intelligent automation"
+      }
     },
     "lang": {
+      "group": "Ngôn ngữ",
       "vi": "Tiếng Việt",
       "en": "English"
     },
@@ -42,24 +69,53 @@
       "network": "Không kết nối được máy chủ. Hãy thử lại.",
       "server": "Có lỗi xảy ra, hãy thử lại sau (mã {code}).",
       "required": {
+        "tenant": "Nhập mã công ty",
+        "username": "Nhập tên đăng nhập",
         "password": "Nhập mật khẩu"
       }
     },
     "logout": "Đăng xuất"
   },
   "password": {
+    "forced": {
+      "title": "Đặt mật khẩu mới",
+      "body": "Đây là lần đăng nhập đầu tiên hoặc mật khẩu vừa được đặt lại. Hãy đặt mật khẩu của riêng bạn để tiếp tục.",
+      "submit": "Đặt mật khẩu và tiếp tục"
+    },
     "self": {
       "title": "Đổi mật khẩu",
-      "body": "Các thiết bị khác sẽ bị đăng xuất sau khi đổi."
+      "body": "Các thiết bị khác sẽ bị đăng xuất sau khi đổi.",
+      "submit": "Đổi mật khẩu"
     },
     "field": {
+      "current": "Mật khẩu hiện tại",
+      "new": "Mật khẩu mới",
+      "confirm": "Nhập lại mật khẩu mới",
       "show": "Hiện mật khẩu",
       "hide": "Ẩn mật khẩu"
     },
+    "hint": "Tối thiểu 10 ký tự. Nên dùng một câu dài dễ nhớ.",
+    "strength": {
+      "label": "Độ mạnh: {level}",
+      "weak": "Yếu",
+      "medium": "Trung bình",
+      "strong": "Mạnh"
+    },
     "error": {
+      "required": {
+        "current": "Nhập mật khẩu hiện tại"
+      },
+      "min": "Mật khẩu cần tối thiểu 10 ký tự",
+      "max": "Mật khẩu tối đa 128 ký tự",
+      "mismatch": "Mật khẩu nhập lại không khớp",
       "same": "Mật khẩu mới phải khác mật khẩu hiện tại",
       "currentWrong": "Mật khẩu hiện tại không đúng",
       "tokenExpired": "Phiên đổi mật khẩu đã hết hạn. Hãy đăng nhập lại."
+    },
+    "relogin": "Đăng nhập lại",
+    "toast": {
+      "changed": "Đã đổi mật khẩu",
+      "changedOthers": "Đã đổi mật khẩu · các thiết bị khác đã được đăng xuất"
     }
   },
   "session": {
@@ -70,7 +126,8 @@
   },
   "member": {
     "title": "Tài khoản của bạn dùng Chat App",
-    "body": "Trang quản trị chỉ dành cho quản trị viên. Hãy mở Chat App để làm việc."
+    "body": "Trang quản trị chỉ dành cho quản trị viên. Hãy mở Chat App để làm việc.",
+    "open": "Mở Chat App"
   },
   "nav": {
     "main": "Điều hướng chính",
@@ -120,8 +177,13 @@
       "body": "Mục này không tồn tại hoặc đã bị xoá.",
       "cta": "Về danh sách"
     },
+    "empty": {
+      "noResults": "Không có kết quả cho '{q}'",
+      "noMatch": "Không có mục nào khớp bộ lọc"
+    },
     "offline": {
-      "banner": "Mất kết nối, thay đổi chưa được lưu"
+      "banner": "Mất kết nối, thay đổi chưa được lưu",
+      "saveTip": "Đang chờ kết nối lại"
     },
     "online": "Đã kết nối lại"
   },
@@ -147,38 +209,190 @@
   "tenants": {
     "list": {
       "title": "Tenants",
-      "subtitle": "Công ty khách hàng dùng nền tảng. Mỗi tenant có user, group và quota riêng."
+      "subtitle": "Công ty khách hàng dùng nền tảng. Mỗi tenant có user, group và quota riêng.",
+      "create": "+ Tạo tenant"
+    },
+    "col": {
+      "key": "Mã công ty",
+      "name": "Tên",
+      "users": "Users",
+      "slots": "Slot subscription",
+      "status": "Trạng thái"
+    },
+    "status": {
+      "active": "Đang hoạt động",
+      "locked": "Đã khoá"
+    },
+    "badge": {
+      "platform": "Nền tảng"
     },
     "new": {
-      "title": "Tạo tenant"
+      "title": "Tạo tenant",
+      "company": "Công ty",
+      "firstAdmin": "Tenant admin đầu tiên",
+      "submit": "Tạo tenant",
+      "goTo": "Đi tới tenant"
+    },
+    "field": {
+      "key": "Mã công ty",
+      "name": "Tên công ty",
+      "slots": "Giới hạn slot subscription",
+      "keyHint": "Người dùng gõ mã này khi đăng nhập. Không đổi được sau khi tạo.",
+      "slotsHint": "Để trống = không giới hạn"
+    },
+    "tab": {
+      "info": "Thông tin",
+      "features": "Feature",
+      "agents": "Agent",
+      "quota": "Quota",
+      "users": "Users",
+      "unavailableBody": "Mục này sẽ khả dụng ở bản sau."
+    },
+    "agents": {
+      "unavailable": "Cấp agent cho tenant làm ở Agent Studio. Mục này sẽ khả dụng khi Agent Hub sẵn sàng."
+    },
+    "detail": {
+      "createdAt": "Tạo lúc {date}",
+      "userCount": "{users} user"
+    },
+    "users": {
+      "summary": "{users} user · {admins} tenant_admin · {locked} đã khoá",
+      "open": "Mở danh sách Users"
+    },
+    "lock": {
+      "button": "Khoá tenant",
+      "title": "Khoá tenant {key}?",
+      "body": "Mọi user của {key} ({users} người) bị đăng xuất và không đăng nhập được.",
+      "typeConfirm": "Gõ {key} để xác nhận"
+    },
+    "unlock": {
+      "button": "Mở khoá tenant",
+      "title": "Mở khoá {key}?",
+      "body": "User trở về trạng thái trước khi khoá tenant; user đã bị khoá riêng vẫn bị khoá.",
+      "submit": "Mở khoá"
+    },
+    "toast": {
+      "locked": "Đã khoá {key}",
+      "unlocked": "Đã mở khoá {key}",
+      "created": "Đã tạo tenant {key}",
+      "saved": "Đã lưu {key}"
     },
     "error": {
-      "keyTaken": "Mã công ty đã được dùng"
+      "keyTaken": "Mã công ty đã được dùng",
+      "keyFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",
+      "nameRequired": "Nhập tên công ty"
+    },
+    "empty": "Chưa có tenant khách hàng nào. Tạo tenant để onboard công ty đầu tiên."
+  },
+  "quota": {
+    "error": {
+      "positive": "Nhập số lớn hơn 0 hoặc để trống"
     }
   },
   "tempPassword": {
+    "titleTenant": "Đã tạo tenant {key}",
+    "body": "Gửi thông tin sau cho khách qua kênh riêng. Mật khẩu tạm chỉ hiện một lần.",
     "tenant": "Mã công ty",
     "username": "Tên đăng nhập",
     "password": "Mật khẩu tạm",
     "copyAll": "Sao chép tất cả",
-    "toast": "Đã copy mật khẩu tạm, hãy gửi cho người dùng qua kênh riêng."
+    "ack": "Tôi đã lưu mật khẩu tạm",
+    "toast": "Đã copy mật khẩu tạm, hãy gửi cho người dùng qua kênh riêng.",
+    "closeWarning": "Sau khi đóng, bạn không xem lại được mật khẩu này.",
+    "closeUncopied": {
+      "title": "Đóng mà chưa sao chép mật khẩu tạm?",
+      "back": "Quay lại"
+    }
   },
   "users": {
     "list": {
       "title": "Users",
-      "subtitle": "Người dùng của {tenant}. Không có trang tự đăng ký — tạo tài khoản ở đây."
+      "subtitle": "Người dùng của {tenant}. Không có trang tự đăng ký — tạo tài khoản ở đây.",
+      "create": "+ Tạo user",
+      "search": "Tìm theo tên đăng nhập, tên, email…"
+    },
+    "col": {
+      "username": "Tên đăng nhập",
+      "tenant": "Tenant",
+      "displayName": "Tên hiển thị",
+      "role": "Role",
+      "lastLogin": "Đăng nhập gần nhất",
+      "status": "Trạng thái"
+    },
+    "filter": {
+      "role": {
+        "label": "Role",
+        "all": "Tất cả role"
+      },
+      "neverLoggedIn": "Chưa đăng nhập"
+    },
+    "status": {
+      "active": "Đang hoạt động",
+      "locked": "Đã khoá",
+      "tempLocked": "Tạm khoá đến {time}"
+    },
+    "lockedByTenant": "Khoá theo tenant {tenant}",
+    "neverLoggedIn": "Chưa đăng nhập",
+    "menu": {
+      "edit": "Sửa",
+      "resetPassword": "Reset mật khẩu",
+      "lock": "Khoá",
+      "unlock": "Mở khoá",
+      "logoutAll": "Đăng xuất mọi thiết bị"
     },
     "drawer": {
+      "createTitle": "Tạo user",
+      "editTitle": "{username} · {name}",
+      "tenantLine": "Tenant: {key}",
       "copyAll": {
         "text": "Mã công ty: {tenant}\nTên đăng nhập: {username}\nMật khẩu tạm: {password}"
       }
     },
+    "field": {
+      "username": "Tên đăng nhập",
+      "displayName": "Tên hiển thị",
+      "email": "Email",
+      "locale": "Ngôn ngữ",
+      "role": "Role",
+      "selfRole": "Bạn không thể tự hạ role của mình."
+    },
+    "create": {
+      "passwordNote": "Mật khẩu tạm được sinh tự động và chỉ hiện một lần. Người dùng phải đổi mật khẩu ở lần đăng nhập đầu.",
+      "submit": "Tạo user"
+    },
+    "reset": {
+      "title": "Reset mật khẩu của {username}?",
+      "body": "Mật khẩu cũ hết hiệu lực, người dùng phải đổi mật khẩu ở lần đăng nhập tới.",
+      "submit": "Reset mật khẩu"
+    },
+    "lock": {
+      "title": "Khoá {username}?",
+      "body": "Người này bị đăng xuất khỏi mọi thiết bị trong tối đa 15 phút.",
+      "submit": "Khoá"
+    },
+    "logoutAll": {
+      "title": "Đăng xuất {username} khỏi mọi thiết bị?",
+      "body": "Phiên hiện tại hết hạn trong tối đa 15 phút.",
+      "submit": "Đăng xuất"
+    },
+    "toast": {
+      "created": "Đã tạo {username}",
+      "saved": "Đã lưu {username}",
+      "locked": "Đã khoá {username}",
+      "unlocked": "Đã mở khoá {username}",
+      "loggedOut": "Đã đăng xuất {username} khỏi mọi thiết bị"
+    },
     "error": {
+      "usernameFormat": "Chỉ dùng chữ thường không dấu, số và . _ - (2–32 ký tự)",
       "usernameTaken": "Tên đăng nhập đã được dùng trong tenant này",
       "emailRequired": "Tenant admin cần có email để nhận cảnh báo quota",
+      "emailFormat": "Email không hợp lệ",
       "emailTaken": "Email đã được dùng trong tenant này",
       "lastAdmin": "Tenant phải còn ít nhất một tenant_admin đang hoạt động",
-      "lastPlatformAdmin": "Hệ thống phải còn ít nhất một platform_admin đang hoạt động"
-    }
+      "lastPlatformAdmin": "Hệ thống phải còn ít nhất một platform_admin đang hoạt động",
+      "displayNameRequired": "Nhập tên hiển thị",
+      "displayNameMax": "Tối đa 64 ký tự"
+    },
+    "empty": "Chưa có người dùng nào ngoài bạn. Tạo user để mời đồng nghiệp dùng Chat App."
   }
 }

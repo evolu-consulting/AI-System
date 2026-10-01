@@ -1,10 +1,22 @@
 {
   "common": {
+    "save": "Save",
     "cancel": "Cancel",
     "close": "Close",
+    "confirm": "Confirm",
     "retry": "Retry",
+    "search": "Search…",
     "clearSearch": "Clear search",
+    "clearFilters": "Clear filters",
+    "all": "All",
+    "actions": "Actions",
+    "moreActions": "More actions",
     "copy": "Copy",
+    "copied": "Copied",
+    "unsaved": "Unsaved changes",
+    "you": "(you)",
+    "unlimited": "Unlimited",
+    "unavailable": "Not available yet",
     "tenantPicker": {
       "label": "Tenant",
       "all": "All tenants",
@@ -12,6 +24,8 @@
     },
     "loading": "Loading",
     "stillLoading": "Still loading…",
+    "saved": "Saved",
+    "reload": "Reload",
     "pagination": {
       "range": "{from}–{to} of {total}",
       "prev": "Previous",
@@ -25,13 +39,26 @@
   "auth": {
     "login": {
       "title": "Sign in",
+      "subtitle": "Use your company code and the account your administrator gave you.",
       "field": {
+        "tenant": "Company code",
+        "tenantHint": "Remembered for next time",
+        "username": "Username",
         "password": "Password"
       },
       "submit": "Sign in",
-      "submitting": "Signing in…"
+      "submitting": "Signing in…",
+      "forgot": "Forgot your password? Contact your company administrator to reset it.",
+      "hero": {
+        "title": "One place to manage your company's users, access and AI features.",
+        "b1": "Grant commands like /dich, /tom by department",
+        "b2": "Track monthly usage and quota",
+        "b3": "See at once why someone can't see a command",
+        "footer": "EvoluConsulting · Intelligent automation"
+      }
     },
     "lang": {
+      "group": "Language",
       "vi": "Tiếng Việt",
       "en": "English"
     },
@@ -42,24 +69,53 @@
       "network": "Couldn't reach the server. Please try again.",
       "server": "Something went wrong, please try again later (code {code}).",
       "required": {
+        "tenant": "Enter your company code",
+        "username": "Enter your username",
         "password": "Enter your password"
       }
     },
     "logout": "Sign out"
   },
   "password": {
+    "forced": {
+      "title": "Set a new password",
+      "body": "This is your first sign-in or your password was just reset. Set your own password to continue.",
+      "submit": "Set password and continue"
+    },
     "self": {
       "title": "Change password",
-      "body": "Other devices will be signed out after the change."
+      "body": "Other devices will be signed out after the change.",
+      "submit": "Change password"
     },
     "field": {
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
       "show": "Show password",
       "hide": "Hide password"
     },
+    "hint": "At least 10 characters. A long, memorable phrase works well.",
+    "strength": {
+      "label": "Strength: {level}",
+      "weak": "Weak",
+      "medium": "Medium",
+      "strong": "Strong"
+    },
     "error": {
+      "required": {
+        "current": "Enter your current password"
+      },
+      "min": "Password must be at least 10 characters",
+      "max": "Password can be at most 128 characters",
+      "mismatch": "Passwords don't match",
       "same": "The new password must differ from the current one",
       "currentWrong": "Current password is incorrect",
       "tokenExpired": "Your password-change session expired. Please sign in again."
+    },
+    "relogin": "Sign in again",
+    "toast": {
+      "changed": "Password changed",
+      "changedOthers": "Password changed · other devices signed out"
     }
   },
   "session": {
@@ -70,7 +126,8 @@
   },
   "member": {
     "title": "Your account uses Chat App",
-    "body": "The admin console is for administrators. Open Chat App to get started."
+    "body": "The admin console is for administrators. Open Chat App to get started.",
+    "open": "Open Chat App"
   },
   "nav": {
     "main": "Main navigation",
@@ -120,8 +177,13 @@
       "body": "This item doesn't exist or was deleted.",
       "cta": "Back to list"
     },
+    "empty": {
+      "noResults": "No results for '{q}'",
+      "noMatch": "Nothing matches these filters"
+    },
     "offline": {
-      "banner": "Connection lost — changes aren't saved"
+      "banner": "Connection lost — changes aren't saved",
+      "saveTip": "Waiting for connection"
     },
     "online": "Back online"
   },
@@ -147,38 +209,190 @@
   "tenants": {
     "list": {
       "title": "Tenants",
-      "subtitle": "Customer companies on the platform. Each has its own users, groups and quota."
+      "subtitle": "Customer companies on the platform. Each has its own users, groups and quota.",
+      "create": "+ New tenant"
+    },
+    "col": {
+      "key": "Company code",
+      "name": "Name",
+      "users": "Users",
+      "slots": "Subscription slots",
+      "status": "Status"
+    },
+    "status": {
+      "active": "Active",
+      "locked": "Locked"
+    },
+    "badge": {
+      "platform": "Platform"
     },
     "new": {
-      "title": "New tenant"
+      "title": "New tenant",
+      "company": "Company",
+      "firstAdmin": "First tenant admin",
+      "submit": "Create tenant",
+      "goTo": "Go to tenant"
+    },
+    "field": {
+      "key": "Company code",
+      "name": "Company name",
+      "slots": "Subscription slot limit",
+      "keyHint": "Users type this code to sign in. It can't be changed later.",
+      "slotsHint": "Leave empty for unlimited"
+    },
+    "tab": {
+      "info": "Details",
+      "features": "Features",
+      "agents": "Agents",
+      "quota": "Quota",
+      "users": "Users",
+      "unavailableBody": "This section will be available in a later release."
+    },
+    "agents": {
+      "unavailable": "Agents are granted in Agent Studio. This will be available once Agent Hub is ready."
+    },
+    "detail": {
+      "createdAt": "Created {date}",
+      "userCount": "{users} users"
+    },
+    "users": {
+      "summary": "{users} users · {admins} tenant admins · {locked} locked",
+      "open": "Open Users list"
+    },
+    "lock": {
+      "button": "Lock tenant",
+      "title": "Lock tenant {key}?",
+      "body": "All users of {key} ({users} people) will be signed out and can't sign in.",
+      "typeConfirm": "Type {key} to confirm"
+    },
+    "unlock": {
+      "button": "Unlock tenant",
+      "title": "Unlock {key}?",
+      "body": "Users return to their state before the tenant was locked; individually locked users stay locked.",
+      "submit": "Unlock"
+    },
+    "toast": {
+      "locked": "Locked {key}",
+      "unlocked": "Unlocked {key}",
+      "created": "Created tenant {key}",
+      "saved": "Saved {key}"
     },
     "error": {
-      "keyTaken": "Company code is already in use"
+      "keyTaken": "Company code is already in use",
+      "keyFormat": "Use lowercase letters, digits and - only (2–32 chars)",
+      "nameRequired": "Enter the company name"
+    },
+    "empty": "No customer tenants yet. Create one to onboard your first company."
+  },
+  "quota": {
+    "error": {
+      "positive": "Enter a number greater than 0 or leave empty"
     }
   },
   "tempPassword": {
+    "titleTenant": "Tenant {key} created",
+    "body": "Send these details through a private channel. The temporary password is shown only once.",
     "tenant": "Company code",
     "username": "Username",
     "password": "Temporary password",
     "copyAll": "Copy all",
-    "toast": "Temporary password copied — send it to the user through a private channel."
+    "ack": "I've saved the temporary password",
+    "toast": "Temporary password copied — send it to the user through a private channel.",
+    "closeWarning": "Once closed, you can't view this password again.",
+    "closeUncopied": {
+      "title": "Close without copying the temporary password?",
+      "back": "Go back"
+    }
   },
   "users": {
     "list": {
       "title": "Users",
-      "subtitle": "Users of {tenant}. There's no self sign-up — create accounts here."
+      "subtitle": "Users of {tenant}. There's no self sign-up — create accounts here.",
+      "create": "+ New user",
+      "search": "Search by username, name, email…"
+    },
+    "col": {
+      "username": "Username",
+      "tenant": "Tenant",
+      "displayName": "Display name",
+      "role": "Role",
+      "lastLogin": "Last sign-in",
+      "status": "Status"
+    },
+    "filter": {
+      "role": {
+        "label": "Role",
+        "all": "All roles"
+      },
+      "neverLoggedIn": "Never signed in"
+    },
+    "status": {
+      "active": "Active",
+      "locked": "Locked",
+      "tempLocked": "Temporarily locked until {time}"
+    },
+    "lockedByTenant": "Locked with tenant {tenant}",
+    "neverLoggedIn": "Never signed in",
+    "menu": {
+      "edit": "Edit",
+      "resetPassword": "Reset password",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "logoutAll": "Sign out everywhere"
     },
     "drawer": {
+      "createTitle": "New user",
+      "editTitle": "{username} · {name}",
+      "tenantLine": "Tenant: {key}",
       "copyAll": {
         "text": "Company code: {tenant}\nUsername: {username}\nTemporary password: {password}"
       }
     },
+    "field": {
+      "username": "Username",
+      "displayName": "Display name",
+      "email": "Email",
+      "locale": "Language",
+      "role": "Role",
+      "selfRole": "You can't lower your own role."
+    },
+    "create": {
+      "passwordNote": "A temporary password is generated and shown only once. The user must change it at first sign-in.",
+      "submit": "Create user"
+    },
+    "reset": {
+      "title": "Reset password for {username}?",
+      "body": "The old password stops working; the user must change it at next sign-in.",
+      "submit": "Reset password"
+    },
+    "lock": {
+      "title": "Lock {username}?",
+      "body": "They'll be signed out of every device within 15 minutes.",
+      "submit": "Lock"
+    },
+    "logoutAll": {
+      "title": "Sign {username} out everywhere?",
+      "body": "Current sessions expire within 15 minutes.",
+      "submit": "Sign out"
+    },
+    "toast": {
+      "created": "Created {username}",
+      "saved": "Saved {username}",
+      "locked": "Locked {username}",
+      "unlocked": "Unlocked {username}",
+      "loggedOut": "Signed {username} out everywhere"
+    },
     "error": {
+      "usernameFormat": "Use lowercase letters, digits and . _ - only (2–32 chars)",
       "usernameTaken": "Username is already used in this tenant",
       "emailRequired": "Tenant admins need an email to receive quota alerts",
+      "emailFormat": "Invalid email",
       "emailTaken": "Email is already used in this tenant",
       "lastAdmin": "The tenant must keep at least one active tenant admin",
-      "lastPlatformAdmin": "The system must keep at least one active platform admin"
-    }
+      "lastPlatformAdmin": "The system must keep at least one active platform admin",
+      "displayNameRequired": "Enter a display name",
+      "displayNameMax": "At most 64 characters"
+    },
+    "empty": "No users besides you. Create users to invite colleagues to Chat App."
   }
 }
