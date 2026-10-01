@@ -17,7 +17,7 @@ Không cài `@hono/zod-validator` (spec §9). Không thư viện khác → khôn
 
 | File | Tạo/Sửa | Nội dung | Task |
 |---|---|---|---|
-| `packages/contracts/src/common.ts` | Tạo | hằng/regex (`COMPANY_KEY_RE`…), `RoleSchema`, `LocaleSchema`, `EntityStatusSchema`, `IsoDateTime`, `UuidSchema`, `ListQueryBase`, `listResponseSchema(item)`, `ErrorCode`, `API_ERRORS`, `ValidationErrorDetailsSchema`, `LastAdminDetailsSchema`, `TempLockedDetailsSchema`, `versionConflictDetailsSchema(entity)` | T1 |
+| `packages/contracts/src/common.ts` | Tạo | hằng/regex (`COMPANY_KEY_RE`…), `RoleSchema`, `LocaleSchema`, `EntityStatusSchema`, `IsoDateTime`, `UuidSchema`, `ListQueryBase`, `listResponseSchema(item)`, `ErrorCode`, `API_ERRORS`, `ValidationErrorDetailsSchema`, `LastAdminDetailsSchema`, `TempLockedDetailsSchema`, `versionConflictDetailsSchema(entity)` (= `{current: entity, updated_at: IsoDateTime}`, strict) | T1 |
 | `packages/contracts/src/auth.ts` | Tạo | `LoginRequestSchema`, `LoginResponseSchema` (discriminatedUnion `status`), `TokenGrantSchema`, `PasswordChangeRequiredSchema`, `RefreshRequestSchema`, `RefreshResponseSchema` (= `TokenGrantSchema`), `ChangePasswordRequestSchema` (union 2 dạng strict), `MeSchema`, `MeUpdateRequestSchema`, `X_CLIENT_HEADER = "X-Client"`, `REFRESH_COOKIE = "ai_rt"` | T1 |
 | `packages/contracts/src/tenants.ts` | Tạo | `TenantSchema`, `TenantDetailSchema`, `TenantListQuerySchema`, `TenantListResponseSchema`, `TenantCreateRequestSchema`, `TenantCreateResponseSchema`, `TenantUpdateRequestSchema` | T1 |
 | `packages/contracts/src/users.ts` | Tạo | `UserSchema`, `UserListQuerySchema`, `UserListResponseSchema`, `UserCreateRequestSchema`, `UserCreateResponseSchema`, `UserUpdateRequestSchema`, `TempPasswordResponseSchema` | T1 |
@@ -219,7 +219,7 @@ export function tenantStatus(t: { active: boolean }): "active" | "locked";
 
 ## 5. Luồng service (transaction, query)
 
-Ký hiệu: `W(scope){…}` = một `withScope`. Mọi `UPDATE … WHERE id=$ AND version=$v RETURNING *`; 0 hàng → đọc lại: không có → `NOT_FOUND`, có → `VERSION_CONFLICT {current}`.
+Ký hiệu: `W(scope){…}` = một `withScope`. Mọi `UPDATE … WHERE id=$ AND version=$v RETURNING *`; 0 hàng → đọc lại: không có → `NOT_FOUND`, có → `VERSION_CONFLICT {current, updated_at}` (`details.updated_at = current.updated_at`; không có `updated_by` ở M1).
 
 **Login** (`auth.service.login`):
 1. `W(nil){ tid = tenant_id_by_key(key); if tid: setScope(tenant tid); tenant = select; user = select by (tid, username) }`.
@@ -243,7 +243,7 @@ Ký hiệu: `W(scope){…}` = một `withScope`. Mọi `UPDATE … WHERE id=$ AN
 **Khoá tenant**: `checkTenantLock` → `W(platform){ select tenant for update; if active: update tenants set active=false, version+1; update users set locked_by_tenant=true, version+1 where tenant_id=$ and active and not locked_by_tenant; update refresh_tokens set revoked_at=now(), revoked_reason='tenant_locked' where tenant_id=$ and revoked_at is null }`.
 **Mở khoá**: `update tenants set active=true…; update users set locked_by_tenant=false, version+1 where tenant_id=$ and locked_by_tenant`.
 
-**Users**: list = một query `select … , count(*) over()` có `limit/offset` + một query `counts` (`count(*) filter (where …)`) cùng điều kiện trừ `status`. Lock/demote: `W{ select tenants for update (tenant của target); đếm admin khác (index users_tenant_role_active_idx; platform: role='platform_admin' and active, mọi tenant) ; checkLastAdmin; update; nếu lock: revoke token user ('user_locked') }`. Reset: `checkSelfAction` → sinh + hash ngoài transaction → `update password_hash, must_change_password=true, password_changed_at=now(), failed_logins=0, locked_until=null, version+1; revoke token ('password_reset')`. Unlock: `active=true, failed_logins=0, locked_until=null, version+1`. Logout-all: revoke ('logout_all'). Mã PG 23505 theo tên constraint → `USERNAME_TAKEN` (`users_tenant_username_uq`), `EMAIL_TAKEN` (`users_tenant_email_uq`), `KEY_TAKEN` (`tenants_key_uq`).
+**Users**: list = một query `select … , count(*) over()` có `limit/offset` + một query `counts` (`count(*) filter (where …)`) cùng điều kiện trừ `status`. Lock/demote: `W{ select tenants for update (tenant của target); đếm admin khác (index users_tenant_role_active_idx; platform: `role='platform_admin' and active`; tenant: `tenant_id=$ and role='tenant_admin' and active` — **không** xét `locked_by_tenant` hay `tenants.active`, áp cho mọi tenant kể cả đang khoá, chốt ở Gate M1) ; checkLastAdmin; update; nếu lock: revoke token user ('user_locked') }`. Reset: `checkSelfAction` → sinh + hash ngoài transaction → `update password_hash, must_change_password=true, password_changed_at=now(), failed_logins=0, locked_until=null, version+1; revoke token ('password_reset')`. Unlock: `active=true, failed_logins=0, locked_until=null, version+1`. Logout-all: revoke ('logout_all'). Mã PG 23505 theo tên constraint → `USERNAME_TAKEN` (`users_tenant_username_uq`), `EMAIL_TAKEN` (`users_tenant_email_uq`), `KEY_TAKEN` (`tenants_key_uq`).
 
 ## 6. App
 
