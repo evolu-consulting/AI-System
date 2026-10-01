@@ -17,6 +17,7 @@ import {
   isTempLocked,
   normalizeLoginId,
   outcomeAfterPasswordOk,
+  type RevokeReason,
 } from "./auth.rules";
 import {
   type AuthCtx,
@@ -260,4 +261,16 @@ export async function updateMyLocale(ctx: AuthCtx, actor: Actor, locale: Locale)
   });
   if (!u) throw appError("UNAUTHORIZED");
   return toMe(u);
+}
+
+/** Dùng bởi module tenants/users (không import repo auth): thu hồi phiên trong transaction của bên gọi. */
+export function revokeTenantSessions(tx: Tx, tenantId: string, reason: RevokeReason) {
+  return repo.revokeTenantTokens(tx, tenantId, reason);
+}
+
+export function revokeUserSessions(
+  tx: Tx,
+  t: { tenantId: string; userId: string; reason: RevokeReason },
+) {
+  return repo.revokeUserTokens(tx, t);
 }

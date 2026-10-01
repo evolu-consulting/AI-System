@@ -7,9 +7,11 @@ import type { AppVars } from "./lib/auth-middleware";
 import { AppError, toErrorBody } from "./lib/errors";
 import type { JwtKeys } from "./lib/jwt";
 import { logger } from "./lib/logger";
+import { safeErrorFields } from "./lib/pg-errors";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { healthRoutes } from "./modules/health/health.routes";
+import { tenantsRoutes } from "./modules/tenants/tenants.routes";
 
 export type AppConfig = { version: string; corsOrigins: string[] };
 export type AppDeps = {
@@ -34,6 +36,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   const secureCookie = deps.appEnv === "production";
   app.route("/auth", authRoutes({ ...ctx, secureCookie, selfChange: selfChangeHandler(ctx) }));
   app.route("/auth", meRoutes(ctx));
+  app.route("/admin/tenants", tenantsRoutes(ctx));
 }
 
 export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {
@@ -75,11 +78,7 @@ export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {
     if (err instanceof AppError) {
       return c.json(toErrorBody(err.code, err.message, err.details), err.status);
     }
-    logger.error("unhandled", {
-      request_id: c.get("requestId"),
-      error: err.message,
-      stack: err.stack,
-    });
+    logger.error("unhandled", { request_id: c.get("requestId"), ...safeErrorFields(err) });
     return c.json(toErrorBody("INTERNAL_ERROR", "Internal server error"), 500);
   });
 

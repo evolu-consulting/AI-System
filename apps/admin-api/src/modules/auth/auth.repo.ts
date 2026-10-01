@@ -216,3 +216,8 @@ export async function updateLocale(tx: Tx, tenantId: string, userId: string, loc
     .set({ locale, version: sql`${users.version} + 1`, updatedAt: sql`now()` })
     .where(and(eq(users.tenantId, tenantId), eq(users.id, userId)));
 }
+
+/** Khoá tenant (M1-R10): thu hồi mọi token đang sống của tenant. */
+export async function revokeTenantTokens(tx: Tx, tenantId: string, reason: RevokeReason) {
+  await tx.update(refreshTokens).set(revokeSet(reason)).where(active(tenantId));
+}
