@@ -264,7 +264,7 @@ Ghi chú đọc AC: claim `user_id`/`tenant_id` ở AC-A01 = `sub`/`tid` theo M1
 | M1-AC07 | `member` gọi `GET /admin/users` → 403; username `an` tạo được ở cả `acme` và `globex`, trùng trong cùng tenant → 409 | BR-05, FR-63 |
 | M1-AC08 (e2e) | Đăng nhập admin web bằng seed → vào shell → Tenants → tạo tenant → thấy dialog mật khẩu tạm một lần → đăng xuất | FR-01, 60, 04 |
 
-Lệnh xong: `docker compose up -d --wait && bun run db:migrate && bun run db:seed && bun run check && bun run typecheck && bun test && bun run test:int && bun run i18n:check && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check`
+Lệnh xong: `docker compose up -d --wait && bun run db:migrate && bun run db:seed && bun run check && bun run typecheck && bun test && bun run test:int && bun run i18n:check && bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check`
 
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng)

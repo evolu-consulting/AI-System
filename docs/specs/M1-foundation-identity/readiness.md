@@ -51,3 +51,10 @@ Agent: spec-readiness (chỉ đọc; điều phối ghi lại). Lần 1: (c) #1�
 
 ### Thấp (áp luôn)
 4 spec §1 BR-08 "kể cả đang khoá" · 5 ADR-0004 → Accepted ở spec/plan-frontend · 6 kiểm `details.updated_at` · 7 test-plan §8 chép Lệnh xong spec §8 · 8 "100 ms" · 9 bỏ "counts nên có" · 10 E1 phiên hết hạn: `binh`, drawer Tạo user · 11 username hoa → chuẩn hoá 201; 33 ký tự/ký tự lạ → 400 · 12 T2 sửa `packages/db/src/migrate.int.test.ts` → `{main:3,dev:2}` · 13 `close()` · 14 ca `admin lock zoe` → 409 LAST_ADMIN · 15 tắt dev server 3001 trước e2e · 16 chữ ký `createFirstAdmin` · 17 `thu` chạy cuối file · 18 missing-screens §12.5/§14.9 theo CR-008; nợ Gate M3: câu modal khi chưa có `updated_by`.
+
+## Lần 3 — 2026-10-01 · NOT READY → đã sửa
+
+Lần 2: Cao #1, #3 đóng; #2 đóng một phần. `bunfig.int.toml` có, khớp `test:int`. Không Chặn. 2 Cao (c), 7 Thấp — không hỏi người dùng.
+- Cao #1 (lệnh xong T2/T3/T5): T2 thêm 2 env DB vào `.env.example` + R4; D2 không seed; `tests/acceptance/M1/seed.int.test.ts` → T5; `tests/acceptance/M1/server.int.test.ts` → T7. (điều phối sửa tasks.md; qc sửa test-plan)
+- Cao #2 (lệnh xong FE0b/FE3): FE0b chỉ `--list`; smoke → FE3; FE3 phụ thuộc T5; ca phiên hết hạn → E3 `users.spec.ts`.
+- Thấp áp: #3 T6 thêm `users.service/repo` (chỉ `createFirstAdmin`) · #4 `build` trước `check:bundle` · #5 R4 vào T2, C1 vào FE2 · #6 T4 chỉ chế độ bắt buộc · #7 423 ở tự đổi (2a396ba) · #8 "spec §3 thắng" (2a396ba) · #9 T2 `git status --porcelain packages/db/migrations` rỗng.
