@@ -888,7 +888,8 @@
         "aria": "Bỏ /{name} khỏi feature"
       },
       "orphan": "/{name} sẽ không thuộc feature nào và biến khỏi menu",
-      "empty": "Feature chưa có command nào. Thêm command để người được cấp feature này dùng được."
+      "empty": "Feature chưa có command nào. Thêm command để người được cấp feature này dùng được.",
+      "orphanBadge": "Mồ côi"
     },
     "icon": {
       "package": "Gói",

@@ -888,7 +888,8 @@
         "aria": "Remove /{name} from feature"
       },
       "orphan": "/{name} will belong to no feature and disappear from the menu",
-      "empty": "No commands yet. Add commands so people granted this feature can use them."
+      "empty": "No commands yet. Add commands so people granted this feature can use them.",
+      "orphanBadge": "Orphan"
     },
     "icon": {
       "package": "Package",
