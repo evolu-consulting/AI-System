@@ -109,7 +109,7 @@ apps/admin-web/src/
 ## 3. Phiên đăng nhập, refresh, phiên hết hạn
 
 ### 3.1 Luồng
-1. App mở → `session.status="unknown"` → `_authed.beforeLoad` hoặc `/login.beforeLoad` gọi `session.ensure()`: `POST /auth/refresh` (cookie) → `GET /auth/me`. Thành công = `authed`; 401 = `anon`. Trong lúc `unknown` hiển thị skeleton toàn trang (không trắng).
+1. App mở → `session.status="unknown"` → `_authed.beforeLoad` hoặc `/login.beforeLoad` gọi `session.ensure()`: `POST /auth/refresh` (cookie `ai_rt`) → `TokenGrant` (đã có `user: Me`, **không** gọi thêm `GET /auth/me`). Thành công = `authed`; 401 = `anon`. Trong lúc `unknown` hiển thị skeleton toàn trang (không trắng).
 2. `POST /auth/login {tenant_key, username, password}` → (a) `status:"authenticated"` → lưu `access_token` + `me`, `i18n.changeLanguage(me.locale)`, chuyển tới `next` (chỉ nhận đường dẫn tương đối bắt đầu bằng `/`, chống open redirect) hoặc `/`; `member` → `/member`. (b) `status:"password_change_required"` → giữ `{change_token, tenantKey, username}` trong bộ nhớ → `/change-password`.
 3. Mọi request có Bearer. Gặp 401 `UNAUTHORIZED` → `refresh()` 1 lần rồi gửi lại; refresh thất bại → `session.status="expired"` → hiện `SessionExpiredDialog` **tại chỗ** (không điều hướng, form đang nhập giữ nguyên, ui-admin 7.1). Nhập lại mật khẩu → `POST /auth/login` cùng mã công ty/username (chỉ đọc) → `authed` → `queryClient.invalidateQueries()` + đóng dialog. Nút phụ `Đăng xuất` → `/login`.
 4. Đăng xuất: `POST /auth/logout` (bỏ qua lỗi) → xoá session + `queryClient.clear()` + phát `logout` qua channel → `/login`.
@@ -123,6 +123,7 @@ apps/admin-web/src/
 - Trong tab: `navigator.locks.request("ai-admin-refresh", async () => {...})`. Trong khoá: nếu đã nhận qua `BroadcastChannel` một access token **mới hơn** token vừa bị 401 (trong 10 giây) → dùng luôn, **không** gọi API; ngược lại gọi `POST /auth/refresh` (cookie hiện tại do trình duyệt giữ, đã được tab kia xoay) rồi phát `{type:"token", accessToken, at}`.
 - Không có `navigator.locks` (trình duyệt cũ/insecure context) → chỉ single-flight trong tab; ghi nhận rủi ro đăng xuất khi hai tab refresh cùng lúc.
 - Tab nhận `{type:"logout"}` → xoá session → `/login`.
+- **`REFRESH_SUPERSEDED`** (401, backend ân hạn 10 s cho token vừa xoay): khi refresh nhận mã này → **thử lại đúng một lần** (cookie lúc này đã là bản mới do tab/request kia xoay; chờ ~100 ms, ưu tiên token từ `BroadcastChannel` nếu đã nhận). Lần thử lại vẫn lỗi → coi như hết phiên. Khác `INVALID_REFRESH_TOKEN` (hết phiên ngay, không thử lại).
 - Lỗi mạng giữa chừng sau khi server đã xoay (mất response) → lần refresh kế bị coi là reuse → đăng xuất: chấp nhận (M1-R07), dialog phiên hết hạn xử lý.
 - Test đơn vị (hàm thuần với `fetch`/`locks` giả): 5 request đồng thời → 1 lần refresh; hai "tab" giả lập tuần tự qua lock → 1 refresh thật + 1 dùng token broadcast; không có `locks` → vẫn 1 lần/tab.
 
@@ -136,7 +137,7 @@ Schema form nằm ở `features/<f>/lib/schemas.ts`, **dùng hằng số xuất 
 | Tên đăng nhập (login) | bắt buộc; `trim().toLowerCase()` | Nhập tên đăng nhập | Enter your username |
 | Mật khẩu (login, phiên hết hạn) | bắt buộc, không trim, không kiểm độ dài | Nhập mật khẩu | Enter your password |
 | Mã công ty (tạo tenant) | `^[a-z0-9-]{2,32}$`; ô tự chuyển thường + bỏ dấu khi gõ (không xoá ký tự lạ) | `tenants.error.keyFormat` (§4) | idem |
-| Tên công ty | bắt buộc, `trim`, ≤ 100 (hằng contract `NAME_MAX`) | Nhập tên công ty | Enter the company name |
+| Tên công ty | bắt buộc, `trim`, ≤ 128 (hằng contract `NAME_MAX = 128`) | Nhập tên công ty | Enter the company name |
 | Giới hạn slot | trống = `null`; số nguyên ≥ 1 | `quota.error.positive` (§4: "Nhập số lớn hơn 0 hoặc để trống") | idem |
 | Tên đăng nhập (user/first admin) | `^[a-z0-9._-]{2,32}$` | `users.error.usernameFormat` (§5) | idem |
 | Tên hiển thị | bắt buộc, `trim`, ≤ 64 (hằng contract `DISPLAY_NAME_MAX`) | `users.error.displayNameRequired` / "Tối đa 64 ký tự" | / "At most 64 characters" |
@@ -194,6 +195,7 @@ Một nút Hiện/Ẩn điều khiển cả hai ô mới (trạng thái chung) �
 | 403 `ACCOUNT_LOCKED` | `auth.error.accountLocked` |
 | 401 `UNAUTHORIZED` (token) | refresh → thất bại = dialog phiên hết hạn |
 | 401 `INVALID_REFRESH_TOKEN` | dialog phiên hết hạn |
+| 401 `REFRESH_SUPERSEDED` | (nội bộ `refresh()`) thử lại 1 lần; vẫn lỗi → dialog phiên hết hạn |
 | 401 `INVALID_CHANGE_TOKEN` | `alert` token hết hạn (forced) |
 | 400 `INVALID_CURRENT_PASSWORD` | `password.error.currentWrong` |
 | 400 `PASSWORD_UNCHANGED` | `password.error.same` |
@@ -338,16 +340,18 @@ Ghi chú nhãn mới/lệch (qc nhận, frontend giữ):
 ## 9. Yêu cầu contract (gửi backend-lead; FE không tự đổi)
 
 1. **Hằng số + schema dùng được ở trình duyệt** từ `@ai/contracts` (không import I/O Node): `COMPANY_KEY_RE`, `USERNAME_RE`, `PASSWORD_MIN_LEN=10`, `PASSWORD_MAX_LEN=128`, `DISPLAY_NAME_MAX=64`, `NAME_MAX`, `EMAIL_MAX`, enum `Role`, `Locale`, `ErrorCode` (union các mã ở §6), các schema request/response (`LoginRequest/Response`, `ChangePassword*`, `Me`, `Tenant*`, `User*`, `ListResponse<T>`). `apps/admin-web` thêm `@ai/contracts` + `zod` vào dependencies.
-2. **Login** `POST /auth/login {tenant_key, username, password}` → union theo `status`: `{status:"authenticated", access_token, expires_in}` (+ `Set-Cookie` refresh khi web) | `{status:"password_change_required", change_token}`. Web **không** gửi `X-Client` (cookie). Lỗi: 401 `INVALID_CREDENTIALS`, 423 `TEMP_LOCKED {until}` (ISO UTC, trong `error.details.until`), 403 `ACCOUNT_LOCKED`.
-3. **Refresh** `POST /auth/refresh` (cookie, không body) → `{access_token, expires_in}`; lỗi 401 `INVALID_REFRESH_TOKEN`. **Logout** `POST /auth/logout` 204.
-4. **Đổi mật khẩu**: tự đổi `POST /auth/change-password {current_password,new_password}` (Bearer) → 204; chế độ bắt buộc `{change_token,new_password}` → **cùng body với login thành công** (`status:"authenticated", access_token, expires_in` + cookie). Mã lỗi **không phải 401** cho mật khẩu hiện tại sai: 400 `INVALID_CURRENT_PASSWORD`; mới trùng cũ: 400 `PASSWORD_UNCHANGED`; `change_token` hết hạn/đã dùng: 401 `INVALID_CHANGE_TOKEN` (dùng mã riêng để FE không vòng refresh). Access token sai/hết hạn trên route bảo vệ: 401 `UNAUTHORIZED` (mã cố định, FE chỉ refresh khi gặp mã này).
+2. **Login** `POST /auth/login {tenant_key, username, password}` → union theo `status`: `TokenGrant = {status:"authenticated", access_token, token_type:"Bearer", expires_in, user: Me}` (+ `Set-Cookie` refresh khi web) | `{status:"password_change_required", change_token}`. Web **không** gửi `X-Client` (cookie). Lỗi: 401 `INVALID_CREDENTIALS`, 423 `TEMP_LOCKED {until}` (ISO UTC, trong `error.details.until`), 403 `ACCOUNT_LOCKED`.
+3. **Refresh** `POST /auth/refresh` (cookie, không body) → `TokenGrant` (có `user: Me`; cookie `ai_rt`); lỗi 401 `INVALID_REFRESH_TOKEN` (hết phiên) hoặc 401 `REFRESH_SUPERSEDED` (thử lại 1 lần, §3.3). **Logout** `POST /auth/logout` 204.
+4. **Đổi mật khẩu**: tự đổi `POST /auth/change-password {current_password,new_password}` (Bearer) → 204; chế độ bắt buộc `{change_token,new_password}` → **cùng body với login thành công** (`TokenGrant` + cookie). Mã lỗi **không phải 401** cho mật khẩu hiện tại sai: 400 `INVALID_CURRENT_PASSWORD`; mới trùng cũ: 400 `PASSWORD_UNCHANGED`; `change_token` hết hạn/đã dùng: 401 `INVALID_CHANGE_TOKEN` (dùng mã riêng để FE không vòng refresh). Access token sai/hết hạn trên route bảo vệ: 401 `UNAUTHORIZED` (mã cố định, FE chỉ refresh khi gặp mã này).
 5. **Cookie dev**: `Secure` chỉ bật khi `APP_ENV=production` (dev chạy `http://localhost`); `SameSite=Strict; HttpOnly; Path=/auth`. Preview của e2e đi qua proxy cùng origin (D6).
 6. `GET /auth/me` → `{id, username, display_name, role, locale, tenant:{id,key,name}, must_change_password:false}`; `PATCH /auth/me {locale}`.
 7. **Tenants**: list `{items,total}` với mỗi item `{id,key,name,active,max_concurrent_sub,user_count,created_at,version}`; `?q&limit(≤200)&offset&status=active|locked`. `GET /:id` kèm `stats:{user_count, tenant_admin_count, locked_user_count}`. `POST /admin/tenants` nhận `first_admin:{username,display_name,email,locale}` → `{tenant, first_admin, temp_password}`. `PATCH /admin/tenants/:id {name,max_concurrent_sub,version}` → tenant mới. `lock/unlock` trả tenant mới. Lỗi: `KEY_TAKEN`, `USERNAME_TAKEN`, `EMAIL_TAKEN` (first admin), `PLATFORM_TENANT_LOCKED`, `VERSION_CONFLICT`.
 8. **Users**: list item `{id,tenant_id,tenant_key,username,display_name,email,role,locale,active,locked_by_tenant,locked_until,last_login_at,version}`; filter `?tenant_id&q&status=active|locked&role&login=never&limit&offset`. `counts:{all,active,locked}` (tính trên tập đã lọc `q`/`tenant_id`/`role`, bỏ qua `status`) — **nên có** để hiện số trên chip (D11); không có thì FE bỏ số. `POST /admin/users` → `{user, temp_password}`; `reset-password` → `{temp_password}`; `lock/unlock/logout-all` → user mới hoặc 204 (FE refetch). Lỗi `LAST_ADMIN` có `details.scope: "platform"|"tenant"`; `SELF_ACTION_FORBIDDEN`; `TENANT_REQUIRED`; `EMAIL_TAKEN`; `NOT_FOUND` (cùng body với id không tồn tại).
 9. `unlock` của user có `locked_until` còn hiệu lực → xoá luôn `failed_logins` và `locked_until` (admin mở khoá tạm khoá).
 10. Mã lỗi theo `ErrorResponseSchema` M0: `{error:{code,message,details?}}`; `message` tiếng Anh ngắn (FE không hiển thị nguyên văn nếu đã có key i18n).
-11. Nhờ backend-lead / điều phối (hạ tầng): `rsbuild.config.ts` thêm `server.proxy` (`/auth`, `/admin` → `ADMIN_API_URL`, mặc định `http://localhost:4000`; tên cổng/biến theo `.env.example` M0) — **frontend tự làm** trong FE0; `playwright.config.ts` `webServer` phải khởi động cả `admin-api` + DB đã seed (qc/điều phối); `.env.example` thêm `PUBLIC_CHAT_APP_URL` (tuỳ chọn) và `ADMIN_API_URL`.
+11. Nhờ backend-lead / điều phối (hạ tầng): `rsbuild.config.ts` thêm `server.proxy` (`/auth`, `/admin` → `ADMIN_API_URL`, mặc định `http://localhost:3001`, backend đã chốt) — **frontend tự làm** trong FE0; `playwright.config.ts` do **frontend-lead** sửa (task FE0b, §9.12); `.env.example` thêm `PUBLIC_CHAT_APP_URL` (tuỳ chọn) và `ADMIN_API_URL`.
+
+12. **E2E hạ tầng (G1 của test-plan, FE0b):** `playwright.config.ts` — `workers: 1`, `fullyParallel: false`; `webServer` là **mảng 2 phần tử**: (1) admin-api: `bun e2e/support/prepare-db.ts && bun apps/admin-api/src/server.ts` (qc viết `prepare-db.ts`), env `ADMIN_API_DATABASE_URL=$TEST_ADMIN_API_DATABASE_URL` (DB `ai_system_test`, không dùng DB dev), `PORT=3001`, `APP_ENV=test`, `url`/`port` = `http://localhost:3001` (health), `reuseExistingServer: false` (DB test phải được chuẩn bị lại); (2) web: `bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web preview` với `ADMIN_API_URL=http://localhost:3001`, `url: http://localhost:3000`. Playwright chờ cả hai sẵn sàng. Giữ `use` của M0 (`locale vi-VN`, `Asia/Ho_Chi_Minh`, chromium). Biến `TEST_ADMIN_API_DATABASE_URL` và `JWT_*` lấy từ `.env.example`/CI do backend-lead cấp.
 
 ## 10. Hiệu năng (CONVENTIONS §6; ngân sách M0 §6 giữ nguyên)
 
@@ -382,7 +386,7 @@ Unit test FE (hàm thuần, `bun test`): `normalize` (key/username/bỏ dấu `�
 
 ## 14. Rủi ro
 - **Contract chưa có** lúc FE0–FE2 → các task này không phụ thuộc type API; FE3+ chờ T1 (contract) + T4/T6/T7.
-- **`Rsbuild preview` có áp `server.proxy`?** Xác minh ở FE0 (tài liệu Rsbuild: `server.proxy` hiệu lực ở dev và preview). Nếu không → e2e chạy trên `rsbuild dev`/serve kèm proxy; ghi "Quyết định trong lúc làm" và báo qc.
+- **`Rsbuild preview` có áp `server.proxy`?** Đã xác minh (2026-10-01): `@rsbuild/core@2.2.11` `dist/types/config.d.ts` ghi `server.proxy`: "Configure proxy rules for the dev server or preview server"; `dist/m.js` có `createProxyMiddleware` dùng chung. → **có**. FE0 vẫn chạy thử một request qua preview để chắc (nếu không áp, dự phòng: e2e chạy `rsbuild dev --port 3000` với cùng `server.proxy`, hoặc `ADMIN_API_URL` được `rsbuild.config.ts` đọc lúc build).
 - **Radix `Select` + `getByRole('combobox')`**: trigger là `button role="combobox"` → khớp nhãn e2e; popup `role="listbox"` (option `role="option"`). `Select` rỗng không có `value=""` hợp lệ → dùng giá trị sentinel `"all"`.
 - **Web Locks** không có trong Safari < 15.4: ngoài browserslist (M0: safari ≥ 16.4) nhưng vẫn có fallback.
 - **`tanstack-router` + search `zod`**: dùng `validateSearch` với schema `zod` (standard schema); xác minh chữ ký ở FE1b trước khi dùng (Grep `.d.ts`).
