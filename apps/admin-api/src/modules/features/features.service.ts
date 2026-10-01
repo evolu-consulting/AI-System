@@ -232,6 +232,20 @@ export async function setCommandFeatures(
   await m.bumpFeatures(tx, [...added, ...removed], a.actorId);
 }
 
+export const lockFeatureRefs = m.lockFeatureRefs;
+
+/** Command MỚI (chưa có hàng feature_commands): gắn vào features ĐÃ khoá bằng `lockFeatureRefs` + tăng version. */
+export async function attachNewCommand(
+  tx: Tx,
+  a: { commandId: string; featureIds: readonly string[]; actorId: string },
+): Promise<void> {
+  await m.addPairs(
+    tx,
+    a.featureIds.map((featureId) => ({ featureId, commandId: a.commandId })),
+  );
+  await m.bumpFeatures(tx, a.featureIds, a.actorId);
+}
+
 /** Xoá command: tăng version mọi feature chứa nó (khoá features id tăng) trước khi xoá. */
 export async function bumpFeaturesOfCommand(
   tx: Tx,

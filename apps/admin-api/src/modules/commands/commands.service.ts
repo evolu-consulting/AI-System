@@ -17,9 +17,11 @@ import { appError } from "../../lib/errors";
 import { validationError } from "../../lib/http";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import {
+  attachNewCommand,
   bumpFeaturesOfCommand,
   coreFeatureId,
   featureRefsByCommands,
+  lockFeatureRefs,
   missingFeatureIds,
   setCommandFeatures,
 } from "../features/features.service";
@@ -72,10 +74,15 @@ function toItem(r: repo.CommandRow, features: FeatureRef[]): CommandListItem {
 }
 
 /** `warnings` tính lại từ input_schema hiện tại của workflow mỗi lần đọc/ghi, không lưu (M2-R17). */
-async function detail(tx: Tx, id: string, known?: WorkflowRefLocked | null): Promise<Command> {
+async function detail(
+  tx: Tx,
+  id: string,
+  known?: WorkflowRefLocked | null,
+  refs?: FeatureRef[],
+): Promise<Command> {
   const r = await repo.findCommand(tx, id);
   if (!r) throw appError("NOT_FOUND");
-  const features = (await featureRefsByCommands(tx, [id])).get(id) ?? [];
+  const features = refs ?? (await featureRefsByCommands(tx, [id])).get(id) ?? [];
   // Vừa ghi xong thì đã có input_schema của workflow (đang giữ SHARE) → bỏ một lượt đọc.
   const schema =
     known && known.id === r.workflowId
@@ -118,10 +125,11 @@ async function checkState(
   s: CommandState,
   wf: WorkflowRefLocked | null,
   selfId: string | null,
+  findMissing: (tx: Tx, ids: string[]) => Promise<string[]> = missingFeatureIds,
 ): Promise<WorkflowInput[]> {
   fail(checkCommandFeatures(s.featureIds));
   if (!wf) throw appError("INVALID_REFERENCE", { field: "workflow_id", ids: [s.workflowId] });
-  const missing = await missingFeatureIds(tx, s.featureIds);
+  const missing = await findMissing(tx, s.featureIds);
   if (missing.length > 0)
     throw appError("INVALID_REFERENCE", { field: "feature_ids", ids: missing });
   await failNameTaken(tx, s, selfId);
@@ -179,18 +187,24 @@ export function createCommand(c: Call, input: CommandCreateRequest): Promise<Com
       enabled: input.enabled,
       featureIds: input.feature_ids ?? [await coreFeatureId(tx)],
     };
-    await checkState(tx, s, wf, null);
+    // Command mới: khoá features ngay ở bước kiểm (workflow SHARE → features NKU; hàng command chưa tồn tại nên
+    // không đảo thứ tự khoá) và dùng lại FeatureRef cho response — bớt 3 lượt DB so với setCommandFeatures (perf).
+    let refs: FeatureRef[] = [];
+    await checkState(tx, s, wf, null, async (t, ids) => {
+      refs = await lockFeatureRefs(t, ids);
+      return ids.filter((x) => !refs.some((r) => r.id === x));
+    });
     const id = Bun.randomUUIDv7();
     await writeNames(tx, s, null, async (sp) => {
       await repo.insertCommand(sp, { ...valuesOf(s), id, actorId: c.actor.userId });
-      await repo.syncNames(sp, id, commandNames(s));
+      await repo.insertNames(sp, id, commandNames(s));
     });
-    await setCommandFeatures(tx, {
+    await attachNewCommand(tx, {
       commandId: id,
       featureIds: s.featureIds,
       actorId: c.actor.userId,
     });
-    return detail(tx, id, wf);
+    return detail(tx, id, wf, refs);
   });
 }
 

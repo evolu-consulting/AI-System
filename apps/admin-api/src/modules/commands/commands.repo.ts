@@ -223,6 +223,11 @@ export async function syncNames(tx: Tx, commandId: string, names: readonly strin
     await tx.insert(commandNames).values(added.map((name) => ({ name, commandId })));
 }
 
+/** Command mới: chèn thẳng mọi tên (PK `command_names_pkey` bảo đảm unique). */
+export async function insertNames(tx: Tx, commandId: string, names: readonly string[]) {
+  await tx.insert(commandNames).values(names.map((name) => ({ name, commandId })));
+}
+
 export async function deleteCommand(tx: Tx, id: string): Promise<void> {
   await tx.delete(commands).where(eq(commands.id, id));
 }

@@ -38,6 +38,30 @@ export async function lockFeatures(tx: Tx, ids: readonly string[]): Promise<stri
   return rows.map((r) => r.id);
 }
 
+/** `core` đầu rồi `key` (thứ tự FeatureRef của command). */
+const byCoreThenKey = (a: FeatureRef, b: FeatureRef) =>
+  Number(a.key !== CORE_FEATURE_KEY) - Number(b.key !== CORE_FEATURE_KEY) ||
+  (a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+
+/** Khoá features `FOR NO KEY UPDATE` (id tăng) và trả luôn FeatureRef — command mới khỏi đọc lại (perf POST). */
+export async function lockFeatureRefs(tx: Tx, ids: readonly string[]): Promise<FeatureRef[]> {
+  if (ids.length === 0) return [];
+  const rows = await tx
+    .select({ id: features.id, key: features.key, name: features.name, status: features.status })
+    .from(features)
+    .where(inArray(features.id, [...ids]))
+    .orderBy(asc(features.id))
+    .for("no key update");
+  return rows
+    .map((r) => ({
+      id: r.id,
+      key: r.key,
+      name: NameSchema.parse(r.name),
+      status: r.status as FeatureStatus,
+    }))
+    .sort(byCoreThenKey);
+}
+
 export async function existingFeatureIds(tx: Tx, ids: readonly string[]): Promise<string[]> {
   if (ids.length === 0) return [];
   const rows = await tx
