@@ -17,6 +17,7 @@ import { pickLocalized } from "@/lib/localized";
 import { useFeature } from "../api";
 import { FeatureCommandsTab } from "../components/FeatureCommandsTab";
 import { FeatureInfoTab } from "../components/FeatureInfoTab";
+import { FeatureTenantsTab } from "../components/FeatureTenantsTab";
 import { useFeatureForm } from "../hooks/use-feature-form";
 import { removedOrphans } from "../lib/schemas";
 
@@ -47,22 +48,29 @@ function EditorBody({ feature, tab, onTab, onReload }: BodyProps) {
   const isDirty = ed.form.formState.isDirty;
   const ids = ed.form.watch("command_ids");
   const blocked = ed.needsFeature && (!feature || removedOrphans(feature.commands, ids).length > 0);
-  const active = !feature && tab === "tenants" ? "info" : tab;
 
   return (
     <FormProvider {...ed.form}>
       <form onSubmit={ed.form.handleSubmit(ed.save)} noValidate>
         <EditorHeader feature={feature} />
-        <Tabs value={active} onValueChange={(v) => onTab(v as FeatureTab)}>
+        <Tabs value={tab} onValueChange={(v) => onTab(v as FeatureTab)}>
           <TabsList>
             <TabsTrigger value="info">{t("features.tab.info")}</TabsTrigger>
             <TabsTrigger value="commands">{t("features.tab.commands")}</TabsTrigger>
+            <TabsTrigger value="tenants">{t("features.tab.tenants")}</TabsTrigger>
           </TabsList>
           <TabsContent value="info" className="pt-4">
             <FeatureInfoTab editing={!!feature} isCore={!!feature?.is_core} />
           </TabsContent>
           <TabsContent value="commands" className="pt-4">
             <FeatureCommandsTab feature={feature} />
+          </TabsContent>
+          <TabsContent value="tenants" className="pt-4">
+            {feature ? (
+              <FeatureTenantsTab feature={feature} />
+            ) : (
+              <p className="text-body text-muted-foreground">{t("features.tenants.saveFirst")}</p>
+            )}
           </TabsContent>
         </Tabs>
         <EditorSaveBar dirty={isDirty} pending={ed.pending} cancelTo="/features">

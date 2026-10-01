@@ -1,10 +1,13 @@
 // ADM-FR-30, ADM-FR-33, ADM-FR-34 · gọi API /admin/features* (nơi duy nhất) dưới dạng hook TanStack Query.
 import type {
   CommandListResponse,
+  Entitlement,
+  EntitlementListResponse,
   FeatureCreateRequest,
   FeatureDetail,
   FeatureListResponse,
   FeatureUpdateRequest,
+  TenantListResponse,
 } from "@ai/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
@@ -19,6 +22,9 @@ export const FEATURE_KEYS = {
   list: (p: FeatureListParams) => ["features", "list", p] as const,
   detail: (id: string) => ["features", "detail", id] as const,
   commands: (q: string) => ["features", "command-options", q] as const,
+  entitlements: (id: string, offset: number, limit: number) =>
+    ["features", "entitlements", id, offset, limit] as const,
+  tenants: ["features", "tenant-options"] as const,
 };
 
 export function useFeatureList(params: FeatureListParams, enabled: boolean) {
@@ -91,6 +97,63 @@ export function useDeleteFeature() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api<undefined>(`/admin/features/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: FEATURE_KEYS.all }),
+  });
+}
+
+export const ENTITLEMENTS_PAGE_SIZE = 50;
+const ENTITLEMENT_IDS_LIMIT = 200;
+
+/** Entitlement chưa thu hồi của feature (`core` luôn rỗng); chỉ nạp khi mở tab Tenant. */
+export function useEntitlements(
+  featureId: string | undefined,
+  offset: number,
+  limit: number = ENTITLEMENTS_PAGE_SIZE,
+) {
+  return useQuery({
+    queryKey: FEATURE_KEYS.entitlements(featureId ?? "", offset, limit),
+    enabled: !!featureId,
+    placeholderData: keepPreviousData,
+    queryFn: () =>
+      api<EntitlementListResponse>(`/admin/features/${featureId}/entitlements`, {
+        query: { limit, offset: offset || undefined },
+      }),
+  });
+}
+
+/** Tenant đã được cấp (≤ 200) để loại khỏi danh sách chọn. */
+export const useGrantedTenantIds = (featureId: string | undefined) =>
+  useEntitlements(featureId, 0, ENTITLEMENT_IDS_LIMIT);
+
+/** Tenant cho ô "+ Cấp cho tenant" (≤ 200); tenant khoá vẫn cấp được. */
+export function useTenantOptions(enabled: boolean) {
+  return useQuery({
+    queryKey: FEATURE_KEYS.tenants,
+    enabled,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const res = await api<TenantListResponse>("/admin/tenants", { query: { limit: 200 } });
+      return res.items.map((t) => ({ id: t.id, key: t.key, name: t.name, locked: !t.active }));
+    },
+  });
+}
+
+export function useGrantEntitlement(featureId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (tenantId: string) =>
+      api<Entitlement>(`/admin/features/${featureId}/entitlements/${tenantId}`, { method: "PUT" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: FEATURE_KEYS.all }),
+  });
+}
+
+export function useRevokeEntitlement(featureId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (tenantId: string) =>
+      api<undefined>(`/admin/features/${featureId}/entitlements/${tenantId}`, {
+        method: "DELETE",
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: FEATURE_KEYS.all }),
   });
 }

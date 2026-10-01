@@ -22,6 +22,8 @@ type Props = {
   onSearch?: (q: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** `button`: nút mở danh sách (vd `+ Cấp cho tenant`); mặc định `combobox` (vd `Thêm feature`). */
+  trigger?: "combobox" | "button";
 };
 
 export function RefPicker({
@@ -33,6 +35,7 @@ export function RefPicker({
   onSearch,
   placeholder,
   disabled,
+  trigger = "combobox",
 }: Props) {
   const { t } = useTranslation();
   const listId = useId();
@@ -74,7 +77,8 @@ export function RefPicker({
         <Button
           type="button"
           variant="outline"
-          role="combobox"
+          role={trigger === "combobox" ? "combobox" : undefined}
+          aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={listId}
           aria-label={label}
