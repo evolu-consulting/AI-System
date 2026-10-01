@@ -9,10 +9,12 @@ import {
   leaksOnPage,
   loginAdmin,
   loginToShell,
+  loginUI,
   openPage,
   PW,
   resetFixture,
   rowOf,
+  seedAdmin,
   toast,
   withOwner,
 } from "./support/helpers";
@@ -238,8 +240,15 @@ test("ADM-FR-50 · M2-R28 · locale EN của user: heading 'Secrets', nút '+ Ad
     await sql`update admin.users set locale = 'en' where username = 'admin' and tenant_id in (select id from admin.tenants where key = 'platform')`;
   });
   try {
-    await loginAdmin(page);
-    await openPage(page, "/secrets", "Secrets");
+    // Đăng nhập không phụ thuộc ngôn ngữ: sau khi vào, M1 đổi ngôn ngữ theo user.locale nên H1 là "Overview" (không phải
+    // "Tổng quan" như loginAdmin chờ) → chờ rời /login thay vì chờ heading.
+    const admin = seedAdmin();
+    await loginUI(page, "platform", admin.username, admin.password);
+    await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+    // Điều hướng trong app (không page.goto/reload) để giữ ngôn ngữ đã đặt lúc đăng nhập.
+    await page.getByRole("navigation").getByRole("link", { name: "Secrets", exact: true }).click();
+    await expect(page).toHaveURL(/\/secrets/);
+    await expect(page.getByRole("heading", { level: 1, name: "Secrets" })).toBeVisible();
     await expect(page.getByRole("button", { name: "+ Add secret" })).toBeVisible();
     await rowOf(page, "Secrets", "DIFY_OLD_KEY")
       .getByRole("button", { name: /More actions|Thao tác khác/ })
