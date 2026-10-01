@@ -7,7 +7,7 @@ import { type Column, DataTable } from "@/components/shared/DataTable";
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
 import { formatUpdated } from "@/lib/format";
 import { pickLocalized } from "@/lib/localized";
-import type { FeatureStatusFilter } from "../api";
+import type { FeatureStatusFilter } from "../hooks/use-feature-queries";
 import { FeatureIcon } from "./FeatureIcon";
 import { FeatureRowMenu } from "./FeatureRowMenu";
 

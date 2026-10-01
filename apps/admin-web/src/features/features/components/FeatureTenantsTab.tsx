@@ -7,9 +7,9 @@ import { Pagination } from "@/components/shared/Pagination";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { Button } from "@/components/ui/button";
-import { ApiError } from "@/lib/http";
-import { ENTITLEMENTS_PAGE_SIZE, useEntitlements } from "../api";
+import { loadError } from "@/lib/load-error";
 import { useEntitlementActions } from "../hooks/use-entitlement-actions";
+import { ENTITLEMENTS_PAGE_SIZE, useEntitlements } from "../hooks/use-feature-queries";
 import { GrantPicker } from "./GrantPicker";
 import { RevokeDialog } from "./RevokeDialog";
 
@@ -71,7 +71,7 @@ export function FeatureTenantsTab({ feature }: { feature: FeatureDetail }) {
   if (feature.is_core) {
     return <p className="text-body text-muted-foreground">{t("features.tenants.coreAll")}</p>;
   }
-  const err = list.error instanceof ApiError ? list.error : null;
+  const err = loadError(list.error);
   return (
     <div className="space-y-4">
       <GrantPicker featureId={feature.id} onGrant={actions.grant} />

@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { FeatureStatusFilter } from "../api";
+import type { FeatureStatusFilter } from "../hooks/use-feature-queries";
 
 type Props = {
   feature: FeatureListItem;

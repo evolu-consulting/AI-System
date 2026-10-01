@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { pickLocalized } from "@/lib/localized";
-import { useCommandOptions } from "../api";
+import { useCommandOptions } from "../hooks/use-feature-queries";
 import { type FeatureFormValues, removedOrphans } from "../lib/schemas";
 
 type Row = { id: string; name: string; description: string; others: number };

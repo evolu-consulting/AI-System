@@ -1,7 +1,7 @@
 // ADM-FR-31 · "+ Cấp cho tenant": chọn tenant chưa được cấp (tenant khoá vẫn cấp được) → `PUT` entitlement.
 import { useTranslation } from "react-i18next";
 import { RefPicker } from "@/components/shared/RefPicker";
-import { useGrantedTenantIds, useTenantOptions } from "../api";
+import { useGrantedTenantIds, useTenantOptions } from "../hooks/use-feature-queries";
 
 type Props = { featureId: string; onGrant: (tenant: { id: string; key: string }) => void };
 

@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTr } from "@/lib/use-translate";
-import { useWorkflowOptions } from "../api";
+import { useWorkflowOptions } from "../hooks/use-command-queries";
 import type { CommandFormValues } from "../lib/schemas";
 import { StepSection } from "./StepSection";
 import { WorkflowCard } from "./WorkflowCard";

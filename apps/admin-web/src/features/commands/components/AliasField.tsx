@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { normalizeCommandName } from "@/lib/normalize";
 import { useTr } from "@/lib/use-translate";
-import { findNameConflict } from "../api";
+import { useNameCheck } from "../hooks/use-command-queries";
 import type { CommandFormValues } from "../lib/schemas";
 
 /** Lỗi khi thêm `alias` vào danh sách `aliases` của command tên `name`; `null` = hợp lệ (chưa kiểm trùng server). */
@@ -27,6 +27,7 @@ export function AliasField({ excludeId, serverError }: Props) {
   const tr = useTr();
   const { control, setValue, getValues } = useFormContext<CommandFormValues>();
   const aliases = useWatch({ control, name: "aliases" });
+  const isTaken = useNameCheck(excludeId);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string>();
 
@@ -36,7 +37,7 @@ export function AliasField({ excludeId, serverError }: Props) {
     const name = getValues("name");
     const problem = aliasProblem(alias, name, aliases);
     if (problem) return setError(tr(problem));
-    const taken = await findNameConflict(alias, excludeId).catch(() => false);
+    const taken = await isTaken(alias);
     if (taken) return setError(tr("commands.error.nameTaken", { name: alias }));
     setValue("aliases", [...aliases, alias], { shouldDirty: true });
     setDraft("");

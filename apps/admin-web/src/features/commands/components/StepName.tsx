@@ -7,7 +7,7 @@ import { LocalizedInput } from "@/components/shared/LocalizedInput";
 import { Input } from "@/components/ui/input";
 import { normalizeCommandName } from "@/lib/normalize";
 import { useTr } from "@/lib/use-translate";
-import { findNameConflict } from "../api";
+import { useNameCheck } from "../hooks/use-command-queries";
 import type { CommandFormValues } from "../lib/schemas";
 import { AliasField } from "./AliasField";
 import { FeatureField } from "./FeatureField";
@@ -22,13 +22,14 @@ export function StepName({ excludeId, serverErrors }: Props) {
   const tr = useTr();
   const { register, control, setValue, getValues, formState } = useFormContext<CommandFormValues>();
   const { errors } = formState;
+  const isTaken = useNameCheck(excludeId);
   const [taken, setTaken] = useState<string>();
   const msg = (m: string | undefined) => (m ? tr(m) : undefined);
 
   const checkTaken = async () => {
     const name = getValues("name");
     if (!name) return;
-    const conflict = await findNameConflict(name, excludeId).catch(() => false);
+    const conflict = await isTaken(name);
     setTaken(conflict ? tr("commands.error.nameTaken", { name }) : undefined);
   };
 

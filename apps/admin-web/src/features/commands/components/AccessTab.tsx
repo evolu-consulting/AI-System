@@ -7,9 +7,9 @@ import { Pagination } from "@/components/shared/Pagination";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ApiError } from "@/lib/http";
+import { loadError } from "@/lib/load-error";
 import { pickLocalized } from "@/lib/localized";
-import { ACCESS_PAGE_SIZE, useCommandAccess } from "../api";
+import { ACCESS_PAGE_SIZE, useCommandAccess } from "../hooks/use-command-queries";
 
 export function AccessTab({ commandId }: { commandId: string }) {
   const { t, i18n } = useTranslation();
@@ -52,7 +52,7 @@ export function AccessTab({ commandId }: { commandId: string }) {
     ],
     [t, lang],
   );
-  const err = access.error instanceof ApiError ? access.error : null;
+  const err = loadError(access.error);
 
   return (
     <div className="space-y-4">

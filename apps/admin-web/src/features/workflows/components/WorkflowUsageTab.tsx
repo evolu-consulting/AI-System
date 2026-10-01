@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import { DependencyList } from "@/components/shared/DependencyList";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiError } from "@/lib/http";
+import { loadError } from "@/lib/load-error";
 import { useTr } from "@/lib/use-translate";
-import { useWorkflowUsages } from "../api";
+import { useWorkflowUsages } from "../hooks/use-workflow-queries";
 import { usageSections } from "../lib/usage";
 
 export function WorkflowUsageTab({ workflowId }: { workflowId: string | undefined }) {
@@ -16,7 +16,7 @@ export function WorkflowUsageTab({ workflowId }: { workflowId: string | undefine
     return <p className="text-body text-muted-foreground">{t("workflows.usage.empty")}</p>;
   if (usages.isPending) return <Skeleton className="h-24 w-full" />;
   if (usages.isError) {
-    const e = usages.error instanceof ApiError ? usages.error : null;
+    const e = loadError(usages.error);
     return (
       <ErrorState
         message={e?.message ?? ""}
