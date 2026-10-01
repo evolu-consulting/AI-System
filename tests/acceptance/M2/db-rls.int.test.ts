@@ -273,19 +273,32 @@ describe("ADM-FR-31 · RLS feature_entitlements", () => {
 });
 
 describe("ADM-NFR-07 · cấu hình RLS", () => {
-  it("ADM-NFR-07 · spec M2 §4 · relrowsecurity bật đúng 5 bảng (feature_entitlements, refresh_tokens, secrets, tenants, users); không bảng nào FORCE", async () => {
+  it("ADM-NFR-07 · spec M2 §4 · relrowsecurity bật đúng 8 bảng (feature_entitlements, feature_grants, group_members, groups, refresh_tokens, secrets, tenants, users); không bảng nào FORCE", async () => {
     const rows = await owner`select c.relname, c.relrowsecurity, c.relforcerowsecurity
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'admin' and c.relkind = 'r' order by c.relname`;
     const on = rows.filter((r) => r.relrowsecurity).map((r) => r.relname);
-    expect(on).toEqual(["feature_entitlements", "refresh_tokens", "secrets", "tenants", "users"]);
+    expect(on).toEqual([
+      "feature_entitlements",
+      "feature_grants",
+      "group_members",
+      "groups",
+      "refresh_tokens",
+      "secrets",
+      "tenants",
+      "users",
+    ]);
     expect(rows.some((r) => r.relforcerowsecurity)).toBe(false);
     expect(rows.map((r) => r.relname)).toEqual([
       "command_names",
       "commands",
+      "config_meta",
       "feature_commands",
       "feature_entitlements",
+      "feature_grants",
       "features",
+      "group_members",
+      "groups",
       "refresh_tokens",
       "secrets",
       "tenants",

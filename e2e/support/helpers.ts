@@ -2,9 +2,11 @@
 import { execFileSync } from "node:child_process";
 import { type APIRequestContext, expect, type Page } from "@playwright/test";
 import postgres from "postgres";
+import { PW } from "../../tests/acceptance/M1/_data";
 
 export { PW, TEMP_PW, TENANT_ID, USER_ID } from "../../tests/acceptance/M1/_data";
 export { ID, LEAK_1, LEAK_2, LEAK_EMOJI, leakForms } from "../../tests/acceptance/M2/_data";
+export { betaId, ID3, id3 } from "../../tests/acceptance/M3/_data";
 
 function loadEnvOnce(): void {
   if (process.env.TEST_DATABASE_URL) return;
@@ -85,6 +87,11 @@ export function rowOf(page: Page, table: string, cellText: string | RegExp) {
     .filter({
       has: page.getByRole("cell", { name: cellText, exact: typeof cellText === "string" }),
     });
+}
+
+/** Đăng nhập một user fixture (mật khẩu `PW` của M1 §3) vào khung quản trị, vd `loginAs(page, "acme", "binh")`. */
+export async function loginAs(page: Page, tenant: string, username: string) {
+  await loginToShell(page, tenant, username, PW);
 }
 
 /** Đăng nhập platform_admin seed vào khung quản trị. */
@@ -179,5 +186,8 @@ export async function apiAsAdmin(request: APIRequestContext) {
   return {
     post: (path: string, data: unknown) => request.post(`${API_URL}${path}`, { headers, data }),
     get: (path: string) => request.get(`${API_URL}${path}`, { headers }),
+    patch: (path: string, data: unknown) => request.patch(`${API_URL}${path}`, { headers, data }),
+    put: (path: string, data?: unknown) => request.put(`${API_URL}${path}`, { headers, data }),
+    del: (path: string) => request.delete(`${API_URL}${path}`, { headers }),
   };
 }

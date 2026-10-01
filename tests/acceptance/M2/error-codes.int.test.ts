@@ -76,8 +76,10 @@ const M1_CODES = [
   "TEMP_LOCKED",
   "INTERNAL_ERROR",
 ];
+// M3 (Q2): 2 mã mới của M3 do tests/acceptance/M3/error-codes.int.test.ts phụ trách.
+const M3_CODES = ["BETA_GROUP_PROTECTED", "NOT_ENTITLED"];
 const M2_CODES = Object.keys(API_ERRORS)
-  .filter((c) => !M1_CODES.includes(c))
+  .filter((c) => !M1_CODES.includes(c) && !M3_CODES.includes(c))
   .sort();
 
 type Scenario = () => Promise<Res>;
@@ -234,7 +236,7 @@ describe("ADM-FR-10 · mã lỗi M2 ↔ API_ERRORS", () => {
     }
   });
 
-  it("ADM-FR-10 · spec M2 §3 · tập mã M2 đã chạy kịch bản == mọi mã của API_ERRORS ngoài 23 mã M1 (11 mã)", () => {
+  it("ADM-FR-10 · spec M2 §3 · tập mã M2 đã chạy kịch bản == mọi mã của API_ERRORS ngoài 23 mã M1 và 2 mã M3 (11 mã)", () => {
     expect(M2_CODES).toHaveLength(11);
     expect([...covered].sort()).toEqual(M2_CODES);
   });

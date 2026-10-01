@@ -26,7 +26,7 @@ import {
 const ok = (r: { success: boolean }) => r.success;
 
 describe("ADM-FR-01 · bảng mã lỗi", () => {
-  it("ADM-FR-01 · spec §3 · API_ERRORS chứa đúng 23 mã M1 với status không đổi; tổng 34 mã sau M2", () => {
+  it("ADM-FR-01 · spec §3 · API_ERRORS chứa đúng 23 mã M1 với status không đổi; tổng 36 mã sau M3", () => {
     expect(API_ERRORS).toMatchObject({
       VALIDATION_ERROR: 400,
       TENANT_REQUIRED: 400,
@@ -52,7 +52,7 @@ describe("ADM-FR-01 · bảng mã lỗi", () => {
       TEMP_LOCKED: 423,
       INTERNAL_ERROR: 500,
     });
-    expect(Object.keys(API_ERRORS)).toHaveLength(34);
+    expect(Object.keys(API_ERRORS)).toHaveLength(36);
   });
 });
 

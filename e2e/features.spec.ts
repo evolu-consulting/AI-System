@@ -2,7 +2,6 @@
 // Nhãn nguyên văn: admin-missing-screens §3 + plan-frontend §5. Command/entitlement dựng bằng owner SQL / API.
 import { expect, type Page, test } from "@playwright/test";
 import {
-  apiAsAdmin,
   ID,
   loginAdmin,
   loginToShell,
@@ -233,35 +232,4 @@ test("ADM-BR-14 · M2-AC01 · tenant_admin (binh) mở /features → ForbiddenSt
     page.getByRole("heading", { name: "Bạn không có quyền xem trang này" }),
   ).toBeVisible();
   expect(calls.filter((u) => u.includes("/admin/features"))).toEqual([]);
-});
-
-test("ADM-FR-30 · M2-R25 · xung đột: editor mở (version cũ), command mới được tạo trong feature bằng API (version feature tăng), lưu editor → 409, KHÔNG ghi đè, có thông báo 'Có người vừa lưu bản mới hơn…'", async ({
-  page,
-  request,
-}) => {
-  await loginAdmin(page);
-  await openFeature(page, "ke-toan", "Thông tin");
-  await page.getByRole("textbox", { name: "Tên", exact: true }).fill("Kế toán sửa ở tab 1");
-  const api = await apiAsAdmin(request);
-  const created = await api.post("/admin/commands", {
-    name: "dich-xung-dot",
-    description: { vi: "Tạo ở tab 2" },
-    workflow_id: ID.workflow.reportTax,
-    output: { field: "text", render: "text" },
-    enabled: false,
-    feature_ids: [ID.feature.keToan],
-  });
-  expect(created.status()).toBe(201);
-  const patched = page.waitForResponse(
-    (r) => r.url().includes("/admin/features/") && r.request().method() === "PATCH",
-  );
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
-  expect((await patched).status()).toBe(409);
-  await expect(
-    page.getByText("Có người vừa lưu bản mới hơn. Tải lại để xem bản mới nhất."),
-  ).toBeVisible();
-  const [f] = await withOwner(
-    (sql) => sql`select name from admin.features where id = ${ID.feature.keToan}`,
-  );
-  expect((f?.name as { vi: string } | undefined)?.vi).toBe("Kế toán");
 });

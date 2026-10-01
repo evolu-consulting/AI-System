@@ -74,7 +74,7 @@ const inp = (over: Record<string, unknown> = {}) => ({
 });
 
 describe("ADM-FR-10 · bảng mã lỗi", () => {
-  it("ADM-FR-10 · spec §3 · API_ERRORS = 23 mã M1 giữ nguyên + 11 mã M2; tổng 34", () => {
+  it("ADM-FR-10 · spec §3 · API_ERRORS = 23 mã M1 + 11 mã M2 giữ nguyên + 2 mã M3; tổng 36", () => {
     expect(API_ERRORS).toEqual({
       VALIDATION_ERROR: 400,
       TENANT_REQUIRED: 400,
@@ -108,10 +108,12 @@ describe("ADM-FR-10 · bảng mã lỗi", () => {
       COMMAND_NAME_TAKEN: 409,
       CORE_FEATURE_PROTECTED: 409,
       FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
+      BETA_GROUP_PROTECTED: 409,
+      NOT_ENTITLED: 409,
       TEMP_LOCKED: 423,
       INTERNAL_ERROR: 500,
     });
-    expect(Object.keys(API_ERRORS)).toHaveLength(34);
+    expect(Object.keys(API_ERRORS)).toHaveLength(36);
   });
 
   it("ADM-FR-10 · spec §3 · hằng/regex/enum M2", () => {

@@ -238,16 +238,20 @@ describe("ADM-NFR-07 · thuộc tính role và bảng", () => {
     expect(owned?.n).toBe(0);
   });
 
-  it("ADM-NFR-07 · spec §4 · RLS bật cho tenants/users/refresh_tokens/secrets/feature_entitlements (không FORCE); 5 bảng còn lại không bật", async () => {
+  it("ADM-NFR-07 · spec §4 · RLS bật cho 8 bảng (tenants/users/refresh_tokens/secrets/feature_entitlements/groups/group_members/feature_grants; không FORCE); 6 bảng còn lại không bật", async () => {
     const rows = await env.owner`select c.relname, c.relrowsecurity, c.relforcerowsecurity
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'admin' and c.relkind = 'r' order by c.relname`;
     expect(rows.map((r) => [r.relname, r.relrowsecurity, r.relforcerowsecurity])).toEqual([
       ["command_names", false, false],
       ["commands", false, false],
+      ["config_meta", false, false],
       ["feature_commands", false, false],
       ["feature_entitlements", true, false],
+      ["feature_grants", true, false],
       ["features", false, false],
+      ["group_members", true, false],
+      ["groups", true, false],
       ["refresh_tokens", true, false],
       ["secrets", true, false],
       ["tenants", true, false],

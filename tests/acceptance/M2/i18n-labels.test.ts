@@ -245,11 +245,6 @@ const TABLE: Row[] = [
   ],
   ["commands.toast.saved", "Đã lưu /{name}", "Saved /{name}"],
   [
-    "commands.access.groupsLater",
-    "Quyền theo nhóm và người dùng chưa khả dụng.",
-    "Group and user access isn't available yet.",
-  ],
-  [
     "commands.access.summary",
     "{tenants} tenant · {users} user",
     "{tenants} tenants · {users} users",

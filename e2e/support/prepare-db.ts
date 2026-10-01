@@ -6,6 +6,7 @@ import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
 import { insertBulk, insertFixture, makeHashes } from "../../tests/acceptance/M1/_data";
 import { ALL_CATALOG, seedCatalog, truncateCatalog } from "../../tests/acceptance/M2/_data";
+import { ALL_PERMISSIONS, seedPermissions } from "../../tests/acceptance/M3/_data";
 
 const SEED_MODULE = "@ai/db/seed";
 
@@ -42,6 +43,8 @@ async function main(): Promise<void> {
     await insertBulk(sql, hashes.pw);
     // M2: fixture danh mục đầy đủ (test-plan §3): secrets, workflows, features, commands, entitlements, agent.
     await seedCatalog(sql, ALL_CATALOG);
+    // M3: group, thành viên, grant, feature `phap-che` (test-plan §3). `config_meta` không bị truncate.
+    await seedPermissions(sql, ALL_PERMISSIONS);
   } finally {
     await sql.end();
   }

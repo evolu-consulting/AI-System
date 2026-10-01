@@ -275,7 +275,7 @@ test("ADM-FR-20 · M2-R26 · xoá /tr-nhanh: alertdialog 'Xoá /tr-nhanh?' gõ t
   await expect(row(page, "tr-nhanh")).toHaveCount(0);
 });
 
-test("ADM-FR-24 · M2-R23 · tab 'Ai dùng được' của /dich: bảng tenant acme/globex/platform/zeta/bulk, tổng '5 tenant · 66 user' (gồm tenant bulk 55 user của fixture e2e), khối nhóm 'chưa khả dụng'; tạo mới thì tab khoá", async ({
+test("ADM-FR-24 · M2-R23 · tab 'Ai dùng được' của /dich: bảng tenant acme/globex/platform/zeta/bulk, tổng '5 tenant · 66 user' (gồm tenant bulk 55 user của fixture e2e). Card 'chưa khả dụng' bỏ ở M3 (kiểm ở access-command.spec); tạo mới thì tab khoá", async ({
   page,
 }) => {
   await loginAdmin(page);
@@ -288,7 +288,6 @@ test("ADM-FR-24 · M2-R23 · tab 'Ai dùng được' của /dich: bảng tenant 
     await expect(table.getByRole("row").filter({ hasText: key })).toBeVisible();
   }
   await expect(table.getByRole("row").filter({ hasText: "acme" })).toContainText("6");
-  await expect(page.getByText("Quyền theo nhóm và người dùng chưa khả dụng.")).toBeVisible();
   await openNew(page);
   await expect(page.getByRole("tab", { name: /Ai dùng được/ })).toBeDisabled();
 });

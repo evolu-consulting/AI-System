@@ -469,9 +469,8 @@ describe("ADM-FR-31 · entitlement (M2-R22, M2-AC05)", () => {
 });
 
 describe("ADM-FR-30 · ngoài phạm vi M2 và đồng thời", () => {
-  it("ADM-BR-10 · không có route grant/groups của M3: POST /admin/features/:id/grants → 404", async () => {
+  it("ADM-BR-10 · không có route grant trên features (M3 cấp qua /admin/grants): POST /admin/features/:id/grants → 404", async () => {
     expect((await as("POST", `/admin/features/${KT}/grants`, {})).status).toBe(404);
-    expect((await as("GET", "/admin/groups")).status).toBe(404);
   });
 
   it("ADM-FR-30 · M2-R25 · 15 PATCH song song cùng version → đúng 1×200 và 14×409 VERSION_CONFLICT", async () => {

@@ -66,18 +66,22 @@ afterAll(async () => {
 });
 
 describe("ADM-NFR-06 · migration development", () => {
-  it("ADM-NFR-06 · spec §4 · development: {main:5, dev:2}; lần 2 {0,0}", () => {
-    expect(firstRun).toEqual({ main: 5, dev: 2 });
+  it("ADM-NFR-06 · spec §4 · development: {main:7, dev:2}; lần 2 {0,0}", () => {
+    expect(firstRun).toEqual({ main: 7, dev: 2 });
     expect(secondRun).toEqual({ main: 0, dev: 0 });
   });
 
-  it("ADM-NFR-06 · spec §4 · đúng 10 bảng admin.* và 3 bảng hub.*; không có bảng/cột của mốc sau", async () => {
+  it("ADM-NFR-06 · spec §4 · đúng 14 bảng admin.* và 3 bảng hub.*; không có bảng/cột của mốc sau", async () => {
     expect(await names(["admin", "hub"])).toEqual([
       "admin.command_names",
       "admin.commands",
+      "admin.config_meta",
       "admin.feature_commands",
       "admin.feature_entitlements",
+      "admin.feature_grants",
       "admin.features",
+      "admin.group_members",
+      "admin.groups",
       "admin.refresh_tokens",
       "admin.secrets",
       "admin.tenants",
@@ -88,8 +92,7 @@ describe("ADM-NFR-06 · migration development", () => {
       "hub.usage_logs",
     ]);
     const [later] = await sql`select count(*)::int as n from information_schema.tables
-      where table_schema = 'admin' and table_name in ('groups', 'group_members', 'config_meta',
-        'feature_grants', 'tenant_quotas', 'audit_log')`;
+      where table_schema = 'admin' and table_name in ('tenant_quotas', 'audit_log')`;
     expect(later?.n).toBe(0);
     const [totp] = await sql`select count(*)::int as n from information_schema.columns
       where table_schema = 'admin' and table_name = 'users' and column_name = 'totp_secret'`;
@@ -276,16 +279,20 @@ describe("ADM-NFR-01 · ràng buộc refresh_tokens và features", () => {
 });
 
 describe("ADM-NFR-06 · migration production", () => {
-  it("ADM-NFR-06 · spec §4 · production: {main:5, dev:0}; 10 bảng admin.*, 0 bảng hub.*; không có bảng theo dõi dev", async () => {
+  it("ADM-NFR-06 · spec §4 · production: {main:7, dev:0}; 14 bảng admin.*, 0 bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 5, dev: 0 });
+    expect(r).toEqual({ main: 7, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual([
       "admin.command_names",
       "admin.commands",
+      "admin.config_meta",
       "admin.feature_commands",
       "admin.feature_entitlements",
+      "admin.feature_grants",
       "admin.features",
+      "admin.group_members",
+      "admin.groups",
       "admin.refresh_tokens",
       "admin.secrets",
       "admin.tenants",
