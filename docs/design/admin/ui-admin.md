@@ -191,6 +191,8 @@ Nội dung khác nhau theo role:
 
 [[WF admin/ui-admin.html#4]]
 
+*Ghi chú M2 ([CR-014](../../CHANGE-REQUESTS.md)): editor là **trang riêng** (`/commands/new`, `/commands/:id`); chưa có Test panel "Chạy thử", "Chạy với tư cách user…" và "Lịch sử" (Test = M5, Lịch sử = M4); tab "Ai dùng được" chỉ phần tenant ([CR-013](../../CHANGE-REQUESTS.md)).*
+
 *Hình 7.4: form chia 5 bước theo thứ tự admin suy nghĩ (đặt tên → chọn workflow → người dùng gõ gì → đưa vào đâu → hiển thị ra sao), cộng ô Feature ở bước ①. Test panel bên phải luôn hiện.*
 
 | Tương tác | Hành vi |
@@ -216,6 +218,7 @@ Nội dung khác nhau theo role:
 
 [[WF admin/ui-admin.html#5]]
 
+- *Ghi chú M2 ([CR-014](../../CHANGE-REQUESTS.md), [CR-012](../../CHANGE-REQUESTS.md)): form workflow là trang riêng (`/workflows/new`, `/workflows/:id`); chưa có "Kiểm tra kết nối" và "Lấy từ Dify"; bước 2 của hướng dẫn rỗng đọc "Chọn secret, khai báo input, viết mô tả".*
 - Workflow là **catalog dùng chung** cho command (Admin) và agent (Agent Studio). Tạo sẵn mà chưa gắn vào đâu là hợp lệ: danh sách hiện badge `Chưa gắn` và có filter chip "Chưa gắn" để dọn dẹp.
 - Cột **Đang được dùng bởi**: số command và số agent, hover thì liệt kê, bấm agent thì mở Agent Studio.
 - **Mô tả workflow** (20–400 ký tự) và **mô tả từng tham số** là bắt buộc, vì agent dùng nguyên văn làm tool. Gợi ý dưới ô: "Viết như đang dặn một người mới: dùng khi nào, không dùng khi nào." Tab "Model thấy gì" hiện đúng tên tool và JSON schema.

@@ -99,7 +99,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 |---|---|---|
 | ADM-FR-10 | CRUD workflow: key (slug), tên, **mô tả (bắt buộc, 20–400 ký tự, nói rõ khi nào dùng)**, loại app (`workflow` \| `chat` \| `agent`), base URL Dify, tham chiếu secret app-key, input schema, output field | **MUST** |
 | ADM-FR-11 | Nhập input schema bằng tay (tên biến, kiểu, bắt buộc hay không, **mô tả bắt buộc**). Mô tả workflow và mô tả tham số được Agent Hub dùng nguyên văn làm tool cho model | **MUST** |
-| ADM-FR-12 | Nút "Lấy schema từ Dify": gọi Dify để tự điền input schema từ app thật | **COULD** |
+| ADM-FR-12 | Nút "Lấy schema từ Dify": gọi Dify để tự điền input schema từ app thật. *Hoãn, không làm ở M2, ẩn nút ([CR-012](../../CHANGE-REQUESTS.md))* | **COULD** |
 | ADM-FR-13 | Không được xoá hoặc tắt workflow đang được command hoặc agent dùng. Hộp xác nhận liệt kê nơi đang dùng (đọc `hub.agent_workflows`) | **MUST** |
 | ADM-FR-14 | Workflow **chưa gắn** vào command hay agent nào là hợp lệ. Danh sách có nhãn "Chưa gắn" và bộ lọc tương ứng | **MUST** |
 | ADM-FR-15 | Cột "Đang được dùng bởi" liệt kê cả command (Admin) và agent (Agent Hub) | **MUST** |
@@ -112,7 +112,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 | ADM-FR-21 | Input map hỗ trợ các nguồn: `$args.<tên>`, `$selection` (đoạn bôi đen), `$page.url`, `$page.text`, `$attachment`, `$user.id`, `$tenant.id`, và giá trị hằng | **MUST** |
 | ADM-FR-22 | Khi lưu phải validate: mọi input bắt buộc của workflow đều đã được map, và không map vào biến không tồn tại | **MUST** |
 | ADM-FR-23 | Nút Test: nhập tham số mẫu, Admin nhờ Hub chạy thử **bằng bản đang sửa (chưa cần lưu)**, gửi cấu hình nháp trong body, rồi hiện kết quả, thời gian chạy và lỗi (nếu có). Có ô "Chạy với tư cách user…" để kiểm tra quyền | **MUST** |
-| ADM-FR-24 | Tab "Ai dùng được": danh sách tenant, group và số user thấy command này, kèm lý do (qua feature nào, grant nào) | **SHOULD** |
+| ADM-FR-24 | Tab "Ai dùng được": danh sách tenant, group và số user thấy command này, kèm lý do (qua feature nào, grant nào). *M2 chỉ phần tenant (feature + entitlement); phần group/grant ở M3 ([CR-013](../../CHANGE-REQUESTS.md))* | **SHOULD** |
 
 ### 5.5 Feature & phân quyền
 
@@ -255,6 +255,7 @@ Mọi `PATCH` gửi kèm `version`; lệch thì trả `409 Conflict`. Endpoint `
 > **AC-A03 · Tạo command**
 > Given workflow `translate` có input bắt buộc `source_text`, `target_lang`, When tạo `/dich` mà chưa map `target_lang`, Then không lưu được và báo "thiếu input bắt buộc: target_lang".
 > When map đủ, chọn feature `core` và lưu, Then trong ≤ 5 giây `/dich` xuất hiện trong menu `/` của mọi user.
+> *Chia vế ([CR-011](../../CHANGE-REQUESTS.md)): M2 kiểm phía Admin (vế 1 và "lưu được"); vế "≤ 5 giây trong menu" đo ở Hub cùng NOTIFY `config_changed` (FR-53) ở M3.*
 
 > **AC-A04 · Test command**
 > Given `/dich` đã lưu, When bấm Test với `text="hello", lang="vi"`, Then hiện kết quả trả về từ Dify cùng thời gian chạy. Nếu key sai thì hiện rõ lỗi của Dify (không nuốt lỗi).

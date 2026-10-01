@@ -3,7 +3,7 @@ id: M2-catalog-command
 title: Catalog & command (Secrets, Workflows, Commands, Features + entitlement)
 milestone: M2
 status: draft            # draft → ready → approved → in-progress → done
-requirements: [ADM-FR-10, ADM-FR-11, ADM-FR-12, ADM-FR-13, ADM-FR-14, ADM-FR-15, ADM-FR-20, ADM-FR-21, ADM-FR-22, ADM-FR-24, ADM-FR-30, ADM-FR-31, ADM-FR-33, ADM-FR-34, ADM-FR-50, ADM-BR-01, ADM-BR-02, ADM-BR-04, ADM-BR-06, ADM-BR-10, ADM-BR-13, ADM-BR-14, AC-A03, AC-A05, AC-A06, AC-A13]
+requirements: [ADM-FR-10, ADM-FR-11, ADM-FR-12, ADM-FR-13, ADM-FR-14, ADM-FR-15, ADM-FR-20, ADM-FR-21, ADM-FR-22, ADM-FR-24, ADM-FR-30, ADM-FR-31, ADM-FR-33, ADM-FR-34, ADM-FR-50, ADM-BR-01, ADM-BR-02, ADM-BR-04, ADM-BR-06, ADM-BR-10, ADM-BR-13, ADM-BR-14, AC-A03, AC-A05, AC-A06, AC-A13]   # ADM-FR-12: chỉ test âm (không có route), không làm ở M2 — CR-012; ADM-FR-24: chỉ phần tenant — CR-013
 design: [docs/ROADMAP.md#M2, docs/design/admin/ba-admin.md#53-catalog-workflow, docs/design/admin/ba-admin.md#54-command, docs/design/admin/ba-admin.md#55-feature--phân-quyền, docs/design/admin/ba-admin.md#57-secret-audit-importexport, docs/design/admin/ba-admin.md#6-luật-nghiệp-vụ, docs/design/admin/ba-admin.md#7-mô-hình-dữ-liệu-schema-admin, docs/design/admin/ba-admin.md#8-api, docs/design/admin/ba-admin.md#11-tiêu-chí-nghiệm-thu-các-kịch-bản-chính, docs/design/admin/ui-admin.md#73-commands--danh-sách, docs/design/admin/ui-admin.md#74-command--editor-màn-hình-quan-trọng-nhất, docs/design/admin/ui-admin.md#76-workflows-catalog-dùng-chung, docs/design/admin/ui-admin.md#78-secrets, docs/design/admin/ui-admin.md#712-features, docs/specs/_design/admin-missing-screens.md#2-commands--danh-sách-commands, docs/specs/_design/admin-missing-screens.md#3-features--danh-sách-features--editor-featuresid, docs/specs/_design/admin-missing-screens.md#6-secrets--secrets--drawer, docs/adr/0001-stack.md, docs/readiness/2026-10-01-admin-m1-m4.md, docs/TECH-DEBT.md#13, docs/CONVENTIONS.md#8-migration-db, canvas: Commands · Workflows · Secrets · Access]
 owner: backend-lead + frontend-lead
 ---
@@ -24,7 +24,7 @@ Mốc: [ROADMAP M2](../../ROADMAP.md). Nền: [M1-foundation-identity](../M1-fou
 
 **Không làm (mốc khác):**
 - **Nút Test, `POST /admin/commands/:id/test`, "Chạy với tư cách user…" (FR-23 = M5)**; "Kiểm tra kết nối" của workflow (RD#35): không có route, ẩn nút.
-- **FR-12 "Lấy schema từ Dify" (COULD)**: ROADMAP gom vào dải 10–15 nhưng không làm ở M2 (Mơ hồ A8). Nếu làm sau: gọi Dify **ngoài** `withScope`/sau commit.
+- **FR-12 "Lấy schema từ Dify" (COULD)**: ROADMAP gom vào dải 10–15 nhưng không làm ở M2 (Mơ hồ A8, [CR-012](../../CHANGE-REQUESTS.md); chỉ test âm). Nếu làm sau: gọi Dify **ngoài** `withScope`/sau commit.
 - Grant, group, ma trận, `beta-testers`, Kiểm tra quyền (M3); NOTIFY `config_changed`/`config_version` (FR-53 = M3, Mơ hồ A1); chống ghi đè UI/modal 409 (FR-55 = M3; backend `version` + 409 đã có); audit và nút "Lịch sử"/Khôi phục (FR-51/52 = M4, ẩn menu "Lịch sử"); Import/Export (FR-54 = M4); Quota (M4).
 - Hub đọc catalog / chạy command / lấy app key (Hub chưa có; Mơ hồ A7). Tab "Feature" trong chi tiết Tenant: giữ "Chưa khả dụng" (Mơ hồ A10).
 
@@ -35,7 +35,7 @@ Mốc: [ROADMAP M2](../../ROADMAP.md). Nền: [M1-foundation-identity](../M1-fou
 
 ## 2. Nghiệp vụ
 
-Luật gốc: [BA §5.3–5.5, §5.7, §6](../../design/admin/ba-admin.md); UI: [ui-admin 7.3, 7.4, 7.6, 7.8, 7.12](../../design/admin/ui-admin.md) + [missing-screens §2, 3, 6](../_design/admin-missing-screens.md). Bảng dưới là phần **cụ thể hoá**. Nhãn nguồn: `[RD#n]` = [readiness](../../readiness/2026-10-01-admin-m1-m4.md) (người dùng **đã chấp nhận**); `ĐX` = đề xuất mới của docs-architect, **chưa chấp nhận** (xem §9, qc/spec-readiness xác nhận; đổi thì sửa tại đây).
+Luật gốc: [BA §5.3–5.5, §5.7, §6](../../design/admin/ba-admin.md); UI: [ui-admin 7.3, 7.4, 7.6, 7.8, 7.12](../../design/admin/ui-admin.md) + [missing-screens §2, 3, 6](../_design/admin-missing-screens.md). Bảng dưới là phần **cụ thể hoá**. Nhãn nguồn: `[RD#n]` = [readiness](../../readiness/2026-10-01-admin-m1-m4.md) (người dùng **đã chấp nhận**); `ĐX` = đề xuất của docs-architect, **đã chấp nhận (Gate 2026-10-01**, xem §9 và [readiness.md](readiness.md)).
 
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
@@ -315,19 +315,19 @@ Lệnh xong: `docker compose up -d --wait && bun run db:migrate && bun run db:se
 ### Trước Gate (đã chốt với người dùng)
 - Mọi mặc định trong [readiness 2026-10-01](../../readiness/2026-10-01-admin-m1-m4.md) được chấp nhận; áp dụng ở M2: #6 (cấu trúc `args/input_map/output`), #7 (`core` tự hiệu lực), #8 (chặn tắt/xoá workflow), #11 (hub-stub), #18 (`command_names`), #20 (`DELETE /admin/secrets/:name`), #25 (regex secret/workflow key), #26 (`input_schema`), #27 (mô tả jsonb), #28 (Thay giá trị = `PUT`), #29 (luật xoá feature, key bất biến), #35 (ẩn Kiểm tra kết nối), #39 (`SECRET_MASTER_KEY` 32 byte base64; chưa tick vì env/thư viện còn M3–M4), #51 (dòng Thấp, không có ô tick); cộng [CR-006…010](../../CHANGE-REQUESTS.md) (M1, `VERSION_CONFLICT` dạng CR-008). Đã tick `[x]` trong readiness các dòng #6, 7, 8, 11, 18, 20, 25, 26, 27, 28, 29, 35 (đã vào spec M2).
 - Mốc xong: AC-A03 (phía Admin), A05, A06, A13 xanh (ROADMAP).
-### Đề xuất mới chờ xác nhận (docs-architect, nhãn `ĐX`; chưa chấp nhận)
-- **A1** FR-33/AC-A03 "≤ 5 s" cần `config_changed` nhưng FR-53 thuộc M3: M2 không NOTIFY, tăng `version` bản ghi nhưng chưa `config_version` (M2-R24).
-- **A2** Mô hình bảo mật Secrets: `key_version`, AAD = `id`, giá trị 8–2048, RLS riêng + REVOKE `hub_ro` (R02, R06). Cần backend-lead xác nhận; **trình Gate** nếu thay đổi cách mã hoá hoặc cần secret thật.
-- **A3** Tên không gian chung command/alias, độ dài 2–32, ≤ 5 alias; `timeout_s` 1–600 (R13, R15).
-- **A4** `WORKFLOW_DISABLED`, `SCHEMA_BREAKS_COMMANDS`, `CORE_FEATURE_PROTECTED`, `COMMAND_NEEDS_FEATURE`, `INPUT_MAP_INVALID`… là mã đề xuất; backend-lead chốt tên ở §3 (không đổi nghĩa).
-- **A5** Production chưa có schema `hub`: `usages` trả rỗng phần agent (R12), không phải lỗi.
-- **A6** Admin chỉ biết `agent_id` (tên agent ở Hub): UI hiện id ngắn đến khi có API Hub.
-- **A7** Hub lấy app key Dify bằng cách nào (giải mã ở đâu, ai giữ master key) **chưa quyết**, ngoài M2; M2 không cấp quyền nào cho `hub_ro` trên `secrets`.
-- **A8** FR-12 (COULD) không làm ở M2 dù nằm trong dải ROADMAP.
-- **A9** FR-24 (SHOULD) chỉ làm phần tenant ở M2; phần group/grant sau M3 (R23).
-- **A10** Tab "Feature" trong chi tiết Tenant giữ "Chưa khả dụng"; entitlement làm ở editor Feature (tab Tenant). `active_user_count` = user active của tenant (R22).
-- **A11** Không ghi audit ở M2 → TECH-DEBT "thay đổi catalog trước M4 không có trong Nhật ký" (điều phối/docs-architect ghi khi đóng mốc); ẩn menu "Lịch sử".
-- **A12** Test khoá M0/M1 đếm migration (`{main:3,dev:2}` trong `tests/acceptance/ADM-NFR-06/migrate.int.test.ts` và `packages/db/src/migrate.int.test.ts`) và danh sách bảng sẽ lệch khi thêm migration M2: qc sửa (như Q2 M1), ghi ở "Quyết định trong lúc làm".
+### Đề xuất của docs-architect — **đã chấp nhận (Gate 2026-10-01)**, xem [readiness.md](readiness.md)
+- **A1** FR-33/AC-A03 "≤ 5 s" cần `config_changed` nhưng FR-53 thuộc M3: M2 không NOTIFY, tăng `version` bản ghi nhưng chưa `config_version` (M2-R24). — **đã chấp nhận (Gate 2026-10-01)** ([CR-011](../../CHANGE-REQUESTS.md))
+- **A2** Mô hình bảo mật Secrets: `key_version`, AAD = `id`, giá trị 8–2048, RLS riêng + REVOKE `hub_ro` (R02, R06). Cần backend-lead xác nhận; **trình Gate** nếu thay đổi cách mã hoá hoặc cần secret thật. — **đã chấp nhận (Gate 2026-10-01)**
+- **A3** Tên không gian chung command/alias, độ dài 2–32, ≤ 5 alias; `timeout_s` 1–600 (R13, R15). — **đã chấp nhận (Gate 2026-10-01)** (mặc định kỹ thuật đi kèm)
+- **A4** `WORKFLOW_DISABLED`, `SCHEMA_BREAKS_COMMANDS`, `CORE_FEATURE_PROTECTED`, `COMMAND_NEEDS_FEATURE`, `INPUT_MAP_INVALID`… là mã đề xuất; backend-lead chốt tên ở §3 (không đổi nghĩa). — **đã chấp nhận (Gate 2026-10-01)** (mặc định kỹ thuật đi kèm)
+- **A5** Production chưa có schema `hub`: `usages` trả rỗng phần agent (R12), không phải lỗi. — **đã chấp nhận (Gate 2026-10-01)** (mặc định kỹ thuật đi kèm)
+- **A6** Admin chỉ biết `agent_id` (tên agent ở Hub): UI hiện id ngắn đến khi có API Hub. — **đã chấp nhận (Gate 2026-10-01)** (mặc định kỹ thuật đi kèm)
+- **A7** Hub lấy app key Dify bằng cách nào (giải mã ở đâu, ai giữ master key) **chưa quyết**, ngoài M2; M2 không cấp quyền nào cho `hub_ro` trên `secrets`. — **đã chấp nhận (Gate 2026-10-01)** (mặc định kỹ thuật đi kèm)
+- **A8** FR-12 (COULD) không làm ở M2 dù nằm trong dải ROADMAP. — **đã chấp nhận (Gate 2026-10-01)** ([CR-012](../../CHANGE-REQUESTS.md))
+- **A9** FR-24 (SHOULD) chỉ làm phần tenant ở M2; phần group/grant sau M3 (R23). — **đã chấp nhận (Gate 2026-10-01)** ([CR-013](../../CHANGE-REQUESTS.md))
+- **A10** Tab "Feature" trong chi tiết Tenant giữ "Chưa khả dụng"; entitlement làm ở editor Feature (tab Tenant). `active_user_count` = user active của tenant (R22). — **đã chấp nhận (Gate 2026-10-01)**
+- **A11** Không ghi audit ở M2 → TECH-DEBT "thay đổi catalog trước M4 không có trong Nhật ký" (điều phối/docs-architect ghi khi đóng mốc); ẩn menu "Lịch sử". — **đã chấp nhận (Gate 2026-10-01)**
+- **A12** Test khoá M0/M1 đếm migration (`{main:3,dev:2}` trong `tests/acceptance/ADM-NFR-06/migrate.int.test.ts` và `packages/db/src/migrate.int.test.ts`) và danh sách bảng sẽ lệch khi thêm migration M2: qc sửa (như Q2 M1), ghi ở "Quyết định trong lúc làm". — **đã chấp nhận (Gate 2026-10-01)** (mặc định kỹ thuật đi kèm)
 
 ### Backend-lead PLAN (2026-10-01; theo thứ tự nguồn Luật 2; chi tiết [plan.md](plan.md))
 Nhãn: **[NGƯỜI DÙNG]** = cần người dùng xác nhận ở Gate (bảo mật chưa có mặc định được chấp nhận); còn lại backend-lead chốt theo Luật 2, không đổi phạm vi đã duyệt, không thêm thư viện.
@@ -358,6 +358,8 @@ Nhãn: **[NGƯỜI DÙNG]** = cần người dùng xác nhận ở Gate (bảo m
   - G12: `VALIDATION_ERROR` của `/admin/secrets*` có `details.issues[].message` **tĩnh theo `code`** (vd `"invalid"`), không dùng message zod; issue `unrecognized_keys` không liệt kê tên khoá (`path: []`). `code`/`path` của trường hợp lệ giữ nguyên để FE gắn lỗi theo ô.
   - G8: `AppDeps.testHooks?` (chỉ nhận khi `appEnv="test"`, ngược lại bỏ qua) để chèn điểm dừng tất định giữa khoá và ghi; 3 ca xen kẽ plan §5.1 viết tất định trong `apps/admin-api/src/lib/lock-order.int.test.ts` (test backend, không khoá) — plan §6.
 - **Phụ thuộc module (không vòng):** `commands → workflows → secrets`, `commands → features`. Đọc chéo bảng qua repo của chính module (như `auth-middleware` M1); `feature_commands` do module `features` sở hữu ghi.
+### UI đã chấp nhận (Gate 2026-10-01, [CR-014](../../CHANGE-REQUESTS.md))
+- Editor Workflows và Commands là trang riêng; bỏ panel "Chạy thử"; giữ câu toast "có hiệu lực sau vài giây" của design (hiệu lực thật do Hub/M3).
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - (chưa có)
 
