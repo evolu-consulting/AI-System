@@ -125,7 +125,7 @@ File: `packages/contracts/src/{groups,grants,access,config}.ts` (mới) + `commo
 | POST | `/admin/groups/:id/members` | `GroupMembersAddRequest` | 200 `GroupMembersAddResponse` | 400 (rỗng, > 500, phần tử > 64) · 404 |
 | DELETE | `/admin/groups/:id/members/:user_id` | — | 204 (không là thành viên / user lạ → vẫn 204) | 404 (group) |
 | GET | `/admin/grants` | `GrantListQuery` | 200 `{items: Grant[], total}` | 400 |
-| POST | `/admin/grants` | `?tenant_id` + `GrantCreateRequest` | 201 `Grant` (mới) · 200 `Grant` (đã có, không ghi) | 400 `VALIDATION_ERROR` / `TENANT_REQUIRED` / `INVALID_REFERENCE {field:"feature_id"|"group_id"|"user_id", ids:[<id thiếu>]}`\|"group_id"\|"user_id"}` · 404 (tenant) · 409 `CORE_FEATURE_PROTECTED` / `NOT_ENTITLED {feature_ids}` |
+| POST | `/admin/grants` | `?tenant_id` + `GrantCreateRequest` | 201 `Grant` (mới) · 200 `Grant` (đã có, không ghi) | 400 `VALIDATION_ERROR` / `TENANT_REQUIRED` / `INVALID_REFERENCE {field:"feature_id"\|"group_id"\|"user_id", ids:[<id thiếu>]}` · 404 (tenant) · 409 `CORE_FEATURE_PROTECTED` / `NOT_ENTITLED {feature_ids}` |
 | DELETE | `/admin/grants` | `GrantDeleteQuery` | 204 (không có grant / feature hoặc subject không thấy → vẫn 204) | 400 · 404 (tenant) · 409 `CORE_FEATURE_PROTECTED` |
 | PUT | `/admin/grants/batch` | `?tenant_id` + `GrantBatchRequest` | 200 `GrantBatchResponse` (một transaction, R08) | 400 `VALIDATION_ERROR` / `TENANT_REQUIRED` / `INVALID_REFERENCE {field:"feature_ids"\|"group_ids", ids}` · 404 (tenant) · 409 `CORE_FEATURE_PROTECTED` / `NOT_ENTITLED {feature_ids}` |
 | GET | `/admin/grants/matrix` | `GrantMatrixQuery` | 200 `GrantMatrix` | 400 `TENANT_REQUIRED` · 404 (tenant, `group_id`) |
