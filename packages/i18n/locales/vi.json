@@ -479,7 +479,8 @@
     },
     "replace": {
       "current": "Giá trị hiện tại: •••• {last4} · cập nhật {date} bởi {user}",
-      "submit": "Lưu giá trị mới"
+      "submit": "Lưu giá trị mới",
+      "currentNoUser": "Giá trị hiện tại: •••• {last4} · cập nhật {date}"
     },
     "delete": {
       "blocked": "Không xoá được {name}: đang được dùng bởi",
@@ -541,7 +542,8 @@
       "info": "Thông tin",
       "input": "Input",
       "preview": "Model thấy gì",
-      "usage": "Đang được dùng bởi"
+      "usage": "Đang được dùng bởi",
+      "hasError": "có lỗi"
     },
     "field": {
       "key": "Key",
@@ -573,7 +575,17 @@
         "options": "Lựa chọn"
       },
       "optionsHint": "Cách nhau bằng dấu phẩy",
-      "empty": "Workflow chưa có input. Thêm tham số để command và agent truyền dữ liệu vào."
+      "empty": "Workflow chưa có input. Thêm tham số để command và agent truyền dữ liệu vào.",
+      "row": {
+        "name": "Tên tham số {n}",
+        "type": "Kiểu {n}",
+        "required": "Bắt buộc {n}",
+        "description": "Mô tả tham số {n}",
+        "options": "Lựa chọn {n}",
+        "moveUp": "Chuyển tham số {n} lên",
+        "moveDown": "Chuyển tham số {n} xuống",
+        "remove": "Xoá tham số {n}"
+      }
     },
     "preview": {
       "note": "Minh hoạ cách agent thấy workflow này; Hub có thể thêm trường khác."
@@ -616,10 +628,17 @@
       "paramName": "Chỉ dùng chữ, số, _ và không bắt đầu bằng số (tối đa 64 ký tự)",
       "paramDup": "Tên tham số bị trùng",
       "paramDesc": "Mô tả tham số là bắt buộc",
-      "optionsRequired": "Danh sách lựa chọn cần ít nhất một mục"
+      "optionsRequired": "Danh sách lựa chọn cần ít nhất một mục",
+      "optionsLimit": "Tối đa 50 lựa chọn, mỗi lựa chọn không quá 100 ký tự",
+      "outputField": "Output field tối đa 128 ký tự"
     },
     "editor": {
-      "titleNew": "Workflow mới"
+      "titleNew": "Workflow mới",
+      "stateNew": "Chưa lưu"
+    },
+    "schemaBreaksDetail": {
+      "missing": "thiếu: {names}",
+      "unknown": "không còn: {names}"
     }
   },
   "commands": {

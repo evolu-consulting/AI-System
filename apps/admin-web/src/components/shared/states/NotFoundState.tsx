@@ -5,7 +5,9 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useDocumentTitle } from "@/lib/use-document-title";
 
-type Props = { backTo: "/" | "/tenants" | "/users" };
+type Props = {
+  backTo: "/" | "/tenants" | "/users" | "/secrets" | "/workflows" | "/commands" | "/features";
+};
 
 export function NotFoundState({ backTo }: Props) {
   const { t } = useTranslation();

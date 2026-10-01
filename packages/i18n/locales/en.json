@@ -479,7 +479,8 @@
     },
     "replace": {
       "current": "Current value: •••• {last4} · updated {date} by {user}",
-      "submit": "Save new value"
+      "submit": "Save new value",
+      "currentNoUser": "Current value: •••• {last4} · updated {date}"
     },
     "delete": {
       "blocked": "Can't delete {name}: used by",
@@ -541,7 +542,8 @@
       "info": "Details",
       "input": "Input",
       "preview": "What the model sees",
-      "usage": "Used by"
+      "usage": "Used by",
+      "hasError": "has errors"
     },
     "field": {
       "key": "Key",
@@ -573,7 +575,17 @@
         "options": "Options"
       },
       "optionsHint": "Separate with commas",
-      "empty": "No inputs yet. Add parameters so commands and agents can pass data in."
+      "empty": "No inputs yet. Add parameters so commands and agents can pass data in.",
+      "row": {
+        "name": "Parameter name {n}",
+        "type": "Type {n}",
+        "required": "Required {n}",
+        "description": "Parameter description {n}",
+        "options": "Options {n}",
+        "moveUp": "Move parameter {n} up",
+        "moveDown": "Move parameter {n} down",
+        "remove": "Delete parameter {n}"
+      }
     },
     "preview": {
       "note": "An illustration of how an agent sees this workflow; Hub may add other fields."
@@ -616,10 +628,17 @@
       "paramName": "Use letters, digits and _ only, not starting with a digit (at most 64 chars)",
       "paramDup": "Duplicate parameter name",
       "paramDesc": "Parameter description is required",
-      "optionsRequired": "Add at least one option"
+      "optionsRequired": "Add at least one option",
+      "optionsLimit": "At most 50 options, each up to 100 characters",
+      "outputField": "Output field can be at most 128 characters"
     },
     "editor": {
-      "titleNew": "New workflow"
+      "titleNew": "New workflow",
+      "stateNew": "Not saved yet"
+    },
+    "schemaBreaksDetail": {
+      "missing": "missing: {names}",
+      "unknown": "no longer in the workflow: {names}"
     }
   },
   "commands": {

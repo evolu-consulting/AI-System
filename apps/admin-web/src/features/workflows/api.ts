@@ -1,5 +1,12 @@
 // ADM-FR-10, ADM-FR-13, ADM-FR-14, ADM-FR-15 · gọi API /admin/workflows* (nơi duy nhất) dưới dạng hook TanStack Query.
-import type { WorkflowListResponse, WorkflowUpdateRequest, WorkflowUsages } from "@ai/contracts";
+import type {
+  SecretListResponse,
+  Workflow,
+  WorkflowCreateRequest,
+  WorkflowListResponse,
+  WorkflowUpdateRequest,
+  WorkflowUsages,
+} from "@ai/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 
@@ -18,6 +25,8 @@ export const WORKFLOW_KEYS = {
   all: ["workflows"] as const,
   list: (p: WorkflowListParams) => ["workflows", "list", p] as const,
   usages: (id: string) => ["workflows", "usages", id] as const,
+  detail: (id: string) => ["workflows", "detail", id] as const,
+  secrets: ["workflows", "secret-options"] as const,
 };
 
 /** Chip `Chưa gắn` → `attached=false` (không gửi `status`); `Bật/Tắt` → `status`. */
@@ -54,11 +63,40 @@ export function useWorkflowUsages(id: string, enabled: boolean) {
   });
 }
 
+export function useWorkflow(id: string | undefined) {
+  return useQuery({
+    queryKey: WORKFLOW_KEYS.detail(id ?? ""),
+    enabled: !!id,
+    queryFn: () => api<Workflow>(`/admin/workflows/${id}`),
+  });
+}
+
+/** Danh sách secret cho ô chọn (giá trị = `id`); chỉ tên và `last4`, không bao giờ có giá trị. */
+export function useSecretOptions() {
+  return useQuery({
+    queryKey: WORKFLOW_KEYS.secrets,
+    staleTime: USAGES_STALE_MS,
+    queryFn: async () => {
+      const res = await api<SecretListResponse>("/admin/secrets", { query: { limit: 200 } });
+      return res.items.map((s) => ({ id: s.id, name: s.name }));
+    },
+  });
+}
+
+export function useCreateWorkflow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: WorkflowCreateRequest) =>
+      api<Workflow>("/admin/workflows", { method: "POST", body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: WORKFLOW_KEYS.all }),
+  });
+}
+
 export function useUpdateWorkflow() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...body }: { id: string } & WorkflowUpdateRequest) =>
-      api<unknown>(`/admin/workflows/${id}`, { method: "PATCH", body }),
+      api<Workflow>(`/admin/workflows/${id}`, { method: "PATCH", body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: WORKFLOW_KEYS.all }),
   });
 }

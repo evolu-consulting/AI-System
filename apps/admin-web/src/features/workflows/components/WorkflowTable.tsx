@@ -44,7 +44,7 @@ export function WorkflowTable({
             >
               {w.name}
             </Link>{" "}
-            <p className="font-mono text-caption text-muted-foreground">{w.key}</p>
+            <p className="font-mono text-caption text-muted-foreground">{w.key}</p>{" "}
           </div>
         ),
       },

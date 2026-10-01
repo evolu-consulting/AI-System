@@ -1,16 +1,23 @@
-// ADM-FR-10 · M2 · stub route (FE1a): chỉ PageHeader trong PlatformOnly; màn thật thay ở task FE sau.
 import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { PlatformOnly } from "@/components/shared/PlatformOnly";
+import { WorkflowEditorPage } from "@/features/workflows/pages/WorkflowEditorPage";
+import { parseEditorTab, type WorkflowEditorSearch } from "./new";
 
-function Stub() {
-  const { t } = useTranslation();
+function Page() {
+  const { workflowId } = Route.useParams();
+  const { tab } = Route.useSearch();
+  const navigate = Route.useNavigate();
   return (
-    <PlatformOnly>
-      <PageHeader title={t("nav.workflows")} />
-    </PlatformOnly>
+    <WorkflowEditorPage
+      workflowId={workflowId}
+      tab={tab ?? "info"}
+      onTab={(t) => void navigate({ search: { tab: t }, replace: true })}
+    />
   );
 }
 
-export const Route = createFileRoute("/_authed/workflows/$workflowId")({ component: Stub });
+export const Route = createFileRoute("/_authed/workflows/$workflowId")({
+  validateSearch: (s: Record<string, unknown>): WorkflowEditorSearch => ({
+    tab: parseEditorTab(s.tab),
+  }),
+  component: Page,
+});
