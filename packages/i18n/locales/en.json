@@ -878,7 +878,17 @@
       "languages": "Languages",
       "flask": "Experiment",
       "users": "Users",
-      "shield": "Shield"
+      "shield": "Shield",
+      "mail": "Mail",
+      "message-square": "Message",
+      "globe": "Globe",
+      "database": "Database",
+      "settings": "Settings",
+      "search": "Search",
+      "zap": "Lightning",
+      "book-open": "Guide",
+      "file-text": "Document",
+      "bar-chart": "Chart"
     },
     "list": {
       "title": "Features",

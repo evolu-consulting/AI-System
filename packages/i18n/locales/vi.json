@@ -878,7 +878,17 @@
       "languages": "Dịch thuật",
       "flask": "Thử nghiệm",
       "users": "Người dùng",
-      "shield": "Bảo mật"
+      "shield": "Bảo mật",
+      "mail": "Thư",
+      "message-square": "Tin nhắn",
+      "globe": "Toàn cầu",
+      "database": "Dữ liệu",
+      "settings": "Cài đặt",
+      "search": "Tìm kiếm",
+      "zap": "Tia chớp",
+      "book-open": "Hướng dẫn",
+      "file-text": "Tài liệu",
+      "bar-chart": "Biểu đồ"
     },
     "list": {
       "title": "Features",

@@ -1,16 +1,25 @@
-// ADM-FR-10 · M2 · stub route (FE1a): chỉ PageHeader trong PlatformOnly; màn thật thay ở task FE sau.
 import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { PlatformOnly } from "@/components/shared/PlatformOnly";
+import { FeaturesPage } from "@/features/features/pages/FeaturesPage";
 
-function Stub() {
-  const { t } = useTranslation();
-  return (
-    <PlatformOnly>
-      <PageHeader title={t("features.list.title")} />
-    </PlatformOnly>
-  );
-}
+export type FeaturesSearch = {
+  q?: string;
+  status?: "on" | "beta" | "off";
+  page?: number;
+};
 
-export const Route = createFileRoute("/_authed/features/")({ component: Stub });
+const str = (v: unknown): string | undefined => (typeof v === "string" && v !== "" ? v : undefined);
+const oneOf = <T extends string>(v: unknown, allowed: readonly T[]): T | undefined =>
+  allowed.find((a) => a === v);
+
+// Viết tay thay zod (như users): bộ lọc nằm trên URL, đổi bộ lọc bỏ `page`.
+export const Route = createFileRoute("/_authed/features/")({
+  validateSearch: (s: Record<string, unknown>): FeaturesSearch => {
+    const page = Number(s.page);
+    return {
+      q: str(s.q),
+      status: oneOf(s.status, ["on", "beta", "off"]),
+      page: Number.isInteger(page) && page > 1 ? page : undefined,
+    };
+  },
+  component: FeaturesPage,
+});
