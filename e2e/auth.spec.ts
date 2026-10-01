@@ -47,11 +47,14 @@ test("ADM-FR-01 · UX · khi đang gửi nút hiện 'Đang đăng nhập…'", 
     await gate;
     await route.continue();
   });
-  await page.goto("/login");
-  await fillLogin(page, "acme", "an", "Sai-Passw0rd-1");
-  await submit(page).click();
-  await expect(page.getByRole("button", { name: "Đang đăng nhập…" })).toBeVisible();
-  release();
+  try {
+    await page.goto("/login");
+    await fillLogin(page, "acme", "an", "Sai-Passw0rd-1");
+    await submit(page).click();
+    await expect(page.getByRole("button", { name: "Đang đăng nhập…" })).toBeVisible();
+  } finally {
+    release();
+  }
 });
 
 test("ADM-FR-01 · BR-05 · binh (tenant_admin) vào khung: main + 'Tổng quan' + 'Xin chào'; menu chỉ có Users, không có Tenants", async ({
