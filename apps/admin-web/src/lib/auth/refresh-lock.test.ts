@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Me } from "@ai/contracts";
-import { ApiError } from "./http";
+import { ApiError } from "../http";
 import {
   createRefresher,
   type LockManagerLike,

@@ -1,8 +1,8 @@
 // ADM-FR-04 · hàng bộ lọc Users: Tenant (platform), chip trạng thái có số, Role, chip "Chưa đăng nhập", ô tìm. Mọi giá trị nằm trên URL.
 import type { ListCounts } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
-import { FilterChips } from "@/components/shared/FilterChips";
-import { SearchBox } from "@/components/shared/SearchBox";
+import { FilterChips } from "@/components/shared/form/FilterChips";
+import { SearchBox } from "@/components/shared/form/SearchBox";
 import { type TenantOption, TenantPicker } from "@/components/shared/TenantPicker";
 import {
   Select,

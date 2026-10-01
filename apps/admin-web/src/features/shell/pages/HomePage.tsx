@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSession } from "@/lib/use-session";
+import { useSession } from "@/lib/auth/use-session";
 import { navGroups } from "../lib/nav";
 
 export function HomePage() {

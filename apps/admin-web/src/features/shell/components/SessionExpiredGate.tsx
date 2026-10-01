@@ -2,7 +2,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PasswordField } from "@/components/shared/PasswordField";
+import { PasswordField } from "@/components/shared/form/PasswordField";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,9 +13,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { session } from "@/lib/auth/session";
+import { useSession } from "@/lib/auth/use-session";
 import { describeLoginError } from "@/lib/errors";
-import { session } from "@/lib/session";
-import { useSession } from "@/lib/use-session";
 import { useTr } from "@/lib/use-translate";
 
 export function SessionExpiredGate() {

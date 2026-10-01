@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSession } from "@/lib/use-session";
+import { useSession } from "@/lib/auth/use-session";
 import { useAccountActions } from "../hooks/use-account-actions";
 
 export function AccountMenu() {

@@ -1,6 +1,6 @@
 // ADM-FR-60, ADM-FR-03 · layout của route `_authed`: khung quản trị; `member` dùng bố cục ngoài khung (D8).
 import { Outlet } from "@tanstack/react-router";
-import { useSession } from "@/lib/use-session";
+import { useSession } from "@/lib/auth/use-session";
 import { AppShell } from "./AppShell";
 import { BareLayout } from "./BareLayout";
 

@@ -1,7 +1,7 @@
 // ADM-FR-01, ADM-FR-03, ADM-FR-06 · gọi API /auth/* (nơi duy nhất ngoài lib/session).
 import type { Locale, LoginRequest, LoginResponse, Me, TokenGrant } from "@ai/contracts";
+import { session } from "@/lib/auth/session";
 import { ApiError, api, sendPublic } from "@/lib/http";
-import { session } from "@/lib/session";
 
 /** Đăng nhập; kết quả đã được nạp vào session (đã đăng nhập hoặc chờ đổi mật khẩu bắt buộc). */
 export function login(req: LoginRequest): Promise<LoginResponse> {

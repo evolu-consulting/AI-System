@@ -5,8 +5,8 @@ import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError } from "@/components/shared/toast";
 import { patchMyLocale } from "@/features/auth/api";
+import { session } from "@/lib/auth/session";
 import { describeError } from "@/lib/errors";
-import { session } from "@/lib/session";
 import { useTr } from "@/lib/use-translate";
 
 export function useAccountActions() {

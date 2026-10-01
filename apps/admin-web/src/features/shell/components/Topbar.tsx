@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import { useSession } from "@/lib/use-session";
+import { useSession } from "@/lib/auth/use-session";
 import { crumbsFor } from "../lib/nav";
 import { AccountMenu } from "./AccountMenu";
 import { SidebarNav } from "./SidebarNav";

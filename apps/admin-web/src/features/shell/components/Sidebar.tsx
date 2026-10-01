@@ -3,7 +3,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { useSession } from "@/lib/use-session";
+import { useSession } from "@/lib/auth/use-session";
 import { cn } from "@/lib/utils";
 import { SidebarNav } from "./SidebarNav";
 

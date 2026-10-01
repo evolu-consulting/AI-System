@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
-import { useSession } from "@/lib/use-session";
+import { useSession } from "@/lib/auth/use-session";
 import { USERS_PAGE_SIZE } from "../api";
 import { CreateUserButton } from "../components/CreateUserButton";
 import { type RoleFilter, type StatusFilter, UserFilters } from "../components/UserFilters";

@@ -2,7 +2,7 @@
 import { Link } from "@tanstack/react-router";
 import { Building2, LayoutDashboard, type LucideIcon, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useSession } from "@/lib/use-session";
+import { useSession } from "@/lib/auth/use-session";
 import { cn } from "@/lib/utils";
 import { type NavId, navGroups } from "../lib/nav";
 

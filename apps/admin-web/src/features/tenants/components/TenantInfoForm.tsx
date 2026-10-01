@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "@/components/shared/ConnectionBanner";
-import { FormField } from "@/components/shared/FormField";
+import { FormField } from "@/components/shared/form/FormField";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

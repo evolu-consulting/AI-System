@@ -1,6 +1,6 @@
 // ADM-FR-01, ADM-FR-03 · guard của route `_authed`: chưa có phiên → /login?next=…; member chỉ được /member và /account/password.
 import { redirect } from "@tanstack/react-router";
-import { session } from "@/lib/session";
+import { session } from "@/lib/auth/session";
 import { isAllowedForRole } from "./nav";
 
 type Loc = { pathname: string; href: string };

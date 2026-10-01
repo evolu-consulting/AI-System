@@ -2,14 +2,14 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FilterChips } from "@/components/shared/FilterChips";
+import { FilterChips } from "@/components/shared/form/FilterChips";
+import { SearchBox } from "@/components/shared/form/SearchBox";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { SearchBox } from "@/components/shared/SearchBox";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
-import { useSession } from "@/lib/use-session";
 import { useTenantList } from "../api";
 import { TenantTable } from "../components/TenantTable";
 import { useLockFlow } from "../hooks/use-lock-flow";

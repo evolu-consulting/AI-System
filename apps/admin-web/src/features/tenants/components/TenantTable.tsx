@@ -2,7 +2,7 @@
 import type { Tenant } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -13,6 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { Translate } from "@/lib/format";
+
+type TenantAction = (t: Tenant) => void;
 
 type Props = {
   tenants: Tenant[] | undefined;
@@ -20,12 +23,98 @@ type Props = {
   isFetching: boolean;
   error: { message: string; code: string } | null;
   onRetry: () => void;
-  empty: React.ReactNode;
-  onLock: (t: Tenant) => void;
-  onUnlock: (t: Tenant) => void;
+  empty: ReactNode;
+  onLock: TenantAction;
+  onUnlock: TenantAction;
 };
 
 const isPlatform = (t: Tenant) => t.key === "platform";
+
+function KeyCell({ tenant }: { tenant: Tenant }) {
+  const { t } = useTranslation();
+  return (
+    <span className="inline-flex items-center gap-2">
+      <Link
+        to="/tenants/$tenantId"
+        params={{ tenantId: tenant.id }}
+        className="font-mono text-primary hover:underline"
+      >
+        {tenant.key}
+      </Link>
+      {isPlatform(tenant) ? (
+        <StatusBadge tone="info">{t("tenants.badge.platform")}</StatusBadge>
+      ) : null}
+    </span>
+  );
+}
+
+function StatusCell({ tenant }: { tenant: Tenant }) {
+  const { t } = useTranslation();
+  return tenant.status === "locked" ? (
+    <StatusBadge tone="err">{t("tenants.status.locked")}</StatusBadge>
+  ) : (
+    <StatusBadge tone="ok">{t("tenants.status.active")}</StatusBadge>
+  );
+}
+
+function RowMenu({
+  tenant,
+  onLock,
+  onUnlock,
+}: {
+  tenant: Tenant;
+  onLock: TenantAction;
+  onUnlock: TenantAction;
+}) {
+  const { t } = useTranslation();
+  const locked = tenant.status === "locked";
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon-sm" aria-label={t("common.moreActions")}>
+          <MoreHorizontal aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link to="/tenants/$tenantId" params={{ tenantId: tenant.id }}>
+            {t("tenants.menu.open")}
+          </Link>
+        </DropdownMenuItem>
+        {isPlatform(tenant) ? null : (
+          <DropdownMenuItem onSelect={() => (locked ? onUnlock(tenant) : onLock(tenant))}>
+            {t(locked ? "tenants.menu.unlock" : "tenants.menu.lock")}
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** Định nghĩa cột (hàm thuần theo `t` và hai callback ổn định) để `useMemo` ở nơi dùng. */
+export function tenantColumns(
+  t: Translate,
+  onLock: TenantAction,
+  onUnlock: TenantAction,
+): Column<Tenant>[] {
+  return [
+    { id: "key", header: t("tenants.col.key"), cell: (r) => <KeyCell tenant={r} /> },
+    { id: "name", header: t("tenants.col.name"), cell: (r) => r.name },
+    { id: "users", header: t("tenants.col.users"), cell: (r) => r.user_count },
+    {
+      id: "slots",
+      header: t("tenants.col.slots"),
+      cell: (r) => r.max_concurrent_sub ?? t("common.unlimited"),
+    },
+    { id: "status", header: t("tenants.col.status"), cell: (r) => <StatusCell tenant={r} /> },
+    {
+      id: "actions",
+      header: <span className="sr-only">{t("common.actions")}</span>,
+      className: "w-12 text-right",
+      cell: (r) => <RowMenu tenant={r} onLock={onLock} onUnlock={onUnlock} />,
+    },
+  ];
+}
 
 export function TenantTable({
   tenants,
@@ -38,74 +127,8 @@ export function TenantTable({
   onUnlock,
 }: Props) {
   const { t } = useTranslation();
-  const columns = useMemo<Column<Tenant>[]>(
-    () => [
-      {
-        id: "key",
-        header: t("tenants.col.key"),
-        cell: (r) => (
-          <span className="inline-flex items-center gap-2">
-            <Link
-              to="/tenants/$tenantId"
-              params={{ tenantId: r.id }}
-              className="font-mono text-primary hover:underline"
-            >
-              {r.key}
-            </Link>
-            {isPlatform(r) ? (
-              <StatusBadge tone="info">{t("tenants.badge.platform")}</StatusBadge>
-            ) : null}
-          </span>
-        ),
-      },
-      { id: "name", header: t("tenants.col.name"), cell: (r) => r.name },
-      { id: "users", header: t("tenants.col.users"), cell: (r) => r.user_count },
-      {
-        id: "slots",
-        header: t("tenants.col.slots"),
-        cell: (r) => r.max_concurrent_sub ?? t("common.unlimited"),
-      },
-      {
-        id: "status",
-        header: t("tenants.col.status"),
-        cell: (r) =>
-          r.status === "locked" ? (
-            <StatusBadge tone="err">{t("tenants.status.locked")}</StatusBadge>
-          ) : (
-            <StatusBadge tone="ok">{t("tenants.status.active")}</StatusBadge>
-          ),
-      },
-      {
-        id: "actions",
-        header: <span className="sr-only">{t("common.actions")}</span>,
-        className: "w-12 text-right",
-        cell: (r) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label={t("common.moreActions")}>
-                <MoreHorizontal aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link to="/tenants/$tenantId" params={{ tenantId: r.id }}>
-                  {t("tenants.menu.open")}
-                </Link>
-              </DropdownMenuItem>
-              {isPlatform(r) ? null : r.status === "locked" ? (
-                <DropdownMenuItem onSelect={() => onUnlock(r)}>
-                  {t("tenants.menu.unlock")}
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onSelect={() => onLock(r)}>
-                  {t("tenants.menu.lock")}
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ),
-      },
-    ],
+  const columns = useMemo(
+    () => tenantColumns(t as unknown as Translate, onLock, onUnlock),
     [t, onLock, onUnlock],
   );
   return (
