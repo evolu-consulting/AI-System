@@ -48,7 +48,7 @@ Không cài `@hono/zod-validator` (spec §9). Không thư viện khác → khôn
 | `apps/admin-api/src/modules/users/{README.md,users.routes.ts,users.service.ts,users.repo.ts,users.rules.ts,users.errors.ts,*.test.ts,users.perf.int.test.ts}` | Tạo | FR-04, 05, 63, BR-05/08/09 | T7 |
 | `apps/admin-api/package.json` | Sửa | `jose`, `@ai/db` | T4 |
 
-Tạo tenant (tenants module) cần tạo user đầu tiên → `tenants.service` gọi `users.service.createFirstAdmin(tx, …)` (không import `users.repo`, CONVENTIONS §2). Sinh mật khẩu tạm dùng `generateTempPassword` ở `auth.rules.ts` qua `auth.service`/`users.service` export lại — hàm thuần, import trực tiếp `rules` được.
+Tạo tenant (tenants module) cần tạo user đầu tiên → `tenants.service` gọi `users.service.createFirstAdmin(tx: Tx, input: { tenantId: string; username: string; displayName: string; email: string; locale: Locale }, passwordHash: string): Promise<User>` (chèn user role `tenant_admin`, `must_change_password=true`; 23505 → `USERNAME_TAKEN`/`EMAIL_TAKEN`) (không import `users.repo`, CONVENTIONS §2). Sinh mật khẩu tạm dùng `generateTempPassword` ở `auth.rules.ts` qua `auth.service`/`users.service` export lại — hàm thuần, import trực tiếp `rules` được.
 
 ## 3. DB: role, RLS, hàm, scope
 
@@ -229,7 +229,7 @@ Ký hiệu: `W(scope){…}` = một `withScope`. Mọi `UPDATE … WHERE id=$ AN
 5. Sai: `W(tenant){ update users set failed_logins=…, locked_until=… where id }` với giá trị từ `afterFailedLogin(clearExpiredLock(...).failedLogins)` — dùng `failed_logins = CASE WHEN locked_until <= now() THEN 1 ELSE failed_logins + 1 END` trong SQL để an toàn khi song song, rồi đặt `locked_until` khi đạt 5 trong cùng câu; → `INVALID_CREDENTIALS`.
 6. Đúng: `outcomeAfterPasswordOk` → `account_locked` (đếm về 0, 403) / `password_change_required` (đếm về 0, ký change_token) / `authenticated`: `W(tenant){ update users set failed_logins=0, locked_until=null, last_login_at=now(); insert refresh_tokens(id=v7, family_id=id, token_hash, client, user_agent, expires_at=now+30d) }`, ký access token (`sid=family_id`).
 
-**Refresh**: `hash = sha256(token)` → `W(nil){ tid = tenant_id_by_refresh_hash(hash); setScope(tenant tid); row = select token + user + tenant }` → `classifyRefresh`: `valid` & `canSignIn` → `update … set revoked_at=now(), revoked_reason='rotated', replaced_by=$new where id=$ and revoked_at is null` (0 hàng = thua race → `REFRESH_SUPERSEDED`) + insert token mới (cùng `family_id`, `expires_at` kế thừa); `superseded` → 401 `REFRESH_SUPERSEDED`; `reuse` → `update … set revoked_at=now(), revoked_reason='reuse' where family_id=$ and revoked_at is null` → `INVALID_REFRESH_TOKEN`; `expired`/không có/user không đăng nhập được → `INVALID_REFRESH_TOKEN`.
+**Refresh**: `hash = sha256(token)` → `W(nil){ tid = tenant_id_by_refresh_hash(hash); setScope(tenant tid); row = select token + user + tenant }` → `classifyRefresh`: `valid` & `canSignIn` → `update … set revoked_at=now(), revoked_reason='rotated', replaced_by=$new where id=$ and revoked_at is null` (0 hàng = thua race → `REFRESH_SUPERSEDED`) + insert token mới (cùng `family_id`, `expires_at` kế thừa); `superseded` → 401 `REFRESH_SUPERSEDED` **không** gửi `Set-Cookie` (không xoá cookie — tab thắng vừa đặt cookie mới); chỉ `INVALID_REFRESH_TOKEN` mới xoá cookie; `reuse` → `update … set revoked_at=now(), revoked_reason='reuse' where family_id=$ and revoked_at is null` → `INVALID_REFRESH_TOKEN`; `expired`/không có/user không đăng nhập được → `INVALID_REFRESH_TOKEN`.
 
 **Logout**: như refresh tới bước tìm hàng; có và chưa thu hồi → `revoked_reason='logout'`; luôn 204.
 
@@ -238,7 +238,7 @@ Ký hiệu: `W(scope){…}` = một `withScope`. Mọi `UPDATE … WHERE id=$ AN
 
 **Middleware** (`requireAuth`): `verifyAccessToken` (alg EdDSA, `iss=admin`, `aud=ai-system`) → mở `withScope(tenant tid)` cho cả request (`c.set("tx")` không dùng; thay vào đó service nhận `scope` và tự mở `withScope` — một transaction/hành động) → đọc `users ⋈ tenants` theo `sub` → không có / `!canSignIn` → 401 `UNAUTHORIZED`; `actor = {userId, tenantId, role (từ DB)}`; `scope = role==='platform_admin' && tenant.key==='platform' ? platform : tenant`. `requireRole('platform_admin')` cho `/admin/tenants*`; `requireRole('platform_admin','tenant_admin')` cho `/admin/users*` → 403 `FORBIDDEN`.
 
-**Tạo tenant**: `W(platform){ insert tenant (unique key → KEY_TAKEN qua mã PG 23505 + tên constraint); users.service.createFirstAdmin(tx, {tenantId, ...first_admin, role:'tenant_admin'}) }` → mật khẩu tạm sinh trước transaction (hash ngoài transaction).
+**Tạo tenant**: `W(platform){ insert tenant (unique key → KEY_TAKEN qua mã PG 23505 + tên constraint); users.service.createFirstAdmin(tx, {tenantId, username, displayName, email, locale}, passwordHash) }` → mật khẩu tạm sinh trước transaction (hash ngoài transaction).
 
 **Khoá tenant**: `checkTenantLock` → `W(platform){ select tenant for update; if active: update tenants set active=false, version+1; update users set locked_by_tenant=true, version+1 where tenant_id=$ and active and not locked_by_tenant; update refresh_tokens set revoked_at=now(), revoked_reason='tenant_locked' where tenant_id=$ and revoked_at is null }`.
 **Mở khoá**: `update tenants set active=true…; update users set locked_by_tenant=false, version+1 where tenant_id=$ and locked_by_tenant`.
