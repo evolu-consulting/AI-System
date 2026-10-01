@@ -5,8 +5,8 @@ import { ErrorState } from "@/components/shared/states/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { loadError } from "@/lib/load-error";
 import { useTr } from "@/lib/use-translate";
-import { useWorkflowUsages } from "../hooks/use-workflow-queries";
-import { usageSections } from "../lib/usage";
+import { useWorkflowUsages } from "../../hooks/use-workflow-queries";
+import { usageSections } from "../../lib/usage";
 
 export function WorkflowUsageTab({ workflowId }: { workflowId: string | undefined }) {
   const { t } = useTranslation();

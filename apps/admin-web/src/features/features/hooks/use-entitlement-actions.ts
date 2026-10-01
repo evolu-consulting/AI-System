@@ -33,34 +33,40 @@ export function useEntitlementActions(feature: FeatureDetail) {
   const [target, setTarget] = useState<RevokeTarget | null>(null);
   const name = pickLocalized(feature.name, i18n.language);
 
-  const grant = async (tenant: { id: string; key: string }) => {
-    try {
-      await grantMut.mutateAsync(tenant.id);
-      notifySuccess(t("features.toast.granted", { feature: name, tenant: tenant.key }));
-    } catch (err) {
-      fail(err);
-    }
-  };
-  const askRevoke = (e: Entitlement) =>
-    setTarget({
-      tenantId: e.tenant_id,
-      tenantKey: e.tenant_key,
-      feature: name,
-      users: e.active_user_count,
-      commands: feature.command_count,
-    });
-  const revoke = async (x: RevokeTarget) => {
-    await revokeMut.mutateAsync(x.tenantId).catch((err) => {
-      fail(err);
-      throw err; // giữ hộp thoại mở
-    });
-    const undo = {
-      label: t("common.undo"),
-      onClick: () => void grantMut.mutateAsync(x.tenantId).catch(fail),
-    };
-    const msg = t("features.toast.revoked", { feature: x.feature, tenant: x.tenantKey });
-    notifySuccess(msg, undo, UNDO_MS);
-  };
+  const grant = useCallback(
+    async (tenant: { id: string; key: string }) => {
+      try {
+        await grantMut.mutateAsync(tenant.id);
+        notifySuccess(t("features.toast.granted", { feature: name, tenant: tenant.key }));
+      } catch (err) {
+        fail(err);
+      }
+    },
+    [grantMut, t, name, fail],
+  );
+  const askRevoke = useCallback(
+    (e: Entitlement) =>
+      setTarget({
+        tenantId: e.tenant_id,
+        tenantKey: e.tenant_key,
+        feature: name,
+        users: e.active_user_count,
+        commands: feature.command_count,
+      }),
+    [name, feature.command_count],
+  );
+  const revoke = useCallback(
+    async (x: RevokeTarget) => {
+      await revokeMut.mutateAsync(x.tenantId).catch((err) => {
+        fail(err);
+        throw err; // giữ hộp thoại mở
+      });
+      const retry = () => void grantMut.mutateAsync(x.tenantId).catch(fail);
+      const msg = t("features.toast.revoked", { feature: x.feature, tenant: x.tenantKey });
+      notifySuccess(msg, { label: t("common.undo"), onClick: retry }, UNDO_MS);
+    },
+    [revokeMut, grantMut, t, fail],
+  );
 
   return { target, grant, askRevoke, revoke, closeRevoke: () => setTarget(null) };
 }

@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import type { WorkflowFormValues } from "../lib/schemas";
+import type { WorkflowFormValues } from "../../lib/schemas";
 import { SchemaParamRow } from "./SchemaParamRow";
 
 const NEW_PARAM: WorkflowFormValues["input_schema"][number] = {

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FilterChips } from "@/components/shared/form/FilterChips";
 import { SearchBox } from "@/components/shared/form/SearchBox";
 import { Button } from "@/components/ui/button";
-import type { WorkflowStatusFilter } from "../hooks/use-workflow-queries";
+import type { WorkflowStatusFilter } from "../../hooks/use-workflow-queries";
 
 type Status = "all" | WorkflowStatusFilter;
 

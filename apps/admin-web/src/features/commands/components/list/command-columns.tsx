@@ -5,8 +5,8 @@ import type { Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatUpdated, type Translate } from "@/lib/format";
 import { pickLocalized } from "@/lib/localized";
-import { CommandRowMenu } from "../components/list/CommandRowMenu";
-import { CommandToggle } from "../components/list/CommandToggle";
+import { CommandRowMenu } from "./CommandRowMenu";
+import { CommandToggle } from "./CommandToggle";
 
 export type ColumnCtx = {
   t: Translate;

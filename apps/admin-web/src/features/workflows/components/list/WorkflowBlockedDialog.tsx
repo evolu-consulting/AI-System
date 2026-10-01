@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { BlockedDialog } from "@/components/shared/BlockedDialog";
 import { DependencyList } from "@/components/shared/DependencyList";
 import { useTr } from "@/lib/use-translate";
-import { usageSections } from "../lib/usage";
+import { usageSections } from "../../lib/usage";
 
 export type BlockedInfo = {
   action: "delete" | "disable";

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { notifySuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/http";
 import { useUpdateWorkflow } from "../api";
-import type { BlockedInfo } from "../components/WorkflowBlockedDialog";
+import type { BlockedInfo } from "../components/list/WorkflowBlockedDialog";
 import { blockedFrom } from "../lib/blocked";
 
 export function useWorkflowToggle(fail: (err: unknown) => void, block: (b: BlockedInfo) => void) {

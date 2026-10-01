@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useWorkflowList, WORKFLOWS_PAGE_SIZE } from "../api";
-import { WorkflowFilters } from "../components/WorkflowFilters";
-import { WorkflowGuide } from "../components/WorkflowGuide";
-import { WorkflowTable } from "../components/WorkflowTable";
+import { WorkflowFilters } from "../components/list/WorkflowFilters";
+import { WorkflowGuide } from "../components/list/WorkflowGuide";
+import { WorkflowTable } from "../components/list/WorkflowTable";
 import { useWorkflowActions } from "../hooks/use-workflow-actions";
 import { useWorkflowsNav } from "../hooks/use-workflows-nav";
 

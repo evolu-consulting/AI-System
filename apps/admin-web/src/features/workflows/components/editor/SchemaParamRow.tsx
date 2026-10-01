@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTr } from "@/lib/use-translate";
-import type { WorkflowFormValues } from "../lib/schemas";
+import type { WorkflowFormValues } from "../../lib/schemas";
 
 type Props = {
   index: number;

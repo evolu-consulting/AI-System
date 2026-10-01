@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTr } from "@/lib/use-translate";
-import { useWorkflowUsages } from "../hooks/use-workflow-queries";
-import { usageSections, usageSummary } from "../lib/usage";
+import { useWorkflowUsages } from "../../hooks/use-workflow-queries";
+import { usageSections, usageSummary } from "../../lib/usage";
 
 function UsagePanel({ id }: { id: string }) {
   const tr = useTr();

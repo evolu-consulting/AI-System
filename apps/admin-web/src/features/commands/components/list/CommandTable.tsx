@@ -4,7 +4,7 @@ import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";
 import { useTr } from "@/lib/use-translate";
-import { buildCommandColumns } from "../../lib/command-columns";
+import { buildCommandColumns } from "./command-columns";
 
 type Props = {
   commands: CommandListItem[] | undefined;

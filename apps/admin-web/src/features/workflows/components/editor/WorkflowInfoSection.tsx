@@ -16,7 +16,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useTr } from "@/lib/use-translate";
-import type { WorkflowFormValues } from "../lib/schemas";
+import type { WorkflowFormValues } from "../../lib/schemas";
 
 type Props = {
   mode: "create" | "edit";

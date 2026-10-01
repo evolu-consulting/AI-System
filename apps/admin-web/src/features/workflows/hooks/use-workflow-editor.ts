@@ -11,7 +11,7 @@ import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useCreateWorkflow, useUpdateWorkflow, WORKFLOW_KEYS } from "../api";
-import type { BlockedInfo } from "../components/WorkflowBlockedDialog";
+import type { BlockedInfo } from "../components/list/WorkflowBlockedDialog";
 import {
   emptyWorkflowForm,
   toFormValues,

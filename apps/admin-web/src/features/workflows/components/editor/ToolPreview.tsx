@@ -1,8 +1,8 @@
 // ADM-FR-11 · tab "Model thấy gì": JSON tool chỉ đọc dựng từ giá trị đang soạn (không gọi server).
 import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import type { WorkflowFormValues } from "../lib/schemas";
-import { toToolPreview } from "../lib/tool-preview";
+import type { WorkflowFormValues } from "../../lib/schemas";
+import { toToolPreview } from "../../lib/tool-preview";
 
 export function ToolPreview() {
   const { t } = useTranslation();

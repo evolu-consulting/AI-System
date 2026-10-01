@@ -6,8 +6,8 @@ import { useTranslation } from "react-i18next";
 import { notifySuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/http";
 import { fetchWorkflowUsages, useDeleteWorkflow, WORKFLOW_KEYS } from "../api";
-import type { BlockedInfo } from "../components/WorkflowBlockedDialog";
-import { WorkflowDeleteDialog } from "../components/WorkflowDeleteDialog";
+import type { BlockedInfo } from "../components/list/WorkflowBlockedDialog";
+import { WorkflowDeleteDialog } from "../components/list/WorkflowDeleteDialog";
 import { blockedFrom } from "../lib/blocked";
 
 type Fail = (err: unknown) => void;

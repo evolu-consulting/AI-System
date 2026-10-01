@@ -1,6 +1,6 @@
 // ADM-FR-13 · AC-A05 · hành động trên một workflow ở danh sách: ghép bật/tắt (use-workflow-toggle) và xoá (use-workflow-delete).
 import { useState } from "react";
-import { type BlockedInfo, WorkflowBlockedDialog } from "../components/WorkflowBlockedDialog";
+import { type BlockedInfo, WorkflowBlockedDialog } from "../components/list/WorkflowBlockedDialog";
 import { useWorkflowDelete } from "./use-workflow-delete";
 import { useWorkflowFail } from "./use-workflow-fail";
 import { useWorkflowToggle } from "./use-workflow-toggle";
