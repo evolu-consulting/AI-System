@@ -2,15 +2,10 @@
 import type { FeatureListItem } from "@ai/contracts";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
-import {
-  FEATURE_KEYS,
-  type FeatureStatusFilter,
-  fetchFeatureDetail,
-  useUpdateFeature,
-} from "../api";
+import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
+import { FEATURE_KEYS, type FeatureStatusFilter, fetchFeatureDetail } from "../api";
 import { DisableFeatureDialog, type DisableTarget } from "../components/DisableFeatureDialog";
+import { useFeaturePatch } from "./use-feature-patch";
 
 type Fail = (err: unknown) => void;
 type NameOf = (f: FeatureListItem) => string;
@@ -32,45 +27,36 @@ async function disableTarget(
 }
 
 export function useFeatureStatus(fail: Fail, nameOf: NameOf) {
-  const { t } = useTranslation();
   const qc = useQueryClient();
-  const update = useUpdateFeature();
+  const { patch, conflictProps } = useFeaturePatch(fail, nameOf);
   const [disable, setDisable] = useState<{ f: FeatureListItem; target: DisableTarget } | null>(
     null,
   );
 
-  const patch = useCallback(
-    async (f: FeatureListItem, status: FeatureStatusFilter) => {
-      await update.mutateAsync({ id: f.id, version: f.version, status });
-      const label = t(`features.status.${status}`);
-      notifySuccess(t("features.toast.statusChanged", { feature: nameOf(f), status: label }));
-    },
-    [update, t, nameOf],
-  );
   const setStatus = useCallback(
     async (f: FeatureListItem, status: FeatureStatusFilter) => {
-      try {
-        if (status !== "off") return await patch(f, status);
-        setDisable({ f, target: await disableTarget(qc, f, nameOf(f)) });
-      } catch (err) {
-        fail(err);
+      if (status !== "off") {
+        await patch(f, status);
+        return;
       }
+      setDisable({ f, target: await disableTarget(qc, f, nameOf(f)) });
     },
-    [patch, qc, nameOf, fail],
+    [patch, qc, nameOf],
   );
   const confirm = async () => {
     if (!disable) return;
-    await patch(disable.f, "off").catch((err) => {
-      fail(err);
-      throw err; // giữ hộp thoại mở
-    });
+    // Lỗi khác xung đột: giữ hộp thoại mở (đã báo toast); xung đột: hộp này đóng, ConflictDialog hiện.
+    if ((await patch(disable.f, "off")) === "failed") throw new Error("patch failed");
   };
   const dialog = (
-    <DisableFeatureDialog
-      target={disable?.target ?? null}
-      onClose={() => setDisable(null)}
-      onConfirm={confirm}
-    />
+    <>
+      <DisableFeatureDialog
+        target={disable?.target ?? null}
+        onClose={() => setDisable(null)}
+        onConfirm={confirm}
+      />
+      <LazyConflictDialog props={conflictProps} />
+    </>
   );
   return { setStatus, dialog };
 }

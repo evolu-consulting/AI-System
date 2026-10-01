@@ -3,6 +3,7 @@ import type { FeatureDetail } from "@ai/contracts";
 import { useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { EditorSaveBar } from "@/components/shared/EditorSaveBar";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
@@ -80,6 +81,7 @@ function EditorBody({ feature, tab, onTab, onReload }: BodyProps) {
         </EditorSaveBar>
       </form>
       <UnsavedGuard dirty={isDirty} />
+      <LazyConflictDialog props={ed.conflict} />
     </FormProvider>
   );
 }

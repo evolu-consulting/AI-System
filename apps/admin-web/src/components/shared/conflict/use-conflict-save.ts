@@ -19,12 +19,13 @@ export type ConflictSaveConfig<B extends object, R> = {
 
 export function useConflictSave<B extends object, R = unknown>(cfg: ConflictSaveConfig<B, R>) {
   const last = useRef<B | null>(null);
+  const shown = useRef<object | null>(null);
   const conflict = useConflict({
     entity: cfg.entity,
     buildRows: (cur) => {
-      const body = last.current ?? ({} as B);
+      const body = shown.current ?? last.current ?? ({} as B);
       const latest = cfg.toComparable
-        ? cfg.toComparable(cur, body)
+        ? cfg.toComparable(cur, body as B)
         : pickKeys(cur, Object.keys(body));
       return diffFields(body, latest);
     },
@@ -35,12 +36,22 @@ export function useConflictSave<B extends object, R = unknown>(cfg: ConflictSave
     onReload: cfg.onReload,
     onError: cfg.onFail,
   });
-  const save = async (body: B, version: number) => {
+  /** `conflict` = đã mở ConflictDialog; `failed` = lỗi khác (đã gọi `onFail`). */
+  /** `forDiff`: dạng đầy đủ của bản của bạn để hiện khác biệt khi body gửi đi chỉ gồm phần đã sửa. */
+  const save = async (
+    body: B,
+    version: number,
+    forDiff?: B,
+  ): Promise<"saved" | "conflict" | "failed"> => {
     last.current = body;
+    shown.current = forDiff ?? null;
     try {
       cfg.onSaved(await cfg.mutate({ ...body, version }));
+      return "saved";
     } catch (err) {
-      if (!conflict.capture(err, version)) cfg.onFail(err);
+      if (conflict.capture(err, version)) return "conflict";
+      cfg.onFail(err);
+      return "failed";
     }
   };
   return { save, props: conflict.props };
