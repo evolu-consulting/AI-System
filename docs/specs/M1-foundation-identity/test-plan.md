@@ -309,12 +309,13 @@ Khớp `tasks.md` (commit 30a9de5). Q2 viết tất cả (đỏ); cột dưới 
 | `rules/auth.rules.test.ts` (R1) | T4 |
 | `db-guard.int.test.ts` (D3), `auth-login.int.test.ts` (A1), `auth-password.int.test.ts` (A3), `seed.int.test.ts` (B1), `ADM-NFR-06/server.int.test.ts` (M0) | T5 |
 | `rules/tenants.rules.test.ts` (R3), `tenants.int.test.ts` (A4) | T6 |
-| `rules/users.rules.test.ts` (R2), `users.int.test.ts` (A5) | T7 |
-| `db-rls.int.test.ts` (D1), `auth-refresh.int.test.ts` (A2), `middleware.int.test.ts` (A6), `error-codes.int.test.ts` (A7), `server.int.test.ts` (A8) | T7 |
+| `rules/users.rules.test.ts` (R2), `users.int.test.ts` (A5: list, tạo, sửa, khoá, reset) | T7 |
+| `db-rls.int.test.ts` (D1), `auth-refresh.int.test.ts` (A2), `middleware.int.test.ts` (A6), `error-codes.int.test.ts` (A7), `server.int.test.ts` (A8), `users-isolation.int.test.ts` (A5: AC-A09, BR-08, BR-05) | T7 |
 | `i18n-labels.test.ts` (C1) | FE2 |
 | `e2e/smoke.spec.ts` (M0, sửa), `e2e/auth.spec.ts` (E1) | FE3 |
 | `e2e/tenants.spec.ts` (E2) | FE4 |
-| `e2e/users.spec.ts` (E3), `e2e/m1-flow.spec.ts` (E4) | FE5 |
+| `e2e/users.spec.ts` (E3) | FE5 |
+| `e2e/m1-flow.spec.ts` (E4) | FE6 (readiness lần 4 #3: khớp lệnh xong của `tasks.md` FE6) |
 
 ## 9. Độ phủ kế hoạch
 
@@ -355,3 +356,4 @@ Không chặn (đã có đáp án trong spec): AC bổ sung (xác nhận 8/8), t
 ## 11. Nhật ký
 
 - 2026-10-01 · qc · WRITE (test-plan) · chưa có file test; Q2/Q3 sau Gate G1.
+- 2026-10-01 · qc · WRITE (Q2) · đã viết test vào `tests/acceptance/M1/**`, `e2e/**`. Khác kế hoạch: (1) A5 tách hai file `users.int.test.ts` + `users-isolation.int.test.ts` (giới hạn 600 dòng/file test); (2) module sản phẩm nạp bằng import động (`_modules.ts`) để `bun run typecheck` không vỡ khi chưa có code; (3) `_data.ts` (dữ liệu fixture, không phụ thuộc bun:test) dùng chung cho int và `e2e/support`; (4) e2e: `e2e/support/prepare-db.ts` + `helpers.ts`; `resetFixture()` của e2e gọi `prepare-db.ts --reset-only` (không DROP schema để không làm hỏng kết nối admin-api đang chạy); hash fixture dùng `Bun.password` độc lập với `@ai/db`; (5) `TEST_ADMIN_API_DATABASE_URL` thiếu thì suy ra từ `TEST_DATABASE_URL` (user `admin_api`, mật khẩu dev).
