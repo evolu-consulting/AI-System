@@ -191,7 +191,7 @@ export function canSeeUser(actor: Actor, target: { tenantId: string }): boolean;
 export function checkRoleAssignment(actor: Actor, tenantIsPlatform: boolean, role: Role): RuleError | null;
   // platform tenant ⇔ role platform_admin; tenant_admin không gán platform_admin → ROLE_NOT_ALLOWED
 export function checkRoleChange(actor: Actor, target: { id: string; role: Role }, next: Role): RuleError | null;
-  // target.role=platform_admin & next≠ → ROLE_NOT_ALLOWED; actor.userId=target.id & next≠target.role → SELF_ACTION_FORBIDDEN
+  // thứ tự (G2): actor.userId=target.id & next≠target.role → SELF_ACTION_FORBIDDEN; rồi target.role=platform_admin & next≠ → ROLE_NOT_ALLOWED
 export function checkSelfAction(actor: Actor, targetId: string, action: "lock" | "reset_password"): RuleError | null;
 export function isEmailRequired(role: Role): boolean;             // tenant_admin
 /** BR-08: thay đổi làm target thôi là admin đang hoạt động và không còn admin cùng phạm vi → LAST_ADMIN {scope}. */
@@ -285,3 +285,24 @@ Một transaction (owner): `insert tenants (key='platform', name='Nền tảng')
 - **`ALTER ROLE … PASSWORD` trong migration dev** lộ mật khẩu dev trong log Postgres — chỉ dev/test, giống `ai_dev_pw` trong compose.
 - **Hiệu năng argon2 trong test:** mỗi user tạo ~22 ms; fixture qc nên hash một lần rồi chèn cùng hash cho nhiều user.
 - **CI:** thứ tự bước đổi (migrate + seed trước e2e); `playwright.config.ts` `webServer` khởi động admin-api do qc/frontend-lead (plan-frontend §9.11).
+
+## 10. Trả lời lỗ hổng test-plan (qc §10, 2026-10-01)
+- **G2:** chấp nhận. `checkRoleChange` kiểm `SELF_ACTION_FORBIDDEN` **trước** `ROLE_NOT_ALLOWED` (M1-R11/BR-08). platform_admin tự đổi role mình → 403 `SELF_ACTION_FORBIDDEN`; người khác đổi role của platform_admin → 400 `ROLE_NOT_ALLOWED`.
+- **G3:** chấp nhận, chốt chữ ký và nơi import:
+  - `apps/admin-api/src/lib/jwt.ts`: `type JwtKeys = { privateKey: CryptoKey; publicKey: CryptoKey; kid: string }`; `loadJwtKeys(env: { JWT_PRIVATE_KEY: string; JWT_PUBLIC_KEY: string; JWT_KID: string }): Promise<JwtKeys>` (PEM PKCS8/SPKI, alg `EdDSA`; khoá lệch → ném `Error`).
+  - `hashPassword(pw: string): Promise<string>`, `verifyPassword(pw: string, hash: string): Promise<boolean>`, `PASSWORD_HASH_OPTIONS` export từ `@ai/db` (file `packages/db/src/password.ts`).
+  - `createDb`, `Db`, `withScope`, `setScope`, `DbScope` export từ `@ai/db`.
+  - `assertSafeDbRole(db: Db): Promise<void>` ở `apps/admin-api/src/lib/db-guard.ts`.
+  - `runSeed`, `loadSeedEnv`, `SeedEnvSchema` ở `@ai/db/seed` (`packages/db/package.json` `exports["./seed"]`).
+  - `createApp(cfg, deps?)`, `AppDeps` ở `apps/admin-api/src/app.ts`. Hash giả: `createDummyHash(): Promise<string>` export từ `apps/admin-api/src/modules/auth/auth.service.ts`.
+  - `jose` 6.2.12 thêm vào `devDependencies` gốc (cùng bản với admin-api; Accepted ADR-0001, không cần ADR mới) — làm ở T1 để Q2 dùng được.
+- **G4:** xác nhận. `classifyRefresh` kiểm `revoked` trước `expired`: đã thu hồi → `superseded`/`reuse` thắng `expired`.
+- **G7:** chấp nhận. `deps.now` áp cho mọi so sánh/ghi của khoá tạm (`locked_until`, `failed_logins`, `details.until`, `clearExpiredLock`, `isTempLocked`) và `last_login_at` (SQL nhận `$now`, không dùng `now()`). JWT `iat/exp`, `refresh_tokens.created_at/expires_at/revoked_at`, cửa sổ ân hạn 10 s, `password_changed_at`, `created_at/updated_at` dùng giờ thật/`now()` của DB.
+- **G8:** chấp nhận. `lock`/`unlock` (user và tenant) khi trạng thái không đổi → không ghi, không tăng `version`/`updated_at`, vẫn 200 với bản hiện tại. Khoá user đã khoá cũng không thu hồi token thêm lần nữa (đã thu hồi lần đầu). Tương tự: PATCH mà mọi trường gửi lên trùng giá trị hiện tại → không tăng `version`.
+- **G9:** chấp nhận, giữ spec. tenant_admin của tenant bị khoá đã bị 401 ở middleware nên thực tế chỉ platform_admin (`?tenant_id=`) tạo được user ở tenant khoá; user mới `active=true, locked_by_tenant=true, status="locked"`.
+- **G10:** chấp nhận. `X-Client` so khớp **đúng** chuỗi `extension` (phân biệt hoa/thường, không trim) → chỉ đọc `refresh_token` trong body, bỏ qua cookie; giá trị khác hoặc thiếu → chỉ đọc cookie `ai_rt`, bỏ qua body. Áp cho refresh, logout, và cách trả token của login/change-password.
+- **G11:** chấp nhận. T3 thêm biến mới vào `.env.example` (keys:dev chỉ sinh secret; biến không bí mật lấy từ `.env.example` khi tạo `.env.local` mới) và vào `env:` của CI; 8 bước CI cũ giữ nguyên thứ tự, chỉ **chèn** bước `keys:dev` (trước Install/Check), `db:migrate` và `db:seed` (trước E2E). Bước "Migrate" cũ vẫn còn đúng chỗ (lần 2 là no-op `main +0`). Test `server.int.test.ts` M0: server M1 cần `ADMIN_API_DATABASE_URL` + `JWT_*` + DB đã migrate (role `admin_api` tồn tại) — `test:int` chạy sau bước migrate nên thoả; ở máy dev phải `bun run db:migrate` trước `test:int` (đã nằm trong Lệnh xong). Nếu vẫn không giữ được test M0 → qc sửa ở Q2 kèm lý do.
+- **G12:** điều phối đã quyết; `tasks.md` Q2 phụ thuộc thêm T1. T1 chỉ gồm contract + test contract + `jose` ở devDependencies gốc, không logic.
+- **G13:** backend tự kiểm ở int test riêng: `tenants.service.int.test.ts` "lỗi giữa chừng khi tạo first admin (ép `EMAIL_TAKEN`/lỗi giả từ `users.service`) → không còn hàng `tenants`"; `seed.int.test.ts` "lỗi giữa chừng → rollback". (a) thời gian verify giả: kiểm đơn vị rằng nhánh tenant/user không tồn tại có gọi `verifyPassword` (spy) — không đo thời gian.
+- **G14:** đồng ý cách đọc: web = cookie `ai_rt`, extension = `refresh_token` trong body.
+- **G15:** đồng ý; ngân sách §6 kiểm bằng `users.perf.int.test.ts` (không khoá).
