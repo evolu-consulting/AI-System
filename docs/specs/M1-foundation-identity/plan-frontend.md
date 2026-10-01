@@ -167,7 +167,7 @@ Lỗi (vùng `role="alert"`, nền warn, đặt trên nút, giữ nguyên giá t
 Đúng canvas `ChangePassword` và §9.1: dòng mono `acme · lan.tran`; `Mật khẩu mới` (+ Hiện/Ẩn, thanh độ mạnh) · `Nhập lại mật khẩu mới` · nút `Đặt mật khẩu và tiếp tục` · link `Đăng xuất` (chỉ xoá `change_token` rồi `/login`). Không có `Bỏ qua`. Gửi `POST /auth/change-password {change_token, new_password}` → như đăng nhập thành công (§3.1.2a) + toast `password.toast.changed`. Token hết hạn/không hợp lệ (401 `INVALID_CHANGE_TOKEN`) → thay form bằng `alert` "Phiên đổi mật khẩu đã hết hạn. Hãy đăng nhập lại." + nút `Đăng nhập lại`. `password.error.same` khi server trả `PASSWORD_UNCHANGED`.
 
 ### 5.3 Đổi mật khẩu tự đổi (`/account/password`)
-§9.2: card 480px; `Mật khẩu hiện tại` · `Mật khẩu mới` (+ độ mạnh) · `Nhập lại mật khẩu mới` · `Huỷ` (về trang trước) · `Đổi mật khẩu`. Thành công → toast `password.toast.changedOthers` → quay lại trang trước (hoặc `/`). Sai mật khẩu hiện tại (400 `INVALID_CURRENT_PASSWORD`) → `password.error.currentWrong` dưới ô.
+§9.2: card 480px; `Mật khẩu hiện tại` · `Mật khẩu mới` (+ độ mạnh) · `Nhập lại mật khẩu mới` · `Huỷ` (về trang trước) · `Đổi mật khẩu`. Thành công → toast `password.toast.changedOthers` → quay lại trang trước (hoặc `/`). Sai mật khẩu hiện tại (400 `INVALID_CURRENT_PASSWORD`) → `password.error.currentWrong` dưới ô; 423 `TEMP_LOCKED {until}` (nhập sai quá nhiều lần) → `auth.error.tempLocked` (`{time}` = `HH:MM` giờ trình duyệt) dưới ô "Mật khẩu hiện tại".
 Một nút Hiện/Ẩn điều khiển cả hai ô mới (trạng thái chung) để nhãn e2e `button "Hiện mật khẩu"` là duy nhất.
 
 ### 5.4 Tenants
@@ -201,6 +201,7 @@ Một nút Hiện/Ẩn điều khiển cả hai ô mới (trạng thái chung) �
 | 401 `REFRESH_SUPERSEDED` | (nội bộ `refresh()`) thử lại 1 lần; vẫn lỗi → dialog phiên hết hạn |
 | 401 `INVALID_CHANGE_TOKEN` | `alert` token hết hạn (forced) |
 | 400 `INVALID_CURRENT_PASSWORD` | `password.error.currentWrong` |
+| 423 `TEMP_LOCKED` (đổi mật khẩu tự đổi) | `auth.error.tempLocked` dưới ô "Mật khẩu hiện tại" |
 | 400 `PASSWORD_UNCHANGED` | `password.error.same` |
 | 403 `FORBIDDEN` | toast `state.forbiddenAction` + `session.reload()` (tải lại `me`; nếu role đổi → định tuyến lại); khi tải trang: `ForbiddenState` |
 | 404 `NOT_FOUND` | `NotFoundState` (trang/drawer); trong hành động: toast `state.notFound.body` + refetch danh sách |
@@ -342,6 +343,8 @@ Ghi chú nhãn mới/lệch (qc nhận, frontend giữ):
 
 ## 9. Yêu cầu contract (gửi backend-lead; FE không tự đổi)
 
+Nếu khác với spec §3 thì spec §3 thắng.
+
 1. **Hằng số + schema dùng được ở trình duyệt** từ `@ai/contracts` (không import I/O Node): `COMPANY_KEY_RE`, `USERNAME_RE`, `PASSWORD_MIN_LEN=10`, `PASSWORD_MAX_LEN=128`, `DISPLAY_NAME_MAX=64`, `NAME_MAX`, `EMAIL_MAX`, enum `Role`, `Locale`, `ErrorCode` (union các mã ở §6), các schema request/response (`LoginRequest/Response`, `ChangePassword*`, `Me`, `Tenant*`, `User*`, `ListResponse<T>`). `apps/admin-web` thêm `@ai/contracts` + `zod` vào dependencies.
 2. **Login** `POST /auth/login {tenant_key, username, password}` → union theo `status`: `TokenGrant = {status:"authenticated", access_token, token_type:"Bearer", expires_in, user: Me}` (+ `Set-Cookie` refresh khi web) | `{status:"password_change_required", change_token}`. Web **không** gửi `X-Client` (cookie). Lỗi: 401 `INVALID_CREDENTIALS`, 423 `TEMP_LOCKED {until}` (ISO UTC, trong `error.details.until`), 403 `ACCOUNT_LOCKED`.
 3. **Refresh** `POST /auth/refresh` (cookie, không body) → `TokenGrant` (có `user: Me`; cookie `ai_rt`); lỗi 401 `INVALID_REFRESH_TOKEN` (hết phiên) hoặc 401 `REFRESH_SUPERSEDED` (thử lại 1 lần, §3.3). **Logout** `POST /auth/logout` 204.
@@ -383,6 +386,7 @@ Ghi chú nhãn mới/lệch (qc nhận, frontend giữ):
 - Phiên bản dependency mới ghi vào bảng ADR-0001 khi Accepted; `react-hook-form` 7.89.0.
 
 ## 13. Việc frontend (đưa vào `tasks.md`)
+Ghi nhận chỉnh của điều phối ở `tasks.md` (readiness lần 3): FE0b chỉ chạy `bunx playwright test --list`; smoke e2e nằm trong lệnh xong của FE3; FE3 phụ thuộc T5; ca "phiên hết hạn" chuyển sang `e2e/users.spec.ts` (FE5).
 Xem bảng FE trong `tasks.md` (đã cập nhật). Thứ tự: FE0 (deps, shadcn, proxy) → FE1a (lib) → FE1b (shell + shared) → FE2 (i18n) → FE3 (auth) → FE4 (tenants) → FE5 (users) → FE6 (rà soát). Mỗi task một commit `[ADM-FR-xx]`, diff ≈ ≤ 400 dòng.
 
 Unit test FE (hàm thuần, `bun test`): `normalize` (key/username/bỏ dấu `đ`), `format` (`formatLastLogin` các mốc, `formatClock`), `strength`, `schemas` (đối chiếu fixture với contract), `errors` (mã → key đều tồn tại trong `vi.json`), `refresh-lock` (§3.3), `status` (user), `next` redirect an toàn (chặn `//evil.com`, `https://…`).
