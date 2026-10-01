@@ -1,0 +1,491 @@
+# Test plan · M3-permissions (qc)
+
+Chế độ WRITE (trước Gate) · 2026-10-02 · Chỉ có **kế hoạch**: chưa viết file test. File test viết ở task Q2 (sau Gate G1 và sau T1), đỏ vì chưa có code, rồi khoá ở Q3.
+"Đúng" = luật `M3-R01…R24` (`spec.md` §2), contract + bảng mã lỗi + thứ tự kiểm + quy tắc `version` (`spec.md` §3), dữ liệu + RLS/quyền (`spec.md` §4), 4 AC của BA (`AC-A07`, `AC-A10`, `AC-A11` phía Admin; `AC-A03` vế 2) và 10 AC do spec đề xuất (`M3-AC01…M3-AC10`, qc **xác nhận cả 10**, mục 7). Chữ ký hàm thuần: `plan.md` §4; SQL tham chiếu hiệu lực: `plan.md` §3.2; thứ tự khoá và ca L1–L10: `plan.md` §6; bảng sự kiện NOTIFY: `plan.md` §5.3; nhãn UI nguyên văn: `plan-frontend.md` §5, §7. Người dùng đã chấp nhận A2, A4, A6, A11 theo mặc định (câu modal R21/R22, mức kiểm R19). Không đọc code implementation (chỉ đọc test M1/M2 đã khoá để biết số liệu cũ phải sửa).
+
+## 1. Quy ước
+
+Kế thừa M1 (§1) và M2 (§1); chỉ ghi phần khác.
+
+- **Thư mục:** `tests/acceptance/M3/` (hàm thuần ở `M3/rules/`), e2e ở `e2e/`. Helper dùng chung (không có `it`): `M3/_data.ts` (hằng, uuid, `seedPermissions`, SQL tham chiếu `HUB_VISIBLE_SQL` chép từ `plan.md` §3.2; **không** import `bun:test` để e2e dùng chung), `M3/_fixtures.ts` (`createM3Env`: nạp M2 env + `testHooks` + listener), `M3/_modules.ts` (nạp động `groups.rules`, `grants.rules`, `access.rules`, `config-write`, như M1/M2). Mã FR/BR/AC nằm ở **tên test** (`it("ADM-FR-62 · M3-R03 · …")`); mọi `it` bắt đầu bằng mã FR/BR/NFR; AC và `M3-Rnn` đi sau.
+- **Loại:** `rules` (`bun test`, không DB) · `int` (`*.int.test.ts`, in-process, DB `ai_system_test`) · `e2e` (Playwright, chromium, `vi-VN`). M3 **không có** loại `proc` (không dựng server riêng, không cổng cố định).
+- **uuid dữ liệu M3:** `01900000-0000-7000-8000-0000000003nn` (`id3(n)`, nn thập phân 00–99); M1 dùng `…0000nn`, M2 `…0000000002nn`. **Riêng `beta-testers` do trigger tạo, id ngẫu nhiên (v4)** → test luôn tra `betaId(owner, tenantKey)` bằng SQL, **không** hard-code.
+- **Fixture app:** như M2 (`createApp(cfg, deps)`, `appEnv: "test"`, `secretKey`), thêm `testHooks` do test truyền (`afterLock(op, step)`). Request API **luôn** qua role `admin_api`; dựng dữ liệu chéo module, đếm hàng, đọc `config_meta`, chèn thành viên/grant/entitlement bằng **owner** (`TEST_DATABASE_URL`). **Nạp lười:** module sản phẩm (`app`, `groups.rules`…) và listener chỉ nạp/mở trong hàm dựng env của từng file (không lúc import); `bun run typecheck` không vỡ khi chưa có code. Test import **tĩnh** từ `@ai/contracts` (Q2 sau T1 nên contract đã có).
+- **Cách ly giữa các test (bài học M2: có test dùng secret đã bị ca trước xoá):** **không `it` nào đọc kết quả của `it` khác.** File có `it` ghi (mọi file int trừ khi ghi "chỉ đọc") dùng `beforeEach(env.reset)`; file chỉ đọc (`matrix` đọc, `effective-access`, `access-sql`, `hub-view` đọc, `db-schema`) dùng `beforeAll` và **không** ghi. `reset()` = owner `TRUNCATE admin.refresh_tokens, admin.users, admin.tenants, admin.features, admin.secrets, admin.workflows, admin.commands CASCADE` (cuốn theo `groups`, `group_members`, `feature_grants` qua FK) + `TRUNCATE hub.agent_workflows` → `runSeed` → fixture M1 + `seedCatalog` M2 + `seedPermissions` M3. **Không** TRUNCATE `config_meta` (hàng toàn hệ thống): mọi so sánh `config_version` dùng **hiệu** (`v_sau − v_trước`), không số tuyệt đối. Chi phí mỗi `reset` ≈ 0,2–0,4 s (hash mật khẩu tính một lần mỗi file) → file nhiều ca ghi (`notify` ≈ 73) vẫn trong hạn 30 s/ca.
+- **Trigger `beta-testers`:** mọi `INSERT tenant` (owner, seed, API) tự sinh `beta-testers`. `insertFixture`/`insertBulk` của M1 vì vậy đã có group này; test M3 tính trước (mục 3).
+- **Không `sleep`/`setTimeout` cố định.** Chờ theo điều kiện: `expect.poll`, `waitForResponse`, `toBeVisible`, `toHaveURL`, hoặc **thông điệp NOTIFY có hạn chót** (≤ 1000 ms). Không dùng `waitForTimeout`. Điều hướng e2e bọc bằng `waitForURL`/`waitForResponse` **đặt trước** thao tác gây ra nó (không đua).
+- **Kiểm "KHÔNG phát NOTIFY" mà không chờ cố định (kỹ thuật sentinel):** sau thao tác cần kiểm, test ghi một **sentinel** (`POST /admin/groups` key `sentinel-<n>` ở tenant `globex`, chắc chắn bump) rồi chờ thông điệp sentinel. NOTIFY của một DB tới listener **theo thứ tự commit**, và thao tác trước đã `await` xong (publish nằm trong response) nên khi sentinel tới, mọi thông điệp của thao tác trước (nếu có) đã tới. Khẳng định: danh sách nhận được giữa hai mốc = đúng `[]` (hoặc đúng 1). Cùng kỹ thuật cho "đúng một NOTIFY" (không cần chờ 1,5 s như `plan.md` L10).
+- **Listener:** `postgres(TEST_DATABASE_URL, {max:1}).listen("config_changed", fn)` — kết nối riêng đóng vai Hub. Mở lười ở `env.listen()`, dọn ở `afterAll`. Mỗi thông điệp parse bằng `ConfigChangedPayloadSchema` (strict) và độ dài ≤ 8.000 byte.
+- **Không `skip`/`only`**; dữ liệu cố định, không ngẫu nhiên không seed (mọi "ngẫu nhiên" là phép duyệt tất định, mục 4 `access-sql`); mọi file dưới `tests/acceptance/**`, `e2e/**` vào `tests/.lock` ở Q3.
+- **Ca không tất định ghi rõ** (không giả vờ tất định): `concurrency.int` C1–C11 (thứ tự đến của song song do hệ điều hành; chỉ kiểm **bất biến** sau loạt) và hai ca có ngưỡng thời gian (`notify` P10 "≤ 1000 ms", e2e đo thời điểm toast): ngưỡng gấp ~100 lần giá trị thường, ghi "có yếu tố thời gian". Ca tất định xen kẽ L1–L10 là của backend (`lock-order.int.test.ts`); qc chỉ có ca đối chiếu (C12).
+- Mọi response lỗi parse bằng `ErrorResponseSchema` + `status === API_ERRORS[code]` + `X-Request-Id`; `details` parse bằng `*DetailsSchema`; response thành công parse bằng schema contract (strict nên **khoá thừa là đỏ**: `GroupSchema`, `GroupMemberSchema`, `GrantSchema`, `GrantMatrixSchema`, `EffectiveAccessSchema`, `UserSchema` mới, `CommandAccessResponseSchema` mới).
+- **DB riêng cho int/e2e (TECH-DEBT #17):** mục 6.3 (đề xuất cách làm; `notify`/`concurrency` **cần** DB không bị ghi từ nơi khác).
+
+## 2. Ma trận truy vết
+
+Cột "Số test" = dự kiến (±10%). Ưu tiên theo `ba-admin.md`: **MUST** = FR-62, FR-32, FR-36, FR-53, FR-55 (**5 mã**); **SHOULD** = FR-35, FR-24 (phần group/grant, CR-013).
+
+| Mã | Ưu tiên | Test chính (file ở mục 4) | Số test |
+|---|---|---|---|
+| ADM-FR-62 (Groups, thành viên, dán, `beta-testers`) | MUST | R1, R3, DB `db-schema`/`db-rls`, `groups`, `members`, `users-groups`, `forbidden`, E `groups-list`, `groups-editor`, `groups-members`, `m3-flow` | 104 |
+| ADM-FR-32 (Grant group/user trong entitlement) | MUST | R1, R4, `grants`, `grants-batch`, `hub-view`, `forbidden`, E `groups-grants`, `access-matrix` | 78 |
+| ADM-FR-35 (Ma trận, tick hàng/cột, batch) | SHOULD | R4, `matrix`, `grants-batch`, E `access-matrix` | 36 |
+| ADM-FR-36 (Kiểm tra quyền, `effective-access`) | MUST | R1, R5, `effective-access`, `access-sql`, `hub-view`, E `access-check`, `access-user-tab` | 78 |
+| ADM-FR-53 (`config_version` + NOTIFY) | MUST | R1 (payload), R2, DB, `notify`, `concurrency`, `hub-view` | 98 |
+| ADM-FR-55 (chống ghi đè, `ConflictDialog`) | MUST | `conflict`, `groups`, E `conflict-*` (6 thực thể), `m3-flow` | 48 |
+| ADM-FR-24 (phần group/grant của "Ai dùng được") | SHOULD | `command-access`, E `access-command`, i18n | 16 |
+| ADM-BR-11 (hiệu lực) | — | R5, `access-sql`, `effective-access`, `hub-view` | gộp FR-36 |
+| ADM-BR-12 (thu hồi giữ grant) | — | R4 (`matrixRowState`), R5, `grants`, `hub-view`, `concurrency` C3, E `access-matrix` | 12 (gộp) |
+| ADM-BR-09 (cách ly tenant) | — | `groups`, `members`, `grants`, `matrix`, `effective-access`, DB RLS + FK kép | 24 (gộp) |
+| ADM-NFR-07 (RLS + quyền) | — | `db-rls`, `forbidden` | 18 |
+| ADM-NFR-06 (migration có version) | — | `db-schema`, `migrate` (sửa) | 20 |
+| AC-A07 · A10 · A11 · A03(vế 2) · M3-AC01…10 | — | mục 7 | gộp |
+| M3-R24 (nhãn/i18n) | — | i18n 3 file, e2e | 10 + |
+
+**Ngoài phạm vi M3** (chỉ có test âm hoặc không có): cấp agent cho group, "Chạy với tư cách user" (FR-37, M5); audit/Lịch sử (M4); import/export grant (FR-54, M4); quota (M4); menu `/`, `CMD_NOT_FOUND`, kill switch phía Hub (M5; R19 (3)); endpoint HTTP cho `config_version` (không có: `GET /admin/config-version` → 404, ca trong `forbidden`); UI cấp feature trực tiếp cho user (A6: e2e đếm `button "Cấp trực tiếp…"` = 0). Hiệu năng spec §6 do backend-lead đo (`access.perf.int.test.ts`); qc chỉ chạy lại ở VERIFY và báo p95 (không khoá).
+
+## 3. Dữ liệu seed / fixture
+
+**Tenant/user: như M1 §3** (`platform` 2 user, `acme` 7 user [6 active; `em` `active=false`], `globex` 3, `zeta` khoá (`active=false`; 2 user `locked_by_tenant=true`)); e2e thêm tenant `bulk` (55 member `bulk000…bulk054`, tất cả active). **Danh mục: như M2 §3** (secrets, workflows `translate/invoice-check/summarize/report-export(tắt)/report-tax`, features `core, ke-toan(on), dich-thuat(on), bao-cao(beta), thu-nghiem(off)`, commands `dich(core), tom-tat(core), kiemtra-hoadon(ke-toan), tr-nhanh(dich-thuat, command tắt), xuat-bao-cao(bao-cao, command tắt, workflow tắt)`, entitlement `ke-toan→acme (còn), ke-toan→globex (đã thu hồi), dich-thuat→acme, bao-cao→acme, thu-nghiem→acme`).
+
+**Thêm cho M3** (owner SQL; `seedPermissions(owner, parts?)`, mỗi file chỉ chèn phần cần; `beta-testers` mỗi tenant do trigger):
+
+| Bảng | Dữ liệu |
+|---|---|
+| features | `phap-che` (id `id3(11)`, tên vi "Pháp chế", on, **không** entitlement cho ai) → `NOT_ENTITLED`; hàng "Chưa mở" của ma trận |
+| groups | acme: `ke-toan` (`id3(1)`, vi "Kế toán", en "Accounting", mô tả "Phòng kế toán"), `kinh-doanh` (`id3(2)`, vi "Kinh doanh", rỗng thành viên); globex: `ke-toan` (`id3(3)`, vi "Kế toán"; **cùng key khác tenant**) |
+| group_members | acme `ke-toan`: `lan`, `thu`, `em` (em `active=false`); acme `beta-testers`: `thu`; globex `ke-toan`: `khang` |
+| feature_grants | G1 acme · feature `ke-toan` → group `ke-toan` (`id3(21)`) · G2 acme · `bao-cao` → `beta-testers` (`id3(22)`) · G3 acme · `dich-thuat` → **user** `an` (`id3(23)`) · G4 globex · `ke-toan` → group `ke-toan` globex (`id3(24)`; entitlement đã thu hồi → vẫn giữ) |
+
+`seedPermissions` tham số `parts` (`{groups?, members?, grants?, phapChe?}`): `[]` = bỏ; vd e2e `m3-flow` và `hub-view` AC-A10 dùng `grants: []` để tự cấp qua API.
+
+**Số liệu đã tính (nguồn cho kỳ vọng; nếu seed đổi phải tính lại):**
+- Group list acme (sắp `beta-testers` đầu rồi key): `[beta-testers, ke-toan, kinh-doanh]`, `member_count` `[1, 3, 0]`, `feature_count` `[1, 1, 0]` (G2, G1), `agent_count` 0. Globex: `[beta-testers (0 người), ke-toan (1 người, feature_count 1)]`. Platform, zeta: chỉ `beta-testers`, 0 người.
+- Ma trận acme (`features` sắp `core` đầu rồi key): `core` state `core` · `bao-cao` `entitled` (granted `[beta-testers]`, `command_names ["xuat-bao-cao"]`) · `dich-thuat` `entitled` (granted `[]`, user-grant G3 **không** nằm trong `granted_group_ids`) · `ke-toan` `entitled` (granted `[ke-toan]`, `["kiemtra-hoadon"]`) · `phap-che` `none` · `thu-nghiem` `entitled`. `core.command_names` = `["dich","tom-tat"]`, `command_count 2`. `groups` 3, `group_total 3`. Ma trận globex: `ke-toan` state **`revoked`** (còn G4), `bao-cao/dich-thuat/phap-che/thu-nghiem` `none`.
+- **`effective-access` acme** (đúng luật plan §4):
+  - `lan` (nhóm `ke-toan`): feature hiệu lực = `core` (`[core]`), `ke-toan` (`[grant_group ke-toan]`); không hiệu lực: `bao-cao` missing `[beta_not_member, no_grant]`, `dich-thuat` `[no_grant]`, `phap-che` `[no_entitlement, no_grant]`, `thu-nghiem` `[feature_off, no_grant]`. Command thấy: `dich`, `tom-tat`, `kiemtra-hoadon` (3/5); `tr-nhanh` missing `[command_disabled, no_effective_feature]`; `xuat-bao-cao` `[command_disabled, workflow_disabled, no_effective_feature]`.
+  - `thu` (`ke-toan` + `beta-testers`): `bao-cao` hiệu lực, reasons `[grant_group beta-testers, beta_member]`; thấy 3 command như `lan`; `xuat-bao-cao` không thấy `[command_disabled, workflow_disabled]` (có `via` bao-cao nên **không** có `no_effective_feature`).
+  - `an`: `dich-thuat` hiệu lực `[grant_user]`; `kiemtra-hoadon` không thấy `[no_effective_feature]`, `blocked_by [{ke-toan, [no_grant]}]`, `suggestion = ke-toan`; `tr-nhanh` `[command_disabled]` (có `via`). Thấy 2 command (`dich`, `tom-tat`).
+  - `em` (inactive, thành viên `ke-toan`): `blockers [user_inactive]`; không thấy command nào; mọi feature `missing` bắt đầu bằng `user_inactive`.
+  - `binh`, `chi`, `dung`: chỉ `core` (2 command). `khang` (globex): `ke-toan` không hiệu lực, reasons `[grant_group ke-toan]`, missing `[no_entitlement]` (A11); thấy `dich`, `tom-tat`. `zoe`/`zed` (zeta): `blockers [tenant_locked]`, rỗng. `admin` (platform): chỉ `core`.
+- **`visible_user_count`** (`active ∧ ¬locked_by_tenant`, tenant active, R11): `/dich` (core) platform 2 · acme 6 · globex 3 · zeta 0 · **bulk 55** (e2e) → tổng 66 (khớp "5 tenant · 66 user" của M2 e2e) · `/kiemtra-hoadon` chỉ tenant acme: **2** (`lan`, `thu`; `em` không active; globex bị thu hồi nên không có hàng) · `/tr-nhanh` acme 0 (command tắt) · `/xuat-bao-cao` acme 0.
+- **Dữ liệu `bulk` (e2e)**: tenant `bulk` không có entitlement/group (ngoài `beta-testers` rỗng), nên ma trận của `bulk` chỉ có hàng `core` ("Mặc định") + feature `none`; 55 user đều active nên `/dich` có `visible_user_count = 55`. Vì trigger, `bulk` **có** `beta-testers`; danh sách group của `bulk` = 1 hàng.
+
+## 4. Danh sách file và ca kiểm
+
+Ký hiệu: **R** = rules, **D** = DB, **I-*** = int theo module, **E-*** = e2e.
+
+### R. Hàm thuần (rules; không DB)
+
+**R1 `rules/contracts.test.ts`** (≈ 22; FR-62/32/36/53/55/24, BR-09; import tĩnh từ `@ai/contracts`)
+1. `API_ERRORS` = bảng M1+M2 giữ nguyên (34 mã) + `BETA_GROUP_PROTECTED 409`, `NOT_ENTITLED 409`; tổng **36**.
+2. `REFERENCE_FIELDS` chứa 4 giá trị mới `feature_id, group_id, user_id, group_ids` cùng 4 giá trị cũ (+ `field` `feature_ids`, `group_ids`, `ids` ở `InvalidReferenceDetails` batch).
+3. Hằng đúng spec §3: `BETA_GROUP_KEY`, `GROUP_KEY_RE`, `GROUP_NAME_MAX 64`, `GROUP_DESC_MAX 400`, `GROUP_PASTE_MAX 500`, `USERNAME_INPUT_MAX 64`, `USER_GROUPS_MAX 50`, `OTHER_GROUPS_MAX 3`, `GRANT_BATCH_MAX 200`, `MATRIX_GROUPS_MAX 200`, `MATRIX_COMMAND_NAMES_MAX 10`, `ACCESS_COMMANDS_MAX 1000`, `ACCESS_GROUPS_MAX 20`, `CONFIG_CHANNEL`; mọi enum (`MATRIX_ROW_STATES`, `ACCESS_REASONS`, `USER_BLOCKERS`, `FEATURE_MISSING`, `COMMAND_MISSING`, `CONFIG_ENTITIES`) đúng thứ tự spec.
+4. `GroupKey`: trim+lower; `a`, 33 ký tự, `a_b`, `Có-dấu` fail; 2 và 32 ok.
+5. `GroupCreateRequest`: `name.vi` thiếu/rỗng/65 fail, 64 ok; `name.en` `""` bị bỏ; `description` 400 ok, 401 fail, `""` → `null`; khoá lạ fail; `GroupUpdateRequest`: cần `version ≥ 1`, có `key` → fail, `description: null` ok.
+6. `GroupMembersAddRequest`: `usernames` rỗng fail, 1 và 500 ok, 501 fail; phần tử 64 ok / 65 fail; chuẩn hoá trim+lower; **bỏ trùng sau chuẩn hoá**; `dry_run` mặc định `false`; khoá lạ fail.
+7. `GroupMembersAddResponse` strict `{added, not_found, already}`; `GroupMember` strict (có `other_groups ≤ 3`, `other_groups_total`).
+8. `GrantCreateRequest`: đúng một trong `group_id`/`user_id` (cả hai / không cái nào → fail, `path []`); `feature_id` không uuid fail; `GrantDeleteQuery` cùng luật.
+9. `GrantBatchRequest`: `add` và `remove` mặc định `[]`; tổng 0 fail, 200 ok, 201 fail; cặp trùng trong một mảng fail (`path` trỏ phần tử trùng); cặp xuất hiện ở cả `add` và `remove` fail; phần tử có `user_id` fail (strict).
+10. `GrantSchema.subject` discriminated union (`group` | `user`); thiếu `type` fail; `entitled` boolean bắt buộc.
+11. `GrantMatrixQuery`: `limit` 0/201 fail, mặc định 200; `offset` -1/100001 fail; `GrantMatrix.features[].state ∈ MATRIX_ROW_STATES`; `command_names ≤ 10`.
+12. `EffectiveAccess` strict: `agents` đúng `{available:false}` (thêm khoá fail); `EffectiveFeature.missing ⊂ FEATURE_MISSING`; `EffectiveCommand.suggestion` `null` | `{action:"grant_feature", feature}`.
+13. `EffectiveAccessQuery.command`: `" /DICH "` → `dich`; `a_b` fail, 33 ký tự fail.
+14. `AccessReason` discriminated union: `grant_group` bắt buộc `group`; `core` có `group` → fail.
+15. `UserSchema` có `groups ≤ 50` (51 fail) + `group_count`; `UserListQuery.group` uuid (`abc` fail); `PATCH` user **không** có `group_ids` (khoá lạ fail).
+16. `CommandAccessItem` có `groups ≤ 20` (mỗi mục `feature` `{id,key,name}`), `group_count`, `visible_user_count`; `active_user_count` giữ.
+17. `GroupVersionConflictDetails` = `{current: Group, updated_at}`; `NotEntitledDetails {feature_ids ≥ 1}` strict; `BETA_GROUP_PROTECTED` không có details.
+18. `GroupListQuery`/`GroupListResponse` (`{items,total}`, **không** `counts`); `GrantListQuery`; `GroupMemberListQuery`.
+19–22. `parseUsernameList`: tách `/[\s,]+/` (xuống dòng, phẩy, khoảng trắng, tab), trim, lower, bỏ rỗng, bỏ trùng giữ thứ tự đầu; `""`/`"  ,\n"` → `[]`; **không** cắt 500; chuỗi 10.000 mục chạy < 50 ms (tất định, ngưỡng rộng).
+
+**R2 `rules/config-payload.test.ts`** (≈ 9; FR-53, M3-R16)
+`configChangedPayload(v, events)`: (1) một sự kiện có tenant → `{v, entity, tenant_id}`; (2) nhiều sự kiện cùng entity cùng tenant → entity đó + `tenant_id`; (3) khác entity → `entity: "batch"`; (4) cùng entity khác tenant → **không** có `tenant_id`; (5) một sự kiện `tenantId: null` (catalog, secret) → không `tenant_id`; (6) lẫn null và id → không `tenant_id`; (7) `events` rỗng → ném `Error`; (8) kết quả qua `ConfigChangedPayloadSchema` (strict): `v` 0 / 1,5 fail, khoá lạ (`name`, `username`) fail; (9) `JSON.stringify` của payload hợp lệ ≤ 8.000 byte và không có khoá nào ngoài `v, entity, tenant_id`.
+
+**R3 `rules/groups.rules.test.ts`** (≈ 14; FR-62, FR-55, M3-R01…R05; nạp qua `_modules`)
+`isBetaGroup`: `beta-testers` true, `ke-toan`/`Beta-Testers` false. `checkGroupDelete`: beta → `{code:"BETA_GROUP_PROTECTED"}` **không** `details`; khác → `null`. `changedGroupFields`: giống hệt → `[]`; đổi `name.vi`; thêm/bỏ `name.en`; `description` `null` ↔ chuỗi; đổi cả hai → cả hai; so sâu `name` (khoá đổi chỗ → `[]`). `planMemberAdd(input, found, existing)`: (a) `added/already/not_found` theo **thứ tự input**; (b) username sai định dạng (`A B`, `x`, `ab!`) → `not_found` dù có trong `found`; (c) user có trong `found` và `existing` → `already`; (d) `toInsert` = id của `added` **sắp tăng dần** (không theo thứ tự input); (e) `found` thừa user không có trong input → bỏ qua; (f) input rỗng → mọi mảng rỗng; (g) hàm không đổi `input`/`found`/`existing` (đóng băng sâu).
+
+**R4 `rules/grants.rules.test.ts`** (≈ 16; FR-32, FR-35, BR-12, M3-R07…R09)
+`comparePairs`: `featureId` trước rồi `groupId`, so chuỗi uuid chữ thường, ổn định. `pairId` = `featureId:groupId`. `checkGrantFeatures(features, addIds)`: `core` trong `add` → `CORE_FEATURE_PROTECTED`; `core` chỉ nằm trong `remove` (không ở `addIds`) → vẫn `CORE_FEATURE_PROTECTED` (đồng nhất DELETE); `!entitled` trong `addIds` → `NOT_ENTITLED {feature_ids}` sắp tăng, không trùng; `!entitled` chỉ ở `remove` → `null`; `core` ưu tiên trước `NOT_ENTITLED`; không vấn đề → `null`. `planBatch(existing, add, remove)`: `insert = add ∖ existing`, `delete = remove ∩ existing`, `unchanged = |add ∩ existing| + |remove ∖ existing|`; `insert`/`delete` sắp theo `comparePairs` (không theo thứ tự input); tập rỗng. `matrixRowState`: `core` → `core`; `entitled` → `entitled` (kể cả `grantCount > 0`); `¬entitled ∧ revoked ∧ grantCount > 0` → `revoked`; `¬entitled ∧ revoked ∧ grantCount = 0` → `none`; chưa từng mở (`revoked=false`) → `none`.
+
+**R5 `rules/access.rules.test.ts`** (≈ 36; FR-36, BR-11, BR-12, M3-R11, R12; **luật `computeEffectiveAccess` plan §4, bảng sự thật**). Dựng `AccessInput` nhỏ bằng hàm `mk()`; kiểm đủ `reasons`, `missing`, `via`, `blockedBy`, `suggestFeatureId`; đóng băng sâu input.
+- **blockers (5):** user active, tenant active → `[]`; `!active` → `[user_inactive]`; `lockedByTenant` → `[tenant_locked]`; `!tenantActive` → `[tenant_locked]`; cả hai → `[user_inactive, tenant_locked]` (đúng thứ tự). Có blocker → mọi feature `missing` bắt đầu bằng blocker, mọi command `visible=false`, `missing` bắt đầu bằng blocker và **không** có `no_effective_feature`.
+- **core (3):** `[core]`, `effective`, không cần entitlement/grant; `entitled=false` vẫn hiệu lực; user có blocker → `effective=false`, `reasons` vẫn `[core]`.
+- **feature thường, trạng thái `on` (6):** entitled+grant group (user thuộc group) → `[grant_group]`; entitled+`grantUser` → `[grant_user]`; cả hai → `[grant_user, grant_group…]` (user trước); group được cấp nhưng user **không** thuộc → `missing [no_grant]`; entitled không grant → `[no_grant]`; `¬entitled` + có grant → `effective=false`, reasons **giữ** (`grant_group`), `missing [no_entitlement]` (A11); `¬entitled` + không grant → `[no_entitlement, no_grant]` (thứ tự).
+- **`off` (2):** `missing` chứa `feature_off` đầu tiên sau blockers; entitled + grant vẫn không hiệu lực; reasons giữ.
+- **`beta` (7, A7):** có grant (qua beta group) **và** là thành viên → `effective`, reasons `[grant_group beta, beta_member]`; thành viên nhưng không grant → missing `[no_grant]`, reasons `[beta_member]`; có grant không thành viên → `[beta_not_member]`, reasons `[grant_group]`; không cả hai → `[beta_not_member, no_grant]`; `betaGroupId = null` → `beta_not_member`; beta + `¬entitled` → `[…, no_entitlement, …]` đúng thứ tự `feature_off? beta_not_member? no_entitlement no_grant`; grant qua group thường (không beta) vẫn cần thành viên beta.
+- **thứ tự reasons/nhiều group (2):** nhiều `grantGroupIds` giao `groupIds` → theo thứ tự của `grantGroupIds`; group được cấp nhưng user không thuộc → không có trong reasons.
+- **command (9):** thấy qua feature hiệu lực (`via` giữ thứ tự `features` input + reasons); `enabled=false` → `[command_disabled]` (+ `no_effective_feature` nếu không `via`); `workflowEnabled=false` → `workflow_disabled`; cả hai; `via=[]` và blockers rỗng → `no_effective_feature`; `blockedBy` = feature của command **không** hiệu lực với `missing` đã **bỏ** `user_inactive`/`tenant_locked` (có thể rỗng); `featureIds` rỗng → `[no_effective_feature]`; `featureIds` trỏ id không có trong `features` → bỏ qua, không ném; thứ tự command giữ như input.
+- **`suggestFeatureId` (4):** command không thấy, blockers rỗng, enabled, workflow enabled, có feature `missing` đúng `["no_grant"]` → feature **đầu tiên** theo thứ tự `features`; feature chỉ có `[no_entitlement, no_grant]` → không gợi ý (`null`); command bị tắt/workflow tắt → `null`; có blockers → `null`.
+- **Tổng hợp (2):** input rỗng → `{blockers: [], features: [], commands: []}`; gọi hai lần cùng input cho kết quả `toEqual` (thuần, không trạng thái).
+
+### i18n (không DB)
+
+**C1 `i18n-conflict.test.ts` · `i18n-groups.test.ts` · `i18n-access.test.ts`** (3 + 3 + 4 = 10; M3-R21, R22, R24; tách theo task nạp key để file xanh đúng task): `vi.json` và `en.json` cùng tập key; mọi key trong `plan-frontend.md` §7 thuộc nhóm của file có giá trị VI **và** EN nguyên văn (bảng cố định trong test, khớp từng ký tự: `conflict.body.byUser` "{user} vừa sửa {entity} này lúc {time} (v{n}). Bản của bạn dựa trên v{mine}.", `conflict.body.anon`, `conflict.overwrite.titleUser/titleAnon`, `conflict.overwrite.body` "Bản v{n} sẽ bị thay bằng bản của bạn (thành v{next}).", `conflict.toast.loaded` "Đã tải bản mới nhất · v{n}"…); mọi nhãn e2e `plan-frontend.md` §5 xuất hiện làm giá trị đầy đủ trong `vi.json` ("+ Tạo group", "Có sẵn", "Thấy các feature đang Beta", "Đổi tên", "Dán danh sách username", "Hiện feature chưa mở ({count})", "Đã thu hồi entitlement", "Vì sao không?", "Hiện command không thấy ({count})"…). `conflict`: không còn dùng `Tải lại` cho 409 (key `errors.versionConflict` **giữ** làm câu dự phòng; test chỉ kiểm key còn tồn tại, M1 i18n-labels l.216-217 giữ nguyên); `i18n-access` thêm: **không còn** key `commands.access.groupsLater`; câu R21 có `{user}` và không `{user}` đủ 2 locale. Kèm `bun run i18n:check` exit 0 (lệnh xong, không `it`).
+
+### D. DB / RLS (owner + `admin_api` + `hub_ro`)
+
+**D1 `db-schema.int.test.ts`** (≈ 18; ADM-NFR-06, FR-62/32/53, M3-AC01/AC06; ngoại lệ như M1-D2: chỉ owner + `resetTestDb` + `runMigrations`, **không** seed/app; chỉ đọc nên `beforeAll`)
+1. `runMigrations` development `{main:7, dev:2}`; lần 2 `{0,0}`; số hàng `drizzle.__drizzle_migrations` = 7.
+2. Đúng **14** bảng `admin.*` (`command_names, commands, config_meta, feature_commands, feature_entitlements, feature_grants, features, group_members, groups, refresh_tokens, secrets, tenants, users, workflows`) + 3 `hub.*`; **không** có `audit_log`, `tenant_quotas`.
+3. Production `{main:7, dev:0}`; 14 bảng `admin.*`, 0 `hub.*`.
+4. **Migration cũ bất biến (CONVENTIONS §8):** sha256 `0000…0004` và `migrations-dev/0000_hub_stub.sql` bằng băm ở HEAD khi viết (qc tính ở Q2, 0003/0004 mới thêm vào danh sách, không dùng `a07984c`); tồn tại đúng `0005_admin_permissions`, `0006_permissions_rls` trong `_journal.json`.
+5. `groups`: `groups_tenant_key_uq` (`23505`), `groups_tenant_id_uq`; CHECK key (`A`, `a`, `a_b`, 33 ký tự → `23514`; `ab`, 32 ok); `name` thiếu `vi` / không phải object → `23514`; `description` 401 ký tự → `23514`; mặc định `version 1`; `updated_by` FK `SET NULL`.
+6. `group_members`: PK `(group_id, user_id)` (`23505`); FK kép chặn user khác tenant với group → `23503`; xoá group → CASCADE; xoá user → CASCADE; chỉ mục `group_members_user_idx`.
+7. `feature_grants`: `feature_grants_subject_check` (cả `group_id` và `user_id` null / cùng có → `23514`); `feature_grants_group_uq`/`feature_grants_user_uq` từng phần (`23505` khi trùng cặp; hai hàng cùng feature khác subject ok); FK kép: group tenant khác với `tenant_id` của grant → `23503`; user tương tự → `23503`; xoá feature → CASCADE grants; xoá group → CASCADE; `granted_by` `SET NULL`; chỉ mục `feature_grants_tenant_feature_idx`, `feature_grants_group_idx`, `feature_grants_user_idx`.
+8. **`users_tenant_id_uq`** tồn tại trên `(tenant_id, id)` (`pg_indexes`/`pg_constraint`), là đích của FK kép; `groups_tenant_id_uq` tương tự.
+9. `config_meta`: một hàng `(id=1, config_version=0)` ngay sau migrate; `id = 2` → `23514`; `config_version = -1` → `23514`; `updated_at` mặc định.
+10. **Trigger `tenants_beta_group`:** tồn tại (`pg_trigger`, AFTER INSERT FOR EACH ROW); hàm `admin.create_beta_group` `SECURITY INVOKER` và `proconfig` chứa `search_path`; `has_function_privilege('public', …, 'EXECUTE')` false.
+11. Trigger: owner `INSERT` tenant mới → đúng **một** `beta-testers` (`name {"vi":"Beta testers","en":"Beta testers"}`, mô tả "Thấy các feature đang Beta"); insert hai tenant một câu → mỗi tenant một; tenant có sẵn `beta-testers` (insert trước bằng owner không thể vì tenant chưa có; kiểm `ON CONFLICT DO NOTHING` bằng chèn lại trực tiếp → 0 hàng mới).
+12. **Backfill** (đọc file `0006_permissions_rls.sql` như artifact, lấy câu `INSERT … SELECT … FROM admin.tenants`): owner xoá `beta-testers` của một tenant rồi chạy lại câu đó → tenant đó có lại đúng một (nội dung giống trigger), tenant khác không bị nhân đôi.
+13. `0005` do drizzle sinh: `bun run db:generate` không sinh gì (kiểm bằng **lệnh**, mục 8, không `it`); `0006` không sửa `0000…0005`.
+14–16. Bất biến M1/M2 còn nguyên: cột `tenants/users/refresh_tokens/secrets/workflows/commands/features` không đổi (trừ unique index mới trên `users`); `hub.agent_workflows` còn; `admin_rw` vẫn không đọc được `secrets.ciphertext`.
+17–18. `drizzle.config` nhận cả hai file schema (kiểm gián tiếp bằng 2 ca trên); `feature_entitlements` còn chỉ mục từng phần M2.
+
+**D2 `db-rls.int.test.ts`** (≈ 16; ADM-NFR-07, ADM-BR-09, **M3-AC06**, M3-AC01 phần DB; owner chèn dữ liệu; truy vấn trực tiếp `admin_api` (`max:1`), scope bằng `set_config(..., true)` trong `sql.begin`)
+1. `admin_api` **không** đặt scope: `count(*)` `groups`, `group_members`, `feature_grants` = 0.
+2. scope `tenant` (acme): chỉ thấy hàng acme của cả 3 bảng; `insert` group tenant globex → `42501`; `insert group_members`/`feature_grants` tenant khác → `42501`; `update`/`delete` hàng tenant khác → 0 hàng.
+3. scope `tenant` acme: `tenant_id` rỗng/`'abc'` trong `app.tenant_id` → 0 hàng hoặc lỗi, **không rò**.
+4. scope `platform`: thấy cả hai tenant, ghi được mọi bảng.
+5. **FK kép (owner, không bị RLS che):** `group_members (acme, group acme, user globex)` → `23503`; `feature_grants (tenant acme, group globex)` → `23503`; `(tenant acme, user globex)` → `23503`; `feature_grants` `group_id` và `user_id` cùng null / cùng có → `23514`; ghi đúng tenant → ok (đối chứng).
+6. **`hub_ro` (M3-AC06):** `SET ROLE hub_ro` → `SELECT` `groups`, `group_members`, `feature_grants`, `config_meta` được và thấy **cả hai tenant** (`USING (true)`); `insert`/`update`/`delete` từng bảng → `42501`; `select name from admin.secrets` vẫn `42501`; `has_table_privilege('hub_ro','admin.secrets','SELECT')` false.
+7. `admin_api` trên `config_meta`: `update` được (cả scope `tenant`); `insert … on conflict do update` được; `delete`/`truncate` → `42501`; `admin_rw` `has_table_privilege(…,'DELETE')` false, `'TRUNCATE'` false; không có RLS trên `config_meta` (`relrowsecurity` false).
+8. `relrowsecurity` đúng **8** bảng (`feature_entitlements, feature_grants, group_members, groups, refresh_tokens, secrets, tenants, users`); 6 bảng còn lại false; không bảng nào `relforcerowsecurity`.
+9. `pg_policies`: `groups_admin_rw`, `group_members_admin_rw`, `feature_grants_admin_rw` (`admin_rw`, FOR ALL) và `*_hub_ro` (`hub_ro`, SELECT); chính sách `admin_rw` có `WITH CHECK`.
+10. Trigger chạy dưới `admin_api` scope `platform`: `insert into admin.tenants` → `beta-testers` có ngay trong cùng transaction (RLS không chặn trigger); `admin_api` scope `tenant` `insert` tenant → `42501` (tenant luôn do platform tạo).
+11. Hai transaction trên một kết nối: tx1 scope `platform` đọc `groups`; tx2 không scope → 0 hàng.
+12–16. Không rò chéo: `member`/`tenant` scope không đọc được `config_meta`? **Không** (bảng không RLS, `admin_api` đọc được `config_version`): ca khẳng định đúng như vậy và `config_version` không chứa dữ liệu nhạy cảm (một số nguyên); `hub_ro` không `EXECUTE` được `create_beta_group` trực tiếp; PUBLIC không có `SELECT` trên 4 bảng mới (`relacl`); role thăm dò `qc_probe_nologin` → `42501` trên `groups`; kiểm `has_column_privilege` không đổi trên `users` cho `hub_ro` (cột đã GRANT ở `0002`, nền của SQL §3.2).
+
+### I. Int theo module (qua app thật + DB test)
+
+**I-G `groups.int.test.ts`** (≈ 38; FR-62, FR-55, BR-09, M3-AC01, R01, R02, R04, R06, R23)
+- **List:** platform không `tenant_id` → mọi tenant, sắp `tenant_key`, `beta-testers` đầu rồi `key`; `?tenant_id=acme` → `[beta-testers, ke-toan, kinh-doanh]` với `member_count [1,3,0]`, `feature_count [1,1,0]`, `agent_count 0`; `is_beta` đúng; `tenant_key/tenant_name` có; `q` khớp `key`, `name.vi`, `name.en` ILIKE (`acc` → `ke-toan`); `limit/offset/total`; `limit=201` / `offset=-1` → 400; response **không** có `counts`; `tenant_admin` (binh) chỉ thấy acme, `?tenant_id=globex` bị bỏ qua (vẫn acme); `member` 403 `FORBIDDEN`; không token 401.
+- **POST:** 201 `GroupSchema` (`version 1`, `updated_by = "admin"`; `tenant_admin` binh → `"binh"`), `member_count 0`; platform thiếu `tenant_id` → 400 `TENANT_REQUIRED`; tenant lạ → 404; `KEY_TAKEN` cùng tenant (409), **cùng key khác tenant → 201**; tạo `beta-testers` → 409 `KEY_TAKEN`; key viết hoa `KE-TOAN2` → lưu `ke-toan2`; key sai (`a`, 33 ký tự, `a_b`) → 400; `name.vi` thiếu/65 ký tự → 400; `description` 401 → 400, `""` → `null`; khoá lạ → 400; `member` 403 trước khi parse (body sai vẫn 403).
+- **GET/PATCH:** `GET :id` 200; `tenant_admin` group tenant khác → 404 (không 403); `abc`/uuid lạ → 404. PATCH đổi tên → `version`+1, `updated_by`, `updated_at` đổi; **version cũ → 409 `VERSION_CONFLICT`**, `details` parse `GroupVersionConflictDetails`, `details.current` = bản server (kể cả `updated_by` username); body không đổi gì → 200 bản hiện tại, `version`/`updated_at` **không** đổi; có `key` → 400 `VALIDATION_ERROR`; thiếu `version` → 400; `description: null` xoá mô tả; **`beta-testers` đổi tên/mô tả được**; thêm thành viên và cấp grant **không** tăng `version` group (R05) và **không** tăng `version` feature/user; group tenant khác 404; thứ tự: `member` 403 → 404 → version.
+- **DELETE:** 204; cascade — `group_members` và `feature_grants` của group biến mất (owner đếm), user và feature **còn nguyên**; `beta-testers` → 409 `BETA_GROUP_PROTECTED` (group còn); uuid lạ 404; tenant khác 404; sau DELETE `GET` 404; thứ tự 404 → `BETA_GROUP_PROTECTED`.
+- **Trigger qua API (R02):** `POST /admin/tenants` (platform) → tenant mới có **đúng một** `beta-testers` (list `?tenant_id=<mới>`), tạo cùng transaction (nếu tenant tạo lỗi `KEY_TAKEN` thì không có group mồ côi: đếm group không có tenant = 0 nhờ FK); tenant `platform` và `zeta` có `beta-testers`.
+
+**I-M `members.int.test.ts`** (≈ 30; FR-62, M3-AC02, R03, R05, R23)
+- **List:** `GET /admin/groups/:id/members` → `{items,total}` sắp `username`; `GroupMember` đủ trường (`role`, `status`, `locked_by_tenant`, `last_login_at`, `added_at`, `added_by` username); `em` (inactive) vẫn nằm trong danh sách; `other_groups` ≤ 3 (beta đầu rồi key, **không** gồm group đang xem) + `other_groups_total` (`thu` ở `ke-toan` thấy `other_groups [beta-testers]`, `total 1`); `q` khớp `username`/`display_name`; phân trang; group tenant khác 404; `member` 403.
+- **Thêm (M3-AC02):** 5 username (1 không tồn tại, 1 đã có, 1 thuộc tenant khác, 2 hợp lệ mới) → 200 `{added:[2], not_found:[2], already:[1]}` theo thứ tự gửi, **2 người được thêm** (owner xác nhận), 3 người còn lại không đổi; thêm trùng lần 2 → toàn `already`; username viết hoa/khoảng trắng chuẩn hoá (`" LAN "` → `lan`); trùng trong request (`lan, LAN`) → một phần tử; username sai định dạng (`a`, `x y` đã tách?, `ab!`) → `not_found` (**không** 400); user bị khoá (`zed`@zeta) thêm được vào group zeta, nằm trong `added`; user inactive (`em`) thêm được; **500 username** → 200 (chỉ 5 hợp lệ); **501 username khác nhau → 400 `VALIDATION_ERROR`**; mảng rỗng → 400; phần tử 65 ký tự → 400; `dry_run:true` → cùng kết quả, **không ghi** (owner đếm), `group.version` không đổi; tenant_admin thêm user tenant khác bằng username → `not_found`; `group` tenant khác → 404; thêm vào `beta-testers` được; response không có `version`; `group.version` và `user.version` **không** tăng (R05).
+- **Bớt:** `DELETE …/members/:user_id` → 204 và hàng mất; idempotent (không phải thành viên → 204); `user_id` lạ/không uuid → 204 (group tồn tại) hoặc 404 (group lạ/tenant khác); `Hoàn tác` = `POST` lại → `added`.
+- **Cách ly tenant:** `tenant_admin` globex không thấy/không sửa group acme (list/GET/POST/DELETE → 404).
+
+**I-UG `users-groups.int.test.ts`** (≈ 10; FR-62, M3-R13, M1 tương thích)
+Mọi response `User` có `groups` (≤ 50, `beta-testers` đầu rồi `key`) và `group_count`: `GET /admin/users` (list), `GET /admin/users/:id`, `POST /admin/users` (201 `groups []`, `group_count 0`), `PATCH`, `lock`/`unlock`, `VERSION_CONFLICT.current`; `thu` có `[beta-testers, ke-toan]`, `group_count 2`; user có 52 group (owner chèn 51 group + beta) → `groups` đúng **50**, `group_count 52`; `?group=<id ke-toan acme>` → `lan, thu, em`; group uuid lạ / group tenant khác (tenant_admin) → danh sách **rỗng** (không 404); `?group=abc` → 400; lọc kết hợp `?q=`; `counts` M1 không đổi theo `?group=`; `tenant_admin` không thấy group tenant khác trong `groups[]` (RLS).
+
+**I-C `conflict.int.test.ts`** (≈ 12; FR-55, **AC-A07 phần API**, M3-R18, R20, R21)
+Sáu thực thể × 2: (a) `PATCH` với `version` cũ → 409 `VERSION_CONFLICT`, `details.current.version` số, `details.updated_at` ISO, `details.current` parse bằng schema thực thể (`UserSchema`, `TenantSchema`, `WorkflowSchema`, `CommandSchema`, `FeatureDetailSchema`, `GroupSchema`); **`updated_by` là chuỗi username (`"admin"`) cho workflow, command, feature, group; vắng hoặc `null` cho user, tenant** (nền của câu R21); (b) gửi lại cùng body với `version = details.current.version` → 200, `version` = current + 1 và dữ liệu là của người gửi (Ghi đè); bản của người kia **không** bị ghi đè âm thầm ở bước (a) (owner xác nhận giá trị server không đổi sau 409). Command `/dich` đặt `version = 7` bằng owner, B lưu → 8, A lưu với 7 → 409 `current.version = 8`.
+
+**I-GR `grants.int.test.ts`** (≈ 36; FR-32, BR-12, M3-AC03, R05, R07, R10)
+- **POST:** group → 201 `GrantSchema` (`subject.type "group"`, `entitled true`, `granted_by "binh"`); **cấp trùng → 200** cùng `id`, không ghi, `config_version` không đổi; subject user (`lan`) → 201 `subject.type "user"`; feature lạ → 400 `INVALID_REFERENCE {field:"feature_id"}`; group tenant khác (id globex, tenant acme) → 400 `{field:"group_id"}` (trong body → 400, không 404); user tenant khác → `{field:"user_id"}`; **thứ tự:** feature lạ + group lạ → `feature_id` trước; `core` (platform **và** tenant_admin) → 409 `CORE_FEATURE_PROTECTED`; `phap-che` chưa entitlement → 409 `NOT_ENTITLED {feature_ids:[phap-che]}`; **entitlement đã thu hồi (globex `ke-toan`) → `NOT_ENTITLED` cả với platform_admin**; `core` ưu tiên trước `NOT_ENTITLED`; feature `off` entitled (`thu-nghiem`) → 201 (lưu được); cả `group_id` + `user_id` / không có cái nào → 400 `VALIDATION_ERROR`; platform thiếu `tenant_id` → 400 `TENANT_REQUIRED`; tenant lạ → 404; `member` 403; khoá lạ 400; cấp xong **không** đổi `version` group/feature/user.
+- **DELETE query:** 204 hàng mất; lần hai 204 (idempotent); `core` → 409 `CORE_FEATURE_PROTECTED`; feature/group/user lạ hoặc group tenant khác → 204 (không thấy → coi như không có); thiếu cả `group_id`/`user_id` → 400; platform thiếu `tenant_id` → 400; xoá grant của feature đã thu hồi được; sau xoá `effective-access` của thành viên không còn feature.
+- **List:** sắp `feature.key`, group trước user, rồi `group.key`/`username`; lọc `feature_id`, `group_id`, `user_id`, `q`; `entitled=false` cho hàng của globex `ke-toan` (BR-12); tenant_admin chỉ thấy tenant mình; platform thấy cả hai; `limit=201` → 400; mọi item parse `GrantSchema`.
+- **BR-12 / R10:** thu hồi entitlement (API M2) rồi đọc `grants` → hàng grant **còn nguyên cùng `id`**, `entitled=false`; cấp lại → `entitled=true`, **cùng `id`**, không hàng mới (`granted_at` không đổi); xoá feature (M2) → grant của nó mất (cascade).
+
+**I-GB `grants-batch.int.test.ts`** (≈ 26; FR-32, FR-35, M3-AC03, R08)
+- **Đúng:** `add` 3 cặp + `remove` 1 cặp → `{added:3, removed:1, unchanged:0}`; áp lại cùng batch → `{0, 0, 4}` và `config_version` **không đổi**; thêm cặp đã có + bớt cặp không có → đếm vào `unchanged`; `remove` feature đã thu hồi entitlement **được**; chỉ `remove` → ok; hoán vị thứ tự `add`/`remove` cho **cùng kết quả cuối** và cùng đếm.
+- **Toàn phần hoặc không có gì:** mỗi loại lỗi cho **toàn batch 4 phần tử, phần tử hỏng ở cuối** → DB không đổi (owner đếm `feature_grants` trước/sau), `config_version` không đổi: `INVALID_REFERENCE {field:"feature_ids", ids}` (`ids` sắp tăng, không trùng), `{field:"group_ids", ids}` (group tenant khác), `CORE_FEATURE_PROTECTED` (core trong `add` **hoặc** `remove`), `NOT_ENTITLED {feature_ids}` (chỉ `add`; sắp tăng); **thứ tự kiểm**: `feature_ids` → `group_ids` → core → `NOT_ENTITLED`.
+- **Giới hạn:** 200 thao tác → 200 (dữ liệu: 100 cặp `add` + 100 `remove` có sẵn hoặc 200 `add` trên 200 group × 1 feature, tạo bằng owner); **201 → 400**; 0 → 400; cặp trùng trong `add` → 400 (path tới phần tử trùng); cặp ở cả `add` và `remove` → 400; phần tử có `user_id` → 400; platform thiếu `tenant_id` → 400 `TENANT_REQUIRED`; tenant lạ → 404; `member` 403.
+- **Cách ly:** `tenant_admin` globex gửi group acme → 400 `INVALID_REFERENCE group_ids`; ghi `feature_grants.tenant_id` đúng tenant (owner).
+- **Hiệu lực:** sau batch, `effective-access` của thành viên phản ánh ngay (M3-R11, không có hàng "đã tính sẵn").
+
+**I-MX `matrix.int.test.ts`** (≈ 16; FR-35, M3-R09; chỉ đọc nên `beforeAll`, vài ca ghi dùng `beforeEach` riêng trong `describe` của chúng)
+Ma trận acme đúng mục 3 (state, thứ tự, `command_names`, `command_count`, `granted_group_ids`, groups theo thứ tự beta đầu rồi key kèm `member_count`, `group_total 3`); ma trận globex: `ke-toan` `revoked`; `?group_id=<ke-toan acme>` → đúng một group, `granted_group_ids` chỉ trong số group trả về; `group_id` lạ/khác tenant → 404; platform thiếu `tenant_id` → 400 `TENANT_REQUIRED`; tenant lạ → 404; tenant_admin bỏ qua `?tenant_id`; `q` lọc **group** theo key/tên; `limit`/`offset` + `group_total` (owner chèn 205 group → `groups` 200 theo mặc định, `group_total 206`); `command_names` ≤ 10 sắp tăng và `command_count` thật (owner gắn 12 command vào `phap-che` ở một `describe` ghi riêng); thu hồi entitlement acme `ke-toan` bằng API → state `revoked` (còn grant G1), cấp lại → `entitled`; thu hồi `thu-nghiem` (không grant) → `none`; `member` 403; response strict.
+
+**I-EA `effective-access.int.test.ts`** (≈ 24; FR-36, BR-11, BR-12, M3-AC04, R11, R12; chỉ đọc, `beforeAll`)
+Đúng bảng mục 3 cho `lan`, `thu`, `an`, `em`, `binh`, `khang`, `zoe`, `admin` (từng phần: `blockers`, `features[].effective/reasons/missing`, `commands[].visible/via/blocked_by/missing/suggestion`); `user.groups` (`GroupRef` + `is_beta`); `agents` đúng `{available:false}`; `features` gồm **mọi** feature catalog (cả `phap-che`), `core` đầu rồi key; `commands` sắp `name`, `command_total` = tổng; `config_version` = `select config_version` của owner; `?command=`: tên (`dich`), alias (`tr`), có `/` đầu, viết hoa → đúng một command; tên không tồn tại → `commands: []`, `command_total 0` (**không** 404); sai định dạng (`a_b`) → 400; `tenant_admin` acme xem user globex → 404; `tenant_admin` xem user mình/tenant mình → 200; platform xem user mọi tenant; `member` 403; user lạ/`abc` → 404; **trần 1.000:** (ca ghi, `describe` riêng) owner chèn 1.001 command → `commands.length = 1000`, `command_total` = tổng thật; trạng thái đổi qua API rồi đọc lại phản ánh ngay (cấp group → thấy; xoá thành viên → hết; tắt feature → `feature_off`; bật beta thiếu thành viên → `beta_not_member`).
+
+**I-SQL `access-sql.int.test.ts`** (≈ 5; **đối chiếu `computeEffectiveAccess` ↔ SQL tham chiếu ↔ API**, BR-11, M3-R11; chỉ đọc sau khi dựng)
+Dựng **bằng owner SQL, tất định** (không ngẫu nhiên), mỗi tổ hợp một cụm riêng (tenant + user + feature + command + workflow) để mọi biến độc lập. Hai họ tổ hợp (tổng **68**): (A) `status{on,off,beta} × entitled{có,không} × grant{không, user, group} × thành viên beta{có,không}` = 36 (user active, tenant active, command/workflow bật); (B) `user.active × locked_by_tenant × tenant.active × command.enabled × workflow.enabled` = 32 với feature cố định `on` + entitled + grant group. Với mỗi tổ hợp tính ba nguồn: (1) hàm thuần `computeEffectiveAccess` trên `AccessInput` suy ra từ chính tổ hợp (qua `_modules`), (2) **SQL §3.2** chạy bằng `SET ROLE hub_ro` (chuỗi `HUB_VISIBLE_SQL` trong `_data.ts`), (3) API `effective-access` của user đó. Ca: (i) tập command thấy được của (1) = (2) cho cả 68; (ii) (3) = (1) về `visible` và `effective` từng feature cho cả 68; (iii) họ A riêng; (iv) họ B riêng (bảng chân trị 32); (v) `visible_user_count` của một tenant dựng sẵn (nhiều user) bằng `count(distinct u.id)` của SQL §3.2 theo tenant. Ca **không tất định: không có** (mọi dữ liệu cố định, không đồng hồ).
+
+**I-CA `command-access.int.test.ts`** (≈ 10; FR-24, M3-AC10, R14)
+`/kiemtra-hoadon`: tenant acme có `groups [{key ke-toan, is_beta false, feature {ke-toan}}]`, `group_count 1`, `visible_user_count 2`; globex vắng (thu hồi); `/dich` (core): `groups []`, `group_count 0`, `visible_user_count` platform 2 · acme 6 · globex 3 · zeta 0 và `active_user_count` giữ nguyên nghĩa M2; `/xuat-bao-cao`: `groups [{beta-testers, is_beta true, feature bao-cao}]`, `visible_user_count 0` (command tắt); `/tr-nhanh`: group_count 0 (grant user G3 không tính group), visible 0; **khớp `effective-access`:** `visible_user_count` của mỗi tenant = số user có command đó `visible=true` trong `effective-access` (duyệt toàn bộ user qua API; **M3-AC10**); trần 20: owner cấp feature `ke-toan` cho 25 group → `groups.length 20`, `group_count 25`, sắp group key rồi feature key; feature `off` không vào `groups[]`; thu hồi entitlement → tenant biến mất; `CommandAccessResponseSchema` strict; `tenant_admin` 403 (route chỉ platform, M2); trang/lọc M2 giữ.
+
+**I-HV `hub-view.int.test.ts`** (≈ 9; **AC-A10, AC-A11, AC-A03 vế 2 — phần dữ liệu `hub_ro`**, M3-R17, R19 (2); không cần NOTIFY nên xanh ở T6)
+Mỗi ca tự dựng (`grants: []` khi cần cấp qua API); SQL = `HUB_VISIBLE_SQL` chạy `SET ROLE hub_ro`. (1) **AC-A10:** `ke-toan` entitled acme; `tenant_admin` binh `POST /admin/grants` (group `ke-toan`) → 201; SQL cho `lan` có `kiemtra-hoadon`, cho `an` (cùng tenant, không trong group) **không**; `effective-access` đồng ý; user globex cùng tên group không thấy. (2) AC-A10: bớt `lan` khỏi group → SQL không còn. (3) **AC-A11:** từ dữ liệu (1) platform `DELETE entitlement` → SQL của `lan` **mất** `kiemtra-hoadon`; `feature_grants` **còn đúng hàng cũ** (`id` không đổi, số hàng không đổi); `effective-access.features[ke-toan]` `effective=false`, `reasons [grant_group]`, `missing [no_entitlement]`; cấp lại → SQL **có lại**, cùng `id` grant, **không** `POST` grant lại, không hàng mới. (4) **AC-A03 vế 2 dữ liệu:** command mới `dich-v2` (workflow `translate`, map đủ) feature `core` → SQL cho mọi user active của tenant active có `dich-v2` (acme 6, globex 3, platform 2), không ai của zeta. (5) kill switch: tắt feature `ke-toan` → SQL mất; bật lại → có. (6) `beta`: `bao-cao` chỉ hiện cho thành viên `beta-testers` **có** grant (`thu`), không cho `lan`. (7) command tắt / workflow tắt → SQL không có (và `effective-access` lý do tương ứng). (8) `hub_ro` đọc `config_meta`: `config_version` = giá trị owner; ghi bị từ chối. (9) `hub_ro` vẫn không đọc `secrets` (`42501`).
+
+**I-X `forbidden.int.test.ts`** (≈ 12; ADM-NFR-07, M3-R06; mọi route M3)
+Route: `GET/POST /admin/groups`, `GET/PATCH/DELETE /admin/groups/:id`, `GET/POST /admin/groups/:id/members`, `DELETE …/members/:user_id`, `GET/POST/DELETE /admin/grants`, `PUT /admin/grants/batch`, `GET /admin/grants/matrix`, `GET /admin/users/:id/effective-access`. Mỗi route: không token → 401; **`member` → 403 `FORBIDDEN` với body hợp lệ / body sai / id lạ (kiểm role trước parse/lookup, body 403 giống byte)**; `tenant_admin` truy thực thể tenant khác → 404; `GET /admin/commands/:id/access` vẫn chỉ `platform_admin` (tenant_admin 403). Không có route: `GET /admin/config-version` → 404, `POST /admin/features/:id/grants` → 404, `GET /admin/commands/:id/effective` → 404.
+
+**I-E `error-codes.int.test.ts`** (4; ADM-FR-62/32, M3-R06)
+`BETA_GROUP_PROTECTED` 409 (message tĩnh tiếng Anh "The beta-testers group cannot be deleted"); `NOT_ENTITLED` 409 `details {feature_ids}` sắp tăng, message "Feature is not entitled for this tenant"; mã dùng lại ở ngữ cảnh mới: `KEY_TAKEN` (group), `CORE_FEATURE_PROTECTED` (grant/batch), `INVALID_REFERENCE` với `field` mới, `TENANT_REQUIRED`, `VERSION_CONFLICT` (group), `NOT_FOUND`, `FORBIDDEN`; tập mã đã chạy kịch bản == 2 mã mới + các mã dùng lại ở trên; mọi `message` **tĩnh** (cùng mã cho hai đầu vào khác nhau có cùng `message`, không echo input).
+
+**I-N `notify.int.test.ts`** (≈ 73; **FR-53, M3-AC05, R15, R16, R19; mọi lệnh ghi M1/M2/M3 theo bảng plan §5.3**; mỗi `it` tự `reset` + mở listener; `chờ(dấu hiệu)` ≤ 1000 ms, âm tính bằng sentinel — mục 1). Ghi chú: ca **tất định**; ca có ngưỡng thời gian là P10, P13–P15.
+
+*N-A. Ghi có đổi → `v` +1, đúng một NOTIFY, đúng `entity`/`tenant_id` (33 ca; mỗi ca: `v` trước, gọi API, nhận đúng 1 thông điệp, `payload.v = v_trước + 1 = config_meta` sau, entity như bảng, sentinel xác nhận không có thông điệp thứ hai):*
+| Ca | Thao tác (API thật) | entity | tenant_id |
+|---|---|---|---|
+| N01 | `POST /admin/tenants` (ghi tenant + admin đầu + `beta-testers` = **ba bảng, một NOTIFY, v+1**) | tenant | id mới |
+| N02–N04 | `PATCH` tenant (đổi tên) · `lock` · `unlock` (đổi `active`) | tenant | id |
+| N05–N08 | `POST /admin/users` · `PATCH` (display_name) · `lock` (active→false) · `unlock` (active false→true) | user | acme |
+| N09–N13 | `POST /admin/groups` · `PATCH` tên · `DELETE` · members add (≥ 1 mới) · members remove (có thật) | group | acme |
+| N14–N16 | `POST /admin/grants` 201 · `DELETE /admin/grants` có thật · `PUT /admin/grants/batch` (thêm+bớt) | grant | acme |
+| N17–N20 | `POST /admin/features` · `PATCH` status · `PATCH` `command_ids` · `DELETE` (`thu-nghiem`) | feature | **vắng** |
+| N21–N23 | `PUT entitlement` (cấp mới cho zeta) · cấp lại (globex `ke-toan`) · `DELETE` thu hồi (acme) | entitlement | tenant đích |
+| N24–N29 | workflow `POST`/`PATCH`/`DELETE` (`report-tax`) · command `POST`/`PATCH`/`DELETE` (`tr-nhanh`) | workflow / command | **vắng** |
+| N30–N33 | secret `POST` · `PUT` (cùng giá trị cũ vẫn bump: hàng đổi `iv`) · `PATCH` ghi chú (đổi) · `DELETE` (`DIFY_OLD_KEY`) | secret | **vắng** |
+
+*N-B. Không đổi gì / lỗi / sổ sách đăng nhập → `v` không đổi, **không** NOTIFY (25 ca; sentinel):* N40 `PATCH` group không đổi · N41 members add toàn `already` · N42 members add `dry_run` (có người mới) · N43 members remove không phải thành viên · N44 `POST` grant đã có (200) · N45 `DELETE` grant không có · N46 batch toàn `unchanged` · N47 batch bị 400 (một phần tử sai) · N48 `PATCH` feature không đổi · N49 `PUT` entitlement đã active · N50 `DELETE` entitlement đã thu hồi (**giả định idempotent, G9**) · N51 `PATCH` workflow không đổi · N52 `PATCH` command không đổi · N53 `PATCH` tenant không đổi · N54 `PATCH` user không đổi · N55 `PATCH` secret cùng ghi chú · N56 `lock` user đã khoá · N57 `lock` tenant đã khoá · N58 `unlock` user chỉ có khoá tạm (`locked_until`, `active=true`) · N59 `POST /auth/login` thành công (`last_login_at`) · N60 `POST /auth/refresh` · N61 `POST /auth/change-password` · N62 `reset-password` · N63 `logout-all` · N64 đăng nhập sai nhiều lần (`failed_logins`, `locked_until`).
+
+*N-C. Tính chất (15 ca):*
+- **P1** mọi thông điệp của file qua `ConfigChangedPayloadSchema` strict, ≤ 8.000 byte; `v` số nguyên ≥ 1.
+- **P2** payload **không chứa** tên/username/secret: sau khi tạo tenant `key notify-co`, user `notify.user`, group `nhom-bi-mat`, feature `tinh-nang-bi-mat`, workflow `quy-trinh-bi-mat`, secret `DIFY_NOTIFY_KEY` giá trị `LEAK_1` → chuỗi thô của mọi thông điệp không chứa các chuỗi đó, không chứa `LEAK_1` ở dạng thô/base64/hex.
+- **P3 rollback không bump:** `POST /admin/commands` hợp lệ trừ một `feature_ids` không tồn tại → 400 `INVALID_REFERENCE`; `v` không đổi, không NOTIFY, DB không đổi (command không tồn tại).
+- **P4** lỗi luật giữa chừng: `POST /admin/groups` `KEY_TAKEN`, `POST /admin/tenants` `KEY_TAKEN` → không bump, không NOTIFY, không `beta-testers` mồ côi.
+- **P5 retry 40P01:** hook `afterLock("group.save","bump")` ném `Object.assign(new Error("test deadlock"), {code:"40P01"})` **lần đầu** → `PATCH` group trả 200, `version` +1 đúng một lần, `config_version` +1, **đúng một NOTIFY** (sentinel), dữ liệu đúng một lần ghi.
+- **P6 retry 40001:** như P5 ở `grant.batch/bump` → `{added, removed}` đúng một lần, `v` +1, một NOTIFY.
+- **P7 retry với trigger:** 40P01 ở `tenant.save/bump` → `POST /admin/tenants` 201, **một** tenant, **một** `beta-testers`, `v` +1, một NOTIFY.
+- **P8 sau commit:** tại thời điểm nhận thông điệp, truy vấn owner thấy **dữ liệu đã commit** và `config_version = payload.v` (kiểm với ba thao tác: group, grant, entitlement) — NOTIFY không đi trước commit.
+- **P9** chuỗi 10 ghi tuần tự → `v` tăng đúng +1 mỗi lần, `payload.v` = giá trị `config_meta` sau từng ghi, chuỗi `payload.v` đơn điệu tăng.
+- **P10 (có yếu tố thời gian)** `payload` tới listener **≤ 1000 ms** sau khi response về (đo `performance.now()` từ lúc `await` response xong) cho 3 loại ghi (group, grant, entitlement).
+- **P11 lỗi gửi không làm hỏng response:** `Db` bọc `notify` ném lỗi → `POST /admin/groups` vẫn 201, dữ liệu đã ghi, `config_version` +1, không treo.
+- **P12** `config_meta` bị xoá hàng (owner) → một ghi bất kỳ vẫn thành công, `v = 1`, hàng tồn tại lại (upsert).
+- **P13 · AC-A03 vế 2:** (platform) tạo command `dich-v2` (workflow `translate`, map đủ, feature `core`) → NOTIFY `entity command` ≤ 1000 ms; **tại lúc nhận**, SQL §3.2 qua `hub_ro` cho user active của tenant active thấy `dich-v2`.
+- **P14 · AC-A10:** `tenant_admin` binh cấp `ke-toan` cho group (API) → NOTIFY `entity grant`, `tenant_id acme` ≤ 1000 ms; tại lúc nhận, SQL qua `hub_ro`: `lan` thấy `kiemtra-hoadon`, `an` không; không NOTIFY nào cho tenant khác.
+- **P15 · AC-A11:** từ P14, platform thu hồi entitlement → NOTIFY `entitlement` ≤ 1000 ms, tại lúc nhận SQL mất `kiemtra-hoadon`, `feature_grants` giữ nguyên hàng; cấp lại → NOTIFY `entitlement`, tại lúc nhận SQL có lại, **cùng `id` grant**.
+
+**I-K `concurrency.int.test.ts`** (≈ 14; ràng buộc khoá M3 — **bất biến sau loạt**, KHÔNG phải ca xen kẽ tất định; ca tất định L1–L10 là của backend ở `apps/admin-api/src/lib/lock-order.int.test.ts`). **Không tất định** (thứ tự đến do hệ điều hành): mỗi ca lặp 10–20 vòng và chỉ khẳng định bất biến luôn đúng; một ca xanh không chứng minh hết lỗi — đó là lý do C12. Mỗi vòng: `pg_stat_database.deadlocks` của DB test **không tăng** (cần DB riêng, mục 6.3), không có 500, `config_version` tăng **đúng bằng số ghi có đổi thành công**, số NOTIFY nhận được bằng số đó và tập `v` nhận được = tập giá trị liên tục `(v0, v0 + n]` (mỗi `v` duy nhất).
+- C1 batch `[bớt X, thêm Y]` ∥ batch `[thêm X, bớt Y]` (20 vòng): cả hai 200; trạng thái cuối **chỉ** là {X có, Y không} hoặc {Y có, X không} (mỗi batch nguyên tử, không "cả hai có" / "không có gì").
+- C2 `POST` cùng cặp (feature, group) × 10 song song: đúng 1×201 + 9×200, 1 hàng, `config_version` +1, 1 NOTIFY.
+- C3 `POST` grant ∥ `DELETE` entitlement: không 500/40P01; kết quả `POST` ∈ {201, 409 `NOT_ENTITLED`}; nếu 201 thì hàng grant còn **và** `effective-access` không hiệu lực khi entitlement đã thu hồi (BR-12).
+- C4 `DELETE` group ∥ batch có group đó: `DELETE` 204; batch ∈ {200, 400 `INVALID_REFERENCE group_ids`}; **không** có `feature_grants` mồ côi (đếm hàng không có group).
+- C5 `PATCH` feature (status) ∥ `POST` grant feature đó: cả hai thành công, `config_version` +2.
+- C6 `DELETE` feature ∥ batch thêm feature đó: batch ∈ {200, 400 `INVALID_REFERENCE feature_ids`}; không grant mồ côi.
+- C7 ghi ở hai tenant song song (20 cặp): `config_version` +40; không ca nào chờ nhau quá hạn 5 s.
+- C8 `POST /admin/tenants` cùng key × 10: 1×201, 9×409 `KEY_TAKEN`; **đúng 1** `beta-testers` cho tenant đó; `v` +1; 1 NOTIFY.
+- C9 members add `[u2,u1]` ∥ `[u1,u2]` (20 vòng): tổng `added` = 2 (không trùng), không 40P01.
+- C10 30 ghi khác loại song song (tenant/user/group/grant/feature/secret): `v` sau = `v` trước + 30, 30 NOTIFY, `v` duy nhất.
+- C11 login/refresh (sổ sách) ∥ ghi cấu hình: `v` chỉ tăng theo số ghi cấu hình.
+- **C12 (guard độ phủ, tất định):** `apps/admin-api/src/lib/lock-order.int.test.ts` có **đủ 10 ca** tên bắt đầu `L1`…`L10` (chuỗi trong file, không đọc logic) và vẫn giữ ca M1 và M2 a/b/c — nếu backend xoá/đổi tên ca, test đỏ.
+- C13 `deadlocks` toàn file không tăng (đọc ở `afterAll`, một khẳng định cuối).
+
+### E. e2e (Playwright; `e2e/*.spec.ts`; nhãn nguyên văn `plan-frontend.md` §5; tên file chốt theo §12 **có đổi** — mục 6.2)
+
+Dữ liệu e2e: `prepare-db` mở rộng (Q2) gọi `seedPermissions(sql, ALL_PERMISSIONS)` sau `seedCatalog` (mục 3); ca cần trạng thái riêng dùng `withOwner` (như M2). Hai phiên = hai `browser.newContext()` (hoặc API `apiAsAdmin`) — **không** `waitForTimeout`; điều hướng bọc `waitForURL`. Giờ trong câu modal (`{time}` do `formatClock`) khớp bằng regex `lúc [^()]+ \(v\d+\)` (không giả định định dạng giờ; ca **có yếu tố thời gian**: không khẳng định giờ cụ thể).
+
+**Họ `conflict-<thực thể>` (M3-AC08, AC-A07; mỗi file 2–3 ca; câu theo A4):** người kia sửa bằng API (`apiAsAdmin(...).patch`) sau khi trang của mình đã mở; người mình sửa trường khác rồi `Lưu`.
+- **E-CU `conflict-users.spec.ts` (2):** drawer sửa `lan`: mình đổi `display_name` "Lan Tran A", người kia đổi thành "Lan Tran B" → `alertdialog "Có người vừa lưu bản mới hơn"`, mô tả **không `{user}`** ("Bản này vừa được sửa lúc … (v2). Bản của bạn dựa trên v1."); `Xem khác biệt` → `table "Khác biệt giữa bản của bạn và bản mới nhất"` có hàng `display_name` (cột `Bản mới nhất (v2)`) và **không** có hàng `email`/`version`/`updated_at`; `Ghi đè` → `alertdialog "Ghi đè thay đổi mới nhất?"` + "Bản v2 sẽ bị thay bằng bản của bạn (thành v3)." → DB `version 3`, tên "Lan Tran A". Ca 2: `Tải bản mới` → toast "Đã tải bản mới nhất · v2", form hiện "Lan Tran B", DB không đổi. **Không** có ca khoá/mở khoá (xem G11).
+- **E-CT `conflict-tenants.spec.ts` (2):** như trên cho tenant `acme` ở tab thông tin (mình đổi `name`; người kia đổi `max_concurrent_sub`); câu không `{user}`; diff có `name` và `max_concurrent_sub`; `Ghi đè`/`Tải bản mới`.
+- **E-CW `conflict-workflows.spec.ts` (3):** editor `translate`: mình đổi `name`, người kia đổi `description` → câu **có `{user}`** ("admin vừa sửa workflow này lúc … (v2). Bản của bạn dựa trên v1."); diff chỉ hàng đổi; `alertdialog "Ghi đè thay đổi của admin?"`; ca `Tải bản mới`; ca công tắc danh sách: `switch` bật/tắt `report-export` khi người kia đã sửa → `ConflictDialog` (diff một dòng `enabled`), `Tải bản mới` → hàng cập nhật + toast. Không còn nút "Tải lại" (count 0). TECH-DEBT #14: gõ thêm giữa lúc lưu không mất (ca trong `workflows.spec` M2 vẫn xanh).
+- **E-CC `conflict-commands.spec.ts` (3):** editor `dich`: câu `{user}` entity "command"; `Ghi đè` → v+1; ca `Switch "Bật command /dich"` khi người kia đổi mô tả → `ConflictDialog`; `Tải bản mới`. (Ca **AC-A07** hai phiên nằm ở `m3-flow`.)
+- **E-CF `conflict-features.spec.ts` (3):** (1) **chuyển ca M2 `features.spec` E-F.10**: người kia tạo command trong feature bằng API (version feature tăng, **không trường nào đổi**) → `ConflictDialog` với `conflict.diff.empty` ("Không có trường nào khác nhau. Có thể người kia chỉ lưu lại bản cũ."), DB tên **không** bị ghi đè trước khi chọn; (2) đổi trạng thái ở danh sách (`menuitem "Tắt"`) khi người kia đổi tên → `ConflictDialog` (diff `status`) + `Ghi đè`; (3) `Tải bản mới`. Không còn chữ "Tải lại để xem bản mới nhất." trong DOM (count 0).
+- **E-CG `conflict-groups.spec.ts` (3):** `/groups/$id` → `button "Đổi tên"` → `dialog "Đổi tên group"`: mình đổi `Mô tả`, người kia đổi tên → `ConflictDialog` (entity "group", `{user}`), diff `name.vi`/`description`; `Escape` và click nền **không** đóng; `Ghi đè` → tên/mô tả của mình, `version`+1; `Tải bản mới` → header hiện tên mới + toast.
+
+**E-GL `groups-list.spec.ts` (6; FR-62, R23, R24)**
+`link "Groups"` trong `navigation` (tenant_admin binh và platform admin); `heading "Groups"`, `table "Groups"` với `combobox "Tenant"` (platform; chưa chọn tenant → nội dung "Chọn một tenant để xem group của tenant đó." và **không** gọi `/admin/groups`); acme: hàng `beta-testers` có `text "Có sẵn"` + `text "Thấy các feature đang Beta"`, hàng `ke-toan` (3 thành viên, 1 feature, Agent "—"), `kinh-doanh`; `searchbox "Tìm theo tên, key…"` lọc; `button "Thao tác khác"` của `beta-testers` → `menuitem "Xoá"` có `aria-disabled="true"`; xoá `kinh-doanh` → `alertdialog "Xoá Kinh doanh?"` + `textbox "Gõ kinh-doanh để xác nhận"` + `button "Xoá group"` → toast "Đã xoá Kinh doanh"; tenant_admin: không có `combobox "Tenant"`, chỉ group acme; lọc không khớp → empty state + `Xoá bộ lọc`.
+
+**E-GE `groups-editor.spec.ts` (7; FR-62, FR-55, R01, R02)**
+`link "+ Tạo group"` → `heading "Group mới"`: `textbox "Key"` gõ `Ke Toan 2` → hiện `ke-toan-2`, `textbox "Tên"` (tab `VI`/`EN`), `textbox "Mô tả"` (đếm `n/400`), `button "Tạo group"` → `waitForURL /groups/<uuid>` + toast "Đã tạo …"; key trùng `ke-toan` → inline "Key đã được dùng trong tenant này"; key sai → "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)"; editor: `heading "Kế toán"`, `tab "Thành viên"`/`"Feature"`/`"Agent"`, `textbox "Key"` `readOnly` + "Key không đổi được sau khi tạo"; `Đổi tên` lưu → toast "Đã lưu …", header đổi; `beta-testers`: nhãn "Thấy các feature đang Beta", đổi tên được, **không** có `Xoá` trong `⋯`; tab `Agent` → `text "Chưa khả dụng"` và **không** gọi API agent; `?tab=` đúng; id lạ → NotFound state ("Về danh sách").
+
+**E-GM `groups-members.spec.ts` (8; FR-62, M3-AC02, R03, D12)**
+`combobox "Thêm người"` → chọn `an` → toast "Đã thêm an vào Kế toán", hàng xuất hiện; `button "Bỏ lan khỏi group"` → toast "Đã bỏ lan khỏi Kế toán" + `button "Hoàn tác"` (bấm trong 5 s → `lan` trở lại, DB 1 hàng); bảng `table "Thành viên"` cột Group khác (chip ≤ 2 + "+n"), `thu` thấy `beta-testers`; `em` (inactive) vẫn hiển thị trong bảng với đúng nhãn trạng thái của M1 và vẫn là thành viên; **dán**: `textbox "Dán danh sách username"` điền `dung, an.vu\nbinh  khang` → đếm "4 username", `button "Thêm 4 người"` → toast "Đã thêm 2 người, 2 username không tìm thấy" (`dung`, `binh` thêm; `an.vu` không tồn tại, `khang` thuộc tenant khác), `status` "Không tìm thấy: an.vu, khang", textarea chỉ còn 2 mục `not_found`, DB có đúng 2 hàng mới; dán 501 username → "Tối đa 500 username mỗi lần. Bạn đã dán 501." và `button` disabled; dán 500 → `button "Thêm 500 người"` enabled (không bấm); dán lại người đã có → dòng "1 người đã ở trong group"; `member` không truy cập được `/groups` (ForbiddenState/redirect, không gọi API).
+
+**E-GG `groups-grants.spec.ts` (5; FR-32, R07, R09; tab Feature của group)**
+Tab `Feature` của `ke-toan` acme: chế độ xem có hàng `Kế toán` và hàng `core` với `text "Mọi người đều có"` (không sửa); `button "Sửa"` → chỉ liệt kê feature đã entitlement (có `checkbox "Kế toán"`, `checkbox "Dịch thuật"`; **không** `Pháp chế`), hàng thu hồi còn grant (nếu có) mờ và khoá; tick `Dịch thuật` → `button "Lưu"` → toast "Đã lưu feature của Kế toán…" và DB có grant mới (một `PUT batch`); không đổi gì thì `Lưu` disabled; `Huỷ` bỏ nháp; `UnsavedGuard` khi rời trang có nháp; không có `button "Cấp trực tiếp…"` (A6).
+
+**E-AM `access-matrix.spec.ts` (10; FR-35, FR-32, BR-12, R08, R09; `grid "Ma trận feature × group"`)**
+`link "Phân quyền"` → `heading "Phân quyền"`, `tab "Ma trận"`/`"Kiểm tra quyền"`; platform phải chọn tenant (`combobox "Tenant"`), chưa chọn → không gọi API; acme: hàng `core` có `text "Mặc định"` và ô `aria-disabled`; ô `checkbox "Kế toán cho group Kế toán"` **đã tick** (G1); `checkbox "Dịch thuật cho group Kinh doanh"` tick → `status` "1 thay đổi chưa lưu" + `Huỷ` bỏ; tick hàng `checkbox "Cấp Dịch thuật cho mọi group"` (tri-state `mixed` khi một phần) → "N thay đổi"; tick cột `checkbox "Cấp mọi feature cho group Kinh doanh"` bỏ qua ô khoá (core, chưa mở); `Lưu` → **một** request `PUT /admin/grants/batch` (đếm bằng `waitForRequest`/`page.on("request")` = 1) → toast "Đã lưu quyền · 2 cấp, 0 thu…" và DB đúng; `switch "Hiện feature chưa mở (1)"` → hàng `Pháp chế` mờ, ô không sửa được, tooltip "Công ty chưa được mở feature này"; **hàng `text "Đã thu hồi entitlement"`**: platform chọn `globex` → hàng `Kế toán` mờ, ô tick giữ nguyên, **không** sửa được (click không đổi `aria-checked`); sau khi thu hồi entitlement acme `ke-toan` qua API rồi tải lại → hàng đổi sang "Đã thu hồi entitlement" mà **tick giữ nguyên**, cấp lại → hàng thường (BR-12); bàn phím: mũi tên di chuyển, `Space` đổi, `Home/End`; > 200 thay đổi (owner dựng 205 group, tick cột) → `button "Lưu"` disabled + "Tối đa 200 thay đổi mỗi lần lưu (đang có 205)…"; 205 group: số ô `role=checkbox` trong DOM ≤ 300 (cửa sổ hoá); lỗi `NOT_ENTITLED` giữa lúc lưu (owner thu hồi trước khi bấm Lưu) → toast "Công ty chưa được mở feature này nên không cấp được. Đã tải lại ma trận.", không áp một phần.
+
+**E-AC `access-check.spec.ts` (8; FR-36, R11, R12, R13, F4)**
+`tab "Kiểm tra quyền"` → `combobox "Người dùng"` chọn `lan` → `heading "Feature"`/`"Command"`/`"Agent"` (h3); dòng "Thấy /kiemtra-hoadon" kèm "qua feature Kế toán · group Kế toán"; summary "Thấy 3/5 command"; `heading "Agent"` có `text "Chưa khả dụng"` và **không** gọi API agent; `an`: `button "Hiện command không thấy (3)"` → `/kiemtra-hoadon` có `button "Vì sao không?"` → câu "Feature Kế toán chưa cấp cho an hay group nào của an." và `button "Cấp Kế toán cho group…"` → `dialog "Cấp Kế toán cho group"` (`combobox "Group"`, `button "Cấp"`, `button "Huỷ"`) → chọn `Kế toán` → `Cấp` → toast "Đã cấp Kế toán cho group Kế toán", dialog đóng; `searchbox "Tìm command"` gõ `kiemtra` lọc; `/tr-nhanh` → "Command đang tắt."; `/xuat-bao-cao` → "Workflow của command đang tắt."; `thu`: hiện `bao-cao` "qua group beta-testers"; `em`: "Tài khoản này đang bị khoá."; user `khang` (globex, platform chọn tenant `globex`): `ke-toan` không dùng được, "Feature Kế toán chưa được mở cho công ty. Liên hệ nền tảng để mở." (tenant_admin **không** có nút; platform có `link "Mở feature Kế toán"`); `beta_not_member` có `button "Thêm lan vào beta-testers"` → thành viên mới (DB); user lạ qua URL `?user=` → "Không tìm thấy người dùng này trong tenant."; `?tab=check&user=<username>&tenant=<mã>` mở thẳng.
+
+**E-UG `users-groups.spec.ts` (6; FR-62, M3-R13, A11)**
+`/users` (acme): `columnheader "Groups"`; hàng `thu` có chip `beta-testers` + `Kế toán`; hàng có ≥ 3 group → 2 chip + "+n" (owner thêm `thu` vào thêm 2 group); `combobox "Group"` mục `Tất cả group` → chọn `Kế toán` → `?group=<key>` và bảng chỉ `lan, thu, em`; key lạ trên URL → bỏ lọc + chip "Group: {key}" (không 404); platform chưa chọn tenant → `combobox "Group"` disabled ("Chọn tenant trước"); drawer sửa `lan`: `tab "Thông tin"` có `list "Groups"` chỉ đọc (chip là `link` tới `/groups/<id>`, gợi ý "Sửa thành viên ở trang Group.", **không** có `combobox` sửa Groups: A11); user chưa có group → "Chưa thuộc group nào".
+
+**E-AUT `access-user-tab.spec.ts` (4; FR-36; thay tên `users-access` để tránh trùng pattern `users`)**
+Drawer sửa `lan` → `tab "Quyền hiệu lực"` (chỉ khi sửa; tạo mới không có tab) → cùng `AccessExplainer` chỉ đọc: có "Thấy /kiemtra-hoadon", **không** có `button "Cấp Kế toán cho group…"`, `heading "Agent"` → "Chưa khả dụng"; `link "Mở Kiểm tra quyền"` → `waitForURL /access?tab=check&user=lan&tenant=acme` và tab Kiểm tra quyền đã chọn `lan`; tab chỉ gọi `effective-access` khi mở (đếm request: 0 trước khi bấm tab, 1 sau); user `em`: "Tài khoản này đang bị khoá."
+
+**E-ACM `access-command.spec.ts` (3; FR-24, M3-AC10; thay tên `commands-access`)**
+`/commands/<kiemtra-hoadon>?tab=access` (platform): `columnheader "Group được cấp"`, `columnheader "Số user thấy"`; hàng `acme`: chip "Kế toán · Kế toán", số **2**; `/dich`: số `6` cho acme và tab hiện tổng "5 tenant · 66 user" (bulk 55); card "Quyền theo nhóm và người dùng chưa khả dụng." **không còn** (count 0); command chưa group nào → "Chưa group nào được cấp"; `/xuat-bao-cao`: chip `beta-testers`, số 0; tab khoá khi tạo mới (giữ M2).
+
+**E-M3 `m3-flow.spec.ts` (3; **AC-A07**, **M3-AC09**, M3-AC08 tổng)**
+1. **AC-A07 · Ghi đè (hai phiên):** `/dich` đặt `version = 7` bằng owner; phiên A (context 1) và B (context 2) cùng mở editor; B đổi `Mô tả` → `Lưu` → `version 8`; A đổi `Alias`/trường khác → `Lưu` → `alertdialog "Có người vừa lưu bản mới hơn"` với "admin vừa sửa command này lúc … (v8). Bản của bạn dựa trên v7."; `Xem khác biệt` → chỉ hàng khác nhau (mô tả, alias), cột "Bản mới nhất (v8)"; mô tả của B **chưa bị ghi đè** (DB vẫn của B); `Ghi đè` → `alertdialog "Ghi đè thay đổi của admin?"` → xác nhận → `version 9`, DB là bản của A.
+2. **AC-A07 · Tải bản mới:** cùng dựng; A chọn `Tải bản mới` → form hiện bản v8 của B + toast "Đã tải bản mới nhất · v8", DB vẫn v8 (bản B không bị ghi đè âm thầm), A lưu tiếp được (v9).
+3. **M3-AC09 · F3→F4:** (`grants: []`, bỏ group `ke-toan`/`kinh-doanh` bằng `withOwner`) đăng nhập `binh` (acme, tenant_admin) → Groups → `+ Tạo group` key `ke-toan` tên "Kế toán" → tab Thành viên: dán `lan thu an.vu` → thêm 2, "Không tìm thấy: an.vu" → Phân quyền → Ma trận: tick `checkbox "Kế toán cho group Kế toán"` → `Lưu` → Kiểm tra quyền: `lan` "Thấy /kiemtra-hoadon"; `an` → `button "Hiện command không thấy (3)"` → `/kiemtra-hoadon` → `button "Vì sao không?"` → `button "Cấp Kế toán cho group…"` hiện (gợi ý), mở dialog rồi `Huỷ`. Mỗi chuyển route bọc `waitForURL`; request đo bằng `waitForResponse` đặt trước thao tác.
+
+## 5. Cập nhật test đã khoá M0/M1/M2 (thay đổi phạm vi đã duyệt, **không** phải tranh chấp)
+
+Lý do chung: M3 thêm `0005_admin_permissions` + `0006_permissions_rls` (4 bảng, RLS thêm 3 bảng, trigger `beta-testers`, `users_tenant_id_uq`), 2 mã lỗi (`API_ERRORS` 34 → 36), route `/admin/groups` và thay đổi hình `User`/`CommandAccessItem`/UX 409. Sửa ở **Q2**, theo thứ tự bắt buộc **T1 → Q2 → T2**:
+- Sau **T1** (36 mã): `M1/rules/contracts` và `M2/rules/contracts` đỏ cho tới khi Q2 sửa (dự kiến, plan §9). Q2 viết xong thì hai file xanh ngay (contract đã có từ T1).
+- Sau **Q2** và trước **T2**: các test đếm migration/bảng/RLS/`{7,2}` đỏ vì **chưa có code** (đúng chủ ý); xanh ở T2 (lệnh xong T2 chạy chính các file này).
+- `tests/.lock` giữ băm cũ của các file sửa tới Q3 (`test:lock:verify` đỏ giữa Q2 và Q3 là dự kiến; **đề nghị Q3 chạy ngay sau Q2, trước T2**, để khoá bảo vệ test mới ngay khi code bắt đầu).
+
+| # | File · dòng (HEAD) | Sửa gì | Lý do | Xanh sau |
+|---|---|---|---|---|
+| 1 | `tests/acceptance/ADM-NFR-06/migrate.int.test.ts` l.17–29 (`ADMIN_TABLES`), l.41 (tiêu đề), l.44, l.138, l.143, l.158, l.161, l.165 | `ADMIN_TABLES` 10 → 14: thêm `admin.config_meta`, `admin.feature_grants`, `admin.group_members`, `admin.groups` (vị trí theo thứ tự chữ cái: `command_names, commands, config_meta, feature_commands, feature_entitlements, feature_grants, features, group_members, groups, refresh_tokens, secrets, tenants, users, workflows`); `{main:5,dev:2}` → `{main:7,dev:2}` (l.44, l.143); `before` `[5,2]` → `[7,2]` (l.138); production `{main:5,dev:0}` → `{main:7,dev:0}` (l.161); tiêu đề l.41, l.158 "10 bảng admin.* (M2)" → "14 bảng admin.* (M3)"; comment l.16 | 2 migration mới, 4 bảng mới | T2 |
+| 2 | `tests/acceptance/M1/db-schema.int.test.ts` l.69–72, l.74–97, l.279–297 | `{main:5,dev:2}` → `{main:7,dev:2}` (l.70); tiêu đề l.74 "10 bảng" → "14"; mảng `names([...])` thêm `admin.config_meta`, `admin.feature_grants`, `admin.group_members`, `admin.groups` đúng vị trí; "bảng mốc sau" (l.90–93) bỏ `groups, group_members, config_meta, feature_grants`, giữ `tenant_quotas, audit_log`; production `{main:7,dev:0}` + 14 bảng (l.279–297; tiêu đề) | như trên | T2 |
+| 3 | `tests/acceptance/M1/db-rls.int.test.ts` l.241–256 | tiêu đề "RLS bật cho 8 bảng …; 6 bảng còn lại không bật"; danh sách 14 hàng: `command_names f · commands f · config_meta f · feature_commands f · feature_entitlements t · feature_grants t · features f · group_members t · groups t · refresh_tokens t · secrets t · tenants t · users t · workflows f` (đều `relforcerowsecurity=false`) | RLS 8 bảng | T2 |
+| 4 | `tests/acceptance/M2/db-schema.int.test.ts` l.53–64 (`ADMIN10`), l.134–136, l.139–145, l.457–462 | `ADMIN10` → `ADMIN14` (thêm 4 bảng, cập nhật mọi chỗ dùng l.140, l.461); `{main:5,dev:2}` → `{main:7,dev:2}` (l.135); production `{main:7,dev:0}` + `ADMIN14` (l.460–461) và tiêu đề; "không có bảng của mốc sau" (l.142–143) bỏ `config_meta, feature_grants, groups, group_members`, giữ `audit_log, tenant_quotas`; tiêu đề l.139 "đúng 14 bảng admin.* + 3 bảng hub.*"; test băm migration (l.147–166) **giữ** | như trên | T2 |
+| 5 | `tests/acceptance/M2/db-rls.int.test.ts` l.275–293 | tiêu đề "relrowsecurity bật đúng 8 bảng (feature_entitlements, feature_grants, group_members, groups, refresh_tokens, secrets, tenants, users)"; `on` = 8 tên (sắp chữ cái); danh sách bảng 14 | RLS 8 bảng | T2 |
+| 6 | `tests/acceptance/M1/rules/contracts.test.ts` l.29–55 | tiêu đề "…tổng 36 mã sau M3"; `toHaveLength(34)` → `36`; giữ phần `toMatchObject` 23 mã M1 | 2 mã lỗi mới | T1/Q2 |
+| 7 | `tests/acceptance/M2/rules/contracts.test.ts` l.77–114 | tiêu đề "API_ERRORS = 23 mã M1 + 11 mã M2 giữ nguyên + 2 mã M3; tổng 36"; `toHaveLength(34)` → `36`; thêm hai dòng `BETA_GROUP_PROTECTED 409`, `NOT_ENTITLED 409` (hoặc kiểm hợp tập 34 mã cũ ⊂ bảng 36) | như trên | T1/Q2 |
+| 8 | `tests/acceptance/M2/features.int.test.ts` l.472–475 | bỏ `expect((await as("GET", "/admin/groups")).status).toBe(404)` (M3 có route này); giữ `POST /admin/features/:id/grants` → 404; sửa tiêu đề "không có route grant của M3 trên features" | route `/admin/groups` có từ T4 | T4 (chạy trong T7 `M2/`) |
+| 9 | `tests/acceptance/M2/i18n-labels.test.ts` l.246–250 | **xoá** hàng `commands.access.groupsLater` (M3 gỡ key khỏi locale ở FE4c; hàng này đỏ sau FE4c nếu giữ); ca "không còn key" nằm ở `M3/i18n-access.test.ts` | R14 bỏ card "chưa khả dụng" | FE2 M2 giữ xanh (xoá hàng không làm đỏ) |
+| 10 | `e2e/features.spec.ts` l.238–262 (ca xung đột E-F.10) | **xoá ca** (hết hiệu lực: "Tải lại để xem bản mới nhất." bị `ConflictDialog` thay ở FE1d); kịch bản chuyển sang `e2e/conflict-features.spec.ts` ca 1 (chữ mới theo A4); sửa tiêu đề "10 ca" trong comment đầu file nếu có | R20; thay `errors.versionConflict` + "Tải lại" | FE1d |
+| 11 | `e2e/commands.spec.ts` l.278 (tiêu đề), l.291 | bỏ dòng `expect(page.getByText("Quyền theo nhóm và người dùng chưa khả dụng.")).toBeVisible()` và cụm "khối nhóm 'chưa khả dụng'" trong tiêu đề; các khẳng định bảng tenant, "5 tenant · 66 user", acme "6" **giữ** (số liệu không đổi: tổng `visible_user_count` của `/dich` = 66); khẳng định thay thế ở `access-command.spec.ts` | FE4c gỡ card; nếu giữ dòng 291 thì FE1c (`commands`) đỏ sau FE4c | FE4c |
+| 12 | `e2e/support/prepare-db.ts`, `e2e/support/helpers.ts` | `prepare-db` gọi `seedPermissions(sql, ALL_PERMISSIONS)` sau `seedCatalog`; `--reset-only` giữ `truncateCatalog` (đã cuốn theo bảng M3 qua FK; **không** TRUNCATE `config_meta`); `helpers` export thêm `betaId`, re-export `ID3` (uuid M3), `loginAs(page, tenant, username)` nếu chưa có | e2e M3 cần dữ liệu | FE2a (e2e đầu tiên M3 dùng) |
+| 13 | `tests/acceptance/ADM-NFR-06/_helpers.ts`, `M1/_fixtures.ts`, `M1/_data.ts`, `M2/_data.ts`, `M2/_fixtures.ts` | **không sửa**: `truncateAll`/`truncateCatalog` đã cuốn `groups`, `group_members`, `feature_grants` (FK cascade); `scanDatabase` (quét `row_to_json`) chạy được với 4 bảng mới | — | — |
+
+**Rà soát không đổi (đã đọc, ghi để người sau không thắc mắc):**
+- `M1/error-codes.int` (22 mã M1 hằng, không dùng `Object.keys(API_ERRORS)`) và `M2/error-codes.int` (11 mã M2 hằng): **không đổi**; 2 mã mới do `M3/error-codes.int`.
+- `M1/users*.int`, `M1/users-isolation.int`: parse `UserSchema` (contract) nên xanh khi T4 đã thêm `groups`/`group_count` ở contract **và** server cùng lúc (plan §9); không đổi.
+- `M2/access.int` l.104–120: `Object.keys(raw)` ở **cấp trên** (`command_active, items, total`) không đổi; các item parse `CommandAccessResponseSchema` (strict, có `groups`) nên xanh ở T6; tiêu đề "không có khoá groups/grants" chỉ nói cấp trên, **không đổi**.
+- `M1/tenants.int` (có trong lệnh T2/T4): `POST /admin/tenants` nay kéo theo trigger `beta-testers`; test không đếm group nên xanh; thêm kiểm bảo vệ ở `M3/groups.int`.
+- `M1/i18n-labels` l.166, l.216–217 (`common.reload`, `errors.versionConflict`): giữ (FE giữ làm câu dự phòng).
+- `e2e/users.spec.ts`, `tenants.spec.ts`, `workflows.spec.ts`, `m1-flow.spec.ts`, `m2-flow.spec.ts`, `smoke.spec.ts`: không có khẳng định về "Tải lại", cột Groups, tab drawer; giữ nguyên, chạy lại ở FE1a/FE1b/FE4a (`users`, `workflows`, `commands`, `features` pattern).
+- **Tác động `config_version`/NOTIFY lên test cũ:** test M1/M2 không đọc `config_meta`, không dùng hook `afterLock` (chỉ backend `lock-order` dùng; plan §5.2: test cũ lọc `op` **và** `step` nên bước `bump` mới không làm dừng thêm); thêm ≤ 5 ms/ghi không đụng ngưỡng nào của M1/M2 (đã rà `< 900 ms`/`30 s`). `M2/concurrency.int` (T3 và T7 đều chạy) giữ bất biến cũ: ghi cấu hình M2 nay chờ thêm khoá `config_meta` (cuối) nên các ca "không deadlock" vẫn đúng; **nếu** ca M2 nào đỏ ở T7 do thứ tự khoá, đó là lỗi thứ tự khoá của backend, không sửa test.
+
+## 6. Cách kiểm các hành vi đặc biệt
+
+### 6.1 Bảng chủ đề → cách kiểm
+
+| Chủ đề | Cách kiểm |
+|---|---|
+| **Mỗi transaction thành công phát đúng một NOTIFY** | `notify` N-A (33 ca, mỗi ghi: đúng một thông điệp, `v` = trước + 1) + N01 (tenant POST ghi ba bảng vẫn một thông điệp, `v`+1) + sentinel xác nhận không có thông điệp thứ hai |
+| **No-op, rollback, retry 40P01 không phát và không tăng version** | `notify` N-B (25 ca no-op/lỗi/sổ sách), P3–P4 (rollback), P5–P7 (retry: hook ném 40P01/40001 ở `bump` **lần đầu** → tăng đúng +1, đúng một NOTIFY, dữ liệu một lần); tính "không tăng" = hiệu `config_version` bằng 0 và sentinel |
+| **Payload không chứa tên/username/secret** | `notify` P2 (chuỗi thô của mọi thông điệp, kể cả base64/hex của `LEAK_1`), P1 (`ConfigChangedPayloadSchema` strict: khoá lạ → đỏ), R2 (9) |
+| **Có listener `LISTEN`** | kết nối riêng `postgres(TEST_DATABASE_URL).listen("config_changed")`, đóng vai Hub; mọi ca N-*, P-*, C-* dùng; P8 kiểm NOTIFY **sau** commit (thấy dữ liệu khi nhận) |
+| **Mọi lệnh ghi M1/M2/M3 (plan §5.3) đều bump** | bảng N-A: tenants (4), users (4), groups (5), grants (3), features (4), entitlements (3), workflows (3), commands (3), secrets (4) = **33 thao tác ghi** + loại trừ N-B (sổ sách đăng nhập: N59–N64) |
+| **Thứ tự khoá, 10 ca L1–L10** | backend (`lock-order.int.test.ts`, tất định, hook); qc: `concurrency` C1–C11 kiểm **bất biến** (không 40P01, không 500, nguyên tử, không mồ côi, `v` liên tục, NOTIFY = số ghi) + C12 guard tồn tại đủ L1–L10 + C13 `deadlocks` không tăng. Ca **không tất định**: C1–C11 |
+| **`ConflictDialog` 6 thực thể, câu theo A4** | e2e `conflict-users/tenants` (câu không `{user}`), `conflict-workflows/commands/features/groups` (câu có `{user}`), `m3-flow` (AC-A07 v7→v8→v9); API: `conflict.int` (`updated_by` có ở 4 thực thể, vắng ở 2) |
+| **`beta-testers` được bảo vệ (trigger)** | `db-schema` D1.10–12 (trigger, hàm, backfill), `db-rls` D2.10 (trigger dưới `admin_api`), `groups.int` (POST tenant → 1 group; DELETE 409 `BETA_GROUP_PROTECTED`; PATCH không nhận `key`; đổi tên được; tạo trùng → `KEY_TAKEN`), `concurrency` C8, e2e `groups-list`/`groups-editor` (không có `Xoá`). Bảo vệ ở **app**, không có ràng buộc DB chặn `DELETE` trực tiếp (G1): test chỉ khẳng định qua API |
+| **RLS trên 8 bảng** | `db-rls` D2.8 + M1/M2 db-rls sửa (mục 5 #3, #5); `groups/group_members/feature_grants` scope tenant/platform/không scope (D2.1–4) |
+| **FK kép chặn chéo tenant** | `db-rls` D2.5, `db-schema` D1.6–7 (owner, bỏ qua RLS: chứng minh DB tự chặn, không phụ thuộc app), `members`/`grants-batch` ở lớp API (`not_found`, `INVALID_REFERENCE`) |
+| **Dán 500, `dry_run` không bump** | `members.int` (500 → 200; 501 → 400; `dry_run` không ghi, `group.version` không đổi), `notify` N42 (`dry_run` không NOTIFY, không bump), e2e `groups-members` (500/501) |
+| **Batch ≤ 200, toàn phần hoặc không** | `grants-batch` (200 ok, 201 → 400, mỗi loại lỗi cuối batch → DB và `config_version` không đổi), `notify` N46–N47, `concurrency` C1 (nguyên tử), e2e `access-matrix` (một `PUT`, > 200 chặn Lưu) |
+| **BR-12 thu hồi giữ grant** | `grants` (cùng `id` trước/sau), `hub-view` (3), `effective-access` (`khang`), `notify` P15, `concurrency` C3, e2e `access-matrix` (hàng "Đã thu hồi entitlement") |
+| **Đối chiếu hiệu lực: hàm thuần ↔ SQL Hub ↔ API** | `access-sql` (68 tổ hợp, 3 nguồn), `effective-access`, `command-access` ("số user thấy" = đếm từ `effective-access`), `hub-view` |
+| **Chỉ `platform_admin`/`tenant_admin`; role trước lookup** | `forbidden` (mọi route M3: 401, member 403 body giống byte với body hợp lệ/sai/id lạ, tenant khác 404) |
+| **Mã lỗi M3** | `error-codes` (2 mã mới + mã dùng lại, `message` tĩnh), R1.1 khoá bảng 36 mã |
+
+### 6.2 Tên e2e chốt (khác đề nghị `plan-frontend.md` §12 ở 3 chỗ — lý do: `bunx playwright test <mẫu>` là **regex trên đường dẫn**, tên chứa chuỗi con của mẫu khác sẽ bị chạy nhầm sớm và đỏ ở task chưa tới)
+
+| Đề nghị FE | Chốt | Lý do |
+|---|---|---|
+| `commands-access` | **`access-command`** | mẫu `commands` (lệnh xong FE1c) khớp `commands-access.spec.ts` → đỏ tới FE4c |
+| `groups-features` | **`groups-grants`** | mẫu `features` (FE1d) khớp `groups-features` → đỏ tới FE2d |
+| `users-access` | **`access-user-tab`** | mẫu `users` (FE4a) khớp `users-access` → đỏ tới FE4b |
+
+Giữ nguyên: `conflict-users`, `conflict-tenants`, `conflict-workflows`, `conflict-commands`, `conflict-features`, `conflict-groups`, `groups-list`, `groups-editor`, `groups-members`, `access-matrix`, `access-check`, `users-groups`, `m3-flow`. Đã rà: mẫu `users` khớp `users`, `conflict-users`, `users-groups` (cả ba xanh ở FE4a); `workflows` khớp `workflows`, `conflict-workflows`; `commands` khớp `commands`, `conflict-commands`; `features` khớp `features`, `conflict-features`. `tasks.md` sửa tương ứng (mục 8.2).
+
+### 6.3 DB test riêng cho int/e2e (TECH-DEBT #17) — đề xuất
+
+**Vì sao M3 cần hơn M1/M2:** (1) NOTIFY là **theo từng database**: listener trong `ai_system_test` nhận NOTIFY của **mọi** ghi vào DB đó từ agent/worktree khác → `notify`/`concurrency` đếm "đúng một" sẽ đỏ ngẫu nhiên; (2) `pg_stat_database.deadlocks` là bộ đếm theo DB (C13, `deadlocksSince`) bị ghi đè bởi tiến trình khác; (3) `config_meta` là một hàng chung nên `v` bị nhiễu. Không giải quyết bằng test (không thể phân biệt NOTIFY "của mình").
+
+**Cách làm (không đổi test đã viết, chỉ cấu hình + một script nhỏ):**
+1. Mọi test đọc `TEST_DATABASE_URL` / `TEST_ADMIN_API_DATABASE_URL` từ môi trường (`.env.local`); `resetTestDb` chỉ chấp nhận tên DB kết thúc `_test`. Mỗi agent/worktree đặt `.env.local` với tên riêng: `ai_system_<tag>_test` (tag = tên worktree, vd `ai_system_m3be_test`).
+2. DB phải tồn tại trước (resetTestDb chỉ DROP SCHEMA, không CREATE DATABASE): **đề nghị backend-lead thêm** `bun run db:test:create <tag>` (trong `tools/scripts`, không phải test): `CREATE DATABASE ai_system_<tag>_test OWNER ai` qua kết nối `postgres` + `GRANT CONNECT` cho `admin_api`/`hub_ro` nếu cần; vai trò (`admin_api`, `hub_ro`, `admin_rw`) là mức cluster nên không tạo lại; mật khẩu như `.env.example`. Một dòng thủ công thay thế: `docker compose exec -T postgres psql -U ai -d postgres -c "create database ai_system_<tag>_test owner ai"`.
+3. Playwright: `prepare-db` và server e2e đọc cùng biến nên chạy được trên DB riêng, nhưng **cổng** 3000/3001 (web/API) cố định trong `playwright.config.ts` nên **hai e2e cùng máy vẫn đụng nhau** → quy tắc vận hành: chạy e2e **một worktree một lúc** (điều phối giữ); int chạy song song được khi DB riêng. Đề nghị (không chặn): `playwright.config.ts` đọc `E2E_WEB_PORT`/`E2E_API_PORT` (frontend-lead; ngoài quyền qc).
+4. M1/M2 `secrets-proc`/`server.int` dùng cổng 3092/3093 cố định (đã khoá, qc không đổi): cùng quy tắc "một lúc". **M3 không thêm cổng cố định** (mọi test in-process + kết nối DB).
+5. Nếu chưa có DB riêng: chạy `notify.int` và `concurrency.int` **riêng, không có tiến trình khác ghi** vào DB test; mỗi ca bắt đầu bằng `reset()` và sentinel sẽ phát hiện thông điệp lạ (fail rõ "nhận thông điệp ngoài kỳ vọng" thay vì treo).
+
+## 7. Ánh xạ AC → test
+
+| AC | Loại | File → ca | Dữ liệu | Kỳ vọng chính |
+|---|---|---|---|---|
+| **AC-A07** | int + e2e | `conflict.int` (6 thực thể); `m3-flow` ca 1–2; `conflict-*` | `/dich` `version=7`, người kia lưu → 8 | 409 `VERSION_CONFLICT` kèm `current` (bản 8); UI modal + diff chỉ trường khác; `Ghi đè` → v9; `Tải bản mới` giữ bản B; bản B **không** bị ghi đè âm thầm |
+| **AC-A10** (phía Admin) | int + e2e | `hub-view` (1–2, 6); `notify` P14; `effective-access` (`lan` vs `an`); `m3-flow` ca 3 | `ke-toan` entitled acme; `grants: []`; binh cấp cho group `ke-toan` | NOTIFY `grant` ≤ 1000 ms; tại lúc nhận SQL `hub_ro`: thành viên (`lan`) thấy `/kiemtra-hoadon`, user khác trong acme (`an`) không; `effective-access` đồng ý. **"menu" và `CMD_NOT_FOUND`**: M5 (R19) |
+| **AC-A11** (phía Admin) | int + e2e | `hub-view` (3); `grants` BR-12; `notify` P15; `concurrency` C3; `access-matrix` | grant G1 + thu hồi/cấp lại entitlement `ke-toan` acme | thu hồi → SQL/`effective-access` mất, **hàng grant còn cùng `id`**; cấp lại → có lại, **không** cấp lại grant (không `POST`, không hàng mới) |
+| **AC-A03 vế 2** | int | `notify` P13; `hub-view` (4) | command `dich-v2` map đủ, feature `core` | NOTIFY `command` ≤ 1000 ms; tại lúc nhận SQL `hub_ro` thấy `dich-v2` cho mọi user active của tenant active. **"menu `/`"**: M5 (R19) |
+| M3-AC01 | int + DB | `groups`, `members`, `db-schema` D1.5–6, `db-rls` D2.1–5, `forbidden` | acme/globex | key trùng 409, khác tenant được; `tenant_admin` group tenant khác 404; `member` 403; xoá group xoá thành viên + grant; `beta-testers` không xoá/đổi key, có sẵn ở tenant mới (POST) và cũ (backfill) |
+| M3-AC02 | int + e2e | `members` (5 username), `groups-members` | `lan`(đã có), `dung`, `binh`, `an.vu`, `khang`@globex | 200 `{added:[2], not_found:[2], already:[1]}`, 2 người được thêm; > 500 → 400 |
+| M3-AC03 | int | `grants`, `grants-batch`, `notify` N44/N46/N47 | `phap-che`, `core`, G1 | chưa entitlement 409; `core` 409; cấp trùng không đổi, không NOTIFY; batch có 1 phần tử sai → không ghi gì |
+| M3-AC04 | rules + int | R5, `effective-access`, `access-sql` | `lan`, `thu`, `an`, `em`, `zoe`, 68 tổ hợp | công thức đúng; `beta` thiếu thành viên → lý do; user khoá/tenant khoá → rỗng + lý do; command/workflow tắt có lý do; tenant khác 404 |
+| M3-AC05 | int | `notify` N-A, N-B, P1–P12; `concurrency` | mọi ghi M1/M2/M3 | mỗi ghi +1 đúng một lần (đa bảng vẫn +1); rollback/no-op/40P01 không tăng/không NOTIFY; `last_login_at` không tăng; payload không secret/username |
+| M3-AC06 | DB | `db-rls` D2.6–7, `hub-view` (8–9) | — | `hub_ro` đọc 4 bảng, ghi bị từ chối; vẫn không đọc `secrets` |
+| M3-AC07 | int | backend L1–L10 + qc `concurrency` C1–C13 | — | không 40P01; ca đỏ khi thứ tự khoá sai (phần tất định thuộc backend; qc kiểm bất biến + guard C12) |
+| M3-AC08 (e2e) | e2e | `conflict-users/tenants/workflows/commands/features/groups` | 6 thực thể | `ConflictDialog` đúng câu R21 (có `{user}` ở 4, không ở 2), 3 hành động, R22 |
+| M3-AC09 (e2e) | e2e | `m3-flow` ca 3 | `grants: []` | tạo group → dán → ma trận → Kiểm tra quyền; `lan` thấy; `an` "Vì sao không?" → "Cấp Kế toán cho group…" |
+| M3-AC10 | int + e2e | `command-access`, `access-command` | `/kiemtra-hoadon`, `/dich` | group được cấp; `visible_user_count` = đếm từ `effective-access` |
+
+**Xác nhận AC bổ sung:** qc xác nhận cả 10 `M3-AC01…10`, không sửa. Ghi chú đọc: AC-A10/A11/A03 chỉ kiểm phía Admin theo R19 (người dùng đã chấp nhận A2): "≤ 5 s" = NOTIFY ≤ 1000 ms sau commit (có listener) + dữ liệu `hub_ro` đúng tại lúc nhận; menu `/`, `CMD_NOT_FOUND`, kill switch phía Hub **không** kiểm ở M3 (ghi vào đầu vào M5). AC-A07 không có phần Hub, kiểm đủ.
+
+## 8. Lệnh kiểm / CI
+
+Lệnh xong M3 (chép nguyên văn spec §8): `docker compose up -d --wait && bun run db:migrate && bun run db:seed && bun run check && bun run typecheck && bun test && bun tests/acceptance/ADM-NFR-06/ac07.check.ts && bun run test:int && bun run i18n:check && bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check && bun run check:size --all && bun run depcruise --all && bun run check:fn --all`. Thêm bước qc ở VERIFY: `bun run db:generate` (không sinh gì), `bun run trace ADM-FR-62` … `ADM-FR-36`, báo p95 của `access.perf.int.test.ts`.
+Chạy int từng task: `bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 <file…>` (như `tasks.md`).
+
+### 8.1 Mỗi file test chạy được (xanh) ở task nào
+
+Khớp `tasks.md` (cột "Lệnh xong"). Q2 viết tất cả (đỏ); cột dưới là task có **lệnh xong chạy chính file đó** và kỳ vọng xanh. Mỗi file chỉ phụ thuộc module đã xong ở task đó (dữ liệu chéo bằng owner SQL).
+
+| File | Xanh sau | Ghi chú |
+|---|---|---|
+| `M1/rules/contracts.test.ts`, `M2/rules/contracts.test.ts` (sửa, #6–7), `M3/rules/contracts.test.ts` (R1), `M3/rules/config-payload.test.ts` (R2) | T2 (code xong ở T1; lệnh xong T2 chạy các file này) | đỏ sau T1 tới khi Q2 sửa M1/M2 (dự kiến) |
+| `ADM-NFR-06/migrate.int.test.ts` (#1), `M1/db-schema` (#2), `M1/db-rls` (#3), `M1/tenants.int`, `M2/db-schema` (#4), `M2/db-rls` (#5), `M3/db-schema.int` (D1), `M3/db-rls.int` (D2) | T2 | đỏ sau Q2 vì chưa có migration (đúng chủ ý) |
+| `M2/concurrency.int.test.ts` (giữ, không đổi) | T3 (chạy lại; xanh trước và sau T3) | bump chưa nối vào M2 tới T7 |
+| `M3/rules/groups.rules.test.ts` (R3), `M3/groups.int`, `M3/members.int`, `M3/users-groups.int`, `M3/conflict.int`, `M1/users.int`, `M1/users-isolation.int`, `M1/tenants.int` | T4 | `conflict.int` thêm vào lệnh T4 (8.2) |
+| `M3/rules/grants.rules.test.ts` (R4), `M3/grants.int`, `M3/grants-batch.int`, `M3/matrix.int` | T5 | entitlement dựng bằng owner SQL |
+| `M3/rules/access.rules.test.ts` (R5), `M3/effective-access.int`, `M3/access-sql.int`, `M3/command-access.int`, `M3/hub-view.int`, `M3/forbidden.int`, `M3/error-codes.int`, `M2/access.int`, `M2/features.int` (#8, chạy ở T7) | T6 | thành viên/grant dựng bằng owner SQL (không chờ API khác); `access-sql` thêm vào lệnh T6 (8.2) |
+| `M3/notify.int`, `M3/concurrency.int`, toàn `M1/`, toàn `M2/` | T7 | cần bump ở M1/M2 (A03 vế 2, A11, bảng N-A) |
+| `M3/i18n-conflict.test.ts` | FE0 | thêm vào lệnh FE0 (8.2) |
+| `e2e/conflict-users`, `conflict-tenants` | FE1a | |
+| `e2e/conflict-workflows` (+ `workflows` M2) | FE1b | |
+| `e2e/conflict-commands` (+ `commands` M2, sửa #11 để xanh trước FE4c) | FE1c | |
+| `e2e/conflict-features` (+ `features` M2, sửa #10) | FE1d | |
+| `e2e/groups-list` | FE2a | |
+| `e2e/groups-editor`, `e2e/conflict-groups` | FE2b | |
+| `e2e/groups-members` | FE2c | |
+| `e2e/groups-grants`, `M3/i18n-groups.test.ts` | FE2d | `groups-grants` thay `groups-features`; i18n thêm vào lệnh FE2d |
+| `e2e/access-matrix` | FE3a | |
+| `e2e/access-check` | FE3b | |
+| `e2e/users-groups` (+ `users` M1) | FE4a | |
+| `e2e/access-user-tab` | FE4b | thay `users-access` |
+| `e2e/access-command`, `M3/i18n-access.test.ts` | FE4c | thay `commands-access`; i18n thêm vào lệnh FE4c |
+| `e2e/m3-flow` | FE5 | cần mọi màn |
+
+Ràng buộc đã rà để không đỏ sai task:
+- `grants.int` (T5) chèn entitlement, thành viên bằng owner SQL; `effective-access`/`command-access` (T6) chèn thành viên/grant bằng owner SQL; `hub-view` (T6) dùng API grants (T5, đã xong) + `PUT/DELETE entitlement` (M2) và **không** cần NOTIFY.
+- `forbidden` (T6) cần mọi route M3 (groups T4, grants T5, access T6) — đủ ở T6.
+- `error-codes` (T6): `BETA_GROUP_PROTECTED` (T4), `NOT_ENTITLED` (T5) — đủ ở T6.
+- `members.int` (T4) không cần grants; `groups.int` ca cascade grants chèn bằng owner SQL; ca "thành viên/grant không tăng `version`" dùng owner SQL để cấp grant.
+- e2e: dữ liệu chéo màn bằng owner SQL (`withOwner`): `groups-members` không chờ `access`; `access-check` dựng group/grant bằng SQL; `conflict-*` dùng API M1/M2 đã có (trừ `conflict-groups` cần T4: FE2a phụ thuộc T4).
+- `m3-flow` ca 3 chỉ dùng UI các màn FE2/FE3 đã xong (FE5 phụ thuộc đủ).
+
+### 8.2 Sửa `tasks.md` (qc, theo quyền "đổi tên thì sửa Lệnh xong cùng lúc")
+- Q1 tick `[x]`; cột File/Lệnh xong của Q2: liệt kê `tests/acceptance/M3/{rules,*.int,i18n-*}`, `e2e/{conflict-*,groups-*,access-*,users-groups,m3-flow}.spec.ts`, và 5 file M0–M2 + 2 file e2e sửa (mục 5).
+- FE0 thêm `tests/acceptance/M3/i18n-conflict.test.ts` vào `bun test …`; FE2d thêm `tests/acceptance/M3/i18n-groups.test.ts`; FE4c thêm `tests/acceptance/M3/i18n-access.test.ts`.
+- T4 thêm `tests/acceptance/M3/conflict.int.test.ts`; T6 thêm `tests/acceptance/M3/access-sql.int.test.ts`.
+- Đổi tên e2e: FE2d `groups-features` → `groups-grants`; FE4b `users-access` → `access-user-tab`; FE4c `commands-access` → `access-command`.
+- Đề nghị điều phối: **Q3 chạy ngay sau Q2, trước T2** (hiện `tasks.md` chỉ ràng buộc G1, Q2).
+
+## 9. Độ phủ kế hoạch
+
+| Loại | Số file | Số test dự kiến |
+|---|---|---|
+| rules (R1–R5) | 5 | ≈ 97 |
+| i18n (C1) | 3 | 10 |
+| int DB (D1, D2) | 2 | ≈ 34 |
+| int API (groups, members, users-groups, conflict, grants, grants-batch, matrix, effective-access, access-sql, command-access, hub-view, forbidden, error-codes) | 13 | ≈ 232 |
+| int NOTIFY (`notify`) | 1 | ≈ 73 |
+| int đồng thời (`concurrency`) | 1 | ≈ 14 |
+| e2e (16 file) | 16 | ≈ 76 |
+| **Tổng** | **41** (+ 3 helper `M3/_*.ts`; 13 file M0–M2 sửa/rà, mục 5) | **≈ 536** |
+
+FR MUST (5 mã): FR-62, FR-32, FR-36, FR-53, FR-55 đều có ≥ 1 test acceptance + API (và e2e với FR-62/32/36/55); FR-35, FR-24 (SHOULD) có test; BR-11/12, BR-09, NFR-06/07 có test; AC-A07/A10/A11/A03(vế 2) + M3-AC01…10 đều có ca (mục 7). Phần Hub của AC-A10/A11/A03 và FR-37 ngoài phạm vi (chỉ khẳng định âm). Độ phủ FR MUST kế hoạch: **5/5**.
+
+## 10. Lỗ hổng cho spec-readiness (kèm mặc định đề xuất)
+
+| # | Mức | Agent | Vấn đề | Mặc định qc áp dụng nếu không trả lời |
+|---|---|---|---|---|
+| G1 | Trung bình | backend-lead | `beta-testers` chỉ được bảo vệ **ở app** (`BETA_GROUP_PROTECTED`; PATCH không nhận `key`); DB không có ràng buộc/trigger chặn `DELETE`/đổi `key` trực tiếp bằng SQL. Spec M3-R02 chỉ yêu cầu 409 | Chấp nhận app-only; test D1/D2 **không** khẳng định chặn ở mức DB, chỉ trigger tạo + bảo vệ qua API. Nếu muốn chặn DB → thêm trigger BEFORE DELETE/UPDATE ở `0006` (đổi phạm vi, qc thêm ca) |
+| G2 | Cao | điều phối | **Mẫu `bunx playwright test <mẫu>` là regex** nên 3 tên e2e FE đề nghị làm lệnh xong FE1c/FE1d/FE4a chạy nhầm file của task sau (`commands-access`, `groups-features`, `users-access`) | Đã chốt tên mới (6.2) và sửa `tasks.md` (8.2): `access-command`, `groups-grants`, `access-user-tab` |
+| G3 | Cao | điều phối | `tasks.md` Q3 (khoá) phụ thuộc G1, Q2 nhưng không ràng buộc **thứ tự trước T2**; trong khoảng Q2→Q3 các test đã sửa chưa được khoá | Đề nghị Q3 ngay sau Q2, trước T2 (8.2); `test:lock:verify` đỏ giữa Q2 và Q3 là dự kiến |
+| G4 | Cao | điều phối/backend | **DB dùng chung phá `notify`/`concurrency`** (NOTIFY và bộ đếm deadlock theo DB; `config_meta` một hàng) — TECH-DEBT #17 trở thành điều kiện cần cho hai file này | Đề xuất 6.3: `ai_system_<tag>_test` mỗi agent + `bun run db:test:create <tag>` (backend-lead) ; tới khi có, chạy hai file riêng; sentinel báo rõ khi có thông điệp lạ |
+| G5 | Trung bình | frontend-lead | **Khoá/mở khoá user không có 409**: `POST /admin/users/:id/lock|unlock` body rỗng, không `version` (M1 §3), nhưng FE1a/D6 viết "khoá/mở khoá (D6) → `ConflictDialog`". Không có đường nào gây 409 | qc **không** viết ca conflict cho lock/unlock user; chỉ drawer `PATCH` (`conflict-users`). Đề nghị frontend-lead sửa D6/FE1a (bỏ lock/unlock khỏi phạm vi) hoặc backend-lead thêm `version` (đổi contract M1 → hard stop, không đề xuất) |
+| G6 | Trung bình | backend-lead | `entity: "batch"` **không đạt được** qua API nếu mọi thao tác ở plan §5.3 chỉ phát một loại sự kiện (batch grant → `grant`; tenant POST → một sự kiện `tenant`) | Kiểm `batch` chỉ ở R2 (hàm thuần); `notify` kỳ vọng entity như bảng N-A. Nếu backend có thao tác thật phát `batch`, báo để qc thêm ca |
+| G7 | Trung bình | backend-lead | Tên `HookOp` của thao tác M1/M2 (`command.save`, `feature.save`, `workflow.save`, …) không có trong plan §2 (chỉ M3 + `tenant.save`, `user.save`, `secret.save`, `entitlement.save`) | qc dùng hook **chỉ** với op đã liệt kê (`group.save`, `grant.batch`, `tenant.save`); M1/M2 op không dùng |
+| G8 | Thấp | backend-lead | `501` username khác nhau → 400 rõ; nhưng **501 phần tử gồm trùng** (còn ≤ 500 sau bỏ trùng) → 400 hay 200 chưa nói (giới hạn tính trước hay sau bỏ trùng) | qc chỉ kiểm 501 phần tử **khác nhau** → 400 và 500 (nhiều trùng) → 200 chỉ khi ≤ 500 phần tử gửi; không kiểm biên mơ hồ |
+| G9 | Thấp | backend-lead | `DELETE entitlement` khi đã thu hồi / chưa có: M2 trả mã gì và có đổi hàng? (N50 giả định idempotent, không bump) | Theo M2 (idempotent 204, không đổi hàng → không bump); nếu M2 trả lỗi, qc bỏ N50 |
+| G10 | Thấp | backend-lead | `effective-access` của user `platform` (tenant `platform`, không entitlement): `core` hiệu lực, feature khác `no_entitlement`; spec không nêu | Kỳ vọng như luật plan §4 (test `admin`: chỉ `core`) |
+| G11 | Trung bình | frontend-lead | Định dạng `{time}` trong modal (`formatClock`) và nhãn chip/badge của `em` (inactive: "Đã khoá" hay "Không hoạt động"?) chưa cố định trong `plan-frontend` §5 | e2e khớp `{time}` bằng regex (ca có yếu tố thời gian); nhãn trạng thái `em` lấy đúng nhãn M1 (`users.status.*`), không hard-code chuỗi mới |
+| G12 | Thấp | backend-lead | Thứ tự `matrix.groups` (spec §3 không nói, plan §5.5 nói beta đầu rồi key) và `GroupListResponse` không có `counts` | Theo plan §5.5/§3; qc kiểm đúng như vậy |
+| G13 | Thấp | backend-lead | `access.perf.int.test.ts` và ngân sách §6 do backend đo; qc không có số p95 trước VERIFY | qc chỉ chạy lại ở VERIFY và báo (không khoá) |
+| G14 | Thấp | điều phối | `backfill` của `0006` chỉ kiểm được bằng cách chạy lại câu `INSERT … SELECT` đọc từ file migration (không có cách chạy migration tới giữa chừng) | D1.12 đọc **artifact** `0006_permissions_rls.sql` (không phải code sản phẩm); nếu backend đổi cấu trúc câu → báo để qc chỉnh |
+| G15 | Thấp | điều phối | Hai ca có yếu tố thời gian (`notify` P10, e2e `{time}`) và `concurrency` C1–C11 không tất định | Ghi rõ ở mục 1/4; ngưỡng rộng; một ca xanh không thay thế L1–L10 của backend |
+
+Không chặn (đã có đáp án trong spec/plan): 10 AC bổ sung (xác nhận 10/10), tên file `tests/acceptance/M3/` (theo `plan.md` §10, thêm `conflict`, `access-sql`, `i18n-*`), câu modal (A4 đã chấp nhận), mức kiểm vế "≤ 5 s" (A2 đã chấp nhận), ô Groups chỉ đọc (A11), không UI cấp feature cho user (A6).
+
+## 11. Nhật ký
+
+- 2026-10-02 · qc · WRITE (test-plan) · chưa có file test; Q2/Q3 sau Gate G1 (Q2 sau T1). Q1 xong. Áp bài học M1/M2: mỗi file gán task xanh (8.1, khớp `tasks.md`); fixture nạp lười; dữ liệu chéo module dựng bằng owner SQL; không `setTimeout`/`waitForTimeout` (NOTIFY chờ theo thông điệp có hạn chót, âm tính bằng sentinel); mỗi `it` tự `reset`, không giả định thứ tự; dữ liệu `bulk` tính ở mục 3 (tổng `/dich` = 66); ca không tất định ghi rõ (G15); chốt tên e2e có đổi 3 chỗ (6.2); đề xuất DB test riêng (6.3).
