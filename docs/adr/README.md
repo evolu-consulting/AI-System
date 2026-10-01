@@ -6,3 +6,4 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 |---|---|---|
 | 0001 | Stack nền | Accepted |
 | 0003 | Driver Postgres (postgres.js) và bản TypeScript (6.0.3) | Accepted |
+| 0004 | Thư viện web M1: toast (sonner) và resolver form (@hookform/resolvers) | Proposed (Gate M1) |

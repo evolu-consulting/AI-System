@@ -84,9 +84,17 @@ Artboard có trong `docs/design/canvas/`: Login, ChangePassword, TenantCreate, U
 
 | Màn / thành phần | Trạng thái (tải · rỗng · lỗi · không quyền) | Câu chữ VI | Câu chữ EN | Role + nhãn cho e2e |
 |---|---|---|---|---|
-| | | | | |
+| Đăng nhập `/login` | nút "Đang đăng nhập…" · — · `alert` chung (không nói rõ trường sai) · đã đăng nhập → `/` | Đăng nhập · "Sai mã công ty, tên đăng nhập hoặc mật khẩu." · "Tạm khoá đến {HH:MM}" | Sign in · "Wrong company code, username or password." · "Temporarily locked until {time}" | `textbox "Mã công ty"` · `textbox "Tên đăng nhập"` · `getByLabel("Mật khẩu")` · `button "Đăng nhập"` · `alert` |
+| Đổi mật khẩu bắt buộc `/change-password` | nút loading · — · token hết hạn → `alert` + "Đăng nhập lại" | Đặt mật khẩu mới · Đặt mật khẩu và tiếp tục | Set a new password · Set password and continue | `getByLabel("Mật khẩu mới")` · `getByLabel("Nhập lại mật khẩu mới")` · `button "Đặt mật khẩu và tiếp tục"` · không có "Bỏ qua" |
+| Đổi mật khẩu tự đổi `/account/password` · Member `/member` | nút loading · — · sai MK hiện tại → lỗi dưới ô | Đổi mật khẩu · Tài khoản của bạn dùng Chat App | Change password · Your account uses Chat App | `getByLabel("Mật khẩu hiện tại")` · `button "Đổi mật khẩu"` · `heading "Tài khoản của bạn dùng Chat App"` |
+| App shell | skeleton khi khởi tạo phiên · — · mất kết nối banner · dialog phiên hết hạn · menu ẩn mục không quyền | Tổng quan · Tenants · Users · Tài khoản của bạn · Đăng xuất | Overview · Tenants · Users · Your account · Sign out | `navigation "Điều hướng chính"` · `button "Tài khoản của bạn"` · `menuitem "Đăng xuất"` · `dialog "Phiên đăng nhập đã hết hạn"` |
+| Tenants `/tenants`, `/tenants/new` | skeleton bảng · "Chưa có tenant khách hàng nào…" · `ErrorState` · tenant_admin → 403 | Tenants · + Tạo tenant · Tạo tenant · Đã tạo tenant {key} | Tenants · + New tenant · Create tenant · Tenant {key} created | `link "+ Tạo tenant"` · `table "Tenants"` · `textbox "Mã công ty"` · `button "Tạo tenant"` · `dialog "Đã tạo tenant acme"` · `textbox "Mật khẩu tạm"` · `checkbox "Tôi đã lưu mật khẩu tạm"` |
+| Tenant chi tiết `/tenants/:id` | skeleton · — · 404 nếu id lạ · 409 `VERSION_CONFLICT` → toast + Tải lại · tab Feature/Agent/Quota "Chưa khả dụng" | Khoá tenant · Mở khoá tenant · Chưa khả dụng | Lock tenant · Unlock tenant · Not available yet | `tab "Thông tin"` · `button "Khoá tenant"` · `alertdialog "Khoá tenant acme?"` · `textbox "Gõ acme để xác nhận"` · `button "Lưu"` |
+| Users `/users` + drawer | skeleton · "Chưa có người dùng nào ngoài bạn…" · `ErrorState` · tenant lạ/khác → 404 · "Tất cả tenant" → `+ Tạo user` bị khoá | Users · + Tạo user · Tạo user · Reset mật khẩu · Khoá · Đăng xuất mọi thiết bị | Users · + New user · Create user · Reset password · Lock · Sign out everywhere | `table "Users"` · `button "+ Tạo user"` · `dialog "Tạo user"` · `button "Thao tác khác"` → `menuitem` · `textbox "Mật khẩu tạm"` · `alertdialog "Khoá cuong.le?"` |
 
-Validate: …
+Validate (khớp contract, câu lỗi ở plan-frontend §4): mã công ty `^[a-z0-9-]{2,32}$` (ô tự chuyển thường + bỏ dấu) · tên đăng nhập `^[a-z0-9._-]{2,32}$` · tên hiển thị bắt buộc ≤ 64 · email bắt buộc với `tenant_admin`, đúng định dạng · slot subscription số nguyên ≥ 1 hoặc trống · mật khẩu mới ≥ 10 và ≤ 128, nhập lại khớp, khác mật khẩu hiện tại · server: `KEY_TAKEN`, `USERNAME_TAKEN`, `EMAIL_TAKEN` hiện dưới ô tương ứng.
+
+Quyết định FE đã chốt (chi tiết plan-frontend §0): C1–C3 như ghi ở trên · access token chỉ trong bộ nhớ, refresh cookie httpOnly · chống đua refresh nhiều tab bằng Web Locks + BroadcastChannel (B4) · bảng phân trang server, không virtualize/TanStack Table ở M1 · mật khẩu tạm hiện nguyên 16 ký tự, không chèn dấu `-` · ADR-0004 (Proposed: `sonner`, `@hookform/resolvers`) cần duyệt ở Gate.
 
 ## 6. Hiệu năng
 <!-- backend-lead -->
@@ -136,6 +144,8 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bun run i18n:
 - **Bỏ** "Còn N lần thử" (câu hỏi 1). **2FA và Import/Export không thuộc M1, để M4** (câu hỏi 2). **EdDSA** (câu hỏi 3).
 ### Đề xuất chờ Gate (docs-architect; không trả lời → áp dụng như ghi, đánh dấu `[ĐX]` ở §2)
 Các mặc định mới (`[ĐX]` ở M1-R01, 03, 04, 06, 15, 17, 20) và nguồn mặc định `admin-missing-screens.md` §15 (không có Xoá tenant; mã công ty/username bất biến; reset mật khẩu đăng xuất mọi thiết bị; mật khẩu tạm 16 ký tự nhóm 4 khi hiển thị). `admin-missing-screens.md` **chưa** được người dùng duyệt riêng — danh sách mơ hồ đầy đủ ở báo cáo bàn giao của docs-architect (A1–C3), tóm tắt:
+Chi tiết đầy đủ (route, trạng thái từng màn, câu chữ VI/EN mới, nhãn e2e, validate, lỗi API → UI, hiệu năng, a11y): [plan-frontend.md](plan-frontend.md). Bảng dưới là tóm tắt; câu chữ nguyên văn ở `admin-missing-screens.md` (§4, 5, 9, 12) và [plan-frontend.md §7](plan-frontend.md).
+
 - A1 FR-62 (Group) nằm trong dải "FR-60–63" của M1 nhưng ROADMAP M3 cũng liệt kê → M1 **không** làm Group.
 - A2 `features` cần cho seed `core` dù FR-30 thuộc M2 → bảng tạo ở M1, API M2.
 - A3 `PATCH` + `version` → 409 có sẵn từ M1, modal UI ở M3.
