@@ -202,6 +202,7 @@ describe("ADM-FR-01 · M1-R04 · tài khoản bị khoá", () => {
     expectErr(await env.login("acme", "em", "sai-mat-khau-1"), "INVALID_CREDENTIALS");
     expectErr(await env.login("zeta", "zed", "sai-mat-khau-1"), "INVALID_CREDENTIALS");
     expectErr(await env.login("acme", "em", PW), "ACCOUNT_LOCKED");
+    expectErr(await env.login("zeta", "zed", PW), "ACCOUNT_LOCKED");
     expect((await row(USER_ID.em))?.failed_logins).toBe(0);
     expect((await row(USER_ID.zed))?.failed_logins).toBe(0);
   });
