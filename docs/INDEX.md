@@ -50,3 +50,4 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 |---|---|---|---|
 | `M0-bootstrap` | Khung repo, công cụ, hạ tầng dev | M0 | done (chờ merge) |
 | `M1-foundation-identity` | DB admin + RLS + seed, Auth, Tenants, Users, App shell | M1 | done (2026-10-01) |
+| `M2-catalog-command` | Secrets, Workflows, Commands (không Test), Features + entitlement | M2 | draft (đã tách spec 2026-10-01, chờ plan + readiness) |
