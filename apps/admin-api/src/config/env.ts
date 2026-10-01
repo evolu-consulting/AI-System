@@ -1,4 +1,4 @@
-// ADM-NFR-06 · env của admin-api (spec M0 §7): chỉ validate biến M0 dùng.
+// ADM-NFR-06, ADM-NFR-07, ADM-NFR-01 · env của admin-api (spec M0 §7, M1 §7). Lỗi chỉ nêu tên biến.
 import { z } from "zod";
 
 const OriginList = z
@@ -11,10 +11,17 @@ const OriginList = z
   )
   .pipe(z.array(z.url()).min(1));
 
+const Pem = (kind: "PRIVATE" | "PUBLIC") => z.string().includes(`-----BEGIN ${kind} KEY-----`);
+
 export const EnvSchema = z.object({
   APP_ENV: z.enum(["development", "test", "production"]),
   PORT: z.coerce.number().int().min(1).max(65535),
   CORS_ORIGINS: OriginList,
+  // Role admin_api (NOBYPASSRLS), không phải owner DATABASE_URL (spec M1 §4).
+  ADMIN_API_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  JWT_PRIVATE_KEY: Pem("PRIVATE"),
+  JWT_PUBLIC_KEY: Pem("PUBLIC"),
+  JWT_KID: z.string().min(1).max(64),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

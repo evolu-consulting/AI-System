@@ -2,6 +2,7 @@
 export { createDb, type Db } from "./client";
 export { type AppEnv, type DbEnv, loadDbEnv } from "./env";
 export { runMigrations } from "./migrate";
+export { hashPassword, PASSWORD_HASH_OPTIONS, verifyPassword } from "./password";
 export { admin, features, REVOKE_REASONS, refreshTokens, tenants, users } from "./schema/admin";
 export { agentGrants, agentWorkflows, hub, usageLogs } from "./schema/hub-readonly";
 export { type DbScope, NIL_SCOPE, NIL_TENANT_ID, setScope, type Tx, withScope } from "./scope";
