@@ -8,7 +8,7 @@ Admin Console (ADM-NFR-06 M0: khung toolchain). Rsbuild + React 18 + Tailwind v4
 - `bun run --filter @ai/admin-web typecheck` — `tsconfig.json` (code trình duyệt) + `tsconfig.node.json` (script, config, unit test)
 - `bun test apps/admin-web` — unit test
 - `bun run --filter @ai/admin-web check:bundle` — JS ban đầu ≤ 150 KB, CSS ≤ 25 KB (gzip), đọc `dist/index.html`
-- `bunx playwright test` — e2e ở `e2e/` chạy trên bản build
+- `bunx playwright test` — e2e ở `e2e/` (chạy từ gốc repo): build + preview admin-web (cổng 3000, proxy `/auth` `/admin` → admin-api) và admin-api e2e (cổng 3001, DB `ai_system_test` được reset). **Tắt `bun run dev` của admin-api (cổng 3001) trước khi chạy**; cần `docker compose up -d --wait` và `.env.local` (`bun run keys:dev`)
 
 ## Cấu trúc
 - `src/app/` — providers, router, query client, i18n
