@@ -1,6 +1,6 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-07, ADM-NFR-01 · đăng nhập, refresh xoay vòng, đăng xuất (plan M1 §5).
 // Không biết HTTP: route quyết định cookie/body. Mỗi bước có DB = một withScope.
-import type { LoginRequest, PasswordChangeRequired } from "@ai/contracts";
+import type { Locale, LoginRequest, Me, PasswordChangeRequired } from "@ai/contracts";
 import { hashPassword, NIL_SCOPE, setScope, type Tx, verifyPassword, withScope } from "@ai/db";
 import { appError } from "../../lib/errors";
 import { signChangeToken, verifyChangeToken } from "../../lib/jwt";
@@ -18,7 +18,14 @@ import {
   normalizeLoginId,
   outcomeAfterPasswordOk,
 } from "./auth.rules";
-import { type AuthCtx, type ClientMeta, issueSession, type Session, sha256 } from "./auth.session";
+import {
+  type AuthCtx,
+  type ClientMeta,
+  issueSession,
+  type Session,
+  sha256,
+  toMe,
+} from "./auth.session";
 
 export type { AuthCtx, ClientMeta, Session } from "./auth.session";
 export type LoginResult =
@@ -234,4 +241,23 @@ export async function changePasswordSelf(
   if (input.new_password === input.current_password) throw appError("PASSWORD_UNCHANGED");
   const hash = await hashPassword(input.new_password);
   await writePassword(ctx, u, hash, { keepFamily: actor.sid }, async () => null);
+}
+
+/** GET /auth/me: hồ sơ đọc lại từ DB (middleware đã chặn user không đăng nhập được). */
+export async function getMe(ctx: AuthCtx, actor: Actor): Promise<Me> {
+  const u = await withScope(ctx.db, tenantScope(actor.tenantId), (tx) =>
+    repo.findUserById(tx, actor.tenantId, actor.userId),
+  );
+  if (!u) throw appError("UNAUTHORIZED");
+  return toMe(u);
+}
+
+/** PATCH /auth/me: chỉ `locale`, ghi sau thắng (không cần version), vẫn tăng `users.version`. */
+export async function updateMyLocale(ctx: AuthCtx, actor: Actor, locale: Locale): Promise<Me> {
+  const u = await withScope(ctx.db, tenantScope(actor.tenantId), async (tx) => {
+    await repo.updateLocale(tx, actor.tenantId, actor.userId, locale);
+    return repo.findUserById(tx, actor.tenantId, actor.userId);
+  });
+  if (!u) throw appError("UNAUTHORIZED");
+  return toMe(u);
 }

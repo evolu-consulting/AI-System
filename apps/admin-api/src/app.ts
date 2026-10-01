@@ -1,20 +1,46 @@
-// ADM-NFR-06 · dựng app Hono (spec M0 §3.1). Factory thuần: không đọc env, để test in-process.
+// ADM-NFR-06, ADM-FR-01 · dựng app Hono (spec M0 §3.1, plan M1 §6.1). Factory thuần: không đọc env, để test in-process.
+// `deps` vắng → chỉ /health (giữ test khoá M0); có `deps` → mount /auth, /admin/*.
+import type { AppEnv, Db } from "@ai/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import type { AppVars } from "./lib/auth-middleware";
 import { AppError, toErrorBody } from "./lib/errors";
+import type { JwtKeys } from "./lib/jwt";
 import { logger } from "./lib/logger";
+import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
+import { authRoutes } from "./modules/auth/auth.routes";
 import { healthRoutes } from "./modules/health/health.routes";
 
 export type AppConfig = { version: string; corsOrigins: string[] };
-type Vars = { Variables: { requestId: string } };
+export type AppDeps = {
+  db: Db;
+  keys: JwtKeys;
+  appEnv: AppEnv;
+  dummyHash: string;
+  now?: () => Date;
+};
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
+const ALLOW_HEADERS = ["Content-Type", "Authorization", "X-Client", REQUEST_ID_HEADER];
 
-export function createApp(cfg: AppConfig): Hono<Vars> {
-  const app = new Hono<Vars>();
+function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
+  const ctx = {
+    db: deps.db,
+    keys: deps.keys,
+    dummyHash: deps.dummyHash,
+    now: deps.now ?? (() => new Date()),
+  };
+  const secureCookie = deps.appEnv === "production";
+  app.route("/auth", authRoutes({ ...ctx, secureCookie, selfChange: selfChangeHandler(ctx) }));
+  app.route("/auth", meRoutes(ctx));
+}
+
+export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {
+  const app = new Hono<AppVars>();
 
   // Tự viết thay `hono/request-id`: bản của Hono từ chối dấu "." mà spec cho phép.
+  // Không bao giờ log body, Authorization, Cookie, Set-Cookie (CONVENTIONS §5).
   app.use(async (c, next) => {
     const incoming = c.req.header(REQUEST_ID_HEADER);
     const id = incoming && REQUEST_ID_RE.test(incoming) ? incoming : crypto.randomUUID();
@@ -22,17 +48,27 @@ export function createApp(cfg: AppConfig): Hono<Vars> {
     const t0 = performance.now();
     await next();
     c.res.headers.set(REQUEST_ID_HEADER, id);
+    const actor = c.get("actor") as AppVars["Variables"]["actor"] | undefined;
     logger.info("request", {
       request_id: id,
       method: c.req.method,
       path: c.req.path,
       status: c.res.status,
       ms: Math.round((performance.now() - t0) * 10) / 10,
+      ...(actor ? { tenant_id: actor.tenantId, user_id: actor.userId } : {}),
     });
   });
-  app.use(cors({ origin: cfg.corsOrigins, credentials: true, exposeHeaders: [REQUEST_ID_HEADER] }));
+  app.use(
+    cors({
+      origin: cfg.corsOrigins,
+      credentials: true,
+      allowHeaders: ALLOW_HEADERS,
+      exposeHeaders: [REQUEST_ID_HEADER],
+    }),
+  );
 
   app.route("/health", healthRoutes(cfg));
+  if (deps) mountApi(app, deps);
 
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
