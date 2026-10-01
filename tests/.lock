@@ -1,5 +1,5 @@
 # tests/.lock — sinh bởi bun run test:lock:write (chỉ qc). Không sửa tay.
-d90e2bc9ea693172fdacff34efdaf2c83ba217fb0f932adcf94722be97563f6b  e2e/auth.spec.ts
+43af1813be521f0f9c3ce7f675fee897b23f59f1ddf14d27ebf87d1fe155f29a  e2e/auth.spec.ts
 329cbefa1cc50da9d3917554d525cd8c60a57c70f423ccbfb12d083dc57b07a6  e2e/m1-flow.spec.ts
 8c302e81222d07b1eded6cda3efcf5eaf5a47d1c87e7ef67f5e23224352ac76f  e2e/smoke.spec.ts
 e22cba7f8aa490e719f867250dd3de0d3be980831cc54e34628817e63a082d43  e2e/support/helpers.ts

@@ -156,6 +156,9 @@ test("ADM-FR-06 · M1-R06 · tự đổi mật khẩu /account/password: sai m�
   page,
 }) => {
   await loginUI(page, "acme", "lan", PW);
+  await expect(
+    page.getByRole("heading", { name: "Tài khoản của bạn dùng Chat App" }),
+  ).toBeVisible();
   await page.goto("/account/password");
   const current = page.getByLabel("Mật khẩu hiện tại", { exact: true });
   const next = page.getByLabel("Mật khẩu mới", { exact: true });
