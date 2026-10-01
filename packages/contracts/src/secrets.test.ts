@@ -56,8 +56,11 @@ describe("ADM-FR-50 · M2-R01 · request", () => {
     expect(SecretCreateRequestSchema.safeParse(input).success).toBe(false);
   });
 
-  test("biên giá trị 8 và 2048 được nhận", () => {
-    for (const value of ["a".repeat(8), "a".repeat(2048)])
+  test("biên giá trị 8 và 2048 được nhận; đếm UTF-16 (4 emoji = 8)", () => {
+    expect(SecretCreateRequestSchema.safeParse({ name: "AB", value: "😀😀😀" }).success).toBe(
+      false,
+    );
+    for (const value of ["a".repeat(8), "a".repeat(2048), "😀😀😀😀", "😀".repeat(1024)])
       expect(SecretCreateRequestSchema.safeParse({ name: "AB", value }).success).toBe(true);
   });
 

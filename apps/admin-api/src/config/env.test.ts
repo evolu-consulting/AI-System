@@ -11,6 +11,7 @@ const OK = {
   JWT_PRIVATE_KEY: PRIV,
   JWT_PUBLIC_KEY: PUB,
   JWT_KID: "dev-1",
+  SECRET_MASTER_KEY: Buffer.alloc(32, 7).toString("base64"),
 };
 
 describe("ADM-NFR-06 · loadEnv", () => {
@@ -38,6 +39,8 @@ describe("ADM-NFR-06 · loadEnv", () => {
     ["JWT_PRIVATE_KEY", { ...OK, JWT_PRIVATE_KEY: PUB }],
     ["JWT_PUBLIC_KEY", { ...OK, JWT_PUBLIC_KEY: "" }],
     ["JWT_KID", { ...OK, JWT_KID: "k".repeat(65) }],
+    ["SECRET_MASTER_KEY", { ...OK, SECRET_MASTER_KEY: "bi_mat_ngan" }],
+    ["SECRET_MASTER_KEY", { ...OK, SECRET_MASTER_KEY: Buffer.alloc(31).toString("base64") }],
   ])("sai %s → lỗi nêu tên biến, không lộ giá trị", (name, source) => {
     expect(() => loadEnv(source)).toThrow(name);
     expect(() => loadEnv(source)).not.toThrow(/bi_mat|BEGIN/);
@@ -45,7 +48,7 @@ describe("ADM-NFR-06 · loadEnv", () => {
 
   test("thiếu mọi biến → liệt kê đủ tên", () => {
     expect(() => loadEnv({})).toThrow(
-      "APP_ENV, PORT, CORS_ORIGINS, ADMIN_API_DATABASE_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, JWT_KID",
+      "APP_ENV, PORT, CORS_ORIGINS, ADMIN_API_DATABASE_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, JWT_KID, SECRET_MASTER_KEY",
     );
   });
 });

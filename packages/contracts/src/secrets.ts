@@ -17,8 +17,28 @@ import {
   UuidSchema,
 } from "./common";
 
-/** Giá trị 8–2048 (đếm UTF-16 như `String.length`), không trim, không chuẩn hoá (M2-R01). */
-export const SecretValueSchema = z.string().min(SECRET_VALUE_MIN).max(SECRET_VALUE_MAX);
+/**
+ * Giá trị 8–2048 (đếm UTF-16 như `String.length`), không trim, không chuẩn hoá (M2-R01). Không dùng `.min/.max` của
+ * zod 4 vì chúng đếm code point (emoji 2 đơn vị UTF-16 = 1), lệch với spec và với CHECK độ dài bản mã của DB.
+ */
+export const SecretValueSchema = z.string().superRefine((v, ctx) => {
+  if (v.length < SECRET_VALUE_MIN)
+    ctx.addIssue({
+      code: "too_small",
+      origin: "string",
+      minimum: SECRET_VALUE_MIN,
+      inclusive: true,
+      message: "too small",
+    });
+  if (v.length > SECRET_VALUE_MAX)
+    ctx.addIssue({
+      code: "too_big",
+      origin: "string",
+      maximum: SECRET_VALUE_MAX,
+      inclusive: true,
+      message: "too big",
+    });
+});
 /** Ghi chú trim ≤ 200; `""` → `null`. */
 export const SecretNoteSchema = z
   .string()

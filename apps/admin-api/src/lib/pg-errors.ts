@@ -17,6 +17,12 @@ export function uniqueViolation(err: unknown): string | null {
   return c?.code === "23505" && typeof c.constraint_name === "string" ? c.constraint_name : null;
 }
 
+/** 23503 (khoá ngoại) với tên constraint → tên đó; khác → null (M2: xoá secret/workflow đua với FK). */
+export function foreignKeyViolation(err: unknown): string | null {
+  const c = pgCause(err);
+  return c?.code === "23503" && typeof c.constraint_name === "string" ? c.constraint_name : null;
+}
+
 const isDrizzleWrapper = (err: unknown): boolean =>
   !!err && typeof err === "object" && "query" in (err as object);
 

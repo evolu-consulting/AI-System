@@ -8,9 +8,11 @@ import { AppError, toErrorBody } from "./lib/errors";
 import type { JwtKeys } from "./lib/jwt";
 import { logger } from "./lib/logger";
 import { safeErrorFields } from "./lib/pg-errors";
+import type { SecretKey } from "./lib/secret-crypto";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { healthRoutes } from "./modules/health/health.routes";
+import { secretsRoutes } from "./modules/secrets/secrets.routes";
 import { tenantsRoutes } from "./modules/tenants/tenants.routes";
 import { usersRoutes } from "./modules/users/users.routes";
 
@@ -21,6 +23,8 @@ export type AppDeps = {
   appEnv: AppEnv;
   dummyHash: string;
   now?: () => Date;
+  /** Khoá mã hoá secret (M2); vắng (fixture M1) → POST/PUT /admin/secrets trả 500. */
+  secretKey?: SecretKey;
 };
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -39,6 +43,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/auth", meRoutes(ctx));
   app.route("/admin/tenants", tenantsRoutes(ctx));
   app.route("/admin/users", usersRoutes(ctx));
+  app.route("/admin/secrets", secretsRoutes({ ...ctx, secretKey: deps.secretKey }));
 }
 
 export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {

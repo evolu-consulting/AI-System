@@ -1,5 +1,6 @@
-// ADM-NFR-06, ADM-NFR-07, ADM-NFR-01 · env của admin-api (spec M0 §7, M1 §7). Lỗi chỉ nêu tên biến.
+// ADM-NFR-06, ADM-NFR-07, ADM-NFR-01, ADM-FR-50 · env của admin-api (spec M0 §7, M1 §7, M2 §4). Lỗi chỉ nêu tên biến.
 import { z } from "zod";
+import { isMasterKeyB64 } from "../lib/secret-crypto";
 
 const OriginList = z
   .string()
@@ -22,6 +23,8 @@ export const EnvSchema = z.object({
   JWT_PRIVATE_KEY: Pem("PRIVATE"),
   JWT_PUBLIC_KEY: Pem("PUBLIC"),
   JWT_KID: z.string().min(1).max(64),
+  /** 32 byte base64 (`^[A-Za-z0-9+/]{43}=$`), mã hoá secret (M2-R02). */
+  SECRET_MASTER_KEY: z.string().refine(isMasterKeyB64),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
