@@ -275,16 +275,16 @@ test("ADM-FR-20 · M2-R26 · xoá /tr-nhanh: alertdialog 'Xoá /tr-nhanh?' gõ t
   await expect(row(page, "tr-nhanh")).toHaveCount(0);
 });
 
-test("ADM-FR-24 · M2-R23 · tab 'Ai dùng được' của /dich: bảng tenant acme/globex/platform/zeta, tổng '4 tenant · 11 user', khối nhóm 'chưa khả dụng'; tạo mới thì tab khoá", async ({
+test("ADM-FR-24 · M2-R23 · tab 'Ai dùng được' của /dich: bảng tenant acme/globex/platform/zeta/bulk, tổng '5 tenant · 66 user' (gồm tenant bulk 55 user của fixture e2e), khối nhóm 'chưa khả dụng'; tạo mới thì tab khoá", async ({
   page,
 }) => {
   await loginAdmin(page);
   await page.goto(`/commands/${ID.command.dich}`);
   const tab = page.getByRole("tab", { name: /Ai dùng được/ });
-  await expect(tab).toContainText("4 tenant · 11 user");
+  await expect(tab).toContainText("5 tenant · 66 user");
   await tab.click();
   const table = page.getByRole("tabpanel").getByRole("table");
-  for (const key of ["acme", "globex", "platform", "zeta"]) {
+  for (const key of ["acme", "globex", "platform", "zeta", "bulk"]) {
     await expect(table.getByRole("row").filter({ hasText: key })).toBeVisible();
   }
   await expect(table.getByRole("row").filter({ hasText: "acme" })).toContainText("6");

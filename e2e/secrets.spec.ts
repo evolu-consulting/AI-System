@@ -250,7 +250,7 @@ test("ADM-FR-50 · M2-R28 · locale EN của user: heading 'Secrets', nút '+ Ad
     await expect(page).toHaveURL(/\/secrets/);
     await expect(page.getByRole("heading", { level: 1, name: "Secrets" })).toBeVisible();
     await expect(page.getByRole("button", { name: "+ Add secret" })).toBeVisible();
-    await rowOf(page, "Secrets", "DIFY_OLD_KEY")
+    await rowOf(page, "Secrets", "DIFY_INVOICE_KEY")
       .getByRole("button", { name: /More actions|Thao tác khác/ })
       .click();
     await expect(page.getByRole("menuitem", { name: "Replace value", exact: true })).toBeVisible();

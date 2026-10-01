@@ -1,10 +1,10 @@
 # tests/.lock — sinh bởi bun run test:lock:write (chỉ qc). Không sửa tay.
 1953e1a4d3e6c752c76aecd22c04a2ff62b5ac60ac057ff349fad3c2e3f2e98f  e2e/auth.spec.ts
-6101398dfde1ddb036bef82913b67c71e862393e94f5a727fc883cc15a17941e  e2e/commands.spec.ts
+dd66098c4adff0547070ae88e57f1684c0ecb8353144a7ef77ed61fe38437039  e2e/commands.spec.ts
 1797493e6d54b3e525bf2ac8a137441648e3341e1b654fe2cd76fef815246fc8  e2e/features.spec.ts
 329cbefa1cc50da9d3917554d525cd8c60a57c70f423ccbfb12d083dc57b07a6  e2e/m1-flow.spec.ts
 00b3e3cf7b4e3233f8de2b2f84220cba2a6aae43ccb64c8b2810b8864d086286  e2e/m2-flow.spec.ts
-5b0d61805a9655dcaced560b10613f45b669b43b9bf2a505cabf08fa1c6c3301  e2e/secrets.spec.ts
+1dc62aa43c4a5dabe3fd32d583e97d88c9d5bd24f5472c489f82b9e910fff4f4  e2e/secrets.spec.ts
 8c302e81222d07b1eded6cda3efcf5eaf5a47d1c87e7ef67f5e23224352ac76f  e2e/smoke.spec.ts
 a40674c78fd48fd13c3afef1588dc1a37984f70c6c7a578369a584fbfbfd9b48  e2e/support/helpers.ts
 9c60de83a40ddc5b2404119797d3dc21bc4b0d3f5543510355e03d3e0e449737  e2e/support/prepare-db.ts
