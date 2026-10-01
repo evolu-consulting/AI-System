@@ -129,3 +129,7 @@ Thực thi: luật Biome · `bun run check:size` (đỏ khi > 400 dòng) · `dep
 
 - Branch `feat/<SPEC-ID>-<slug>`; commit `feat(<module>): <việc> [ADM-FR-xx]`; mỗi task một commit.
 - Không commit lên `main`, không push, không đổi lịch sử trừ khi được yêu cầu.
+
+## 8. Migration DB
+
+- Từ M2: không sửa migration đã commit; mọi thay đổi là migration mới (kể cả siết policy RLS). Ngoại lệ M1 (`0002_admin_rls.sql` sửa ở `ceb5693`): xem `packages/db/README.md`.
