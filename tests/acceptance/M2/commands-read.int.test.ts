@@ -299,15 +299,26 @@ describe("ADM-FR-20 · xoá, nhân bản, ngoài phạm vi", () => {
     expect((await as("GET", `/admin/commands/${C.dich}/history`)).status).toBe(404);
   });
 
-  it("AC-A06 · ADM-BR-04 · command dùng workflow trỏ secret tạo bằng API (LEAK_1): GET list/detail không chứa LEAK_1 hay khoá ciphertext/iv/value", async () => {
+  it("AC-A06 · ADM-BR-04 · command dùng workflow trỏ secret tạo bằng API (LEAK_1): GET list/detail không chứa giá trị LEAK_1; khoá ciphertext/iv/key_version không xuất hiện ở bất kỳ đâu; đối tượng workflow không có value/secret", async () => {
     const sid = await apiSecret(env, "DIFY_CMD_LEAK", LEAK_1);
     await env.owner`update admin.workflows set secret_id = ${sid} where id = ${W.translate}`;
-    for (const t of [
-      (await as("GET", "/admin/commands")).text,
-      (await as("GET", `/admin/commands/${C.dich}`)).text,
-    ]) {
-      expect(leakForms(LEAK_1).filter((f) => t.includes(f))).toEqual([]);
-      for (const k of ["ciphertext", '"iv"', '"value"']) expect(t).not.toContain(k);
+    const list = await as("GET", "/admin/commands");
+    const detail = await as("GET", `/admin/commands/${C.dich}`);
+    const keysOf = (v: unknown): string[] =>
+      Array.isArray(v)
+        ? v.flatMap(keysOf)
+        : v && typeof v === "object"
+          ? Object.entries(v).flatMap(([k, x]) => [k, ...keysOf(x)])
+          : [];
+    for (const res of [list, detail]) {
+      expect(leakForms(LEAK_1).filter((f) => res.text.includes(f))).toEqual([]);
+      const keys = keysOf(res.json);
+      for (const k of ["ciphertext", "iv", "key_version"]) expect(keys).not.toContain(k);
+    }
+    // `value` hợp lệ trong input_map (nguồn arg/const) nên chỉ cấm ở cấp đối tượng workflow.
+    const workflows = [...(list.json.items as Json[]).map((c) => c.workflow), detail.json.workflow];
+    for (const w of workflows) {
+      for (const k of ["value", "secret", "ciphertext", "iv"]) expect(w).not.toHaveProperty(k);
     }
   });
 });
