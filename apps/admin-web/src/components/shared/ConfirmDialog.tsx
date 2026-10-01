@@ -20,6 +20,8 @@ type Props = {
   title: string;
   description?: string;
   confirmLabel: string;
+  /** Mặc định `Huỷ`. */
+  cancelLabel?: string;
   destructive?: boolean;
   /** `heavy`: người dùng phải gõ lại `confirmText` (nhãn `typePrompt`). */
   level?: "medium" | "heavy";
@@ -35,6 +37,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel,
   destructive,
   level = "medium",
   confirmText,
@@ -95,7 +98,9 @@ export function ConfirmDialog({
           </div>
         ) : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>{t("common.cancel")}</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>
+            {cancelLabel ?? t("common.cancel")}
+          </AlertDialogCancel>
           <Button
             variant={destructive ? "destructive" : "default"}
             disabled={blocked}

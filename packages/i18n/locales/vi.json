@@ -368,6 +368,7 @@
     "reset": {
       "title": "Reset mật khẩu của {username}?",
       "body": "Mật khẩu cũ hết hiệu lực, người dùng phải đổi mật khẩu ở lần đăng nhập tới.",
+      "done": "Mật khẩu tạm của {username}",
       "submit": "Reset mật khẩu"
     },
     "lock": {

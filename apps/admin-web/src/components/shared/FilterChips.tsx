@@ -44,7 +44,7 @@ export function FilterChips<V extends string>({ label, chips, value, onChange }:
             type="button"
             role="radio"
             aria-checked={checked}
-            tabIndex={checked ? 0 : -1}
+            tabIndex={checked || (!chips.some((c) => c.value === value) && i === 0) ? 0 : -1}
             onClick={() => onChange(chip.value)}
             onKeyDown={(e) => onKeyDown(e, i)}
             className={cn(

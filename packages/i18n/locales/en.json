@@ -368,6 +368,7 @@
     "reset": {
       "title": "Reset password for {username}?",
       "body": "The old password stops working; the user must change it at next sign-in.",
+      "done": "Temporary password for {username}",
       "submit": "Reset password"
     },
     "lock": {
