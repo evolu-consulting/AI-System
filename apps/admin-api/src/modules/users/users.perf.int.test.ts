@@ -13,7 +13,9 @@ const API = process.env.TEST_ADMIN_API_DATABASE_URL;
 if (!OWNER || !API) throw new Error("TEST_DATABASE_URL/TEST_ADMIN_API_DATABASE_URL chưa đặt");
 
 const N = 5000;
-const RUNS = 20;
+/** ≥ 50 lần đo + 5 lần khởi động nóng: p95 ổn định khi máy đang chạy song song test khác (review M2 #2). */
+const RUNS = 50;
+const WARMUP = 5;
 const PW = "Perf-Passw0rd-1";
 const TID = "01900000-0000-7000-8000-0000000aa001";
 const owner = postgres(OWNER, { max: 1, onnotice: () => {} });
@@ -56,7 +58,7 @@ afterAll(async () => {
 });
 
 async function timed(fn: () => Response | Promise<Response>): Promise<number[]> {
-  await fn(); // làm nóng kết nối/plan
+  for (let w = 0; w < WARMUP; w++) await fn(); // làm nóng kết nối/plan/JIT
   const out: number[] = [];
   for (let i = 0; i < RUNS; i++) {
     const t0 = performance.now();
