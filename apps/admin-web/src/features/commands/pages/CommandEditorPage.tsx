@@ -4,6 +4,7 @@ import { useRouter } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { FormProvider } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { EditorSaveBar } from "@/components/shared/EditorSaveBar";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
@@ -127,6 +128,7 @@ function EditorBody({ command, copyOf, presetWorkflow, tab, onTab }: BodyProps) 
         <EditorSaveBar dirty={isDirty} pending={ed.pending} cancelTo="/commands" />
       </form>
       <UnsavedGuard dirty={isDirty} />
+      <LazyConflictDialog props={ed.conflict} />
     </FormProvider>
   );
 }
@@ -151,7 +153,7 @@ function EditorLoader(props: Props) {
   const loaded = wanted?.data;
   return (
     <EditorBody
-      key={props.commandId ? `${loaded?.id}-${loaded?.version}` : `new-${props.from ?? ""}`}
+      key={props.commandId ? `${loaded?.id}` : `new-${props.from ?? ""}`}
       command={props.commandId ? loaded : undefined}
       copyOf={props.commandId ? undefined : loaded}
       presetWorkflow={props.workflow}

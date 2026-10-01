@@ -2,6 +2,7 @@
 import type { CommandListItem } from "@ai/contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { notifySuccess } from "@/components/shared/toast";
 import { useDeleteCommand } from "../api";
 import { CommandDeleteDialog } from "../components/list/CommandDeleteDialog";
@@ -11,7 +12,7 @@ import { useCommandToggle } from "./use-command-toggle";
 export function useCommandActions() {
   const { t } = useTranslation();
   const fail = useCommandFail();
-  const { optimistic, toggle } = useCommandToggle(fail);
+  const { optimistic, toggle, conflictProps } = useCommandToggle(fail);
   const del = useDeleteCommand();
   const [toDelete, setToDelete] = useState<CommandListItem | null>(null);
 
@@ -25,11 +26,14 @@ export function useCommandActions() {
     notifySuccess(t("commands.toast.deleted", { name: c.name }));
   };
   const dialog = (
-    <CommandDeleteDialog
-      target={toDelete}
-      onClose={() => setToDelete(null)}
-      onConfirm={confirmDelete}
-    />
+    <>
+      <CommandDeleteDialog
+        target={toDelete}
+        onClose={() => setToDelete(null)}
+        onConfirm={confirmDelete}
+      />
+      <LazyConflictDialog props={conflictProps} />
+    </>
   );
   return { optimistic, toggle, remove: setToDelete, dialog };
 }

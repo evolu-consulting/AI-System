@@ -11,10 +11,11 @@ import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-import { COMMAND_KEYS, useCreateCommand, useFeatureOptions, useUpdateCommand } from "../api";
+import { COMMAND_KEYS, useCreateCommand, useFeatureOptions } from "../api";
 import { emptyCommandForm, toDuplicateValues, toFormValues, toRequestBody } from "../lib/defaults";
 import { validateInputMap } from "../lib/input-map";
 import { type CommandFormValues, commandSchema } from "../lib/schemas";
+import { useCommandConflict } from "./use-command-conflict";
 
 export type MapIssues = { missing: string[]; unknown: string[]; unknownArgs: string[] };
 export type ServerState = {
@@ -108,11 +109,7 @@ function useSaveFail(setServer: (s: ServerState) => void) {
       return notifyError(t("errors.invalidReference"));
     }
     const spec = describeError(err);
-    const conflict = err instanceof ApiError && err.code === "VERSION_CONFLICT";
-    notifyError(
-      tr(spec.key, spec.params),
-      conflict ? { label: t("common.reload"), onClick: reset } : undefined,
-    );
+    notifyError(tr(spec.key, spec.params));
   };
 }
 
@@ -127,7 +124,6 @@ function mapBlock(values: CommandFormValues, workflow: Workflow | undefined): Ma
 export function useCommandForm(source: Source) {
   const { t } = useTranslation();
   const create = useCreateCommand();
-  const update = useUpdateCommand();
   const form = useForm<CommandFormValues>({
     resolver: zodResolver(commandSchema as never) as unknown as Resolver<CommandFormValues>,
     mode: "onTouched",
@@ -138,19 +134,16 @@ export function useCommandForm(source: Source) {
   useDefaultCoreFeature(form, !source.command && !source.copyOf);
   useCreatedRedirect(createdId, form.formState.isDirty);
   const fail = useSaveFail(setServer);
+  const cc = useCommandConflict(source.command, form, fail);
 
   const save = async (values: CommandFormValues, workflow: Workflow | undefined) => {
     setServer({});
     const blocked = mapBlock(values, workflow);
     if (blocked) return setServer({ map: blocked });
+    if (source.command) return cc.save(values);
     try {
-      const body = toRequestBody(values);
-      const cmd = source.command;
-      const res = cmd
-        ? await update.mutateAsync({ id: cmd.id, version: cmd.version, ...body })
-        : await create.mutateAsync(body);
+      const res = await create.mutateAsync(toRequestBody(values));
       notifySuccess(t("commands.toast.saved", { name: res.name }));
-      if (cmd) return;
       form.reset(values);
       setCreatedId(res.id);
     } catch (err) {
@@ -158,5 +151,5 @@ export function useCommandForm(source: Source) {
     }
   };
 
-  return { form, server, save, pending: create.isPending || update.isPending };
+  return { form, server, save, pending: create.isPending || cc.pending, conflict: cc.props };
 }
