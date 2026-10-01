@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { API_ERRORS } from "@ai/contracts";
-import { describeError, describeLoginError } from "./errors";
+import { describeError, describeInputMapErrors, describeLoginError } from "./errors";
 import { ApiError, type ApiErrorCode } from "./http";
 
 const err = (code: ApiErrorCode, details?: unknown) =>
@@ -47,5 +47,54 @@ describe("ADM-FR-01 · lỗi API → key i18n", () => {
     for (const code of Object.keys(API_ERRORS)) {
       expect(describeError(err(code as ApiErrorCode)).key.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("ADM-FR-10 · M2-R28 · mã lỗi M2 → câu hiển thị", () => {
+  test("mã tĩnh", () => {
+    expect(describeError(err("SECRET_NAME_TAKEN")).key).toBe("secrets.error.nameTaken");
+    expect(describeError(err("WORKFLOW_DISABLED")).key).toBe("commands.error.workflowDisabled");
+    expect(describeError(err("COMMAND_NEEDS_FEATURE")).key).toBe("commands.error.featureRequired");
+    expect(describeError(err("CORE_FEATURE_PROTECTED")).key).toBe("features.error.coreProtected");
+    expect(describeError(err("SCHEMA_BREAKS_COMMANDS")).key).toBe("workflows.schemaBreaks");
+    expect(describeError(err("FEATURE_HAS_EXCLUSIVE_COMMANDS")).key).toBe(
+      "features.delete.blocked",
+    );
+    expect(describeError(err("INVALID_REFERENCE")).key).toBe("errors.invalidReference");
+  });
+
+  test("COMMAND_NAME_TAKEN nhận {name}", () => {
+    expect(describeError(err("COMMAND_NAME_TAKEN", { name: "dich" }))).toEqual({
+      key: "commands.error.nameTaken",
+      params: { name: "dich" },
+    });
+  });
+
+  test("WORKFLOW_IN_USE theo action", () => {
+    expect(describeError(err("WORKFLOW_IN_USE", { action: "disable" })).key).toBe(
+      "workflows.blocked.disable",
+    );
+    expect(describeError(err("WORKFLOW_IN_USE", { action: "delete" })).key).toBe(
+      "workflows.delete.blocked",
+    );
+  });
+
+  test("KEY_TAKEN theo màn", () => {
+    expect(describeError(err("KEY_TAKEN"), { keyTaken: "workflows.error.keyTaken" }).key).toBe(
+      "workflows.error.keyTaken",
+    );
+  });
+
+  test("INPUT_MAP_INVALID dựng câu từ details", () => {
+    const details = { missing: ["target_lang", "tone"], unknown: [], unknown_args: ["x"] };
+    expect(describeInputMapErrors(details)).toEqual([
+      { key: "commands.error.mapMissing", params: { names: "target_lang, tone" } },
+      { key: "commands.error.mapUnknownArg", params: { names: "x" } },
+    ]);
+    expect(describeError(err("INPUT_MAP_INVALID", details))).toEqual({
+      key: "commands.error.mapMissing",
+      params: { names: "target_lang, tone" },
+    });
+    expect(describeInputMapErrors(undefined)).toEqual([]);
   });
 });

@@ -353,3 +353,21 @@ Không có câu chặn Gate. Hai chỗ đề nghị người dùng xác nhận (
 1. Workflows/Commands editor là **trang riêng** thay vì panel/drawer như hình vẽ Workflows? → Mặc định **trang riêng** (ui-admin §3 cho Command và Workflow).
 2. Giữ nguyên câu "có hiệu lực sau vài giây" ở toast cấp feature dù Hub chưa đọc catalog ở M2 (M2-R24)? → Mặc định **giữ** (câu chữ design đã duyệt; hiệu lực thật là việc của Hub/M3).
 Các yêu cầu contract Y1–Y10 đã được backend-lead chốt (§9); không còn câu hỏi mở.
+
+## 12. Chốt cho QC (FE2, trả lời Q2 của spec §9)
+
+| Chủ đề | Chốt (nguyên văn) | Key |
+|---|---|---|
+| Nút xác nhận xoá secret | `Xoá secret` (EN `Delete secret`) | `secrets.delete.submit` |
+| Nút xác nhận xoá feature | `Xoá feature` (EN `Delete feature`) | `features.delete.submit` |
+| Nút xác nhận thu hồi entitlement | `Thu hồi feature` (EN `Revoke feature`) | `features.revoke.submit` |
+| Dialog xoá secret / feature | `Xoá {name}?` / `Xoá {feature}?`; ô gõ `Gõ {name} để xác nhận` / `Gõ {key} để xác nhận` (feature gõ **key**) | `secrets.delete.title/typeToConfirm`, `features.delete.title/typeToConfirm` |
+| H1 editor Workflows | tạo: `Workflow mới`; sửa: **tên workflow** (không phải key) | `workflows.editor.titleNew` |
+| H1 editor Features | tạo: `Feature mới`; sửa: **tên feature theo ngôn ngữ đang dùng** | `features.editor.titleNew` |
+| H1 editor Commands | tạo: `Command mới`; sửa: `/{tên}` | `commands.editor.titleNew` |
+| Tooltip switch command khoá | `Bật workflow {key} trước` (đã có ở missing-screens §2) | `commands.list.workflowOff` |
+| Lỗi tên trùng phía client | `/{name} đã được dùng bởi command khác`, hiện khi blur ô tên (kiểm bằng danh sách đã tải) và khi server trả `COMMAND_NAME_TAKEN` | `commands.error.nameTaken` |
+| Nhân bản | `Bản sao của /{name}: đã tắt, không có alias.`; tên mặc định `{name}-copy` | `commands.duplicate.hint` |
+| Đổi ngôn ngữ | Locale lấy từ `users.locale` khi **đăng nhập** (`LoginPage` gọi `i18n.changeLanguage(user.locale)`), rồi `ai.locale` trong localStorage, rồi ngôn ngữ trình duyệt. Menu tài khoản đổi và `PATCH /auth/me {locale}`. Test EN (sửa `users.locale` rồi đăng nhập) khớp hành vi này | (M1, không đổi) |
+
+Xung đột cấu trúc JSON: `commands.empty` và `workflows.empty` vừa là câu vừa có `.cta` → câu đổi thành `commands.empty.text`, `workflows.empty.text` (`.cta`, `.noWorkflow` giữ). Test khoá không tham chiếu hai key này.

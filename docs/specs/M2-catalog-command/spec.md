@@ -374,6 +374,7 @@ Mục bảo mật A2 đã được người dùng chấp nhận (Gate 2026-10-01
 - Q2: tách ca `commands` thành `commands.int.test.ts` (tạo/validate/tên/workflow/feature/thứ tự kiểm) và `commands-read.int.test.ts` (đọc/danh sách/version hai phía/tham số/xoá/nhân bản) vì giới hạn 600 dòng/file test; thêm file qc `secrets-proc.int.test.ts` (T3), `concurrency.int.test.ts` (T6), `i18n-labels.test.ts` (FE2). Lệnh xong T3, T6, FE2 trong `tasks.md` đã bổ sung.
 - Q2: `e2e/support/prepare-db.ts` dựng thêm fixture danh mục (`tests/acceptance/M2/_data.ts`) và `--reset-only` dùng `truncateCatalog` tường minh (sau M2 mọi bảng danh mục có FK `updated_by → users` nên `truncateAll` của M1 sẽ cuốn theo chúng qua CASCADE). e2e chỉ chạy được sau T2 (cần migration `0003`/`0004`).
 - Q2: nhãn nút xác nhận xoá secret/feature và tiêu đề heading editor Workflows/Features chưa có trong spec/plan-frontend: test dùng regex `/^Xoá( secret)?$/`, `/^Xoá/`, `/^Thu hồi/` cho nút xác nhận và chờ ô `Key` thay vì heading ở editor — frontend-lead nên chốt nhãn nguyên văn (ghi vào plan-frontend §5) rồi qc siết test ở lần Gate sau nếu cần.
+- FE2: đã chốt nhãn xoá/thu hồi, H1 editor, tooltip, câu tên trùng, cách đổi ngôn ngữ ở [plan-frontend §12](plan-frontend.md); khớp regex test, không tranh chấp. `commands.empty`/`workflows.empty` đổi thành `.empty.text` (đụng cấu trúc JSON). `describeError(err, {keyTaken})` nhận key `KEY_TAKEN` theo màn; `describeInputMapErrors(details)` dựng 3 câu `INPUT_MAP_INVALID`.
 
 ## 10. Tranh chấp test
 - (không)

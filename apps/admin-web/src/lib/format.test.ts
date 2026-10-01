@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatClock, formatLastLogin } from "./format";
+import { formatClock, formatLastLogin, formatUpdated } from "./format";
 
 const t = (key: string, params?: Record<string, string | number>) =>
   params ? `${key}:${Object.values(params).join(",")}` : key;
@@ -41,5 +41,14 @@ describe("ADM-FR-04 · formatClock / formatLastLogin", () => {
 
   test("cũ hơn → dd/MM/yyyy", () => {
     expect(formatLastLogin(new Date(2026, 8, 3, 10, 0).toISOString(), now, t)).toBe("03/09/2026");
+  });
+});
+
+describe("ADM-FR-50 · formatUpdated", () => {
+  test("ngày dd/MM/yyyy kèm người sửa nếu có", () => {
+    const iso = new Date(2026, 8, 5, 10, 0).toISOString();
+    expect(formatUpdated(iso, "minh.pham")).toBe("05/09/2026 · minh.pham");
+    expect(formatUpdated(iso, null)).toBe("05/09/2026");
+    expect(formatUpdated(iso, undefined)).toBe("05/09/2026");
   });
 });

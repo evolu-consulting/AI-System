@@ -31,10 +31,18 @@
       "prev": "Previous",
       "next": "Next",
       "aria": "Pagination"
-    }
+    },
+    "dismiss": "Close",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "on": "Enabled",
+    "off": "Disabled",
+    "undo": "Undo",
+    "savedVersion": "Saved · v{n}"
   },
   "toast": {
-    "saveFailed": "Couldn't save: {reason}"
+    "saveFailed": "Couldn't save: {reason}",
+    "saved": "Saved and applied · v{n}"
   },
   "auth": {
     "login": {
@@ -133,7 +141,9 @@
     "main": "Main navigation",
     "overview": "Overview",
     "group": {
-      "access": "ACCESS"
+      "access": "ACCESS",
+      "features": "FEATURES",
+      "security": "SECURITY"
     },
     "tenants": "Tenants",
     "users": "Users",
@@ -141,7 +151,11 @@
     "expand": "Expand sidebar",
     "openMenu": "Open menu",
     "skip": "Skip to content",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "commands": "Commands",
+    "workflows": "Workflows",
+    "features": "Features",
+    "secrets": "Secrets"
   },
   "topbar": {
     "platform": "Platform"
@@ -196,7 +210,8 @@
   "errors": {
     "selfAction": "You can't lock or demote yourself.",
     "platformTenantLocked": "The platform tenant can't be locked.",
-    "versionConflict": "Someone just saved a newer version. Reload to see the latest."
+    "versionConflict": "Someone just saved a newer version. Reload to see the latest.",
+    "invalidReference": "The selection is out of date. The list was reloaded; please choose again."
   },
   "format": {
     "lastLogin": {
@@ -400,5 +415,502 @@
       "displayNameMax": "At most 64 characters"
     },
     "empty": "No users besides you. Create users to invite colleagues to Chat App."
+  },
+  "secrets": {
+    "error": {
+      "valueLength": "Value must be 8–2048 characters",
+      "noteMax": "Note can be at most 200 characters",
+      "nameFormat": "Use uppercase letters, digits and _ only (2–64 chars)",
+      "nameTaken": "A secret with this name already exists",
+      "valueRequired": "Enter the secret value"
+    },
+    "field": {
+      "noValueHint": "The value can't be viewed again after saving",
+      "name": "Name",
+      "value": "Value",
+      "note": "Note",
+      "newValue": "New value",
+      "show": "Show typed value",
+      "hide": "Hide value"
+    },
+    "note": {
+      "title": "Edit note · {name}"
+    },
+    "toast": {
+      "noteSaved": "Saved note for {name}",
+      "replaced": "Replaced {name} · •••• {last4}",
+      "viewWorkflows": "View workflows using this secret",
+      "created": "Added {name}",
+      "deleted": "Deleted {name}"
+    },
+    "col": {
+      "unused": "Unused",
+      "name": "Name",
+      "value": "Value",
+      "note": "Note",
+      "usedBy": "Used by",
+      "updated": "Updated"
+    },
+    "drawer": {
+      "create": "Add secret",
+      "replace": "Replace value"
+    },
+    "list": {
+      "title": "Secrets",
+      "subtitle": "Shared keys for workflows. Values are write-only and can't be viewed again.",
+      "create": "+ Add secret"
+    },
+    "filter": {
+      "used": "In use",
+      "unused": "Unused"
+    },
+    "menu": {
+      "replace": "Replace value",
+      "editNote": "Edit note",
+      "delete": "Delete"
+    },
+    "replace": {
+      "current": "Current value: •••• {last4} · updated {date} by {user}",
+      "submit": "Save new value"
+    },
+    "delete": {
+      "blocked": "Can't delete {name}: used by",
+      "title": "Delete {name}?",
+      "typeToConfirm": "Type {name} to confirm",
+      "submit": "Delete secret"
+    },
+    "empty": "No secrets yet. Secrets store Dify app keys so workflows can call them."
+  },
+  "workflows": {
+    "list": {
+      "title": "Workflows",
+      "subtitle": "Shared catalog. Commands and agents both pick workflows from here. Declare first, attach later is fine.",
+      "create": "+ Declare workflow",
+      "search": "Search by name, key, description…"
+    },
+    "guide": {
+      "title": "Declare a workflow",
+      "s1": {
+        "title": "Build it on Dify",
+        "body": "Build the workflow with a Claude session and get the app key"
+      },
+      "s2": {
+        "title": "Declare it here",
+        "body": "Pick the secret, declare inputs, write the description. Unattached is fine"
+      },
+      "s3": {
+        "title": "Attach to a command or agent",
+        "body": "Commands in Admin · agents in Agent Studio"
+      },
+      "dismiss": {
+        "aria": "Hide the guide"
+      }
+    },
+    "filter": {
+      "all": "All",
+      "on": "Enabled",
+      "off": "Disabled",
+      "unattached": "Unattached",
+      "secret": "Secret: {name}",
+      "clearSecret": "Clear secret filter"
+    },
+    "col": {
+      "workflow": "Workflow",
+      "type": "Type",
+      "usedBy": "Used by",
+      "status": "Status"
+    },
+    "unattached": "Unattached",
+    "menu": {
+      "edit": "Edit",
+      "enable": "Enable",
+      "disable": "Disable",
+      "createCommand": "Create command",
+      "delete": "Delete"
+    },
+    "createCommandFrom": "Create a command from this workflow",
+    "tab": {
+      "info": "Details",
+      "input": "Input",
+      "preview": "What the model sees",
+      "usage": "Used by"
+    },
+    "field": {
+      "key": "Key",
+      "name": "Name",
+      "type": "Type",
+      "secret": "Secret",
+      "baseUrl": "Base URL",
+      "outputField": "Output field",
+      "description": "Description",
+      "enabled": "Enable workflow",
+      "keyLocked": "Key can't be changed after creation",
+      "descHint": "Write it as if briefing a newcomer: when to use it and when not to.",
+      "descCount": "Agents read this description verbatim to decide when to call the workflow · {n}/400"
+    },
+    "type": {
+      "workflow": "workflow",
+      "chat": "chat",
+      "agent": "agent"
+    },
+    "schema": {
+      "title": "Input",
+      "add": "+ Add parameter",
+      "max": "At most 50 parameters",
+      "col": {
+        "name": "Parameter name",
+        "type": "Type",
+        "required": "Required",
+        "description": "Parameter description",
+        "options": "Options"
+      },
+      "optionsHint": "Separate with commas",
+      "empty": "No inputs yet. Add parameters so commands and agents can pass data in."
+    },
+    "preview": {
+      "note": "An illustration of how an agent sees this workflow; Hub may add other fields."
+    },
+    "usage": {
+      "empty": "No command or agent uses this workflow yet.",
+      "agent": "Agent …{id}",
+      "commands_one": "{count} command",
+      "commands_other": "{count} commands",
+      "agents_one": "{count} agent",
+      "agents_other": "{count} agents"
+    },
+    "blocked": {
+      "disable": "Can't disable {key}: used by"
+    },
+    "delete": {
+      "title": "Delete {key}?",
+      "blocked": "Can't delete {key}: used by",
+      "typeToConfirm": "Type {key} to confirm",
+      "submit": "Delete workflow"
+    },
+    "schemaBreaks": "Can't save: this change breaks these commands. Fix them first.",
+    "toast": {
+      "saved": "Saved {name}",
+      "deleted": "Deleted {name}",
+      "enabled": "Enabled {name}",
+      "disabled": "Disabled {name}"
+    },
+    "empty": {
+      "cta": "+ Declare your first workflow",
+      "text": "No workflows yet. Build a workflow on Dify (with a Claude session) → put the app key in a secret → declare inputs and description here."
+    },
+    "error": {
+      "keyFormat": "Use lowercase letters, digits and - only (2–32 chars)",
+      "keyTaken": "Key is already in use",
+      "nameRequired": "Enter a workflow name (at most 128 characters)",
+      "descLength": "Description must be 20–400 characters",
+      "secretRequired": "Choose a secret",
+      "baseUrl": "Enter a valid http:// or https:// URL without credentials",
+      "paramName": "Use letters, digits and _ only, not starting with a digit (at most 64 chars)",
+      "paramDup": "Duplicate parameter name",
+      "paramDesc": "Parameter description is required",
+      "optionsRequired": "Add at least one option"
+    },
+    "editor": {
+      "titleNew": "New workflow"
+    }
+  },
+  "commands": {
+    "tab": {
+      "config": "Configuration",
+      "access": "Who can use it"
+    },
+    "access": {
+      "summary": "{tenants} tenants · {users} users",
+      "col": {
+        "key": "Company key",
+        "name": "Name",
+        "features": "Features",
+        "users": "Users"
+      },
+      "empty": "No tenant can use this command yet. Put it in a feature and grant the feature to a tenant.",
+      "inactive": "The command or its workflow is disabled: nobody can use it yet.",
+      "summaryTenants": "{tenants} tenants",
+      "tenantLocked": "Locked",
+      "groupsLater": "Group and user access isn't available yet."
+    },
+    "step1": "Name and feature bundle",
+    "step2": "Choose a workflow",
+    "step3": "What the user types",
+    "step4": "Feed the workflow",
+    "step5": "Show the result",
+    "field": {
+      "name": "Command name",
+      "alias": "Alias",
+      "aliasAdd": "Add alias",
+      "description": "Description for users",
+      "features": "Features decide who sees this command",
+      "featuresAdd": "Add feature",
+      "workflow": "Workflow",
+      "outputField": "Output field",
+      "render": "Display",
+      "mode": "Mode",
+      "timeout": "Timeout (seconds)",
+      "enabled": "Enable command"
+    },
+    "alias": {
+      "remove": {
+        "aria": "Remove alias {name}"
+      }
+    },
+    "feature": {
+      "remove": {
+        "aria": "Remove feature {name}"
+      }
+    },
+    "render": {
+      "markdown": "Markdown",
+      "text": "Text",
+      "json": "JSON"
+    },
+    "mode": {
+      "sync": "sync",
+      "async": "async"
+    },
+    "args": {
+      "add": "+ Add parameter",
+      "col": {
+        "name": "Parameter",
+        "description": "Description",
+        "default": "Default",
+        "fallback": "If empty use",
+        "rest": "Take the rest"
+      },
+      "syntax": "Syntax",
+      "empty": "No parameters: users just type /{name}."
+    },
+    "fallback": {
+      "none": "None",
+      "selection": "Selection",
+      "page_text": "Page text",
+      "page_url": "Page URL"
+    },
+    "map": {
+      "col": {
+        "input": "Workflow input",
+        "source": "Source",
+        "value": "Value"
+      },
+      "source": {
+        "arg": "Parameter",
+        "selection": "Selection",
+        "page_url": "Page URL",
+        "page_text": "Page text",
+        "attachment": "Attachment",
+        "user_id": "User ID",
+        "tenant_id": "Tenant ID",
+        "const": "Fixed value",
+        "aria": "Source of {name}"
+      },
+      "arg": {
+        "aria": "Parameter for {name}"
+      },
+      "value": {
+        "aria": "Value for {name}"
+      },
+      "pickWorkflow": "Choose a workflow to map its inputs.",
+      "dropped": "Dropped mappings for: {names} (the new workflow has no such inputs).",
+      "autoMapped": "Auto-mapped {names} by parameter name."
+    },
+    "error": {
+      "nameFormat": "Use lowercase letters, digits and - only (2–32 chars)",
+      "nameTaken": "/{name} is already used by another command",
+      "aliasDup": "Duplicate alias",
+      "aliasMax": "At most 5 aliases",
+      "descRequired": "Enter a description (at most 200 characters)",
+      "featureRequired": "A command must belong to at least one feature",
+      "workflowRequired": "Choose a workflow",
+      "workflowDisabled": "The workflow is disabled. Enable it first.",
+      "argName": "Lowercase letters, digits and _ only, starting with a letter",
+      "argDup": "Duplicate parameter name",
+      "argRest": "Only one parameter can take the rest, and it must be last",
+      "mapMissing": "missing required input: {names}",
+      "mapUnknown": "Input not in the workflow: {names}",
+      "mapUnknownArg": "Undeclared parameter: {names}",
+      "constMax": "Fixed value at most 4000 characters",
+      "outputField": "Enter an output field (at most 128 characters)",
+      "timeout": "Timeout must be 1–600 seconds"
+    },
+    "warn": {
+      "mapType": "Source \"{source}\" may not match the {type} type of {name}. You can still save."
+    },
+    "toast": {
+      "saved": "Saved /{name}",
+      "disabled": "Disabled /{name}",
+      "enabled": "Enabled /{name}",
+      "deleted": "Deleted /{name}"
+    },
+    "editor": {
+      "unsaved": "Unsaved changes",
+      "titleNew": "New command"
+    },
+    "breadcrumb": {
+      "new": "New command"
+    },
+    "duplicate": {
+      "hint": "Copy of /{name}: disabled, no aliases."
+    },
+    "list": {
+      "title": "Commands",
+      "subtitle": "Short commands users type in Chat and the Extension; each calls one workflow.",
+      "create": "+ New command",
+      "search": "Search by name, alias, description…",
+      "col": {
+        "name": "Name",
+        "description": "Description",
+        "workflow": "Workflow",
+        "feature": "Feature",
+        "mode": "Mode",
+        "status": "Status",
+        "updated": "Updated"
+      },
+      "filter": {
+        "feature": "Feature",
+        "workflow": "Workflow"
+      },
+      "enMissing": "EN missing",
+      "toggle": {
+        "aria": "Enable command /{name}"
+      },
+      "workflowOff": "Enable workflow {key} first",
+      "menu": {
+        "edit": "Edit",
+        "duplicate": "Duplicate",
+        "delete": "Delete"
+      }
+    },
+    "delete": {
+      "title": "Delete /{name}?",
+      "body": "Users of {features} will no longer be able to run /{name}. This can't be undone.",
+      "typeToConfirm": "Type {name} to confirm",
+      "submit": "Delete command"
+    },
+    "empty": {
+      "cta": "+ Create your first command",
+      "noWorkflow": "Add a workflow first",
+      "text": "No commands yet. A command lets users call a workflow with a short command like /dich."
+    }
+  },
+  "features": {
+    "disable": {
+      "bodyNoCount": "The feature's commands disappear from menus within seconds. Running jobs will finish.",
+      "title": "Disable {feature}?",
+      "body": "{commands} commands disappear from {users} people's menus within seconds. Running jobs will finish.",
+      "submit": "Disable feature"
+    },
+    "toast": {
+      "statusChanged": "Moved {feature} to {status}",
+      "saved": "Saved {name}",
+      "deleted": "Deleted {name}",
+      "granted": "Granted {feature} to {tenant} · takes effect in a few seconds",
+      "revoked": "Revoked {feature} from {tenant}"
+    },
+    "error": {
+      "nameRequired": "Enter a feature name (at most 64 characters)",
+      "descMax": "Description can be at most 400 characters",
+      "coreProtected": "The core feature can't be deleted, disabled or moved to Beta",
+      "keyTaken": "Key is already in use",
+      "keyFormat": "Use lowercase letters, digits and - only (2–32 chars)"
+    },
+    "tenants": {
+      "col": {
+        "key": "Company key",
+        "name": "Name",
+        "users": "Active users",
+        "grantedAt": "Granted at",
+        "grantedBy": "Granted by"
+      },
+      "saveFirst": "Save the feature first to grant it to tenants",
+      "pickerEmpty": "Every tenant is already granted.",
+      "grant": "+ Grant to tenant",
+      "revoke": "Revoke",
+      "coreAll": "The core feature is granted to every tenant.",
+      "empty": "Not granted to any tenant yet."
+    },
+    "commands": {
+      "col": {
+        "name": "Name",
+        "description": "Description",
+        "others": "Other features"
+      },
+      "addPlaceholder": "Search commands…",
+      "add": "Add command",
+      "remove": {
+        "aria": "Remove /{name} from feature"
+      },
+      "orphan": "/{name} will belong to no feature and disappear from the menu",
+      "empty": "No commands yet. Add commands so people granted this feature can use them."
+    },
+    "icon": {
+      "package": "Package",
+      "calculator": "Calculator",
+      "languages": "Languages",
+      "flask": "Experiment",
+      "users": "Users",
+      "shield": "Shield"
+    },
+    "list": {
+      "title": "Features",
+      "subtitle": "Feature bundles. Users see a command when a feature containing it is granted to them.",
+      "create": "+ New feature"
+    },
+    "col": {
+      "name": "Name",
+      "status": "Status",
+      "commands": "Commands",
+      "tenants": "Tenants",
+      "updated": "Updated"
+    },
+    "status": {
+      "on": "Enabled",
+      "beta": "Beta",
+      "off": "Disabled"
+    },
+    "default": "Default",
+    "allTenants": "All tenants",
+    "menu": {
+      "toBeta": "Move to Beta"
+    },
+    "tab": {
+      "info": "Details",
+      "commands": "Commands",
+      "tenants": "Tenants"
+    },
+    "field": {
+      "key": "Key",
+      "name": "Name",
+      "description": "Description",
+      "icon": "Icon",
+      "status": "Status",
+      "keyLocked": "Key can't be changed after creation",
+      "betaHint": "Only the beta-testers group can see it"
+    },
+    "core": {
+      "hint": "Default feature: always on and available to every user"
+    },
+    "revoke": {
+      "title": "Revoke {feature} from {tenant}?",
+      "body": "{users} people will lose {commands} commands within seconds. The tenant's grants are kept and apply again if re-granted.",
+      "typeToConfirm": "Type {tenant} to confirm",
+      "submit": "Revoke feature"
+    },
+    "delete": {
+      "blocked": "Can't delete {feature}: these commands belong only to it. Move them to another feature first.",
+      "title": "Delete {feature}?",
+      "typeToConfirm": "Type {key} to confirm",
+      "submit": "Delete feature"
+    },
+    "empty": "No features besides core. Features bundle commands to grant to tenants and groups.",
+    "editor": {
+      "titleNew": "New feature"
+    }
+  },
+  "picker": {
+    "more": "{n} more results, type to filter",
+    "empty": "No results"
   }
 }

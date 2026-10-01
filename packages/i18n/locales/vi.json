@@ -31,10 +31,18 @@
       "prev": "Trước",
       "next": "Sau",
       "aria": "Phân trang"
-    }
+    },
+    "dismiss": "Đóng",
+    "moveUp": "Chuyển lên",
+    "moveDown": "Chuyển xuống",
+    "on": "Bật",
+    "off": "Tắt",
+    "undo": "Hoàn tác",
+    "savedVersion": "Đã lưu · v{n}"
   },
   "toast": {
-    "saveFailed": "Không lưu được: {reason}"
+    "saveFailed": "Không lưu được: {reason}",
+    "saved": "Đã lưu và áp dụng · v{n}"
   },
   "auth": {
     "login": {
@@ -133,7 +141,9 @@
     "main": "Điều hướng chính",
     "overview": "Tổng quan",
     "group": {
-      "access": "TRUY CẬP"
+      "access": "TRUY CẬP",
+      "features": "CHỨC NĂNG",
+      "security": "BẢO MẬT"
     },
     "tenants": "Tenants",
     "users": "Users",
@@ -141,7 +151,11 @@
     "expand": "Mở rộng thanh bên",
     "openMenu": "Mở menu",
     "skip": "Bỏ qua điều hướng",
-    "breadcrumb": "Đường dẫn"
+    "breadcrumb": "Đường dẫn",
+    "commands": "Commands",
+    "workflows": "Workflows",
+    "features": "Features",
+    "secrets": "Secrets"
   },
   "topbar": {
     "platform": "Nền tảng"
@@ -196,7 +210,8 @@
   "errors": {
     "selfAction": "Bạn không thể tự khoá hoặc hạ role của chính mình.",
     "platformTenantLocked": "Không thể khoá tenant nền tảng.",
-    "versionConflict": "Có người vừa lưu bản mới hơn. Tải lại để xem bản mới nhất."
+    "versionConflict": "Có người vừa lưu bản mới hơn. Tải lại để xem bản mới nhất.",
+    "invalidReference": "Dữ liệu chọn đã cũ. Đã tải lại danh sách, hãy chọn lại."
   },
   "format": {
     "lastLogin": {
@@ -400,5 +415,502 @@
       "displayNameMax": "Tối đa 64 ký tự"
     },
     "empty": "Chưa có người dùng nào ngoài bạn. Tạo user để mời đồng nghiệp dùng Chat App."
+  },
+  "secrets": {
+    "error": {
+      "valueLength": "Giá trị dài 8–2048 ký tự",
+      "noteMax": "Ghi chú tối đa 200 ký tự",
+      "nameFormat": "Chỉ dùng chữ HOA, số và _ (2–64 ký tự)",
+      "nameTaken": "Tên secret đã tồn tại",
+      "valueRequired": "Nhập giá trị secret"
+    },
+    "field": {
+      "noValueHint": "Giá trị không xem lại được sau khi lưu",
+      "name": "Tên",
+      "value": "Giá trị",
+      "note": "Ghi chú",
+      "newValue": "Giá trị mới",
+      "show": "Hiện giá trị đang gõ",
+      "hide": "Ẩn giá trị"
+    },
+    "note": {
+      "title": "Sửa ghi chú · {name}"
+    },
+    "toast": {
+      "noteSaved": "Đã lưu ghi chú {name}",
+      "replaced": "Đã thay giá trị {name} · •••• {last4}",
+      "viewWorkflows": "Xem các workflow dùng secret này",
+      "created": "Đã thêm {name}",
+      "deleted": "Đã xoá {name}"
+    },
+    "col": {
+      "unused": "Chưa dùng",
+      "name": "Tên",
+      "value": "Giá trị",
+      "note": "Ghi chú",
+      "usedBy": "Đang được dùng bởi",
+      "updated": "Cập nhật"
+    },
+    "drawer": {
+      "create": "Thêm secret",
+      "replace": "Thay giá trị"
+    },
+    "list": {
+      "title": "Secrets",
+      "subtitle": "Key dùng chung cho workflow. Giá trị chỉ ghi, không xem lại được.",
+      "create": "+ Thêm secret"
+    },
+    "filter": {
+      "used": "Đang dùng",
+      "unused": "Chưa dùng"
+    },
+    "menu": {
+      "replace": "Thay giá trị",
+      "editNote": "Sửa ghi chú",
+      "delete": "Xoá"
+    },
+    "replace": {
+      "current": "Giá trị hiện tại: •••• {last4} · cập nhật {date} bởi {user}",
+      "submit": "Lưu giá trị mới"
+    },
+    "delete": {
+      "blocked": "Không xoá được {name}: đang được dùng bởi",
+      "title": "Xoá {name}?",
+      "typeToConfirm": "Gõ {name} để xác nhận",
+      "submit": "Xoá secret"
+    },
+    "empty": "Chưa có secret nào. Secret lưu app key Dify để workflow gọi được."
+  },
+  "workflows": {
+    "list": {
+      "title": "Workflows",
+      "subtitle": "Catalog dùng chung. Command và agent đều chọn workflow từ đây. Khai báo trước, gắn sau cũng được.",
+      "create": "+ Khai báo workflow",
+      "search": "Tìm theo tên, key, mô tả…"
+    },
+    "guide": {
+      "title": "Khai báo workflow",
+      "s1": {
+        "title": "Tạo trên Dify",
+        "body": "Dựng workflow bằng Claude session, lấy app key"
+      },
+      "s2": {
+        "title": "Khai báo ở đây",
+        "body": "Chọn secret, khai báo input, viết mô tả. Chưa gắn cũng được"
+      },
+      "s3": {
+        "title": "Gắn cho command hoặc agent",
+        "body": "Command ở Admin · agent ở Agent Studio"
+      },
+      "dismiss": {
+        "aria": "Ẩn hướng dẫn"
+      }
+    },
+    "filter": {
+      "all": "Tất cả",
+      "on": "Bật",
+      "off": "Tắt",
+      "unattached": "Chưa gắn",
+      "secret": "Secret: {name}",
+      "clearSecret": "Bỏ lọc secret"
+    },
+    "col": {
+      "workflow": "Workflow",
+      "type": "Loại",
+      "usedBy": "Đang được dùng bởi",
+      "status": "Trạng thái"
+    },
+    "unattached": "Chưa gắn",
+    "menu": {
+      "edit": "Sửa",
+      "enable": "Bật",
+      "disable": "Tắt",
+      "createCommand": "Tạo command",
+      "delete": "Xoá"
+    },
+    "createCommandFrom": "Tạo command từ workflow này",
+    "tab": {
+      "info": "Thông tin",
+      "input": "Input",
+      "preview": "Model thấy gì",
+      "usage": "Đang được dùng bởi"
+    },
+    "field": {
+      "key": "Key",
+      "name": "Tên",
+      "type": "Loại",
+      "secret": "Secret",
+      "baseUrl": "Base URL",
+      "outputField": "Output field",
+      "description": "Mô tả",
+      "enabled": "Bật workflow",
+      "keyLocked": "Key không đổi được sau khi tạo",
+      "descHint": "Viết như đang dặn một người mới: dùng khi nào, không dùng khi nào.",
+      "descCount": "Agent đọc nguyên văn mô tả này để biết khi nào gọi workflow · {n}/400"
+    },
+    "type": {
+      "workflow": "workflow",
+      "chat": "chat",
+      "agent": "agent"
+    },
+    "schema": {
+      "title": "Input",
+      "add": "+ Thêm tham số",
+      "max": "Tối đa 50 tham số",
+      "col": {
+        "name": "Tên tham số",
+        "type": "Kiểu",
+        "required": "Bắt buộc",
+        "description": "Mô tả tham số",
+        "options": "Lựa chọn"
+      },
+      "optionsHint": "Cách nhau bằng dấu phẩy",
+      "empty": "Workflow chưa có input. Thêm tham số để command và agent truyền dữ liệu vào."
+    },
+    "preview": {
+      "note": "Minh hoạ cách agent thấy workflow này; Hub có thể thêm trường khác."
+    },
+    "usage": {
+      "empty": "Chưa có command hay agent nào dùng workflow này.",
+      "agent": "Agent …{id}",
+      "commands_one": "{count} command",
+      "commands_other": "{count} command",
+      "agents_one": "{count} agent",
+      "agents_other": "{count} agent"
+    },
+    "blocked": {
+      "disable": "Không tắt được {key}: đang được dùng bởi"
+    },
+    "delete": {
+      "title": "Xoá {key}?",
+      "blocked": "Không xoá được {key}: đang được dùng bởi",
+      "typeToConfirm": "Gõ {key} để xác nhận",
+      "submit": "Xoá workflow"
+    },
+    "schemaBreaks": "Không lưu được: thay đổi này làm hỏng các command sau. Sửa chúng trước.",
+    "toast": {
+      "saved": "Đã lưu {name}",
+      "deleted": "Đã xoá {name}",
+      "enabled": "Đã bật {name}",
+      "disabled": "Đã tắt {name}"
+    },
+    "empty": {
+      "cta": "+ Khai báo workflow đầu tiên",
+      "text": "Chưa có workflow nào. Tạo workflow trên Dify (bằng Claude session) → dán app key vào secret → khai báo input và mô tả ở đây."
+    },
+    "error": {
+      "keyFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",
+      "keyTaken": "Key đã được dùng",
+      "nameRequired": "Nhập tên workflow (tối đa 128 ký tự)",
+      "descLength": "Mô tả dài 20–400 ký tự",
+      "secretRequired": "Chọn một secret",
+      "baseUrl": "Nhập URL http:// hoặc https:// hợp lệ, không kèm tên đăng nhập",
+      "paramName": "Chỉ dùng chữ, số, _ và không bắt đầu bằng số (tối đa 64 ký tự)",
+      "paramDup": "Tên tham số bị trùng",
+      "paramDesc": "Mô tả tham số là bắt buộc",
+      "optionsRequired": "Danh sách lựa chọn cần ít nhất một mục"
+    },
+    "editor": {
+      "titleNew": "Workflow mới"
+    }
+  },
+  "commands": {
+    "tab": {
+      "config": "Cấu hình",
+      "access": "Ai dùng được"
+    },
+    "access": {
+      "summary": "{tenants} tenant · {users} user",
+      "col": {
+        "key": "Mã công ty",
+        "name": "Tên",
+        "features": "Feature",
+        "users": "Số user"
+      },
+      "empty": "Chưa tenant nào dùng được command này. Gán command vào một feature và cấp feature cho tenant.",
+      "inactive": "Command đang tắt hoặc workflow của nó đang tắt: chưa ai dùng được.",
+      "summaryTenants": "{tenants} tenant",
+      "tenantLocked": "Đã khoá",
+      "groupsLater": "Quyền theo nhóm và người dùng chưa khả dụng."
+    },
+    "step1": "Đặt tên và gói chức năng",
+    "step2": "Chọn workflow",
+    "step3": "Người dùng gõ gì",
+    "step4": "Đưa vào workflow",
+    "step5": "Hiển thị kết quả",
+    "field": {
+      "name": "Tên command",
+      "alias": "Alias",
+      "aliasAdd": "Thêm alias",
+      "description": "Mô tả cho người dùng",
+      "features": "Feature quyết định ai thấy lệnh này",
+      "featuresAdd": "Thêm feature",
+      "workflow": "Workflow",
+      "outputField": "Output field",
+      "render": "Hiển thị",
+      "mode": "Chế độ",
+      "timeout": "Timeout (giây)",
+      "enabled": "Bật command"
+    },
+    "alias": {
+      "remove": {
+        "aria": "Bỏ alias {name}"
+      }
+    },
+    "feature": {
+      "remove": {
+        "aria": "Bỏ feature {name}"
+      }
+    },
+    "render": {
+      "markdown": "Markdown",
+      "text": "Văn bản",
+      "json": "JSON"
+    },
+    "mode": {
+      "sync": "sync",
+      "async": "async"
+    },
+    "args": {
+      "add": "+ Thêm tham số",
+      "col": {
+        "name": "Tham số",
+        "description": "Mô tả",
+        "default": "Mặc định",
+        "fallback": "Nếu trống lấy",
+        "rest": "Nuốt phần còn lại"
+      },
+      "syntax": "Cú pháp",
+      "empty": "Lệnh chưa có tham số: người dùng chỉ gõ /{name}."
+    },
+    "fallback": {
+      "none": "Không",
+      "selection": "Đoạn bôi đen",
+      "page_text": "Nội dung trang",
+      "page_url": "URL trang"
+    },
+    "map": {
+      "col": {
+        "input": "Input của workflow",
+        "source": "Nguồn",
+        "value": "Giá trị"
+      },
+      "source": {
+        "arg": "Tham số",
+        "selection": "Đoạn bôi đen",
+        "page_url": "URL trang",
+        "page_text": "Nội dung trang",
+        "attachment": "File đính kèm",
+        "user_id": "ID người dùng",
+        "tenant_id": "ID tenant",
+        "const": "Giá trị cố định",
+        "aria": "Nguồn của {name}"
+      },
+      "arg": {
+        "aria": "Tham số của {name}"
+      },
+      "value": {
+        "aria": "Giá trị của {name}"
+      },
+      "pickWorkflow": "Chọn workflow để khai báo cách đưa dữ liệu vào.",
+      "dropped": "Đã bỏ map của: {names} (workflow mới không có các input này).",
+      "autoMapped": "Đã tự map {names} theo tên tham số."
+    },
+    "error": {
+      "nameFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",
+      "nameTaken": "/{name} đã được dùng bởi command khác",
+      "aliasDup": "Alias bị trùng",
+      "aliasMax": "Tối đa 5 alias",
+      "descRequired": "Nhập mô tả (tối đa 200 ký tự)",
+      "featureRequired": "Command phải thuộc ít nhất một feature",
+      "workflowRequired": "Chọn một workflow",
+      "workflowDisabled": "Workflow đang tắt. Bật workflow trước.",
+      "argName": "Tên chỉ gồm chữ thường, số, _ và bắt đầu bằng chữ",
+      "argDup": "Tên tham số bị trùng",
+      "argRest": "Chỉ một tham số được nuốt phần còn lại và phải là tham số cuối",
+      "mapMissing": "thiếu input bắt buộc: {names}",
+      "mapUnknown": "Input không có trong workflow: {names}",
+      "mapUnknownArg": "Tham số chưa khai báo: {names}",
+      "constMax": "Giá trị cố định tối đa 4000 ký tự",
+      "outputField": "Nhập output field (tối đa 128 ký tự)",
+      "timeout": "Timeout từ 1 đến 600 giây"
+    },
+    "warn": {
+      "mapType": "Nguồn \"{source}\" có thể không khớp kiểu {type} của {name}. Vẫn lưu được."
+    },
+    "toast": {
+      "saved": "Đã lưu /{name}",
+      "disabled": "Đã tắt /{name}",
+      "enabled": "Đã bật /{name}",
+      "deleted": "Đã xoá /{name}"
+    },
+    "editor": {
+      "unsaved": "Chưa lưu thay đổi",
+      "titleNew": "Command mới"
+    },
+    "breadcrumb": {
+      "new": "Command mới"
+    },
+    "duplicate": {
+      "hint": "Bản sao của /{name}: đã tắt, không có alias."
+    },
+    "list": {
+      "title": "Commands",
+      "subtitle": "Lệnh ngắn người dùng gõ trong Chat và Extension, mỗi lệnh gọi một workflow.",
+      "create": "+ Tạo command",
+      "search": "Tìm theo tên, alias, mô tả…",
+      "col": {
+        "name": "Tên",
+        "description": "Mô tả",
+        "workflow": "Workflow",
+        "feature": "Feature",
+        "mode": "Chế độ",
+        "status": "Trạng thái",
+        "updated": "Cập nhật"
+      },
+      "filter": {
+        "feature": "Feature",
+        "workflow": "Workflow"
+      },
+      "enMissing": "EN thiếu",
+      "toggle": {
+        "aria": "Bật command /{name}"
+      },
+      "workflowOff": "Bật workflow {key} trước",
+      "menu": {
+        "edit": "Sửa",
+        "duplicate": "Nhân bản",
+        "delete": "Xoá"
+      }
+    },
+    "delete": {
+      "title": "Xoá /{name}?",
+      "body": "Người dùng các feature {features} sẽ không gõ được /{name} nữa. Thao tác này không hoàn tác được.",
+      "typeToConfirm": "Gõ {name} để xác nhận",
+      "submit": "Xoá command"
+    },
+    "empty": {
+      "cta": "+ Tạo command đầu tiên",
+      "noWorkflow": "Khai báo workflow trước",
+      "text": "Chưa có command nào. Command giúp người dùng gọi workflow bằng một lệnh ngắn như /dich."
+    }
+  },
+  "features": {
+    "disable": {
+      "bodyNoCount": "Các command trong feature biến khỏi menu trong vài giây. Run đang chạy vẫn chạy xong.",
+      "title": "Tắt {feature}?",
+      "body": "{commands} command biến khỏi menu của {users} người trong vài giây. Run đang chạy vẫn chạy xong.",
+      "submit": "Tắt feature"
+    },
+    "toast": {
+      "statusChanged": "Đã chuyển {feature} sang {status}",
+      "saved": "Đã lưu {name}",
+      "deleted": "Đã xoá {name}",
+      "granted": "Đã cấp {feature} cho {tenant} · có hiệu lực sau vài giây",
+      "revoked": "Đã thu hồi {feature} của {tenant}"
+    },
+    "error": {
+      "nameRequired": "Nhập tên feature (tối đa 64 ký tự)",
+      "descMax": "Mô tả tối đa 400 ký tự",
+      "coreProtected": "Feature core không thể xoá, tắt hay đổi sang Beta",
+      "keyTaken": "Key đã được dùng",
+      "keyFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)"
+    },
+    "tenants": {
+      "col": {
+        "key": "Mã công ty",
+        "name": "Tên",
+        "users": "Số user đang dùng",
+        "grantedAt": "Cấp lúc",
+        "grantedBy": "Cấp bởi"
+      },
+      "saveFirst": "Lưu feature trước để cấp cho tenant",
+      "pickerEmpty": "Mọi tenant đã được cấp.",
+      "grant": "+ Cấp cho tenant",
+      "revoke": "Thu hồi",
+      "coreAll": "Feature core được cấp cho mọi tenant.",
+      "empty": "Chưa cấp cho tenant nào."
+    },
+    "commands": {
+      "col": {
+        "name": "Tên",
+        "description": "Mô tả",
+        "others": "Feature khác"
+      },
+      "addPlaceholder": "Tìm command…",
+      "add": "Thêm command",
+      "remove": {
+        "aria": "Bỏ /{name} khỏi feature"
+      },
+      "orphan": "/{name} sẽ không thuộc feature nào và biến khỏi menu",
+      "empty": "Feature chưa có command nào. Thêm command để người được cấp feature này dùng được."
+    },
+    "icon": {
+      "package": "Gói",
+      "calculator": "Máy tính",
+      "languages": "Dịch thuật",
+      "flask": "Thử nghiệm",
+      "users": "Người dùng",
+      "shield": "Bảo mật"
+    },
+    "list": {
+      "title": "Features",
+      "subtitle": "Gói chức năng. Người dùng thấy command khi feature chứa nó được cấp cho họ.",
+      "create": "+ Tạo feature"
+    },
+    "col": {
+      "name": "Tên",
+      "status": "Trạng thái",
+      "commands": "Commands",
+      "tenants": "Tenant",
+      "updated": "Cập nhật"
+    },
+    "status": {
+      "on": "Bật",
+      "beta": "Beta",
+      "off": "Tắt"
+    },
+    "default": "Mặc định",
+    "allTenants": "Mọi tenant",
+    "menu": {
+      "toBeta": "Chuyển sang Beta"
+    },
+    "tab": {
+      "info": "Thông tin",
+      "commands": "Commands",
+      "tenants": "Tenant"
+    },
+    "field": {
+      "key": "Key",
+      "name": "Tên",
+      "description": "Mô tả",
+      "icon": "Icon",
+      "status": "Trạng thái",
+      "keyLocked": "Key không đổi được sau khi tạo",
+      "betaHint": "Chỉ group beta-testers thấy"
+    },
+    "core": {
+      "hint": "Feature mặc định: luôn bật và tự có hiệu lực với mọi người dùng"
+    },
+    "revoke": {
+      "title": "Thu hồi {feature} của {tenant}?",
+      "body": "{users} người đang dùng sẽ mất {commands} command trong vài giây. Grant của tenant được giữ lại và có hiệu lực trở lại khi cấp lại.",
+      "typeToConfirm": "Gõ {tenant} để xác nhận",
+      "submit": "Thu hồi feature"
+    },
+    "delete": {
+      "blocked": "Không xoá được {feature}: các command sau chỉ thuộc feature này. Chuyển chúng sang feature khác trước.",
+      "title": "Xoá {feature}?",
+      "typeToConfirm": "Gõ {key} để xác nhận",
+      "submit": "Xoá feature"
+    },
+    "empty": "Chưa có feature nào ngoài core. Feature gom các command để cấp cho tenant và group.",
+    "editor": {
+      "titleNew": "Feature mới"
+    }
+  },
+  "picker": {
+    "more": "Còn {n} kết quả, gõ để lọc",
+    "empty": "Không có kết quả"
   }
 }

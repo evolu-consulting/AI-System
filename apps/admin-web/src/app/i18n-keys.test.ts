@@ -1,4 +1,4 @@
-// ADM-FR-01, ADM-FR-60 · M1-R22 · mọi key i18n nhắc trong mã admin-web phải có ở cả vi.json và en.json.
+// ADM-FR-01, ADM-FR-60, ADM-FR-10 · M1-R22, M2-R28 · mọi key i18n nhắc trong mã admin-web phải có ở cả vi.json và en.json.
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -14,8 +14,16 @@ function leaves(tree: Tree, prefix = ""): string[] {
   );
 }
 
-const viKeys = new Set(leaves(vi as Tree));
-const enKeys = new Set(leaves(en as Tree));
+/** Key số nhiều `a.b_one` + `a.b_other` được tính là có key gốc `a.b` (dùng với `{count}`). */
+function withPlurals(keys: Set<string>): Set<string> {
+  for (const k of [...keys]) {
+    if (k.endsWith("_one") && keys.has(`${k.slice(0, -4)}_other`)) keys.add(k.slice(0, -4));
+  }
+  return keys;
+}
+
+const viKeys = withPlurals(new Set(leaves(vi as Tree)));
+const enKeys = withPlurals(new Set(leaves(en as Tree)));
 const namespaces = new Set(Object.keys(vi));
 
 const SRC = join(import.meta.dir, "..");

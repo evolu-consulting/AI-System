@@ -19,3 +19,13 @@ export function normalizeCompanyKey(input: string): string {
 export function normalizeUsername(input: string): string {
   return input.trim().toLowerCase();
 }
+
+/** Tên secret gửi lên server: trim + HOA (khớp `SecretNameSchema`; sai định dạng do schema báo). */
+export function normalizeSecretName(input: string): string {
+  return input.trim().toUpperCase();
+}
+
+/** Tên/alias command: bỏ `/` đầu, trim, chữ thường, bỏ dấu (khớp `CatalogKeySchema` sau khi chuẩn hoá). */
+export function normalizeCommandName(input: string): string {
+  return foldKeyInput(input.trim().replace(/^\/+/, "").trim());
+}

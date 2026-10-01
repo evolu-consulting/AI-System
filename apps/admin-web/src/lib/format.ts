@@ -35,3 +35,12 @@ export function formatLastLogin(iso: string | null, now: Date, t: Translate): st
   }
   return `${pad(at.getDate())}/${pad(at.getMonth() + 1)}/${at.getFullYear()}`;
 }
+
+/**
+ * Cột "Cập nhật": `dd/MM/yyyy` + ` · {user}` nếu có người sửa (`updated_by` có thể null, Y10).
+ */
+export function formatUpdated(iso: string, updatedBy: string | null | undefined): string {
+  const d = new Date(iso);
+  const date = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  return updatedBy ? `${date} · ${updatedBy}` : date;
+}
