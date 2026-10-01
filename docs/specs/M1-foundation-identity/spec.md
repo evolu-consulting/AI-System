@@ -320,6 +320,10 @@ Các mặc định mới (`[ĐX]` ở M1-R01, 03, 04, 06, 15, 17, 20) và nguồ
 - 2026-10-01 · frontend-lead · FE1b: Tenants/Users/Overview dùng chung `TooltipProvider` đặt trong `AppShell`; `StatusBadge` có tooltip bọc `<span tabIndex=0>` (Badge chưa forwardRef) và `biome-ignore` có lý do (a11y §11).
 - 2026-10-01 · frontend-lead · FE2: xung đột cây JSON giữa `users.filter.role` ("Role", `admin-missing-screens` §5) và `users.filter.role.all` (plan §7, `i18n-labels.test.ts` đã khoá). Giữ `users.filter.role.all`, đổi nhãn ô lọc thành `users.filter.role.label` (giá trị vẫn "Role", nhãn e2e `combobox "Role"` không đổi). Đã kiểm 248 key không còn xung đột (`ghi 248/248`).
 - 2026-10-01 · frontend-lead · FE2: bộ key đầy đủ M1 = plan §7 + `admin-missing-screens` §0.5/§4/§5/§9/§12 phần dùng ở M1 (bỏ Group/Quota/Access/2FA/xung đột modal). Thêm test `apps/admin-web/src/app/i18n-keys.test.ts` (mọi key literal trong mã + `ERROR_MESSAGE_KEYS` có ở vi và en) và `packages/i18n/src/placeholders.test.ts` (cùng tập `{tham số}`, không rỗng).
+- 2026-10-01 · backend-lead · T2: drizzle-kit sinh `CREATE SCHEMA "admin";` ở đầu `0001_admin_identity.sql` (snapshot 0000 không có schema) → sửa tay thành `CREATE SCHEMA IF NOT EXISTS "admin";` (schema đã tạo ở 0000). Snapshot không đổi nên `db:generate` lần 2 vẫn "No schema changes".
+- 2026-10-01 · backend-lead · T2: `migrations-dev/meta/_journal.json` thêm entry viết tay cho `0001_admin_api_login_dev` (thư mục dev không do drizzle-kit quản lý, migrator chỉ đọc journal + sql); không thêm snapshot.
+- 2026-10-01 · backend-lead · T2: tên CHECK theo mẫu `<bảng>_<cột>_check`; thêm unique `features_key_uq` (spec chỉ ghi UNIQUE, cần tên cho `ON CONFLICT`), CHECK `refresh_tokens_user_agent_check` (≤ 512, spec ghi "cắt ≤ 512") và CHECK `version >= 1` cho mọi bảng có `version`.
+- 2026-10-01 · backend-lead · T2: `@ai/db` export thêm `NIL_TENANT_ID`, `NIL_SCOPE` (scope tạm khi gọi hàm SECURITY DEFINER, plan §3.4), bảng Drizzle `tenants/users/refreshTokens/features`, `REVOKE_REASONS`.
 
 ## 10. Tranh chấp test
 - (không)

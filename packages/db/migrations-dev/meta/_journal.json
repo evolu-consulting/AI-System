@@ -8,6 +8,13 @@
       "when": 1790805385467,
       "tag": "0000_hub_stub",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790858500000,
+      "tag": "0001_admin_api_login_dev",
+      "breakpoints": true
     }
   ]
 }
