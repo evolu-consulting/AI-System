@@ -215,7 +215,9 @@ Không tx nào giữ khoá của bậc sau rồi xin khoá bậc trước → kh
 ## 6. App
 - `AppDeps` thêm `secretKey?: SecretKey` (mới). `mountApi` thêm 4 route group, mỗi group `r.use("*", requireAuth(d), requireRole("platform_admin"))` trước mọi parse (kiểm role trước, M2-AC01). Route handler ≤ 30 dòng: parse contract → service.
 - `parseNameParam(c)` (mới, `lib/http.ts`): `:name` khớp `SECRET_NAME_RE` nguyên văn, sai → `NOT_FOUND`; `parseIdParam` (M1) cho `:id`, `:tenant_id`.
-- Log: giữ request log M1 (không body/header). Không thêm log nào chứa trường của `/admin/secrets*`; lỗi 500 qua `safeErrorFields` (không log tham số Drizzle — tham số chỉ có bản mã, không có giá trị rõ).
+- **Hook thử nghiệm (G8, mới):** `AppDeps.testHooks?: TestHooks` với `type TestHooks = { afterLock?: (op: "command.save" | "command.delete" | "feature.save" | "feature.delete" | "workflow.save", step: "locked") => Promise<void> }`. `createApp` chỉ chuyển `testHooks` xuống service khi `appEnv === "test"` (production/development: luôn `undefined`). Service gọi `await hooks?.afterLock?.(op, "locked")` ngay sau khi giữ đủ khoá, trước bước kiểm luật/ghi — chỉ đợi một Promise do test giữ, không I/O (TECH-DEBT #13). Test dùng cặp "barrier" (Promise mở bằng tay) để: (a) command PATCH bỏ feature G dừng sau khoá → feature G PATCH bỏ cùng command phải **chờ** (kiểm bằng `pg_locks`/`pg_stat_activity.wait_event_type='Lock'`) → mở → đúng một thành công, command còn ≥ 1 feature; (b) command POST `enabled=true` dừng sau khoá workflow `SHARE` → workflow PATCH `enabled=false` chờ → mở → workflow PATCH nhận `WORKFLOW_IN_USE`; (c) feature DELETE dừng sau khoá → command PATCH chỉ còn feature đó chờ → mở → command nhận `INVALID_REFERENCE`, không mồ côi. Mỗi ca: `deadlocks` không tăng, < 900 ms sau khi mở. Thay seam `beforeVerify` kiểu M1 (TECH-DEBT #12): hook nằm ở `AppDeps`, không trong type service production.
+- Log: giữ request log M1 (không body/header). Với `/admin/secrets*` chỉ log `path` thuần, không query string (G7).
+- `VALIDATION_ERROR` ở `/admin/secrets*` (G12): `secrets.routes.ts` dùng `parseSecretBody(c, schema)` (mới) bọc `parseWith`: `message` của mọi issue = chuỗi tĩnh theo `code` (`"invalid"`, `"too_small"`…), issue `unrecognized_keys` → `{path: [], code: "unrecognized_keys", message: "unrecognized keys"}` (không nêu tên khoá). Không thêm log nào chứa trường của `/admin/secrets*`; lỗi 500 qua `safeErrorFields` (không log tham số Drizzle — tham số chỉ có bản mã, không có giá trị rõ).
 
 ## 7. Lỗi Postgres → mã
 | SQLSTATE · constraint | Mã | Nơi |
@@ -250,6 +252,7 @@ Bọc mỗi câu có thể lỗi trong savepoint (`tx.transaction`, như M1 T6) 
 - **Hub mồ côi**: hàng `hub.agent_workflows` thêm cùng lúc xoá workflow (Admin không khoá được bảng hub) → TECH-DEBT, Hub tự kiểm (§4 spec).
 - **jsonb lệch schema** (sửa tay DB): đọc lại parse zod, lỗi → 500 có log tên bảng/id, không đoán.
 - **Mảng lồng không phân trang** (`used_by`, `features` của command, `commands` của feature detail, chi tiết `WORKFLOW_IN_USE`): bị chặn bởi kích thước catalog (vài trăm); `usages` có trần 200 + đếm.
+- **`core` + `command_ids`** (G5): được phép như feature khác; chỉ `status`, xoá, entitlement bị chặn.
 - **Bump version hai chiều** làm editor bên kia nhận 409 thường hơn (vd tạo command trong `core` tăng `version` của `core`) — chủ đích (chống ghi đè), modal 409 là M3.
 
 ## 10. Ghi chú cho qc (Q1/Q2)
