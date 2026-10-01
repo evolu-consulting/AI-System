@@ -2,31 +2,55 @@ import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 import {
   API_ERRORS,
+  ARG_NAME_RE,
+  CATALOG_KEY_RE,
+  CatalogKeySchema,
   COMPANY_KEY_RE,
+  CommandNameTakenDetailsSchema,
+  CommandNeedsFeatureDetailsSchema,
   DISPLAY_NAME_MAX,
   EMAIL_MAX,
   EmailSchema,
   ERROR_CODES,
   ErrorResponseSchema,
+  FEATURE_ICON_RE,
+  FEATURE_STATUSES,
+  FeatureHasExclusiveCommandsDetailsSchema,
+  INPUT_NAME_RE,
+  InputMapInvalidDetailsSchema,
+  InvalidReferenceDetailsSchema,
   IsoDateTime,
   LastAdminDetailsSchema,
   LIST_LIMIT_DEFAULT,
   LIST_LIMIT_MAX,
   ListQueryBase,
   LOCALES,
+  LocalizedOptionalSchema,
+  LocalizedTextSchema,
   listResponseSchema,
+  MAP_SOURCES,
   NAME_MAX,
   NewPasswordSchema,
   PASSWORD_MAX_LEN,
   PASSWORD_MIN_LEN,
+  pageResponseSchema,
+  QueryBoolSchema,
   ROLES,
+  SchemaBreaksCommandsDetailsSchema,
+  SECRET_NAME_RE,
+  SecretInUseDetailsSchema,
+  SecretNameSchema,
   TEMP_PASSWORD_LEN,
   TempLockedDetailsSchema,
   TempPasswordSchema,
   TenantKeySchema,
+  TIMEOUT_DEFAULT_S,
   USERNAME_RE,
   UsernameSchema,
+  uniqueArray,
   ValidationErrorDetailsSchema,
+  WorkflowDisabledDetailsSchema,
+  WorkflowInUseDetailsSchema,
 } from "./index";
 
 describe("ADM-FR-01 · hằng và regex export", () => {
@@ -115,7 +139,7 @@ describe("ADM-FR-04 · ListQueryBase", () => {
 });
 
 describe("ADM-FR-01 · API_ERRORS", () => {
-  test("đủ 23 mã, đúng HTTP theo spec §3", () => {
+  test("đủ 34 mã (23 M1 + 11 M2), đúng HTTP theo spec M1 §3 + M2 §3", () => {
     expect(API_ERRORS).toEqual({
       VALIDATION_ERROR: 400,
       TENANT_REQUIRED: 400,
@@ -123,6 +147,9 @@ describe("ADM-FR-01 · API_ERRORS", () => {
       EMAIL_REQUIRED: 400,
       PASSWORD_UNCHANGED: 400,
       INVALID_CURRENT_PASSWORD: 400,
+      INVALID_REFERENCE: 400,
+      INPUT_MAP_INVALID: 400,
+      COMMAND_NEEDS_FEATURE: 400,
       UNAUTHORIZED: 401,
       INVALID_CREDENTIALS: 401,
       INVALID_REFRESH_TOKEN: 401,
@@ -138,10 +165,18 @@ describe("ADM-FR-01 · API_ERRORS", () => {
       EMAIL_TAKEN: 409,
       LAST_ADMIN: 409,
       PLATFORM_TENANT_LOCKED: 409,
+      SECRET_NAME_TAKEN: 409,
+      SECRET_IN_USE: 409,
+      WORKFLOW_IN_USE: 409,
+      SCHEMA_BREAKS_COMMANDS: 409,
+      WORKFLOW_DISABLED: 409,
+      COMMAND_NAME_TAKEN: 409,
+      CORE_FEATURE_PROTECTED: 409,
+      FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
       TEMP_LOCKED: 423,
       INTERNAL_ERROR: 500,
     });
-    expect(ERROR_CODES).toHaveLength(23);
+    expect(ERROR_CODES).toHaveLength(34);
   });
 
   test("mọi mã hợp lệ theo ErrorResponseSchema M0", () => {
@@ -171,5 +206,112 @@ describe("ADM-FR-01 · details của lỗi", () => {
       true,
     );
     expect(TempLockedDetailsSchema.safeParse({ until: "08:15" }).success).toBe(false);
+  });
+});
+
+describe("ADM-FR-10 · hằng/regex/enum catalog M2", () => {
+  test("giá trị đúng spec M2 §3", () => {
+    expect(SECRET_NAME_RE.source).toBe("^[A-Z0-9_]{2,64}$");
+    expect(CATALOG_KEY_RE).toBe(COMPANY_KEY_RE);
+    expect(INPUT_NAME_RE.test("_a1")).toBe(true);
+    expect(INPUT_NAME_RE.test("1a")).toBe(false);
+    expect(INPUT_NAME_RE.test(`a${"b".repeat(63)}`)).toBe(true);
+    expect(INPUT_NAME_RE.test(`a${"b".repeat(64)}`)).toBe(false);
+    expect(ARG_NAME_RE.test("lang_2")).toBe(true);
+    expect(ARG_NAME_RE.test("Lang")).toBe(false);
+    expect(ARG_NAME_RE.test(`a${"b".repeat(32)}`)).toBe(false);
+    expect(FEATURE_ICON_RE.test("file-text")).toBe(true);
+    expect(TIMEOUT_DEFAULT_S).toEqual({ sync: 30, async: 120 });
+    expect(MAP_SOURCES).toHaveLength(8);
+    expect(FEATURE_STATUSES).toEqual(["on", "off", "beta"]);
+  });
+
+  test("SecretName / CatalogKey chuẩn hoá rồi kiểm regex", () => {
+    expect(SecretNameSchema.parse(" dify_key ")).toBe("DIFY_KEY");
+    expect(SecretNameSchema.safeParse("DIFY-KEY").success).toBe(false);
+    expect(CatalogKeySchema.parse(" Translate ")).toBe("translate");
+    expect(CatalogKeySchema.safeParse("dịch").success).toBe(false);
+  });
+
+  test("QueryBool chỉ nhận true/false", () => {
+    expect(QueryBoolSchema.parse("true")).toBe(true);
+    expect(QueryBoolSchema.parse("false")).toBe(false);
+    for (const bad of ["1", "TRUE", "", "yes"])
+      expect(QueryBoolSchema.safeParse(bad).success).toBe(false);
+  });
+
+  test("LocalizedText: vi bắt buộc, en rỗng bị bỏ khoá, strict", () => {
+    const s = LocalizedTextSchema(5);
+    expect(s.parse({ vi: " Dịch ", en: "  " })).toEqual({ vi: "Dịch" });
+    expect(s.parse({ vi: "a", en: " b " })).toEqual({ vi: "a", en: "b" });
+    expect(s.safeParse({ vi: "  " }).success).toBe(false);
+    expect(s.safeParse({ vi: "abcdef" }).success).toBe(false);
+    expect(s.safeParse({ vi: "a", fr: "b" }).success).toBe(false);
+  });
+
+  test("LocalizedOptional: mọi khoá tuỳ chọn, rỗng bị bỏ", () => {
+    const s = LocalizedOptionalSchema(3);
+    expect(s.parse({})).toEqual({});
+    expect(s.parse({ vi: " ", en: "x" })).toEqual({ en: "x" });
+    expect(s.safeParse({ vi: "abcd" }).success).toBe(false);
+  });
+
+  test("uniqueArray: trùng → issue tại vị trí lặp; vượt max bị từ chối", () => {
+    const s = uniqueArray(z.string(), 3);
+    expect(s.parse(["a", "b"])).toEqual(["a", "b"]);
+    const r = s.safeParse(["a", "b", "a"]);
+    expect(r.error?.issues[0]?.path).toEqual([2]);
+    expect(s.safeParse(["a", "b", "c", "d"]).success).toBe(false);
+  });
+
+  test("listResponseSchema nhận counts riêng; pageResponseSchema không có counts", () => {
+    const counts = z.strictObject({ all: z.number(), on: z.number() });
+    const l = listResponseSchema(z.string(), counts);
+    expect(l.safeParse({ items: [], total: 0, counts: { all: 0, on: 0 } }).success).toBe(true);
+    expect(
+      l.safeParse({ items: [], total: 0, counts: { all: 0, active: 0, locked: 0 } }).success,
+    ).toBe(false);
+    const p = pageResponseSchema(z.string());
+    expect(p.safeParse({ items: ["a"], total: 1 }).success).toBe(true);
+    expect(p.safeParse({ items: [], total: 0, counts: {} }).success).toBe(false);
+  });
+});
+
+describe("ADM-FR-10 · details của mã lỗi M2", () => {
+  const ID = "0199a3b2-7c1e-7a2b-8c3d-1e2f3a4b5c6d";
+  test.each([
+    [SecretInUseDetailsSchema, { used_by: ["translate"] }, { used_by: [] }],
+    [InvalidReferenceDetailsSchema, { field: "secret_id", ids: [ID] }, { field: "x", ids: [ID] }],
+    [
+      WorkflowInUseDetailsSchema,
+      {
+        action: "delete",
+        commands: [{ id: ID, name: "dich", enabled: true }],
+        agents: [{ id: ID }],
+      },
+      { action: "remove", commands: [], agents: [] },
+    ],
+    [
+      SchemaBreaksCommandsDetailsSchema,
+      { commands: [{ id: ID, name: "dich", missing: ["target_lang"], unknown: [] }] },
+      { commands: [] },
+    ],
+    [
+      WorkflowDisabledDetailsSchema,
+      { workflow: { id: ID, key: "translate" } },
+      { workflow: { id: ID } },
+    ],
+    [CommandNameTakenDetailsSchema, { name: "dich" }, { name: "Dịch" }],
+    [
+      InputMapInvalidDetailsSchema,
+      { missing: ["target_lang"], unknown: [], unknown_args: [] },
+      { missing: ["target_lang"] },
+    ],
+    [CommandNeedsFeatureDetailsSchema, { commands: [{ id: ID, name: "dich" }] }, { commands: [] }],
+    [FeatureHasExclusiveCommandsDetailsSchema, { commands: [{ id: ID, name: "dich" }] }, {}],
+  ] as const)("%# nhận dạng đúng, từ chối dạng sai / thừa trường", (schema, good, bad) => {
+    expect(schema.parse(good)).toEqual(good as never);
+    expect(schema.safeParse(bad).success).toBe(false);
+    expect(schema.safeParse({ ...good, extra: 1 }).success).toBe(false);
   });
 });

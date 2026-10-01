@@ -1,4 +1,4 @@
-// ADM-NFR-06, ADM-FR-01 · lỗi có mã (CONVENTIONS §5, spec M0 §3.1, M1 §3). Status lấy từ API_ERRORS (một nguồn).
+// ADM-NFR-06, ADM-FR-01, ADM-FR-10 · lỗi có mã (CONVENTIONS §5, spec M0 §3.1, M1 §3). Status lấy từ API_ERRORS (một nguồn).
 import { API_ERRORS, type ErrorCode, type ErrorResponse } from "@ai/contracts";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
@@ -22,6 +22,9 @@ const MESSAGES: Record<ErrorCode, string> = {
   EMAIL_REQUIRED: "Email is required for this role",
   PASSWORD_UNCHANGED: "New password must differ from the current one",
   INVALID_CURRENT_PASSWORD: "Current password is incorrect",
+  INVALID_REFERENCE: "Referenced item does not exist",
+  INPUT_MAP_INVALID: "Invalid input map",
+  COMMAND_NEEDS_FEATURE: "A command must belong to at least one feature",
   UNAUTHORIZED: "Unauthorized",
   INVALID_CREDENTIALS: "Invalid company code, username or password",
   INVALID_REFRESH_TOKEN: "Invalid refresh token",
@@ -32,11 +35,19 @@ const MESSAGES: Record<ErrorCode, string> = {
   SELF_ACTION_FORBIDDEN: "This action cannot be applied to yourself",
   NOT_FOUND: "Not found",
   VERSION_CONFLICT: "Version conflict",
-  KEY_TAKEN: "Company code is already taken",
+  KEY_TAKEN: "Key is already taken",
   USERNAME_TAKEN: "Username is already taken",
   EMAIL_TAKEN: "Email is already taken",
   LAST_ADMIN: "Cannot remove the last active admin",
   PLATFORM_TENANT_LOCKED: "The platform tenant cannot be locked",
+  SECRET_NAME_TAKEN: "Secret name is already taken",
+  SECRET_IN_USE: "Secret is in use by workflows",
+  WORKFLOW_IN_USE: "Workflow is in use",
+  SCHEMA_BREAKS_COMMANDS: "Input schema change breaks commands",
+  WORKFLOW_DISABLED: "Workflow is disabled",
+  COMMAND_NAME_TAKEN: "Command name is already taken",
+  CORE_FEATURE_PROTECTED: "The core feature cannot be changed this way",
+  FEATURE_HAS_EXCLUSIVE_COMMANDS: "Feature has commands that belong only to it",
   TEMP_LOCKED: "Temporarily locked",
   INTERNAL_ERROR: "Internal server error",
 };

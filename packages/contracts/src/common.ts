@@ -1,4 +1,5 @@
 // ADM-FR-01, ADM-FR-04, ADM-FR-60, ADM-FR-63, ADM-BR-05 · kiểu dùng chung, hằng và bảng mã lỗi M1 (spec M1 §3).
+// ADM-FR-10, ADM-FR-20, ADM-FR-30, ADM-FR-50 · hằng/enum catalog M2, kiểu chung và 11 mã lỗi M2 (spec M2 §3).
 // Không import I/O: file này chạy được ở trình duyệt (admin-web dùng regex/hằng để validate form).
 import { z } from "zod";
 
@@ -48,6 +49,123 @@ export type TenantKey = z.infer<typeof TenantKeySchema>;
 export type Username = z.infer<typeof UsernameSchema>;
 export type Email = z.infer<typeof EmailSchema>;
 
+// ---- M2 catalog (spec M2 §3): hằng/regex/enum dùng chung BE/FE ----
+export const SECRET_NAME_RE = /^[A-Z0-9_]{2,64}$/;
+export const SECRET_VALUE_MIN = 8;
+export const SECRET_VALUE_MAX = 2048;
+export const SECRET_NOTE_MAX = 200;
+/** Key workflow, key feature, tên + alias command (= `COMPANY_KEY_RE`). */
+export const CATALOG_KEY_RE = COMPANY_KEY_RE;
+export const WORKFLOW_DESC_MIN = 20;
+export const WORKFLOW_DESC_MAX = 400;
+export const INPUT_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
+export const INPUT_SCHEMA_MAX = 50;
+export const INPUT_DESC_MAX = 400;
+export const SELECT_OPTIONS_MAX = 50;
+export const SELECT_OPTION_MAX = 100;
+export const ARG_NAME_RE = /^[a-z][a-z0-9_]{0,31}$/;
+export const ARGS_MAX = 20;
+export const ALIASES_MAX = 5;
+export const COMMAND_DESC_MAX = 200;
+export const CONST_VALUE_MAX = 4000;
+export const ARG_DEFAULT_MAX = 1000;
+export const TIMEOUT_MIN_S = 1;
+export const TIMEOUT_MAX_S = 600;
+export const TIMEOUT_DEFAULT_S = { sync: 30, async: 120 } as const;
+export const COMMAND_FEATURES_MAX = 50;
+export const FEATURE_COMMANDS_MAX = 500;
+export const FEATURE_NAME_MAX = 64;
+export const FEATURE_DESC_MAX = 400;
+export const FEATURE_ICON_RE = /^[a-z0-9-]{1,40}$/;
+export const FEATURE_ICON_DEFAULT = "package";
+export const CORE_FEATURE_KEY = "core";
+export const BASE_URL_MAX = 2048;
+export const OUTPUT_FIELD_MAX = 128;
+/** Trần mảng `commands`/`agents` của `WorkflowUsages`. */
+export const USAGES_MAX = 200;
+
+export const APP_TYPES = ["workflow", "chat", "agent"] as const;
+export const INPUT_TYPES = ["text", "number", "boolean", "select", "file"] as const;
+export const COMMAND_MODES = ["sync", "async"] as const;
+export const OUTPUT_RENDERS = ["markdown", "text", "json"] as const;
+export const MAP_SOURCES = [
+  "arg",
+  "selection",
+  "page_url",
+  "page_text",
+  "attachment",
+  "user_id",
+  "tenant_id",
+  "const",
+] as const;
+export const ARG_FALLBACKS = ["selection", "page_url", "page_text"] as const;
+export const FEATURE_STATUSES = ["on", "off", "beta"] as const;
+export const ON_OFF = ["on", "off"] as const;
+
+export const AppTypeSchema = z.enum(APP_TYPES);
+export type AppType = z.infer<typeof AppTypeSchema>;
+export const InputTypeSchema = z.enum(INPUT_TYPES);
+export type InputType = z.infer<typeof InputTypeSchema>;
+export const CommandModeSchema = z.enum(COMMAND_MODES);
+export type CommandMode = z.infer<typeof CommandModeSchema>;
+export const OutputRenderSchema = z.enum(OUTPUT_RENDERS);
+export type OutputRender = z.infer<typeof OutputRenderSchema>;
+export const MapSourceSchema = z.enum(MAP_SOURCES);
+export type MapSource = z.infer<typeof MapSourceSchema>;
+export const ArgFallbackSchema = z.enum(ARG_FALLBACKS);
+export type ArgFallback = z.infer<typeof ArgFallbackSchema>;
+export const FeatureStatusSchema = z.enum(FEATURE_STATUSES);
+export type FeatureStatus = z.infer<typeof FeatureStatusSchema>;
+export const OnOffSchema = z.enum(ON_OFF);
+export type OnOff = z.infer<typeof OnOffSchema>;
+
+/** Key catalog (workflow/feature) và tên/alias command: trim → lower → `CATALOG_KEY_RE`. */
+export const CatalogKeySchema = z.string().trim().toLowerCase().regex(CATALOG_KEY_RE);
+/** Tên secret ở body: trim → HOA → `SECRET_NAME_RE`. Path `:name` khớp nguyên văn, không qua đây. */
+export const SecretNameSchema = z.string().trim().toUpperCase().regex(SECRET_NAME_RE);
+/** Query bool chỉ nhận đúng `"true"`/`"false"`. */
+export const QueryBoolSchema = z.enum(["true", "false"]).transform((v) => v === "true");
+/** Username của người ghi gần nhất; `null` = seed/không rõ (spec M2 §3, Y10). */
+export const UpdatedBySchema = z.string().min(1).nullable();
+
+export type LocalizedText = { vi: string; en?: string };
+export type LocalizedOptional = { vi?: string; en?: string };
+
+/** `{vi: trim 1–max, en?: trim ≤ max}`; `en` rỗng sau trim → bỏ khoá. */
+export function LocalizedTextSchema(max: number) {
+  return z
+    .strictObject({
+      vi: z.string().trim().min(1).max(max),
+      en: z.string().trim().max(max).optional(),
+    })
+    .transform(({ vi, en }): LocalizedText => (en ? { vi, en } : { vi }));
+}
+
+/** `{vi?, en?}` mỗi khoá trim ≤ max; rỗng sau trim → bỏ khoá. */
+export function LocalizedOptionalSchema(max: number) {
+  const part = z.string().trim().max(max).optional();
+  return z.strictObject({ vi: part, en: part }).transform(({ vi, en }): LocalizedOptional => {
+    const out: LocalizedOptional = {};
+    if (vi) out.vi = vi;
+    if (en) out.en = en;
+    return out;
+  });
+}
+
+/** Mảng ≤ max phần tử, không trùng (so `===`); trùng → issue `custom` tại vị trí lặp. */
+export function uniqueArray<T extends z.ZodType>(item: T, max: number) {
+  return z
+    .array(item)
+    .max(max)
+    .superRefine((arr, ctx) => {
+      const seen = new Set<unknown>();
+      arr.forEach((v, i) => {
+        if (seen.has(v)) ctx.addIssue({ code: "custom", message: "duplicate", path: [i] });
+        seen.add(v);
+      });
+    });
+}
+
 /** Query chung của list: `q` trim ≤ 100 (rỗng = bỏ), `limit` 1–200 (50), `offset` 0–100000 (0). */
 export const ListQueryBase = z.strictObject({
   q: z
@@ -68,12 +186,23 @@ export const ListCountsSchema = z.strictObject({
 });
 export type ListCounts = z.infer<typeof ListCountsSchema>;
 
-export function listResponseSchema<T extends z.ZodType>(item: T) {
-  return z.strictObject({ items: z.array(item), total: CountSchema, counts: ListCountsSchema });
+/** `counts` mặc định = `ListCountsSchema` (M1); thực thể M2 truyền schema counts riêng. */
+export function listResponseSchema<
+  T extends z.ZodType,
+  C extends z.ZodType = typeof ListCountsSchema,
+>(item: T, counts?: C) {
+  const c = (counts ?? ListCountsSchema) as C;
+  return z.strictObject({ items: z.array(item), total: CountSchema, counts: c });
 }
-export type ListResponse<T> = { items: T[]; total: number; counts: ListCounts };
+export type ListResponse<T, C = ListCounts> = { items: T[]; total: number; counts: C };
 
-/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3). */
+/** List không có `counts` (entitlement, access): `{items, total}`. */
+export function pageResponseSchema<T extends z.ZodType>(item: T) {
+  return z.strictObject({ items: z.array(item), total: CountSchema });
+}
+export type PageResponse<T> = { items: T[]; total: number };
+
+/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3: 23 + 11 = 34 mã). */
 export const API_ERRORS = {
   VALIDATION_ERROR: 400,
   TENANT_REQUIRED: 400,
@@ -81,6 +210,9 @@ export const API_ERRORS = {
   EMAIL_REQUIRED: 400,
   PASSWORD_UNCHANGED: 400,
   INVALID_CURRENT_PASSWORD: 400,
+  INVALID_REFERENCE: 400,
+  INPUT_MAP_INVALID: 400,
+  COMMAND_NEEDS_FEATURE: 400,
   UNAUTHORIZED: 401,
   INVALID_CREDENTIALS: 401,
   INVALID_REFRESH_TOKEN: 401,
@@ -96,6 +228,14 @@ export const API_ERRORS = {
   EMAIL_TAKEN: 409,
   LAST_ADMIN: 409,
   PLATFORM_TENANT_LOCKED: 409,
+  SECRET_NAME_TAKEN: 409,
+  SECRET_IN_USE: 409,
+  WORKFLOW_IN_USE: 409,
+  SCHEMA_BREAKS_COMMANDS: 409,
+  WORKFLOW_DISABLED: 409,
+  COMMAND_NAME_TAKEN: 409,
+  CORE_FEATURE_PROTECTED: 409,
+  FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
   TEMP_LOCKED: 423,
   INTERNAL_ERROR: 500,
 } as const satisfies Record<string, 400 | 401 | 403 | 404 | 409 | 423 | 500>;
@@ -122,3 +262,81 @@ export type LastAdminDetails = z.infer<typeof LastAdminDetailsSchema>;
 
 export const TempLockedDetailsSchema = z.strictObject({ until: IsoDateTime });
 export type TempLockedDetails = z.infer<typeof TempLockedDetailsSchema>;
+
+// ---- details của mã lỗi M2 (spec M2 §3 "Mã lỗi mới"). SECRET_NAME_TAKEN, CORE_FEATURE_PROTECTED: không details ----
+const CommandNameRef = z.string().regex(CATALOG_KEY_RE);
+export const CommandRefSchema = z.strictObject({ id: UuidSchema, name: CommandNameRef });
+export type CommandRef = z.infer<typeof CommandRefSchema>;
+export const UsageCommandSchema = z.strictObject({
+  id: UuidSchema,
+  name: CommandNameRef,
+  enabled: z.boolean(),
+});
+export type UsageCommand = z.infer<typeof UsageCommandSchema>;
+/** Admin chỉ biết `agent_id` (tên agent ở Hub, Mơ hồ A6). */
+export const AgentRefSchema = z.strictObject({ id: UuidSchema });
+export type AgentRef = z.infer<typeof AgentRefSchema>;
+
+export const SecretInUseDetailsSchema = z.strictObject({
+  used_by: z.array(z.string().regex(CATALOG_KEY_RE)).min(1),
+});
+export type SecretInUseDetails = z.infer<typeof SecretInUseDetailsSchema>;
+
+export const REFERENCE_FIELDS = ["secret_id", "workflow_id", "feature_ids", "command_ids"] as const;
+export const InvalidReferenceDetailsSchema = z.strictObject({
+  field: z.enum(REFERENCE_FIELDS),
+  ids: z.array(UuidSchema).min(1),
+});
+export type InvalidReferenceDetails = z.infer<typeof InvalidReferenceDetailsSchema>;
+
+/** `delete`: mọi command + agent; `disable`: chỉ command đang bật + mọi agent (M2-R11). */
+export const WorkflowInUseDetailsSchema = z.strictObject({
+  action: z.enum(["delete", "disable"]),
+  commands: z.array(UsageCommandSchema),
+  agents: z.array(AgentRefSchema),
+});
+export type WorkflowInUseDetails = z.infer<typeof WorkflowInUseDetailsSchema>;
+
+export const SchemaBreaksCommandsDetailsSchema = z.strictObject({
+  commands: z
+    .array(
+      z.strictObject({
+        id: UuidSchema,
+        name: CommandNameRef,
+        missing: z.array(z.string()),
+        unknown: z.array(z.string()),
+      }),
+    )
+    .min(1),
+});
+export type SchemaBreaksCommandsDetails = z.infer<typeof SchemaBreaksCommandsDetailsSchema>;
+
+export const WorkflowDisabledDetailsSchema = z.strictObject({
+  workflow: z.strictObject({ id: UuidSchema, key: z.string().regex(CATALOG_KEY_RE) }),
+});
+export type WorkflowDisabledDetails = z.infer<typeof WorkflowDisabledDetailsSchema>;
+
+/** `name` = tên/alias đầu tiên bị trùng theo thứ tự `[name, ...aliases]`. */
+export const CommandNameTakenDetailsSchema = z.strictObject({ name: CommandNameRef });
+export type CommandNameTakenDetails = z.infer<typeof CommandNameTakenDetailsSchema>;
+
+/** Đủ 3 khoá (có thể rỗng); `message` cố định "Invalid input map", câu AC-A03 do FE dựng. */
+export const InputMapInvalidDetailsSchema = z.strictObject({
+  missing: z.array(z.string()),
+  unknown: z.array(z.string()),
+  unknown_args: z.array(z.string()),
+});
+export type InputMapInvalidDetails = z.infer<typeof InputMapInvalidDetailsSchema>;
+
+/** Chỉ có khi từ `PATCH /admin/features/:id` (command mồ côi); từ `/admin/commands*` không có details. */
+export const CommandNeedsFeatureDetailsSchema = z.strictObject({
+  commands: z.array(CommandRefSchema).min(1),
+});
+export type CommandNeedsFeatureDetails = z.infer<typeof CommandNeedsFeatureDetailsSchema>;
+
+export const FeatureHasExclusiveCommandsDetailsSchema = z.strictObject({
+  commands: z.array(CommandRefSchema).min(1),
+});
+export type FeatureHasExclusiveCommandsDetails = z.infer<
+  typeof FeatureHasExclusiveCommandsDetailsSchema
+>;

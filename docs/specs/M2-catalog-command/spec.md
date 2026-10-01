@@ -361,7 +361,15 @@ Mục bảo mật A2 đã được người dùng chấp nhận (Gate 2026-10-01
 ### UI đã chấp nhận (Gate 2026-10-01, [CR-014](../../CHANGE-REQUESTS.md))
 - Editor Workflows và Commands là trang riêng; bỏ panel "Chạy thử"; giữ câu toast "có hiệu lực sau vài giây" của design (hiệu lực thật do Hub/M3).
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- T1 (backend-lead): hằng mới đặt tên cho các số đã có ở §3: `SELECT_OPTION_MAX = 100` (độ dài một option), `COMMAND_FEATURES_MAX = 50`, `FEATURE_COMMANDS_MAX = 500`, `USAGES_MAX = 200`, `REFERENCE_FIELDS`; helper mới `CatalogKeySchema`, `SecretNameSchema`, `uniqueArray(item, max)` trong `common.ts`.
+- T1: `CommandArg.default` rỗng sau trim → `null` (như `SecretNote`), tránh lưu `""` lẫn với "không có mặc định".
+- T1: `BaseUrlSchema` = trim → ≤ 2048 → regex `^https?://` (phân biệt hoa thường, khớp CHECK DB; chặn `HTTPS://…`, `http:host`) → `z.url({protocol: /^https?$/})` → refine không userinfo.
+- T1: response có refine bất biến: `Workflow*.unattached ⇔ command_count = 0 ∧ agent_count = 0`; `WorkflowUsages.agents_available = false ⇒ agents = [] ∧ agent_count = 0`; `Feature*.is_core ⇔ key = "core"`.
+- T1: `aliases` không trùng `name` chỉ kiểm được ở biên khi body có cả hai; `PATCH` chỉ gửi một bên → T6 kiểm trên trạng thái ghép, trả `VALIDATION_ERROR` (path `aliases`), không phải `COMMAND_NAME_TAKEN`.
+- T1: `details` có mảng `min(1)` khi mã chỉ phát sinh lúc có phần tử (`SECRET_IN_USE.used_by`, `INVALID_REFERENCE.ids`, `SCHEMA_BREAKS_COMMANDS/COMMAND_NEEDS_FEATURE/FEATURE_HAS_EXCLUSIVE_COMMANDS.commands`); `WORKFLOW_IN_USE.commands/agents` từng mảng có thể rỗng.
+- T1: `CommandRefSchema`, `UsageCommandSchema`, `AgentRefSchema` ở `common.ts` (dùng chung cho `details` và `WorkflowUsages`); `FeatureRefSchema` ở `features.ts`; `commands.ts` import `features.ts` + `workflows.ts` (một chiều, không vòng). `versionConflictDetailsSchema` giữ nguyên, dùng dạng truyền schema (`WorkflowSchema`, `CommandSchema`, `FeatureDetailSchema`).
+- T1: message cố định 11 mã mới (`apps/admin-api/src/lib/errors.ts`): `INVALID_REFERENCE` "Referenced item does not exist", `INPUT_MAP_INVALID` "Invalid input map", `COMMAND_NEEDS_FEATURE` "A command must belong to at least one feature", `SECRET_NAME_TAKEN` "Secret name is already taken", `SECRET_IN_USE` "Secret is in use by workflows", `WORKFLOW_IN_USE` "Workflow is in use", `SCHEMA_BREAKS_COMMANDS` "Input schema change breaks commands", `WORKFLOW_DISABLED` "Workflow is disabled", `COMMAND_NAME_TAKEN` "Command name is already taken", `CORE_FEATURE_PROTECTED` "The core feature cannot be changed this way", `FEATURE_HAS_EXCLUSIVE_COMMANDS` "Feature has commands that belong only to it"; `KEY_TAKEN` → "Key is already taken".
+- T1: `common.ts` sau M2 = 342 dòng (≤ 400); mốc sau thêm hằng/mã thì tách phần catalog sang file riêng.
 
 ## 10. Tranh chấp test
 - (không)
