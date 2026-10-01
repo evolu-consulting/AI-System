@@ -17,6 +17,7 @@ import { healthRoutes } from "./modules/health/health.routes";
 import { secretsRoutes } from "./modules/secrets/secrets.routes";
 import { tenantsRoutes } from "./modules/tenants/tenants.routes";
 import { usersRoutes } from "./modules/users/users.routes";
+import { workflowsRoutes } from "./modules/workflows/workflows.routes";
 
 export type AppConfig = { version: string; corsOrigins: string[] };
 export type AppDeps = {
@@ -50,6 +51,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/users", usersRoutes(ctx));
   app.route("/admin/secrets", secretsRoutes({ ...ctx, secretKey: deps.secretKey }));
   app.route("/admin/features", featuresRoutes({ ...ctx, hooks }));
+  app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
 }
 
 export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {
