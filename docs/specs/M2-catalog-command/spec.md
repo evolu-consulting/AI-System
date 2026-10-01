@@ -70,11 +70,175 @@ Luật gốc: [BA §5.3–5.5, §5.7, §6](../../design/admin/ba-admin.md); UI: 
 
 ## 3. Contract (backend-lead)
 <!-- backend-lead -->
-File dự kiến: `packages/contracts/src/{secrets,workflows,commands,features}.ts` (+ mở rộng `common.ts`/`errors.ts`). Nghĩa vụ: dùng lại `ListQueryBase`, `listResponseSchema`, `versionConflictDetailsSchema`, `API_ERRORS`; endpoint theo [BA §8](../../design/admin/ba-admin.md) (Secret, Catalog, Command, Feature) **trừ** `/commands/:id/test`; thêm `DELETE /admin/secrets/:name` (RD#20), `GET /admin/workflows/:id/usages`. Mã lỗi mới phải vào `API_ERRORS` (tên ở M2-R04…R22 là đề xuất). Sự kiện / NOTIFY: **không có ở M2**.
+File: `packages/contracts/src/{secrets,workflows,commands,features}.ts` (mới) + `common.ts` (hằng, kiểu chung, mã lỗi, schema `details`), export qua `index.ts`. Chi tiết hiện thực: [plan.md](plan.md). Đã đối chiếu yêu cầu FE Y1–Y10 ([plan-frontend.md §9](plan-frontend.md)); trả lời từng mục ở plan.md §11.
+
+**Quy ước** (kế thừa M1 §3, không nhắc lại): body/query strict, `:id` không phải uuid → 404, lỗi `{error:{code,message,details?}}` với `message` tiếng Anh **cố định theo mã** (không chứa dữ liệu người dùng; FE dựng câu từ `code` + `details`), ISO UTC, id uuid v7. Mọi route M2 = `requireAuth` + `requireRole("platform_admin")` (kiểm role **trước** khi tra/parse body) → `tenant_admin`/`member` 403 `FORBIDDEN`; scope DB `platform`.
+- `updated_by` trong mọi response M2 = **username** của người ghi gần nhất (`string | null`; `null` = seed/không rõ) (Y10).
+- Query bool: chỉ nhận `"true"`/`"false"`. List: `ListQueryBase` (`q` trim ≤ 100, `limit` 1–200 = 50, `offset` 0–100000) + bộ lọc riêng; `counts` tính theo cùng bộ lọc **trừ** các bộ lọc chip (cột "chip" dưới). List không có `counts` (entitlement, access) trả `{items, total}`.
+- `PATCH` nhận `version` (M1-R19); trường vắng = giữ nguyên; không trường nào đổi → 200 bản hiện tại, không tăng `version`. `DELETE` không nhận `version`. Không endpoint nào ở M2 gửi NOTIFY/sự kiện (A1).
+
+**Hằng/regex export** (`common.ts`, dùng được ở trình duyệt): `SECRET_NAME_RE = /^[A-Z0-9_]{2,64}$/`, `SECRET_VALUE_MIN = 8`, `SECRET_VALUE_MAX = 2048`, `SECRET_NOTE_MAX = 200`, `CATALOG_KEY_RE = /^[a-z0-9-]{2,32}$/` (workflow key, feature key, tên + alias command; = `COMPANY_KEY_RE`), `WORKFLOW_DESC_MIN = 20`, `WORKFLOW_DESC_MAX = 400`, `INPUT_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/`, `INPUT_SCHEMA_MAX = 50`, `INPUT_DESC_MAX = 400`, `SELECT_OPTIONS_MAX = 50`, `ARG_NAME_RE = /^[a-z][a-z0-9_]{0,31}$/`, `ARGS_MAX = 20`, `ALIASES_MAX = 5`, `COMMAND_DESC_MAX = 200`, `CONST_VALUE_MAX = 4000`, `ARG_DEFAULT_MAX = 1000`, `TIMEOUT_MIN_S = 1`, `TIMEOUT_MAX_S = 600`, `TIMEOUT_DEFAULT_S = {sync: 30, async: 120}`, `FEATURE_NAME_MAX = 64`, `FEATURE_DESC_MAX = 400`, `FEATURE_ICON_RE = /^[a-z0-9-]{1,40}$/`, `FEATURE_ICON_DEFAULT = "package"`, `CORE_FEATURE_KEY = "core"`, `BASE_URL_MAX = 2048`, `OUTPUT_FIELD_MAX = 128`. Enum: `APP_TYPES = [workflow, chat, agent]`, `INPUT_TYPES = [text, number, boolean, select, file]`, `COMMAND_MODES = [sync, async]`, `OUTPUT_RENDERS = [markdown, text, json]`, `MAP_SOURCES = [arg, selection, page_url, page_text, attachment, user_id, tenant_id, const]`, `ARG_FALLBACKS = [selection, page_url, page_text]`, `FEATURE_STATUSES = [on, off, beta]`, `ON_OFF = [on, off]`.
+
+**Kiểu dùng chung**
+- `LocalizedText(max)` = strict `{vi: trim 1–max, en?: trim ≤ max}` (`en` rỗng sau trim → bỏ khoá). `LocalizedOptional(max)` = strict `{vi?: trim ≤ max, en?: trim ≤ max}` (rỗng → bỏ khoá).
+- `listResponseSchema(item, counts = ListCountsSchema)` (mở rộng không phá M1) · `pageResponseSchema(item)` = `{items, total}`.
+- `versionConflictDetailsSchema(<schema>)` cho `Workflow`, `Command`, `FeatureDetail` (dạng M1, `{current, updated_at}`).
+
+**Secrets** (`secrets.ts`) — M2-R01…R06
+- `Secret = {id, name, last4: string(4), note: string|null, used_by: string[] (key workflow tham chiếu, sắp tăng dần), created_at, updated_at, updated_by}`. **Không bao giờ** có `value`, `ciphertext`, `iv`, `key_version` (R03, AC-A06). `id` có trong response (Y1) để workflow tham chiếu; `id` không phải bí mật.
+- `SecretName` = trim → `toUpperCase()` → `SECRET_NAME_RE`. `SecretValue` = string 8–2048 (đếm UTF-16 như `String.length`), **không trim**, không chuẩn hoá. `SecretNote` = trim ≤ 200, `""` → `null`.
+- `SecretCreateRequest {name, value, note?}` · `SecretReplaceRequest {value}` · `SecretNoteRequest {note: SecretNote | null}` · `SecretListQuery = ListQueryBase + {used?: bool}` (`q` khớp `name`/`note` ILIKE) · `SecretListResponse` counts `{all, used, unused}` (chip: `used`), sắp `name`.
+- `:name` trong path phải khớp `SECRET_NAME_RE` nguyên văn (không chuẩn hoá); sai dạng hoặc không có → 404.
+
+**Workflows** (`workflows.ts`) — M2-R07…R12, R18
+- `WorkflowInput = strict {name: INPUT_NAME_RE, type: INPUT_TYPES, required: boolean, description: trim 1–400, options?: string trim 1–100 [] (1–50, không trùng; **bắt buộc khi** `type=select`, **cấm** khi khác)}`. `InputSchema = WorkflowInput[]` 0–50, `name` không trùng (superRefine → `VALIDATION_ERROR` có `path`).
+- `WorkflowRef = {id, key, name, enabled}` · `SecretRef = {id, name}`.
+- `WorkflowListItem = {id, key, name, app_type, description, enabled, secret: SecretRef, command_count, agent_count, unattached, version, updated_at, updated_by}` (Y5). `Workflow = WorkflowListItem & {base_url, input_schema: InputSchema, output_field: string|null, created_at}`.
+- `WorkflowCreateRequest {key: CATALOG_KEY_RE (trim+lower), name: trim 1–128, description: trim 20–400, app_type, base_url, secret_id: uuid, input_schema? = [], output_field?: trim 1–128 | null = null, enabled? = true}`. `base_url` = `z.url()` giao thức `http`/`https`, ≤ 2048, **không** có `username`/`password` (refine). `WorkflowUpdateRequest {version, name?, description?, app_type?, base_url?, secret_id?, input_schema?, output_field?, enabled?}` (không có `key` → 400).
+- `WorkflowListQuery = ListQueryBase + {status?: on|off, attached?: bool, secret?: SecretName}` (`q` khớp `key`/`name`/`description`; `secret` lạ → list rỗng). Counts `{all, on, off, unattached}` (chip: `status`, `attached`), sắp `key`.
+- `WorkflowUsages = {commands: [{id, name, enabled}] (≤ 200, sắp `name`), agents: [{id}] (≤ 200, sắp `id`), command_count, agent_count, agents_available: boolean}` — `agents_available=false` khi DB không có `hub.agent_workflows` đọc được (R12; khi đó `agents=[]`, `agent_count=0`).
+
+**Commands** (`commands.ts`) — M2-R13…R19, R23
+- `CommandName` = trim → lower → `CATALOG_KEY_RE` (dùng cho `name` và từng alias). `CommandArg = strict {name: ARG_NAME_RE, description: LocalizedText(200), default?: trim ≤ 1000 | null = null, fallback?: ARG_FALLBACKS | null = null, rest?: boolean = false}` (Y8). `Args` 0–20: `name` không trùng; ≤ 1 `rest=true` và phải là phần tử cuối (superRefine).
+- `InputMapEntry` = discriminatedUnion `source`: `{source:"arg", value: ARG_NAME_RE}` · `{source:"const", value: string ≤ 4000}` · `{source: selection|page_url|page_text|attachment|user_id|tenant_id}` (không có `value`). `InputMap = record<INPUT_NAME_RE, InputMapEntry>` ≤ 50 khoá. Cú pháp BA (`$args.x`, `$page.url`…) chỉ là hiển thị FE (R16).
+- `CommandOutput = strict {field: trim 1–128, render: OUTPUT_RENDERS}` (`field` **bắt buộc**; FE điền sẵn từ `workflow.output_field`, Y8).
+- `FeatureRef = {id, key, name: LocalizedText, status}`.
+- `CommandListItem = {id, name, aliases: string[], description: LocalizedText, workflow: WorkflowRef, features: FeatureRef[] (sắp `key`, `core` đầu), mode, enabled, version, updated_at, updated_by}` (Y3). `Command = CommandListItem & {args, input_map, output, timeout_s, feature_ids: uuid[], warnings: InputMapWarning[], created_at}` (Y4).
+- `InputMapWarning = {var, type: INPUT_TYPES, source: MAP_SOURCES, reason: "type_mismatch" | "const_invalid"}` — tính lại mỗi lần đọc/ghi từ `input_schema` hiện tại của workflow, **không lưu** (R17, RD#51). Luật cảnh báo: plan.md §4 `inputMapWarnings`.
+- `CommandCreateRequest {name, aliases? = [] (0–5, không trùng nhau, không trùng `name`), description, workflow_id, args? = [], input_map? = {}, output, mode? = "sync", timeout_s?: int 1–600 (vắng → theo `mode`), enabled? = true, feature_ids?: uuid[] ≤ 50 không trùng (vắng → `[id của core]`; `[]` → 400 `COMMAND_NEEDS_FEATURE`)}`. `CommandUpdateRequest = {version} + mọi trường trên đều tuỳ chọn` (đổi `mode` không tự đổi `timeout_s`).
+- `CommandListQuery = ListQueryBase + {status?: on|off, feature?: uuid, workflow?: uuid}` (`q` khớp `name`, mọi alias, `description.vi/en`; Y3 lọc theo **id**). Counts `{all, on, off}` (chip: `status`), sắp `name`.
+- `CommandAccessItem = {tenant_id, tenant_key, tenant_name, tenant_active, features: [{id, key, name}], active_user_count}` · `CommandAccessResponse = {items, total, command_active: boolean}` (`command_active = command.enabled && workflow.enabled`) · query `ListQueryBase` (`q` khớp key/tên tenant), sắp `tenant_key` (R23, Y7 — dạng phẳng như entitlement; có phân trang theo CONVENTIONS §6).
+- Nhân bản (ui-admin 7.4): **không có endpoint**; FE đọc `GET /admin/commands/:id` rồi `POST` với tên mới, `enabled=false`.
+
+**Features** (`features.ts`) — M2-R19…R22, R24
+- `FeatureListItem = {id, key, name: LocalizedText(64), description: LocalizedOptional(400), icon: FEATURE_ICON_RE, status, is_core: boolean, command_count, tenant_count (entitlement chưa thu hồi; `core` = 0, FE hiện "Mọi tenant" theo `is_core`), version, updated_at, updated_by}` (Y9; `icon` null trong DB → trả `"package"`).
+- `FeatureDetail = FeatureListItem & {created_at, commands: [{id, name, description: LocalizedText, enabled, feature_count}] (sắp `name`), affected_user_count}` (Y2). `affected_user_count` = Σ user active (`active && !locked_by_tenant`) của các tenant đang được entitlement (`core`: mọi tenant) — số "{users} người" trong hộp thoại Tắt.
+- `FeatureCreateRequest {key, name: LocalizedText(64), description?: LocalizedOptional(400) = {}, icon?: FEATURE_ICON_RE = "package", status? = "on", command_ids?: uuid[] ≤ 500 không trùng = []}` · `FeatureUpdateRequest {version, name?, description?, icon?, status?, command_ids?}` (`command_ids` = **thay cả tập** trong cùng transaction, Y2; không có `key` → 400).
+- `FeatureListQuery = ListQueryBase + {status?: on|off|beta}` (`q` khớp `key`, `name.vi/en`). Counts `{all, on, beta, off}` (chip: `status`), sắp: `core` đầu rồi `key`.
+- `Entitlement = {tenant_id, tenant_key, tenant_name, tenant_active, active_user_count, granted_at, granted_by: string|null}` (chỉ hàng **chưa thu hồi**, Y1) · `EntitlementListResponse = {items, total}` · query `ListQueryBase` (`q` khớp key/tên tenant), sắp `tenant_key`; `core` → `{items: [], total: 0}`.
+
+| Method | Path | Request | Response | Lỗi (HTTP · code) |
+|---|---|---|---|---|
+| GET | `/admin/secrets` | `SecretListQuery` | 200 `SecretListResponse` | 400 · 401 · 403 |
+| POST | `/admin/secrets` | `SecretCreateRequest` | 201 `Secret` | 400 `VALIDATION_ERROR` · 409 `SECRET_NAME_TAKEN` |
+| PUT | `/admin/secrets/:name` | `SecretReplaceRequest` (thay giá trị: IV mới, `last4` mới, giữ `id`, RD#28) | 200 `Secret` | 400 · 404 |
+| PATCH | `/admin/secrets/:name` | `SecretNoteRequest` (không đụng ciphertext, Y6) | 200 `Secret` | 400 · 404 |
+| DELETE | `/admin/secrets/:name` | — | 204 (xoá thật) | 404 · 409 `SECRET_IN_USE {used_by}` |
+| GET | `/admin/workflows` | `WorkflowListQuery` | 200 `{items: WorkflowListItem[], total, counts}` | 400 |
+| POST | `/admin/workflows` | `WorkflowCreateRequest` | 201 `Workflow` | 400 `VALIDATION_ERROR` / `INVALID_REFERENCE {field:"secret_id"}` · 409 `KEY_TAKEN` |
+| GET | `/admin/workflows/:id` | — | 200 `Workflow` | 404 |
+| GET | `/admin/workflows/:id/usages` | — | 200 `WorkflowUsages` | 404 |
+| PATCH | `/admin/workflows/:id` | `WorkflowUpdateRequest` | 200 `Workflow` | 400 / `INVALID_REFERENCE` · 404 · 409 `VERSION_CONFLICT {current: Workflow, updated_at}` / `WORKFLOW_IN_USE {action:"disable",…}` / `SCHEMA_BREAKS_COMMANDS` |
+| DELETE | `/admin/workflows/:id` | — | 204 | 404 · 409 `WORKFLOW_IN_USE {action:"delete",…}` |
+| GET | `/admin/commands` | `CommandListQuery` | 200 `{items: CommandListItem[], total, counts}` | 400 |
+| POST | `/admin/commands` | `CommandCreateRequest` | 201 `Command` | 400 `VALIDATION_ERROR` / `COMMAND_NEEDS_FEATURE` / `INVALID_REFERENCE {field:"workflow_id"\|"feature_ids"}` / `INPUT_MAP_INVALID` · 409 `COMMAND_NAME_TAKEN {name}` / `WORKFLOW_DISABLED` |
+| GET | `/admin/commands/:id` | — | 200 `Command` | 404 |
+| PATCH | `/admin/commands/:id` | `CommandUpdateRequest` | 200 `Command` | như POST + 404 + 409 `VERSION_CONFLICT {current: Command, updated_at}` |
+| DELETE | `/admin/commands/:id` | — | 204 (cascade `command_names`, `feature_commands`) | 404 |
+| GET | `/admin/commands/:id/access` | `ListQueryBase` | 200 `CommandAccessResponse` | 404 |
+| GET | `/admin/features` | `FeatureListQuery` | 200 `{items: FeatureListItem[], total, counts}` | 400 |
+| POST | `/admin/features` | `FeatureCreateRequest` | 201 `FeatureDetail` | 400 / `INVALID_REFERENCE {field:"command_ids"}` · 409 `KEY_TAKEN` |
+| GET | `/admin/features/:id` | — | 200 `FeatureDetail` | 404 |
+| PATCH | `/admin/features/:id` | `FeatureUpdateRequest` | 200 `FeatureDetail` | 400 / `INVALID_REFERENCE` / `COMMAND_NEEDS_FEATURE {commands}` · 404 · 409 `VERSION_CONFLICT {current: FeatureDetail, updated_at}` / `CORE_FEATURE_PROTECTED` |
+| DELETE | `/admin/features/:id` | — | 204 (cascade `feature_commands`, `feature_entitlements`) | 404 · 409 `CORE_FEATURE_PROTECTED` / `FEATURE_HAS_EXCLUSIVE_COMMANDS {commands}` |
+| GET | `/admin/features/:id/entitlements` | `ListQueryBase` | 200 `EntitlementListResponse` | 404 |
+| PUT | `/admin/features/:id/entitlements/:tenant_id` | body rỗng | 200 `Entitlement` (idempotent; đã có → không ghi; đã thu hồi → `revoked_at=null`, `granted_by/at` mới; tenant khoá vẫn cấp được) | 404 (feature/tenant) · 409 `CORE_FEATURE_PROTECTED` |
+| DELETE | `/admin/features/:id/entitlements/:tenant_id` | — | 204 (đặt `revoked_at=now()`, không xoá hàng; chưa cấp/đã thu hồi → 204 không ghi) | 404 (feature/tenant) · 409 `CORE_FEATURE_PROTECTED` |
+
+Không có: `POST /admin/commands/:id/test` (M5), "Kiểm tra kết nối", "Lấy schema từ Dify" (A8), `GET /admin/secrets/:name` (list đủ cho drawer).
+
+**Mã lỗi mới** (A4 chốt; vào `API_ERRORS`; `details` export schema strict cùng tên + `DetailsSchema`):
+
+| Code | HTTP | `details` | Khi nào |
+|---|---|---|---|
+| `SECRET_NAME_TAKEN` | 409 | — | tên secret trùng (`secrets_name_uq`) |
+| `SECRET_IN_USE` | 409 | `{used_by: string[]}` (key workflow) | xoá secret còn workflow tham chiếu |
+| `INVALID_REFERENCE` | 400 | `{field: "secret_id"\|"workflow_id"\|"feature_ids"\|"command_ids", ids: uuid[]}` | id tham chiếu trong body không tồn tại |
+| `WORKFLOW_IN_USE` | 409 | `{action: "delete"\|"disable", commands: [{id,name,enabled}], agents: [{id}]}` | R11: `delete` liệt kê mọi command + agent; `disable` chỉ command đang bật + mọi agent |
+| `SCHEMA_BREAKS_COMMANDS` | 409 | `{commands: [{id, name, missing: string[], unknown: string[]}]}` | R18: `input_schema` mới làm command (bật hay tắt) thiếu biến bắt buộc / map vào biến đã bỏ |
+| `WORKFLOW_DISABLED` | 409 | `{workflow: {id, key}}` | R14: command sau khi ghi có `enabled=true` mà workflow đang tắt |
+| `COMMAND_NAME_TAKEN` | 409 | `{name}` (tên/alias đầu tiên bị trùng) | R13 |
+| `INPUT_MAP_INVALID` | 400 | `{missing: string[], unknown: string[], unknown_args: string[]}` (đủ 3 khoá, có thể rỗng) | R17. AC-A03: FE hiện "thiếu input bắt buộc: {missing}" từ `details`; `message` server cố định "Invalid input map" |
+| `COMMAND_NEEDS_FEATURE` | 400 | từ `/admin/commands*`: không có · từ `PATCH /admin/features/:id`: `{commands: [{id, name}]}` | R19 |
+| `CORE_FEATURE_PROTECTED` | 409 | — | R20/R22: xoá `core`, `status≠on` cho `core`, PUT/DELETE entitlement của `core` |
+| `FEATURE_HAS_EXCLUSIVE_COMMANDS` | 409 | `{commands: [{id, name}]}` | R21 |
+
+Dùng lại mã M1: `KEY_TAKEN` (409) cho key workflow (`workflows_key_uq`) và key feature (`features_key_uq`) — message đổi thành "Key is already taken" (chung, không nêu "company code"); FE dịch theo màn (plan-frontend §8). `API_ERRORS` sau M2: 23 + 11 = **34** mã.
+
+**Thứ tự kiểm** (qc dựa vào để chọn mã khi nhiều lỗi cùng lúc): role → parse (`VALIDATION_ERROR`) → 404 thực thể → `version` → không đổi gì → luật theo thứ tự cột "Khi nào" dưới:
+- Workflow PATCH: `INVALID_REFERENCE` → `WORKFLOW_IN_USE` (khi `enabled` true→false) → `SCHEMA_BREAKS_COMMANDS` → ghi. Workflow DELETE: `WORKFLOW_IN_USE`.
+- Command POST/PATCH (trên **trạng thái sau khi ghép**): `COMMAND_NEEDS_FEATURE` → `INVALID_REFERENCE` (workflow, rồi features) → `COMMAND_NAME_TAKEN` → `INPUT_MAP_INVALID` → `WORKFLOW_DISABLED` → ghi.
+- Feature PATCH: `CORE_FEATURE_PROTECTED` → `INVALID_REFERENCE` → `COMMAND_NEEDS_FEATURE` → ghi. Feature DELETE: `CORE_FEATURE_PROTECTED` → `FEATURE_HAS_EXCLUSIVE_COMMANDS`.
+- Secret DELETE: 404 → `SECRET_IN_USE`.
+
+**`version`** (R25): Workflow tăng khi đổi `name, description, app_type, base_url, secret_id, input_schema, output_field, enabled`. Command tăng khi đổi `name, aliases (so theo thứ tự), description, workflow_id, args, input_map, output, mode, timeout_s, enabled` hoặc **tập feature** — kể cả khi tập feature đổi từ `PATCH /admin/features/:id` (`command_ids`). Feature tăng khi đổi `name, description, icon, status` hoặc **tập command** — kể cả khi đổi từ `POST/PATCH /admin/commands` (`feature_ids`), để editor bên kia nhận 409 thay vì ghi đè. Tạo/xoá command cũng tăng `version` các feature chứa nó. Entitlement không tăng `version` feature (không thuộc `FeatureDetail`). `updated_by/updated_at` đổi cùng `version`. Secret không có `version`.
+
+**Bảo mật Secrets ở biên** (R03, AC-A06): body `/admin/secrets*` không bao giờ được log (M1 đã không log body; giữ); `VALIDATION_ERROR.details.issues` chỉ có `path/code/message` của zod (không có `input`); không response nào (kể cả 409/400/500) chứa giá trị; giá trị chỉ tồn tại trong bộ nhớ tới khi mã hoá xong, không gửi xuống DB dạng rõ.
+
+Sự kiện / NOTIFY: **không có ở M2** (A1).
 
 ## 4. Dữ liệu (backend-lead)
 <!-- backend-lead -->
-Bảng: `secrets` (BA §7 + `key_version`), `workflows`, `commands`, `command_names`, `feature_commands`, `feature_entitlements` (đã có `features`). Migration mới `0003_…` (drizzle sinh) + `0004_…` (custom: RLS `secrets`, RLS `feature_entitlements` theo `tenant_id`, `REVOKE … hub_ro` trên `secrets`, GRANT `admin_rw`), không sửa migration cũ. `workflows`/`commands`/`feature_commands`/`command_names` không có `tenant_id` → không RLS (như `features` M1), chặn bằng role ở route. Seed: giữ nguyên M1 (`core`); không seed secret/workflow. Env: `SECRET_MASTER_KEY` bắt đầu được validate (M1 chỉ khai báo).
+Kiểu chung như M1 §4 (`id uuid PK DEFAULT gen_random_uuid()`, app truyền v7; `timestamptz`; `version integer NOT NULL DEFAULT 1 CHECK (version >= 1)`; `created_at`/`updated_at NOT NULL DEFAULT now()`; CHECK đặt tên `<bảng>_<cột>_check`). Cột mới dùng chung: `updated_by uuid NULL` FK `users(id) ON DELETE SET NULL` (username trả ra bằng join; FK lấy `FOR KEY SHARE` trên hàng user, không xung đột `FOR NO KEY UPDATE` của M1). jsonb luôn parse bằng zod khi đọc (CONVENTIONS §5).
+
+| Bảng | Cột | Kiểu | Null | Default | Ràng buộc / index | RLS |
+|---|---|---|---|---|---|---|
+| `secrets` | `id` | uuid | không | | PK; là một phần AAD | **bật**: chỉ `app.scope='platform'` (USING = WITH CHECK); `hub_ro`: REVOKE ALL; `admin_rw`: **không** SELECT `ciphertext`, `iv` (chỉ cấp SELECT theo cột) |
+| | `name` | text | không | | UNIQUE `secrets_name_uq`; CHECK `~ '^[A-Z0-9_]{2,64}$'`; bất biến (app) | |
+| | `ciphertext` | bytea | không | | AES-256-GCM, = bản mã ‖ tag 16 byte; CHECK `octet_length BETWEEN 24 AND 6160` (8 ký tự + 16 … 2048 UTF-16 ≤ 6144 byte UTF-8 + 16) | |
+| | `iv` | bytea | không | | CHECK `octet_length = 12`; CSPRNG mới mỗi lần ghi | |
+| | `key_version` | smallint | không | `1` | CHECK `>= 1` | |
+| | `last4` | text | không | | 4 code point cuối của giá trị; CHECK `char_length = 4` | |
+| | `note` | text | có | null | CHECK `char_length <= 200` | |
+| | `created_at`, `updated_at`, `updated_by` | | | | không có `version` (R25) | |
+| `workflows` | `id` | uuid | không | | PK | không (catalog toàn hệ thống, như `features`) |
+| | `key` | text | không | | UNIQUE `workflows_key_uq`; CHECK `~ '^[a-z0-9-]{2,32}$'`; bất biến | |
+| | `name` | text | không | | CHECK `char_length BETWEEN 1 AND 128` | |
+| | `description` | text | không | | lưu đã trim; CHECK `char_length BETWEEN 20 AND 400` | |
+| | `app_type` | text | không | | CHECK `IN ('workflow','chat','agent')` | |
+| | `base_url` | text | không | | CHECK `char_length <= 2048 AND base_url ~ '^https?://'` | |
+| | `secret_id` | uuid | không | | FK `secrets(id) ON DELETE RESTRICT`; INDEX `workflows_secret_idx (secret_id)` | |
+| | `input_schema` | jsonb | không | `'[]'` | CHECK `jsonb_typeof = 'array'` (chi tiết: zod) | |
+| | `output_field` | text | có | null | CHECK `char_length BETWEEN 1 AND 128` | |
+| | `enabled` | boolean | không | `true` | | |
+| | `version`, `created_at`, `updated_at`, `updated_by` | | | | | |
+| `commands` | `id` | uuid | không | | PK | không |
+| | `name` | text | không | | UNIQUE `commands_name_uq`; CHECK `~ '^[a-z0-9-]{2,32}$'` | |
+| | `aliases` | text[] | không | `'{}'` | CHECK `cardinality(aliases) <= 5` (Hub đọc trực tiếp; unique qua `command_names`) | |
+| | `description` | jsonb | không | | `{vi, en?}`; CHECK `jsonb_typeof = 'object' AND description ? 'vi'` | |
+| | `workflow_id` | uuid | không | | FK `workflows(id) ON DELETE RESTRICT` (BR-02); INDEX `commands_workflow_idx (workflow_id)` | |
+| | `args` | jsonb | không | `'[]'` | CHECK `jsonb_typeof = 'array'` | |
+| | `input_map` | jsonb | không | `'{}'` | CHECK `jsonb_typeof = 'object'` | |
+| | `output` | jsonb | không | | `{field, render}`; CHECK `jsonb_typeof = 'object'` | |
+| | `mode` | text | không | `'sync'` | CHECK `IN ('sync','async')` | |
+| | `timeout_s` | integer | không | `30` | CHECK `BETWEEN 1 AND 600` | |
+| | `enabled` | boolean | không | `true` | | |
+| | `version`, `created_at`, `updated_at`, `updated_by` | | | | | |
+| `command_names` | `name` | text | không | | PK `command_names_pkey` (không gian tên chung tên + alias, R13, RD#18); CHECK `~ '^[a-z0-9-]{2,32}$'` | không |
+| | `command_id` | uuid | không | | FK `commands(id) ON DELETE CASCADE`; INDEX `command_names_command_idx (command_id)` | |
+| `feature_commands` | `feature_id` | uuid | không | | PK `(feature_id, command_id)`; FK `features(id) ON DELETE CASCADE` | không |
+| | `command_id` | uuid | không | | FK `commands(id) ON DELETE CASCADE`; INDEX `feature_commands_command_idx (command_id)` | |
+| `feature_entitlements` | `feature_id` | uuid | không | | PK `(feature_id, tenant_id)`; FK `features(id) ON DELETE CASCADE` | **bật**: như `users` M1 (`scope='platform'` hoặc `scope='tenant'` ∧ `tenant_id = app.tenant_id`); `hub_ro` SELECT `USING (true)` |
+| | `tenant_id` | uuid | không | | FK `tenants(id) ON DELETE CASCADE`; INDEX `feature_entitlements_tenant_active_idx (tenant_id, feature_id) WHERE revoked_at IS NULL` (Ai dùng được, M3 effective-access) | |
+| | `granted_by` | uuid | có | null | FK `users(id) ON DELETE SET NULL` | |
+| | `granted_at` | timestamptz | không | `now()` | | |
+| | `revoked_at` | timestamptz | có | null | thu hồi = đặt giá trị; cấp lại = `null` (BR-12) | |
+| `features` (M1, sửa) | `updated_by` | uuid | có | null | **thêm cột** (FK như trên); `core` seed giữ `null`. `icon` null → API trả `"package"` | không (giữ M1) |
+
+**Không** tạo ở M2: `config_meta` (M3), `feature_grants`, `groups` (M3), `audit_log` (M4). Không thêm cột `tenant_id` vào catalog. Không có trigger.
+
+**Migration** (CONVENTIONS §8 — không sửa `0000`–`0002`):
+1. `0003_admin_catalog.sql` — drizzle-kit sinh từ `packages/db/src/schema/admin.ts` (6 bảng mới + `features.updated_by`). `db:generate` lần 2 phải "No schema changes".
+2. `0004_catalog_rls.sql` — `drizzle-kit generate --custom --name catalog_rls`, SQL nguyên văn ở [plan.md §3.1](plan.md): RLS + policy `secrets_admin_rw`, `feature_entitlements_admin_rw`, `feature_entitlements_hub_ro`; `REVOKE ALL ON admin.secrets FROM hub_ro, PUBLIC`; `REVOKE SELECT ON admin.secrets FROM admin_rw` + `GRANT SELECT (id, name, key_version, last4, note, created_at, updated_at, updated_by) ON admin.secrets TO admin_rw`.
+3. Không có migration dev mới (stub `hub.agent_workflows` + `GRANT SELECT … TO admin_rw` đã có ở `migrations-dev/0000`). Kết quả `runMigrations`: development/test `{main: 5, dev: 2}`, production `{main: 5, dev: 0}`.
+
+Bảng `admin.*` sau M2 (10): `command_names, commands, feature_commands, feature_entitlements, features, refresh_tokens, secrets, tenants, users, workflows`. RLS bật (không FORCE): `feature_entitlements, refresh_tokens, secrets, tenants, users`; không bật: `command_names, commands, feature_commands, features, workflows`.
+
+**Quyền `hub_ro`:** SELECT mọi bảng catalog mới theo default privileges M0 (Hub đọc catalog, HUB-FR-02), **trừ** `secrets` (REVOKE ALL; A7). **Quyền `admin_rw` trên `secrets`:** INSERT/UPDATE/DELETE theo default privileges; SELECT chỉ các cột không mật → admin-api (kể cả khi có lỗi SQL injection/bug) **không đọc được** `ciphertext`/`iv`; M2 không có luồng nào cần giải mã ở admin-api.
+
+**Đọc `hub.agent_workflows`** (R12, A5): schema `hub` luôn có (migration chính `0000`), bảng thì chỉ có khi Hub (hoặc stub dev) đã tạo. Mỗi transaction cần dữ liệu agent chạy trước `select coalesce(has_table_privilege(to_regclass('hub.agent_workflows'), 'SELECT'), false) as ok` (`to_regclass` trả `NULL` khi thiếu bảng/schema, không lỗi) rồi mới truy vấn bảng; `false` → `agents=[]`, `agent_count=0`, `agents_available=false`. Không cache (Hub có thể lên sau Admin). Admin không khoá được hàng `hub.*` → hàng Hub thêm cùng lúc với xoá workflow có thể mồ côi; Hub phải tự kiểm workflow tồn tại (ghi TECH-DEBT).
+
+**Seed:** giữ nguyên M1 (`platform`, `core`, admin); không seed secret/workflow/command. **Env:** `SECRET_MASTER_KEY` bắt buộc ở admin-api (`config/env.ts`): đúng `^[A-Za-z0-9+/]{43}=$` và giải mã base64 ra đúng 32 byte; sai/thiếu → exit 1 "Env không hợp lệ: SECRET_MASTER_KEY" (không in giá trị).
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
@@ -94,6 +258,21 @@ Component mới dùng chung: `PlatformOnly`, `DependencyList`, `RefPicker`, `Loc
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6, ADM-NFR-03 (CRUD < 300 ms, 5.000 bản ghi/bảng ở mức M1; catalog thực tế vài trăm). Riêng: `GET /admin/workflows` kèm `command_count`/`agent_count` và `GET /admin/features` kèm `command_count`/`tenant_count` phải gộp bằng `GROUP BY`, không N+1; ghi secret (mã hoá) < 50 ms. Bundle: giữ ngân sách M1 (JS ≤ 150 KB gzip ban đầu), route-split 4 màn mới. **Frontend:** JS ban đầu hiện 106,9 KB, ước ≤ 112 KB sau M2 (i18n + nav); mỗi chunk route ≤ 50 KB gzip (FE7 đo, thêm kiểm trong `check-bundle`); bảng phân trang server 50 dòng nên không virtualize; danh sách chọn lấy `limit=200` và render ≤ 50 mục; hàng/dòng editor `memo` + `useWatch` đúng trường (plan-frontend §6).
 
+**Backend — ngân sách siết** (p95, máy dev, in-process; dữ liệu: 1.000 workflow, 5.000 command × 2 feature, 5.000 hàng `hub.agent_workflows`, 200 feature, 500 tenant × 20 user, 100 entitlement/feature): `GET /admin/commands` (mọi bộ lọc) < 150 ms · `GET /admin/workflows` (kèm đếm, `attached=false`) < 150 ms · `GET /admin/features` < 100 ms · `GET /admin/commands/:id/access` < 150 ms · `POST/PATCH /admin/commands` < 100 ms · `POST/PUT /admin/secrets` < 50 ms (AES-GCM đo 2026-10-01: ~0,01 ms/lần với 2.048 ký tự, Bun 1.3.14) · mọi CRUD còn lại < 300 ms. Kiểm: `commands.perf.int.test.ts` (T6, không khoá). Không N+1: đếm/gộp bằng subquery `GROUP BY` hoặc `json_agg` trong **một** câu cho cả trang.
+
+| Truy vấn | Index dùng |
+|---|---|
+| Secrets list sắp `name`; `used` / `used_by` | `secrets_name_uq`; `workflows_secret_idx` |
+| Workflows list sắp `key`; `command_count`; `agent_count`; `attached=false`; `?secret=` | `workflows_key_uq`; `commands_workflow_idx`; `agent_workflows_workflow_id_idx` (hub); như trên; `secrets_name_uq` → `workflows_secret_idx` |
+| Usages / chặn xoá-tắt / `SCHEMA_BREAKS_COMMANDS` | `commands_workflow_idx`; `agent_workflows_workflow_id_idx` |
+| Commands list sắp `name`; `?workflow=`; `?feature=`; feature của mỗi command | `commands_name_uq`; `commands_workflow_idx`; PK `feature_commands (feature_id, command_id)`; `feature_commands_command_idx` |
+| `?q` (ILIKE name/alias/mô tả, ≤ 5.000 hàng) | quét tuần tự có lọc (ước < 20 ms); không `pg_trgm` ở M2 |
+| Trùng tên/alias | PK `command_names_pkey` |
+| Features list; `command_count`; `tenant_count` | `features_key_uq`; PK `feature_commands`; PK `feature_entitlements` (`feature_id` đứng đầu) |
+| Entitlement list; `active_user_count` | PK `feature_entitlements`; `tenants` PK; `users_tenant_role_active_idx` (M1, `WHERE active`) |
+| Access (Ai dùng được) | `feature_commands_command_idx` → `feature_entitlements_tenant_active_idx`/PK → `tenants_key_uq` |
+| Command độc quyền của feature (xoá feature, bỏ khỏi feature) | PK `feature_commands` + `feature_commands_command_idx` |
+
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
 |---|---|
@@ -101,7 +280,7 @@ Mặc định `CONVENTIONS.md` §6, ADM-NFR-03 (CRUD < 300 ms, 5.000 bản ghi/b
 | `hub.agent_workflows` | Bảng stub `migrations-dev/0000_hub_stub.sql` (test tự `INSERT` để dựng agent "Trợ lý dịch" cho AC-A05); production không có (M2-R12) |
 | Dify / Hub / Redis / SMTP | Không dùng ở M2 (không NOTIFY, không gọi mock Dify/Hub) |
 
-Env: `SECRET_MASTER_KEY` (32 byte base64): dev/test sinh cục bộ bằng `bun run keys:dev` (backend-lead mở rộng script ghi dòng này vào `.env.local`) và CI sinh trong job; `.env.example` giữ trống. Không thêm thư viện (mã hoá = `node:crypto`/Web Crypto của Bun); nếu cần thư viện mới (vd bộ soạn JSON/kéo-thả) → ADR + trình Gate.
+Env: `SECRET_MASTER_KEY` (32 byte base64): dev/test sinh cục bộ bằng `bun run keys:dev` — **script đã sinh biến này từ M0** (`tools/scripts/src/keys-dev.ts`, test `keys-dev.test.ts` kiểm 32 byte), `.env.local` hiện có đã điền; CI đã chạy `keys:dev` trước Install nên **không cần sửa script hay `ci.yml`**. `.env.example` giữ trống. Cần thêm (không thuộc backend): `playwright.config.ts` `webServer[0].env` thêm `SECRET_MASTER_KEY: need("SECRET_MASTER_KEY")` (task FE0b), vì admin-api từ T3 không khởi động khi thiếu biến. `test:int` dùng `--env-file=.env.local` và test spawn server dùng `...process.env` nên đã có biến. Production: vận hành sinh 32 byte ngẫu nhiên, giữ trong secret store, **dùng chung với Hub** (architecture §"Đã chốt"); mất khoá = mất mọi secret → ghi `PRODUCTION-NOTES.md` (docs-architect, D1). Không thêm thư viện (mã hoá = `node:crypto`/Web Crypto của Bun); nếu cần thư viện mới (vd bộ soạn JSON/kéo-thả) → ADR + trình Gate.
 
 ## 8. Tiêu chí nghiệm thu (qc)
 
@@ -149,6 +328,29 @@ Lệnh xong: `docker compose up -d --wait && bun run db:migrate && bun run db:se
 - **A10** Tab "Feature" trong chi tiết Tenant giữ "Chưa khả dụng"; entitlement làm ở editor Feature (tab Tenant). `active_user_count` = user active của tenant (R22).
 - **A11** Không ghi audit ở M2 → TECH-DEBT "thay đổi catalog trước M4 không có trong Nhật ký" (điều phối/docs-architect ghi khi đóng mốc); ẩn menu "Lịch sử".
 - **A12** Test khoá M0/M1 đếm migration (`{main:3,dev:2}` trong `tests/acceptance/ADM-NFR-06/migrate.int.test.ts` và `packages/db/src/migrate.int.test.ts`) và danh sách bảng sẽ lệch khi thêm migration M2: qc sửa (như Q2 M1), ghi ở "Quyết định trong lúc làm".
+
+### Backend-lead PLAN (2026-10-01; theo thứ tự nguồn Luật 2; chi tiết [plan.md](plan.md))
+Nhãn: **[NGƯỜI DÙNG]** = cần người dùng xác nhận ở Gate (bảo mật chưa có mặc định được chấp nhận); còn lại backend-lead chốt theo Luật 2, không đổi phạm vi đã duyệt, không thêm thư viện.
+- **A1 — xác nhận.** Không NOTIFY, không `config_meta`; chỉ tăng `version` bản ghi (§3 "`version`"). AC-A03 vế "≤ 5 s" không kiểm ở M2.
+- **A2 — xác nhận, siết thêm. [NGƯỜI DÙNG]** (một câu, mặc định đề xuất: chấp nhận cả gói):
+  - AES-256-GCM bằng `node:crypto` (không thư viện), khoá = 32 byte của `SECRET_MASTER_KEY` dùng trực tiếp (không HKDF: tách miền bằng AAD; Hub chỉ cần cùng khoá + cùng công thức AAD), IV 12 byte `randomBytes` mỗi lần ghi, tag 16 byte nối cuối `ciphertext`, `key_version = 1`.
+  - **AAD = UTF-8 `"admin.secrets:" + id + ":" + key_version`** (sửa từ "AAD = `id`": thêm tiền tố bảng để khoá dùng cho mục đích khác ở M4 (vd TOTP) không tráo được bản mã, thêm `key_version` để chuẩn bị xoay khoá). Định dạng này là **contract với Hub** (plan.md §3.2).
+  - RLS `secrets` chỉ scope `platform`; `REVOKE ALL … FROM hub_ro, PUBLIC` (default privileges M0 cấp SELECT nên bắt buộc); **mới:** `admin_rw` mất SELECT trên `ciphertext`/`iv` (chỉ cấp SELECT theo cột) — admin-api không có luồng giải mã ở M2 nên không cần đọc bản mã; bug/SQL injection ở admin-api cũng không lấy được bản mã. M5 (FR-23) hoặc Hub cần đọc → migration GRANT mới.
+  - Giá trị 8–2048, không trim; `last4` = 4 code point cuối (BA §7 có `last4`, RD#25). Response/log/lỗi không bao giờ có giá trị (§3 "Bảo mật Secrets ở biên").
+  - Mã hoá chạy **trong** callback `withScope` sau khi biết `id` (AAD cần `id`): đây là tính toán cục bộ, không gửi gì ra ngoài, chạy lại khi 40P01 chỉ sinh IV mới → không vi phạm TECH-DEBT #13.
+  - `keys:dev` **không cần mở rộng**: đã sinh `SECRET_MASTER_KEY` từ M0; CI đã chạy `keys:dev`. Chỉ thiếu biến trong `playwright.config.ts` (FE0b).
+  - Xoay khoá (nhiều `key_version`) chưa làm → TECH-DEBT (D1).
+- **A3 — xác nhận** 2–32, ≤ 5 alias, `timeout_s` 1–600 (mặc định sync 30 / async 120); thêm `args` ≤ 20, `input_schema` ≤ 50, `const` ≤ 4000, `default` ≤ 1000, `options` ≤ 50.
+- **A4 — chốt** 11 mã mới (§3 bảng "Mã lỗi mới"). Khác đề xuất: dùng `SECRET_NAME_TAKEN` (không `NAME_TAKEN`); key workflow/feature trùng dùng lại `KEY_TAKEN` của M1 (FE plan §8 đã dựa vào; message đổi thành "Key is already taken"); thêm `INVALID_REFERENCE` (id tham chiếu không tồn tại — trước đây không có mã). `INPUT_MAP_INVALID.message` **cố định** tiếng Anh như mọi mã M1; chuỗi AC-A03 "thiếu input bắt buộc: target_lang" do FE dựng từ `details.missing` (sửa cách đọc M2-R17 "message gồm đúng chuỗi").
+- **A5 — chốt cách phát hiện:** `has_table_privilege(to_regclass('hub.agent_workflows'), 'SELECT')` mỗi transaction cần dữ liệu agent, không cache (§4). Schema `hub` luôn tồn tại (migration `0000`), chỉ bảng là có thể thiếu.
+- **A6 — xác nhận** (`agents:[{id}]`).
+- **A7 — sửa:** [architecture.md](../../design/architecture.md) đã chốt "Hub đọc workflow **và secret** từ schema `admin`; master key dùng chung giữa Admin và Hub". M2 vẫn REVOKE `hub_ro` (Hub chưa có); khi làm Hub: migration mới `GRANT SELECT (id, name, ciphertext, iv, key_version) ON admin.secrets TO hub_ro`, Hub giải mã theo plan.md §3.2. Không phải câu hỏi mới.
+- **A8, A9, A10, A11 — xác nhận.** A9: `GET /admin/commands/:id/access` (§3). A10: `active_user_count` = user `active && !locked_by_tenant` (= `status` "active" của M1).
+- **A12 — chốt số cho qc** (Q2; chi tiết plan.md §10): `runMigrations` development/test `{main:5, dev:2}` (lần 2 `{0,0}`), production `{main:5, dev:0}`; 10 bảng `admin.*` + 3 bảng `hub.*` (production: 10 + 0); RLS bật `feature_entitlements, refresh_tokens, secrets, tenants, users`; `API_ERRORS` 34 mã. File khoá phải sửa: `tests/acceptance/ADM-NFR-06/migrate.int.test.ts`, `tests/acceptance/M1/db-schema.int.test.ts` (đếm, danh sách bảng, danh sách "bảng mốc sau" bỏ `secrets/workflows/commands`), `tests/acceptance/M1/db-rls.int.test.ts:242` (danh sách RLS), `tests/acceptance/M1/rules/contracts.test.ts:29-55` (23 mã → giữ đúng 23 mã M1 bằng `toMatchObject`, đếm 34), `tests/acceptance/M1/error-codes.int.test.ts:145` (chỉ so tập mã M1). `packages/db/src/migrate.int.test.ts` là test backend, backend-lead sửa ở T2.
+- **Sửa/làm rõ luật §2 (không đổi nghĩa nghiệp vụ):** R03 response secret có thêm `id` (Y1); R04 mã `SECRET_NAME_TAKEN`, sửa ghi chú = `PATCH /admin/secrets/:name` (Y6); R10 `usages` thêm `command_count/agent_count/agents_available`; R15 `output.field` bắt buộc, `fallback ∈ {selection, page_url, page_text} | null` (Y8); R20 `icon` `^[a-z0-9-]{1,40}$` (Y9); R26 bộ lọc: Workflows `?status=on|off&attached=&secret=<NAME>&q`, Commands `?status=on|off&feature=<uuid>&workflow=<uuid>&q` (Y3), counts `{all,on,off(,unattached)}`; R22 thêm `GET …/entitlements` (Y1); R13 bảng `command_names` + unique `commands_name_uq` (cả hai trong một transaction).
+- **Thêm (cần cho UI, không đổi phạm vi):** cột `updated_by` cho `secrets`, `workflows`, `commands`, `features` (UI "Cập nhật … · minh.pham", Y10); tập feature/command đổi từ phía bên kia tăng `version` cả hai thực thể (chống ghi đè giữa editor Command và tab Commands của Feature).
+- **Khoá hàng** (R27, bài học M1 N1): chỉ `FOR NO KEY UPDATE` (ghi) và `FOR SHARE` (giữ tham chiếu ổn định), **không bao giờ** `FOR UPDATE` tường minh; thứ tự cố định `workflows → commands (id tăng) → features (id tăng) → secrets`; chi tiết + bảng xung đột ở plan.md §5.1, test `lib/lock-order.int.test.ts` mở rộng ở T6.
+- **Phụ thuộc module (không vòng):** `commands → workflows → secrets`, `commands → features`. Đọc chéo bảng qua repo của chính module (như `auth-middleware` M1); `feature_commands` do module `features` sở hữu ghi.
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - (chưa có)
 
