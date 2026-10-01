@@ -26,7 +26,7 @@ Người dùng gõ `/intake` thì chạy luôn (đã là xác nhận).
 ## Luật 1 — Cửa sẵn sàng (BẮT BUỘC; hỏi người dùng xác nhận trước khi chạy)
 Trước khi viết code cho một feature hoặc thay đổi không tầm thường — kể cả khi người dùng chỉ nói "implement", "code", "làm", "build", "tiếp tục", "chạy task":
 1. Xác định spec (`docs/specs/<ID>/`; chưa có spec thì mục BA/UI tương ứng trong `docs/design/`).
-2. Hỏi người dùng xác nhận (một câu), rồi chạy agent **spec-readiness**. Agent chưa hiện trong danh sách → dùng subagent general-purpose đọc nguyên văn `.claude/agents/spec-readiness.md` và đóng đúng vai. (Áp dụng cách này cho mọi agent trong `.claude/agents/`.)
+2. Chạy agent **spec-readiness**. Người dùng đã bảo làm (implement/code/làm tiếp/run…) = đã xác nhận, **không hỏi lại**; chỉ hỏi khi không rõ người dùng có muốn code hay không. Agent chưa hiện trong danh sách → dùng subagent general-purpose đọc nguyên văn `.claude/agents/spec-readiness.md` và đóng đúng vai. (Áp dụng cách này cho mọi agent trong `.claude/agents/`.)
 3. **READY** → theo `docs/WORKFLOW.md`. **NOT READY** → không code; gom lỗ hổng Chặn/Cao kèm mặc định đề xuất, hỏi người dùng **một lượt**; ghi câu trả lời vào spec rồi chạy lại.
 4. Spec/design/tasks đổi sau lần READY gần nhất → chạy lại. Ghi mỗi lần chạy vào `docs/specs/<ID>/readiness.md`.
 
@@ -38,6 +38,11 @@ spec → BA/UI (`docs/design/`) → ADR → `CONVENTIONS.md` → code hiện có
 Mỗi lần tự quyết: một dòng trong mục "Quyết định trong lúc làm" của spec.
 
 **Hard stop** (task `blocked`, làm tiếp task khác, gom vào báo cáo cuối): ảnh hưởng bảo mật / cách ly tenant · có thể mất dữ liệu · phải đổi contract hoặc phạm vi đã duyệt · cần dịch vụ trả tiền, secret thật, push, deploy.
+
+## Luật 2b — Đủ context thì chạy, không hỏi xác nhận
+- Không hỏi "bắt đầu mốc tiếp không?", "chạy bước X không?", "tiếp tục không?". Xong một mốc → chạy luôn vòng của mốc kế (ROADMAP) trên nhánh hiện tại.
+- **Tự duyệt Gate** khi spec-readiness READY và mọi lỗ hổng Chặn/Cao đều đã có câu trả lời trong spec/BA/readiness đã được người dùng chấp nhận; ghi `docs/specs/<mốc>-gate.md` với dòng "Tự duyệt theo Luật 2b". Chỉ trình Gate cho người dùng khi còn câu hỏi **mới** chưa có mặc định được chấp nhận, khi có ADR thêm thư viện/dịch vụ mới, hoặc khi có hard stop (Luật 2).
+- Vẫn hỏi: Intake (Luật 0, tránh chạy khi chỉ trò chuyện), hard stop, merge vào `main`, push, deploy.
 
 ## Luật 3 — Đội agent và phân quyền (chi tiết: `docs/WORKFLOW.md`)
 - Phiên chính = điều phối: gọi agent đúng thứ tự, gom kết quả, giữ `tasks.md` + `docs/STATE.md`, trình Gate **một lần mỗi mốc**.

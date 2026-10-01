@@ -67,7 +67,7 @@ Agent code tin một test sai → **không sửa test**, ghi vào mục "Tranh c
 
 ## Gói duyệt (Gate)
 
-Một file `docs/specs/<milestone>-gate.md` do điều phối tạo, gồm: danh sách spec + link · contract thay đổi · UI mới / artboard mới · ADR mới (Proposed) · test-plan tóm tắt (số test theo FR) · rủi ro · câu hỏi đã được trả lời. Người dùng trả lời "duyệt" hoặc sửa từng dòng. Duyệt xong: ADR chuyển Accepted, spec chuyển `approved`.
+Một file `docs/specs/<milestone>-gate.md` do điều phối tạo, gồm: danh sách spec + link · contract thay đổi · UI mới / artboard mới · ADR mới (Proposed) · test-plan tóm tắt (số test theo FR) · rủi ro · câu hỏi đã được trả lời. Người dùng trả lời "duyệt" hoặc sửa từng dòng. **Tự duyệt** (Luật 2b `CLAUDE.md`) khi READY và không còn câu hỏi mới / ADR thư viện mới / hard stop — vẫn ghi file gate để truy vết. Duyệt xong: ADR chuyển Accepted, spec chuyển `approved`.
 
 ## Đề xuất công nghệ
 
