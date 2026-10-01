@@ -4,7 +4,7 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
-| (chưa chạy) | — | — | — | — | Spec tách 2026-10-02 (`status: draft`); chạy sau khi P1, P2, Q1 xong |
+| lần 1 NOT READY (13 Cao) → lần 2 NOT READY (2 Cao) → lần 3 READY | — | — | — | — | Spec tách 2026-10-02 (`status: draft`); chạy sau khi P1, P2, Q1 xong |
 
 ## Gate 2026-10-02 — câu trả lời người dùng
 
@@ -33,3 +33,7 @@ Agent: spec-readiness (điều phối ghi lại). Lần 1: 13/13 Cao đã đóng
 (1) plan: `planBatch` chỉ để sắp thứ tự, **không early-return**, luôn DELETE + INSERT, no-op = `added + removed = 0` từ `returning`.
 (2) tasks: FE2d ← FE2c; FE4c ← FE3b, FE4b (test i18n kiểm mọi key của nhóm).
 Thấp: (3) `bun run db:test:create be &&` đầu phần int lệnh xong T2–T7; (4) T2 thêm `catalog-rls.int.test.ts`; (5) T7 thêm `features.repo.ts`; (6) DELETE batch dùng subselect `order by feature_id, group_id for no key update`, ghi §6.2; (7) tên `notify-{writes,noop,props}.int` ở tasks Q2/plan; (8) test-plan env theo `.env.test-be.local`/`.env.test-qc.local`; (9) bỏ vế "chờ 1,5 s"; (10) sửa ô lỗi `POST /admin/grants` ở spec.
+
+## Lần 3 — 2026-10-02 · READY
+
+Agent: spec-readiness. 0 Chặn, 0 Cao, 5 Thấp — không hỏi người dùng. 10/10 mục lần 2 đã đóng; chuỗi phụ thuộc không chu trình; mọi task xanh tại chỗ. Thấp áp trong BUILD: xem `docs/specs/M3-gate.md` §3. Gate tự duyệt theo Luật 2b.

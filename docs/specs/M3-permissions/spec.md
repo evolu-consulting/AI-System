@@ -2,7 +2,7 @@
 id: M3-permissions
 title: Phân quyền (Groups, Grants + ma trận, Kiểm tra quyền, NOTIFY config_changed, chống ghi đè)
 milestone: M3
-status: draft                # draft → ready → approved → in-progress → done
+status: approved                # draft → ready → approved → in-progress → done
 requirements: [ADM-FR-32, ADM-FR-35, ADM-FR-36, ADM-FR-53, ADM-FR-55, ADM-FR-62, ADM-FR-24, ADM-BR-11, ADM-BR-12, AC-A07, AC-A10, AC-A11, AC-A03]   # ADM-FR-24: chỉ phần group/grant (CR-013); AC-A03: chỉ vế "≤ 5 giây" (CR-011); AC-A10/A11: phía Admin (M3-R19)
 design: [docs/ROADMAP.md#M3, docs/design/admin/ba-admin.md#52-tenant--group, docs/design/admin/ba-admin.md#55-feature--phân-quyền, docs/design/admin/ba-admin.md#57-secret-audit-importexport, docs/design/admin/ba-admin.md#6-luật-nghiệp-vụ, docs/design/admin/ba-admin.md#7-mô-hình-dữ-liệu-schema-admin, docs/design/admin/ba-admin.md#8-api, docs/design/admin/ba-admin.md#11-tiêu-chí-nghiệm-thu-các-kịch-bản-chính, docs/design/admin/ui-admin.md#714-groups, docs/design/admin/ui-admin.md#715-phân-quyền, docs/design/admin/ui-admin.md#8-luồng-thao-tác-chính, docs/specs/_design/admin-missing-screens.md#5-users--users--drawer, docs/specs/_design/admin-missing-screens.md#125-xung-đột-409-version_conflict-fr-55-ac-a07, docs/specs/_design/admin-missing-screens.md#14-cần-backend-lead-không-tự-đổi-contract, docs/adr/0001-stack.md, docs/readiness/2026-10-01-admin-m1-m4.md, docs/TECH-DEBT.md#7, docs/TECH-DEBT.md#13, docs/CONVENTIONS.md#8-migration-db, canvas: Groups · Access · Users · States]
 owner: backend-lead + frontend-lead
