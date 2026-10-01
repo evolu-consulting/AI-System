@@ -1,6 +1,6 @@
 # @ai/admin-web
 
-Admin Console (ADM-NFR-06 M0: khung toolchain). Rsbuild + React 18 + Tailwind v4 + shadcn/ui + TanStack Router/Query + react-i18next.
+Admin Console (M0: khung toolchain; M1: đăng nhập, đổi mật khẩu, quản lý Tenants và Users). Rsbuild + React 18 + Tailwind v4 + shadcn/ui + TanStack Router/Query + react-i18next.
 
 ## Lệnh (chạy ở gốc repo)
 - `bun run --filter @ai/admin-web dev` — dev server `http://localhost:3000` (cổng cố định, khớp `CORS_ORIGINS`)
@@ -13,7 +13,9 @@ Admin Console (ADM-NFR-06 M0: khung toolchain). Rsbuild + React 18 + Tailwind v4
 ## Cấu trúc
 - `src/app/` — providers, router, query client, i18n
 - `src/routes/` — file route mỏng; `src/routeTree.gen.ts` do router-plugin sinh (commit, không sửa tay)
-- `src/features/<f>/` — `api.ts` (nơi duy nhất gọi API), `pages/`, `components/`
+- `src/features/<f>/` — `api.ts` (nơi duy nhất gọi API), `pages/`, `components/`; M1: `shell` (khung, menu theo role, phiên hết hạn), `auth`, `tenants`, `users` (mỗi feature có README)
+- `src/lib/` — `http` (ApiError, Bearer, refresh 1 lần), `session` (access token chỉ trong bộ nhớ, Web Locks + BroadcastChannel cho refresh liên tab), `errors` (mã lỗi → key i18n)
+- `src/components/shared/` — DataTable, FilterChips, SearchBox, Pagination, ConfirmDialog, TempPasswordPanel, FormField, các trạng thái tải/rỗng/lỗi/403/404
 - `src/components/ui/` — shadcn sinh ra (`components.json`)
 - `src/styles/globals.css` — theme; token lấy từ `docs/design/canvas/tokens-map.md`
 - `public/brand/` — logo EvoluConsulting
