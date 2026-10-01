@@ -968,5 +968,42 @@
   "picker": {
     "more": "{n} more results, type to filter",
     "empty": "No results"
+  },
+  "conflict": {
+    "title": "Someone just saved a newer version",
+    "body": {
+      "byUser": "{user} edited this {entity} at {time} (v{n}). Your copy is based on v{mine}.",
+      "anon": "This was just edited at {time} (v{n}). Your copy is based on v{mine}."
+    },
+    "entity": {
+      "user": "user",
+      "tenant": "tenant",
+      "workflow": "workflow",
+      "command": "command",
+      "feature": "feature",
+      "group": "group"
+    },
+    "action": {
+      "diff": "View differences",
+      "overwrite": "Overwrite",
+      "reload": "Load latest"
+    },
+    "diff": {
+      "aria": "Differences between your version and the latest",
+      "field": "Field",
+      "mine": "Your version",
+      "latest": "Latest (v{n})",
+      "empty": "No fields differ. The other person may have just re-saved.",
+      "more": "{n} more fields",
+      "none": "(empty)"
+    },
+    "overwrite": {
+      "titleUser": "Overwrite {user}'s changes?",
+      "titleAnon": "Overwrite the latest changes?",
+      "body": "v{n} will be replaced by your version (becoming v{next})."
+    },
+    "toast": {
+      "loaded": "Loaded latest · v{n}"
+    }
   }
 }

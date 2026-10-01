@@ -968,5 +968,42 @@
   "picker": {
     "more": "Còn {n} kết quả, gõ để lọc",
     "empty": "Không có kết quả"
+  },
+  "conflict": {
+    "title": "Có người vừa lưu bản mới hơn",
+    "body": {
+      "byUser": "{user} vừa sửa {entity} này lúc {time} (v{n}). Bản của bạn dựa trên v{mine}.",
+      "anon": "Bản này vừa được sửa lúc {time} (v{n}). Bản của bạn dựa trên v{mine}."
+    },
+    "entity": {
+      "user": "user",
+      "tenant": "tenant",
+      "workflow": "workflow",
+      "command": "command",
+      "feature": "feature",
+      "group": "group"
+    },
+    "action": {
+      "diff": "Xem khác biệt",
+      "overwrite": "Ghi đè",
+      "reload": "Tải bản mới"
+    },
+    "diff": {
+      "aria": "Khác biệt giữa bản của bạn và bản mới nhất",
+      "field": "Trường",
+      "mine": "Bản của bạn",
+      "latest": "Bản mới nhất (v{n})",
+      "empty": "Không có trường nào khác nhau. Có thể người kia chỉ lưu lại bản cũ.",
+      "more": "Còn {n} trường khác",
+      "none": "(trống)"
+    },
+    "overwrite": {
+      "titleUser": "Ghi đè thay đổi của {user}?",
+      "titleAnon": "Ghi đè thay đổi mới nhất?",
+      "body": "Bản v{n} sẽ bị thay bằng bản của bạn (thành v{next})."
+    },
+    "toast": {
+      "loaded": "Đã tải bản mới nhất · v{n}"
+    }
   }
 }
