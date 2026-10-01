@@ -14,3 +14,6 @@ Ghi lại thay vì sửa lan ra ngoài phạm vi task (xem `CONVENTIONS.md` §1,
 | 8 | 2026-10-01 | `apps/admin-api` (auth, spec M1 §6) | Refresh token hết hạn chưa được dọn khỏi DB | Job dọn định kỳ (xoá `expires_at` quá hạn) khi có Worker/cron | reviewer M1 vòng 1 #10a |
 | 9 | 2026-10-01 | `apps/admin-api` (A4) | M1 chưa ghi audit cho thao tác tenant/user/auth | Sẽ có ở M4 (audit log) | reviewer M1 vòng 1 #10b |
 | 10 | 2026-10-01 | `tools/scripts` (`check:size`, `depcruise`) | Khi working tree sạch, hai lệnh không kiểm file nào (chỉ xét file đổi) → nghiệm thu giả xanh | Bước nghiệm thu chạy với `--all` hoặc so với merge-base | reviewer M1 vòng 1 #13 |
+| 11 | 2026-10-01 | `apps/admin-api/src/modules/auth` (test khoá tạm #3, `tests/acceptance/M1`) | Phần song song của test khoá tạm #3 không tất định; lỗi thật do test backend dùng hook `beforeVerify` bắt | Khi có seam công khai thì đưa vào acceptance | reviewer M1 vòng 2 m1 |
+| 12 | 2026-10-01 | `apps/admin-api` (`AuthCtx`) | Seam test `beforeVerify?` nằm trong type production `AuthCtx` | Tách ra `AuthTestHooks` | reviewer M1 vòng 2 m2 |
+| 13 | 2026-10-01 | `packages/db/src/scope.ts` (`withScope`) | Retry 40P01/40001 (tối đa 3 lần) chỉ an toàn khi callback chỉ làm việc DB | Từ M2: nếu callback gửi gì ra ngoài (NOTIFY, mail, gọi HTTP) thì đưa phần đó ra sau commit | reviewer M1 vòng 2 |
