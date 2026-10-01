@@ -219,6 +219,11 @@
       "slots": "Subscription slots",
       "status": "Status"
     },
+    "menu": {
+      "open": "Open",
+      "lock": "Lock",
+      "unlock": "Unlock"
+    },
     "status": {
       "active": "Active",
       "locked": "Locked"

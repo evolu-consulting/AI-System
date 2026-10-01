@@ -219,6 +219,11 @@
       "slots": "Slot subscription",
       "status": "Trạng thái"
     },
+    "menu": {
+      "open": "Mở",
+      "lock": "Khoá",
+      "unlock": "Mở khoá"
+    },
     "status": {
       "active": "Đang hoạt động",
       "locked": "Đã khoá"

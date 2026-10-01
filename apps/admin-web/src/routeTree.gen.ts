@@ -17,6 +17,8 @@ import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account.password'
 import { Route as AuthedTenantsIndexRouteImport } from './routes/_authed/tenants/index'
+import { Route as AuthedTenantsTenantIdRouteImport } from './routes/_authed/tenants/$tenantId'
+import { Route as AuthedTenantsNewRouteImport } from './routes/_authed/tenants/new'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -57,6 +59,16 @@ const AuthedTenantsIndexRoute = AuthedTenantsIndexRouteImport.update({
   path: '/tenants/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedTenantsTenantIdRoute = AuthedTenantsTenantIdRouteImport.update({
+  id: '/tenants/$tenantId',
+  path: '/tenants/$tenantId',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTenantsNewRoute = AuthedTenantsNewRouteImport.update({
+  id: '/tenants/new',
+  path: '/tenants/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
@@ -65,6 +77,8 @@ export interface FileRoutesByFullPath {
   '/member': typeof AuthedMemberRoute
   '/users': typeof AuthedUsersRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
+  '/tenants/new': typeof AuthedTenantsNewRoute
   '/tenants/': typeof AuthedTenantsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +88,8 @@ export interface FileRoutesByTo {
   '/users': typeof AuthedUsersRoute
   '/': typeof AuthedIndexRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
+  '/tenants/new': typeof AuthedTenantsNewRoute
   '/tenants': typeof AuthedTenantsIndexRoute
 }
 export interface FileRoutesById {
@@ -85,6 +101,8 @@ export interface FileRoutesById {
   '/_authed/users': typeof AuthedUsersRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
+  '/_authed/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
+  '/_authed/tenants/new': typeof AuthedTenantsNewRoute
   '/_authed/tenants/': typeof AuthedTenantsIndexRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +114,8 @@ export interface FileRouteTypes {
     | '/member'
     | '/users'
     | '/account/password'
+    | '/tenants/$tenantId'
+    | '/tenants/new'
     | '/tenants/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +125,8 @@ export interface FileRouteTypes {
     | '/users'
     | '/'
     | '/account/password'
+    | '/tenants/$tenantId'
+    | '/tenants/new'
     | '/tenants'
   id:
     | '__root__'
@@ -115,6 +137,8 @@ export interface FileRouteTypes {
     | '/_authed/users'
     | '/_authed/'
     | '/_authed/account/password'
+    | '/_authed/tenants/$tenantId'
+    | '/_authed/tenants/new'
     | '/_authed/tenants/'
   fileRoutesById: FileRoutesById
 }
@@ -182,6 +206,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedTenantsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/tenants/$tenantId': {
+      id: '/_authed/tenants/$tenantId'
+      path: '/tenants/$tenantId'
+      fullPath: '/tenants/$tenantId'
+      preLoaderRoute: typeof AuthedTenantsTenantIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/tenants/new': {
+      id: '/_authed/tenants/new'
+      path: '/tenants/new'
+      fullPath: '/tenants/new'
+      preLoaderRoute: typeof AuthedTenantsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
@@ -190,6 +228,8 @@ interface AuthedRouteChildren {
   AuthedUsersRoute: typeof AuthedUsersRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
+  AuthedTenantsTenantIdRoute: typeof AuthedTenantsTenantIdRoute
+  AuthedTenantsNewRoute: typeof AuthedTenantsNewRoute
   AuthedTenantsIndexRoute: typeof AuthedTenantsIndexRoute
 }
 
@@ -198,6 +238,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedUsersRoute: AuthedUsersRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
+  AuthedTenantsTenantIdRoute: AuthedTenantsTenantIdRoute,
+  AuthedTenantsNewRoute: AuthedTenantsNewRoute,
   AuthedTenantsIndexRoute: AuthedTenantsIndexRoute,
 }
 
