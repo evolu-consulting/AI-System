@@ -1,6 +1,6 @@
 # ADR-0004 · Thư viện web M1: toast (sonner) và resolver form (@hookform/resolvers)
 
-Trạng thái: **Proposed** (duyệt cùng Gate M1) · Ngày: 2026-10-01 · Tác giả: frontend-lead
+Trạng thái: **Accepted** (2026-10-01, người dùng duyệt tại Gate M1) · Ngày: 2026-10-01 · Tác giả: frontend-lead
 
 ## Bối cảnh
 - ADR-0001 đã Accepted `react-hook-form` + `zod` (form dùng chung schema với API) nhưng **chưa** nêu gói nối hai thứ này, cũng chưa chọn thành phần Toast. M1 là mốc đầu tiên có form và toast (Đăng nhập, Tenant, User).
@@ -27,7 +27,7 @@ Nạp lười: `<Toaster />` đặt trong layout `_authed` và trang login (cả
 | Hỗ trợ zod 4.6.5 | Có (v5 dùng Standard Schema; peer `react-hook-form ^7.55`) | Có (zod 4 hiện thực Standard Schema) |
 | Bảo trì | Thư viện chính chủ react-hook-form | Dự án tự giữ, phải test ánh xạ `path` → tên field |
 
-## Quyết định (đề xuất)
+## Quyết định
 - Dùng **`sonner` 2.0.8** (chuẩn shadcn, a11y có sẵn) và **`@hookform/resolvers` 5.9.1**. Ghi phiên bản vào bảng ADR-0001 khi Accepted. Tra lại `npm view` ngày BUILD; nếu khác thì ghi chênh lệch vào "Quyết định trong lúc làm".
 - Tổng thêm ≈ 25 KB gzip (`react-hook-form` 14,8 + `sonner` 9,4 + resolver ước ≈ 1–2) **chỉ vào chunk route đăng nhập/shell**, không vào JS ban đầu (ngân sách 150 KB của `check:bundle`). Số đo thật ghi ở "Quyết định trong lúc làm" sau `rsbuild build`.
 - Nếu một chunk route vượt 50 KB gzip (ngân sách M0 §6) thì tách vendor chung bằng `performance.chunkSplit` và ghi `docs/TECH-DEBT.md`; không nới ngân sách ban đầu.

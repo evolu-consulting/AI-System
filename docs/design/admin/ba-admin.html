@@ -143,7 +143,7 @@
   <h3>5.2 Tenant &amp; group</h3>
   <div class="table-scroll"><table>
     <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
-    <tr><td class="id">ADM-FR-60</td><td>CRUD tenant (chỉ <code>platform_admin</code>): key (mã công ty), tên, trạng thái, giới hạn slot subscription <code>max_concurrent_sub</code> (trống = không giới hạn). Tạo tenant kèm tạo <code>tenant_admin</code> đầu tiên</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">ADM-FR-60</td><td>CRUD tenant, <strong>không có Xoá ở v1, chỉ Khoá</strong> (CR-006) (chỉ <code>platform_admin</code>): key (mã công ty), tên, trạng thái, giới hạn slot subscription <code>max_concurrent_sub</code> (trống = không giới hạn). Tạo tenant kèm tạo <code>tenant_admin</code> đầu tiên</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">ADM-FR-61</td><td>Khoá tenant thì mọi user trong tenant bị khoá và thu hồi refresh token. Mở khoá thì khôi phục trạng thái trước đó của từng user</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">ADM-FR-62</td><td>CRUD group trong tenant: key, tên (vi/en), mô tả. Thêm/bớt thành viên, hỗ trợ dán danh sách username để thêm hàng loạt. Không lồng group</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">ADM-FR-63</td><td>Username duy nhất trong tenant (hai tenant có thể cùng có <code>an</code>)</td><td><span class="pri must">MUST</span></td></tr>
@@ -212,7 +212,7 @@
     <tr><td class="id">ADM-BR-04</td><td>Giá trị secret không bao giờ trả ra khỏi Admin qua API, UI hay export</td></tr>
     <tr><td class="id">ADM-BR-05</td><td>Có 3 role: <code>platform_admin</code> (toàn hệ thống, kể cả Agent Studio), <code>tenant_admin</code> (trong tenant của mình, không vào Agent Studio), <code>member</code> (chỉ gọi <code>/auth/*</code> và đổi mật khẩu của mình)</td></tr>
     <tr><td class="id">ADM-BR-06</td><td>Thực thể bị tắt thì vẫn lưu trong DB, nhưng Hub coi như không tồn tại: không hiện trong menu command, agent không gọi được</td></tr>
-    <tr><td class="id">ADM-BR-08</td><td>Admin không được tự khoá chính mình hoặc tự hạ role của mình. Luôn phải còn ít nhất một <code>platform_admin</code> active và mỗi tenant active còn ít nhất một <code>tenant_admin</code></td></tr>
+    <tr><td class="id">ADM-BR-08</td><td>Admin không được tự khoá chính mình hoặc tự hạ role của mình. Luôn phải còn ít nhất một <code>platform_admin</code> active và mỗi tenant (kể cả tenant đang khoá) còn ít nhất một <code>tenant_admin</code> active (CR-007)</td></tr>
     <tr><td class="id">ADM-BR-09</td><td>Mọi truy vấn của <code>tenant_admin</code> bị giới hạn theo <code>tenant_id</code> của họ. Truy cập thực thể của tenant khác trả 404</td></tr>
     <tr><td class="id">ADM-BR-10</td><td>Mỗi command phải thuộc ít nhất một feature. Feature <code>core</code> luôn tồn tại, được entitlement cho mọi tenant, không xoá được</td></tr>
     <tr><td class="id">ADM-BR-11</td><td>User dùng được <code>/cmd</code> ⇔ cmd thuộc feature F ∧ F đang bật (hoặc <code>beta</code> và user thuộc <code>beta-testers</code>) ∧ F được entitlement cho tenant của user ∧ F được cấp cho user hoặc cho một group user thuộc về</td></tr>

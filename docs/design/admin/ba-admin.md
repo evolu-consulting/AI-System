@@ -88,7 +88,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
-| ADM-FR-60 | CRUD tenant (chỉ `platform_admin`): key (mã công ty), tên, trạng thái, giới hạn slot subscription `max_concurrent_sub` (trống = không giới hạn). Tạo tenant kèm tạo `tenant_admin` đầu tiên | **MUST** |
+| ADM-FR-60 | CRUD tenant, **không có Xoá ở v1, chỉ Khoá** ([CR-006](../../CHANGE-REQUESTS.md)) (chỉ `platform_admin`): key (mã công ty), tên, trạng thái, giới hạn slot subscription `max_concurrent_sub` (trống = không giới hạn). Tạo tenant kèm tạo `tenant_admin` đầu tiên | **MUST** |
 | ADM-FR-61 | Khoá tenant thì mọi user trong tenant bị khoá và thu hồi refresh token. Mở khoá thì khôi phục trạng thái trước đó của từng user | **MUST** |
 | ADM-FR-62 | CRUD group trong tenant: key, tên (vi/en), mô tả. Thêm/bớt thành viên, hỗ trợ dán danh sách username để thêm hàng loạt. Không lồng group | **MUST** |
 | ADM-FR-63 | Username duy nhất trong tenant (hai tenant có thể cùng có `an`) | **MUST** |
@@ -155,7 +155,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 | ADM-BR-04 | Giá trị secret không bao giờ trả ra khỏi Admin qua API, UI hay export |
 | ADM-BR-05 | Có 3 role: `platform_admin` (toàn hệ thống, kể cả Agent Studio), `tenant_admin` (trong tenant của mình, không vào Agent Studio), `member` (chỉ gọi `/auth/*` và đổi mật khẩu của mình) |
 | ADM-BR-06 | Thực thể bị tắt thì vẫn lưu trong DB, nhưng Hub coi như không tồn tại: không hiện trong menu command, agent không gọi được |
-| ADM-BR-08 | Admin không được tự khoá chính mình hoặc tự hạ role của mình. Luôn phải còn ít nhất một `platform_admin` active và mỗi tenant active còn ít nhất một `tenant_admin` |
+| ADM-BR-08 | Admin không được tự khoá chính mình hoặc tự hạ role của mình. Luôn phải còn ít nhất một `platform_admin` active và mỗi tenant (kể cả tenant đang khoá) còn ít nhất một `tenant_admin` active ([CR-007](../../CHANGE-REQUESTS.md)) |
 | ADM-BR-09 | Mọi truy vấn của `tenant_admin` bị giới hạn theo `tenant_id` của họ. Truy cập thực thể của tenant khác trả 404 |
 | ADM-BR-10 | Mỗi command phải thuộc ít nhất một feature. Feature `core` luôn tồn tại, được entitlement cho mọi tenant, không xoá được |
 | ADM-BR-11 | User dùng được `/cmd` ⇔ cmd thuộc feature F ∧ F đang bật (hoặc `beta` và user thuộc `beta-testers`) ∧ F được entitlement cho tenant của user ∧ F được cấp cho user hoặc cho một group user thuộc về |

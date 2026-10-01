@@ -827,9 +827,9 @@ Không cần artboard riêng (dùng mẫu A/B + câu chữ ở trên): Commands 
 9. Mọi lỗi 403 giữa phiên có mã `FORBIDDEN`; 409 theo R#4.
 
 ## 15. Câu hỏi (kèm mặc định đề xuất)
-1. Có "Xoá tenant" không? → Mặc định **không** ở v1, chỉ Khoá (tránh mất dữ liệu).
-2. Mã công ty và tên đăng nhập có đổi được sau khi tạo? → Mặc định **không** (định danh đăng nhập).
+1. Có "Xoá tenant" không? → Mặc định **không** ở v1, chỉ Khoá (tránh mất dữ liệu). **Đã duyệt 2026-10-01 (Gate M1, CR-006).**
+2. Mã công ty và tên đăng nhập có đổi được sau khi tạo? → Mặc định **không** (định danh đăng nhập). **Đã duyệt 2026-10-01 (Gate M1, CR-006).**
 3. 2FA bắt buộc hay tuỳ chọn? → Mặc định **tuỳ chọn tự bật**; mã dự phòng 10 mã × 8 ký tự; mã TOTP sai tính chung bộ đếm khoá tạm.
 4. Admin tắt 2FA hộ user mất điện thoại? → Mặc định **có**, `⋯ › Tắt 2FA` mức vừa, ghi audit.
-5. Reset mật khẩu có đăng xuất mọi thiết bị? → Mặc định **có**.
+5. Reset mật khẩu có đăng xuất mọi thiết bị? → Mặc định **có**. **Đã duyệt 2026-10-01 (Gate M1, M1-R17).**
 6. tenant_admin có được Khôi phục trong Nhật ký? → Mặc định **không** (BA §8 chỉ đọc).

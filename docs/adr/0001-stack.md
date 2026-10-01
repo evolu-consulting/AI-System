@@ -52,6 +52,8 @@ Tra ngày 2026-10-01 bằng `npm view <pkg> version` (dist-tag `latest`). Ghim c
 | postgres (postgres.js) | 3.4.9 | = | db | ADR-0003 |
 | jose | 6.2.12 | = | admin-api (M1) | Chưa cài ở M0 |
 | @hono/zod-validator | 0.9.1 | = | admin-api (M1) | peer `zod ^3.25 \|\| ^4`, `hono >=4.11.2`; chưa cài ở M0 |
+| sonner | 2.0.8 | = | admin-web (M1) | ADR-0004; chưa cài |
+| @hookform/resolvers | 5.9.1 | = | admin-web (M1) | ADR-0004; chưa cài |
 | ioredis | 6.0.0 | = | M1+ | Major mới; đánh giá lại khi cài |
 | @playwright/test | 1.63.0 | = | e2e (qc/frontend-lead) | |
 | Image `postgres` | `16-alpine` | — | compose, CI | Major theo quyết định Postgres 16 |
