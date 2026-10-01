@@ -1,15 +1,11 @@
-// ADM-FR-01, ADM-NFR-06 · chuẩn bị DB `ai_system_test` cho e2e (test-plan E, G1): reset + migrate + seed + fixture §3.
+// ADM-FR-01, ADM-NFR-06 · chuẩn bị DB `ai_system_test` cho e2e (test-plan E, G1): reset + migrate + seed + fixture §3 (M1) + danh mục (M2).
 // Chạy bằng bun: `bun e2e/support/prepare-db.ts` (đầy đủ, đầu phiên) hoặc `--reset-only` (chỉ dữ liệu, giữa các file spec).
 // Bắt buộc DB tên kết thúc `_test` (resetTestDb kiểm). Mật khẩu admin seed đọc từ SEED_ADMIN_PASSWORD (không hard-code).
 import { runMigrations } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
-import {
-  insertBulk,
-  insertFixture,
-  makeHashes,
-  truncateAll,
-} from "../../tests/acceptance/M1/_data";
+import { insertBulk, insertFixture, makeHashes } from "../../tests/acceptance/M1/_data";
+import { ALL_CATALOG, seedCatalog, truncateCatalog } from "../../tests/acceptance/M2/_data";
 
 const SEED_MODULE = "@ai/db/seed";
 
@@ -31,7 +27,8 @@ async function main(): Promise<void> {
   }
   const sql = postgres(url, { max: 1, onnotice: () => {} });
   try {
-    if (resetOnly) await truncateAll(sql);
+    // M2: TRUNCATE tường minh cả danh mục (secrets/workflows/commands/features/hub.agent_workflows).
+    if (resetOnly) await truncateCatalog(sql);
     const { runSeed } = (await import(SEED_MODULE)) as {
       runSeed: (o: {
         url: string;
@@ -43,6 +40,8 @@ async function main(): Promise<void> {
     const hashes = await makeHashes();
     await insertFixture(sql, hashes);
     await insertBulk(sql, hashes.pw);
+    // M2: fixture danh mục đầy đủ (test-plan §3): secrets, workflows, features, commands, entitlements, agent.
+    await seedCatalog(sql, ALL_CATALOG);
   } finally {
     await sql.end();
   }

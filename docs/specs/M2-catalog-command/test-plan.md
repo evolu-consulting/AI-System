@@ -446,7 +446,7 @@ Khớp `tasks.md`. Q2 viết tất cả (đỏ); cột dưới là task sau đó
 | `M2/rules/secret-crypto.test.ts` (R2), `M2/rules/secrets.rules.test.ts` (R3), `M2/secrets.int.test.ts` (S), `M2/secrets-proc.int.test.ts` (SP; ca 8 chỉ cần 404 nên không đợi T5/T6; ca 7 quét toàn DB sau luồng secrets) | T3 |
 | `M2/rules/features.rules.test.ts` (R6), `M2/features.int.test.ts` (F) | T4 |
 | `M2/rules/workflows.rules.test.ts` (R4), `M2/workflows.int.test.ts` (W) | T5 |
-| `M2/rules/commands.rules.test.ts` (R5), `M2/commands.int.test.ts` (C), `M2/access.int.test.ts` (A), `M2/forbidden.int.test.ts` (X), `M2/error-codes.int.test.ts` (E), `M2/concurrency.int.test.ts` (K) | T6 |
+| `M2/rules/commands.rules.test.ts` (R5), `M2/commands.int.test.ts` + `M2/commands-read.int.test.ts` (C, tách 2 file vì giới hạn 600 dòng), `M2/access.int.test.ts` (A), `M2/forbidden.int.test.ts` (X), `M2/error-codes.int.test.ts` (E), `M2/concurrency.int.test.ts` (K) | T6 |
 | `M2/i18n-labels.test.ts` (C1) | FE2 |
 | `e2e/secrets.spec.ts` (E-S) | FE3 |
 | `e2e/workflows.spec.ts` (E-W) | FE4b |
@@ -502,3 +502,4 @@ Không chặn (đã có đáp án trong spec/plan): 9 AC bổ sung (xác nhận 
 ## 11. Nhật ký
 
 - 2026-10-01 · qc · WRITE (test-plan) · chưa có file test; Q2/Q3 sau Gate G1. Q1 xong. Áp bài học M1: mỗi file gán task xanh (8.1); e2e bọc điều hướng bằng `waitForURL`/`waitForResponse`, không `waitForTimeout`; ca song song không tất định ghi rõ (K, G8) và đề xuất backend dùng hook.
+- 2026-10-01 · qc · WRITE (Q2) · đã viết test vào `tests/acceptance/M2/**`, `e2e/{secrets,workflows,features,commands,m2-flow}.spec.ts`, mở rộng `e2e/support/{prepare-db,helpers}.ts`, sửa 5 file khoá M0/M1 (lý do ở `spec.md` §9 "Trong lúc làm"). Khác kế hoạch: (1) `commands.int` tách thêm `commands-read.int`; (2) `M2/_fixtures.ts` nạp `secret-crypto`/app lười trong hàm dựng app; `_data.ts` không phụ thuộc `bun:test` (dùng chung cho e2e); (3) D1/D2 đã được kiểm với một migration thử viết tay từ spec §4 (DB tạm, đã xoá) nên logic ràng buộc/RLS/quyền cột của test đã chạy xanh một lần; (4) test dùng `Bun.sleep` chỉ trong vòng thăm dò `/health` có hạn chót (như M1/A8), không có chờ cố định.

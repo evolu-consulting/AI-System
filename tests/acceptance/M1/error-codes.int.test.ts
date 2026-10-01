@@ -23,7 +23,32 @@ import {
 } from "./_fixtures";
 
 type Scenario = (env: Env) => Promise<Res>;
-type Testable = Exclude<ErrorCode, "INTERNAL_ERROR">;
+// 22 mã M1 (không gồm INTERNAL_ERROR); 11 mã M2 do tests/acceptance/M2/error-codes.int.test.ts phụ trách.
+const M1_TESTABLE = [
+  "VALIDATION_ERROR",
+  "TENANT_REQUIRED",
+  "ROLE_NOT_ALLOWED",
+  "EMAIL_REQUIRED",
+  "PASSWORD_UNCHANGED",
+  "INVALID_CURRENT_PASSWORD",
+  "UNAUTHORIZED",
+  "INVALID_CREDENTIALS",
+  "INVALID_REFRESH_TOKEN",
+  "REFRESH_SUPERSEDED",
+  "INVALID_CHANGE_TOKEN",
+  "FORBIDDEN",
+  "ACCOUNT_LOCKED",
+  "SELF_ACTION_FORBIDDEN",
+  "NOT_FOUND",
+  "VERSION_CONFLICT",
+  "KEY_TAKEN",
+  "USERNAME_TAKEN",
+  "EMAIL_TAKEN",
+  "LAST_ADMIN",
+  "PLATFORM_TENANT_LOCKED",
+  "TEMP_LOCKED",
+] as const satisfies readonly ErrorCode[];
+type Testable = (typeof M1_TESTABLE)[number];
 
 let env: Env;
 beforeAll(async () => {
@@ -142,9 +167,8 @@ describe("ADM-FR-01 · mã lỗi ↔ API_ERRORS", () => {
     });
   }
 
-  it("ADM-FR-01 · spec §3 · tập mã đã chạy kịch bản == mọi mã của API_ERRORS trừ INTERNAL_ERROR", () => {
-    const want = Object.keys(API_ERRORS).filter((c) => c !== "INTERNAL_ERROR");
-    expect([...covered].sort()).toEqual(want.sort());
+  it("ADM-FR-01 · spec §3 · tập mã M1 đã chạy kịch bản == 22 mã M1 (trừ INTERNAL_ERROR)", () => {
+    expect([...covered].sort()).toEqual([...M1_TESTABLE].sort());
   });
 
   it("ADM-FR-01 · spec §3 · INTERNAL_ERROR: db đã đóng → 500, không lộ stack/chuỗi kết nối/password", async () => {

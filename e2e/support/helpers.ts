@@ -1,9 +1,10 @@
 // ADM-FR-01 · helper dùng chung cho e2e M1 (chạy trong Node/Playwright: không dùng API riêng của Bun).
 import { execFileSync } from "node:child_process";
-import { expect, type Page } from "@playwright/test";
+import { type APIRequestContext, expect, type Page } from "@playwright/test";
 import postgres from "postgres";
 
 export { PW, TEMP_PW, TENANT_ID, USER_ID } from "../../tests/acceptance/M1/_data";
+export { ID, LEAK_1, LEAK_2, LEAK_EMOJI, leakForms } from "../../tests/acceptance/M2/_data";
 
 function loadEnvOnce(): void {
   if (process.env.TEST_DATABASE_URL) return;
@@ -84,4 +85,99 @@ export function rowOf(page: Page, table: string, cellText: string | RegExp) {
     .filter({
       has: page.getByRole("cell", { name: cellText, exact: typeof cellText === "string" }),
     });
+}
+
+/** Đăng nhập platform_admin seed vào khung quản trị. */
+export async function loginAdmin(page: Page) {
+  const a = seedAdmin();
+  await loginToShell(page, "platform", a.username, a.password);
+}
+
+/** Điều hướng bằng URL đầy đủ (reload) rồi chờ heading level 1 của màn đích; không race điều hướng. */
+export async function openPage(page: Page, path: string, heading: string) {
+  await page.goto(path);
+  await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+}
+
+export type Traffic = {
+  /** Chờ mọi body response đã đọc xong rồi mới quét (không race). */
+  flush: () => Promise<void>;
+  bodies: string[];
+  requests: Array<{ url: string; method: string; post: string | null }>;
+  consoleMessages: string[];
+};
+
+/** Thu mọi request/response/console của trang để quét rò secret (AC-A06). Gọi TRƯỚC khi thao tác. */
+export function collectTraffic(page: Page): Traffic {
+  const pending: Promise<void>[] = [];
+  const t: Traffic = {
+    flush: async () => {
+      await Promise.all(pending);
+    },
+    bodies: [],
+    requests: [],
+    consoleMessages: [],
+  };
+  page.on("request", (r) =>
+    t.requests.push({ url: r.url(), method: r.method(), post: r.postData() }),
+  );
+  page.on("response", (r) => {
+    pending.push(
+      r
+        .text()
+        .then((b) => {
+          t.bodies.push(b);
+        })
+        .catch(() => undefined),
+    );
+  });
+  page.on("console", (m) => t.consoleMessages.push(m.text()));
+  return t;
+}
+
+/** Mọi nơi trên trang + mạng có thể chứa `forms`; trả danh sách nơi bị lộ (rỗng = sạch). */
+export async function leaksOnPage(page: Page, t: Traffic, forms: string[]): Promise<string[]> {
+  await t.flush();
+  // Chuỗi JS (không phải hàm) vì tsconfig của test không có lib DOM; chạy trong trình duyệt.
+  const storage = String(
+    await page.evaluate(
+      `JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage }, cookie: document.cookie,
+        title: document.title, url: location.href, state: JSON.stringify(history.state ?? null) })`,
+    ),
+  );
+  const where: Record<string, string> = {
+    html: await page.content(),
+    storage,
+    console: t.consoleMessages.join("\n"),
+    responses: t.bodies.join("\n"),
+    // Body request chỉ được chứa giá trị ở đúng POST/PUT /admin/secrets (ghi giá trị).
+    otherRequests: t.requests
+      .filter((r) => !(/\/admin\/secrets/.test(r.url) && ["POST", "PUT"].includes(r.method)))
+      .map((r) => `${r.url}\n${r.post ?? ""}`)
+      .join("\n"),
+  };
+  return Object.entries(where)
+    .filter(([, text]) => forms.some((f) => text.includes(f)))
+    .map(([k]) => k);
+}
+
+/** Toast (role status) có chứa `text`. */
+export const toast = (page: Page, text: string | RegExp) =>
+  page.getByRole("status").filter({ hasText: text });
+
+const API_URL = "http://localhost:3001";
+
+/** Gọi thẳng admin-api (cổng 3001) bằng token platform_admin seed — để dựng thay đổi "từ phía khác" (tab 2). */
+export async function apiAsAdmin(request: APIRequestContext) {
+  const a = seedAdmin();
+  const login = await request.post(`${API_URL}/auth/login`, {
+    data: { tenant_key: "platform", username: a.username, password: a.password },
+  });
+  expect(login.status()).toBe(200);
+  const token = ((await login.json()) as { access_token: string }).access_token;
+  const headers = { authorization: `Bearer ${token}` };
+  return {
+    post: (path: string, data: unknown) => request.post(`${API_URL}${path}`, { headers, data }),
+    get: (path: string) => request.get(`${API_URL}${path}`, { headers }),
+  };
 }
