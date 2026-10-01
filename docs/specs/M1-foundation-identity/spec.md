@@ -2,7 +2,7 @@
 id: M1-foundation-identity
 title: Nền tảng & danh tính (DB admin + RLS + seed, Auth, Tenants, Users, App shell)
 milestone: M1
-status: draft            # draft → ready → approved → in-progress → done
+status: approved            # draft → ready → approved → in-progress → done
 requirements: [ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-04, ADM-FR-05, ADM-FR-06, ADM-FR-07, ADM-FR-60, ADM-FR-61, ADM-FR-63, ADM-BR-05, ADM-BR-08, ADM-BR-09, ADM-NFR-01, ADM-NFR-06, ADM-NFR-07, AC-A01, AC-A02, AC-A09]
 design: [docs/ROADMAP.md#M1, docs/design/admin/ba-admin.md#51-auth--user, docs/design/admin/ba-admin.md#52-tenant--group, docs/design/admin/ba-admin.md#6-luật-nghiệp-vụ, docs/design/admin/ba-admin.md#7-mô-hình-dữ-liệu-schema-admin, docs/design/admin/ba-admin.md#8-api, docs/design/admin/ba-admin.md#10-yêu-cầu-phi-chức-năng, docs/design/admin/ba-admin.md#11-tiêu-chí-nghiệm-thu-các-kịch-bản-chính, docs/design/admin/ui-admin.md#4-khung-ứng-dụng-app-shell, docs/design/admin/ui-admin.md#71-đăng-nhập--đổi-mật-khẩu, docs/design/admin/ui-admin.md#79-users, docs/design/admin/ui-admin.md#713-tenants, docs/design/admin/ui-admin.md#9-trạng-thái-validation-thông-báo, docs/design/admin/ui-admin.md#15-song-ngữ-vien, docs/specs/_design/admin-missing-screens.md, docs/adr/0001-stack.md, docs/readiness/2026-10-01-admin-m1-m4.md, canvas: Login · ChangePassword · TenantCreate · Users · Sidebar · States · Main]
 owner: backend-lead + frontend-lead

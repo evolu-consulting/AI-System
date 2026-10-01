@@ -10,7 +10,7 @@ Cập nhật: 2026-10-01 · Người cập nhật: điều phối (Claude)
 - Git repo khởi tạo ở M0 (T0). Từ M1 làm và commit trực tiếp trên `main` (người dùng yêu cầu 2026-10-01), không push.
 
 ## Việc kế tiếp (phiên mới: làm ngay, KHÔNG hỏi — Luật 2b)
-1. **M1 Nền tảng & danh tính** — đang làm: đã tách spec `docs/specs/M1-foundation-identity/`; kế tiếp backend-lead PLAN ∥ frontend-lead PLAN. Làm trên `main`, không push.
+1. **M1 Nền tảng & danh tính** — Gate đã duyệt 2026-10-01 (`docs/specs/M1-gate.md`, readiness lần 4 READY). Đang BUILD: T1 contract → Q2 qc viết test → Q3 khoá → T2…T7 ∥ FE0…FE6 → T8. Làm trên `main`, không push.
    Vòng: docs-architect tạo `docs/specs/M1-foundation-identity/` từ `_template` (FR theo dòng M1 của ROADMAP) → backend-lead PLAN ∥ frontend-lead PLAN → qc test-plan → spec-readiness (lỗ hổng lấy mặc định từ `readiness/2026-10-01-admin-m1-m4.md`) → tự duyệt Gate (`M1-gate.md`) → qc viết + khoá test → BUILD BE ∥ FE → Lệnh xong M1 → reviewer (≤ 2 vòng) → docs-architect CODEMAP/TRACE/STATE → báo cáo cuối M1.
 2. Canvas: đổi `#7A7390` → `#736C89` (FE-R1, AA) khi chạm lại canvas.
 

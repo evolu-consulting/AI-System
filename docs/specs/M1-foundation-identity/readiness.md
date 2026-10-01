@@ -58,3 +58,12 @@ Lần 2: Cao #1, #3 đóng; #2 đóng một phần. `bunfig.int.toml` có, khớ
 - Cao #1 (lệnh xong T2/T3/T5): T2 thêm 2 env DB vào `.env.example` + R4; D2 không seed; `tests/acceptance/M1/seed.int.test.ts` → T5; `tests/acceptance/M1/server.int.test.ts` → T7. (điều phối sửa tasks.md; qc sửa test-plan)
 - Cao #2 (lệnh xong FE0b/FE3): FE0b chỉ `--list`; smoke → FE3; FE3 phụ thuộc T5; ca phiên hết hạn → E3 `users.spec.ts`.
 - Thấp áp: #3 T6 thêm `users.service/repo` (chỉ `createFirstAdmin`) · #4 `build` trước `check:bundle` · #5 R4 vào T2, C1 vào FE2 · #6 T4 chỉ chế độ bắt buộc · #7 423 ở tự đổi (2a396ba) · #8 "spec §3 thắng" (2a396ba) · #9 T2 `git status --porcelain packages/db/migrations` rỗng.
+
+## Lần 4 — 2026-10-01 · READY
+
+Agent: spec-readiness (chỉ đọc; điều phối ghi lại). Lần 3: Cao #1, #2 đã đóng; Thấp #3–#9 đã áp. Không Chặn, không Cao. 7 Thấp — áp ở BUILD (Luật 2), không hỏi người dùng.
+
+### Thấp (áp luôn)
+1 T2 lệnh xong thêm `tests/acceptance/ADM-NFR-06/migrate.int.test.ts` · 2 FE1b stub `routes/_authed/tenants/index.tsx`, `routes/_authed/users.tsx` (PageHeader); FE4/FE5 thay · 3 E4 `m1-flow` → FE6, qc sửa §8.1 · 4 T2: `git add` migration trước `db:generate`, kiểm `git diff --quiet` + `ls-files --others` · 5 T2: `.env.local` thiếu `ADMIN_API_DATABASE_URL`/`TEST_ADMIN_API_DATABASE_URL` → thêm giá trị spec §7 · 6 T1 thêm `jose` 6.2.12 vào devDependencies gốc + `bun.lock`; sửa spec §7 · 7 qc: migrate.int M0 sửa cả 4 chỗ + danh sách bảng; smoke bỏ ca logo, ghi lý do. Kèm: T3 lệnh xong thêm `ci-workflow.test.ts`.
+
+Đã áp vào tasks.md ngay sau READY: #1, #2, #3 (phần tasks), #4, ci-workflow (đúng mặc định trên, không chạy lại readiness). Gate: `docs/specs/M1-gate.md` (tự duyệt theo Luật 2b).
