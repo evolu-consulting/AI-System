@@ -37,3 +37,17 @@ Người dùng **chấp nhận toàn bộ** mục Cao (b) #5–#15 theo mặc đ
 Đã sửa trước Gate (không cần hỏi): lỗ hổng Cao (c) #1–#4 và Thấp #16–#33 — các commit `f985da7` (ROADMAP M1 bỏ FR-62), `25ec255` (frontend), `b7a4bca` (test-plan), `bba5882` (spec/plan). Thấp #34 giữ nguyên.
 
 Còn lại: chạy lại spec-readiness (Luật 1 điểm 4) sau khi backend-lead sửa xong contract §3/plan.
+
+## Lần 2 — 2026-10-01 · NOT READY
+
+Agent: spec-readiness (chỉ đọc; điều phối ghi lại). Lần 1: (c) #1–#4 đóng; (b) #5–#15 đã ghi vào spec/BA/CR/ADR; Thấp #16–#33 đã áp (riêng #28 chưa vào test-plan). Không Chặn. 3 Cao mới, đều (c) — không hỏi người dùng. 15 Thấp.
+
+### Cao (c)
+| # | Vấn đề | Mặc định | Chủ |
+|---|---|---|---|
+| 1 | `REFRESH_SUPERSEDED` chưa nói về cookie; xoá cookie sẽ đè cookie mới của tab thắng | Response SUPERSEDED không có `Set-Cookie`; A2.4/A2.7 kiểm vắng `set-cookie` | backend-lead, qc |
+| 2 | Lệnh xong T2/T4/T5 cần code của T5–T7; T2–T7 thiếu phụ thuộc Q2 | T2: `rls.int` + D2; T4: test backend + R1; T5: + A1, A3, D3, A8; T7: + A2, A6, A7, D1; Q2 vào phụ thuộc T2–T7 | backend-lead |
+| 3 | Playwright (Node) không nạp `.env.local`; `keys:dev` sinh mật khẩu seed ngẫu nhiên lệch `SEED_PW` | `playwright.config.ts` nạp `.env.local` (không ghi đè), truyền env tường minh vào `webServer.env`; e2e đọc `SEED_ADMIN_*` từ env; CI `SEED_ADMIN_PASSWORD=Seed-Admin-Pw-01` | frontend-lead, qc |
+
+### Thấp (áp luôn)
+4 spec §1 BR-08 "kể cả đang khoá" · 5 ADR-0004 → Accepted ở spec/plan-frontend · 6 kiểm `details.updated_at` · 7 test-plan §8 chép Lệnh xong spec §8 · 8 "100 ms" · 9 bỏ "counts nên có" · 10 E1 phiên hết hạn: `binh`, drawer Tạo user · 11 username hoa → chuẩn hoá 201; 33 ký tự/ký tự lạ → 400 · 12 T2 sửa `packages/db/src/migrate.int.test.ts` → `{main:3,dev:2}` · 13 `close()` · 14 ca `admin lock zoe` → 409 LAST_ADMIN · 15 tắt dev server 3001 trước e2e · 16 chữ ký `createFirstAdmin` · 17 `thu` chạy cuối file · 18 missing-screens §12.5/§14.9 theo CR-008; nợ Gate M3: câu modal khi chưa có `updated_by`.
