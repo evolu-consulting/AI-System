@@ -199,11 +199,11 @@ Artboard: `Groups`, `Access`, `Users`, `States` (`docs/design/canvas/`); modal x
 | `/groups/new` | Tạo group | Key · Tên (VI/EN) · Mô tả |
 | `/groups/:id` `?tab=members\|features\|agents` | Editor Group (mẫu B) | Tab Thành viên (RefPicker + dán tối đa 500, thêm một phần, liệt kê `not_found`) · Feature (chỉ feature đã entitlement, batch) · Agent "Chưa khả dụng"; `Đổi tên` dùng `ConflictDialog` |
 | `/access` `?tab=matrix\|check&tenant&user` | Phân quyền | Ma trận feature × group (cuộn ngang, cột đầu cố định, tick hàng/cột, một batch ≤ 200, hàng "Đã thu hồi entitlement") · Kiểm tra quyền (`AccessExplainer`, "Vì sao không?", "Cấp cho group…") |
-| `/users` (bật) `?group` | Users | Cột Groups (≤ 2 chip + "+n"), lọc Group, tab "Quyền hiệu lực" (chỉ đọc, link "Mở Kiểm tra quyền"), ô Groups chỉ đọc (A11, chờ) |
+| `/users` (bật) `?group` | Users | Cột Groups (≤ 2 chip + "+n"), lọc Group, tab "Quyền hiệu lực" (chỉ đọc, link "Mở Kiểm tra quyền"), ô Groups chỉ đọc (A11) |
 | `/commands/:id?tab=access` (đổi) | Ai dùng được | Cột Group được cấp, "Số user thấy" (`visible_user_count`) |
-| Mọi editor/danh sách có `version` | `ConflictDialog` dùng chung | Thay "Tải lại" của M1/M2 ở Users, Tenants, Workflows, Commands, Features, Groups; câu có `{user}` khi `updated_by` có (A4, chờ) |
+| Mọi editor/danh sách có `version` | `ConflictDialog` dùng chung | Thay "Tải lại" của M1/M2 ở Users, Tenants, Workflows, Commands, Features, Groups; câu có `{user}` khi `updated_by` có (A4) |
 
-Chốt FE (chi tiết `plan-frontend.md` §0): không thêm thư viện, không ADR (DiffViewer và cửa sổ hoá ma trận tự viết); ma trận lưu một `PUT /admin/grants/batch` (> 200 thay đổi thì chặn Lưu); A6 không có UI cấp feature cho user (chờ); chưa chọn tenant thì Groups/Phân quyền không gọi API. Tính năng chờ Gate: A2, A4, A6, A11 (mặc định đã áp dụng).
+Chốt FE (chi tiết `plan-frontend.md` §0): không thêm thư viện, không ADR (DiffViewer và cửa sổ hoá ma trận tự viết); ma trận lưu một `PUT /admin/grants/batch` (> 200 thay đổi thì chặn Lưu); A6 không có UI cấp feature cho user; chưa chọn tenant thì Groups/Phân quyền không gọi API. A2, A4, A6, A11 đã được người dùng chấp nhận theo mặc định.
 
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6, ADM-NFR-03. Ngân sách riêng (p95, in-process, dữ liệu: 500 tenant × 20 user, 200 group/tenant, 200 feature, 100 grant/feature; backend-lead siết thêm ở plan): `GET /admin/groups` < 100 ms · `GET /admin/users/:id/effective-access` < 150 ms · ma trận 200 × 200 < 150 ms · batch ≤ 200 thao tác < 300 ms · `GET /admin/commands/:id/access` (kèm group) < 150 ms · bump `config_version` + NOTIFY thêm ≤ 5 ms/ghi. Không N+1 (gộp bằng `GROUP BY`/`json_agg`). Bundle giữ ngân sách (JS ban đầu ≤ 150 KB gzip, chunk route ≤ 50 KB; `ConflictDialog`/DiffViewer `lazy()`).
