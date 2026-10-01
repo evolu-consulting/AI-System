@@ -190,7 +190,7 @@ export function createCommand(c: Call, input: CommandCreateRequest): Promise<Com
       featureIds: s.featureIds,
       actorId: c.actor.userId,
     });
-    return detail(tx, id);
+    return detail(tx, id, wf);
   });
 }
 
@@ -274,7 +274,7 @@ export function updateCommand(c: Call, id: string, input: CommandUpdateRequest):
         featureIds: next.featureIds,
         actorId: c.actor.userId,
       });
-    return detail(tx, id);
+    return detail(tx, id, wf);
   });
 }
 

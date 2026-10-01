@@ -1,4 +1,4 @@
-// ADM-NFR-03 · ngân sách hiệu năng M2 (spec M2 §6, p95 20 lần, in-process, máy dev): 1.000 workflow, 5.000 command × 2
+// ADM-NFR-03 · ngân sách hiệu năng M2 (spec M2 §6, p95 50 lần, in-process, máy dev): 1.000 workflow, 5.000 command × 2
 // feature, 5.000 hàng hub.agent_workflows, 200 feature, 500 tenant × 20 user, 100 entitlement/feature.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { randomBytes } from "node:crypto";
@@ -29,7 +29,9 @@ const secretCall = {
   ...call,
   ctx: { db, secretKey: parseMasterKey(randomBytes(32).toString("base64")) },
 };
-const RUNS = 20;
+/** ≥ 50 lần đo + 5 lần khởi động nóng: p95 ổn định khi máy đang chạy song song test khác (review M2 #2). */
+const RUNS = 50;
+const WARMUP = 5;
 const page = { limit: 50, offset: 0 };
 let wfId = "";
 let cmdId = "";
@@ -80,7 +82,7 @@ async function seed(): Promise<void> {
 }
 
 async function p95(fn: (i: number) => Promise<unknown>): Promise<number> {
-  await fn(-1);
+  for (let w = 0; w < WARMUP; w++) await fn(-1 - w);
   const ms: number[] = [];
   for (let i = 0; i < RUNS; i++) {
     const t0 = performance.now();
@@ -128,7 +130,7 @@ describe("ADM-NFR-03 · ngân sách p95 (spec M2 §6)", () => {
     const [f] = await owner`select id from admin.features where key = 'f-9'`;
     const create = (i: number) =>
       createCommand(call, {
-        name: `perf-${i + 1}`,
+        name: `perf-${i + 10}`,
         aliases: [],
         description: { vi: "Đo" },
         workflow_id: wfId,
@@ -149,7 +151,7 @@ describe("ADM-NFR-03 · ngân sách p95 (spec M2 §6)", () => {
     ).toBeLessThan(100);
     expect(
       await p95((i) =>
-        createSecret(secretCall, { name: `PERF_S_${i + 1}`, value: "x".repeat(2048) }),
+        createSecret(secretCall, { name: `PERF_S_${i + 10}`, value: "x".repeat(2048) }),
       ),
     ).toBeLessThan(50);
     expect(await p95(() => replaceSecret(secretCall, "PERF_KEY", "y".repeat(2048)))).toBeLessThan(

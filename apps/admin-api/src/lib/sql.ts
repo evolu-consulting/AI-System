@@ -10,11 +10,16 @@ export const likeArg = (q: string): string => `%${q.replace(/[\\%_]/g, (m) => `\
  * Cột của câu NGOÀI dùng trong subquery tương quan, luôn ghi đủ `"schema"."bảng"."cột"`: câu select một bảng
  * (không join) của Drizzle in cột KHÔNG kèm tên bảng, nên `${secrets.id}` trong subquery `from workflows` thành `"id"`
  * và bị hiểu là `workflows.id` (lỗi `used_by: []` ở T6).
+ * Giới hạn: không dùng cho tự tương quan cùng bảng (subquery `from` chính bảng của câu ngoài) — tên đầy đủ khi đó trỏ
+ * vào bảng gần nhất (bảng trong subquery); trường hợp đó phải viết SQL có alias (như `features.repo` exclusiveCommands).
  */
 export function outer(col: AnyColumn): SQL {
   const table = col.table as PgTable;
-  const schema = getTableConfig(table).schema ?? "public";
-  return sql.raw(`"${schema}"."${getTableName(table)}"."${col.name}"`);
+  const parts = [getTableConfig(table).schema ?? "public", getTableName(table), col.name];
+  // sql.raw không thoát định danh: tên có `"` (không xảy ra với schema Drizzle hiện có) → ném thay vì sinh SQL sai.
+  if (parts.some((p) => p.includes('"')))
+    throw new Error(`outer: tên không hợp lệ ${parts.join(".")}`);
+  return sql.raw(parts.map((p) => `"${p}"`).join("."));
 }
 
 /**

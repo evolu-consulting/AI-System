@@ -37,11 +37,24 @@ const WEB = { client: "web" as const, userAgent: "lock-order" };
 let ctx: AuthCtx;
 
 const deadlocks = async () => {
-  await owner`select pg_stat_clear_snapshot()`;
+  await owner`select pg_stat_force_next_flush(), pg_stat_clear_snapshot()`;
   const [r] = await owner`select deadlocks::int as n from pg_stat_database
     where datname = current_database()`;
   return Number(r?.n ?? 0);
 };
+
+/**
+ * Số deadlock tăng thêm so với `before`. Backend phát hiện deadlock chỉ đẩy thống kê khi rảnh (tối đa ~1 s), nên poll
+ * tới hạn chót thay vì ngủ cố định; tăng là trả ngay (fail sớm).
+ */
+async function deadlocksSince(before: number, deadlineMs = 1500): Promise<number> {
+  const end = Date.now() + deadlineMs;
+  for (;;) {
+    const n = (await deadlocks()) - before;
+    if (n > 0 || Date.now() >= end) return n;
+    await Bun.sleep(50);
+  }
+}
 
 /** A giữ khoá hàng user (như login/đổi mật khẩu), B chạy trong lúc đó, rồi A chèn refresh token. */
 async function interleave(
@@ -60,8 +73,7 @@ async function interleave(
   });
   await pb;
   const ms = performance.now() - t0;
-  await Bun.sleep(600); // thống kê deadlock được flush định kỳ
-  return { ms, deadlocks: (await deadlocks()) - before };
+  return { ms, deadlocks: await deadlocksSince(before) };
 }
 
 beforeAll(async () => {
@@ -253,8 +265,7 @@ async function m2Interleave(
   b.open();
   const [ra, rb] = await Promise.all([pa, pb]);
   const ms = performance.now() - t0;
-  await Bun.sleep(600);
-  return { ra, rb, ms, deadlocks: (await deadlocks()) - before };
+  return { ra, rb, ms, deadlocks: await deadlocksSince(before) };
 }
 
 const featureCount = async (): Promise<number> => {

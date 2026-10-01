@@ -1,6 +1,6 @@
 // ADM-FR-50, ADM-BR-04 · nghiệp vụ secrets (plan M2 §5 "Secrets"). Không biết HTTP; giá trị chỉ sống trong bộ nhớ tới
 // khi mã hoá xong, không bao giờ trả về/log/gửi xuống DB dạng rõ. Callback withScope chỉ làm việc DB + tính toán cục bộ
-// (mã hoá) — chạy lại khi 40P01 chỉ sinh IV mới (TECH-DEBT #13).
+// (TECH-DEBT #13). create: mã hoá trước withScope (retry dùng lại bản mã); PUT: mã hoá trong callback (retry sinh IV mới).
 import type {
   Secret,
   SecretCreateRequest,
