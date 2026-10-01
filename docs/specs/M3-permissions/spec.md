@@ -80,10 +80,24 @@ Migration: `0005_…` (sinh bằng drizzle-kit, `db:generate` lần 2 "No schema
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
-Artboard: `Groups`, `Access`, `Users`, `States` (`docs/design/canvas/`); modal xung đột theo missing-screens §12.5 + M3-R20…R22. Route dự kiến: `/groups`, `/groups/new`, `/groups/:id` (3 tab Thành viên · Feature · Agent "Chưa khả dụng"), `/access` (Ma trận · Kiểm tra quyền), bật cột/lọc/tab ở `/users`, khối nhóm trong tab "Ai dùng được" của command, `ConflictDialog` dùng chung. Chi tiết: `plan-frontend.md`.
+Artboard: `Groups`, `Access`, `Users`, `States` (`docs/design/canvas/`); modal xung đột theo missing-screens §12.5 + M3-R20…R22. Chi tiết (bố cục, trạng thái, câu chữ VI/EN, nhãn e2e, validate, yêu cầu contract C1–C12): [`plan-frontend.md`](plan-frontend.md).
+
+| Route | Màn | Ghi chú |
+|---|---|---|
+| `/groups` `?tenant&q&page` | Danh sách Groups | Mẫu A; cột Group · Thành viên · Feature · Agent ("—"); `beta-testers` có nhãn "Thấy các feature đang Beta", không xoá được |
+| `/groups/new` | Tạo group | Key · Tên (VI/EN) · Mô tả |
+| `/groups/:id` `?tab=members\|features\|agents` | Editor Group (mẫu B) | Tab Thành viên (RefPicker + dán tối đa 500, thêm một phần, liệt kê `not_found`) · Feature (chỉ feature đã entitlement, batch) · Agent "Chưa khả dụng"; `Đổi tên` dùng `ConflictDialog` |
+| `/access` `?tab=matrix\|check&tenant&user` | Phân quyền | Ma trận feature × group (cuộn ngang, cột đầu cố định, tick hàng/cột, một batch ≤ 200, hàng "Đã thu hồi entitlement") · Kiểm tra quyền (`AccessExplainer`, "Vì sao không?", "Cấp cho group…") |
+| `/users` (bật) `?group` | Users | Cột Groups (≤ 2 chip + "+n"), lọc Group, tab "Quyền hiệu lực" (chỉ đọc, link "Mở Kiểm tra quyền"), ô Groups chỉ đọc (A11, chờ) |
+| `/commands/:id?tab=access` (đổi) | Ai dùng được | Cột Group được cấp, "Số user thấy" (`visible_user_count`) |
+| Mọi editor/danh sách có `version` | `ConflictDialog` dùng chung | Thay "Tải lại" của M1/M2 ở Users, Tenants, Workflows, Commands, Features, Groups; câu có `{user}` khi `updated_by` có (A4, chờ) |
+
+Chốt FE (chi tiết `plan-frontend.md` §0): không thêm thư viện, không ADR (DiffViewer và cửa sổ hoá ma trận tự viết); ma trận lưu một `PUT /admin/grants/batch` (> 200 thay đổi thì chặn Lưu); A6 không có UI cấp feature cho user (chờ); chưa chọn tenant thì Groups/Phân quyền không gọi API. Tính năng chờ Gate: A2, A4, A6, A11 (mặc định đã áp dụng).
 
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6, ADM-NFR-03. Ngân sách riêng (p95, in-process, dữ liệu: 500 tenant × 20 user, 200 group/tenant, 200 feature, 100 grant/feature; backend-lead siết thêm ở plan): `GET /admin/groups` < 100 ms · `GET /admin/users/:id/effective-access` < 150 ms · ma trận 200 × 200 < 150 ms · batch ≤ 200 thao tác < 300 ms · `GET /admin/commands/:id/access` (kèm group) < 150 ms · bump `config_version` + NOTIFY thêm ≤ 5 ms/ghi. Không N+1 (gộp bằng `GROUP BY`/`json_agg`). Bundle giữ ngân sách (JS ban đầu ≤ 150 KB gzip, chunk route ≤ 50 KB; `ConflictDialog`/DiffViewer `lazy()`).
+
+**Frontend** (chi tiết `plan-frontend.md` §6): JS ban đầu hiện 115,8 KB, ước sau M3 ≤ 122 KB (i18n +~4,5 KB); chunk route ước groups ~28 KB, access ~30 KB, `ConflictDialog` lazy ~6 KB, `AccessExplainer` dùng chung ~8 KB, drawer user nạp tab "Quyền hiệu lực" bằng `lazy()`. Ma trận 200 × 200 **bắt buộc** cửa sổ hoá hai chiều (≤ ~240 ô trong DOM, ô và hàng `memo`, nháp là `Map` chênh lệch); bảng Groups/thành viên/Users phân trang server `limit=50`; `effective-access` chỉ nạp khi có user/tab mở; `staleTime: 0` cho ma trận và `effective-access`, invalidate sau mọi lưu. Mọi hook ≤ 50 dòng, component chỉ gọi hook, thư mục ≤ 10 file.
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
