@@ -10,6 +10,8 @@ export type DependencyItem = {
   mono?: boolean;
   /** Đường dẫn nội bộ (vd `/commands/<id>`); không có thì chỉ là chữ (agent: Mơ hồ A6). */
   href?: string;
+  /** Query string của `href` (vd `{ q: key }`). */
+  search?: Record<string, string>;
   badge?: { tone: StatusTone; text: string };
 };
 export type DependencySection = { title: string; items: DependencyItem[] };
@@ -46,7 +48,11 @@ function ItemLabel({ item }: { item: DependencyItem }) {
   const cls = item.mono ? "font-mono" : undefined;
   if (!item.href) return <span className={cls}>{item.label}</span>;
   return (
-    <Link to={item.href} className={`${cls ?? ""} text-primary underline-offset-4 hover:underline`}>
+    <Link
+      to={item.href}
+      search={item.search}
+      className={`${cls ?? ""} text-primary underline-offset-4 hover:underline`}
+    >
       {item.label}
     </Link>
   );

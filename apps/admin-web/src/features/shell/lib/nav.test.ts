@@ -8,17 +8,17 @@ describe("ADM-FR-60 · menu theo role", () => {
   test("platform_admin thấy Tenants, Users và 4 mục M2 theo nhóm", () => {
     expect(ids("platform_admin")).toEqual([
       "overview",
-      "tenants",
-      "users",
       "features",
       "commands",
       "workflows",
+      "tenants",
+      "users",
       "secrets",
     ]);
     expect(navGroups("platform_admin").map((g) => g.labelKey)).toEqual([
       null,
-      "nav.group.access",
       "nav.group.features",
+      "nav.group.access",
       "nav.group.security",
     ]);
   });

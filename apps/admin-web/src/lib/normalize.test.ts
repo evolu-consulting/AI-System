@@ -5,6 +5,7 @@ import {
   normalizeCompanyKey,
   normalizeSecretName,
   normalizeUsername,
+  typeSecretName,
 } from "./normalize";
 
 describe("ADM-FR-60 · normalize mã công ty / tên đăng nhập", () => {
@@ -35,5 +36,13 @@ describe("ADM-FR-50, ADM-FR-20 · normalizeSecretName / normalizeCommandName", (
     expect(normalizeCommandName("  /Xuất-Báo-Cáo ")).toBe("xuat-bao-cao");
     expect(normalizeCommandName("tr")).toBe("tr");
     expect(normalizeCommandName("//")).toBe("");
+  });
+});
+
+describe("ADM-FR-50 · typeSecretName", () => {
+  test("HOA, bỏ dấu, dấu cách và - thành _", () => {
+    expect(typeSecretName("dify new key")).toBe("DIFY_NEW_KEY");
+    expect(typeSecretName("Khoá-đặc biệt")).toBe("KHOA_DAC_BIET");
+    expect(typeSecretName("A_1")).toBe("A_1");
   });
 });

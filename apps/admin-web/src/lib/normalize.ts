@@ -25,6 +25,11 @@ export function normalizeSecretName(input: string): string {
   return input.trim().toUpperCase();
 }
 
+/** Tên secret khi đang gõ: bỏ dấu, HOA, dấu cách và `-` thành `_` (không trim, để không nuốt ký tự giữa chừng). */
+export function typeSecretName(input: string): string {
+  return foldKeyInput(input).toUpperCase().replace(/[\s-]/g, "_");
+}
+
 /** Tên/alias command: bỏ `/` đầu, trim, chữ thường, bỏ dấu (khớp `CatalogKeySchema` sau khi chuẩn hoá). */
 export function normalizeCommandName(input: string): string {
   return foldKeyInput(input.trim().replace(/^\/+/, "").trim());

@@ -1,5 +1,5 @@
 // ADM-FR-60, ADM-FR-04, ADM-FR-10 · mục menu theo role: Tổng quan; TRUY CẬP: Tenants (chỉ platform_admin), Users;
-// CHỨC NĂNG: Features, Commands, Workflows và BẢO MẬT: Secrets (M2, chỉ platform_admin).
+// CHỨC NĂNG (trên TRUY CẬP, plan-frontend D3): Features, Commands, Workflows; BẢO MẬT (dưới cùng): Secrets (M2, chỉ platform_admin).
 import type { Role } from "@ai/contracts";
 
 export type NavId =
@@ -42,8 +42,8 @@ export function navGroups(role: Role | undefined): NavGroup[] {
   if (role === "platform_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },
-      { labelKey: "nav.group.access", items: [TENANTS, USERS] },
       { labelKey: "nav.group.features", items: [FEATURES, COMMANDS, WORKFLOWS] },
+      { labelKey: "nav.group.access", items: [TENANTS, USERS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
     ];
   }
