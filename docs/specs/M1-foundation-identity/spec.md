@@ -190,6 +190,8 @@ Kiểu chung: `id uuid PK DEFAULT gen_random_uuid()` (app luôn truyền v7); `t
 <!-- frontend-lead -->
 Artboard có trong `docs/design/canvas/`: Login, ChangePassword, TenantCreate, Users, Sidebar, States, Main (shell). Màn không có artboard theo mẫu trong [admin-missing-screens](../_design/admin-missing-screens.md): Tenants danh sách §4.1, Tenant chi tiết §4.3 (chỉ tab Thông tin + Users; Feature/Agent/Quota hiện "Chưa khả dụng"), Users §5, Đổi mật khẩu tự đổi §9.2, Trạng thái chung §12. Câu chữ VI/EN nguyên văn nằm ở các mục đó; frontend-lead chép vào `locales/*.json`, ghi nhãn e2e vào bảng dưới. Menu M1: Tổng quan (tạm), Tenants (platform_admin), Users. Cắt phần 2FA, group, config badge (Mơ hồ C1–C3).
 
+Chi tiết đầy đủ (route, trạng thái từng màn, câu chữ VI/EN mới, nhãn e2e, validate, lỗi API → UI, hiệu năng, a11y): [plan-frontend.md](plan-frontend.md). Bảng dưới là tóm tắt; câu chữ nguyên văn ở `admin-missing-screens.md` (§4, 5, 9, 12) và [plan-frontend.md §7](plan-frontend.md).
+
 | Màn / thành phần | Trạng thái (tải · rỗng · lỗi · không quyền) | Câu chữ VI | Câu chữ EN | Role + nhãn cho e2e |
 |---|---|---|---|---|
 | Đăng nhập `/login` | nút "Đang đăng nhập…" · — · `alert` chung (không nói rõ trường sai) · đã đăng nhập → `/` | Đăng nhập · "Sai mã công ty, tên đăng nhập hoặc mật khẩu." · "Tạm khoá đến {HH:MM}" | Sign in · "Wrong company code, username or password." · "Temporarily locked until {time}" | `textbox "Mã công ty"` · `textbox "Tên đăng nhập"` · `getByLabel("Mật khẩu")` · `button "Đăng nhập"` · `alert` |
@@ -274,8 +276,6 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bun run i18n:
 - **Bỏ** "Còn N lần thử" (câu hỏi 1). **2FA và Import/Export không thuộc M1, để M4** (câu hỏi 2). **EdDSA** (câu hỏi 3).
 ### Đề xuất chờ Gate (docs-architect; không trả lời → áp dụng như ghi, đánh dấu `[ĐX]` ở §2)
 Các mặc định mới (`[ĐX]` ở M1-R01, 03, 04, 06, 15, 17, 20) và nguồn mặc định `admin-missing-screens.md` §15 (không có Xoá tenant; mã công ty/username bất biến; reset mật khẩu đăng xuất mọi thiết bị; mật khẩu tạm 16 ký tự nhóm 4 khi hiển thị). `admin-missing-screens.md` **chưa** được người dùng duyệt riêng — danh sách mơ hồ đầy đủ ở báo cáo bàn giao của docs-architect (A1–C3), tóm tắt:
-Chi tiết đầy đủ (route, trạng thái từng màn, câu chữ VI/EN mới, nhãn e2e, validate, lỗi API → UI, hiệu năng, a11y): [plan-frontend.md](plan-frontend.md). Bảng dưới là tóm tắt; câu chữ nguyên văn ở `admin-missing-screens.md` (§4, 5, 9, 12) và [plan-frontend.md §7](plan-frontend.md).
-
 - A1 FR-62 (Group) nằm trong dải "FR-60–63" của M1 nhưng ROADMAP M3 cũng liệt kê → M1 **không** làm Group.
 - A2 `features` cần cho seed `core` dù FR-30 thuộc M2 → bảng tạo ở M1, API M2.
 - A3 `PATCH` + `version` → 409 có sẵn từ M1, modal UI ở M3.
