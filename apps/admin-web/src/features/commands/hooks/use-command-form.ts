@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { type Resolver, useForm } from "react-hook-form";
+import { type Resolver, type UseFormReturn, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
@@ -66,33 +66,22 @@ export function serverPatch(
   }
 }
 
-export function useCommandForm(source: Source) {
-  const { t } = useTranslation();
-  const tr = useTr();
-  const router = useRouter();
-  const qc = useQueryClient();
-  const create = useCreateCommand();
-  const update = useUpdateCommand();
-  const features = useFeatureOptions();
-  const form = useForm<CommandFormValues>({
-    resolver: zodResolver(commandSchema as never) as unknown as Resolver<CommandFormValues>,
-    mode: "onTouched",
-    defaultValues: initialValues(source),
-  });
-  const [server, setServer] = useState<ServerState>({});
-  const [createdId, setCreatedId] = useState<string | null>(null);
-  const isDirty = form.formState.isDirty;
-  const isNew = !source.command;
+type Form = UseFormReturn<CommandFormValues>;
 
-  // Mặc định feature `core` cho command mới (D6: bản nhân bản giữ feature của bản gốc).
+/** Mặc định feature `core` cho command mới (D6: bản nhân bản giữ feature của bản gốc). */
+function useDefaultCoreFeature(form: Form, applies: boolean) {
+  const features = useFeatureOptions();
   useEffect(() => {
     const core = features.data?.find((f) => f.isCore);
-    if (isNew && !source.copyOf && core && form.getValues("feature_ids").length === 0) {
+    if (applies && core && form.getValues("feature_ids").length === 0) {
       form.reset({ ...form.getValues(), feature_ids: [core.id] });
     }
-  }, [features.data, isNew, source.copyOf, form]);
+  }, [features.data, applies, form]);
+}
 
-  // Tạo xong: chờ cờ "chưa lưu" tắt (UnsavedGuard) rồi mới chuyển sang trang sửa.
+/** Tạo xong: chờ cờ "chưa lưu" tắt (UnsavedGuard) rồi mới chuyển sang trang sửa. */
+function useCreatedRedirect(createdId: string | null, isDirty: boolean) {
+  const router = useRouter();
   useEffect(() => {
     if (createdId && !isDirty) {
       void router.navigate({
@@ -102,53 +91,70 @@ export function useCommandForm(source: Source) {
       });
     }
   }, [createdId, isDirty, router]);
+}
 
-  const fail = (err: unknown, values: CommandFormValues) => {
+/** Lỗi lưu: lỗi có chỗ riêng → `setServer`; `INVALID_REFERENCE` → làm mới; còn lại toast bền (409 version → "Tải lại"). */
+function useSaveFail(setServer: (s: ServerState) => void) {
+  const { t } = useTranslation();
+  const tr = useTr();
+  const qc = useQueryClient();
+  return (err: unknown, name: string) => {
     if (err instanceof ApiError && err.code === "UNAUTHORIZED") return;
-    const patch = err instanceof ApiError ? serverPatch(err, tr, values.name) : null;
+    const patch = err instanceof ApiError ? serverPatch(err, tr, name) : null;
     if (patch) return setServer(patch);
+    const reset = () => void qc.invalidateQueries({ queryKey: COMMAND_KEYS.all });
     if (err instanceof ApiError && err.code === "INVALID_REFERENCE") {
-      void qc.invalidateQueries({ queryKey: COMMAND_KEYS.all });
+      reset();
       return notifyError(t("errors.invalidReference"));
     }
     const spec = describeError(err);
-    const reload = {
-      label: t("common.reload"),
-      onClick: () => void qc.invalidateQueries({ queryKey: COMMAND_KEYS.all }),
-    };
+    const conflict = err instanceof ApiError && err.code === "VERSION_CONFLICT";
     notifyError(
       tr(spec.key, spec.params),
-      err instanceof ApiError && err.code === "VERSION_CONFLICT" ? reload : undefined,
+      conflict ? { label: t("common.reload"), onClick: reset } : undefined,
     );
   };
+}
+
+/** Chặn gửi khi thiếu input bắt buộc hoặc `arg` trỏ tham số chưa khai báo (AC-A03); `null` = hợp lệ. */
+function mapBlock(values: CommandFormValues, workflow: Workflow | undefined): MapIssues | null {
+  if (!workflow) return null;
+  const check = validateInputMap(workflow.input_schema, values.args, values.input_map);
+  if (check.missing.length === 0 && check.unknownArgs.length === 0) return null;
+  return { missing: check.missing, unknown: [], unknownArgs: check.unknownArgs };
+}
+
+export function useCommandForm(source: Source) {
+  const { t } = useTranslation();
+  const create = useCreateCommand();
+  const update = useUpdateCommand();
+  const form = useForm<CommandFormValues>({
+    resolver: zodResolver(commandSchema as never) as unknown as Resolver<CommandFormValues>,
+    mode: "onTouched",
+    defaultValues: initialValues(source),
+  });
+  const [server, setServer] = useState<ServerState>({});
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  useDefaultCoreFeature(form, !source.command && !source.copyOf);
+  useCreatedRedirect(createdId, form.formState.isDirty);
+  const fail = useSaveFail(setServer);
 
   const save = async (values: CommandFormValues, workflow: Workflow | undefined) => {
     setServer({});
-    const check = workflow
-      ? validateInputMap(workflow.input_schema, values.args, values.input_map)
-      : { missing: [], unknownArgs: [], warnings: [] };
-    if (check.missing.length > 0 || check.unknownArgs.length > 0) {
-      return setServer({
-        map: { missing: check.missing, unknown: [], unknownArgs: check.unknownArgs },
-      });
-    }
+    const blocked = mapBlock(values, workflow);
+    if (blocked) return setServer({ map: blocked });
     try {
       const body = toRequestBody(values);
-      if (source.command) {
-        const res = await update.mutateAsync({
-          id: source.command.id,
-          version: source.command.version,
-          ...body,
-        });
-        notifySuccess(t("commands.toast.saved", { name: res.name }));
-        return;
-      }
-      const res = await create.mutateAsync(body);
+      const cmd = source.command;
+      const res = cmd
+        ? await update.mutateAsync({ id: cmd.id, version: cmd.version, ...body })
+        : await create.mutateAsync(body);
       notifySuccess(t("commands.toast.saved", { name: res.name }));
+      if (cmd) return;
       form.reset(values);
       setCreatedId(res.id);
     } catch (err) {
-      fail(err, values);
+      fail(err, values.name);
     }
   };
 

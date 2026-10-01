@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTr } from "@/lib/use-translate";
-import type { CommandFormValues } from "../lib/schemas";
+import type { CommandFormValues } from "../../lib/schemas";
 
 type Props = {
   index: number;

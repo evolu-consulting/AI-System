@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { pickLocalized } from "@/lib/localized";
-import { useFeatureOptions, useWorkflowOptions } from "../hooks/use-command-queries";
+import { useFeatureOptions, useWorkflowOptions } from "../../hooks/use-command-queries";
 
 type Status = "all" | "on" | "off";
 const ALL = "all";

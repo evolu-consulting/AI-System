@@ -6,9 +6,9 @@ import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { describeInputMapErrors } from "@/lib/errors";
 import { useTr } from "@/lib/use-translate";
-import type { MapIssues } from "../hooks/use-command-form";
-import { type MapWarning, validateInputMap } from "../lib/input-map";
-import type { CommandFormValues } from "../lib/schemas";
+import type { MapIssues } from "../../hooks/use-command-form";
+import { type MapWarning, validateInputMap } from "../../lib/input-map";
+import type { CommandFormValues } from "../../lib/schemas";
 import { InputMapRow } from "./InputMapRow";
 import { StepSection } from "./StepSection";
 

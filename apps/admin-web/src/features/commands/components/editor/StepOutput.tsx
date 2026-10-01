@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useTr } from "@/lib/use-translate";
-import { defaultTimeout } from "../lib/defaults";
-import type { CommandFormValues } from "../lib/schemas";
+import { defaultTimeout } from "../../lib/defaults";
+import type { CommandFormValues } from "../../lib/schemas";
 import { StepSection } from "./StepSection";
 
 export function StepOutput() {

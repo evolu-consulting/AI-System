@@ -4,10 +4,10 @@ import { useCallback } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import type { CommandFormValues } from "../lib/schemas";
+import type { CommandFormValues } from "../../lib/schemas";
+import { SyntaxPreview } from "../editor-parts/SyntaxPreview";
 import { ArgRow } from "./ArgRow";
 import { StepSection } from "./StepSection";
-import { SyntaxPreview } from "./SyntaxPreview";
 
 const NEW_ARG: CommandFormValues["args"][number] = {
   name: "",

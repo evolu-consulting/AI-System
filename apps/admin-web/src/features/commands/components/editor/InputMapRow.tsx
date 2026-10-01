@@ -13,9 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import type { MapInput, MapWarning } from "../lib/input-map";
-import type { CommandFormValues, MapEntryValues } from "../lib/schemas";
-import { mapSyntax } from "../lib/syntax";
+import type { MapInput, MapWarning } from "../../lib/input-map";
+import type { CommandFormValues, MapEntryValues } from "../../lib/schemas";
+import { mapSyntax } from "../../lib/syntax";
 
 type Props = {
   input: MapInput;

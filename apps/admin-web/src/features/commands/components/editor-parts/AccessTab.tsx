@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/shared/states/EmptyState";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loadError } from "@/lib/load-error";
 import { pickLocalized } from "@/lib/localized";
-import { ACCESS_PAGE_SIZE, useCommandAccess } from "../hooks/use-command-queries";
+import { ACCESS_PAGE_SIZE, useCommandAccess } from "../../hooks/use-command-queries";
 
 export function AccessTab({ commandId }: { commandId: string }) {
   const { t, i18n } = useTranslation();

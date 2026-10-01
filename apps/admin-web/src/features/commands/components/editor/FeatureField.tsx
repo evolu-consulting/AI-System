@@ -6,8 +6,8 @@ import { FormField } from "@/components/shared/form/FormField";
 import { RefPicker } from "@/components/shared/RefPicker";
 import { pickLocalized } from "@/lib/localized";
 import { useTr } from "@/lib/use-translate";
-import { useFeatureOptions } from "../hooks/use-command-queries";
-import type { CommandFormValues } from "../lib/schemas";
+import { useFeatureOptions } from "../../hooks/use-command-queries";
+import type { CommandFormValues } from "../../lib/schemas";
 
 export function FeatureField({ serverError }: { serverError?: string }) {
   const { t, i18n } = useTranslation();

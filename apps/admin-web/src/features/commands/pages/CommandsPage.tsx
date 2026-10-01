@@ -8,8 +8,8 @@ import { EmptyState } from "@/components/shared/states/EmptyState";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/http";
 import { COMMANDS_PAGE_SIZE, useCommandList, useWorkflowOptions } from "../api";
-import { CommandFilters } from "../components/CommandFilters";
-import { CommandTable } from "../components/CommandTable";
+import { CommandFilters } from "../components/list/CommandFilters";
+import { CommandTable } from "../components/list/CommandTable";
 import { useCommandActions } from "../hooks/use-command-actions";
 import { useCommandsNav } from "../hooks/use-commands-nav";
 

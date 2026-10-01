@@ -18,18 +18,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useCommand, useCommandAccess } from "../api";
-import { StepArgs } from "../components/StepArgs";
-import { StepInputMap } from "../components/StepInputMap";
-import { StepName } from "../components/StepName";
-import { StepOutput } from "../components/StepOutput";
-import { StepWorkflow } from "../components/StepWorkflow";
+import { StepArgs } from "../components/editor/StepArgs";
+import { StepInputMap } from "../components/editor/StepInputMap";
+import { StepName } from "../components/editor/StepName";
+import { StepOutput } from "../components/editor/StepOutput";
+import { StepWorkflow } from "../components/editor/StepWorkflow";
 import { useCommandForm } from "../hooks/use-command-form";
 import { useWorkflowLink } from "../hooks/use-workflow-link";
 import { accessSummary } from "../lib/access";
 
 // Tab ít dùng: tách chunk riêng để editor không kéo thêm bảng tenant (plan-frontend §6).
 const AccessTab = lazy(() =>
-  import("../components/AccessTab").then((m) => ({ default: m.AccessTab })),
+  import("../components/editor-parts/AccessTab").then((m) => ({ default: m.AccessTab })),
 );
 
 export type CommandTab = "config" | "access";

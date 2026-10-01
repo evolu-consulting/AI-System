@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { normalizeCommandName } from "@/lib/normalize";
 import { useTr } from "@/lib/use-translate";
-import { useNameCheck } from "../hooks/use-command-queries";
-import type { CommandFormValues } from "../lib/schemas";
+import { useNameCheck } from "../../hooks/use-command-queries";
+import type { CommandFormValues } from "../../lib/schemas";
 
 /** Lỗi khi thêm `alias` vào danh sách `aliases` của command tên `name`; `null` = hợp lệ (chưa kiểm trùng server). */
 export function aliasProblem(alias: string, name: string, aliases: string[]): string | null {

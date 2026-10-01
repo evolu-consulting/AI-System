@@ -3,86 +3,52 @@
 import type { Secret } from "@ai/contracts";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BlockedDialog } from "@/components/shared/BlockedDialog";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { DependencyList } from "@/components/shared/DependencyList";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useDeleteSecret } from "../api";
+import { type DeleteTarget, SecretDeleteDialogs } from "../components/SecretDeleteDialogs";
 
-type Target = { name: string; usedBy: string[]; blocked: boolean };
-
+/** `used_by` của 409 `SECRET_IN_USE` (workflow vừa tham chiếu secret giữa chừng). */
 function usedByFrom(details: unknown): string[] {
   const list = (details as { used_by?: unknown } | null | undefined)?.used_by;
   return Array.isArray(list) ? list.filter((x): x is string => typeof x === "string") : [];
 }
 
+function useFail() {
+  const tr = useTr();
+  return (err: unknown) => {
+    if (err instanceof ApiError && err.code === "UNAUTHORIZED") return;
+    const spec = describeError(err);
+    notifyError(tr(spec.key, spec.params));
+  };
+}
+
 export function useSecretDelete() {
   const { t } = useTranslation();
-  const tr = useTr();
+  const fail = useFail();
   const del = useDeleteSecret();
-  const [target, setTarget] = useState<Target | null>(null);
+  const [target, setTarget] = useState<DeleteTarget | null>(null);
 
   const request = useCallback((s: Secret) => {
     setTarget({ name: s.name, usedBy: s.used_by, blocked: s.used_by.length > 0 });
   }, []);
-
   const confirm = async () => {
     if (!target) return;
     try {
       await del.mutateAsync(target.name);
       notifySuccess(t("secrets.toast.deleted", { name: target.name }));
     } catch (err) {
-      if (err instanceof ApiError && err.code === "SECRET_IN_USE") {
-        setTarget({ name: target.name, usedBy: usedByFrom(err.details), blocked: true });
-        return;
+      if (!(err instanceof ApiError && err.code === "SECRET_IN_USE")) {
+        fail(err);
+        throw err; // giữ hộp thoại mở
       }
-      if (!(err instanceof ApiError && err.code === "UNAUTHORIZED")) {
-        const spec = describeError(err);
-        notifyError(tr(spec.key, spec.params));
-      }
-      throw err; // giữ hộp thoại mở
+      setTarget({ name: target.name, usedBy: usedByFrom(err.details), blocked: true });
     }
   };
-
-  const close = () => setTarget(null);
-  const name = target?.name ?? "";
   const dialogs = (
-    <>
-      <BlockedDialog
-        open={!!target?.blocked}
-        onClose={close}
-        title={t("secrets.delete.blocked", { name })}
-      >
-        <DependencyList
-          sections={[
-            {
-              title: t("common.dependency.workflow"),
-              items: (target?.usedBy ?? []).map((key) => ({
-                id: key,
-                label: key,
-                mono: true,
-                href: "/workflows",
-                search: { q: key },
-              })),
-            },
-          ]}
-        />
-      </BlockedDialog>
-      <ConfirmDialog
-        open={!!target && !target.blocked}
-        onOpenChange={(open) => !open && close()}
-        title={t("secrets.delete.title", { name })}
-        confirmLabel={t("secrets.delete.submit")}
-        destructive
-        level="heavy"
-        confirmText={name}
-        typePrompt={t("secrets.delete.typeToConfirm", { name })}
-        onConfirm={confirm}
-      />
-    </>
+    <SecretDeleteDialogs target={target} onClose={() => setTarget(null)} onConfirm={confirm} />
   );
   return { request, dialogs };
 }

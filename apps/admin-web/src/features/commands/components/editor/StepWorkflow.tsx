@@ -11,10 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTr } from "@/lib/use-translate";
-import { useWorkflowOptions } from "../hooks/use-command-queries";
-import type { CommandFormValues } from "../lib/schemas";
+import { useWorkflowOptions } from "../../hooks/use-command-queries";
+import type { CommandFormValues } from "../../lib/schemas";
+import { WorkflowCard } from "../editor-parts/WorkflowCard";
 import { StepSection } from "./StepSection";
-import { WorkflowCard } from "./WorkflowCard";
 
 export type WorkflowNotice = { dropped: string[]; autoMapped: string[] };
 

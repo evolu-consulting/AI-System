@@ -1,8 +1,8 @@
 // ADM-FR-20 · bước 3 · cú pháp người dùng gõ, cập nhật ngay khi sửa tên/tham số (chỉ đọc).
 import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import type { CommandFormValues } from "../lib/schemas";
-import { buildSyntax } from "../lib/syntax";
+import type { CommandFormValues } from "../../lib/schemas";
+import { buildSyntax } from "../../lib/syntax";
 
 export function SyntaxPreview() {
   const { t } = useTranslation();
