@@ -58,6 +58,8 @@ export default defineConfig({
         JWT_PRIVATE_KEY: need("JWT_PRIVATE_KEY"),
         JWT_PUBLIC_KEY: need("JWT_PUBLIC_KEY"),
         JWT_KID: need("JWT_KID"),
+        // M2: admin-api (từ T3) bắt buộc khoá mã hoá secret.
+        SECRET_MASTER_KEY: need("SECRET_MASTER_KEY"),
       },
     },
     {
