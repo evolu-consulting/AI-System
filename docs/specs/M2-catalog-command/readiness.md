@@ -29,3 +29,14 @@ Agent: spec-readiness (chỉ đọc; điều phối ghi lại). Không Chặn, k
 Thấp: 7 R02 AAD theo plan §3.2 · 8 nhãn A2 → đã chấp nhận · 9 `NAME_TAKEN`→`SECRET_NAME_TAKEN`, `SECRET_NOT_FOUND`→`INVALID_REFERENCE {field:"secret_id"}` · 10 R26 `?status=` · 11 R17 message cố định · 12 placeholder `{names}` · 13 E-C.5 `dich-moi` · 14 ca owner SQL chỉ kiểm bất biến · 15 D1.4 băm ở HEAD · 16 Q2 lệnh xong thêm `typecheck && check` · 17 tick P2, status `ready` khi READY.
 
 Đã kiểm sớm theo bài học M1: lệnh xong ↔ §8.1 (trừ 1–3), T1 → Q2 → T2, lệnh int `--config=bunfig.int.toml`, `SECRET_MASTER_KEY` ở `.env.local` + FE0b, khoá chỉ `FOR NO KEY UPDATE`/`FOR SHARE`, hook chỉ `appEnv=test`.
+
+## Lần 2 — 2026-10-01 · READY
+
+Agent: spec-readiness (chỉ đọc; điều phối ghi lại). Kiểm lại sau efb4136, ffa1d89, bc6cc1b, de2f700. Lỗ hổng lần 1: 17/17 đã đóng. Chuỗi phụ thuộc không chu trình; lệnh xong từng task khớp test-plan §8.1 và xanh được tại task. Không Chặn, không Cao. Thấp (áp trong BUILD, Luật 2):
+1. T5 chạy sau T4 (`AppDeps.testHooks`, cùng sửa `app.ts`).
+2. Xoá feature không tăng `version` command; editor command còn id cũ → 400 `INVALID_REFERENCE {field:"feature_ids"}`.
+3. spec §9 A2/A10 cũ đã bị thay bởi R02/R22 — BUILD theo R02/R22.
+4. `tests/acceptance/M2/_fixtures.ts` nạp `secret-crypto` lười để D1/D2 xanh ở T2.
+5. `status` spec → `approved`.
+
+Gate: `docs/specs/M2-gate.md` (tự duyệt theo Luật 2b).

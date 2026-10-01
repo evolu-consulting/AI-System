@@ -9,7 +9,7 @@ Cập nhật: 2026-10-01 · Người cập nhật: docs-architect (đóng M1)
 - Đã chốt: bỏ "Còn N lần thử"; JWT EdDSA; chấp nhận mọi mặc định `readiness/2026-10-01-admin-m1-m4.md`; 2FA + Import/Export vào M4 khi có artboard. Làm và commit trực tiếp trên `main`, không push.
 
 ## Việc kế tiếp (phiên mới: làm ngay, KHÔNG hỏi — Luật 2b)
-1. **M2 Catalog & command** theo `docs/ROADMAP.md` (Secrets, Workflows, Commands, Features + entitlement; FR-10–15, 20–22, 24, 30, 31, 33, 34, 50). Vòng: docs-architect tách spec `M2-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate → qc khoá test → BUILD → Lệnh xong M2 → reviewer (≤ 2 vòng) → docs. Làm trên `main`, không push.
+1. **M2 Catalog & command** — Gate đã duyệt 2026-10-01 (`docs/specs/M2-gate.md`, readiness lần 2 READY). Đang BUILD: T1 contract → Q2 qc viết + sửa test khoá M0/M1 → Q3 khoá → T2…T6 ∥ FE0…FE7 → T7 Lệnh xong M2 → reviewer (≤ 2 vòng) → D1. Làm trên `main`, không push.
 2. Canvas: đổi `#7A7390` → `#736C89` (FE-R1, AA) khi chạm lại canvas.
 
 ## TECH-DEBT đáng chú ý (`docs/TECH-DEBT.md`)
