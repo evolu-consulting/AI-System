@@ -377,3 +377,23 @@ describe("ADM-FR-04 · reset mật khẩu", () => {
     expectErr(await act(binh, USER_ID.binh, "reset-password"), "SELF_ACTION_FORBIDDEN");
   });
 });
+
+describe("ADM-FR-04 · review vòng 1 #1 · PATCH đồng thời cùng version", () => {
+  it("ADM-FR-04 · spec §3 · 4 vòng × 15 PATCH song song cùng version → mỗi vòng đúng 1×200, còn lại 409 VERSION_CONFLICT {current, updated_at}; version tăng đúng 1", async () => {
+    for (let round = 0; round < 4; round++) {
+      const before = await getUser(binh, USER_ID.an);
+      const rs = await Promise.all(
+        Array.from({ length: 15 }, (_, i) =>
+          patch(binh, USER_ID.an, { version: before.version, display_name: `An R${round} ${i}` }),
+        ),
+      );
+      expect(rs.filter((r) => r.status === 200)).toHaveLength(1);
+      for (const l of rs.filter((r) => r.status !== 200)) {
+        expectErr(l, "VERSION_CONFLICT");
+        const d = versionConflictDetailsSchema("user").parse(l.json.error.details);
+        expect(d.updated_at).toBe(d.current.updated_at);
+      }
+      expect((await getUser(binh, USER_ID.an)).version).toBe(before.version + 1);
+    }
+  });
+});

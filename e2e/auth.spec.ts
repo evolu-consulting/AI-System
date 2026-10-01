@@ -39,14 +39,19 @@ test("ADM-FR-01 · M1-R01 · sai mật khẩu → alert chung, không nêu trư�
 });
 
 test("ADM-FR-01 · UX · khi đang gửi nút hiện 'Đang đăng nhập…'", async ({ page }) => {
+  let release: () => void = () => {};
+  const gate = new Promise<void>((r) => {
+    release = r;
+  });
   await page.route("**/auth/login", async (route) => {
-    await new Promise((r) => setTimeout(r, 1500));
+    await gate;
     await route.continue();
   });
   await page.goto("/login");
   await fillLogin(page, "acme", "an", "Sai-Passw0rd-1");
   await submit(page).click();
   await expect(page.getByRole("button", { name: "Đang đăng nhập…" })).toBeVisible();
+  release();
 });
 
 test("ADM-FR-01 · BR-05 · binh (tenant_admin) vào khung: main + 'Tổng quan' + 'Xin chào'; menu chỉ có Users, không có Tenants", async ({

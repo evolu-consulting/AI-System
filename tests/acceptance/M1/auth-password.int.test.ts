@@ -213,3 +213,18 @@ describe("ADM-FR-06 · GET/PATCH /auth/me", () => {
     expect((await userRow(USER_ID.an))?.version).toBe(before?.version);
   });
 });
+
+describe("ADM-FR-06 · review vòng 1 #2 · đổi mật khẩu bắt buộc ghi last_login_at", () => {
+  it("ADM-FR-06 · M1-R05 · đổi mật khẩu bắt buộc xong → last_login_at khác null, user không còn trong bộ lọc login=never", async () => {
+    const binh = await env.token("acme", "binh");
+    const never = async () =>
+      (await env.get("/admin/users?login=never", { token: binh })).json.items.map(
+        (u: { username: string }) => u.username,
+      );
+    expect(await never()).toContain("dung");
+    expect((await userRow(USER_ID.dung))?.last_login_at).toBeNull();
+    expect((await forced(await dungToken(), NEW_PW)).status).toBe(200);
+    expect((await userRow(USER_ID.dung))?.last_login_at).not.toBeNull();
+    expect(await never()).not.toContain("dung");
+  });
+});

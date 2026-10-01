@@ -1,5 +1,5 @@
 # tests/.lock — sinh bởi bun run test:lock:write (chỉ qc). Không sửa tay.
-43af1813be521f0f9c3ce7f675fee897b23f59f1ddf14d27ebf87d1fe155f29a  e2e/auth.spec.ts
+2116282f19749967e5e01459779b6b8851e0bfd56dee1d8b60ae654effa3fe21  e2e/auth.spec.ts
 329cbefa1cc50da9d3917554d525cd8c60a57c70f423ccbfb12d083dc57b07a6  e2e/m1-flow.spec.ts
 8c302e81222d07b1eded6cda3efcf5eaf5a47d1c87e7ef67f5e23224352ac76f  e2e/smoke.spec.ts
 e22cba7f8aa490e719f867250dd3de0d3be980831cc54e34628817e63a082d43  e2e/support/helpers.ts
@@ -20,8 +20,8 @@ b91631853eb52d1f994195017a9fa636dc2e1bb06ab2c061e21efc29414f8827  tests/acceptan
 485e75650171f0003c62315cf010b16fdbd214e0fdad48ada5952f13b9b583f3  tests/acceptance/M1/_data.ts
 4b1929cdd07d5b5a9cd4ad66a0e3ae41139df76288428f40ccc7b67b4b9f30e3  tests/acceptance/M1/_fixtures.ts
 bc6b2417f10557e403ec460ce301de5a070ec9c77ecd584f285c66b97400acf7  tests/acceptance/M1/_modules.ts
-b0207b179c4d3d4e97c7fd2aa9cda3290936ea8b298c4d1ddab73544ad8a5448  tests/acceptance/M1/auth-login.int.test.ts
-062c37e5b31a57fb3293855abd4f38bc2c920810a07ae752d7de015b2bdab64b  tests/acceptance/M1/auth-password.int.test.ts
+e30d81781521e75f45de4b5801f260acf203a4a10c249e984b6e19241bbf95b4  tests/acceptance/M1/auth-login.int.test.ts
+e56bd948975491f6f140b08b098373a0a605e348b4b497ab25cdba4c1172ea7b  tests/acceptance/M1/auth-password.int.test.ts
 a7f3f82b944200561d0f7d75ea0b373836eb9a00f41d4398d3e3bead9a0b78ee  tests/acceptance/M1/auth-refresh.int.test.ts
 e7d208302c2d5d4d61999ffd0335832778a9c7bf32e46dc64f42dedc84e2f790  tests/acceptance/M1/db-guard.int.test.ts
 3378c12077885e51187092ca9ec5f4438df5ff06297739a789ee6d3d61c7c8ba  tests/acceptance/M1/db-rls.int.test.ts
@@ -37,4 +37,4 @@ e3715d7aa34b603baa682778826ac9d53cbb63d191f6a1bb2f26f05e36265fca  tests/acceptan
 5f2875eaddf1dd4e698aa29580db658eeab1890f9fd3a34becf927b422232131  tests/acceptance/M1/server.int.test.ts
 777dda81e99e4f63915ee6836546a3f8b3ec9d28d8af8984b03121833c489ce3  tests/acceptance/M1/tenants.int.test.ts
 2f5d2afc92f0df368d3a1bef52cda02e1c2f706a8e2777ba024c1a5870d3186f  tests/acceptance/M1/users-isolation.int.test.ts
-726fcb8199819b23dcc06ebb790112cc8084b6c078368427c7e8c9f7cd499f64  tests/acceptance/M1/users.int.test.ts
+18879d8cd1e2ad310d946356befa95717893a8f92677c5adf63eb0de4694ef4b  tests/acceptance/M1/users.int.test.ts

@@ -309,3 +309,23 @@ describe("ADM-FR-01 · validate body", () => {
     expect(d.issues[0]?.path).toEqual([]);
   });
 });
+
+describe("ADM-FR-07 · review vòng 1 #3 · khoá tạm với request song song", () => {
+  it("ADM-FR-07 · M1-R03 · 10 lần sai + 1 lần đúng song song → tài khoản bị khoá tạm (locked_until), lần đúng kế tiếp → 423", async () => {
+    const attempts = [
+      ...Array.from({ length: 10 }, () => env.login("acme", "an", "Sai-Passw0rd-1")),
+      env.login("acme", "an", PW),
+    ];
+    const rs = await Promise.all(attempts);
+    for (const r of rs) expect([200, 401, 423]).toContain(r.status);
+    expect(rs.filter((r) => r.status === 200).length).toBeLessThanOrEqual(1);
+    // xác định: đưa về trạng thái khoá bằng đúng 5 lần sai nối tiếp rồi mọi lần đúng đều 423
+    await env.reset();
+    await Promise.all(Array.from({ length: 8 }, () => env.login("acme", "an", "Sai-Passw0rd-1")));
+    const locked = await row(USER_ID.an);
+    expect(locked?.locked_until).not.toBeNull();
+    // chỉ đúng 5 lần sai đầu được đếm; lần sai đến sau khi đã khoá không được cộng thêm vào bộ đếm
+    expect(locked?.failed_logins).toBe(0);
+    expectErr(await env.login("acme", "an", PW), "TEMP_LOCKED");
+  });
+});
