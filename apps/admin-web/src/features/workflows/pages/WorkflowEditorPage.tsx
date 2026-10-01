@@ -2,6 +2,7 @@
 import type { Workflow } from "@ai/contracts";
 import { FormProvider } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { EditorSaveBar } from "@/components/shared/EditorSaveBar";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { ErrorState } from "@/components/shared/states/ErrorState";
@@ -98,6 +99,7 @@ function EditorBody({ workflow, tab, onTab }: { workflow?: Workflow } & Omit<Pro
         <EditorSaveBar dirty={isDirty} pending={ed.pending} cancelTo="/workflows" />
       </form>
       <UnsavedGuard dirty={isDirty} />
+      <LazyConflictDialog props={ed.conflict} />
       <WorkflowBlockedDialog info={ed.blocked} onClose={ed.closeBlocked} />
     </FormProvider>
   );
@@ -118,8 +120,8 @@ function EditorLoader({ workflowId, tab, onTab }: Props) {
       />
     );
   }
-  // `key` theo version: sau khi lưu/tải lại, form dựng lại từ dữ liệu mới (bỏ thay đổi đang sửa).
-  return <EditorBody key={wf.data.version} workflow={wf.data} tab={tab} onTab={onTab} />;
+  // `key` theo id (không theo version, TECH-DEBT #14): sau lưu/Tải bản mới form tự `reset`, không mất chữ vừa gõ.
+  return <EditorBody key={wf.data.id} workflow={wf.data} tab={tab} onTab={onTab} />;
 }
 
 export function WorkflowEditorPage(props: Props) {

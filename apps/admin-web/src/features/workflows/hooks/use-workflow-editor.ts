@@ -10,7 +10,7 @@ import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-import { useCreateWorkflow, useUpdateWorkflow, WORKFLOW_KEYS } from "../api";
+import { useCreateWorkflow, WORKFLOW_KEYS } from "../api";
 import type { BlockedInfo } from "../components/list/WorkflowBlockedDialog";
 import {
   emptyWorkflowForm,
@@ -19,6 +19,7 @@ import {
   type WorkflowFormValues,
   workflowSchema,
 } from "../lib/schemas";
+import { useWorkflowConflict } from "./use-workflow-conflict";
 
 type Form = UseFormReturn<WorkflowFormValues>;
 type Sinks = {
@@ -71,18 +72,13 @@ function useSaveFail(form: Form, sinks: Sinks) {
       return notifyError(t("errors.invalidReference"));
     }
     const spec = describeError(err);
-    const reload = {
-      label: t("common.reload"),
-      onClick: () => void qc.invalidateQueries({ queryKey: WORKFLOW_KEYS.all }),
-    };
-    notifyError(tr(spec.key, spec.params), err.code === "VERSION_CONFLICT" ? reload : undefined);
+    notifyError(tr(spec.key, spec.params));
   };
 }
 
 export function useWorkflowEditor(workflow: Workflow | undefined) {
   const { t } = useTranslation();
   const create = useCreateWorkflow();
-  const update = useUpdateWorkflow();
   const form = useForm<WorkflowFormValues>({
     resolver: zodResolver(workflowSchema),
     mode: "onTouched",
@@ -93,20 +89,17 @@ export function useWorkflowEditor(workflow: Workflow | undefined) {
   const [createdId, setCreatedId] = useState<string | null>(null);
   useCreatedRedirect(createdId, form.formState.isDirty);
   const fail = useSaveFail(form, { setBreaks, setBlocked });
+  const wc = useWorkflowConflict(workflow, form, fail);
 
   const save = async (values: WorkflowFormValues) => {
-    const saved = (key: string) => notifySuccess(t("workflows.toast.saved", { name: key }));
-    if (!workflow) {
-      const res = await create.mutateAsync({
-        key: values.key.trim().toLowerCase(),
-        ...toRequestBody(values),
-      });
-      saved(res.key);
-      form.reset(values); // bỏ cờ "chưa lưu" trước khi rời trang
-      return setCreatedId(res.id);
-    }
-    const body = { id: workflow.id, version: workflow.version, ...toRequestBody(values) };
-    saved((await update.mutateAsync(body)).key);
+    if (workflow) return wc.save(values);
+    const res = await create.mutateAsync({
+      key: values.key.trim().toLowerCase(),
+      ...toRequestBody(values),
+    });
+    notifySuccess(t("workflows.toast.saved", { name: res.key }));
+    form.reset(values); // bỏ cờ "chưa lưu" trước khi rời trang
+    setCreatedId(res.id);
   };
   const submit = form.handleSubmit(async (values) => {
     setBreaks(null);
@@ -116,7 +109,8 @@ export function useWorkflowEditor(workflow: Workflow | undefined) {
   return {
     form,
     submit,
-    pending: create.isPending || update.isPending,
+    pending: create.isPending || wc.pending,
+    conflict: wc.props,
     breaks,
     blocked,
     closeBlocked: () => setBlocked(null),

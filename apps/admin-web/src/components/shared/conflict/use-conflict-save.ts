@@ -6,17 +6,18 @@ import { diffFields } from "@/lib/diff-fields";
 import type { ConflictEntity } from "./ConflictDialog";
 import { useConflict } from "./use-conflict";
 
-export type ConflictSaveConfig<B extends object> = {
+export type ConflictSaveConfig<B extends object, R> = {
   entity: ConflictEntity;
-  mutate: (body: B & { version: number }) => Promise<unknown>;
-  onSaved: () => void;
+  mutate: (body: B & { version: number }) => Promise<R>;
+  /** Gọi với phản hồi của lần lưu thành công (kể cả sau `Ghi đè`). */
+  onSaved: (res: R) => void;
   onFail: (err: unknown) => void;
   onReload: (current: ConflictCurrent) => void;
   /** Dạng so sánh của bản mới; mặc định chọn các khoá của body từ `current`. */
   toComparable?: (current: ConflictCurrent, body: B) => unknown;
 };
 
-export function useConflictSave<B extends object>(cfg: ConflictSaveConfig<B>) {
+export function useConflictSave<B extends object, R = unknown>(cfg: ConflictSaveConfig<B, R>) {
   const last = useRef<B | null>(null);
   const conflict = useConflict({
     entity: cfg.entity,
@@ -29,8 +30,7 @@ export function useConflictSave<B extends object>(cfg: ConflictSaveConfig<B>) {
     },
     submit: async (version) => {
       if (!last.current) return;
-      await cfg.mutate({ ...last.current, version });
-      cfg.onSaved();
+      cfg.onSaved(await cfg.mutate({ ...last.current, version }));
     },
     onReload: cfg.onReload,
     onError: cfg.onFail,
@@ -38,8 +38,7 @@ export function useConflictSave<B extends object>(cfg: ConflictSaveConfig<B>) {
   const save = async (body: B, version: number) => {
     last.current = body;
     try {
-      await cfg.mutate({ ...body, version });
-      cfg.onSaved();
+      cfg.onSaved(await cfg.mutate({ ...body, version }));
     } catch (err) {
       if (!conflict.capture(err, version)) cfg.onFail(err);
     }
