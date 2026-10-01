@@ -60,23 +60,131 @@ Luật nghiệp vụ gốc: [BA §5.1–5.2, §6](../../design/admin/ba-admin.md
 
 ## 3. Contract (backend-lead)
 <!-- backend-lead -->
-File dự kiến: `packages/contracts/src/{auth,tenants,users,common}.ts`. Phải liệt kê: endpoint BA §8 nhóm Auth/Tenant/User + `GET/PATCH /auth/me`, `POST /admin/tenants/:id/{lock,unlock}`, `POST /admin/users/:id/{lock,unlock,logout-all,reset-password}`; mã lỗi ở M1-R01…R19; schema list `{items,total}`; response `temp_password`; cách phân biệt cookie/body (Mơ hồ A6). Chưa điền.
+File: `packages/contracts/src/{common,auth,tenants,users}.ts` (zod 4, export qua `index.ts`). Chi tiết hiện thực: [plan.md](plan.md) §2–§3.
+
+**Quy ước chung**
+- Route gốc của admin-api: `/auth/*`, `/admin/*` (không tiền tố). JSON UTF-8; thời gian = chuỗi ISO 8601 UTC (`z.iso.datetime()`); id = uuid (`z.uuid()`, app sinh v7 bằng `Bun.randomUUIDv7()`).
+- Mọi body/query parse bằng schema **strict** (trường lạ → 400). `:id` không phải uuid → 404 `NOT_FOUND` (cùng body với id không tồn tại).
+- Lỗi: `{error:{code,message,details?}}` (`ErrorResponseSchema` M0). `message` tiếng Anh cố định; web dịch theo `code`.
+  - `VALIDATION_ERROR.details = {issues:[{path:(string|number)[], code:string, message:string}]}` (lấy từ issue zod; JSON hỏng → `issues:[{path:[],code:"invalid_json",…}]`).
+  - `VERSION_CONFLICT.details = {current: <bản mới nhất, cùng schema response của endpoint>}` (readiness #4 đặt `current` ở gốc; M0 `ErrorResponseSchema` strict nên đặt trong `details`).
+  - `TEMP_LOCKED.details = {until: ISO}`.
+- Bearer: `Authorization: Bearer <access_token>`. Token thiếu/sai chữ ký/hết hạn/sai `aud`, hoặc user không còn đăng nhập được (khoá, khoá theo tenant, tenant khoá) → 401 `UNAUTHORIZED`. Middleware **đọc lại user từ DB mỗi request** (role, `active`, `locked_by_tenant`, tenant `active`): Admin chặn ngay khi khoá/hạ role; Hub vẫn tin token tới `exp` (M1-R09).
+- Role: `member` gọi `/admin/*` → 403 `FORBIDDEN`; `tenant_admin` gọi `/admin/tenants*` → 403 `FORBIDDEN`. Kiểm role **trước** khi tra thực thể.
+- Client: header `X-Client: extension` → refresh token trả/nhận trong **body** (`refresh_token`); thiếu header hoặc giá trị khác → **web**: refresh token chỉ ở cookie `ai_rt` (`HttpOnly; SameSite=Strict; Path=/auth; Max-Age=2592000`; thêm `Secure` khi `APP_ENV=production`), không bao giờ có trong body. CORS cho phép header `X-Client`, `credentials: true`.
+- List: query `q?` (trim, ≤ 100, rỗng = bỏ), `limit` (int 1–200, mặc định 50), `offset` (int 0–100000, mặc định 0); response `{items, total, counts}` với `counts = {all, active, locked}` tính theo cùng bộ lọc **trừ** `status`.
+
+**Kiểu dùng chung** (`common.ts`)
+- `Role = "platform_admin" | "tenant_admin" | "member"` · `Locale = "vi" | "en"` · `EntityStatus = "active" | "locked"`.
+- `TenantKey = string` trim+lowercase, `^[a-z0-9-]{2,32}$` · `Username = string` trim+lowercase, `^[a-z0-9._-]{2,32}$` · `Email = z.email()` trim+lowercase, ≤ 254 · `DisplayName` trim 1–64 · `TenantName` trim 1–128 · `NewPassword` 10–128 ký tự (không trim) · `Version` int ≥ 1.
+- Hằng export (dùng được ở trình duyệt, không import I/O): `COMPANY_KEY_RE = /^[a-z0-9-]{2,32}$/`, `USERNAME_RE = /^[a-z0-9._-]{2,32}$/`, `PASSWORD_MIN_LEN = 10`, `PASSWORD_MAX_LEN = 128`, `DISPLAY_NAME_MAX = 64`, `NAME_MAX = 128` (tên tenant), `EMAIL_MAX = 254`, `LIST_LIMIT_DEFAULT = 50`, `LIST_LIMIT_MAX = 200`, `TEMP_PASSWORD_LEN = 16`; enum `ROLES`, `LOCALES`; `ErrorCode` (union mọi mã trong bảng dưới) + `API_ERRORS: Record<ErrorCode, status>`.
+- Tên schema export: `LoginRequestSchema`, `LoginResponseSchema`, `RefreshRequestSchema`, `RefreshResponseSchema`, `ChangePasswordRequestSchema`, `MeSchema`, `MeUpdateRequestSchema`, `TenantSchema`, `TenantDetailSchema`, `TenantListQuerySchema`, `TenantListResponseSchema`, `TenantCreateRequestSchema`, `TenantCreateResponseSchema`, `TenantUpdateRequestSchema`, `UserSchema`, `UserListQuerySchema`, `UserListResponseSchema`, `UserCreateRequestSchema`, `UserCreateResponseSchema`, `UserUpdateRequestSchema`, `TempPasswordResponseSchema`, helper `listResponseSchema(item)` → `ListResponse<T> = {items: T[], total, counts}`; kiểu TS cùng tên bỏ hậu tố `Schema`.
+- `Me = {id, tenant:{id, key, name}, username, display_name, email: string|null, role, locale, must_change_password: false}` (luôn `false` với người giữ access token).
+- `User = {id, tenant_id, tenant_key, username, display_name, email: string|null, role, locale, status, active, locked_by_tenant, locked_until: ISO|null (khoá tạm FR-07), must_change_password, last_login_at: ISO|null, created_at, updated_at, version}` — `status = "locked"` ⇔ `!active || locked_by_tenant`.
+- `Tenant = {id, key, name, active, status, max_concurrent_sub: int|null, user_count, created_at, updated_at, version}` · `TenantDetail = Tenant & {stats:{user_count, tenant_admin_count, locked_user_count}}`.
+- `TokenGrant = {status:"authenticated", access_token, token_type:"Bearer", expires_in:900, user: Me, refresh_token?}` (`refresh_token` chỉ khi extension).
+- `PasswordChangeRequired = {status:"password_change_required", change_token, expires_in:300}`.
+- `LAST_ADMIN.details = {scope: "platform" | "tenant"}`.
+
+**Token** (M1-R02, bổ sung): access token có thêm claim `sid` (= `refresh_tokens.family_id` của phiên) để "thu hồi mọi refresh token **khác**" (M1-R06); Hub bỏ qua `sid`. `change_token` = JWT EdDSA cùng khoá, `aud="admin:password-change"` (access token đòi `aud="ai-system"` nên hai loại không dùng lẫn), claim `sub`, `tid`, `pwc` (= `users.password_changed_at` epoch ms), `exp`=`iat`+300; dùng một lần vì đổi mật khẩu cập nhật `password_changed_at` → `pwc` lệch.
 
 | Method | Path | Role | Request | Response | Lỗi (HTTP · code) |
 |---|---|---|---|---|---|
-| | | | | | |
+| POST | `/auth/login` | công khai | `LoginRequest {tenant_key: string trim+lower 1–64, username: string trim+lower 1–64, password: string 1–128}` · header `X-Client?` | 200 `TokenGrant \| PasswordChangeRequired` (web: kèm `Set-Cookie ai_rt`) | 400 `VALIDATION_ERROR` · 401 `INVALID_CREDENTIALS` · 423 `TEMP_LOCKED {until}` · 403 `ACCOUNT_LOCKED` |
+| POST | `/auth/refresh` | công khai | web: cookie `ai_rt`, body rỗng · extension: `{refresh_token: string 1–200}` | 200 `TokenGrant` (token mới, cookie mới) | 401 `INVALID_REFRESH_TOKEN` (thiếu/lạ/hết hạn/reuse/user hoặc tenant khoá; web: xoá cookie) · 401 `REFRESH_SUPERSEDED` (token vừa bị xoay ≤ 10 s bởi request song song; **không** thu hồi chuỗi; client thử lại 1 lần) |
+| POST | `/auth/logout` | công khai | như refresh (cookie hoặc body `{refresh_token?}`) | 204 (web: xoá cookie) | — (idempotent, M1-R08) |
+| POST | `/auth/change-password` | bắt buộc: công khai · tự đổi: Bearer (mọi role) | `ChangePasswordRequest = {change_token, new_password} \| {current_password: 1–128, new_password}` (đúng một trong hai dạng) | bắt buộc: 200 `TokenGrant` (như đăng nhập) · tự đổi: 204 | 400 `VALIDATION_ERROR` (mật khẩu < 10 / > 128) · 400 `PASSWORD_UNCHANGED` · 400 `INVALID_CURRENT_PASSWORD` (tính vào bộ đếm khoá tạm) · 423 `TEMP_LOCKED` (tự đổi) · 401 `INVALID_CHANGE_TOKEN` · 403 `ACCOUNT_LOCKED` (bắt buộc, user/tenant vừa bị khoá) · 401 `UNAUTHORIZED` |
+| GET | `/auth/me` | Bearer (mọi role) | — | 200 `Me` | 401 `UNAUTHORIZED` |
+| PATCH | `/auth/me` | Bearer (mọi role) | `{locale}` (không cần `version`: tuỳ chọn cá nhân, ghi sau thắng; vẫn tăng `users.version`) | 200 `Me` | 400 `VALIDATION_ERROR` · 401 |
+| GET | `/admin/tenants` | platform_admin | `?q` (khớp `key`/`name`, ILIKE) `&status?&limit&offset` | 200 `{items: Tenant[], total, counts}` sắp `key` tăng dần | 401 · 403 `FORBIDDEN` · 400 `VALIDATION_ERROR` |
+| POST | `/admin/tenants` | platform_admin | `TenantCreateRequest {key: TenantKey, name: TenantName, max_concurrent_sub?: int 1–10000 \| null (mặc định null), first_admin: {username, display_name, email (bắt buộc), locale? (mặc định "vi")}}` | 201 `{tenant: Tenant, first_admin: User, temp_password: string(16)}` | 400 `VALIDATION_ERROR` · 409 `KEY_TAKEN` · 401 · 403 |
+| GET | `/admin/tenants/:id` | platform_admin | — | 200 `TenantDetail` | 404 `NOT_FOUND` · 401 · 403 |
+| PATCH | `/admin/tenants/:id` | platform_admin | `TenantUpdateRequest {version, name?, max_concurrent_sub?: int\|null}` (`key` không có trong schema → 400) | 200 `Tenant` | 400 · 404 · 409 `VERSION_CONFLICT {current: Tenant}` |
+| POST | `/admin/tenants/:id/lock` | platform_admin | body rỗng | 200 `Tenant` (idempotent khi đã khoá) | 404 · 409 `PLATFORM_TENANT_LOCKED` |
+| POST | `/admin/tenants/:id/unlock` | platform_admin | body rỗng | 200 `Tenant` (idempotent) | 404 |
+| GET | `/admin/users` | platform_admin, tenant_admin | `?tenant_id?` (chỉ platform_admin; tenant_admin: bỏ qua, luôn tenant mình) `&q` (khớp `username`/`display_name`/`email`) `&role?&status?&login=never?&limit&offset` | 200 `{items: User[], total, counts}` sắp `username`, `id` | 401 · 403 · 400 |
+| POST | `/admin/users` | platform_admin (bắt buộc `?tenant_id=`), tenant_admin (tenant mình) | `UserCreateRequest {username, display_name, email?: Email\|null, role, locale? = "vi"}` | 201 `{user: User, temp_password: string(16)}` | 400 `TENANT_REQUIRED` · 400 `VALIDATION_ERROR` · 400 `ROLE_NOT_ALLOWED` · 400 `EMAIL_REQUIRED` · 404 (tenant_id lạ) · 409 `USERNAME_TAKEN` · 409 `EMAIL_TAKEN` |
+| GET | `/admin/users/:id` | platform_admin, tenant_admin | — | 200 `User` | 404 (gồm user tenant khác, M1-R13) |
+| PATCH | `/admin/users/:id` | platform_admin, tenant_admin | `UserUpdateRequest {version, display_name?, email?: Email\|null, role?, locale?}` (`username` không có trong schema) | 200 `User` | 400 `ROLE_NOT_ALLOWED` / `EMAIL_REQUIRED` · 403 `SELF_ACTION_FORBIDDEN` (tự đổi role) · 404 · 409 `VERSION_CONFLICT {current: User}` / `LAST_ADMIN` / `EMAIL_TAKEN` |
+| POST | `/admin/users/:id/lock` | platform_admin, tenant_admin | body rỗng | 200 `User` (idempotent) | 403 `SELF_ACTION_FORBIDDEN` · 404 · 409 `LAST_ADMIN` |
+| POST | `/admin/users/:id/unlock` | platform_admin, tenant_admin | body rỗng | 200 `User` (`active=true`, xoá khoá tạm; **không** gỡ `locked_by_tenant`) | 404 |
+| POST | `/admin/users/:id/logout-all` | platform_admin, tenant_admin | body rỗng | 204 | 404 |
+| POST | `/admin/users/:id/reset-password` | platform_admin, tenant_admin | body rỗng | 200 `{temp_password: string(16)}` | 403 `SELF_ACTION_FORBIDDEN` (tự reset → dùng change-password) · 404 |
+
+Bảng mã lỗi → HTTP (`API_ERRORS` trong `common.ts`, nguồn duy nhất cho BE/FE/QC): `VALIDATION_ERROR` 400 · `TENANT_REQUIRED` 400 · `ROLE_NOT_ALLOWED` 400 · `EMAIL_REQUIRED` 400 · `PASSWORD_UNCHANGED` 400 · `INVALID_CURRENT_PASSWORD` 400 · `UNAUTHORIZED` 401 · `INVALID_CREDENTIALS` 401 · `INVALID_REFRESH_TOKEN` 401 · `REFRESH_SUPERSEDED` 401 · `INVALID_CHANGE_TOKEN` 401 · `FORBIDDEN` 403 · `ACCOUNT_LOCKED` 403 · `SELF_ACTION_FORBIDDEN` 403 · `NOT_FOUND` 404 · `VERSION_CONFLICT` 409 · `KEY_TAKEN` 409 · `USERNAME_TAKEN` 409 · `EMAIL_TAKEN` 409 · `LAST_ADMIN` 409 · `PLATFORM_TENANT_LOCKED` 409 · `TEMP_LOCKED` 423 · `INTERNAL_ERROR` 500.
+
+**Luật cụ thể hoá ở biên** (bổ sung §2, hàm thuần khai báo ở plan.md §4):
+- Đăng nhập theo thứ tự: tenant theo key → user theo username (không có ở bước nào → verify argon2 giả → 401) → đang khoá tạm (`locked_until > now`) → 423, không verify → khoá tạm đã hết → đếm về 0 → verify sai: `failed_logins+1`; chạm 5 → `locked_until=now+15'`, đếm về 0; trả 401 (lần 5 vẫn 401, lần 6 mới 423 — AC-A01) → verify đúng: đếm về 0 → `!active \|\| locked_by_tenant \|\| !tenant.active` → 403 `ACCOUNT_LOCKED` → `must_change_password` → `PasswordChangeRequired` → cấp token, `last_login_at=now`.
+- Refresh: chuỗi `family_id` có hạn **tuyệt đối** 30 ngày từ lúc đăng nhập (token xoay vòng kế thừa `expires_at`). Token đã thu hồi lý do `rotated` trong ≤ 10 s → `REFRESH_SUPERSEDED`; mọi trường hợp đã thu hồi khác → thu hồi cả chuỗi + `INVALID_REFRESH_TOKEN`.
+- Admin "đang hoạt động" để đếm BR-08: `platform_admin`: `active=true` toàn hệ thống; `tenant_admin`: `active=true` trong tenant (bỏ qua `locked_by_tenant`, áp cho **mọi** tenant kể cả đang khoá — chặt hơn BA để mở khoá tenant luôn còn ≥ 1 tenant_admin). Kiểm dưới khoá `SELECT … FOR UPDATE` hàng `tenants` của tenant đích (chống hai admin khoá nhau đồng thời).
+- Role gán được (`ROLE_NOT_ALLOWED`): tenant `platform` chỉ có `platform_admin`; tenant khác chỉ `tenant_admin`/`member`; `tenant_admin` không gán `platform_admin`. Đổi role user `platform_admin` → luôn `ROLE_NOT_ALLOWED`.
+- `email` bắt buộc khi role (sau thay đổi) là `tenant_admin` → `EMAIL_REQUIRED`; xoá email (`null`) của tenant_admin cũng vậy.
+- Tạo user trong tenant đang khoá: cho phép, user mới `locked_by_tenant=true`.
+- `version` chỉ tăng khi đổi trường admin sửa được hoặc trạng thái (`display_name`, `email`, `role`, `locale`, `active`, `locked_by_tenant`, `must_change_password`, `name`, `max_concurrent_sub`); đăng nhập (`failed_logins`, `locked_until`, `last_login_at`) **không** tăng `version`.
+- Đổi role **không** thu hồi refresh token (Admin đọc role từ DB mỗi request; Hub nhận role mới sau ≤ 15 phút).
 
 Sự kiện / NOTIFY: không có ở M1 (FR-53 = M3).
 
 ## 4. Dữ liệu (backend-lead)
 <!-- backend-lead -->
-Phải trả lời: bảng nào tạo ở M1 (Mơ hồ B1), cột bổ sung từ readiness (`users.email`, `last_login_at`, `locked_by_tenant`; `refresh_tokens.family_id`), chính sách RLS và vai trò `admin_rw` vs `hub_ro` vs owner (Mơ hồ B2), index tìm kiếm `?q`, thứ tự migration (`0001_…`), seed.
+**Phạm vi bảng (B1):** M1 tạo `admin.tenants`, `admin.users` (không `totp_secret`, thêm `email`, `locked_by_tenant`, `last_login_at`, `password_changed_at`), `admin.refresh_tokens` (thêm `tenant_id`, `family_id`, `client`, `revoked_reason`, `replaced_by`), `admin.features` (A2: chỉ bảng + seed `core`, API ở M2). **Không** tạo ở M1: `groups`, `group_members` (M3), `config_meta` (M3), `secrets`, `workflows`, `commands`, `feature_*` (M2/M3), `tenant_quotas` (M4), `audit_log` (M4).
+Kiểu chung: `id uuid PK DEFAULT gen_random_uuid()` (app luôn truyền v7); `timestamptz`; `version integer NOT NULL DEFAULT 1 CHECK (version >= 1)`; `created_at`/`updated_at timestamptz NOT NULL DEFAULT now()` (`updated_at` đổi cùng `version`).
 
 | Bảng | Cột | Kiểu | Null | Default | Ràng buộc / index | RLS |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| `tenants` | `id` | uuid | không | `gen_random_uuid()` | PK | bật: `id` = `app.tenant_id` hoặc `app.scope`=`platform` |
+| | `key` | text | không | — | UNIQUE `tenants_key_uq`; CHECK `key ~ '^[a-z0-9-]{2,32}$'`; bất biến (app) | |
+| | `name` | text | không | — | CHECK `char_length(name) BETWEEN 1 AND 128` | |
+| | `active` | boolean | không | `true` | | |
+| | `max_concurrent_sub` | integer | có | null | CHECK `IS NULL OR BETWEEN 1 AND 10000` | |
+| | `settings` | jsonb | không | `'{}'` | chưa dùng ở M1 | |
+| | `version`, `created_at`, `updated_at` | | | | | |
+| `users` | `id` | uuid | không | `gen_random_uuid()` | PK | bật: `tenant_id` = `app.tenant_id` hoặc scope `platform` |
+| | `tenant_id` | uuid | không | — | FK `tenants(id)` ON DELETE RESTRICT | |
+| | `username` | text | không | — | UNIQUE `users_tenant_username_uq (tenant_id, username)` (FR-63; phục vụ đăng nhập + list theo tenant); CHECK `~ '^[a-z0-9._-]{2,32}$'` | |
+| | `email` | text | có | null | UNIQUE `users_tenant_email_uq (tenant_id, lower(email)) WHERE email IS NOT NULL`; CHECK `char_length(email) <= 254` | |
+| | `password_hash` | text | không | — | argon2id PHC string | |
+| | `display_name` | text | không | — | CHECK `char_length BETWEEN 1 AND 64` | |
+| | `role` | text | không | — | CHECK `IN ('platform_admin','tenant_admin','member')`; CHECK `role <> 'tenant_admin' OR email IS NOT NULL` | |
+| | `locale` | text | không | `'vi'` | CHECK `IN ('vi','en')` | |
+| | `active` | boolean | không | `true` | khoá bởi admin = `false` | |
+| | `locked_by_tenant` | boolean | không | `false` | RD#21 | |
+| | `must_change_password` | boolean | không | `true` | | |
+| | `failed_logins` | smallint | không | `0` | CHECK `>= 0` | |
+| | `locked_until` | timestamptz | có | null | khoá tạm FR-07 | |
+| | `last_login_at` | timestamptz | có | null | RD#33 | |
+| | `password_changed_at` | timestamptz | không | `now()` | claim `pwc` của change_token | |
+| | `version`, `created_at`, `updated_at` | | | | INDEX `users_tenant_role_active_idx (tenant_id, role) WHERE active` (đếm LAST_ADMIN); INDEX `users_username_idx (username, id)` (list mọi tenant của platform_admin) | |
+| `refresh_tokens` | `id` | uuid | không | `gen_random_uuid()` | PK | bật: `tenant_id` = `app.tenant_id` hoặc scope `platform`; **không** cấp cho `hub_ro` |
+| | `user_id` | uuid | không | — | FK `users(id)` ON DELETE CASCADE; INDEX `refresh_tokens_user_active_idx (user_id) WHERE revoked_at IS NULL` | |
+| | `tenant_id` | uuid | không | — | FK `tenants(id)` ON DELETE CASCADE (để RLS không cần join); INDEX `refresh_tokens_tenant_active_idx (tenant_id) WHERE revoked_at IS NULL` (khoá tenant) | |
+| | `family_id` | uuid | không | — | B3: = `id` của token đầu chuỗi (lúc đăng nhập); INDEX `refresh_tokens_family_idx (family_id)` | |
+| | `token_hash` | bytea | không | — | SHA-256 của token (32 byte ngẫu nhiên, base64url 43 ký tự); UNIQUE `refresh_tokens_hash_uq`; CHECK `octet_length = 32` | |
+| | `client` | text | không | — | CHECK `IN ('web','extension')` | |
+| | `user_agent` | text | có | null | cắt ≤ 512 ký tự | |
+| | `expires_at` | timestamptz | không | — | hạn tuyệt đối của chuỗi | |
+| | `revoked_at` | timestamptz | có | null | | |
+| | `revoked_reason` | text | có | null | CHECK `IN ('rotated','reuse','logout','logout_all','user_locked','tenant_locked','password_changed','password_reset')`; CHECK `(revoked_at IS NULL) = (revoked_reason IS NULL)` | |
+| | `replaced_by` | uuid | có | null | id token kế tiếp khi `rotated` (không FK) | |
+| | `created_at` | timestamptz | không | `now()` | | |
+| `features` | `id` | uuid | không | `gen_random_uuid()` | PK | **không** bật (catalog toàn hệ thống; quyền ghi do app, M2) |
+| | `key` | text | không | — | UNIQUE; CHECK `~ '^[a-z0-9-]{2,32}$'` | |
+| | `name` | jsonb | không | — | `{vi, en?}` (zod ở biên, M2) | |
+| | `description` | jsonb | không | `'{}'` | | |
+| | `icon` | text | có | null | | |
+| | `status` | text | không | `'on'` | CHECK `IN ('on','off','beta')` | |
+| | `version`, `created_at`, `updated_at` | | | | | |
 
-Migration: … · Seed: M1-R20.
+**Role DB và RLS (B2 — cách ly tenant; SQL đầy đủ ở plan.md §3):**
+- `ai` (owner, superuser ở dev) chỉ dùng cho **migrate, seed, reset test**. Bảng do owner tạo; owner bỏ qua RLS (không `FORCE`) — chủ ý, đây là đường bảo trì.
+- **`admin_api`** (mới): role `LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION`, `IN ROLE admin_rw`, không sở hữu bảng nào. admin-api **chỉ** kết nối bằng `ADMIN_API_DATABASE_URL` (role này). Migration chính tạo role `NOLOGIN`; migration dev/test `migrations-dev/0001_admin_api_login_dev.sql` đặt `LOGIN PASSWORD 'admin_api_dev_pw'`; production do vận hành đặt mật khẩu (PRODUCTION-NOTES). Khởi động admin-api **từ chối chạy** (exit 1) nếu `current_user` là superuser, có `BYPASSRLS`, hoặc sở hữu bảng trong schema `admin`.
+- Ngữ cảnh mỗi request = **một transaction** mở bằng `select set_config('app.scope', $scope, true), set_config('app.tenant_id', $tid, true)` (transaction-local, không rò sang request khác trong pool). `scope='tenant'` + `tenant_id` của actor; `scope='platform'` **chỉ** khi user đọc từ DB có role `platform_admin` (tenant `platform`). Policy `admin_rw` (FOR ALL, USING = WITH CHECK): `current_setting('app.scope', true) = 'platform' OR <cột tenant> = NULLIF(current_setting('app.tenant_id', true), '')::uuid` — thiếu cấu hình → **không thấy hàng nào**.
+- Repository **vẫn luôn** lọc `tenant_id` tường minh (NFR-07); `platform_admin` có `?tenant_id=` thì lọc theo đó, không có thì list mọi tenant (M1-R14).
+- Trước khi có ngữ cảnh (đăng nhập, refresh, logout) dùng 2 hàm `SECURITY DEFINER` hẹp, chỉ `admin_rw` được `EXECUTE`, `SET search_path = pg_catalog, pg_temp`: `admin.tenant_id_by_key(p_key text) RETURNS uuid` và `admin.tenant_id_by_refresh_hash(p_hash bytea) RETURNS uuid`. Chỉ trả `tenant_id`; app đặt `scope='tenant'` rồi đọc user/token qua RLS như thường. `change_token` mang sẵn `tid`.
+- `hub_ro` (Hub, chỉ đọc, xem chéo tenant để tính quyền): policy `FOR SELECT TO hub_ro USING (true)` trên `tenants`, `users`; `REVOKE SELECT ON admin.refresh_tokens FROM hub_ro`; trên `users` thu hồi quyền bảng và chỉ `GRANT SELECT (id, tenant_id, username, display_name, email, role, locale, active, locked_by_tenant, created_at, updated_at, version)` — không đọc `password_hash`, bộ đếm khoá. `features` không RLS, `hub_ro` SELECT theo default privileges M0.
+
+**Migration** (thứ tự): `0001_admin_identity.sql` (drizzle-kit sinh từ `packages/db/src/schema/admin.ts`: 4 bảng, CHECK, index) → `0002_admin_rls.sql` (`drizzle-kit generate --custom`: role `admin_api`, `ENABLE ROW LEVEL SECURITY`, policy, 2 hàm SECURITY DEFINER, GRANT/REVOKE cho `hub_ro`) → dev/test `migrations-dev/0001_admin_api_login_dev.sql`. `db:migrate` giữ nguyên nghĩa M0 (chỉ migration).
+**Seed** (M1-R20): `packages/db/src/seed.ts`, chạy bằng `bun run db:seed` (owner `DATABASE_URL`), dev tiện dùng `bun run db:setup` (= `db:migrate && db:seed`). Một transaction, `INSERT … ON CONFLICT DO NOTHING` theo `tenants.key`, `features.key`, `(tenant_id, username)` → lần 2 không đổi gì (kể cả `password_hash`). Env `SEED_ADMIN_USERNAME` (khớp `Username`), `SEED_ADMIN_PASSWORD` (10–128) — thiếu/sai → exit 1 nêu tên biến, không in giá trị. Seed admin `display_name` = "Platform Admin", `email` null, `locale` vi, `must_change_password=false`.
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
@@ -98,18 +206,40 @@ Quyết định FE đã chốt (chi tiết plan-frontend §0): C1–C3 như ghi 
 
 ## 6. Hiệu năng
 <!-- backend-lead -->
-Mặc định theo `CONVENTIONS.md` §6 và ADM-NFR-03 (CRUD < 300 ms). Riêng M1 cần chốt: chi phí argon2id (tham số `Bun.password`, mục tiêu đăng nhập p95 < 500 ms), index `users(tenant_id, username)`, `refresh_tokens(token_hash)`. Bundle web: `check:bundle` giữ ngân sách M0 (JS ≤ 150 KB gzip ban đầu, route-split các màn).
+Mặc định theo `CONVENTIONS.md` §6 và ADM-NFR-03 (CRUD < 300 ms). Bundle web: `check:bundle` giữ ngân sách M0 (JS ≤ 150 KB gzip ban đầu, route-split các màn).
+
+**argon2id:** `Bun.password` `{algorithm:"argon2id", memoryCost: 19456 (KiB), timeCost: 2}` (p=1) = mức khuyến nghị OWASP (m=19 MiB, t=2, p=1). Đo trên máy dev 2026-10-01 (Bun 1.3.14, 10 lần verify): 19456/2 = **22 ms**; 47104/1 = 31 ms; mặc định Bun 65536/2 = 84 ms. Chọn 19456/2 vì M1 không có rate-limit IP: bộ nhớ mỗi lần verify nhỏ (19 MiB) chịu được dồn đăng nhập. Verify đọc tham số từ chuỗi hash nên đổi tham số sau này không cần migrate. Hash giả cho M1-R01 tính một lần lúc khởi động với cùng tham số.
+
+**Ngân sách siết cho M1** (p95, DB 5.000 user/tenant, máy dev): `POST /auth/login` < 150 ms · `POST /auth/refresh` < 50 ms · middleware xác thực (verify JWT + đọc user theo PK) < 5 ms · `GET /admin/users` < 100 ms · mọi CRUD còn lại < 300 ms. Pool `postgres` `max: 10`.
+
+| Truy vấn | Index dùng |
+|---|---|
+| Đăng nhập: tenant theo key / user theo username | `tenants_key_uq` (qua `admin.tenant_id_by_key`) / `users_tenant_username_uq` |
+| Refresh/logout theo token | `refresh_tokens_hash_uq` (qua `admin.tenant_id_by_refresh_hash`, rồi theo PK) |
+| Middleware đọc actor | `users` PK + `tenants` PK |
+| `GET /admin/users` (một tenant) sắp `username` + `counts` | `users_tenant_username_uq`; `?q` ILIKE trên `username/display_name/email` quét các hàng của tenant (≤ 5.000, ước < 10 ms) — không thêm `pg_trgm` ở M1 |
+| `GET /admin/users` mọi tenant (platform) | `users_username_idx (username, id)` |
+| `GET /admin/tenants` + `user_count` | `tenants_key_uq`; đếm `GROUP BY tenant_id` qua `users_tenant_username_uq` |
+| Đếm admin còn lại (LAST_ADMIN) | `users_tenant_role_active_idx` |
+| Thu hồi token theo user / tenant / chuỗi | `refresh_tokens_user_active_idx` / `refresh_tokens_tenant_active_idx` / `refresh_tokens_family_idx` |
+
+Kiểm: `apps/admin-api/src/modules/users/users.perf.int.test.ts` (backend-lead, T7) nạp 5.000 user, đo p95 20 lần `GET /admin/users?q=…` và `POST /auth/login` in-process. Hàng `refresh_tokens` hết hạn chưa được dọn ở M1 (TECH-DEBT).
 
 ## 7. Phụ thuộc & giả lập
 
 | Phụ thuộc | Cách giả lập khi dev/test |
 |---|---|
-| Postgres 16 | compose `postgres`; DB `ai_system_test` cho `test:int` (role `admin_rw` phải dùng được, Mơ hồ B2) |
+| Postgres 16 | compose `postgres`; DB `ai_system_test` cho `test:int`. Migrate/seed/reset bằng owner (`TEST_DATABASE_URL`); app và test RLS bằng role `admin_api` (`TEST_ADMIN_API_DATABASE_URL`) — xem §4 |
 | SMTP (Mailpit) | Chưa dùng ở M1 (email quota ở M4) |
 | Redis | Chưa dùng ở M1 (không rate-limit IP) |
-| Hub | Không cần; M1 chỉ xuất public key |
+| Hub | Không cần; M1 chỉ xuất public key (`JWT_PUBLIC_KEY`, `JWT_KID`) |
 
-Env mới: không (đã có từ M0: `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`, `JWT_KID`, `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD`, `SECRET_MASTER_KEY`, `DATABASE_URL`). `apps/admin-api/src/config/env.ts` mở rộng validate các biến này. Thư viện mới: `jose` 6.2.12 (đã Accepted trong ADR-0001, chưa cài); không cần ADR mới nếu không thêm thư viện khác.
+**Env** (`.env.example` + CI):
+- Mới: `ADMIN_API_DATABASE_URL=postgres://admin_api:admin_api_dev_pw@localhost:5432/ai_system` (admin-api runtime), `TEST_ADMIN_API_DATABASE_URL=postgres://admin_api:admin_api_dev_pw@localhost:5432/ai_system_test` (test tích hợp chạy app/RLS). Giá trị dev, không phải secret (giống `ai_dev_pw`). `.env.local` cũ không có hai dòng này → admin-api báo "Env không hợp lệ: ADMIN_API_DATABASE_URL"; chép từ `.env.example` (ghi ở README admin-api).
+- Đã có từ M0, M1 bắt đầu dùng: `JWT_PRIVATE_KEY` (PEM PKCS8 Ed25519), `JWT_PUBLIC_KEY` (PEM SPKI), `JWT_KID` (1–64 ký tự) — admin-api `config/env.ts` validate, khởi động ký thử + verify thử một token (cặp khoá lệch → exit 1); `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD` — chỉ `seed.ts` đọc. `DATABASE_URL` giữ nghĩa owner (migrate/seed). `SECRET_MASTER_KEY` chưa dùng ở M1 (M2), không validate.
+- CI (`.github/workflows/ci.yml`): thêm `ADMIN_API_DATABASE_URL`, `TEST_ADMIN_API_DATABASE_URL`, `SEED_ADMIN_USERNAME=admin`, `SEED_ADMIN_PASSWORD=<giá trị dev cố định ≥ 10 ký tự>`, khoá JWT dev sinh trong job (`bun run keys:dev` ghi `.env.local`); bước `db:migrate` + `db:seed` chuyển lên **trước** E2E (e2e M1 cần DB + seed).
+
+Thư viện mới: `jose` 6.2.12 (đã Accepted trong ADR-0001, chưa cài) — chỉ thêm vào `apps/admin-api`. **Không** cài `@hono/zod-validator` (có trong bảng ADR-0001) — tự viết `parseJson/parseQuery` ~30 dòng để kiểm soát định dạng `VALIDATION_ERROR`. Không cần ADR backend mới.
 
 ## 8. Tiêu chí nghiệm thu (qc)
 
@@ -154,6 +284,20 @@ Chi tiết đầy đủ (route, trạng thái từng màn, câu chữ VI/EN mớ
 - A6 Phân biệt web/extension khi trả refresh token: header `X-Client: extension` → body, ngược lại cookie.
 - B1 Phạm vi bảng M1; B2 RLS vs role kết nối (owner/superuser bỏ qua RLS) — backend-lead chốt trong §4.
 - C1–C3 Menu/trang chủ/config badge ở shell M1.
+
+### Backend-lead PLAN (2026-10-01; theo thứ tự nguồn Luật 2, chờ Gate)
+- **Xác nhận** A1, A2, A3, A5, A6 như trên; A4: M1 không ghi audit → TECH-DEBT "thay đổi tenant/user trước M4 không có trong Nhật ký" (điều phối/docs-architect ghi). A5: claim `sub`/`tid` (= `user_id`/`tenant_id` của AC-A01), thêm `sid`. A6: chỉ kiểm phía Admin (`exp ≤ iat+900`, refresh bị từ chối).
+- **Xác nhận các `[ĐX]` §2:** R01 (401 đồng nhất + verify giả — chống dò user/thời gian); R03 (lần sai thứ 5 vẫn 401, lần 6 → 423; khoá tạm kiểm **trước** verify; 423 chỉ lộ user tồn tại sau 5 lần sai — chấp nhận theo RD#24); R04 (403 chỉ khi đúng mật khẩu — kẻ dò phải có mật khẩu); R05/R06 (`change_token` không trạng thái, một lần nhờ `pwc`); R15, R17 (16 ký tự `[A-Za-z0-9]` ≈ 95 bit, lấy mẫu loại bỏ để không lệch); R19 (`limit` ≤ 200); R20 (seed `must_change_password=false` vì mật khẩu do vận hành đặt qua env secret). R20 "chạy sau `db:migrate`" hiểu là **thứ tự**: `db:migrate` giữ nguyên (CI M0 không có env seed), thêm `db:seed` và `db:setup`.
+- **B2 (cách ly tenant):** role đăng nhập riêng `admin_api` (NOBYPASSRLS, không sở hữu bảng) + RLS theo `app.scope`/`app.tenant_id` transaction-local + 2 hàm SECURITY DEFINER chỉ trả `tenant_id` + kiểm role DB lúc khởi động (§4). Loại phương án "`SET LOCAL ROLE admin_rw` trên kết nối owner": session vẫn là superuser, một query quên bọc transaction là bỏ qua RLS.
+- **B3:** `family_id` = id token đầu chuỗi; reuse → thu hồi theo `family_id`. Hạn chuỗi tuyệt đối 30 ngày (không trượt) — đơn giản, giới hạn thời gian một token bị lộ còn dùng được.
+- **B4 (nhiều tab):** BE ân hạn 10 s: token vừa `rotated` dùng lại → 401 `REFRESH_SUPERSEDED`, không thu hồi chuỗi; FE vẫn tuần tự hoá bằng Web Locks (plan-frontend §3.3) và thử lại một lần khi gặp mã này (cookie lúc đó đã là token mới).
+- Middleware Admin đọc user từ DB mỗi request (khoá/hạ role có hiệu lực ngay ở Admin), Hub vẫn theo `exp`.
+- BR-08 đếm `tenant_admin` `active=true` ở **mọi** tenant (kể cả đang khoá) — chặt hơn BA để mở khoá tenant không bao giờ ra tenant không có admin; `LAST_ADMIN.details.scope`.
+- Tự reset mật khẩu của chính mình qua `/admin/users/:id/reset-password` → 403 `SELF_ACTION_FORBIDDEN` (dùng đổi mật khẩu). Mở khoá user xoá luôn khoá tạm.
+- Mật khẩu hiện tại sai ở chế độ tự đổi **tính vào** bộ đếm khoá tạm (chống dò mật khẩu bằng phiên bị lấy cắp).
+- Contract theo yêu cầu frontend-lead (plan-frontend §9): nhận tên mã `INVALID_CURRENT_PASSWORD`, `PASSWORD_UNCHANGED`, `INVALID_CHANGE_TOKEN`, `status:"authenticated"`, `locked_until`, `stats.{user_count,tenant_admin_count,locked_user_count}`, `counts`, `LAST_ADMIN.details.scope`, hằng/regex export. Khác yêu cầu: (1) `TokenGrant` có thêm `token_type`, `user: Me` (đỡ một lần gọi `/auth/me` sau đăng nhập/refresh); (2) thêm 401 `REFRESH_SUPERSEDED` (B4); (3) `POST /admin/tenants` không thể trả `USERNAME_TAKEN`/`EMAIL_TAKEN` (tenant mới chưa có user) — FE map cũng không sao; (4) cổng admin-api dev là `PORT=3001` (`.env.example` M0), không phải 4000 — `ADMIN_API_URL=http://localhost:3001`.
+- Không thêm thư viện: `jose` (ADR-0001); bỏ `@hono/zod-validator`.
+
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - <ngày> · <agent> · chọn … vì …
 
