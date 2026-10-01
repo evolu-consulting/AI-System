@@ -41,7 +41,8 @@ i18next.use(initReactI18next).init({
   ),
   fallbackLng: DEFAULT_LOCALE,
   supportedLngs: [...SUPPORTED_LOCALES],
-  interpolation: { escapeValue: false },
+  // Chuỗi dùng {tham_số} (plan-frontend §7), không phải {{...}} mặc định của i18next.
+  interpolation: { prefix: "{", suffix: "}", escapeValue: false },
 });
 
 export const i18n = i18next;

@@ -13,6 +13,11 @@ describe("ADM-NFR-06 · i18n admin-web", () => {
     await i18n.changeLanguage("vi");
   });
 
+  test("nội suy {tham_số}", () => {
+    expect(i18n.t("auth.error.tempLocked", { time: "14:45" })).toBe("Tạm khoá đến 14:45");
+    expect(i18n.t("overview.welcome", { name: "Lan" })).toBe("Xin chào, Lan");
+  });
+
   test("syncDocument đặt lang", () => {
     const doc = { documentElement: { lang: "" } };
     syncDocument(doc, "en");

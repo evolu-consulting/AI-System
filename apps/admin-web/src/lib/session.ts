@@ -99,7 +99,10 @@ async function ensure(): Promise<SessionStatus> {
 }
 
 async function login(req: LoginRequest): Promise<LoginResponse> {
-  const res = await sendPublic<LoginResponse>("/auth/login", { method: "POST", body: req });
+  const res = await sendPublic<LoginResponse>("/auth/login", {
+    method: "POST",
+    body: req,
+  });
   if (res.status === "authenticated") {
     applyGrant(res);
   } else {
