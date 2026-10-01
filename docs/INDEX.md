@@ -34,14 +34,14 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 ## Code & truy vết
 | File | Nội dung |
 |---|---|
-| `CODEMAP.md` | Module → file chính, hàm vào (tới M1) |
+| `CODEMAP.md` | Module → file chính, hàm vào (tới M2) |
 | `TRACE.md` | FR → spec → code → test (sinh bằng `bun run trace`) |
 | `specs/<ID>/` | spec.md · plan.md · plan-frontend.md · tasks.md · test-plan.md · readiness.md |
-| `specs/M0-gate.md`, `specs/M1-gate.md` | Biên bản Gate (Luật 2b) |
+| `specs/M0-gate.md`, `specs/M1-gate.md`, `specs/M2-gate.md` | Biên bản Gate (Luật 2b) |
 | `specs/_design/admin-missing-screens.md` | Màn chưa có artboard (chuỗi, trạng thái) |
 | `../packages/db/README.md` | Schema, migration, RLS, seed: file vào + bẫy |
-| `../apps/admin-api/src/modules/{auth,tenants,users,health}/README.md` | Module API: FR, file vào, bẫy |
-| `../apps/admin-web/README.md`, `../apps/admin-web/src/features/{auth,shell,tenants,users}/README.md` | App web và feature: FR, file vào, bẫy |
+| `../apps/admin-api/src/modules/{auth,tenants,users,health,secrets,workflows,commands,features}/README.md` | Module API: FR, file vào, bẫy |
+| `../apps/admin-web/README.md`, `../apps/admin-web/src/features/{auth,shell,tenants,users,secrets,workflows,commands,features}/README.md` | App web và feature: FR, file vào, bẫy |
 | `specs/_template/` | Mẫu cho spec mới |
 | `readiness/` | Báo cáo spec-readiness trước khi có spec (vd `2026-10-01-admin-m1-m4.md`) |
 
@@ -50,4 +50,4 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 |---|---|---|---|
 | `M0-bootstrap` | Khung repo, công cụ, hạ tầng dev | M0 | done (chờ merge) |
 | `M1-foundation-identity` | DB admin + RLS + seed, Auth, Tenants, Users, App shell | M1 | done (2026-10-01) |
-| `M2-catalog-command` | Secrets, Workflows, Commands (không Test), Features + entitlement | M2 | draft (đã tách spec 2026-10-01, chờ plan + readiness) |
+| `M2-catalog-command` | Secrets, Workflows, Commands (không Test), Features + entitlement | M2 | done (2026-10-02) |
