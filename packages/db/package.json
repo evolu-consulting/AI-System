@@ -5,13 +5,15 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./test-db": "./src/test-db.ts"
+    "./test-db": "./src/test-db.ts",
+    "./seed": "./src/seed.ts"
   },
   "scripts": {
     "typecheck": "tsc -p . --noEmit",
     "generate": "bun --env-file=../../.env.local drizzle-kit generate"
   },
   "dependencies": {
+    "@ai/contracts": "workspace:*",
     "drizzle-orm": "0.45.3",
     "postgres": "3.4.9",
     "zod": "4.6.5"

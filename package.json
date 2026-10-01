@@ -19,6 +19,8 @@
     "keys:dev": "bun tools/scripts/src/keys-dev.ts",
     "db:generate": "bun run --cwd packages/db generate",
     "db:migrate": "bun --env-file=.env.local packages/db/src/migrate.ts",
+    "db:seed": "bun --env-file=.env.local packages/db/src/seed.ts",
+    "db:setup": "bun run db:migrate && bun run db:seed",
     "mocks": "bun tools/mocks/src/server.ts",
     "check:size": "bun tools/scripts/src/check-size.ts",
     "depcruise": "bun tools/scripts/src/depcruise.ts",

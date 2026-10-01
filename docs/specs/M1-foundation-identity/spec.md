@@ -324,6 +324,9 @@ Các mặc định mới (`[ĐX]` ở M1-R01, 03, 04, 06, 15, 17, 20) và nguồ
 - 2026-10-01 · backend-lead · T2: `migrations-dev/meta/_journal.json` thêm entry viết tay cho `0001_admin_api_login_dev` (thư mục dev không do drizzle-kit quản lý, migrator chỉ đọc journal + sql); không thêm snapshot.
 - 2026-10-01 · backend-lead · T2: tên CHECK theo mẫu `<bảng>_<cột>_check`; thêm unique `features_key_uq` (spec chỉ ghi UNIQUE, cần tên cho `ON CONFLICT`), CHECK `refresh_tokens_user_agent_check` (≤ 512, spec ghi "cắt ≤ 512") và CHECK `version >= 1` cho mọi bảng có `version`.
 - 2026-10-01 · backend-lead · T2: `@ai/db` export thêm `NIL_TENANT_ID`, `NIL_SCOPE` (scope tạm khi gọi hàm SECURITY DEFINER, plan §3.4), bảng Drizzle `tenants/users/refreshTokens/features`, `REVOKE_REASONS`.
+- 2026-10-01 · backend-lead · T3: `@ai/db` thêm phụ thuộc `@ai/contracts` (workspace) để `SeedEnvSchema` dùng chung `USERNAME_RE`, `PASSWORD_MIN_LEN/MAX_LEN` (một nguồn). `SEED_ADMIN_USERNAME` không trim/lower (sai là lỗi, không tự sửa giá trị env). `describeError` export từ `migrate.ts` để `seed.ts` dùng lại (cùng gợi ý ECONNREFUSED).
+- 2026-10-01 · backend-lead · T3: seed chỉ băm mật khẩu khi chưa có user `(platform, username)`; id hàng seed sinh bằng `Bun.randomUUIDv7()`. `verifyPassword` nuốt lỗi hash không phải PHC → `false` (luồng đăng nhập luôn ra 401 đồng nhất).
+- 2026-10-01 · backend-lead · T3: CI chèn bước `bun run keys:dev` ngay trước `Install` (script không cần dependency) và bước `bun run db:migrate && bun run db:seed` ngay trước `E2E`; bước "Migrate" cũ trước `test:int` giữ nguyên (lần 2 là no-op). Env job thêm `ADMIN_API_DATABASE_URL`, `TEST_ADMIN_API_DATABASE_URL`, `SEED_ADMIN_*`, `ADMIN_API_URL`; `JWT_*` lấy từ `.env.local` (env của job vẫn thắng giá trị trong file khi dùng `--env-file`, đã thử Bun 1.3.14).
 
 ## 10. Tranh chấp test
 - (không)

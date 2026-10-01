@@ -1,4 +1,4 @@
-# ADM-NFR-06 · CI M0 (spec M0 §8 AC17, plan.md mục CI). Chỉ file — chưa push.
+# ADM-NFR-06 · CI M0 (spec M0 §8 AC17, plan.md mục CI) + M1 (spec M1 §7: env admin_api/seed/e2e, migrate + seed trước E2E). Chỉ file — chưa push.
 name: ci
 
 on:
@@ -38,6 +38,12 @@ jobs:
       TEST_DATABASE_URL: postgres://ai:ai_dev_pw@localhost:5432/ai_system_test
       CORS_ORIGINS: http://localhost:3000
       PORT: "3001"
+      # M1 (spec M1 §7): role admin_api (NOBYPASSRLS) cho admin-api và test RLS; seed + e2e. Giá trị dev cố định.
+      ADMIN_API_DATABASE_URL: postgres://admin_api:admin_api_dev_pw@localhost:5432/ai_system
+      TEST_ADMIN_API_DATABASE_URL: postgres://admin_api:admin_api_dev_pw@localhost:5432/ai_system_test
+      SEED_ADMIN_USERNAME: admin
+      SEED_ADMIN_PASSWORD: Seed-Admin-Pw-01
+      ADMIN_API_URL: http://localhost:3001
     steps:
       - uses: actions/checkout@v7
         with:
@@ -59,6 +65,10 @@ jobs:
 
       - name: Tạo DB test (service container không mount được init script)
         run: PGPASSWORD=ai_dev_pw psql -h localhost -U ai -d ai_system -c "CREATE DATABASE ai_system_test OWNER ai"
+
+      # JWT_* sinh mới mỗi job vào .env.local (env của job vẫn thắng giá trị trong file).
+      - name: Khoá dev (.env.local)
+        run: bun run keys:dev
 
       - name: Install
         run: bun install --frozen-lockfile
@@ -83,6 +93,10 @@ jobs:
 
       - name: Ngân sách bundle
         run: bun run --filter @ai/admin-web check:bundle
+
+      # e2e M1 cần DB đã migrate + seed (admin-api webServer của Playwright).
+      - name: Migrate + seed trước E2E
+        run: bun run db:migrate && bun run db:seed
 
       - name: E2E
         run: bunx playwright test

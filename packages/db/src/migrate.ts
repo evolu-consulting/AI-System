@@ -45,7 +45,7 @@ export async function runMigrations(opts: {
   }
 }
 
-function describeError(err: unknown): string {
+export function describeError(err: unknown): string {
   const code = (err as { code?: unknown } | null)?.code;
   const msg = err instanceof Error ? err.message : String(err);
   const hint =

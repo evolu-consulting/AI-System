@@ -91,6 +91,7 @@
       "name": "@ai/db",
       "version": "0.0.0",
       "dependencies": {
+        "@ai/contracts": "workspace:*",
         "drizzle-orm": "0.45.3",
         "postgres": "3.4.9",
         "zod": "4.6.5",
