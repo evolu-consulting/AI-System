@@ -71,12 +71,123 @@ Luật gốc: [BA §5.2, §5.5, §5.7, §6 (BR-09, 11, 12)](../../design/admin/b
 
 ## 3. Contract (backend-lead)
 <!-- backend-lead -->
-File: `packages/contracts/src/…` (mới: groups, grants, access/effective-access, config). Chi tiết hiện thực: `plan.md`. Hạn chế đầu vào: M3-R01…R24; mã lỗi mới (vào `API_ERRORS`; tên do backend-lead chốt, không đổi nghĩa); payload NOTIFY là contract với Hub (M3-R16).
+File: `packages/contracts/src/{groups,grants,access,config}.ts` (mới) + `common.ts` (2 mã lỗi, `REFERENCE_FIELDS`, `NotEntitledDetailsSchema`), sửa `users.ts` (T4), `commands.ts` (T6), export `index.ts`. Chi tiết hiện thực: [plan.md](plan.md). Đã đối chiếu yêu cầu FE C1–C12 ([plan-frontend.md §9](plan-frontend.md)); trả lời từng mục ở plan.md §11.
+
+**Quy ước** (kế thừa M1 §3, M2 §3, không nhắc lại): body/query strict, `:id`/`:user_id` không phải uuid → 404, lỗi `{error:{code,message,details?}}` `message` tiếng Anh cố định theo mã, ISO UTC, id uuid v7 (riêng `beta-testers` do trigger tạo: v4).
+- **Role:** mọi route M3 = `requireAuth` + `requireRole("platform_admin","tenant_admin")`, kiểm **trước** khi parse/tra → `member` 403 `FORBIDDEN`. Ngoại lệ: `GET /admin/commands/:id/access` giữ chỉ `platform_admin` (M2).
+- **Tenant** (như `/admin/users`, `resolveTenantScope`): `tenant_admin` luôn tenant mình (`?tenant_id` bị bỏ qua); `platform_admin` truyền `?tenant_id=` — thiếu khi **ghi** hoặc khi đọc `matrix` → 400 `TENANT_REQUIRED`; thiếu khi đọc list → mọi tenant; `tenant_id` không tồn tại → 404 (ghi, matrix), list rỗng. Scope DB: `tenant_admin` → `tenant`, `platform_admin` → `platform`. Group/user/grant của tenant khác → 404 khi ở path, `INVALID_REFERENCE` khi ở body.
+- `updated_by`, `granted_by`, `added_by` = **username** (`string | null`). Thành viên và grant là **tập hợp**: idempotent, không `version`, không tăng `version` group/feature/user (R05). `PATCH` group nhận `version` (M1-R19).
+- **Mọi ghi cấu hình** thành công có đổi dữ liệu (kể cả module M1/M2, R15, bảng sự kiện ở plan §5.3) → `config_version` +1 trong cùng transaction + đúng một NOTIFY `config_changed` **sau commit** (R16); không đổi gì / lỗi / rollback → không.
+
+**Hằng/enum export** (dùng được ở trình duyệt): `BETA_GROUP_KEY = "beta-testers"`, `GROUP_KEY_RE = CATALOG_KEY_RE`, `GROUP_NAME_MAX = 64`, `GROUP_DESC_MAX = 400`, `GROUP_PASTE_MAX = 500`, `USERNAME_INPUT_MAX = 64`, `USER_GROUPS_MAX = 50`, `OTHER_GROUPS_MAX = 3`, `GRANT_BATCH_MAX = 200`, `MATRIX_GROUPS_MAX = 200`, `MATRIX_COMMAND_NAMES_MAX = 10`, `ACCESS_COMMANDS_MAX = 1000`, `ACCESS_GROUPS_MAX = 20`, `CONFIG_CHANNEL = "config_changed"`. Enum: `MATRIX_ROW_STATES = [core, entitled, revoked, none]`, `ACCESS_REASONS = [core, grant_user, grant_group, beta_member]`, `USER_BLOCKERS = [user_inactive, tenant_locked]`, `FEATURE_MISSING = [user_inactive, tenant_locked, feature_off, beta_not_member, no_entitlement, no_grant]`, `COMMAND_MISSING = [user_inactive, tenant_locked, command_disabled, workflow_disabled, no_effective_feature]`, `CONFIG_ENTITIES = [tenant, user, group, grant, feature, entitlement, workflow, command, secret, batch]`. Hàm thuần: `parseUsernameList(text)` (tách `/[\s,]+/`, trim, chữ thường, bỏ rỗng/trùng giữ thứ tự), `configChangedPayload(v, events)` (plan §4).
+
+**Groups** (`groups.ts`) — R01…R05, R23
+- `GroupKey` = trim → lower → `GROUP_KEY_RE`. `GroupName = LocalizedText(64)`. `GroupDescription` = trim ≤ 400, `""` → `null`.
+- `GroupRef = {id, key, name: LocalizedText(64), is_beta: boolean}` (`is_beta ⇔ key = "beta-testers"`).
+- `GroupListItem = {id, tenant_id, tenant_key, tenant_name, key, name, description: string|null, is_beta, member_count, feature_count (số grant của group), agent_count (= 0 tới M5), version, updated_at, updated_by}`. `Group = GroupListItem & {created_at}`.
+- `GroupCreateRequest {key, name, description? = null}` · `GroupUpdateRequest {version, name?, description?: GroupDescription | null}` (không có `key` → 400; R01 bất biến).
+- `GroupListQuery = ListQueryBase + {tenant_id?: uuid}` (`q` khớp `key`, `name.vi`, `name.en` ILIKE) · `GroupListResponse = {items, total}` (không chip nên không `counts`), sắp `tenant_key`, `beta-testers` đầu, rồi `key`.
+- `GroupMember = {user_id, username, display_name, role, status, locked_by_tenant, last_login_at: iso|null, added_at, added_by, other_groups: GroupRef[] (≤ 3, beta đầu rồi key, không gồm group đang xem), other_groups_total}` · `GroupMemberListQuery = ListQueryBase` (`q` khớp `username`/`display_name`) · `{items, total}` sắp `username`.
+- `GroupMembersAddRequest {usernames: string trim → lower, 1–64 ký tự [] (1–500; bỏ trùng sau chuẩn hoá), dry_run?: boolean = false}` → `GroupMembersAddResponse {added: string[], not_found: string[], already: string[]}` (username đã chuẩn hoá, theo thứ tự gửi lên). `not_found` = không khớp `USERNAME_RE`, không tồn tại, hoặc thuộc tenant khác (R03); user bị khoá vẫn vào `added`. **Không** all-or-nothing. `dry_run` → cùng kết quả, không ghi, không NOTIFY (FE C4).
+- `GroupVersionConflictDetails = versionConflictDetailsSchema(GroupSchema)` (`{current: Group, updated_at}`).
+
+**Grants** (`grants.ts`) — R07…R10
+- `GrantFeatureRef = {id, key, name: LocalizedText(64), status, is_core}`. `GrantSubject` = discriminatedUnion `type`: `{type:"group", group: GroupRef}` · `{type:"user", user: {id, username, display_name}}`.
+- `Grant = {id, tenant_id, feature: GrantFeatureRef, subject: GrantSubject, entitled: boolean (entitlement chưa thu hồi **lúc đọc**; BR-12), granted_at, granted_by}`.
+- `GrantListQuery = ListQueryBase + {tenant_id?, feature_id?, group_id?, user_id?}` (`q` khớp key/tên feature) · `{items, total}` sắp `feature.key`, rồi group trước user, rồi `group.key`/`username`.
+- `GrantCreateRequest {feature_id, group_id?, user_id?}` — đúng một trong `group_id`/`user_id` (refine → `VALIDATION_ERROR` path `[]`). `GrantDeleteQuery {tenant_id?, feature_id, group_id?, user_id?}` cùng luật.
+- `GrantKey = {feature_id, group_id}` · `GrantBatchRequest {add?: GrantKey[] = [], remove?: GrantKey[] = []}` — `add.length + remove.length` 1–200; một cặp xuất hiện hai lần (trong một mảng hoặc giữa hai mảng) → 400 `VALIDATION_ERROR` (path tới phần tử trùng). Chỉ group (R09). `GrantBatchResponse {added, removed, unchanged}` (đếm; `unchanged` = thêm cặp đã có + bớt cặp không có).
+- `GrantMatrixQuery = {tenant_id?, group_id?: uuid, q?: (lọc group) trim ≤ 100, limit: 1–200 = 200, offset: 0–100000 = 0}` · `GrantMatrix = {tenant_id, groups: (GroupRef & {member_count})[] (≤ 200; `group_id` → đúng một), group_total, features: [{feature: GrantFeatureRef, state: MATRIX_ROW_STATES, command_names: string[] (≤ 10, sắp), command_count, granted_group_ids: uuid[] (trong số `groups` trả về, sắp)}]}`. `features` = **mọi** feature catalog, sắp `core` đầu rồi `key`; `state`: `core` · `entitled` (entitlement chưa thu hồi) · `revoked` (đã thu hồi **và** còn grant, R09) · `none` (chưa mở; FE ẩn mặc định, D11).
+
+**Kiểm tra quyền** (`access.ts`) — R11, R12
+- `AccessReason` = discriminatedUnion `code`: `{code:"core"}` · `{code:"grant_user"}` · `{code:"grant_group", group: GroupRef}` · `{code:"beta_member"}`.
+- `EffectiveFeature = {feature: GrantFeatureRef, effective: boolean, reasons: AccessReason[], missing: FEATURE_MISSING[]}` — `effective ⇔ missing = []`; `reasons` có cả khi không hiệu lực (vd grant còn giữ khi `no_entitlement`, A11).
+- `FeatureMini = {id, key, name}`. `EffectiveCommand = {id, name, aliases, description: LocalizedText(200), visible: boolean, via: [{feature: FeatureMini, reasons: AccessReason[]}], blocked_by: [{feature: FeatureMini, missing: FEATURE_MISSING ∖ USER_BLOCKERS []}], missing: COMMAND_MISSING[], suggestion: {action: "grant_feature", feature: FeatureMini} | null}` — `visible ⇔ missing = []`; `suggestion` khác null ⇔ không thấy chỉ vì thiếu grant ở một feature (F4 "Cấp cho group…").
+- `EffectiveAccess = {user: {id, username, display_name, tenant_id, tenant_key, status, groups: GroupRef[]}, blockers: USER_BLOCKERS[], features: EffectiveFeature[] (mọi feature, `core` đầu rồi key), commands: EffectiveCommand[] (sắp `name`, ≤ 1.000), command_total, agents: {available: false}, config_version}`. Luật tính chính xác = `computeEffectiveAccess` (plan §4), cùng nghĩa với SQL tham chiếu (plan §3.2) mà Hub dùng.
+- `EffectiveAccessQuery {command?: string}` = trim → lower → bỏ một `/` đầu → `CATALOG_KEY_RE`; khớp `name` hoặc alias → `commands` chỉ còn command đó; không khớp → `commands: []`, `command_total: 0` (không 404).
+
+**Users** (`users.ts`, sửa ở T4) — R13: `User` thêm `groups: GroupRef[]` (≤ 50, beta đầu rồi key) + `group_count` ở **mọi** response user (list, get, PATCH, tạo, `first_admin`, `VERSION_CONFLICT.current`); `UserListQuery` thêm `group?: uuid` (group không thấy được → list rỗng). `PATCH /admin/users` **không** đổi (A11).
+
+**Commands "Ai dùng được"** (`commands.ts`, sửa ở T6) — R14: `CommandAccessItem` thêm `groups: [{id, key, name, is_beta, feature: FeatureMini}]` (≤ 20; một mục = một cặp group–feature của command đang được cấp, feature `on|beta` có entitlement chưa thu hồi; sắp group key rồi feature key), `group_count` (tổng số cặp), `visible_user_count` (số user **thấy thật** theo R11, = đếm từ `effective-access`). `active_user_count`, tập tenant, phân trang giữ nghĩa M2.
+
+**NOTIFY — contract với Hub** (`config.ts`) — R15, R16
+- Kênh `config_changed`; payload = JSON `ConfigChangedPayload = strict {v: int ≥ 1, entity: CONFIG_ENTITIES, tenant_id?: uuid}`, ≤ 8.000 byte. `v` = `config_meta.config_version` sau ghi; `entity` = thực thể của transaction (nhiều loại → `batch`); `tenant_id` có khi mọi thay đổi thuộc **một** tenant (group, grant, user, entitlement, tenant), vắng khi toàn hệ thống (catalog, secret). **Không bao giờ** có tên, username, giá trị secret, mật khẩu.
+- Đúng một NOTIFY mỗi transaction thành công có đổi; gửi ngoài transaction sau commit. NOTIFY có thể **mất** (crash giữa commit và gửi) hoặc **đến lệch thứ tự** → Hub lấy `max(v)`, và đọc `select config_version from admin.config_meta` (role `hub_ro`) khi khởi động, khi LISTEN nối lại và định kỳ (mặc định 30 s).
+- Không có endpoint HTTP cho `config_version` (Hub đọc DB; FE không cần). `effective-access.config_version` chỉ để hiển thị/kiểm.
+
+| Method | Path | Request | Response | Lỗi (HTTP · code) |
+|---|---|---|---|---|
+| GET | `/admin/groups` | `GroupListQuery` | 200 `GroupListResponse` | 400 · 401 · 403 |
+| POST | `/admin/groups` | `?tenant_id` + `GroupCreateRequest` | 201 `Group` | 400 `VALIDATION_ERROR` / `TENANT_REQUIRED` · 404 (tenant) · 409 `KEY_TAKEN` |
+| GET | `/admin/groups/:id` | — | 200 `Group` | 404 |
+| PATCH | `/admin/groups/:id` | `GroupUpdateRequest` | 200 `Group` | 400 · 404 · 409 `VERSION_CONFLICT {current: Group, updated_at}` |
+| DELETE | `/admin/groups/:id` | — | 204 (cascade thành viên + grant) | 404 · 409 `BETA_GROUP_PROTECTED` |
+| GET | `/admin/groups/:id/members` | `GroupMemberListQuery` | 200 `{items: GroupMember[], total}` | 404 |
+| POST | `/admin/groups/:id/members` | `GroupMembersAddRequest` | 200 `GroupMembersAddResponse` | 400 (rỗng, > 500, phần tử > 64) · 404 |
+| DELETE | `/admin/groups/:id/members/:user_id` | — | 204 (không là thành viên / user lạ → vẫn 204) | 404 (group) |
+| GET | `/admin/grants` | `GrantListQuery` | 200 `{items: Grant[], total}` | 400 |
+| POST | `/admin/grants` | `?tenant_id` + `GrantCreateRequest` | 201 `Grant` (mới) · 200 `Grant` (đã có, không ghi) | 400 `VALIDATION_ERROR` / `TENANT_REQUIRED` / `INVALID_REFERENCE {field:"feature_id"\|"group_id"\|"user_id"}` · 404 (tenant) · 409 `CORE_FEATURE_PROTECTED` / `NOT_ENTITLED {feature_ids}` |
+| DELETE | `/admin/grants` | `GrantDeleteQuery` | 204 (không có grant / feature hoặc subject không thấy → vẫn 204) | 400 · 404 (tenant) · 409 `CORE_FEATURE_PROTECTED` |
+| PUT | `/admin/grants/batch` | `?tenant_id` + `GrantBatchRequest` | 200 `GrantBatchResponse` (một transaction, R08) | 400 `VALIDATION_ERROR` / `TENANT_REQUIRED` / `INVALID_REFERENCE {field:"feature_ids"\|"group_ids", ids}` · 404 (tenant) · 409 `CORE_FEATURE_PROTECTED` / `NOT_ENTITLED {feature_ids}` |
+| GET | `/admin/grants/matrix` | `GrantMatrixQuery` | 200 `GrantMatrix` | 400 `TENANT_REQUIRED` · 404 (tenant, `group_id`) |
+| GET | `/admin/users/:id/effective-access` | `EffectiveAccessQuery` | 200 `EffectiveAccess` | 400 · 404 (user tenant khác) |
+| GET | `/admin/users` (đổi) | `UserListQuery` + `group?` | 200, item có `groups`, `group_count` | như M1 |
+| GET | `/admin/commands/:id/access` (đổi) | như M2 | 200, item có `groups`, `group_count`, `visible_user_count` | như M2 |
+
+Không có: cấp agent (FR-37, M5), import/export grant (M4), endpoint `config_version`, UI cấp cho user (API có, A6).
+
+**Mã lỗi mới** (vào `API_ERRORS`, `MESSAGES`; `details` export strict):
+| Code | HTTP | `details` | Khi nào |
+|---|---|---|---|
+| `BETA_GROUP_PROTECTED` | 409 | — | `DELETE` group `beta-testers` (R02). Đổi key không có đường (PATCH không nhận `key`) |
+| `NOT_ENTITLED` | 409 | `{feature_ids: uuid[]}` (≥ 1, sắp tăng) | thêm grant cho feature không có entitlement chưa thu hồi ở tenant (R07; cả `platform_admin`) |
+Dùng lại: `KEY_TAKEN` (23505 `groups_tenant_key_uq`), `CORE_FEATURE_PROTECTED` (grant/batch có `core`), `INVALID_REFERENCE` (`REFERENCE_FIELDS` thêm `feature_id`, `group_id`, `user_id`, `group_ids`), `TENANT_REQUIRED`, `VERSION_CONFLICT`, `NOT_FOUND`, `FORBIDDEN`. `API_ERRORS` sau M3: 34 + 2 = **36** mã.
+
+**Thứ tự kiểm** (role → parse → tenant (`TENANT_REQUIRED` → 404) → …):
+- Group POST: `KEY_TAKEN`. PATCH: 404 → `version` → không đổi gì (200 hiện tại, không bump). DELETE: 404 → `BETA_GROUP_PROTECTED`.
+- Members POST: 404 group → kết quả từng phần. DELETE: 404 group → 204.
+- Grant POST: `INVALID_REFERENCE` (feature, rồi subject) → `CORE_FEATURE_PROTECTED` → `NOT_ENTITLED` → đã có (200) / tạo (201).
+- Batch: `INVALID_REFERENCE` (`feature_ids`, rồi `group_ids`; `ids` sắp tăng, không trùng) → `CORE_FEATURE_PROTECTED` (bất kỳ phần tử) → `NOT_ENTITLED` (chỉ `add`; `remove` không cần entitlement) → ghi; lỗi → **không ghi gì**.
+- Effective-access: 404 user → tính (user khoá/tenant khoá không phải lỗi, ra `blockers`).
+
+**`version`** (R18): group tăng khi đổi `name`, `description`; không tăng khi đổi thành viên/grant. `updated_by/updated_at` đổi cùng `version`. Thực thể có `version` và `VERSION_CONFLICT`: tenant, user (M1), workflow, command, feature (M2), group (M3).
 
 ## 4. Dữ liệu (backend-lead)
 <!-- backend-lead -->
-Bảng mới (BA §7): `groups`, `group_members`, `feature_grants`, `config_meta` (một hàng, seed trong migration). Yêu cầu từ spec: `groups` có `version`, `updated_by` (username khi trả ra, như M2 Y10); unique `(tenant_id, key)`; `feature_grants` unique `(feature_id, subject)`, cascade khi xoá group/feature (M3-R04, R10) — BA §7 dùng `subject_type + subject_id` không FK; backend-lead chọn phương án có toàn vẹn (đề xuất hai cột `group_id`/`user_id` nullable + CHECK đúng một cột + unique riêng) và ghi vào §9; RLS theo M3-R06/R17; backfill `beta-testers` + hàng `config_meta` trong migration mới. **Không sửa** `0000`–`0004`.
-Migration: `0005_…` (sinh bằng drizzle-kit, `db:generate` lần 2 "No schema changes"), `0006_…` (custom: RLS, GRANT/REVOKE).
+Kiểu chung như M1/M2 §4. Schema Drizzle mới ở `packages/db/src/schema/permissions.ts` (tách khỏi `admin.ts` để ≤ 400 dòng; `drizzle.config.ts` nhận cả hai file). FK kép `(tenant_id, x_id) → x(tenant_id, id)` bảo đảm ở **DB** rằng thành viên/grant không trỏ sang tenant khác (R03, R07; thay `subject_type + subject_id` của BA §7, A14).
+
+| Bảng | Cột | Kiểu | Null | Default | Ràng buộc / index | RLS |
+|---|---|---|---|---|---|---|
+| `users` (sửa) | — | | | | thêm UNIQUE `users_tenant_id_uq (tenant_id, id)` (đích FK kép) | như M1 |
+| `groups` | `id` | uuid | không | `gen_random_uuid()` | PK; UNIQUE `groups_tenant_id_uq (tenant_id, id)` | **bật**: `groups_admin_rw` như `users` (platform, hoặc `tenant` ∧ `tenant_id = app.tenant_id`); `groups_hub_ro` SELECT `USING (true)` |
+| | `tenant_id` | uuid | không | | FK `tenants(id) ON DELETE CASCADE` | |
+| | `key` | text | không | | UNIQUE `groups_tenant_key_uq (tenant_id, key)`; CHECK `~ '^[a-z0-9-]{2,32}$'`; bất biến (app) | |
+| | `name` | jsonb | không | | `{vi, en?}`; CHECK `jsonb_typeof = 'object' AND name ? 'vi'` | |
+| | `description` | text | có | null | CHECK `char_length <= 400` | |
+| | `version`, `created_at`, `updated_at`, `updated_by` | | | | như M2 (`updated_by` FK `users(id) ON DELETE SET NULL`) | |
+| `group_members` | `tenant_id` | uuid | không | | FK kép `(tenant_id, group_id) → groups(tenant_id, id) ON DELETE CASCADE`; FK kép `(tenant_id, user_id) → users(tenant_id, id) ON DELETE CASCADE` | **bật**: `group_members_admin_rw`, `group_members_hub_ro` |
+| | `group_id` | uuid | không | | PK `group_members_pkey (group_id, user_id)` | |
+| | `user_id` | uuid | không | | INDEX `group_members_user_idx (user_id)` | |
+| | `added_by` | uuid | có | null | FK `users(id) ON DELETE SET NULL` | |
+| | `added_at` | timestamptz | không | `now()` | | |
+| `feature_grants` | `id` | uuid | không | | PK | **bật**: `feature_grants_admin_rw`, `feature_grants_hub_ro` |
+| | `tenant_id` | uuid | không | | FK `tenants(id) ON DELETE CASCADE`; INDEX `feature_grants_tenant_feature_idx (tenant_id, feature_id)` | |
+| | `feature_id` | uuid | không | | FK `features(id) ON DELETE CASCADE` (R10) | |
+| | `group_id` | uuid | có | | FK kép `(tenant_id, group_id) → groups(tenant_id, id) ON DELETE CASCADE` (R04); UNIQUE từng phần `feature_grants_group_uq (feature_id, group_id) WHERE group_id IS NOT NULL`; INDEX `feature_grants_group_idx (group_id)` | |
+| | `user_id` | uuid | có | | FK kép `(tenant_id, user_id) → users(tenant_id, id) ON DELETE CASCADE`; UNIQUE từng phần `feature_grants_user_uq (feature_id, user_id) WHERE user_id IS NOT NULL`; INDEX `feature_grants_user_idx (user_id)` | |
+| | `granted_by` | uuid | có | null | FK `users(id) ON DELETE SET NULL` | |
+| | `granted_at` | timestamptz | không | `now()` | CHECK `feature_grants_subject_check`: `num_nonnulls(group_id, user_id) = 1` | |
+| `config_meta` | `id` | smallint | không | `1` | PK; CHECK `id = 1` (một hàng) | **không** (toàn hệ thống); `admin_rw`: SELECT/INSERT/UPDATE (REVOKE DELETE, TRUNCATE); `hub_ro`: SELECT |
+| | `config_version` | integer | không | `0` | CHECK `>= 0`; +1 mỗi transaction ghi cấu hình (R15) | |
+| | `updated_at` | timestamptz | không | `now()` | | |
+
+- **Không cột/bảng "đã tính sẵn"** (R10): hiệu lực luôn tính lúc đọc từ `feature_entitlements.revoked_at IS NULL` + grant + thành viên.
+- **Trigger** `tenants_beta_group` (AFTER INSERT ON `tenants`, hàm `admin.create_beta_group()` `SECURITY INVOKER`, `search_path` cố định): chèn `beta-testers` (`name {"vi":"Beta testers","en":"Beta testers"}`, `description` "Thấy các feature đang Beta") trong cùng transaction với **mọi** INSERT tenant (service, seed, fixture SQL), `ON CONFLICT DO NOTHING` (R02, A10).
+- **Xoá**: xoá group → cascade `group_members`, `feature_grants` của group; xoá feature → cascade `feature_grants` (cùng `feature_commands`, `feature_entitlements` M2); xoá user/tenant không có ở app (CR-006) nhưng FK cascade để dọn dữ liệu test/vận hành.
+- **Quyền**: default privileges M0 cấp `admin_rw` S/I/U/D + `hub_ro` SELECT cho 4 bảng mới; `hub_ro` không có ghi nào; không đổi quyền `secrets` (R17).
+- **Migration**: `0005_admin_permissions.sql` (drizzle-kit sinh: 4 bảng + `users_tenant_id_uq`; `db:generate` lần 2 "No schema changes") · `0006_permissions_rls.sql` (custom: RLS + 6 policy, REVOKE trên `config_meta`, hàng `config_meta (1, 0)`, hàm + trigger `beta-testers`, backfill `beta-testers` cho tenant đã có; SQL đầy đủ ở plan §3.1). **Không sửa** `0000`–`0004`.
+- **Sau M3**: 7 migration chính (`0000`–`0006`) + 2 dev; 14 bảng `admin.*`; RLS bật 8 bảng (`feature_entitlements, feature_grants, group_members, groups, refresh_tokens, secrets, tenants, users`), không FORCE.
+- **Thứ tự khoá toàn cục** (mọi service M1/M2/M3, khoá tường minh + ngầm qua FK `KEY SHARE` và unique index; `config_meta` cuối): plan §6 — nguồn duy nhất, reviewer đối chiếu.
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
@@ -97,17 +208,29 @@ Chốt FE (chi tiết `plan-frontend.md` §0): không thêm thư viện, không 
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6, ADM-NFR-03. Ngân sách riêng (p95, in-process, dữ liệu: 500 tenant × 20 user, 200 group/tenant, 200 feature, 100 grant/feature; backend-lead siết thêm ở plan): `GET /admin/groups` < 100 ms · `GET /admin/users/:id/effective-access` < 150 ms · ma trận 200 × 200 < 150 ms · batch ≤ 200 thao tác < 300 ms · `GET /admin/commands/:id/access` (kèm group) < 150 ms · bump `config_version` + NOTIFY thêm ≤ 5 ms/ghi. Không N+1 (gộp bằng `GROUP BY`/`json_agg`). Bundle giữ ngân sách (JS ban đầu ≤ 150 KB gzip, chunk route ≤ 50 KB; `ConflictDialog`/DiffViewer `lazy()`).
 
+**Backend** (chi tiết plan §3.2, §5; đo ở `access.perf.int.test.ts`, 20 lần, p95, in-process, dữ liệu trên): giữ đúng các ngân sách trên, siết thêm: `GET /admin/groups/:id/members` (5.000 thành viên) < 100 ms · `POST …/members` 500 username < 200 ms · `GET /admin/users` (kèm `groups`) giữ ngân sách M1 (< 300 ms CRUD) và tăng ≤ 20 ms so với M2 · `GET /admin/grants` < 100 ms · upsert `config_meta` trong tx ≤ 2 ms, `pg_notify` sau commit ≤ 3 ms. Số câu mỗi request (không N+1): effective-access 4, ma trận 3, batch ≤ 8, members add 4, command access 3. Index từng query:
+| Query | Index |
+|---|---|
+| groups list (tenant, sắp `key`) + `member_count`/`feature_count` | `groups_tenant_key_uq`; `group_members_pkey` (tiền tố `group_id`); `feature_grants_group_idx` |
+| members list / thêm (`username = any`) | `group_members_pkey`; `users_tenant_username_uq` |
+| `groups[]` của user, `?group=` | `group_members_user_idx`; `group_members_pkey` |
+| grant theo cặp, lock pass, `ON CONFLICT` | `feature_grants_group_uq` / `feature_grants_user_uq` |
+| ma trận, grant list theo tenant | `feature_grants_tenant_feature_idx`; `feature_entitlements_pkey`; `feature_commands_pkey` |
+| effective-access, `visible_user_count` | `group_members_user_idx`; `feature_grants_*_uq`; `feature_entitlements_pkey`; `feature_commands_command_idx`; `users_tenant_username_uq` (tiền tố `tenant_id`) |
+| bump | `config_meta_pkey` (một hàng) |
+
 **Frontend** (chi tiết `plan-frontend.md` §6): JS ban đầu hiện 115,8 KB, ước sau M3 ≤ 122 KB (i18n +~4,5 KB); chunk route ước groups ~28 KB, access ~30 KB, `ConflictDialog` lazy ~6 KB, `AccessExplainer` dùng chung ~8 KB, drawer user nạp tab "Quyền hiệu lực" bằng `lazy()`. Ma trận 200 × 200 **bắt buộc** cửa sổ hoá hai chiều (≤ ~240 ô trong DOM, ô và hàng `memo`, nháp là `Map` chênh lệch); bảng Groups/thành viên/Users phân trang server `limit=50`; `effective-access` chỉ nạp khi có user/tab mở; `staleTime: 0` cho ma trận và `effective-access`, invalidate sau mọi lưu. Mọi hook ≤ 50 dòng, component chỉ gọi hook, thư mục ≤ 10 file.
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
 |---|---|
-| Postgres 16 `LISTEN/NOTIFY` | Test mở **kết nối riêng** `LISTEN config_changed` (đóng vai Hub); gửi bằng kết nối riêng ngoài `withScope` |
+| Postgres 16 `LISTEN/NOTIFY` | Test mở **kết nối riêng** `postgres(TEST_DATABASE_URL).listen("config_changed", fn)` (đóng vai Hub); server gửi bằng `Db.notify` = `sql.notify` của postgres.js 3.4.9 (kết nối pool, ngoài `withScope`, sau commit). Ca retry: `testHooks.afterLock(op, "bump")` ném `{code:"40P01"}` lần đầu (plan §5.2) |
+| Thứ tự khoá | `testHooks.afterLock(op, step)` với step `locked` / `names` (M2) / `rows` / `bump` (M3) — chỉ khi `appEnv = "test"` (plan §6.3) |
 | Hub (đọc `config_meta`, tính menu, `CMD_NOT_FOUND`) | Không có; thay bằng role `hub_ro` + SQL tham chiếu (M3-R19). Mock Hub của M0 chưa cần |
 | `hub.agent_grants` (FR-37) | Không dùng ở M3 |
 | SMTP / Dify / Redis | Không dùng. Không thêm thư viện, không ADR |
 
-Env mới: không (`DATABASE_URL` hiện có; không thêm biến).
+Env mới: không (`DATABASE_URL` hiện có; không thêm biến). Không thêm thư viện, không ADR (backend: NOTIFY qua postgres.js có sẵn; `check:fn` dùng `typescript` đã có).
 
 ## 8. Tiêu chí nghiệm thu (qc)
 
@@ -159,6 +282,26 @@ Phân loại: `[mới-hỏi]` = cần người dùng trả lời; `[mới-kỹ t
 - **A12 `[mới-kỹ thuật]`** Dán danh sách: tối đa 500, tách xuống dòng/phẩy/khoảng trắng, partial add (R03).
 - **A13 `[mới-kỹ thuật]`** T0 thêm `check:fn` (TECH-DEBT #18) vào `bun run check` để "kiểm độ dài hàm" có lệnh thật; chạm `tools/scripts` + `package.json`.
 - **A14 `[mới-kỹ thuật]`** `feature_grants` dùng hai cột FK `group_id`/`user_id` (CHECK đúng một) thay `subject_type + subject_id` của BA §7 để có toàn vẹn + cascade (§4).
+### Backend-lead PLAN (2026-10-02; theo thứ tự nguồn Luật 2; chi tiết [plan.md](plan.md))
+Xác nhận mục kỹ thuật của docs-architect (không cần Gate hỏi người dùng):
+- **A1 xác nhận.** Cơ chế: `withConfigWrite` (`packages/db`) tạo sink sự kiện **mới mỗi lần thử** của `withScope`, bump `config_meta` là câu cuối trong tx; `configWrite` (`admin-api/lib/config`) phát `pg_notify` qua `Db.notify` **sau** khi `withScope` trả (đã commit), đúng một lần, lỗi gửi chỉ log. Chọn "trả events" (không `afterCommit` hook tuỳ ý) vì callback vẫn thuần DB, và rollback/retry tự loại sự kiện (plan §5.2).
+- **A3 xác nhận, cụ thể hoá loại trừ:** không bump khi unlock chỉ xoá khoá tạm, reset-password, logout-all, login/refresh/đổi mật khẩu (sổ sách đăng nhập); bảng sự kiện theo thao tác ở plan §5.3.
+- **A5 xác nhận** phía contract: `VERSION_CONFLICT.details.current` đã đủ cho tenant/user (M1) và workflow/command/feature (M2); thêm `GroupVersionConflictDetails`.
+- **A7 xác nhận.** Thêm: `DELETE /admin/grants` với `core` cũng 409 (đồng nhất); `remove` trong batch không cần entitlement (dọn được grant của feature đã thu hồi).
+- **A8, A12 xác nhận.** A12 thêm: server nhận **mảng** `usernames` (FE tách bằng `parseUsernameList` của contract), username sai định dạng → `not_found` (không 400), có `dry_run` (FE C4).
+- **A9 xác nhận có sửa** theo FE C9: `groups[]` là cặp group–feature (≤ 20) + `group_count` + `visible_user_count`.
+- **A10 xác nhận, đổi cơ chế:** tạo `beta-testers` bằng **trigger** `AFTER INSERT ON tenants` (migration `0006`) thay vì code ở module tenants, để mọi đường chèn tenant (service, seed, fixture SQL của qc) đều có group; backfill trong cùng migration. Bảo vệ xoá ở app (`BETA_GROUP_PROTECTED`).
+- **A13 xác nhận:** `check:fn` dùng TypeScript compiler API, hàm ≤ 50 dòng (component `.tsx` PascalCase ≤ 200), ≤ 4 tham số, phạm vi `apps|packages|tools/*/src` gồm test cạnh code, bỏ `tests/**`, `e2e/**` (của qc); allowlist `tools/scripts/check-fn.allow.json` có lý do (plan §7).
+- **A14 xác nhận, siết thêm:** FK **kép** `(tenant_id, group_id|user_id) → groups|users(tenant_id, id)` (thêm UNIQUE `users_tenant_id_uq`, `groups_tenant_id_uq`) để DB chặn grant/thành viên chéo tenant.
+Quyết định riêng của backend (Luật 2):
+- **B1** Mã lỗi mới: `BETA_GROUP_PROTECTED` (409), `NOT_ENTITLED` (409, `{feature_ids}`); dùng lại `KEY_TAKEN`, `CORE_FEATURE_PROTECTED`, `INVALID_REFERENCE` (thêm 4 giá trị `field`). `API_ERRORS` = 36.
+- **B2** Đường dẫn: `POST/DELETE /admin/grants` (BA §8) với `DELETE` theo **query** (`feature_id` + `group_id|user_id`) và luôn 204 (idempotent, R05); `DELETE /admin/groups/:id/members/:user_id` (thay `DELETE …/members` có body); `GET /admin/grants/matrix` (`?group_id` cho tab Feature của group, thay endpoint "feature cấp được" riêng). `effective-access` mount từ module `access` trước router users.
+- **B3** `POST /admin/grants`: 201 khi tạo, 200 khi đã có (không ghi, không NOTIFY).
+- **B4** `User` có `groups` (≤ 50) + `group_count` ở **mọi** response user (một hình cho drawer, list, conflict); ma trận `features[].state` thêm `none` (FE D11; R09 vẫn đúng cho hàng hiển thị mặc định).
+- **B5** Ma trận đọc cũng cần tenant: `platform_admin` thiếu `?tenant_id` → 400 `TENANT_REQUIRED` (list groups/grants thiếu → mọi tenant như users).
+- **B6** Thứ tự khoá toàn cục 14 hạng + 2 ngoại lệ có chứng minh (Workflow POST; `KEY SHARE` lên tenants/users) + luật batch (sắp tăng, lock pass phủ thêm ∪ bớt) + 10 ca xen kẽ tất định L1–L10: plan §6. `config_meta` hạng cuối; bump chỉ khi có sự kiện.
+- **B7** Payload NOTIFY `{v, entity, tenant_id?}`; Hub lấy `max(v)` và đọc `config_meta` khi khởi động / nối lại LISTEN / mỗi 30 s (PRODUCTION-NOTES ở D1).
+- **B8** `effective-access.commands` trần 1.000 + `command_total`; `?command=` không khớp → `commands: []` (không 404).
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - (chưa có)
 
