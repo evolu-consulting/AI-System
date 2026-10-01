@@ -677,7 +677,8 @@
       "render": "Display",
       "mode": "Mode",
       "timeout": "Timeout (seconds)",
-      "enabled": "Enable command"
+      "enabled": "Enable command",
+      "descriptionLabel": "Description"
     },
     "alias": {
       "remove": {
@@ -822,6 +823,9 @@
       "cta": "+ Create your first command",
       "noWorkflow": "Add a workflow first",
       "text": "No commands yet. A command lets users call a workflow with a short command like /dich."
+    },
+    "header": {
+      "duplicate": "Duplicate"
     }
   },
   "features": {

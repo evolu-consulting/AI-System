@@ -677,7 +677,8 @@
       "render": "Hiển thị",
       "mode": "Chế độ",
       "timeout": "Timeout (giây)",
-      "enabled": "Bật command"
+      "enabled": "Bật command",
+      "descriptionLabel": "Mô tả"
     },
     "alias": {
       "remove": {
@@ -822,6 +823,9 @@
       "cta": "+ Tạo command đầu tiên",
       "noWorkflow": "Khai báo workflow trước",
       "text": "Chưa có command nào. Command giúp người dùng gọi workflow bằng một lệnh ngắn như /dich."
+    },
+    "header": {
+      "duplicate": "Nhân bản"
     }
   },
   "features": {

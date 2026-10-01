@@ -1,16 +1,22 @@
-// ADM-FR-10 · M2 · stub route (FE1a): chỉ PageHeader trong PlatformOnly; màn thật thay ở task FE sau.
 import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { PlatformOnly } from "@/components/shared/PlatformOnly";
+import { CommandEditorPage } from "@/features/commands/pages/CommandEditorPage";
 
-function Stub() {
-  const { t } = useTranslation();
+function Page() {
+  const { commandId } = Route.useParams();
+  const { tab } = Route.useSearch();
+  const navigate = Route.useNavigate();
   return (
-    <PlatformOnly>
-      <PageHeader title={t("nav.commands")} />
-    </PlatformOnly>
+    <CommandEditorPage
+      commandId={commandId}
+      tab={tab ?? "config"}
+      onTab={(t) => void navigate({ search: { tab: t }, replace: true })}
+    />
   );
 }
 
-export const Route = createFileRoute("/_authed/commands/$commandId")({ component: Stub });
+export const Route = createFileRoute("/_authed/commands/$commandId")({
+  validateSearch: (s: Record<string, unknown>): { tab?: "config" | "access" } => ({
+    tab: s.tab === "config" || s.tab === "access" ? s.tab : undefined,
+  }),
+  component: Page,
+});

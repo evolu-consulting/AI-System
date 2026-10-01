@@ -6,6 +6,7 @@ import type {
   CommandListResponse,
   CommandUpdateRequest,
   FeatureListResponse,
+  Workflow,
   WorkflowListResponse,
 } from "@ai/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +30,7 @@ export const COMMAND_KEYS = {
   detail: (id: string) => ["commands", "detail", id] as const,
   features: ["commands", "feature-options"] as const,
   workflows: ["commands", "workflow-options"] as const,
+  workflow: (id: string) => ["commands", "workflow", id] as const,
 };
 
 export function useCommandList(params: CommandListParams, enabled: boolean) {
@@ -89,10 +91,30 @@ export function useWorkflowOptions(enabled = true) {
           name: w.name,
           description: w.description,
           enabled: w.enabled,
+          commandCount: w.command_count,
+          agentCount: w.agent_count,
         })),
       };
     },
   });
+}
+
+/** Chi tiết workflow đang chọn (input schema cho bước Input map, output field mặc định). */
+export function useWorkflowDetail(id: string | undefined) {
+  return useQuery({
+    queryKey: COMMAND_KEYS.workflow(id ?? ""),
+    enabled: !!id,
+    staleTime: OPTIONS_STALE_MS,
+    queryFn: () => api<Workflow>(`/admin/workflows/${id}`),
+  });
+}
+
+export const fetchWorkflowDetail = (id: string) => api<Workflow>(`/admin/workflows/${id}`);
+
+/** Tên/alias `name` đã thuộc command khác (D7): tìm `q=<tên>` rồi so khớp chính xác; server vẫn là nguồn quyết định. */
+export async function findNameConflict(name: string, excludeId?: string): Promise<boolean> {
+  const res = await api<CommandListResponse>("/admin/commands", { query: { q: name, limit: 5 } });
+  return res.items.some((c) => c.id !== excludeId && (c.name === name || c.aliases.includes(name)));
 }
 
 export function useUpdateCommand() {
