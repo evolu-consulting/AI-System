@@ -709,7 +709,18 @@
         "rest": "Take the rest"
       },
       "syntax": "Syntax",
-      "empty": "No parameters: users just type /{name}."
+      "empty": "No parameters: users just type /{name}.",
+      "row": {
+        "name": "Parameter name {n}",
+        "description": "Parameter description {n}",
+        "default": "Default {n}",
+        "fallback": "If empty use {n}",
+        "rest": "Take the rest {n}",
+        "moveUp": "Move parameter {n} up",
+        "moveDown": "Move parameter {n} down",
+        "remove": "Delete parameter {n}"
+      },
+      "max": "At most 20 parameters"
     },
     "fallback": {
       "none": "None",
@@ -742,7 +753,8 @@
       },
       "pickWorkflow": "Choose a workflow to map its inputs.",
       "dropped": "Dropped mappings for: {names} (the new workflow has no such inputs).",
-      "autoMapped": "Auto-mapped {names} by parameter name."
+      "autoMapped": "Auto-mapped {names} by parameter name.",
+      "noInputs": "This workflow has no inputs to map."
     },
     "error": {
       "nameFormat": "Use lowercase letters, digits and - only (2–32 chars)",

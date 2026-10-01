@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { type Resolver, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
@@ -75,7 +75,7 @@ export function useCommandForm(source: Source) {
   const update = useUpdateCommand();
   const features = useFeatureOptions();
   const form = useForm<CommandFormValues>({
-    resolver: zodResolver(commandSchema),
+    resolver: zodResolver(commandSchema as never) as unknown as Resolver<CommandFormValues>,
     mode: "onTouched",
     defaultValues: initialValues(source),
   });

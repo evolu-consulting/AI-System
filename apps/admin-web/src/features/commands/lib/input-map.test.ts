@@ -1,7 +1,7 @@
 // ADM-FR-20, ADM-FR-22 · AC-A03 · M2-R16, R17 · reconcileMap / validateInputMap / mapWarnings / buildSyntax.
 import { describe, expect, test } from "bun:test";
 import { hasSource, type MapInput, mapWarnings, reconcileMap, validateInputMap } from "./input-map";
-import { buildSyntax } from "./syntax";
+import { buildSyntax, mapSyntax } from "./syntax";
 
 const inputs: MapInput[] = [
   { name: "source_text", type: "text", required: true },
@@ -118,5 +118,15 @@ describe("ADM-FR-20 · buildSyntax", () => {
         { name: "", default: "", rest: false },
       ]),
     ).toBe("/x <a>");
+  });
+});
+
+describe("ADM-FR-21 · mapSyntax", () => {
+  test("cú pháp từng nguồn", () => {
+    expect(mapSyntax({ source: "arg", value: "lang" })).toBe("$args.lang");
+    expect(mapSyntax({ source: "arg", value: "" })).toBe("");
+    expect(mapSyntax({ source: "page_url", value: "" })).toBe("$page.url");
+    expect(mapSyntax({ source: "const", value: "vi" })).toBe('"vi"');
+    expect(mapSyntax({ source: "", value: "" })).toBe("");
   });
 });

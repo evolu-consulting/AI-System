@@ -709,7 +709,18 @@
         "rest": "Nuốt phần còn lại"
       },
       "syntax": "Cú pháp",
-      "empty": "Lệnh chưa có tham số: người dùng chỉ gõ /{name}."
+      "empty": "Lệnh chưa có tham số: người dùng chỉ gõ /{name}.",
+      "row": {
+        "name": "Tên tham số {n}",
+        "description": "Mô tả tham số {n}",
+        "default": "Mặc định {n}",
+        "fallback": "Nếu trống lấy {n}",
+        "rest": "Nuốt phần còn lại {n}",
+        "moveUp": "Chuyển tham số {n} lên",
+        "moveDown": "Chuyển tham số {n} xuống",
+        "remove": "Xoá tham số {n}"
+      },
+      "max": "Tối đa 20 tham số"
     },
     "fallback": {
       "none": "Không",
@@ -742,7 +753,8 @@
       },
       "pickWorkflow": "Chọn workflow để khai báo cách đưa dữ liệu vào.",
       "dropped": "Đã bỏ map của: {names} (workflow mới không có các input này).",
-      "autoMapped": "Đã tự map {names} theo tên tham số."
+      "autoMapped": "Đã tự map {names} theo tên tham số.",
+      "noInputs": "Workflow này không có input nào cần map."
     },
     "error": {
       "nameFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",

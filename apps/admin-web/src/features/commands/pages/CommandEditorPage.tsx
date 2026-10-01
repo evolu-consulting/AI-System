@@ -16,6 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/http";
 import { useCommand } from "../api";
+import { StepArgs } from "../components/StepArgs";
+import { StepInputMap } from "../components/StepInputMap";
 import { StepName } from "../components/StepName";
 import { StepOutput } from "../components/StepOutput";
 import { StepWorkflow } from "../components/StepWorkflow";
@@ -98,6 +100,8 @@ function EditorBody({ command, copyOf, presetWorkflow, tab, onTab }: BodyProps) 
               notice={link.notice}
               disabledByServer={!!ed.server.workflowDisabled}
             />
+            <StepArgs />
+            <StepInputMap workflow={link.workflow} issues={ed.server.map} />
             <StepOutput />
           </TabsContent>
         </Tabs>

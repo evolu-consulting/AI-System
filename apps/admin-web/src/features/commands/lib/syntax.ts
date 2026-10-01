@@ -14,3 +14,27 @@ export function buildSyntax(
     });
   return [`/${name}`, ...parts].join(" ");
 }
+
+/** Cú pháp BA của một nguồn input map (chỉ đọc, kế bên ô chọn): `$args.lang`, `$selection`, `$page.url`… */
+export function mapSyntax(e: { source: string; value: string }): string {
+  switch (e.source) {
+    case "arg":
+      return e.value === "" ? "" : `$args.${e.value}`;
+    case "selection":
+      return "$selection";
+    case "page_url":
+      return "$page.url";
+    case "page_text":
+      return "$page.text";
+    case "attachment":
+      return "$attachment";
+    case "user_id":
+      return "$user.id";
+    case "tenant_id":
+      return "$tenant.id";
+    case "const":
+      return JSON.stringify(e.value);
+    default:
+      return "";
+  }
+}

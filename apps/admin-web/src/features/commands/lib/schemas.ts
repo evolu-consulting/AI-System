@@ -59,8 +59,9 @@ const arg = z.object({
   rest: z.boolean(),
 });
 const mapEntry = z.object({
-  source: z.enum(["", ...MAP_SOURCES]),
-  value: z.string().max(CONST_VALUE_MAX, "commands.error.constMax"),
+  source: z.enum(["", ...MAP_SOURCES]).default(""),
+  // RHF chỉ tạo `source` khi người dùng chọn trước khi map được dựng đủ → `value` mặc định rỗng.
+  value: z.string().max(CONST_VALUE_MAX, "commands.error.constMax").default(""),
 });
 
 function checkNames(v: { name: string; aliases: string[] }, ctx: z.RefinementCtx): void {
