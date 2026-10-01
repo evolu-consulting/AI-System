@@ -18,4 +18,5 @@ export {
   workflows,
 } from "./schema/admin";
 export { agentGrants, agentWorkflows, hub, usageLogs } from "./schema/hub-readonly";
+export { configMeta, featureGrants, groupMembers, groups } from "./schema/permissions";
 export { type DbScope, NIL_SCOPE, NIL_TENANT_ID, setScope, type Tx, withScope } from "./scope";

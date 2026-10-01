@@ -18,7 +18,7 @@ describe("ADM-NFR-06 · runMigrations (int)", () => {
   beforeEach(() => resetTestDb(URL));
 
   test("test: áp main + dev (M2: 5 main, 2 dev), 3 bảng hub, admin_rw SELECT được usage_logs; lần 2 {0,0}", async () => {
-    expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 5, dev: 2 });
+    expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 7, dev: 2 });
     expect(await hubTables()).toEqual(["agent_grants", "agent_workflows", "usage_logs"]);
     const [p] = await sql<{ ok: boolean }[]>`
       select has_table_privilege('admin_rw', 'hub.usage_logs', 'SELECT') as ok`;
@@ -27,7 +27,7 @@ describe("ADM-NFR-06 · runMigrations (int)", () => {
   });
 
   test("production: chỉ main, không bảng hub, không bảng theo dõi dev", async () => {
-    expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 5, dev: 0 });
+    expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 7, dev: 0 });
     expect(await hubTables()).toEqual([]);
     const [r] = await sql<{ r: string | null }[]>`
       select to_regclass('drizzle.__drizzle_migrations_dev')::text as r`;
