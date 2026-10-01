@@ -237,7 +237,7 @@ Kiểm: `apps/admin-api/src/modules/users/users.perf.int.test.ts` (backend-lead,
 - Đã có từ M0, M1 bắt đầu dùng: `JWT_PRIVATE_KEY` (PEM PKCS8 Ed25519), `JWT_PUBLIC_KEY` (PEM SPKI), `JWT_KID` (1–64 ký tự) — admin-api `config/env.ts` validate, khởi động ký thử + verify thử một token (cặp khoá lệch → exit 1); `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD` — chỉ `seed.ts` đọc. `DATABASE_URL` giữ nghĩa owner (migrate/seed). `SECRET_MASTER_KEY` chưa dùng ở M1 (M2), không validate.
 - CI (`.github/workflows/ci.yml`): thêm `ADMIN_API_DATABASE_URL`, `TEST_ADMIN_API_DATABASE_URL`, `SEED_ADMIN_USERNAME=admin`, `SEED_ADMIN_PASSWORD=Seed-Admin-Pw-01` (giá trị dev cố định, không phải secret; e2e đọc `SEED_ADMIN_*` từ env), env e2e `ADMIN_API_URL=http://localhost:3001`, `APP_ENV=test`, `PORT=3001`, `JWT_*`; khoá JWT dev sinh trong job (`bun run keys:dev` ghi `.env.local`); bước `db:migrate` + `db:seed` chuyển lên **trước** E2E (e2e M1 cần DB + seed).
 
-Thư viện mới: `jose` 6.2.12 (đã Accepted trong ADR-0001, chưa cài) — chỉ thêm vào `apps/admin-api`. **Không** cài `@hono/zod-validator` (có trong bảng ADR-0001) — tự viết `parseJson/parseQuery` ~30 dòng để kiểm soát định dạng `VALIDATION_ERROR`. Không cần ADR backend mới.
+Thư viện mới: `jose` 6.2.12 (đã Accepted trong ADR-0001) — thêm vào `apps/admin-api` (dependencies) + gốc (devDependencies, cho test). **Không** cài `@hono/zod-validator` (có trong bảng ADR-0001) — tự viết `parseJson/parseQuery` ~30 dòng để kiểm soát định dạng `VALIDATION_ERROR`. Không cần ADR backend mới.
 
 ## 8. Tiêu chí nghiệm thu (qc)
 
@@ -295,7 +295,13 @@ Các mặc định mới (`[ĐX]` ở M1-R01, 03, 04, 06, 15, 17, 20) và nguồ
 - Không thêm thư viện: `jose` (ADR-0001); bỏ `@hono/zod-validator`.
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- <ngày> · <agent> · chọn … vì …
+- 2026-10-01 · backend-lead · T1: `versionConflictDetailsSchema` đặt ở `packages/contracts/src/version-conflict.ts` (không phải `common.ts` như plan §2) và nhận **cả** tên thực thể `"tenant" | "user"` (test-plan A5/A6/A7 gọi `versionConflictDetailsSchema("tenant")`) **lẫn** một schema zod (plan §2) — nhận tên cần import `tenants`/`users`, đặt trong `common.ts` sẽ thành import vòng. Export qua `index.ts` nên nơi import không đổi.
+- 2026-10-01 · backend-lead · T1: schema trường dùng chung đặt tên có hậu tố `Schema` theo CONVENTIONS §3: `TenantKeySchema`, `UsernameSchema`, `EmailSchema`, `DisplayNameSchema`, `TenantNameSchema`, `NewPasswordSchema`, `VersionSchema`, `TempPasswordSchema`; kiểu TS `TenantKey`, `Username`, `Email`. Giữ `IsoDateTime`, `UuidSchema`, `ListQueryBase` đúng tên plan §2.
+- 2026-10-01 · backend-lead · T1: export thêm (không đổi contract): `ERROR_CODES`, `ErrorCodeSchema`, `ApiErrorStatus`, `ENTITY_STATUSES`, `TEMP_PASSWORD_RE`, `LIST_OFFSET_MAX = 100000`, `LIST_Q_MAX = 100`, `MAX_CONCURRENT_SUB_MAX = 10000`, `ListCountsSchema`, `CountSchema`, `TenantStatsSchema`, `MaxConcurrentSubSchema`, `LogoutRequestSchema` (`{refresh_token?: ≤ 200}`), `ForcedChangePasswordRequestSchema`, `SelfChangePasswordRequestSchema`, `X_CLIENT_EXTENSION = "extension"`, `ACCESS_TOKEN_EXPIRES_IN = 900`, `CHANGE_TOKEN_EXPIRES_IN = 300` — để BE/FE/QC dùng chung một nguồn.
+- 2026-10-01 · backend-lead · T1: `UserSchema`, `TenantSchema`, `TenantDetailSchema` có `refine` khoá bất biến `status` (spec §3: user `locked` ⇔ `!active || locked_by_tenant`; tenant `locked` ⇔ `!active`) — response sai trạng thái bị test bắt.
+- 2026-10-01 · backend-lead · T1: ô đăng nhập (`tenant_key`, `username`) chỉ kiểm trim+lower 1–64, **không** kiểm regex định danh, để sai định dạng vẫn ra 401 `INVALID_CREDENTIALS` (M1-R01) thay vì 400. `change_token` giới hạn 1–4096 ký tự (JWT; spec không nêu trần). Trường `id`/`key`/`name` trong response không trim lại ngoài schema định danh dùng chung.
+- 2026-10-01 · backend-lead · T1: `EmailSchema` = `string().trim().toLowerCase().max(254).pipe(z.email())` vì kiểm định dạng của `z.email()` chạy trước transform trim/lower (đã thử zod 4.6.5). `ListQueryBase` dùng `z.coerce.number()` cho `limit`/`offset` (query là chuỗi); `q` output là `q?: string` (rỗng sau trim → `undefined`).
+- 2026-10-01 · backend-lead · T1: dữ liệu mẫu unit test contract đặt ở `packages/contracts/src/test-fixtures.ts` (không export qua `index.ts`).
 
 ## 10. Tranh chấp test
 - (không)
