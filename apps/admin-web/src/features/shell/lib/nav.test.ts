@@ -5,11 +5,25 @@ const ids = (role: Parameters<typeof navGroups>[0]) =>
   navGroups(role).flatMap((g) => g.items.map((i) => i.id));
 
 describe("ADM-FR-60 · menu theo role", () => {
-  test("platform_admin thấy Tenants và Users", () => {
-    expect(ids("platform_admin")).toEqual(["overview", "tenants", "users"]);
+  test("platform_admin thấy Tenants, Users và 4 mục M2 theo nhóm", () => {
+    expect(ids("platform_admin")).toEqual([
+      "overview",
+      "tenants",
+      "users",
+      "features",
+      "commands",
+      "workflows",
+      "secrets",
+    ]);
+    expect(navGroups("platform_admin").map((g) => g.labelKey)).toEqual([
+      null,
+      "nav.group.access",
+      "nav.group.features",
+      "nav.group.security",
+    ]);
   });
 
-  test("tenant_admin không thấy Tenants", () => {
+  test("tenant_admin không thấy Tenants và các mục M2", () => {
     expect(ids("tenant_admin")).toEqual(["overview", "users"]);
   });
 
@@ -29,5 +43,16 @@ describe("ADM-FR-60 · menu theo role", () => {
     expect(crumbsFor("/")).toEqual([{ labelKey: "nav.overview" }]);
     expect(crumbsFor("/tenants/new")).toHaveLength(2);
     expect(crumbsFor("/unknown")).toEqual([]);
+  });
+
+  test("breadcrumb M2", () => {
+    expect(crumbsFor("/secrets")).toEqual([{ labelKey: "nav.secrets" }]);
+    expect(crumbsFor("/workflows")).toEqual([{ labelKey: "nav.workflows" }]);
+    expect(crumbsFor("/workflows/")).toEqual([{ labelKey: "nav.workflows" }]);
+    expect(crumbsFor("/commands/new")).toEqual([
+      { labelKey: "nav.commands", to: "/commands" },
+      { labelKey: "commands.editor.titleNew" },
+    ]);
+    expect(crumbsFor("/features/abc")).toEqual([{ labelKey: "nav.features", to: "/features" }]);
   });
 });

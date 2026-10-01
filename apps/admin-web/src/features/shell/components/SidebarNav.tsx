@@ -1,6 +1,15 @@
 // ADM-FR-60, ADM-FR-04 · danh sách mục menu (dùng cho Sidebar và Sheet di động); mục hiện tại có aria-current="page".
 import { Link } from "@tanstack/react-router";
-import { Building2, LayoutDashboard, type LucideIcon, Users } from "lucide-react";
+import {
+  Building2,
+  KeyRound,
+  LayoutDashboard,
+  type LucideIcon,
+  Package,
+  Terminal,
+  Users,
+  Workflow,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "@/lib/auth/use-session";
 import { cn } from "@/lib/utils";
@@ -10,6 +19,10 @@ const ICONS: Record<NavId, LucideIcon> = {
   overview: LayoutDashboard,
   tenants: Building2,
   users: Users,
+  features: Package,
+  commands: Terminal,
+  workflows: Workflow,
+  secrets: KeyRound,
 };
 
 type Props = { collapsed?: boolean; onNavigate?: () => void };

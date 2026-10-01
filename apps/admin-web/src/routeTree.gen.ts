@@ -14,11 +14,21 @@ import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
+import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account.password'
+import { Route as AuthedCommandsIndexRouteImport } from './routes/_authed/commands/index'
+import { Route as AuthedCommandsCommandIdRouteImport } from './routes/_authed/commands/$commandId'
+import { Route as AuthedCommandsNewRouteImport } from './routes/_authed/commands/new'
+import { Route as AuthedFeaturesIndexRouteImport } from './routes/_authed/features/index'
+import { Route as AuthedFeaturesFeatureIdRouteImport } from './routes/_authed/features/$featureId'
+import { Route as AuthedFeaturesNewRouteImport } from './routes/_authed/features/new'
 import { Route as AuthedTenantsIndexRouteImport } from './routes/_authed/tenants/index'
 import { Route as AuthedTenantsTenantIdRouteImport } from './routes/_authed/tenants/$tenantId'
 import { Route as AuthedTenantsNewRouteImport } from './routes/_authed/tenants/new'
+import { Route as AuthedWorkflowsIndexRouteImport } from './routes/_authed/workflows/index'
+import { Route as AuthedWorkflowsWorkflowIdRouteImport } from './routes/_authed/workflows/$workflowId'
+import { Route as AuthedWorkflowsNewRouteImport } from './routes/_authed/workflows/new'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -44,6 +54,11 @@ const AuthedMemberRoute = AuthedMemberRouteImport.update({
   path: '/member',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedSecretsRoute = AuthedSecretsRouteImport.update({
+  id: '/secrets',
+  path: '/secrets',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedUsersRoute = AuthedUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -52,6 +67,36 @@ const AuthedUsersRoute = AuthedUsersRouteImport.update({
 const AuthedAccountPasswordRoute = AuthedAccountPasswordRouteImport.update({
   id: '/account/password',
   path: '/account/password',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCommandsIndexRoute = AuthedCommandsIndexRouteImport.update({
+  id: '/commands/',
+  path: '/commands/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCommandsCommandIdRoute = AuthedCommandsCommandIdRouteImport.update({
+  id: '/commands/$commandId',
+  path: '/commands/$commandId',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCommandsNewRoute = AuthedCommandsNewRouteImport.update({
+  id: '/commands/new',
+  path: '/commands/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedFeaturesIndexRoute = AuthedFeaturesIndexRouteImport.update({
+  id: '/features/',
+  path: '/features/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedFeaturesFeatureIdRoute = AuthedFeaturesFeatureIdRouteImport.update({
+  id: '/features/$featureId',
+  path: '/features/$featureId',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedFeaturesNewRoute = AuthedFeaturesNewRouteImport.update({
+  id: '/features/new',
+  path: '/features/new',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedTenantsIndexRoute = AuthedTenantsIndexRouteImport.update({
@@ -69,28 +114,64 @@ const AuthedTenantsNewRoute = AuthedTenantsNewRouteImport.update({
   path: '/tenants/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedWorkflowsIndexRoute = AuthedWorkflowsIndexRouteImport.update({
+  id: '/workflows/',
+  path: '/workflows/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedWorkflowsWorkflowIdRoute =
+  AuthedWorkflowsWorkflowIdRouteImport.update({
+    id: '/workflows/$workflowId',
+    path: '/workflows/$workflowId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedWorkflowsNewRoute = AuthedWorkflowsNewRouteImport.update({
+  id: '/workflows/new',
+  path: '/workflows/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/member': typeof AuthedMemberRoute
+  '/secrets': typeof AuthedSecretsRoute
   '/users': typeof AuthedUsersRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/commands/$commandId': typeof AuthedCommandsCommandIdRoute
+  '/commands/new': typeof AuthedCommandsNewRoute
+  '/features/$featureId': typeof AuthedFeaturesFeatureIdRoute
+  '/features/new': typeof AuthedFeaturesNewRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
+  '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
+  '/workflows/new': typeof AuthedWorkflowsNewRoute
+  '/commands/': typeof AuthedCommandsIndexRoute
+  '/features/': typeof AuthedFeaturesIndexRoute
   '/tenants/': typeof AuthedTenantsIndexRoute
+  '/workflows/': typeof AuthedWorkflowsIndexRoute
 }
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/member': typeof AuthedMemberRoute
+  '/secrets': typeof AuthedSecretsRoute
   '/users': typeof AuthedUsersRoute
   '/': typeof AuthedIndexRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/commands/$commandId': typeof AuthedCommandsCommandIdRoute
+  '/commands/new': typeof AuthedCommandsNewRoute
+  '/features/$featureId': typeof AuthedFeaturesFeatureIdRoute
+  '/features/new': typeof AuthedFeaturesNewRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
+  '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
+  '/workflows/new': typeof AuthedWorkflowsNewRoute
+  '/commands': typeof AuthedCommandsIndexRoute
+  '/features': typeof AuthedFeaturesIndexRoute
   '/tenants': typeof AuthedTenantsIndexRoute
+  '/workflows': typeof AuthedWorkflowsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,12 +179,22 @@ export interface FileRoutesById {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/_authed/member': typeof AuthedMemberRoute
+  '/_authed/secrets': typeof AuthedSecretsRoute
   '/_authed/users': typeof AuthedUsersRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
+  '/_authed/commands/$commandId': typeof AuthedCommandsCommandIdRoute
+  '/_authed/commands/new': typeof AuthedCommandsNewRoute
+  '/_authed/features/$featureId': typeof AuthedFeaturesFeatureIdRoute
+  '/_authed/features/new': typeof AuthedFeaturesNewRoute
   '/_authed/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/_authed/tenants/new': typeof AuthedTenantsNewRoute
+  '/_authed/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
+  '/_authed/workflows/new': typeof AuthedWorkflowsNewRoute
+  '/_authed/commands/': typeof AuthedCommandsIndexRoute
+  '/_authed/features/': typeof AuthedFeaturesIndexRoute
   '/_authed/tenants/': typeof AuthedTenantsIndexRoute
+  '/_authed/workflows/': typeof AuthedWorkflowsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -112,34 +203,64 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/login'
     | '/member'
+    | '/secrets'
     | '/users'
     | '/account/password'
+    | '/commands/$commandId'
+    | '/commands/new'
+    | '/features/$featureId'
+    | '/features/new'
     | '/tenants/$tenantId'
     | '/tenants/new'
+    | '/workflows/$workflowId'
+    | '/workflows/new'
+    | '/commands/'
+    | '/features/'
     | '/tenants/'
+    | '/workflows/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/change-password'
     | '/login'
     | '/member'
+    | '/secrets'
     | '/users'
     | '/'
     | '/account/password'
+    | '/commands/$commandId'
+    | '/commands/new'
+    | '/features/$featureId'
+    | '/features/new'
     | '/tenants/$tenantId'
     | '/tenants/new'
+    | '/workflows/$workflowId'
+    | '/workflows/new'
+    | '/commands'
+    | '/features'
     | '/tenants'
+    | '/workflows'
   id:
     | '__root__'
     | '/_authed'
     | '/change-password'
     | '/login'
     | '/_authed/member'
+    | '/_authed/secrets'
     | '/_authed/users'
     | '/_authed/'
     | '/_authed/account/password'
+    | '/_authed/commands/$commandId'
+    | '/_authed/commands/new'
+    | '/_authed/features/$featureId'
+    | '/_authed/features/new'
     | '/_authed/tenants/$tenantId'
     | '/_authed/tenants/new'
+    | '/_authed/workflows/$workflowId'
+    | '/_authed/workflows/new'
+    | '/_authed/commands/'
+    | '/_authed/features/'
     | '/_authed/tenants/'
+    | '/_authed/workflows/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -185,6 +306,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedMemberRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/secrets': {
+      id: '/_authed/secrets'
+      path: '/secrets'
+      fullPath: '/secrets'
+      preLoaderRoute: typeof AuthedSecretsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/users': {
       id: '/_authed/users'
       path: '/users'
@@ -197,6 +325,48 @@ declare module '@tanstack/react-router' {
       path: '/account/password'
       fullPath: '/account/password'
       preLoaderRoute: typeof AuthedAccountPasswordRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/commands/': {
+      id: '/_authed/commands/'
+      path: '/commands'
+      fullPath: '/commands/'
+      preLoaderRoute: typeof AuthedCommandsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/commands/$commandId': {
+      id: '/_authed/commands/$commandId'
+      path: '/commands/$commandId'
+      fullPath: '/commands/$commandId'
+      preLoaderRoute: typeof AuthedCommandsCommandIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/commands/new': {
+      id: '/_authed/commands/new'
+      path: '/commands/new'
+      fullPath: '/commands/new'
+      preLoaderRoute: typeof AuthedCommandsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/features/': {
+      id: '/_authed/features/'
+      path: '/features'
+      fullPath: '/features/'
+      preLoaderRoute: typeof AuthedFeaturesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/features/$featureId': {
+      id: '/_authed/features/$featureId'
+      path: '/features/$featureId'
+      fullPath: '/features/$featureId'
+      preLoaderRoute: typeof AuthedFeaturesFeatureIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/features/new': {
+      id: '/_authed/features/new'
+      path: '/features/new'
+      fullPath: '/features/new'
+      preLoaderRoute: typeof AuthedFeaturesNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/tenants/': {
@@ -220,27 +390,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedTenantsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/workflows/': {
+      id: '/_authed/workflows/'
+      path: '/workflows'
+      fullPath: '/workflows/'
+      preLoaderRoute: typeof AuthedWorkflowsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/workflows/$workflowId': {
+      id: '/_authed/workflows/$workflowId'
+      path: '/workflows/$workflowId'
+      fullPath: '/workflows/$workflowId'
+      preLoaderRoute: typeof AuthedWorkflowsWorkflowIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/workflows/new': {
+      id: '/_authed/workflows/new'
+      path: '/workflows/new'
+      fullPath: '/workflows/new'
+      preLoaderRoute: typeof AuthedWorkflowsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
   AuthedMemberRoute: typeof AuthedMemberRoute
+  AuthedSecretsRoute: typeof AuthedSecretsRoute
   AuthedUsersRoute: typeof AuthedUsersRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
+  AuthedCommandsCommandIdRoute: typeof AuthedCommandsCommandIdRoute
+  AuthedCommandsNewRoute: typeof AuthedCommandsNewRoute
+  AuthedFeaturesFeatureIdRoute: typeof AuthedFeaturesFeatureIdRoute
+  AuthedFeaturesNewRoute: typeof AuthedFeaturesNewRoute
   AuthedTenantsTenantIdRoute: typeof AuthedTenantsTenantIdRoute
   AuthedTenantsNewRoute: typeof AuthedTenantsNewRoute
+  AuthedWorkflowsWorkflowIdRoute: typeof AuthedWorkflowsWorkflowIdRoute
+  AuthedWorkflowsNewRoute: typeof AuthedWorkflowsNewRoute
+  AuthedCommandsIndexRoute: typeof AuthedCommandsIndexRoute
+  AuthedFeaturesIndexRoute: typeof AuthedFeaturesIndexRoute
   AuthedTenantsIndexRoute: typeof AuthedTenantsIndexRoute
+  AuthedWorkflowsIndexRoute: typeof AuthedWorkflowsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedMemberRoute: AuthedMemberRoute,
+  AuthedSecretsRoute: AuthedSecretsRoute,
   AuthedUsersRoute: AuthedUsersRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
+  AuthedCommandsCommandIdRoute: AuthedCommandsCommandIdRoute,
+  AuthedCommandsNewRoute: AuthedCommandsNewRoute,
+  AuthedFeaturesFeatureIdRoute: AuthedFeaturesFeatureIdRoute,
+  AuthedFeaturesNewRoute: AuthedFeaturesNewRoute,
   AuthedTenantsTenantIdRoute: AuthedTenantsTenantIdRoute,
   AuthedTenantsNewRoute: AuthedTenantsNewRoute,
+  AuthedWorkflowsWorkflowIdRoute: AuthedWorkflowsWorkflowIdRoute,
+  AuthedWorkflowsNewRoute: AuthedWorkflowsNewRoute,
+  AuthedCommandsIndexRoute: AuthedCommandsIndexRoute,
+  AuthedFeaturesIndexRoute: AuthedFeaturesIndexRoute,
   AuthedTenantsIndexRoute: AuthedTenantsIndexRoute,
+  AuthedWorkflowsIndexRoute: AuthedWorkflowsIndexRoute,
 }
 
 const AuthedRouteWithChildren =
