@@ -138,14 +138,19 @@ export async function listUsers(tx: Tx, f: UserFilter) {
 
 export type TenantBrief = { id: string; key: string; active: boolean };
 
-/** `forUpdate`: khoá hàng tenant để kiểm BR-08 tuần tự (hai admin khoá nhau cùng lúc). */
-export async function findTenantBrief(tx: Tx, tenantId: string, o: { forUpdate?: boolean } = {}) {
+/** `lock`: `update` = khoá hàng tenant (BR-08, mọi thao tác ghi user — thứ tự khoá luôn tenant → user);
+ * `share` = giữ tenant không đổi trạng thái khoá trong lúc tạo user. */
+export async function findTenantBrief(
+  tx: Tx,
+  tenantId: string,
+  o: { lock?: "update" | "share" } = {},
+) {
   const q = tx
     .select({ id: tenants.id, key: tenants.key, active: tenants.active })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
     .limit(1);
-  const [row] = o.forUpdate ? await q.for("update") : await q;
+  const [row] = o.lock ? await q.for(o.lock) : await q;
   return (row as TenantBrief | undefined) ?? null;
 }
 
@@ -190,4 +195,12 @@ export async function updateUser(
       ...(bump ? { version: sql`${users.version} + 1`, updatedAt: sql`now()` } : {}),
     })
     .where(and(eq(users.tenantId, t.tenantId), eq(users.id, t.id)));
+}
+
+/** Khoá hàng user (FOR UPDATE chỉ bảng users; Drizzle `of` in tên kèm schema nên viết SQL tay). */
+export async function lockUserRow(tx: Tx, tenantId: string, id: string): Promise<boolean> {
+  const rows = await tx.execute(
+    sql`select 1 from admin.users where tenant_id = ${tenantId} and id = ${id} for update`,
+  );
+  return (rows as unknown as unknown[]).length === 1;
 }

@@ -9,7 +9,14 @@ import { signAccessToken } from "../../lib/jwt";
 import { type AuthUser, insertRefresh } from "./auth.repo";
 import { ACCESS_TOKEN_TTL_S } from "./auth.rules";
 
-export type AuthCtx = { db: Db; keys: JwtKeys; now: () => Date; dummyHash: string };
+export type AuthCtx = {
+  db: Db;
+  keys: JwtKeys;
+  now: () => Date;
+  dummyHash: string;
+  /** Chỉ cho test backend: chạy giữa lúc đọc ảnh chụp user và lúc verify mật khẩu (tái hiện race khoá tạm). */
+  beforeVerify?: () => Promise<void>;
+};
 export type ClientMeta = { client: ClientKind; userAgent: string | null };
 /** Grant chưa gắn refresh token vào body: route quyết định cookie (web) hay body (extension). */
 export type Session = { grant: Omit<TokenGrant, "refresh_token">; refreshToken: string };

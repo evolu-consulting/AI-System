@@ -202,7 +202,7 @@ export async function updatePassword(tx: Tx, tenantId: string, userId: string, h
 
 export async function lockPasswordRow(tx: Tx, tenantId: string, userId: string) {
   const [row] = await tx
-    .select({ passwordChangedAt: users.passwordChangedAt })
+    .select({ passwordChangedAt: users.passwordChangedAt, lockedUntil: users.lockedUntil })
     .from(users)
     .where(and(eq(users.tenantId, tenantId), eq(users.id, userId)))
     .for("update");

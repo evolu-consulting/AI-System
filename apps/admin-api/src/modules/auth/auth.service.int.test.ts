@@ -141,3 +141,46 @@ describe("ADM-FR-02 · refresh / ADM-FR-03 · logout", () => {
     expect(await code(refresh(ctx, s.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
   });
 });
+
+describe("ADM-FR-07 · review vòng 1 #3 · race khoá tạm", () => {
+  test("ADM-FR-07 · ảnh chụp chưa khoá, nhưng 5 lần sai chen vào trước khi verify → lần đúng nhận TEMP_LOCKED, không cấp phiên", async () => {
+    const bad = { tenant_key: "acme", username: "an", password: "Wrong-Passw0rd-1" };
+    const racing: AuthCtx = {
+      ...ctx,
+      beforeVerify: async () => {
+        for (let i = 0; i < 5; i++) await code(login(ctx, bad, WEB));
+      },
+    };
+    const r = await code(login(racing, { tenant_key: "acme", username: "an", password: PW }, WEB));
+    expect(r).toBe("TEMP_LOCKED");
+    const [t] = await owner`select count(*)::int as n from admin.refresh_tokens`;
+    expect(t?.n).toBe(0);
+    const [u] = await owner`select last_login_at, locked_until from admin.users where id = ${AN}`;
+    expect(u?.last_login_at).toBeNull();
+    expect(u?.locked_until).not.toBeNull();
+  });
+
+  test("ADM-FR-06 · cùng race ở nhánh must_change_password → không phát change_token", async () => {
+    const bad = { tenant_key: "acme", username: "dung", password: "Wrong-Passw0rd-1" };
+    const racing: AuthCtx = {
+      ...ctx,
+      beforeVerify: async () => {
+        for (let i = 0; i < 5; i++) await code(login(ctx, bad, WEB));
+      },
+    };
+    const input = { tenant_key: "acme", username: "dung", password: PW };
+    expect(await code(login(racing, input, WEB))).toBe("TEMP_LOCKED");
+  });
+
+  test("ADM-FR-06 · đổi mật khẩu bắt buộc ghi last_login_at (review vòng 1 #2)", async () => {
+    const r = await login(ctx, { tenant_key: "acme", username: "dung", password: PW }, WEB);
+    if (r.kind !== "change") throw new Error("expected change");
+    await changePasswordForced(
+      ctx,
+      { change_token: r.body.change_token, new_password: "New-Passw0rd-9" },
+      WEB,
+    );
+    const [u] = await owner`select last_login_at from admin.users where id = ${DUNG}`;
+    expect(new Date(u?.last_login_at).toISOString()).toBe(clock.toISOString());
+  });
+});

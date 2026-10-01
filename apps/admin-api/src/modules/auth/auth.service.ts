@@ -59,12 +59,25 @@ export async function recordFailedLogin(ctx: AuthCtx, u: AuthUser, now: Date): P
   });
 }
 
-async function resetCounter(ctx: AuthCtx, u: AuthUser): Promise<void> {
-  if (u.failedLogins === 0 && u.lockedUntil === null) return;
-  await withScope(ctx.db, tenantScope(u.tenantId), (tx) =>
-    repo.setCounter(tx, u.tenantId, u.id, { failedLogins: 0, lockedUntil: null }),
-  );
+/**
+ * Mật khẩu đúng: trong transaction khoá hàng user (FOR UPDATE) và kiểm lại khoá tạm — ảnh chụp đọc trước verify có
+ * thể đã cũ vì request sai song song vừa khoá tài khoản (review vòng 1 #3). Đang khoá → 423; không thì đếm về 0.
+ */
+async function confirmNotTempLocked<T>(
+  ctx: AuthCtx,
+  u: AuthUser,
+  now: Date,
+  fn: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  return withScope(ctx.db, tenantScope(u.tenantId), async (tx) => {
+    const row = await repo.lockCounter(tx, u.tenantId, u.id);
+    if (row && isTempLocked(row.lockedUntil, now)) throw tempLocked(row.lockedUntil as Date);
+    return fn(tx);
+  });
 }
+
+const resetCounter = (tx: Tx, u: AuthUser) =>
+  repo.setCounter(tx, u.tenantId, u.id, { failedLogins: 0, lockedUntil: null });
 
 export async function login(
   ctx: AuthCtx,
@@ -82,13 +95,14 @@ export async function login(
   }
   const now = ctx.now();
   if (isTempLocked(u.lockedUntil, now)) throw tempLocked(u.lockedUntil as Date);
+  await ctx.beforeVerify?.();
   if (!(await verifyPassword(input.password, u.passwordHash))) {
     await recordFailedLogin(ctx, u, now);
     throw appError("INVALID_CREDENTIALS");
   }
   const outcome = outcomeAfterPasswordOk(u, u.tenant.active);
   if (outcome !== "authenticated") {
-    await resetCounter(ctx, u);
+    await confirmNotTempLocked(ctx, u, now, (tx) => resetCounter(tx, u));
     if (outcome === "account_locked") throw appError("ACCOUNT_LOCKED");
     const changeToken = await signChangeToken(ctx.keys, {
       sub: u.id,
@@ -102,7 +116,7 @@ export async function login(
     };
     return { kind: "change", body: body as PasswordChangeRequired };
   }
-  const session = await withScope(ctx.db, tenantScope(u.tenantId), async (tx) => {
+  const session = await confirmNotTempLocked(ctx, u, now, async (tx) => {
     await repo.markLoginSuccess(tx, u.tenantId, u.id, now);
     return issueSession(ctx, tx, u, meta);
   });
@@ -179,7 +193,7 @@ async function writePassword(
   ctx: AuthCtx,
   u: AuthUser,
   hash: string,
-  o: { expectPwc?: number; keepFamily: string | null },
+  o: { expectPwc?: number; keepFamily: string | null; tempLockAt?: Date },
   after: (tx: Tx) => Promise<Session | null>,
 ): Promise<Session | null> {
   return withScope(ctx.db, tenantScope(u.tenantId), async (tx) => {
@@ -187,6 +201,10 @@ async function writePassword(
     if (!row) throw appError("INVALID_CHANGE_TOKEN");
     if (o.expectPwc !== undefined && !changeTokenMatches(o.expectPwc, row.passwordChangedAt)) {
       throw appError("INVALID_CHANGE_TOKEN");
+    }
+    // Tự đổi: kiểm lại khoá tạm dưới khoá hàng (request sai song song có thể vừa khoá).
+    if (o.tempLockAt && isTempLocked(row.lockedUntil, o.tempLockAt)) {
+      throw tempLocked(row.lockedUntil as Date);
     }
     await repo.updatePassword(tx, u.tenantId, u.id, hash);
     await repo.revokeUserTokens(tx, {
@@ -217,8 +235,16 @@ export async function changePasswordForced(
   if (await verifyPassword(input.new_password, u.passwordHash))
     throw appError("PASSWORD_UNCHANGED");
   const hash = await hashPassword(input.new_password);
-  const s = await writePassword(ctx, u, hash, { expectPwc: claims.pwc, keepFamily: null }, (tx) =>
-    issueSession(ctx, tx, u, meta),
+  // Đổi xong = đăng nhập thành công: ghi last_login_at (review vòng 1 #2) rồi cấp phiên.
+  const s = await writePassword(
+    ctx,
+    u,
+    hash,
+    { expectPwc: claims.pwc, keepFamily: null },
+    async (tx) => {
+      await repo.markLoginSuccess(tx, u.tenantId, u.id, ctx.now());
+      return issueSession(ctx, tx, u, meta);
+    },
   );
   return s as Session;
 }
@@ -241,7 +267,7 @@ export async function changePasswordSelf(
   }
   if (input.new_password === input.current_password) throw appError("PASSWORD_UNCHANGED");
   const hash = await hashPassword(input.new_password);
-  await writePassword(ctx, u, hash, { keepFamily: actor.sid }, async () => null);
+  await writePassword(ctx, u, hash, { keepFamily: actor.sid, tempLockAt: now }, async () => null);
 }
 
 /** GET /auth/me: hồ sơ đọc lại từ DB (middleware đã chặn user không đăng nhập được). */

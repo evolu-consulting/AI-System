@@ -17,14 +17,22 @@ export function uniqueViolation(err: unknown): string | null {
   return c?.code === "23505" && typeof c.constraint_name === "string" ? c.constraint_name : null;
 }
 
-/** Trường an toàn để log: bỏ SQL/tham số của Drizzle, giữ message + SQLSTATE của Postgres. */
+const isDrizzleWrapper = (err: unknown): boolean =>
+  !!err && typeof err === "object" && "query" in (err as object);
+
+/**
+ * Trường an toàn để log: bỏ SQL/tham số của Drizzle, giữ message + SQLSTATE của Postgres. DrizzleQueryError không có
+ * `cause` → chỉ "query failed" (+ SQLSTATE nếu có), không log message/stack gốc (review vòng 1 #9).
+ */
 export function safeErrorFields(err: unknown): { error: string; code?: string; stack?: string } {
   const c = pgCause(err);
+  const code = typeof c?.code === "string" ? { code: c.code } : {};
+  if (!c && isDrizzleWrapper(err)) return { error: "query failed", ...code };
   const src = c ?? (err as PgLike | null);
   const message = typeof src?.message === "string" ? src.message : String(err);
   return {
     error: message,
-    ...(typeof c?.code === "string" ? { code: c.code } : {}),
+    ...code,
     ...(typeof src?.stack === "string" ? { stack: src.stack } : {}),
   };
 }
