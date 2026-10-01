@@ -16,10 +16,10 @@ Quy ước câu chữ: chuỗi "§n" lấy nguyên văn từ `admin-missing-scre
 | D6 | **Nhân bản command làm ở FE:** `/commands/new?from=<id>` đọc `GET /admin/commands/:id`, điền sẵn tên `<name>-copy`, `enabled=false`, **bỏ alias** (alias dùng chung không gian tên nên sẽ trùng), giữ feature/workflow/args/map; lưu bằng `POST`. Không cần endpoint. Tên `-copy` trùng → 409 `COMMAND_NAME_TAKEN` hiện dưới ô tên | M2-R13, R15 |
 | D7 | Kiểm trùng tên/alias "ngay khi rời ô" (ui-admin 7.4): `GET /admin/commands?q=<tên>&limit=5`, so khớp **chính xác** tên/alias của kết quả (bỏ command đang sửa). Server vẫn là nguồn quyết định (409 hiện cùng câu dưới ô). Không cần endpoint mới | Không đổi contract |
 | D8 | Icon feature: `Select` ~16 icon lucide chọn sẵn (map tĩnh, tree-shake), mặc định `package`; giá trị lạ từ server hiển thị `package`. Không nạp cả bộ lucide | Bundle |
-| D9 | Validate input map ở client là **hàm thuần** `validateInputMap(schema, args, map)` (cùng luật M2-R16/R17) để chặn trước khi gửi; lỗi `INPUT_MAP_INVALID` từ server dựng lại cùng UI từ `details`. Sai kiểu = **cảnh báo** vàng, không chặn (M2-R17, RD#51) | AC-A03 |
+| D9 | Validate input map ở client là **hàm thuần** `validateInputMap(schema, args, map)` (cùng luật M2-R16/R17) để chặn trước khi gửi; lỗi `INPUT_MAP_INVALID` từ server dựng lại cùng UI từ `details`. Sai kiểu = **cảnh báo** vàng, không chặn (M2-R17, RD#51): trước khi lưu dùng cảnh báo tính ở client, sau khi tải/lưu dùng `warnings[]` của server (`{var,type,source,reason: type_mismatch|const_invalid}`), hai nguồn gộp theo `var` | AC-A03 |
 | D10 | Secret: giá trị chỉ sống trong state của form (RHF) → `reset()` ngay khi gửi xong/đóng drawer; mutation `gcTime: 0` + `reset()` sau khi xong (TanStack giữ `variables` trong cache); không đưa vào URL, `localStorage`, log, toast, `title`; ô `type=password`, `autoComplete="new-password"`, `spellCheck=false`; nút Hiện/Ẩn **chỉ** tác động giá trị đang gõ. Lỗi của `/admin/secrets*` hiển thị bằng key tĩnh, **không** chèn `message` server | M2-R03, AC-A06 |
 | D11 | Đồng bộ chip có số: Secrets/Workflows/Commands/Features dùng `counts` của API (M2-R26). Workflows: `Tất cả = counts.all`; `Chưa gắn` = `counts.unattached` (đề xuất contract Y5) | M1 D11 |
-| D12 | Mọi `PATCH` gửi `version`; lệch → 409 `VERSION_CONFLICT` dùng lại xử lý M1 D13 (toast bền + nút `Tải lại`); modal diff = M3 | M2-R25 |
+| D12 | Mọi `PATCH` gửi `version`; lệch → 409 `VERSION_CONFLICT` **G14:** UI chỉ hiện `errors.versionConflict` trong toast bền kèm nút `Tải lại` (refetch, bỏ thay đổi đang sửa), đúng M1 D13. **Không** modal diff (M3), **không** tự gửi lại, **không** nút "Ghi đè"; form giữ nguyên chữ người dùng cho tới khi họ bấm `Tải lại`. Áp dụng cho `PATCH` workflow/command/feature và Switch ở danh sách (hoàn lại Switch + toast). Lưu ý: `version` của feature và command còn tăng chéo khi đổi tập feature↔command (spec §3 `version`), nên 409 có thể xảy ra giữa hai editor khác nhau | M2-R25, G14 |
 | D13 | Mọi tên route, query-key, key i18n ghi ở file này; không đổi sau Gate để qc khoá test | |
 
 ## 1. Màn, route, bố cục
@@ -30,7 +30,7 @@ Mọi trang trong khung dùng `<main id="main">`, H1 nhận focus (`PageHeader`)
 |---|---|---|---|
 | `/secrets` (`secrets.tsx`) `?q&used=yes\|no&page&drawer=new\|replace\|note&secret=<NAME>` | Secrets | Mẫu A + drawer C. Cột: Tên (mono) · Giá trị (`•••• 7f3a`, mono) · Ghi chú · Đang được dùng bởi (link `/workflows?q=<key>`, badge `off` "Chưa dùng" khi rỗng) · Cập nhật ("12/09/2026 · minh.pham") · `⋯` (Thay giá trị · Sửa ghi chú · Xoá). Chip `Tất cả/Đang dùng/Chưa dùng`. Không hành động xem/copy giá trị | `Secrets` |
 | `/workflows` (`workflows/index.tsx`) `?q&status=on\|off\|unattached&secret=<NAME>&page` | Workflows | Mẫu A. Hộp hướng dẫn 3 bước (đóng được, nhớ trong `localStorage ai.workflowsGuide`) → chip `Tất cả/Bật/Tắt/Chưa gắn` → bảng. Cột: Workflow (tên + key mono) · Loại (`workflow\|chat\|agent`) · Đang được dùng bởi (`2 command · 1 agent`, bấm mở Popover DependencyList; `Chưa gắn` = badge `warn`) · Trạng thái (badge) · `⋯` (Sửa · Bật/Tắt · Tạo command · Xoá). `?secret=` hiện chip "Secret: NAME ✕" (`button "Bỏ lọc secret"`) | `Workflows` |
-| `/workflows/new`, `/workflows/$workflowId` (`workflows/new.tsx`, `workflows/$workflowId.tsx`) `?tab=info\|input\|preview\|usage` | Editor workflow | Mẫu B: breadcrumb → header (tên, key mono, badge, nút `Tạo command từ workflow này` (link, ẩn khi tạo mới)) → 4 tab → thanh lưu dính đáy. Tab **Thông tin**: Key (khoá khi đã lưu) · Tên · Loại (radio) · Secret (Select theo tên) · Base URL · Output field · **Mô tả** (Textarea, đếm `n/400`, gợi ý "Viết như đang dặn một người mới: dùng khi nào, không dùng khi nào.") · công tắc Bật. Tab **Input**: bảng tham số (§3.3). Tab **Model thấy gì**: `<pre>` JSON tool (chỉ đọc, §3.4). Tab **Đang được dùng bởi**: DependencyList. Tab Info+Input chung một form, chung nút Lưu; tab có lỗi hiện chấm `err` | `Workflows` (panel) + D2 |
+| `/workflows/new`, `/workflows/$workflowId` (`workflows/new.tsx`, `workflows/$workflowId.tsx`) `?tab=info\|input\|preview\|usage` | Editor workflow | Mẫu B: breadcrumb → header (tên, key mono, badge, nút `Tạo command từ workflow này` (link, ẩn khi tạo mới)) → 4 tab → thanh lưu dính đáy. Tab **Thông tin**: Key (khoá khi đã lưu) · Tên · Loại (radio) · Secret (Select, giá trị = `secret.id`, hiện tên; nguồn `GET /admin/secrets?limit=200`) · Base URL · Output field · **Mô tả** (Textarea, đếm `n/400`, gợi ý "Viết như đang dặn một người mới: dùng khi nào, không dùng khi nào.") · công tắc Bật. Tab **Input**: bảng tham số (§3.3). Tab **Model thấy gì**: `<pre>` JSON tool (chỉ đọc, §3.4). Tab **Đang được dùng bởi**: DependencyList. Tab Info+Input chung một form, chung nút Lưu; tab có lỗi hiện chấm `err` | `Workflows` (panel) + D2 |
 | `/commands` (`commands/index.tsx`) `?q&status=on\|off&feature=<id>&workflow=<id>&page` | Danh sách Commands | Mẫu A đúng missing-screens §2: chip, 2 `Select` (Feature, Workflow), cột Tên+alias · Mô tả (+ "EN thiếu") · Workflow (+ badge `Tắt`) · Feature (chip link `/features/$id`) · Chế độ · Trạng thái (`Switch`) · Cập nhật · `⋯` (**Sửa · Nhân bản · Bật/Tắt · Xoá**; không Lịch sử) | missing-screens §2 |
 | `/commands/new`, `/commands/$commandId` (`commands/new.tsx`, `commands/$commandId.tsx`) `?from=<id>&workflow=<id>&tab=config\|access` | Editor command | Canvas `Commands`: breadcrumb "Commands › /dich" → header (`/dich` mono, badge, "alias translate, tr", nút `Nhân bản`) → tab `Cấu hình` · `Ai dùng được` (+ "3 tenant · 142 user") → **5 bước** (1 Đặt tên và gói chức năng · 2 Chọn workflow · 3 Người dùng gõ gì · 4 Đưa vào workflow · 5 Hiển thị kết quả) → thanh lưu dính đáy (`Chưa lưu thay đổi` · `Huỷ` · `Lưu`). **Không có panel "Chạy thử"**, không "Chạy với tư cách user…", không gợi ý "Bạn chưa chạy thử bản này"; cột phải của canvas bỏ, nội dung một cột `max-w-3xl` | `Commands` (bỏ Test panel) |
 | `/features` (`features/index.tsx`) `?q&status=on\|beta\|off&page` | Danh sách Features | Mẫu A (§3.1). `⋯` đổi trạng thái bằng `DropdownMenu` (Sửa · Bật · Tắt · Chuyển sang Beta · Xoá; `core` chỉ "Sửa"). Tắt → ConfirmDialog vừa | missing-screens §3.1 |
@@ -113,14 +113,14 @@ Bảng dòng, tối đa 50. Mỗi dòng (`aria-label` có số thứ tự): `tex
 - **Danh sách:** Switch bật/tắt: **tắt → toast `commands.toast.disabled` + `Hoàn tác` 5 s** (hoàn tác = `PATCH enabled:true` với version mới); bật → toast `commands.toast.enabled`. Workflow tắt → Switch `disabled` + tooltip `commands.list.workflowOff` (bọc `span tabIndex=0`). Xoá = ConfirmDialog nặng (gõ tên), body `commands.delete.body` với `{features}` = tên feature nối bằng ", ".
 - **Bước 1** Tên (`textbox "Tên command"`, tiền tố `/` trang trí `aria-hidden`; gõ `normalizeCommandName`: bỏ `/` đầu, chữ thường, bỏ dấu) · Alias (`textbox "Alias"` + `button "Thêm alias"` hoặc Enter; chip `button "Bỏ alias tr"`; ≤ 5, không trùng nhau/tên) · Mô tả (`LocalizedInput`, VI bắt buộc ≤ 200) · Feature (`combobox "Thêm feature"` RefPicker, chip `button "Bỏ feature core"`; mặc định `core`; bỏ hết → lỗi inline).
 - **Bước 2** Workflow: `combobox "Workflow"` (Select, lấy `GET /admin/workflows?limit=200`, hiện key + tên, option `Tắt` mờ); thẻ tóm tắt (tên, mô tả, "2 command · 1 agent"). Workflow tắt → Alert `commands.error.workflowDisabled` và Lưu bị khoá nếu đang bật command. Đổi workflow: `reconcileMap()` giữ map còn hợp lệ, **liệt kê map bị bỏ** trong Alert info `commands.map.dropped` (ui-admin 7.4); input trùng tên tham số tự map `arg`.
-- **Bước 3** Tham số (`ArgsEditor`): dòng `Tên` (`^[a-z][a-z0-9_]*$`) · `Mô tả` (`LocalizedInput` gọn) · `Mặc định` · `Nếu trống lấy` (Select: không · `selection` · `page_text` · `page_url`, mặc định xem Y8) · `Nuốt phần còn lại` (checkbox, tối đa 1 và phải ở dòng cuối) · `↑` `↓` · `Xoá`. `SyntaxPreview`: `/dich <lang = vi> <text…>` cập nhật ngay (hàm `buildSyntax`).
+- **Bước 3** Tham số (`ArgsEditor`): dòng `Tên` (`^[a-z][a-z0-9_]*$`) · `Mô tả` (`LocalizedInput` gọn) · `Mặc định` · `Nếu trống lấy` (Select: không · `selection` · `page_text` · `page_url` = `ARG_FALLBACKS`) · `Nuốt phần còn lại` (checkbox, tối đa 1 và phải ở dòng cuối) · `↑` `↓` · `Xoá`. `SyntaxPreview`: `/dich <lang = vi> <text…>` cập nhật ngay (hàm `buildSyntax`).
 - **Bước 4** Input map (`InputMapEditor`): một dòng cho **mỗi input của workflow** (tên mono, `*` nếu bắt buộc, kiểu): `combobox "Nguồn của {name}"` với 8 nguồn (`arg`, `selection`, `page_url`, `page_text`, `attachment`, `user_id`, `tenant_id`, `const`; nhãn người dùng: "Tham số", "Đoạn bôi đen", "URL trang", "Nội dung trang", "File đính kèm", "ID người dùng", "ID tenant", "Giá trị cố định") · khi `arg`: `combobox "Tham số của {name}"` (chỉ tham số đã khai báo ở bước 3) · khi `const`: `textbox "Giá trị của {name}"` (≤ 4000). Hiển thị cú pháp BA `$args.lang` kế bên (chỉ đọc). Dòng bắt buộc chưa chọn nguồn → viền đỏ + `aria-invalid` + câu `commands.error.mapRowMissing`. Cảnh báo sai kiểu (§4) hiện icon vàng + `aria-describedby`, **không chặn**.
 - **Bước 5** Output: `textbox "Output field"` (điền sẵn từ `workflow.output_field`) · `combobox "Hiển thị"` (Markdown/Text/JSON) · `radio "sync"|"async"` (nhóm "Chế độ"; đổi → timeout mặc định 30/120 nếu người dùng chưa sửa) · `spinbutton "Timeout (giây)"` 1–600.
 - **Lưu:** validate toàn form (client) → cuộn + focus lỗi đầu; `POST`/`PATCH` kèm `version`. Thiếu input bắt buộc: **chặn gửi** và hiện `commands.error.mapMissing` ("thiếu input bắt buộc: target_lang", AC-A03). Thành công: toast `commands.toast.saved`, tạo mới → `/commands/$id`.
-- **Tab "Ai dùng được"** (M2-R23): bảng tenant (Mã công ty mono · Tên · Feature (chip) · Số user đang hoạt động) + tổng "3 tenant · 142 user" ở trigger tab; khối nhóm/grant: card "Chưa khả dụng" (`commands.access.groupsLater`, M3). Tab khoá khi tạo mới.
+- **Tab "Ai dùng được"** (M2-R23): bảng tenant có phân trang `limit=50` (`GET …/access` trả `{items,total,command_active}`: Mã công ty mono · Tên (badge `err` "Đã khoá" khi `tenant_active=false`) · Feature (chip) · Số user đang hoạt động); `command_active=false` → Alert `commands.access.inactive` trên bảng; tổng ở trigger tab = `total` tenant (kèm tổng user khi `total` ≤ 50, ngược lại chỉ số tenant, `commands.access.summaryTenants`); khối nhóm/grant: card "Chưa khả dụng" (`commands.access.groupsLater`, M3). Tab khoá khi tạo mới.
 
 ### 3.6 Features + entitlement (ADM-FR-30, 31, 33, 34)
-- **Danh sách:** `core` badge `info` "Mặc định" + "Mọi tenant". Đổi trạng thái: `Bật`/`Chuyển sang Beta` áp dụng ngay (toast `features.toast.statusChanged`); **Tắt** → ConfirmDialog vừa (`features.disable.*`) với `{commands}` = `command_count`, `{users}` = tổng `active_user_count` của entitlement (nạp `GET …/entitlements` khi mở hộp thoại, Y1; `core` không tắt được nên không cần; lỗi nạp → dùng `features.disable.bodyNoCount`). Xoá: ConfirmDialog nặng (gõ key); 409 `FEATURE_HAS_EXCLUSIVE_COMMANDS` → dialog chặn + DependencyList.
+- **Danh sách:** `core` badge `info` "Mặc định" + "Mọi tenant". Đổi trạng thái: `Bật`/`Chuyển sang Beta` áp dụng ngay (toast `features.toast.statusChanged`); **Tắt** → ConfirmDialog vừa (`features.disable.*`) với `{commands}` = `command_count`, `{users}` = tổng `active_user_count` của entitlement (= `affected_user_count` của `GET /admin/features/:id` (nạp khi mở hộp thoại; `core` không tắt được); lỗi nạp → dùng `features.disable.bodyNoCount`). Xoá: ConfirmDialog nặng (gõ key); 409 `FEATURE_HAS_EXCLUSIVE_COMMANDS` → dialog chặn + DependencyList.
 - **Tab Thông tin:** Key (`readOnly` + `features.field.keyLocked` sau khi tạo) · Tên + Mô tả (`LocalizedInput`) · Icon (Select) · Trạng thái (RadioGroup Bật/Beta/Tắt; `core`: khoá + `features.core.hint`). Beta hint `features.field.betaHint`.
 - **Tab Commands:** bảng + `combobox "Thêm command"` (RefPicker; nguồn `GET /admin/commands?limit=200&q=`); `button "Bỏ /dich khỏi feature"`; bỏ command chỉ có feature này → hàng đỏ + `features.commands.orphan` + **chặn Lưu** (`commands.error.featureRequired`). Danh sách là **nháp**, lưu chung với tab Thông tin qua thanh lưu (Y2).
 - **Tab Tenant:** lưu ngay từng thao tác. `button "+ Cấp cho tenant"` → RefPicker tenant chưa có (`GET /admin/tenants?limit=200`, loại tenant đã cấp, ghi chú tenant khoá vẫn cấp được) → `PUT` → toast `features.toast.granted`. Bảng: Mã công ty · Tên · Số user đang dùng · Cấp lúc · Cấp bởi · `button "Thu hồi"`. Thu hồi = ConfirmDialog nặng (gõ mã công ty), `features.revoke.*` (`{users}` = `active_user_count`, `{commands}` = số command của feature) → toast `features.toast.revoked` + `Hoàn tác` 5 s (= `PUT` lại). `core`: không có nút, hiện `features.tenants.coreAll`.
@@ -151,7 +151,7 @@ Schema form dùng hằng/regex từ `@ai/contracts` (như M1), thông điệp l�
 | Tham số lệnh | `^[a-z][a-z0-9_]*$`, không trùng; ≤ 1 `rest` và phải cuối | `commands.error.argName` / `commands.error.argDup` / `commands.error.argRest` | idem |
 | Input map | mọi input `required` có nguồn; khoá lạ; `arg` trỏ tham số chưa khai báo; `const` ≤ 4000 | `commands.error.mapMissing` · `commands.error.mapUnknown` · `commands.error.mapUnknownArg` · `commands.error.constMax` | idem |
 | Cảnh báo sai kiểu (không chặn) | `file` ← nguồn khác `attachment`; `attachment` → input không phải `file`; `number`/`boolean` ← nguồn văn bản cố định không đúng dạng; `select` ← `const` ngoài `options` | `commands.warn.mapType` | idem |
-| Output | field không rỗng ≤ 64 (Y8); `timeout_s` nguyên 1–600 | `commands.error.outputField` / `commands.error.timeout` | idem |
+| Output | field không rỗng ≤ 128; `timeout_s` nguyên 1–600 | `commands.error.outputField` / `commands.error.timeout` | idem |
 | Feature · Key | `^[a-z0-9-]{2,32}$` | `features.error.keyFormat` (§3) | idem |
 | Feature · Tên | VI bắt buộc ≤ 64 | `features.error.nameRequired` | idem |
 | Feature · Mô tả | ≤ 400 | `features.error.descMax` | idem |
@@ -247,6 +247,10 @@ Dòng trùng role/tên trong cùng trang đều có hậu tố số thứ tự (
 | commands.access.summary | {tenants} tenant · {users} user | {tenants} tenants · {users} users |
 | commands.access.col.key / name / features / users | Mã công ty / Tên / Feature / Số user | Company key / Name / Features / Users |
 | commands.access.empty | Chưa tenant nào dùng được command này. Gán command vào một feature và cấp feature cho tenant. | No tenant can use this command yet. Put it in a feature and grant the feature to a tenant. |
+| commands.access.inactive | Command đang tắt hoặc workflow của nó đang tắt: chưa ai dùng được. | The command or its workflow is disabled: nobody can use it yet. |
+| commands.access.summaryTenants | {tenants} tenant | {tenants} tenants |
+| commands.access.tenantLocked | Đã khoá | Locked |
+| errors.invalidReference | Dữ liệu chọn đã cũ. Đã tải lại danh sách, hãy chọn lại. | The selection is out of date. The list was reloaded; please choose again. |
 | commands.access.groupsLater | Quyền theo nhóm và người dùng chưa khả dụng. | Group and user access isn't available yet. |
 | commands.step1 / step2 / step3 / step4 / step5 | Đặt tên và gói chức năng / Chọn workflow / Người dùng gõ gì / Đưa vào workflow / Hiển thị kết quả | Name and feature bundle / Choose a workflow / What the user types / Feed the workflow / Show the result |
 | commands.field.name / alias / aliasAdd / description / features / featuresAdd | Tên command / Alias / Thêm alias / Mô tả cho người dùng / Feature quyết định ai thấy lệnh này / Thêm feature | Command name / Alias / Add alias / Description for users / Features decide who sees this command / Add feature |
@@ -275,7 +279,7 @@ Dòng trùng role/tên trong cùng trang đều có hậu tố số thứ tự (
 | commands.error.mapMissing | thiếu input bắt buộc: {names} | missing required input: {names} |
 | commands.error.mapRowMissing | thiếu input bắt buộc: {name} | missing required input: {name} |
 | commands.error.mapUnknown / mapUnknownArg | Input không có trong workflow: {names} / Tham số chưa khai báo: {names} | Input not in the workflow: {names} / Undeclared parameter: {names} |
-| commands.error.constMax / outputField / timeout | Giá trị cố định tối đa 4000 ký tự / Nhập output field (tối đa 64 ký tự) / Timeout từ 1 đến 600 giây | Fixed value at most 4000 characters / Enter an output field (at most 64 characters) / Timeout must be 1–600 seconds |
+| commands.error.constMax / outputField / timeout | Giá trị cố định tối đa 4000 ký tự / Nhập output field (tối đa 128 ký tự) / Timeout từ 1 đến 600 giây | Fixed value at most 4000 characters / Enter an output field (at most 128 characters) / Timeout must be 1–600 seconds |
 | commands.warn.mapType | Nguồn "{source}" có thể không khớp kiểu {type} của {name}. Vẫn lưu được. | Source "{source}" may not match the {type} type of {name}. You can still save. |
 | commands.toast.saved | Đã lưu /{name} | Saved /{name} |
 | commands.editor.unsaved | Chưa lưu thay đổi | Unsaved changes |
@@ -305,35 +309,37 @@ FE2 chốt danh sách ~16 icon (8 icon đầu ở bảng trên, thêm cho đủ)
 |---|---|
 | `SECRET_NAME_TAKEN` / `NAME_TAKEN` (R04) | inline `secrets.error.nameTaken` |
 | `SECRET_IN_USE {used_by[]}` (R05) | dialog chặn (D-list) |
-| `WORKFLOW_IN_USE {commands[],agents[]}` (R11) | dialog chặn (D-list) |
-| `SCHEMA_BREAKS_COMMANDS {commands[]}` (R18) | Alert đỏ + D-list |
+| `WORKFLOW_IN_USE {action:"delete"|"disable",commands[],agents[]}` (R11) | dialog chặn (D-list) theo `action` (`workflows.delete.blocked` / `workflows.blocked.disable`); dùng luôn `details`, không gọi lại `usages` |
+| `SCHEMA_BREAKS_COMMANDS {commands:[{id,name,missing[],unknown[]}]}` (R18) | Alert đỏ + D-list, mỗi command ghi biến thiếu/lạ |
 | `WORKFLOW_DISABLED` (R14) | `commands.error.workflowDisabled` |
 | `COMMAND_NAME_TAKEN {name}` (R13) | inline `commands.error.nameTaken` |
-| `INPUT_MAP_INVALID {missing,unknown,unknown_args}` (R17) | `commands.error.mapMissing`/`mapUnknown`/`mapUnknownArg` + đánh dấu hàng |
+| `INPUT_MAP_INVALID {missing,unknown,unknown_args}` (R17) | câu dựng từ `details` (`message` server cố định tiếng Anh, không hiển thị): `mapMissing` ({names} = `details.missing`, "thiếu input bắt buộc: target_lang"), `mapUnknown`, `mapUnknownArg` + đánh dấu hàng |
 | `COMMAND_NEEDS_FEATURE` (R19) | `commands.error.featureRequired` |
 | `CORE_FEATURE_PROTECTED` (R20, R22) | toast `features.error.coreProtected` |
 | `FEATURE_HAS_EXCLUSIVE_COMMANDS {commands[]}` (R21) | dialog chặn |
-| `KEY_TAKEN` (có sẵn) | tuỳ màn: `workflows.error.keyTaken` / `features.error.keyTaken` |
+| `KEY_TAKEN` (dùng chung với M1; `message` server chỉ để log) | tuỳ màn: `workflows.error.keyTaken` / `features.error.keyTaken` |
 | `VALIDATION_ERROR` của `/admin/secrets*` | inline theo `details` trường, câu tĩnh; **không** dùng `message` server |
-| `VERSION_CONFLICT` | D12 |
+| `VERSION_CONFLICT` | D12 (G14) |
+| `INVALID_REFERENCE {field, ids}` | toast bền `errors.invalidReference` (danh sách chọn đã cũ; refetch danh sách chọn) |
 | `FORBIDDEN`, `NOT_FOUND`, mạng | như M1 |
 
-## 9. Yêu cầu contract (gửi backend-lead; FE không tự đổi)
+## 9. Yêu cầu contract: đã chốt (spec §3, commit 63ead5c)
 
-Mặc định FE nếu backend không đổi: ghi ở cột cuối. Không có yêu cầu nào là hard stop.
+Backend-lead đã trả lời Y1–Y10 ở spec §3 và `plan.md` §11. Không còn yêu cầu mở. Khi code, lấy kiểu từ `@ai/contracts`, không tự khai báo.
 
-| # | Yêu cầu | Lý do | Mặc định FE nếu từ chối |
-|---|---|---|---|
-| **Y1** | **Workflow tham chiếu secret theo `name`** (`secret` trong body/response) **hoặc** response secret có `id`. M2-R03 liệt kê response secret không có `id` nhưng M2-R07 bắt workflow gửi `secret_id` → FE không có id để chọn. Đề xuất: `workflow.secret: string` (tên, bất biến, unique). Cũng: `GET /admin/features/:id/entitlements` (BA §8 chỉ có PUT/DELETE) trả `{items:[{tenant_id, tenant_key, tenant_name, active_user_count, granted_at, granted_by}]}` chỉ gồm hàng **chưa thu hồi**; với `core` trả danh sách rỗng (hộp thoại Tắt `core` không cần: `core` không tắt được) | Chọn secret; hộp thoại Tắt/Thu hồi cần số user | Secret phải có `id` trong response (không có cách khác chọn secret; **cần chốt trước T1**). Entitlement list thiếu → bỏ số user trong hộp thoại, vẫn dùng `bodyNoCount` |
-| **Y2** | Feature: `GET /admin/features/:id` kèm `commands:[{id,name,description,feature_count}]`; `POST` và `PATCH /admin/features/:id` nhận tuỳ chọn `command_ids: uuid[]` (thay cả tập, cùng transaction, lỗi `COMMAND_NEEDS_FEATURE` có `details.commands:[{id,name}]`) | Tab Commands là danh sách nháp lưu chung (missing-screens §3.2) | FE gọi `PATCH /admin/commands/:id` sửa `feature_ids` từng command (nhiều request, không nguyên tử) |
-| **Y3** | Command list item: `{id, name, aliases[], description{vi,en?}, workflow{id,key,name,enabled}, features[{id,key,name}], mode, enabled, version, updated_at, updated_by}` (`updated_by` = username hoặc null); `?feature=` và `?workflow=` nhận **id**; `?q` tìm trên name, alias, description; `counts {all,on,off}` | Bảng §2, D7 | Không (cần để vẽ bảng) |
-| **Y4** | Command detail đủ `args`, `input_map`, `output`, `timeout_s`, `feature_ids`; response `POST/PATCH` có `warnings[]` (map sai kiểu, M2-R17); lỗi có `details` đúng dạng ở §8 | Editor, D9 | FE tự tính cảnh báo (đã có `validateInputMap`) |
-| **Y5** | Workflow list item: `{id, key, name, app_type, description, enabled, secret, command_count, agent_count, unattached, version, updated_at, updated_by}`; `counts {all, on, off, unattached}`; `?secret=<NAME>` lọc theo tên; `usages {commands:[{id,name,enabled}], agents:[{id}]}`; `409 WORKFLOW_IN_USE` và `SCHEMA_BREAKS_COMMANDS` có `details` như §8 | Bảng + chip có số + dialog chặn | `counts.unattached` thiếu → chip "Chưa gắn" không có số |
-| **Y6** | Secret list item `{name, last4, note, used_by:string[], created_at, updated_at, updated_by}` (workflow **key**); `PATCH /admin/secrets/:name {note}` đổi ghi chú (BA §8 chỉ có `PUT`). Nếu không muốn `PATCH`: `PUT` nhận `{value?, note?}` (không bắt buộc cả hai) | Drawer "Sửa ghi chú" không đụng giá trị (M2-R04) | `PUT` với `value` bắt buộc → bỏ "Sửa ghi chú" (không chấp nhận được; cần chốt) |
-| **Y7** | `GET /admin/commands/:id/access` → `{tenants:[{tenant_id, key, name, features:[{key,name}], active_user_count}]}` | Tab "Ai dùng được" (R23) | Không (cần cho tab) |
-| **Y8** | Command `args[].fallback` là một trong `selection\|page_text\|page_url` hay chuỗi tuỳ ý? `output.field` bắt buộc hay mặc định lấy `workflow.output_field`? | Cột "Nếu trống lấy"; bước 5 | `fallback ∈ {selection,page_text,page_url}` hoặc bỏ trống; `output.field` bắt buộc, điền sẵn từ workflow |
-| **Y9** | Feature list item: `{id, key, name{vi,en?}, description, icon, status, command_count, tenant_count, version, updated_at, updated_by}`; `counts {all,on,beta,off}`; `icon` là chuỗi `^[a-z0-9-]{1,40}$` | Bảng §3.1 | — |
-| **Y10** | Mọi `updated_by` là **username** (không phải uuid), `updated_at` ISO | Cột "Cập nhật" hiện "12/09/2026 · minh.pham" | FE hiện chỉ ngày nếu thiếu |
+| # | Kết quả đã chốt | FE dùng |
+|---|---|---|
+| Y1 | Secret có `id`; workflow gửi `secret_id`, response `secret:{id,name}`; `GET /admin/features/:id/entitlements` → `{items,total}` (chỉ chưa thu hồi; `core` rỗng) | Select secret có value = `id`; tab Tenant dùng `ListQueryBase` (`q`, phân trang) |
+| Y2 | `FeatureDetail.commands[]` + `affected_user_count`; `POST/PATCH` nhận `command_ids` (thay cả tập); `COMMAND_NEEDS_FEATURE {commands}` | Tab Commands nháp lưu chung; hộp thoại Tắt dùng `affected_user_count` |
+| Y3, Y5, Y9 | Item list đủ cột; `counts` `{all,on,off}` / `{all,on,off,unattached}` / `{all,on,beta,off}`; `?feature=` và `?workflow=` theo id; `?secret=<NAME>`; `is_core` | Chip có số; `core` nhận biết bằng `is_core` ("Mọi tenant") |
+| Y4 | `Command.warnings[]`; `INPUT_MAP_INVALID.details` đủ 3 khoá | §8, D9 |
+| Y6 | `PATCH /admin/secrets/:name {note: string or null}` | Drawer Sửa ghi chú |
+| Y7 | `GET /admin/commands/:id/access` → `{items,total,command_active}` có phân trang | §3.5 tab Ai dùng được |
+| Y8 | `fallback ∈ ARG_FALLBACKS`; `output.field` bắt buộc 1–128 | Select fallback, bước 5 |
+| Y10 | `updated_by` = username hoặc null | Cột "Cập nhật": thiếu thì chỉ hiện ngày |
+
+Giới hạn lấy từ contract: tham số workflow ≤ 50, mô tả ≤ 400, lựa chọn ≤ 50 mục × 100 ký tự; tham số lệnh ≤ 20, `^[a-z][a-z0-9_]{0,31}$`; alias ≤ 5; `base_url` ≤ 2048; `output_field` ≤ 128; mô tả command VI/EN ≤ 200; `const` ≤ 4000; `default` ≤ 1000; `icon` `^[a-z0-9-]{1,40}$`.
+
 
 ## 10. Artboard / ADR đề xuất
 
@@ -345,4 +351,4 @@ Mặc định FE nếu backend không đổi: ghi ở cột cuối. Không có y
 Không có câu chặn Gate. Hai chỗ đề nghị người dùng xác nhận (mặc định đã áp dụng, đổi thì sửa ở D2/D5):
 1. Workflows/Commands editor là **trang riêng** thay vì panel/drawer như hình vẽ Workflows? → Mặc định **trang riêng** (ui-admin §3 cho Command và Workflow).
 2. Giữ nguyên câu "có hiệu lực sau vài giây" ở toast cấp feature dù Hub chưa đọc catalog ở M2 (M2-R24)? → Mặc định **giữ** (câu chữ design đã duyệt; hiệu lực thật là việc của Hub/M3).
-Y1 (secret `id`/`name`) và Y6 (`PATCH` ghi chú) cần backend-lead chốt **trước T1**; đó là yêu cầu contract, không phải câu hỏi cho người dùng.
+Các yêu cầu contract Y1–Y10 đã được backend-lead chốt (§9); không còn câu hỏi mở.
