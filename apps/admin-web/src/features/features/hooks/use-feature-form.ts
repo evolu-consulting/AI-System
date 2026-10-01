@@ -39,6 +39,14 @@ export function useFeatureForm(feature: FeatureDetail | undefined, onReload: () 
   const isDirty = form.formState.isDirty;
   // Version dùng cho PATCH kế tiếp: lấy từ phản hồi lưu, không đợi refetch (tránh dựng lại form làm mất chỉnh sửa vừa gõ).
   const version = useRef(feature?.version ?? 0);
+  // Đếm chỉnh sửa để biết người dùng có gõ thêm trong lúc chờ phản hồi lưu hay không.
+  const edits = useRef(0);
+  useEffect(() => {
+    const sub = form.watch(() => {
+      edits.current += 1;
+    });
+    return () => sub.unsubscribe();
+  }, [form]);
 
   // Tạo xong: chờ cờ "chưa lưu" tắt (UnsavedGuard) rồi mới chuyển sang trang sửa.
   useEffect(() => {
@@ -71,6 +79,7 @@ export function useFeatureForm(feature: FeatureDetail | undefined, onReload: () 
 
   const save = async (values: FeatureFormValues) => {
     setNeedsFeature(false);
+    const editsAtSubmit = edits.current;
     if (feature && removedOrphans(feature.commands, values.command_ids).length > 0) {
       return setNeedsFeature(true);
     }
@@ -87,7 +96,8 @@ export function useFeatureForm(feature: FeatureDetail | undefined, onReload: () 
         ...toUpdateBody(values, version.current, feature.is_core),
       });
       version.current = res.version;
-      form.reset(toFormValues(res), { keepDirtyValues: true });
+      // Không gõ thêm → form khớp bản đã lưu (hết "chưa lưu"); có gõ thêm → giữ phần mới gõ.
+      form.reset(toFormValues(res), { keepDirtyValues: edits.current !== editsAtSubmit });
       notifySuccess(t("features.toast.saved", { name: pickLocalized(res.name, i18n.language) }));
     } catch (err) {
       fail(err);

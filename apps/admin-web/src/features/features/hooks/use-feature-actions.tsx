@@ -98,7 +98,6 @@ export function useFeatureActions() {
 
   const remove = useCallback(
     async (f: FeatureListItem) => {
-      if (f.command_count === 0) return setToDelete(f);
       try {
         const d = await qc.fetchQuery({
           queryKey: FEATURE_KEYS.detail(f.id),

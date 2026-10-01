@@ -14,6 +14,14 @@ import { api } from "@/lib/http";
 
 export const FEATURES_PAGE_SIZE = 50;
 
+/** Đổi feature/entitlement/tập command đổi "ai dùng được" và feature của command → làm mới cả hai danh sách. */
+function invalidateCatalog(qc: ReturnType<typeof useQueryClient>) {
+  return Promise.all([
+    qc.invalidateQueries({ queryKey: ["features"] }),
+    qc.invalidateQueries({ queryKey: ["commands"] }),
+  ]);
+}
+
 export type FeatureStatusFilter = "on" | "beta" | "off";
 export type FeatureListParams = { q: string; status?: FeatureStatusFilter; offset: number };
 
@@ -80,7 +88,7 @@ export function useCreateFeature() {
   return useMutation({
     mutationFn: (body: FeatureCreateRequest) =>
       api<FeatureDetail>("/admin/features", { method: "POST", body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: FEATURE_KEYS.all }),
+    onSuccess: () => invalidateCatalog(qc),
   });
 }
 
@@ -89,7 +97,7 @@ export function useUpdateFeature() {
   return useMutation({
     mutationFn: ({ id, ...body }: { id: string } & FeatureUpdateRequest) =>
       api<FeatureDetail>(`/admin/features/${id}`, { method: "PATCH", body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: FEATURE_KEYS.all }),
+    onSuccess: () => invalidateCatalog(qc),
   });
 }
 
@@ -97,7 +105,7 @@ export function useDeleteFeature() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api<undefined>(`/admin/features/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: FEATURE_KEYS.all }),
+    onSuccess: () => invalidateCatalog(qc),
   });
 }
 
@@ -143,7 +151,7 @@ export function useGrantEntitlement(featureId: string) {
   return useMutation({
     mutationFn: (tenantId: string) =>
       api<Entitlement>(`/admin/features/${featureId}/entitlements/${tenantId}`, { method: "PUT" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: FEATURE_KEYS.all }),
+    onSuccess: () => invalidateCatalog(qc),
   });
 }
 
@@ -154,6 +162,6 @@ export function useRevokeEntitlement(featureId: string) {
       api<undefined>(`/admin/features/${featureId}/entitlements/${tenantId}`, {
         method: "DELETE",
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: FEATURE_KEYS.all }),
+    onSuccess: () => invalidateCatalog(qc),
   });
 }

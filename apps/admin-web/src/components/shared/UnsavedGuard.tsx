@@ -17,7 +17,8 @@ type Props = { dirty: boolean };
 export function UnsavedGuard({ dirty }: Props) {
   const { t } = useTranslation();
   const blocker = useBlocker({
-    shouldBlockFn: () => dirty,
+    // Chỉ chặn khi rời trang; đổi tab/tham số tìm kiếm trong cùng trang (editor) không mất dữ liệu nên không chặn.
+    shouldBlockFn: ({ current, next }) => dirty && current.pathname !== next.pathname,
     enableBeforeUnload: () => dirty,
     withResolver: true,
   });

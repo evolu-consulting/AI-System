@@ -72,13 +72,14 @@ export function useWorkflowActions() {
 
   const remove = useCallback(
     async (w: WorkflowListItem) => {
-      if (w.unattached) return setToDelete(w);
+      // Luôn hỏi `usages` mới: cờ `unattached` của danh sách có thể cũ (command vừa gắn ở màn khác).
       try {
         const u = await qc.fetchQuery({
           queryKey: WORKFLOW_KEYS.usages(w.id),
           queryFn: () => fetchWorkflowUsages(w.id),
           staleTime: 0,
         });
+        if (u.commands.length === 0 && u.agents.length === 0) return setToDelete(w);
         setBlocked({
           action: "delete",
           workflowKey: w.key,

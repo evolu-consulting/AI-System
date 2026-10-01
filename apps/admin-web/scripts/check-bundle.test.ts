@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkBundle, initialAssets } from "./check-bundle";
+import { asyncChunkSizes, checkBundle, initialAssets } from "./check-bundle";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -80,5 +80,28 @@ describe("ADM-NFR-06 · M0-AC19 · check:bundle", () => {
     expect(checkBundle(empty).errors).toEqual(["check:bundle: thiếu dist/index.html"]);
     const dir = makeDist(page(["/static/js/none.js"]), {});
     expect(checkBundle(dir).errors).toEqual(["check:bundle: thiếu dist/static/js/none.js"]);
+  });
+});
+
+describe("ADM-NFR-06 · M2 · ngân sách chunk route", () => {
+  const withChunks = (files: Record<string, Uint8Array | string>) =>
+    makeDist(page(["/static/js/a.js"]), { "static/js/a.js": "x", ...files });
+
+  test("chunk bất đồng bộ ≤ 50 KB → không lỗi và báo chunk lớn nhất", () => {
+    const dir = withChunks({ "static/js/async/r.js": noise(20) });
+    const r = checkBundle(dir);
+    expect(r.errors).toEqual([]);
+    expect(Number(r.maxChunkKb)).toBeGreaterThan(19);
+  });
+
+  test("chunk vượt 50 KB → lỗi nêu tên chunk", () => {
+    const dir = withChunks({ "static/js/async/big.js": noise(60), "static/js/async/ok.js": "1" });
+    expect(checkBundle(dir).errors).toEqual([expect.stringContaining("chunk big.js")]);
+  });
+
+  test("không có thư mục async → bỏ qua; chỉ đọc file .js", () => {
+    expect(asyncChunkSizes(withChunks({}))).toEqual([]);
+    const dir = withChunks({ "static/js/async/a.js.LICENSE.txt": noise(80) });
+    expect(asyncChunkSizes(dir)).toEqual([]);
   });
 });

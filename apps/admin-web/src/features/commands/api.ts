@@ -17,6 +17,12 @@ export const COMMANDS_PAGE_SIZE = 50;
 const OPTIONS_STALE_MS = 30_000;
 const OPTIONS_LIMIT = 200;
 
+/** Thay đổi command đổi số đếm "đang được dùng bởi" của workflow và số command của feature → làm mới cả hai danh sách. */
+const CATALOG_KEYS = [["commands"], ["workflows"], ["features"]] as const;
+function invalidateCatalog(qc: ReturnType<typeof useQueryClient>) {
+  return Promise.all(CATALOG_KEYS.map((queryKey) => qc.invalidateQueries({ queryKey })));
+}
+
 export type CommandListParams = {
   q: string;
   status?: "on" | "off";
@@ -123,7 +129,7 @@ export function useUpdateCommand() {
   return useMutation({
     mutationFn: ({ id, ...body }: { id: string } & CommandUpdateRequest) =>
       api<Command>(`/admin/commands/${id}`, { method: "PATCH", body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: COMMAND_KEYS.all }),
+    onSuccess: () => invalidateCatalog(qc),
   });
 }
 
@@ -147,7 +153,7 @@ export function useCreateCommand() {
   return useMutation({
     mutationFn: (body: CommandCreateRequest) =>
       api<Command>("/admin/commands", { method: "POST", body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: COMMAND_KEYS.all }),
+    onSuccess: () => invalidateCatalog(qc),
   });
 }
 
@@ -155,7 +161,7 @@ export function useDeleteCommand() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api<undefined>(`/admin/commands/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: COMMAND_KEYS.all }),
+    onSuccess: () => invalidateCatalog(qc),
   });
 }
 
