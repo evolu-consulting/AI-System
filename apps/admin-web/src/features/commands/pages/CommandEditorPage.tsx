@@ -1,6 +1,7 @@
 // ADM-FR-20, ADM-FR-21, ADM-FR-22, ADM-FR-24 · editor Command (/commands/new, /commands/$id): 5 bước trong tab "Cấu hình" + tab "Ai dùng được".
 import type { Command } from "@ai/contracts";
 import { useRouter } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
 import { FormProvider } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { EditorSaveBar } from "@/components/shared/EditorSaveBar";
@@ -15,7 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/http";
-import { useCommand } from "../api";
+import { useTr } from "@/lib/use-translate";
+import { useCommand, useCommandAccess } from "../api";
 import { StepArgs } from "../components/StepArgs";
 import { StepInputMap } from "../components/StepInputMap";
 import { StepName } from "../components/StepName";
@@ -23,6 +25,12 @@ import { StepOutput } from "../components/StepOutput";
 import { StepWorkflow } from "../components/StepWorkflow";
 import { useCommandForm } from "../hooks/use-command-form";
 import { useWorkflowLink } from "../hooks/use-workflow-link";
+import { accessSummary } from "../lib/access";
+
+// Tab ít dùng: tách chunk riêng để editor không kéo thêm bảng tenant (plan-frontend §6).
+const AccessTab = lazy(() =>
+  import("../components/AccessTab").then((m) => ({ default: m.AccessTab })),
+);
 
 export type CommandTab = "config" | "access";
 type Props = {
@@ -73,6 +81,9 @@ function EditorBody({ command, copyOf, presetWorkflow, tab, onTab }: BodyProps) 
   const ed = useCommandForm({ command, copyOf, presetWorkflow });
   const link = useWorkflowLink(ed.form, !command && !copyOf);
   const isDirty = ed.form.formState.isDirty;
+  const tr = useTr();
+  const access = useCommandAccess(command?.id, 0);
+  const summary = access.data ? accessSummary(tr, access.data.total, access.data.items) : "";
   const serverNames = { name: ed.server.name, alias: ed.server.alias, feature: ed.server.feature };
 
   return (
@@ -84,6 +95,7 @@ function EditorBody({ command, copyOf, presetWorkflow, tab, onTab }: BodyProps) 
             <TabsTrigger value="config">{t("commands.tab.config")}</TabsTrigger>
             <TabsTrigger value="access" disabled={!command}>
               {t("commands.tab.access")}
+              {summary ? ` · ${summary}` : ""}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="config" className="max-w-3xl space-y-4 pt-4">
@@ -104,6 +116,13 @@ function EditorBody({ command, copyOf, presetWorkflow, tab, onTab }: BodyProps) 
             <StepInputMap workflow={link.workflow} issues={ed.server.map} />
             <StepOutput />
           </TabsContent>
+          {command ? (
+            <TabsContent value="access" className="max-w-3xl pt-4">
+              <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                <AccessTab commandId={command.id} />
+              </Suspense>
+            </TabsContent>
+          ) : null}
         </Tabs>
         <EditorSaveBar dirty={isDirty} pending={ed.pending} cancelTo="/commands" />
       </form>

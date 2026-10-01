@@ -2,6 +2,7 @@
 // Danh sách chọn Feature/Workflow (≤ 200) cũng gọi ở đây vì chỉ Commands dùng.
 import type {
   Command,
+  CommandAccessResponse,
   CommandCreateRequest,
   CommandListResponse,
   CommandUpdateRequest,
@@ -123,6 +124,21 @@ export function useUpdateCommand() {
     mutationFn: ({ id, ...body }: { id: string } & CommandUpdateRequest) =>
       api<Command>(`/admin/commands/${id}`, { method: "PATCH", body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: COMMAND_KEYS.all }),
+  });
+}
+
+export const ACCESS_PAGE_SIZE = 50;
+
+/** "Ai dùng được" (M2-R23): tenant dùng được command, phân trang server 50; chỉ nạp cho command đã lưu. */
+export function useCommandAccess(id: string | undefined, offset: number) {
+  return useQuery({
+    queryKey: ["commands", "access", id ?? "", offset] as const,
+    enabled: !!id,
+    placeholderData: keepPreviousData,
+    queryFn: () =>
+      api<CommandAccessResponse>(`/admin/commands/${id}/access`, {
+        query: { limit: ACCESS_PAGE_SIZE, offset: offset || undefined },
+      }),
   });
 }
 
