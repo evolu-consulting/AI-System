@@ -1,5 +1,6 @@
 // ADM-FR-01, ADM-FR-04, ADM-FR-60, ADM-FR-63, ADM-BR-05 · kiểu dùng chung, hằng và bảng mã lỗi M1 (spec M1 §3).
 // ADM-FR-10, ADM-FR-20, ADM-FR-30, ADM-FR-50 · hằng/enum catalog M2, kiểu chung và 11 mã lỗi M2 (spec M2 §3).
+// ADM-FR-62, ADM-FR-32 · 2 mã lỗi M3 + `REFERENCE_FIELDS` mở rộng (spec M3 §3).
 // Không import I/O: file này chạy được ở trình duyệt (admin-web dùng regex/hằng để validate form).
 import { z } from "zod";
 
@@ -202,7 +203,7 @@ export function pageResponseSchema<T extends z.ZodType>(item: T) {
 }
 export type PageResponse<T> = { items: T[]; total: number };
 
-/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3: 23 + 11 = 34 mã). */
+/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3 + M3 §3: 23 + 11 + 2 = 36 mã). */
 export const API_ERRORS = {
   VALIDATION_ERROR: 400,
   TENANT_REQUIRED: 400,
@@ -236,6 +237,8 @@ export const API_ERRORS = {
   COMMAND_NAME_TAKEN: 409,
   CORE_FEATURE_PROTECTED: 409,
   FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
+  BETA_GROUP_PROTECTED: 409,
+  NOT_ENTITLED: 409,
   TEMP_LOCKED: 423,
   INTERNAL_ERROR: 500,
 } as const satisfies Record<string, 400 | 401 | 403 | 404 | 409 | 423 | 500>;
@@ -282,7 +285,17 @@ export const SecretInUseDetailsSchema = z.strictObject({
 });
 export type SecretInUseDetails = z.infer<typeof SecretInUseDetailsSchema>;
 
-export const REFERENCE_FIELDS = ["secret_id", "workflow_id", "feature_ids", "command_ids"] as const;
+/** M2: secret_id, workflow_id, feature_ids, command_ids · M3: feature_id, group_id, user_id (grant POST), group_ids (batch). */
+export const REFERENCE_FIELDS = [
+  "secret_id",
+  "workflow_id",
+  "feature_ids",
+  "command_ids",
+  "feature_id",
+  "group_id",
+  "user_id",
+  "group_ids",
+] as const;
 export const InvalidReferenceDetailsSchema = z.strictObject({
   field: z.enum(REFERENCE_FIELDS),
   ids: z.array(UuidSchema).min(1),
@@ -340,3 +353,9 @@ export const FeatureHasExclusiveCommandsDetailsSchema = z.strictObject({
 export type FeatureHasExclusiveCommandsDetails = z.infer<
   typeof FeatureHasExclusiveCommandsDetailsSchema
 >;
+
+/** M3-R07: feature không có entitlement chưa thu hồi ở tenant (≥ 1, sắp tăng, không trùng). */
+export const NotEntitledDetailsSchema = z.strictObject({
+  feature_ids: z.array(UuidSchema).min(1),
+});
+export type NotEntitledDetails = z.infer<typeof NotEntitledDetailsSchema>;

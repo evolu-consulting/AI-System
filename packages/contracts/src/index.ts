@@ -1,7 +1,9 @@
-// ADM-NFR-06, ADM-FR-01, ADM-FR-10 · điểm vào contract dùng chung giữa admin-api, admin-web và test.
+// ADM-NFR-06, ADM-FR-01, ADM-FR-10, ADM-FR-62 · điểm vào contract dùng chung giữa admin-api, admin-web và test.
+export * from "./access";
 export * from "./auth";
 export * from "./commands";
 export * from "./common";
+export * from "./config";
 export {
   BASE_ERROR_CODES,
   type BaseErrorCode,
@@ -9,6 +11,8 @@ export {
   ErrorResponseSchema,
 } from "./errors";
 export * from "./features";
+export * from "./grants";
+export * from "./groups";
 export { type HealthResponse, HealthResponseSchema } from "./health";
 export * from "./secrets";
 export * from "./tenants";

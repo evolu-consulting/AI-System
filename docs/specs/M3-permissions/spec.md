@@ -306,6 +306,7 @@ Quyết định riêng của backend (Luật 2):
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - T0 (backend): allowlist `check:fn` ban đầu 18 mục khi chạy `--all` trên M0–M2: 2 hàm 5 tham số (`jwt.ts` `sign`, `auth.service.ts` `writePassword`, TECH-DEBT #24) + 16 callback `describe` > 50 dòng trong test cạnh code (TECH-DEBT #23 mở rộng: db-guard, lock-order ×2, secret-crypto, commands perf/service, features/secrets service, rls, contracts common, admin-web schemas×2/nav/refresh-lock, tools depcruise/trace). Code sản phẩm không có vi phạm độ dài nào. Khoá allowlist = file + tên (callback = `callee("40 ký tự đầu của chuỗi")`).
 - T0 (backend): `db:test:drop <tag>` xoá luôn `.env.test-<tag>.local` (tránh file env trỏ DB đã xoá); `db:test:create` sao chép `.env.local` thay vì ghép nhiều `--env-file` (plan §12).
+- T1 (backend): `groups.ts` export `groupRefShape` + `refineBeta()` để ghép GroupRef với trường thêm (`MatrixGroup` = GroupRef + `member_count`; T6 dùng cho cặp group–feature của "Ai dùng được") thay vì `z.intersection` (GroupRef strict không nhận khoá lạ). `access.ts` thêm enum `FEATURE_ONLY_MISSING` (= `FEATURE_MISSING` bỏ `USER_BLOCKERS`) cho `blocked_by[].missing`; `EffectiveFeature`/`EffectiveCommand` có refine `effective ⇔ missing = []` / `visible ⇔ missing = []`. `config.ts` thêm `CONFIG_PAYLOAD_MAX_BYTES = 8000`; `configChangedPayload` ném khi `v` không nguyên ≥ 1.
 
 ## 10. Tranh chấp test
 - (không)

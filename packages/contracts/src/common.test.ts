@@ -139,7 +139,7 @@ describe("ADM-FR-04 · ListQueryBase", () => {
 });
 
 describe("ADM-FR-01 · API_ERRORS", () => {
-  test("đủ 34 mã (23 M1 + 11 M2), đúng HTTP theo spec M1 §3 + M2 §3", () => {
+  test("đủ 36 mã (23 M1 + 11 M2 + 2 M3), đúng HTTP theo spec M1 §3 + M2 §3 + M3 §3", () => {
     expect(API_ERRORS).toEqual({
       VALIDATION_ERROR: 400,
       TENANT_REQUIRED: 400,
@@ -173,10 +173,12 @@ describe("ADM-FR-01 · API_ERRORS", () => {
       COMMAND_NAME_TAKEN: 409,
       CORE_FEATURE_PROTECTED: 409,
       FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
+      BETA_GROUP_PROTECTED: 409,
+      NOT_ENTITLED: 409,
       TEMP_LOCKED: 423,
       INTERNAL_ERROR: 500,
     });
-    expect(ERROR_CODES).toHaveLength(34);
+    expect(ERROR_CODES).toHaveLength(36);
   });
 
   test("mọi mã hợp lệ theo ErrorResponseSchema M0", () => {

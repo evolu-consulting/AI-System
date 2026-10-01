@@ -48,6 +48,8 @@ const MESSAGES: Record<ErrorCode, string> = {
   COMMAND_NAME_TAKEN: "Command name is already taken",
   CORE_FEATURE_PROTECTED: "The core feature cannot be changed this way",
   FEATURE_HAS_EXCLUSIVE_COMMANDS: "Feature has commands that belong only to it",
+  BETA_GROUP_PROTECTED: "The beta-testers group cannot be deleted",
+  NOT_ENTITLED: "Feature is not entitled for this tenant",
   TEMP_LOCKED: "Temporarily locked",
   INTERNAL_ERROR: "Internal server error",
 };
