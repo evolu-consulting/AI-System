@@ -1,14 +1,184 @@
 {
-  "app": {
-    "meta": {
-      "title": "Admin Console"
+  "common": {
+    "cancel": "Huỷ",
+    "close": "Đóng",
+    "retry": "Thử lại",
+    "clearSearch": "Xoá từ khoá",
+    "copy": "Sao chép",
+    "tenantPicker": {
+      "label": "Tenant",
+      "all": "Tất cả tenant",
+      "required": "Chọn một tenant trước"
+    },
+    "loading": "Đang tải",
+    "stillLoading": "Vẫn đang tải…",
+    "pagination": {
+      "range": "{from}–{to} / {total}",
+      "prev": "Trước",
+      "next": "Sau",
+      "aria": "Phân trang"
     }
   },
-  "home": {
-    "page": {
-      "title": "Admin Console",
-      "subtitle": "Bảng quản trị nền tảng AI",
-      "logoAlt": "EvoluConsulting"
+  "toast": {
+    "saveFailed": "Không lưu được: {reason}"
+  },
+  "auth": {
+    "login": {
+      "title": "Đăng nhập",
+      "field": {
+        "password": "Mật khẩu"
+      },
+      "submit": "Đăng nhập",
+      "submitting": "Đang đăng nhập…"
+    },
+    "lang": {
+      "vi": "Tiếng Việt",
+      "en": "English"
+    },
+    "error": {
+      "invalid": "Sai mã công ty, tên đăng nhập hoặc mật khẩu.",
+      "tempLocked": "Tạm khoá đến {time}",
+      "accountLocked": "Tài khoản đã bị khoá. Liên hệ quản trị viên công ty bạn.",
+      "network": "Không kết nối được máy chủ. Hãy thử lại.",
+      "server": "Có lỗi xảy ra, hãy thử lại sau (mã {code}).",
+      "required": {
+        "password": "Nhập mật khẩu"
+      }
+    },
+    "logout": "Đăng xuất"
+  },
+  "password": {
+    "self": {
+      "title": "Đổi mật khẩu",
+      "body": "Các thiết bị khác sẽ bị đăng xuất sau khi đổi."
+    },
+    "field": {
+      "show": "Hiện mật khẩu",
+      "hide": "Ẩn mật khẩu"
+    },
+    "error": {
+      "same": "Mật khẩu mới phải khác mật khẩu hiện tại",
+      "currentWrong": "Mật khẩu hiện tại không đúng",
+      "tokenExpired": "Phiên đổi mật khẩu đã hết hạn. Hãy đăng nhập lại."
+    }
+  },
+  "session": {
+    "expired": {
+      "title": "Phiên đăng nhập đã hết hạn",
+      "body": "Đăng nhập lại để tiếp tục. Dữ liệu đang nhập được giữ nguyên."
+    }
+  },
+  "member": {
+    "title": "Tài khoản của bạn dùng Chat App",
+    "body": "Trang quản trị chỉ dành cho quản trị viên. Hãy mở Chat App để làm việc."
+  },
+  "nav": {
+    "main": "Điều hướng chính",
+    "overview": "Tổng quan",
+    "group": {
+      "access": "TRUY CẬP"
+    },
+    "tenants": "Tenants",
+    "users": "Users",
+    "collapse": "Thu gọn thanh bên",
+    "expand": "Mở rộng thanh bên",
+    "openMenu": "Mở menu",
+    "skip": "Bỏ qua điều hướng",
+    "breadcrumb": "Đường dẫn"
+  },
+  "topbar": {
+    "platform": "Nền tảng"
+  },
+  "account": {
+    "menu": "Tài khoản của bạn",
+    "changePassword": "Đổi mật khẩu",
+    "language": "Ngôn ngữ"
+  },
+  "overview": {
+    "welcome": "Xin chào, {name}",
+    "platform": {
+      "body": "Quản lý tenant và người dùng của nền tảng."
+    },
+    "tenant": {
+      "body": "Quản lý người dùng của {tenant}."
+    },
+    "soon": "Thống kê và cảnh báo sẽ có ở các bản sau."
+  },
+  "state": {
+    "error": {
+      "title": "Không tải được dữ liệu",
+      "body": "{message} (mã {code})"
+    },
+    "forbidden": {
+      "title": "Bạn không có quyền xem trang này",
+      "platformOnly": "Trang này chỉ dành cho quản trị nền tảng. Nếu cần, hãy liên hệ người quản trị của bạn.",
+      "cta": "Về Tổng quan"
+    },
+    "forbiddenAction": "Bạn không còn quyền thực hiện thao tác này",
+    "notFound": {
+      "title": "Không tìm thấy",
+      "body": "Mục này không tồn tại hoặc đã bị xoá.",
+      "cta": "Về danh sách"
+    },
+    "offline": {
+      "banner": "Mất kết nối, thay đổi chưa được lưu"
+    },
+    "online": "Đã kết nối lại"
+  },
+  "unsaved": {
+    "title": "Bỏ thay đổi?",
+    "body": "Các thay đổi chưa lưu sẽ mất.",
+    "stay": "Ở lại",
+    "discard": "Bỏ thay đổi"
+  },
+  "errors": {
+    "selfAction": "Bạn không thể tự khoá hoặc hạ role của chính mình.",
+    "platformTenantLocked": "Không thể khoá tenant nền tảng.",
+    "versionConflict": "Có người vừa lưu bản mới hơn. Tải lại để xem bản mới nhất."
+  },
+  "format": {
+    "lastLogin": {
+      "now": "Vừa xong",
+      "minutes": "{n} phút trước",
+      "today": "Hôm nay {time}",
+      "yesterday": "Hôm qua {time}"
+    }
+  },
+  "tenants": {
+    "list": {
+      "title": "Tenants",
+      "subtitle": "Công ty khách hàng dùng nền tảng. Mỗi tenant có user, group và quota riêng."
+    },
+    "new": {
+      "title": "Tạo tenant"
+    },
+    "error": {
+      "keyTaken": "Mã công ty đã được dùng"
+    }
+  },
+  "tempPassword": {
+    "tenant": "Mã công ty",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu tạm",
+    "copyAll": "Sao chép tất cả",
+    "toast": "Đã copy mật khẩu tạm, hãy gửi cho người dùng qua kênh riêng."
+  },
+  "users": {
+    "list": {
+      "title": "Users",
+      "subtitle": "Người dùng của {tenant}. Không có trang tự đăng ký — tạo tài khoản ở đây."
+    },
+    "drawer": {
+      "copyAll": {
+        "text": "Mã công ty: {tenant}\nTên đăng nhập: {username}\nMật khẩu tạm: {password}"
+      }
+    },
+    "error": {
+      "usernameTaken": "Tên đăng nhập đã được dùng trong tenant này",
+      "emailRequired": "Tenant admin cần có email để nhận cảnh báo quota",
+      "emailTaken": "Email đã được dùng trong tenant này",
+      "lastAdmin": "Tenant phải còn ít nhất một tenant_admin đang hoạt động",
+      "lastPlatformAdmin": "Hệ thống phải còn ít nhất một platform_admin đang hoạt động"
     }
   }
 }

@@ -1,14 +1,184 @@
 {
-  "app": {
-    "meta": {
-      "title": "Admin Console"
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "retry": "Retry",
+    "clearSearch": "Clear search",
+    "copy": "Copy",
+    "tenantPicker": {
+      "label": "Tenant",
+      "all": "All tenants",
+      "required": "Select a tenant first"
+    },
+    "loading": "Loading",
+    "stillLoading": "Still loading…",
+    "pagination": {
+      "range": "{from}–{to} of {total}",
+      "prev": "Previous",
+      "next": "Next",
+      "aria": "Pagination"
     }
   },
-  "home": {
-    "page": {
-      "title": "Admin Console",
-      "subtitle": "AI platform administration",
-      "logoAlt": "EvoluConsulting"
+  "toast": {
+    "saveFailed": "Couldn't save: {reason}"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "field": {
+        "password": "Password"
+      },
+      "submit": "Sign in",
+      "submitting": "Signing in…"
+    },
+    "lang": {
+      "vi": "Tiếng Việt",
+      "en": "English"
+    },
+    "error": {
+      "invalid": "Wrong company code, username or password.",
+      "tempLocked": "Temporarily locked until {time}",
+      "accountLocked": "This account is locked. Contact your company administrator.",
+      "network": "Couldn't reach the server. Please try again.",
+      "server": "Something went wrong, please try again later (code {code}).",
+      "required": {
+        "password": "Enter your password"
+      }
+    },
+    "logout": "Sign out"
+  },
+  "password": {
+    "self": {
+      "title": "Change password",
+      "body": "Other devices will be signed out after the change."
+    },
+    "field": {
+      "show": "Show password",
+      "hide": "Hide password"
+    },
+    "error": {
+      "same": "The new password must differ from the current one",
+      "currentWrong": "Current password is incorrect",
+      "tokenExpired": "Your password-change session expired. Please sign in again."
+    }
+  },
+  "session": {
+    "expired": {
+      "title": "Your session expired",
+      "body": "Sign in again to continue. Your unsaved input is kept."
+    }
+  },
+  "member": {
+    "title": "Your account uses Chat App",
+    "body": "The admin console is for administrators. Open Chat App to get started."
+  },
+  "nav": {
+    "main": "Main navigation",
+    "overview": "Overview",
+    "group": {
+      "access": "ACCESS"
+    },
+    "tenants": "Tenants",
+    "users": "Users",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "openMenu": "Open menu",
+    "skip": "Skip to content",
+    "breadcrumb": "Breadcrumb"
+  },
+  "topbar": {
+    "platform": "Platform"
+  },
+  "account": {
+    "menu": "Your account",
+    "changePassword": "Change password",
+    "language": "Language"
+  },
+  "overview": {
+    "welcome": "Hello, {name}",
+    "platform": {
+      "body": "Manage the platform's tenants and users."
+    },
+    "tenant": {
+      "body": "Manage the users of {tenant}."
+    },
+    "soon": "Statistics and alerts will arrive in later releases."
+  },
+  "state": {
+    "error": {
+      "title": "Couldn't load data",
+      "body": "{message} (code {code})"
+    },
+    "forbidden": {
+      "title": "You don't have access to this page",
+      "platformOnly": "This page is for platform admins only. Contact your administrator if you need access.",
+      "cta": "Back to Overview"
+    },
+    "forbiddenAction": "You no longer have permission to do this",
+    "notFound": {
+      "title": "Not found",
+      "body": "This item doesn't exist or was deleted.",
+      "cta": "Back to list"
+    },
+    "offline": {
+      "banner": "Connection lost — changes aren't saved"
+    },
+    "online": "Back online"
+  },
+  "unsaved": {
+    "title": "Discard changes?",
+    "body": "Unsaved changes will be lost.",
+    "stay": "Stay",
+    "discard": "Discard"
+  },
+  "errors": {
+    "selfAction": "You can't lock or demote yourself.",
+    "platformTenantLocked": "The platform tenant can't be locked.",
+    "versionConflict": "Someone just saved a newer version. Reload to see the latest."
+  },
+  "format": {
+    "lastLogin": {
+      "now": "Just now",
+      "minutes": "{n} min ago",
+      "today": "Today {time}",
+      "yesterday": "Yesterday {time}"
+    }
+  },
+  "tenants": {
+    "list": {
+      "title": "Tenants",
+      "subtitle": "Customer companies on the platform. Each has its own users, groups and quota."
+    },
+    "new": {
+      "title": "New tenant"
+    },
+    "error": {
+      "keyTaken": "Company code is already in use"
+    }
+  },
+  "tempPassword": {
+    "tenant": "Company code",
+    "username": "Username",
+    "password": "Temporary password",
+    "copyAll": "Copy all",
+    "toast": "Temporary password copied — send it to the user through a private channel."
+  },
+  "users": {
+    "list": {
+      "title": "Users",
+      "subtitle": "Users of {tenant}. There's no self sign-up — create accounts here."
+    },
+    "drawer": {
+      "copyAll": {
+        "text": "Company code: {tenant}\nUsername: {username}\nTemporary password: {password}"
+      }
+    },
+    "error": {
+      "usernameTaken": "Username is already used in this tenant",
+      "emailRequired": "Tenant admins need an email to receive quota alerts",
+      "emailTaken": "Email is already used in this tenant",
+      "lastAdmin": "The tenant must keep at least one active tenant admin",
+      "lastPlatformAdmin": "The system must keep at least one active platform admin"
     }
   }
 }

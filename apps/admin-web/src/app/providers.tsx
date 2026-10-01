@@ -1,8 +1,12 @@
-// ADM-NFR-06 · provider gốc: Query bọc Router. i18n dùng instance toàn cục của initReactI18next.
+// ADM-NFR-06, ADM-FR-01 · provider gốc: Query bọc Router; sự kiện phiên điều khiển cache (đăng xuất → xoá, đăng nhập lại → tải lại).
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
+import { session } from "@/lib/session";
 import { queryClient } from "./query-client";
 import { router } from "./router";
+
+session.on("cleared", () => queryClient.clear());
+session.on("reauthed", () => void queryClient.invalidateQueries());
 
 export function Providers() {
   return (

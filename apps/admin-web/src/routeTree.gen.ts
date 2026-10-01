@@ -9,50 +9,173 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
+import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
+import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account.password'
+import { Route as AuthedTenantsIndexRouteImport } from './routes/_authed/tenants/index'
 
-const IndexRoute = IndexRouteImport.update({
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedMemberRoute = AuthedMemberRouteImport.update({
+  id: '/member',
+  path: '/member',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedUsersRoute = AuthedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAccountPasswordRoute = AuthedAccountPasswordRouteImport.update({
+  id: '/account/password',
+  path: '/account/password',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTenantsIndexRoute = AuthedTenantsIndexRouteImport.update({
+  id: '/tenants/',
+  path: '/tenants/',
+  getParentRoute: () => AuthedRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthedIndexRoute
+  '/login': typeof LoginRoute
+  '/member': typeof AuthedMemberRoute
+  '/users': typeof AuthedUsersRoute
+  '/account/password': typeof AuthedAccountPasswordRoute
+  '/tenants/': typeof AuthedTenantsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/member': typeof AuthedMemberRoute
+  '/users': typeof AuthedUsersRoute
+  '/': typeof AuthedIndexRoute
+  '/account/password': typeof AuthedAccountPasswordRoute
+  '/tenants': typeof AuthedTenantsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authed': typeof AuthedRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_authed/member': typeof AuthedMemberRoute
+  '/_authed/users': typeof AuthedUsersRoute
+  '/_authed/': typeof AuthedIndexRoute
+  '/_authed/account/password': typeof AuthedAccountPasswordRoute
+  '/_authed/tenants/': typeof AuthedTenantsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    '/' | '/login' | '/member' | '/users' | '/account/password' | '/tenants/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/login' | '/member' | '/users' | '/' | '/account/password' | '/tenants'
+  id:
+    | '__root__'
+    | '/_authed'
+    | '/login'
+    | '/_authed/member'
+    | '/_authed/users'
+    | '/_authed/'
+    | '/_authed/account/password'
+    | '/_authed/tenants/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthedRoute: typeof AuthedRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authed': {
+      id: '/_authed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed/': {
+      id: '/_authed/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthedIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/member': {
+      id: '/_authed/member'
+      path: '/member'
+      fullPath: '/member'
+      preLoaderRoute: typeof AuthedMemberRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/users': {
+      id: '/_authed/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthedUsersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/account/password': {
+      id: '/_authed/account/password'
+      path: '/account/password'
+      fullPath: '/account/password'
+      preLoaderRoute: typeof AuthedAccountPasswordRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/tenants/': {
+      id: '/_authed/tenants/'
+      path: '/tenants'
+      fullPath: '/tenants/'
+      preLoaderRoute: typeof AuthedTenantsIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
   }
 }
 
+interface AuthedRouteChildren {
+  AuthedMemberRoute: typeof AuthedMemberRoute
+  AuthedUsersRoute: typeof AuthedUsersRoute
+  AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
+  AuthedTenantsIndexRoute: typeof AuthedTenantsIndexRoute
+}
+
+const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedMemberRoute: AuthedMemberRoute,
+  AuthedUsersRoute: AuthedUsersRoute,
+  AuthedIndexRoute: AuthedIndexRoute,
+  AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
+  AuthedTenantsIndexRoute: AuthedTenantsIndexRoute,
+}
+
+const AuthedRouteWithChildren =
+  AuthedRoute._addFileChildren(AuthedRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthedRoute: AuthedRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
