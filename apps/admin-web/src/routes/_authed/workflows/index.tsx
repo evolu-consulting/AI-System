@@ -1,9 +1,5 @@
-// ADM-FR-10 · M2 · route danh sách Workflows (stub FE1a; FE4a thay bằng màn thật). `validateSearch` có sẵn để các màn khác
-// (Secrets: "Xem các workflow dùng secret này") điều hướng kèm `?secret=`.
 import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { PlatformOnly } from "@/components/shared/PlatformOnly";
+import { WorkflowsPage } from "@/features/workflows/pages/WorkflowsPage";
 
 export type WorkflowsSearch = {
   q?: string;
@@ -13,28 +9,19 @@ export type WorkflowsSearch = {
 };
 
 const str = (v: unknown): string | undefined => (typeof v === "string" && v !== "" ? v : undefined);
+const oneOf = <T extends string>(v: unknown, allowed: readonly T[]): T | undefined =>
+  allowed.find((a) => a === v);
 
-function Stub() {
-  const { t } = useTranslation();
-  return (
-    <PlatformOnly>
-      <PageHeader title={t("workflows.list.title")} />
-    </PlatformOnly>
-  );
-}
-
+// Viết tay thay zod (như users): bộ lọc nằm trên URL, đổi bộ lọc bỏ `page`.
 export const Route = createFileRoute("/_authed/workflows/")({
   validateSearch: (s: Record<string, unknown>): WorkflowsSearch => {
     const page = Number(s.page);
-    const status = ["on", "off", "unattached"].find((x) => x === s.status) as
-      | WorkflowsSearch["status"]
-      | undefined;
     return {
       q: str(s.q),
-      status,
+      status: oneOf(s.status, ["on", "off", "unattached"]),
       secret: str(s.secret),
       page: Number.isInteger(page) && page > 1 ? page : undefined,
     };
   },
-  component: Stub,
+  component: WorkflowsPage,
 });
