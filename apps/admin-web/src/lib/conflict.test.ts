@@ -1,6 +1,6 @@
 // ADM-FR-55 · AC-A07 · parseConflict: chỉ VERSION_CONFLICT có details hợp lệ.
 import { describe, expect, test } from "bun:test";
-import { parseConflict } from "./conflict";
+import { parseConflict, pickKeys } from "./conflict";
 import { ApiError } from "./http";
 
 const conflict = (details: unknown) => new ApiError(409, "VERSION_CONFLICT", "x", details);
@@ -33,5 +33,11 @@ describe("ADM-FR-55 · parseConflict", () => {
     expect(parseConflict(conflict({ current: { version: 1 } }))).toBeNull();
     expect(parseConflict(new ApiError(409, "KEY_TAKEN", "x"))).toBeNull();
     expect(parseConflict(new Error("x"))).toBeNull();
+  });
+});
+
+describe("ADM-FR-55 · pickKeys", () => {
+  test("chỉ giữ khoá được chọn và có mặt", () => {
+    expect(pickKeys({ a: 1, b: 2, c: 3 }, ["a", "c", "z"])).toEqual({ a: 1, c: 3 });
   });
 });

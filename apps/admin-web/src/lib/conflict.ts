@@ -26,3 +26,10 @@ export function parseConflict(err: unknown): ConflictInfo | null {
     updatedBy: typeof by === "string" && by !== "" ? by : null,
   };
 }
+
+/** Chọn đúng các khoá `keys` của `obj` (dùng để so bản mới với body đã gửi; khoá thiếu bị bỏ). */
+export function pickKeys(obj: Record<string, unknown>, keys: string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of keys) if (k in obj) out[k] = obj[k];
+  return out;
+}

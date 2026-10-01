@@ -1,13 +1,15 @@
 // ADM-FR-04, ADM-FR-63 · nối drawer với API: nạp user khi sửa, tạo/lưu, ánh xạ lỗi server vào đúng ô.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-import { useCreateUser, useUpdateUser, useUser } from "../api";
+import { useCreateUser, useUser } from "../api";
 import { type CreatedInfo, UserDrawer } from "../components/UserDrawer";
 import type { UserFormErrors } from "../components/UserForm";
+import { useUserConflict } from "../hooks/use-user-conflict";
 import { emailToValue, type UserCreateValues } from "../lib/schemas";
 
 type Props = {
@@ -38,7 +40,6 @@ export function UserDrawerController({
   const tr = useTr();
   const userQuery = useUser(userId, mode === "edit");
   const create = useCreateUser(tenantId);
-  const update = useUpdateUser(userId);
   const [errors, setErrors] = useState<UserFormErrors>({});
   const [created, setCreated] = useState<CreatedInfo | null>(null);
 
@@ -55,12 +56,17 @@ export function UserDrawerController({
       setErrors({ [field]: text });
       return;
     }
-    const conflict = err instanceof ApiError && err.code === "VERSION_CONFLICT";
-    notifyError(
-      text,
-      conflict ? { label: t("common.reload"), onClick: () => void userQuery.refetch() } : undefined,
-    );
+    notifyError(text);
   };
+
+  const conflict = useUserConflict(userId, {
+    onSaved: () => {
+      notifySuccess(t("users.toast.saved", { username: user?.username ?? "" }));
+      onClose();
+    },
+    onFail: fail,
+    onReload: () => void userQuery.refetch(),
+  });
 
   const submit = async (v: UserCreateValues) => {
     setErrors({});
@@ -78,33 +84,36 @@ export function UserDrawerController({
         return;
       }
       if (!user) return;
-      await update.mutateAsync({
-        version: user.version,
-        display_name: v.display_name,
-        email: emailToValue(v.email),
-        locale: v.locale,
-        ...(v.role === user.role ? {} : { role: v.role }),
-      });
-      notifySuccess(t("users.toast.saved", { username: user.username }));
-      onClose();
+      await conflict.save(
+        {
+          display_name: v.display_name,
+          email: emailToValue(v.email),
+          locale: v.locale,
+          ...(v.role === user.role ? {} : { role: v.role }),
+        },
+        user.version,
+      );
     } catch (err) {
       fail(err);
     }
   };
 
   return (
-    <UserDrawer
-      mode={mode}
-      tenantKey={user?.tenant_key ?? tenantKey}
-      user={user}
-      loading={mode === "edit" && userQuery.isPending}
-      notFound={notFound}
-      isSelf={!!user && user.id === selfId}
-      pending={create.isPending || update.isPending}
-      serverErrors={errors}
-      created={created}
-      onSubmit={submit}
-      onClose={onClose}
-    />
+    <>
+      <UserDrawer
+        mode={mode}
+        tenantKey={user?.tenant_key ?? tenantKey}
+        user={user}
+        loading={mode === "edit" && userQuery.isPending}
+        notFound={notFound}
+        isSelf={!!user && user.id === selfId}
+        pending={create.isPending || conflict.pending}
+        serverErrors={errors}
+        created={created}
+        onSubmit={submit}
+        onClose={onClose}
+      />
+      <LazyConflictDialog props={conflict.props} />
+    </>
   );
 }

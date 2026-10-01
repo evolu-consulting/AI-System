@@ -3,6 +3,7 @@ import type { TenantDetail } from "@ai/contracts";
 import { getRouteApi } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ErrorState } from "@/components/shared/states/ErrorState";
@@ -17,10 +18,11 @@ import { useSession } from "@/lib/auth/use-session";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-import { useTenantDetail, useUpdateTenant } from "../api";
+import { useTenantDetail } from "../api";
 import { TenantInfoForm } from "../components/TenantInfoForm";
 import { TenantUsersTab, UnavailableTab } from "../components/TenantTabs";
 import { useLockFlow } from "../hooks/use-lock-flow";
+import { useTenantConflict } from "../hooks/use-tenant-conflict";
 import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
 
 const route = getRouteApi("/_authed/tenants/$tenantId");
@@ -72,7 +74,15 @@ export function TenantDetailPage() {
   const role = useSession((s) => s.me?.role);
   const allowed = role === "platform_admin";
   const query = useTenantDetail(tenantId, allowed);
-  const update = useUpdateTenant(tenantId);
+  const conflict = useTenantConflict(tenantId, {
+    onSaved: () => notifySuccess(t("tenants.toast.saved", { key: query.data?.key ?? "" })),
+    onFail: (err) => {
+      if (err instanceof ApiError && err.code === "UNAUTHORIZED") return;
+      const spec = describeError(err);
+      notifyError(tr(spec.key, spec.params));
+    },
+    onReload: () => void query.refetch(),
+  });
   const { requestLock, requestUnlock, dialogs } = useLockFlow();
   const [dirty, setDirty] = useState(false);
 
@@ -91,24 +101,8 @@ export function TenantDetailPage() {
   }
   const tenant = query.data;
 
-  const save = async (v: TenantInfoValues) => {
-    try {
-      await update.mutateAsync({
-        version: tenant.version,
-        name: v.name,
-        max_concurrent_sub: slotsToValue(v.slots),
-      });
-      notifySuccess(t("tenants.toast.saved", { key: tenant.key }));
-    } catch (err) {
-      const spec = describeError(err);
-      const reload = { label: t("common.reload"), onClick: () => void query.refetch() };
-      if (err instanceof ApiError && err.code === "UNAUTHORIZED") return;
-      notifyError(
-        tr(spec.key, spec.params),
-        err instanceof ApiError && err.code === "VERSION_CONFLICT" ? reload : undefined,
-      );
-    }
-  };
+  const save = (v: TenantInfoValues) =>
+    conflict.save({ name: v.name, max_concurrent_sub: slotsToValue(v.slots) }, tenant.version);
 
   return (
     <>
@@ -128,7 +122,7 @@ export function TenantDetailPage() {
         <TabsContent value="info" className="pt-4">
           <TenantInfoForm
             tenant={tenant}
-            pending={update.isPending}
+            pending={conflict.pending}
             onDirtyChange={setDirty}
             onSubmit={save}
           />
@@ -148,6 +142,7 @@ export function TenantDetailPage() {
       </Tabs>
       <UnsavedGuard dirty={dirty} />
       {dialogs}
+      <LazyConflictDialog props={conflict.props} />
     </>
   );
 }
