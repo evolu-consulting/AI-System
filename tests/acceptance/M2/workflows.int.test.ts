@@ -355,9 +355,9 @@ describe("ADM-FR-15 · hub.agent_workflows vắng/không đọc được (M2-R12
   };
   afterAll(async () => {
     await restore();
-    const [r] = await env.owner`select to_regclass('hub.agent_workflows') as t,
+    const [r] = await env.owner`select to_regclass('hub.agent_workflows') is not null as t,
       has_table_privilege('admin_rw', 'hub.agent_workflows', 'SELECT') as p`;
-    expect(r).toMatchObject({ t: "agent_workflows", p: true });
+    expect(r).toMatchObject({ t: true, p: true });
   });
 
   async function expectNoAgents(): Promise<void> {

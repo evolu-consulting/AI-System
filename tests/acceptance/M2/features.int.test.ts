@@ -280,11 +280,24 @@ describe("ADM-BR-10 · command_ids thay cả tập (M2-R19)", () => {
 
   it("ADM-BR-10 · M2-R19 · bỏ command còn feature khác → được; version command bị bỏ +1", async () => {
     const core = await env.coreId();
+    // Theo fixture tom-tat chỉ thuộc core: cho nó thêm feature ke-toan (owner SQL) để bỏ khỏi core không làm mồ côi.
+    await env.owner`insert into admin.feature_commands (feature_id, command_id) values (${KT}, ${CMD.tomTat})`;
     const vt = await cmdVersion(CMD.tomTat);
     const res = await patch(core, 1, { command_ids: [CMD.dich] });
     expect(res.status).toBe(200);
     expect(await featCommands(core)).toEqual([CMD.dich]);
     expect(await cmdVersion(CMD.tomTat)).toBe(vt + 1);
+  });
+
+  it("ADM-BR-10 · M2-R19 · G5 · core áp luật mồ côi như feature khác: bỏ command CHỈ thuộc core (tom-tat) → 400 COMMAND_NEEDS_FEATURE {commands:[{id,name}]}; DB không đổi", async () => {
+    const core = await env.coreId();
+    const vt = await cmdVersion(CMD.tomTat);
+    const res = await patch(core, 1, { command_ids: [CMD.dich] });
+    expectErr(res, "COMMAND_NEEDS_FEATURE");
+    expect(res.json.error.details).toEqual({ commands: [{ id: CMD.tomTat, name: "tom-tat" }] });
+    expect(await featCommands(core)).toEqual([CMD.dich, CMD.tomTat].sort());
+    expect(await cmdVersion(CMD.tomTat)).toBe(vt);
+    expect(await featVersion(core)).toBe(1);
   });
 
   it("ADM-BR-10 · M2-R19 · thứ tự kiểm: id lạ + command mồ côi cùng lúc → INVALID_REFERENCE; cùng tập (khác thứ tự) → không tăng version", async () => {
