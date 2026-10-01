@@ -1,4 +1,5 @@
 // ADM-NFR-06, ADM-NFR-07, ADM-FR-63 · schema `admin` M1 (spec M1 §4): tenants, users, refresh_tokens, features.
+// ADM-FR-10, ADM-FR-20, ADM-FR-30, ADM-FR-31, ADM-FR-50 · + 6 bảng catalog M2 và `features.updated_by` (spec M2 §4).
 // RLS, policy, role `admin_api`, hàm SECURITY DEFINER nằm ở migration custom 0002_admin_rls (không khai ở đây).
 import { sql } from "drizzle-orm";
 import {
@@ -9,6 +10,7 @@ import {
   integer,
   jsonb,
   pgSchema,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -28,6 +30,8 @@ const audit = () => ({
   createdAt: tsz("created_at").notNull().defaultNow(),
   updatedAt: tsz("updated_at").notNull().defaultNow(),
 });
+/** M2: người ghi gần nhất; xoá user giữ hàng (`SET NULL`). `users` tham chiếu lười nên khai trước được. */
+const updatedBy = () => uuid("updated_by").references(() => users.id, { onDelete: "set null" });
 
 export const tenants = admin.table(
   "tenants",
@@ -162,11 +166,169 @@ export const features = admin.table(
       .default("on"),
     version: versionCol(),
     ...audit(),
+    updatedBy: updatedBy(),
   },
   (t) => [
     uniqueIndex("features_key_uq").on(t.key),
     check("features_key_check", sql`${t.key} ~ '^[a-z0-9-]{2,32}$'`),
     check("features_status_check", sql`${t.status} IN ('on', 'off', 'beta')`),
     check("features_version_check", sql`${t.version} >= 1`),
+  ],
+);
+
+// ---- M2 catalog (spec M2 §4): secrets, workflows, commands, command_names, feature_commands, feature_entitlements.
+// RLS/quyền cột/REVOKE của secrets + feature_entitlements nằm ở migration custom 0004_catalog_rls.
+
+/** Bản mã AES-256-GCM (‖ tag 16 byte); admin_rw không SELECT được `ciphertext`/`iv` (0004). */
+export const secrets = admin.table(
+  "secrets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    ciphertext: bytea("ciphertext").notNull(),
+    iv: bytea("iv").notNull(),
+    keyVersion: smallint("key_version").notNull().default(1),
+    last4: text("last4").notNull(),
+    note: text("note"),
+    ...audit(),
+    updatedBy: updatedBy(),
+  },
+  (t) => [
+    uniqueIndex("secrets_name_uq").on(t.name),
+    check("secrets_name_check", sql`${t.name} ~ '^[A-Z0-9_]{2,64}$'`),
+    check("secrets_ciphertext_check", sql`octet_length(${t.ciphertext}) BETWEEN 24 AND 6160`),
+    check("secrets_iv_check", sql`octet_length(${t.iv}) = 12`),
+    check("secrets_key_version_check", sql`${t.keyVersion} >= 1`),
+    check("secrets_last4_check", sql`char_length(${t.last4}) = 4`),
+    check("secrets_note_check", sql`char_length(${t.note}) <= 200`),
+  ],
+);
+
+export const workflows = admin.table(
+  "workflows",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    key: text("key").notNull(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    appType: text("app_type", { enum: ["workflow", "chat", "agent"] }).notNull(),
+    baseUrl: text("base_url").notNull(),
+    secretId: uuid("secret_id")
+      .notNull()
+      .references(() => secrets.id, { onDelete: "restrict" }),
+    inputSchema: jsonb("input_schema").notNull().default([]),
+    outputField: text("output_field"),
+    enabled: boolean("enabled").notNull().default(true),
+    version: versionCol(),
+    ...audit(),
+    updatedBy: updatedBy(),
+  },
+  (t) => [
+    uniqueIndex("workflows_key_uq").on(t.key),
+    index("workflows_secret_idx").on(t.secretId),
+    check("workflows_key_check", sql`${t.key} ~ '^[a-z0-9-]{2,32}$'`),
+    check("workflows_name_check", sql`char_length(${t.name}) BETWEEN 1 AND 128`),
+    check("workflows_description_check", sql`char_length(${t.description}) BETWEEN 20 AND 400`),
+    check("workflows_app_type_check", sql`${t.appType} IN ('workflow', 'chat', 'agent')`),
+    check(
+      "workflows_base_url_check",
+      sql`char_length(${t.baseUrl}) <= 2048 AND ${t.baseUrl} ~ '^https?://'`,
+    ),
+    check("workflows_input_schema_check", sql`jsonb_typeof(${t.inputSchema}) = 'array'`),
+    check("workflows_output_field_check", sql`char_length(${t.outputField}) BETWEEN 1 AND 128`),
+    check("workflows_version_check", sql`${t.version} >= 1`),
+  ],
+);
+
+export const commands = admin.table(
+  "commands",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    aliases: text("aliases").array().notNull().default(sql`'{}'::text[]`),
+    description: jsonb("description").notNull(),
+    workflowId: uuid("workflow_id")
+      .notNull()
+      .references(() => workflows.id, { onDelete: "restrict" }),
+    args: jsonb("args").notNull().default([]),
+    inputMap: jsonb("input_map").notNull().default({}),
+    output: jsonb("output").notNull(),
+    mode: text("mode", { enum: ["sync", "async"] })
+      .notNull()
+      .default("sync"),
+    timeoutS: integer("timeout_s").notNull().default(30),
+    enabled: boolean("enabled").notNull().default(true),
+    version: versionCol(),
+    ...audit(),
+    updatedBy: updatedBy(),
+  },
+  (t) => [
+    uniqueIndex("commands_name_uq").on(t.name),
+    index("commands_workflow_idx").on(t.workflowId),
+    check("commands_name_check", sql`${t.name} ~ '^[a-z0-9-]{2,32}$'`),
+    check("commands_aliases_check", sql`cardinality(${t.aliases}) <= 5`),
+    check(
+      "commands_description_check",
+      sql`jsonb_typeof(${t.description}) = 'object' AND ${t.description} ? 'vi'`,
+    ),
+    check("commands_args_check", sql`jsonb_typeof(${t.args}) = 'array'`),
+    check("commands_input_map_check", sql`jsonb_typeof(${t.inputMap}) = 'object'`),
+    check("commands_output_check", sql`jsonb_typeof(${t.output}) = 'object'`),
+    check("commands_mode_check", sql`${t.mode} IN ('sync', 'async')`),
+    check("commands_timeout_s_check", sql`${t.timeoutS} BETWEEN 1 AND 600`),
+    check("commands_version_check", sql`${t.version} >= 1`),
+  ],
+);
+
+/** Không gian tên chung tên + alias command (M2-R13): PK `command_names_pkey` bảo đảm unique. */
+export const commandNames = admin.table(
+  "command_names",
+  {
+    name: text("name").primaryKey(),
+    commandId: uuid("command_id")
+      .notNull()
+      .references(() => commands.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    index("command_names_command_idx").on(t.commandId),
+    check("command_names_name_check", sql`${t.name} ~ '^[a-z0-9-]{2,32}$'`),
+  ],
+);
+
+export const featureCommands = admin.table(
+  "feature_commands",
+  {
+    featureId: uuid("feature_id")
+      .notNull()
+      .references(() => features.id, { onDelete: "cascade" }),
+    commandId: uuid("command_id")
+      .notNull()
+      .references(() => commands.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ name: "feature_commands_pkey", columns: [t.featureId, t.commandId] }),
+    index("feature_commands_command_idx").on(t.commandId),
+  ],
+);
+
+/** Thu hồi = đặt `revoked_at` (không xoá hàng, BR-12); `core` không có hàng (tự hiệu lực). */
+export const featureEntitlements = admin.table(
+  "feature_entitlements",
+  {
+    featureId: uuid("feature_id")
+      .notNull()
+      .references(() => features.id, { onDelete: "cascade" }),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    grantedBy: uuid("granted_by").references(() => users.id, { onDelete: "set null" }),
+    grantedAt: tsz("granted_at").notNull().defaultNow(),
+    revokedAt: tsz("revoked_at"),
+  },
+  (t) => [
+    primaryKey({ name: "feature_entitlements_pkey", columns: [t.featureId, t.tenantId] }),
+    index("feature_entitlements_tenant_active_idx")
+      .on(t.tenantId, t.featureId)
+      .where(sql`${t.revokedAt} IS NULL`),
   ],
 );
