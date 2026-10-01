@@ -78,10 +78,21 @@ Bảng: `secrets` (BA §7 + `key_version`), `workflows`, `commands`, `command_na
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
-Artboard: `Secrets`, `Workflows`, `Commands` (`docs/design/canvas/`); Features và editor Command dùng mẫu A/B theo [missing-screens §2, §3](../_design/admin-missing-screens.md); `Access` chỉ để đối chiếu (ma trận = M3). Câu chữ nguyên văn ở missing-screens §2, §3, §6 và artboard Workflows. Menu M2: Commands, Workflows, Features, Secrets (chỉ `platform_admin`; `tenant_admin`/`member` → 403 `ForbiddenState`).
+Chi tiết: [plan-frontend.md](plan-frontend.md) (bố cục, trạng thái, validate, nhãn e2e, câu chữ VI/EN, yêu cầu contract Y1–Y10). Artboard: `Secrets`, `Workflows`, `Commands` (`docs/design/canvas/`); Features và danh sách Commands dùng mẫu A/B theo [missing-screens §2, §3](../_design/admin-missing-screens.md); `Access` chỉ để đối chiếu (ma trận = M3). Câu chữ nguyên văn ở missing-screens §2, §3, §6 và artboard Workflows; chuỗi mới ở plan-frontend §7.
+
+| Route | Màn | Mẫu |
+|---|---|---|
+| `/secrets` (`?drawer=new\|replace\|note&secret=`) | Danh sách + drawer thêm / Thay giá trị / Sửa ghi chú; giá trị chỉ nhập, chỉ hiện `last4` | A + C |
+| `/workflows`, `/workflows/new`, `/workflows/:id` | Catalog (chip "Chưa gắn", "Đang được dùng bởi"), editor 4 tab (Thông tin · Input nhập tay · Model thấy gì · Đang được dùng bởi) | A, B |
+| `/commands`, `/commands/new`, `/commands/:id` | Danh sách (Switch + Hoàn tác 5 s), editor 5 bước, input map 8 nguồn + validate, tab "Ai dùng được" (tenant); **không** Test, **không** Lịch sử | A, canvas `Commands` |
+| `/features`, `/features/new`, `/features/:id` | Danh sách + kill switch, editor 3 tab (Thông tin · Commands · Tenant), cấp/thu hồi entitlement | A, B |
+
+Component mới dùng chung: `PlatformOnly`, `DependencyList`, `RefPicker`, `LocalizedInput`, `notifySuccess(message, action?)`; trong feature: `SecretField`, `SchemaEditor`, `ArgsEditor`, `InputMapEditor`. Không thêm thư viện, không ADR (D1). Menu M2: nhóm `CHỨC NĂNG` (Features, Commands, Workflows) và `BẢO MẬT` (Secrets), chỉ `platform_admin`; `tenant_admin`/`member` mở URL → `ForbiddenState`, không gọi API. Tab "Feature" của Tenant giữ "Chưa khả dụng" (A10).
+
+**Yêu cầu contract gửi backend-lead** (chi tiết plan-frontend §9): Y1 workflow tham chiếu secret theo `name` hoặc secret có `id`, và `GET /admin/features/:id/entitlements`; Y2 feature nhận `command_ids`; Y3/Y5/Y9 hình dạng item list + `counts`; Y4 `details` lỗi + `warnings`; Y6 `PATCH` ghi chú secret; Y7 `GET /admin/commands/:id/access`; Y8 kiểu `fallback`/`output.field`; Y10 `updated_by` = username.
 
 ## 6. Hiệu năng
-Mặc định `CONVENTIONS.md` §6, ADM-NFR-03 (CRUD < 300 ms, 5.000 bản ghi/bảng ở mức M1; catalog thực tế vài trăm). Riêng: `GET /admin/workflows` kèm `command_count`/`agent_count` và `GET /admin/features` kèm `command_count`/`tenant_count` phải gộp bằng `GROUP BY`, không N+1; ghi secret (mã hoá) < 50 ms. Bundle: giữ ngân sách M1 (JS ≤ 150 KB gzip ban đầu), route-split 4 màn mới.
+Mặc định `CONVENTIONS.md` §6, ADM-NFR-03 (CRUD < 300 ms, 5.000 bản ghi/bảng ở mức M1; catalog thực tế vài trăm). Riêng: `GET /admin/workflows` kèm `command_count`/`agent_count` và `GET /admin/features` kèm `command_count`/`tenant_count` phải gộp bằng `GROUP BY`, không N+1; ghi secret (mã hoá) < 50 ms. Bundle: giữ ngân sách M1 (JS ≤ 150 KB gzip ban đầu), route-split 4 màn mới. **Frontend:** JS ban đầu hiện 106,9 KB, ước ≤ 112 KB sau M2 (i18n + nav); mỗi chunk route ≤ 50 KB gzip (FE7 đo, thêm kiểm trong `check-bundle`); bảng phân trang server 50 dòng nên không virtualize; danh sách chọn lấy `limit=200` và render ≤ 50 mục; hàng/dòng editor `memo` + `useWatch` đúng trường (plan-frontend §6).
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
