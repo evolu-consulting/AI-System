@@ -1,0 +1,92 @@
+[
+  {
+    "file": "apps/admin-api/src/lib/db-guard.int.test.ts",
+    "name": "describe(\"ADM-NFR-07 · assertSafeDbRole — thành vi\")",
+    "reason": "TECH-DEBT #23: callback describe của test 74 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-api/src/lib/jwt.ts",
+    "name": "sign",
+    "reason": "TECH-DEBT #24: hàm 5 tham số từ M0/M1, gom thành object khi chạm lại"
+  },
+  {
+    "file": "apps/admin-api/src/lib/lock-order.int.test.ts",
+    "name": "describe(\"ADM-FR-63 · review vòng 2 N1 · không dea\")",
+    "reason": "TECH-DEBT #23: callback describe của test 51 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-api/src/lib/lock-order.int.test.ts",
+    "name": "describe(\"ADM-BR-10 · M2 plan §5.1 · khoá hàng cat\")",
+    "reason": "TECH-DEBT #23: callback describe của test 100 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-api/src/lib/secret-crypto.test.ts",
+    "name": "describe(\"ADM-FR-50 · secret-crypto\")",
+    "reason": "TECH-DEBT #23: callback describe của test 52 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-api/src/modules/auth/auth.service.ts",
+    "name": "writePassword",
+    "reason": "TECH-DEBT #24: hàm 5 tham số từ M0/M1, gom thành object khi chạm lại"
+  },
+  {
+    "file": "apps/admin-api/src/modules/commands/commands.perf.int.test.ts",
+    "name": "describe(\"ADM-NFR-03 · ngân sách p95 (spec M2 §6)\")",
+    "reason": "TECH-DEBT #23: callback describe của test 56 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-api/src/modules/commands/commands.service.int.test.ts",
+    "name": "describe(\"ADM-FR-20 · commands.service\")",
+    "reason": "TECH-DEBT #23: callback describe của test 52 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-api/src/modules/features/features.service.int.test.ts",
+    "name": "describe(\"ADM-FR-30 · features.service\")",
+    "reason": "TECH-DEBT #23: callback describe của test 98 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-api/src/modules/secrets/secrets.service.int.test.ts",
+    "name": "describe(\"ADM-FR-50 · secrets.service\")",
+    "reason": "TECH-DEBT #23: callback describe của test 56 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-web/src/features/commands/lib/schemas.test.ts",
+    "name": "describe(\"ADM-BR-01 · commandSchema\")",
+    "reason": "TECH-DEBT #23: callback describe của test 51 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-web/src/features/shell/lib/nav.test.ts",
+    "name": "describe(\"ADM-FR-60 · menu theo role\")",
+    "reason": "TECH-DEBT #23: callback describe của test 52 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-web/src/features/tenants/lib/schemas.test.ts",
+    "name": "describe(\"ADM-FR-60 · schema form tenant khớp cont\")",
+    "reason": "TECH-DEBT #23: callback describe của test 54 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "apps/admin-web/src/lib/auth/refresh-lock.test.ts",
+    "name": "describe(\"ADM-FR-02 · refresh single-flight + Web \")",
+    "reason": "TECH-DEBT #23: callback describe của test 122 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "packages/contracts/src/common.test.ts",
+    "name": "describe(\"ADM-FR-10 · hằng/regex/enum catalog M2\")",
+    "reason": "TECH-DEBT #23: callback describe của test 67 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "packages/db/src/rls.int.test.ts",
+    "name": "describe(\"ADM-NFR-07 · RLS qua withScope (admin_ap\")",
+    "reason": "TECH-DEBT #23: callback describe của test 84 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "tools/scripts/src/depcruise.test.ts",
+    "name": "describe(\"ADM-NFR-06 · luật dependency-cruiser trê\")",
+    "reason": "TECH-DEBT #23: callback describe của test 64 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "tools/scripts/src/trace.test.ts",
+    "name": "describe(\"ADM-NFR-06 · trace parse (T-TRACE-1, T-T\")",
+    "reason": "TECH-DEBT #23: callback describe của test 65 dòng (trước M3), tách khi chạm lại"
+  }
+]

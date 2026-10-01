@@ -304,7 +304,8 @@ Quyết định riêng của backend (Luật 2):
 - **B10** Trả lời test-plan G1, G6–G10, G12, G13 (plan §13): `beta-testers` chỉ bảo vệ ở app (trigger chỉ tạo, không chặn SQL); `entity:"batch"` chỉ qua hàm thuần; op hook M1/M2 có sẵn trong `test-hooks.ts`; trần 500 username tính trước khi bỏ trùng; `DELETE` entitlement đã thu hồi/chưa cấp → 204, không bump.
 - **B11** (readiness lần 1): batch xoá theo **toàn bộ** `remove` và chèn `on conflict do nothing`, đếm `added`/`removed` từ `returning`, `unchanged = |add|+|remove|−added−removed` (không xoá theo snapshot của lock pass, sai ở READ COMMITTED; #8) · DB test riêng: int T2–T7 dùng `.env.test-be.local`/`.env.test-qc.local`, e2e giữ `ai_system_test`, không `set -a` (#9) · `INVALID_REFERENCE` của Grant POST luôn có `ids` (#13) · ngoại lệ khoá E3 Tenant POST (#14) · vị trí hook `locked`/`rows`/`bump` cho mọi op và một request = một `configWrite` (#16, #24) · `features.repo` trả số hàng đổi cho entitlement (#25). Chi tiết plan §5.1, §5.5, §6.2, §12.
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- T0 (backend): allowlist `check:fn` ban đầu 18 mục khi chạy `--all` trên M0–M2: 2 hàm 5 tham số (`jwt.ts` `sign`, `auth.service.ts` `writePassword`, TECH-DEBT #24) + 16 callback `describe` > 50 dòng trong test cạnh code (TECH-DEBT #23 mở rộng: db-guard, lock-order ×2, secret-crypto, commands perf/service, features/secrets service, rls, contracts common, admin-web schemas×2/nav/refresh-lock, tools depcruise/trace). Code sản phẩm không có vi phạm độ dài nào. Khoá allowlist = file + tên (callback = `callee("40 ký tự đầu của chuỗi")`).
+- T0 (backend): `db:test:drop <tag>` xoá luôn `.env.test-<tag>.local` (tránh file env trỏ DB đã xoá); `db:test:create` sao chép `.env.local` thay vì ghép nhiều `--env-file` (plan §12).
 
 ## 10. Tranh chấp test
 - (không)
