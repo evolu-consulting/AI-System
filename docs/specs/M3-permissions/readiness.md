@@ -19,3 +19,10 @@ Hệ quả cho tài liệu: BA (AC-A03, A10, A11, FR-32), missing-screens §12.5
 
 ## Đã đưa vào spec từ readiness 2026-10-01 (đã được người dùng chấp nhận)
 #13 (bump + NOTIFY, sửa thành sau commit), #19 (batch grant), #30 (dán username), #34 (agent "Chưa khả dụng"), #38, #29, #16 (cascade, unique grant), #12 (AC góc Admin), #7, #17; CR-008, CR-011, CR-013.
+
+## Lần 1 — 2026-10-02 · NOT READY → đã sửa
+
+Agent: spec-readiness (điều phối ghi lại). 0 Chặn, 13 Cao (đều (c) kỹ thuật, có mặc định — không hỏi người dùng), 13 Thấp.
+Cao: (1) R1.15–16 tách sang T4/T6; (2) helper `newField` ở `_data.ts` cho typecheck Q2–T3; (3) grants/grants-batch (T5) dùng `HUB_VISIBLE_SQL`; (4) thêm `M2/error-codes.int.test.ts` vào danh sách sửa test khoá; (5) FE1a–d phụ thuộc T2; (6) FE0 phụ thuộc Q2; (7) T1 phụ thuộc T0; (8) batch xoá trực tiếp theo `remove` + đếm bằng `returning`; (9) lệnh int dùng DB test riêng `.env.test-be.local`/`.env.test-qc.local`, e2e chỉ truyền 2 biến URL; (10) E-CF ca 1 kỳ vọng diff `name.vi` + `command_ids`; (11) số trên nút dán = số username đã tách; (12) `:user_id` không phải uuid → 404; (13) `INVALID_REFERENCE` của Grant POST luôn có `ids`.
+Thấp #14–#26 đã áp (chuỗi khoá Tenant POST + E3, L10 sentinel, vị trí hook, R09/R12, xoá marker, tên file `.tsx`, tách notify, T7 chạy int modules, "x y" một phần tử, bỏ tuỳ chọn cổng e2e → TECH-DEBT #17, một request một `configWrite`, repo trả số hàng, D16 >200 group).
+Commit: 65bbbd6 (qc), dec1b6f (backend), bcdcbbd (frontend), tasks.md (điều phối).
