@@ -17,11 +17,14 @@ Quy ước: mọi chuỗi VI/EN trích từ `admin-missing-screens.md` ghi "§n"
 | D7 | Đổi mật khẩu: route `/change-password` = chế độ **bắt buộc** (ngoài khung, công khai, cần `change_token` trong bộ nhớ); `/account/password` = **tự đổi** (trong khung với admin, ngoài khung mẫu D với `member`). Hai route thay vì một route hai chế độ | Hai luồng khác API/guard; tránh nhầm lẫn `change_token` với phiên đăng nhập. Lệch nhẹ với `missing-screens` §9.2 ("cùng route" cho member) |
 | D8 | `member` đăng nhập thành công → `/member` (ngoài khung): "Tài khoản của bạn dùng Chat App" + nút "Mở Chat App" (chỉ hiện khi build có `PUBLIC_CHAT_APP_URL`) + "Đổi mật khẩu" + "Đăng xuất". Mọi route khác của member → redirect `/member`. **Artboard thiếu**: `ui-admin.md` 7.1 nói "đã có trong artboard Đăng nhập" nhưng `Login.dc.html` không có màn này → dùng mẫu D (card 400px) — đề xuất vẽ bổ sung (không chặn) | |
 | D9 | Bảng M1 = `Table` shadcn + cột tự viết, phân trang server (`limit=50`, `?q&offset`), **không** TanStack Table và **không** virtualize (≤ 50 dòng/trang; CONVENTIONS §6 chỉ yêu cầu khi > 200). Đề xuất TanStack Table lại ở M2 | Giảm bundle/rủi ro API v9; xem ADR-0004 |
-| D10 | Mật khẩu tạm hiển thị **nguyên 16 ký tự, không chèn dấu `-`** (artboard vẽ `Xk7p-2mQa-…` chỉ là minh hoạ; dấu `-` không thuộc mật khẩu, copy ra sẽ sai). Chỉ tách nhóm bằng `letter-spacing`/khoảng trắng CSS, giá trị `<input readOnly>` và nội dung "Sao chép tất cả" là chuỗi gốc. Mật khẩu tạm chỉ nằm trong state của dialog/drawer: không URL, không cache TanStack Query (`gcTime: 0`), không log, xoá khi đóng | M1-R17 |
+| D10 | Mật khẩu tạm hiển thị **nguyên 16 ký tự, không chèn dấu `-`** (artboard vẽ `Xk7p-2mQa-…` chỉ là minh hoạ; dấu `-` không thuộc mật khẩu, copy ra sẽ sai). Hiển thị bằng **4 `<span>` mỗi span 4 ký tự** (`aria-hidden`, font mono), cách nhau bằng CSS `margin` (không ký tự phân cách trong DOM). Bên cạnh có `<input readOnly>` (nhãn "Mật khẩu tạm", `sr-only`, giá trị = chuỗi gốc 16 ký tự) để đọc bằng trình đọc màn hình và e2e; nội dung "Sao chép tất cả" cũng dùng chuỗi gốc. Không có hàm `formatTempPassword` (bỏ): chia nhóm là việc của JSX (`chunk(password, 4)`). Mật khẩu tạm chỉ nằm trong state của dialog/drawer: không URL, không cache TanStack Query (`gcTime: 0`), không log, xoá khi đóng | M1-R17 |
 | D11 | Chip lọc có số (`Tất cả 120 / Đang hoạt động 118 / Đã khoá 2`): Tenants tính phía client (lấy `limit=200`); Users cần `counts` từ API (xem §9 mục 8). Backend không có `counts` → chip hiện không số | Tránh đổi contract một mình |
 | D12 | Hàng "(bạn)" ở Users: menu `⋯` chỉ còn **Sửa** (không Khoá/Reset/Đăng xuất mọi thiết bị; tự đổi mật khẩu ở menu avatar) | BR-08, tránh tự vô hiệu phiên |
 | D13 | `PATCH` lệch `version` → 409 `VERSION_CONFLICT`: M1 hiện toast lỗi "Có người vừa lưu bản mới hơn. Tải lại để xem bản mới nhất." + nút `Tải lại` (refetch, bỏ thay đổi). Modal diff đầy đủ = M3 (A3) | Spec A3 |
 | D14 | Test FE: `bun test` chỉ cho hàm thuần (không DOM giả lập, theo M0 #10). Hành vi giao diện kiểm bằng e2e của qc | Nhất quán M0 |
+| D16 | `/` nay nằm sau guard (chưa đăng nhập → `/login`), nên FE1b **xoá** `features/home/**` (trang tạm M0), các key `home.*` và `app.meta.title` khỏi `vi.json`/`en.json` (HomePage mới của shell dùng `overview.*`). `e2e/smoke.spec.ts` của M0 do qc sửa theo | Readiness #1 |
+| D17 | Toast lưu ở M1 = `tenants.toast.saved` "Đã lưu {key}" / `users.toast.saved` "Đã lưu {username}" (không dùng `toast.saved` "Đã lưu và áp dụng · v{n}" của §0.5 vì chưa có `config vN`, FR-53 = M3) | Readiness #21 |
+| D18 | Sidebar rộng **248px** theo artboard `Sidebar` (thay 240px của `ui-admin.md` §4; `--sidebar-width` M0) | Readiness #22 |
 | D15 | Mọi tên route/query-key/key i18n mới ghi ở file này; không đổi tên sau Gate để qc khoá test | |
 
 ## 1. Màn, route, bố cục
@@ -93,7 +96,7 @@ apps/admin-web/src/
 │  ├─ refresh-lock.ts   single-flight + navigator.locks ('ai-admin-refresh') + fallback
 │  ├─ auth-channel.ts   BroadcastChannel('ai-admin-auth'): 'token' | 'logout'
 │  ├─ errors.ts         mã lỗi → key i18n (§6)
-│  ├─ format.ts         formatLastLogin, formatClock(HH:MM), formatTempPassword
+│  ├─ format.ts         formatLastLogin, formatClock(HH:MM)
 │  ├─ normalize.ts      normalizeCompanyKey (trim, lowercase, bỏ dấu, đ→d), normalizeUsername
 │  └─ clipboard.ts      copyText (navigator.clipboard + fallback)
 ├─ components/ui/       shadcn sinh ra (không sửa logic)
@@ -171,7 +174,7 @@ Một nút Hiện/Ẩn điều khiển cả hai ô mới (trạng thái chung) �
 - **Danh sách**: `GET /admin/tenants?limit=200&q=` (lọc trạng thái và đếm chip phía client; `total > 200` → chuyển sang tìm phía server, bỏ số chip). Hàng bấm vào = mở chi tiết (link ở ô Mã công ty). `⋯` → `Mở`, `Khoá` (dialog nặng, như chi tiết), `Mở khoá`.
 - **Tạo** (`/tenants/new`): 2 card, một nút `Tạo tenant` (cuối trang) + `Huỷ` (về danh sách, qua `UnsavedGuard`). Gửi `POST /admin/tenants {key,name,max_concurrent_sub,first_admin:{username,display_name,email,locale}}` → `{tenant, first_admin, temp_password}` → `Dialog` "Đã tạo tenant {key}" **không** đóng bằng click nền/Esc/nút X; nút `Đi tới tenant` `disabled` cho tới khi tick `Tôi đã lưu mật khẩu tạm`; `beforeunload` bật khi dialog mở. Sau khi đóng → `/tenants/<id>` + toast `tenants.toast.created`. Ghi chú gợi ý mật khẩu tạm: sau lần đăng nhập đầu phải đổi (dùng câu của `users.create.passwordNote`).
 - **Chi tiết**: `GET /admin/tenants/:id` (kèm `stats`, §9 mục 7). Tab Thông tin: `Mã công ty` (readOnly + gợi ý `tenants.field.keyHint`), `Tên công ty`, `Giới hạn slot subscription`, trạng thái (badge chỉ đọc), "Tạo lúc {ngày}", "Số user". Thanh lưu dính đáy: "Chưa lưu thay đổi" / `Huỷ` `Lưu`; `Ctrl+S` lưu. Tab Feature/Agent/Quota: card `common.unavailable` + một câu mô tả (Agent dùng `tenants.agents.unavailable`; Feature/Quota: `tenants.tab.unavailableBody`). Tab Users: `tenants.users.summary` + link `Mở danh sách Users` → `/users?tenant=<key>`.
-- **Khoá** (`POST /admin/tenants/:id/lock`): `ConfirmDialog` nặng (gõ lại `key`). **Mở khoá**: dialog vừa. Thành công → toast, refetch. Tenant `platform`: không có nút (và nếu API vẫn trả 409 `PLATFORM_TENANT_LOCKED` → toast `errors.PLATFORM_TENANT_LOCKED`).
+- **Khoá** (`POST /admin/tenants/:id/lock`): `ConfirmDialog` nặng (gõ lại `key`). **Mở khoá**: dialog vừa. Thành công → toast, refetch. Tenant `platform`: không có nút (và nếu API vẫn trả 409 `PLATFORM_TENANT_LOCKED` → toast `errors.platformTenantLocked`).
 
 ### 5.5 Users
 - **Danh sách**: platform_admin: `TenantPicker` (đồng bộ `?tenant=<key>`; ánh xạ key→id từ `GET /admin/tenants?limit=200`) → `GET /admin/users?tenant_id=&q=&status=&role=&login=never&limit=50&offset=`. tenant_admin: không có ô Tenant, bỏ `?tenant`. Chip: `Tất cả` `Đang hoạt động` `Đã khoá` (+ số, D11) · `Select` "Role" (Tất cả role / tenant_admin / member / platform_admin chỉ khi xem tenant `platform`) · chip phụ `Chưa đăng nhập`. Tìm phía server (debounce 300 ms). Mọi bộ lọc nằm trên URL; đổi bộ lọc → `page=1`.
@@ -300,7 +303,7 @@ Chép vào `packages/i18n/locales/{vi,en}.json`; `bun run i18n:check` bắt bu�
 | state.notFound.cta | Về danh sách | Back to list |
 | state.empty.noResults | Không có kết quả cho '{q}' | No results for '{q}' |
 | state.empty.noMatch | Không có mục nào khớp bộ lọc | Nothing matches these filters |
-| state.offline | Mất kết nối, thay đổi chưa được lưu | Connection lost — changes aren't saved |
+| state.offline.banner | Mất kết nối, thay đổi chưa được lưu | Connection lost — changes aren't saved |
 | state.offline.saveTip | Đang chờ kết nối lại | Waiting for connection |
 | state.online | Đã kết nối lại | Back online |
 | unsaved.title | Bỏ thay đổi? | Discard changes? |
