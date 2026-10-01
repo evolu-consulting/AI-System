@@ -763,7 +763,7 @@ Tất cả nằm trong **vùng nội dung**; sidebar và topbar luôn dùng đư
 | Bạn không còn quyền thực hiện thao tác này | You no longer have permission to do this |
 
 ### 12.5 Xung đột 409 (`VERSION_CONFLICT`, FR-55, AC-A07)
-Server trả `{error:{code:"VERSION_CONFLICT"}, current, updated_by, updated_at}` (R#4).
+Server trả `{error:{code:"VERSION_CONFLICT",message,details:{current, updated_at}}}` (R#4 đã sửa theo [CR-008](../../CHANGE-REQUESTS.md)). **`updated_by` chỉ có từ M4**; trước đó modal không có tên người sửa, dùng câu thay thế "Bản này vừa được sửa lúc {time} (v{n}). Bản của bạn dựa trên v{mine}." (VI) / "This was just edited at {time} (v{n}). Your copy is based on v{mine}." (EN); nút "Ghi đè" hỏi lại "Ghi đè thay đổi mới nhất?". Câu có `{user}` bên dưới dùng từ M4. Nợ M3: xem `TECH-DEBT.md` #7.
 - `AlertDialog` (không đóng bằng click nền): tiêu đề "Có người vừa lưu bản mới hơn" · "thu.ha vừa sửa command này lúc 10:42 (v44). Bản của bạn dựa trên v43." · 3 nút: `Xem khác biệt` · `Ghi đè` · `Tải bản mới`.
 - `Xem khác biệt` → mở rộng dialog thành DiffViewer 3 cột **Trường · Bản của bạn · Bản mới nhất (v44)**, chỉ các trường khác nhau.
 - `Ghi đè` → ConfirmDialog con "Ghi đè thay đổi của thu.ha?" "Bản v44 sẽ bị thay bằng bản của bạn (thành v45). Lịch sử vẫn giữ v44." · `Ghi đè` → gửi lại với `version` = `current.version`.
@@ -824,7 +824,7 @@ Không cần artboard riêng (dùng mẫu A/B + câu chữ ở trên): Commands 
 6. Audit: list trả câu mô tả đủ dữ liệu (`entity_name`, `actor_username`, `config_version`); filter `?entity&action&actor&from&to&tenant_id`; `restore` trả 409 `NAME_TAKEN`.
 7. Import: `dry_run` trả `{added[],updated[],unchanged_count, missing_secrets[], errors[{path,message}]}`; áp dụng nhận `secrets:{NAME:value}` cho mục Cần tạo secret.
 8. Tổng quan tenant: một endpoint gộp (Đề xuất `GET /admin/overview`) trả KPI + 5 user chưa đăng nhập + 8 audit gần nhất để tránh 4 request.
-9. Mọi lỗi 403 giữa phiên có mã `FORBIDDEN`; 409 theo R#4.
+9. Mọi lỗi 403 giữa phiên có mã `FORBIDDEN`; 409 `VERSION_CONFLICT` theo §12.5 (`error.details:{current, updated_at}`, CR-008).
 
 ## 15. Câu hỏi (kèm mặc định đề xuất)
 1. Có "Xoá tenant" không? → Mặc định **không** ở v1, chỉ Khoá (tránh mất dữ liệu). **Đã duyệt 2026-10-01 (Gate M1, CR-006).**
