@@ -66,6 +66,38 @@ describe("ADM-NFR-07 · assertSafeDbRole — thành viên gián tiếp (review v
     });
   });
 
+  const exec = (s: string) => owner.db.execute(sql.raw(s));
+
+  test("ADM-NFR-07 · thành viên gián tiếp của role chỉ có BYPASSRLS (không superuser) → ném", async () => {
+    await exec("drop role if exists guard_bypass_only");
+    await exec("create role guard_bypass_only nologin bypassrls");
+    try {
+      await withProbe(`grant guard_bypass_only to ${PROBE}`, async (db) => {
+        await expect(assertSafeDbRole(db)).rejects.toThrow(UNSAFE_ROLE_MESSAGE);
+      });
+    } finally {
+      await exec("drop role if exists guard_bypass_only");
+    }
+  });
+
+  test("ADM-NFR-07 · thành viên của role (không superuser) sở hữu bảng trong schema admin → ném", async () => {
+    const cleanup = async () => {
+      await exec("drop table if exists admin.guard_owned_probe");
+      await exec("drop role if exists guard_table_owner");
+    };
+    await cleanup();
+    await exec("create role guard_table_owner nologin");
+    await exec("create table admin.guard_owned_probe (id int)");
+    await exec("alter table admin.guard_owned_probe owner to guard_table_owner");
+    try {
+      await withProbe(`grant guard_table_owner to ${PROBE}`, async (db) => {
+        await expect(assertSafeDbRole(db)).rejects.toThrow(UNSAFE_ROLE_MESSAGE);
+      });
+    } finally {
+      await cleanup();
+    }
+  });
+
   test("ADM-NFR-07 · role thường không thuộc role nguy hiểm → qua", async () => {
     await withProbe("select 1", async (db) => {
       await expect(assertSafeDbRole(db)).resolves.toBeUndefined();

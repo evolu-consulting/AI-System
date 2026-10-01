@@ -143,12 +143,16 @@ async function rotate(
   meta: ClientMeta,
 ): Promise<Session> {
   return withScope(ctx.db, tenantScope(f.tid), async (tx: Tx) => {
+    await repo.lockUserShared(tx, f.tid, u.id);
+    // Đọc lại dưới khoá: user có thể vừa bị khoá/tenant khoá trước khi ta giữ được hàng.
+    const fresh = await repo.findUserById(tx, f.tid, u.id);
+    if (!fresh || !canSignIn(fresh, fresh.tenant.active)) throw appError("INVALID_REFRESH_TOKEN");
     const id = Bun.randomUUIDv7();
     // Request song song thua race: UPDATE chờ khoá hàng rồi thấy revoked_at đã đặt → 0 hàng.
     if (!(await repo.rotateRefresh(tx, f.tid, f.token.id, id)))
       throw appError("REFRESH_SUPERSEDED");
     const family = { id: f.token.familyId, expiresAt: f.token.expiresAt };
-    return issueSession(ctx, tx, u, { ...meta, id, family });
+    return issueSession(ctx, tx, fresh, { ...meta, id, family });
   });
 }
 
@@ -240,7 +244,7 @@ export async function changePasswordForced(
     ctx,
     u,
     hash,
-    { expectPwc: claims.pwc, keepFamily: null },
+    { expectPwc: claims.pwc, keepFamily: null, tempLockAt: ctx.now() },
     async (tx) => {
       await repo.markLoginSuccess(tx, u.tenantId, u.id, ctx.now());
       return issueSession(ctx, tx, u, meta);

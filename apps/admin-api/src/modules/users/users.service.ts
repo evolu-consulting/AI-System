@@ -111,14 +111,16 @@ async function reread(tx: Tx, u: { tenantId: string; id: string }): Promise<User
 }
 
 /**
- * Mọi thao tác ghi lên user: khoá hàng tenant rồi hàng user (FOR UPDATE, thứ tự cố định tenant → user như khoá
- * tenant, tránh deadlock) và trả bản đọc lại sau khi giữ khoá — so `version`, BR-08 đều trên bản này.
+ * Mọi thao tác ghi lên user: khoá hàng tenant rồi hàng user bằng FOR NO KEY UPDATE (thứ tự tenant → user như khoá
+ * tenant) và trả bản đọc lại sau khi giữ khoá — so `version`, BR-08 đều trên bản này. NO KEY UPDATE (không phải
+ * FOR UPDATE) vì INSERT refresh_tokens lấy FOR KEY SHARE trên hàng tenant/user qua FK: FOR UPDATE xung đột với nó
+ * và gây deadlock với login/refresh song song (review vòng 2 N1). NO KEY UPDATE vẫn xung đột với nhau và với
+ * FOR SHARE nên PATCH/BR-08/createUser vẫn tuần tự.
  */
-async function lockTarget(tx: Tx, a: Actor, id: string): Promise<UserRow> {
-  const seen = await mustFindUser(tx, a, id);
-  await repo.findTenantBrief(tx, seen.tenantId, { lock: "update" });
+async function lockTarget(tx: Tx, a: Actor, seen: UserRow): Promise<UserRow> {
+  await repo.findTenantBrief(tx, seen.tenantId, { lock: "no key update" });
   if (!(await repo.lockUserRow(tx, seen.tenantId, seen.id))) throw appError("NOT_FOUND");
-  return mustFindUser(tx, a, id);
+  return mustFindUser(tx, a, seen.id);
 }
 
 /** BR-08 trên bản đã khoá (hai admin khoá nhau cùng lúc → đúng một thành công). */
@@ -213,7 +215,7 @@ function checkUpdate(c: Call, u: UserRow, set: repo.UserSet): void {
 /** PATCH theo `version` trên bản đã khoá: lệch → 409 {current, updated_at}; PATCH song song → đúng một thắng. */
 export function updateUser(c: Call, id: string, input: UserUpdateRequest): Promise<User> {
   return withScope(c.ctx.db, c.scope, async (tx) => {
-    const u = await lockTarget(tx, c.actor, id);
+    const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
     if (u.version !== input.version) {
       const current = toUser(u);
       throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
@@ -233,7 +235,7 @@ export function lockUser(c: Call, id: string): Promise<User> {
     const seen = await mustFindUser(tx, c.actor, id);
     fail(checkSelfAction(c.actor, seen.id, "lock"));
     if (!seen.active) return toUser(seen);
-    const u = await lockTarget(tx, c.actor, id);
+    const u = await lockTarget(tx, c.actor, seen);
     if (!u.active) return toUser(u);
     await guardLastAdmin(tx, u, { active: false });
     await repo.updateUser(tx, u, { active: false }, true);
@@ -245,7 +247,7 @@ export function lockUser(c: Call, id: string): Promise<User> {
 /** Mở khoá: `active=true` + xoá khoá tạm; không gỡ `locked_by_tenant` (M1-R10). Lặp lại không tăng version. */
 export function unlockUser(c: Call, id: string): Promise<User> {
   return withScope(c.ctx.db, c.scope, async (tx) => {
-    const u = await lockTarget(tx, c.actor, id);
+    const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
     const clear = { failedLogins: 0, lockedUntil: null };
     if (!u.active) await repo.updateUser(tx, u, { ...clear, active: true }, true);
     else if (u.lockedUntil !== null) await repo.updateUser(tx, u, clear, false);
@@ -268,7 +270,7 @@ export async function resetPassword(c: Call, id: string): Promise<{ temp_passwor
   fail(checkSelfAction(c.actor, id, "reset_password"));
   const temp = await newTempPassword();
   return withScope(c.ctx.db, c.scope, async (tx) => {
-    const u = await lockTarget(tx, c.actor, id);
+    const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
     const set = { passwordHash: temp.hash, mustChangePassword: true, failedLogins: 0 };
     await repo.updateUser(tx, u, { ...set, lockedUntil: null, passwordChanged: true }, true);
     await revokeUserSessions(tx, { tenantId: u.tenantId, userId: u.id, reason: "password_reset" });

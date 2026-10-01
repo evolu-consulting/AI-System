@@ -143,7 +143,7 @@ export type TenantBrief = { id: string; key: string; active: boolean };
 export async function findTenantBrief(
   tx: Tx,
   tenantId: string,
-  o: { lock?: "update" | "share" } = {},
+  o: { lock?: "no key update" | "share" } = {},
 ) {
   const q = tx
     .select({ id: tenants.id, key: tenants.key, active: tenants.active })
@@ -200,7 +200,7 @@ export async function updateUser(
 /** Khoá hàng user (FOR UPDATE chỉ bảng users; Drizzle `of` in tên kèm schema nên viết SQL tay). */
 export async function lockUserRow(tx: Tx, tenantId: string, id: string): Promise<boolean> {
   const rows = await tx.execute(
-    sql`select 1 from admin.users where tenant_id = ${tenantId} and id = ${id} for update`,
+    sql`select 1 from admin.users where tenant_id = ${tenantId} and id = ${id} for no key update`,
   );
   return (rows as unknown as unknown[]).length === 1;
 }

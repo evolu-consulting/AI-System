@@ -79,7 +79,7 @@ export async function lockCounter(tx: Tx, tenantId: string, userId: string) {
     .select({ failedLogins: users.failedLogins, lockedUntil: users.lockedUntil })
     .from(users)
     .where(and(eq(users.tenantId, tenantId), eq(users.id, userId)))
-    .for("update");
+    .for("no key update");
   return row ?? null;
 }
 
@@ -205,7 +205,7 @@ export async function lockPasswordRow(tx: Tx, tenantId: string, userId: string) 
     .select({ passwordChangedAt: users.passwordChangedAt, lockedUntil: users.lockedUntil })
     .from(users)
     .where(and(eq(users.tenantId, tenantId), eq(users.id, userId)))
-    .for("update");
+    .for("no key update");
   return row ?? null;
 }
 
@@ -220,4 +220,15 @@ export async function updateLocale(tx: Tx, tenantId: string, userId: string, loc
 /** Khoá tenant (M1-R10): thu hồi mọi token đang sống của tenant. */
 export async function revokeTenantTokens(tx: Tx, tenantId: string, reason: RevokeReason) {
   await tx.update(refreshTokens).set(revokeSet(reason)).where(active(tenantId));
+}
+
+/**
+ * Refresh: giữ hàng user FOR SHARE trong lúc xoay token để lock/reset/khoá tenant (FOR NO KEY UPDATE trên user)
+ * chờ rotate commit rồi mới thu hồi — câu UPDATE thu hồi khi đó thấy cả token mới (review vòng 2 N1). Chỉ khoá
+ * hàng user (không khoá tenant) để không tạo vòng chờ với khoá tenant.
+ */
+export async function lockUserShared(tx: Tx, tenantId: string, userId: string): Promise<void> {
+  await tx.execute(
+    sql`select 1 from admin.users where tenant_id = ${tenantId} and id = ${userId} for share`,
+  );
 }

@@ -19,10 +19,31 @@ export async function setScope(tx: Tx, scope: DbScope): Promise<void> {
   );
 }
 
-/** Mở transaction, đặt app.scope/app.tenant_id (transaction-local) rồi chạy fn. */
-export function withScope<T>(db: Db, scope: DbScope, fn: (tx: Tx) => Promise<T>): Promise<T> {
-  return db.db.transaction(async (tx) => {
-    await setScope(tx, scope);
-    return fn(tx);
-  });
+/** 40P01 deadlock, 40001 serialization failure: Postgres đã rollback cả transaction nên chạy lại an toàn. */
+const RETRYABLE = new Set(["40P01", "40001"]);
+export const SCOPE_MAX_ATTEMPTS = 3;
+
+export function sqlState(err: unknown): string | undefined {
+  const e = err as { code?: unknown; cause?: { code?: unknown } } | null;
+  const code = e?.code ?? e?.cause?.code;
+  return typeof code === "string" ? code : undefined;
+}
+
+/**
+ * Mở transaction, đặt app.scope/app.tenant_id (transaction-local) rồi chạy fn. Gặp 40P01/40001 thì chạy lại cả
+ * transaction (tối đa SCOPE_MAX_ATTEMPTS lần) thay vì để thành 500 — `fn` chỉ được làm việc DB (không gửi gì ra
+ * ngoài) để chạy lại không có tác dụng phụ.
+ */
+export async function withScope<T>(db: Db, scope: DbScope, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await db.db.transaction(async (tx) => {
+        await setScope(tx, scope);
+        return fn(tx);
+      });
+    } catch (err) {
+      const state = sqlState(err);
+      if (!state || !RETRYABLE.has(state) || attempt >= SCOPE_MAX_ATTEMPTS) throw err;
+    }
+  }
 }

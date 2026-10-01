@@ -22,12 +22,12 @@ const isDrizzleWrapper = (err: unknown): boolean =>
 
 /**
  * Trường an toàn để log: bỏ SQL/tham số của Drizzle, giữ message + SQLSTATE của Postgres. DrizzleQueryError không có
- * `cause` → chỉ "query failed" (+ SQLSTATE nếu có), không log message/stack gốc (review vòng 1 #9).
+ * `cause` → chỉ "query failed" (không có cause thì cũng không có SQLSTATE), không log message/stack gốc.
  */
 export function safeErrorFields(err: unknown): { error: string; code?: string; stack?: string } {
   const c = pgCause(err);
   const code = typeof c?.code === "string" ? { code: c.code } : {};
-  if (!c && isDrizzleWrapper(err)) return { error: "query failed", ...code };
+  if (!c && isDrizzleWrapper(err)) return { error: "query failed" };
   const src = c ?? (err as PgLike | null);
   const message = typeof src?.message === "string" ? src.message : String(err);
   return {

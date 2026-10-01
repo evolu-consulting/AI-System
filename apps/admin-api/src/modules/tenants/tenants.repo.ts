@@ -61,7 +61,7 @@ export async function listTenants(tx: Tx, f: TenantFilter) {
 
 export async function findTenant(tx: Tx, id: string, o: { forUpdate?: boolean } = {}) {
   const q = tx.select(rowCols).from(tenants).where(eq(tenants.id, id)).limit(1);
-  const [row] = o.forUpdate ? await q.for("update") : await q;
+  const [row] = o.forUpdate ? await q.for("no key update") : await q;
   return (row as TenantRow | undefined) ?? null;
 }
 
