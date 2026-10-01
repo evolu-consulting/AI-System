@@ -302,6 +302,12 @@ Các mặc định mới (`[ĐX]` ở M1-R01, 03, 04, 06, 15, 17, 20) và nguồ
 - 2026-10-01 · backend-lead · T1: ô đăng nhập (`tenant_key`, `username`) chỉ kiểm trim+lower 1–64, **không** kiểm regex định danh, để sai định dạng vẫn ra 401 `INVALID_CREDENTIALS` (M1-R01) thay vì 400. `change_token` giới hạn 1–4096 ký tự (JWT; spec không nêu trần). Trường `id`/`key`/`name` trong response không trim lại ngoài schema định danh dùng chung.
 - 2026-10-01 · backend-lead · T1: `EmailSchema` = `string().trim().toLowerCase().max(254).pipe(z.email())` vì kiểm định dạng của `z.email()` chạy trước transform trim/lower (đã thử zod 4.6.5). `ListQueryBase` dùng `z.coerce.number()` cho `limit`/`offset` (query là chuỗi); `q` output là `q?: string` (rỗng sau trim → `undefined`).
 - 2026-10-01 · backend-lead · T1: dữ liệu mẫu unit test contract đặt ở `packages/contracts/src/test-fixtures.ts` (không export qua `index.ts`).
+- 2026-10-01 · frontend-lead · FE0: `shadcn add` (4.21.0) tự thêm `cn` và `next-themes` vào `package.json` và import `cn` từ gói `cn` (sai); đã gỡ cả hai, trỏ import về `@/lib/utils`; `sonner.tsx` bỏ `useTheme`, cố định `theme="light"` (chưa có dark toggle, M0).
+- 2026-10-01 · frontend-lead · FE0: cài `radix-ui@1.6.7` (đúng ADR-0001, shadcn cần), `react-hook-form@7.89.0`, `@hookform/resolvers@5.9.1`, `sonner@2.0.8`, `zod@4.6.5` (= contracts), `@ai/contracts` workspace; `npm view` khớp ADR-0004, không chênh lệch.
+- 2026-10-01 · frontend-lead · FE0: biến thể `Badge` `ok|off|warn|info|err` dùng token đang có (`success-bg/success`, `muted/muted-strong-foreground`, `warning-bg/warning`, `accent/accent-foreground`, `danger-bg/danger`) vì `--status-*` như plan nêu **không tồn tại** ở M0; tương phản đo ở FE6.
+- 2026-10-01 · frontend-lead · FE0: `--subtle-foreground` đã là `#736c89` từ M0 (FE-R1), không cần đổi.
+- 2026-10-01 · frontend-lead · FE0: `server.proxy` `/auth`, `/admin` → `ADMIN_API_URL` (mặc định `http://localhost:3001`); đã thử `rsbuild preview` với backend tắt: `/auth/login` và `/admin/tenants` trả 504 do proxy (không phải 404/HTML) → preview có áp proxy. `.env.example` thêm `ADMIN_API_URL`, `PUBLIC_CHAT_APP_URL` (trống = ẩn nút); khai báo type trong `src/env.d.ts`. Chưa đụng `playwright.config.ts` (FE0b).
+- 2026-10-01 · frontend-lead · FE0: số đo sau build: `check:bundle` js 95,9 KB / css 12,3 KB gzip (ngân sách 150/25). Chưa có component nào được import nên bundle chưa đổi so với M0; đo chunk route ở FE6.
 
 ## 10. Tranh chấp test
 - (không)
