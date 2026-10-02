@@ -35,6 +35,7 @@ import {
   VersionSchema,
 } from "./common";
 import { FeatureRefSchema } from "./features";
+import { groupRefShape, refineBeta } from "./groups";
 import { WorkflowRefSchema } from "./workflows";
 
 /** Tên chính và từng alias: trim → lower → `CATALOG_KEY_RE` (một không gian tên chung, M2-R13). */
@@ -206,7 +207,10 @@ export const CommandListResponseSchema = listResponseSchema(
 );
 export type CommandListResponse = z.infer<typeof CommandListResponseSchema>;
 
-/** Tab "Ai dùng được" (M2-R23, chỉ phần tenant). Query `ListQueryBase` (`q` khớp key/tên tenant), sắp `tenant_key`. */
+/** Trần `groups` mỗi tenant của tab "Ai dùng được" (M3-R14). */
+export const ACCESS_GROUPS_MAX = 20;
+
+/** Tab "Ai dùng được" (M2-R23 phần tenant + M3-R14 phần group/grant). Query `ListQueryBase` (`q` khớp key/tên tenant), sắp `tenant_key`. */
 export const CommandAccessItemSchema = z.strictObject({
   tenant_id: UuidSchema,
   tenant_key: TenantKeySchema,
@@ -216,6 +220,25 @@ export const CommandAccessItemSchema = z.strictObject({
     z.strictObject({ id: UuidSchema, key: NameRef, name: LocalizedTextSchema(FEATURE_NAME_MAX) }),
   ),
   active_user_count: CountSchema,
+  /** M3-R14: cặp group–feature của command đang được cấp (feature on|beta, entitlement chưa thu hồi), ≤ 20, sắp group key rồi feature key. */
+  groups: z
+    .array(
+      refineBeta(
+        z.strictObject({
+          ...groupRefShape,
+          feature: z.strictObject({
+            id: UuidSchema,
+            key: NameRef,
+            name: LocalizedTextSchema(FEATURE_NAME_MAX),
+          }),
+        }),
+      ),
+    )
+    .max(ACCESS_GROUPS_MAX),
+  /** Tổng số cặp group–feature (trước khi cắt 20). */
+  group_count: CountSchema,
+  /** Số user thấy thật theo M3-R11 (= đếm từ effective-access). */
+  visible_user_count: CountSchema,
 });
 export type CommandAccessItem = z.infer<typeof CommandAccessItemSchema>;
 

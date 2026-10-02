@@ -10,6 +10,7 @@ import { logger } from "./lib/logger";
 import { safeErrorFields } from "./lib/pg-errors";
 import type { SecretKey } from "./lib/secret-crypto";
 import type { TestHooks } from "./lib/test-hooks";
+import { accessRoutes } from "./modules/access/access.routes";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { commandsRoutes } from "./modules/commands/commands.routes";
@@ -51,6 +52,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/auth", authRoutes({ ...ctx, secureCookie, selfChange: selfChangeHandler(ctx) }));
   app.route("/auth", meRoutes(ctx));
   app.route("/admin/tenants", tenantsRoutes(ctx));
+  app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes(ctx));
   app.route("/admin/groups", groupsRoutes({ ...ctx, hooks }));
   app.route("/admin/grants", grantsRoutes({ ...ctx, hooks }));
