@@ -20,6 +20,7 @@ export const GROUP_KEYS = {
   all: ["groups"] as const,
   list: (p: GroupListParams) => ["groups", "list", p] as const,
   detail: (id: string) => ["groups", "detail", id] as const,
+  options: (tenantId: string) => ["groups", "options", tenantId] as const,
   members: (id: string, q: string, offset: number) => ["groups", "members", id, q, offset] as const,
 };
 
@@ -46,6 +47,21 @@ export function useDeleteGroup() {
     mutationFn: (g: Pick<GroupListItem | Group, "id">) =>
       api<undefined>(`/admin/groups/${g.id}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: GROUP_KEYS.all }),
+  });
+}
+
+/** Danh sách group của tenant cho ô chọn/lọc (≤ 200, `staleTime` 30 s): `{id, key, name}`. */
+export function useGroupOptions(tenantId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: GROUP_KEYS.options(tenantId ?? ""),
+    enabled,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const res = await api<GroupListResponse>("/admin/groups", {
+        query: { tenant_id: tenantId, limit: 200 },
+      });
+      return res.items.map((g) => ({ id: g.id, key: g.key, name: g.name, is_beta: g.is_beta }));
+    },
   });
 }
 

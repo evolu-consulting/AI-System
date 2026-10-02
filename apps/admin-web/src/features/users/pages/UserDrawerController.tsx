@@ -7,8 +7,8 @@ import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useCreateUser, useUser } from "../api";
-import { type CreatedInfo, UserDrawer } from "../components/UserDrawer";
-import type { UserFormErrors } from "../components/UserForm";
+import { type CreatedInfo, UserDrawer } from "../components/drawer/UserDrawer";
+import type { UserFormErrors } from "../components/drawer/UserForm";
 import { useUserConflict } from "../hooks/use-user-conflict";
 import { emailToValue, type UserCreateValues } from "../lib/schemas";
 

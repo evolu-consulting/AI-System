@@ -347,14 +347,21 @@
       "displayName": "Display name",
       "role": "Role",
       "lastLogin": "Last sign-in",
-      "status": "Status"
+      "status": "Status",
+      "groups": "Groups",
+      "filter": {
+        "group": "Group",
+        "allGroups": "All groups"
+      }
     },
     "filter": {
       "role": {
         "label": "Role",
         "all": "All roles"
       },
-      "neverLoggedIn": "Never signed in"
+      "neverLoggedIn": "Never signed in",
+      "groupChip": "Group: {key}",
+      "groupNeedsTenant": "Choose a tenant first"
     },
     "status": {
       "active": "Active",
@@ -384,7 +391,9 @@
       "email": "Email",
       "locale": "Language",
       "role": "Role",
-      "selfRole": "You can't lower your own role."
+      "selfRole": "You can't lower your own role.",
+      "groupsReadonly": "Edit membership on the Group page.",
+      "groupsNone": "Not in any group"
     },
     "create": {
       "passwordNote": "A temporary password is generated and shown only once. The user must change it at first sign-in.",
@@ -424,7 +433,13 @@
       "displayNameRequired": "Enter a display name",
       "displayNameMax": "At most 64 characters"
     },
-    "empty": "No users besides you. Create users to invite colleagues to Chat App."
+    "empty": "No users besides you. Create users to invite colleagues to Chat App.",
+    "groups": {
+      "more": "Also: {names}"
+    },
+    "tab": {
+      "info": "Details"
+    }
   },
   "secrets": {
     "error": {

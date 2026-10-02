@@ -1,34 +1,20 @@
-// ADM-FR-04 · dữ liệu của trang Users: xác định tenant đang xem (platform chọn qua URL, tenant_admin cố định) và nạp danh sách.
+// ADM-FR-04 · ADM-FR-62 · dữ liệu của trang Users: tenant đang xem (platform chọn qua URL, tenant_admin cố định), bộ lọc Group, danh sách.
 import type { Me } from "@ai/contracts";
 import { getRouteApi } from "@tanstack/react-router";
+import { useTenantOptions } from "@/features/tenants/api";
 import { ApiError } from "@/lib/http";
-import { USERS_PAGE_SIZE, useTenantOptions, useUserList } from "../api";
-import type { RoleFilter, StatusFilter } from "../components/UserFilters";
+import { resolveViewedTenant } from "@/lib/viewed-tenant";
+import { USERS_PAGE_SIZE, useUserList } from "../api";
+import type { RoleFilter, StatusFilter } from "../components/list/UserFilters";
+import { useUsersGroupFilter } from "./use-users-group-filter";
 
 const route = getRouteApi("/_authed/users");
 
-/** Tenant đang xem: tenant_admin cố định; platform chọn qua `?tenant=<mã>` (mã lạ → `unknown` → 404). */
-function useViewedTenant(me: Me | null, tenantParam: string | undefined) {
-  const isPlatform = me?.role === "platform_admin";
-  const options = useTenantOptions(isPlatform);
-  const tenantKey = isPlatform ? (tenantParam ?? null) : (me?.tenant.key ?? null);
-  const picked =
-    isPlatform && tenantKey ? options.data?.find((o) => o.key === tenantKey) : undefined;
-  const unknown = isPlatform && !!tenantKey && !!options.data && !picked;
-  return {
-    isPlatform,
-    tenants: options.data,
-    tenantKey,
-    // Chỉ platform_admin gửi `tenant_id`; tenant_admin do server suy ra từ phiên.
-    tenantId: isPlatform ? picked?.id : undefined,
-    unknown,
-    ready: isPlatform ? !!options.data && !unknown : true,
-  };
-}
-
 export function useUsersView(me: Me | null) {
   const search = route.useSearch();
-  const tn = useViewedTenant(me, search.tenant);
+  const options = useTenantOptions(me?.role === "platform_admin");
+  const tn = resolveViewedTenant(me, search.tenant, options);
+  const group = useUsersGroupFilter(search.group, tn, !!me);
   const page = search.page ?? 1;
   const list = useUserList(
     {
@@ -37,9 +23,10 @@ export function useUsersView(me: Me | null) {
       status: search.status,
       role: search.role,
       login: search.login,
+      group: group.id,
       offset: (page - 1) * USERS_PAGE_SIZE,
     },
-    tn.ready && !!me,
+    tn.ready && !!me && group.ready,
   );
   const canCreate = tn.isPlatform ? !!tn.tenantId : true;
   const drawerMode: "edit" | "create" = search.drawer === "edit" ? "edit" : "create";
@@ -50,10 +37,11 @@ export function useUsersView(me: Me | null) {
     search,
     page,
     list,
+    group,
     canCreate,
     drawerMode,
     drawerOpen: !!search.drawer && (drawerMode === "edit" || canCreate),
-    filtered: !!search.q || !!search.status || !!search.role || !!search.login,
+    filtered: !!(search.q || search.status || search.role || search.login || group.id),
     loadError: err ? { message: err.message, code: err.code } : null,
     filterState: {
       status: (search.status ?? "all") as StatusFilter,

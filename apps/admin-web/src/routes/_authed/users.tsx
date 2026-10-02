@@ -7,6 +7,8 @@ export type UsersSearch = {
   status?: "active" | "locked";
   role?: "platform_admin" | "tenant_admin" | "member";
   login?: "never";
+  /** Key group (`?group=ke-toan`), ánh xạ sang id ở hook. */
+  group?: string;
   page?: number;
   drawer?: "new" | "edit";
   user?: string;
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/_authed/users")({
       status: oneOf(s.status, ["active", "locked"]),
       role: oneOf(s.role, ["platform_admin", "tenant_admin", "member"]),
       login: oneOf(s.login, ["never"]),
+      group: str(s.group),
       page: Number.isInteger(page) && page > 1 ? page : undefined,
       drawer: oneOf(s.drawer, ["new", "edit"]),
       user: str(s.user),

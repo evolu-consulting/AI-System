@@ -1,9 +1,11 @@
 // ADM-FR-04 · hàng bộ lọc Users: Tenant (platform), chip trạng thái có số, Role, chip "Chưa đăng nhập", ô tìm. Mọi giá trị nằm trên URL.
 import type { ListCounts } from "@ai/contracts";
+import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FilterChips } from "@/components/shared/form/FilterChips";
 import { SearchBox } from "@/components/shared/form/SearchBox";
 import { type TenantOption, TenantPicker } from "@/components/shared/TenantPicker";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -11,9 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { pickLocalized } from "@/lib/localized";
 
+export type GroupFilterOption = { key: string; name: { vi: string; en?: string } };
 export type StatusFilter = "all" | "active" | "locked";
 export type RoleFilter = "all" | "platform_admin" | "tenant_admin" | "member";
+
+const ALL_GROUPS = "all";
 
 type Props = {
   /** Có giá trị → hiện ô chọn Tenant (chỉ platform_admin). */
@@ -26,6 +32,13 @@ type Props = {
   counts?: ListCounts;
   /** `platform_admin` chỉ là lựa chọn khi đang xem tenant platform. */
   showPlatformRole: boolean;
+  /** Group của tenant đang xem (`undefined` = chưa nạp). */
+  groups?: GroupFilterOption[];
+  groupKey?: string;
+  /** `?group` không khớp group nào: bỏ lọc, hiện chip để xoá. */
+  unknownGroupKey?: string;
+  groupDisabled: boolean;
+  onGroup: (key: string | undefined) => void;
   onTenant: (key: string | null) => void;
   onStatus: (s: StatusFilter) => void;
   onRole: (r: RoleFilter) => void;
@@ -34,7 +47,7 @@ type Props = {
 };
 
 export function UserFilters(p: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3">
       {p.tenants ? (
@@ -63,6 +76,40 @@ export function UserFilters(p: Props) {
           ) : null}
         </SelectContent>
       </Select>
+      <Select
+        value={p.groupKey ?? ALL_GROUPS}
+        onValueChange={(v) => p.onGroup(v === ALL_GROUPS ? undefined : v)}
+        disabled={p.groupDisabled}
+      >
+        <SelectTrigger
+          aria-label={t("users.col.filter.group")}
+          title={p.groupDisabled ? t("users.filter.groupNeedsTenant") : undefined}
+          className="w-44"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL_GROUPS}>{t("users.col.filter.allGroups")}</SelectItem>
+          {(p.groups ?? []).map((g) => (
+            <SelectItem key={g.key} value={g.key}>
+              {pickLocalized(g.name, i18n.language)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {p.unknownGroupKey ? (
+        <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1 text-label">
+          {t("users.filter.groupChip", { key: p.unknownGroupKey })}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("common.clearFilters")}
+            onClick={() => p.onGroup(undefined)}
+          >
+            <X aria-hidden />
+          </Button>
+        </span>
+      ) : null}
       <FilterChips<"never" | "any">
         label={t("users.filter.neverLoggedIn")}
         value={p.never ? "never" : "any"}

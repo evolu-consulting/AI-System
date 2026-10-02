@@ -5,10 +5,10 @@ import { Pagination } from "@/components/shared/Pagination";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { useSession } from "@/lib/auth/use-session";
 import { USERS_PAGE_SIZE } from "../api";
-import { CreateUserButton } from "../components/CreateUserButton";
-import { type RoleFilter, type StatusFilter, UserFilters } from "../components/UserFilters";
-import { UsersEmpty } from "../components/UsersEmpty";
-import { UserTable } from "../components/UserTable";
+import { CreateUserButton } from "../components/list/CreateUserButton";
+import { type RoleFilter, type StatusFilter, UserFilters } from "../components/list/UserFilters";
+import { UsersEmpty } from "../components/list/UsersEmpty";
+import { UserTable } from "../components/list/UserTable";
 import { useUserActions } from "../hooks/use-user-actions";
 import { useUsersNav } from "../hooks/use-users-nav";
 import { useUsersView } from "../hooks/use-users-view";
@@ -27,7 +27,13 @@ export function UsersPage() {
 
   const createButton = <CreateUserButton canCreate={view.canCreate} onCreate={nav.openCreate} />;
   const clearFilters = () =>
-    nav.patch({ q: undefined, status: undefined, role: undefined, login: undefined });
+    nav.patch({
+      q: undefined,
+      status: undefined,
+      role: undefined,
+      login: undefined,
+      group: undefined,
+    });
 
   return (
     <>
@@ -44,7 +50,12 @@ export function UsersPage() {
         tenantKey={tenantKey}
         counts={list.data?.counts}
         showPlatformRole={tenantKey === "platform"}
-        onTenant={(key) => nav.patch({ tenant: key ?? undefined })}
+        groups={view.group.options}
+        groupKey={view.group.key}
+        unknownGroupKey={view.group.unknownKey}
+        groupDisabled={view.group.disabled}
+        onGroup={(key) => nav.patch({ group: key })}
+        onTenant={(key) => nav.patch({ tenant: key ?? undefined, group: undefined })}
         onStatus={(s: StatusFilter) => nav.patch({ status: s === "all" ? undefined : s })}
         onRole={(r: RoleFilter) => nav.patch({ role: r === "all" ? undefined : r })}
         onNever={(never) => nav.patch({ login: never ? "never" : undefined })}

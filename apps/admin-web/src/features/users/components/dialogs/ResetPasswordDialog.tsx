@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { UncopiedConfirm } from "./UncopiedConfirm";
+import { UncopiedConfirm } from "../drawer/UncopiedConfirm";
 
 export type ResetResult = { tenantKey: string; username: string; password: string };
 

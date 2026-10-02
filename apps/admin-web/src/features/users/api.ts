@@ -1,7 +1,6 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-63 · gọi API /admin/users* (nơi duy nhất) dưới dạng hook TanStack Query.
 import type {
   TempPasswordResponse,
-  TenantListResponse,
   User,
   UserCreateRequest,
   UserCreateResponse,
@@ -19,6 +18,8 @@ export type UserListParams = {
   status?: "active" | "locked";
   role?: "platform_admin" | "tenant_admin" | "member";
   login?: "never";
+  /** Id group (từ `?group=<key>` đã ánh xạ). */
+  group?: string;
   offset: number;
 };
 
@@ -26,7 +27,6 @@ const KEYS = {
   all: ["users"] as const,
   list: (p: UserListParams) => ["users", "list", p] as const,
   detail: (id: string) => ["users", "detail", id] as const,
-  tenants: ["users", "tenant-options"] as const,
 };
 
 export function useUserList(params: UserListParams, enabled: boolean) {
@@ -42,6 +42,7 @@ export function useUserList(params: UserListParams, enabled: boolean) {
           status: params.status,
           role: params.role,
           login: params.login,
+          group: params.group,
           limit: USERS_PAGE_SIZE,
           offset: params.offset || undefined,
         },
@@ -54,18 +55,6 @@ export function useUser(id: string | undefined, enabled: boolean) {
     queryKey: KEYS.detail(id ?? ""),
     enabled: enabled && !!id,
     queryFn: () => api<User>(`/admin/users/${id}`),
-  });
-}
-
-/** Danh sách tenant cho ô chọn Tenant (chỉ platform_admin; ánh xạ mã → id). */
-export function useTenantOptions(enabled: boolean) {
-  return useQuery({
-    queryKey: KEYS.tenants,
-    enabled,
-    queryFn: async () => {
-      const res = await api<TenantListResponse>("/admin/tenants", { query: { limit: 200 } });
-      return res.items.map((t) => ({ id: t.id, key: t.key }));
-    },
   });
 }
 

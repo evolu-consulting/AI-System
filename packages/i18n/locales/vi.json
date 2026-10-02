@@ -347,14 +347,21 @@
       "displayName": "Tên hiển thị",
       "role": "Role",
       "lastLogin": "Đăng nhập gần nhất",
-      "status": "Trạng thái"
+      "status": "Trạng thái",
+      "groups": "Groups",
+      "filter": {
+        "group": "Group",
+        "allGroups": "Tất cả group"
+      }
     },
     "filter": {
       "role": {
         "label": "Role",
         "all": "Tất cả role"
       },
-      "neverLoggedIn": "Chưa đăng nhập"
+      "neverLoggedIn": "Chưa đăng nhập",
+      "groupChip": "Group: {key}",
+      "groupNeedsTenant": "Chọn tenant trước"
     },
     "status": {
       "active": "Đang hoạt động",
@@ -384,7 +391,9 @@
       "email": "Email",
       "locale": "Ngôn ngữ",
       "role": "Role",
-      "selfRole": "Bạn không thể tự hạ role của mình."
+      "selfRole": "Bạn không thể tự hạ role của mình.",
+      "groupsReadonly": "Sửa thành viên ở trang Group.",
+      "groupsNone": "Chưa thuộc group nào"
     },
     "create": {
       "passwordNote": "Mật khẩu tạm được sinh tự động và chỉ hiện một lần. Người dùng phải đổi mật khẩu ở lần đăng nhập đầu.",
@@ -424,7 +433,13 @@
       "displayNameRequired": "Nhập tên hiển thị",
       "displayNameMax": "Tối đa 64 ký tự"
     },
-    "empty": "Chưa có người dùng nào ngoài bạn. Tạo user để mời đồng nghiệp dùng Chat App."
+    "empty": "Chưa có người dùng nào ngoài bạn. Tạo user để mời đồng nghiệp dùng Chat App.",
+    "groups": {
+      "more": "Còn: {names}"
+    },
+    "tab": {
+      "info": "Thông tin"
+    }
   },
   "secrets": {
     "error": {

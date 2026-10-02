@@ -13,12 +13,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Translate } from "@/lib/format";
 import { useTr } from "@/lib/use-translate";
-import type { UserCreateValues } from "../lib/schemas";
+import type { UserCreateValues } from "../../lib/schemas";
 import { TempPasswordStage } from "./TempPasswordStage";
 import { UncopiedConfirm } from "./UncopiedConfirm";
 import { UserForm, type UserFormErrors } from "./UserForm";
+import { UserGroupsField } from "./UserGroupsField";
 
 export type CreatedInfo = { username: string; password: string };
 
@@ -73,7 +75,7 @@ function DrawerBody(p: BodyProps) {
       />
     );
   }
-  return (
+  const form = (
     <UserForm
       key={p.user ? `${p.user.id}-${p.user.version}` : "new"}
       formId={FORM_ID}
@@ -85,6 +87,18 @@ function DrawerBody(p: BodyProps) {
       onDirtyChange={p.onDirtyChange}
       onSubmit={p.onSubmit}
     />
+  );
+  if (p.mode !== "edit" || !p.user) return form;
+  return (
+    <Tabs defaultValue="info">
+      <TabsList>
+        <TabsTrigger value="info">{t("users.tab.info")}</TabsTrigger>
+      </TabsList>
+      <TabsContent value="info" className="pt-4">
+        {form}
+        <UserGroupsField groups={p.user.groups} />
+      </TabsContent>
+    </Tabs>
   );
 }
 

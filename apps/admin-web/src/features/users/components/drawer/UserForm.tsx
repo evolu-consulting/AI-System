@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTr } from "@/lib/use-translate";
-import { type UserCreateValues, userCreateSchema } from "../lib/schemas";
+import { type UserCreateValues, userCreateSchema } from "../../lib/schemas";
 
 export type UserFormErrors = { username?: string; email?: string; role?: string };
 type Role = UserCreateValues["role"];

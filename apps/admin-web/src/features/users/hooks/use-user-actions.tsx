@@ -7,8 +7,8 @@ import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useUserAction } from "../api";
-import { ResetPasswordDialog, type ResetResult } from "../components/ResetPasswordDialog";
-import { type PendingAction, UserActionDialog } from "../components/UserActionDialog";
+import { ResetPasswordDialog, type ResetResult } from "../components/dialogs/ResetPasswordDialog";
+import { type PendingAction, UserActionDialog } from "../components/dialogs/UserActionDialog";
 import type { UserActionKind } from "../lib/status";
 
 const API_ACTION = {
