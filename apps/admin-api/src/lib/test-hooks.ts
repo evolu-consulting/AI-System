@@ -1,16 +1,30 @@
-// ADM-NFR-07 · điểm dừng tất định cho test khoá hàng (plan M2 §6, G8). `createApp` chỉ chuyển hook xuống service khi
-// `appEnv === "test"`; production/development luôn `undefined`. Hook chỉ đợi một Promise do test giữ, không I/O
-// (TECH-DEBT #13: callback withScope có thể chạy lại).
+// ADM-NFR-07, ADM-FR-53 · điểm dừng tất định cho test khoá hàng (plan M2 §6, G8; plan M3 §5.1, §6.3). `createApp` chỉ
+// chuyển hook xuống service khi `appEnv === "test"`; production/development luôn `undefined`. Hook chỉ đợi một Promise
+// do test giữ (hoặc ném để giả 40P01), không I/O (TECH-DEBT #13: callback withScope có thể chạy lại).
 export type HookOp =
   | "command.save"
   | "command.delete"
   | "feature.save"
   | "feature.delete"
-  | "workflow.save";
-/** `locked`: vừa giữ đủ khoá, trước kiểm luật/ghi. `names`: command vừa ghi `command_names` (giữ khoá ngầm của
- * unique index), trước khi khoá features — để test thứ tự khoá tên → features (review M2 v2 #1). */
-export type HookStep = "locked" | "names";
-export type TestHooks = { afterLock?: (op: HookOp, step: HookStep) => Promise<void> };
+  | "workflow.save"
+  | "group.save"
+  | "group.delete"
+  | "group.members"
+  | "grant.save"
+  | "grant.batch"
+  | "entitlement.save"
+  | "tenant.save"
+  | "user.save"
+  | "secret.save";
+/**
+ * `locked`: sau câu khoá CUỐI của luồng, trước kiểm luật. `names` (M2): command vừa ghi `command_names`, trước khi khoá
+ * features. `rows`: sau câu ghi CUỐI, trước bump. `bump`: `configWrite` gọi ngay trước upsert `config_meta` (chỉ khi có
+ * sự kiện).
+ */
+export type HookStep = "locked" | "names" | "rows" | "bump";
+export type TestHooks = {
+  afterLock?: (op: HookOp, step: HookStep) => Promise<void> | void;
+};
 
 export async function afterLock(
   hooks: TestHooks | undefined,

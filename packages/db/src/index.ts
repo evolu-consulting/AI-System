@@ -1,5 +1,12 @@
 // ADM-NFR-06, ADM-NFR-07, ADM-FR-10 · điểm vào @ai/db.
 export { createDb, type Db } from "./client";
+export {
+  bumpConfigVersion,
+  type ConfigCommitted,
+  type ConfigSink,
+  readConfigVersion,
+  withConfigWrite,
+} from "./config-meta";
 export { type AppEnv, type DbEnv, loadDbEnv } from "./env";
 export { runMigrations } from "./migrate";
 export { hashPassword, PASSWORD_HASH_OPTIONS, verifyPassword } from "./password";
