@@ -13,7 +13,8 @@ function flat(tree: Tree, prefix = ""): Record<string, string> {
   return out;
 }
 
-const params = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+// So theo tập (bỏ lặp): một ngôn ngữ có thể dùng cùng tham số hai lần (vd vi `access.reason.noGrant` lặp {user}).
+const params = (s: string) => [...new Set([...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort();
 
 describe("ADM-NFR-06 · tham số nội suy vi/en", () => {
   test("mỗi key có cùng tập {tham số} ở hai ngôn ngữ", () => {
