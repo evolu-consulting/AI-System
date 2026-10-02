@@ -9,6 +9,7 @@ import { useGroup } from "../api";
 import { GroupHeader } from "../components/editor/GroupHeader";
 import { GroupRenameDialog } from "../components/editor/GroupRenameDialog";
 import { GroupTabs } from "../components/editor/GroupTabs";
+import { MembersTab } from "../components/members/MembersTab";
 import { useGroupDelete } from "../hooks/use-group-delete";
 
 const route = getRouteApi("/_authed/groups/$groupId");
@@ -45,7 +46,7 @@ export function GroupEditorPage() {
       <GroupTabs
         tab={search.tab ?? "members"}
         onTab={(tab) => void setSearch({ search: (prev) => ({ ...prev, tab }), replace: true })}
-        members={null}
+        members={<MembersTab group={group} />}
         features={null}
       />
       {renaming ? (

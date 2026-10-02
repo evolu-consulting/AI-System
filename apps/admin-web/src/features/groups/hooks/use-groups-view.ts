@@ -4,7 +4,8 @@ import { getRouteApi } from "@tanstack/react-router";
 import { useTenantOptions } from "@/features/tenants/api";
 import { ApiError } from "@/lib/http";
 import { resolveViewedTenant } from "@/lib/viewed-tenant";
-import { GROUPS_PAGE_SIZE, useGroupList } from "../api";
+import { useGroupList } from "../api";
+import { GROUPS_PAGE_SIZE } from "../lib/paging";
 
 const route = getRouteApi("/_authed/groups/");
 

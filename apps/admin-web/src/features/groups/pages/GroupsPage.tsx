@@ -6,13 +6,13 @@ import { Pagination } from "@/components/shared/Pagination";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
-import { GROUPS_PAGE_SIZE } from "../api";
 import { GroupFilters } from "../components/list/GroupFilters";
 import { GroupsEmpty } from "../components/list/GroupsEmpty";
 import { GroupTable } from "../components/list/GroupTable";
 import { useGroupDelete } from "../hooks/use-group-delete";
 import { useGroupsNav } from "../hooks/use-groups-nav";
 import { useGroupsView } from "../hooks/use-groups-view";
+import { GROUPS_PAGE_SIZE } from "../lib/paging";
 
 export function GroupsPage() {
   const { t } = useTranslation();
