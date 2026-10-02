@@ -439,6 +439,9 @@
     },
     "tab": {
       "info": "Details"
+    },
+    "access": {
+      "summary": "Sees {visible} of {total} commands"
     }
   },
   "secrets": {
@@ -669,13 +672,20 @@
         "key": "Company key",
         "name": "Name",
         "features": "Features",
-        "users": "Users"
+        "users": "Users",
+        "groups": "Granted groups",
+        "visible": "Users who see it"
       },
       "empty": "No tenant can use this command yet. Put it in a feature and grant the feature to a tenant.",
       "inactive": "The command or its workflow is disabled: nobody can use it yet.",
       "summaryTenants": "{tenants} tenants",
       "tenantLocked": "Locked",
-      "groupsLater": "Group and user access isn't available yet."
+      "groupsLater": "Group and user access isn't available yet.",
+      "groups": {
+        "none": "No group granted yet",
+        "more": "+{count} more groups"
+      },
+      "visibleHint": "Counts feature, group and Beta rules. The company has {active} active users."
     },
     "step1": "Name and feature bundle",
     "step2": "Choose a workflow",
@@ -1143,11 +1153,99 @@
   "access": {
     "title": "Access",
     "matrix": {
-      "revoked": "Entitlement revoked"
+      "revoked": "Entitlement revoked",
+      "title": "Feature × group matrix",
+      "aria": "Feature × group matrix",
+      "dirty_one": "{count} unsaved change",
+      "dirty_other": "{count} unsaved changes",
+      "tooMany": "At most 200 changes per save ({count} now). Save some, then continue.",
+      "cell": "{feature} for group {group}",
+      "rowAll": "Grant {feature} to every group",
+      "colAll": "Grant every feature to group {group}",
+      "tip": {
+        "on": "Granted",
+        "off": "Not granted",
+        "notOpened": "The company hasn't been given this feature",
+        "core": "Everyone has it"
+      },
+      "badge": {
+        "default": "Default",
+        "unsaved": "Unsaved",
+        "beta": "Beta",
+        "notOpened": "Not opened"
+      },
+      "showUnopened": "Show unopened features ({count})",
+      "noGroups": "No groups yet. Create a group first, then come back to grant features.",
+      "noGroupsCta": "Create group",
+      "unopenedHint": "Contact the platform to open this feature for the company.",
+      "groupsTrimmed": "Showing {shown} of {total} groups. Type to filter.",
+      "filterGroups": "Filter groups"
     },
     "error": {
       "notEntitled": "The company hasn't been given this feature, so it can't be granted. The matrix was reloaded.",
-      "coreProtected": "core is available to everyone and needs no grant."
+      "coreProtected": "core is available to everyone and needs no grant.",
+      "batchFail": "Couldn't save; none of the changes were applied."
+    },
+    "subtitle": "Grant features to groups. You can only grant features the platform has opened for the company.",
+    "tab": {
+      "matrix": "Matrix",
+      "check": "Access check"
+    },
+    "selectTenant": "Choose a tenant to manage its access.",
+    "toast": {
+      "saved": "Saved · {added} granted, {removed} revoked. Members see the change within seconds.",
+      "grantedToGroup": "Granted {feature} to group {group}"
+    },
+    "check": {
+      "title": "Access check",
+      "subtitle": "Answers \"why can't I see command X\"",
+      "user": "User",
+      "userPlaceholder": "Enter a username…",
+      "prompt": "Choose a user to see what they can use, and why.",
+      "userNotFound": "This user isn't in the tenant.",
+      "search": "Search commands",
+      "searchPlaceholder": "Search commands, e.g. kiemtra",
+      "section": {
+        "features": "Features",
+        "commands": "Commands",
+        "agents": "Agents"
+      },
+      "summary": "Sees {visible} of {total} commands",
+      "sees": "Can see {name}",
+      "notSees": "Can't see {name}",
+      "showHidden": "Show hidden commands ({count})",
+      "hideHidden": "Hide hidden commands",
+      "showUnusable": "Show unavailable features ({count})",
+      "why": "Why not?",
+      "hideWhy": "Hide reason",
+      "more": "{count} more, type to filter",
+      "grantTo": "Grant {feature} to a group…",
+      "addBeta": "Add {user} to beta-testers",
+      "openFeature": "Open feature {feature}"
+    },
+    "grant": {
+      "title": "Grant {feature} to group",
+      "group": "Group",
+      "groupRequired": "Choose a group",
+      "hint": "Members of the group see this feature's commands within seconds.",
+      "submit": "Grant"
+    },
+    "reason": {
+      "grantGroup": "via group {group}",
+      "grantUser": "granted directly to this user",
+      "betaMember": "via the beta-testers group",
+      "viaFeatureGroup": "via feature {feature} · group {group}",
+      "viaFeature": "via feature {feature}",
+      "featureOff": "Feature {feature} is off.",
+      "betaNotMember": "Feature {feature} is in Beta and {user} isn't in the beta-testers group.",
+      "noEntitlement": "Feature {feature} hasn't been opened for the company. Contact the platform to open it.",
+      "noGrant": "Feature {feature} isn't granted to {user} or any of their groups.",
+      "noEffectiveFeature": "The command isn't in any available feature.",
+      "commandDisabled": "The command is disabled.",
+      "workflowDisabled": "The command's workflow is disabled.",
+      "userInactive": "This account is locked.",
+      "tenantLocked": "The company is locked.",
+      "unknown": "Reason unknown."
     }
   }
 }

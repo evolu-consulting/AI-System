@@ -439,6 +439,9 @@
     },
     "tab": {
       "info": "Thông tin"
+    },
+    "access": {
+      "summary": "Thấy {visible}/{total} command"
     }
   },
   "secrets": {
@@ -669,13 +672,20 @@
         "key": "Mã công ty",
         "name": "Tên",
         "features": "Feature",
-        "users": "Số user"
+        "users": "Số user",
+        "groups": "Group được cấp",
+        "visible": "Số user thấy"
       },
       "empty": "Chưa tenant nào dùng được command này. Gán command vào một feature và cấp feature cho tenant.",
       "inactive": "Command đang tắt hoặc workflow của nó đang tắt: chưa ai dùng được.",
       "summaryTenants": "{tenants} tenant",
       "tenantLocked": "Đã khoá",
-      "groupsLater": "Quyền theo nhóm và người dùng chưa khả dụng."
+      "groupsLater": "Quyền theo nhóm và người dùng chưa khả dụng.",
+      "groups": {
+        "none": "Chưa group nào được cấp",
+        "more": "+{count} group nữa"
+      },
+      "visibleHint": "Đã tính feature, group và Beta. Công ty có {active} user đang hoạt động."
     },
     "step1": "Đặt tên và gói chức năng",
     "step2": "Chọn workflow",
@@ -1143,11 +1153,99 @@
   "access": {
     "title": "Phân quyền",
     "matrix": {
-      "revoked": "Đã thu hồi entitlement"
+      "revoked": "Đã thu hồi entitlement",
+      "title": "Ma trận feature × group",
+      "aria": "Ma trận feature × group",
+      "dirty_one": "{count} thay đổi chưa lưu",
+      "dirty_other": "{count} thay đổi chưa lưu",
+      "tooMany": "Tối đa 200 thay đổi mỗi lần lưu (đang có {count}). Lưu bớt rồi làm tiếp.",
+      "cell": "{feature} cho group {group}",
+      "rowAll": "Cấp {feature} cho mọi group",
+      "colAll": "Cấp mọi feature cho group {group}",
+      "tip": {
+        "on": "Đã cấp",
+        "off": "Chưa cấp",
+        "notOpened": "Công ty chưa được mở feature này",
+        "core": "Mọi người đều có"
+      },
+      "badge": {
+        "default": "Mặc định",
+        "unsaved": "Chưa lưu",
+        "beta": "Beta",
+        "notOpened": "Chưa mở"
+      },
+      "showUnopened": "Hiện feature chưa mở ({count})",
+      "noGroups": "Chưa có group nào. Tạo group trước, rồi quay lại cấp feature.",
+      "noGroupsCta": "Tạo group",
+      "unopenedHint": "Liên hệ nền tảng để mở feature này cho công ty.",
+      "groupsTrimmed": "Đang hiện {shown}/{total} group. Gõ để lọc.",
+      "filterGroups": "Lọc group"
     },
     "error": {
       "notEntitled": "Công ty chưa được mở feature này nên không cấp được. Đã tải lại ma trận.",
-      "coreProtected": "core có sẵn cho mọi người, không cần cấp."
+      "coreProtected": "core có sẵn cho mọi người, không cần cấp.",
+      "batchFail": "Không lưu được, chưa có thay đổi nào được áp dụng."
+    },
+    "subtitle": "Cấp feature cho từng group. Chỉ cấp được feature mà công ty đã được nền tảng mở.",
+    "tab": {
+      "matrix": "Ma trận",
+      "check": "Kiểm tra quyền"
+    },
+    "selectTenant": "Chọn một tenant để phân quyền cho tenant đó.",
+    "toast": {
+      "saved": "Đã lưu quyền · {added} cấp, {removed} thu. Thành viên thấy thay đổi trong vài giây.",
+      "grantedToGroup": "Đã cấp {feature} cho group {group}"
+    },
+    "check": {
+      "title": "Kiểm tra quyền",
+      "subtitle": "Trả lời \"sao tôi không thấy lệnh X\"",
+      "user": "Người dùng",
+      "userPlaceholder": "Nhập username…",
+      "prompt": "Chọn một người dùng để xem họ dùng được gì và vì sao.",
+      "userNotFound": "Không tìm thấy người dùng này trong tenant.",
+      "search": "Tìm command",
+      "searchPlaceholder": "Tìm command, ví dụ kiemtra",
+      "section": {
+        "features": "Feature",
+        "commands": "Command",
+        "agents": "Agent"
+      },
+      "summary": "Thấy {visible}/{total} command",
+      "sees": "Thấy {name}",
+      "notSees": "Không thấy {name}",
+      "showHidden": "Hiện command không thấy ({count})",
+      "hideHidden": "Ẩn command không thấy",
+      "showUnusable": "Hiện feature không dùng được ({count})",
+      "why": "Vì sao không?",
+      "hideWhy": "Ẩn lý do",
+      "more": "Còn {count} mục, gõ để lọc",
+      "grantTo": "Cấp {feature} cho group…",
+      "addBeta": "Thêm {user} vào beta-testers",
+      "openFeature": "Mở feature {feature}"
+    },
+    "grant": {
+      "title": "Cấp {feature} cho group",
+      "group": "Group",
+      "groupRequired": "Chọn một group",
+      "hint": "Thành viên của group thấy các command của feature này trong vài giây.",
+      "submit": "Cấp"
+    },
+    "reason": {
+      "grantGroup": "qua group {group}",
+      "grantUser": "được cấp trực tiếp cho người này",
+      "betaMember": "qua group beta-testers",
+      "viaFeatureGroup": "qua feature {feature} · group {group}",
+      "viaFeature": "qua feature {feature}",
+      "featureOff": "Feature {feature} đang tắt.",
+      "betaNotMember": "Feature {feature} đang ở Beta và {user} chưa thuộc group beta-testers.",
+      "noEntitlement": "Feature {feature} chưa được mở cho công ty. Liên hệ nền tảng để mở.",
+      "noGrant": "Feature {feature} chưa cấp cho {user} hay group nào của {user}.",
+      "noEffectiveFeature": "Command chưa thuộc feature nào dùng được.",
+      "commandDisabled": "Command đang tắt.",
+      "workflowDisabled": "Workflow của command đang tắt.",
+      "userInactive": "Tài khoản này đang bị khoá.",
+      "tenantLocked": "Công ty đang bị khoá.",
+      "unknown": "Không rõ lý do."
     }
   }
 }

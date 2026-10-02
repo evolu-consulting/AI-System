@@ -41,6 +41,11 @@ export function notifySuccess(
   id = toast.success(<output>{body(message, action, () => id)}</output>, { duration: durationMs });
 }
 
+/** Thông báo không phải lỗi cứng (vd ma trận đã tự tải lại sau khi entitlement bị thu hồi): role status, tự ẩn sau 8 giây. */
+export function notifyInfo(message: string): void {
+  toast.info(<output>{message}</output>, { duration: 8000 });
+}
+
 export function notifyError(message: string, action?: ToastAction): void {
   let id: string | number = "";
   id = toast.error(<span role="alert">{body(message, action, () => id)}</span>, {
