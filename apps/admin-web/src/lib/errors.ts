@@ -45,6 +45,8 @@ export const ERROR_MESSAGE_KEYS = [
   "features.error.keyTaken",
   "features.delete.blocked",
   "errors.invalidReference",
+  // M3
+  "groups.error.betaProtected",
 ] as const;
 
 function untilTime(details: unknown): string {
@@ -82,6 +84,7 @@ const STATIC_KEYS: Partial<Record<string, string>> = {
   CORE_FEATURE_PROTECTED: "features.error.coreProtected",
   FEATURE_HAS_EXCLUSIVE_COMMANDS: "features.delete.blocked",
   INVALID_REFERENCE: "errors.invalidReference",
+  BETA_GROUP_PROTECTED: "groups.error.betaProtected",
 };
 
 const asList = (v: unknown): string[] =>

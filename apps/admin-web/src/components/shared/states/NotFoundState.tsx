@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { useDocumentTitle } from "@/lib/use-document-title";
 
 type Props = {
-  backTo: "/" | "/tenants" | "/users" | "/secrets" | "/workflows" | "/commands" | "/features";
+  backTo:
+    | "/"
+    | "/tenants"
+    | "/users"
+    | "/secrets"
+    | "/workflows"
+    | "/commands"
+    | "/features"
+    | "/groups";
 };
 
 export function NotFoundState({ backTo }: Props) {

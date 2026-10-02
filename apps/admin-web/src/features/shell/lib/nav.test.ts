@@ -13,6 +13,8 @@ describe("ADM-FR-60 · menu theo role", () => {
       "workflows",
       "tenants",
       "users",
+      "groups",
+      "access",
       "secrets",
     ]);
     expect(navGroups("platform_admin").map((g) => g.labelKey)).toEqual([
@@ -24,7 +26,7 @@ describe("ADM-FR-60 · menu theo role", () => {
   });
 
   test("tenant_admin không thấy Tenants và các mục M2", () => {
-    expect(ids("tenant_admin")).toEqual(["overview", "users"]);
+    expect(ids("tenant_admin")).toEqual(["overview", "users", "groups", "access"]);
   });
 
   test("member không có mục nào", () => {
@@ -43,6 +45,16 @@ describe("ADM-FR-60 · menu theo role", () => {
     expect(crumbsFor("/")).toEqual([{ labelKey: "nav.overview" }]);
     expect(crumbsFor("/tenants/new")).toHaveLength(2);
     expect(crumbsFor("/unknown")).toEqual([]);
+  });
+
+  test("breadcrumb M3", () => {
+    expect(crumbsFor("/access")).toEqual([{ labelKey: "nav.access" }]);
+    expect(crumbsFor("/groups")).toEqual([{ labelKey: "nav.groups" }]);
+    expect(crumbsFor("/groups/new")).toEqual([
+      { labelKey: "nav.groups", to: "/groups" },
+      { labelKey: "groups.editor.titleNew" },
+    ]);
+    expect(crumbsFor("/groups/abc")).toEqual([{ labelKey: "nav.groups", to: "/groups" }]);
   });
 
   test("breadcrumb M2", () => {

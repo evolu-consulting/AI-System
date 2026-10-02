@@ -6,8 +6,10 @@ import {
   LayoutDashboard,
   type LucideIcon,
   Package,
+  ShieldCheck,
   Terminal,
   Users,
+  UsersRound,
   Workflow,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -19,6 +21,8 @@ const ICONS: Record<NavId, LucideIcon> = {
   overview: LayoutDashboard,
   tenants: Building2,
   users: Users,
+  groups: UsersRound,
+  access: ShieldCheck,
   features: Package,
   commands: Terminal,
   workflows: Workflow,

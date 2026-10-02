@@ -13,6 +13,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedAccessRouteImport } from './routes/_authed/access'
 import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
@@ -23,6 +24,9 @@ import { Route as AuthedCommandsNewRouteImport } from './routes/_authed/commands
 import { Route as AuthedFeaturesIndexRouteImport } from './routes/_authed/features/index'
 import { Route as AuthedFeaturesFeatureIdRouteImport } from './routes/_authed/features/$featureId'
 import { Route as AuthedFeaturesNewRouteImport } from './routes/_authed/features/new'
+import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
+import { Route as AuthedGroupsGroupIdRouteImport } from './routes/_authed/groups/$groupId'
+import { Route as AuthedGroupsNewRouteImport } from './routes/_authed/groups/new'
 import { Route as AuthedTenantsIndexRouteImport } from './routes/_authed/tenants/index'
 import { Route as AuthedTenantsTenantIdRouteImport } from './routes/_authed/tenants/$tenantId'
 import { Route as AuthedTenantsNewRouteImport } from './routes/_authed/tenants/new'
@@ -47,6 +51,11 @@ const LoginRoute = LoginRouteImport.update({
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAccessRoute = AuthedAccessRouteImport.update({
+  id: '/access',
+  path: '/access',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedMemberRoute = AuthedMemberRouteImport.update({
@@ -99,6 +108,21 @@ const AuthedFeaturesNewRoute = AuthedFeaturesNewRouteImport.update({
   path: '/features/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedGroupsIndexRoute = AuthedGroupsIndexRouteImport.update({
+  id: '/groups/',
+  path: '/groups/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedGroupsGroupIdRoute = AuthedGroupsGroupIdRouteImport.update({
+  id: '/groups/$groupId',
+  path: '/groups/$groupId',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedGroupsNewRoute = AuthedGroupsNewRouteImport.update({
+  id: '/groups/new',
+  path: '/groups/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedTenantsIndexRoute = AuthedTenantsIndexRouteImport.update({
   id: '/tenants/',
   path: '/tenants/',
@@ -135,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/access': typeof AuthedAccessRoute
   '/member': typeof AuthedMemberRoute
   '/secrets': typeof AuthedSecretsRoute
   '/users': typeof AuthedUsersRoute
@@ -143,18 +168,22 @@ export interface FileRoutesByFullPath {
   '/commands/new': typeof AuthedCommandsNewRoute
   '/features/$featureId': typeof AuthedFeaturesFeatureIdRoute
   '/features/new': typeof AuthedFeaturesNewRoute
+  '/groups/$groupId': typeof AuthedGroupsGroupIdRoute
+  '/groups/new': typeof AuthedGroupsNewRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
   '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
   '/workflows/new': typeof AuthedWorkflowsNewRoute
   '/commands/': typeof AuthedCommandsIndexRoute
   '/features/': typeof AuthedFeaturesIndexRoute
+  '/groups/': typeof AuthedGroupsIndexRoute
   '/tenants/': typeof AuthedTenantsIndexRoute
   '/workflows/': typeof AuthedWorkflowsIndexRoute
 }
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/access': typeof AuthedAccessRoute
   '/member': typeof AuthedMemberRoute
   '/secrets': typeof AuthedSecretsRoute
   '/users': typeof AuthedUsersRoute
@@ -164,12 +193,15 @@ export interface FileRoutesByTo {
   '/commands/new': typeof AuthedCommandsNewRoute
   '/features/$featureId': typeof AuthedFeaturesFeatureIdRoute
   '/features/new': typeof AuthedFeaturesNewRoute
+  '/groups/$groupId': typeof AuthedGroupsGroupIdRoute
+  '/groups/new': typeof AuthedGroupsNewRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
   '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
   '/workflows/new': typeof AuthedWorkflowsNewRoute
   '/commands': typeof AuthedCommandsIndexRoute
   '/features': typeof AuthedFeaturesIndexRoute
+  '/groups': typeof AuthedGroupsIndexRoute
   '/tenants': typeof AuthedTenantsIndexRoute
   '/workflows': typeof AuthedWorkflowsIndexRoute
 }
@@ -178,6 +210,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/_authed/access': typeof AuthedAccessRoute
   '/_authed/member': typeof AuthedMemberRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
   '/_authed/users': typeof AuthedUsersRoute
@@ -187,12 +220,15 @@ export interface FileRoutesById {
   '/_authed/commands/new': typeof AuthedCommandsNewRoute
   '/_authed/features/$featureId': typeof AuthedFeaturesFeatureIdRoute
   '/_authed/features/new': typeof AuthedFeaturesNewRoute
+  '/_authed/groups/$groupId': typeof AuthedGroupsGroupIdRoute
+  '/_authed/groups/new': typeof AuthedGroupsNewRoute
   '/_authed/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/_authed/tenants/new': typeof AuthedTenantsNewRoute
   '/_authed/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
   '/_authed/workflows/new': typeof AuthedWorkflowsNewRoute
   '/_authed/commands/': typeof AuthedCommandsIndexRoute
   '/_authed/features/': typeof AuthedFeaturesIndexRoute
+  '/_authed/groups/': typeof AuthedGroupsIndexRoute
   '/_authed/tenants/': typeof AuthedTenantsIndexRoute
   '/_authed/workflows/': typeof AuthedWorkflowsIndexRoute
 }
@@ -202,6 +238,7 @@ export interface FileRouteTypes {
     | '/'
     | '/change-password'
     | '/login'
+    | '/access'
     | '/member'
     | '/secrets'
     | '/users'
@@ -210,18 +247,22 @@ export interface FileRouteTypes {
     | '/commands/new'
     | '/features/$featureId'
     | '/features/new'
+    | '/groups/$groupId'
+    | '/groups/new'
     | '/tenants/$tenantId'
     | '/tenants/new'
     | '/workflows/$workflowId'
     | '/workflows/new'
     | '/commands/'
     | '/features/'
+    | '/groups/'
     | '/tenants/'
     | '/workflows/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/change-password'
     | '/login'
+    | '/access'
     | '/member'
     | '/secrets'
     | '/users'
@@ -231,12 +272,15 @@ export interface FileRouteTypes {
     | '/commands/new'
     | '/features/$featureId'
     | '/features/new'
+    | '/groups/$groupId'
+    | '/groups/new'
     | '/tenants/$tenantId'
     | '/tenants/new'
     | '/workflows/$workflowId'
     | '/workflows/new'
     | '/commands'
     | '/features'
+    | '/groups'
     | '/tenants'
     | '/workflows'
   id:
@@ -244,6 +288,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/change-password'
     | '/login'
+    | '/_authed/access'
     | '/_authed/member'
     | '/_authed/secrets'
     | '/_authed/users'
@@ -253,12 +298,15 @@ export interface FileRouteTypes {
     | '/_authed/commands/new'
     | '/_authed/features/$featureId'
     | '/_authed/features/new'
+    | '/_authed/groups/$groupId'
+    | '/_authed/groups/new'
     | '/_authed/tenants/$tenantId'
     | '/_authed/tenants/new'
     | '/_authed/workflows/$workflowId'
     | '/_authed/workflows/new'
     | '/_authed/commands/'
     | '/_authed/features/'
+    | '/_authed/groups/'
     | '/_authed/tenants/'
     | '/_authed/workflows/'
   fileRoutesById: FileRoutesById
@@ -297,6 +345,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthedIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/access': {
+      id: '/_authed/access'
+      path: '/access'
+      fullPath: '/access'
+      preLoaderRoute: typeof AuthedAccessRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/member': {
@@ -369,6 +424,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedFeaturesNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/groups/': {
+      id: '/_authed/groups/'
+      path: '/groups'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof AuthedGroupsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/groups/$groupId': {
+      id: '/_authed/groups/$groupId'
+      path: '/groups/$groupId'
+      fullPath: '/groups/$groupId'
+      preLoaderRoute: typeof AuthedGroupsGroupIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/groups/new': {
+      id: '/_authed/groups/new'
+      path: '/groups/new'
+      fullPath: '/groups/new'
+      preLoaderRoute: typeof AuthedGroupsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/tenants/': {
       id: '/_authed/tenants/'
       path: '/tenants'
@@ -415,6 +491,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedAccessRoute: typeof AuthedAccessRoute
   AuthedMemberRoute: typeof AuthedMemberRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
   AuthedUsersRoute: typeof AuthedUsersRoute
@@ -424,17 +501,21 @@ interface AuthedRouteChildren {
   AuthedCommandsNewRoute: typeof AuthedCommandsNewRoute
   AuthedFeaturesFeatureIdRoute: typeof AuthedFeaturesFeatureIdRoute
   AuthedFeaturesNewRoute: typeof AuthedFeaturesNewRoute
+  AuthedGroupsGroupIdRoute: typeof AuthedGroupsGroupIdRoute
+  AuthedGroupsNewRoute: typeof AuthedGroupsNewRoute
   AuthedTenantsTenantIdRoute: typeof AuthedTenantsTenantIdRoute
   AuthedTenantsNewRoute: typeof AuthedTenantsNewRoute
   AuthedWorkflowsWorkflowIdRoute: typeof AuthedWorkflowsWorkflowIdRoute
   AuthedWorkflowsNewRoute: typeof AuthedWorkflowsNewRoute
   AuthedCommandsIndexRoute: typeof AuthedCommandsIndexRoute
   AuthedFeaturesIndexRoute: typeof AuthedFeaturesIndexRoute
+  AuthedGroupsIndexRoute: typeof AuthedGroupsIndexRoute
   AuthedTenantsIndexRoute: typeof AuthedTenantsIndexRoute
   AuthedWorkflowsIndexRoute: typeof AuthedWorkflowsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAccessRoute: AuthedAccessRoute,
   AuthedMemberRoute: AuthedMemberRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,
   AuthedUsersRoute: AuthedUsersRoute,
@@ -444,12 +525,15 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCommandsNewRoute: AuthedCommandsNewRoute,
   AuthedFeaturesFeatureIdRoute: AuthedFeaturesFeatureIdRoute,
   AuthedFeaturesNewRoute: AuthedFeaturesNewRoute,
+  AuthedGroupsGroupIdRoute: AuthedGroupsGroupIdRoute,
+  AuthedGroupsNewRoute: AuthedGroupsNewRoute,
   AuthedTenantsTenantIdRoute: AuthedTenantsTenantIdRoute,
   AuthedTenantsNewRoute: AuthedTenantsNewRoute,
   AuthedWorkflowsWorkflowIdRoute: AuthedWorkflowsWorkflowIdRoute,
   AuthedWorkflowsNewRoute: AuthedWorkflowsNewRoute,
   AuthedCommandsIndexRoute: AuthedCommandsIndexRoute,
   AuthedFeaturesIndexRoute: AuthedFeaturesIndexRoute,
+  AuthedGroupsIndexRoute: AuthedGroupsIndexRoute,
   AuthedTenantsIndexRoute: AuthedTenantsIndexRoute,
   AuthedWorkflowsIndexRoute: AuthedWorkflowsIndexRoute,
 }

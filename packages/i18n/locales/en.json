@@ -163,7 +163,9 @@
     "commands": "Commands",
     "workflows": "Workflows",
     "features": "Features",
-    "secrets": "Secrets"
+    "secrets": "Secrets",
+    "groups": "Groups",
+    "access": "Access"
   },
   "topbar": {
     "platform": "Platform"
@@ -1005,5 +1007,125 @@
     "toast": {
       "loaded": "Loaded latest · v{n}"
     }
+  },
+  "groups": {
+    "list": {
+      "title": "Groups",
+      "subtitle": "Groups of {tenant}. Grant features to a whole group instead of person by person.",
+      "create": "+ New group",
+      "search": "Search by name, key…"
+    },
+    "col": {
+      "group": "Group",
+      "members": "Members",
+      "features": "Features",
+      "agents": "Agents"
+    },
+    "badge": {
+      "builtin": "Built-in"
+    },
+    "beta": {
+      "hint": "Sees features in Beta"
+    },
+    "menu": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "protected": {
+      "tip": "The built-in beta-testers group can't be deleted"
+    },
+    "selectTenant": "Choose a tenant to see its groups.",
+    "empty": {
+      "text": "No groups yet. Create a group to grant features to a whole team.",
+      "cta": "+ Create your first group"
+    },
+    "editor": {
+      "titleNew": "New group",
+      "breadcrumb": {
+        "new": "New group"
+      }
+    },
+    "summary": "{members} members · {features} features",
+    "field": {
+      "key": "Key",
+      "name": "Name",
+      "description": "Description",
+      "keyLocked": "Key can't be changed after creation",
+      "descCount": "{n}/400"
+    },
+    "create": {
+      "submit": "Create group"
+    },
+    "rename": {
+      "button": "Rename",
+      "title": "Rename group"
+    },
+    "tab": {
+      "members": "Members",
+      "features": "Features",
+      "agents": "Agents"
+    },
+    "members": {
+      "add": "Add people",
+      "addPlaceholder": "Search users…",
+      "col": {
+        "user": "User",
+        "other": "Other groups",
+        "lastLogin": "Last sign-in"
+      },
+      "remove": {
+        "aria": "Remove {username} from group"
+      },
+      "empty": "This group has no members yet."
+    },
+    "paste": {
+      "label": "Add many: paste usernames, one per line",
+      "aria": "Paste a list of usernames",
+      "count_one": "{count} username",
+      "count_other": "{count} usernames",
+      "submit_one": "Add {count} person",
+      "submit_other": "Add {count} people",
+      "notFound": "Not found: {names}",
+      "already_one": "{count} already in the group",
+      "already_other": "{count} already in the group",
+      "tooMany": "At most 500 usernames at a time. You pasted {count}.",
+      "checking": "Checking…"
+    },
+    "features": {
+      "title": "Granted features",
+      "hint": "You can only pick features the company has been granted.",
+      "edit": "Edit",
+      "core": "Everyone has it",
+      "empty": "This group has no features beyond core."
+    },
+    "agents": {
+      "body": "Granting agents to a group is done in Agent Studio once Agent Hub is ready."
+    },
+    "delete": {
+      "title": "Delete {name}?",
+      "body": "{members} members will leave the group and {features} granted features will be revoked from it. User accounts stay as they are.",
+      "typeToConfirm": "Type {key} to confirm",
+      "submit": "Delete group"
+    },
+    "toast": {
+      "created": "Created {name}",
+      "saved": "Saved {name}",
+      "deleted": "Deleted {name}",
+      "memberAdded": "Added {username} to {group}",
+      "memberRemoved": "Removed {username} from {group}",
+      "pasted": "Added {count} people to {group}",
+      "pastedPartial": "Added {added}, {missing} usernames not found",
+      "featuresSaved": "Saved features of {group}. Members see the change within seconds."
+    },
+    "error": {
+      "keyFormat": "Use lowercase letters, digits and - only (2–32 chars)",
+      "keyTaken": "Key is already used in this tenant",
+      "nameRequired": "Enter a group name (at most 64 characters)",
+      "descMax": "Description can be at most 400 characters",
+      "betaProtected": "The built-in beta-testers group can't be deleted or re-keyed."
+    }
+  },
+  "access": {
+    "title": "Access"
   }
 }

@@ -163,7 +163,9 @@
     "commands": "Commands",
     "workflows": "Workflows",
     "features": "Features",
-    "secrets": "Secrets"
+    "secrets": "Secrets",
+    "groups": "Groups",
+    "access": "Phân quyền"
   },
   "topbar": {
     "platform": "Nền tảng"
@@ -1005,5 +1007,125 @@
     "toast": {
       "loaded": "Đã tải bản mới nhất · v{n}"
     }
+  },
+  "groups": {
+    "list": {
+      "title": "Groups",
+      "subtitle": "Nhóm người dùng của {tenant}. Cấp feature cho cả nhóm thay vì từng người.",
+      "create": "+ Tạo group",
+      "search": "Tìm theo tên, key…"
+    },
+    "col": {
+      "group": "Group",
+      "members": "Thành viên",
+      "features": "Feature",
+      "agents": "Agent"
+    },
+    "badge": {
+      "builtin": "Có sẵn"
+    },
+    "beta": {
+      "hint": "Thấy các feature đang Beta"
+    },
+    "menu": {
+      "edit": "Sửa",
+      "delete": "Xoá"
+    },
+    "protected": {
+      "tip": "Group beta-testers có sẵn, không xoá được"
+    },
+    "selectTenant": "Chọn một tenant để xem group của tenant đó.",
+    "empty": {
+      "text": "Chưa có group nào. Tạo group để cấp feature cho cả phòng ban.",
+      "cta": "+ Tạo group đầu tiên"
+    },
+    "editor": {
+      "titleNew": "Group mới",
+      "breadcrumb": {
+        "new": "Group mới"
+      }
+    },
+    "summary": "{members} thành viên · {features} feature",
+    "field": {
+      "key": "Key",
+      "name": "Tên",
+      "description": "Mô tả",
+      "keyLocked": "Key không đổi được sau khi tạo",
+      "descCount": "{n}/400"
+    },
+    "create": {
+      "submit": "Tạo group"
+    },
+    "rename": {
+      "button": "Đổi tên",
+      "title": "Đổi tên group"
+    },
+    "tab": {
+      "members": "Thành viên",
+      "features": "Feature",
+      "agents": "Agent"
+    },
+    "members": {
+      "add": "Thêm người",
+      "addPlaceholder": "Tìm người dùng…",
+      "col": {
+        "user": "Người dùng",
+        "other": "Group khác",
+        "lastLogin": "Lần đăng nhập cuối"
+      },
+      "remove": {
+        "aria": "Bỏ {username} khỏi group"
+      },
+      "empty": "Group này chưa có thành viên."
+    },
+    "paste": {
+      "label": "Thêm nhiều người: dán username, mỗi dòng một người",
+      "aria": "Dán danh sách username",
+      "count_one": "{count} username",
+      "count_other": "{count} username",
+      "submit_one": "Thêm {count} người",
+      "submit_other": "Thêm {count} người",
+      "notFound": "Không tìm thấy: {names}",
+      "already_one": "{count} người đã ở trong group",
+      "already_other": "{count} người đã ở trong group",
+      "tooMany": "Tối đa 500 username mỗi lần. Bạn đã dán {count}.",
+      "checking": "Đang kiểm tra…"
+    },
+    "features": {
+      "title": "Feature được cấp",
+      "hint": "Chỉ chọn được feature mà công ty đã được cấp.",
+      "edit": "Sửa",
+      "core": "Mọi người đều có",
+      "empty": "Group chưa được cấp feature nào ngoài core."
+    },
+    "agents": {
+      "body": "Cấp agent cho group làm ở Agent Studio, khi Agent Hub sẵn sàng."
+    },
+    "delete": {
+      "title": "Xoá {name}?",
+      "body": "{members} thành viên sẽ rời group và {features} feature đang cấp cho group sẽ bị thu hồi. Tài khoản người dùng vẫn giữ nguyên.",
+      "typeToConfirm": "Gõ {key} để xác nhận",
+      "submit": "Xoá group"
+    },
+    "toast": {
+      "created": "Đã tạo {name}",
+      "saved": "Đã lưu {name}",
+      "deleted": "Đã xoá {name}",
+      "memberAdded": "Đã thêm {username} vào {group}",
+      "memberRemoved": "Đã bỏ {username} khỏi {group}",
+      "pasted": "Đã thêm {count} người vào {group}",
+      "pastedPartial": "Đã thêm {added} người, {missing} username không tìm thấy",
+      "featuresSaved": "Đã lưu feature của {group}. Thành viên thấy thay đổi trong vài giây."
+    },
+    "error": {
+      "keyFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",
+      "keyTaken": "Key đã được dùng trong tenant này",
+      "nameRequired": "Nhập tên group (tối đa 64 ký tự)",
+      "descMax": "Mô tả tối đa 400 ký tự",
+      "betaProtected": "Group beta-testers có sẵn: không xoá hay đổi key được."
+    }
+  },
+  "access": {
+    "title": "Phân quyền"
   }
 }
