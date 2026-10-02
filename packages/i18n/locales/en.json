@@ -686,7 +686,6 @@
       "inactive": "The command or its workflow is disabled: nobody can use it yet.",
       "summaryTenants": "{tenants} tenants",
       "tenantLocked": "Locked",
-      "groupsLater": "Group and user access isn't available yet.",
       "groups": {
         "none": "No group granted yet",
         "more": "+{count} more groups"

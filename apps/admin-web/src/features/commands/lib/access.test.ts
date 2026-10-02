@@ -8,12 +8,12 @@ const t = (key: string, p?: Record<string, string | number>) =>
     .join(",")}`;
 
 describe("ADM-FR-24 · accessSummary", () => {
-  test("một trang: cộng user active của các tenant", () => {
+  test("một trang: cộng số user thấy của các tenant", () => {
     const items = [
-      { active_user_count: 6 },
-      { active_user_count: 3 },
-      { active_user_count: 2 },
-      { active_user_count: 0 },
+      { visible_user_count: 6 },
+      { visible_user_count: 3 },
+      { visible_user_count: 2 },
+      { visible_user_count: 0 },
     ];
     expect(accessSummary(t, 4, items)).toBe("commands.access.summary:tenants=4,users=11");
   });

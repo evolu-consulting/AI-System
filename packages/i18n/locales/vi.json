@@ -686,7 +686,6 @@
       "inactive": "Command đang tắt hoặc workflow của nó đang tắt: chưa ai dùng được.",
       "summaryTenants": "{tenants} tenant",
       "tenantLocked": "Đã khoá",
-      "groupsLater": "Quyền theo nhóm và người dùng chưa khả dụng.",
       "groups": {
         "none": "Chưa group nào được cấp",
         "more": "+{count} group nữa"

@@ -1,4 +1,4 @@
-// ADM-FR-24 · M2-R23 · tab "Ai dùng được" (chỉ phần tenant): bảng tenant dùng được command + card "Chưa khả dụng" cho nhóm/người dùng (M3).
+// ADM-FR-24 · M2-R23, M3-R14 · tab "Ai dùng được": bảng tenant dùng được command + group được cấp + số user thấy thật.
 import type { CommandAccessItem } from "@ai/contracts";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loadError } from "@/lib/load-error";
 import { pickLocalized } from "@/lib/localized";
 import { ACCESS_PAGE_SIZE, useCommandAccess } from "../../hooks/use-command-queries";
+import { AccessGroups } from "./AccessGroups";
 
 export function AccessTab({ commandId }: { commandId: string }) {
   const { t, i18n } = useTranslation();
@@ -48,7 +49,20 @@ export function AccessTab({ commandId }: { commandId: string }) {
           </span>
         ),
       },
-      { id: "users", header: t("commands.access.col.users"), cell: (a) => a.active_user_count },
+      {
+        id: "groups",
+        header: t("commands.access.col.groups"),
+        cell: (a) => <AccessGroups item={a} />,
+      },
+      {
+        id: "visible",
+        header: t("commands.access.col.visible"),
+        cell: (a) => (
+          <span title={t("commands.access.visibleHint", { active: a.active_user_count })}>
+            {a.visible_user_count}
+          </span>
+        ),
+      },
     ],
     [t, lang],
   );
@@ -78,9 +92,6 @@ export function AccessTab({ commandId }: { commandId: string }) {
         total={access.data?.total ?? 0}
         onOffsetChange={setOffset}
       />
-      <div className="rounded-lg border border-dashed border-border bg-card p-4 text-body text-muted-foreground">
-        {t("commands.access.groupsLater")}
-      </div>
     </div>
   );
 }
