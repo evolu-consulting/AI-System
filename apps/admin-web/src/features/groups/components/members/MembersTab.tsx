@@ -3,12 +3,12 @@ import type { Group } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";
 import { Pagination } from "@/components/shared/Pagination";
+import { SearchCombobox } from "@/components/shared/SearchCombobox";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { useGroupMembersView } from "../../hooks/use-group-members";
 import { useMemberAdd } from "../../hooks/use-member-add";
 import { usePasteMembers } from "../../hooks/use-paste-members";
 import { MEMBERS_PAGE_SIZE } from "../../lib/paging";
-import { MemberAdder } from "./MemberAdder";
 import { MemberTable } from "./MemberTable";
 import { PasteMembers } from "./PasteMembers";
 
@@ -23,7 +23,9 @@ export function MembersTab({ group }: { group: Group }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <MemberAdder
+        <SearchCombobox
+          label={t("groups.members.add")}
+          placeholder={t("groups.members.addPlaceholder")}
           options={adder.options}
           taken={taken}
           isLoading={adder.isLoading}

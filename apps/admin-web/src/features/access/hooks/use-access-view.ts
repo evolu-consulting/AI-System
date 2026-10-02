@@ -20,6 +20,7 @@ export function useAccessView(me: Me | null) {
     tab: (search.tab ?? "matrix") as AccessTab,
     needsTenant: tn.isPlatform && !tn.tenantId,
     setTab: (tab: AccessTab) => patch({ tab }),
+    setUser: (user: string | undefined) => patch({ user }),
     setTenant: (key: string | null) => patch({ tenant: key ?? undefined, user: undefined }),
   };
 }

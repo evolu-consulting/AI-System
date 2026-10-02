@@ -438,10 +438,16 @@
       "more": "Còn: {names}"
     },
     "tab": {
-      "info": "Thông tin"
+      "info": "Thông tin",
+      "access": "Quyền hiệu lực"
     },
     "access": {
-      "summary": "Thấy {visible}/{total} command"
+      "summary": "Thấy {visible}/{total} command",
+      "via": "qua {path}",
+      "core": "qua feature core (mặc định cho mọi người)",
+      "agentsUnavailable": "Chưa khả dụng",
+      "openCheck": "Mở Kiểm tra quyền",
+      "empty": "Người dùng này chỉ dùng được các command của feature core."
     }
   },
   "secrets": {

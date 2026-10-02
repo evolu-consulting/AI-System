@@ -438,10 +438,16 @@
       "more": "Also: {names}"
     },
     "tab": {
-      "info": "Details"
+      "info": "Details",
+      "access": "Effective access"
     },
     "access": {
-      "summary": "Sees {visible} of {total} commands"
+      "summary": "Sees {visible} of {total} commands",
+      "via": "via {path}",
+      "core": "via core feature (default for everyone)",
+      "agentsUnavailable": "Not available yet",
+      "openCheck": "Open access check",
+      "empty": "This user can only use core commands."
     }
   },
   "secrets": {

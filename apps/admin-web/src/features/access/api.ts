@@ -1,5 +1,6 @@
 // ADM-FR-35 · ADM-FR-36 · gọi API ma trận grant / batch (nơi duy nhất của feature access) dưới dạng hook TanStack Query.
 import type {
+  EffectiveAccess,
   GrantBatchRequest,
   GrantBatchResponse,
   GrantMatrix,
@@ -12,6 +13,7 @@ import { api } from "@/lib/http";
 export const ACCESS_KEYS = {
   all: ["access"] as const,
   matrix: (tenantId: string) => ["access", "matrix", tenantId] as const,
+  effective: (userId: string) => ["access", "effective", userId] as const,
 };
 
 /** Tối đa 10 trang × 200 group; hơn nữa thì báo `groupsTrimmed` (hiếm: spec giả định ≤ 200 group/tenant). */
@@ -68,5 +70,15 @@ export function useSaveMatrix(tenantId: string | undefined) {
       void qc.invalidateQueries({ queryKey: ["groups"] });
       return qc.invalidateQueries({ queryKey: ACCESS_KEYS.all });
     },
+  });
+}
+
+/** Quyền hiệu lực của một user (feature, command thấy/không thấy kèm lý do, agent "Chưa khả dụng"); luôn tính lại (M3-R11). */
+export function useEffectiveAccess(userId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ACCESS_KEYS.effective(userId ?? ""),
+    enabled: enabled && !!userId,
+    staleTime: 0,
+    queryFn: () => api<EffectiveAccess>(`/admin/users/${userId}/effective-access`),
   });
 }

@@ -27,8 +27,9 @@ export function useMemberAdd(group: Group) {
   );
   const add = useAddMembers(group.id);
   const options = (users.data?.items ?? []).map((u) => ({
-    username: u.username,
+    id: u.username,
     label: u.display_name,
+    hint: u.username,
   }));
   const pick = async (username: string) => {
     try {

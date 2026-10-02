@@ -6,6 +6,7 @@ import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { TenantPicker } from "@/components/shared/TenantPicker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "@/lib/auth/use-session";
+import { CheckTab } from "../components/check/CheckTab";
 import { MatrixTab } from "../components/matrix/MatrixTab";
 import { type AccessTab, useAccessView } from "../hooks/use-access-view";
 
@@ -40,7 +41,16 @@ export function AccessPage() {
           )}
         </TabsContent>
         <TabsContent value="check" className="pt-4">
-          {null}
+          {view.needsTenant ? (
+            <EmptyState message={t("access.selectTenant")} />
+          ) : (
+            <CheckTab
+              tenantId={view.tenantId}
+              isPlatform={view.isPlatform}
+              username={view.user}
+              onUser={view.setUser}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </>
