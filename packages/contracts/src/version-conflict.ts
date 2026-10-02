@@ -2,6 +2,7 @@
 // Tách khỏi common.ts vì nhận tên thực thể ("tenant" | "user") cần import tenants/users → tránh import vòng.
 import { z } from "zod";
 import { IsoDateTime } from "./common";
+import { GroupSchema } from "./groups";
 import { TenantSchema } from "./tenants";
 import { UserSchema } from "./users";
 
@@ -25,3 +26,7 @@ export function versionConflictDetailsSchema(entity: VersionedEntity | z.ZodType
   const current = typeof entity === "string" ? ENTITY_SCHEMAS[entity] : entity;
   return z.strictObject({ current, updated_at: IsoDateTime });
 }
+
+/** M3: `{current: Group, updated_at}` (spec M3 §3). Ở đây thay vì groups.ts để tránh import vòng groups → users. */
+export const GroupVersionConflictDetailsSchema = versionConflictDetailsSchema(GroupSchema);
+export type GroupVersionConflictDetails = z.infer<typeof GroupVersionConflictDetailsSchema>;

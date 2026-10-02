@@ -29,3 +29,12 @@ export function outer(col: AnyColumn): SQL {
  */
 export const usernameOf = (col: AnyColumn): SQL<string | null> =>
   sql<string | null>`(select ${users.username} from ${users} where ${users.id} = ${outer(col)})`;
+
+/**
+ * Mảng Postgres làm MỘT tham số (`'{"a","b"}'::text[]`): Drizzle tự bung mảng JS trong `sql\`\`` thành `($1, $2)`
+ * (record) nên `= any(${arr})` / `unnest(${arr})` hỏng. Phần tử được đặt trong `"…"`, thoát `\` và `"`.
+ */
+export function pgArray(values: readonly string[], type: "uuid" | "text"): SQL {
+  const lit = `{${values.map((v) => `"${v.replace(/[\\"]/g, (m) => `\\${m}`)}"`).join(",")}}`;
+  return sql`${lit}::${sql.raw(type)}[]`;
+}

@@ -15,7 +15,6 @@ import {
   UuidSchema,
   VersionSchema,
 } from "./common";
-import { versionConflictDetailsSchema } from "./version-conflict";
 
 export const BETA_GROUP_KEY = "beta-testers";
 export const GROUP_KEY_RE = CATALOG_KEY_RE;
@@ -104,9 +103,6 @@ export type GroupListQuery = z.infer<typeof GroupListQuerySchema>;
 /** Sắp tenant_key, `beta-testers` đầu, rồi key. Không có `counts` (không chip). */
 export const GroupListResponseSchema = pageResponseSchema(GroupListItemSchema);
 export type GroupListResponse = z.infer<typeof GroupListResponseSchema>;
-
-export const GroupVersionConflictDetailsSchema = versionConflictDetailsSchema(GroupSchema);
-export type GroupVersionConflictDetails = z.infer<typeof GroupVersionConflictDetailsSchema>;
 
 export const GroupMemberSchema = z.strictObject({
   user_id: UuidSchema,

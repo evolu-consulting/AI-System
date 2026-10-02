@@ -1,16 +1,21 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-BR-08, ADM-BR-09 · nghiệp vụ users (plan M1 §5 "Users"). Không biết HTTP.
 // Mỗi hành động = một withScope theo scope của actor; repo vẫn lọc tenant_id (tenant_admin luôn tenant mình).
 import { randomBytes } from "node:crypto";
-import type {
-  Locale,
-  User,
-  UserCreateRequest,
-  UserCreateResponse,
-  UserListQuery,
-  UserListResponse,
-  UserUpdateRequest,
+import {
+  BETA_GROUP_KEY,
+  GROUP_NAME_MAX,
+  type GroupRef,
+  type Locale,
+  LocalizedTextSchema,
+  type User,
+  type UserCreateRequest,
+  type UserCreateResponse,
+  type UserListQuery,
+  type UserListResponse,
+  type UserUpdateRequest,
 } from "@ai/contracts";
 import { type Db, type DbScope, hashPassword, type Tx, withScope } from "@ai/db";
+import { z } from "zod";
 import { appError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
 import { generateTempPassword } from "../auth/auth.rules";
@@ -38,6 +43,15 @@ export type Call = { ctx: UsersCtx; actor: Actor; scope: DbScope };
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
 
+const GroupsJson = z.array(
+  z.object({ id: z.string(), key: z.string(), name: LocalizedTextSchema(GROUP_NAME_MAX) }),
+);
+
+/** jsonb từ subquery (users.repo) → GroupRef[] (validate ở biên đọc DB, CONVENTIONS §5). */
+function userGroups(raw: unknown): GroupRef[] {
+  return GroupsJson.parse(raw).map((g) => ({ ...g, is_beta: g.key === BETA_GROUP_KEY }));
+}
+
 export function toUser(u: UserRow): User {
   return {
     id: u.id,
@@ -57,6 +71,8 @@ export function toUser(u: UserRow): User {
     created_at: u.createdAt.toISOString(),
     updated_at: u.updatedAt.toISOString(),
     version: u.version,
+    groups: userGroups(u.groups),
+    group_count: u.groupCount,
   };
 }
 

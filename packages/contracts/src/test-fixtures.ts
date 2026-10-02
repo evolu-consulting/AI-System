@@ -49,4 +49,6 @@ export const user: User = {
   created_at: T0,
   updated_at: T1,
   version: 1,
+  groups: [],
+  group_count: 0,
 };

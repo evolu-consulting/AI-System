@@ -1,8 +1,8 @@
-// ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-NFR-07 · truy vấn users. Luôn trong withScope (RLS) và lọc tenant_id tường minh.
-import type { Locale, Role } from "@ai/contracts";
+// ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-NFR-07, ADM-FR-62 · truy vấn users (M3: `groups`/`group_count`, `?group`). Luôn trong withScope (RLS) và lọc tenant_id tường minh.
+import { type Locale, type Role, USER_GROUPS_MAX } from "@ai/contracts";
 import { type Tx, tenants, users } from "@ai/db";
 import { and, asc, eq, ilike, isNull, ne, or, type SQL, sql } from "drizzle-orm";
-import { likeArg } from "../../lib/sql";
+import { likeArg, outer } from "../../lib/sql";
 
 export type UserRow = {
   id: string;
@@ -21,7 +21,17 @@ export type UserRow = {
   createdAt: Date;
   updatedAt: Date;
   version: number;
+  /** M3-R13: ≤ 50 group (beta đầu rồi key) dạng jsonb thô — service parse bằng contract. */
+  groups: unknown;
+  groupCount: number;
 };
+
+// Tham chiếu admin.users.id viết tay (subquery tương quan; Drizzle không in tên bảng cho cột trong select).
+const groupsJson = sql<unknown>`coalesce((select json_agg(json_build_object('id', g.id, 'key', g.key, 'name', g.name)
+    order by (g.key <> 'beta-testers'), g.key)
+  from (select g.id, g.key, g.name from admin.group_members m join admin.groups g on g.id = m.group_id
+    where m.user_id = admin.users.id order by (g.key <> 'beta-testers'), g.key limit ${USER_GROUPS_MAX}) g), '[]'::json)`;
+const groupCount = sql<number>`(select count(*)::int from admin.group_members m where m.user_id = admin.users.id)`;
 
 export const userRowCols = {
   id: users.id,
@@ -40,6 +50,8 @@ export const userRowCols = {
   createdAt: users.createdAt,
   updatedAt: users.updatedAt,
   version: users.version,
+  groups: groupsJson,
+  groupCount,
 };
 
 /** `tenantId` null = mọi tenant (chỉ platform scope, RLS vẫn áp). */
@@ -93,6 +105,8 @@ export type UserFilter = {
   role?: Role;
   status?: "active" | "locked";
   login?: "never";
+  /** M3-R13: chỉ lọc hàng, không lọc `counts`. */
+  group?: string;
   limit: number;
   offset: number;
 };
@@ -112,13 +126,19 @@ function baseWhere(f: UserFilter): SQL | undefined {
   );
 }
 
+/** `?group=`: thành viên của group (PK group_members); group tenant khác/không tồn tại → rỗng (RLS + tenant lọc). */
+const groupWhere = (g?: string) =>
+  g
+    ? sql`exists (select 1 from admin.group_members m where m.group_id = ${g} and m.user_id = ${outer(users.id)})`
+    : undefined;
+
 export async function listUsers(tx: Tx, f: UserFilter) {
   const status = f.status ? (f.status === "locked" ? isLocked : sql`not ${isLocked}`) : undefined;
   const rows = await tx
     .select({ ...userRowCols, total: sql<number>`count(*) over()`.mapWith(Number) })
     .from(users)
     .innerJoin(tenants, eq(tenants.id, users.tenantId))
-    .where(and(baseWhere(f), status))
+    .where(and(baseWhere(f), status, groupWhere(f.group)))
     .orderBy(asc(users.username), asc(users.id))
     .limit(f.limit)
     .offset(f.offset);

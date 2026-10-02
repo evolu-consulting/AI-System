@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { features, secrets } from "@ai/db";
 import { PgDialect, pgTable, uuid } from "drizzle-orm/pg-core";
-import { likeArg, outer, usernameOf } from "./sql";
+import { likeArg, outer, pgArray, usernameOf } from "./sql";
 
 const render = (s: Parameters<PgDialect["sqlToQuery"]>[0]) => new PgDialect().sqlToQuery(s).sql;
 
@@ -19,5 +19,14 @@ describe("ADM-FR-50 · lib/sql", () => {
   test("ADM-FR-50 · outer từ chối tên chứa dấu nháy kép", () => {
     const bad = pgTable('x"y', { id: uuid("id") });
     expect(() => outer(bad.id)).toThrow("outer: tên không hợp lệ");
+  });
+});
+
+describe("ADM-FR-62 · pgArray", () => {
+  test("một tham số literal mảng, thoát dấu \\ và dấu nháy kép; rỗng → {}", () => {
+    const q = new PgDialect().sqlToQuery(pgArray(['a"b', "c\\d"], "text"));
+    expect(q.sql).toBe("$1::text[]");
+    expect(q.params).toEqual(['{"a\\"b","c\\\\d"}']);
+    expect(new PgDialect().sqlToQuery(pgArray([], "uuid")).params).toEqual(["{}"]);
   });
 });

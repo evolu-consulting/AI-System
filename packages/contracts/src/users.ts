@@ -1,6 +1,8 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-BR-05, ADM-BR-09 · contract /admin/users* (spec M1 §3).
+// ADM-FR-62 · M3-R13: `groups` (≤ 50, beta đầu rồi key) + `group_count` ở mọi response user; `?group=` (spec M3 §3).
 import { z } from "zod";
 import {
+  CountSchema,
   DisplayNameSchema,
   EmailSchema,
   EntityStatusSchema,
@@ -15,6 +17,7 @@ import {
   UuidSchema,
   VersionSchema,
 } from "./common";
+import { GroupRefSchema, USER_GROUPS_MAX } from "./groups";
 
 /** `status = "locked"` ⇔ `!active || locked_by_tenant`; `locked_until` = khoá tạm FR-07. */
 export const UserSchema = z
@@ -36,6 +39,8 @@ export const UserSchema = z
     created_at: IsoDateTime,
     updated_at: IsoDateTime,
     version: VersionSchema,
+    groups: z.array(GroupRefSchema).max(USER_GROUPS_MAX),
+    group_count: CountSchema,
   })
   .refine((u) => (u.status === "locked") === (!u.active || u.locked_by_tenant), {
     message: "status must be 'locked' iff !active || locked_by_tenant",
@@ -49,6 +54,8 @@ export const UserListQuerySchema = ListQueryBase.extend({
   role: RoleSchema.optional(),
   status: EntityStatusSchema.optional(),
   login: z.literal("never").optional(),
+  /** Chỉ lọc hàng (không lọc `counts`); group không thấy được → rỗng. */
+  group: UuidSchema.optional(),
 });
 export type UserListQuery = z.infer<typeof UserListQuerySchema>;
 
