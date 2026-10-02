@@ -10,7 +10,8 @@ import { useTr } from "@/lib/use-translate";
 import { useDeleteGroup } from "../api";
 import { GroupDeleteDialog } from "../components/list/GroupDeleteDialog";
 
-export function useGroupDelete() {
+/** `onDeleted`: gọi sau khi xoá xong (editor quay về danh sách). */
+export function useGroupDelete(onDeleted?: () => void) {
   const { t, i18n } = useTranslation();
   const tr = useTr();
   const del = useDeleteGroup();
@@ -27,6 +28,7 @@ export function useGroupDelete() {
       throw err; // giữ hộp thoại mở
     });
     notifySuccess(t("groups.toast.deleted", { name: pickLocalized(g.name, i18n.language) }));
+    onDeleted?.();
   };
   const dialog = (
     <GroupDeleteDialog target={target} onClose={() => setTarget(null)} onConfirm={confirm} />

@@ -1,5 +1,11 @@
 // ADM-FR-62 · gọi API /admin/groups* (nơi duy nhất của feature groups) dưới dạng hook TanStack Query.
-import type { Group, GroupListItem, GroupListResponse } from "@ai/contracts";
+import type {
+  Group,
+  GroupCreateRequest,
+  GroupListItem,
+  GroupListResponse,
+  GroupUpdateRequest,
+} from "@ai/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 
@@ -35,6 +41,32 @@ export function useDeleteGroup() {
   return useMutation({
     mutationFn: (g: Pick<GroupListItem | Group, "id">) =>
       api<undefined>(`/admin/groups/${g.id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: GROUP_KEYS.all }),
+  });
+}
+
+export function useGroup(id: string | undefined) {
+  return useQuery({
+    queryKey: GROUP_KEYS.detail(id ?? ""),
+    enabled: !!id,
+    queryFn: () => api<Group>(`/admin/groups/${id}`),
+  });
+}
+
+export function useCreateGroup(tenantId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: GroupCreateRequest) =>
+      api<Group>("/admin/groups", { method: "POST", body, query: { tenant_id: tenantId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: GROUP_KEYS.all }),
+  });
+}
+
+export function useUpdateGroup(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: GroupUpdateRequest) =>
+      api<Group>(`/admin/groups/${id}`, { method: "PATCH", body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: GROUP_KEYS.all }),
   });
 }
