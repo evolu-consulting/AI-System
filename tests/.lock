@@ -92,7 +92,7 @@ c071941f39397d6d46d9d433b57999b251bfe122467c2434d376f71aa74d8771  tests/acceptan
 931619b29a242a7099ee13d5b4870b5a3df991dd6c8986ea5445df1fe5e81450  tests/acceptance/M3/concurrency.int.test.ts
 e8133aabdae93b451544f1cf8b85963430ada99fde720c45890ed85ab9cc7c8f  tests/acceptance/M3/conflict.int.test.ts
 07d09783182fbd4e6a8e33213df064091b0d37c72f4b79a353f7083c2fa24611  tests/acceptance/M3/db-rls.int.test.ts
-ab053e7219543a5d5df1ca7e02b993861874878c22bf28345e872310976febf9  tests/acceptance/M3/db-schema.int.test.ts
+18cf029e9bd32e7d07cdbaf7ecc694e3b53e49841c09a2713170bd00a3bc886f  tests/acceptance/M3/db-schema.int.test.ts
 c338fc90e889990f82d99685aa20811eea50c43b359bc0805ad3e1fac2fd1105  tests/acceptance/M3/effective-access.int.test.ts
 d4833850f46684713ca1c984fff9f1a7748523d5fd26207f45a07e2b4861e952  tests/acceptance/M3/error-codes.int.test.ts
 6d6d101f3ae54d65671a87532ea79abd54802ad88f305839a2cf397b4a9d8967  tests/acceptance/M3/forbidden.int.test.ts

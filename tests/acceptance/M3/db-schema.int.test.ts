@@ -160,7 +160,7 @@ describe("ADM-FR-62 · ràng buộc groups (M3-R01)", () => {
     let n = 0;
     const ins = (name: string, desc: string | null = null) =>
       sql`insert into admin.groups (tenant_id, key, name, description)
-        values (${T2}, ${`gr${++n}`}, ${name}::jsonb, ${desc})`;
+        values (${T2}, ${`gr${++n}`}, ${sql.json(JSON.parse(name))}, ${desc})`;
     expect(await code(ins('{"en":"x"}'))).toBe("23514");
     expect(await code(ins('"chuoi"'))).toBe("23514");
     expect(await code(ins('{"vi":"x"}', "d".repeat(401)))).toBe("23514");
@@ -271,6 +271,8 @@ describe("ADM-FR-32 · ràng buộc feature_grants (M3-R07, R10)", () => {
     await sql`delete from admin.users where id = ${U1}`;
     expect(await n()).toBe(0);
     await grant(T2, F1, GT2, null);
+    // users.tenant_id → tenants là RESTRICT (M1, CR-006: không xoá tenant ở app): dọn user của T2 trước (TC-2).
+    await sql`delete from admin.users where tenant_id = ${T2}`;
     await sql`delete from admin.tenants where id = ${T2}`;
     expect(await n()).toBe(0);
     expect(
