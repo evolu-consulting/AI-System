@@ -51,12 +51,12 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   const hooks = deps.appEnv === "test" ? deps.testHooks : undefined;
   app.route("/auth", authRoutes({ ...ctx, secureCookie, selfChange: selfChangeHandler(ctx) }));
   app.route("/auth", meRoutes(ctx));
-  app.route("/admin/tenants", tenantsRoutes(ctx));
+  app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/users", accessRoutes(ctx));
-  app.route("/admin/users", usersRoutes(ctx));
+  app.route("/admin/users", usersRoutes({ ...ctx, hooks }));
   app.route("/admin/groups", groupsRoutes({ ...ctx, hooks }));
   app.route("/admin/grants", grantsRoutes({ ...ctx, hooks }));
-  app.route("/admin/secrets", secretsRoutes({ ...ctx, secretKey: deps.secretKey }));
+  app.route("/admin/secrets", secretsRoutes({ ...ctx, secretKey: deps.secretKey, hooks }));
   app.route("/admin/features", featuresRoutes({ ...ctx, hooks }));
   app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
   app.route("/admin/commands", commandsRoutes({ ...ctx, hooks }));

@@ -63,14 +63,16 @@ export async function shareEntitled(
   return new Set(rows.map((r) => r.feature_id));
 }
 
-const pairsTable = (pairs: readonly PairKey[]) => sql`(select f, g from unnest(
-  ${pgArray(
+/** Cặp (feature, group) dạng bảng để JOIN theo index unique (tenant_id, feature_id, group_id) — nhanh hơn `(a, b) in (…)`. */
+const pairsJoin = (pairs: readonly PairKey[]) =>
+  sql`join unnest(${pgArray(
     pairs.map((p) => p.featureId),
     "uuid",
   )}, ${pgArray(
     pairs.map((p) => p.groupId),
     "uuid",
-  )}) as x(f, g))`;
+  )})
+    as x(f, g) on fg.feature_id = x.f and fg.group_id = x.g`;
 
 /** Lock pass: mọi hàng grant group đang có trong `pairs` (thêm ∪ bớt), `FOR NO KEY UPDATE` sắp (feature_id, group_id). */
 export async function lockGroupGrants(
@@ -81,10 +83,9 @@ export async function lockGroupGrants(
   if (pairs.length === 0) return new Set();
   const rows = await run<{ f: string; g: string }>(
     tx,
-    sql`select feature_id as f, group_id as g
-    from admin.feature_grants where tenant_id = ${tenantId} and group_id is not null
-      and (feature_id, group_id) in ${pairsTable(pairs)}
-    order by feature_id, group_id for no key update`,
+    sql`select fg.feature_id as f, fg.group_id as g from admin.feature_grants fg ${pairsJoin(pairs)}
+    where fg.tenant_id = ${tenantId} and fg.group_id is not null
+    order by fg.feature_id, fg.group_id for no key update of fg`,
   );
   return new Set(rows.map((r) => `${r.f}:${r.g}`));
 }
@@ -99,9 +100,9 @@ export async function deleteGroupGrants(
   const rows = await run(
     tx,
     sql`delete from admin.feature_grants where id in (
-      select id from admin.feature_grants where tenant_id = ${tenantId} and group_id is not null
-        and (feature_id, group_id) in ${pairsTable(pairs)}
-      order by feature_id, group_id for no key update)
+      select fg.id from admin.feature_grants fg ${pairsJoin(pairs)}
+      where fg.tenant_id = ${tenantId} and fg.group_id is not null
+      order by fg.feature_id, fg.group_id for no key update of fg)
     returning id`,
   );
   return rows.length;

@@ -110,19 +110,16 @@ describe("ADM-FR-53 · configWrite + NOTIFY sau commit (M3-R16)", () => {
 });
 
 describe("ADM-FR-53 · chi phí bump + NOTIFY (spec M3 §6)", () => {
-  test("≤ 5 ms/ghi (trung vị 50 lần, so với cùng giao dịch không bump; trung vị để bớt nhiễu máy khi chạy song song)", async () => {
-    const time = async (bump: boolean) => {
-      const ts: number[] = [];
-      for (let i = 0; i < 50; i++) {
-        const t = performance.now();
-        await configWrite(call(), "secret.save", async (_tx, ch) => {
-          if (bump) ch.changed(ev);
-        });
-        ts.push(performance.now() - t);
-      }
-      return ts.sort((a, b) => a - b)[25] ?? 0;
+  test("≤ 5 ms/ghi: trung vị của hiệu từng cặp (không bump, bump) chạy xen kẽ 50 lần — bớt nhiễu khi máy bận", async () => {
+    const once = async (bump: boolean) => {
+      const t = performance.now();
+      await configWrite(call(), "secret.save", async (_tx, ch) => {
+        if (bump) ch.changed(ev);
+      });
+      return performance.now() - t;
     };
-    const base = await time(false);
-    expect((await time(true)) - base).toBeLessThan(5);
+    const diffs: number[] = [];
+    for (let i = 0; i < 50; i++) diffs.push((await once(true)) - (await once(false)));
+    expect(diffs.sort((x, y) => x - y)[25] ?? 0).toBeLessThan(5);
   });
 });

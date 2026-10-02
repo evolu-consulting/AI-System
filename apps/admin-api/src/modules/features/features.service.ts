@@ -13,6 +13,7 @@ import {
 } from "@ai/contracts";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
+import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import { mapFeatureConflict } from "./features.errors";
@@ -90,7 +91,7 @@ export function getFeature(c: Call, id: string): Promise<FeatureDetail> {
 }
 
 export function createFeature(c: Call, input: FeatureCreateRequest): Promise<FeatureDetail> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "feature.save", async (tx, ch) => {
     const locked = await m.lockCommands(tx, input.command_ids);
     await afterLock(c.ctx.hooks, "feature.save");
     invalidCommands(missingIds(input.command_ids, locked));
@@ -107,6 +108,8 @@ export function createFeature(c: Call, input: FeatureCreateRequest): Promise<Fea
     await tx.transaction((sp) => repo.insertFeature(sp, row)).catch(mapFeatureConflict);
     await m.addPairs(tx, pairs(id, input.command_ids));
     await m.bumpCommands(tx, input.command_ids, c.actor.userId);
+    ch.changed({ entity: "feature", tenantId: null });
+    await afterLock(c.ctx.hooks, "feature.save", "rows");
     return featureDetail(tx, id);
   });
 }
@@ -171,7 +174,7 @@ export function updateFeature(
   id: string,
   input: FeatureUpdateRequest,
 ): Promise<FeatureDetail> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "feature.save", async (tx, ch) => {
     if (!(await repo.findFeature(tx, id))) throw appError("NOT_FOUND");
     const l = await lockForUpdate(tx, id, input.command_ids);
     await afterLock(c.ctx.hooks, "feature.save");
@@ -188,13 +191,15 @@ export function updateFeature(
     const set: repo.FeatureSet = {};
     for (const k of changed) if (k !== "commandIds") Object.assign(set, { [k]: next[k] });
     await repo.bumpFeature(tx, id, set, c.actor.userId);
+    ch.changed({ entity: "feature", tenantId: null });
+    await afterLock(c.ctx.hooks, "feature.save", "rows");
     return featureDetail(tx, id);
   });
 }
 
 /** 404 → CORE_FEATURE_PROTECTED → FEATURE_HAS_EXCLUSIVE_COMMANDS → xoá (cascade feature_commands, entitlement). */
 export function deleteFeature(c: Call, id: string): Promise<void> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "feature.delete", async (tx, ch) => {
     // Khoá command của feature trước (thứ tự commands → features) để luật "không mồ côi" không bị đua.
     await m.lockCommands(tx, await m.commandIdsOfFeature(tx, id));
     const f = await repo.lockFeature(tx, id, "no key update");
@@ -202,6 +207,8 @@ export function deleteFeature(c: Call, id: string): Promise<void> {
     await afterLock(c.ctx.hooks, "feature.delete");
     fail(checkFeatureDelete(f, await repo.exclusiveCommands(tx, id)));
     await repo.deleteFeature(tx, id);
+    ch.changed({ entity: "feature", tenantId: null });
+    await afterLock(c.ctx.hooks, "feature.delete", "rows");
   });
 }
 

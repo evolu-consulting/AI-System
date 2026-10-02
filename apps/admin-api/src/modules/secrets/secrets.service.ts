@@ -10,14 +10,16 @@ import type {
 } from "@ai/contracts";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
+import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { foreignKeyViolation } from "../../lib/pg-errors";
 import { encryptSecret, type SecretKey } from "../../lib/secret-crypto";
+import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import { mapSecretConflict } from "./secrets.errors";
 import * as repo from "./secrets.repo";
 import { checkSecretDelete, secretLast4 } from "./secrets.rules";
 
-export type SecretsCtx = { db: Db; secretKey?: SecretKey };
+export type SecretsCtx = { db: Db; secretKey?: SecretKey; hooks?: TestHooks };
 export type Call = { ctx: SecretsCtx; actor: Actor; scope: DbScope };
 
 export function toSecret(r: repo.SecretRow): Secret {
@@ -74,11 +76,13 @@ export async function createSecret(c: Call, input: SecretCreateRequest): Promise
   const key = requireKey(c);
   const id = Bun.randomUUIDv7();
   const sealed = seal(key, id, input.value);
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "secret.save", async (tx, ch) => {
     const row = { ...sealed, id, name: input.name, note: input.note ?? null };
     await tx
       .transaction((sp) => repo.insertSecret(sp, { ...row, actorId: c.actor.userId }))
       .catch(mapSecretConflict);
+    ch.changed({ entity: "secret", tenantId: null });
+    await afterLock(c.ctx.hooks, "secret.save", "rows");
     return reread(tx, input.name);
   });
 }
@@ -86,18 +90,27 @@ export async function createSecret(c: Call, input: SecretCreateRequest): Promise
 /** Thay giá trị (M2-R04): IV mới, last4 mới, giữ id/note/used_by. */
 export function replaceSecret(c: Call, name: string, value: string): Promise<Secret> {
   const key = requireKey(c);
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "secret.save", async (tx, ch) => {
     const id = await mustLock(tx, name);
+    await afterLock(c.ctx.hooks, "secret.save", "locked");
     await repo.updateSecret(tx, id, { ...seal(key, id, value), actorId: c.actor.userId });
+    ch.changed({ entity: "secret", tenantId: null });
+    await afterLock(c.ctx.hooks, "secret.save", "rows");
     return reread(tx, name);
   });
 }
 
 /** Sửa ghi chú: không đụng bản mã (Y6). */
 export function updateSecretNote(c: Call, name: string, input: SecretNoteRequest): Promise<Secret> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "secret.save", async (tx, ch) => {
     const id = await mustLock(tx, name);
+    await afterLock(c.ctx.hooks, "secret.save", "locked");
+    const cur = await reread(tx, name);
+    // Ghi chú không đổi → không ghi, không bump (M2-R25, M3-R15).
+    if (cur.note === input.note) return cur;
     await repo.updateSecret(tx, id, { note: input.note, actorId: c.actor.userId });
+    ch.changed({ entity: "secret", tenantId: null });
+    await afterLock(c.ctx.hooks, "secret.save", "rows");
     return reread(tx, name);
   });
 }
@@ -109,8 +122,9 @@ function failInUse(usedBy: string[]): void {
 
 /** 404 → SECRET_IN_USE → xoá thật. 23503 (workflow chèn đua) → đọc lại used_by → SECRET_IN_USE. */
 export function deleteSecret(c: Call, name: string): Promise<void> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "secret.save", async (tx, ch) => {
     const id = await mustLock(tx, name);
+    await afterLock(c.ctx.hooks, "secret.save", "locked");
     failInUse(await repo.usedByOf(tx, id));
     await tx
       .transaction((sp) => repo.deleteSecret(sp, id))
@@ -119,6 +133,8 @@ export function deleteSecret(c: Call, name: string): Promise<void> {
         failInUse(await repo.usedByOf(tx, id));
         throw err;
       });
+    ch.changed({ entity: "secret", tenantId: null });
+    await afterLock(c.ctx.hooks, "secret.save", "rows");
   });
 }
 

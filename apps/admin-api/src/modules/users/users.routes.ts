@@ -8,6 +8,7 @@ import {
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
+import type { TestHooks } from "../../lib/test-hooks";
 import {
   type Call,
   createUser,
@@ -22,7 +23,7 @@ import {
 
 const TenantIdQuery = UserListQuerySchema.pick({ tenant_id: true });
 
-export function usersRoutes(d: AuthDeps): Hono<AppVars> {
+export function usersRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
   const r = new Hono<AppVars>();
   const call = (c: Context<AppVars>): Call => ({
     ctx: d,

@@ -1,5 +1,5 @@
 // ADM-FR-60, ADM-FR-61 · nghiệp vụ tenants (plan M1 §5): list, tạo kèm tenant_admin đầu tiên (một transaction),
-// xem, sửa theo `version`, khoá/mở khoá. Không biết HTTP; mỗi hành động = một withScope theo scope của actor.
+// xem, sửa theo `version`, khoá/mở khoá. Không biết HTTP; ghi qua configWrite (bump config_version + NOTIFY sau commit, M3-R15).
 import { randomBytes } from "node:crypto";
 import type {
   Tenant,
@@ -11,8 +11,10 @@ import type {
   TenantUpdateRequest,
 } from "@ai/contracts";
 import { type Db, type DbScope, hashPassword, type Tx, withScope } from "@ai/db";
+import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
+import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import { generateTempPassword } from "../auth/auth.rules";
 import { revokeTenantSessions } from "../auth/auth.service";
 import { createFirstAdmin, setTenantLockFlags } from "../users/users.service";
@@ -20,7 +22,7 @@ import type { TenantRow } from "./tenants.repo";
 import * as repo from "./tenants.repo";
 import { changedTenantFields, checkTenantLock, tenantStatus } from "./tenants.rules";
 
-export type TenantsCtx = { db: Db };
+export type TenantsCtx = { db: Db; hooks?: TestHooks };
 
 export function toTenant(t: TenantRow): Tenant {
   return {
@@ -76,7 +78,7 @@ export async function createTenant(
 ): Promise<TenantCreateResponse> {
   const tempPassword = generateTempPassword((n) => randomBytes(n));
   const hash = await hashPassword(tempPassword);
-  return withScope(ctx.db, scope, async (tx) => {
+  return configWrite({ ctx, scope }, "tenant.save", async (tx, ch) => {
     const t = { key: input.key, name: input.name, maxConcurrentSub: input.max_concurrent_sub };
     const id = await tx
       .transaction((sp) => repo.insertTenant(sp, t))
@@ -96,6 +98,9 @@ export async function createTenant(
       },
       hash,
     );
+    // Trigger tenants_beta_group đã chèn beta-testers trong câu INSERT tenant (ngoại lệ khoá E3, plan §6).
+    ch.changed({ entity: "tenant", tenantId: id });
+    await afterLock(ctx.hooks, "tenant.save", "rows");
     return {
       tenant: toTenant(await mustFind(tx, id)),
       first_admin: firstAdmin,
@@ -111,8 +116,9 @@ export async function updateTenant(
   id: string,
   input: TenantUpdateRequest,
 ): Promise<Tenant> {
-  return withScope(ctx.db, scope, async (tx) => {
+  return configWrite({ ctx, scope }, "tenant.save", async (tx, ch) => {
     const cur = await mustFind(tx, id, true);
+    await afterLock(ctx.hooks, "tenant.save", "locked");
     if (cur.version !== input.version) {
       const current = toTenant(cur);
       throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
@@ -120,6 +126,8 @@ export async function updateTenant(
     const set = changedTenantFields(cur, input);
     if (Object.keys(set).length === 0) return toTenant(cur);
     await repo.updateTenant(tx, id, set);
+    ch.changed({ entity: "tenant", tenantId: id });
+    await afterLock(ctx.hooks, "tenant.save", "rows");
     return toTenant(await mustFind(tx, id));
   });
 }
@@ -131,8 +139,9 @@ export async function setTenantLocked(
   id: string,
   locked: boolean,
 ): Promise<Tenant> {
-  return withScope(ctx.db, scope, async (tx) => {
+  return configWrite({ ctx, scope }, "tenant.save", async (tx, ch) => {
     const cur = await mustFind(tx, id, true);
+    await afterLock(ctx.hooks, "tenant.save", "locked");
     if (locked) {
       const err = checkTenantLock(cur);
       if (err) throw appError(err.code, err.details);
@@ -141,6 +150,8 @@ export async function setTenantLocked(
     await repo.updateTenant(tx, id, { active: !locked });
     await setTenantLockFlags(tx, id, locked);
     if (locked) await revokeTenantSessions(tx, id, "tenant_locked");
+    ch.changed({ entity: "tenant", tenantId: id });
+    await afterLock(ctx.hooks, "tenant.save", "rows");
     return toTenant(await mustFind(tx, id));
   });
 }

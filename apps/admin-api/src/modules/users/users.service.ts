@@ -16,8 +16,10 @@ import {
 } from "@ai/contracts";
 import { type Db, type DbScope, hashPassword, type Tx, withScope } from "@ai/db";
 import { z } from "zod";
+import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
+import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import { generateTempPassword } from "../auth/auth.rules";
 import { revokeUserSessions } from "../auth/auth.service";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
@@ -38,7 +40,7 @@ import {
   userStatus,
 } from "./users.rules";
 
-export type UsersCtx = { db: Db };
+export type UsersCtx = { db: Db; hooks?: TestHooks };
 export type Call = { ctx: UsersCtx; actor: Actor; scope: DbScope };
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -185,13 +187,14 @@ export async function createUser(
   if ("code" in r) throw appError(r.code);
   const tenantId = r.tenantId as string;
   const temp = await newTempPassword();
-  const user = await withScope(c.ctx.db, c.scope, async (tx) => {
+  const user = await configWrite(c, "user.save", async (tx, ch) => {
     // FOR SHARE: tenant không bị khoá/mở khoá giữa lúc đọc `active` và lúc chèn user (locked_by_tenant đúng).
     const t = await repo.findTenantBrief(tx, tenantId, { lock: "share" });
     if (!t) throw appError("NOT_FOUND");
     fail(checkRoleAssignment(c.actor, t.key === PLATFORM_TENANT_KEY, input.role));
     const email = input.email ?? null;
     if (isEmailRequired(input.role) && !email) throw appError("EMAIL_REQUIRED");
+    ch.changed({ entity: "user", tenantId });
     return insertAndRead(tx, {
       tenantId,
       username: input.username,
@@ -230,8 +233,9 @@ function checkUpdate(c: Call, u: UserRow, set: repo.UserSet): void {
 
 /** PATCH theo `version` trên bản đã khoá: lệch → 409 {current, updated_at}; PATCH song song → đúng một thắng. */
 export function updateUser(c: Call, id: string, input: UserUpdateRequest): Promise<User> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "user.save", async (tx, ch) => {
     const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
+    await afterLock(c.ctx.hooks, "user.save", "locked");
     if (u.version !== input.version) {
       const current = toUser(u);
       throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
@@ -241,13 +245,14 @@ export function updateUser(c: Call, id: string, input: UserUpdateRequest): Promi
     if (Object.keys(set).length === 0) return toUser(u);
     if (set.role) await guardLastAdmin(tx, u, { role: set.role });
     await tx.transaction((sp) => repo.updateUser(sp, u, set, true)).catch(mapUserConflict);
+    ch.changed({ entity: "user", tenantId: u.tenantId });
     return reread(tx, u);
   });
 }
 
 /** FR-05: khoá → `active=false` + thu hồi mọi refresh token; đã khoá → trả bản hiện tại, không ghi. */
 export function lockUser(c: Call, id: string): Promise<User> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "user.save", async (tx, ch) => {
     const seen = await mustFindUser(tx, c.actor, id);
     fail(checkSelfAction(c.actor, seen.id, "lock"));
     if (!seen.active) return toUser(seen);
@@ -256,17 +261,21 @@ export function lockUser(c: Call, id: string): Promise<User> {
     await guardLastAdmin(tx, u, { active: false });
     await repo.updateUser(tx, u, { active: false }, true);
     await revokeUserSessions(tx, { tenantId: u.tenantId, userId: u.id, reason: "user_locked" });
+    ch.changed({ entity: "user", tenantId: u.tenantId });
     return reread(tx, u);
   });
 }
 
 /** Mở khoá: `active=true` + xoá khoá tạm; không gỡ `locked_by_tenant` (M1-R10). Lặp lại không tăng version. */
 export function unlockUser(c: Call, id: string): Promise<User> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "user.save", async (tx, ch) => {
     const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
     const clear = { failedLogins: 0, lockedUntil: null };
-    if (!u.active) await repo.updateUser(tx, u, { ...clear, active: true }, true);
-    else if (u.lockedUntil !== null) await repo.updateUser(tx, u, clear, false);
+    // Chỉ bỏ khoá tạm (sổ sách đăng nhập) → không bump (M3-R15); mở lại active → bump.
+    if (!u.active) {
+      await repo.updateUser(tx, u, { ...clear, active: true }, true);
+      ch.changed({ entity: "user", tenantId: u.tenantId });
+    } else if (u.lockedUntil !== null) await repo.updateUser(tx, u, clear, false);
     else return toUser(u);
     return reread(tx, u);
   });

@@ -14,6 +14,7 @@ import type {
 } from "@ai/contracts";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
+import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { validationError } from "../../lib/http";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
@@ -171,7 +172,7 @@ async function writeNames(
 }
 
 export function createCommand(c: Call, input: CommandCreateRequest): Promise<Command> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "command.save", async (tx, ch) => {
     const wf = await lockWorkflowRef(tx, input.workflow_id);
     await afterLock(c.ctx.hooks, "command.save");
     const s: CommandState = {
@@ -203,6 +204,8 @@ export function createCommand(c: Call, input: CommandCreateRequest): Promise<Com
       featureIds: s.featureIds,
       actorId: c.actor.userId,
     });
+    ch.changed({ entity: "command", tenantId: null });
+    await afterLock(c.ctx.hooks, "command.save", "rows");
     return detail(tx, id, wf, refs);
   });
 }
@@ -264,7 +267,7 @@ async function lockForUpdate(tx: Tx, c: Call, id: string, input: CommandUpdateRe
 }
 
 export function updateCommand(c: Call, id: string, input: CommandUpdateRequest): Promise<Command> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "command.save", async (tx, ch) => {
     const { row, wf } = await lockForUpdate(tx, c, id, input);
     if (row.version !== input.version) {
       const current = await detail(tx, id);
@@ -288,16 +291,20 @@ export function updateCommand(c: Call, id: string, input: CommandUpdateRequest):
         featureIds: next.featureIds,
         actorId: c.actor.userId,
       });
+    ch.changed({ entity: "command", tenantId: null });
+    await afterLock(c.ctx.hooks, "command.save", "rows");
     return detail(tx, id, wf);
   });
 }
 
 /** Khoá command → tăng version mọi feature chứa nó → xoá (cascade command_names, feature_commands). */
 export function deleteCommand(c: Call, id: string): Promise<void> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "command.delete", async (tx, ch) => {
     if (!(await repo.lockCommand(tx, id))) throw appError("NOT_FOUND");
     await afterLock(c.ctx.hooks, "command.delete");
     await bumpFeaturesOfCommand(tx, id, c.actor.userId);
     await repo.deleteCommand(tx, id);
+    ch.changed({ entity: "command", tenantId: null });
+    await afterLock(c.ctx.hooks, "command.delete", "rows");
   });
 }

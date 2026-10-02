@@ -278,27 +278,30 @@ export async function tenantExists(tx: Tx, id: string): Promise<boolean> {
   return !!row;
 }
 
-/** Cấp idempotent: chưa có → chèn; đã thu hồi → `revoked_at=null` + granted_* mới; đang hiệu lực → không ghi. */
+/** Cấp idempotent: chưa có → chèn; đã thu hồi → `revoked_at=null` + granted_* mới; đang hiệu lực → không ghi.
+ * Trả số hàng đổi (0 = no-op → không bump, M3-R15). */
 export async function grantEntitlement(
   tx: Tx,
   e: { featureId: string; tenantId: string; actorId: string },
-): Promise<void> {
-  await tx
+): Promise<number> {
+  const rows = await tx
     .insert(featureEntitlements)
     .values({ featureId: e.featureId, tenantId: e.tenantId, grantedBy: e.actorId })
     .onConflictDoUpdate({
       target: [featureEntitlements.featureId, featureEntitlements.tenantId],
       set: { revokedAt: null, grantedBy: e.actorId, grantedAt: sql`now()` },
       setWhere: sql`${featureEntitlements.revokedAt} is not null`,
-    });
+    })
+    .returning({ id: featureEntitlements.featureId });
+  return rows.length;
 }
 
-/** Thu hồi = đặt `revoked_at` (không xoá hàng, BR-12); chưa cấp/đã thu hồi → không ghi. */
+/** Thu hồi = đặt `revoked_at` (không xoá hàng, BR-12); chưa cấp/đã thu hồi → không ghi. Trả số hàng đổi. */
 export async function revokeEntitlement(
   tx: Tx,
   e: { featureId: string; tenantId: string },
-): Promise<void> {
-  await tx
+): Promise<number> {
+  const rows = await tx
     .update(featureEntitlements)
     .set({ revokedAt: sql`now()` })
     .where(
@@ -307,5 +310,7 @@ export async function revokeEntitlement(
         eq(featureEntitlements.tenantId, e.tenantId),
         isNull(featureEntitlements.revokedAt),
       ),
-    );
+    )
+    .returning({ id: featureEntitlements.featureId });
+  return rows.length;
 }

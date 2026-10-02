@@ -15,6 +15,7 @@ import {
 } from "@ai/contracts";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
+import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { foreignKeyViolation } from "../../lib/pg-errors";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
@@ -106,7 +107,7 @@ export function getWorkflowUsages(c: Call, id: string): Promise<WorkflowUsages> 
 }
 
 export function createWorkflow(c: Call, input: WorkflowCreateRequest): Promise<Workflow> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "workflow.save", async (tx, ch) => {
     await lockSecretRef(tx, input.secret_id);
     await afterLock(c.ctx.hooks, "workflow.save");
     const id = Bun.randomUUIDv7();
@@ -124,6 +125,8 @@ export function createWorkflow(c: Call, input: WorkflowCreateRequest): Promise<W
       enabled: input.enabled,
     };
     await tx.transaction((sp) => repo.insertWorkflow(sp, values)).catch(mapWorkflowConflict);
+    ch.changed({ entity: "workflow", tenantId: null });
+    await afterLock(c.ctx.hooks, "workflow.save", "rows");
     return detail(tx, id);
   });
 }
@@ -166,7 +169,7 @@ export function updateWorkflow(
   id: string,
   input: WorkflowUpdateRequest,
 ): Promise<Workflow> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "workflow.save", async (tx, ch) => {
     if (!(await repo.lockWorkflow(tx, id, "no key update"))) throw appError("NOT_FOUND");
     await afterLock(c.ctx.hooks, "workflow.save");
     const row = await repo.findWorkflow(tx, id, await hubAgentsReadable(tx));
@@ -182,13 +185,15 @@ export function updateWorkflow(
     const set: Partial<repo.WorkflowValues> = {};
     for (const k of changed) Object.assign(set, { [k]: next[k] });
     await repo.bumpWorkflow(tx, id, set, c.actor.userId);
+    ch.changed({ entity: "workflow", tenantId: null });
+    await afterLock(c.ctx.hooks, "workflow.save", "rows");
     return detail(tx, id);
   });
 }
 
 /** 404 → WORKFLOW_IN_USE (mọi command + agent) → xoá. 23503 (command chèn đua) → đọc lại usages → WORKFLOW_IN_USE. */
 export function deleteWorkflow(c: Call, id: string): Promise<void> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
+  return configWrite(c, "workflow.save", async (tx, ch) => {
     if (!(await repo.lockWorkflow(tx, id, "no key update"))) throw appError("NOT_FOUND");
     fail(checkWorkflowDelete(asUsages(await usagesOf(tx, id))));
     await tx
@@ -198,6 +203,8 @@ export function deleteWorkflow(c: Call, id: string): Promise<void> {
         fail(checkWorkflowDelete(asUsages(await usagesOf(tx, id))));
         throw err;
       });
+    ch.changed({ entity: "workflow", tenantId: null });
+    await afterLock(c.ctx.hooks, "workflow.save", "rows");
   });
 }
 

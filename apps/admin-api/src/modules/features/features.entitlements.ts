@@ -3,7 +3,9 @@
 // Khoá feature FOR SHARE (chặn xoá feature song song); tenant chỉ bị FK KEY SHARE. Không tăng version feature.
 import type { Entitlement, EntitlementListResponse } from "@ai/contracts";
 import { type Tx, withScope } from "@ai/db";
+import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
+import { afterLock } from "../../lib/test-hooks";
 import * as repo from "./features.repo";
 import { checkEntitlementTarget, isCore } from "./features.rules";
 import { type Call, fail } from "./features.service";
@@ -38,9 +40,15 @@ export function listEntitlements(
 }
 
 /** Feature lạ (ưu tiên) → 404; core → 409; tenant lạ → 404 (cùng body). */
-async function target(tx: Tx, featureId: string, tenantId: string): Promise<void> {
+async function target(
+  c: Call,
+  tx: Tx,
+  ids: { featureId: string; tenantId: string },
+): Promise<void> {
+  const { featureId, tenantId } = ids;
   const f = await repo.lockFeature(tx, featureId, "share");
   if (!f) throw appError("NOT_FOUND");
+  await afterLock(c.ctx.hooks, "entitlement.save", "locked");
   fail(checkEntitlementTarget(f));
   if (!(await repo.tenantExists(tx, tenantId))) throw appError("NOT_FOUND");
 }
@@ -50,9 +58,11 @@ export function grantEntitlement(
   featureId: string,
   tenantId: string,
 ): Promise<Entitlement> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
-    await target(tx, featureId, tenantId);
-    await repo.grantEntitlement(tx, { featureId, tenantId, actorId: c.actor.userId });
+  return configWrite(c, "entitlement.save", async (tx, ch) => {
+    await target(c, tx, { featureId, tenantId });
+    const n = await repo.grantEntitlement(tx, { featureId, tenantId, actorId: c.actor.userId });
+    if (n > 0) ch.changed({ entity: "entitlement", tenantId });
+    await afterLock(c.ctx.hooks, "entitlement.save", "rows");
     const row = await repo.findEntitlement(tx, featureId, tenantId);
     if (!row) throw new Error("features: không đọc lại được entitlement vừa cấp");
     return toEntitlement(row);
@@ -60,8 +70,10 @@ export function grantEntitlement(
 }
 
 export function revokeEntitlement(c: Call, featureId: string, tenantId: string): Promise<void> {
-  return withScope(c.ctx.db, c.scope, async (tx) => {
-    await target(tx, featureId, tenantId);
-    await repo.revokeEntitlement(tx, { featureId, tenantId });
+  return configWrite(c, "entitlement.save", async (tx, ch) => {
+    await target(c, tx, { featureId, tenantId });
+    const n = await repo.revokeEntitlement(tx, { featureId, tenantId });
+    if (n > 0) ch.changed({ entity: "entitlement", tenantId });
+    await afterLock(c.ctx.hooks, "entitlement.save", "rows");
   });
 }

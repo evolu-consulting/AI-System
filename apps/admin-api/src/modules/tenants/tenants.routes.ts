@@ -7,6 +7,7 @@ import {
 import { Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
+import type { TestHooks } from "../../lib/test-hooks";
 import {
   createTenant,
   getTenant,
@@ -15,7 +16,7 @@ import {
   updateTenant,
 } from "./tenants.service";
 
-export function tenantsRoutes(d: AuthDeps): Hono<AppVars> {
+export function tenantsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
   const r = new Hono<AppVars>();
   r.use("*", requireAuth(d), requireRole("platform_admin"));
 

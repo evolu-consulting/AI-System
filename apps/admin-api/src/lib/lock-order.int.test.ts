@@ -3,7 +3,7 @@
 // A giữ khoá hàng user rồi mới chèn refresh token; B (lockUser/resetPassword) chen vào giữa.
 // Deadlock thật thì Postgres chỉ phát hiện sau deadlock_timeout (1 s) rồi withScope chạy lại → kiểm cả thời gian
 // lẫn bộ đếm deadlock của DB để chứng minh không có deadlock nào, không chỉ "không 500".
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, test } from "bun:test";
 import { generateKeyPairSync } from "node:crypto";
 import { createDb, runMigrations, withScope } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
@@ -11,12 +11,19 @@ import postgres from "postgres";
 import * as authRepo from "../modules/auth/auth.repo";
 import { type AuthCtx, issueSession } from "../modules/auth/auth.session";
 import { createCommand, updateCommand } from "../modules/commands/commands.service";
+import { revokeEntitlement } from "../modules/features/features.entitlements";
 import { deleteFeature, updateFeature } from "../modules/features/features.service";
+import { batchGrants } from "../modules/grants/grants.batch";
+import { createGrant } from "../modules/grants/grants.service";
+import { addMembers } from "../modules/groups/groups.members";
+import { deleteGroup, updateGroup } from "../modules/groups/groups.service";
+import { createTenant } from "../modules/tenants/tenants.service";
 import * as usersRepo from "../modules/users/users.repo";
 import { type Call, createUser, lockUser, resetPassword } from "../modules/users/users.service";
 import { updateWorkflow } from "../modules/workflows/workflows.service";
 import { loadJwtKeys } from "./jwt";
-import type { HookOp, HookStep, TestHooks } from "./test-hooks";
+import { barrier, codeOf, lockKit } from "./lock-order.helpers";
+import type { TestHooks } from "./test-hooks";
 
 const OWNER = process.env.TEST_DATABASE_URL;
 const API = process.env.TEST_ADMIN_API_DATABASE_URL;
@@ -35,26 +42,7 @@ const call: Call = {
 };
 const WEB = { client: "web" as const, userAgent: "lock-order" };
 let ctx: AuthCtx;
-
-const deadlocks = async () => {
-  await owner`select pg_stat_force_next_flush(), pg_stat_clear_snapshot()`;
-  const [r] = await owner`select deadlocks::int as n from pg_stat_database
-    where datname = current_database()`;
-  return Number(r?.n ?? 0);
-};
-
-/**
- * Số deadlock tăng thêm so với `before`. Backend phát hiện deadlock chỉ đẩy thống kê khi rảnh (tối đa ~1 s), nên poll
- * tới hạn chót thay vì ngủ cố định; tăng là trả ngay (fail sớm).
- */
-async function deadlocksSince(before: number, deadlineMs = 1500): Promise<number> {
-  const end = Date.now() + deadlineMs;
-  for (;;) {
-    const n = (await deadlocks()) - before;
-    if (n > 0 || Date.now() >= end) return n;
-    await Bun.sleep(50);
-  }
-}
+const { deadlocks, deadlocksSince, interleave: m2Interleave, passBy } = lockKit(owner);
 
 /** A giữ khoá hàng user (như login/đổi mật khẩu), B chạy trong lúc đó, rồi A chèn refresh token. */
 async function interleave(
@@ -210,70 +198,11 @@ const actor = {
 } as const;
 const m2 = (hooks?: TestHooks) => ({ ctx: { db, hooks }, actor, scope: platform });
 
-/** Hook dừng đúng một lần ở `target` sau khi đã giữ khoá; test mở bằng tay. */
-function barrier(target: HookOp, step: HookStep = "locked") {
-  let open: () => void = () => undefined;
-  let reached: () => void = () => undefined;
-  const opened = new Promise<void>((r) => {
-    open = r;
-  });
-  const locked = new Promise<void>((r) => {
-    reached = r;
-  });
-  let used = false;
-  const hooks: TestHooks = {
-    afterLock: async (op, s) => {
-      if (op !== target || s !== step || used) return;
-      used = true;
-      reached();
-      await opened;
-    },
-  };
-  return { hooks, locked, open: () => open() };
-}
-
-/** Chờ tới khi có ít nhất một backend đang đợi khoá hàng (wait_event_type = 'Lock'). */
-async function waitForLockWait(): Promise<void> {
-  const deadline = Date.now() + 3000;
-  while (Date.now() < deadline) {
-    const [r] = await owner`select count(*)::int as n from pg_stat_activity
-      where datname = current_database() and wait_event_type = 'Lock'`;
-    if ((r?.n ?? 0) >= 1) return;
-    await Bun.sleep(20);
-  }
-  throw new Error("không thấy request thứ hai chờ khoá");
-}
-
-type Settled = { ok: boolean; e?: unknown };
-const settle = (p: Promise<unknown>): Promise<Settled> =>
-  p.then(
-    () => ({ ok: true }),
-    (e) => ({ ok: false, e }),
-  );
-
-async function m2Interleave(
-  first: () => Promise<unknown>,
-  second: () => Promise<unknown>,
-  b: { locked: Promise<void>; open: () => void },
-) {
-  const before = await deadlocks();
-  const pa = settle(first());
-  await b.locked;
-  const pb = settle(second());
-  await waitForLockWait();
-  const t0 = performance.now();
-  b.open();
-  const [ra, rb] = await Promise.all([pa, pb]);
-  const ms = performance.now() - t0;
-  return { ra, rb, ms, deadlocks: await deadlocksSince(before) };
-}
-
 const featureCount = async (): Promise<number> => {
   const [r] =
     await owner`select count(*)::int as n from admin.feature_commands where command_id = ${CMD}`;
   return Number(r?.n ?? 0);
 };
-const codeOf = (r: Settled) => (r.e as { code?: string } | undefined)?.code;
 
 describe("ADM-BR-10 · M2 plan §5.1 · khoá hàng catalog xen kẽ tất định (G8)", () => {
   beforeEach(async () => {
@@ -373,5 +302,242 @@ describe("ADM-BR-10 · M2 plan §5.1 · khoá hàng catalog xen kẽ tất đị
     expect(codeOf(r.rb)).toBe("COMMAND_NAME_TAKEN");
     expect(r.deadlocks).toBe(0);
     expect(r.ms).toBeLessThan(900);
+  });
+});
+
+// ---- M3 (plan §6.3): L1–L10 xen kẽ TẤT ĐỊNH qua khoá ngầm (FK KEY SHARE, unique index) + config_meta là khoá CUỐI ----
+
+const n3 = (k: number) => `01900000-0000-7000-8000-0000000cc${String(k).padStart(3, "0")}`;
+const [T2, U1, U2, G1, G2, G3, F1, F2] = [n3(1), n3(2), n3(3), n3(4), n3(5), n3(6), n3(7), n3(8)];
+const who = (role: "tenant_admin" | "platform_admin") =>
+  ({ userId: ADMIN, tenantId: TID, tenantKey: "lock", role, sid: null }) as const;
+const ta = (hooks?: TestHooks) => ({ ctx: { db, hooks }, actor: who("tenant_admin"), scope });
+const pa = (hooks?: TestHooks) => ({
+  ctx: { db, hooks },
+  actor: who("platform_admin"),
+  scope: { kind: "platform" } as const,
+});
+const P = (feature_id: string, group_id: string) => ({ feature_id, group_id });
+const cfgNow = async () =>
+  Number((await owner`select config_version as v from admin.config_meta`)[0]?.v);
+const grantRows = async (g: string) =>
+  Number(
+    (await owner`select count(*)::int as n from admin.feature_grants where group_id = ${g}`)[0]?.n,
+  );
+const ok = (r: { deadlocks: number; ms?: number }) => {
+  expect(r.deadlocks).toBe(0);
+  if (r.ms !== undefined) expect(r.ms).toBeLessThan(900);
+};
+
+async function seedM3(): Promise<void> {
+  await owner`insert into admin.tenants (id, key, name) values (${T2}, 'lock2', 'Lock 2')`;
+  await owner`insert into admin.users (id, tenant_id, username, password_hash, display_name, role) values
+    (${U1}, ${TID}, 'u-one', 'h', 'U1', 'member'), (${U2}, ${TID}, 'u-two', 'h', 'U2', 'member')`;
+  await owner`insert into admin.groups (id, tenant_id, key, name) values (${G1}, ${TID}, 'g-one', '{"vi":"G1"}'),
+    (${G2}, ${TID}, 'g-two', '{"vi":"G2"}'), (${G3}, ${T2}, 'g-three', '{"vi":"G3"}')`;
+  await owner`insert into admin.features (id, key, name) values (${F1}, 'f-one', '{"vi":"F1"}'),
+    (${F2}, 'f-two', '{"vi":"F2"}')`;
+  await owner`insert into admin.feature_entitlements (feature_id, tenant_id) values
+    (${F1}, ${TID}), (${F2}, ${TID}), (${F1}, ${T2})`;
+}
+
+describe("ADM-FR-35 · M3 plan §6.3 · grant/batch qua khoá ngầm (L1–L2)", () => {
+  beforeEach(seedM3);
+
+  it("L1 · batch [bớt X, thêm Y] ∥ batch [thêm X, bớt Y] → cả hai xong, không deadlock", async () => {
+    await batchGrants(ta(), undefined, { add: [P(F1, G1)], remove: [] });
+    const v0 = await cfgNow();
+    const b = barrier("grant.batch", "rows");
+    const r = await m2Interleave(
+      () => batchGrants(ta(b.hooks), undefined, { add: [P(F2, G2)], remove: [P(F1, G1)] }),
+      () => batchGrants(ta(), undefined, { add: [P(F1, G1)], remove: [P(F2, G2)] }),
+      b,
+    );
+    expect([r.ra.ok, r.rb.ok]).toEqual([true, true]);
+    expect([await grantRows(G1), await grantRows(G2)]).toEqual([1, 0]);
+    expect(await cfgNow()).toBe(v0 + 2);
+    ok(r);
+  });
+
+  it("L2 · POST grant (f,g) ∥ POST cùng cặp (unique index) → 1 hàng, bump đúng một lần", async () => {
+    const v0 = await cfgNow();
+    const b = barrier("grant.save", "rows");
+    const body = { feature_id: F1, group_id: G1 };
+    const r = await m2Interleave(
+      () => createGrant(ta(b.hooks), undefined, body),
+      () => createGrant(ta(), undefined, body),
+      b,
+    );
+    const created = [r.ra, r.rb].map((x) => (x.v as { created: boolean }).created);
+    expect(created).toEqual([true, false]);
+    expect([await grantRows(G1), await cfgNow()]).toEqual([1, v0 + 1]);
+    ok(r);
+  });
+});
+
+describe("ADM-FR-32 · M3 plan §6.3 · grant ∥ thu hồi entitlement (L3)", () => {
+  beforeEach(seedM3);
+
+  it("L3 · L3a grant giữ entitlement SHARE ∥ thu hồi chờ; L3b thu hồi giữ hàng ∥ grant → NOT_ENTITLED", async () => {
+    const a = barrier("grant.save");
+    const r1 = await m2Interleave(
+      () => createGrant(ta(a.hooks), undefined, { feature_id: F1, group_id: G1 }),
+      () => revokeEntitlement(pa(), F1, TID),
+      a,
+    );
+    expect([r1.ra.ok, r1.rb.ok, await grantRows(G1)]).toEqual([true, true, 1]);
+    ok(r1);
+    const b = barrier("entitlement.save", "rows");
+    const r2 = await m2Interleave(
+      () => revokeEntitlement(pa(b.hooks), F2, TID),
+      () => createGrant(ta(), undefined, { feature_id: F2, group_id: G2 }),
+      b,
+    );
+    expect([r2.ra.ok, codeOf(r2.rb)]).toEqual([true, "NOT_ENTITLED"]);
+    ok(r2);
+  });
+});
+
+describe("ADM-FR-62 · M3 plan §6.3 · group/feature xoá ∥ batch (L4–L6)", () => {
+  beforeEach(seedM3);
+
+  it("L4 · L4a xoá group giữ NKU ∥ batch chờ → group_ids; L4b batch giữ hàng ∥ xoá group → cascade", async () => {
+    const a = barrier("group.delete");
+    const r1 = await m2Interleave(
+      () => deleteGroup(ta(a.hooks), G1),
+      () => batchGrants(ta(), undefined, { add: [P(F1, G1)], remove: [] }),
+      a,
+    );
+    expect([r1.ra.ok, codeOf(r1.rb), await grantRows(G1)]).toEqual([true, "INVALID_REFERENCE", 0]);
+    ok(r1);
+    const b = barrier("grant.batch", "rows");
+    const r2 = await m2Interleave(
+      () => batchGrants(ta(b.hooks), undefined, { add: [P(F1, G2)], remove: [] }),
+      () => deleteGroup(ta(), G2),
+      b,
+    );
+    expect([r2.ra.ok, r2.rb.ok, await grantRows(G2)]).toEqual([true, true, 0]);
+    ok(r2);
+  });
+
+  it("L5 · PATCH feature (NKU) ∥ POST grant feature đó (chờ SHARE) → cả hai xong, bump +2", async () => {
+    const v0 = await cfgNow();
+    const b = barrier("feature.save");
+    const r = await m2Interleave(
+      () => updateFeature(pa(b.hooks), F1, { version: 1, status: "beta" }),
+      () => createGrant(ta(), undefined, { feature_id: F1, group_id: G1 }),
+      b,
+    );
+    expect([r.ra.ok, r.rb.ok, await cfgNow()]).toEqual([true, true, v0 + 2]);
+    ok(r);
+  });
+
+  it("L6 · xoá feature (NKU) ∥ batch thêm feature đó → INVALID_REFERENCE feature_ids", async () => {
+    const b = barrier("feature.delete");
+    const r = await m2Interleave(
+      () => deleteFeature(pa(b.hooks), F2),
+      () => batchGrants(ta(), undefined, { add: [P(F2, G1)], remove: [] }),
+      b,
+    );
+    expect([r.ra.ok, codeOf(r.rb)]).toEqual([true, "INVALID_REFERENCE"]);
+    expect((r.rb.e as { details?: { field?: string } }).details?.field).toBe("feature_ids");
+    ok(r);
+  });
+});
+
+const firstAdmin = (key: string) => ({
+  key,
+  name: key,
+  max_concurrent_sub: null,
+  first_admin: {
+    username: "boss",
+    display_name: "Boss",
+    email: `boss@${key}.test`,
+    locale: "vi" as const,
+  },
+});
+
+describe("ADM-FR-53 · M3 plan §6.3 · config_meta cuối, tạo tenant (L7–L8)", () => {
+  beforeEach(seedM3);
+
+  it("L7 · A dừng NGAY TRƯỚC bump ∥ B tenant khác ghi xong không chờ → v_B = v0+1, v_A = v0+2", async () => {
+    const v0 = await cfgNow();
+    const b = barrier("group.save", "bump");
+    const t2 = {
+      ...ta(),
+      actor: { ...who("tenant_admin"), tenantId: T2 },
+      scope: { kind: "tenant", tenantId: T2 } as const,
+    };
+    const r = await passBy(
+      () => updateGroup(ta(b.hooks), G1, { version: 1, name: { vi: "G1 mới" } }),
+      async () => [
+        await createGrant(t2, undefined, { feature_id: F1, group_id: G3 }),
+        await cfgNow(),
+      ],
+      b,
+    );
+    expect([r.ra.ok, r.rb.ok]).toEqual([true, true]);
+    expect((r.rb.v as unknown[])[1]).toBe(v0 + 1);
+    expect(await cfgNow()).toBe(v0 + 2);
+    ok(r);
+  });
+
+  it("L8 · POST tenant ∥ POST cùng key (unique tenants_key_uq) → KEY_TAKEN, đúng 1 beta-testers", async () => {
+    const v0 = await cfgNow();
+    const b = barrier("tenant.save", "rows");
+    const ctx = { db, hooks: b.hooks };
+    const platform = { kind: "platform" } as const;
+    const r = await m2Interleave(
+      () => createTenant(ctx, platform, firstAdmin("acme2")),
+      () => createTenant({ db }, platform, firstAdmin("acme2")),
+      b,
+    );
+    expect([r.ra.ok, codeOf(r.rb)]).toEqual([true, "KEY_TAKEN"]);
+    const [n] =
+      await owner`select count(*)::int as n from admin.groups g join admin.tenants t on t.id = g.tenant_id
+      where t.key = 'acme2' and g.key = 'beta-testers'`;
+    expect([n?.n, await cfgNow()]).toEqual([1, v0 + 1]);
+    ok(r);
+  });
+});
+
+describe("ADM-FR-62 · M3 plan §6.3 · thành viên đua, retry 40P01 (L9–L10)", () => {
+  beforeEach(seedM3);
+
+  it("L9 · thêm thành viên [u2,u1] ∥ [u1,u2] → không deadlock; A added 2, B already 2, bump +1", async () => {
+    const v0 = await cfgNow();
+    const b = barrier("group.members", "rows");
+    const r = await m2Interleave(
+      () => addMembers(ta(b.hooks), G1, { usernames: ["u-two", "u-one"], dry_run: false }),
+      () => addMembers(ta(), G1, { usernames: ["u-one", "u-two"], dry_run: false }),
+      b,
+    );
+    const out = [r.ra, r.rb].map((x) => x.v as { added: string[]; already: string[] });
+    expect([out[0]?.added.length, out[1]?.already.length, await cfgNow()]).toEqual([2, 2, v0 + 1]);
+    ok(r);
+  });
+
+  it("L10 · 40P01 ở bump lần đầu → chạy lại: version +1, bump +1, đúng MỘT NOTIFY (sentinel)", async () => {
+    const lis = postgres(OWNER, { max: 1, onnotice: () => {} });
+    const got: { v: number; entity: string }[] = [];
+    await lis.listen("config_changed", (raw) => got.push(JSON.parse(raw)));
+    try {
+      let n = 0;
+      const hooks: TestHooks = {
+        afterLock: (op, step) => {
+          if (op !== "group.save" || step !== "bump" || n++ > 0) return;
+          throw Object.assign(new Error("test deadlock"), { code: "40P01" });
+        },
+      };
+      const v0 = await cfgNow();
+      const g = await updateGroup(ta(hooks), G1, { version: 1, name: { vi: "G1 retry" } });
+      await updateGroup(ta(), G2, { version: 1, name: { vi: "sentinel" } });
+      const end = Date.now() + 1000;
+      while (!got.some((m) => m.v === v0 + 2) && Date.now() < end) await Bun.sleep(10);
+      expect([n, g.version, await cfgNow()]).toEqual([2, 2, v0 + 2]);
+      expect(got.map((m) => m.v)).toEqual([v0 + 1, v0 + 2]);
+    } finally {
+      await lis.end({ timeout: 1 });
+    }
   });
 });
