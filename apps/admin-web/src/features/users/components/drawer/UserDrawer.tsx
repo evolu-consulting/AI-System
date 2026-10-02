@@ -1,6 +1,6 @@
 // ADM-FR-04, ADM-FR-63 · drawer 520px tạo/sửa user (URL `?drawer=new|edit&user=`); sau khi tạo hiện khối mật khẩu tạm.
 import type { User } from "@ai/contracts";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,11 @@ import { TempPasswordStage } from "./TempPasswordStage";
 import { UncopiedConfirm } from "./UncopiedConfirm";
 import { UserForm, type UserFormErrors } from "./UserForm";
 import { UserGroupsField } from "./UserGroupsField";
+
+// Tab "Quyền hiệu lực" nạp lười: không vào chunk /users và chỉ gọi API khi tab được mở.
+const UserAccessTab = lazy(() =>
+  import("./UserAccessTab").then((m) => ({ default: m.UserAccessTab })),
+);
 
 export type CreatedInfo = { username: string; password: string };
 
@@ -93,10 +98,20 @@ function DrawerBody(p: BodyProps) {
     <Tabs defaultValue="info">
       <TabsList>
         <TabsTrigger value="info">{t("users.tab.info")}</TabsTrigger>
+        <TabsTrigger value="access">{t("users.tab.access")}</TabsTrigger>
       </TabsList>
       <TabsContent value="info" className="pt-4">
         {form}
         <UserGroupsField groups={p.user.groups} />
+      </TabsContent>
+      <TabsContent value="access" className="pt-4">
+        <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+          <UserAccessTab
+            userId={p.user.id}
+            username={p.user.username}
+            tenantKey={p.user.tenant_key}
+          />
+        </Suspense>
       </TabsContent>
     </Tabs>
   );
