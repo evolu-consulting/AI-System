@@ -191,7 +191,7 @@ describe("ADM-FR-35 · toàn phần hoặc không có gì (M3-R08)", () => {
   it("ADM-FR-35 · M3-R08 · NOT_ENTITLED chỉ xét add: {feature_ids sắp tăng} gồm feature đã thu hồi và feature chưa mở; không ghi gì", async () => {
     await env.owner`update admin.feature_entitlements set revoked_at = now() where feature_id = ${F.dichThuat} and tenant_id = ${TENANT_ID.acme}`;
     const res = await rejected(
-      { add: [P(ID3.feature.phapChe, KT), P(F.dichThuat, KD)] },
+      { add: [P(ID3.feature.phapChe, KT), P(F.dichThuat, await betaId(env.owner, "acme"))] },
       "NOT_ENTITLED",
     );
     expect(res.json.error.details).toEqual({ feature_ids: [F.dichThuat, ID3.feature.phapChe] });

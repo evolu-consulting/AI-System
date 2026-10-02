@@ -39,7 +39,7 @@ test("ADM-FR-62 · M3-R13 · user ở 4 group (beta-testers, ke-toan + 2 thêm) 
   await withOwner(async (sql) => {
     for (const k of ["nhom-1", "nhom-2"]) {
       const [g] = await sql<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
-        values (${TENANT_ID.acme}, ${k}, jsonb_build_object('vi', ${`Nhóm ${k}`})) returning id`;
+        values (${TENANT_ID.acme}, ${k}, jsonb_build_object('vi', ${`Nhóm ${k}`}::text)) returning id`;
       await sql`insert into admin.group_members (tenant_id, group_id, user_id)
         values (${TENANT_ID.acme}, ${g?.id as string}, ${USER_ID.thu})`;
     }

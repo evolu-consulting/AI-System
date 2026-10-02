@@ -87,21 +87,36 @@ beforeAll(async () => {
   const idx = COMBOS.map((c) => c.i);
   await o`insert into admin.tenants (id, key, name, active)
     select * from unnest(${idx.map(T)}::uuid[], ${idx.map((i) => `cmb${i}`)}::text[],
-      ${idx.map((i) => `Combo ${i}`)}::text[], ${COMBOS.map((c) => c.tenantActive)}::boolean[])`;
+      ${idx.map((i) => `Combo ${i}`)}::text[], ${o.array(
+        COMBOS.map((c) => c.tenantActive),
+        16,
+      )})`;
   await o`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, active, locked_by_tenant)
     select * from unnest(${idx.map(U)}::uuid[], ${idx.map(T)}::uuid[], ${idx.map((i) => `user${i}`)}::text[],
       ${idx.map(() => "h")}::text[], ${idx.map((i) => `User ${i}`)}::text[], ${idx.map(() => "member")}::text[],
-      ${COMBOS.map((c) => c.userActive)}::boolean[], ${COMBOS.map((c) => c.locked)}::boolean[])`;
+      ${o.array(
+        COMBOS.map((c) => c.userActive),
+        16,
+      )}, ${o.array(
+        COMBOS.map((c) => c.locked),
+        16,
+      )})`;
   await o`insert into admin.features (id, key, name, status)
     select f, k, jsonb_build_object('vi', k), s from unnest(${idx.map(F)}::uuid[], ${idx.map((i) => `fx${i}`)}::text[],
       ${COMBOS.map((c) => c.status)}::text[]) as t(f, k, s)`;
   await o`insert into admin.workflows (id, key, name, description, app_type, base_url, secret_id, enabled)
     select w, k, k, 'Workflow tổ hợp dùng để đối chiếu hiệu lực', 'workflow', 'https://dify.example.com/v1', ${ID.secret.translate}, e
-    from unnest(${idx.map(W)}::uuid[], ${idx.map((i) => `wx${i}`)}::text[], ${COMBOS.map((c) => c.wfEnabled)}::boolean[]) as t(w, k, e)`;
+    from unnest(${idx.map(W)}::uuid[], ${idx.map((i) => `wx${i}`)}::text[], ${o.array(
+      COMBOS.map((c) => c.wfEnabled),
+      16,
+    )}) as t(w, k, e)`;
   await o`insert into admin.commands (id, name, description, workflow_id, output, enabled)
     select c, k, jsonb_build_object('vi', k), w, '{"field":"text","render":"text"}'::jsonb, e
     from unnest(${idx.map(C)}::uuid[], ${idx.map((i) => `cx${i}`)}::text[], ${idx.map(W)}::uuid[],
-      ${COMBOS.map((c) => c.cmdEnabled)}::boolean[]) as t(c, k, w, e)`;
+      ${o.array(
+        COMBOS.map((c) => c.cmdEnabled),
+        16,
+      )}) as t(c, k, w, e)`;
   await o`insert into admin.command_names (name, command_id)
     select * from unnest(${idx.map((i) => `cx${i}`)}::text[], ${idx.map(C)}::uuid[])`;
   await o`insert into admin.feature_commands (feature_id, command_id)

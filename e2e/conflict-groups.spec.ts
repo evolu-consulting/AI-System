@@ -73,7 +73,11 @@ test("ADM-FR-55 · M3-AC08 · group: sau Ghi đè form dựng lại đúng versi
   await page.getByRole("button", { name: "Đổi tên", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Đổi tên group" });
   await dialog.getByRole("textbox", { name: "Mô tả", exact: true }).fill("Mô tả C");
+  const saved = page.waitForResponse(
+    (r) => r.url().includes("/admin/groups/") && r.request().method() === "PATCH",
+  );
   await dialog.getByRole("button", { name: "Lưu", exact: true }).click();
+  expect((await saved).status()).toBe(200);
   await expect(conflictDialog(page)).toHaveCount(0);
   expect(await versionOf("groups", KT)).toBe(latest + 2);
   expect(await dbValue("groups", KT, "description")).toBe("Mô tả C");

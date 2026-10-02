@@ -96,8 +96,9 @@ export async function createM3Env(
   o: { catalog?: CatalogParts; perms?: PermParts } = {},
 ): Promise<M3Env> {
   const m2 = await createM2Env({ catalog: o.catalog ?? ALL_CATALOG });
-  let perms = o.perms ?? ALL_PERMISSIONS;
-  await seedPermissions(m2.owner, perms);
+  // Bộ quyền mặc định của env; `reset3({perms})` chỉ ghi đè cho đúng lần gọi đó (TC-4: không dính sang lần sau).
+  const basePerms = o.perms ?? ALL_PERMISSIONS;
+  await seedPermissions(m2.owner, basePerms);
   const closers: Array<() => Promise<void>> = [];
   let sentinelN = 0;
 
@@ -179,11 +180,12 @@ export async function createM3Env(
     expect(res.status).toBe(201);
     const v = await cfg();
     const start = performance.now();
-    while (!lis.msgs.some((m) => m.payload.v === v)) {
+    // chỉ tìm từ mốc `from` (P12 xoá config_meta nên `v` có thể lặp lại giá trị của thông điệp cũ)
+    while (!lis.msgs.some((m, i) => i >= from && m.payload.v === v)) {
       if (performance.now() - start > 2000) throw new Error("NOTIFY: không nhận được sentinel");
       await lis.waitCount(lis.msgs.length + 1, 2000);
     }
-    const idx = lis.msgs.findIndex((m) => m.payload.v === v);
+    const idx = lis.msgs.findIndex((m, i) => i >= from && m.payload.v === v);
     return lis.msgs.slice(from, idx);
   };
 
@@ -197,12 +199,11 @@ export async function createM3Env(
     as,
     reset: async (parts) => {
       await m2.reset(parts);
-      await seedPermissions(m2.owner, perms);
+      await seedPermissions(m2.owner, basePerms);
     },
     reset3: async (x = {}) => {
-      if (x.perms) perms = x.perms;
       await m2.reset(x.catalog ?? ALL_CATALOG);
-      await seedPermissions(m2.owner, perms);
+      await seedPermissions(m2.owner, x.perms ?? basePerms);
     },
     close: async () => {
       for (const l of listeners) await l.close();

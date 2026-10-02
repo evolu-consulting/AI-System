@@ -357,13 +357,16 @@ describe("ADM-FR-53 · lỗi gửi và config_meta (M3-R15, R16)", () => {
 
   it("ADM-FR-53 · M3-R15 · P12 · config_meta bị xoá hàng (owner): một ghi bất kỳ vẫn thành công, config_version = 1, hàng tồn tại lại (upsert), NOTIFY v=1", async () => {
     await env.owner`delete from admin.config_meta`;
-    const { res, msgs } = await track(env, lis, () =>
+    const { res, v1, msgs } = await track(env, lis, () =>
       binh("POST", "/admin/groups", { key: "p12-group", name: { vi: "P12" } }),
     );
     expect(res.status).toBe(201);
+    // v1 đọc ngay sau ghi, trước sentinel của track (sentinel cũng bump nên không đọc lại config_meta ở đây)
+    expect(v1).toBe(1);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]?.payload.v).toBe(1);
     const rows = await env.owner`select config_version from admin.config_meta`;
     expect(rows.length).toBe(1);
-    expect(msgs[0]?.payload.v).toBe(rows[0]?.config_version as number);
   });
 });
 
