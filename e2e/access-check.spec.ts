@@ -1,11 +1,20 @@
 // ADM-FR-36 · M3-R11, R12, R13 · e2e Phân quyền › Kiểm tra quyền (F4; test-plan E-AC). Nhãn nguyên văn plan-frontend §5, §7.
 // Số liệu: lan thấy 3/5 command; an thiếu grant kiemtra-hoadon; thu thuộc beta-testers; em inactive; khang globex (thu hồi).
 import { expect, type Page, test } from "@playwright/test";
-import { loginAdmin, loginAs, resetFixture, toast, USER_ID, withOwner } from "./support/helpers";
+import {
+  loginAdmin,
+  loginAs,
+  resetFixture,
+  seedPhapChe,
+  toast,
+  USER_ID,
+  withOwner,
+} from "./support/helpers";
 
 test.describe.configure({ mode: "serial" });
-test.beforeEach(() => {
+test.beforeEach(async () => {
   resetFixture();
+  await seedPhapChe();
 });
 
 const openCheck = async (

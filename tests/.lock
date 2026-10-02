@@ -1,7 +1,7 @@
 # tests/.lock — sinh bởi bun run test:lock:write (chỉ qc). Không sửa tay.
-31ac7f8196e670e6a5188c08858083fa8555f27853ccde09ef0926dfe85394a7  e2e/access-check.spec.ts
+0299ea8edb3729068e4a68dff9345be8ec8ce8ab2650fc42840c231068e89060  e2e/access-check.spec.ts
 d2c81bd8128f68801f72cca23c5d001a99b89e6ec9bb84eb7d6d50c2f77d3332  e2e/access-command.spec.ts
-d1416409a32f27a50c2b08242e2cfc5cb342ab4afea6c02cc0b050a73a5be46c  e2e/access-matrix.spec.ts
+dc937c61fc1bb30ba4c926367127427224773dbfced96621b5540c38eb07a87e  e2e/access-matrix.spec.ts
 2da017df95f4e03f2aab70c5dd6336a913c5227400434ce4a8e75c038124ef92  e2e/access-user-tab.spec.ts
 1953e1a4d3e6c752c76aecd22c04a2ff62b5ac60ac057ff349fad3c2e3f2e98f  e2e/auth.spec.ts
 84cc3ffb575fee886afd1116858da1c51e806ce45f469c96cab502bda841df9f  e2e/commands.spec.ts
@@ -13,7 +13,7 @@ daaef41687853867370a51ea3ab6bb4c5f050afe0e048721ae4ff1bbcd58f63a  e2e/conflict-u
 a5f80bf65d5d975e33b10788e5ffbde5a2bddabf7a2a9bbff08160e2aef3b7e4  e2e/conflict-workflows.spec.ts
 b42a4b05cd28ab6d845677a14eeee598941a87d14cec9a114b27e484567f55e4  e2e/features.spec.ts
 c2c4b61b5cb34d14f34050a2f30b3c753a3459500c47655c763815377c64b726  e2e/groups-editor.spec.ts
-310db7d935ad21e1a700b06490ba507b10a16fd7e9ca0bb57fa06bb1547f84a8  e2e/groups-grants.spec.ts
+8b6a73017627f4571d39e8dce3432dad766d41a08098080a78a47d796f1ab844  e2e/groups-grants.spec.ts
 d24a4e56f4e9d2a2d12f53aed722040a28714fab81da73fc920676fa9272ee53  e2e/groups-list.spec.ts
 7c15fe4a95c4249aea6fa5354c4b64b2d591b13754904bc64fd992c6fd5385e8  e2e/groups-members.spec.ts
 329cbefa1cc50da9d3917554d525cd8c60a57c70f423ccbfb12d083dc57b07a6  e2e/m1-flow.spec.ts
@@ -22,8 +22,8 @@ d24a4e56f4e9d2a2d12f53aed722040a28714fab81da73fc920676fa9272ee53  e2e/groups-lis
 1dc62aa43c4a5dabe3fd32d583e97d88c9d5bd24f5472c489f82b9e910fff4f4  e2e/secrets.spec.ts
 8c302e81222d07b1eded6cda3efcf5eaf5a47d1c87e7ef67f5e23224352ac76f  e2e/smoke.spec.ts
 64ac4fb8dba71703d88263d785f3853eac63c0b483b74f531f4328f547e04465  e2e/support/conflict.ts
-618105402077575ed6277e39c230a775e63a4a8a5b99e7cb4de1fdf720d16044  e2e/support/helpers.ts
-a5a8df7a381dbdb70579e6d96a465fd437369ea705be33e317f2462893a410a5  e2e/support/prepare-db.ts
+768348334cee36f5d446eee618f80863f5077a888b231f5db8d5b4505fe7b072  e2e/support/helpers.ts
+06669f718b6bae997d0e4a0cd3fc7d59bc3b8a930907247ff709e5fc7dafd3ec  e2e/support/prepare-db.ts
 57f37bcf4109942d834f4bf90b9a631a37b758851a25f3e7b51c234c5d8546bf  e2e/tenants.spec.ts
 5c7602643e15ac0abe4acdf8b3c530e0c6ab112e60f587f1708d5381101118fe  e2e/users-groups.spec.ts
 32846a7b6a73feff2f89c548106e339d5cb0e12ec35f39190c7512f5594176bd  e2e/users.spec.ts

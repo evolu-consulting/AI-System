@@ -43,8 +43,9 @@ async function main(): Promise<void> {
     await insertBulk(sql, hashes.pw);
     // M2: fixture danh mục đầy đủ (test-plan §3): secrets, workflows, features, commands, entitlements, agent.
     await seedCatalog(sql, ALL_CATALOG);
-    // M3: group, thành viên, grant, feature `phap-che` (test-plan §3). `config_meta` không bị truncate.
-    await seedPermissions(sql, ALL_PERMISSIONS);
+    // M3: group, thành viên, grant (test-plan §3). KHÔNG seed feature `phap-che` ở đây (làm lệch số đếm feature của e2e M2, TC-3);
+    // spec nào cần thì gọi `seedPhapChe()`. `config_meta` không bị truncate.
+    await seedPermissions(sql, { ...ALL_PERMISSIONS, phapChe: false });
   } finally {
     await sql.end();
   }

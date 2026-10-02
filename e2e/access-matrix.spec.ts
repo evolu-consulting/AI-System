@@ -8,14 +8,16 @@ import {
   loginAdmin,
   loginAs,
   resetFixture,
+  seedPhapChe,
   TENANT_ID,
   toast,
   withOwner,
 } from "./support/helpers";
 
 test.describe.configure({ mode: "serial" });
-test.beforeEach(() => {
+test.beforeEach(async () => {
   resetFixture();
+  await seedPhapChe();
 });
 
 const grid = (page: Page) => page.getByRole("grid", { name: "Ma trận feature × group" });

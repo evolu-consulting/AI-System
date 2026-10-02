@@ -8,6 +8,8 @@ export { PW, TEMP_PW, TENANT_ID, USER_ID } from "../../tests/acceptance/M1/_data
 export { ID, LEAK_1, LEAK_2, LEAK_EMOJI, leakForms } from "../../tests/acceptance/M2/_data";
 export { betaId, ID3, id3 } from "../../tests/acceptance/M3/_data";
 
+import { seedPermissions } from "../../tests/acceptance/M3/_data";
+
 function loadEnvOnce(): void {
   if (process.env.TEST_DATABASE_URL) return;
   try {
@@ -42,6 +44,11 @@ export function resetFixture(): void {
     },
     stdio: "inherit",
   });
+}
+
+/** Thêm feature `phap-che` (chưa entitlement cho ai) — chỉ các spec M3 cần hàng "Chưa mở"/NOT_ENTITLED gọi sau `resetFixture()`. */
+export async function seedPhapChe(): Promise<void> {
+  await withOwner((sql) => seedPermissions(sql, { phapChe: true }));
 }
 
 /** Kết nối owner tới DB test cho một thao tác rồi đóng. */

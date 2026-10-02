@@ -1,11 +1,12 @@
 // ADM-FR-32 · ADM-BR-12 · M3-R07, R08, R09 · e2e tab Feature của Group (test-plan E-GG; tên file đổi từ groups-features để
 // mẫu `features` của FE1d không khớp nhầm). Lưu qua MỘT `PUT /admin/grants/batch`. Nhãn nguyên văn plan-frontend §5.
 import { expect, type Page, test } from "@playwright/test";
-import { ID, ID3, loginAs, resetFixture, toast, withOwner } from "./support/helpers";
+import { ID, ID3, loginAs, resetFixture, seedPhapChe, toast, withOwner } from "./support/helpers";
 
 test.describe.configure({ mode: "serial" });
-test.beforeEach(() => {
+test.beforeEach(async () => {
   resetFixture();
+  await seedPhapChe();
 });
 
 const KT = ID3.group.acmeKeToan;
