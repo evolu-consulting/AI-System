@@ -157,3 +157,8 @@ export function deleteGroup(c: Call, id: string): Promise<void> {
     await afterLock(c.ctx.hooks, "group.delete", "rows");
   });
 }
+
+/** Cho module grants: tenant phải tồn tại (404). Không khoá (E2). */
+export async function mustTenant(tx: Tx, tenantId: string): Promise<void> {
+  if (!(await repo.tenantExists(tx, tenantId))) throw appError("NOT_FOUND");
+}
