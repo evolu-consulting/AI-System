@@ -1,5 +1,8 @@
 // ADM-FR-62 · gọi API /admin/groups* (nơi duy nhất của feature groups) dưới dạng hook TanStack Query.
 import type {
+  GrantBatchRequest,
+  GrantBatchResponse,
+  GrantMatrix,
   Group,
   GroupCreateRequest,
   GroupListItem,
@@ -20,6 +23,7 @@ export const GROUP_KEYS = {
   all: ["groups"] as const,
   list: (p: GroupListParams) => ["groups", "list", p] as const,
   detail: (id: string) => ["groups", "detail", id] as const,
+  grants: (groupId: string) => ["groups", "grants", groupId] as const,
   options: (tenantId: string) => ["groups", "options", tenantId] as const,
   members: (id: string, q: string, offset: number) => ["groups", "members", id, q, offset] as const,
 };
@@ -118,6 +122,31 @@ export function useRemoveMember(groupId: string) {
   return useMutation({
     mutationFn: (userId: string) =>
       api<undefined>(`/admin/groups/${groupId}/members/${userId}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: GROUP_KEYS.all }),
+  });
+}
+
+/** Cột của MỘT group trong ma trận (tab Feature): mọi feature catalog + `state` + `granted_group_ids` (M3-R09). */
+export function useGroupMatrix(tenantId: string, groupId: string) {
+  return useQuery({
+    queryKey: GROUP_KEYS.grants(groupId),
+    queryFn: () =>
+      api<GrantMatrix>("/admin/grants/matrix", {
+        query: { tenant_id: tenantId, group_id: groupId },
+      }),
+  });
+}
+
+/** Lưu cấp/thu feature qua MỘT `PUT /admin/grants/batch` (một transaction, ≤ 200 thao tác). */
+export function useApplyGrants(tenantId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Pick<GrantBatchRequest, "add" | "remove">) =>
+      api<GrantBatchResponse>("/admin/grants/batch", {
+        method: "PUT",
+        body,
+        query: { tenant_id: tenantId },
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: GROUP_KEYS.all }),
   });
 }

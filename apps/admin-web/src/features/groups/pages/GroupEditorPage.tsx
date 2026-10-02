@@ -9,6 +9,7 @@ import { useGroup } from "../api";
 import { GroupHeader } from "../components/editor/GroupHeader";
 import { GroupRenameDialog } from "../components/editor/GroupRenameDialog";
 import { GroupTabs } from "../components/editor/GroupTabs";
+import { GroupFeaturesTab } from "../components/grants/GroupFeaturesTab";
 import { MembersTab } from "../components/members/MembersTab";
 import { useGroupDelete } from "../hooks/use-group-delete";
 
@@ -47,7 +48,7 @@ export function GroupEditorPage() {
         tab={search.tab ?? "members"}
         onTab={(tab) => void setSearch({ search: (prev) => ({ ...prev, tab }), replace: true })}
         members={<MembersTab group={group} />}
-        features={null}
+        features={<GroupFeaturesTab group={group} />}
       />
       {renaming ? (
         <GroupRenameDialog

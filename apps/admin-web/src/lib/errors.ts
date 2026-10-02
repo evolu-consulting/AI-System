@@ -47,6 +47,8 @@ export const ERROR_MESSAGE_KEYS = [
   "errors.invalidReference",
   // M3
   "groups.error.betaProtected",
+  "access.error.notEntitled",
+  "access.error.coreProtected",
 ] as const;
 
 function untilTime(details: unknown): string {
@@ -85,6 +87,7 @@ const STATIC_KEYS: Partial<Record<string, string>> = {
   FEATURE_HAS_EXCLUSIVE_COMMANDS: "features.delete.blocked",
   INVALID_REFERENCE: "errors.invalidReference",
   BETA_GROUP_PROTECTED: "groups.error.betaProtected",
+  NOT_ENTITLED: "access.error.notEntitled",
 };
 
 const asList = (v: unknown): string[] =>
@@ -110,12 +113,17 @@ function detailString(details: unknown, field: string): string {
 }
 
 /** Lỗi → câu hiển thị. Mã chưa biết/5xx → `toast.saveFailed` kèm `message` server làm lý do. */
-export function describeError(err: unknown, opts?: { keyTaken?: string }): MessageSpec {
+export function describeError(
+  err: unknown,
+  opts?: { keyTaken?: string; coreProtected?: string },
+): MessageSpec {
   if (!(err instanceof ApiError)) return { key: "toast.saveFailed", params: { reason: "" } };
   if (err.code === "TEMP_LOCKED") {
     return { key: "auth.error.tempLocked", params: { time: untilTime(err.details) } };
   }
   if (err.code === "KEY_TAKEN" && opts?.keyTaken) return { key: opts.keyTaken };
+  if (err.code === "CORE_FEATURE_PROTECTED" && opts?.coreProtected)
+    return { key: opts.coreProtected };
   if (err.code === "LAST_ADMIN") return { key: lastAdminKey(err.details) };
   if (err.code === "COMMAND_NAME_TAKEN") {
     return { key: "commands.error.nameTaken", params: { name: detailString(err.details, "name") } };

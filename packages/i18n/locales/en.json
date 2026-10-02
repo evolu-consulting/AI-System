@@ -1141,6 +1141,13 @@
     }
   },
   "access": {
-    "title": "Access"
+    "title": "Access",
+    "matrix": {
+      "revoked": "Entitlement revoked"
+    },
+    "error": {
+      "notEntitled": "The company hasn't been given this feature, so it can't be granted. The matrix was reloaded.",
+      "coreProtected": "core is available to everyone and needs no grant."
+    }
   }
 }

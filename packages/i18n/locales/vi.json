@@ -1141,6 +1141,13 @@
     }
   },
   "access": {
-    "title": "Phân quyền"
+    "title": "Phân quyền",
+    "matrix": {
+      "revoked": "Đã thu hồi entitlement"
+    },
+    "error": {
+      "notEntitled": "Công ty chưa được mở feature này nên không cấp được. Đã tải lại ma trận.",
+      "coreProtected": "core có sẵn cho mọi người, không cần cấp."
+    }
   }
 }
