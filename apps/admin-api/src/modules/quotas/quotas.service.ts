@@ -43,17 +43,17 @@ const limitsOf = (r: QuotaItemInput): QuotaItemInput => ({
 const auditItems = (rows: readonly repo.QuotaDbRow[]) =>
   rows.map((r) => ({ ...limitsOf(r), feature_key: r.feature_key }));
 
-/** `QuotaSetResponse` từ bộ đang lưu (luôn có dòng `feature_id=null` đầu) + mức dùng tháng hiện tại. */
-async function buildResponse(
+/** Trạng thái từng dòng quota (luôn có dòng `feature_id=null` đầu) + mức dùng tháng VN hiện tại (dùng lại ở usage). */
+export async function quotaStatuses(
   tx: Tx,
-  t: repo.QuotaTenant,
+  tenantId: string,
   now: Date,
   saved?: repo.QuotaDbRow[],
-): Promise<QuotaSetResponse> {
-  const rows = saved ?? (await repo.listQuotas(tx, t.id));
+): Promise<{ month: string; items: QuotaStatus[] }> {
+  const rows = saved ?? (await repo.listQuotas(tx, tenantId));
   const all = rows[0]?.feature_id === null ? rows : [NULL_ROW, ...rows];
   const range = monthRange(now);
-  const usage = await repo.monthUsage(tx, t.id, range);
+  const usage = await repo.monthUsage(tx, tenantId, range);
   const evals = evaluateQuota({
     quotas: all.map((r) => ({
       featureId: r.feature_id,
@@ -80,10 +80,21 @@ async function buildResponse(
       level: e.level,
     };
   });
+  return { month: range.month, items };
+}
+
+/** `QuotaSetResponse` từ bộ đang lưu + mức dùng tháng hiện tại. */
+async function buildResponse(
+  tx: Tx,
+  t: repo.QuotaTenant,
+  now: Date,
+  saved?: repo.QuotaDbRow[],
+): Promise<QuotaSetResponse> {
+  const { month, items } = await quotaStatuses(tx, t.id, now, saved);
   return {
     tenant_id: t.id,
     version: t.version,
-    month: range.month,
+    month,
     has_usage_data: await repo.hasUsageData(tx),
     items,
   };

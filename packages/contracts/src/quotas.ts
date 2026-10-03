@@ -28,9 +28,14 @@ export const MoneyLimitSchema = z
 export const DateOnlySchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((v) => new Date(`${v}T00:00:00Z`).toISOString().startsWith(v), {
-    message: "invalid date",
-  });
+  .refine(
+    (v) => {
+      // Tháng 13 / ngày 32 → Invalid Date: toISOString() ném RangeError (500) nếu không chặn trước.
+      const t = Date.parse(`${v}T00:00:00Z`);
+      return !Number.isNaN(t) && new Date(t).toISOString().startsWith(v);
+    },
+    { message: "invalid date" },
+  );
 
 export const QuotaLevelSchema = z.enum(QUOTA_LEVELS);
 export type QuotaLevel = z.infer<typeof QuotaLevelSchema>;
