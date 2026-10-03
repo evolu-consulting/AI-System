@@ -13,6 +13,7 @@ import type { TestHooks } from "./lib/test-hooks";
 import { accessRoutes } from "./modules/access/access.routes";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
+import { totpRoutes } from "./modules/auth/totp/totp.routes";
 import { commandsRoutes } from "./modules/commands/commands.routes";
 import { featuresRoutes } from "./modules/features/features.routes";
 import { grantsRoutes } from "./modules/grants/grants.routes";
@@ -51,6 +52,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   const hooks = deps.appEnv === "test" ? deps.testHooks : undefined;
   app.route("/auth", authRoutes({ ...ctx, secureCookie, selfChange: selfChangeHandler(ctx) }));
   app.route("/auth", meRoutes(ctx));
+  app.route("/auth/totp", totpRoutes({ ...ctx, secretKey: deps.secretKey }));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));

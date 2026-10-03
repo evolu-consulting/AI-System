@@ -2,6 +2,7 @@
 import { z } from "zod";
 import {
   EmailSchema,
+  IsoDateTime,
   LocaleSchema,
   NewPasswordSchema,
   PASSWORD_MAX_LEN,
@@ -10,6 +11,7 @@ import {
   UsernameSchema,
   UuidSchema,
 } from "./common";
+import { BACKUP_CODE_COUNT } from "./totp";
 
 /** Header chọn kiểu client; chỉ đúng chuỗi `extension` mới nhận/trả refresh token trong body. */
 export const X_CLIENT_HEADER = "X-Client";
@@ -34,7 +36,7 @@ export const LoginRequestSchema = z.strictObject({
 });
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
-/** Hồ sơ người đang giữ access token; `must_change_password` luôn `false`. */
+/** Hồ sơ người đang giữ access token; `must_change_password` luôn `false`. 2FA (M4): `backup_codes_left` 0 khi chưa bật. */
 export const MeSchema = z.strictObject({
   id: UuidSchema,
   tenant: z.strictObject({ id: UuidSchema, key: TenantKeySchema, name: z.string().min(1) }),
@@ -44,6 +46,9 @@ export const MeSchema = z.strictObject({
   role: RoleSchema,
   locale: LocaleSchema,
   must_change_password: z.literal(false),
+  totp_enabled: z.boolean(),
+  totp_enabled_at: IsoDateTime.nullable(),
+  backup_codes_left: z.number().int().min(0).max(BACKUP_CODE_COUNT),
 });
 export type Me = z.infer<typeof MeSchema>;
 

@@ -35,6 +35,9 @@ export function toMe(u: AuthUser): Me {
     role: u.role,
     locale: u.locale,
     must_change_password: false,
+    totp_enabled: u.totpEnabledAt !== null,
+    totp_enabled_at: u.totpEnabledAt ? u.totpEnabledAt.toISOString() : null,
+    backup_codes_left: u.totpEnabledAt ? u.backupCodesLeft : 0,
   };
 }
 

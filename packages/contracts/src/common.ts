@@ -203,7 +203,7 @@ export function pageResponseSchema<T extends z.ZodType>(item: T) {
 }
 export type PageResponse<T> = { items: T[]; total: number };
 
-/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3 + M3 §3 + M4 A/B: 23 + 11 + 2 + 3 = 39 mã). */
+/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3 + M3 §3 + M4 A/B + D: 23 + 11 + 2 + 3 + 6 = 45 mã; khối C thêm ở T7). */
 export const API_ERRORS = {
   VALIDATION_ERROR: 400,
   TENANT_REQUIRED: 400,
@@ -214,11 +214,14 @@ export const API_ERRORS = {
   INVALID_REFERENCE: 400,
   INPUT_MAP_INVALID: 400,
   COMMAND_NEEDS_FEATURE: 400,
+  INVALID_CURRENT_CODE: 400,
   UNAUTHORIZED: 401,
   INVALID_CREDENTIALS: 401,
   INVALID_REFRESH_TOKEN: 401,
   REFRESH_SUPERSEDED: 401,
   INVALID_CHANGE_TOKEN: 401,
+  INVALID_TOTP_TOKEN: 401,
+  INVALID_OTP: 401,
   FORBIDDEN: 403,
   ACCOUNT_LOCKED: 403,
   SELF_ACTION_FORBIDDEN: 403,
@@ -242,6 +245,9 @@ export const API_ERRORS = {
   NAME_TAKEN: 409,
   NOT_RESTORABLE: 409,
   RESTORE_REF_MISSING: 409,
+  TOTP_ALREADY_ENABLED: 409,
+  TOTP_NOT_ENABLED: 409,
+  TOTP_SETUP_EXPIRED: 409,
   TEMP_LOCKED: 423,
   INTERNAL_ERROR: 500,
 } as const satisfies Record<string, 400 | 401 | 403 | 404 | 409 | 423 | 500>;
