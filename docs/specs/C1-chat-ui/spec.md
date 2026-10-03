@@ -55,7 +55,7 @@ Cấu trúc store, seed, user mẫu: `plan.md` §3.4–§3.5.
 
 ## 5. UI (frontend-lead)
 Artboard: Main, FlowOpen, Welcome, States, Mobile. Câu chữ VI lấy nguyên văn canvas + `ui-chat-extension.md` §8; EN do frontend-lead dịch.
-<!-- frontend-lead: bảng chi tiết, cấu trúc apps/chat-web, router, state SSE, nháp localStorage, nhãn role cho e2e -->
+Chi tiết: `plan-frontend.md` (cấu trúc, route, state, SSE, màn ↔ artboard ↔ AC, nhãn e2e, responsive, a11y, bundle) + `plan-frontend-i18n.md` (key VI/EN). Q3 → ADR-0006 (Proposed); Q4 → 3100.
 
 | Màn / thành phần | Trạng thái cần có | UC |
 |---|---|---|
