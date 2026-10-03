@@ -73,6 +73,15 @@
   --chart-5: #e08bb4;
 
   --radius: 8px;
+
+  /* Code (plan-frontend-theme.md §3, §5) */
+  --code-bg: #f6f4fa;
+  --code-fg: #1d1733;
+  --code-keyword: #8a3fa8;
+  --code-string: #0b6b3a;
+  --code-number: #9a4a00;
+  --code-title: #2a55a8;
+  --code-comment: #6b6580;
 }
 
 /* Dark: Đề xuất, canvas chưa có artboard dark; chưa có nút bật ở M0. */
@@ -91,6 +100,13 @@
   --input: #342c49;
   --ring: #a58bdb;
   --destructive: #f97066;
+  --code-bg: #100d17;
+  --code-fg: #e6e1f2;
+  --code-keyword: #d7a6f0;
+  --code-string: #8fd9a8;
+  --code-number: #f2b872;
+  --code-title: #9db8f5;
+  --code-comment: #9790ad;
 }
 
 @theme inline {
@@ -203,4 +219,29 @@
     /* biome-ignore lint/complexity/noImportantStyles: như trên */
     transition-duration: 0.01ms !important;
   }
+}
+
+/* highlight.js: màu qua CSS biến, không nạp theme của hljs (ADR-0006, plan-frontend-theme §5). */
+.hljs {
+  background: var(--code-bg);
+  color: var(--code-fg);
+}
+.hljs-keyword,
+.hljs-built_in {
+  color: var(--code-keyword);
+}
+.hljs-string {
+  color: var(--code-string);
+}
+.hljs-number,
+.hljs-literal {
+  color: var(--code-number);
+}
+.hljs-title,
+.hljs-attr {
+  color: var(--code-title);
+}
+.hljs-comment {
+  color: var(--code-comment);
+  font-style: italic;
 }

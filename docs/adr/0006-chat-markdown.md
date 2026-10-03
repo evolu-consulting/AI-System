@@ -44,3 +44,14 @@ Phương án dự phòng nếu đo thực tế chunk A > 50 KB: chuyển D (gi�
 ## Nguồn
 - bundlephobia: react-markdown@10.1.0 34 090 B · remark-gfm@4.0.1 9 811 B · markdown-to-jsx@9.10.3 28 161 B · dompurify@3.4.16 11 137 B · streamdown@2.7.0 153 673 B · lowlight@3.3.0 288 674 B (gzip, 2026-10-03).
 - npm registry `latest`: marked 18.0.14, highlight.js 11.12.0, rehype-highlight 7.0.2 (bundlephobia không trả số đo cho ba gói này lúc tra).
+
+## Số đo thực (F12, 2026-10-04)
+Đo bằng `rsbuild build` rồi `gzip -9` từng chunk async; bản ghim: react-markdown 10.1.0, remark-gfm 4.0.1, highlight.js 11.12.0.
+
+| Chunk | Gzip | Ngân sách |
+|---|---|---|
+| Markdown (react-markdown + remark-gfm + micromark) | **44,0 KB** (+ 1,8 KB component `Markdown`/`CodeBlock`) | ≤ 50 KB |
+| Highlight (hljs core + 10 ngôn ngữ, `hljs-setup`) | **21,0 KB** (+ 0,3 KB cầu nối `highlight.ts`) | ≤ 50 KB |
+| JS ban đầu chat-web | 110,0 KB → 110,1 KB (thêm một `import()` nên gần như không đổi) | ≤ 150 KB |
+
+Khớp ước lượng (markdown 43,9 KB; highlight 15–20 KB, thực tế nhỉnh hơn do `typescript` + `markdown` + `sql`). Không cần phương án dự phòng D.
