@@ -281,6 +281,19 @@ test("review C1 #1 · stream đóng chưa kết thúc, E14 báo đã xong → l�
   expect(log.expired.map((r) => r.key)).toEqual(["k1"]);
 });
 
+test("review C1 m2 · run đã xong trên Hub: Dừng bị khoá (không gọi E15) trước khi onExpired", async () => {
+  const { store, driver, first, log } = setup({ getRun: async () => ({ status: "finished" }) });
+  await driver.send({ convId: "c", origin: "main", request: { content: "hi" } });
+  first.push(started);
+  first.enqueueRaw(badFinished);
+  first.close();
+  await flush();
+  expect(log.expired[0]?.cancelling).toBe(true);
+  await driver.cancel("k1");
+  expect(log.cancels).toEqual([]);
+  expect(store.get("k1")?.cancelling).toBe(true);
+});
+
 test("review C1 #1 · có sự kiện mới thì lượt nối lại hồi về đầu", async () => {
   let n = 0;
   const { store, driver, first, log } = setup({

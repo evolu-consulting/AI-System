@@ -250,9 +250,15 @@ export class RunDriver {
     } catch (err) {
       return this.isGone(key, err);
     }
-    this.controllers.delete(key);
-    this.deps.onExpired(this.store.get(key) ?? run);
+    this.expire(key, run);
     return true;
+  }
+
+  /** Run đã xong trên Hub nhưng query chưa làm mới: khoá Dừng (`cancelling`) trước, để E15 không bắn vào run đã xong. */
+  private expire(key: string, run: RunState): void {
+    this.controllers.delete(key);
+    this.store.dispatch(key, { type: "cancelRequested" });
+    this.deps.onExpired(this.store.get(key) ?? run);
   }
 
   /** Backoff 0,5 · 1 · 2 · 4 · 8 s; mỗi lần mở E13 với `Last-Event-ID` = id cuối đã nhận. */
@@ -283,8 +289,8 @@ export class RunDriver {
     if (isAbort(err) || this.signalFor(key).aborted) return true;
     if (!(err instanceof ApiError) || (err.status !== 410 && err.status !== 404)) return false;
     const run = this.store.get(key);
-    this.controllers.delete(key);
-    if (run) this.deps.onExpired(run);
+    if (run) this.expire(key, run);
+    else this.controllers.delete(key);
     return true;
   }
 
