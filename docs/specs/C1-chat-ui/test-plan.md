@@ -197,6 +197,7 @@ Helper: `_env.ts` (đích, `isMock`, users) · `_client.ts` (`login`, `api`, `se
 | U-8 | `rules.test.ts` | `encodeSseEvent` → `createSseParser` → `toChatEvent` khứ hồi bằng nhau (7 loại) | 31 |
 | U-9 | `no-hub-url.test.ts` | `apps/chat-web/src/**/*.{ts,tsx}` tồn tại và không chứa `localhost`, `127.0.0.1`, `:4020`, `:3001`; nếu có `apps/chat-web/dist` thì bundle không chứa `localhost:4020` | 34 |
 | U-10 | `i18n-chat.test.ts` | `packages/i18n/locales/chat/{vi,en}.json`: cùng tập key, không giá trị rỗng, cùng biến `{{x}}` mỗi key; có key e2e dùng (`login.invalid`, `login.locked`, `session.expired`) | 36 |
+| U-11 | `contrast.test.ts` | Đọc `apps/chat-web/src/styles/globals.css`, tách `:root` (Sáng) / `.dark` (Tối); mọi cặp plan-frontend-theme §2: chữ ≥ 4.5, ring/viền flow mở/error-border/warning-solid ≥ 3 (`--input` chỉ kiểm ở Tối; Sáng 1.44 là ngoại lệ canvas). Thêm theo CR-027 (đề xuất T3 của frontend-lead, §6 plan-frontend-theme) | 35 |
 
 ## 6. E2e — `e2e/chat/` (QE)
 
@@ -270,8 +271,10 @@ Helper `_support.ts`: `resetMock`, `expireAccess`, `login`, `nextSend` (`waitFor
 
 ## 9. Kết quả đỏ đúng lý do (điền ở QB/QA/QE)
 
+**Quyết định QA (bun test gốc):** `bunfig.toml` chỉ loại `tests/contract/**`; các mốc trước (M1) để ca acceptance đỏ trong `bun test` gốc ("đỏ lúc chạy" tới khi code xong). Để không làm đỏ phiên M4 song song, ca phụ thuộc chat-web (`no-hub-url`, `i18n-chat`, `contrast`) bọc `describe.skipIf(!CHAT_WEB_ENABLED)` (`tests/acceptance/C1/_gate.ts`): tắt khi chưa có `apps/chat-web`, **tự bật** khi F1 tạo thư mục; `C1_STRICT=1` ép bật (dùng khi kiểm đỏ đúng lý do, CI và VERIFY — thiếu thư mục là đỏ). Đây là cổng theo điều kiện đích, không phải `skip` vĩnh viễn. Lưu ý: `apps/chat-web` đã có ⇒ ba file này đang chạy và đỏ trong `bun test` gốc cho tới khi F1/F14/F-i18n xong.
+
 | Nhóm | Số ca | Đỏ đúng lý do / tổng | Ghi chú |
 |---|---|---|---|
 | Contract | — | — | — |
-| Unit acceptance | — | — | — |
+| Unit acceptance | 39 (rules 25 · no-hub-url 3 · i18n-chat 5 · contrast 6) | 9 đỏ đúng lý do / 39; 30 xanh (`rules` 25/25 xanh ngay vì B1 `da8ca10` có trước, đúng dự kiến) | Chạy 2026-10-04 lúc `apps/chat-web` đã có (F1 đang làm): `no-hub-url` 3/3 xanh (src chưa có URL cứng); `i18n-chat` 5/5 đỏ ở `expect(existsSync(packages/i18n/locales/chat/vi.json)).toBe(true)` (chưa có file); `contrast` 4/6 đỏ: `globals.css` chưa đủ token (`.dark` 14 var < 20; thiếu `code-*`, `input`...) — 2 ca còn lại (Sáng ≥3:1) xanh vì đã có đủ var cần. Không ca nào đỏ ở dựng dữ liệu. |
 | E2e | — | — | — |
