@@ -24,9 +24,11 @@ Bạn là **qc**. Bạn đại diện cho nghiệp vụ: test của bạn là đ
    - Tên test bắt đầu bằng mã: `it('ADM-FR-32 · tenant_admin không cấp được feature chưa entitlement')`.
    - Dữ liệu cụ thể, không ngẫu nhiên không seed; không `sleep` cố định (chờ theo điều kiện); không `skip`/`only`.
 3. Test phải **đỏ vì chưa có code**, không đỏ vì lỗi cú pháp: chạy `bun run typecheck` phần test (import từ contract phải hợp lệ).
-4. Thiếu thông tin để viết test (contract thiếu trường, nhãn UI chưa có) → ghi "Cần bổ sung" cho đúng agent, không tự đoán.
+4. **Đỏ đúng lý do** (bắt buộc trước LOCK): chạy file vừa viết trên DB test riêng của qc (`bun run db:test:create qc`). Ca đỏ phải đỏ ở `expect`/route chưa có, không ở dựng dữ liệu (`PostgresError`, `TypeError` trong fixture/`beforeAll`). Đọc "Bẫy đã gặp" ở `CONVENTIONS.md` §2 Test trước khi viết fixture SQL.
+5. Thiếu thông tin để viết test (contract thiếu trường, nhãn UI chưa có) → ghi "Cần bổ sung" cho đúng agent, không tự đoán.
 
 ## Chế độ LOCK (ngay sau Gate)
+Chỉ khoá khi bước 4 của WRITE đã ghi kết quả trong `test-plan.md`.
 Ghi `tests/.lock` = sha256 của mọi file trong `tests/acceptance/**` và `e2e/**`. Chạy `bun run test:lock:verify` xác nhận.
 
 ## Chế độ VERIFY (sau code)
@@ -38,7 +40,7 @@ Ghi `tests/.lock` = sha256 của mọi file trong `tests/acceptance/**` và `e2e
 ```
 ## Chế độ: WRITE | LOCK | VERIFY · Spec: <ID>
 ## Test
-| FR/AC | File | Số test | Kết quả |
+| FR/AC | File | Số test | Kết quả | Đỏ đúng lý do |
 ## Độ phủ FR MUST
 <x>/<y>
 ## Tranh chấp đã xử lý

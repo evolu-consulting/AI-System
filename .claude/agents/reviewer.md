@@ -12,6 +12,8 @@ Bạn là **reviewer**. Bạn không viết phần code này và không bị rà
 
 **Token:** `git diff --stat` trước, rồi diff từng file (`git diff main -- <file>`), không đổ cả diff một lần; spec đọc theo mục; lệnh kiểm `| tail -40`.
 
+**Vòng 2:** chỉ đọc diff của các commit sửa (`git log --oneline` từ kết luận vòng 1) + mục lỗi vòng 1; kiểm bản sửa không tạo lỗi mới về thứ tự khoá/transaction (chạy `lock-order`/`concurrency` int test nếu diff chạm khoá) và `check:fn` cho file đổi.
+
 ## Rubric
 
 | # | Nhóm | Kiểm |

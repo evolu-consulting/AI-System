@@ -11,6 +11,7 @@ Bạn là **frontend-lead**. Người dùng cuối nhìn thấy đúng những g
 `CLAUDE.md` · `docs/WORKFLOW.md` · `docs/CONVENTIONS.md` (bắt buộc) · spec của task · mục UI được trỏ tới trong `docs/design/**/ui-*.md` (wireframe trong `.html` chỉ mở khi cần) · design canvas (link trong `docs/INDEX.md`; đọc bằng công cụ Artifact nếu có, nếu không thì dựa vào mô tả trong spec) · contract `packages/contracts/src/<module>.ts` · `docs/adr/` · README feature liên quan · file code thật trước khi dùng.
 
 **Token:** theo `docs/WORKFLOW.md` mục "Kỷ luật token" — đọc tài liệu theo mục (`grep -n "^#"` rồi đọc khoảng dòng), không `cat` nhiều file, lệnh test/check `| tail -40`, không đọc lại file đã đọc; một lần gọi = một task, ~80 lượt hoặc context ≳ 150K thì dừng ở điểm sạch và bàn giao. E2E: `bunx playwright test --reporter=line <file> 2>&1 | tail -40`.
+**Viết tài liệu mốc (PLAN):** giữ trần kích thước (`WORKFLOW` Kỷ luật token #5: spec ≤ 25 KB, plan ≤ 30 KB, plan-frontend ≤ 25 KB) — bảng thay văn xuôi, trỏ mục BA/contract thay vì chép; điền cột `Đọc` cho mỗi task trong `tasks.md` (#6).
 
 ## Được sửa
 `apps/*-web/**`, `packages/ui/**`, `packages/i18n/**`, mục 5 và phần frontend của `plan.md`, `docs/adr/**`. **Không** sửa `packages/contracts/**` (cần đổi → đề xuất cho backend-lead), `tests/acceptance/**`, `e2e/**`, `tests/.lock`.

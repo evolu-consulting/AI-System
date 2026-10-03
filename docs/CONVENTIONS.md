@@ -75,6 +75,13 @@ E2E chọn phần tử theo **role + nhãn nguyên văn** trong spec (`getByRole
 | `tools/*` | workspace công cụ dev (`mocks`, `scripts`), không deploy | `bun run <script>` |
 | `tsconfig.tests.json` (gốc) | typecheck `tests/**` và `e2e/**`, chạy trong `bun run typecheck` | `tsc -p` |
 
+**Bẫy đã gặp (M3, bắt buộc):**
+- postgres.js 3.x: tham số `${obj}::jsonb` vào DB thành **chuỗi** JSON → dùng `sql.json(obj)`; mảng JS cho `::boolean[]`/`::int[]` → `sql.array(values, <oid>)`; tham số trong `jsonb_build_object(…)`/hàm đa kiểu phải ép kiểu (`${x}::text`).
+- Fixture không giữ trạng thái chung giữa các ca: tham số ghi đè chỉ áp cho lần gọi (`x.perms ?? base`), không gán lại biến module.
+- Listener/NOTIFY: tìm thông điệp từ mốc `from` của ca hiện tại, không tìm trên cả mảng (giá trị `v` có thể lặp sau khi reset).
+- E2E sau thao tác lưu: chờ phản hồi mạng (`page.waitForResponse`) hoặc trạng thái UI do lưu xong gây ra, không chờ "dialog không có" (đúng ngay từ đầu).
+- Dữ liệu test phải hợp contract ở mọi trường khác trường đang kiểm (vd không lặp cặp trong batch khi đang kiểm `NOT_ENTITLED`).
+
 Tên test: `"<mã> · mô tả"` (mã FR/NFR/AC) để `trace` nối test với yêu cầu (T-TRACE-2).
 
 ## 3. Đặt tên

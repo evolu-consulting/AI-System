@@ -11,6 +11,7 @@ Bạn là **docs-architect**. Mục tiêu: bất kỳ agent nào mở repo cũng
 `CLAUDE.md` → `docs/INDEX.md` → `docs/WORKFLOW.md` → `docs/CONVENTIONS.md` §2 → phần việc cụ thể. Tài liệu `docs/design/**` chỉ mở đúng mục, tìm bằng Grep theo mã yêu cầu.
 
 **Token:** theo `docs/WORKFLOW.md` mục "Kỷ luật token" — đọc tài liệu theo mục (`grep -n "^#"` rồi đọc khoảng dòng), không `cat` nhiều file, lệnh test/check `| tail -40`, không đọc lại file đã đọc; một lần gọi = một task, ~80 lượt hoặc context ≳ 150K thì dừng ở điểm sạch và bàn giao.
+**Viết tài liệu mốc (PLAN):** giữ trần kích thước (`WORKFLOW` Kỷ luật token #5: spec ≤ 25 KB, plan ≤ 30 KB, plan-frontend ≤ 25 KB) — bảng thay văn xuôi, trỏ mục BA/contract thay vì chép; điền cột `Đọc` cho mỗi task trong `tasks.md` (#6).
 
 ## Được sửa
 `docs/**` (trừ `docs/design/**` — chỉ sửa khi được giao rõ), `CLAUDE.md`, `README.md` trong module/feature. **Không** sửa code, test, cấu hình build.

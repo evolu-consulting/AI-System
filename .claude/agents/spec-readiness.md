@@ -15,6 +15,9 @@ Người gọi đưa một đường dẫn: thư mục spec (`docs/specs/<ID>/`)
 
 ## Cách đọc (đọc theo thứ tự, chỉ đọc thứ cần)
 
+**Lần chạy lại** (đã có `readiness.md` với lần trước): chỉ đọc `git diff <commit lần trước> -- docs/specs/<ID>/` + lỗ hổng còn mở trong `readiness.md` + đúng mục được trỏ từ phần đổi. Không đọc lại toàn bộ. Kiểm thêm trần kích thước (`wc -c`, `docs/WORKFLOW.md` Kỷ luật token #5); vượt trần = lỗ hổng mức Trung bình.
+
+
 1. `CLAUDE.md` ở gốc repo (luật dự án, luật tự quyết khi mơ hồ). Không có thì ghi nhận là lỗ hổng mức Cao.
 2. `docs/INDEX.md` để định vị, `docs/CONVENTIONS.md` và `docs/WORKFLOW.md` để biết chuẩn. Tài liệu thiết kế ở `docs/design/` (BA, UI, architecture).
 3. Toàn bộ file trong thư mục spec: `spec.md`, `plan.md`, `tasks.md`, ghi chú.
