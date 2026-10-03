@@ -53,7 +53,7 @@ C + D: [test-plan-cd.md](test-plan-cd.md). Nguồn: spec §2, §8 · plan-contra
 | R17 | M4-R13 · Q7 · Q8 | 〃 | `canRestore`: platform × 5 entity × {update, delete, restore} × snapshot → true (15 ca); snapshot false, entity khác (7), action khác (6), tenant_admin → false |
 | R18 | M4-R13 | 〃 | `restoreCheck`: update + không tồn tại → NOT_RESTORABLE; update + version lệch → VERSION_CONFLICT; update khớp → ok; delete + còn → NOT_RESTORABLE; delete + không còn → ok |
 | R19 | M4-R12 | 〃 | `encodeCursor/decodeCursor` khứ hồi `"1"`, `"9007199254740993"`; `"!!"`, `""`, base64 của `"abc"`/`"-1"` → null |
-| R20 | contract | `contracts.test.ts` | 3 mã A+B mới = 409 (chỉ `toMatchObject`; phép đếm `Object.keys(API_ERRORS).length === 48` ở `rules/contracts-cd.test.ts`, test-plan-cd, xanh ở T7); `CONFIG_ENTITIES` có `quota` đứng trước `"batch"`, length 11; `AUDIT_ENTITIES` 12, `AUDIT_ACTIONS` 9; `QuotaSetRequestSchema` từ chối `max_runs 0`/`1.5`, `max_usd "0"`/`"1.234"`/`"-1"`, 101 items, khoá thừa; `UsageReportTenantSchema` từ chối `cost_usd`; `User`/`TenantSchema` có `updated_by` |
+| R20 | contract | `contracts.test.ts` | 3 mã A+B mới = 409 (chỉ `toMatchObject`; phép đếm 48 ở D-K04 `rules/contracts-cd.test.ts`, test-plan-cd, xanh ở T7); `CONFIG_ENTITIES` có `quota` đứng trước `"batch"`, length 11; `AUDIT_ENTITIES` 12, `AUDIT_ACTIONS` 9; `QuotaSetRequestSchema` từ chối `max_runs 0`/`1.5`, `max_usd "0"`/`"1.234"`/`"-1"`, 101 items, khoá thừa; `UsageReportTenantSchema` từ chối `cost_usd`; `User`/`TenantSchema` có `updated_by` |
 
 ### D · DB / RLS (`M4/db-schema.int.test.ts`, `M4/db-rls.int.test.ts`; owner / `admin_api` / `hub_ro`)
 
@@ -231,7 +231,7 @@ Dữ liệu: owner đặt `/dich` version 42, admin PATCH `description` "B" (→
 
 ## 5. Sửa test đã khoá (phạm vi đã duyệt, không phải tranh chấp; Q2 sửa, Q3 khoá lại)
 
-Tổng sau M4 (A+B+C+D): migration main **9** (`0007_m4_ops`, `0008_admin_totp`), dev **3** (`0002_usage_at_idx`); bảng admin **19** (+ `audit_log`, `quota_alerts`, `tenant_quotas`, `user_backup_codes`, `user_totp`); RLS bật **13**; `API_ERRORS` **48** (+3 A+B, +9 C+D). A+B sửa file đếm, qc C+D kiểm.
+Tổng sau M4 (A+B+C+D): migration main **9** (`0007_m4_ops`, `0008_admin_totp`), dev **3** (`0002_usage_at_idx`); bảng admin **19** (+ `audit_log`, `quota_alerts`, `tenant_quotas`, `user_backup_codes`, `user_totp`); RLS bật **13**; `API_ERRORS` **48** (+3 A+B, +9 C+D). Đếm 48 `API_ERRORS` ở D-K04 (test-plan-cd).
 
 | # | File (dòng HEAD) | Sửa | Xanh |
 |---|---|---|---|
@@ -239,7 +239,7 @@ Tổng sau M4 (A+B+C+D): migration main **9** (`0007_m4_ops`, `0008_admin_totp`)
 | K2 | `M1/db-schema.int` (l.69–98, 282–285) | như K1; bỏ "không có `tenant_quotas`/`audit_log`"; giữ "users không `totp_secret`" | 〃 |
 | K3 | `M2/db-schema.int` (l.53, 138–146, 460–464), `M3/db-schema.int` (l.51, 95–105, 437–440) | `ADMIN19`, `{9,3}`/`{9,0}`, bỏ "không có audit_log, tenant_quotas" | 〃 |
 | K4 | `M1/db-rls`, `M2/db-rls` (l.275–293), `M3/db-rls` (l.290–307) | RLS bật 13 / tắt 6 | 〃 |
-| K5 | `M1|M2|M3/rules/contracts` (l.55, 116, 70) | `toMatchObject` tập mã cũ (cách test-plan-cd §8), không đếm; đếm 48 chỉ ở R20 | T0b + T7 |
+| K5 | `M1|M2|M3/rules/contracts` (l.55, 116, 70) | `toMatchObject` tập mã cũ (cách test-plan-cd §8), không đếm; đếm 48 ở D-K04 (contracts-cd) | T0b + T7 |
 | K6 | `M3/rules/contracts` (l.118–129) | `CONFIG_ENTITIES` = `arrayContaining([...10 cũ,"quota"])` + length 11 (quota trước `"batch"`) | T0b |
 | K7 | `M2/error-codes.int` (l.81–82) | lọc 12 mã M4 khỏi `M2_CODES`, giữ 11 | T0b/T7 |
 | K8 | `M3/i18n-conflict` (l.106–116) | bỏ "không có 'Lịch sử'"; kiểm `conflict.overwrite.history` "Lịch sử vẫn giữ v{n}." | FE0a |

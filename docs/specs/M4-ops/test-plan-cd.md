@@ -80,10 +80,11 @@ Snapshot dựng từ M2/M3 `_data.ts` (workflow `translate`, `invoice-check`, `s
 | C-K01 · BR-04 | `ConfigFileSchema` | mẫu đủ 6 loại qua; khoá lạ ở gốc/phần tử lồng → fail; `format` khác, `format_version: 2` → fail; `secrets[0].value` / `secrets[0].last4` → fail; `workflows[0].secret_id` → fail; tenant thiếu `quotas` theo schema A |
 | C-K02 | `ImportRequestSchema` | `x.YML` qua; `x.json`, 256 ký tự, khoá lạ → fail; `base_config_version: -1` fail |
 | C-K03 | `ImportPreviewSchema`, `ImportResultSchema` | mẫu hợp lệ qua; `op: "delete"` fail; `errors[0].code` ngoài 10 mã → fail |
+| — | **D-K01…D-K03 nằm ở file riêng `rules/contracts-totp.test.ts`** (schema tạo ở T9b–T9d; xanh T9d). `contracts-cd.test.ts` giữ C-K01…C-K03 + D-K04 (xanh T7) | |
 | D-K01 | verify request | `{totp_token, code:"012345"}` qua; `code:"12345"`, `"12a456"`, có cả `code`+`backup_code`, không có cả hai, khoá lạ → fail; `backup_code: "K7P2-9XQM"`, `"k7p29xqm"` qua |
 | D-K02 · M4-AC11 | `LoginResponseSchema` | `{status:"totp_required", totp_token, expires_in:300}` qua; `expires_in: 600` fail; nhánh M1 vẫn qua |
 | D-K03 | `MeSchema`, `UserSchema` | thiếu `totp_enabled` fail; `backup_codes_left` 0..10 qua, 11/-1 fail |
-| D-K04 | `API_ERRORS` | chứa 9 mã: `PAYLOAD_TOO_LARGE 413, IMPORT_INVALID 400, SECRETS_REQUIRED 400, INVALID_TOTP_TOKEN 401, INVALID_OTP 401, INVALID_CURRENT_CODE 400, TOTP_ALREADY_ENABLED 409, TOTP_NOT_ENABLED 409, TOTP_SETUP_EXPIRED 409` (tập đầy đủ M4 kiểm ở test-plan A+B) |
+| D-K04 | `API_ERRORS` | `Object.keys(API_ERRORS).length === 48` (đếm duy nhất của M4, xanh T7); chứa 9 mã: `PAYLOAD_TOO_LARGE 413, IMPORT_INVALID 400, SECRETS_REQUIRED 400, INVALID_TOTP_TOKEN 401, INVALID_OTP 401, INVALID_CURRENT_CODE 400, TOTP_ALREADY_ENABLED 409, TOTP_NOT_ENABLED 409, TOTP_SETUP_EXPIRED 409` (tập đầy đủ M4 kiểm ở test-plan A+B) |
 
 ### 1.4 `tests/acceptance/M4/rules/mailer.test.ts` — `lib/mailer` (plan-cd §9)
 
@@ -200,7 +201,7 @@ Không có test: lock-order E4 (`transfer.lock-order.int.test.ts` — backend T8
 
 ## 7. File test sẽ tạo (Q2)
 
-`tests/acceptance/M4/_totp.ts` · `_cd.ts` · `_transfer-data.ts` · `rules/totp.test.ts` · `rules/transfer.test.ts` · `rules/contracts-cd.test.ts` · `rules/mailer.test.ts` · `totp-setup.int.test.ts` · `totp-login.int.test.ts` · `totp-admin-reset.int.test.ts` · `totp-db.int.test.ts` · `export.int.test.ts` · `import-dry-run.int.test.ts` · `import-apply.int.test.ts` · `mailer.int.test.ts` · `e2e/support/totp.ts` (gồm `enable2faApi`) · `e2e/m4-2fa.spec.ts` · `e2e/m4-transfer.spec.ts`. Sửa `e2e/support/helpers.ts` `resetFixture()`: xoá `admin.user_totp` (cascade mã) mỗi lần reset.
+`tests/acceptance/M4/_totp.ts` · `_cd.ts` · `_transfer-data.ts` · `rules/totp.test.ts` · `rules/transfer.test.ts` · `rules/contracts-cd.test.ts` (xanh T7) · `rules/contracts-totp.test.ts` (D-K01…03, xanh T9d) · `rules/mailer.test.ts` · `totp-setup.int.test.ts` · `totp-login.int.test.ts` · `totp-admin-reset.int.test.ts` · `totp-db.int.test.ts` · `export.int.test.ts` · `import-dry-run.int.test.ts` · `import-apply.int.test.ts` · `mailer.int.test.ts` · `e2e/support/totp.ts` (gồm `enable2faApi`) · `e2e/m4-2fa.spec.ts` · `e2e/m4-transfer.spec.ts`. Sửa `e2e/support/helpers.ts` `resetFixture()`: xoá `admin.user_totp` (cascade mã) mỗi lần reset.
 
 ## 8. Test khoá cũ cần sửa (Q2, cập nhật lock, ghi lý do)
 
@@ -216,7 +217,7 @@ Không có test: lock-order E4 (`transfer.lock-order.int.test.ts` — backend T8
 ## 9. Đã chốt (spec-readiness lần 1)
 
 - Nút xác nhận trong `alertdialog "Tắt xác thực hai bước?"` = "Tắt xác thực hai bước" (trong phạm vi dialog); nút `⋯` hàng Users = `button "Thao tác khác"`; sai mật khẩu/mã ở dialog tắt/tạo lại → `twofa.error.wrongCreds`.
-- Tập mã `API_ERRORS` M1–M3: `toMatchObject` (§8); đếm 48 chỉ ở test-plan A+B R20.
+- Tập mã `API_ERRORS` M1–M3: `toMatchObject` (§8); đếm 48 chỉ ở D-K04 (`contracts-cd`, T7).
 - Độ phủ: FR-08, FR-54 MUST đủ (xem §6).
 
 ## 10. Đỏ đúng lý do (điền ở Q2)

@@ -21,7 +21,7 @@ A + B: `plan.md`; UI: `plan-frontend.md`. Luật: spec §2 (R10, R14–R16). Th�
 | D6 | QR sinh **ở server** (`qrcode` → `qr_svg` data URL) cùng `otpauth_url`; FE chỉ `<img src={qr_svg}>` — không cần `qrcode` ở web (thay plan-frontend D2) | 0 byte bundle web; secret vốn trả cho client (khoá thủ công) |
 | D7 | Import/Export dùng `yaml` 2.x (`maxAliasCount: 0`) thay `Bun.YAML` | Bun 1.3.14: file "billion laughs" 9 tầng → `Bun.YAML.parse` ném `Out of memory` (đo tại máy) |
 | D8 | Import áp dụng: một `configWrite` (một tx, một NOTIFY `batch`), **một** dòng audit `import`; xung đột với ghi song song: `configWrite` nhận `expectBase` → sau bump `v ≠ base+1` thì ném → 409 `VERSION_CONFLICT` | R14; bump vẫn là câu cuối (hạng 14) |
-| D9 | Biểu đồ Usage (khối A, FE): **đề xuất bỏ `recharts`**, tự vẽ SVG cột theo ngày (≤ 31 cột) | `recharts@3.10.1` = 151 KB gzip > chunk 50 KB; §12 Q-C1 |
+| D9 | Biểu đồ Usage (khối A, FE): **bỏ `recharts` (ADR-0005)**, tự vẽ SVG cột theo ngày (≤ 31 cột) | `recharts@3.10.1` = 151 KB gzip > chunk 50 KB; §12 Q-C1 |
 | D10 | Mailer: `lib/mailer` (interface `Mailer.send`) + `nodemailer` SMTP; thiếu `SMTP_URL` → mailer "tắt" ném `MailError("MAIL_DISABLED")` | A (T4) dùng cho cảnh báo quota (R05) |
 
 ## 2. Giao diện chung với khối A/B (thống nhất qua spec §3)

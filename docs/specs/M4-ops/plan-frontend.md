@@ -8,7 +8,7 @@ Nguồn: spec · `ui-admin` 7.2, 7.10–7.16, F7 · `missing-screens` (**ms**) �
 
 | # | Quyết định | Lý do |
 |---|---|---|
-| D1 | **Không dùng `recharts`.** Cột ngày tự viết SVG (`DailyBars` ~120 dòng): chồng Trong quota + Vượt quota (vân chéo), `<title>` mỗi cột | recharts + d3 ≈ 100 KB gzip > chunk 50 KB; artboard là cột đơn giản |
+| D1 | **Không dùng `recharts`.** Cột ngày tự viết SVG (`DailyBars` ~120 dòng): chồng Trong quota + Vượt quota (vân chéo), `<title>` mỗi cột | recharts 151 KB gzip (ADR-0005) > chunk 50 KB; artboard là cột đơn giản |
 | D2 | QR = `<img src={qr_svg}>` server trả (plan-cd §4.2); web **không** cài `qrcode`; `otpauth_url`/`secret` cho nhập tay | plan §2 #1 |
 | D3 | Không thêm `input-otp`, `react-day-picker`: `OtpInput` = **một** `<input inputMode="numeric" autocomplete="one-time-code" maxLength=6>` vẽ 6 ô bằng CSS, tự gửi khi đủ 6; `PeriodFilter` = `Popover` + preset 7/30/90 ngày + 2 `<input type="date">` | ms §10 e2e "1 input duy nhất"; bundle |
 | D4 | shadcn mới chép từ `radix-ui` đã có: `accordion`, `collapsible`, `toggle-group`. không npm mới | ADR-0001 |
@@ -68,7 +68,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 
 ### 3.4 Nhật ký `/audit` (FR-51, 52; R12, R13; Q7, Q8) — `Audit`, `States`
 - ms §7 nguyên văn: lọc, nhóm theo ngày, `Tải thêm` = `useInfiniteQuery` con trỏ (limit 50). "Người thực hiện" = `SearchCombobox` trên `GET /admin/users?q` (đã có).
-- Lọc "Loại" gồm cả Entitlement, 2FA; Import không có thực thể → lọc theo Hành động = Import.
+- Lọc "Loại" 11 mục = ms:489 + Entitlement, 2FA (không có `config`); Import lọc theo Hành động = Import. Nhãn `config` = "Cấu hình" / "Configuration"; nhãn entity khác = tên ms viết hoa đầu, `user_totp` = "2FA".
 - Chi tiết (D8): câu + `audit.detail.meta` · `DiffTable` (update Trước/Sau; create chỉ Sau; delete chỉ Trước; secret một dòng "Giá trị: đã thay đổi"; import: danh sách Thêm/Sửa).
 - `Khôi phục bản trước` khi `entry.restorable` (luôn có) → ConfirmDialog vừa → toast, invalidate list + entity. Lỗi theo §8; 403 → toast `state.forbiddenAction` + nạp lại phiên.
 
@@ -160,7 +160,7 @@ Chuỗi định dạng không cần dịch (giống nhau 2 ngôn ngữ): `quota.
 | audit.sentence.members | {actor} đã đổi thành viên {name} (Thêm {a} · Bớt {r}) | {actor} changed members of {name} ({a} added · {r} removed) |
 | audit.sentence.passwordReset | {actor} đã đặt lại mật khẩu của {subject} | {actor} reset the password of {subject} |
 | audit.sentence.quota / entitlement | {actor} đã đổi quota {name} / {actor} đã đổi quyền feature {name} của {subject} | {actor} changed quota {name} / {actor} changed feature access {name} for {subject} |
-| audit.sentence.import ({file} = entity_name, {a}/{u} = after.added/updated, ms §7) | {actor} đã nhập cấu hình từ {file} (Thêm {a} · Sửa {u}) | {actor} imported configuration from {file} ({a} added · {u} updated) |
+| audit.sentence.import ({file} = entity_name, {a}/{u} = after.added/updated, ms §7) | {actor} đã import {file} (Thêm {a} · Sửa {u}) | {actor} imported {file} ({a} added · {u} updated) |
 | audit.error.changedSince | Không khôi phục được: {name} đã được sửa sau thay đổi này. Mở bản mới nhất để xem. | Can't restore: {name} has changed since. Open the latest version to review. |
 | audit.period.days / custom / from / to / apply | Thời gian: {n} ngày / Tuỳ chọn / Từ ngày / Đến ngày / Áp dụng | Period: {n} days / Custom / From / To / Apply |
 | transfer.import.file / fields | {file} · {size} · hợp lệ / {n} trường | {file} · {size} · valid / {n} fields |
