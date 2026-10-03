@@ -140,3 +140,61 @@ Thực thi: luật Biome · `bun run check:size` (đỏ khi > 400 dòng) · `dep
 ## 8. Migration DB
 
 - Từ M2: không sửa migration đã commit; mọi thay đổi là migration mới (kể cả siết policy RLS). Ngoại lệ M1 (`0002_admin_rls.sql` sửa ở `ceb5693`): xem `packages/db/README.md`.
+
+## 9. Python — Agent Runtime (`apps/agent-runtime`)
+
+Theo [ADR-0007](adr/0007-hub-ts-agent-runtime-python.md). Chỉ áp cho `apps/agent-runtime`; phần còn lại của repo vẫn TS (§1–8). Mã chạy trong WSL2 Ubuntu (CR-029, WRK-NFR-06): **chỉ nhắm Linux, không viết nhánh Windows**.
+
+### Đối chiếu TS ↔ Python
+
+| Việc | TS (§1–6) | Python |
+|---|---|---|
+| Runtime / package | Bun, `bun.lock` | Python 3.12+, `uv` (`uv.lock`, `uv sync --frozen`) |
+| Format + lint | Biome | `ruff format` + `ruff check`, chỉ file thay đổi (như §1) |
+| Kiểu | `tsc` strict | `pyright` strict, cấm `Any` ngầm |
+| Test | `bun test` | `pytest` + `pytest-asyncio` |
+| Chiều import | dependency-cruiser | `import-linter` (`lint-imports`) |
+| Validate ở biên | zod | pydantic v2 |
+| Log | logger có `request_id` | `structlog`/logging JSON có `job_id`, `run_id`, `tenant_id` (WRK-NFR-04); cấm `print` |
+| Tên | camelCase / kebab-case | `snake_case` module + hàm, `PascalCase` class, hằng `UPPER_SNAKE` |
+
+Turborepo gọi qua scripts trong `apps/agent-runtime/package.json` (`check`, `typecheck`, `test`, `test:int`) nên `bun run check|typecheck|test` ở gốc vẫn chạy cả Python.
+
+### Cấu trúc (`src/agent_runtime/`)
+
+| Thư mục | Nội dung |
+|---|---|
+| `queue/` | claim job `FOR UPDATE SKIP LOCKED`, heartbeat, nghe cancel (`NOTIFY job_cancel`) |
+| `events/` | ghi sự kiện run vào Redis Streams (`XADD run:<run_id>`) |
+| `runtimes/{cli,llm,python}/` | ba loại runtime |
+| `providers/` | claude (Agent SDK Python), codex, gemini |
+| `sandbox/` | hook chặn đường dẫn (WRK-BR-07), process group |
+| `agents/` | agent nội bộ: mỗi agent một module, đăng ký vào registry → manifest `hub.agent_types` |
+| `contracts/` | pydantic **sinh** từ JSON Schema xuất từ zod; header "generated", không sửa tay |
+| `db/` | SQL thuần cho bảng `hub` (không ORM, không migration; migration vẫn ở `packages/db` Drizzle, §8) |
+| `config.py` · `main.py` | env (pydantic-settings) · điểm vào |
+
+Test: unit `test_*.py` đặt cạnh file code; test cần Postgres/Redis thật là `*_int_test.py` cạnh file, gắn marker `int` (`pytest -m int` = `bun run test:int`). Mỗi thư mục có `README.md` ≤ 30 dòng như §2.
+
+### Giới hạn và luật code
+
+- Cỡ: file ≤ 400 dòng, hàm ≤ 50 dòng, ≤ 4 tham số ngoài `self` (§4). Ruff: `PLR0913`, `PLR0915`, `C901`; chạy trong `check`.
+- asyncio async/await; type hint đầy đủ; pydantic v2 cho dữ liệu qua biên.
+- Lỗi: mã dùng chung với Hub (`ALL_PROVIDERS_EXHAUSTED`, `TIMEOUT`, `CANCELLED`, `UPSTREAM_ERROR`…) lấy từ `contracts/` sinh ra, không tự đặt chuỗi.
+- Không log secret, nội dung file.
+- Subprocess: luôn `start_new_session=True` (process group riêng, huỷ = SIGTERM group, 3 giây sau SIGKILL), `env` tường minh (không kế thừa `os.environ`), cấm `shell=True`. Agent nội bộ chạy process con không mang secret (WRK-FR-26).
+- Mã yêu cầu ở docstring đầu module (`"""WRK-FR-01 · HUB-FR-89 · …"""`); test đặt tên chứa mã (`test_wrk_fr_05_cancel_kills_group`). TODO: `# TODO(WRK-FR-xx): …`.
+- **Chưa có:** `bun run trace` và `check:size` chưa quét `.py`; mở rộng ở task đầu H1.
+
+### Thư viện
+
+Đã duyệt (ADR-0007): uv, ruff, pyright, pytest, pydantic. Dự kiến (asyncpg, redis-py, claude-agent-sdk, structlog, pytest-asyncio, import-linter) là **đề xuất trong ADR của plan H1**, chưa duyệt. Thư viện mới cần ADR như TS.
+
+### Lệnh xong task Python
+
+```
+cd apps/agent-runtime
+uv run ruff check --diff <file đổi> && uv run ruff format --check <file đổi> \
+  && uv run pyright && uv run pytest && uv run lint-imports
+```
+Thêm `uv run pytest -m int` khi chạm DB/Redis.

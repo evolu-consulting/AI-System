@@ -35,7 +35,7 @@ Chọn **3**.
 
 ## Hệ quả
 - Repo hai ngôn ngữ. ADR-0001 không còn "TypeScript toàn bộ" cho Agent Runtime; Admin, Hub, Chat vẫn TS.
-- Cần bổ sung `docs/CONVENTIONS.md` phần Python **trước mốc H1** (chưa sửa trong CR-028).
+- Đã bổ sung chuẩn Python: xem `docs/CONVENTIONS.md` §9.
 - Thêm bước CI: xuất JSON Schema từ zod, sinh pydantic, so khớp; chạy `ruff`, `pyright`, `pytest` cho `apps/agent-runtime`.
 - Phụ thuộc mới (Python: Agent SDK, driver Postgres, redis-py, pydantic) chốt ở ADR/plan của mốc H1.
 - Hub cần module `AgentRunner`, đọc Redis Streams và `hub.agent_types`; Gateway phía Hub chỉ phục vụ Orchestrator, Agent Runtime có bản Python của Gateway cho agent `llm` (cùng profile/fallback/ghi usage).
