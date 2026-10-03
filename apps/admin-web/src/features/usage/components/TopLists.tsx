@@ -1,10 +1,11 @@
-// ADM-FR-42 · M4-R07, R08 · "Top feature theo số thu" (5 dòng) và "Top user theo số thu": "Không theo feature", badge "Vượt quota". Chưa có cờ "chưa định giá" theo dòng (xem spec-decisions) → hiện số tiền như contract trả.
+// ADM-FR-42 · M4-R07, R08 · "Top feature theo số thu" (5 dòng) và "Top user theo số thu": "Không theo feature", badge "Vượt quota". Nhãn "Chưa định giá" theo `unpriced_rows` của dòng (priceDisplay).
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
 import { Badge } from "@/components/ui/badge";
 import { pickLocalized } from "@/lib/localized";
 import { formatCount, formatUsd } from "@/lib/quota-format";
 import type { UsageReport } from "../lib/types";
+import { priceDisplay } from "../lib/unpriced";
 
 export const TOP_FEATURE_ROWS = 5;
 
@@ -43,10 +44,17 @@ function FeatureName({ f }: { f: Feature }) {
   return <>{f.feature_name ? pickLocalized(f.feature_name, i18n.language) : f.feature_key}</>;
 }
 
-type RowProps = { name: React.ReactNode; runs: number; tokens: number; usd: string };
+type RowProps = {
+  name: React.ReactNode;
+  runs: number;
+  tokens: number;
+  usd: string;
+  unpricedRows: number;
+};
 
-function Row({ name, runs, tokens, usd }: RowProps) {
-  const { i18n } = useTranslation();
+function Row({ name, runs, tokens, usd, unpricedRows }: RowProps) {
+  const { t, i18n } = useTranslation();
+  const mode = priceDisplay(unpricedRows, runs);
   return (
     <tr className="border-t">
       <th scope="row" className="py-2 text-left font-medium">
@@ -54,7 +62,19 @@ function Row({ name, runs, tokens, usd }: RowProps) {
       </th>
       <td className="py-2">{formatCount(runs, i18n.language)}</td>
       <td className="py-2">{formatCount(tokens, i18n.language)}</td>
-      <td className="py-2">{formatUsd(usd, i18n.language)}</td>
+      <td className="py-2">
+        {mode === "unpriced" ? null : formatUsd(usd, i18n.language)}
+        {mode === "amount" ? null : (
+          <Badge
+            variant="warn"
+            className={mode === "partial" ? "ml-2" : undefined}
+            title={t("usage.unpriced")}
+          >
+            {t("usage.unpriced")}
+            {mode === "partial" ? ` (${formatCount(unpricedRows, i18n.language)})` : ""}
+          </Badge>
+        )}
+      </td>
     </tr>
   );
 }
@@ -80,6 +100,7 @@ export function TopFeatures({ rows, loading, error }: Props<Feature>) {
                 runs={f.runs}
                 tokens={f.tokens}
                 usd={f.billable_usd}
+                unpricedRows={f.unpriced_rows}
               />
             ))}
           </tbody>
@@ -106,6 +127,7 @@ export function TopUsers({ rows, loading, error }: Props<User>) {
                 runs={u.runs}
                 tokens={u.tokens}
                 usd={u.billable_usd}
+                unpricedRows={u.unpriced_rows}
               />
             ))}
           </tbody>
