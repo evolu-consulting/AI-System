@@ -150,7 +150,7 @@ Agent Hub là nơi điều phối agent. Nó quyết định dùng workflow hay 
 | **Config cache** | Nạp command, workflow và secret, tenant, group, feature, grant, quota từ schema `admin` (chỉ đọc), cùng cấu hình agent của chính Hub. Làm mới qua NOTIFY. Từ đó tính quyền của user |
 | **Router** | Tin nhắn bắt đầu bằng `/` thì đi Command Runner, còn lại đi Coordinator. Lệnh user không có quyền → `CMD_NOT_FOUND` |
 | **Command / Workflow Runner** | Là cổng duy nhất gọi Dify: map input, gọi workflow. Job chạy lâu thì đẩy sang Worker |
-| **Coordinator agent** | Hiểu ý người dùng, chọn một hoặc nhiều agent trong số agent user được dùng, nối các bước, gộp kết quả. Không có agent nào thì tự trả lời |
+| **Coordinator agent** | Hiểu ý người dùng, chọn một hoặc nhiều agent trong số agent user được dùng, nối các bước, gộp kết quả. Không có agent nào thì tự trả lời. Là **một agent được chọn** (CR-020); Hub giữ vòng lặp điều phối, CLI không tự gọi agent khác |
 | **Runtime adapters** | `llm` · `dify-workflow` · `dify-agent` · `agentic-cli` |
 | **Model Gateway** | Một interface chung cho mọi hãng. Lo retry, dự phòng theo profile, ghi log token và chi phí theo tenant (`cost_usd`, `billable_usd`) |
 | **Subscription Pool** | Theo dõi quota và trạng thái bận của từng CLI, xếp hàng job, giới hạn slot mỗi tenant. Hết quota thì chuyển sang API |

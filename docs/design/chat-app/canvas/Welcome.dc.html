@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hội thoại mới · Chat App</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.card{border:1px solid #E6E3EE;border-radius:12px;background:#FFFFFF;padding:14px 16px;text-align:left;display:flex;flex-direction:column;gap:6px;cursor:pointer;font-family:'Be Vietnam Pro',sans-serif;color:#1D1733}
+.card:hover{border-color:#CFC7E2;background:#FBF8FF}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-wrap: wrap; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733; font-size: 14px; background: #F7F6FA">
+
+<nav aria-label="Hội thoại" style="flex: 0 0 260px; background: #FFFFFF; border-right: 1px solid #E6E3EE; display: flex; flex-direction: column; padding: 16px 12px; gap: 12px; box-sizing: border-box">
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 0 4px"><img src="/_blob/e3494dea1ce2ef7661ea480dd997f0d3" alt="EvoluConsulting" style="width: 200px; height: 62px; object-fit: contain; object-position: left center; margin-left: -10px"><span style="font-size: 12px; color: #635C78; padding-left: 6px">AI Chat · Acme Việt Nam</span></div>
+<button style="height: 40px; border: 1px solid #CFC7E2; border-radius: 8px; background: #EDE6FB; color: #2E2150; font: 600 14px 'Be Vietnam Pro',sans-serif; display: flex; align-items: center; gap: 8px; padding: 0 12px; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Hội thoại mới</button>
+<div style="font-size: 12px; font-weight: 600; color: #635C78; padding: 8px 8px 0">Hôm nay</div>
+<a href="Main.dc.html" style="display: block; padding: 8px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">Việc khách hàng Minh Phát</a>
+<a href="#" style="display: block; padding: 8px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">Chuẩn bị họp giao ban</a>
+<div style="flex-grow: 1"></div>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; background: #FFFFFF; box-sizing: border-box">
+<div style="width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 24px">
+<img src="/_blob/607ff10b0a024d9fb8e3ed4972889b9d" alt="" style="width: 48px; height: 48px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em">Chào Thu Hà, hôm nay cần gì?</h1>
+<p style="margin: 0; color: #635C78; font-size: 15px">Mỗi câu hỏi mở một flow riêng. Muốn hỏi tiếp việc nào, bấm Trả lời tiếp trên flow đó.</p>
+</div>
+<div style="border: 1px solid #D9D5E3; border-radius: 14px; padding: 14px 12px 12px 16px; display: flex; align-items: flex-end; gap: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(29,23,51,0.04)">
+<label style="flex-grow: 1"><span style="position: absolute; left: -9999px">Tin nhắn</span>
+<textarea rows="3" placeholder="Nhập yêu cầu…" style="width: 100%; border: 0; resize: none; font: 15px/1.5 'Be Vietnam Pro',sans-serif; color: #1D1733; outline: none; background: transparent"></textarea>
+</label>
+<button aria-label="Gửi" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #6B4FA0; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<button class="card"><span style="font-weight: 600">Soạn email</span><span style="font-size: 13px; color: #635C78">Soạn email báo giá gửi khách hàng</span></button>
+<button class="card"><span style="font-weight: 600">Tóm tắt văn bản</span><span style="font-size: 13px; color: #635C78">Tóm tắt 3 ý chính của một biên bản họp</span></button>
+<button class="card"><span style="font-weight: 600">Dịch</span><span style="font-size: 13px; color: #635C78">Dịch một đoạn hợp đồng sang tiếng Anh</span></button>
+<button class="card"><span style="font-weight: 600">Lên dàn ý</span><span style="font-size: 13px; color: #635C78">Lên dàn ý báo cáo tháng cho phòng kinh doanh</span></button>
+</div>
+<p style="margin: 0; font-size: 12px; color: #635C78">Bấm một thẻ để điền sẵn vào ô nhập. Chưa gửi ngay.</p>
+</div>
+</main>
+
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

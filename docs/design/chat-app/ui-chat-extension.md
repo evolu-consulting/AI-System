@@ -19,7 +19,7 @@ Từ v0.4, mỗi user thuộc một **tenant** (công ty). User đăng nhập b�
 | C2 | **Luôn biết hệ thống đang làm gì** | Các bước hiện trực tiếp ("Đang kiểm tra hoá đơn…"). Job dài có thanh tiến độ. Luôn có nút Dừng |
 | C3 | **Ngữ cảnh là thứ user chủ động chọn** | Đoạn bôi đen và nội dung trang hiện thành chip, bỏ được. Nội dung trang mặc định *không* gửi (theo HUB-BR-07) |
 | C4 | **Lỗi phải dẫn tới hành động** | Thẻ lỗi có câu dễ hiểu và nút [Thử lại], [Sửa lệnh] hoặc [Báo admin] |
-| C5 | **Không lộ chi tiết kỹ thuật** | Member thấy tên agent thân thiện và các bước. Provider, token, trace đầy đủ thì chỉ `platform_admin` thấy (trong Agent Studio › Vận hành) |
+| C5 | **Không lộ chi tiết kỹ thuật** | Member thấy một tên duy nhất "Consultant" (CR-022) và các bước chỉ mô tả việc, không thấy tên agent chuyên trách. Provider, token, trace đầy đủ thì chỉ `platform_admin` thấy (trong Agent Studio › Vận hành) |
 
 ## 2. Kiến trúc thông tin
 
@@ -28,9 +28,13 @@ Chat App (web)                       Extension (side panel)
 ├─ /login                            ├─ Đăng nhập
 ├─ /c/new       (trang chào)         ├─ Chat (hội thoại hiện tại)
 ├─ /c/:id       (hội thoại)          │   └─ ☰ danh sách hội thoại (sheet)
+│   ├─ khối flow (câu hỏi + trả lời) × N
+│   └─ khung flow bên phải (ẩn mặc định)
 └─ Cài đặt (dialog)                  └─ ⚙ Cài đặt (sheet)
     ngôn ngữ · giao diện · tài khoản     + "Dùng nội dung trang" mặc định
 ```
+
+**Flow (CR-021, canvas `chat-app/canvas/`):** một hội thoại gồm nhiều flow. Mỗi câu hỏi gửi ở ô nhập chính ("Hỏi điều mới…") tạo **một flow mới**; câu hỏi và câu trả lời nằm chung một khối. Nút **"Trả lời tiếp"** trên khối mở **khung flow bên phải** (mặc định ẩn) để chat tiếp; AI nhớ toàn bộ flow đó (context = flow, không phải cả hội thoại). Flow không có trạng thái đóng: rảnh thì Hub tự tắt tiến trình CLI (~10 phút), chat lại thì resume; lần đầu sau khi nghỉ hiện "Đang mở lại flow, lần đầu có thể mất vài giây…". Điện thoại: khung flow là sheet trượt từ dưới. Chi tiết: `usecases-chat.md` UC-02, UC-06.
 
 ## 3. Chat App (web)
 
@@ -41,7 +45,7 @@ Chat App (web)                       Extension (side panel)
 | Vùng | Đặc tả |
 |---|---|
 | Sidebar | Rộng 260px, thu gọn được. Nút "Hội thoại mới" (`Ctrl`+`Shift`+`O`). Ô tìm theo tiêu đề. Nhóm theo Hôm nay / 7 ngày qua / 30 ngày qua / Cũ hơn. Hover một mục thì hiện `⋯`: Đổi tên, Xoá (xác nhận). Tiêu đề tự đặt từ tin nhắn đầu (40 ký tự đầu), sửa được |
-| Luồng tin | Rộng tối đa 720px, căn giữa. Tin của user căn phải, nền nhạt. Câu trả lời căn trái, không có khung (đọc như tài liệu). Tự cuộn xuống khi đang stream, *trừ khi* user đã cuộn lên, khi đó hiện nút "↓ Tin mới" |
+| Luồng tin | Rộng tối đa 720px, căn giữa. Mỗi **flow** là một khối (CR-021): câu hỏi của user (căn phải, nền nhạt) và câu trả lời căn trái, không có khung (đọc như tài liệu). Ô nhập chính đặt chữ mờ "Hỏi điều mới…". Tự cuộn xuống khi đang stream, *trừ khi* user đã cuộn lên, khi đó hiện nút "↓ Tin mới" |
 | Trang chào (/c/new) | Lời chào theo tên, và 4 thẻ gợi ý lấy từ các command phổ biến *mà user được cấp* (`/dich`, `/tom`…) cùng ví dụ câu hỏi. User chưa được cấp lệnh nào thì chỉ hiện ví dụ câu hỏi. Click thẻ thì điền sẵn vào composer, không gửi ngay |
 
 ## 4. Composer & menu command
@@ -76,7 +80,8 @@ Chat App (web)                       Extension (side panel)
 | Hỏi lại (ask) | Thẻ viền màu primary. Có quick-reply chip nếu Hub gửi lựa chọn. Bấm chip thì gửi luôn câu trả lời. Có thể gõ tự do thay cho chip |
 | Lỗi | Thẻ đỏ gồm tiêu đề, một câu giải thích theo mã lỗi (bảng ở mục 8), các nút hành động, và dòng nhỏ có mã lỗi và run id (để báo admin). [Báo admin] copy sẵn run id và mã lỗi vào clipboard |
 | Hành động trên tin | Hover thì hiện: Copy · Chạy lại (gửi lại đúng yêu cầu đó) · (với command) Sửa lệnh (đưa lại vào composer) |
-| Nhãn agent | Nếu Coordinator giao việc cho agent chuyên trách thì ghi tên hiển thị của agent trong khối các bước ("Trợ lý hoá đơn"). Member không thấy provider và token |
+| Tên hiển thị (CR-022; thay "Nhãn agent") | Mọi câu trả lời ghi **"Consultant"** + icon EvoluConsulting, bất kể agent nào trả lời. Member không thấy tên agent chuyên trách, provider, token; khối các bước chỉ mô tả việc ("Đang viết email") |
+| Flow (CR-021) | Câu hỏi + trả lời chung một khối flow; nút [Trả lời tiếp] mở khung phải (xem §2). Khối các bước, ask, lỗi hiển thị y nhau trong khung flow |
 
 ## 6. Extension (side panel)
 

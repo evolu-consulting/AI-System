@@ -56,7 +56,7 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 | `logged_out` | Phiên đăng nhập CLI đã hết hạn | Probe phát hiện ra. Cần người đăng nhập lại (runbook) |
 | `error` | CLI lỗi lặp lại (không cài, crash…) | 3 lần lỗi liên tiếp |
 
-> ℹ️ **Nguyên tắc dự phòng:** nếu provider ở trạng thái `cooldown`, `logged_out` hoặc `error`, hoặc đang `busy` quá `max_wait_s` (mặc định 30 giây), thì Worker **không chờ** mà chuyển job sang bước kế tiếp của profile. Bước kế tiếp có thể là CLI khác, hoặc chính Agent SDK chạy bằng API key. Tenant đã dùng hết `max_concurrent_sub` được xử lý như provider `busy` *với riêng tenant đó*: chờ tối đa `max_wait_s` rồi dự phòng (`reason=tenant_slots`). Profile luôn có bước API cuối nên job không bị kẹt.
+> ℹ️ **Nguyên tắc dự phòng:** nếu provider ở trạng thái `cooldown`, `logged_out` hoặc `error`, hoặc đang `busy` quá `max_wait_s` (mặc định 30 giây), thì Worker **không chờ** mà chuyển job sang bước kế tiếp của profile. Bước kế tiếp có thể là CLI khác, hoặc chính Agent SDK chạy bằng API key. Tenant đã dùng hết `max_concurrent_sub` được xử lý như provider `busy` *với riêng tenant đó*: chờ tối đa `max_wait_s` rồi dự phòng (`reason=tenant_slots`). Profile **không bắt buộc** có bước API cuối (CR-019): hết bước thì job lỗi rõ `ALL_PROVIDERS_EXHAUSTED` (HUB-BR-04). Subscription chỉ cho dev/test; phục vụ tenant thật cần bước API.
 
 > ⚠️ **Lưu ý:** cần xác nhận loại gói subscription đang dùng cho phép phục vụ nhiều khách hàng.
 

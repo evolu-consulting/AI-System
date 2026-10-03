@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Trạng thái · Chat App</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.btn{height:32px;border:1px solid #D9D5E3;border-radius:8px;background:#FFFFFF;color:#1D1733;font:500 13px 'Be Vietnam Pro',sans-serif;padding:0 12px;cursor:pointer}
+.chip{height:32px;border:1px solid #CFC7E2;border-radius:999px;background:#FFFFFF;color:#4A3278;font:500 13px 'Be Vietnam Pro',sans-serif;padding:0 14px;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 880px; height: 1180px; box-sizing: border-box; padding: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-content: start; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733; font-size: 14px; background: #F7F6FA">
+
+<section style="background: #FFFFFF; border: 1px solid #E6E3EE; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; color: #635C78">Các bước · đang chạy</h2>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #4A3278"><img src="/_blob/607ff10b0a024d9fb8e3ed4972889b9d" alt="" style="width: 22px; height: 22px">Consultant</div>
+<div style="border: 1px solid #E6E3EE; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<div style="display: flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#05603F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Hiểu yêu cầu<span style="margin-left: auto; color: #635C78; font-size: 12px">2,1s</span></div>
+<div style="display: flex; align-items: center; gap: 8px; font-weight: 500"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B4FA0" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>Đang viết email</div>
+</div>
+<div style="line-height: 1.6">Kính gửi Quý khách,<span style="display: inline-block; width: 8px; height: 16px; background: #6B4FA0; vertical-align: -3px; margin-left: 2px"></span></div>
+<p style="margin: 0; font-size: 12px; color: #635C78">Nút gửi đổi thành nút Dừng (Esc) trong lúc chạy.</p>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E6E3EE; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; color: #635C78">Các bước · xong, thu gọn</h2>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #4A3278"><img src="/_blob/607ff10b0a024d9fb8e3ed4972889b9d" alt="" style="width: 22px; height: 22px">Consultant</div>
+<button style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; padding: 0; font: 12px 'Be Vietnam Pro',sans-serif; color: #635C78; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#05603F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>2 bước · 7,8s<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<div style="line-height: 1.6">Kính gửi Quý khách Minh Phát, chúng tôi xin gửi báo giá gói bảo trì quý 4…</div>
+<div style="display: flex; gap: 8px">
+<button class="btn">Copy</button>
+<button class="btn" style="border-color: #CFC7E2; color: #4A3278; background: #F8F5FE">Trả lời tiếp</button>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E6E3EE; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; color: #635C78">Hỏi lại khi yêu cầu chưa rõ</h2>
+<div style="border: 1px solid #CFC7E2; border-left-width: 1px; border-radius: 12px; background: #F8F5FE; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #4A3278"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6M12 17h.01"></path></svg>Consultant cần thêm thông tin</div>
+<div style="line-height: 1.55">Bạn muốn tóm tắt biên bản nào? Dán nội dung vào đây, hoặc chọn:</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button class="chip">Họp giao ban sáng nay</button>
+<button class="chip">Họp với Minh Phát</button>
+</div>
+</div>
+<p style="margin: 0; font-size: 12px; color: #635C78">Bấm chip là gửi luôn. Vẫn gõ tự do được.</p>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E6E3EE; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; color: #635C78">Lỗi · AI tạm hết lượt dùng</h2>
+<div role="alert" style="border: 1px solid #F5C2C2; border-radius: 12px; background: #FFFAFA; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: #9B1C1C"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg>Hệ thống đang quá tải</div>
+<div style="line-height: 1.55; color: #3B3450">AI tạm hết lượt dùng. Hãy thử lại sau ít phút.</div>
+<div style="display: flex; gap: 8px">
+<button class="btn">Thử lại</button>
+<button class="btn">Báo admin</button>
+</div>
+<div style="font: 11px 'JetBrains Mono',monospace; color: #635C78">ALL_PROVIDERS_EXHAUSTED · run [RUN_ID]</div>
+</div>
+<p style="margin: 0; font-size: 12px; color: #635C78">Báo admin copy sẵn mã lỗi và run id.</p>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E6E3EE; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; color: #635C78">Flow quay lại sau khi nghỉ</h2>
+<div style="border: 1px solid #CFC7E2; border-radius: 12px; overflow: hidden">
+<div style="background: #F8F5FE; padding: 10px 14px; border-bottom: 1px solid #E6E3EE; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">Dịch điều khoản thanh toán</span><span style="font-size: 12px; color: #635C78">6 tin · hôm qua</span></div>
+<div style="padding: 14px; display: flex; flex-direction: column; gap: 12px; font-size: 13px">
+<div style="align-self: flex-end; background: #F0EEF4; padding: 8px 12px; border-radius: 10px">Dịch tiếp điều 7 giúp mình.</div>
+<div style="display: flex; align-items: center; gap: 8px; color: #635C78"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B4FA0" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>Đang mở lại flow, lần đầu có thể mất vài giây…</div>
+</div>
+</div>
+<p style="margin: 0; font-size: 12px; color: #635C78">Flow không có nút đóng. Rảnh lâu thì hệ thống tự nghỉ, chat lại thì tự mở lại đủ ngữ cảnh.</p>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E6E3EE; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; color: #635C78">Đã dừng · mất kết nối</h2>
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #F0EEF4; color: #635C78; font-size: 13px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>Đã dừng<button class="btn" style="margin-left: auto; height: 28px; font-size: 12px">Chạy lại</button>
+</div>
+<div role="status" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #FDF0DF; color: #7F3C04; font-size: 13px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.4a5 5 0 0 1 7 0M12 20h.01"></path></svg>Đang kết nối lại…
+</div>
+<div role="alert" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #FDE8E8; color: #9B1C1C; font-size: 13px">
+Không kết nối được máy chủ<button class="btn" style="margin-left: auto; height: 28px; font-size: 12px">Thử lại</button>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

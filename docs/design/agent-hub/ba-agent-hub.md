@@ -156,6 +156,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 |---|---|---|
 | HUB-FR-40 | CRUD conversation của chính user (trong tenant của user): tạo, liệt kê, đổi tên, xoá, xem message | **MUST** |
 | HUB-FR-41 | Gửi message thì trả về SSE stream các sự kiện chuẩn (mục 9.2) | **MUST** |
+| HUB-FR-45 | **Flow** (CR-021): một conversation gồm nhiều flow. Gửi message không kèm `flow_id` thì tạo flow mới (qua Coordinator); kèm `flow_id` thì đi thẳng agent của flow, context = message của flow đó (Coordinator chọn lại nếu đổi chủ đề hẳn). Flow không có trạng thái đóng: rảnh ~10 phút Hub tắt tiến trình CLI, chat lại thì resume (mất session thì dựng lại từ message đã lưu) | **MUST** |
 | HUB-FR-42 | Client mất kết nối rồi nối lại thì được xem tiếp sự kiện từ `Last-Event-ID`. Run không dừng khi client rớt mạng | **SHOULD** |
 | HUB-FR-43 | `POST /runs/:id/cancel` huỷ run và các job con. Worker phải dừng trong ≤ 5 giây | **MUST** |
 | HUB-FR-44 | Upload file đính kèm (≤ 20MB/file). Lưu cục bộ hoặc object storage, gắn `tenant_id`, gắn vào message, và chuyển cho Dify hoặc agent khi cần | **SHOULD** |
@@ -175,7 +176,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 |---|---|---|
 | HUB-FR-60 | CRUD agent: key, tên hiển thị (vi/en), mô tả cho Coordinator, runtime, model profile, system prompt, workflow được gắn (`hub.agent_workflows`), timeout, ngân sách token, bật/tắt | **MUST** |
 | HUB-FR-61 | Runtime `agentic-cli` có thêm: CLI (claude/codex/gemini), tool có sẵn được phép (Read/Grep/Edit/Bash…), có dùng MCP tools không, chế độ thư mục làm việc | **MUST** |
-| HUB-FR-62 | Cấu hình **Coordinator** (duy nhất): model profile, system prompt, `max_steps`, ngân sách token mỗi run, số message lịch sử đưa vào, hành vi khi không có agent nào khớp (tự trả lời / hỏi lại) | **MUST** |
+| HUB-FR-62 | Cấu hình **Coordinator** (duy nhất): chọn **một agent** làm Coordinator (`agent_id`; profile và system prompt là của agent đó, runtime `llm`/API hoặc `agentic-cli`/subscription), `max_steps`, ngân sách token mỗi run, số message lịch sử đưa vào, hành vi khi không có agent nào khớp (tự trả lời / hỏi lại). Agent đang làm Coordinator không tắt/xoá được, không nằm trong danh sách delegate, trả `delegate\|answer\|ask` bằng JSON có cấu trúc; chạy bằng CLI thì không tool, không MCP. **Hub giữ vòng lặp điều phối** (kiểm quyền mỗi bước, `max_steps`, huỷ, trace, chi phí), không để CLI tự gọi agent khác (CR-020) | **MUST** |
 | HUB-FR-63 | **Dry-run định tuyến**: nhập một câu hỏi, xem Coordinator sẽ chọn agent nào và vì sao, mà không thật sự chạy agent | **MUST** |
 | HUB-FR-64 | **Gắn workflow cho agent**: chọn từ catalog `admin.workflows` (chỉ đọc, chỉ workflow đang bật), lưu vào `hub.agent_workflows`. Agent không đặt tên và không viết lại mô tả. Tên tool sinh từ key workflow, mô tả và mô tả tham số lấy từ workflow. Muốn sửa mô tả thì sửa workflow ở Admin | **MUST** |
 | HUB-FR-65 | Chạy thử workflow đã chọn với input mẫu. Xem trước tool dưới dạng model nhìn thấy (tên, mô tả, JSON schema), lấy từ workflow | **MUST** |
@@ -206,7 +207,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | HUB-FR-83 | **Log chi phí theo tenant:** mỗi dòng `usage_logs` ghi `tenant_id`, `feature_id` (run command; job agent chat / run orchestrated thì `null`), `billing` (`api` \| `subscription` \| `dify`), `cost_usd` (chi phí thật; subscription = 0), `billable_usd` (số thu của tenant), `overage` | **MUST** |
 | HUB-FR-84 | **Bảng giá bán `hub.price_book`:** Hub (hoặc Worker, với job của Worker) tính `billable_usd` lúc ghi `usage_logs`: (token vào × `input_usd_per_mtok` + token ra × `output_usd_per_mtok`) / 1.000.000, theo dòng giá của (provider, model) có `effective_from` gần nhất trước lúc chạy. Dùng chung cho API và subscription. Chưa có đơn giá thì vẫn ghi token, `billable_usd = null`, và được tính lại khi thêm đơn giá. `platform_admin` sửa bảng giá trong Studio | **MUST** |
 | HUB-FR-85 | **Chi phí Dify:** ghi token và chi phí từ metadata Dify nếu có. Không có thì ghi số run và thời gian chạy | **MUST** |
-| HUB-FR-86 | **Slot subscription theo tenant:** subscription CLI dùng chung cho mọi tenant. Số job subscription chạy cùng lúc của một tenant không vượt `tenants.max_concurrent_sub` (null = không giới hạn, là mặc định). Tenant đã đủ slot thì bước subscription được coi như gặp `quota` và profile chuyển sang bước sau (luôn có bước API dự phòng) | **MUST** |
+| HUB-FR-86 | **Slot subscription theo tenant:** subscription CLI dùng chung cho mọi tenant. Số job subscription chạy cùng lúc của một tenant không vượt `tenants.max_concurrent_sub` (null = không giới hạn, là mặc định). Tenant đã đủ slot thì bước subscription được coi như gặp `quota` và profile chuyển sang bước sau. Hết bước thì lỗi `ALL_PROVIDERS_EXHAUSTED` (HUB-BR-04); profile **không bắt buộc** có bước API cuối, subscription chỉ cho dev/test (CR-019) | **MUST** |
 | HUB-FR-87 | **Xem trace theo role:** `platform_admin` xem trace mọi tenant. `tenant_admin` chỉ xem chi phí của tenant, không xem nội dung chat. Mỗi lần xem trace ghi audit `view_trace` kèm tenant | **MUST** |
 | HUB-FR-88 | Tenant hoặc user bị khoá (theo cache) thì Hub từ chối request ngay, không đợi access token hết hạn: trả 401, client về màn đăng nhập | **SHOULD** |
 
@@ -223,7 +224,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | HUB-BR-05 | Khi dự phòng sang provider khác, câu trả lời vẫn hợp lệ, nhưng trace phải ghi rõ provider nào đã phục vụ |
 | HUB-BR-06 | Cấu hình và quyền được chốt tại thời điểm run bắt đầu. Sửa giữa chừng thì run đang chạy không bị ảnh hưởng |
 | HUB-BR-07 | Context trang (URL, nội dung) chỉ được gửi đi khi command hoặc agent thật sự dùng tới. Không tự động nhồi vào mọi request |
-| HUB-BR-08 | Luôn có đúng một cấu hình Coordinator hợp lệ (có profile). Coordinator chỉ thấy các agent đang bật mà user được dùng |
+| HUB-BR-08 | Luôn có đúng một cấu hình Coordinator hợp lệ (trỏ tới một agent đang bật có profile; agent đó không tắt/xoá được khi đang được chọn, CR-020). Coordinator chỉ thấy các agent đang bật mà user được dùng |
 | HUB-BR-09 | Mô tả agent (cho Coordinator) là bắt buộc, từ 20 đến 400 ký tự. Mô tả tool là mô tả của workflow: bắt buộc 20–400 ký tự, kèm mô tả từng tham số, do Admin kiểm khi tạo workflow |
 | HUB-BR-10 | Không được xoá profile, provider hoặc secret đang được dùng. Chỉ được tắt, hoặc phải gỡ tham chiếu trước. Workflow đang được agent dùng thì Admin không cho xoá hay tắt, và hiện danh sách agent đang dùng |
 | HUB-BR-11 | Tên tool sinh từ key workflow, dạng `^[a-z][a-z0-9_]{2,40}$` (hợp lệ với function-calling của mọi hãng). Key workflow là duy nhất nên tên tool không trùng |
@@ -251,7 +252,8 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | `agent_workflows` | agent_id, workflow_id (→ `admin.workflows`), created_by, created_at (thay bảng `tools` cũ) |
 | `agent_entitlements` | agent_id, tenant_id, granted_by, granted_at, revoked_at |
 | `agent_grants` | id, agent_id, tenant_id, subject_type (group/user), subject_id, granted_by, granted_at |
-| `coordinator_settings` | singleton: profile_id, system_prompt, max_steps, token_budget, history_n, on_no_match (answer\|ask), version, updated_by |
+| `flows` | id, conversation_id, tenant_id, user_id, agent_id (null đến khi Coordinator chọn), title, created_at, last_active_at (CR-021). `messages` và `runs` thêm `flow_id` |
+| `coordinator_settings` | singleton: agent_id (thay profile_id, system_prompt, CR-020), max_steps, token_budget, history_n, on_no_match (answer\|ask), version, updated_by |
 | `providers` | id, key, kind, vendor, base_url, secret_id, max_concurrency, enabled |
 | `model_profiles` | id, key, steps (jsonb [{provider_id, model, on[]}]) |
 | `secrets` | id, name, ciphertext, iv, last4, note, updated_by, updated_at (chỉ secret của provider) |
@@ -271,7 +273,7 @@ Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `feat
 | `GET /commands` | Menu command cho client, chỉ gồm lệnh user được dùng |
 | `GET/POST /conversations` · `PATCH/DELETE /conversations/:id` | Quản lý hội thoại (trong tenant của user) |
 | `GET /conversations/:id/messages` | Lịch sử (phân trang) |
-| `POST /conversations/:id/messages` | Gửi message, trả về SSE stream |
+| `POST /conversations/:id/messages` | Gửi message (body có `flow_id?`, CR-021), trả về SSE stream. `GET /conversations/:id/flows` liệt kê flow |
 | `GET /runs/:id/events` | Nối lại stream (hỗ trợ `Last-Event-ID`) |
 | `POST /runs/:id/cancel` · `GET /runs/:id` · `GET /runs/:id/trace` | Điều khiển và xem run (trace theo HUB-FR-87) |
 | `POST /attachments` | Upload file |

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hội thoại · Chat App</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.ib{width:36px;height:36px;border:0;border-radius:8px;background:transparent;color:#635C78;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.act{height:30px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:#635C78;font:500 12px 'Be Vietnam Pro',sans-serif;display:inline-flex;align-items:center;gap:6px;cursor:pointer;text-decoration:none}
+.go{height:30px;padding:0 12px;border:1px solid #CFC7E2;border-radius:999px;background:#FFFFFF;color:#4A3278;font:500 12px 'Be Vietnam Pro',sans-serif;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.go:hover{background:#F8F5FE;color:#2E2150}
+.flow{border:1px solid #E6E3EE;border-radius:14px;background:#FFFFFF;padding:16px;display:flex;flex-direction:column;gap:12px}
+.q{align-self:flex-end;max-width:80%;background:#F0EEF4;padding:10px 14px;border-radius:12px;line-height:1.5}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#4A3278}
+.ft{display:flex;align-items:center;gap:6px;border-top:1px solid #EFEDF3;padding-top:10px;margin-top:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-wrap: wrap; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733; font-size: 14px; background: #F7F6FA">
+
+<nav aria-label="Hội thoại" style="flex: 0 0 260px; background: #FFFFFF; border-right: 1px solid #E6E3EE; display: flex; flex-direction: column; padding: 16px 12px; gap: 12px; box-sizing: border-box">
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 0 4px"><img src="/_blob/e3494dea1ce2ef7661ea480dd997f0d3" alt="EvoluConsulting" style="width: 200px; height: 62px; object-fit: contain; object-position: left center; margin-left: -10px"><span style="font-size: 12px; color: #635C78; padding-left: 6px">AI Chat · Acme Việt Nam</span></div>
+<a href="Welcome.dc.html" style="height: 40px; border: 1px solid #D9D5E3; border-radius: 8px; background: #FFFFFF; color: #1D1733; font: 600 14px 'Be Vietnam Pro',sans-serif; display: flex; align-items: center; gap: 8px; padding: 0 12px; text-decoration: none">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Hội thoại mới<span style="margin-left: auto; font: 400 11px 'JetBrains Mono',monospace; color: #635C78">Ctrl⇧O</span></a>
+<label style="display: block"><span style="position: absolute; left: -9999px">Tìm hội thoại</span>
+<input placeholder="Tìm hội thoại" style="width: 100%; height: 36px; border: 1px solid #E6E3EE; border-radius: 8px; padding: 0 12px; font: 14px 'Be Vietnam Pro',sans-serif; box-sizing: border-box; background: #F7F6FA; color: #1D1733">
+</label>
+<div style="font-size: 12px; font-weight: 600; color: #635C78; padding: 8px 8px 0">Hôm nay</div>
+<a href="#" aria-current="page" style="display: block; padding: 8px 10px; border-radius: 8px; background: #EDE6FB; color: #2E2150; font-weight: 600; text-decoration: none">Việc khách hàng Minh Phát</a>
+<a href="#" style="display: block; padding: 8px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">Chuẩn bị họp giao ban</a>
+<div style="font-size: 12px; font-weight: 600; color: #635C78; padding: 8px 8px 0">7 ngày qua</div>
+<a href="#" style="display: block; padding: 8px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">Hợp đồng NDA đối tác</a>
+<a href="#" style="display: block; padding: 8px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">Kế hoạch tuyển dụng Q4</a>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px; border-top: 1px solid #E6E3EE">
+<div style="width: 32px; height: 32px; border-radius: 999px; background: #EDE6FB; color: #4A3278; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px">TH</div>
+<div style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-weight: 500">Thu Hà</span><span style="font-size: 12px; color: #635C78">thu.ha</span></div>
+<button class="ib" aria-label="Cài đặt"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></svg></button>
+</div>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; background: #F7F6FA">
+<header style="height: 60px; border-bottom: 1px solid #E6E3EE; background: #FFFFFF; display: flex; align-items: center; gap: 12px; padding: 0 24px">
+<h1 style="margin: 0; font-size: 16px; font-weight: 600">Việc khách hàng Minh Phát</h1>
+<span style="font-size: 12px; color: #635C78; background: #F0EEF4; padding: 3px 8px; border-radius: 999px">3 flow</span>
+</header>
+
+<div role="log" aria-live="polite" style="flex-grow: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; max-width: 800px; width: 100%; margin: 0 auto; box-sizing: border-box">
+
+<article class="flow" aria-label="Flow: Chúc mừng khai trương">
+<div class="q">Viết giúp mình một câu chúc mừng khai trương chi nhánh mới, ngắn gọn, trang trọng.</div>
+<div class="who"><img src="/_blob/607ff10b0a024d9fb8e3ed4972889b9d" alt="" style="width: 22px; height: 22px">Consultant</div>
+<div style="line-height: 1.6">"Chúc mừng Quý công ty khai trương chi nhánh mới. Kính chúc chi nhánh vận hành thuận lợi, phát triển bền vững và tiếp tục đồng hành cùng khách hàng trên chặng đường mới."</div>
+<div class="ft">
+<button class="act"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>Copy</button>
+<span style="flex-grow: 1"></span>
+<a class="go" href="FlowOpen.dc.html">Trả lời tiếp<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a>
+</div>
+</article>
+
+<article class="flow" aria-label="Flow: Email báo giá Minh Phát">
+<div class="q">Soạn email gửi khách Minh Phát báo giá gói bảo trì quý 4.</div>
+<div class="who"><img src="/_blob/607ff10b0a024d9fb8e3ed4972889b9d" alt="" style="width: 22px; height: 22px">Consultant<span style="font-weight: 400; color: #635C78; font-size: 12px">· 2 bước · 7,8s</span></div>
+<div style="line-height: 1.6">Kính gửi Quý khách Minh Phát, chúng tôi xin gửi báo giá gói bảo trì quý 4 gồm kiểm tra định kỳ hằng tháng và hỗ trợ sự cố trong giờ hành chính. Chi phí trọn gói: [GIÁ GÓI]…</div>
+<div class="ft">
+<button class="act"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>Copy</button>
+<span style="flex-grow: 1"></span>
+<a class="go" href="FlowOpen.dc.html" style="background: #F8F5FE"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"></path></svg>+2 tin trong flow · 2 phút trước<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a>
+</div>
+</article>
+
+<article class="flow" aria-label="Flow: Tóm tắt biên bản họp" style="border-color: #CFC7E2">
+<div class="q">Tóm tắt 3 ý chính của biên bản họp giao ban sáng nay giúp mình.</div>
+<div class="who"><img src="/_blob/607ff10b0a024d9fb8e3ed4972889b9d" alt="" style="width: 22px; height: 22px">Consultant</div>
+<div style="border: 1px solid #E6E3EE; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; max-width: 440px">
+<div style="display: flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#05603F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Hiểu yêu cầu</div>
+<div style="display: flex; align-items: center; gap: 8px; font-weight: 500"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B4FA0" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>Đang soạn câu trả lời</div>
+</div>
+<div style="line-height: 1.6">Mình chưa có nội dung biên bản<span style="display: inline-block; width: 8px; height: 16px; background: #6B4FA0; vertical-align: -3px; margin-left: 2px"></span></div>
+</article>
+
+</div>
+
+<div style="padding: 0 24px 20px; max-width: 800px; width: 100%; margin: 0 auto; box-sizing: border-box">
+<div style="border: 1px solid #D9D5E3; border-radius: 12px; padding: 10px 10px 10px 14px; display: flex; align-items: flex-end; gap: 8px; background: #FFFFFF">
+<label style="flex-grow: 1"><span style="position: absolute; left: -9999px">Câu hỏi mới</span>
+<textarea rows="2" placeholder="Hỏi điều mới…" style="width: 100%; border: 0; resize: none; font: 14px/1.5 'Be Vietnam Pro',sans-serif; color: #1D1733; outline: none; background: transparent"></textarea>
+</label>
+<button aria-label="Dừng" style="width: 36px; height: 36px; border: 0; border-radius: 8px; background: #1D1733; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg></button>
+</div>
+<p style="margin: 8px 0 0; font-size: 12px; color: #635C78">Mỗi câu hỏi ở đây mở một flow mới. Muốn hỏi tiếp một việc, bấm <b style="font-weight: 600; color: #4A3278">Trả lời tiếp</b> trên flow đó.</p>
+</div>
+</main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

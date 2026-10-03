@@ -19,7 +19,7 @@
 | Admin (`ADM-*`) | `design/admin/ba-admin.md` | `design/admin/ui-admin.md` (wireframe trong `.html`) |
 | Agent Hub (`HUB-*`) | `design/agent-hub/ba-agent-hub.md` | `design/agent-hub/ui-agent-studio.md`, `design/agent-hub/ui-operations.md` |
 | Worker (`WRK-*`) | `design/worker/ba-worker.md` | — |
-| Chat & Extension | — | `design/chat-app/ui-chat-extension.md` |
+| Chat & Extension | — | `design/chat-app/ui-chat-extension.md` · use case C1 `design/chat-app/usecases-chat.md` (UC-01…08, CHAT-AC) · canvas `design/chat-app/canvas/` (5 artboard, xem README) |
 | Design đã duyệt (Gate M0) | Canvas: https://claude.ai/artifact/FTSiKuF9ax5DkMBVKMdHDB · bản sao nguồn `design/canvas/` | 18 artboard Admin · token `design/canvas/tokens-map.md` |
 
 Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DEBT.md`).
@@ -53,3 +53,4 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 | `M2-catalog-command` | Secrets, Workflows, Commands (không Test), Features + entitlement | M2 | done (2026-10-02) |
 | `M3-permissions` | Groups, Grants + ma trận, Kiểm tra quyền, NOTIFY `config_changed`, chống ghi đè (modal 409); dồn từ M2: vế ≤ 5 s AC-A03, FR-24 group/grant | M3 | draft (2026-10-02, Gate đã trả lời, chờ plan) |
 | `M4-ops` | Quota + cảnh báo, Chi phí & quota, Tổng quan, Audit + khôi phục, Import/Export, 2FA (FR-40–42, 51, 52, 54, 08; AC-A12 phía Admin) | M4 | draft (2026-10-03, chờ plan BE ∥ FE) |
+| `C1-chat-ui` | Chat UI (`apps/chat-web`) + contract Chat↔Hub + mock Hub chat + bộ test contract dùng chung (flow, Consultant; CR-018…022) | C1 | draft (2026-10-03, chờ plan BE ∥ FE) |

@@ -86,7 +86,7 @@ Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở *Tools*
 
 [[WF agent-hub/ui-agent-studio.html#5]]
 
-- **Coordinator là một trang singleton**, không nằm trong danh sách Agents và không tắt được. Nhờ vậy không thể rơi vào tình trạng "không có Coordinator" (HUB-BR-08).
+- **Coordinator là một agent được chọn** (CR-020; thay cho "trang singleton riêng"). Trang `/studio/coordinator` chọn agent làm Coordinator + `max_steps`, ngân sách, `history_n`, `on_no_match`. Agent đó hiện trong danh sách Agents kèm badge "Coordinator", không tắt/xoá được khi đang được chọn (HUB-BR-08); đổi bằng chọn agent khác hoặc nút [Đặt làm Coordinator] ở editor agent. Đổi Coordinator = thay đổi định tuyến → chạy bộ câu kiểm thử (bên dưới). Coordinator không nằm trong danh sách delegate; chạy CLI thì không tool, không MCP.
 - **Agent Coordinator nhìn thấy:** trang này và Dry-run dùng toàn bộ agent đang bật. Khi chạy thật, mỗi user chỉ đưa cho Coordinator các agent user đó được dùng (HUB-FR-77). Muốn xem theo một user thì dùng Playground với "Chạy như user".
 - **Phát hiện mô tả trùng ý:** khi hai agent có mô tả quá giống nhau thì hiện badge cảnh báo. Có thể so bằng embedding, hoặc đơn giản là so trùng từ khoá ở v1.
 - **Bộ câu kiểm thử định tuyến** (MUST, HUB-FR-73): tab "Kiểm thử" ngay trong trang Coordinator, gồm bảng các câu (nội dung, agent mong đợi, kết quả lần chạy gần nhất). Thêm câu bằng tay, hoặc từ nút [+ Lưu làm câu kiểm thử] ở Dry-run, Playground và Runs. Bộ câu chạy với toàn bộ agent, không lọc theo quyền.
@@ -215,7 +215,7 @@ Admin › Tenants: tạo tenant "acme" (entitlement feature, quota, slot subscri
 | Gỡ workflow khỏi agent | Được phép. Nếu là workflow duy nhất của agent `dify-workflow`/`dify-agent` thì phải chọn workflow khác trước | "Agent cần một workflow" |
 | Thu hồi entitlement | Được phép, bắt xác nhận | Hộp xác nhận nêu số grant sẽ mất hiệu lực |
 | Đơn giá | Giá ≥ 0, `effective_from` không trùng với dòng khác của cùng provider + model | "Đã có đơn giá hiệu lực từ ngày này" |
-| Coordinator | Phải có profile hợp lệ, max_steps từ 1 đến 10 | "Số bước tối đa từ 1 đến 10" |
+| Coordinator | Phải chọn một agent đang bật có profile hợp lệ (CR-020), max_steps từ 1 đến 10 | "Số bước tối đa từ 1 đến 10" |
 
 Trạng thái đang tải, rỗng, lỗi, xung đột và mất kết nối dùng chung quy ước với Admin (UI/UX Admin, mục 9). Riêng trang rỗng:
 
