@@ -12,6 +12,7 @@ export type HookOp =
   | "group.members"
   | "grant.save"
   | "grant.batch"
+  | "grant.matrix"
   | "entitlement.save"
   | "tenant.save"
   | "user.save"
@@ -19,9 +20,9 @@ export type HookOp =
 /**
  * `locked`: sau câu khoá CUỐI của luồng, trước kiểm luật. `names` (M2): command vừa ghi `command_names`, trước khi khoá
  * features. `rows`: sau câu ghi CUỐI, trước bump. `bump`: `configWrite` gọi ngay trước upsert `config_meta` (chỉ khi có
- * sự kiện).
+ * sự kiện). `cols` (chỉ `grant.matrix`, đọc): sau câu cột group, trước câu hàng feature.
  */
-export type HookStep = "locked" | "names" | "rows" | "bump";
+export type HookStep = "locked" | "names" | "rows" | "bump" | "cols";
 export type TestHooks = {
   afterLock?: (op: HookOp, step: HookStep) => Promise<void> | void;
 };

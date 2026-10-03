@@ -1,11 +1,15 @@
 // ADM-FR-32, ADM-FR-35, ADM-FR-53 · grants gọi trực tiếp service: idempotent + bump đúng lúc, batch đếm theo returning,
-// batch song song hai chiều (thêm X bớt Y ∥ thêm Y bớt X) không deadlock. Ca xen kẽ tất định ở lib/lock-order.int.test.ts.
+// batch song song hai chiều (thêm X bớt Y ∥ thêm Y bớt X) không deadlock; ma trận một snapshot khi group tạo/xoá xen giữa
+// câu cột và câu hàng. Ca xen kẽ khoá tất định ở lib/lock-order.int.test.ts.
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { GrantMatrixQuerySchema } from "@ai/contracts";
 import { createDb, runMigrations } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
 import { isAppError } from "../../lib/errors";
+import { barrier } from "../../lib/lock-order.helpers";
 import { batchGrants } from "./grants.batch";
+import { grantMatrix } from "./grants.matrix";
 import { type Call, createGrant, deleteGrant } from "./grants.service";
 
 const OWNER = process.env.TEST_DATABASE_URL;
@@ -15,7 +19,7 @@ if (!OWNER || !API) throw new Error("TEST_DATABASE_URL/TEST_ADMIN_API_DATABASE_U
 const id = (n: number) => `01900000-0000-7000-8000-0000000ff${String(n).padStart(3, "0")}`;
 const TID = id(1);
 const ADMIN = id(11);
-const [G1, G2] = [id(21), id(22)];
+const [G1, G2, G0] = [id(21), id(22), id(20)];
 const [F1, F2, CORE, FX] = [id(31), id(32), id(33), id(34)];
 const owner = postgres(OWNER, { max: 1, onnotice: () => {} });
 const db = createDb(API, { max: 6 });
@@ -122,5 +126,37 @@ describe("ADM-FR-35 · batch", () => {
     );
     await Promise.all(runs);
     expect(await rows()).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("ADM-FR-35 · matrix một snapshot", () => {
+  test("hook giữa câu cột và câu hàng: xoá G2 + tạo G0 (có grant) → granted ⊂ groups, không mất ô của G2", async () => {
+    await owner`insert into admin.feature_grants (tenant_id, feature_id, group_id) values
+      (${TID}, ${F1}, ${G1}), (${TID}, ${F1}, ${G2})`;
+    const b = barrier("grant.matrix", "cols");
+    const p = grantMatrix(
+      { ...call, ctx: { db, hooks: b.hooks } },
+      GrantMatrixQuerySchema.parse({}),
+    );
+    await b.locked;
+    await owner`delete from admin.feature_grants where group_id = ${G2}`;
+    await owner`delete from admin.groups where id = ${G2}`;
+    await owner`insert into admin.groups (id, tenant_id, key, name) values (${G0}, ${TID}, 'aa', '{"vi":"AA"}')`;
+    await owner`insert into admin.feature_grants (tenant_id, feature_id, group_id) values (${TID}, ${F1}, ${G0})`;
+    b.open();
+    const m = await p;
+    const cols = m.groups.map((g) => g.id);
+    // Trigger tạo sẵn group beta cho tenant (đứng đầu) → so phần sau nó.
+    expect(cols.slice(1)).toEqual([G2, G1]);
+    expect(m.group_total).toBe(3);
+    const f1 = m.features.find((f) => f.feature.id === F1);
+    expect(f1?.granted_group_ids).toEqual([G1, G2].sort());
+    for (const f of m.features) for (const g of f.granted_group_ids) expect(cols).toContain(g);
+    // Sau khi tx kết thúc: lần đọc mới thấy trạng thái mới.
+    const now = await grantMatrix(call, GrantMatrixQuerySchema.parse({}));
+    expect(now.groups.map((g) => g.id).slice(1)).toEqual([G0, G1]);
+    expect(now.features.find((f) => f.feature.id === F1)?.granted_group_ids).toEqual(
+      [G0, G1].sort(),
+    );
   });
 });
