@@ -43,7 +43,7 @@ Cập nhật: 2026-10-03 · Người cập nhật: docs-architect (đóng M3)
 - (b) H1 chạy Agent SDK trong Hub vs BA "Hub không chạy CLI": đề xuất interface `AgentRunner` (in-process cho dev, qua Worker cho prod).
 - (c) Queue Postgres `SKIP LOCKED` thay Redis queue; slot tenant đếm trong DB.
 - (d) Sự kiện run dùng Redis Streams để `Last-Event-ID` hoạt động.
-- (e) Sandbox: hook chặn đường dẫn ngoài `work/<job_id>`; Worker chạy Windows hay Linux?
+- (e) ~~Worker Windows hay Linux?~~ Chốt CR-027: Windows + WSL2 Ubuntu (WRK-NFR-06, WRK-BR-07). Còn mở: bật sandbox Claude Code mặc định hay chỉ hook
 - (f) Cookie refresh khi chat-web khác origin với admin-api.
 
 ## Bị chặn
