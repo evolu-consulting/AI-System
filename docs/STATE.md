@@ -3,6 +3,7 @@
 Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (CR-028)
 
 ## Đang ở đâu
+- **Mốc H1 (phiên Hub/Worker, 2026-10-04):** spec `docs/specs/H1-hub-core/spec.md` (`status: draft`, 82 mã yêu cầu, 26 luật H1-R, 12 AC kỹ thuật `HUB-H1-AC`, 10 câu hỏi mở có mặc định) + `tasks.md` khung; ROADMAP thêm H1–H4. Kế tiếp: plan BE (TS) ∥ plan Python, qc test-plan, readiness, Gate. Cần CR cho lệch chữ HUB-FR-42 (id SSE tuần tự vs id Redis Stream, spec §9 Q6).
 - **CR-028 / ADR-0007** (2026-10-04, phiên Hub/Worker): Hub giữ TypeScript; Worker thành **Agent Runtime Python** (`apps/agent-runtime`) chạy mọi agent `llm`/`agentic-cli`/`python`. Hàng đợi Postgres `SKIP LOCKED` (bỏ Redis queue, slot đếm trong DB), sự kiện run qua Redis Streams, contract zod → JSON Schema → pydantic, manifest `hub.agent_types`. Đã sửa ba-agent-hub, ba-worker, architecture (gồm mâu thuẫn CR-019) — chỉ design, html chưa sinh lại (TECH-DEBT #32). Chat/Admin không đổi.
 - **CR-025/026** (2026-10-04, Intake Nhanh): Orchestrator định tuyến mọi tin (kể cả trong flow), kết quả agent có cấu trúc (HUB-FR-27/28/29, AC-H14/15), runtime mặc định `llm`; đổi tên thuật ngữ cũ → Orchestrator toàn docs + i18n. Chỉ sửa design; html chưa sinh lại (TECH-DEBT #32). C1 contract không đổi.
 - **Mốc C1 (phiên chat, song song M4)** (2026-10-03): người dùng chốt làm Chat App trước (CR-018…024). Đã có spec `docs/specs/C1-chat-ui/spec.md` (draft, 7 câu hỏi mở có mặc định) + `tasks.md` khung, `docs/design/chat-app/usecases-chat.md` (UC-01…08, CHAT-AC-01…36), canvas `docs/design/chat-app/canvas/`. Design đã cập nhật: flow, Consultant, Orchestrator là agent, subscription không bắt buộc API cuối. Kế tiếp: plan BE ∥ FE, ADR thư viện markdown, test-plan, readiness, Gate. Không đụng `packages/contracts/src/index.ts` (M4 đang sửa).
@@ -12,7 +13,7 @@ Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (CR-028)
 - M0, M1, M2 xong. Thiết kế v0.4 xong (`design/`); canvas 18 artboard. Khung quy trình xong (`CLAUDE.md`, `WORKFLOW.md`, 7 agent, Luật 2b).
 
 ## Việc kế tiếp (phiên mới: làm ngay, KHÔNG hỏi — Luật 2b)
-0. **Phiên Hub:** bổ sung `docs/CONVENTIONS.md` phần Python (`uv`, `ruff`, `pyright` strict, `pytest`, cỡ file/hàm), rồi tách spec H1 (Hub lõi TS + Agent Runtime Python tối thiểu) theo ROADMAP (ROADMAP chưa cập nhật theo CR-028).
+0. **Phiên Hub:** CONVENTIONS §9 (Python) và spec H1 đã xong (draft). Làm tiếp: plan BE (TS) ∥ plan Python (`plan.md`, `plan-runtime.md`), qc test-plan, spec-readiness, Gate (Luật 2b), rồi BUILD theo `docs/specs/H1-hub-core/tasks.md`.
 1. **M4 Chi phí & vận hành** theo `docs/ROADMAP.md` (Quota + cảnh báo, Chi phí & quota, Audit + khôi phục, Tổng quan, Import/Export, 2FA; ADM-FR-40–42, 51, 52, 54, 08; AC-A12 phía Admin; Import/Export và 2FA cần artboard trước Gate). Vòng: docs-architect tách spec `M4-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate (Luật 2b) → qc khoá test (đỏ đúng lý do) → BUILD một task mỗi lần gọi → Lệnh xong M4 (không gồm `test:perf`) → reviewer ≤ 2 vòng → docs → bật service và hướng dẫn người dùng test toàn bộ admin app. Trên `main`, KHÔNG push.
 2. Canvas: đổi `#7A7390` → `#736C89` (FE-R1, AA) khi chạm lại canvas.
 
