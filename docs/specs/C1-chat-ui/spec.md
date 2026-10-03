@@ -145,5 +145,19 @@ Lệnh xong mốc: `bun run typecheck && bun test && <test contract> && bunx pla
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - (chưa có)
 
+### Điều phối xử lý test-plan §8 (2026-10-04, Luật 2: chọn phương án đơn giản, dễ đổi)
+| # | Quyết định |
+|---|---|
+| M1 | `tests/contract/**` thêm vào ignore của `bunfig.toml`; tạo `bunfig.contract.toml` + script `test:contract:chat` (như `test:int`). `bun test` gốc không chạy bộ contract. Lệnh xong C1 gồm `bun run test:contract:chat` |
+| M2 | Lệnh AC-32 (instance mock thứ hai) chạy kèm `DIFY_MOCK_PORT=4011` |
+| M3 | Mock thu hồi access theo mốc ms (hoặc `sid`), không theo `iat` giây (B2) |
+| M4 | Env `MOCK_EVENTS_RETENTION_S` (mặc định 600) để test 410 `EVENTS_EXPIRED` (B5) |
+| M5–M6 | FE: bước đang chạy có `aria-busy="true"`; tay nắm sheet mobile là `button` có `aria-label` "Đóng khung flow" (F9, F10) |
+| M7 | Cột Lệnh xong F4–F13 đổi sang `bunx playwright test -c e2e/chat/playwright.config.ts` (đã sửa tasks.md) |
+| M8 | `Last-Event-ID` sai định dạng → coi như không có (phát lại từ đầu), không thêm mã lỗi |
+| M9 | Ô đổi tên UI giới hạn 200 ký tự, khớp contract |
+| M10 | Quét URL tuyệt đối trong `src/**` chỉ do test qc U-9; F13 bỏ phần quét |
+| Lock | Khoá `tests/acceptance/**`, `e2e/**`, `tests/contract/**`; backend-lead thêm `tests/contract` vào `LOCKED_DIRS` (`tools/scripts/src/test-lock.ts`) ở B6 |
+
 ## 10. Tranh chấp test
 - (không)
