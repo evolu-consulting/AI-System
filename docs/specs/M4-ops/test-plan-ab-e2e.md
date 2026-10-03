@@ -35,3 +35,15 @@ Quy ước: `test-plan.md` §1–2. Lệnh: `bunx playwright test e2e/m4-`.
 | E20 | 〃 | M4-AC12 | an `/audit`, `/usage` → `/member` |
 | E21 | `m4-conflict.spec.ts` | M4-R17 · M4-AC14 | user `lan` / tenant acme, admin (API) lưu trước → "admin vừa sửa user này lúc … (v{n}). Bản của bạn dựa trên v{m}."; `Ghi đè` → "Lịch sử vẫn giữ v{n}." |
 
+
+## Đỏ đúng lý do (Q2c · chạy 2026-10-03, DB riêng `qce`, migration main +7 = chưa có `0007_m4_ops`)
+
+24 test ở 5 file, 24 đỏ (không xanh nhầm). Nhóm theo lý do:
+
+| Nhóm | Test | Lý do đỏ |
+|---|---|---|
+| UI/route M4 chưa có (đúng) | E1–E4, E22 (tab `Quota` không tồn tại); E5–E9 (`/usage`, link "Chi phí & quota"); E14–E17 (`/audit`, heading "Nhật ký thay đổi"); E20 (chưa chuyển `/audit`,`/usage` về `/member`); E14b (`Số run 24 giờ` chưa có) | không thấy phần tử / route / URL không đúng |
+| Hành vi M4 chưa có (đúng) | E21 ×2 (câu hiện "Bản này vừa được sửa lúc…" thay vì "admin vừa sửa user này lúc…" — M4-R17 chưa làm) | `expect` câu sai |
+| Dựng dữ liệu thiếu migration M4 (**chấp nhận**) | E10–E13 (`setQuota` → `relation "admin.tenant_quotas" does not exist`); E18, E19 (`seedAuditRows` → `relation "admin.audit_log" does not exist`) | bảng M4 chưa tồn tại; sẽ hết khi `0007_m4_ops` có. Đã giảm tối đa: E5–E9 không seed quota nên đỏ ở UI |
+
+`prepare-db`/login/`resetFixture` không đỏ (chạy OK ở cả 24 ca). Không dùng `describe.configure({mode:"serial"})` (serial bỏ qua ca sau khi một ca đỏ; `workers:1` đã tuần tự).
