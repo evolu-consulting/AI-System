@@ -14,12 +14,12 @@ Nguồn: spec · `ui-admin` 7.2, 7.10–7.16, F7 · `missing-screens` (**ms**) �
 | D4 | shadcn mới chép từ `radix-ui` đã có: `accordion`, `collapsible`, `toggle-group`. không npm mới | ADR-0001 |
 | D5 | Mở rộng `DiffTable` M3 (chuyển `components/shared/diff/`): prop `labels{before,after}`, `mode` update/create/delete, chữ "đã đổi" (không chỉ màu), dòng "{n} trường không đổi · Hiện". `lib/diff-fields.ts` thêm `diffAll()` → `{changed, unchanged}` | ms §7.2; dùng ở Audit, Import, Conflict |
 | D6 | `QuotaBanner` trong `AppShell` dưới topbar, **mọi trang** của tenant_admin, không nút đóng (Q12); platform/không quota/< 80 % → không render; lỗi tải → im lặng. Query `staleTime` 60 s, refetch khi focus, invalidate sau lưu quota | R06, F7 |
-| D7 | Tab tenant theo `?tab=`; `UnsavedGuard` dirty = info ∨ quota | mẫu secrets |
+| D7 | Tab tenant theo `?tab=`; `UnsavedGuard` dirty = info ∨ quota. Info và Quota **dùng chung `version` tenant**: lưu tab nào xong thì ghi `version` mới vào form tab kia | mẫu secrets; tránh 409 giả |
 | D8 | Chi tiết audit = `Sheet` 640 px, route con `/audit/$auditId` (mở thẳng URL vẫn thấy timeline); đóng → `/audit` giữ search | ms §7.2 |
 | D9 | Usage: feature null hiện **"Không theo feature"** (spec R08 thắng chữ artboard) + giữ chú thích artboard | Luật 2: spec > design |
 | D10 | Hub chưa có (Q5): card "Command lỗi nhiều nhất 24 giờ", "Agent Studio" hiện `common.unavailable` + `overview.hubPending`; bỏ dòng phụ "2,1% lỗi" | spec Q5 |
 | D11 | Giá trị secret (Import), mã dự phòng, `totp_token`: chỉ state/bộ nhớ (`gcTime: 0`, không URL/storage); xoá khi unmount/đổi file/quay lại | BR-04, R16 |
-| D12 | Tải file: `lib/download.ts` (`fetch` Bearer → Blob → `<a download>`, tên từ `Content-Disposition`) | không lộ token qua URL |
+| D12 | Tải file: `lib/download.ts` (`fetch` Bearer → Blob → `<a download>`, tên từ `Content-Disposition`), toast `transfer.toast.downloaded` | không lộ token qua URL |
 | D13 | Giữ cổng hook M3 D7. Câu audit = hàm thuần `lib/audit-sentence.ts` chung cho Tổng quan + Nhật ký | CONVENTIONS §2 |
 
 ## 1. Route, menu, quyền
@@ -57,7 +57,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 
 ### 3.2 Chi phí & quota `/usage` (FR-42; R03, R07–R09) — `Usage`
 - Lọc: (platform) `TenantPicker` · `Select` "Kỳ" (12 tháng gần nhất, giờ VN, R01) · `Xuất CSV` (D12).
-- KPI Số run · Token · Số thu + delta; "Chi phí thật", "Biên" **chỉ render khi response có khoá** (server đã loại, R08 — FE không dựa role).
+- KPI Số run · Token · Số thu + delta (không render "% token qua subscription", "Slot subscription" — thiếu dữ liệu contract, TECH-DEBT #30); "Chi phí thật", "Biên" **chỉ render khi response có khoá** (server đã loại, R08 — FE không dựa role).
 - `DailyBars` số thu theo ngày + chú thích.
 - Platform + "Tất cả tenant": bảng "Theo tenant" (link `/tenants/$id?tab=quota`). Một tenant/tenant_admin: card "Quota tháng" (QuotaBar) thay bảng.
 - "Top feature theo số thu" (5 dòng, D9); "Top user theo số thu" nếu API trả (§10.4). `billable_usd` null → "Chưa định giá"; hàng `overage` → badge err "Vượt quota".
@@ -68,6 +68,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 
 ### 3.4 Nhật ký `/audit` (FR-51, 52; R12, R13; Q7, Q8) — `Audit`, `States`
 - ms §7 nguyên văn: lọc, nhóm theo ngày, `Tải thêm` = `useInfiniteQuery` con trỏ (limit 50). "Người thực hiện" = `SearchCombobox` trên `GET /admin/users?q` (đã có).
+- Lọc "Loại" gồm cả Entitlement, 2FA; Import không có thực thể → lọc theo Hành động = Import.
 - Chi tiết (D8): câu + `audit.detail.meta` · `DiffTable` (update Trước/Sau; create chỉ Sau; delete chỉ Trước; secret một dòng "Giá trị: đã thay đổi"; import: danh sách Thêm/Sửa).
 - `Khôi phục bản trước` khi `entry.restorable` (mặc định nếu API không trả: platform ∧ action ∈ {update, delete} ∧ entity ∈ {command, workflow, feature, group, quota}) → ConfirmDialog vừa → toast, invalidate list + entity. Lỗi theo §8; 403 → toast `state.forbiddenAction` + nạp lại phiên.
 
@@ -79,6 +80,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 
 ### 3.6 2FA (FR-08; R16; Q10) — `Enable2FA`; bước đăng nhập không artboard (ms §10.2, mẫu D — đủ để code)
 - Trang ms §10.1: `off → reauth → scan → verify → backup → on` (reducer thuần `lib/totp-steps.ts` +test). File `ai-system-backup-codes-{tenant}-{username}.txt`; rời trang ở bước 3 → `UnsavedGuard`.
+- Member vào `/account/2fa` → `/member`. Admin tắt 2FA hộ user **giữ phiên** của user.
 - Đã bật: `Tạo lại mã dự phòng` (dialog có `Mã xác thực`, rồi hiện bước Lưu mã); Tắt theo ms.
 - Đăng nhập: `totp_required` → `LoginTotpStep` (cùng `/login`; `session.pendingTotp {token, tenant, username}` trong bộ nhớ như `pendingChange`): dòng mono "acme · thu.ha", `OtpInput` autofocus; `Dùng mã dự phòng` ↔ `Dùng mã từ ứng dụng`; `Quay lại đăng nhập` giữ mã công ty + tên đăng nhập. Verify → `authenticated` điều hướng như cũ; `password_change_required` → `/change-password`.
 - Users: `⋯ › Tắt 2FA` khi `user.totp_enabled` ∧ không phải mình → ConfirmDialog vừa → toast.
@@ -103,7 +105,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 | File import | `.yaml/.yml`, ≤ 1 MB | `transfer.import.wrongType` / `tooLarge` |
 | Giá trị secret thiếu | luật giá trị M2 (`secrets/lib/schemas.ts`) | câu M2 |
 | Mã TOTP | 6 chữ số | không báo, chỉ gửi khi đủ |
-| Mã dự phòng | `^[a-z0-9]{4}-?[a-z0-9]{4}$` sau chuẩn hoá (thường, bỏ khoảng trắng) | `login.totp.backupFormat` |
+| Mã dự phòng | `^[2-9a-hjkmnp-z]{4}-?[2-9a-hjkmnp-z]{4}$` (= `BACKUP_ALPHABET` plan-cd §4.2) sau chuẩn hoá (thường, bỏ khoảng trắng) | `login.totp.backupFormat` |
 | Mật khẩu hiện tại | không rỗng | câu M1 đã có |
 | Export | ≥ 1 loại | `transfer.export.none` |
 
@@ -114,16 +116,16 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 - Tổng quan platform: `region` theo tiêu đề KPI/card (§7) · `link "Tạo tenant"` · `link "Tạo command"`.
 - Banner: `alert` chứa câu ms §1 + `link "Xem chi tiết"`; **không** có nút đóng.
 - Nhật ký: Sheet = `dialog` tên là câu mô tả · `button "Đóng"`.
-- 2FA: `heading "Lưu mã dự phòng"` · `alertdialog "Tắt xác thực hai bước?"` · `alertdialog "Tạo lại mã dự phòng?"`. Users: `menuitem "Tắt 2FA"` · `alertdialog "Tắt 2FA của binh.vo?"` · `button "Tắt 2FA"`.
+- 2FA: nút xác nhận trong `alertdialog "Tắt xác thực hai bước?"` = `button "Tắt xác thực hai bước"` (e2e lấy trong phạm vi dialog) · `heading "Lưu mã dự phòng"` · `alertdialog "Tắt xác thực hai bước?"` · `alertdialog "Tạo lại mã dự phòng?"`. Users: `menuitem "Tắt 2FA"` · `alertdialog "Tắt 2FA của binh.vo?"` · `button "Tắt 2FA"` · hàng Users `button "Thao tác khác"` (⋯). KPI "—": tooltip Radix `role=tooltip`.
 
 ## 7. Câu chữ MỚI (VI \| EN)
-Chuỗi định dạng không cần dịch (giống nhau 2 ngôn ngữ): `quota.bar.used` "{used} / {limit}", `usage.slots` "{used} / {max}", `audit.detail.meta` "{time} · v{n} · {scope}", `tenants.quota.cell` "{field} · {scope}", `audit.entity.*` (command … quota, chữ thường), `audit.entityLabel.*` (Command … Quota).
+Chuỗi định dạng không cần dịch (giống nhau 2 ngôn ngữ): `quota.bar.used` "{used} / {limit}", `audit.detail.meta` "{time} · v{n} · {scope}", `tenants.quota.cell` "{field} · {scope}", `audit.entity.*` (command … quota, entitlement, twofa; chữ thường), `audit.entityLabel.*` (Command … Quota, Entitlement, 2FA).
 
 | Key | VI | EN |
 |---|---|---|
 | nav.group.system / usage / audit / transfer | HỆ THỐNG / Chi phí & quota / Nhật ký / Import / Export | SYSTEM / Usage & quota / Audit log / Import / Export |
 | account.twofa | Xác thực hai bước | Two-step verification |
-| common.downloaded | Đã tải {file} | Downloaded {file} |
+| transfer.toast.downloaded | Đã tải {file} | Downloaded {file} |
 | quota.unit.runs / tokens | {n} run / {n} token | {n} runs / {n} tokens |
 | quota.bar.unlimited | {used} · Không giới hạn | {used} · Unlimited |
 | quota.badge.warn / over / overPct | {pct}% quota / Vượt quota / Vượt {pct}% | {pct}% of quota / Over quota / Over by {pct}% |
@@ -133,26 +135,30 @@ Chuỗi định dạng không cần dịch (giống nhau 2 ngôn ngữ): `quota.
 | usage.title / subtitle | Chi phí & quota / {period}. Vượt quota không chặn, phần vượt được tính phí riêng. | Usage & quota / {period}. Going over quota doesn't block; overage is billed separately. |
 | usage.period / current / previous / csv | Kỳ / Tháng này / Tháng trước / Xuất CSV | Period / This month / Last month / Export CSV |
 | usage.kpi.runs / tokens / billable / cost / margin | Số run / Token / Số thu / Chi phí thật / Biên | Runs / Tokens / Revenue / Actual cost / Margin |
-| usage.kpi.delta / marginPct / subShare | {sign}{pct}% so với tháng {prev} / {pct}% số thu / {pct}% token qua subscription | {sign}{pct}% vs {prev} / {pct}% of revenue / {pct}% of tokens via subscription |
+| usage.kpi.delta / marginPct | {sign}{pct}% so với tháng {prev} / {pct}% số thu | {sign}{pct}% vs {prev} / {pct}% of revenue |
 | usage.chart.title / inQuota / over | Số thu theo ngày / Trong quota / Vượt quota | Revenue by day / Within quota / Over quota |
 | usage.chart.bar / summary | Ngày {date} · {amount} / Số thu theo ngày, tổng {total}, cao nhất {max} ngày {date} | {date} · {amount} / Revenue by day, total {total}, peak {max} on {date} |
-| usage.byTenant.title / noQuota / slotsUnlimited | Theo tenant / {used} · không đặt quota / {used} / không giới hạn | By tenant / {used} · no quota set / {used} / unlimited |
-| usage.col.tenant / quota / billable / cost / slots | Tenant / Quota tháng / Số thu / Chi phí thật / Slot subscription | Tenant / Monthly quota / Revenue / Actual cost / Subscription slots |
+| usage.byTenant.title / noQuota | Theo tenant / {used} · không đặt quota | By tenant / {used} · no quota set |
+| usage.col.tenant / quota / billable / cost | Tenant / Quota tháng / Số thu / Chi phí thật | Tenant / Monthly quota / Revenue / Actual cost |
 | usage.topFeature.title / topUser.title | Top feature theo số thu / Top user theo số thu | Top features by revenue / Top users by revenue |
 | usage.noFeature / noFeatureNote | Không theo feature / Run qua agent chat không gắn feature nào nên đứng riêng một dòng. | No feature / Agent-chat runs aren't tied to a feature, so they get their own row. |
 | usage.unpriced | Chưa định giá | Not priced yet |
 | usage.empty.noData / period | Chưa có dữ liệu từ Agent Hub / Không có run nào trong kỳ này. | No data from Agent Hub yet / No runs in this period. |
 | overview.platform.subtitle | Toàn bộ nền tảng · {n} tenant · cập nhật lúc {time} | Whole platform · {n} tenants · updated {time} |
 | overview.platform.createTenant / createCommand | Tạo tenant / Tạo command | New tenant / New command |
-| overview.kpi.activeTenants / newThisMonth | Tenant đang hoạt động / +{n} trong tháng này | Active tenants / +{n} this month |
-| overview.kpi.enabledCommands / inFeatures | Commands đang bật / trong {n} feature | Enabled commands / across {n} features |
+| overview.kpi.activeTenants / enabledCommands | Tenant đang hoạt động / Commands đang bật | Active tenants / Enabled commands |
 | overview.kpi.workflows / unattached | Workflows / {n} chưa gắn | Workflows / {n} unattached |
-| overview.kpi.runs24h / usersDelta / activeOf | Số run 24 giờ / {sign}{n} so với tháng trước / trên {total} user · {locked} đã khoá | Runs (24h) / {sign}{n} vs last month / of {total} users · {locked} locked |
+| overview.kpi.runs24h | Số run 24 giờ | Runs (24h) |
 | overview.nearQuota.title / empty / ok | Tenant sắp hoặc đã vượt quota / Chưa tenant nào đặt quota. / Trong quota | Tenants near or over quota / No tenant has a quota yet. / Within quota |
-| overview.nearQuota.col.quota / billable / status | Quota tháng · run / Số thu tháng / Trạng thái | Monthly quota · runs / Revenue this month / Status |
+| overview.nearQuota.col.quota / status | Quota tháng · run / Trạng thái | Monthly quota · runs / Status |
 | overview.agentStudio.body | Agent, Coordinator, model và vận hành nằm ở Agent Studio. Agent chọn workflow từ catalog của Admin. | Agents, coordinators, models and operations live in Agent Studio. Agents pick workflows from the Admin catalog. |
 | overview.agentStudio.open / topErrors.title | Mở Agent Studio / Command lỗi nhiều nhất 24 giờ | Open Agent Studio / Most failing commands (24h) |
 | overview.hubPending | Sẽ có khi Agent Hub sẵn sàng. | Available once Agent Hub is ready. |
+| audit.sentence.totpOn / totpOff / totpRegen | {actor} đã bật 2FA / {actor} đã tắt 2FA của {subject} (hoặc của chính mình) / {actor} đã tạo lại mã dự phòng | {actor} turned on 2FA / {actor} turned off 2FA for {subject} / {actor} regenerated backup codes |
+| audit.sentence.members | {actor} đã đổi thành viên {name} (Thêm {a} · Bớt {r}) | {actor} changed members of {name} ({a} added · {r} removed) |
+| audit.sentence.passwordReset | {actor} đã đặt lại mật khẩu của {subject} | {actor} reset the password of {subject} |
+| audit.sentence.quota / entitlement | {actor} đã đổi quota {name} / {actor} đã đổi quyền feature {name} của {subject} | {actor} changed quota {name} / {actor} changed feature access {name} for {subject} |
+| audit.sentence.config | {actor} đã đổi cấu hình {name} | {actor} changed configuration {name} |
 | audit.error.changedSince | Không khôi phục được: {name} đã được sửa sau thay đổi này. Mở bản mới nhất để xem. | Can't restore: {name} has changed since. Open the latest version to review. |
 | audit.period.days / custom / from / to / apply | Thời gian: {n} ngày / Tuỳ chọn / Từ ngày / Đến ngày / Áp dụng | Period: {n} days / Custom / From / To / Apply |
 | transfer.import.file / fields | {file} · {size} · hợp lệ / {n} trường | {file} · {size} · valid / {n} fields |
@@ -174,24 +180,15 @@ Xoá key `overview.welcome/soon/platform.body/tenant.body`.
 | `NAME_TAKEN` / `VERSION_CONFLICT` (restore) | `audit.error.nameTaken` / `audit.error.changedSince` (toast, không mở ConflictDialog) |
 | `VERSION_CONFLICT` (import áp dụng) | `transfer.import.stale` + chạy lại dry-run |
 | `IMPORT_INVALID` (`details.errors[{path,code,message,params}]`) · `SECRETS_REQUIRED` · 413 `PAYLOAD_TOO_LARGE` | Alert `transfer.import.invalid` + danh sách · `transfer.import.secretsMissing` · `transfer.import.tooLarge` |
-| `INVALID_OTP` (401, login) · `INVALID_CURRENT_CODE` (400) | `login.totp.wrong` (xoá ô, focus) · bật `twofa.verify.wrong`; tắt/tạo lại `twofa.error.wrongCreds` |
+| `INVALID_OTP` (401, login) · `INVALID_CURRENT_CODE` (400) | `login.totp.wrong` (xoá ô, focus) · bật `twofa.verify.wrong`; tắt/tạo lại: cả `INVALID_CURRENT_PASSWORD` lẫn `INVALID_CURRENT_CODE` → `twofa.error.wrongCreds` |
 | `INVALID_TOTP_TOKEN` (401) | `login.totp.expired` → về form đăng nhập |
-| `TEMP_LOCKED` · `INVALID_CURRENT_PASSWORD` (reauth) | `login.tempLocked` · `password.error.currentWrong` |
+| `TEMP_LOCKED` · `INVALID_CURRENT_PASSWORD` (reauth bật) | `login.tempLocked` · `password.error.currentWrong` |
 
 ## 9. Hiệu năng (không chặn mốc; `check:bundle` vẫn trong Lệnh xong FE)
 Chunk theo route (`autoCodeSplitting`); D1, D2; JS ban đầu chỉ thêm banner + nav (< 3 KB). Timeline > 200 dòng: `content-visibility: auto` mỗi dòng. `staleTime` Usage/banner 60 s, Overview 30 s.
 
-## 10. Backend-lead đã chốt (2026-10-03; chi tiết: plan §2 "Đối chiếu FE §10")
-1. ✓ ADR-0005, không `recharts`; QR server `qr_svg` (D2).
-2. đổi tên: `QuotaSetResponse` plan-contract §2.1 (`feature_id/key/name`, `used.billable_usd`, `level`; tiền = chuỗi).
-3. đổi: `GET /admin/quota-banner` → `{banner:{level:"warn"|"over",pct,feature_key}|null}`.
-4. đổi tên: `daily[].overage_billable_usd`, `tenants*` (thay `by_tenant`); `top_users`, `quotas`, `previous` luôn có; CSV ✓.
-5. ✓ `GET /admin/overview` (`runs_24h` null khi chưa có data).
-6. đổi tên: `meta` → `summary` (`added_count/updated_count`, `value_changed`); `restorable`, `next_cursor` ✓.
-7. ✓ `GET /admin/export/meta` → `{config_version, counts}` (plan-cd §3.1).
-8. đổi tên: `{file_name, content, secrets?, base_config_version}`, `items[].op`; `missing_secrets[{name, used_by[]}]` ✓; 409 `{current}`.
-9. ✓ TOTP như đề xuất; `disable {current_password, code|backup_code}`; mã lỗi §8.
-10. ✓ `updated_by: string|null`.
+## 10. Backend-lead đã chốt (2026-10-03)
+Mọi đề xuất FE §10 cũ đã chốt (tên trường, `qr_svg`, `/admin/overview`, `quota-banner`, `export/meta`, `updated_by`…): xem plan §2 "Đối chiếu FE §10" và plan-contract/plan-cd. Không dùng `recharts` (ADR-0005).
 
 ## 11. Câu hỏi
 - **Q-FE1 (người dùng chốt 2026-10-03: để sau, TECH-DEBT #29):** Tab **Feature** của Tenant còn "Chưa khả dụng" (ui 7.13; ngoài phạm vi M4; entitlement API theo feature). Mặc định: **không làm ở M4**, ghi `TECH-DEBT.md` (đã cấp được ở `/features/:id`). Muốn có → task FE7 + `GET /admin/tenants/:id/entitlements` (đổi phạm vi).
