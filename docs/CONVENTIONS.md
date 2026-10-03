@@ -70,7 +70,7 @@ E2E chọn phần tử theo **role + nhãn nguyên văn** trong spec (`getByRole
 | Đuôi / vị trí | Ý nghĩa | Chạy bằng |
 |---|---|---|
 | `*.test.ts(x)` | unit/acceptance, không cần hạ tầng | `bun test` |
-| `*.int.test.ts` | cần Postgres/Redis thật (docker compose) | `bun run test:int` |
+| `*.int.test.ts` | cần Postgres/Redis thật (docker compose) | `bun run test:int` (đo hiệu năng `*.perf.int.test.ts`: `bun run test:perf`, không thuộc Lệnh xong) |
 | `*.check.ts` | script kiểm tra độc lập, exit code 0/≠0 | `bun <file>` (vd `ac07.check.ts`) |
 | `tools/*` | workspace công cụ dev (`mocks`, `scripts`), không deploy | `bun run <script>` |
 | `tsconfig.tests.json` (gốc) | typecheck `tests/**` và `e2e/**`, chạy trong `bun run typecheck` | `tsc -p` |

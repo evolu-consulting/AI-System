@@ -11,7 +11,7 @@ Nền tảng AI multi-tenant: **Admin** (tenant, user, group, quyền, command, 
 TypeScript strict · Bun + Turborepo · Rsbuild + React + Tailwind + shadcn/ui · Hono · Postgres + Drizzle (RLS) · zod · Redis · Biome · bun test + Playwright · Docker Compose.
 
 ## Lệnh (có sau M0)
-`bun install` · `bun run dev` · `bun run typecheck` · `bun test` · `bun run test:int` (cần DB) · `bun run e2e` (= `bunx playwright test`) · `bun run check:bundle` · `bun run keys:dev` · `bun run db:migrate` · `bun run mocks` · `bunx biome check --write --changed` · `bun run check:size` · `bun run trace <FR>` · `bun run test:lock:verify` · `docker compose up -d`
+`bun install` · `bun run dev` · `bun run typecheck` · `bun test` · `bun run test:int` (cần DB) · `bun run test:perf` (đo p95, không thuộc Lệnh xong) · `bun run e2e` (= `bunx playwright test`) · `bun run check:bundle` · `bun run keys:dev` · `bun run db:migrate` · `bun run mocks` · `bunx biome check --write --changed` · `bun run check:size` · `bun run trace <FR>` · `bun run test:lock:verify` · `docker compose up -d`
 
 **Lệnh xong M0** (T17, máy sạch): `bun install --frozen-lockfile && docker compose up -d --wait && bun run db:migrate && bun run check && bun run typecheck && bun test && bun tests/acceptance/ADM-NFR-06/ac07.check.ts && bun run test:int && bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check`
 

@@ -5,17 +5,17 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 
 | FR | Ưu tiên | Spec | Code | Test | Trạng thái |
 |---|---|---|---|---|---|
-| ADM-FR-01 | MUST | docs/specs/M1-foundation-identity/spec.md | 39 file | 17 file | có test |
+| ADM-FR-01 | MUST | docs/specs/M1-foundation-identity/spec.md | 39 file | 18 file | có test |
 | ADM-FR-02 | MUST | docs/specs/M1-foundation-identity/spec.md | 12 file | 9 file | có test |
 | ADM-FR-03 | MUST | docs/specs/M1-foundation-identity/spec.md | 12 file | 4 file | có test |
-| ADM-FR-04 | MUST | docs/specs/M1-foundation-identity/spec.md | 41 file | 11 file | có test |
+| ADM-FR-04 | MUST | docs/specs/M1-foundation-identity/spec.md | 42 file | 11 file | có test |
 | ADM-FR-05 | MUST | docs/specs/M1-foundation-identity/spec.md | 11 file | 7 file | có test |
 | ADM-FR-06 | SHOULD | docs/specs/M1-foundation-identity/spec.md | 15 file | 10 file | có test |
 | ADM-FR-07 | SHOULD | docs/specs/M1-foundation-identity/spec.md | 4 file | 7 file | có test |
 | ADM-FR-08 | SHOULD |  |  |  | chưa spec |
 | ADM-FR-60 | MUST | docs/specs/M1-foundation-identity/spec.md | 50 file | 11 file | có test |
 | ADM-FR-61 | MUST | docs/specs/M1-foundation-identity/spec.md | 11 file | 4 file | có test |
-| ADM-FR-62 | MUST |  |  |  | chưa spec |
+| ADM-FR-62 | MUST | docs/specs/M3-permissions/spec.md | 49 file | 23 file | có test |
 | ADM-FR-63 | MUST | docs/specs/M1-foundation-identity/spec.md | 15 file | 8 file | có test |
 | ADM-FR-10 | MUST | docs/specs/M2-catalog-command/spec.md | 21 file | 12 file | có test |
 | ADM-FR-11 | MUST | docs/specs/M2-catalog-command/spec.md | 10 file | 5 file | có test |
@@ -27,14 +27,14 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | ADM-FR-21 | MUST | docs/specs/M2-catalog-command/spec.md | 11 file | 4 file | có test |
 | ADM-FR-22 | MUST | docs/specs/M2-catalog-command/spec.md | 12 file | 11 file | có test |
 | ADM-FR-23 | MUST |  |  |  | chưa spec |
-| ADM-FR-24 | SHOULD | docs/specs/M2-catalog-command/spec.md | 8 file | 5 file | có test |
+| ADM-FR-24 | SHOULD | docs/specs/M2-catalog-command/spec.md<br>docs/specs/M3-permissions/spec.md | 11 file | 11 file | có test |
 | ADM-FR-30 | MUST | docs/specs/M2-catalog-command/spec.md | 34 file | 11 file | có test |
 | ADM-FR-31 | MUST | docs/specs/M2-catalog-command/spec.md | 13 file | 8 file | có test |
-| ADM-FR-32 | MUST |  |  |  | chưa spec |
-| ADM-FR-33 | MUST | docs/specs/M2-catalog-command/spec.md | 11 file | 3 file | có test |
-| ADM-FR-34 | SHOULD | docs/specs/M2-catalog-command/spec.md | 6 file | 2 file | có test |
-| ADM-FR-35 | SHOULD |  |  |  | chưa spec |
-| ADM-FR-36 | MUST |  |  |  | chưa spec |
+| ADM-FR-32 | MUST | docs/specs/M3-permissions/spec.md | 20 file | 13 file | có test |
+| ADM-FR-33 | MUST | docs/specs/M2-catalog-command/spec.md | 12 file | 6 file | có test |
+| ADM-FR-34 | SHOULD | docs/specs/M2-catalog-command/spec.md | 7 file | 7 file | có test |
+| ADM-FR-35 | SHOULD | docs/specs/M3-permissions/spec.md | 24 file | 12 file | có test |
+| ADM-FR-36 | MUST | docs/specs/M3-permissions/spec.md | 21 file | 12 file | có test |
 | ADM-FR-37 | MUST |  |  |  | chưa spec |
 | ADM-FR-40 | MUST |  |  |  | chưa spec |
 | ADM-FR-41 | MUST |  |  |  | chưa spec |
@@ -42,28 +42,28 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | ADM-FR-50 | MUST | docs/specs/M2-catalog-command/spec.md | 24 file | 19 file | có test |
 | ADM-FR-51 | MUST |  |  |  | chưa spec |
 | ADM-FR-52 | SHOULD |  |  |  | chưa spec |
-| ADM-FR-53 | MUST |  |  |  | chưa spec |
+| ADM-FR-53 | MUST | docs/specs/M3-permissions/spec.md | 7 file | 12 file | có test |
 | ADM-FR-54 | SHOULD |  |  |  | chưa spec |
-| ADM-FR-55 | MUST |  |  |  | chưa spec |
+| ADM-FR-55 | MUST | docs/specs/M3-permissions/spec.md | 24 file | 16 file | có test |
 | ADM-BR-01 | — | docs/specs/M2-catalog-command/spec.md | 8 file | 10 file | có test |
 | ADM-BR-02 | — | docs/specs/M2-catalog-command/spec.md | 3 file | 4 file | có test |
 | ADM-BR-04 | — | docs/specs/M2-catalog-command/spec.md | 5 file | 4 file | có test |
-| ADM-BR-05 | — | docs/specs/M1-foundation-identity/spec.md | 5 file | 9 file | có test |
+| ADM-BR-05 | — | docs/specs/M1-foundation-identity/spec.md | 8 file | 9 file | có test |
 | ADM-BR-06 | — | docs/specs/M2-catalog-command/spec.md | 6 file | 2 file | có test |
 | ADM-BR-08 | — | docs/specs/M1-foundation-identity/spec.md | 3 file | 7 file | có test |
-| ADM-BR-09 | — | docs/specs/M1-foundation-identity/spec.md | 5 file | 10 file | có test |
+| ADM-BR-09 | — | docs/specs/M1-foundation-identity/spec.md | 9 file | 20 file | có test |
 | ADM-BR-10 | — | docs/specs/M2-catalog-command/spec.md | 16 file | 13 file | có test |
-| ADM-BR-11 | — |  |  |  | chưa spec |
-| ADM-BR-12 | — |  | 4 file |  | chưa spec |
+| ADM-BR-11 | — | docs/specs/M3-permissions/spec.md | 5 file | 1 file | có test |
+| ADM-BR-12 | — | docs/specs/M3-permissions/spec.md | 12 file | 9 file | có test |
 | ADM-BR-13 | — | docs/specs/M2-catalog-command/spec.md |  |  | có spec |
 | ADM-BR-14 | — | docs/specs/M2-catalog-command/spec.md | 1 file | 4 file | có test |
 | ADM-NFR-01 | — | docs/specs/M1-foundation-identity/spec.md | 10 file | 12 file | có test |
 | ADM-NFR-02 | — |  |  |  | chưa spec |
-| ADM-NFR-03 | — |  |  | 2 file | chưa spec |
+| ADM-NFR-03 | — |  |  | 3 file | chưa spec |
 | ADM-NFR-04 | — |  |  |  | chưa spec |
 | ADM-NFR-05 | — |  |  |  | chưa spec |
-| ADM-NFR-06 | — | docs/specs/M0-bootstrap/spec.md<br>docs/specs/M1-foundation-identity/spec.md | 40 file | 39 file | có test |
-| ADM-NFR-07 | — | docs/specs/M1-foundation-identity/spec.md | 12 file | 7 file | có test |
+| ADM-NFR-06 | — | docs/specs/M0-bootstrap/spec.md<br>docs/specs/M1-foundation-identity/spec.md | 42 file | 42 file | có test |
+| ADM-NFR-07 | — | docs/specs/M1-foundation-identity/spec.md | 16 file | 11 file | có test |
 | HUB-FR-01 | MUST |  |  |  | chưa spec |
 | HUB-FR-02 | MUST |  |  |  | chưa spec |
 | HUB-FR-03 | MUST |  |  |  | chưa spec |

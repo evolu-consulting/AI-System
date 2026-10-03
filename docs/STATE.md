@@ -1,22 +1,25 @@
 # STATE — trạng thái hiện tại
 
-Cập nhật: 2026-10-01 · Người cập nhật: docs-architect (đóng M1)
+Cập nhật: 2026-10-03 · Người cập nhật: docs-architect (đóng M3)
 
 ## Đang ở đâu
-- **M2 xong** (2026-10-02, trên `main`, chưa push). Lệnh xong M2 xanh sau ad96c73: `bun test` 743, `test:int` 538/538, e2e 83/83, `check:size --all` 498 file, depcruise 0 vi phạm, lock 67, trace 172, bundle JS 115,8 KB / CSS 14,3 KB, chunk lớn nhất 40,8 KB. Review: vòng 1 CHANGES REQUESTED (1 Major, 7 Minor, đã sửa); vòng 2 có 2 Major do bản sửa perf (deadlock thứ tự khoá POST/PATCH command, hàm 5 tham số), sửa ở ad96c73; điều phối tự xác minh bằng đọc diff + chạy lại lệnh (không tự chạy lại ca deadlock trên code cũ). Kết luận: `docs/specs/M2-catalog-command/spec.md` §9. Spec `status: done`.
-- M1, M0 xong. Thiết kế v0.4 xong (`design/`); canvas 18 artboard. Khung quy trình xong (`CLAUDE.md`, `WORKFLOW.md`, 7 agent, Luật 2b).
-- Đã chốt (M2): gói bảo mật Secrets, AC-A03 tách vế (CR-011), hoãn FR-12 (CR-012), FR-24 phần tenant (CR-013), UI editor trang riêng (CR-014). Làm và commit trực tiếp trên `main`, không push.
+- **M3 xong** (2026-10-03, trên `main`, KHÔNG push). Nghiệm thu xanh: `bun test` 963/963, `test:int` 885/885, e2e 159/159, i18n, build, `check:bundle` (JS đầu ~121,6 KB, chunk lớn nhất ~26,7 KB), lock, `trace --check`, `check:size --all`, `depcruise --all` 0 vi phạm, `check:fn --all`. Sau Minor vòng 2: unit 179/179, ma trận int 21/21, e2e liên quan 43/43. Review: vòng 1 CHANGES REQUESTED (BE 2 Major, FE 1 Major; đã sửa), vòng 2 APPROVED. Kết luận: `docs/specs/M3-permissions/spec.md` §9. Spec `status: done`.
+- Người dùng 2026-10-03: hiệu năng không chặn mốc (`bun run test:perf`, TECH-DEBT #27); viết lại policy RLS dạng InitPlan chờ duyệt (#28). Ưu tiên: hoàn tất admin app (M4) rồi người dùng test service. Repo chỉ local, không push.
+- M0, M1, M2 xong. Thiết kế v0.4 xong (`design/`); canvas 18 artboard. Khung quy trình xong (`CLAUDE.md`, `WORKFLOW.md`, 7 agent, Luật 2b).
 
 ## Việc kế tiếp (phiên mới: làm ngay, KHÔNG hỏi — Luật 2b)
-1. **M3 Phân quyền** theo `docs/ROADMAP.md` (Groups + thành viên; Grants + ma trận; Kiểm tra quyền phần feature/command; NOTIFY `config_changed`; chống ghi đè `version`; FR-32, 35, 36, 53, 55, 62; BR-11, 12; xong khi AC-A07, A10, A11 phía Admin xanh; cộng vế "≤ 5 giây" của AC-A03 hoãn từ M2, CR-011; FR-24 phần group/grant). Vòng: docs-architect tách spec `M3-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate nếu đủ điều kiện (Luật 2b) → qc khoá test → BUILD → Lệnh xong M3 → reviewer (≤ 2 vòng) → docs. Trên `main`, không push.
+1. **M4 Chi phí & vận hành** theo `docs/ROADMAP.md` (Quota + cảnh báo, Chi phí & quota, Audit + khôi phục, Tổng quan, Import/Export, 2FA; ADM-FR-40–42, 51, 52, 54, 08; AC-A12 phía Admin; Import/Export và 2FA cần artboard trước Gate). Vòng: docs-architect tách spec `M4-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate (Luật 2b) → qc khoá test (đỏ đúng lý do) → BUILD một task mỗi lần gọi → Lệnh xong M4 (không gồm `test:perf`) → reviewer ≤ 2 vòng → docs → bật service và hướng dẫn người dùng test toàn bộ admin app. Trên `main`, KHÔNG push.
 2. Canvas: đổi `#7A7390` → `#736C89` (FE-R1, AA) khi chạm lại canvas.
 
 ## Token (đo bằng `token-report.py`, xem WORKFLOW "Đo token mỗi mốc")
 - Mốc chuẩn M0–M3 (trước 2026-10-03, quy trình cũ): ≈ $756 quy đổi giá API · đọc lại cache 69% · backend-lead 38%, điều phối 23%, frontend-lead 15%, qc 13% · lần chạy lớn nhất 347 lượt / context 775K (backend-lead PLAN M3).
+- M3-đóng (nghiệm thu + review, quy trình mới, từ 2026-10-03): ≈ $21,4 tổng · cache 63% · lần chạy agent lớn nhất 155K context / 50 lượt (mục tiêu ≤ 200K / 80 đạt) · điều phối 219K.
+- Chỉ số chất lượng M3: readiness 3 lần · tranh chấp test 8 (test sai 7 + TC-6 sửa kèm, code sai 0) · review vòng 1: BE 2 Major, FE 1 Major; vòng 2: 0 Major · commit sửa sau review 10.
 - Từ 2026-10-03: model theo rủi ro + một task mỗi lần gọi. Mục tiêu: cache < 40%, không lần chạy > 200K context / > 80 lượt.
 
 ## TECH-DEBT đáng chú ý (`docs/TECH-DEBT.md`)
-- #13 `withScope` retry 40P01/40001: NOTIFY (M3), mail, HTTP phải đặt sau commit.
+- #13 `withScope` retry 40P01/40001: mail, HTTP phải đặt sau commit (NOTIFY M3 đã làm đúng).
+- #27 đo hiệu năng tách sang `bun run test:perf`, đánh giá trên môi trường ổn định trước production; #28 policy RLS InitPlan chờ người dùng duyệt (hard stop cách ly tenant).
 - #16 xoay khoá `SECRET_MASTER_KEY` chưa có (mất khoá = mất mọi secret, xem PRODUCTION-NOTES).
 - #17 mỗi agent/worktree cần DB test riêng (e2e và test:int đụng nhau trên `ai_system_test`).
 - #18 chưa có kiểm tự động độ dài hàm ≤ 50 dòng; #22 lệnh xong task FE thiếu `depcruise --all`.
