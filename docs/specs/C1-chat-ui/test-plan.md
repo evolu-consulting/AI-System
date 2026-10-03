@@ -285,6 +285,8 @@ Helper `_support.ts`: `resetMock`, `expireAccess`, `login`, `nextSend` (`waitFor
 
 **Lock đợt 2 (QL, 2026-10-04):** sau phân xử E-S5 (spec §10, sửa test chờ `button "Gửi"`), e2e chat chạy cả bộ 2 lần (`CHAT_E2E_HUB_PORT=4051 CHAT_E2E_WEB_PORT=3151 bun run e2e:chat`): **41/41 · 41/41** (TH2b, E-R3, E-T7 nay xanh); `tests/.lock` +10 dòng = 10 file `e2e/chat/**`; không đổi checksum mốc khác; `test:lock:verify` OK (195 file).
 
+**Lock đợt 3 (QC, 2026-10-04):** gắn mã truy vết HUB-FR-40/41/42/43/45 vào tên `describe` của `tests/contract/chat/*` (conversations, isolation → 40; messages, stream → 41/45; resume → 42; cancel → 43) để `trace --check` xanh; không đổi logic test; cập nhật `tests/.lock` các dòng contract chat.
+
 ## 9.1. QV — Lệnh xong mốc C1 (VERIFY, 2026-10-04)
 
 | Lệnh | Kết quả |

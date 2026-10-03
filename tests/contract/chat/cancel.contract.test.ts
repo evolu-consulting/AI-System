@@ -108,7 +108,7 @@ describe.if(isMock)("cancel · huỷ giữa chừng (chỉ mock)", () => {
   });
 });
 
-describe("cancel · idempotent (mọi Hub)", () => {
+describe("HUB-FR-43 · cancel · idempotent (mọi Hub)", () => {
   it("UC-04 · run đã xong → E15 200 status=finished; E13 phát lại không có CANCELLED [K-X3]", async () => {
     const { access } = await lan();
     const conv = await newConv(access, title("Huỷ muộn"));

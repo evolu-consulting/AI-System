@@ -88,7 +88,7 @@ async function expectAll404(s: Session, o: Owned): Promise<void> {
   }
 }
 
-describe("isolation · C1-R09", () => {
+describe("HUB-FR-40 · isolation · C1-R09", () => {
   it("C1-R09 · hoa (cùng tenant) gọi E7–E15 trên id của lan → 404 NOT_FOUND, không lộ tiêu đề [K-I1][K-I2]", async () => {
     const o = await fixture();
     await expectAll404(await hoa(), o);

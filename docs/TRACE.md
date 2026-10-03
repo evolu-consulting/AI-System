@@ -89,11 +89,11 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-31 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
 | HUB-FR-32 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
 | HUB-FR-33 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-40 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-41 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-45 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 2 file |  | có code |
-| HUB-FR-42 | SHOULD | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 2 file |  | có code |
-| HUB-FR-43 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 2 file |  | có code |
+| HUB-FR-40 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md |  | 2 file | có test |
+| HUB-FR-41 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md |  | 2 file | có test |
+| HUB-FR-45 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
+| HUB-FR-42 | SHOULD | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
+| HUB-FR-43 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
 | HUB-FR-44 | SHOULD |  |  |  | chưa spec |
 | HUB-FR-50 | MUST |  |  |  | chưa spec |
 | HUB-FR-51 | MUST |  | 1 file |  | chưa spec |

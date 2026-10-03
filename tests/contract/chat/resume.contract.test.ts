@@ -54,7 +54,7 @@ async function replay(
   return readStream(res);
 }
 
-describe("resume · phát lại run đã xong (mọi Hub)", () => {
+describe("HUB-FR-42 · resume · phát lại run đã xong (mọi Hub)", () => {
   it("CHAT-AC-28 · Last-Event-ID: 2 → đúng id 3…n, không lặp, kết thúc rồi đóng [K-R1]", async () => {
     const { access } = await lan();
     const { runId, events } = await finishedRun(access);

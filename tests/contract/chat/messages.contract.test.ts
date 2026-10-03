@@ -64,7 +64,7 @@ function lastAssistant(items: Message[]): Message | undefined {
   return items.filter((m) => m.role === "assistant").at(-1);
 }
 
-describe("messages · gửi ở ô chính tạo flow mới (C1-R01)", () => {
+describe("HUB-FR-45 · messages · gửi ở ô chính tạo flow mới (C1-R01)", () => {
   it("CHAT-AC-05 · 2 lần E12 không flow_id → 2 flow; header X-Run-Id/X-Flow-Id/X-Message-Id khớp run.started [K-M1]", async () => {
     const { access } = await lan();
     const { convId, r1, r2 } = await twoFlows(access);
@@ -92,7 +92,7 @@ describe("messages · gửi ở ô chính tạo flow mới (C1-R01)", () => {
   });
 });
 
-describe("messages · gửi trong flow, đọc tin (E11, E12 có flow_id)", () => {
+describe("HUB-FR-41 · messages · gửi trong flow, đọc tin (E11, E12 có flow_id)", () => {
   it("CHAT-AC-13 · CHAT-AC-15 · E12 flow_id = flow 1 → tin vào flow 1; vẫn 2 flow; message_count 2 → 4 [K-M2]", async () => {
     const { access } = await lan();
     const { convId, r1 } = await twoFlows(access);

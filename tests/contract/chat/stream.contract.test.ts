@@ -45,7 +45,7 @@ function expectNoForbiddenKeys(value: unknown): void {
   for (const k of FORBIDDEN_KEYS) expect(keys.has(k)).toBe(false);
 }
 
-describe("stream · bất biến (mọi Hub)", () => {
+describe("HUB-FR-41 · stream · bất biến (mọi Hub)", () => {
   it("CHAT-AC-06 · CHAT-AC-33 · 'Xin chào': bất biến §2.5, nối delta = run.finished.content, message_id = tin E11 [K-S1]", async () => {
     const { access } = await lan();
     const r = await run(access, "Xin chào");

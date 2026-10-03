@@ -44,7 +44,7 @@ async function getConv(token: string, id: string): Promise<Conversation> {
   );
 }
 
-describe("conversations · tạo, đọc, đổi tên, xoá (E6–E9)", () => {
+describe("HUB-FR-40 · conversations · tạo, đọc, đổi tên, xoá (E6–E9)", () => {
   it("CHAT-AC-18 · E6 tạo → 201 Conversation flow_count=0; E7 trả bằng hệt [K-C1]", async () => {
     const { access } = await lan();
     const t = title("Báo giá");
@@ -106,7 +106,7 @@ describe("conversations · tạo, đọc, đổi tên, xoá (E6–E9)", () => {
   });
 });
 
-describe("conversations · danh sách E5", () => {
+describe("HUB-FR-40 · conversations · danh sách E5", () => {
   it("CHAT-AC-19 · gửi tin vào X → X trước Y; sắp updated_at giảm, hoà → id giảm [K-C4]", async () => {
     const { access } = await lan();
     const x = await newConv(access, title("Hội thoại X"));
@@ -173,7 +173,7 @@ describe("conversations · danh sách E5", () => {
   });
 });
 
-describe("conversations · validate và 404 (CHAT-AC-31)", () => {
+describe("HUB-FR-40 · conversations · validate và 404 (CHAT-AC-31)", () => {
   it("CHAT-AC-31 · E6 title rỗng / khoảng trắng / 201 ký tự / thừa trường → 400 [K-C7]", async () => {
     const { access } = await lan();
     const bodies = [
