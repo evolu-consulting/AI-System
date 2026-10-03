@@ -3,6 +3,7 @@ import type { Conversation } from "@ai/contracts/chat";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CONVERSATIONS_KEY,
+  createConversation,
   deleteConversation,
   listConversations,
   renameConversation,
@@ -43,5 +44,14 @@ export function useDeleteConversation() {
   return useMutation({
     mutationFn: (id: string) => deleteConversation(id),
     onSuccess: () => invalidate(),
+  });
+}
+
+/** E6 · tạo hội thoại rồi làm mới danh sách (sidebar). */
+export function useCreateConversation() {
+  const invalidate = useInvalidateConversations();
+  return useMutation({
+    mutationFn: (title: string) => createConversation(title),
+    onSuccess: () => void invalidate(),
   });
 }

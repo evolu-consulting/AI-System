@@ -28,3 +28,8 @@ export function renameConversation(id: string, title: string): Promise<Conversat
 export async function deleteConversation(id: string): Promise<void> {
   await api<unknown>(`/conversations/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
+
+/** E6 · client tính `title = deriveTitle(content)` của tin đầu. */
+export function createConversation(title: string): Promise<Conversation> {
+  return api<Conversation>("/conversations", { method: "POST", body: { title } });
+}

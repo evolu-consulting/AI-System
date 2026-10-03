@@ -25,3 +25,11 @@ export function writeLocal(key: string, value: string, s: Store | null = store()
     // bỏ qua: không lưu được thì lần sau nhập lại
   }
 }
+
+export function removeLocal(key: string, s: Store | null = store()): void {
+  try {
+    s?.removeItem(key);
+  } catch {
+    // bỏ qua
+  }
+}
