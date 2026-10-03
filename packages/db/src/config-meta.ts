@@ -10,7 +10,10 @@ import { type DbScope, type Tx, withScope } from "./scope";
 export type ConfigSink = { changed(e: ConfigEvent): void; audit(e: AuditInput): void };
 export type ConfigWriteOpts = {
   beforeBump?: () => Promise<void>;
-  /** Người thực hiện cho hàng audit (NULL = hệ thống). `undefined` mà `fn` có `ch.audit` → ném (lỗi lập trình). */
+  /**
+   * Người thực hiện cho hàng audit (NULL = hệ thống). `undefined` mà `fn` có `ch.audit` → ném (lỗi lập trình). Có giá trị
+   * → bật bất biến "có sự kiện ⇔ có audit" (lệch → `Error("audit/event mismatch")`, rollback).
+   */
   actorId?: string | null;
 };
 export type ConfigCommitted<T> = {
@@ -56,6 +59,9 @@ export async function withConfigWrite<T>(
     const events: ConfigEvent[] = [];
     const audits: AuditInput[] = [];
     const result = await fn(tx, { changed: (e) => events.push(e), audit: (e) => audits.push(e) });
+    // Bất biến (plan M4 §4.1, T1c): nơi gọi có audit (actorId) thì có sự kiện ⇔ có audit — sai = module sót `ch.audit`.
+    if (opts.actorId !== undefined && events.length > 0 !== audits.length > 0)
+      throw new Error("audit/event mismatch");
     let version: number | null = null;
     if (events.length > 0) {
       await opts.beforeBump?.();

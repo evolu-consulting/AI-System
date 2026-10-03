@@ -8,7 +8,15 @@ import type {
   SecretListResponse,
   SecretNoteRequest,
 } from "@ai/contracts";
-import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
+import {
+  type AuditActionValue,
+  type AuditInput,
+  type Db,
+  type DbScope,
+  type Tx,
+  withScope,
+} from "@ai/db";
+import { auditOf } from "../../lib/audit/audit.write";
 import type { Actor } from "../../lib/auth-middleware";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
@@ -33,6 +41,24 @@ export function toSecret(r: repo.SecretRow): Secret {
     updated_at: r.updatedAt.toISOString(),
     updated_by: r.updatedBy,
   };
+}
+
+/** Hàng audit `secret` (plan M4 §4.2): allowlist chỉ name/note (không last4/giá trị/IV), tenant NULL, snapshot false. */
+function secretAudit(
+  action: AuditActionValue,
+  before: Secret | null,
+  after: Secret | null,
+  summary?: { value_changed: true },
+): AuditInput {
+  const x = (after ?? before) as Secret;
+  return auditOf(action, "secret", {
+    entityId: x.id,
+    entityName: x.name,
+    tenantId: null,
+    before,
+    after,
+    summary,
+  });
 }
 
 /** Thiếu khoá (fixture cũ) → lỗi thường → 500 INTERNAL_ERROR; message không chứa dữ liệu người dùng. */
@@ -83,7 +109,9 @@ export async function createSecret(c: Call, input: SecretCreateRequest): Promise
       .catch(mapSecretConflict);
     ch.changed({ entity: "secret", tenantId: null });
     await afterLock(c.ctx.hooks, "secret.save", "rows");
-    return reread(tx, input.name);
+    const after = await reread(tx, input.name);
+    ch.audit(secretAudit("create", null, after));
+    return after;
   });
 }
 
@@ -93,10 +121,13 @@ export function replaceSecret(c: Call, name: string, value: string): Promise<Sec
   return configWrite(c, "secret.save", async (tx, ch) => {
     const id = await mustLock(tx, name);
     await afterLock(c.ctx.hooks, "secret.save", "locked");
+    const before = await reread(tx, name);
     await repo.updateSecret(tx, id, { ...seal(key, id, value), actorId: c.actor.userId });
     ch.changed({ entity: "secret", tenantId: null });
     await afterLock(c.ctx.hooks, "secret.save", "rows");
-    return reread(tx, name);
+    const after = await reread(tx, name);
+    ch.audit(secretAudit("update", before, after, { value_changed: true }));
+    return after;
   });
 }
 
@@ -111,7 +142,9 @@ export function updateSecretNote(c: Call, name: string, input: SecretNoteRequest
     await repo.updateSecret(tx, id, { note: input.note, actorId: c.actor.userId });
     ch.changed({ entity: "secret", tenantId: null });
     await afterLock(c.ctx.hooks, "secret.save", "rows");
-    return reread(tx, name);
+    const after = await reread(tx, name);
+    ch.audit(secretAudit("update", cur, after));
+    return after;
   });
 }
 
@@ -126,6 +159,7 @@ export function deleteSecret(c: Call, name: string): Promise<void> {
     const id = await mustLock(tx, name);
     await afterLock(c.ctx.hooks, "secret.save", "locked");
     failInUse(await repo.usedByOf(tx, id));
+    const before = await reread(tx, name);
     await tx
       .transaction((sp) => repo.deleteSecret(sp, id))
       .catch(async (err) => {
@@ -134,6 +168,7 @@ export function deleteSecret(c: Call, name: string): Promise<void> {
         throw err;
       });
     ch.changed({ entity: "secret", tenantId: null });
+    ch.audit(secretAudit("delete", before, null));
     await afterLock(c.ctx.hooks, "secret.save", "rows");
   });
 }

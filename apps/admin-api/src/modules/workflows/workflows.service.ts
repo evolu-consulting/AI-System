@@ -13,7 +13,15 @@ import {
   type WorkflowUpdateRequest,
   type WorkflowUsages,
 } from "@ai/contracts";
-import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
+import {
+  type AuditActionValue,
+  type AuditInput,
+  type Db,
+  type DbScope,
+  type Tx,
+  withScope,
+} from "@ai/db";
+import { auditOf } from "../../lib/audit/audit.write";
 import type { Actor } from "../../lib/auth-middleware";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
@@ -66,6 +74,25 @@ const toWorkflow = (r: repo.WorkflowRow): Workflow => ({
   output_field: r.outputField,
   created_at: r.createdAt.toISOString(),
 });
+
+/** Hàng audit `workflow` (plan M4 §4.2): tenant NULL, snapshot true; DTO thêm `secret_id` cho allowlist. */
+function workflowAudit(
+  action: AuditActionValue,
+  before: Workflow | null,
+  after: Workflow | null,
+): AuditInput {
+  const w = (after ?? before) as Workflow;
+  const dto = (x: Workflow | null) => (x ? { ...x, secret_id: x.secret.id } : null);
+  return auditOf(action, "workflow", {
+    entityId: w.id,
+    entityName: w.key,
+    tenantId: null,
+    before: dto(before),
+    after: dto(after),
+    entityVersion: after?.version ?? null,
+    snapshot: true,
+  });
+}
 
 async function detail(tx: Tx, id: string): Promise<Workflow> {
   const row = await repo.findWorkflow(tx, id, await hubAgentsReadable(tx));
@@ -127,7 +154,9 @@ export function createWorkflow(c: Call, input: WorkflowCreateRequest): Promise<W
     await tx.transaction((sp) => repo.insertWorkflow(sp, values)).catch(mapWorkflowConflict);
     ch.changed({ entity: "workflow", tenantId: null });
     await afterLock(c.ctx.hooks, "workflow.save", "rows");
-    return detail(tx, id);
+    const after = await detail(tx, id);
+    ch.audit(workflowAudit("create", null, after));
+    return after;
   });
 }
 
@@ -187,7 +216,9 @@ export function updateWorkflow(
     await repo.bumpWorkflow(tx, id, set, c.actor.userId);
     ch.changed({ entity: "workflow", tenantId: null });
     await afterLock(c.ctx.hooks, "workflow.save", "rows");
-    return detail(tx, id);
+    const after = await detail(tx, id);
+    ch.audit(workflowAudit("update", toWorkflow(row), after));
+    return after;
   });
 }
 
@@ -198,6 +229,7 @@ export function deleteWorkflow(c: Call, id: string): Promise<void> {
     await afterLock(c.ctx.hooks, "workflow.save");
     if (!locked) throw appError("NOT_FOUND");
     fail(checkWorkflowDelete(asUsages(await usagesOf(tx, id))));
+    const before = await detail(tx, id);
     await tx
       .transaction((sp) => repo.deleteWorkflow(sp, id))
       .catch(async (err) => {
@@ -206,6 +238,7 @@ export function deleteWorkflow(c: Call, id: string): Promise<void> {
         throw err;
       });
     ch.changed({ entity: "workflow", tenantId: null });
+    ch.audit(workflowAudit("delete", before, null));
     await afterLock(c.ctx.hooks, "workflow.save", "rows");
   });
 }

@@ -12,8 +12,16 @@ import {
   type GroupUpdateRequest,
   LocalizedTextSchema,
 } from "@ai/contracts";
-import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
+import {
+  type AuditActionValue,
+  type AuditInput,
+  type Db,
+  type DbScope,
+  type Tx,
+  withScope,
+} from "@ai/db";
 import { z } from "zod";
+import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
@@ -59,6 +67,39 @@ export function toGroupListItem(r: Omit<repo.GroupRow, "createdAt">): GroupListI
 
 export function toGroup(r: repo.GroupRow): Group {
   return { ...toGroupListItem(r), created_at: r.createdAt.toISOString() };
+}
+
+/** Hàng audit `group` (plan M4 §4.2): tenant_id = tenant của group, snapshot true (khôi phục được). */
+function groupAudit(
+  action: AuditActionValue,
+  before: Group | null,
+  after: Group | null,
+): AuditInput {
+  const g = (after ?? before) as Group;
+  return auditOf(action, "group", {
+    entityId: g.id,
+    entityName: g.key,
+    tenantId: g.tenant_id,
+    before,
+    after,
+    entityVersion: after?.version ?? null,
+    snapshot: true,
+  });
+}
+
+/** Thêm/bớt thành viên: update · group, before/after null, `summary.added|removed` = username (plan M4 §4.2). */
+export function membersAudit(
+  g: { id: string; tenantId: string; key: string },
+  summary: { added: string[] } | { removed: string[] },
+): AuditInput {
+  return auditOf("update", "group", {
+    entityId: g.id,
+    entityName: g.key,
+    tenantId: g.tenantId,
+    before: null,
+    after: null,
+    summary,
+  });
 }
 
 const fail = (e: { code: Parameters<typeof appError>[0]; details?: unknown } | null): void => {
@@ -109,7 +150,9 @@ export function createGroup(
       });
     ch.changed({ entity: "group", tenantId });
     await afterLock(c.ctx.hooks, "group.save", "rows");
-    return toGroup(await mustFind(tx, c, id));
+    const after = toGroup(await mustFind(tx, c, id));
+    ch.audit(groupAudit("create", null, after));
+    return after;
   });
 }
 
@@ -141,7 +184,9 @@ export function updateGroup(c: Call, id: string, input: GroupUpdateRequest): Pro
     await repo.bumpGroup(tx, locked, set, c.actor.userId);
     ch.changed({ entity: "group", tenantId: locked.tenantId });
     await afterLock(c.ctx.hooks, "group.save", "rows");
-    return toGroup(await mustFind(tx, c, id));
+    const after = toGroup(await mustFind(tx, c, id));
+    ch.audit(groupAudit("update", toGroup(cur), after));
+    return after;
   });
 }
 
@@ -152,8 +197,10 @@ export function deleteGroup(c: Call, id: string): Promise<void> {
     if (!g) throw appError("NOT_FOUND");
     await afterLock(c.ctx.hooks, "group.delete", "locked");
     fail(checkGroupDelete(g));
+    const before = toGroup(await mustFind(tx, c, id));
     await repo.deleteGroup(tx, g);
     ch.changed({ entity: "group", tenantId: g.tenantId });
+    ch.audit(groupAudit("delete", before, null));
     await afterLock(c.ctx.hooks, "group.delete", "rows");
   });
 }

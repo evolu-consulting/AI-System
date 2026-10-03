@@ -1,8 +1,19 @@
 // ADM-FR-53 · NOTIFY `config_changed` sau commit, đúng một lần (plan M3 §5.2, TECH-DEBT #13). Listener = kết nối riêng
 // đóng vai Hub. Âm tính chứng minh bằng sentinel (ghi chắc chắn bump rồi chờ nó), không ngủ cố định.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { type ConfigChangedPayload, ConfigChangedPayloadSchema } from "@ai/contracts";
-import { createDb, type Db, runMigrations, withConfigWrite, withScope } from "@ai/db";
+import {
+  type ConfigChangedPayload,
+  ConfigChangedPayloadSchema,
+  type ConfigEvent,
+} from "@ai/contracts";
+import {
+  type ConfigSink,
+  createDb,
+  type Db,
+  runMigrations,
+  withConfigWrite,
+  withScope,
+} from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import { sql } from "drizzle-orm";
 import postgres from "postgres";
@@ -24,6 +35,19 @@ const call = (d: Db = db, hooks?: Parameters<typeof configWrite>[0]["ctx"]["hook
 });
 const msgs: { at: number; p: ConfigChangedPayload }[] = [];
 const ev = { entity: "secret", tenantId: null } as const;
+/** Ghi có sự kiện luôn kèm audit (bất biến event⇔audit, plan M4 §4.1). */
+const touch = (ch: ConfigSink, e: ConfigEvent = ev) => {
+  ch.changed(e);
+  ch.audit(
+    auditOf("update", "secret", {
+      entityId: null,
+      entityName: "T",
+      tenantId: null,
+      before: null,
+      after: null,
+    }),
+  );
+};
 const cfg = async () =>
   (await owner<{ v: number }[]>`select config_version as v from admin.config_meta`)[0]?.v ?? -1;
 
@@ -38,7 +62,7 @@ async function waitFor(pred: () => boolean, ms = 1000): Promise<void> {
 /** Ghi sentinel (bump chắc chắn), chờ nó tới; trả payload đến trước sentinel kể từ `from`. */
 async function settle(from: number): Promise<ConfigChangedPayload[]> {
   await configWrite(call(), "group.save", async (_tx, ch) =>
-    ch.changed({ entity: "command", tenantId: null }),
+    touch(ch, { entity: "command", tenantId: null }),
   );
   const v = await cfg();
   await waitFor(() => msgs.some((m) => m.p.v === v));
@@ -53,6 +77,7 @@ async function settle(from: number): Promise<ConfigChangedPayload[]> {
 beforeAll(async () => {
   await resetTestDb(OWNER);
   await runMigrations({ url: OWNER, appEnv: "test" });
+  await seedActor();
   await listener.listen("config_changed", (raw) => {
     msgs.push({ at: performance.now(), p: ConfigChangedPayloadSchema.parse(JSON.parse(raw)) });
   });
@@ -67,7 +92,7 @@ describe("ADM-FR-53 · configWrite + NOTIFY sau commit (M3-R16)", () => {
   test("ghi có đổi → đúng 1 NOTIFY ≤ 1 s, v = config_version, payload không lộ dữ liệu", async () => {
     const from = msgs.length;
     const t0 = performance.now();
-    await configWrite(call(), "secret.save", async (_tx, ch) => ch.changed(ev));
+    await configWrite(call(), "secret.save", async (_tx, ch) => touch(ch));
     const v = await cfg();
     await waitFor(() => msgs.length > from);
     expect((msgs[from]?.at ?? Number.POSITIVE_INFINITY) - t0).toBeLessThan(1000);
@@ -95,7 +120,7 @@ describe("ADM-FR-53 · configWrite + NOTIFY sau commit (M3-R16)", () => {
       },
     };
     await configWrite(call(db, hooks), "group.save", async (_tx, ch) =>
-      ch.changed({ entity: "group", tenantId: null }),
+      touch(ch, { entity: "group", tenantId: null }),
     );
     expect(n).toBe(2);
     expect((await settle(from)).map((p) => p.entity)).toEqual(["group"]);
@@ -105,7 +130,7 @@ describe("ADM-FR-53 · configWrite + NOTIFY sau commit (M3-R16)", () => {
     const broken: Db = { ...db, notify: () => Promise.reject(new Error("notify hỏng")) };
     const before = await cfg();
     const r = await configWrite(call(broken), "secret.save", async (_t, ch) => {
-      ch.changed(ev);
+      touch(ch);
       return "done";
     });
     expect(r).toBe("done");
@@ -230,6 +255,20 @@ describe("ADM-FR-51 · M4-R10 · audit: thiếu actor, tx không bump", () => {
     expect(await auditsAfter(from)).toEqual([]);
   });
 
+  test("bất biến T1c: sự kiện mà không audit / audit mà không sự kiện → ném, rollback", async () => {
+    const from = await lastSeq();
+    const before = await cfg();
+    const run = (fn: (ch: ConfigSink) => void) =>
+      configWrite(call(), "secret.save", async (_tx, ch) => fn(ch)).then(
+        () => "",
+        (e: Error) => e.message,
+      );
+    expect(await run((ch) => ch.changed(ev))).toBe("audit/event mismatch");
+    expect(await run((ch) => ch.audit(secretAudit("ONLY_AUDIT")))).toBe("audit/event mismatch");
+    expect(await cfg()).toBe(before);
+    expect(await auditsAfter(from)).toEqual([]);
+  });
+
   test("recordAudit (tx không bump) → config_version NULL, actor_username snapshot", async () => {
     const from = await lastSeq();
     const before = await cfg();
@@ -266,7 +305,7 @@ describe.skipIf(!process.env.PERF)("ADM-FR-53 · chi phí bump + NOTIFY (spec M3
       const t = performance.now();
       await configWrite(call(), "secret.save", async (tx, ch) => {
         await tx.execute(sql`update public.config_write_perf set n = n + 1 where id = 1`);
-        if (bump) ch.changed(ev);
+        if (bump) touch(ch);
       });
       return performance.now() - t;
     };

@@ -17,7 +17,7 @@ import { likeArg, pgArray } from "../../lib/sql";
 import { afterLock } from "../../lib/test-hooks";
 import * as repo from "./groups.repo";
 import { planMemberAdd } from "./groups.rules";
-import { type Call, groupRefsOf, tenantFilter } from "./groups.service";
+import { type Call, groupRefsOf, membersAudit, tenantFilter } from "./groups.service";
 
 const iso = (d: unknown) =>
   d === null || d === undefined ? null : new Date(d as string).toISOString();
@@ -124,15 +124,29 @@ export function addMembers(
     const out = { added: plan.added, not_found: plan.not_found, already: plan.already };
     if (input.dry_run) return out;
     const inserted = await insertMembers(tx, g, plan.toInsert, c.actor.userId);
-    if (inserted.size > 0) ch.changed({ entity: "group", tenantId: g.tenantId });
+    const res = settleRaced(out, found, inserted, input.usernames);
+    if (inserted.size > 0) {
+      ch.changed({ entity: "group", tenantId: g.tenantId });
+      ch.audit(membersAudit(g, { added: res.added }));
+    }
     await afterLock(c.ctx.hooks, "group.members", "rows");
-    if (inserted.size === plan.toInsert.length) return out;
-    const byName = new Map(found.map((f) => [f.username, f.id]));
-    const raced = out.added.filter((n) => !inserted.has(byName.get(n) as string));
-    const order = (n: string) => input.usernames.indexOf(n);
-    const already = [...out.already, ...raced].sort((a, b) => order(a) - order(b));
-    return { ...out, added: out.added.filter((n) => !raced.includes(n)), already };
+    return res;
   });
+}
+
+/** Đua thêm cùng user (DO NOTHING) → tên đó chuyển từ `added` sang `already`, giữ thứ tự đầu vào. */
+function settleRaced(
+  out: GroupMembersAddResponse,
+  found: { id: string; username: string }[],
+  inserted: Set<string>,
+  usernames: string[],
+): GroupMembersAddResponse {
+  const byName = new Map(found.map((f) => [f.username, f.id]));
+  const raced = out.added.filter((n) => !inserted.has(byName.get(n) as string));
+  if (raced.length === 0) return out;
+  const order = (n: string) => usernames.indexOf(n);
+  const already = [...out.already, ...raced].sort((a, b) => order(a) - order(b));
+  return { ...out, added: out.added.filter((n) => !raced.includes(n)), already };
 }
 
 /** 204 cả khi không là thành viên (idempotent, R05); group không thấy được → 404. */
@@ -141,10 +155,15 @@ export function removeMember(c: Call, groupId: string, userId: string): Promise<
     const g = await repo.lockGroup(tx, tenantFilter(c.actor), groupId, "share");
     if (!g) throw appError("NOT_FOUND");
     await afterLock(c.ctx.hooks, "group.members", "locked");
-    const rows = (await tx.execute(sql`delete from admin.group_members
-      where tenant_id = ${g.tenantId} and group_id = ${g.id} and user_id = ${userId}
-      returning user_id`)) as unknown as unknown[];
-    if (rows.length > 0) ch.changed({ entity: "group", tenantId: g.tenantId });
+    const rows = (await tx.execute(sql`delete from admin.group_members m
+      where m.tenant_id = ${g.tenantId} and m.group_id = ${g.id} and m.user_id = ${userId}
+      returning (select u.username from admin.users u where u.id = m.user_id) as username`)) as unknown as {
+      username: string;
+    }[];
+    if (rows.length > 0) {
+      ch.changed({ entity: "group", tenantId: g.tenantId });
+      ch.audit(membersAudit(g, { removed: rows.map((r) => r.username) }));
+    }
     await afterLock(c.ctx.hooks, "group.members", "rows");
   });
 }

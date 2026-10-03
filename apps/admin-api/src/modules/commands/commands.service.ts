@@ -12,7 +12,15 @@ import type {
   FeatureRef,
   WorkflowInput,
 } from "@ai/contracts";
-import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
+import {
+  type AuditActionValue,
+  type AuditInput,
+  type Db,
+  type DbScope,
+  type Tx,
+  withScope,
+} from "@ai/db";
+import { auditOf } from "../../lib/audit/audit.write";
 import type { Actor } from "../../lib/auth-middleware";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
@@ -73,6 +81,25 @@ function toItem(r: repo.CommandRow, features: FeatureRef[]): CommandListItem {
     updated_at: r.updatedAt.toISOString(),
     updated_by: r.updatedBy,
   };
+}
+
+/** Hàng audit `command` (plan M4 §4.2): tên `/name`, tenant NULL, snapshot true; DTO thêm `workflow_id` cho allowlist. */
+function commandAudit(
+  action: AuditActionValue,
+  before: Command | null,
+  after: Command | null,
+): AuditInput {
+  const x = (after ?? before) as Command;
+  const dto = (v: Command | null) => (v ? { ...v, workflow_id: v.workflow.id } : null);
+  return auditOf(action, "command", {
+    entityId: x.id,
+    entityName: `/${x.name}`,
+    tenantId: null,
+    before: dto(before),
+    after: dto(after),
+    entityVersion: after?.version ?? null,
+    snapshot: true,
+  });
 }
 
 /** `warnings` tính lại từ input_schema hiện tại của workflow mỗi lần đọc/ghi, không lưu (M2-R17). */
@@ -206,7 +233,9 @@ export function createCommand(c: Call, input: CommandCreateRequest): Promise<Com
     });
     ch.changed({ entity: "command", tenantId: null });
     await afterLock(c.ctx.hooks, "command.save", "rows");
-    return detail(tx, id, wf, refs);
+    const after = await detail(tx, id, wf, refs);
+    ch.audit(commandAudit("create", null, after));
+    return after;
   });
 }
 
@@ -279,6 +308,7 @@ export function updateCommand(c: Call, id: string, input: CommandUpdateRequest):
     if (changed.length === 0) return detail(tx, id);
     checkAliasesNotName(next);
     await checkState(tx, next, wf, id);
+    const before = await detail(tx, id, wf);
     await writeNames(tx, next, id, async (sp) => {
       await repo.bumpCommand(sp, id, valuesOf(next), c.actor.userId);
       if (changed.includes("name") || changed.includes("aliases"))
@@ -293,7 +323,9 @@ export function updateCommand(c: Call, id: string, input: CommandUpdateRequest):
       });
     ch.changed({ entity: "command", tenantId: null });
     await afterLock(c.ctx.hooks, "command.save", "rows");
-    return detail(tx, id, wf);
+    const after = await detail(tx, id, wf);
+    ch.audit(commandAudit("update", before, after));
+    return after;
   });
 }
 
@@ -302,9 +334,11 @@ export function deleteCommand(c: Call, id: string): Promise<void> {
   return configWrite(c, "command.delete", async (tx, ch) => {
     if (!(await repo.lockCommand(tx, id))) throw appError("NOT_FOUND");
     await afterLock(c.ctx.hooks, "command.delete");
+    const before = await detail(tx, id);
     await bumpFeaturesOfCommand(tx, id, c.actor.userId);
     await repo.deleteCommand(tx, id);
     ch.changed({ entity: "command", tenantId: null });
+    ch.audit(commandAudit("delete", before, null));
     await afterLock(c.ctx.hooks, "command.delete", "rows");
   });
 }

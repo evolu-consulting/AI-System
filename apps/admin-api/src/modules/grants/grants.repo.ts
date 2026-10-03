@@ -10,6 +10,20 @@ type Rows<T> = T[];
 const run = async <T>(tx: Tx, q: SQL): Promise<Rows<T>> => (await tx.execute(q)) as unknown as T[];
 const sorted = (ids: readonly string[]) => [...new Set(ids)].sort();
 
+/** Hàng grant vừa chèn/xoá (cho audit, plan M4 §4.2): khoá feature + tên subject (group key | username). */
+export type GrantChange = {
+  id: string;
+  feature_id: string;
+  group_id: string | null;
+  user_id: string | null;
+  feature_key: string;
+  subject_name: string;
+};
+const RETURNING_CHANGE = sql`returning id, feature_id, group_id, user_id,
+  (select f.key from admin.features f where f.id = feature_id) as feature_key,
+  coalesce((select g.key from admin.groups g where g.id = group_id),
+    (select u.username from admin.users u where u.id = user_id)) as subject_name`;
+
 /** Group của tenant, `FOR SHARE`, id tăng (chặn xoá group song song; chèn grant lấy KEY SHARE qua FK). */
 export async function shareGroups(
   tx: Tx,
@@ -95,17 +109,16 @@ export async function deleteGroupGrants(
   tx: Tx,
   tenantId: string,
   pairs: readonly PairKey[],
-): Promise<number> {
-  if (pairs.length === 0) return 0;
-  const rows = await run(
+): Promise<GrantChange[]> {
+  if (pairs.length === 0) return [];
+  return run<GrantChange>(
     tx,
     sql`delete from admin.feature_grants where id in (
       select fg.id from admin.feature_grants fg ${pairsJoin(pairs)}
       where fg.tenant_id = ${tenantId} and fg.group_id is not null
       order by fg.feature_id, fg.group_id for no key update of fg)
-    returning id`,
+    ${RETURNING_CHANGE}`,
   );
-  return rows.length;
 }
 
 /** Chèn theo đúng thứ tự `pairs` (đã sắp), `ON CONFLICT DO NOTHING`; trả số hàng thật sự chèn. */
@@ -113,9 +126,9 @@ export async function insertGroupGrants(
   tx: Tx,
   g: { tenantId: string; actorId: string },
   pairs: readonly PairKey[],
-): Promise<number> {
-  if (pairs.length === 0) return 0;
-  const rows = await run(
+): Promise<GrantChange[]> {
+  if (pairs.length === 0) return [];
+  return run<GrantChange>(
     tx,
     sql`insert into admin.feature_grants (id, tenant_id, feature_id, group_id, granted_by)
     select gen_random_uuid(), ${g.tenantId}, x.f, x.g, ${g.actorId}::uuid
@@ -129,9 +142,8 @@ export async function insertGroupGrants(
       with ordinality as x(f, g, n)
     order by x.n
     on conflict (tenant_id, feature_id, group_id) where group_id is not null do nothing
-    returning id`,
+    ${RETURNING_CHANGE}`,
   );
-  return rows.length;
 }
 
 export type Subject = { kind: "group" | "user"; id: string };
@@ -155,28 +167,27 @@ export async function lockGrant(
 export async function insertGrant(
   tx: Tx,
   t: { tenantId: string; featureId: string; subject: Subject; actorId: string },
-): Promise<string | null> {
+): Promise<GrantChange | null> {
   const col = subjectCol(t.subject);
-  const rows = await run<{ id: string }>(
+  const rows = await run<GrantChange>(
     tx,
     sql`insert into admin.feature_grants
       (id, tenant_id, feature_id, ${col}, granted_by)
     values (${Bun.randomUUIDv7()}, ${t.tenantId}, ${t.featureId}, ${t.subject.id}, ${t.actorId})
     on conflict (tenant_id, feature_id, ${col}) where ${col} is not null do nothing
-    returning id`,
+    ${RETURNING_CHANGE}`,
   );
-  return rows[0]?.id ?? null;
+  return rows[0] ?? null;
 }
 
 export async function deleteGrant(
   tx: Tx,
   t: { tenantId: string; featureId: string; subject: Subject },
-): Promise<number> {
-  const rows = await run(
+): Promise<GrantChange[]> {
+  return run<GrantChange>(
     tx,
     sql`delete from admin.feature_grants
     where tenant_id = ${t.tenantId} and feature_id = ${t.featureId} and ${subjectCol(t.subject)} = ${t.subject.id}
-    returning id`,
+    ${RETURNING_CHANGE}`,
   );
-  return rows.length;
 }

@@ -2,7 +2,8 @@
 // `core` tự hiệu lực mọi tenant nên không có hàng (PUT/DELETE → CORE_FEATURE_PROTECTED, GET → rỗng).
 // Khoá feature FOR SHARE (chặn xoá feature song song); tenant chỉ bị FK KEY SHARE. Không tăng version feature.
 import type { Entitlement, EntitlementListResponse } from "@ai/contracts";
-import { type Tx, withScope } from "@ai/db";
+import { type AuditInput, type Tx, withScope } from "@ai/db";
+import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { afterLock } from "../../lib/test-hooks";
@@ -39,18 +40,35 @@ export function listEntitlements(
   });
 }
 
-/** Feature lạ (ưu tiên) → 404; core → 409; tenant lạ → 404 (cùng body). */
+/** Hàng audit `entitlement` (plan M4 §4.2): tenant_id = tenant được cấp, entity_id = feature, tên = feature key. */
+function entitlementAudit(
+  action: "grant" | "revoke",
+  f: { id: string; key: string },
+  tenantId: string,
+): AuditInput {
+  const dto = { feature_id: f.id, tenant_id: tenantId };
+  return auditOf(action, "entitlement", {
+    entityId: f.id,
+    entityName: f.key,
+    tenantId,
+    before: action === "revoke" ? dto : null,
+    after: action === "grant" ? dto : null,
+  });
+}
+
+/** Feature lạ (ưu tiên) → 404; core → 409; tenant lạ → 404 (cùng body). Trả feature đã khoá. */
 async function target(
   c: Call,
   tx: Tx,
   ids: { featureId: string; tenantId: string },
-): Promise<void> {
+): Promise<{ id: string; key: string }> {
   const { featureId, tenantId } = ids;
   const f = await repo.lockFeature(tx, featureId, "share");
   if (!f) throw appError("NOT_FOUND");
   await afterLock(c.ctx.hooks, "entitlement.save", "locked");
   fail(checkEntitlementTarget(f));
   if (!(await repo.tenantExists(tx, tenantId))) throw appError("NOT_FOUND");
+  return f;
 }
 
 export function grantEntitlement(
@@ -59,9 +77,12 @@ export function grantEntitlement(
   tenantId: string,
 ): Promise<Entitlement> {
   return configWrite(c, "entitlement.save", async (tx, ch) => {
-    await target(c, tx, { featureId, tenantId });
+    const f = await target(c, tx, { featureId, tenantId });
     const n = await repo.grantEntitlement(tx, { featureId, tenantId, actorId: c.actor.userId });
-    if (n > 0) ch.changed({ entity: "entitlement", tenantId });
+    if (n > 0) {
+      ch.changed({ entity: "entitlement", tenantId });
+      ch.audit(entitlementAudit("grant", f, tenantId));
+    }
     await afterLock(c.ctx.hooks, "entitlement.save", "rows");
     const row = await repo.findEntitlement(tx, featureId, tenantId);
     if (!row) throw new Error("features: không đọc lại được entitlement vừa cấp");
@@ -71,9 +92,12 @@ export function grantEntitlement(
 
 export function revokeEntitlement(c: Call, featureId: string, tenantId: string): Promise<void> {
   return configWrite(c, "entitlement.save", async (tx, ch) => {
-    await target(c, tx, { featureId, tenantId });
+    const f = await target(c, tx, { featureId, tenantId });
     const n = await repo.revokeEntitlement(tx, { featureId, tenantId });
-    if (n > 0) ch.changed({ entity: "entitlement", tenantId });
+    if (n > 0) {
+      ch.changed({ entity: "entitlement", tenantId });
+      ch.audit(entitlementAudit("revoke", f, tenantId));
+    }
     await afterLock(c.ctx.hooks, "entitlement.save", "rows");
   });
 }

@@ -11,7 +11,7 @@ import { afterLock } from "../../lib/test-hooks";
 import { mustTenant, writeTenant } from "../groups/groups.service";
 import * as repo from "./grants.repo";
 import { checkGrantFeatures, comparePairs, type PairKey, planBatch } from "./grants.rules";
-import { type Call, fail } from "./grants.service";
+import { type Call, fail, grantAudit } from "./grants.service";
 
 const toPair = (k: GrantKey): PairKey => ({ featureId: k.feature_id, groupId: k.group_id });
 const missing = (want: readonly string[], have: ReadonlySet<string>) =>
@@ -65,14 +65,19 @@ export function batchGrants(
     await lockAndCheck(c, tx, { tenantId, add, all });
     const existing = await repo.lockGroupGrants(tx, tenantId, all);
     const plan = planBatch(existing, add, remove);
-    const removed = await repo.deleteGroupGrants(tx, tenantId, remove);
+    const gone = await repo.deleteGroupGrants(tx, tenantId, remove);
     // Hàng trong existing đã bị ta khoá nên không ai xoá được tới commit → chỉ cần chèn add ∖ existing.
-    const added = await repo.insertGroupGrants(
+    const made = await repo.insertGroupGrants(
       tx,
       { tenantId, actorId: c.actor.userId },
       plan.insert,
     );
+    const added = made.length;
+    const removed = gone.length;
     if (added + removed > 0) ch.changed({ entity: "grant", tenantId });
+    // Một dòng audit mỗi cặp thật sự đổi (plan M4 §4.2).
+    for (const g of gone) ch.audit(grantAudit("revoke", tenantId, g));
+    for (const g of made) ch.audit(grantAudit("grant", tenantId, g));
     await afterLock(c.ctx.hooks, "grant.batch", "rows");
     return { added, removed, unchanged: add.length + remove.length - added - removed };
   });

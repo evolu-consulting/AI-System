@@ -11,7 +11,15 @@ import {
   type FeatureUpdateRequest,
   LocalizedTextSchema,
 } from "@ai/contracts";
-import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
+import {
+  type AuditActionValue,
+  type AuditInput,
+  type Db,
+  type DbScope,
+  type Tx,
+  withScope,
+} from "@ai/db";
+import { auditOf } from "../../lib/audit/audit.write";
 import type { Actor } from "../../lib/auth-middleware";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
@@ -69,6 +77,27 @@ export async function featureDetail(tx: Tx, id: string): Promise<FeatureDetail> 
   };
 }
 
+/** DTO audit `feature`: chi tiết + `command_ids` (allowlist plan M4 §4.1). */
+const featureDto = (d: FeatureDetail) => ({ ...d, command_ids: d.commands.map((x) => x.id) });
+
+/** Hàng audit `feature` (plan M4 §4.2): tenant NULL, snapshot true. */
+function featureAudit(
+  action: AuditActionValue,
+  before: FeatureDetail | null,
+  after: FeatureDetail | null,
+): AuditInput {
+  const f = (after ?? before) as FeatureDetail;
+  return auditOf(action, "feature", {
+    entityId: f.id,
+    entityName: f.key,
+    tenantId: null,
+    before: before ? featureDto(before) : null,
+    after: after ? featureDto(after) : null,
+    entityVersion: after?.version ?? null,
+    snapshot: true,
+  });
+}
+
 const missingIds = (want: readonly string[], have: readonly { id: string }[]) => {
   const seen = new Set(have.map((h) => h.id));
   return want.filter((id) => !seen.has(id));
@@ -110,7 +139,9 @@ export function createFeature(c: Call, input: FeatureCreateRequest): Promise<Fea
     await m.bumpCommands(tx, input.command_ids, c.actor.userId);
     ch.changed({ entity: "feature", tenantId: null });
     await afterLock(c.ctx.hooks, "feature.save", "rows");
-    return featureDetail(tx, id);
+    const after = await featureDetail(tx, id);
+    ch.audit(featureAudit("create", null, after));
+    return after;
   });
 }
 
@@ -187,13 +218,16 @@ export function updateFeature(
     const changed = changedFeatureFields(cur, next);
     if (changed.length === 0) return featureDetail(tx, id);
     fail(checkFeatureStatus(l.row, input.status));
+    const before = await featureDetail(tx, id);
     if (changed.includes("commandIds")) await applyMembership(c, tx, l, next.commandIds);
     const set: repo.FeatureSet = {};
     for (const k of changed) if (k !== "commandIds") Object.assign(set, { [k]: next[k] });
     await repo.bumpFeature(tx, id, set, c.actor.userId);
     ch.changed({ entity: "feature", tenantId: null });
     await afterLock(c.ctx.hooks, "feature.save", "rows");
-    return featureDetail(tx, id);
+    const after = await featureDetail(tx, id);
+    ch.audit(featureAudit("update", before, after));
+    return after;
   });
 }
 
@@ -206,8 +240,10 @@ export function deleteFeature(c: Call, id: string): Promise<void> {
     if (!f) throw appError("NOT_FOUND");
     await afterLock(c.ctx.hooks, "feature.delete");
     fail(checkFeatureDelete(f, await repo.exclusiveCommands(tx, id)));
+    const before = await featureDetail(tx, id);
     await repo.deleteFeature(tx, id);
     ch.changed({ entity: "feature", tenantId: null });
+    ch.audit(featureAudit("delete", before, null));
     await afterLock(c.ctx.hooks, "feature.delete", "rows");
   });
 }

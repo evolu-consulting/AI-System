@@ -7,7 +7,8 @@ import type {
   GrantListQuery,
   GrantListResponse,
 } from "@ai/contracts";
-import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
+import { type AuditInput, type Db, type DbScope, type Tx, withScope } from "@ai/db";
+import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
@@ -23,6 +24,30 @@ export type Call = { ctx: GrantsCtx; actor: Actor; scope: DbScope };
 export const fail = (e: RuleError | null): void => {
   if (e) throw appError(e.code, e.details);
 };
+
+/** Hàng audit `grant` (plan M4 §4.2): entity_name = feature key, `summary.subject_*`, snapshot false. */
+export function grantAudit(
+  action: "grant" | "revoke",
+  tenantId: string,
+  g: repo.GrantChange,
+): AuditInput {
+  const subjectType = g.group_id ? "group" : "user";
+  const subjectId = (g.group_id ?? g.user_id) as string;
+  const dto = { feature_id: g.feature_id, subject_type: subjectType, subject_id: subjectId };
+  return auditOf(action, "grant", {
+    entityId: g.id,
+    entityName: g.feature_key,
+    tenantId,
+    before: action === "revoke" ? dto : null,
+    after: action === "grant" ? dto : null,
+    summary: {
+      subject_type: subjectType,
+      subject_id: subjectId,
+      subject_name: g.subject_name,
+      feature_key: g.feature_key,
+    },
+  });
+}
 
 export async function listGrants(c: Call, q: GrantListQuery): Promise<GrantListResponse> {
   const r = resolveTenantScope(c.actor, q.tenant_id, "read");
@@ -93,11 +118,14 @@ export function createGrant(
     checkRefs(l, input.feature_id, subject, true);
     const t = { tenantId, featureId: input.feature_id, subject };
     const existing = await repo.lockGrant(tx, t);
-    const id = existing ?? (await repo.insertGrant(tx, { ...t, actorId: c.actor.userId }));
-    const created = existing === null && id !== null;
-    if (created) ch.changed({ entity: "grant", tenantId });
+    const ins = existing ? null : await repo.insertGrant(tx, { ...t, actorId: c.actor.userId });
+    const created = ins !== null;
+    if (ins) {
+      ch.changed({ entity: "grant", tenantId });
+      ch.audit(grantAudit("grant", tenantId, ins));
+    }
     await afterLock(c.ctx.hooks, "grant.save", "rows");
-    const grantId = id ?? (await repo.lockGrant(tx, t));
+    const grantId = existing ?? ins?.id ?? (await repo.lockGrant(tx, t));
     return { grant: await grantById(tx, tenantId, grantId as string), created };
   });
 }
@@ -112,8 +140,9 @@ export function deleteGrant(c: Call, q: GrantDeleteQuery): Promise<void> {
     await afterLock(c.ctx.hooks, "grant.save", "locked");
     if (!l.feature || !l.subjectOk) return;
     checkRefs(l, q.feature_id, subject, false);
-    const n = await repo.deleteGrant(tx, { tenantId, featureId: q.feature_id, subject });
-    if (n > 0) ch.changed({ entity: "grant", tenantId });
+    const gone = await repo.deleteGrant(tx, { tenantId, featureId: q.feature_id, subject });
+    if (gone.length > 0) ch.changed({ entity: "grant", tenantId });
+    for (const g of gone) ch.audit(grantAudit("revoke", tenantId, g));
     await afterLock(c.ctx.hooks, "grant.save", "rows");
   });
 }
