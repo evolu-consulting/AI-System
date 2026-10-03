@@ -13,6 +13,8 @@ export type ReasonActions = {
   username: string;
   onGrant?: (feature: FeatureMini) => void;
   onAddBeta?: () => void;
+  /** Chưa có group beta-testers / đang gửi → khoá nút. */
+  addBetaDisabled?: boolean;
 };
 
 function Action({ r, a }: { r: Reason; a: ReasonActions }) {
@@ -30,7 +32,7 @@ function Action({ r, a }: { r: Reason; a: ReasonActions }) {
   }
   if (act.kind === "beta" && a.onAddBeta) {
     return (
-      <Button variant="outline" size="sm" onClick={a.onAddBeta}>
+      <Button variant="outline" size="sm" disabled={a.addBetaDisabled} onClick={a.onAddBeta}>
         {t("access.check.addBeta", { user: a.username })}
       </Button>
     );

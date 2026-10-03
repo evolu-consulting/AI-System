@@ -59,7 +59,8 @@ export function CheckTab({ tenantId, isPlatform, username, onUser }: Props) {
             isPlatform,
             username: data.user.username,
             onGrant: setGranting,
-            onAddBeta: () => void addBeta(),
+            onAddBeta: () => void addBeta.run(),
+            addBetaDisabled: !addBeta.ready,
           }}
         />
       ) : null}

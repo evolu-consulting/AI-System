@@ -18,7 +18,10 @@ type Props = {
   draft: Draft;
   cols: Range;
   width: number;
-  firstRow: boolean;
+  /** Cột của ô có tabindex=0 trong hàng này (-1: không có) — roving tabindex theo ô vừa focus. */
+  tabC: number;
+  /** Cột đang hiện tooltip trong hàng này (-1: không). */
+  tipC: number;
   onCell: (f: MatrixFeature, g: MatrixGroup) => void;
   onRow: (f: MatrixFeature) => void;
   onTip: (tip: TipState | null) => void;
@@ -51,7 +54,19 @@ function tipFor(t: (k: string) => string, f: MatrixFeature, checked: boolean): s
   return t(checked ? "access.matrix.tip.on" : "access.matrix.tip.off");
 }
 
-function MatrixRowImpl({ f, r, model, draft, cols, width, firstRow, onCell, onRow, onTip }: Props) {
+function MatrixRowImpl({
+  f,
+  r,
+  model,
+  draft,
+  cols,
+  width,
+  tabC,
+  tipC,
+  onCell,
+  onRow,
+  onTip,
+}: Props) {
   const { t, i18n } = useTranslation();
   const name = pickLocalized(f.feature.name, i18n.language);
   const prefix = `${f.feature.id}:`;
@@ -119,7 +134,8 @@ function MatrixRowImpl({ f, r, model, draft, cols, width, firstRow, onCell, onRo
               checked={checked}
               locked={locked}
               dirty={!locked && checked !== model.granted.has(`${prefix}${g.id}`)}
-              tabbable={firstRow && c === cols.start}
+              tabbable={c === tabC}
+              described={c === tipC}
               tip={tipFor(t, f, checked)}
               onToggle={toggleAt}
               onTip={onTip}

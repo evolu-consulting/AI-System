@@ -5,7 +5,8 @@ import { Check, Minus } from "lucide-react";
 import { memo } from "react";
 import { cn } from "@/lib/utils";
 
-export type TipState = { text: string; x: number; y: number };
+export const TIP_ID = "matrix-tip";
+export type TipState = { text: string; x: number; y: number; r: number; c: number };
 
 type Props = {
   r: number;
@@ -17,14 +18,16 @@ type Props = {
   locked: boolean;
   dirty: boolean;
   tabbable: boolean;
+  /** Tooltip chung đang hiện cho ô này → `aria-describedby`. */
+  described?: boolean;
   tip: string;
   onToggle: (r: number, c: number) => void;
   onTip: (tip: TipState | null) => void;
 };
 
-function showTip(tip: string, el: HTMLElement, onTip: Props["onTip"]) {
+function showTip(p: Props, el: HTMLElement) {
   const box = el.getBoundingClientRect();
-  onTip({ text: tip, x: box.left + box.width / 2, y: box.bottom + 6 });
+  p.onTip({ text: p.tip, x: box.left + box.width / 2, y: box.bottom + 6, r: p.r, c: p.c });
 }
 
 function MatrixCellImpl(p: Props) {
@@ -35,13 +38,14 @@ function MatrixCellImpl(p: Props) {
       aria-checked={p.mixed ? "mixed" : p.checked}
       aria-disabled={p.locked || undefined}
       aria-label={p.label}
+      aria-describedby={p.described ? TIP_ID : undefined}
       data-r={p.r}
       data-c={p.c}
       tabIndex={p.tabbable ? 0 : -1}
       onClick={() => !p.locked && p.onToggle(p.r, p.c)}
-      onPointerEnter={(e) => showTip(p.tip, e.currentTarget, p.onTip)}
+      onPointerEnter={(e) => showTip(p, e.currentTarget)}
       onPointerLeave={() => p.onTip(null)}
-      onFocus={(e) => showTip(p.tip, e.currentTarget, p.onTip)}
+      onFocus={(e) => showTip(p, e.currentTarget)}
       onBlur={() => p.onTip(null)}
       className={cn(
         "relative mx-auto flex size-6 items-center justify-center rounded border border-input bg-background outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",

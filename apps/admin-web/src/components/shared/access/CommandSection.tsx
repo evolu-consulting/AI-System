@@ -31,6 +31,7 @@ export function CommandSection({ commands, ctx, actions }: Props) {
   const visible = commands.filter((c) => c.visible);
   const hidden = commands.filter((c) => !c.visible);
   const more = Math.max(0, visible.length - LIMIT);
+  const moreHidden = Math.max(0, hidden.length - LIMIT);
   return (
     <section className="space-y-3">
       <h3 className="text-label font-semibold">{t("access.check.section.commands")}</h3>
@@ -59,6 +60,11 @@ export function CommandSection({ commands, ctx, actions }: Props) {
           {hidden.slice(0, LIMIT).map((c) => (
             <HiddenRow key={c.id} c={c} ctx={ctx} actions={actions} />
           ))}
+          {moreHidden > 0 ? (
+            <li className="px-4 py-2 text-caption text-muted-foreground">
+              {t("access.check.more", { count: moreHidden })}
+            </li>
+          ) : null}
         </ul>
       ) : null}
     </section>

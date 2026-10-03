@@ -2,6 +2,7 @@
 // biome-ignore-all lint/a11y/useSemanticElements: lưới ảo hoá (cửa sổ hoá hai chiều) không dùng được <table>/<input>; role đặt đúng theo WAI-ARIA grid/checkbox
 // biome-ignore-all lint/a11y/noStaticElementInteractions: onKeyDown ở vùng cuộn của role=grid để điều hướng ô bằng mũi tên (ủy quyền sự kiện từ ô checkbox)
 import type { MatrixFeature, MatrixGroup } from "@ai/contracts";
+import type { FocusEvent } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGridWindow } from "../../hooks/use-grid-window";
@@ -28,10 +29,23 @@ export function GrantMatrix({ model, draft, showUnopened, onCell, onRow, onCol }
   const rows = model.features.filter((f) => showUnopened || f.state !== "none");
   const cols = model.groups.length;
   const w = useGridWindow(rows.length, cols);
+  const [focus, setFocus] = useState({ r: 0, c: 0 });
+  const onFocus = (e: FocusEvent<HTMLElement>) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-r][data-c]");
+    if (el) setFocus({ r: Number(el.dataset.r), c: Number(el.dataset.c) });
+  };
+  // Ô vừa focus còn trong cửa sổ → giữ tabindex=0 ở đó; ngược lại về ô đầu cửa sổ.
+  const inWin =
+    focus.r >= w.rows.start &&
+    focus.r < w.rows.end &&
+    focus.c >= w.cols.start &&
+    focus.c < w.cols.end;
+  const tab = inWin ? focus : { r: w.rows.start, c: w.cols.start };
   return (
     <div
       ref={w.ref}
       onScroll={w.onScroll}
+      onFocus={onFocus}
       onKeyDown={(e) => onGridKeyDown(e, rows.length, cols)}
       className="relative max-h-[70vh] overflow-auto rounded-lg border border-border bg-card"
     >
@@ -53,7 +67,8 @@ export function GrantMatrix({ model, draft, showUnopened, onCell, onRow, onCol }
             draft={draft}
             cols={w.cols}
             width={w.totalW}
-            firstRow={i === 0}
+            tabC={tab.r === w.rows.start + i ? tab.c : -1}
+            tipC={tip && tip.r === w.rows.start + i ? tip.c : -1}
             onCell={onCell}
             onRow={onRow}
             onTip={setTip}

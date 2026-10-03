@@ -1226,6 +1226,8 @@
       "more": "{count} more, type to filter",
       "grantTo": "Grant {feature} to a group…",
       "addBeta": "Add {user} to beta-testers",
+      "betaAdded": "Added {user} to beta-testers.",
+      "betaNotFound": "Could not find {user} to add to beta-testers.",
       "openFeature": "Open feature {feature}"
     },
     "grant": {

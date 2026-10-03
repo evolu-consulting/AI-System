@@ -1226,6 +1226,8 @@
       "more": "Còn {count} mục, gõ để lọc",
       "grantTo": "Cấp {feature} cho group…",
       "addBeta": "Thêm {user} vào beta-testers",
+      "betaAdded": "Đã thêm {user} vào beta-testers.",
+      "betaNotFound": "Không tìm thấy {user} để thêm vào beta-testers.",
       "openFeature": "Mở feature {feature}"
     },
     "grant": {

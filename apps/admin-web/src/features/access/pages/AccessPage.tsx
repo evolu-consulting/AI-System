@@ -37,7 +37,11 @@ export function AccessPage() {
           {view.needsTenant ? (
             <EmptyState message={t("access.selectTenant")} />
           ) : (
-            <MatrixTab tenantId={view.tenantId} tenantKey={view.tenantKey} />
+            <MatrixTab
+              key={view.tenantId ?? "self"}
+              tenantId={view.tenantId}
+              tenantKey={view.tenantKey}
+            />
           )}
         </TabsContent>
         <TabsContent value="check" className="pt-4">
