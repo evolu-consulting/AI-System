@@ -65,9 +65,9 @@ describe("ADM-FR-41 · M4-R04 · phát cảnh báo", () => {
     expect((await putQuota(env, A, [qi(null, { runs: 1000, tokens: 10_000_000 })])).status).toBe(
       200,
     );
-    await poll(() => count(100), 2);
+    await poll(statuses, ["null:80:sent", "null:100:sent"]);
+    expect(count(100)).toBe(2);
     expect(count(80)).toBe(2);
-    expect(await statuses()).toEqual(["null:80:sent", "null:100:sent"]);
   });
 
   it("ADM-FR-41 · M4-R04 · AL3 · 1000/1000 chưa có alert → chỉ mail 100 (2 người); hàng 80 skipped, không mail 80 về sau", async () => {
@@ -89,7 +89,7 @@ describe("ADM-FR-41 · M4-R04 · phát cảnh báo", () => {
     expect(mailsTo(env, "lan@acme.test")).toHaveLength(0);
   });
 
-  it("ADM-FR-41 · M4-R05 · AL4 · chi active=false rồi chi email NULL → chỉ binh nhận", async () => {
+  it("ADM-FR-41 · M4-R05 · AL4 · chi active=false rồi chi active nhưng role member (tenant_admin luôn có email — CHECK M1) → chỉ binh nhận", async () => {
     await env.owner`update admin.users set active = false where username = 'chi'`;
     await insertUsage(env.owner, 800, { tenant: A });
     expect((await putQuota(env, A, [qi(null, { runs: 1000 })])).status).toBe(200);
@@ -98,7 +98,7 @@ describe("ADM-FR-41 · M4-R04 · phát cảnh báo", () => {
     expect(
       env.mailer.sent.filter((m) => m.subject.startsWith("[Acme Corp]")).map((m) => m.to),
     ).toEqual([[BINH]]);
-    await env.owner`update admin.users set active = true, email = null where username = 'chi'`;
+    await env.owner`update admin.users set active = true, role = 'member' where username = 'chi'`;
     await insertUsage(env.owner, 200, { tenant: A });
     expect((await putQuota(env, A, [qi(null, { runs: 1000, tokens: 9_000_000 })])).status).toBe(
       200,
