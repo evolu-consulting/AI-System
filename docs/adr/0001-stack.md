@@ -53,6 +53,9 @@ Tra ngày 2026-10-01 bằng `npm view <pkg> version` (dist-tag `latest`). Ghim c
 | drizzle-kit | 0.31.11 | = | db (dev) | |
 | postgres (postgres.js) | 3.4.9 | = | db | ADR-0003 |
 | jose | 6.2.12 | = | admin-api (M1) | Chưa cài ở M0 |
+| react-markdown | 10.1.0 | = | chat-web (C1, ADR-0006) | Nạp lazy |
+| remark-gfm | 4.0.1 | = | chat-web (C1, ADR-0006) | Nạp lazy |
+| highlight.js | 11.12.0 | = | chat-web (C1, ADR-0006) | Nạp lazy |
 | @hono/zod-validator | 0.9.1 | = | admin-api (M1) | peer `zod ^3.25 \|\| ^4`, `hono >=4.11.2`; chưa cài ở M0 |
 | sonner | 2.0.8 | = | admin-web (M1) | ADR-0004; chưa cài |
 | @hookform/resolvers | 5.9.1 | = | admin-web (M1) | ADR-0004; chưa cài |
