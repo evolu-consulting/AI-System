@@ -39,7 +39,7 @@ export default function ConflictDialog(p: ConflictDialogProps) {
   const reloadRef = useRef<HTMLButtonElement>(null);
   const overwriteRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const firstStep = useRef(true);
+  const prevStep = useRef(step);
   const user = p.updatedBy;
   const body = {
     user,
@@ -56,10 +56,8 @@ export default function ConflictDialog(p: ConflictDialogProps) {
   const confirming = step === "confirm";
   // Đổi bước làm nút đang focus bị gỡ → đưa focus sang nút tương ứng (huỷ → "Ghi đè"; vào xác nhận → "Huỷ").
   useEffect(() => {
-    if (firstStep.current) {
-      firstStep.current = false;
-      return;
-    }
+    if (prevStep.current === step) return; // mount (kể cả StrictMode chạy effect hai lần) → để onOpenAutoFocus quyết
+    prevStep.current = step;
     (step === "confirm" ? cancelRef : overwriteRef).current?.focus();
   }, [step]);
   return (

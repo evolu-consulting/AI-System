@@ -13,7 +13,7 @@ import {
 import { type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { appError } from "../../lib/errors";
-import { likeArg } from "../../lib/sql";
+import { likeArg, pgArray } from "../../lib/sql";
 import { afterLock } from "../../lib/test-hooks";
 import { groupRefsOf, mustTenant } from "../groups/groups.service";
 import { resolveTenantScope } from "../users/users.rules";
@@ -57,11 +57,10 @@ async function featureRows(tx: Tx, tenantId: string, groupIds: string[]): Promis
   // Tập hợp theo feature một lần rồi join (không subquery từng feature). `granted` lọc theo ĐÚNG danh sách id cột đã
   // trả (không tính lại trang) → ⊂ `groups`. Trả dạng chuỗi nối ',' không sắp: array_agg … order by + parse mảng text[]
   // phía client tốn ~15–20 ms ở 200 × 100 ô; sắp lại ở JS (spec §9).
-  const ids = `{${groupIds.join(",")}}`;
   const rows = (await tx.execute(sql`
     with gc as (select fg.feature_id, count(*)::int as n, string_agg(fg.group_id::text, ',')
           filter (where p.id is not null) as granted
-        from admin.feature_grants fg left join unnest(${ids}::uuid[]) as p(id) on p.id = fg.group_id
+        from admin.feature_grants fg left join unnest(${pgArray(groupIds, "uuid")}) as p(id) on p.id = fg.group_id
         where fg.tenant_id = ${tenantId} group by fg.feature_id),
       cn as (select fc.feature_id, count(*)::int as n,
           (array_agg(c.name order by c.name))[1:${MATRIX_COMMAND_NAMES_MAX}] as names

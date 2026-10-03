@@ -7,7 +7,8 @@ type Args = { tenantId: string | undefined; username: string | undefined; enable
 
 export function useAccessCheck({ tenantId, username, enabled }: Args) {
   const lookup = useUserByUsername(tenantId, username, enabled);
-  const found = lookup.data ?? undefined;
+  // Đang đổi `?user=`: dữ liệu giữ chỗ là user cũ → chưa coi là tìm thấy (review M3 vòng 2 #2).
+  const found = lookup.isPlaceholderData ? undefined : (lookup.data ?? undefined);
   const access = useEffectiveAccess(found?.id, enabled);
   const err =
     access.error instanceof ApiError

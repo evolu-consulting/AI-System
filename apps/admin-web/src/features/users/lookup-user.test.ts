@@ -12,8 +12,8 @@ describe("lookupStep", () => {
   test("cuối trang còn nhỏ hơn → nạp tiếp", () => {
     expect(lookupStep({ ...base, items: it("a", "b") }, "bob")).toBe("more");
   });
-  test("cuối trang lớn hơn → dừng", () => {
-    expect(lookupStep({ ...base, items: it("a", "carl") }, "bob")).toBe("stop");
+  test("cuối trang lớn hơn vẫn nạp tiếp (collation DB có thể khác JS)", () => {
+    expect(lookupStep({ ...base, items: it("a", "carl") }, "bob")).toBe("more");
   });
   test("hết total → dừng", () => {
     expect(lookupStep({ total: 52, offset: 50, pages: 2, items: it("a", "b") }, "bob")).toBe(
