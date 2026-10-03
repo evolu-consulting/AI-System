@@ -1484,6 +1484,51 @@
     }
   },
   "usage": {
+    "title": "Usage & quota",
+    "subtitle": "{period}. Going over quota doesn't block; overage is billed separately.",
+    "period": "Period",
+    "current": "This month",
+    "previous": "Last month",
+    "csv": "Export CSV",
+    "csvFailed": "Couldn't export the CSV. Try again later.",
+    "kpi": {
+      "runs": "Runs",
+      "tokens": "Tokens",
+      "billable": "Revenue",
+      "cost": "Actual cost",
+      "margin": "Margin",
+      "delta": "{sign}{pct}% vs {prev}",
+      "marginPct": "{pct}% of revenue"
+    },
+    "byTenant": {
+      "title": "By tenant",
+      "noQuota": "{used} · no quota set"
+    },
+    "col": {
+      "tenant": "Tenant",
+      "quota": "Monthly quota",
+      "billable": "Revenue",
+      "cost": "Actual cost",
+      "feature": "Feature",
+      "user": "User",
+      "runs": "Runs",
+      "tokens": "Tokens"
+    },
+    "quotaCard": "Monthly quota",
+    "topFeature": {
+      "title": "Top features by revenue"
+    },
+    "topUser": {
+      "title": "Top users by revenue"
+    },
+    "noFeature": "No feature",
+    "noFeatureNote": "Agent-chat runs aren't tied to a feature, so they get their own row.",
+    "unpriced": "Not priced yet",
+    "empty": {
+      "noData": "No data from Agent Hub yet",
+      "period": "No runs in this period.",
+      "rows": "No rows yet."
+    },
     "chart": {
       "title": "Revenue by day",
       "inQuota": "Within quota",

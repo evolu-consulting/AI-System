@@ -1484,6 +1484,51 @@
     }
   },
   "usage": {
+    "title": "Chi phí & quota",
+    "subtitle": "{period}. Vượt quota không chặn, phần vượt được tính phí riêng.",
+    "period": "Kỳ",
+    "current": "Tháng này",
+    "previous": "Tháng trước",
+    "csv": "Xuất CSV",
+    "csvFailed": "Không xuất được CSV. Thử lại sau.",
+    "kpi": {
+      "runs": "Số run",
+      "tokens": "Token",
+      "billable": "Số thu",
+      "cost": "Chi phí thật",
+      "margin": "Biên",
+      "delta": "{sign}{pct}% so với tháng {prev}",
+      "marginPct": "{pct}% số thu"
+    },
+    "byTenant": {
+      "title": "Theo tenant",
+      "noQuota": "{used} · không đặt quota"
+    },
+    "col": {
+      "tenant": "Tenant",
+      "quota": "Quota tháng",
+      "billable": "Số thu",
+      "cost": "Chi phí thật",
+      "feature": "Feature",
+      "user": "User",
+      "runs": "Số run",
+      "tokens": "Token"
+    },
+    "quotaCard": "Quota tháng",
+    "topFeature": {
+      "title": "Top feature theo số thu"
+    },
+    "topUser": {
+      "title": "Top user theo số thu"
+    },
+    "noFeature": "Không theo feature",
+    "noFeatureNote": "Run qua agent chat không gắn feature nào nên đứng riêng một dòng.",
+    "unpriced": "Chưa định giá",
+    "empty": {
+      "noData": "Chưa có dữ liệu từ Agent Hub",
+      "period": "Không có run nào trong kỳ này.",
+      "rows": "Chưa có dòng nào."
+    },
     "chart": {
       "title": "Số thu theo ngày",
       "inQuota": "Trong quota",

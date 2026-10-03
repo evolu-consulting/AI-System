@@ -22,7 +22,7 @@ export function QuotaBanner() {
       <AlertDescription className="flex-1 text-current">
         {over ? t("banner.quota100") : t("banner.quota80", { pct: banner.pct })}
       </AlertDescription>
-      <Link to={"/usage" as "/"} className="text-label font-medium underline underline-offset-2">
+      <Link to="/usage" className="text-label font-medium underline underline-offset-2">
         {t("banner.quotaLink")}
       </Link>
     </Alert>

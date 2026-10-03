@@ -21,7 +21,7 @@ export function TenantQuotaCard({ quotas, loading, error }: Props) {
       loading={loading}
       error={error}
       footer={
-        <Link to={"/usage" as "/"} className="font-medium text-primary hover:underline">
+        <Link to="/usage" className="font-medium text-primary hover:underline">
           {t("overview.quota.link")}
         </Link>
       }
