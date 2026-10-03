@@ -69,3 +69,4 @@ Nền: CR-001 (mặc định readiness M1–M4), CR-002 (2FA + Import/Export và
 - BE review vòng 1 #4 · `auth.repo` subquery `backupCodesLeft` lọc thêm `tenant_id = users.tenant_id`.
 - BE review vòng 1 #5 · khôi phục dòng `delete` chỉ khi là dòng mới nhất của `(entity, entity_id)` (`latest` = `not exists` dòng `seq` lớn hơn, index `audit_log_entity_seq_idx`); không → `NOT_RESTORABLE`, `restorable=false` ở list/detail/overview. Dòng `update`/`restore` cũ giữ luật cũ (409 `VERSION_CONFLICT` khi khôi phục, RS2). `canRestore`/`restoreCheck` nhận `latest?` (vắng = true, tương thích test acceptance).
 - BE review vòng 1 #6 · quota `has_usage_data`: scope tenant → chỉ `usage_logs` của tenant đó (như usage `has_data`); platform → toàn bảng.
+- top_features/top_users thêm `unpriced_rows` (người dùng duyệt 2026-10-04, giải TECH-DEBT #33).

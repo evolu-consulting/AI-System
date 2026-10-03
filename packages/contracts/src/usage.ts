@@ -59,6 +59,7 @@ const topFeatureBase = {
   tokens: CountSchema,
   billable_usd: MoneyNonNegSchema,
   overage: z.boolean(),
+  unpriced_rows: CountSchema,
 };
 const topUserBase = {
   user_id: UuidSchema.nullable(),
@@ -67,6 +68,7 @@ const topUserBase = {
   runs: CountSchema,
   tokens: CountSchema,
   billable_usd: MoneyNonNegSchema,
+  unpriced_rows: CountSchema,
 };
 const cost = { cost_usd: MoneyNonNegSchema };
 

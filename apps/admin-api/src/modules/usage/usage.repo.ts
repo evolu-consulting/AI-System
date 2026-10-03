@@ -36,7 +36,8 @@ const inRange = (from: Date, to: Date) =>
 const AGG = sql`count(distinct run_id)::int as runs,
   coalesce(sum(input_tokens::bigint + output_tokens), 0)::text as tokens,
   coalesce(sum(billable_usd), 0)::text as billable_usd,
-  coalesce(sum(cost_usd), 0)::text as cost_usd`;
+  coalesce(sum(cost_usd), 0)::text as cost_usd,
+  (count(*) filter (where billable_usd is null))::int as unpriced_rows`;
 
 export type KpiRow = {
   cur: boolean;
@@ -93,6 +94,7 @@ export type TopFeatureRow = {
   tokens: string;
   billable_usd: string;
   cost_usd: string;
+  unpriced_rows: number;
   overage: boolean;
 };
 
@@ -119,6 +121,7 @@ export type TopUserRow = {
   tokens: string;
   billable_usd: string;
   cost_usd: string;
+  unpriced_rows: number;
 };
 
 /** ≤ `limit` user; `users` tra theo PK sau khi cắt (join RLS sớm → plan xấu, xem `lib/sql` usernameOf). */

@@ -39,8 +39,8 @@ tenant_admin: `tenant_id` vắng → tenant mình; khác tenant mình → **404*
 |---|---|
 | `UsageKpi` | `runs` · `tokens` · `input_tokens` · `output_tokens` · `billable_usd` · `unpriced_rows` · `overage_runs` · `cost_usd*` · `margin_usd*` (= billable − cost, có thể âm: `Money` cho phép `-`) |
 | `UsageDay` | `date` · `runs` · `tokens` · `billable_usd` · `overage_billable_usd` · `cost_usd*` (đủ mọi ngày trong khoảng, ngày trống = 0) |
-| `UsageTopFeature` (≤10, theo `billable_usd` giảm) | `feature_id\|null` · `feature_key\|null` · `feature_name\|null` (null = "Không theo feature") · `runs` · `tokens` · `billable_usd` · `overage: bool` · `cost_usd*` |
-| `UsageTopUser` (≤10) | `user_id\|null` · `username\|null` · `display_name\|null` · `runs` · `tokens` · `billable_usd` · `cost_usd*` |
+| `UsageTopFeature` (≤10, theo `billable_usd` giảm) | `feature_id\|null` · `feature_key\|null` · `feature_name\|null` (null = "Không theo feature") · `runs` · `tokens` · `billable_usd` · `unpriced_rows` (số hàng `billable_usd` NULL) · `overage: bool` · `cost_usd*` |
+| `UsageTopUser` (≤10) | `user_id\|null` · `username\|null` · `display_name\|null` · `runs` · `tokens` · `billable_usd` · `unpriced_rows` · `cost_usd*` |
 | `UsageTenantRow*` (≤200, chỉ khi `tenant_id` vắng) | `tenant_id` · `tenant_key` · `tenant_name` · `runs` · `tokens` · `billable_usd` · `cost_usd` · `quota_pct: int\|null` · `level` |
 | `UsageReport*` | `range:{from,to}` · `tenant_id\|null` · `feature_id` · `has_data: bool` (R09: có ≥1 hàng `usage_logs` bất kỳ thời điểm cho phạm vi tenant) · `kpi` · `previous: UsageKpi` (khoảng liền trước cùng độ dài, cho delta) · `daily` · `top_features` · `top_users` · `quotas: QuotaStatus[]` (rỗng khi không chọn tenant) · `tenants*` |
 
