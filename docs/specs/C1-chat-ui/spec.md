@@ -163,6 +163,7 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 ### Bổ sung sau readiness lần 1 (2026-10-04, `readiness.md`)
 - Contract `plan.md` §2 là nguồn cho C1; BA §9.2–9.3 bổ sung `FLOW_BUSY`, `EVENTS_EXPIRED`, `run.failed.message_id` và ui-chat §7 (refresh lỗi → về /login, C1-R08) ghi backlog docs cho H1 (`TECH-DEBT.md`).
 - H2 (chờ người dùng ở Gate): mặc định C1 chỉ giao diện Sáng, ghi TECH-DEBT. H4 (mặc định, theo canvas FlowOpen): khối flow ở luồng chính hiện câu trả lời **đầu** (`preview`); câu mới chỉ thấy trong khung flow.
+- **Gate 2026-10-04 (CR-027):** H2 đã chốt **Sáng + Tối** (+ Theo hệ thống), thay mặc định trên — token Tối đạt AA, logo tối, chống nháy: `plan-frontend-theme.md`, task F14.
 
 ## 10. Tranh chấp test
 - (không)

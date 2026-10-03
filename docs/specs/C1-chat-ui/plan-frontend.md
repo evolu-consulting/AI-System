@@ -118,7 +118,7 @@ Luật: một hội thoại chỉ một run chạy (UC-02: gõ trước được
 | FlowPanel (≥ 640) | FlowOpen: `aside` flex `1 1 420px`, max 480px, nền trắng, viền trái, bóng; header: tiêu đề flow + "{n} tin · nhớ cả flow" + ✕; luồng đủ tin của flow; composer "Trả lời trong flow…" | mở: tải tin (skeleton 3), focus ô nhập (AC-14); đổi flow → thay nội dung; cold | UC-06 · 14, 15, 16 |
 | FlowSheet (< 640) | Mobile: Sheet đáy, cao ~83vh, radius 16 trên, tay nắm kéo (`button` `aria-label="Kéo để đóng"`); header ✕ "Đóng khung flow" + "Thu nhỏ flow" | kéo xuống > 120px, ✕ hoặc "Thu nhỏ flow" (C1 cùng hành vi ✕) → đóng (xoá `?flow`) | UC-06 · 17 |
 | ConnectionBanner | States: vàng "Đang kết nối lại…" (`role=status`), đỏ "Không kết nối được máy chủ" + Thử lại (`role=alert`) | | UC-08 · 28, 29 |
-| SettingsDialog | không có artboard: Dialog (ui-chat §7) — Ngôn ngữ (Tiếng Việt/English), Tài khoản (tên, công ty), dòng Quyền riêng tư, nút Đăng xuất. Giao diện Sáng/Tối: **chưa làm C1** (chưa có token tối) | đăng xuất → `POST /auth/logout`, xoá phiên + query cache, `/login` | UC-01 · 04 |
+| SettingsDialog | không có artboard: Dialog (ui-chat §7) — Ngôn ngữ (Tiếng Việt/English), Tài khoản (tên, công ty), dòng Quyền riêng tư, nút Đăng xuất. Giao diện Sáng/Tối/Theo hệ thống: `plan-frontend-theme.md` (F14) | đăng xuất → `POST /auth/logout`, xoá phiên + query cache, `/login` | UC-01 · 04 |
 
 
 ## 6. Câu chữ
@@ -205,6 +205,6 @@ Bảng key ↔ VI ↔ EN: **`plan-frontend-i18n.md`** (phụ lục, cho task có
 | # | Câu hỏi | Mặc định |
 |---|---|---|
 | H1 | ADR-0006 thêm 3 thư viện markdown (≈ 44 KB + 15–20 KB gzip, nạp lazy) | Duyệt |
-| H2 | Sáng/Tối trong Cài đặt: chưa có token tối trên canvas | C1 chỉ Sáng; ghi TECH-DEBT |
+| H2 | Sáng/Tối trong Cài đặt | **Đã chốt: Sáng + Tối** (CR-027), xem `plan-frontend-theme.md` |
 | H3 | Spec §9 Q2 / CHAT-AC-34 ghi `PUBLIC_HUB_URL`; backend + FE chốt proxy `HUB_URL` (D5) | Theo proxy; docs-architect sửa câu chữ Q2/AC-34 trong spec |
 | H4 | Khối flow ở luồng chính hiện trả lời **đầu** (canvas FlowOpen, `preview`); câu trả lời mới chỉ thấy trong khung | Theo canvas |

@@ -43,6 +43,7 @@ Phụ lục của `plan-frontend.md` §6. Namespace `chat.*`, file `packages/i18
 | `errors.retry` · `errors.report` · `errors.meta` | Thử lại · Báo admin · {{code}} · run {{runId}} | Retry · Report to admin · {{code}} · run {{runId}} |
 | `conn.reconnecting` · `conn.down` · `conn.retry` | Đang kết nối lại… · Không kết nối được máy chủ · Thử lại | Reconnecting… · Can't reach the server · Retry |
 | `settings.title` · `settings.language` · `settings.account` · `settings.privacy` · `settings.logout` | Cài đặt · Ngôn ngữ · Tài khoản · Quản trị nền tảng có thể xem nội dung hội thoại để hỗ trợ và gỡ lỗi. Quản trị viên công ty bạn không xem được nội dung, chỉ xem mức sử dụng · Đăng xuất | Settings · Language · Account · Platform administrators may view chat content for support and debugging. Your company administrators cannot see content, only usage · Sign out |
+| `settings.theme` · `settings.themeLight` · `settings.themeDark` · `settings.themeSystem` (CR-027, `plan-frontend-theme.md` §3) | Giao diện · Sáng · Tối · Theo hệ thống | Appearance · Light · Dark · System |
 | `toast.flowBusy` | Flow này đang trả lời, chờ xong rồi gửi tiếp. | This flow is still replying; wait for it to finish. |
 | `toast.renameFailed` · `toast.deleteFailed` · `toast.sendFailed` | Không đổi được tên. Thử lại sau. · Không xoá được hội thoại. Thử lại sau. · Không gửi được tin. Nội dung vẫn còn trong ô nhập. | Couldn't rename. Try again later. · Couldn't delete the chat. Try again later. · Couldn't send. Your text is still in the input. |
 
