@@ -10,7 +10,6 @@ import {
   useRenameConversation,
 } from "~/features/conversations/hooks/use-conversations";
 import { groupByTime } from "~/lib/time-groups";
-import { conversationPath } from "../lib/conversation-path";
 import { ConversationItem } from "./ConversationItem";
 
 type Props = {
@@ -31,7 +30,7 @@ export function ConversationList({ q, activeId, onNavigate }: Props) {
   const remove = useDeleteConversation();
 
   const open = (id: string) => {
-    void router.navigate({ to: conversationPath(id) as never });
+    void router.navigate({ to: "/c/$id", params: { id } });
     onNavigate?.();
   };
   const onRename = async (id: string, title: string) => {

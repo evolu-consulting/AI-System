@@ -8,7 +8,6 @@ import { draftKey } from "~/features/composer/lib/composer-logic";
 import { useCreateConversation } from "~/features/conversations/hooks/use-conversations";
 import { useRunByKey } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
-import { conversationPath } from "~/features/shell/lib/conversation-path";
 import { useSession } from "~/lib/auth/use-session";
 import { SuggestionCards } from "../components/SuggestionCards";
 
@@ -38,7 +37,7 @@ export function WelcomePage() {
       if (!out.ok) return false;
       setRunKey(out.key);
       pendingConv.current = null;
-      void router.navigate({ to: conversationPath(convId) as never, replace: true });
+      void router.navigate({ to: "/c/$id", params: { id: convId }, replace: true });
       return true;
     },
     [create, send, router],

@@ -36,7 +36,7 @@ function FooterMeta({
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-caption text-muted-foreground">
       {busy ? (
-        <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
+        <LoaderCircle className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
       ) : (
         <MessageCircle className="size-3.5" aria-hidden />
       )}

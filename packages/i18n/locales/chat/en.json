@@ -78,6 +78,7 @@
     "close": "Close flow panel",
     "minimize": "Minimize flow",
     "panel": "Open flow",
+    "log": "Messages in this flow",
     "dragClose": "Drag to close",
     "cold": "Reopening the flow, the first reply may take a few seconds…",
     "noClose": "Flows never close. When idle the system pauses them and restores full context when you chat again."

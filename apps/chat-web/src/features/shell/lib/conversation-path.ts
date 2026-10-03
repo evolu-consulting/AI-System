@@ -1,4 +1,4 @@
-// CHAT-AC-20 · đường dẫn hội thoại. Route `/c/$id` do F8 thêm; đến lúc đó đường dẫn chưa có trong routeTree nên dùng chuỗi.
+// CHAT-AC-20 · đường dẫn hội thoại dạng chuỗi (cho `href`); điều hướng trong app dùng `to: "/c/$id"` có kiểu.
 export function conversationPath(id: string): string {
   return `/c/${encodeURIComponent(id)}`;
 }

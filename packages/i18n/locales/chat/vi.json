@@ -80,6 +80,7 @@
     "close": "Đóng khung flow",
     "minimize": "Thu nhỏ flow",
     "panel": "Flow đang mở",
+    "log": "Tin nhắn trong flow",
     "dragClose": "Kéo để đóng",
     "cold": "Đang mở lại flow, lần đầu có thể mất vài giây…",
     "noClose": "Flow không có nút đóng. Rảnh lâu thì hệ thống tự nghỉ, chat lại thì tự mở lại đủ ngữ cảnh."

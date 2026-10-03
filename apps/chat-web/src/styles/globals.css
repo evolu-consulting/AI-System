@@ -266,6 +266,8 @@
   *::after {
     /* biome-ignore lint/complexity/noImportantStyles: người dùng chọn giảm chuyển động phải thắng mọi utility animate */
     animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: như trên — vòng lặp vô hạn 0.01ms thành nháy */
+    animation-iteration-count: 1 !important;
     /* biome-ignore lint/complexity/noImportantStyles: như trên */
     transition-duration: 0.01ms !important;
   }

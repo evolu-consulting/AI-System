@@ -20,7 +20,10 @@ export function formatSeconds(ms: number, locale: string): string {
 }
 
 function StepIcon({ status }: { status: StepItem["status"] }) {
-  if (status === "running") return <LoaderCircle className="size-3.5 animate-spin" aria-hidden />;
+  if (status === "running")
+    return (
+      <LoaderCircle className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
+    );
   if (status === "ok") return <Check className="size-3.5 text-success" aria-hidden />;
   return <X className="size-3.5 text-danger" aria-hidden />;
 }

@@ -1,4 +1,5 @@
 // CHAT-AC-14..16 · luồng tin của khung flow: tin E11 (cuộn lên tải cũ hơn) + câu hỏi/trả lời của run đang chạy (stream, cold).
+import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
 import { Skeleton } from "~/components/ui/skeleton";
 import { AnswerExtras } from "~/features/thread/components/AnswerExtras";
@@ -45,12 +46,21 @@ function PanelSkeleton() {
 }
 
 export function FlowMessages({ data }: { data: FlowPanelData }) {
+  const { t } = useTranslation();
   const { scrollRef, contentRef, onScroll } = useStickyScroll({
     has: data.hasOlder,
     load: data.loadOlder,
   });
   return (
-    <div ref={scrollRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto">
+    <div
+      ref={scrollRef}
+      onScroll={onScroll}
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions"
+      aria-label={t("flow.log")}
+      className="min-h-0 flex-1 overflow-y-auto"
+    >
       <div ref={contentRef} className="flex flex-col gap-4 p-4 text-body leading-[1.55]">
         {data.loading ? (
           <PanelSkeleton />

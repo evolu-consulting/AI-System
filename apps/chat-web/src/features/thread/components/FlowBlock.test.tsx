@@ -67,6 +67,13 @@ test("đang stream: con trỏ aria-hidden + data-run-id", () => {
   expect(html).toContain('data-run-id="r1"');
   expect(html).toContain("animate-pulse");
   expect(html).toContain('aria-busy="true"');
+  expect(html).toContain('<div class="leading-relaxed" aria-hidden="true" aria-busy="true">');
+});
+
+test("xong run: thân câu trả lời không còn aria-hidden (trình đọc màn hình đọc bản đầy đủ)", () => {
+  const html = render();
+  expect(html).toContain('<div class="leading-relaxed">');
+  expect(html).not.toContain('aria-busy="true"');
 });
 
 test("lỗi đã lưu: alert theo mã, không hiện message thô", () => {

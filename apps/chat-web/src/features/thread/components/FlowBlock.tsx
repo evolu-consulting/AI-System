@@ -23,7 +23,7 @@ function StreamingCursor() {
   return (
     <span
       aria-hidden
-      className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-primary align-[-3px]"
+      className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-primary align-[-3px] motion-reduce:animate-none"
     />
   );
 }
@@ -33,8 +33,15 @@ export function Answer({ answer }: { answer: AnswerView }) {
   if (answer.waiting) {
     return answer.cold ? <ColdResumeNote /> : <StreamingCursor />;
   }
+  // a11y (plan-frontend §9): chữ đang stream ẩn khỏi trình đọc màn hình; xong run thì gắn node mới
+  // (đổi `key`) để vùng `role=log` (aria-relevant=additions) đọc bản đầy đủ một lần.
   return (
-    <div className="leading-relaxed" aria-busy={answer.streaming || undefined}>
+    <div
+      key={answer.streaming ? "streaming" : "done"}
+      className="leading-relaxed"
+      aria-hidden={answer.streaming || undefined}
+      aria-busy={answer.streaming || undefined}
+    >
       {answer.text !== "" && <AnswerBody content={answer.text} streaming={answer.streaming} />}
       {answer.streaming && <StreamingCursor />}
     </div>
