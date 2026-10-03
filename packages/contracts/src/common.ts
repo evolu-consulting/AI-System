@@ -203,7 +203,7 @@ export function pageResponseSchema<T extends z.ZodType>(item: T) {
 }
 export type PageResponse<T> = { items: T[]; total: number };
 
-/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3 + M3 §3 + M4 A/B + D: 23 + 11 + 2 + 3 + 6 = 45 mã; khối C thêm ở T7). */
+/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3 + M3 §3 + M4 A/B + C + D: 23 + 11 + 2 + 3 + 3 + 6 = 48 mã). */
 export const API_ERRORS = {
   VALIDATION_ERROR: 400,
   TENANT_REQUIRED: 400,
@@ -215,6 +215,8 @@ export const API_ERRORS = {
   INPUT_MAP_INVALID: 400,
   COMMAND_NEEDS_FEATURE: 400,
   INVALID_CURRENT_CODE: 400,
+  IMPORT_INVALID: 400,
+  SECRETS_REQUIRED: 400,
   UNAUTHORIZED: 401,
   INVALID_CREDENTIALS: 401,
   INVALID_REFRESH_TOKEN: 401,
@@ -248,9 +250,10 @@ export const API_ERRORS = {
   TOTP_ALREADY_ENABLED: 409,
   TOTP_NOT_ENABLED: 409,
   TOTP_SETUP_EXPIRED: 409,
+  PAYLOAD_TOO_LARGE: 413,
   TEMP_LOCKED: 423,
   INTERNAL_ERROR: 500,
-} as const satisfies Record<string, 400 | 401 | 403 | 404 | 409 | 423 | 500>;
+} as const satisfies Record<string, 400 | 401 | 403 | 404 | 409 | 413 | 423 | 500>;
 
 export type ErrorCode = keyof typeof API_ERRORS;
 export type ApiErrorStatus = (typeof API_ERRORS)[ErrorCode];

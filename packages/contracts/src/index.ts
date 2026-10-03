@@ -20,6 +20,7 @@ export * from "./quotas";
 export * from "./secrets";
 export * from "./tenants";
 export * from "./totp";
+export * from "./transfer";
 export * from "./usage";
 export * from "./users";
 export * from "./version-conflict";

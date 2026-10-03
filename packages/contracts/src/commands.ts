@@ -40,7 +40,7 @@ import { WorkflowRefSchema } from "./workflows";
 
 /** Tên chính và từng alias: trim → lower → `CATALOG_KEY_RE` (một không gian tên chung, M2-R13). */
 export const CommandNameSchema = CatalogKeySchema;
-const CommandDescSchema = LocalizedTextSchema(COMMAND_DESC_MAX);
+export const CommandDescSchema = LocalizedTextSchema(COMMAND_DESC_MAX);
 
 /** `default` rỗng sau trim → `null`. */
 export const CommandArgSchema = z.strictObject({
@@ -106,8 +106,8 @@ export const InputMapWarningSchema = z.strictObject({
 export type InputMapWarning = z.infer<typeof InputMapWarningSchema>;
 
 const NameRef = z.string().regex(CATALOG_KEY_RE);
-const TimeoutSchema = z.number().int().min(TIMEOUT_MIN_S).max(TIMEOUT_MAX_S);
-const AliasesSchema = uniqueArray(CommandNameSchema, ALIASES_MAX);
+export const TimeoutSchema = z.number().int().min(TIMEOUT_MIN_S).max(TIMEOUT_MAX_S);
+export const AliasesSchema = uniqueArray(CommandNameSchema, ALIASES_MAX);
 const FeatureIdsSchema = uniqueArray(UuidSchema, COMMAND_FEATURES_MAX);
 
 const listItemShape = {

@@ -138,7 +138,7 @@ describe("ADM-FR-04 · ListQueryBase", () => {
   });
 });
 
-/** Bảng mã kỳ vọng (spec M1 §3 + M2 §3 + M3 §3 + M4 A/B + plan-cd §4.3 khối D). */
+/** Bảng mã kỳ vọng (spec M1 §3 + M2 §3 + M3 §3 + M4 A/B + plan-cd §4.3 khối C + D). */
 const EXPECTED_ERRORS = {
   VALIDATION_ERROR: 400,
   TENANT_REQUIRED: 400,
@@ -150,6 +150,8 @@ const EXPECTED_ERRORS = {
   INPUT_MAP_INVALID: 400,
   COMMAND_NEEDS_FEATURE: 400,
   INVALID_CURRENT_CODE: 400,
+  IMPORT_INVALID: 400,
+  SECRETS_REQUIRED: 400,
   UNAUTHORIZED: 401,
   INVALID_CREDENTIALS: 401,
   INVALID_REFRESH_TOKEN: 401,
@@ -183,14 +185,15 @@ const EXPECTED_ERRORS = {
   TOTP_ALREADY_ENABLED: 409,
   TOTP_NOT_ENABLED: 409,
   TOTP_SETUP_EXPIRED: 409,
+  PAYLOAD_TOO_LARGE: 413,
   TEMP_LOCKED: 423,
   INTERNAL_ERROR: 500,
 } as const;
 
 describe("ADM-FR-01 · API_ERRORS", () => {
-  test("đủ 45 mã (23 M1 + 11 M2 + 2 M3 + 3 M4 A/B + 6 M4 D), đúng HTTP theo spec M1 §3 + M2 §3 + M3 §3", () => {
+  test("đủ 48 mã (23 M1 + 11 M2 + 2 M3 + 3 M4 A/B + 3 M4 C + 6 M4 D), đúng HTTP theo spec M1 §3 + M2 §3 + M3 §3", () => {
     expect(API_ERRORS).toEqual(EXPECTED_ERRORS);
-    expect(ERROR_CODES).toHaveLength(45);
+    expect(ERROR_CODES).toHaveLength(48);
   });
 
   test("mọi mã hợp lệ theo ErrorResponseSchema M0", () => {

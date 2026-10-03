@@ -15,7 +15,20 @@ export type ConfigWriteOpts = {
    * → bật bất biến "có sự kiện ⇔ có audit" (lệch → `Error("audit/event mismatch")`, rollback).
    */
   actorId?: string | null;
+  /**
+   * Phiên bản gốc người gọi đã xem (import, plan-cd §2/D8): sau bump mà `v !== expectBase + 1` → ném
+   * `ConfigVersionMoved {current: v - 1}` (rollback). Không có sự kiện (không bump) → không kiểm.
+   */
+  expectBase?: number;
 };
+
+/** Config đã đổi so với `expectBase` (ghi song song chen giữa) — người gọi đổi thành 409 `VERSION_CONFLICT`. */
+export class ConfigVersionMoved extends Error {
+  constructor(readonly current: number) {
+    super("config_version moved");
+    this.name = "ConfigVersionMoved";
+  }
+}
 export type ConfigCommitted<T> = {
   result: T;
   version: number | null;
@@ -66,6 +79,8 @@ export async function withConfigWrite<T>(
     if (events.length > 0) {
       await opts.beforeBump?.();
       version = await bumpConfigVersion(tx);
+      if (opts.expectBase !== undefined && version !== opts.expectBase + 1)
+        throw new ConfigVersionMoved(version - 1);
     }
     if (audits.length > 0) {
       if (opts.actorId === undefined) throw new Error("configWrite: ch.audit cần actorId");

@@ -83,9 +83,9 @@ export const BaseUrlSchema = z
     { message: "base_url must not contain credentials" },
   );
 
-const WorkflowNameSchema = z.string().trim().min(1).max(NAME_MAX);
-const WorkflowDescSchema = z.string().trim().min(WORKFLOW_DESC_MIN).max(WORKFLOW_DESC_MAX);
-const OutputFieldSchema = z.string().trim().min(1).max(OUTPUT_FIELD_MAX).nullable();
+export const WorkflowNameSchema = z.string().trim().min(1).max(NAME_MAX);
+export const WorkflowDescSchema = z.string().trim().min(WORKFLOW_DESC_MIN).max(WORKFLOW_DESC_MAX);
+export const OutputFieldSchema = z.string().trim().min(1).max(OUTPUT_FIELD_MAX).nullable();
 
 export const SecretRefSchema = z.strictObject({
   id: UuidSchema,

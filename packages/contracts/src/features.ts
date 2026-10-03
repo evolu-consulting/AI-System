@@ -27,8 +27,8 @@ import {
 } from "./common";
 
 export const FeatureIconSchema = z.string().regex(FEATURE_ICON_RE);
-const FeatureNameSchema = LocalizedTextSchema(FEATURE_NAME_MAX);
-const FeatureDescSchema = LocalizedOptionalSchema(FEATURE_DESC_MAX);
+export const FeatureNameSchema = LocalizedTextSchema(FEATURE_NAME_MAX);
+export const FeatureDescSchema = LocalizedOptionalSchema(FEATURE_DESC_MAX);
 const CommandIdsSchema = uniqueArray(UuidSchema, FEATURE_COMMANDS_MAX);
 
 /** Feature gắn trên command (danh sách/chi tiết command). */

@@ -11,6 +11,8 @@ export type ConfigCall = {
   ctx: { db: Db; hooks?: TestHooks };
   scope: DbScope;
   actor: { userId: string };
+  /** Import (plan-cd §2): bump mà config đã đi khác `expectBase + 1` → ném `ConfigVersionMoved` (rollback). */
+  expectBase?: number;
 };
 export type { ConfigSink };
 
@@ -44,6 +46,7 @@ export async function configWrite<T>(
   const r = await withConfigWrite(c.ctx.db, c.scope, fn, {
     beforeBump: hooks ? () => afterLock(hooks, op, "bump") : undefined,
     actorId: c.actor.userId,
+    expectBase: c.expectBase,
   });
   if (r.version !== null) await publishConfigChanged(c.ctx.db, r.version, r.events);
   return r.result;

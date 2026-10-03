@@ -23,6 +23,7 @@ import { healthRoutes } from "./modules/health/health.routes";
 import { quotasRoutes } from "./modules/quotas/quotas.routes";
 import { secretsRoutes } from "./modules/secrets/secrets.routes";
 import { tenantsRoutes } from "./modules/tenants/tenants.routes";
+import { exportRoutes } from "./modules/transfer/transfer.routes";
 import { usersRoutes } from "./modules/users/users.routes";
 import { workflowsRoutes } from "./modules/workflows/workflows.routes";
 
@@ -73,6 +74,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/features", featuresRoutes({ ...ctx, hooks }));
   app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
   app.route("/admin/commands", commandsRoutes({ ...ctx, hooks }));
+  app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
   app.route("/admin/audit", auditRoutes(ctx));
 }
 
@@ -103,7 +105,7 @@ export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {
       origin: cfg.corsOrigins,
       credentials: true,
       allowHeaders: ALLOW_HEADERS,
-      exposeHeaders: [REQUEST_ID_HEADER],
+      exposeHeaders: [REQUEST_ID_HEADER, "Content-Disposition", "X-Config-Version"],
     }),
   );
 

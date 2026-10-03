@@ -11,6 +11,7 @@ export {
   bumpConfigVersion,
   type ConfigCommitted,
   type ConfigSink,
+  ConfigVersionMoved,
   readConfigVersion,
   withConfigWrite,
 } from "./config-meta";

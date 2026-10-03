@@ -26,6 +26,8 @@ const MESSAGES: Record<ErrorCode, string> = {
   INPUT_MAP_INVALID: "Invalid input map",
   COMMAND_NEEDS_FEATURE: "A command must belong to at least one feature",
   INVALID_CURRENT_CODE: "Verification code is incorrect",
+  IMPORT_INVALID: "The configuration file is invalid",
+  SECRETS_REQUIRED: "Secret values are required for this import",
   UNAUTHORIZED: "Unauthorized",
   INVALID_CREDENTIALS: "Invalid company code, username or password",
   INVALID_REFRESH_TOKEN: "Invalid refresh token",
@@ -59,6 +61,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   TOTP_ALREADY_ENABLED: "Two-factor authentication is already enabled",
   TOTP_NOT_ENABLED: "Two-factor authentication is not enabled",
   TOTP_SETUP_EXPIRED: "Two-factor setup has expired; start again",
+  PAYLOAD_TOO_LARGE: "Payload is too large",
   TEMP_LOCKED: "Temporarily locked",
   INTERNAL_ERROR: "Internal server error",
 };
