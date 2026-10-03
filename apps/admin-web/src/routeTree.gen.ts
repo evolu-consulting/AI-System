@@ -14,6 +14,7 @@ import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedAccessRouteImport } from './routes/_authed/access'
+import { Route as AuthedAuditRouteRouteImport } from './routes/_authed/audit/route'
 import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
 import { Route as AuthedTransferRouteImport } from './routes/_authed/transfer'
@@ -21,6 +22,7 @@ import { Route as AuthedUsageRouteImport } from './routes/_authed/usage'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
 import { Route as AuthedAccount2faRouteImport } from './routes/_authed/account.2fa'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account.password'
+import { Route as AuthedAuditAuditIdRouteImport } from './routes/_authed/audit/$auditId'
 import { Route as AuthedCommandsIndexRouteImport } from './routes/_authed/commands/index'
 import { Route as AuthedCommandsCommandIdRouteImport } from './routes/_authed/commands/$commandId'
 import { Route as AuthedCommandsNewRouteImport } from './routes/_authed/commands/new'
@@ -61,6 +63,11 @@ const AuthedAccessRoute = AuthedAccessRouteImport.update({
   path: '/access',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedAuditRouteRoute = AuthedAuditRouteRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedMemberRoute = AuthedMemberRouteImport.update({
   id: '/member',
   path: '/member',
@@ -95,6 +102,11 @@ const AuthedAccountPasswordRoute = AuthedAccountPasswordRouteImport.update({
   id: '/account/password',
   path: '/account/password',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAuditAuditIdRoute = AuthedAuditAuditIdRouteImport.update({
+  id: '/$auditId',
+  path: '/$auditId',
+  getParentRoute: () => AuthedAuditRouteRoute,
 } as any)
 const AuthedCommandsIndexRoute = AuthedCommandsIndexRouteImport.update({
   id: '/commands/',
@@ -177,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/audit': typeof AuthedAuditRouteRouteWithChildren
   '/access': typeof AuthedAccessRoute
   '/member': typeof AuthedMemberRoute
   '/secrets': typeof AuthedSecretsRoute
@@ -185,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof AuthedUsersRoute
   '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/audit/$auditId': typeof AuthedAuditAuditIdRoute
   '/commands/$commandId': typeof AuthedCommandsCommandIdRoute
   '/commands/new': typeof AuthedCommandsNewRoute
   '/features/$featureId': typeof AuthedFeaturesFeatureIdRoute
@@ -204,6 +218,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/audit': typeof AuthedAuditRouteRouteWithChildren
   '/access': typeof AuthedAccessRoute
   '/member': typeof AuthedMemberRoute
   '/secrets': typeof AuthedSecretsRoute
@@ -213,6 +228,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthedIndexRoute
   '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/audit/$auditId': typeof AuthedAuditAuditIdRoute
   '/commands/$commandId': typeof AuthedCommandsCommandIdRoute
   '/commands/new': typeof AuthedCommandsNewRoute
   '/features/$featureId': typeof AuthedFeaturesFeatureIdRoute
@@ -234,6 +250,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/_authed/audit': typeof AuthedAuditRouteRouteWithChildren
   '/_authed/access': typeof AuthedAccessRoute
   '/_authed/member': typeof AuthedMemberRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
@@ -243,6 +260,7 @@ export interface FileRoutesById {
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/account/2fa': typeof AuthedAccount2faRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
+  '/_authed/audit/$auditId': typeof AuthedAuditAuditIdRoute
   '/_authed/commands/$commandId': typeof AuthedCommandsCommandIdRoute
   '/_authed/commands/new': typeof AuthedCommandsNewRoute
   '/_authed/features/$featureId': typeof AuthedFeaturesFeatureIdRoute
@@ -265,6 +283,7 @@ export interface FileRouteTypes {
     | '/'
     | '/change-password'
     | '/login'
+    | '/audit'
     | '/access'
     | '/member'
     | '/secrets'
@@ -273,6 +292,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/account/2fa'
     | '/account/password'
+    | '/audit/$auditId'
     | '/commands/$commandId'
     | '/commands/new'
     | '/features/$featureId'
@@ -292,6 +312,7 @@ export interface FileRouteTypes {
   to:
     | '/change-password'
     | '/login'
+    | '/audit'
     | '/access'
     | '/member'
     | '/secrets'
@@ -301,6 +322,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account/2fa'
     | '/account/password'
+    | '/audit/$auditId'
     | '/commands/$commandId'
     | '/commands/new'
     | '/features/$featureId'
@@ -321,6 +343,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/change-password'
     | '/login'
+    | '/_authed/audit'
     | '/_authed/access'
     | '/_authed/member'
     | '/_authed/secrets'
@@ -330,6 +353,7 @@ export interface FileRouteTypes {
     | '/_authed/'
     | '/_authed/account/2fa'
     | '/_authed/account/password'
+    | '/_authed/audit/$auditId'
     | '/_authed/commands/$commandId'
     | '/_authed/commands/new'
     | '/_authed/features/$featureId'
@@ -390,6 +414,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAccessRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/audit': {
+      id: '/_authed/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuthedAuditRouteRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/member': {
       id: '/_authed/member'
       path: '/member'
@@ -438,6 +469,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/account/password'
       preLoaderRoute: typeof AuthedAccountPasswordRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_authed/audit/$auditId': {
+      id: '/_authed/audit/$auditId'
+      path: '/$auditId'
+      fullPath: '/audit/$auditId'
+      preLoaderRoute: typeof AuthedAuditAuditIdRouteImport
+      parentRoute: typeof AuthedAuditRouteRoute
     }
     '/_authed/commands/': {
       id: '/_authed/commands/'
@@ -547,7 +585,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthedAuditRouteRouteChildren {
+  AuthedAuditAuditIdRoute: typeof AuthedAuditAuditIdRoute
+}
+
+const AuthedAuditRouteRouteChildren: AuthedAuditRouteRouteChildren = {
+  AuthedAuditAuditIdRoute: AuthedAuditAuditIdRoute,
+}
+
+const AuthedAuditRouteRouteWithChildren =
+  AuthedAuditRouteRoute._addFileChildren(AuthedAuditRouteRouteChildren)
+
 interface AuthedRouteChildren {
+  AuthedAuditRouteRoute: typeof AuthedAuditRouteRouteWithChildren
   AuthedAccessRoute: typeof AuthedAccessRoute
   AuthedMemberRoute: typeof AuthedMemberRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
@@ -575,6 +625,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAuditRouteRoute: AuthedAuditRouteRouteWithChildren,
   AuthedAccessRoute: AuthedAccessRoute,
   AuthedMemberRoute: AuthedMemberRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,

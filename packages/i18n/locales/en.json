@@ -1431,6 +1431,52 @@
     }
   },
   "audit": {
+    "title": "Audit log",
+    "subtitle": "Every change to configuration, users, groups, access and quota.",
+    "empty": "No changes yet. Saves, grants and locks will appear here.",
+    "emptyFiltered": "No changes match the filters.",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "viewChanges": "View changes",
+    "loadMore": "Load more",
+    "scope": { "system": "System-wide" },
+    "filter": {
+      "entity": "Type",
+      "action": "Action",
+      "actor": "Actor",
+      "search": "Search by entity name…",
+      "actorChip": "Actor: {name}",
+      "actorClear": "Remove actor filter {name}"
+    },
+    "action": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "grant": "Grant",
+      "revoke": "Revoke",
+      "restore": "Restore",
+      "import": "Import"
+    },
+    "entityLabel": {
+      "tenant": "Tenant",
+      "user": "User",
+      "twofa": "2FA",
+      "group": "Group",
+      "grant": "Grant",
+      "entitlement": "Entitlement",
+      "feature": "Feature",
+      "workflow": "Workflow",
+      "command": "Command",
+      "secret": "Secret",
+      "quota": "Quota",
+      "config": "Configuration"
+    },
+    "detail": {
+      "meta": "{time} · v{n} · {scope}",
+      "metaNoVersion": "{time} · {scope}"
+    },
     "entity": {
       "tenant": "tenant",
       "user": "user",
@@ -1467,6 +1513,8 @@
       "entitlement": "{actor} changed feature access {name} for {subject}"
     },
     "diff": {
+      "caption": "Changes",
+      "secret": "Value: changed",
       "field": "Field",
       "before": "Before",
       "after": "After",

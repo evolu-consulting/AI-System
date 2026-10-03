@@ -24,7 +24,7 @@ export function RecentChanges({ items, emptyKey, loading, error }: Props) {
       loading={loading}
       error={error}
       footer={
-        <Link to={"/audit" as "/"} className="font-medium text-primary hover:underline">
+        <Link to="/audit" className="font-medium text-primary hover:underline">
           {t("overview.recent.link")}
         </Link>
       }

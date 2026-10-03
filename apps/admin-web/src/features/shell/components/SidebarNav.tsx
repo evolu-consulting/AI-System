@@ -54,8 +54,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: Props) {
             return (
               <Link
                 key={item.id}
-                // Route /usage, /audit, /transfer đến ở FE2/FE4/FE5; tới lúc đó routeTree chưa biết các đường dẫn này.
-                to={item.to as "/"}
+                to={item.to}
                 activeOptions={{ exact: item.to === "/" }}
                 onClick={onNavigate}
                 className={cn(

@@ -1431,6 +1431,52 @@
     }
   },
   "audit": {
+    "title": "Nhật ký thay đổi",
+    "subtitle": "Mọi thay đổi cấu hình, người dùng, group, quyền và quota.",
+    "empty": "Chưa có thay đổi nào. Mọi thao tác lưu, cấp quyền, khoá sẽ hiện ở đây.",
+    "emptyFiltered": "Không có thay đổi nào khớp bộ lọc.",
+    "today": "Hôm nay",
+    "yesterday": "Hôm qua",
+    "viewChanges": "Xem thay đổi",
+    "loadMore": "Tải thêm",
+    "scope": { "system": "Toàn hệ thống" },
+    "filter": {
+      "entity": "Loại",
+      "action": "Hành động",
+      "actor": "Người thực hiện",
+      "search": "Tìm theo tên thực thể…",
+      "actorChip": "Người thực hiện: {name}",
+      "actorClear": "Bỏ lọc người thực hiện {name}"
+    },
+    "action": {
+      "create": "Tạo",
+      "update": "Sửa",
+      "delete": "Xoá",
+      "lock": "Khoá",
+      "unlock": "Mở khoá",
+      "grant": "Cấp",
+      "revoke": "Thu hồi",
+      "restore": "Khôi phục",
+      "import": "Import"
+    },
+    "entityLabel": {
+      "tenant": "Tenant",
+      "user": "User",
+      "twofa": "2FA",
+      "group": "Group",
+      "grant": "Quyền",
+      "entitlement": "Quyền feature",
+      "feature": "Feature",
+      "workflow": "Workflow",
+      "command": "Command",
+      "secret": "Secret",
+      "quota": "Quota",
+      "config": "Cấu hình"
+    },
+    "detail": {
+      "meta": "{time} · v{n} · {scope}",
+      "metaNoVersion": "{time} · {scope}"
+    },
     "entity": {
       "tenant": "tenant",
       "user": "user",
@@ -1467,6 +1513,8 @@
       "entitlement": "{actor} đã đổi quyền feature {name} của {subject}"
     },
     "diff": {
+      "caption": "Thay đổi",
+      "secret": "Giá trị: đã thay đổi",
       "field": "Trường",
       "before": "Trước",
       "after": "Sau",
