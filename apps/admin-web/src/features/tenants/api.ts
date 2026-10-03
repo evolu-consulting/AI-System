@@ -1,5 +1,8 @@
-// ADM-FR-60, ADM-FR-61 · gọi API /admin/tenants* (nơi duy nhất) dưới dạng hook TanStack Query.
+// ADM-FR-60, ADM-FR-61, ADM-FR-40 · gọi API /admin/tenants* (nơi duy nhất) dưới dạng hook TanStack Query.
 import type {
+  GrantMatrix,
+  QuotaSetRequest,
+  QuotaSetResponse,
   TenantCreateRequest,
   TenantCreateResponse,
   TenantDetail,
@@ -8,6 +11,7 @@ import type {
 } from "@ai/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
+import type { QuotaFeatureOption } from "./lib/quota-draft";
 
 export type TenantListParams = { q: string; status?: "active" | "locked" };
 
@@ -78,6 +82,53 @@ export function useTenantOptions(enabled: boolean) {
     queryFn: async () => {
       const res = await api<TenantListResponse>("/admin/tenants", { query: { limit: 200 } });
       return res.items.map((t) => ({ id: t.id, key: t.key }));
+    },
+  });
+}
+
+const QUOTA_KEYS = {
+  quotas: (id: string) => ["tenants", "quotas", id] as const,
+  features: (id: string) => ["tenants", "quota-features", id] as const,
+};
+
+/** Quota tháng hiện tại + mức đã dùng (platform_admin xem mọi tenant). */
+export function useTenantQuotas(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: QUOTA_KEYS.quotas(id),
+    enabled,
+    queryFn: () => api<QuotaSetResponse>(`/admin/tenants/${id}/quotas`),
+  });
+}
+
+/** PUT thay cả bộ; thành công → ghi `version` mới vào bản tenant đang cache (Info và Quota dùng chung version, E22) và làm mới banner/usage. */
+export function useSetTenantQuotas(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: QuotaSetRequest) =>
+      api<QuotaSetResponse>(`/admin/tenants/${id}/quotas`, { method: "PUT", body }),
+    onSuccess: (res) => {
+      qc.setQueryData(QUOTA_KEYS.quotas(id), res);
+      qc.setQueryData<TenantDetail>(KEYS.detail(id), (old) =>
+        old ? { ...old, version: res.version } : old,
+      );
+      void qc.invalidateQueries({ queryKey: ["quota-banner"] });
+      void qc.invalidateQueries({ queryKey: ["usage"] });
+    },
+  });
+}
+
+/** Feature tenant dùng được (core + đã entitlement chưa thu hồi) để thêm quota; `limit=1` vì chỉ cần `features`. */
+export function useQuotaFeatureOptions(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: QUOTA_KEYS.features(id),
+    enabled,
+    queryFn: async (): Promise<QuotaFeatureOption[]> => {
+      const m = await api<GrantMatrix>("/admin/grants/matrix", {
+        query: { tenant_id: id, limit: 1 },
+      });
+      return m.features
+        .filter((f) => f.state === "core" || f.state === "entitled")
+        .map((f) => ({ id: f.feature.id, key: f.feature.key, name: f.feature.name }));
     },
   });
 }

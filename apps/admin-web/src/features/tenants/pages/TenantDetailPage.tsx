@@ -1,7 +1,7 @@
 // ADM-FR-60, ADM-FR-61 · /tenants/$tenantId (mẫu B): header (tên, badge, khoá/mở khoá), tab Thông tin/Feature/Agent/Quota/Users.
 import type { TenantDetail } from "@ai/contracts";
 import { getRouteApi } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -19,6 +19,7 @@ import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useTenantDetail } from "../api";
+import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";
 import { TenantInfoForm } from "../components/TenantInfoForm";
 import { TenantUsersTab, UnavailableTab } from "../components/TenantTabs";
 import { useLockFlow } from "../hooks/use-lock-flow";
@@ -26,6 +27,7 @@ import { useTenantConflict } from "../hooks/use-tenant-conflict";
 import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
 
 const route = getRouteApi("/_authed/tenants/$tenantId");
+export type TenantTab = "info" | "features" | "agents" | "quota" | "users";
 
 function Header({
   tenant,
@@ -71,6 +73,8 @@ export function TenantDetailPage() {
   const { t } = useTranslation();
   const tr = useTr();
   const { tenantId } = route.useParams();
+  const { tab } = route.useSearch();
+  const navigate = route.useNavigate();
   const role = useSession((s) => s.me?.role);
   const allowed = role === "platform_admin";
   const query = useTenantDetail(tenantId, allowed);
@@ -84,7 +88,9 @@ export function TenantDetailPage() {
     onReload: () => void query.refetch(),
   });
   const { requestLock, requestUnlock, dialogs } = useLockFlow();
-  const [dirty, setDirty] = useState(false);
+  const [infoDirty, setInfoDirty] = useState(false);
+  const [quotaDirty, setQuotaDirty] = useState(false);
+  const reloadTenant = useCallback(() => void query.refetch(), [query.refetch]);
 
   if (!allowed) return <ForbiddenState />;
   if (query.isPending) return <LoadingState />;
@@ -111,7 +117,10 @@ export function TenantDetailPage() {
         onLock={() => requestLock(tenant)}
         onUnlock={() => requestUnlock(tenant)}
       />
-      <Tabs defaultValue="info">
+      <Tabs
+        value={tab ?? "info"}
+        onValueChange={(v) => void navigate({ search: { tab: v as TenantTab }, replace: true })}
+      >
         <TabsList>
           <TabsTrigger value="info">{t("tenants.tab.info")}</TabsTrigger>
           <TabsTrigger value="features">{t("tenants.tab.features")}</TabsTrigger>
@@ -123,7 +132,7 @@ export function TenantDetailPage() {
           <TenantInfoForm
             tenant={tenant}
             pending={conflict.pending}
-            onDirtyChange={setDirty}
+            onDirtyChange={setInfoDirty}
             onSubmit={save}
           />
         </TabsContent>
@@ -134,13 +143,17 @@ export function TenantDetailPage() {
           <UnavailableTab body="tenants.agents.unavailable" />
         </TabsContent>
         <TabsContent value="quota" className="pt-4">
-          <UnavailableTab body="tenants.tab.unavailableBody" />
+          <TenantQuotaTab
+            tenant={tenant}
+            onDirtyChange={setQuotaDirty}
+            onReloadTenant={reloadTenant}
+          />
         </TabsContent>
         <TabsContent value="users" className="pt-4">
           <TenantUsersTab tenant={tenant} />
         </TabsContent>
       </Tabs>
-      <UnsavedGuard dirty={dirty} />
+      <UnsavedGuard dirty={infoDirty || quotaDirty} />
       {dialogs}
       <LazyConflictDialog props={conflict.props} />
     </>

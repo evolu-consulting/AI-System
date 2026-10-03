@@ -1,4 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TenantDetailPage } from "@/features/tenants/pages/TenantDetailPage";
+import { TenantDetailPage, type TenantTab } from "@/features/tenants/pages/TenantDetailPage";
 
-export const Route = createFileRoute("/_authed/tenants/$tenantId")({ component: TenantDetailPage });
+const TABS = ["info", "features", "agents", "quota", "users"] as const;
+
+export const Route = createFileRoute("/_authed/tenants/$tenantId")({
+  validateSearch: (s: Record<string, unknown>): { tab?: TenantTab } => ({
+    tab: TABS.find((t) => t === s.tab),
+  }),
+  component: TenantDetailPage,
+});

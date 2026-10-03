@@ -192,6 +192,7 @@ Lệnh xong M4 (như M3 §8, **không** gồm `test:perf`): `docker compose up -
 Toàn bộ (trước Gate + trong lúc làm): [spec-decisions.md](spec-decisions.md).
 
 ## 10. Tranh chấp test
+- FE1 · `e2e/tenants.spec.ts:104` (ADM-FR-60 · M1-R19) dòng 114–117 kỳ vọng tab **Quota** hiện "Chưa khả dụng" — lỗi thời: M4 FR-40 (plan-frontend §3.1, `e2e/m4-quota`) đưa tab Quota thành màn thật. Code đúng spec; chỉ tab Feature/Agent còn "Chưa khả dụng". Đề xuất qc: bỏ "Quota" khỏi vòng lặp dòng 114.
 - T9b · `tests/acceptance/M4/totp-setup.int.test.ts` D-S02 kỳ vọng `failed_logins` = 5 sau lần sai thứ 5; luật M1 `afterFailedLogin` (AC-A01, khoá bởi `M1/auth-login.int` "DB failed_logins=0") đưa về `{0, locked_until=+15'}` ở lần 5 → nhận 0. Đề xuất qc: vòng lặp kiểm `i` cho 1..4, lần 5 kiểm `locked_until` (phần 423 lần 6 đã xanh).
 - T9b · `tests/acceptance/M1/rules/contracts.test.ts` "LoginResponseSchema phân biệt theo status": mẫu `me` thiếu `totp_enabled/totp_enabled_at/backup_codes_left` — bắt buộc theo plan-cd §4.1 + D-K03 → nhánh grant fail. Đề xuất qc: thêm 3 trường vào mẫu (như Q2a đã sửa test khoá cũ).
 - **Phán quyết qc (2026-10-03, VERIFY):** D-S02 — **test sai**. R16 "mã sai tính chung bộ đếm FR-07" = luật M1 `afterFailedLogin` (AC-A01, M1 test-plan: 4 → `{0, +15'}`). Đã sửa: lần 1..4 kiểm `failed_logins = i`, `locked_until = null`; lần 5 kiểm `{0, 09:15Z}`; lần 6 vẫn 423. Xanh trên DB qcv.

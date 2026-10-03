@@ -1,7 +1,7 @@
 // ADM-FR-60 · tab Thông tin: mã công ty readOnly, tên, slot; thanh lưu dính đáy khi có thay đổi (Ctrl+S lưu).
 import type { TenantDetail } from "@ai/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "@/components/shared/ConnectionBanner";
@@ -36,9 +36,19 @@ export function TenantInfoForm({ tenant, pending, onDirtyChange, onSubmit }: Pro
   const { errors, isDirty } = form.formState;
   const msg = (m: string | undefined) => (m ? tr(m) : undefined);
 
-  useEffect(() => onDirtyChange(isDirty), [isDirty, onDirtyChange]);
-  // Bản mới từ server (sau lưu / tải lại) → nạp lại form và coi như sạch.
-  useEffect(() => form.reset(toValues(tenant)), [tenant, form]);
+  useEffect(() => {
+    onDirtyChange(isDirty);
+    return () => onDirtyChange(false);
+  }, [isDirty, onDirtyChange]);
+  // Bản mới từ server (sau lưu / tải lại) → nạp lại form và coi như sạch. Chỉ `version` đổi (tab Quota vừa lưu, E22)
+  // → giữ phần người dùng đang sửa.
+  const loaded = useRef(toValues(tenant));
+  useEffect(() => {
+    const next = toValues(tenant);
+    const same = next.name === loaded.current.name && next.slots === loaded.current.slots;
+    loaded.current = next;
+    form.reset(next, same ? { keepDirtyValues: true } : undefined);
+  }, [tenant, form]);
 
   const save = form.handleSubmit(onSubmit);
   useEffect(() => {
