@@ -284,3 +284,49 @@ Helper `_support.ts`: `resetMock`, `expireAccess`, `login`, `nextSend` (`waitFor
 **Lock đợt 1 (QL, 2026-10-04):** `tests/.lock` +15 dòng = 10 file `tests/contract/chat/**` + 5 file `tests/acceptance/C1/**` (gồm `_gate.ts`); không đổi checksum mốc khác; `test:lock:verify` OK (185 file). e2e khoá ở đợt 2.
 
 **Lock đợt 2 (QL, 2026-10-04):** sau phân xử E-S5 (spec §10, sửa test chờ `button "Gửi"`), e2e chat chạy cả bộ 2 lần (`CHAT_E2E_HUB_PORT=4051 CHAT_E2E_WEB_PORT=3151 bun run e2e:chat`): **41/41 · 41/41** (TH2b, E-R3, E-T7 nay xanh); `tests/.lock` +10 dòng = 10 file `e2e/chat/**`; không đổi checksum mốc khác; `test:lock:verify` OK (195 file).
+
+## 9.1. QV — Lệnh xong mốc C1 (VERIFY, 2026-10-04)
+
+| Lệnh | Kết quả |
+|---|---|
+| `bun run typecheck` | xanh (8/8 task turbo, cache hit; gồm chat-web, tsc tests) |
+| `bun run check` (biome ci --changed + size + depcruise + i18n + fn) | xanh (cây sạch nên `--changed` = 0 file; bản `--all` ở dưới) |
+| `bun test` (gốc) | xanh: 1466 pass · 13 skip · 0 fail (203 file) |
+| `C1_STRICT=1 bun test tests/acceptance/C1` | xanh: 39/39 (rules 25 · no-hub-url 3 · i18n-chat 5 · contrast 6) |
+| `bun run test:contract:chat` (mock trong tiến trình) | xanh: 62/62 (8 file) |
+| CHAT-AC-32: `HUB_MOCK_PORT=4061 DIFY_MOCK_PORT=4062 MOCK_FAST=1 bun run mocks` + `HUB_URL=http://localhost:4061 bun run test:contract:chat` | xanh: 61 pass · 1 skip · 0 fail. Skip = K-R6 (`describe.if(inProcess)`, cần dựng mock thứ hai; theo thiết kế §4). Đã tắt tiến trình mock, cổng 4061/4062 trống |
+| `CHAT_E2E_HUB_PORT=4071 CHAT_E2E_WEB_PORT=3171 bun run e2e:chat -- --output <tmp>` | xanh: 41/41 (53,6 s). Chạy cổng khác mặc định = bằng chứng AC-34 cùng U-9 |
+| `bun run depcruise --all` | xanh (1024 module, 0 vi phạm) |
+| `bun run check:fn --all` | xanh (894 file, 18 ngoại lệ allowlist) |
+| `bun run check:size --all` | xanh (1129 file) |
+| `bun run i18n:check` | xanh (locales 1137 key · chat 123 key) |
+| `bun run --filter @ai/chat-web build && … check:bundle` | xanh: js 110,5 KB · css 12,6 KB · chunk lớn nhất 43,4 KB |
+| `bun run test:lock:verify` | xanh (195 file) |
+| `bun run trace --check` | exit 1, **ngoài C1**: chỉ báo `MUST chưa có test: HUB-FR-40/41/43/45` (spec H1-hub-core, được C1 spec trích dẫn); không có mã CHAT-* nào bị báo. Không sửa tool |
+
+Phân loại đỏ: không có ca đỏ (không code sai / test sai / môi trường). Không có tranh chấp test mới.
+
+### Độ phủ CHAT-AC (K = `tests/contract/chat/<nhóm>.contract.test.ts`, U = `tests/acceptance/C1/*.test.ts`, E = `e2e/chat/*.chat.ts`; mã ca theo §3–§6)
+
+| AC | Test (file/ca) | Xanh |
+|---|---|---|
+| 01–04 | K auth A1–A9 · E auth.chat A1–A5 | có |
+| 05–07 | K conversations M1/M10, stream S1/S10 · E send.chat S1–S3 | có |
+| 08–09 | K stream S4, conversations C10 · E states.chat T1–T2 | có |
+| 10–11 | K cancel X1/X2/X4 · E states.chat T3–T5 | có |
+| 12–13 | K messages M2/M8, stream S5 · E states.chat T6–T7 | có |
+| 14–16 | K messages M2–M4, flow-cold F1–F3 · U rules U-4 · E flow.chat F1–F3 | có |
+| 17 | E flow.chat F4–F5 (390×844) | có |
+| 18 | K conversations C1 · E send.chat S4 | có |
+| 19–23 | K conversations C1–C10 · U rules U-2/U-3 · E conversations.chat V1–V5 | có |
+| 24–27 | K stream S7, messages M11 · E errors.chat R1–R4 | có |
+| 28–30 | K resume R1–R4, stream S2 · U rules U-5/U-6/U-7 · E connection.chat N1–N2, errors.chat R5 | có |
+| 31 | toàn bộ K + U (62 + 39) | có |
+| 32 | toàn bộ K trên instance 4061 | có (K-R6 skip theo thiết kế) |
+| 33 | K stream S1/S2 · U rules U-6 | có |
+| 34 | U `no-hub-url.test.ts` (U-9) + e2e cổng 4071/3171 | có |
+| 35 | toàn bộ 41 ca E (cột E không trống) | có |
+| 36 | U `i18n-chat.test.ts` (U-10) · E i18n.chat I1 | có |
+| C1-R09 | K conversations I1–I4 | có |
+
+Độ phủ: 36/36 CHAT-AC (+ C1-R09) có test và xanh. Kết luận QV: đạt.
