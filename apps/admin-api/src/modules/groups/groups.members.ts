@@ -42,21 +42,27 @@ function toMember(r: MemberRow): GroupMember {
 
 async function memberRows(tx: Tx, g: { id: string; tenantId: string }, q: GroupMemberListQuery) {
   const like = q.q ? likeArg(q.q) : null;
+  // `page`: lọc + sắp + cắt trang trước; other_groups/added_by chỉ tính cho ≤ limit hàng.
   return (await tx.execute(sql`
-    select u.id as user_id, u.username, u.display_name, u.role, u.active, u.locked_by_tenant, u.last_login_at,
-      m.added_at, (select a.username from admin.users a where a.id = m.added_by) as added_by,
+    with page as (
+      select u.id, u.username, u.display_name, u.role, u.active, u.locked_by_tenant, u.last_login_at,
+        m.added_at, m.added_by, count(*) over()::int as total
+      from admin.group_members m join admin.users u on u.id = m.user_id
+      where m.group_id = ${g.id} and m.tenant_id = ${g.tenantId}
+        and (${like}::text is null or u.username ilike ${like} or u.display_name ilike ${like})
+      order by u.username limit ${q.limit} offset ${q.offset})
+    select p.id as user_id, p.username, p.display_name, p.role, p.active, p.locked_by_tenant, p.last_login_at,
+      p.added_at, (select a.username from admin.users a where a.id = p.added_by) as added_by,
       coalesce((select json_agg(json_build_object('id', o.id, 'key', o.key, 'name', o.name)
           order by (o.key <> 'beta-testers'), o.key)
         from (select og.id, og.key, og.name from admin.group_members om join admin.groups og on og.id = om.group_id
-          where om.user_id = u.id and om.group_id <> ${g.id}
+          where om.user_id = p.id and om.group_id <> ${g.id}
           order by (og.key <> 'beta-testers'), og.key limit ${OTHER_GROUPS_MAX}) o), '[]'::json) as other_groups,
-      (select count(*)::int from admin.group_members om where om.user_id = u.id and om.group_id <> ${g.id})
+      (select count(*)::int from admin.group_members om where om.user_id = p.id and om.group_id <> ${g.id})
         as other_groups_total,
-      count(*) over()::int as total
-    from admin.group_members m join admin.users u on u.id = m.user_id
-    where m.group_id = ${g.id} and m.tenant_id = ${g.tenantId}
-      and (${like}::text is null or u.username ilike ${like} or u.display_name ilike ${like})
-    order by u.username limit ${q.limit} offset ${q.offset}`)) as unknown as MemberRow[];
+      p.total
+    from page p
+    order by p.username`)) as unknown as MemberRow[];
 }
 
 export function listMembers(

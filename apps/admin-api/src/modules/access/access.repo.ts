@@ -16,6 +16,9 @@ export type UserHead = {
   active: boolean;
   locked_by_tenant: boolean;
   tenant_active: boolean;
+  /** `beta-testers` của tenant (null nếu thiếu) và `config_version` — gộp vào câu đầu để bớt 2 round-trip. */
+  beta_group_id: string | null;
+  config_version: number;
 };
 
 export async function userHead(
@@ -26,7 +29,9 @@ export async function userHead(
   const rows = await run<UserHead>(
     tx,
     sql`select u.id, u.username, u.display_name, u.tenant_id,
-      t.key as tenant_key, u.active, u.locked_by_tenant, t.active as tenant_active
+      t.key as tenant_key, u.active, u.locked_by_tenant, t.active as tenant_active,
+      (select g.id from admin.groups g where g.tenant_id = u.tenant_id and g.key = 'beta-testers') as beta_group_id,
+      coalesce((select config_version from admin.config_meta where id = 1), 0)::int as config_version
     from admin.users u join admin.tenants t on t.id = u.tenant_id
     where u.id = ${id} and (${tenantId}::uuid is null or u.tenant_id = ${tenantId})`,
   );
@@ -45,15 +50,6 @@ export async function userGroups(
     sql`select g.id, g.key, g.name from admin.group_members m join admin.groups g on g.id = m.group_id
     where m.user_id = ${u.id} and m.tenant_id = ${u.tenant_id} order by (g.key <> 'beta-testers'), g.key`,
   );
-}
-
-export async function betaGroupId(tx: Tx, tenantId: string): Promise<string | null> {
-  const rows = await run<{ id: string }>(
-    tx,
-    sql`select id from admin.groups
-    where tenant_id = ${tenantId} and key = 'beta-testers'`,
-  );
-  return rows[0]?.id ?? null;
 }
 
 export type FeatureLite = {

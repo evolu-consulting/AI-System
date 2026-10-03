@@ -15,7 +15,7 @@ import {
   LocalizedTextSchema,
   USER_GROUPS_MAX,
 } from "@ai/contracts";
-import { type Db, type DbScope, readConfigVersion, type Tx, withScope } from "@ai/db";
+import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import { appError } from "../../lib/errors";
 import { type Actor, canSeeUser } from "../users/users.rules";
 import * as repo from "./access.repo";
@@ -72,10 +72,8 @@ function commandOut(
 type Loaded = {
   head: repo.UserHead;
   groups: repo.GroupLite[];
-  beta: string | null;
   features: repo.FeatureLite[];
   commands: repo.CommandLite[];
-  version: number;
 };
 
 async function load(tx: Tx, c: Call, userId: string, q: EffectiveAccessQuery): Promise<Loaded> {
@@ -88,10 +86,8 @@ async function load(tx: Tx, c: Call, userId: string, q: EffectiveAccessQuery): P
   return {
     head,
     groups: await repo.userGroups(tx, head),
-    beta: await repo.betaGroupId(tx, head.tenant_id),
     features: await repo.featuresFor(tx, head),
     commands: await repo.commandsFor(tx, { command: q.command, limit: ACCESS_COMMANDS_MAX }),
-    version: await readConfigVersion(tx),
   };
 }
 
@@ -104,7 +100,7 @@ function compute(l: Loaded) {
       tenantActive: l.head.tenant_active,
       groupIds: l.groups.map((g) => g.id),
     },
-    betaGroupId: l.beta,
+    betaGroupId: l.head.beta_group_id,
     features: l.features.map((f) => ({
       id: f.id,
       key: f.key,
@@ -167,7 +163,7 @@ export function effectiveAccess(
       commands: l.commands.map((cmd, i) => commandOut(cmd, r.commands[i] as CommandAccess, m)),
       command_total: l.commands[0]?.total ?? 0,
       agents: { available: false },
-      config_version: l.version,
+      config_version: l.head.config_version,
     };
   });
 }

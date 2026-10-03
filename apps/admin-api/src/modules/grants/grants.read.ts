@@ -86,27 +86,39 @@ export type GrantFilter = {
 /** Sắp feature.key, group trước user, rồi group.key/username (spec M3 §3). */
 export async function grantRows(tx: Tx, f: GrantFilter): Promise<Row[]> {
   const like = f.q ? likeArg(f.q) : null;
+  // `base` MATERIALIZED: chặn planner đẩy LIMIT xuống đi theo features.key (RLS làm nó đoán 224 hàng → lồng 200 × 20k hàng,
+  // ~1,1 s). `page`: lọc + sắp + cắt trang chỉ với cột khoá; chi tiết (entitled, granted_by, tên) chỉ tính cho ≤ limit hàng.
   return (await tx.execute(sql`
-    select fg.id, fg.tenant_id, f.id as f_id, f.key as f_key, f.name as f_name, f.status as f_status,
+    with base as materialized (
+      select fg.id, fg.tenant_id, fg.feature_id, fg.group_id, fg.user_id, fg.granted_at, fg.granted_by,
+        f.key as f_key, g.key as g_key,
+        case when fg.user_id is not null then (select a.username from admin.users a where a.id = fg.user_id) end as u_key
+      from admin.feature_grants fg
+      join admin.features f on f.id = fg.feature_id
+      left join admin.groups g on g.id = fg.group_id
+      where (${f.tenantId}::uuid is null or fg.tenant_id = ${f.tenantId})
+        and (${f.id ?? null}::uuid is null or fg.id = ${f.id ?? null})
+        and (${f.featureId ?? null}::uuid is null or fg.feature_id = ${f.featureId ?? null})
+        and (${f.groupId ?? null}::uuid is null or fg.group_id = ${f.groupId ?? null})
+        and (${f.userId ?? null}::uuid is null or fg.user_id = ${f.userId ?? null})
+        and (${like}::text is null or f.key ilike ${like} or f.name->>'vi' ilike ${like}
+             or f.name->>'en' ilike ${like})),
+    page as (
+      select b.*, (select count(*) from base)::int as total from base b
+      order by b.f_key, (b.group_id is null), b.g_key, b.u_key, b.id
+      limit ${f.limit} offset ${f.offset})
+    select p.id, p.tenant_id, f.id as f_id, f.key as f_key, f.name as f_name, f.status as f_status,
       g.id as g_id, g.key as g_key, g.name as g_name, u.id as u_id, u.username as u_username,
-      u.display_name as u_display_name, fg.granted_at,
-      exists (select 1 from admin.feature_entitlements e where e.feature_id = fg.feature_id
-        and e.tenant_id = fg.tenant_id and e.revoked_at is null) as entitled,
-      (select a.username from admin.users a where a.id = fg.granted_by) as granted_by,
-      count(*) over()::int as total
-    from admin.feature_grants fg
-    join admin.features f on f.id = fg.feature_id
-    left join admin.groups g on g.id = fg.group_id
-    left join admin.users u on u.id = fg.user_id
-    where (${f.tenantId}::uuid is null or fg.tenant_id = ${f.tenantId})
-      and (${f.id ?? null}::uuid is null or fg.id = ${f.id ?? null})
-      and (${f.featureId ?? null}::uuid is null or fg.feature_id = ${f.featureId ?? null})
-      and (${f.groupId ?? null}::uuid is null or fg.group_id = ${f.groupId ?? null})
-      and (${f.userId ?? null}::uuid is null or fg.user_id = ${f.userId ?? null})
-      and (${like}::text is null or f.key ilike ${like} or f.name->>'vi' ilike ${like}
-           or f.name->>'en' ilike ${like})
-    order by f.key, (fg.group_id is null), g.key, u.username, fg.id
-    limit ${f.limit} offset ${f.offset}`)) as unknown as Row[];
+      u.display_name as u_display_name, p.granted_at,
+      exists (select 1 from admin.feature_entitlements e where e.feature_id = p.feature_id
+        and e.tenant_id = p.tenant_id and e.revoked_at is null) as entitled,
+      (select a.username from admin.users a where a.id = p.granted_by) as granted_by,
+      p.total
+    from page p
+    join admin.features f on f.id = p.feature_id
+    left join admin.groups g on g.id = p.group_id
+    left join admin.users u on u.id = p.user_id
+    order by p.f_key, (p.group_id is null), p.g_key, p.u_key, p.id`)) as unknown as Row[];
 }
 
 export async function grantById(tx: Tx, tenantId: string, id: string): Promise<Grant> {

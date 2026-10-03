@@ -2,7 +2,7 @@
 import { type Locale, type Role, USER_GROUPS_MAX } from "@ai/contracts";
 import { type Tx, tenants, users } from "@ai/db";
 import { and, asc, eq, ilike, isNull, ne, or, type SQL, sql } from "drizzle-orm";
-import { likeArg, outer } from "../../lib/sql";
+import { likeArg, outer, pgArray } from "../../lib/sql";
 
 export type UserRow = {
   id: string;
@@ -27,11 +27,16 @@ export type UserRow = {
 };
 
 // Tham chiếu admin.users.id viết tay (subquery tương quan; Drizzle không in tên bảng cho cột trong select).
-const groupsJson = sql<unknown>`coalesce((select json_agg(json_build_object('id', g.id, 'key', g.key, 'name', g.name)
+const groupsJsonOf = (
+  uid: SQL,
+) => sql<unknown>`coalesce((select json_agg(json_build_object('id', g.id, 'key', g.key, 'name', g.name)
     order by (g.key <> 'beta-testers'), g.key)
   from (select g.id, g.key, g.name from admin.group_members m join admin.groups g on g.id = m.group_id
-    where m.user_id = admin.users.id order by (g.key <> 'beta-testers'), g.key limit ${USER_GROUPS_MAX}) g), '[]'::json)`;
-const groupCount = sql<number>`(select count(*)::int from admin.group_members m where m.user_id = admin.users.id)`;
+    where m.user_id = ${uid} order by (g.key <> 'beta-testers'), g.key limit ${USER_GROUPS_MAX}) g), '[]'::json)`;
+const groupCountOf = (uid: SQL) =>
+  sql<number>`(select count(*)::int from admin.group_members m where m.user_id = ${uid})`;
+const groupsJson = groupsJsonOf(sql`admin.users.id`);
+const groupCount = groupCountOf(sql`admin.users.id`);
 
 export const userRowCols = {
   id: users.id,
@@ -132,16 +137,41 @@ const groupWhere = (g?: string) =>
     ? sql`exists (select 1 from admin.group_members m where m.group_id = ${g} and m.user_id = ${outer(users.id)})`
     : undefined;
 
+/** `groups`/`group_count` của một trang user bằng MỘT câu (join `unnest` id) — không tính cho cả tập đã lọc. */
+async function withGroups<T extends { id: string }>(tx: Tx, rows: T[]) {
+  if (rows.length === 0) return rows;
+  const x = sql`x.id`;
+  const extra = (await tx.execute(
+    sql`select x.id, ${groupsJsonOf(x)} as groups, ${groupCountOf(x)} as group_count
+    from unnest(${pgArray(
+      rows.map((r) => r.id),
+      "uuid",
+    )}) as x(id)`,
+  )) as unknown as { id: string; groups: unknown; group_count: number }[];
+  const byId = new Map(extra.map((e) => [e.id, e]));
+  return rows.map((r) => ({
+    ...r,
+    groups: byId.get(r.id)?.groups ?? [],
+    groupCount: byId.get(r.id)?.group_count ?? 0,
+  }));
+}
+
 export async function listUsers(tx: Tx, f: UserFilter) {
   const status = f.status ? (f.status === "locked" ? isLocked : sql`not ${isLocked}`) : undefined;
-  const rows = await tx
-    .select({ ...userRowCols, total: sql<number>`count(*) over()`.mapWith(Number) })
+  const page = await tx
+    .select({
+      ...userRowCols,
+      groups: sql<unknown>`null`,
+      groupCount: sql<number>`0`,
+      total: sql<number>`count(*) over()`.mapWith(Number),
+    })
     .from(users)
     .innerJoin(tenants, eq(tenants.id, users.tenantId))
     .where(and(baseWhere(f), status, groupWhere(f.group)))
     .orderBy(asc(users.username), asc(users.id))
     .limit(f.limit)
     .offset(f.offset);
+  const rows = await withGroups(tx, page);
   const [c] = await tx
     .select({
       all: sql<number>`count(*)`.mapWith(Number),
