@@ -1,5 +1,8 @@
-// ADM-NFR-06 · mock Agent Hub (spec M0 §3.3, §3.4). Cổng mặc định 4020.
+// ADM-NFR-06, CHAT-AC-31 · mock Agent Hub (spec M0 §3.3, §3.4; plan C1 §3). Cổng mặc định 4020.
+import { FLOW_IDLE_S, RUN_EVENTS_RETENTION_S } from "@ai/contracts/chat";
 import { Hono } from "hono";
+import { createChatMock } from "./chat/index";
+import type { ChatMockEnv } from "./env";
 import {
   HUB_EFFECTIVE_OK,
   HUB_HEALTH,
@@ -13,11 +16,17 @@ import { isPlainObject, readJsonObject, scenarioMiddleware } from "./scenario";
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-export function createHubMock(opts: { timeoutMs: number }): Hono {
+/** `{timeoutMs}` kiểu M0 vẫn hợp lệ: phần chat lấy mặc định, `/health` giữ `version:"mock"` của M0. */
+export type HubMockOptions = { timeoutMs: number } & Partial<ChatMockEnv>;
+
+export function createHubMock(opts: HubMockOptions): Hono {
   const app = new Hono();
 
   // Đăng ký trước middleware kịch bản: /health không cần token, không bao giờ chờ.
-  app.get("/health", (c) => c.json(HUB_HEALTH));
+  const health = { ...HUB_HEALTH, version: opts.healthVersion ?? HUB_HEALTH.version };
+  app.get("/health", (c) => c.json(health));
+  // Kênh chat (C1): auth JWT riêng, cũng đứng trước kịch bản M0.
+  app.route("/", createChatMock(chatOptions(opts)));
 
   app.use(
     scenarioMiddleware({
@@ -47,4 +56,12 @@ export function createHubMock(opts: { timeoutMs: number }): Hono {
 
   app.notFound((c) => c.json(NOT_FOUND_BODY, 404));
   return app;
+}
+
+function chatOptions(opts: HubMockOptions) {
+  return {
+    fast: opts.fast ?? false,
+    flowIdleS: opts.flowIdleS ?? FLOW_IDLE_S,
+    eventsRetentionS: opts.eventsRetentionS ?? RUN_EVENTS_RETENTION_S,
+  };
 }

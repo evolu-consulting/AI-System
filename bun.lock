@@ -164,7 +164,9 @@
       "name": "@ai/mocks",
       "version": "0.0.0",
       "dependencies": {
+        "@ai/contracts": "workspace:*",
         "hono": "4.13.12",
+        "jose": "6.2.12",
         "postgres": "3.4.9",
         "zod": "4.6.5",
       },

@@ -148,6 +148,8 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 - B1: `CHAT_RUN_ERROR_CODES` đặt ở `chat/errors.ts` (không ở `events.ts`) để `entities.ts` dùng mà không vòng import; vẫn export qua `@ai/contracts/chat`.
 - B1: thêm hằng phụ không đổi hành vi: `CHAT_ASK_QUESTION_MAX` 2000, `CHAT_STEP_ID_MAX` 64, `CHAT_STEPS_MAX` 50, `CHAT_DELTA_MAX` 4000, tên header `X-Run-Id`/`X-Flow-Id`/`X-Message-Id`/`Last-Event-ID`, `SSE_PING_FRAME`, `SSE_CONTENT_TYPE`. `MessageSchema` ép: tin `user` có `content` 1–16000, `run`/`ask` = null; `RunSummary.error` khác null ⇔ `failed`/`cancelled` (đúng §2.3). `AskDataSchema` = `AskSchema`.
 - B1: `deriveTitle` bỏ tiền tố `#scn:\S*` sau khi `trimStart`; cắt đúng 40 code point rồi thêm `…` (không trimEnd trước `…`). Parser SSE: khung không có dòng `data:` không phát (đặc tả SSE); `event` thiếu → `"message"`.
+- B2: thu hồi access (M3) theo mốc **số thứ tự cấp** (`jti` = seq tăng trong tiến trình), không theo ms: token cấp cùng ms/giây trước và sau `expire-access` vẫn phân biệt; logout huỷ phiên `sid` ⇒ access của phiên đó cũng 401. Refresh token cũ dùng lại → `REFRESH_SUPERSEDED`, không huỷ phiên (giống Admin: tab thua cuộc đua). Extension (`X-Client: extension`) nhận/gửi `refresh_token` trong body, không cookie.
+- B2: `/health` mock: `createHubMock({timeoutMs})` kiểu M0 giữ `version:"mock"` (test M0-AC15 ghim); env từ `loadMockEnv` (bộ test contract, `bun run mocks`) trả `"0.0.0-mock"` (semver, qua `HealthResponseSchema`, K-A6) → không tranh chấp test. `GET /conversations` B2 là khung tạm (trang rỗng + validate query) tới B3.
 
 ### Điều phối xử lý test-plan §8 (2026-10-04, Luật 2: chọn phương án đơn giản, dễ đổi)
 | # | Quyết định |
