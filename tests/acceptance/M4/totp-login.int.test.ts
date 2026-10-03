@@ -90,13 +90,16 @@ describe("ADM-FR-08 · login → totp_required → verify", () => {
 
   it("ADM-FR-08 · D-L04 · plan D4 · mật khẩu đúng không reset bộ đếm; mã sai thứ 5 khoá; mã đúng sau đó → 423; login lại → 423", async () => {
     const e = await on();
-    for (let i = 0; i < 4; i++)
+    for (let i = 1; i <= 4; i++) {
       expect((await login(env, "acme", "binh", WRONG_PW)).status).toBe(401);
+      expect(await failed()).toBe(i);
+    }
     const tok = await tokenBinh();
     expect(await failed()).toBe(4);
     expectErr(await verify(env, { totp_token: tok, code: wrong(e) }), "INVALID_OTP");
+    // AC-A01 (M1 afterFailedLogin): lần sai thứ 5 → {failed_logins: 0, locked_until: +15'}
     const u = await userRow(env, USER_ID.binh);
-    expect(u.failed_logins).toBe(5);
+    expect(u.failed_logins).toBe(0);
     expect(new Date(u.locked_until as Date).getTime()).toBe(
       env.clock.now().getTime() + 15 * 60_000,
     );
