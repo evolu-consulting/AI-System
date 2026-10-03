@@ -1,7 +1,7 @@
 // UC-02, UC-04, UC-08, C1-R06, CHAT-AC-06 · RunDriver với stream giả (encodeSseEvent): rAF gộp delta, nối lại
 // Last-Event-ID + backoff, lost + Thử lại, 410, 409 FLOW_BUSY, Dừng không abort, gắn lại từ 0.
 import { expect, test } from "bun:test";
-import { type ChatEvent, encodeSseEvent } from "@ai/contracts/chat";
+import { type ChatEvent, encodeSseEvent, type Run } from "@ai/contracts/chat";
 import { ApiError } from "~/lib/http";
 import { readEvents } from "~/lib/sse";
 import type { SendAccepted } from "./api";
@@ -36,6 +36,7 @@ type Ctl = {
   push(...e: ChatEvent[]): void;
   close(): void;
   fail(): void;
+  enqueueRaw(text: string): void;
 };
 function fakeStream(): Ctl {
   let c!: ReadableStreamDefaultController<Uint8Array>;
@@ -51,6 +52,7 @@ function fakeStream(): Ctl {
     },
     close: () => c.close(),
     fail: () => c.error(new TypeError("network")),
+    enqueueRaw: (text) => c.enqueue(enc.encode(text)),
   };
 }
 
@@ -62,6 +64,7 @@ function setup(
   opts: {
     send?: (convId: string, req: unknown) => Promise<SendAccepted>;
     open?: (id: string, last: number) => Promise<ReadableStream<Uint8Array>>;
+    getRun?: () => Promise<{ status: Run["status"] }>;
   } = {},
 ) {
   const store = createRunStore();
@@ -73,6 +76,7 @@ function setup(
     settled: [] as RunState[],
     expired: [] as RunState[],
     dispatches: 0,
+    getRuns: 0,
   };
   const first = fakeStream();
   store.subscribe(() => log.dispatches++);
@@ -85,6 +89,11 @@ function setup(
       return opts.open(id, last);
     },
     cancelRun: async (id) => void log.cancels.push(id),
+    getRun: async () => {
+      log.getRuns++;
+      if (!opts.getRun) throw new ApiError(0, "NETWORK_ERROR", "down");
+      return opts.getRun();
+    },
     readEvents,
     sleep: async (ms) => void log.sleeps.push(ms),
     requestFrame: (cb) => void frames.push(cb),
@@ -218,4 +227,73 @@ test("Chạy lại: ô chính → không flow_id; trong khung → cùng flow", a
   await driver.retry({ ...base, origin: "flow" });
   expect(reqs).toEqual([{ content: "lại" }, { content: "lại", flow_id: FLOW }]);
   expect(store.getRuns()).toEqual([]);
+});
+
+/** Stream Hub phát `chunks` rồi đóng êm (không lỗi, không sự kiện kết thúc hợp lệ). */
+const closedStream = (...chunks: string[]) =>
+  new ReadableStream<Uint8Array>({
+    start(ctl) {
+      for (const x of chunks) ctl.enqueue(enc.encode(x));
+      ctl.close();
+    },
+  });
+/** `run.finished` sai schema (thiếu `content`) → parser bỏ, `lastEventId` đứng yên. */
+const badFinished = 'id: 2\nevent: run.finished\ndata: {"run_id":"x"}\n\n';
+
+test("review C1 #1 · Hub đóng stream không có sự kiện kết thúc, E14 vẫn running → 5 lần rồi lost", async () => {
+  const { store, driver, first, log } = setup({
+    open: async () => closedStream(),
+    getRun: async () => ({ status: "running" }),
+  });
+  await driver.send({ convId: "c", origin: "main", request: { content: "hi" } });
+  first.push(started);
+  first.close();
+  await flush(60);
+  expect(log.sleeps).toEqual([500, 1000, 2000, 4000, 8000]);
+  expect(log.opens).toEqual([1, 1, 1, 1, 1]);
+  expect(store.get("k1")?.phase).toBe("lost");
+});
+
+test("review C1 #1 · sự kiện kết thúc sai schema bị phát lại mãi → không lặp vô hạn, tới lost", async () => {
+  const { store, driver, first, log } = setup({
+    open: async () => closedStream(badFinished),
+    getRun: async () => ({ status: "running" }),
+  });
+  await driver.send({ convId: "c", origin: "main", request: { content: "hi" } });
+  first.push(started);
+  first.enqueueRaw(badFinished);
+  first.close();
+  await flush(60);
+  expect(log.opens.length).toBe(5);
+  expect(store.get("k1")?.phase).toBe("lost");
+  expect(store.get("k1")?.lastEventId).toBe(1);
+});
+
+test("review C1 #1 · stream đóng chưa kết thúc, E14 báo đã xong → làm mới query + xoá, không nối lại", async () => {
+  const { driver, first, log } = setup({ getRun: async () => ({ status: "finished" }) });
+  await driver.send({ convId: "c", origin: "main", request: { content: "hi" } });
+  first.push(started);
+  first.enqueueRaw(badFinished);
+  first.close();
+  await flush();
+  expect(log.getRuns).toBe(1);
+  expect(log.opens).toEqual([]);
+  expect(log.expired.map((r) => r.key)).toEqual(["k1"]);
+});
+
+test("review C1 #1 · có sự kiện mới thì lượt nối lại hồi về đầu", async () => {
+  let n = 0;
+  const { store, driver, first, log } = setup({
+    open: async () => {
+      n++;
+      return n === 2 ? closedStream(encodeSseEvent(delta(2, "a"))) : closedStream();
+    },
+    getRun: async () => ({ status: "running" }),
+  });
+  await driver.send({ convId: "c", origin: "main", request: { content: "hi" } });
+  first.push(started);
+  first.close();
+  await flush(80);
+  expect(log.sleeps).toEqual([500, 1000, 500, 1000, 2000, 4000, 8000]);
+  expect(store.get("k1")?.phase).toBe("lost");
 });

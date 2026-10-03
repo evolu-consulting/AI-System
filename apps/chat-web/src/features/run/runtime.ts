@@ -2,7 +2,7 @@
 import { queryClient } from "~/app/query-client";
 import { session } from "~/lib/auth/session";
 import { readEvents } from "~/lib/sse";
-import { cancelRun, openEvents, sendMessage } from "./api";
+import { cancelRun, getRun, openEvents, sendMessage } from "./api";
 import type { RunState } from "./lib/reducer";
 import { RunDriver } from "./run-driver";
 import { runStore } from "./run-store";
@@ -40,10 +40,12 @@ export const runDriver = new RunDriver(runStore, {
   sendMessage,
   openEvents,
   cancelRun,
+  getRun,
   readEvents,
   sleep,
   requestFrame,
-  // Run đã kết thúc vẫn ở store tới khi view thấy `answerId` trong query rồi gọi `runDriver.drop` (tránh nháy).
+  // Run đã kết thúc vẫn ở store tới khi view thấy `answerId` trong query rồi gọi `runDriver.drop` (tránh nháy);
+  // rời hội thoại trước đó → `runStore` tự bỏ run đã kết thúc cũ nhất vượt `MAX_SETTLED_RUNS`.
   onSettled: (run) => void refreshQueries(run),
   onExpired: (run) => {
     void refreshQueries(run).then(() => runStore.remove(run.key));

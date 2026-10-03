@@ -1,7 +1,8 @@
 // UC-02, UC-04, UC-08, C1-R06 · điều khiển stream của run: gửi (E12), gắn lại (E13 từ 0), gom delta theo khung hình,
 // nối lại `Last-Event-ID` (0,5→8 s ×5) rồi `lost`, 410 → làm mới dữ liệu, dừng (E15) KHÔNG abort fetch.
+// Stream đóng êm mà chưa có sự kiện kết thúc → hỏi E14; lượt nối lại chỉ hồi lại khi nhận được sự kiện mới.
 // Không phụ thuộc React/DOM: mọi I/O qua `RunDriverDeps` để unit test dựng stream giả.
-import { type ChatEvent, isNewEvent, type SendMessageRequest } from "@ai/contracts/chat";
+import { type ChatEvent, isNewEvent, type Run, type SendMessageRequest } from "@ai/contracts/chat";
 import { ApiError } from "~/lib/http";
 import type { SendAccepted } from "./api";
 import { reconnectDelay } from "./lib/reconnect";
@@ -21,19 +22,27 @@ export type RunDriverDeps = {
   sendMessage(convId: string, req: SendMessageRequest, signal: AbortSignal): Promise<SendAccepted>;
   openEvents(runId: string, lastEventId: number, signal: AbortSignal): Promise<Body>;
   cancelRun(runId: string): Promise<unknown>;
+  /** E14: ảnh chụp run — chỉ dùng khi stream đóng mà chưa có sự kiện kết thúc. */
+  getRun(runId: string): Promise<Pick<Run, "status">>;
   readEvents(body: Body, onEvent: (e: ChatEvent) => void, signal: AbortSignal): Promise<void>;
   sleep(ms: number, signal: AbortSignal): Promise<void>;
   /** Hẹn gọi 1 lần ở khung hình kế (`requestAnimationFrame`). */
   requestFrame(cb: () => void): void;
   /** Run vừa kết thúc (finished/asked/failed/cancelled) → làm mới query. */
   onSettled(run: RunState): void;
-  /** 410 `EVENTS_EXPIRED` / 404 khi nối lại → làm mới query rồi xoá run. */
+  /** 410 `EVENTS_EXPIRED` / 404 khi nối lại, hoặc E14 báo run đã xong mà stream không gửi sự kiện kết thúc
+   *  → làm mới query rồi xoá run (query là nguồn đúng). */
   onExpired(run: RunState): void;
   newKey(): string;
 };
 
 export type SendInput = Omit<NewRunInput, "key">;
 export type SendOutcome = { ok: true; key: string } | { ok: false; error: ApiError };
+
+/** Số lần nối lại đã dùng, giữ qua các vòng `pump`; chỉ về 0 khi stream cho sự kiện mới. */
+type Tries = { n: number };
+/** `terminal` = có sự kiện kết thúc; `progressed` = có sự kiện mới; `closed` = stream đóng êm (không lỗi). */
+type Consumed = { terminal: boolean; progressed: boolean; closed: boolean };
 
 const isTerminalEvent = (e: ChatEvent) => e.event === "run.finished" || e.event === "run.failed";
 const ABORTED = AbortSignal.abort();
@@ -173,38 +182,44 @@ export class RunDriver {
     return this.controllers.get(key)?.signal ?? ABORTED;
   }
 
-  /** Đọc tới sự kiện kết thúc; đứt giữa chừng → nối lại; hết lượt → `lost`. */
-  private async pump(key: string, first: Body): Promise<void> {
+  /** Đọc tới sự kiện kết thúc; đứt/đóng giữa chừng → (đóng êm: hỏi E14) → nối lại; hết lượt → `lost`. */
+  private async pump(key: string, first: Body, tries: Tries = { n: 0 }): Promise<void> {
     let body: Body | null = first;
     while (body) {
-      if (await this.consume(key, body)) return this.settle(key);
+      const r = await this.consume(key, body);
+      if (r.terminal) return this.settle(key);
       if (this.signalFor(key).aborted) return;
-      body = await this.reopen(key);
+      // Lần nối lại không cho sự kiện mới (Hub đóng ngay / phát lại sự kiện sai schema) vẫn tính một lần thử.
+      if (r.progressed) tries.n = 0;
+      if (r.closed && (await this.endedOnHub(key))) return;
+      body = await this.reopen(key, tries);
     }
   }
 
   private async resume(key: string, backoff: boolean): Promise<void> {
-    const body = backoff ? await this.reopen(key) : await this.openOnce(key);
-    if (body) await this.pump(key, body);
+    const tries: Tries = { n: 0 };
+    const body = backoff ? await this.reopen(key, tries) : await this.openOnce(key, tries);
+    if (body) await this.pump(key, body, tries);
   }
 
   /** Lần mở đầu khi gắn lại: lỗi mạng → vào vòng backoff như đứt stream. */
-  private async openOnce(key: string): Promise<Body | null> {
+  private async openOnce(key: string, tries: Tries): Promise<Body | null> {
     const run = this.store.get(key);
     if (!run?.runId) return null;
     try {
       return await this.deps.openEvents(run.runId, run.lastEventId, this.signalFor(key));
     } catch (err) {
       if (this.isGone(key, err)) return null;
-      return this.reopen(key);
+      return this.reopen(key, tries);
     }
   }
 
-  /** Trả `true` nếu đã nhận sự kiện kết thúc. */
-  private async consume(key: string, body: Body): Promise<boolean> {
+  private async consume(key: string, body: Body): Promise<Consumed> {
     const batch = createBatcher(this.store, key, this.deps.requestFrame);
-    let lastId = this.store.get(key)?.lastEventId ?? 0;
+    const startId = this.store.get(key)?.lastEventId ?? 0;
+    let lastId = startId;
     let terminal = false;
+    let closed = true;
     const onEvent = (e: ChatEvent) => {
       if (terminal || !isNewEvent(e.id, lastId)) return;
       lastId = e.id;
@@ -217,17 +232,34 @@ export class RunDriver {
     try {
       await this.deps.readEvents(body, onEvent, this.signalFor(key));
     } catch (err) {
+      closed = false;
       if (!isAbort(err) && import.meta.env?.DEV) console.warn("[run] stream đứt", err);
     } finally {
       batch.flush();
     }
-    return terminal;
+    return { terminal, progressed: lastId !== startId, closed };
+  }
+
+  /** Stream đóng êm mà chưa kết thúc → E14; run không còn `running` → làm mới query, xoá run. Lỗi mạng → nối lại. */
+  private async endedOnHub(key: string): Promise<boolean> {
+    const run = this.store.get(key);
+    if (!run?.runId) return false;
+    try {
+      const snap = await this.deps.getRun(run.runId);
+      if (snap.status === "running" || this.signalFor(key).aborted) return false;
+    } catch (err) {
+      return this.isGone(key, err);
+    }
+    this.controllers.delete(key);
+    this.deps.onExpired(this.store.get(key) ?? run);
+    return true;
   }
 
   /** Backoff 0,5 · 1 · 2 · 4 · 8 s; mỗi lần mở E13 với `Last-Event-ID` = id cuối đã nhận. */
-  private async reopen(key: string): Promise<Body | null> {
+  private async reopen(key: string, tries: Tries): Promise<Body | null> {
     const signal = this.signalFor(key);
-    for (let attempt = 1; ; attempt++) {
+    for (;;) {
+      const attempt = ++tries.n;
       const delay = reconnectDelay(attempt);
       if (delay === null) break;
       this.store.dispatch(key, { type: "reconnecting", attempt });
