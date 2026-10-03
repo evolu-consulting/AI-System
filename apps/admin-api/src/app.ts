@@ -50,7 +50,15 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   };
   const secureCookie = deps.appEnv === "production";
   const hooks = deps.appEnv === "test" ? deps.testHooks : undefined;
-  app.route("/auth", authRoutes({ ...ctx, secureCookie, selfChange: selfChangeHandler(ctx) }));
+  app.route(
+    "/auth",
+    authRoutes({
+      ...ctx,
+      secretKey: deps.secretKey,
+      secureCookie,
+      selfChange: selfChangeHandler(ctx),
+    }),
+  );
   app.route("/auth", meRoutes(ctx));
   app.route("/auth/totp", totpRoutes({ ...ctx, secretKey: deps.secretKey }));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));

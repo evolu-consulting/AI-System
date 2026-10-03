@@ -9,12 +9,16 @@ const ALG = "EdDSA";
 export const ISSUER = "admin";
 export const ACCESS_AUDIENCE = "ai-system";
 export const CHANGE_AUDIENCE = "admin:password-change";
+export const TOTP_AUDIENCE = "admin:totp";
 const ACCESS_TTL_S = 900;
 const CHANGE_TTL_S = 300;
+const TOTP_TTL_S = 300;
 
 /** `sid` = family_id của phiên; token thiếu `sid` vẫn hợp lệ (Hub bỏ qua), khi đó `sid=null`. */
 export type AccessClaims = { sub: string; tid: string; role: Role; sid: string | null };
 export type ChangeClaims = { sub: string; tid: string; pwc: number };
+/** Bước 2 đăng nhập (M4, plan-cd §7): `pwc` = password_changed_at ms, `tte` = user_totp.enabled_at ms. */
+export type TotpClaims = ChangeClaims & { tte: number };
 
 /** PEM PKCS8/SPKI Ed25519. Ký thử + verify thử: cặp khoá lệch → ném Error (không in khoá). */
 export async function loadJwtKeys(env: {
@@ -42,8 +46,9 @@ function sign(
   sub: string,
   aud: string,
   ttlS: number,
+  nowMs = Date.now(),
 ): Promise<string> {
-  const iat = Math.floor(Date.now() / 1000);
+  const iat = Math.floor(nowMs / 1000);
   return new SignJWT(claims)
     .setProtectedHeader({ alg: ALG, kid: keys.kid })
     .setSubject(sub)
@@ -66,13 +71,14 @@ const isStr = (v: unknown): v is string => typeof v === "string" && v.length > 0
 // sub/tid đi vào set_config + ép ::uuid: không phải uuid thì coi như token hỏng (tránh lỗi 22P02 → 500).
 const isUuid = (v: unknown): v is string => UuidSchema.safeParse(v).success;
 
-async function verify(keys: JwtKeys, token: string, aud: string) {
+async function verify(keys: JwtKeys, token: string, aud: string, currentDate?: Date) {
   try {
     const { payload } = await jwtVerify(token, keys.publicKey, {
       algorithms: [ALG],
       issuer: ISSUER,
       audience: aud,
       requiredClaims: ["sub", "iat", "exp"],
+      ...(currentDate ? { currentDate } : {}),
     });
     return payload;
   } catch {
@@ -97,4 +103,24 @@ export async function verifyChangeToken(
   const p = await verify(keys, token, CHANGE_AUDIENCE);
   if (!p || !isUuid(p.sub) || !isUuid(p.tid) || typeof p.pwc !== "number") return null;
   return { sub: p.sub, tid: p.tid, pwc: p.pwc };
+}
+
+/**
+ * totp_token (TTL 300 s) theo đồng hồ của app (`now`, test dùng clock giả) — khác access/change token dùng giờ thật:
+ * hạn của bước 2 phải so được với cùng đồng hồ dùng cho bước TOTP và khoá tạm.
+ */
+export function signTotpToken(keys: JwtKeys, c: TotpClaims, now: Date): Promise<string> {
+  const claims = { tid: c.tid, pwc: c.pwc, tte: c.tte };
+  return sign(keys, claims, c.sub, TOTP_AUDIENCE, TOTP_TTL_S, now.getTime());
+}
+
+export async function verifyTotpToken(
+  keys: JwtKeys,
+  token: string,
+  now: Date,
+): Promise<TotpClaims | null> {
+  const p = await verify(keys, token, TOTP_AUDIENCE, now);
+  if (!p || !isUuid(p.sub) || !isUuid(p.tid)) return null;
+  if (typeof p.pwc !== "number" || typeof p.tte !== "number") return null;
+  return { sub: p.sub, tid: p.tid, pwc: p.pwc, tte: p.tte };
 }

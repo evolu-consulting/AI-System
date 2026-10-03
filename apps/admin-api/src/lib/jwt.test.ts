@@ -6,8 +6,10 @@ import {
   loadJwtKeys,
   signAccessToken,
   signChangeToken,
+  signTotpToken,
   verifyAccessToken,
   verifyChangeToken,
+  verifyTotpToken,
 } from "./jwt";
 
 const pair = () => {
@@ -57,5 +59,32 @@ describe("ADM-FR-01 · jwt", () => {
     const err = await loadJwtKeys({ ...a, JWT_PUBLIC_KEY: b.JWT_PUBLIC_KEY }).catch((e) => e);
     expect(err).toBeInstanceOf(Error);
     expect(String(err.message)).not.toContain("BEGIN");
+  });
+});
+
+describe("ADM-FR-08 · totp_token", () => {
+  const T = new Date("2026-01-01T00:00:00Z");
+  const tc = { sub: SUB, tid: TID, pwc: 11, tte: 22 };
+
+  test("ADM-FR-08 · aud admin:totp, exp-iat=300 theo đồng hồ app; hết hạn sau 300 s", async () => {
+    const keys = await loadJwtKeys(pair());
+    const t = await signTotpToken(keys, tc, T);
+    const c = decodeJwt(t);
+    expect([c.aud, c.iat, (c.exp ?? 0) - (c.iat ?? 0)]).toEqual([
+      "admin:totp",
+      T.getTime() / 1000,
+      300,
+    ]);
+    expect(await verifyTotpToken(keys, t, new Date(T.getTime() + 299_000))).toEqual(tc);
+    expect(await verifyTotpToken(keys, t, new Date(T.getTime() + 301_000))).toBeNull();
+  });
+
+  test("ADM-FR-08 · không dùng lẫn với access/change token", async () => {
+    const keys = await loadJwtKeys(pair());
+    const t = await signTotpToken(keys, tc, new Date());
+    expect(await verifyChangeToken(keys, t)).toBeNull();
+    expect(await verifyAccessToken(keys, t)).toBeNull();
+    const ch = await signChangeToken(keys, { sub: SUB, tid: TID, pwc: 1 });
+    expect(await verifyTotpToken(keys, ch, new Date())).toBeNull();
   });
 });

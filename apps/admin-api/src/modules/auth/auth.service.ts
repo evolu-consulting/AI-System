@@ -1,9 +1,9 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-07, ADM-NFR-01 · đăng nhập, refresh xoay vòng, đăng xuất (plan M1 §5).
 // Không biết HTTP: route quyết định cookie/body. Mỗi bước có DB = một withScope.
-import type { Locale, LoginRequest, Me, PasswordChangeRequired } from "@ai/contracts";
+import type { Locale, LoginRequest, Me, PasswordChangeRequired, TotpRequired } from "@ai/contracts";
 import { hashPassword, NIL_SCOPE, setScope, type Tx, verifyPassword, withScope } from "@ai/db";
 import { appError } from "../../lib/errors";
-import { signChangeToken, verifyChangeToken } from "../../lib/jwt";
+import { signChangeToken, signTotpToken, verifyChangeToken } from "../../lib/jwt";
 import { tempLocked } from "./auth.errors";
 import type { AuthUser } from "./auth.repo";
 import * as repo from "./auth.repo";
@@ -16,7 +16,6 @@ import {
   clearExpiredLock,
   isTempLocked,
   normalizeLoginId,
-  outcomeAfterPasswordOk,
   type RevokeReason,
 } from "./auth.rules";
 import {
@@ -27,11 +26,13 @@ import {
   sha256,
   toMe,
 } from "./auth.session";
+import { loginNextStep, TOTP_TOKEN_TTL_S } from "./totp/totp.rules";
 
 export type { AuthCtx, ClientMeta, Session } from "./auth.session";
 export type LoginResult =
   | ({ kind: "session" } & Session)
-  | { kind: "change"; body: PasswordChangeRequired };
+  | { kind: "change"; body: PasswordChangeRequired }
+  | { kind: "totp"; body: TotpRequired };
 
 const tenantScope = (tenantId: string) => ({ kind: "tenant", tenantId }) as const;
 
@@ -63,7 +64,7 @@ export async function recordFailedLogin(ctx: AuthCtx, u: AuthUser, now: Date): P
  * Mật khẩu đúng: trong transaction khoá hàng user (FOR NO KEY UPDATE) và kiểm lại khoá tạm — ảnh chụp đọc trước verify có
  * thể đã cũ vì request sai song song vừa khoá tài khoản (review vòng 1 #3). Đang khoá → 423; không thì đếm về 0.
  */
-async function confirmNotTempLocked<T>(
+export async function confirmNotTempLocked<T>(
   ctx: AuthCtx,
   u: AuthUser,
   now: Date,
@@ -76,7 +77,7 @@ async function confirmNotTempLocked<T>(
   });
 }
 
-const resetCounter = (tx: Tx, u: AuthUser) =>
+export const resetCounter = (tx: Tx, u: AuthUser) =>
   repo.setCounter(tx, u.tenantId, u.id, { failedLogins: 0, lockedUntil: null });
 
 export async function login(
@@ -100,21 +101,54 @@ export async function login(
     await recordFailedLogin(ctx, u, now);
     throw appError("INVALID_CREDENTIALS");
   }
-  const outcome = outcomeAfterPasswordOk(u, u.tenant.active);
-  if (outcome !== "authenticated") {
+  return afterPasswordOk(ctx, u, now, meta);
+}
+
+/** Body `password_change_required` (login M1 và bước 2FA khi còn phải đổi mật khẩu). */
+export async function changeRequired(ctx: AuthCtx, u: AuthUser): Promise<LoginResult> {
+  const changeToken = await signChangeToken(ctx.keys, {
+    sub: u.id,
+    tid: u.tenantId,
+    pwc: u.passwordChangedAt.getTime(),
+  });
+  const body = {
+    status: "password_change_required",
+    change_token: changeToken,
+    expires_in: CHANGE_TOKEN_TTL_S,
+  };
+  return { kind: "change", body: body as PasswordChangeRequired };
+}
+
+/**
+ * Sau mật khẩu đúng (plan-cd §7, Q10): account_locked → totp_required → password_change_required → authenticated.
+ * `totp_required` KHÔNG đưa bộ đếm về 0 (D4) nhưng vẫn kiểm khoá tạm dưới khoá hàng.
+ */
+async function afterPasswordOk(
+  ctx: AuthCtx,
+  u: AuthUser,
+  now: Date,
+  meta: ClientMeta,
+): Promise<LoginResult> {
+  const step = loginNextStep({
+    canSignIn: canSignIn(u, u.tenant.active),
+    totpEnabled: u.totpEnabledAt !== null,
+    mustChangePassword: u.mustChangePassword,
+  });
+  if (step === "totp_required") {
+    await confirmNotTempLocked(ctx, u, now, async () => null);
+    const claims = { sub: u.id, tid: u.tenantId, pwc: u.passwordChangedAt.getTime() };
+    const token = await signTotpToken(
+      ctx.keys,
+      { ...claims, tte: (u.totpEnabledAt as Date).getTime() },
+      now,
+    );
+    const body = { status: "totp_required", totp_token: token, expires_in: TOTP_TOKEN_TTL_S };
+    return { kind: "totp", body: body as TotpRequired };
+  }
+  if (step !== "authenticated") {
     await confirmNotTempLocked(ctx, u, now, (tx) => resetCounter(tx, u));
-    if (outcome === "account_locked") throw appError("ACCOUNT_LOCKED");
-    const changeToken = await signChangeToken(ctx.keys, {
-      sub: u.id,
-      tid: u.tenantId,
-      pwc: u.passwordChangedAt.getTime(),
-    });
-    const body = {
-      status: "password_change_required",
-      change_token: changeToken,
-      expires_in: CHANGE_TOKEN_TTL_S,
-    };
-    return { kind: "change", body: body as PasswordChangeRequired };
+    if (step === "account_locked") throw appError("ACCOUNT_LOCKED");
+    return changeRequired(ctx, u);
   }
   const session = await confirmNotTempLocked(ctx, u, now, async (tx) => {
     await repo.markLoginSuccess(tx, u.tenantId, u.id, now);

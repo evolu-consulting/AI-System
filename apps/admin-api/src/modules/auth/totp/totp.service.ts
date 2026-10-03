@@ -37,12 +37,12 @@ const rand = (n: number) => new Uint8Array(randomBytes(n));
 const scopeOf = (tenantId: string) => ({ kind: "tenant", tenantId }) as const;
 const who = (a: Actor) => ({ tenantId: a.tenantId, userId: a.userId });
 
-function keyOf(ctx: TotpCtx): SecretKey {
+export function keyOf(ctx: TotpCtx): SecretKey {
   if (!ctx.secretKey) throw new Error("totp: thiếu SECRET_MASTER_KEY");
   return ctx.secretKey;
 }
 
-function openSecret(k: SecretKey, userId: string, row: repo.TotpRow): Uint8Array {
+export function openSecret(k: SecretKey, userId: string, row: repo.TotpRow): Uint8Array {
   return openBytes(k, totpAad(userId, row.keyVersion), {
     ciphertext: row.secretCt,
     iv: row.secretIv,

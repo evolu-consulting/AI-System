@@ -6,24 +6,27 @@ import {
   LogoutRequestSchema,
   RefreshRequestSchema,
   type TokenGrant,
+  TotpVerifyRequestSchema,
 } from "@ai/contracts";
 import { type Context, Hono } from "hono";
 import { clearRefreshCookie, readRefreshCookie, setRefreshCookie } from "../../lib/cookie";
 import { appError, isAppError, toErrorBody } from "../../lib/errors";
 import { type ClientKind, clientKind, parseJson, readJson } from "../../lib/http";
 import {
-  type AuthCtx,
   type ClientMeta,
   changePasswordForced,
+  type LoginResult,
   login,
   logout,
   refresh,
   type Session,
 } from "./auth.service";
+import type { TotpCtx } from "./totp/totp.service";
+import { verifyTotpLogin } from "./totp/totp.verify";
 
 export type SelfChangeInput = { current_password: string; new_password: string };
 
-export type AuthRouteDeps = AuthCtx & {
+export type AuthRouteDeps = TotpCtx & {
   secureCookie: boolean;
   /** Tự đổi mật khẩu (cần Bearer) — gắn ở auth.me.routes để route này không phụ thuộc middleware. */
   selfChange?: (c: Context, input: SelfChangeInput) => Promise<Response>;
@@ -33,6 +36,12 @@ const meta = (c: Context): ClientMeta => ({
   client: clientKind(c),
   userAgent: c.req.header("user-agent") ?? null,
 });
+
+/** Kết quả login / bước 2FA: nhánh chưa có phiên trả body nguyên; phiên → cookie (web) hoặc body (extension). */
+function loginBody(c: Context, res: LoginResult, client: ClientKind, secure: boolean) {
+  if (res.kind === "change" || res.kind === "totp") return res.body;
+  return sessionBody(c, res, client, secure);
+}
 
 function sessionBody(c: Context, s: Session, client: ClientKind, secure: boolean): TokenGrant {
   if (client === "extension") return { ...s.grant, refresh_token: s.refreshToken };
@@ -58,9 +67,14 @@ export function authRoutes(d: AuthRouteDeps): Hono {
   r.post("/login", async (c) => {
     const input = await parseJson(c, LoginRequestSchema);
     const m = meta(c);
-    const res = await login(d, input, m);
-    if (res.kind === "change") return c.json(res.body);
-    return c.json(sessionBody(c, res, m.client, d.secureCookie));
+    return c.json(loginBody(c, await login(d, input, m), m.client, d.secureCookie));
+  });
+
+  // Bước 2 đăng nhập (M4, plan-cd §4.2): không cần Bearer; đăng ký ở đây vì dùng chung cookie/body như login.
+  r.post("/totp/verify", async (c) => {
+    const input = await parseJson(c, TotpVerifyRequestSchema);
+    const m = meta(c);
+    return c.json(loginBody(c, await verifyTotpLogin(d, input, m), m.client, d.secureCookie));
   });
 
   r.post("/refresh", async (c) => {

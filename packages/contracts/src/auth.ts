@@ -11,7 +11,7 @@ import {
   UsernameSchema,
   UuidSchema,
 } from "./common";
-import { BACKUP_CODE_COUNT } from "./totp";
+import { BACKUP_CODE_COUNT, TotpRequiredSchema } from "./totp";
 
 /** Header chọn kiểu client; chỉ đúng chuỗi `extension` mới nhận/trả refresh token trong body. */
 export const X_CLIENT_HEADER = "X-Client";
@@ -73,6 +73,7 @@ export type PasswordChangeRequired = z.infer<typeof PasswordChangeRequiredSchema
 export const LoginResponseSchema = z.discriminatedUnion("status", [
   TokenGrantSchema,
   PasswordChangeRequiredSchema,
+  TotpRequiredSchema,
 ]);
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
