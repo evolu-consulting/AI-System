@@ -7,6 +7,7 @@ import type { AppVars } from "./lib/auth-middleware";
 import { AppError, toErrorBody } from "./lib/errors";
 import type { JwtKeys } from "./lib/jwt";
 import { logger } from "./lib/logger";
+import type { Mailer } from "./lib/mailer";
 import { safeErrorFields } from "./lib/pg-errors";
 import type { SecretKey } from "./lib/secret-crypto";
 import type { TestHooks } from "./lib/test-hooks";
@@ -20,6 +21,8 @@ import { featuresRoutes } from "./modules/features/features.routes";
 import { grantsRoutes } from "./modules/grants/grants.routes";
 import { groupsRoutes } from "./modules/groups/groups.routes";
 import { healthRoutes } from "./modules/health/health.routes";
+import { quotaBannerRoutes } from "./modules/quotas/quotas.banner";
+import { startQuotaListener } from "./modules/quotas/quotas.listener";
 import { quotasRoutes } from "./modules/quotas/quotas.routes";
 import { secretsRoutes } from "./modules/secrets/secrets.routes";
 import { tenantsRoutes } from "./modules/tenants/tenants.routes";
@@ -39,6 +42,10 @@ export type AppDeps = {
   secretKey?: SecretKey;
   /** Điểm dừng sau khoá cho test khoá hàng (G8); chỉ dùng khi `appEnv === "test"`, khác → bỏ qua. */
   testHooks?: TestHooks;
+  /** Mailer (TM); có → LISTEN `quota_threshold` + evaluator gửi mail (M4 §5.2). Dừng LISTEN = `db.close()`. */
+  mailer?: Mailer;
+  /** Gốc admin-web cho link trong mail (`ADMIN_WEB_URL`). */
+  adminWebUrl?: string;
 };
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -65,7 +72,10 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   );
   app.route("/auth", meRoutes(ctx));
   app.route("/auth/totp", totpRoutes({ ...ctx, secretKey: deps.secretKey }));
-  app.route("/admin/tenants", quotasRoutes({ ...ctx, hooks }));
+  const qctx = { ...ctx, mailer: deps.mailer, webUrl: deps.adminWebUrl };
+  if (deps.mailer) startQuotaListener(qctx);
+  app.route("/admin/quota-banner", quotaBannerRoutes(qctx));
+  app.route("/admin/tenants", quotasRoutes({ ...qctx, hooks }));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));

@@ -8,6 +8,7 @@ import { loadEnv } from "./config/env";
 import { assertSafeDbRole } from "./lib/db-guard";
 import { loadJwtKeys } from "./lib/jwt";
 import { logger, setMinLevel } from "./lib/logger";
+import { createMailer } from "./lib/mailer";
 import { parseMasterKey, selfTestSecretKey } from "./lib/secret-crypto";
 import { createDummyHash } from "./modules/auth/auth.service";
 
@@ -51,7 +52,15 @@ async function main(): Promise<void> {
   const dummyHash = await createDummyHash();
   const app = createApp(
     { version: pkg.version, corsOrigins: env.CORS_ORIGINS },
-    { db, keys, appEnv: env.APP_ENV, dummyHash, secretKey },
+    {
+      db,
+      keys,
+      appEnv: env.APP_ENV,
+      dummyHash,
+      secretKey,
+      mailer: createMailer(env),
+      adminWebUrl: env.ADMIN_WEB_URL,
+    },
   );
   const server = Bun.serve({ port: env.PORT, fetch: app.fetch });
   logger.info("listening", { port: server.port, app_env: env.APP_ENV, version: pkg.version });

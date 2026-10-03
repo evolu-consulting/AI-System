@@ -5,11 +5,13 @@ import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";
 import { parseIdParam, parseJson } from "../../lib/http";
+import type { EvaluatorCtx } from "./quotas.evaluator";
 import { getQuotas, putQuotas, type QuotasCall, type QuotasCtx } from "./quotas.service";
 
 const PATH = "/:id/quotas";
 
-export function quotasRoutes(d: AuthDeps & QuotasCtx): Hono<AppVars> {
+/** `d` mang cả `mailer`/`webUrl` (EvaluatorCtx) → `ctx: d` tới evaluator sau commit PUT. */
+export function quotasRoutes(d: AuthDeps & QuotasCtx & EvaluatorCtx): Hono<AppVars> {
   const r = new Hono<AppVars>();
   const call = (c: Context<AppVars>): QuotasCall => ({
     ctx: d,

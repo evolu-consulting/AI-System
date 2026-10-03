@@ -21,6 +21,7 @@ describe("ADM-NFR-06 · loadEnv", () => {
       ...OK,
       PORT: 3001,
       CORS_ORIGINS: ["http://a.test", "http://b.test:3000"],
+      ADMIN_WEB_URL: "http://localhost:3000",
     });
   });
 
@@ -38,6 +39,7 @@ describe("ADM-NFR-06 · loadEnv", () => {
     ["ADMIN_API_DATABASE_URL", { ...OK, ADMIN_API_DATABASE_URL: "mysql://a:bi_mat@h/d" }],
     ["JWT_PRIVATE_KEY", { ...OK, JWT_PRIVATE_KEY: PUB }],
     ["JWT_PUBLIC_KEY", { ...OK, JWT_PUBLIC_KEY: "" }],
+    ["ADMIN_WEB_URL", { ...OK, ADMIN_WEB_URL: "ftp://web.test" }],
     ["JWT_KID", { ...OK, JWT_KID: "k".repeat(65) }],
     ["SECRET_MASTER_KEY", { ...OK, SECRET_MASTER_KEY: "bi_mat_ngan" }],
     ["SECRET_MASTER_KEY", { ...OK, SECRET_MASTER_KEY: Buffer.alloc(31).toString("base64") }],
