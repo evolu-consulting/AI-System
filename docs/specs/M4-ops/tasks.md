@@ -13,8 +13,8 @@ Lệnh xong mọi task: kèm `bun run depcruise --all && bun run check:fn --all`
 | P3 | ADR-0005 thư viện M4 (`nodemailer`, `qrcode`, `yaml`; TOTP `node:crypto`; không `recharts`) — số 0004 đã dùng ở M1 | backend-lead | thường | `spec §9 Q3`; `adr/0001-stack.md` | `docs/adr/0005-m4-mail-qr-yaml-chart.md` | P1 | — | [x] Accepted 2026-10-03 |
 | Q1 | Test-plan (≤ 30 KB): AC → test, dữ liệu, kỳ vọng | qc | cao | `spec §2, §8`; `plan §3–4` | `docs/specs/M4-ops/test-plan.md` (A+B), `test-plan-cd.md` + `test-plan-cd-e2e.md` (C+D) | P1, P2 | `wc -c` ≤ 30720 | [x] A+B xong · C+D xong |
 | G1 | spec-readiness + Gate M4 (tự duyệt Luật 2b nếu đủ điều kiện) | spec-readiness | cao | toàn bộ `spec`, `plan*`, `test-plan`, `tasks` | `readiness.md`, `docs/specs/M4-gate.md` | P1–P3, Q1 | READY | [ ] |
-| Q2 | Viết test khoá (đỏ đúng lý do) | qc | cao | `test-plan.md`, `test-plan-ab-e2e.md`, `test-plan-cd.md`, `test-plan-cd-e2e.md`, `test-plan-cd-transfer.md` | `tests/acceptance/M4/**`, `e2e/**` | G1 | `bun test` đỏ đúng lý do | [ ] |
-| Q3 | Khoá test | qc | thường | `WORKFLOW` khoá test | `tests/.lock` | Q2 | `bun run test:lock:verify` | [ ] |
+| Q2 | Viết test khoá (đỏ đúng lý do) | qc | cao | `test-plan.md`, `test-plan-ab-e2e.md`, `test-plan-cd.md`, `test-plan-cd-e2e.md`, `test-plan-cd-transfer.md` | `tests/acceptance/M4/**`, `e2e/**` | G1 | `bun test` đỏ đúng lý do | [x] |
+| Q3 | Khoá test | qc | thường | `WORKFLOW` khoá test | `tests/.lock` | Q2 | `bun run test:lock:verify` | [x] |
 
 ## BUILD backend (số task và tách nhỏ do P1 chốt)
 
