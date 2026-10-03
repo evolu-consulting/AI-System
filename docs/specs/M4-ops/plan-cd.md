@@ -63,7 +63,7 @@ Một snapshot (`repeatable read, read only`, như `grants.matrix.ts`); phần t
 | `workflows` | `{key, name, description, app_type, base_url, secret: SecretName, input_schema, output_field, enabled}[]` ≤ 2000 | field schema lấy từ `workflows.ts` (`CatalogKeySchema`, `BaseUrlSchema`, `InputSchemaSchema`…); `secret_id` → **tên** |
 | `commands` | `{name, aliases, description, workflow: key, args, input_map, output, mode, timeout_s, enabled}[]` ≤ 2000 | từ `commands.ts`; không có `feature_ids` (thành viên feature chỉ khai ở `features.commands`) |
 | `features` | `{key, name, description, icon, status, commands: CommandName[]}[]` ≤ 500 | `commands` = thay **cả tập** của feature đó (như PATCH `command_ids`) |
-| `tenants` | `{key, name, max_concurrent_sub, entitlements: FeatureKey[], quotas: QuotaEntry[]}[]` ≤ 2000 | không có tenant `platform`; `QuotaEntry = {feature: FeatureKey\|null, max_runs, max_tokens, max_usd}` (kiểu theo R02, schema của A) |
+| `tenants` | `{key, name, max_concurrent_sub, entitlements: FeatureKey[], quotas: QuotaEntry[]}[]` ≤ 2000 | không có tenant `platform`; `QuotaEntry = {feature: FeatureKey\|null, max_runs, max_tokens, max_usd}` (kiểu theo R02); upsert theo (tenant, feature), dòng mọi giới hạn null → `SCHEMA`; `entitlements` chỉ thêm |
 | `groups` | `{tenant: TenantKey, key, name, description}[]` ≤ 2000 | không có tenant `platform` |
 | `grants` | `{tenant: TenantKey, group: GroupKey, feature: FeatureKey}[]` ≤ 5000 | chỉ grant cho **group** (grant cho user không export vì user không chuyển môi trường) |
 
@@ -122,7 +122,7 @@ Request JSON (`ImportRequestSchema`, strict):
 |---|---|---|---|---|
 | `POST /auth/totp/verify` | không cần Bearer | `{totp_token, code: /^\d{6}$/}` **hoặc** `{totp_token, backup_code: /^[a-z2-9]{4}-?[a-z2-9]{4}$/i}` (đúng một) | như login: `TokenGrant` (cookie web / body extension) hoặc `password_change_required` | 401 `INVALID_TOTP_TOKEN` (hỏng/hết hạn/không khớp); 401 `INVALID_OTP` (mã sai/đã dùng); 423 `TEMP_LOCKED {until}`; 403 `ACCOUNT_LOCKED` |
 | `POST /auth/totp/setup` | `platform_admin`, `tenant_admin` | `{current_password}` | `{secret: base32 32 ký tự, otpauth_url, qr_svg: "data:image/svg+xml;base64,…", account_label: "acme · thu.ha", expires_in: 600}` | 400 `INVALID_CURRENT_PASSWORD` (tính bộ đếm); 423; 409 `TOTP_ALREADY_ENABLED` |
-| `POST /auth/totp/enable` | như trên | `{code}` | `{backup_codes: string[10]}` dạng `xxxx-xxxx` (chỉ trả một lần) | 400 `INVALID_CURRENT_CODE`; 409 `TOTP_SETUP_EXPIRED` (không có/hết hạn pending); 409 `TOTP_ALREADY_ENABLED` |
+| `POST /auth/totp/enable` | như trên | `{code}` | `{backup_codes: string[10]}` dạng `xxxx-xxxx` (chỉ trả một lần) | 400 `INVALID_CURRENT_CODE` (**không** tính bộ đếm, R16); 409 `TOTP_SETUP_EXPIRED` (không có/hết hạn pending); 409 `TOTP_ALREADY_ENABLED` |
 | `POST /auth/totp/disable` | như trên | `{current_password, code}` hoặc `{current_password, backup_code}` | `204` | 400 `INVALID_CURRENT_PASSWORD` / `INVALID_CURRENT_CODE` (cả hai tính bộ đếm); 423; 409 `TOTP_NOT_ENABLED` |
 | `POST /auth/totp/backup-codes` | như trên | `{code}` (mã TOTP hiện tại; xem §12 Q-D1) | `{backup_codes: string[10]}`; mã cũ hết hiệu lực | 400 `INVALID_CURRENT_CODE` (tính bộ đếm); 423; 409 `TOTP_NOT_ENABLED` |
 | `POST /admin/users/:id/totp/disable` | `platform_admin` (mọi tenant), `tenant_admin` (chỉ tenant mình) | body rỗng | `200 User` (đã `totp_enabled:false`) | 404 (ngoài phạm vi, BR-09); 403 `SELF_ACTION_FORBIDDEN` (chính mình); 409 `TOTP_NOT_ENABLED` |
@@ -273,7 +273,7 @@ export function createMemoryMailer(): Mailer & { sent: MailMessage[] };         
 
 | Env (`config/env.ts`) | Kiểu | Bắt buộc | Mặc định |
 |---|---|---|---|
-| `SMTP_URL` | `z.url({protocol: /^smtps?$/})` | không | vắng = tắt mail (cảnh báo lúc khởi động); dev `smtp://127.0.0.1:1025` |
+| `SMTP_URL` | `z.url({protocol: /^smtps?$/})` | không | vắng = tắt mail (cảnh báo lúc khởi động); dev + `.env.example` `smtp://127.0.0.1:1025` (TM) |
 | `MAIL_FROM` | string ≤ 200, dạng `Tên <addr>` | không | `AI System <no-reply@ai-system.local>` |
 
 `deps.secretKey` (M2) bắt buộc cho route 2FA và import (thiếu → 500 như secrets M2).
@@ -298,10 +298,6 @@ Lệnh xong chung (thêm vào mỗi dòng): `bun run typecheck && bun run check:
 
 `auth/` đã 10 file → TOTP ở `modules/auth/totp/` (CONVENTIONS §4); `auth.service.ts` (306 dòng) chỉ thêm nhánh `totp_required`.
 
-## 12. Câu hỏi (mặc định đề xuất)
+## 12. Câu hỏi — đã chốt (người dùng 2026-10-03, spec §9)
 
-| # | Câu hỏi | Mặc định |
-|---|---|---|
-| Q-D1 | Tạo lại mã dự phòng có đòi xác thực lại? (missing §10.1 chỉ có ConfirmDialog) | Đòi **mã TOTP hiện tại** trong ConfirmDialog (token truy cập bị lộ không đủ để lấy mã dự phòng mới); FE thêm ô `Mã xác thực` |
-| Q-C1 | Biểu đồ Usage | **Đã thống nhất với plan-frontend D1**: SVG tự vẽ, không `recharts` (không còn là câu hỏi) |
-| Q-C2 | Grant cho **user** có export? | Không (user không chuyển môi trường) |
+Q-D1: tạo lại mã dự phòng đòi **mã TOTP hiện tại** trong ConfirmDialog (token truy cập bị lộ không đủ lấy mã mới). Q-C1: SVG tự vẽ, không `recharts` (plan-frontend D1). Q-C2: grant cho user không export (user không chuyển môi trường).

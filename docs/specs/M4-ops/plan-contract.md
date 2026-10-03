@@ -24,7 +24,7 @@ Quy ước: mọi schema `z.strictObject`; tiền là **chuỗi thập phân** `
 | `QuotaSetResponse` | `tenant_id` · `version` (tenant) · `month: "YYYY-MM"` · `has_usage_data: bool` · `items: QuotaStatus[]` — **luôn** có dòng đầu `feature_id=null` (giới hạn null nếu chưa đặt), rồi theo `feature_key` tăng |
 | `QuotaBanner` | `level: "warn"\|"over"` · `pct: int` · `feature_key: string\|null` (quota có `pct` cao nhất) |
 
-PUT: tenant `version+1`, `updated_by`, `updated_at` (quota thuộc tenant, Q9). Sau commit gọi `evaluateTenant` (§5.2), lỗi chỉ log.
+PUT (thứ tự): kiểm `version` (lệch → 409) → `normalizeQuotaItems` (+ sắp theo `feature_id`) so với bộ hiện tại cũng đã normalize; **bằng nhau → no-op**: 200 `QuotaSetResponse` hiện tại, không bump version/`updated_by`, không audit, không NOTIFY, không evaluate (plan §4.2 "chỉ khi thực sự đổi hàng"). Khác → tenant `version+1`, `updated_by`, `updated_at` (quota thuộc tenant, Q9); sau commit `void evaluateTenant(ctx, tenantId).catch(log)` (**không await**, plan §5.2).
 
 ### 2.2 Usage (`usage.ts`) — FR-42, M4-R03, R07–R09
 
@@ -53,7 +53,7 @@ CSV: một dòng / (ngày × tenant × feature). Cột tenant_admin: `date,tenan
 | `kind` | Trường |
 |---|---|
 | `"tenant"` | `tenant:{id,key,name}` · `month` · `active_users` · `groups` · `runs_month: Count\|null` · `runs_prev_month: Count\|null` (null khi `has_usage_data=false`) · `has_usage_data` · `quotas: QuotaStatus[]` · `banner: QuotaBanner\|null` · `never_logged_in: {id,username,display_name,created_at}[] ≤5` (active, `last_login_at` null, `created_at` giảm) · `never_logged_in_total` · `recent_changes: AuditItem[] ≤8` |
-| `"platform"` | `tenants_active` · `commands_enabled` · `workflows_total` · `workflows_unattached` (không command nào trỏ tới) · `users_active` · `runs_24h: Count\|null` · `has_usage_data` · `quota_tenants: {tenant_id,tenant_key,tenant_name,pct,level}[] ≤10` (level ≠ none, pct giảm) · `recent_changes: AuditItem[] ≤8` · `unavailable: ("command_errors"\|"agent_studio")[]` (luôn đủ 2, Q5) |
+| `"platform"` | `tenants_active` · `commands_enabled` · `workflows_total` · `workflows_unattached` (không command nào trỏ tới) · `users_active` · `runs_24h: Count\|null` · `has_usage_data` · `quota_tenants: {tenant_id,tenant_key,tenant_name,pct,level}[] ≤10` (`pct` = max pct trên các quota của tenant, `level` theo pct đó; level ≠ none, pct giảm) · `recent_changes: AuditItem[] ≤8` · `unavailable: ("command_errors"\|"agent_studio")[]` (luôn đủ 2, Q5) |
 
 ### 2.4 Audit (`audit.ts`) — FR-51, 52, M4-R10–R13
 
@@ -82,6 +82,6 @@ Cursor = base64url của `seq` (bigint). Sắp `seq` giảm.
 | File | Thay đổi |
 |---|---|
 | `common.ts` `API_ERRORS` | thêm `NAME_TAKEN: 409`, `NOT_RESTORABLE: 409`, `RESTORE_REF_MISSING: 409` (message EN ở `lib/errors.ts`) |
-| `config.ts` `CONFIG_ENTITIES` | thêm `"quota"` (cộng thêm, Hub M5 parse) |
+| `config.ts` `CONFIG_ENTITIES` | chèn `"quota"` ngay **trước** `"batch"` (cộng thêm, Hub M5 parse); sửa `config.test.ts` length 10 → 11 (T0b) |
 | `tenants.ts` `tenantShape`, `users.ts` `UserSchema` | thêm `updated_by: UpdatedBySchema` (username, null khi không thấy qua RLS — như groups M3) |
 | NOTIFY mới (Hub → Admin) | kênh `quota_threshold`, payload `z.strictObject({tenant_id: uuid})` ≤ 100 byte; Hub/mock gửi khi ghi `usage_logs` (Q2b) |

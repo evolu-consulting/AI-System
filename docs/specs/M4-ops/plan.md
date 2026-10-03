@@ -131,6 +131,7 @@ Chữ ký: [`plan-rules.md` §A1](plan-rules.md).
 | command | name, aliases, description, workflow_id, args, input_map, output, mode, timeout_s, enabled, feature_ids, version | `/name` |
 | secret | name, note (**không** last4, không giá trị); `summary.value_changed` khi thay giá trị | name |
 | quota | items[] (feature_id, feature_key, max_runs, max_tokens, max_usd) | tenant key |
+| config (import, plan-cd §8.3) | from_config_version, added, updated, secrets_created, truncated | file_name |
 | user_totp | enabled, backup_codes_left (không secret/mã) | username |
 
 ### 4.2 Điểm gọi theo thao tác (mỗi thao tác chỉ khi thực sự đổi hàng, cùng chỗ `ch.changed`)
@@ -144,7 +145,7 @@ Chữ ký: [`plan-rules.md` §A1](plan-rules.md).
 | entitlements PUT / DELETE | grant, revoke · entitlement · tenant được cấp | false |
 | workflows, commands, features POST/PATCH/DELETE | create, update, delete · null tenant | **true** |
 | secrets POST/PUT/PATCH/DELETE | create, update, delete · secret · null | false |
-| quotas PUT | update · quota · tenant | **true**, `entity_version` = version tenant mới |
+| quotas PUT | update · quota · tenant; bộ sau `normalizeQuotaItems` bằng bộ hiện tại → no-op (200, không bump/`updated_by`/audit/NOTIFY/evaluate) | **true**, `entity_version` = version tenant mới |
 | restore | restore · entity gốc | true (để khôi phục tiếp được) |
 
 Tổng quát: `entity_version` = version sau thay đổi (thực thể có version); delete: before = bản cuối, after null.
@@ -176,7 +177,7 @@ Tiền so sánh bằng số nguyên micro-USD (`BigInt`) trong rules, không `pa
 | 1 | `withScope(tenant)` | đọc quotas; usage tháng: `group by feature_id` trên `usage_logs where tenant_id = $t and at >= from and at < to` (index `usage_logs_tenant_at_idx`); `evaluateQuota`; `alertsDue` với alerts tháng này → `INSERT … ON CONFLICT DO NOTHING`; **claim**: `UPDATE quota_alerts SET status='sending', claimed_at=now() WHERE tenant_id=$t AND (status='pending' OR (status='sending' AND claimed_at < now()-'5 min')) RETURNING`; đọc người nhận: tenant_admin active có email + locale |
 | 2 | ngoài tx | `mailer.send` từng người nhận (một mail một người, không lộ email nhau), link `{ADMIN_WEB_URL}/usage` |
 | 3 | `withScope(tenant)` | thành công → `sent`, `sent_at`; lỗi → `pending`, `attempts+1`, `last_error` = mã; `attempts ≥ 5` → `failed`. Không ném ra ngoài |
-Gọi từ: sau commit `PUT quotas`; `quotas.listener.ts` (LISTEN `quota_threshold`, gộp theo tenant 2 s, payload sai → log warn); GET `/admin/overview` & `/admin/quota-banner` của tenant_admin (chạy nền `void …catch(log)`, chặn lặp 60 s/tenant trong bộ nhớ). Không job định kỳ. Banner/overview tính trực tiếp từ `evaluateQuota`, không đọc `quota_alerts` (R06).
+Gọi từ: sau commit `PUT quotas` (`void evaluateTenant(…).catch(log)`, không await; PUT no-op không gọi); `quotas.listener.ts` (LISTEN `quota_threshold`, gộp theo tenant 2 s, payload sai → log warn); GET `/admin/overview` & `/admin/quota-banner` của tenant_admin (chạy nền `void …catch(log)`, chặn lặp 60 s/tenant trong bộ nhớ). Không job định kỳ. Banner/overview tính trực tiếp từ `evaluateQuota`, không đọc `quota_alerts` (R06).
 
 ### 5.3 Mailer — theo plan-cd §9 (task TM)
 `deps.mailer: Mailer` (`send` ném `MailError`), test dùng `createMemoryMailer()`; mỗi người nhận một lần `send` (không lộ email nhau). `MAIL_DISABLED` → giữ `pending` như lỗi gửi. plan-cd gọi evaluator là `evaluateQuota(ctx, tenantId)` → tên thật `evaluateTenant` (pure `evaluateQuota` ở plan-rules §A4).
@@ -210,13 +211,14 @@ Ca xen kẽ thêm vào `lib/lock-order.int.test.ts`: Quota PUT ∥ Feature DELET
 | Mục | Chi tiết |
 |---|---|
 | `bun run mock:quota -- --tenant acme --runs 1001 --quota 1000 [--feature dich] [--seed]` | dùng `DATABASE_URL` (owner; `admin_rw` không INSERT được `hub.usage_logs`); đặt quota nếu có `--quota`; ghi N run (mỗi run 1 hàng, `billable_usd` 0.10, `cost_usd` 0.06), hàng thứ > quota mang `overage=true` (vai Hub, R07); `--seed`: 60 ngày dữ liệu mẫu 3 feature + 1 hàng `feature_id` null + 1 hàng `billable_usd` null; cuối cùng `NOTIFY quota_threshold` |
+| Proc AL10 (`quota-alerts-proc.int`) | server con kế thừa `...process.env` như M2 secrets-proc, cổng 3094, `SMTP_URL` Mailpit |
 | Env mới | `ADMIN_WEB_URL` (link trong mail, mặc định `http://localhost:3000`); `SMTP_URL` đã có (plan-cd) |
 | Perf (`*.perf.int.test.ts`, không chặn) | `usage.perf`: 1 tháng, 200k hàng 1 tenant < 2 s (ADM-NFR-03); `audit.perf`: 50k dòng, list p95 < 300 ms; quota PUT < 300 ms |
 
 ## 8. Test của backend (ngoài acceptance qc)
 | File | Ca |
 |---|---|
-| `lib/audit/audit.rules.test.ts` | allowlist từng entity; khoá cấm ở độ sâu bất kỳ → ném |
+| `lib/audit/audit.rules.test.ts` | allowlist từng entity; khoá cấm ở cấp 1 sau allowlist → ném; `input_schema`/`input_map`/`args`/`output` chứa `password` → không ném |
 | `packages/db/src/ops-rls.int.test.ts` | RLS 3 bảng (tenant A không thấy B, NULL chỉ platform); `admin_rw` UPDATE/DELETE audit → lỗi quyền; trigger chặn owner; `hub_ro` đọc quotas, không đọc audit/alerts |
 | `lib/config/config-write.int.test.ts` (sửa) | audit cùng tx; retry 40P01 không nhân đôi audit; bất biến mismatch |
 | `quotas.rules.test.ts`, `usage.rules.test.ts`, `audit.rules.test.ts` | ranh giới tháng VN (30/09 23:59:59+07 vs 01/10 00:00+07), pct nhiều chiều, alertsDue, CSV injection/BOM |
@@ -231,21 +233,5 @@ Ca xen kẽ thêm vào `lib/lock-order.int.test.ts`: Quota PUT ∥ Feature DELET
 | Mail gửi trong tx bị retry | mail luôn sau commit, claim `sending` (TD #13) |
 | `updated_by` null khi tenant_admin xem bản do platform sửa (RLS users) | như M3 groups; FE dùng câu không `{user}` |
 
-## 10. Task BUILD (A + B) — chép vào `tasks.md`
-Lệnh xong chung: `bun run typecheck && bun test <file> && bun run check:fn --files <file đổi> && bun run depcruise --all && bun run test:lock:verify`.
-
-| # | Task | Rủi ro | Đọc | File | Lệnh xong thêm |
-|---|---|---|---|---|---|
-| T0 | Schema + `0007` (3 bảng, `updated_by`, RLS nối tay), RLS, append-only, `listen` client, `insertAuditRows` | cao | plan §3, §4.1 (hàng withConfigWrite), §8 hàng ops-rls | `packages/db/**` | `bun run db:migrate && bun run test:int packages/db` |
-| T0b | Contracts A+B (§2.1–2.5) + test parse | thường | plan-contract §2 | `packages/contracts/src/{quotas,usage,overview,audit}.ts`, sửa `common,config,tenants,users` | `bun test packages/contracts` |
-| T0m | `mock:quota` + stub index | thường | plan §7 | `tools/mocks/src/quota.ts`, `migrations-dev/0002_*`, `package.json` | `bun run mock:quota -- --tenant acme --seed` |
-| T1 | Lõi audit: sink `ch.audit`, `ConfigCall.actor`, `audit.rules`, `recordAudit` | cao | plan §4.1, §6 hàng 15 | `lib/audit/*`, `lib/config/config-write.ts`, `packages/db/src/config-meta.ts` | `bun run test:int config-write` |
-| T1b | Gắn audit M1 (tenants, users, reset) + `updated_by` users/tenants (CR-016) | cao | plan §4.2 hàng tenants/users, §2.5 | `modules/{tenants,users}/*` | `bun run test:int tenants users` + M4-AC04/05 phần user |
-| T1c | Gắn audit M2/M3 (workflows, commands, features, entitlements, secrets, groups, members, grants, batch) + bật bất biến | cao | plan §4.1 bất biến, §4.2 | `modules/{workflows,commands,features,secrets,groups,grants}/*` | `bun run test:int` (toàn bộ) + M4-AC04–06 |
-| T2 | Đọc audit: list/detail, filter, cursor, RLS | cao | plan-contract §2.4, §4.3 | `modules/audit/{routes,service,repo,rules}` | M4-AC07 (phần đọc), AC-A09 audit |
-| T3 | Quota GET/PUT + version tenant + audit | cao | plan-contract §2.1, §3.1, §5.1 (normalize, duplicate), §6 Quota PUT | `modules/quotas/{routes,service,repo,rules}` | quota int + lock-order ca Quota∥Feature DELETE |
-| T2b | Khôi phục + adapter command/workflow/feature/group/quota | cao | plan §4.4, §6 Restore | `modules/audit/audit.restore.ts`, `modules/*/<m>.restore.ts` | M4-AC07 (403), AC08 |
-| T4 | Evaluator, `quota_alerts`, listener, `GET /admin/quota-banner` | cao | plan §5.1–5.3, §6 Evaluator | `modules/quotas/{evaluator,alerts,listener}`, `server.ts` | M4-AC01, AC02, AC-A12 |
-| T5 | `GET /admin/usage` + CSV | cao | plan-contract §2.2, §5.4 | `modules/usage/*` | M4-AC03, AC-A09 usage |
-| T6 | `GET /admin/overview` (2 role) | thường | plan-contract §2.3, §5.5 | `modules/overview/*` | M4-AC13 (API) |
-Thứ tự: T0 → T0b → T0m → T1 → T1b → T1c → T2 → T3 → T2b → T4 → T5 → T6.
+## 10. Task BUILD (A + B)
+Nguồn duy nhất: [`tasks.md`](tasks.md) (T0–T6, đã áp readiness lần 1: T6 rủi ro `cao`, lệnh int, file test cụ thể). Thứ tự: T0 → T0b → T0m → T1 → T1b → T1c → T2 → T3 → T2b → T4 → T5 → T6.

@@ -49,7 +49,7 @@ Nguồn FR/BR/AC: [BA §5.6–5.7, §6, §11](../../design/admin/ba-admin.md). B
 |---|---|---|
 | M4-R01 | "Tháng" = `[ngày 1 00:00, ngày 1 tháng sau)` giờ `Asia/Ho_Chi_Minh`, trùng Hub | RD#31 |
 | M4-R02 | `tenant_quotas`: unique (tenant_id, feature_id) NULLS NOT DISTINCT; `max_runs`/`max_tokens` nguyên > 0, `max_usd` numeric(12,2) > 0; trống = không giới hạn; `warn_pct` = 80 cố định | RD#16, 31, 48 |
-| M4-R03 | Mức dùng: run = số `run_id` khác nhau, token = input + output, USD = `billable_usd` (hàng `NULL` bỏ qua, hiện "Chưa định giá"); quota theo feature đếm đúng `feature_id`, quota cả tenant đếm tất cả. % một quota = max các chiều có giới hạn | Q1 |
+| M4-R03 | Mức dùng: run = số `run_id` khác nhau, token = input + output, USD = `billable_usd` (hàng `NULL` bỏ qua, hiện "Chưa định giá"); quota theo feature đếm đúng `feature_id`, quota cả tenant đếm tất cả. % một quota = max các chiều có giới hạn; % của tenant (Tổng quan) = max % các quota của tenant; hàng `run_id` NULL không tính run/`overage_runs`, vẫn cộng token/USD | Q1 |
 | M4-R04 | Ngưỡng 80 và 100: mỗi (tenant, feature\|null, level, month) cảnh báo **đúng một lần** (`quota_alerts` unique); không chặn, không đổi hành vi run | RD#10 |
 | M4-R05 | Email tới mọi `tenant_admin` active có email của tenant; tiêu đề `[{tenant}] Đã dùng {pct}% quota tháng`; gửi **sau commit**; lỗi gửi chỉ log + giữ trạng thái để gửi lại, không làm hỏng ghi quota | RD#42, TD #13 |
 | M4-R06 | Banner chỉ `tenant_admin`, tính từ mức dùng hiện tại (80–99 vàng, ≥ 100 cam); `platform_admin` không thấy; quota trống thì không banner | RD#42, missing §1 |
@@ -62,7 +62,7 @@ Nguồn FR/BR/AC: [BA §5.6–5.7, §6, §11](../../design/admin/ba-admin.md). B
 | M4-R13 | Khôi phục: chỉ `platform_admin`; tạo **phiên bản mới** (không sửa lịch sử), ghi audit `restore`; trùng tên → 409 `NAME_TAKEN`; thực thể đã đổi sau đó (version lệch) → 409 `VERSION_CONFLICT`; phạm vi: Q7 | RD#36, ui 7.10 |
 | M4-R14 | Export: chọn loại, tham chiếu bằng **key** (không id), `config-v{config_version}.yaml`, secret chỉ tên. Import: zod `ConfigFileSchema`, upsert theo key, **không xoá**, `dry_run` không ghi gì, áp dụng trong **một transaction** + một audit `import` + một NOTIFY; file ≤ 1 MB | RD#37, BR-04 |
 | M4-R15 | Import file tham chiếu secret chưa có → `missing_secrets[]`; áp dụng nhận `secrets:{NAME:value}`, thiếu thì từ chối | missing §14.7 |
-| M4-R16 | 2FA tuỳ chọn, tự bật; `totp_secret` mã hoá AES-GCM (master key như secret); mã dự phòng 10 × 8 ký tự dùng một lần, lưu dạng hash; mã sai tính chung bộ đếm FR-07; mã đã dùng không dùng lại trong cùng bước 30 s; `totp_token` 5 phút | missing §10, §15.3 |
+| M4-R16 | 2FA tuỳ chọn, tự bật; `totp_secret` mã hoá AES-GCM (master key như secret); mã dự phòng 10 × 8 ký tự dùng một lần, lưu dạng hash; mã sai tính chung bộ đếm FR-07 (ngoại lệ: mã sai ở bước bật `enable` không tính); mã đã dùng không dùng lại trong cùng bước 30 s; `totp_token` 5 phút | missing §10, §15.3 |
 | M4-R17 | `users.updated_by`, `tenants.updated_by` (TD #7): modal 409 hiện `{user}` cho mọi editor và vế "Lịch sử vẫn giữ v{n}" khi có audit | CR-016 |
 
 ## 3. Contract (backend-lead)
@@ -91,12 +91,10 @@ Mã lỗi mới (A+B): `NAME_TAKEN` 409 `{entity,name}` · `NOT_RESTORABLE` 409 
 | `POST /auth/totp/setup` · `enable` · `disable` · `backup-codes` | platform, tenant_admin (member 403) | `{current_password}` → `{secret, otpauth_url, qr_svg, account_label, expires_in}` · `{code}` → `{backup_codes[10]}` · `{current_password, code \| backup_code}` → 204 · `{code}` → `{backup_codes[10]}` |
 | `POST /admin/users/:id/totp/disable` | platform, tenant_admin (tenant mình; khác → 404; chính mình → 403) | `{}` → `User` |
 
-Đổi có sẵn (C+D): `Me` + `totp_enabled`, `totp_enabled_at`, `backup_codes_left`; `User` + `totp_enabled`; `ConfigCall.expectBase` (import: config đổi sau dry-run → 409 `VERSION_CONFLICT {current}`). Mã lỗi mới (C+D): `PAYLOAD_TOO_LARGE` 413 · `IMPORT_INVALID` 400 `{errors[]}` · `SECRETS_REQUIRED` 400 `{missing[]}` · `INVALID_TOTP_TOKEN` 401 · `INVALID_OTP` 401 · `INVALID_CURRENT_CODE` 400 · `TOTP_ALREADY_ENABLED` / `TOTP_NOT_ENABLED` / `TOTP_SETUP_EXPIRED` 409. Audit: import = 1 `ch.audit` (`import`/`config`); 2FA = `recordAudit` (`user_totp`: create/delete/update). Không NOTIFY cho 2FA.
-
-<!-- backend-lead -->
+Đổi có sẵn (C+D): `Me` + `totp_enabled`, `totp_enabled_at`, `backup_codes_left`; `User` + `totp_enabled`; `ConfigCall.expectBase` (import: config đổi sau dry-run → 409 `VERSION_CONFLICT {current}`). Mã lỗi mới (C+D): plan-cd §4.3. Audit: import = 1 `ch.audit` (`import`/`config`); 2FA = `recordAudit` (`user_totp`: create/delete/update). Không NOTIFY cho 2FA.
 
 ## 4. Dữ liệu (backend-lead)
-Điểm xuất phát: [BA §7](../../design/admin/ba-admin.md) (`tenant_quotas`, `audit_log`), cột TOTP của `users`, `quota_alerts`, `updated_by`; quyền `hub_ro` đọc `usage_logs` đã có (M3). RLS: bảng mới theo mẫu M1/M3.
+Điểm xuất phát: [BA §7](../../design/admin/ba-admin.md); `hub_ro` đọc `usage_logs` đã có (M3). RLS bảng mới theo mẫu M1/M3.
 **Khối A + B** ([plan §3](plan.md)): `0007_m4_ops.sql` (generate + phần RLS nối tay cuối file); bảng TOTP ở `0008_admin_totp` (plan-cd).
 
 | Bảng / cột | Điểm chính | RLS / quyền |
@@ -117,8 +115,6 @@ Thứ tự khoá mới: hạng 11a `tenant_quotas`, 13a `quota_alerts`, 15 `audi
 
 Thứ tự khoá: `user_totp`/`user_backup_codes` hạng 2b (sau `users`); import = ngoại lệ E4 (plan-cd §8.4).
 
-<!-- backend-lead -->
-
 ## 5. UI (frontend-lead)
 Màn → nguồn (chỉ trỏ; trạng thái/câu chữ do frontend-lead điền ở `plan-frontend.md`):
 
@@ -131,7 +127,6 @@ Màn → nguồn (chỉ trỏ; trạng thái/câu chữ do frontend-lead điền
 | Import/Export | `/transfer` | ImportPreview (Export: không artboard, theo missing §8) | missing §8 |
 | 2FA bật/tắt; bước đăng nhập | `/account/2fa`, `/login` | Enable2FA (đăng nhập: không artboard, mẫu D) | missing §10 |
 
-<!-- frontend-lead -->
 Chi tiết: [plan-frontend.md](plan-frontend.md) (trạng thái §4, validate §5, nhãn e2e §6, câu chữ mới §7, mã lỗi §8, cần backend-lead §10). Tóm tắt:
 - Menu nhóm **HỆ THỐNG** (Chi phí & quota, Nhật ký, Import / Export chỉ platform); tenant_admin thấy Usage + Nhật ký trong tenant mình; member không vào được. Thêm `Xác thực hai bước` ở menu avatar.
 - Banner quota trong khung, mọi trang của `tenant_admin`, không đóng được (R06, Q12). Tab tenant theo `?tab=`.
@@ -147,14 +142,13 @@ Mục tiêu (**không chặn mốc**, đo ở `test:perf`): báo cáo chi phí m
 | Phụ thuộc | Cách giả lập khi dev/test |
 |---|---|
 | `hub.usage_logs` | migration `hub-stub` + seed mẫu; `bun run mock:quota` ghi hàng tới ngưỡng/`overage` (RD#10) |
-| SMTP | Mailpit (`SMTP_URL=smtp://localhost:1025`), test đọc API Mailpit |
-| Thư viện mới (QR, mail, biểu đồ) | Q3: [ADR-0005](../../adr/0005-m4-mail-qr-yaml-chart.md) (Proposed; số 0004 đã dùng ở M1): `nodemailer`, `qrcode` (server), `yaml`; TOTP `node:crypto`; biểu đồ SVG tự vẽ, không `recharts` |
+| SMTP | Mailpit (`SMTP_URL=smtp://127.0.0.1:1025`), test đọc API Mailpit |
+| Thư viện mới (QR, mail, biểu đồ) | Q3: [ADR-0005](../../adr/0005-m4-mail-qr-yaml-chart.md) (Accepted 2026-10-03): `nodemailer`, `qrcode` (server), `yaml`; TOTP `node:crypto`; biểu đồ SVG tự vẽ, không `recharts` |
 | Hub gửi ngưỡng | `mock:quota` cuối lần ghi chạy `NOTIFY quota_threshold {tenant_id}`; Admin LISTEN và chạy evaluator (plan §5.2) |
 | Index `usage_logs (at)` (overview platform) | `migrations-dev/0002_usage_at_idx.sql` cho stub; Hub M5 tự thêm vào migration của Hub |
 
 Env mới (A+B): `ADMIN_WEB_URL` (link trong mail cảnh báo, mặc định `http://localhost:3000`). Mailer: interface `Mailer.send` (A+B), SMTP thật theo plan-cd/ADR-0005.
 Env mới (C+D, plan-cd §10): `SMTP_URL` (tuỳ chọn, `smtp://`/`smtps://`; vắng = tắt mail, cảnh báo lúc khởi động; dev `smtp://127.0.0.1:1025`) · `MAIL_FROM` (tuỳ chọn, mặc định `AI System <no-reply@ai-system.local>`). 2FA/import dùng `SECRET_MASTER_KEY` có sẵn. Mailer: `lib/mailer` (task TM), test đơn vị dùng `createMemoryMailer`.
-<!-- backend-lead: env mới -->
 
 ## 8. Tiêu chí nghiệm thu (qc)
 
@@ -190,32 +184,30 @@ AC bổ sung (đề xuất; qc chốt ở Q1, mã `M4-ACnn`):
 | M4-AC12 | `member` không thấy/gọi được `/auth/totp/*`, `/audit`, `/usage` | int |
 | M4-AC13 | Hub chưa có dữ liệu: Tổng quan và Chi phí hiện "—" + tooltip, không lỗi (R09) | e2e |
 | M4-AC14 | Modal 409 của user/tenant hiện `{user}` và vế "Lịch sử" khi có audit (R17) | e2e |
+| M4-AC15–18 | Quota PUT version/409/NOTIFY/audit · CSV BOM/formula/cột theo role · RLS 3 bảng mới · mail lỗi không hỏng ghi quota | [test-plan §4](test-plan.md) |
 
-Lệnh xong: `bun run typecheck && bun test && bunx playwright test M4` (+ Lệnh xong M0 mở rộng cho M4, **không** gồm `test:perf`).
+Lệnh xong M4 (như M3 §8, **không** gồm `test:perf`): `docker compose up -d --wait && bun run db:migrate && bun run db:seed && bun run check && bun run typecheck && bun test && bun tests/acceptance/ADM-NFR-06/ac07.check.ts && bun run test:int && bun run i18n:check && bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check && bun run check:size --all && bun run depcruise --all && bun run check:fn --all`. Riêng e2e M4: `bunx playwright test e2e/m4-`.
 
 ## 9. Quyết định
-### Trước Gate (đã chốt với người dùng)
-- Mặc định readiness Admin M1–M4 đã chấp nhận (CR-001); 2FA + Import/Export vào M4 khi đủ artboard (CR-002): canvas có 6/8 màn (TenantQuota, Usage, TenantOverview/Main, Audit, ImportPreview, Enable2FA); thiếu bước đăng nhập 2FA và tab Export.
-- Hiệu năng không chặn mốc (2026-10-03). Ưu tiên: hoàn tất admin để người dùng test service.
-- RD#10, 16, 31, 32, 33, 36, 37, 42, 48 đã đưa vào §2 (tick trong readiness).
-
-### Câu hỏi mở (chờ Gate; mặc định đề xuất, người dùng chấp nhận = "đồng ý")
-| # | Mơ hồ / mâu thuẫn | Mặc định đề xuất |
-|---|---|---|
-| Q0 | M4 lớn (4 khối, nhiều task rủi ro cao). Tách? | **Giữ một spec**; task xếp theo khối A, B, C, D. Nếu quá hạn thì cắt **M4a = A + B** (chi phí + audit, dính nhau qua audit quota) và **M4b = C + D** (Import/Export + 2FA: độc lập, mỗi khối rủi ro bảo mật riêng) |
-| Q1 | BA không nói "run" đếm gì, USD tính theo cột nào | R03: `run_id` khác nhau, `billable_usd` (giá thu, tenant thấy được) |
-| Q2 | AC-A12 có vế Hub ("2 run đều chạy"), Hub chưa có | Admin kiểm phía Admin bằng `mock:quota`/stub; vế Hub ghi đầu vào M5 (như CR-015) |
-| Q2b | Ai phát ngưỡng khi chưa có Hub? | Admin có hàm `evaluateQuota(tenant)` chạy: sau `PUT quotas`, khi nhận NOTIFY `quota_threshold` từ Hub/mock, và khi mở Tổng quan/banner (tính trực tiếp). Không job định kỳ |
-| Q3 | Email/QR/biểu đồ cần thư viện mới | `nodemailer`, `qrcode` (server, `qr_svg`), `yaml`; TOTP `node:crypto` (RFC 6238); không `recharts` (SVG tự vẽ). **ADR-0005** trình Gate (Luật 2b) |
-| Q5 | Tổng quan platform cần `hub.runs` (run lỗi, provider) không có | Chỉ dùng `usage_logs`: run 24 giờ, tenant sắp/đã vượt quota; card "Command lỗi nhiều nhất", "Agent Studio" hiện "—"/"Chưa khả dụng" |
-| Q6 | FR-51 "mọi thay đổi" nhưng M1–M3 chưa ghi | Ghi qua điểm chung `configWrite` + thao tác user/tenant (khoá, reset, tắt 2FA hộ); login/refresh **không** ghi; không backfill |
-| Q7 | FR-52 không nêu thực thể nào khôi phục được | Khôi phục: command, workflow, feature, group, quota (update/delete). **Không**: user, tenant (tránh khôi phục role/mật khẩu), secret, lock/unlock, grant/revoke (đảo bằng thao tác thường) |
-| Q8 | `tenant_admin` có khôi phục trong tenant mình? (BA §8: chỉ đọc) | Không (missing §15.6) |
-| Q9 | Quota có `version` (FR-55)? BA chỉ liệt kê command/workflow/feature/group/user | `PUT /admin/tenants/:id/quotas` thay cả bộ trong một transaction, gửi `version` của tenant; lệch thì 409 |
-| Q10 | Bước đăng nhập 2FA chưa có artboard | Theo missing §10.2 (mẫu D; thứ tự mật khẩu, mã, đổi mật khẩu bắt buộc); 2FA tuỳ chọn; admin tắt hộ user trong phạm vi quản lý, ghi audit (missing §15.3–4) |
-| Q11 | Import `tenants` có thể tạo tenant không có `tenant_admin` (vi phạm BR-08) | Import tenant chỉ **sửa** (tên, slot, quota); tenant chưa tồn tại thì lỗi dòng "tạo ở trang Tenants". Grants tham chiếu (tenant key, group key, feature key) |
-| Q12 | Banner có đóng được? | Không; biến mất khi dưới 80% |
-| Q13 | ROADMAP: "cần artboard trước Gate M4" nhưng thiếu Export + bước đăng nhập 2FA | Dùng mô tả missing-screens (như M1–M3); vẽ sau, không chặn |
+### Trước Gate — đã chốt (người dùng 2026-10-03)
+Nền: CR-001 (mặc định readiness M1–M4), CR-002 (2FA + Import/Export vào M4; canvas 6/8 màn); hiệu năng không chặn mốc; RD#10, 16, 31, 32, 33, 36, 37, 42, 48 đã vào §2. Người dùng chấp nhận mọi mặc định dưới đây và của [readiness lần 1](readiness.md); 3 câu trả lời riêng ghi "(ND)".
+- Q0 Giữ một spec, task theo khối A–D; quá hạn thì cắt M4a = A+B, M4b = C+D.
+- Q1 Run = số `run_id` khác nhau; USD = `billable_usd` (R03).
+- Q2 AC-A12 kiểm phía Admin bằng `mock:quota`/stub; vế Hub ("2 run đều chạy") vào M5.
+- Q2b Ngưỡng do `evaluateTenant` của Admin: sau commit PUT quotas (không await), NOTIFY `quota_threshold`, mở Tổng quan/banner; không job định kỳ.
+- Q3 ADR-0005 **Accepted** 2026-10-03: `nodemailer`, `qrcode` (server), `yaml`; TOTP `node:crypto`; không `recharts`.
+- Q5 Tổng quan platform chỉ dùng `usage_logs`; card cần `hub.runs` hiện "—"/"Chưa khả dụng".
+- Q6 Audit qua `configWrite` + thao tác user/tenant (khoá, reset, tắt 2FA hộ); login/refresh không ghi; không backfill.
+- Q7 (ND) Khôi phục chỉ command, workflow, feature, group, quota; chỉ `platform_admin`.
+- Q8 `tenant_admin` không khôi phục (403).
+- Q9 PUT quotas thay cả bộ trong một tx, gửi `version` tenant, lệch → 409.
+- Q10 (ND) Bước đăng nhập 2FA theo missing §10.2; 2FA tuỳ chọn; admin tắt hộ trong phạm vi, ghi audit, **giữ phiên** của user (không thu hồi).
+- Q11 Import tenant chỉ **sửa** (tên, slot, quota, entitlement chỉ thêm); tenant chưa có → lỗi dòng; grants tham chiếu theo key.
+- Q12 Banner không đóng được, biến mất dưới 80%. Q13 Màn thiếu artboard theo missing-screens, vẽ sau.
+- Q-D1 Tạo lại mã dự phòng đòi mã TOTP hiện tại. Q-C2 Grant cho user không export.
+- plan-cd D1 bảng riêng `user_totp` thay cột `users.totp_secret` của BA §7 (docs-architect sửa BA ở task D1) · D2 AES-GCM AAD riêng · D3 mã dự phòng HMAC + pepper · D4 (ND) mật khẩu đúng chưa qua TOTP không reset bộ đếm · D5 `last_used_step` · D6 QR ở server · D7 `yaml` `maxAliasCount: 0` · D8 import 1 tx/1 audit/1 NOTIFY + `expectBase` · D9 SVG tự vẽ · D10 thiếu `SMTP_URL` = tắt mail.
+- plan A+B: audit cùng tx trong `configWrite` + bất biến event⇔audit (§4.1); khôi phục = version mới, chỉ thay đổi mới nhất (§4.4); usage loại `cost_usd` ở server (§5.4); mail sau commit, claim `sending` (§5.2).
+- Readiness lần 1: PUT quotas không đổi (so bộ sau `normalizeQuotaItems`) → 200 bộ hiện tại, không bump/`updated_by`/audit/NOTIFY/evaluate · `auditSnapshot` chỉ kiểm khoá cấm ở cấp 1 sau allowlist (bỏ qua `input_map`, `input_schema`, `args`, `output`) · audit `config` (import) allowlist `from_config_version, added, updated, secrets_created, truncated` · import `quotas` upsert theo (tenant, feature), dòng mọi giới hạn null → `SCHEMA` · KPI phụ/slot/subscription của Usage/Overview không thêm trường, FE bỏ hiển thị (TECH-DEBT #30).
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - (chưa có)

@@ -6,8 +6,11 @@ Chữ ký chốt để qc viết test trước; ngữ cảnh ở [plan.md](plan.
 ```ts
 export const AUDIT_FIELDS: Readonly<Record<AuditEntity, readonly string[]>>;   // allowlist bảng dưới
 export const FORBIDDEN_AUDIT_KEYS: readonly string[]; // password, password_hash, totp_secret, ciphertext, iv, token_hash, value, backup_codes, code_hash
-export function auditSnapshot(entity: AuditEntity, dto: Readonly<Record<string, unknown>>): Record<string, unknown>; // pick allowlist; ném nếu kết quả chứa FORBIDDEN_AUDIT_KEYS ở mọi độ sâu
-export function containsForbiddenKey(v: unknown): boolean;
+export const USER_DEFINED_AUDIT_FIELDS: readonly string[]; // input_map, input_schema, args, output — nội dung người dùng định nghĩa
+export function auditSnapshot(entity: AuditEntity, dto: Readonly<Record<string, unknown>>): Record<string, unknown>;
+// pick allowlist; ném nếu khoá cấp 1 của kết quả ∈ FORBIDDEN_AUDIT_KEYS; KHÔNG duyệt sâu vào USER_DEFINED_AUDIT_FIELDS
+// (vd `workflow.input_schema` có thuộc tính `password` là hợp lệ → không ném)
+export function containsForbiddenKey(v: unknown): boolean; // tiện ích đệ quy mọi độ sâu (test/kiểm DTO), auditSnapshot không dùng cho phần người dùng định nghĩa
 ```
 
 ## A2 · `modules/audit/audit.rules.ts` (đọc, khôi phục)
