@@ -14,7 +14,7 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
-import type { z } from "zod";
+import { type Issue, type Parsed, parseBody } from "./http";
 import type { AccessClaims, SessionStore } from "./sessions";
 import { findUser, findUserById, MOCK_DEV_PASSWORD, toMe } from "./users";
 
@@ -39,36 +39,12 @@ const MESSAGES: Record<AuthCode, string> = {
 const COOKIE_OPTS = { httpOnly: true, sameSite: "Strict", path: "/auth" } as const;
 const COOKIE_MAX_AGE_S = 2_592_000;
 
-type Issue = { path: (string | number)[]; code: string; message: string };
-
 function authError(c: Context, code: AuthCode, issues?: Issue[]): Response {
   const details = issues ? { details: { issues } } : {};
   return c.json({ error: { code, message: MESSAGES[code], ...details } }, API_ERRORS[code]);
 }
 
 const isExtension = (c: Context) => c.req.header(X_CLIENT_HEADER) === X_CLIENT_EXTENSION;
-
-/** Body JSON theo schema; body rỗng → `{}`; JSON hỏng → issue `invalid_json`. */
-async function parseBody<T>(
-  c: Context,
-  schema: z.ZodType<T>,
-): Promise<{ ok: true; data: T } | { ok: false; issues: Issue[] }> {
-  const text = await c.req.text();
-  let raw: unknown = {};
-  try {
-    if (text.trim() !== "") raw = JSON.parse(text);
-  } catch {
-    return { ok: false, issues: [{ path: [], code: "invalid_json", message: "Invalid JSON" }] };
-  }
-  const r = schema.safeParse(raw);
-  if (r.success) return { ok: true, data: r.data };
-  const issues = r.error.issues.map((i) => ({
-    path: i.path.filter((p): p is string | number => typeof p !== "symbol"),
-    code: i.code,
-    message: i.message,
-  }));
-  return { ok: false, issues };
-}
 
 /** Cấp TokenGrant: web nhận cookie `ai_rt`, extension nhận `refresh_token` trong body. */
 async function grant(
@@ -91,12 +67,10 @@ async function grant(
 }
 
 /** Refresh token của request: extension → body, web → cookie. */
-async function readRefreshToken(
-  c: Context,
-): Promise<{ ok: true; token: string | undefined } | { ok: false; issues: Issue[] }> {
-  if (!isExtension(c)) return { ok: true, token: getCookie(c, REFRESH_COOKIE) };
+async function readRefreshToken(c: Context): Promise<Parsed<string | undefined>> {
+  if (!isExtension(c)) return { ok: true, data: getCookie(c, REFRESH_COOKIE) };
   const r = await parseBody(c, RefreshRequestSchema);
-  return r.ok ? { ok: true, token: r.data.refresh_token } : r;
+  return r.ok ? { ok: true, data: r.data.refresh_token } : r;
 }
 
 export function createAuthRoutes(store: SessionStore): Hono {
@@ -115,7 +89,7 @@ export function createAuthRoutes(store: SessionStore): Hono {
   app.post("/auth/refresh", async (c) => {
     const t = await readRefreshToken(c);
     if (!t.ok) return authError(c, "VALIDATION_ERROR", t.issues);
-    const r = t.token ? store.rotate(t.token) : null;
+    const r = t.data ? store.rotate(t.data) : null;
     if (r?.ok) return grant(c, store, r);
     const code = r?.code ?? "INVALID_REFRESH_TOKEN";
     // Như Admin: chỉ INVALID_REFRESH_TOKEN của web xoá cookie (SUPERSEDED: tab thắng vừa đặt cookie mới).

@@ -150,6 +150,9 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 - B1: `deriveTitle` bỏ tiền tố `#scn:\S*` sau khi `trimStart`; cắt đúng 40 code point rồi thêm `…` (không trimEnd trước `…`). Parser SSE: khung không có dòng `data:` không phát (đặc tả SSE); `event` thiếu → `"message"`.
 - B2: thu hồi access (M3) theo mốc **số thứ tự cấp** (`jti` = seq tăng trong tiến trình), không theo ms: token cấp cùng ms/giây trước và sau `expire-access` vẫn phân biệt; logout huỷ phiên `sid` ⇒ access của phiên đó cũng 401. Refresh token cũ dùng lại → `REFRESH_SUPERSEDED`, không huỷ phiên (giống Admin: tab thua cuộc đua). Extension (`X-Client: extension`) nhận/gửi `refresh_token` trong body, không cookie.
 - B2: `/health` mock: `createHubMock({timeoutMs})` kiểu M0 giữ `version:"mock"` (test M0-AC15 ghim); env từ `loadMockEnv` (bộ test contract, `bun run mocks`) trả `"0.0.0-mock"` (semver, qua `HealthResponseSchema`, K-A6) → không tranh chấp test. `GET /conversations` B2 là khung tạm (trang rỗng + validate query) tới B3.
+- B3: cursor = base64url(JSON `[số, chuỗi]`) của phần tử cuối trang (E5 `[updated_at_ms, id]`, E10 `[created_at_ms, id]`, E11 `[thứ tự thêm, id]`); không giải mã được hoặc không chính tắc → 400 `VALIDATION_ERROR`.
+- B3: đồng hồ store tăng nghiêm ngặt (≥ 1 ms mỗi thao tác) → hai thao tác liền nhau không trùng `updated_at` (K-C4, K-M10 tất định); sở hữu = `user_id` **và** `tenant_id` khớp claims.
+- B3: seed `minh` theo §3.5, `created_at` hội thoại = tin đầu; tin assistant seed có `run_id` nhưng không có run trong engine (E13/E14 với id đó → 404). E9 trả id run đang chạy cho hook `onDeleted` (B4 huỷ).
 
 ### Điều phối xử lý test-plan §8 (2026-10-04, Luật 2: chọn phương án đơn giản, dễ đổi)
 | # | Quyết định |
