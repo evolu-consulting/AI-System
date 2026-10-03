@@ -80,6 +80,19 @@ File đề xuất: `packages/contracts/src/{quotas,usage,overview,audit,transfer
 
 Mã lỗi mới (A+B): `NAME_TAKEN` 409 `{entity,name}` · `NOT_RESTORABLE` 409 · `RESTORE_REF_MISSING` 409 `{missing[]}`. Đổi có sẵn: `CONFIG_ENTITIES` + `quota`; `Tenant`/`User` + `updated_by` (CR-016). NOTIFY mới Hub → Admin: `quota_threshold {tenant_id}`. Member → 403 mọi endpoint trên.
 
+**Khối C + D** (chi tiết từng trường: [plan-cd §3–4](plan-cd.md); hàm thuần: plan-cd §6):
+
+| Endpoint | Role | Schema (`packages/contracts`) |
+|---|---|---|
+| `GET /admin/export?types=…` | platform (khác → 403) | `ExportQuery` → yaml `ConfigFile` (`config-v{n}.yaml`, secret chỉ tên) (`transfer.ts`) |
+| `POST /admin/import?dry_run=1\|0` (mặc định 1) | platform | `ImportRequest {file_name, content ≤ 1 MiB, secrets?, base_config_version (bắt buộc khi áp dụng)}` → `ImportPreview` / `ImportResult` |
+| `POST /auth/login` (đổi) | mọi client | thêm nhánh `{status:"totp_required", totp_token, expires_in:300}` (`auth.ts`) |
+| `POST /auth/totp/verify` | không Bearer | `{totp_token, code \| backup_code}` → như login (`totp.ts`) |
+| `POST /auth/totp/setup` · `enable` · `disable` · `backup-codes` | platform, tenant_admin (member 403) | `{current_password}` → `{secret, otpauth_url, qr_svg, account_label, expires_in}` · `{code}` → `{backup_codes[10]}` · `{current_password, code \| backup_code}` → 204 · `{code}` → `{backup_codes[10]}` |
+| `POST /admin/users/:id/totp/disable` | platform, tenant_admin (tenant mình; khác → 404; chính mình → 403) | `{}` → `User` |
+
+Đổi có sẵn (C+D): `Me` + `totp_enabled`, `totp_enabled_at`, `backup_codes_left`; `User` + `totp_enabled`; `ConfigCall.expectBase` (import: config đổi sau dry-run → 409 `VERSION_CONFLICT {current}`). Mã lỗi mới (C+D): `PAYLOAD_TOO_LARGE` 413 · `IMPORT_INVALID` 400 `{errors[]}` · `SECRETS_REQUIRED` 400 `{missing[]}` · `INVALID_TOTP_TOKEN` 401 · `INVALID_OTP` 401 · `INVALID_CURRENT_CODE` 400 · `TOTP_ALREADY_ENABLED` / `TOTP_NOT_ENABLED` / `TOTP_SETUP_EXPIRED` 409. Audit: import = 1 `ch.audit` (`import`/`config`); 2FA = `recordAudit` (`user_totp`: create/delete/update). Không NOTIFY cho 2FA.
+
 <!-- backend-lead -->
 
 ## 4. Dữ liệu (backend-lead)
@@ -94,6 +107,15 @@ Mã lỗi mới (A+B): `NAME_TAKEN` 409 `{entity,name}` · `NOT_RESTORABLE` 409 
 | `users.updated_by`, `tenants.updated_by` | uuid FK users `set null` | `hub_ro` không được cột mới |
 
 Thứ tự khoá mới: hạng 11a `tenant_quotas`, 13a `quota_alerts`, 15 `audit_log` (INSERT sau bump, không chờ) — [plan §6](plan.md).
+
+**Khối C + D** ([plan-cd §5](plan-cd.md)): `0008_admin_totp.sql`. Import/Export không thêm bảng.
+
+| Bảng | Điểm chính | RLS / quyền |
+|---|---|---|
+| `user_totp` (PK `user_id`) | `secret_ct` bytea 36 B (AES-256-GCM, `SECRET_MASTER_KEY`, AAD `admin.user_totp:<user_id>:<kv>`), `secret_iv` 12 B, `key_version`, `enabled_at` (null = đang setup), `pending_expires_at` (10 phút), `last_used_step` bigint (chống dùng lại); FK kép `(tenant_id, user_id)` → users | tenant pattern; `REVOKE ALL FROM hub_ro` |
+| `user_backup_codes` | `code_hash` = HMAC-SHA256(pepper HKDF từ master key) 32 B, unique `(user_id, code_hash)`, `used_at`; FK kép → `user_totp` ON DELETE CASCADE | tenant pattern; `REVOKE ALL FROM hub_ro` |
+
+Thứ tự khoá: `user_totp`/`user_backup_codes` hạng 2b (sau `users`); import = ngoại lệ E4 (plan-cd §8.4).
 
 <!-- backend-lead -->
 
@@ -126,11 +148,12 @@ Mục tiêu (**không chặn mốc**, đo ở `test:perf`): báo cáo chi phí m
 |---|---|
 | `hub.usage_logs` | migration `hub-stub` + seed mẫu; `bun run mock:quota` ghi hàng tới ngưỡng/`overage` (RD#10) |
 | SMTP | Mailpit (`SMTP_URL=smtp://localhost:1025`), test đọc API Mailpit |
-| Thư viện mới (QR, mail, biểu đồ) | Q3: ADR-0004 trước Gate |
+| Thư viện mới (QR, mail, biểu đồ) | Q3: [ADR-0005](../../adr/0005-m4-mail-qr-yaml-chart.md) (Proposed; số 0004 đã dùng ở M1): `nodemailer`, `qrcode` (server), `yaml`; TOTP `node:crypto`; biểu đồ SVG tự vẽ, không `recharts` |
 | Hub gửi ngưỡng | `mock:quota` cuối lần ghi chạy `NOTIFY quota_threshold {tenant_id}`; Admin LISTEN và chạy evaluator (plan §5.2) |
 | Index `usage_logs (at)` (overview platform) | `migrations-dev/0002_usage_at_idx.sql` cho stub; Hub M5 tự thêm vào migration của Hub |
 
-Env mới (A+B): `ADMIN_WEB_URL` (link trong mail cảnh báo, mặc định `http://localhost:3000`). Mailer: interface `Mailer.send` (A+B), SMTP thật theo plan-cd/ADR-0004.
+Env mới (A+B): `ADMIN_WEB_URL` (link trong mail cảnh báo, mặc định `http://localhost:3000`). Mailer: interface `Mailer.send` (A+B), SMTP thật theo plan-cd/ADR-0005.
+Env mới (C+D, plan-cd §10): `SMTP_URL` (tuỳ chọn, `smtp://`/`smtps://`; vắng = tắt mail, cảnh báo lúc khởi động; dev `smtp://127.0.0.1:1025`) · `MAIL_FROM` (tuỳ chọn, mặc định `AI System <no-reply@ai-system.local>`). 2FA/import dùng `SECRET_MASTER_KEY` có sẵn. Mailer: `lib/mailer` (task TM), test đơn vị dùng `createMemoryMailer`.
 <!-- backend-lead: env mới -->
 
 ## 8. Tiêu chí nghiệm thu (qc)
