@@ -32,12 +32,13 @@ const sortKeyOf = (t: string, e: Obj): string =>
         : e.key;
 const codes = (p: Obj) => (p.errors as Obj[]).map((e) => e.code);
 
-function keysDeep(v: unknown, out: string[] = []): string[] {
-  if (Array.isArray(v)) for (const x of v) keysDeep(x, out);
+// [khoá, nằm trong commands[].input_map] — `input_map.<field>.value` là hằng của M2 (`InputMapEntrySchema`), không phải secret
+function keysDeep(v: unknown, out: [string, boolean][] = [], inMap = false): [string, boolean][] {
+  if (Array.isArray(v)) for (const x of v) keysDeep(x, out, inMap);
   else if (v && typeof v === "object") {
     for (const [k, x] of Object.entries(v)) {
-      out.push(k);
-      keysDeep(x, out);
+      out.push([k, inMap]);
+      keysDeep(x, out, inMap || k === "input_map");
     }
   }
   return out;
@@ -72,10 +73,11 @@ describe("ADM-FR-54 · export", () => {
     const r = await loadTransferRules();
     const f = r.buildExportFile(snap, TYPES, NOW);
     expect(f.secrets).toEqual([{ name: "DIFY_INVOICE_KEY" }, { name: "DIFY_TRANSLATE_KEY" }]);
-    for (const k of keysDeep(f)) {
-      expect(k === "id" || k.endsWith("_id") || ["value", "last4", "ciphertext"].includes(k)).toBe(
-        false,
-      );
+    // BR-04 / plan-cd §3: mục secret chỉ có `name`; không giá trị/last4/iv ở đâu ngoài hằng input_map
+    for (const s of f.secrets as Obj[]) expect(Object.keys(s)).toEqual(["name"]);
+    for (const [k, inMap] of keysDeep(f)) {
+      const banned = ["last4", "ciphertext", "iv"].includes(k) || (k === "value" && !inMap);
+      expect(k === "id" || k.endsWith("_id") || banned).toBe(false);
     }
   });
 

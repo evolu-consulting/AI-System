@@ -160,7 +160,7 @@ f2ac17e5f8b5fd9be804bb3532cf4eff0983faa4af8e1cd4aac447a8d2a212cf  tests/acceptan
 c80acf3cb281c12f7ef59eaa50512362eef01ea112326674956718d7a998c68c  tests/acceptance/M4/rules/quotas.rules.test.ts
 1ad406078ec8706341f63601e6301d2be249747fd8fd2bb7fa2d90fbcee78d01  tests/acceptance/M4/rules/totp-oracle.test.ts
 22378d61c815d4b681704085a15a700fc760b3e3c0384552b31d9e5d68734b75  tests/acceptance/M4/rules/totp.test.ts
-622b34f3acb3997c69394dc8b2d1324385511cde347e5d96c8fbf109a3402acf  tests/acceptance/M4/rules/transfer.test.ts
+f3832f68ccd046227a045eac833cf9f3281c7f52e6bb2f00f9e91ec598e3f0d4  tests/acceptance/M4/rules/transfer.test.ts
 b20677995d32e0003dc4fedb0eab18012db9a5f9d0bb42a0b460ced35147093e  tests/acceptance/M4/rules/usage.rules.test.ts
 a848c6ca744516a8f903fbdb9c748f6b11290c7773393e1077108458cc7d15bf  tests/acceptance/M4/totp-admin-reset.int.test.ts
 000c6752c61374772fab402da874db7e0b991abb7f51718c12de5b145a93a13f  tests/acceptance/M4/totp-db.int.test.ts
