@@ -16,6 +16,7 @@ export const CONFIG_ENTITIES = [
   "workflow",
   "command",
   "secret",
+  "quota",
   "batch",
 ] as const;
 export type ConfigEntity = (typeof CONFIG_ENTITIES)[number];

@@ -74,6 +74,7 @@ export function toUser(u: UserRow): User {
     created_at: u.createdAt.toISOString(),
     updated_at: u.updatedAt.toISOString(),
     version: u.version,
+    updated_by: null, // T1b điền username người ghi gần nhất (M4-R17)
     groups: userGroups(u.groups),
     group_count: u.groupCount,
   };

@@ -13,6 +13,7 @@ import {
   TempPasswordSchema,
   TenantKeySchema,
   TenantNameSchema,
+  UpdatedBySchema,
   UsernameSchema,
   UuidSchema,
   VersionSchema,
@@ -37,6 +38,8 @@ const tenantShape = {
   created_at: IsoDateTime,
   updated_at: IsoDateTime,
   version: VersionSchema,
+  /** Username người ghi gần nhất; null = seed / không thấy qua RLS (M4-R17). */
+  updated_by: UpdatedBySchema,
 };
 const statusMatchesActive = (t: { active: boolean; status: string }) =>
   (t.status === "locked") === !t.active;

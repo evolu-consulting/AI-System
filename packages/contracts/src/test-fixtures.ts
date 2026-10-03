@@ -29,6 +29,7 @@ export const tenant: Tenant = {
   created_at: T0,
   updated_at: T1,
   version: 2,
+  updated_by: null,
 };
 
 export const user: User = {
@@ -49,6 +50,7 @@ export const user: User = {
   created_at: T0,
   updated_at: T1,
   version: 1,
+  updated_by: null,
   groups: [],
   group_count: 0,
 };

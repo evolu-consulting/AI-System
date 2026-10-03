@@ -50,6 +50,9 @@ const MESSAGES: Record<ErrorCode, string> = {
   FEATURE_HAS_EXCLUSIVE_COMMANDS: "Feature has commands that belong only to it",
   BETA_GROUP_PROTECTED: "The beta-testers group cannot be deleted",
   NOT_ENTITLED: "Feature is not entitled for this tenant",
+  NAME_TAKEN: "Name is already taken",
+  NOT_RESTORABLE: "This change cannot be restored",
+  RESTORE_REF_MISSING: "A referenced record no longer exists",
   TEMP_LOCKED: "Temporarily locked",
   INTERNAL_ERROR: "Internal server error",
 };

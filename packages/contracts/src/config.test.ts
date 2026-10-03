@@ -12,7 +12,7 @@ describe("ADM-FR-53 · payload config_changed (spec M3 §3, M3-R16)", () => {
   test("kênh và danh sách entity", () => {
     expect(CONFIG_CHANNEL).toBe("config_changed");
     expect(CONFIG_ENTITIES).toContain("batch");
-    expect(CONFIG_ENTITIES).toHaveLength(10);
+    expect(CONFIG_ENTITIES).toHaveLength(11);
   });
 
   test("một event một tenant → entity + tenant_id", () => {
@@ -62,6 +62,6 @@ describe("ADM-FR-53 · payload config_changed: gộp event và biên", () => {
     expect(new TextEncoder().encode(JSON.stringify(ok)).length).toBeLessThan(8000);
     expect(ConfigChangedPayloadSchema.safeParse({ ...ok, name: "X" }).success).toBe(false);
     expect(ConfigChangedPayloadSchema.safeParse({ v: 0, entity: "user" }).success).toBe(false);
-    expect(ConfigChangedPayloadSchema.safeParse({ v: 1, entity: "quota" }).success).toBe(false);
+    expect(ConfigChangedPayloadSchema.safeParse({ v: 1, entity: "bogus" }).success).toBe(false);
   });
 });

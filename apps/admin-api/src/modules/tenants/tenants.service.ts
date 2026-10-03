@@ -36,6 +36,7 @@ export function toTenant(t: TenantRow): Tenant {
     created_at: t.createdAt.toISOString(),
     updated_at: t.updatedAt.toISOString(),
     version: t.version,
+    updated_by: null, // T1b điền username người ghi gần nhất (M4-R17)
   };
 }
 

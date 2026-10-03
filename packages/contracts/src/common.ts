@@ -203,7 +203,7 @@ export function pageResponseSchema<T extends z.ZodType>(item: T) {
 }
 export type PageResponse<T> = { items: T[]; total: number };
 
-/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3 + M3 §3: 23 + 11 + 2 = 36 mã). */
+/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3 + M3 §3 + M4 A/B: 23 + 11 + 2 + 3 = 39 mã). */
 export const API_ERRORS = {
   VALIDATION_ERROR: 400,
   TENANT_REQUIRED: 400,
@@ -239,6 +239,9 @@ export const API_ERRORS = {
   FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
   BETA_GROUP_PROTECTED: 409,
   NOT_ENTITLED: 409,
+  NAME_TAKEN: 409,
+  NOT_RESTORABLE: 409,
+  RESTORE_REF_MISSING: 409,
   TEMP_LOCKED: 423,
   INTERNAL_ERROR: 500,
 } as const satisfies Record<string, 400 | 401 | 403 | 404 | 409 | 423 | 500>;

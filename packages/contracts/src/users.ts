@@ -13,6 +13,7 @@ import {
   RoleSchema,
   TempPasswordSchema,
   TenantKeySchema,
+  UpdatedBySchema,
   UsernameSchema,
   UuidSchema,
   VersionSchema,
@@ -39,6 +40,7 @@ export const UserSchema = z
     created_at: IsoDateTime,
     updated_at: IsoDateTime,
     version: VersionSchema,
+    updated_by: UpdatedBySchema,
     groups: z.array(GroupRefSchema).max(USER_GROUPS_MAX),
     group_count: CountSchema,
   })

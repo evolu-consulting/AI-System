@@ -175,10 +175,13 @@ describe("ADM-FR-01 · API_ERRORS", () => {
       FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
       BETA_GROUP_PROTECTED: 409,
       NOT_ENTITLED: 409,
+      NAME_TAKEN: 409,
+      NOT_RESTORABLE: 409,
+      RESTORE_REF_MISSING: 409,
       TEMP_LOCKED: 423,
       INTERNAL_ERROR: 500,
     });
-    expect(ERROR_CODES).toHaveLength(36);
+    expect(ERROR_CODES).toHaveLength(39);
   });
 
   test("mọi mã hợp lệ theo ErrorResponseSchema M0", () => {
