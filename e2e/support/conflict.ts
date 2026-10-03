@@ -17,7 +17,8 @@ export async function versionOf(table: string, id: string): Promise<number> {
 
 export type BodyOpts = { entity: string; latest: number; mine: number; user?: string };
 
-/** Hộp thoại hiện đúng câu: có `{user}` (workflow/command/feature/group) hoặc không (user/tenant). */
+/** Hộp thoại hiện đúng câu: có `{user}` khi bản mới nhất có `updated_by` (workflow/command/feature/group; user/tenant từ M4-R17)
+ * hoặc không (`updated_by` null). */
 export async function expectConflictBody(page: Page, o: BodyOpts) {
   const dlg = conflictDialog(page);
   await expect(dlg).toBeVisible();

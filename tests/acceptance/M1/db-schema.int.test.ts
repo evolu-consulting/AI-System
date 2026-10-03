@@ -51,7 +51,7 @@ const names = async (schemas: string[]) =>
     await sql<
       { t: string }[]
     >`select table_schema || '.' || table_name as t from information_schema.tables
-      where table_schema in ${sql(schemas)} and table_type = 'BASE TABLE' order by 1`
+      where table_schema in ${sql(schemas)} and table_type = 'BASE TABLE' order by (table_schema || '.' || table_name) collate "C"`
   ).map((r) => r.t);
 const clean = () =>
   sql`truncate admin.refresh_tokens, admin.users, admin.tenants, admin.features cascade`;
@@ -66,13 +66,14 @@ afterAll(async () => {
 });
 
 describe("ADM-NFR-06 · migration development", () => {
-  it("ADM-NFR-06 · spec §4 · development: {main:7, dev:2}; lần 2 {0,0}", () => {
-    expect(firstRun).toEqual({ main: 7, dev: 2 });
+  it("ADM-NFR-06 · spec §4 · development: {main:9, dev:3}; lần 2 {0,0}", () => {
+    expect(firstRun).toEqual({ main: 9, dev: 3 });
     expect(secondRun).toEqual({ main: 0, dev: 0 });
   });
 
-  it("ADM-NFR-06 · spec §4 · đúng 14 bảng admin.* và 3 bảng hub.*; không có bảng/cột của mốc sau", async () => {
+  it("ADM-NFR-06 · spec §4 · đúng 19 bảng admin.* (M4) và 3 bảng hub.*; users không có totp_secret (M4 Q2a K2)", async () => {
     expect(await names(["admin", "hub"])).toEqual([
+      "admin.audit_log",
       "admin.command_names",
       "admin.commands",
       "admin.config_meta",
@@ -82,18 +83,19 @@ describe("ADM-NFR-06 · migration development", () => {
       "admin.features",
       "admin.group_members",
       "admin.groups",
+      "admin.quota_alerts",
       "admin.refresh_tokens",
       "admin.secrets",
+      "admin.tenant_quotas",
       "admin.tenants",
+      "admin.user_backup_codes",
+      "admin.user_totp",
       "admin.users",
       "admin.workflows",
       "hub.agent_grants",
       "hub.agent_workflows",
       "hub.usage_logs",
     ]);
-    const [later] = await sql`select count(*)::int as n from information_schema.tables
-      where table_schema = 'admin' and table_name in ('tenant_quotas', 'audit_log')`;
-    expect(later?.n).toBe(0);
     const [totp] = await sql`select count(*)::int as n from information_schema.columns
       where table_schema = 'admin' and table_name = 'users' and column_name = 'totp_secret'`;
     expect(totp?.n).toBe(0);
@@ -279,11 +281,12 @@ describe("ADM-NFR-01 · ràng buộc refresh_tokens và features", () => {
 });
 
 describe("ADM-NFR-06 · migration production", () => {
-  it("ADM-NFR-06 · spec §4 · production: {main:7, dev:0}; 14 bảng admin.*, 0 bảng hub.*; không có bảng theo dõi dev", async () => {
+  it("ADM-NFR-06 · spec §4 · production: {main:9, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 7, dev: 0 });
+    expect(r).toEqual({ main: 9, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual([
+      "admin.audit_log",
       "admin.command_names",
       "admin.commands",
       "admin.config_meta",
@@ -293,9 +296,13 @@ describe("ADM-NFR-06 · migration production", () => {
       "admin.features",
       "admin.group_members",
       "admin.groups",
+      "admin.quota_alerts",
       "admin.refresh_tokens",
       "admin.secrets",
+      "admin.tenant_quotas",
       "admin.tenants",
+      "admin.user_backup_codes",
+      "admin.user_totp",
       "admin.users",
       "admin.workflows",
     ]);

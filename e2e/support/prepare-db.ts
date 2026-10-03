@@ -7,6 +7,7 @@ import postgres from "postgres";
 import { insertBulk, insertFixture, makeHashes } from "../../tests/acceptance/M1/_data";
 import { ALL_CATALOG, seedCatalog, truncateCatalog } from "../../tests/acceptance/M2/_data";
 import { ALL_PERMISSIONS, seedPermissions } from "../../tests/acceptance/M3/_data";
+import { clearUsage } from "../../tests/acceptance/M4/_data";
 
 const SEED_MODULE = "@ai/db/seed";
 
@@ -30,6 +31,9 @@ async function main(): Promise<void> {
   try {
     // M2: TRUNCATE tường minh cả danh mục (secrets/workflows/commands/features/hub.agent_workflows).
     if (resetOnly) await truncateCatalog(sql);
+    // M4 (Q2a, test-plan §5 K12): usage của Hub không theo TRUNCATE tenants CASCADE → xoá tường minh. audit_log
+    // append-only (không xoá được) → e2e lọc theo tên/mốc ca; tenant_quotas/quota_alerts theo CASCADE.
+    if (resetOnly) await clearUsage(sql);
     const { runSeed } = (await import(SEED_MODULE)) as {
       runSeed: (o: {
         url: string;

@@ -103,12 +103,18 @@ describe("ADM-FR-55 · M3-R24 · i18n VI/EN (conflict)", () => {
     expect(E2E_LABELS.filter((l) => !set.has(l))).toEqual([]);
   });
 
-  it("ADM-FR-55 · M3-R22 · không còn câu 'Lịch sử vẫn giữ' trong chuỗi conflict.*; có đủ câu có {user} và không {user} (R21) ở cả hai locale", () => {
+  it("ADM-FR-55 · M3-R22 · M4-R17 · 'Lịch sử' chỉ ở conflict.overwrite.history (M4 có audit: vi 'Lịch sử vẫn giữ v{n}.', en 'History keeps v{n}.'); có đủ câu có {user} và không {user} (R21) ở cả hai locale", () => {
     for (const lang of ["vi", "en"] as const) {
       const all = load(lang);
       const conflict = Object.entries(all).filter(([k]) => k.startsWith("conflict."));
       expect(conflict.length).toBeGreaterThan(0);
-      expect(conflict.some(([, v]) => /Lịch sử|history/i.test(v))).toBe(false);
+      // M4 (Q2a, test-plan §5 K8): câu lịch sử quay lại khi đã có audit (plan-frontend §7).
+      expect(conflict.filter(([, v]) => /Lịch sử|history/i.test(v)).map(([k]) => k)).toEqual([
+        "conflict.overwrite.history",
+      ]);
+      expect(all["conflict.overwrite.history"]).toBe(
+        lang === "vi" ? "Lịch sử vẫn giữ v{n}." : "History keeps v{n}.",
+      );
       expect(all["conflict.body.byUser"]).toContain("{user}");
       expect(all["conflict.body.anon"]).not.toContain("{user}");
       expect(all["conflict.overwrite.titleUser"]).toContain("{user}");

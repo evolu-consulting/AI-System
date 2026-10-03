@@ -54,7 +54,7 @@ const ref = { id: U1, key: "ke-toan", name: { vi: "Kế toán" }, is_beta: false
 const feat = { id: U2, key: "ke-toan", name: { vi: "Kế toán" }, status: "on", is_core: false };
 
 describe("ADM-FR-62 · bảng mã lỗi và hằng M3", () => {
-  it("ADM-FR-62 · M3 · API_ERRORS = 34 mã M1+M2 giữ nguyên + BETA_GROUP_PROTECTED 409 + NOT_ENTITLED 409; tổng 36", () => {
+  it("ADM-FR-62 · M3 · API_ERRORS = 34 mã M1+M2 giữ nguyên + BETA_GROUP_PROTECTED 409 + NOT_ENTITLED 409; tập cũ giữ nguyên sau M4 (toMatchObject)", () => {
     expect(API_ERRORS.BETA_GROUP_PROTECTED).toBe(409);
     expect(API_ERRORS.NOT_ENTITLED).toBe(409);
     expect(API_ERRORS).toMatchObject({
@@ -67,7 +67,7 @@ describe("ADM-FR-62 · bảng mã lỗi và hằng M3", () => {
       FORBIDDEN: 403,
       INTERNAL_ERROR: 500,
     });
-    expect(Object.keys(API_ERRORS)).toHaveLength(36);
+    // M4 (Q2a, test-plan §5 K5): không đếm — tổng 48 mã kiểm ở M4/rules/contracts-cd.test.ts (D-K04).
   });
 
   it("ADM-FR-32 · M3-R07 · REFERENCE_FIELDS chứa 4 giá trị cũ + feature_id, group_id, user_id, group_ids; InvalidReferenceDetails nhận field mới", () => {
@@ -115,18 +115,25 @@ describe("ADM-FR-62 · bảng mã lỗi và hằng M3", () => {
       "workflow_disabled",
       "no_effective_feature",
     ]);
-    expect([...CONFIG_ENTITIES]).toEqual([
-      "tenant",
-      "user",
-      "group",
-      "grant",
-      "feature",
-      "entitlement",
-      "workflow",
-      "command",
-      "secret",
-      "batch",
-    ]);
+    // M4 (Q2a, test-plan §5 K6): M4 chèn "quota" ngay trước "batch" (plan-contract §2.5) → 11 giá trị.
+    const entities = [...CONFIG_ENTITIES] as string[];
+    expect(entities).toEqual(
+      expect.arrayContaining([
+        "tenant",
+        "user",
+        "group",
+        "grant",
+        "feature",
+        "entitlement",
+        "workflow",
+        "command",
+        "secret",
+        "batch",
+        "quota",
+      ]),
+    );
+    expect(entities).toHaveLength(11);
+    expect(entities.indexOf("quota")).toBe(entities.indexOf("batch") - 1);
   });
 });
 

@@ -14,8 +14,9 @@ afterAll(async () => {
 });
 
 const HUB_TABLES = ["agent_grants", "agent_workflows", "usage_logs"];
-// M2 (Q2): thêm 0003_admin_catalog + 0004_catalog_rls → 10 bảng; M3 (Q2): thêm 0005_admin_permissions + 0006_permissions_rls → 14 bảng admin.* (spec M3 §4).
+// M2 (Q2): thêm 0003_admin_catalog + 0004_catalog_rls → 10 bảng; M3 (Q2): thêm 0005_admin_permissions + 0006_permissions_rls → 14 bảng admin.* (spec M3 §4); M4 (Q2a, test-plan §5 K1): + 0007_m4_ops, 0008_admin_totp, dev 0002_usage_at_idx → 19 bảng admin.*; sắp collate "C" (không phụ thuộc collation DB).
 const ADMIN_TABLES = [
+  "admin.audit_log",
   "admin.command_names",
   "admin.commands",
   "admin.config_meta",
@@ -25,9 +26,13 @@ const ADMIN_TABLES = [
   "admin.features",
   "admin.group_members",
   "admin.groups",
+  "admin.quota_alerts",
   "admin.refresh_tokens",
   "admin.secrets",
+  "admin.tenant_quotas",
   "admin.tenants",
+  "admin.user_backup_codes",
+  "admin.user_totp",
   "admin.users",
   "admin.workflows",
 ];
@@ -37,15 +42,15 @@ async function tablesIn(schemas: string[]): Promise<string[]> {
     select table_schema || '.' || table_name as t
     from information_schema.tables
     where table_schema in ${sql(schemas)}
-    order by 1`;
+    order by (table_schema || '.' || table_name) collate "C"`;
   return rows.map((r) => r.t);
 }
 
 describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
-  it("ADM-NFR-06 · M0-AC03 · có đúng 3 bảng hub.* và 14 bảng admin.* (M3)", async () => {
+  it("ADM-NFR-06 · M0-AC03 · có đúng 3 bảng hub.* và 19 bảng admin.* (M4)", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "development" });
-    expect(r).toEqual({ main: 7, dev: 2 });
+    expect(r).toEqual({ main: 9, dev: 3 });
     expect(await tablesIn(["admin", "hub"])).toEqual([
       ...ADMIN_TABLES,
       "hub.agent_grants",
@@ -139,12 +144,12 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
     expect([await count("__drizzle_migrations"), await count("__drizzle_migrations_dev")]).toEqual(
       before,
     );
-    expect(before).toEqual([7, 2]);
+    expect(before).toEqual([9, 3]);
   });
 
   it("ADM-NFR-06 · M0-AC03 · role đã có sẵn (DB reset nhưng role ở mức cluster) vẫn migrate được", async () => {
     await resetTestDb(URL);
-    await expect(runMigrations({ url: URL, appEnv: "test" })).resolves.toEqual({ main: 7, dev: 2 });
+    await expect(runMigrations({ url: URL, appEnv: "test" })).resolves.toEqual({ main: 9, dev: 3 });
   });
 
   it("ADM-NFR-06 · M0-AC03 · db:migrate không kết nối được → exit 1, nêu ECONNREFUSED và gợi ý compose", () => {
@@ -159,10 +164,10 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
 });
 
 describe("ADM-NFR-06 · M0-AC04 · db:migrate (production)", () => {
-  it("ADM-NFR-06 · M0-AC04 · có schema admin, hub; 14 bảng admin.* (M3), không có bảng hub.*; không có bảng theo dõi dev", async () => {
+  it("ADM-NFR-06 · M0-AC04 · có schema admin, hub; 19 bảng admin.* (M4), không có bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 7, dev: 0 });
+    expect(r).toEqual({ main: 9, dev: 0 });
     const ns = await sql<{ nspname: string }[]>`
       select nspname from pg_namespace where nspname in ('admin', 'hub') order by 1`;
     expect(ns.map((n) => n.nspname)).toEqual(["admin", "hub"]);

@@ -267,7 +267,15 @@ Xanh: rules/contracts.test.ts T0b; quotas.rules T3; usage.rules T5; audit-snapsh
 
 | File | Lệnh | Kết quả | Lý do đỏ |
 |---|---|---|---|
-| (Q2 điền) | `bun --env-file=.env.test-qc.local test tests/acceptance/M4/<file>` | | |
+| M4/rules/quotas · usage · audit-snapshot · audit (Q2a) | `bun test` | 0/18 · 0/10 · 0/17 · 0/9 | Cannot find module `quotas.rules`/`usage.rules`/`lib/audit`/`modules/audit` |
+| M4/rules/contracts (R20) | `bun test` | 0/7 | `expect`: thiếu 3 mã, CONFIG_ENTITIES 10, AUDIT_*, schema quota/usage chưa có, không `updated_by` |
+| M4/i18n-ab | `bun test` | 1/2 | `expect`: 41 nhãn chưa có trong vi.json (ca tự kiểm bộ so khớp xanh) |
+| K1 migrate · K2/K3 db-schema M1–M3 (int, DB qca) | `bun --env-file=.env.test-qca.local --config=bunfig.int.toml test` | đỏ 4 · 3 · 3 · 3 | `expect`: `{main:7,dev:2}` ≠ `{9,3}`, 14 ≠ 19 bảng; không PostgresError |
+| K4 db-rls M1–M3 | 〃 | đỏ 1/ file | `expect`: 8 ≠ 13 bảng RLS |
+| K5 contracts M1/M2 · K7 error-codes · K11 i18n-labels | `bun test` / int | xanh | bỏ đếm 36 (toMatchObject); lọc 12 mã M4; bỏ 4 key overview |
+| K6 M3 contracts · K8 i18n-conflict | `bun test` | đỏ 1 · 1 | `expect`: CONFIG_ENTITIES 10 ≠ 11; chưa có `conflict.overwrite.history` |
+| K9 conflict-users/tenants · K10 auth (e2e) | `bunx playwright test --list` | biên dịch OK | chưa chạy (cần FE0a/FE3); đỏ dự kiến ở câu "Ghi đè thay đổi của admin?", region "Users đang hoạt động" |
+| Helper `createM4Env`/`insertUsage`/`reset4` | ca khói tạm (đã xoá) | xanh | `auditMark` ném "relation admin.audit_log does not exist" tới T0 (đúng) |
 
 ## 8. Đã chốt (spec-readiness lần 1, người dùng chấp nhận 2026-10-03)
 

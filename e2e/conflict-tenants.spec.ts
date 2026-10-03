@@ -1,4 +1,5 @@
-// ADM-FR-55 · M3-AC08 · ConflictDialog cho Tenant (tab Thông tin) — câu KHÔNG có {user} (tenant không có updated_by).
+// ADM-FR-55 · M3-AC08 · M4-R17 · ConflictDialog cho Tenant (tab Thông tin). M4 (Q2a, test-plan §5 K9): Tenant có `updated_by`
+// → ca 1 (admin lưu trước) hiện câu có {user} = "admin".
 // Test-plan E-CT. Người kia sửa bằng API; người mình sửa Tên công ty rồi Lưu.
 import { expect, type Page, test } from "@playwright/test";
 import {
@@ -32,18 +33,18 @@ async function conflictOnAcme(page: Page, request: Parameters<typeof apiAsAdmin>
   return { mine, latest: mine + 1, name };
 }
 
-test("ADM-FR-55 · M3-AC08 · tenant: alertdialog không {user}; Xem khác biệt có name và max_concurrent_sub; Ghi đè → version +2, tên và max_concurrent_sub của mình (5)", async ({
+test("ADM-FR-55 · M3-AC08 · M4-R17 · tenant: admin lưu trước → alertdialog có {user} = admin; Xem khác biệt có name và max_concurrent_sub; Ghi đè → version +2, tên và max_concurrent_sub của mình (5)", async ({
   page,
   request,
 }) => {
   const { mine, latest } = await conflictOnAcme(page, request);
-  await expectConflictBody(page, { entity: "tenant", latest, mine });
+  await expectConflictBody(page, { entity: "tenant", latest, mine, user: "admin" });
   await expectDiff(page, {
     latest,
     fields: ["name", "max_concurrent_sub"],
     absent: ["key", "version"],
   });
-  await overwrite(page, { latest });
+  await overwrite(page, { latest, user: "admin" });
   expect(await dbValue("tenants", TENANT_ID.acme, "name")).toBe("Acme A");
   expect(await dbValue("tenants", TENANT_ID.acme, "max_concurrent_sub")).toBe(5);
   expect(await versionOf("tenants", TENANT_ID.acme)).toBe(latest + 1);

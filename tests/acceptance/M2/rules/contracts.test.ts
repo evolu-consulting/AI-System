@@ -74,8 +74,8 @@ const inp = (over: Record<string, unknown> = {}) => ({
 });
 
 describe("ADM-FR-10 · bảng mã lỗi", () => {
-  it("ADM-FR-10 · spec §3 · API_ERRORS = 23 mã M1 + 11 mã M2 giữ nguyên + 2 mã M3; tổng 36", () => {
-    expect(API_ERRORS).toEqual({
+  it("ADM-FR-10 · spec §3 · API_ERRORS = 23 mã M1 + 11 mã M2 giữ nguyên + 2 mã M3 giữ nguyên sau M4 (toMatchObject)", () => {
+    expect(API_ERRORS).toMatchObject({
       VALIDATION_ERROR: 400,
       TENANT_REQUIRED: 400,
       ROLE_NOT_ALLOWED: 400,
@@ -113,7 +113,7 @@ describe("ADM-FR-10 · bảng mã lỗi", () => {
       TEMP_LOCKED: 423,
       INTERNAL_ERROR: 500,
     });
-    expect(Object.keys(API_ERRORS)).toHaveLength(36);
+    // M4 (Q2a, test-plan §5 K5): không đếm — tổng 48 mã kiểm ở M4/rules/contracts-cd.test.ts (D-K04).
   });
 
   it("ADM-FR-10 · spec §3 · hằng/regex/enum M2", () => {

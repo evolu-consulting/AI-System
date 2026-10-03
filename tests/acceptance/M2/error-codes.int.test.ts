@@ -78,8 +78,23 @@ const M1_CODES = [
 ];
 // M3 (Q2): 2 mã mới của M3 do tests/acceptance/M3/error-codes.int.test.ts phụ trách.
 const M3_CODES = ["BETA_GROUP_PROTECTED", "NOT_ENTITLED"];
+// M4 (Q2a, test-plan §5 K7): 12 mã M4 (A+B: plan-contract §2.5; C+D: plan-cd §4.3) do test M4 phụ trách → giữ 11 mã M2.
+const M4_CODES = [
+  "NAME_TAKEN",
+  "NOT_RESTORABLE",
+  "RESTORE_REF_MISSING",
+  "PAYLOAD_TOO_LARGE",
+  "IMPORT_INVALID",
+  "SECRETS_REQUIRED",
+  "INVALID_TOTP_TOKEN",
+  "INVALID_OTP",
+  "INVALID_CURRENT_CODE",
+  "TOTP_ALREADY_ENABLED",
+  "TOTP_NOT_ENABLED",
+  "TOTP_SETUP_EXPIRED",
+];
 const M2_CODES = Object.keys(API_ERRORS)
-  .filter((c) => !M1_CODES.includes(c) && !M3_CODES.includes(c))
+  .filter((c) => !M1_CODES.includes(c) && !M3_CODES.includes(c) && !M4_CODES.includes(c))
   .sort();
 
 type Scenario = () => Promise<Res>;

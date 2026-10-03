@@ -7,6 +7,22 @@ import { PW } from "../../tests/acceptance/M1/_data";
 export { PW, TEMP_PW, TENANT_ID, USER_ID } from "../../tests/acceptance/M1/_data";
 export { ID, LEAK_1, LEAK_2, LEAK_EMOJI, leakForms } from "../../tests/acceptance/M2/_data";
 export { betaId, ID3, id3 } from "../../tests/acceptance/M3/_data";
+export {
+  auditMark,
+  auditSince,
+  clearUsage,
+  ID4,
+  id4,
+  inMonth,
+  inPrevMonth,
+  insertUsage,
+  runId,
+  seedAuditRows,
+  setQuota,
+  vnDate,
+  vnMonth,
+  vnMonthStart,
+} from "../../tests/acceptance/M4/_data";
 
 import { seedPermissions } from "../../tests/acceptance/M3/_data";
 

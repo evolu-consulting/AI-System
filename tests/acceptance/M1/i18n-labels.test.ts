@@ -114,18 +114,7 @@ const TABLE: Array<[string, string, string]> = [
   ["account.menu", "Tài khoản của bạn", "Your account"],
   ["account.changePassword", "Đổi mật khẩu", "Change password"],
   ["account.language", "Ngôn ngữ", "Language"],
-  ["overview.welcome", "Xin chào, {name}", "Hello, {name}"],
-  [
-    "overview.platform.body",
-    "Quản lý tenant và người dùng của nền tảng.",
-    "Manage the platform's tenants and users.",
-  ],
-  ["overview.tenant.body", "Quản lý người dùng của {tenant}.", "Manage the users of {tenant}."],
-  [
-    "overview.soon",
-    "Thống kê và cảnh báo sẽ có ở các bản sau.",
-    "Statistics and alerts will arrive in later releases.",
-  ],
+  // M4 (Q2a, test-plan §5 K11): bỏ overview.welcome/soon/platform.body/tenant.body (Tổng quan thật, plan-frontend §7).
   ["tenants.badge.platform", "Nền tảng", "Platform"],
   [
     "tenants.tab.unavailableBody",
