@@ -5,17 +5,18 @@
 import type {
   CommandEl,
   FeatureEl,
+  GrantEl,
+  GroupEl,
   ImportItem,
   QuotaEntry,
   TenantEl,
   WorkflowEl,
 } from "@ai/contracts";
 import type { Tx } from "@ai/db";
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import { pgArray } from "../../lib/sql";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
 import { canonicalJson } from "./transfer.norm";
-import { capRows, SNAPSHOT_ROW_CAP } from "./transfer.repo";
 
 export type Ids = {
   tenants: Map<string, string>;
@@ -41,40 +42,117 @@ export function changedQuotas(x: It<TenantEl>): QuotaEntry[] {
   return x.after.quotas.filter((q) => old.get(scopeOf(q)) !== canonicalJson(q));
 }
 
-async function pairs(tx: Tx, q: ReturnType<typeof sql>): Promise<Map<string, string>> {
-  const rows = (await tx.execute(q)) as unknown as { k: string; id: string }[];
-  return new Map(capRows(rows).map((r) => [r.k, r.id]));
+type KeyType = keyof Ids;
+type Keys = Record<KeyType, Set<string>>;
+
+const refs = <T>(items: readonly ImportItem[], type: ImportItem["type"]): T[] =>
+  itemsOf<T>(items, type).flatMap((x) => (x.before ? [x.before, x.after] : [x.after]));
+
+/** Mọi khoá file chạm tới (mục + tham chiếu, cả `before`) — `readIds` chỉ tra các khoá này (không trần theo DB). */
+export function keysOf(items: readonly ImportItem[]): Keys {
+  const k: Keys = {
+    tenants: new Set(),
+    groups: new Set(),
+    workflows: new Set(),
+    commands: new Set(),
+    features: new Set(),
+    secrets: new Set(),
+  };
+  const add = (t: KeyType, keys: readonly (string | null)[]) => {
+    for (const x of keys) if (x !== null) k[t].add(x);
+  };
+  for (const x of items) if (x.type !== "grant") add(`${x.type}s` as KeyType, [x.key]);
+  add(
+    "secrets",
+    refs<WorkflowEl>(items, "workflow").map((w) => w.secret),
+  );
+  add(
+    "workflows",
+    refs<CommandEl>(items, "command").map((c) => c.workflow),
+  );
+  add(
+    "commands",
+    refs<FeatureEl>(items, "feature").flatMap((f) => f.commands),
+  );
+  const ts = refs<TenantEl>(items, "tenant");
+  add(
+    "features",
+    ts.flatMap((t) => [...t.entitlements, ...t.quotas.map((q) => q.feature)]),
+  );
+  add(
+    "tenants",
+    refs<GroupEl>(items, "group").map((g) => g.tenant),
+  );
+  const gs = refs<GrantEl>(items, "grant");
+  add(
+    "tenants",
+    gs.map((g) => g.tenant),
+  );
+  add(
+    "groups",
+    gs.map((g) => `${g.tenant}/${g.group}`),
+  );
+  add(
+    "features",
+    gs.map((g) => g.feature),
+  );
+  return k;
 }
 
-/** Không khoá (đọc trong tx ghi, trước `lockForImport`). */
-export async function readIds(tx: Tx): Promise<Ids> {
-  const cap = SNAPSHOT_ROW_CAP + 1; // + 1 để `capRows` phát hiện vượt trần
+async function pairs(
+  tx: Tx,
+  keys: Set<string>,
+  q: (arr: SQL) => SQL,
+): Promise<Map<string, string>> {
+  if (keys.size === 0) return new Map();
+  const rows = (await tx.execute(q(pgArray([...keys], "text")))) as unknown as {
+    k: string;
+    id: string;
+  }[];
+  return new Map(rows.map((r) => [r.k, r.id]));
+}
+
+/**
+ * Không khoá (đọc trong tx ghi, trước `lockForImport`). Chỉ tra khoá có trong file (≤ trần file) → không trần theo
+ * số hàng DB (review M4 vòng 2: DB > 5000 group vẫn import được file nhỏ).
+ */
+export async function readIds(tx: Tx, items: readonly ImportItem[]): Promise<Ids> {
+  const k = keysOf(items);
+  const tenantKeys = pgArray([...new Set([...k.groups].map((g) => g.split("/")[0] ?? ""))], "text");
   return {
     tenants: await pairs(
       tx,
-      sql`select key as k, id from admin.tenants where key <> ${PLATFORM_TENANT_KEY} order by key limit ${cap}`,
+      k.tenants,
+      (a) => sql`select key as k, id from admin.tenants where key = any(${a})
+        and key <> ${PLATFORM_TENANT_KEY}`,
     ),
     groups: await pairs(
       tx,
-      sql`select t.key || '/' || g.key as k, g.id from admin.groups g
-        join admin.tenants t on t.id = g.tenant_id where t.key <> ${PLATFORM_TENANT_KEY}
-        order by t.key, g.key limit ${cap}`,
+      k.groups,
+      (a) => sql`select t.key || '/' || g.key as k, g.id from admin.groups g
+        join admin.tenants t on t.id = g.tenant_id
+        where t.key = any(${tenantKeys}) and t.key <> ${PLATFORM_TENANT_KEY}
+          and t.key || '/' || g.key = any(${a})`,
     ),
     workflows: await pairs(
       tx,
-      sql`select key as k, id from admin.workflows order by key limit ${cap}`,
+      k.workflows,
+      (a) => sql`select key as k, id from admin.workflows where key = any(${a})`,
     ),
     commands: await pairs(
       tx,
-      sql`select name as k, id from admin.commands order by name limit ${cap}`,
+      k.commands,
+      (a) => sql`select name as k, id from admin.commands where name = any(${a})`,
     ),
     features: await pairs(
       tx,
-      sql`select key as k, id from admin.features order by key limit ${cap}`,
+      k.features,
+      (a) => sql`select key as k, id from admin.features where key = any(${a})`,
     ),
     secrets: await pairs(
       tx,
-      sql`select name as k, id from admin.secrets order by name limit ${cap}`,
+      k.secrets,
+      (a) => sql`select name as k, id from admin.secrets where name = any(${a})`,
     ),
   };
 }

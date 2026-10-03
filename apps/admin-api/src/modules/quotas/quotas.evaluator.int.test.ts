@@ -112,8 +112,8 @@ describe("ADM-FR-41 · M4-R05 · evaluator: lỗi gửi, claim quá hạn", () =
   });
 });
 
-describe("ADM-FR-41 · M4-R09 · review M4 #6 · has_usage_data theo scope", () => {
-  it("HU1 · chỉ tenant khác có usage → tenant_admin thấy false, platform thấy true", async () => {
+describe("ADM-FR-41 · M4-R09 · review M4 vòng 2 · has_usage_data theo tenant đang xem", () => {
+  it("HU1 · chỉ tenant khác có usage → cả tenant_admin lẫn platform xem tenant này đều thấy false", async () => {
     const OTHER = n(9);
     await owner`delete from hub.usage_logs where tenant_id = ${OTHER}`;
     await owner`insert into hub.usage_logs (tenant_id, run_id, billing)
@@ -126,7 +126,7 @@ describe("ADM-FR-41 · M4-R09 · review M4 #6 · has_usage_data theo scope", () 
     try {
       const t = await getQuotas(call({ kind: "tenant", tenantId: TID }) as never, TID);
       const p = await getQuotas(call({ kind: "platform" }) as never, TID);
-      expect([t.has_usage_data, p.has_usage_data]).toEqual([false, true]);
+      expect([t.has_usage_data, p.has_usage_data]).toEqual([false, false]);
     } finally {
       await owner`delete from hub.usage_logs where tenant_id = ${OTHER}`;
     }

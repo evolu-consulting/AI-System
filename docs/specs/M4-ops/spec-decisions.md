@@ -71,3 +71,7 @@ Nền: CR-001 (mặc định readiness M1–M4), CR-002 (2FA + Import/Export và
 - BE review vòng 1 #6 · quota `has_usage_data`: scope tenant → chỉ `usage_logs` của tenant đó (như usage `has_data`); platform → toàn bảng.
 - top_features/top_users thêm `unpriced_rows` (người dùng duyệt 2026-10-04, giải TECH-DEBT #33).
 - FE · Top list "Chưa định giá" (`lib/unpriced.ts` `priceDisplay(unpricedRows, billableUsd)`; review vòng 2: không so `unpriced_rows` với `runs` vì khác đơn vị — `runs` bỏ hàng run_id NULL): `unpriced_rows = 0` → số tiền; `unpriced_rows > 0` và billable = 0 → chỉ nhãn (ẩn số tiền); `unpriced_rows > 0` và billable > 0 → số tiền + nhãn "Chưa định giá (n)". Không có quy định riêng trong plan-frontend → tự chọn.
+- BE review vòng 2 #1 · import `readIds(tx, items)` chỉ tra id theo khoá file chạm tới (mục + tham chiếu, cả `before`; `= any(text[])`, không trần theo DB). Trần 5000/loại giữ ở snapshot export/dry-run/apply nhưng trả 400 `VALIDATION_ERROR {issues:[{path:[loại],code:"too_big",message}]}` thay vì 413 `PAYLOAD_TOO_LARGE {max_bytes}` (không đổi contract; mã riêng → TECH-DEBT #35).
+- BE review vòng 2 #2 · `mapRace(c, err, base)`: unique/FK khi `current === base` → `logger.warn("import unique/FK without version move")`, vẫn 409.
+- BE review vòng 2 #3 · quota `has_usage_data` theo tenant đang xem (`t.id`) cho mọi scope (R09); thay quyết định vòng 1 #6.
+- BE review vòng 2 #4 (tuỳ chọn) · bỏ qua: `tests/acceptance/M4/audit-read` AR6 (khoá) kỳ vọng `restorable = canRestore` cho dòng `update`; giữ luật vòng 1 #5.

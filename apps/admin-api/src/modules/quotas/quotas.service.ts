@@ -86,7 +86,7 @@ export async function quotaStatuses(
 
 /** `QuotaSetResponse` từ bộ đang lưu + mức dùng tháng hiện tại. */
 async function buildResponse(
-  { tx, scope }: { tx: Tx; scope: DbScope },
+  { tx }: { tx: Tx; scope: DbScope },
   t: repo.QuotaTenant,
   now: Date,
   saved?: repo.QuotaDbRow[],
@@ -96,7 +96,8 @@ async function buildResponse(
     tenant_id: t.id,
     version: t.version,
     month,
-    has_usage_data: await repo.hasUsageData(tx, scope.kind === "tenant" ? scope.tenantId : null),
+    // R09 · theo tenant đang xem cho mọi scope (review M4 vòng 2).
+    has_usage_data: await repo.hasUsageData(tx, t.id),
     items,
   };
 }
