@@ -4,7 +4,7 @@
 
 C1 chạy với **mock Hub** (chưa có Hub/Claude CLI thật). Actor chung: **Member** (user cuối của một tenant). "Consultant" là tên hiển thị duy nhất của mọi câu trả lời (CR-022).
 
-**Ngoài phạm vi C1:** menu `/` và command, đính kèm file, Extension, Knowledge base (CR-024), chat nhóm / agent↔agent (CR-023), Orchestrator và Claude CLI thật, schema `hub` thật, Worker.
+**Ngoài phạm vi C1:** menu `/` và command, đính kèm file, Extension, Knowledge base (CR-024), chat nhóm / agent↔agent (CR-023), Coordinator và Claude CLI thật, schema `hub` thật, Worker.
 
 ## Mục lục
 
@@ -98,7 +98,7 @@ C1 chạy với **mock Hub** (chưa có Hub/Claude CLI thật). Actor chung: **M
 |---|---|
 | Điều kiện trước | Flow đã có câu trả lời |
 | Luồng chính | 1. Bấm "Trả lời tiếp" → khung flow bên phải mở (mặc định ẩn); điện thoại: sheet trượt từ dưới → 2. Gõ tin → gửi kèm `flow_id` → 3. Stream trả lời hiện trong khung, đồng bộ vào khối flow ở luồng chính → 4. Đóng khung bằng ✕ (không có "đóng flow") |
-| Phụ / lỗi | Flow nghỉ lâu (Hub đã tắt CLI): tin đầu sau nghỉ hiện "Đang mở lại flow, lần đầu có thể mất vài giây…" cho tới `run.started`/`delta` đầu. Mở khung của flow khác thì thay nội dung khung. Đổi chủ đề hẳn: Orchestrator định tuyến mọi tin (kể cả tin trong flow, CR-025) nên có thể chọn agent khác; phía Chat không đổi gì |
+| Phụ / lỗi | Flow nghỉ lâu (Hub đã tắt CLI): tin đầu sau nghỉ hiện "Đang mở lại flow, lần đầu có thể mất vài giây…" cho tới `run.started`/`delta` đầu. Mở khung của flow khác thì thay nội dung khung. Đổi chủ đề hẳn: Hub/Coordinator có thể chọn agent khác, phía Chat không đổi gì |
 
 | AC | Given / When / Then |
 |---|---|

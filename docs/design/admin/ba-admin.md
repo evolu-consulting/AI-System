@@ -17,7 +17,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 - Lưu secret (app-key Dify) dưới dạng mã hoá.
 - Nhật ký thay đổi (audit log) và import/export cấu hình.
 
-> ⚠️ **v0.4:** hệ thống chuyển từ "chỉ nội bộ" sang **multi-tenant cho công ty / khách hàng bên ngoài**. Workflow trở thành catalog dùng chung: agent ở Agent Hub chọn workflow từ đây, không khai báo tool riêng nữa. Cấu hình agent, Orchestrator, provider, model profile vẫn thuộc [Agent Hub](../agent-hub/ba-agent-hub.md).
+> ⚠️ **v0.4:** hệ thống chuyển từ "chỉ nội bộ" sang **multi-tenant cho công ty / khách hàng bên ngoài**. Workflow trở thành catalog dùng chung: agent ở Agent Hub chọn workflow từ đây, không khai báo tool riêng nữa. Cấu hình agent, Coordinator, provider, model profile vẫn thuộc [Agent Hub](../agent-hub/ba-agent-hub.md).
 
 **Admin không làm:** không chạy workflow, không gọi LLM, không lưu hội thoại, không cấu hình agent. Những việc đó thuộc Agent Hub. Khi bấm nút "Test" trên Admin, Admin chỉ nhờ Hub chạy thử.
 

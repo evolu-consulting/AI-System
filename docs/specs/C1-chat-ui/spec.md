@@ -23,7 +23,7 @@ Nguồn: CR-018 (mốc C1), CR-019…022 (đã vào design). Người dùng ch�
 | 4 | **Bộ test contract dùng chung** | Chạy với `HUB_URL` bất kỳ: mock hôm nay, Hub thật sau này |
 | 5 | E2E Playwright cho chat-web | Chạy với mock |
 
-**Không làm (C1):** menu `/` và command, đính kèm file, Extension, Knowledge base (CR-024), chat nhóm / agent↔agent (CR-023), Orchestrator và Claude CLI thật, schema `hub` thật, Worker, gọi Admin thật, thông báo trình duyệt cho job nền, quota thật (mock chỉ trả `quota.state` để hiện dòng nhắc).
+**Không làm (C1):** menu `/` và command, đính kèm file, Extension, Knowledge base (CR-024), chat nhóm / agent↔agent (CR-023), Coordinator và Claude CLI thật, schema `hub` thật, Worker, gọi Admin thật, thông báo trình duyệt cho job nền, quota thật (mock chỉ trả `quota.state` để hiện dòng nhắc).
 
 ## 2. Nghiệp vụ
 Không chép BA; chỉ phần cụ thể hoá cho C1.
@@ -74,7 +74,7 @@ Theo `CONVENTIONS.md` §6. Riêng C1: JS đầu của chat-web ≤ 150 KB gzip (
 |---|---|
 | Agent Hub | Mock Hub chat trong `tools/mocks` (cổng 4020), chọn kịch bản (dưới) |
 | Admin auth | Mock login trong mock Hub (user mẫu `plan.md` §3.4: `acme/minh`, `acme/lan`, `acme/hoa`, `beta/an`, `acme/khoa` khoá); JWT EdDSA, khoá sinh lúc khởi động (Q7). **Không gọi Admin** |
-| Claude CLI, Orchestrator, Worker | Không có; mock sinh câu trả lời tất định |
+| Claude CLI, Coordinator, Worker | Không có; mock sinh câu trả lời tất định |
 
 **Kịch bản mock** (chi tiết sự kiện, thời gian, thứ tự chọn: `plan.md` §3.3; chọn bằng tiền tố `#scn:<tên>` ở đầu nội dung tin — test contract chỉ dùng cách này; `POST /__mock/scenario {name}` đặt mặc định toàn cục cho e2e; mặc định `normal`; thêm `markdown`, `quota-warn`):
 
@@ -118,7 +118,7 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng, phiên điều phối 2026-10-03)
 - Làm Chat App trước, độc lập Admin; C1 dùng mock Hub (CR-018). Mốc Hub sau: H1 Hub lõi, H2 Worker + Dify, Studio sau.
-- Flow (CR-021), "Consultant" (CR-022), Orchestrator là agent (CR-020) và định tuyến mọi tin (CR-025, contract SSE không đổi), subscription không bắt buộc API cuối (CR-019): đã ghi vào design; C1 chỉ cần giao diện + contract.
+- Flow (CR-021), "Consultant" (CR-022), Coordinator là agent (CR-020), subscription không bắt buộc API cuối (CR-019): đã ghi vào design; C1 chỉ cần giao diện + contract.
 - C1 dùng mock đăng nhập trong mock Hub; contract giữ dạng Admin `/auth/login` để đổi sang Admin thật sau.
 - Bộ test contract dùng chung là cam kết "Hub thật pass thì Chat chạy".
 

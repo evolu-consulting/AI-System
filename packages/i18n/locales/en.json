@@ -303,7 +303,7 @@
     },
     "agentStudio": {
       "title": "Agent Studio",
-      "body": "Agents, orchestrator, models and operations live in Agent Studio. Agents pick workflows from the Admin catalog.",
+      "body": "Agents, coordinators, models and operations live in Agent Studio. Agents pick workflows from the Admin catalog.",
       "open": "Open Agent Studio"
     },
     "topErrors": {
