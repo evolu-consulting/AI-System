@@ -1,4 +1,5 @@
 {
+  "common": { "close": "Đóng" },
   "login": {
     "title": "Đăng nhập",
     "subtitle": "Dùng mã công ty và tài khoản do quản trị viên cấp.",
@@ -10,7 +11,10 @@
     "submitting": "Đang đăng nhập…",
     "invalid": "Sai mã công ty, tên đăng nhập hoặc mật khẩu",
     "locked": "Tài khoản đang bị khoá. Liên hệ quản trị viên công ty",
-    "useAdmin": "Tài khoản cần hoàn tất bước bảo mật trong Admin Console trước khi dùng Chat"
+    "useAdmin": "Tài khoản cần hoàn tất bước bảo mật trong Admin Console trước khi dùng Chat",
+    "lockedOk": "Đã hiểu",
+    "required": "Không được để trống",
+    "tenantRemembered": "Được nhớ cho lần đăng nhập sau"
   },
   "session": { "expired": "Phiên đã hết hạn" },
   "shell": {
@@ -117,6 +121,9 @@
     "account": "Tài khoản",
     "privacy": "Quản trị nền tảng có thể xem nội dung hội thoại để hỗ trợ và gỡ lỗi. Quản trị viên công ty bạn không xem được nội dung, chỉ xem mức sử dụng",
     "logout": "Đăng xuất",
+    "company": "Công ty",
+    "langVi": "Tiếng Việt",
+    "langEn": "English",
     "theme": "Giao diện",
     "themeLight": "Sáng",
     "themeDark": "Tối",

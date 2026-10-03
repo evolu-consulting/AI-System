@@ -1,4 +1,5 @@
 {
+  "common": { "close": "Close" },
   "login": {
     "title": "Sign in",
     "subtitle": "Use your company code and the account your administrator gave you.",
@@ -10,7 +11,10 @@
     "submitting": "Signing in…",
     "invalid": "Incorrect company code, username or password",
     "locked": "Your account is locked. Contact your company administrator",
-    "useAdmin": "Finish the security step in Admin Console before using Chat"
+    "useAdmin": "Finish the security step in Admin Console before using Chat",
+    "lockedOk": "Got it",
+    "required": "This field is required",
+    "tenantRemembered": "Remembered for your next sign-in"
   },
   "session": { "expired": "Your session has expired" },
   "shell": {
@@ -122,6 +126,9 @@
     "account": "Account",
     "privacy": "Platform administrators may view chat content for support and debugging. Your company administrators cannot see content, only usage",
     "logout": "Sign out",
+    "company": "Company",
+    "langVi": "Tiếng Việt",
+    "langEn": "English",
     "theme": "Appearance",
     "themeLight": "Light",
     "themeDark": "Dark",

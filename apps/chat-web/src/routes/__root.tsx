@@ -1,4 +1,17 @@
-// C1 FE · route gốc: chỉ chứa Outlet (guard đăng nhập ở `_authed`, F3).
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+// C1 FE · route gốc: Outlet + Toaster dùng chung (toast "Phiên đã hết hạn"…); đường lạ → `/c/new` (plan-frontend §2).
+import { createRootRoute, Navigate, Outlet } from "@tanstack/react-router";
+import { Toaster } from "~/components/ui/sonner";
 
-export const Route = createRootRoute({ component: Outlet });
+function Root() {
+  return (
+    <>
+      <Outlet />
+      <Toaster position="bottom-right" />
+    </>
+  );
+}
+
+export const Route = createRootRoute({
+  component: Root,
+  notFoundComponent: () => <Navigate to="/c/new" replace />,
+});

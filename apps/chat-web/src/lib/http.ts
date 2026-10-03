@@ -8,7 +8,8 @@ export type AuthErrorCode =
   | "INVALID_REFRESH_TOKEN"
   | "REFRESH_SUPERSEDED"
   | "UNAUTHORIZED"
-  | "ACCOUNT_LOCKED";
+  | "ACCOUNT_LOCKED"
+  | "TEMP_LOCKED";
 export type ApiErrorCode = ChatErrorCode | AuthErrorCode | "NETWORK_ERROR" | "HTTP_ERROR";
 
 export class ApiError extends Error {

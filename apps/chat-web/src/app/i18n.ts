@@ -3,6 +3,8 @@ import { loadChatLocale } from "@ai/i18n/chat-locales";
 import { DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
+import { setRequestLanguage } from "~/lib/http";
+import { writeLocal } from "~/lib/storage";
 
 export const LOCALE_STORAGE_KEY = "ai.locale";
 
@@ -22,7 +24,9 @@ export function resolveInitialLocale(
 
 i18next.on("languageChanged", (lng) => {
   if (typeof document !== "undefined") document.documentElement.lang = lng;
-  if (typeof localStorage !== "undefined") localStorage.setItem(LOCALE_STORAGE_KEY, lng);
+  writeLocal(LOCALE_STORAGE_KEY, lng);
+  // `Accept-Language` của mọi request theo ngôn ngữ UI.
+  setRequestLanguage(isSupported(lng) ? lng : null);
 });
 
 const lazyBackend = {
