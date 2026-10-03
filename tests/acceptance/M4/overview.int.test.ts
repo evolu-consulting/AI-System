@@ -15,6 +15,7 @@ import {
   setQuota,
   TENANT_ID,
   verOf,
+  vnMonth,
 } from "./_ab";
 
 let env: M4Env;
@@ -115,18 +116,17 @@ describe("ui 7.2 · tổng quan tenant", () => {
 });
 
 describe("ui 7.2 · Q5 · tổng quan platform", () => {
-  it("ADM-FR-40 · Q5 · O5 · admin → platform: đếm khớp DB; unavailable đủ 2; quota_tenants pct = max (40/90 → 90) giảm dần; runs_24h bỏ hàng 25 giờ trước; recent_changes có hàng NULL", async () => {
+  it("ADM-FR-40 · Q5 · O5 · admin → platform: đếm khớp DB; unavailable đủ 2; quota_tenants pct = max (40/90 → 90) giảm dần; runs_24h bỏ hàng 25 giờ trước, globex pct theo tháng VN (80|85); recent_changes có hàng NULL", async () => {
     await setQuota(env.owner, A, null, { runs: 100 });
     await setQuota(env.owner, A, ID.feature.keToan, { runs: 10 });
     await setQuota(env.owner, G, null, { runs: 100 });
     await insertUsage(env.owner, 40, { tenant: A, runFrom: 0 });
     await insertUsage(env.owner, 9, { tenant: A, feature: ID.feature.keToan, runFrom: 100 });
-    await insertUsage(env.owner, 85, { tenant: G, runFrom: 200 });
-    await insertUsage(env.owner, 5, {
-      tenant: G,
-      runFrom: 300,
-      at: new Date(Date.now() - 25 * 3600_000),
-    });
+    await insertUsage(env.owner, 80, { tenant: G, runFrom: 200 });
+    // 5 run lúc now − 25 h: ngoài runs_24h; pct theo tháng VN (plan §5.5) nên chỉ tính khi cùng tháng.
+    const old25 = new Date(Date.now() - 25 * 3600_000);
+    await insertUsage(env.owner, 5, { tenant: G, runFrom: 300, at: old25 });
+    const globexPct = 80 + (vnMonth(old25) === vnMonth(new Date()) ? 5 : 0);
     const v = await verOf(env, "features", ID3.feature.phapChe);
     expect(
       (
@@ -155,12 +155,12 @@ describe("ui 7.2 · Q5 · tổng quan platform", () => {
     expect([tenantsExcl, tenantsExcl + 1]).toContain(b.tenants_active);
     expect(typeof b.users_active).toBe("number");
     expect([...b.unavailable].sort()).toEqual(["agent_studio", "command_errors"]);
-    expect(b.runs_24h).toBe(49 + 85);
+    expect(b.runs_24h).toBe(49 + 80);
     expect(b.has_usage_data).toBe(true);
     const qt = b.quota_tenants as { tenant_key: string; pct: number; level: string }[];
     expect(qt.map((t) => [t.tenant_key, t.pct, t.level])).toEqual([
       ["acme", 90, "warn"],
-      ["globex", 85, "warn"],
+      ["globex", globexPct, "warn"],
     ]);
     expect(b.recent_changes.length).toBeLessThanOrEqual(8);
     expect(b.recent_changes.some((r: { tenant_id: string | null }) => r.tenant_id === null)).toBe(
