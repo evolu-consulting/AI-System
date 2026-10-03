@@ -22,6 +22,8 @@ const baseUser = {
   created_at: "2026-10-01T09:00:00.000Z",
   updated_at: "2026-10-01T09:00:00.000Z",
   version: 1,
+  updated_by: null, // M4-R17 · CR-016
+  totp_enabled: false, // M4 plan-cd §4.1 · D-K03 (xanh từ T9d)
 };
 const group = (i: number) => ({
   id: U(100 + i),

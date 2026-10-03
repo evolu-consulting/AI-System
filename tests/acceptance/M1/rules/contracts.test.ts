@@ -119,6 +119,9 @@ describe("ADM-FR-01 · schema auth", () => {
       role: "member",
       locale: "vi",
       must_change_password: false,
+      totp_enabled: false,
+      totp_enabled_at: null,
+      backup_codes_left: 0,
     };
     const grant = {
       status: "authenticated",

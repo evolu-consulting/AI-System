@@ -69,11 +69,17 @@ describe("ADM-FR-08 · setup", () => {
     expect(Buffer.from(row.secret_ct).indexOf(Buffer.from(unb32(res.json.secret)))).toBe(-1);
   });
 
-  it("ADM-FR-08 · D-S02 · ADM-FR-07 · setup sai mật khẩu ×5 → 400 (bộ đếm 1..5); lần 6 đúng → 423 TEMP_LOCKED", async () => {
-    for (let i = 1; i <= 5; i++) {
+  it("ADM-FR-08 · D-S02 · ADM-FR-07 · setup sai mật khẩu ×5 → 400 (bộ đếm 1..4; lần 5 khoá +15', bộ đếm 0); lần 6 đúng → 423 TEMP_LOCKED", async () => {
+    for (let i = 1; i <= 4; i++) {
       expectErr(await setup("Wrong-Passw0rd-9"), "INVALID_CURRENT_PASSWORD");
-      expect((await userRow(env, USER_ID.binh)).failed_logins).toBe(i);
+      const r = await userRow(env, USER_ID.binh);
+      expect(r.failed_logins).toBe(i);
+      expect(r.locked_until).toBeNull();
     }
+    expectErr(await setup("Wrong-Passw0rd-9"), "INVALID_CURRENT_PASSWORD");
+    const locked = await userRow(env, USER_ID.binh);
+    expect(locked.failed_logins).toBe(0);
+    expect(new Date(locked.locked_until as Date).toISOString()).toBe("2026-10-01T09:15:00.000Z");
     const res = await setup();
     expectErr(res, "TEMP_LOCKED");
     expect(res.json.error.details.until).toBe("2026-10-01T09:15:00.000Z");

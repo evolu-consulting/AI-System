@@ -61,7 +61,7 @@ ebf8501285a9546253b8769f3f8f7b40170a83f6920b5f0282e2935d503b773e  tests/acceptan
 09ab7574f90835fbbdb304b6a3498f0c6313d42cb494d6f957196b1e226ef13d  tests/acceptance/M1/i18n-labels.test.ts
 26bd440a16e7340e11531daba15bc239403c32a6160d03ab90f3b1a47c38b092  tests/acceptance/M1/middleware.int.test.ts
 d4117e76978a30fa47a915208f4fa55559062c198dcae5731a8cb8e5fee70691  tests/acceptance/M1/rules/auth.rules.test.ts
-c9d2536075de24c67a71323dd160d0868c8171885e7b1c2fd6f1c95f37e370a6  tests/acceptance/M1/rules/contracts.test.ts
+32bc95e78f908c3603a16753eae4d473c1ab426910b8dfadb413c315a7fea09a  tests/acceptance/M1/rules/contracts.test.ts
 01e9128ca002da40a56e7de8f64452390b6fdcfba2326a3c2159f2f56b46ff47  tests/acceptance/M1/rules/tenants.rules.test.ts
 7da0fe82837b32b32d07999678d0a90b7ddf35b87ba04236c0aa3e4743fd25b6  tests/acceptance/M1/rules/users.rules.test.ts
 8792204a6e04ae99f021fa79e5ab2e2254caad20434034754e23afe28b6f2e4a  tests/acceptance/M1/seed.int.test.ts
@@ -120,7 +120,7 @@ c06543cc875efaba225e33a0eca50042618e0dc70591621ad9ea0b082f758a37  tests/acceptan
 9ebca29e7046494684da78dfa1d261c0d859a59228db7f68f42a51640fc3de16  tests/acceptance/M3/rules/access.rules.test.ts
 0b7fc219bd658c1651fc155b36b60df5bc6f7e9a489eabd06efb35c69730a273  tests/acceptance/M3/rules/config-payload.test.ts
 be8daeda096561d2817467d0f45320705d3d33a6b260b9949416a3374f984ed1  tests/acceptance/M3/rules/contracts-commands.test.ts
-151f3674e7bb6312da4a295bef2fa08b03e57b048f27330c58e57b875bf0b89a  tests/acceptance/M3/rules/contracts-users.test.ts
+6e28805739f65c674610cba04feca2ff98081a6cd10007d4fdee0ef42902330b  tests/acceptance/M3/rules/contracts-users.test.ts
 039d63f64e6732c752dddcb5e8f7b72743c1bfddc8b46a28e59febb7630eef48  tests/acceptance/M3/rules/contracts.test.ts
 594121bce96376c3540f36a3c31e626f42122caefdac12a5a364b66119f72e7f  tests/acceptance/M3/rules/grants.rules.test.ts
 70160e554875572c7aa27b3e76e3528bf768b9cf57c0c57254bf4279401f3fca  tests/acceptance/M3/rules/groups.rules.test.ts
@@ -165,7 +165,7 @@ b20677995d32e0003dc4fedb0eab18012db9a5f9d0bb42a0b460ced35147093e  tests/acceptan
 a848c6ca744516a8f903fbdb9c748f6b11290c7773393e1077108458cc7d15bf  tests/acceptance/M4/totp-admin-reset.int.test.ts
 000c6752c61374772fab402da874db7e0b991abb7f51718c12de5b145a93a13f  tests/acceptance/M4/totp-db.int.test.ts
 60eded9f8a2ee4c4469d0739aec42c5306b11b7a04b4c12570f9afbc2aa19a2d  tests/acceptance/M4/totp-login.int.test.ts
-71591896d089d2ec6455567c2c05c25d1f477b0f1f87ab68dd92c26e79e008be  tests/acceptance/M4/totp-setup.int.test.ts
+721f1ac7b51d1ef2615b332cfd51b8aaadc1d3caeda6208597fa978e5467d925  tests/acceptance/M4/totp-setup.int.test.ts
 77b90cc87ad9291fead0146e71810acf6b92c9a1311490115025d4272f6a8f43  tests/acceptance/M4/updated-by.int.test.ts
 bce7c9d33a5085e307c5c85eae55cacb7a34f8d5d32405497620addba1e6d048  tests/acceptance/M4/usage-csv.int.test.ts
 0c7fae54d58dd2886d6e8f1f56338d3a2fbb8b72bc3261bf599cf8b57e14ac8e  tests/acceptance/M4/usage.int.test.ts
