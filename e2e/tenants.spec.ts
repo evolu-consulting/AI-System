@@ -101,7 +101,7 @@ test("ADM-FR-60 · M1-R15 · tạo tenant với mã trùng 'acme' → 'Mã công
   await expect(page.getByText("Mã công ty đã được dùng")).toBeVisible();
 });
 
-test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu → toast 'Đã lưu acme'; tab Feature/Agent/Quota 'Chưa khả dụng'", async ({
+test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu → toast 'Đã lưu acme'; tab Feature/Agent 'Chưa khả dụng'", async ({
   page,
 }) => {
   await asAdmin(page);
@@ -111,7 +111,7 @@ test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu �
   await page.getByRole("textbox", { name: "Tên công ty" }).fill("Acme Corp 2");
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Đã lưu acme" })).toBeVisible();
-  for (const tab of ["Feature", "Agent", "Quota"]) {
+  for (const tab of ["Feature", "Agent"]) {
     await page.getByRole("tab", { name: tab }).click();
     await expect(page.getByText("Chưa khả dụng").first()).toBeVisible();
   }
