@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import type { Ref } from "react";
 import { useTranslation } from "react-i18next";
+import { BrandLogo } from "~/components/shared/BrandLogo";
 import { Input } from "~/components/ui/input";
 import { ConversationList } from "./ConversationList";
 import { UserMenu } from "./UserMenu";
@@ -29,10 +30,9 @@ export function Sidebar(p: Props) {
       className="flex h-full w-[260px] shrink-0 flex-col gap-3 border-r border-sidebar-border bg-card px-3 py-4"
     >
       <div className="flex flex-col gap-0.5 px-1">
-        <img
-          src="/brand/evoluconsulting-logo-horizontal.svg"
-          alt="EvoluConsulting"
-          className="-ml-2.5 h-[62px] w-[200px] object-contain object-left"
+        <BrandLogo
+          className="min-h-[62px] items-center"
+          imgClassName="-ml-2.5 h-[62px] w-[200px] object-contain object-left"
         />
         <span className="pl-1.5 text-xs text-muted-foreground">
           {t("shell.brand", { tenant: p.tenantName })}

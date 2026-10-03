@@ -82,24 +82,70 @@
   --code-number: #9a4a00;
   --code-title: #2a55a8;
   --code-comment: #6b6580;
+
+  --shadow-color-toast: rgb(29 23 51 / 0.25);
+  --shadow-color-dialog: rgb(29 23 51 / 0.28);
+  --shadow-color-drawer: rgb(29 23 51 / 0.18);
 }
 
-/* Dark: Đề xuất, canvas chưa có artboard dark; chưa có nút bật ở M0. */
+/* Tối (CR-027, plan-frontend-theme §1): cùng tông tím, đạt AA; đổi qua class `dark` trên <html>. */
 .dark {
-  --background: #15111f;
+  --background: #14111c;
   --foreground: #ece8f5;
-  --card: #1e1830;
+  --card: #1c1828;
   --card-foreground: #ece8f5;
-  --popover: #1e1830;
+  --popover: #1c1828;
   --popover-foreground: #ece8f5;
-  --muted: #2a2340;
+  --muted: #262037;
   --muted-foreground: #a9a2bd;
+  --muted-strong-foreground: #c4bed6;
+  --subtle-foreground: #958dad;
+  --placeholder: #6e6786;
+
   --primary: #a58bdb;
-  --primary-foreground: #15111f;
-  --border: #342c49;
-  --input: #342c49;
+  --primary-foreground: #14111c;
+  --primary-strong: #c9b8ff;
+  --secondary: #262037;
+  --secondary-foreground: #cfc9df;
+  --accent: #2e2150;
+  --accent-foreground: #d9ccff;
+  --ink-strong: #3a2a66;
+  --on-ink: #e4dcf7;
+  --on-ink-link: #c9b8ff;
+
+  --border: #352d4a;
+  --input: #6e6589;
+  --row-divider: #2a2340;
   --ring: #a58bdb;
-  --destructive: #f97066;
+  --error-border: #f97066;
+
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --success: #6ee7b7;
+  --success-bg: #0f2e22;
+  --warning: #fbbf6a;
+  --warning-bg: #33220c;
+  --warning-solid: #f59e0b;
+  --danger: #fca5a5;
+  --danger-bg: #3a1518;
+  --overage-hatch-from: #c2410c;
+  --overage-hatch-to: #f59e0b;
+
+  --sidebar: #1c1828;
+  --sidebar-foreground: #cfc9df;
+  --sidebar-primary: #a58bdb;
+  --sidebar-primary-foreground: #14111c;
+  --sidebar-accent: #2e2150;
+  --sidebar-accent-foreground: #d9ccff;
+  --sidebar-border: #352d4a;
+  --sidebar-ring: #a58bdb;
+
+  --chart-1: #a58bdb;
+  --chart-2: #9c84c9;
+  --chart-3: #c9b8ff;
+  --chart-4: #6b4fa0;
+  --chart-5: #e08bb4;
+
   --code-bg: #100d17;
   --code-fg: #e6e1f2;
   --code-keyword: #d7a6f0;
@@ -107,6 +153,10 @@
   --code-number: #f2b872;
   --code-title: #9db8f5;
   --code-comment: #9790ad;
+
+  --shadow-color-toast: rgb(0 0 0 / 0.5);
+  --shadow-color-dialog: rgb(0 0 0 / 0.5);
+  --shadow-color-drawer: rgb(0 0 0 / 0.5);
 }
 
 @theme inline {
@@ -189,9 +239,9 @@
   --radius-lg: calc(var(--radius) + 2px);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --shadow-toast: 0 8px 24px rgb(29 23 51 / 0.25);
-  --shadow-dialog: 0 20px 48px rgb(29 23 51 / 0.28);
-  --shadow-drawer: -12px 0 32px rgb(29 23 51 / 0.18);
+  --shadow-toast: 0 8px 24px var(--shadow-color-toast);
+  --shadow-dialog: 0 20px 48px var(--shadow-color-dialog);
+  --shadow-drawer: -12px 0 32px var(--shadow-color-drawer);
 
   --spacing-sidebar: 248px;
   --spacing-sidebar-icon: 64px;

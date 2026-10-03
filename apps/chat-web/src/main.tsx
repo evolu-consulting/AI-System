@@ -4,6 +4,9 @@ import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import { initI18n } from "./app/i18n";
 import { Providers } from "./app/providers";
+import { watchTheme } from "./lib/theme";
+
+watchTheme();
 
 const el = document.getElementById("root");
 if (!el) throw new Error("Thiếu phần tử #root");

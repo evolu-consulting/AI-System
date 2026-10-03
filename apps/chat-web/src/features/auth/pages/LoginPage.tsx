@@ -3,6 +3,7 @@
 import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BrandLogo } from "~/components/shared/BrandLogo";
 import { login } from "../api";
 import { LockedDialog } from "../components/LockedDialog";
 import { LoginForm, type LoginValues } from "../components/LoginForm";
@@ -55,13 +56,7 @@ export function LoginPage() {
   return (
     <main id="main" className="flex min-h-screen flex-col bg-background p-6">
       <div className="mx-auto flex w-full max-w-[380px] flex-1 flex-col justify-center gap-6 py-8">
-        <img
-          src="/brand/evoluconsulting-logo-horizontal.svg"
-          alt="EvoluConsulting"
-          width={180}
-          height={56}
-          className="h-12 w-auto self-start"
-        />
+        <BrandLogo className="self-start" imgClassName="h-12 w-auto" />
         <div className="space-y-1">
           <h1 className="text-page-title font-bold text-foreground">{t("login.title")}</h1>
           <p className="text-body text-muted-foreground">{t("login.subtitle")}</p>

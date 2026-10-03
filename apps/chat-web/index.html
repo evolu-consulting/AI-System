@@ -1,6 +1,17 @@
 <!doctype html>
 <html lang="vi">
-  <head></head>
+  <head>
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (() => {
+        var d = document.documentElement, m = "system";
+        try { m = localStorage.getItem("ai-chat-theme") || "system"; } catch {}
+        var dark = m === "dark" || (m !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) d.classList.add("dark");
+        d.style.colorScheme = dark ? "dark" : "light";
+      })();
+    </script>
+  </head>
   <body>
     <div id="root"></div>
   </body>
