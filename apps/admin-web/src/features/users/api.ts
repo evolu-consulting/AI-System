@@ -9,6 +9,7 @@ import type {
 } from "@ai/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
+import { lookupStep } from "./lookup-user";
 
 export const USERS_PAGE_SIZE = 50;
 
@@ -47,6 +48,35 @@ export function useUserList(params: UserListParams, enabled: boolean) {
           offset: params.offset || undefined,
         },
       }),
+  });
+}
+
+/** Tìm đúng username (danh sách sort `username` tăng): nạp tiếp trang tới khi `lookupStep` dừng. */
+export function useUserByUsername(
+  tenantId: string | undefined,
+  username: string | undefined,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ["users", "by-username", tenantId ?? "", username ?? ""],
+    enabled: enabled && !!username,
+    placeholderData: keepPreviousData,
+    queryFn: async (): Promise<User | null> => {
+      const name = username ?? "";
+      for (let pages = 1, offset = 0; ; pages++, offset += USERS_PAGE_SIZE) {
+        const r = await api<UserListResponse>("/admin/users", {
+          query: {
+            tenant_id: tenantId,
+            q: name,
+            limit: USERS_PAGE_SIZE,
+            offset: offset || undefined,
+          },
+        });
+        const step = lookupStep({ items: r.items, total: r.total, offset, pages }, name);
+        if (step === "found") return r.items.find((u) => u.username === name) ?? null;
+        if (step === "stop") return null;
+      }
+    },
   });
 }
 
