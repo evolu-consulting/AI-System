@@ -1,9 +1,11 @@
 // ADM-FR-55 · AC-A07 · M3-R20…R22 · hộp thoại xung đột 409 dùng chung (missing-screens §12.5; plan-frontend D3, §3.1).
+// M4-R17: user/tenant cũng có `updated_by` (câu `{user}`); bước Ghi đè nhắc "Lịch sử vẫn giữ v{n}." cho mọi entity.
 // Một AlertDialog: Escape và click nền không đóng; `Xem khác biệt` mở rộng tại chỗ; `Ghi đè` chuyển sang bước xác nhận
 // ngay trong hộp thoại (alertdialog mang tên câu xác nhận). Khi đang gửi lại, hộp quay về bước chọn với nút khoá để
 // hộp thoại xung đột còn hiện (không bị aria-hidden bởi hộp thoại thứ hai) tới khi bản ghi thật sự đã lưu.
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DiffTable } from "@/components/shared/diff/DiffTable";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -15,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import type { DiffRow } from "@/lib/diff-fields";
 import { formatClock } from "@/lib/format";
-import { DiffTable } from "./DiffTable";
 
 export type ConflictEntity = "user" | "tenant" | "workflow" | "command" | "feature" | "group";
 
@@ -78,7 +79,7 @@ export default function ConflictDialog(p: ConflictDialogProps) {
           </AlertDialogTitle>
           <AlertDialogDescription>
             {confirming
-              ? t("conflict.overwrite.body", { n: p.latestVersion, next: p.latestVersion + 1 })
+              ? `${t("conflict.overwrite.body", { n: p.latestVersion, next: p.latestVersion + 1 })} ${t("conflict.overwrite.history", { n: p.latestVersion })}`
               : t(user ? "conflict.body.byUser" : "conflict.body.anon", body)}
           </AlertDialogDescription>
         </AlertDialogHeader>

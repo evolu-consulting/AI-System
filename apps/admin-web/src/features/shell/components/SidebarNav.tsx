@@ -1,7 +1,10 @@
 // ADM-FR-60, ADM-FR-04 · danh sách mục menu (dùng cho Sidebar và Sheet di động); mục hiện tại có aria-current="page".
 import { Link } from "@tanstack/react-router";
 import {
+  ArrowLeftRight,
   Building2,
+  Coins,
+  History,
   KeyRound,
   LayoutDashboard,
   type LucideIcon,
@@ -27,6 +30,9 @@ const ICONS: Record<NavId, LucideIcon> = {
   commands: Terminal,
   workflows: Workflow,
   secrets: KeyRound,
+  usage: Coins,
+  audit: History,
+  transfer: ArrowLeftRight,
 };
 
 type Props = { collapsed?: boolean; onNavigate?: () => void };
@@ -48,7 +54,8 @@ export function SidebarNav({ collapsed = false, onNavigate }: Props) {
             return (
               <Link
                 key={item.id}
-                to={item.to}
+                // Route /usage, /audit, /transfer đến ở FE2/FE4/FE5; tới lúc đó routeTree chưa biết các đường dẫn này.
+                to={item.to as "/"}
                 activeOptions={{ exact: item.to === "/" }}
                 onClick={onNavigate}
                 className={cn(

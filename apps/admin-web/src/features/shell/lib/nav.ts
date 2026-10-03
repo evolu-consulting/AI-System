@@ -1,4 +1,4 @@
-// ADM-FR-60, ADM-FR-04, ADM-FR-10 · mục menu theo role: Tổng quan; TRUY CẬP: Tenants (chỉ platform_admin), Users;
+// ADM-FR-60, ADM-FR-04, ADM-FR-10 · mục menu theo role: Tổng quan; TRUY CẬP: Tenants (chỉ platform_admin), Users; HỆ THỐNG (cuối, M4): Chi phí & quota, Nhật ký (cả hai role), Import / Export (chỉ platform_admin).
 // TRUY CẬP gồm cả Groups và Phân quyền (M3, tenant_admin cũng thấy); CHỨC NĂNG (trên TRUY CẬP, plan-frontend D3): Features, Commands, Workflows; BẢO MẬT (dưới cùng): Secrets (M2, chỉ platform_admin).
 import type { Role } from "@ai/contracts";
 
@@ -11,7 +11,10 @@ export type NavId =
   | "workflows"
   | "groups"
   | "access"
-  | "secrets";
+  | "secrets"
+  | "usage"
+  | "audit"
+  | "transfer";
 type NavTo =
   | "/"
   | "/tenants"
@@ -21,7 +24,10 @@ type NavTo =
   | "/features"
   | "/commands"
   | "/workflows"
-  | "/secrets";
+  | "/secrets"
+  | "/usage"
+  | "/audit"
+  | "/transfer";
 export type NavItem = {
   id: NavId;
   to: NavTo;
@@ -34,10 +40,18 @@ export type NavItem = {
     | "nav.workflows"
     | "nav.groups"
     | "nav.access"
-    | "nav.secrets";
+    | "nav.secrets"
+    | "nav.usage"
+    | "nav.audit"
+    | "nav.transfer";
 };
 export type NavGroup = {
-  labelKey: "nav.group.access" | "nav.group.features" | "nav.group.security" | null;
+  labelKey:
+    | "nav.group.access"
+    | "nav.group.features"
+    | "nav.group.security"
+    | "nav.group.system"
+    | null;
   items: NavItem[];
 };
 
@@ -51,6 +65,9 @@ const WORKFLOWS = item("workflows", "/workflows");
 const GROUPS = item("groups", "/groups");
 const ACCESS = item("access", "/access");
 const SECRETS = item("secrets", "/secrets");
+const USAGE = item("usage", "/usage");
+const AUDIT = item("audit", "/audit");
+const TRANSFER = item("transfer", "/transfer");
 
 /** Menu theo role. `member` không dùng khung quản trị nên không có mục nào. */
 export function navGroups(role: Role | undefined): NavGroup[] {
@@ -60,12 +77,14 @@ export function navGroups(role: Role | undefined): NavGroup[] {
       { labelKey: "nav.group.features", items: [FEATURES, COMMANDS, WORKFLOWS] },
       { labelKey: "nav.group.access", items: [TENANTS, USERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
+      { labelKey: "nav.group.system", items: [USAGE, AUDIT, TRANSFER] },
     ];
   }
   if (role === "tenant_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },
       { labelKey: "nav.group.access", items: [USERS, GROUPS, ACCESS] },
+      { labelKey: "nav.group.system", items: [USAGE, AUDIT] },
     ];
   }
   return [];
@@ -76,6 +95,7 @@ export type Crumb = {
     | NavItem["labelKey"]
     | "tenants.new.title"
     | "account.changePassword"
+    | "account.twofa"
     | "workflows.editor.titleNew"
     | "commands.editor.titleNew"
     | "groups.editor.titleNew"
@@ -107,6 +127,11 @@ export function crumbsFor(pathname: string): Crumb[] {
   if (pathname === "/access") return [{ labelKey: "nav.access" }];
   if (pathname === "/secrets") return [{ labelKey: "nav.secrets" }];
   if (pathname === "/account/password") return [{ labelKey: "account.changePassword" }];
+  if (pathname === "/account/2fa") return [{ labelKey: "account.twofa" }];
+  if (pathname === "/usage") return [{ labelKey: "nav.usage" }];
+  if (pathname === "/transfer") return [{ labelKey: "nav.transfer" }];
+  if (pathname === "/audit") return [{ labelKey: "nav.audit" }];
+  if (pathname.startsWith("/audit/")) return [{ labelKey: "nav.audit", to: "/audit" }];
   if (pathname === "/tenants") return [{ labelKey: "nav.tenants" }];
   if (pathname === "/tenants/new") {
     return [{ labelKey: "nav.tenants", to: "/tenants" }, { labelKey: "tenants.new.title" }];

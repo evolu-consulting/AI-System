@@ -62,3 +62,18 @@ export function diffFields(mine: unknown, latest: unknown): DiffResult {
     .map((p) => toRow(p, a.get(p), b.get(p)));
   return { rows: rows.slice(0, DIFF_MAX_ROWS), more: Math.max(0, rows.length - DIFF_MAX_ROWS) };
 }
+
+/** Như `diffFields` nhưng không cắt dòng và trả cả trường không đổi (Nhật ký, Import: "{n} trường không đổi · Hiện"). */
+export function diffAll(
+  before: unknown,
+  after: unknown,
+): { changed: DiffRow[]; unchanged: DiffRow[] } {
+  const a = flatten(before);
+  const b = flatten(after);
+  const changed: DiffRow[] = [];
+  const unchanged: DiffRow[] = [];
+  for (const p of new Set([...a.keys(), ...b.keys()])) {
+    (same(a.get(p), b.get(p)) ? unchanged : changed).push(toRow(p, a.get(p), b.get(p)));
+  }
+  return { changed, unchanged };
+}

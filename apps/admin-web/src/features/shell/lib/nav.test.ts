@@ -16,17 +16,28 @@ describe("ADM-FR-60 · menu theo role", () => {
       "groups",
       "access",
       "secrets",
+      "usage",
+      "audit",
+      "transfer",
     ]);
     expect(navGroups("platform_admin").map((g) => g.labelKey)).toEqual([
       null,
       "nav.group.features",
       "nav.group.access",
       "nav.group.security",
+      "nav.group.system",
     ]);
   });
 
   test("tenant_admin không thấy Tenants và các mục M2", () => {
-    expect(ids("tenant_admin")).toEqual(["overview", "users", "groups", "access"]);
+    expect(ids("tenant_admin")).toEqual([
+      "overview",
+      "users",
+      "groups",
+      "access",
+      "usage",
+      "audit",
+    ]);
   });
 
   test("member không có mục nào", () => {
@@ -45,6 +56,14 @@ describe("ADM-FR-60 · menu theo role", () => {
     expect(crumbsFor("/")).toEqual([{ labelKey: "nav.overview" }]);
     expect(crumbsFor("/tenants/new")).toHaveLength(2);
     expect(crumbsFor("/unknown")).toEqual([]);
+  });
+
+  test("breadcrumb M4", () => {
+    expect(crumbsFor("/usage")).toEqual([{ labelKey: "nav.usage" }]);
+    expect(crumbsFor("/transfer")).toEqual([{ labelKey: "nav.transfer" }]);
+    expect(crumbsFor("/audit")).toEqual([{ labelKey: "nav.audit" }]);
+    expect(crumbsFor("/audit/abc")).toEqual([{ labelKey: "nav.audit", to: "/audit" }]);
+    expect(crumbsFor("/account/2fa")).toEqual([{ labelKey: "account.twofa" }]);
   });
 
   test("breadcrumb M3", () => {

@@ -151,7 +151,8 @@
     "group": {
       "access": "ACCESS",
       "features": "FEATURES",
-      "security": "SECURITY"
+      "security": "SECURITY",
+      "system": "SYSTEM"
     },
     "tenants": "Tenants",
     "users": "Users",
@@ -165,7 +166,10 @@
     "features": "Features",
     "secrets": "Secrets",
     "groups": "Groups",
-    "access": "Access"
+    "access": "Access",
+    "usage": "Usage & quota",
+    "audit": "Audit log",
+    "transfer": "Import / Export"
   },
   "topbar": {
     "platform": "Platform"
@@ -173,7 +177,8 @@
   "account": {
     "menu": "Your account",
     "changePassword": "Change password",
-    "language": "Language"
+    "language": "Language",
+    "twofa": "Two-step verification"
   },
   "overview": {
     "welcome": "Hello, {name}",
@@ -183,7 +188,10 @@
     "tenant": {
       "body": "Manage the users of {tenant}."
     },
-    "soon": "Statistics and alerts will arrive in later releases."
+    "soon": "Statistics and alerts will arrive in later releases.",
+    "kpi": {
+      "noData": "No data from Agent Hub yet"
+    }
   },
   "state": {
     "error": {
@@ -317,6 +325,19 @@
   "quota": {
     "error": {
       "positive": "Enter a number greater than 0 or leave empty"
+    },
+    "unit": {
+      "runs": "{n} runs",
+      "tokens": "{n} tokens"
+    },
+    "bar": {
+      "used": "{used} / {limit}",
+      "unlimited": "{used} · Unlimited"
+    },
+    "badge": {
+      "warn": "{pct}% of quota",
+      "over": "Over quota",
+      "overPct": "Over by {pct}%"
     }
   },
   "tempPassword": {
@@ -1032,7 +1053,8 @@
     "overwrite": {
       "titleUser": "Overwrite {user}'s changes?",
       "titleAnon": "Overwrite the latest changes?",
-      "body": "v{n} will be replaced by your version (becoming v{next})."
+      "body": "v{n} will be replaced by your version (becoming v{next}).",
+      "history": "History keeps v{n}."
     },
     "toast": {
       "loaded": "Loaded latest · v{n}"
@@ -1253,6 +1275,15 @@
       "userInactive": "This account is locked.",
       "tenantLocked": "The company is locked.",
       "unknown": "Reason unknown."
+    }
+  },
+  "audit": {
+    "diff": {
+      "field": "Field",
+      "before": "Before",
+      "after": "After",
+      "changed": "changed",
+      "unchanged": "{n} unchanged fields · Show"
     }
   }
 }

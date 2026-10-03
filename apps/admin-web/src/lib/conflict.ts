@@ -5,7 +5,7 @@ export type ConflictCurrent = Record<string, unknown> & { version: number };
 export type ConflictInfo = {
   current: ConflictCurrent;
   updatedAt: string;
-  /** Username người vừa sửa; `null` với user/tenant hoặc khi server không trả (A4: dùng câu không `{user}`). */
+  /** Username người vừa sửa (cả user/tenant từ M4-R17); `null` khi server không trả (vd tenant_admin xem bản platform sửa) → câu không `{user}`. */
   updatedBy: string | null;
 };
 

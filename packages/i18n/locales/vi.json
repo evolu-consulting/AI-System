@@ -151,7 +151,8 @@
     "group": {
       "access": "TRUY CẬP",
       "features": "CHỨC NĂNG",
-      "security": "BẢO MẬT"
+      "security": "BẢO MẬT",
+      "system": "HỆ THỐNG"
     },
     "tenants": "Tenants",
     "users": "Users",
@@ -165,7 +166,10 @@
     "features": "Features",
     "secrets": "Secrets",
     "groups": "Groups",
-    "access": "Phân quyền"
+    "access": "Phân quyền",
+    "usage": "Chi phí & quota",
+    "audit": "Nhật ký",
+    "transfer": "Import / Export"
   },
   "topbar": {
     "platform": "Nền tảng"
@@ -173,7 +177,8 @@
   "account": {
     "menu": "Tài khoản của bạn",
     "changePassword": "Đổi mật khẩu",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "twofa": "Xác thực hai bước"
   },
   "overview": {
     "welcome": "Xin chào, {name}",
@@ -183,7 +188,10 @@
     "tenant": {
       "body": "Quản lý người dùng của {tenant}."
     },
-    "soon": "Thống kê và cảnh báo sẽ có ở các bản sau."
+    "soon": "Thống kê và cảnh báo sẽ có ở các bản sau.",
+    "kpi": {
+      "noData": "Chưa có dữ liệu từ Agent Hub"
+    }
   },
   "state": {
     "error": {
@@ -317,6 +325,19 @@
   "quota": {
     "error": {
       "positive": "Nhập số lớn hơn 0 hoặc để trống"
+    },
+    "unit": {
+      "runs": "{n} run",
+      "tokens": "{n} token"
+    },
+    "bar": {
+      "used": "{used} / {limit}",
+      "unlimited": "{used} · Không giới hạn"
+    },
+    "badge": {
+      "warn": "{pct}% quota",
+      "over": "Vượt quota",
+      "overPct": "Vượt {pct}%"
     }
   },
   "tempPassword": {
@@ -1032,7 +1053,8 @@
     "overwrite": {
       "titleUser": "Ghi đè thay đổi của {user}?",
       "titleAnon": "Ghi đè thay đổi mới nhất?",
-      "body": "Bản v{n} sẽ bị thay bằng bản của bạn (thành v{next})."
+      "body": "Bản v{n} sẽ bị thay bằng bản của bạn (thành v{next}).",
+      "history": "Lịch sử vẫn giữ v{n}."
     },
     "toast": {
       "loaded": "Đã tải bản mới nhất · v{n}"
@@ -1253,6 +1275,15 @@
       "userInactive": "Tài khoản này đang bị khoá.",
       "tenantLocked": "Công ty đang bị khoá.",
       "unknown": "Không rõ lý do."
+    }
+  },
+  "audit": {
+    "diff": {
+      "field": "Trường",
+      "before": "Trước",
+      "after": "Sau",
+      "changed": "đã đổi",
+      "unchanged": "{n} trường không đổi · Hiện"
     }
   }
 }

@@ -12,6 +12,7 @@ export function HomePage() {
   const role = useSession((s) => s.me?.role);
   const tenantName = useSession((s) => s.me?.tenant.name ?? "");
   const links = navGroups(role)
+    .filter((g) => g.labelKey !== "nav.group.system") // trang HỆ THỐNG chưa có route tới FE2–FE5
     .flatMap((g) => g.items)
     .filter((i) => i.id !== "overview");
   return (
@@ -31,7 +32,7 @@ export function HomePage() {
             {links.map((item) => (
               <li key={item.id}>
                 <Link
-                  to={item.to}
+                  to={item.to as "/"}
                   className="inline-flex h-9 items-center rounded-md border border-border px-4 text-label font-medium text-primary hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {t(item.labelKey)}

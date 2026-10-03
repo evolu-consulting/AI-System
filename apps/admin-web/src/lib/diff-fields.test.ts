@@ -1,6 +1,6 @@
 // ADM-FR-55 · M3-R20 · diffFields: chỉ trường khác, khoá phẳng, bỏ khoá hệ thống, giới hạn dòng.
 import { describe, expect, test } from "bun:test";
-import { DIFF_MAX_ROWS, diffFields, formatDiffValue } from "./diff-fields";
+import { DIFF_MAX_ROWS, diffAll, diffFields, formatDiffValue } from "./diff-fields";
 
 describe("ADM-FR-55 · diffFields", () => {
   test("chỉ trả trường khác, khoá phẳng, giá trị chuỗi có nháy", () => {
@@ -69,5 +69,30 @@ describe("ADM-FR-55 · diffFields (biên)", () => {
     expect(formatDiffValue("en")).toBe('"en"');
     expect(formatDiffValue([])).toBe("[]");
     expect(formatDiffValue({})).toBe("{}");
+  });
+});
+
+describe("ADM-FR-51 · diffAll", () => {
+  test("tách changed / unchanged, không cắt dòng, bỏ khoá hệ thống", () => {
+    const before = { version: 1, a: 1, b: "x", c: { d: true } };
+    const after = { version: 2, a: 2, b: "x", c: { d: true } };
+    const { changed, unchanged } = diffAll(before, after);
+    expect(changed.map((r) => r.path)).toEqual(["a"]);
+    expect(unchanged.map((r) => r.path)).toEqual(["b", "c.d"]);
+  });
+
+  test("tạo (before null) → mọi trường là changed với cột trước trống; xoá ngược lại", () => {
+    const created = diffAll(null, { a: 1 });
+    expect(created.changed).toEqual([
+      { path: "a", mine: "", latest: "1", mineEmpty: true, latestEmpty: false },
+    ]);
+    expect(diffAll({ a: 1 }, null).changed[0]).toMatchObject({ latestEmpty: true, mine: "1" });
+  });
+
+  test("không giới hạn DIFF_MAX_ROWS", () => {
+    const big = Object.fromEntries(
+      Array.from({ length: DIFF_MAX_ROWS + 5 }, (_, i) => [`k${i}`, i]),
+    );
+    expect(diffAll({}, big).changed).toHaveLength(DIFF_MAX_ROWS + 5);
   });
 });
