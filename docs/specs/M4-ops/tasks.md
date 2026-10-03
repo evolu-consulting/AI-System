@@ -9,7 +9,7 @@ Lệnh xong mọi task: kèm `bun run depcruise --all && bun run check:fn --all`
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
 | P1 | Plan BE (≤ 30 KB): contract, migration, audit hook, evaluator, mail, import, TOTP | backend-lead | cao | `spec §2–4, §9 Q0–Q13`; `ba-admin §5.6–5.7, §7–8`; `missing-screens §14` | `docs/specs/M4-ops/plan.md` (A+B, + `plan-rules.md`), `plan-cd.md` (C+D) | — | `wc -c plan.md` ≤ 30720 | [ ] |
-| P2 | Plan FE (≤ 25 KB): màn, trạng thái, câu chữ VI/EN, nhãn e2e | frontend-lead | thường | `spec §5`; `missing-screens §1, 7, 8, 10, 12`; canvas (trỏ) | `docs/specs/M4-ops/plan-frontend.md` | P1 (contract) | `wc -c` ≤ 25600 | [ ] |
+| P2 | Plan FE (≤ 25 KB): màn, trạng thái, câu chữ VI/EN, nhãn e2e | frontend-lead | thường | `spec §5`; `missing-screens §1, 7, 8, 10, 12`; canvas (trỏ) | `docs/specs/M4-ops/plan-frontend.md` | P1 (contract) | `wc -c` ≤ 25600 | [x] |
 | P3 | ADR-0004 thư viện mới (`nodemailer`, `qrcode`, `recharts`) | backend-lead | thường | `spec §9 Q3`; `adr/0001-stack.md` | `docs/adr/0004-*.md` | P1 | — | [ ] |
 | Q1 | Test-plan (≤ 30 KB): AC → test, dữ liệu, kỳ vọng | qc | cao | `spec §2, §8`; `plan §3–4` | `docs/specs/M4-ops/test-plan.md` | P1, P2 | `wc -c` ≤ 30720 | [ ] |
 | G1 | spec-readiness + Gate M4 (tự duyệt Luật 2b nếu đủ điều kiện) | spec-readiness | cao | toàn bộ `spec`, `plan*`, `test-plan`, `tasks` | `readiness.md`, `docs/specs/M4-gate.md` | P1–P3, Q1 | READY | [ ] |
@@ -36,23 +36,30 @@ Lệnh xong mọi task: kèm `bun run depcruise --all && bun run check:fn --all`
 | T8 | C · Import dry-run + áp dụng (1 transaction, `secrets{}`, audit `import`, NOTIFY) | backend-lead | cao | `spec §2 R14, R15`, `§9 Q11` | `modules/transfer` | T7 | M4-AC09, AC10 | [ ] |
 | T9 | D · 2FA BE: setup/enable/disable/verify/backup, login `totp_required`, tắt hộ | backend-lead | cao | `spec §2 R16`, `§9 Q10`; `missing-screens §10, §14.1` | `modules/auth` | T1 | M4-AC11, AC12 | [ ] |
 
-## BUILD frontend (tách nhỏ theo plan-frontend)
+## BUILD frontend (chi tiết: `plan-frontend.md`)
+
+LX = `bun run typecheck && bun test apps/admin-web && bun run i18n:check && bun run check:fn --files <file đổi> && bun run depcruise --all && bun run check:size && bunx playwright test e2e/<spec> --reporter=line`; `build` + `check:bundle` = `bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle`. File tính từ `apps/admin-web/src/` (trừ `packages/`). Tên spec e2e do qc chốt.
 
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
-| FE0 | Chung: QuotaBar, DiffViewer, DateRangePicker, InputOTP, biểu đồ, banner quota, modal 409 có `{user}` + "Lịch sử" | frontend-lead | thường | `plan-frontend §…`; `missing-screens §7.2, §12.5` | `apps/admin-web/src/components/shared`, `features/shell` | Q3 | `bun run typecheck && bun test` + `depcruise --all` | [ ] |
-| FE1 | A · Tenant › tab Quota | frontend-lead | thường | `plan-frontend §…`; canvas `TenantQuota` | `features/tenants` | T3, FE0 | `bunx playwright test M4` (Quota) | [ ] |
-| FE2 | A · Chi phí & quota + CSV | frontend-lead | thường | canvas `Usage`; `ui-admin 7.16` | `features/usage` | T5, FE0 | e2e Usage | [ ] |
-| FE3 | A · Tổng quan (2 role) + banner | frontend-lead | thường | canvas `Main`, `TenantOverview` | `features/overview`, `features/shell` | T4, T6, FE0 | e2e Overview | [ ] |
-| FE4 | B · Nhật ký + chi tiết + Khôi phục | frontend-lead | thường | canvas `Audit`, `States`; `missing-screens §7` | `features/audit` | T2, FE0 | e2e Audit | [ ] |
-| FE5 | C · Import/Export | frontend-lead | thường | canvas `ImportPreview`; `missing-screens §8` | `features/transfer` | T8, FE0 | e2e Transfer | [ ] |
-| FE6 | D · 2FA (trang bật/tắt, bước đăng nhập, tắt hộ ở Users) | frontend-lead | cao | canvas `Enable2FA`; `missing-screens §10` | `features/auth`, `features/users` | T9, FE0 | e2e 2FA | [ ] |
+| FE0a | Chung 1: nav HỆ THỐNG + crumbs + menu avatar; QuotaBar, KpiCard, quota-format; DiffTable mở rộng + `diffAll`; ConflictDialog vế "Lịch sử" + `{user}` user/tenant (R17) | frontend-lead | thường | `plan-frontend §0 D5, §1, §2, §7`; ms §12.5 | `features/shell/lib/nav.ts`, `components/shared/{quota,kpi,diff,conflict}/*`, `lib/{diff-fields,quota-format}.ts`, `packages/i18n/locales/*` | Q3, T0 | LX (`plan-frontend §12`) + e2e `m4-conflict` | [ ] |
+| FE0b | Chung 2: DailyBars (SVG, không recharts), OtpInput, PeriodFilter, `lib/download.ts`, shadcn accordion/collapsible/toggle-group | frontend-lead | thường | `plan-frontend §0 D1, D3, D4, D12, §2` | `components/shared/{chart,form}/*`, `components/ui/*`, `lib/download.ts` | FE0a | LX (`plan-frontend §12`) (unit) + `build` + `check:bundle` | [ ] |
+| FE1 | A · Tenant › tab Quota + `?tab` | frontend-lead | thường | `plan-frontend §3.1, §5, §6`; canvas `TenantQuota` | `features/tenants/components/quota/*`, `features/tenants/hooks/use-tenant-quotas.ts`, `routes/_authed/tenants/$tenantId.tsx` | T3, FE0a | LX (`plan-frontend §12`) + e2e `m4-quota` | [ ] |
+| FE2 | A · Chi phí & quota + CSV | frontend-lead | thường | `plan-frontend §3.2, §4, §6`; canvas `Usage` | `features/usage/**`, `routes/_authed/usage.tsx` | T5, FE0b | LX (`plan-frontend §12`) + e2e `m4-usage` + `check:bundle` | [ ] |
+| FE3 | A · Tổng quan (2 role) + QuotaBanner | frontend-lead | thường | `plan-frontend §3.3, §0 D6, D10`; ms §1; canvas `Main`, `TenantOverview` | `features/overview/**`, `features/shell/components/{AppShell,QuotaBanner}.tsx`, `lib/audit-sentence.ts`, `routes/_authed/index.tsx` | T4, T6, FE0a | LX (`plan-frontend §12`) + e2e `m4-overview` | [ ] |
+| FE4a | B · Nhật ký: timeline, lọc, Tải thêm | frontend-lead | thường | `plan-frontend §3.4, §0 D8`; ms §7.1; canvas `Audit` | `features/audit/{api.ts,pages/AuditPage.tsx,components/{AuditFilters,AuditTimeline,AuditRow}.tsx,hooks/use-audit-list.ts}`, `routes/_authed/audit/*` | T2, FE0b, FE3 | LX (`plan-frontend §12`) + e2e `m4-audit` | [ ] |
+| FE4b | B · Nhật ký: Sheet chi tiết + diff + Khôi phục | frontend-lead | thường | `plan-frontend §3.4, §8`; ms §7.2 | `features/audit/{pages/AuditDetailSheet.tsx,components/{AuditDiff,RestoreDialog}.tsx,hooks/{use-audit-entry,use-restore}.ts}` | FE4a | LX (`plan-frontend §12`) + e2e `m4-audit` | [ ] |
+| FE5a | C · Export | frontend-lead | thường | `plan-frontend §3.5`; ms §8 | `features/transfer/{api.ts,pages/TransferPage.tsx,components/ExportTab.tsx,hooks/use-export.ts}`, `routes/_authed/transfer.tsx` | T7, FE0b | LX (`plan-frontend §12`) + e2e `m4-transfer` | [ ] |
+| FE5b | C · Import: tải file → dry-run → Cần tạo secret → áp dụng | frontend-lead | cao | `plan-frontend §3.5, §0 D11, §5, §8`; canvas `ImportPreview` | `features/transfer/{components/{ImportTab,ImportDrop,ImportSummary,ImportGroup,MissingSecrets,ImportErrors}.tsx,hooks/{use-import-preview,use-import-apply}.ts,lib/import-file.ts}` | T8, FE5a | LX (`plan-frontend §12`) + e2e `m4-transfer` | [ ] |
+| FE6a | D · Trang 2FA: bật (reauth, QR, mã, mã dự phòng), tắt, tạo lại mã | frontend-lead | cao | `plan-frontend §3.6, §0 D2, D11`; ms §10.1; canvas `Enable2FA` | `features/auth/{api.ts,pages/TwoFactorPage.tsx,components/totp/*,hooks/use-totp-setup.ts,lib/totp-steps.ts}`, `routes/_authed/account.2fa.tsx` | T9, FE0b | LX (`plan-frontend §12`) + e2e `m4-2fa` + `check:bundle` (chunk QR) | [ ] |
+| FE6b | D · Bước TOTP khi đăng nhập (`pendingTotp`, mã dự phòng) | frontend-lead | cao | `plan-frontend §3.6, §8`; ms §10.2 | `features/auth/{pages/LoginPage.tsx,components/totp/LoginTotpStep.tsx,hooks/use-totp-login.ts}`, `lib/auth/session.ts` | FE6a | LX (`plan-frontend §12`) + e2e `m4-2fa`, `auth` | [ ] |
+| FE6c | D · Users `⋯ › Tắt 2FA` hộ user | frontend-lead | cao | `plan-frontend §3.6, §6` | `features/users/components/list/*`, `features/users/hooks/use-user-actions.tsx` | T9, FE6a | LX (`plan-frontend §12`) + e2e `m4-2fa`, `users` | [ ] |
 
 ## Nghiệm thu & đóng mốc
 
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
-| TN | Lệnh xong M4 (Lệnh xong M0 + AC M4; **không** `test:perf`) | điều phối | thường | `CLAUDE.md` "Lệnh xong M0"; `spec §8` | — | T0–T9, FE0–FE6 | toàn bộ xanh | [ ] |
+| TN | Lệnh xong M4 (Lệnh xong M0 + AC M4; **không** `test:perf`) | điều phối | thường | `CLAUDE.md` "Lệnh xong M0"; `spec §8` | — | T0–T9, FE0a–FE6c | toàn bộ xanh | [ ] |
 | R1 | Review (≤ 2 vòng) | reviewer | cao | `git diff`, `spec §2` | — | TN | APPROVED | [ ] |
 | D1 | Đồng bộ docs: CODEMAP, TRACE, README module, STATE, ROADMAP, PRODUCTION-NOTES; đóng TD #7, #9, #20 | docs-architect | thường | `WORKFLOW` Việc 2 | `docs/**` | R1 | `bun run trace --check` | [ ] |
 | H1 | Bật service + hướng dẫn người dùng test toàn bộ admin app | điều phối | thường | `STATE` | — | D1 | — | [ ] |
