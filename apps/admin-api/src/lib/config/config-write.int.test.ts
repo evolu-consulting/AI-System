@@ -134,7 +134,6 @@ describe("ADM-FR-53 · chi phí bump + NOTIFY (spec M3 §6)", () => {
     const diffs: number[] = [];
     for (let i = 0; i < 50; i++) diffs.push((await once(true)) - (await once(false)));
     const median = diffs.sort((x, y) => x - y)[25] ?? 0;
-    console.info(`config-write perf: trung vị bump + NOTIFY = ${median.toFixed(2)} ms`);
     expect(median).toBeLessThan(5);
   });
 });

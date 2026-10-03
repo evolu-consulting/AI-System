@@ -1,13 +1,17 @@
 // ADM-NFR-03 · ngân sách p95 spec M3 §6 (20 lần, in-process, gọi service trực tiếp). Dữ liệu: 500 tenant × 20 user,
 // 200 group/tenant, 200 feature, 100 grant/feature (tenant đo), 50 command. Dựng bằng owner SQL (generate_series).
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { createDb, runMigrations } from "@ai/db";
+import { createDb, runMigrations, withScope } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
+import { sql } from "drizzle-orm";
 import postgres from "postgres";
 import { commandAccess } from "../commands/commands.access";
 import { batchGrants } from "../grants/grants.batch";
 import { grantMatrix } from "../grants/grants.matrix";
+import { listGrants } from "../grants/grants.service";
+import { addMembers, listMembers } from "../groups/groups.members";
 import { listGroups } from "../groups/groups.service";
+import { listUsers } from "../users/users.service";
 import { effectiveAccess } from "./access.service";
 
 const OWNER = process.env.TEST_DATABASE_URL;
@@ -21,6 +25,8 @@ let admin = "";
 let member = "";
 let cmd = "";
 let groupIds: string[] = [];
+let bigGroup = "";
+let emptyGroup = "";
 let featureIds: string[] = [];
 
 async function seed(): Promise<void> {
@@ -55,6 +61,13 @@ async function grantsAndMembers(): Promise<void> {
   await owner`insert into admin.group_members (tenant_id, group_id, user_id)
     select ${T0}, g.id, u.id from admin.users u join admin.groups g on g.tenant_id = u.tenant_id
     where u.tenant_id = ${T0} and g.key in ('g1', 'g2', 'g3', 'beta-testers')`;
+  // 5.000 thành viên cho g150 (GET members); 500 username m0000-m0499 sẽ được thêm vào g151 (POST members).
+  await owner`insert into admin.users (tenant_id, username, password_hash, display_name, role, email)
+    select ${T0}, 'm' || lpad(i::text, 4, '0'), 'x', 'M ' || i, 'member', 'm' || i || '@x.test'
+    from generate_series(0, 4979) i`;
+  await owner`insert into admin.group_members (tenant_id, group_id, user_id)
+    select ${T0}, g.id, u.id from admin.users u join admin.groups g on g.tenant_id = u.tenant_id and g.key = 'g150'
+    where u.tenant_id = ${T0}`;
 }
 
 beforeAll(async () => {
@@ -68,6 +81,11 @@ beforeAll(async () => {
   member = (await owner`select id from admin.users where tenant_id = ${T0} and username = 'u5'`)[0]
     ?.id;
   cmd = (await owner`select id from admin.commands where name = 'cmd1'`)[0]?.id;
+  bigGroup = (await owner`select id from admin.groups where tenant_id = ${T0} and key = 'g150'`)[0]
+    ?.id;
+  emptyGroup = (
+    await owner`select id from admin.groups where tenant_id = ${T0} and key = 'g151'`
+  )[0]?.id;
   groupIds = (
     await owner`select id from admin.groups where tenant_id = ${T0} order by key desc limit 100`
   ).map((r) => r.id);
@@ -91,10 +109,13 @@ const platform = () => ({
   scope: { kind: "platform" as const },
 });
 
-async function p95(fn: () => Promise<unknown>): Promise<number> {
+/** `prep` chạy trước mỗi lần đo (ngoài đồng hồ) để đưa dữ liệu về trạng thái đầu. */
+async function p95(fn: () => Promise<unknown>, prep?: () => Promise<unknown>): Promise<number> {
+  await prep?.();
   await fn();
   const ts: number[] = [];
   for (let i = 0; i < 20; i++) {
+    await prep?.();
     const t = performance.now();
     await fn();
     ts.push(performance.now() - t);
@@ -134,5 +155,42 @@ describe("ADM-NFR-03 · ngân sách p95 spec M3 §6", () => {
     expect(await p95(() => commandAccess(platform(), cmd, { limit: 50, offset: 0 }))).toBeLessThan(
       150,
     );
+  });
+});
+
+describe("ADM-NFR-03 · ngân sách p95 spec M3 §6 (thành viên, grants, users)", () => {
+  test("GET /admin/groups/:id/members (5.000 thành viên) < 100 ms", async () => {
+    const page = () => listMembers(call(), bigGroup, { limit: 50, offset: 0 });
+    expect((await page()).total).toBe(5000);
+    expect(await p95(page)).toBeLessThan(100);
+  });
+
+  test("POST /admin/groups/:id/members 500 username < 200 ms", async () => {
+    const usernames = Array.from({ length: 500 }, (_, i) => `m${String(i).padStart(4, "0")}`);
+    const add = () => addMembers(call(), emptyGroup, { usernames, dry_run: false });
+    const reset = () => owner`delete from admin.group_members where group_id = ${emptyGroup}`;
+    expect((await add()).added).toHaveLength(500);
+    expect(await p95(add, reset)).toBeLessThan(200);
+  });
+
+  test("GET /admin/grants < 100 ms", async () => {
+    expect(await p95(() => listGrants(call(), { limit: 50, offset: 0 }))).toBeLessThan(100);
+  });
+
+  test("GET /admin/users (kèm groups) < 300 ms, tăng ≤ 20 ms so với bản M2 (không groups)", async () => {
+    const withGroups = await p95(() => listUsers(call(), { limit: 50, offset: 0 }));
+    // Bản M2 = cùng RLS, join, sắp, trang; không subquery `groups`/`group_count`.
+    const m2 = () =>
+      withScope(db, call().scope, async (tx) => {
+        await tx.execute(sql`select u.id, u.username, u.display_name, u.email, u.role, u.version,
+            count(*) over()::int as total
+          from admin.users u join admin.tenants t on t.id = u.tenant_id
+          where u.tenant_id = ${T0} order by u.username, u.id limit 50`);
+        await tx.execute(sql`select count(*), count(*) filter (where u.active) from admin.users u
+          where u.tenant_id = ${T0}`); // `counts` của M1
+      });
+    const baseline = await p95(m2);
+    expect(withGroups).toBeLessThan(300);
+    expect(withGroups - baseline).toBeLessThanOrEqual(20);
   });
 });
