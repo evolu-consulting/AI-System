@@ -15,6 +15,13 @@
       "when": 1790858500000,
       "tag": "0001_admin_api_login_dev",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790944900000,
+      "tag": "0002_usage_logs_at_idx",
+      "breakpoints": true
     }
   ]
 }

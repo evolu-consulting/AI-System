@@ -23,6 +23,7 @@
     "db:seed": "bun --env-file=.env.local packages/db/src/seed.ts",
     "db:setup": "bun run db:migrate && bun run db:seed",
     "mocks": "bun tools/mocks/src/server.ts",
+    "mock:quota": "bun --env-file=.env.local tools/mocks/src/quota.ts",
     "check:size": "bun tools/scripts/src/check-size.ts",
     "check:fn": "bun tools/scripts/src/check-fn.ts",
     "db:test:create": "bun --env-file=.env.local packages/db/src/test-db-cli.ts create",

@@ -17,8 +17,8 @@ const hubTables = async () =>
 describe("ADM-NFR-06 · runMigrations (int)", () => {
   beforeEach(() => resetTestDb(URL));
 
-  test("test: áp main + dev (M4 T0: 8 main, 2 dev), 3 bảng hub, admin_rw SELECT được usage_logs; lần 2 {0,0}", async () => {
-    expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 8, dev: 2 });
+  test("test: áp main + dev (M4 T0: 8 main, 3 dev), 3 bảng hub, admin_rw SELECT được usage_logs; lần 2 {0,0}", async () => {
+    expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 8, dev: 3 });
     expect(await hubTables()).toEqual(["agent_grants", "agent_workflows", "usage_logs"]);
     const [p] = await sql<{ ok: boolean }[]>`
       select has_table_privilege('admin_rw', 'hub.usage_logs', 'SELECT') as ok`;
@@ -36,6 +36,6 @@ describe("ADM-NFR-06 · runMigrations (int)", () => {
 
   test("production rồi test trên cùng DB: dev áp sau, main không áp lại", async () => {
     await runMigrations({ url: URL, appEnv: "production" });
-    expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 0, dev: 2 });
+    expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 0, dev: 3 });
   });
 });
