@@ -2,7 +2,7 @@
 // iv = 12 byte CSPRNG mới mỗi lần ghi; ciphertext = bản mã ‖ tag 16 byte; AAD = UTF-8 `admin.secrets:<id>:<key_version>`;
 // khoá = 32 byte base64-decode của SECRET_MASTER_KEY, dùng trực tiếp (tách miền bằng tiền tố AAD, không HKDF).
 // Message lỗi không bao giờ chứa khoá, giá trị hay bản mã.
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes } from "node:crypto";
 
 export type SecretKey = { version: number; key: Uint8Array };
 export type SealedSecret = { ciphertext: Uint8Array; iv: Uint8Array; keyVersion: number };
@@ -65,4 +65,57 @@ export function selfTestSecretKey(k: SecretKey): void {
   const nil = "00000000-0000-0000-0000-000000000000";
   if (decryptSecret(k, nil, encryptSecret(k, nil, "self-test-value")) !== "self-test-value")
     throw new Error("secret-crypto: tự kiểm thất bại");
+}
+
+// ADM-FR-08 · M4-R16 · plan-cd D2–D3: mã hoá byte với AAD tuỳ miền (secret TOTP) và pepper cho mã dự phòng.
+// `encryptSecret`/`decryptSecret` giữ nguyên định dạng contract với Hub; hai hàm dưới cùng thuật toán, AAD do caller.
+export type SealedBytes = SealedSecret;
+
+/** AAD miền 2FA — khác tiền tố `admin.secrets:` nên bản mã không đổi chỗ được giữa hai bảng. */
+export function totpAad(userId: string, keyVersion: number): Uint8Array {
+  return new Uint8Array(Buffer.from(`admin.user_totp:${userId}:${keyVersion}`, "utf8"));
+}
+
+export function sealBytes(
+  k: SecretKey,
+  aad: Uint8Array,
+  plain: Uint8Array,
+  rand: (n: number) => Uint8Array = defaultRand,
+): SealedBytes {
+  const iv = rand(IV_BYTES);
+  if (iv.length !== IV_BYTES) throw new Error("secret-crypto: iv phải 12 byte");
+  const c = createCipheriv(ALGO, k.key, iv);
+  c.setAAD(aad);
+  const body = Buffer.concat([c.update(plain), c.final(), c.getAuthTag()]);
+  return { ciphertext: new Uint8Array(body), iv: new Uint8Array(iv), keyVersion: k.version };
+}
+
+/** Sai khoá/AAD/tag/key_version → ném (message không chứa dữ liệu). */
+export function openBytes(k: SecretKey, aad: Uint8Array, s: SealedBytes): Uint8Array {
+  if (s.keyVersion !== k.version) throw new Error("secret-crypto: key_version không khớp");
+  const ct = Buffer.from(s.ciphertext);
+  if (ct.length < TAG_BYTES || s.iv.length !== IV_BYTES)
+    throw new Error("secret-crypto: dữ liệu hỏng");
+  try {
+    const d = createDecipheriv(ALGO, k.key, s.iv);
+    d.setAAD(aad);
+    d.setAuthTag(ct.subarray(ct.length - TAG_BYTES));
+    return new Uint8Array(
+      Buffer.concat([d.update(ct.subarray(0, ct.length - TAG_BYTES)), d.final()]),
+    );
+  } catch {
+    throw new Error("secret-crypto: giải mã thất bại");
+  }
+}
+
+const BACKUP_PEPPER_INFO = "admin.backup-codes.v1";
+
+/** pepper = HKDF-SHA256(master key, salt rỗng, info "admin.backup-codes.v1"), 32 byte. */
+export function backupCodePepper(k: SecretKey): Uint8Array {
+  return new Uint8Array(hkdfSync("sha256", k.key, new Uint8Array(0), BACKUP_PEPPER_INFO, 32));
+}
+
+/** HMAC-SHA256(pepper, mã đã chuẩn hoá) — 32 byte, khớp CHECK `octet_length(code_hash) = 32`. */
+export function hashBackupCode(pepper: Uint8Array, normalizedCode: string): Uint8Array {
+  return new Uint8Array(createHmac("sha256", pepper).update(normalizedCode, "utf8").digest());
 }

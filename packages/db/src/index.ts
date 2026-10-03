@@ -41,4 +41,5 @@ export {
   tenantQuotas,
 } from "./schema/ops";
 export { configMeta, featureGrants, groupMembers, groups } from "./schema/permissions";
+export { userBackupCodes, userTotp } from "./schema/totp";
 export { type DbScope, NIL_SCOPE, NIL_TENANT_ID, setScope, type Tx, withScope } from "./scope";

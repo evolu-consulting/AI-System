@@ -4,7 +4,12 @@ import { loadDbEnv } from "./src/env";
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: ["./src/schema/admin.ts", "./src/schema/permissions.ts", "./src/schema/ops.ts"],
+  schema: [
+    "./src/schema/admin.ts",
+    "./src/schema/permissions.ts",
+    "./src/schema/ops.ts",
+    "./src/schema/totp.ts",
+  ],
   out: "./migrations",
   schemaFilter: ["admin"],
   dbCredentials: { url: loadDbEnv(process.env).DATABASE_URL },
