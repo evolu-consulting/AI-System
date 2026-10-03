@@ -105,7 +105,7 @@ async function login(req: LoginRequest): Promise<LoginResponse> {
   });
   if (res.status === "authenticated") {
     applyGrant(res);
-  } else {
+  } else if (res.status === "password_change_required") {
     set({
       pendingChange: {
         changeToken: res.change_token,

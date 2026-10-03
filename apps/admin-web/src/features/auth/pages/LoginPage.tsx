@@ -46,6 +46,11 @@ export function LoginPage() {
         await router.navigate({ to: "/change-password" });
         return;
       }
+      if (res.status === "totp_required") {
+        // Bước nhập mã 2 bước là FE6b; tạm hiện lỗi chung.
+        setError(tr("auth.error.server", { code: "TOTP_REQUIRED" }));
+        return;
+      }
       await i18n.changeLanguage(res.user.locale);
       const next = safeNext(search.next);
       if (next) router.history.push(next);
