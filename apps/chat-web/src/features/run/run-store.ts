@@ -1,7 +1,24 @@
 // UC-02, UC-08 · store run ngoài React (plan-frontend §3): không gắn route → stream sống tiếp khi `/c/new` → `/c/:id`.
 // Đọc bằng `useSyncExternalStore` + selector; mỗi thay đổi thay mảng `runs` (tham chiếu run không đổi thì giữ nguyên).
 import { useSyncExternalStore } from "react";
-import { isRunActive, type RunAction, type RunState, runReducer } from "./lib/reducer";
+import { isRunActive, isTerminal, type RunAction, type RunState, runReducer } from "./lib/reducer";
+
+/**
+ * Trần run đã kết thúc giữ trong store (review C1 #4). Bình thường view gọi `drop` khi query đã có `answerId`;
+ * rời hội thoại trước lúc đó thì run nằm lại — chọn trần thay vì dọn theo route vì store cố ý không gắn route
+ * (stream sống qua `/c/new` → `/c/:id`). Khi thêm run mới, bỏ run đã kết thúc cũ nhất vượt trần.
+ */
+export const MAX_SETTLED_RUNS = 20;
+
+/** Giữ mọi run chưa kết thúc + `max` run đã kết thúc mới nhất (thứ tự giữ nguyên). */
+export function pruneSettled(
+  runs: readonly RunState[],
+  max = MAX_SETTLED_RUNS,
+): readonly RunState[] {
+  let excess = runs.filter((r) => isTerminal(r.phase)).length - max;
+  if (excess <= 0) return runs;
+  return runs.filter((r) => !(isTerminal(r.phase) && excess-- > 0));
+}
 
 export type RunStore = ReturnType<typeof createRunStore>;
 
@@ -20,7 +37,7 @@ export function createRunStore() {
       return () => listeners.delete(l);
     },
     add(run: RunState): void {
-      commit([...runs.filter((r) => r.key !== run.key), run]);
+      commit(pruneSettled([...runs.filter((r) => r.key !== run.key), run]));
     },
     dispatch(key: string, action: RunAction): void {
       const cur = runs.find((r) => r.key === key);
