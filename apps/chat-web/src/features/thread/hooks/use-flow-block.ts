@@ -33,7 +33,16 @@ export function useFlowBlock(convId: string, flow: Flow, openFlowId?: string): F
 
   const inBlock = run !== undefined && isFirstAnswerRun(run, flow);
   const saved = flow.preview.answer;
-  const answer = inBlock ? answerFromRun(run) : saved ? answerFromMessage(saved) : null;
+  const savedExtra = {
+    context: {
+      convId,
+      flowId: flow.id,
+      content: flow.preview.question.content,
+      origin: "main" as const,
+    },
+    askAnswered: flow.message_count > 2,
+  };
+  const answer = inBlock ? answerFromRun(run) : saved ? answerFromMessage(saved, savedExtra) : null;
   const live = run !== undefined && isRunActive(run);
   return {
     title: flow.title,

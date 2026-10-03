@@ -85,7 +85,11 @@
     "noClose": "Flow không có nút đóng. Rảnh lâu thì hệ thống tự nghỉ, chat lại thì tự mở lại đủ ngữ cảnh."
   },
   "answer": { "who": "Consultant", "copy": "Copy", "copied": "Đã sao chép" },
-  "steps": { "summary": "{{count}} bước · {{seconds}}s", "toggle": "Xem các bước" },
+  "steps": {
+    "summary": "{{count}} bước · {{seconds}}s",
+    "toggle": "Xem các bước",
+    "list": "Các bước"
+  },
   "ask": {
     "title": "Consultant cần thêm thông tin",
     "hint": "Bấm chip là gửi luôn. Vẫn gõ tự do được."

@@ -67,6 +67,28 @@ export type AnswerView = {
   ask: Ask | null;
   error: { code: string; runId: string | null } | null;
   cancelled: boolean;
+  /** F9 · bước đã/đang chạy (rỗng → không hiện danh sách). */
+  steps?: AnswerStep[];
+  /** F9 · để Thử lại / Chạy lại / chip hỏi lại gửi đúng chỗ; thiếu → không có nút gửi. */
+  context?: AnswerContext | null;
+  /** F9 · flow đã có tin sau câu hỏi lại → chip vô hiệu. */
+  askAnswered?: boolean;
+};
+
+export type AnswerStep = {
+  id: string;
+  label: string;
+  status: "running" | "ok" | "failed";
+  ms: number | null;
+};
+
+export type AnswerContext = {
+  convId: string;
+  flowId: string | null;
+  /** Nội dung tin user gốc của run (gửi lại nguyên văn). */
+  content: string;
+  /** `main` → Thử lại tạo flow mới; `flow` → cùng flow. */
+  origin: "main" | "flow";
 };
 
 export function answerFromRun(run: RunState): AnswerView {
@@ -79,10 +101,21 @@ export function answerFromRun(run: RunState): AnswerView {
     ask: run.ask,
     error: run.phase === "failed" && run.error ? { code: run.error.code, runId: run.runId } : null,
     cancelled: run.phase === "cancelled",
+    steps: run.steps,
+    context: {
+      convId: run.convId,
+      flowId: run.flowId,
+      content: run.request.content,
+      origin: run.origin,
+    },
+    askAnswered: false,
   };
 }
 
-export function answerFromMessage(m: Message): AnswerView {
+export function answerFromMessage(
+  m: Message,
+  extra: { context?: AnswerContext | null; askAnswered?: boolean } = {},
+): AnswerView {
   const status = m.run?.status;
   return {
     text: m.content,
@@ -92,5 +125,13 @@ export function answerFromMessage(m: Message): AnswerView {
     ask: m.ask,
     error: status === "failed" && m.run?.error ? { code: m.run.error.code, runId: m.run.id } : null,
     cancelled: status === "cancelled",
+    steps: (m.run?.steps ?? []).map((x) => ({
+      id: x.step_id,
+      label: x.label,
+      status: x.status,
+      ms: x.ms,
+    })),
+    context: extra.context ?? null,
+    askAnswered: extra.askAnswered ?? false,
   };
 }

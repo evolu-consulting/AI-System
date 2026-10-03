@@ -1,41 +1,55 @@
-// CHAT-AC-12, CHAT-AC-24, CHAT-AC-10 · SLOT cho F9: bản tối thiểu của hỏi lại / lỗi / đã dừng.
-// F9 thay phần thân bằng AskCard (chip), ErrorCard (Thử lại, Báo admin), CancelledNote (Chạy lại) — giữ nguyên props.
-import { useTranslation } from "react-i18next";
-import type { AnswerView } from "../lib/thread-logic";
+// CHAT-AC-08..13, CHAT-AC-24..27 · phần dưới câu trả lời: bước, hỏi lại, lỗi, đã dừng. Props `{ answer: AnswerView }` ổn định.
+// Gửi lại dùng `answer.context` (convId/flowId/nội dung gốc); thiếu → không có nút gửi.
+import { useCallback } from "react";
+import { AskCard } from "~/features/answer/components/AskCard";
+import { CancelledNote } from "~/features/answer/components/CancelledNote";
+import { ErrorCard } from "~/features/answer/components/ErrorCard";
+import { StepList } from "~/features/answer/components/StepList";
+import { useSend } from "~/features/run/hooks/use-send";
+import type { AnswerContext, AnswerView } from "../lib/thread-logic";
 
-const KNOWN_CODES = new Set([
-  "ALL_PROVIDERS_EXHAUSTED",
-  "TIMEOUT",
-  "UPSTREAM_ERROR",
-  "BUDGET_EXCEEDED",
-  "NOT_CONFIGURED",
-]);
+function useResend(ctx: AnswerContext | null | undefined) {
+  const send = useSend();
+  const inFlow = useCallback(
+    (flowId: string, ctxv: AnswerContext, content: string) =>
+      void send.sendInFlow(
+        ctxv.convId,
+        { id: flowId, last_active_at: new Date().toISOString() },
+        content,
+      ),
+    [send],
+  );
+  const rerun = useCallback(() => {
+    if (!ctx) return;
+    if (ctx.origin === "flow" && ctx.flowId) inFlow(ctx.flowId, ctx, ctx.content);
+    else void send.sendMain(ctx.convId, ctx.content);
+  }, [ctx, send, inFlow]);
+  const pick = useCallback(
+    (choice: string) => {
+      if (ctx?.flowId) inFlow(ctx.flowId, ctx, choice);
+    },
+    [ctx, inFlow],
+  );
+  return { rerun: ctx ? rerun : undefined, pick: ctx?.flowId ? pick : undefined };
+}
 
 export function AnswerExtras({ answer }: { answer: AnswerView }) {
-  const { t } = useTranslation();
-  const { ask, error, cancelled } = answer;
+  const { ask, error, cancelled, steps, context, askAnswered, streaming } = answer;
+  const { rerun, pick } = useResend(context);
+  const stopped = cancelled || error?.code === "CANCELLED";
   return (
     <>
+      {steps && steps.length > 0 && <StepList steps={steps} streaming={streaming} />}
       {ask && (
-        <section
-          aria-label={t("ask.title")}
-          className="flex flex-col gap-1 rounded-lg border border-primary p-3"
-        >
-          <p className="text-label font-semibold">{t("ask.title")}</p>
-          <p>{ask.question}</p>
-        </section>
+        <AskCard
+          question={ask.question}
+          choices={ask.choices}
+          answered={askAnswered ?? false}
+          onPick={pick}
+        />
       )}
-      {error && (
-        <div role="alert" className="flex flex-col gap-1 rounded-lg bg-danger-bg p-3 text-danger">
-          <p className="font-semibold">
-            {t(`errors.${KNOWN_CODES.has(error.code) ? error.code : "unknown"}.title`)}
-          </p>
-          <p className="font-mono text-caption">
-            {t("errors.meta", { code: error.code, runId: error.runId ?? "—" })}
-          </p>
-        </div>
-      )}
-      {cancelled && <p className="text-caption text-muted-foreground">{t("run.cancelled")}</p>}
+      {error && !stopped && <ErrorCard code={error.code} runId={error.runId} onRetry={rerun} />}
+      {stopped && <CancelledNote onRerun={rerun} />}
     </>
   );
 }

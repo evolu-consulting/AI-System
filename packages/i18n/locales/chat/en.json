@@ -83,7 +83,7 @@
     "noClose": "Flows never close. When idle the system pauses them and restores full context when you chat again."
   },
   "answer": { "who": "Consultant", "copy": "Copy", "copied": "Copied" },
-  "steps": { "summary": "{{count}} steps · {{seconds}}s", "toggle": "Show steps" },
+  "steps": { "summary": "{{count}} steps · {{seconds}}s", "toggle": "Show steps", "list": "Steps" },
   "ask": {
     "title": "Consultant needs more information",
     "hint": "Clicking a chip sends it right away. You can still type freely."
