@@ -67,10 +67,34 @@ Nguồn FR/BR/AC: [BA §5.6–5.7, §6, §11](../../design/admin/ba-admin.md). B
 
 ## 3. Contract (backend-lead)
 File đề xuất: `packages/contracts/src/{quotas,usage,overview,audit,transfer,totp}.ts`. Điểm xuất phát: [BA §8](../../design/admin/ba-admin.md), [missing-screens §14](../_design/admin-missing-screens.md) (mục 1, 6, 7, 8). Mã lỗi mới liệt kê tại đây.
+**Khối A + B** (chi tiết từng trường: [plan §2](plan.md); hàm thuần: [plan-rules](plan-rules.md)):
+
+| Endpoint | Role | Schema (`packages/contracts`) |
+|---|---|---|
+| `GET/PUT /admin/tenants/:id/quotas` | GET platform + tenant_admin (tenant mình, khác → 404); PUT platform | `QuotaSetRequest {version (tenant), items[≤100]}` → `QuotaSetResponse` (`quotas.ts`) |
+| `GET /admin/quota-banner` | platform (luôn `null`), tenant_admin | `{banner: QuotaBanner \| null}` |
+| `GET /admin/usage`, `GET /admin/usage.csv` | platform, tenant_admin (ép tenant mình) | `UsageQuery` → `UsageReportPlatform` / `UsageReportTenant` (không có khoá `cost_usd`, `margin_usd`, `tenants`) (`usage.ts`) |
+| `GET /admin/overview` | platform, tenant_admin | `OverviewResponse` union theo `kind` (`overview.ts`) |
+| `GET /admin/audit`, `GET /admin/audit/:id` | platform, tenant_admin (tenant mình) | `AuditListQuery` (cursor) → `{items: AuditItem[], next_cursor}`; `AuditDetail` (`audit.ts`) |
+| `POST /admin/audit/:id/restore` | platform (tenant_admin 403) | `{}` → `{entity, entity_id, version, audit_id}` |
+
+Mã lỗi mới (A+B): `NAME_TAKEN` 409 `{entity,name}` · `NOT_RESTORABLE` 409 · `RESTORE_REF_MISSING` 409 `{missing[]}`. Đổi có sẵn: `CONFIG_ENTITIES` + `quota`; `Tenant`/`User` + `updated_by` (CR-016). NOTIFY mới Hub → Admin: `quota_threshold {tenant_id}`. Member → 403 mọi endpoint trên.
+
 <!-- backend-lead -->
 
 ## 4. Dữ liệu (backend-lead)
 Điểm xuất phát: [BA §7](../../design/admin/ba-admin.md) (`tenant_quotas`, `audit_log`), cột TOTP của `users`, `quota_alerts`, `updated_by`; quyền `hub_ro` đọc `usage_logs` đã có (M3). RLS: bảng mới theo mẫu M1/M3.
+**Khối A + B** ([plan §3](plan.md)): `0007_m4_ops.sql` (generate + phần RLS nối tay cuối file); bảng TOTP ở `0008_admin_totp` (plan-cd).
+
+| Bảng / cột | Điểm chính | RLS / quyền |
+|---|---|---|
+| `tenant_quotas` | unique NULLS NOT DISTINCT (tenant_id, feature_id); `max_runs` int, `max_tokens` bigint, `max_usd` numeric(12,2), > 0, ≥ 1 giới hạn; `warn_pct` = 80 | tenant pattern; `hub_ro` SELECT |
+| `quota_alerts` | unique NULLS NOT DISTINCT (tenant_id, feature_id, level, month); `status` pending/sending/sent/skipped/failed, `attempts` | tenant pattern; `hub_ro` không |
+| `audit_log` | `seq` identity (cursor), không FK, `actor_username` snapshot, `snapshot` bool (khôi phục được) | SELECT/INSERT theo scope (`tenant_id` NULL chỉ platform); `admin_rw` không UPDATE/DELETE/TRUNCATE; trigger append-only; `hub_ro` không |
+| `users.updated_by`, `tenants.updated_by` | uuid FK users `set null` | `hub_ro` không được cột mới |
+
+Thứ tự khoá mới: hạng 11a `tenant_quotas`, 13a `quota_alerts`, 15 `audit_log` (INSERT sau bump, không chờ) — [plan §6](plan.md).
+
 <!-- backend-lead -->
 
 ## 5. UI (frontend-lead)
@@ -96,6 +120,10 @@ Mục tiêu (**không chặn mốc**, đo ở `test:perf`): báo cáo chi phí m
 | `hub.usage_logs` | migration `hub-stub` + seed mẫu; `bun run mock:quota` ghi hàng tới ngưỡng/`overage` (RD#10) |
 | SMTP | Mailpit (`SMTP_URL=smtp://localhost:1025`), test đọc API Mailpit |
 | Thư viện mới (QR, mail, biểu đồ) | Q3: ADR-0004 trước Gate |
+| Hub gửi ngưỡng | `mock:quota` cuối lần ghi chạy `NOTIFY quota_threshold {tenant_id}`; Admin LISTEN và chạy evaluator (plan §5.2) |
+| Index `usage_logs (at)` (overview platform) | `migrations-dev/0002_usage_at_idx.sql` cho stub; Hub M5 tự thêm vào migration của Hub |
+
+Env mới (A+B): `ADMIN_WEB_URL` (link trong mail cảnh báo, mặc định `http://localhost:3000`). Mailer: interface `Mailer.send` (A+B), SMTP thật theo plan-cd/ADR-0004.
 <!-- backend-lead: env mới -->
 
 ## 8. Tiêu chí nghiệm thu (qc)
