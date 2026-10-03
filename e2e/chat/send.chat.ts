@@ -100,6 +100,8 @@ test("UC-02 · quota-over: hiện nhắc, 'Ẩn nhắc' ẩn được, vẫn g�
   await expect(hide).toBeVisible();
   await hide.click();
   await expect(hide).toBeHidden();
+  // UC-02 Phụ: đang có run thì không gửi được — chờ run đầu xong (nút về "Gửi").
+  await expect(page.getByRole("button", { name: "Gửi", exact: true })).toBeVisible();
   const body = nextSend(page);
   await sendMain(page, "tiếp tục");
   expect((await body).content).toBe("tiếp tục");
