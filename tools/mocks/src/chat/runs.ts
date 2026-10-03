@@ -2,7 +2,17 @@
 // Mỗi run giữ MỌI sự kiện đã phát (`events[i].id === i + 1`) + tập listener → stream E12 và E13 (nối lại theo
 // `Last-Event-ID`) đọc cùng một nguồn. Run chạy tiếp khi client rớt mạng; chỉ huỷ khi E15 / xoá hội thoại / reset.
 // Kết thúc run: lưu đúng một tin assistant (nội dung = nối delta), gỡ `active_run_id`, rồi phát sự kiện kết thúc.
-import type { Ask, ChatEvent, Run, RunError, RunSummary, StepSummary } from "@ai/contracts/chat";
+// Bộ nhớ (plan §5): ≤ `maxRuns` run (bỏ run đã xong cũ nhất), ≤ `maxEvents` sự kiện/run (vượt → `run.failed
+// INTERNAL_ERROR`); run xong quá `retentionS` → nhả sự kiện, E13 trả 410 `EVENTS_EXPIRED` (CHAT-AC-31).
+import {
+  type Ask,
+  type ChatEvent,
+  RUN_EVENTS_RETENTION_S,
+  type Run,
+  type RunError,
+  type RunSummary,
+  type StepSummary,
+} from "@ai/contracts/chat";
 import {
   type Beat,
   buildScript,
@@ -26,8 +36,9 @@ export type RunRec = {
   status: Run["status"];
   startedAt: number;
   finishedAt: number | null;
-  /** Sự kiện đã phát theo thứ tự; id liên tiếp từ 1. */
+  /** Sự kiện đã phát theo thứ tự; id liên tiếp từ 1. Rỗng sau khi hết hạn giữ (`lastEventId` vẫn đúng). */
   events: ChatEvent[];
+  lastEventId: number;
   listeners: Set<Listener>;
   error: RunError | null;
   steps: StepSummary[];
@@ -41,9 +52,21 @@ export type EngineDeps = {
   /** `MOCK_FAST`: chờ ÷10 (trừ nhịp có `fastMs`). */
   fast: boolean;
   sleep?: (ms: number) => Promise<void>;
+  /** Giữ sự kiện sau khi run kết thúc (`MOCK_EVENTS_RETENTION_S`, spec §9 M4). */
+  retentionS?: number;
+  maxRuns?: number;
+  maxEvents?: number;
 };
 export type StartInput = { owner: Owner; flow: FlowRec; scenario: ScenarioName };
 type Ending = { status: "finished" | "failed" | "cancelled"; ms: number; error: RunError | null };
+
+export const MAX_RUNS = 500;
+export const MAX_EVENTS_PER_RUN = 5000;
+const OVERFLOW_ERROR: RunError = {
+  code: "INTERNAL_ERROR",
+  message: "Câu trả lời quá dài, hệ thống đã dừng.",
+  hint: "Hãy thử hỏi ngắn hơn.",
+};
 
 const iso = (ms: number) => new Date(ms).toISOString();
 const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -51,13 +74,25 @@ const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 export class RunEngine {
   private readonly runs = new Map<string, RunRec>();
   private readonly sleep: (ms: number) => Promise<void>;
+  private readonly retentionMs: number;
+  private readonly maxRuns: number;
+  private readonly maxEvents: number;
 
   constructor(private readonly d: EngineDeps) {
     this.sleep = d.sleep ?? defaultSleep;
+    this.retentionMs = (d.retentionS ?? RUN_EVENTS_RETENTION_S) * 1000;
+    this.maxRuns = d.maxRuns ?? MAX_RUNS;
+    this.maxEvents = d.maxEvents ?? MAX_EVENTS_PER_RUN;
+  }
+
+  /** Số run đang giữ (unit test bộ nhớ). */
+  get size(): number {
+    return this.runs.size;
   }
 
   /** Tạo run cho tin user vừa thêm vào `flow`, đặt `active_run_id`, chạy kịch bản ở nền. */
   start(i: StartInput): RunRec {
+    this.sweep();
     const r: RunRec = {
       id: crypto.randomUUID(),
       owner: i.owner,
@@ -67,6 +102,7 @@ export class RunEngine {
       startedAt: this.d.store.clock(),
       finishedAt: null,
       events: [],
+      lastEventId: 0,
       listeners: new Set(),
       error: null,
       steps: [],
@@ -86,6 +122,11 @@ export class RunEngine {
     const r = this.runs.get(id);
     if (!r || r.owner.userId !== owner.userId || r.owner.tenantId !== owner.tenantId) return null;
     return this.d.store.getConversation(owner, r.conversationId) ? r : null;
+  }
+
+  /** CHAT-AC-31: run đã kết thúc quá hạn giữ → sự kiện không còn (E13 410). */
+  expired(r: RunRec): boolean {
+    return r.finishedAt !== null && Date.now() - r.finishedAt > this.retentionMs;
   }
 
   /** Nhận sự kiện phát sau thời điểm gọi; trả hàm gỡ. */
@@ -110,7 +151,7 @@ export class RunEngine {
       status: r.status,
       started_at: iso(r.startedAt),
       finished_at: r.finishedAt === null ? null : iso(r.finishedAt),
-      last_event_id: r.events.length,
+      last_event_id: r.lastEventId,
       error: r.error,
     };
   }
@@ -119,6 +160,15 @@ export class RunEngine {
   reset(): void {
     for (const id of this.runs.keys()) this.cancel(id);
     this.runs.clear();
+  }
+
+  /** Nhả sự kiện của run hết hạn; giữ ≤ `maxRuns - 1` run trước khi thêm run mới (bỏ run đã xong cũ nhất). */
+  private sweep(): void {
+    for (const r of this.runs.values()) if (this.expired(r)) r.events = [];
+    for (const [id, r] of this.runs) {
+      if (this.runs.size < this.maxRuns) break;
+      if (r.status !== "running") this.runs.delete(id);
+    }
   }
 
   private async drive(r: RunRec, beats: Beat[]): Promise<void> {
@@ -131,6 +181,11 @@ export class RunEngine {
   }
 
   private apply(r: RunRec, e: ScriptEvent): void {
+    const last = e.event === "finish" || e.event === "fail";
+    if (!last && r.events.length >= this.maxEvents - 1) {
+      this.end(r, { status: "failed", ms: Date.now() - r.startedAt, error: OVERFLOW_ERROR });
+      return;
+    }
     switch (e.event) {
       case "finish":
         this.end(r, { status: "finished", ms: e.data.ms, error: null });
@@ -188,7 +243,8 @@ export class RunEngine {
   }
 
   private emit(r: RunRec, body: EventBody): void {
-    const e = { id: r.events.length + 1, ...body } as ChatEvent;
+    r.lastEventId += 1;
+    const e = { id: r.lastEventId, ...body } as ChatEvent;
     r.events.push(e);
     for (const l of [...r.listeners]) l(e);
   }

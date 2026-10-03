@@ -68,6 +68,8 @@ export function realWait(b: Beat, fast: boolean): number {
   return b.fastMs ?? Math.max(1, Math.round(b.waitMs / 10));
 }
 
+/** `drop`: E12 đóng ngay sau delta thứ 5 (plan §3.3, K-R4). */
+export const DROP_AFTER_DELTAS = 5;
 export const CANCELLED_ERROR = { message: "Bạn đã dừng yêu cầu này.", hint: "" } as const;
 const ERRORS: Record<"err-exhausted" | "err-timeout" | "err-upstream", Omit<FailData, "ms">> = {
   "err-exhausted": {

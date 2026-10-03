@@ -72,3 +72,50 @@ describe("RunEngine · huỷ, sở hữu, listener", () => {
     expect(run.status).toBe("cancelled");
   });
 });
+
+describe("RunEngine · bộ nhớ (plan §5)", () => {
+  const engineWith = (o: { retentionS?: number; maxRuns?: number; maxEvents?: number }) => {
+    const store = new ChatStore();
+    const engine = new RunEngine({ store, fast: true, sleep: () => Promise.resolve(), ...o });
+    const conv = store.createConversation(A, "X");
+    const run = () =>
+      engine.start({ owner: A, flow: store.startFlow(conv, "Câu").flow, scenario: "normal" });
+    return { engine, run };
+  };
+
+  test("quá maxEvents → run.failed INTERNAL_ERROR, không vượt giới hạn", async () => {
+    const { engine, run } = engineWith({ maxEvents: 4 });
+    const r = run();
+    await settle(engine, r.id);
+    expect(r.events.length).toBe(4);
+    const end = r.events.at(-1);
+    expect(end?.event === "run.failed" ? end.data.code : "").toBe("INTERNAL_ERROR");
+    expect(RunSchema.parse(engine.toRun(r)).status).toBe("failed");
+  });
+
+  test("quá maxRuns → bỏ run đã xong cũ nhất, giữ run mới", async () => {
+    const { engine, run } = engineWith({ maxRuns: 3 });
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      const r = run();
+      ids.push(r.id);
+      await settle(engine, r.id);
+    }
+    expect(engine.size).toBe(3);
+    expect(engine.get(A, ids[0] ?? "")).toBeNull();
+    expect(engine.get(A, ids[4] ?? "")?.id).toBe(ids[4]);
+  });
+
+  test("hết hạn giữ: expired = true, lần dọn kế nhả sự kiện, last_event_id giữ nguyên", async () => {
+    const { engine, run } = engineWith({ retentionS: 0 });
+    const r = run();
+    expect(engine.expired(r)).toBe(false);
+    await settle(engine, r.id);
+    const last = r.events.length;
+    await Bun.sleep(5);
+    expect(engine.expired(r)).toBe(true);
+    run();
+    expect(r.events).toEqual([]);
+    expect(engine.toRun(r).last_event_id).toBe(last);
+  });
+});

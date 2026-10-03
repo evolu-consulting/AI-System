@@ -10,7 +10,11 @@ import {
 } from "@ai/contracts/chat";
 import type { RunEngine, RunRec } from "./runs";
 
-export type StreamOptions = { heartbeatMs?: number };
+export type StreamOptions = {
+  heartbeatMs?: number;
+  /** Kịch bản `drop` (plan §3.3): đóng stream ngay sau delta thứ N, run chạy tiếp (CHAT-AC-28). */
+  dropAfterDeltas?: number;
+};
 
 const isTerminal = (e: ChatEvent) => (TERMINAL_EVENTS as readonly string[]).includes(e.event);
 
@@ -20,7 +24,7 @@ type Pipe = { done: boolean; stop: () => void };
 function attach(
   ctrl: ReadableStreamDefaultController<Uint8Array>,
   p: Pipe,
-  src: { engine: RunEngine; r: RunRec; fromId: number; heartbeatMs: number },
+  src: { engine: RunEngine; r: RunRec; fromId: number; heartbeatMs: number; dropAfter?: number },
 ): void {
   const enc = new TextEncoder();
   const close = () => {
@@ -38,10 +42,12 @@ function attach(
       p.stop();
     }
   };
+  let deltas = 0;
   const onEvent = (e: ChatEvent) => {
     if (e.id <= src.fromId) return;
     write(encodeSseEvent(e));
-    if (isTerminal(e)) close();
+    if (e.event === "delta") deltas += 1;
+    if (isTerminal(e) || deltas === src.dropAfter) close();
   };
   // Khung chú thích đầu tiên đẩy header đi ngay (fetch chỉ trả Response khi có byte body) — `flow-cold`.
   write(SSE_PING_FRAME);
@@ -66,9 +72,15 @@ export function runStream(
   opts: StreamOptions = {},
 ): ReadableStream<Uint8Array> {
   const p: Pipe = { done: false, stop: () => {} };
-  const heartbeatMs = opts.heartbeatMs ?? SSE_HEARTBEAT_S * 1000;
+  const src = {
+    engine,
+    r,
+    fromId,
+    heartbeatMs: opts.heartbeatMs ?? SSE_HEARTBEAT_S * 1000,
+    ...(opts.dropAfterDeltas === undefined ? {} : { dropAfter: opts.dropAfterDeltas }),
+  };
   return new ReadableStream<Uint8Array>({
-    start: (ctrl) => attach(ctrl, p, { engine, r, fromId, heartbeatMs }),
+    start: (ctrl) => attach(ctrl, p, src),
     cancel: () => {
       p.done = true;
       p.stop();

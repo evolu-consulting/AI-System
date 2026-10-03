@@ -17,7 +17,7 @@ import type { ChatVars } from "./auth";
 import { loadConversation, ownerOf } from "./conversations.routes";
 import { chatError, parseBody } from "./http";
 import type { RunEngine, RunRec } from "./runs";
-import { pickScenario, type ScenarioName } from "./scenarios";
+import { DROP_AFTER_DELTAS, pickScenario, type ScenarioName } from "./scenarios";
 import { runStream, type StreamOptions, sseResponse } from "./sse";
 import type { ChatStore, ConvRec, FlowRec } from "./store";
 
@@ -74,7 +74,9 @@ function registerSend(app: Hono<ChatVars>, d: MessageRoutesDeps): void {
       flowIdle: t.idle,
     });
     const run = d.engine.start({ owner: ownerOf(c), flow: t.flow, scenario });
-    return sseResponse(runStream(d.engine, run, 0, d.stream), {
+    const opts =
+      scenario === "drop" ? { ...d.stream, dropAfterDeltas: DROP_AFTER_DELTAS } : d.stream;
+    return sseResponse(runStream(d.engine, run, 0, opts), {
       [RUN_ID_HEADER]: run.id,
       [FLOW_ID_HEADER]: t.flow.id,
       [MESSAGE_ID_HEADER]: t.messageId,
@@ -83,10 +85,11 @@ function registerSend(app: Hono<ChatVars>, d: MessageRoutesDeps): void {
 }
 
 function registerRuns(app: Hono<ChatVars>, d: MessageRoutesDeps): void {
-  // E13 · phát lại `id > Last-Event-ID` rồi nghe tiếp (410/giữ sự kiện: B5).
+  // E13 · phát lại `id > Last-Event-ID` rồi nghe tiếp; run xong quá hạn giữ → 410 (CHAT-AC-31).
   app.get("/runs/:id/events", (c) => {
     const run = loadRun(c, d.engine);
     if (!run) return chatError(c, "NOT_FOUND");
+    if (d.engine.expired(run)) return chatError(c, "EVENTS_EXPIRED");
     return sseResponse(runStream(d.engine, run, readLastEventId(c), d.stream));
   });
 

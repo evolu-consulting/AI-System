@@ -17,7 +17,7 @@ export type ChatMockOptions = Omit<ChatMockEnv, "healthVersion">;
 export function createChatMock(opts: ChatMockOptions): Hono<ChatVars> {
   const sessions = createSessionStore();
   const store = new ChatStore();
-  const engine = new RunEngine({ store, fast: opts.fast });
+  const engine = new RunEngine({ store, fast: opts.fast, retentionS: opts.eventsRetentionS });
   let fallback: ScenarioName | null = null;
   seedChat(store);
   const app = new Hono<ChatVars>();
