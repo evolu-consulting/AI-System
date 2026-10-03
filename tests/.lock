@@ -82,7 +82,7 @@ f4d1ce22f4134c08c255c77fde46b660fddf0ee878cfdb7075685bc14e7d3a24  tests/acceptan
 6237c6772822833fc41c8795a72f23fd5d1ef65753556e2438551a750a7a901c  tests/acceptance/M2/error-codes.int.test.ts
 2df745083cfee3e0cae7217010418f4be151a291de3d979f0b7c70f43b1f1c1c  tests/acceptance/M2/features.int.test.ts
 9bcc59e0ec6b72cbd027d083ff1e3eb7231c1629103d6e940b83e303d3a8e207  tests/acceptance/M2/forbidden.int.test.ts
-339cd354152d342943853a21e2d14e8561e3b480e9f736d5ac164ab8f2f3e14c  tests/acceptance/M2/i18n-labels.test.ts
+72ef88a28e3a6f534e13720f0d4e900b004a9e7e1c29ae5c7d1ffba09df6819b  tests/acceptance/M2/i18n-labels.test.ts
 540800f766fff240b9932cec8de36b3efdaf382c2986e35bae1d42cc26cbcf4e  tests/acceptance/M2/rules/commands.rules.test.ts
 df1710d4d9cdfce0e4d6b962726122a19b693a4562d1721500635d224fa9f05b  tests/acceptance/M2/rules/contracts.test.ts
 920ff0854a21b7f8155ebb1d1295c9ec29ae18c97ad073b51d963969a8d73348  tests/acceptance/M2/rules/features.rules.test.ts

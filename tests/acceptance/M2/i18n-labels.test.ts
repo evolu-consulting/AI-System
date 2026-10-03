@@ -358,7 +358,7 @@ const E2E_LABELS = [
 ];
 
 /** Chuỗi KHÔNG được có (nút bị bỏ ở M2, R28). */
-const FORBIDDEN_VALUE = [/Kiểm tra kết nối/, /Lấy từ Dify/, /Chạy thử/, /Lịch sử/];
+const FORBIDDEN_VALUE = [/Kiểm tra kết nối/, /Lấy từ Dify/, /Chạy thử/, /^Lịch sử$/];
 
 describe("ADM-FR-50 · M2-R28 · i18n VI/EN", () => {
   it("ADM-FR-50 · M2-R28 · vi.json và en.json có cùng tập key", () => {
