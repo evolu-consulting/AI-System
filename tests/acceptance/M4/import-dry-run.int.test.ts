@@ -50,6 +50,10 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await env.reset3();
+  // Làm ấm token trước khi đo: đăng nhập ghi refresh_tokens + users.last_login_at, không phải ghi của import.
+  await env.admin();
+  await env.token("acme", "binh");
+  await env.token("acme", "an");
 });
 
 const req = (content: string, extra: Obj = {}) => ({ file_name: FILE_NAME, content, ...extra });

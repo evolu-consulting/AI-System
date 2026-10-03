@@ -48,6 +48,8 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await env.reset3();
+  // Làm ấm token trước khi đo checksum: đăng nhập ghi refresh_tokens + users, không phải ghi của import.
+  await env.admin();
 });
 
 const apply = async (content: string, extra: Obj = {}): Promise<Res> =>

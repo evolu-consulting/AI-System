@@ -142,8 +142,8 @@ bb5f025663f0beab15fcb3dd6f5b1f3a5b05c10fc34eee6cc42eedaaedb38d0a  tests/acceptan
 760486c2a548467056153c5138d9af580c30be534e63495372beb6ec1f161f58  tests/acceptance/M4/export.int.test.ts
 85bfea307df0ef220efc777af49d32eb6048940fd9a89b2c8f33b65bf2216572  tests/acceptance/M4/forbidden.int.test.ts
 4b83ba3326d2ade6057752b398e8eac9fc33f23a57045f2c8a8c971b50f0d79c  tests/acceptance/M4/i18n-ab.test.ts
-cce2886ad2cb290bf99d7adc9b740ecf58ea3462b0c12115cb35ae794538d2bf  tests/acceptance/M4/import-apply.int.test.ts
-a7d2f71b2db4be231212ab63a10832fea406645a1364293cdd45b2137ad7323f  tests/acceptance/M4/import-dry-run.int.test.ts
+8e6e813416866d8915a75ef6c82b675534f436f236164aba842ebf7e7fd30198  tests/acceptance/M4/import-apply.int.test.ts
+447e6d0ea6106c2f91065d47ccd6c044bfa65afbdad97f132241e6eda4aa448b  tests/acceptance/M4/import-dry-run.int.test.ts
 8dccd52c899771e50d58e0bae90c1911b5e08526fe232b1a6645c70c50eeed0a  tests/acceptance/M4/mailer.int.test.ts
 8deda82d38c1453e48eff3667e631c1bb7d2bf787c48bde50c2e32b31fbe0fc1  tests/acceptance/M4/notify.int.test.ts
 990bb3bc7419f31aeb22779664225a87a7788fbac079e9a0962e251fa45cfa73  tests/acceptance/M4/overview.int.test.ts
