@@ -1,0 +1,2 @@
+# thread — luồng hội thoại (UC-02, UC-07 · CHAT-AC-05..07, 18, 20)
+`pages/WelcomePage` (`/c/new`, F7) · `pages/ConversationPage` (`/c/:id`, F8): E7 + E10 (`api.ts`, `hooks/use-thread`), khối flow `FlowBlock` (preview + footer "+N tin", "Trả lời tiếp" → `?flow=`), khối tạm cho run vừa gửi (`lib/thread-logic#pendingRunKeys`), tự cuộn + "↓ Tin mới" (`hooks/use-autoscroll`). `components/AnswerExtras` là slot tối thiểu cho F9 (AskCard/ErrorCard/CancelledNote).
