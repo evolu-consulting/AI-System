@@ -55,7 +55,7 @@ Giao thức cha↔con: stdin = 1 dòng JSON `ChildRequest` (payload contract + `
 |---|---|
 | Khởi động | 1 config (sai → exit 2) · 2 log · 3 pool asyncpg + kết nối LISTEN · 4 Redis ping · 5 registry provider (`fake-cli` chỉ khi `APP_ENV`∈{development,test}, khác → bỏ + log `warn`; có trong `AGENT_RT_PROVIDERS` mà production → exit 2) · 6 manifest `agent_types` (§8) · 7 **dọn job sót** của `worker_id` mình (§2.4) · 8 LISTEN · 9 chạy task: claimer, heartbeat, sweeper, log-cleanup |
 | Chạy | `asyncio.TaskGroup`; task chết → log `error`, exit 1 (systemd chạy lại) |
-| SIGTERM | ngừng claim → huỷ job đang chạy (§2.3, `failed reason=worker_shutdown`, XADD `error INTERNAL_ERROR`) → exit 0 trong ≤ 10 s |
+| SIGTERM | ngừng claim → huỷ job đang chạy (§2.3, `failed reason=worker_shutdown`, XADD `job.failed INTERNAL_ERROR`) → exit 0 trong ≤ 10 s |
 
 ## 2. Hàng đợi, heartbeat, orphaned, timeout, cancel
 
@@ -65,15 +65,15 @@ Giao thức cha↔con: stdin = 1 dòng JSON `ChildRequest` (payload contract + `
 | Đánh thức | `LISTEN job_enqueued` (chỉ là tín hiệu) **hoặc** poll mỗi `AGENT_RT_POLL_S`=1 s |
 | Claim | **SQL claim của `plan.md`** (advisory lock provider → đếm `running` provider + tenant, đọc `max_concurrent_sub` trong cùng transaction nên không cần cache → `SKIP LOCKED` → `running` + `worker_id`). Lặp tới khi rỗng |
 | Lọc (trong SQL) | provider của registry (`= ANY($providers)`); bỏ job có `(conversation_id, agent_id)` đang `running` (BR-05) |
-| Sau claim | ghi `jobs.pgid` ngay sau spawn job host (SQL `plan.md`); `bind_job`; không XADD sự kiện "bắt đầu" (Hub tự phát step, H1-R10); Runtime chỉ XADD `progress`/`result`/`error` |
-| Hết chờ (`max_wait_s`) | mỗi vòng poll gọi **SQL expire của `plan.md`**: job `queued` quá `max_wait_s` → `failed` (`reason=tenant_slots`\|`provider_busy`), provider `cooldown/logged_out/error` → `failed` ngay; mỗi job → XADD `error{code: ALL_PROVIDERS_EXHAUSTED, reason}` (H1-R18) |
+| Sau claim | ghi `jobs.pgid` sau spawn (SQL `plan.md`); `bind_job`; XADD `job.started` (`plan.md` §2.3) |
+| Hết chờ (`max_wait_s`) | mỗi vòng poll gọi **SQL expire của `plan.md`**: job `queued` quá `max_wait_s` → `failed` (`reason=tenant_slots`\|`provider_busy`), provider `cooldown/logged_out/error` → `failed` ngay; mỗi job → XADD `job.failed{ALL_PROVIDERS_EXHAUSTED, reason}` (H1-R18) |
 | LISTEN rớt | mở lại sau 1 s (lũy thừa tới 10 s); vẫn poll |
 
 ### 2.2 Heartbeat, orphaned (WRK-FR-02, 23, BR-04, H1-R20)
 | Việc | Chu kỳ | Cách |
 |---|---|---|
 | Heartbeat | 15 s | một câu SQL `plan.md` cập nhật `heartbeat_at` cho mọi job `running` của `worker_id`, **trả về** job có `cancel_requested_at` ≠ null → huỷ (dự phòng mất `job_cancel`, WRK-FR-05) |
-| Orphaned sweeper | 15 s | SQL `plan.md`: `running` ∧ `heartbeat_at < now()-60 s` → `orphaned` → `failed(orphaned)` (mọi worker, idempotent); XADD `error{INTERNAL_ERROR}` |
+| Orphaned sweeper | 15 s | SQL `plan.md`: `running` ∧ `heartbeat_at < now()-60 s` → `orphaned` → `failed(orphaned)` (mọi worker, idempotent); XADD `job.failed{INTERNAL_ERROR}` |
 | Khởi động lại | 1 lần | §2.4 |
 
 ### 2.3 Cancel / timeout (WRK-FR-04, 05, NFR-06, AC-W03, W10, AC-H06)
@@ -85,13 +85,13 @@ Giao thức cha↔con: stdin = 1 dòng JSON `ChildRequest` (payload contract + `
 | 4 | Chờ job host thoát (`proc.wait`) tối đa `KILL_GRACE_S`=3 s | ≤ 3 s |
 | 5 | `os.killpg(pgid, SIGKILL)` (bỏ qua `ProcessLookupError`) | t≈3 s |
 | 6 | Xác nhận: quét `/proc/*/stat` trường `pgrp == pgid`, lặp 100 ms tới 1,5 s; còn pid → SIGKILL từng pid + log `error` `pg_leak` | ≤ 4,5 s |
-| 7 | SQL finish `plan.md`: `cancelled` / `timed_out` (rời `running` ⇒ slot provider + tenant tự trả, WRK-FR-24) ; XADD `error{CANCELLED\|TIMEOUT}` | ≤ 5 s |
+| 7 | SQL finish `plan.md`: `cancelled` / `timed_out` (rời `running` ⇒ slot provider + tenant tự trả, WRK-FR-24) ; XADD `job.failed{CANCELLED\|TIMEOUT}` | ≤ 5 s |
 | 8 | Không ghi `cli_sessions` khi cancel/timeout; vẫn ghi `usage_logs` nếu đã có `usage` | — |
 
 Không dùng `interrupt()` (cần CLI hợp tác [V S1]); `close()` của SDK leo thang 5 s + 5 s + 5 s [V S5] > 5 s ⇒ cha kill group. Nếu PY-02 thấy CLI sinh con thoát group: dùng `PR_SET_CHILD_SUBREAPER` + quét cây `ppid`.
 
 ### 2.4 Dọn khi khởi động (H1-R20, HUB-H1-AC-04)
-Đọc job `running` của `worker_id` mình (SQL `plan.md`) → với mỗi `pgid`: chỉ kill nếu `/proc/<pgid>/cmdline` chứa `agent_runtime.runtimes.cli.child` **và** `--job-id=<job_id>` (tránh pid tái dùng) → SIGTERM/SIGKILL như §2.3 → đặt `orphaned→failed(orphaned)` + XADD `error INTERNAL_ERROR`. Thư mục `work/<job_id>/` giữ lại cho cleanup 24 h.
+Đọc job `running` của `worker_id` mình (SQL `plan.md`) → với mỗi `pgid`: chỉ kill nếu `/proc/<pgid>/cmdline` chứa `agent_runtime.runtimes.cli.child` **và** `--job-id=<job_id>` (tránh pid tái dùng) → SIGTERM/SIGKILL như §2.3 → đặt `orphaned→failed(orphaned)` + XADD `job.failed INTERNAL_ERROR`. Thư mục `work/<job_id>/` giữ lại cho cleanup 24 h.
 
 ## 3. Runtime `agentic-cli` với Claude Agent SDK Python
 
@@ -123,7 +123,7 @@ Không dùng `interrupt()` (cần CLI hợp tác [V S1]); `close()` của SDK le
 | Message SDK | Dùng |
 |---|---|
 | `SystemMessage(subtype="init", data)` | `data["session_id"]` → `session` sớm [V S4: Python để trong `data`] |
-| `AssistantMessage` có `ToolUseBlock` | `progress{label}` nhãn tĩnh theo tên tool (vd "Đang đọc tệp"), **không** kèm đường dẫn/nội dung (H1-R26); đếm `tool_use` (WRK-BR-04) |
+| `AssistantMessage` có `ToolUseBlock` | `job.progress{message}` nhãn tĩnh theo tên tool (vd "Đang đọc tệp"), **không** kèm đường dẫn/nội dung (H1-R26); đếm `tool_use` (WRK-BR-04) |
 | `RateLimitEvent(rate_limit_info: status, resets_at, rate_limit_type…)` | `status=="rejected"` → `rate_limit` [V S1] |
 | `ResultMessage` | `session_id`, `usage{input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens}`, `model_usage` (lấy key model), `is_error`, `subtype`, `structured_output`, `result`, `errors`, `api_error_status`, `terminal_reason` [V S1] |
 | Ngoại lệ | `CLINotFoundError` → `fatal` + provider `error`; `ProcessError(exit_code, stderr)`; `ResultError(api_error_status, session_id)`; `CLIJSONDecodeError` [V S1] |
@@ -136,20 +136,21 @@ Không dùng `interrupt()` (cần CLI hợp tác [V S1]); `close()` của SDK le
 | `ProcessError.stderr` khớp regex trên | now+30 phút |
 | Lỗi xác thực (401, "/login", "not logged in") [CX chữ] | `provider_state=logged_out` |
 | 3 lần `fatal`/`ProcessError` khác liên tiếp | `provider_state=error` (đếm `consecutive_errors`, về 0 khi job thành công) |
-Áp: UPSERT `provider_state(provider_key, state='cooldown', cooldown_until)` (SQL `plan.md`), job `failed(reason=quota)`, XADD `error{ALL_PROVIDERS_EXHAUSTED}` (profile 1 bước). Ngưỡng `allowed_warning` → chỉ log.
+Áp: UPSERT `provider_state(provider_key, state='cooldown', cooldown_until)` (SQL `plan.md`), job `failed(reason=quota)`, XADD `job.failed{ALL_PROVIDERS_EXHAUSTED}` (profile 1 bước). Ngưỡng `allowed_warning` → chỉ log.
 
 ## 4. Kết quả có cấu trúc; Orchestrator vs agent
+Phân biệt bằng `JobPayload.output` (`agent_result` \| `text`) + `use_session` (`plan.md` §2.2).
 
-| Mục | Agent (`AgentResult`) | Orchestrator (`OrchestratorDecision`) |
+| Mục | `output="agent_result"` (agent) | `output="text"` (Orchestrator) |
 |---|---|---|
-| Phân biệt | `JobPayload.purpose` (§12 R1) | như trái |
-| Tool / MCP | `tools=allowed_tools` (không Bash), MCP: H1 không | `tools=[]`, không MCP, `disallowed_tools=["*"]` |
-| Session | resume theo §6 | không đọc/ghi `cli_sessions`; `CLAUDE_CODE_SKIP_PROMPT_HISTORY=1` |
-| Schema | `done{text}` \| `partial{text,missing}` \| `need_input{question,choices?}` | `delegate{agent_key,task}` \| `answer{text}` \| `ask{question,choices?}` |
+| Tool / MCP | `tools=allowed_tools` (không Bash); MCP: H1 không | `tools=[]`, `disallowed_tools=["*"]`, không MCP |
+| Session | §6 | không `cli_sessions`; `CLAUDE_CODE_SKIP_PROMPT_HISTORY=1` |
+| Ép định dạng | `output_format` = JSON Schema `AgentResult` (C2) + khối "chỉ trả MỘT đối tượng JSON" trong system prompt | không `output_format`; prompt (có schema `OrchestratorDecision`) do Hub dựng |
+| Trích | `structured_output`, không có thì JSON cuối trong `result` (bóc ```json) → pydantic | `result` nguyên văn |
+| Hỏng | thử lại **1 lần trong job**: `resume` session vừa tạo + nhắc định dạng kèm lỗi pydantic ≤ 300 ký tự (không chạy lại tool); vẫn hỏng → `job.failed{UPSTREAM_ERROR, reason:invalid_output}` (§12 R5) | Hub `parseDecision` + retry (H1-R06, `plan.md`) |
+| XADD | `job.result{output:{kind:"agent_result", result}, usage, session_resumed}` | `job.result{output:{kind:"text", text}, usage}` |
 
-Cách ép (cả hai): 1) `output_format` JSON Schema xuất từ contract (sinh ở C2) ; 2) system prompt thêm khối "chỉ trả MỘT đối tượng JSON đúng schema" ; 3) `structured_output`, không có thì parse `result` (bóc ```json) ; 4) validate pydantic (`contracts/`) ; 5) **hỏng → thử lại đúng 1 lần trong cùng job**: agent = `resume` session vừa tạo + nhắc định dạng kèm lỗi pydantic ≤ 300 ký tự (không chạy lại tool); Orchestrator = gọi lại từ đầu kèm nhắc ; 6) vẫn hỏng → XADD `error{code: UPSTREAM_ERROR, reason: invalid_output}`, job `failed`. Hub **không** retry thêm (§12 R5). `[CX]` `output_format` với `oneOf`/discriminator; dự phòng: schema phẳng `{kind, text?, missing?, question?, choices?}` + pydantic chặt.
-
-Kết quả hợp lệ → XADD `result{job_id, purpose, result}`; Runtime **không** cắt `delta` (Hub cắt cho pass-through/answer/ask — H1-R08, R09; §12 R4).
+Runtime không phát `delta`; Hub cắt (H1-R08, R09). [CX] `output_format` với `discriminatedUnion` → dự phòng schema phẳng `{status, text?, missing?, question?, choices?}` + pydantic chặt.
 
 ## 5. Sandbox (WRK-BR-07, BR-02, FR-11/12, H1-R21)
 
@@ -207,7 +208,7 @@ Cùng interface `Provider`, chạy **trong job host** (cùng env, group, hook, c
 | `#fake:spawn-child` | `Popen(["sleep","300"])` cùng group rồi ngủ — AC-W10 |
 | `#fake:read=<path>` | qua đúng `sandbox.hook.path_guard` (`file_path`); allow → trả độ dài, deny → `done{text:"denied"}` |
 | `#fake:ratelimit[=<unix_ts>]` | phát `rate_limit{status:"rejected", resets_at}` rồi `final is_error` |
-| `#fake:badjson=<n>` | n lần đầu trả `raw_json` hỏng (đếm theo job) — n=1 phải qua sau retry, n=2 → `UPSTREAM_ERROR` (HUB-H1-AC-10) |
+| `#fake:badjson=<n>` | n lần đầu trả JSON hỏng, đếm theo `run_id` (agent: n=1 qua nhờ retry; Orchestrator: Hub retry — HUB-H1-AC-10) |
 | `#fake:crash` | `os._exit(3)` giữa chừng → `fatal` |
 | `#fake:usage=<in>,<out>` | usage giả (mặc định 10,20), `model="fake"` |
 | `#fake:remember=<w>` · `recall` · `lost-session` | session giả lưu ở `AGENT_RT_WORK_DIR/.fake-sessions/` (§6) |
@@ -239,15 +240,12 @@ Thứ tự: PY-01 → PY-02 ∥ PY-03 → PY-04, PY-05, PY-07 → PY-06 → PY-0
 ## 12. Yêu cầu gửi plan BE (contract/DB) — điều phối đối chiếu
 | # | Cần | Mặc định Runtime giả định |
 |---|---|---|
-| R1 | `JobPayload` có trường phân biệt **`purpose: "agent" \| "orchestrator"`** (hoặc tên khác, miễn đơn nghĩa) và `output_schema` suy ra từ đó | như trái |
-| R2 | `JobPayload` gồm: `job_id, run_id, tenant_id, user_id, conversation_id, flow_id, agent_id, agent_key, provider_key, model?, prompt, system_prompt, allowed_tools[], max_turns?, timeout_s, history[{role,text}]` (≤ `history_n`, luôn có cho agent — `agent_rt` không đọc `hub.messages`), `resume_session?` (hoặc Runtime tự tra `cli_sessions`) | Runtime tự tra `cli_sessions`; `history` luôn có |
-| R3 | `RunEvent` Runtime→Hub: `progress{label}`, `result{job_id, purpose, result}`, `error{job_id, code, reason?}`; mã lỗi gồm `CANCELLED, TIMEOUT, UPSTREAM_ERROR, ALL_PROVIDERS_EXHAUSTED, INTERNAL_ERROR`; `reason` ∈ `quota, tenant_slots, provider_busy, orphaned, invalid_output, worker_shutdown, crash` | như trái |
-| R4 | Runtime **không** phát `delta`; Hub cắt `delta` từ `result` (cả pass-through) | như trái |
-| R5 | Retry JSON hỏng: **Runtime** làm 1 lần trong job; Hub B8 không retry thêm (HUB-H1-AC-10 "hỏng 2 lần" ⇒ 1 job, `error UPSTREAM_ERROR`) | như trái |
+| R1 | ✓ đã khớp `plan.md` §2.2–2.6: `output`, `use_session`, `job.started/progress/result/failed` (+ `seq` theo job), `HUB_JOB_ERROR_CODES`, NOTIFY `{v, job_id, …}` | dùng nguyên tên |
+| R2 | `JobPayload` cần `history[{role,text}]` (≤ `history_n`) cho agent — `agent_rt` không đọc `hub.messages`; và `model?`, `max_turns?` | thiếu → không dựng lại được (H1-R23) |
+| R5 | `plan.md` §2.4 gợi ý JSON hỏng → `done{text: toàn bộ}`; plan này: retry 1 lần rồi `UPSTREAM_ERROR` (task yêu cầu "lỗi rõ") — điều phối chốt | retry rồi lỗi |
 | R6 | `usage_logs`: thêm cột nullable `job_id uuid`, `cache_read_tokens int`, `cache_write_tokens int` (ALTER idempotent, giữ stub) — hoặc xác nhận không cần | không có cột thì chỉ ghi tổng vào `input_tokens` |
-| R7 | `jobs` có `worker_id, pgid, heartbeat_at, started_at, finished_at, cancel_requested_at, timeout_s, reason, error_code, provider_key, agent_id, conversation_id, purpose`; trạng thái theo BA-W §3 | |
+| R7 | `jobs` có `worker_id, pgid, heartbeat_at, cancel_requested_at, reason, error_code`; trạng thái BA-W §3 (gồm `orphaned`, `timed_out`) | |
 | R8 | SQL: claim (`provider_key = ANY($1)`, BR-05), set `pgid`, heartbeat (trả job bị huỷ), finish (+ usage một transaction), expire, orphan sweep, job `running` theo `worker_id`, UPSERT `cli_sessions`/`provider_state`/`agent_types` | |
-| R9 | NOTIFY: `job_enqueued` payload `{job_id, provider_key}`; `job_cancel` payload `{job_id}` (một NOTIFY mỗi job); kích thước < 8000 byte | |
 | R10 | `provider_state(provider_key PK, state, cooldown_until, consecutive_errors int default 0, updated_at)`; `agent_types` có `available boolean`; `cli_sessions` unique `(tenant_id, conversation_id, agent_id, provider_key)` | |
 | R11 | `max_wait_s`: lấy từ `providers.max_wait_s` hay payload? | payload `profile_step.max_wait_s`, mặc định 30 |
 | R12 | Khi Runtime chết hẳn (không restart), Hub runner chờ `run:<run_id>` phải tự kiểm `jobs.status`/`heartbeat_at` mỗi 15 s để không treo (AC-04) | Runtime sweeper chạy ≤ 15 s sau khi systemd khởi động lại |
