@@ -253,9 +253,9 @@ Tổng sau M4 (A+B+C+D): migration main **9** (`0007_m4_ops`, `0008_admin_totp`)
 
 | Loại | File |
 |---|---|
-| helper | `M4/_data.ts`, `_fixtures.ts` (`createM4Env` = M3 env + mailer + listener), `_modules.ts` (nạp lười rules + `lib/mailer`) |
+| helper | `M4/_ab.ts` (int A+B: `parse4`, `expectErr4`, `poll`, `resetNow`, `auditHelpers`), `_data.ts`, `_fixtures.ts` (`createM4Env` = M3 env + mailer + listener), `_modules.ts` (nạp lười rules + `lib/mailer`) |
 | rules | `M4/rules/quotas.rules.test.ts` (R1–R8), `usage.rules.test.ts` (R9–R13), `audit-snapshot.rules.test.ts` (R14–R15), `audit.rules.test.ts` (R16–R19), `contracts.test.ts` (R20) |
-| int | `M4/db-schema.int`, `db-rls.int`, `quotas.int`, `quota-alerts.int`, `quota-alerts-proc.int`, `usage.int`, `usage-csv.int`, `overview.int`, `audit-write.int`, `audit-secrets.int`, `audit-read.int`, `restore.int`, `updated-by.int`, `notify.int`, `forbidden.int` (`.test.ts`) |
+| int | `M4/db-schema.int`, `db-rls.int`, `quotas.int`, `quota-alerts.int`, `quota-alerts-proc.int`, `usage.int`, `usage-csv.int`, `overview.int`, `audit-write.int` (+ `audit-write-catalog.int`: AW6–AW12, trần 400 dòng), `audit-secrets.int`, `audit-read.int`, `restore.int`, `updated-by.int`, `notify.int`, `forbidden.int` (`.test.ts`) |
 | i18n | `M4/i18n-ab.test.ts`: mọi nhãn e2e §3-E có làm giá trị trong `vi.json` |
 | e2e (xem phụ lục) | `e2e/m4-quota.spec.ts`, `m4-usage.spec.ts`, `m4-overview.spec.ts`, `m4-audit.spec.ts`, `m4-conflict.spec.ts` |
 
@@ -276,6 +276,7 @@ Xanh: rules/contracts.test.ts T0b; quotas.rules T3; usage.rules T5; audit-snapsh
 | K6 M3 contracts · K8 i18n-conflict | `bun test` | đỏ 1 · 1 | `expect`: CONFIG_ENTITIES 10 ≠ 11; chưa có `conflict.overwrite.history` |
 | K9 conflict-users/tenants · K10 auth (e2e) | `bunx playwright test --list` | biên dịch OK | chưa chạy (cần FE0a/FE3); đỏ dự kiến ở câu "Ghi đè thay đổi của admin?", region "Users đang hoạt động" |
 | Helper `createM4Env`/`insertUsage`/`reset4` | ca khói tạm (đã xoá) | xanh | `auditMark` ném "relation admin.audit_log does not exist" tới T0 (đúng) |
+| int A+B (Q2b, 16 file, 93 ca) | DB qcb | 0/93 | xem [test-plan-red.md](test-plan-red.md): `expect` 404 route / relation bảng M4 |
 
 ## 8. Đã chốt (spec-readiness lần 1, người dùng chấp nhận 2026-10-03)
 
