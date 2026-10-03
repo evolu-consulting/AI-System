@@ -54,7 +54,7 @@ type RowProps = {
 
 function Row({ name, runs, tokens, usd, unpricedRows }: RowProps) {
   const { t, i18n } = useTranslation();
-  const mode = priceDisplay(unpricedRows, runs);
+  const mode = priceDisplay(unpricedRows, usd);
   return (
     <tr className="border-t">
       <th scope="row" className="py-2 text-left font-medium">

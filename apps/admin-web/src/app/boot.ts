@@ -37,7 +37,8 @@ export async function boot(
 ): Promise<void> {
   try {
     await init();
-  } catch {
+  } catch (err) {
+    console.error("[boot] initI18n failed", err);
     onFail();
     return;
   }
