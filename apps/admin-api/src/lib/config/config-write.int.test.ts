@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { type ConfigChangedPayload, ConfigChangedPayloadSchema } from "@ai/contracts";
 import { createDb, type Db, runMigrations } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
+import { sql } from "drizzle-orm";
 import postgres from "postgres";
 import { configWrite } from "./config-write";
 
@@ -110,16 +111,30 @@ describe("ADM-FR-53 · configWrite + NOTIFY sau commit (M3-R16)", () => {
 });
 
 describe("ADM-FR-53 · chi phí bump + NOTIFY (spec M3 §6)", () => {
-  test("≤ 5 ms/ghi: trung vị của hiệu từng cặp (không bump, bump) chạy xen kẽ 50 lần — bớt nhiễu khi máy bận", async () => {
+  // Hai nhánh cùng UPDATE một hàng không phải cấu hình: mọi configWrite thật đều đã ghi dữ liệu, nên chi phí commit
+  // tx có ghi (WAL flush) là của câu ghi, không phải của bump. So nhánh chỉ đọc sẽ tính nhầm phần đó vào bump.
+  beforeAll(async () => {
+    await owner`create table if not exists public.config_write_perf (id int primary key, n bigint not null)`;
+    await owner`insert into public.config_write_perf values (1, 0) on conflict do nothing`;
+    await owner`grant select, update on public.config_write_perf to admin_api`;
+  });
+  afterAll(async () => {
+    await owner`drop table if exists public.config_write_perf`;
+  });
+
+  test("≤ 5 ms/ghi: trung vị của hiệu từng cặp (ghi, ghi + bump) chạy xen kẽ 50 lần — bớt nhiễu khi máy bận", async () => {
     const once = async (bump: boolean) => {
       const t = performance.now();
-      await configWrite(call(), "secret.save", async (_tx, ch) => {
+      await configWrite(call(), "secret.save", async (tx, ch) => {
+        await tx.execute(sql`update public.config_write_perf set n = n + 1 where id = 1`);
         if (bump) ch.changed(ev);
       });
       return performance.now() - t;
     };
     const diffs: number[] = [];
     for (let i = 0; i < 50; i++) diffs.push((await once(true)) - (await once(false)));
-    expect(diffs.sort((x, y) => x - y)[25] ?? 0).toBeLessThan(5);
+    const median = diffs.sort((x, y) => x - y)[25] ?? 0;
+    console.info(`config-write perf: trung vị bump + NOTIFY = ${median.toFixed(2)} ms`);
+    expect(median).toBeLessThan(5);
   });
 });
