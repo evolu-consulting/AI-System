@@ -1,0 +1,131 @@
+{
+  "login": {
+    "title": "Đăng nhập",
+    "subtitle": "Dùng mã công ty và tài khoản do quản trị viên cấp.",
+    "tenant": "Mã công ty",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "changeTenant": "Đổi công ty",
+    "submit": "Đăng nhập",
+    "submitting": "Đang đăng nhập…",
+    "invalid": "Sai mã công ty, tên đăng nhập hoặc mật khẩu",
+    "locked": "Tài khoản đang bị khoá. Liên hệ quản trị viên công ty",
+    "useAdmin": "Tài khoản cần hoàn tất bước bảo mật trong Admin Console trước khi dùng Chat"
+  },
+  "session": { "expired": "Phiên đã hết hạn" },
+  "shell": {
+    "brand": "AI Chat · {{tenant}}",
+    "newChat": "Hội thoại mới",
+    "search": "Tìm hội thoại",
+    "settings": "Cài đặt",
+    "nav": "Hội thoại",
+    "openList": "Danh sách hội thoại"
+  },
+  "group": {
+    "today": "Hôm nay",
+    "week": "7 ngày qua",
+    "month": "30 ngày qua",
+    "older": "Cũ hơn"
+  },
+  "sidebar": {
+    "empty": "Chưa có hội thoại nào",
+    "noMatch": "Không có hội thoại khớp \"{{q}}\""
+  },
+  "item": { "more": "Thao tác khác", "rename": "Đổi tên", "delete": "Xoá" },
+  "rename": { "title": "Đổi tên hội thoại", "label": "Tên hội thoại", "save": "Lưu" },
+  "delete": {
+    "title": "Xoá hội thoại?",
+    "body": "\"{{title}}\" và mọi flow trong đó sẽ bị xoá.",
+    "confirm": "Xoá"
+  },
+  "welcome": {
+    "greeting": "Chào {{name}}, hôm nay cần gì?",
+    "hint": "Mỗi câu hỏi mở một flow riêng. Muốn hỏi tiếp việc nào, bấm Trả lời tiếp trên flow đó.",
+    "cards": {
+      "email": { "title": "Soạn email", "prompt": "Soạn email báo giá gửi khách hàng" },
+      "summary": { "title": "Tóm tắt văn bản", "prompt": "Tóm tắt 3 ý chính của một biên bản họp" },
+      "translate": { "title": "Dịch", "prompt": "Dịch một đoạn hợp đồng sang tiếng Anh" },
+      "outline": { "title": "Lên dàn ý", "prompt": "Lên dàn ý báo cáo tháng cho phòng kinh doanh" }
+    },
+    "cardsHint": "Bấm một thẻ để điền sẵn vào ô nhập. Chưa gửi ngay."
+  },
+  "thread": {
+    "flowCount": "{{count}} flow",
+    "notFound": "Hội thoại không tồn tại",
+    "backHome": "Về trang chào",
+    "newMessages": "↓ Tin mới",
+    "log": "Nội dung hội thoại"
+  },
+  "flow": {
+    "label": "Flow: {{title}}",
+    "more": "+{{count}} tin trong flow",
+    "time": "{{time}}",
+    "openRight": "Đang mở bên phải",
+    "messageCount": "{{count}} tin",
+    "panelMeta": "{{count}} tin · nhớ cả flow",
+    "reply": "Trả lời tiếp",
+    "close": "Đóng khung flow",
+    "minimize": "Thu nhỏ flow",
+    "panel": "Flow đang mở",
+    "dragClose": "Kéo để đóng",
+    "cold": "Đang mở lại flow, lần đầu có thể mất vài giây…",
+    "noClose": "Flow không có nút đóng. Rảnh lâu thì hệ thống tự nghỉ, chat lại thì tự mở lại đủ ngữ cảnh."
+  },
+  "answer": { "who": "Consultant", "copy": "Copy", "copied": "Đã sao chép" },
+  "steps": { "summary": "{{count}} bước · {{seconds}}s", "toggle": "Xem các bước" },
+  "ask": {
+    "title": "Consultant cần thêm thông tin",
+    "hint": "Bấm chip là gửi luôn. Vẫn gõ tự do được."
+  },
+  "composer": {
+    "newLabel": "Câu hỏi mới",
+    "newHint": "Mỗi câu hỏi ở đây mở một flow mới. Muốn hỏi tiếp một việc, bấm Trả lời tiếp trên flow đó.",
+    "placeholder": "Hỏi điều mới…",
+    "flowPlaceholder": "Trả lời trong flow…",
+    "input": "Tin nhắn",
+    "flowInput": "Tin nhắn trong flow",
+    "send": "Gửi",
+    "sendInFlow": "Gửi trong flow",
+    "stop": "Dừng",
+    "busy": "Đang có câu trả lời chạy, chờ xong hoặc bấm Dừng",
+    "quotaOver": "Công ty bạn đã dùng vượt hạn mức tháng này. Bạn vẫn dùng bình thường.",
+    "quotaDismiss": "Ẩn nhắc"
+  },
+  "run": { "cancelled": "Đã dừng", "rerun": "Chạy lại" },
+  "errors": {
+    "ALL_PROVIDERS_EXHAUSTED": {
+      "title": "Hệ thống đang quá tải",
+      "body": "AI tạm hết lượt dùng. Hãy thử lại sau ít phút."
+    },
+    "TIMEOUT": { "title": "Hệ thống xử lý quá lâu" },
+    "UPSTREAM_ERROR": { "title": "Dịch vụ AI đang gặp sự cố" },
+    "BUDGET_EXCEEDED": { "title": "Yêu cầu quá lớn để xử lý một lần. Hãy chia nhỏ ra" },
+    "NOT_CONFIGURED": { "title": "Tính năng này chưa được cấu hình xong" },
+    "unknown": { "title": "Có lỗi khi xử lý yêu cầu" },
+    "retry": "Thử lại",
+    "report": "Báo admin",
+    "meta": "{{code}} · run {{runId}}"
+  },
+  "conn": {
+    "reconnecting": "Đang kết nối lại…",
+    "down": "Không kết nối được máy chủ",
+    "retry": "Thử lại"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "language": "Ngôn ngữ",
+    "account": "Tài khoản",
+    "privacy": "Quản trị nền tảng có thể xem nội dung hội thoại để hỗ trợ và gỡ lỗi. Quản trị viên công ty bạn không xem được nội dung, chỉ xem mức sử dụng",
+    "logout": "Đăng xuất",
+    "theme": "Giao diện",
+    "themeLight": "Sáng",
+    "themeDark": "Tối",
+    "themeSystem": "Theo hệ thống"
+  },
+  "toast": {
+    "flowBusy": "Flow này đang trả lời, chờ xong rồi gửi tiếp.",
+    "renameFailed": "Không đổi được tên. Thử lại sau.",
+    "deleteFailed": "Không xoá được hội thoại. Thử lại sau.",
+    "sendFailed": "Không gửi được tin. Nội dung vẫn còn trong ô nhập."
+  }
+}

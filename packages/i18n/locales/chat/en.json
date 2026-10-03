@@ -1,0 +1,136 @@
+{
+  "login": {
+    "title": "Sign in",
+    "subtitle": "Use your company code and the account your administrator gave you.",
+    "tenant": "Company code",
+    "username": "Username",
+    "password": "Password",
+    "changeTenant": "Change company",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "invalid": "Incorrect company code, username or password",
+    "locked": "Your account is locked. Contact your company administrator",
+    "useAdmin": "Finish the security step in Admin Console before using Chat"
+  },
+  "session": { "expired": "Your session has expired" },
+  "shell": {
+    "brand": "AI Chat · {{tenant}}",
+    "newChat": "New chat",
+    "search": "Search chats",
+    "settings": "Settings",
+    "nav": "Chats",
+    "openList": "Chat list"
+  },
+  "group": {
+    "today": "Today",
+    "week": "Previous 7 days",
+    "month": "Previous 30 days",
+    "older": "Older"
+  },
+  "sidebar": {
+    "empty": "No chats yet",
+    "noMatch": "No chats match \"{{q}}\""
+  },
+  "item": { "more": "More actions", "rename": "Rename", "delete": "Delete" },
+  "rename": { "title": "Rename chat", "label": "Chat name", "save": "Save" },
+  "delete": {
+    "title": "Delete chat?",
+    "body": "\"{{title}}\" and all its flows will be deleted.",
+    "confirm": "Delete"
+  },
+  "welcome": {
+    "greeting": "Hi {{name}}, what do you need today?",
+    "hint": "Each question opens its own flow. To follow up on one, click Reply in flow on it.",
+    "cards": {
+      "email": { "title": "Draft an email", "prompt": "Draft a quotation email to a customer" },
+      "summary": {
+        "title": "Summarize",
+        "prompt": "Summarize the 3 key points of meeting minutes"
+      },
+      "translate": { "title": "Translate", "prompt": "Translate a contract clause into English" },
+      "outline": { "title": "Outline", "prompt": "Outline the monthly report for the sales team" }
+    },
+    "cardsHint": "Click a card to fill the input. Nothing is sent yet."
+  },
+  "thread": {
+    "flowCount": "{{count}} flows",
+    "notFound": "This chat doesn't exist",
+    "backHome": "Back to start",
+    "newMessages": "↓ New messages",
+    "log": "Conversation"
+  },
+  "flow": {
+    "label": "Flow: {{title}}",
+    "more": "+{{count}} messages in flow",
+    "time": "{{time}}",
+    "openRight": "Open on the right",
+    "messageCount": "{{count}} messages",
+    "panelMeta": "{{count}} messages · remembers the whole flow",
+    "reply": "Reply in flow",
+    "close": "Close flow panel",
+    "minimize": "Minimize flow",
+    "panel": "Open flow",
+    "dragClose": "Drag to close",
+    "cold": "Reopening the flow, the first reply may take a few seconds…",
+    "noClose": "Flows never close. When idle the system pauses them and restores full context when you chat again."
+  },
+  "answer": { "who": "Consultant", "copy": "Copy", "copied": "Copied" },
+  "steps": { "summary": "{{count}} steps · {{seconds}}s", "toggle": "Show steps" },
+  "ask": {
+    "title": "Consultant needs more information",
+    "hint": "Clicking a chip sends it right away. You can still type freely."
+  },
+  "composer": {
+    "newLabel": "New question",
+    "newHint": "Each question here opens a new flow. To follow up, click Reply in flow on that flow.",
+    "placeholder": "Ask something new…",
+    "flowPlaceholder": "Reply in this flow…",
+    "input": "Message",
+    "flowInput": "Message in flow",
+    "send": "Send",
+    "sendInFlow": "Send in flow",
+    "stop": "Stop",
+    "busy": "A reply is running; wait or press Stop",
+    "quotaOver": "Your company has exceeded this month's quota. You can keep using Chat.",
+    "quotaDismiss": "Dismiss"
+  },
+  "run": { "cancelled": "Stopped", "rerun": "Run again" },
+  "errors": {
+    "ALL_PROVIDERS_EXHAUSTED": {
+      "title": "The system is overloaded",
+      "body": "AI capacity is temporarily used up. Please try again in a few minutes."
+    },
+    "TIMEOUT": { "title": "Processing took too long" },
+    "UPSTREAM_ERROR": { "title": "The AI service is having problems" },
+    "BUDGET_EXCEEDED": {
+      "title": "The request is too large to process at once. Please split it up"
+    },
+    "NOT_CONFIGURED": { "title": "This feature isn't fully configured yet" },
+    "unknown": { "title": "Something went wrong processing the request" },
+    "retry": "Retry",
+    "report": "Report to admin",
+    "meta": "{{code}} · run {{runId}}"
+  },
+  "conn": {
+    "reconnecting": "Reconnecting…",
+    "down": "Can't reach the server",
+    "retry": "Retry"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "account": "Account",
+    "privacy": "Platform administrators may view chat content for support and debugging. Your company administrators cannot see content, only usage",
+    "logout": "Sign out",
+    "theme": "Appearance",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System"
+  },
+  "toast": {
+    "flowBusy": "This flow is still replying; wait for it to finish.",
+    "renameFailed": "Couldn't rename. Try again later.",
+    "deleteFailed": "Couldn't delete the chat. Try again later.",
+    "sendFailed": "Couldn't send. Your text is still in the input."
+  }
+}

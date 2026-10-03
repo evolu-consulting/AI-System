@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./locales": "./src/locales.ts"
+    "./locales": "./src/locales.ts",
+    "./chat-locales": "./src/chat-locales.ts"
   },
   "scripts": {
     "test": "bun test",

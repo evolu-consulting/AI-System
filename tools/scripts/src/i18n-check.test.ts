@@ -10,7 +10,10 @@ afterEach(() => {
   while (dirs.length) rmSync(dirs.pop() as string, { recursive: true, force: true });
 });
 
-function run(locales: Partial<Record<"vi" | "en", string>>) {
+function run(
+  locales: Partial<Record<"vi" | "en", string>>,
+  chat: Partial<Record<"vi" | "en", string>> = {},
+) {
   const dir = mkdtempSync(join(tmpdir(), "be-i18n-"));
   dirs.push(dir);
   Bun.spawnSync(["git", "init", "-q", "-b", "main"], { cwd: dir });
@@ -18,6 +21,9 @@ function run(locales: Partial<Record<"vi" | "en", string>>) {
   mkdirSync(loc, { recursive: true });
   for (const [lang, text] of Object.entries(locales))
     writeFileSync(join(loc, `${lang}.json`), text);
+  mkdirSync(join(loc, "chat"), { recursive: true });
+  for (const [lang, text] of Object.entries(chat))
+    writeFileSync(join(loc, "chat", `${lang}.json`), text);
   const p = Bun.spawnSync([process.execPath, SCRIPT], { cwd: dir, stdout: "pipe", stderr: "pipe" });
   return { code: p.exitCode, out: p.stdout.toString() + p.stderr.toString() };
 }
@@ -57,5 +63,16 @@ describe("ADM-NFR-06 · i18n-check CLI (T-I18N-1)", () => {
     const broken = run({ vi: "{", en: "{}" });
     expect(broken.code).toBe(1);
     expect(broken.out).toContain("không phải JSON hợp lệ");
+  });
+
+  test("cặp chat/: lệch → MISSING có tiền tố chat:; thiếu một file → exit 1; khớp → 0", () => {
+    const ok = { vi: '{"a":"x"}', en: '{"a":"y"}' };
+    expect(run(ok, ok).code).toBe(0);
+    const bad = run(ok, { vi: '{"a":"x","d":"y"}', en: '{"a":"x"}' });
+    expect(bad.code).toBe(1);
+    expect(bad.out).toContain("MISSING_en chat:d");
+    const one = run(ok, { vi: '{"a":"x"}' });
+    expect(one.code).toBe(1);
+    expect(one.out).toContain("i18n:check: thiếu packages/i18n/locales/chat/en.json");
   });
 });
