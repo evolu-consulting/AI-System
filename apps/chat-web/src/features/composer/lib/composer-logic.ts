@@ -1,4 +1,6 @@
 // CHAT-AC-05, CHAT-AC-10 · luật thuần của ô nhập: phím, chiều cao tự giãn, khoá gửi, khoá nháp.
+import { DRAFT_KEY_PREFIX } from "~/lib/storage";
+
 export const COMPOSER_MAX_ROWS = 8;
 export const DRAFT_DEBOUNCE_MS = 300;
 
@@ -22,7 +24,14 @@ export function canSend(text: string, locked: boolean, submitting: boolean): boo
   return !locked && !submitting && text.trim() !== "";
 }
 
-/** `chat:draft:<convId|new>:<flowId|main>` (plan-frontend §3). */
-export function draftKey(convId: string | null, flowId: string | null): string {
-  return `chat:draft:${convId ?? "new"}:${flowId ?? "main"}`;
+/**
+ * `chat:draft:<userId|anon>:<convId|new>:<flowId|main>` (plan-frontend §3). Gắn user để máy dùng chung không lộ nháp
+ * của người trước; mọi `chat:draft:*` còn bị xoá khi phiên `cleared`/`expired` (`lib/auth/session`).
+ */
+export function draftKey(
+  userId: string | null,
+  convId: string | null,
+  flowId: string | null,
+): string {
+  return `${DRAFT_KEY_PREFIX}${userId ?? "anon"}:${convId ?? "new"}:${flowId ?? "main"}`;
 }

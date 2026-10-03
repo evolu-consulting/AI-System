@@ -4,19 +4,18 @@ import { useRouter } from "@tanstack/react-router";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Composer, type ComposerHandle } from "~/features/composer/components/Composer";
-import { draftKey } from "~/features/composer/lib/composer-logic";
+import { useDraftKey } from "~/features/composer/hooks/use-draft";
 import { useCreateConversation } from "~/features/conversations/hooks/use-conversations";
 import { useRunByKey } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
 import { useSession } from "~/lib/auth/use-session";
 import { SuggestionCards } from "../components/SuggestionCards";
 
-const NEW_DRAFT = draftKey(null, null);
-
 export function WelcomePage() {
   const { t } = useTranslation();
   const router = useRouter();
   const name = useSession((s) => s.me?.display_name ?? "");
+  const newDraftKey = useDraftKey(null, null);
   const send = useSend();
   const create = useCreateConversation();
   const composer = useRef<ComposerHandle>(null);
@@ -62,7 +61,7 @@ export function WelcomePage() {
         <Composer
           ref={composer}
           variant="main"
-          draftKey={NEW_DRAFT}
+          draftKey={newDraftKey}
           autoFocus
           quotaOver={run?.quota?.state === "over"}
           onSubmit={submit}

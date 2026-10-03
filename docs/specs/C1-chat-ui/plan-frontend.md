@@ -75,7 +75,7 @@ Phím: `Ctrl+Shift+O` → `/c/new`; `Ctrl+K` → focus "Tìm hội thoại" (m�
 | Tin của một flow (khung) | Infinite `['flow', flowId, 'messages']` (E11 `flow_id`, cursor cũ hơn khi cuộn lên) | `ChatPage<Message>` | invalidate sau run kết thúc |
 | Run đang chạy | `run/run-store.ts` (store ngoài React, `useSyncExternalStore`, selector theo `flowId`) | `RunState {runId, flowId, convId, origin: 'main'\|'flow', request:{content, flowId?}, phase, text, steps[], ask?, error?, quota?, lastEventId}` | xoá khi query đã chứa `message_id` của run (tránh nháy) |
 | `phase` | reducer thuần `run/lib/reducer.ts` | `sending → cold → streaming → reconnecting → finished \| asked \| failed \| cancelled \| lost` | `cold` = gửi vào flow có `isFlowIdle(last_active_at)` (contract) cho tới `run.started` (UC-06) |
-| Nháp | `localStorage` `chat:draft:<convId\|new>:<flowId\|main>` | string | debounce 300 ms; xoá khi gửi thành công |
+| Nháp | `localStorage` `chat:draft:<userId>:<convId\|new>:<flowId\|main>` | string | debounce 300 ms; xoá khi gửi ok, đăng xuất, hết phiên |
 | Mã công ty | `localStorage` `chat:tenant_key` | string | lưu khi login ok |
 | Ẩn nhắc quota | `sessionStorage` `chat:quota-dismissed` | `1` | hết phiên |
 | Sidebar thu gọn | `localStorage` `chat:sidebar` | `open\|closed` | |

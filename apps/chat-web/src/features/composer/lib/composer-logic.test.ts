@@ -30,8 +30,10 @@ describe("clampHeight / draftKey", () => {
     expect(clampHeight(48, 24, 8)).toBe(48);
     expect(clampHeight(500, 24, 8)).toBe(192);
   });
-  test("khoá nháp theo hội thoại + flow", () => {
-    expect(draftKey(null, null)).toBe("chat:draft:new:main");
-    expect(draftKey("c1", "f1")).toBe("chat:draft:c1:f1");
+  test("khoá nháp theo user + hội thoại + flow (review C1 #2)", () => {
+    expect(draftKey("u1", null, null)).toBe("chat:draft:u1:new:main");
+    expect(draftKey("u1", "c1", "f1")).toBe("chat:draft:u1:c1:f1");
+    expect(draftKey("u2", null, null)).not.toBe(draftKey("u1", null, null));
+    expect(draftKey(null, null, null)).toBe("chat:draft:anon:new:main");
   });
 });

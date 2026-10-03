@@ -150,3 +150,80 @@ describe("CHAT-AC-01 · đăng xuất", () => {
     off();
   });
 });
+
+describe("review C1 #2 · phiên kết thúc → xoá mọi nháp chat:draft:*", () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  const memory = () => {
+    const m = new Map<string, string>();
+    return {
+      get length() {
+        return m.size;
+      },
+      key: (i: number) => [...m.keys()][i] ?? null,
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, v),
+      removeItem: (k: string) => void m.delete(k),
+      clear: () => m.clear(),
+    };
+  };
+  let ls = memory();
+  beforeEach(() => {
+    ls = memory();
+    Object.defineProperty(globalThis, "localStorage", { value: ls, configurable: true });
+    ls.setItem("chat:draft:u1:new:main", "bí mật");
+    ls.setItem("chat:draft:u1:c1:f1", "nháp flow");
+    ls.setItem("chat:tenant", "acme");
+  });
+  afterEach(() => {
+    if (original) Object.defineProperty(globalThis, "localStorage", original);
+    else delete (globalThis as { localStorage?: unknown }).localStorage;
+  });
+
+  test("đăng xuất → xoá nháp, giữ khoá khác", async () => {
+    session.applyGrant(grant("old"));
+    routes["/auth/logout"] = [{ status: 204 }];
+    await session.logout();
+    expect(ls.getItem("chat:draft:u1:new:main")).toBeNull();
+    expect(ls.getItem("chat:draft:u1:c1:f1")).toBeNull();
+    expect(ls.getItem("chat:tenant")).toBe("acme");
+  });
+
+  test("hết phiên (refresh hỏng) → xoá nháp", async () => {
+    session.applyGrant(grant("old"));
+    routes["/x"] = [fail(401, "AUTH_EXPIRED")];
+    routes["/auth/refresh"] = [
+      fail(401, "INVALID_REFRESH_TOKEN"),
+      fail(401, "INVALID_REFRESH_TOKEN"),
+    ];
+    await api<unknown>("/x").catch(() => undefined);
+    expect(session.getState().status).toBe("expired");
+    expect(ls.length).toBe(1);
+  });
+});
+
+describe("review C1 #5 · token từ tab khác kèm `sub`", () => {
+  const meA = { ...me, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } as Me;
+  const grantA = (token: string): TokenGrant => ({ ...grant(token), user: meA });
+
+  test("cùng user → nhận token mới, giữ me", () => {
+    session.applyGrant(grantA("old"));
+    session.receive({ type: "token", accessToken: "t2", at: Date.now(), sub: meA.id });
+    expect(session.getState()).toMatchObject({ status: "authed", accessToken: "t2", me: meA });
+  });
+
+  test("user khác → xoá phiên tab này + phát `cleared`, không ghép token với me cũ", () => {
+    session.applyGrant(grantA("old"));
+    let cleared = 0;
+    const off = session.on("cleared", () => cleared++);
+    session.receive({ type: "token", accessToken: "tB", at: Date.now(), sub: "other-user" });
+    expect(session.getState()).toEqual({ status: "anon", accessToken: null, me: null });
+    expect(cleared).toBe(1);
+    off();
+  });
+
+  test("thiếu sub (tab cũ) → giữ hành vi cũ: nhận token", () => {
+    session.applyGrant(grantA("old"));
+    session.receive({ type: "token", accessToken: "t3", at: Date.now() });
+    expect(session.getState().accessToken).toBe("t3");
+  });
+});

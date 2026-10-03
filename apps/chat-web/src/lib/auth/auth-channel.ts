@@ -1,6 +1,9 @@
 // CHAT-AC-03 · BroadcastChannel liên tab (chép admin-web, kênh `ai-chat-auth`): chia sẻ access token mới và tín hiệu đăng xuất.
 
-export type AuthMessage = { type: "token"; accessToken: string; at: number } | { type: "logout" };
+/** `sub` = `me.id` của token (thiếu khi tab gửi chưa biết user) — tab nhận so với user của mình. */
+export type AuthMessage =
+  | { type: "token"; accessToken: string; at: number; sub?: string }
+  | { type: "logout" };
 
 export const AUTH_CHANNEL_NAME = "ai-chat-auth";
 
@@ -15,7 +18,10 @@ export function parseAuthMessage(data: unknown): AuthMessage | null {
     m.accessToken !== "" &&
     typeof m.at === "number"
   ) {
-    return { type: "token", accessToken: m.accessToken, at: m.at };
+    const sub = typeof m.sub === "string" && m.sub !== "" ? m.sub : undefined;
+    return sub
+      ? { type: "token", accessToken: m.accessToken, at: m.at, sub }
+      : { type: "token", accessToken: m.accessToken, at: m.at };
   }
   return null;
 }

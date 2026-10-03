@@ -1,7 +1,14 @@
 // CHAT-AC-05 · nháp theo (hội thoại, flow) trong localStorage: debounce 300 ms, xoá khi gửi thành công.
 import { useCallback, useEffect, useRef } from "react";
+import { useSession } from "~/lib/auth/use-session";
 import { readLocal, removeLocal, writeLocal } from "~/lib/storage";
-import { DRAFT_DEBOUNCE_MS } from "../lib/composer-logic";
+import { DRAFT_DEBOUNCE_MS, draftKey } from "../lib/composer-logic";
+
+/** Khoá nháp của user đang đăng nhập cho (hội thoại, flow). */
+export function useDraftKey(convId: string | null, flowId: string | null): string {
+  const userId = useSession((s) => s.me?.id ?? null);
+  return draftKey(userId, convId, flowId);
+}
 
 export function readDraft(key: string): string {
   return readLocal(key) ?? "";

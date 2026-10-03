@@ -5,7 +5,7 @@ import type { Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Composer, type ComposerHandle } from "~/features/composer/components/Composer";
-import { draftKey } from "~/features/composer/lib/composer-logic";
+import { useDraftKey } from "~/features/composer/hooks/use-draft";
 import type { FlowPanelData } from "../hooks/use-flow-panel";
 import { FlowMessages } from "./FlowMessages";
 
@@ -67,6 +67,7 @@ export function FlowContent({
   onClose,
   composerRef,
 }: FlowContentProps) {
+  const flowDraftKey = useDraftKey(convId, flow.id);
   return (
     <>
       <FlowHeader flow={flow} mobile={mobile} onClose={onClose} />
@@ -75,7 +76,7 @@ export function FlowContent({
         <Composer
           ref={composerRef}
           variant="flow"
-          draftKey={draftKey(convId, flow.id)}
+          draftKey={flowDraftKey}
           autoFocus={!mobile}
           {...data.composer}
         />

@@ -173,3 +173,16 @@ describe("CHAT-AC-03 · tên khoá riêng của chat", () => {
     expect(REFRESH_LOCK_NAME).toBe("ai-chat-refresh");
   });
 });
+
+describe("review C1 #5 · broadcast kèm sub", () => {
+  test("token mới được broadcast cùng id user của token", async () => {
+    const meWithId = { ...me, id: "u-1" } as Me;
+    const got: Array<string | undefined> = [];
+    const s = setup({
+      callRefresh: async () => ({ accessToken: "t", me: meWithId }),
+      broadcast: (_t, _at, sub) => void got.push(sub),
+    });
+    await createRefresher(s.deps).refresh({ stale: null, allowShared: false });
+    expect(got).toEqual(["u-1"]);
+  });
+});

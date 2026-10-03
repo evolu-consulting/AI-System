@@ -18,8 +18,8 @@ export type RefresherDeps = {
   callRefresh(): Promise<RefreshResult>;
   /** `null` = không có Web Locks (chỉ còn single-flight trong tab). */
   locks: LockManagerLike | null;
-  /** Báo tab khác token mới. */
-  broadcast(accessToken: string, at: number): void;
+  /** Báo tab khác token mới; `sub` = id user của token (tab nhận phát hiện đổi tài khoản). */
+  broadcast(accessToken: string, at: number, sub?: string): void;
   now(): number;
   sleep(ms: number): Promise<void>;
 };
@@ -51,7 +51,7 @@ export function createRefresher(deps: RefresherDeps): Refresher {
     const result = await deps.callRefresh();
     const at = deps.now();
     shared = { accessToken: result.accessToken, at };
-    deps.broadcast(result.accessToken, at);
+    deps.broadcast(result.accessToken, at, result.me?.id);
     return result;
   };
 

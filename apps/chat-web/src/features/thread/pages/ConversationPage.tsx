@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { prefetchMarkdown } from "~/features/answer/components/AnswerBody";
 import { Composer } from "~/features/composer/components/Composer";
-import { draftKey } from "~/features/composer/lib/composer-logic";
+import { useDraftKey } from "~/features/composer/hooks/use-draft";
 import { FlowPane } from "~/features/flow-panel/components/FlowPane";
 import { useOpenFlow } from "~/features/flow-panel/hooks/use-open-flow";
 import { useActiveRun } from "~/features/run/hooks/use-run-stream";
@@ -60,6 +60,7 @@ function ConversationView({ convId }: { convId: string }) {
   const autoscroll = useAutoscroll(useActiveRun(convId) !== undefined);
   const composer = useMainComposer(convId, autoscroll.scrollToBottom);
   const open = useOpenFlow(convId, openFlowId, flows);
+  const mainDraftKey = useDraftKey(convId, null);
 
   useEffect(() => prefetchMarkdown(), []);
 
@@ -84,12 +85,7 @@ function ConversationView({ convId }: { convId: string }) {
           autoscroll={autoscroll}
         />
         <div className="mx-auto w-full max-w-[800px] px-4 pb-5 sm:px-6">
-          <Composer
-            variant="main"
-            draftKey={draftKey(convId, null)}
-            autoFocus={!open.flow}
-            {...composer}
-          />
+          <Composer variant="main" draftKey={mainDraftKey} autoFocus={!open.flow} {...composer} />
         </div>
       </div>
       {open.flow && (

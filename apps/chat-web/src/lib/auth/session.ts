@@ -2,6 +2,7 @@
 // Chat không có bước đổi mật khẩu / 2FA: `password_change_required` / `totp_required` trả về cho LoginPage (alert `chat.login.useAdmin`).
 import type { LoginRequest, LoginResponse, Me, TokenGrant } from "@ai/contracts/chat";
 import { ApiError, sendPublic, setAuthHooks } from "../http";
+import { DRAFT_KEY_PREFIX, removeLocalByPrefix } from "../storage";
 import { type AuthMessage, createAuthChannel } from "./auth-channel";
 import { createRefresher, type RefreshResult } from "./refresh-lock";
 
@@ -24,7 +25,9 @@ function set(next: SessionState): void {
   for (const l of listeners) l();
 }
 
+/** Phiên kết thúc (đăng xuất / hết hạn) → xoá nháp ô nhập (review C1 #2) rồi báo listener. */
 function emit(event: SessionEvent): void {
+  removeLocalByPrefix(DRAFT_KEY_PREFIX);
   for (const l of eventListeners.get(event) ?? []) l();
 }
 
@@ -35,7 +38,7 @@ const makeRefresher = () =>
       return { accessToken: grant.access_token, me: grant.user };
     },
     locks: typeof navigator !== "undefined" && navigator.locks ? navigator.locks : null,
-    broadcast: (accessToken, at) => channel.post({ type: "token", accessToken, at }),
+    broadcast: (accessToken, at, sub) => channel.post({ type: "token", accessToken, at, sub }),
     now: () => Date.now(),
     sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
   });
@@ -46,14 +49,22 @@ function clearLocal(): void {
   emit("cleared");
 }
 
-channel.subscribe((msg: AuthMessage) => {
+/** Thông điệp tab khác. Token của user khác (`sub` ≠ `me.id`: tab kia đăng nhập tài khoản khác, cookie đã đổi chủ)
+ *  → xoá phiên tab này thay vì ghép token mới với `me` cũ (review C1 #5). */
+function receive(msg: AuthMessage): void {
   if (msg.type === "logout") {
+    if (state.status !== "anon") clearLocal();
+    return;
+  }
+  if (msg.sub && state.me && msg.sub !== state.me.id) {
     if (state.status !== "anon") clearLocal();
     return;
   }
   refresher.receive(msg.accessToken, msg.at);
   if (state.status === "authed") set({ ...state, accessToken: msg.accessToken });
-});
+}
+
+channel.subscribe(receive);
 
 function applyGrant(grant: TokenGrant): void {
   set({ status: "authed", accessToken: grant.access_token, me: grant.user });
@@ -128,6 +139,8 @@ export const session = {
   login,
   logout,
   applyGrant,
+  /** Chỉ dùng cho test: giả thông điệp BroadcastChannel từ tab khác. */
+  receive,
   /** Chỉ dùng cho test. */
   reset: (): void => {
     state = INITIAL;
