@@ -6,9 +6,10 @@ import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
 import { barrier, codeOf, lockKit } from "../../lib/lock-order.helpers";
 import type { TestHooks } from "../../lib/test-hooks";
-import { createCommand, updateCommand } from "../commands/commands.service";
+import { createCommand, deleteCommand, updateCommand } from "../commands/commands.service";
 import { createWorkflow } from "../workflows/workflows.service";
 import { restoreAudit } from "./audit.restore";
+import { getAudit } from "./audit.service";
 
 const OWNER = process.env.TEST_DATABASE_URL;
 const API = process.env.TEST_ADMIN_API_DATABASE_URL;
@@ -110,5 +111,28 @@ describe("ADM-FR-52 · plan M4 §6 · Restore command ∥ Command PATCH", () => 
       v + 1,
       0,
     ]);
+  });
+});
+
+describe("ADM-FR-52 · M4-R13 · review M4 #5 · khôi phục dòng delete cũ", () => {
+  it("RL3 · xoá → khôi phục → xoá lại: dòng delete đầu → restorable false + NOT_RESTORABLE; dòng delete mới → ok", async () => {
+    const delOf = async () =>
+      (
+        await owner<{ id: string }[]>`select id from admin.audit_log
+          where entity = 'command' and action = 'delete' and entity_id = ${CMD} order by seq desc limit 1`
+      )[0]?.id as string;
+    await deleteCommand(c(), CMD);
+    const d1 = await delOf();
+    await restoreAudit(c(), d1);
+    await deleteCommand(c(), CMD);
+    const d2 = await delOf();
+    expect((await getAudit(c(), d1)).restorable).toBe(false);
+    expect((await getAudit(c(), d2)).restorable).toBe(true);
+    const err = await restoreAudit(c(), d1).then(
+      () => null,
+      (e: { code?: string }) => e.code,
+    );
+    expect(err).toBe("NOT_RESTORABLE");
+    expect((await restoreAudit(c(), d2)).entity_id).toBe(CMD);
   });
 });

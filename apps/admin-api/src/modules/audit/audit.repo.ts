@@ -24,6 +24,8 @@ export type AuditRow = {
   entityVersion: number | null;
   summary: Record<string, unknown>;
   snapshot: boolean;
+  /** Không có dòng nào mới hơn cùng `(entity, entity_id)` — luật khôi phục dòng `delete` (`canRestore`). */
+  latest: boolean;
 };
 export type AuditDetailRow = AuditRow & {
   before: Record<string, unknown> | null;
@@ -32,6 +34,12 @@ export type AuditDetailRow = AuditRow & {
 
 const tenantKey = sql<string | null>`(select ${tenants.key} from ${tenants}
   where ${tenants.id} = ${outer(auditLog.tenantId)})`;
+
+// Probe `audit_log_entity_seq_idx` mỗi hàng của trang (≤ 201). RLS cùng scope: tenant_admin không thấy dòng ngoài
+// tenant nhưng với họ `restorable` luôn false (Q8), nên không ảnh hưởng.
+const latest = sql<boolean>`not exists (select 1 from "admin"."audit_log" as newer
+  where newer.entity = ${outer(auditLog.entity)} and newer.entity_id = ${outer(auditLog.entityId)}
+    and newer.seq > ${outer(auditLog.seq)})`;
 
 const rowCols = {
   id: auditLog.id,
@@ -49,6 +57,7 @@ const rowCols = {
   entityVersion: auditLog.entityVersion,
   summary: auditLog.summary,
   snapshot: auditLog.snapshot,
+  latest,
 };
 
 export type AuditListFilter = {

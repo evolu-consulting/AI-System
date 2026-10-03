@@ -86,7 +86,7 @@ export async function quotaStatuses(
 
 /** `QuotaSetResponse` từ bộ đang lưu + mức dùng tháng hiện tại. */
 async function buildResponse(
-  tx: Tx,
+  { tx, scope }: { tx: Tx; scope: DbScope },
   t: repo.QuotaTenant,
   now: Date,
   saved?: repo.QuotaDbRow[],
@@ -96,7 +96,7 @@ async function buildResponse(
     tenant_id: t.id,
     version: t.version,
     month,
-    has_usage_data: await repo.hasUsageData(tx),
+    has_usage_data: await repo.hasUsageData(tx, scope.kind === "tenant" ? scope.tenantId : null),
     items,
   };
 }
@@ -109,7 +109,7 @@ async function mustTenant(tx: Tx, id: string, lock: boolean): Promise<repo.Quota
 
 export async function getQuotas(c: QuotasCall, id: string): Promise<QuotaSetResponse> {
   return withScope(c.ctx.db, c.scope, async (tx) =>
-    buildResponse(tx, await mustTenant(tx, id, false), c.ctx.now()),
+    buildResponse({ tx, scope: c.scope }, await mustTenant(tx, id, false), c.ctx.now()),
   );
 }
 
@@ -168,14 +168,14 @@ export async function putQuotasIn(
   const items = normalizeQuotaItems(input.items);
   const t = await mustTenant(tx, id, true);
   if (t.version !== input.version) {
-    const current = await buildResponse(tx, t, now);
+    const current = await buildResponse({ tx, scope: c.scope }, t, now);
     throw appError("VERSION_CONFLICT", { current, updated_at: t.updated_at });
   }
   await lockFeatures(tx, id, items);
   await afterLock(c.ctx.hooks, "quota.save", "locked");
   const before = await repo.listQuotas(tx, id);
   if (sameQuotaSet(normalizeQuotaItems(before.map(limitsOf)), items)) {
-    return { out: await buildResponse(tx, t, now, before), changed: false };
+    return { out: await buildResponse({ tx, scope: c.scope }, t, now, before), changed: false };
   }
   await repo.replaceQuotas(tx, id, items, c.actor.userId);
   await repo.bumpTenant(tx, id, c.actor.userId);
@@ -194,5 +194,5 @@ export async function putQuotasIn(
       snapshot: true,
     }),
   );
-  return { out: await buildResponse(tx, t2, now, after), changed: true };
+  return { out: await buildResponse({ tx, scope: c.scope }, t2, now, after), changed: true };
 }

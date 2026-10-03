@@ -117,11 +117,14 @@ async function applyInTx(c: ImportCall, a: Args, tx: Tx, ch: ConfigSink): Promis
   return { result, quotaTenants };
 }
 
-/** Đụng unique/FK do ghi song song chen giữa: config đã đổi → 409; còn lại ném lại. */
-async function mapRace(c: ImportCall, base: number, err: unknown): Promise<never> {
+/**
+ * Đụng unique/FK do ghi song song chen giữa (kể cả ghi không bump config_version) → 409 `VERSION_CONFLICT {current}`
+ * (version hiện tại, có thể = base): người dùng chạy lại dry-run. Không để rơi thành 500. Lỗi khác ném lại.
+ */
+export async function mapRace(c: ImportCall, err: unknown): Promise<never> {
   if (uniqueViolation(err) || foreignKeyViolation(err)) {
     const cur = await withScope(c.ctx.db, c.scope, (tx) => readConfigVersion(tx));
-    if (cur !== base) throw appError("VERSION_CONFLICT", { current: cur });
+    throw appError("VERSION_CONFLICT", { current: cur });
   }
   return mapVersionMoved(err);
 }
@@ -138,7 +141,7 @@ export async function applyImport(c: ImportCall, req: ImportRequest): Promise<Im
   const args: Args = { req, base, file: parsed.file };
   const out = await configWrite({ ...c, expectBase: base }, OP, (tx, ch) =>
     applyInTx(c, args, tx, ch),
-  ).catch((err) => mapRace(c, base, err));
+  ).catch((err) => mapRace(c, err));
   for (const id of out.quotaTenants) {
     void evaluateTenant(c.ctx, id).catch((err) =>
       logger.error("quota evaluate failed", { module: "transfer", ...safeErrorFields(err) }),

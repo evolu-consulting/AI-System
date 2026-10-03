@@ -11,7 +11,7 @@ import { parseMasterKey } from "../../lib/secret-crypto";
 import type { TestHooks } from "../../lib/test-hooks";
 import { updateCommand } from "../commands/commands.service";
 import { replaceSecret } from "../secrets/secrets.service";
-import { applyImport } from "./transfer.apply";
+import { applyImport, mapRace } from "./transfer.apply";
 
 const OWNER = process.env.TEST_DATABASE_URL;
 const API = process.env.TEST_ADMIN_API_DATABASE_URL;
@@ -139,5 +139,25 @@ describe("ADM-FR-54 · plan-cd §8.4 E4 · Import ∥ Command PATCH / Secret PUT
       b,
     );
     expect([r.ra.ok, r.rb.ok, r.deadlocks, await cfg()]).toEqual([true, true, 0, v0 + 2]);
+  });
+});
+
+describe("ADM-FR-54 · review M4 #3 · mapRace", () => {
+  it("TL-R · unique/FK khi config_version không đổi → 409 VERSION_CONFLICT {current} (không 500); lỗi khác ném lại", async () => {
+    const cur = Number(
+      (await owner`select config_version as v from admin.config_meta where id = 1`)[0]?.v ?? 0,
+    );
+    const codeOfErr = (err: unknown) =>
+      mapRace(call() as never, err).then(
+        () => null,
+        (e: { code?: string; details?: unknown }) => [e.code, e.details],
+      );
+    for (const code of ["23505", "23503"])
+      expect(await codeOfErr({ code, constraint_name: "x_uq" })).toEqual([
+        "VERSION_CONFLICT",
+        { current: cur },
+      ]);
+    const boom = new Error("boom");
+    expect(await mapRace(call() as never, boom).catch((e) => e)).toBe(boom);
   });
 });

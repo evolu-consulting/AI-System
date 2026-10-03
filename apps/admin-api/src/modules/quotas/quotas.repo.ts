@@ -140,8 +140,15 @@ export async function monthUsage(
   return { total, byFeature };
 }
 
-/** Hub đã ghi dữ liệu chưa (M4-R09): `usage_logs` có hàng nào không. */
-export async function hasUsageData(tx: Tx): Promise<boolean> {
-  const rows = await run<{ x: number }>(tx, sql`select 1 as x from hub.usage_logs limit 1`);
+/**
+ * Hub đã ghi dữ liệu chưa (M4-R09): `usage_logs` có hàng nào không. `tenantId` ≠ null (người gọi scope tenant)
+ * → chỉ hàng của tenant đó (như `usage.repo.hasData`, không lộ dữ liệu tenant khác); null = platform, toàn bảng.
+ */
+export async function hasUsageData(tx: Tx, tenantId: string | null): Promise<boolean> {
+  const where = tenantId === null ? sql`true` : sql`tenant_id = ${tenantId}`;
+  const rows = await run<{ x: number }>(
+    tx,
+    sql`select 1 as x from hub.usage_logs where ${where} limit 1`,
+  );
   return rows.length > 0;
 }

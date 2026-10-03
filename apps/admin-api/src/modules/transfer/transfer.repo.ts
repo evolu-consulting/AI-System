@@ -1,14 +1,25 @@
 // ADM-FR-54 · M4-R14 · AC-A06 · đọc snapshot cấu hình ở dạng phần tử file (plan-cd §3.2, §8.1). Chỉ đọc; người gọi mở
 // tx `repeatable read, read only` (một snapshot). Secret: chỉ cột `name` (admin_rw không có quyền ciphertext/iv).
 // Bỏ tenant `platform`; grant chỉ cho group. `FROM` dùng chung cho SELECT và COUNT → meta đếm đúng tập export.
-import type { ConfigFileBody, TransferType } from "@ai/contracts";
+import { type ConfigFileBody, IMPORT_MAX_BYTES, type TransferType } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
+import { appError } from "../../lib/errors";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
 import type { Snapshot } from "./transfer.norm";
 
 /** Trần hàng mỗi loại khi đọc (plan-cd §8.1). */
 export const SNAPSHOT_ROW_CAP = 5000;
+
+/**
+ * Đọc `cap + 1` hàng (câu gọi có ORDER BY khoá ổn định): vượt trần → 413 `PAYLOAD_TOO_LARGE {max_bytes}` thay vì cắt
+ * im lặng (export thiếu phần tử; import tưởng thiếu id → tạo trùng). Cấu hình lớn hơn trần không vừa một file.
+ */
+export function capRows<T>(rows: readonly T[]): T[] {
+  if (rows.length > SNAPSHOT_ROW_CAP)
+    throw appError("PAYLOAD_TOO_LARGE", { max_bytes: IMPORT_MAX_BYTES });
+  return [...rows];
+}
 
 const FROM: Record<TransferType, SQL> = {
   workflows: sql`from admin.workflows w join admin.secrets s on s.id = w.secret_id`,
@@ -20,6 +31,16 @@ const FROM: Record<TransferType, SQL> = {
   grants: sql`from admin.feature_grants fg join admin.groups g on g.id = fg.group_id
     join admin.tenants t on t.id = fg.tenant_id join admin.features f on f.id = fg.feature_id
     where fg.group_id is not null and t.key <> ${PLATFORM_TENANT_KEY}`,
+};
+
+/** Thứ tự ổn định (khoá tự nhiên) để trần cắt cùng một tập giữa các lần đọc. */
+const ORDER: Record<TransferType, SQL> = {
+  workflows: sql`order by w.key`,
+  commands: sql`order by c.name`,
+  features: sql`order by f.key`,
+  tenants: sql`order by t.key`,
+  groups: sql`order by t.key, g.key`,
+  grants: sql`order by t.key, g.key, f.key`,
 };
 
 const COLS: Record<TransferType, SQL> = {
@@ -45,15 +66,17 @@ async function readType<T extends TransferType>(
   tx: Tx,
   t: T,
 ): Promise<NonNullable<ConfigFileBody[T]>> {
-  const rows = await tx.execute(sql`select ${COLS[t]} ${FROM[t]} limit ${SNAPSHOT_ROW_CAP}`);
-  return rows as unknown as NonNullable<ConfigFileBody[T]>;
+  const rows = await tx.execute(
+    sql`select ${COLS[t]} ${FROM[t]} ${ORDER[t]} limit ${SNAPSHOT_ROW_CAP + 1}`,
+  );
+  return capRows(rows as unknown as unknown[]) as unknown as NonNullable<ConfigFileBody[T]>;
 }
 
 async function readSecretNames(tx: Tx): Promise<string[]> {
   const rows = (await tx.execute(
-    sql`select name from admin.secrets order by name limit ${SNAPSHOT_ROW_CAP}`,
+    sql`select name from admin.secrets order by name limit ${SNAPSHOT_ROW_CAP + 1}`,
   )) as unknown as { name: string }[];
-  return rows.map((r) => r.name);
+  return capRows(rows).map((r) => r.name);
 }
 
 /** Snapshot chỉ gồm `types` (thứ tự do `buildExportFile` sắp ở JS — không phụ thuộc collation DB). */

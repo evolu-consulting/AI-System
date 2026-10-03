@@ -47,9 +47,8 @@ const userCols = {
     userTotp.enabledAt,
   ),
   backupCodesLeft: sql<number>`(select count(*)::int from ${userBackupCodes}
-    where ${userBackupCodes.userId} = ${users.id} and ${userBackupCodes.usedAt} is null)`.mapWith(
-    Number,
-  ),
+    where ${userBackupCodes.userId} = ${users.id} and ${userBackupCodes.tenantId} = ${users.tenantId}
+      and ${userBackupCodes.usedAt} is null)`.mapWith(Number),
   tenant: { id: tenants.id, key: tenants.key, name: tenants.name, active: tenants.active },
 };
 

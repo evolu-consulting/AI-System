@@ -15,6 +15,8 @@ export type RestoreEntry = {
   entityId: string;
   tenantId: string | null;
   entityVersion: number | null;
+  /** Dòng mới nhất của `(entity, entity_id)` (`restoreCheck` chặn dòng `delete` cũ). */
+  latest?: boolean;
   before: Readonly<Record<string, unknown>>;
 };
 /** Version của thực thể sau khôi phục. */

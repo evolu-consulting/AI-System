@@ -133,6 +133,8 @@ export type RecentAuditRow = {
   entityVersion: number | null;
   summary: Record<string, unknown>;
   snapshot: boolean;
+  /** Không có dòng mới hơn cùng `(entity, entity_id)` (luật khôi phục dòng delete — `audit.rules.canRestore`). */
+  latest: boolean;
 };
 
 /** `limit` hàng audit mới nhất (`seq desc`); tenantId null = mọi hàng thấy qua RLS (platform). Index
@@ -149,7 +151,9 @@ export async function recentAudit(
       (select t.key from admin.tenants t where t.id = a.tenant_id) as "tenantKey",
       a.actor_id as "actorId", a.actor_username as "actorUsername", a.action, a.entity,
       a.entity_id as "entityId", a.entity_name as "entityName", a.config_version as "configVersion",
-      a.entity_version as "entityVersion", a.summary, a.snapshot
+      a.entity_version as "entityVersion", a.summary, a.snapshot,
+      not exists (select 1 from admin.audit_log n where n.entity = a.entity
+        and n.entity_id = a.entity_id and n.seq > a.seq) as latest
     from admin.audit_log a where ${where}
     order by a.seq desc limit ${limit}`,
   );

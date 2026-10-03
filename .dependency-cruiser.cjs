@@ -16,10 +16,11 @@ module.exports = {
     },
     {
       name: "no-cross-module-repo",
-      comment: "T-DEP-2: module không import repo của module khác (đi qua service)",
+      comment:
+        "T-DEP-2: module không import repo của module khác, kể cả repo lồng (modules/x/**/y.repo.ts) — đi qua service",
       severity: "error",
       from: { path: "modules/([^/]+)/" },
-      to: { path: "modules/[^/]+/[^/]*\\.repo\\.ts$", pathNot: "modules/$1/" },
+      to: { path: "modules/[^/]+/.*\\.repo\\.ts$", pathNot: "modules/$1/" },
     },
     {
       name: "rules-must-be-pure",

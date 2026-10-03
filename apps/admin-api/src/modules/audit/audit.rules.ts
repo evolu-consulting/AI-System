@@ -33,25 +33,36 @@ const RESTORABLE_ENTITIES: ReadonlySet<AuditEntity> = new Set([
 ]);
 const RESTORABLE_ACTIONS: ReadonlySet<AuditAction> = new Set(["update", "delete", "restore"]);
 
-/** Q7, Q8: chỉ platform_admin, 5 thực thể cấu hình, action update/delete/restore, hàng có snapshot đầy đủ. */
+/** Dòng `delete` đã bị một dòng mới hơn cùng `(entity, entity_id)` vượt (xoá → khôi phục → xoá lại). */
+const staleDelete = (e: { action: AuditAction; latest?: boolean }): boolean =>
+  e.action === "delete" && e.latest === false;
+
+/**
+ * Q7, Q8: chỉ platform_admin, 5 thực thể cấu hình, action update/delete/restore, hàng có snapshot đầy đủ; dòng
+ * `delete` còn phải là dòng mới nhất của `(entity, entity_id)` (`latest`, vắng = true) — không khôi phục bản xoá cũ.
+ */
 export function canRestore(
   role: Role,
-  e: { entity: AuditEntity; action: AuditAction; snapshot: boolean },
+  e: { entity: AuditEntity; action: AuditAction; snapshot: boolean; latest?: boolean },
 ): boolean {
   return (
     role === "platform_admin" &&
     RESTORABLE_ENTITIES.has(e.entity) &&
     RESTORABLE_ACTIONS.has(e.action) &&
-    e.snapshot
+    e.snapshot &&
+    !staleDelete(e)
   );
 }
 
-/** Chỉ khôi phục thay đổi mới nhất (update/restore) hoặc thực thể đã xoá (delete) — plan §4.4. */
+/**
+ * Chỉ khôi phục thay đổi mới nhất (update/restore) hoặc thực thể đã xoá (delete) — plan §4.4. Dòng `delete` không
+ * phải mới nhất của `(entity, entity_id)` (`latest === false`) → NOT_RESTORABLE (version không được lùi).
+ */
 export function restoreCheck(
-  e: { action: AuditAction; entityVersion: number | null },
+  e: { action: AuditAction; entityVersion: number | null; latest?: boolean },
   cur: { exists: boolean; version: number | null },
 ): "ok" | "NOT_RESTORABLE" | "VERSION_CONFLICT" {
-  if (e.action === "delete") return cur.exists ? "NOT_RESTORABLE" : "ok";
+  if (e.action === "delete") return cur.exists || staleDelete(e) ? "NOT_RESTORABLE" : "ok";
   if (!cur.exists) return "NOT_RESTORABLE";
   return cur.version === e.entityVersion ? "ok" : "VERSION_CONFLICT";
 }

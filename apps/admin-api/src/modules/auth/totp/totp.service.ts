@@ -243,3 +243,18 @@ export async function regenerateBackupCodes(
   if (!res) throw appError("INVALID_CURRENT_CODE");
   return res;
 }
+
+/**
+ * ADM-FR-08 · admin tắt 2FA hộ — phần dữ liệu 2FA, chạy trong tx của người gọi (đã khoá `users` hạng 2):
+ * khoá `user_totp` (hạng 2b), chưa bật → TOTP_NOT_ENABLED, đếm mã dự phòng còn rồi xoá. Audit do người gọi ghi.
+ */
+export async function adminResetTotp(
+  tx: Tx,
+  w: { tenantId: string; userId: string },
+): Promise<{ backup_codes_left: number }> {
+  const row = await repo.lockTotp(tx, w);
+  if (!row?.enabledAt) throw appError("TOTP_NOT_ENABLED");
+  const left = await repo.countUnusedCodes(tx, w);
+  await repo.deleteTotp(tx, w);
+  return { backup_codes_left: left };
+}

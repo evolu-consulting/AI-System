@@ -1,6 +1,6 @@
 // ADM-FR-51 · M4-R12 · auditRange (ngày VN) + cursor chuẩn tắc — bổ sung cho test acceptance R16–R19.
 import { describe, expect, it } from "bun:test";
-import { auditRange, decodeCursor, encodeCursor } from "./audit.rules";
+import { auditRange, canRestore, decodeCursor, encodeCursor, restoreCheck } from "./audit.rules";
 
 const NOW = new Date("2026-10-03T20:00:00Z"); // = 2026-10-04 03:00 giờ VN
 
@@ -34,5 +34,22 @@ describe("ADM-FR-51 · cursor", () => {
     expect(decodeCursor(encodeCursor("9223372036854775808"))).toBeNull();
     expect(decodeCursor(encodeCursor("0"))).toBeNull();
     expect(decodeCursor(encodeCursor("9223372036854775807"))).toBe("9223372036854775807");
+  });
+});
+
+describe("ADM-FR-52 · M4-R13 · dòng delete không còn mới nhất (review M4 #5)", () => {
+  const del = { entity: "command", action: "delete", snapshot: true } as const;
+  it("canRestore: latest false → false; true / vắng → true; update cũ vẫn true (409 lúc khôi phục)", () => {
+    expect(canRestore("platform_admin", { ...del, latest: false })).toBe(false);
+    expect(canRestore("platform_admin", { ...del, latest: true })).toBe(true);
+    expect(canRestore("platform_admin", del)).toBe(true);
+    expect(canRestore("platform_admin", { ...del, action: "update", latest: false })).toBe(true);
+  });
+  it("restoreCheck: delete latest false → NOT_RESTORABLE dù thực thể không còn", () => {
+    const gone = { exists: false, version: null };
+    expect(restoreCheck({ action: "delete", entityVersion: null, latest: false }, gone)).toBe(
+      "NOT_RESTORABLE",
+    );
+    expect(restoreCheck({ action: "delete", entityVersion: null, latest: true }, gone)).toBe("ok");
   });
 });

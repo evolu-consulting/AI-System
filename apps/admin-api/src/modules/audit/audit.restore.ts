@@ -77,6 +77,7 @@ async function entryOf(
     entityId: row.entityId,
     tenantId: row.tenantId,
     entityVersion: row.entityVersion,
+    latest: row.latest,
     before: row.before,
   };
 }

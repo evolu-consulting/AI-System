@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm";
 import { pgArray } from "../../lib/sql";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
 import { canonicalJson } from "./transfer.norm";
-import { SNAPSHOT_ROW_CAP } from "./transfer.repo";
+import { capRows, SNAPSHOT_ROW_CAP } from "./transfer.repo";
 
 export type Ids = {
   tenants: Map<string, string>;
@@ -43,26 +43,39 @@ export function changedQuotas(x: It<TenantEl>): QuotaEntry[] {
 
 async function pairs(tx: Tx, q: ReturnType<typeof sql>): Promise<Map<string, string>> {
   const rows = (await tx.execute(q)) as unknown as { k: string; id: string }[];
-  return new Map(rows.map((r) => [r.k, r.id]));
+  return new Map(capRows(rows).map((r) => [r.k, r.id]));
 }
 
 /** Không khoá (đọc trong tx ghi, trước `lockForImport`). */
 export async function readIds(tx: Tx): Promise<Ids> {
-  const cap = SNAPSHOT_ROW_CAP;
+  const cap = SNAPSHOT_ROW_CAP + 1; // + 1 để `capRows` phát hiện vượt trần
   return {
     tenants: await pairs(
       tx,
-      sql`select key as k, id from admin.tenants where key <> ${PLATFORM_TENANT_KEY} limit ${cap}`,
+      sql`select key as k, id from admin.tenants where key <> ${PLATFORM_TENANT_KEY} order by key limit ${cap}`,
     ),
     groups: await pairs(
       tx,
       sql`select t.key || '/' || g.key as k, g.id from admin.groups g
-        join admin.tenants t on t.id = g.tenant_id where t.key <> ${PLATFORM_TENANT_KEY} limit ${cap}`,
+        join admin.tenants t on t.id = g.tenant_id where t.key <> ${PLATFORM_TENANT_KEY}
+        order by t.key, g.key limit ${cap}`,
     ),
-    workflows: await pairs(tx, sql`select key as k, id from admin.workflows limit ${cap}`),
-    commands: await pairs(tx, sql`select name as k, id from admin.commands limit ${cap}`),
-    features: await pairs(tx, sql`select key as k, id from admin.features limit ${cap}`),
-    secrets: await pairs(tx, sql`select name as k, id from admin.secrets limit ${cap}`),
+    workflows: await pairs(
+      tx,
+      sql`select key as k, id from admin.workflows order by key limit ${cap}`,
+    ),
+    commands: await pairs(
+      tx,
+      sql`select name as k, id from admin.commands order by name limit ${cap}`,
+    ),
+    features: await pairs(
+      tx,
+      sql`select key as k, id from admin.features order by key limit ${cap}`,
+    ),
+    secrets: await pairs(
+      tx,
+      sql`select name as k, id from admin.secrets order by name limit ${cap}`,
+    ),
   };
 }
 

@@ -6,6 +6,7 @@ import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
 import { createMemoryMailer, MailError, type Mailer } from "../../lib/mailer";
 import { evaluateTenant } from "./quotas.evaluator";
+import { getQuotas } from "./quotas.service";
 
 const OWNER = process.env.TEST_DATABASE_URL;
 const API = process.env.TEST_ADMIN_API_DATABASE_URL;
@@ -108,5 +109,26 @@ describe("ADM-FR-41 · M4-R05 · evaluator: lỗi gửi, claim quá hạn", () =
     const [r] =
       await owner`select status, last_error from admin.quota_alerts where tenant_id = ${TID} and level = 100`;
     expect([r?.status, r?.last_error]).toEqual(["pending", "MAIL_DISABLED"]);
+  });
+});
+
+describe("ADM-FR-41 · M4-R09 · review M4 #6 · has_usage_data theo scope", () => {
+  it("HU1 · chỉ tenant khác có usage → tenant_admin thấy false, platform thấy true", async () => {
+    const OTHER = n(9);
+    await owner`delete from hub.usage_logs where tenant_id = ${OTHER}`;
+    await owner`insert into hub.usage_logs (tenant_id, run_id, billing)
+      values (${OTHER}, ${crypto.randomUUID()}, 'api')`;
+    const call = (scope: { kind: "tenant"; tenantId: string } | { kind: "platform" }) => ({
+      ctx: { db, now: () => new Date() },
+      scope,
+      actor: { userId: BOSS },
+    });
+    try {
+      const t = await getQuotas(call({ kind: "tenant", tenantId: TID }) as never, TID);
+      const p = await getQuotas(call({ kind: "platform" }) as never, TID);
+      expect([t.has_usage_data, p.has_usage_data]).toEqual([false, true]);
+    } finally {
+      await owner`delete from hub.usage_logs where tenant_id = ${OTHER}`;
+    }
   });
 });
