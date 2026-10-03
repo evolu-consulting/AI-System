@@ -1,4 +1,4 @@
-// ADM-FR-42, ADM-FR-54 · plan-frontend D12 · tải file: fetch kèm Bearer → Blob → <a download> (token không nằm trên URL).
+// ADM-FR-42, ADM-FR-54, ADM-FR-08 · plan-frontend D12 · tải file: fetch kèm Bearer → Blob → <a download> (token không nằm trên URL).
 import { apiResponse, type RequestOptions } from "./http";
 
 /** Lấy tên file từ `Content-Disposition` (`filename*=UTF-8''…` ưu tiên, rồi `filename="…"`); không có → `fallback`. */
@@ -35,6 +35,12 @@ export async function downloadFile(
   const res = await apiResponse(path, { ...req, headers: { Accept: "*/*", ...req.headers } });
   const filename = filenameFromDisposition(res.headers.get("Content-Disposition"), fallbackName);
   const blob = await res.blob();
+  saveBlob(blob, filename);
+  return { filename, size: blob.size };
+}
+
+/** Lưu Blob về máy qua `<a download>` (dùng cả cho nội dung tạo ở client, vd mã dự phòng 2FA). */
+export function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -46,5 +52,4 @@ export async function downloadFile(
   a.remove();
   // Trình duyệt cần một nhịp để bắt đầu tải trước khi thu hồi URL.
   setTimeout(() => URL.revokeObjectURL(url), 0);
-  return { filename, size: blob.size };
 }

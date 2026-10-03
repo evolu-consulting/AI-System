@@ -1,6 +1,5 @@
 // ADM-FR-08 · M4-R16 · ô nhập mã 6 số: MỘT <input> thật (e2e `textbox`), 6 ô chỉ là hình vẽ CSS (plan-frontend D3).
-// Tự gọi `onComplete` khi đủ 6 số (mỗi lần chuyển từ chưa đủ → đủ).
-import { useRef } from "react";
+// Tự gọi `onComplete` khi đủ 6 số (mỗi lần chuyển từ chưa đủ → đủ, so với `value` hiện tại — nơi dùng xoá ô thì lần sau gửi lại).
 import { cn } from "@/lib/utils";
 import { isOtpComplete, OTP_LENGTH, sanitizeOtp } from "./otp";
 
@@ -30,13 +29,10 @@ export function OtpInput({
   "aria-describedby": describedBy,
   className,
 }: Props) {
-  const completed = useRef(false);
   const handle = (raw: string) => {
     const next = sanitizeOtp(raw);
     onChange(next);
-    const done = isOtpComplete(next);
-    if (done && !completed.current) onComplete?.(next);
-    completed.current = done;
+    if (isOtpComplete(next) && next !== value) onComplete?.(next);
   };
   return (
     <div

@@ -46,7 +46,9 @@
     },
     "localized": {
       "enMissing": "EN thiếu"
-    }
+    },
+    "continue": "Tiếp tục",
+    "back": "Quay lại"
   },
   "toast": {
     "saveFailed": "Không lưu được: {reason}",
@@ -179,6 +181,60 @@
     "changePassword": "Đổi mật khẩu",
     "language": "Ngôn ngữ",
     "twofa": "Xác thực hai bước"
+  },
+  "twofa": {
+    "title": "Xác thực hai bước",
+    "off": "Chưa bật",
+    "on": "Đã bật",
+    "intro": "Mỗi lần đăng nhập, bạn nhập thêm mã 6 số từ ứng dụng xác thực trên điện thoại.",
+    "enable": "Bật xác thực hai bước",
+    "step": "Bước {n}/3",
+    "reauth": "Nhập mật khẩu để tiếp tục",
+    "code": "Mã xác thực",
+    "scan": {
+      "title": "Quét mã QR bằng ứng dụng xác thực",
+      "alt": "Mã QR để thêm tài khoản vào ứng dụng xác thực",
+      "manual": "Không quét được? Nhập khoá thủ công:"
+    },
+    "account": "Tên tài khoản trong ứng dụng",
+    "accountName": "AI System ({tenant} · {username})",
+    "verify": {
+      "title": "Nhập mã 6 số đang hiện trong ứng dụng",
+      "submit": "Xác nhận và bật",
+      "wrong": "Mã không đúng. Kiểm tra giờ trên điện thoại và thử lại."
+    },
+    "backup": {
+      "title": "Lưu mã dự phòng",
+      "list": "Mã dự phòng",
+      "warn": "Mỗi mã dùng được một lần khi bạn mất điện thoại. Mã chỉ hiện một lần.",
+      "download": "Tải xuống (.txt)",
+      "ack": "Tôi đã lưu mã dự phòng ở nơi an toàn",
+      "done": "Hoàn tất",
+      "fileHeading": "AI System · mã dự phòng ({tenant} · {username})"
+    },
+    "status": {
+      "since": "Bật từ {date} · còn {n} mã dự phòng"
+    },
+    "regen": {
+      "action": "Tạo lại mã dự phòng",
+      "title": "Tạo lại mã dự phòng?",
+      "body": "Mã dự phòng cũ sẽ hết hiệu lực.",
+      "submit": "Tạo lại"
+    },
+    "disable": {
+      "action": "Tắt xác thực hai bước",
+      "title": "Tắt xác thực hai bước?",
+      "body": "Đăng nhập sẽ chỉ cần mật khẩu. Nhập mật khẩu và mã hiện tại để xác nhận."
+    },
+    "toast": {
+      "enabled": "Đã bật xác thực hai bước",
+      "disabled": "Đã tắt xác thực hai bước",
+      "regenerated": "Đã tạo mã dự phòng mới"
+    },
+    "error": {
+      "wrongCreds": "Mật khẩu hoặc mã không đúng",
+      "setupExpired": "Phiên thiết lập đã hết hạn. Hãy bắt đầu lại."
+    }
   },
   "overview": {
     "welcome": "Xin chào, {name}",

@@ -1,5 +1,14 @@
-// ADM-FR-01, ADM-FR-03, ADM-FR-06 · gọi API /auth/* (nơi duy nhất ngoài lib/session).
-import type { Locale, LoginRequest, LoginResponse, Me, TokenGrant } from "@ai/contracts";
+// ADM-FR-01, ADM-FR-03, ADM-FR-06, ADM-FR-08 · gọi API /auth/* (nơi duy nhất ngoài lib/session).
+import type {
+  BackupCodesResponse,
+  Locale,
+  LoginRequest,
+  LoginResponse,
+  Me,
+  TokenGrant,
+  TotpDisableRequest,
+  TotpSetupResponse,
+} from "@ai/contracts";
 import { session } from "@/lib/auth/session";
 import { ApiError, api, sendPublic } from "@/lib/http";
 
@@ -31,4 +40,27 @@ export function changePasswordSelf(currentPassword: string, newPassword: string)
 /** Đổi ngôn ngữ phiên (`PATCH /auth/me`), trả hồ sơ mới. */
 export function patchMyLocale(locale: Locale): Promise<Me> {
   return api<Me>("/auth/me", { method: "PATCH", body: { locale } });
+}
+
+/** 2FA bước 0→1: xác thực lại bằng mật khẩu, nhận secret + QR (chỉ giữ trong bộ nhớ, D11). */
+export function totpSetup(currentPassword: string): Promise<TotpSetupResponse> {
+  return api<TotpSetupResponse>("/auth/totp/setup", {
+    method: "POST",
+    body: { current_password: currentPassword },
+  });
+}
+
+/** 2FA bước 2: mã 6 số đúng → bật, trả 10 mã dự phòng (một lần). */
+export function totpEnable(code: string): Promise<BackupCodesResponse> {
+  return api<BackupCodesResponse>("/auth/totp/enable", { method: "POST", body: { code } });
+}
+
+/** Tự tắt 2FA (mật khẩu + mã). 204. */
+export function totpDisable(req: TotpDisableRequest): Promise<void> {
+  return api<void>("/auth/totp/disable", { method: "POST", body: req });
+}
+
+/** Tạo lại mã dự phòng (mã TOTP hiện tại, Q-D1); mã cũ hết hiệu lực. */
+export function totpRegenerate(code: string): Promise<BackupCodesResponse> {
+  return api<BackupCodesResponse>("/auth/totp/backup-codes", { method: "POST", body: { code } });
 }

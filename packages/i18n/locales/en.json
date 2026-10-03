@@ -46,7 +46,9 @@
     },
     "localized": {
       "enMissing": "EN missing"
-    }
+    },
+    "continue": "Continue",
+    "back": "Back"
   },
   "toast": {
     "saveFailed": "Couldn't save: {reason}",
@@ -179,6 +181,60 @@
     "changePassword": "Change password",
     "language": "Language",
     "twofa": "Two-step verification"
+  },
+  "twofa": {
+    "title": "Two-step verification",
+    "off": "Off",
+    "on": "On",
+    "intro": "Each time you sign in, you'll also enter a 6-digit code from an authenticator app on your phone.",
+    "enable": "Turn on two-step verification",
+    "step": "Step {n}/3",
+    "reauth": "Enter your password to continue",
+    "code": "Verification code",
+    "scan": {
+      "title": "Scan the QR code with your authenticator app",
+      "alt": "QR code to add the account to your authenticator app",
+      "manual": "Can't scan? Enter this key manually:"
+    },
+    "account": "Account name in the app",
+    "accountName": "AI System ({tenant} · {username})",
+    "verify": {
+      "title": "Enter the 6-digit code shown in the app",
+      "submit": "Verify and turn on",
+      "wrong": "Incorrect code. Check your phone's clock and try again."
+    },
+    "backup": {
+      "title": "Save your backup codes",
+      "list": "Backup codes",
+      "warn": "Each code works once if you lose your phone. They're shown only once.",
+      "download": "Download (.txt)",
+      "ack": "I've stored my backup codes somewhere safe",
+      "done": "Done",
+      "fileHeading": "AI System · backup codes ({tenant} · {username})"
+    },
+    "status": {
+      "since": "On since {date} · {n} backup codes left"
+    },
+    "regen": {
+      "action": "Generate new backup codes",
+      "title": "Generate new backup codes?",
+      "body": "Your old backup codes will stop working.",
+      "submit": "Generate"
+    },
+    "disable": {
+      "action": "Turn off two-step verification",
+      "title": "Turn off two-step verification?",
+      "body": "Sign-in will only need your password. Enter your password and current code to confirm."
+    },
+    "toast": {
+      "enabled": "Two-step verification is on",
+      "disabled": "Two-step verification is off",
+      "regenerated": "New backup codes generated"
+    },
+    "error": {
+      "wrongCreds": "Incorrect password or code",
+      "setupExpired": "The setup session expired. Please start again."
+    }
   },
   "overview": {
     "welcome": "Hello, {name}",

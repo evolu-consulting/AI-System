@@ -17,6 +17,7 @@ import { Route as AuthedAccessRouteImport } from './routes/_authed/access'
 import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
+import { Route as AuthedAccount2faRouteImport } from './routes/_authed/account.2fa'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account.password'
 import { Route as AuthedCommandsIndexRouteImport } from './routes/_authed/commands/index'
 import { Route as AuthedCommandsCommandIdRouteImport } from './routes/_authed/commands/$commandId'
@@ -71,6 +72,11 @@ const AuthedSecretsRoute = AuthedSecretsRouteImport.update({
 const AuthedUsersRoute = AuthedUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAccount2faRoute = AuthedAccount2faRouteImport.update({
+  id: '/account/2fa',
+  path: '/account/2fa',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAccountPasswordRoute = AuthedAccountPasswordRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/member': typeof AuthedMemberRoute
   '/secrets': typeof AuthedSecretsRoute
   '/users': typeof AuthedUsersRoute
+  '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
   '/commands/$commandId': typeof AuthedCommandsCommandIdRoute
   '/commands/new': typeof AuthedCommandsNewRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/secrets': typeof AuthedSecretsRoute
   '/users': typeof AuthedUsersRoute
   '/': typeof AuthedIndexRoute
+  '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
   '/commands/$commandId': typeof AuthedCommandsCommandIdRoute
   '/commands/new': typeof AuthedCommandsNewRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/_authed/secrets': typeof AuthedSecretsRoute
   '/_authed/users': typeof AuthedUsersRoute
   '/_authed/': typeof AuthedIndexRoute
+  '/_authed/account/2fa': typeof AuthedAccount2faRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
   '/_authed/commands/$commandId': typeof AuthedCommandsCommandIdRoute
   '/_authed/commands/new': typeof AuthedCommandsNewRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/member'
     | '/secrets'
     | '/users'
+    | '/account/2fa'
     | '/account/password'
     | '/commands/$commandId'
     | '/commands/new'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/secrets'
     | '/users'
     | '/'
+    | '/account/2fa'
     | '/account/password'
     | '/commands/$commandId'
     | '/commands/new'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/_authed/secrets'
     | '/_authed/users'
     | '/_authed/'
+    | '/_authed/account/2fa'
     | '/_authed/account/password'
     | '/_authed/commands/$commandId'
     | '/_authed/commands/new'
@@ -373,6 +385,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof AuthedUsersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/account/2fa': {
+      id: '/_authed/account/2fa'
+      path: '/account/2fa'
+      fullPath: '/account/2fa'
+      preLoaderRoute: typeof AuthedAccount2faRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/account/password': {
@@ -496,6 +515,7 @@ interface AuthedRouteChildren {
   AuthedSecretsRoute: typeof AuthedSecretsRoute
   AuthedUsersRoute: typeof AuthedUsersRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedAccount2faRoute: typeof AuthedAccount2faRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
   AuthedCommandsCommandIdRoute: typeof AuthedCommandsCommandIdRoute
   AuthedCommandsNewRoute: typeof AuthedCommandsNewRoute
@@ -520,6 +540,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSecretsRoute: AuthedSecretsRoute,
   AuthedUsersRoute: AuthedUsersRoute,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedAccount2faRoute: AuthedAccount2faRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
   AuthedCommandsCommandIdRoute: AuthedCommandsCommandIdRoute,
   AuthedCommandsNewRoute: AuthedCommandsNewRoute,

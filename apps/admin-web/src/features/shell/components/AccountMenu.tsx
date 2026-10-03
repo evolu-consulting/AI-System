@@ -1,4 +1,4 @@
-// ADM-FR-01, ADM-FR-03 · menu avatar: Đổi mật khẩu · Xác thực hai bước · Ngôn ngữ (menuitemradio) · Đăng xuất.
+// ADM-FR-01, ADM-FR-03, ADM-FR-08 · menu avatar: Đổi mật khẩu · Xác thực hai bước (không cho member, AC12) · Ngôn ngữ (menuitemradio) · Đăng xuất.
 import type { Locale } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -42,9 +42,11 @@ export function AccountMenu() {
         <DropdownMenuItem asChild>
           <Link to="/account/password">{t("account.changePassword")}</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to={"/account/2fa" as "/"}>{t("account.twofa")}</Link>
-        </DropdownMenuItem>
+        {role === "member" ? null : (
+          <DropdownMenuItem asChild>
+            <Link to="/account/2fa">{t("account.twofa")}</Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-caption text-muted-foreground">
           {t("account.language")}
