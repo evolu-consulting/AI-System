@@ -2,7 +2,7 @@
 // Một AlertDialog: Escape và click nền không đóng; `Xem khác biệt` mở rộng tại chỗ; `Ghi đè` chuyển sang bước xác nhận
 // ngay trong hộp thoại (alertdialog mang tên câu xác nhận). Khi đang gửi lại, hộp quay về bước chọn với nút khoá để
 // hộp thoại xung đột còn hiện (không bị aria-hidden bởi hộp thoại thứ hai) tới khi bản ghi thật sự đã lưu.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlertDialog,
@@ -37,6 +37,9 @@ export default function ConflictDialog(p: ConflictDialogProps) {
   const [step, setStep] = useState<"choose" | "confirm">("choose");
   const [pending, setPending] = useState(false);
   const reloadRef = useRef<HTMLButtonElement>(null);
+  const overwriteRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const firstStep = useRef(true);
   const user = p.updatedBy;
   const body = {
     user,
@@ -51,6 +54,14 @@ export default function ConflictDialog(p: ConflictDialogProps) {
     void p.onOverwrite().finally(() => setPending(false));
   };
   const confirming = step === "confirm";
+  // Đổi bước làm nút đang focus bị gỡ → đưa focus sang nút tương ứng (huỷ → "Ghi đè"; vào xác nhận → "Huỷ").
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    (step === "confirm" ? cancelRef : overwriteRef).current?.focus();
+  }, [step]);
   return (
     <AlertDialog open>
       <AlertDialogContent
@@ -78,7 +89,7 @@ export default function ConflictDialog(p: ConflictDialogProps) {
         ) : null}
         {confirming ? (
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setStep("choose")}>
+            <Button ref={cancelRef} variant="outline" onClick={() => setStep("choose")}>
               {t("common.cancel")}
             </Button>
             <Button onClick={overwrite}>{t("conflict.action.overwrite")}</Button>
@@ -93,7 +104,12 @@ export default function ConflictDialog(p: ConflictDialogProps) {
             >
               {t("conflict.action.diff")}
             </Button>
-            <Button variant="outline" disabled={pending} onClick={() => setStep("confirm")}>
+            <Button
+              ref={overwriteRef}
+              variant="outline"
+              disabled={pending}
+              onClick={() => setStep("confirm")}
+            >
               {t("conflict.action.overwrite")}
             </Button>
             <Button ref={reloadRef} disabled={pending} onClick={p.onReload}>
