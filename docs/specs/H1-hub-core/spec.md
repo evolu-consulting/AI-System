@@ -152,6 +152,7 @@ Lệnh xong mốc (chốt ở plan): `bun run typecheck && bun test && bun run t
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng)
 - Hub TS + Agent Runtime Python (CR-028/ADR-0007), WSL2 (CR-029), subscription chỉ dev/test và profile 1 bước được phép (CR-019), mọi tin qua Orchestrator (CR-025), Orchestrator là một agent (CR-020).
+- **Q1 (người dùng 2026-10-04):** chưa có API key → Orchestrator và agent đều chạy `agentic-cli` qua `claude-sub` (CLI). Q2–Q10: chưa có ý kiến khác → dùng mặc định bên dưới.
 - Phiên Hub không sửa Chat/Admin/test khoá C1. Cần dùng chung `access.rules.ts`, `jwt.ts`… của Admin → đề xuất chuyển sang `packages/*` (ghi TECH-DEBT), không sửa file Admin.
 
 ### Câu hỏi mở (mỗi câu có mặc định; PLAN dùng mặc định nếu không có trả lời)
