@@ -170,7 +170,8 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 | Bảng | Trường chính |
 |---|---|
 | `tenants` | id, key (mã công ty, unique), name, active, max_concurrent_sub (null = không giới hạn), settings (jsonb), created_at, version |
-| `users` | id, tenant_id, username, password_hash, display_name, role (`platform_admin` \| `tenant_admin` \| `member`), locale (vi\|en), active, must_change_password, failed_logins, locked_until, totp_secret, version, created_at, updated_at · unique (tenant_id, username) |
+| `users` | id, tenant_id, username, password_hash, display_name, role (`platform_admin` \| `tenant_admin` \| `member`), locale (vi\|en), active, must_change_password, failed_logins, locked_until, version, created_at, updated_at · unique (tenant_id, username) |
+| `user_totp` · `user_backup_codes` | 2FA (M4, quyết định plan-cd D1; thay `users.totp_secret`): `user_totp` (tenant_id, user_id unique, secret mã hoá AES-256-GCM cùng `SECRET_MASTER_KEY`, trạng thái chờ/đã bật); `user_backup_codes` (user_id, code_hash HMAC-SHA256 có pepper, used_at). Hub không đọc (`REVOKE hub_ro`) |
 | `refresh_tokens` | id, user_id, token_hash, expires_at, revoked_at, created_at, user_agent |
 | `groups` | id, tenant_id, key, name (jsonb vi/en), description, version · unique (tenant_id, key) |
 | `group_members` | group_id, user_id, added_by, added_at |

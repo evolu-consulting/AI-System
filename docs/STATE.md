@@ -1,8 +1,9 @@
 # STATE — trạng thái hiện tại
 
-Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (CR-028)
+Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (đóng M4)
 
 ## Đang ở đâu
+- **M4 xong** (2026-10-04, trên `main`, KHÔNG push): **admin app hoàn tất mọi phần không cần Hub** (M5 cần Agent Hub). Nghiệm thu và review: `docs/specs/M4-ops/spec-decisions.md` "Kết luận nghiệm thu và review". Spec `status: done`. Chưa chạy lại e2e toàn bộ (máy thiếu bộ nhớ); check/typecheck/bun test đang đỏ chỉ do code dở của phiên Chat.
 - **Mốc H1 (phiên Hub/Worker, 2026-10-04):** spec `docs/specs/H1-hub-core/spec.md` (`status: draft`, 82 mã yêu cầu, 26 luật H1-R, 12 AC kỹ thuật `HUB-H1-AC`, 10 câu hỏi mở có mặc định) + `tasks.md` khung; ROADMAP thêm H1–H4. Kế tiếp: plan BE (TS) ∥ plan Python, qc test-plan, readiness, Gate. Cần CR cho lệch chữ HUB-FR-42 (id SSE tuần tự vs id Redis Stream, spec §9 Q6).
 - **CR-028 / ADR-0007** (2026-10-04, phiên Hub/Worker): Hub giữ TypeScript; Worker thành **Agent Runtime Python** (`apps/agent-runtime`) chạy mọi agent `llm`/`agentic-cli`/`python`. Hàng đợi Postgres `SKIP LOCKED` (bỏ Redis queue, slot đếm trong DB), sự kiện run qua Redis Streams, contract zod → JSON Schema → pydantic, manifest `hub.agent_types`. Đã sửa ba-agent-hub, ba-worker, architecture (gồm mâu thuẫn CR-019) — chỉ design, html chưa sinh lại (TECH-DEBT #32). Chat/Admin không đổi.
 - **CR-025/026** (2026-10-04, Intake Nhanh): Orchestrator định tuyến mọi tin (kể cả trong flow), kết quả agent có cấu trúc (HUB-FR-27/28/29, AC-H14/15), runtime mặc định `llm`; đổi tên thuật ngữ cũ → Orchestrator toàn docs + i18n. Chỉ sửa design; html chưa sinh lại (TECH-DEBT #32). C1 contract không đổi.
@@ -13,14 +14,17 @@ Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (CR-028)
 - M0, M1, M2 xong. Thiết kế v0.4 xong (`design/`); canvas 18 artboard. Khung quy trình xong (`CLAUDE.md`, `WORKFLOW.md`, 7 agent, Luật 2b).
 
 ## Việc kế tiếp (phiên mới: làm ngay, KHÔNG hỏi — Luật 2b)
+A. **Sau M4:** (1) người dùng test service admin; (2) chạy lại e2e toàn bộ khi đủ bộ nhớ; (3) M5 khi có Hub; (4) TECH-DEBT nổi bật: #27/#28 (perf, RLS InitPlan — cần duyệt), #34 (`hub_ro` trên `admin.tenants`), #35 (mã lỗi riêng cho trần import).
 0. **Phiên Hub:** CONVENTIONS §9 (Python) và spec H1 đã xong (draft). Làm tiếp: plan BE (TS) ∥ plan Python (`plan.md`, `plan-runtime.md`), qc test-plan, spec-readiness, Gate (Luật 2b), rồi BUILD theo `docs/specs/H1-hub-core/tasks.md`.
-1. **M4 Chi phí & vận hành** theo `docs/ROADMAP.md` (Quota + cảnh báo, Chi phí & quota, Audit + khôi phục, Tổng quan, Import/Export, 2FA; ADM-FR-40–42, 51, 52, 54, 08; AC-A12 phía Admin; Import/Export và 2FA cần artboard trước Gate). Vòng: docs-architect tách spec `M4-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate (Luật 2b) → qc khoá test (đỏ đúng lý do) → BUILD một task mỗi lần gọi → Lệnh xong M4 (không gồm `test:perf`) → reviewer ≤ 2 vòng → docs → bật service và hướng dẫn người dùng test toàn bộ admin app. Trên `main`, KHÔNG push.
+1. ~~M4 Chi phí & vận hành~~ (xong 2026-10-04) theo `docs/ROADMAP.md` (Quota + cảnh báo, Chi phí & quota, Audit + khôi phục, Tổng quan, Import/Export, 2FA; ADM-FR-40–42, 51, 52, 54, 08; AC-A12 phía Admin; Import/Export và 2FA cần artboard trước Gate). Vòng: docs-architect tách spec `M4-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate (Luật 2b) → qc khoá test (đỏ đúng lý do) → BUILD một task mỗi lần gọi → Lệnh xong M4 (không gồm `test:perf`) → reviewer ≤ 2 vòng → docs → bật service và hướng dẫn người dùng test toàn bộ admin app. Trên `main`, KHÔNG push.
 2. Canvas: đổi `#7A7390` → `#736C89` (FE-R1, AA) khi chạm lại canvas.
 
 ## Token (đo bằng `token-report.py`, xem WORKFLOW "Đo token mỗi mốc")
 - Mốc chuẩn M0–M3 (trước 2026-10-03, quy trình cũ): ≈ $756 quy đổi giá API · đọc lại cache 69% · backend-lead 38%, điều phối 23%, frontend-lead 15%, qc 13% · lần chạy lớn nhất 347 lượt / context 775K (backend-lead PLAN M3).
 - M3-đóng (nghiệm thu + review, quy trình mới, từ 2026-10-03): ≈ $21,4 tổng · cache 63% · lần chạy agent lớn nhất 155K context / 50 lượt (mục tiêu ≤ 200K / 80 đạt) · điều phối 219K.
 - Chỉ số chất lượng M3: readiness 3 lần · tranh chấp test 8 (test sai 7 + TC-6 sửa kèm, code sai 0) · review vòng 1: BE 2 Major, FE 1 Major; vòng 2: 0 Major · commit sửa sau review 10.
+- M4 (2026-10-03 → 04, `--since 2026-10-03`, 3 phiên, 86 lượt chạy; gồm cả việc nhỏ của phiên khác): ≈ $211 · đọc lại cache 70% · backend-lead opus 36% ($75,7 / 25 lần), điều phối 24% ($51,7, 259 lượt, context max 614K), qc opus 13%, frontend-lead 14% (opus+sonnet), reviewer 6% · lần chạy agent lớn nhất BE T8 import 224K / 106 lượt, qc Q2d 239K (vượt mục tiêu 200K); điều phối vượt xa (614K).
+- Chỉ số chất lượng M4: readiness 4 lần · tranh chấp test ~16 (test sai 16, code sai 0) · review vòng 1: BE 1 Major, FE 1 Major; vòng 2: 2 Major (do bản sửa) · commit sửa sau review ~8.
 - Từ 2026-10-03: model theo rủi ro + một task mỗi lần gọi. Mục tiêu: cache < 40%, không lần chạy > 200K context / > 80 lượt.
 
 ## TECH-DEBT đáng chú ý (`docs/TECH-DEBT.md`)

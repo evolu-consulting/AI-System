@@ -75,3 +75,10 @@ Nền: CR-001 (mặc định readiness M1–M4), CR-002 (2FA + Import/Export và
 - BE review vòng 2 #2 · `mapRace(c, err, base)`: unique/FK khi `current === base` → `logger.warn("import unique/FK without version move")`, vẫn 409.
 - BE review vòng 2 #3 · quota `has_usage_data` theo tenant đang xem (`t.id`) cho mọi scope (R09); thay quyết định vòng 1 #6.
 - BE review vòng 2 #4 (tuỳ chọn) · bỏ qua: `tests/acceptance/M4/audit-read` AR6 (khoá) kỳ vọng `restorable = canRestore` cho dòng `update`; giữ luật vòng 1 #5.
+
+## Kết luận nghiệm thu và review (2026-10-04)
+
+- Nghiệm thu: 31 task BE/FE + FE7 xong. `test:int` 1098/1098, ac07, i18n, build, `check:bundle` (JS đầu 137,4 KB, nạp động locale) xanh. Lần 1: e2e 201/202, 2 ca chập chờn khi tải (M2-R27, e2e `commands:191`) chạy riêng xanh; 1 test M2 i18n lỗi thời (qc phán), 1 `check:fn` đã sửa. Lần 2: check/typecheck/bun test đỏ chỉ do code dở phiên Chat; e2e toàn bộ chạy lại khi đủ bộ nhớ.
+- Tranh chấp test ~16: tất cả "test sai" (qc), 0 code sai.
+- Review vòng 1: BE 1 Major + 5 Minor, FE 1 Major + 9 Minor, đã sửa. Vòng 2: 2 Major do bản sửa (`priceDisplay`, trần transfer 413 -> 400), đã sửa; điều phối xác minh diff (cách ly tenant ở `readIds` theo cặp tenant/group).
+- Quyết định kéo theo: `unpriced_rows` (2026-10-04), TECH-DEBT #34, #35. Không `test:perf` trong Lệnh xong (TD #27/#28).

@@ -4,6 +4,10 @@ Quyết định nhỏ, "đã thử & bỏ vì…", bẫy đã gặp. Mới nhấ
 
 | Ngày | Chủ đề | Ghi chú |
 |---|---|---|
+| 2026-10-04 | M4 mail / cấu hình | Cảnh báo quota và đặt lại gửi email qua `SMTP_URL` (dev: Mailpit trong `compose.yaml`, `smtp://127.0.0.1:1025`), `MAIL_FROM` (tuỳ chọn), `ADMIN_WEB_URL` (link trong mail). Production phải đặt SMTP thật; mail gửi sau commit (TECH-DEBT #13). |
+| 2026-10-04 | M4 2FA / khoá | `SECRET_MASTER_KEY` nay mã hoá cả secret TOTP (`user_totp`, bảng riêng, Hub không đọc được): mất khoá = người dùng bật 2FA không đăng nhập được bằng mã (còn mã dự phòng HMAC). Chưa xoay khoá (#16). |
+| 2026-10-04 | M4 audit | `admin.audit_log` append-only: role ứng dụng không UPDATE/DELETE được; không có đường xoá, chỉ lưu trữ ngoài DB nếu cần. Khôi phục tạo dòng mới, không sửa dòng cũ. |
+| 2026-10-04 | M4 hiệu năng | `bun run test:perf` ngoài Lệnh xong, chưa chạy trên môi trường ổn định; TD #27 (đo), #28 (RLS InitPlan, chờ duyệt). Trần transfer 5000 hàng/loại → 400 `VALIDATION_ERROR` (#35); `hub_ro` đọc được `admin.tenants` (#34). |
 | 2026-10-03 | M3 NOTIFY / Hub | `NOTIFY config_changed` phát **sau commit** (`lib/config/config-write.ts`), không trong transaction retry (TECH-DEBT #13). NOTIFY có thể mất nếu Hub mất kết nối: Hub phải đọc `admin.config_meta` (`config_version`) định kỳ làm dự phòng và nạp lại khi lệch. Hub dùng role `hub_ro`; SQL tham chiếu `access.repo.visibleUserCounts`. |
 | 2026-10-03 | Hiệu năng / RLS | `bun run test:perf` (không thuộc Lệnh xong) chưa chạy trên môi trường ổn định; số đo Docker/Windows dao động mạnh (TECH-DEBT #27). Policy RLS `current_setting(...)::uuid` tính theo hàng, chậm ở bảng lớn; đề xuất dạng InitPlan chờ người dùng duyệt (#28, đụng cách ly tenant). Cả hai cần đánh giá trước production. |
 | 2026-10-02 | `SECRET_MASTER_KEY` | Khoá dùng **chung với Hub** (Hub giải mã secret theo cùng công thức AAD, M2 plan §3.2). **Mất khoá = mất mọi secret** (không khôi phục được; phải nhập lại từng giá trị). Khoá phải được sao lưu và quản lý **ngoài repo** (secret manager của vận hành); không đặt trong DB, không commit. Chưa có xoay khoá (TECH-DEBT #16). |
