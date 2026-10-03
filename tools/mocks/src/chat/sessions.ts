@@ -11,7 +11,7 @@ const AUDIENCE = "ai-system";
 const KID = "mock";
 
 export type AccessClaims = { sub: string; tid: string; sid: string };
-type Session = { userId: string; tenantId: string; current: string; revoked: boolean };
+type Session = { userId: string; tenantId: string; current: string; previous: string };
 export type RefreshResult =
   | { ok: true; sid: string; userId: string; refreshToken: string }
   | { ok: false; code: "INVALID_REFRESH_TOKEN" | "REFRESH_SUPERSEDED" };
@@ -33,13 +33,15 @@ const opaque = () => randomBytes(32).toString("base64url");
 class MockSessionStore implements SessionStore {
   private readonly keys = generateKeyPair(ALG, { crv: "Ed25519" });
   private readonly sessions = new Map<string, Session>();
-  /** refresh token → sid; giữ cả token đã xoay để trả REFRESH_SUPERSEDED. */
+  /** refresh token → sid; mỗi phiên chỉ giữ token hiện tại + token ngay trước (để trả REFRESH_SUPERSEDED). */
   private readonly refresh = new Map<string, string>();
   private seq = 0;
   private cutoff = 0;
 
   private issueRefresh(sid: string, s: Session): string {
     const token = opaque();
+    this.refresh.delete(s.previous);
+    s.previous = s.current;
     s.current = token;
     this.refresh.set(token, sid);
     return token;
@@ -53,14 +55,14 @@ class MockSessionStore implements SessionStore {
 
   open(userId: string, tenantId: string) {
     const sid = randomUUID();
-    const s: Session = { userId, tenantId, current: "", revoked: false };
+    const s: Session = { userId, tenantId, current: "", previous: "" };
     this.sessions.set(sid, s);
     return { sid, refreshToken: this.issueRefresh(sid, s) };
   }
 
   rotate(token: string): RefreshResult {
     const found = this.sessionOf(token);
-    if (!found || found.s.revoked) return { ok: false, code: "INVALID_REFRESH_TOKEN" };
+    if (!found) return { ok: false, code: "INVALID_REFRESH_TOKEN" };
     if (found.s.current !== token) return { ok: false, code: "REFRESH_SUPERSEDED" };
     const refreshToken = this.issueRefresh(found.sid, found.s);
     return { ok: true, sid: found.sid, userId: found.s.userId, refreshToken };
@@ -68,7 +70,10 @@ class MockSessionStore implements SessionStore {
 
   revoke(token: string): void {
     const found = this.sessionOf(token);
-    if (found) found.s.revoked = true;
+    if (!found) return;
+    this.refresh.delete(found.s.current);
+    this.refresh.delete(found.s.previous);
+    this.sessions.delete(found.sid);
   }
 
   async signAccess(sid: string): Promise<string> {
@@ -97,7 +102,7 @@ class MockSessionStore implements SessionStore {
       });
       const sid = typeof p.sid === "string" ? p.sid : "";
       const s = this.sessions.get(sid);
-      if (!s || s.revoked || Number(p.jti) <= this.cutoff) return null;
+      if (!s || Number(p.jti) <= this.cutoff) return null;
       return { sub: s.userId, tid: s.tenantId, sid };
     } catch {
       return null;

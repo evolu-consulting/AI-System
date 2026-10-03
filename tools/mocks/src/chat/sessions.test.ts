@@ -52,6 +52,23 @@ describe("CHAT-AC-03, CHAT-AC-04 · SessionStore mock: refresh, logout, reset", 
     expect(await s.verifyAccess(access)).toBeNull();
   });
 
+  test("dọn token đã xoay: map refresh không tăng theo số lần xoay; revoke xoá sạch", () => {
+    const s = createSessionStore();
+    const size = () => (s as unknown as { refresh: Map<string, string> }).refresh.size;
+    let token = s.open(U, T).refreshToken;
+    let prev = token;
+    for (let i = 0; i < 20; i++) {
+      const r = s.rotate(token);
+      if (!r.ok) throw new Error("rotate phải ok");
+      prev = token;
+      token = r.refreshToken;
+      expect(size()).toBeLessThanOrEqual(2);
+    }
+    expect(s.rotate(prev)).toEqual({ ok: false, code: "REFRESH_SUPERSEDED" });
+    s.revoke(token);
+    expect(size()).toBe(0);
+  });
+
   test("reset xoá mọi phiên", async () => {
     const s = createSessionStore();
     const { sid, refreshToken } = s.open(U, T);
