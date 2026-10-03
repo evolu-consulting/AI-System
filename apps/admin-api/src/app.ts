@@ -27,7 +27,7 @@ import { startQuotaListener } from "./modules/quotas/quotas.listener";
 import { quotasRoutes } from "./modules/quotas/quotas.routes";
 import { secretsRoutes } from "./modules/secrets/secrets.routes";
 import { tenantsRoutes } from "./modules/tenants/tenants.routes";
-import { exportRoutes } from "./modules/transfer/transfer.routes";
+import { exportRoutes, importRoutes } from "./modules/transfer/transfer.routes";
 import { usageRoutes } from "./modules/usage/usage.routes";
 import { usersRoutes } from "./modules/users/users.routes";
 import { workflowsRoutes } from "./modules/workflows/workflows.routes";
@@ -87,6 +87,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
   app.route("/admin/commands", commandsRoutes({ ...ctx, hooks }));
   app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
+  app.route("/admin/import", importRoutes({ ...qctx, secretKey: deps.secretKey, hooks }));
   app.route("/admin/audit", auditRoutes(ctx));
   app.route("/admin", usageRoutes(ctx));
   app.route("/admin", overviewRoutes(qctx));

@@ -122,7 +122,6 @@ export const QuotaEntrySchema = z
   })
   .refine((q) => q.max_runs !== null || q.max_tokens !== null || q.max_usd !== null, {
     message: "at least one limit is required",
-    path: ["max_runs"],
   });
 export type QuotaEntry = z.infer<typeof QuotaEntrySchema>;
 

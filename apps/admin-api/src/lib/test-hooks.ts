@@ -17,7 +17,8 @@ export type HookOp =
   | "tenant.save"
   | "user.save"
   | "secret.save"
-  | "quota.save";
+  | "quota.save"
+  | "import.apply";
 /**
  * `locked`: sau câu khoá CUỐI của luồng, trước kiểm luật. `names` (M2): command vừa ghi `command_names`, trước khi khoá
  * features. `rows`: sau câu ghi CUỐI, trước bump. `bump`: `configWrite` gọi ngay trước upsert `config_meta` (chỉ khi có

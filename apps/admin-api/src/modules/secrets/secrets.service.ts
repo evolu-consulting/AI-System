@@ -11,6 +11,7 @@ import type {
 import {
   type AuditActionValue,
   type AuditInput,
+  type ConfigSink,
   type Db,
   type DbScope,
   type Tx,
@@ -96,6 +97,28 @@ export async function listSecrets(c: Call, q: SecretListQuery): Promise<SecretLi
     total: rows[0]?.total ?? 0,
     counts,
   };
+}
+
+export type SecretTxInput = { name: string; value: string; note: string | null };
+
+/**
+ * Tạo secret trong transaction ghi cấu hình có sẵn (import, plan-cd §8.3; E4: chèn trước workflow). `audit: false` →
+ * không ghi hàng audit riêng (người gọi ghi audit gộp). Mã hoá trong callback: retry sinh IV mới.
+ */
+export async function createSecretTx(
+  tx: Tx,
+  ch: ConfigSink,
+  a: { key: SecretKey; actorId: string; audit: boolean },
+  input: SecretTxInput,
+): Promise<string> {
+  const id = Bun.randomUUIDv7();
+  const row = { ...seal(a.key, id, input.value), id, name: input.name, note: input.note };
+  await tx
+    .transaction((sp) => repo.insertSecret(sp, { ...row, actorId: a.actorId }))
+    .catch(mapSecretConflict);
+  ch.changed({ entity: "secret", tenantId: null });
+  if (a.audit) ch.audit(secretAudit("create", null, await reread(tx, input.name)));
+  return id;
 }
 
 export async function createSecret(c: Call, input: SecretCreateRequest): Promise<Secret> {

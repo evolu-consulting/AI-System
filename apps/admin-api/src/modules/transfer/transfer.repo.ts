@@ -5,7 +5,7 @@ import type { ConfigFileBody, TransferType } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
-import type { Snapshot } from "./transfer.rules";
+import type { Snapshot } from "./transfer.norm";
 
 /** Trần hàng mỗi loại khi đọc (plan-cd §8.1). */
 export const SNAPSHOT_ROW_CAP = 5000;
