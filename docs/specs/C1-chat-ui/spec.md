@@ -168,5 +168,7 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 - H2 (chờ người dùng ở Gate): mặc định C1 chỉ giao diện Sáng, ghi TECH-DEBT. H4 (mặc định, theo canvas FlowOpen): khối flow ở luồng chính hiện câu trả lời **đầu** (`preview`); câu mới chỉ thấy trong khung flow.
 - **Gate 2026-10-04 (CR-027):** H2 đã chốt **Sáng + Tối** (+ Theo hệ thống), thay mặc định trên — token Tối đạt AA, logo tối, chống nháy: `plan-frontend-theme.md`, task F14.
 
+- Điều phối 2026-10-04: test acceptance C1 chỉ chạy khi `C1_STRICT=1` (`tests/acceptance/C1/_gate.ts`) để `bun test` gốc của phiên M4 không đỏ khi C1 dở. Lệnh xong F*/QV phải chạy `C1_STRICT=1 bun test tests/acceptance/C1`.
+
 ## 10. Tranh chấp test
 - (không)
