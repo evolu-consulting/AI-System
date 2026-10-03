@@ -24,7 +24,7 @@ const wf = (key: string, secret: string): WorkflowEl => ({
   enabled: true,
 });
 
-describe("ADM-FR-54 · transfer.rules export", () => {
+describe("ADM-FR-54 · transfer.rules sắp xếp", () => {
   test("cmpStr theo code unit: '-' (0x2d) trước chữ, khác collation ICU", () => {
     expect(["kinh-doanh", "ke-toan", "k-a", "ka"].sort(cmpStr)).toEqual([
       "k-a",
@@ -69,7 +69,9 @@ describe("ADM-FR-54 · transfer.rules export", () => {
     expect(st?.quotas.map((q) => q.feature)).toEqual([null, "x"]);
     expect(f.commands).toEqual(["z", "a"]);
   });
+});
 
+describe("ADM-FR-54 · transfer.rules secrets", () => {
   test("referencedSecrets duy nhất, sắp; buildExportFile không có workflows → secrets []", () => {
     expect(referencedSecrets([wf("a", "K_B"), wf("b", "K_A"), wf("c", "K_B")])).toEqual([
       { name: "K_A" },
@@ -79,7 +81,9 @@ describe("ADM-FR-54 · transfer.rules export", () => {
     expect(buildExportFile(s, ["commands"], new Date(0)).secrets).toEqual([]);
     expect(buildExportFile(s, ["workflows"], new Date(0)).secrets).toEqual([{ name: "K_A" }]);
   });
+});
 
+describe("ADM-FR-54 · transfer.rules diff", () => {
   test("canonicalJson bỏ undefined, sắp khoá đệ quy, giữ thứ tự mảng; diffOp", () => {
     expect(canonicalJson({ b: [2, 1], a: { d: 1, c: undefined } })).toBe('{"a":{"d":1},"b":[2,1]}');
     expect(diffOp({ a: [1, 2] }, { a: [2, 1] })).toBe("update");
