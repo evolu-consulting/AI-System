@@ -4,7 +4,7 @@ import {
   TenantListQuerySchema,
   TenantUpdateRequestSchema,
 } from "@ai/contracts";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
 import type { TestHooks } from "../../lib/test-hooks";
@@ -13,31 +13,35 @@ import {
   getTenant,
   listTenants,
   setTenantLocked,
+  type TenantsCall,
   updateTenant,
 } from "./tenants.service";
 
 export function tenantsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
   const r = new Hono<AppVars>();
   r.use("*", requireAuth(d), requireRole("platform_admin"));
+  const call = (c: Context<AppVars>): TenantsCall => ({
+    ctx: d,
+    scope: c.get("scope"),
+    actor: c.get("actor"),
+  });
 
   r.get("/", async (c) =>
     c.json(await listTenants(d, c.get("scope"), parseQuery(c, TenantListQuerySchema))),
   );
   r.post("/", async (c) => {
     const input = await parseJson(c, TenantCreateRequestSchema);
-    return c.json(await createTenant(d, c.get("scope"), input), 201);
+    return c.json(await createTenant(call(c), input), 201);
   });
   r.get("/:id", async (c) => c.json(await getTenant(d, c.get("scope"), parseIdParam(c))));
   r.patch("/:id", async (c) => {
     const id = parseIdParam(c);
     const input = await parseJson(c, TenantUpdateRequestSchema);
-    return c.json(await updateTenant(d, c.get("scope"), id, input));
+    return c.json(await updateTenant(call(c), id, input));
   });
-  r.post("/:id/lock", async (c) =>
-    c.json(await setTenantLocked(d, c.get("scope"), parseIdParam(c), true)),
-  );
+  r.post("/:id/lock", async (c) => c.json(await setTenantLocked(call(c), parseIdParam(c), true)));
   r.post("/:id/unlock", async (c) =>
-    c.json(await setTenantLocked(d, c.get("scope"), parseIdParam(c), false)),
+    c.json(await setTenantLocked(call(c), parseIdParam(c), false)),
   );
   return r;
 }

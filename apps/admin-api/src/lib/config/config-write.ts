@@ -6,14 +6,11 @@ import { logger } from "../logger";
 import { safeErrorFields } from "../pg-errors";
 import { afterLock, type HookOp, type TestHooks } from "../test-hooks";
 
-/**
- * `actor` = người thực hiện cho hàng audit (plan M4 §4.1). Tuỳ chọn tới khi tenants truyền (T1b); thiếu mà `fn` gọi
- * `ch.audit` → ném (không bao giờ ghi audit vô danh âm thầm).
- */
+/** `actor` = người thực hiện cho hàng audit (plan M4 §4.1); bắt buộc ở mọi nơi gọi. */
 export type ConfigCall = {
   ctx: { db: Db; hooks?: TestHooks };
   scope: DbScope;
-  actor?: { userId: string };
+  actor: { userId: string };
 };
 export type { ConfigSink };
 
@@ -46,7 +43,7 @@ export async function configWrite<T>(
   const hooks = c.ctx.hooks;
   const r = await withConfigWrite(c.ctx.db, c.scope, fn, {
     beforeBump: hooks ? () => afterLock(hooks, op, "bump") : undefined,
-    actorId: c.actor?.userId,
+    actorId: c.actor.userId,
   });
   if (r.version !== null) await publishConfigChanged(c.ctx.db, r.version, r.events);
   return r.result;

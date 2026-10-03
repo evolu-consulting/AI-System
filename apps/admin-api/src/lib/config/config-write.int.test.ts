@@ -2,7 +2,7 @@
 // đóng vai Hub. Âm tính chứng minh bằng sentinel (ghi chắc chắn bump rồi chờ nó), không ngủ cố định.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { type ConfigChangedPayload, ConfigChangedPayloadSchema } from "@ai/contracts";
-import { createDb, type Db, runMigrations, withScope } from "@ai/db";
+import { createDb, type Db, runMigrations, withConfigWrite, withScope } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import { sql } from "drizzle-orm";
 import postgres from "postgres";
@@ -16,9 +16,11 @@ if (!OWNER || !API) throw new Error("TEST_DATABASE_URL/TEST_ADMIN_API_DATABASE_U
 const owner = postgres(OWNER, { max: 1, onnotice: () => {} });
 const listener = postgres(OWNER, { max: 1, onnotice: () => {} });
 const db = createDb(API, { max: 3 });
+const ROOT = "01900000-0000-7000-8000-0000000c0002";
 const call = (d: Db = db, hooks?: Parameters<typeof configWrite>[0]["ctx"]["hooks"]) => ({
   ctx: { db: d, hooks },
   scope: { kind: "platform" } as const,
+  actor: { userId: ROOT },
 });
 const msgs: { at: number; p: ConfigChangedPayload }[] = [];
 const ev = { entity: "secret", tenantId: null } as const;
@@ -112,7 +114,6 @@ describe("ADM-FR-53 · configWrite + NOTIFY sau commit (M3-R16)", () => {
 });
 
 const PLATFORM = "01900000-0000-7000-8000-0000000c0001";
-const ROOT = "01900000-0000-7000-8000-0000000c0002";
 const actorCall = (hooks?: Parameters<typeof configWrite>[0]["ctx"]["hooks"]) => ({
   ...call(db, hooks),
   actor: { userId: ROOT },
@@ -213,10 +214,11 @@ describe("ADM-FR-51 · M4-R10 · audit trong configWrite (sau bump, cùng tx)", 
 describe("ADM-FR-51 · M4-R10 · audit: thiếu actor, tx không bump", () => {
   beforeAll(seedActor);
 
-  test("ch.audit mà ConfigCall thiếu actor → ném, rollback (không bump, không audit)", async () => {
+  // `ConfigCall.actor` bắt buộc ở kiểu (T1b); lưới an toàn còn lại ở `withConfigWrite` (opts thiếu `actorId`).
+  test("ch.audit mà withConfigWrite thiếu actorId → ném, rollback (không bump, không audit)", async () => {
     const from = await lastSeq();
     const before = await cfg();
-    const failed = await configWrite(call(), "secret.save", async (_tx, ch) => {
+    const failed = await withConfigWrite(db, { kind: "platform" }, async (_tx, ch) => {
       ch.changed(ev);
       ch.audit(secretAudit("NO_ACTOR"));
     }).then(

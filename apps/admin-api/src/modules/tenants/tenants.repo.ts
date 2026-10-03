@@ -14,10 +14,15 @@ export type TenantRow = {
   createdAt: Date;
   updatedAt: Date;
   version: number;
+  /** M4-R17: username người ghi gần nhất; null khi chưa ai ghi hoặc không thấy qua RLS. */
+  updatedBy: string | null;
 };
 
 // Tham chiếu tenants.id viết tay: Drizzle in cột không kèm tên bảng trong select nên "id" sẽ bị hiểu là u.id.
 const userCount = sql<number>`(select count(*)::int from admin.users u where u.tenant_id = admin.tenants.id)`;
+const updatedBy = sql<
+  string | null
+>`(select u.username from admin.users u where u.id = admin.tenants.updated_by)`;
 const rowCols = {
   id: tenants.id,
   key: tenants.key,
@@ -28,6 +33,7 @@ const rowCols = {
   createdAt: tenants.createdAt,
   updatedAt: tenants.updatedAt,
   version: tenants.version,
+  updatedBy,
 };
 
 export type TenantFilter = { q?: string; status?: EntityStatus; limit: number; offset: number };
@@ -82,21 +88,22 @@ export async function tenantStats(tx: Tx, tenantId: string) {
 
 export async function insertTenant(
   tx: Tx,
-  t: { key: string; name: string; maxConcurrentSub: number | null },
+  t: { key: string; name: string; maxConcurrentSub: number | null; updatedBy: string },
 ): Promise<string> {
   const id = Bun.randomUUIDv7();
   await tx.insert(tenants).values({ id, ...t });
   return id;
 }
 
-/** Ghi trường đổi + tăng version/updated_at (chỉ gọi khi thực sự có thay đổi). */
+/** Ghi trường đổi + tăng version/updated_at, `updated_by` = người ghi (chỉ gọi khi thực sự có thay đổi). */
 export async function updateTenant(
   tx: Tx,
   id: string,
   set: { name?: string; maxConcurrentSub?: number | null; active?: boolean },
+  by: string,
 ): Promise<void> {
   await tx
     .update(tenants)
-    .set({ ...set, version: sql`${tenants.version} + 1`, updatedAt: sql`now()` })
+    .set({ ...set, version: sql`${tenants.version} + 1`, updatedAt: sql`now()`, updatedBy: by })
     .where(eq(tenants.id, id));
 }

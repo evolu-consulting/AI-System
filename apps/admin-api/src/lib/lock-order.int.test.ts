@@ -488,8 +488,9 @@ describe("ADM-FR-53 · M3 plan §6.3 · config_meta cuối, tạo tenant (L7–L
     const ctx = { db, hooks: b.hooks };
     const platform = { kind: "platform" } as const;
     const r = await m2Interleave(
-      () => createTenant(ctx, platform, firstAdmin("acme2")),
-      () => createTenant({ db }, platform, firstAdmin("acme2")),
+      () => createTenant({ ctx, scope: platform, actor: { userId: U1 } }, firstAdmin("acme2")),
+      () =>
+        createTenant({ ctx: { db }, scope: platform, actor: { userId: U1 } }, firstAdmin("acme2")),
       b,
     );
     expect([r.ra.ok, codeOf(r.rb)]).toEqual([true, "KEY_TAKEN"]);

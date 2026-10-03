@@ -15,9 +15,18 @@ import {
   type UserListResponse,
   type UserUpdateRequest,
 } from "@ai/contracts";
-import { type Db, type DbScope, hashPassword, type Tx, withScope } from "@ai/db";
+import {
+  type AuditActionValue,
+  type AuditInput,
+  type Db,
+  type DbScope,
+  hashPassword,
+  type Tx,
+  withScope,
+} from "@ai/db";
 import { z } from "zod";
-import { configWrite } from "../../lib/config/config-write";
+import { auditOf, recordAudit } from "../../lib/audit/audit.write";
+import { type ConfigSink, configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
@@ -74,10 +83,28 @@ export function toUser(u: UserRow): User {
     created_at: u.createdAt.toISOString(),
     updated_at: u.updatedAt.toISOString(),
     version: u.version,
-    updated_by: null, // T1b điền username người ghi gần nhất (M4-R17)
+    updated_by: u.updatedBy,
     groups: userGroups(u.groups),
     group_count: u.groupCount,
   };
+}
+
+/** Hàng audit `user` (plan M4 §4.2): DTO đầy đủ, allowlist lọc trong `auditOf`; snapshot false. */
+export function userAudit(
+  action: AuditActionValue,
+  before: User | null,
+  after: User,
+  summary?: Record<string, unknown>,
+): AuditInput {
+  return auditOf(action, "user", {
+    entityId: after.id,
+    entityName: after.username,
+    tenantId: after.tenant_id,
+    before,
+    after,
+    entityVersion: after.version,
+    summary,
+  });
 }
 
 /** Dịch 23505 theo tên constraint (plan §5): username / email trùng trong tenant. */
@@ -105,13 +132,20 @@ export function createFirstAdmin(
   tx: Tx,
   input: { tenantId: string; username: string; displayName: string; email: string; locale: Locale },
   passwordHash: string,
+  actorId: string,
 ): Promise<User> {
-  return insertAndRead(tx, { ...input, role: "tenant_admin", passwordHash, lockedByTenant: false });
+  const u = { ...input, role: "tenant_admin", passwordHash, lockedByTenant: false } as const;
+  return insertAndRead(tx, { ...u, updatedBy: actorId });
 }
 
 /** Khoá/mở khoá tenant (FR-61, M1-R10): đặt/gỡ `locked_by_tenant` cho user của tenant. */
-export function setTenantLockFlags(tx: Tx, tenantId: string, locked: boolean): Promise<void> {
-  return repo.setLockedByTenant(tx, tenantId, locked);
+export function setTenantLockFlags(
+  tx: Tx,
+  tenantId: string,
+  locked: boolean,
+  actorId: string,
+): Promise<void> {
+  return repo.setLockedByTenant(tx, tenantId, locked, actorId);
 }
 
 /** tenant_admin chỉ thấy tenant mình (BR-09); platform không lọc tenant (RLS scope platform vẫn áp). */
@@ -206,8 +240,10 @@ export async function createUser(
       locale: input.locale,
       passwordHash: temp.hash,
       lockedByTenant: !t.active,
+      updatedBy: c.actor.userId,
     });
     ch.changed({ entity: "user", tenantId });
+    ch.audit(userAudit("create", null, created));
     await afterLock(c.ctx.hooks, "user.save", "rows");
     return created;
   });
@@ -249,10 +285,23 @@ export function updateUser(c: Call, id: string, input: UserUpdateRequest): Promi
     checkUpdate(c, u, set);
     if (Object.keys(set).length === 0) return toUser(u);
     if (set.role) await guardLastAdmin(tx, u, { role: set.role });
-    await tx.transaction((sp) => repo.updateUser(sp, u, set, true)).catch(mapUserConflict);
+    const by = { by: c.actor.userId };
+    await tx.transaction((sp) => repo.updateUser(sp, u, set, by)).catch(mapUserConflict);
     ch.changed({ entity: "user", tenantId: u.tenantId });
-    return reread(tx, u);
+    return rereadAudited(tx, ch, "update", u);
   });
+}
+
+/** Đọc lại sau ghi + `ch.audit` (before = bản đã khoá, after = bản đọc lại). */
+async function rereadAudited(
+  tx: Tx,
+  ch: ConfigSink,
+  action: AuditActionValue,
+  before: UserRow,
+): Promise<User> {
+  const after = await reread(tx, before);
+  ch.audit(userAudit(action, toUser(before), after));
+  return after;
 }
 
 /** FR-05: khoá → `active=false` + thu hồi mọi refresh token; đã khoá → trả bản hiện tại, không ghi. */
@@ -265,11 +314,11 @@ export function lockUser(c: Call, id: string): Promise<User> {
     await afterLock(c.ctx.hooks, "user.save", "locked");
     if (!u.active) return toUser(u);
     await guardLastAdmin(tx, u, { active: false });
-    await repo.updateUser(tx, u, { active: false }, true);
+    await repo.updateUser(tx, u, { active: false }, { by: c.actor.userId });
     await revokeUserSessions(tx, { tenantId: u.tenantId, userId: u.id, reason: "user_locked" });
     ch.changed({ entity: "user", tenantId: u.tenantId });
     await afterLock(c.ctx.hooks, "user.save", "rows");
-    return reread(tx, u);
+    return rereadAudited(tx, ch, "lock", u);
   });
 }
 
@@ -279,11 +328,14 @@ export function unlockUser(c: Call, id: string): Promise<User> {
     const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
     const clear = { failedLogins: 0, lockedUntil: null };
     // Chỉ bỏ khoá tạm (sổ sách đăng nhập) → không bump (M3-R15); mở lại active → bump.
+    // Bỏ khoá tạm không phải thay đổi cấu hình → không audit (Q6).
     if (!u.active) {
-      await repo.updateUser(tx, u, { ...clear, active: true }, true);
+      await repo.updateUser(tx, u, { ...clear, active: true }, { by: c.actor.userId });
       ch.changed({ entity: "user", tenantId: u.tenantId });
-    } else if (u.lockedUntil !== null) await repo.updateUser(tx, u, clear, false);
-    else return toUser(u);
+      return rereadAudited(tx, ch, "unlock", u);
+    }
+    if (u.lockedUntil === null) return toUser(u);
+    await repo.updateUser(tx, u, clear, false);
     return reread(tx, u);
   });
 }
@@ -304,8 +356,13 @@ export async function resetPassword(c: Call, id: string): Promise<{ temp_passwor
   return withScope(c.ctx.db, c.scope, async (tx) => {
     const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
     const set = { passwordHash: temp.hash, mustChangePassword: true, failedLogins: 0 };
-    await repo.updateUser(tx, u, { ...set, lockedUntil: null, passwordChanged: true }, true);
+    const by = { by: c.actor.userId };
+    await repo.updateUser(tx, u, { ...set, lockedUntil: null, passwordChanged: true }, by);
     await revokeUserSessions(tx, { tenantId: u.tenantId, userId: u.id, reason: "password_reset" });
+    // Không bump config_version → audit tường minh, câu cuối của transaction (plan M4 §4.1).
+    const after = await reread(tx, u);
+    const e = userAudit("update", toUser(u), after, { password_reset: true });
+    await recordAudit(tx, { ...e, actorId: c.actor.userId });
     return { temp_password: temp.pw };
   });
 }

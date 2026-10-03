@@ -21,6 +21,8 @@ export type UserRow = {
   createdAt: Date;
   updatedAt: Date;
   version: number;
+  /** M4-R17: username người ghi gần nhất; null khi chưa ai ghi hoặc không thấy qua RLS (vd platform admin). */
+  updatedBy: string | null;
   /** M3-R13: ≤ 50 group (beta đầu rồi key) dạng jsonb thô — service parse bằng contract. */
   groups: unknown;
   groupCount: number;
@@ -37,6 +39,9 @@ const groupCountOf = (uid: SQL) =>
   sql<number>`(select count(*)::int from admin.group_members m where m.user_id = ${uid})`;
 const groupsJson = groupsJsonOf(sql`admin.users.id`);
 const groupCount = groupCountOf(sql`admin.users.id`);
+const updatedBy = sql<
+  string | null
+>`(select w.username from admin.users w where w.id = admin.users.updated_by)`;
 
 export const userRowCols = {
   id: users.id,
@@ -55,6 +60,7 @@ export const userRowCols = {
   createdAt: users.createdAt,
   updatedAt: users.updatedAt,
   version: users.version,
+  updatedBy,
   groups: groupsJson,
   groupCount,
 };
@@ -84,6 +90,8 @@ export type NewUser = {
   locale: Locale;
   passwordHash: string;
   lockedByTenant: boolean;
+  /** Người tạo (M4-R17). */
+  updatedBy: string;
 };
 
 /** Luôn `must_change_password=true` (M1-R17). 23505 do service dịch theo tên constraint. */
@@ -93,14 +101,26 @@ export async function insertUser(tx: Tx, u: NewUser): Promise<string> {
   return id;
 }
 
+/** Tăng version + updated_at và ghi `updated_by` = người ghi (M4-R17). */
+const bumpBy = (by: string) => ({
+  version: sql`${users.version} + 1`,
+  updatedAt: sql`now()`,
+  updatedBy: by,
+});
+
 /** Khoá tenant: user đang active → locked_by_tenant (M1-R10). Mở khoá: chỉ gỡ cờ này. */
-export async function setLockedByTenant(tx: Tx, tenantId: string, locked: boolean): Promise<void> {
+export async function setLockedByTenant(
+  tx: Tx,
+  tenantId: string,
+  locked: boolean,
+  by: string,
+): Promise<void> {
   const cond = locked
     ? and(eq(users.tenantId, tenantId), eq(users.active, true), eq(users.lockedByTenant, false))
     : and(eq(users.tenantId, tenantId), eq(users.lockedByTenant, true));
   await tx
     .update(users)
-    .set({ lockedByTenant: locked, version: sql`${users.version} + 1`, updatedAt: sql`now()` })
+    .set({ lockedByTenant: locked, ...bumpBy(by) })
     .where(cond);
 }
 
@@ -229,12 +249,15 @@ export type UserSet = Partial<{
   mustChangePassword: boolean;
 }>;
 
-/** `bump`: tăng version + updated_at (trường admin sửa được/trạng thái); bộ đếm đăng nhập thì không. */
+/**
+ * `bump` = `{ by }`: tăng version + updated_at + `updated_by` (trường admin sửa được/trạng thái); `false` cho bộ đếm
+ * đăng nhập (không đổi version/`updated_by`).
+ */
 export async function updateUser(
   tx: Tx,
   t: { tenantId: string; id: string },
   set: UserSet & { passwordChanged?: boolean },
-  bump: boolean,
+  bump: { by: string } | false,
 ): Promise<void> {
   const { passwordChanged, ...cols } = set;
   await tx
@@ -242,7 +265,7 @@ export async function updateUser(
     .set({
       ...cols,
       ...(passwordChanged ? { passwordChangedAt: sql`now()` } : {}),
-      ...(bump ? { version: sql`${users.version} + 1`, updatedAt: sql`now()` } : {}),
+      ...(bump ? bumpBy(bump.by) : {}),
     })
     .where(and(eq(users.tenantId, t.tenantId), eq(users.id, t.id)));
 }
