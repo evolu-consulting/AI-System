@@ -11,6 +11,7 @@ import { safeErrorFields } from "./lib/pg-errors";
 import type { SecretKey } from "./lib/secret-crypto";
 import type { TestHooks } from "./lib/test-hooks";
 import { accessRoutes } from "./modules/access/access.routes";
+import { auditRoutes } from "./modules/audit/audit.routes";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { totpRoutes } from "./modules/auth/totp/totp.routes";
@@ -70,6 +71,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/features", featuresRoutes({ ...ctx, hooks }));
   app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
   app.route("/admin/commands", commandsRoutes({ ...ctx, hooks }));
+  app.route("/admin/audit", auditRoutes(ctx));
 }
 
 export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {
