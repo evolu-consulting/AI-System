@@ -185,7 +185,7 @@ const EXPECTED_ERRORS = {
   TOTP_SETUP_EXPIRED: 409,
   TEMP_LOCKED: 423,
   INTERNAL_ERROR: 500,
-};
+} as const;
 
 describe("ADM-FR-01 · API_ERRORS", () => {
   test("đủ 45 mã (23 M1 + 11 M2 + 2 M3 + 3 M4 A/B + 6 M4 D), đúng HTTP theo spec M1 §3 + M2 §3 + M3 §3", () => {
