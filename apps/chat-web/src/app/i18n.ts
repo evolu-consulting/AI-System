@@ -4,7 +4,7 @@ import { DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 import { setRequestLanguage } from "~/lib/http";
-import { writeLocal } from "~/lib/storage";
+import { readLocal, writeLocal } from "~/lib/storage";
 
 export const LOCALE_STORAGE_KEY = "ai.locale";
 
@@ -48,8 +48,9 @@ export const initI18n = (): Promise<unknown> =>
     .use(initReactI18next)
     .init({
       partialBundledLanguages: true,
+      // Đọc qua `readLocal`: storage bị chặn (ném lỗi) thì coi như chưa lưu, không làm vỡ app.
       lng: resolveInitialLocale(
-        typeof localStorage === "undefined" ? undefined : localStorage,
+        { getItem: readLocal },
         typeof navigator === "undefined" ? undefined : navigator.language,
       ),
       fallbackLng: DEFAULT_LOCALE,
