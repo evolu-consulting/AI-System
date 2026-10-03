@@ -20,6 +20,7 @@ import { featuresRoutes } from "./modules/features/features.routes";
 import { grantsRoutes } from "./modules/grants/grants.routes";
 import { groupsRoutes } from "./modules/groups/groups.routes";
 import { healthRoutes } from "./modules/health/health.routes";
+import { quotasRoutes } from "./modules/quotas/quotas.routes";
 import { secretsRoutes } from "./modules/secrets/secrets.routes";
 import { tenantsRoutes } from "./modules/tenants/tenants.routes";
 import { usersRoutes } from "./modules/users/users.routes";
@@ -62,6 +63,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   );
   app.route("/auth", meRoutes(ctx));
   app.route("/auth/totp", totpRoutes({ ...ctx, secretKey: deps.secretKey }));
+  app.route("/admin/tenants", quotasRoutes({ ...ctx, hooks }));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));
