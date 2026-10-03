@@ -37,6 +37,7 @@ const user = {
   last_login_at: null,
   created_at: "2026-10-01T09:00:00.000Z",
   updated_at: "2026-10-01T09:00:00.000Z",
+  updated_by: null,
   version: 1,
   groups: [],
   group_count: 0,

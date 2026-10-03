@@ -135,7 +135,7 @@ f0c4dc15605ed3ffa78660337afc7b9ddc2ba98b9f24793cef53f93896460e49  tests/acceptan
 f8a10f1bfb69136f849b455d78389df1dde6ab77dd604b47c78558a775f709f2  tests/acceptance/M4/_transfer-data.ts
 55dfb78919e20a84325833999f295d57d05ccc6ccc40bf155ff33d247db2835c  tests/acceptance/M4/audit-read.int.test.ts
 6a1149895ec3486c0021cbf8c776b04c9d625b0bfe34361f037a683c0a167ae6  tests/acceptance/M4/audit-secrets.int.test.ts
-4132a055cfa9b377e6c7037d4bbacba2fa94f599271670fadd4505274c66a356  tests/acceptance/M4/audit-write-catalog.int.test.ts
+d6cd9ae85877801ae9d2e54d5c05adcc62f798b4b42a383e080232f7191353c4  tests/acceptance/M4/audit-write-catalog.int.test.ts
 bb5f025663f0beab15fcb3dd6f5b1f3a5b05c10fc34eee6cc42eedaaedb38d0a  tests/acceptance/M4/audit-write.int.test.ts
 8f48f87f2847026f00dc6513fcbdcbc3a1f9a814a7347eaf8adc888828fdac74  tests/acceptance/M4/db-rls.int.test.ts
 50bf4c9293dc8c9338e4399dffe58eb84c299fa9f117ed353e9dfb72dcad2d07  tests/acceptance/M4/db-schema.int.test.ts
@@ -154,7 +154,7 @@ e7fed11680f7345ac2c3863b64ec211c3c518bba65d54b5a022e7a3f67709725  tests/acceptan
 734304552fa5e54deb754c7aa01e4343a8d6c87bb5ae31d6be3936b30ff85948  tests/acceptance/M4/rules/audit-snapshot.rules.test.ts
 551a5760d74d9d80e9a50ebd9723653c066a7c4020f338893f5586c3e7056f24  tests/acceptance/M4/rules/audit.rules.test.ts
 8c0c51567e575e4b39fc69496a5be319d767198b3f746b26487fe6642d57d895  tests/acceptance/M4/rules/contracts-cd.test.ts
-1e5ec08be1e49172b6506145237248ff11bbe5bee046ce8651cff381e1af9f65  tests/acceptance/M4/rules/contracts-totp.test.ts
+44fc3ae44a85325fe907a11356487780506aa8a157e99a45aa009f82f4d516ea  tests/acceptance/M4/rules/contracts-totp.test.ts
 0ffb7b429054659ae9abefbd81ed72b1dae62a35d2a6e39e14266f369714be03  tests/acceptance/M4/rules/contracts.test.ts
 f2ac17e5f8b5fd9be804bb3532cf4eff0983faa4af8e1cd4aac447a8d2a212cf  tests/acceptance/M4/rules/mailer.test.ts
 c80acf3cb281c12f7ef59eaa50512362eef01ea112326674956718d7a998c68c  tests/acceptance/M4/rules/quotas.rules.test.ts

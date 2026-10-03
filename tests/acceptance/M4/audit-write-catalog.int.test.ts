@@ -59,13 +59,30 @@ async function none(run: () => Promise<Res>, status: number | "2xx"): Promise<vo
 
 describe("ADM-FR-51 · M4-AC04 · catalog (snapshot)", () => {
   it("ADM-FR-51 · M4-AC04 · AW6 · POST command input_map có khoá password/value/iv → 201, đúng 1 dòng create (không 500)", async () => {
+    // Workflow riêng có input_schema đúng 3 khoá cấm cấp sâu, để luật M2 checkInputMap không chặn (phán T1c).
+    const field = (name: string) => ({
+      name,
+      type: "text",
+      required: false,
+      description: `Trường ${name}`,
+    });
+    const wf = await admin("POST", "/admin/workflows", {
+      key: "aw6-secret-wf",
+      name: "AW6 secret",
+      description: "d".repeat(30),
+      app_type: "workflow",
+      base_url: "https://x.example.com",
+      secret_id: ID.secret.old,
+      input_schema: [field("password"), field("value"), field("iv")],
+    });
+    expect(wf.status).toBe(201);
     const r = await one(
       ADMIN,
       () =>
         admin("POST", "/admin/commands", {
           name: "aw6-cmd",
           description: { vi: "AW6" },
-          workflow_id: W.translate,
+          workflow_id: wf.json.id as string,
           args: [{ name: "text", description: { vi: "Văn bản" }, rest: true }],
           input_map: {
             password: { source: "arg", value: "text" },
