@@ -21,7 +21,7 @@ Chọn **3**.
 
 | # | Nội dung |
 |---|---|
-| 1 | Hub giữ TypeScript/Bun: auth, tính quyền, quota, conversation/flow/SSE, vòng lặp Orchestrator (gọi model của Orchestrator), trace, Command Runner → Dify (sync), MCP tools, Studio API. Runtime `dify-workflow`/`dify-agent` chạy trong Hub. **Agent Runtime** (`apps/agent-runtime`, Python, chạy trong WSL2 Ubuntu theo CR-027) = Worker: chạy mọi agent `llm`, `agentic-cli` (Claude Agent SDK Python, Codex, Gemini CLI) và runtime mới `python` |
+| 1 | Hub giữ TypeScript/Bun: auth, tính quyền, quota, conversation/flow/SSE, vòng lặp Orchestrator (gọi model của Orchestrator), trace, Command Runner → Dify (sync), MCP tools, Studio API. Runtime `dify-workflow`/`dify-agent` chạy trong Hub. **Agent Runtime** (`apps/agent-runtime`, Python, chạy trong WSL2 Ubuntu theo CR-029) = Worker: chạy mọi agent `llm`, `agentic-cli` (Claude Agent SDK Python, Codex, Gemini CLI) và runtime mới `python` |
 | 2 | Không có API config Admin↔Hub mới; Admin không phải làm gì thêm |
 | 3 | `AgentRunner.run(task, signal) → AsyncIterable<RunEvent>` trong Hub; v1 = tạo job + đọc Redis Stream. Thêm runtime/CLI chỉ đụng Agent Runtime |
 | 4 | Hàng đợi Postgres: `hub.jobs` + `SELECT … FOR UPDATE SKIP LOCKED`; `NOTIFY job_enqueued` đánh thức Agent Runtime. Bỏ Redis queue/BullMQ. Slot provider (`max_concurrency`) và slot tenant (`max_concurrent_sub`) đếm từ job `running` trong cùng transaction lấy job (advisory lock theo provider). Bỏ `sub_slots:<tenant_id>` |

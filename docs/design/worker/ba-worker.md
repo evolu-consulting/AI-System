@@ -13,7 +13,7 @@ Chạy mọi agent `llm`, `agentic-cli`, `python` và việc dài ngoài luồng
 
 Agent Runtime (gọi tắt Worker, giữ mã `WRK-*`) lấy job từ hàng đợi Postgres, chạy, báo tiến độ, ghi kết quả. Nó cũng quản lý quota của các tài khoản subscription, và chia slot subscription công bằng giữa các tenant.
 
-**Quan hệ với Hub (CR-028):** **không còn chung codebase**. Hub là TypeScript/Bun; Agent Runtime là Python (`apps/agent-runtime`), chạy thành process riêng trên máy đã đăng nhập CLI (WSL2 Ubuntu, CR-027). Không có API công khai và không có API config với Admin: nó chỉ nói chuyện với Hub qua **Postgres** (`hub.jobs`, `NOTIFY job_enqueued`/`job_cancel`), **Redis Streams** (`run:<run_id>`) và **MCP** của Hub. Contract (payload job, sự kiện run, kết quả agent) là pydantic sinh từ zod của Hub.
+**Quan hệ với Hub (CR-028):** **không còn chung codebase**. Hub là TypeScript/Bun; Agent Runtime là Python (`apps/agent-runtime`), chạy thành process riêng trên máy đã đăng nhập CLI (WSL2 Ubuntu, CR-029). Không có API công khai và không có API config với Admin: nó chỉ nói chuyện với Hub qua **Postgres** (`hub.jobs`, `NOTIFY job_enqueued`/`job_cancel`), **Redis Streams** (`run:<run_id>`) và **MCP** của Hub. Contract (payload job, sự kiện run, kết quả agent) là pydantic sinh từ zod của Hub.
 
 **Worker không làm:** không quyết định dùng agent nào (việc của Orchestrator), không tự đọc cấu hình agent, không kiểm tra quyền hay quota của user (Hub đã kiểm tra trước khi tạo job). Mọi thông tin cần để chạy đã nằm sẵn trong payload của job, kể cả `tenant_id`.
 
@@ -112,7 +112,7 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 | WRK-BR-03 | Khi dự phòng sang provider khác thì **không thể** resume session cũ. Job mới nhận tóm tắt N message gần nhất thay cho session |
 | WRK-BR-04 | Không retry `agent.cli` tự động, vì agent có thể đã làm dở việc có tác dụng phụ. Chỉ dự phòng khi lỗi xảy ra *trước khi* agent bắt đầu gọi tool |
 | WRK-BR-05 | Job của cùng một conversation và cùng agent chạy tuần tự, để không ghi đè session |
-| WRK-BR-07 | **Chặn đường dẫn (CR-027):** mọi tool đọc/ghi file của CLI đi qua hook kiểm tra đường dẫn: chuẩn hoá bằng `realpath` (theo symlink) rồi chỉ cho phép trong `work/<job_id>/`. Chặn tuyệt đối thư mục home của user `worker` (chứa phiên đăng nhập `~/.claude`, `~/.codex`, `~/.gemini`), `/mnt/*` (ổ Windows) và thư mục của job khác |
+| WRK-BR-07 | **Chặn đường dẫn (CR-029):** mọi tool đọc/ghi file của CLI đi qua hook kiểm tra đường dẫn: chuẩn hoá bằng `realpath` (theo symlink) rồi chỉ cho phép trong `work/<job_id>/`. Chặn tuyệt đối thư mục home của user `worker` (chứa phiên đăng nhập `~/.claude`, `~/.codex`, `~/.gemini`), `/mnt/*` (ổ Windows) và thư mục của job khác |
 | WRK-BR-06 | Job chỉ chạm dữ liệu của đúng tenant trong payload: file đính kèm, session CLI và MCP token đều gắn `tenant_id`. Không resume session của tenant khác |
 
 ## 7. Dữ liệu & giao tiếp
@@ -155,7 +155,7 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 
 | Tình huống | Xử lý |
 |---|---|
-| Cài máy Worker mới (CR-027) | Máy Windows: bật WSL2 + Ubuntu, bật `systemd=true` trong `/etc/wsl.conf`, mạng `networkingMode=mirrored` trong `.wslconfig` (WSL gọi `localhost` tới Postgres, Redis, Hub). Trong Ubuntu: tạo user `worker`, cài `uv` (Python) và các CLI, đăng nhập bằng tay từng cái (`claude`, `codex`, `gemini`) dưới user `worker`. Worker chạy bằng unit systemd của Ubuntu, thư mục làm việc trên ổ Linux (`/home/worker/work`, không dùng `/mnt/c`). Khai báo provider trong Agent Studio › Models › Providers. Chạy probe để xác nhận `ok` |
+| Cài máy Worker mới (CR-029) | Máy Windows: bật WSL2 + Ubuntu, bật `systemd=true` trong `/etc/wsl.conf`, mạng `networkingMode=mirrored` trong `.wslconfig` (WSL gọi `localhost` tới Postgres, Redis, Hub). Trong Ubuntu: tạo user `worker`, cài `uv` (Python) và các CLI, đăng nhập bằng tay từng cái (`claude`, `codex`, `gemini`) dưới user `worker`. Worker chạy bằng unit systemd của Ubuntu, thư mục làm việc trên ổ Linux (`/home/worker/work`, không dùng `/mnt/c`). Khai báo provider trong Agent Studio › Models › Providers. Chạy probe để xác nhận `ok` |
 | Máy Windows khởi động lại | WSL không tự chạy khi chưa có ai đăng nhập: đặt Task Scheduler "At startup" chạy `wsl -d Ubuntu --exec /bin/true` và `vmIdleTimeout=-1` để WSL không tự tắt. Kiểm tra `systemctl status ai-worker` trong Ubuntu |
 | Provider báo `logged_out` | SSH vào máy Worker và đăng nhập lại CLI tương ứng. Trong lúc chờ, job tự dự phòng sang API |
 | Provider `cooldown` liên tục | Giảm `max_concurrency`, thêm tài khoản, hoặc đưa bước API lên trước trong profile |
@@ -171,7 +171,7 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 | WRK-NFR-03 | **Phục hồi:** Worker khởi động lại thì không mất job `queued`. Job `running` được xử lý theo luật orphaned. Slot theo tenant và theo provider vốn đếm từ các job `running` trong DB nên không cần dựng lại |
 | WRK-NFR-04 | **Quan sát:** log có `job_id`, `run_id` và `tenant_id`. Lưu stdout/stderr của CLI 7 ngày để debug |
 | WRK-NFR-05 | **Quy mô v1:** 1 máy Worker, mỗi subscription 1–2 slot, 5 job `workflow.async` chạy đồng thời |
-| WRK-NFR-06 | **Môi trường (CR-027):** máy Worker là Windows, Worker chạy trong **WSL2 Ubuntu** (code Worker chỉ nhắm Linux). Mỗi tiến trình CLI chạy trong process group riêng; huỷ = SIGTERM cả group, sau 3 giây SIGKILL, không còn process con nào sống. Dùng sandbox của Claude Code (Linux) khi provider hỗ trợ, cộng hook ở WRK-BR-07. File đăng nhập CLI chỉ nằm trong `/home/worker`, không nằm trên ổ Windows |
+| WRK-NFR-06 | **Môi trường (CR-029):** máy Worker là Windows, Worker chạy trong **WSL2 Ubuntu** (code Worker chỉ nhắm Linux). Mỗi tiến trình CLI chạy trong process group riêng; huỷ = SIGTERM cả group, sau 3 giây SIGKILL, không còn process con nào sống. Dùng sandbox của Claude Code (Linux) khi provider hỗ trợ, cộng hook ở WRK-BR-07. File đăng nhập CLI chỉ nằm trong `/home/worker`, không nằm trên ổ Windows |
 
 ## 10. Tiêu chí nghiệm thu
 
@@ -219,7 +219,7 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 
 ### Câu hỏi mở
 
-1. ~~Máy Worker chạy Windows hay Linux?~~ Đã chốt (CR-027, 2026-10-04): máy Windows, Worker chạy trong WSL2 Ubuntu (WRK-NFR-06, WRK-BR-07).
+1. ~~Máy Worker chạy Windows hay Linux?~~ Đã chốt (CR-029, 2026-10-04): máy Windows, Worker chạy trong WSL2 Ubuntu (WRK-NFR-06, WRK-BR-07).
 2. Có cho agent `agentic-cli` dùng Bash ở v1 không, hay chỉ Read/Grep/Edit trong thư mục làm việc?
 3. ~~Thư viện queue cụ thể~~ Đã chốt (CR-028, ADR-0007): Postgres `SKIP LOCKED` + `NOTIFY`, không dùng thư viện queue.
 4. Tenant chạm `max_concurrent_sub`: chờ `max_wait_s` rồi dự phòng (đang chọn), hay dự phòng sang API ngay?

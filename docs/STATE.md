@@ -45,7 +45,7 @@ Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (CR-028)
 - (b) ~~H1 chạy Agent SDK trong Hub vs "Hub không chạy CLI"~~ Đã chốt (CR-028/ADR-0007): interface `AgentRunner`, v1 = job + Redis Stream; Agent Runtime Python chạy CLI.
 - (c) ~~Queue Postgres~~ Đã chốt (CR-028/ADR-0007): `SKIP LOCKED`, slot đếm trong DB.
 - (d) ~~Redis Streams cho sự kiện run~~ Đã chốt (CR-028/ADR-0007).
-- (e) ~~Worker Windows hay Linux?~~ Chốt CR-027: Windows + WSL2 Ubuntu (WRK-NFR-06, WRK-BR-07). Còn mở: bật sandbox Claude Code mặc định hay chỉ hook
+- (e) ~~Worker Windows hay Linux?~~ Chốt CR-029: Windows + WSL2 Ubuntu (WRK-NFR-06, WRK-BR-07). Còn mở: bật sandbox Claude Code mặc định hay chỉ hook
 - (f) Cookie refresh khi chat-web khác origin với admin-api.
 
 ## Bị chặn
