@@ -15,3 +15,4 @@ Bản sao nguồn của canvas **Chat App** (https://claude.ai/artifact/Jf4ZGu6Z
 | Welcome | Hội thoại mới: lời chào + 4 thẻ gợi ý | UC-07 |
 | States | Bước (đang chạy / thu gọn), hỏi lại, lỗi hết lượt, flow mở lại, đã dừng, mất kết nối | UC-03, 04, 05, 06, 08 |
 | Mobile | Điện thoại: khung flow là sheet từ dưới | UC-06 (CHAT-AC-17) |
+| MainDark · FlowOpenDark | Giao diện Tối (CR-027, token `plan-frontend-theme.md`); logo tối = icon + chữ HTML | UC-02, 06 · F14 |
