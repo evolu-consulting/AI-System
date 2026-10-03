@@ -130,7 +130,7 @@ Màn → nguồn (chỉ trỏ; trạng thái/câu chữ do frontend-lead điền
 Chi tiết: [plan-frontend.md](plan-frontend.md) (trạng thái §4, validate §5, nhãn e2e §6, câu chữ mới §7, mã lỗi §8, cần backend-lead §10). Tóm tắt:
 - Menu nhóm **HỆ THỐNG** (Chi phí & quota, Nhật ký, Import / Export chỉ platform); tenant_admin thấy Usage + Nhật ký trong tenant mình; member không vào được. Thêm `Xác thực hai bước` ở menu avatar.
 - Banner quota trong khung, mọi trang của `tenant_admin`, không đóng được (R06, Q12). Tab tenant theo `?tab=`.
-- **Không dùng `recharts`**: biểu đồ cột ngày tự viết SVG (≈ 100 KB gzip > ngân sách chunk 50 KB). `qrcode` nạp động chỉ ở bước QR. Không thêm `input-otp`/`react-day-picker`. → backend-lead bỏ `recharts` khỏi ADR M4.
+- **Không dùng `recharts`**: biểu đồ cột ngày tự viết SVG (≈ 100 KB gzip > ngân sách chunk 50 KB). `qrcode` nạp động chỉ ở bước QR. Không thêm `input-otp`/`react-day-picker`.
 - Diff ở Nhật ký/Import/409 dùng chung `DiffTable` M3 mở rộng. Audit chi tiết là Sheet trên route `/audit/:id`.
 - Giá trị secret khi Import, mã dự phòng, `totp_token` chỉ ở bộ nhớ component (BR-04).
 - Màn chưa có artboard (Export, bước TOTP khi đăng nhập) theo missing §8, §10.2 — đủ để code (Q13).

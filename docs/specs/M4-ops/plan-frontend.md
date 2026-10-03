@@ -60,7 +60,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 - KPI Số run · Token · Số thu + delta (không render "% token qua subscription", "Slot subscription" — thiếu dữ liệu contract, TECH-DEBT #30); "Chi phí thật", "Biên" **chỉ render khi response có khoá** (server đã loại, R08 — FE không dựa role).
 - `DailyBars` số thu theo ngày + chú thích.
 - Platform + "Tất cả tenant": bảng "Theo tenant" (link `/tenants/$id?tab=quota`). Một tenant/tenant_admin: card "Quota tháng" (QuotaBar) thay bảng.
-- "Top feature theo số thu" (5 dòng, D9); "Top user theo số thu" nếu API trả (§10.4). `billable_usd` null → "Chưa định giá"; hàng `overage` → badge err "Vượt quota".
+- "Top feature theo số thu" (5 dòng, D9); "Top user theo số thu" (`top_users`, luôn có). `billable_usd` null → "Chưa định giá"; hàng `overage` → badge err "Vượt quota".
 
 ### 3.3 Tổng quan `/` (ui 7.2; R06, R09; Q5) — `Main`, `TenantOverview`
 - Thay `shell/pages/HomePage.tsx`. Tenant: ms §1 nguyên văn; `Reset mật khẩu` mở drawer Users (đã có).
@@ -70,7 +70,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 - ms §7 nguyên văn: lọc, nhóm theo ngày, `Tải thêm` = `useInfiniteQuery` con trỏ (limit 50). "Người thực hiện" = `SearchCombobox` trên `GET /admin/users?q` (đã có).
 - Lọc "Loại" gồm cả Entitlement, 2FA; Import không có thực thể → lọc theo Hành động = Import.
 - Chi tiết (D8): câu + `audit.detail.meta` · `DiffTable` (update Trước/Sau; create chỉ Sau; delete chỉ Trước; secret một dòng "Giá trị: đã thay đổi"; import: danh sách Thêm/Sửa).
-- `Khôi phục bản trước` khi `entry.restorable` (mặc định nếu API không trả: platform ∧ action ∈ {update, delete} ∧ entity ∈ {command, workflow, feature, group, quota}) → ConfirmDialog vừa → toast, invalidate list + entity. Lỗi theo §8; 403 → toast `state.forbiddenAction` + nạp lại phiên.
+- `Khôi phục bản trước` khi `entry.restorable` (luôn có) → ConfirmDialog vừa → toast, invalidate list + entity. Lỗi theo §8; 403 → toast `state.forbiddenAction` + nạp lại phiên.
 
 ### 3.5 Import / Export `/transfer` (FR-54; R14, R15; Q11, Q13) — `ImportPreview`; Export không artboard (ms §8, mẫu B có tab — đủ để code)
 - Export: ms §8; "Chọn tất cả" tri-state; n và số đếm từ `export/meta`; không chọn → nút khoá + `transfer.export.none`.
@@ -96,7 +96,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 | Import/Export | xem trước: skeleton + nút khoá | `transfer.import.nothing` | `ErrorState` bước 2, giữ file | tenant_admin: `ForbiddenState` | `transfer.import.stale` + chạy lại dry-run |
 | 2FA | card skeleton | — | `ErrorState` | — | — |
 
-## 5. Validate phía client (khớp contract khi T0 chốt)
+## 5. Validate phía client (khớp contract)
 
 | Trường | Luật | Câu |
 |---|---|---|
@@ -105,7 +105,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 | File import | `.yaml/.yml`, ≤ 1 MB | `transfer.import.wrongType` / `tooLarge` |
 | Giá trị secret thiếu | luật giá trị M2 (`secrets/lib/schemas.ts`) | câu M2 |
 | Mã TOTP | 6 chữ số | không báo, chỉ gửi khi đủ |
-| Mã dự phòng | `^[2-9a-hjkmnp-z]{4}-?[2-9a-hjkmnp-z]{4}$` (= `BACKUP_ALPHABET` plan-cd §4.2) sau chuẩn hoá (thường, bỏ khoảng trắng) | `login.totp.backupFormat` |
+| Mã dự phòng | `^[2-9a-hjkmnp-z]{4}-?[2-9a-hjkmnp-z]{4}$` (= `BACKUP_ALPHABET`, plan-cd §6) sau chuẩn hoá (thường, bỏ khoảng trắng) | `login.totp.backupFormat` |
 | Mật khẩu hiện tại | không rỗng | câu M1 đã có |
 | Export | ≥ 1 loại | `transfer.export.none` |
 
@@ -119,7 +119,7 @@ Menu (`shell/lib/nav.ts`, khớp `Sidebar`): nhóm cuối **HỆ THỐNG**: `Chi
 - 2FA: nút xác nhận trong `alertdialog "Tắt xác thực hai bước?"` = `button "Tắt xác thực hai bước"` (e2e lấy trong phạm vi dialog) · `heading "Lưu mã dự phòng"` · `alertdialog "Tắt xác thực hai bước?"` · `alertdialog "Tạo lại mã dự phòng?"`. Users: `menuitem "Tắt 2FA"` · `alertdialog "Tắt 2FA của binh.vo?"` · `button "Tắt 2FA"` · hàng Users `button "Thao tác khác"` (⋯). KPI "—": tooltip Radix `role=tooltip`.
 
 ## 7. Câu chữ MỚI (VI \| EN)
-Chuỗi định dạng không cần dịch (giống nhau 2 ngôn ngữ): `quota.bar.used` "{used} / {limit}", `audit.detail.meta` "{time} · v{n} · {scope}", `tenants.quota.cell` "{field} · {scope}", `audit.entity.*` (command … quota, entitlement, twofa; chữ thường), `audit.entityLabel.*` (Command … Quota, Entitlement, 2FA).
+Chuỗi định dạng không cần dịch (giống nhau 2 ngôn ngữ): `quota.bar.used` "{used} / {limit}", `audit.detail.meta` "{time} · v{n} · {scope}", `tenants.quota.cell` "{field} · {scope}", `audit.entity.*` / `audit.entityLabel.*` theo 12 giá trị `AUDIT_ENTITIES`: tenant, user, user_totp, group, grant, entitlement, feature, workflow, command, secret, quota, config; ánh xạ `user_totp`→key `twofa` (nhãn 2FA), `config`→`config`; thực hiện trong `lib/audit-sentence.ts`. Key chữ thường; nhãn viết hoa đầu.
 
 | Key | VI | EN |
 |---|---|---|
@@ -154,11 +154,13 @@ Chuỗi định dạng không cần dịch (giống nhau 2 ngôn ngữ): `quota.
 | overview.agentStudio.body | Agent, Coordinator, model và vận hành nằm ở Agent Studio. Agent chọn workflow từ catalog của Admin. | Agents, coordinators, models and operations live in Agent Studio. Agents pick workflows from the Admin catalog. |
 | overview.agentStudio.open / topErrors.title | Mở Agent Studio / Command lỗi nhiều nhất 24 giờ | Open Agent Studio / Most failing commands (24h) |
 | overview.hubPending | Sẽ có khi Agent Hub sẵn sàng. | Available once Agent Hub is ready. |
-| audit.sentence.totpOn / totpOff / totpRegen | {actor} đã bật 2FA / {actor} đã tắt 2FA của {subject} (hoặc của chính mình) / {actor} đã tạo lại mã dự phòng | {actor} turned on 2FA / {actor} turned off 2FA for {subject} / {actor} regenerated backup codes |
+| audit.sentence.totpOff | {actor} đã tắt 2FA của {subject} | {actor} turned off 2FA for {subject} |
+| audit.sentence.totpOffSelf (dùng khi actor_id = entity_id) | {actor} đã tắt 2FA | {actor} turned off 2FA |
+| audit.sentence.totpOn / totpRegen | {actor} đã bật 2FA / {actor} đã tạo lại mã dự phòng | {actor} turned on 2FA / {actor} regenerated backup codes |
 | audit.sentence.members | {actor} đã đổi thành viên {name} (Thêm {a} · Bớt {r}) | {actor} changed members of {name} ({a} added · {r} removed) |
 | audit.sentence.passwordReset | {actor} đã đặt lại mật khẩu của {subject} | {actor} reset the password of {subject} |
 | audit.sentence.quota / entitlement | {actor} đã đổi quota {name} / {actor} đã đổi quyền feature {name} của {subject} | {actor} changed quota {name} / {actor} changed feature access {name} for {subject} |
-| audit.sentence.config | {actor} đã đổi cấu hình {name} | {actor} changed configuration {name} |
+| audit.sentence.import ({file} = entity_name, {a}/{u} = after.added/updated, ms §7) | {actor} đã nhập cấu hình từ {file} (Thêm {a} · Sửa {u}) | {actor} imported configuration from {file} ({a} added · {u} updated) |
 | audit.error.changedSince | Không khôi phục được: {name} đã được sửa sau thay đổi này. Mở bản mới nhất để xem. | Can't restore: {name} has changed since. Open the latest version to review. |
 | audit.period.days / custom / from / to / apply | Thời gian: {n} ngày / Tuỳ chọn / Từ ngày / Đến ngày / Áp dụng | Period: {n} days / Custom / From / To / Apply |
 | transfer.import.file / fields | {file} · {size} · hợp lệ / {n} trường | {file} · {size} · valid / {n} fields |
@@ -197,18 +199,5 @@ Mọi đề xuất FE §10 cũ đã chốt (tên trường, `qr_svg`, `/admin/ov
 ## 12. Task FE (đã điền `tasks.md`)
 **LX** = `bun run typecheck && bun test apps/admin-web && bun run i18n:check && bun run check:fn --files <file đổi> && bun run depcruise --all && bun run check:size && bunx playwright test e2e/<spec> --reporter=line`. FE0b, FE2, FE6a thêm `bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle`. Tên spec e2e là đề xuất cho qc.
 
-| # | Task | Rủi ro | Đọc | Phụ thuộc | e2e |
-|---|---|---|---|---|---|
-| FE0a | Nav HỆ THỐNG, crumbs, menu avatar; QuotaBar, KpiCard, quota-format; DiffTable mở rộng + `diffAll`; ConflictDialog vế Lịch sử + `{user}` user/tenant | thường | §0 D5, §1, §2, §7 | Q3, T0 | `m4-conflict` |
-| FE0b | DailyBars, OtpInput, PeriodFilter, download, shadcn accordion/collapsible/toggle-group | thường | §0 D1, D3, D4, D12, §2 | FE0a | unit |
-| FE1 | Tenant › Quota + `?tab` | thường | §3.1, §5, §6 | T3, FE0a | `m4-quota` |
-| FE2 | Chi phí & quota + CSV | thường | §3.2, §4, §6 | T5, FE0b | `m4-usage` |
-| FE3 | Tổng quan 2 role + QuotaBanner | thường | §3.3, §0 D6, D10 | T4, T6, FE0a | `m4-overview` |
-| FE4a | Nhật ký: timeline, lọc, Tải thêm | thường | §3.4, §0 D8 | T2, FE0b, FE3 | `m4-audit` |
-| FE4b | Nhật ký: Sheet chi tiết, diff, Khôi phục | thường | §3.4, §8 | FE4a | `m4-audit` |
-| FE5a | Export | thường | §3.5 | T7, FE0b | `m4-transfer` |
-| FE5b | Import dry-run → áp dụng + Cần tạo secret | cao (giá trị secret ở FE) | §3.5, §0 D11, §5, §8 | T8, FE5a | `m4-transfer` |
-| FE6a | Trang 2FA bật/tắt/tạo lại mã + QR | cao (2FA) | §3.6, §0 D2, D11 | T9, FE0b | `m4-2fa` |
-| FE6b | Bước TOTP khi đăng nhập + `pendingTotp` | cao (auth) | §3.6, §8 | FE6a | `m4-2fa` |
-| FE6c | Users `⋯ › Tắt 2FA` | cao (quyền) | §3.6, §6 | T9, FE6a | `m4-2fa` |
+Danh sách task: xem `tasks.md` (nguồn chính).
 File chính từng task: cột File của `tasks.md`.

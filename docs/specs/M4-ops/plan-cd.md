@@ -120,7 +120,7 @@ Request JSON (`ImportRequestSchema`, strict):
 
 | Endpoint | Ai | Request (strict) | 200 | Lỗi |
 |---|---|---|---|---|
-| `POST /auth/totp/verify` | không cần Bearer | `{totp_token, code: /^\d{6}$/}` **hoặc** `{totp_token, backup_code: /^[a-z2-9]{4}-?[a-z2-9]{4}$/i}` (đúng một) | như login: `TokenGrant` (cookie web / body extension) hoặc `password_change_required` | 401 `INVALID_TOTP_TOKEN` (hỏng/hết hạn/không khớp); 401 `INVALID_OTP` (mã sai/đã dùng); 423 `TEMP_LOCKED {until}`; 403 `ACCOUNT_LOCKED` |
+| `POST /auth/totp/verify` | không cần Bearer | `{totp_token, code: /^\d{6}$/}` **hoặc** `{totp_token, backup_code: /^[2-9a-hjkmnp-z]{4}-?[2-9a-hjkmnp-z]{4}$/}` (đúng một) | như login: `TokenGrant` (cookie web / body extension) hoặc `password_change_required` | 401 `INVALID_TOTP_TOKEN` (hỏng/hết hạn/không khớp); 401 `INVALID_OTP` (mã sai/đã dùng); 423 `TEMP_LOCKED {until}`; 403 `ACCOUNT_LOCKED` |
 | `POST /auth/totp/setup` | `platform_admin`, `tenant_admin` | `{current_password}` | `{secret: base32 32 ký tự, otpauth_url, qr_svg: "data:image/svg+xml;base64,…", account_label: "acme · thu.ha", expires_in: 600}` | 400 `INVALID_CURRENT_PASSWORD` (tính bộ đếm); 423; 409 `TOTP_ALREADY_ENABLED` |
 | `POST /auth/totp/enable` | như trên | `{code}` | `{backup_codes: string[10]}` dạng `xxxx-xxxx` (chỉ trả một lần) | 400 `INVALID_CURRENT_CODE` (**không** tính bộ đếm, R16); 409 `TOTP_SETUP_EXPIRED` (không có/hết hạn pending); 409 `TOTP_ALREADY_ENABLED` |
 | `POST /auth/totp/disable` | như trên | `{current_password, code}` hoặc `{current_password, backup_code}` | `204` | 400 `INVALID_CURRENT_PASSWORD` / `INVALID_CURRENT_CODE` (cả hai tính bộ đếm); 423; 409 `TOTP_NOT_ENABLED` |
@@ -286,15 +286,7 @@ QC: e2e tính mã từ `secret` của setup bằng `lib/totp.ts`; chống dùng 
 
 Lệnh xong chung (thêm vào mỗi dòng): `bun run typecheck && bun run check:fn --files <file đổi> && bun run depcruise --all && bun run test:lock:verify`.
 
-| # | Task | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong riêng |
-|---|---|---|---|---|---|---|
-| TM | Mailer: interface + nodemailer + disabled/memory + env `SMTP_URL`/`MAIL_FROM` | thường | plan-cd §9, §10; ADR-0005 | `apps/admin-api/src/lib/mailer/*`, `config/env.ts`, `app.ts` (deps.mailer), `.env.example` | T0, G1 | `bun test apps/admin-api/src/lib/mailer` + int Mailpit |
-| T7 | C · contract `transfer.ts` + mã lỗi mới C/D + `configWrite.expectBase` + Export | cao | plan-cd §2, §3.1–3.2, §4.3, §6 (transfer), §8.1 | `packages/contracts/src/{transfer,common}.ts`, `packages/db/src/config-meta.ts`, `lib/config/config-write.ts`, `modules/transfer/{routes,service,repo,rules,errors}.ts`, `README.md` | T1 | `bun test packages/contracts modules/transfer` + int M4-AC09 (export), AC-A06 |
-| T8 | C · Import dry-run + áp dụng (`yaml` maxAlias 0, ≤ 1 MiB, `createSecretTx`, audit `import`, 1 NOTIFY, E4) | cao | plan-cd §3.3, §6, §8.2–8.4; spec §9 Q11 | `modules/transfer/transfer.{import,apply}.ts`, `transfer.repo.ts`, `modules/secrets/secrets.service.ts` (tách `createSecretTx`), `transfer.lock-order.int.test.ts` | T7, T3 (bảng quota) | int M4-AC09, AC10; test bom alias + 413 |
-| T9a | D · migration `0008_admin_totp` + schema + RLS + `lib/totp.ts` + `sealBytes/openBytes` + `totp.rules.ts` | cao | plan-cd §1 D1–D3, §5, §6 (totp) | `packages/db/migrations/0008_*.sql`, `packages/db/src/schema/totp.ts`, `apps/admin-api/src/lib/{totp,secret-crypto}.ts`, `modules/auth/totp/totp.rules.ts` | T0 | `bun run db:migrate && bun test packages/db apps/admin-api/src/lib` (vector RFC 6238, RLS, hub_ro bị chặn) |
-| T9b | D · setup/enable/disable/backup-codes + `GET /auth/me` thêm trường + audit | cao | plan-cd §4.1–4.4, §7 (Setup → Tạo lại mã) | `packages/contracts/src/{totp,auth}.ts`, `modules/auth/totp/totp.{routes,service,repo}.ts`, `auth.session.ts` (`toMe`) | T9a, T1 | int M4-AC11 (phần bật/tắt), AC12 |
-| T9c | D · đăng nhập 2 bước: login `totp_required` + `/auth/totp/verify` (khoá tạm, chống dùng lại, mã dự phòng 1 lần) | cao | plan-cd §1 D4–D5, §7 (Login, Verify); `auth.service.ts` | `modules/auth/auth.service.ts`, `auth.routes.ts`, `lib/jwt.ts` (`aud admin:totp`), `modules/auth/totp/totp.verify.ts` | T9b | int M4-AC11 (đăng nhập, 5 lần sai → 423, mã dùng lại → 401) |
-| T9d | D · admin tắt 2FA hộ + `UserSchema.totp_enabled` | cao | plan-cd §4.2 (dòng cuối), §7 (Admin tắt hộ) | `modules/users/users.{routes,service}.ts` (gọi `totp.service.disableForUser`), `packages/contracts/src/users.ts` | T9b | int: tenant khác → 404, chính mình → 403, audit 1 dòng |
+Danh sách task: xem `tasks.md` (nguồn chính).
 
 `auth/` đã 10 file → TOTP ở `modules/auth/totp/` (CONVENTIONS §4); `auth.service.ts` (306 dòng) chỉ thêm nhánh `totp_required`.
 

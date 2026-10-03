@@ -218,7 +218,7 @@ Ca xen kẽ thêm vào `lib/lock-order.int.test.ts`: Quota PUT ∥ Feature DELET
 ## 8. Test của backend (ngoài acceptance qc)
 | File | Ca |
 |---|---|
-| `lib/audit/audit.rules.test.ts` | allowlist từng entity; khoá cấm ở cấp 1 sau allowlist → ném; `input_schema`/`input_map`/`args`/`output` chứa `password` → không ném |
+| `lib/audit/audit.rules.test.ts` | allowlist từng entity; khoá cấm ở cấp 1 sau allowlist → ném (assert phòng thủ, không có test); `input_schema`/`input_map`/`args`/`output` chứa `password` → không ném |
 | `packages/db/src/ops-rls.int.test.ts` | RLS 3 bảng (tenant A không thấy B, NULL chỉ platform); `admin_rw` UPDATE/DELETE audit → lỗi quyền; trigger chặn owner; `hub_ro` đọc quotas, không đọc audit/alerts |
 | `lib/config/config-write.int.test.ts` (sửa) | audit cùng tx; retry 40P01 không nhân đôi audit; bất biến mismatch |
 | `quotas.rules.test.ts`, `usage.rules.test.ts`, `audit.rules.test.ts` | ranh giới tháng VN (30/09 23:59:59+07 vs 01/10 00:00+07), pct nhiều chiều, alertsDue, CSV injection/BOM |

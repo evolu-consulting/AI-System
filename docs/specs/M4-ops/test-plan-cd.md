@@ -211,7 +211,7 @@ Không có test: lock-order E4 (`transfer.lock-order.int.test.ts` — backend T8
 | `tests/acceptance/M3/rules/contracts.test.ts` | dòng 70 | như trên |
 | `tests/acceptance/M3/rules/contracts-users.test.ts` | mẫu `u(0)` `UserSchema` | thêm `totp_enabled:false` |
 | `tests/acceptance/M1/db-schema.int.test.ts`, `M2/db-schema.int.test.ts` | danh sách bảng `admin.*` cố định (nếu `toEqual`) | thêm `admin.user_totp`, `admin.user_backup_codes` (+ bảng A/B) — phối hợp qc A+B |
-| `tests/acceptance/M1/auth-*.int.test.ts`, `e2e/auth.spec.ts` | — | **không sửa**: fixture M1 không có user bật 2FA, luồng cũ giữ nguyên (D-L11 kiểm lại) |
+| `tests/acceptance/M1/auth-*.int.test.ts`, `e2e/auth.spec.ts` | — | **không sửa vì 2FA** (A+B sửa K10): fixture M1 không có user bật 2FA, luồng cũ giữ nguyên (D-L11 kiểm lại) |
 
 ## 9. Đã chốt (spec-readiness lần 1)
 

@@ -53,7 +53,7 @@ C + D: [test-plan-cd.md](test-plan-cd.md). Nguồn: spec §2, §8 · plan-contra
 | R17 | M4-R13 · Q7 · Q8 | 〃 | `canRestore`: platform × 5 entity × {update, delete, restore} × snapshot → true (15 ca); snapshot false, entity khác (7), action khác (6), tenant_admin → false |
 | R18 | M4-R13 | 〃 | `restoreCheck`: update + không tồn tại → NOT_RESTORABLE; update + version lệch → VERSION_CONFLICT; update khớp → ok; delete + còn → NOT_RESTORABLE; delete + không còn → ok |
 | R19 | M4-R12 | 〃 | `encodeCursor/decodeCursor` khứ hồi `"1"`, `"9007199254740993"`; `"!!"`, `""`, base64 của `"abc"`/`"-1"` → null |
-| R20 | contract | `contracts.test.ts` | 3 mã mới = 409; **chỉ ở đây** `Object.keys(API_ERRORS).length === 48`; `CONFIG_ENTITIES` có `quota` đứng trước `"batch"`, length 11; `AUDIT_ENTITIES` 12, `AUDIT_ACTIONS` 9; `QuotaSetRequestSchema` từ chối `max_runs 0`/`1.5`, `max_usd "0"`/`"1.234"`/`"-1"`, 101 items, khoá thừa; `UsageReportTenantSchema` từ chối `cost_usd`; `User`/`TenantSchema` có `updated_by` |
+| R20 | contract | `contracts.test.ts` | 3 mã A+B mới = 409 (chỉ `toMatchObject`; phép đếm `Object.keys(API_ERRORS).length === 48` ở `rules/contracts-cd.test.ts`, test-plan-cd, xanh ở T7); `CONFIG_ENTITIES` có `quota` đứng trước `"batch"`, length 11; `AUDIT_ENTITIES` 12, `AUDIT_ACTIONS` 9; `QuotaSetRequestSchema` từ chối `max_runs 0`/`1.5`, `max_usd "0"`/`"1.234"`/`"-1"`, 101 items, khoá thừa; `UsageReportTenantSchema` từ chối `cost_usd`; `User`/`TenantSchema` có `updated_by` |
 
 ### D · DB / RLS (`M4/db-schema.int.test.ts`, `M4/db-rls.int.test.ts`; owner / `admin_api` / `hub_ro`)
 
@@ -92,7 +92,7 @@ C + D: [test-plan-cd.md](test-plan-cd.md). Nguồn: spec §2, §8 · plan-contra
 | AL2 | M4-R04 | tiếp AL1: +200 run, PUT đổi `max_tokens` → mail 100 ×2; mail 80 vẫn đúng 2 (sentinel = mail 100); 2 hàng alert |
 | AL3 | M4-R04 | 1000 run (chưa có alert), PUT → chỉ mail 100 (2 người); hàng 80 `skipped`, không mail 80 về sau |
 | AL4 | M4-R05 | chi `active=false` hoặc `email NULL`; lan (member, có email) → chỉ binh nhận; chi locale `en` → subject EN |
-| AL5 | M4-R05 · TD #13 | mailer ném `MAIL_SEND_FAILED` → PUT 200, quota lưu; alert `pending`, `attempts 1`, `last_error` = mã; mailer tốt + PUT lại → `sent` |
+| AL5 | M4-R05 · TD #13 | mailer ném `MAIL_SEND_FAILED` → PUT 200, quota lưu; alert `pending`, `attempts 1`, `last_error` = mã; mailer tốt + gửi lại bằng `NOTIFY quota_threshold {tenant_id}` (không PUT cùng bộ — no-op không evaluate) → `sent` |
 | AL6 | M4-R05 | `MAIL_DISABLED` → `pending` như lỗi gửi |
 | AL7 | FR-41 · M4-AC02 | không quota, 5000 run → 0 alert, 0 mail |
 | AL8 | M4-R04 | quota feature `ke-toan` 100 run, 85 run `ke-toan` + 500 run khác → alert (`ke-toan`, 80); quota null không có → không alert tenant |
@@ -261,7 +261,7 @@ Tổng sau M4 (A+B+C+D): migration main **9** (`0007_m4_ops`, `0008_admin_totp`)
 
 Số ca dự kiến: rules ≈ 75 · int ≈ 105 · i18n 1 · e2e 22.
 
-Xanh: rules/contracts T0b · db-* T0 · audit-write/secrets T1–T1c · updated-by T1b · audit-read T2 · quotas T3 · quota-alerts* T4 · restore T2b · usage* T5 · overview, forbidden T6 · e2e: quota FE1, usage FE2, overview FE3, audit FE4b, conflict FE0a.
+Xanh: rules/contracts.test.ts T0b; quotas.rules T3; usage.rules T5; audit-snapshot T1; audit.rules T2 · db-* T0 · audit-write/secrets T1–T1c · updated-by T1b · audit-read T2 · quotas T3 · quota-alerts* T4 · restore T2b · usage* T5 · overview, forbidden T6 · e2e: quota FE1, usage FE2, overview FE3, audit FE4b, conflict FE0a.
 
 ## 7. Đỏ đúng lý do (điền ở Q2)
 
@@ -271,6 +271,6 @@ Xanh: rules/contracts T0b · db-* T0 · audit-write/secrets T1–T1c · updated-
 
 ## 8. Đã chốt (spec-readiness lần 1, người dùng chấp nhận 2026-10-03)
 
-PUT quota không chờ evaluate (AL dùng `expect.poll`); no-op → 200 không bump (Q10); `quota` trước `"batch"`; tooltip KPI `role=tooltip`; lệnh `bunx playwright test e2e/m4-`. proc AL10: env cổng/`SMTP_URL` theo plan §6 (backend-lead ghi vào plan nếu thiếu).
+PUT quota không chờ evaluate (AL dùng `expect.poll`); no-op → 200 không bump (readiness lần 1 #2); `quota` trước `"batch"`; tooltip KPI `role=tooltip`; lệnh `bunx playwright test e2e/m4-`. proc AL10: env cổng/`SMTP_URL` theo plan §7 (backend-lead ghi vào plan nếu thiếu).
 
-Cần bổ sung: backend-lead: `auditSnapshot` có còn ném ở chỗ nào khác ngoài `containsForbiddenKey` trực tiếp (R15)? qc đã bỏ ca ném trên `workflow.input_schema`.
+Ghi chú: `auditSnapshot` ném ở đâu → `plan-rules §A1`.

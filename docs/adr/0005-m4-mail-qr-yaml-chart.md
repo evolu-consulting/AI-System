@@ -52,7 +52,7 @@ Trạng thái: **Accepted** (người dùng duyệt 2026-10-03, trước Gate M4
 1. `apps/admin-api` thêm (ghim chính xác): `nodemailer@10.0.13`, `qrcode@1.5.4`, `yaml@2.9.1`; dev: `@types/nodemailer@8.0.2`, `@types/qrcode@1.5.6`. Không thêm gì cho TOTP (`node:crypto`).
 2. YAML luôn parse với `{maxAliasCount: 0, uniqueKeys: true, schema: "core"}`, sau khi kiểm `content` ≤ 1 MiB.
 3. Mailer đi qua interface `Mailer.send` (`lib/mailer`), không module nào import `nodemailer` trực tiếp → đổi nhà cung cấp chỉ sửa một file.
-4. Biểu đồ Admin: SVG tự vẽ (thống nhất plan-frontend D1), **không** thêm `recharts` vào `admin-web` (giữ ADR-0001 cho Ops UI). Nếu người dùng chọn giữ `recharts` ở Gate: nạp lười chỉ ở route `/usage` và `/`, tách vendor chunk riêng, nới ngân sách chunk của route đó lên 160 KB gzip và ghi `docs/TECH-DEBT.md`; không nới JS ban đầu.
+4. Biểu đồ Admin: SVG tự vẽ (thống nhất plan-frontend D1), **không** thêm `recharts` vào `admin-web` (giữ ADR-0001 cho Ops UI).
 
 ## Hệ quả
 - Bundle web: +0 KB (QR ở server; biểu đồ tự vẽ). Server: +3 dependency trực tiếp.
