@@ -1,6 +1,12 @@
-// ADM-FR-51 · M4-R12 · gọi GET /admin/audit và /admin/audit/:id (nơi duy nhất của feature audit).
-import type { AuditAction, AuditDetail, AuditEntity, AuditListResponse } from "@ai/contracts";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+// ADM-FR-51 · ADM-FR-52 · M4-R12 · R13 · gọi GET /admin/audit, /admin/audit/:id và POST …/restore (nơi duy nhất của feature audit).
+import type {
+  AuditAction,
+  AuditDetail,
+  AuditEntity,
+  AuditListResponse,
+  AuditRestoreResponse,
+} from "@ai/contracts";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 
 export const AUDIT_PAGE_SIZE = 50;
@@ -48,5 +54,30 @@ export function useAuditEntry(id: string) {
     queryKey: [...AUDIT_KEY, "entry", id] as const,
     retry: false,
     queryFn: () => api<AuditDetail>(`/admin/audit/${id}`),
+  });
+}
+
+/** Gốc query của thực thể bị khôi phục (ngoài `AUDIT_KEY`), theo `AuditEntity` khôi phục được (BR-08). */
+const RESTORE_ROOTS: Partial<Record<AuditEntity, readonly string[]>> = {
+  command: ["commands", "access", "overview"],
+  workflow: ["workflows", "commands"],
+  feature: ["features", "commands", "access", "tenants"],
+  group: ["groups", "access", "grants"],
+  quota: ["quotas", "tenants", "quota-banner", "usage", "overview"],
+};
+
+/** POST /admin/audit/:id/restore (body `{}`); xong → làm mới nhật ký + thực thể bị khôi phục. */
+export function useAuditRestore() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<AuditRestoreResponse>(`/admin/audit/${id}/restore`, { method: "POST", body: {} }),
+    // 409 (vd NOT_RESTORABLE, VERSION_CONFLICT): `restorable` có thể đã đổi → nạp lại nhật ký.
+    onError: () => void qc.invalidateQueries({ queryKey: AUDIT_KEY }),
+    onSuccess: (res) => {
+      for (const root of [AUDIT_KEY[0], ...(RESTORE_ROOTS[res.entity] ?? [])]) {
+        void qc.invalidateQueries({ queryKey: [root] });
+      }
+    },
   });
 }

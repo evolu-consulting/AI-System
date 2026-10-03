@@ -1529,6 +1529,20 @@
       "from": "Từ ngày",
       "to": "Đến ngày",
       "apply": "Áp dụng"
+    },
+    "restore": {
+      "button": "Khôi phục bản trước",
+      "title": "Khôi phục {name} về trạng thái trước v{n}?",
+      "body": "Tạo phiên bản mới v{next} với nội dung trước thay đổi này. Lịch sử cũ được giữ nguyên.",
+      "confirm": "Khôi phục",
+      "done": "Đã khôi phục {name} · v{n}"
+    },
+    "error": {
+      "nameTaken": "Không khôi phục được: {name} đã được dùng bởi {entityType} khác",
+      "changedSince": "Không khôi phục được: {name} đã được sửa sau thay đổi này. Mở bản mới nhất để xem.",
+      "notRestorable": "Không khôi phục được: đây không còn là thay đổi mới nhất của {name}.",
+      "refMissing": "Không khôi phục được: thành phần mà {name} dùng đã bị xoá.",
+      "invalid": "Không khôi phục được: bản trước của {name} không còn hợp lệ với cấu hình hiện tại."
     }
   },
   "usage": {

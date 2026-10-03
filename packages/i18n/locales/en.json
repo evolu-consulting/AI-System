@@ -1529,6 +1529,20 @@
       "from": "From",
       "to": "To",
       "apply": "Apply"
+    },
+    "restore": {
+      "button": "Restore previous version",
+      "title": "Restore {name} to its state before v{n}?",
+      "body": "Creates a new version v{next} with the content from before this change. Earlier history is kept.",
+      "confirm": "Restore",
+      "done": "Restored {name} · v{n}"
+    },
+    "error": {
+      "nameTaken": "Can't restore: {name} is already used by another {entityType}",
+      "changedSince": "Can't restore: {name} has changed since. Open the latest version to review.",
+      "notRestorable": "Can't restore: this is no longer the latest change to {name}.",
+      "refMissing": "Can't restore: something {name} depends on has been deleted.",
+      "invalid": "Can't restore: the previous version of {name} is no longer valid with the current configuration."
     }
   },
   "usage": {
