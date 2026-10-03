@@ -1,4 +1,4 @@
-// ADM-FR-04, ADM-FR-05 · hành động trên user từ menu `⋯`: khoá / reset / đăng xuất mọi thiết bị (có xác nhận), mở khoá (ngay).
+// ADM-FR-04, ADM-FR-05, ADM-FR-08 · hành động trên user từ menu `⋯`: khoá / reset / đăng xuất mọi thiết bị / tắt 2FA (có xác nhận), mở khoá (ngay).
 import type { TempPasswordResponse, User } from "@ai/contracts";
 import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,9 +16,15 @@ const API_ACTION = {
   unlock: "unlock",
   reset: "reset-password",
   logoutAll: "logout-all",
+  disable2fa: "totp/disable",
 } as const;
 
-const TOAST = { lock: "locked", unlock: "unlocked", logoutAll: "loggedOut" } as const;
+const TOAST = {
+  lock: "users.toast.locked",
+  unlock: "users.toast.unlocked",
+  logoutAll: "users.toast.loggedOut",
+  disable2fa: "users.reset2fa.toast",
+} as const;
 
 /** Gọi API cho một hành động; thành công → toast (hoặc trả mật khẩu tạm cho reset), lỗi → toast bền (401 để modal phiên hết hạn lo). */
 function useRunUserAction(onReset: (r: ResetResult) => void) {
@@ -34,7 +40,7 @@ function useRunUserAction(onReset: (r: ResetResult) => void) {
           onReset({ tenantKey: user.tenant_key, username: user.username, password: temp_password });
           return;
         }
-        notifySuccess(t(`users.toast.${TOAST[kind]}`, { username: user.username }));
+        notifySuccess(t(TOAST[kind], { username: user.username }));
       } catch (err) {
         if (err instanceof ApiError && err.code === "UNAUTHORIZED") return;
         const spec = describeError(err);

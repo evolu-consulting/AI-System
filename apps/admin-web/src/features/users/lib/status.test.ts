@@ -35,7 +35,9 @@ describe("ADM-FR-04 · trạng thái user", () => {
       unlock: false,
       unlockEnabled: false,
       logoutAll: false,
+      disable2fa: false,
     });
+    expect(rowActions({ ...base, totp_enabled: true }, true, now).disable2fa).toBe(false);
   });
 
   test("user hoạt động: Khoá; khoá riêng: Mở khoá; khoá theo tenant: Mở khoá bị vô hiệu", () => {
@@ -49,5 +51,13 @@ describe("ADM-FR-04 · trạng thái user", () => {
       unlock: true,
       unlockEnabled: false,
     });
+  });
+});
+
+describe("ADM-FR-08 · menu Tắt 2FA", () => {
+  test("Tắt 2FA chỉ khi user đã bật 2FA", () => {
+    expect(rowActions(base, false, now).disable2fa).toBe(false);
+    expect(rowActions({ ...base, totp_enabled: false }, false, now).disable2fa).toBe(false);
+    expect(rowActions({ ...base, totp_enabled: true }, false, now).disable2fa).toBe(true);
   });
 });

@@ -132,19 +132,25 @@ async function verifyTotp(
 ): Promise<TotpVerifyResponse> {
   const pending = state.pendingTotp;
   if (!pending) throw new ApiError(401, "INVALID_TOTP_TOKEN", "No totp token");
+  // Bước mã của hộp thoại "phiên hết hạn" (TECH-DEBT #31): xong thì báo `reauthed` như `relogin`.
+  const wasExpired = state.status === "expired";
   const body: TotpVerifyRequest = { totp_token: pending.totpToken, ...input };
   const res = await sendPublic<TotpVerifyResponse>("/auth/totp/verify", { method: "POST", body });
   applyLoginResult(res, pending);
+  if (wasExpired && res.status === "authenticated") emit("reauthed");
   return res;
 }
 
-/** Đăng nhập lại ngay tại chỗ khi phiên hết hạn (mã công ty + tên đăng nhập lấy từ `me`). */
-async function relogin(password: string): Promise<void> {
+/**
+ * Đăng nhập lại ngay tại chỗ khi phiên hết hạn (mã công ty + tên đăng nhập lấy từ `me`).
+ * `totp_required` → `pendingTotp` được đặt, hộp thoại chuyển sang bước mã (`verifyTotp`).
+ */
+async function relogin(password: string): Promise<LoginResponse["status"]> {
   const me = state.me;
   if (!me) throw new ApiError(401, "UNAUTHORIZED", "No session");
   const res = await login({ tenant_key: me.tenant.key, username: me.username, password });
-  if (res.status !== "authenticated") return;
-  emit("reauthed");
+  if (res.status === "authenticated") emit("reauthed");
+  return res.status;
 }
 
 async function logout(): Promise<void> {

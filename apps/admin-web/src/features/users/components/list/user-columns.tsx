@@ -76,6 +76,11 @@ function RowMenu({
             {t("users.menu.logoutAll")}
           </DropdownMenuItem>
         ) : null}
+        {a.disable2fa ? (
+          <DropdownMenuItem onSelect={() => onAction("disable2fa", user)}>
+            {t("users.menu.disable2fa")}
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

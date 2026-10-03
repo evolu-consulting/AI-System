@@ -465,7 +465,8 @@
       "resetPassword": "Reset mật khẩu",
       "lock": "Khoá",
       "unlock": "Mở khoá",
-      "logoutAll": "Đăng xuất mọi thiết bị"
+      "logoutAll": "Đăng xuất mọi thiết bị",
+      "disable2fa": "Tắt 2FA"
     },
     "drawer": {
       "createTitle": "Tạo user",
@@ -504,6 +505,12 @@
       "title": "Đăng xuất {username} khỏi mọi thiết bị?",
       "body": "Phiên hiện tại hết hạn trong tối đa 15 phút.",
       "submit": "Đăng xuất"
+    },
+    "reset2fa": {
+      "title": "Tắt 2FA của {username}?",
+      "body": "Lần đăng nhập sau chỉ cần mật khẩu. Phiên đang mở của người này vẫn giữ.",
+      "submit": "Tắt 2FA",
+      "toast": "Đã tắt 2FA của {username}"
     },
     "toast": {
       "created": "Đã tạo {username}",

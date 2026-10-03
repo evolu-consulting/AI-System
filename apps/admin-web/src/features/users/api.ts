@@ -111,7 +111,8 @@ export function useUpdateUser(id: string | undefined) {
   });
 }
 
-export type UserAction = "lock" | "unlock" | "logout-all" | "reset-password";
+/** `totp/disable` (ADM-FR-08): admin tắt 2FA hộ user → 200 User; phiên của user được giữ (Q10). */
+export type UserAction = "lock" | "unlock" | "logout-all" | "reset-password" | "totp/disable";
 
 /** Hành động trên một user. `gcTime: 0` để mật khẩu tạm của `reset-password` không nằm lại trong cache mutation. */
 export function useUserAction() {

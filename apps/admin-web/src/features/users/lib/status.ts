@@ -1,7 +1,7 @@
 // ADM-FR-04, ADM-FR-05 · trạng thái hiển thị của một user trong bảng (hàm thuần).
 import type { User } from "@ai/contracts";
 
-export type UserActionKind = "lock" | "unlock" | "reset" | "logoutAll";
+export type UserActionKind = "lock" | "unlock" | "reset" | "logoutAll" | "disable2fa";
 
 export type UserStatusView =
   | { kind: "locked"; byTenant: boolean }
@@ -25,10 +25,16 @@ export type RowActions = {
   unlock: boolean;
   unlockEnabled: boolean;
   logoutAll: boolean;
+  /** ADM-FR-08 · "Tắt 2FA" hộ user: chỉ khi user đã bật 2FA và không phải chính mình. */
+  disable2fa: boolean;
 };
 
 /** Menu `⋯` ngoài "Sửa": hàng "(bạn)" chỉ có Sửa (D12); Mở khoá bị vô hiệu khi user bị khoá theo tenant. */
-export function rowActions(u: StatusFields, isSelf: boolean, now: Date): RowActions {
+export function rowActions(
+  u: StatusFields & Partial<Pick<User, "totp_enabled">>,
+  isSelf: boolean,
+  now: Date,
+): RowActions {
   if (isSelf) {
     return {
       resetPassword: false,
@@ -36,6 +42,7 @@ export function rowActions(u: StatusFields, isSelf: boolean, now: Date): RowActi
       unlock: false,
       unlockEnabled: false,
       logoutAll: false,
+      disable2fa: false,
     };
   }
   const view = userStatusView(u, now);
@@ -45,5 +52,6 @@ export function rowActions(u: StatusFields, isSelf: boolean, now: Date): RowActi
     unlock: view.kind !== "active",
     unlockEnabled: !u.locked_by_tenant,
     logoutAll: true,
+    disable2fa: u.totp_enabled === true,
   };
 }

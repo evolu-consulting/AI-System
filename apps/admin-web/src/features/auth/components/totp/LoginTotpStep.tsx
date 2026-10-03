@@ -17,6 +17,8 @@ type Props = {
   onError: (message: string | null) => void;
   onSubmit: (input: TotpLoginInput) => Promise<boolean>;
   onBack: () => void;
+  /** `false` khi nơi chứa đã có tiêu đề riêng (hộp thoại phiên hết hạn). Mặc định `true`. */
+  showHeader?: boolean;
 };
 
 const ERROR_ID = "login-totp-error";
@@ -24,6 +26,7 @@ const ERROR_ID = "login-totp-error";
 export function LoginTotpStep(props: Props) {
   const { t } = useTranslation();
   const { tenantKey, username, busy, error, onError, onSubmit, onBack } = props;
+  const showHeader = props.showHeader ?? true;
   const [mode, setMode] = useState<"app" | "backup">("app");
   const [code, setCode] = useState("");
   const [backup, setBackup] = useState("");
@@ -59,11 +62,15 @@ export function LoginTotpStep(props: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-page-title font-bold text-foreground">{t("auth.login.totp.title")}</h1>
-        <p className="text-body text-muted-foreground">{t("auth.login.totp.body")}</p>
-        <p className="font-mono text-label text-foreground">{`${tenantKey} · ${username}`}</p>
-      </div>
+      {showHeader ? (
+        <div className="space-y-1">
+          <h1 className="text-page-title font-bold text-foreground">
+            {t("auth.login.totp.title")}
+          </h1>
+          <p className="text-body text-muted-foreground">{t("auth.login.totp.body")}</p>
+          <p className="font-mono text-label text-foreground">{`${tenantKey} · ${username}`}</p>
+        </div>
+      ) : null}
       <form onSubmit={submit} noValidate className="space-y-4">
         {mode === "app" ? (
           <div ref={codeRef} className="space-y-1.5">

@@ -465,7 +465,8 @@
       "resetPassword": "Reset password",
       "lock": "Lock",
       "unlock": "Unlock",
-      "logoutAll": "Sign out everywhere"
+      "logoutAll": "Sign out everywhere",
+      "disable2fa": "Turn off 2FA"
     },
     "drawer": {
       "createTitle": "New user",
@@ -504,6 +505,12 @@
       "title": "Sign {username} out everywhere?",
       "body": "Current sessions expire within 15 minutes.",
       "submit": "Sign out"
+    },
+    "reset2fa": {
+      "title": "Turn off 2FA for {username}?",
+      "body": "Next sign-in needs only the password. Their current sessions stay signed in.",
+      "submit": "Turn off 2FA",
+      "toast": "Turned off 2FA for {username}"
     },
     "toast": {
       "created": "Created {username}",
