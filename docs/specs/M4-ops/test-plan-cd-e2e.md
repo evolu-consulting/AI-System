@@ -26,6 +26,7 @@ Quy ước/fixture: `test-plan-cd.md` §0. Dữ liệu `baseFile()`: §3.2 C-I01
 | E-2FA-11 · tắt hộ | chi bật 2FA qua API (`enable2faApi`); binh `/users` → hàng chi → `button "Thao tác khác"` → `menuitem "Tắt 2FA"` → `alertdialog "Tắt 2FA của chi?"` → `button "Tắt 2FA"` | `waitForResponse` 200; toast "Đã tắt 2FA của chi"; hàng binh (chính mình) và hàng `an` (chưa bật) không có `menuitem "Tắt 2FA"` |
 | E-2FA-12 · M4-AC12 | `an` (member): menu avatar; `goto /account/2fa` | không có `menuitem "Xác thực hai bước"`; chuyển về `/member` (như E20) |
 | E-2FA-13 | dialog tắt (E-2FA-08) với mật khẩu sai; với mã sai; dialog tạo lại mã (E-2FA-07) với mã sai | mỗi ca: `alert` trong dialog có chữ của `twofa.error.wrongCreds` (đọc từ `vi.json`); dialog còn mở, 2FA vẫn bật |
+| E-2FA-14 · TECH-DEBT #31 | binh bật 2FA (`enable2faApi`) → `loginTotp` → `/users` → `button "+ Tạo user"` → điền `Tên đăng nhập` zz2, `Tên hiển thị` → DB `active=false` → `Tạo user` → `dialog "Phiên đăng nhập đã hết hạn"` → DB `active=true` → `Mật khẩu` = PW → `Đăng nhập` → `textbox "Mã xác thực"` (trong dialog) = `freshCode` | dialog đóng; form giữ `zz2`, tên hiển thị; DB chưa có zz2 (không tự gửi lại); bấm lại `Tạo user` → có zz2 (như M1-R07) |
 
 ### 5.2 `e2e/m4-transfer.spec.ts` (FE5a–b; nhãn: missing-screens §8)
 

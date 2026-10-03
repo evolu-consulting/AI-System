@@ -1,4 +1,4 @@
-// ADM-FR-08 · M4-R16 · M4-AC11 · M4-AC12 · e2e 2FA (test-plan-cd-e2e §5.1 E-2FA-01…13).
+// ADM-FR-08 · M4-R16 · M4-AC11 · M4-AC12 · e2e 2FA (test-plan-cd-e2e §5.1 E-2FA-01…14).
 // Nhãn nguyên văn: missing-screens §10, plan-frontend §6–7. Mã TOTP theo giờ thật (oracle e2e/support/totp.ts);
 // sau mỗi lần dùng mã thành công phải `waitNextStep()` rồi `codeFor(secret, 1)` (mã mỗi bước chỉ dùng một lần).
 import { expect, type Locator, type Page, test } from "@playwright/test";
@@ -14,6 +14,8 @@ import {
   resetFixture,
   rowOf,
   toast,
+  USER_ID,
+  withOwner,
 } from "./support/helpers";
 import { codeFor, enable2faApi, waitNextStep } from "./support/totp";
 
@@ -295,7 +297,8 @@ test("ADM-FR-08 · E-2FA-11 · tắt hộ: binh tắt 2FA của chi (toast); hà
   await dialog.getByRole("button", { name: "Tắt 2FA" }).click();
   expect((await done).status()).toBe(200);
   await expect(toast(page, "Đã tắt 2FA của chi")).toBeVisible();
-  for (const username of ["binh", "an"]) {
+  // Hàng chính mình hiển thị "binh (bạn)" (M1 D12, khoá ở e2e/users.spec.ts).
+  for (const username of ["binh (bạn)", "an"]) {
     await rowOf(page, "Users", username).getByRole("button", { name: "Thao tác khác" }).click();
     await expect(page.getByRole("menuitem", { name: "Sửa", exact: true })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: "Tắt 2FA" })).toHaveCount(0);
@@ -352,4 +355,39 @@ test("ADM-FR-08 · E-2FA-13 · mật khẩu/mã sai ở dialog tắt và dialog 
   await expect(regen).toBeVisible();
   await regen.getByRole("button", { name: "Huỷ" }).click();
   await expect(page.getByText("Đã bật", { exact: true })).toBeVisible();
+});
+
+test("ADM-FR-08 · E-2FA-14 · TECH-DEBT #31 · phiên hết hạn với user đã bật 2FA: dialog đăng nhập lại → 'Mã xác thực' → đóng, form giữ nguyên, không tự gửi lại", async ({
+  page,
+  request,
+}) => {
+  const { secret } = await enable2faApi(request, "acme", "binh", PW);
+  await loginTotp(page, secret);
+  await page.goto("/users");
+  await page.getByRole("button", { name: "+ Tạo user" }).click();
+  const drawer = page.getByRole("dialog", { name: "Tạo user" });
+  await drawer.getByRole("textbox", { name: "Tên đăng nhập" }).fill("zz2");
+  await drawer.getByRole("textbox", { name: "Tên hiển thị" }).fill("Zed Hai");
+  await withOwner((sql) => sql`update admin.users set active = false where id = ${USER_ID.binh}`);
+  await drawer.getByRole("button", { name: "Tạo user", exact: true }).click();
+  const expired = page.getByRole("dialog", { name: "Phiên đăng nhập đã hết hạn" });
+  await expect(expired).toBeVisible();
+  await withOwner((sql) => sql`update admin.users set active = true where id = ${USER_ID.binh}`);
+  await expired.getByLabel("Mật khẩu", { exact: true }).fill(PW);
+  await expired.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+  await expect(codeBox(expired)).toBeVisible();
+  await expect(expired).toBeVisible();
+  await codeBox(expired).fill(await freshCode(secret));
+  await expect(expired).toBeHidden();
+  await expect(drawer.getByRole("textbox", { name: "Tên đăng nhập" })).toHaveValue("zz2");
+  await expect(drawer.getByRole("textbox", { name: "Tên hiển thị" })).toHaveValue("Zed Hai");
+  const count = async () =>
+    (
+      await withOwner(
+        (sql) => sql`select count(*)::int as n from admin.users where username = 'zz2'`,
+      )
+    )[0]?.n;
+  expect(await count()).toBe(0);
+  await drawer.getByRole("button", { name: "Tạo user", exact: true }).click();
+  await expect.poll(count).toBe(1);
 });
