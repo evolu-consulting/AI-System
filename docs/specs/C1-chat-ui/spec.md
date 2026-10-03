@@ -144,7 +144,10 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 - `ask` không kết thúc stream một mình: luôn theo sau bởi `run.finished` (mỗi stream đúng một sự kiện kết thúc).
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- B1: subpath `@ai/contracts/chat` không vướng tooling (tsc gốc + `tsconfig.tests.json`, depcruise, bun runtime đều resolve) → không cần fallback `@ai/contracts-chat`.
+- B1: `CHAT_RUN_ERROR_CODES` đặt ở `chat/errors.ts` (không ở `events.ts`) để `entities.ts` dùng mà không vòng import; vẫn export qua `@ai/contracts/chat`.
+- B1: thêm hằng phụ không đổi hành vi: `CHAT_ASK_QUESTION_MAX` 2000, `CHAT_STEP_ID_MAX` 64, `CHAT_STEPS_MAX` 50, `CHAT_DELTA_MAX` 4000, tên header `X-Run-Id`/`X-Flow-Id`/`X-Message-Id`/`Last-Event-ID`, `SSE_PING_FRAME`, `SSE_CONTENT_TYPE`. `MessageSchema` ép: tin `user` có `content` 1–16000, `run`/`ask` = null; `RunSummary.error` khác null ⇔ `failed`/`cancelled` (đúng §2.3). `AskDataSchema` = `AskSchema`.
+- B1: `deriveTitle` bỏ tiền tố `#scn:\S*` sau khi `trimStart`; cắt đúng 40 code point rồi thêm `…` (không trimEnd trước `…`). Parser SSE: khung không có dòng `data:` không phát (đặc tả SSE); `event` thiếu → `"message"`.
 
 ### Điều phối xử lý test-plan §8 (2026-10-04, Luật 2: chọn phương án đơn giản, dễ đổi)
 | # | Quyết định |
