@@ -2,10 +2,11 @@
 // đóng vai Hub. Âm tính chứng minh bằng sentinel (ghi chắc chắn bump rồi chờ nó), không ngủ cố định.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { type ConfigChangedPayload, ConfigChangedPayloadSchema } from "@ai/contracts";
-import { createDb, type Db, runMigrations } from "@ai/db";
+import { createDb, type Db, runMigrations, withScope } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import { sql } from "drizzle-orm";
 import postgres from "postgres";
+import { auditOf, recordAudit } from "../audit/audit.write";
 import { configWrite } from "./config-write";
 
 const OWNER = process.env.TEST_DATABASE_URL;
@@ -107,6 +108,141 @@ describe("ADM-FR-53 · configWrite + NOTIFY sau commit (M3-R16)", () => {
     });
     expect(r).toBe("done");
     expect(await cfg()).toBe(before + 1);
+  });
+});
+
+const PLATFORM = "01900000-0000-7000-8000-0000000c0001";
+const ROOT = "01900000-0000-7000-8000-0000000c0002";
+const actorCall = (hooks?: Parameters<typeof configWrite>[0]["ctx"]["hooks"]) => ({
+  ...call(db, hooks),
+  actor: { userId: ROOT },
+});
+type AuditRow = {
+  action: string;
+  entity: string;
+  entity_name: string;
+  actor_id: string | null;
+  actor_username: string | null;
+  config_version: number | null;
+  before: unknown;
+  after: unknown;
+  snapshot: boolean;
+};
+const auditsAfter = async (seq: number): Promise<AuditRow[]> => [
+  ...(await owner<AuditRow[]>`select action, entity, entity_name, actor_id, actor_username,
+    config_version, before, after, snapshot from admin.audit_log where seq > ${seq} order by seq`),
+];
+const lastSeq = async () =>
+  (await owner<{ m: number }[]>`select coalesce(max(seq), 0)::int as m from admin.audit_log`)[0]
+    ?.m ?? 0;
+/** Hook ném 40P01 ở lần bump đầu → `withScope` thử lại. */
+function deadlockOnce() {
+  let n = 0;
+  const hooks = {
+    afterLock: async () => {
+      n += 1;
+      if (n === 1) throw Object.assign(new Error("test deadlock"), { code: "40P01" });
+    },
+  };
+  return { hooks, calls: () => n };
+}
+async function seedActor(): Promise<void> {
+  await owner`insert into admin.tenants (id, key, name) values (${PLATFORM}, 'platform', 'P')
+    on conflict do nothing`;
+  await owner`insert into admin.users (id, tenant_id, username, password_hash, display_name, role)
+    values (${ROOT}, ${PLATFORM}, 'root', 'h', 'R', 'platform_admin') on conflict do nothing`;
+}
+const secretAudit = (name: string) =>
+  auditOf("create", "secret", {
+    entityId: null,
+    entityName: name,
+    tenantId: null,
+    before: null,
+    after: { name, note: null, value: "sk-LEAK", last4: "LEAK" },
+  });
+
+describe("ADM-FR-51 · M4-R10 · audit trong configWrite (sau bump, cùng tx)", () => {
+  beforeAll(seedActor);
+
+  test("2 ch.audit + changed → 2 hàng, config_version = v mới, actor_username snapshot, allowlist lọc giá trị", async () => {
+    const from = await lastSeq();
+    await configWrite(actorCall(), "secret.save", async (_tx, ch) => {
+      ch.changed(ev);
+      ch.audit(secretAudit("A_KEY"));
+      ch.audit({ ...secretAudit("B_KEY"), snapshot: true });
+    });
+    const v = await cfg();
+    const rows = await auditsAfter(from);
+    expect(rows).toEqual([
+      expect.objectContaining({ entity_name: "A_KEY", config_version: v, snapshot: false }),
+      expect.objectContaining({ entity_name: "B_KEY", config_version: v, snapshot: true }),
+    ]);
+    for (const r of rows) {
+      expect(r).toMatchObject({
+        action: "create",
+        entity: "secret",
+        actor_id: ROOT,
+        actor_username: "root",
+      });
+      expect(r.before).toBeNull();
+      expect(r.after).toEqual({ name: r.entity_name, note: null });
+    }
+  });
+
+  test("rollback → không audit; retry 40P01 → audit của lần hỏng bị bỏ (đúng 1 hàng)", async () => {
+    const from = await lastSeq();
+    const failed = await configWrite(actorCall(), "secret.save", async (_tx, ch) => {
+      ch.changed(ev);
+      ch.audit(secretAudit("ROLLED"));
+      throw new Error("luật");
+    }).then(
+      () => "",
+      (e: Error) => e.message,
+    );
+    expect(failed).toBe("luật");
+    const d = deadlockOnce();
+    await configWrite(actorCall(d.hooks), "secret.save", async (_tx, ch) => {
+      ch.changed(ev);
+      ch.audit(secretAudit("RETRIED"));
+    });
+    expect(d.calls()).toBe(2);
+    expect((await auditsAfter(from)).map((r) => r.entity_name)).toEqual(["RETRIED"]);
+  });
+});
+
+describe("ADM-FR-51 · M4-R10 · audit: thiếu actor, tx không bump", () => {
+  beforeAll(seedActor);
+
+  test("ch.audit mà ConfigCall thiếu actor → ném, rollback (không bump, không audit)", async () => {
+    const from = await lastSeq();
+    const before = await cfg();
+    const failed = await configWrite(call(), "secret.save", async (_tx, ch) => {
+      ch.changed(ev);
+      ch.audit(secretAudit("NO_ACTOR"));
+    }).then(
+      () => "",
+      (e: Error) => e.message,
+    );
+    expect(failed).toContain("actorId");
+    expect(await cfg()).toBe(before);
+    expect(await auditsAfter(from)).toEqual([]);
+  });
+
+  test("recordAudit (tx không bump) → config_version NULL, actor_username snapshot", async () => {
+    const from = await lastSeq();
+    const before = await cfg();
+    await withScope(db, { kind: "platform" }, (tx) =>
+      recordAudit(tx, { ...secretAudit("NO_BUMP"), action: "update", actorId: ROOT }),
+    );
+    expect(await cfg()).toBe(before);
+    expect(await auditsAfter(from)).toEqual([
+      expect.objectContaining({
+        action: "update",
+        entity_name: "NO_BUMP",
+        config_version: null,
+        actor_username: "root",
+      }),
+    ]);
   });
 });
 

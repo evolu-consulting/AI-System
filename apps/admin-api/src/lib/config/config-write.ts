@@ -6,7 +6,15 @@ import { logger } from "../logger";
 import { safeErrorFields } from "../pg-errors";
 import { afterLock, type HookOp, type TestHooks } from "../test-hooks";
 
-export type ConfigCall = { ctx: { db: Db; hooks?: TestHooks }; scope: DbScope };
+/**
+ * `actor` = người thực hiện cho hàng audit (plan M4 §4.1). Tuỳ chọn tới khi tenants truyền (T1b); thiếu mà `fn` gọi
+ * `ch.audit` → ném (không bao giờ ghi audit vô danh âm thầm).
+ */
+export type ConfigCall = {
+  ctx: { db: Db; hooks?: TestHooks };
+  scope: DbScope;
+  actor?: { userId: string };
+};
 export type { ConfigSink };
 
 /**
@@ -26,8 +34,9 @@ export async function publishConfigChanged(
 }
 
 /**
- * Transaction ghi cấu hình: `fn` chỉ làm việc DB và gọi `ch.changed(...)` ngay sau câu ghi có đổi hàng. Đã commit và có
- * sự kiện → NOTIFY đúng một lần. Ném (luật, rollback) → không NOTIFY; retry 40P01 → sự kiện của lần hỏng bị bỏ.
+ * Transaction ghi cấu hình: `fn` chỉ làm việc DB và gọi `ch.changed(...)` (+ `ch.audit(auditOf(...))`) ngay sau câu ghi
+ * có đổi hàng; audit ghi sau bump, cùng transaction. Đã commit và có sự kiện → NOTIFY đúng một lần. Ném (luật,
+ * rollback) → không NOTIFY, không audit; retry 40P01 → sự kiện và audit của lần hỏng bị bỏ.
  */
 export async function configWrite<T>(
   c: ConfigCall,
@@ -37,6 +46,7 @@ export async function configWrite<T>(
   const hooks = c.ctx.hooks;
   const r = await withConfigWrite(c.ctx.db, c.scope, fn, {
     beforeBump: hooks ? () => afterLock(hooks, op, "bump") : undefined,
+    actorId: c.actor?.userId,
   });
   if (r.version !== null) await publishConfigChanged(c.ctx.db, r.version, r.events);
   return r.result;

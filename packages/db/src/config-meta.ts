@@ -2,10 +2,17 @@
 // NOTIFY là việc của người gọi SAU khi hàm này trả (đã commit) — xem admin-api `lib/config/config-write.ts`.
 import type { ConfigEvent } from "@ai/contracts";
 import { sql } from "drizzle-orm";
+import { type AuditInput, insertAuditRows } from "./audit-log";
 import type { Db } from "./client";
 import { type DbScope, type Tx, withScope } from "./scope";
 
-export type ConfigSink = { changed(e: ConfigEvent): void };
+/** `changed` ngay sau câu ghi có đổi hàng; `audit` cùng chỗ (plan M4 §4.1) — ghi sau bump, cùng transaction. */
+export type ConfigSink = { changed(e: ConfigEvent): void; audit(e: AuditInput): void };
+export type ConfigWriteOpts = {
+  beforeBump?: () => Promise<void>;
+  /** Người thực hiện cho hàng audit (NULL = hệ thống). `undefined` mà `fn` có `ch.audit` → ném (lỗi lập trình). */
+  actorId?: string | null;
+};
 export type ConfigCommitted<T> = {
   result: T;
   version: number | null;
@@ -13,8 +20,9 @@ export type ConfigCommitted<T> = {
 };
 
 /**
- * Tăng `config_version` (hàng id=1) và trả giá trị mới. Phải là câu CUỐI của transaction (khoá hạng 14, plan §6):
- * giữ khoá hàng tới commit rồi không chờ gì nữa → không nằm trong vòng chờ. Upsert để hàng bị xoá tay vẫn chạy.
+ * Tăng `config_version` (hàng id=1) và trả giá trị mới. Phải là câu CUỐI của transaction (khoá hạng 14, plan §6),
+ * chỉ trừ INSERT audit (hạng 15, không FK → không chờ): giữ khoá hàng tới commit rồi không chờ gì nữa → không nằm
+ * trong vòng chờ. Upsert để hàng bị xoá tay vẫn chạy.
  */
 export async function bumpConfigVersion(tx: Tx): Promise<number> {
   const rows = await tx.execute(sql`
@@ -34,20 +42,29 @@ export async function readConfigVersion(tx: Tx): Promise<number> {
 }
 
 /**
- * `withScope` + sink sự kiện tạo MỚI mỗi lần thử (retry 40P01/40001 bỏ sự kiện của lần hỏng). `fn` xong: có sự kiện →
- * `beforeBump` (điểm dừng test) → bump (câu cuối); không có → không bump, `version = null`.
+ * `withScope` + sink sự kiện/audit tạo MỚI mỗi lần thử (retry 40P01/40001 bỏ cả sự kiện lẫn audit của lần hỏng). `fn`
+ * xong: có sự kiện → `beforeBump` (điểm dừng test) → bump (hạng 14); rồi audit một câu INSERT (hạng 15, không chờ gì)
+ * với `config_version` = bản mới (NULL nếu không bump).
  */
 export async function withConfigWrite<T>(
   db: Db,
   scope: DbScope,
   fn: (tx: Tx, ch: ConfigSink) => Promise<T>,
-  opts: { beforeBump?: () => Promise<void> } = {},
+  opts: ConfigWriteOpts = {},
 ): Promise<ConfigCommitted<T>> {
   return withScope(db, scope, async (tx) => {
     const events: ConfigEvent[] = [];
-    const result = await fn(tx, { changed: (e) => events.push(e) });
-    if (events.length === 0) return { result, version: null, events };
-    await opts.beforeBump?.();
-    return { result, version: await bumpConfigVersion(tx), events };
+    const audits: AuditInput[] = [];
+    const result = await fn(tx, { changed: (e) => events.push(e), audit: (e) => audits.push(e) });
+    let version: number | null = null;
+    if (events.length > 0) {
+      await opts.beforeBump?.();
+      version = await bumpConfigVersion(tx);
+    }
+    if (audits.length > 0) {
+      if (opts.actorId === undefined) throw new Error("configWrite: ch.audit cần actorId");
+      await insertAuditRows(tx, audits, { actorId: opts.actorId, v: version });
+    }
+    return { result, version, events };
   });
 }
