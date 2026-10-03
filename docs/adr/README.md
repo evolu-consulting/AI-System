@@ -8,4 +8,4 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0003 | Driver Postgres (postgres.js) và bản TypeScript (6.0.3) | Accepted |
 | 0004 | Thư viện web M1: toast (sonner) và resolver form (@hookform/resolvers) | Accepted (Gate M1, 2026-10-01) |
 | 0005 | Thư viện M4: nodemailer, qrcode, yaml; TOTP tự viết; biểu đồ Admin không recharts | Accepted (2026-10-03) |
-| 0006 | Render markdown + highlight code cho Chat App (react-markdown, remark-gfm, highlight.js core) | Proposed (Gate C1) |
+| 0006 | Render markdown + highlight code cho Chat App (react-markdown, remark-gfm, highlight.js core) | Accepted (Gate C1, 2026-10-04) |

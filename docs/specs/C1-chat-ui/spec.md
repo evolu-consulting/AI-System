@@ -2,7 +2,7 @@
 id: C1-chat-ui
 title: Chat UI + contract Chat↔Hub + mock Hub
 milestone: C1
-status: draft            # draft → ready → approved → in-progress → done
+status: approved           # draft → ready → approved → in-progress → done
 requirements: [CHAT-AC-01..30, HUB-FR-40, HUB-FR-41, HUB-FR-42, HUB-FR-43, HUB-FR-45]
 design: [docs/design/chat-app/usecases-chat.md, docs/design/chat-app/ui-chat-extension.md#2-kiến-trúc-thông-tin, docs/design/agent-hub/ba-agent-hub.md#9-api--sự-kiện-stream, canvas: docs/design/chat-app/canvas/ (Main, FlowOpen, Welcome, States, Mobile)]
 owner: backend-lead + frontend-lead

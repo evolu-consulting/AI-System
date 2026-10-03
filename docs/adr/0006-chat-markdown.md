@@ -1,6 +1,6 @@
 # ADR-0006 · Render markdown + highlight code cho Chat App (C1)
 
-Trạng thái: **Proposed** (trình Gate C1) · Ngày: 2026-10-03 · Tác giả: frontend-lead · Spec: `docs/specs/C1-chat-ui/spec.md` §9 Q3, `plan-frontend.md` §10–11
+Trạng thái: **Accepted** (Gate C1, 2026-10-04) · Ngày: 2026-10-03 · Tác giả: frontend-lead · Spec: `docs/specs/C1-chat-ui/spec.md` §9 Q3, `plan-frontend.md` §10–11
 
 ## Bối cảnh
 - `ui-chat-extension.md` §5: câu trả lời stream theo `delta`, render **markdown GFM** (bảng, code có highlight + nút copy, link mở tab mới, danh sách), con trỏ nhấp nháy khi đang stream.

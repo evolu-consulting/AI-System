@@ -1,6 +1,6 @@
 # Gate C1 — Chat UI + contract + mock Hub
 
-Ngày: 2026-10-04 · Trạng thái: **CHỜ NGƯỜI DÙNG DUYỆT** · Readiness: READY sau xử lý (`C1-chat-ui/readiness.md`, 2 lần)
+Ngày: 2026-10-04 · Trạng thái: **ĐÃ DUYỆT 2026-10-04** · Readiness: READY sau xử lý (`C1-chat-ui/readiness.md`, 2 lần)
 
 Không tự duyệt (Luật 2b): có ADR thêm thư viện mới (ADR-0006) và một câu hỏi phạm vi UI (H2).
 
@@ -15,6 +15,10 @@ CR-018…024 (mốc C1, subscription, Orchestrator là agent, flow, "Consultant"
 |---|---|---|
 | G1 | Duyệt ADR-0006: `react-markdown` 10.1.0 + `remark-gfm` 4.0.1 + `highlight.js` core 10 ngôn ngữ, nạp lazy (~60 KB gzip, chunk riêng) | Duyệt. Không duyệt → bỏ F12, câu trả lời hiện chữ thô |
 | G2 | C1 chỉ giao diện Sáng (canvas chưa có token tối), Tối ghi TECH-DEBT | Chỉ Sáng |
+
+## 3b. Người dùng trả lời (2026-10-04)
+- G1: **Duyệt** ADR-0006 → Accepted.
+- G2: **Sáng + Tối** (khác mặc định). Hệ quả: frontend-lead bổ sung bảng token tối (đạt AA 4.5:1) + Cài đặt Giao diện Sáng/Tối/Theo hệ thống (ui-chat §7), task mới F14; qc thêm ca e2e đổi giao diện. Ghi CR-027.
 
 ## 4. Test-plan tóm tắt
 Contract ≈ 52 ca · unit acceptance ≈ 30 · e2e 37. Khoá `tests/acceptance/**`, `e2e/**`, `tests/contract/**`. Bộ contract chạy riêng `bun run test:contract:chat` (không nằm trong `bun test` gốc).
