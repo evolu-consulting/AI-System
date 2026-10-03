@@ -701,7 +701,7 @@
   <h3>F3. Tenant admin mở chức năng cho một phòng ban</h3>
 <pre><code>Groups › + Tạo group "Kế toán" → tab Thành viên: dán danh sách username
   → tab Feature: chọn "Kế toán" → tab Agent: chọn "Trợ lý hoá đơn" → Lưu
-  → thành viên thấy /kiemtra-hoadon và được Coordinator giao cho agent sau ≤ 5 giây</code></pre>
+  → thành viên thấy /kiemtra-hoadon và được Orchestrator giao cho agent sau ≤ 5 giây</code></pre>
   <p>Chỉ tiêu: ≤ 2 phút.</p>
 
   <h3>F4. "Sao tôi không thấy lệnh X?"</h3>
@@ -882,7 +882,7 @@
         <li>tên và mô tả feature, tên group.</li>
       </ul>
       Trên form, các trường này có tab nhỏ <span class="tag">VI</span> <span class="tag">EN</span> ngay trên ô nhập. Ô EN để trống thì tự dùng bản VI, và list hiện icon "EN thiếu" để admin bổ sung sau.</li>
-    <li><strong>Không cần hai bản:</strong> key, tên command, system prompt, mô tả agent cho Coordinator (Coordinator đọc được cả hai thứ tiếng).</li>
+    <li><strong>Không cần hai bản:</strong> key, tên command, system prompt, mô tả agent cho Orchestrator (Orchestrator đọc được cả hai thứ tiếng).</li>
     <li><strong>Độ dài chữ:</strong> bản EN thường dài hơn khoảng 20–30%. Nút và nhãn không dùng chiều rộng cố định. Kiểm tra lại cả hai ngôn ngữ ở khổ 1024px.</li>
     <li><strong>Định dạng:</strong> dùng <code>Intl</code> theo locale cho ngày, giờ, số và tiền. Thời gian tương đối ("5 phút trước" / "5 min ago") cũng theo locale.</li>
     <li><strong>Ảnh hưởng tới BA Admin:</strong> thêm <code>users.locale</code>, và đổi các trường mô tả hoặc hiển thị thành jsonb <code>{vi, en}</code>.</li>

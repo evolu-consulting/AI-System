@@ -22,7 +22,7 @@ Từ v0.4, hệ thống phục vụ nhiều **tenant** (công ty khách hàng). 
 ```
 Agent Studio sidebar
 ├─ Tổng quan
-├─ CẤU HÌNH AGENT   Agents · Coordinator · Tools · Models · Secrets
+├─ CẤU HÌNH AGENT   Agents · Orchestrator · Tools · Models · Secrets
 ├─ THỬ NGHIỆM       Playground
 ├─ VẬN HÀNH   ◀── tài liệu này
 │  ├─ Runs                    /studio/ops/runs          · /studio/ops/runs/:id
@@ -64,7 +64,7 @@ Agent Studio sidebar
 
 *Hình 4.1: dòng thời gian dạng waterfall, dùng một trục thời gian chung. Step dự phòng được tô vân chéo (không chỉ khác màu) và có nhãn lý do.*
 
-- Waterfall lồng theo cấp: Coordinator → agent → step con. Click một hàng thì panel bên phải hiện Input/Output/Raw. Input đã được che secret (hiện `••••`).
+- Waterfall lồng theo cấp: Orchestrator → agent → step con. Click một hàng thì panel bên phải hiện Input/Output/Raw. Input đã được che secret (hiện `••••`).
 - Hover một đoạn trên thanh thì tooltip hiện: tên step, bắt đầu và kết thúc (ms tính từ lúc run bắt đầu), provider, token.
 - Run đang chạy thì trace cập nhật trực tiếp qua SSE `/runs/:id/events`, header có nút [Huỷ run] (modal xác nhận mức vừa).
 - Run lỗi thì hiện khối lỗi ngay đầu trang, gồm mã lỗi, thông điệp, gợi ý, và link tới step gây lỗi.

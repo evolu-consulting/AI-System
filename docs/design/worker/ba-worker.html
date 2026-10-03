@@ -64,7 +64,7 @@
   </ul>
   <p>Worker lấy job từ hàng đợi, chạy, báo tiến độ, ghi kết quả. Nó cũng quản lý quota của các tài khoản subscription, và chia slot subscription công bằng giữa các tenant.</p>
   <p><strong>Quan hệ với Hub:</strong> Worker dùng chung codebase với Hub nhưng chạy thành <strong>process riêng</strong>, có thể trên máy riêng (máy đã đăng nhập CLI). Worker không có API công khai: nó chỉ nói chuyện với Hub qua Redis và DB, và gọi MCP catalog của Hub.</p>
-  <p><strong>Worker không làm:</strong> không quyết định dùng agent nào (việc của Coordinator), không tự đọc cấu hình agent, không kiểm tra quyền hay quota của user (Hub đã kiểm tra trước khi tạo job). Mọi thông tin cần để chạy đã nằm sẵn trong payload của job, kể cả <code>tenant_id</code>.</p>
+  <p><strong>Worker không làm:</strong> không quyết định dùng agent nào (việc của Orchestrator), không tự đọc cấu hình agent, không kiểm tra quyền hay quota của user (Hub đã kiểm tra trước khi tạo job). Mọi thông tin cần để chạy đã nằm sẵn trong payload của job, kể cả <code>tenant_id</code>.</p>
 </section>
 
 <section id="s2">

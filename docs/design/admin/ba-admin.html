@@ -68,7 +68,7 @@
     <li>Lưu secret (app-key Dify) dưới dạng mã hoá.</li>
     <li>Nhật ký thay đổi (audit log) và import/export cấu hình.</li>
   </ul>
-  <div class="note warn"><strong>v0.4:</strong> hệ thống chuyển từ "chỉ nội bộ" sang <strong>multi-tenant cho công ty / khách hàng bên ngoài</strong>. Workflow trở thành catalog dùng chung: agent ở Agent Hub chọn workflow từ đây, không khai báo tool riêng nữa. Cấu hình agent, Coordinator, provider, model profile vẫn thuộc <a href="../agent-hub/ba-agent-hub.html" style="color:inherit">Agent Hub</a>.</div>
+  <div class="note warn"><strong>v0.4:</strong> hệ thống chuyển từ "chỉ nội bộ" sang <strong>multi-tenant cho công ty / khách hàng bên ngoài</strong>. Workflow trở thành catalog dùng chung: agent ở Agent Hub chọn workflow từ đây, không khai báo tool riêng nữa. Cấu hình agent, Orchestrator, provider, model profile vẫn thuộc <a href="../agent-hub/ba-agent-hub.html" style="color:inherit">Agent Hub</a>.</div>
   <p><strong>Admin không làm:</strong> không chạy workflow, không gọi LLM, không lưu hội thoại, không cấu hình agent. Những việc đó thuộc Agent Hub. Khi bấm nút "Test" trên Admin, Admin chỉ nhờ Hub chạy thử.</p>
   <div class="note info"><strong>Giả định:</strong> command, workflow, secret, key Dify và API key <strong>dùng chung toàn hệ thống</strong>; tenant chỉ được cấp quyền dùng, không tự tạo. Dùng chung một Postgres với Agent Hub, trong đó Admin sở hữu schema <code>admin</code>.</div>
 </section>

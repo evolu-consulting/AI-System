@@ -303,7 +303,7 @@
     },
     "agentStudio": {
       "title": "Agent Studio",
-      "body": "Agent, Coordinator, model và vận hành nằm ở Agent Studio. Agent chọn workflow từ catalog của Admin.",
+      "body": "Agent, Orchestrator, model và vận hành nằm ở Agent Studio. Agent chọn workflow từ catalog của Admin.",
       "open": "Mở Agent Studio"
     },
     "topErrors": {

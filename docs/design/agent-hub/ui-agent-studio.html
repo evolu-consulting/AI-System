@@ -130,7 +130,7 @@
 
 <header>
   <h1>Agent Studio — Đặc tả UI/UX (Agent Hub)</h1>
-  <p>UI riêng của Agent Hub: cấu hình agent, Coordinator, chọn workflow làm tool, model và provider, cấp agent cho tenant; thử nghiệm bằng Playground; vận hành</p>
+  <p>UI riêng của Agent Hub: cấu hình agent, Orchestrator, chọn workflow làm tool, model và provider, cấp agent cho tenant; thử nghiệm bằng Playground; vận hành</p>
   <div class="meta"><span class="tag">v0.4 · draft</span><span class="tag">2026-10-01</span><span class="tag">shadcn/ui · song ngữ VI/EN</span><span class="tag">Đáp ứng HUB-FR-60 → 73, 77, 78, 84</span></div>
 </header>
 
@@ -141,7 +141,7 @@
     <li><a href="#s3">Khung ứng dụng</a></li>
     <li><a href="#s4">Tổng quan</a></li>
     <li><a href="#s5">Agents</a></li>
-    <li><a href="#s6">Coordinator</a></li>
+    <li><a href="#s6">Orchestrator</a></li>
     <li><a href="#s7">Tools (chọn workflow)</a></li>
     <li><a href="#s8">Models</a></li>
     <li><a href="#s9">Quyền agent</a></li>
@@ -155,11 +155,11 @@
 
 <section id="s1">
   <h2>1. Vai trò &amp; nguyên tắc</h2>
-  <p><strong>Agent Studio</strong> là nơi <code>platform_admin</code> thiết kế cách hệ thống <em>suy nghĩ và hành động</em>: có những agent nào, mỗi agent dùng model gì và được dùng workflow nào, Coordinator chọn agent ra sao, tenant nào được dùng agent nào. Studio được Hub phục vụ tại <code>/studio</code>, dùng chung design system (shadcn) và chung phiên đăng nhập với Admin UI. Chỉ <code>platform_admin</code> vào được. <code>tenant_admin</code> cấp agent cho group trong Admin (trang Groups), không vào Studio.</p>
+  <p><strong>Agent Studio</strong> là nơi <code>platform_admin</code> thiết kế cách hệ thống <em>suy nghĩ và hành động</em>: có những agent nào, mỗi agent dùng model gì và được dùng workflow nào, Orchestrator chọn agent ra sao, tenant nào được dùng agent nào. Studio được Hub phục vụ tại <code>/studio</code>, dùng chung design system (shadcn) và chung phiên đăng nhập với Admin UI. Chỉ <code>platform_admin</code> vào được. <code>tenant_admin</code> cấp agent cho group trong Admin (trang Groups), không vào Studio.</p>
   <div class="table-scroll"><table>
     <tr><th>#</th><th>Nguyên tắc</th><th>Thể hiện</th></tr>
-    <tr><td>S1</td><td><strong>Thấy điều LLM thấy</strong></td><td>Mô tả agent, tool (lấy từ workflow) và prompt của Coordinator đều có nút "Xem như model thấy", hiện đúng phần text và JSON schema sẽ gửi cho model. Chất lượng định tuyến phụ thuộc gần như hoàn toàn vào phần này</td></tr>
-    <tr><td>S2</td><td><strong>Thử trước khi tin</strong></td><td>Workflow có nút Chạy thử. Agent có Test panel. Coordinator có Dry-run định tuyến. Toàn hệ thống có Playground. Tất cả đều chạy được trên <em>bản nháp</em> chưa lưu</td></tr>
+    <tr><td>S1</td><td><strong>Thấy điều LLM thấy</strong></td><td>Mô tả agent, tool (lấy từ workflow) và prompt của Orchestrator đều có nút "Xem như model thấy", hiện đúng phần text và JSON schema sẽ gửi cho model. Chất lượng định tuyến phụ thuộc gần như hoàn toàn vào phần này</td></tr>
+    <tr><td>S2</td><td><strong>Thử trước khi tin</strong></td><td>Workflow có nút Chạy thử. Agent có Test panel. Orchestrator có Dry-run định tuyến. Toàn hệ thống có Playground. Tất cả đều chạy được trên <em>bản nháp</em> chưa lưu</td></tr>
     <tr><td>S3</td><td><strong>Trạng thái thật ngay tại chỗ</strong></td><td>Chỗ nào chọn provider hay profile là chỗ đó hiện trạng thái sống (ok/cooldown/logged_out) và ghi "lúc này sẽ chạy bằng …"</td></tr>
     <tr><td>S4</td><td><strong>Workflow ở Admin, agent ở Studio</strong></td><td>Workflow là catalog dùng chung của Admin: Studio chỉ <em>chọn</em>, không tạo, không đặt tên, không viết lại mô tả. Không có ô nào tham chiếu command. Mọi cấu hình còn lại của agent thuộc Studio</td></tr>
     <tr><td>S5</td><td><strong>Cùng ngôn ngữ thiết kế với Admin</strong></td><td>Dùng lại khung, DataTable, SecretField, TestPanel, ConfirmDialog, audit và phím tắt của <a href="../admin/ui-admin.html" style="color:var(--accent)">UI/UX Admin</a> (mục 4–6, 9–12, 14–15). Tài liệu này chỉ đặc tả phần riêng</td></tr>
@@ -172,7 +172,7 @@
 ├─ Tổng quan                          /studio
 ├─ CẤU HÌNH AGENT
 │  ├─ Agents                          /studio/agents        · /new · /:id
-│  ├─ Coordinator                     /studio/coordinator   (một trang, singleton)
+│  ├─ Orchestrator                     /studio/orchestrator   (một trang, singleton)
 │  ├─ Tools                           /studio/tools         · /:workflow_id  (catalog workflow của Admin, chỉ đọc)
 │  ├─ Models                          /studio/models?tab=providers|profiles|prices
 │  └─ Secrets                         /studio/secrets       (drawer)
@@ -185,7 +185,7 @@
 └─ HỆ THỐNG
    ├─ Nhật ký thay đổi                /studio/audit
    └─ Import / Export                 /studio/transfer</code></pre>
-  <p>Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở <em>Tools</em> → gắn vào <em>Agents</em> → chỉnh <em>Coordinator</em> → cấp cho tenant ở <em>Quyền agent</em> → thử ở <em>Playground</em>. Trên menu, Agents đứng đầu vì được mở nhiều nhất.</p>
+  <p>Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở <em>Tools</em> → gắn vào <em>Agents</em> → chỉnh <em>Orchestrator</em> → cấp cho tenant ở <em>Quyền agent</em> → thử ở <em>Playground</em>. Trên menu, Agents đứng đầu vì được mở nhiều nhất.</p>
 </section>
 
 <section id="s3">
@@ -196,7 +196,7 @@
       <div class="wf-nav">Tổng quan</div>
       <div class="wf-grp">Cấu hình agent</div>
       <div class="wf-nav on">Agents <span>6</span></div>
-      <div class="wf-nav">Coordinator</div>
+      <div class="wf-nav">Orchestrator</div>
       <div class="wf-nav">Tools <span>11</span></div>
       <div class="wf-nav">Models <span class="b warn">2</span></div>
       <div class="wf-nav">Secrets</div>
@@ -241,15 +241,15 @@
         <div style="margin-bottom:6px"><span class="b warn">!</span> Agent <b>reviewer</b> có tỉ lệ lỗi 18% trong 24 giờ · <span class="wf-btn ghost">Xem runs</span></div>
         <div><span class="b warn">!</span> Agent <b>reviewer</b> đang bật nhưng chưa cấp cho tenant nào · <span class="wf-btn ghost">Cấp cho tenant…</span></div>
       </div>
-      <div class="wf-card"><h5>Định tuyến của Coordinator (24 giờ)</h5>
-        <div class="wf-muted" style="margin-bottom:6px">Coordinator đã giao việc cho agent nào</div>
+      <div class="wf-card"><h5>Định tuyến của Orchestrator (24 giờ)</h5>
+        <div class="wf-muted" style="margin-bottom:6px">Orchestrator đã giao việc cho agent nào</div>
         <div>chat (tự trả lời) · <b>54%</b></div><div>hoadon · <b>21%</b></div><div>dev-helper · <b>15%</b></div><div>trello · <b>7%</b></div><div>hỏi lại user · <b>3%</b></div>
       </div>
     </div>
   </div></div></div>
   <ul>
     <li>Card <strong>Cần chú ý</strong> gom mọi thứ cần xử lý: provider hỏng, agent lỗi nhiều, workflow được gắn không kết nối được, agent đang bật nhưng chưa cấp cho tenant nào. Không có gì thì hiện "✓ Mọi thứ ổn".</li>
-    <li>Card <strong>Định tuyến</strong> cho biết Coordinator chọn agent có hợp lý không. Tỉ lệ "hỏi lại" cao là dấu hiệu mô tả agent chưa rõ. Click một dòng thì mở Runs đã lọc theo agent đó.</li>
+    <li>Card <strong>Định tuyến</strong> cho biết Orchestrator chọn agent có hợp lý không. Tỉ lệ "hỏi lại" cao là dấu hiệu mô tả agent chưa rõ. Click một dòng thì mở Runs đã lọc theo agent đó.</li>
   </ul>
 </section>
 
@@ -259,7 +259,7 @@
   <div class="wf-scroll"><div class="wf"><div class="wf-main">
     <div class="wf-h"><h4>Agents</h4><span class="sp"></span><span class="wf-btn pri">+ Tạo agent</span></div>
     <table class="wf-tbl">
-      <tr><th>Agent</th><th>Mô tả (Coordinator đọc)</th><th>Runtime</th><th>Profile · đang chạy bằng</th><th>Workflow</th><th>Tenant</th><th>24 giờ</th><th>Bật</th></tr>
+      <tr><th>Agent</th><th>Mô tả (Orchestrator đọc)</th><th>Runtime</th><th>Profile · đang chạy bằng</th><th>Workflow</th><th>Tenant</th><th>24 giờ</th><th>Bật</th></tr>
       <tr><td><b>chat</b> <span class="wf-muted">Trợ lý chung</span></td><td>Câu hỏi chung, viết lách, giải thích…</td><td>llm</td><td>cheap · <span class="b ok">gemini-api</span></td><td>2</td><td>4</td><td>221 · 0.5%</td><td><span class="wf-tog"></span></td></tr>
       <tr><td><b>hoadon</b> <span class="wf-muted">Trợ lý hoá đơn</span></td><td>Kiểm tra hoá đơn XML/PDF/ảnh…</td><td>dify-workflow</td><td>—</td><td>1</td><td>2</td><td>86 · 1.2%</td><td><span class="wf-tog"></span></td></tr>
       <tr><td><b>dev-helper</b> <span class="wf-muted">Trợ lý kỹ thuật</span></td><td>Việc nhiều bước, xử lý file, code…</td><td>agentic-cli</td><td>coder · <span class="b warn">claude-sub (dự phòng)</span></td><td>3</td><td>1</td><td>62 · 3.2%</td><td><span class="wf-tog"></span></td></tr>
@@ -282,7 +282,7 @@
           <div class="wf-f"><label>Tên hiển thị</label><div class="wf-in"><span class="tag">VI</span> Trợ lý kỹ thuật &nbsp;<span class="wf-muted">|</span>&nbsp; <span class="tag">EN</span> Tech assistant</div></div>
           <div class="wf-help">Hiện cho người dùng trong khối các bước ("Trợ lý kỹ thuật đang làm…")</div>
           <div class="wf-f"><label>Mô tả <span class="wf-req">*</span></label><div class="wf-in ta">Dùng khi yêu cầu cần nhiều bước, đọc/sửa file đính kèm, phân tích code hoặc tài liệu dài. Không dùng cho câu hỏi ngắn hay tra cứu đơn giản.</div></div>
-          <div class="wf-help">Coordinator chỉ dựa vào mô tả này để chọn agent. Ghi rõ <b>khi nào dùng</b> / <b>khi nào không</b>. 128/400 · <a style="color:var(--accent)">Xem như Coordinator thấy</a></div>
+          <div class="wf-help">Orchestrator chỉ dựa vào mô tả này để chọn agent. Ghi rõ <b>khi nào dùng</b> / <b>khi nào không</b>. 128/400 · <a style="color:var(--accent)">Xem như Orchestrator thấy</a></div>
         </div>
         <div class="wf-card"><h5>② Cách chạy</h5>
           <div class="wf-f"><label>Runtime</label><div><span class="wf-chip">llm</span><span class="wf-chip">dify-workflow</span><span class="wf-chip">dify-agent</span><span class="wf-chip on">agentic-cli</span></div></div>
@@ -299,7 +299,7 @@
           <div class="wf-f"><label>Tenant được dùng</label><div><span class="wf-chip">platform</span> <span class="wf-muted">· sửa ở</span> <a style="color:var(--accent)">Quyền agent</a></div></div>
         </div>
       </div>
-      <div><div class="wf-card" style="position:sticky;top:0"><h5>▶ Chạy thử agent <span class="wf-muted" style="font-weight:400">· bản đang sửa, bỏ qua Coordinator</span></h5>
+      <div><div class="wf-card" style="position:sticky;top:0"><h5>▶ Chạy thử agent <span class="wf-muted" style="font-weight:400">· bản đang sửa, bỏ qua Orchestrator</span></h5>
         <div class="wf-in ta">Đọc file đính kèm và liệt kê các hàm chưa có test</div>
         <div style="margin:8px 0"><span class="wf-chip">📎 utils.ts</span> <span class="wf-chip">Profile: coder ▾</span></div>
         <div style="text-align:right;margin-bottom:10px"><span class="wf-btn pri">▶ Chạy thử  Ctrl↵</span></div>
@@ -325,18 +325,18 @@
       </ul>
       </td></tr>
     <tr><td>Chọn workflow</td><td>Ô ③ mở picker catalog: tìm theo key/tên, lọc loại app, mỗi dòng có mô tả và nút "Xem như model thấy". Chỉ hiện workflow đang bật. Không có ô đặt tên hay viết mô tả</td></tr>
-    <tr><td>Xem như Coordinator thấy</td><td>Popover hiện đúng đoạn Coordinator nhận về agent này: <code>- dev-helper: Dùng khi…</code>, kèm danh sách các agent khác để admin so sánh xem mô tả có bị trùng ý không</td></tr>
+    <tr><td>Xem như Orchestrator thấy</td><td>Popover hiện đúng đoạn Orchestrator nhận về agent này: <code>- dev-helper: Dùng khi…</code>, kèm danh sách các agent khác để admin so sánh xem mô tả có bị trùng ý không</td></tr>
     <tr><td>Chọn Bash</td><td>Cảnh báo inline và bắt tick "Tôi hiểu agent chạy được lệnh hệ thống trên máy Worker"</td></tr>
-    <tr><td>Chạy thử</td><td>Gọi thẳng agent (bỏ qua Coordinator) bằng bản nháp. Mặc định mở tab Trace. Đổi được profile cho lượt thử mà không lưu</td></tr>
+    <tr><td>Chạy thử</td><td>Gọi thẳng agent (bỏ qua Orchestrator) bằng bản nháp. Mặc định mở tab Trace. Đổi được profile cho lượt thử mà không lưu</td></tr>
     <tr><td>Lưu agent mới</td><td>Lưu xong mà agent chưa cấp cho tenant nào thì toast nhắc "Chưa tenant nào dùng được agent này" kèm nút [Cấp cho tenant…]</td></tr>
-    <tr><td>Tắt agent</td><td>Toast có Hoàn tác, kèm nhắc: "Coordinator sẽ không còn chọn agent này. Các yêu cầu tương tự sẽ được chat tự trả lời"</td></tr>
+    <tr><td>Tắt agent</td><td>Toast có Hoàn tác, kèm nhắc: "Orchestrator sẽ không còn chọn agent này. Các yêu cầu tương tự sẽ được chat tự trả lời"</td></tr>
   </table></div>
 </section>
 
 <section id="s6">
-  <h2>6. Coordinator</h2>
+  <h2>6. Orchestrator</h2>
   <div class="wf-scroll"><div class="wf">
-    <div class="wf-top"><span class="wf-crumb">Cấu hình agent / <b>Coordinator</b></span><span class="sp" style="flex:1"></span><span class="wf-btn ghost">Lịch sử</span></div>
+    <div class="wf-top"><span class="wf-crumb">Cấu hình agent / <b>Orchestrator</b></span><span class="sp" style="flex:1"></span><span class="wf-btn ghost">Lịch sử</span></div>
     <div class="wf-main"><div class="wf-cols">
       <div>
         <div class="wf-card"><h5>① Model &amp; giới hạn</h5>
@@ -375,14 +375,14 @@
     <div class="wf-bar"><span class="wf-muted">Đã lưu · hub v18 · định tuyến <span class="b ok">8/9</span></span><span class="sp"></span><span class="wf-btn">Huỷ</span><span class="wf-btn pri">Lưu (tự kiểm thử)</span></div>
   </div></div>
   <ul>
-    <li><strong>Coordinator là một trang singleton</strong>, không nằm trong danh sách Agents và không tắt được. Nhờ vậy không thể rơi vào tình trạng "không có Coordinator" (HUB-BR-08).</li>
-    <li><strong>Agent Coordinator nhìn thấy:</strong> trang này và Dry-run dùng toàn bộ agent đang bật. Khi chạy thật, mỗi user chỉ đưa cho Coordinator các agent user đó được dùng (HUB-FR-77). Muốn xem theo một user thì dùng Playground với "Chạy như user".</li>
+    <li><strong>Orchestrator là một trang singleton</strong>, không nằm trong danh sách Agents và không tắt được. Nhờ vậy không thể rơi vào tình trạng "không có Orchestrator" (HUB-BR-08).</li>
+    <li><strong>Agent Orchestrator nhìn thấy:</strong> trang này và Dry-run dùng toàn bộ agent đang bật. Khi chạy thật, mỗi user chỉ đưa cho Orchestrator các agent user đó được dùng (HUB-FR-77). Muốn xem theo một user thì dùng Playground với "Chạy như user".</li>
     <li><strong>Phát hiện mô tả trùng ý:</strong> khi hai agent có mô tả quá giống nhau thì hiện badge cảnh báo. Có thể so bằng embedding, hoặc đơn giản là so trùng từ khoá ở v1.</li>
-    <li><strong>Bộ câu kiểm thử định tuyến</strong> (MUST, HUB-FR-73): tab "Kiểm thử" ngay trong trang Coordinator, gồm bảng các câu (nội dung, agent mong đợi, kết quả lần chạy gần nhất). Thêm câu bằng tay, hoặc từ nút [+ Lưu làm câu kiểm thử] ở Dry-run, Playground và Runs. Bộ câu chạy với toàn bộ agent, không lọc theo quyền.</li>
-    <li><strong>Tự chạy khi lưu:</strong> bấm Lưu ở Coordinator, hoặc lưu/bật/tắt/xoá một agent, thì nút Lưu chuyển thành "Đang kiểm thử định tuyến… 6/9" (các câu chạy song song, tối đa khoảng 30 giây). Kết quả:
+    <li><strong>Bộ câu kiểm thử định tuyến</strong> (MUST, HUB-FR-73): tab "Kiểm thử" ngay trong trang Orchestrator, gồm bảng các câu (nội dung, agent mong đợi, kết quả lần chạy gần nhất). Thêm câu bằng tay, hoặc từ nút [+ Lưu làm câu kiểm thử] ở Dry-run, Playground và Runs. Bộ câu chạy với toàn bộ agent, không lọc theo quyền.</li>
+    <li><strong>Tự chạy khi lưu:</strong> bấm Lưu ở Orchestrator, hoặc lưu/bật/tắt/xoá một agent, thì nút Lưu chuyển thành "Đang kiểm thử định tuyến… 6/9" (các câu chạy song song, tối đa khoảng 30 giây). Kết quả:
       <ul>
         <li><span class="b ok">✓ 9/9 (≥ baseline 8/9)</span>: lưu, và toast ghi "Đã lưu · định tuyến 9/9".</li>
-        <li><span class="b err">✕ 7/9 (&lt; baseline 8/9)</span>: <strong>không lưu</strong>. Mở modal liệt kê từng câu sai (mong đợi → thực tế, kèm lý do Coordinator đưa ra). Có các nút [Sửa tiếp] và [Chỉnh câu kiểm thử…]. Chỉnh hay xoá câu kiểm thử phải ghi lý do, và việc đó được đưa vào audit.</li>
+        <li><span class="b err">✕ 7/9 (&lt; baseline 8/9)</span>: <strong>không lưu</strong>. Mở modal liệt kê từng câu sai (mong đợi → thực tế, kèm lý do Orchestrator đưa ra). Có các nút [Sửa tiếp] và [Chỉnh câu kiểm thử…]. Chỉnh hay xoá câu kiểm thử phải ghi lý do, và việc đó được đưa vào audit.</li>
       </ul>
     </li>
     <li>Bộ câu rỗng thì không chặn, nhưng hiện gợi ý "Thêm vài câu kiểm thử để tránh làm hỏng định tuyến". Mỗi lần kiểm thử đều gọi model thật, nên chi phí được tính vào Vận hành với nhãn <span class="b off">routing-test</span>.</li>
@@ -512,7 +512,7 @@
 <section id="s10">
   <h2>10. Playground</h2>
   <div class="wf-scroll"><div class="wf"><div class="wf-main"><div class="wf-cols">
-    <div class="wf-card" style="min-height:260px"><h5>Chat thử <span class="wf-muted" style="font-weight:400">· Đích: </span><span class="wf-chip on">Toàn hệ thống (Coordinator)</span><span class="wf-chip">Một agent ▾</span></h5>
+    <div class="wf-card" style="min-height:260px"><h5>Chat thử <span class="wf-muted" style="font-weight:400">· Đích: </span><span class="wf-chip on">Toàn hệ thống (Orchestrator)</span><span class="wf-chip">Một agent ▾</span></h5>
       <div style="background:var(--accent-soft);border-radius:10px;padding:6px 10px;margin:0 0 8px auto;width:fit-content">Kiểm tra hoá đơn này rồi tạo thẻ Trello nếu sai 📎</div>
       <div class="wf-muted" style="margin-bottom:6px">✓ Kiểm tra hoá đơn · ⟳ Đang tạo thẻ Trello…</div>
       <div>HD-0114 sai tổng tiền (lệch 1.200.000đ). Đã tạo thẻ…</div>
@@ -521,9 +521,9 @@
     </div>
     <div class="wf-card"><h5>Trace trực tiếp</h5>
       <div class="wf-tl">
-        <div>Coordinator → <b>hoadon</b> · 0.9s</div>
+        <div>Orchestrator → <b>hoadon</b> · 0.9s</div>
         <div>tool <b>check_invoice</b> · 6.1s</div>
-        <div>Coordinator → <b>trello</b> · 0.7s</div>
+        <div>Orchestrator → <b>trello</b> · 0.7s</div>
         <div>⟳ tool <b>create_card</b>…</div>
       </div>
       <div style="margin-top:8px"><span class="wf-btn ghost">Mở trong Runs</span> <span class="wf-btn ghost">+ Lưu làm câu kiểm thử</span></div>
@@ -531,9 +531,9 @@
   </div></div></div></div>
   <ul>
     <li>Dùng lại chính component chat của Chat App (<code>packages/ui-chat</code>), nên thấy đúng những gì người dùng cuối thấy. Bên phải có thêm trace.</li>
-    <li><strong>Đích:</strong> toàn hệ thống (qua Coordinator) hoặc một agent cụ thể.</li>
-    <li><strong>Dùng bản nháp chưa lưu:</strong> áp các thay đổi chưa lưu của agent, workflow được gắn và Coordinator vào lượt thử, để thử trước khi áp dụng cho mọi người.</li>
-    <li><strong>Chạy như user</strong>: mặc định là chính admin. Chọn tenant rồi chọn user. Lượt thử áp đúng quyền command và agent của user đó: Coordinator chỉ thấy agent user được dùng, và "Một agent ▾" chỉ liệt kê các agent đó. Chỉ dùng để tái hiện ngữ cảnh (không truy cập được dữ liệu riêng của người khác) và có ghi audit.</li>
+    <li><strong>Đích:</strong> toàn hệ thống (qua Orchestrator) hoặc một agent cụ thể.</li>
+    <li><strong>Dùng bản nháp chưa lưu:</strong> áp các thay đổi chưa lưu của agent, workflow được gắn và Orchestrator vào lượt thử, để thử trước khi áp dụng cho mọi người.</li>
+    <li><strong>Chạy như user</strong>: mặc định là chính admin. Chọn tenant rồi chọn user. Lượt thử áp đúng quyền command và agent của user đó: Orchestrator chỉ thấy agent user được dùng, và "Một agent ▾" chỉ liệt kê các agent đó. Chỉ dùng để tái hiện ngữ cảnh (không truy cập được dữ liệu riêng của người khác) và có ghi audit.</li>
     <li>Run trong Playground được gắn nhãn <span class="b off">playground</span> trong Runs, tính chi phí riêng (không tính vào quota hay số thu của tenant) và không tính vào thống kê định tuyến.</li>
   </ul>
 </section>
@@ -543,8 +543,8 @@
   <p>Giống hệt mẫu của Admin (<a href="../admin/ui-admin.html#s7" style="color:var(--accent)">UI/UX Admin</a>, mục 7.8, 7.10, 7.11), chỉ khác phạm vi:</p>
   <ul>
     <li><strong>Secrets:</strong> chỉ API key của provider. Mã hoá bằng <code>HUB_SECRETS_KEY</code>. Chỉ ghi, không đọc lại. App-key của workflow là secret của Admin.</li>
-    <li><strong>Nhật ký:</strong> thay đổi của agent, workflow được gắn, Coordinator, entitlement agent, provider, profile, đơn giá và secret, có diff và khôi phục. Có thêm các sự kiện <code>view_trace</code> (kèm tenant) và <code>playground_run_as</code>.</li>
-    <li><strong>Import/Export:</strong> file <code>hub-config-v18.yaml</code> gồm agents (kèm key các workflow được gắn), coordinator, providers, profiles. <code>platform_admin</code> dùng file này để Claude session sinh hoặc sửa cấu hình agent hàng loạt, rồi import có xem diff. Key workflow không có trong catalog Admin thì import báo lỗi dòng đó.</li>
+    <li><strong>Nhật ký:</strong> thay đổi của agent, workflow được gắn, Orchestrator, entitlement agent, provider, profile, đơn giá và secret, có diff và khôi phục. Có thêm các sự kiện <code>view_trace</code> (kèm tenant) và <code>playground_run_as</code>.</li>
+    <li><strong>Import/Export:</strong> file <code>hub-config-v18.yaml</code> gồm agents (kèm key các workflow được gắn), orchestrator, providers, profiles. <code>platform_admin</code> dùng file này để Claude session sinh hoặc sửa cấu hình agent hàng loạt, rồi import có xem diff. Key workflow không có trong catalog Admin thì import báo lỗi dòng đó.</li>
   </ul>
 </section>
 
@@ -557,14 +557,14 @@
   → Studio › Tools: tìm workflow vừa tạo → [Xem như model thấy] → [▶ Chạy thử] ✓
   → Agents › + Tạo agent: key, mô tả "Dùng khi… Không dùng khi…"
       runtime llm + profile, ③ chọn workflow từ catalog → [▶ Chạy thử] ✓ → Lưu
-  → Coordinator › Dry-run 2–3 câu ví dụ → thấy chọn đúng agent mới → lưu các câu đó làm câu kiểm thử
+  → Orchestrator › Dry-run 2–3 câu ví dụ → thấy chọn đúng agent mới → lưu các câu đó làm câu kiểm thử
   → Quyền agent: bật entitlement cho các tenant cần dùng
       (tenant_admin của từng tenant cấp cho group ở Admin › Groups)
   → Playground: chạy như một user đã được cấp → thử end-to-end → xong</code></pre>
-  <h3>F2. Coordinator chọn sai agent</h3>
+  <h3>F2. Orchestrator chọn sai agent</h3>
 <pre><code>Tổng quan: tỉ lệ "hỏi lại" tăng, hoặc user báo sai
-  → Runs › lọc run đó › xem bước Coordinator (lý do chọn)
-  → sửa mô tả agent (hoặc prompt Coordinator) → Dry-run câu đó
+  → Runs › lọc run đó › xem bước Orchestrator (lý do chọn)
+  → sửa mô tả agent (hoặc prompt Orchestrator) → Dry-run câu đó
   → [+ Lưu làm câu kiểm thử] cho câu bị sai → Lưu (bộ kiểm thử tự chạy, chặn nếu tỉ lệ đúng giảm)</code></pre>
   <p>Nếu model chọn sai <em>tool</em> (không phải agent) thì sửa mô tả workflow ở Admin.</p>
   <h3>F3. Provider hết phiên đăng nhập</h3>
@@ -578,7 +578,7 @@
 <pre><code>Admin › Tenants: tạo tenant "acme" (entitlement feature, quota, slot subscription)
   → Studio › Quyền agent: lọc tenant acme → bật hoadon, chat
   → tenant_admin của acme: Admin › Groups › ke-toan › cấp hoadon
-  → user trong ke-toan chat "kiểm tra hoá đơn…" → Coordinator chọn được hoadon</code></pre>
+  → user trong ke-toan chat "kiểm tra hoá đơn…" → Orchestrator chọn được hoadon</code></pre>
 </section>
 
 <section id="s13">
@@ -595,13 +595,13 @@
     <tr><td>Gỡ workflow khỏi agent</td><td>Được phép. Nếu là workflow duy nhất của agent <code>dify-workflow</code>/<code>dify-agent</code> thì phải chọn workflow khác trước</td><td>"Agent cần một workflow"</td></tr>
     <tr><td>Thu hồi entitlement</td><td>Được phép, bắt xác nhận</td><td>Hộp xác nhận nêu số grant sẽ mất hiệu lực</td></tr>
     <tr><td>Đơn giá</td><td>Giá ≥ 0, <code>effective_from</code> không trùng với dòng khác của cùng provider + model</td><td>"Đã có đơn giá hiệu lực từ ngày này"</td></tr>
-    <tr><td>Coordinator</td><td>Phải có profile hợp lệ, max_steps từ 1 đến 10</td><td>"Số bước tối đa từ 1 đến 10"</td></tr>
+    <tr><td>Orchestrator</td><td>Phải có profile hợp lệ, max_steps từ 1 đến 10</td><td>"Số bước tối đa từ 1 đến 10"</td></tr>
   </table></div>
   <p>Trạng thái đang tải, rỗng, lỗi, xung đột và mất kết nối dùng chung quy ước với Admin (UI/UX Admin, mục 9). Riêng trang rỗng:</p>
   <ul>
-    <li><strong>Agents rỗng:</strong> "Chưa có agent nào. Coordinator sẽ tự trả lời mọi câu hỏi." kèm nút [+ Tạo agent đầu tiên].</li>
+    <li><strong>Agents rỗng:</strong> "Chưa có agent nào. Orchestrator sẽ tự trả lời mọi câu hỏi." kèm nút [+ Tạo agent đầu tiên].</li>
     <li><strong>Tools rỗng:</strong> "Catalog chưa có workflow nào. Workflow được tạo ở Admin." kèm nút [Mở Admin › Workflows ↗].</li>
-    <li><strong>Quyền agent rỗng:</strong> "Chưa cấp agent cho tenant nào. User chỉ chat được với Coordinator." </li>
+    <li><strong>Quyền agent rỗng:</strong> "Chưa cấp agent cho tenant nào. User chỉ chat được với Orchestrator." </li>
   </ul>
 </section>
 
@@ -610,7 +610,7 @@
   <div class="table-scroll"><table>
     <tr><th>Màn hình</th><th>Đáp ứng</th></tr>
     <tr><td>5 Agents</td><td>HUB-FR-60, 61 · HUB-BR-09</td></tr>
-    <tr><td>6 Coordinator</td><td>HUB-FR-62, 63, 73 · HUB-BR-08, 13</td></tr>
+    <tr><td>6 Orchestrator</td><td>HUB-FR-62, 63, 73 · HUB-BR-08, 13</td></tr>
     <tr><td>7 Tools</td><td>HUB-FR-64, 65 · HUB-BR-09, 10, 11, 12</td></tr>
     <tr><td>8 Models</td><td>HUB-FR-66, 67, 84</td></tr>
     <tr><td>9 Quyền agent</td><td>HUB-FR-77, 78 · HUB-BR-17</td></tr>

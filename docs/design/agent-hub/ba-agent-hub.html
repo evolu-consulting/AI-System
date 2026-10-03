@@ -68,13 +68,13 @@
   <ul>
     <li>Verify JWT, cách ly dữ liệu theo tenant, tính quyền command và agent của user.</li>
     <li>Cung cấp menu command (chỉ những lệnh user được dùng).</li>
-    <li>Parse và chạy command, điều phối agent qua Coordinator.</li>
+    <li>Parse và chạy command, điều phối agent qua Orchestrator.</li>
     <li>Runtime <code>llm</code>, <code>dify-workflow</code>, <code>dify-agent</code> chạy ngay trong Hub. Runtime <code>agentic-cli</code> và các job dài được giao cho <a href="../worker/ba-worker.html">Worker</a>.</li>
     <li>Model Gateway (dự phòng theo profile), lưu hội thoại, stream kết quả.</li>
     <li>Ghi log chi phí theo tenant, kiểm tra quota (cảnh báo, không chặn), ghi trace.</li>
     <li>Mở workflow của agent ra dưới dạng MCP server.</li>
   </ul>
-  <div class="note info"><strong>v0.4:</strong> Hệ thống phục vụ <strong>nhiều tenant</strong> (công ty khách hàng). Mọi dữ liệu runtime gắn <code>tenant_id</code>. <strong>Workflow là catalog dùng chung</strong> ở Admin (<code>admin.workflows</code>): command và agent cùng dùng catalog này. Agent chỉ <em>chọn</em> workflow, Hub dùng luôn tên và mô tả của workflow làm tool. Hub vẫn <strong>sở hữu cấu hình agent</strong>: agent, Coordinator, provider, model profile, secret provider, quyền agent. Cấu hình qua UI <a href="ui-agent-studio.html" style="color:inherit">Agent Studio</a> (chỉ <code>platform_admin</code>).</div>
+  <div class="note info"><strong>v0.4:</strong> Hệ thống phục vụ <strong>nhiều tenant</strong> (công ty khách hàng). Mọi dữ liệu runtime gắn <code>tenant_id</code>. <strong>Workflow là catalog dùng chung</strong> ở Admin (<code>admin.workflows</code>): command và agent cùng dùng catalog này. Agent chỉ <em>chọn</em> workflow, Hub dùng luôn tên và mô tả của workflow làm tool. Hub vẫn <strong>sở hữu cấu hình agent</strong>: agent, Orchestrator, provider, model profile, secret provider, quyền agent. Cấu hình qua UI <a href="ui-agent-studio.html" style="color:inherit">Agent Studio</a> (chỉ <code>platform_admin</code>).</div>
   <p><strong>Agent Hub không làm:</strong> không sửa command, workflow, feature, tenant hay user (việc của <a href="../admin/ba-admin.html">Admin</a>), không chạy tiến trình CLI (việc của Worker).</p>
 </section>
 
@@ -102,7 +102,7 @@
     <tr><td>Run</td><td>Một lần xử lý cho một message của user. Có hai loại: <code>command</code> hoặc <code>orchestrated</code></td></tr>
     <tr><td>Step</td><td>Một bước trong run: gọi agent, gọi workflow, gọi model, hoặc gọi tool. Mọi step đều được ghi trace</td></tr>
     <tr><td>Job</td><td>Phần việc được đẩy sang Worker (async). Một run có thể có nhiều job</td></tr>
-    <tr><td>Coordinator</td><td>Agent đặc biệt: đọc yêu cầu, chọn agent chuyên trách, nối các bước, tổng hợp câu trả lời</td></tr>
+    <tr><td>Orchestrator</td><td>Agent đặc biệt: đọc yêu cầu, chọn agent chuyên trách, nối các bước, tổng hợp câu trả lời</td></tr>
     <tr><td>Context</td><td>Dữ liệu client gửi kèm: đoạn bôi đen, URL/nội dung trang, file đính kèm</td></tr>
     <tr><td>Workflow</td><td>Một app Dify trong catalog dùng chung của Admin (<code>admin.workflows</code>). Command gọi nó, agent dùng nó làm tool</td></tr>
     <tr><td>Tool</td><td>Workflow được gắn cho agent (<code>hub.agent_workflows</code>), trình cho model dưới dạng function</td></tr>
@@ -147,7 +147,7 @@
   │     │      ├─ mode=sync  → gọi Dify workflow → stream kết quả
   │     │      └─ mode=async → tạo job → Worker → stream tiến độ
   │     ├─ bắt đầu "/" + KHÔNG khớp (hoặc không có quyền) ──▶ CMD_NOT_FOUND + gợi ý
-  │     └─ còn lại ──────────────────▶ COORDINATOR
+  │     └─ còn lại ──────────────────▶ ORCHESTRATOR
   │            đọc: agent đang bật mà user được dùng (key, mô tả), lịch sử gần, context
   │            không có agent nào → tự trả lời, không gọi tool
   │            lặp ≤ max_steps:
@@ -182,15 +182,15 @@
     <tr><td class="id">HUB-FR-13</td><td><code>mode=sync</code>: gọi Dify, stream kết quả, có timeout. <code>mode=async</code>: tạo job, trả ngay <code>job_id</code>, rồi stream tiến độ</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-14</td><td>Command không tồn tại hoặc user không có quyền: trả <code>CMD_NOT_FOUND</code> kèm tối đa 3 gợi ý gần giống (so theo khoảng cách chuỗi, chỉ gợi ý trong các lệnh user được dùng)</td><td><span class="pri should">SHOULD</span></td></tr>
   </table></div>
-  <h3>6.3 Coordinator &amp; agent</h3>
+  <h3>6.3 Orchestrator &amp; agent</h3>
   <div class="table-scroll"><table>
     <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
-    <tr><td class="id">HUB-FR-20</td><td>Coordinator nhận: yêu cầu, N message gần nhất, context, và danh sách agent đang bật <strong>mà user được dùng</strong> (chỉ key và mô tả, xem HUB-FR-77). Mỗi lượt nó trả ra một trong ba quyết định: <code>delegate(agent, task)</code>, <code>answer(text)</code>, hoặc <code>ask(question)</code></td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">HUB-FR-20</td><td>Orchestrator nhận: yêu cầu, N message gần nhất, context, và danh sách agent đang bật <strong>mà user được dùng</strong> (chỉ key và mô tả, xem HUB-FR-77). Mỗi lượt nó trả ra một trong ba quyết định: <code>delegate(agent, task)</code>, <code>answer(text)</code>, hoặc <code>ask(question)</code></td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-21</td><td>Vòng điều phối giới hạn <code>max_steps</code> (mặc định 5) và ngân sách token của run. Vượt giới hạn thì dừng và trả kết quả đang có, kèm thông báo</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-22</td><td>Runtime <code>llm</code>: chạy trong Hub với system prompt của agent. Tool là các workflow gắn cho agent (<code>hub.agent_workflows</code>), trình cho model bằng tên, mô tả và mô tả tham số của chính workflow. Gọi model qua Gateway</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-23</td><td>Runtime <code>dify-workflow</code> và <code>dify-agent</code>: agent bọc đúng một workflow trong catalog (loại app tương ứng). Map task thành input rồi gọi Dify</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-24</td><td>Runtime <code>agentic-cli</code>: tạo job loại <code>agent.cli</code> cho Worker, kèm prompt, workflow được gắn, token MCP có phạm vi riêng cho job, <code>tenant_id</code>, và session trước đó (nếu có)</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">HUB-FR-25</td><td>Không agent nào khớp, hoặc user không được dùng agent nào, thì Coordinator tự trả lời bằng model của nó (chat chung, không gọi tool). Yêu cầu mơ hồ thì hỏi lại user</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">HUB-FR-25</td><td>Không agent nào khớp, hoặc user không được dùng agent nào, thì Orchestrator tự trả lời bằng model của nó (chat chung, không gọi tool). Yêu cầu mơ hồ thì hỏi lại user</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-26</td><td>Chạy song song các delegate độc lập trong cùng một lượt</td><td><span class="pri could">COULD</span></td></tr>
   </table></div>
   <h3>6.4 Model Gateway</h3>
@@ -221,10 +221,10 @@
   <h3>6.7 Cấu hình agent — Agent Studio</h3>
   <div class="table-scroll"><table>
     <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
-    <tr><td class="id">HUB-FR-60</td><td>CRUD agent: key, tên hiển thị (vi/en), mô tả cho Coordinator, runtime, model profile, system prompt, workflow được gắn (<code>hub.agent_workflows</code>), timeout, ngân sách token, bật/tắt</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">HUB-FR-60</td><td>CRUD agent: key, tên hiển thị (vi/en), mô tả cho Orchestrator, runtime, model profile, system prompt, workflow được gắn (<code>hub.agent_workflows</code>), timeout, ngân sách token, bật/tắt</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-61</td><td>Runtime <code>agentic-cli</code> có thêm: CLI (claude/codex/gemini), tool có sẵn được phép (Read/Grep/Edit/Bash…), có dùng MCP tools không, chế độ thư mục làm việc</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">HUB-FR-62</td><td>Cấu hình <strong>Coordinator</strong> (duy nhất): model profile, system prompt, <code>max_steps</code>, ngân sách token mỗi run, số message lịch sử đưa vào, hành vi khi không có agent nào khớp (tự trả lời / hỏi lại)</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">HUB-FR-63</td><td><strong>Dry-run định tuyến</strong>: nhập một câu hỏi, xem Coordinator sẽ chọn agent nào và vì sao, mà không thật sự chạy agent</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">HUB-FR-62</td><td>Cấu hình <strong>Orchestrator</strong> (duy nhất): model profile, system prompt, <code>max_steps</code>, ngân sách token mỗi run, số message lịch sử đưa vào, hành vi khi không có agent nào khớp (tự trả lời / hỏi lại)</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">HUB-FR-63</td><td><strong>Dry-run định tuyến</strong>: nhập một câu hỏi, xem Orchestrator sẽ chọn agent nào và vì sao, mà không thật sự chạy agent</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-64</td><td><strong>Gắn workflow cho agent</strong>: chọn từ catalog <code>admin.workflows</code> (chỉ đọc, chỉ workflow đang bật), lưu vào <code>hub.agent_workflows</code>. Agent không đặt tên và không viết lại mô tả. Tên tool sinh từ key workflow, mô tả và mô tả tham số lấy từ workflow. Muốn sửa mô tả thì sửa workflow ở Admin</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-65</td><td>Chạy thử workflow đã chọn với input mẫu. Xem trước tool dưới dạng model nhìn thấy (tên, mô tả, JSON schema), lấy từ workflow</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-66</td><td>CRUD provider: key, loại (<code>api</code> | <code>subscription-cli</code>), hãng, base URL, secret, <code>max_concurrency</code>. Hiện trạng thái sống (ok/busy/cooldown/logged_out/error)</td><td><span class="pri must">MUST</span></td></tr>
@@ -232,18 +232,18 @@
     <tr><td class="id">HUB-FR-68</td><td>Secret của Hub (API key của provider): chỉ ghi, không đọc lại, mã hoá AES-256-GCM bằng <code>HUB_SECRETS_KEY</code>. App-key của workflow là secret của Admin</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-69</td><td>Audit log riêng cho mọi thay đổi cấu hình của Hub (ai, lúc nào, tenant, trước/sau) và khôi phục bản trước. Mỗi lần lưu thì tăng <code>hub_config_version</code> và NOTIFY <code>hub_config_changed</code></td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-70</td><td><strong>Playground</strong>: chat thử với toàn bộ luồng điều phối (hoặc chỉ một agent), xem trace trực tiếp. Có thể đổi profile tạm thời cho lượt thử. "Chạy như user" thì áp đúng quyền command và agent của user đó</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">HUB-FR-71</td><td>Export và import yaml cho agent (kèm key các workflow được gắn), Coordinator, provider, profile (secret chỉ export tên), có bước xem diff trước khi áp dụng</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">HUB-FR-71</td><td>Export và import yaml cho agent (kèm key các workflow được gắn), Orchestrator, provider, profile (secret chỉ export tên), có bước xem diff trước khi áp dụng</td><td><span class="pri should">SHOULD</span></td></tr>
     <tr><td class="id">HUB-FR-72</td><td>Studio UI và <code>/studio/api/*</code> yêu cầu JWT có role <code>platform_admin</code>. <code>tenant_admin</code> và <code>member</code> không vào được Studio. Hub phục vụ Studio UI ở <code>/studio</code> (cùng origin)</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">HUB-FR-73</td><td><strong>Bộ câu kiểm thử định tuyến</strong>: CRUD các câu (nội dung, có file hay không, agent mong đợi theo thứ tự). Khi lưu một thay đổi <em>ảnh hưởng tới định tuyến</em> (cấu hình Coordinator; tạo/xoá/bật/tắt agent; sửa mô tả agent), hệ thống tự chạy dry-run toàn bộ bộ câu trên bản nháp, <strong>với toàn bộ agent</strong> (không lọc theo quyền). <strong>Tỉ lệ đúng thấp hơn baseline thì chặn lưu</strong> và liệt kê các câu bị sai. Baseline là tỉ lệ đúng của lần lưu thành công gần nhất</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">HUB-FR-73</td><td><strong>Bộ câu kiểm thử định tuyến</strong>: CRUD các câu (nội dung, có file hay không, agent mong đợi theo thứ tự). Khi lưu một thay đổi <em>ảnh hưởng tới định tuyến</em> (cấu hình Orchestrator; tạo/xoá/bật/tắt agent; sửa mô tả agent), hệ thống tự chạy dry-run toàn bộ bộ câu trên bản nháp, <strong>với toàn bộ agent</strong> (không lọc theo quyền). <strong>Tỉ lệ đúng thấp hơn baseline thì chặn lưu</strong> và liệt kê các câu bị sai. Baseline là tỉ lệ đúng của lần lưu thành công gần nhất</td><td><span class="pri must">MUST</span></td></tr>
   </table></div>
-  <div class="note info"><strong>Workflow dùng chung (v0.4):</strong> Admin sở hữu workflow và app-key, Hub chỉ đọc. Một app Dify chỉ khai báo một lần, nên rotate key ở một chỗ. Nguyên tắc "Admin và Hub không tham chiếu chéo" <strong>bỏ cho workflow</strong>: Admin đọc <code>hub.agent_workflows</code> (chỉ đọc) để chặn xoá hay tắt workflow đang được agent dùng. Cấu hình agent (agent, Coordinator, provider, profile, secret provider, quyền agent) vẫn thuộc Hub.</div>
+  <div class="note info"><strong>Workflow dùng chung (v0.4):</strong> Admin sở hữu workflow và app-key, Hub chỉ đọc. Một app Dify chỉ khai báo một lần, nên rotate key ở một chỗ. Nguyên tắc "Admin và Hub không tham chiếu chéo" <strong>bỏ cho workflow</strong>: Admin đọc <code>hub.agent_workflows</code> (chỉ đọc) để chặn xoá hay tắt workflow đang được agent dùng. Cấu hình agent (agent, Orchestrator, provider, profile, secret provider, quyền agent) vẫn thuộc Hub.</div>
   <h3>6.8 Tenant, quyền, quota, chi phí (v0.4)</h3>
   <div class="table-scroll"><table>
     <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
     <tr><td class="id">HUB-FR-74</td><td>JWT chứa <code>user_id</code>, <code>tenant_id</code>, <code>role</code> (<code>platform_admin</code> | <code>tenant_admin</code> | <code>member</code>). Token không chứa danh sách quyền. Hub tự tính quyền từ cache (HUB-FR-02)</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-75</td><td><strong>Cách ly theo tenant:</strong> <code>conversations</code>, <code>runs</code>, <code>jobs</code>, <code>attachments</code>, <code>usage_logs</code> đều có <code>tenant_id</code> lấy từ JWT. Mọi truy vấn lọc theo <code>tenant_id</code> và <code>user_id</code>. Truy cập tài nguyên của tenant khác trả 404</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-76</td><td><strong>Quyền command:</strong> user dùng được <code>/cmd</code> ⇔ cmd thuộc feature F ∧ F bật (hoặc Beta và user thuộc group <code>beta-testers</code>) ∧ F có entitlement cho tenant của user ∧ F được cấp cho user hoặc group của user. Áp cho <code>GET /commands</code> và kiểm tra lại khi chạy. Không có quyền thì trả <code>CMD_NOT_FOUND</code></td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">HUB-FR-77</td><td><strong>Quyền agent:</strong> user dùng được agent A ⇔ A bật ∧ A có entitlement cho tenant của user (<code>hub.agent_entitlements</code>, chưa thu hồi) ∧ A được cấp cho user hoặc group của user (<code>hub.agent_grants</code>). Coordinator chỉ nhận danh sách agent user được dùng. Hub kiểm tra lại khi delegate và khi Playground chọn một agent</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">HUB-FR-77</td><td><strong>Quyền agent:</strong> user dùng được agent A ⇔ A bật ∧ A có entitlement cho tenant của user (<code>hub.agent_entitlements</code>, chưa thu hồi) ∧ A được cấp cho user hoặc group của user (<code>hub.agent_grants</code>). Orchestrator chỉ nhận danh sách agent user được dùng. Hub kiểm tra lại khi delegate và khi Playground chọn một agent</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-78</td><td><strong>Cấp quyền agent:</strong> <code>platform_admin</code> cấp và thu hồi entitlement agent cho tenant (trong Studio). <code>tenant_admin</code> cấp agent cho group/user trong tenant mình, chỉ với agent đã có entitlement (UI ở trang Groups của Admin, gọi <code>GET/POST/DELETE /agent-grants</code> của Hub bằng JWT của chính <code>tenant_admin</code>, không qua <code>/studio</code>). Thu hồi entitlement thì grant trong tenant mất hiệu lực nhưng vẫn giữ để khôi phục. Mọi thay đổi ghi audit và tăng <code>hub_config_version</code></td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-79</td><td><strong>Kiểm tra quyền:</strong> API trả các agent một user thấy được kèm lý do (entitlement, grant qua group nào), để công cụ "Kiểm tra quyền" của Admin hiện cùng feature và command</td><td><span class="pri should">SHOULD</span></td></tr>
     <tr><td class="id">HUB-FR-80</td><td>Khi gọi Dify, gửi <code>user = &lt;tenant&gt;:&lt;user_id&gt;</code> để truy vết</td><td><span class="pri must">MUST</span></td></tr>
@@ -263,15 +263,15 @@
   <h2>7. Luật nghiệp vụ</h2>
   <div class="table-scroll"><table>
     <tr><th>ID</th><th>Luật</th></tr>
-    <tr><td class="id">HUB-BR-01</td><td>Message bắt đầu bằng <code>/</code> <strong>luôn</strong> được hiểu là command, không bao giờ rơi xuống Coordinator. Muốn gửi chữ bắt đầu bằng "/" thì gõ <code>//</code></td></tr>
+    <tr><td class="id">HUB-BR-01</td><td>Message bắt đầu bằng <code>/</code> <strong>luôn</strong> được hiểu là command, không bao giờ rơi xuống Orchestrator. Muốn gửi chữ bắt đầu bằng "/" thì gõ <code>//</code></td></tr>
     <tr><td class="id">HUB-BR-02</td><td>Dữ liệu cách ly theo <code>tenant_id</code> và <code>user_id</code>: user chỉ thấy conversation, run và file của mình. <code>platform_admin</code> xem được trace của mọi tenant để debug. <code>tenant_admin</code> chỉ xem chi phí, không xem nội dung</td></tr>
-    <tr><td class="id">HUB-BR-03</td><td>Coordinator chỉ thấy agent đang bật mà user được dùng. Agent chuyên trách <strong>không được</strong> gọi ngược lại Coordinator (độ sâu tối đa là 1)</td></tr>
+    <tr><td class="id">HUB-BR-03</td><td>Orchestrator chỉ thấy agent đang bật mà user được dùng. Agent chuyên trách <strong>không được</strong> gọi ngược lại Orchestrator (độ sâu tối đa là 1)</td></tr>
     <tr><td class="id">HUB-BR-04</td><td>Mọi lỗi đều phải hiện cho user, kèm mã lỗi và gợi ý. Không được im lặng và không được bịa kết quả. Ví dụ: thiếu key thì báo "chưa cấu hình", không được trả rỗng</td></tr>
     <tr><td class="id">HUB-BR-05</td><td>Khi dự phòng sang provider khác, câu trả lời vẫn hợp lệ, nhưng trace phải ghi rõ provider nào đã phục vụ</td></tr>
     <tr><td class="id">HUB-BR-06</td><td>Cấu hình và quyền được chốt tại thời điểm run bắt đầu. Sửa giữa chừng thì run đang chạy không bị ảnh hưởng</td></tr>
     <tr><td class="id">HUB-BR-07</td><td>Context trang (URL, nội dung) chỉ được gửi đi khi command hoặc agent thật sự dùng tới. Không tự động nhồi vào mọi request</td></tr>
-    <tr><td class="id">HUB-BR-08</td><td>Luôn có đúng một cấu hình Coordinator hợp lệ (có profile). Coordinator chỉ thấy các agent đang bật mà user được dùng</td></tr>
-    <tr><td class="id">HUB-BR-09</td><td>Mô tả agent (cho Coordinator) là bắt buộc, từ 20 đến 400 ký tự. Mô tả tool là mô tả của workflow: bắt buộc 20–400 ký tự, kèm mô tả từng tham số, do Admin kiểm khi tạo workflow</td></tr>
+    <tr><td class="id">HUB-BR-08</td><td>Luôn có đúng một cấu hình Orchestrator hợp lệ (có profile). Orchestrator chỉ thấy các agent đang bật mà user được dùng</td></tr>
+    <tr><td class="id">HUB-BR-09</td><td>Mô tả agent (cho Orchestrator) là bắt buộc, từ 20 đến 400 ký tự. Mô tả tool là mô tả của workflow: bắt buộc 20–400 ký tự, kèm mô tả từng tham số, do Admin kiểm khi tạo workflow</td></tr>
     <tr><td class="id">HUB-BR-10</td><td>Không được xoá profile, provider hoặc secret đang được dùng. Chỉ được tắt, hoặc phải gỡ tham chiếu trước. Workflow đang được agent dùng thì Admin không cho xoá hay tắt, và hiện danh sách agent đang dùng</td></tr>
     <tr><td class="id">HUB-BR-11</td><td>Tên tool sinh từ key workflow, dạng <code>^[a-z][a-z0-9_]{2,40}$</code> (hợp lệ với function-calling của mọi hãng). Key workflow là duy nhất nên tên tool không trùng</td></tr>
     <tr><td class="id">HUB-BR-12</td><td>Tool của agent chỉ là workflow trong catalog Admin, nên luôn gọi qua Dify (workflow hoặc agent app). Muốn gọi API nội bộ thì bọc nó trong một workflow Dify rồi thêm vào catalog</td></tr>
@@ -300,7 +300,7 @@
     <tr><td><code>agent_workflows</code></td><td>agent_id, workflow_id (→ <code>admin.workflows</code>), created_by, created_at (thay bảng <code>tools</code> cũ)</td></tr>
     <tr><td><code>agent_entitlements</code></td><td>agent_id, tenant_id, granted_by, granted_at, revoked_at</td></tr>
     <tr><td><code>agent_grants</code></td><td>id, agent_id, tenant_id, subject_type (group/user), subject_id, granted_by, granted_at</td></tr>
-    <tr><td><code>coordinator_settings</code></td><td>singleton: profile_id, system_prompt, max_steps, token_budget, history_n, on_no_match (answer|ask), version, updated_by</td></tr>
+    <tr><td><code>orchestrator_settings</code></td><td>singleton: profile_id, system_prompt, max_steps, token_budget, history_n, on_no_match (answer|ask), version, updated_by</td></tr>
     <tr><td><code>providers</code></td><td>id, key, kind, vendor, base_url, secret_id, max_concurrency, enabled</td></tr>
     <tr><td><code>model_profiles</code></td><td>id, key, steps (jsonb [{provider_id, model, on[]}])</td></tr>
     <tr><td><code>secrets</code></td><td>id, name, ciphertext, iv, last4, note, updated_by, updated_at (chỉ secret của provider)</td></tr>
@@ -328,8 +328,8 @@
     <tr><td><code>GET/POST/DELETE /agent-grants</code></td><td>Cấp agent cho group/user (Admin UI trang Groups gọi, bằng JWT của <code>tenant_admin</code>). Chỉ role <code>tenant_admin</code>/<code>platform_admin</code>. Chỉ trong đúng <code>tenant_id</code> của JWT, chỉ với agent đã có entitlement cho tenant đó. <code>GET</code> trả các agent đã có entitlement cho tenant kèm grant. Không nằm dưới <code>/studio</code></td></tr>
     <tr><td><code>GET /agent-grants/effective/:user_id</code></td><td>Agent user thấy được kèm lý do (cho "Kiểm tra quyền" của Admin)</td></tr>
     <tr><td><code>/mcp</code></td><td>MCP server: workflow gắn cho agent của job (token của job)</td></tr>
-    <tr><td><code>/studio</code> · <code>/studio/api/{agents,coordinator,workflows,providers,model-profiles,secrets,agent-entitlements,price-book,audit,export,import}</code></td><td>Agent Studio UI và API cấu hình (role <code>platform_admin</code>). <code>workflows</code> là catalog Admin, chỉ đọc</td></tr>
-    <tr><td><code>POST /studio/api/coordinator/dry-run</code> · <code>POST /studio/api/workflows/:id/test</code> · <code>POST /studio/api/playground</code> (SSE)</td><td>Thử định tuyến, thử workflow, Playground</td></tr>
+    <tr><td><code>/studio</code> · <code>/studio/api/{agents,orchestrator,workflows,providers,model-profiles,secrets,agent-entitlements,price-book,audit,export,import}</code></td><td>Agent Studio UI và API cấu hình (role <code>platform_admin</code>). <code>workflows</code> là catalog Admin, chỉ đọc</td></tr>
+    <tr><td><code>POST /studio/api/orchestrator/dry-run</code> · <code>POST /studio/api/workflows/:id/test</code> · <code>POST /studio/api/playground</code> (SSE)</td><td>Thử định tuyến, thử workflow, Playground</td></tr>
     <tr><td><code>/studio/api/routing-tests</code> (CRUD) · <code>POST /studio/api/routing-tests/run</code></td><td>Bộ câu kiểm thử định tuyến. Khi lưu cấu hình ảnh hưởng tới định tuyến, server tự chạy và có thể trả <code>422 ROUTING_REGRESSION</code></td></tr>
     <tr><td><code>POST /internal/test-run</code></td><td>Admin gọi để test (service token)</td></tr>
   </table></div>
@@ -339,7 +339,7 @@ event: step.started    data: {step_id, type, label: "Đang kiểm tra hoá đơn
 event: delta           data: {text}                       # token câu trả lời
 event: step.finished   data: {step_id, status, provider?, ms}
 event: job.progress    data: {job_id, message, percent?}  # từ Worker
-event: ask             data: {question}                   # Coordinator hỏi lại
+event: ask             data: {question}                   # Orchestrator hỏi lại
 event: run.finished    data: {run_id, message_id, usage}
 event: run.failed      data: {run_id, code, message, hint}</code></pre>
   <h3>9.3 Mã lỗi</h3>
@@ -375,7 +375,7 @@ event: run.failed      data: {run_id, code, message, hint}</code></pre>
   <div class="ac"><b>AC-H01 · Command với đoạn bôi đen</b><br>
     Given <code>/dich</code> có tham số <code>text</code> với fallback <code>$selection</code>, When user bôi đen "xin chào" rồi gõ <code>/dich en</code>, Then Dify nhận <code>source_text="xin chào"</code>, <code>target_lang="en"</code>, và client nhận được stream kết quả.</div>
   <div class="ac"><b>AC-H02 · Command sai tên</b><br>
-    When gõ <code>/dihc</code>, Then nhận <code>CMD_NOT_FOUND</code> kèm gợi ý <code>/dich</code>, và Coordinator <strong>không</strong> được gọi.</div>
+    When gõ <code>/dihc</code>, Then nhận <code>CMD_NOT_FOUND</code> kèm gợi ý <code>/dich</code>, và Orchestrator <strong>không</strong> được gọi.</div>
   <div class="ac"><b>AC-H03 · Điều phối nhiều bước</b><br>
     Given user được dùng agent <code>hoadon</code> và <code>trello</code>, When user gửi "kiểm tra hoá đơn đính kèm rồi tạo thẻ Trello nếu sai", Then trace có các step delegate(hoadon), rồi delegate(trello) nếu hoá đơn sai, cuối cùng là answer. Client thấy <code>step.started</code> với nhãn dễ hiểu cho từng bước.</div>
   <div class="ac"><b>AC-H04 · Dự phòng provider</b><br>
@@ -388,8 +388,8 @@ event: run.failed      data: {run_id, code, message, hint}</code></pre>
     When user A gọi <code>GET /conversations/:id</code> với id của user B, Then nhận 404 (không phải 403, để không lộ việc hội thoại đó tồn tại).</div>
   <div class="ac"><b>AC-H08 · Cách ly tenant</b><br>
     Given user X thuộc tenant <code>acme</code> và run R thuộc tenant <code>beta</code>, When X gọi <code>GET /runs/R</code>, <code>GET /runs/R/trace</code> hoặc <code>GET /conversations/:id</code> của tenant <code>beta</code>, Then nhận 404. Kể cả khi X là <code>tenant_admin</code> của <code>acme</code>.</div>
-  <div class="ac"><b>AC-H09 · Agent không được cấp thì Coordinator không chọn</b><br>
-    Given agent <code>hoadon</code> có entitlement cho <code>acme</code> nhưng chưa cấp cho group nào của user X, When X gửi "kiểm tra hoá đơn này", Then danh sách agent đưa cho Coordinator không có <code>hoadon</code>, trace không có delegate(hoadon), và Coordinator tự trả lời (hoặc chọn agent khác X được dùng). When <code>tenant_admin</code> cấp <code>hoadon</code> cho group của X, Then trong ≤ 5 giây lượt gửi tiếp theo có thể delegate(hoadon).</div>
+  <div class="ac"><b>AC-H09 · Agent không được cấp thì Orchestrator không chọn</b><br>
+    Given agent <code>hoadon</code> có entitlement cho <code>acme</code> nhưng chưa cấp cho group nào của user X, When X gửi "kiểm tra hoá đơn này", Then danh sách agent đưa cho Orchestrator không có <code>hoadon</code>, trace không có delegate(hoadon), và Orchestrator tự trả lời (hoặc chọn agent khác X được dùng). When <code>tenant_admin</code> cấp <code>hoadon</code> cho group của X, Then trong ≤ 5 giây lượt gửi tiếp theo có thể delegate(hoadon).</div>
   <div class="ac"><b>AC-H10 · Vượt quota vẫn chạy và có cảnh báo</b><br>
     Given tenant <code>acme</code> có quota tháng <code>max_runs = 100</code>, <code>warn_pct = 80</code>, đã dùng 79 run, When user gửi run thứ 80, Then run chạy bình thường, <code>run.started</code> có <code>quota{state:"warn", pct:80}</code>, và Hub phát <code>quota_threshold{level:80}</code> một lần. When run thứ 101 được gửi, Then run vẫn chạy, <code>run.started</code> có <code>quota.state = "over"</code>, dòng <code>usage_logs</code> có <code>overage = true</code>, và <code>quota_threshold{level:100}</code> chỉ phát một lần trong tháng.</div>
   <div class="ac"><b>AC-H11 · Command không được cấp</b><br>
@@ -411,7 +411,7 @@ event: run.failed      data: {run_id, code, message, hint}</code></pre>
   </ul>
   <h3>Câu hỏi mở</h3>
   <ol>
-    <li>Coordinator dùng model nào mặc định: profile rẻ (nhanh) hay profile mạnh (chọn đúng hơn)?</li>
+    <li>Orchestrator dùng model nào mặc định: profile rẻ (nhanh) hay profile mạnh (chọn đúng hơn)?</li>
     <li>File đính kèm lưu ở ổ đĩa cục bộ hay object storage (S3/MinIO)?</li>
     <li>Extension có cần WebSocket hai chiều (Hub ra lệnh ngược cho extension) ở v1 không?</li>
     <li>Command thuộc nhiều feature thì <code>feature_id</code> của run lấy feature nào? Tạm: feature đầu tiên (theo key) mà user được cấp. Job agent chat và run orchestrated có <code>feature_id = null</code>, nên chỉ tính vào quota cả tenant.</li>

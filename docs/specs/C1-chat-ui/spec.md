@@ -117,7 +117,7 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng, phiên điều phối 2026-10-03)
 - Làm Chat App trước, độc lập Admin; C1 dùng mock Hub (CR-018). Mốc Hub sau: H1 Hub lõi, H2 Worker + Dify, Studio sau.
-- Flow (CR-021), "Consultant" (CR-022), Orchestrator là agent (CR-020), subscription không bắt buộc API cuối (CR-019): đã ghi vào design; C1 chỉ cần giao diện + contract.
+- Flow (CR-021), "Consultant" (CR-022), Orchestrator là agent (CR-020) và định tuyến mọi tin (CR-025, contract SSE không đổi), subscription không bắt buộc API cuối (CR-019): đã ghi vào design; C1 chỉ cần giao diện + contract.
 - C1 dùng mock đăng nhập trong mock Hub; contract giữ dạng Admin `/auth/login` để đổi sang Admin thật sau.
 - Bộ test contract dùng chung là cam kết "Hub thật pass thì Chat chạy".
 

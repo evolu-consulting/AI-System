@@ -155,7 +155,7 @@
   <h2>2. Sitemap &amp; nguồn dữ liệu</h2>
 <pre><code>Agent Studio sidebar
 ├─ Tổng quan
-├─ CẤU HÌNH AGENT   Agents · Coordinator · Tools · Models · Secrets
+├─ CẤU HÌNH AGENT   Agents · Orchestrator · Tools · Models · Secrets
 ├─ THỬ NGHIỆM       Playground
 ├─ VẬN HÀNH   ◀── tài liệu này
 │  ├─ Runs                    /studio/ops/runs          · /studio/ops/runs/:id
@@ -215,13 +215,13 @@
         <div class="wf-card"><h5>Dòng thời gian</h5>
           <div class="legend"><span><i class="dot t-deleg"></i>Delegate</span><span><i class="dot t-model"></i>Model</span><span><i class="dot t-tool"></i>Tool</span><span><i class="dot t-wf"></i>Workflow</span><span><i class="dot t-fb"></i>Dự phòng</span></div>
           <div class="wfall">
-            <div class="r"><span>Coordinator · chọn agent</span><div class="lane"><i class="seg t-model" style="left:0;width:6%"></i></div><span class="num muted">0.8s</span></div>
+            <div class="r"><span>Orchestrator · chọn agent</span><div class="lane"><i class="seg t-model" style="left:0;width:6%"></i></div><span class="num muted">0.8s</span></div>
             <div class="r"><span>→ dev-helper (agent.cli)</span><div class="lane"><i class="seg t-deleg" style="left:6%;width:90%"></i></div><span class="num muted">12.9s</span></div>
             <div class="r"><span>&nbsp;&nbsp;codex-sub · quota</span><div class="lane"><i class="seg t-fb" style="left:6%;width:3%"></i></div><span class="num muted">0.4s</span></div>
             <div class="r sel"><span>&nbsp;&nbsp;claude-sub · Read utils.ts</span><div class="lane"><i class="seg t-tool" style="left:12%;width:3%"></i></div><span class="num muted">0.3s</span></div>
             <div class="r"><span>&nbsp;&nbsp;claude-sub · Grep</span><div class="lane"><i class="seg t-tool" style="left:16%;width:2%"></i></div><span class="num muted">0.1s</span></div>
             <div class="r"><span>&nbsp;&nbsp;claude-sub · trả lời</span><div class="lane"><i class="seg t-model" style="left:19%;width:77%"></i></div><span class="num muted">11.0s</span></div>
-            <div class="r"><span>Coordinator · tổng hợp</span><div class="lane"><i class="seg t-model" style="left:96%;width:4%"></i></div><span class="num muted">0.5s</span></div>
+            <div class="r"><span>Orchestrator · tổng hợp</span><div class="lane"><i class="seg t-model" style="left:96%;width:4%"></i></div><span class="num muted">0.5s</span></div>
           </div>
         </div>
         <div class="wf-card"><h5>Step: Read utils.ts</h5>
@@ -236,7 +236,7 @@
   </div></div>
   <p class="caption">Hình 4.1: dòng thời gian dạng waterfall, dùng một trục thời gian chung. Step dự phòng được tô vân chéo (không chỉ khác màu) và có nhãn lý do.</p>
   <ul>
-    <li>Waterfall lồng theo cấp: Coordinator → agent → step con. Click một hàng thì panel bên phải hiện Input/Output/Raw. Input đã được che secret (hiện <code>••••</code>).</li>
+    <li>Waterfall lồng theo cấp: Orchestrator → agent → step con. Click một hàng thì panel bên phải hiện Input/Output/Raw. Input đã được che secret (hiện <code>••••</code>).</li>
     <li>Hover một đoạn trên thanh thì tooltip hiện: tên step, bắt đầu và kết thúc (ms tính từ lúc run bắt đầu), provider, token.</li>
     <li>Run đang chạy thì trace cập nhật trực tiếp qua SSE <code>/runs/:id/events</code>, header có nút [Huỷ run] (modal xác nhận mức vừa).</li>
     <li>Run lỗi thì hiện khối lỗi ngay đầu trang, gồm mã lỗi, thông điệp, gợi ý, và link tới step gây lỗi.</li>

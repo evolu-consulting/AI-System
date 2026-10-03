@@ -151,7 +151,7 @@ Chuỗi định dạng không cần dịch (giống nhau 2 ngôn ngữ): `quota.
 | overview.kpi.runs24h | Số run 24 giờ | Runs (24h) |
 | overview.nearQuota.title / empty / ok | Tenant sắp hoặc đã vượt quota / Chưa tenant nào đặt quota. / Trong quota | Tenants near or over quota / No tenant has a quota yet. / Within quota |
 | overview.nearQuota.col.quota / status | Quota tháng · run / Trạng thái | Monthly quota · runs / Status |
-| overview.agentStudio.body | Agent, Coordinator, model và vận hành nằm ở Agent Studio. Agent chọn workflow từ catalog của Admin. | Agents, coordinators, models and operations live in Agent Studio. Agents pick workflows from the Admin catalog. |
+| overview.agentStudio.body | Agent, Orchestrator, model và vận hành nằm ở Agent Studio. Agent chọn workflow từ catalog của Admin. | Agents, orchestrator, models and operations live in Agent Studio. Agents pick workflows from the Admin catalog. |
 | overview.agentStudio.open / topErrors.title | Mở Agent Studio / Command lỗi nhiều nhất 24 giờ | Open Agent Studio / Most failing commands (24h) |
 | overview.hubPending | Sẽ có khi Agent Hub sẵn sàng. | Available once Agent Hub is ready. |
 | audit.sentence.totpOff | {actor} đã tắt 2FA của {subject} | {actor} turned off 2FA for {subject} |

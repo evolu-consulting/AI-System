@@ -360,7 +360,7 @@ Tenants › + Tạo tenant: mã công ty "acme", tên → tạo tenant_admin đ�
 ```
 Groups › + Tạo group "Kế toán" → tab Thành viên: dán danh sách username
   → tab Feature: chọn "Kế toán" → tab Agent: chọn "Trợ lý hoá đơn" → Lưu
-  → thành viên thấy /kiemtra-hoadon và được Coordinator giao cho agent sau ≤ 5 giây
+  → thành viên thấy /kiemtra-hoadon và được Orchestrator giao cho agent sau ≤ 5 giây
 ```
 
 Chỉ tiêu: ≤ 2 phút.
@@ -545,7 +545,7 @@ Dùng shadcn/ui (Radix + Tailwind), copy component vào repo (`components/ui`). 
   - tên hiển thị agent, nhãn step;
   - mô tả workflow (nếu hiện cho user);
   - tên và mô tả feature, tên group.
-- **Không cần hai bản:** key, tên command, system prompt, mô tả agent cho Coordinator (Coordinator đọc được cả hai thứ tiếng).
+- **Không cần hai bản:** key, tên command, system prompt, mô tả agent cho Orchestrator (Orchestrator đọc được cả hai thứ tiếng).
 - **Độ dài chữ:** bản EN thường dài hơn khoảng 20–30%. Nút và nhãn không dùng chiều rộng cố định. Kiểm tra lại cả hai ngôn ngữ ở khổ 1024px.
 - **Định dạng:** dùng `Intl` theo locale cho ngày, giờ, số và tiền. Thời gian tương đối ("5 phút trước" / "5 min ago") cũng theo locale.
 - **Ảnh hưởng tới BA Admin:** thêm `users.locale`, và đổi các trường mô tả hoặc hiển thị thành jsonb `{vi, en}`.

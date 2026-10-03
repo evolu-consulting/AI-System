@@ -15,7 +15,7 @@ Worker lấy job từ hàng đợi, chạy, báo tiến độ, ghi kết quả. 
 
 **Quan hệ với Hub:** Worker dùng chung codebase với Hub nhưng chạy thành **process riêng**, có thể trên máy riêng (máy đã đăng nhập CLI). Worker không có API công khai: nó chỉ nói chuyện với Hub qua Redis và DB, và gọi MCP catalog của Hub.
 
-**Worker không làm:** không quyết định dùng agent nào (việc của Coordinator), không tự đọc cấu hình agent, không kiểm tra quyền hay quota của user (Hub đã kiểm tra trước khi tạo job). Mọi thông tin cần để chạy đã nằm sẵn trong payload của job, kể cả `tenant_id`.
+**Worker không làm:** không quyết định dùng agent nào (việc của Orchestrator), không tự đọc cấu hình agent, không kiểm tra quyền hay quota của user (Hub đã kiểm tra trước khi tạo job). Mọi thông tin cần để chạy đã nằm sẵn trong payload của job, kể cả `tenant_id`.
 
 ## 2. Loại job
 

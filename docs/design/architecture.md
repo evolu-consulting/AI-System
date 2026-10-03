@@ -6,10 +6,10 @@ Ghi lại kết quả thảo luận thiết kế · v0.4 · cập nhật 2026-10
 
 - [**Admin**](admin/ba-admin.md): tenant, user và auth, group, feature và phân quyền, command, catalog workflow, secret, quota, audit (ADM-*)
 - [**UI/UX Admin**](admin/ui-admin.md): đặc tả giao diện chi tiết (khung, thành phần, sitemap và các màn hình, luồng thao tác, trạng thái, microcopy)
-- [**UI Agent Studio**](agent-hub/ui-agent-studio.md): UI của Agent Hub gồm agent, Coordinator, tool (chọn workflow từ catalog), quyền agent, model, Playground
+- [**UI Agent Studio**](agent-hub/ui-agent-studio.md): UI của Agent Hub gồm agent, Orchestrator, tool (chọn workflow từ catalog), quyền agent, model, Playground
 - [**UI Vận hành**](agent-hub/ui-operations.md): Runs và trace, Chi phí và usage theo tenant, Jobs và Worker (một mục trong Agent Studio)
 - [**UI Chat & Extension**](chat-app/ui-chat-extension.md): UI người dùng cuối của Hub (đăng nhập, composer, menu "/", các bước, ngữ cảnh trang)
-- [**Agent Hub**](agent-hub/ba-agent-hub.md): cấu hình agent (Agent Studio), kiểm tra quyền, command runner, Coordinator, runtime, Model Gateway, hội thoại, SSE, MCP (HUB-*)
+- [**Agent Hub**](agent-hub/ba-agent-hub.md): cấu hình agent (Agent Studio), kiểm tra quyền, command runner, Orchestrator, runtime, Model Gateway, hội thoại, SSE, MCP (HUB-*)
 - [**Worker**](worker/ba-worker.md): job async, agent CLI, Subscription Pool (slot theo tenant), dự phòng, runbook (WRK-*)
 
 ## 1. Các quyết định đã chốt
@@ -19,21 +19,21 @@ Ghi lại kết quả thảo luận thiết kế · v0.4 · cập nhật 2026-10
 - **Không có Flow factory.** Workflow Dify được tạo và sửa bằng *Claude session* (qua mcp-dify).
 - **Multi-tenant (v0.4):** tenant là **công ty / khách hàng bên ngoài**. Công ty vận hành hệ thống cũng là một tenant (`platform`), nơi có `platform_admin`. Dữ liệu cách ly theo `tenant_id` + `user_id`. Truy cập sai tenant trả 404.
 - **Dùng chung toàn hệ thống:** command, workflow, secret, key Dify, API key. Chỉ `platform_admin` tạo và sửa. Hub gửi `user = <tenant>:<user_id>` cho Dify để truy vết. Workflow không được dùng knowledge base hay bộ nhớ chứa dữ liệu của tenant khác.
-- **Chia quyền sở hữu cấu hình (v0.4):** *Admin* giữ tenant, user/auth, group, feature, command, **catalog workflow dùng chung**, secret của workflow, quota. *Agent Hub* giữ **cấu hình agent**: agent, Coordinator, provider, model profile, secret provider, quyền agent. Workflow chỉ khai báo một nơi (ở Admin), nên rotate key một chỗ. Hub đọc workflow và secret từ schema `admin` (chỉ đọc).
+- **Chia quyền sở hữu cấu hình (v0.4):** *Admin* giữ tenant, user/auth, group, feature, command, **catalog workflow dùng chung**, secret của workflow, quota. *Agent Hub* giữ **cấu hình agent**: agent, Orchestrator, provider, model profile, secret provider, quyền agent. Workflow chỉ khai báo một nơi (ở Admin), nên rotate key một chỗ. Hub đọc workflow và secret từ schema `admin` (chỉ đọc).
 - **Workflow là catalog dùng chung (v0.4).** Tạo sẵn được, chưa gắn đâu cũng được (nhãn "Chưa gắn"). Workflow không có quyền riêng. Có hai nơi dùng, độc lập nhau: **command** (user gõ `/lệnh`, quyền qua feature) và **agent** (dùng workflow làm tool khi chat, quyền qua agent grant). Agent không liên quan tới command.
 - **Agent chỉ chọn workflow**, không đặt tên hay viết mô tả lại. Hub dùng luôn tên, mô tả và mô tả tham số của workflow làm tool cho model. Vì vậy mô tả workflow (20–400 ký tự, nói rõ khi nào dùng) và mô tả từng tham số là **bắt buộc**.
 - **Feature là gói command để cấp quyền.** Mỗi command thuộc ít nhất 1 feature (mặc định `core`). Quyền có 2 tầng: **entitlement** (`platform_admin` cho tenant được có feature) và **access** (`tenant_admin` cấp cho group/user trong phạm vi entitlement). Tắt feature thì mọi command trong đó biến khỏi menu trong ≤ 5 giây.
-- **Quyền agent cũng 2 tầng:** `platform_admin` entitlement agent cho tenant (trong Agent Studio), `tenant_admin` cấp cho group/user ngay trên trang Groups của Admin UI (Admin UI gọi `hub/agent-grants`). Coordinator chỉ thấy agent user được dùng.
+- **Quyền agent cũng 2 tầng:** `platform_admin` entitlement agent cho tenant (trong Agent Studio), `tenant_admin` cấp cho group/user ngay trên trang Groups của Admin UI (Admin UI gọi `hub/agent-grants`). Orchestrator chỉ thấy agent user được dùng.
 - **Agent Hub có UI riêng: Agent Studio** (`/studio`). Studio chứa cả mục Vận hành (Runs, Chi phí, Jobs & Worker). Đăng nhập bằng cùng JWT do Admin phát, yêu cầu role `platform_admin`.
 - **Mọi request từ client đều đi qua Agent Hub.** Client không gọi thẳng Dify, nên không có key nào nằm trong client.
-- **Agent Hub có một Coordinator agent.** Nó chọn agent chuyên trách để chat hoặc làm việc.
+- **Agent Hub có một Orchestrator agent.** Nó chọn agent chuyên trách để chat hoặc làm việc.
 - **Hỗ trợ nhiều model** (không riêng Claude), qua cả *subscription* (CLI) lẫn *API*.
 - **Agent có thể chạy bằng Claude Code** (Agent SDK), Codex hoặc Gemini CLI, coi như một loại runtime.
 - **Subscription là đường chính, API là dự phòng.** Subscription CLI dùng chung cho mọi tenant, tính phí theo token. Mỗi tenant có giới hạn slot subscription để chia công bằng.
 - **Quyền: 3 role.** `platform_admin` (toàn hệ thống), `tenant_admin` (trong tenant mình), `member` (dùng command/agent được cấp). Xem bảng ở phần 8.
 - **Chi phí và quota theo tenant (MUST).** Mọi run ghi `tenant_id`, `feature_id` vào `usage_logs`. Quota mặc định không giới hạn (đang test). **Không chặn khi vượt:** cảnh báo ở 80% và 100%, phần vượt đánh dấu `overage` để tính phí.
 - **Tool của agent chỉ đi qua Dify** (workflow hoặc agent app). Không có loại gọi HTTP trực tiếp.
-- **Bảo vệ định tuyến:** có bộ câu kiểm thử. Mỗi lần lưu thay đổi ảnh hưởng tới Coordinator, bộ câu tự chạy với toàn bộ agent, và hệ thống chặn lưu nếu tỉ lệ đúng giảm.
+- **Bảo vệ định tuyến:** có bộ câu kiểm thử. Mỗi lần lưu thay đổi ảnh hưởng tới Orchestrator, bộ câu tự chạy với toàn bộ agent, và hệ thống chặn lưu nếu tỉ lệ đúng giảm.
 - **Chống ghi đè cấu hình:** dùng trường `version` (trả 409 khi xung đột). Nút Test chạy được trên bản nháp chưa lưu.
 - **UI:** dùng shadcn/ui, song ngữ VI/EN. Có ba giao diện: Admin UI (tenant, user, group, feature, command, workflow, chi phí & quota), Agent Studio (agent, model, vận hành), và Chat App/Extension (người dùng cuối). Worker không có UI.
 - **Auth bằng user/pass.** Đăng nhập bằng mã công ty (tenant key) + username + password. Admin phát JWT chứa `user_id`, `tenant_id`, `role` (không chứa danh sách quyền). Hub chỉ kiểm tra JWT và tự tính quyền.
@@ -46,14 +46,14 @@ Ghi lại kết quả thảo luận thiết kế · v0.4 · cập nhật 2026-10
 ```
 ┌──────────── ADMIN (backend + DB, schema admin) ────────────┐   ┌────────────────── AGENT HUB (schema hub) ──────────────────┐
 │ Admin UI  (platform_admin · tenant_admin)                  │   │ Agent Studio UI  /studio  (platform_admin)                 │
-│  Tenants · Users · Groups · Phân quyền · Features ·        │   │  Agents · Coordinator · Tools(chọn workflow từ catalog)    │
+│  Tenants · Users · Groups · Phân quyền · Features ·        │   │  Agents · Orchestrator · Tools(chọn workflow từ catalog)    │
 │  Commands · Workflows(catalog chung) · Secrets ·           │   │  · Quyền agent · Models · Secrets · Playground             │
 │  Chi phí & quota · Nhật ký · Import/Export                 │   │  · Vận hành · Nhật ký                                      │
 │                                                            │   │                                                            │
 │ Auth API  /auth/login · /auth/refresh                      │   │ Runtime                                                    │
 │           → JWT{user_id, tenant_id, role}                  │   │  1. verify JWT → user_id, tenant_id, role; tính quyền      │
 │ Config API (CRUD tenants/users/groups/features/            │   │  2. Router  /cmd → Command Runner (lệnh user được cấp)     │
-│             commands/workflows/secrets/quotas)             │   │             chat → COORDINATOR → agent user được dùng      │
+│             commands/workflows/secrets/quotas)             │   │             chat → ORCHESTRATOR → agent user được dùng      │
 │                                                            │   │  3. Runtime adapters: llm · dify-wf · dify-agent · cli     │
 │ DB: tenants · users · groups · features · grants ·         │──▶│  4. Model Gateway: profile → sub → hết quota → API         │
 │     commands · workflows · secrets · quotas · audit        │   │     ghi usage theo tenant (cost_usd, billable_usd)         │
@@ -76,7 +76,7 @@ Ghi lại kết quả thảo luận thiết kế · v0.4 · cập nhật 2026-10
 | Thành phần | Loại | Sở hữu / làm | Không làm |
 |---|---|---|---|
 | **Admin** | Service (backend + DB + UI) | Tenant, user và đăng nhập (phát JWT), group, feature và phân quyền (entitlement, access), cấu hình *command*, catalog workflow dùng chung (cho command và agent), secret của workflow, quota. Màn Chi phí & quota theo tenant | Không chạy workflow, không cấu hình agent |
-| **Agent Hub** | Service + UI (Agent Studio) | **Sở hữu cấu hình agent** (agent, Coordinator, provider, profile, secret provider, quyền agent, bảng giá bán). Agent chọn workflow từ catalog Admin. Chạy mọi thứ: kiểm tra quyền, Router, Command Runner, Coordinator, agent, Model Gateway. Lưu hội thoại, run, job, chi phí theo tenant | Không quản lý tenant, user, group. Không sửa command hay workflow |
+| **Agent Hub** | Service + UI (Agent Studio) | **Sở hữu cấu hình agent** (agent, Orchestrator, provider, profile, secret provider, quyền agent, bảng giá bán). Agent chọn workflow từ catalog Admin. Chạy mọi thứ: kiểm tra quyền, Router, Command Runner, Orchestrator, agent, Model Gateway. Lưu hội thoại, run, job, chi phí theo tenant | Không quản lý tenant, user, group. Không sửa command hay workflow |
 | **Worker** | Process (chung code với Hub) | Job chạy lâu, retry, xếp hàng. Chạy các CLI subscription (claude, codex, gemini), giới hạn slot theo tenant | — |
 | **Chat App / Extension / Mobile** | Client | Giao diện. Đăng nhập (có mã công ty), lấy menu command, gửi request lên Hub | Không gọi Dify hay model trực tiếp, không giữ key |
 | **Dify** | External | Thực thi workflow | — |
@@ -145,12 +145,12 @@ Agent Hub là nơi điều phối agent. Nó quyết định dùng workflow hay 
 
 | Module | Việc |
 |---|---|
-| **Agent Studio (config)** | UI và API cấu hình agent, Coordinator, tool (chọn workflow từ catalog Admin), quyền agent, provider, model profile, secret provider, bảng giá bán. Chỉ `platform_admin`. Có audit riêng |
+| **Agent Studio (config)** | UI và API cấu hình agent, Orchestrator, tool (chọn workflow từ catalog Admin), quyền agent, provider, model profile, secret provider, bảng giá bán. Chỉ `platform_admin`. Có audit riêng |
 | **Auth guard** | Verify JWT bằng khoá chung với Admin, lấy ra `user_id`, `tenant_id` và `role` |
 | **Config cache** | Nạp command, workflow và secret, tenant, group, feature, grant, quota từ schema `admin` (chỉ đọc), cùng cấu hình agent của chính Hub. Làm mới qua NOTIFY. Từ đó tính quyền của user |
-| **Router** | Tin nhắn bắt đầu bằng `/` thì đi Command Runner, còn lại đi Coordinator. Lệnh user không có quyền → `CMD_NOT_FOUND` |
+| **Router** | Tin nhắn bắt đầu bằng `/` thì đi Command Runner, còn lại (kể cả tin thứ 2+ trong flow, CR-025) đi Orchestrator. Lệnh user không có quyền → `CMD_NOT_FOUND` |
 | **Command / Workflow Runner** | Là cổng duy nhất gọi Dify: map input, gọi workflow. Job chạy lâu thì đẩy sang Worker |
-| **Coordinator agent** | Hiểu ý người dùng, chọn một hoặc nhiều agent trong số agent user được dùng, nối các bước, gộp kết quả. Không có agent nào thì tự trả lời. Là **một agent được chọn** (CR-020); Hub giữ vòng lặp điều phối, CLI không tự gọi agent khác |
+| **Orchestrator agent** | Hiểu ý người dùng, chọn một hoặc nhiều agent trong số agent user được dùng, nối các bước, gộp kết quả. Không có agent nào thì tự trả lời. Là **một agent được chọn** (CR-020), mặc định runtime `llm`/model rẻ vì mọi tin đều qua nó (CR-025); nhận kết quả agent có cấu trúc `done|partial|need_input` (HUB-FR-27), agent hỏi lại thì route tin kế về đúng agent đó (HUB-FR-28), một delegate + `done` thì stream thẳng (HUB-FR-29); Hub giữ vòng lặp điều phối, CLI không tự gọi agent khác |
 | **Runtime adapters** | `llm` · `dify-workflow` · `dify-agent` · `agentic-cli` |
 | **Model Gateway** | Một interface chung cho mọi hãng. Lo retry, dự phòng theo profile, ghi log token và chi phí theo tenant (`cost_usd`, `billable_usd`) |
 | **Subscription Pool** | Theo dõi quota và trạng thái bận của từng CLI, xếp hàng job, giới hạn slot mỗi tenant. Hết quota thì chuyển sang API |
@@ -172,10 +172,10 @@ User gõ "/aaa hello"
 
 ```
 User gõ "kiểm tra hoá đơn này rồi tạo thẻ Trello"
- → Agent Hub → Coordinator đọc danh sách agent user được dùng (cấu hình trong Agent Studio)
+ → Agent Hub → Orchestrator (mọi tin, kể cả tin thứ 2+ trong flow) đọc danh sách agent user được dùng (cấu hình trong Agent Studio) + gợi ý agent gần nhất của flow
  → chọn Agent HoáĐơn  → dùng workflow invoice (chọn từ catalog Admin)
  → chọn Agent Trello  → dùng workflow trello-create
- → Coordinator gộp kết quả, trả về Chat App
+ → Orchestrator gộp kết quả (agent trả done/partial/need_input; partial → agent khác hoặc nói rõ phần thiếu; need_input → hỏi lại user), trả về Chat App
 ```
 
 > ℹ️ Command và agent dùng chung catalog workflow nhưng độc lập nhau. Command gọi workflow qua `/lệnh`, quyền theo feature. Agent chọn workflow làm tool, quyền theo agent grant. Nếu agent có chọn workflow `translate`, gõ `/dich` hay chat "dịch giúp tôi" đều chạy cùng một workflow.
@@ -185,7 +185,7 @@ User gõ "kiểm tra hoá đơn này rồi tạo thẻ Trello"
 Agent và model được tách riêng. Agent chỉ trỏ tới một *model profile*. Profile quyết định dùng hãng nào, gọi qua subscription hay API, và dự phòng sang đâu khi lỗi.
 
 ```
-  COORDINATOR → chọn agent
+  ORCHESTRATOR → chọn agent
      ▼
   ┌──────────────── RUNTIME ADAPTERS ─────────────────────────────────────┐
   │  llm-chat        dify-workflow      agentic-cli                       │
@@ -247,7 +247,7 @@ Agent và model được tách riêng. Agent chỉ trỏ tới một *model prof
 1. ~~Dùng chung một DB hay hai DB riêng?~~ Đã chốt: dùng chung, tách schema.
 2. ~~Hub cập nhật cấu hình bằng poll hay webhook?~~ Đã chốt: Postgres NOTIFY, cộng poll 60 giây dự phòng.
 3. Dropdown chọn workflow trong catalog lấy dữ liệu từ đâu: dán tay app-key, hay Admin đăng nhập Dify Console API để tự list app và đọc input schema?
-4. Coordinator và các agent `llm` chạy trong Hub (khuyên dùng), hay dùng app agent trên Dify?
+4. Orchestrator và các agent `llm` chạy trong Hub (khuyên dùng), hay dùng app agent trên Dify?
 5. Stack cụ thể (ngôn ngữ, framework) chưa chốt. Các câu hỏi mở riêng của từng service nằm trong tài liệu BA của service đó.
 
 ## 11. Diễn tiến thảo luận (vì sao ra thiết kế này)
@@ -256,7 +256,7 @@ Agent và model được tách riêng. Agent chỉ trỏ tới một *model prof
 2. **Đề xuất ban đầu:** Agent Hub + Worker + Flow factory (tuỳ chọn). Góp ý rằng client không nên gọi thẳng Dify vì sẽ lộ key. Đây là bài học từ auto-pilot, nơi 8 app-key Dify bị nhúng trong extension.
 3. **Bỏ Flow factory** vì workflow sẽ được tạo bằng Claude session. Bỏ auth ở giai đoạn đó. Cấu hình command lúc này là file `commands.yaml` trong Hub.
 4. **Cần admin page:** ban đầu hiểu nhầm admin page chỉ là giao diện của Hub. *Chốt lại:* Admin là service riêng, chứa cấu hình cho FE (command → workflow). Agent Hub là nơi điều phối agent.
-5. **Chốt ba ý:** Admin giữ catalog workflow dùng chung. Mọi request đi qua Agent Hub, trong đó Coordinator chọn agent. Admin có backend và DB.
+5. **Chốt ba ý:** Admin giữ catalog workflow dùng chung. Mọi request đi qua Agent Hub, trong đó Orchestrator chọn agent. Admin có backend và DB.
 6. **Agent dùng Claude Code:** được, coi là runtime `agentic-cli` và nên dùng Agent SDK.
 7. **Đa model, cả subscription lẫn API:** thêm `providers`, `model_profiles`, Model Gateway và Subscription Pool.
 8. **v0.3: cấu hình agent chuyển về Agent Hub.** Hub tự khai báo workflow/tool cho agent, không tham chiếu command của Admin, và có UI riêng là Agent Studio (gồm cả Vận hành). *(v0.4 đổi lại phần workflow, xem bước 10.)*

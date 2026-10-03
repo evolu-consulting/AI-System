@@ -1,17 +1,17 @@
 # Agent Studio — Đặc tả UI/UX (Agent Hub)
 
-UI riêng của Agent Hub: cấu hình agent, Coordinator, chọn workflow làm tool, model và provider, cấp agent cho tenant; thử nghiệm bằng Playground; vận hành
+UI riêng của Agent Hub: cấu hình agent, Orchestrator, chọn workflow làm tool, model và provider, cấp agent cho tenant; thử nghiệm bằng Playground; vận hành
 
 `v0.4 · draft` · `2026-10-01` · `shadcn/ui · song ngữ VI/EN` · `Đáp ứng HUB-FR-60 → 73, 77, 78, 84`
 
 ## 1. Vai trò & nguyên tắc
 
-**Agent Studio** là nơi `platform_admin` thiết kế cách hệ thống *suy nghĩ và hành động*: có những agent nào, mỗi agent dùng model gì và được dùng workflow nào, Coordinator chọn agent ra sao, tenant nào được dùng agent nào. Studio được Hub phục vụ tại `/studio`, dùng chung design system (shadcn) và chung phiên đăng nhập với Admin UI. Chỉ `platform_admin` vào được. `tenant_admin` cấp agent cho group trong Admin (trang Groups), không vào Studio.
+**Agent Studio** là nơi `platform_admin` thiết kế cách hệ thống *suy nghĩ và hành động*: có những agent nào, mỗi agent dùng model gì và được dùng workflow nào, Orchestrator chọn agent ra sao, tenant nào được dùng agent nào. Studio được Hub phục vụ tại `/studio`, dùng chung design system (shadcn) và chung phiên đăng nhập với Admin UI. Chỉ `platform_admin` vào được. `tenant_admin` cấp agent cho group trong Admin (trang Groups), không vào Studio.
 
 | # | Nguyên tắc | Thể hiện |
 |---|---|---|
-| S1 | **Thấy điều LLM thấy** | Mô tả agent, tool (lấy từ workflow) và prompt của Coordinator đều có nút "Xem như model thấy", hiện đúng phần text và JSON schema sẽ gửi cho model. Chất lượng định tuyến phụ thuộc gần như hoàn toàn vào phần này |
-| S2 | **Thử trước khi tin** | Workflow có nút Chạy thử. Agent có Test panel. Coordinator có Dry-run định tuyến. Toàn hệ thống có Playground. Tất cả đều chạy được trên *bản nháp* chưa lưu |
+| S1 | **Thấy điều LLM thấy** | Mô tả agent, tool (lấy từ workflow) và prompt của Orchestrator đều có nút "Xem như model thấy", hiện đúng phần text và JSON schema sẽ gửi cho model. Chất lượng định tuyến phụ thuộc gần như hoàn toàn vào phần này |
+| S2 | **Thử trước khi tin** | Workflow có nút Chạy thử. Agent có Test panel. Orchestrator có Dry-run định tuyến. Toàn hệ thống có Playground. Tất cả đều chạy được trên *bản nháp* chưa lưu |
 | S3 | **Trạng thái thật ngay tại chỗ** | Chỗ nào chọn provider hay profile là chỗ đó hiện trạng thái sống (ok/cooldown/logged_out) và ghi "lúc này sẽ chạy bằng …" |
 | S4 | **Workflow ở Admin, agent ở Studio** | Workflow là catalog dùng chung của Admin: Studio chỉ *chọn*, không tạo, không đặt tên, không viết lại mô tả. Không có ô nào tham chiếu command. Mọi cấu hình còn lại của agent thuộc Studio |
 | S5 | **Cùng ngôn ngữ thiết kế với Admin** | Dùng lại khung, DataTable, SecretField, TestPanel, ConfirmDialog, audit và phím tắt của [UI/UX Admin](../admin/ui-admin.md) (mục 4–6, 9–12, 14–15). Tài liệu này chỉ đặc tả phần riêng |
@@ -23,7 +23,7 @@ Agent Studio  (/studio · role=platform_admin)
 ├─ Tổng quan                          /studio
 ├─ CẤU HÌNH AGENT
 │  ├─ Agents                          /studio/agents        · /new · /:id
-│  ├─ Coordinator                     /studio/coordinator   (một trang, singleton)
+│  ├─ Orchestrator                     /studio/orchestrator   (một trang, singleton)
 │  ├─ Tools                           /studio/tools         · /:workflow_id  (catalog workflow của Admin, chỉ đọc)
 │  ├─ Models                          /studio/models?tab=providers|profiles|prices
 │  └─ Secrets                         /studio/secrets       (drawer)
@@ -38,7 +38,7 @@ Agent Studio  (/studio · role=platform_admin)
    └─ Import / Export                 /studio/transfer
 ```
 
-Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở *Tools* → gắn vào *Agents* → chỉnh *Coordinator* → cấp cho tenant ở *Quyền agent* → thử ở *Playground*. Trên menu, Agents đứng đầu vì được mở nhiều nhất.
+Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở *Tools* → gắn vào *Agents* → chỉnh *Orchestrator* → cấp cho tenant ở *Quyền agent* → thử ở *Playground*. Trên menu, Agents đứng đầu vì được mở nhiều nhất.
 
 ## 3. Khung ứng dụng
 
@@ -55,7 +55,7 @@ Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở *Tools*
 [[WF agent-hub/ui-agent-studio.html#2]]
 
 - Card **Cần chú ý** gom mọi thứ cần xử lý: provider hỏng, agent lỗi nhiều, workflow được gắn không kết nối được, agent đang bật nhưng chưa cấp cho tenant nào. Không có gì thì hiện "✓ Mọi thứ ổn".
-- Card **Định tuyến** cho biết Coordinator chọn agent có hợp lý không. Tỉ lệ "hỏi lại" cao là dấu hiệu mô tả agent chưa rõ. Click một dòng thì mở Runs đã lọc theo agent đó.
+- Card **Định tuyến** cho biết Orchestrator chọn agent có hợp lý không. Tỉ lệ "hỏi lại" cao là dấu hiệu mô tả agent chưa rõ. Click một dòng thì mở Runs đã lọc theo agent đó.
 
 ## 5. Agents
 
@@ -76,23 +76,24 @@ Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở *Tools*
 |---|---|
 | Đổi runtime | Bước ② và ③ thay đổi theo runtime: <br>• `llm`: profile, prompt, workflow được gắn.<br>• `dify-workflow`: chọn đúng một workflow loại `workflow` từ catalog, không có profile. Agent là lớp mỏng quanh workflow.<br>• `dify-agent`: chọn một workflow loại `agent` từ catalog.<br>• `agentic-cli`: như hình. Trường không còn áp dụng thì ẩn đi nhưng giữ giá trị đến khi lưu |
 | Chọn workflow | Ô ③ mở picker catalog: tìm theo key/tên, lọc loại app, mỗi dòng có mô tả và nút "Xem như model thấy". Chỉ hiện workflow đang bật. Không có ô đặt tên hay viết mô tả |
-| Xem như Coordinator thấy | Popover hiện đúng đoạn Coordinator nhận về agent này: `- dev-helper: Dùng khi…`, kèm danh sách các agent khác để admin so sánh xem mô tả có bị trùng ý không |
+| Xem như Orchestrator thấy | Popover hiện đúng đoạn Orchestrator nhận về agent này: `- dev-helper: Dùng khi…`, kèm danh sách các agent khác để admin so sánh xem mô tả có bị trùng ý không |
 | Chọn Bash | Cảnh báo inline và bắt tick "Tôi hiểu agent chạy được lệnh hệ thống trên máy Worker" |
-| Chạy thử | Gọi thẳng agent (bỏ qua Coordinator) bằng bản nháp. Mặc định mở tab Trace. Đổi được profile cho lượt thử mà không lưu |
+| Chạy thử | Gọi thẳng agent (bỏ qua Orchestrator) bằng bản nháp. Mặc định mở tab Trace. Đổi được profile cho lượt thử mà không lưu |
 | Lưu agent mới | Lưu xong mà agent chưa cấp cho tenant nào thì toast nhắc "Chưa tenant nào dùng được agent này" kèm nút [Cấp cho tenant…] |
-| Tắt agent | Toast có Hoàn tác, kèm nhắc: "Coordinator sẽ không còn chọn agent này. Các yêu cầu tương tự sẽ được chat tự trả lời" |
+| Tắt agent | Toast có Hoàn tác, kèm nhắc: "Orchestrator sẽ không còn chọn agent này. Các yêu cầu tương tự sẽ được chat tự trả lời" |
 
-## 6. Coordinator
+## 6. Orchestrator
 
 [[WF agent-hub/ui-agent-studio.html#5]]
 
-- **Coordinator là một agent được chọn** (CR-020; thay cho "trang singleton riêng"). Trang `/studio/coordinator` chọn agent làm Coordinator + `max_steps`, ngân sách, `history_n`, `on_no_match`. Agent đó hiện trong danh sách Agents kèm badge "Coordinator", không tắt/xoá được khi đang được chọn (HUB-BR-08); đổi bằng chọn agent khác hoặc nút [Đặt làm Coordinator] ở editor agent. Đổi Coordinator = thay đổi định tuyến → chạy bộ câu kiểm thử (bên dưới). Coordinator không nằm trong danh sách delegate; chạy CLI thì không tool, không MCP.
-- **Agent Coordinator nhìn thấy:** trang này và Dry-run dùng toàn bộ agent đang bật. Khi chạy thật, mỗi user chỉ đưa cho Coordinator các agent user đó được dùng (HUB-FR-77). Muốn xem theo một user thì dùng Playground với "Chạy như user".
+- **Orchestrator là một agent được chọn** (CR-020; thay cho "trang singleton riêng"). Trang `/studio/orchestrator` chọn agent làm Orchestrator + `max_steps`, ngân sách, `history_n`, `on_no_match`. Agent đó hiện trong danh sách Agents kèm badge "Orchestrator", không tắt/xoá được khi đang được chọn (HUB-BR-08); đổi bằng chọn agent khác hoặc nút [Đặt làm Orchestrator] ở editor agent. Đổi Orchestrator = thay đổi định tuyến → chạy bộ câu kiểm thử (bên dưới). Orchestrator không nằm trong danh sách delegate; chạy CLI thì không tool, không MCP.
+- **Runtime mặc định `llm`/model rẻ** (CR-025: mọi tin đều qua Orchestrator). Chọn agent runtime `agentic-cli` làm Orchestrator thì hiện cảnh báo: "Chậm: mỗi quyết định khởi động CLI vài giây và chiếm slot subscription".
+- **Agent Orchestrator nhìn thấy:** trang này và Dry-run dùng toàn bộ agent đang bật. Khi chạy thật, mỗi user chỉ đưa cho Orchestrator các agent user đó được dùng (HUB-FR-77). Muốn xem theo một user thì dùng Playground với "Chạy như user".
 - **Phát hiện mô tả trùng ý:** khi hai agent có mô tả quá giống nhau thì hiện badge cảnh báo. Có thể so bằng embedding, hoặc đơn giản là so trùng từ khoá ở v1.
-- **Bộ câu kiểm thử định tuyến** (MUST, HUB-FR-73): tab "Kiểm thử" ngay trong trang Coordinator, gồm bảng các câu (nội dung, agent mong đợi, kết quả lần chạy gần nhất). Thêm câu bằng tay, hoặc từ nút [+ Lưu làm câu kiểm thử] ở Dry-run, Playground và Runs. Bộ câu chạy với toàn bộ agent, không lọc theo quyền.
-- **Tự chạy khi lưu:** bấm Lưu ở Coordinator, hoặc lưu/bật/tắt/xoá một agent, thì nút Lưu chuyển thành "Đang kiểm thử định tuyến… 6/9" (các câu chạy song song, tối đa khoảng 30 giây). Kết quả:
+- **Bộ câu kiểm thử định tuyến** (MUST, HUB-FR-73): tab "Kiểm thử" ngay trong trang Orchestrator, gồm bảng các câu (nội dung, agent mong đợi, kết quả lần chạy gần nhất). Thêm câu bằng tay, hoặc từ nút [+ Lưu làm câu kiểm thử] ở Dry-run, Playground và Runs. Bộ câu chạy với toàn bộ agent, không lọc theo quyền.
+- **Tự chạy khi lưu:** bấm Lưu ở Orchestrator, hoặc lưu/bật/tắt/xoá một agent, thì nút Lưu chuyển thành "Đang kiểm thử định tuyến… 6/9" (các câu chạy song song, tối đa khoảng 30 giây). Kết quả:
   - `✓ 9/9 (≥ baseline 8/9)`: lưu, và toast ghi "Đã lưu · định tuyến 9/9".
-  - `✕ 7/9 (< baseline 8/9)`: **không lưu**. Mở modal liệt kê từng câu sai (mong đợi → thực tế, kèm lý do Coordinator đưa ra). Có các nút [Sửa tiếp] và [Chỉnh câu kiểm thử…]. Chỉnh hay xoá câu kiểm thử phải ghi lý do, và việc đó được đưa vào audit.
+  - `✕ 7/9 (< baseline 8/9)`: **không lưu**. Mở modal liệt kê từng câu sai (mong đợi → thực tế, kèm lý do Orchestrator đưa ra). Có các nút [Sửa tiếp] và [Chỉnh câu kiểm thử…]. Chỉnh hay xoá câu kiểm thử phải ghi lý do, và việc đó được đưa vào audit.
 - Bộ câu rỗng thì không chặn, nhưng hiện gợi ý "Thêm vài câu kiểm thử để tránh làm hỏng định tuyến". Mỗi lần kiểm thử đều gọi model thật, nên chi phí được tính vào Vận hành với nhãn `routing-test`.
 
 ## 7. Tools (chọn workflow từ catalog Admin)
@@ -136,9 +137,9 @@ Agent có hai tầng quyền, giống feature. Studio làm tầng đầu: **enti
 [[WF agent-hub/ui-agent-studio.html#9]]
 
 - Dùng lại chính component chat của Chat App (`packages/ui-chat`), nên thấy đúng những gì người dùng cuối thấy. Bên phải có thêm trace.
-- **Đích:** toàn hệ thống (qua Coordinator) hoặc một agent cụ thể.
-- **Dùng bản nháp chưa lưu:** áp các thay đổi chưa lưu của agent, workflow được gắn và Coordinator vào lượt thử, để thử trước khi áp dụng cho mọi người.
-- **Chạy như user**: mặc định là chính admin. Chọn tenant rồi chọn user. Lượt thử áp đúng quyền command và agent của user đó: Coordinator chỉ thấy agent user được dùng, và "Một agent ▾" chỉ liệt kê các agent đó. Chỉ dùng để tái hiện ngữ cảnh (không truy cập được dữ liệu riêng của người khác) và có ghi audit.
+- **Đích:** toàn hệ thống (qua Orchestrator) hoặc một agent cụ thể.
+- **Dùng bản nháp chưa lưu:** áp các thay đổi chưa lưu của agent, workflow được gắn và Orchestrator vào lượt thử, để thử trước khi áp dụng cho mọi người.
+- **Chạy như user**: mặc định là chính admin. Chọn tenant rồi chọn user. Lượt thử áp đúng quyền command và agent của user đó: Orchestrator chỉ thấy agent user được dùng, và "Một agent ▾" chỉ liệt kê các agent đó. Chỉ dùng để tái hiện ngữ cảnh (không truy cập được dữ liệu riêng của người khác) và có ghi audit.
 - Run trong Playground được gắn nhãn `playground` trong Runs, tính chi phí riêng (không tính vào quota hay số thu của tenant) và không tính vào thống kê định tuyến.
 
 ## 11. Secrets, Nhật ký, Import/Export
@@ -146,8 +147,8 @@ Agent có hai tầng quyền, giống feature. Studio làm tầng đầu: **enti
 Giống hệt mẫu của Admin ([UI/UX Admin](../admin/ui-admin.md#s7), mục 7.8, 7.10, 7.11), chỉ khác phạm vi:
 
 - **Secrets:** chỉ API key của provider. Mã hoá bằng `HUB_SECRETS_KEY`. Chỉ ghi, không đọc lại. App-key của workflow là secret của Admin.
-- **Nhật ký:** thay đổi của agent, workflow được gắn, Coordinator, entitlement agent, provider, profile, đơn giá và secret, có diff và khôi phục. Có thêm các sự kiện `view_trace` (kèm tenant) và `playground_run_as`.
-- **Import/Export:** file `hub-config-v18.yaml` gồm agents (kèm key các workflow được gắn), coordinator, providers, profiles. `platform_admin` dùng file này để Claude session sinh hoặc sửa cấu hình agent hàng loạt, rồi import có xem diff. Key workflow không có trong catalog Admin thì import báo lỗi dòng đó.
+- **Nhật ký:** thay đổi của agent, workflow được gắn, Orchestrator, entitlement agent, provider, profile, đơn giá và secret, có diff và khôi phục. Có thêm các sự kiện `view_trace` (kèm tenant) và `playground_run_as`.
+- **Import/Export:** file `hub-config-v18.yaml` gồm agents (kèm key các workflow được gắn), orchestrator, providers, profiles. `platform_admin` dùng file này để Claude session sinh hoặc sửa cấu hình agent hàng loạt, rồi import có xem diff. Key workflow không có trong catalog Admin thì import báo lỗi dòng đó.
 
 ## 12. Luồng thao tác chính
 
@@ -160,18 +161,18 @@ Claude session tạo workflow trên Dify → lấy app key
   → Studio › Tools: tìm workflow vừa tạo → [Xem như model thấy] → [▶ Chạy thử] ✓
   → Agents › + Tạo agent: key, mô tả "Dùng khi… Không dùng khi…"
       runtime llm + profile, ③ chọn workflow từ catalog → [▶ Chạy thử] ✓ → Lưu
-  → Coordinator › Dry-run 2–3 câu ví dụ → thấy chọn đúng agent mới → lưu các câu đó làm câu kiểm thử
+  → Orchestrator › Dry-run 2–3 câu ví dụ → thấy chọn đúng agent mới → lưu các câu đó làm câu kiểm thử
   → Quyền agent: bật entitlement cho các tenant cần dùng
       (tenant_admin của từng tenant cấp cho group ở Admin › Groups)
   → Playground: chạy như một user đã được cấp → thử end-to-end → xong
 ```
 
-### F2. Coordinator chọn sai agent
+### F2. Orchestrator chọn sai agent
 
 ```
 Tổng quan: tỉ lệ "hỏi lại" tăng, hoặc user báo sai
-  → Runs › lọc run đó › xem bước Coordinator (lý do chọn)
-  → sửa mô tả agent (hoặc prompt Coordinator) → Dry-run câu đó
+  → Runs › lọc run đó › xem bước Orchestrator (lý do chọn)
+  → sửa mô tả agent (hoặc prompt Orchestrator) → Dry-run câu đó
   → [+ Lưu làm câu kiểm thử] cho câu bị sai → Lưu (bộ kiểm thử tự chạy, chặn nếu tỉ lệ đúng giảm)
 ```
 
@@ -198,7 +199,7 @@ Models › Profiles › smart › kéo anthropic-api lên đầu hoặc đổi m
 Admin › Tenants: tạo tenant "acme" (entitlement feature, quota, slot subscription)
   → Studio › Quyền agent: lọc tenant acme → bật hoadon, chat
   → tenant_admin của acme: Admin › Groups › ke-toan › cấp hoadon
-  → user trong ke-toan chat "kiểm tra hoá đơn…" → Coordinator chọn được hoadon
+  → user trong ke-toan chat "kiểm tra hoá đơn…" → Orchestrator chọn được hoadon
 ```
 
 ## 13. Validation & trạng thái
@@ -215,20 +216,20 @@ Admin › Tenants: tạo tenant "acme" (entitlement feature, quota, slot subscri
 | Gỡ workflow khỏi agent | Được phép. Nếu là workflow duy nhất của agent `dify-workflow`/`dify-agent` thì phải chọn workflow khác trước | "Agent cần một workflow" |
 | Thu hồi entitlement | Được phép, bắt xác nhận | Hộp xác nhận nêu số grant sẽ mất hiệu lực |
 | Đơn giá | Giá ≥ 0, `effective_from` không trùng với dòng khác của cùng provider + model | "Đã có đơn giá hiệu lực từ ngày này" |
-| Coordinator | Phải chọn một agent đang bật có profile hợp lệ (CR-020), max_steps từ 1 đến 10 | "Số bước tối đa từ 1 đến 10" |
+| Orchestrator | Phải chọn một agent đang bật có profile hợp lệ (CR-020), max_steps từ 1 đến 10 | "Số bước tối đa từ 1 đến 10" |
 
 Trạng thái đang tải, rỗng, lỗi, xung đột và mất kết nối dùng chung quy ước với Admin (UI/UX Admin, mục 9). Riêng trang rỗng:
 
-- **Agents rỗng:** "Chưa có agent nào. Coordinator sẽ tự trả lời mọi câu hỏi." kèm nút [+ Tạo agent đầu tiên].
+- **Agents rỗng:** "Chưa có agent nào. Orchestrator sẽ tự trả lời mọi câu hỏi." kèm nút [+ Tạo agent đầu tiên].
 - **Tools rỗng:** "Catalog chưa có workflow nào. Workflow được tạo ở Admin." kèm nút [Mở Admin › Workflows ↗].
-- **Quyền agent rỗng:** "Chưa cấp agent cho tenant nào. User chỉ chat được với Coordinator." 
+- **Quyền agent rỗng:** "Chưa cấp agent cho tenant nào. User chỉ chat được với Orchestrator." 
 
 ## 14. Truy vết & câu hỏi mở
 
 | Màn hình | Đáp ứng |
 |---|---|
 | 5 Agents | HUB-FR-60, 61 · HUB-BR-09 |
-| 6 Coordinator | HUB-FR-62, 63, 73 · HUB-BR-08, 13 |
+| 6 Orchestrator | HUB-FR-62, 63, 73 · HUB-BR-08, 13 |
 | 7 Tools | HUB-FR-64, 65 · HUB-BR-09, 10, 11, 12 |
 | 8 Models | HUB-FR-66, 67, 84 |
 | 9 Quyền agent | HUB-FR-77, 78 · HUB-BR-17 |
