@@ -9,9 +9,9 @@ Nguồn: spec · `ui-admin` 7.2, 7.10–7.16, F7 · `missing-screens` (**ms**) �
 | # | Quyết định | Lý do |
 |---|---|---|
 | D1 | **Không dùng `recharts`.** Cột ngày tự viết SVG (`DailyBars` ~120 dòng): chồng Trong quota + Vượt quota (vân chéo), `<title>` mỗi cột | recharts + d3 ≈ 100 KB gzip > chunk 50 KB; artboard là cột đơn giản |
-| D2 | QR vẽ ở client từ `otpauth_url` bằng `qrcode`, `import()` động chỉ ở bước QR. Chunk > 50 KB gzip → phương án B: server trả `qr_svg` | ms §14.1, spec Q3 |
+| D2 | QR = `<img src={qr_svg}>` server trả (plan-cd §4.2); web **không** cài `qrcode`; `otpauth_url`/`secret` cho nhập tay | plan §2 #1 |
 | D3 | Không thêm `input-otp`, `react-day-picker`: `OtpInput` = **một** `<input inputMode="numeric" autocomplete="one-time-code" maxLength=6>` vẽ 6 ô bằng CSS, tự gửi khi đủ 6; `PeriodFilter` = `Popover` + preset 7/30/90 ngày + 2 `<input type="date">` | ms §10 e2e "1 input duy nhất"; bundle |
-| D4 | shadcn mới chép từ `radix-ui` đã có: `accordion`, `collapsible`, `toggle-group`. npm mới duy nhất: `qrcode` | ADR-0001 |
+| D4 | shadcn mới chép từ `radix-ui` đã có: `accordion`, `collapsible`, `toggle-group`. không npm mới | ADR-0001 |
 | D5 | Mở rộng `DiffTable` M3 (chuyển `components/shared/diff/`): prop `labels{before,after}`, `mode` update/create/delete, chữ "đã đổi" (không chỉ màu), dòng "{n} trường không đổi · Hiện". `lib/diff-fields.ts` thêm `diffAll()` → `{changed, unchanged}` | ms §7.2; dùng ở Audit, Import, Conflict |
 | D6 | `QuotaBanner` trong `AppShell` dưới topbar, **mọi trang** của tenant_admin, không nút đóng (Q12); platform/không quota/< 80 % → không render; lỗi tải → im lặng. Query `staleTime` 60 s, refetch khi focus, invalidate sau lưu quota | R06, F7 |
 | D7 | Tab tenant theo `?tab=`; `UnsavedGuard` dirty = info ∨ quota | mẫu secrets |
@@ -167,31 +167,31 @@ Chuỗi định dạng không cần dịch (giống nhau 2 ngôn ngữ): `quota.
 | conflict.overwrite.history | Lịch sử vẫn giữ v{n}. | History keeps v{n}. |
 Xoá key `overview.welcome/soon/platform.body/tenant.body`.
 
-## 8. Mã lỗi API → câu (`lib/errors.ts`; tên mã là đề xuất, chốt theo spec §3)
+## 8. Mã lỗi API → câu (`lib/errors.ts`; đã chốt: plan-cd §3.3, §4.3; plan-contract §2.4)
 
 | Mã | Câu |
 |---|---|
 | `NAME_TAKEN` / `VERSION_CONFLICT` (restore) | `audit.error.nameTaken` / `audit.error.changedSince` (toast, không mở ConflictDialog) |
 | `VERSION_CONFLICT` (import áp dụng) | `transfer.import.stale` + chạy lại dry-run |
-| `IMPORT_INVALID` (`details.errors[{path,message}]`) · `MISSING_SECRETS` · `FILE_TOO_LARGE` | Alert `transfer.import.invalid` + danh sách · `transfer.import.secretsMissing` · `transfer.import.tooLarge` |
-| `TOTP_INVALID` | đăng nhập `login.totp.wrong` (xoá ô, focus lại); bật `twofa.verify.wrong`; tắt/tạo lại `twofa.error.wrongCreds` |
-| `TOTP_TOKEN_EXPIRED` | `login.totp.expired` → về form đăng nhập |
-| `TEMP_LOCKED` · `INVALID_CREDENTIALS` (reauth) | `login.tempLocked` · `password.error.currentWrong` (đã có) |
+| `IMPORT_INVALID` (`details.errors[{path,code,message,params}]`) · `SECRETS_REQUIRED` · 413 `PAYLOAD_TOO_LARGE` | Alert `transfer.import.invalid` + danh sách · `transfer.import.secretsMissing` · `transfer.import.tooLarge` |
+| `INVALID_OTP` (401, login) · `INVALID_CURRENT_CODE` (400) | `login.totp.wrong` (xoá ô, focus) · bật `twofa.verify.wrong`; tắt/tạo lại `twofa.error.wrongCreds` |
+| `INVALID_TOTP_TOKEN` (401) | `login.totp.expired` → về form đăng nhập |
+| `TEMP_LOCKED` · `INVALID_CURRENT_PASSWORD` (reauth) | `login.tempLocked` · `password.error.currentWrong` |
 
 ## 9. Hiệu năng (không chặn mốc; `check:bundle` vẫn trong Lệnh xong FE)
 Chunk theo route (`autoCodeSplitting`); D1, D2; JS ban đầu chỉ thêm banner + nav (< 3 KB). Timeline > 200 dòng: `content-visibility: auto` mỗi dòng. `staleTime` Usage/banner 60 s, Overview 30 s.
 
-## 10. Cần backend-lead xác nhận (không tự đổi contract)
-1. ADR M4: bỏ `recharts` (D1). Số `0004` đã dùng (M1) → ADR M4 là `0005`.
-2. Quota: `GET /admin/tenants/:id/quotas` → `{version, month, items[{feature|null, max_runs, max_tokens, max_usd, used{runs,tokens,usd}, pct}]}`; `PUT {version, items}` trả cùng dạng.
-3. Banner: mặc định `GET /admin/quota-status` → `{level: null|80|100, pct, scope, used, limit, unit}` (hoặc trường trong `/auth/me`).
-4. Usage: `kpi{…, cost_usd?, margin_usd?}`, `daily[{date, billable_usd, overage_usd}]`, `by_tenant?` (+slot), `top_features`, `top_users?`, `quotas?`, `has_data`; CSV `GET /admin/usage.csv` + `Content-Disposition`.
-5. Overview: `GET /admin/overview` một request/role (ms §14.8) đủ trường §3.3; `runs_24h` null khi Hub chưa có.
-6. Audit: ms §14.6 + `restorable`, `tenant_key|null`, `meta{feature, subject, file, added, updated}`; chi tiết `before, after, secret_changed`; `next_cursor`.
-7. Export: `GET /admin/export/meta` → `{config_version, counts}`; `GET /admin/export?types=` + `Content-Disposition`.
-8. Import: body `{yaml, based_on_version}`; dry-run ms §14.7 + `items[{type, key, action, before?, after?}]`, `missing_secrets[{name, used_by[]}]`; áp dụng thêm `secrets{}`; lệch version → 409.
-9. TOTP: ms §14.1 + `setup {current_password}`, `backup-codes {code}`; `Me`: `totp_enabled, totp_enabled_at, backup_codes_left`; Users list `totp_enabled`; `POST /admin/users/:id/totp/disable`.
-10. User/tenant trả `updated_by` (R17).
+## 10. Backend-lead đã chốt (2026-10-03; chi tiết: plan §2 "Đối chiếu FE §10")
+1. ✓ ADR-0005, không `recharts`; QR server `qr_svg` (D2).
+2. đổi tên: `QuotaSetResponse` plan-contract §2.1 (`feature_id/key/name`, `used.billable_usd`, `level`; tiền = chuỗi).
+3. đổi: `GET /admin/quota-banner` → `{banner:{level:"warn"|"over",pct,feature_key}|null}`.
+4. đổi tên: `daily[].overage_billable_usd`, `tenants*` (thay `by_tenant`); `top_users`, `quotas`, `previous` luôn có; CSV ✓.
+5. ✓ `GET /admin/overview` (`runs_24h` null khi chưa có data).
+6. đổi tên: `meta` → `summary` (`added_count/updated_count`, `value_changed`); `restorable`, `next_cursor` ✓.
+7. ✓ `GET /admin/export/meta` → `{config_version, counts}` (plan-cd §3.1).
+8. đổi tên: `{file_name, content, secrets?, base_config_version}`, `items[].op`; `missing_secrets[{name, used_by[]}]` ✓; 409 `{current}`.
+9. ✓ TOTP như đề xuất; `disable {current_password, code|backup_code}`; mã lỗi §8.
+10. ✓ `updated_by: string|null`.
 
 ## 11. Câu hỏi
 - **Q-FE1 (mới):** Tab **Feature** của Tenant còn "Chưa khả dụng" (ui 7.13; ngoài phạm vi M4; entitlement API theo feature). Mặc định: **không làm ở M4**, ghi `TECH-DEBT.md` (đã cấp được ở `/features/:id`). Muốn có → task FE7 + `GET /admin/tenants/:id/entitlements` (đổi phạm vi).

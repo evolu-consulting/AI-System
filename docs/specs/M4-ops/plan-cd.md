@@ -7,7 +7,7 @@ requirements: [ADM-FR-54, ADM-FR-08, ADM-BR-04, ADM-BR-09, AC-A06, AC-A09]
 
 # Plan backend M4 · khối C + D
 
-A + B: `plan.md`; UI: `plan-frontend.md`. Luật: spec §2 (R10, R14–R16). Thư viện: [ADR-0005](../../adr/0005-m4-mail-qr-yaml-chart.md) (spec ghi "ADR-0004" — số đó đã dùng ở M1).
+A + B: `plan.md`; UI: `plan-frontend.md`. Luật: spec §2 (R10, R14–R16). Thư viện: [ADR-0005](../../adr/0005-m4-mail-qr-yaml-chart.md).
 
 ## 1. Quyết định chính
 
@@ -29,7 +29,7 @@ A + B: `plan.md`; UI: `plan-frontend.md`. Luật: spec §2 (R10, R14–R16). Th�
 | Giao diện | Ai làm | Chữ ký | C/D dùng thế nào |
 |---|---|---|---|
 | Ghi audit | B (T1) | trong `configWrite`: `ch.audit(e: AuditInput)` (plan §4.1); tx không bump: `recordAudit(tx, e: AuditEntry)` câu cuối, `config_version` NULL | Import: **một** `ch.audit` (§8.3); 2FA: `recordAudit`, entity `user_totp` (§4.4) |
-| `AUDIT_ENTITIES` | B | đã gồm `config`, `user_totp` (plan §2.4) | allowlist `config` = `after` nguyên dạng (chỉ type/key/tên) — B thêm dòng |
+| `AUDIT_ENTITIES` | B | đã gồm `config`, `user_totp` (plan-contract §2.4) | allowlist `config` = `after` nguyên dạng (chỉ type/key/tên) — B thêm dòng |
 | Secret tạo qua import | C (T8) | `createSecretTx(tx, ch, …, {audit: false})` | giữ đúng 1 dòng audit `import` (R14) |
 | `configWrite` kiểm phiên bản gốc | C (T7) | `ConfigCall.expectBase?: number` → `withConfigWrite(…, {expectBase})`: sau bump, `v !== expectBase + 1` → ném `ConfigVersionMoved {current: v - 1}` (rollback) | T8 đổi thành 409 `VERSION_CONFLICT {current}` |
 | Mailer | C/D (TM) | §9 | A (T4) inject `deps.mailer` |
@@ -48,6 +48,8 @@ Chỉ `platform_admin` (`requireRole("platform_admin")`; `tenant_admin`/`member`
 | Response | `200`, `Content-Type: application/yaml; charset=utf-8`, `Content-Disposition: attachment; filename="config-v{n}.yaml"`, header `X-Config-Version: {n}` | body = `ConfigFileSchema` dạng yaml (`yaml.stringify`, `sortMapEntries: true`, `lineWidth: 0`), UTF-8 không BOM |
 
 Một snapshot (`repeatable read, read only`, như `grants.matrix.ts`); phần tử sắp theo key.
+
+`GET /admin/export/meta` (platform) → `{config_version: int, counts: {workflows, commands, features, tenants, groups, grants}: int}` — đếm đúng tập sẽ export (bỏ tenant `platform`, chỉ grant cho group), cùng snapshot.
 
 ### 3.2 `ConfigFileSchema` (zod, strict mọi cấp; dùng cho cả export và import)
 
@@ -89,7 +91,7 @@ Request JSON (`ImportRequestSchema`, strict):
 | `base_config_version` | int (config hiện tại lúc xem trước) |
 | `summary` | `{added, updated, unchanged}` int ≥ 0 |
 | `items` | `{type: "workflow"\|"command"\|"feature"\|"tenant"\|"group"\|"grant", key: string, op: "add"\|"update", before: object\|null, after: object}[]` — chỉ mục đổi; `key` của group/grant = `acme/sales`, `acme/sales/translate` |
-| `missing_secrets` | `SecretName[]` (tên được workflow trong file dùng, chưa có trong DB) |
+| `missing_secrets` | `{name: SecretName, used_by: WorkflowKey[]}[]` (secret workflow trong file dùng, chưa có trong DB; sắp theo `name`) |
 | `errors` | `{path: string, code: ImportErrorCode, message: string, params?: Record<string,string>, line?: int, col?: int}[]` ≤ 100 (cắt bớt + 1 lỗi `TOO_MANY_ERRORS`) |
 
 `before/after` = dạng phần tử file. `ImportErrorCode` = `YAML_SYNTAX` · `SCHEMA` · `DUPLICATE_KEY` · `REF_NOT_FOUND` · `TENANT_NOT_FOUND` · `PLATFORM_TENANT` · `COMMAND_NEEDS_FEATURE` · `NOT_ENTITLED` · `RULE` (luật module trả, `params.code` = mã lỗi gốc, vd `INPUT_MAP_INVALID`, `SCHEMA_BREAKS_COMMANDS`, `BETA_GROUP_PROTECTED`, `CORE_FEATURE_PROTECTED`) · `TOO_MANY_ERRORS`. `message` tiếng Việt; FE dịch theo `code` + `params`.

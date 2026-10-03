@@ -1,6 +1,6 @@
 # Plan · M4-ops (backend, khối A + B)
 
-Khối C + D (Import/Export, 2FA, ADR-0004): [`plan-cd.md`](plan-cd.md). Spec: [§2 luật M4-Rnn](spec.md#2-nghiệp-vụ), [§9 Q](spec.md#9-quyết-định). Mặc định Q0–Q13 giữ nguyên (không thấy sai); chi tiết hoá ở đây. Ưu tiên 2026-10-03: hiệu năng chỉ là mục tiêu (`*.perf.int.test.ts` → `test:perf`).
+Khối C + D (Import/Export, 2FA, ADR-0005): [`plan-cd.md`](plan-cd.md). Spec: [§2 luật M4-Rnn](spec.md#2-nghiệp-vụ), [§9 Q](spec.md#9-quyết-định). Mặc định Q0–Q13 giữ nguyên (không thấy sai); chi tiết hoá ở đây. Ưu tiên 2026-10-03: hiệu năng chỉ là mục tiêu (`*.perf.int.test.ts` → `test:perf`).
 
 ## 1. File
 
@@ -22,89 +22,23 @@ Khối C + D (Import/Export, 2FA, ADR-0004): [`plan-cd.md`](plan-cd.md). Spec: [
 | `modules/{tenants,users,secrets,grants}` | sửa service/batch: `ch.audit`; users reset → `recordAudit` | §4.2 |
 | `tools/mocks/src` | `quota.ts` (`bun run mock:quota`) | §7 |
 
-## 2. Contract
+## 2. Contract → [plan-contract.md](plan-contract.md) (§2.1–2.5 giữ số)
 
-Quy ước: mọi schema `z.strictObject`; tiền là **chuỗi thập phân** `Money = /^\d{1,10}(\.\d{1,6})?$/` (numeric trả string, không mất chính xác); giới hạn USD nhập `MoneyLimit = /^(0|[1-9]\d{0,9})(\.\d{1,2})?$/` và > 0. Ngày `DateOnly = /^\d{4}-\d{2}-\d{2}$/` (ngày giờ VN). `Count` = int ≥ 0.
+**Đối chiếu FE §10** (chốt 2026-10-03; ✓ = nhận đề xuất FE, đổi = FE theo contract):
 
-### 2.1 Quota (`quotas.ts`) — FR-40, M4-R02, Q9
+| # | Chốt | Ghi chú |
+|---|---|---|
+| 1 | ✓ | ADR-0005, không `recharts`; QR: server trả `qr_svg` → web **không** cài `qrcode` |
+| 2 | đổi tên | `QuotaSetResponse` (§2.1): `feature_id/key/name`, `used{runs,tokens,billable_usd,unpriced_rows}`, `pct\|null`, `level`; tiền = chuỗi |
+| 3 | đổi | giữ `GET /admin/quota-banner` → `{banner:{level:"warn"\|"over",pct,feature_key}\|null}`; ms §1 chỉ cần `pct`+`level`; không nhét vào `/auth/me` |
+| 4 | đổi tên | `daily[].overage_billable_usd`; `by_tenant` → `tenants*`; `top_users`, `quotas`, `previous` luôn có; CSV ✓ |
+| 5 | ✓ | `runs_24h: null` khi `has_usage_data=false` |
+| 6 | đổi tên | `meta` → `summary` (`added_count/updated_count`; `added/removed` = mảng member); `secret_changed` → `summary.value_changed`; `restorable` luôn có |
+| 7 | ✓ thêm | `GET /admin/export/meta` (plan-cd §3.1) |
+| 8 | đổi tên | `{file_name, content, secrets?, base_config_version}`; `items[].op`; `missing_secrets[{name, used_by[]}]` ✓ (plan-cd §3.3); 409 `VERSION_CONFLICT {current}` |
+| 9 | ✓ + mã | mã lỗi theo plan-cd §4.3 (không có `TOTP_INVALID`/`TOTP_TOKEN_EXPIRED`); `disable {current_password, code\|backup_code}` |
+| 10 | ✓ | `updated_by: string\|null` (username) |
 
-| Endpoint | Role | Request | 200 | Lỗi |
-|---|---|---|---|---|
-| `GET /admin/tenants/:id/quotas` | platform; tenant_admin chỉ `:id` = tenant mình | — | `QuotaSetResponse` | 404 (không có / tenant khác), 403 member |
-| `PUT /admin/tenants/:id/quotas` | platform | `QuotaSetRequest` | `QuotaSetResponse` | 400 `VALIDATION_ERROR` (trùng `feature_id`, > 100 dòng), 400 `INVALID_REFERENCE` (feature không có), 403, 404, 409 `VERSION_CONFLICT` `details:{current: QuotaSetResponse, updated_at}` |
-| `GET /admin/quota-banner` | platform → `{banner:null}`; tenant_admin; member 403 | — | `{banner: QuotaBanner \| null}` | 403 |
-
-| Schema | Trường |
-|---|---|
-| `QuotaLimits` | `max_runs: int 1..1e9 \| null` · `max_tokens: int 1..1e12 \| null` · `max_usd: MoneyLimit \| null` |
-| `QuotaItemInput` | `feature_id: uuid \| null` (null = cả tenant) + `QuotaLimits` |
-| `QuotaSetRequest` | `version: int ≥1` (version **tenant**) · `items: QuotaItemInput[] ≤100` — dòng mọi giới hạn null bị bỏ (= không giới hạn) |
-| `QuotaUsage` | `runs: Count` · `tokens: Count` · `billable_usd: Money` · `unpriced_rows: Count` |
-| `QuotaStatus` | `feature_id: uuid\|null` · `feature_key: string\|null` · `feature_name: LocalizedText\|null` · `QuotaLimits` · `used: QuotaUsage` · `pct: int ≥0 \| null` (null = không giới hạn) · `level: "none"\|"warn"\|"over"` |
-| `QuotaSetResponse` | `tenant_id` · `version` (tenant) · `month: "YYYY-MM"` · `has_usage_data: bool` · `items: QuotaStatus[]` — **luôn** có dòng đầu `feature_id=null` (giới hạn null nếu chưa đặt), rồi theo `feature_key` tăng |
-| `QuotaBanner` | `level: "warn"\|"over"` · `pct: int` · `feature_key: string\|null` (quota có `pct` cao nhất) |
-
-PUT: tenant `version+1`, `updated_by`, `updated_at` (quota thuộc tenant, Q9). Sau commit gọi `evaluateTenant` (§5.2), lỗi chỉ log.
-
-### 2.2 Usage (`usage.ts`) — FR-42, M4-R03, R07–R09
-
-| Endpoint | Role | Query `UsageQuery` | 200 |
-|---|---|---|---|
-| `GET /admin/usage` | platform, tenant_admin | `tenant_id?: uuid` · `feature_id?: uuid \| "none"` · `from?`, `to?: DateOnly` (mặc định tháng hiện tại; `to` gồm cả ngày; `from ≤ to`; ≤ 366 ngày) | platform: `UsageReportPlatform`; tenant_admin: `UsageReportTenant` |
-| `GET /admin/usage.csv` | như trên | như trên | `text/csv; charset=utf-8`, BOM, CRLF, `Content-Disposition: attachment; filename="usage-{tenant_key\|all}-{from}-{to}.csv"` |
-
-tenant_admin: `tenant_id` vắng → tenant mình; khác tenant mình → **404**. Lỗi: 400 `VALIDATION_ERROR`, 403 member.
-
-| Schema | Trường (`*` = chỉ bản Platform; bản Tenant **không có khoá**) |
-|---|---|
-| `UsageKpi` | `runs` · `tokens` · `input_tokens` · `output_tokens` · `billable_usd` · `unpriced_rows` · `overage_runs` · `cost_usd*` · `margin_usd*` (= billable − cost, có thể âm: `Money` cho phép `-`) |
-| `UsageDay` | `date` · `runs` · `tokens` · `billable_usd` · `overage_billable_usd` · `cost_usd*` (đủ mọi ngày trong khoảng, ngày trống = 0) |
-| `UsageTopFeature` (≤10, theo `billable_usd` giảm) | `feature_id\|null` · `feature_key\|null` · `feature_name\|null` (null = "Không theo feature") · `runs` · `tokens` · `billable_usd` · `overage: bool` · `cost_usd*` |
-| `UsageTopUser` (≤10) | `user_id\|null` · `username\|null` · `display_name\|null` · `runs` · `tokens` · `billable_usd` · `cost_usd*` |
-| `UsageTenantRow*` (≤200, chỉ khi `tenant_id` vắng) | `tenant_id` · `tenant_key` · `tenant_name` · `runs` · `tokens` · `billable_usd` · `cost_usd` · `quota_pct: int\|null` · `level` |
-| `UsageReport*` | `range:{from,to}` · `tenant_id\|null` · `feature_id` · `has_data: bool` (R09: có ≥1 hàng `usage_logs` bất kỳ thời điểm cho phạm vi tenant) · `kpi` · `previous: UsageKpi` (khoảng liền trước cùng độ dài, cho delta) · `daily` · `top_features` · `top_users` · `quotas: QuotaStatus[]` (rỗng khi không chọn tenant) · `tenants*` |
-
-CSV: một dòng / (ngày × tenant × feature). Cột tenant_admin: `date,tenant_key,feature_key,runs,input_tokens,output_tokens,billable_usd,overage_runs`; platform thêm `cost_usd` sau `billable_usd`. Null: `feature_key` = `""`, `billable_usd` null = `""`. Ô bắt đầu `= + - @ \t \r` được thêm `'` (chống formula injection).
-
-### 2.3 Overview (`overview.ts`) — ui 7.2, missing §1, Q5
-
-`GET /admin/overview` (platform, tenant_admin; member 403) → `OverviewResponse = discriminatedUnion("kind")`:
-
-| `kind` | Trường |
-|---|---|
-| `"tenant"` | `tenant:{id,key,name}` · `month` · `active_users` · `groups` · `runs_month: Count\|null` · `runs_prev_month: Count\|null` (null khi `has_usage_data=false`) · `has_usage_data` · `quotas: QuotaStatus[]` · `banner: QuotaBanner\|null` · `never_logged_in: {id,username,display_name,created_at}[] ≤5` (active, `last_login_at` null, `created_at` giảm) · `never_logged_in_total` · `recent_changes: AuditItem[] ≤8` |
-| `"platform"` | `tenants_active` · `commands_enabled` · `workflows_total` · `workflows_unattached` (không command nào trỏ tới) · `users_active` · `runs_24h: Count\|null` · `has_usage_data` · `quota_tenants: {tenant_id,tenant_key,tenant_name,pct,level}[] ≤10` (level ≠ none, pct giảm) · `recent_changes: AuditItem[] ≤8` · `unavailable: ("command_errors"\|"agent_studio")[]` (luôn đủ 2, Q5) |
-
-### 2.4 Audit (`audit.ts`) — FR-51, 52, M4-R10–R13
-
-| Enum | Giá trị |
-|---|---|
-| `AUDIT_ENTITIES` | `tenant, user, user_totp, group, grant, entitlement, feature, workflow, command, secret, quota, config` (`config` = import; `user_totp` = 2FA, plan-cd) |
-| `AUDIT_ACTIONS` | `create, update, delete, lock, unlock, grant, revoke, restore, import` |
-
-| Endpoint | Role | Request | 200 | Lỗi |
-|---|---|---|---|---|
-| `GET /admin/audit` | platform, tenant_admin | `AuditListQuery` | `{items: AuditItem[], next_cursor: string\|null}` | 400, 403 member, 404 (tenant_admin lọc tenant khác / `system`) |
-| `GET /admin/audit/:id` | như trên | — | `AuditDetail` | 404 (không thấy qua RLS) |
-| `POST /admin/audit/:id/restore` | **platform** (tenant_admin → 403 trước khi tra) | `{}` (strict) | `{entity, entity_id, version, audit_id}` | 403, 404, 409 `NOT_RESTORABLE`, 409 `VERSION_CONFLICT` (`details:{current, updated_at}` theo DTO thực thể), 409 `NAME_TAKEN` `details:{entity,name}`, 409 `RESTORE_REF_MISSING` `details:{missing:[{entity,id}]}`, + lỗi luật của module (vd 400 `COMMAND_NEEDS_FEATURE`) |
-
-| Schema | Trường |
-|---|---|
-| `AuditListQuery` | `tenant_id?: uuid \| "system"` · `entity?` · `action?` · `actor_id?: uuid` · `entity_id?: uuid` (menu "Lịch sử" của editor M2/M3) · `from?`, `to?: DateOnly` (mặc định: 30 ngày gần nhất) · `q?: trim 1..100` (ILIKE `entity_name`) · `limit: 1..200 = 50` · `cursor?: string ≤ 32` |
-| `AuditItem` | `id: uuid` · `at` · `tenant_id\|null` · `tenant_key\|null` · `actor_id\|null` · `actor_username\|null` (null = hệ thống) · `action` · `entity` · `entity_id\|null` · `entity_name` · `config_version: int\|null` (chip `v{n}`) · `entity_version: int\|null` (version thực thể sau thay đổi; câu "trước v{n}") · `summary: AuditSummary` · `restorable: bool` (= `canRestore` cho actor đang gọi) |
-| `AuditSummary` (mọi khoá optional) | `subject_type`, `subject_name`, `feature_key`, `tenant_key` (grant/entitlement) · `added: string[]`, `removed: string[]` (member) · `value_changed: true` (secret) · `password_reset: true` · `restored_from: uuid`, `restored_version: int` · `file`, `added_count`, `updated_count` (import) |
-| `AuditDetail` | `AuditItem` + `before: Record<string,unknown>\|null` · `after: …\|null` (secret: chỉ `name`,`note`; không có giá trị) |
-
-Cursor = base64url của `seq` (bigint). Sắp `seq` giảm.
-
-### 2.5 Thay đổi contract có sẵn
-
-| File | Thay đổi |
-|---|---|
-| `common.ts` `API_ERRORS` | thêm `NAME_TAKEN: 409`, `NOT_RESTORABLE: 409`, `RESTORE_REF_MISSING: 409` (message EN ở `lib/errors.ts`) |
-| `config.ts` `CONFIG_ENTITIES` | thêm `"quota"` (cộng thêm, Hub M5 parse) |
-| `tenants.ts` `tenantShape`, `users.ts` `UserSchema` | thêm `updated_by: UpdatedBySchema` (username, null khi không thấy qua RLS — như groups M3) |
-| NOTIFY mới (Hub → Admin) | kênh `quota_threshold`, payload `z.strictObject({tenant_id: uuid})` ≤ 100 byte; Hub/mock gửi khi ghi `usage_logs` (Q2b) |
 
 ## 3. Dữ liệu
 
@@ -303,15 +237,15 @@ Lệnh xong chung: `bun run typecheck && bun test <file> && bun run check:fn --f
 | # | Task | Rủi ro | Đọc | File | Lệnh xong thêm |
 |---|---|---|---|---|---|
 | T0 | Schema + `0007` (3 bảng, `updated_by`, RLS nối tay), RLS, append-only, `listen` client, `insertAuditRows` | cao | plan §3, §4.1 (hàng withConfigWrite), §8 hàng ops-rls | `packages/db/**` | `bun run db:migrate && bun run test:int packages/db` |
-| T0b | Contracts A+B (§2.1–2.5) + test parse | thường | plan §2 | `packages/contracts/src/{quotas,usage,overview,audit}.ts`, sửa `common,config,tenants,users` | `bun test packages/contracts` |
+| T0b | Contracts A+B (§2.1–2.5) + test parse | thường | plan-contract §2 | `packages/contracts/src/{quotas,usage,overview,audit}.ts`, sửa `common,config,tenants,users` | `bun test packages/contracts` |
 | T0m | `mock:quota` + stub index | thường | plan §7 | `tools/mocks/src/quota.ts`, `migrations-dev/0002_*`, `package.json` | `bun run mock:quota -- --tenant acme --seed` |
 | T1 | Lõi audit: sink `ch.audit`, `ConfigCall.actor`, `audit.rules`, `recordAudit` | cao | plan §4.1, §6 hàng 15 | `lib/audit/*`, `lib/config/config-write.ts`, `packages/db/src/config-meta.ts` | `bun run test:int config-write` |
 | T1b | Gắn audit M1 (tenants, users, reset) + `updated_by` users/tenants (CR-016) | cao | plan §4.2 hàng tenants/users, §2.5 | `modules/{tenants,users}/*` | `bun run test:int tenants users` + M4-AC04/05 phần user |
 | T1c | Gắn audit M2/M3 (workflows, commands, features, entitlements, secrets, groups, members, grants, batch) + bật bất biến | cao | plan §4.1 bất biến, §4.2 | `modules/{workflows,commands,features,secrets,groups,grants}/*` | `bun run test:int` (toàn bộ) + M4-AC04–06 |
-| T2 | Đọc audit: list/detail, filter, cursor, RLS | cao | plan §2.4, §4.3 | `modules/audit/{routes,service,repo,rules}` | M4-AC07 (phần đọc), AC-A09 audit |
-| T3 | Quota GET/PUT + version tenant + audit | cao | plan §2.1, §3.1, §5.1 (normalize, duplicate), §6 Quota PUT | `modules/quotas/{routes,service,repo,rules}` | quota int + lock-order ca Quota∥Feature DELETE |
+| T2 | Đọc audit: list/detail, filter, cursor, RLS | cao | plan-contract §2.4, §4.3 | `modules/audit/{routes,service,repo,rules}` | M4-AC07 (phần đọc), AC-A09 audit |
+| T3 | Quota GET/PUT + version tenant + audit | cao | plan-contract §2.1, §3.1, §5.1 (normalize, duplicate), §6 Quota PUT | `modules/quotas/{routes,service,repo,rules}` | quota int + lock-order ca Quota∥Feature DELETE |
 | T2b | Khôi phục + adapter command/workflow/feature/group/quota | cao | plan §4.4, §6 Restore | `modules/audit/audit.restore.ts`, `modules/*/<m>.restore.ts` | M4-AC07 (403), AC08 |
 | T4 | Evaluator, `quota_alerts`, listener, `GET /admin/quota-banner` | cao | plan §5.1–5.3, §6 Evaluator | `modules/quotas/{evaluator,alerts,listener}`, `server.ts` | M4-AC01, AC02, AC-A12 |
-| T5 | `GET /admin/usage` + CSV | cao | plan §2.2, §5.4 | `modules/usage/*` | M4-AC03, AC-A09 usage |
-| T6 | `GET /admin/overview` (2 role) | thường | plan §2.3, §5.5 | `modules/overview/*` | M4-AC13 (API) |
+| T5 | `GET /admin/usage` + CSV | cao | plan-contract §2.2, §5.4 | `modules/usage/*` | M4-AC03, AC-A09 usage |
+| T6 | `GET /admin/overview` (2 role) | thường | plan-contract §2.3, §5.5 | `modules/overview/*` | M4-AC13 (API) |
 Thứ tự: T0 → T0b → T0m → T1 → T1b → T1c → T2 → T3 → T2b → T4 → T5 → T6.

@@ -67,7 +67,7 @@ Nguồn FR/BR/AC: [BA §5.6–5.7, §6, §11](../../design/admin/ba-admin.md). B
 
 ## 3. Contract (backend-lead)
 File đề xuất: `packages/contracts/src/{quotas,usage,overview,audit,transfer,totp}.ts`. Điểm xuất phát: [BA §8](../../design/admin/ba-admin.md), [missing-screens §14](../_design/admin-missing-screens.md) (mục 1, 6, 7, 8). Mã lỗi mới liệt kê tại đây.
-**Khối A + B** (chi tiết từng trường: [plan §2](plan.md); hàm thuần: [plan-rules](plan-rules.md)):
+**Khối A + B** (chi tiết từng trường: [plan-contract §2](plan-contract.md); hàm thuần: [plan-rules](plan-rules.md)):
 
 | Endpoint | Role | Schema (`packages/contracts`) |
 |---|---|---|
@@ -84,7 +84,7 @@ Mã lỗi mới (A+B): `NAME_TAKEN` 409 `{entity,name}` · `NOT_RESTORABLE` 409 
 
 | Endpoint | Role | Schema (`packages/contracts`) |
 |---|---|---|
-| `GET /admin/export?types=…` | platform (khác → 403) | `ExportQuery` → yaml `ConfigFile` (`config-v{n}.yaml`, secret chỉ tên) (`transfer.ts`) |
+| `GET /admin/export?types=…` · `/export/meta` | platform (khác → 403) | `ExportQuery` → yaml `ConfigFile` (`config-v{n}.yaml`, secret chỉ tên) · meta `{config_version, counts}` |
 | `POST /admin/import?dry_run=1\|0` (mặc định 1) | platform | `ImportRequest {file_name, content ≤ 1 MiB, secrets?, base_config_version (bắt buộc khi áp dụng)}` → `ImportPreview` / `ImportResult` |
 | `POST /auth/login` (đổi) | mọi client | thêm nhánh `{status:"totp_required", totp_token, expires_in:300}` (`auth.ts`) |
 | `POST /auth/totp/verify` | không Bearer | `{totp_token, code \| backup_code}` → như login (`totp.ts`) |
@@ -206,7 +206,7 @@ Lệnh xong: `bun run typecheck && bun test && bunx playwright test M4` (+ Lện
 | Q1 | BA không nói "run" đếm gì, USD tính theo cột nào | R03: `run_id` khác nhau, `billable_usd` (giá thu, tenant thấy được) |
 | Q2 | AC-A12 có vế Hub ("2 run đều chạy"), Hub chưa có | Admin kiểm phía Admin bằng `mock:quota`/stub; vế Hub ghi đầu vào M5 (như CR-015) |
 | Q2b | Ai phát ngưỡng khi chưa có Hub? | Admin có hàm `evaluateQuota(tenant)` chạy: sau `PUT quotas`, khi nhận NOTIFY `quota_threshold` từ Hub/mock, và khi mở Tổng quan/banner (tính trực tiếp). Không job định kỳ |
-| Q3 | Email/QR/biểu đồ cần thư viện mới | `nodemailer` (SMTP), `qrcode`, `recharts` (RD#40); TOTP tự viết bằng `node:crypto` (RFC 6238). **ADR-0004** liệt kê trước Gate (Luật 2b: thêm thư viện thì trình Gate) |
+| Q3 | Email/QR/biểu đồ cần thư viện mới | `nodemailer`, `qrcode` (server, `qr_svg`), `yaml`; TOTP `node:crypto` (RFC 6238); không `recharts` (SVG tự vẽ). **ADR-0005** trình Gate (Luật 2b) |
 | Q5 | Tổng quan platform cần `hub.runs` (run lỗi, provider) không có | Chỉ dùng `usage_logs`: run 24 giờ, tenant sắp/đã vượt quota; card "Command lỗi nhiều nhất", "Agent Studio" hiện "—"/"Chưa khả dụng" |
 | Q6 | FR-51 "mọi thay đổi" nhưng M1–M3 chưa ghi | Ghi qua điểm chung `configWrite` + thao tác user/tenant (khoá, reset, tắt 2FA hộ); login/refresh **không** ghi; không backfill |
 | Q7 | FR-52 không nêu thực thể nào khôi phục được | Khôi phục: command, workflow, feature, group, quota (update/delete). **Không**: user, tenant (tránh khôi phục role/mật khẩu), secret, lock/unlock, grant/revoke (đảo bằng thao tác thường) |
