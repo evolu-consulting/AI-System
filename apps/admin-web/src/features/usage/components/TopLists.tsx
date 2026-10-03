@@ -1,7 +1,7 @@
-// ADM-FR-42 · M4-R07, R08 · "Top feature theo số thu" (5 dòng) và "Top user theo số thu": "Không theo feature", "Chưa định giá", badge "Vượt quota".
+// ADM-FR-42 · M4-R07, R08 · "Top feature theo số thu" (5 dòng) và "Top user theo số thu": "Không theo feature", badge "Vượt quota". Chưa có cờ "chưa định giá" theo dòng (xem spec-decisions) → hiện số tiền như contract trả.
 import { useTranslation } from "react-i18next";
+import { Panel } from "@/components/shared/panel/Panel";
 import { Badge } from "@/components/ui/badge";
-import { Panel } from "@/features/overview/components/Panel";
 import { pickLocalized } from "@/lib/localized";
 import { formatCount, formatUsd } from "@/lib/quota-format";
 import type { UsageReport } from "../lib/types";
@@ -12,15 +12,6 @@ type Err = { message: string; code: string; onRetry?: () => void };
 type Feature = UsageReport["top_features"][number];
 type User = UsageReport["top_users"][number];
 type Props<T> = { rows?: T[]; loading?: boolean; error?: Err };
-
-function Money({ value, runs }: { value: string; runs: number }) {
-  const { t, i18n } = useTranslation();
-  // Server cộng bỏ qua hàng NULL (M4-R03): tổng 0 mà có run = chưa định giá.
-  if (Number(value) === 0 && runs > 0) {
-    return <span className="text-muted-foreground">{t("usage.unpriced")}</span>;
-  }
-  return <>{formatUsd(value, i18n.language)}</>;
-}
 
 function Head({ first }: { first: string }) {
   const { t } = useTranslation();
@@ -63,9 +54,7 @@ function Row({ name, runs, tokens, usd }: RowProps) {
       </th>
       <td className="py-2">{formatCount(runs, i18n.language)}</td>
       <td className="py-2">{formatCount(tokens, i18n.language)}</td>
-      <td className="py-2">
-        <Money value={usd} runs={runs} />
-      </td>
+      <td className="py-2">{formatUsd(usd, i18n.language)}</td>
     </tr>
   );
 }

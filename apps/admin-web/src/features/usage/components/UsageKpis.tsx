@@ -45,6 +45,18 @@ export function UsageKpis({ report, prevMonth, ...common }: Props) {
   const kpi = report?.kpi;
   const prev = report?.previous;
   const delta = useDelta(prevMonth, has);
+  const billableNote = (cur: number | undefined, before: number | undefined, unpriced: number) => {
+    const d = delta(cur, before);
+    if (!has || unpriced <= 0) return d;
+    return (
+      <>
+        {d ? <span className="block">{d}</span> : null}
+        <span className="block" title={t("usage.unpriced")}>
+          {t("usage.unpriced")} ({formatCount(unpriced, i18n.language)})
+        </span>
+      </>
+    );
+  };
   const count = (n: number | undefined) =>
     has && n !== undefined ? formatCount(n, i18n.language) : null;
   return (
@@ -64,7 +76,11 @@ export function UsageKpis({ report, prevMonth, ...common }: Props) {
       <KpiCard
         title={t("usage.kpi.billable")}
         value={has && kpi ? formatUsd(kpi.billable_usd, i18n.language) : null}
-        note={delta(kpi && Number(kpi.billable_usd), prev && Number(prev.billable_usd))}
+        note={billableNote(
+          kpi && Number(kpi.billable_usd),
+          prev && Number(prev.billable_usd),
+          kpi?.unpriced_rows ?? 0,
+        )}
         {...common}
       />
       {kpi ? <CostKpis kpi={kpi} has={has} {...common} /> : null}

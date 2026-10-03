@@ -1,7 +1,7 @@
 // ADM-FR-42 · Q5 · plan-frontend D10 · hai card cần Agent Hub (Agent Studio, Command lỗi nhiều nhất): chưa khả dụng → "Sẽ có khi Agent Hub sẵn sàng.".
 import { useTranslation } from "react-i18next";
+import { Panel } from "@/components/shared/panel/Panel";
 import { Button } from "@/components/ui/button";
-import { Panel } from "./Panel";
 
 export function HubCards() {
   const { t } = useTranslation();

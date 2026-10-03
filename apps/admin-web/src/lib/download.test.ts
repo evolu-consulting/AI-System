@@ -26,3 +26,12 @@ describe("ADM-FR-54 · filenameFromDisposition", () => {
     expect(filenameFromDisposition('attachment; filename="../../etc/passwd"', "fb")).toBe("passwd");
   });
 });
+
+describe("ADM-FR-54 · sanitizeName qua filenameFromDisposition", () => {
+  test("tách cả dấu gạch chéo và gạch ngược (không để lộ đường dẫn)", () => {
+    expect(filenameFromDisposition('attachment; filename="..\\..\\evil.csv"', "x.csv")).toBe(
+      "evil.csv",
+    );
+    expect(filenameFromDisposition('attachment; filename="a/b/c.csv"', "x.csv")).toBe("c.csv");
+  });
+});

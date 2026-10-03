@@ -2,9 +2,9 @@
 import type { QuotaStatus } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { Panel } from "@/components/shared/panel/Panel";
 import { QuotaBar } from "@/components/shared/quota/QuotaBar";
 import type { LoadError } from "@/lib/load-error";
-import { Panel } from "./Panel";
 
 type Props = {
   quotas: QuotaStatus[] | undefined;

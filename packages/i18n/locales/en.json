@@ -152,7 +152,8 @@
   "session": {
     "expired": {
       "title": "Your session expired",
-      "body": "Sign in again to continue. Your unsaved input is kept."
+      "body": "Sign in again to continue. Your unsaved input is kept.",
+      "changeRequired": "This account must change its password first. Sign out, then sign in again to change it."
     }
   },
   "member": {
@@ -1586,6 +1587,7 @@
     "noFeature": "No feature",
     "noFeatureNote": "Agent-chat runs aren't tied to a feature, so they get their own row.",
     "unpriced": "Not priced yet",
+    "unit": { "runs": "Run", "tokens": "Token", "usd": "USD" },
     "empty": {
       "noData": "No data from Agent Hub yet",
       "period": "No runs in this period.",

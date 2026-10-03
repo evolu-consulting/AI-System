@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DailyBars } from "@/components/shared/chart/DailyBars";
-import { Panel } from "@/features/overview/components/Panel";
+import { Panel } from "@/components/shared/panel/Panel";
 import type { UsageReport } from "../lib/types";
 
 type Props = {

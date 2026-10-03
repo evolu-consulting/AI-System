@@ -2,10 +2,10 @@
 import type { OverviewResponse } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { Panel } from "@/components/shared/panel/Panel";
 import { formatAgo } from "@/lib/format";
 import type { LoadError } from "@/lib/load-error";
 import { useTr } from "@/lib/use-translate";
-import { Panel } from "./Panel";
 
 type Tenant = Extract<OverviewResponse, { kind: "tenant" }>;
 type Props = {

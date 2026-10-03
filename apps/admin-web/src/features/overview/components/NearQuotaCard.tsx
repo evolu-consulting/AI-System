@@ -1,9 +1,9 @@
 // ADM-FR-42 · M4-R06 · card "Tenant sắp hoặc đã vượt quota" (top 5 theo %): tên tenant, % run, trạng thái.
 import type { OverviewResponse } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
+import { Panel } from "@/components/shared/panel/Panel";
 import type { LoadError } from "@/lib/load-error";
 import { cn } from "@/lib/utils";
-import { Panel } from "./Panel";
 
 type Platform = Extract<OverviewResponse, { kind: "platform" }>;
 type Props = {

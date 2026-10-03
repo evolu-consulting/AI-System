@@ -152,7 +152,8 @@
   "session": {
     "expired": {
       "title": "Phiên đăng nhập đã hết hạn",
-      "body": "Đăng nhập lại để tiếp tục. Dữ liệu đang nhập được giữ nguyên."
+      "body": "Đăng nhập lại để tiếp tục. Dữ liệu đang nhập được giữ nguyên.",
+      "changeRequired": "Tài khoản này phải đổi mật khẩu trước khi tiếp tục. Hãy đăng xuất rồi đăng nhập lại để đổi mật khẩu."
     }
   },
   "member": {
@@ -1586,6 +1587,7 @@
     "noFeature": "Không theo feature",
     "noFeatureNote": "Run qua agent chat không gắn feature nào nên đứng riêng một dòng.",
     "unpriced": "Chưa định giá",
+    "unit": { "runs": "Run", "tokens": "Token", "usd": "USD" },
     "empty": {
       "noData": "Chưa có dữ liệu từ Agent Hub",
       "period": "Không có run nào trong kỳ này.",

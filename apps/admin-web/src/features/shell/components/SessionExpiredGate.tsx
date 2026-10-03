@@ -1,6 +1,6 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-08 · modal "Phiên đăng nhập đã hết hạn" tại chỗ: nhập lại mật khẩu (và mã 2FA nếu user đã bật), dữ liệu form giữ nguyên (ui-admin 7.1).
 import { useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PasswordField } from "@/components/shared/form/PasswordField";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,25 @@ export function SessionExpiredGate() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   // `authenticated` → session đóng hộp thoại (status `authed`); không cần làm gì thêm.
-  const totp = useTotpLogin({ onDone: async () => undefined, onExpired: setError });
+  // Tài khoản bị buộc đổi mật khẩu: không giữ được token đổi sau khi đóng hộp thoại → báo rõ, người dùng đăng xuất rồi đăng nhập lại.
+  const needChange = () => {
+    session.clearPendingChange();
+    session.clearPendingTotp();
+    setError(t("session.expired.changeRequired"));
+  };
+  const totp = useTotpLogin({
+    onDone: async (res) => {
+      if (res.status === "password_change_required") needChange();
+    },
+    onExpired: setError,
+  });
+  // Từ bước mã quay lại form mật khẩu → focus ô mật khẩu.
+  const wasTotp = useRef(false);
+  useEffect(() => {
+    if (wasTotp.current && !totpStep && expired)
+      document.getElementById("relogin-password")?.focus();
+    wasTotp.current = totpStep;
+  }, [totpStep, expired]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -44,8 +62,9 @@ export function SessionExpiredGate() {
     setPending(true);
     setError(null);
     try {
-      await session.relogin(password);
+      const status = await session.relogin(password);
       setPassword("");
+      if (status === "password_change_required") needChange();
     } catch (err) {
       const spec = describeLoginError(err);
       setError(tr(spec.key, spec.params));

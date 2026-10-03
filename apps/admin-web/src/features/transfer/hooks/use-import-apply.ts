@@ -23,41 +23,64 @@ function applyErrorSpec(e: unknown, missing: number): MessageSpec {
   return describeError(e);
 }
 
+/** Giá trị secret nhập tay + biến mutation (giữ `secrets`): xoá cả hai khi quay lại bước 1 / unmount. */
+type Flow = ImportFlow;
+function buildBody(
+  file: NonNullable<Flow["file"]>,
+  preview: NonNullable<Flow["preview"]>,
+  missing: { name: string }[],
+  values: Record<string, string>,
+): ImportRequest {
+  const secrets = Object.fromEntries(missing.map((m) => [m.name, values[m.name] ?? ""]));
+  return {
+    file_name: file.name,
+    content: file.content,
+    base_config_version: preview.base_config_version,
+    ...(missing.length > 0 ? { secrets } : {}),
+  };
+}
+
+function useSecretValues(noFile: boolean, resetCommit: () => void) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (noFile) {
+      setValues({});
+      resetCommit();
+    }
+  }, [noFile, resetCommit]);
+  useEffect(
+    () => () => {
+      setValues({});
+      resetCommit();
+    },
+    [resetCommit],
+  );
+  const setValue = useCallback((name: string, v: string) => {
+    setValues((prev) => ({ ...prev, [name]: v }));
+  }, []);
+  return { values, setValues, setValue, resetCommit };
+}
+
 export function useImportApply(flow: ImportFlow) {
   const { t } = useTranslation();
   const commit = useImportCommit();
-  const [values, setValues] = useState<Record<string, string>>({});
   const [confirming, setConfirming] = useState(false);
   const { file, preview, refresh, reset } = flow;
-
-  // Đổi file / quay lại bước 1 → xoá giá trị secret khỏi bộ nhớ.
-  useEffect(() => {
-    if (file === null) setValues({});
-  }, [file]);
-  useEffect(() => () => setValues({}), []);
+  const { values, setValues, setValue, resetCommit } = useSecretValues(file === null, commit.reset);
 
   const missing = preview?.missing_secrets ?? [];
   const missingCount = missing.filter((m) => !secretValueOk(values[m.name])).length;
   const changes = preview ? preview.summary.added + preview.summary.updated : 0;
 
-  const setValue = useCallback((name: string, v: string) => {
-    setValues((prev) => ({ ...prev, [name]: v }));
-  }, []);
-
   const apply = useCallback(async () => {
     if (!file || !preview) return;
-    const secrets = Object.fromEntries(missing.map((m) => [m.name, values[m.name] ?? ""]));
-    const body: ImportRequest = {
-      file_name: file.name,
-      content: file.content,
-      base_config_version: preview.base_config_version,
-      ...(missing.length > 0 ? { secrets } : {}),
-    };
+    const body = buildBody(file, preview, missing, values);
     try {
       const r = await commit.mutateAsync(body);
       const { added: a, updated: u } = r.summary;
       notifySuccess(t("transfer.toast.imported", { a, u, n: r.config_version }));
       setValues({});
+      resetCommit();
       reset();
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
@@ -68,7 +91,19 @@ export function useImportApply(flow: ImportFlow) {
       notifyError(t(m.key, m.params));
       throw e;
     }
-  }, [commit, file, missing, missingCount, preview, refresh, reset, t, values]);
+  }, [
+    commit,
+    resetCommit,
+    setValues,
+    file,
+    missing,
+    missingCount,
+    preview,
+    refresh,
+    reset,
+    t,
+    values,
+  ]);
 
   return { values, setValue, missingCount, changes, confirming, setConfirming, apply };
 }

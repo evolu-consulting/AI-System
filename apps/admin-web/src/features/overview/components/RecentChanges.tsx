@@ -2,11 +2,11 @@
 import type { AuditItem } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { Panel } from "@/components/shared/panel/Panel";
 import { auditSentence } from "@/lib/audit-sentence";
 import { formatClock } from "@/lib/format";
 import type { LoadError } from "@/lib/load-error";
 import { useTr } from "@/lib/use-translate";
-import { Panel } from "./Panel";
 
 type Props = {
   items: AuditItem[] | undefined;

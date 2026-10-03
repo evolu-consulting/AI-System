@@ -53,7 +53,7 @@ export function useAuditEntry(id: string) {
   return useQuery({
     queryKey: [...AUDIT_KEY, "entry", id] as const,
     retry: false,
-    queryFn: () => api<AuditDetail>(`/admin/audit/${id}`),
+    queryFn: () => api<AuditDetail>(`/admin/audit/${encodeURIComponent(id)}`),
   });
 }
 
@@ -71,7 +71,10 @@ export function useAuditRestore() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      api<AuditRestoreResponse>(`/admin/audit/${id}/restore`, { method: "POST", body: {} }),
+      api<AuditRestoreResponse>(`/admin/audit/${encodeURIComponent(id)}/restore`, {
+        method: "POST",
+        body: {},
+      }),
     // 409 (vd NOT_RESTORABLE, VERSION_CONFLICT): `restorable` có thể đã đổi → nạp lại nhật ký.
     onError: () => void qc.invalidateQueries({ queryKey: AUDIT_KEY }),
     onSuccess: (res) => {

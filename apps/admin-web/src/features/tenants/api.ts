@@ -113,6 +113,8 @@ export function useSetTenantQuotas(id: string) {
       );
       void qc.invalidateQueries({ queryKey: ["quota-banner"] });
       void qc.invalidateQueries({ queryKey: ["usage"] });
+      void qc.invalidateQueries({ queryKey: ["overview"] });
+      void qc.invalidateQueries({ queryKey: ["audit"] });
     },
   });
 }

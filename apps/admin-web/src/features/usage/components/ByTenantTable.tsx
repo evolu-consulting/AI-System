@@ -2,7 +2,7 @@
 import type { UsageReportPlatform } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Panel } from "@/features/overview/components/Panel";
+import { Panel } from "@/components/shared/panel/Panel";
 import { formatCount, formatUsd } from "@/lib/quota-format";
 import { cn } from "@/lib/utils";
 

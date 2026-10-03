@@ -20,7 +20,7 @@ export function filenameFromDisposition(header: string | null, fallback: string)
 /** Bỏ đường dẫn và ký tự điều khiển; rỗng → `fallback`. */
 function sanitizeName(name: string, fallback: string): string {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: loại ký tự điều khiển khỏi tên file
-  const base = (name.split(/[/]/).pop() ?? "").replace(/[\u0000-\u001f]/g, "").trim();
+  const base = (name.split(/[/\\]/).pop() ?? "").replace(/[\u0000-\u001f]/g, "").trim();
   return base || fallback;
 }
 

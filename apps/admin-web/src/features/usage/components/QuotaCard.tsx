@@ -1,8 +1,8 @@
 // ADM-FR-42 · M4-R02, R06 · card "Quota tháng" (một tenant / tenant_admin): QuotaBar Run · Token · USD cho cả tenant, rồi từng feature có quota.
 import type { QuotaStatus } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
+import { Panel } from "@/components/shared/panel/Panel";
 import { QuotaBar } from "@/components/shared/quota/QuotaBar";
-import { Panel } from "@/features/overview/components/Panel";
 import { pickLocalized } from "@/lib/localized";
 
 type Props = {
@@ -12,22 +12,33 @@ type Props = {
 };
 
 function Bars({ q, scope }: { q: QuotaStatus; scope: string | null }) {
+  const { t } = useTranslation();
   const suffix = scope ? ` · ${scope}` : "";
   return (
     <div className="space-y-3">
       {q.max_runs !== null || !scope ? (
-        <QuotaBar label={`Run${suffix}`} kind="runs" used={q.used.runs} limit={q.max_runs} />
+        <QuotaBar
+          label={`${t("usage.unit.runs")}${suffix}`}
+          kind="runs"
+          used={q.used.runs}
+          limit={q.max_runs}
+        />
       ) : null}
       {q.max_tokens !== null || !scope ? (
         <QuotaBar
-          label={`Token${suffix}`}
+          label={`${t("usage.unit.tokens")}${suffix}`}
           kind="tokens"
           used={q.used.tokens}
           limit={q.max_tokens}
         />
       ) : null}
       {q.max_usd !== null || !scope ? (
-        <QuotaBar label={`USD${suffix}`} kind="usd" used={q.used.billable_usd} limit={q.max_usd} />
+        <QuotaBar
+          label={`${t("usage.unit.usd")}${suffix}`}
+          kind="usd"
+          used={q.used.billable_usd}
+          limit={q.max_usd}
+        />
       ) : null}
     </div>
   );
