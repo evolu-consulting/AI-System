@@ -1,4 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HomePage } from "@/features/shell/pages/HomePage";
+import { OverviewPage } from "@/features/overview/pages/OverviewPage";
 
-export const Route = createFileRoute("/_authed/")({ component: HomePage });
+export const Route = createFileRoute("/_authed/")({ component: OverviewPage });

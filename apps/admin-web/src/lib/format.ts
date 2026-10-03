@@ -44,3 +44,13 @@ export function formatUpdated(iso: string, updatedBy: string | null | undefined)
   const date = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
   return updatedBy ? `${date} · ${updatedBy}` : date;
 }
+
+/** "Vừa xong" / "{n} phút trước" / "{n} giờ trước" / "{n} ngày trước" (tạo {relative}, Tổng quan). */
+export function formatAgo(iso: string, now: Date, t: Translate): string {
+  const diff = Math.max(0, now.getTime() - new Date(iso).getTime());
+  if (diff < MINUTE) return t("format.ago.now");
+  if (diff < 60 * MINUTE) return t("format.ago.minutes", { n: Math.floor(diff / MINUTE) });
+  if (diff < 24 * 60 * MINUTE)
+    return t("format.ago.hours", { n: Math.floor(diff / (60 * MINUTE)) });
+  return t("format.ago.days", { n: Math.floor(diff / (24 * 60 * MINUTE)) });
+}

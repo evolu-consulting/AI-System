@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatClock, formatLastLogin, formatUpdated } from "./format";
+import { formatAgo, formatClock, formatLastLogin, formatUpdated } from "./format";
 
 const t = (key: string, params?: Record<string, string | number>) =>
   params ? `${key}:${Object.values(params).join(",")}` : key;
@@ -50,5 +50,14 @@ describe("ADM-FR-50 · formatUpdated", () => {
     expect(formatUpdated(iso, "minh.pham")).toBe("05/09/2026 · minh.pham");
     expect(formatUpdated(iso, null)).toBe("05/09/2026");
     expect(formatUpdated(iso, undefined)).toBe("05/09/2026");
+  });
+});
+
+describe("formatAgo", () => {
+  test("vừa xong / phút / giờ / ngày", () => {
+    expect(formatAgo(ago(10_000), now, t)).toBe("format.ago.now");
+    expect(formatAgo(ago(5 * 60_000), now, t)).toBe("format.ago.minutes:5");
+    expect(formatAgo(ago(3 * 3_600_000), now, t)).toBe("format.ago.hours:3");
+    expect(formatAgo(ago(3 * 86_400_000), now, t)).toBe("format.ago.days:3");
   });
 });

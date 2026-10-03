@@ -249,18 +249,67 @@
       "setupExpired": "Phiên thiết lập đã hết hạn. Hãy bắt đầu lại."
     }
   },
+  "banner": {
+    "quota80": "Đã dùng {pct}% quota tháng này",
+    "quota100": "Đang vượt quota, phần vượt được tính phí",
+    "quotaLink": "Xem chi tiết"
+  },
   "overview": {
-    "welcome": "Xin chào, {name}",
-    "platform": {
-      "body": "Quản lý tenant và người dùng của nền tảng."
-    },
-    "tenant": {
-      "body": "Quản lý người dùng của {tenant}."
-    },
-    "soon": "Thống kê và cảnh báo sẽ có ở các bản sau.",
+    "title": "Tổng quan",
+    "subtitle": "{tenant} · tháng {month}",
     "kpi": {
-      "noData": "Chưa có dữ liệu từ Agent Hub"
-    }
+      "activeUsers": "Users đang hoạt động",
+      "groups": "Groups",
+      "runsMonth": "Số run tháng này",
+      "delta": "{sign}{pct}% so với tháng trước",
+      "quota": "Quota tháng",
+      "noData": "Chưa có dữ liệu từ Agent Hub",
+      "activeTenants": "Tenant đang hoạt động",
+      "enabledCommands": "Commands đang bật",
+      "workflows": "Workflows",
+      "unattached": "{n} chưa gắn",
+      "runs24h": "Số run 24 giờ"
+    },
+    "quota": {
+      "link": "Xem chi phí & quota",
+      "empty": "Tenant chưa đặt quota."
+    },
+    "neverLoggedIn": {
+      "title": "Người dùng mới chưa đăng nhập",
+      "item": "tạo {relative}",
+      "empty": "Mọi người dùng mới đều đã đăng nhập.",
+      "all": "Xem tất cả"
+    },
+    "recent": {
+      "title": "Thay đổi gần đây",
+      "empty": "Chưa có thay đổi nào trong tenant.",
+      "emptyPlatform": "Chưa có thay đổi nào.",
+      "link": "Xem nhật ký"
+    },
+    "platform": {
+      "subtitle": "Toàn bộ nền tảng · {n} tenant · cập nhật lúc {time}",
+      "createTenant": "Tạo tenant",
+      "createCommand": "Tạo command"
+    },
+    "nearQuota": {
+      "title": "Tenant sắp hoặc đã vượt quota",
+      "empty": "Chưa tenant nào đặt quota.",
+      "ok": "Trong quota",
+      "col": {
+        "tenant": "Tenant",
+        "quota": "Quota tháng · run",
+        "status": "Trạng thái"
+      }
+    },
+    "agentStudio": {
+      "title": "Agent Studio",
+      "body": "Agent, Coordinator, model và vận hành nằm ở Agent Studio. Agent chọn workflow từ catalog của Admin.",
+      "open": "Mở Agent Studio"
+    },
+    "topErrors": {
+      "title": "Command lỗi nhiều nhất 24 giờ"
+    },
+    "hubPending": "Sẽ có khi Agent Hub sẵn sàng."
   },
   "state": {
     "error": {
@@ -301,6 +350,12 @@
     "invalidReference": "Dữ liệu chọn đã cũ. Đã tải lại danh sách, hãy chọn lại."
   },
   "format": {
+    "ago": {
+      "now": "vừa xong",
+      "minutes": "{n} phút trước",
+      "hours": "{n} giờ trước",
+      "days": "{n} ngày trước"
+    },
     "lastLogin": {
       "now": "Vừa xong",
       "minutes": "{n} phút trước",
@@ -389,11 +444,33 @@
       "keyFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",
       "nameRequired": "Nhập tên công ty"
     },
-    "empty": "Chưa có tenant khách hàng nào. Tạo tenant để onboard công ty đầu tiên."
+    "empty": "Chưa có tenant khách hàng nào. Tạo tenant để onboard công ty đầu tiên.",
+    "quota": {
+      "title": "Quota tháng {month}",
+      "hint": "Để trống một ô = Không giới hạn.",
+      "note": "Vượt quota không chặn; tenant admin nhận cảnh báo ở 80% và 100%. Tháng tính theo giờ Việt Nam.",
+      "scope": {
+        "tenant": "Cả tenant"
+      },
+      "col": {
+        "scope": "Phạm vi",
+        "runs": "Số run",
+        "tokens": "Số token",
+        "usd": "Số USD",
+        "used": "Đã dùng tháng này"
+      },
+      "addFeature": "+ Thêm quota theo feature",
+      "remove": "Bỏ quota {feature}",
+      "pickFeature": "Chọn feature",
+      "noFeatureLeft": "Mọi feature đã có quota",
+      "cell": "{field} · {scope}"
+    }
   },
   "quota": {
     "error": {
-      "positive": "Nhập số lớn hơn 0 hoặc để trống"
+      "positive": "Nhập số lớn hơn 0 hoặc để trống",
+      "integer": "Nhập số nguyên",
+      "usdFormat": "Tối đa 2 chữ số thập phân"
     },
     "unit": {
       "runs": "{n} run",
@@ -1354,6 +1431,41 @@
     }
   },
   "audit": {
+    "entity": {
+      "tenant": "tenant",
+      "user": "user",
+      "twofa": "2FA",
+      "group": "group",
+      "grant": "quyền",
+      "entitlement": "quyền feature",
+      "feature": "feature",
+      "workflow": "workflow",
+      "command": "command",
+      "secret": "secret",
+      "quota": "quota",
+      "config": "cấu hình"
+    },
+    "sentence": {
+      "system": "Hệ thống",
+      "update": "{actor} đã sửa {entityType} {name}",
+      "create": "{actor} đã tạo {entityType} {name}",
+      "delete": "{actor} đã xoá {entityType} {name}",
+      "grant": "{actor} đã cấp {feature} cho {subject}",
+      "revoke": "{actor} đã thu hồi {feature} của {subject}",
+      "lock": "{actor} đã khoá {entityType} {name}",
+      "unlock": "{actor} đã mở khoá {entityType} {name}",
+      "secret": "{actor} đã thay giá trị secret {name}",
+      "import": "{actor} đã import {file} (Thêm {a} · Sửa {u})",
+      "restore": "{actor} đã khôi phục {name} về trước v{n}",
+      "totpOff": "{actor} đã tắt 2FA của {subject}",
+      "totpOffSelf": "{actor} đã tắt 2FA",
+      "totpOn": "{actor} đã bật 2FA",
+      "totpRegen": "{actor} đã tạo lại mã dự phòng",
+      "members": "{actor} đã đổi thành viên {name} (Thêm {a} · Bớt {r})",
+      "passwordReset": "{actor} đã đặt lại mật khẩu của {subject}",
+      "quota": "{actor} đã đổi quota {name}",
+      "entitlement": "{actor} đã đổi quyền feature {name} của {subject}"
+    },
     "diff": {
       "field": "Trường",
       "before": "Trước",

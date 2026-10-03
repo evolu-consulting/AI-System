@@ -15,7 +15,7 @@ describe("ADM-NFR-06 · i18n admin-web", () => {
 
   test("nội suy {tham_số}", () => {
     expect(i18n.t("auth.error.tempLocked", { time: "14:45" })).toBe("Tạm khoá đến 14:45");
-    expect(i18n.t("overview.welcome", { name: "Lan" })).toBe("Xin chào, Lan");
+    expect(i18n.t("banner.quota80", { pct: 85 })).toBe("Đã dùng 85% quota tháng này");
   });
 
   test("syncDocument đặt lang", () => {

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ConnectionBanner } from "@/components/shared/ConnectionBanner";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { QuotaBanner } from "./QuotaBanner";
 import { SessionExpiredGate } from "./SessionExpiredGate";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
@@ -25,6 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex-1 overflow-y-auto">
             <main id="main" tabIndex={-1} className="mx-auto w-full max-w-content p-6 outline-none">
               <ConnectionBanner />
+              <QuotaBanner />
               {children}
             </main>
           </div>

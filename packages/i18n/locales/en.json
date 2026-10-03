@@ -249,18 +249,67 @@
       "setupExpired": "The setup session expired. Please start again."
     }
   },
+  "banner": {
+    "quota80": "{pct}% of this month's quota used",
+    "quota100": "Over quota — overage is billed separately",
+    "quotaLink": "Details"
+  },
   "overview": {
-    "welcome": "Hello, {name}",
-    "platform": {
-      "body": "Manage the platform's tenants and users."
-    },
-    "tenant": {
-      "body": "Manage the users of {tenant}."
-    },
-    "soon": "Statistics and alerts will arrive in later releases.",
+    "title": "Overview",
+    "subtitle": "{tenant} · {month}",
     "kpi": {
-      "noData": "No data from Agent Hub yet"
-    }
+      "activeUsers": "Active users",
+      "groups": "Groups",
+      "runsMonth": "Runs this month",
+      "delta": "{sign}{pct}% vs last month",
+      "quota": "Monthly quota",
+      "noData": "No data from Agent Hub yet",
+      "activeTenants": "Active tenants",
+      "enabledCommands": "Enabled commands",
+      "workflows": "Workflows",
+      "unattached": "{n} unattached",
+      "runs24h": "Runs (24h)"
+    },
+    "quota": {
+      "link": "View usage & quota",
+      "empty": "This tenant has no quota set."
+    },
+    "neverLoggedIn": {
+      "title": "New users who haven't signed in",
+      "item": "created {relative}",
+      "empty": "All new users have signed in.",
+      "all": "View all"
+    },
+    "recent": {
+      "title": "Recent changes",
+      "empty": "No changes in this tenant yet.",
+      "emptyPlatform": "No changes yet.",
+      "link": "View audit log"
+    },
+    "platform": {
+      "subtitle": "Whole platform · {n} tenants · updated {time}",
+      "createTenant": "New tenant",
+      "createCommand": "New command"
+    },
+    "nearQuota": {
+      "title": "Tenants near or over quota",
+      "empty": "No tenant has a quota yet.",
+      "ok": "Within quota",
+      "col": {
+        "tenant": "Tenant",
+        "quota": "Monthly quota · runs",
+        "status": "Status"
+      }
+    },
+    "agentStudio": {
+      "title": "Agent Studio",
+      "body": "Agents, coordinators, models and operations live in Agent Studio. Agents pick workflows from the Admin catalog.",
+      "open": "Open Agent Studio"
+    },
+    "topErrors": {
+      "title": "Most failing commands (24h)"
+    },
+    "hubPending": "Available once Agent Hub is ready."
   },
   "state": {
     "error": {
@@ -301,6 +350,12 @@
     "invalidReference": "The selection is out of date. The list was reloaded; please choose again."
   },
   "format": {
+    "ago": {
+      "now": "just now",
+      "minutes": "{n} min ago",
+      "hours": "{n} h ago",
+      "days": "{n} days ago"
+    },
     "lastLogin": {
       "now": "Just now",
       "minutes": "{n} min ago",
@@ -389,11 +444,33 @@
       "keyFormat": "Use lowercase letters, digits and - only (2–32 chars)",
       "nameRequired": "Enter the company name"
     },
-    "empty": "No customer tenants yet. Create one to onboard your first company."
+    "empty": "No customer tenants yet. Create one to onboard your first company.",
+    "quota": {
+      "title": "Quota for {month}",
+      "hint": "Leave a cell empty for unlimited.",
+      "note": "Going over quota doesn't block; tenant admins are alerted at 80% and 100%. Months follow Vietnam time.",
+      "scope": {
+        "tenant": "Whole tenant"
+      },
+      "col": {
+        "scope": "Scope",
+        "runs": "Runs",
+        "tokens": "Tokens",
+        "usd": "USD",
+        "used": "Used this month"
+      },
+      "addFeature": "+ Add per-feature quota",
+      "remove": "Remove quota for {feature}",
+      "pickFeature": "Choose a feature",
+      "noFeatureLeft": "Every feature already has a quota",
+      "cell": "{field} · {scope}"
+    }
   },
   "quota": {
     "error": {
-      "positive": "Enter a number greater than 0 or leave empty"
+      "positive": "Enter a number greater than 0 or leave empty",
+      "integer": "Enter a whole number",
+      "usdFormat": "Up to 2 decimal places"
     },
     "unit": {
       "runs": "{n} runs",
@@ -1354,6 +1431,41 @@
     }
   },
   "audit": {
+    "entity": {
+      "tenant": "tenant",
+      "user": "user",
+      "twofa": "2FA",
+      "group": "group",
+      "grant": "access",
+      "entitlement": "feature access",
+      "feature": "feature",
+      "workflow": "workflow",
+      "command": "command",
+      "secret": "secret",
+      "quota": "quota",
+      "config": "configuration"
+    },
+    "sentence": {
+      "system": "System",
+      "update": "{actor} updated {entityType} {name}",
+      "create": "{actor} created {entityType} {name}",
+      "delete": "{actor} deleted {entityType} {name}",
+      "grant": "{actor} granted {feature} to {subject}",
+      "revoke": "{actor} revoked {feature} from {subject}",
+      "lock": "{actor} locked {entityType} {name}",
+      "unlock": "{actor} unlocked {entityType} {name}",
+      "secret": "{actor} replaced the value of secret {name}",
+      "import": "{actor} imported {file} ({a} added · {u} updated)",
+      "restore": "{actor} restored {name} to before v{n}",
+      "totpOff": "{actor} turned off 2FA for {subject}",
+      "totpOffSelf": "{actor} turned off 2FA",
+      "totpOn": "{actor} turned on 2FA",
+      "totpRegen": "{actor} regenerated backup codes",
+      "members": "{actor} changed members of {name} ({a} added · {r} removed)",
+      "passwordReset": "{actor} reset the password of {subject}",
+      "quota": "{actor} changed quota {name}",
+      "entitlement": "{actor} changed feature access {name} for {subject}"
+    },
     "diff": {
       "field": "Field",
       "before": "Before",
