@@ -153,7 +153,8 @@ Helper: `_env.ts` (đích, `isMock`, users) · `_client.ts` (`login`, `api`, `se
 | R3 | không header · `Last-Event-ID: 0` | phát lại đủ 1…n, giống stream gốc | 28 |
 | R4 (M) | `#scn:drop` | stream E12 đóng sau delta thứ 5 (id cuối 6), **không** có sự kiện kết thúc; E13 `Last-Event-ID: 6` → id 7…n; delta gộp không trùng = `run.finished.content`; E14 cuối `finished` | 28 |
 | R5 | E13/E14 uuid lạ | 404 `NOT_FOUND` | 31 |
-| R6 (M) | 410: cần điều khiển mock (§8 M4) | 410 `EVENTS_EXPIRED` | 31 |
+| R6 (M) | 410: mock `eventsRetentionS=1`, run kết thúc, chờ 1,1 s rồi gọi E13 | 410 `EVENTS_EXPIRED` | 31 |
+| R7 | E13 `Last-Event-ID: abc` (sai định dạng, M8) | 200, phát lại từ id 1…n | 31 |
 
 **`cancel.contract.test.ts`**
 

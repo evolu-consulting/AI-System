@@ -26,7 +26,7 @@ Phụ lục của `plan-frontend.md` §6. Namespace `chat.*`, file `packages/i18
 | `thread.newMessages` · `thread.log` | ↓ Tin mới · Nội dung hội thoại | ↓ New messages · Conversation |
 | `flow.label` | Flow: {{title}} | Flow: {{title}} |
 | `flow.more` · `flow.openRight` · `flow.panelMeta` | +{{count}} tin trong flow · {{time}} · Đang mở bên phải · {{count}} tin · {{count}} tin · nhớ cả flow | +{{count}} messages in flow · {{time}} · Open on the right · {{count}} messages · {{count}} messages · remembers the whole flow |
-| `flow.reply` · `flow.close` · `flow.minimize` · `flow.panel` | Trả lời tiếp · Đóng khung flow · Thu nhỏ flow · Flow đang mở | Reply in flow · Close flow panel · Minimize flow · Open flow |
+| `flow.reply` · `flow.close` · `flow.minimize` · `flow.panel` · `flow.dragClose` | Trả lời tiếp · Đóng khung flow · Thu nhỏ flow · Flow đang mở · Kéo để đóng | Reply in flow · Close flow panel · Minimize flow · Open flow · Drag to close |
 | `flow.cold` · `flow.noClose` | Đang mở lại flow, lần đầu có thể mất vài giây… · Flow không có nút đóng. Rảnh lâu thì hệ thống tự nghỉ, chat lại thì tự mở lại đủ ngữ cảnh. | Reopening the flow, the first reply may take a few seconds… · Flows never close. When idle the system pauses them and restores full context when you chat again. |
 | `answer.who` · `answer.copy` · `answer.copied` | Consultant · Copy · Đã sao chép | Consultant · Copy · Copied |
 | `steps.summary` · `steps.toggle` | {{count}} bước · {{seconds}}s · Xem các bước | {{count}} steps · {{seconds}}s · Show steps |

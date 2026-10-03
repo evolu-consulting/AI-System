@@ -99,6 +99,7 @@ Theo `CONVENTIONS.md` §6. Riêng C1: JS đầu của chat-web ≤ 150 KB gzip (
 | `CHAT_CONTRACT_USERS` | JSON user cho test contract với Hub thật (`plan.md` §4.1); trống → user mock | trống |
 | `MOCK_FLOW_IDLE_S` | ngưỡng flow nghỉ của mock | `600` |
 | `MOCK_FAST` | mock rút ngắn thời gian chờ (÷10, trừ `slow`/`flow-cold`) trong e2e | mặc định `0`, e2e đặt `1` |
+| `MOCK_EVENTS_RETENTION_S` | giữ sự kiện run sau khi kết thúc (M4); test 410 đặt 1 | mặc định 600 |
 
 ## 8. Tiêu chí nghiệm thu (qc)
 AC UC-01…UC-08 = **CHAT-AC-01…30** trong `docs/design/chat-app/usecases-chat.md` (Given/When/Then ở đó, không chép lại). Bổ sung kỹ thuật:

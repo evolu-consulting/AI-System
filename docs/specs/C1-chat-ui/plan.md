@@ -80,7 +80,7 @@ Header chung: `Authorization: Bearer <access>` (trừ `/auth/*`, `/health`). L�
 | E10 | GET `/conversations/:id/flows` | `{cursor?, limit?}` | 200 `ChatPage<Flow>`; sắp `created_at` **tăng** (luồng chính từ trên xuống), `next_cursor` = trang sau | 400 · 401 · 404 |
 | E11 | GET `/conversations/:id/messages` | `{flow_id?: uuid, cursor?, limit?}` | 200 `ChatPage<Message>`: trang đầu = `limit` tin **mới nhất**, `items` sắp `created_at` **tăng**; `next_cursor` = trang **cũ hơn**. Không `flow_id` = mọi flow | 400 · 401 · 404 (cả `flow_id` không thuộc hội thoại) |
 | E12 | POST `/conversations/:id/messages` | `SendMessageRequest` `{content: 1–16000 trim, flow_id?: uuid}`. Không `flow_id` → flow mới (C1-R01); có → tin vào flow đó | 200 `text/event-stream; charset=utf-8`, header `X-Run-Id`, `X-Flow-Id`, `X-Message-Id` (tin user), `Cache-Control: no-cache`, `X-Accel-Buffering: no`. Lỗi trước khi mở stream trả JSON | 400 · 401 · 404 · 409 `FLOW_BUSY` (flow có `active_run_id`) |
-| E13 | GET `/runs/:id/events` | header `Last-Event-ID` hoặc query `last_event_id` (int ≥ 0; thiếu = 0) | 200 SSE: sự kiện `id >` giá trị, rồi phát tiếp tới sự kiện kết thúc; run đã kết thúc → phát phần còn lại rồi đóng | 401 · 404 · 410 `EVENTS_EXPIRED` (run kết thúc > `RUN_EVENTS_RETENTION_S`) |
+| E13 | GET `/runs/:id/events` | header `Last-Event-ID` hoặc query `last_event_id` (int ≥ 0; thiếu hoặc sai định dạng = 0, spec §9 M8) | 200 SSE: sự kiện `id >` giá trị, rồi phát tiếp tới sự kiện kết thúc; run đã kết thúc → phát phần còn lại rồi đóng | 401 · 404 · 410 `EVENTS_EXPIRED` (run kết thúc > `RUN_EVENTS_RETENTION_S`) |
 | E14 | GET `/runs/:id` | — | 200 `Run` | 401 · 404 |
 | E15 | POST `/runs/:id/cancel` | body rỗng | 200 `Run` (ảnh chụp lúc nhận). Run đang chạy → stream phát `run.failed CANCELLED` ≤ 5 s (HUB-FR-43). Đã kết thúc → không đổi gì, 200 (UC-04 phụ). Idempotent | 401 · 404 |
 
@@ -137,7 +137,7 @@ Khung: `id: <n>\nevent: <tên>\ndata: <JSON một dòng>\n\n`; `: ping\n\n` mỗ
 | File | Trách nhiệm |
 |---|---|
 | `hub.ts` (sửa 3 dòng) | `app.route("/", createChatMock(opts))` **trước** `app.use(scenarioMiddleware…)` (như `/health`) → route chat không qua token `mock-ok`; route M0 giữ nguyên hành vi |
-| `env.ts` (sửa) | thêm `MOCK_FAST` (`0\|1`, mặc định 0), `MOCK_FLOW_IDLE_S` (int ≥ 0, mặc định `FLOW_IDLE_S`); `MockEnv` thêm `fast`, `flowIdleS` |
+| `env.ts` (sửa) | thêm `MOCK_FAST` (`0\|1`, mặc định 0), `MOCK_FLOW_IDLE_S` (mặc định `FLOW_IDLE_S`), `MOCK_EVENTS_RETENTION_S` (mặc định `RUN_EVENTS_RETENTION_S`=600, M4); `MockEnv` + `createHubMock` thêm `fast`, `flowIdleS`, `eventsRetentionS` |
 | `chat/index.ts` | `createChatMock(opts: ChatMockOptions): Hono` — ghép các router, giữ một `ChatStore` |
 | `chat/auth.ts` | E1–E3 + middleware Bearer (jose `SignJWT`/`jwtVerify`, khoá Ed25519 sinh bằng `generateKeyPair("EdDSA")` lúc tạo app); refresh token opaque xoay vòng; `expireBefore` |
 | `chat/users.ts` | user/tenant mẫu (§3.4), dựng `Me` |
@@ -214,7 +214,7 @@ Trạng thái toàn cục (`scenario`, `expire-access`, `reset`) không an toàn
 |---|---|
 | `bun run test:contract:chat` (không trong `bun test` gốc, M1) | `HUB_URL` trống → `_env.ts` dựng mock **trong tiến trình** `Bun.serve({port: 0, fetch: createHubMock({…, fast: true}).fetch})` |
 | `HUB_URL=http://localhost:4020 bun run test:contract:chat` | mock đang chạy (`MOCK_FAST=1 bun run mocks`) |
-| `HUB_MOCK_PORT=4021 bun run mocks` rồi `HUB_URL=http://localhost:4021 bun run test:contract:chat` | CHAT-AC-32 (instance thứ hai) |
+| `HUB_MOCK_PORT=4021 DIFY_MOCK_PORT=4011 bun run mocks` rồi `HUB_URL=http://localhost:4021 bun run test:contract:chat` | CHAT-AC-32 (instance thứ hai) |
 | `HUB_URL=<hub thật> AUTH_URL=<admin thật> CHAT_CONTRACT_USERS='<json>' bun run test:contract:chat` | Hub H1: ca chỉ-mock tự bỏ qua (`GET /__mock/ping` ≠ 204) |
 
 Script gốc mới: `"test:contract:chat": "bun --config=bunfig.contract.toml test --timeout 30000 tests/contract/chat"`. `CHAT_CONTRACT_USERS` = JSON `{a, b, other_tenant, locked}` mỗi phần tử `{tenant_key, username, password}`; trống → user §3.4. `bunfig.toml` ignore `tests/contract/**`; khoá qua `LOCKED_DIRS` (B0). `tsconfig.tests.json` đã bao `tests/**`. Import mock bằng đường tương đối `../../../tools/mocks/src/hub` (gốc không khai `@ai/mocks`).

@@ -24,3 +24,14 @@
 | 14 | Thấp | H2, H4 chưa chép vào spec | Spec §9: H2 chờ người dùng ở Gate (Sáng, TECH-DEBT); H4 theo canvas |
 
 Câu hỏi người dùng: **ADR-0006** (markdown, ≈ 44 KB + 15–20 KB gzip, nạp lazy; mặc định Duyệt), và H2 (giao diện Tối) ở Gate.
+
+## Lần 2 — 2026-10-04 — NOT READY → đã xử lý (điều phối)
+| # | Mức | Xử lý |
+|---|---|---|
+| 1 | Cao | M2: `DIFY_MOCK_PORT=4011` vào plan §4.1 + B6 |
+| 2 | Cao | M4: `MOCK_EVENTS_RETENTION_S` / `eventsRetentionS` vào plan `env.ts`, `createHubMock`, spec §7, B5 (`Đọc` spec §9 M4, M8), B6 `.env.example`; test-plan R6 có dữ liệu cụ thể |
+| 3 | Cao | M8: plan E13 "sai định dạng = 0"; test-plan thêm R7 |
+| 4 | Thấp | i18n `flow.dragClose` |
+| 5 | Thấp | WORKFLOW: 1 KB = 1024 byte → plan/plan-frontend trong trần |
+CR-025/026 (phiên khác): không ảnh hưởng C1 (readiness xác nhận).
+Kết luận sau xử lý: READY (không còn lỗ hổng Chặn/Cao; còn câu hỏi người dùng ở Gate: ADR-0006, H2).
