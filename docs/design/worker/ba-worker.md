@@ -1,6 +1,6 @@
-# Worker — Business Requirements
+# Agent Runtime (Worker) — Business Requirements
 
-Chạy việc dài hoặc nặng ngoài luồng request, và là nơi chạy các CLI subscription (Claude Code, Codex, Gemini)
+Chạy mọi agent `llm`, `agentic-cli`, `python` và việc dài ngoài luồng request; là nơi chạy các CLI subscription (Claude Code, Codex, Gemini). Viết bằng **Python** ([ADR-0007](../../adr/0007-hub-ts-agent-runtime-python.md), CR-028)
 
 `v0.4 · draft` · `2026-10-01` · `Mã yêu cầu: WRK-*`
 
@@ -11,9 +11,9 @@ Chạy việc dài hoặc nặng ngoài luồng request, và là nơi chạy cá
 - **Việc chạy lâu**, như workflow Dify mất vài phút hoặc agent làm nhiều bước.
 - **Việc gắn với một máy cụ thể**: CLI subscription đã đăng nhập sẵn trên đúng một máy và chỉ chạy được 1–2 job cùng lúc.
 
-Worker lấy job từ hàng đợi, chạy, báo tiến độ, ghi kết quả. Nó cũng quản lý quota của các tài khoản subscription, và chia slot subscription công bằng giữa các tenant.
+Agent Runtime (gọi tắt Worker, giữ mã `WRK-*`) lấy job từ hàng đợi Postgres, chạy, báo tiến độ, ghi kết quả. Nó cũng quản lý quota của các tài khoản subscription, và chia slot subscription công bằng giữa các tenant.
 
-**Quan hệ với Hub:** Worker dùng chung codebase với Hub nhưng chạy thành **process riêng**, có thể trên máy riêng (máy đã đăng nhập CLI). Worker không có API công khai: nó chỉ nói chuyện với Hub qua Redis và DB, và gọi MCP catalog của Hub.
+**Quan hệ với Hub (CR-028):** **không còn chung codebase**. Hub là TypeScript/Bun; Agent Runtime là Python (`apps/agent-runtime`), chạy thành process riêng trên máy đã đăng nhập CLI (WSL2 Ubuntu, CR-027). Không có API công khai và không có API config với Admin: nó chỉ nói chuyện với Hub qua **Postgres** (`hub.jobs`, `NOTIFY job_enqueued`/`job_cancel`), **Redis Streams** (`run:<run_id>`) và **MCP** của Hub. Contract (payload job, sự kiện run, kết quả agent) là pydantic sinh từ zod của Hub.
 
 **Worker không làm:** không quyết định dùng agent nào (việc của Orchestrator), không tự đọc cấu hình agent, không kiểm tra quyền hay quota của user (Hub đã kiểm tra trước khi tạo job). Mọi thông tin cần để chạy đã nằm sẵn trong payload của job, kể cả `tenant_id`.
 
@@ -21,8 +21,9 @@ Worker lấy job từ hàng đợi, chạy, báo tiến độ, ghi kết quả. 
 
 | Type | Nguồn tạo | Việc | Retry tự động |
 |---|---|---|---|
+| `agent.run` | Agent runtime `llm` hoặc `python` (HUB-FR-24) | Chạy vòng lặp agent với system prompt, tool (MCP của Hub) và model qua bản Python của Model Gateway; hoặc chạy class agent Python nội bộ trong process con (WRK-FR-26) | Không retry tự động (như `agent.cli`); lỗi trước khi gọi tool thì dự phòng theo profile |
 | `workflow.async` | Command `mode=async` hoặc agent `dify-workflow` chạy lâu | Gọi Dify workflow (dùng chế độ streaming hoặc poll), đẩy tiến độ về | Tối đa 2 lần, chỉ khi lỗi mạng hoặc 5xx |
-| `agent.cli` | Agent runtime `agentic-cli` | Chạy Claude Code (Agent SDK), Codex hoặc Gemini CLI với prompt, tool và MCP được cấp | Không retry. Hết quota thì dự phòng sang bước sau của profile |
+| `agent.cli` | Agent runtime `agentic-cli` | Chạy Claude Code (Claude Agent SDK Python), Codex hoặc Gemini CLI với prompt, tool và MCP được cấp | Không retry. Hết quota thì dự phòng sang bước sau của profile |
 | `maint.probe` | Lịch định kỳ (5 phút) | Kiểm tra từng CLI còn đăng nhập và còn quota không, rồi cập nhật `provider_state` | — |
 | `maint.cleanup` | Lịch định kỳ (mỗi giờ) | Xoá thư mục làm việc quá hạn và job treo | — |
 
@@ -68,11 +69,11 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
-| WRK-FR-01 | Lấy job từ Redis queue theo loại. Worker khai báo mình phục vụ những loại job và provider nào khi khởi động | **MUST** |
+| WRK-FR-01 | Lấy job từ **Postgres**: `SELECT … FOR UPDATE SKIP LOCKED` trên `hub.jobs` theo loại, `priority`, `created_at`; `LISTEN job_enqueued` để được đánh thức (kèm poll dự phòng). Bỏ Redis queue (CR-028). Worker khai báo mình phục vụ những loại job và provider nào khi khởi động | **MUST** |
 | WRK-FR-02 | Cập nhật `hub.jobs` khi chuyển trạng thái. Gửi heartbeat mỗi 15 giây khi đang chạy | **MUST** |
-| WRK-FR-03 | Đẩy sự kiện `job.progress` và `delta` lên kênh Redis `run:<run_id>` để Hub chuyển tiếp qua SSE | **MUST** |
+| WRK-FR-03 | Đẩy sự kiện `job.progress` và `delta` bằng `XADD` vào Redis Stream `run:<run_id>` (TTL ~24 giờ); Hub `XREAD` và dùng id stream làm `id` SSE (HUB-FR-42) | **MUST** |
 | WRK-FR-04 | Tôn trọng `timeout_s` của job. Quá hạn thì dừng tiến trình và đặt `timed_out` | **MUST** |
-| WRK-FR-05 | Nghe tín hiệu huỷ (kênh `cancel:<job_id>`) và dừng tiến trình trong ≤ 5 giây (dừng nhẹ trước, ép dừng sau) | **MUST** |
+| WRK-FR-05 | Nghe tín hiệu huỷ (`LISTEN job_cancel`, kiểm `jobs.cancel_requested_at`; kiểm lại khi khởi động và mỗi heartbeat) và dừng tiến trình trong ≤ 5 giây (dừng nhẹ trước, ép dừng sau) | **MUST** |
 | WRK-FR-06 | Retry theo chính sách của từng loại job (mục 2), với backoff 2 giây rồi 8 giây | **MUST** |
 | WRK-FR-07 | Gọi Dify (`workflow.async`) với `user = <tenant>:<user_id>` để truy vết. Ghi token và chi phí từ metadata Dify nếu có, không có thì ghi thời gian chạy | **MUST** |
 
@@ -80,7 +81,7 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
-| WRK-FR-10 | Claude Code chạy qua **Claude Agent SDK**. Codex và Gemini chạy qua CLI ở chế độ không tương tác, đọc output dạng JSON stream | **MUST** |
+| WRK-FR-10 | Claude Code chạy qua **Claude Agent SDK (Python)**. Codex và Gemini chạy qua CLI ở chế độ không tương tác, đọc output dạng JSON stream | **MUST** |
 | WRK-FR-11 | Mỗi job có một thư mục làm việc riêng `work/<job_id>/`. File đính kèm của run được copy vào đây. CLI bị giới hạn trong thư mục này | **MUST** |
 | WRK-FR-12 | Áp đúng danh sách tool được phép trong payload. Mặc định không có Bash và không có quyền ghi ra ngoài thư mục làm việc | **MUST** |
 | WRK-FR-13 | Kết nối MCP tools của Hub bằng token của job (gắn `tenant_id` và `user_id`, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (`hub.agent_workflows`); tên tool là key của workflow. Chỉ những tool có trong payload | **MUST** |
@@ -94,11 +95,13 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
-| WRK-FR-20 | Giới hạn số job chạy đồng thời theo `max_concurrency` của từng provider | **MUST** |
+| WRK-FR-20 | Giới hạn số job chạy đồng thời theo `max_concurrency` của từng provider: đếm các job `running` của provider đó trong **cùng transaction lấy job**, dưới advisory lock theo provider (CR-028) | **MUST** |
 | WRK-FR-21 | Dự phòng: tạo job mới với bước kế tiếp của profile (có trong payload). Gửi `step.finished{status: fallback, reason}` để trace ghi lại | **MUST** |
 | WRK-FR-22 | Probe định kỳ từng CLI (đã đăng nhập chưa, còn quota không) rồi ghi `hub.provider_state`. Agent Studio (Models và Vận hành) đọc trạng thái này để hiển thị | **SHOULD** |
 | WRK-FR-23 | Dọn thư mục làm việc sau 24 giờ. Đánh dấu job `orphaned` khi mất heartbeat quá 60 giây | **MUST** |
-| WRK-FR-24 | Giới hạn slot subscription theo tenant: đếm job subscription đang chạy của từng tenant (bộ đếm Redis `sub_slots:<tenant_id>`), không cho vượt `tenants.max_concurrent_sub`. `null` = không giới hạn. Slot trả lại khi job xong, lỗi, huỷ hoặc orphaned. Đọc giới hạn từ `admin.tenants` (chỉ đọc, cache ≤ 5 giây) | **MUST** |
+| WRK-FR-24 | Giới hạn slot subscription theo tenant: đếm job subscription `running` của từng tenant trong cùng transaction lấy job (advisory lock theo provider; không còn bộ đếm Redis `sub_slots`), không cho vượt `tenants.max_concurrent_sub`. `null` = không giới hạn. Slot tự trả khi job rời trạng thái `running` (xong, lỗi, huỷ, orphaned). Đọc giới hạn từ `admin.tenants` (chỉ đọc, cache ≤ 5 giây) | **MUST** |
+| WRK-FR-25 | **Manifest loại agent** (CR-028, HUB-FR-90): khi khởi động ghi/cập nhật `hub.agent_types` (key, runtime, mô tả, JSON Schema tham số cấu hình, version) cho mọi class agent đã đăng ký, gồm các runtime `llm`, `agentic-cli` và agent `python` nội bộ. Loại agent bị gỡ khỏi code thì đánh dấu không còn khả dụng, không xoá agent đang trỏ tới | **MUST** |
+| WRK-FR-26 | **Agent `python` chạy trong process con** (CR-028): mỗi job một process con, môi trường không mang secret của hệ thống (như WRK-BR-02), chỉ nhận đúng thứ được cấp trong payload (prompt, tool MCP, thư mục `work/<job_id>/`, token MCP của job). Giao tiếp với Agent Runtime qua interface (stdin/stdout JSON theo contract pydantic); cùng huỷ theo process group, timeout, thư mục làm việc và hook đường dẫn như `agent.cli` | **MUST** |
 
 ## 6. Luật nghiệp vụ
 
@@ -115,23 +118,24 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 ## 7. Dữ liệu & giao tiếp
 
 ```
-HUB ──enqueue(job)──▶ Redis queue ──▶ WORKER
-HUB ◀──pub run:<run_id> (progress/delta)── WORKER
-HUB ──pub cancel:<job_id>──────────────────▶ WORKER
-                       Postgres hub.*  ◀──── WORKER ghi jobs / cli_sessions / usage_logs (có tenant_id) / provider_state
-                       Postgres admin.tenants ──▶ WORKER đọc max_concurrent_sub (chỉ đọc)
-                       Redis sub_slots:<tenant_id> ◀──▶ WORKER đếm slot subscription theo tenant
+HUB ──INSERT hub.jobs + NOTIFY job_enqueued──▶ AGENT RUNTIME (SKIP LOCKED lấy job)
+HUB ◀──XREAD Redis Stream run:<run_id> (progress/delta, id = id SSE)── AGENT RUNTIME (XADD)
+HUB ──jobs.cancel_requested_at + NOTIFY job_cancel──▶ AGENT RUNTIME
+                       Postgres hub.*  ◀──── AGENT RUNTIME ghi jobs / cli_sessions / usage_logs (có tenant_id) / provider_state / agent_types
+                       Postgres admin.tenants ──▶ AGENT RUNTIME đọc max_concurrent_sub (chỉ đọc)
+                       Slot provider/tenant: đếm job `running` trong transaction lấy job (không có bộ đếm Redis)
 WORKER(agent CLI) ──MCP (token job)──▶ HUB /mcp ──▶ Dify workflows (workflow gắn cho agent)
 WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 ```
 
-### Payload job `agent.cli` (ví dụ)
+### Payload job `agent.cli` / `agent.run` (ví dụ)
 
 ```
 {
   "job_id": "j_123", "run_id": "r_456",
   "tenant_id": "t_acme", "user_id": "u_1", "feature_id": null,
   "conversation_id": "c_9", "agent_key": "dev-helper",
+  "runtime": "agentic-cli", "agent_type_key": null,   // agent.run: "llm" | "python" (+ agent_type_key)
   "profile_steps": [
     {"provider": "codex-sub"}, {"provider": "claude-sub"},
     {"provider": "anthropic-api", "model": "claude-opus-5"}
@@ -145,13 +149,13 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 }
 ```
 
-`feature_id` có giá trị khi job đến từ command (feature chứa command đó). Job của agent chat để `null`. `mcp.tools` là key của các workflow được gắn cho agent.
+`feature_id` có giá trị khi job đến từ command (feature chứa command đó). Job của agent chat để `null`. Payload là contract zod của Hub (JSON Schema → pydantic). `mcp.tools` là key của các workflow được gắn cho agent.
 
 ## 8. Vận hành (runbook)
 
 | Tình huống | Xử lý |
 |---|---|
-| Cài máy Worker mới (CR-027) | Máy Windows: bật WSL2 + Ubuntu, bật `systemd=true` trong `/etc/wsl.conf`, mạng `networkingMode=mirrored` trong `.wslconfig` (WSL gọi `localhost` tới Postgres, Redis, Hub). Trong Ubuntu: tạo user `worker`, cài Bun và các CLI, đăng nhập bằng tay từng cái (`claude`, `codex`, `gemini`) dưới user `worker`. Worker chạy bằng unit systemd của Ubuntu, thư mục làm việc trên ổ Linux (`/home/worker/work`, không dùng `/mnt/c`). Khai báo provider trong Agent Studio › Models › Providers. Chạy probe để xác nhận `ok` |
+| Cài máy Worker mới (CR-027) | Máy Windows: bật WSL2 + Ubuntu, bật `systemd=true` trong `/etc/wsl.conf`, mạng `networkingMode=mirrored` trong `.wslconfig` (WSL gọi `localhost` tới Postgres, Redis, Hub). Trong Ubuntu: tạo user `worker`, cài `uv` (Python) và các CLI, đăng nhập bằng tay từng cái (`claude`, `codex`, `gemini`) dưới user `worker`. Worker chạy bằng unit systemd của Ubuntu, thư mục làm việc trên ổ Linux (`/home/worker/work`, không dùng `/mnt/c`). Khai báo provider trong Agent Studio › Models › Providers. Chạy probe để xác nhận `ok` |
 | Máy Windows khởi động lại | WSL không tự chạy khi chưa có ai đăng nhập: đặt Task Scheduler "At startup" chạy `wsl -d Ubuntu --exec /bin/true` và `vmIdleTimeout=-1` để WSL không tự tắt. Kiểm tra `systemctl status ai-worker` trong Ubuntu |
 | Provider báo `logged_out` | SSH vào máy Worker và đăng nhập lại CLI tương ứng. Trong lúc chờ, job tự dự phòng sang API |
 | Provider `cooldown` liên tục | Giảm `max_concurrency`, thêm tài khoản, hoặc đưa bước API lên trước trong profile |
@@ -164,7 +168,7 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 |---|---|
 | WRK-NFR-01 | **Thời gian nhận job:** job bắt đầu chạy trong ≤ 2 giây sau khi vào queue (khi còn slot) |
 | WRK-NFR-02 | **Cách ly:** job này không đọc được thư mục làm việc của job khác, kể cả cùng tenant. Khi mở cho nhiều người hơn thì nâng lên container riêng cho từng job |
-| WRK-NFR-03 | **Phục hồi:** Worker khởi động lại thì không mất job `queued`. Job `running` được xử lý theo luật orphaned. Bộ đếm slot theo tenant được dựng lại từ các job đang `running` |
+| WRK-NFR-03 | **Phục hồi:** Worker khởi động lại thì không mất job `queued`. Job `running` được xử lý theo luật orphaned. Slot theo tenant và theo provider vốn đếm từ các job `running` trong DB nên không cần dựng lại |
 | WRK-NFR-04 | **Quan sát:** log có `job_id`, `run_id` và `tenant_id`. Lưu stdout/stderr của CLI 7 ngày để debug |
 | WRK-NFR-05 | **Quy mô v1:** 1 máy Worker, mỗi subscription 1–2 slot, 5 job `workflow.async` chạy đồng thời |
 | WRK-NFR-06 | **Môi trường (CR-027):** máy Worker là Windows, Worker chạy trong **WSL2 Ubuntu** (code Worker chỉ nhắm Linux). Mỗi tiến trình CLI chạy trong process group riêng; huỷ = SIGTERM cả group, sau 3 giây SIGKILL, không còn process con nào sống. Dùng sandbox của Claude Code (Linux) khi provider hỗ trợ, cộng hook ở WRK-BR-07. File đăng nhập CLI chỉ nằm trong `/home/worker`, không nằm trên ổ Windows |
@@ -217,7 +221,7 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 
 1. ~~Máy Worker chạy Windows hay Linux?~~ Đã chốt (CR-027, 2026-10-04): máy Windows, Worker chạy trong WSL2 Ubuntu (WRK-NFR-06, WRK-BR-07).
 2. Có cho agent `agentic-cli` dùng Bash ở v1 không, hay chỉ Read/Grep/Edit trong thư mục làm việc?
-3. Thư viện queue cụ thể (ví dụ BullMQ nếu dùng TS) phụ thuộc vào stack chưa chốt.
+3. ~~Thư viện queue cụ thể~~ Đã chốt (CR-028, ADR-0007): Postgres `SKIP LOCKED` + `NOTIFY`, không dùng thư viện queue.
 4. Tenant chạm `max_concurrent_sub`: chờ `max_wait_s` rồi dự phòng (đang chọn), hay dự phòng sang API ngay?
 5. Ai tính `billable_usd`: Worker tính lúc ghi usage (đang chọn), hay Hub tính lại theo lô? Cờ `overage` do Hub đánh dấu theo bộ đếm quota, Worker không kiểm quota. Cần chốt cùng BA Agent Hub.
 6. Vì đã phục vụ tenant bên ngoài, có cần đưa container sandbox từng job lên sớm hơn v1 không?

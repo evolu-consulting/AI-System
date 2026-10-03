@@ -18,14 +18,14 @@ Cả hai cách đều cần: kiểm tra danh tính và quyền, giấu key, ch�
 - Verify JWT, cách ly dữ liệu theo tenant, tính quyền command và agent của user.
 - Cung cấp menu command (chỉ những lệnh user được dùng).
 - Parse và chạy command, điều phối agent qua Orchestrator.
-- Runtime `llm`, `dify-workflow`, `dify-agent` chạy ngay trong Hub. Runtime `agentic-cli` và các job dài được giao cho [Worker](../worker/ba-worker.md).
+- Runtime `dify-workflow`, `dify-agent` chạy ngay trong Hub. Mọi agent còn lại (`llm`, `agentic-cli`, `python`) và các job dài được giao cho [Agent Runtime (Worker)](../worker/ba-worker.md) qua `hub.jobs` (CR-028, [ADR-0007](../../adr/0007-hub-ts-agent-runtime-python.md)). Hub viết bằng TypeScript, Agent Runtime bằng Python.
 - Model Gateway (dự phòng theo profile), lưu hội thoại, stream kết quả.
 - Ghi log chi phí theo tenant, kiểm tra quota (cảnh báo, không chặn), ghi trace.
 - Mở workflow của agent ra dưới dạng MCP server.
 
 > ℹ️ **v0.4:** Hệ thống phục vụ **nhiều tenant** (công ty khách hàng). Mọi dữ liệu runtime gắn `tenant_id`. **Workflow là catalog dùng chung** ở Admin (`admin.workflows`): command và agent cùng dùng catalog này. Agent chỉ *chọn* workflow, Hub dùng luôn tên và mô tả của workflow làm tool. Hub vẫn **sở hữu cấu hình agent**: agent, Orchestrator, provider, model profile, secret provider, quyền agent. Cấu hình qua UI [Agent Studio](ui-agent-studio.md) (chỉ `platform_admin`).
 
-**Agent Hub không làm:** không sửa command, workflow, feature, tenant hay user (việc của [Admin](../admin/ba-admin.md)), không chạy tiến trình CLI (việc của Worker).
+**Agent Hub không làm:** không sửa command, workflow, feature, tenant hay user (việc của [Admin](../admin/ba-admin.md)), không chạy tiến trình CLI và không chạy agent `llm`/`python` (việc của Agent Runtime).
 
 ## 2. Actor
 
@@ -35,10 +35,10 @@ Cả hai cách đều cần: kiểm tra danh tính và quyền, giấu key, ch�
 | **Tenant admin** (`tenant_admin`) | Như member. Cấp agent cho group/user trong tenant mình (ở trang Groups của Admin, Admin UI gọi `/agent-grants` của Hub). Xem chi phí và quota của tenant, không xem nội dung chat |
 | **Platform admin** (`platform_admin`) | Vào Agent Studio. Cấp agent cho tenant (entitlement). Xem trace mọi tenant |
 | **Admin service** | Gửi `NOTIFY config_changed`, gọi `/internal/test-run`. Đọc `hub.agent_workflows` (chỉ đọc) để chặn xoá workflow đang dùng |
-| **Worker** | Nhận job từ queue, đẩy sự kiện tiến độ về, ghi kết quả vào DB |
+| **Agent Runtime (Worker)** | Python, process riêng. Nhận job từ `hub.jobs` (Postgres), đẩy sự kiện về Redis Stream, ghi kết quả vào DB, ghi manifest `hub.agent_types` |
 | **Dify** | Được Hub gọi để chạy workflow hoặc agent app |
 | **Model providers** | Được Model Gateway gọi (API) |
-| **Agent CLI** (trong Worker) | Gọi MCP của Hub để dùng workflow được gắn cho agent như tool |
+| **Agent CLI / agent Python** (trong Agent Runtime) | Gọi MCP của Hub để dùng workflow được gắn cho agent như tool |
 
 ## 3. Thuật ngữ
 
@@ -48,7 +48,7 @@ Cả hai cách đều cần: kiểm tra danh tính và quyền, giấu key, ch�
 | Conversation | Một phiên chat của một user, gồm nhiều message |
 | Run | Một lần xử lý cho một message của user. Có hai loại: `command` hoặc `orchestrated` |
 | Step | Một bước trong run: gọi agent, gọi workflow, gọi model, hoặc gọi tool. Mọi step đều được ghi trace |
-| Job | Phần việc được đẩy sang Worker (async). Một run có thể có nhiều job |
+| Job | Phần việc được đẩy sang Agent Runtime (async). Một run có thể có nhiều job |
 | Orchestrator | Agent đặc biệt: đọc yêu cầu, chọn agent chuyên trách, nối các bước, tổng hợp câu trả lời |
 | Context | Dữ liệu client gửi kèm: đoạn bôi đen, URL/nội dung trang, file đính kèm |
 | Workflow | Một app Dify trong catalog dùng chung của Admin (`admin.workflows`). Command gọi nó, agent dùng nó làm tool |
@@ -89,7 +89,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
   │     ├─ bắt đầu "/" + khớp command user được dùng ─▶ COMMAND RUNNER
   │     │      parse args → áp input_map (args/selection/page/attachment)
   │     │      ├─ mode=sync  → gọi Dify workflow → stream kết quả
-  │     │      └─ mode=async → tạo job → Worker → stream tiến độ
+  │     │      └─ mode=async → tạo job → Agent Runtime → stream tiến độ
   │     ├─ bắt đầu "/" + KHÔNG khớp (hoặc không có quyền) ──▶ CMD_NOT_FOUND + gợi ý
   │     └─ còn lại (kể cả tin thứ 2+ trong flow) ─▶ ORCHESTRATOR
   │            đọc: agent đang bật mà user được dùng (key, mô tả), lịch sử gần, context,
@@ -97,8 +97,8 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
   │            không có agent nào → tự trả lời, không gọi tool
   │            lặp ≤ max_steps:
   │              chọn agent → chạy theo runtime:
-  │                llm / dify-workflow / dify-agent  → chạy trong Hub
-  │                agentic-cli                       → job → Worker
+  │                dify-workflow / dify-agent         → chạy trong Hub
+  │                llm / agentic-cli / python        → AgentRunner: job → Agent Runtime (HUB-FR-24, 89)
   │              tool = workflow gắn cho agent (catalog admin.workflows)
   │              nhận kết quả có cấu trúc (HUB-FR-27):
   │                done       → kết thúc / bước tiếp
@@ -140,22 +140,24 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 |---|---|---|
 | HUB-FR-20 | Orchestrator nhận: yêu cầu, N message gần nhất, context, và danh sách agent đang bật **mà user được dùng** (chỉ key và mô tả, xem HUB-FR-77). Mỗi lượt nó trả ra một trong ba quyết định: `delegate(agent, task)`, `answer(text)`, hoặc `ask(question)` | **MUST** |
 | HUB-FR-21 | Vòng điều phối giới hạn `max_steps` (mặc định 5) và ngân sách token của run. Vượt giới hạn thì dừng và trả kết quả đang có, kèm thông báo | **MUST** |
-| HUB-FR-22 | Runtime `llm`: chạy trong Hub với system prompt của agent. Tool là các workflow gắn cho agent (`hub.agent_workflows`), trình cho model bằng tên, mô tả và mô tả tham số của chính workflow. Gọi model qua Gateway | **MUST** |
+| HUB-FR-22 | Runtime `llm`: chạy ở **Agent Runtime** (job `agent.run`, CR-028) với system prompt của agent. Tool là các workflow gắn cho agent (`hub.agent_workflows`), trình cho model bằng tên, mô tả và mô tả tham số của chính workflow, gọi qua MCP của Hub. Gọi model qua bản Python của Gateway (HUB-FR-30) | **MUST** |
 | HUB-FR-23 | Runtime `dify-workflow` và `dify-agent`: agent bọc đúng một workflow trong catalog (loại app tương ứng). Map task thành input rồi gọi Dify | **MUST** |
-| HUB-FR-24 | Runtime `agentic-cli`: tạo job loại `agent.cli` cho Worker, kèm prompt, workflow được gắn, token MCP có phạm vi riêng cho job, `tenant_id`, và session trước đó (nếu có) | **MUST** |
+| HUB-FR-24 | **Mọi delegate agent trừ `dify-*`** là job cho Agent Runtime (qua `AgentRunner`, HUB-FR-89): `agentic-cli` → job `agent.cli`; `llm`, `python` → job `agent.run`. Payload gồm `runtime`, `agent_type_key` (nếu có), prompt, workflow được gắn, token MCP có phạm vi riêng cho job, `tenant_id`, và session trước đó (nếu có) | **MUST** |
 | HUB-FR-25 | Không agent nào khớp, hoặc user không được dùng agent nào, thì Orchestrator tự trả lời bằng model của nó (chat chung, không gọi tool). Yêu cầu mơ hồ thì hỏi lại user | **MUST** |
 | HUB-FR-26 | Chạy song song các delegate độc lập trong cùng một lượt (v1 gọi tuần tự rồi gộp) | **COULD** |
 | HUB-FR-27 | **Kết quả agent có cấu trúc** (CR-025): mỗi agent trả về một trong `done{text}` · `partial{text, missing}` · `need_input{question, choices?}`. Orchestrator dựa vào đó để quyết định: `partial` → delegate agent khác mà user được dùng cho phần thiếu; không có thì `answer` phần đã làm và nói rõ phần chưa làm được (HUB-BR-04, không bịa) | **MUST** |
 | HUB-FR-28 | **Agent hỏi lại user** (CR-025): `need_input` → Hub phát SSE `ask` (`{question, choices?}`), run kết thúc, chờ tin kế. Tin trả lời kế tiếp vẫn qua Orchestrator nhưng mặc định route về đúng agent đã hỏi (Orchestrator nhận trạng thái "đang chờ trả lời của agent X"). Trace ghi agent nào hỏi; kênh SSE chat **không** có `agent` (C1-R04, CR-022) | **MUST** |
 | HUB-FR-29 | **Pass-through** (CR-025): run chỉ có một delegate và agent trả `done` thì Hub stream thẳng câu trả lời của agent cho user, Orchestrator không viết lại (giảm độ trễ và token). Nhiều agent thì Orchestrator tổng hợp | **SHOULD** |
+| HUB-FR-89 | **AgentRunner** (CR-028): Hub có interface `AgentRunner.run(task, signal) → AsyncIterable<RunEvent>`. Bản cài đặt v1: ghi job vào `hub.jobs` (+ `NOTIFY job_enqueued`) rồi đọc sự kiện từ Redis Stream `run:<run_id>` bằng `XREAD`. Payload job, sự kiện run và kết quả agent (HUB-FR-27) định nghĩa bằng zod, xuất JSON Schema để Agent Runtime sinh pydantic. Huỷ: ghi `jobs.cancel_requested_at` + `NOTIFY job_cancel`. Thêm runtime/CLI mới chỉ đụng Agent Runtime | **MUST** |
+| HUB-FR-90 | **Manifest `hub.agent_types`** (CR-028): khi khởi động, Agent Runtime ghi mỗi loại agent nó có (key, runtime, mô tả, JSON Schema tham số cấu hình, version). Studio đọc bảng này để dựng form tạo/sửa agent (`runtime_options`, `agent_type_key`). Agent nội bộ Python mới = thêm class Python + deploy lại Agent Runtime, không sửa TS. Playground / Test agent / dry-run chạy qua cùng đường job (HUB-FR-89) | **MUST** |
 
 ### 6.4 Model Gateway
 
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
-| HUB-FR-30 | Dùng một interface chung `complete(profile, messages, tools, stream)` cho mọi hãng API (anthropic, openai, gemini, openrouter, ollama) | **MUST** |
+| HUB-FR-30 | Dùng một interface chung `complete(profile, messages, tools, stream)` cho mọi hãng API (anthropic, openai, gemini, openrouter, ollama). Gateway trong Hub phục vụ **Orchestrator**; agent `llm` gọi model từ Agent Runtime bằng bản Python của Gateway (cùng profile, fallback, ghi usage) (CR-028) | **MUST** |
 | HUB-FR-31 | Thử các bước của profile theo thứ tự. Chuyển sang bước sau khi gặp điều kiện đã khai báo (`error`, `quota`, `timeout`). Ghi lại bước nào đã phục vụ request | **MUST** |
-| HUB-FR-32 | Bước là provider subscription thì không gọi trực tiếp mà chuyển thành job cho Worker. Chỉ áp dụng cho runtime `agentic-cli`, vì chat thường nên đi API cho nhanh. Subscription dùng chung cho mọi tenant, giới hạn slot theo tenant (HUB-FR-86) | **MUST** |
+| HUB-FR-32 | Bước là provider subscription thì không gọi trực tiếp mà chuyển thành job cho Agent Runtime. Chỉ áp dụng cho runtime `agentic-cli`, vì chat thường nên đi API cho nhanh. Subscription dùng chung cho mọi tenant, giới hạn slot theo tenant (HUB-FR-86) | **MUST** |
 | HUB-FR-33 | Ghi usage cho mọi lời gọi: tenant, user, feature, provider, model, token vào/ra, loại tính phí, chi phí thật, số thu, thời gian, run/step (chi tiết ở HUB-FR-83) | **MUST** |
 
 ### 6.5 Hội thoại, stream, job
@@ -165,8 +167,8 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | HUB-FR-40 | CRUD conversation của chính user (trong tenant của user): tạo, liệt kê, đổi tên, xoá, xem message | **MUST** |
 | HUB-FR-41 | Gửi message thì trả về SSE stream các sự kiện chuẩn (mục 9.2) | **MUST** |
 | HUB-FR-45 | **Flow** (CR-021): một conversation gồm nhiều flow. Gửi message không kèm `flow_id` thì tạo flow mới. **Mọi tin đều qua Orchestrator**, kể cả tin thứ 2+ trong flow (CR-025): flow là nhóm hiển thị + nguồn context (context = message của flow đó); Orchestrator nhận thêm gợi ý "agent gần nhất của flow" (`flows.agent_id`, đổi được) và thường delegate lại agent đó (resume session), nhưng được chọn agent khác khi user đổi chủ đề hoặc hỏi nhiều việc. Flow không có trạng thái đóng: rảnh ~10 phút Hub tắt tiến trình CLI, chat lại thì resume (mất session thì dựng lại từ message đã lưu) | **MUST** |
-| HUB-FR-42 | Client mất kết nối rồi nối lại thì được xem tiếp sự kiện từ `Last-Event-ID`. Run không dừng khi client rớt mạng | **SHOULD** |
-| HUB-FR-43 | `POST /runs/:id/cancel` huỷ run và các job con. Worker phải dừng trong ≤ 5 giây | **MUST** |
+| HUB-FR-42 | Client mất kết nối rồi nối lại thì được xem tiếp sự kiện từ `Last-Event-ID`: `id` sự kiện SSE = id Redis Stream (`run:<run_id>`, TTL ~24 giờ), nên nối lại vào bất kỳ instance Hub nào cũng được (CR-028). Run không dừng khi client rớt mạng | **SHOULD** |
+| HUB-FR-43 | `POST /runs/:id/cancel` huỷ run và các job con. Agent Runtime phải dừng trong ≤ 5 giây (Hub ghi `cancel_requested_at` + `NOTIFY job_cancel`) | **MUST** |
 | HUB-FR-44 | Upload file đính kèm (≤ 20MB/file). Lưu cục bộ hoặc object storage, gắn `tenant_id`, gắn vào message, và chuyển cho Dify hoặc agent khi cần | **SHOULD** |
 
 ### 6.6 MCP, test, báo cáo
@@ -213,9 +215,9 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | HUB-FR-81 | **Kiểm tra quota khi bắt đầu run, không chặn.** Đọc `admin.tenant_quotas` (theo cả tenant, và theo tenant × feature nếu có). Số đã dùng trong tháng (run, token, USD) đếm trong Redis, đối soát định kỳ với `usage_logs`. Không có quota (mặc định) thì không giới hạn. Đã vượt 100% thì run vẫn chạy và usage được đánh dấu `overage = true` | **MUST** |
 | HUB-FR-82 | **Cảnh báo quota:** khi số đã dùng chạm `warn_pct` (mặc định 80%) và 100%, Hub phát sự kiện `quota_threshold` (tenant, feature, mức) một lần cho mỗi mức trong tháng. Admin dùng sự kiện này để gửi email và hiện banner cho `tenant_admin`. Sự kiện SSE `run.started` luôn mang `quota: {state, pct}` (`ok` dưới 80%, `warn` ≥ 80%, `over` ≥ 100%) để client hiện dòng nhắc nhẹ cho user | **MUST** |
 | HUB-FR-83 | **Log chi phí theo tenant:** mỗi dòng `usage_logs` ghi `tenant_id`, `feature_id` (run command; job agent chat / run orchestrated thì `null`), `billing` (`api` \| `subscription` \| `dify`), `cost_usd` (chi phí thật; subscription = 0), `billable_usd` (số thu của tenant), `overage` | **MUST** |
-| HUB-FR-84 | **Bảng giá bán `hub.price_book`:** Hub (hoặc Worker, với job của Worker) tính `billable_usd` lúc ghi `usage_logs`: (token vào × `input_usd_per_mtok` + token ra × `output_usd_per_mtok`) / 1.000.000, theo dòng giá của (provider, model) có `effective_from` gần nhất trước lúc chạy. Dùng chung cho API và subscription. Chưa có đơn giá thì vẫn ghi token, `billable_usd = null`, và được tính lại khi thêm đơn giá. `platform_admin` sửa bảng giá trong Studio | **MUST** |
+| HUB-FR-84 | **Bảng giá bán `hub.price_book`:** Hub (hoặc Agent Runtime, với job của Agent Runtime) tính `billable_usd` lúc ghi `usage_logs`: (token vào × `input_usd_per_mtok` + token ra × `output_usd_per_mtok`) / 1.000.000, theo dòng giá của (provider, model) có `effective_from` gần nhất trước lúc chạy. Dùng chung cho API và subscription. Chưa có đơn giá thì vẫn ghi token, `billable_usd = null`, và được tính lại khi thêm đơn giá. `platform_admin` sửa bảng giá trong Studio | **MUST** |
 | HUB-FR-85 | **Chi phí Dify:** ghi token và chi phí từ metadata Dify nếu có. Không có thì ghi số run và thời gian chạy | **MUST** |
-| HUB-FR-86 | **Slot subscription theo tenant:** subscription CLI dùng chung cho mọi tenant. Số job subscription chạy cùng lúc của một tenant không vượt `tenants.max_concurrent_sub` (null = không giới hạn, là mặc định). Tenant đã đủ slot thì bước subscription được coi như gặp `quota` và profile chuyển sang bước sau. Hết bước thì lỗi `ALL_PROVIDERS_EXHAUSTED` (HUB-BR-04); profile **không bắt buộc** có bước API cuối, subscription chỉ cho dev/test (CR-019) | **MUST** |
+| HUB-FR-86 | **Slot subscription theo tenant:** subscription CLI dùng chung cho mọi tenant. Số job subscription chạy cùng lúc của một tenant không vượt `tenants.max_concurrent_sub` (null = không giới hạn, là mặc định). Số job đang chạy đếm từ `hub.jobs` (`running`) trong cùng transaction lấy job, không dùng bộ đếm Redis (CR-028). Tenant đã đủ slot thì bước subscription được coi như gặp `quota` và profile chuyển sang bước sau. Hết bước thì lỗi `ALL_PROVIDERS_EXHAUSTED` (HUB-BR-04); profile **không bắt buộc** có bước API cuối, subscription chỉ cho dev/test (CR-019) | **MUST** |
 | HUB-FR-87 | **Xem trace theo role:** `platform_admin` xem trace mọi tenant. `tenant_admin` chỉ xem chi phí của tenant, không xem nội dung chat. Mỗi lần xem trace ghi audit `view_trace` kèm tenant | **MUST** |
 | HUB-FR-88 | Tenant hoặc user bị khoá (theo cache) thì Hub từ chối request ngay, không đợi access token hết hạn: trả 401, client về màn đăng nhập | **SHOULD** |
 
@@ -251,12 +253,13 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | `messages` | id, conversation_id, role (user/assistant/system), content, context (jsonb), attachments (jsonb), run_id, created_at |
 | `runs` | id, tenant_id, conversation_id, user_id, kind (command/orchestrated), command_id, feature_id, status, config_version, started_at, finished_at, error_code, error_message |
 | `run_steps` | id, run_id, seq, type (delegate/workflow/model/tool), agent_id, workflow_id (→ `admin.workflows`), provider_key, model, input (jsonb, đã che secret), output (jsonb), status, started_at, finished_at |
-| `jobs` | id, tenant_id, run_id, step_id, type, payload (jsonb), status, attempts, worker_id, heartbeat_at, result (jsonb), error, created_at, finished_at |
+| `jobs` | id, tenant_id, run_id, step_id, type (`agent.run`/`agent.cli`/`workflow.async`/`maint.*`), priority, payload (jsonb), status, attempts, worker_id, heartbeat_at, `cancel_requested_at`, result (jsonb), error, created_at, finished_at. Hàng đợi: `SELECT … FOR UPDATE SKIP LOCKED` theo `priority`, `created_at` (CR-028) |
+| `agent_types` | key, runtime, description (jsonb vi/en), config_schema (JSON Schema), version, registered_at. Agent Runtime ghi khi khởi động (HUB-FR-90); Studio chỉ đọc |
 | `cli_sessions` | conversation_id, agent_id, provider_key, session_id, updated_at |
 | `usage_logs` | id, tenant_id, run_id, step_id, user_id, feature_id, agent_id, provider_key, model, billing (api/subscription/dify), input_tokens, output_tokens, cost_usd, billable_usd, overage (bool), latency_ms, at |
 | `price_book` | id, provider_key, model, input_usd_per_mtok, output_usd_per_mtok, effective_from |
 | `provider_state` | provider_key, status (ok/busy/cooldown/error/logged_out), cooldown_until, last_error, updated_at |
-| `agents` | id, key, name (jsonb vi/en), description, runtime, profile_id, system_prompt, runtime_options (jsonb), timeout_s, token_budget, enabled, version, timestamps |
+| `agents` | id, key, name (jsonb vi/en), description, runtime, `agent_type_key` (→ `agent_types.key`; null với llm/agentic-cli/dify), profile_id, system_prompt, runtime_options (jsonb), timeout_s, token_budget, enabled, version, timestamps |
 | `agent_workflows` | agent_id, workflow_id (→ `admin.workflows`), created_by, created_at (thay bảng `tools` cũ) |
 | `agent_entitlements` | agent_id, tenant_id, granted_by, granted_at, revoked_at |
 | `agent_grants` | id, agent_id, tenant_id, subject_type (group/user), subject_id, granted_by, granted_at |
@@ -270,7 +273,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | `routing_test_runs` | id, trigger (save/manual), config_draft_hash, passed, total, pass_rate, results (jsonb), accepted (bool), by, at |
 | `attachments` | id, tenant_id, user_id, filename, mime, size, storage_path, created_at |
 
-Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `features`, `feature_commands`, `feature_entitlements`, `feature_grants`, `tenant_quotas`, `commands`, `workflows` và secret của workflow. Hub **ghi** schema `hub` (cấu hình agent, quyền agent, bảng giá, dữ liệu runtime). Admin chỉ **đọc** (không ghi) 3 bảng `hub.agent_workflows`, `hub.agent_grants`, `hub.usage_logs`. `user_id`, `tenant_id`, `role` lấy từ JWT, không cần join sang bảng users mỗi request.
+Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `features`, `feature_commands`, `feature_entitlements`, `feature_grants`, `tenant_quotas`, `commands`, `workflows` và secret của workflow. Hub **ghi** schema `hub` (cấu hình agent, quyền agent, bảng giá, dữ liệu runtime); Agent Runtime (Python, SQL thuần) ghi `jobs`, `usage_logs`, `cli_sessions`, `provider_state`, `agent_types`. Drizzle vẫn quản migration. Admin chỉ **đọc** (không ghi) 3 bảng `hub.agent_workflows`, `hub.agent_grants`, `hub.usage_logs`. `user_id`, `tenant_id`, `role` lấy từ JWT, không cần join sang bảng users mỗi request.
 
 ## 9. API & sự kiện stream
 
@@ -301,7 +304,7 @@ event: run.started     data: {run_id, kind, quota: {state: "ok"|"warn"|"over", p
 event: step.started    data: {step_id, type, label: "Đang kiểm tra hoá đơn…", agent?}
 event: delta           data: {text}                       # token câu trả lời
 event: step.finished   data: {step_id, status, provider?, ms}
-event: job.progress    data: {job_id, message, percent?}  # từ Worker
+event: job.progress    data: {job_id, message, percent?}  # từ Agent Runtime (qua Redis Stream)
 event: ask             data: {question, choices?}         # Orchestrator hoặc agent (need_input) hỏi lại; không có `agent`
 event: run.finished    data: {run_id, message_id, usage}
 event: run.failed      data: {run_id, code, message, hint}
@@ -327,7 +330,7 @@ Vượt quota tenant **không** phải lỗi: run vẫn chạy, `run.started` ma
 | ID | Yêu cầu |
 |---|---|
 | HUB-NFR-01 | **Độ trễ:** overhead của Hub với command sync ≤ 200ms (không tính thời gian Dify), đã gồm tính quyền và kiểm tra quota. Sự kiện `run.started` đến client trong ≤ 500ms |
-| HUB-NFR-02 | **Chạy nhiều instance:** Hub không giữ trạng thái trong process (ngoài cache cấu hình). Chạy được nhiều instance, mỗi instance tự LISTEN riêng. Sự kiện SSE, bộ đếm quota và slot subscription đi qua Redis |
+| HUB-NFR-02 | **Chạy nhiều instance:** Hub không giữ trạng thái trong process (ngoài cache cấu hình). Chạy được nhiều instance, mỗi instance tự LISTEN riêng. Sự kiện run đi qua Redis Streams (`id` stream = `id` SSE, nên `Last-Event-ID` đúng giữa các instance, HUB-FR-42); bộ đếm quota qua Redis; slot subscription đếm từ `hub.jobs` trong Postgres |
 | HUB-NFR-03 | **Chịu lỗi:** Admin chết thì Hub vẫn phục vụ bằng cache (gồm cả quyền). Dify chết thì command báo `UPSTREAM_ERROR`, còn agent `llm` vẫn chạy. Redis mất bộ đếm quota thì dựng lại từ `usage_logs` |
 | HUB-NFR-04 | **Quan sát:** mọi log có `run_id`, `tenant_id` và `user_id`. Secret và nội dung file không bao giờ xuất hiện trong log |
 | HUB-NFR-05 | **Lưu trữ:** giữ hội thoại 180 ngày. Giữ `run_steps.input/output` 30 ngày rồi xoá, chỉ giữ lại metadata (có thể chỉnh). `usage_logs` giữ lâu dài để tính phí |
@@ -397,5 +400,5 @@ Vượt quota tenant **không** phải lỗi: run vẫn chạy, `run.started` ma
 4. Command thuộc nhiều feature thì `feature_id` của run lấy feature nào? Tạm: feature đầu tiên (theo key) mà user được cấp. Job agent chat và run orchestrated có `feature_id = null`, nên chỉ tính vào quota cả tenant.
 5. `max_usd` của quota so với `billable_usd` hay `cost_usd`? Tạm: `billable_usd`.
 6. Ai gửi email cảnh báo quota? Tạm: Hub phát `quota_threshold` (NOTIFY), Admin gửi email và hiện banner.
-7. Workflow dùng làm tool không có sync/async và timeout riêng (các trường này nằm ở command). Tạm: tool gọi đồng bộ, timeout theo `timeout_s` của agent. Có cần cấu hình riêng cho từng cặp agent–workflow không?
+7. Workflow dùng làm tool không có sync/async và timeout riêng (các trường này nằm ở command). Tạm: tool gọi đồng bộ, timeout theo `timeout_s` của agent. Có cần cấu hình riêng cho từng cặp agent–workflow không? (Từ CR-028 tool đi qua MCP của Hub nên timeout áp ở Hub.)
 8. Quy mô v1 khi có nhiều tenant thật (số tenant, user, run đồng thời) cần chốt lại.

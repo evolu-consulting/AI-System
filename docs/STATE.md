@@ -1,8 +1,9 @@
 # STATE — trạng thái hiện tại
 
-Cập nhật: 2026-10-03 · Người cập nhật: docs-architect (đóng M3)
+Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (CR-028)
 
 ## Đang ở đâu
+- **CR-028 / ADR-0007** (2026-10-04, phiên Hub/Worker): Hub giữ TypeScript; Worker thành **Agent Runtime Python** (`apps/agent-runtime`) chạy mọi agent `llm`/`agentic-cli`/`python`. Hàng đợi Postgres `SKIP LOCKED` (bỏ Redis queue, slot đếm trong DB), sự kiện run qua Redis Streams, contract zod → JSON Schema → pydantic, manifest `hub.agent_types`. Đã sửa ba-agent-hub, ba-worker, architecture (gồm mâu thuẫn CR-019) — chỉ design, html chưa sinh lại (TECH-DEBT #32). Chat/Admin không đổi.
 - **CR-025/026** (2026-10-04, Intake Nhanh): Orchestrator định tuyến mọi tin (kể cả trong flow), kết quả agent có cấu trúc (HUB-FR-27/28/29, AC-H14/15), runtime mặc định `llm`; đổi tên thuật ngữ cũ → Orchestrator toàn docs + i18n. Chỉ sửa design; html chưa sinh lại (TECH-DEBT #32). C1 contract không đổi.
 - **Mốc C1 (phiên chat, song song M4)** (2026-10-03): người dùng chốt làm Chat App trước (CR-018…024). Đã có spec `docs/specs/C1-chat-ui/spec.md` (draft, 7 câu hỏi mở có mặc định) + `tasks.md` khung, `docs/design/chat-app/usecases-chat.md` (UC-01…08, CHAT-AC-01…36), canvas `docs/design/chat-app/canvas/`. Design đã cập nhật: flow, Consultant, Orchestrator là agent, subscription không bắt buộc API cuối. Kế tiếp: plan BE ∥ FE, ADR thư viện markdown, test-plan, readiness, Gate. Không đụng `packages/contracts/src/index.ts` (M4 đang sửa).
 - **M4 bắt đầu** (2026-10-03): spec `docs/specs/M4-ops/spec.md` (`status: draft`, 12 mã yêu cầu, 17 luật M4-R, 14 AC bổ sung, 14 câu hỏi mở có mặc định) + `tasks.md` khung. Kế tiếp: plan BE ∥ FE, ADR-0004 (thư viện mới), test-plan, readiness, Gate.
@@ -11,6 +12,7 @@ Cập nhật: 2026-10-03 · Người cập nhật: docs-architect (đóng M3)
 - M0, M1, M2 xong. Thiết kế v0.4 xong (`design/`); canvas 18 artboard. Khung quy trình xong (`CLAUDE.md`, `WORKFLOW.md`, 7 agent, Luật 2b).
 
 ## Việc kế tiếp (phiên mới: làm ngay, KHÔNG hỏi — Luật 2b)
+0. **Phiên Hub:** bổ sung `docs/CONVENTIONS.md` phần Python (`uv`, `ruff`, `pyright` strict, `pytest`, cỡ file/hàm), rồi tách spec H1 (Hub lõi TS + Agent Runtime Python tối thiểu) theo ROADMAP (ROADMAP chưa cập nhật theo CR-028).
 1. **M4 Chi phí & vận hành** theo `docs/ROADMAP.md` (Quota + cảnh báo, Chi phí & quota, Audit + khôi phục, Tổng quan, Import/Export, 2FA; ADM-FR-40–42, 51, 52, 54, 08; AC-A12 phía Admin; Import/Export và 2FA cần artboard trước Gate). Vòng: docs-architect tách spec `M4-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate (Luật 2b) → qc khoá test (đỏ đúng lý do) → BUILD một task mỗi lần gọi → Lệnh xong M4 (không gồm `test:perf`) → reviewer ≤ 2 vòng → docs → bật service và hướng dẫn người dùng test toàn bộ admin app. Trên `main`, KHÔNG push.
 2. Canvas: đổi `#7A7390` → `#736C89` (FE-R1, AA) khi chạm lại canvas.
 
@@ -38,11 +40,11 @@ Cập nhật: 2026-10-03 · Người cập nhật: docs-architect (đóng M3)
 18 artboard trong `docs/design/canvas/` (Login, Main, Sidebar, TenantOverview, TenantCreate, TenantQuota, Users, Groups, Access, Commands, Workflows, Secrets, Usage, Audit, ChangePassword, Enable2FA, ImportPreview, States). Màn chưa có artboard: xem `docs/specs/_design/admin-missing-screens.md`.
 
 ## Câu hỏi đang chờ người dùng
-Điểm thiết kế Hub/Worker đã thảo luận 2026-10-04, **chưa chốt**:
-- (a) architecture §1/§7 còn ghi "subscription là đường chính", mâu thuẫn CR-019 (subscription chỉ dev/test).
-- (b) H1 chạy Agent SDK trong Hub vs BA "Hub không chạy CLI": đề xuất interface `AgentRunner` (in-process cho dev, qua Worker cho prod).
-- (c) Queue Postgres `SKIP LOCKED` thay Redis queue; slot tenant đếm trong DB.
-- (d) Sự kiện run dùng Redis Streams để `Last-Event-ID` hoạt động.
+Điểm thiết kế Hub/Worker đã thảo luận 2026-10-04:
+- (a) ~~architecture ghi "subscription là đường chính" mâu thuẫn CR-019~~ Đã sửa (CR-028).
+- (b) ~~H1 chạy Agent SDK trong Hub vs "Hub không chạy CLI"~~ Đã chốt (CR-028/ADR-0007): interface `AgentRunner`, v1 = job + Redis Stream; Agent Runtime Python chạy CLI.
+- (c) ~~Queue Postgres~~ Đã chốt (CR-028/ADR-0007): `SKIP LOCKED`, slot đếm trong DB.
+- (d) ~~Redis Streams cho sự kiện run~~ Đã chốt (CR-028/ADR-0007).
 - (e) ~~Worker Windows hay Linux?~~ Chốt CR-027: Windows + WSL2 Ubuntu (WRK-NFR-06, WRK-BR-07). Còn mở: bật sandbox Claude Code mặc định hay chỉ hook
 - (f) Cookie refresh khi chat-web khác origin với admin-api.
 

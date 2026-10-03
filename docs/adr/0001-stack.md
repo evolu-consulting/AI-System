@@ -2,6 +2,8 @@
 
 Trạng thái: **Accepted** (Gate M0, 2026-10-01) · Ngày: 2026-10-01
 
+> Agent Runtime (Worker): xem ADR-0007 (Python; thay các dòng "Worker Node LTS" và "BullMQ ở Worker").
+
 ## Bối cảnh
 Nền tảng multi-tenant gồm Admin, Agent Hub, Worker, Chat App/Extension. Worker chạy Claude Agent SDK (TypeScript). Cần chia sẻ schema validate giữa form, API, DB; một ngôn ngữ cho toàn monorepo.
 
