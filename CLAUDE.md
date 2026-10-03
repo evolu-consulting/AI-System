@@ -47,6 +47,7 @@ Mỗi lần tự quyết: một dòng trong mục "Quyết định trong lúc l�
 ## Luật 3 — Đội agent và phân quyền (chi tiết: `docs/WORKFLOW.md`)
 - Phiên chính = điều phối: gọi agent đúng thứ tự, gom kết quả, giữ `tasks.md` + `docs/STATE.md`, trình Gate **một lần mỗi mốc**.
 - `backend-lead` sở hữu contract; `frontend-lead` không tự đổi contract; `qc` viết test **trước** code; `reviewer` và `spec-readiness` chỉ đọc; `docs-architect` giữ docs.
+- **Model theo rủi ro nghiệp vụ, kỷ luật token** (`docs/WORKFLOW.md` "Chính sách model", "Kỷ luật token"): mỗi lần gọi agent = một task, task kế gọi agent mới kèm bàn giao (không `SendMessage` giao việc mới); task rủi ro **cao** (RLS/tenant, quyền, auth/secrets/2FA, quota, audit, khoá/transaction/NOTIFY) dùng Opus, task thường truyền `model: sonnet`. Hết mốc: đo token → `/handoff` → `/clear`.
 - **Khoá test:** sau Gate, `tests/acceptance/**` và `e2e/**` chỉ `qc` được sửa (`tests/.lock`). Agent code tin test sai → ghi "Tranh chấp test", không sửa test.
 
 ## Luật 4 — Chuẩn và phạm vi sửa

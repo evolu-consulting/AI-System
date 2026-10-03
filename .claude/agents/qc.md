@@ -10,6 +10,8 @@ Bạn là **qc**. Bạn đại diện cho nghiệp vụ: test của bạn là đ
 ## Đọc
 `CLAUDE.md` · `docs/WORKFLOW.md` · `docs/CONVENTIONS.md` §2 (phần Test) · spec (`spec.md` mục 2, 3, 5, 8; `plan.md` phần chữ ký hàm trong `*.rules.ts`) · mục BA được trỏ tới (FR, BR, AC) · contract `packages/contracts/**`. **Không** đọc code implementation để viết test.
 
+**Token:** theo `docs/WORKFLOW.md` mục "Kỷ luật token" — đọc tài liệu theo mục (`grep -n "^#"` rồi đọc khoảng dòng), không `cat` nhiều file, lệnh test/check `| tail -40`, không đọc lại file đã đọc; một lần gọi = một task, ~80 lượt hoặc context ≳ 150K thì dừng ở điểm sạch và bàn giao. Đọc spec/plan/test-plan đúng mục FR/AC đang viết, không đọc test-plan của mốc cũ trừ khi cần mẫu.
+
 ## Được sửa
 `tests/**`, `e2e/**`, `tests/.lock`, `docs/specs/*/test-plan.md`, mục 10 "Tranh chấp test" của spec. **Không** sửa code sản phẩm.
 
@@ -43,4 +45,6 @@ Ghi `tests/.lock` = sha256 của mọi file trong `tests/acceptance/**` và `e2e
 - …
 ## Cần bổ sung (agent: việc)
 - …
+## Bàn giao (≤ 20 dòng, cho lần gọi kế)
+- Việc dở / bước kế · file đang sửa · bẫy đã gặp
 ```

@@ -11,6 +11,10 @@ Cập nhật: 2026-10-01 · Người cập nhật: docs-architect (đóng M1)
 1. **M3 Phân quyền** theo `docs/ROADMAP.md` (Groups + thành viên; Grants + ma trận; Kiểm tra quyền phần feature/command; NOTIFY `config_changed`; chống ghi đè `version`; FR-32, 35, 36, 53, 55, 62; BR-11, 12; xong khi AC-A07, A10, A11 phía Admin xanh; cộng vế "≤ 5 giây" của AC-A03 hoãn từ M2, CR-011; FR-24 phần group/grant). Vòng: docs-architect tách spec `M3-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate nếu đủ điều kiện (Luật 2b) → qc khoá test → BUILD → Lệnh xong M3 → reviewer (≤ 2 vòng) → docs. Trên `main`, không push.
 2. Canvas: đổi `#7A7390` → `#736C89` (FE-R1, AA) khi chạm lại canvas.
 
+## Token (đo bằng `token-report.py`, xem WORKFLOW "Đo token mỗi mốc")
+- Mốc chuẩn M0–M3 (trước 2026-10-03, quy trình cũ): ≈ $756 quy đổi giá API · đọc lại cache 69% · backend-lead 38%, điều phối 23%, frontend-lead 15%, qc 13% · lần chạy lớn nhất 347 lượt / context 775K (backend-lead PLAN M3).
+- Từ 2026-10-03: model theo rủi ro + một task mỗi lần gọi. Mục tiêu: cache < 40%, không lần chạy > 200K context / > 80 lượt.
+
 ## TECH-DEBT đáng chú ý (`docs/TECH-DEBT.md`)
 - #13 `withScope` retry 40P01/40001: NOTIFY (M3), mail, HTTP phải đặt sau commit.
 - #16 xoay khoá `SECRET_MASTER_KEY` chưa có (mất khoá = mất mọi secret, xem PRODUCTION-NOTES).

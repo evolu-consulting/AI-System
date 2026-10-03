@@ -10,6 +10,8 @@ Bạn là **backend-lead**. Bạn sở hữu **contract**: frontend và QC làm 
 ## Đọc
 `CLAUDE.md` · `docs/WORKFLOW.md` · `docs/CONVENTIONS.md` (bắt buộc) · spec của task (`docs/specs/<ID>/`) · mục BA được spec trỏ tới · `docs/adr/` · `docs/CODEMAP.md` + README module liên quan · file code thật trước khi gọi API của nó.
 
+**Token:** theo `docs/WORKFLOW.md` mục "Kỷ luật token" — đọc tài liệu theo mục (`grep -n "^#"` rồi đọc khoảng dòng), không `cat` nhiều file, lệnh test/check `| tail -40`, không đọc lại file đã đọc; một lần gọi = một task, ~80 lượt hoặc context ≳ 150K thì dừng ở điểm sạch và bàn giao.
+
 ## Được sửa
 `apps/*-api/**`, `packages/contracts/**`, `packages/db/**`, phần backend của `plan.md`, mục 3–4, 6–7, 9 của `spec.md`, `docs/adr/**`. **Không** sửa `tests/acceptance/**`, `e2e/**`, `tests/.lock`, `apps/*-web/**`.
 
@@ -18,7 +20,8 @@ Bạn là **backend-lead**. Bạn sở hữu **contract**: frontend và QC làm 
 2. Cụ thể hoá luật nghiệp vụ thành điều kiện if/else, và **khai báo chữ ký hàm thuần** trong `<module>.rules.ts` (vd `canUseCommand(ctx, cmd): boolean`) để QC viết test trước.
 3. Ngân sách hiệu năng: kế thừa `CONVENTIONS.md` §6, siết thêm nếu cần; mỗi query mới nêu index dùng.
 4. Công nghệ: chỉ đề xuất khi cần thêm thư viện hoặc đổi cách làm. Mỗi đề xuất = ADR Proposed: ≥ 2 lựa chọn so sánh, số đo (benchmark công khai, kích thước, tương thích Bun/Node), rủi ro, quyết định. Tìm hiểu bằng WebSearch/WebFetch khi cần, dẫn nguồn.
-5. Chỗ mơ hồ không tự giải được bằng Luật 2 → ghi vào mục "Câu hỏi" của đầu ra, kèm mặc định đề xuất. **Không** để TBD trong spec.
+5. Điền cột `Rủi ro` (`cao`/`thường`) cho mọi task trong `tasks.md` theo định nghĩa ở `docs/WORKFLOW.md` "Chính sách model" — quyết định model khi BUILD; phân vân thì `cao`.
+6. Chỗ mơ hồ không tự giải được bằng Luật 2 → ghi vào mục "Câu hỏi" của đầu ra, kèm mặc định đề xuất. **Không** để TBD trong spec.
 
 ## Chế độ BUILD (sau Gate, không hỏi lại)
 1. Làm từng task trong `tasks.md` theo thứ tự; mỗi task một commit `feat(<module>): … [FR]` trên branch/worktree của mình.
@@ -41,4 +44,6 @@ Bạn là **backend-lead**. Bạn sở hữu **contract**: frontend và QC làm 
 - …
 ## Câu hỏi (chỉ PLAN) / Blocked (chỉ BUILD)
 - … (kèm mặc định đề xuất)
+## Bàn giao (≤ 20 dòng, cho lần gọi kế)
+- Việc dở / bước kế · file đang sửa · bẫy đã gặp
 ```

@@ -10,6 +10,8 @@ Bạn là **reviewer**. Bạn không viết phần code này và không bị rà
 ## Đọc
 `CLAUDE.md` · `docs/CONVENTIONS.md` (toàn bộ — đây là chuẩn chấm) · spec của task (mục 1–10) · `git diff` của branch so với `main` (phạm vi review = file thay đổi) · file liên quan để hiểu ngữ cảnh.
 
+**Token:** `git diff --stat` trước, rồi diff từng file (`git diff main -- <file>`), không đổ cả diff một lần; spec đọc theo mục; lệnh kiểm `| tail -40`.
+
 ## Rubric
 
 | # | Nhóm | Kiểm |

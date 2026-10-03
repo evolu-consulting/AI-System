@@ -14,19 +14,43 @@ Mỗi mốc (milestone) chạy đúng một vòng dưới đây. Người dùng 
 | `qc` | Test plan theo FR/AC, acceptance + e2e, test luật BR, fixture/seed test, báo cáo độ phủ | `tests/**`, `e2e/**`, `docs/specs/*/test-plan.md`, `tests/.lock` | Code sản phẩm |
 | `reviewer` | Review theo rubric (đúng spec, bảo mật, dữ liệu, hiệu năng, test, chuẩn, FE, truy vết) | — (chỉ đọc) | — |
 
-### Chính sách model (tối ưu token)
+### Chính sách model — chọn theo rủi ro nghiệp vụ
 
-Mặc định ghi ở dòng `model:` của từng file agent. Điều phối **nâng lên Opus** (tham số `model` khi gọi) chỉ trong các trường hợp ghi ở cột cuối.
+Model chọn theo **việc**, không theo agent. Dòng `model:` trong file agent là mặc định an toàn (agent làm chủ yếu việc rủi ro cao thì mặc định Opus). Điều phối đổi bằng tham số `model` khi gọi agent; tham số này thắng frontmatter. Không dùng biến `CLAUDE_CODE_SUBAGENT_MODEL` (ép mọi agent một model).
 
-| Agent | Mặc định | Lý do | Nâng lên Opus khi |
-|---|---|---|---|
-| `spec-readiness` | Opus | Suy luận sâu, bắt mâu thuẫn | — |
-| `backend-lead` | Opus | Contract, dữ liệu, bảo mật tenant | — |
-| `reviewer` | Opus | Bảo mật, đúng nghiệp vụ | — |
-| `intake-analyst` | Opus | Chỉ chạy ở mức Đầy đủ (tài liệu lớn) | — (mức Nhanh do điều phối tự làm) |
-| `frontend-lead` | Sonnet | BUILD theo spec đã chi tiết | Chế độ PLAN có màn mới / lấp chỗ trống UX lớn |
-| `qc` | Sonnet | Viết test theo spec + template | Phân xử Tranh chấp test; luật BR phức tạp (quyền, quota) |
-| `docs-architect` | Sonnet | Việc cấu trúc, đồng bộ | — |
+**Rủi ro cao** = task chạm ít nhất một thứ: RLS / cách ly tenant · phân quyền (grants, ma trận, kiểm tra quyền, role) · auth, secrets, 2FA, token · quota, chi phí, usage · audit / khôi phục · transaction nhiều bảng, khoá hàng, thứ tự khoá, NOTIFY · migration đổi/xoá dữ liệu có sẵn. Còn lại là **thường** (CRUD theo contract đã chốt, list/phân trang, seed, màn hình theo artboard, i18n, docs). Cột `Rủi ro` trong `tasks.md` do backend-lead điền ở PLAN; task chưa có cột → điều phối xét theo danh sách trên, phân vân thì coi là cao.
+
+| Agent · việc | Model | Lý do nghiệp vụ |
+|---|---|---|
+| `spec-readiness` | Opus | Cửa chặn chính; bỏ sót ở đây sai dây chuyền |
+| `intake-analyst` (Đầy đủ) | Opus | Bắt mâu thuẫn ngầm giữa yêu cầu mới và BA (mức Nhanh do điều phối tự làm) |
+| `reviewer` | Opus | Lưới an toàn cuối cho bảo mật, tenant, đồng thời |
+| `backend-lead` PLAN | Opus (mặc định) | Contract, schema, RLS, luật BR thành if/else — QC và FE dựa vào |
+| `backend-lead` BUILD task **cao** | Opus (mặc định) | Lỗi nặng nhất từng gặp (deadlock M1, M2) thuộc nhóm này |
+| `backend-lead` BUILD task **thường** | **Sonnet** — truyền `model: sonnet` | Code theo contract đã chốt |
+| `qc` WRITE luật BR quyền/quota/tenant, phân xử Tranh chấp test | Opus — truyền `model: opus` | Test là định nghĩa "đúng"; test sai khoá luôn code sai |
+| `qc` WRITE thường, LOCK, VERIFY | Sonnet (mặc định) | Theo spec + template, chạy lệnh |
+| `frontend-lead` PLAN có màn mới / lấp chỗ trống UX lớn | Opus — truyền `model: opus` | Quyết định UX ảnh hưởng người dùng cuối |
+| `frontend-lead` PLAN/BUILD thường | Sonnet (mặc định) | Lỗi FE lịch sử là chuẩn code, không phải nghiệp vụ |
+| `docs-architect` Việc 1, 3 | Sonnet (mặc định) | Cần hiểu BA để nhóm FR |
+| `docs-architect` Việc 2 (đồng bộ CODEMAP/TRACE/STATE) | Haiku — truyền `model: haiku` | Việc cơ học; câu chữ kém thì quay lại Sonnet |
+| Phiên chính (điều phối) | Opus | Chỉ điều phối — không tự đọc/viết tài liệu lớn, giao agent |
+
+### Kỷ luật token (bắt buộc cho điều phối và mọi agent)
+
+Chi phí chủ yếu do context dài bị đọc lại mỗi lượt (M0–M3: ~69% chi phí; có lần chạy 347 lượt, context 775K). Vì vậy:
+
+1. **Một lần gọi agent = một task** (hoặc nhóm task nhỏ cùng file, ≤ ~80 lượt). Xong → agent trả **Bàn giao ≤ 20 dòng** (đã làm, file, lệnh + kết quả, việc dở, bẫy). Task kế → gọi agent **mới** kèm bàn giao, **không** dùng `SendMessage` để giao việc mới cho agent đã chạy lâu. `SendMessage` chỉ để trả lời câu hỏi của agent đang làm dở.
+2. Agent thấy context lớn (≳ 150K) hoặc đã ~80 lượt → dừng ở điểm sạch (đã commit), trả bàn giao.
+3. **Đọc tài liệu theo mục**: `grep -n "^#" <file>` để tìm mục, rồi đọc đúng khoảng dòng (≤ ~80 dòng/lần). Không đọc cả file spec/plan/test-plan > 20KB; không `cat` nhiều file một lệnh; không đọc lại file đã đọc trong cùng lần chạy. Output bị lưu ra file (quá dài) → `grep`/`tail` file đó, không Read cả file. Ngoại lệ: `spec-readiness` vẫn đọc hết thư mục spec (luật strict của nó), nhưng tài liệu được trỏ thì chỉ đọc đúng mục.
+4. **Lệnh ít output**: test chỉ in lỗi + tổng (`bun test … 2>&1 | tail -40`, `bunx playwright test --reporter=line … | tail -40`, typecheck/biome/depcruise `| tail -30`). Chỉ xem đầy đủ khi cần sửa một ca đỏ cụ thể.
+5. Phiên chính: hết mỗi mốc (hoặc sau Gate / sau BUILD) → `/handoff` rồi `/clear`; đầu phiên mới hook tự chèn `STATE.md`.
+
+### Đo token mỗi mốc
+
+Cuối mốc điều phối chạy và chép bảng tóm tắt vào `docs/STATE.md` mục "Token":
+`python "%USERPROFILE%\.claude\scripts\token-report.py" D:\AI\ai-system --since <ngày bắt đầu mốc> --runs 15`
+Mục tiêu: chi phí đọc lại cache < 40% · không lần chạy agent nào context > 200K hoặc > 80 lượt. Trong phiên: `/usage` (token, chi phí, cache), `/context` (cái gì chiếm context).
 
 Phiên chính (Claude) là **điều phối**: gọi agent theo thứ tự, gom kết quả, giữ `tasks.md` và `docs/STATE.md`, trình Gate cho người dùng.
 
@@ -50,7 +74,9 @@ Mọi yêu cầu/thay đổi mới (đầu phiên hay giữa phiên) đi qua **I
 8. qc               chạy toàn bộ, báo độ phủ theo FR; test sai → mục Tranh chấp
 9. reviewer         review; Blocker/Major → trả agent code sửa (tối đa 2 vòng/task)
 10. docs-architect  cập nhật CODEMAP, TRACE, STATE, README module → báo cáo cuối cho người dùng
+11. điều phối       đo token (mục "Đo token mỗi mốc") → ghi STATE.md → /handoff, /clear
 ```
+Bước 7–9: mỗi task một lần gọi agent, model theo cột `Rủi ro` (mục "Chính sách model").
 
 ## Luật khoá test
 

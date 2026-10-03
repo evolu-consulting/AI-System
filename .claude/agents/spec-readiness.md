@@ -64,6 +64,7 @@ Người gọi đưa một đường dẫn: thư mục spec (`docs/specs/<ID>/`)
 **H. Task**
 - Mỗi task: file sẽ tạo/sửa, đầu vào/đầu ra, điều kiện xong kiểm chứng được. Không task nào kiểu "làm phần còn lại".
 - Thứ tự và phụ thuộc giữa các task rõ; task nào chặn task nào.
+- Mỗi task có cột `Rủi ro` (`cao`/`thường`) đúng định nghĩa `docs/WORKFLOW.md` "Chính sách model"; task chạm RLS/quyền/auth/secrets/quota/khoá mà ghi `thường` → lỗ hổng Cao. (Spec tạo trước 2026-10-03 chưa có cột: ghi Thấp.)
 
 **I. Nhất quán**
 - Không mâu thuẫn giữa spec, BA, UI, architecture, ADR (tên bảng, tên trường, mã lỗi, role, con số).
