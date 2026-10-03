@@ -15,16 +15,17 @@ Quy ước/fixture: `test-plan-cd.md` §0. Dữ liệu `baseFile()`: §3.2 C-I01
 |---|---|---|
 | E-2FA-01 · M4-AC11 | binh `loginToShell` → menu avatar → `menuitem "Xác thực hai bước"` → `heading "Xác thực hai bước"`, chữ "Chưa bật" → `button "Bật xác thực hai bước"` → `getByLabel("Mật khẩu hiện tại")` = PW → `button "Tiếp tục"` (lấy `secret` từ `waitForResponse(/auth/totp/setup)`) → `img "Mã QR để thêm tài khoản vào ứng dụng xác thực"` → `button "Tiếp tục"` → `textbox "Mã xác thực"` = `codeFor(secret, 0)` | `heading "Lưu mã dự phòng"`; `list "Mã dự phòng"` có 10 `listitem`; `button "Hoàn tất"` khoá tới khi tick `checkbox "Tôi đã lưu mã dự phòng ở nơi an toàn"`; bấm → toast "Đã bật xác thực hai bước"; chữ "Đã bật", "còn 10 mã dự phòng" |
 | E-2FA-02 | sai mã ở bước bật: `codeFor(secret, 5)` | chữ "Mã không đúng. Kiểm tra giờ trên điện thoại và thử lại." |
-| E-2FA-03 · bước đăng nhập | đăng xuất → `fillLogin(acme, binh, PW)` | `heading "Xác thực hai bước"`, chữ "acme · binh"; `textbox "Mã xác thực"` = `codeFor(secret, 5)` → `alert` "Mã không đúng hoặc đã hết hạn"; = `codeFor(secret, 1)` → vào shell |
+| E-2FA-03 · bước đăng nhập | đăng xuất → `fillLogin(acme, binh, PW)` | `heading "Xác thực hai bước"`, chữ "acme · binh"; `textbox "Mã xác thực"` = `codeFor(secret, 5)` → `alert` "Mã không đúng hoặc đã hết hạn"; `waitNextStep` rồi `codeFor(secret, 1)` → vào shell (mỗi lần đăng nhập thành công về sau trong ca cũng `waitNextStep` + `codeFor(secret, 1)`) |
 | E-2FA-04 · mã dự phòng | đăng xuất → login → `button "Dùng mã dự phòng"` → `textbox "Mã dự phòng"` = codes[0] → `button "Xác nhận"`; lặp với codes[0] | lần 1 vào shell; lần 2 `alert` "Mã không đúng hoặc đã hết hạn"; `button "Dùng mã từ ứng dụng"` đổi lại ô `Mã xác thực` |
 | E-2FA-05 | ở bước mã → `link "Quay lại đăng nhập"` | form đăng nhập, mã công ty `acme` + tên `binh` còn giữ |
-| E-2FA-06 · khoá tạm | 5 lần `codeFor(secret, 5)` | `alert` khớp `/^Tạm khoá đến \d{2}:\d{2}$/` |
-| E-2FA-07 · Q-D1 | trang 2FA → `button "Tạo lại mã dự phòng"` → `alertdialog "Tạo lại mã dự phòng?"` → `Mã xác thực` (`waitNextStep` rồi `codeFor(secret,0)`) → `button "Tạo lại"` | 10 mã mới, khác danh sách cũ; toast "Đã tạo mã dự phòng mới" |
-| E-2FA-08 · tự tắt | `button "Tắt xác thực hai bước"` → `alertdialog "Tắt xác thực hai bước?"` → `Mật khẩu hiện tại` + `Mã xác thực` → nút xác nhận trong dialog | toast "Đã tắt xác thực hai bước"; chữ "Chưa bật"; login lần sau không có bước mã |
+| E-2FA-06 · khoá tạm | 5 lần `codeFor(secret, 5)` (mỗi lần 401 `INVALID_OTP`, thấy `login.totp.wrong`, **chưa** có "Tạm khoá"); lần 6 (mã bất kỳ, 423) | lần 6 mới thấy `alert` khớp `/^Tạm khoá đến \d{2}:\d{2}$/` |
+| E-2FA-07 · Q-D1 | trang 2FA → `button "Tạo lại mã dự phòng"` → `alertdialog "Tạo lại mã dự phòng?"` → `Mã xác thực` (`waitNextStep` rồi `codeFor(secret,1)`) → `button "Tạo lại"` | 10 mã mới, khác danh sách cũ; toast "Đã tạo mã dự phòng mới" |
+| E-2FA-08 · tự tắt | `button "Tắt xác thực hai bước"` → `alertdialog "Tắt xác thực hai bước?"` → `Mật khẩu hiện tại` + `Mã xác thực` → `getByRole("alertdialog").getByRole("button", {name: "Tắt xác thực hai bước"})` | toast "Đã tắt xác thực hai bước"; chữ "Chưa bật"; login lần sau không có bước mã |
 | E-2FA-09 · D11 không lộ | `collectTraffic` suốt E-2FA-01/04 | `leaksOnPage(page, t, [secret, ...codes, totp_token])` = `[]` (URL, storage, cookie đọc được) |
 | E-2FA-10 · token hết hạn | `page.route` trả 401 `INVALID_TOTP_TOKEN` cho `/auth/totp/verify` | chữ "Phiên xác thực đã hết hạn. Hãy đăng nhập lại."; về form đăng nhập |
-| E-2FA-11 · tắt hộ | chi bật 2FA qua API (`enable2faApi`); binh `/users` → hàng chi → menu `⋯` → `menuitem "Tắt 2FA"` → `alertdialog "Tắt 2FA của chi?"` → `button "Tắt 2FA"` | `waitForResponse` 200; toast "Đã tắt 2FA của chi"; hàng binh (chính mình) và hàng `an` (chưa bật) không có `menuitem "Tắt 2FA"` |
-| E-2FA-12 · M4-AC12 | `an` (member): menu avatar; `goto /account/2fa` | không có `menuitem "Xác thực hai bước"`; trạng thái 403 (ms §12.4) |
+| E-2FA-11 · tắt hộ | chi bật 2FA qua API (`enable2faApi`); binh `/users` → hàng chi → `button "Thao tác khác"` → `menuitem "Tắt 2FA"` → `alertdialog "Tắt 2FA của chi?"` → `button "Tắt 2FA"` | `waitForResponse` 200; toast "Đã tắt 2FA của chi"; hàng binh (chính mình) và hàng `an` (chưa bật) không có `menuitem "Tắt 2FA"` |
+| E-2FA-12 · M4-AC12 | `an` (member): menu avatar; `goto /account/2fa` | không có `menuitem "Xác thực hai bước"`; chuyển về `/member` (như E20) |
+| E-2FA-13 | dialog tắt (E-2FA-08) với mật khẩu sai; với mã sai; dialog tạo lại mã (E-2FA-07) với mã sai | mỗi ca: `alert` trong dialog có chữ của `twofa.error.wrongCreds` (đọc từ `vi.json`); dialog còn mở, 2FA vẫn bật |
 
 ### 5.2 `e2e/m4-transfer.spec.ts` (FE5a–b; nhãn: missing-screens §8)
 

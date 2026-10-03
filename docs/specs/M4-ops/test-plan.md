@@ -13,7 +13,7 @@ C + D: [test-plan-cd.md](test-plan-cd.md). Nguồn: spec §2, §8 · plan-contra
 | Reset | `beforeEach` = reset M3 + `DELETE hub.usage_logs` (quota/alerts theo `TRUNCATE tenants CASCADE`). **`audit_log` không TRUNCATE được** (trigger) → mốc `mark = max(seq)` đầu ca, đếm `seq > mark`; API lọc `entity_id`/`q` hoặc khẳng định bất biến |
 | Thời gian | `inMonth()` = `now() − 1 phút` (nếu < 10 phút từ đầu tháng VN thì đầu tháng + 1 s); ranh giới tháng: rules R1 + int U3, AL9 |
 | Mail | int: `deps.mailer = createMemoryMailer()` hoặc stub ném `MailError`; proc: Mailpit `GET :8025/api/v1/search`, lọc theo tên tenant riêng của ca + mốc thời gian |
-| Chờ | không `sleep`: `expect.poll` ≤ 5 s; "không gửi thêm / không NOTIFY" = sentinel (M3 §1) |
+| Chờ | không `sleep`: `expect.poll` ≤ 5 s (PUT quota **không** chờ `evaluateTenant` → mọi khẳng định `quota_alerts`/mail ở AL1–AL6 dùng `expect.poll`); "không gửi thêm / không NOTIFY" = sentinel (M3 §1) |
 | Strict | lỗi: `ErrorResponseSchema` + `API_ERRORS[code]`; 200: schema contract strict; rò `cost_usd`: quét **chuỗi** body |
 | Bẫy | CONVENTIONS §2 "Bẫy đã gặp" (`sql.json` cho jsonb audit, mốc `from` listener, `waitForResponse` đặt trước click) |
 
@@ -47,13 +47,13 @@ C + D: [test-plan-cd.md](test-plan-cd.md). Nguồn: spec §2, §8 · plan-contra
 | R12 | M4-R08 | 〃 | `toCsv`: BOM U+FEFF, CRLF; ô có `,` `"` xuống dòng → quote; ô bắt đầu `= + - @ 	 
 ` → tiền tố `'` (6 ca, vd `=HYPERLINK(…)`); null → `""` |
 | R13 | M4-R08 | 〃 | `stripCost(tenant_admin, …)` xoá **đệ quy** `cost_usd`, `margin_usd`, `tenants` (cả trong `kpi`, `previous`, `daily[]`, `top_*[]`); platform giữ nguyên |
-| R14 | M4-R10 · BR-04 | `audit-snapshot.rules.test.ts` | `auditSnapshot` 11 entity: đúng allowlist plan §4.1 (dto thừa `password_hash`, `last4`, `updated_at` bị bỏ); secret chỉ `name, note` |
-| R15 | M4-R10 | 〃 | `containsForbiddenKey`: 9 khoá cấm ở độ sâu 3 (trong mảng) → true; sạch → false; `auditSnapshot` ném khi `workflow.input_schema` chứa `{password}` |
+| R14 | M4-R10 · BR-04 | `audit-snapshot.rules.test.ts` | `auditSnapshot` đủ **12** entity: đúng allowlist plan §4.1 (dto thừa `password_hash`, `last4`, `updated_at` bị bỏ); secret chỉ `name, note`; `config` chỉ `from_config_version, added, updated, secrets_created, truncated` |
+| R15 | M4-R10 | 〃 | `containsForbiddenKey`: 9 khoá cấm ở độ sâu 3 (trong mảng) → true; sạch → false; `auditSnapshot` **không ném** khi `command.input_map` có khoá `password`/`value`/`iv` (giữ nguyên trong snapshot; command lưu + khôi phục được) |
 | R16 | M4-R12 | `audit.rules.test.ts` | `resolveAuditFilter`: tenant_admin undefined/own → tenant own; khác/`"system"` → not_found; platform undefined → all, `"system"` → system, uuid → tenant |
 | R17 | M4-R13 · Q7 · Q8 | 〃 | `canRestore`: platform × 5 entity × {update, delete, restore} × snapshot → true (15 ca); snapshot false, entity khác (7), action khác (6), tenant_admin → false |
 | R18 | M4-R13 | 〃 | `restoreCheck`: update + không tồn tại → NOT_RESTORABLE; update + version lệch → VERSION_CONFLICT; update khớp → ok; delete + còn → NOT_RESTORABLE; delete + không còn → ok |
 | R19 | M4-R12 | 〃 | `encodeCursor/decodeCursor` khứ hồi `"1"`, `"9007199254740993"`; `"!!"`, `""`, base64 của `"abc"`/`"-1"` → null |
-| R20 | contract | `contracts.test.ts` | 3 mã mới = 409; `CONFIG_ENTITIES` có `quota`; `AUDIT_ENTITIES` 12, `AUDIT_ACTIONS` 9; `QuotaSetRequestSchema` từ chối `max_runs 0`/`1.5`, `max_usd "0"`/`"1.234"`/`"-1"`, 101 items, khoá thừa; `UsageReportTenantSchema` từ chối `cost_usd`; `User`/`TenantSchema` có `updated_by` |
+| R20 | contract | `contracts.test.ts` | 3 mã mới = 409; **chỉ ở đây** `Object.keys(API_ERRORS).length === 48`; `CONFIG_ENTITIES` có `quota` đứng trước `"batch"`, length 11; `AUDIT_ENTITIES` 12, `AUDIT_ACTIONS` 9; `QuotaSetRequestSchema` từ chối `max_runs 0`/`1.5`, `max_usd "0"`/`"1.234"`/`"-1"`, 101 items, khoá thừa; `UsageReportTenantSchema` từ chối `cost_usd`; `User`/`TenantSchema` có `updated_by` |
 
 ### D · DB / RLS (`M4/db-schema.int.test.ts`, `M4/db-rls.int.test.ts`; owner / `admin_api` / `hub_ro`)
 
@@ -81,6 +81,7 @@ C + D: [test-plan-cd.md](test-plan-cd.md). Nguồn: spec §2, §8 · plan-contra
 | Q6 | FR-40 | feature uuid không tồn tại → 400 `INVALID_REFERENCE` |
 | Q7 | Q9 · FR-55 | PUT `version` cũ → 409 `VERSION_CONFLICT`, `details.current` parse `QuotaSetResponseSchema` (đúng bộ đang lưu), `updated_at`; DB không đổi |
 | Q8 | BR-09 · AC-A09 | binh GET globex 404, GET acme 200, PUT 403; an GET 403; tenant không tồn tại 404 |
+| Q10 | AW9 | PUT cùng bộ đang lưu (no-op) → 200 bộ hiện tại; tenant `version`, `updated_by` không đổi; 0 audit, 0 NOTIFY, không evaluate (0 mail, sentinel) |
 | Q9 | M4-R10 | PUT → 1 audit `update quota` acme, `entity_name acme`, snapshot, `entity_version v+1`, `before/after.items` đúng; 409 → 0 dòng |
 
 ### AL · Cảnh báo quota (`M4/quota-alerts.int.test.ts`; `proc`: `M4/quota-alerts-proc.int.test.ts`) — FR-41, M4-R04, R05, Q2b
@@ -113,6 +114,7 @@ Dữ liệu U: acme tháng này 3 run `ke-toan` (run 3 có **2 hàng**), 1 run f
 | U6 | BR-09 · AC-A09 | binh `?tenant_id=globex` → 404; admin `tenant_id` không tồn tại → 404; an → 403 |
 | U7 | FR-42 | `from>to`, 367 ngày, `from=2026-13-01`, `feature_id=abc` → 400 `VALIDATION_ERROR` |
 | U8 | M4-R09 · M4-AC13 | `usage_logs` rỗng → 200, `has_data false`, kpi 0; không lỗi |
+| U9 | M4-R03 | hàng `usage_logs.run_id` NULL (acme, tháng này, in 100/out 50, billable 0.10, cost 0.06, `overage`): **không** vào `runs`, `overage_runs`, `quotas[].used_runs`; **có** vào `tokens`, `billable_usd`, `cost_usd`, quota token/USD |
 | C1 | M4-R08 | CSV admin acme: BOM, CRLF, header platform, `text/csv; charset=utf-8`, file `usage-acme-{from}-{to}.csv`; Σ runs = `kpi.runs`; NULL → `""` |
 | C2 | M4-R08 · M4-AC03 | CSV binh: header **không** `cost_usd`; toàn văn không chứa `cost_usd` hay giá trị cost `0.06`; không tenant `all` → filename `usage-acme-…` |
 | C3 | BR-09 | CSV binh `tenant_id=globex` → 404; admin không tenant → `usage-all-…`, có dòng globex |
@@ -125,7 +127,7 @@ Dữ liệu U: acme tháng này 3 run `ke-toan` (run 3 có **2 hàng**), 1 run f
 | O2 | M4-R06 | binh 850/1000 → `banner {warn,85}`, `quotas[0].level warn`; `runs_month 850`, `runs_prev_month` từ tháng trước |
 | O3 | M4-R09 | `usage_logs` rỗng → `runs_month null`, `runs_prev_month null`, `has_usage_data false` |
 | O4 | M4-R12 | `recent_changes` ≤8, chỉ `tenant_id` acme (sau khi admin sửa command + globex group) |
-| O5 | Q5 | admin → `platform`: đếm khớp seed; `unavailable` đủ 2; `quota_tenants` level ≠ none, pct giảm; `runs_24h` không tính hàng 25 giờ trước; `recent_changes` có hàng NULL |
+| O5 | Q5 | admin → `platform`: đếm khớp seed; `unavailable` đủ 2; `quota_tenants` level ≠ none, `pct` tenant = **max** các quota của tenant (2 quota 40%/90% → 90), giảm dần; `runs_24h` không tính hàng 25 giờ trước; `recent_changes` có hàng NULL |
 | O6 | M4-AC12 | an → 403 |
 
 ### AW · Ghi audit (`M4/audit-write.int.test.ts`, `M4/audit-secrets.int.test.ts`) — FR-51, M4-R10, Q6
@@ -137,10 +139,10 @@ Dữ liệu U: acme tháng này 3 run `ke-toan` (run 3 có **2 hàng**), 1 run f
 | AW3 | M4-AC04 | groups POST/PATCH/DELETE · snapshot true; member thêm/bớt → `update`, `summary.added/removed`, before/after null |
 | AW4 | M4-AC04 | grant POST/DELETE → grant/revoke, `summary.subject_*`, `feature_key`; batch 3 cặp đổi + 1 có sẵn → 3 dòng |
 | AW5 | M4-AC04 | entitlement PUT/DELETE → grant/revoke · entitlement · tenant được cấp |
-| AW6 | M4-AC04 | workflow/command/feature POST/PATCH/DELETE → create/update/delete · NULL · snapshot true; command `entity_name '/dich'`; `entity_version` = version sau; delete `after null` |
+| AW6 | M4-AC04 | (thêm: POST command `input_map` có khoá `password`/`value`/`iv` → 201, 1 dòng audit, không 500) workflow/command/feature POST/PATCH/DELETE → create/update/delete · NULL · snapshot true; command `entity_name '/dich'`; `entity_version` = version sau; delete `after null` |
 | AW7 | M4-AC04 | secret POST/PUT giá trị/PATCH note/DELETE → create/update/update/delete · secret · NULL; PUT giá trị: `summary.value_changed true` |
 | AW8 | M4-R10 | mỗi dòng: `actor_id`, `actor_username` = người gọi; `config_version` = `v` của NOTIFY cùng thao tác (listener từ mốc) |
-| AW9 | M4-R10 | no-op (PATCH không đổi, grant đã có, entitlement đã có) → 0 dòng (sentinel `POST group globex`) |
+| AW9 | M4-R10 | no-op (PATCH không đổi, grant đã có, entitlement đã có, PUT quota cùng bộ: Q10) → 0 dòng (sentinel `POST group globex`) |
 | AW10 | M4-R10 · M4-AC04 | `testHooks.afterLock` ném ở bước `bump` khi PATCH `/dich` → 500, `/dich` không đổi, 0 dòng audit |
 | AW11 | Q6 | login, refresh, logout, tự đổi mật khẩu, sai mật khẩu → 0 dòng |
 | AW12 | M4-R10 | 409 `VERSION_CONFLICT`, 400 validate, 404 → 0 dòng |
@@ -203,31 +205,7 @@ Dữ liệu: owner đặt `/dich` version 42, admin PATCH `description` "B" (→
 | F2 | binh → 403: PUT quotas, restore; 404: quotas/usage/usage.csv/audit của globex |
 | F3 | không token → 401 |
 
-### E · e2e (Playwright; nhãn nguyên văn plan-frontend §6, ms §1/§4.3/§7/§12.5)
-
-| # | File | Mã | Kịch bản → kỳ vọng |
-|---|---|---|---|
-| E1 | `m4-quota.spec.ts` | FR-40 | admin `?tab=quota`: `spinbutton "Số run · Cả tenant"` 1000; `+ Thêm quota theo feature` → `combobox "Chọn feature"` Kế toán → `"Số USD · Kế toán"` 300; `Lưu` (chờ PUT 200); reload còn |
-| E2 | 〃 | FR-40 | nhập `0` → "Nhập số lớn hơn 0 hoặc để trống"; USD `1.234` → "Tối đa 2 chữ số thập phân"; run `1.5` → "Nhập số nguyên"; không gửi PUT |
-| E3 | 〃 | M4-AC02 | không quota → hàng "Cả tenant", chữ "Không giới hạn", không `progressbar`; `button "Bỏ quota Kế toán"` → lưu → hàng biến mất |
-| E4 | 〃 | Q9 | sửa run trong lúc API đổi quota (version +1) → `alertdialog "Có người vừa lưu bản mới hơn"` |
-| E5 | `m4-usage.spec.ts` | FR-42 | admin `link "Chi phí & quota"`: `combobox "Tenant"`, `"Kỳ"`; 5 `region` KPI (cả "Chi phí thật", "Biên"); `img` "Số thu theo ngày…"; `table "Theo tenant"` có acme, globex |
-| E6 | 〃 | M4-R08 · M4-AC03 | binh `/usage`: không `combobox "Tenant"`, `region "Chi phí thật"`/`"Biên"`; response không chứa `cost_usd` |
-| E7 | 〃 | M4-R07, R08 | `region "Top feature theo số thu"` có "Không theo feature", "Chưa định giá", badge "Vượt quota" |
-| E8 | 〃 | FR-42 | `button "Xuất CSV"` → `download` tên `usage-acme-…csv`, nội dung bắt đầu BOM, binh không cột `cost_usd` |
-| E9 | 〃 | M4-R09 · M4-AC13 | usage rỗng → KPI "—", hover → "Chưa có dữ liệu từ Agent Hub"; không `ErrorState` |
-| E10 | `m4-overview.spec.ts` | M4-R06 · AC-A12 | 850/1000: binh `alert` "Đã dùng 85% quota tháng này" + `link "Xem chi tiết"` → `/usage`, không nút đóng, có cả ở `/users`; 1001 (hàng cuối overage) → "Đang vượt quota, phần vượt được tính phí" + badge "Vượt quota" ở `/usage` |
-| E11 | 〃 | M4-R06 | admin cùng dữ liệu → không `alert` quota; không quota → binh không `alert` |
-| E12 | 〃 | ui 7.2 | binh `/`: `region` "Users đang hoạt động", "Quota tháng" (`progressbar "Run"`), "Người dùng mới chưa đăng nhập", "Thay đổi gần đây"; `link "Xem nhật ký"` |
-| E13 | 〃 | Q5 · M4-AC13 | admin `/`: `link "Tạo tenant"`, `"Tạo command"`; "Tenant sắp hoặc đã vượt quota" có acme; "Sẽ có khi Agent Hub sẵn sàng." ×2; rỗng → "—" |
-| E14 | `m4-audit.spec.ts` | FR-51 | admin sửa `/dich` (API) → `/audit`: `listitem` "admin đã sửa command /dich"; `Xem thay đổi` → `dialog`, `table "Thay đổi"` có "đã đổi", URL `/audit/{id}`; `Đóng` → `/audit` |
-| E15 | 〃 | FR-52 · M4-AC08 | (v42→v43 như RS) `Khôi phục bản trước` → `alertdialog "Khôi phục /dich về trạng thái trước v43?"` → `Khôi phục` (chờ POST 200) → toast "Đã khôi phục /dich · v44" |
-| E16 | 〃 | M4-R13 | NAME_TAKEN (RS3 dữ liệu) → toast "Không khôi phục được: /dich đã được dùng bởi command khác" |
-| E17 | 〃 | BR-04 | thay giá trị secret → chi tiết "Giá trị: đã thay đổi", trang không chứa `LEAK_2` (`leaksOnPage`) |
-| E18 | 〃 | Q8 · M4-AC07 | binh `/audit`: dòng acme, không "Toàn hệ thống", không `Khôi phục bản trước`; `/audit/{id globex}` → "Không tìm thấy" |
-| E19 | 〃 | M4-R12 | 55 dòng `m4-page-*` → tìm "m4-page" → `Tải thêm` → > 50 `listitem` |
-| E20 | 〃 | M4-AC12 | an `/audit`, `/usage` → `/member` |
-| E21 | `m4-conflict.spec.ts` | M4-R17 · M4-AC14 | user `lan` / tenant acme, admin (API) lưu trước → "admin vừa sửa user này lúc … (v{n}). Bản của bạn dựa trên v{m}."; `Ghi đè` → "Lịch sử vẫn giữ v{n}." |
+### E · e2e — phụ lục [test-plan-ab-e2e.md](test-plan-ab-e2e.md) (E1–E22; chạy `bunx playwright test e2e/m4-`)
 
 ## 4. AC → test (chốt M4-AC01–14; sửa/thêm)
 
@@ -249,7 +227,7 @@ Dữ liệu: owner đặt `/dich` version 42, admin PATCH `description` "B" (→
 | M4-AC17 (mới) | RLS 3 bảng mới; `hub_ro` chỉ đọc `tenant_quotas` | D5, D6, D8 |
 | M4-AC18 (mới) | mail lỗi không hỏng ghi quota, giữ `pending` | AL5, AL6 |
 
-Độ phủ FR MUST A+B: FR-40 ✓ · FR-41 ✓ · FR-42 ✓ · FR-51 ✓ · FR-52 ✓ · BR-04 (vế audit) ✓ · BR-09 ✓ → **5/5 FR**.
+Độ phủ A+B: FR MUST 40, 41, 42, 51 ✓ → **4/4 MUST**; FR-52 (SHOULD) ✓ → **+1 SHOULD**; BR-04 (vế audit), BR-09 ✓.
 
 ## 5. Sửa test đã khoá (phạm vi đã duyệt, không phải tranh chấp; Q2 sửa, Q3 khoá lại)
 
@@ -261,8 +239,8 @@ Tổng sau M4 (A+B+C+D): migration main **9** (`0007_m4_ops`, `0008_admin_totp`)
 | K2 | `M1/db-schema.int` (l.69–98, 282–285) | như K1; bỏ "không có `tenant_quotas`/`audit_log`"; giữ "users không `totp_secret`" | 〃 |
 | K3 | `M2/db-schema.int` (l.53, 138–146, 460–464), `M3/db-schema.int` (l.51, 95–105, 437–440) | `ADMIN19`, `{9,3}`/`{9,0}`, bỏ "không có audit_log, tenant_quotas" | 〃 |
 | K4 | `M1/db-rls`, `M2/db-rls` (l.275–293), `M3/db-rls` (l.290–307) | RLS bật 13 / tắt 6 | 〃 |
-| K5 | `M1|M2|M3/rules/contracts` (l.55, 116, 70) | `API_ERRORS` 48 | T0b + T7 |
-| K6 | `M3/rules/contracts` (l.118–129) | `CONFIG_ENTITIES` = `arrayContaining([...10 cũ,"quota"])` + length 11 | T0b |
+| K5 | `M1|M2|M3/rules/contracts` (l.55, 116, 70) | `toMatchObject` tập mã cũ (cách test-plan-cd §8), không đếm; đếm 48 chỉ ở R20 | T0b + T7 |
+| K6 | `M3/rules/contracts` (l.118–129) | `CONFIG_ENTITIES` = `arrayContaining([...10 cũ,"quota"])` + length 11 (quota trước `"batch"`) | T0b |
 | K7 | `M2/error-codes.int` (l.81–82) | lọc 12 mã M4 khỏi `M2_CODES`, giữ 11 | T0b/T7 |
 | K8 | `M3/i18n-conflict` (l.106–116) | bỏ "không có 'Lịch sử'"; kiểm `conflict.overwrite.history` "Lịch sử vẫn giữ v{n}." | FE0a |
 | K9 | `e2e/conflict-users`, `conflict-tenants` (ca 1) + `support/conflict.ts` | `user: "admin"` (R17), "Ghi đè thay đổi của admin?" | FE0a, T1b |
@@ -279,9 +257,9 @@ Tổng sau M4 (A+B+C+D): migration main **9** (`0007_m4_ops`, `0008_admin_totp`)
 | rules | `M4/rules/quotas.rules.test.ts` (R1–R8), `usage.rules.test.ts` (R9–R13), `audit-snapshot.rules.test.ts` (R14–R15), `audit.rules.test.ts` (R16–R19), `contracts.test.ts` (R20) |
 | int | `M4/db-schema.int`, `db-rls.int`, `quotas.int`, `quota-alerts.int`, `quota-alerts-proc.int`, `usage.int`, `usage-csv.int`, `overview.int`, `audit-write.int`, `audit-secrets.int`, `audit-read.int`, `restore.int`, `updated-by.int`, `notify.int`, `forbidden.int` (`.test.ts`) |
 | i18n | `M4/i18n-ab.test.ts`: mọi nhãn e2e §3-E có làm giá trị trong `vi.json` |
-| e2e | `e2e/m4-quota.spec.ts`, `m4-usage.spec.ts`, `m4-overview.spec.ts`, `m4-audit.spec.ts`, `m4-conflict.spec.ts` |
+| e2e (xem phụ lục) | `e2e/m4-quota.spec.ts`, `m4-usage.spec.ts`, `m4-overview.spec.ts`, `m4-audit.spec.ts`, `m4-conflict.spec.ts` |
 
-Số ca dự kiến: rules ≈ 75 · int ≈ 105 · i18n 1 · e2e 21.
+Số ca dự kiến: rules ≈ 75 · int ≈ 105 · i18n 1 · e2e 22.
 
 Xanh: rules/contracts T0b · db-* T0 · audit-write/secrets T1–T1c · updated-by T1b · audit-read T2 · quotas T3 · quota-alerts* T4 · restore T2b · usage* T5 · overview, forbidden T6 · e2e: quota FE1, usage FE2, overview FE3, audit FE4b, conflict FE0a.
 
@@ -291,13 +269,8 @@ Xanh: rules/contracts T0b · db-* T0 · audit-write/secrets T1–T1c · updated-
 |---|---|---|---|
 | (Q2 điền) | `bun --env-file=.env.test-qc.local test tests/acceptance/M4/<file>` | | |
 
-## 8. Cần bổ sung (trước Q2)
+## 8. Đã chốt (spec-readiness lần 1, người dùng chấp nhận 2026-10-03)
 
-| Agent | Việc |
-|---|---|
-| backend-lead | `PUT quotas` có **await** `evaluateTenant` sau commit trước response? (đề xuất: có, lỗi nuốt) |
-| backend-lead | PUT quota không đổi gì (cùng bộ): tenant `version` có tăng, có audit/NOTIFY? (đề xuất: như M3 no-op → không bump, không audit) |
-| backend-lead | `CONFIG_ENTITIES`: vị trí `"quota"` (đề xuất: trước `"batch"`) |
-| backend-lead | proc AL10: env cổng/`SMTP_URL` khi spawn `server.ts` |
-| frontend-lead | tooltip KPI "—" có `role=tooltip`? (E9) |
-| người dùng/orchestrator | spec §8 Lệnh xong `bunx playwright test M4` → đề xuất `bunx playwright test m4-` (tên file chữ thường) |
+PUT quota không chờ evaluate (AL dùng `expect.poll`); no-op → 200 không bump (Q10); `quota` trước `"batch"`; tooltip KPI `role=tooltip`; lệnh `bunx playwright test e2e/m4-`. proc AL10: env cổng/`SMTP_URL` theo plan §6 (backend-lead ghi vào plan nếu thiếu).
+
+Cần bổ sung: backend-lead: `auditSnapshot` có còn ném ở chỗ nào khác ngoài `containsForbiddenKey` trực tiếp (R15)? qc đã bỏ ca ném trên `workflow.input_schema`.
