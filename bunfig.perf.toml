@@ -1,0 +1,6 @@
+[install]
+linker = "isolated"
+
+[test]
+# Bộ đo hiệu năng (p95, ngân sách spec §6). Không thuộc "Lệnh xong" mốc; chạy khi máy rảnh: `bun run test:perf`.
+pathIgnorePatterns = ["e2e/**", "**/node_modules/**", "**/__fixtures__/**"]

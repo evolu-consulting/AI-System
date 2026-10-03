@@ -14,6 +14,7 @@
     "typecheck": "turbo run typecheck && tsc -p tsconfig.tests.json",
     "test": "bun test",
     "test:int": "bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 .int.test",
+    "test:perf": "PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test --timeout 60000 .perf.int.test config-write.int.test",
     "check:bundle": "turbo run check:bundle",
     "e2e": "playwright test",
     "keys:dev": "bun tools/scripts/src/keys-dev.ts",

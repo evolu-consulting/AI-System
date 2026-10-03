@@ -110,7 +110,8 @@ describe("ADM-FR-53 · configWrite + NOTIFY sau commit (M3-R16)", () => {
   });
 });
 
-describe("ADM-FR-53 · chi phí bump + NOTIFY (spec M3 §6)", () => {
+// Đo hiệu năng không chặn mốc (người dùng 2026-10-03): chỉ chạy trong `bun run test:perf` (PERF=1).
+describe.skipIf(!process.env.PERF)("ADM-FR-53 · chi phí bump + NOTIFY (spec M3 §6)", () => {
   // Hai nhánh cùng UPDATE một hàng không phải cấu hình: mọi configWrite thật đều đã ghi dữ liệu, nên chi phí commit
   // tx có ghi (WAL flush) là của câu ghi, không phải của bump. So nhánh chỉ đọc sẽ tính nhầm phần đó vào bump.
   beforeAll(async () => {
