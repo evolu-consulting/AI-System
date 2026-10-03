@@ -62,7 +62,11 @@ async function parseError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, "HTTP_ERROR", res.statusText || `HTTP ${res.status}`);
 }
 
-async function exec<T>(path: string, opts: RequestOptions, token: string | null): Promise<T> {
+async function execRaw(
+  path: string,
+  opts: RequestOptions,
+  token: string | null,
+): Promise<Response> {
   const headers: Record<string, string> = { Accept: "application/json", ...opts.headers };
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -80,6 +84,11 @@ async function exec<T>(path: string, opts: RequestOptions, token: string | null)
     throw new ApiError(0, "NETWORK_ERROR", "Network error");
   }
   if (!res.ok) throw await parseError(res);
+  return res;
+}
+
+async function exec<T>(path: string, opts: RequestOptions, token: string | null): Promise<T> {
+  const res = await execRaw(path, opts, token);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
@@ -99,5 +108,18 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
     const fresh = await hooks.refresh(token);
     if (!fresh) throw err;
     return exec<T>(path, opts, fresh);
+  }
+}
+
+/** Như `api` nhưng trả `Response` thô (tải file: CSV, JSON export); cùng quy tắc Bearer + refresh 1 lần. */
+export async function apiResponse(path: string, opts: RequestOptions = {}): Promise<Response> {
+  const token = hooks?.getToken() ?? null;
+  try {
+    return await execRaw(path, opts, token);
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.code !== "UNAUTHORIZED" || !hooks) throw err;
+    const fresh = await hooks.refresh(token);
+    if (!fresh) throw err;
+    return execRaw(path, opts, fresh);
   }
 }

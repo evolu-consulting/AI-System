@@ -1284,6 +1284,29 @@
       "after": "After",
       "changed": "changed",
       "unchanged": "{n} unchanged fields · Show"
+    },
+    "period": {
+      "days": "Period: {n} days",
+      "preset": "{n} days",
+      "label": "Quick range",
+      "custom": "Custom",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply"
+    }
+  },
+  "usage": {
+    "chart": {
+      "title": "Revenue by day",
+      "inQuota": "Within quota",
+      "over": "Over quota",
+      "bar": "{date} · {amount}",
+      "summary": "Revenue by day, total {total}, peak {max} on {date}"
+    }
+  },
+  "transfer": {
+    "toast": {
+      "downloaded": "Downloaded {file}"
     }
   }
 }

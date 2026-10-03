@@ -1284,6 +1284,29 @@
       "after": "Sau",
       "changed": "đã đổi",
       "unchanged": "{n} trường không đổi · Hiện"
+    },
+    "period": {
+      "days": "Thời gian: {n} ngày",
+      "preset": "{n} ngày",
+      "label": "Khoảng nhanh",
+      "custom": "Tuỳ chọn",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "apply": "Áp dụng"
+    }
+  },
+  "usage": {
+    "chart": {
+      "title": "Số thu theo ngày",
+      "inQuota": "Trong quota",
+      "over": "Vượt quota",
+      "bar": "Ngày {date} · {amount}",
+      "summary": "Số thu theo ngày, tổng {total}, cao nhất {max} ngày {date}"
+    }
+  },
+  "transfer": {
+    "toast": {
+      "downloaded": "Đã tải {file}"
     }
   }
 }
