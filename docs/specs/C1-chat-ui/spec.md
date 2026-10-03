@@ -2,7 +2,7 @@
 id: C1-chat-ui
 title: Chat UI + contract Chat↔Hub + mock Hub
 milestone: C1
-status: approved           # draft → ready → approved → in-progress → done
+status: done               # draft → ready → approved → in-progress → done
 requirements: [CHAT-AC-01..30, HUB-FR-40, HUB-FR-41, HUB-FR-42, HUB-FR-43, HUB-FR-45]
 design: [docs/design/chat-app/usecases-chat.md, docs/design/chat-app/ui-chat-extension.md#2-kiến-trúc-thông-tin, docs/design/agent-hub/ba-agent-hub.md#9-api--sự-kiện-stream, canvas: docs/design/chat-app/canvas/ (Main, FlowOpen, Welcome, States, Mobile)]
 owner: backend-lead + frontend-lead
@@ -148,7 +148,7 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 - B1: `CHAT_RUN_ERROR_CODES` đặt ở `chat/errors.ts` (không ở `events.ts`) để `entities.ts` dùng mà không vòng import; vẫn export qua `@ai/contracts/chat`.
 - B1: thêm hằng phụ không đổi hành vi: `CHAT_ASK_QUESTION_MAX` 2000, `CHAT_STEP_ID_MAX` 64, `CHAT_STEPS_MAX` 50, `CHAT_DELTA_MAX` 4000, tên header `X-Run-Id`/`X-Flow-Id`/`X-Message-Id`/`Last-Event-ID`, `SSE_PING_FRAME`, `SSE_CONTENT_TYPE`. `MessageSchema` ép: tin `user` có `content` 1–16000, `run`/`ask` = null; `RunSummary.error` khác null ⇔ `failed`/`cancelled` (đúng §2.3). `AskDataSchema` = `AskSchema`.
 - B1: `deriveTitle` bỏ tiền tố `#scn:\S*` sau khi `trimStart`; cắt đúng 40 code point rồi thêm `…` (không trimEnd trước `…`). Parser SSE: khung không có dòng `data:` không phát (đặc tả SSE); `event` thiếu → `"message"`.
-- B2: thu hồi access (M3) theo mốc **số thứ tự cấp** (`jti` = seq tăng trong tiến trình), không theo ms: token cấp cùng ms/giây trước và sau `expire-access` vẫn phân biệt; logout huỷ phiên `sid` ⇒ access của phiên đó cũng 401. Refresh token cũ dùng lại → `REFRESH_SUPERSEDED`, không huỷ phiên (giống Admin: tab thua cuộc đua). Extension (`X-Client: extension`) nhận/gửi `refresh_token` trong body, không cookie.
+- B2: thu hồi access (M3) theo mốc **số thứ tự cấp** (`jti` = seq tăng trong tiến trình), không theo ms: token cấp cùng ms/giây trước và sau `expire-access` vẫn phân biệt; logout huỷ phiên `sid` ⇒ access của phiên đó cũng 401. Refresh token **ngay trước** dùng lại → `REFRESH_SUPERSEDED`, không huỷ phiên (tab thua cuộc đua); token cũ hơn → `INVALID_REFRESH_TOKEN`, mock không thu hồi chuỗi (khác Admin; review C1 vòng 2 m3). Extension (`X-Client: extension`) nhận/gửi `refresh_token` trong body, không cookie.
 - B2: `/health` mock: `createHubMock({timeoutMs})` kiểu M0 giữ `version:"mock"` (test M0-AC15 ghim); env từ `loadMockEnv` (bộ test contract, `bun run mocks`) trả `"0.0.0-mock"` (semver, qua `HealthResponseSchema`, K-A6) → không tranh chấp test. `GET /conversations` B2 là khung tạm (trang rỗng + validate query) tới B3.
 - B3: cursor = base64url(JSON `[số, chuỗi]`) của phần tử cuối trang (E5 `[updated_at_ms, id]`, E10 `[created_at_ms, id]`, E11 `[thứ tự thêm, id]`); không giải mã được hoặc không chính tắc → 400 `VALIDATION_ERROR`.
 - B3: đồng hồ store tăng nghiêm ngặt (≥ 1 ms mỗi thao tác) → hai thao tác liền nhau không trùng `updated_at` (K-C4, K-M10 tất định); sở hữu = `user_id` **và** `tenant_id` khớp claims.
@@ -182,3 +182,8 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 ## 10. Tranh chấp test
 - **E-S5** (`e2e/chat/send.chat.ts` "quota-over … vẫn gửi tiếp được", frontend-lead F13, 2026-10-04): test gõ "tiếp tục" + Enter ngay sau khi ẩn nhắc, lúc run đầu (`#scn:quota-over`) **còn đang stream** — trace: SSE E12 kéo dài ~474 ms (13190→13664), Enter lúc 13415 → nút đang là "Dừng", Enter không gửi (BA `usecases-chat.md` UC-02 Phụ: "Đang có run: gõ trước được nhưng không gửi được"; `ui-chat-extension.md` §Đang chạy: "Nút gửi thành ■ Dừng … vẫn gõ trước được, nhưng không gửi được"; plan-frontend §3, §5). Trang `/c/:id` có đủ composer chính `textbox "Tin nhắn"` (placeholder "Hỏi điều mới…"); sau khi run xong gửi được bình thường. Đề xuất qc: trước `sendMain(page, "tiếp tục")` chờ run xong, vd `await expect(page.getByRole("button", { name: "Gửi" })).toBeVisible()` (hoặc chờ `nextSendResponse` của tin đầu kết thúc). Code giữ đúng design.
 - **Phân xử (qc, 2026-10-04): test sai → đã sửa test.** BA UC-02 Phụ ("Đang có run: gõ trước được nhưng không gửi được") và ui-chat-extension §Đang chạy cho thấy Enter khi nút là "Dừng" không gửi là đúng; quota `over` "không chặn" chỉ nói về dòng nhắc, không cho gửi chồng run. Ca E-S5 nay chờ `button "Gửi"` (exact) hiện lại rồi mới `sendMain(page, "tiếp tục")` — sửa tối thiểu 1 dòng, kỳ vọng giữ nguyên (body gửi = "tiếp tục"). Code không đổi. Chạy cả bộ e2e chat 2 lần (4051/3151): 41/41 · 41/41.
+
+## 11. Kết luận (2026-10-04)
+- QV xanh (`test-plan.md` §9.1): `bun test` gốc 1484 pass; acceptance C1 39/39; contract 62/62 (CHAT-AC-32 với mock thứ hai: 61 pass / 1 skip theo thiết kế); e2e chat 41/41; depcruise 0; check:fn/size/i18n OK; bundle JS 110,7 KB, chunk lớn nhất 43,4 KB; lock 195 file; 36/36 CHAT-AC có test xanh.
+- Review: vòng 1 CHANGES REQUESTED (2 Major frontend: nối lại vô hạn, nháp không gắn user; 5 Minor) → sửa ở 6 commit (`a30ce41`, `ea242a6`, `bad808f`, `f9fe2bc`, `8326f03`, `b5252a4`); vòng 2 APPROVED, 3 Minor: m1, m2 → TECH-DEBT #40, #41; m3 sửa câu chữ tại chỗ.
+- Còn lại: chạy với Hub thật (H1, phiên khác) bằng `HUB_URL`/`AUTH_URL` + `bun run test:contract:chat`. `trace --check` báo HUB-FR-40/41/43/45 là do spec H1 (ngoài C1).

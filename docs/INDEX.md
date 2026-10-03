@@ -41,6 +41,7 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 | `specs/_design/admin-missing-screens.md` | Màn chưa có artboard (chuỗi, trạng thái) |
 | `../packages/db/README.md` | Schema, migration, RLS, seed: file vào + bẫy |
 | `../apps/admin-api/src/modules/{auth,tenants,users,health,secrets,workflows,commands,features}/README.md` | Module API: FR, file vào, bẫy |
+| `../apps/chat-web/README.md`, `../apps/chat-web/src/features/{auth,shell,conversations,thread,composer,run,answer,flow-panel}/README.md`, `../tools/mocks/README.md` | Chat app, feature, mock Hub chat: FR, file vào, bẫy |
 | `../apps/admin-web/README.md`, `../apps/admin-web/src/features/{auth,shell,tenants,users,secrets,workflows,commands,features}/README.md` | App web và feature: FR, file vào, bẫy |
 | `specs/_template/` | Mẫu cho spec mới |
 | `readiness/` | Báo cáo spec-readiness trước khi có spec (vd `2026-10-01-admin-m1-m4.md`) |
@@ -53,5 +54,5 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 | `M2-catalog-command` | Secrets, Workflows, Commands (không Test), Features + entitlement | M2 | done (2026-10-02) |
 | `M3-permissions` | Groups, Grants + ma trận, Kiểm tra quyền, NOTIFY `config_changed`, chống ghi đè (modal 409); dồn từ M2: vế ≤ 5 s AC-A03, FR-24 group/grant | M3 | draft (2026-10-02, Gate đã trả lời, chờ plan) |
 | `M4-ops` | Quota + cảnh báo, Chi phí & quota, Tổng quan, Audit + khôi phục, Import/Export, 2FA (FR-40–42, 51, 52, 54, 08; AC-A12 phía Admin) | M4 | draft (2026-10-03, chờ plan BE ∥ FE) |
-| `C1-chat-ui` | Chat UI (`apps/chat-web`) + contract Chat↔Hub + mock Hub chat + bộ test contract dùng chung (flow, Consultant; CR-018…022) | C1 | draft (2026-10-03, chờ plan BE ∥ FE) |
+| `C1-chat-ui` | Chat UI (`apps/chat-web`) + contract Chat↔Hub + mock Hub chat + bộ test contract dùng chung (flow, Consultant; CR-018…022) | C1 | done (2026-10-04) |
 | `H1-hub-core` | Hub lõi `apps/hub-api` (JWT, hội thoại/flow/SSE, Orchestrator, `AgentRunner`) + Agent Runtime Python tối thiểu (`claude-sub`, sandbox, queue) + schema `hub` + contract zod→pydantic; Hub thật pass test contract chat (HUB-FR-01–03, 20–29, 40–45, 74–77, 83, 86, 88–90; WRK-FR-01–05, 10–15, 17, 20, 23–25) | H1 | draft (2026-10-04, chờ plan BE ∥ Python) |

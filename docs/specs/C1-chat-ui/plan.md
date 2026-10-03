@@ -184,7 +184,7 @@ Thứ tự chọn: tiền tố `#scn:<tên hợp lệ>` → flow nghỉ ⇒ `flo
 | `beta` | `an` | An | active | cách ly khác tenant |
 | `acme` | `khoa` | Khoa | locked → 403 `ACCOUNT_LOCKED` | CHAT-AC lỗi khoá |
 
-Sai tenant/user/mật khẩu → 401 `INVALID_CREDENTIALS` (không nói trường nào). Login luôn trả `status:"authenticated"` (`TokenGrant`, `user` = `Me` đủ trường: `role:"member"`, `locale:"vi"`, `totp_enabled:false`, `backup_codes_left:0`, `email:null`). Cookie `ai_rt=<opaque>; HttpOnly; SameSite=Strict; Path=/auth; Max-Age=2592000`. Refresh xoay vòng: token cũ dùng lại → 401 `REFRESH_SUPERSEDED`; lạ → `INVALID_REFRESH_TOKEN`. Logout huỷ refresh token.
+Sai tenant/user/mật khẩu → 401 `INVALID_CREDENTIALS` (không nói trường nào). Login luôn trả `status:"authenticated"` (`TokenGrant`, `user` = `Me` đủ trường: `role:"member"`, `locale:"vi"`, `totp_enabled:false`, `backup_codes_left:0`, `email:null`). Cookie `ai_rt=<opaque>; HttpOnly; SameSite=Strict; Path=/auth; Max-Age=2592000`. Refresh xoay vòng: token **ngay trước** dùng lại → 401 `REFRESH_SUPERSEDED` (không thu hồi chuỗi); token cũ hơn hoặc lạ → `INVALID_REFRESH_TOKEN` (khác Admin: Admin thu hồi chuỗi). Logout huỷ refresh token.
 
 ### 3.5 Seed của `minh` (thời điểm tương đối lúc khởi động / reset)
 
