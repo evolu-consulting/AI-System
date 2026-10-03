@@ -3,6 +3,7 @@
 Cập nhật: 2026-10-03 · Người cập nhật: docs-architect (đóng M3)
 
 ## Đang ở đâu
+- **M4 bắt đầu** (2026-10-03): spec `docs/specs/M4-ops/spec.md` (`status: draft`, 12 mã yêu cầu, 17 luật M4-R, 14 AC bổ sung, 14 câu hỏi mở có mặc định) + `tasks.md` khung. Kế tiếp: plan BE ∥ FE, ADR-0004 (thư viện mới), test-plan, readiness, Gate.
 - **M3 xong** (2026-10-03, trên `main`, KHÔNG push). Nghiệm thu xanh: `bun test` 963/963, `test:int` 885/885, e2e 159/159, i18n, build, `check:bundle` (JS đầu ~121,6 KB, chunk lớn nhất ~26,7 KB), lock, `trace --check`, `check:size --all`, `depcruise --all` 0 vi phạm, `check:fn --all`. Sau Minor vòng 2: unit 179/179, ma trận int 21/21, e2e liên quan 43/43. Review: vòng 1 CHANGES REQUESTED (BE 2 Major, FE 1 Major; đã sửa), vòng 2 APPROVED. Kết luận: `docs/specs/M3-permissions/spec.md` §9. Spec `status: done`.
 - Người dùng 2026-10-03: hiệu năng không chặn mốc (`bun run test:perf`, TECH-DEBT #27); viết lại policy RLS dạng InitPlan chờ duyệt (#28). Ưu tiên: hoàn tất admin app (M4) rồi người dùng test service. Repo chỉ local, không push.
 - M0, M1, M2 xong. Thiết kế v0.4 xong (`design/`); canvas 18 artboard. Khung quy trình xong (`CLAUDE.md`, `WORKFLOW.md`, 7 agent, Luật 2b).
