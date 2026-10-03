@@ -167,7 +167,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | HUB-FR-40 | CRUD conversation của chính user (trong tenant của user): tạo, liệt kê, đổi tên, xoá, xem message | **MUST** |
 | HUB-FR-41 | Gửi message thì trả về SSE stream các sự kiện chuẩn (mục 9.2) | **MUST** |
 | HUB-FR-45 | **Flow** (CR-021): một conversation gồm nhiều flow. Gửi message không kèm `flow_id` thì tạo flow mới. **Mọi tin đều qua Orchestrator**, kể cả tin thứ 2+ trong flow (CR-025): flow là nhóm hiển thị + nguồn context (context = message của flow đó); Orchestrator nhận thêm gợi ý "agent gần nhất của flow" (`flows.agent_id`, đổi được) và thường delegate lại agent đó (resume session), nhưng được chọn agent khác khi user đổi chủ đề hoặc hỏi nhiều việc. Flow không có trạng thái đóng: rảnh ~10 phút Hub tắt tiến trình CLI, chat lại thì resume (mất session thì dựng lại từ message đã lưu) | **MUST** |
-| HUB-FR-42 | Client mất kết nối rồi nối lại thì được xem tiếp sự kiện từ `Last-Event-ID`: `id` sự kiện SSE = id Redis Stream (`run:<run_id>`, TTL ~24 giờ), nên nối lại vào bất kỳ instance Hub nào cũng được (CR-028). Run không dừng khi client rớt mạng | **SHOULD** |
+| HUB-FR-42 | Client mất kết nối rồi nối lại thì được xem tiếp sự kiện từ `Last-Event-ID`: hai stream: Agent Runtime `XADD run:<run_id>` (nội bộ), Hub là bên ghi duy nhất của `sse:<run_id>` với id tường minh `<seq>-0` (TTL ~24 giờ); `id` SSE = `seq` (số nguyên 1…n theo run, đúng contract chat C1-R06), nên nối lại vào bất kỳ instance Hub nào cũng được (CR-028, CR-030). Run không dừng khi client rớt mạng | **SHOULD** |
 | HUB-FR-43 | `POST /runs/:id/cancel` huỷ run và các job con. Agent Runtime phải dừng trong ≤ 5 giây (Hub ghi `cancel_requested_at` + `NOTIFY job_cancel`) | **MUST** |
 | HUB-FR-44 | Upload file đính kèm (≤ 20MB/file). Lưu cục bộ hoặc object storage, gắn `tenant_id`, gắn vào message, và chuyển cho Dify hoặc agent khi cần | **SHOULD** |
 
@@ -330,7 +330,7 @@ Vượt quota tenant **không** phải lỗi: run vẫn chạy, `run.started` ma
 | ID | Yêu cầu |
 |---|---|
 | HUB-NFR-01 | **Độ trễ:** overhead của Hub với command sync ≤ 200ms (không tính thời gian Dify), đã gồm tính quyền và kiểm tra quota. Sự kiện `run.started` đến client trong ≤ 500ms |
-| HUB-NFR-02 | **Chạy nhiều instance:** Hub không giữ trạng thái trong process (ngoài cache cấu hình). Chạy được nhiều instance, mỗi instance tự LISTEN riêng. Sự kiện run đi qua Redis Streams (`id` stream = `id` SSE, nên `Last-Event-ID` đúng giữa các instance, HUB-FR-42); bộ đếm quota qua Redis; slot subscription đếm từ `hub.jobs` trong Postgres |
+| HUB-NFR-02 | **Chạy nhiều instance:** Hub không giữ trạng thái trong process (ngoài cache cấu hình). Chạy được nhiều instance, mỗi instance tự LISTEN riêng. Sự kiện run đi qua Redis Streams (`id` SSE = `seq` trong stream `sse:<run_id>` do Hub ghi, nên `Last-Event-ID` đúng giữa các instance, HUB-FR-42, CR-030); bộ đếm quota qua Redis; slot subscription đếm từ `hub.jobs` trong Postgres |
 | HUB-NFR-03 | **Chịu lỗi:** Admin chết thì Hub vẫn phục vụ bằng cache (gồm cả quyền). Dify chết thì command báo `UPSTREAM_ERROR`, còn agent `llm` vẫn chạy. Redis mất bộ đếm quota thì dựng lại từ `usage_logs` |
 | HUB-NFR-04 | **Quan sát:** mọi log có `run_id`, `tenant_id` và `user_id`. Secret và nội dung file không bao giờ xuất hiện trong log |
 | HUB-NFR-05 | **Lưu trữ:** giữ hội thoại 180 ngày. Giữ `run_steps.input/output` 30 ngày rồi xoá, chỉ giữ lại metadata (có thể chỉnh). `usage_logs` giữ lâu dài để tính phí |

@@ -71,7 +71,7 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 |---|---|---|
 | WRK-FR-01 | Lấy job từ **Postgres**: `SELECT … FOR UPDATE SKIP LOCKED` trên `hub.jobs` theo loại, `priority`, `created_at`; `LISTEN job_enqueued` để được đánh thức (kèm poll dự phòng). Bỏ Redis queue (CR-028). Worker khai báo mình phục vụ những loại job và provider nào khi khởi động | **MUST** |
 | WRK-FR-02 | Cập nhật `hub.jobs` khi chuyển trạng thái. Gửi heartbeat mỗi 15 giây khi đang chạy | **MUST** |
-| WRK-FR-03 | Đẩy sự kiện `job.progress` và `delta` bằng `XADD` vào Redis Stream `run:<run_id>` (TTL ~24 giờ); Hub `XREAD` và dùng id stream làm `id` SSE (HUB-FR-42) | **MUST** |
+| WRK-FR-03 | Đẩy sự kiện `job.progress` và `delta` bằng `XADD` vào Redis Stream `run:<run_id>` (TTL ~24 giờ); Hub `XREAD`, đánh số lại và phát qua `sse:<run_id>` (HUB-FR-42, CR-030); Agent Runtime không đặt `id` SSE | **MUST** |
 | WRK-FR-04 | Tôn trọng `timeout_s` của job. Quá hạn thì dừng tiến trình và đặt `timed_out` | **MUST** |
 | WRK-FR-05 | Nghe tín hiệu huỷ (`LISTEN job_cancel`, kiểm `jobs.cancel_requested_at`; kiểm lại khi khởi động và mỗi heartbeat) và dừng tiến trình trong ≤ 5 giây (dừng nhẹ trước, ép dừng sau) | **MUST** |
 | WRK-FR-06 | Retry theo chính sách của từng loại job (mục 2), với backoff 2 giây rồi 8 giây | **MUST** |

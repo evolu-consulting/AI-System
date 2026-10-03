@@ -25,7 +25,7 @@ Chọn **3**.
 | 2 | Không có API config Admin↔Hub mới; Admin không phải làm gì thêm |
 | 3 | `AgentRunner.run(task, signal) → AsyncIterable<RunEvent>` trong Hub; v1 = tạo job + đọc Redis Stream. Thêm runtime/CLI chỉ đụng Agent Runtime |
 | 4 | Hàng đợi Postgres: `hub.jobs` + `SELECT … FOR UPDATE SKIP LOCKED`; `NOTIFY job_enqueued` đánh thức Agent Runtime. Bỏ Redis queue/BullMQ. Slot provider (`max_concurrency`) và slot tenant (`max_concurrent_sub`) đếm từ job `running` trong cùng transaction lấy job (advisory lock theo provider). Bỏ `sub_slots:<tenant_id>` |
-| 5 | Sự kiện run qua Redis Streams: Agent Runtime `XADD run:<run_id>` (TTL ~24 giờ); Hub `XREAD`; `id` SSE = id stream ⇒ `Last-Event-ID` đúng khi nhiều instance Hub. Huỷ: Hub ghi `jobs.cancel_requested_at` + `NOTIFY job_cancel` |
+| 5 | Sự kiện run qua Redis Streams: Agent Runtime `XADD run:<run_id>` (TTL ~24 giờ); Hub `XREAD` rồi ghi lại vào `sse:<run_id>` với id tường minh `<seq>-0` (Hub là bên ghi duy nhất); `id` SSE = `seq` 1…n ⇒ `Last-Event-ID` đúng khi nhiều instance Hub (sửa CR-030). Huỷ: Hub ghi `jobs.cancel_requested_at` + `NOTIFY job_cancel` |
 | 6 | Payload job, sự kiện run, kết quả agent (`done\|partial\|need_input`) định nghĩa bằng zod (package Hub) → JSON Schema → sinh pydantic; CI kiểm hai bên khớp |
 | 7 | Khi khởi động Agent Runtime ghi `hub.agent_types` (key, runtime, mô tả, JSON Schema tham số, version); Studio đọc để dựng form tạo agent. Agent nội bộ mới = thêm class Python + deploy lại, không sửa TS |
 | 8 | Agent `python` chạy trong process con không mang secret (như WRK-BR-02), giao tiếp qua interface, chỉ nhận thứ được cấp |
