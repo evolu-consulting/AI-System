@@ -5,6 +5,7 @@ import {
   GROUP_NAME_MAX,
   type Group,
   type GroupCreateRequest,
+  type GroupListItem,
   type GroupListQuery,
   type GroupListResponse,
   type GroupRef,
@@ -36,7 +37,8 @@ export function groupRefsOf(raw: unknown): GroupRef[] {
   return RefsJson.parse(raw).map((g) => ({ ...g, is_beta: g.key === BETA_GROUP_KEY }));
 }
 
-export function toGroup(r: repo.GroupRow): Group {
+/** Hàng danh sách: không có `created_at` (contract GroupListItem) nên không cần cột đó. */
+export function toGroupListItem(r: Omit<repo.GroupRow, "createdAt">): GroupListItem {
   return {
     id: r.id,
     tenant_id: r.tenantId,
@@ -52,8 +54,11 @@ export function toGroup(r: repo.GroupRow): Group {
     version: r.version,
     updated_at: r.updatedAt.toISOString(),
     updated_by: r.updatedBy,
-    created_at: r.createdAt.toISOString(),
   };
+}
+
+export function toGroup(r: repo.GroupRow): Group {
+  return { ...toGroupListItem(r), created_at: r.createdAt.toISOString() };
 }
 
 const fail = (e: { code: Parameters<typeof appError>[0]; details?: unknown } | null): void => {
@@ -72,12 +77,7 @@ export async function listGroups(c: Call, q: GroupListQuery): Promise<GroupListR
   if ("code" in r) throw appError(r.code);
   const f = { tenantId: r.tenantId, q: q.q, limit: q.limit, offset: q.offset };
   const { rows, total } = await withScope(c.ctx.db, c.scope, (tx) => repo.listGroups(tx, f));
-  return { items: rows.map(({ createdAt: _c, ...g }) => listItem(g)), total };
-}
-
-function listItem(g: Omit<repo.GroupRow, "createdAt">) {
-  const { created_at: _c, ...item } = toGroup({ ...g, createdAt: g.updatedAt });
-  return item;
+  return { items: rows.map(toGroupListItem), total };
 }
 
 async function mustFind(tx: Tx, c: Call, id: string): Promise<repo.GroupRow> {

@@ -194,7 +194,9 @@ export function updateWorkflow(
 /** 404 → WORKFLOW_IN_USE (mọi command + agent) → xoá. 23503 (command chèn đua) → đọc lại usages → WORKFLOW_IN_USE. */
 export function deleteWorkflow(c: Call, id: string): Promise<void> {
   return configWrite(c, "workflow.save", async (tx, ch) => {
-    if (!(await repo.lockWorkflow(tx, id, "no key update"))) throw appError("NOT_FOUND");
+    const locked = await repo.lockWorkflow(tx, id, "no key update");
+    await afterLock(c.ctx.hooks, "workflow.save");
+    if (!locked) throw appError("NOT_FOUND");
     fail(checkWorkflowDelete(asUsages(await usagesOf(tx, id))));
     await tx
       .transaction((sp) => repo.deleteWorkflow(sp, id))

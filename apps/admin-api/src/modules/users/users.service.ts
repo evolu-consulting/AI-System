@@ -1,5 +1,6 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-BR-08, ADM-BR-09 · nghiệp vụ users (plan M1 §5 "Users"). Không biết HTTP.
-// Mỗi hành động = một withScope theo scope của actor; repo vẫn lọc tenant_id (tenant_admin luôn tenant mình).
+// Hành động ghi = một `configWrite` (transaction + scope + bump/NOTIFY sau commit, plan M3 §5.1–5.2), hành động đọc = một
+// withScope theo scope của actor; repo vẫn lọc tenant_id (tenant_admin luôn tenant mình).
 import { randomBytes } from "node:crypto";
 import {
   BETA_GROUP_KEY,
@@ -190,12 +191,12 @@ export async function createUser(
   const user = await configWrite(c, "user.save", async (tx, ch) => {
     // FOR SHARE: tenant không bị khoá/mở khoá giữa lúc đọc `active` và lúc chèn user (locked_by_tenant đúng).
     const t = await repo.findTenantBrief(tx, tenantId, { lock: "share" });
+    await afterLock(c.ctx.hooks, "user.save", "locked");
     if (!t) throw appError("NOT_FOUND");
     fail(checkRoleAssignment(c.actor, t.key === PLATFORM_TENANT_KEY, input.role));
     const email = input.email ?? null;
     if (isEmailRequired(input.role) && !email) throw appError("EMAIL_REQUIRED");
-    ch.changed({ entity: "user", tenantId });
-    return insertAndRead(tx, {
+    const created = await insertAndRead(tx, {
       tenantId,
       username: input.username,
       displayName: input.display_name,
@@ -205,6 +206,9 @@ export async function createUser(
       passwordHash: temp.hash,
       lockedByTenant: !t.active,
     });
+    ch.changed({ entity: "user", tenantId });
+    await afterLock(c.ctx.hooks, "user.save", "rows");
+    return created;
   });
   return { user, temp_password: temp.pw };
 }
@@ -257,11 +261,13 @@ export function lockUser(c: Call, id: string): Promise<User> {
     fail(checkSelfAction(c.actor, seen.id, "lock"));
     if (!seen.active) return toUser(seen);
     const u = await lockTarget(tx, c.actor, seen);
+    await afterLock(c.ctx.hooks, "user.save", "locked");
     if (!u.active) return toUser(u);
     await guardLastAdmin(tx, u, { active: false });
     await repo.updateUser(tx, u, { active: false }, true);
     await revokeUserSessions(tx, { tenantId: u.tenantId, userId: u.id, reason: "user_locked" });
     ch.changed({ entity: "user", tenantId: u.tenantId });
+    await afterLock(c.ctx.hooks, "user.save", "rows");
     return reread(tx, u);
   });
 }
