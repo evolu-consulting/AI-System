@@ -43,3 +43,15 @@ Quy ước/fixture: `test-plan-cd.md` §0. Dữ liệu `baseFile()`: §3.2 C-I01
 | E-TR-10 · 409 | dry-run xong → `apiAsAdmin` PATCH command → Áp dụng + Xác nhận | chữ "Cấu hình vừa thay đổi. Đã tạo lại bản xem trước."; có request `dry_run=1` mới |
 | E-TR-11 | binh (tenant_admin): menu; `goto /transfer` | không `link "Import / Export"`; trạng thái 403 |
 
+
+## Đỏ đúng lý do (Q2e · chạy trên DB `qcf`, 2026-10-03)
+
+| Nhóm | Ca | Kết quả | Lý do đỏ |
+|---|---|---|---|
+| `m4-transfer` | E-TR-01…10 | đỏ (10/10) | login admin qua; chờ `link "Import / Export"` — menu/route `/transfer` chưa có |
+| `m4-transfer` | E-TR-11 | đỏ | `/transfer` chưa có trang 403 `heading "Bạn không có quyền xem trang này"` |
+| `m4-2fa` | E-2FA-01, 02, 09 | đỏ | chờ `menuitem "Xác thực hai bước"` — chưa có mục menu/route `/account/2fa` |
+| `m4-2fa` | E-2FA-03…08, 10, 11, 13 | đỏ | `enable2faApi` nhận 404 ở `POST /auth/totp/setup` — route M4 chưa có (đỏ ở dựng dữ liệu do thiếu route/migration M4 — chấp nhận) |
+| `m4-2fa` | E-2FA-12 | đỏ | `expect(page).toHaveURL(/\/member$/)`: `/account/2fa` chưa chuyển hướng |
+
+Không ca nào đỏ ở login/`prepare-db`/TypeError. Giả định nhãn cần frontend-lead đối chiếu: (1) ô `Mã xác thực` ở bước bật, đăng nhập và OTP trong dialog là `textbox` duy nhất; bước bật + đăng nhập tự gửi khi đủ 6 số, dialog Tắt/Tạo lại KHÔNG tự gửi (bấm nút); (2) nút trong dialog tạo lại = `Tạo lại`, nút huỷ = `Huỷ`; (3) `alert` trong dialog chứa `twofa.error.wrongCreds`; (4) 403 `/transfer` hiện `heading "Bạn không có quyền xem trang này"`; (5) tên checkbox Export dạng `Workflows (5)`; (6) hàng chip lọc/mục Import hiển thị khoá mục (`report-new`, `translate`, `acme`, `bao-cao`) làm text khớp chính xác; (7) tắt hộ trả 200 từ `POST /admin/users/:id/totp/disable`, tự tắt trả 204 `/auth/totp/disable`.

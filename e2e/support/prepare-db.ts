@@ -34,6 +34,11 @@ async function main(): Promise<void> {
     // M4 (Q2a, test-plan §5 K12): usage của Hub không theo TRUNCATE tenants CASCADE → xoá tường minh. audit_log
     // append-only (không xoá được) → e2e lọc theo tên/mốc ca; tenant_quotas/quota_alerts theo CASCADE.
     if (resetOnly) await clearUsage(sql);
+    // M4 khối D (Q2e): xoá 2FA của mọi user (cascade mã dự phòng); chịu được khi bảng chưa migrate.
+    if (resetOnly) {
+      const [t] = await sql`select to_regclass('admin.user_totp') as r`;
+      if (t?.r) await sql.unsafe("truncate admin.user_totp cascade");
+    }
     const { runSeed } = (await import(SEED_MODULE)) as {
       runSeed: (o: {
         url: string;
