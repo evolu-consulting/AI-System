@@ -2,14 +2,17 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
-import "./app/i18n";
+import { initI18n } from "./app/i18n";
 import { Providers } from "./app/providers";
 
 const el = document.getElementById("root");
 if (!el) throw new Error("Thiếu phần tử #root");
 
-createRoot(el).render(
-  <StrictMode>
-    <Providers />
-  </StrictMode>,
-);
+// Chờ bản dịch đang dùng nạp xong rồi mới vẽ (không nháy key).
+void initI18n().then(() => {
+  createRoot(el).render(
+    <StrictMode>
+      <Providers />
+    </StrictMode>,
+  );
+});

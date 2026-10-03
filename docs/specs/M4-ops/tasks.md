@@ -58,6 +58,7 @@ LX = `bun run typecheck && bun test apps/admin-web && bun run i18n:check && bun 
 | FE6a | D · Trang 2FA: bật (reauth, QR, mã, mã dự phòng), tắt, tạo lại mã | frontend-lead | cao | `plan-frontend §3.6, §0 D2, D11`; ms §10.1; canvas `Enable2FA` | `features/auth/{api.ts,pages/TwoFactorPage.tsx,components/totp/*,hooks/use-totp-setup.ts,lib/totp-steps.ts}`, `routes/_authed/account.2fa.tsx` | T9b, T9c, FE0b | LX (`plan-frontend §12`) + e2e `m4-2fa` + `check:bundle` (chunk QR) | [x] |
 | FE6b | D · Bước TOTP khi đăng nhập (`pendingTotp`, mã dự phòng) | frontend-lead | cao | `plan-frontend §3.6, §8`; ms §10.2 | `features/auth/{pages/LoginPage.tsx,components/totp/LoginTotpStep.tsx,hooks/use-totp-login.ts}`, `lib/auth/session.ts` | FE6a, FE3 | LX (`plan-frontend §12`) + e2e `m4-2fa`, `auth` || [x] |
 | FE6c | D · Users `⋯ › Tắt 2FA` hộ user | frontend-lead | cao | `plan-frontend §3.6, §6` | `features/users/components/list/*`, `features/users/hooks/use-user-actions.tsx` | T9d, FE6a | LX (`plan-frontend §12`) + e2e `m4-2fa`, `users` || [x] |
+| FE7 | Bundle về ngân sách (locale nạp động) + sửa typecheck ImportDrop | frontend-lead | thường | `CONVENTIONS §6` | `app/i18n.ts`, `main.tsx`, `packages/i18n/src/locales.ts` | FE5b | `check:bundle` OK, `i18n:check`, `bun test apps/admin-web` | [x] |
 
 ## Nghiệm thu & đóng mốc
 

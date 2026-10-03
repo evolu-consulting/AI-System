@@ -1,7 +1,9 @@
-import { describe, expect, test } from "bun:test";
-import { i18n, resolveInitialLocale, syncDocument } from "./i18n";
+import { beforeAll, describe, expect, test } from "bun:test";
+import { i18n, initI18n, resolveInitialLocale, syncDocument } from "./i18n";
 
 describe("ADM-NFR-06 · i18n admin-web", () => {
+  beforeAll(() => initI18n());
+
   test("mặc định vi", () => {
     expect(i18n.language).toBe("vi");
     expect(i18n.t("nav.overview")).toBe("Tổng quan");
