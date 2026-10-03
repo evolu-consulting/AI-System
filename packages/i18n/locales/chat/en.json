@@ -33,14 +33,18 @@
   },
   "sidebar": {
     "empty": "No chats yet",
+    "loadMore": "Load more",
+    "error": "Could not load chats",
+    "retry": "Retry",
     "noMatch": "No chats match \"{{q}}\""
   },
   "item": { "more": "More actions", "rename": "Rename", "delete": "Delete" },
-  "rename": { "title": "Rename chat", "label": "Chat name", "save": "Save" },
+  "rename": { "title": "Rename chat", "label": "Chat name", "save": "Save", "cancel": "Cancel" },
   "delete": {
     "title": "Delete chat?",
     "body": "\"{{title}}\" and all its flows will be deleted.",
-    "confirm": "Delete"
+    "confirm": "Delete",
+    "cancel": "Cancel"
   },
   "welcome": {
     "greeting": "Hi {{name}}, what do you need today?",

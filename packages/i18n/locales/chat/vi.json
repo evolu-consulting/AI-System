@@ -33,14 +33,23 @@
   },
   "sidebar": {
     "empty": "Chưa có hội thoại nào",
+    "loadMore": "Tải thêm",
+    "error": "Không tải được danh sách hội thoại",
+    "retry": "Thử lại",
     "noMatch": "Không có hội thoại khớp \"{{q}}\""
   },
   "item": { "more": "Thao tác khác", "rename": "Đổi tên", "delete": "Xoá" },
-  "rename": { "title": "Đổi tên hội thoại", "label": "Tên hội thoại", "save": "Lưu" },
+  "rename": {
+    "title": "Đổi tên hội thoại",
+    "label": "Tên hội thoại",
+    "save": "Lưu",
+    "cancel": "Huỷ"
+  },
   "delete": {
     "title": "Xoá hội thoại?",
     "body": "\"{{title}}\" và mọi flow trong đó sẽ bị xoá.",
-    "confirm": "Xoá"
+    "confirm": "Xoá",
+    "cancel": "Huỷ"
   },
   "welcome": {
     "greeting": "Chào {{name}}, hôm nay cần gì?",
