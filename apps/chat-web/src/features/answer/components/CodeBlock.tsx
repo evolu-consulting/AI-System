@@ -17,7 +17,7 @@ export function CodeBlock({ code, lang, highlight }: Props) {
     if (!el || !highlight) return;
     let alive = true;
     void highlightToHtml(code, lang).then((html) => {
-      // hljs đã escape toàn bộ văn bản; không có đường nào đưa HTML của AI vào đây.
+      // Ngoại lệ innerHTML có điều kiện (ADR-0006 "Cách dùng"): hljs đã escape toàn bộ văn bản, chỉ sinh <span class=hljs-*>.
       if (alive && html !== null) el.innerHTML = html;
     });
     return () => {

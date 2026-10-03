@@ -35,6 +35,15 @@ describe("highlightToHtml", () => {
     expect(out).toContain("hljs-keyword");
     expect(out).not.toContain("<b>");
   });
+  test("review C1 #6 · điều kiện an toàn của innerHTML: chỉ có thẻ <span class=hljs-*|language-*>, mọi `<` khác đã escape", async () => {
+    const payload =
+      '<img src=x onerror="alert(1)"><script>alert(2)</script>\n```\n<a href="javascript:x">l</a>';
+    for (const lang of ["html", "md", "ts", "bash"]) {
+      const out = (await highlightToHtml(payload, lang)) ?? "";
+      const rest = out.replace(/<span class="(hljs|language)-[\w .-]+">|<\/span>/g, "");
+      expect(rest).not.toContain("<");
+    }
+  });
   test("ngôn ngữ lạ → null", async () => {
     expect(await highlightToHtml("fn main() {}", "rust")).toBeNull();
   });
