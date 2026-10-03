@@ -2,7 +2,7 @@
 id: M4-ops
 title: Chi phí & vận hành (Quota + cảnh báo, Chi phí & quota, Tổng quan, Audit + khôi phục, Import/Export, 2FA)
 milestone: M4
-status: draft                   # draft → ready → approved → in-progress → done
+status: approved                # draft → ready → approved → in-progress → done
 requirements: [ADM-FR-40, ADM-FR-41, ADM-FR-42, ADM-FR-51, ADM-FR-52, ADM-FR-54, ADM-FR-08, ADM-BR-04, ADM-BR-09, AC-A12, AC-A06, AC-A09]   # AC-A06: vế export; AC-A09: audit/usage/quota; AC-A12: phía Admin (ROADMAP M4)
 design: [docs/ROADMAP.md#M4, docs/design/admin/ba-admin.md#56-quota--chi-phí, docs/design/admin/ba-admin.md#57-secret-audit-importexport, docs/design/admin/ba-admin.md#6-luật-nghiệp-vụ, docs/design/admin/ba-admin.md#7-mô-hình-dữ-liệu-schema-admin, docs/design/admin/ba-admin.md#8-api, docs/design/admin/ba-admin.md#11-tiêu-chí-nghiệm-thu-các-kịch-bản-chính, docs/design/admin/ui-admin.md#72-tổng-quan, docs/design/admin/ui-admin.md#710-nhật-ký-thay-đổi-audit, docs/design/admin/ui-admin.md#711-import--export, docs/design/admin/ui-admin.md#713-tenants, docs/design/admin/ui-admin.md#716-chi-phí--quota, docs/design/admin/ui-admin.md#f7-tenant-vượt-quota, docs/specs/_design/admin-missing-screens.md (mục 1 Tổng quan · 7 Nhật ký · 8 Import/Export · 10 2FA · 14 Cần backend-lead), docs/readiness/2026-10-01-admin-m1-m4.md, "canvas: TenantOverview · Main · TenantQuota · Usage · Audit · Enable2FA · ImportPreview · States"]
 owner: backend-lead + frontend-lead
