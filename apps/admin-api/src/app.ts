@@ -21,6 +21,7 @@ import { featuresRoutes } from "./modules/features/features.routes";
 import { grantsRoutes } from "./modules/grants/grants.routes";
 import { groupsRoutes } from "./modules/groups/groups.routes";
 import { healthRoutes } from "./modules/health/health.routes";
+import { overviewRoutes } from "./modules/overview/overview.routes";
 import { quotaBannerRoutes } from "./modules/quotas/quotas.banner";
 import { startQuotaListener } from "./modules/quotas/quotas.listener";
 import { quotasRoutes } from "./modules/quotas/quotas.routes";
@@ -88,6 +89,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
   app.route("/admin/audit", auditRoutes(ctx));
   app.route("/admin", usageRoutes(ctx));
+  app.route("/admin", overviewRoutes(qctx));
 }
 
 export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {

@@ -74,6 +74,17 @@ function worst(
   return { pct, level: quotaLevel(pct) };
 }
 
+/** pct/level quota tháng VN hiện tại của từng tenant trong `ids` (dùng lại ở overview platform). */
+export async function worstByTenant(
+  tx: Tx,
+  ids: readonly string[],
+  now: Date,
+): Promise<Map<string, { pct: number | null; level: Level }>> {
+  const month = monthByTenant(await repo.monthUsageMany(tx, ids, monthRange(now)));
+  const quotas = quotasByTenant(await repo.quotasMany(tx, ids));
+  return new Map(ids.map((id) => [id, worst(quotas.get(id) ?? [], month.get(id))]));
+}
+
 export async function tenantQuotaLevels(
   tx: Tx,
   f: repo.UsageFilter,
@@ -81,11 +92,13 @@ export async function tenantQuotaLevels(
   limit: number,
 ): Promise<TenantOut[]> {
   const rows = await repo.tenantRows(tx, f, limit);
-  const ids = rows.map((r) => r.tenant_id);
-  const month = monthByTenant(await repo.monthUsageMany(tx, ids, monthRange(now)));
-  const quotas = quotasByTenant(await repo.quotasMany(tx, ids));
+  const w = await worstByTenant(
+    tx,
+    rows.map((r) => r.tenant_id),
+    now,
+  );
   return rows.map((r) => {
-    const w = worst(quotas.get(r.tenant_id) ?? [], month.get(r.tenant_id));
-    return { ...r, tokens: Number(r.tokens), quota_pct: w.pct, level: w.level };
+    const x = w.get(r.tenant_id) ?? { pct: null, level: "none" as const };
+    return { ...r, tokens: Number(r.tokens), quota_pct: x.pct, level: x.level };
   });
 }
