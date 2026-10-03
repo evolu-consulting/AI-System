@@ -222,6 +222,30 @@ Không có test: lock-order E4 (`transfer.lock-order.int.test.ts` — backend T8
 
 ## 10. Đỏ đúng lý do (điền ở Q2)
 
+Chạy 2026-10-03 (Q2d) trên DB `ai_system_qcd_test`; `tsc -p tsconfig.tests.json` sạch. Không ca nào đỏ ở `PostgresError`/`TypeError` khi dựng dữ liệu (truy vấn bảng M4 có chặn `to_regclass` → đỏ ở `expect`).
+
 | File | Ca đỏ / tổng | Đỏ ở | Ghi chú |
 |---|---|---|---|
-| (chưa chạy) | | | |
+| `rules/totp-oracle.test.ts` | 0 / 4 | — | **xanh**: oracle `_totp.ts` khớp RFC 4226 D, RFC 6238 B, RFC 4648 §10 |
+| `rules/totp.test.ts` | 18 / 18 | `Cannot find module lib/totp.ts`, `totp.rules.ts` | T9a |
+| `rules/transfer.test.ts` | 18 / 18 | `Cannot find module transfer.rules.ts` | T7/T8 |
+| `rules/mailer.test.ts` | 3 / 3 | `Cannot find module lib/mailer/index.ts` | TM |
+| `rules/contracts-cd.test.ts` | 4 / 4 | `Cannot find module contracts/src/transfer.ts` ×3; D-K04 `expect` (số mã ≠ 48) | T7 |
+| `rules/contracts-totp.test.ts` | 3 / 3 | `Cannot find module contracts/src/totp.ts`; `expect` (nhánh `totp_required`, `totp_enabled`) | T9b–T9d |
+| `totp-setup.int` | 15 / 15 | `expect` status (route 404) | T9b |
+| `totp-login.int` | 16 / 17 | `expect` status (route 404) | D-L11 **xanh** (luồng M1 không 2FA — hồi quy, giữ xanh) |
+| `totp-admin-reset.int` | 7 / 7 | `expect` status | T9d |
+| `totp-db.int` | 6 / 6 | `expect` (cột / bảng chưa có; route 404) | T9a (DB05–06 cần T9b–c) |
+| `export.int` | 9 / 9 | `expect` status (route 404) | T7 (C-E09 cần T8) |
+| `import-dry-run.int` | 14 / 14 | `expect` status | T8 |
+| `import-apply.int` | 15 / 15 | `expect` status | T8 |
+| `mailer.int` | 3 / 3 | `Cannot find module lib/mailer` | TM (Mailpit `:8025`, tiền tố `[M4-qc]`) |
+
+Quyết định khi viết (Q2d):
+- Thêm `tests/acceptance/M4/_cd-modules.ts` (nạp động module C + D, không cần DB — file luật dùng được) và `rules/totp-oracle.test.ts` (tự kiểm oracle).
+- `_cd.ts` có `expectErr` riêng nhận 9 mã mới (status theo plan-cd §4.3) vì `ErrorCode` chưa có mã đó tới T7.
+- D-R12 viết bền với cách đọc byte theo khối: (a) lần xin đầu toàn byte ≥ 248 → kết quả như bỏ lần đó; (b) byte xấu 249/251/253/255 (chỉ số lẻ) xen byte tốt chỉ số chẵn → mọi ký tự ở chỉ số chẵn.
+- C-I01 dùng file chỉ gồm phần tử đổi (`_transfer-data.baseObject`) → `summary {2, 3, 0}`; "unchanged" kiểm ở C-R06/C-R07 và round-trip C-E09.
+- Ca cần audit trong `track` đọc audit **trước** sentinel (sentinel tạo group có thể ghi audit).
+
+Cần bổ sung (backend-lead, T9b/T9c): tên schema request verify — test dùng `TotpVerifyRequestSchema` trong `packages/contracts/src/totp.ts`; regex `backup_code` phải **không phân biệt hoa thường** (D-K01 `"K7P2-9XQM"` qua, D-L06 mã HOA không gạch → 200; plan-cd §4.2 đang ghi regex chữ thường). `QuotaEntry` trong file: các giới hạn vắng được (C-K01, C-A12, C-A15 dùng `{feature:null, max_runs:1000}`).
