@@ -154,7 +154,7 @@ Khung: `id: <n>\nevent: <tên>\ndata: <JSON một dòng>\n\n`; `: ping\n\n` mỗ
 Engine: `waitMs` thật = `fast ? max(1, round(waitMs/10)) : waitMs`, **trừ** `slow` và `flow-cold` (có sàn riêng §3.3). `ms` trong `step.finished`/`run.finished` là hằng của kịch bản (không theo `fast`) để câu "2,1s", "7,8s" tất định. Huỷ: engine kiểm `cancelRequested` trước mỗi beat → phát `run.failed CANCELLED` (giữ delta đã phát). Run tiếp tục chạy khi client rớt mạng (HUB-FR-42).
 
 ### 3.2 Nội dung tất định
-- Trả lời `normal`: markdown cố định ~30 `delta` (mỗi delta 1 từ + khoảng trắng), dòng cuối `Flow này có {n} tin nhắn.` (n = số tin của flow kể cả tin vừa gửi — chứng minh C1-R02).
+- Trả lời `normal`: markdown cố định 30 `delta` (mỗi delta 1 từ + khoảng trắng), dòng cuối `Flow này có {n} tin nhắn.` (n = số tin của flow kể cả tin vừa gửi — chứng minh C1-R02).
 - `run.started.quota` mặc định `{state:"ok", pct: 12}`.
 
 ### 3.3 Kịch bản (`pickScenario({content, fallback, flowIdle}): ScenarioName`; `content` lưu nguyên văn kể cả tiền tố để "Chạy lại" gửi lại đúng)
@@ -202,7 +202,7 @@ Sai tenant/user/mật khẩu → 401 `INVALID_CREDENTIALS` (không nói trườn
 | GET `/__mock/ping` | 204 — test §4 dùng để biết đích là mock (bật ca chỉ-mock) |
 | POST `/__mock/reset` | 204 — xoá store, run, refresh token; nạp lại seed; mặc định toàn cục = `normal` |
 | POST `/__mock/scenario` `{name: string \| null}` | 204 — đặt mặc định toàn cục; tên lạ → 400 `VALIDATION_ERROR` |
-| POST `/__mock/expire-access` | 204 — mọi access token có `iat` ≤ now → 401 `AUTH_EXPIRED` (CHAT-AC-03) |
+| POST `/__mock/expire-access` | 204 — mọi access token cấp trước mốc ms hiện tại (hoặc `sid` cũ, M3) → 401 `AUTH_EXPIRED` (CHAT-AC-03) |
 
 Trạng thái toàn cục (`scenario`, `expire-access`, `reset`) không an toàn khi chạy song song → e2e dùng chúng phải `test.describe.serial` hoặc project `workers: 1` (frontend/qc chốt).
 
@@ -212,12 +212,12 @@ Trạng thái toàn cục (`scenario`, `expire-access`, `reset`) không an toàn
 
 | Lệnh | Đích |
 |---|---|
-| `bun test` (gốc) / `bun run test:contract:chat` | `HUB_URL` trống → `_env.ts` dựng mock **trong tiến trình** `Bun.serve({port: 0, fetch: createHubMock({…, fast: true}).fetch})` |
+| `bun run test:contract:chat` (không trong `bun test` gốc, M1) | `HUB_URL` trống → `_env.ts` dựng mock **trong tiến trình** `Bun.serve({port: 0, fetch: createHubMock({…, fast: true}).fetch})` |
 | `HUB_URL=http://localhost:4020 bun run test:contract:chat` | mock đang chạy (`MOCK_FAST=1 bun run mocks`) |
 | `HUB_MOCK_PORT=4021 bun run mocks` rồi `HUB_URL=http://localhost:4021 bun run test:contract:chat` | CHAT-AC-32 (instance thứ hai) |
 | `HUB_URL=<hub thật> AUTH_URL=<admin thật> CHAT_CONTRACT_USERS='<json>' bun run test:contract:chat` | Hub H1: ca chỉ-mock tự bỏ qua (`GET /__mock/ping` ≠ 204) |
 
-Script gốc mới: `"test:contract:chat": "bun test --timeout 30000 tests/contract/chat"`. `CHAT_CONTRACT_USERS` = JSON `{a, b, other_tenant, locked}` mỗi phần tử `{tenant_key, username, password}`; trống → user §3.4. `tests/contract/**` thêm vào `tests/.lock` (qc quyết). `tsconfig.tests.json` đã bao `tests/**`. Import mock bằng đường tương đối `../../../tools/mocks/src/hub` (gốc không khai `@ai/mocks`).
+Script gốc mới: `"test:contract:chat": "bun --config=bunfig.contract.toml test --timeout 30000 tests/contract/chat"`. `CHAT_CONTRACT_USERS` = JSON `{a, b, other_tenant, locked}` mỗi phần tử `{tenant_key, username, password}`; trống → user §3.4. `bunfig.toml` ignore `tests/contract/**`; khoá qua `LOCKED_DIRS` (B0). `tsconfig.tests.json` đã bao `tests/**`. Import mock bằng đường tương đối `../../../tools/mocks/src/hub` (gốc không khai `@ai/mocks`).
 
 ### 4.2 File và ca (tên test `"<AC> · …"`)
 

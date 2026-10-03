@@ -263,7 +263,7 @@ Helper `_support.ts`: `resetMock`, `expireAccess`, `login`, `nextSend` (`waitFor
 | M5 | plan-frontend §7 Bước | Không có role/nhãn cho spinner "đang chạy"; với `MOCK_FAST` bước 1 chỉ 210 ms | FE thêm `aria-busy="true"` trên `listitem` đang chạy; E-T1 ghi nhận bằng `MutationObserver` cài trước khi gửi (không phụ thuộc polling) |
 | M6 | plan-frontend §7 Khung flow mobile | Tay nắm kéo không có nhãn → E-F5 phải kéo theo toạ độ | FE thêm `aria-label="Kéo để đóng"` cho tay nắm (hoặc chấp nhận F5 theo toạ độ header sheet) |
 | M7 | spec §8 AC-35 `e2e/chat-*.spec.ts`; tasks F4–F13 lệnh `bunx playwright test … e2e/chat-*.spec.ts` | qc chốt `e2e/chat/*.chat.ts` + config riêng | Điều phối sửa cột "Lệnh xong" F4–F13: `bunx playwright test -c e2e/chat/playwright.config.ts --reporter=line <tên> \| tail -40` |
-| M8 | plan §2.4 E13 lỗi | `Last-Event-ID: abc` không ghi mã lỗi (bảng chỉ 401·404·410) | 400 `VALIDATION_ERROR` theo thứ tự kiểm chung; chưa viết ca tới khi backend-lead xác nhận |
+| M8 | plan §2.4 E13 lỗi | `Last-Event-ID: abc` không ghi mã lỗi (bảng chỉ 401·404·410) | 400 `VALIDATION_ERROR` theo thứ tự kiểm chung; **Đã chốt (spec §9 M8): sai định dạng → coi như không có** (phát lại từ đầu); ca viết theo đó |
 | M9 | plan-frontend §5 Đổi tên "≤ 120 ký tự" vs contract `title` 1–200 | Lệch giới hạn | Không test giới hạn UI; contract kiểm 200 |
 | M10 | tasks F13 "test CHAT-AC-34 quét `src/**`" | Trùng U-9 của qc (bị khoá) | F13 bỏ phần test đó, chỉ chạy U-9 |
 

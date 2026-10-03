@@ -23,7 +23,7 @@ Nguồn: CR-018 (mốc C1), CR-019…022 (đã vào design). Người dùng ch�
 | 4 | **Bộ test contract dùng chung** | Chạy với `HUB_URL` bất kỳ: mock hôm nay, Hub thật sau này |
 | 5 | E2E Playwright cho chat-web | Chạy với mock |
 
-**Không làm (C1):** menu `/` và command, đính kèm file, Extension, Knowledge base (CR-024), chat nhóm / agent↔agent (CR-023), Coordinator và Claude CLI thật, schema `hub` thật, Worker, gọi Admin thật, thông báo trình duyệt cho job nền, quota thật (mock chỉ trả `quota.state` để hiện dòng nhắc).
+**Không làm (C1):** menu `/` và command, đính kèm file, Extension, Knowledge base (CR-024), chat nhóm / agent↔agent (CR-023), Orchestrator và Claude CLI thật, schema `hub` thật, Worker, gọi Admin thật, thông báo trình duyệt cho job nền, quota thật (mock chỉ trả `quota.state` để hiện dòng nhắc).
 
 ## 2. Nghiệp vụ
 Không chép BA; chỉ phần cụ thể hoá cho C1.
@@ -44,7 +44,7 @@ Không chép BA; chỉ phần cụ thể hoá cho C1.
 **Nguồn chính: `plan.md` §2** (schema từng trường, endpoint E1–E15, SSE, bất biến stream, hàm thuần). Tóm tắt:
 
 - Vị trí: subpath `@ai/contracts/chat` → `packages/contracts/src/chat/` (Q1); không đụng `src/index.ts`.
-- Thực thể strict: `Conversation {id, title, created_at, updated_at}` · `Flow {id, conversation_id, title, created_at, last_active_at, message_count, active_run_id, preview}` · `Message {id, conversation_id, flow_id, role, content, run_id, created_at, run: RunSummary|null, ask|null}` · `Run {id, conversation_id, flow_id, status: running|finished|failed|cancelled, started_at, finished_at, last_event_id, error}`. Đăng nhập dùng lại nguyên `auth.ts` của Admin (`{tenant_key, username, password}` → `LoginResponse`, cookie `ai_rt`).
+- Thực thể strict: `Conversation {id, title, flow_count, created_at, updated_at}` · `Flow {id, conversation_id, title, created_at, last_active_at, message_count, active_run_id, preview}` · `Message {id, conversation_id, flow_id, role, content, run_id, created_at, run: RunSummary|null, ask|null}` · `Run {id, conversation_id, flow_id, status: running|finished|failed|cancelled, started_at, finished_at, last_event_id, error}`. Đăng nhập dùng lại nguyên `auth.ts` của Admin (`{tenant_key, username, password}` → `LoginResponse`, cookie `ai_rt`).
 - Endpoint: `/auth/login|refresh|logout`, `/health`, `GET·POST /conversations` (cursor, `q` không dấu), `GET·PATCH·DELETE /conversations/:id`, `GET /conversations/:id/flows`, `GET·POST /conversations/:id/messages` (POST trả SSE, `flow_id?`), `GET /runs/:id/events` (`Last-Event-ID`), `GET /runs/:id`, `POST /runs/:id/cancel`. Phân trang `{items, next_cursor}`.
 - SSE: `run.started`, `step.started`, `step.finished`, `delta`, `ask`, `run.finished {run_id, message_id, content, ms}`, `run.failed {run_id, message_id, code, message, hint}`; `id` liên tiếp từ 1 theo run; đúng một sự kiện kết thúc; không `agent`/`provider` (strict).
 - Lỗi HTTP chat: `VALIDATION_ERROR` 400 · `AUTH_EXPIRED` 401 · `NOT_FOUND` 404 (cả tài nguyên của người khác) · `FLOW_BUSY` 409 · `EVENTS_EXPIRED` 410. Mã `run.failed`: `ALL_PROVIDERS_EXHAUSTED`, `TIMEOUT`, `UPSTREAM_ERROR`, `CANCELLED`, `BUDGET_EXCEEDED`, `NOT_CONFIGURED`, `INTERNAL_ERROR` (câu chữ: `ui-chat-extension.md` §8).
@@ -67,14 +67,14 @@ Chi tiết: `plan-frontend.md` (cấu trúc, route, state, SSE, màn ↔ artboar
 | Banner kết nối | "Đang kết nối lại…", đỏ "Không kết nối được máy chủ" | UC-08 |
 
 ## 6. Hiệu năng
-Theo `CONVENTIONS.md` §6. Riêng C1: JS đầu của chat-web ≤ 150 KB gzip (đo như `check:bundle` của admin-web); stream 500 `delta` không giật (gộp delta theo khung hình).
+Theo `CONVENTIONS.md` §6. Riêng C1: JS đầu của chat-web ≤ 150 KB gzip (đo như `check:bundle` của admin-web); stream 500 `delta` không giật là **mục tiêu thiết kế** (gộp delta theo khung hình), không phải AC.
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
 |---|---|
 | Agent Hub | Mock Hub chat trong `tools/mocks` (cổng 4020), chọn kịch bản (dưới) |
 | Admin auth | Mock login trong mock Hub (user mẫu `plan.md` §3.4: `acme/minh`, `acme/lan`, `acme/hoa`, `beta/an`, `acme/khoa` khoá); JWT EdDSA, khoá sinh lúc khởi động (Q7). **Không gọi Admin** |
-| Claude CLI, Coordinator, Worker | Không có; mock sinh câu trả lời tất định |
+| Claude CLI, Orchestrator, Worker | Không có; mock sinh câu trả lời tất định |
 
 **Kịch bản mock** (chi tiết sự kiện, thời gian, thứ tự chọn: `plan.md` §3.3; chọn bằng tiền tố `#scn:<tên>` ở đầu nội dung tin — test contract chỉ dùng cách này; `POST /__mock/scenario {name}` đặt mặc định toàn cục cho e2e; mặc định `normal`; thêm `markdown`, `quota-warn`):
 
@@ -98,7 +98,7 @@ Theo `CONVENTIONS.md` §6. Riêng C1: JS đầu của chat-web ≤ 150 KB gzip (
 | `AUTH_URL` | đích proxy `/auth` của chat-web và `/auth/*` của test contract; trống → = `HUB_URL`; đổi sang admin-api khi bỏ mock login | trống |
 | `CHAT_CONTRACT_USERS` | JSON user cho test contract với Hub thật (`plan.md` §4.1); trống → user mock | trống |
 | `MOCK_FLOW_IDLE_S` | ngưỡng flow nghỉ của mock | `600` |
-| `MOCK_FAST` | mock rút ngắn thời gian chờ (÷10, trừ `slow`/`flow-cold`) trong e2e | `1` |
+| `MOCK_FAST` | mock rút ngắn thời gian chờ (÷10, trừ `slow`/`flow-cold`) trong e2e | mặc định `0`, e2e đặt `1` |
 
 ## 8. Tiêu chí nghiệm thu (qc)
 AC UC-01…UC-08 = **CHAT-AC-01…30** trong `docs/design/chat-app/usecases-chat.md` (Given/When/Then ở đó, không chép lại). Bổ sung kỹ thuật:
@@ -109,15 +109,15 @@ AC UC-01…UC-08 = **CHAT-AC-01…30** trong `docs/design/chat-app/usecases-chat
 | CHAT-AC-32 | Given bộ test contract, When đổi `HUB_URL` sang địa chỉ khác (instance mock thứ hai), Then không sửa mã mà vẫn xanh. Cam kết: Hub thật pass bộ này thì Chat chạy | như trên |
 | CHAT-AC-33 | Given payload SSE của mock, Then mọi sự kiện parse được bằng zod của contract và **không** có `agent`/`provider` (C1-R04) | như trên |
 | CHAT-AC-34 | Given chat-web, When đổi `HUB_URL`/`AUTH_URL` (proxy dev/preview) rồi chạy lại, Then Chat gọi địa chỉ mới (không hằng số URL trong code) | unit hoặc e2e |
-| CHAT-AC-35 | Given e2e Playwright với mock, Then CHAT-AC-01…30 đều có test tự động (UC-08 `drop`, `flow-cold` dùng `MOCK_FAST`) | `e2e/chat-*.spec.ts` (tên tạm) |
+| CHAT-AC-35 | Given e2e Playwright với mock, Then CHAT-AC-01…30 đều có test tự động (UC-08 `drop`, `flow-cold` dùng `MOCK_FAST`) | `e2e/chat/*.chat.ts` |
 | CHAT-AC-36 | Given VI/EN, Then không thiếu khoá i18n (script i18n của repo), mọi chuỗi hiển thị qua `packages/i18n` | script i18n |
 
-Lệnh xong mốc: `bun run typecheck && bun test && <test contract> && bunx playwright test e2e/chat-` kèm `check:size --all`, `depcruise --all`, `check:bundle` cho chat-web. <!-- qc/backend-lead chốt tên script -->
+Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:contract:chat`, `bun test tests/acceptance/C1`, e2e) kèm `bun run typecheck`, `bun test`, `bun run check:size --all`, `bunx depcruise --all`, `bun run --filter @ai/chat-web build && bun run --filter @ai/chat-web check:bundle`, `bun run test:contract:chat`, `bunx playwright test -c e2e/chat/playwright.config.ts`, `bun run test:lock:verify`.
 
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng, phiên điều phối 2026-10-03)
 - Làm Chat App trước, độc lập Admin; C1 dùng mock Hub (CR-018). Mốc Hub sau: H1 Hub lõi, H2 Worker + Dify, Studio sau.
-- Flow (CR-021), "Consultant" (CR-022), Coordinator là agent (CR-020), subscription không bắt buộc API cuối (CR-019): đã ghi vào design; C1 chỉ cần giao diện + contract.
+- Flow (CR-021), "Consultant" (CR-022), Orchestrator là agent (CR-020), subscription không bắt buộc API cuối (CR-019): đã ghi vào design; C1 chỉ cần giao diện + contract.
 - C1 dùng mock đăng nhập trong mock Hub; contract giữ dạng Admin `/auth/login` để đổi sang Admin thật sau.
 - Bộ test contract dùng chung là cam kết "Hub thật pass thì Chat chạy".
 
@@ -152,12 +152,16 @@ Lệnh xong mốc: `bun run typecheck && bun test && <test contract> && bunx pla
 | M2 | Lệnh AC-32 (instance mock thứ hai) chạy kèm `DIFY_MOCK_PORT=4011` |
 | M3 | Mock thu hồi access theo mốc ms (hoặc `sid`), không theo `iat` giây (B2) |
 | M4 | Env `MOCK_EVENTS_RETENTION_S` (mặc định 600) để test 410 `EVENTS_EXPIRED` (B5) |
-| M5–M6 | FE: bước đang chạy có `aria-busy="true"`; tay nắm sheet mobile là `button` có `aria-label` "Đóng khung flow" (F9, F10) |
+| M5–M6 | FE: bước đang chạy có `aria-busy="true"`; tay nắm sheet mobile là `button` có `aria-label="Kéo để đóng"` (không trùng nút ✕ "Đóng khung flow") (F9, F10). Nút "Thu nhỏ flow" (mobile) ở C1 cùng hành vi ✕: đóng sheet, xoá `?flow` |
 | M7 | Cột Lệnh xong F4–F13 đổi sang `bunx playwright test -c e2e/chat/playwright.config.ts` (đã sửa tasks.md) |
 | M8 | `Last-Event-ID` sai định dạng → coi như không có (phát lại từ đầu), không thêm mã lỗi |
 | M9 | Ô đổi tên UI giới hạn 200 ký tự, khớp contract |
 | M10 | Quét URL tuyệt đối trong `src/**` chỉ do test qc U-9; F13 bỏ phần quét |
-| Lock | Khoá `tests/acceptance/**`, `e2e/**`, `tests/contract/**`; backend-lead thêm `tests/contract` vào `LOCKED_DIRS` (`tools/scripts/src/test-lock.ts`) ở B6 |
+| Lock | Khoá `tests/acceptance/**`, `e2e/**`, `tests/contract/**`; backend-lead thêm `tests/contract` vào `LOCKED_DIRS` (`tools/scripts/src/test-lock.ts`) ở **B0** (cùng `bunfig` + script, trước QB) |
+
+### Bổ sung sau readiness lần 1 (2026-10-04, `readiness.md`)
+- Contract `plan.md` §2 là nguồn cho C1; BA §9.2–9.3 bổ sung `FLOW_BUSY`, `EVENTS_EXPIRED`, `run.failed.message_id` và ui-chat §7 (refresh lỗi → về /login, C1-R08) ghi backlog docs cho H1 (`TECH-DEBT.md`).
+- H2 (chờ người dùng ở Gate): mặc định C1 chỉ giao diện Sáng, ghi TECH-DEBT. H4 (mặc định, theo canvas FlowOpen): khối flow ở luồng chính hiện câu trả lời **đầu** (`preview`); câu mới chỉ thấy trong khung flow.
 
 ## 10. Tranh chấp test
 - (không)

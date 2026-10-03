@@ -102,21 +102,21 @@ Luật: một hội thoại chỉ một run chạy (UC-02: gõ trước được
 |---|---|---|---|
 | LoginPage | không có artboard chat → bố cục Login Admin (form giữa trang, logo ngang trên đầu, không có panel hero) | đang gửi (nút disabled + "Đang đăng nhập…"), lỗi chung (`role=alert`), khoá → `LockedDialog`, mất mạng, `password_change_required`/`totp_required` → alert `chat.login.useAdmin` | UC-01 · 01, 02 |
 | AppShell + Sidebar | Main: `nav` 260px, nền `--card`, viền phải `--border`, padding 16/12; đầu: logo + "AI Chat · {tenant}"; nút "Hội thoại mới" + kbd `Ctrl⇧O`; ô tìm; nhóm; cuối: avatar chữ tắt + tên + username, nút Cài đặt | tải (skeleton 6 dòng), rỗng (`chat.sidebar.empty`), tìm không thấy (`chat.sidebar.noMatch`), lỗi → banner Hub | UC-07 · 19, 21–23 |
-| ConversationItem `⋯` | DropdownMenu: Đổi tên (Dialog, input ≤ 120 ký tự, không rỗng) · Xoá (AlertDialog) | đang lưu, lỗi → toast `chat.toast.renameFailed`; xoá hội thoại đang mở → `/c/new` | UC-07 · 21, 22 |
+| ConversationItem `⋯` | DropdownMenu: Đổi tên (Dialog, input ≤ 200 ký tự, không rỗng) · Xoá (AlertDialog) | đang lưu, lỗi → toast `chat.toast.renameFailed`; xoá hội thoại đang mở → `/c/new` | UC-07 · 21, 22 |
 | WelcomePage `/c/new` | Welcome: cột 720px, logo 48px, "Chào {name}, hôm nay cần gì?", phụ đề, lưới 2×2 thẻ (tiêu đề + câu mẫu), dòng gợi ý dưới | bấm thẻ → điền composer + focus, **không gửi** | UC-07 · 18 |
 | ConversationPage `/c/:id` | Main: luồng max 720–800px giữa; tiêu đề hội thoại + "{n} flow"; FlowBlock (`border 1px, radius 14, padding 16, gap 12`), câu hỏi phải nền `--row-divider` radius 12 max 80% | tải: skeleton 3 tin; 404 → NotFoundState "Hội thoại không tồn tại" + nút "Về trang chào"; rỗng (hội thoại chưa có flow) → hiện như trang chào không thẻ | UC-07 · 20 |
 | FlowBlock | Main: `Flow.preview` = câu hỏi đầu + câu trả lời **đầu** của flow (khớp canvas FlowOpen; flow chưa có trả lời → stream ngay trong khối) + footer viền trên: Copy · Trả lời tiếp · "+{n} tin trong flow · {thời gian}" (`message_count − 2`, `last_active_at`); flow đang mở bên phải → "Đang mở bên phải · {n} tin"; run chạy trong khung → footer hiện spinner + đếm cập nhật ("đồng bộ" UC-06) | streaming (con trỏ nhấp nháy `aria-hidden`), steps (`run.steps` sau F5), ask, error, cancelled, cold | UC-02 · 05, 06 |
 | ConsultantAvatar | `.who`: icon 22px + "Consultant" 13px/600 `--primary-strong`. Không bao giờ hiện agent/provider | — | CR-022 · 06, 30 |
 | StepList | States: đang chạy (spinner + nhãn, ✓ + "2,1s"), xong → Collapsible "✓ {n} bước · {s}s" (định dạng số theo locale); ✕ cho `failed`; 0 bước → không hiện | | UC-03 · 08, 09 |
 | AskCard | States: viền `--primary`, tiêu đề "Consultant cần thêm thông tin", câu hỏi, chip cao 32 radius 999; gợi ý "Bấm chip là gửi luôn. Vẫn gõ tự do được." | chip bấm → gửi ngay cùng `flow_id`; sau khi có tin kế → chip `disabled` | UC-05 · 12, 13 |
-| ErrorCard | States: nền `--danger-bg`, tiêu đề + câu theo **mã** (i18n, không hiện `message`/`hint` thô của Hub — CHAT-AC-30), nút, dòng mono `{CODE} · run {id}` | Báo admin → clipboard `"{CODE} · run {id}"` + toast "Đã sao chép"; Thử lại → run mới | UC-08 · 24–27, 30 |
+| ErrorCard | States: nền `--danger-bg`, tiêu đề + câu theo **mã** (i18n, không hiện `message`/`hint` thô của Hub — CHAT-AC-30), nút, dòng mono `{CODE} · run {id}` | Báo admin → clipboard `"{CODE} · run {id}"` + toast "Đã sao chép"; Thử lại → run mới. Nút theo mã: `TIMEOUT`/`UPSTREAM_ERROR` Thử lại · `ALL_PROVIDERS_EXHAUSTED` Thử lại + Báo admin · `NOT_CONFIGURED` Báo admin · `BUDGET_EXCEEDED` không nút · `CANCELLED` Chạy lại (nhỏ, xám) · lạ/`INTERNAL_ERROR` Thử lại + Báo admin (ui-chat §8) | UC-08 · 24–27, 30 |
 | CancelledNote | States: "Đã dừng" xám + nút nhỏ "Chạy lại" | | UC-04 · 10, 11 |
 | ColdResumeNote | States: spinner + "Đang mở lại flow, lần đầu có thể mất vài giây…" trong khối/khung flow tới `run.started`/`delta` đầu | | UC-06 · 16 |
 | Composer | Main/Welcome: textarea tự giãn ≤ 8 dòng, nút Gửi 36px → ■ Dừng khi run chạy; placeholder chính "Hỏi điều mới…", trong flow "Trả lời trong flow…"; nhãn trên composer "Câu hỏi mới" + mô tả (Main) | rỗng → Gửi disabled; busy → gõ được, gửi disabled; gửi lỗi mạng → giữ chữ | UC-02/04 · 05, 10 |
 | QuotaNotice | dòng xám trên composer khi `run.started.quota.state = over`, nút ✕ | | UC-02 |
 | NewMessagesButton | nổi giữa đáy luồng: "↓ Tin mới" | hiện khi cách đáy > 80px lúc stream | UC-02 · 07 |
 | FlowPanel (≥ 640) | FlowOpen: `aside` flex `1 1 420px`, max 480px, nền trắng, viền trái, bóng; header: tiêu đề flow + "{n} tin · nhớ cả flow" + ✕; luồng đủ tin của flow; composer "Trả lời trong flow…" | mở: tải tin (skeleton 3), focus ô nhập (AC-14); đổi flow → thay nội dung; cold | UC-06 · 14, 15, 16 |
-| FlowSheet (< 640) | Mobile: Sheet đáy, cao ~83vh, radius 16 trên, tay nắm kéo; header ✕ "Đóng khung flow" + "Thu nhỏ flow" | kéo xuống > 120px hoặc ✕ → đóng (xoá `?flow`) | UC-06 · 17 |
+| FlowSheet (< 640) | Mobile: Sheet đáy, cao ~83vh, radius 16 trên, tay nắm kéo (`button` `aria-label="Kéo để đóng"`); header ✕ "Đóng khung flow" + "Thu nhỏ flow" | kéo xuống > 120px, ✕ hoặc "Thu nhỏ flow" (C1 cùng hành vi ✕) → đóng (xoá `?flow`) | UC-06 · 17 |
 | ConnectionBanner | States: vàng "Đang kết nối lại…" (`role=status`), đỏ "Không kết nối được máy chủ" + Thử lại (`role=alert`) | | UC-08 · 28, 29 |
 | SettingsDialog | không có artboard: Dialog (ui-chat §7) — Ngôn ngữ (Tiếng Việt/English), Tài khoản (tên, công ty), dòng Quyền riêng tư, nút Đăng xuất. Giao diện Sáng/Tối: **chưa làm C1** (chưa có token tối) | đăng xuất → `POST /auth/logout`, xoá phiên + query cache, `/login` | UC-01 · 04 |
 
@@ -169,7 +169,7 @@ Bảng key ↔ VI ↔ EN: **`plan-frontend-i18n.md`** (phụ lục, cho task có
 | JS ban đầu (gzip) | **≤ 150 KB** (spec §6) | route chunk (`autoCodeSplitting`), locale nạp động, login là chunk riêng; `check:bundle` chép admin, đổi ngưỡng |
 | CSS ban đầu | ≤ 25 KB | Tailwind v4 |
 | Chunk bất đồng bộ | ≤ 50 KB mỗi chunk | markdown ≈ 44 KB (react-markdown 34,1 + remark-gfm 9,8); highlight ≈ 15–20 KB chunk riêng (ADR-0006) |
-| Stream 500 delta | không giật | gộp delta theo `requestAnimationFrame`; `FlowBlock` `memo` + selector run-store theo `flowId` (flow khác không render lại); Markdown: tách khối đã đóng (`\n\n`) memo, chỉ khối cuối parse lại |
+| Stream 500 delta | không giật (**mục tiêu thiết kế**, không phải AC) | gộp delta theo `requestAnimationFrame`; `FlowBlock` `memo` + selector run-store theo `flowId` (flow khác không render lại); Markdown: tách khối đã đóng (`\n\n`) memo, chỉ khối cuối parse lại |
 | Danh sách | sidebar trang 50 (E5), "tải thêm" khi cuộn tới cuối, ≤ 200 mục → không virtualize; flows trang 50 (E10); tin trong khung trang 50, cuộn lên tải thêm (cursor) | |
 | Prefetch | sau login idle → `import()` chunk markdown | câu trả lời đầu đã có markdown |
 
@@ -198,7 +198,7 @@ Bảng key ↔ VI ↔ EN: **`plan-frontend-i18n.md`** (phụ lục, cho task có
 |---|---|
 | Phiên M4 sửa cùng `tsconfig.depcruise.json`, `tools/scripts/src/i18n-check.ts` | Sửa tối thiểu (1 dòng alias; vòng lặp cặp locale), commit riêng, đọc lại file ngay trước khi sửa |
 | Chép code auth/http từ admin → hai bản lệch | Ghi `TECH-DEBT.md`; test unit chép kèm |
-| Stream + markdown re-parse gây giật | rAF batching, memo khối đã đóng; đo bằng e2e kịch bản `normal` N=500 |
+| Stream + markdown re-parse gây giật | rAF batching, memo khối đã đóng; mục tiêu thiết kế, đo thủ công |
 
 ## 14. Câu hỏi cho người dùng (mỗi câu có mặc định)
 
