@@ -57,7 +57,7 @@ describe("ADM-FR-60 · M1-R22 · key i18n dùng trong mã", () => {
       .filter(([key]) => !viKeys.has(key) || !enKeys.has(key))
       .map(([key, file]) => `${key} (${file.replace(SRC, "src")})`);
     expect(missing).toEqual([]);
-  });
+  }, 30_000); // quét đồng bộ cả src: chạy riêng ~0,2 s, chạy chung `bun test` có lúc > 5 s
 
   test("mọi key của bảng mã lỗi có trong vi.json và en.json", () => {
     for (const key of ERROR_MESSAGE_KEYS) {
