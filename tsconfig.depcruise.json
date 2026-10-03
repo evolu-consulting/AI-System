@@ -4,7 +4,7 @@
   "compilerOptions": {
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
-    "paths": { "@/*": ["apps/admin-web/src/*"] }
+    "paths": { "@/*": ["apps/admin-web/src/*"], "~/*": ["apps/chat-web/src/*"] }
   },
-  "include": ["apps/admin-web/src"]
+  "include": ["apps/admin-web/src", "apps/chat-web/src"]
 }

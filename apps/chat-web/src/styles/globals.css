@@ -1,0 +1,206 @@
+/* C1 FE · theme chat-web (chép từ admin-web). Token Sáng theo docs/design/canvas/tokens-map.md; giá trị Tối bổ sung ở F14. */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource/be-vietnam-pro/400.css";
+@import "@fontsource/be-vietnam-pro/500.css";
+@import "@fontsource/be-vietnam-pro/600.css";
+@import "@fontsource/be-vietnam-pro/700.css";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Bề mặt và chữ */
+  --background: #f7f6fa;
+  --foreground: #1d1733;
+  --card: #ffffff;
+  --card-foreground: #1d1733;
+  --popover: #ffffff;
+  --popover-foreground: #1d1733;
+  --muted: #efedf3;
+  --muted-foreground: #635c78;
+  --muted-strong-foreground: #4f4865;
+  --subtle-foreground: #736c89; /* canvas #7A7390, sẫm lại cho AA (tokens-map.md) */
+  --placeholder: #b3adc4;
+
+  /* Thương hiệu */
+  --primary: #6b4fa0;
+  --primary-foreground: #ffffff;
+  --primary-strong: #4a3278;
+  --secondary: #efedf3;
+  --secondary-foreground: #3b3450;
+  --accent: #ede6fb;
+  --accent-foreground: #4a3278;
+  --ink-strong: #2e2150;
+  --on-ink: #e4dcf7;
+  --on-ink-link: #c9b8ff;
+
+  /* Viền */
+  --border: #e6e3ee;
+  --input: #d9d5e3;
+  --row-divider: #f0eef4;
+  --ring: #6b4fa0;
+  --error-border: #d92d20;
+
+  /* Trạng thái */
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --success: #05603f;
+  --success-bg: #e3f4ec;
+  --warning: #7f3c04;
+  --warning-bg: #fdf0df;
+  --warning-solid: #b45309;
+  --danger: #9b1c1c;
+  --danger-bg: #fde8e8;
+  --overage-hatch-from: #c2410c;
+  --overage-hatch-to: #f59e0b;
+
+  /* Sidebar (Sidebar.dc.html) */
+  --sidebar: #fcfbfe;
+  --sidebar-foreground: #3b3450;
+  --sidebar-primary: #6b4fa0;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ede6fb;
+  --sidebar-accent-foreground: #4a3278;
+  --sidebar-border: #e6e3ee;
+  --sidebar-ring: #6b4fa0;
+
+  /* Biểu đồ (Đề xuất, M4) */
+  --chart-1: #6b4fa0;
+  --chart-2: #9c84c9;
+  --chart-3: #2e2150;
+  --chart-4: #c9b8ff;
+  --chart-5: #e08bb4;
+
+  --radius: 8px;
+}
+
+/* Dark: Đề xuất, canvas chưa có artboard dark; chưa có nút bật ở M0. */
+.dark {
+  --background: #15111f;
+  --foreground: #ece8f5;
+  --card: #1e1830;
+  --card-foreground: #ece8f5;
+  --popover: #1e1830;
+  --popover-foreground: #ece8f5;
+  --muted: #2a2340;
+  --muted-foreground: #a9a2bd;
+  --primary: #a58bdb;
+  --primary-foreground: #15111f;
+  --border: #342c49;
+  --input: #342c49;
+  --ring: #a58bdb;
+  --destructive: #f97066;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted-strong-foreground: var(--muted-strong-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-placeholder: var(--placeholder);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-strong: var(--primary-strong);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ink-strong: var(--ink-strong);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-link: var(--on-ink-link);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-row-divider: var(--row-divider);
+  --color-ring: var(--ring);
+  --color-error-border: var(--error-border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-solid: var(--warning-solid);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-overage-hatch-from: var(--overage-hatch-from);
+  --color-overage-hatch-to: var(--overage-hatch-to);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  /* Thang chữ ngữ nghĩa theo canvas; không ghi đè thang mặc định để component shadcn giữ nguyên. */
+  --text-micro: 11px;
+  --text-micro--line-height: 16px;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-label: 13px;
+  --text-label--line-height: 20px;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-card-title: 16px;
+  --text-card-title--line-height: 24px;
+  --text-dialog-title: 18px;
+  --text-dialog-title--line-height: 28px;
+  --text-page-title: 24px;
+  --text-page-title--line-height: 32px;
+  --text-kpi: 28px;
+  --text-kpi--line-height: 36px;
+  --text-display: 40px;
+  --text-display--line-height: 48px;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-toast: 0 8px 24px rgb(29 23 51 / 0.25);
+  --shadow-dialog: 0 20px 48px rgb(29 23 51 / 0.28);
+  --shadow-drawer: -12px 0 32px rgb(29 23 51 / 0.18);
+
+  --spacing-sidebar: 248px;
+  --spacing-sidebar-icon: 64px;
+  --spacing-topbar: 60px;
+  --spacing-control: 36px;
+  --spacing-page: 28px;
+  --container-content: 1280px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans text-body;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: người dùng chọn giảm chuyển động phải thắng mọi utility animate */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: như trên */
+    transition-duration: 0.01ms !important;
+  }
+}

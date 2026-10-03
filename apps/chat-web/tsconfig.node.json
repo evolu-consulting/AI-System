@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  },
+  "include": [
+    "scripts",
+    "rsbuild.config.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.d.ts"
+  ],
+  "exclude": []
+}
