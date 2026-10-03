@@ -99,7 +99,7 @@ decfd21449de994c03c04b8ddba822b41cd3802305e6e215010ce7d9a5f2cd19  tests/acceptan
 975075106f0ded5da078898ff71e6e38bc15d60d8b3b7975328efe9c0aece7d9  tests/acceptance/M3/access-sql.int.test.ts
 254da841e9f2a364e4706d2bed031efa56fa0d242c50264a4a06b8c292aecc5b  tests/acceptance/M3/command-access.int.test.ts
 931619b29a242a7099ee13d5b4870b5a3df991dd6c8986ea5445df1fe5e81450  tests/acceptance/M3/concurrency.int.test.ts
-e8133aabdae93b451544f1cf8b85963430ada99fde720c45890ed85ab9cc7c8f  tests/acceptance/M3/conflict.int.test.ts
+6b5561a28bbe96b1583c3e2cf9cd0bd329b7019846c73d5ade74a090b77db0e1  tests/acceptance/M3/conflict.int.test.ts
 4c2272a6c30e7c70de71941ea831e78982833402498ce99ac1e67e6151fb064c  tests/acceptance/M3/db-rls.int.test.ts
 eb9a0e1f45af797957a3f5f58eee6c76cfd300f43f186d315370babd638275c2  tests/acceptance/M3/db-schema.int.test.ts
 c338fc90e889990f82d99685aa20811eea50c43b359bc0805ad3e1fac2fd1105  tests/acceptance/M3/effective-access.int.test.ts

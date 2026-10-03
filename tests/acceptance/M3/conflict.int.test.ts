@@ -1,5 +1,5 @@
 // ADM-FR-55 · AC-A07 (phần API) · 409 VERSION_CONFLICT cho 6 thực thể có version: current + updated_at; updated_by có ở
-// workflow/command/feature/group, vắng ở user/tenant (nền của câu R21); Ghi đè = gửi lại với version = current.version
+// cả 6 thực thể (user/tenant từ M4-R17 · CR-016; trước M4 vắng — câu R21); Ghi đè = gửi lại với version = current.version
 // (M3-R18, R20, R21; test-plan I-C). Mỗi `it` tự dựng lại dữ liệu; không `it` nào đọc kết quả của `it` khác.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import {
@@ -43,7 +43,7 @@ type Entity = {
   a: Record<string, unknown>;
   b: Record<string, unknown>;
   read: (j: unknown) => unknown;
-  /** user/tenant không có updated_by (câu R21 không `{user}`). */
+  /** Có `updated_by` = người ghi. User/tenant: true từ M4-R17 · CR-016 (M3: false, câu R21 không `{user}`). */
   hasUpdatedBy: boolean;
   startVersion?: { table: string; id: string; version: number };
 };
@@ -57,7 +57,7 @@ const ENTITIES: Entity[] = [
     a: { display_name: "Lan A" },
     b: { display_name: "Lan B" },
     read: (j) => newField(j, "display_name"),
-    hasUpdatedBy: false,
+    hasUpdatedBy: true, // M4-R17 · CR-016: users.updated_by có từ M4
   },
   {
     name: "tenant",
@@ -67,7 +67,7 @@ const ENTITIES: Entity[] = [
     a: { name: "Acme A" },
     b: { name: "Acme B" },
     read: (j) => newField(j, "name"),
-    hasUpdatedBy: false,
+    hasUpdatedBy: true, // M4-R17 · CR-016: tenants.updated_by có từ M4
   },
   {
     name: "workflow",
