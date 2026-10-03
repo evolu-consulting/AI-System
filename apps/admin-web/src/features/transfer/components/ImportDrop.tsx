@@ -10,7 +10,7 @@ type Props = { problem: ImportFileProblem | null; onPick: (file: File) => void }
 export function ImportDrop({ problem, onPick }: Props) {
   const { t } = useTranslation();
   const [over, setOver] = useState(false);
-  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+  const onDrop = (e: DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     setOver(false);
     const f = e.dataTransfer.files[0];
