@@ -16,6 +16,8 @@ import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedAccessRouteImport } from './routes/_authed/access'
 import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
+import { Route as AuthedTransferRouteImport } from './routes/_authed/transfer'
+import { Route as AuthedUsageRouteImport } from './routes/_authed/usage'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
 import { Route as AuthedAccount2faRouteImport } from './routes/_authed/account.2fa'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account.password'
@@ -67,6 +69,16 @@ const AuthedMemberRoute = AuthedMemberRouteImport.update({
 const AuthedSecretsRoute = AuthedSecretsRouteImport.update({
   id: '/secrets',
   path: '/secrets',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTransferRoute = AuthedTransferRouteImport.update({
+  id: '/transfer',
+  path: '/transfer',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedUsageRoute = AuthedUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedUsersRoute = AuthedUsersRouteImport.update({
@@ -168,6 +180,8 @@ export interface FileRoutesByFullPath {
   '/access': typeof AuthedAccessRoute
   '/member': typeof AuthedMemberRoute
   '/secrets': typeof AuthedSecretsRoute
+  '/transfer': typeof AuthedTransferRoute
+  '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
   '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
@@ -193,6 +207,8 @@ export interface FileRoutesByTo {
   '/access': typeof AuthedAccessRoute
   '/member': typeof AuthedMemberRoute
   '/secrets': typeof AuthedSecretsRoute
+  '/transfer': typeof AuthedTransferRoute
+  '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
   '/': typeof AuthedIndexRoute
   '/account/2fa': typeof AuthedAccount2faRoute
@@ -221,6 +237,8 @@ export interface FileRoutesById {
   '/_authed/access': typeof AuthedAccessRoute
   '/_authed/member': typeof AuthedMemberRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
+  '/_authed/transfer': typeof AuthedTransferRoute
+  '/_authed/usage': typeof AuthedUsageRoute
   '/_authed/users': typeof AuthedUsersRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/account/2fa': typeof AuthedAccount2faRoute
@@ -250,6 +268,8 @@ export interface FileRouteTypes {
     | '/access'
     | '/member'
     | '/secrets'
+    | '/transfer'
+    | '/usage'
     | '/users'
     | '/account/2fa'
     | '/account/password'
@@ -275,6 +295,8 @@ export interface FileRouteTypes {
     | '/access'
     | '/member'
     | '/secrets'
+    | '/transfer'
+    | '/usage'
     | '/users'
     | '/'
     | '/account/2fa'
@@ -302,6 +324,8 @@ export interface FileRouteTypes {
     | '/_authed/access'
     | '/_authed/member'
     | '/_authed/secrets'
+    | '/_authed/transfer'
+    | '/_authed/usage'
     | '/_authed/users'
     | '/_authed/'
     | '/_authed/account/2fa'
@@ -378,6 +402,20 @@ declare module '@tanstack/react-router' {
       path: '/secrets'
       fullPath: '/secrets'
       preLoaderRoute: typeof AuthedSecretsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/transfer': {
+      id: '/_authed/transfer'
+      path: '/transfer'
+      fullPath: '/transfer'
+      preLoaderRoute: typeof AuthedTransferRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/usage': {
+      id: '/_authed/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof AuthedUsageRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/users': {
@@ -513,6 +551,8 @@ interface AuthedRouteChildren {
   AuthedAccessRoute: typeof AuthedAccessRoute
   AuthedMemberRoute: typeof AuthedMemberRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
+  AuthedTransferRoute: typeof AuthedTransferRoute
+  AuthedUsageRoute: typeof AuthedUsageRoute
   AuthedUsersRoute: typeof AuthedUsersRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAccount2faRoute: typeof AuthedAccount2faRoute
@@ -538,6 +578,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccessRoute: AuthedAccessRoute,
   AuthedMemberRoute: AuthedMemberRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,
+  AuthedTransferRoute: AuthedTransferRoute,
+  AuthedUsageRoute: AuthedUsageRoute,
   AuthedUsersRoute: AuthedUsersRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAccount2faRoute: AuthedAccount2faRoute,

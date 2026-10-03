@@ -1493,6 +1493,24 @@
     }
   },
   "transfer": {
+    "title": "Import / Export",
+    "subtitle": "Move configuration between environments with a yaml file.",
+    "tab": { "export": "Export", "import": "Import" },
+    "export": {
+      "pick": "Choose content",
+      "selectAll": "Select all",
+      "type": {
+        "workflows": "Workflows",
+        "commands": "Commands",
+        "features": "Features",
+        "tenants": "Tenants",
+        "groups": "Groups",
+        "grants": "Grants"
+      },
+      "note": "Secrets are exported by name only, never values. Agent config is exported in Agent Studio.",
+      "download": "Download {file}",
+      "none": "Select at least one type to export"
+    },
     "toast": {
       "downloaded": "Downloaded {file}"
     }

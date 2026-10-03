@@ -1493,6 +1493,24 @@
     }
   },
   "transfer": {
+    "title": "Import / Export",
+    "subtitle": "Chuyển cấu hình giữa các môi trường bằng file yaml.",
+    "tab": { "export": "Export", "import": "Import" },
+    "export": {
+      "pick": "Chọn nội dung",
+      "selectAll": "Chọn tất cả",
+      "type": {
+        "workflows": "Workflows",
+        "commands": "Commands",
+        "features": "Features",
+        "tenants": "Tenants",
+        "groups": "Groups",
+        "grants": "Grants"
+      },
+      "note": "Secret chỉ xuất tên, không xuất giá trị. Cấu hình agent xuất ở Agent Studio.",
+      "download": "Tải file {file}",
+      "none": "Chọn ít nhất một loại để xuất"
+    },
     "toast": {
       "downloaded": "Đã tải {file}"
     }
