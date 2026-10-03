@@ -82,10 +82,10 @@ Từng trường: `plan.md` §2.
 - **NOTIFY:** `config_changed` (Admin, có sẵn) · `hub_config_changed {v, version}` (seed) · `job_enqueued {v, job_id, provider_key}`, `job_cancel {v, job_id, run_id}` (Hub).
 
 ## 4. Dữ liệu (backend-lead)
-Cột/index/RLS/thứ tự khoá: `plan.md` §3; SQL hàng đợi nguyên văn: `plan.md` §5.4–5.5.
+Cột/RLS/khoá: `plan.md` §3; bảng Runtime + SQL: `plan-db.md`.
 - Bảng: cấu hình (`config_meta, providers, model_profiles, agents, orchestrator_settings, agent_entitlements, agent_grants, agent_workflows`) · hội thoại (`conversations, flows, messages, runs, run_steps`) · Runtime (`jobs, cli_sessions, provider_state, agent_types, usage_logs`). Không làm: `price_book, secrets, attachments, routing_tests*, audit_log`.
-- **Tương thích Admin:** migration ở `packages/db/migrations-hub/`, chạy bằng `runHubMigrations` (`db:migrate` gọi sau `runMigrations`, hàm này không đổi) → test khoá Admin giữ `{main: 9, dev: 3}` và 3 bảng `hub.*`. Ba bảng stub nâng cấp idempotent, giữ tên/kiểu/CHECK/index/`GRANT SELECT … admin_rw`; `usage_logs` chỉ thêm `job_id`, không RLS, không FK (HUB-H1-AC-08).
-- Role: `hub_api` (login = `hub_rw` + `hub_ro`) · `agent_runtime` (login = `agent_rt`; không quyền `admin.*`, đọc giới hạn tenant qua `hub.tenant_sub_limit`). RLS (`app.scope` user/system + tenant + user) trên 5 bảng hội thoại (Q7).
+- **Tương thích Admin:** `packages/db/migrations-hub/` qua `runHubMigrations` (`db:migrate` gọi sau `runMigrations` không đổi) → test khoá Admin giữ `{main: 9, dev: 3}` và 3 bảng `hub.*`. Ba bảng stub nâng cấp idempotent, giữ tên/kiểu/CHECK/index/`GRANT SELECT … admin_rw`; `usage_logs` chỉ thêm cột nullable `job_id, cache_read_tokens, cache_write_tokens`, không RLS, không FK (HUB-H1-AC-08).
+- Role: `hub_api` (login = `hub_rw` + `hub_ro`) · `agent_runtime` (role Runtime duy nhất; không `admin.*`, đọc giới hạn tenant qua `hub.tenant_sub_limit`). RLS (`app.scope` user/system + tenant + user) trên 5 bảng hội thoại (Q7).
 - Seed: `apps/hub-api/seed/*.yaml` + `bun run hub:seed` (`plan.md` §3.6).
 
 ## 5. UI

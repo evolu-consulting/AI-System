@@ -1,6 +1,6 @@
 # Plan · H1-hub-core (BE TS + phần dùng chung)
 
-Python: `plan-runtime.md`. Luật: spec §2. Chat: `C1 plan §2` (chỉ import).
+Python: `plan-runtime.md`. Bảng Runtime + SQL Runtime: `plan-db.md`. Luật: spec §2. Chat: `C1 plan §2` (chỉ import).
 
 ## 1. Quyết định
 | # | Quyết định | Lý do |
@@ -30,10 +30,11 @@ Python: `plan-runtime.md`. Luật: spec §2. Chat: `C1 plan §2` (chỉ import).
 | `job_id, run_id, step_id, tenant_id, user_id, conversation_id, flow_id` | uuid | `step_id` = `run_steps.id` |
 | `feature_id` · `agent_type_key` · `mcp` | nullable uuid · nullable AgentKey · `null` | H1 đều `null` |
 | `agent` | `{id: uuid, key: AgentKey, role: enum[orchestrator, agent]}` | |
-| `provider_key` · `model` · `step_index` | AgentKey · nullable 1–100 · int 0–4 | bước đang chạy (H1 `0`) |
+| `provider_key` · `model` · `step_index` | AgentKey · nullable 1–100 · int 0–4 | bước đang chạy (H1 `0`); `model` = `profile_steps[step_index].model`, null = mặc định CLI |
+| `max_turns` | int 1–100 | `runtime_options.max_turns`; thiếu → agent 30, Orchestrator 3 (Hub điền, schema không `default`) |
 | `profile_steps` | 1–5 × `{provider_key, model, on: enum["error","quota","timeout"][] 0–3}` | H1 1 bước |
 | `system_prompt` · `prompt` | 0–20 000 · 1–200 000 | Orchestrator §6.2–6.3; agent `prompt` = `task` |
-| `history` | 0–50 × `{role: enum[user, assistant], content: 0–64 000}` | `history_n` của flow; dùng khi không resume (H1-R23) |
+| `history` | 0–50 × `{role: enum[user, assistant], content: 0–64 000}` (tên `content` như `messages.content`) | `history_n` của flow; dùng khi không resume (H1-R23) |
 | `use_session` · `allowed_tools` | boolean · AllowedTool[] 0–3 | agent `true` + `runtime_options.allowed_tools` (mặc định Read, Grep); Orchestrator `false` + `[]` |
 | `output` · `timeout_s` | enum[agent_result, text] · int 10–3600 | `text` = nguyên văn, Hub parse |
 
@@ -96,23 +97,14 @@ Quy ước: `id uuid DEFAULT gen_random_uuid()`, thời gian `timestamptz NOT NU
 | `run_steps` | `id, tenant_id, user_id, run_id FK CASCADE, seq, type (orchestrator\|delegate), agent_id null, provider_key null, job_id null, label_key, status (running\|ok\|failed\|skipped), detail jsonb null (trace, không nội dung file), started_at, finished_at null` | `UNIQUE (run_id, seq)` |
 
 ### 3.3 Runtime (Python ghi, ADR-0007 #9)
-| Bảng | Cột | Index (câu dùng) |
-|---|---|---|
-| `jobs` | `id, tenant_id, user_id, run_id FK runs CASCADE, step_id, conversation_id, agent_id, type (agent.cli\|agent.run), provider_key FK providers(key), priority smallint DEFAULT 100 (nhỏ trước), payload jsonb, status DEFAULT 'queued', attempts DEFAULT 0, worker_id null, pgid int null, heartbeat_at null, cancel_requested_at null, started_at null, finished_at null, result jsonb null, error_code null, error_reason null, error_message null, created_at` | claim `(priority, created_at, id) WHERE queued`; slot `(provider_key)`, `(tenant_id) WHERE running`; BR-05 `(conversation_id, agent_id) WHERE queued/running`; huỷ `(run_id)`; orphan `(heartbeat_at) WHERE running` |
-| `cli_sessions` | `conversation_id FK CASCADE, agent_id, provider_key, tenant_id, session_id, updated_at` | PK `(conversation_id, agent_id, provider_key)` |
-| `provider_state` | `provider_key PK FK providers(key) CASCADE, status DEFAULT 'ok' (ok\|busy\|cooldown\|error\|logged_out), cooldown_until null, last_error null (≤ 500), consecutive_errors DEFAULT 0, updated_at` | |
-| `agent_types` | `key PK, runtime, description jsonb, config_schema jsonb, version, worker_id, registered_at` | |
-| `usage_logs` (stub) | giữ mọi cột/CHECK/index; **thêm** `job_id uuid null` | `usage_logs_job_uq UNIQUE (job_id) WHERE job_id IS NOT NULL`; `usage_logs_at_idx (at)` (IF NOT EXISTS — production cần như dev) |
-
-Hàm `hub.tenant_sub_limit(uuid) RETURNS int` — `sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp`, trả `admin.tenants.max_concurrent_sub`: Runtime không cần quyền `admin.*`.
+`jobs, cli_sessions, provider_state, agent_types`, `usage_logs` (+ `job_id, cache_read_tokens, cache_write_tokens` nullable), `hub.tenant_sub_limit`: **`plan-db.md` §3.3**.
 
 ### 3.4 Role, GRANT, RLS
 | Role | Quyền |
 |---|---|
 | `hub_rw` (NOLOGIN) | USAGE hub; CRUD 5 bảng §3.2; SELECT §3.1 + `provider_state, agent_types`; SELECT/INSERT/UPDATE `jobs`; SELECT `usage_logs` |
 | `hub_api` (LOGIN, NOBYPASSRLS; mật khẩu dev ở `migrations-hub-dev`) | `GRANT hub_rw, hub_ro` → một URL `HUB_DATABASE_URL` |
-| `agent_rt` (NOLOGIN) | USAGE hub; SELECT/UPDATE `jobs`; SELECT/INSERT `usage_logs`; CRUD `cli_sessions`; SELECT/INSERT/UPDATE `provider_state, agent_types`; SELECT `providers`; EXECUTE `tenant_sub_limit`. Không `admin.*`, không bảng hội thoại |
-| `agent_runtime` (LOGIN, NOBYPASSRLS, dev) | `GRANT agent_rt` |
+| `agent_runtime` (LOGIN, NOBYPASSRLS; mật khẩu dev ở `migrations-hub-dev`) — role Runtime **duy nhất**, không role nhóm | USAGE hub; SELECT/UPDATE `jobs`; SELECT/INSERT `usage_logs`; CRUD `cli_sessions`; SELECT/INSERT/UPDATE `provider_state, agent_types`; SELECT `providers`; EXECUTE `tenant_sub_limit`. Không `admin.*`, không bảng hội thoại (bảng §3.3 không RLS ⇒ claim xuyên tenant) |
 | `admin_rw` | `GRANT SELECT` lại 3 bảng stub (idempotent), không thêm |
 
 RLS (`ENABLE` + policy `TO hub_rw`, mẫu `0002`) trên 5 bảng §3.2: `USING/WITH CHECK (current_setting('app.scope', true) = 'system' OR (current_setting('app.scope', true) = 'user' AND tenant_id = NULLIF(current_setting('app.tenant_id', true),'')::uuid AND user_id = NULLIF(current_setting('app.user_id', true),'')::uuid))`. `packages/db/src/hub-scope.ts`: `withHubScope(db, {kind:"user", tenantId, userId} | {kind:"system"}, fn)` (như `withScope`); `system` chỉ cho việc nền (runner, lease, quét). Bảng §3.3 không RLS; câu Hub vẫn lọc `tenant_id` (Q7).
@@ -152,57 +144,8 @@ Commit → `run.started` (id 1) → trả stream (P9) → vòng Orchestrator ch�
 ### 5.3 E13
 Run của user (404) → `n` = `parseLastEventId` (chat rules) → `eventsExpired` hoặc key mất → 410 → `XRANGE sse:<id> (<n>-0 +` rồi theo dõi qua `SseReader` (`XREAD BLOCK 1000` multiplex) tới sự kiện kết thúc; `: ping` 15 s. DB đã kết thúc mà stream thiếu sự kiện kết thúc → XADD dựng từ DB, `seq = last+1` (trùng id = đã có người làm).
 
-### 5.4 SQL Runtime (nguyên văn, tham số asyncpg)
-**Claim** — một transaction READ COMMITTED; câu khoá tách riêng để snapshot câu sau thấy mọi claim đã commit:
-```sql
-SELECT pg_advisory_xact_lock(hashtext('hub.jobs.claim'));
-SELECT j.id, j.payload FROM hub.jobs j
-JOIN hub.providers p ON p.key = j.provider_key AND p.enabled
-LEFT JOIN hub.provider_state s ON s.provider_key = p.key
-WHERE j.status = 'queued' AND j.cancel_requested_at IS NULL
-  AND j.provider_key = ANY($1::text[])
-  AND (s.status IS NULL OR s.status IN ('ok','busy') OR (s.status = 'cooldown' AND s.cooldown_until <= now()))
-  AND (SELECT count(*) FROM hub.jobs r WHERE r.status = 'running' AND r.provider_key = j.provider_key) < p.max_concurrency
-  AND (p.kind <> 'subscription' OR hub.tenant_sub_limit(j.tenant_id) IS NULL
-       OR (SELECT count(*) FROM hub.jobs r JOIN hub.providers rp ON rp.key = r.provider_key
-           WHERE r.status = 'running' AND r.tenant_id = j.tenant_id AND rp.kind = 'subscription')
-          < hub.tenant_sub_limit(j.tenant_id))
-  AND NOT EXISTS (SELECT 1 FROM hub.jobs b
-       WHERE b.conversation_id = j.conversation_id AND b.agent_id = j.agent_id
-         AND (b.status = 'running' OR (b.status = 'queued'
-              AND (b.priority, b.created_at, b.id) < (j.priority, j.created_at, j.id))))
-ORDER BY j.priority, j.created_at, j.id
-LIMIT 1
-FOR UPDATE OF j SKIP LOCKED;
-UPDATE hub.jobs SET status = 'running', worker_id = $2, started_at = now(), heartbeat_at = now(), attempts = attempts + 1
-WHERE id = $3 AND status = 'queued';
--- COMMIT → XADD job.started. Không dòng → COMMIT, chờ job_enqueued / poll 1 s
-```
-**pgid:** `UPDATE hub.jobs SET pgid = $3 WHERE id = $1 AND worker_id = $2 AND status = 'running';`
-**Heartbeat 10 s:** `UPDATE hub.jobs SET heartbeat_at = now() WHERE id = $1 AND worker_id = $2 AND status = 'running' RETURNING cancel_requested_at IS NOT NULL AS cancel;` — 0 dòng = không còn của mình → giết group, không ghi gì.
-**Kết thúc** (một transaction, sau khi group đã hết):
-```sql
-UPDATE hub.jobs SET status = $3, result = $4, error_code = $5, error_reason = $6, error_message = $7,
-  finished_at = now(), pgid = NULL
-WHERE id = $1 AND worker_id = $2 AND status = 'running';           -- 0 dòng → ROLLBACK, không XADD
-INSERT INTO hub.usage_logs (tenant_id, run_id, step_id, user_id, feature_id, agent_id, provider_key, model, billing,
-  input_tokens, output_tokens, cost_usd, billable_usd, overage, latency_ms, job_id)
-VALUES ($8, $9, $10, $11, NULL, $12, $13, $14, 'subscription', $15, $16, 0, NULL, false, $17, $1)
-ON CONFLICT (job_id) WHERE job_id IS NOT NULL DO NOTHING;
-INSERT INTO hub.cli_sessions (conversation_id, agent_id, provider_key, tenant_id, session_id, updated_at)
-VALUES ($18, $12, $13, $8, $19, now())
-ON CONFLICT (conversation_id, agent_id, provider_key) DO UPDATE
-  SET session_id = EXCLUDED.session_id, updated_at = now()
-  WHERE hub.cli_sessions.tenant_id = EXCLUDED.tenant_id;          -- chỉ khi use_session và có session_id
--- COMMIT → XADD job.result | job.failed
-```
-**Rate limit** (transaction riêng sau kết thúc): `K_CLAIM` → upsert `hub.provider_state (provider_key=$1, status='cooldown', cooldown_until=$2, last_error=$3, updated_at=now())` `ON CONFLICT (provider_key) DO UPDATE` → `UPDATE hub.jobs SET status = 'failed', error_code = 'ALL_PROVIDERS_EXHAUSTED', error_reason = 'quota', finished_at = now() WHERE status = 'queued' AND provider_key = $1 RETURNING id, run_id;` → COMMIT → XADD `job.failed` từng job.
-**Khởi động lại:** `UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE worker_id = $1 AND status = 'running' RETURNING id, run_id, pgid;` → giết pgid còn sống → XADD `job.failed`. `worker_id` cố định (`AGENT_RT_WORKER_ID`).
-**Manifest:** `INSERT INTO hub.agent_types (…7 cột) VALUES (…, now()) ON CONFLICT (key) DO UPDATE SET` mọi cột `= EXCLUDED.*`, `registered_at = now()`.
-**XADD:** `XADD run:<run_id> MAXLEN ~ 10000 * e <json>` + `EXPIRE run:<run_id> 86400` (pipeline).
-
-### 5.5 Quét orphan (Hub và Runtime, mỗi 10 s)
-`UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE status = 'running' AND heartbeat_at < now() - interval '60 seconds' RETURNING id, run_id, worker_id, pgid;` Runtime: pgid của `worker_id` mình còn sống → giết group.
+### 5.4 SQL Runtime · 5.5 Quét orphan
+Nguyên văn: **`plan-db.md` §5.4–5.5** (claim khoá toàn cục `K_CLAIM`, pgid, heartbeat, kết thúc + usage, provider, khởi động lại, manifest, XADD; quét orphan Hub và Runtime mỗi 10 s).
 
 ### 5.6 AgentRunner (`modules/runner`)
 `interface AgentRunner { run(task: AgentTask, signal: AbortSignal): AsyncIterable<RunEvent> }`; `JobAgentRunner`:
@@ -210,7 +153,7 @@ ON CONFLICT (conversation_id, agent_id, provider_key) DO UPDATE
 2. Transaction `system`: `INSERT hub.jobs` + `SELECT pg_notify('job_enqueued', $1)`.
 3. Theo dõi `run:<run_id>` qua `RunStreamReader` (multiplex), lọc `job_id`.
 4. Im 2 s → đọc `jobs.status/error_*/result` theo id; đã kết thúc mà chưa có sự kiện → dựng từ DB.
-5. Còn `queued` sau `HUB_JOB_MAX_WAIT_S` (30) từ `created_at`: `UPDATE hub.jobs SET status = 'failed', error_code = 'ALL_PROVIDERS_EXHAUSTED', error_reason = $2, finished_at = now() WHERE id = $1 AND status = 'queued'` (0 dòng = vừa được claim; Runtime chạy câu tương tự được, idempotent); `$2 = queueTimeoutReason(…)`.
+5. Còn `queued` sau `HUB_JOB_MAX_WAIT_S` (30) từ `created_at`: `UPDATE hub.jobs SET status = 'failed', error_code = 'ALL_PROVIDERS_EXHAUSTED', error_reason = $2, finished_at = now() WHERE id = $1 AND status = 'queued'` (0 dòng = vừa được claim; **chỉ Hub** chạy — Runtime không hết hạn job `queued`, R11); `$2 = queueTimeoutReason(…)`.
 
 ### 5.7 Huỷ (E15, E9)
 Transaction `system`, §3.5: `flows FOR UPDATE` → `UPDATE runs SET status='cancelled', error_code='CANCELLED', finished_at=now() WHERE id=$1 AND status='running'` (0 dòng → 200 + `Run` hiện tại, không phát gì) → `UPDATE hub.jobs SET status='cancelled', cancel_requested_at=now(), finished_at=now() WHERE run_id=$1 AND status='queued'` → `UPDATE hub.jobs SET cancel_requested_at=now() WHERE run_id=$1 AND status='running' AND cancel_requested_at IS NULL RETURNING id` → `pg_notify('job_cancel')` mỗi id → tin assistant → COMMIT → `run.failed CANCELLED` (chủ qua `AbortSignal`; instance khác XADD `seq` kế, fencing §5.2).
@@ -254,7 +197,7 @@ Env hub-api: `HUB_PORT=4000`, `HUB_DATABASE_URL` (`hub_api`), `REDIS_URL`, `JWT_
 ## 8. Ràng buộc gửi plan-runtime
 | # | Ràng buộc |
 |---|---|
-| R1 | SQL §5.4–5.5 nguyên văn; role `agent_runtime`; không đọc `admin.*` (dùng `hub.tenant_sub_limit`) |
+| R1 | SQL `plan-db.md` §5.4–5.5 nguyên văn; role `agent_runtime`; không đọc `admin.*` (dùng `hub.tenant_sub_limit`) |
 | R2 | Mỗi job đúng một sự kiện kết thúc, XADD **sau** commit; commit 0 dòng → không XADD |
 | R3 | `output="agent_result"`: trích + retry theo `plan-runtime §4` (hỏng → `UPSTREAM_ERROR`, `invalid_output`); `output="text"`: nguyên văn |
 | R4 | `fake-cli` + `output="text"` in JSON `OrchestratorDecision` theo `#fake:delegate=<key>`, `#fake:answer`, `#fake:ask`, `#fake:badjson=<n>` (n lần đầu hỏng — HUB-H1-AC-10) |
@@ -262,3 +205,17 @@ Env hub-api: `HUB_PORT=4000`, `HUB_DATABASE_URL` (`hub_api`), `REDIS_URL`, `JWT_
 | R6 | `datamodel-code-generator` = dev dep (ADR-0009, không lặp ở ADR-0008); `hub.py` qua `pyright` strict bằng cờ codegen, không `type: ignore` |
 | R7 | `usage_logs` cho cả job Orchestrator (`agent_id` = agent orchestrator) |
 | R8 | `job.progress.message` không đường dẫn/nội dung file/prompt |
+
+**Trả lời `plan-runtime.md` §12** (Runtime theo cột "Chốt"; R3, R4, R9 không có trong §12):
+| # | Chốt | Chỗ |
+|---|---|---|
+| R1 | ✓ nhận | §2.2–2.6 |
+| R2 | ✓ nhận, tên theo contract: `history[{role, content}]` (không `text`), `model` (nullable), **thêm** `max_turns` int 1–100 | §2.2 |
+| R5 | ✓ nhận: retry 1 lần trong job rồi `job.failed{UPSTREAM_ERROR, reason:"invalid_output"}` | §8 R3 |
+| R6 | ✓ nhận: `job_id`, `cache_read_tokens`, `cache_write_tokens` nullable; `input_tokens` = tổng gồm cache | `plan-db` §3.3, §5.4 Kết thúc |
+| R7 | ✓ nhận, tên theo plan: `error_reason` (không `reason`); không có status `orphaned` (= `failed` + `error_reason='orphaned'`); `timed_out` là status | §2.5, `plan-db` §3.3 |
+| R8 | ✓ nhận (heartbeat gộp theo `worker_id`; thêm SQL Provider OK/lỗi/hỏng, reset provider khi khởi động, `available`). Hết hạn `queued`: xem R11 | `plan-db` §5.4–5.5 |
+| R10 | Một phần: `provider_state` giữ tên cột `status` (không `state`), có `consecutive_errors`; ✓ `agent_types.available`; **từ chối** unique 4 cột cho `cli_sessions` — `conversation_id` là uuid toàn cục, PK 3 cột + điều kiện `tenant_id` ở mọi SELECT/UPSERT đủ cho BR-06 | `plan-db` §3.3 |
+| R11 | **Từ chối** `max_wait_s` ở payload/`providers`: chỉ Hub hết hạn job `queued` theo env `HUB_JOB_MAX_WAIT_S` (P8, §5.6 bước 5). Runtime không có env/logic `max_wait_s`; provider hỏng → Runtime fail ngay job `queued` của provider đó (Provider hỏng) | §1 P8, §5.6 |
+| R12 | ✓ đã có, chặt hơn: AgentRunner đọc `jobs.status` mỗi 2 s khi im; Hub cũng quét orphan 10 s (heartbeat > 60 s) | §1 P7, §5.6 bước 4, `plan-db` §5.5 |
+| R13 | ✓ nhận: một role `agent_runtime` (bỏ tên `agent_rt`), có SELECT `providers`; bảng Runtime không RLS | §3.4 |
