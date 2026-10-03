@@ -8,7 +8,7 @@ import { listFiles, repoRoot } from "./lib/git";
 export const LOCK_PATH = "tests/.lock";
 export const LOCK_HEADER =
   "# tests/.lock — sinh bởi bun run test:lock:write (chỉ qc). Không sửa tay.";
-const LOCKED_DIRS = ["tests/acceptance", "e2e"];
+const LOCKED_DIRS = ["tests/acceptance", "e2e", "tests/contract"];
 
 export type LockDiff = { kind: "CHANGED" | "MISSING" | "UNLOCKED"; path: string };
 

@@ -1,0 +1,7 @@
+[install]
+linker = "isolated"
+
+[test]
+# Bộ test contract chat (tests/contract/chat): chạy bằng `bun run test:contract:chat`; timeout 30 s đặt bằng cờ --timeout trong script.
+# Không ignore tests/contract (bunfig.toml gốc ignore để `bun test` không chạy nó).
+pathIgnorePatterns = ["e2e/**", "**/node_modules/**", "**/__fixtures__/**"]

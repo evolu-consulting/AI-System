@@ -17,6 +17,8 @@
     "test:perf": "PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test --timeout 60000 .perf.int.test config-write.int.test",
     "check:bundle": "turbo run check:bundle",
     "e2e": "playwright test",
+    "e2e:chat": "bunx playwright test -c e2e/chat/playwright.config.ts",
+    "test:contract:chat": "bun --config=bunfig.contract.toml test --timeout 30000 tests/contract/chat",
     "keys:dev": "bun tools/scripts/src/keys-dev.ts",
     "db:generate": "bun run --cwd packages/db generate",
     "db:migrate": "bun --env-file=.env.local packages/db/src/migrate.ts",
