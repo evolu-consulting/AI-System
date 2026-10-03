@@ -58,8 +58,11 @@ export function AccessTab({ commandId }: { commandId: string }) {
         id: "visible",
         header: t("commands.access.col.visible"),
         cell: (a) => (
-          <span title={t("commands.access.visibleHint", { active: a.active_user_count })}>
+          <span>
             {a.visible_user_count}
+            <span className="block max-w-xs text-caption font-normal text-muted-foreground">
+              {t("commands.access.visibleHint", { active: a.active_user_count })}
+            </span>
           </span>
         ),
       },

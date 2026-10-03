@@ -3,6 +3,7 @@ import type { Group } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
+import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
 import { Button } from "@/components/ui/button";
 import { useGroupGrants } from "../../hooks/use-group-grants";
 import { GroupFeatureEdit } from "./GroupFeatureEdit";
@@ -36,6 +37,7 @@ export function GroupFeaturesTab({ group }: { group: Group }) {
           </Button>
         )}
       </div>
+      {draft.editing ? <UnsavedGuard dirty={draft.dirty} /> : null}
       {draft.editing ? (
         <GroupFeatureEdit rows={g.rows} selected={draft.selected} onToggle={draft.toggle} />
       ) : (

@@ -45,9 +45,10 @@ export function SearchCombobox({
       e.preventDefault();
       const next = active + (e.key === "ArrowDown" ? 1 : -1);
       setActive(Math.min(shown.length - 1, Math.max(0, next)));
-    } else if (e.key === "Enter" && shown[active]) {
+    } else if (e.key === "Enter") {
       e.preventDefault();
-      pick(shown[active].id);
+      // Đang tải: gợi ý còn là của lần tìm cũ → không cho chọn.
+      if (!isLoading && shown[active]) pick(shown[active].id);
     } else if (e.key === "Escape") setOpen(false);
   };
 
@@ -56,7 +57,7 @@ export function SearchCombobox({
       <Input
         role="combobox"
         aria-label={label}
-        aria-expanded={open}
+        aria-expanded={open && query.trim() !== ""}
         aria-controls={listId}
         aria-autocomplete="list"
         aria-activedescendant={shown[active] ? `${listId}-${shown[active].id}` : undefined}
