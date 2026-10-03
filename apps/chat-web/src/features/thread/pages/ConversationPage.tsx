@@ -1,11 +1,13 @@
 // CHAT-AC-05..07, CHAT-AC-20 · `/c/:id`: tiêu đề + "{n} flow", luồng khối flow (E7 + E10), composer chính (ô chính → flow mới).
-// `?flow=` → khung flow (F10 thêm FlowPanel/FlowSheet cạnh cột chính); F8 chỉ điều hướng + đánh dấu khối đang mở.
+// CHAT-AC-14..17 · `?flow=` → khung flow (FlowPanel ≥ 640 / FlowSheet < 640) cạnh cột chính.
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { prefetchMarkdown } from "~/features/answer/components/AnswerBody";
 import { Composer } from "~/features/composer/components/Composer";
 import { draftKey } from "~/features/composer/lib/composer-logic";
+import { FlowPane } from "~/features/flow-panel/components/FlowPane";
+import { useOpenFlow } from "~/features/flow-panel/hooks/use-open-flow";
 import { useActiveRun } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
 import { useRuns } from "~/features/run/run-store";
@@ -57,31 +59,42 @@ function ConversationView({ convId }: { convId: string }) {
   const pendingKeys = useMemo(() => (pending ? pending.split(",") : []), [pending]);
   const autoscroll = useAutoscroll(useActiveRun(convId) !== undefined);
   const composer = useMainComposer(convId, autoscroll.scrollToBottom);
+  const open = useOpenFlow(convId, openFlowId, flows);
 
   useEffect(() => prefetchMarkdown(), []);
 
   if (isNotFound(conv.error) || isNotFound(flows.error)) return <NotFoundState />;
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex h-[60px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 sm:px-6">
-        <h1 className="truncate text-card-title font-semibold">{conv.data?.title ?? ""}</h1>
-        {conv.data && (
-          <span className="shrink-0 rounded-full bg-row-divider px-2 py-0.5 text-caption text-muted-foreground">
-            {t("thread.flowCount", { count: conv.data.flow_count })}
-          </span>
-        )}
-      </header>
-      <ThreadView
-        convId={convId}
-        loading={flows.isPending}
-        flows={flows.flows}
-        pendingKeys={pendingKeys}
-        openFlowId={openFlowId}
-        autoscroll={autoscroll}
-      />
-      <div className="mx-auto w-full max-w-[800px] px-4 pb-5 sm:px-6">
-        <Composer variant="main" draftKey={draftKey(convId, null)} autoFocus {...composer} />
+    <div className="flex min-h-0 min-w-0 flex-1">
+      <div className="flex min-h-0 min-w-0 flex-[1_1_0] flex-col">
+        <header className="flex h-[60px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 sm:px-6">
+          <h1 className="truncate text-card-title font-semibold">{conv.data?.title ?? ""}</h1>
+          {conv.data && (
+            <span className="shrink-0 rounded-full bg-row-divider px-2 py-0.5 text-caption text-muted-foreground">
+              {t("thread.flowCount", { count: conv.data.flow_count })}
+            </span>
+          )}
+        </header>
+        <ThreadView
+          convId={convId}
+          loading={flows.isPending}
+          flows={flows.flows}
+          pendingKeys={pendingKeys}
+          openFlowId={openFlowId}
+          autoscroll={autoscroll}
+        />
+        <div className="mx-auto w-full max-w-[800px] px-4 pb-5 sm:px-6">
+          <Composer
+            variant="main"
+            draftKey={draftKey(convId, null)}
+            autoFocus={!open.flow}
+            {...composer}
+          />
+        </div>
       </div>
+      {open.flow && (
+        <FlowPane key={open.flow.id} convId={convId} flow={open.flow} onClose={open.close} />
+      )}
     </div>
   );
 }

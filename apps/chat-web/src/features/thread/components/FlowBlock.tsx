@@ -1,8 +1,8 @@
 // CHAT-AC-05, CHAT-AC-06 · khối flow ở luồng chính: câu hỏi đầu (phải) + Consultant + câu trả lời đầu (stream ngay trong khối) + footer.
-import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
 import { AnswerBody } from "~/features/answer/components/AnswerBody";
+import { ColdResumeNote } from "~/features/answer/components/ColdResumeNote";
 import { cn } from "~/lib/utils";
 import type { AnswerView } from "../lib/thread-logic";
 import { AnswerExtras } from "./AnswerExtras";
@@ -28,17 +28,10 @@ function StreamingCursor() {
   );
 }
 
-function Answer({ answer }: { answer: AnswerView }) {
-  const { t } = useTranslation();
+/** Thân câu trả lời (chờ / cold / stream + con trỏ) — dùng chung cho khối flow và khung flow (F10). */
+export function Answer({ answer }: { answer: AnswerView }) {
   if (answer.waiting) {
-    return answer.cold ? (
-      <p role="status" className="flex items-center gap-2 text-muted-foreground">
-        <LoaderCircle className="size-4 animate-spin" aria-hidden />
-        {t("flow.cold")}
-      </p>
-    ) : (
-      <StreamingCursor />
-    );
+    return answer.cold ? <ColdResumeNote /> : <StreamingCursor />;
   }
   return (
     <div className="leading-relaxed" aria-busy={answer.streaming || undefined}>

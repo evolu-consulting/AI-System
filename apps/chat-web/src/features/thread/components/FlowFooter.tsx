@@ -72,6 +72,7 @@ export function FlowFooter({ copyValue, onReply, ...meta }: FlowFooterProps) {
         className="h-[30px] gap-1.5 rounded-full px-3 text-caption text-primary-strong"
         disabled={!onReply}
         onClick={onReply}
+        data-flow-reply
       >
         {t("flow.reply")}
         <ChevronRight className="size-3.5" aria-hidden />
