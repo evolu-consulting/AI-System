@@ -20,6 +20,7 @@ import {
   type Tx,
   withScope,
 } from "@ai/db";
+import type { InTx, RestoreAt } from "../../lib/audit/audit.write";
 import { auditOf } from "../../lib/audit/audit.write";
 import type { Actor } from "../../lib/auth-middleware";
 import { configWrite } from "../../lib/config/config-write";
@@ -199,44 +200,58 @@ async function writeNames(
 }
 
 export function createCommand(c: Call, input: CommandCreateRequest): Promise<Command> {
-  return configWrite(c, "command.save", async (tx, ch) => {
-    const wf = await lockWorkflowRef(tx, input.workflow_id);
-    await afterLock(c.ctx.hooks, "command.save");
-    const s: CommandState = {
-      name: input.name,
-      aliases: input.aliases,
-      description: input.description,
-      workflowId: input.workflow_id,
-      args: input.args,
-      inputMap: input.input_map,
-      output: input.output,
-      mode: input.mode,
-      timeoutS: input.timeout_s ?? defaultTimeout(input.mode),
-      enabled: input.enabled,
-      featureIds: input.feature_ids ?? [await coreFeatureId(tx)],
-    };
-    await checkState(tx, s, wf, null);
-    const id = Bun.randomUUIDv7();
-    await writeNames(tx, s, null, async (sp) => {
-      await repo.insertCommand(sp, { ...valuesOf(s), id, actorId: c.actor.userId });
-      await repo.insertNames(sp, id, commandNames(s));
-    });
-    await afterLock(c.ctx.hooks, "command.save", "names");
-    // Khoá features SAU khi ghi tên (cùng thứ tự với PATCH, review M2 v2 #1); FeatureRef trả về dùng lại cho response.
-    const refs = await lockFeatureRefs(tx, s.featureIds);
-    const gone = s.featureIds.filter((x) => !refs.some((r) => r.id === x));
-    if (gone.length > 0) throw appError("INVALID_REFERENCE", { field: "feature_ids", ids: gone });
-    await attachNewCommand(tx, {
-      commandId: id,
-      featureIds: s.featureIds,
+  return configWrite(c, "command.save", (tx, ch) => createCommandIn({ tx, ch }, c, input));
+}
+
+/** Lõi tx của POST; `at` = chèn lại cùng id/version (khôi phục bản đã xoá, plan M4 §4.4). */
+export async function createCommandIn(
+  w: InTx,
+  c: Call,
+  input: CommandCreateRequest,
+  at?: RestoreAt,
+): Promise<Command> {
+  const { tx, ch } = w;
+  const wf = await lockWorkflowRef(tx, input.workflow_id);
+  await afterLock(c.ctx.hooks, "command.save");
+  const s: CommandState = {
+    name: input.name,
+    aliases: input.aliases,
+    description: input.description,
+    workflowId: input.workflow_id,
+    args: input.args,
+    inputMap: input.input_map,
+    output: input.output,
+    mode: input.mode,
+    timeoutS: input.timeout_s ?? defaultTimeout(input.mode),
+    enabled: input.enabled,
+    featureIds: input.feature_ids ?? [await coreFeatureId(tx)],
+  };
+  await checkState(tx, s, wf, null);
+  const id = at?.id ?? Bun.randomUUIDv7();
+  await writeNames(tx, s, null, async (sp) => {
+    await repo.insertCommand(sp, {
+      ...valuesOf(s),
+      id,
+      version: at?.version,
       actorId: c.actor.userId,
     });
-    ch.changed({ entity: "command", tenantId: null });
-    await afterLock(c.ctx.hooks, "command.save", "rows");
-    const after = await detail(tx, id, wf, refs);
-    ch.audit(commandAudit("create", null, after));
-    return after;
+    await repo.insertNames(sp, id, commandNames(s));
   });
+  await afterLock(c.ctx.hooks, "command.save", "names");
+  // Khoá features SAU khi ghi tên (cùng thứ tự với PATCH, review M2 v2 #1); FeatureRef trả về dùng lại cho response.
+  const refs = await lockFeatureRefs(tx, s.featureIds);
+  const gone = s.featureIds.filter((x) => !refs.some((r) => r.id === x));
+  if (gone.length > 0) throw appError("INVALID_REFERENCE", { field: "feature_ids", ids: gone });
+  await attachNewCommand(tx, {
+    commandId: id,
+    featureIds: s.featureIds,
+    actorId: c.actor.userId,
+  });
+  ch.changed({ entity: "command", tenantId: null });
+  await afterLock(c.ctx.hooks, "command.save", "rows");
+  const after = await detail(tx, id, wf, refs);
+  ch.audit(commandAudit("create", null, after));
+  return after;
 }
 
 function mergeState(cur: CommandState, i: CommandUpdateRequest): CommandState {
@@ -296,37 +311,46 @@ async function lockForUpdate(tx: Tx, c: Call, id: string, input: CommandUpdateRe
 }
 
 export function updateCommand(c: Call, id: string, input: CommandUpdateRequest): Promise<Command> {
-  return configWrite(c, "command.save", async (tx, ch) => {
-    const { row, wf } = await lockForUpdate(tx, c, id, input);
-    if (row.version !== input.version) {
-      const current = await detail(tx, id);
-      throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
-    }
-    const cur = await stateOf(tx, row);
-    const next = mergeState(cur, input);
-    const changed = changedCommandFields(cur, next);
-    if (changed.length === 0) return detail(tx, id);
-    checkAliasesNotName(next);
-    await checkState(tx, next, wf, id);
-    const before = await detail(tx, id, wf);
-    await writeNames(tx, next, id, async (sp) => {
-      await repo.bumpCommand(sp, id, valuesOf(next), c.actor.userId);
-      if (changed.includes("name") || changed.includes("aliases"))
-        await repo.syncNames(sp, id, commandNames(next));
-    });
-    await afterLock(c.ctx.hooks, "command.save", "names");
-    if (changed.includes("featureIds"))
-      await setCommandFeatures(tx, {
-        commandId: id,
-        featureIds: next.featureIds,
-        actorId: c.actor.userId,
-      });
-    ch.changed({ entity: "command", tenantId: null });
-    await afterLock(c.ctx.hooks, "command.save", "rows");
-    const after = await detail(tx, id, wf);
-    ch.audit(commandAudit("update", before, after));
-    return after;
+  return configWrite(c, "command.save", (tx, ch) => updateCommandIn({ tx, ch }, c, id, input));
+}
+
+/** Lõi tx của PATCH (khôi phục dùng lại, plan M4 §4.4). */
+export async function updateCommandIn(
+  w: InTx,
+  c: Call,
+  id: string,
+  input: CommandUpdateRequest,
+): Promise<Command> {
+  const { tx, ch } = w;
+  const { row, wf } = await lockForUpdate(tx, c, id, input);
+  if (row.version !== input.version) {
+    const current = await detail(tx, id);
+    throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
+  }
+  const cur = await stateOf(tx, row);
+  const next = mergeState(cur, input);
+  const changed = changedCommandFields(cur, next);
+  if (changed.length === 0) return detail(tx, id);
+  checkAliasesNotName(next);
+  await checkState(tx, next, wf, id);
+  const before = await detail(tx, id, wf);
+  await writeNames(tx, next, id, async (sp) => {
+    await repo.bumpCommand(sp, id, valuesOf(next), c.actor.userId);
+    if (changed.includes("name") || changed.includes("aliases"))
+      await repo.syncNames(sp, id, commandNames(next));
   });
+  await afterLock(c.ctx.hooks, "command.save", "names");
+  if (changed.includes("featureIds"))
+    await setCommandFeatures(tx, {
+      commandId: id,
+      featureIds: next.featureIds,
+      actorId: c.actor.userId,
+    });
+  ch.changed({ entity: "command", tenantId: null });
+  await afterLock(c.ctx.hooks, "command.save", "rows");
+  const after = await detail(tx, id, wf);
+  ch.audit(commandAudit("update", before, after));
+  return after;
 }
 
 /** Khoá command → tăng version mọi feature chứa nó → xoá (cascade command_names, feature_commands). */

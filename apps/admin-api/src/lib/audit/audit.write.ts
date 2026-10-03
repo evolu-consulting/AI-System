@@ -1,7 +1,13 @@
 // ADM-FR-51 · M4-R10 · dựng hàng audit (`auditOf`) và ghi audit cho transaction không bump `config_version`
 // (`recordAudit`: users reset-password, 2FA). Plan M4 §4.1, plan-cd §4.4.
 import type { AuditEntity } from "@ai/contracts";
-import { type AuditActionValue, type AuditInput, insertAuditRows, type Tx } from "@ai/db";
+import {
+  type AuditActionValue,
+  type AuditInput,
+  type ConfigSink,
+  insertAuditRows,
+  type Tx,
+} from "@ai/db";
 import { auditSnapshot } from "./audit.rules";
 
 type Dto = Readonly<Record<string, unknown>>;
@@ -46,3 +52,9 @@ export async function recordAudit(tx: Tx, e: AuditEntry): Promise<void> {
   const { actorId, ...row } = e;
   await insertAuditRows(tx, [row], { actorId, v: null });
 }
+
+/** Khôi phục bản đã xoá (plan M4 §4.4): chèn lại cùng `id`, `version` = bản cuối + 1. */
+export type RestoreAt = { id: string; version: number };
+
+/** Lõi tx của thao tác ghi cấu hình (callback `configWrite`), để khôi phục chạy lại trong một transaction. */
+export type InTx = { tx: Tx; ch: ConfigSink };

@@ -21,6 +21,7 @@ import {
   type Tx,
   withScope,
 } from "@ai/db";
+import type { InTx, RestoreAt } from "../../lib/audit/audit.write";
 import { auditOf } from "../../lib/audit/audit.write";
 import type { Actor } from "../../lib/auth-middleware";
 import { configWrite } from "../../lib/config/config-write";
@@ -134,30 +135,40 @@ export function getWorkflowUsages(c: Call, id: string): Promise<WorkflowUsages> 
 }
 
 export function createWorkflow(c: Call, input: WorkflowCreateRequest): Promise<Workflow> {
-  return configWrite(c, "workflow.save", async (tx, ch) => {
-    await lockSecretRef(tx, input.secret_id);
-    await afterLock(c.ctx.hooks, "workflow.save");
-    const id = Bun.randomUUIDv7();
-    const values = {
-      id,
-      key: input.key,
-      actorId: c.actor.userId,
-      name: input.name,
-      description: input.description,
-      appType: input.app_type,
-      baseUrl: input.base_url,
-      secretId: input.secret_id,
-      inputSchema: input.input_schema,
-      outputField: input.output_field,
-      enabled: input.enabled,
-    };
-    await tx.transaction((sp) => repo.insertWorkflow(sp, values)).catch(mapWorkflowConflict);
-    ch.changed({ entity: "workflow", tenantId: null });
-    await afterLock(c.ctx.hooks, "workflow.save", "rows");
-    const after = await detail(tx, id);
-    ch.audit(workflowAudit("create", null, after));
-    return after;
-  });
+  return configWrite(c, "workflow.save", (tx, ch) => createWorkflowIn({ tx, ch }, c, input));
+}
+
+/** Lõi tx của POST; `at` = chèn lại cùng id/version (khôi phục bản đã xoá, plan M4 §4.4). */
+export async function createWorkflowIn(
+  w: InTx,
+  c: Call,
+  input: WorkflowCreateRequest,
+  at?: RestoreAt,
+): Promise<Workflow> {
+  const { tx, ch } = w;
+  await lockSecretRef(tx, input.secret_id);
+  await afterLock(c.ctx.hooks, "workflow.save");
+  const id = at?.id ?? Bun.randomUUIDv7();
+  const values = {
+    id,
+    version: at?.version,
+    key: input.key,
+    actorId: c.actor.userId,
+    name: input.name,
+    description: input.description,
+    appType: input.app_type,
+    baseUrl: input.base_url,
+    secretId: input.secret_id,
+    inputSchema: input.input_schema,
+    outputField: input.output_field,
+    enabled: input.enabled,
+  };
+  await tx.transaction((sp) => repo.insertWorkflow(sp, values)).catch(mapWorkflowConflict);
+  ch.changed({ entity: "workflow", tenantId: null });
+  await afterLock(c.ctx.hooks, "workflow.save", "rows");
+  const after = await detail(tx, id);
+  ch.audit(workflowAudit("create", null, after));
+  return after;
 }
 
 const stateOf = (r: repo.WorkflowRow): WorkflowState => ({
@@ -198,28 +209,37 @@ export function updateWorkflow(
   id: string,
   input: WorkflowUpdateRequest,
 ): Promise<Workflow> {
-  return configWrite(c, "workflow.save", async (tx, ch) => {
-    if (!(await repo.lockWorkflow(tx, id, "no key update"))) throw appError("NOT_FOUND");
-    await afterLock(c.ctx.hooks, "workflow.save");
-    const row = await repo.findWorkflow(tx, id, await hubAgentsReadable(tx));
-    if (!row) throw appError("NOT_FOUND");
-    if (row.version !== input.version) {
-      const current = toWorkflow(row);
-      throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
-    }
-    const cur = stateOf(row);
-    const next = mergeState(cur, input);
-    if (changedWorkflowFields(cur, next).length === 0) return toWorkflow(row);
-    const changed = await checkUpdate(tx, id, cur, next);
-    const set: Partial<repo.WorkflowValues> = {};
-    for (const k of changed) Object.assign(set, { [k]: next[k] });
-    await repo.bumpWorkflow(tx, id, set, c.actor.userId);
-    ch.changed({ entity: "workflow", tenantId: null });
-    await afterLock(c.ctx.hooks, "workflow.save", "rows");
-    const after = await detail(tx, id);
-    ch.audit(workflowAudit("update", toWorkflow(row), after));
-    return after;
-  });
+  return configWrite(c, "workflow.save", (tx, ch) => updateWorkflowIn({ tx, ch }, c, id, input));
+}
+
+/** Lõi tx của PATCH (khôi phục dùng lại, plan M4 §4.4). */
+export async function updateWorkflowIn(
+  w: InTx,
+  c: Call,
+  id: string,
+  input: WorkflowUpdateRequest,
+): Promise<Workflow> {
+  const { tx, ch } = w;
+  if (!(await repo.lockWorkflow(tx, id, "no key update"))) throw appError("NOT_FOUND");
+  await afterLock(c.ctx.hooks, "workflow.save");
+  const row = await repo.findWorkflow(tx, id, await hubAgentsReadable(tx));
+  if (!row) throw appError("NOT_FOUND");
+  if (row.version !== input.version) {
+    const current = toWorkflow(row);
+    throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
+  }
+  const cur = stateOf(row);
+  const next = mergeState(cur, input);
+  if (changedWorkflowFields(cur, next).length === 0) return toWorkflow(row);
+  const changed = await checkUpdate(tx, id, cur, next);
+  const set: Partial<repo.WorkflowValues> = {};
+  for (const k of changed) Object.assign(set, { [k]: next[k] });
+  await repo.bumpWorkflow(tx, id, set, c.actor.userId);
+  ch.changed({ entity: "workflow", tenantId: null });
+  await afterLock(c.ctx.hooks, "workflow.save", "rows");
+  const after = await detail(tx, id);
+  ch.audit(workflowAudit("update", toWorkflow(row), after));
+  return after;
 }
 
 /** 404 → WORKFLOW_IN_USE (mọi command + agent) → xoá. 23503 (command chèn đua) → đọc lại usages → WORKFLOW_IN_USE. */

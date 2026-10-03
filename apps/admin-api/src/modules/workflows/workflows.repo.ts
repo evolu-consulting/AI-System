@@ -212,7 +212,7 @@ export type WorkflowValues = {
 
 export async function insertWorkflow(
   tx: Tx,
-  w: WorkflowValues & { id: string; key: string; actorId: string },
+  w: WorkflowValues & { id: string; key: string; actorId: string; version?: number },
 ): Promise<void> {
   const { actorId, ...rest } = w;
   await tx.insert(workflows).values({ ...rest, updatedBy: actorId });

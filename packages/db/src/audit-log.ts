@@ -10,6 +10,8 @@ type Json = Readonly<Record<string, unknown>>;
 
 /** Một hàng audit chưa gắn actor/`config_version` (`ConfigSink.audit`, plan §4.1). */
 export type AuditInput = {
+  /** Đặt trước khi cần trả id hàng audit cho client (restore: `audit_id`); vắng → `gen_random_uuid()`. */
+  id?: string;
   action: AuditActionValue;
   entity: AuditEntityValue;
   entityId: string | null;
@@ -33,7 +35,7 @@ export type AuditMeta = {
 const json = (x: Json | null | undefined): string | null => (x == null ? null : JSON.stringify(x));
 
 function valuesRow(r: AuditInput): SQL {
-  return sql`(${r.tenantId}::uuid, ${r.action}, ${r.entity}, ${r.entityId}::uuid, ${r.entityName},
+  return sql`(${r.id ?? null}::uuid, ${r.tenantId}::uuid, ${r.action}, ${r.entity}, ${r.entityId}::uuid, ${r.entityName},
     ${r.entityVersion ?? null}::int, ${json(r.before)}::jsonb, ${json(r.after)}::jsonb,
     ${json(r.summary ?? {})}::jsonb, ${r.snapshot ?? false}::boolean)`;
 }
@@ -49,12 +51,12 @@ export async function insertAuditRows(
 ): Promise<void> {
   if (rows.length === 0) return;
   await tx.execute(sql`
-    insert into admin.audit_log (tenant_id, actor_id, actor_username, action, entity, entity_id, entity_name,
+    insert into admin.audit_log (id, tenant_id, actor_id, actor_username, action, entity, entity_id, entity_name,
       config_version, entity_version, before, after, summary, snapshot)
-    select v.tenant_id, ${meta.actorId}::uuid,
+    select coalesce(v.id, gen_random_uuid()), v.tenant_id, ${meta.actorId}::uuid,
       (select u.username from admin.users u where u.id = ${meta.actorId}::uuid),
       v.action, v.entity, v.entity_id, v.entity_name, ${meta.v}::int, v.entity_version, v.before, v.after,
       v.summary, v.snapshot
     from (values ${sql.join(rows.map(valuesRow), sql`, `)})
-      as v(tenant_id, action, entity, entity_id, entity_name, entity_version, before, after, summary, snapshot)`);
+      as v(id, tenant_id, action, entity, entity_id, entity_name, entity_version, before, after, summary, snapshot)`);
 }

@@ -1,5 +1,5 @@
 // ADM-FR-51, ADM-BR-09 · M4-R12 · đọc audit (plan §4.3). Không biết HTTP. `restorable` tính theo người gọi
-// (`canRestore`); khôi phục (POST /:id/restore) ở T2b.
+// (`canRestore`); khôi phục (POST /:id/restore) ở `audit.restore.ts`.
 import {
   type AuditDetail,
   type AuditItem,

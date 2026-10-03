@@ -3,6 +3,7 @@
 // bump/audit/NOTIFY/evaluate; đổi thật → tenant version+1, `updated_by`, audit snapshot, sau commit evaluator chạy nền.
 import type { QuotaItemInput, QuotaSetRequest, QuotaSetResponse, QuotaStatus } from "@ai/contracts";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
+import type { InTx } from "../../lib/audit/audit.write";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
@@ -113,7 +114,7 @@ export async function getQuotas(c: QuotasCall, id: string): Promise<QuotaSetResp
 }
 
 /** 400 trước khi mở transaction: trùng `feature_id` (null là một giá trị). */
-function checkItems(items: readonly QuotaItemInput[]): void {
+export function checkItems(items: readonly QuotaItemInput[]): void {
   const dup = duplicateFeatureIndex(items);
   if (dup === null) return;
   throw validationError([
@@ -138,46 +139,60 @@ export async function putQuotas(
   input: QuotaSetRequest,
 ): Promise<QuotaSetResponse> {
   checkItems(input.items);
-  const items = normalizeQuotaItems(input.items);
-  const now = c.ctx.now();
   let changed = false;
   const out = await configWrite(c, "quota.save", async (tx, ch) => {
-    changed = false;
-    const t = await mustTenant(tx, id, true);
-    if (t.version !== input.version) {
-      const current = await buildResponse(tx, t, now);
-      throw appError("VERSION_CONFLICT", { current, updated_at: t.updated_at });
-    }
-    await lockFeatures(tx, id, items);
-    await afterLock(c.ctx.hooks, "quota.save", "locked");
-    const before = await repo.listQuotas(tx, id);
-    if (sameQuotaSet(normalizeQuotaItems(before.map(limitsOf)), items)) {
-      return buildResponse(tx, t, now, before);
-    }
-    await repo.replaceQuotas(tx, id, items, c.actor.userId);
-    await repo.bumpTenant(tx, id, c.actor.userId);
-    ch.changed({ entity: "quota", tenantId: id });
-    await afterLock(c.ctx.hooks, "quota.save", "rows");
-    const after = await repo.listQuotas(tx, id);
-    const t2 = { ...t, version: t.version + 1 };
-    ch.audit(
-      auditOf("update", "quota", {
-        entityId: id,
-        entityName: t.key,
-        tenantId: id,
-        before: { items: auditItems(before) },
-        after: { items: auditItems(after) },
-        entityVersion: t2.version,
-        snapshot: true,
-      }),
-    );
-    changed = true;
-    return buildResponse(tx, t2, now, after);
+    const r = await putQuotasIn({ tx, ch }, c, id, input);
+    changed = r.changed;
+    return r.out;
   });
-  if (changed) {
-    void evaluateTenant(c.ctx, id).catch((err) =>
-      logger.error("quota evaluate failed", { module: "quotas", ...safeErrorFields(err) }),
-    );
-  }
+  if (changed) evaluateLater(c.ctx, id);
   return out;
+}
+
+/** Evaluator chạy nền sau commit (lỗi chỉ log). */
+export function evaluateLater(ctx: QuotasCtx, id: string): void {
+  void evaluateTenant(ctx, id).catch((err) =>
+    logger.error("quota evaluate failed", { module: "quotas", ...safeErrorFields(err) }),
+  );
+}
+
+/** Lõi tx của PUT (đã `checkItems`); khôi phục dùng lại (plan M4 §4.4). `changed` = đã ghi + audit. */
+export async function putQuotasIn(
+  w: InTx,
+  c: QuotasCall,
+  id: string,
+  input: QuotaSetRequest,
+): Promise<{ out: QuotaSetResponse; changed: boolean }> {
+  const { tx, ch } = w;
+  const now = c.ctx.now();
+  const items = normalizeQuotaItems(input.items);
+  const t = await mustTenant(tx, id, true);
+  if (t.version !== input.version) {
+    const current = await buildResponse(tx, t, now);
+    throw appError("VERSION_CONFLICT", { current, updated_at: t.updated_at });
+  }
+  await lockFeatures(tx, id, items);
+  await afterLock(c.ctx.hooks, "quota.save", "locked");
+  const before = await repo.listQuotas(tx, id);
+  if (sameQuotaSet(normalizeQuotaItems(before.map(limitsOf)), items)) {
+    return { out: await buildResponse(tx, t, now, before), changed: false };
+  }
+  await repo.replaceQuotas(tx, id, items, c.actor.userId);
+  await repo.bumpTenant(tx, id, c.actor.userId);
+  ch.changed({ entity: "quota", tenantId: id });
+  await afterLock(c.ctx.hooks, "quota.save", "rows");
+  const after = await repo.listQuotas(tx, id);
+  const t2 = { ...t, version: t.version + 1 };
+  ch.audit(
+    auditOf("update", "quota", {
+      entityId: id,
+      entityName: t.key,
+      tenantId: id,
+      before: { items: auditItems(before) },
+      after: { items: auditItems(after) },
+      entityVersion: t2.version,
+      snapshot: true,
+    }),
+  );
+  return { out: await buildResponse(tx, t2, now, after), changed: true };
 }

@@ -181,7 +181,7 @@ export type CommandValues = {
 
 export async function insertCommand(
   tx: Tx,
-  v: CommandValues & { id: string; actorId: string },
+  v: CommandValues & { id: string; actorId: string; version?: number },
 ): Promise<void> {
   const { actorId, ...rest } = v;
   await tx.insert(commands).values({ ...rest, updatedBy: actorId });

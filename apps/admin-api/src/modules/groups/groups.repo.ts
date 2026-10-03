@@ -92,6 +92,8 @@ export type NewGroup = {
   name: { vi: string; en?: string };
   description: string | null;
   actorId: string;
+  /** Vắng = mặc định 1; khôi phục bản đã xoá đặt bản cuối + 1. */
+  version?: number;
 };
 
 /** 23505 `groups_tenant_key_uq` do service dịch thành KEY_TAKEN. */
@@ -102,6 +104,7 @@ export async function insertGroup(tx: Tx, g: NewGroup): Promise<void> {
     key: g.key,
     name: g.name,
     description: g.description,
+    version: g.version,
     updatedBy: g.actorId,
   });
 }

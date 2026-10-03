@@ -88,7 +88,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/commands", commandsRoutes({ ...ctx, hooks }));
   app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
   app.route("/admin/import", importRoutes({ ...qctx, secretKey: deps.secretKey, hooks }));
-  app.route("/admin/audit", auditRoutes(ctx));
+  app.route("/admin/audit", auditRoutes({ ...qctx, hooks }));
   app.route("/admin", usageRoutes(ctx));
   app.route("/admin", overviewRoutes(qctx));
 }

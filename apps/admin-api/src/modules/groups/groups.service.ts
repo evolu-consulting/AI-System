@@ -21,6 +21,7 @@ import {
   withScope,
 } from "@ai/db";
 import { z } from "zod";
+import type { InTx, RestoreAt } from "../../lib/audit/audit.write";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
@@ -138,22 +139,34 @@ export function createGroup(
   input: GroupCreateRequest,
 ): Promise<Group> {
   const tenantId = writeTenant(c.actor, queryTenantId);
-  return configWrite(c, "group.save", async (tx, ch) => {
-    if (!(await repo.tenantExists(tx, tenantId))) throw appError("NOT_FOUND");
-    const id = Bun.randomUUIDv7();
-    const row = { id, tenantId, ...input, actorId: c.actor.userId };
-    await tx
-      .transaction((sp) => repo.insertGroup(sp, row))
-      .catch((err) => {
-        if (uniqueViolation(err) === "groups_tenant_key_uq") throw appError("KEY_TAKEN");
-        throw err;
-      });
-    ch.changed({ entity: "group", tenantId });
-    await afterLock(c.ctx.hooks, "group.save", "rows");
-    const after = toGroup(await mustFind(tx, c, id));
-    ch.audit(groupAudit("create", null, after));
-    return after;
-  });
+  return configWrite(c, "group.save", (tx, ch) =>
+    createGroupIn({ tx, ch }, c, { tenantId, input }),
+  );
+}
+
+/** Lõi tx của POST; `at` = chèn lại cùng id/version (khôi phục bản đã xoá, plan M4 §4.4). */
+export async function createGroupIn(
+  w: InTx,
+  c: Call,
+  req: { tenantId: string; input: GroupCreateRequest },
+  at?: RestoreAt,
+): Promise<Group> {
+  const { tx, ch } = w;
+  const { tenantId, input } = req;
+  if (!(await repo.tenantExists(tx, tenantId))) throw appError("NOT_FOUND");
+  const id = at?.id ?? Bun.randomUUIDv7();
+  const row = { id, tenantId, ...input, actorId: c.actor.userId, version: at?.version };
+  await tx
+    .transaction((sp) => repo.insertGroup(sp, row))
+    .catch((err) => {
+      if (uniqueViolation(err) === "groups_tenant_key_uq") throw appError("KEY_TAKEN");
+      throw err;
+    });
+  ch.changed({ entity: "group", tenantId });
+  await afterLock(c.ctx.hooks, "group.save", "rows");
+  const after = toGroup(await mustFind(tx, c, id));
+  ch.audit(groupAudit("create", null, after));
+  return after;
 }
 
 const stateOf = (g: repo.GroupRow): GroupState => ({
@@ -163,31 +176,40 @@ const stateOf = (g: repo.GroupRow): GroupState => ({
 
 /** 404 → version (trên bản đã khoá) → không đổi gì → ghi (version +1). */
 export function updateGroup(c: Call, id: string, input: GroupUpdateRequest): Promise<Group> {
-  return configWrite(c, "group.save", async (tx, ch) => {
-    const locked = await repo.lockGroup(tx, tenantFilter(c.actor), id, "no key update");
-    if (!locked) throw appError("NOT_FOUND");
-    await afterLock(c.ctx.hooks, "group.save", "locked");
-    const cur = await mustFind(tx, c, id);
-    if (cur.version !== input.version) {
-      const current = toGroup(cur);
-      throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
-    }
-    const before = stateOf(cur);
-    const next: GroupState = {
-      name: input.name ?? before.name,
-      description: input.description === undefined ? before.description : input.description,
-    };
-    const changed = changedGroupFields(before, next);
-    if (changed.length === 0) return toGroup(cur);
-    const set: repo.GroupSet = {};
-    for (const k of changed) Object.assign(set, { [k]: next[k] });
-    await repo.bumpGroup(tx, locked, set, c.actor.userId);
-    ch.changed({ entity: "group", tenantId: locked.tenantId });
-    await afterLock(c.ctx.hooks, "group.save", "rows");
-    const after = toGroup(await mustFind(tx, c, id));
-    ch.audit(groupAudit("update", toGroup(cur), after));
-    return after;
-  });
+  return configWrite(c, "group.save", (tx, ch) => updateGroupIn({ tx, ch }, c, id, input));
+}
+
+/** Lõi tx của PATCH (khôi phục dùng lại, plan M4 §4.4). */
+export async function updateGroupIn(
+  w: InTx,
+  c: Call,
+  id: string,
+  input: GroupUpdateRequest,
+): Promise<Group> {
+  const { tx, ch } = w;
+  const locked = await repo.lockGroup(tx, tenantFilter(c.actor), id, "no key update");
+  if (!locked) throw appError("NOT_FOUND");
+  await afterLock(c.ctx.hooks, "group.save", "locked");
+  const cur = await mustFind(tx, c, id);
+  if (cur.version !== input.version) {
+    const current = toGroup(cur);
+    throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
+  }
+  const before = stateOf(cur);
+  const next: GroupState = {
+    name: input.name ?? before.name,
+    description: input.description === undefined ? before.description : input.description,
+  };
+  const changed = changedGroupFields(before, next);
+  if (changed.length === 0) return toGroup(cur);
+  const set: repo.GroupSet = {};
+  for (const k of changed) Object.assign(set, { [k]: next[k] });
+  await repo.bumpGroup(tx, locked, set, c.actor.userId);
+  ch.changed({ entity: "group", tenantId: locked.tenantId });
+  await afterLock(c.ctx.hooks, "group.save", "rows");
+  const after = toGroup(await mustFind(tx, c, id));
+  ch.audit(groupAudit("update", toGroup(cur), after));
+  return after;
 }
 
 /** 404 → BETA_GROUP_PROTECTED → xoá (cascade thành viên + grant, M3-R04). */

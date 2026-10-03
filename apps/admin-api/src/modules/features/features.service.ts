@@ -19,6 +19,7 @@ import {
   type Tx,
   withScope,
 } from "@ai/db";
+import type { InTx, RestoreAt } from "../../lib/audit/audit.write";
 import { auditOf } from "../../lib/audit/audit.write";
 import type { Actor } from "../../lib/auth-middleware";
 import { configWrite } from "../../lib/config/config-write";
@@ -120,29 +121,39 @@ export function getFeature(c: Call, id: string): Promise<FeatureDetail> {
 }
 
 export function createFeature(c: Call, input: FeatureCreateRequest): Promise<FeatureDetail> {
-  return configWrite(c, "feature.save", async (tx, ch) => {
-    const locked = await m.lockCommands(tx, input.command_ids);
-    await afterLock(c.ctx.hooks, "feature.save");
-    invalidCommands(missingIds(input.command_ids, locked));
-    const id = Bun.randomUUIDv7();
-    const row = {
-      id,
-      key: input.key,
-      actorId: c.actor.userId,
-      name: input.name,
-      description: input.description,
-      icon: input.icon,
-      status: input.status,
-    };
-    await tx.transaction((sp) => repo.insertFeature(sp, row)).catch(mapFeatureConflict);
-    await m.addPairs(tx, pairs(id, input.command_ids));
-    await m.bumpCommands(tx, input.command_ids, c.actor.userId);
-    ch.changed({ entity: "feature", tenantId: null });
-    await afterLock(c.ctx.hooks, "feature.save", "rows");
-    const after = await featureDetail(tx, id);
-    ch.audit(featureAudit("create", null, after));
-    return after;
-  });
+  return configWrite(c, "feature.save", (tx, ch) => createFeatureIn({ tx, ch }, c, input));
+}
+
+/** Lõi tx của POST; `at` = chèn lại cùng id/version (khôi phục bản đã xoá, plan M4 §4.4). */
+export async function createFeatureIn(
+  w: InTx,
+  c: Call,
+  input: FeatureCreateRequest,
+  at?: RestoreAt,
+): Promise<FeatureDetail> {
+  const { tx, ch } = w;
+  const locked = await m.lockCommands(tx, input.command_ids);
+  await afterLock(c.ctx.hooks, "feature.save");
+  invalidCommands(missingIds(input.command_ids, locked));
+  const id = at?.id ?? Bun.randomUUIDv7();
+  const row = {
+    id,
+    version: at?.version,
+    key: input.key,
+    actorId: c.actor.userId,
+    name: input.name,
+    description: input.description,
+    icon: input.icon,
+    status: input.status,
+  };
+  await tx.transaction((sp) => repo.insertFeature(sp, row)).catch(mapFeatureConflict);
+  await m.addPairs(tx, pairs(id, input.command_ids));
+  await m.bumpCommands(tx, input.command_ids, c.actor.userId);
+  ch.changed({ entity: "feature", tenantId: null });
+  await afterLock(c.ctx.hooks, "feature.save", "rows");
+  const after = await featureDetail(tx, id);
+  ch.audit(featureAudit("create", null, after));
+  return after;
 }
 
 type Locked = {
@@ -205,30 +216,39 @@ export function updateFeature(
   id: string,
   input: FeatureUpdateRequest,
 ): Promise<FeatureDetail> {
-  return configWrite(c, "feature.save", async (tx, ch) => {
-    if (!(await repo.findFeature(tx, id))) throw appError("NOT_FOUND");
-    const l = await lockForUpdate(tx, id, input.command_ids);
-    await afterLock(c.ctx.hooks, "feature.save");
-    if (l.row.version !== input.version) {
-      const current = await featureDetail(tx, id);
-      throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
-    }
-    const cur = stateOf(l.row, l.curIds);
-    const next = mergeState(cur, input);
-    const changed = changedFeatureFields(cur, next);
-    if (changed.length === 0) return featureDetail(tx, id);
-    fail(checkFeatureStatus(l.row, input.status));
-    const before = await featureDetail(tx, id);
-    if (changed.includes("commandIds")) await applyMembership(c, tx, l, next.commandIds);
-    const set: repo.FeatureSet = {};
-    for (const k of changed) if (k !== "commandIds") Object.assign(set, { [k]: next[k] });
-    await repo.bumpFeature(tx, id, set, c.actor.userId);
-    ch.changed({ entity: "feature", tenantId: null });
-    await afterLock(c.ctx.hooks, "feature.save", "rows");
-    const after = await featureDetail(tx, id);
-    ch.audit(featureAudit("update", before, after));
-    return after;
-  });
+  return configWrite(c, "feature.save", (tx, ch) => updateFeatureIn({ tx, ch }, c, id, input));
+}
+
+/** Lõi tx của PATCH (khôi phục dùng lại, plan M4 §4.4). */
+export async function updateFeatureIn(
+  w: InTx,
+  c: Call,
+  id: string,
+  input: FeatureUpdateRequest,
+): Promise<FeatureDetail> {
+  const { tx, ch } = w;
+  if (!(await repo.findFeature(tx, id))) throw appError("NOT_FOUND");
+  const l = await lockForUpdate(tx, id, input.command_ids);
+  await afterLock(c.ctx.hooks, "feature.save");
+  if (l.row.version !== input.version) {
+    const current = await featureDetail(tx, id);
+    throw appError("VERSION_CONFLICT", { current, updated_at: current.updated_at });
+  }
+  const cur = stateOf(l.row, l.curIds);
+  const next = mergeState(cur, input);
+  const changed = changedFeatureFields(cur, next);
+  if (changed.length === 0) return featureDetail(tx, id);
+  fail(checkFeatureStatus(l.row, input.status));
+  const before = await featureDetail(tx, id);
+  if (changed.includes("commandIds")) await applyMembership(c, tx, l, next.commandIds);
+  const set: repo.FeatureSet = {};
+  for (const k of changed) if (k !== "commandIds") Object.assign(set, { [k]: next[k] });
+  await repo.bumpFeature(tx, id, set, c.actor.userId);
+  ch.changed({ entity: "feature", tenantId: null });
+  await afterLock(c.ctx.hooks, "feature.save", "rows");
+  const after = await featureDetail(tx, id);
+  ch.audit(featureAudit("update", before, after));
+  return after;
 }
 
 /** 404 → CORE_FEATURE_PROTECTED → FEATURE_HAS_EXCLUSIVE_COMMANDS → xoá (cascade feature_commands, entitlement). */

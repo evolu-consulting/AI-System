@@ -152,7 +152,7 @@ export type FeatureSet = {
 
 export async function insertFeature(
   tx: Tx,
-  f: Required<FeatureSet> & { id: string; key: string; actorId: string },
+  f: Required<FeatureSet> & { id: string; key: string; actorId: string; version?: number },
 ): Promise<void> {
   const { actorId, ...rest } = f;
   await tx.insert(features).values({ ...rest, updatedBy: actorId });
