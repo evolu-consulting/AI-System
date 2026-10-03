@@ -1556,8 +1556,50 @@
       "download": "Download {file}",
       "none": "Select at least one type to export"
     },
+    "import": {
+      "drop": "Drag a .yaml file here or",
+      "choose": "Choose file",
+      "steps": "Import steps",
+      "step1": "Choose file",
+      "step2": "Preview",
+      "step3": "Apply",
+      "invalid": "Invalid file",
+      "errorAt": "line {line}, column {col}",
+      "wrongType": "Only .yaml or .yml files are accepted",
+      "tooLarge": "File is larger than 1 MB",
+      "file": "{file} · {size} · valid",
+      "fields": "{n} fields",
+      "added": "Add {n}",
+      "updated": "Update {n}",
+      "unchanged": "Unchanged {n}",
+      "unchangedNote": "Unchanged items aren't listed.",
+      "op": { "add": "Add", "update": "Update" },
+      "showDiff": "Show changes",
+      "hideDiff": "Hide changes",
+      "diff": {
+        "caption": "Changes to {key}",
+        "field": "Field",
+        "before": "Current",
+        "after": "In file"
+      },
+      "noDelete": "Import never deletes entities missing from the file.",
+      "secretsNeeded": "Secrets to create",
+      "secretUsedBy": "Workflow {key} in the file uses this secret.",
+      "value": "Value",
+      "valueLabel": "Value for {name}",
+      "secretsMissing": "Enter values for {n} missing secrets",
+      "apply": "Apply {n} changes",
+      "nothing": "The file has no changes compared to the current configuration.",
+      "confirm": {
+        "title": "Apply {n} changes from {file}?",
+        "body": "Users will see the changes within seconds."
+      },
+      "another": "Choose another file",
+      "stale": "Configuration just changed. The preview was refreshed."
+    },
     "toast": {
-      "downloaded": "Downloaded {file}"
+      "downloaded": "Downloaded {file}",
+      "imported": "Imported · {a} added · {u} updated · v{n}"
     }
   }
 }

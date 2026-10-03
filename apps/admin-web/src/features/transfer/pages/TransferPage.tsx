@@ -1,10 +1,11 @@
-// ADM-FR-54 · /transfer: Tabs Export · Import (FE5b dựng nội dung Import). Chỉ platform_admin.
+// ADM-FR-54 · /transfer: Tabs Export · Import (3 bước, FE5b). Chỉ platform_admin.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExportTab } from "../components/ExportTab";
+import { ImportTab } from "../components/ImportTab";
 
 function TransferContent() {
   const { t } = useTranslation();
@@ -20,7 +21,9 @@ function TransferContent() {
         <TabsContent value="export" className="mt-4">
           <ExportTab />
         </TabsContent>
-        <TabsContent value="import" className="mt-4" />
+        <TabsContent value="import" className="mt-4">
+          <ImportTab />
+        </TabsContent>
       </Tabs>
     </>
   );

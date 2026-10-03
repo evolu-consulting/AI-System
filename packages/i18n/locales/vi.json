@@ -1556,8 +1556,50 @@
       "download": "Tải file {file}",
       "none": "Chọn ít nhất một loại để xuất"
     },
+    "import": {
+      "drop": "Kéo file .yaml vào đây hoặc",
+      "choose": "Chọn file",
+      "steps": "Các bước import",
+      "step1": "Chọn file",
+      "step2": "Xem trước",
+      "step3": "Áp dụng",
+      "invalid": "File không hợp lệ",
+      "errorAt": "dòng {line}, cột {col}",
+      "wrongType": "Chỉ nhận file .yaml hoặc .yml",
+      "tooLarge": "File lớn hơn 1 MB",
+      "file": "{file} · {size} · hợp lệ",
+      "fields": "{n} trường",
+      "added": "Thêm {n}",
+      "updated": "Sửa {n}",
+      "unchanged": "Không đổi {n}",
+      "unchangedNote": "Mục không đổi không được liệt kê.",
+      "op": { "add": "Thêm", "update": "Sửa" },
+      "showDiff": "Xem thay đổi",
+      "hideDiff": "Ẩn thay đổi",
+      "diff": {
+        "caption": "Thay đổi của {key}",
+        "field": "Trường",
+        "before": "Hiện tại",
+        "after": "Trong file"
+      },
+      "noDelete": "Import không xoá thực thể không có trong file.",
+      "secretsNeeded": "Cần tạo secret",
+      "secretUsedBy": "Workflow {key} trong file dùng secret này.",
+      "value": "Giá trị",
+      "valueLabel": "Giá trị {name}",
+      "secretsMissing": "Nhập giá trị cho {n} secret còn thiếu",
+      "apply": "Áp dụng {n} thay đổi",
+      "nothing": "File không có thay đổi nào so với cấu hình hiện tại.",
+      "confirm": {
+        "title": "Áp dụng {n} thay đổi từ {file}?",
+        "body": "Người dùng thấy thay đổi sau vài giây."
+      },
+      "another": "Chọn file khác",
+      "stale": "Cấu hình vừa thay đổi. Đã tạo lại bản xem trước."
+    },
     "toast": {
-      "downloaded": "Đã tải {file}"
+      "downloaded": "Đã tải {file}",
+      "imported": "Đã import · Thêm {a} · Sửa {u} · v{n}"
     }
   }
 }
