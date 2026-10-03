@@ -76,19 +76,17 @@ Chỉ phần cụ thể hoá BA.
 | H1-R26 | Log có `run_id`, `tenant_id`, `user_id` (Hub) / `job_id`, `run_id`, `tenant_id` (Runtime); không log secret, nội dung file/tin nhắn | HUB-NFR-04, WRK-NFR-04 |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead -->
-Ràng buộc đã biết:
-- **Kênh chat:** giữ `@ai/contracts/chat` (entity strict, endpoint E1–E15 ở `C1 plan.md` §2, SSE 7 loại, lỗi 400/401/404/409 `FLOW_BUSY`/410 `EVENTS_EXPIRED`, header `X-Run-Id`/`X-Flow-Id`/`X-Message-Id` ở POST message). Hub không cài `/auth/*` (Admin cấp JWT, Q2), không `/__mock/*`.
-- **Hub↔Runtime (nội bộ, mới):** subpath `@ai/contracts/hub` (không đụng `src/index.ts`): `JobPayload` (`agent.cli`), `RunEvent` (progress, delta, step, result), `AgentResult` (`done|partial|need_input`), `OrchestratorDecision`, mã lỗi. Script xuất JSON Schema → `apps/agent-runtime/src/agent_runtime/contracts/` (sinh, không sửa tay); CI so khớp.
-- Kênh NOTIFY: `config_changed` (Admin, có sẵn), `hub_config_changed`, `job_enqueued`, `job_cancel` — payload và người gửi ghi ở plan.
+Từng trường: `plan.md` §2.
+- **Kênh chat:** chỉ import `@ai/contracts/chat` (E5–E15 `C1 plan §2.4`, SSE `§2.5`); thêm `GET /health`. Hub không `/auth/*` (Q2), không `/__mock/*`.
+- **Hub↔Runtime** `@ai/contracts/hub`: `JobPayload` (`agent.cli`), `RunEvent` trên `run:<run_id>` (`job.started`, `job.progress`, `job.result`, `job.failed`; mỗi job đúng một kết thúc), `AgentResult`, `OrchestratorDecision`, `AgentTypeManifest`, `HUB_JOB_ERROR_CODES` ⊂ `CHAT_RUN_ERROR_CODES`. `bun run contracts:gen` sinh `apps/agent-runtime/contracts/hub.schema.json` + `src/agent_runtime/contracts/hub.py`; `contracts:check` so byte (ADR-0009).
+- **NOTIFY:** `config_changed` (Admin, có sẵn) · `hub_config_changed {v, version}` (seed) · `job_enqueued {v, job_id, provider_key}`, `job_cancel {v, job_id, run_id}` (Hub).
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead -->
-Ràng buộc đã biết:
-- Bảng `hub` cần có (theo `ba-agent-hub.md` §8): `conversations`, `messages`, `flows`, `runs`, `run_steps`, `jobs`, `agent_types`, `cli_sessions`, `usage_logs`, `provider_state`, `agents`, `agent_workflows`, `agent_entitlements`, `agent_grants`, `orchestrator_settings`, `providers`, `model_profiles`, `config_meta` (`hub_config_version`). Thêm: `runs.owner/lease_until/config_version`, `jobs.pgid`. Không làm: `price_book`, `secrets`, `attachments`, `routing_tests*`, `audit_log` (H3/H4).
-- **Tương thích Admin M4:** `hub.usage_logs`, `hub.agent_workflows`, `hub.agent_grants` đã có stub (`packages/db/migrations-dev/0000_hub_stub.sql`, đã commit, không sửa). Migration H1 chính thức tạo/nâng cấp **idempotent** (`IF NOT EXISTS`, thêm ràng buộc bằng `ALTER`), giữ nguyên tên, kiểu, CHECK, index và `GRANT SELECT … TO admin_rw` của ba bảng; chạy được trên DB đã có stub lẫn DB sạch (production không chạy `migrations-dev`). Test int của Admin đọc `usage_logs` phải xanh nguyên văn (HUB-H1-AC-08).
-- Role DB: `hub_ro` (đọc `admin.*`, đã có) · mới `hub_rw` (hub-api ghi `hub.*`) và `agent_rt` (Runtime: chỉ `jobs`, `usage_logs`, `cli_sessions`, `provider_state`, `agent_types`; đọc `admin.tenants`, `hub.runs`, `hub.agents`). RLS theo mẫu Admin (`CONVENTIONS` §8): chốt ở plan (§9 Q7).
-- Seed: `apps/hub-api/seed/*.yaml` + `bun run hub:seed`. Tối thiểu: provider `claude-sub` (`max_concurrency` 2 dev) và `fake-cli` (chỉ dev/test), profile 1 bước mỗi provider, agent `orchestrator` + `assistant` (mô tả 20–400 ký tự), `orchestrator_settings`, entitlement cho tenant `acme`/`beta`, grant cho user mẫu (§9 Q8).
+Cột/index/RLS/thứ tự khoá: `plan.md` §3; SQL hàng đợi nguyên văn: `plan.md` §5.4–5.5.
+- Bảng: cấu hình (`config_meta, providers, model_profiles, agents, orchestrator_settings, agent_entitlements, agent_grants, agent_workflows`) · hội thoại (`conversations, flows, messages, runs, run_steps`) · Runtime (`jobs, cli_sessions, provider_state, agent_types, usage_logs`). Không làm: `price_book, secrets, attachments, routing_tests*, audit_log`.
+- **Tương thích Admin:** migration ở `packages/db/migrations-hub/`, chạy bằng `runHubMigrations` (`db:migrate` gọi sau `runMigrations`, hàm này không đổi) → test khoá Admin giữ `{main: 9, dev: 3}` và 3 bảng `hub.*`. Ba bảng stub nâng cấp idempotent, giữ tên/kiểu/CHECK/index/`GRANT SELECT … admin_rw`; `usage_logs` chỉ thêm `job_id`, không RLS, không FK (HUB-H1-AC-08).
+- Role: `hub_api` (login = `hub_rw` + `hub_ro`) · `agent_runtime` (login = `agent_rt`; không quyền `admin.*`, đọc giới hạn tenant qua `hub.tenant_sub_limit`). RLS (`app.scope` user/system + tenant + user) trên 5 bảng hội thoại (Q7).
+- Seed: `apps/hub-api/seed/*.yaml` + `bun run hub:seed` (`plan.md` §3.6).
 
 ## 5. UI
 Không có UI (Studio để H4). Cấu hình qua seed yaml (H1-R16).
@@ -100,6 +98,7 @@ Không có UI (Studio để H4). Cấu hình qua seed yaml (H1-R16).
 | Overhead Hub (xác thực + quyền + tạo run, không tính job) | ≤ 200 ms p95 | `test:perf` |
 | WRK-NFR-01 nhận job khi còn slot | ≤ 2 s sau `INSERT` (NOTIFY; poll dự phòng 1 s) | int Python, `fake-cli` |
 | Huỷ | ≤ 5 s tới khi hết process (H1-R22) | AC-H06/W03/W10 (chặn Lệnh xong) |
+| Claim job (10 000 `queued`) | ≤ 20 ms p95 | `test:perf` |
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
@@ -110,7 +109,7 @@ Không có UI (Studio để H4). Cấu hình qua seed yaml (H1-R16).
 | **`fake-cli`** (provider giả, `agent-runtime/providers/`) | Thay CLI bằng script tất định, cùng interface provider; trả `AgentResult`/`OrchestratorDecision` theo chỉ thị trong prompt (`#fake:delegate=<key>`, `ask`, `partial`, `sleep=<s>`, `spawn-child`, `read=<path>` (qua đúng hook), `ratelimit`, `crash`); không chỉ thị → echo. **Từ chối đăng ký khi `APP_ENV` ∉ {development, test}**. Đường sandbox, hook, process group, slot đều là code thật |
 | Dify · MCP · Studio · Codex/Gemini | Không có (H2+) |
 
-Env mới (tên · dev): `HUB_PORT=4000` · `DATABASE_URL_HUB_RW`, `_RO` · `REDIS_URL` · `JWT_PUBLIC_KEY` (PEM Admin) · `HUB_INSTANCE_ID` · `AGENT_RT_DATABASE_URL` · `AGENT_RT_WORK_DIR=/home/<user>/work` (không `/mnt/c`) · `APP_ENV`. Runtime không mở cổng.
+Env mới (tên · dev): `HUB_PORT=4000` · `HUB_DATABASE_URL` (role `hub_api`) · `REDIS_URL` · `JWT_PUBLIC_KEY` (PEM Admin) · `HUB_INSTANCE_ID` · `HUB_JOB_MAX_WAIT_S=30` · `AGENT_RT_DATABASE_URL` (role `agent_runtime`) · `AGENT_RT_WORKER_ID` · `AGENT_RT_WORK_DIR=/home/<user>/work` (không `/mnt/c`) · `APP_ENV`. Runtime không mở cổng.
 
 ## 8. Tiêu chí nghiệm thu (qc)
 Nguyên văn AC-H/AC-W ở BA (`ba-agent-hub` §11, `ba-worker` §10); bảng nêu phần thuộc H1.
@@ -163,14 +162,16 @@ Lệnh xong mốc (chốt ở plan): `bun run typecheck && bun test && bun run t
 | Q3 | Cổng dev | hub-api `4000` (`HUB_PORT`); agent-runtime không mở cổng |
 | Q4 | Vị trí contract | Chat: `@ai/contracts/chat` (chỉ import). Hub↔Runtime: `@ai/contracts/hub` (mới) |
 | Q5 | Runtime (WSL2) gọi Postgres/Redis Docker trên Windows | `networkingMode=mirrored`, `localhost`. Dự phòng: host IP trong env |
-| Q6 | HUB-FR-42/ADR-0007 #5 ghi "id SSE = id Redis Stream", nhưng contract chat đòi id liên tiếp từ 1 (Redis tự sinh `ms-seq`) | Hai stream: `run:<id>` (Runtime→Hub) và `sse:<id>` (Hub→client, id `<seq>-0`) theo H1-R12. **Cần CR** sửa chữ HUB-FR-42 và ADR-0007 #5 (`docs/design` ngoài phạm vi bước này — điều phối quyết) |
-| Q7 | Cách ly tenant ở DB | Lọc ở repo (bắt buộc) + RLS cho bảng người dùng của hub-api (`conversations, flows, messages, runs`) qua `hub_rw`; `jobs/usage_logs` qua `agent_rt`/`hub_rw` có lọc `tenant_id` |
+| Q6 | Id SSE so với id Redis Stream | **Đã giải** (CR-030 đã sửa HUB-FR-42, ADR-0007 #5); TTL `sse:` = `RUN_EVENTS_RETENTION_S` (600 s) |
+| Q7 | Cách ly tenant ở DB | **Chốt** (`plan.md` §3.4): lọc ở repo + RLS 5 bảng hội thoại (`hub_rw`); bảng Runtime không RLS, câu Hub lọc `tenant_id`; `usage_logs` không RLS (Admin đọc toàn nền) |
 | Q8 | Seed: user nào được grant, chạy ở môi trường nào | Grant theo `tenant_key + username` trong yaml (tra id lúc seed; thiếu user → bỏ qua + cảnh báo); seed chạy mọi môi trường (chưa có Studio), `fake-cli` chỉ nạp khi `APP_ENV` ∈ dev/test |
-| Q9 | Thư viện mới (Python: asyncpg, redis-py, claude-agent-sdk, structlog, import-linter; TS: redis client) | Đề xuất trong ADR của plan H1 |
+| Q9 | Thư viện mới | ADR-0008 (Python), ADR-0009 (TS + codegen), Proposed |
 | Q10 | `max_wait_s` khi hết slot · sandbox gốc Claude Code hay chỉ hook | 30 s, test đặt qua env · H1 chỉ hook WRK-BR-07 + `allowed_tools` (không Bash) |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - 2026-10-04 · docs-architect · H1-R09, R10, R12, R13 và `fake-cli` thuộc agent-runtime: BA không nói; contract chat đòi id 1..n, nhiều instance cần chủ run, test cần CLI tất định.
+- 2026-10-04 · backend-lead · `plan.md` §1: P1 migration Hub tách thư mục (test khoá Admin assert `{main: 9, dev: 3}`) · P4 JWT chép verify + test vector · P5 claim một advisory lock toàn cục (thay "theo provider" ở H1-R19: slot tenant đếm chung mọi provider) · P6 kết quả agent đệm rồi cắt `delta` · P7/P8 Hub cũng quét orphan và hết hạn `queued` quá `max_wait_s`.
+- 2026-10-04 · backend-lead · `orphaned` = `failed` + `error_reason=orphaned`; thứ tự khoá `flows → runs → run_steps → messages → jobs` (`plan.md` §3.5); một URL DB/role (`HUB_DATABASE_URL`).
 
 ## 10. Tranh chấp test
 - (không)
