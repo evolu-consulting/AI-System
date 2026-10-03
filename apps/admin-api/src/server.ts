@@ -38,6 +38,7 @@ async function main(): Promise<void> {
   } catch (err) {
     fail("env", err);
   }
+  if (!env.SMTP_URL) logger.warn("mailer-disabled", { reason: "SMTP_URL vắng, không gửi mail" });
   const keys = await loadJwtKeys(env).catch((err) => fail("jwt", err));
   let secretKey: ReturnType<typeof parseMasterKey>;
   try {

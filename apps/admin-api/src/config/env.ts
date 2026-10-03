@@ -25,6 +25,9 @@ export const EnvSchema = z.object({
   JWT_KID: z.string().min(1).max(64),
   /** 32 byte base64 (`^[A-Za-z0-9+/]{43}=$`), mã hoá secret (M2-R02). */
   SECRET_MASTER_KEY: z.string().refine(isMasterKeyB64),
+  /** Vắng = tắt gửi mail (cảnh báo lúc khởi động). ADM-FR-41, plan-cd §10. */
+  SMTP_URL: z.url({ protocol: /^smtps?$/ }).optional(),
+  MAIL_FROM: z.string().max(200).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
