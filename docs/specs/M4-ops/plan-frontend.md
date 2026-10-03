@@ -194,7 +194,7 @@ Chunk theo route (`autoCodeSplitting`); D1, D2; JS ban đầu chỉ thêm banner
 10. ✓ `updated_by: string|null`.
 
 ## 11. Câu hỏi
-- **Q-FE1 (mới):** Tab **Feature** của Tenant còn "Chưa khả dụng" (ui 7.13; ngoài phạm vi M4; entitlement API theo feature). Mặc định: **không làm ở M4**, ghi `TECH-DEBT.md` (đã cấp được ở `/features/:id`). Muốn có → task FE7 + `GET /admin/tenants/:id/entitlements` (đổi phạm vi).
+- **Q-FE1 (người dùng chốt 2026-10-03: để sau, TECH-DEBT #29):** Tab **Feature** của Tenant còn "Chưa khả dụng" (ui 7.13; ngoài phạm vi M4; entitlement API theo feature). Mặc định: **không làm ở M4**, ghi `TECH-DEBT.md` (đã cấp được ở `/features/:id`). Muốn có → task FE7 + `GET /admin/tenants/:id/entitlements` (đổi phạm vi).
 - Còn lại theo mặc định spec Q0–Q13.
 
 ## 12. Task FE (đã điền `tasks.md`)

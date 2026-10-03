@@ -1,6 +1,6 @@
 # ADR-0005 · Thư viện M4: gửi mail (nodemailer), QR (qrcode), YAML (yaml), TOTP tự viết, biểu đồ (không recharts ở Admin)
 
-Trạng thái: **Proposed** (duyệt cùng Gate M4) · Ngày: 2026-10-03 · Tác giả: backend-lead · Spec: [M4-ops](../specs/M4-ops/spec.md) §9 Q3 (spec ghi "ADR-0004"; số 0004 đã dùng cho thư viện web M1) · Plan: [plan-cd §1, §9–10](../specs/M4-ops/plan-cd.md)
+Trạng thái: **Accepted** (người dùng duyệt 2026-10-03, trước Gate M4) · Ngày: 2026-10-03 · Tác giả: backend-lead · Spec: [M4-ops](../specs/M4-ops/spec.md) §9 Q3 (spec ghi "ADR-0004"; số 0004 đã dùng cho thư viện web M1) · Plan: [plan-cd §1, §9–10](../specs/M4-ops/plan-cd.md)
 
 ## Bối cảnh
 - M4 cần: email cảnh báo quota (FR-41, R05) tới Mailpit ở dev (ADR-0001 đã chọn Mailpit); QR để bật 2FA (FR-08); đọc/ghi yaml cho Import/Export (FR-54); biểu đồ theo ngày ở màn Chi phí (FR-42).
