@@ -153,6 +153,10 @@ Lệnh xong mốc: lệnh hàng QV trong `tasks.md` (`test:lock:verify`, `test:c
 - B3: cursor = base64url(JSON `[số, chuỗi]`) của phần tử cuối trang (E5 `[updated_at_ms, id]`, E10 `[created_at_ms, id]`, E11 `[thứ tự thêm, id]`); không giải mã được hoặc không chính tắc → 400 `VALIDATION_ERROR`.
 - B3: đồng hồ store tăng nghiêm ngặt (≥ 1 ms mỗi thao tác) → hai thao tác liền nhau không trùng `updated_at` (K-C4, K-M10 tất định); sở hữu = `user_id` **và** `tenant_id` khớp claims.
 - B3: seed `minh` theo §3.5, `created_at` hội thoại = tin đầu; tin assistant seed có `run_id` nhưng không có run trong engine (E13/E14 với id đó → 404). E9 trả id run đang chạy cho hook `onDeleted` (B4 huỷ).
+- B4: nhịp kết thúc của `buildScript` là `finish{ms}` / `fail{ms,code,message,hint}` (không phải `ChatEvent` đủ): `message_id` chỉ có khi engine lưu tin assistant lúc kết thúc; engine điền `run_id`/`message_id`/`content`. Nhịp có `fastMs` (slow 100, flow-cold 1000) thay cho ÷10.
+- B4: stream E12/E13 phát `: ping` ngay khi mở → header về tức thì kể cả `flow-cold` (fetch chỉ trả Response khi có byte body).
+- B4: làm luôn E15 tối thiểu (huỷ **đồng bộ**: phát `run.failed CANCELLED`, lưu tin, gỡ `active_run_id`; trả ảnh chụp trước huỷ) và E13 phát lại `id > Last-Event-ID` (header thắng query, sai định dạng = 0) — K-M7 cần E15, K-I1–I4 cần E13/E15 trả 404. B5 còn: `drop` (K-R4), 410 `EVENTS_EXPIRED` (K-R6), dọn run/giới hạn bộ nhớ.
+- B4: tin assistant của run `failed`/`cancelled` có `ask = null`; tóm tắt bước chỉ gồm bước đã `step.finished` (label lấy từ `step.started`).
 
 ### Điều phối xử lý test-plan §8 (2026-10-04, Luật 2: chọn phương án đơn giản, dễ đổi)
 | # | Quyết định |
