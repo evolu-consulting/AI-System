@@ -26,6 +26,8 @@ export type UserRow = {
   /** M3-R13: ≤ 50 group (beta đầu rồi key) dạng jsonb thô — service parse bằng contract. */
   groups: unknown;
   groupCount: number;
+  /** ADM-FR-08: có hàng `user_totp` đã bật (`enabled_at` not null); pending không tính. */
+  totpEnabled: boolean;
 };
 
 // Tham chiếu admin.users.id viết tay (subquery tương quan; Drizzle không in tên bảng cho cột trong select).
@@ -39,6 +41,9 @@ const groupCountOf = (uid: SQL) =>
   sql<number>`(select count(*)::int from admin.group_members m where m.user_id = ${uid})`;
 const groupsJson = groupsJsonOf(sql`admin.users.id`);
 const groupCount = groupCountOf(sql`admin.users.id`);
+// PK user_totp(user_id) → index lookup; RLS user_totp cùng scope với users.
+const totpEnabled = sql<boolean>`exists (select 1 from admin.user_totp t
+  where t.user_id = admin.users.id and t.enabled_at is not null)`;
 const updatedBy = sql<
   string | null
 >`(select w.username from admin.users w where w.id = admin.users.updated_by)`;
@@ -63,6 +68,7 @@ export const userRowCols = {
   updatedBy,
   groups: groupsJson,
   groupCount,
+  totpEnabled,
 };
 
 /** `tenantId` null = mọi tenant (chỉ platform scope, RLS vẫn áp). */

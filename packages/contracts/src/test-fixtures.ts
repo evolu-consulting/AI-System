@@ -56,4 +56,5 @@ export const user: User = {
   updated_by: null,
   groups: [],
   group_count: 0,
+  totp_enabled: false,
 };

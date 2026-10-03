@@ -12,6 +12,7 @@ import type { TestHooks } from "../../lib/test-hooks";
 import {
   type Call,
   createUser,
+  disableUserTotp,
   getUser,
   listUsers,
   lockUser,
@@ -51,5 +52,7 @@ export function usersRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> 
     return c.body(null, 204);
   });
   r.post("/:id/reset-password", async (c) => c.json(await resetPassword(call(c), parseIdParam(c))));
+  // ADM-FR-08 · plan-cd §4.2: body rỗng (không parse); trả 200 User.
+  r.post("/:id/totp/disable", async (c) => c.json(await disableUserTotp(call(c), parseIdParam(c))));
   return r;
 }

@@ -1,5 +1,6 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-BR-05, ADM-BR-09 · contract /admin/users* (spec M1 §3).
 // ADM-FR-62 · M3-R13: `groups` (≤ 50, beta đầu rồi key) + `group_count` ở mọi response user; `?group=` (spec M3 §3).
+// ADM-FR-08 · M4 plan-cd §4.1–4.2: `totp_enabled` (đã bật 2FA; pending không tính) ở mọi response user.
 import { z } from "zod";
 import {
   CountSchema,
@@ -43,6 +44,7 @@ export const UserSchema = z
     updated_by: UpdatedBySchema,
     groups: z.array(GroupRefSchema).max(USER_GROUPS_MAX),
     group_count: CountSchema,
+    totp_enabled: z.boolean(),
   })
   .refine((u) => (u.status === "locked") === (!u.active || u.locked_by_tenant), {
     message: "status must be 'locked' iff !active || locked_by_tenant",

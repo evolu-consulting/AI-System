@@ -32,6 +32,8 @@ import { uniqueViolation } from "../../lib/pg-errors";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import { generateTempPassword } from "../auth/auth.rules";
 import { revokeUserSessions } from "../auth/auth.service";
+import * as totpRepo from "../auth/totp/totp.repo";
+import { canResetTotpFor } from "../auth/totp/totp.rules";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
 import type { UserRow } from "./users.repo";
 import * as repo from "./users.repo";
@@ -86,6 +88,7 @@ export function toUser(u: UserRow): User {
     updated_by: u.updatedBy,
     groups: userGroups(u.groups),
     group_count: u.groupCount,
+    totp_enabled: u.totpEnabled,
   };
 }
 
@@ -364,5 +367,25 @@ export async function resetPassword(c: Call, id: string): Promise<{ temp_passwor
     const e = userAudit("update", toUser(u), after, { password_reset: true });
     await recordAudit(tx, { ...e, actorId: c.actor.userId });
     return { temp_password: temp.pw };
+  });
+}
+
+/**
+ * ADM-FR-08 · Admin tắt 2FA hộ (plan-cd §7): khoá tenant → user, `canResetTotpFor`, chưa bật → 409; xoá + audit
+ * `delete user_totp` như tự tắt. Không thu hồi phiên (Q10); không bump config_version (như disableTotp).
+ */
+export function disableUserTotp(c: Call, id: string): Promise<User> {
+  return withScope(c.ctx.db, c.scope, async (tx) => {
+    const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
+    fail(canResetTotpFor(c.actor, { id: u.id, tenantId: u.tenantId }));
+    const who = { tenantId: u.tenantId, userId: u.id };
+    const row = await totpRepo.lockTotp(tx, who);
+    if (!row?.enabledAt) throw appError("TOTP_NOT_ENABLED");
+    const before = { enabled: true, backup_codes_left: await totpRepo.countUnusedCodes(tx, who) };
+    await totpRepo.deleteTotp(tx, who);
+    const target = { entityId: u.id, entityName: u.username, tenantId: u.tenantId };
+    const e = auditOf("delete", "user_totp", { ...target, before, after: null });
+    await recordAudit(tx, { ...e, actorId: c.actor.userId });
+    return reread(tx, u);
   });
 }
