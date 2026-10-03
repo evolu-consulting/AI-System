@@ -1,4 +1,11 @@
 // ADM-NFR-06, ADM-NFR-07, ADM-FR-10 · điểm vào @ai/db.
+export {
+  type AuditActionValue,
+  type AuditEntityValue,
+  type AuditInput,
+  type AuditMeta,
+  insertAuditRows,
+} from "./audit-log";
 export { createDb, type Db } from "./client";
 export {
   bumpConfigVersion,
@@ -25,5 +32,13 @@ export {
   workflows,
 } from "./schema/admin";
 export { agentGrants, agentWorkflows, hub, usageLogs } from "./schema/hub-readonly";
+export {
+  AUDIT_ACTION_VALUES,
+  AUDIT_ENTITY_VALUES,
+  auditLog,
+  QUOTA_ALERT_STATUSES,
+  quotaAlerts,
+  tenantQuotas,
+} from "./schema/ops";
 export { configMeta, featureGrants, groupMembers, groups } from "./schema/permissions";
 export { type DbScope, NIL_SCOPE, NIL_TENANT_ID, setScope, type Tx, withScope } from "./scope";

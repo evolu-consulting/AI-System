@@ -189,28 +189,7 @@ AC bổ sung (đề xuất; qc chốt ở Q1, mã `M4-ACnn`):
 Lệnh xong M4 (như M3 §8, **không** gồm `test:perf`): `docker compose up -d --wait && bun run db:migrate && bun run db:seed && bun run check && bun run typecheck && bun test && bun tests/acceptance/ADM-NFR-06/ac07.check.ts && bun run test:int && bun run i18n:check && bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check && bun run check:size --all && bun run depcruise --all && bun run check:fn --all`. Riêng e2e M4: `bunx playwright test e2e/m4-`.
 
 ## 9. Quyết định
-### Trước Gate — đã chốt (người dùng 2026-10-03)
-Nền: CR-001 (mặc định readiness M1–M4), CR-002 (2FA + Import/Export vào M4; canvas 6/8 màn); hiệu năng không chặn mốc; RD#10, 16, 31, 32, 33, 36, 37, 42, 48 đã vào §2. Người dùng chấp nhận mọi mặc định dưới đây và của [readiness lần 1](readiness.md); 3 câu trả lời riêng ghi "(ND)".
-- Q0 Giữ một spec, task theo khối A–D; quá hạn thì cắt M4a = A+B, M4b = C+D.
-- Q1 Run = số `run_id` khác nhau; USD = `billable_usd` (R03).
-- Q2 AC-A12 kiểm phía Admin bằng `mock:quota`/stub; vế Hub ("2 run đều chạy") vào M5.
-- Q2b Ngưỡng do `evaluateTenant` của Admin: sau commit PUT quotas (không await), NOTIFY `quota_threshold`, mở Tổng quan/banner; không job định kỳ.
-- Q3 ADR-0005 **Accepted** 2026-10-03: `nodemailer`, `qrcode` (server), `yaml`; TOTP `node:crypto`; không `recharts`.
-- Q5 Tổng quan platform chỉ dùng `usage_logs`; card cần `hub.runs` hiện "—"/"Chưa khả dụng".
-- Q6 Audit qua `configWrite` + thao tác user/tenant (khoá, reset, tắt 2FA hộ); login/refresh không ghi; không backfill.
-- Q7 (ND) Khôi phục chỉ command, workflow, feature, group, quota; chỉ `platform_admin`.
-- Q8 `tenant_admin` không khôi phục (403).
-- Q9 PUT quotas thay cả bộ trong một tx, gửi `version` tenant, lệch → 409.
-- Q10 (ND) Bước đăng nhập 2FA theo missing §10.2; 2FA tuỳ chọn; admin tắt hộ trong phạm vi, ghi audit, **giữ phiên** của user (không thu hồi).
-- Q11 Import tenant chỉ **sửa** (tên, slot, quota, entitlement chỉ thêm); tenant chưa có → lỗi dòng; grants tham chiếu theo key.
-- Q12 Banner không đóng được, biến mất dưới 80%. Q13 Màn thiếu artboard theo missing-screens, vẽ sau.
-- Q-D1 Tạo lại mã dự phòng đòi mã TOTP hiện tại. Q-C2 Grant cho user không export.
-- plan-cd D1 bảng riêng `user_totp` thay cột `users.totp_secret` của BA §7 (docs-architect sửa BA ở task D1) · D2 AES-GCM AAD riêng · D3 mã dự phòng HMAC + pepper · D4 (ND) mật khẩu đúng chưa qua TOTP không reset bộ đếm · D5 `last_used_step` · D6 QR ở server · D7 `yaml` `maxAliasCount: 0` · D8 import 1 tx/1 audit/1 NOTIFY + `expectBase` · D9 SVG tự vẽ · D10 thiếu `SMTP_URL` = tắt mail.
-- plan A+B: audit cùng tx trong `configWrite` + bất biến event⇔audit (§4.1); khôi phục = version mới, chỉ thay đổi mới nhất (§4.4); usage loại `cost_usd` ở server (§5.4); mail sau commit, claim `sending` (§5.2).
-- Readiness lần 1: PUT quotas không đổi (so bộ sau `normalizeQuotaItems`) → 200 bộ hiện tại, không bump/`updated_by`/audit/NOTIFY/evaluate · `auditSnapshot` chỉ kiểm khoá cấm ở cấp 1 sau allowlist (bỏ qua `input_map`, `input_schema`, `args`, `output`) · audit `config` (import) allowlist `from_config_version, added, updated, secrets_created, truncated` · import `quotas` upsert theo (tenant, feature), dòng mọi giới hạn null → `SCHEMA` · KPI phụ/slot/subscription của Usage/Overview không thêm trường, FE bỏ hiển thị (TECH-DEBT #30).
-
-### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+Toàn bộ (trước Gate + trong lúc làm): [spec-decisions.md](spec-decisions.md).
 
 ## 10. Tranh chấp test
 - (không)

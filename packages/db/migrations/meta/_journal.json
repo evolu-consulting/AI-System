@@ -50,6 +50,13 @@
       "when": 1790897749548,
       "tag": "0006_permissions_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791034345223,
+      "tag": "0007_m4_ops",
+      "breakpoints": true
     }
   ]
 }
