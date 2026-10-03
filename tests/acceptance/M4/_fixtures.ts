@@ -154,7 +154,8 @@ async function fetchApp(app: AppLike, method: string, path: string, o: Opts): Pr
   const body = o.raw ?? (o.body === undefined ? undefined : JSON.stringify(o.body));
   if (body !== undefined) headers.set("content-type", "application/json");
   const res = await app.fetch(new Request(`http://localhost${path}`, { method, headers, body }));
-  const text = await res.text();
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const text = new TextDecoder().decode(bytes); // = res.text(): bỏ BOM UTF-8 đầu theo WHATWG
   let json: unknown;
   try {
     json = JSON.parse(text);
@@ -165,7 +166,11 @@ async function fetchApp(app: AppLike, method: string, path: string, o: Opts): Pr
     status: res.status,
     headers: res.headers,
     text,
+    bytes,
     json,
     cookies: res.headers.getSetCookie(),
   } as Res;
 }
+
+/** Byte thô của body (C1 BOM: `text` đã bị decoder bỏ BOM). */
+export const bytesOf = (res: Res): Uint8Array => (res as Res & { bytes: Uint8Array }).bytes;

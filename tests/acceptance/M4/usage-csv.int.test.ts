@@ -2,6 +2,7 @@
 // Xanh ở T5.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import {
+  bytesOf,
   createM4Env,
   expectErr4,
   ID,
@@ -66,7 +67,9 @@ describe("ADM-FR-42 · M4-AC16 · CSV", () => {
     expect(res.headers.get("content-disposition")).toBe(
       `attachment; filename="usage-acme-${FROM()}-${TO()}.csv"`,
     );
-    expect(res.text.startsWith(BOM)).toBe(true);
+    // BOM kiểm ở byte: WHATWG UTF-8 decode (res.text()) luôn bỏ BOM đầu → `text` là phần sau BOM.
+    expect([...bytesOf(res).slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+    expect(res.text.startsWith(BOM)).toBe(false);
     expect(res.text.replace(/\r\n/g, "")).not.toContain("\n");
     const r = rows(res.text);
     expect(r[0]?.join(",")).toBe(H_PLATFORM);
