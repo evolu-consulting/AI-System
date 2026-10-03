@@ -34,3 +34,15 @@
 | 18 | — | spec, ADR-0005 | Xoá câu về bỏ/giữ `recharts` ở Gate |
 | 19 | — | test-plan-cd | "không sửa vì 2FA; A+B sửa K10" |
 | 20 | — | readiness.md | Bảng này |
+
+## Lần 3 · 2026-10-03 · NOT READY → đã áp (điều phối)
+3 Cao, 3 Thấp; mọi mục có mặc định, không câu hỏi người dùng.
+
+| # | Mức | Vị trí | Đã làm |
+|---|---|---|---|
+| 1 | Cao | test-plan R20/K5/§tổng ↔ test-plan-cd D-K04/§9 | Đếm 48 `API_ERRORS` duy nhất ở D-K04 (`contracts-cd`, T7); sửa mọi câu trỏ |
+| 2 | Cao | tasks T7 ↔ test-plan-cd D-K01…03 | D-K01…03 tách sang `rules/contracts-totp.test.ts` (xanh T9d, thêm vào lệnh xong T9d); `contracts-cd` giữ C-K01…03 + D-K04 |
+| 3 | Cao | plan-frontend `audit.sentence.import` | Nguyên văn ms:522 VI/EN |
+| 4 | Thấp | plan-cd D9, spec §7, plan-frontend D1 | "bỏ `recharts` (ADR-0005)", 151 KB gzip |
+| 5 | Thấp | plan-frontend §7 lọc Loại | 11 mục (ms:489 + Entitlement, 2FA; không `config`); nhãn `config` "Cấu hình"/"Configuration" |
+| 6 | Thấp | spec.md 25 486/25 600 B | Ghi nhận: lần sửa spec tới chuyển §9 sang `spec-decisions.md` |
