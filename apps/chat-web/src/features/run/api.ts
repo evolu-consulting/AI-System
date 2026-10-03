@@ -41,12 +41,18 @@ export async function sendMessage(
     headers: SSE_ACCEPT,
     signal,
   });
-  return {
-    runId: header(res, RUN_ID_HEADER),
-    flowId: header(res, FLOW_ID_HEADER),
-    messageId: header(res, MESSAGE_ID_HEADER),
-    body: streamBody(res),
-  };
+  try {
+    return {
+      runId: header(res, RUN_ID_HEADER),
+      flowId: header(res, FLOW_ID_HEADER),
+      messageId: header(res, MESSAGE_ID_HEADER),
+      body: streamBody(res),
+    };
+  } catch (err) {
+    // 200 thiếu header id → không ai đọc stream: đóng để nhả kết nối trước khi ném.
+    res.body?.cancel().catch(() => {});
+    throw err;
+  }
 }
 
 /** E13: phát lại sự kiện `id > lastEventId` rồi tiếp tục. Chưa nhận sự kiện nào (0) → không gửi header. 410 `EVENTS_EXPIRED`. */
