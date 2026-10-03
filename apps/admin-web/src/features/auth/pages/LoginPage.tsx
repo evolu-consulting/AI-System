@@ -1,9 +1,11 @@
-// ADM-FR-01, ADM-FR-02 · màn Đăng nhập (canvas Login): 2 cột (trái nền thương hiệu, phải form 380px); < 1024px ẩn cột trái.
+// ADM-FR-01, ADM-FR-02, ADM-FR-08 · màn Đăng nhập (canvas Login): 2 cột (trái nền thương hiệu, phải form 380px); < 1024px ẩn cột trái.
 import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Toaster } from "@/components/ui/sonner";
 import { safeNext } from "@/lib/auth/next";
+import { session, type TotpVerifyResponse } from "@/lib/auth/session";
+import { useSession } from "@/lib/auth/use-session";
 import { describeLoginError } from "@/lib/errors";
 import { normalizeCompanyKey, normalizeUsername } from "@/lib/normalize";
 import { useDocumentTitle } from "@/lib/use-document-title";
@@ -12,6 +14,8 @@ import { useTr } from "@/lib/use-translate";
 import { login } from "../api";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LoginForm } from "../components/LoginForm";
+import { LoginTotpStep } from "../components/totp/LoginTotpStep";
+import { useTotpLogin } from "../hooks/use-totp-login";
 import type { LoginValues } from "../lib/schemas";
 
 const loginRoute = getRouteApi("/login");
@@ -27,34 +31,38 @@ export function LoginPage() {
   const tr = useTr();
   const router = useRouter();
   const search = loginRoute.useSearch();
+  const pendingTotp = useSession((s) => s.pendingTotp);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  useDocumentTitle(t("auth.login.title"));
+  const [lastUsername, setLastUsername] = useState("");
+  useDocumentTitle(t(pendingTotp ? "auth.login.totp.title" : "auth.login.title"));
+
+  const finish = async (res: TotpVerifyResponse) => {
+    if (res.status === "password_change_required") {
+      await router.navigate({ to: "/change-password" });
+      return;
+    }
+    await i18n.changeLanguage(res.user.locale);
+    const next = safeNext(search.next);
+    if (next) router.history.push(next);
+    else await router.navigate({ to: res.user.role === "member" ? "/member" : "/" });
+  };
+  const totp = useTotpLogin({ onDone: finish, onExpired: setError });
 
   const submit = async (values: LoginValues) => {
     setPending(true);
     setError(null);
     const tenantKey = normalizeCompanyKey(values.tenant_key);
+    const username = normalizeUsername(values.username);
+    setLastUsername(username);
     try {
-      const res = await login({
-        tenant_key: tenantKey,
-        username: normalizeUsername(values.username),
-        password: values.password,
-      });
+      const res = await login({ tenant_key: tenantKey, username, password: values.password });
       localStorage.setItem(TENANT_STORAGE_KEY, tenantKey);
-      if (res.status === "password_change_required") {
-        await router.navigate({ to: "/change-password" });
-        return;
-      }
       if (res.status === "totp_required") {
-        // Bước nhập mã 2 bước là FE6b; tạm hiện lỗi chung.
-        setError(tr("auth.error.server", { code: "TOTP_REQUIRED" }));
+        totp.setError(null);
         return;
       }
-      await i18n.changeLanguage(res.user.locale);
-      const next = safeNext(search.next);
-      if (next) router.history.push(next);
-      else await router.navigate({ to: res.user.role === "member" ? "/member" : "/" });
+      await finish(res);
     } catch (err) {
       const spec = describeLoginError(err);
       setError(tr(spec.key, spec.params));
@@ -98,16 +106,33 @@ export function LoginPage() {
             height={56}
             className="h-12 w-auto self-start"
           />
-          <div className="space-y-1">
-            <h1 className="text-page-title font-bold text-foreground">{t("auth.login.title")}</h1>
-            <p className="text-body text-muted-foreground">{t("auth.login.subtitle")}</p>
-          </div>
-          <LoginForm
-            defaultTenant={rememberedTenant(search)}
-            pending={pending}
-            error={error}
-            onSubmit={submit}
-          />
+          {pendingTotp ? (
+            <LoginTotpStep
+              tenantKey={pendingTotp.tenantKey}
+              username={pendingTotp.username}
+              busy={totp.busy}
+              error={totp.error}
+              onError={totp.setError}
+              onSubmit={totp.submit}
+              onBack={session.clearPendingTotp}
+            />
+          ) : (
+            <>
+              <div className="space-y-1">
+                <h1 className="text-page-title font-bold text-foreground">
+                  {t("auth.login.title")}
+                </h1>
+                <p className="text-body text-muted-foreground">{t("auth.login.subtitle")}</p>
+              </div>
+              <LoginForm
+                defaultTenant={rememberedTenant(search)}
+                defaultUsername={lastUsername}
+                pending={pending}
+                error={error}
+                onSubmit={submit}
+              />
+            </>
+          )}
         </div>
       </main>
       <Toaster position="bottom-right" />

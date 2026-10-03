@@ -73,6 +73,19 @@
         "b2": "Theo dõi mức dùng và quota trong tháng",
         "b3": "Biết ngay vì sao một người không thấy một lệnh",
         "footer": "EvoluConsulting · Intelligent automation"
+      },
+      "totp": {
+        "title": "Xác thực hai bước",
+        "body": "Nhập mã 6 số trong ứng dụng xác thực của bạn.",
+        "code": "Mã xác thực",
+        "submit": "Xác nhận",
+        "useBackup": "Dùng mã dự phòng",
+        "backupCode": "Mã dự phòng",
+        "useApp": "Dùng mã từ ứng dụng",
+        "back": "Quay lại đăng nhập",
+        "wrong": "Mã không đúng hoặc đã hết hạn",
+        "expired": "Phiên xác thực đã hết hạn. Hãy đăng nhập lại.",
+        "backupFormat": "Mã dự phòng có dạng xxxx-xxxx"
       }
     },
     "lang": {

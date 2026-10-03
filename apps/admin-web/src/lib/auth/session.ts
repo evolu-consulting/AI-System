@@ -1,17 +1,22 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03 · phiên đăng nhập: access token CHỈ trong bộ nhớ (D5), refresh bằng cookie httpOnly.
-import type { LoginRequest, LoginResponse, Me, TokenGrant } from "@ai/contracts";
+import type { LoginRequest, LoginResponse, Me, TokenGrant, TotpVerifyRequest } from "@ai/contracts";
 import { ApiError, api, sendPublic, setAuthHooks } from "../http";
 import { type AuthMessage, createAuthChannel } from "./auth-channel";
 import { createRefresher, type RefreshResult } from "./refresh-lock";
 
 export type SessionStatus = "unknown" | "anon" | "authed" | "expired";
 export type PendingChange = { changeToken: string; tenantKey: string; username: string };
+export type PendingTotp = { totpToken: string; tenantKey: string; username: string };
+/** Kết quả bước mã 2FA: như đăng nhập, trừ nhánh `totp_required`. */
+export type TotpVerifyResponse = Exclude<LoginResponse, { status: "totp_required" }>;
 export type SessionState = {
   status: SessionStatus;
   accessToken: string | null;
   me: Me | null;
   /** Đăng nhập lần đầu / vừa reset: giữ `change_token` trong bộ nhớ tới khi đổi xong. */
   pendingChange: PendingChange | null;
+  /** Mật khẩu đúng, còn bước mã 2FA: `totp_token` CHỈ trong bộ nhớ (D11, M4-R16). */
+  pendingTotp: PendingTotp | null;
 };
 export type SessionEvent = "cleared" | "reauthed" | "expired";
 
@@ -20,6 +25,7 @@ const INITIAL: SessionState = {
   accessToken: null,
   me: null,
   pendingChange: null,
+  pendingTotp: null,
 };
 
 let state: SessionState = INITIAL;
@@ -63,7 +69,13 @@ channel.subscribe((msg: AuthMessage) => {
 });
 
 function applyGrant(grant: TokenGrant): void {
-  set({ status: "authed", accessToken: grant.access_token, me: grant.user, pendingChange: null });
+  set({
+    status: "authed",
+    accessToken: grant.access_token,
+    me: grant.user,
+    pendingChange: null,
+    pendingTotp: null,
+  });
 }
 
 async function refreshToken(stale: string | null): Promise<string | null> {
@@ -98,22 +110,31 @@ async function ensure(): Promise<SessionStatus> {
   return ensurePromise;
 }
 
+function applyLoginResult(res: LoginResponse, who: { tenantKey: string; username: string }): void {
+  if (res.status === "authenticated") applyGrant(res);
+  else if (res.status === "password_change_required")
+    set({ pendingChange: { changeToken: res.change_token, ...who }, pendingTotp: null });
+  else set({ pendingTotp: { totpToken: res.totp_token, ...who } });
+}
+
 async function login(req: LoginRequest): Promise<LoginResponse> {
   const res = await sendPublic<LoginResponse>("/auth/login", {
     method: "POST",
     body: req,
   });
-  if (res.status === "authenticated") {
-    applyGrant(res);
-  } else if (res.status === "password_change_required") {
-    set({
-      pendingChange: {
-        changeToken: res.change_token,
-        tenantKey: req.tenant_key,
-        username: req.username,
-      },
-    });
-  }
+  applyLoginResult(res, { tenantKey: req.tenant_key, username: req.username });
+  return res;
+}
+
+/** Bước 2 đăng nhập: gửi mã 6 số hoặc mã dự phòng kèm `totp_token` đang giữ. */
+async function verifyTotp(
+  input: { code: string } | { backup_code: string },
+): Promise<TotpVerifyResponse> {
+  const pending = state.pendingTotp;
+  if (!pending) throw new ApiError(401, "INVALID_TOTP_TOKEN", "No totp token");
+  const body: TotpVerifyRequest = { totp_token: pending.totpToken, ...input };
+  const res = await sendPublic<TotpVerifyResponse>("/auth/totp/verify", { method: "POST", body });
+  applyLoginResult(res, pending);
   return res;
 }
 
@@ -156,12 +177,14 @@ export const session = {
   },
   ensure,
   login,
+  verifyTotp,
   relogin,
   logout,
   reload,
   applyGrant,
   setMe: (me: Me): void => set({ me }),
   clearPendingChange: (): void => set({ pendingChange: null }),
+  clearPendingTotp: (): void => set({ pendingTotp: null }),
   /** Chỉ dùng cho test. */
   reset: (): void => {
     state = INITIAL;

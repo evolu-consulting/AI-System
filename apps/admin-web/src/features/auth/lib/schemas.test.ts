@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { NewPasswordSchema } from "@ai/contracts";
-import { forcedPasswordSchema, loginSchema, selfPasswordSchema } from "./schemas";
+import {
+  forcedPasswordSchema,
+  loginSchema,
+  normalizeBackupCode,
+  selfPasswordSchema,
+} from "./schemas";
 
 const FIXTURES = [
   "",
@@ -56,5 +61,18 @@ describe("ADM-FR-06 · schema form khớp contract", () => {
     expect(loginSchema.safeParse({ tenant_key: "a", username: "b", password: "x" }).success).toBe(
       true,
     );
+  });
+});
+
+describe("ADM-FR-08 · mã dự phòng ở bước đăng nhập", () => {
+  test("chuẩn hoá: HOA, không gạch, khoảng trắng đều nhận", () => {
+    expect(normalizeBackupCode("abcd-efgh")).toBe("abcd-efgh");
+    expect(normalizeBackupCode(" ABCD EFGH ")).toBe("abcdefgh");
+    expect(normalizeBackupCode("ABCD-EFGH")).toBe("abcd-efgh");
+  });
+  test("sai dạng → null (ký tự ngoài bảng chữ, sai độ dài)", () => {
+    for (const bad of ["", "abcd-efg", "abc1-efgh", "abcd--efgh", "oooo-iiii"]) {
+      expect(normalizeBackupCode(bad)).toBeNull();
+    }
   });
 });

@@ -1,5 +1,5 @@
 // ADM-FR-01, ADM-FR-06 · schema form auth; hằng số lấy từ @ai/contracts, thông điệp là KEY i18n (resolve khi render).
-import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
+import { BackupCodeSchema, PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
 import { z } from "zod";
 
 export const loginSchema = z.object({
@@ -38,3 +38,9 @@ export const selfPasswordSchema = z
     message: "password.error.same",
   });
 export type SelfPasswordValues = z.infer<typeof selfPasswordSchema>;
+
+/** ADM-FR-08 · mã dự phòng ở bước đăng nhập: bỏ khoảng trắng, nhận HOA/không gạch; sai dạng → null. */
+export function normalizeBackupCode(raw: string): string | null {
+  const r = BackupCodeSchema.safeParse(raw.replace(/\s+/g, ""));
+  return r.success ? r.data : null;
+}

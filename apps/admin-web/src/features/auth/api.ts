@@ -9,12 +9,19 @@ import type {
   TotpDisableRequest,
   TotpSetupResponse,
 } from "@ai/contracts";
-import { session } from "@/lib/auth/session";
+import { session, type TotpVerifyResponse } from "@/lib/auth/session";
 import { ApiError, api, sendPublic } from "@/lib/http";
 
 /** Đăng nhập; kết quả đã được nạp vào session (đã đăng nhập hoặc chờ đổi mật khẩu bắt buộc). */
 export function login(req: LoginRequest): Promise<LoginResponse> {
   return session.login(req);
+}
+
+/** Bước mã 2FA khi đăng nhập (`totp_token` lấy trong bộ nhớ phiên); kết quả nạp vào session như login. */
+export function verifyTotpLogin(
+  input: { code: string } | { backup_code: string },
+): Promise<TotpVerifyResponse> {
+  return session.verifyTotp(input);
 }
 
 /** Đổi mật khẩu bắt buộc: dùng `change_token` giữ trong bộ nhớ; thành công = đăng nhập luôn. */

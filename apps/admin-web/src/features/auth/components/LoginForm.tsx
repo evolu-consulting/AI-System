@@ -12,19 +12,27 @@ import { type LoginValues, loginSchema } from "../lib/schemas";
 
 type Props = {
   defaultTenant: string;
+  /** Giữ tên đăng nhập khi quay lại từ bước mã 2FA. */
+  defaultUsername?: string;
   pending: boolean;
   /** Câu lỗi chung đã dịch (đăng nhập sai, khoá tạm, mạng…). */
   error: string | null;
   onSubmit: (values: LoginValues) => void;
 };
 
-export function LoginForm({ defaultTenant, pending, error, onSubmit }: Props) {
+export function LoginForm({
+  defaultTenant,
+  defaultUsername = "",
+  pending,
+  error,
+  onSubmit,
+}: Props) {
   const { t } = useTranslation();
   const tr = useTr();
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     mode: "onTouched",
-    defaultValues: { tenant_key: defaultTenant, username: "", password: "" },
+    defaultValues: { tenant_key: defaultTenant, username: defaultUsername, password: "" },
   });
   const { errors } = form.formState;
   const msg = (m: string | undefined) => (m ? tr(m) : undefined);

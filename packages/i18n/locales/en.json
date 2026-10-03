@@ -73,6 +73,19 @@
         "b2": "Track monthly usage and quota",
         "b3": "See at once why someone can't see a command",
         "footer": "EvoluConsulting · Intelligent automation"
+      },
+      "totp": {
+        "title": "Two-step verification",
+        "body": "Enter the 6-digit code from your authenticator app.",
+        "code": "Verification code",
+        "submit": "Verify",
+        "useBackup": "Use a backup code",
+        "backupCode": "Backup code",
+        "useApp": "Use a code from the app",
+        "back": "Back to sign in",
+        "wrong": "The code is incorrect or expired",
+        "expired": "Your verification session expired. Please sign in again.",
+        "backupFormat": "Backup codes look like xxxx-xxxx"
       }
     },
     "lang": {
