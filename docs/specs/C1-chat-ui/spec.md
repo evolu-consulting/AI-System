@@ -108,7 +108,7 @@ AC UC-01…UC-08 = **CHAT-AC-01…30** trong `docs/design/chat-app/usecases-chat
 | CHAT-AC-31 | Given bộ test contract, When chạy với `HUB_URL` = mock, Then xanh toàn bộ (login/refresh, CRUD hội thoại, tạo flow, gửi tin vào flow, đủ 7 loại sự kiện SSE, `Last-Event-ID`, cancel, 401/404, cách ly user) | `tests/contract/chat/*.contract.test.ts` (`plan.md` §4) |
 | CHAT-AC-32 | Given bộ test contract, When đổi `HUB_URL` sang địa chỉ khác (instance mock thứ hai), Then không sửa mã mà vẫn xanh. Cam kết: Hub thật pass bộ này thì Chat chạy | như trên |
 | CHAT-AC-33 | Given payload SSE của mock, Then mọi sự kiện parse được bằng zod của contract và **không** có `agent`/`provider` (C1-R04) | như trên |
-| CHAT-AC-34 | Given chat-web, When đổi `PUBLIC_HUB_URL` rồi chạy lại, Then Chat gọi địa chỉ mới (không hằng số URL trong code) | unit hoặc e2e |
+| CHAT-AC-34 | Given chat-web, When đổi `HUB_URL`/`AUTH_URL` (proxy dev/preview) rồi chạy lại, Then Chat gọi địa chỉ mới (không hằng số URL trong code) | unit hoặc e2e |
 | CHAT-AC-35 | Given e2e Playwright với mock, Then CHAT-AC-01…30 đều có test tự động (UC-08 `drop`, `flow-cold` dùng `MOCK_FAST`) | `e2e/chat-*.spec.ts` (tên tạm) |
 | CHAT-AC-36 | Given VI/EN, Then không thiếu khoá i18n (script i18n của repo), mọi chuỗi hiển thị qua `packages/i18n` | script i18n |
 
@@ -125,7 +125,7 @@ Lệnh xong mốc: `bun run typecheck && bun test && <test contract> && bunx pla
 | # | Câu hỏi | Mặc định |
 |---|---|---|
 | Q1 | Vị trí contract: phiên M4 đang sửa `packages/contracts/src/index.ts` | Subpath export `@ai/contracts/chat` (thêm một dòng vào `exports` + file `src/chat.ts`); backend-lead quyết cuối, được phép dùng package mới `@ai/contracts-chat` nếu subpath vướng tooling |
-| Q2 | Tên biến môi trường Hub: repo đã có `HUB_BASE_URL` (Admin→Hub) | `HUB_URL` cho test contract, mặc định lấy `HUB_BASE_URL` nếu `HUB_URL` trống; chat-web dùng `PUBLIC_HUB_URL` → **đã chốt khác mặc định**, xem dưới |
+| Q2 | Tên biến môi trường Hub: repo đã có `HUB_BASE_URL` (Admin→Hub) | `HUB_URL` cho test contract, mặc định lấy `HUB_BASE_URL` nếu `HUB_URL` trống; → **đã chốt khác mặc định** (proxy `HUB_URL`/`AUTH_URL`, không `PUBLIC_HUB_URL`), xem dưới |
 | Q3 | Thư viện render markdown + highlight code (cần ADR → trình người dùng ở Gate) | Đề xuất `react-markdown` + `remark-gfm` + `rehype-highlight`, nạp lazy; ADR mới (số do docs-architect cấp) |
 | Q4 | Cổng dev chat-web | `3100` (admin-web 3000, mock Hub 4020) |
 | Q5 | Có làm nối lại `Last-Event-ID` ở C1 không | **Có** (UI đã vẽ banner; UC-08, CHAT-AC-28) |
@@ -134,7 +134,7 @@ Lệnh xong mốc: `bun run typecheck && bun test && <test contract> && bunx pla
 
 ### Quyết định PLAN backend (2026-10-03, chi tiết `plan.md` §1)
 - Q1: `@ai/contracts/chat` (`packages/contracts/src/chat/`), thêm 1 dòng `exports`; fallback `@ai/contracts-chat` nếu tooling đỏ.
-- Q2: `HUB_URL` + `AUTH_URL` (trống → `HUB_URL`) là env **server-side**: dev/preview chat-web proxy `/auth` → `AUTH_URL`, `/conversations` `/runs` `/health` → `HUB_URL` (như admin-web proxy `ADMIN_API_URL`); client gọi đường dẫn tương đối. Bỏ `PUBLIC_HUB_URL` và fallback `HUB_BASE_URL` (Bun tự nạp `.env.local` → `bun test` sẽ gọi cổng không chạy). CHAT-AC-34 cần đọc là "đổi `HUB_URL`/`AUTH_URL`" (qc sửa §8).
+- Q2: `HUB_URL` + `AUTH_URL` (trống → `HUB_URL`) là env **server-side**: dev/preview chat-web proxy `/auth` → `AUTH_URL`, `/conversations` `/runs` `/health` → `HUB_URL` (như admin-web proxy `ADMIN_API_URL`); client gọi đường dẫn tương đối. Bỏ `PUBLIC_HUB_URL` và fallback `HUB_BASE_URL` (Bun tự nạp `.env.local` → `bun test` sẽ gọi cổng không chạy). CHAT-AC-34 đã sửa theo (điều phối, 2026-10-03).
 - Q5: có; `id` liên tiếp từ 1, `Last-Event-ID` header hoặc query `last_event_id`; 410 `EVENTS_EXPIRED` sau 600 s.
 - Q6: payload kênh chat strict, chỉ trường của contract; test contract parse strict.
 - Q7: mock ký EdDSA bằng `jose` (ADR-0001, không ADR mới), khoá Ed25519 sinh lúc khởi động, claims như Admin.

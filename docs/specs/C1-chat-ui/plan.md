@@ -50,13 +50,13 @@ Symbol thật đã đọc (2026-10-03): schema auth + `REFRESH_COOKIE`, `X_CLIEN
 
 | Schema | Trường (kiểu · ràng buộc) |
 |---|---|
-| `ConversationSchema` | `id` · `title` string 1–200 · `created_at` · `updated_at` (= lúc có tin mới nhất hoặc đổi tên; sidebar nhóm theo trường này) |
+| `ConversationSchema` | `id` · `title` string 1–200 · `created_at` · `updated_at` (= lúc có tin mới nhất hoặc đổi tên; sidebar nhóm theo trường này) · `flow_count` int ≥ 0 (FE P1) |
 | `StepSummarySchema` | `step_id` string 1–64 · `label` string 1–200 · `status` `ok\|failed` · `ms` int ≥ 0 |
 | `RunErrorSchema` | `code` ∈ `CHAT_RUN_ERROR_CODES` · `message` 1–500 · `hint` 0–500 |
 | `AskSchema` | `question` 1–2000 · `choices` string[] 0–6, mỗi chuỗi 1–200 (rỗng = không chip) |
 | `RunSummarySchema` | `id` · `status` `finished\|failed\|cancelled` · `ms` int ≥ 0 · `steps` StepSummary[] (≤ 50) · `error` RunError \| null (khác null ⇔ `failed`/`cancelled`) |
-| `MessageSchema` | `id` · `conversation_id` · `flow_id` · `role` `user\|assistant` · `content` string 0–64000 (user: ≥ 1) · `run_id` uuid \| null · `created_at` · `run` RunSummary \| null (chỉ assistant) · `ask` Ask \| null (chỉ assistant, khi run kết thúc bằng hỏi lại) |
-| `FlowSchema` | `id` · `conversation_id` · `title` 1–200 (= `deriveTitle` tin đầu) · `created_at` · `last_active_at` · `message_count` int ≥ 1 · `active_run_id` uuid \| null (run đang chạy → client nối `GET /runs/:id/events`) · `preview` `{question: Message, answer: Message \| null}` (tin đầu của flow và trả lời đầu; khối flow ở luồng chính + "+N tin trong flow · <thời gian>") |
+| `MessageSchema` | `id` · `conversation_id` · `flow_id` · `role` `user\|assistant` · `content` string 0–64000 (user: ≥ 1) · `run_id` uuid \| null · `created_at` · `run` RunSummary \| null (chỉ assistant) · `ask` Ask \| null (chỉ assistant, khi run kết thúc bằng hỏi lại). `content` user lưu nguyên văn kể cả tiền tố `#scn:` (FE P2) |
+| `FlowSchema` | `id` · `conversation_id` · `title` 1–200 (= `deriveTitle` tin đầu) · `created_at` · `last_active_at` · `message_count` int ≥ 1 · `active_run_id` uuid \| null (run đang chạy → client nối `GET /runs/:id/events`) · `preview` `{question: Message, answer: Message \| null}` (tin đầu của flow và trả lời đầu; `answer` có ngay khi tin trả lời đầu được lưu (FE P3); khối flow ở luồng chính + "+N tin trong flow · <thời gian>") |
 | `RunSchema` | `id` · `conversation_id` · `flow_id` · `status` `running\|finished\|failed\|cancelled` · `started_at` · `finished_at` \| null · `last_event_id` int ≥ 0 · `error` RunError \| null |
 | `ChatPageSchema(item)` | `{items: item[], next_cursor: string(1–200) \| null}` |
 
