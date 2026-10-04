@@ -202,3 +202,22 @@ Tổng mới ≈ **197** ca (R 78, A 83, P 30, S 3, perf 3) + K + M (3 checklist
 
 ## 10. Đỏ đúng lý do
 Chưa chạy (chưa viết test). Sau QW: bảng `ID · ca đỏ đúng lý do / tổng · ca xanh trước code (lý do)` ghi ở đây.
+
+### QW-R · `tests/acceptance/H2a/rules/` (2026-10-05, trên B0 `6962fbf`)
+`bun test tests/acceptance/H2a/rules`: **79 ca / 11 file** (+ helper `_catalog.ts`) · **62 đỏ** — cả 62 đỏ ở `Error: not implemented: <hàm>(…)` của stub B0 (0 lỗi import/cú pháp/dựng dữ liệu) · **17 xanh trước code** (có lý do). `tsc -p tsconfig.tests.json`, biome, `check:size` sạch.
+
+| File | ID | Đỏ đúng lý do / tổng | Xanh trước code (lý do) |
+|---|---|---|---|
+| `command-parse` | R01–R14 | 14/14 | — |
+| `command-input` | R15–R26 | 12/12 | — |
+| `suggest` | R27–R29 | 3/3 | — |
+| `access-parity` | R30–R39 ×2 + so tập | 11/21 (nhánh Hub 10 + so tập R39) | 10 — nhánh Admin `computeEffectiveAccess` (chuẩn tham chiếu, đúng thiết kế) |
+| `menu` | R40–R42 | 3/3 | — |
+| `dify` | R43–R49 (+`maskInputs` trong R49) | 7/7 | — |
+| `mcp` | R50–R55 | 6/6 | — |
+| `confirm` | R56–R59 | 3/4 | R59 — `lib/job-token.ts` B0 đã làm thật (không phải stub) |
+| `runner` | R60–R62 | 3/3 | — |
+| `secret-crypto` | R63 | 0/1 | R63 — `lib/secret-crypto.ts` B0 đã chép thật (P6) |
+| `contracts-h2a` | R70–R74 | 0/5 | R70–R74 — contract C1/C2 đã có (`fc19f86`, `f753471`) |
+
+Ghi chú: R36 theo spec H2a-R02 + M3-R11 (`core` hiệu lực **không cần grant**), khác câu chữ cases §1.4 ("`core` không grant → không") — nhánh Admin xanh xác nhận; sửa cases khi khoá Q2. R61 giả định tham số `url` của `mcpConfigFor` là URL `/mcp` đầy đủ (Hub dựng `<HUB_PUBLIC_INTERNAL_URL>/mcp` trước khi gọi). Kiểm chéo: 29 ca `command-parse`/`command-input`/`suggest` xanh trên một bản cài tham chiếu tạm (đã xoá) — kỳ vọng nhất quán.
