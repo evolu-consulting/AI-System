@@ -57,6 +57,8 @@ export type AppDeps = {
   signal?: AbortSignal;
   /** Vòng chạy run. Vắng → vòng Orchestrator (B8) qua `JobAgentRunner` (B7). */
   runDriver?: RunDriver;
+  /** H2a · = `SECRET_MASTER_KEY` (base64 32 byte, chung Admin); nạp bằng `loadMasterKey` (dify/credential.service). */
+  secretMasterKey?: string;
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;

@@ -1,5 +1,5 @@
 // HUB-NFR-04 · điểm khởi động hub-api: nơi duy nhất đọc env và mở cổng (plan H1 §4, §7).
-// Thứ tự: env → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → Orchestrator hợp lệ (HUB-BR-08) → Redis (connect + ping) → serve.
+// Thứ tự: env → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → Orchestrator hợp lệ (HUB-BR-08) → master key (H2a) → Redis (connect + ping) → serve.
 // Lỗi bước nào → log `fatal` + exit 1.
 import { SSE_HEARTBEAT_S } from "@ai/contracts/chat";
 import pkg from "../package.json";
@@ -11,6 +11,7 @@ import { importJwtPublicKey } from "./lib/jwt";
 import { logger, setMinLevel } from "./lib/logger";
 import { createRedis, pingRedis, type Redis } from "./lib/redis";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
+import { loadMasterKey, probeMasterKey } from "./modules/dify/credential.service";
 
 function fail(step: string, err: unknown): never {
   logger.fatal(step, safeErrorFields(err));
@@ -59,6 +60,21 @@ async function assertOrchestrator(db: Db): Promise<void> {
   process.exit(1);
 }
 
+/**
+ * H2a plan §8: `SECRET_MASTER_KEY` sai định dạng/tự kiểm hỏng → fatal. Khớp khoá Admin chỉ dò (giải thử một secret thật) và
+ * cảnh báo — một secret hỏng không được làm sập Hub. Vắng → cảnh báo, mọi lời gọi Dify `NOT_CONFIGURED`.
+ */
+async function checkMasterKey(env: Env, db: Db): Promise<void> {
+  let key: ReturnType<typeof loadMasterKey> = null;
+  try {
+    key = loadMasterKey(env.SECRET_MASTER_KEY);
+  } catch (err) {
+    fail("secret_master_key", err);
+  }
+  if (key) await probeMasterKey(db, key, logger).catch(() => "none");
+  else logger.warn("secret_master_key_missing");
+}
+
 async function main(): Promise<void> {
   const env = readEnv();
   const jwtPublicKey = await importJwtPublicKey(env.JWT_PUBLIC_KEY).catch((err) =>
@@ -66,6 +82,7 @@ async function main(): Promise<void> {
   );
   const db = await openDb(env).catch((err) => fail("db", err));
   await assertOrchestrator(db);
+  await checkMasterKey(env, db);
   const redis = await openRedis(env).catch((err) => fail("redis", err));
   const stop = new AbortController();
   const app = createApp(
@@ -79,6 +96,7 @@ async function main(): Promise<void> {
       instanceId: env.HUB_INSTANCE_ID,
       jobMaxWaitS: env.HUB_JOB_MAX_WAIT_S,
       configPollS: env.HUB_CONFIG_POLL_S,
+      secretMasterKey: env.SECRET_MASTER_KEY,
       signal: stop.signal,
     },
   );

@@ -1,6 +1,7 @@
 // HUB-NFR-04 · env của hub-api (plan H1 §7), validate bằng zod. Lỗi chỉ nêu tên biến, không in giá trị.
 import { hostname } from "node:os";
 import { z } from "zod";
+import { isMasterKeyB64 } from "../lib/secret-crypto";
 
 const OriginList = z
   .string()
@@ -30,6 +31,8 @@ export const EnvSchema = z.object({
   HUB_CONFIG_POLL_S: z.coerce.number().int().min(1).default(60),
   HUB_CORS_ORIGINS: OriginList.default(["http://localhost:3100"]),
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
+  // H2a plan §8: chung với admin-api (base64 32 byte). Vắng → gọi Dify luôn NOT_CONFIGURED; sai → env lỗi (fatal).
+  SECRET_MASTER_KEY: z.string().refine(isMasterKeyB64).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
