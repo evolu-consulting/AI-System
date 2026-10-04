@@ -10,6 +10,8 @@ Spec H2a-dify-command (R01–R08, R16); plan §4–§5.1, chữ ký hàm thuần
 | `command-access.rules.ts` | `usableCommands` — chép `visible` của `computeEffectiveAccess` Admin (P5, Q4) |
 | `suggest.rules.ts` | `levenshtein`, `suggestCommands` (R04) |
 | `menu.rules.ts` | `toMenuItem` (GET `/commands`) |
+| `commands.service.ts` | `CommandService.usable(u)` (ảnh catalog + lệnh dùng được, chụp một lần/request), `menu(u)` |
+| `commands.routes.ts` | GET `/commands` (JWT ở gốc `app.ts`, mount qua `app.h2a.ts` `mountH2a`) |
 
-Trạng thái: `usableCommands` xong (B1; catalog cache ở `modules/config/catalog.*`); hàm khác còn stub B0, route/service/driver ở B2–B5.
+Trạng thái: `usableCommands` (B1; catalog cache ở `modules/config/catalog.*`), menu GET `/commands` (B2) xong; parse/input/gợi ý/`prepare` ở B3, driver ở B5.
 Phụ thuộc: `@ai/contracts` (kiểu). Luật thuần, không I/O.

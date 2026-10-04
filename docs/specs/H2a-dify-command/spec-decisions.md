@@ -95,3 +95,10 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 - Luật seed ở `modules/seed/seed.workflows.ts`: `runtime_options` agent `dify-*` = `strictObject({workflow_key})` kiểm thuần trước DB; đối chiếu `admin.workflows` trong transaction seed (sau khoá `config_meta`), lỗi → rollback toàn bộ (A93 "DB không đổi"); cảnh báo log sau commit như Q8.
 - `workflow_flags.side_effect` seed chỉ **bật** (upsert `true`), không tắt cờ của workflow vắng trong yaml (đồng nghĩa "upsert, không xoá"); `workflows.yaml` mặc định để danh sách rỗng + ví dụ comment (không cấp tool cho `assistant` ngầm).
 - `agent_workflows.agent` phải có trong seed (như grant/entitlement); agent `dify-*` bị bỏ vì workflow vắng thì các dòng tham chiếu nó ghi 0 hàng (không lỗi).
+
+## BUILD — B2 (backend-lead, 2026-10-05)
+| # | Quyết định | Lý do |
+|---|---|---|
+| B-B2-1 | `/commands` thêm vào `PROTECTED_PREFIXES` của `app.ts` (JWT ở gốc như E5–E15: không JWT → 401 `AUTH_EXPIRED`); route mount trong `app.h2a.ts` `mountH2a(app, config)` khi có `db` + cache cấu hình (không cần Redis) | plan §2.4, §4 (giữ `app.ts` ≤ 250 dòng) |
+| B-B2-2 | `CommandService.menu` = `usableCatalogCommands` (B1, đã sắp `name`) → `toMenuItem`; tenant/user lấy từ `ConfigCache` (user chưa có trong cache → đọc DB một lần rồi cache như H1; cache nóng = 0 query). User vắng trong cache → `items: []` (middleware đã chặn trước) | plan §8 (0 query từ cache), R03 kiểm quyền mỗi request trên ảnh hiện hành |
+| B-B2-3 | `toMenuItem.required`: arg được `input_map` (nguồn `arg`) map vào **ít nhất một** input `required` ∧ `default=null` ∧ `fallback=null`; arg không map vào input nào → `false`. `description.en` vắng → `null` | plan-rules menu; R40–R42 |

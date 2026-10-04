@@ -10,6 +10,7 @@ import {
 } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { mountH2a } from "./app.h2a";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
@@ -62,7 +63,7 @@ const DEFAULT_CONFIG_POLL_S = 60;
 /** = `HUB_JOB_MAX_WAIT_S` mặc định (plan §7). */
 const DEFAULT_JOB_MAX_WAIT_S = 30;
 /** Gốc các route cần JWT (E5–E15). Chặn ở gốc ⇒ 401 trước 404, kể cả route chưa mount; `/health` mở. */
-const PROTECTED_PREFIXES = ["/conversations", "/runs"];
+const PROTECTED_PREFIXES = ["/conversations", "/runs", "/commands"];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
@@ -128,6 +129,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
   if (!deps.db) return;
+  if (config) mountH2a(app, config);
   if (!deps.redis || !config) {
     app.route("/conversations", conversationRoutes(deps.db));
     return;
