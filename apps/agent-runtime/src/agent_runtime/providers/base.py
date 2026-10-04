@@ -8,12 +8,16 @@ Không import `config`/`db`/`events` (process con không cầm secret).
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-from typing import Annotated, Any, Literal, Protocol
+import json
+from collections.abc import Awaitable, Callable, Mapping, Sequence
+from typing import Annotated, Any, Literal, Protocol, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from agent_runtime.contracts.hub import JobPayload1
+
+CONFIRMATION_REQUIRED = "CONFIRMATION_REQUIRED"
+CONFIRM_QUESTION_MAX = 2000
 
 
 class _Ev(BaseModel):
@@ -69,6 +73,52 @@ class Fatal(_Ev):
     code: str
     msg: Annotated[str, Field(max_length=500)]
     reason: str | None = None
+
+
+class Confirm(_Ev):
+    """HUB-FR-95 · R21 · Hub từ chối tool `side_effect` chưa xác nhận (`plan-runtime` §5).
+    PY-05 đưa vào `ProviderEvent`/`protocol.py`."""
+
+    type: Literal["confirm"] = "confirm"
+    question: Annotated[str, Field(min_length=1, max_length=CONFIRM_QUESTION_MAX)]
+    choices: tuple[str, str]
+
+
+def _first_text(content: str | Sequence[Mapping[str, Any]]) -> str | None:
+    """Khối text đầu tiên; `content` str (CLI `is_error`, spike S2: khối nối bằng xuống dòng) →
+    phần trước dấu xuống dòng đầu tiên (`content[0]` là `JSON.stringify` một dòng)."""
+    if isinstance(content, str):
+        return content.split("\n", 1)[0]
+    for block in content:
+        if block.get("type") == "text":
+            text = block.get("text")
+            return text if isinstance(text, str) else None
+    return None
+
+
+def parse_confirmation(content: str | Sequence[Mapping[str, Any]]) -> Confirm | None:
+    """§5 #2 · khối text đầu là JSON `{code: "CONFIRMATION_REQUIRED", question, choices}`
+    (`question` str 1–2 000, `choices` đúng 2 str) → `Confirm`; khác → None. Câu chỉ dẫn và
+    `structuredContent` bỏ qua."""
+    text = _first_text(content)
+    if not text:
+        return None
+    try:
+        obj: object = json.loads(text)
+    except ValueError:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    data = cast(dict[str, object], obj)
+    question, choices = data.get("question"), data.get("choices")
+    if data.get("code") != CONFIRMATION_REQUIRED or not isinstance(question, str):
+        return None
+    if not 1 <= len(question) <= CONFIRM_QUESTION_MAX or not isinstance(choices, list):
+        return None
+    items = cast(list[object], choices)
+    if len(items) != 2 or not all(isinstance(c, str) for c in items):
+        return None
+    return Confirm(question=question, choices=(str(items[0]), str(items[1])))
 
 
 ProviderEvent = Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal

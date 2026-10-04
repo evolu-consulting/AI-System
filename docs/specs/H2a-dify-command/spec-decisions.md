@@ -73,6 +73,13 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 ## BUILD — D1b (backend-lead, 2026-10-05)
 - B-D1b-1: Migration mới `migrations-hub/0004_h2a_jobs_checks.sql` (+ `_journal.json`) nới `jobs_error_code_check` thêm `NOT_CONFIGURED`, `jobs_error_reason_check` thêm `credential`/`upstream` theo C2 (`HUB_JOB_ERROR_CODES`, `JOB_FAIL_REASONS`; `plan-errors` §2) — D1 sót (qc A89b); DROP+ADD trong `DO $$` chỉ khi định nghĩa cũ thiếu giá trị; các CHECK khác (`runs_error_code_ck` = `CHAT_RUN_ERROR_CODES`, `jobs_status`, `agent_types_runtime`) đã khớp contract; `schema/hub.ts` không có hằng mã lỗi job nên không đổi.
 
+## BUILD — PY-01 (backend-lead, 2026-10-05)
+- B-PY01-1 (điều phối): PY-01 thêm hai trường ngoài phạm vi để P28 xanh đủ 85/85: `ClaimedJob.token: str = field(default="", repr=False)` (`db/jobs_sql.py`, chỉ khai báo — sinh token lúc claim vẫn thuộc PY-03) và `Settings.dify_backoff_s` (`config.py`, env `AGENT_RT_DIFY_BACKOFF_S` dạng `"2,8"`, mặc định `(2.0, 8.0)`, mỗi giá trị > 0; chưa ai đọc tới PY-03).
+- B-PY01-2: `Confirm` (pydantic, `type:"confirm"`, `choices: tuple[str, str]`) đặt trong `providers/base.py` cạnh `parse_confirmation` nhưng **chưa** vào union `ProviderEvent`/`protocol.py` (PY-05). `parse_confirmation` chỉ xét **khối text đầu** (list) / phần trước dấu xuống dòng đầu (str); JSON hỏng/không phải object → None.
+- B-PY01-3: `reduce` đặt `task_id` từ sự kiện đầu có `task_id` (mọi loại, không chỉ `workflow_started` — chat cần cho stop); `node_started`/`agent_thought` đếm bước không xét `app_type`; `workflow_finished` lưu `usage = data` (nguồn `usage_row` workflow). `usage_row` theo `app_type` (bảng `-dify` §3.7), không đoán theo trường như `difyUsage` TS: workflow chỉ đọc `total_tokens`; token rác/âm/bool → 0; `total_price` → `Decimal` qua `str` (không float), NaN/âm → 0.
+- B-PY01-4: `retry_delay` giới hạn retry = `min(2, len(backoff))` (tối đa 3 lần gọi kể cả khi env cho nhiều mốc). `mask` che thêm base64url và hex hoa (như `maskSecret` TS). `final_text` (cùng `stream.py`) làm luôn: object/số → JSON gọn (`separators=(",", ":")`, `ensure_ascii=False`) như `JSON.stringify`; cắt 64 000 ký tự để host (PY-03).
+- B-PY01-5: import-linter thêm contract forbidden `runtimes.dify` ↛ `providers`, `sandbox`, `runtimes.cli` (`plan-runtime` §3.1).
+
 ## WRITE — QW-R (qc) — 2026-10-05
 - R36: H2a-R02 ghi "∧ F cấp cho user/group" nhưng luật gốc M3-R11 và code Admin cho `core` hiệu lực **không cần grant**; R02 yêu cầu "đúng luật M3" + parity ⇒ theo Admin. Sửa `test-plan-cases` R36 (điều phối, trước Q2).
 - R61: `mcpConfigFor(…, url)` nhận URL `/mcp` đầy đủ, trả nguyên văn (ghi `plan-rules`).

@@ -48,12 +48,28 @@ class Settings(BaseSettings):
     kill_grace_s: float = Field(default=3.0, gt=0)
     cleanup_s: float = Field(default=3600.0, gt=0)
     cli_path: Path | None = None
+    # `workflow.async` (plan-runtime-dify §3.4): backoff giữa các lần thử, "2,8" = `policy.BACKOFF`.
+    dify_backoff_s: Annotated[tuple[float, ...], NoDecode] = (2.0, 8.0)
 
     @field_validator("providers", mode="before")
     @classmethod
     def _split_providers(cls, value: object) -> object:
         if isinstance(value, str):
             return tuple(p.strip() for p in value.split(",") if p.strip())
+        return value
+
+    @field_validator("dify_backoff_s", mode="before")
+    @classmethod
+    def _split_backoff(cls, value: object) -> object:
+        if isinstance(value, str):
+            return tuple(float(p) for p in value.split(",") if p.strip())
+        return value
+
+    @field_validator("dify_backoff_s")
+    @classmethod
+    def _positive_backoff(cls, value: tuple[float, ...]) -> tuple[float, ...]:
+        if not value or any(d <= 0 for d in value):
+            raise ValueError("AGENT_RT_DIFY_BACKOFF_S: danh sách giây > 0, vd 2,8")
         return value
 
     @field_validator("home", "log_dir")

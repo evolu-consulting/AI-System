@@ -104,3 +104,13 @@ source_modules = [
   "agent_runtime.sandbox",
 ]
 forbidden_modules = ["agent_runtime.config", "agent_runtime.db", "agent_runtime.events"]
+
+[[tool.importlinter.contracts]]
+name = "runtimes.dify không import providers, sandbox, runtimes.cli (plan-runtime 3.1)"
+type = "forbidden"
+source_modules = ["agent_runtime.runtimes.dify"]
+forbidden_modules = [
+  "agent_runtime.providers",
+  "agent_runtime.sandbox",
+  "agent_runtime.runtimes.cli",
+]

@@ -8,7 +8,7 @@ Chỉ đánh lại số tham số cho liền mạch (asyncpg không suy được
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from agent_runtime.db.pool import Conn, Row
@@ -66,6 +66,8 @@ RESET_PROVIDERS = """UPDATE hub.provider_state SET status = 'ok', consecutive_er
 class ClaimedJob:
     id: str
     payload: dict[str, Any]
+    # RT1 · token claim (`plan-runtime` §3.3): chỉ trong bộ nhớ cha, không repr/log; PY-03 sinh.
+    token: str = field(default="", repr=False)
 
     @property
     def run_id(self) -> str:
