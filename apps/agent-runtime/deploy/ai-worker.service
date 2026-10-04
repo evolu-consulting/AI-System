@@ -1,0 +1,27 @@
+# WRK-NFR-06 · Agent Runtime (plan-runtime §1.3). Cài trong WSL2 Ubuntu:
+#   sudo cp ai-worker.service /etc/systemd/system/ && sudo install -m 0600 -o root \
+#     ai-worker.env.example /etc/ai-worker.env   # rồi điền giá trị thật
+#   sudo systemctl daemon-reload && sudo systemctl enable --now ai-worker
+# HOME do systemd đặt theo User= (/home/worker) → Settings.home.
+[Unit]
+Description=AI System Agent Runtime (worker)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=worker
+WorkingDirectory=/home/worker/ai-system/apps/agent-runtime
+EnvironmentFile=/etc/ai-worker.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/worker/.local/bin/uv run --frozen python -m agent_runtime
+Restart=always
+RestartSec=2
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=15
+NoNewPrivileges=yes
+SyslogIdentifier=ai-worker
+
+[Install]
+WantedBy=multi-user.target

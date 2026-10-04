@@ -3,9 +3,12 @@ name = "agent-runtime"
 version = "0.0.0"
 description = "AI System · Agent Runtime (Worker Python, chỉ nhắm Linux)"
 requires-python = ">=3.12"
-# Runtime deps (asyncpg, redis, claude-agent-sdk, structlog, pydantic-settings...) theo ADR-0008
-# được thêm ở task dùng tới (PY-03...); khung chỉ khai dev deps.
-dependencies = []
+# Runtime deps theo ADR-0008, thêm ở task dùng tới: PY-03 structlog + pydantic-settings;
+# asyncpg, redis (PY-04), claude-agent-sdk (PY-02/PY-05).
+dependencies = [
+  "pydantic-settings>=2.15",
+  "structlog>=26.1",
+]
 
 [dependency-groups]
 dev = [
