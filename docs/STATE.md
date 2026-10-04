@@ -16,7 +16,7 @@ Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (đóng M4)
 
 ## Việc kế tiếp (phiên mới: làm ngay, KHÔNG hỏi — Luật 2b)
 A. **Sau M4:** (1) người dùng test service admin; (2) chạy lại e2e toàn bộ khi đủ bộ nhớ; (3) M5 khi có Hub; (4) TECH-DEBT nổi bật: #27/#28 (perf, RLS InitPlan — cần duyệt), #34 (`hub_ro` trên `admin.tenants`), #35 (mã lỗi riêng cho trần import).
-0. **Phiên Hub:** (1) tách spec **H2** (docs-architect, theo ROADMAP + CR-032/033/034 + F3/F6 của smoke I2); (2) ý tưởng "Agent Builder" bằng chat (người dùng nói để sau H4, chưa ghi CR); (3) nợ H1 chuyển `TECH-DEBT.md` (F3–F7, `job_run.py` 398/400, gộp verify JWT vào `packages/auth`).
+0. **Phiên Hub:** (1) tách spec **H2** (docs-architect, theo ROADMAP + CR-032/033/034 + F3/F6 của smoke I2).
 1. ~~M4 Chi phí & vận hành~~ (xong 2026-10-04) theo `docs/ROADMAP.md` (Quota + cảnh báo, Chi phí & quota, Audit + khôi phục, Tổng quan, Import/Export, 2FA; ADM-FR-40–42, 51, 52, 54, 08; AC-A12 phía Admin; Import/Export và 2FA cần artboard trước Gate). Vòng: docs-architect tách spec `M4-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate (Luật 2b) → qc khoá test (đỏ đúng lý do) → BUILD một task mỗi lần gọi → Lệnh xong M4 (không gồm `test:perf`) → reviewer ≤ 2 vòng → docs → bật service và hướng dẫn người dùng test toàn bộ admin app. Trên `main`, KHÔNG push.
 2. Canvas: đổi `#7A7390` → `#736C89` (FE-R1, AA) khi chạm lại canvas.
 
