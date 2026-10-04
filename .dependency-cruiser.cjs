@@ -98,7 +98,8 @@ module.exports = {
   options: {
     doNotFollow: { path: "node_modules" },
     // dist neo vào build của workspace: `(^|/)dist/` từng loại cả cạnh tới gói npm (`node_modules/hono/dist/…`).
-    exclude: { path: "(^|/)__fixtures__/|^(apps|packages|tools)/[^/]+/dist/" },
+    // `.venv` (venv Python của agent-runtime khi chạy uv trên host) không phải code repo.
+    exclude: { path: "(^|/)__fixtures__/|(^|/)\\.venv/|^(apps|packages|tools)/[^/]+/dist/" },
     tsPreCompilationDeps: true,
     // Alias `@/*` → `apps/admin-web/src/*` (tsconfig admin-web). Đường dẫn tuyệt đối để chạy được từ cwd bất kỳ
     // (fixture). Workspace khác không dùng `@/` nên không bị ảnh hưởng; thêm web app mới → gộp alias ở đây.
