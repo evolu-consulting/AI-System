@@ -75,3 +75,11 @@ Phạm vi: spec, plan, plan-db, plan-runtime, test-plan, tasks; ADR-0007/0008/00
 | 49 | Thấp | test-plan 25 542/25 600 B; WORKFLOW ghi 30 KB | Sát trần; hai trần khác nhau | Ca mới vào test-plan-cases; giữ 25 600 B là trần riêng H1 (ghi ở Q1) |
 
 Ghi chú (không chặn): câu vi trong `plan-errors.md` theo mock C1 khác chữ `ui-chat-extension.md` §8 — để phiên Chat/CR khi combine.
+
+## Lần 4 · 2026-10-04 · spec-readiness (Opus) · **READY** (phần đổi `9b11c36..HEAD`)
+Đóng #45–#49. Không Chặn, không Cao, không câu hỏi mới. Còn Thấp:
+- #50 `bunx depcruise --all` sai cờ (bin không có `--all`) → **đã sửa**: test-plan §7.1 và tasks I1 dùng `bun run depcruise --all` (chỉ báo cáo).
+- #51 Thêm ca: A54 user `locale='en'` → `runs.error_message/hint` = `runErrorText('INTERNAL_ERROR','en')`; `migrate-hub.int.test.ts` UPDATE `error_code` thiếu `error_message` → 23514. → **qc làm ở QW** (test-plan-cases).
+- #52 Fixture: `hoa` `locale='en'`, còn lại `vi`; A13/A56b dùng `lan` (vi) và `hoa` (en), không đổi locale giữa ca. → **qc làm ở QW**.
+- #53 Thêm `run-errors` vào danh sách file nhóm R (test-plan §2); cột nguồn A47 ghi `H1-R16`. → **qc làm ở QW** (test-plan còn 3 B; đặt ghi chú ở test-plan-cases).
+Gate: ADR-0008/0009 Proposed → trình người dùng (không tự duyệt, Luật 2b).

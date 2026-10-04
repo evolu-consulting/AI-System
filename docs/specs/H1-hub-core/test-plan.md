@@ -217,7 +217,7 @@ bun run test:h1:stack                               # cần tools/hub-dev chạy
 HUB_URL=http://localhost:4000 AUTH_URL=http://localhost:3001 CHAT_CONTRACT_USERS='<json>' bun run test:contract:chat
 bun run test:lock:verify && bun run trace --check && bun run check:size --all && bunx depcruise apps/hub-api packages/contracts/src/hub packages/db tools/hub-dev
 ```
-Chạy riêng, **chỉ báo cáo**: `tsc -p tsconfig.tests.json`, `bunx depcruise --all`.
+Chạy riêng, **chỉ báo cáo**: `tsc -p tsconfig.tests.json`, `bun run depcruise --all`.
 `trace --check`, `check:size` quét `.py` chỉ sau PY-01. `test:perf` không thuộc Lệnh xong. Đỏ ngoài bộ lọc (depcruise, `bun test` toàn repo) **do code dở của Chat** = phụ thuộc combine, không chặn H1; ghi tên file đỏ vào bàn giao.
 
 ### 7.2 Smoke thủ công — HUB-H1-AC-02 · **blocked (chờ W0)**, I2 cuối H1: [`test-plan-cases.md`](test-plan-cases.md) §2.1
