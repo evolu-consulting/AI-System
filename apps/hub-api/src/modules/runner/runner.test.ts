@@ -48,6 +48,10 @@ const input = (o: Partial<PayloadInput> = {}): PayloadInput => ({
 });
 
 describe("HUB-FR-89 · buildJobPayload (plan §2.2)", () => {
+  it("HUB-FR-89 · H1 chỉ agentic-cli: agent runtime khác → null (không dựng job agent.cli sai loại)", () => {
+    expect(buildJobPayload(input({ agent: agent({ runtime: "llm" }) }))).toBeNull();
+  });
+
   it("HUB-BR-03 · agent mặc định: Read+Grep, max_turns 30, use_session, agent_result, bước 0", () => {
     const p = buildJobPayload(input());
     expect(p).toMatchObject({

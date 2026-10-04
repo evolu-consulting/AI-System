@@ -1,25 +1,30 @@
 // HUB-FR-77 · HUB-BR-03 · HUB-BR-06 · unit cho accessInput/canDelegate (R7 khoá ở tests/acceptance/H1/rules).
 import { describe, expect, it } from "bun:test";
-import { type AccessSnapshot, accessInput, canDelegate, visibleAgents } from "./agent-access.rules";
+import {
+  type AccessSnapshot,
+  accessInput,
+  canDelegate,
+  H1_RUNTIME,
+  visibleAgents,
+} from "./agent-access.rules";
 
+const CLI = H1_RUNTIME;
 const T = "t1";
 const U = "u1";
 const G = "g1";
 const snap: AccessSnapshot = {
   agents: [
-    { id: "o", key: "orchestrator", enabled: true, description: "điều phối" },
-    { id: "b", key: "beta", enabled: true, description: "Agent B" },
-    { id: "a", key: "alpha", enabled: true },
+    { id: "o", key: "orchestrator", enabled: true, description: "điều phối", runtime: CLI },
+    { id: "b", key: "beta", enabled: true, description: "Agent B", runtime: CLI },
+    { id: "a", key: "alpha", enabled: true, runtime: CLI },
+    { id: "l", key: "llm-only", enabled: true, runtime: "llm" },
   ],
-  entitlements: [
-    { agentId: "o", tenantId: T, revokedAt: null },
-    { agentId: "a", tenantId: T, revokedAt: null },
-    { agentId: "b", tenantId: T, revokedAt: null },
-  ],
+  entitlements: ["o", "a", "b", "l"].map((agentId) => ({ agentId, tenantId: T, revokedAt: null })),
   grants: [
     { agentId: "o", tenantId: T, subject: U },
     { agentId: "a", tenantId: T, subject: G },
     { agentId: "b", tenantId: T, subject: U },
+    { agentId: "l", tenantId: T, subject: U },
   ],
   orchestrator: { agentId: "o" },
 };
@@ -39,6 +44,12 @@ describe("agent-access [HUB-FR-77 · HUB-BR-03 · HUB-BR-06]", () => {
     expect(canDelegate(i, "orchestrator")).toBeNull();
     expect(canDelegate(i, "khong-co")).toBeNull();
     expect(canDelegate(accessInput(snap, { ...who, groupIds: new Set() }), "alpha")).toBeNull();
+  });
+
+  it("HUB-FR-77 · H1 chỉ agentic-cli: agent runtime khác không thấy, không delegate được", () => {
+    const i = accessInput(snap, who);
+    expect(visibleAgents(i).map((a) => a.key)).not.toContain("llm-only");
+    expect(canDelegate(i, "llm-only")).toBeNull();
   });
 
   it("HUB-BR-06 · ảnh không có Orchestrator → không loại agent nào theo id", () => {

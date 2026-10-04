@@ -68,7 +68,8 @@ const isTrigger = (s: string): s is (typeof FALLBACK_TRIGGERS)[number] =>
  */
 export function buildJobPayload(i: PayloadInput): JobPayload | null {
   const step = i.profile.steps[0];
-  if (!step) return null;
+  // H1 chỉ có job `agent.cli` (runtime `agentic-cli`); runtime khác → không dựng payload sai loại.
+  if (!step || i.agent.runtime !== "agentic-cli") return null;
   const opts = i.agent.runtimeOptions;
   const isAgent = i.role === "agent";
   const parsed = JobPayloadSchema.safeParse({

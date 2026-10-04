@@ -19,19 +19,25 @@ export type VisibleAgentsInput = {
   orchestratorId: string;
 };
 
+/** Runtime duy nhất H1 chạy được (job `agent.cli`, plan §2.2); agent runtime khác chờ mốc sau. */
+export const H1_RUNTIME = "agentic-cli";
+
 /** Phần của `ConfigSnapshot` cần cho quyền — kiểu cấu trúc để không import ngược `config`. */
 export type AccessSnapshot = {
-  agents: readonly AgentRow[];
+  agents: readonly (AgentRow & { runtime: string })[];
   entitlements: readonly EntitlementRow[];
   grants: readonly GrantRow[];
   orchestrator: { agentId: string } | null;
 };
 export type AccessSubject = { tenantId: string; userId: string; groupIds: ReadonlySet<string> };
 
-/** HUB-BR-06: quyền tính trên ảnh run giữ lúc bắt đầu, không đọc ảnh mới giữa run. */
+/**
+ * HUB-BR-06: quyền tính trên ảnh run giữ lúc bắt đầu, không đọc ảnh mới giữa run. Chỉ agent `H1_RUNTIME` vào danh
+ * sách (không thấy, không delegate được): agent runtime khác không có job H1 chạy nổi.
+ */
 export function accessInput(s: AccessSnapshot, who: AccessSubject): VisibleAgentsInput {
   return {
-    agents: s.agents,
+    agents: s.agents.filter((a) => a.runtime === H1_RUNTIME),
     entitlements: s.entitlements,
     grants: s.grants,
     orchestratorId: s.orchestrator?.agentId ?? "",
