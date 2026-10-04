@@ -2,7 +2,8 @@
 // (`tests/acceptance/H1/_runtime.ts`, chỉ đọc). Vòng chạy = driver tạm "delegate thẳng agent `assistant`" (thay B8).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { ChatEventSchema } from "@ai/contracts/chat";
-import { JobEnqueuedPayloadSchema } from "@ai/contracts/hub";
+import { JobEnqueuedPayloadSchema, type JobPayload } from "@ai/contracts/hub";
+import { withHubScope } from "@ai/db/hub-scope";
 import {
   HUB_API_URL,
   type Hub,
@@ -34,6 +35,7 @@ import { runErrorText } from "../runs/run-errors";
 import type { RunContext, RunDriver } from "../runs/runs.service";
 import { JobAgentRunner, runJob } from "./job-agent-runner";
 import { RunStreamReader } from "./run-stream-reader";
+import { enqueueJob } from "./runner.repo";
 
 const OWNER = "b7-hub";
 const MAX_WAIT_S = 2;
@@ -83,7 +85,13 @@ beforeAll(async () => {
   redis = createRedis(REDIS_TEST_URL);
   await redis.connect();
   const reader = new RunStreamReader(redis, logger, ac.signal);
-  const runner = new JobAgentRunner({ db, reader, maxWaitS: MAX_WAIT_S, log: logger });
+  const runner = new JobAgentRunner({
+    db,
+    owner: OWNER,
+    reader,
+    maxWaitS: MAX_WAIT_S,
+    log: logger,
+  });
   const app = createApp(
     { version: "0.0.0-test", corsOrigins: [] },
     {
@@ -176,6 +184,34 @@ describe("B7 · JobAgentRunner [HUB-FR-89 · HUB-FR-24]", () => {
       await sub.unlisten();
       await listener.end();
     }
+  });
+});
+
+describe("B7 · không INSERT job cho run đã đóng / không còn của mình [H1-R14 · P12]", () => {
+  it("H1-R14 · enqueueJob: owner khác → false; run đã kết thúc → false; không ghi jobs/run_steps", async () => {
+    const { s, runId } = await start("Câu B7 đóng");
+    const job = await rt.next(runId);
+    const p = job.payload as JobPayload;
+    const step = (owner: string) => ({
+      stepId: p.step_id,
+      seq: 1,
+      type: "delegate" as const,
+      labelKey: "step.delegate",
+      reopen: true,
+      owner,
+    });
+    const again = (owner: string) =>
+      withHubScope(hub.db, { kind: "system" }, (tx) =>
+        enqueueJob(tx, { ...p, job_id: crypto.randomUUID() }, step(owner)),
+      );
+    expect(await again("other-hub")).toBe(false);
+    await rt.agent(job, { status: "done", text: "Xong." });
+    expect((await end(s))?.event).toBe("run.finished");
+    expect(await again(OWNER)).toBe(false);
+    const [n] = await sql`select count(*)::int as n from hub.jobs where run_id = ${runId}`;
+    expect(n?.n).toBe(1);
+    const [st] = await sql`select status, job_id from hub.run_steps where run_id = ${runId}`;
+    expect(st).toMatchObject({ status: "ok", job_id: job.id });
   });
 });
 

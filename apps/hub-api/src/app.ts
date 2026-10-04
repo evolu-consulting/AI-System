@@ -89,11 +89,20 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
   return r;
 }
 
+/** `runs.owner` của instance (= `HUB_INSTANCE_ID`; test khung vắng → host:pid). */
+const instanceOwner = (deps: AppDeps): string => deps.instanceId ?? `${hostname()}:${process.pid}`;
+
 /** B8 · vòng Orchestrator (plan §6) chạy job qua runner B7 (§5.6); dừng theo `deps.signal`. */
 function defaultRunDriver(db: Db, redis: Redis, deps: AppDeps, config: ConfigCache): RunDriver {
   const reader = new RunStreamReader(redis, logger, deps.signal);
   const maxWaitS = deps.jobMaxWaitS ?? DEFAULT_JOB_MAX_WAIT_S;
-  const runner = new JobAgentRunner({ db, reader, maxWaitS, log: logger });
+  const runner = new JobAgentRunner({
+    db,
+    owner: instanceOwner(deps),
+    reader,
+    maxWaitS,
+    log: logger,
+  });
   return orchestratorDriver({ db, runner, users: config, log: logger });
 }
 
@@ -123,7 +132,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     app.route("/conversations", conversationRoutes(deps.db));
     return;
   }
-  const owner = deps.instanceId ?? `${hostname()}:${process.pid}`;
+  const owner = instanceOwner(deps);
   const runs = new RunService({
     db: deps.db,
     redis: deps.redis,

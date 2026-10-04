@@ -1,5 +1,5 @@
 // HUB-FR-89 · HUB-FR-24 · SQL của AgentRunner (plan H1 §5.6, plan-db §3.3). Gọi trong `withHubScope(system)` (việc nền
-// của chủ run); `hub.jobs`/`provider_state` không RLS. Thứ tự khoá §3.5: run_steps → jobs.
+// của chủ run); `hub.jobs`/`provider_state` không RLS. Thứ tự khoá §3.5: runs → run_steps → jobs.
 import { JOB_ENQUEUED_CHANNEL, type JobEnqueuedPayload, type JobPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { jobs, providerState, runSteps } from "@ai/db/schema/hub";
@@ -29,10 +29,19 @@ export type StepInsert = {
 };
 
 /**
- * §5.6 bước 2 · `run_steps` (running) → `INSERT hub.jobs` → `pg_notify('job_enqueued')` cùng transaction: NOTIFY chỉ
- * giao khi COMMIT nên Runtime nhận NOTIFY là thấy dòng job.
+ * §5.6 bước 2 · `runs FOR SHARE` (còn `running` và còn của `owner`, P12/H1-R14) → `run_steps` (running) → `INSERT
+ * hub.jobs` → `pg_notify('job_enqueued')` cùng transaction: NOTIFY chỉ giao khi COMMIT nên Runtime nhận NOTIFY là thấy
+ * dòng job. Run đã bị huỷ/sweeper đóng → false, không ghi gì (job mới sẽ chạy tới timeout giữ slot). `FOR SHARE` chặn
+ * huỷ/kết thúc (`UPDATE runs`) tới COMMIT ⇒ job vừa INSERT luôn được `cancelJobs` của bên đóng nhìn thấy.
  */
-export async function enqueueJob(tx: Tx, p: JobPayload, step: StepInsert): Promise<void> {
+export async function enqueueJob(
+  tx: Tx,
+  p: JobPayload,
+  step: StepInsert & { owner: string },
+): Promise<boolean> {
+  const live = await tx.execute(sql`select 1 from hub.runs
+    where id = ${p.run_id} and status = 'running' and owner = ${step.owner} for share`);
+  if (live.length === 0) return false;
   if (step.reopen) await reopenStep(tx, p, step.stepId);
   else await insertStep(tx, p, step);
   await tx.insert(jobs).values({
@@ -49,6 +58,7 @@ export async function enqueueJob(tx: Tx, p: JobPayload, step: StepInsert): Promi
   });
   const note: JobEnqueuedPayload = { v: 1, job_id: p.job_id, provider_key: p.provider_key };
   await tx.execute(sql`select pg_notify(${JOB_ENQUEUED_CHANNEL}, ${JSON.stringify(note)})`);
+  return true;
 }
 
 async function insertStep(tx: Tx, p: JobPayload, step: StepInsert): Promise<void> {

@@ -59,6 +59,8 @@ export type JobOutcome =
 
 export type JobAgentRunnerDeps = {
   db: Db;
+  /** = `HUB_INSTANCE_ID` (`runs.owner`): chỉ chủ còn giữ run mới INSERT job (H1-R14). */
+  owner: string;
   reader: RunStreamReader;
   /** = `HUB_JOB_MAX_WAIT_S` (P8). */
   maxWaitS: number;
@@ -96,9 +98,13 @@ class EventQueue {
 
 const stepType = (role: AgentRole) => (role === "orchestrator" ? "orchestrator" : "delegate");
 
-function stepInsert(task: AgentTask, stepId: string): repo.StepInsert {
+function stepInsert(
+  task: AgentTask,
+  stepId: string,
+  owner: string,
+): repo.StepInsert & { owner: string } {
   const type = stepType(task.role);
-  return { stepId, seq: task.seq, type, labelKey: `step.${type}`, reopen: task.reopen };
+  return { stepId, seq: task.seq, type, labelKey: `step.${type}`, reopen: task.reopen, owner };
 }
 
 export class JobAgentRunner implements AgentRunner {
@@ -154,7 +160,10 @@ export class JobAgentRunner implements AgentRunner {
     });
     try {
       const type = stepType(task.role);
-      await this.#system((tx) => repo.enqueueJob(tx, payload, stepInsert(task, stepId)));
+      // Huỷ/mất lease → không INSERT job (job mồ côi giữ slot tới timeout); `runJob` quy về `aborted`.
+      if (signal.aborted) return;
+      const step = stepInsert(task, stepId, this.d.owner);
+      if (!(await this.#system((tx) => repo.enqueueJob(tx, payload, step)))) return;
       await this.#emit(task, {
         event: "step.started",
         data: { step_id: `s${task.seq}`, label: stepLabel(type, task.run.locale) },
