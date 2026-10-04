@@ -6,6 +6,7 @@ invalid_output` (plan-runtime §4), `RunEvent` ở `run:<run_id>` (plan-db §5.4
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -51,7 +52,10 @@ async def test_wrk_text_output_verbatim(ctx: Ctx) -> None:
     ctx.runtime()
     out = result_of(await ctx.until_status(job, ["succeeded"], 15))
     assert out["kind"] == "text"
-    assert str(out["text"]).startswith('echo: chào {"a":1} ')
+    # plan-runtime-fake §7: fake Orchestrator in `answer{text}` JSON; Runtime trả nguyên văn
+    # (plan §8 R3) — `text` vẫn là chuỗi (không bóc thành object), Hub mới parse.
+    assert isinstance(out["text"], str)
+    assert json.loads(out["text"])["text"].startswith('echo: chào {"a":1} ')
 
 
 @pytest.mark.parametrize(

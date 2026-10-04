@@ -99,16 +99,19 @@ HUB-FR-31 fallback nhiều bước → H2 (Q-T6) · HUB-FR-02 command/workflow/f
 - Sửa A40 + R25 (phân xử) · 2026-10-04 · `lease.int.test.ts` so id Redis `<seq>-0` thay `ev.id`; `usage_int_test.py` chờ `job.progress` đầu trước khi huỷ; lease 4/4, usage 5/5 xanh; lock đổi đúng 2 dòng.
 - Sửa AC-04 (phân xử) · 2026-10-04 · `orphan_int_test.py`: chờ `job.failed` ≤ 5 s sau khi pgid chết (XADD sau kill theo plan §2.4); vẫn đúng một `INTERNAL_ERROR`; file 9/9 xanh, lock cập nhật.
 
-**`done:h1` (I1) · 2026-10-04** — `bun run done:h1` (test-plan §7.1), Windows + Python trong container:
+**`done:h1` (I1) · 2026-10-04** — `bun run done:h1` đủ một lượt (không `--from`), Windows + Python trong container: **XANH** (bước 1–11 chặn, 12–13 báo cáo).
 
 | # | Bước | Kết quả | Ghi chú |
 |---|---|---|---|
 | 1 | `turbo typecheck` Hub | xanh | |
-| 2 | `bun test` contracts/db/rules/R14 | xanh | 350 |
-| 3 | int H1 + M + ADM-NFR-06 | xanh | 1572; A52 đua log (code sửa: log trước `run.finished`) |
-| 4 | `contracts:check` | xanh | |
-| 5 | Python (ruff, pyright, lint-imports, pytest, `-m int`) | **đỏ 2/240** | `P45a`, `test_wrk_text_output_verbatim`: **Tranh chấp test** (spec-decisions, I1) — fake-cli Orchestrator trả `answer{text}` theo plan-runtime-fake §7 |
-| 6 | `test:h1:stack` | xanh (`--from=6`) | 4/4 sau sửa: `idleTimeout` hub-api, fake-cli khối `<message>` JSON + delegate + usage mặc định |
-| 7 | contract chat, Hub thật + admin-api | xanh (`--from=6`) | 41 pass, 21 skip (`isMock`) |
-| 8–11 | lock · trace · check:size · depcruise Hub | xanh (`--from=6`) | |
-| — | `tsc -p tsconfig.tests.json` · `depcruise --all` (báo cáo) | xanh · xanh | `.venv` bỏ khỏi depcruise |
+| 2 | `bun test` contracts/db/rules/R14 | xanh | 350 pass |
+| 3 | int H1 + M + ADM-NFR-06 | xanh | 1572 pass, 16,8 phút |
+| 4 | `contracts:check` | xanh | 13 pass |
+| 5 | Python (ruff, pyright, lint-imports, pytest, `-m int`) | xanh | 176 + int; P45a/verbatim đã phân xử (dưới) |
+| 6 | `test:h1:stack` | xanh | 4 pass |
+| 7 | contract chat, Hub thật + admin-api | xanh | 41 pass (hub-dev tự bật, đã dọn) |
+| 8–11 | lock · trace · check:size · depcruise Hub | xanh | |
+| 12 | `tsc -p tsconfig.tests.json` (báo cáo) | xanh | |
+| 13 | `depcruise --all` (báo cáo) | xanh | |
+
+**Phân xử P45a / verbatim (qc, I1):** test sai, sửa tối thiểu: Orchestrator `fake-cli` không chỉ thị trả `answer{text}` JSON (plan-runtime-fake §7; plan §8 R3 Runtime trả `text` nguyên văn, Hub tự parse). P45a `json.loads` rồi kiểm `decision=="answer"`, `text` bắt đầu `echo: xin chào `, không `<agents>`/history trên chuỗi thô; verbatim kiểm `text` là `str` và `json.loads(text)["text"]` bắt đầu `echo: chào {"a":1} `. Lock đã ghi lại (2 dòng).

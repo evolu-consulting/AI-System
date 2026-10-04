@@ -7,6 +7,7 @@ session giả ở `AGENT_RT_WORK_DIR/.fake-sessions/` (plan-runtime §6, plan-ru
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from typing import Any
 
@@ -165,10 +166,14 @@ async def orchestrator_text(ctx: Ctx) -> str:
 async def test_wrk_fr_03_p45a_fake_echoes_only_message(ctx: Ctx) -> None:
     """P45a · Orchestrator `fake-cli` chỉ echo khối `<message>`: `"echo: xin chào"` + câu cố định;
     không chứa chuỗi mồi, `<agents>`, `<history>` (Q-T8)."""
-    text = await orchestrator_text(ctx)
+    raw = await orchestrator_text(ctx)
+    # plan-runtime-fake §7: Orchestrator không chỉ thị → `answer{text}` (JSON).
+    decision = json.loads(raw)
+    assert decision["decision"] == "answer"
+    text = decision["text"]
     assert text.startswith("echo: xin chào ")
     for bad in ("SECRET-AGENTS-1", "SECRET-HIST-1", "<agents>", "<history>", "<message>"):
-        assert bad not in text
+        assert bad not in raw
 
 
 async def test_k_r1_p45b_fake_tail_long_enough(ctx: Ctx) -> None:
