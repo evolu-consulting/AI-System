@@ -8,6 +8,7 @@ import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
+import { cancelJobs } from "../close/cancel.repo";
 import { runErrorText } from "../run-errors";
 import * as repo from "../runs.repo";
 
@@ -35,10 +36,13 @@ export type RunInfo = {
   locale: repo.Locale;
 };
 
-/** `agentId`: `undefined` = giữ `flows.agent_id`; `ask` + `agentId` ⇒ `flows.pending_ask`. `content` của run lỗi mặc định "". */
+/**
+ * `agentId`: `undefined` = giữ `flows.agent_id`; `ask` + `agentId` ⇒ `flows.pending_ask`. Run lỗi: tin assistant = nối
+ * các `delta` writer đã XADD (C1 luật lưu, như huỷ/sweeper).
+ */
 export type RunOutcome =
   | { kind: "finished"; content: string; ask?: Ask | null; agentId?: string | null }
-  | { kind: "failed"; code: ChatRunErrorCode; content?: string; agentId?: string | null };
+  | { kind: "failed"; code: ChatRunErrorCode; agentId?: string | null };
 
 export class RunFencedError extends Error {
   constructor(runId: string) {
@@ -61,6 +65,8 @@ export class SseWriter {
   #seq: number;
   #expirySet = false;
   #done = false;
+  /** Nối `delta` đã XADD — nội dung tin assistant khi run kết thúc lỗi. */
+  #deltas = "";
 
   constructor(
     readonly run: RunInfo,
@@ -89,7 +95,23 @@ export class SseWriter {
   /** XADD sự kiện kế (`seq + 1`). Ném `RunFencedError` khi đã dừng hoặc Redis từ chối id. */
   async emit(ev: SseEventBody): Promise<number> {
     if (this.#done || isTerminalEvent(ev.event)) throw new RunFencedError(this.run.id);
-    return this.#xadd(ev);
+    const seq = await this.#xadd(ev);
+    if (ev.event === "delta") this.#deltas += (ev.data as { text: string }).text;
+    return seq;
+  }
+
+  /**
+   * `finish` không ném: lỗi (DB) → log + `abort()` — writer rời `RunRegistry`, lease hết hạn, sweeper đóng run
+   * (H1-R11, H1-R13). Dùng cho lần kết thúc cuối (sau khi đã thử) để run không kẹt `running`/`FLOW_BUSY`.
+   */
+  async finishOrAbort(o: RunOutcome): Promise<boolean> {
+    try {
+      return await this.finish(o);
+    } catch (err) {
+      this.deps.log.error("run-finish-failed", { run_id: this.run.id, ...safeErrorFields(err) });
+      this.abort();
+      return false;
+    }
   }
 
   async #xadd(ev: SseEventBody): Promise<number> {
@@ -111,7 +133,7 @@ export class SseWriter {
   }
 
   /**
-   * Kết thúc run (§5.2): transaction `system` (flows FOR UPDATE → runs P12 → tin assistant → flows) **rồi** XADD
+   * Kết thúc run (§5.2): transaction `system` (flows FOR UPDATE → runs P12 → tin assistant → flows → jobs khi lỗi) **rồi** XADD
    * `ask?` + sự kiện kết thúc, `EXPIRE sse 600`, `DEL run:<id>`. Trả false khi không còn là chủ (không ghi gì).
    */
   async finish(o: RunOutcome): Promise<boolean> {
@@ -122,7 +144,7 @@ export class SseWriter {
       o.kind === "failed" ? { code: o.code, ...runErrorText(o.code, this.run.locale) } : null;
     const status =
       o.kind === "finished" ? "finished" : o.code === "CANCELLED" ? "cancelled" : "failed";
-    const content = o.content ?? "";
+    const content = o.kind === "finished" ? o.content : this.#deltas;
     const times = await withHubScope(this.deps.db, { kind: "system" }, async (tx) => {
       const r = this.run;
       const t = await repo.finishRun(tx, {
@@ -151,6 +173,8 @@ export class SseWriter {
         agentId: o.agentId,
         pendingAsk: !!ask && typeof o.agentId === "string",
       });
+      // Lỗi Hub giữa chừng: job có thể vẫn chạy → huỷ như §5.7 để Runtime nhả slot (sau `messages`, §3.5).
+      if (o.kind === "failed") await cancelJobs(tx, { runId: r.id, tenantId: r.tenantId });
       return t;
     });
     this.#done = true;

@@ -200,7 +200,7 @@ export class RunService {
     return { runId: run.id, flowId: run.flowId, messageId: run.userMessageId, stream };
   }
 
-  /** `run.started` (id 1) ngay sau COMMIT, trước khi gọi vòng chạy (H1-R10). Redis lỗi → kết thúc run lỗi rồi ném. */
+  /** `run.started` (id 1) ngay sau COMMIT, trước khi gọi vòng chạy (H1-R10). Redis lỗi → kết thúc run lỗi (DB cũng lỗi → `abort`, sweeper đóng) rồi ném. */
   async #announce(writer: SseWriter): Promise<void> {
     const r = writer.run;
     try {
@@ -209,7 +209,7 @@ export class RunService {
         data: { run_id: r.id, flow_id: r.flowId, quota: QUOTA_OK },
       });
     } catch (err) {
-      await writer.finish({ kind: "failed", code: "INTERNAL_ERROR" }).catch(() => false);
+      await writer.finishOrAbort({ kind: "failed", code: "INTERNAL_ERROR" });
       throw err;
     }
   }

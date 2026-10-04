@@ -103,7 +103,10 @@ export async function driveRun(d: OrchestratorDeps, base: RunContext): Promise<v
   } catch (err) {
     if (writer.signal.aborted || writer.done) return;
     log.error("orchestrator-failed", safeErrorFields(err));
-    await writer.finish({ kind: "failed", code: "INTERNAL_ERROR" }).catch(() => false);
+    await writer.finishOrAbort({ kind: "failed", code: "INTERNAL_ERROR" });
+  } finally {
+    // Vòng chạy hết mà run chưa kết thúc (vd job không INSERT vì run đã bị đóng) → rời registry, lease hết hạn.
+    if (!writer.done) writer.abort();
   }
 }
 

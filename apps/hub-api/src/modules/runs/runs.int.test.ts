@@ -26,16 +26,19 @@ import {
   insertHubConfig,
   openSse,
   runIdOf,
+  runRow,
   type Sse,
   send,
   sseStream,
 } from "../../../../../tests/acceptance/H1/_hub";
 import { createApp } from "../../app";
 import { connectDb } from "../../lib/db";
+import { logger } from "../../lib/logger";
 import { createRedis, type Redis } from "../../lib/redis";
+import { sweepExpiredLeases } from "./close/sweeper";
 import { runErrorText } from "./run-errors";
 import type { RunContext, RunDriver } from "./runs.service";
-import { RunFencedError } from "./sse/sse-writer";
+import { RunFencedError, RunRegistry } from "./sse/sse-writer";
 
 const ctxs = new Map<string, RunContext>();
 const driver: RunDriver = { start: (ctx) => void ctxs.set(ctx.writer.run.id, ctx) };
@@ -236,5 +239,82 @@ describe("B6 · E13 Last-Event-ID, 410, dựng lại từ DB [HUB-FR-42 · H1-R1
       body: { bad: 1 },
     });
     expect(errorOf(res)).toEqual(err("NOT_FOUND"));
+  });
+});
+
+/** Trigger giả lỗi DB ở `finishRun` của đúng một run (sweeper không đặt `last_seq` nên vẫn đóng được). */
+async function failFinishOf(runId: string): Promise<() => Promise<void>> {
+  await sql.unsafe(`create or replace function hub.test_fail_finish() returns trigger language plpgsql as $$
+    begin
+      if new.id = '${runId}' and new.status <> 'running' and new.last_seq > 0 then
+        raise exception 'test: finishRun lỗi';
+      end if;
+      return new;
+    end $$`);
+  await sql.unsafe(`create trigger test_fail_finish before update on hub.runs
+    for each row execute function hub.test_fail_finish()`);
+  return async () => {
+    await sql.unsafe("drop trigger if exists test_fail_finish on hub.runs");
+    await sql.unsafe("drop function if exists hub.test_fail_finish()");
+  };
+}
+
+describe("B6 · finish lỗi DB → abort, sweeper đóng run [H1-R11 · H1-R13]", () => {
+  it("H1-R13 · finishRun lỗi 2 lần → finishOrAbort false, writer dừng; lease hết → sweeper failed INTERNAL_ERROR", async () => {
+    const { s, ctx } = await started();
+    const runId = ctx.writer.run.id;
+    await ctx.writer.emit({ event: "delta", data: { text: "Dở" } });
+    const restore = await failFinishOf(runId);
+    try {
+      await expect(ctx.writer.finish({ kind: "finished", content: "Dở" })).rejects.toThrow();
+      expect(ctx.writer.done).toBe(false);
+      const last = { kind: "failed", code: "INTERNAL_ERROR" } as const;
+      expect(await ctx.writer.finishOrAbort(last)).toBe(false);
+      expect(ctx.writer.done).toBe(true);
+      expect(ctx.writer.signal.aborted).toBe(true);
+    } finally {
+      await restore();
+    }
+    expect(await runRow(sql, runId)).toMatchObject({ status: "running" });
+    await sql`update hub.runs set lease_until = now() - interval '1 second' where id = ${runId}`;
+    const d = { db: hub.db, redis, owner: "b6-sweeper", registry: new RunRegistry(), log: logger };
+    expect(await sweepExpiredLeases(d)).toBeGreaterThanOrEqual(1);
+    const e = await s.terminal(5_000);
+    s.close();
+    expect(e?.data?.code).toBe("INTERNAL_ERROR");
+    expect(await runRow(sql, runId)).toMatchObject({ status: "failed", owner: "b6-sweeper" });
+  });
+});
+
+describe("B6 · run failed ở chủ: nội dung + huỷ job [H1-R14 · C1 luật lưu]", () => {
+  it("H1-R14 · finish(failed): tin assistant = nối delta; job running → cancel_requested_at + NOTIFY", async () => {
+    const { s, ctx } = await started();
+    const r = ctx.writer.run;
+    const jobId = id();
+    await sql`insert into hub.jobs (id, tenant_id, user_id, run_id, step_id, conversation_id, agent_id, type,
+        provider_key, payload, status, started_at)
+      values (${jobId}, ${r.tenantId}, ${r.userId}, ${r.id}, ${id()}, ${r.conversationId}, ${AG.assistant},
+        'agent.cli', 'fake-cli', ${sql.json({})}, 'running', now())`;
+    const listener = ownerSql();
+    const notes: string[] = [];
+    const sub = await listener.listen("job_cancel", (raw) => void notes.push(raw));
+    try {
+      await ctx.writer.emit({ event: "delta", data: { text: "Một " } });
+      await ctx.writer.emit({ event: "delta", data: { text: "nửa" } });
+      expect(await ctx.writer.finish({ kind: "failed", code: "INTERNAL_ERROR" })).toBe(true);
+      expect((await s.terminal())?.event).toBe("run.failed");
+      s.close();
+      const [m] = await sql`select content from hub.messages where id = ${r.answerMessageId}`;
+      expect(m?.content).toBe("Một nửa");
+      const [j] =
+        await sql`select cancel_requested_at is not null as asked from hub.jobs where id = ${jobId}`;
+      expect(j?.asked).toBe(true);
+      const t0 = Date.now();
+      while (!notes.some((n) => n.includes(jobId)) && Date.now() - t0 < 3_000) await Bun.sleep(50);
+      expect(notes.some((n) => n.includes(jobId))).toBe(true);
+    } finally {
+      await sub.unlisten();
+      await listener.end();
+    }
   });
 });

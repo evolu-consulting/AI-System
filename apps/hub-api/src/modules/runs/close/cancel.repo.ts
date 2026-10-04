@@ -123,7 +123,14 @@ async function closeRun(
   return true;
 }
 
-async function cancelJobs(tx: Tx, t: CancelTarget): Promise<void> {
+/**
+ * Job `queued` → `cancelled`; job `running` → `cancel_requested_at` + `pg_notify('job_cancel')` (Runtime dừng job, nhả
+ * slot). Gọi sau `messages` (§3.5); dùng chung cho huỷ/sweeper và run kết thúc `failed` ở chủ (`SseWriter.finish`).
+ */
+export async function cancelJobs(
+  tx: Tx,
+  t: Pick<CancelTarget, "runId" | "tenantId">,
+): Promise<void> {
   await tx.execute(sql`update hub.jobs set status = 'cancelled', cancel_requested_at = now(),
     finished_at = now() where run_id = ${t.runId} and tenant_id = ${t.tenantId} and status = 'queued'`);
   const running = await tx.execute<{
