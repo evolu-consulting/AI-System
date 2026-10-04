@@ -112,7 +112,7 @@ def render(prefix: str, path: Path) -> tuple[str, list[tuple[str, str]]]:
     text = path.read_text(encoding="utf-8")
     text = re.sub(r"\A# .*\n", "", text, count=1)  # bỏ tiêu đề cấp 1, dùng tiêu đề phần
     md = markdown.Markdown(extensions=["tables", "fenced_code", "toc", "sane_lists"])
-    body = md.convert(text)
+    body = md.convert(text).replace("\\|", "|")  # `\|` trong code span của bảng
     body = re.sub(r'id="', f'id="{prefix}-', body)
     for lvl in (4, 3, 2):  # hạ một cấp: ## → h3
         body = re.sub(rf"<(/?)h{lvl}\b", rf"<\1h{lvl + 1}", body)
