@@ -175,21 +175,33 @@ describe("A42–A45, A47 · hub:seed [HUB-FR-89 · HUB-H1-AC-11 · H1-R16]", () 
     }
   });
 
-  for (const [name, from, to] of [
-    ["key agent sai định dạng (Bad)", /key:\s*assistant\b/, "key: Bad"],
-    ["provider lạ trong profile", /provider_key:\s*fake-cli\b/, "provider_key: khong-co-provider"],
+  // `field`: lỗi validate yaml phải nêu trường/giá trị sai (zod `path`/`message` hoặc chuỗi lỗi) — stub "not implemented"
+  // hay lỗi đọc thư mục (ENOENT) cũng ném nhưng KHÔNG đạt (ca không xanh giả khi thư mục seed có mà runHubSeed còn stub).
+  for (const [name, from, to, field] of [
+    ["key agent sai định dạng (Bad)", /key:\s*assistant\b/, "key: Bad", /\bkey\b|Bad/],
+    [
+      "provider lạ trong profile",
+      /provider_key:\s*fake-cli\b/,
+      "provider_key: khong-co-provider",
+      /provider|khong-co-provider/,
+    ],
   ] as const) {
     it(`A43 · yaml sai — ${name} → runHubSeed lỗi, không ghi gì (version, bảng cấu hình giữ nguyên) [HUB-H1-AC-11]`, async () => {
       const dir = mutatedSeed(from, to);
       try {
         const before = await snapshot();
-        let threw = false;
+        let thrown: unknown;
         try {
           await runHubSeed({ url: OWNER_URL, dir, appEnv: "test" });
-        } catch {
-          threw = true;
+        } catch (e) {
+          thrown = e;
         }
-        expect(threw).toBe(true);
+        expect(thrown).toBeInstanceOf(Error);
+        const detail = `${(thrown as Error).name} ${(thrown as Error).message} ${JSON.stringify(
+          (thrown as { issues?: unknown }).issues ?? "",
+        )}`;
+        expect(detail).not.toMatch(/not implemented|ENOENT|ENOTDIR|EACCES/i);
+        expect(detail).toMatch(field);
         expect(await snapshot()).toEqual(before);
       } finally {
         rmSync(dir, { recursive: true, force: true });
