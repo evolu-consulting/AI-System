@@ -4,7 +4,7 @@ Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (đóng M4)
 
 ## Đang ở đâu
 - **M4 xong** (2026-10-04, trên `main`, KHÔNG push): **admin app hoàn tất mọi phần không cần Hub** (M5 cần Agent Hub). Nghiệm thu và review: `docs/specs/M4-ops/spec-decisions.md` "Kết luận nghiệm thu và review". Spec `status: done`. Chưa chạy lại e2e toàn bộ (máy thiếu bộ nhớ); check/typecheck/bun test đang đỏ chỉ do code dở của phiên Chat.
-- **Mốc H1 (phiên Hub/Worker, 2026-10-04):** spec `docs/specs/H1-hub-core/spec.md` (`status: draft`, 82 mã yêu cầu, 26 luật H1-R, 12 AC kỹ thuật `HUB-H1-AC`, 10 câu hỏi mở có mặc định) + `tasks.md` khung; ROADMAP thêm H1–H4. Kế tiếp (2026-10-04): **readiness lần 1 = NOT READY → đang sửa**; người dùng chấp nhận toàn bộ mặc định #1–#33 và câu 1 = **"chưa"** (chưa chuẩn bị WSL2/đăng nhập `claude`) ⇒ task **W0** chờ người dùng, spike PY-02 + smoke CLI thật `blocked`, AC-02 dời I2 cuối H1. Quyết định chuyển `docs/specs/H1-hub-core/spec-decisions.md`; CR-030/031 sửa chữ BA/ADR. Plan/tasks/test-plan do phiên khác sửa; sau đó chạy lại spec-readiness → Gate (ADR-0008/0009 Proposed).
+- **H1 xong** (2026-10-04, phiên Hub, trên `main`, KHÔNG push; spec `status: done`): `done:h1` 13/13 xanh (lượt 2), review Hub TS vòng 2 APPROVED + Python 2 vòng, smoke thật `claude-sub` 7/7. Kết luận + điểm mở F3–F7 + rủi ro chưa xác minh (hết quota thật, SIGTERM giữa lượt, biến telemetry): `docs/specs/H1-hub-core/spec-decisions.md` "Kết luận H1". Nợ mới đã ghi ở mục "Nợ chuyển TECH-DEBT" (điều phối chuyển vào `TECH-DEBT.md`).
 - **CR-028 / ADR-0007** (2026-10-04, phiên Hub/Worker): Hub giữ TypeScript; Worker thành **Agent Runtime Python** (`apps/agent-runtime`) chạy mọi agent `llm`/`agentic-cli`/`python`. Hàng đợi Postgres `SKIP LOCKED` (bỏ Redis queue, slot đếm trong DB), sự kiện run qua Redis Streams, contract zod → JSON Schema → pydantic, manifest `hub.agent_types`. Đã sửa ba-agent-hub, ba-worker, architecture (gồm mâu thuẫn CR-019) — chỉ design, html chưa sinh lại (TECH-DEBT #32). Chat/Admin không đổi.
 - **CR-032/033/034** (2026-10-04, phiên Hub, Intake đã chốt): Orchestrator mặc định + riêng theo tenant (HUB-FR-62, BR-08; H2 runtime, H4 UI); gọi thẳng `@agent` + `GET /agents` (HUB-FR-91/92, BR-18, `AGENT_NOT_FOUND`; H2); review business: đính kèm file MUST H2, chặn cứng quota (HUB-FR-93, H3), `max_concurrent_runs` (HUB-FR-94), xác nhận `side_effect` (HUB-FR-95), kiểm thử định tuyến 3 lần/câu + sai số 1 + lưu đè, container sandbox bắt buộc trước tenant thật. H1 không đổi phạm vi. Phiên Chat/Admin áp dụng khi combine: contract `GET /agents`, mã lỗi, menu `@`, tên agent khi tag; `tenant_quotas.hard_block`, `workflows.side_effect` (xem CHANGE-REQUESTS).
 - **CR-025/026** (2026-10-04, Intake Nhanh): Orchestrator định tuyến mọi tin (kể cả trong flow), kết quả agent có cấu trúc (HUB-FR-27/28/29, AC-H14/15), runtime mặc định `llm`; đổi tên thuật ngữ cũ → Orchestrator toàn docs + i18n. Chỉ sửa design; html chưa sinh lại (TECH-DEBT #32). C1 contract không đổi.
@@ -16,7 +16,7 @@ Cập nhật: 2026-10-04 · Người cập nhật: docs-architect (đóng M4)
 
 ## Việc kế tiếp (phiên mới: làm ngay, KHÔNG hỏi — Luật 2b)
 A. **Sau M4:** (1) người dùng test service admin; (2) chạy lại e2e toàn bộ khi đủ bộ nhớ; (3) M5 khi có Hub; (4) TECH-DEBT nổi bật: #27/#28 (perf, RLS InitPlan — cần duyệt), #34 (`hub_ro` trên `admin.tenants`), #35 (mã lỗi riêng cho trần import).
-0. **Phiên Hub:** CONVENTIONS §9 (Python) và spec H1 đã xong (draft). Làm tiếp: plan BE (TS) ∥ plan Python (`plan.md`, `plan-runtime.md`), qc test-plan, spec-readiness, Gate (Luật 2b), rồi BUILD theo `docs/specs/H1-hub-core/tasks.md`.
+0. **Phiên Hub:** (1) tách spec **H2** (docs-architect, theo ROADMAP + CR-032/033/034 + F3/F6 của smoke I2); (2) ý tưởng "Agent Builder" bằng chat (người dùng nói để sau H4, chưa ghi CR); (3) nợ H1 chuyển `TECH-DEBT.md` (F3–F7, `job_run.py` 398/400, gộp verify JWT vào `packages/auth`).
 1. ~~M4 Chi phí & vận hành~~ (xong 2026-10-04) theo `docs/ROADMAP.md` (Quota + cảnh báo, Chi phí & quota, Audit + khôi phục, Tổng quan, Import/Export, 2FA; ADM-FR-40–42, 51, 52, 54, 08; AC-A12 phía Admin; Import/Export và 2FA cần artboard trước Gate). Vòng: docs-architect tách spec `M4-…` → plan BE ∥ FE → qc test-plan → spec-readiness → tự duyệt Gate (Luật 2b) → qc khoá test (đỏ đúng lý do) → BUILD một task mỗi lần gọi → Lệnh xong M4 (không gồm `test:perf`) → reviewer ≤ 2 vòng → docs → bật service và hướng dẫn người dùng test toàn bộ admin app. Trên `main`, KHÔNG push.
 2. Canvas: đổi `#7A7390` → `#736C89` (FE-R1, AA) khi chạm lại canvas.
 
@@ -56,6 +56,7 @@ A. **Sau M4:** (1) người dùng test service admin; (2) chạy lại e2e toàn
 - (d) ~~Redis Streams cho sự kiện run~~ Đã chốt (CR-028/ADR-0007).
 - (e) ~~Worker Windows hay Linux?~~ Chốt CR-029: Windows + WSL2 Ubuntu (WRK-NFR-06, WRK-BR-07). Còn mở: bật sandbox Claude Code mặc định hay chỉ hook
 - (f) Cookie refresh khi chat-web khác origin với admin-api.
+- (g) **Phiên Admin phân xử:** M4-AC18 chập chờn khi tải nặng — `tests/acceptance/M4/_ab.ts:129` chờ attempts=1 nhận 2 (đỏ 1/2 lượt `done:h1`; chạy riêng 3/3 xanh).
 
 ## Bị chặn
 - (không)

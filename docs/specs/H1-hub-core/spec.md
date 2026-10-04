@@ -2,7 +2,7 @@
 id: H1-hub-core
 title: Hub lõi (apps/hub-api) + Agent Runtime tối thiểu (apps/agent-runtime)
 milestone: H1
-status: in-progress           # draft → ready → approved → in-progress → done
+status: done                  # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-01, HUB-FR-02, HUB-FR-03, HUB-FR-20, HUB-FR-21, HUB-FR-25, HUB-FR-27, HUB-FR-28, HUB-FR-29,
    HUB-FR-31, HUB-FR-32, HUB-FR-33, HUB-FR-40, HUB-FR-41, HUB-FR-42, HUB-FR-43, HUB-FR-45, HUB-FR-60,
@@ -155,11 +155,11 @@ Toàn bộ chuyển sang [spec-decisions.md](spec-decisions.md). Tóm tắt:
 - Readiness lần 1: người dùng chấp nhận mặc định #1–#33; câu 1 = "chưa" (WSL2/đăng nhập `claude`) ⇒ W0, PY-02, AC-02 `blocked`, dời I2.
 - Lệch BA sửa chữ ở CR-031; ADR-0008/0009 Proposed trình ở Gate.
 
+## 9b. Kết luận H1 (2026-10-04)
+Chi tiết: [spec-decisions.md](spec-decisions.md) "Kết luận H1".
+- `done:h1` **13/13 xanh** (lượt 2; lượt 1 đỏ do M4-AC18 của Admin chập chờn): 350 unit TS · 1572 int · 243 + 67 Python · 4 stack · 41 contract chat · lock/trace/size/depcruise xanh ([test-plan-cases.md](test-plan-cases.md) §10).
+- Review: TS vòng 2 APPROVED; Python 2 vòng + điều phối xác minh. Smoke I2 chạy thật **7/7** ([smoke-i2.md](smoke-i2.md)).
+- Chưa xác minh: chữ result khi hết quota thật, SIGTERM giữa lượt, tác dụng biến telemetry; điểm mở F3–F7.
+
 ## 10. Tranh chấp test
-- 2026-10-04 · backend-lead (D2, **mở**, task D2 `blocked`) · `tests/acceptance/H1/db.int.test.ts` A48 khoá `runHubMigrations` DB stub = `{hub: 1, hubDev: 1}` (đếm theo D1). D2 (`tasks.md`) bắt buộc migration mới `migrations-hub/0001_hub_rls.sql` (CONVENTIONS §8: không sửa `0000` đã commit) ⇒ DB sạch luôn ra `hub: 2` → A48 đỏ dù schema đúng. Ý của A48 (test-plan dòng A48: "migrate thành công, schema giống nhau, lần 2 = 0") không phụ thuộc số file. Đề xuất qc: đổi kỳ vọng thành `hub: 2` (hoặc so với số entry `migrations-hub/meta/_journal.json`) rồi `test:lock:write`. Không lách bằng thư mục migration thứ ba ngoài bộ đếm (làm `hub` sai nghĩa).
-- 2026-10-04 · qc · A48 **phán quyết: TEST SAI → qc đã sửa test + lock** (chi tiết `spec-decisions.md`). Khoá `{hub:1,hubDev:1}` theo trạng thái trung gian D1, không theo BA (HUB-H1-AC-08 chỉ đòi schema giống nhau + lần 2 = 0). Nay so với số entry `_journal.json`; D2 thêm `0001_hub_rls.sql` hợp lệ, được mở khoá.
-- 2026-10-04 · backend-lead (B9, **mở**) · `tests/acceptance/H1/concurrency.int.test.ts` A37 đỏ ở `_runtime.ts:74` (`expect(claimed.length).toBe(1)` trong `ScriptRuntime.tryNext`): `finishBy` `peek` thấy job `queued`, E15 chạy song song COMMIT `UPDATE hub.jobs SET status='cancelled' … WHERE status='queued'` (plan §5.7, đúng nguyên văn) trước khi test claim ⇒ claim 0 dòng. Đây là đua hợp lệ do chính A37 dựng (huỷ ∥ kết thúc); Runtime thật claim có điều kiện và bỏ qua job không còn `queued` (plan-db §5.4). Không có lỗi Hub (0 deadlock, A37b/A38 xanh). Đề xuất qc: `tryNext` coi claim 0 dòng là "không có job" (trả `undefined`, hoặc chỉ `finishBy` bỏ qua) rồi `test:lock:write`.
-- 2026-10-04 · PY-12 · `usage_int_test.py::test_hub_h1_r25_cancel_with_usage_one_row` — **qc: test sai, đã sửa** (huỷ khi chưa có usage; R25 chỉ đòi dòng khi job đã báo usage). Chờ `job.progress` đầu rồi mới huỷ; mục tiêu ca giữ. Chi tiết: `spec-decisions.md`. Ghi chú `orphan_int_test::ac_04_restart_after_kill9` (đọc stream trước XADD): **mở**, ngoài PY-12.
-- 2026-10-04 · qc · A37 **TEST SAI → qc sửa `_runtime.ts`+lock**: claim 0 dòng = không có job (spec-decisions).
-- 2026-10-04 · B10 · `lease.int.test.ts` A40 — **qc: test sai, đã sửa** (`seq` ở id Redis `<seq>-0`, không trong JSON; plan §5.2/B6/CR-030). So `after.at(-1)?.id` = `${n}-0`. Chi tiết: `spec-decisions.md`.
-- 2026-10-04 · AC-04 (`orphan_int_test::restart_after_kill9`, P13) · **qc: TEST SAI, đã sửa + lock**. Test đọc `run:<id>` một lần ngay khi pgid chết, trong khi plan-runtime §2.4/plan-db §5.5 chốt COMMIT → kill → XADD (BA AC-04 chỉ đòi `run.failed INTERNAL_ERROR` ≤ 90 s, không định thứ tự). Nay `wait_until` có `job.failed` ≤ 5 s, vẫn đòi đúng `["INTERNAL_ERROR"]`; code giữ nguyên. Chi tiết `spec-decisions.md`.
+Chuyển sang [spec-decisions.md](spec-decisions.md) mục "Tranh chấp test (chuyển từ spec §10)" (2026-10-04, I3).

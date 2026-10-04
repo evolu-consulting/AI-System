@@ -62,46 +62,50 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | ADM-NFR-03 | — |  | 2 file | 3 file | chưa spec |
 | ADM-NFR-04 | — |  |  |  | chưa spec |
 | ADM-NFR-05 | — |  |  |  | chưa spec |
-| ADM-NFR-06 | — | docs/specs/M0-bootstrap/spec.md<br>docs/specs/M1-foundation-identity/spec.md | 45 file | 44 file | có test |
+| ADM-NFR-06 | — | docs/specs/M0-bootstrap/spec.md<br>docs/specs/M1-foundation-identity/spec.md | 46 file | 44 file | có test |
 | ADM-NFR-07 | — | docs/specs/M1-foundation-identity/spec.md | 16 file | 13 file | có test |
-| HUB-FR-01 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-02 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-03 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-01 | MUST | docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
+| HUB-FR-02 | MUST | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
+| HUB-FR-03 | MUST | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
 | HUB-FR-04 | MUST |  |  |  | chưa spec |
 | HUB-FR-10 | MUST |  |  |  | chưa spec |
 | HUB-FR-11 | MUST |  |  |  | chưa spec |
 | HUB-FR-12 | MUST |  |  |  | chưa spec |
 | HUB-FR-13 | MUST |  |  |  | chưa spec |
 | HUB-FR-14 | SHOULD |  |  |  | chưa spec |
-| HUB-FR-20 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-21 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-20 | MUST | docs/specs/H1-hub-core/spec.md | 5 file | 2 file | có test |
+| HUB-FR-21 | MUST | docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
 | HUB-FR-22 | MUST |  |  |  | chưa spec |
 | HUB-FR-23 | MUST |  |  |  | chưa spec |
-| HUB-FR-24 | MUST |  |  |  | chưa spec |
-| HUB-FR-25 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-24 | MUST |  | 2 file |  | chưa spec |
+| HUB-FR-25 | MUST | docs/specs/H1-hub-core/spec.md |  | 1 file | có test |
 | HUB-FR-26 | COULD |  |  |  | chưa spec |
-| HUB-FR-27 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-28 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-29 | SHOULD | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-89 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-90 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-27 | MUST | docs/specs/H1-hub-core/spec.md | 7 file | 3 file | có test |
+| HUB-FR-28 | MUST | docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
+| HUB-FR-29 | SHOULD | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
+| HUB-FR-89 | MUST | docs/specs/H1-hub-core/spec.md | 18 file | 5 file | có test |
+| HUB-FR-90 | MUST | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
+| HUB-FR-91 | MUST |  |  |  | chưa spec |
+| HUB-FR-92 | MUST |  |  |  | chưa spec |
+| HUB-FR-94 | MUST |  |  |  | chưa spec |
+| HUB-FR-95 | MUST |  |  |  | chưa spec |
 | HUB-FR-30 | MUST |  |  |  | chưa spec |
-| HUB-FR-31 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-32 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-33 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-40 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md |  | 2 file | có test |
-| HUB-FR-41 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md |  | 2 file | có test |
-| HUB-FR-45 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
-| HUB-FR-42 | SHOULD | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
-| HUB-FR-43 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
-| HUB-FR-44 | SHOULD |  |  |  | chưa spec |
+| HUB-FR-31 | MUST | docs/specs/H1-hub-core/spec.md |  | 1 file | có test |
+| HUB-FR-32 | MUST | docs/specs/H1-hub-core/spec.md |  | 1 file | có test |
+| HUB-FR-33 | MUST | docs/specs/H1-hub-core/spec.md |  | 1 file | có test |
+| HUB-FR-40 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 5 file | 4 file | có test |
+| HUB-FR-41 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 4 file | 3 file | có test |
+| HUB-FR-45 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 8 file | 3 file | có test |
+| HUB-FR-42 | SHOULD | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 7 file | 3 file | có test |
+| HUB-FR-43 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 6 file | 2 file | có test |
+| HUB-FR-44 | MUST |  |  |  | chưa spec |
 | HUB-FR-50 | MUST |  |  |  | chưa spec |
 | HUB-FR-51 | MUST |  | 1 file |  | chưa spec |
 | HUB-FR-52 | SHOULD |  |  |  | chưa spec |
 | HUB-FR-53 | SHOULD |  |  |  | chưa spec |
-| HUB-FR-60 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-61 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-62 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-60 | MUST | docs/specs/H1-hub-core/spec.md | 4 file | 1 file | có test |
+| HUB-FR-61 | MUST | docs/specs/H1-hub-core/spec.md | 4 file | 1 file | có test |
+| HUB-FR-62 | MUST | docs/specs/H1-hub-core/spec.md | 4 file | 1 file | có test |
 | HUB-FR-63 | MUST |  |  |  | chưa spec |
 | HUB-FR-64 | MUST |  |  |  | chưa spec |
 | HUB-FR-65 | MUST |  |  |  | chưa spec |
@@ -113,77 +117,81 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-71 | SHOULD |  |  |  | chưa spec |
 | HUB-FR-72 | MUST |  |  |  | chưa spec |
 | HUB-FR-73 | MUST |  |  |  | chưa spec |
-| HUB-FR-74 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-FR-75 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-74 | MUST | docs/specs/H1-hub-core/spec.md | 1 file | 1 file | có test |
+| HUB-FR-75 | MUST | docs/specs/H1-hub-core/spec.md | 4 file | 2 file | có test |
 | HUB-FR-76 | MUST |  |  |  | chưa spec |
-| HUB-FR-77 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-77 | MUST | docs/specs/H1-hub-core/spec.md | 1 file | 1 file | có test |
 | HUB-FR-78 | MUST |  |  |  | chưa spec |
 | HUB-FR-79 | SHOULD |  |  |  | chưa spec |
 | HUB-FR-80 | MUST |  |  |  | chưa spec |
 | HUB-FR-81 | MUST |  |  |  | chưa spec |
 | HUB-FR-82 | MUST |  |  |  | chưa spec |
-| HUB-FR-83 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-83 | MUST | docs/specs/H1-hub-core/spec.md |  | 1 file | có test |
 | HUB-FR-84 | MUST |  |  |  | chưa spec |
 | HUB-FR-85 | MUST |  |  |  | chưa spec |
-| HUB-FR-86 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-86 | MUST | docs/specs/H1-hub-core/spec.md |  | 1 file | có test |
 | HUB-FR-87 | MUST |  |  |  | chưa spec |
-| HUB-FR-88 | SHOULD | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-FR-88 | SHOULD | docs/specs/H1-hub-core/spec.md | 1 file | 1 file | có test |
+| HUB-FR-93 | SHOULD |  |  |  | chưa spec |
 | HUB-BR-01 | — |  |  |  | chưa spec |
 | HUB-BR-02 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-BR-03 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-BR-04 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-BR-03 | — | docs/specs/H1-hub-core/spec.md | 3 file | 2 file | có test |
+| HUB-BR-04 | — | docs/specs/H1-hub-core/spec.md | 2 file | 2 file | có test |
 | HUB-BR-05 | — |  |  |  | chưa spec |
-| HUB-BR-06 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-BR-06 | — | docs/specs/H1-hub-core/spec.md | 6 file | 2 file | có test |
 | HUB-BR-07 | — |  |  |  | chưa spec |
-| HUB-BR-08 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-BR-08 | — | docs/specs/H1-hub-core/spec.md | 5 file | 1 file | có test |
 | HUB-BR-09 | — |  |  |  | chưa spec |
 | HUB-BR-10 | — |  |  |  | chưa spec |
 | HUB-BR-11 | — |  |  |  | chưa spec |
 | HUB-BR-12 | — |  |  |  | chưa spec |
 | HUB-BR-13 | — |  |  |  | chưa spec |
-| HUB-BR-14 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-BR-14 | — | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
 | HUB-BR-15 | — |  |  |  | chưa spec |
 | HUB-BR-16 | — |  |  |  | chưa spec |
 | HUB-BR-17 | — |  |  |  | chưa spec |
+| HUB-BR-18 | — |  |  |  | chưa spec |
+| HUB-BR-19 | — |  |  |  | chưa spec |
+| HUB-BR-20 | — |  |  |  | chưa spec |
 | HUB-NFR-01 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-NFR-02 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-NFR-03 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| HUB-NFR-04 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-NFR-02 | — | docs/specs/H1-hub-core/spec.md | 6 file | 2 file | có test |
+| HUB-NFR-03 | — | docs/specs/H1-hub-core/spec.md | 1 file |  | có code |
+| HUB-NFR-04 | — | docs/specs/H1-hub-core/spec.md | 7 file | 3 file | có test |
 | HUB-NFR-05 | — |  |  |  | chưa spec |
 | HUB-NFR-06 | — |  |  |  | chưa spec |
-| WRK-FR-01 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-02 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-03 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-04 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-05 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| WRK-FR-01 | MUST | docs/specs/H1-hub-core/spec.md | 6 file | 6 file | có test |
+| WRK-FR-02 | MUST | docs/specs/H1-hub-core/spec.md | 4 file | 5 file | có test |
+| WRK-FR-03 | MUST | docs/specs/H1-hub-core/spec.md | 2 file | 5 file | có test |
+| WRK-FR-04 | MUST | docs/specs/H1-hub-core/spec.md | 11 file | 3 file | có test |
+| WRK-FR-05 | MUST | docs/specs/H1-hub-core/spec.md | 10 file | 7 file | có test |
 | WRK-FR-06 | MUST |  |  |  | chưa spec |
 | WRK-FR-07 | MUST |  |  |  | chưa spec |
-| WRK-FR-10 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-11 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-12 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| WRK-FR-10 | MUST | docs/specs/H1-hub-core/spec.md | 14 file | 4 file | có test |
+| WRK-FR-11 | MUST | docs/specs/H1-hub-core/spec.md | 1 file | 2 file | có test |
+| WRK-FR-12 | MUST | docs/specs/H1-hub-core/spec.md | 1 file | 3 file | có test |
 | WRK-FR-13 | MUST |  |  |  | chưa spec |
-| WRK-FR-14 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-15 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| WRK-FR-14 | MUST | docs/specs/H1-hub-core/spec.md | 10 file | 5 file | có test |
+| WRK-FR-15 | MUST | docs/specs/H1-hub-core/spec.md | 5 file | 6 file | có test |
 | WRK-FR-16 | SHOULD |  |  |  | chưa spec |
-| WRK-FR-17 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| WRK-FR-17 | MUST | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
 | WRK-FR-18 | COULD |  |  |  | chưa spec |
-| WRK-FR-20 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| WRK-FR-20 | MUST | docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
 | WRK-FR-21 | MUST |  |  |  | chưa spec |
 | WRK-FR-22 | SHOULD |  |  |  | chưa spec |
-| WRK-FR-23 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-24 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-25 | MUST | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-FR-26 | MUST |  |  |  | chưa spec |
+| WRK-FR-23 | MUST | docs/specs/H1-hub-core/spec.md | 6 file | 6 file | có test |
+| WRK-FR-24 | MUST | docs/specs/H1-hub-core/spec.md | 8 file | 7 file | có test |
+| WRK-FR-25 | MUST | docs/specs/H1-hub-core/spec.md | 5 file | 2 file | có test |
+| WRK-FR-26 | MUST |  | 1 file |  | chưa spec |
 | WRK-BR-01 | — |  |  |  | chưa spec |
-| WRK-BR-02 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-BR-03 | — |  |  |  | chưa spec |
-| WRK-BR-04 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-BR-05 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-BR-07 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-BR-06 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-NFR-01 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| WRK-BR-02 | — | docs/specs/H1-hub-core/spec.md | 8 file | 5 file | có test |
+| WRK-BR-03 | — |  | 5 file | 2 file | chưa spec |
+| WRK-BR-04 | — | docs/specs/H1-hub-core/spec.md | 6 file | 5 file | có test |
+| WRK-BR-05 | — | docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
+| WRK-BR-07 | — | docs/specs/H1-hub-core/spec.md | 5 file | 7 file | có test |
+| WRK-BR-06 | — | docs/specs/H1-hub-core/spec.md | 4 file | 2 file | có test |
+| WRK-NFR-01 | — | docs/specs/H1-hub-core/spec.md | 1 file | 1 file | có test |
 | WRK-NFR-02 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
 | WRK-NFR-03 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
-| WRK-NFR-04 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| WRK-NFR-04 | — | docs/specs/H1-hub-core/spec.md | 6 file | 6 file | có test |
 | WRK-NFR-05 | — |  |  |  | chưa spec |
-| WRK-NFR-06 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| WRK-NFR-06 | — | docs/specs/H1-hub-core/spec.md | 10 file | 6 file | có test |
