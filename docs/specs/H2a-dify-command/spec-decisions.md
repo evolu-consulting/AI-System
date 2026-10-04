@@ -98,6 +98,16 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 - QA2-3 A32 hết blocked bởi DB: migration `0004` (`8f7c9a9`) đã thêm `NOT_CONFIGURED`/`credential`/`upstream`; chạy lại đỏ đúng lý do (chưa có code). A89b (QW-A1) nay xanh.
 - QA2-4 Q2: `tools/hub-dev/src/dify-mock.ts` thêm vào `LOCKED_DIRS` (`tools/scripts/src/test-lock.ts`) — sửa mock = tranh chấp test (`test-plan` §9 Q-T1).
 
+## BUILD — B1 (backend-lead, 2026-10-05)
+| # | Quyết định | Lý do |
+|---|---|---|
+| B-B1-1 | Catalog nạp trong `ConfigCache.#loadAdmin` (cùng `config_changed`/poll, đọc `config_version` trước), một transaction REPEATABLE READ (`config/catalog.repo.ts`); lỗi nạp ⇒ giữ catalog + tenant/user cũ như H1. `ConfigSource` thêm `loadCatalog(adminVersion)` | plan §4; ảnh nhất quán; `hub.workflow_flags` (P14) đi cùng phần Admin vì seed không bump `hub_config_version` riêng cho cờ |
+| B-B1-2 | `CatalogSnapshot` giữ dữ liệu quyền đã chỉ mục (`entitled` `tenant:feature` chưa thu hồi, `grantGroups`, `grantUsers`, `betaGroups`, `tenantKeys`) — `usableCatalogCommands(cat, tenant, user)` dựng `CommandAccessInput` theo đúng cách test `adminVisible` dựng `AccessInput` (grant user theo `user_id`, grant group/entitlement theo tenant của user, beta = group `beta-testers` của tenant); tenant không có trong cache ⇒ `tenantActive=false` | P5; nguồn chung cho menu (B2) và `prepare` (B3), 0 query mỗi request |
+| B-B1-3 | jsonb validate ở biên bằng zod dễ dãi hơn contract ghi: `description.en` nhận `null` (→ bỏ khoá), arg `default/fallback/rest` thiếu → `null/null/false`; `input_schema`/`input_map`/`output` dùng schema contract. Hàng hỏng (jsonb/enum) bị **bỏ** + log `warn catalog-rows-dropped {table,id}`; command trỏ workflow bị bỏ cũng bỏ; `command_names` trỏ command bị bỏ không vào `names` | Fixture QW (`desc()` → `{vi, en:null}`) và Admin cũ; một hàng lỗi không được làm hỏng cả catalog (ẩn lệnh đó = an toàn) |
+| B-B1-4 | R23: `information_schema.columns` có `admin.workflows.side_effect` ⇒ cột thắng **hoàn toàn** (bỏ qua `workflow_flags`), `sideEffectSource:"column"`; không ⇒ `workflow_flags`, thiếu hàng = `false` | spec R23, A67 (thêm cột default false → gọi thẳng Dify) |
+| B-B1-5 | `usableCommands` phá hoà khi trùng `key` theo vị trí trong `features`, id feature trùng → bản sau thắng (như `byId` Admin) | Parity tuyệt đối với `computeEffectiveAccess` kể cả đầu vào bất thường; DB có `features_key_uq` nên thực tế không xảy ra |
+| B-B1-6 | Int đối chiếu HUB-H2a-AC-10 ở `apps/hub-api/src/modules/config/catalog.int.test.ts` (cache thật role `hub_api` vs `adminVisible` qua 5 biến thể A08 + 1 tắt command, NOTIFY ≤ 5 s, R23) — A08 khoá đi qua `GET /commands` nên xanh ở B2 | B1 không có route |
+
 ## BUILD — D3 (backend-lead, 2026-10-05)
 - `plan-db` §4: ví dụ `dify-dich` sửa thành `dify-tom` ↔ `tom` (một input chuỗi bắt buộc) theo QA2-1; seed mặc định `agents.yaml` dùng `dify-tom`, `dify-tro-ly`.
 - Luật seed ở `modules/seed/seed.workflows.ts`: `runtime_options` agent `dify-*` = `strictObject({workflow_key})` kiểm thuần trước DB; đối chiếu `admin.workflows` trong transaction seed (sau khoá `config_meta`), lỗi → rollback toàn bộ (A93 "DB không đổi"); cảnh báo log sau commit như Q8.
@@ -123,12 +133,6 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 | B-B4-7 | Stop: `POST <stop url>` body `{user}`, Bearer key, `AbortSignal.timeout(2 s)`; không `taskId` ⇒ bỏ qua. Lỗi HTTP run: đọc ≤ 8 KiB thân rồi `maskSecret(…, apiKey)` ≤ 300 vào `detail`; SSE `event:error` `message` cũng che | plan §5.2; A23/A24/A26 |
 | B-B4-8 | `AppDeps.secretMasterKey` (đúng tên seam qc) — server truyền `env.SECRET_MASTER_KEY`; người dùng (B5/B6/B10) gọi `loadMasterKey(deps.secretMasterKey)`. `app.ts`/`server.ts`/`env.ts` chỉ thêm đúng các dòng này | File dùng chung, sửa tối thiểu |
 | B-B4-9 | Test cạnh code: `dify.client.test.ts` (mock MK trong tiến trình: SSE, bảng lỗi, stop, che key) + `credential.int.test.ts` (DB test + role `hub_api`: `workflow_secret` dưới `hub_ro`, hỏng/`key_version`, tự kiểm/probe, `log_dify_usage`, chuỗi credential → client → MK proxy → usage) | Ca khoá A20–A26, A80–A83 cần route (B3/B5/B6) |
-
-## BUILD — D3 (backend-lead, 2026-10-05)
-- `plan-db` §4: ví dụ `dify-dich` sửa thành `dify-tom` ↔ `tom` (một input chuỗi bắt buộc) theo QA2-1; seed mặc định `agents.yaml` dùng `dify-tom`, `dify-tro-ly`.
-- Luật seed ở `modules/seed/seed.workflows.ts`: `runtime_options` agent `dify-*` = `strictObject({workflow_key})` kiểm thuần trước DB; đối chiếu `admin.workflows` trong transaction seed (sau khoá `config_meta`), lỗi → rollback toàn bộ (A93 "DB không đổi"); cảnh báo log sau commit như Q8.
-- `workflow_flags.side_effect` seed chỉ **bật** (upsert `true`), không tắt cờ của workflow vắng trong yaml (đồng nghĩa "upsert, không xoá"); `workflows.yaml` mặc định để danh sách rỗng + ví dụ comment (không cấp tool cho `assistant` ngầm).
-- `agent_workflows.agent` phải có trong seed (như grant/entitlement); agent `dify-*` bị bỏ vì workflow vắng thì các dòng tham chiếu nó ghi 0 hàng (không lỗi).
 
 ## BUILD — B3 (backend-lead, 2026-10-05)
 | # | Quyết định | Lý do |
