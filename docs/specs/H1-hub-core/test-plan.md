@@ -1,6 +1,6 @@
 # Test plan · H1-hub-core (qc)
 
-Chế độ **TEST-PLAN** · 2026-10-04 · sửa theo readiness lần 1 (người dùng chấp nhận mọi mặc định, câu 1 = "chưa"). Chưa có file test; viết + "đỏ đúng lý do" sau Gate (§8), rồi khoá. Ca bổ sung (R15, A37b, A54–A57, P45), ca `blocked (chờ W0)`, tranh chấp K: [`test-plan-cases.md`](test-plan-cases.md).
+Chế độ **TEST-PLAN** · 2026-10-04 · sửa theo readiness lần 1+2 (người dùng chấp nhận mọi mặc định, câu 1 = "chưa"). Chưa có file test; viết + "đỏ đúng lý do" sau Gate (§8), rồi khoá. Ca bổ sung (R15, A37b, A54–A57, P45), ca `blocked (chờ W0)`, tranh chấp K: [`test-plan-cases.md`](test-plan-cases.md).
 "Đúng" = spec §2 (H1-R01…R26), §8 (AC phần H1, HUB-H1-AC-01…12); chữ ký `plan.md` §6.4; SQL `plan-db.md` §5.4–5.5; `fake-cli` `plan-runtime.md` §7. BA chỉ ở mục AC được trỏ.
 
 ## 1. Quy ước
@@ -131,7 +131,7 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 | A34 | AC-H06 | huỷ: `queued→cancelled`; `running` có `cancel_requested_at` + `job_cancel`; SSE `CANCELLED`; lần 2 → 200, không sự kiện mới |
 | A35 | E9 | xoá hội thoại có run chạy → run `cancelled`, rồi 404 |
 | A36 | UC-04 | huỷ run đã xong → 200 `finished` |
-| A37 | §3.5 | 50 vòng E12 ∥ kết thúc ∥ huỷ cùng flow: `deadlocks` không tăng; 1 kết thúc/run; ≤ 1 `running`/flow · + E9 đổi tên/xoá ∥ E12: A37b |
+| A37 | §3.5 | 50 vòng E12 ∥ kết thúc ∥ huỷ cùng flow: `deadlocks` không tăng; 1 kết thúc/run; ≤ 1 `running`/flow · + E8 ∥ E9 ∥ E12: A37b |
 | A38 | §3.5 | huỷ ∥ sweeper ∥ kết thúc cùng run → đúng 1 kết thúc, DB khớp |
 | A39 | AC-03 | 2 instance: POST ở A, ngắt sau `delta` 3, E13 ở B `Last-Event-ID: 3` → 4…n không lặp/mất |
 | A40 | AC-05 | A dừng không dọn, `lease_until` lùi → B ≤ 20 s đóng `INTERNAL_ERROR`, huỷ job, `seq`=cuối+1; A bị fencing |
@@ -207,7 +207,7 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 ### 7.1 Xong mốc H1 — **chuẩn duy nhất** (spec §8, plan-runtime §10 trỏ về đây) · script `bun run done:h1` gọi tuần tự
 Lọc theo package Hub: `@ai/hub-api`, `packages/{contracts,db}`, `apps/agent-runtime`, `tests/acceptance/H1`.
 ```
-bunx turbo run typecheck --filter=@ai/hub-api --filter=@ai/contracts --filter=@ai/db && tsc -p tsconfig.tests.json
+bunx turbo run typecheck --filter=@ai/hub-api --filter=@ai/contracts --filter=@ai/db
 bun test packages/contracts packages/db tests/acceptance/H1/rules tests/acceptance/H1/contracts-hub.test.ts
 bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 tests/acceptance/H1/ tests/acceptance/M tests/acceptance/ADM-NFR-06   # H1 *.int (DB h1) + Admin khoá
 bun run contracts:check
@@ -217,7 +217,8 @@ bun run test:h1:stack                               # cần tools/hub-dev chạy
 HUB_URL=http://localhost:4000 AUTH_URL=http://localhost:3001 CHAT_CONTRACT_USERS='<json>' bun run test:contract:chat
 bun run test:lock:verify && bun run trace --check && bun run check:size --all && bunx depcruise --all
 ```
-`trace --check`, `check:size` quét `.py` chỉ sau PY-01. `test:perf` không thuộc Lệnh xong. Đỏ ngoài bộ lọc (`tsconfig.tests.json`, depcruise, `bun test` toàn repo) **do code dở của Chat** = phụ thuộc combine, không chặn H1; ghi tên file đỏ vào bàn giao.
+Chạy riêng, **chỉ báo cáo, không chặn** (ngoài chuỗi `&&`): `tsc -p tsconfig.tests.json`.
+`trace --check`, `check:size` quét `.py` chỉ sau PY-01. `test:perf` không thuộc Lệnh xong. Đỏ ngoài bộ lọc (depcruise, `bun test` toàn repo) **do code dở của Chat** = phụ thuộc combine, không chặn H1; ghi tên file đỏ vào bàn giao.
 
 ### 7.2 Smoke thủ công — HUB-H1-AC-02 · **blocked (chờ W0)**, I2 cuối H1: [`test-plan-cases.md`](test-plan-cases.md) §2.1
 
@@ -226,14 +227,15 @@ bun run test:lock:verify && bun run trace --check && bun run check:size --all &&
 | Nhóm | File | Số ca (≈) | Phải đỏ đúng lý do vì |
 |---|---|---|---|
 | QW-R | `rules/{orchestrator,agent-access,runs,jwt}.test.ts`, `contracts-hub.test.ts` | 54 | module/hàm chưa có (import tĩnh sau khi backend-lead tạo stub chữ ký, Q-T2) |
-| QW-A | 11 file `*.int.test.ts` | 67 | route 404/`expect`; fixture DB/Redis phải xanh |
+| QW-A1 (cao) | `auth`, `isolation` | A1–A7 | route 404/`expect`; fixture DB/Redis phải xanh |
+| QW-A2 (cao) | 9 file `*.int.test.ts` còn lại | A8–A52, A37b, A54–A57, P45b(A) | như QW-A1 |
 | QW-P | 11 file Python | 52 (unit 12, int 40) | `ModuleNotFoundError` trong thân test / timeout chờ trạng thái; fixture (DB, Redis, spawn) phải xanh |
 | QW-S | 3 file `.stack.test.ts` | 4 | kết nối tới stack/expect |
 | K | có sẵn | ~40 "mọi Hub" | chỉ chạy ở I2 |
 | perf | 1 | 4 | không chặn |
 
 Tổng mới ≈ **181** ca (TS 129, Python 52; +13 theo readiness 1) + 40 K + M1/spike blocked; theo mã: Hub FR/BR ~85, WRK ~55, HUB-H1-AC ~28.
-**Chú ý đỏ đúng lý do:** ca kỳ vọng 404 (A5, K-C8) có đối chứng 200 của chủ và so body `NOT_FOUND` JSON (404 mặc định của Hono không đạt) · dựng dữ liệu bằng SQL, không qua route chưa có · P2 chạy SQL nguyên văn trên schema D1 nên có thể **xanh** trước code Runtime (chấp nhận, ghi §10) · A48–A51 đỏ vì `runHubMigrations` chưa có.
+**Chú ý đỏ đúng lý do:** ca kỳ vọng 404 (A5, K-C8) có đối chứng 200 của chủ và so body `NOT_FOUND` JSON (404 mặc định của Hono không đạt) · dựng dữ liệu bằng SQL, không qua route chưa có · P2 chạy SQL nguyên văn trên schema D1 nên có thể **xanh** trước code Runtime (chấp nhận, ghi §10) · A48–A51 (và A3 nếu B1 xong trước) **xanh trước khoá** (chấp nhận, ghi §10).
 
 ## 9. Rủi ro test · câu hỏi — **đã chốt** (người dùng chấp nhận mặc định 2026-10-04)
 
