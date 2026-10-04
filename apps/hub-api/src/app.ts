@@ -10,6 +10,7 @@ import {
 } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { DEFAULT_JOB_MAX_WAIT_S, mountDifyCredential, workflowJobs } from "./app.async";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountMcp } from "./app.mcp";
 import { agentRunner } from "./app.runner";
@@ -69,8 +70,6 @@ export type AppDeps = {
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
-/** = `HUB_JOB_MAX_WAIT_S` mặc định (plan §7). */
-const DEFAULT_JOB_MAX_WAIT_S = 30;
 /** Gốc các route cần JWT (E5–E15). Chặn ở gốc ⇒ 401 trước 404, kể cả route chưa mount; `/health` mở. */
 const PROTECTED_PREFIXES = ["/conversations", "/runs", "/commands"];
 
@@ -135,7 +134,8 @@ function startRunLoops(d: {
 
 /**
  * JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E14. Vắng `db` (test khung) ⇒ không mount;
- * E12–E14 cần thêm `redis` + cache cấu hình.
+ * E12–E14 cần thêm `redis` + cache cấu hình. B6: kèm `/internal/jobs/:job_id/dify-credential` (ngoài `PROTECTED_PREFIXES`,
+ * không JWT — token job).
  */
 function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache): void {
   const auth = requireAuth(deps.jwtPublicKey);
@@ -145,7 +145,9 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     db: deps.db,
     log: logger,
     secretMasterKey: deps.secretMasterKey,
+    jobs: workflowJobs({ ...deps, db: deps.db, owner: instanceOwner(deps), log: logger }),
   });
+  if (config) mountDifyCredential(app, { ...deps, db: deps.db, config, log: logger });
   const h2a = config && mountH2a(app, config, drivers);
   if (!deps.redis || !config || !h2a) {
     app.route("/conversations", conversationRoutes(deps.db));

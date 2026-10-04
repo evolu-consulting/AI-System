@@ -80,7 +80,7 @@ export type JobAgentRunnerDeps = {
 };
 
 /** Hàng đợi sự kiện một job: `next` trả sự kiện kế, null khi hết `ms` hoặc `signal` abort. */
-class EventQueue {
+export class EventQueue {
   readonly #items: RunEvent[] = [];
   #wake: (() => void) | null = null;
 

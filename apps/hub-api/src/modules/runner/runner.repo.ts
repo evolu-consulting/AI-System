@@ -166,8 +166,35 @@ export async function finishStep(
 
 export type OrphanJob = { id: string; runId: string };
 
+/** Ngưỡng orphan phía Hub (giây), dùng chung câu requeue H2a và câu `failed` H1 (plan-db H2a §2: Hub `$1 = 60`). */
+export const ORPHAN_S = 60;
+
 /**
- * plan-db §5.5 (nguyên văn, Hub và Runtime cùng chạy): job `running` mất heartbeat > 60 s → `failed` `orphaned`.
+ * plan-db H2a §2 "Requeue orphan" (nguyên văn, chạy **trước** `sweepOrphanJobs` cùng lượt): job `workflow.async` mất
+ * heartbeat, `attempts < 3`, chưa huỷ, không (`side_effect` ∧ đã gửi Dify) → `queued` (xoá token/worker, `queued_at` mới)
+ * + `pg_notify('job_enqueued')` mỗi dòng (giao khi COMMIT). Không XADD: job chưa kết thúc (R13, AC-W06).
+ */
+export async function requeueOrphanJobs(tx: Tx): Promise<OrphanJob[]> {
+  const rows = await tx.execute<{
+    id: string;
+    run_id: string;
+  }>(sql`UPDATE hub.jobs SET status = 'queued',
+    worker_id = NULL, pgid = NULL, heartbeat_at = NULL, started_at = NULL,
+    token_hash = NULL, dispatched_at = NULL, queued_at = now()
+    WHERE status = 'running' AND type = 'workflow.async' AND heartbeat_at < now() - make_interval(secs => ${ORPHAN_S})
+      AND attempts < 3 AND cancel_requested_at IS NULL
+      AND NOT (coalesce((payload->>'side_effect')::boolean, false) AND dispatched_at IS NOT NULL)
+    RETURNING id, run_id, worker_id, pgid`);
+  const out = [...rows].map((r) => ({ id: r.id, runId: r.run_id }));
+  for (const j of out) {
+    const note: JobEnqueuedPayload = { v: 1, job_id: j.id, provider_key: "dify" };
+    await tx.execute(sql`select pg_notify(${JOB_ENQUEUED_CHANNEL}, ${JSON.stringify(note)})`);
+  }
+  return out;
+}
+
+/**
+ * plan-db §5.5 (nguyên văn, Hub và Runtime cùng chạy): job `running` mất heartbeat > `ORPHAN_S` → `failed` `orphaned`.
  * Chỉ bên nhận dòng trong `RETURNING` phát `job.failed`.
  */
 export async function sweepOrphanJobs(tx: Tx): Promise<OrphanJob[]> {
@@ -176,7 +203,7 @@ export async function sweepOrphanJobs(tx: Tx): Promise<OrphanJob[]> {
     run_id: string;
   }>(sql`UPDATE hub.jobs SET status = 'failed',
     error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now()
-    WHERE status = 'running' AND heartbeat_at < now() - interval '60 seconds'
+    WHERE status = 'running' AND heartbeat_at < now() - make_interval(secs => ${ORPHAN_S})
     RETURNING id, run_id, worker_id, pgid`);
   return [...rows].map((r) => ({ id: r.id, runId: r.run_id }));
 }

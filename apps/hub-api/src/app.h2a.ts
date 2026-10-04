@@ -4,6 +4,7 @@ import type { Env, Hono } from "hono";
 import { DEFAULT_DIFY_TIMEOUT_MAX_S } from "./app.mcp";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
+import { asyncCommandDriver } from "./modules/commands/command-async-driver";
 import { type CommandDriverDeps, commandDriver } from "./modules/commands/command-driver";
 import { commandRoutes } from "./modules/commands/commands.routes";
 import { CommandService, type PreparedCommand } from "./modules/commands/commands.service";
@@ -12,6 +13,7 @@ import { CredentialService, loadMasterKey } from "./modules/dify/credential.serv
 import { DifyClient } from "./modules/dify/dify.client";
 import { testRunRoutes } from "./modules/internal/test-run.routes";
 import { TestRunService } from "./modules/internal/test-run.service";
+import type { WorkflowJobRunner } from "./modules/runner/workflow-job-runner";
 import type { PrepareCommand } from "./modules/runs/runs.routes";
 import type { RunDriver } from "./modules/runs/runs.service";
 
@@ -19,8 +21,8 @@ import type { RunDriver } from "./modules/runs/runs.service";
 export type CommandDriverFor = (p: PreparedCommand) => RunDriver;
 
 /**
- * Lệnh chưa có driver (async tới B6): run lệnh đã tạo đúng (`kind=command`) rồi kết thúc `INTERNAL_ERROR`, không gọi
- * Dify. Không để run treo tới sweeper.
+ * Lệnh không có driver (async khi app dựng không có Redis — test khung): run lệnh đã tạo đúng (`kind=command`) rồi kết
+ * thúc `INTERNAL_ERROR`, không gọi Dify. Không để run treo tới sweeper.
  */
 export const pendingCommandDriver: CommandDriverFor = () => ({
   start: (ctx) => void ctx.writer.finishOrAbort({ kind: "failed", code: "INTERNAL_ERROR" }),
@@ -31,9 +33,11 @@ export type CommandDriverMountDeps = {
   log: Logger;
   /** = `SECRET_MASTER_KEY` (đã kiểm ở `server.ts`); vắng → mọi lệnh `NOT_CONFIGURED`. */
   secretMasterKey?: string;
+  /** B6 · runner job `workflow.async` (`app.async.ts`); vắng → lệnh async `pendingCommandDriver`. */
+  jobs?: Pick<WorkflowJobRunner, "run">;
 };
 
-/** B5 · lệnh `sync` → `command-driver` (Dify streaming); `async` → `pendingCommandDriver` tới B6. */
+/** B5 · lệnh `sync` → `command-driver` (Dify streaming); B6 · `async` → `command-async-driver` (job `workflow.async`). */
 export function commandDriverFor(m: CommandDriverMountDeps): CommandDriverFor {
   const d: CommandDriverDeps = {
     db: m.db,
@@ -45,7 +49,11 @@ export function commandDriverFor(m: CommandDriverMountDeps): CommandDriverFor {
     dify: new DifyClient(),
     log: m.log,
   };
-  return (p) => (p.command.mode === "sync" ? commandDriver(d, p) : pendingCommandDriver(p));
+  const jobs = m.jobs;
+  return (p) => {
+    if (p.command.mode === "sync") return commandDriver(d, p);
+    return jobs ? asyncCommandDriver({ db: m.db, jobs, log: m.log }, p) : pendingCommandDriver(p);
+  };
 }
 
 export type H2aMounted = { commands: CommandService; prepareCommand: PrepareCommand };

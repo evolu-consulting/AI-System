@@ -29,16 +29,18 @@ export type CommandDriverDeps = {
 };
 
 /** Kết cục một lần chạy: `stopped` = writer đã dừng (huỷ E15 / mất lease) — không kết thúc run ở đây. */
-type Outcome =
+export type Outcome =
   | { kind: "finished"; text: string }
   | { kind: "failed"; code: ChatRunErrorCode; trace: Record<string, unknown> }
   | { kind: "stopped"; trace: Record<string, unknown> };
 
-type Step = { id: string; seq: number };
+export type Step = { id: string; seq: number };
 type Live = { d: CommandDriverDeps; p: PreparedCommand; writer: SseWriter; log: Logger };
+/** Phần `Live` mà mở/đóng step cần (dùng chung driver async, B6). */
+export type StepLive = { d: { db: Db }; p: PreparedCommand; writer: SseWriter };
 
 /** Phát `delta` tuần tự (callback Dify đồng bộ): nối hàng promise; lỗi phát (fencing) → bỏ, writer tự dừng. */
-class DeltaPipe {
+export class DeltaPipe {
   #chain: Promise<void> = Promise.resolve();
   sent = "";
   constructor(private readonly writer: SseWriter) {}
@@ -88,7 +90,7 @@ async function openStep(l: Live): Promise<Step> {
 }
 
 /** Kết thúc step + `step.finished` (bỏ phát khi writer đã dừng). */
-async function closeStep(l: Live, step: Step, o: Outcome): Promise<void> {
+export async function closeStep(l: StepLive, step: Step, o: Outcome): Promise<void> {
   const status = o.kind === "finished" ? "ok" : "failed";
   const detail = {
     ...(l.p.extraTokens > 0 && { extra_tokens: l.p.extraTokens }),
@@ -164,7 +166,11 @@ async function callDify(
 }
 
 /** `run.finished` (mk không chunk → phát `delta` từ `outputs`) / `run.failed`; `stopped` → không ghi. */
-async function deliver(l: Live, pipe: DeltaPipe, o: Outcome): Promise<void> {
+export async function deliver(
+  l: Pick<StepLive, "writer">,
+  pipe: DeltaPipe,
+  o: Outcome,
+): Promise<void> {
   if (o.kind === "stopped") return;
   if (o.kind === "failed") {
     await l.writer.finish({ kind: "failed", code: o.code });
