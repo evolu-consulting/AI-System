@@ -225,6 +225,7 @@ Chuẩn duy nhất: `test-plan.md` §7.1, chạy bằng `bun run done:h1` (I1). 
 Yêu cầu R1–R13 và câu trả lời chốt (Runtime theo cột Chốt): `plan-db.md` §8.
 
 ## 13. Kết quả spike (PY-02 điền — `blocked` chờ W0)
+**PY-02 xong 2026-10-04 → [spike-py02.md](spike-py02.md)** (bảng 10 điểm + sửa S1–S9; Blocker: `@đường/dẫn` trong prompt CLI tự đọc file ngoài hook; hook đang deny `StructuredOutput`). Cột "Kết quả spike" dưới đây: xem phụ lục.
 | Mục [CX] | Dự phòng code trước (task) | Kết quả spike |
 |---|---|---|
 | hook với `query()` vs `ClaudeSDKClient` | dùng `ClaudeSDKClient` (PY-08) | |
