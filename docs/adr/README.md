@@ -12,3 +12,4 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0007 | Hub TypeScript, Agent Runtime Python (queue Postgres, sự kiện Redis Streams) | Accepted (người dùng, 2026-10-04) |
 | 0008 | Thư viện Python cho Agent Runtime (asyncpg, redis-py, claude-agent-sdk, structlog, pydantic-settings, pytest-asyncio, import-linter) | Accepted (Gate H1, 2026-10-04) |
 | 0009 | Hub: Redis client ioredis + toolchain contract (z.toJSONSchema, datamodel-code-generator) | Accepted (Gate H1, 2026-10-04) |
+| 0010 | Agent Runtime: HTTP client httpx2 (Dify SSE, endpoint nội bộ Hub, MCP cho fake-cli) | Proposed (Gate H2a) |
