@@ -53,12 +53,17 @@ export function titleSearchPattern(q: string): string {
 }
 
 export type Locale = "vi" | "en";
-export type StepType = "orchestrator" | "delegate";
+export type StepType = "orchestrator" | "delegate" | "workflow" | "tool";
 
-/** Nhãn step tĩnh theo `runs.locale` (plan H1 §6.1), không lộ key agent/provider (C1-R04). */
+/**
+ * Nhãn step tĩnh theo `runs.locale` (plan H1 §6.1; H2a `plan-errors` §3 cho `workflow`/`tool`), không lộ key
+ * agent/provider/workflow (C1-R04, R09).
+ */
 const STEP_LABELS: Record<StepType, Record<Locale, string>> = {
   orchestrator: { vi: "Đang phân tích yêu cầu…", en: "Analyzing your request…" },
   delegate: { vi: "Đang xử lý…", en: "Working on it…" },
+  workflow: { vi: "Đang chạy lệnh", en: "Running command" },
+  tool: { vi: "Đang dùng công cụ", en: "Using a tool" },
 };
 export function stepLabel(type: StepType, locale: Locale): string {
   return STEP_LABELS[type][locale];

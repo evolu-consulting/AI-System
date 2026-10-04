@@ -3,8 +3,9 @@
 import type { HistoryItem } from "@ai/contracts/hub";
 import { HISTORY_CONTENT_MAX } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
-import { flows, messages, runSteps } from "@ai/db/schema/hub";
-import { and, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { flows, messages } from "@ai/db/schema/hub";
+import { and, desc, eq, isNull, ne, or } from "drizzle-orm";
+import { insertStep } from "../../lib/run-steps";
 
 export type FlowState = { agentId: string | null; pendingAsk: boolean };
 export type RunKey = { id: string; tenantId: string; userId: string; flowId: string };
@@ -37,22 +38,24 @@ export async function flowHistory(tx: Tx, r: RunKey, limit: number): Promise<His
     .map((m) => ({ role: m.role, content: m.content.slice(0, HISTORY_CONTENT_MAX) }));
 }
 
-/** H1-R06 · delegate ngoài danh sách được phép: ghi trace `skipped`, không job. */
+/** H1-R06 · delegate ngoài danh sách được phép: ghi trace `skipped`, không job. `seq` do DB cấp (P11). */
 export async function insertSkippedStep(
   tx: Tx,
-  p: { run: RunKey; seq: number; agentId: string | null; agentKey: string },
+  p: { run: RunKey; agentId: string | null; agentKey: string },
 ): Promise<void> {
-  await tx.insert(runSteps).values({
+  await insertStep(tx, {
+    id: crypto.randomUUID(),
     tenantId: p.run.tenantId,
     userId: p.run.userId,
     runId: p.run.id,
-    seq: p.seq,
     type: "delegate",
     agentId: p.agentId,
+    providerKey: null,
+    jobId: null,
+    workflowId: null,
     labelKey: "step.delegate",
     status: "skipped",
     detail: { reason: "not_allowed", agent: p.agentKey },
-    startedAt: sql`date_trunc('milliseconds', now())`,
-    finishedAt: sql`date_trunc('milliseconds', now())`,
+    finished: true,
   });
 }

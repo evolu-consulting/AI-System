@@ -18,6 +18,7 @@ import {
   type RunEvent,
   type TokenUsage,
   type WorkflowAsyncJob,
+  WorkflowAsyncJobSchema,
 } from "@ai/contracts/hub";
 import type { WorkflowJobInput } from "../commands/catalog.types";
 import type { AgentConfig, ProfileConfig } from "../config/config.rules";
@@ -47,6 +48,8 @@ export type PayloadInput = {
   prompt: string;
   systemPrompt: string;
   history: readonly HistoryItem[];
+  /** H2a · `mcpConfigFor(...)` (P4: không token); vắng/null → `mcp: null`. */
+  mcp?: McpConfig | null;
 };
 
 /** Agent kẹp ≥ 2: structured output tốn một lượt (Runtime đã tự ép, Hub khớp). */
@@ -92,7 +95,7 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
     flow_id: i.run.flowId,
     feature_id: null,
     agent_type_key: null,
-    mcp: null,
+    mcp: i.mcp ?? null,
     agent: { id: i.agent.id, key: i.agent.key, role: i.role },
     provider_key: step.provider_key,
     model: step.model,
@@ -221,7 +224,6 @@ export function compareStreamId(a: string, b: string): number {
 }
 
 // HUB-FR-89, HUB-FR-50 · H2a-R13, R18, P10 · job `workflow.async`, cấu hình MCP, requeue orphan (plan-rules).
-// B0: chỉ chữ ký — thân làm ở B6/B8.
 
 export type OrphanJob = {
   type: "agent.cli" | "workflow.async";
@@ -230,21 +232,51 @@ export type OrphanJob = {
   dispatched: boolean;
 };
 
+/** Requeue orphan tối đa tới lần claim thứ 3 (R13, `plan-db` §2 `attempts < 3`). */
+export const WORKFLOW_MAX_ATTEMPTS = 3;
+
 /** Kết quả parse `WorkflowAsyncJobSchema`; không khoá secret/URL; `side_effect` theo cờ workflow. */
 export function buildWorkflowJobPayload(i: WorkflowJobInput): WorkflowAsyncJob {
-  throw new Error(`not implemented: buildWorkflowJobPayload(${i.jobId})`);
+  return WorkflowAsyncJobSchema.parse({
+    v: HUB_CONTRACT_VERSION,
+    type: "workflow.async",
+    provider_key: "dify",
+    job_id: i.jobId,
+    run_id: i.runId,
+    step_id: i.stepId,
+    tenant_id: i.tenantId,
+    user_id: i.userId,
+    conversation_id: i.conversationId,
+    flow_id: i.flowId,
+    workflow_id: i.workflow.id,
+    feature_id: i.featureId,
+    command_id: i.commandId,
+    workflow_key: i.workflow.key,
+    app_type: i.workflow.appType,
+    inputs: i.inputs,
+    query: i.query,
+    output_field: i.outputField,
+    dify_user: i.difyUser,
+    side_effect: i.workflow.sideEffect,
+    timeout_s: i.timeoutS,
+  });
 }
 
-/** `toolKeys` rỗng → `null`; có → `{url, tools}` (token không ở đây, P4). */
+/**
+ * `toolKeys` rỗng → `null`; có → `{url, tools}` (token không ở đây, P4). `url` = URL `/mcp` đầy đủ, giữ nguyên văn.
+ * Chỉ agent `agentic-cli` có MCP (Orchestrator/`dify-*` không chạy CLI có tool).
+ */
 export function mcpConfigFor(
   agent: AgentConfig,
   toolKeys: readonly string[],
   url: string,
 ): McpConfig | null {
-  throw new Error(`not implemented: mcpConfigFor(${agent.key}, ${toolKeys.length}, ${url.length})`);
+  if (toolKeys.length === 0 || agent.runtime !== "agentic-cli") return null;
+  return { url, tools: [...toolKeys] };
 }
 
 /** R13/P10: `workflow.async` ∧ `attempts < 3` ∧ ¬(`sideEffect` ∧ `dispatched`) → requeue; còn lại → fail. */
 export function orphanAction(j: OrphanJob): "requeue" | "fail" {
-  throw new Error(`not implemented: orphanAction(${j.type}, ${j.attempts})`);
+  if (j.type !== "workflow.async" || j.attempts >= WORKFLOW_MAX_ATTEMPTS) return "fail";
+  return j.sideEffect && j.dispatched ? "fail" : "requeue";
 }

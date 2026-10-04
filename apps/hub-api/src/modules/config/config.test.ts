@@ -49,6 +49,7 @@ const snap = (version: number, o: Partial<ConfigSnapshot> = {}): ConfigSnapshot 
   },
   entitlements: [],
   grants: [],
+  agentWorkflows: new Map(),
   ...o,
 });
 

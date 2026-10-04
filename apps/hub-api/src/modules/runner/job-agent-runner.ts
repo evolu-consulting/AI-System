@@ -2,14 +2,24 @@
 // NOTIFY → theo dõi `run:<run_id>` (lọc `job_id`) → im 2 s thì đọc `jobs` (dựng từ DB / hết hạn `queued`) → ghi `run_steps`.
 // Không biết HTTP; vòng Orchestrator (B8) gọi `run`/`runJob` với ảnh cấu hình của run (HUB-BR-06).
 import type { ChatRunErrorCode } from "@ai/contracts/chat";
-import type { AgentCliJob, HistoryItem, JobOutput, RunEvent, TokenUsage } from "@ai/contracts/hub";
+import {
+  type AgentCliJob,
+  type HistoryItem,
+  type JobOutput,
+  MCP_TOOLS_MAX,
+  type McpConfig,
+  type RunEvent,
+  type TokenUsage,
+} from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
-import type { AgentConfig, ConfigSnapshot } from "../config/config.rules";
+import type { CatalogSnapshot } from "../config/catalog.rules";
+import { type AgentConfig, agentWorkflowIds, type ConfigSnapshot } from "../config/config.rules";
 import { stepLabel } from "../conversations/conversations.rules";
+import { mcpToolsFor } from "../mcp/mcp.rules";
 import { queueTimeoutReason } from "../runs/runs.rules";
 import type { SseEventBody } from "../runs/sse/sse-writer";
 import type { RunStreamReader } from "./run-stream-reader";
@@ -19,6 +29,7 @@ import {
   buildJobPayload,
   eventFromJobRow,
   isJobTerminal,
+  mcpConfigFor,
   providerBlocked,
   type RunRef,
   runErrorCodeOf,
@@ -38,8 +49,6 @@ export type AgentTask = {
   /** Vắng → `agent.systemPrompt` (Orchestrator: B8 nối khối định dạng §6.3). */
   systemPrompt?: string;
   history: readonly HistoryItem[];
-  /** `run_steps.seq` (người gọi đánh số, gồm cả step `skipped`); SSE `step_id = s<seq>` như E10/E11. */
-  seq: number;
   /** `run_steps.id` do người gọi chọn (vắng → mới); `reopen` = thử lại cùng step (Orchestrator JSON hỏng, plan §6.1). */
   stepId?: string;
   reopen?: boolean;
@@ -66,6 +75,8 @@ export type JobAgentRunnerDeps = {
   maxWaitS: number;
   log: Logger;
   pollMs?: number;
+  /** H2a · MCP cho agent gắn workflow (R18): `url` = `HUB_PUBLIC_INTERNAL_URL + "/mcp"`; vắng → `mcp: null`. */
+  mcp?: { url: string; catalog: () => Promise<CatalogSnapshot> };
 };
 
 /** Hàng đợi sự kiện một job: `next` trả sự kiện kế, null khi hết `ms` hoặc `signal` abort. */
@@ -104,7 +115,16 @@ function stepInsert(
   owner: string,
 ): repo.StepInsert & { owner: string } {
   const type = stepType(task.role);
-  return { stepId, seq: task.seq, type, labelKey: `step.${type}`, reopen: task.reopen, owner };
+  return { stepId, type, labelKey: `step.${type}`, reopen: task.reopen, owner };
+}
+
+/** R19 (phía payload): workflow gắn agent ∩ `enabled` (bỏ input `file` bắt buộc), sắp key, ≤ `MCP_TOOLS_MAX`. */
+export function agentToolKeys(ids: ReadonlySet<string>, catalog: CatalogSnapshot): string[] {
+  const workflows = [...catalog.workflows.values()];
+  const allowed = workflows.map((w) => w.key);
+  return mcpToolsFor({ agentWorkflowIds: ids, workflows, allowed })
+    .map((t) => t.name)
+    .slice(0, MCP_TOOLS_MAX);
 }
 
 export class JobAgentRunner implements AgentRunner {
@@ -114,12 +134,31 @@ export class JobAgentRunner implements AgentRunner {
     return withHubScope(this.d.db, { kind: "system" }, fn);
   }
 
-  #payload(task: AgentTask, jobId: string, stepId: string): AgentCliJob | null {
+  /** `payload.mcp` (P4: không token). Chỉ agent (không Orchestrator); catalog lỗi → null + cảnh báo. */
+  async #mcp(task: AgentTask): Promise<McpConfig | null> {
+    const m = this.d.mcp;
+    if (!m || task.role !== "agent") return null;
+    const ids = agentWorkflowIds(task.snapshot, task.agent.id);
+    if (ids.size === 0) return null;
+    try {
+      return mcpConfigFor(task.agent, agentToolKeys(ids, await m.catalog()), m.url);
+    } catch (err) {
+      this.d.log.warn("job-mcp-unavailable", { run_id: task.run.id, ...safeErrorFields(err) });
+      return null;
+    }
+  }
+
+  #payload(
+    task: AgentTask,
+    ids: { jobId: string; stepId: string },
+    mcp: McpConfig | null,
+  ): AgentCliJob | null {
     const profile = task.snapshot.profiles.find((p) => p.id === task.agent.profileId);
     if (!profile) return null;
     return buildJobPayload({
-      jobId,
-      stepId,
+      jobId: ids.jobId,
+      stepId: ids.stepId,
+      mcp,
       run: task.run,
       agent: task.agent,
       role: task.role,
@@ -133,7 +172,7 @@ export class JobAgentRunner implements AgentRunner {
   async *run(task: AgentTask, signal: AbortSignal): AsyncGenerator<RunEvent> {
     const jobId = crypto.randomUUID();
     const stepId = task.stepId ?? crypto.randomUUID();
-    const payload = this.#payload(task, jobId, stepId);
+    const payload = this.#payload(task, { jobId, stepId }, await this.#mcp(task));
     if (!payload) {
       this.d.log.error("job-payload-invalid", { run_id: task.run.id, agent_id: task.agent.id });
       const f = {
@@ -161,15 +200,15 @@ export class JobAgentRunner implements AgentRunner {
     try {
       const type = stepType(task.role);
       // Huỷ/mất lease → không INSERT job (job mồ côi giữ slot tới timeout); `runJob` quy về `aborted`.
-      const skip = await this.#enqueue(task, payload, stepId, signal);
-      if (skip)
-        return this.d.log.info("job-enqueue-skipped", { run_id: task.run.id, reason: skip });
+      const seq = await this.#enqueue(task, payload, stepId, signal);
+      if (typeof seq !== "number")
+        return this.d.log.info("job-enqueue-skipped", { run_id: task.run.id, reason: seq });
       await this.#emit(task, {
         event: "step.started",
-        data: { step_id: `s${task.seq}`, label: stepLabel(type, task.run.locale) },
+        data: { step_id: `s${seq}`, label: stepLabel(type, task.run.locale) },
       });
       yield* this.#follow(
-        { task, jobId, stepId, providerKey: payload.provider_key },
+        { task, jobId, stepId, seq, providerKey: payload.provider_key },
         queue,
         signal,
       );
@@ -178,20 +217,20 @@ export class JobAgentRunner implements AgentRunner {
     }
   }
 
-  /** Lý do bỏ qua INSERT job (null = đã vào hàng đợi). */
+  /** `seq` của step khi đã vào hàng đợi (P11: DB cấp); không thì lý do bỏ qua INSERT job. */
   async #enqueue(
     task: AgentTask,
     payload: AgentCliJob,
     stepId: string,
     signal: AbortSignal,
-  ): Promise<"aborted" | "not_enqueued" | null> {
+  ): Promise<number | "aborted" | "not_enqueued"> {
     if (signal.aborted) return "aborted";
     const step = stepInsert(task, stepId, this.d.owner);
-    return (await this.#system((tx) => repo.enqueueJob(tx, payload, step))) ? null : "not_enqueued";
+    return (await this.#system((tx) => repo.enqueueJob(tx, payload, step))) ?? "not_enqueued";
   }
 
   async *#follow(
-    j: { task: AgentTask; jobId: string; stepId: string; providerKey: string },
+    j: { task: AgentTask; jobId: string; stepId: string; seq: number; providerKey: string },
     queue: EventQueue,
     signal: AbortSignal,
   ): AsyncGenerator<RunEvent> {
@@ -200,7 +239,7 @@ export class JobAgentRunner implements AgentRunner {
         (await queue.next(this.d.pollMs ?? JOB_POLL_MS, signal)) ?? (await this.#poll(j, signal));
       if (!ev || signal.aborted) continue;
       if (isJobTerminal(ev)) {
-        await this.#finishStep(j.task, j.stepId, ev);
+        await this.#finishStep(j.task, { id: j.stepId, seq: j.seq }, ev);
         yield ev;
         return;
       }
@@ -233,7 +272,11 @@ export class JobAgentRunner implements AgentRunner {
   }
 
   /** `run_steps` ok/failed (+ bản gốc lỗi Runtime vào `detail`, P11) rồi `step.finished`. */
-  async #finishStep(task: AgentTask, stepId: string, ev: RunEvent): Promise<void> {
+  async #finishStep(
+    task: AgentTask,
+    step: { id: string; seq: number },
+    ev: RunEvent,
+  ): Promise<void> {
     const failed = ev.type === "job.failed";
     const detail = failed
       ? {
@@ -255,13 +298,13 @@ export class JobAgentRunner implements AgentRunner {
     }
     const status = failed ? "failed" : "ok";
     const t = await this.#system((tx) =>
-      repo.finishStep(tx, { stepId, runId: task.run.id, status, detail }),
+      repo.finishStep(tx, { stepId: step.id, runId: task.run.id, status, detail }),
     );
     if (!t) return;
     const ms = Math.max(0, t.finishedAt.getTime() - t.startedAt.getTime());
     await this.#emit(task, {
       event: "step.finished",
-      data: { step_id: `s${task.seq}`, status, ms },
+      data: { step_id: `s${step.seq}`, status, ms },
     });
   }
 

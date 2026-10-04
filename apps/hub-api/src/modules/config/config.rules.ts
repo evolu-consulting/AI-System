@@ -57,7 +57,14 @@ export type ConfigSnapshot = Readonly<{
   orchestrator: OrchestratorConfig | null;
   entitlements: readonly EntitlementRow[];
   grants: readonly GrantRow[];
+  /** H2a · `hub.agent_workflows`: agent id → workflow id gắn (tool MCP, R18–R19). */
+  agentWorkflows: ReadonlyMap<string, ReadonlySet<string>>;
 }>;
+
+/** Workflow gắn agent (rỗng khi không có). */
+export function agentWorkflowIds(s: ConfigSnapshot, agentId: string): ReadonlySet<string> {
+  return s.agentWorkflows.get(agentId) ?? new Set<string>();
+}
 
 export type OrchestratorProblem =
   | "missing_settings"

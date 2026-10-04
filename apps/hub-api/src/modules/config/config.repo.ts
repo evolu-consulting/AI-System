@@ -1,6 +1,6 @@
 // HUB-FR-02, HUB-FR-03 · đọc cấu hình `admin` + `hub` cho cache (role hub_api, chỉ SELECT; plan H1 §4 Cache, §3.1, §3.4).
 // Bảng cấu hình không RLS, toàn hệ thống (không lọc tenant); `admin.users` chỉ đọc cột hub_ro được GRANT.
-import { agentGrants, configMeta, groupMembers, tenants, users } from "@ai/db";
+import { agentGrants, agentWorkflows, configMeta, groupMembers, tenants, users } from "@ai/db";
 import {
   agentEntitlements,
   agents,
@@ -89,7 +89,22 @@ async function readHubRows(tx: Tx) {
     orch,
     ent: await tx.select().from(agentEntitlements),
     gr: await tx.select().from(agentGrants),
+    aw: await tx
+      .select({ agentId: agentWorkflows.agentId, workflowId: agentWorkflows.workflowId })
+      .from(agentWorkflows),
   };
+}
+
+function groupAgentWorkflows(
+  rows: readonly { agentId: string; workflowId: string }[],
+): ConfigSnapshot["agentWorkflows"] {
+  const m = new Map<string, Set<string>>();
+  for (const r of rows) {
+    const set = m.get(r.agentId) ?? new Set<string>();
+    set.add(r.workflowId);
+    m.set(r.agentId, set);
+  }
+  return m;
 }
 
 /** Ảnh Hub đọc trong một transaction REPEATABLE READ: `version` khớp đúng dữ liệu đi kèm. */
@@ -120,6 +135,7 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
           tenantId: g.tenantId,
           subject: g.subjectId,
         })),
+        agentWorkflows: groupAgentWorkflows(r.aw),
       });
     },
     { isolationLevel: "repeatable read", accessMode: "read only" },

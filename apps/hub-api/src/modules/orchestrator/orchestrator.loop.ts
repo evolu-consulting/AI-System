@@ -36,14 +36,14 @@ export type LoopJob = {
   prompt: string;
   systemPrompt?: string;
   history: readonly HistoryItem[];
-  seq: number;
   stepId?: string;
   reopen?: boolean;
 };
 
 export type LoopIo = {
   job(j: LoopJob): Promise<LoopJobOutcome>;
-  skip(s: { seq: number; agentId: string | null; agentKey: string }): Promise<void>;
+  /** Step `skipped` (H1-R06); `seq` do DB cấp (P11). */
+  skip(s: { agentId: string | null; agentKey: string }): Promise<void>;
 };
 
 export type LoopInput = {
@@ -69,7 +69,6 @@ export type LoopEnd =
 type Stop = Extract<LoopEnd, { kind: "failed" | "aborted" }>;
 
 type State = {
-  seq: number;
   steps: number;
   tokens: number;
   delegates: number;
@@ -112,7 +111,6 @@ async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
     role: "orchestrator" as const,
     systemPrompt: orchestratorSystemPrompt(c.orchestrator.systemPrompt),
     history: [],
-    seq: ++s.seq,
     stepId: crypto.randomUUID(),
   };
   const first = prompt(false);
@@ -141,7 +139,6 @@ async function delegate(
     role: "agent",
     prompt: d.task,
     history: c.history,
-    seq: ++s.seq,
   });
   addUsage(s, o);
   if (o.kind !== "result") return stopOf(o);
@@ -178,7 +175,7 @@ async function onDelegate(
   const agent = ref ? c.agents.find((a) => a.id === ref.id) : undefined;
   if (agent) return delegate(io, c, s, { agent, task: dec.task });
   const known = c.agents.find((a) => a.key === dec.agent);
-  await io.skip({ seq: ++s.seq, agentId: known?.id ?? null, agentKey: dec.agent });
+  await io.skip({ agentId: known?.id ?? null, agentKey: dec.agent });
   s.steps++;
   s.notes.push({ agent: dec.agent, status: "skipped", reason: "not_allowed" });
   return null;
@@ -190,7 +187,6 @@ async function onDelegate(
  */
 export async function runLoop(io: LoopIo, c: LoopInput): Promise<LoopEnd> {
   const s: State = {
-    seq: 0,
     steps: 0,
     tokens: 0,
     delegates: 0,

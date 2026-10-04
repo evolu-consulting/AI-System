@@ -60,7 +60,6 @@ function delegateDriver(runner: JobAgentRunner): RunDriver {
       role: "agent" as const,
       prompt: ctx.content,
       history: [],
-      seq: 1,
       emit: (ev: Parameters<typeof w.emit>[0]) => w.emit(ev),
     };
     const out = await runJob(runner, task, w.signal, ctx.log);
@@ -188,13 +187,12 @@ describe("B7 · JobAgentRunner [HUB-FR-89 · HUB-FR-24]", () => {
 });
 
 describe("B7 · không INSERT job cho run đã đóng / không còn của mình [H1-R14 · P12]", () => {
-  it("H1-R14 · enqueueJob: owner khác → false; run đã kết thúc → false; không ghi jobs/run_steps", async () => {
+  it("H1-R14 · enqueueJob: owner khác → null; run đã kết thúc → null; không ghi jobs/run_steps", async () => {
     const { s, runId } = await start("Câu B7 đóng");
     const job = await rt.next(runId);
     const p = job.payload as AgentCliJob;
     const step = (owner: string) => ({
       stepId: p.step_id,
-      seq: 1,
       type: "delegate" as const,
       labelKey: "step.delegate",
       reopen: true,
@@ -204,10 +202,10 @@ describe("B7 · không INSERT job cho run đã đóng / không còn của mình 
       withHubScope(hub.db, { kind: "system" }, (tx) =>
         enqueueJob(tx, { ...p, job_id: crypto.randomUUID() }, step(owner)),
       );
-    expect(await again("other-hub")).toBe(false);
+    expect(await again("other-hub")).toBeNull();
     await rt.agent(job, { status: "done", text: "Xong." });
     expect((await end(s))?.event).toBe("run.finished");
-    expect(await again(OWNER)).toBe(false);
+    expect(await again(OWNER)).toBeNull();
     const [n] = await sql`select count(*)::int as n from hub.jobs where run_id = ${runId}`;
     expect(n?.n).toBe(1);
     const [st] = await sql`select status, job_id from hub.run_steps where run_id = ${runId}`;

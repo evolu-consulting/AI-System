@@ -4,6 +4,7 @@ import { type AgentCliJob, JOB_ENQUEUED_CHANNEL, type JobEnqueuedPayload } from 
 import type { Tx } from "@ai/db";
 import { jobs, providerState, runSteps } from "@ai/db/schema/hub";
 import { and, eq, sql } from "drizzle-orm";
+import { insertStep } from "../../lib/run-steps";
 import type { JobRow } from "./runner.rules";
 
 const NOW_MS = sql`date_trunc('milliseconds', now())`;
@@ -21,7 +22,6 @@ export async function providerStateOf(
 
 export type StepInsert = {
   stepId: string;
-  seq: number;
   type: "orchestrator" | "delegate";
   labelKey: string;
   /** Step đã có (thử lại cùng step): mở lại `running` với job mới thay vì INSERT. */
@@ -33,17 +33,33 @@ export type StepInsert = {
  * hub.jobs` → `pg_notify('job_enqueued')` cùng transaction: NOTIFY chỉ giao khi COMMIT nên Runtime nhận NOTIFY là thấy
  * dòng job. Run đã bị huỷ/sweeper đóng → false, không ghi gì (job mới sẽ chạy tới timeout giữ slot). `FOR SHARE` chặn
  * huỷ/kết thúc (`UPDATE runs`) tới COMMIT ⇒ job vừa INSERT luôn được `cancelJobs` của bên đóng nhìn thấy.
+ * Trả `seq` của step (P11: DB cấp; SSE `step_id = s<seq>`), null = không ghi.
  */
 export async function enqueueJob(
   tx: Tx,
   p: AgentCliJob,
   step: StepInsert & { owner: string },
-): Promise<boolean> {
+): Promise<number | null> {
   const live = await tx.execute(sql`select 1 from hub.runs
     where id = ${p.run_id} and status = 'running' and owner = ${step.owner} for share`);
-  if (live.length === 0) return false;
-  if (step.reopen) await reopenStep(tx, p, step.stepId);
-  else await insertStep(tx, p, step);
+  if (live.length === 0) return null;
+  const seq = step.reopen
+    ? await reopenStep(tx, p, step.stepId)
+    : await insertStep(tx, {
+        id: step.stepId,
+        tenantId: p.tenant_id,
+        userId: p.user_id,
+        runId: p.run_id,
+        type: step.type,
+        agentId: p.agent.id,
+        providerKey: p.provider_key,
+        jobId: p.job_id,
+        workflowId: null,
+        labelKey: step.labelKey,
+        status: "running",
+        detail: null,
+      });
+  if (seq === null) return null;
   await tx.insert(jobs).values({
     id: p.job_id,
     tenantId: p.tenant_id,
@@ -58,32 +74,17 @@ export async function enqueueJob(
   });
   const note: JobEnqueuedPayload = { v: 1, job_id: p.job_id, provider_key: p.provider_key };
   await tx.execute(sql`select pg_notify(${JOB_ENQUEUED_CHANNEL}, ${JSON.stringify(note)})`);
-  return true;
+  return seq;
 }
 
-async function insertStep(tx: Tx, p: AgentCliJob, step: StepInsert): Promise<void> {
-  await tx.insert(runSteps).values({
-    id: step.stepId,
-    tenantId: p.tenant_id,
-    userId: p.user_id,
-    runId: p.run_id,
-    seq: step.seq,
-    type: step.type,
-    agentId: p.agent.id,
-    providerKey: p.provider_key,
-    jobId: p.job_id,
-    labelKey: step.labelKey,
-    status: "running",
-    startedAt: NOW_MS,
-  });
-}
-
-/** Thử lại cùng step: trỏ sang job mới, `running` lại (giữ `started_at`). */
-async function reopenStep(tx: Tx, p: AgentCliJob, stepId: string): Promise<void> {
-  await tx
+/** Thử lại cùng step: trỏ sang job mới, `running` lại (giữ `started_at`, `seq`). Không có step → null. */
+async function reopenStep(tx: Tx, p: AgentCliJob, stepId: string): Promise<number | null> {
+  const [row] = await tx
     .update(runSteps)
     .set({ jobId: p.job_id, status: "running", finishedAt: null })
-    .where(and(eq(runSteps.id, stepId), eq(runSteps.runId, p.run_id)));
+    .where(and(eq(runSteps.id, stepId), eq(runSteps.runId, p.run_id)))
+    .returning({ seq: runSteps.seq });
+  return row?.seq ?? null;
 }
 
 /** §5.6 bước 4–5 · trạng thái job + đã `queued` quá `maxWaitS` chưa (đồng hồ DB, cùng gốc `created_at`). */

@@ -122,14 +122,14 @@ describe("runLoop · answer, ask, pass-through, need_input [HUB-FR-27 · HUB-FR-
   it("HUB-FR-20 · answer → text, 1 job Orchestrator (history rỗng, use khối định dạng)", async () => {
     const f = fakeIo(() => say({ decision: "answer", text: "chào" }));
     expect(await runLoop(f.io, input())).toEqual({ kind: "text", text: "chào" });
-    expect(f.jobs.map((j) => [j.role, j.seq, j.history.length])).toEqual([["orchestrator", 1, 0]]);
+    expect(f.jobs.map((j) => [j.role, j.history.length])).toEqual([["orchestrator", 0]]);
     expect(f.jobs[0]?.systemPrompt?.endsWith(FORMAT_BLOCK)).toBe(true);
   });
 
   it("HUB-FR-29 · delegate → done → pass-through, agentId, prompt = task, history flow", async () => {
     const f = fakeIo((_j, n) => (n === 1 ? DELEGATE() : res({ status: "done", text: "xong" })));
     expect(await runLoop(f.io, input())).toEqual({ kind: "text", text: "xong", agentId: "a" });
-    expect(f.jobs[1]).toMatchObject({ role: "agent", prompt: "việc", seq: 2, history: [{}] });
+    expect(f.jobs[1]).toMatchObject({ role: "agent", prompt: "việc", history: [{}] });
   });
 
   it("HUB-FR-27 · need_input → ask + agentId; Orchestrator ask → ask không agentId", async () => {
@@ -160,7 +160,7 @@ describe("HUB-FR-21 · runLoop · JSON hỏng, ngoài quyền, ngân sách [H1-R
     );
     expect(await runLoop(f.io, input())).toEqual({ kind: "text", text: "ok" });
     const [a, b] = f.jobs;
-    expect([b?.stepId, b?.seq, b?.reopen]).toEqual([a?.stepId, a?.seq, true]);
+    expect([b?.stepId, b?.reopen]).toEqual([a?.stepId, true]);
     expect(b?.prompt.endsWith(RETRY_REMINDER)).toBe(true);
     const g = fakeIo(() => say('{"decision":"khong"}'));
     expect(await runLoop(g.io, input())).toEqual({ kind: "failed", code: "UPSTREAM_ERROR" });
@@ -171,7 +171,7 @@ describe("HUB-FR-21 · runLoop · JSON hỏng, ngoài quyền, ngân sách [H1-R
     const f = fakeIo(() => DELEGATE("hoadon"));
     expect(await runLoop(f.io, input())).toEqual({ kind: "failed", code: "BUDGET_EXCEEDED" });
     expect(f.jobs.every((j) => j.role === "orchestrator")).toBe(true);
-    expect(f.skips[0]).toEqual({ seq: 2, agentId: "h", agentKey: "hoadon" });
+    expect(f.skips[0]).toEqual({ agentId: "h", agentKey: "hoadon" });
     expect(f.jobs[1]?.prompt).toContain('"reason":"not_allowed"');
   });
 

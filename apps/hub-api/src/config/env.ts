@@ -33,6 +33,9 @@ export const EnvSchema = z.object({
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
   // H2a plan §8: chung với admin-api (base64 32 byte). Vắng → gọi Dify luôn NOT_CONFIGURED; sai → env lỗi (fatal).
   SECRET_MASTER_KEY: z.string().refine(isMasterKeyB64).optional(),
+  // H2a plan §8: `mcp.url` = `<HUB_PUBLIC_INTERNAL_URL>/mcp` trong payload job agent; hạn tối đa một lời gọi tool Dify.
+  HUB_PUBLIC_INTERNAL_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:4000"),
+  HUB_DIFY_TIMEOUT_MAX_S: z.coerce.number().int().min(1).max(3600).default(300),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

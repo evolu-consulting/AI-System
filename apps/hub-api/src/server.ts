@@ -75,6 +75,21 @@ async function checkMasterKey(env: Env, db: Db): Promise<void> {
   else logger.warn("secret_master_key_missing");
 }
 
+/** SSE: Bun mặc định đóng kết nối im > 10 s, trước nhịp `: ping` (SSE_HEARTBEAT_S) → đặt gấp đôi nhịp ping. */
+function serve(
+  env: Env,
+  fetch: (req: Request, server: Bun.Server<undefined>) => Response | Promise<Response>,
+) {
+  const server = Bun.serve({ port: env.HUB_PORT, fetch, idleTimeout: SSE_HEARTBEAT_S * 2 });
+  logger.info("listening", {
+    port: server.port,
+    app_env: env.APP_ENV,
+    instance_id: env.HUB_INSTANCE_ID,
+    version: pkg.version,
+  });
+  return server;
+}
+
 async function main(): Promise<void> {
   const env = readEnv();
   const jwtPublicKey = await importJwtPublicKey(env.JWT_PUBLIC_KEY).catch((err) =>
@@ -97,21 +112,12 @@ async function main(): Promise<void> {
       jobMaxWaitS: env.HUB_JOB_MAX_WAIT_S,
       configPollS: env.HUB_CONFIG_POLL_S,
       secretMasterKey: env.SECRET_MASTER_KEY,
+      publicInternalUrl: env.HUB_PUBLIC_INTERNAL_URL,
+      difyTimeoutMaxS: env.HUB_DIFY_TIMEOUT_MAX_S,
       signal: stop.signal,
     },
   );
-  // SSE: Bun mặc định đóng kết nối im > 10 s, trước nhịp `: ping` (SSE_HEARTBEAT_S) → đặt gấp đôi nhịp ping.
-  const server = Bun.serve({
-    port: env.HUB_PORT,
-    fetch: app.fetch,
-    idleTimeout: SSE_HEARTBEAT_S * 2,
-  });
-  logger.info("listening", {
-    port: server.port,
-    app_env: env.APP_ENV,
-    instance_id: env.HUB_INSTANCE_ID,
-    version: pkg.version,
-  });
+  const server = serve(env, app.fetch);
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info("shutdown", { signal });

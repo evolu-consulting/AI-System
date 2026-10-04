@@ -11,6 +11,7 @@ import {
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { mountH2a } from "./app.h2a";
+import { mountMcp, runnerMcp } from "./app.mcp";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
@@ -111,6 +112,7 @@ function defaultRunDriver(db: Db, redis: Redis, deps: AppDeps, config: ConfigCac
     reader,
     maxWaitS,
     log: logger,
+    mcp: runnerMcp(deps.publicInternalUrl, config),
   });
   return orchestratorDriver({ db, runner, users: config, log: logger });
 }
@@ -215,6 +217,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   mountProtected(app, deps, config);
+  if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger });
 
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
