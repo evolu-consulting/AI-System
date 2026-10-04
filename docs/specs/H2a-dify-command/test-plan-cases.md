@@ -56,7 +56,7 @@ Mỗi ca chạy **hai lần** (`describe.each`): `usableCommands` (Hub) và `com
 | R33 | entitlement đã thu hồi / của tenant khác → không |
 | R34 | F off → không |
 | R35 | F beta: user ∈ `beta-testers` → có; không thuộc → không |
-| R36 | F `core` không entitlement + grant → có; `core` không grant → không |
+| R36 | F `core`: không cần entitlement, không cần grant → có (theo M3-R11 + code Admin — luật gốc của H2a-R02); `core` `off` → không |
 | R37 | command tắt / workflow tắt → không; agent có workflow gắn không ảnh hưởng (BR-19) |
 | R38 | lệnh ở 2 feature (1 thu hồi, 1 hợp lệ) → có; Hub `featureId` = feature hiệu lực key nhỏ nhất (Q4) |
 | R39 | Bộ đầy đủ §7 → tập Hub = tập Admin cho `lan`, `hoa`, `tadmin`, `an` |
