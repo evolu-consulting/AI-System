@@ -118,15 +118,21 @@ export type RunEventStreamOpts = {
   reader: SseReader;
   runId: string;
   after: number;
-  /** Run đã kết thúc trong DB mà stream thiếu sự kiện kết thúc → phát bù ("XADD bên ngoài", §5.3). */
-  ensureTerminal: () => Promise<void>;
+  /**
+   * Run đã kết thúc trong DB mà stream thiếu sự kiện kết thúc → phát bù ("XADD bên ngoài", §5.3). Trả id sự kiện kết
+   * thúc khi đã biết (run không còn `running`), null khi chưa: id ≤ id client đã có → đóng stream ngay.
+   */
+  ensureTerminal: () => Promise<number | null>;
   log: Logger;
+  /** Tắt instance (`server.stop()` chờ response đang mở) → đóng stream, client tự nối lại instance khác. */
+  signal?: AbortSignal;
   pingMs?: number;
 };
 
 /**
  * Stream SSE của một run: entry `seq > after` rồi theo dõi tới sự kiện kết thúc (đóng stream). Mỗi nhịp ping cũng
  * gọi `ensureTerminal` (chủ chết sau COMMIT trước XADD). Client ngắt → huỷ đăng ký, run vẫn chạy (HUB-FR-42).
+ * Client đã có sự kiện kết thúc (`Last-Event-ID` ≥ id của nó) → đóng ngay, không giữ đăng ký + ping.
  */
 export function runEventStream(o: RunEventStreamOpts): ReadableStream<Uint8Array> {
   const enc = new TextEncoder();
@@ -136,36 +142,47 @@ export function runEventStream(o: RunEventStreamOpts): ReadableStream<Uint8Array
       let last = o.after;
       let closed = false;
       let unsub = () => {};
+      const end = () => {
+        if (closed) return;
+        stop();
+        ctl.close();
+      };
+      const check = async () => {
+        const seq = await o.ensureTerminal();
+        if (seq !== null && seq <= last) end();
+      };
       const ping = setInterval(
         () => {
           if (closed) return;
           ctl.enqueue(enc.encode(SSE_PING_FRAME));
-          o.ensureTerminal().catch((err) => o.log.warn("sse-ensure-failed", safeErrorFields(err)));
+          check().catch((err) => o.log.warn("sse-ensure-failed", safeErrorFields(err)));
         },
         o.pingMs ?? SSE_HEARTBEAT_S * 1000,
       );
+      const onAbort = () => end();
       stop = () => {
         closed = true;
         clearInterval(ping);
         unsub();
+        o.signal?.removeEventListener("abort", onAbort);
       };
+      if (o.signal?.aborted) return end();
+      o.signal?.addEventListener("abort", onAbort, { once: true });
       const push = (entries: SseEntry[]) => {
         for (const e of entries) {
           if (closed || e.seq <= last) continue;
           last = e.seq;
           ctl.enqueue(enc.encode(sseFrame(e)));
-          if (isTerminalEvent(e.event)) {
-            stop();
-            ctl.close();
-          }
+          if (isTerminalEvent(e.event)) end();
         }
       };
       return (async () => {
         push(await o.reader.range(o.runId, o.after));
         if (closed) return;
         unsub = o.reader.subscribe(o.runId, last, push);
-        await o.ensureTerminal();
+        await check();
       })().catch((err) => {
+        if (closed) return;
         stop();
         ctl.error(err);
       });

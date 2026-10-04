@@ -318,3 +318,55 @@ describe("B6 · run failed ở chủ: nội dung + huỷ job [H1-R14 · C1 luậ
     }
   });
 });
+
+/** E13 đọc tới khi server đóng stream; quá `ms` → null (stream không đóng). Trả các id sự kiện nhận được. */
+async function readClosed(runId: string, lastId: number, ms = 3_000): Promise<number[] | null> {
+  const ac2 = new AbortController();
+  const res = await fetch(`${hub.base}/runs/${runId}/events`, {
+    headers: { Authorization: `Bearer ${await tok("lan")}`, "Last-Event-ID": String(lastId) },
+    signal: ac2.signal,
+  });
+  expect(res.status).toBe(200);
+  const timer = setTimeout(() => ac2.abort(), ms);
+  try {
+    const text = await res.text();
+    return [...text.matchAll(/^id: (\d+)$/gm)].map((m) => Number(m[1]));
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+describe("B6 · E13 đóng khi client đã có sự kiện kết thúc [HUB-FR-42 · C1-R06]", () => {
+  it("HUB-FR-42 · Last-Event-ID = id kết thúc → đóng ngay, không sự kiện; nhỏ hơn → nhận tới kết thúc rồi đóng", async () => {
+    const { s, ctx } = await started();
+    await ctx.writer.finish({ kind: "finished", content: "" });
+    await s.terminal();
+    s.close();
+    const runId = ctx.writer.run.id;
+    expect(await readClosed(runId, 2)).toEqual([]);
+    expect(await readClosed(runId, 9)).toEqual([]);
+    expect(await readClosed(runId, 1)).toEqual([2]);
+  });
+
+  it("C1-R06 · mất sse:<id> → dựng lại kết thúc ở id ≥ runs.last_seq; Last-Event-ID lớn hơn mọi id → vẫn đóng", async () => {
+    const { s, ctx } = await started();
+    s.close();
+    const runId = ctx.writer.run.id;
+    await step(ctx, 1);
+    await ctx.writer.finish({ kind: "failed", code: "TIMEOUT" });
+    await redis.del(`sse:${runId}`);
+    await sql`update hub.runs set finished_at = now() - interval '5 seconds' where id = ${runId}`;
+    expect(await readClosed(runId, 2)).toEqual([3]);
+    expect(await runRow(sql, runId)).toMatchObject({ last_seq: 3 });
+    const other = await started();
+    other.s.close();
+    const id2 = other.ctx.writer.run.id;
+    await other.ctx.writer.finish({ kind: "failed", code: "TIMEOUT" });
+    await redis.del(`sse:${id2}`);
+    await sql`update hub.runs set finished_at = now() - interval '5 seconds', last_seq = 0
+      where id = ${id2}`;
+    expect(await readClosed(id2, 7)).toEqual([]);
+  });
+});

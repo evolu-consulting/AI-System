@@ -1,6 +1,7 @@
 // HUB-FR-42 · H1-R12 · phần thuần của SSE: trả lời XREAD RESP2/RESP3, entry `e`, khung SSE (plan §5.2–5.3).
 import { describe, expect, it } from "bun:test";
-import { sseFrame, xreadPairs } from "./sse/sse-reader";
+import { logger } from "../../lib/logger";
+import { runEventStream, type SseReader, sseFrame, xreadPairs } from "./sse/sse-reader";
 import { isTerminalEvent, parseEntry } from "./sse/sse-writer";
 
 const ROWS: [string, string[]][] = [["1-0", ["e", '{"event":"delta","data":{"text":"a"}}']]];
@@ -32,5 +33,29 @@ describe("HUB-FR-42 · SSE thuần", () => {
     expect(frame.split(NL).length).toBe(5);
     expect(isTerminalEvent("run.failed")).toBe(true);
     expect(isTerminalEvent("ask")).toBe(false);
+  });
+});
+
+describe("runEventStream đóng stream [HUB-FR-42]", () => {
+  const reader = { range: async () => [], subscribe: () => () => {} } as unknown as SseReader;
+  const base = { reader, runId: "r", log: logger, pingMs: 60_000 };
+
+  it("HUB-FR-42 · ensureTerminal trả id ≤ after → đóng ngay", async () => {
+    const s = runEventStream({ ...base, after: 3, ensureTerminal: async () => 3 });
+    expect((await s.getReader().read()).done).toBe(true);
+  });
+
+  it("HUB-FR-42 · signal abort (tắt instance) → đóng stream đang theo dõi", async () => {
+    const ac = new AbortController();
+    const s = runEventStream({
+      ...base,
+      after: 0,
+      ensureTerminal: async () => null,
+      signal: ac.signal,
+    });
+    const r = s.getReader();
+    const pending = r.read();
+    setTimeout(() => ac.abort(), 20);
+    expect((await pending).done).toBe(true);
   });
 });

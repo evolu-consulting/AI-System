@@ -239,19 +239,20 @@ export function parseEntry(fields: string[]): SseEventBody | null {
 
 /**
  * "XADD bên ngoài" (§5.2): bên không phải chủ (huỷ B9, sweeper B10, dựng lại §5.3) phát sự kiện kết thúc sau COMMIT.
- * `seq` = id cuối + 1; lỗi id → đọc lại: đã có sự kiện kết thúc → thôi; chưa → thử lại (tối đa 3 lần) rồi log.
+ * `seq` = max(id cuối + 1, `minSeq`); lỗi id → đọc lại: đã có sự kiện kết thúc → thôi; chưa → thử lại (tối đa 3 lần)
+ * rồi log. `minSeq` (= `runs.last_seq` khi dựng lại): `sse:` mất/dựng từ đầu vẫn không lùi dưới id client đã thấy.
  * Trả `seq` đã ghi, `null` khi không ghi.
  */
 export async function appendExternal(
   redis: Redis,
   runId: string,
   ev: SseEventBody,
-  log: Logger,
+  o: { log: Logger; minSeq?: number },
 ): Promise<number | null> {
   for (let attempt = 1; attempt <= EXTERNAL_ATTEMPTS; attempt++) {
     const last = await lastSseEntry(redis, runId);
     if (last.event && isTerminalEvent(last.event)) return null;
-    const seq = last.seq + 1;
+    const seq = Math.max(last.seq + 1, o.minSeq ?? 0);
     try {
       await redis.xadd(sseKey(runId), `${seq}-0`, SSE_FIELD, JSON.stringify(ev));
       if (isTerminalEvent(ev.event)) {
@@ -263,7 +264,7 @@ export async function appendExternal(
       if (!isIdTooSmall(err)) throw err;
     }
   }
-  log.error("sse-external-xadd-failed", { run_id: runId });
+  o.log.error("sse-external-xadd-failed", { run_id: runId });
   return null;
 }
 

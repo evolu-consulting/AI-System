@@ -17,6 +17,7 @@ import type { Logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
 import type { ConfigSnapshot } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
+import { setFinalSeq } from "./close/cancel.repo";
 import * as repo from "./runs.repo";
 import { eventsExpired } from "./runs.rules";
 import { runEventStream, SseReader } from "./sse/sse-reader";
@@ -218,6 +219,8 @@ export class RunService {
   async events(u: AuthUser, id: string, after: number, now = new Date()) {
     const r = await this.#findOr404(u, id);
     if (eventsExpired(r, now, RUN_EVENTS_RETENTION_S)) throw appError("EVENTS_EXPIRED");
+    // Client đã có sự kiện kết thúc (`last_seq` = id của nó) → stream rỗng đóng ngay (HUB-FR-42).
+    if (r.status !== "running" && r.lastSeq > 0 && after >= r.lastSeq) return emptyStream();
     return this.#stream(u, id, after);
   }
 
@@ -234,23 +237,45 @@ export class RunService {
       after,
       ensureTerminal: () => this.#ensureTerminal(u, runId),
       log: this.d.log,
+      signal: this.d.signal,
     });
   }
 
-  /** §5.3 · DB đã kết thúc mà `sse:<id>` thiếu sự kiện kết thúc → phát bù bằng "XADD bên ngoài". Không ném. */
-  async #ensureTerminal(u: AuthUser, runId: string): Promise<void> {
+  /**
+   * §5.3 · id sự kiện kết thúc khi run không còn `running` (null: còn chạy / chưa biết). DB đã kết thúc (> 2 s) mà
+   * `sse:<id>` thiếu sự kiện kết thúc → "XADD bên ngoài" với id ≥ `runs.last_seq` rồi ghi `last_seq`. Không ném.
+   */
+  async #ensureTerminal(u: AuthUser, runId: string): Promise<number | null> {
     const { redis, log } = this.d;
     try {
-      const ev = await this.#scoped(u, async (tx, o) => {
+      const found = await this.#scoped(u, async (tx, o) => {
         const r = await repo.findRun(tx, o, runId);
-        if (!r?.finishedAt || Date.now() - r.finishedAt.getTime() < REBUILD_GRACE_MS) return null;
-        const last = await lastSseEntry(redis, runId);
-        if (last.event && isTerminalEvent(last.event)) return null;
-        return terminalFromDb(tx, o, r);
+        if (!r || r.status === "running") return null;
+        const seq = await terminalSeqOf(redis, runId);
+        if (seq !== null) return { seq };
+        const fresh = !r.finishedAt || Date.now() - r.finishedAt.getTime() < REBUILD_GRACE_MS;
+        if (fresh) return { seq: r.lastSeq > 0 ? r.lastSeq : null };
+        return { seq: null, rebuild: await terminalFromDb(tx, o, r), minSeq: r.lastSeq };
       });
-      if (ev) await appendExternal(redis, runId, ev, log);
+      if (!found?.rebuild) return found?.seq ?? null;
+      const seq = await appendExternal(redis, runId, found.rebuild, { log, minSeq: found.minSeq });
+      if (seq === null) return terminalSeqOf(redis, runId);
+      await withHubScope(this.d.db, { kind: "system" }, (tx) => setFinalSeq(tx, runId, seq));
+      return seq;
     } catch (err) {
       log.warn("sse-rebuild-failed", { run_id: runId, ...safeErrorFields(err) });
+      return null;
     }
   }
+}
+
+/** Id sự kiện kết thúc đang ở cuối `sse:<id>` (null khi chưa có). */
+async function terminalSeqOf(redis: Redis, runId: string): Promise<number | null> {
+  const last = await lastSseEntry(redis, runId);
+  return last.event && isTerminalEvent(last.event) ? last.seq : null;
+}
+
+/** Stream SSE rỗng, đóng ngay. */
+function emptyStream(): ReadableStream<Uint8Array> {
+  return new ReadableStream<Uint8Array>({ start: (ctl) => ctl.close() });
 }

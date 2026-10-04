@@ -116,7 +116,7 @@ export async function announceClosed(
     data: { run_id: t.runId, message_id: t.answerMessageId, ...error },
   };
   try {
-    const seq = await appendExternal(d.redis, t.runId, ev, d.log);
+    const seq = await appendExternal(d.redis, t.runId, ev, { log: d.log });
     if (seq === null) return;
     await withHubScope(d.db, { kind: "system" }, (tx) => setFinalSeq(tx, t.runId, seq));
   } catch (err) {
