@@ -125,11 +125,14 @@ describe("A27–A29 · payload agent, lệnh `/`, job + NOTIFY [HUB-BR-03 · H1-
     }
   });
 
-  it("A28 · tin bắt đầu `/` vẫn đi qua Orchestrator (có job Orchestrator, prompt chứa tin) [H1-R05]", async () => {
-    const { s, runId } = await start("/tong-hop hoá đơn tháng 9");
+  // qc 2026-10-05 (tranh chấp B-B3-9): từ H2a, `/xxx` là lệnh (H2a-R01 thay H1-R05 phần `/`);
+  // chữ bắt đầu `/` tới Orchestrator phải thoát `//` → Orchestrator nhận `/…` nguyên văn.
+  it("A28 · tin `//…` đi qua Orchestrator, prompt chứa `/…` (bỏ một `/`) [H1-R05] [H2a-R01]", async () => {
+    const { s, runId } = await start("//tong-hop hoá đơn tháng 9");
     const job = await rt.next(runId);
     expect(job.payload.agent.role).toBe("orchestrator");
     expect(job.payload.prompt).toContain("/tong-hop hoá đơn tháng 9");
+    expect(job.payload.prompt).not.toContain("//tong-hop");
     await rt.decide(job, { decision: "answer", text: "Đã tổng hợp." });
     expect((await end(s))?.event).toBe("run.finished");
   });
