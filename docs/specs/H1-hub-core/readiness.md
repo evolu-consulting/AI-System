@@ -62,3 +62,16 @@ Phạm vi: spec, plan, plan-db, plan-runtime, test-plan, tasks; ADR-0007/0008/00
 | 42 | Mới | Thấp | spec-decisions | Ghi thứ tự khoá cũ | Thêm "(đã thay bởi plan §3.5, readiness #1)" |
 | 43 | Mới | Thấp | tasks Q1; plan-runtime 30 694/30 720 B | Q1 `≤ 30 KB` sai; plan-runtime sát trần | Q1 `≤ 25 600 B`; tách plan-runtime §12 thành một dòng trỏ plan-db §8 |
 | 44 | Mới | Thấp | tasks B1 | "(nếu cần preload Hub)" không có tiêu chí | B1 sửa `bunfig.int.toml` `pathIgnorePatterns` cho `tests/acceptance/H1/stack/**`; không sửa `bunfig.contract.toml` |
+
+## Lần 3 · 2026-10-04 · spec-readiness (Opus) · **NOT READY** (phần đổi `b79174a..HEAD`)
+Đóng: #21, #34–#44. Không có câu hỏi mới.
+
+| # | Mức | Vị trí | Lỗ hổng | Mặc định (áp dụng) |
+|---|---|---|---|---|
+| 45 | Cao | plan §3 `runs`, §5.7, §5.8; C1 `RunError` | Nguồn `RunError` ở E11/E14/E15 chưa ghi; UPDATE kết thúc chỉ đặt `error_code` ⇒ đọc ra `null`, trái contract (message ≥ 1, hint string); locale khi sweeper/instance khác kết thúc | Mọi UPDATE kết thúc có `error_code` ghi luôn `error_message, error_hint = runErrorText(code, locale chụp lúc tạo run)`; CHECK ba cột cùng null/không null; E11/E14/E15 đọc cột, không tính lại |
+| 46 | Trung | test-plan §7.1 ↔ I1/I2 | `depcruise --all` trong chuỗi `&&` nhưng ghi "không chặn" | `depcruise --all` chạy riêng, chỉ báo cáo; chuỗi chặn dùng depcruise theo đường dẫn Hub |
+| 47 | Thấp | plan-errors ↔ test-plan-cases | Không có ca unit cho `runErrorText` | R16: 7 mã × {vi,en} khớp nguyên văn, `CANCELLED` hint `""`, message ≤ 500; QW-R ghi R16 |
+| 48 | Thấp | A56b | "vi ≠ en" đỏ sai với hint `""` | Chỉ áp cho `message`, và `hint` khi khác `""` |
+| 49 | Thấp | test-plan 25 542/25 600 B; WORKFLOW ghi 30 KB | Sát trần; hai trần khác nhau | Ca mới vào test-plan-cases; giữ 25 600 B là trần riêng H1 (ghi ở Q1) |
+
+Ghi chú (không chặn): câu vi trong `plan-errors.md` theo mock C1 khác chữ `ui-chat-extension.md` §8 — để phiên Chat/CR khi combine.
