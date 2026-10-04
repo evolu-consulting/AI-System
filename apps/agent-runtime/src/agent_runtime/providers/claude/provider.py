@@ -86,7 +86,7 @@ class ClaudeProvider:
         try:
             # `ClaudeSDKClient` tra theo tên module lúc gọi ⇒ test monkeypatch được (SDK giả).
             async with ClaudeSDKClient(options=build_options(job)) as client:
-                await client.query(job.payload.prompt)
+                await client.query(job.retry_prompt or job.payload.prompt)
                 async for msg in client.receive_response():
                     await turn.handle(msg)
         except ClaudeSDKError as err:

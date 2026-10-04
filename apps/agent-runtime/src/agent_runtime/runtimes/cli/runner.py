@@ -14,28 +14,38 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+import time
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal, Protocol
+from typing import Literal, Protocol
 
 from pydantic import ValidationError
 
-from agent_runtime.contracts.hub import AgentResult, JobPayload1
+from agent_runtime.contracts.hub import JobPayload1
 from agent_runtime.db import jobs_sql
 from agent_runtime.db.jobs_sql import ClaimedJob, Finish
 from agent_runtime.db.pool import Pool
 from agent_runtime.events.job_events import Failure, RunEvents, Tokens
 from agent_runtime.log import bind_job, get_logger
-from agent_runtime.providers.base import Fatal, Final, Progress, ProviderEvent, UsageEv
+from agent_runtime.providers.base import (
+    Fatal,
+    Final,
+    Progress,
+    ProviderEvent,
+    Session,
+    UsageEv,
+)
 from agent_runtime.runtimes.cli.joblog import append_envelope
+from agent_runtime.runtimes.cli.prompt import retry_prompt
 from agent_runtime.runtimes.cli.protocol import (
     MAX_LINE_BYTES,
     ChildRequest,
     child_argv,
     parse_event,
 )
+from agent_runtime.runtimes.cli.result import build_output, validation_hint
 from agent_runtime.sandbox.env import TMP_SUBDIR, forbidden_roots, job_host_env
 from agent_runtime.sandbox.process import group_pids, kill_group
 
@@ -77,12 +87,21 @@ class _Seen:
     final: Final | None = None
     fatal: Fatal | None = None
     usage: UsageEv | None = None
+    session_id: str | None = None
+    carried: Tokens = field(default_factory=Tokens)  # usage của lần chạy trước (thử lại)
 
     def tokens(self) -> Tokens:
         u = self.usage
         if u is None:
-            return Tokens()
-        return Tokens(u.input + u.cache_read + u.cache_write, u.output)
+            return self.carried
+        return Tokens(
+            self.carried.input_tokens + u.input + u.cache_read + u.cache_write,
+            self.carried.output_tokens + u.output,
+        )
+
+    def next_attempt(self) -> None:
+        """Lần thử lại: giữ usage đã tiêu + session, bỏ final/fatal cũ."""
+        self.carried, self.final, self.fatal, self.usage = self.tokens(), None, None, None
 
 
 def stderr_log_path(log_dir: Path, job_id: str) -> Path:
@@ -96,20 +115,6 @@ def events_log_path(log_dir: Path, job_id: str) -> Path:
 def fatal_failure(f: Fatal) -> Failure:
     code = f.code if f.code in JOB_ERROR_CODES else "INTERNAL_ERROR"
     return Failure("failed", code, f.reason or "crash", f.msg or "job host fatal")
-
-
-def build_output(payload: JobPayload1, final: Final) -> dict[str, Any] | None:
-    """`job.result.output` (plan.md §2.3); sai hình → None (PY-10: retry 1 lần)."""
-    if payload.output == "text":
-        text = final.text if final.text is not None else final.raw_json
-        if text is None or len(text) > 64_000:
-            return None
-        return {"kind": "text", "text": text}
-    try:
-        result = AgentResult.model_validate(final.structured)
-    except ValidationError:
-        return None
-    return {"kind": "agent_result", "result": result.model_dump(mode="json")}
 
 
 class CliJobHost:
@@ -157,8 +162,31 @@ class _Run:
         self.seen = _Seen()
         self.work = self.cfg.work_root / job.id
         self.proc: asyncio.subprocess.Process | None = None
+        self.retry: str | None = None  # prompt lần thử lại (agent, JSON hỏng)
+        self.resume_id: str | None = None
+        self.deadline = time.monotonic() + payload.timeout_s
 
     async def execute(self) -> None:
+        outcome = await self._attempt()
+        if outcome == "exited" and (hint := self._invalid_hint()) is not None:
+            sid = self.seen.session_id if self.payload.use_session else None
+            self.retry = retry_prompt(self.payload.prompt, hint, resumed=sid is not None)
+            self.resume_id = sid
+            self.seen.next_attempt()
+            get_logger().info("job.output_retry", resumed=sid is not None)
+            outcome = await self._attempt()
+        await self._apply(outcome)
+
+    def _invalid_hint(self) -> str | None:
+        """Agent trả JSON sai hình (chưa thử lại) → lý do ngắn; ngược lại None."""
+        f = self.seen.final
+        if self.retry is not None or self.seen.fatal is not None or f is None or f.is_error:
+            return None
+        if self.payload.output != "agent_result" or build_output(self.payload, f) is not None:
+            return None
+        return validation_hint(f)
+
+    async def _attempt(self) -> Outcome:
         outcome: Outcome = "lost"
         try:
             self.proc = await self._spawn()
@@ -166,7 +194,7 @@ class _Run:
                 outcome = await self._supervise()
         finally:
             await self._kill_leftovers()
-        await self._apply(outcome)
+        return outcome
 
     def _prepare_work(self) -> None:
         self.work.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -213,6 +241,8 @@ class _Run:
             payload=self.payload,
             work_dir=str(self.work),
             forbidden_roots=[str(r) for r in roots],
+            resume_session_id=self.resume_id,
+            retry_prompt=self.retry,
         )
         return req.model_dump_json().encode() + b"\n"
 
@@ -221,7 +251,9 @@ class _Run:
         stop = asyncio.create_task(self.control.stopped.wait())
         try:
             done, _ = await asyncio.wait(
-                {reader, stop}, timeout=self.payload.timeout_s, return_when=asyncio.FIRST_COMPLETED
+                {reader, stop},
+                timeout=max(0.0, self.deadline - time.monotonic()),
+                return_when=asyncio.FIRST_COMPLETED,
             )
         finally:
             stop.cancel()
@@ -261,6 +293,8 @@ class _Run:
             await self.host.events.progress(self.job, ev.label)
         elif isinstance(ev, UsageEv):
             self.seen.usage = ev
+        elif isinstance(ev, Session):
+            self.seen.session_id = ev.session_id
         elif isinstance(ev, Final):
             self.seen.final = ev
         elif isinstance(ev, Fatal):

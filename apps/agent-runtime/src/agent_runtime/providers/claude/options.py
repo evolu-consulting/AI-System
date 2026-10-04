@@ -57,8 +57,8 @@ FORMAT_BLOCK = (
 
 
 def job_tools(job: ProviderJob) -> list[str]:
-    """Agent: `payload.allowed_tools`; Orchestrator (`output="text"`): không tool."""
-    if job.payload.output == "text":
+    """Agent: `payload.allowed_tools`; Orchestrator / lần thử lại (PY-10): không tool."""
+    if job.payload.output == "text" or job.retry_prompt is not None:
         return []
     return list(dict.fromkeys(job.payload.allowed_tools))
 

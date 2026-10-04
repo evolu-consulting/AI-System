@@ -87,6 +87,8 @@ class ProviderJob(BaseModel):
     # (`Settings.cli_path` = `AGENT_RT_CLI_PATH`, dự phòng §13; None = CLI đóng gói trong SDK).
     resume_session_id: str | None = None
     cli_path: str | None = None
+    # PY-10: lần thử lại khi JSON agent hỏng — thay `payload.prompt`, `tools=[]` (WRK-BR-04).
+    retry_prompt: str | None = None
 
 
 class Provider(Protocol):

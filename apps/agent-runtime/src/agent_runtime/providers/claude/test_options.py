@@ -81,3 +81,11 @@ async def test_wrk_br_07_hook_is_path_guard(tmp_path: Path) -> None:
     assert tool["hookSpecificOutput"]["permissionDecisionReason"] == "tool_not_allowed"  # pyright: ignore[reportTypedDictNotRequiredAccess, reportGeneralTypeIssues]
     glob = await hook(_input("Glob", {"pattern": "*.md"}), "t1", ctx)
     assert glob["hookSpecificOutput"]["permissionDecisionReason"] == "tool_not_allowed"  # pyright: ignore[reportTypedDictNotRequiredAccess, reportGeneralTypeIssues]
+
+
+def test_wrk_br_04_retry_has_no_tools(tmp_path: Path) -> None:
+    job = job_of(tmp_path).model_copy(update={"retry_prompt": "chỉ JSON"})
+    opts = build_options(job)
+    assert opts.tools == [] and opts.allowed_tools == []
+    assert set(opts.disallowed_tools) == set(KNOWN_TOOLS)
+    assert opts.output_format == {"type": "json_schema", "schema": AGENT_RESULT_SCHEMA}
