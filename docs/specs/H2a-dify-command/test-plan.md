@@ -240,3 +240,25 @@ Lệch plan / cần backend-lead:
 - **MK không có kịch bản "thân lỗi chứa key"** (A26, A80) và RMB/chunk 95 ký tự (A15 vế RMB, A17 vế 95 ký tự): proxy trả 400 chứa key cho `LEAK_KEY_ECHO…`; vế RMB và chunk dài để cho R47 / R-unit.
 - A25 "secret không có" không dựng được: `admin.workflows.secret_id` NOT NULL + FK ⇒ `workflow_secret` luôn 1 dòng; thay bằng bản mã hỏng + `key_version` lệch.
 - A14 "`output.field` null → khoá `text`": `CommandOutputSchema.field` bắt buộc ⇒ chỉ phủ `field="text"`.
+
+### QW-A2 · `tests/acceptance/H2a/{async,dify-agent,mcp,confirm,test-run,seed}.int.test.ts` (2026-10-05, trên `0e702ef`)
+`bun --env-file=.env.local --env-file=.env.test-h2a_qwa2.local --config=bunfig.int.toml test --timeout 30000 <6 file>` (DB riêng `ai_system_h2a_qwa2_test`, 75 s): **43 ID / 52 ca** (A32 ×2, A38 ×3, A62 ×4, A93 ×4 biến thể) · **48 đỏ đúng lý do** · **4 xanh trước code** (có lý do). 0 đỏ do fixture/import/SQL (không `TypeError`/`PostgresError`): catalog §7, agent H2a, job SQL có token (payload qua `JobPayloadSchema`), seed tạm đều dựng được. Tên ca bắt đầu bằng mã (`trace --check` OK — có HUB-FR-23, WRK-FR-06, WRK-FR-13). `tsc -p tsconfig.tests.json`, biome, `check:size` sạch. Helper mới `_h2a2.ts` (`addCommand`, `jobInRun` — job có token chèn vào run Hub tạo, `claimWithToken`, `endSqlRun`, `rpcRaw`/`toolCall`, `expectConfirmation`, câu `plan-errors` §4–5); `_runtime2.ts` chỉ thêm `export` cho `sqlJobPayload`.
+
+| File | ID | Đỏ đúng lý do / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `async` | A30–A39 | 9/13 | Hub chưa tạo job `workflow.async` (`claimAsync` → `expect(row).toBeDefined()` sau 5 s; `/dich-async` vẫn đi luồng H1); A33 `run.failed` = `ALL_PROVIDERS_EXHAUSTED` thay vì `NOT_CONFIGURED`; A37 job async mồ côi bị câu H1 đánh `failed orphaned` thay vì requeue | A38 ×3 (side_effect ∧ dispatched / attempts=3 / cancel_requested → `failed orphaned` = hành vi H1 giữ nguyên), A39 (hồi quy H1 `agent.cli`) |
+| `dify-agent` | A40–A46 | 7/7 | Agent `dify-*` chưa có runner: delegate bị bỏ qua → Orchestrator echo (`run.finished` ≠ text Dify, MK 0 lời gọi, không `cli_sessions`/usage `dify`); `agent.cli.mcp` = `null` | — |
+| `mcp` | A50–A58 | 9/9 | `/mcp` 404 (không 401/405/JSON-RPC) | — |
+| `confirm` | A60–A67 | 11/11 | `/mcp` 404 ⇒ không `CONFIRMATION_REQUIRED`; E12 chưa cập nhật `tool_confirmations` | — |
+| `test-run` | A70–A75 | 6/6 | `POST /internal/test-run` 404 | — |
+| `seed` | A93–A95 | 6/6 | D3 chưa làm: seed chấp nhận agent `dify-*` sai loại app/không map input/thừa `runtime_options` (không ném, CLI exit 0); `vendor: dify` + `agent_workflows`/`workflow_flags` bị schema từ chối (`SeedValidationError`) | — |
+
+Lệch plan / cần backend-lead:
+- **`agents_timeout_s_check` (10–3600)** chặn `agents.timeout_s=1` (A43, A58 theo test-plan): dùng `timeout_s=10` + `mk-slow-3000` (5 chunk × 3 s = 15 s) — A43/A58 mất ~10–13 s mỗi ca.
+- **A32 vế `NOT_CONFIGURED`/`credential` và `UPSTREAM_ERROR`/`upstream`** phụ thuộc migration `0004` (CHECK `jobs_error_code_check`/`jobs_error_reason_check`, như A89b QW-A1): ScriptRuntime ghi `hub.jobs` như Runtime ⇒ sau khi Hub có code mà chưa có `0004` hai ca này đỏ ở 23514.
+- **`difyAgentInput` với `select`**: catalog §7 gắn `dify-dich` ↔ `dich` (input bắt buộc `source_text` text + `target_lang` select). Nếu `select` tính là "input chuỗi bắt buộc" ⇒ hai input ⇒ `null` ⇒ seed từ chối / runtime `NOT_CONFIGURED` (A40, A44 không xanh được). Cần chốt: chỉ kiểu `text`/`paragraph` mới tính (đề xuất). A40 chỉ kiểm `inputs.source_text`.
+- **A94 "bỏ dòng"** hiểu là: agent `dify-*` có `workflow_key` không tồn tại **không** được ghi; dòng `agent_workflows`/`workflow_flags` trỏ workflow lạ bị bỏ; mỗi dòng một cảnh báo chứa key.
+- **A56 "usage 1 dòng"**: kiểm trên lời gọi Dify thành công (1 dòng/lời gọi, `feature_id NULL`, `agent_id` = agent của job); `validateToolArgs` với khoá thừa không có trong plan nên không kiểm.
+- **A61 trace "confirmed, consumed"**: kiểm chuỗi có trong `run_steps.detail` của R2 (plan-db §3.1 ghi `confirmation` ở bước đầu; `consumed` ở bước `tool`) — plan chưa chốt tên khoá.
+- **Job MCP trong run Hub tạo** (A61–A65): job `agent.cli` có token chèn bằng SQL (step `seq` ≥ 100 để không đụng bộ đếm H1); khi P11 xong `insertStep` lấy `max(seq)+1` vẫn đúng.
+- **A67** thêm/xoá cột `admin.workflows.side_effect` bằng owner trong DB test (dọn trong `finally`); Hub phải phát hiện cột khi nạp lại catalog (`config_changed`).

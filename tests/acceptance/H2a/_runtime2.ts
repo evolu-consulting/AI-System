@@ -100,7 +100,7 @@ export type SqlJobOpts = {
 };
 
 /** Payload hợp `JobPayloadSchema` cho job dựng bằng SQL. */
-function sqlJobPayload(
+export function sqlJobPayload(
   o: SqlJobOpts,
   common: Record<string, string>,
   difyUser: string,
