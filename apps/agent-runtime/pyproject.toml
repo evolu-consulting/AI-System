@@ -17,6 +17,8 @@ dev = [
   "pytest>=8.4",
   "pytest-asyncio>=1.0",
   "import-linter>=2.3",
+  "asyncpg>=0.31",
+  "redis>=8.1",
 ]
 
 [build-system]
