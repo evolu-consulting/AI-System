@@ -1,0 +1,15 @@
+# HUB-FR-62 · Q8 · entitlement (tenant được dùng agent) + grant (user/group trong tenant). Tenant/user/group không tồn tại
+# → bỏ mục đó + log cảnh báo, phần còn lại vẫn ghi. Group `beta-testers` do trigger Admin 0006 tạo cùng mọi tenant.
+entitlements:
+  - agent: assistant
+    tenant_key: acme
+  - agent: assistant
+    tenant_key: beta
+
+grants:
+  - agent: assistant
+    tenant_key: acme
+    subject: group:beta-testers
+  - agent: assistant
+    tenant_key: beta
+    subject: group:beta-testers

@@ -1,0 +1,25 @@
+# HUB-FR-60, HUB-FR-62 · HUB-BR-08 · agent + cài đặt Orchestrator (plan H1 §3.1, §3.6). `profile: $HUB_SEED_PROFILE` = profile
+# chọn lúc seed (env HUB_SEED_PROFILE; trống → fake-1 khi development/test, khác → claude-sub-1).
+agents:
+  - key: orchestrator
+    name: { vi: Điều phối, en: Orchestrator }
+    description: Điều phối yêu cầu của người dùng tới agent phù hợp, hỏi lại khi mơ hồ.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: >-
+      Bạn là bộ điều phối của hệ thống AI. Đọc yêu cầu của người dùng, chọn agent phù hợp nhất trong danh sách
+      <agents> để xử lý, tự trả lời khi không agent nào phù hợp, và hỏi lại khi yêu cầu chưa rõ.
+  - key: assistant
+    name: { vi: Trợ lý, en: Assistant }
+    description: Trợ lý chung — trả lời câu hỏi, soạn thảo và tóm tắt văn bản theo yêu cầu.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: >-
+      Bạn là trợ lý hữu ích. Trả lời ngắn gọn, chính xác, bằng ngôn ngữ của người dùng.
+
+orchestrator:
+  agent: orchestrator
+  max_steps: 5
+  token_budget: 200000
+  history_n: 10
+  on_no_match: answer
