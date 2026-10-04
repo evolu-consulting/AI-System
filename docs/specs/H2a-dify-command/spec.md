@@ -124,7 +124,7 @@ Nguyên văn AC ở BA (`ba-agent-hub` §11, `ba-worker` §10).
 
 | AC | Phạm vi H2a | Test |
 |---|---|---|
-| AC-H01 | Đủ, `context.selection` gửi qua `chat-ext`; mock Dify ghi nhận `inputs.source_text="xin chào"`, `target_lang="en"`, `user=<tenant_key>:<user_id>` | acceptance |
+| AC-H01 | Đủ, `context.selection` gửi qua `chat` (Q3); mock Dify ghi nhận `inputs.source_text="xin chào"`, `target_lang="en"`, `user=<tenant_key>:<user_id>` | acceptance |
 | AC-H02 | Đủ: `CMD_NOT_FOUND` + gợi ý `dich`; không run, không job Orchestrator | acceptance |
 | AC-H05 | Đủ: tắt command / feature → ≤ 5 s biến khỏi `GET /commands`; run dở vẫn `run.finished` (mock chậm) | acceptance |
 | AC-H11 | Đủ: không entitlement → không trong menu; gõ vẫn `CMD_NOT_FOUND`, mock Dify 0 lời gọi | acceptance |

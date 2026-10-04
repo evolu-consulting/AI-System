@@ -45,5 +45,5 @@ HTTP khác chưa liệt kê: 4xx → `UPSTREAM_ERROR`. `outputs[field]` không p
 |---|---|---|
 | `structuredContent.question` | Thao tác này sẽ thay đổi dữ liệu ở hệ thống bên ngoài. Bạn có muốn tiếp tục? | This action will change data in an external system. Do you want to continue? |
 | `structuredContent.choices` | `["Đồng ý", "Huỷ"]` | `["Agree", "Cancel"]` |
-| `content[0].text` | CONFIRMATION_REQUIRED: Công cụ này cần người dùng xác nhận trước. Dừng lại và trả need_input với đúng question và choices trong structuredContent; không gọi lại công cụ trong lượt này. | CONFIRMATION_REQUIRED: This tool needs user confirmation first. Stop and return need_input with exactly the question and choices in structuredContent; do not call the tool again this turn. |
+| `content[1].text` (câu chỉ dẫn; `content[0].text` = JSON `ToolConfirmationRequired`, plan §2.3) | CONFIRMATION_REQUIRED: Công cụ này cần người dùng xác nhận trước. Dừng lại và trả need_input với đúng question và choices trong structuredContent; không gọi lại công cụ trong lượt này. | CONFIRMATION_REQUIRED: This tool needs user confirmation first. Stop and return need_input with exactly the question and choices in structuredContent; do not call the tool again this turn. |
 `isAgreeReply` nhận "Đồng ý" và "Agree" ở cả hai locale.

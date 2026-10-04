@@ -96,12 +96,12 @@ Chủ hàm = role chạy migration (owner DB, chủ `admin.*` và `hub.usage_log
 ```sql
 UPDATE hub.jobs SET status = 'queued', worker_id = NULL, pgid = NULL, heartbeat_at = NULL, started_at = NULL,
   token_hash = NULL, dispatched_at = NULL, queued_at = now()
-WHERE status = 'running' AND type = 'workflow.async' AND heartbeat_at < now() - interval '60 seconds'
+WHERE status = 'running' AND type = 'workflow.async' AND heartbeat_at < now() - make_interval(secs => $1)
   AND attempts < 3 AND cancel_requested_at IS NULL
   AND NOT (coalesce((payload->>'side_effect')::boolean, false) AND dispatched_at IS NOT NULL)
 RETURNING id, run_id, worker_id, pgid;
 ```
-Mỗi dòng: `pg_notify('job_enqueued', {v:1, job_id, provider_key:'dify'})`; Runtime giết `pgid` nếu `worker_id` là mình. Không XADD (job chưa kết thúc). Bản **khởi động lại** của Runtime: cùng câu, thay điều kiện heartbeat bằng `worker_id = $1`.
+Mỗi dòng: `pg_notify('job_enqueued', {v:1, job_id, provider_key:'dify'})`; Runtime giết `pgid` nếu `worker_id` là mình. Không XADD (job chưa kết thúc). `$1` = cùng ngưỡng orphan của câu `failed` H1 (không hằng 60 s). Bản **khởi động lại** của Runtime: cùng câu, thay điều kiện heartbeat bằng `worker_id = $1`.
 **`insertStep` (P11):**
 ```sql
 INSERT INTO hub.run_steps (id, tenant_id, user_id, run_id, seq, type, agent_id, provider_key, job_id, workflow_id,
@@ -129,7 +129,7 @@ WHERE flow_id = $1 AND status IN ('pending', 'confirmed');
 
 ### 3.2 `tools/call` tool `side_effect` (transaction `user` theo tenant/user của job)
 1. `UPDATE hub.tool_confirmations SET status='consumed', consumed_at=now() WHERE flow_id=$1 AND agent_id=$2 AND workflow_id=$3 AND status='confirmed' AND decided_run_id=$4 RETURNING id` — 1 dòng → COMMIT → gọi Dify (trace `consumed`).
-2. 0 dòng → `INSERT INTO hub.tool_confirmations (tenant_id, user_id, flow_id, run_id, agent_id, workflow_id, status) VALUES ($5,$6,$1,$4,$2,$3,'pending') ON CONFLICT (flow_id, agent_id, workflow_id) WHERE status IN ('pending','confirmed') DO UPDATE SET run_id = EXCLUDED.run_id, created_at = now() WHERE hub.tool_confirmations.status = 'pending'` → `insertStep(type='tool', status='failed', detail:{code:'CONFIRMATION_REQUIRED'})` → COMMIT → result `isError:true`, `structuredContent = ToolConfirmationRequired` (câu: `plan-errors`), **không** gọi Dify.
+2. 0 dòng → `INSERT INTO hub.tool_confirmations (tenant_id, user_id, flow_id, run_id, agent_id, workflow_id, status) VALUES ($5,$6,$1,$4,$2,$3,'pending') ON CONFLICT (flow_id, agent_id, workflow_id) WHERE status IN ('pending','confirmed') DO UPDATE SET run_id = EXCLUDED.run_id, created_at = now() WHERE hub.tool_confirmations.status = 'pending'` → `insertStep(type='tool', status='failed', detail:{code:'CONFIRMATION_REQUIRED'})` → COMMIT → result `isError:true`, `content[0]` JSON + `content[1]` câu chỉ dẫn + `structuredContent` (plan §2.3; câu: `plan-errors` §5), **không** gọi Dify.
 Thứ tự khoá: `run_steps → tool_confirmations` (H1 §3.5 + `plan.md` §3). `side_effect(workflow)` = cột `admin.workflows.side_effect` nếu cache phát hiện có cột, không thì `workflow_flags.side_effect` (R23).
 
 ## 4. Seed (D3, H1 §3.6)
