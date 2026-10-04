@@ -147,7 +147,7 @@ Phân biệt bằng `JobPayload.output` (`agent_result` \| `text`) + `use_sessio
 | Session | §6 | không `cli_sessions`; `CLAUDE_CODE_SKIP_PROMPT_HISTORY=1` |
 | Ép định dạng | `output_format` = JSON Schema `AgentResult` (C2) + khối "chỉ trả MỘT đối tượng JSON" trong system prompt | không `output_format`; prompt (có schema `OrchestratorDecision`) do Hub dựng |
 | Trích | `structured_output`, không có thì JSON cuối trong `result` (bóc ```json) → pydantic | `result` nguyên văn |
-| Hỏng | thử lại **1 lần trong job**: `resume` session vừa tạo + nhắc định dạng kèm lỗi pydantic ≤ 300 ký tự, lần thử lại `tools=[]` + `disallowed_tools` như Orchestrator (không chạy lại tool — WRK-BR-04); vẫn hỏng → `job.failed{UPSTREAM_ERROR, reason:invalid_output}` (§12 R5) | Hub `parseDecision` + retry (H1-R06, `plan.md` §6.1) |
+| Hỏng | thử lại **1 lần trong job**: `resume` session vừa tạo + nhắc định dạng kèm lỗi pydantic ≤ 300 ký tự, lần thử lại `tools=[]` + `disallowed_tools` như Orchestrator (không chạy lại tool — WRK-BR-04); vẫn hỏng → `job.failed{UPSTREAM_ERROR, reason:invalid_output}` (`plan-db` §8 R5) | Hub `parseDecision` + retry (H1-R06, `plan.md` §6.1) |
 | XADD | `job.result{output:{kind:"agent_result", result}, usage, session_resumed}` | `job.result{output:{kind:"text", text}, usage, session_resumed:false}` |
 
 Runtime không phát `delta`; Hub cắt (H1-R08, R09). [CX] `output_format` với `discriminatedUnion` → dự phòng schema phẳng `{status, text?, missing?, question?, choices?}` + pydantic chặt.
@@ -189,7 +189,7 @@ Danh sách trắng duy nhất: `HOME` = `Settings.home` của cha (CLI cần đ�
 |---|---|
 | Có `cli_sessions` khoá `(conversation_id, agent_id, provider_key)` cùng `tenant_id` của payload | `resume=session_id` (SELECT luôn lọc `tenant_id` của payload — BR-06) |
 | `cwd` mỗi job khác nhau | CLI ≥ v2.1.223 tìm session ngoài project hiện tại [V S4]; thêm `CLAUDE_CODE_PROJECT_DIR_NAME=<tenant>__<conversation>__<agent>` [V S4, SDK ≥ 0.2.140; CX: cần `CLAUDE_CONFIG_DIR` kèm?] |
-| Resume lỗi (session mất) — `ResultMessage.is_error`/`ProcessError` với chữ "No conversation found" [CX chữ] **và** chưa có `tool_use` nào | chạy lại 1 lần trong cùng job **không** `resume`, prompt = khối "Ngữ cảnh trước" dựng từ `payload.history` (≤ `history_n` tin của flow, §12 R2) + tin hiện tại; không báo lỗi user (H1-R23). Đã có `tool_use` → `failed UPSTREAM_ERROR` (BR-04) |
+| Resume lỗi (session mất) — `ResultMessage.is_error`/`ProcessError` với chữ "No conversation found" [CX chữ] **và** chưa có `tool_use` nào | chạy lại 1 lần trong cùng job **không** `resume`, prompt = khối "Ngữ cảnh trước" dựng từ `payload.history` (≤ `history_n` tin của flow, `plan-db` §8 R2) + tin hiện tại; không báo lỗi user (H1-R23). Đã có `tool_use` → `failed UPSTREAM_ERROR` (BR-04) |
 | Xong (có `ResultMessage.session_id`, kết quả hợp lệ) | UPSERT `cli_sessions` (SQL Kết thúc `plan-db.md`) với `session_id` mới |
 | Provider khác / không có dòng (BR-03) | không resume, dùng `history` |
 | Tuần tự (BR-05) | do SQL claim (§2.1) |
@@ -222,19 +222,7 @@ Chuẩn duy nhất: `test-plan.md` §7.1, chạy bằng `bun run done:h1` (I1). 
 13 task `PY-01`…`PY-13` ở `tasks.md` khối **PY** (Rủi ro, Đọc, File, Lệnh xong, thứ tự). Người dùng **chưa** chuẩn bị WSL2 + đăng nhập `claude` (2026-10-04) ⇒ task **W0** (người dùng) chặn PY-02 và smoke HUB-H1-AC-02; PY-04/06/07/11 code theo **dự phòng** đã ghi ở §1.3, §2.3, §5.2, §6 (cột "Dự phòng" §13), PY-08 test bằng SDK giả (monkeypatch `ClaudeSDKClient`); xác minh lại sau W0 + PY-02 ở I2.
 
 ## 12. Yêu cầu gửi plan BE (contract/DB) — đã đối chiếu
-Trả lời đầy đủ: `plan-db.md` §8. Runtime theo cột Chốt. Số R3, R4, R9 không dùng.
-| # | Đã yêu cầu | Chốt (BE) |
-|---|---|---|
-| R1 | `output`, `use_session`, `job.*` (+ `seq`), `HUB_JOB_ERROR_CODES`, NOTIFY `{v, job_id, …}` | ✓ |
-| R2 | `history` trong `JobPayload`; `model?`, `max_turns?` | ✓ `history[{role, content}]` (trường `content`, không `text`); `model` nullable; `max_turns` int 1–100 bắt buộc (Hub điền) |
-| R5 | JSON hỏng → retry 1 lần rồi `UPSTREAM_ERROR` | ✓ `reason=invalid_output` |
-| R6 | `usage_logs`: `job_id`, `cache_read_tokens`, `cache_write_tokens` nullable | ✓ `input_tokens` vẫn là tổng |
-| R7 | cột `jobs` + trạng thái `orphaned`/`timed_out` | ✓ cột tên `error_reason` (không `reason`); `orphaned` = `failed` + `error_reason`, không phải status |
-| R8 | SQL claim/pgid/heartbeat/finish/expire/orphan/restart/UPSERT | ✓ `plan-db.md` §5.4–5.5 (heartbeat gộp theo `worker_id`; expire: R11) |
-| R10 | `provider_state`, `agent_types.available`, unique `cli_sessions` 4 cột | ✓ một phần: cột `status` (không `state`); ✓ `available`; ✗ unique 4 cột — PK `(conversation_id, agent_id, provider_key)` + lọc `tenant_id` |
-| R11 | nguồn `max_wait_s` | ✗ Runtime không hết hạn `queued`; chỉ Hub (`HUB_JOB_MAX_WAIT_S`, P8). Bỏ `AGENT_RT_MAX_WAIT_S` |
-| R12 | Hub tự kiểm `jobs.status`/`heartbeat_at` khi Runtime chết | ✓ AgentRunner đọc mỗi 2 s khi im (P7) + Hub quét orphan 10 s |
-| R13 | `SELECT hub.providers`; claim xuyên tenant | ✓ role duy nhất `agent_runtime` (bỏ `agent_rt`); bảng Runtime không RLS |
+Yêu cầu R1–R13 và câu trả lời chốt (Runtime theo cột Chốt): `plan-db.md` §8.
 
 ## 13. Kết quả spike (PY-02 điền — `blocked` chờ W0)
 | Mục [CX] | Dự phòng code trước (task) | Kết quả spike |
