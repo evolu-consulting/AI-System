@@ -14,6 +14,7 @@ Bảng Runtime (§3.3) và SQL Runtime nguyên văn (§5.4–5.5) — tách kh�
 Hàm `hub.tenant_sub_limit(uuid) RETURNS int` — `sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp`, trả `admin.tenants.max_concurrent_sub`: Runtime không cần quyền `admin.*`. Ngay sau `CREATE`: `REVOKE EXECUTE ON FUNCTION hub.tenant_sub_limit(uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION hub.tenant_sub_limit(uuid) TO agent_runtime;` (mặc định Postgres cho PUBLIC EXECUTE).
 
 ### 5.4 SQL Runtime (nguyên văn, tham số asyncpg)
+Runtime chỉ ghi `hub.jobs` (và bảng §3.3), **không** `hub.runs` (không GRANT, `plan` §3.4): `jobs.error_code` không phải lỗi run; Hub kết thúc run và ghi `runs.error_*` qua `runErrorText` (`plan-errors` §Ghi, readiness #45).
 **Claim** — một transaction READ COMMITTED; advisory lock **toàn cục** `K_CLAIM` (P5, không theo provider), câu khoá tách riêng để snapshot câu sau thấy mọi claim đã commit:
 ```sql
 SELECT pg_advisory_xact_lock(hashtext('hub.jobs.claim'));
