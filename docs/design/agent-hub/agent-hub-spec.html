@@ -45,7 +45,7 @@ footer{margin-top:64px;color:var(--muted);font-size:12.5px;border-top:1px solid 
 <nav class="toc" aria-label="Mục lục"><h2>Tổng quan</h2><a href="#overview">0. Tổng quan</a><h2>A. Agent Hub</h2><a href="#a-1-muc-ich-pham-vi">1. Mục đích &amp; phạm vi</a><a href="#a-2-actor">2. Actor</a><a href="#a-3-thuat-ngu">3. Thuật ngữ</a><a href="#a-4-user-stories">4. User stories</a><a href="#a-5-luong-xu-ly">5. Luồng xử lý</a><a href="#a-6-yeu-cau-chuc-nang">6. Yêu cầu chức năng</a><a href="#a-7-luat-nghiep-vu">7. Luật nghiệp vụ</a><a href="#a-8-mo-hinh-du-lieu-schema-hub">8. Mô hình dữ liệu (schema hub)</a><a href="#a-9-api-su-kien-stream">9. API &amp; sự kiện stream</a><a href="#a-10-yeu-cau-phi-chuc-nang">10. Yêu cầu phi chức năng</a><a href="#a-11-tieu-chi-nghiem-thu">11. Tiêu chí nghiệm thu</a><a href="#a-12-ngoai-pham-vi-cau-hoi-mo">12. Ngoài phạm vi &amp; câu hỏi mở</a><h2>B. Agent Runtime (Worker)</h2><a href="#b-1-muc-ich-pham-vi">1. Mục đích &amp; phạm vi</a><a href="#b-2-loai-job">2. Loại job</a><a href="#b-3-vong-oi-job">3. Vòng đời job</a><a href="#b-4-subscription-pool">4. Subscription Pool</a><a href="#b-5-yeu-cau-chuc-nang">5. Yêu cầu chức năng</a><a href="#b-6-luat-nghiep-vu">6. Luật nghiệp vụ</a><a href="#b-7-du-lieu-giao-tiep">7. Dữ liệu &amp; giao tiếp</a><a href="#b-8-van-hanh-runbook">8. Vận hành (runbook)</a><a href="#b-9-yeu-cau-phi-chuc-nang">9. Yêu cầu phi chức năng</a><a href="#b-10-tieu-chi-nghiem-thu">10. Tiêu chí nghiệm thu</a><a href="#b-11-ngoai-pham-vi-cau-hoi-mo">11. Ngoài phạm vi &amp; câu hỏi mở</a></nav>
 <main>
 <header class="doc"><h1>Agent Hub — Specification</h1>
-<div class="meta"><span class="pill">v0.5</span><span>cập nhật 2026-10-04</span><span>· mã yêu cầu HUB-* / WRK-*</span><span>· nguồn: ba-agent-hub.md, ba-worker.md, CHANGE-REQUESTS, ROADMAP</span></div></header>
+<div class="meta"><span class="pill">v0.5</span><span>cập nhật 2026-10-05</span><span>· mã yêu cầu HUB-* / WRK-*</span><span>· nguồn: ba-agent-hub.md, ba-worker.md, CHANGE-REQUESTS, ROADMAP</span></div></header>
 
 <section id="overview">
 <h2>0. Tổng quan</h2>
@@ -458,7 +458,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td>HUB-FR-24</td>
-<td><strong>Mọi delegate agent trừ <code>dify-*</code></strong> là job cho Agent Runtime (qua <code>AgentRunner</code>, HUB-FR-89): <code>agentic-cli</code> → job <code>agent.cli</code>; <code>llm</code>, <code>python</code> → job <code>agent.run</code>. Payload gồm <code>runtime</code>, <code>agent_type_key</code> (nếu có), prompt, workflow được gắn, token MCP có phạm vi riêng cho job, <code>tenant_id</code>, và session trước đó (nếu có)</td>
+<td><strong>Mọi delegate agent trừ <code>dify-*</code></strong> là job cho Agent Runtime (qua <code>AgentRunner</code>, HUB-FR-89): <code>agentic-cli</code> → job <code>agent.cli</code>; <code>llm</code>, <code>python</code> → job <code>agent.run</code>. Payload gồm <code>runtime</code>, <code>agent_type_key</code> (nếu có), prompt, workflow được gắn, <code>tenant_id</code>, và session trước đó (nếu có). <strong>Token MCP không nằm trong payload</strong> (CR-035): Agent Runtime sinh token phạm vi job lúc claim, DB chỉ lưu hash (<code>jobs.token_hash</code>)</td>
 <td><strong>MUST</strong></td>
 </tr>
 <tr>
@@ -855,7 +855,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td>HUB-BR-11</td>
-<td>Tên tool sinh từ key workflow, dạng <code>^[a-z][a-z0-9_]{2,40}$</code> (hợp lệ với function-calling của mọi hãng). Key workflow là duy nhất nên tên tool không trùng</td>
+<td><strong>Tên tool = key workflow</strong>, dạng <code>^[a-z0-9-]{2,32}$</code> (CR-035). Key là duy nhất nên tên tool không trùng, và hợp lệ với MCP. Khi gọi function-calling API của hãng (H2d) mà hãng không nhận <code>-</code>, Gateway tự ánh xạ tên (vd <code>-</code> → <code>_</code>) và đổi ngược khi nhận kết quả</td>
 </tr>
 <tr>
 <td>HUB-BR-12</td>
@@ -1440,7 +1440,7 @@ Given workflow <code>create_trello_card</code> có <code>side_effect = true</cod
 </tr>
 <tr>
 <td>WRK-FR-13</td>
-<td>Kết nối MCP tools của Hub bằng token của job (gắn <code>tenant_id</code> và <code>user_id</code>, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (<code>hub.agent_workflows</code>); tên tool là key của workflow. Chỉ những tool có trong payload</td>
+<td>Kết nối MCP tools của Hub bằng token của job (do Agent Runtime sinh lúc claim, DB chỉ lưu hash <code>jobs.token_hash</code>, không nằm trong payload; gắn <code>tenant_id</code> và <code>user_id</code>, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (<code>hub.agent_workflows</code>); tên tool là key của workflow. Chỉ những tool có trong payload</td>
 <td><strong>MUST</strong></td>
 </tr>
 <tr>
@@ -1512,7 +1512,7 @@ Given workflow <code>create_trello_card</code> có <code>side_effect = true</cod
 </tr>
 <tr>
 <td>WRK-FR-26</td>
-<td><strong>Agent <code>python</code> chạy trong process con</strong> (CR-028): mỗi job một process con, môi trường không mang secret của hệ thống (như WRK-BR-02), chỉ nhận đúng thứ được cấp trong payload (prompt, tool MCP, thư mục <code>work/&lt;job_id&gt;/</code>, token MCP của job). Giao tiếp với Agent Runtime qua interface (stdin/stdout JSON theo contract pydantic); cùng huỷ theo process group, timeout, thư mục làm việc và hook đường dẫn như <code>agent.cli</code></td>
+<td><strong>Agent <code>python</code> chạy trong process con</strong> (CR-028): mỗi job một process con, môi trường không mang secret của hệ thống (như WRK-BR-02), chỉ nhận đúng thứ được cấp trong payload (prompt, tool MCP, thư mục <code>work/&lt;job_id&gt;/</code>; token MCP của job do Runtime sinh lúc claim). Giao tiếp với Agent Runtime qua interface (stdin/stdout JSON theo contract pydantic); cùng huỷ theo process group, timeout, thư mục làm việc và hook đường dẫn như <code>agent.cli</code></td>
 <td><strong>MUST</strong></td>
 </tr>
 </tbody>
@@ -1579,7 +1579,7 @@ WORKER(workflow.async) ──user=&lt;tenant&gt;:&lt;user_id&gt;──▶ Dify
   &quot;step_index&quot;: 0,
   &quot;prompt&quot;: &quot;...&quot;, &quot;system_prompt&quot;: &quot;...&quot;,
   &quot;allowed_tools&quot;: [&quot;Read&quot;, &quot;Grep&quot;, &quot;Edit&quot;],
-  &quot;mcp&quot;: {&quot;url&quot;: &quot;https://hub/mcp&quot;, &quot;token&quot;: &quot;job-scoped&quot;, &quot;tools&quot;: [&quot;translate_text&quot;, &quot;check_invoice&quot;]},
+  &quot;mcp&quot;: {&quot;url&quot;: &quot;https://hub/mcp&quot;, &quot;tools&quot;: [&quot;translate_text&quot;, &quot;check_invoice&quot;]},
   &quot;attachments&quot;: [&quot;att_1&quot;], &quot;resume_session&quot;: &quot;sess_abc&quot;,
   &quot;timeout_s&quot;: 600
 }
@@ -1596,7 +1596,7 @@ WORKER(workflow.async) ──user=&lt;tenant&gt;:&lt;user_id&gt;──▶ Dify
 <tbody>
 <tr>
 <td>Cài máy Worker mới (CR-029)</td>
-<td>Máy Windows: bật WSL2 + Ubuntu, bật <code>systemd=true</code> trong <code>/etc/wsl.conf</code>, mạng <code>networkingMode=mirrored</code> trong <code>.wslconfig</code> (WSL gọi <code>localhost</code> tới Postgres, Redis, Hub). Trong Ubuntu: tạo user <code>worker</code>, cài <code>uv</code> (Python) và các CLI, đăng nhập bằng tay từng cái (<code>claude</code>, <code>codex</code>, <code>gemini</code>) dưới user <code>worker</code>. Worker chạy bằng unit systemd của Ubuntu, thư mục làm việc trên ổ Linux (<code>/home/worker/work</code>, không dùng <code>/mnt/c</code>). Khai báo provider trong Agent Studio › Models › Providers. Chạy probe để xác nhận <code>ok</code></td>
+<td>Máy Windows: bật WSL2 + Ubuntu, bật <code>systemd=true</code> và <strong>tắt interop</strong> (<code>[interop] enabled=false</code>, <code>appendWindowsPath=false</code>) trong <code>/etc/wsl.conf</code> — CLI gọi <code>reg.exe</code> đọc policy Windows <code>HKCU/HKLM\SOFTWARE\Policies\ClaudeCode</code> (spike PY-02 S8); tắt interop thì Linux không chạy được <code>.exe</code> Windows, chiều Windows → <code>wsl.exe</code> không ảnh hưởng — <code>wsl --shutdown</code> để áp dụng, mạng <code>networkingMode=mirrored</code> trong <code>.wslconfig</code> (WSL gọi <code>localhost</code> tới Postgres, Redis, Hub). Trong Ubuntu: tạo user <code>worker</code>, cài <code>uv</code> (Python) và các CLI, đăng nhập bằng tay từng cái (<code>claude</code>, <code>codex</code>, <code>gemini</code>) dưới user <code>worker</code>. Worker chạy bằng unit systemd của Ubuntu, thư mục làm việc trên ổ Linux (<code>/home/worker/work</code>, không dùng <code>/mnt/c</code>). Khai báo provider trong Agent Studio › Models › Providers. Chạy probe để xác nhận <code>ok</code></td>
 </tr>
 <tr>
 <td>Máy Windows khởi động lại</td>

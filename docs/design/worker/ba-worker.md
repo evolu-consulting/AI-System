@@ -84,7 +84,7 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 | WRK-FR-10 | Claude Code chạy qua **Claude Agent SDK (Python)**. Codex và Gemini chạy qua CLI ở chế độ không tương tác, đọc output dạng JSON stream | **MUST** |
 | WRK-FR-11 | Mỗi job có một thư mục làm việc riêng `work/<job_id>/`. File đính kèm của run được copy vào đây. CLI bị giới hạn trong thư mục này | **MUST** |
 | WRK-FR-12 | Áp đúng danh sách tool được phép trong payload. Mặc định không có Bash và không có quyền ghi ra ngoài thư mục làm việc | **MUST** |
-| WRK-FR-13 | Kết nối MCP tools của Hub bằng token của job (gắn `tenant_id` và `user_id`, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (`hub.agent_workflows`); tên tool là key của workflow. Chỉ những tool có trong payload | **MUST** |
+| WRK-FR-13 | Kết nối MCP tools của Hub bằng token của job (do Agent Runtime sinh lúc claim, DB chỉ lưu hash `jobs.token_hash`, không nằm trong payload; gắn `tenant_id` và `user_id`, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (`hub.agent_workflows`); tên tool là key của workflow. Chỉ những tool có trong payload | **MUST** |
 | WRK-FR-14 | Giữ ngữ cảnh: có `session_id` cũ cùng provider thì resume, xong thì ghi `session_id` mới vào `hub.cli_sessions` | **MUST** |
 | WRK-FR-15 | Nhận diện hết quota hoặc rate limit từ output/mã lỗi của từng CLI. Có thông tin thời điểm reset thì đặt cooldown đến lúc đó, không có thì mặc định 30 phút | **MUST** |
 | WRK-FR-16 | Chuyển tiến trình của CLI (tool đang gọi, file đang đọc) thành `job.progress` có nhãn dễ hiểu | **SHOULD** |
@@ -101,7 +101,7 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 | WRK-FR-23 | Dọn thư mục làm việc sau 24 giờ. Đánh dấu job `orphaned` khi mất heartbeat quá 60 giây | **MUST** |
 | WRK-FR-24 | Giới hạn slot subscription theo tenant: đếm job subscription `running` của từng tenant trong cùng transaction lấy job (khoá claim toàn cục; slot tenant đếm chung mọi provider, CR-031; không còn bộ đếm Redis `sub_slots`), không cho vượt `tenants.max_concurrent_sub`. `null` = không giới hạn. Slot tự trả khi job rời trạng thái `running` (xong, lỗi, huỷ, orphaned). Đọc giới hạn từ `admin.tenants` (chỉ đọc, cache ≤ 5 giây) | **MUST** |
 | WRK-FR-25 | **Manifest loại agent** (CR-028, HUB-FR-90): khi khởi động ghi/cập nhật `hub.agent_types` (key, runtime, mô tả, JSON Schema tham số cấu hình, version) cho mọi class agent đã đăng ký, gồm các runtime `llm`, `agentic-cli` và agent `python` nội bộ. Loại agent bị gỡ khỏi code thì đánh dấu không còn khả dụng, không xoá agent đang trỏ tới | **MUST** |
-| WRK-FR-26 | **Agent `python` chạy trong process con** (CR-028): mỗi job một process con, môi trường không mang secret của hệ thống (như WRK-BR-02), chỉ nhận đúng thứ được cấp trong payload (prompt, tool MCP, thư mục `work/<job_id>/`, token MCP của job). Giao tiếp với Agent Runtime qua interface (stdin/stdout JSON theo contract pydantic); cùng huỷ theo process group, timeout, thư mục làm việc và hook đường dẫn như `agent.cli` | **MUST** |
+| WRK-FR-26 | **Agent `python` chạy trong process con** (CR-028): mỗi job một process con, môi trường không mang secret của hệ thống (như WRK-BR-02), chỉ nhận đúng thứ được cấp trong payload (prompt, tool MCP, thư mục `work/<job_id>/`; token MCP của job do Runtime sinh lúc claim). Giao tiếp với Agent Runtime qua interface (stdin/stdout JSON theo contract pydantic); cùng huỷ theo process group, timeout, thư mục làm việc và hook đường dẫn như `agent.cli` | **MUST** |
 
 ## 6. Luật nghiệp vụ
 
@@ -143,7 +143,7 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
   "step_index": 0,
   "prompt": "...", "system_prompt": "...",
   "allowed_tools": ["Read", "Grep", "Edit"],
-  "mcp": {"url": "https://hub/mcp", "token": "job-scoped", "tools": ["translate_text", "check_invoice"]},
+  "mcp": {"url": "https://hub/mcp", "tools": ["translate_text", "check_invoice"]},
   "attachments": ["att_1"], "resume_session": "sess_abc",
   "timeout_s": 600
 }
