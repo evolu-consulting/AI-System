@@ -24,6 +24,7 @@ from agent_runtime.db.pool import ListenConn, Pool, connect_listen, create_pool
 from agent_runtime.events.job_events import RunEvents, connect_redis
 from agent_runtime.log import get_logger
 from agent_runtime.queue.claimer import Claimer
+from agent_runtime.queue.cleanup import CleanupConfig, run_cleanup
 from agent_runtime.queue.heartbeat import run_heartbeat
 from agent_runtime.queue.host import JobHost
 from agent_runtime.queue.listener import Listener
@@ -62,11 +63,13 @@ class QueueRuntime:
         s, sup = self.settings, self.supervisor
         dsn = s.database_url.get_secret_value()
         listener = Listener(lambda: connect_listen(dsn), self.claimer.wake, sup)
+        clean = CleanupConfig(s.work_dir, s.log_dir, s.cleanup_s)
         return [
             lambda: self.claimer.run(s.worker_id, s.poll_s),
             lambda: listener.run(self.listen),
             lambda: run_heartbeat(self.pool, sup, s.worker_id, s.heartbeat_s),
             lambda: run_sweeper(self.pool, self.events, sup, self.sweep),
+            lambda: run_cleanup(clean, sup.held),
         ]
 
     async def shutdown(self) -> None:

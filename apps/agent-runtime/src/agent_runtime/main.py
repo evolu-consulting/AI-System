@@ -61,7 +61,6 @@ async def serve(stop: asyncio.Event, services: Sequence[Service]) -> int:
 
 
 def build_services(rt: QueueRuntime) -> list[Service]:
-    # TODO(WRK-FR-23): PY-13 — cleanup log/work theo `settings.cleanup_s`.
     return rt.services()
 
 

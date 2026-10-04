@@ -29,6 +29,7 @@ from agent_runtime.db.pool import Pool
 from agent_runtime.events.job_events import Failure, RunEvents, Tokens
 from agent_runtime.log import bind_job, get_logger
 from agent_runtime.providers.base import Fatal, Final, Progress, ProviderEvent, UsageEv
+from agent_runtime.runtimes.cli.joblog import append_envelope
 from agent_runtime.runtimes.cli.protocol import (
     MAX_LINE_BYTES,
     ChildRequest,
@@ -86,6 +87,10 @@ class _Seen:
 
 def stderr_log_path(log_dir: Path, job_id: str) -> Path:
     return log_dir / datetime.now(UTC).strftime("%Y-%m-%d") / f"{job_id}.stderr.log"
+
+
+def events_log_path(log_dir: Path, job_id: str) -> Path:
+    return log_dir / datetime.now(UTC).strftime("%Y-%m-%d") / f"{job_id}.events.jsonl"
 
 
 def fatal_failure(f: Fatal) -> Failure:
@@ -250,6 +255,8 @@ class _Run:
 
     async def _on_event(self, ev: ProviderEvent) -> bool:
         """True = ngừng đọc (fatal)."""
+        with suppress(OSError):  # khung message, không nội dung (RQ1)
+            append_envelope(events_log_path(self.cfg.log_dir, self.job.id), ev)
         if isinstance(ev, Progress):
             await self.host.events.progress(self.job, ev.label)
         elif isinstance(ev, UsageEv):
