@@ -117,7 +117,7 @@ b66fea8bf6e7b0410682985e7dbc0a4182bc322d29075c9bb461c95bdd15279e  tests/acceptan
 ffead9e31101c61a11ac213e9e9c067322ae3f4d483553b585688ec6a534cbb7  tests/acceptance/H2a/async.int.test.ts
 53c04e25ce6e262988a5b8d4ccec167cc3044fcad206daa0a604812836c33fa1  tests/acceptance/H2a/command-run.int.test.ts
 0ebc264a6f18d288e0e346057e7d09cb241d60dac210534469b331bde18d8071  tests/acceptance/H2a/commands.int.test.ts
-ce354bb3e2a6011d166f0e9b1a7f7c3c042d8d7f525a1c29574f946b5decc66a  tests/acceptance/H2a/confirm.int.test.ts
+b77b20fa39180810516ac84991e0e6dc34f0eaa3c22e5e83962ea21d4d8c7f0c  tests/acceptance/H2a/confirm.int.test.ts
 843bc084c5a78e37d78a9f40fb8fea6a51caa9d209e125a609457194db952792  tests/acceptance/H2a/db.int.test.ts
 ecb8254a9c638d5deef1cf6bb581a3fce392fdff3d722fc7c8ffc3e3468183ab  tests/acceptance/H2a/dify-agent.int.test.ts
 0e129ab93507f39f3ff21417e1b663c9db7b6293fd348d44a1bd2b88a97308d9  tests/acceptance/H2a/dify-errors.int.test.ts

@@ -91,6 +91,12 @@ const inRun = (runId: string, agent: "trello" | "assistant" | "hoadon" = "trello
     mcpUrl: mcpUrl(),
   });
 const callTrello = (token: string) => toolCall(hub, token, WF_KEY.trello, { title: "Thẻ mới" });
+/** Lời gọi MK của workflow side_effect `create-trello-card` (input `title`; `/dich` dùng `source_text`). */
+const trelloRuns = () =>
+  dify.runs().filter((c) => {
+    const inputs = (c.body as { inputs?: Record<string, unknown> } | null)?.inputs;
+    return !!inputs && "title" in inputs;
+  });
 
 /** R1 (SQL) gọi tool → CONFIRMATION_REQUIRED → R1 kết thúc (như agent trả need_input). */
 async function pendingFlow(o: Partial<SqlJobOpts> = {}): Promise<SqlJob> {
@@ -175,7 +181,9 @@ describe("A62–A66 · quyết định, hết hạn, nguyên tử, ràng buộc,
           const job = await inRun(r.runId);
           dify.mock.reset();
           expect(isConfirmation((await callTrello(job.token)).result)).toBe(true);
-          expect(dify.runs().length).toBe(0);
+          // TC-2: chỉ đếm lời gọi workflow side_effect (create-trello-card, input `title`); `/dich` của tin trả lời
+          // được phép chạy Dify bất đồng bộ (B5) và có thể tới mock sau `reset()`.
+          expect(trelloRuns().length).toBe(0);
           expect(await statuses(j.flowId)).toEqual(["declined", "pending"]);
         }
       } finally {
