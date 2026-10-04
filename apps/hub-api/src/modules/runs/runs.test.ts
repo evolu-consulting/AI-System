@@ -1,7 +1,7 @@
 // HUB-FR-42 · H1-R12 · phần thuần của SSE: trả lời XREAD RESP2/RESP3, entry `e`, khung SSE (plan §5.2–5.3).
 import { describe, expect, it } from "bun:test";
-import { sseFrame, xreadPairs } from "./sse-reader";
-import { isTerminalEvent, parseEntry } from "./sse-writer";
+import { sseFrame, xreadPairs } from "./sse/sse-reader";
+import { isTerminalEvent, parseEntry } from "./sse/sse-writer";
 
 const ROWS: [string, string[]][] = [["1-0", ["e", '{"event":"delta","data":{"text":"a"}}']]];
 

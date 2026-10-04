@@ -22,13 +22,13 @@ import { orchestratorDriver } from "./modules/orchestrator/orchestrator.service"
 import { JobAgentRunner } from "./modules/runner/job-agent-runner";
 import { startOrphanSweep } from "./modules/runner/orphan-sweep";
 import { RunStreamReader } from "./modules/runner/run-stream-reader";
-import { cancelRoutes } from "./modules/runs/cancel.routes";
-import { CancelService } from "./modules/runs/cancel.service";
-import { startLeaseLoop } from "./modules/runs/lease";
+import { cancelRoutes } from "./modules/runs/close/cancel.routes";
+import { CancelService } from "./modules/runs/close/cancel.service";
+import { startLeaseLoop } from "./modules/runs/close/lease";
+import { startLeaseSweeper } from "./modules/runs/close/sweeper";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
 import { type RunDriver, RunService } from "./modules/runs/runs.service";
-import type { RunRegistry } from "./modules/runs/sse-writer";
-import { startLeaseSweeper } from "./modules/runs/sweeper";
+import type { RunRegistry } from "./modules/runs/sse/sse-writer";
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
 export type AppVars = {

@@ -34,7 +34,7 @@ import { connectDb } from "../../lib/db";
 import { createRedis, type Redis } from "../../lib/redis";
 import { runErrorText } from "./run-errors";
 import type { RunContext, RunDriver } from "./runs.service";
-import { RunFencedError } from "./sse-writer";
+import { RunFencedError } from "./sse/sse-writer";
 
 const ctxs = new Map<string, RunContext>();
 const driver: RunDriver = { start: (ctx) => void ctxs.set(ctx.writer.run.id, ctx) };

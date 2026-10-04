@@ -11,7 +11,7 @@ import type { Logger } from "../../lib/logger";
 import type { AgentConfig, ConfigSnapshot } from "../config/config.rules";
 import { stepLabel } from "../conversations/conversations.rules";
 import { queueTimeoutReason } from "../runs/runs.rules";
-import type { SseEventBody } from "../runs/sse-writer";
+import type { SseEventBody } from "../runs/sse/sse-writer";
 import type { RunStreamReader } from "./run-stream-reader";
 import * as repo from "./runner.repo";
 import {

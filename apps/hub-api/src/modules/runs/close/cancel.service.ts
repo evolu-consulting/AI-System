@@ -3,12 +3,16 @@
 // (§5.2) — chủ ở instance khác bị chặn bởi id `sse:<id>` và mất lease (B10). Không biết HTTP.
 import type { Run } from "@ai/contracts/chat";
 import { withHubScope } from "@ai/db/hub-scope";
-import type { AuthUser } from "../../lib/auth.middleware";
-import type { Db } from "../../lib/db";
-import { appError, safeErrorFields } from "../../lib/errors";
-import type { Logger } from "../../lib/logger";
-import type { Redis } from "../../lib/redis";
-import type { ConversationService } from "../conversations/conversations.service";
+import type { AuthUser } from "../../../lib/auth.middleware";
+import type { Db } from "../../../lib/db";
+import { appError, safeErrorFields } from "../../../lib/errors";
+import type { Logger } from "../../../lib/logger";
+import type { Redis } from "../../../lib/redis";
+import type { ConversationService } from "../../conversations/conversations.service";
+import { runErrorText } from "../run-errors";
+import * as repo from "../runs.repo";
+import { lastEventIdOf, toRun } from "../runs.service";
+import { appendExternal, parseEntry, type RunRegistry, sseKey } from "../sse/sse-writer";
 import {
   type CancelTarget,
   type CancelWrite,
@@ -16,10 +20,6 @@ import {
   runningRunsOf,
   setFinalSeq,
 } from "./cancel.repo";
-import { runErrorText } from "./run-errors";
-import * as repo from "./runs.repo";
-import { lastEventIdOf, toRun } from "./runs.service";
-import { appendExternal, parseEntry, type RunRegistry, sseKey } from "./sse-writer";
 
 export type CancelServiceDeps = {
   db: Db;

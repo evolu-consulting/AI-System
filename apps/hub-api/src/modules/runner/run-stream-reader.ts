@@ -4,7 +4,7 @@ import { RUN_STREAM_FIELD, type RunEvent, RunEventSchema, runStreamKey } from "@
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
-import { xreadPairs } from "../runs/sse-reader";
+import { xreadPairs } from "../runs/sse/sse-reader";
 import { compareStreamId } from "./runner.rules";
 
 type StreamEntry = [id: string, fields: string[]];

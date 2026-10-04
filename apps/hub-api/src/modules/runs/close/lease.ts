@@ -2,11 +2,11 @@
 // run trong `RunRegistry`; run không còn `running`/không còn của instance (bị huỷ, sweeper chiếm) → `abort()` writer
 // cục bộ, không ghi gì (vòng chạy dừng theo `writer.signal`, B8).
 import { withHubScope } from "@ai/db/hub-scope";
-import type { Db } from "../../lib/db";
-import type { Logger } from "../../lib/logger";
-import { startLoop } from "../../lib/loop";
-import * as repo from "./runs.repo";
-import type { RunRegistry } from "./sse-writer";
+import type { Db } from "../../../lib/db";
+import type { Logger } from "../../../lib/logger";
+import { startLoop } from "../../../lib/loop";
+import * as repo from "../runs.repo";
+import type { RunRegistry } from "../sse/sse-writer";
 
 /** Nhịp gia hạn (lease 30 s ⇒ chịu được 2 nhịp hụt). */
 export const LEASE_RENEW_MS = 10_000;

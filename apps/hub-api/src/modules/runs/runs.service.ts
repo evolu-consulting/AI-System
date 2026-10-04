@@ -19,7 +19,7 @@ import type { ConfigSnapshot } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
 import * as repo from "./runs.repo";
 import { eventsExpired } from "./runs.rules";
-import { runEventStream, SseReader } from "./sse-reader";
+import { runEventStream, SseReader } from "./sse/sse-reader";
 import {
   appendExternal,
   isTerminalEvent,
@@ -28,7 +28,7 @@ import {
   RunRegistry,
   type SseEventBody,
   SseWriter,
-} from "./sse-writer";
+} from "./sse/sse-writer";
 
 /** Ngữ cảnh một run cho vòng chạy: ghi sự kiện qua `writer`, kết thúc bằng `writer.finish`, dừng khi `writer.signal`. */
 export type RunContext = {

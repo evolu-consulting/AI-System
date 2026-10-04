@@ -8,7 +8,7 @@ import { accessInput, visibleAgents } from "../agents/agent-access.rules";
 import type { UserState } from "../config/config.rules";
 import { type AgentRunner, runJob } from "../runner/job-agent-runner";
 import type { RunContext, RunDriver } from "../runs/runs.service";
-import type { SseWriter } from "../runs/sse-writer";
+import type { SseWriter } from "../runs/sse/sse-writer";
 import { type LoopEnd, type LoopInput, type LoopIo, runLoop } from "./orchestrator.loop";
 import * as repo from "./orchestrator.repo";
 import { chunkText } from "./orchestrator.rules";

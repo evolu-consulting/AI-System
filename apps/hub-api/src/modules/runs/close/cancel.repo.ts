@@ -6,7 +6,7 @@ import { JOB_CANCEL_CHANNEL, type JobCancelPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { runs } from "@ai/db/schema/hub";
 import { and, eq, lt, ne, type SQL, sql } from "drizzle-orm";
-import * as repo from "./runs.repo";
+import * as repo from "../runs.repo";
 
 const NOW_MS = sql`date_trunc('milliseconds', now())`;
 

@@ -20,7 +20,7 @@ import {
   sign,
   USERS,
   type UserKey,
-} from "../../../../../tests/acceptance/H1/_fixtures";
+} from "../../../../../../tests/acceptance/H1/_fixtures";
 import {
   AG,
   idGen,
@@ -33,13 +33,13 @@ import {
   type Sse,
   send,
   sseStream,
-} from "../../../../../tests/acceptance/H1/_hub";
-import { createApp } from "../../app";
-import { connectDb } from "../../lib/db";
-import { createRedis } from "../../lib/redis";
-import { runErrorText } from "./run-errors";
-import type { RunContext, RunDriver } from "./runs.service";
-import { RunFencedError } from "./sse-writer";
+} from "../../../../../../tests/acceptance/H1/_hub";
+import { createApp } from "../../../app";
+import { connectDb } from "../../../lib/db";
+import { createRedis } from "../../../lib/redis";
+import { runErrorText } from "../run-errors";
+import type { RunContext, RunDriver } from "../runs.service";
+import { RunFencedError } from "../sse/sse-writer";
 
 type Inst = Hub & { ctxs: Map<string, RunContext> };
 

@@ -1,6 +1,6 @@
 // HUB-FR-40 · HUB-FR-45 · HUB-BR-14 · nghiệp vụ E5–E11 (C1 plan §2.4). Mọi đọc/ghi qua `withHubScope(user)` (D2);
 // không thấy (khác chủ / khác tenant / đã xoá / không có) → cùng một 404 `NOT_FOUND` (H1-R03). Không biết HTTP.
-// E9 ở đây xoá mềm hội thoại; huỷ run đang chạy cắm qua `remove(…, inTx)` (B9 `runs/cancel.service`, plan §5.7).
+// E9 ở đây xoá mềm hội thoại; huỷ run đang chạy cắm qua `remove(…, inTx)` (B9 `runs/close/cancel.service`, plan §5.7).
 import {
   type ChatPage,
   type Conversation,

@@ -3,15 +3,15 @@
 // §Ghi), tin assistant, huỷ job như §5.7; sau COMMIT phát `run.failed` bằng "XADD bên ngoài" (§5.2) — đúng một sự kiện
 // kết thúc vì chủ cũ kết thúc sau đó được 0 dòng (P12) và XADD của nó bị chặn bởi id.
 import { withHubScope } from "@ai/db/hub-scope";
-import type { Db } from "../../lib/db";
-import { safeErrorFields } from "../../lib/errors";
-import type { Logger } from "../../lib/logger";
-import { startLoop } from "../../lib/loop";
-import type { Redis } from "../../lib/redis";
+import type { Db } from "../../../lib/db";
+import { safeErrorFields } from "../../../lib/errors";
+import type { Logger } from "../../../lib/logger";
+import { startLoop } from "../../../lib/loop";
+import type { Redis } from "../../../lib/redis";
+import { runErrorText } from "../run-errors";
+import type { RunRegistry } from "../sse/sse-writer";
 import { type CancelWrite, expiredLeaseRuns, failExpiredRun } from "./cancel.repo";
 import { announceClosed, deltaContent } from "./cancel.service";
-import { runErrorText } from "./run-errors";
-import type { RunRegistry } from "./sse-writer";
 
 export const LEASE_SWEEP_MS = 10_000;
 /** Ứng viên mỗi lượt (§5.8 `LIMIT 20`); còn sót → lượt sau. */
