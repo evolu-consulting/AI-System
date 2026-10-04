@@ -62,3 +62,10 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 | B-B0-5 | `lib/secret-crypto.ts` Hub chỉ chép phần **giải mã** (`isMasterKeyB64`, `parseMasterKey`, `secretAad`, `decryptSecret`) — không `encryptSecret`/`selfTestSecretKey`. Vector: khoá thử byte 0x00..0x1f, 2 ca (key_version 1/2, Unicode) sinh bằng `encryptSecret` Admin rand cố định, nhúng trong test | P6; Hub không mã hoá. Tự kiểm khởi động (plan §8) để B4 quyết (vd giải thử một vector cố định) |
 | B-B0-6 | `lib/job-token.ts` thêm `JOB_TOKEN_RE`/`isJobToken` (43 ký tự base64url, plan §6 Auth) cạnh `hashJobToken`; băm UTF-8 (= ASCII với token hợp lệ). Vector sha256 tính độc lập bằng `sha256sum` | Kiểm hình token trước khi tra DB (B6/B8) |
 | B-B0-7 | Stub `buildWorkflowJobPayload`/`mcpConfigFor`/`orphanAction` thêm cuối `runner/runner.rules.ts` (218 → 250 dòng); `runner` import kiểu `WorkflowJobInput` từ `commands/catalog.types` | `plan-rules` ghi `runner.rules.ts (+)`; chỉ import kiểu, depcruise xanh |
+
+## BUILD — D2 (backend-lead, 2026-10-05)
+| # | Quyết định | Lý do |
+|---|---|---|
+| B-D2-1 | Hàm D2 nằm ở migration **mới** `migrations-hub/0003_h2a_dify_fn.sql` (+ entry `_journal.json`), không nối vào `0002` (điều phối) | `0002` đã commit và đã áp trên DB dev — Drizzle không chạy lại file đã ghi trong `__drizzle_migrations_hub`. Comment đầu `0002` ("hàm D2 ở cuối file") không sửa (file khoá); `plan-db` §1 đọc là "0002 + 0003". Test đếm theo journal (`migrate-hub.int`, H1 A48) tự nhận 4 |
+| B-D2-2 | Thêm `GRANT USAGE ON SCHEMA hub TO hub_ro` trong `0003` | `plan-db` §1.3 bỏ sót: không có USAGE thì `SET ROLE hub_ro; select * from hub.workflow_secret(…)` → 42501. Không kèm quyền bảng nào (schema `hub` không có default privileges cho `hub_ro`); M2/M3 chạy trên DB Admin không có migration Hub nên không đổi |
+| B-D2-3 | Test D2 = `packages/db/src/hub-h2a.int.test.ts` (D1 là `hub-h2a-schema.int.test.ts`); chạy cục bộ trên DB Hub riêng `ai_system_h2a_d2_hub_test` (`HUB_TEST_DATABASE_URL` trong `.env.test-h2a_d2.local`) | `db:test:create` chép nguyên `HUB_TEST_DATABASE_URL` = `ai_system_h1_test` dùng chung giữa các agent → test Hub các phiên giẫm nhau |
