@@ -1,5 +1,12 @@
-// HUB-FR-43 · CHAT-AC-31 · lỗi có mã theo `CHAT_API_ERRORS` (contract chat, plan §4). Status lấy từ contract (một nguồn).
-import { CHAT_API_ERRORS, type ChatErrorCode, type ErrorResponse } from "@ai/contracts/chat";
+// HUB-FR-43 · CHAT-AC-31 · lỗi có mã theo `CHAT_API_ERRORS` (contract chat, plan §4) + `CHAT_COMMAND_ERRORS` (H2a C1,
+// HUB-FR-14). Status lấy từ contract (một nguồn).
+import {
+  CHAT_API_ERRORS,
+  CHAT_COMMAND_ERRORS,
+  type ChatCommandErrorCode,
+  type ChatErrorCode,
+  type ErrorResponse,
+} from "@ai/contracts/chat";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export class AppError extends Error {
@@ -14,21 +21,30 @@ export class AppError extends Error {
   }
 }
 
-/** Message tiếng Anh cố định theo mã; client dịch theo `code`. Không chứa dữ liệu người dùng. */
-export const ERROR_MESSAGES: Record<ChatErrorCode, string> = {
+/** Mã HTTP Hub trả cho client chat: C1 + lệnh `/` (H2a, hằng riêng — Q3). */
+export type HubErrorCode = ChatErrorCode | ChatCommandErrorCode;
+const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
+  ...CHAT_API_ERRORS,
+  ...CHAT_COMMAND_ERRORS,
+};
+
+/** Message tiếng Anh cố định theo mã; client dịch theo `code`. Không chứa dữ liệu người dùng (plan-errors H2a §1). */
+export const ERROR_MESSAGES: Record<HubErrorCode, string> = {
   VALIDATION_ERROR: "Invalid request",
   AUTH_EXPIRED: "Session expired",
   NOT_FOUND: "Not found",
   FLOW_BUSY: "Flow is busy",
   EVENTS_EXPIRED: "Run events have expired",
   INTERNAL_ERROR: "Internal server error",
+  CMD_NOT_FOUND: "Command not found",
+  CMD_MISSING_ARG: "Missing or invalid command argument",
 };
 
-export function appError(code: ChatErrorCode, details?: unknown): AppError {
-  return new AppError(code, CHAT_API_ERRORS[code], ERROR_MESSAGES[code], details);
+export function appError(code: HubErrorCode, details?: unknown): AppError {
+  return new AppError(code, HUB_ERRORS[code], ERROR_MESSAGES[code], details);
 }
 
-export function isAppError(err: unknown, code?: ChatErrorCode): err is AppError {
+export function isAppError(err: unknown, code?: HubErrorCode): err is AppError {
   return err instanceof AppError && (code === undefined || err.code === code);
 }
 

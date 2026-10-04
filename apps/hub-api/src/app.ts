@@ -59,6 +59,12 @@ export type AppDeps = {
   runDriver?: RunDriver;
   /** H2a · = `SECRET_MASTER_KEY` (base64 32 byte, chung Admin); nạp bằng `loadMasterKey` (dify/credential.service). */
   secretMasterKey?: string;
+  /** H2a · = `HUB_INTERNAL_TOKEN` (vắng → `/internal/test-run` 503). */
+  internalToken?: string;
+  /** H2a · = `HUB_PUBLIC_INTERNAL_URL` (dựng `mcp.url` = `<url>/mcp`). */
+  publicInternalUrl?: string;
+  /** H2a · = `HUB_DIFY_TIMEOUT_MAX_S` (mặc định 300). */
+  difyTimeoutMaxS?: number;
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -131,8 +137,8 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
   if (!deps.db) return;
-  if (config) mountH2a(app, config);
-  if (!deps.redis || !config) {
+  const h2a = config && mountH2a(app, config);
+  if (!deps.redis || !config || !h2a) {
     app.route("/conversations", conversationRoutes(deps.db));
     return;
   }
@@ -159,7 +165,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     "/conversations",
     conversationRoutes(deps.db, (u, id) => cancel.removeConversation(u, id)),
   );
-  app.route("/conversations", sendMessageRoutes(conversations, runs));
+  app.route("/conversations", sendMessageRoutes(conversations, runs, h2a.prepareCommand));
   app.route("/runs", runRoutes(runs));
   app.route("/runs", cancelRoutes(cancel));
   startRunLoops({

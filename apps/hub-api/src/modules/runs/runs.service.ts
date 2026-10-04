@@ -44,6 +44,14 @@ export interface RunDriver {
   start(ctx: RunContext): void;
 }
 
+/** H2a §5.1 bước 3 · run `kind=command` (R08): driver riêng đã gắn lệnh đã chuẩn bị; vắng = Orchestrator. */
+export type CommandRunStart = {
+  kind: "command";
+  commandId: string;
+  featureId: string;
+  driver: RunDriver;
+};
+
 export type RunServiceDeps = {
   db: Db;
   redis: Redis;
@@ -74,7 +82,13 @@ type Created = RunInfo & { userMessageId: string };
 async function createRunTx(
   tx: Tx,
   o: repo.Owner,
-  p: { run: Created; req: SendMessageRequest; configVersion: number; owner: string },
+  p: {
+    run: Created;
+    req: SendMessageRequest;
+    configVersion: number;
+    owner: string;
+    command?: CommandRunStart;
+  },
 ): Promise<void> {
   const r = p.run;
   if (!(await repo.touchConversation(tx, o, r.conversationId))) throw appError("NOT_FOUND");
@@ -94,6 +108,11 @@ async function createRunTx(
     answerMessageId: r.answerMessageId,
     owner: p.owner,
     locale: r.locale,
+    ...(p.command && {
+      kind: "command" as const,
+      commandId: p.command.commandId,
+      featureId: p.command.featureId,
+    }),
   });
   await repo.insertMessage(tx, o, {
     id: r.userMessageId,
@@ -171,8 +190,13 @@ export class RunService {
     return run;
   }
 
-  /** E12 · ném 404 (hội thoại/flow), 409 `FLOW_BUSY`. Trả stream đọc từ `sse:<id>` (P9). */
-  async start(u: AuthUser, conversationId: string, req: SendMessageRequest): Promise<StartedRun> {
+  /** E12 · ném 404 (hội thoại/flow), 409 `FLOW_BUSY`. Trả stream đọc từ `sse:<id>` (P9). `command` → run lệnh (H2a). */
+  async start(
+    u: AuthUser,
+    conversationId: string,
+    req: SendMessageRequest,
+    command?: CommandRunStart,
+  ): Promise<StartedRun> {
     const snapshot = await this.d.config.snapshot();
     const locale = (await this.d.config.user(u.userId))?.locale ?? "vi";
     const run: Created = {
@@ -187,7 +211,7 @@ export class RunService {
     const { owner } = this.d;
     try {
       await this.#scoped(u, (tx, o) =>
-        createRunTx(tx, o, { run, req, configVersion: snapshot.version, owner }),
+        createRunTx(tx, o, { run, req, configVersion: snapshot.version, owner, command }),
       );
     } catch (err) {
       if (flowBusy(err)) throw appError("FLOW_BUSY");
@@ -196,7 +220,8 @@ export class RunService {
     const writer = new SseWriter(run, { ...this.d, owner });
     this.registry.add(writer);
     await this.#announce(writer);
-    this.d.driver.start({ writer, snapshot, content: req.content, log: this.d.log });
+    const driver = command?.driver ?? this.d.driver;
+    driver.start({ writer, snapshot, content: req.content, log: this.d.log });
     const stream = this.#stream(u, run.id, 0);
     return { runId: run.id, flowId: run.flowId, messageId: run.userMessageId, stream };
   }

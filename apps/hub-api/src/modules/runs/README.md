@@ -6,8 +6,8 @@ Thư mục con: `sse/` (hai đầu stream `sse:<id>`), `close/` (đóng run bở
 
 | File | Vai trò |
 |---|---|
-| `runs.routes.ts` | E12 `POST /conversations/:id/messages` (mount dưới `/conversations`) · E13 `GET /runs/:id/events` · E14 `GET /runs/:id` |
-| `runs.service.ts` | `RunService`: E12 transaction `user` (conversations → flows → runs → messages), 409 `FLOW_BUSY`, `run.started`; E13/E14; `RunDriver` (chỗ cắm B8) |
+| `runs.routes.ts` | E12 `POST /conversations/:id/messages` (mount dưới `/conversations`; H2a: `classifyMessage` → `/lệnh` qua `prepareCommand` — 404/422 `CMD_*` trước run; `//…` → tin thường bỏ một `/`) · E13 `GET /runs/:id/events` · E14 `GET /runs/:id` |
+| `runs.service.ts` | `RunService`: E12 transaction `user` (conversations → flows → runs → messages), 409 `FLOW_BUSY`, `run.started`; E13/E14; `RunDriver` (chỗ cắm B8); `start(…, CommandRunStart)` → run `kind=command` + `command_id`/`feature_id`, driver riêng (H2a-R08) |
 | `runs.repo.ts` | SQL run (lọc `tenant_id`+`user_id`); `finishRun` = `flows FOR UPDATE` → `UPDATE runs … status='running' AND owner=$me` |
 | `sse/sse-writer.ts` | `SseWriter` (chủ run, `XADD sse:<id> <seq>-0`, fencing, `finish`), `appendExternal` ("XADD bên ngoài"), `RunRegistry` |
 | `sse/sse-reader.ts` | `SseReader` (một kết nối `XREAD BLOCK 1000` multiplex), `runEventStream` (XRANGE → theo dõi → đóng ở sự kiện kết thúc, ping 15 s) |

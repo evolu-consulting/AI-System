@@ -68,6 +68,10 @@ export type RunInsert = {
   answerMessageId: string;
   owner: string;
   locale: Locale;
+  /** H2a-R08 · vắng = `orchestrated`; `command` kèm `commandId` + `featureId`. */
+  kind?: "orchestrated" | "command";
+  commandId?: string | null;
+  featureId?: string | null;
 };
 
 /** §5.1 bước 3 · `owner` + lease 30 s. Trả `started_at` (đã cắt ms). 23505 `FLOW_RUNNING_UQ` do người gọi xử lý. */
