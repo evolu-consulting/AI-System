@@ -1,6 +1,6 @@
 // WRK-FR-06 · AC-W06 · H2a-R13 · RT4 · test-plan H2a cases §5 S03: stack thật — `/dich-async` (job `workflow.async`,
 // MK `mk-slow-2000`) đang chạy trong Runtime (`fake-cli,dify`) → `kill -9` container → Runtime mới
-// (`AGENT_RT_ORPHAN_S=5`) requeue + chạy lại → client thấy đúng một `run.finished` (text MK), job `attempts=2`.
+// (`AGENT_RT_ORPHAN_S=5`, `AGENT_RT_HEARTBEAT_S=1`) requeue + chạy lại → client thấy đúng một `run.finished` (text MK), job `attempts=2`.
 // Chạy: bun run test:h2a:stack
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { type Json, waitFor } from "../../H1/_fixtures";
@@ -37,7 +37,9 @@ describe("S03 · kill -9 Runtime giữa job workflow.async → requeue, một ru
     expect(running.map((j) => [j.type, j.status])).toEqual([["workflow.async", "running"]]);
 
     rt.kill9();
-    await s.runtime(`${RT}-2`, PROVIDERS, { AGENT_RT_ORPHAN_S: "5" });
+    // TC-5: ngưỡng orphan phải > chu kỳ heartbeat (mặc định 10 s) — không thì Runtime mới requeue chính job nó vừa
+    // claim (mk-slow-2000 chạy > 5 s) → claim lần 3. Heartbeat 1 s giữ đúng tỉ lệ prod (orphan 60 / heartbeat 10).
+    await s.runtime(`${RT}-2`, PROVIDERS, { AGENT_RT_ORPHAN_S: "5", AGENT_RT_HEARTBEAT_S: "1" });
     const end = await sse.terminal(90_000);
     sse.close();
     expect(end?.event).toBe("run.finished");

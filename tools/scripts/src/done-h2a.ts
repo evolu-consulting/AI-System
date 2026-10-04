@@ -28,7 +28,7 @@ const bunStep = (title: string, args: string[], extra: Partial<Step> = {}): Step
 /** §7.1 theo thứ tự; dòng `&&` (stack, cuối) tách thành từng bước. */
 export function h2aSteps(env: Record<string, string | undefined> = process.env): Step[] {
   const typecheck =
-    "typecheck --filter=@ai/hub-api --filter=@ai/contracts --filter=@ai/db --filter=@ai/hub-dev --filter=@ai/chat-web --filter=@ai/mocks";
+    "typecheck --filter=@ai/hub-api --filter=@ai/contracts --filter=@ai/db --filter=@ai/scripts --filter=@ai/chat-web --filter=@ai/mocks";
   const unit =
     "packages/contracts packages/db tools/hub-dev apps/admin-api/src/modules/access tests/acceptance/C1 tests/acceptance/H1/rules tests/acceptance/H2a/rules";
   const int =

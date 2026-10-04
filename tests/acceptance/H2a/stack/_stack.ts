@@ -5,8 +5,12 @@
 // `AGENT_RT_PROVIDERS=fake-cli` và không có env H2a nên viết lại hai hàm khởi động ở đây.
 //
 // Nối host ↔ container (Docker Desktop / WSL2): Runtime gọi Hub (`/mcp` theo `payload.mcp.url`, credential theo
-// `AGENT_RT_HUB_URL`) và Dify (`base_url` trong catalog, trả qua credential) bằng `host.docker.internal`; hub-api trên host
-// cũng tới MK qua cùng tên (catalog chỉ có một `base_url`). `HUB_PUBLIC_INTERNAL_URL` = `http://host.docker.internal:<cổng>`.
+// `AGENT_RT_HUB_URL`) bằng `host.docker.internal` (`--add-host …:host-gateway`); `HUB_PUBLIC_INTERNAL_URL` =
+// `http://host.docker.internal:<cổng>`. TC-4: hub-api chạy TRÊN HOST không được dùng `host.docker.internal` (hosts của
+// Windows có thể trỏ IP cũ → timeout) → `base_url` Dify chọn theo bên gọi: workflow có lệnh `mode='async'` (Runtime trong
+// container gọi Dify, base_url trả qua credential) → `host.docker.internal`; workflow còn lại (Hub gọi sync) → `localhost`.
+// MK nghe 0.0.0.0 (mặc định Bun.serve) nên cả hai đường tới cùng một mock. Giới hạn: một workflow dùng cả sync lẫn async
+// trong CÙNG test stack sẽ chỉ đúng một phía (S01–S03 không có ca đó: S01 trello sync, S03 dich chỉ /dich-async).
 // Chạy riêng (bunfig bỏ qua thư mục này): `bun run test:h2a:stack` (không song song test:int TS/Python cùng DB).
 import { resolve } from "node:path";
 import { dockerArgs, IMAGE } from "../../../../apps/agent-runtime/scripts/run";
@@ -208,17 +212,16 @@ export type StackH2a = {
   stop: () => Promise<void>;
 };
 
-/** DB sạch + fixture H1 + catalog/agent H2a (cases §7, `base_url` MK qua `host.docker.internal`) + hub-api. */
+/** DB sạch + fixture H1 + catalog/agent H2a (cases §7; `base_url` MK theo bên gọi — TC-4, đầu file) + hub-api. */
 export async function bootStackH2a(rtName: string): Promise<StackH2a> {
   await prepareDb();
   const sql = ownerSql();
   await insertFixture(sql);
   await insertHubConfig(sql);
   const dify = startDify();
-  await insertCatalog(sql, {
-    baseUrl: dify.baseUrl.replace("localhost", HOST_ALIAS),
-    extras: true,
-  });
+  await insertCatalog(sql, { baseUrl: dify.baseUrl, extras: true });
+  await sql`update admin.workflows set base_url = ${dify.baseUrl.replace("localhost", HOST_ALIAS)}
+    where id in (select workflow_id from admin.commands where mode = 'async')`;
   await insertH2aAgents(sql);
   const k = await makeKeys();
   const hub = await startHubProcH2a(k);
