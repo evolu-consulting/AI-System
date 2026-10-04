@@ -11,6 +11,7 @@ from typing import Annotated
 from pydantic import Field, TypeAdapter, ValidationError
 
 from agent_runtime.providers.base import (
+    Confirm,
     Fatal,
     Final,
     Progress,
@@ -33,7 +34,7 @@ class ChildRequest(ProviderJob):
 
 
 ChildEvent = Annotated[
-    Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal,
+    Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal | Confirm,
     Field(discriminator="type"),
 ]
 _EVENT: TypeAdapter[ProviderEvent] = TypeAdapter(ChildEvent)

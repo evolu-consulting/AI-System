@@ -21,6 +21,7 @@ from agent_runtime.db import jobs_sql
 from agent_runtime.db.jobs_sql import ClaimedJob
 from agent_runtime.log import get_logger
 from agent_runtime.providers.base import (
+    Confirm,
     Fatal,
     Final,
     Progress,
@@ -263,6 +264,9 @@ class HostProcess:
             self.run.seen.session_id = ev.session_id
         elif isinstance(ev, ToolUse):
             self.run.seen.tool_used = True
+        elif isinstance(ev, Confirm):
+            if self.run.seen.confirm is None:  # §5 #3: giữ cái đầu
+                self.run.seen.confirm = ev
         elif isinstance(ev, Final):
             self.run.seen.final = ev
         elif isinstance(ev, RateLimit):

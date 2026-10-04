@@ -76,8 +76,8 @@ class Fatal(_Ev):
 
 
 class Confirm(_Ev):
-    """HUB-FR-95 · R21 · Hub từ chối tool `side_effect` chưa xác nhận (`plan-runtime` §5).
-    PY-05 đưa vào `ProviderEvent`/`protocol.py`."""
+    """HUB-FR-95 · R21 · Hub từ chối tool `side_effect` chưa xác nhận (`plan-runtime` §5): cha
+    ghi `seen.confirm` (giữ cái đầu) → `build_output` ép `need_input`, không thử lại."""
 
     type: Literal["confirm"] = "confirm"
     question: Annotated[str, Field(min_length=1, max_length=CONFIRM_QUESTION_MAX)]
@@ -121,7 +121,7 @@ def parse_confirmation(content: str | Sequence[Mapping[str, Any]]) -> Confirm | 
     return Confirm(question=question, choices=(str(items[0]), str(items[1])))
 
 
-ProviderEvent = Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal
+ProviderEvent = Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal | Confirm
 Emit = Callable[[ProviderEvent], Awaitable[None]]
 
 

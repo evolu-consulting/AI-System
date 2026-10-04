@@ -31,7 +31,11 @@ from agent_runtime.runtimes.cli.outcome import (
     usage_row,
 )
 from agent_runtime.runtimes.cli.prompt import retry_prompt
-from agent_runtime.runtimes.cli.result import build_output, validation_hint
+from agent_runtime.runtimes.cli.result import (
+    build_output,
+    confirmation_forced,
+    validation_hint,
+)
 from agent_runtime.runtimes.cli.session import resume_failed, session_key
 
 if TYPE_CHECKING:
@@ -86,7 +90,8 @@ class JobRun:
         await self._apply(outcome)
 
     def _retryable(self, outcome: Outcome) -> bool:
-        return outcome == "exited" and not self.stopping()
+        """HUB-FR-95 §5 #5: đã có `Confirm` → không resume/thử lại (lượt sau là run mới)."""
+        return outcome == "exited" and not self.stopping() and self.seen.confirm is None
 
     async def _load_session(self) -> None:
         """§6: session cùng khoá + tenant (BR-06) → resume; không → prompt kèm history (BR-03)."""
@@ -145,7 +150,12 @@ class JobRun:
             get_logger().info("job.stopped_no_write", reason=reason or outcome)
             self.host.events.forget(self.job.id)
         else:
-            await self._close(decide_exit(self.payload, self.seen))
+            v = decide_exit(self.payload, self.seen)
+            if v.failure is None and confirmation_forced(
+                self.payload, self.seen.final, self.seen.confirm
+            ):
+                get_logger().info("job.confirmation_forced")  # không nội dung (§5 #4)
+            await self._close(v)
 
     def _succeeded(self) -> bool:
         return decide_exit(self.payload, self.seen).failure is None

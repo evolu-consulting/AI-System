@@ -25,10 +25,13 @@ from claude_agent_sdk import (
     ResultError,
     ResultMessage,
     SystemMessage,
+    ToolResultBlock,
     ToolUseBlock,
+    UserMessage,
 )
 
 from agent_runtime.providers.base import (
+    Confirm,
     Fatal,
     Final,
     Progress,
@@ -36,6 +39,7 @@ from agent_runtime.providers.base import (
     RateLimit,
     ToolUse,
     UsageEv,
+    parse_confirmation,
 )
 from agent_runtime.providers.claude.mcp import MCP_SERVER, TOOL_PREFIX
 
@@ -86,6 +90,28 @@ def tool_events(msg: AssistantMessage) -> Iterator[ProviderEvent]:
         if isinstance(block, ToolUseBlock):
             yield ToolUse(name=block.name[:200] or "?")
             yield Progress(label=tool_label(block.name))
+
+
+def mcp_tool_ids(msg: AssistantMessage) -> Iterator[str]:
+    """Id `ToolUseBlock` của tool MCP Hub (`mcp__hub__*`) — để nhận ra kết quả của nó (§5 #2)."""
+    for block in msg.content:
+        if isinstance(block, ToolUseBlock) and block.name.startswith(TOOL_PREFIX):
+            yield block.id
+
+
+def confirm_events(msg: UserMessage, mcp_ids: set[str]) -> Iterator[Confirm]:
+    """HUB-FR-95 · §5 #2: `ToolResultBlock(is_error)` của tool `mcp__hub__*` có khối đầu JSON
+    `CONFIRMATION_REQUIRED` đúng hình → `Confirm` (content str khi lỗi — spike S2 — hoặc list)."""
+    if isinstance(msg.content, str):
+        return
+    for block in msg.content:
+        if not isinstance(block, ToolResultBlock) or not block.is_error:
+            continue
+        if block.tool_use_id not in mcp_ids or block.content is None:
+            continue
+        got = parse_confirmation(block.content)
+        if got is not None:
+            yield got
 
 
 def tool_label(name: str) -> str:

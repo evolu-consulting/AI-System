@@ -20,7 +20,7 @@ from agent_runtime.db.jobs_sql import Finish
 from agent_runtime.db.provider_state_sql import Broken, ProviderEffect
 from agent_runtime.db.usage_sql import UsageKeys, UsageRow
 from agent_runtime.events.job_events import Failure, Tokens
-from agent_runtime.providers.base import Fatal, Final, RateLimit, UsageEv
+from agent_runtime.providers.base import Confirm, Fatal, Final, RateLimit, UsageEv
 from agent_runtime.runtimes.cli.result import build_output
 
 JOB_ERROR_CODES = frozenset(
@@ -76,6 +76,8 @@ class Seen:
     carried: UsageSum = field(default_factory=UsageSum)  # usage của lần chạy trước (thử lại)
     parent_fault: bool = False  # `fatal` do phía cha dựng (giao thức/reader), không phải provider
     signaled: bool = False  # job host thoát vì tín hiệu mà cha không gửi (returncode < 0)
+    # HUB-FR-95 §5 #3: Hub từ chối tool `side_effect` (giữ cái đầu; không reset khi thử lại)
+    confirm: Confirm | None = None
 
     def total(self) -> UsageSum:
         return self.carried if self.usage is None else self.carried.plus(self.usage)
@@ -130,9 +132,9 @@ def decide_exit(payload: JobPayload1, seen: Seen) -> Verdict:
         return Verdict(fatal_failure(seen.fatal), provider="none" if seen.parent_fault else "error")
     if seen.final is None:
         return Verdict(CRASHED, provider="none" if seen.signaled else "error")
-    if seen.final.is_error:
+    if seen.final.is_error and seen.confirm is None:
         return Verdict(PROVIDER_ERROR)
-    output = build_output(payload, seen.final)
+    output = build_output(payload, seen.final, seen.confirm)
     if output is None:
         return Verdict(INVALID_OUTPUT)
     return Verdict(None, output, "ok")

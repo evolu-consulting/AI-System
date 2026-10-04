@@ -19,16 +19,19 @@ from claude_agent_sdk import (
     RateLimitEvent,
     ResultMessage,
     SystemMessage,
+    UserMessage,
 )
 
 from agent_runtime.log import get_logger
 from agent_runtime.providers.base import Emit, ProviderJob, RateLimit, Session
 from agent_runtime.providers.claude.mapping import (
+    confirm_events,
     error_events,
     final_event,
     init_model,
     init_session_id,
     mcp_statuses,
+    mcp_tool_ids,
     rate_limit_event,
     result_signal,
     tool_events,
@@ -47,6 +50,7 @@ class _Turn:
     session_id: str | None = None
     model: str | None = None
     rate_limited: set[str] = field(default_factory=set[str])
+    mcp_ids: set[str] = field(default_factory=set[str])  # id `ToolUseBlock` `mcp__hub__*` (§5)
     final_sent: bool = False
 
     async def session(self, sid: str | None) -> None:
@@ -68,16 +72,23 @@ class _Turn:
         await self.emit(final_event(msg, self.job.payload.output))
         self.final_sent = True
 
+    async def system(self, msg: SystemMessage) -> None:
+        self.model = init_model(msg) or self.model
+        for status in mcp_statuses(msg):
+            if status != "connected":  # §4.5: không fail job, tool không có
+                get_logger().warning("job.mcp_unavailable", status=status)
+        await self.session(init_session_id(msg))
+
     async def handle(self, msg: Message) -> None:
         if isinstance(msg, SystemMessage):
-            self.model = init_model(msg) or self.model
-            for status in mcp_statuses(msg):
-                if status != "connected":  # §4.5: không fail job, tool không có
-                    get_logger().warning("job.mcp_unavailable", status=status)
-            await self.session(init_session_id(msg))
+            await self.system(msg)
         elif isinstance(msg, AssistantMessage):
+            self.mcp_ids.update(mcp_tool_ids(msg))
             for ev in tool_events(msg):
                 await self.emit(ev)
+        elif isinstance(msg, UserMessage):
+            for confirm in confirm_events(msg, self.mcp_ids):
+                await self.emit(confirm)
         elif isinstance(msg, RateLimitEvent):
             ev = rate_limit_event(msg)
             if ev is None:
