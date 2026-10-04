@@ -54,14 +54,15 @@ export async function deltaContent(redis: Redis, runId: string): Promise<string>
 export class CancelService {
   constructor(private readonly d: CancelServiceDeps) {}
 
+  /** `content` đọc từ Redis **trước** transaction (không giữ khoá DB trong lúc gọi Redis). */
   async #write(
-    target: CancelTarget,
-    locale: repo.Locale,
+    w: { target: CancelTarget; locale: repo.Locale; content: string },
     run: (w: CancelWrite) => Promise<boolean>,
-  ) {
-    const error = cancelError(locale);
-    const content = await deltaContent(this.d.redis, target.runId);
-    return (await run({ target, owner: this.d.owner, error, content })) ? { target, error } : null;
+  ): Promise<Cancelled | null> {
+    const { target } = w;
+    const error = cancelError(w.locale);
+    const ok = await run({ target, owner: this.d.owner, error, content: w.content });
+    return ok ? { target, error } : null;
   }
 
   /**
@@ -77,7 +78,8 @@ export class CancelService {
     const snapshot = toRun(r, await lastEventIdOf(this.d.redis, r));
     if (r.status !== "running") return snapshot;
     const target: CancelTarget = { runId: r.id, ...r };
-    const done = await this.#write(target, r.locale, (w) =>
+    const content = await deltaContent(this.d.redis, r.id);
+    const done = await this.#write({ target, locale: r.locale, content }, (w) =>
       withHubScope(this.d.db, { kind: "system" }, (tx) => cancelRun(tx, w)),
     );
     if (done) await this.#announce(done);
@@ -86,15 +88,28 @@ export class CancelService {
 
   /** E9 · một transaction `user`: xoá mềm hội thoại (khoá đầu tiên) rồi huỷ từng run `running` của nó. 404 như B5. */
   async removeConversation(u: AuthUser, conversationId: string): Promise<void> {
+    const contents = await this.#deltasOf(u, conversationId);
     const done = await this.d.conversations.remove(u, conversationId, async (tx, o) => {
       const out: Cancelled[] = [];
       for (const r of await runningRunsOf(tx, o, conversationId)) {
-        const c = await this.#write(r, r.locale, (w) => cancelRun(tx, w));
+        const w = { target: r, locale: r.locale, content: contents.get(r.runId) ?? "" };
+        const c = await this.#write(w, (cw) => cancelRun(tx, cw));
         if (c) out.push(c);
       }
       return out;
     });
     for (const c of done ?? []) await this.#announce(c);
+  }
+
+  /** Nội dung `delta` của các run đang chạy (đọc không khoá, trước transaction E9). Run mới xen giữa → "". */
+  async #deltasOf(u: AuthUser, conversationId: string): Promise<Map<string, string>> {
+    const o = { tenantId: u.tenantId, userId: u.userId };
+    const runs = await withHubScope(this.d.db, { kind: "user", ...o }, (tx) =>
+      runningRunsOf(tx, o, conversationId),
+    );
+    const out = new Map<string, string>();
+    for (const r of runs) out.set(r.runId, await deltaContent(this.d.redis, r.runId));
+    return out;
   }
 
   #announce(c: Cancelled): Promise<void> {
