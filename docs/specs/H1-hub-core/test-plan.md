@@ -1,6 +1,6 @@
 # Test plan · H1-hub-core (qc)
 
-Chế độ **TEST-PLAN** · 2026-10-04 · chưa có file test; viết + "đỏ đúng lý do" sau Gate (nhóm §8), rồi khoá.
+Chế độ **TEST-PLAN** · 2026-10-04 · sửa theo readiness lần 1 (người dùng chấp nhận mọi mặc định, câu 1 = "chưa"). Chưa có file test; viết + "đỏ đúng lý do" sau Gate (§8), rồi khoá. Ca bổ sung (R15, A37b, A54–A57, P45), ca `blocked (chờ W0)`, tranh chấp K: [`test-plan-cases.md`](test-plan-cases.md).
 "Đúng" = spec §2 (H1-R01…R26), §8 (AC phần H1, HUB-H1-AC-01…12); chữ ký `plan.md` §6.4; SQL `plan-db.md` §5.4–5.5; `fake-cli` `plan-runtime.md` §7. BA chỉ ở mục AC được trỏ.
 
 ## 1. Quy ước
@@ -19,13 +19,13 @@ Chế độ **TEST-PLAN** · 2026-10-04 · chưa có file test; viết + "đỏ 
 
 | Mục | Đề xuất | Ai |
 |---|---|---|
-| DB test | DB riêng `ai_system_test_h1` (TECH-DEBT #17, env `HUB_TEST_DATABASE_URL`) + `runHubMigrations`; **không** migrate Hub trên `TEST_DATABASE_URL` (R-DB2). Python dùng cùng DB, role `agent_runtime`. Mỗi file tự migrate ở `beforeAll` (idempotent) | backend-lead env, qc fixture |
+| DB test | DB riêng `ai_system_h1_test` (đuôi `_test` cho `resetTestDb`; TECH-DEBT #17), env `HUB_TEST_DATABASE_URL` (TS) + `runHubMigrations`; **không** migrate Hub trên `TEST_DATABASE_URL` (R-DB2). Python: cùng DB qua `AGENT_RT_TEST_DATABASE_URL`, role `agent_runtime`. Mỗi file tự migrate ở `beforeAll` (idempotent) | backend-lead env, qc fixture |
 | Redis test | `redis://localhost:6379/15`; key theo `run_id` mới mỗi ca; không `FLUSHDB` | qc |
 | Runtime kịch bản (A) | `tests/acceptance/H1/_runtime.ts`: đợi `INSERT hub.jobs`, parse `JobPayloadSchema`, ghi `jobs` + XADD `RunEvent` theo kịch bản ca; assert được **payload** (prompt, `<agents>`, history) | qc |
-| `fake-cli` (P, S, K) | `plan-runtime §7` + `badjson` (`plan §8 R4`), `APP_ENV=test` | backend-lead PY-09 |
-| Runtime trong P | subprocess `python -m agent_runtime` (WSL2), env tường minh: `AGENT_RT_PROVIDERS=fake-cli`, `WORKER_ID=qc-<n>`, `WORK_DIR`/`LOG_DIR` tmp ổ Linux, `ORPHAN_S=5`, `HOME`=tmp có `.claude/.credentials.json` mồi (Q-T4) | qc |
+| `fake-cli` (P, S, K) | `plan-runtime §7` + `badjson` (`plan §8 R4`), `#fake:tool=<name>`, `APP_ENV=test`; Orchestrator chỉ echo khối `<message>`/`prompt`: `"echo: "+msg` + câu cố định ≥ 120 ký tự (≥ 3 `delta`) | backend-lead PY-09 |
+| Runtime trong P | subprocess `python -m agent_runtime` (WSL2), env tường minh: `AGENT_RT_PROVIDERS=fake-cli`, `WORKER_ID=qc-<n>`, `WORK_DIR`/`LOG_DIR` tmp ổ Linux, `ORPHAN_S=5`, `CLEANUP_S=1`, `HOME`=tmp có `.claude/.credentials.json` mồi (CLI con dùng `HOME` cha, Q-T4) | qc |
 | Stack (S, K) | `tools/hub-dev` (I1): hub-api :4000 + agent-runtime + admin-api, profile `fake-1` | backend-lead I1 |
-| CLI thật | chỉ spike PY-02 + M1 | người dùng |
+| CLI thật | chỉ spike PY-02 + M1: **blocked (chờ W0)** → I2 cuối H1. Mọi test tự động: `fake-cli` hoặc SDK giả (monkeypatch `ClaudeSDKClient`) | người dùng |
 | Lock | `LOCKED_DIRS` + `apps/agent-runtime/tests/acceptance`, bỏ `__pycache__`, `.pytest_cache` | backend-lead PY-01 |
 | Tách chạy | `tests/acceptance/H1/stack/**` vào `pathIgnorePatterns` (`bunfig.toml`, `bunfig.int.toml`); script `test:h1:stack` | backend-lead B1 |
 
@@ -37,11 +37,11 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 |---|---|
 | HUB-FR-01, 74 · HUB-H1-AC-09 | R11–R13, A1 |
 | HUB-FR-88 · H1-R04 · HUB-NFR-03 | A2 (mọi A chạy không admin-api) |
-| HUB-FR-02, 03 | A2, A25 (phần tenant/user/group/hub) |
+| HUB-FR-02, 03 | A2, A25, A57 (phần tenant/user/group/hub) |
 | HUB-FR-40 · H1-R03 | A5–A7, K |
-| HUB-FR-41 · H1-R09, R10 | A8, A11, A13, A15, K |
-| HUB-FR-42 · HUB-NFR-02 · HUB-H1-AC-03 · H1-R12 | A11, A12, A39, K |
-| HUB-FR-43 · AC-H06 · H1-R14 | A34–A36, P8, S1 |
+| HUB-FR-41 · H1-R09, R10 | A8, A11, A13, A15, P45b, K |
+| HUB-FR-42 · HUB-NFR-02 · HUB-H1-AC-03 · H1-R12 | R8, R15, A11, A12, A39, A54, K |
+| HUB-FR-43 · AC-H06 · H1-R14 | A34–A36, A55, P8, S1 |
 | HUB-FR-45 · H1-R11 | A9, A10, A24 |
 | HUB-FR-75 · HUB-BR-02, 14 · AC-H07, H08 | A5–A7, K |
 | HUB-FR-20, 25 · H1-R05 | A14, A15, A28 |
@@ -49,7 +49,7 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 | HUB-FR-27, 29 · H1-R08 | R5, A16, A17, P28 |
 | HUB-FR-28 · AC-H15 · AC-H14 | A18, A19, S2 |
 | HUB-FR-77 · HUB-BR-03 · AC-H09 · H1-R06 | R7, A14, A21, A25, A27 |
-| HUB-BR-04 · HUB-BR-06 · H1-R15 | A20, A26, A30 · A25 |
+| HUB-BR-04 · HUB-BR-06 · H1-R15 | A20, A26, A30, A56 · A25 |
 | HUB-FR-60, 61, 62 · HUB-BR-08 · H1-R16, R17 · HUB-H1-AC-11 | A42–A47 |
 | HUB-FR-89, 32 · H1-R18 | A29–A32 |
 | HUB-FR-86 · AC-H13 · AC-W07, W08 · HUB-H1-AC-07 | A31, P2–P4 |
@@ -60,19 +60,19 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 | WRK-FR-01, 20, 24 · WRK-BR-05 · WRK-NFR-01 · H1-R19 | P2–P7 |
 | WRK-FR-02, 23 · WRK-BR-04 · WRK-NFR-03 · H1-R20 · HUB-H1-AC-04 | P12–P16, A41, S3 |
 | HUB-H1-AC-05 · H1-R13 | A40 |
-| WRK-FR-03 | P38, P39 |
+| WRK-FR-03 | P38, P39, P45a |
 | WRK-FR-04, 05 · WRK-NFR-06 · AC-W03, W10 · H1-R22 | P8–P11 |
 | WRK-FR-11, 12 · WRK-BR-02, 07 · WRK-NFR-02 · AC-W05, W11 · H1-R21 | P1, P17–P19 |
 | WRK-FR-14 · WRK-BR-03, 06 · AC-W04 · H1-R23 | P20–P25 |
 | WRK-FR-15 · AC-W02 · H1-R24 | P29–P32 |
-| WRK-FR-10 · HUB-H1-AC-02 | M1 (+ spike PY-02) |
+| WRK-FR-10 · HUB-H1-AC-02 | M1 + spike PY-02 — **blocked (chờ W0)**, I2 |
 | HUB-H1-AC-01 · CHAT-AC-31, 32, 33 | K (~40 ca "mọi Hub") |
 | HUB-H1-AC-06 | R14, P44, `contracts:check` |
 | HUB-H1-AC-08 | A48–A51 |
-| HUB-H1-AC-10 · HUB-H1-AC-12 | A20–A22, P26 · A24 |
+| HUB-H1-AC-10 · HUB-H1-AC-12 | A20–A22, A56, P26 · A24 |
 | spec §7 (`fake-cli` chỉ dev/test) | A44, P40, P41 |
 
-**Không phủ (đủ) ở H1:** HUB-FR-31 fallback nhiều bước → H2 (Q-T6) · HUB-FR-02 command/workflow/feature/quota → H2/H3; poll 60 s (Q-T7) · HUB-FR-60/61 CRUD Studio → H4 (H1 qua seed) · AC-H08 `/runs/:id/trace` → H3 · AC-H09 "cấp ≤ 5 s qua API" → H3 · AC-H13, AC-W02, AC-W07 dự phòng sang API → H2/H3 (H1 kết thúc `ALL_PROVIDERS_EXHAUSTED`) · AC-W09 `billable_usd`/`price_book`, HUB-FR-83 `overage` → H3 · HUB-NFR-03 bộ đếm quota Redis → H3 · WRK-FR-03 `delta` từ Runtime (P6: Hub cắt) · WRK-FR-10 SDK thật chỉ thủ công · AC-W06 (`workflow.async` đưa lại queue) không thuộc H1 — thay bằng HUB-H1-AC-04.
+**Không phủ (đủ) ở H1:** [`test-plan-cases.md`](test-plan-cases.md) §4.
 
 ## 4. R · Hàm thuần TS (chữ ký `plan.md` §6.4)
 
@@ -85,7 +85,7 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 | R5 | `canPassThrough` | `done`+1+`!hadPartial` → true; `delegates=2` → false; `hadPartial` → false; `partial`/`need_input` → false; `delegates=0` → false |
 | R6 | `chunkText` | nối == text; phần 1–40; đúng 40 → 1 phần; từ 95 ký tự → cắt cứng; dấu NFC/NFD, emoji không cắt đôi (Q-T5); xuống dòng kép, nhiều cách giữ; `max=5`; `""` → `[]` |
 | R7 | `visibleAgents` | loại: agent tắt, entitlement thu hồi/tenant khác, chưa grant (`hoadon`), grant user khác/group không thuộc, Orchestrator dù có grant; grant user+group → 1 mục; sắp `key`; chỉ `key`+mô tả |
-| R8 | `eventsExpired` | `running` → false; xong `now-599 s`, 600 → false; `now-601 s` → true; biên `=600` theo Q-T5 |
+| R8 | `eventsExpired` | hết hạn khi `now − finishedAt > retention` (như mock C1 `runs.ts`): `running` → false; xong `now-599 s` → false; **đúng** `now-600 s` → false; `now-600 s-1 ms`, `now-601 s` → true |
 | R9 | `leaseExpired` | `null` → false (sweeper SQL `<`); `now-1 ms` → true; `== now` → false |
 | R10 | `queueTimeoutReason` | `limit null` → `provider_busy`; `0<1` → `provider_busy`; `1≥1` → `tenant_slots`; `3≥2` → `tenant_slots` |
 | R11 | `verifyAccessToken` hợp lệ | token EdDSA đúng `iss/aud/sub/tid/role` → claims; `role` ∈ 3 giá trị |
@@ -121,7 +121,7 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 | A23 | FR-21 | `usage` vượt `token_budget` → dừng theo R07 |
 | A24 | AC-12 | prompt chỉ tin flow 1, ≤ `history_n`, không gồm tin hiện tại, mỗi tin ≤ 4000 |
 | A25 | BR-06, AC-H09 | seed tắt `assistant` giữa run → run đang chạy giữ snapshot, run mới ≤ 5 s không thấy; grant `hoadon` qua seed → ≤ 5 s có |
-| A26 | BR-04 | `job.failed` TIMEOUT/INTERNAL/UPSTREAM → `run.failed` cùng mã, `message` không rỗng, không lộ agent |
+| A26 | BR-04 | `job.failed` TIMEOUT/INTERNAL/UPSTREAM → `run.failed` cùng mã, `message` không rỗng, không lộ agent (chi tiết A56: không chuyển `message` gốc) |
 | A27 | BR-03 | payload agent `allowed_tools ⊂ {Read,Grep,Glob}` |
 | A28 | R05 | tin bắt đầu `/` → vẫn có job Orchestrator |
 | A29 | FR-89 | `INSERT jobs` + `job_enqueued` cùng transaction (thấy NOTIFY ⇒ thấy dòng) |
@@ -131,7 +131,7 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 | A34 | AC-H06 | huỷ: `queued→cancelled`; `running` có `cancel_requested_at` + `job_cancel`; SSE `CANCELLED`; lần 2 → 200, không sự kiện mới |
 | A35 | E9 | xoá hội thoại có run chạy → run `cancelled`, rồi 404 |
 | A36 | UC-04 | huỷ run đã xong → 200 `finished` |
-| A37 | §3.5 | 50 vòng E12 ∥ kết thúc ∥ huỷ cùng flow: `deadlocks` không tăng; 1 kết thúc/run; ≤ 1 `running`/flow |
+| A37 | §3.5 | 50 vòng E12 ∥ kết thúc ∥ huỷ cùng flow: `deadlocks` không tăng; 1 kết thúc/run; ≤ 1 `running`/flow · + E9 đổi tên/xoá ∥ E12: A37b |
 | A38 | §3.5 | huỷ ∥ sweeper ∥ kết thúc cùng run → đúng 1 kết thúc, DB khớp |
 | A39 | AC-03 | 2 instance: POST ở A, ngắt sau `delta` 3, E13 ở B `Last-Event-ID: 3` → 4…n không lặp/mất |
 | A40 | AC-05 | A dừng không dọn, `lease_until` lùi → B ≤ 20 s đóng `INTERNAL_ERROR`, huỷ job, `seq`=cuối+1; A bị fencing |
@@ -171,7 +171,7 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 | P16 | §3.3 | 3 `crash` liên tiếp → `provider_state=error`, job `queued` → `provider_unavailable`; thành công xen giữa → đếm về 0 |
 | P17 | AC-W11 | `read=` `~/.claude/.credentials.json`, `$HOME/.codex/x`, `/mnt/c/…`, `../<job khác>`, symlink → `denied`; canary không ở `result`, Redis, log, stdout |
 | P18 | BR-02 | `#fake:env` khoá ∩ {`AGENT_RT_*`, `REDIS_URL`, `DATABASE_URL*`, `ANTHROPIC_API_KEY`, `JWT_*`, `HUB_*`} = ∅; `cwd`=`work/<job_id>` |
-| P19 | FR-12 | tool ngoài `allowed_tools`, `Bash`, `Agent` → `tool_not_allowed` (Q-T3) |
+| P19 | FR-12 | `#fake:tool=` tool ngoài `allowed_tools`, `Bash`, `Agent` → `tool_not_allowed` (Q-T3) |
 | P20 | AC-W04 | `remember=xanh` → `recall` = "xanh", `session_resumed=true` |
 | P21 | R23 | `lost-session` → thành công từ `history`, `session_resumed=false` |
 | P22 | BR-06 | session cùng khoá, `tenant_id` khác → không resume, không ghi đè |
@@ -194,7 +194,7 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 | P40 | §7 | production + `fake-cli` liệt kê → exit 2; không liệt kê → không đăng ký |
 | P41 | §1.4 | `WORK_DIR` dưới `/mnt/` hoặc tương đối → exit 2 |
 | P42 | NFR-04 | stdout JSON có `job_id, run_id, tenant_id`, không chuỗi mồi; file log 0600 |
-| P43 | FR-23 | log > 7 ngày, `work/<job>` > 24 h bị xoá (Q-T7) |
+| P43 | FR-23 | `AGENT_RT_CLEANUP_S=1`: log > 7 ngày, `work/<job>` > 24 h bị xoá (Q-T7) |
 | P44 | AC-06 | fixtures `valid/invalid`: pydantic cùng kết luận zod; `model_dump_json()` → zod parse |
 | S1 | AC-H06 | stack: `#fake:delegate=assistant #fake:sleep=60` → huỷ → ≤ 5 s `CANCELLED`, job `cancelled` |
 | S2 | AC-H14/15 | stack: `need_input` → trả lời → delegate lại, `session_resumed=true` |
@@ -204,9 +204,12 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 
 ## 7. Lệnh
 
-### 7.1 Xong mốc H1 (đề xuất script `bun run done:h1` gọi tuần tự)
+### 7.1 Xong mốc H1 — **chuẩn duy nhất** (spec §8, plan-runtime §10 trỏ về đây) · script `bun run done:h1` gọi tuần tự
+Lọc theo package Hub: `@ai/hub-api`, `packages/{contracts,db}`, `apps/agent-runtime`, `tests/acceptance/H1`.
 ```
-bun run typecheck && bun test && bun run test:int   # gồm Admin khoá + H1 *.int (DB h1)
+bunx turbo run typecheck --filter=@ai/hub-api --filter=@ai/contracts --filter=@ai/db && tsc -p tsconfig.tests.json
+bun test packages/contracts packages/db tests/acceptance/H1/rules tests/acceptance/H1/contracts-hub.test.ts
+bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 tests/acceptance/H1/ tests/acceptance/M tests/acceptance/ADM-NFR-06   # H1 *.int (DB h1) + Admin khoá
 bun run contracts:check
 (cd apps/agent-runtime && uv run ruff check . && uv run ruff format --check . && uv run pyright \
   && uv run lint-imports && uv run pytest && uv run pytest -m int)   # WSL2
@@ -214,51 +217,41 @@ bun run test:h1:stack                               # cần tools/hub-dev chạy
 HUB_URL=http://localhost:4000 AUTH_URL=http://localhost:3001 CHAT_CONTRACT_USERS='<json>' bun run test:contract:chat
 bun run test:lock:verify && bun run trace --check && bun run check:size --all && bunx depcruise --all
 ```
-`trace --check`, `check:size` quét `.py` chỉ sau PY-01. `test:perf` không thuộc Lệnh xong.
+`trace --check`, `check:size` quét `.py` chỉ sau PY-01. `test:perf` không thuộc Lệnh xong. Đỏ ngoài bộ lọc (`tsconfig.tests.json`, depcruise, `bun test` toàn repo) **do code dở của Chat** = phụ thuộc combine, không chặn H1; ghi tên file đỏ vào bàn giao.
 
-### 7.2 Smoke thủ công (người dùng, WSL2) — HUB-H1-AC-02
-1. `claude` đăng nhập dưới `worker` (có `~/.claude/.credentials.json`). 2. `pg_isready -h localhost`, `redis-cli ping`. 3. `HUB_SEED_PROFILE=claude-sub-1 bun run hub:seed`, `systemctl start ai-worker`, hub-api `HUB_LIVE=1`. 4. `curl -N` POST "Xin chào" → `run.started…run.finished`, `content` không rỗng, không key `agent`/`provider`. 5. `usage_logs` có dòng `claude-sub`, token > 0. 6. Huỷ run dài → ≤ 5 s, `ps -eo pgid,cmd` hết CLI. 7. Bảo agent đọc `../../.claude/.credentials.json` → bị từ chối. Ghi kết quả vào spec §9.
+### 7.2 Smoke thủ công — HUB-H1-AC-02 · **blocked (chờ W0)**, I2 cuối H1: [`test-plan-cases.md`](test-plan-cases.md) §2.1
 
 ## 8. Ước lượng và nhóm WRITE (sau Gate)
 
 | Nhóm | File | Số ca (≈) | Phải đỏ đúng lý do vì |
 |---|---|---|---|
-| QW-R | `rules/{orchestrator,agent-access,runs,jwt}.test.ts`, `contracts-hub.test.ts` | 50 | module/hàm chưa có (import tĩnh sau khi backend-lead tạo stub chữ ký, Q-T2) |
-| QW-A | 11 file `*.int.test.ts` | 60 | route 404/`expect`; fixture DB/Redis phải xanh |
-| QW-P | 11 file Python | 50 (unit 12, int 38) | `ModuleNotFoundError` trong thân test / timeout chờ trạng thái; fixture (DB, Redis, spawn) phải xanh |
+| QW-R | `rules/{orchestrator,agent-access,runs,jwt}.test.ts`, `contracts-hub.test.ts` | 54 | module/hàm chưa có (import tĩnh sau khi backend-lead tạo stub chữ ký, Q-T2) |
+| QW-A | 11 file `*.int.test.ts` | 67 | route 404/`expect`; fixture DB/Redis phải xanh |
+| QW-P | 11 file Python | 52 (unit 12, int 40) | `ModuleNotFoundError` trong thân test / timeout chờ trạng thái; fixture (DB, Redis, spawn) phải xanh |
 | QW-S | 3 file `.stack.test.ts` | 4 | kết nối tới stack/expect |
 | K | có sẵn | ~40 "mọi Hub" | chỉ chạy ở I2 |
 | perf | 1 | 4 | không chặn |
 
-Tổng mới ≈ **168** ca (TS 118, Python 50) + 40 K + M1; theo mã: Hub FR/BR ~85, WRK ~55, HUB-H1-AC ~28.
+Tổng mới ≈ **181** ca (TS 129, Python 52; +13 theo readiness 1) + 40 K + M1/spike blocked; theo mã: Hub FR/BR ~85, WRK ~55, HUB-H1-AC ~28.
 **Chú ý đỏ đúng lý do:** ca kỳ vọng 404 (A5, K-C8) có đối chứng 200 của chủ và so body `NOT_FOUND` JSON (404 mặc định của Hono không đạt) · dựng dữ liệu bằng SQL, không qua route chưa có · P2 chạy SQL nguyên văn trên schema D1 nên có thể **xanh** trước code Runtime (chấp nhận, ghi §10) · A48–A51 đỏ vì `runHubMigrations` chưa có.
 
-## 9. Rủi ro test · câu hỏi (mặc định)
+## 9. Rủi ro test · câu hỏi — **đã chốt** (người dùng chấp nhận mặc định 2026-10-04)
 
-| # | Rủi ro / câu hỏi | Mặc định |
+| # | Rủi ro / câu hỏi | Đã chốt |
 |---|---|---|
 | Q-T1 | Test Python của qc ở đâu để bị khoá | `apps/agent-runtime/tests/acceptance/` + `LOCKED_DIRS`; pytest `testpaths=["src","tests"]` |
 | Q-T2 | R import tĩnh `*.rules.ts` chưa có → typecheck đỏ | backend-lead tạo stub chữ ký `plan §6.4` (thân `throw`) đầu B1/B4/B8; qc viết R sau |
-| Q-T3 | `fake-cli` thiếu chỉ thị gọi tool tuỳ ý (P19) | thêm `#fake:tool=<name>` qua hook thật (PY-09); không có → P19 thành unit backend |
-| Q-T4 | Không được đụng `~/.claude` thật | Runtime lấy `HOME` từ env cha; test đặt `HOME`=tmp |
-| Q-T5 | Biên: `eventsExpired` đúng 600 s; `chunkText` đếm gì; `parseDecision` với mảng | hết hạn khi `now ≥ finishedAt+retention`; đếm code point, không cắt surrogate; mảng → `ok` |
+| Q-T3 | `fake-cli` thiếu chỉ thị gọi tool tuỳ ý (P19) | `#fake:tool=<name>` qua hook thật (PY-09) |
+| Q-T4 | Không được đụng `~/.claude` thật | `HOME` con = `HOME` cha (`Settings.home`), `forbidden_roots` tính từ đó; test đặt `HOME`=tmp (P17) |
+| Q-T5 | Biên: `eventsExpired` đúng 600 s; `chunkText` đếm gì; `parseDecision` với mảng | hết hạn khi `now − finishedAt > retention` (R8, mock C1); đếm code point, không cắt surrogate; mảng → `ok` |
 | Q-T6 | Profile > 1 bước ở H1 | chỉ bước 0, không fallback; không test HUB-FR-31 |
-| Q-T7 | Poll 60 s (HUB-FR-03), cleanup mỗi giờ không test nhanh | env `HUB_CONFIG_POLL_S`, `AGENT_RT_CLEANUP_S` (60/3600); không có → unit backend |
-| Q-T8 | Orchestrator giả không chỉ thị echo **cả prompt** (lộ `<agents>`, history vào `content`) | echo chỉ `<message>`; `delegate` truyền `task` = tin bỏ `#fake:delegate` (để `#fake:sleep` tới agent, S1) |
+| Q-T7 | Poll 60 s (HUB-FR-03), cleanup mỗi giờ không test nhanh | env `HUB_CONFIG_POLL_S` (60, B3), `AGENT_RT_CLEANUP_S` (3600, PY-13); A57, P43 |
+| Q-T8 | Orchestrator giả không chỉ thị echo **cả prompt** (lộ `<agents>`, history vào `content`) | echo chỉ `<message>`/`prompt`: `"echo: "+msg` + câu cố định ≥ 120 ký tự (P45); `delegate` truyền `task` = tin bỏ `#fake:delegate` (để `#fake:sleep` tới agent, S1) |
 | Q-T9 | AC-W06 không trong `requirements` | thay bằng HUB-H1-AC-04 (orphaned → failed, không đưa lại queue) |
 | R-DB2 | `test:int` một tiến trình: migrate Hub trên DB chung → test khoá Admin "đúng 3 bảng `hub.*`" đỏ | DB `h1` riêng; A49 kiểm |
 | R-WIN | `bun test` trên Windows không chạy P/S | P qua `wsl.exe` (RQ5); S ở I2 |
 
-**Tranh chấp tiềm năng — contract chat với Hub thật (cho phiên Chat; Hub không sửa test khoá):**
-
-| Ca K | Có thể lệch vì | Gợi ý |
-|---|---|---|
-| K-A1…A7 (`/auth/*` ở admin-api) | thuộc tính cookie `ai_rt`, refresh extension (`X-Client`), `ACCOUNT_LOCKED` cho `khoa`, chính sách mật khẩu `dev-password-1`, khoá tài khoản sau nhiều lần sai (K-A2 sai mật khẩu `lan`) | user fixture qua `tools/`, mật khẩu hợp lệ trong `CHAT_CONTRACT_USERS`; lệch thật → "Tranh chấp test" C1 |
-| K-A6 `/health` | phải là `HealthResponseSchema` chat | A3 |
-| K-I1…I4 | `#scn:slow` là text thường → run xong nhanh; I4 chỉ đòi `≠ cancelled` | nên xanh |
-| K-R1, R2 | cần ≥ 5 sự kiện; echo ngắn có thể 1 `delta` | echo đủ dài (≥ 2 `delta`) |
-| K-S2 | key cấm xanh nhưng `content` có thể lộ agent | Q-T8 |
-| `describe.if(isMock/inProcess)` | tự bỏ ở Hub thật | — |
+**Tranh chấp tiềm năng contract chat (K):** [`test-plan-cases.md`](test-plan-cases.md) §3.
 
 ## 10. Kết quả đỏ đúng lý do (điền ở QW-*)
 (trống)
