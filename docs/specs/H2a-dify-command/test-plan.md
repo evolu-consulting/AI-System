@@ -135,7 +135,7 @@ File: `commands` (A01–A09) · `command-run` (A10–A19) · `dify-errors` (A20�
 | A55 | FR-50 · BR-12 | `tools/call check-invoice {x, y}`, secret `S` = `LEAK_KEY_a550f1e2d3c4b5a6978899a` (cases §7), `x = "a".repeat(190) + S`, `y = "b".repeat(250)` → MK nhận đúng 1 lời gọi `user="acme:<lan>"`, response `{content:[{type:"text"}], isError:false}`; `run_steps` `type='tool'`, `workflow_id`, `detail.inputs` qua `maskInputs` (che trước, cắt ≤ 200 sau): `detail.inputs.x === "a".repeat(190) + "***"` (che trước; cắt trước sẽ để lộ mảnh `S`), `detail.inputs.y === "b".repeat(200)`; `detail` không chứa `LEAK_KEY`; không SSE live (P12) |
 | A56 | R20 | Tham số sai → `isError` "Invalid arguments for this tool."; `mk-401` → "This tool is not configured."; `mk-failed` → "The tool's service returned an error."; usage 1 dòng `feature_id NULL` |
 | A57 | AC-05 · tenant | Token job tenant `beta` không thấy/ghi run/flow/`tool_confirmations` của `acme` (xác nhận `confirmed` của acme giữ nguyên; `run_steps` chỉ ghi vào run beta) |
-| A58 | R20 | Timeout tool = min(`agents.timeout_s`, 300): `agents.timeout_s=1` + `mk-slow` → "The tool took too long to respond." + stop |
+| A58 | R20 | Timeout tool = min(`agents.timeout_s`, 300): `agents.timeout_s=10` (CHECK 10–3600) + `mk-slow-3000` → "The tool took too long to respond." + stop |
 | A60 | AC-H22 · BR-20 | Token job `trello` (run R1, flow F) `tools/call create-trello-card` → `isError:true`, `content[0].text` parse = `ToolConfirmationRequiredSchema` (`choices:["Đồng ý","Huỷ"]`, câu vi `plan-errors` §5), `content[1].text` = câu chỉ dẫn, `structuredContent` cùng object; MK **0** lời gọi; `tool_confirmations` 1 `pending`; `run_steps` `tool` `failed` `detail.code="CONFIRMATION_REQUIRED"` |
 | A61 | AC-H22 | E12 "Đồng ý" trong F → run R2, xác nhận `confirmed`, `decided_run_id=R2`; job R2 gọi tool → MK đúng **1**; gọi lần 2 → lại `CONFIRMATION_REQUIRED`, MK vẫn 1; trace R2 có `confirmed`, `consumed` |
 | A62 | R22 | "  agree " (en) → `confirmed`; "Huỷ"/"ok"/`/dich…` → `declined`, gọi → `CONFIRMATION_REQUIRED` mới |
@@ -188,7 +188,7 @@ Tổng mới ≈ **197** ca (R 78, A 83, P 30, S 3, perf 3) + K + M (3 checklist
 
 | # | Rủi ro / câu hỏi | Mặc định |
 |---|---|---|
-| Q-T1 | Hai mock (MK TS, `dify_mock.py`, `mcp_mock.py`) do backend-lead viết, ngoài `tests/acceptance` → agent code có thể sửa mock cho xanh | Sau QW, qc thêm 3 file vào danh sách khoá (`LOCKED_DIRS`/`tests/.lock`); sửa mock = tranh chấp test |
+| Q-T1 | Hai mock (MK TS, `dify_mock.py`, `mcp_mock.py`) do backend-lead viết, ngoài `tests/acceptance` → agent code có thể sửa mock cho xanh | Sau QW, qc thêm 3 file vào danh sách khoá (`LOCKED_DIRS`/`tests/.lock`); sửa mock = tranh chấp test. **Q2 xong**: `tools/hub-dev/src/dify-mock.ts` đã vào `LOCKED_DIRS` + `tests/.lock`; `dify_mock.py` ở Q3, `mcp_mock.py` sau PY-06 |
 | Q-T2 | R import tĩnh `*.rules.ts` chưa có | Như H1 Q-T2: B0 tạo stub chữ ký (thân `throw`) trước QW |
 | Q-T3 | BA HUB-BR-11 regex tên tool ≠ plan | **Đóng**: đã sửa bởi CR-035; A52 theo plan (tên = key, có `-`) |
 | Q-T4 | Test-run secret thiếu: 409 (`plan-errors` §1) hay 200 `ok:false NOT_CONFIGURED` | 409 `NOT_CONFIGURED` trước khi gọi Dify; lỗi **từ** Dify (401) → 200 `ok:false` |
@@ -255,10 +255,24 @@ Lệch plan / cần backend-lead:
 
 Lệch plan / cần backend-lead:
 - **`agents_timeout_s_check` (10–3600)** chặn `agents.timeout_s=1` (A43, A58 theo test-plan): dùng `timeout_s=10` + `mk-slow-3000` (5 chunk × 3 s = 15 s) — A43/A58 mất ~10–13 s mỗi ca.
-- **A32 vế `NOT_CONFIGURED`/`credential` và `UPSTREAM_ERROR`/`upstream`** phụ thuộc migration `0004` (CHECK `jobs_error_code_check`/`jobs_error_reason_check`, như A89b QW-A1): ScriptRuntime ghi `hub.jobs` như Runtime ⇒ sau khi Hub có code mà chưa có `0004` hai ca này đỏ ở 23514.
-- **`difyAgentInput` với `select`**: catalog §7 gắn `dify-dich` ↔ `dich` (input bắt buộc `source_text` text + `target_lang` select). Nếu `select` tính là "input chuỗi bắt buộc" ⇒ hai input ⇒ `null` ⇒ seed từ chối / runtime `NOT_CONFIGURED` (A40, A44 không xanh được). Cần chốt: chỉ kiểu `text`/`paragraph` mới tính (đề xuất). A40 chỉ kiểm `inputs.source_text`.
+- ~~**A32** phụ thuộc migration `0004`~~ **Đóng** (Q2, 2026-10-05): `0004_h2a_jobs_checks` (`8f7c9a9`, D1b) đã nới `jobs_error_code_check`/`jobs_error_reason_check` (kiểm trên DB test: có `NOT_CONFIGURED`, `credential`) ⇒ A32 ×2 không còn blocked bởi DB; chạy lại vẫn đỏ đúng lý do (chưa có code: `claimAsync` không thấy job `workflow.async`).
+- ~~**`difyAgentInput` với `select`**~~ **Đóng** (điều phối, spec-decisions "WRITE — QW-A2 chốt"): giữ R48 — đếm **mọi** input bắt buộc (kể cả `select`); `dify-dich` ↔ `dich` (2 input bắt buộc) là fixture sai ⇒ đổi sang `dify-tom` ↔ `tom` (một input `source_text` text bắt buộc). R48 (`rules/dify.test.ts`) thêm vế `[text req, number req]`, `[text req, select req]`, `[select req]` → `null`.
 - **A94 "bỏ dòng"** hiểu là: agent `dify-*` có `workflow_key` không tồn tại **không** được ghi; dòng `agent_workflows`/`workflow_flags` trỏ workflow lạ bị bỏ; mỗi dòng một cảnh báo chứa key.
 - **A56 "usage 1 dòng"**: kiểm trên lời gọi Dify thành công (1 dòng/lời gọi, `feature_id NULL`, `agent_id` = agent của job); `validateToolArgs` với khoá thừa không có trong plan nên không kiểm.
 - **A61 trace "confirmed, consumed"**: kiểm chuỗi có trong `run_steps.detail` của R2 (plan-db §3.1 ghi `confirmation` ở bước đầu; `consumed` ở bước `tool`) — plan chưa chốt tên khoá.
 - **Job MCP trong run Hub tạo** (A61–A65): job `agent.cli` có token chèn bằng SQL (step `seq` ≥ 100 để không đụng bộ đếm H1); khi P11 xong `insertStep` lấy `max(seq)+1` vẫn đúng.
 - **A67** thêm/xoá cột `admin.workflows.side_effect` bằng owner trong DB test (dọn trong `finally`); Hub phải phát hiện cột khi nạp lại catalog (`config_changed`).
+
+### Q2 · chạy lại trước khoá (2026-10-05, trên `0376f94` + sửa fixture QW-A2 chốt)
+DB riêng `ai_system_h2a_q2_test` (`.env.test-h2a_q2.local`, Hub/Runtime URL trỏ cùng DB). Fixture: agent `dify-dich` → `dify-tom` (`_h2a.ts` `AG2.difyTom`, `dify-agent.int.test.ts` A40–A44, `secret.int.test.ts` A80 bước dify-* — `tom` mang `LEAK_DICH` trong ca); R48 theo luật đếm mọi input bắt buộc.
+
+| File | Đỏ đúng lý do / tổng | Ghi chú |
+|---|---|---|
+| `async` | 9/13 | như QW-A2; A32 ×2 đỏ ở `claimAsync` (`toBeDefined`, chưa có code) — không còn phụ thuộc DB |
+| `dify-agent` | 7/7 | A40 nhận echo Orchestrator thay vì `MOCK_TEXT` (chưa có runner `dify-*`) |
+| `seed` | 6/6 | như QW-A2 |
+| `secret` | 6/8 | như QW-A1 (A84, A85 xanh) |
+| `db` | 1/7 | **A89b nay xanh** nhờ `0004` (D1b); còn A92 (`/mcp` 404) |
+| `rules/dify` | 7/7 | R48 đỏ ở stub `not implemented` |
+
+0 lỗi `PostgresError`/`TypeError` trong dựng dữ liệu. Khoá: `tests/.lock` thêm 26 file `tests/acceptance/H2a/**` + `tools/hub-dev/src/dify-mock.ts` (qua `LOCKED_DIRS`) = +27 dòng, tổng 261 file; `stack/` chưa viết (QW-P, khoá ở Q3).

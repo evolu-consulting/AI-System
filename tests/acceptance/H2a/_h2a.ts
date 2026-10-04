@@ -84,7 +84,7 @@ export const FEAT = {
   aaaDup: a(35),
 } as const;
 export const GRP = { staff: a(41) } as const;
-export const AG2 = { trello: a(51), difyDich: a(52), difyTroLy: a(53) } as const;
+export const AG2 = { trello: a(51), difyTom: a(52), difyTroLy: a(53) } as const;
 
 // ---------- secret (khoá test cố định, KHÔNG phải khoá thật) ----------
 export const TEST_MASTER_KEY_B64 = Buffer.from(
@@ -422,8 +422,8 @@ export async function betaGroup(sql: Sql, tenantId: string): Promise<string> {
 
 /**
  * Agent H2a (cases §7) — cần `insertHubConfig` H1 trước (profile `fake-1`, agent `hoadon`): `trello` (agentic-cli) ↔
- * `create-trello-card`; `hoadon` ↔ `check-invoice`, `tat`; `dify-dich` (dify-workflow → `dich`), `dify-tro-ly`
- * (dify-agent → `tro-ly`). Entitlement acme + grant lan cho cả bốn; bump `hub_config_version`.
+ * `create-trello-card`; `hoadon` ↔ `check-invoice`, `tat`; `dify-tom` (dify-workflow → `tom`, đúng một input
+ * bắt buộc kiểu text — R48), `dify-tro-ly` (dify-agent → `tro-ly`). Entitlement acme + grant lan cho cả bốn; bump `hub_config_version`.
  */
 export async function insertH2aAgents(sql: Sql): Promise<void> {
   const agent = (id: string, k: string, runtime: string, opts: Record<string, unknown> = {}) => ({
@@ -438,12 +438,12 @@ export async function insertH2aAgents(sql: Sql): Promise<void> {
   });
   await sql`insert into hub.agents ${sql([
     agent(AG2.trello, "trello", "agentic-cli"),
-    agent(AG2.difyDich, "dify-dich", "dify-workflow", { workflow_key: "dich" }),
+    agent(AG2.difyTom, "dify-tom", "dify-workflow", { workflow_key: "tom" }),
     agent(AG2.difyTroLy, "dify-tro-ly", "dify-agent", { workflow_key: "tro-ly" }),
   ])}`;
   await sql`insert into hub.agent_workflows (agent_id, workflow_id) values
     (${AG2.trello}, ${WF.trello}), (${AG.hoadon}, ${WF.checkInvoice}), (${AG.hoadon}, ${WF.tat})`;
-  const ids = [AG2.trello, AG2.difyDich, AG2.difyTroLy, AG.hoadon];
+  const ids = [AG2.trello, AG2.difyTom, AG2.difyTroLy, AG.hoadon];
   await sql`insert into hub.agent_entitlements ${sql(ids.map((agent_id) => ({ agent_id, tenant_id: T.acme })))}
     on conflict do nothing`;
   await sql`insert into hub.agent_grants ${sql(

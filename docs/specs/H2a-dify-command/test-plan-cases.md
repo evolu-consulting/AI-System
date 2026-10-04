@@ -76,7 +76,7 @@ Mỗi ca chạy **hai lần** (`describe.each`): `usableCommands` (Hub) và `com
 | R45 | `mapDifyHttpError`: 401, 403, 404 → `NOT_CONFIGURED`; 400, 413, 415, 422, 429, 418, 500, 502, 503 → `UPSTREAM_ERROR` |
 | R46 | `finalText("abc", …)` → `"abc"`; `("", {text:"x"}, null)` → `"x"`; `("", {result:"y"}, "result")` → `"y"`; object/number → `JSON.stringify`; `null`/`""`/thiếu khoá/`outputs null` → `null` |
 | R47 | `difyUsage`: chat `{prompt_tokens:10, completion_tokens:5, total_price:"0.0012", currency:"USD"}` → 10/5/0.0012; workflow `{total_tokens:30}` → 30/0/0; `currency:"RMB"` → cost 0; thiếu/rác → 0/0/0 |
-| R48 | `difyUser("acme", u)` → `"acme:<u>"`; `difyAgentInput`: có `query` → `"query"`; một input chuỗi bắt buộc → tên đó; hai → `null`; không có → `null` |
+| R48 | `difyUser("acme", u)` → `"acme:<u>"`; `difyAgentInput`: đếm **mọi** input bắt buộc (mọi kiểu, kể cả `select`); có `query` → `"query"`; đúng một input bắt buộc và kiểu chuỗi (`text`) → tên đó; còn lại (≥ 2 bắt buộc, bắt buộc không phải chuỗi, không có) → `null` |
 | R49 | `maskSecret`: thô, base64, hex (thường + hoa) → `***`; cắt ≤ 300; nhiều lần xuất hiện → che hết |
 
 ### 1.7 `mcp` (R50–R55) · R18–R20
@@ -192,11 +192,11 @@ File: `secret` (A80–A86) · `dify-agent` (A40–A46) · `test-run` (A70–A75)
 
 | ID | Mã | Given/When → Then |
 |---|---|---|
-| A40 | FR-23 · AC-07 | Orchestrator (kịch bản) delegate `dify-dich` → **không** hàng `jobs` cho bước đó; MK nhận `workflows/run`, `user="acme:<lan>"`; `run.finished` = text Dify (pass-through `done`) |
+| A40 | FR-23 · AC-07 | Orchestrator (kịch bản) delegate `dify-tom` → **không** hàng `jobs` cho bước đó; MK nhận `workflows/run`, `user="acme:<lan>"`; `run.finished` = text Dify (pass-through `done`) |
 | A41 | AC-07 | `dify-tro-ly` lượt 1 → MK trả `conversation_id=c1` → `cli_sessions(provider_key='dify')`; lượt 2 cùng hội thoại → body có `conversation_id:"c1"`; hội thoại khác → không gửi |
 | A42 | R14 | Workflow của agent tắt → bước `job.failed NOT_CONFIGURED` → Orchestrator xử lý như H1; `mk-failed` → `UPSTREAM_ERROR` |
-| A43 | R14 | Timeout `agents.timeout_s=1` + `mk-slow` → stop + bước lỗi `TIMEOUT`; huỷ run → stop |
-| A44 | R15 | Usage `agent_id`=`dify-dich`, `feature_id NULL` |
+| A43 | R14 | Timeout `agents.timeout_s=10` (CHECK 10–3600) + `mk-slow-3000` → stop + bước lỗi `TIMEOUT`; huỷ run → stop |
+| A44 | R15 | Usage `agent_id`=`dify-tom`, `feature_id NULL` |
 | A45 | FR-24 | Delegate `trello` → payload `agent.cli.mcp = {url:"<HUB_PUBLIC_INTERNAL_URL>/mcp", tools:["create-trello-card"]}`, không `token`; agent không gắn workflow → `mcp: null`; Orchestrator → `mcp: null` |
 | A46 | FR-24 | `hoadon` gắn `check-invoice` + `tat` (tắt) → `tools` chỉ `["check-invoice"]` |
 | A70 | FR-51 · AC-08 | `POST /internal/test-run` Bearer đúng, command nháp `/dich` → 200 `{ok:true, output, steps≤10, usage, ms}`; MK `user="platform:<padmin>"`; `counts()` conversations/runs/messages/usage_logs/jobs không đổi (Q13) |
@@ -219,10 +219,10 @@ File: `secret` (A80–A86) · `dify-agent` (A40–A46) · `test-run` (A70–A75)
 ## 7. Catalog fixture (`_h2a.ts`, SQL owner vào `admin.*`)
 | Đối tượng | Giá trị |
 |---|---|
-| workflows | `dich` (workflow, inputs `source_text` string req, `target_lang` select[en,vi,ja] req, `tone` string opt) key `mk-ok` · `tom` (workflow) · `hoi` (chat, `query` req) · `tro-ly` (agent app) · `check-invoice` (workflow, mô tả "Kiểm tra một hoá đơn điện tử…", inputs `x` string opt mô tả "Mã hoá đơn", `y` string opt mô tả "Ghi chú") · `create-trello-card` (workflow, `side_effect`, input `title` req) · `so` (input number + boolean) · `tat` (enabled=false) |
+| workflows | `dich` (workflow, inputs `source_text` string req, `target_lang` select[en,vi,ja] req, `tone` string opt) key `mk-ok` · `tom` (workflow, input `source_text` string req — duy nhất) · `hoi` (chat, `query` req) · `tro-ly` (agent app) · `check-invoice` (workflow, mô tả "Kiểm tra một hoá đơn điện tử…", inputs `x` string opt mô tả "Mã hoá đơn", `y` string opt mô tả "Ghi chú") · `create-trello-card` (workflow, `side_effect`, input `title` req) · `so` (input number + boolean) · `tat` (enabled=false) |
 | args/input_map | `/hoi`: arg `q` (rest) → `query←arg q`, tin `/hoi` trống → `missing:["q"]` · `/so`: args `n` (number), `flag` (boolean) → `n←arg n`, `flag←arg flag` (số/boolean ép kiểu; `abc`/`maybe` → `invalid`) |
 | commands | `/dich` (alias `translate`; args `lang`, `text` `rest` fallback `$selection`; input_map `target_lang←arg lang`, `source_text←arg text`, `tone←const "neutral"`) · `/tom` (feature `summary`) · `/hoi` · `/so` · `/tat` (workflow tắt) · `/dong` (`enabled=false`) |
 | features | `core` (`/hoi`), `translate` on (`/dich`, `/so`), `summary` on không entitlement `acme` (`/tom`), `labs` beta (`/so`), `aaa-dup` on chứa `/dich` (kiểm Q4 key nhỏ nhất) |
 | grants | `core` + `translate` → group `acme/staff` (`lan`,`hoa`); `aaa-dup` → user `hoa`; `labs` → `lan`; `lan` ∈ `beta-testers`; `beta/an` grant `translate` + entitlement beta |
-| agents (`hub.*`) | `trello` (`agentic-cli`) ↔ `create-trello-card`; `hoadon` ↔ `check-invoice`, `tat`; `dify-dich` (`dify-workflow`, `workflow_key: dich`); `dify-tro-ly` (`dify-agent`, `tro-ly`) |
+| agents (`hub.*`) | `trello` (`agentic-cli`) ↔ `create-trello-card`; `hoadon` ↔ `check-invoice`, `tat`; `dify-tom` (`dify-workflow`, `workflow_key: tom` — đúng một input bắt buộc kiểu chuỗi, R48); `dify-tro-ly` (`dify-agent`, `tro-ly`) |
 | secrets | mỗi workflow một secret mã: app-key = tên kịch bản MK; `dich` ở ca rò rỉ = `LEAK_KEY_7f3a…`; `check-invoice` (A55) = `LEAK_KEY_a55` + 20 hex = `LEAK_KEY_a550f1e2d3c4b5a6978899a` |

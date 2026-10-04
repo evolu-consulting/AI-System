@@ -113,6 +113,8 @@ const SECRETS = [LEAK_DICH, LEAK_INVOICE, LEAK_ECHO];
 describe("A80 · secret không rò qua mọi đường gọi Dify [HUB-H2a-AC-04 · H2a-R17]", () => {
   it("A80 · sync, async + credential, MCP, dify-*, test-run, lỗi có key trong thân → 0 dạng key (thô/base64/hex) trong SSE, JSON, DB, Redis, log [HUB-H2a-AC-04]", async () => {
     await setAppKey(sql, "dich", LEAK_DICH);
+    // agent dify-tom (workflow `tom`) cũng mang key rò rỉ để bước dify-* có nghĩa khi quét
+    await setAppKey(sql, "tom", LEAK_DICH);
     dify.mock.reset();
     const from = lines.length;
     const blobs: string[] = [];
@@ -150,7 +152,7 @@ describe("A80 · secret không rò qua mọi đường gọi Dify [HUB-H2a-AC-04
     });
     expect(mres.status).toBe(200);
     blobs.push(mres.text);
-    // 4. dify-* (Orchestrator delegate tới dify-dich, rồi trả lời)
+    // 4. dify-* (Orchestrator delegate tới dify-tom, rồi trả lời)
     const s4 = await open("Dịch giúp tôi câu này");
     try {
       runIds.push(runIdOf(s4));
@@ -162,7 +164,7 @@ describe("A80 · secret không rò qua mọi đường gọi Dify [HUB-H2a-AC-04
           if (turn === 1)
             await rt2.rt.decide(job, {
               decision: "delegate",
-              agent: "dify-dich",
+              agent: "dify-tom",
               task: "xin chào",
             });
           else await rt2.rt.decide(job, echoAnswer(job));
@@ -208,6 +210,7 @@ describe("A80 · secret không rò qua mọi đường gọi Dify [HUB-H2a-AC-04
       for (const f of leakForms(sec))
         expect({ f, hit: all.includes(f) }).toEqual({ f, hit: false });
     await setAppKey(sql, "dich", "mk-ok");
+    await setAppKey(sql, "tom", "mk-ok");
   });
 });
 

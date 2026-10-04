@@ -76,3 +76,9 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 ## WRITE — QW-R (qc) — 2026-10-05
 - R36: H2a-R02 ghi "∧ F cấp cho user/group" nhưng luật gốc M3-R11 và code Admin cho `core` hiệu lực **không cần grant**; R02 yêu cầu "đúng luật M3" + parity ⇒ theo Admin. Sửa `test-plan-cases` R36 (điều phối, trước Q2).
 - R61: `mcpConfigFor(…, url)` nhận URL `/mcp` đầy đủ, trả nguyên văn (ghi `plan-rules`).
+
+## WRITE — QW-A2 chốt (điều phối + qc, 2026-10-05, trước Q2)
+- QA2-1 `difyAgentInput` giữ R48: đếm **mọi** input bắt buộc (mọi kiểu, kể cả `select`); có `query` → `"query"`; đúng một input bắt buộc và kiểu chuỗi → tên đó; còn lại → `null`. Lý do: bỏ qua `select` bắt buộc thì Dify thật lỗi thiếu input. Fixture A40/A44 (`dify-dich` ↔ `dich`, 2 input bắt buộc) sai ⇒ đổi sang `dify-tom` ↔ `tom` (một `source_text` text bắt buộc) trong `_h2a.ts`, `dify-agent.int.test.ts`, `secret.int.test.ts` (A80 bước dify-*); R48 thêm vế `select`/`number` bắt buộc → `null`; `test-plan-cases` R48, A40, A44, §7 sửa theo. `plan-db` §4 ví dụ `dify-dich` chỉ là ví dụ seed — nếu dùng thật phải trỏ workflow một input.
+- QA2-2 Chấp nhận diễn giải QW-A2 (`test-plan` §10): A94 workflow không có → bỏ dòng + cảnh báo (đúng `plan-db` §4); A56 usage chỉ tính trên lời gọi Dify thành công; A61 kiểm `confirmed`/`consumed` trong `run_steps.detail`; A67 thêm/xoá cột `admin.workflows.side_effect` trong DB test, dọn ở `finally`; A43/A58 dùng `timeout_s=10` (CHECK `agents_timeout_s_check` 10–3600).
+- QA2-3 A32 hết blocked bởi DB: migration `0004` (`8f7c9a9`) đã thêm `NOT_CONFIGURED`/`credential`/`upstream`; chạy lại đỏ đúng lý do (chưa có code). A89b (QW-A1) nay xanh.
+- QA2-4 Q2: `tools/hub-dev/src/dify-mock.ts` thêm vào `LOCKED_DIRS` (`tools/scripts/src/test-lock.ts`) — sửa mock = tranh chấp test (`test-plan` §9 Q-T1).

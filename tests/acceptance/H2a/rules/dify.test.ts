@@ -140,8 +140,13 @@ describe("HUB-FR-80 · kết quả, usage, user [R46–R48]", () => {
     const q = input("query", "text", { required: true });
     const a = input("a", "text", { required: true });
     const b = input("b", "text", { required: true });
+    // Đếm MỌI input bắt buộc (mọi kiểu, kể cả select) — spec-decisions "WRITE — QW-A2 chốt".
+    const sel = input("lang", "select", { required: true, options: ["en", "vi"] });
     expect(difyAgentInput([a, q, input("opt")])).toBe("query");
-    expect(difyAgentInput([a, input("opt"), input("n", "number", { required: true })])).toBe("a");
+    expect(difyAgentInput([a, input("opt"), input("n", "number")])).toBe("a");
+    expect(difyAgentInput([a, input("n", "number", { required: true })])).toBeNull();
+    expect(difyAgentInput([a, sel])).toBeNull();
+    expect(difyAgentInput([sel])).toBeNull();
     expect(difyAgentInput([a, b])).toBeNull();
     expect(difyAgentInput([input("opt")])).toBeNull();
     expect(difyAgentInput([])).toBeNull();

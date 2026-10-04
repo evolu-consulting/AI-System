@@ -13,6 +13,8 @@ const LOCKED_DIRS = [
   "e2e",
   "tests/contract",
   "apps/agent-runtime/tests/acceptance",
+  // H2a test-plan §9 Q-T1: mock Dify (MK) do backend-lead viết, test H2a phụ thuộc — khoá như test.
+  "tools/hub-dev/src/dify-mock.ts",
 ];
 
 export type LockDiff = { kind: "CHANGED" | "MISSING" | "UNLOCKED"; path: string };

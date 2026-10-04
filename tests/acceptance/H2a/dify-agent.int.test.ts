@@ -116,9 +116,9 @@ const end = (t: Turn) =>
   t.s.events.find((e) => e.event === "run.finished" || e.event === "run.failed");
 
 describe("A40–A44 · agent dify-* do Hub gọi Dify trực tiếp [HUB-FR-23 · HUB-H2a-AC-07 · H2a-R14]", () => {
-  it("HUB-FR-23 · A40 · delegate dify-dich → không hàng jobs cho bước đó; MK nhận /v1/workflows/run user acme:<lan>; run.finished = text Dify (pass-through done) [HUB-FR-23 · HUB-H2a-AC-07]", async () => {
+  it("HUB-FR-23 · A40 · delegate dify-tom → không hàng jobs cho bước đó; MK nhận /v1/workflows/run user acme:<lan>; run.finished = text Dify (pass-through done) [HUB-FR-23 · HUB-H2a-AC-07]", async () => {
     dify.mock.reset();
-    const t = await delegateTo("dify-dich", "xin chào");
+    const t = await delegateTo("dify-tom", "xin chào");
     expect(end(t)?.event).toBe("run.finished");
     expect(end(t)?.data?.content).toBe(MOCK_TEXT);
     const runs = dify.runs();
@@ -131,10 +131,10 @@ describe("A40–A44 · agent dify-* do Hub gọi Dify trực tiếp [HUB-FR-23 �
       inputs: { source_text: "xin chào" },
     });
     const jobs = await sql<Json[]>`select agent_id, type from hub.jobs where run_id = ${t.runId}`;
-    expect(jobs.some((j) => j.agent_id === AG2.difyDich)).toBe(false);
+    expect(jobs.some((j) => j.agent_id === AG2.difyTom)).toBe(false);
     expect(jobs.every((j) => j.agent_id === AG.orchestrator)).toBe(true);
     const steps = await sql<Json[]>`select type, agent_id, job_id, status from hub.run_steps
-      where run_id = ${t.runId} and agent_id = ${AG2.difyDich}`;
+      where run_id = ${t.runId} and agent_id = ${AG2.difyTom}`;
     expect(steps.length).toBe(1);
     expect(steps[0]).toMatchObject({ type: "delegate", status: "ok" });
   });
@@ -163,44 +163,44 @@ describe("A40–A44 · agent dify-* do Hub gọi Dify trực tiếp [HUB-FR-23 �
     dify.mock.reset();
     await catalogChange(
       sql,
-      (tx) => tx`update admin.workflows set enabled = false where id = ${WF.dich}`,
+      (tx) => tx`update admin.workflows set enabled = false where id = ${WF.tom}`,
     );
     try {
       await Bun.sleep(500);
-      const t = await delegateTo("dify-dich", "xin chào");
+      const t = await delegateTo("dify-tom", "xin chào");
       expect(end(t)?.event).toBe("run.failed");
       expect(end(t)?.data?.code).toBe("NOT_CONFIGURED");
       expect(dify.runs().length).toBe(0);
       const [st] = await sql<Json[]>`select status from hub.run_steps
-        where run_id = ${t.runId} and agent_id = ${AG2.difyDich}`;
+        where run_id = ${t.runId} and agent_id = ${AG2.difyTom}`;
       expect(st?.status).toBe("failed");
     } finally {
       await catalogChange(
         sql,
-        (tx) => tx`update admin.workflows set enabled = true where id = ${WF.dich}`,
+        (tx) => tx`update admin.workflows set enabled = true where id = ${WF.tom}`,
       );
     }
     await Bun.sleep(500);
-    await setAppKey(sql, "dich", "mk-failed");
+    await setAppKey(sql, "tom", "mk-failed");
     try {
-      const t = await delegateTo("dify-dich", "xin chào");
+      const t = await delegateTo("dify-tom", "xin chào");
       expect(end(t)?.data?.code).toBe("UPSTREAM_ERROR");
       expect(dify.runs().length).toBe(1);
     } finally {
-      await setAppKey(sql, "dich", "mk-ok");
+      await setAppKey(sql, "tom", "mk-ok");
     }
   });
 
   it("HUB-FR-23 · A43 · agents.timeout_s=10 + mk-slow-3000 → bước TIMEOUT + MK nhận stop; huỷ run (E15) giữa chừng → MK nhận stop [H2a-R14 · H2a-R10]", async () => {
     await hubConfigChange(
       sql,
-      (tx) => tx`update hub.agents set timeout_s = 10 where id = ${AG2.difyDich}`,
+      (tx) => tx`update hub.agents set timeout_s = 10 where id = ${AG2.difyTom}`,
     );
-    await setAppKey(sql, "dich", "mk-slow-3000");
+    await setAppKey(sql, "tom", "mk-slow-3000");
     try {
       dify.mock.reset();
       const t0 = Date.now();
-      const t = await delegateTo("dify-dich", "xin chào", { ms: 25_000 });
+      const t = await delegateTo("dify-tom", "xin chào", { ms: 25_000 });
       expect(end(t)?.event).toBe("run.failed");
       expect(end(t)?.data?.code).toBe("TIMEOUT");
       expect(Date.now() - t0).toBeLessThanOrEqual(10_000 + 5_000);
@@ -214,11 +214,11 @@ describe("A40–A44 · agent dify-* do Hub gọi Dify trực tiếp [HUB-FR-23 �
       dify.mock.reset();
       const conv = await insertConv(sql, "lan", id());
       const tok = await sign(k, USERS.lan);
-      const s = await send(hub, tok, conv, "Nhờ dify-dich lần nữa");
+      const s = await send(hub, tok, conv, "Nhờ dify-tom lần nữa");
       try {
         const runId = runIdOf(s);
         const job = await rt.next(runId);
-        await rt.decide(job, { decision: "delegate", agent: "dify-dich", task: "xin chào" });
+        await rt.decide(job, { decision: "delegate", agent: "dify-tom", task: "xin chào" });
         await waitFor(
           async () => dify.runs(),
           (v) => v.length > 0,
@@ -237,16 +237,16 @@ describe("A40–A44 · agent dify-* do Hub gọi Dify trực tiếp [HUB-FR-23 �
         s.close();
       }
     } finally {
-      await setAppKey(sql, "dich", "mk-ok");
+      await setAppKey(sql, "tom", "mk-ok");
       await hubConfigChange(
         sql,
-        (tx) => tx`update hub.agents set timeout_s = 60 where id = ${AG2.difyDich}`,
+        (tx) => tx`update hub.agents set timeout_s = 60 where id = ${AG2.difyTom}`,
       );
     }
   }, 45_000);
 
-  it("HUB-FR-23 · A44 · usage của bước dify-*: 1 dòng billing dify, agent_id = dify-dich, feature_id NULL, model NULL [H2a-R15]", async () => {
-    const t = await delegateTo("dify-dich", "xin chào usage");
+  it("HUB-FR-23 · A44 · usage của bước dify-*: 1 dòng billing dify, agent_id = dify-tom, feature_id NULL, model NULL [H2a-R15]", async () => {
+    const t = await delegateTo("dify-tom", "xin chào usage");
     expect(end(t)?.event).toBe("run.finished");
     const rows = await sql<
       Json[]
@@ -257,7 +257,7 @@ describe("A40–A44 · agent dify-* do Hub gọi Dify trực tiếp [HUB-FR-23 �
         billing: "dify",
         provider_key: "dify",
         model: null,
-        agent_id: AG2.difyDich,
+        agent_id: AG2.difyTom,
         feature_id: null,
         input_tokens: 20,
       },
