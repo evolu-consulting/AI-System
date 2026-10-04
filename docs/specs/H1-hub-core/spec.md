@@ -2,7 +2,7 @@
 id: H1-hub-core
 title: Hub lõi (apps/hub-api) + Agent Runtime tối thiểu (apps/agent-runtime)
 milestone: H1
-status: approved           # draft → ready → approved → in-progress → done
+status: in-progress           # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-01, HUB-FR-02, HUB-FR-03, HUB-FR-20, HUB-FR-21, HUB-FR-25, HUB-FR-27, HUB-FR-28, HUB-FR-29,
    HUB-FR-31, HUB-FR-32, HUB-FR-33, HUB-FR-40, HUB-FR-41, HUB-FR-42, HUB-FR-43, HUB-FR-45, HUB-FR-60,
