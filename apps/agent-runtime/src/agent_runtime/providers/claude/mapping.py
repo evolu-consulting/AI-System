@@ -1,0 +1,189 @@
+"""WRK-FR-10 · WRK-FR-15 · H1-R24 · H1-R26 · Map message/lỗi SDK → `ProviderEvent`
+(plan-runtime §3.2, §3.3, §4).
+
+Progress chỉ nhãn tĩnh theo tên tool (không đường dẫn/nội dung). Lỗi không lặp lại stderr/nội dung.
+**Xác minh lại sau W0+PY-02** (§13): chữ lỗi hết quota / chưa đăng nhập (regex dưới), định dạng
+giờ reset trong text (chưa parse → `resets_at=None` ⇒ cooldown mặc định 30 phút ở PY-12).
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from collections.abc import Iterator
+from typing import Any, cast
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeSDKError,
+    CLIJSONDecodeError,
+    CLINotFoundError,
+    ProcessError,
+    RateLimitEvent,
+    ResultError,
+    ResultMessage,
+    SystemMessage,
+    ToolUseBlock,
+)
+
+from agent_runtime.providers.base import (
+    Fatal,
+    Final,
+    Progress,
+    ProviderEvent,
+    RateLimit,
+    ToolUse,
+    UsageEv,
+)
+
+RATE_RE = re.compile(r"usage limit|rate limit|\b429\b", re.IGNORECASE)
+AUTH_RE = re.compile(r"/login|not logged in|\b401\b|invalid api key|oauth token", re.IGNORECASE)
+REJECTED = "rejected"
+LOGGED_OUT = "logged_out"
+TOOL_LABELS = {
+    "Read": "Đang đọc tệp",
+    "Grep": "Đang tìm trong tệp",
+    "Glob": "Đang liệt kê tệp",
+}
+DEFAULT_TOOL_LABEL = "Đang dùng công cụ"
+_FENCE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
+
+
+def init_session_id(msg: SystemMessage) -> str | None:
+    """`SystemMessage(subtype="init")` — Python để `session_id` trong `data` (§3.2)."""
+    if msg.subtype != "init":
+        return None
+    sid = msg.data.get("session_id")
+    return sid if isinstance(sid, str) and sid else None
+
+
+def tool_events(msg: AssistantMessage) -> Iterator[ProviderEvent]:
+    for block in msg.content:
+        if isinstance(block, ToolUseBlock):
+            yield ToolUse(name=block.name[:200] or "?")
+            yield Progress(label=TOOL_LABELS.get(block.name, DEFAULT_TOOL_LABEL))
+
+
+def rate_limit_event(msg: RateLimitEvent) -> RateLimit | None:
+    """Chỉ `status=="rejected"` → sự kiện; `allowed_warning` để người gọi log."""
+    info = msg.rate_limit_info
+    if info.status != REJECTED:
+        return None
+    return RateLimit(status=REJECTED, resets_at=info.resets_at)
+
+
+def classify_text(*texts: str | None) -> str | None:
+    """`rejected` (hết quota) | `logged_out` | None theo regex §3.3."""
+    joined = "\n".join(t for t in texts if t)
+    if RATE_RE.search(joined):
+        return REJECTED
+    if AUTH_RE.search(joined):
+        return LOGGED_OUT
+    return None
+
+
+def result_signal(msg: ResultMessage) -> RateLimit | None:
+    if not msg.is_error:
+        return None
+    if msg.api_error_status == 429:
+        return RateLimit(status=REJECTED)
+    if msg.api_error_status == 401:
+        return RateLimit(status=LOGGED_OUT)
+    status = classify_text(msg.result, *(msg.errors or []))
+    return RateLimit(status=status) if status else None
+
+
+def _int(usage: dict[str, Any], key: str) -> int:
+    value = usage.get(key)
+    return value if isinstance(value, int) and value >= 0 else 0
+
+
+def usage_event(msg: ResultMessage) -> UsageEv | None:
+    usage = msg.usage or {}
+    model = next(iter(msg.model_usage or {}), None)
+    if not usage and model is None:
+        return None
+    return UsageEv.model_validate(
+        {
+            "in": _int(usage, "input_tokens"),
+            "out": _int(usage, "output_tokens"),
+            "cache_read": _int(usage, "cache_read_input_tokens"),
+            "cache_write": _int(usage, "cache_creation_input_tokens"),
+            "model": model,
+        }
+    )
+
+
+def _json_object(text: str | None) -> dict[str, Any] | None:
+    """JSON cuối trong `result` (bóc ```json); không phải object → None."""
+    if not text:
+        return None
+    fenced = _FENCE.findall(text)
+    candidates = [*reversed(fenced), text.strip()]
+    for raw in candidates:
+        try:
+            value = json.loads(raw)
+        except ValueError:
+            continue
+        if isinstance(value, dict):
+            return cast(dict[str, Any], value)
+    return None
+
+
+def agent_structured(msg: ResultMessage) -> dict[str, Any] | None:
+    """`structured_output` (hoặc JSON trong `result`); bỏ khoá `null` của schema phẳng."""
+    raw: object = msg.structured_output
+    obj = cast(dict[str, Any], raw) if isinstance(raw, dict) else _json_object(msg.result)
+    if obj is None:
+        return None
+    return {k: v for k, v in obj.items() if v is not None}
+
+
+def final_event(msg: ResultMessage, kind: str) -> Final:
+    errors = [e[:500] for e in (msg.errors or [])][:10]
+    common: dict[str, Any] = {
+        "is_error": msg.is_error,
+        "subtype": msg.subtype,
+        "api_error_status": msg.api_error_status,
+        "errors": errors,
+    }
+    if kind == "agent_result":
+        structured = None if msg.is_error else agent_structured(msg)
+        raw = msg.result if structured is None else None
+        return Final(kind="agent_result", structured=structured, raw_json=raw, **common)
+    return Final(kind="text", text=msg.result, **common)
+
+
+def _process_error(err: ProcessError) -> list[ProviderEvent]:
+    if isinstance(err, ResultError):
+        status = str(err.api_error_status) if err.api_error_status is not None else None
+        texts = [status, err.result, *err.errors]
+    else:
+        texts = [err.stderr]
+    signal = classify_text(*texts)
+    if signal == REJECTED:
+        return [RateLimit(status=REJECTED), _exhausted("quota", "claude rate limited")]
+    if signal == LOGGED_OUT:
+        return [
+            RateLimit(status=LOGGED_OUT),
+            _exhausted("provider_unavailable", "claude not logged in"),
+        ]
+    code = err.exit_code if err.exit_code is not None else "?"
+    return [Fatal(code="UPSTREAM_ERROR", msg=f"claude cli exited {code}", reason="crash")]
+
+
+def _exhausted(reason: str, msg: str) -> Fatal:
+    return Fatal(code="ALL_PROVIDERS_EXHAUSTED", msg=msg, reason=reason)
+
+
+def error_events(err: ClaudeSDKError) -> list[ProviderEvent]:
+    """Lỗi SDK → sự kiện; không kèm stderr/dòng JSON (có thể chứa đường dẫn/nội dung)."""
+    if isinstance(err, CLINotFoundError):
+        return [
+            Fatal(code="UPSTREAM_ERROR", msg="claude cli not found", reason="provider_unavailable")
+        ]
+    if isinstance(err, ProcessError):
+        return _process_error(err)
+    if isinstance(err, CLIJSONDecodeError):
+        return [Fatal(code="UPSTREAM_ERROR", msg="claude cli sent invalid json", reason="crash")]
+    return [Fatal(code="UPSTREAM_ERROR", msg=f"claude sdk error: {type(err).__name__}")]

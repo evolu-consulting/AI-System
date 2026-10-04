@@ -83,6 +83,10 @@ class ProviderJob(BaseModel):
     payload: JobPayload1
     work_dir: str
     forbidden_roots: list[str]
+    # PY-08: `claude-sub` đọc; runner điền — `resume_session_id` (PY-11, §6), `cli_path`
+    # (`Settings.cli_path` = `AGENT_RT_CLI_PATH`, dự phòng §13; None = CLI đóng gói trong SDK).
+    resume_session_id: str | None = None
+    cli_path: str | None = None
 
 
 class Provider(Protocol):
