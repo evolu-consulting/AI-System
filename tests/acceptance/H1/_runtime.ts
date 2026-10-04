@@ -60,25 +60,32 @@ export class ScriptRuntime {
     }
   }
 
-  /** Như claim của Runtime: `queued → running` + XADD `job.started`; payload phải hợp `JobPayloadSchema`. */
+  /**
+   * Như claim của Runtime: `queued → running` + XADD `job.started`; payload phải hợp `JobPayloadSchema`.
+   * Claim có điều kiện `status = 'queued'` (SKIP job không còn queued, như Runtime thật): UPDATE 0 dòng (job vừa bị
+   * huỷ/kết thúc song song) = "không có job đó" → thử job kế / chờ tới hết `ms`, không ném lỗi (phán quyết A37).
+   */
   async tryNext(runId: string, ms = 5_000): Promise<Job | undefined> {
-    const row = await this.peek(runId, ms);
-    if (!row) return undefined;
-    this.seen.add(row.id);
-    const parsed = JobPayloadSchema.safeParse(row.payload);
-    expect(parsed.success).toBe(true);
-    const claimed = await this
-      .sql`update hub.jobs set status = 'running', worker_id = ${this.workerId},
-        started_at = now(), heartbeat_at = now(), attempts = attempts + 1
-      where id = ${row.id} and status = 'queued' returning id`;
-    expect(claimed.length).toBe(1);
-    const job: Job = { id: row.id, runId, payload: parsed.data as AgentCliJob };
-    await this.emit(job, {
-      type: "job.started",
-      worker_id: this.workerId,
-      provider_key: job.payload.provider_key,
-    });
-    return job;
+    const end = Date.now() + ms;
+    for (;;) {
+      const row = await this.peek(runId, Math.max(0, end - Date.now()));
+      if (!row) return undefined;
+      this.seen.add(row.id);
+      const parsed = JobPayloadSchema.safeParse(row.payload);
+      expect(parsed.success).toBe(true);
+      const claimed = await this
+        .sql`update hub.jobs set status = 'running', worker_id = ${this.workerId},
+          started_at = now(), heartbeat_at = now(), attempts = attempts + 1
+        where id = ${row.id} and status = 'queued' returning id`;
+      if (claimed.length === 0) continue;
+      const job: Job = { id: row.id, runId, payload: parsed.data as AgentCliJob };
+      await this.emit(job, {
+        type: "job.started",
+        worker_id: this.workerId,
+        provider_key: job.payload.provider_key,
+      });
+      return job;
+    }
   }
 
   /** Như `tryNext` nhưng bắt buộc có job (Hub chưa tạo job → đỏ ở `expect`). */

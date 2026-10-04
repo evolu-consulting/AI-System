@@ -95,3 +95,4 @@ HUB-FR-31 fallback nhiều bước → H2 (Q-T6) · HUB-FR-02 command/workflow/f
 
 **Khoá Q2 · 2026-10-04:** 39 file H1 (24 `tests/acceptance/H1/**`, 15 `apps/agent-runtime/tests/acceptance/**`) vào `tests/.lock` (tổng 234 dòng); chỉ thêm dòng, không đổi dòng cũ; `test:lock:verify` OK.
 - Sửa A48 (phân xử D2) · 2026-10-04 · `db.int.test.ts`: số migration Hub theo `_journal.json` (không cố định 1/1); DB stub theo tên DB test (`_stub_test`); 5/5 xanh, ca khác không đổi; lock cập nhật.
+| QW-A2 · A37 phán quyết 2026-10-04 | `_runtime.ts` `tryNext` | — | — | — | Claim 0 dòng (job vừa bị huỷ) = không có job → thử job kế/chờ; A37 giữ nguyên; lock đã ghi lại |
