@@ -1,6 +1,7 @@
 """WRK-NFR-04 · WRK-BR-02 · Điểm vào `python -m agent_runtime` — vòng đời process cha
 (plan-runtime §1.5). PY-03: config (sai → exit 2), log, chờ SIGTERM/SIGINT → exit 0; dịch vụ chết
-→ exit 1 (systemd chạy lại). Chưa claim job.
+→ exit 1 (systemd chạy lại). PY-04: khởi động hàng đợi (pool + LISTEN, manifest, dọn job sót),
+dịch vụ claimer/listener/heartbeat/sweeper; SIGTERM → ngừng claim, job đang chạy → `orphaned`.
 """
 
 import asyncio
@@ -13,6 +14,9 @@ from pydantic import ValidationError
 
 from agent_runtime.config import Settings, load_settings
 from agent_runtime.log import configure_logging, get_logger
+from agent_runtime.queue import runtime as queue_runtime
+from agent_runtime.queue.host import LogJobEvents, PendingJobHost
+from agent_runtime.queue.runtime import QueueRuntime
 
 Service = Callable[[], Coroutine[Any, Any, None]]
 
@@ -52,11 +56,27 @@ async def serve(stop: asyncio.Event, services: Sequence[Service]) -> int:
     return code
 
 
-def build_services(settings: Settings) -> list[Service]:
-    # TODO(WRK-FR-01): PY-04+ — pool asyncpg + LISTEN, Redis ping, registry provider, manifest,
-    # dọn job sót (§2.4), claimer/heartbeat/sweeper/cleanup (`settings.cleanup_s`).
-    _ = settings
-    return []
+def build_services(rt: QueueRuntime) -> list[Service]:
+    # TODO(WRK-FR-23): PY-13 — cleanup log/work theo `settings.cleanup_s`.
+    return rt.services()
+
+
+async def start_queue(settings: Settings) -> QueueRuntime:
+    # TODO(WRK-FR-03): PY-05/PY-06 — thay `LogJobEvents`/`PendingJobHost` bằng XADD + job host thật.
+    return await queue_runtime.start(settings, PendingJobHost(), LogJobEvents())
+
+
+async def _start_unless_stopped(settings: Settings, stop: asyncio.Event) -> QueueRuntime | None:
+    """Khởi động (bước 3–8 §1.5); SIGTERM lúc đang khởi động → None (thoát 0)."""
+    starting = asyncio.create_task(start_queue(settings))
+    stopping = asyncio.create_task(stop.wait())
+    await asyncio.wait({starting, stopping}, return_when=asyncio.FIRST_COMPLETED)
+    stopping.cancel()
+    if starting.done():
+        return starting.result()
+    starting.cancel()
+    await asyncio.gather(starting, return_exceptions=True)
+    return None
 
 
 async def run(settings: Settings) -> int:
@@ -66,8 +86,17 @@ async def run(settings: Settings) -> int:
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, stop.set)
     log.info("runtime.start", **settings.safe_summary())
-    code = await serve(stop, build_services(settings))
-    # TODO(WRK-FR-04): PY-04+ — ngừng claim, huỷ job đang chạy (§2.3) trước khi thoát (≤ 10 s).
+    try:
+        rt = await _start_unless_stopped(settings, stop)
+    except Exception as err:  # DB không tới/sai quyền → exit 1, systemd chạy lại
+        log.error("runtime.startup_failed", error=type(err).__name__)
+        return EXIT_TASK_FAILED
+    code = EXIT_OK
+    if rt is not None:
+        try:
+            code = await serve(stop, build_services(rt))
+        finally:
+            await rt.shutdown()
     log.info("runtime.stop", exit_code=code)
     return code
 

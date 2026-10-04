@@ -11,13 +11,13 @@ name = "agent-runtime"
 version = "0.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "asyncpg" },
     { name = "pydantic-settings" },
     { name = "structlog" },
 ]
 
 [package.dev-dependencies]
 dev = [
-    { name = "asyncpg" },
     { name = "datamodel-code-generator" },
     { name = "import-linter" },
     { name = "pyright", extra = ["nodejs"] },
@@ -29,13 +29,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "asyncpg", specifier = ">=0.31" },
     { name = "pydantic-settings", specifier = ">=2.15" },
     { name = "structlog", specifier = ">=26.1" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "asyncpg", specifier = ">=0.31" },
     { name = "datamodel-code-generator", specifier = ">=0.71" },
     { name = "import-linter", specifier = ">=2.3" },
     { name = "pyright", extras = ["nodejs"], specifier = ">=1.1.400" },

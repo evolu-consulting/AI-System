@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 # Runtime deps theo ADR-0008, thêm ở task dùng tới: PY-03 structlog + pydantic-settings;
 # asyncpg, redis (PY-04), claude-agent-sdk (PY-02/PY-05).
 dependencies = [
+  "asyncpg>=0.31",
   "pydantic-settings>=2.15",
   "structlog>=26.1",
 ]
@@ -17,7 +18,6 @@ dev = [
   "pytest>=8.4",
   "pytest-asyncio>=1.0",
   "import-linter>=2.3",
-  "asyncpg>=0.31",
   "redis>=8.1",
   "datamodel-code-generator>=0.71",
 ]

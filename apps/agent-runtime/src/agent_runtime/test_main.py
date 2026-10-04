@@ -5,10 +5,12 @@ import io
 import os
 import signal
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from agent_runtime.config import load_settings
+from agent_runtime import main as main_mod
+from agent_runtime.config import Settings, load_settings
 from agent_runtime.log import configure_logging
 from agent_runtime.main import EXIT_CONFIG, main, run, serve
 
@@ -39,14 +41,63 @@ async def test_wrk_nfr_04_serve_task_failure_exits_1(quiet_log: io.StringIO) -> 
     assert "pw_x" not in quiet_log.getvalue()
 
 
-async def test_wrk_nfr_04_sigterm_exits_0(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+class _FakeQueue:
+    def __init__(self) -> None:
+        self.shut = False
+
+    def services(self) -> list[Any]:
+        return []
+
+    async def shutdown(self) -> None:
+        self.shut = True
+
+
+def _settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Settings:
     monkeypatch.setenv("APP_ENV", "test")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379")
     monkeypatch.setenv("AGENT_RT_DATABASE_URL", "postgres://a:b@h/d")
-    settings = load_settings()
+    return load_settings()
+
+
+async def test_wrk_nfr_04_sigterm_exits_0(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    settings = _settings(monkeypatch, tmp_path)
+    fake = _FakeQueue()
+
+    async def start(_s: Settings) -> Any:
+        return fake
+
+    monkeypatch.setattr(main_mod, "start_queue", start)
     asyncio.get_running_loop().call_later(0.05, os.kill, os.getpid(), signal.SIGTERM)
     assert await asyncio.wait_for(run(settings), 2) == 0
+    assert fake.shut
+
+
+async def test_wrk_nfr_04_sigterm_during_startup_exits_0(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    settings = _settings(monkeypatch, tmp_path)
+
+    async def start(_s: Settings) -> Any:
+        await asyncio.sleep(3600)
+
+    monkeypatch.setattr(main_mod, "start_queue", start)
+    asyncio.get_running_loop().call_later(0.05, os.kill, os.getpid(), signal.SIGTERM)
+    assert await asyncio.wait_for(run(settings), 2) == 0
+
+
+async def test_wrk_nfr_04_startup_failure_exits_1(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, quiet_log: io.StringIO
+) -> None:
+    settings = _settings(monkeypatch, tmp_path)
+
+    async def start(_s: Settings) -> Any:
+        raise OSError("postgres://a:pw_y@h/d unreachable")
+
+    monkeypatch.setattr(main_mod, "start_queue", start)
+    assert await asyncio.wait_for(run(settings), 2) == 1
+    assert "runtime.startup_failed" in quiet_log.getvalue()
+    assert "pw_y" not in quiet_log.getvalue()
 
 
 def test_wrk_nfr_04_invalid_config_exits_2(
