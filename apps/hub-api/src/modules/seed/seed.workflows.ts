@@ -3,13 +3,13 @@
 import type { WorkflowInput } from "@ai/contracts";
 import type { DifyAppType } from "@ai/contracts/hub";
 import { difyAgentInput } from "../dify/dify.rules";
-import type { SeedIssue, SeedPlan } from "./seed.rules";
 import {
   DIFY_RUNTIMES,
   type DifyRuntime,
   DifyRuntimeOptionsSchema,
   type SeedAgent,
 } from "./seed.schema";
+import type { SeedIssue, SeedPlan } from "./seed.types";
 
 /** Hàng `admin.workflows` seed cần (chỉ đọc). */
 export type SeedCatalogWorkflow = {

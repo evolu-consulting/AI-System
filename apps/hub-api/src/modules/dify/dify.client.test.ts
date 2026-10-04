@@ -43,7 +43,7 @@ describe("HUB-FR-13 · run streaming với mock MK [H2a-R09, R15]", () => {
       kind: "finished",
       text: "Xin chào, đây là mock.",
       taskId: "task-1",
-      usage: { input_tokens: 12, output_tokens: 8, cost_usd: 0.0001 },
+      usage: { input_tokens: 20, output_tokens: 0, cost_usd: 0.0001 },
     });
     const [c] = mk.calls();
     expect(c?.path).toBe("/v1/workflows/run");

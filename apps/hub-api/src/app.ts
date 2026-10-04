@@ -10,7 +10,7 @@ import {
 } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { mountH2a } from "./app.h2a";
+import { commandDriverFor, mountH2a } from "./app.h2a";
 import { mountMcp, runnerMcp } from "./app.mcp";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import type { Db } from "./lib/db";
@@ -139,7 +139,12 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
   if (!deps.db) return;
-  const h2a = config && mountH2a(app, config);
+  const drivers = commandDriverFor({
+    db: deps.db,
+    log: logger,
+    secretMasterKey: deps.secretMasterKey,
+  });
+  const h2a = config && mountH2a(app, config, drivers);
   if (!deps.redis || !config || !h2a) {
     app.route("/conversations", conversationRoutes(deps.db));
     return;

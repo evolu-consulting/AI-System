@@ -4,17 +4,13 @@ import type { z } from "zod";
 import {
   SEED_PROFILE_TOKEN,
   type SeedAgent,
-  type SeedAgentWorkflow,
-  type SeedEntitlement,
   SeedFileSchema,
-  type SeedGrant,
   type SeedOrchestrator,
-  type SeedProfile,
-  type SeedProvider,
 } from "./seed.schema";
+import type { SeedIssue, SeedPlan } from "./seed.types";
 import { checkDifyOptions } from "./seed.workflows";
 
-export type SeedIssue = { path: string; message: string; value?: unknown };
+export type { SeedIssue, SeedPlan } from "./seed.types";
 
 /** Lỗi validate seed: `message` và `issues` nêu file, đường dẫn trường và giá trị sai (A43). */
 export class SeedValidationError extends Error {
@@ -30,18 +26,6 @@ function formatIssue(i: SeedIssue): string {
   const v = i.value === undefined ? "" : ` (giá trị: ${JSON.stringify(i.value)})`;
   return `${i.path}: ${i.message}${v}`;
 }
-
-export type SeedPlan = {
-  providers: SeedProvider[];
-  profiles: SeedProfile[];
-  agents: (Omit<SeedAgent, "profile"> & { profile: string })[];
-  orchestrator: SeedOrchestrator;
-  entitlements: SeedEntitlement[];
-  grants: SeedGrant[];
-  /** H2a: key workflow Admin — đổi sang id ở `resolveWorkflows` (cần đọc `admin.workflows`). */
-  agentWorkflows: SeedAgentWorkflow[];
-  sideEffect: string[];
-};
 
 export type SeedSource = { name: string; data: unknown };
 export type PlanOptions = { appEnv: string; profile?: string };

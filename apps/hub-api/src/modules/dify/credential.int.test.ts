@@ -188,7 +188,7 @@ describe("HUB-H2a-AC-03 · credential → client → mock MK → usage [H2a-R15,
     await recordDifyUsage(db, usageRow(run, out.usage, out.ms, id()));
     const rows = await sql<{ i: number; o: number; c: string }[]>`select input_tokens as i,
       output_tokens as o, cost_usd::text as c from hub.usage_logs where run_id = ${run}`;
-    expect(rows.map((r) => [r.i, r.o, Number(r.c)])).toEqual([[12, 8, 0.0001]]);
+    expect(rows.map((r) => [r.i, r.o, Number(r.c)])).toEqual([[20, 0, 0.0001]]);
     const dump = JSON.stringify(await sql`select * from hub.usage_logs where run_id = ${run}`);
     for (const f of leakForms(apiKey)) expect(dump).not.toContain(f);
   });

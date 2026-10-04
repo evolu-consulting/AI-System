@@ -68,12 +68,25 @@ function finishedOf(e: Obj): DifyEvent {
     return { kind: "finished", status: "succeeded", outputs: null, usage: meta.usage };
   }
   const data = isObj(e.data) ? e.data : {};
-  const meta = isObj(data.metadata) ? data.metadata : {};
+  const meta = isObj(data.metadata) && isObj(data.metadata.usage) ? data.metadata.usage : {};
   return {
     kind: "finished",
     status: typeof data.status === "string" ? data.status : "succeeded",
     outputs: isObj(data.outputs) ? data.outputs : null,
-    usage: isObj(meta.usage) ? meta.usage : data,
+    usage: workflowUsage(data, meta),
+  };
+}
+
+/**
+ * R15 app `workflow`: `total_tokens` → `input_tokens`, `output_tokens = 0` (không lấy prompt/completion của
+ * `metadata.usage`); giá `total_price`/`currency` lấy ở `data` hoặc `metadata.usage`.
+ */
+function workflowUsage(data: Obj, meta: Obj): Obj {
+  const pick = (k: string) => (data[k] !== undefined ? data[k] : meta[k]);
+  return {
+    total_tokens: pick("total_tokens"),
+    total_price: pick("total_price"),
+    currency: pick("currency"),
   };
 }
 
