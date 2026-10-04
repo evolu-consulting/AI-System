@@ -3,7 +3,8 @@
 | File | Nội dung |
 |---|---|
 | `runner.py` | (cha) `CliJobHost.run(job, control)`: validate payload, SQL Kết thúc (lỗi DB → thử lại backoff) + XADD sau commit |
-| `job_run.py` | (cha) `JobRun`: spawn `python -m agent_runtime.runtimes.cli.child --job-id=<id>` (`start_new_session`, env `sandbox/env.py`, cwd `work/<job_id>`), ghi `pgid`, đọc sự kiện, cancel/timeout → giết group (`sandbox/process.py`), cha đang dừng → không ghi |
+| `job_run.py` | (cha) `JobRun`: điều phối một lần chạy — session/resume (H1-R23), thử lại JSON hỏng, cha đang dừng → không ghi, `_apply` → `CliJobHost.close`; giữ `proc_host: HostProcess` |
+| `host_proc.py` | (cha) `HostProcess` (PY-00): spawn `python -m agent_runtime.runtimes.cli.child --job-id=<id>` (`start_new_session`, env `sandbox/env.py`, cwd `work/<job_id>`), ghi `pgid`, đọc sự kiện, cancel/timeout → giết group (`sandbox/process.py`); đọc trạng thái lần chạy qua Protocol `RunState` |
 | `stdout_pipe.py` | (cha) pipe stdout do cha tạo: inode → tìm cháu giữ pipe, đóng transport khi bỏ đọc |
 | `outcome.py` | sự kiện đã thấy → kết quả job + ảnh hưởng provider + dòng usage |
 | `joblog.py` | file log theo job (khung message, stderr) |

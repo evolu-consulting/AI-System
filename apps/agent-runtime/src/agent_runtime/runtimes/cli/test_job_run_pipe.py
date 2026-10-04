@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 from agent_runtime.providers.base import Final, Progress
-from agent_runtime.runtimes.cli import job_run as jr
+from agent_runtime.runtimes.cli import host_proc as hp
 from agent_runtime.runtimes.cli.outcome import decide_exit
 from agent_runtime.runtimes.cli.protocol import encode_event
 from agent_runtime.runtimes.cli.test_job_run import make_run, start
@@ -28,10 +28,10 @@ async def test_wrk_fr_15_slow_progress_then_final_kept(tmp_path: Path) -> None:
     """N1: `Progress` xử lý (Redis) lâu hơn `DRAIN_S` sau khi job host thoát, rồi `Final` → kết quả
     còn, không đếm lỗi provider."""
     run, host = make_run(tmp_path)
-    host.events.progress_s = jr.DRAIN_S + 0.8
+    host.events.progress_s = hp.DRAIN_S + 0.8
     await start(run, _printf(encode_event(Progress(label="p")), encode_event(FINAL)) + "; exit 0")
-    assert await run._supervise() == "exited"  # pyright: ignore[reportPrivateUsage]
-    await run._kill_leftovers()  # pyright: ignore[reportPrivateUsage]
+    assert await run.proc_host.supervise() == "exited"
+    await run.proc_host.kill_leftovers()
     assert run.seen.final == FINAL
     v = decide_exit(run.payload, run.seen)
     assert v.failure is None and v.provider != "error"
@@ -53,15 +53,15 @@ async def test_wrk_fr_05_setsid_grandchild_killed_pipe_closed(tmp_path: Path) ->
     → cháu bị giết, không còn ai giữ pipe, Runtime không rò fd pipe."""
     run, _ = make_run(tmp_path)
     await start(run, "setsid sleep 30 & exit 0")
-    assert run.pipe is not None
-    inode = run.pipe.inode
+    assert run.proc_host.pipe is not None
+    inode = run.proc_host.pipe.inode
     t0 = time.monotonic()
-    assert await run._supervise() == "exited"  # pyright: ignore[reportPrivateUsage]
+    assert await run.proc_host.supervise() == "exited"
     held = pg.stamp(pg.pipe_holders(inode))
     assert held  # cháu còn giữ đầu ghi
-    await run._kill_leftovers()  # pyright: ignore[reportPrivateUsage]
-    assert time.monotonic() - t0 < jr.DRAIN_S + 5
+    await run.proc_host.kill_leftovers()
+    assert time.monotonic() - t0 < hp.DRAIN_S + 5
     assert pg.pipe_holders(inode) == set()
     assert pg.still_alive(held) == set()
     await asyncio.sleep(0.05)  # `transport.close()` đóng fd ở vòng lặp kế
-    assert run.pipe.transport is None and _fds_on(inode) == []
+    assert run.proc_host.pipe.transport is None and _fds_on(inode) == []
