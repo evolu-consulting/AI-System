@@ -1,6 +1,13 @@
 // HUB-NFR-04 · H1-R26 · dựng app Hono của hub-api (plan H1 §4). Factory thuần: không đọc env, để test in-process.
 // Middleware: request_id → logger (child có request_id) → CORS. Lỗi theo `CHAT_API_ERRORS` (contract chat).
-import { HealthResponseSchema } from "@ai/contracts/chat";
+
+import { hostname } from "node:os";
+import {
+  FLOW_ID_HEADER,
+  HealthResponseSchema,
+  MESSAGE_ID_HEADER,
+  RUN_ID_HEADER,
+} from "@ai/contracts/chat";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
@@ -10,6 +17,9 @@ import { type Logger, logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
+import { conversationService } from "./modules/conversations/conversations.service";
+import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
+import { pendingRunDriver, type RunDriver, RunService } from "./modules/runs/runs.service";
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
 export type AppVars = {
@@ -35,6 +45,8 @@ export type AppDeps = {
   /** = `HUB_CONFIG_POLL_S` (mặc định 60). */
   configPollS?: number;
   signal?: AbortSignal;
+  /** Vòng chạy run (B8 Orchestrator). Vắng → `pendingRunDriver` (run giữ `running`). */
+  runDriver?: RunDriver;
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -66,11 +78,27 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
   return r;
 }
 
-/** JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E11. Vắng `db` (test khung) ⇒ không mount. */
-function mountProtected(app: Hono<AppVars>, deps: AppDeps): void {
+/**
+ * JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E14. Vắng `db` (test khung) ⇒ không mount;
+ * E12–E14 cần thêm `redis` + cache cấu hình.
+ */
+function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache): void {
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
-  if (deps.db) app.route("/conversations", conversationRoutes(deps.db));
+  if (!deps.db) return;
+  app.route("/conversations", conversationRoutes(deps.db));
+  if (!deps.redis || !config) return;
+  const runs = new RunService({
+    db: deps.db,
+    redis: deps.redis,
+    config,
+    owner: deps.instanceId ?? `${hostname()}:${process.pid}`,
+    driver: deps.runDriver ?? pendingRunDriver,
+    log: logger,
+    signal: deps.signal,
+  });
+  app.route("/conversations", sendMessageRoutes(conversationService(deps.db), runs));
+  app.route("/runs", runRoutes(runs));
 }
 
 export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
@@ -105,12 +133,12 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
       origin: cfg.corsOrigins,
       credentials: true,
       allowHeaders: ALLOW_HEADERS,
-      exposeHeaders: [REQUEST_ID_HEADER],
+      exposeHeaders: [REQUEST_ID_HEADER, RUN_ID_HEADER, FLOW_ID_HEADER, MESSAGE_ID_HEADER],
     }),
   );
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
-  mountProtected(app, deps);
+  mountProtected(app, deps, config);
 
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
