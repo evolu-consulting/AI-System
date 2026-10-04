@@ -20,11 +20,15 @@ import { conversationRoutes } from "./modules/conversations/conversations.routes
 import { conversationService } from "./modules/conversations/conversations.service";
 import { orchestratorDriver } from "./modules/orchestrator/orchestrator.service";
 import { JobAgentRunner } from "./modules/runner/job-agent-runner";
+import { startOrphanSweep } from "./modules/runner/orphan-sweep";
 import { RunStreamReader } from "./modules/runner/run-stream-reader";
 import { cancelRoutes } from "./modules/runs/cancel.routes";
 import { CancelService } from "./modules/runs/cancel.service";
+import { startLeaseLoop } from "./modules/runs/lease";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
 import { type RunDriver, RunService } from "./modules/runs/runs.service";
+import type { RunRegistry } from "./modules/runs/sse-writer";
+import { startLeaseSweeper } from "./modules/runs/sweeper";
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
 export type AppVars = {
@@ -93,6 +97,20 @@ function defaultRunDriver(db: Db, redis: Redis, deps: AppDeps, config: ConfigCac
   return orchestratorDriver({ db, runner, users: config, log: logger });
 }
 
+/** B10 · vòng nền của instance (plan §5.2 lease, §5.8 sweeper lease, plan-db §5.5 orphan); dừng khi `signal` abort. */
+function startRunLoops(d: {
+  db: Db;
+  redis: Redis;
+  owner: string;
+  registry: RunRegistry;
+  signal?: AbortSignal;
+}): void {
+  const deps = { ...d, log: logger };
+  startLeaseLoop(deps);
+  startLeaseSweeper(deps);
+  startOrphanSweep(deps);
+}
+
 /**
  * JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E14. Vắng `db` (test khung) ⇒ không mount;
  * E12–E14 cần thêm `redis` + cache cấu hình.
@@ -131,6 +149,13 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   app.route("/conversations", sendMessageRoutes(conversations, runs));
   app.route("/runs", runRoutes(runs));
   app.route("/runs", cancelRoutes(cancel));
+  startRunLoops({
+    db: deps.db,
+    redis: deps.redis,
+    owner,
+    registry: runs.registry,
+    signal: deps.signal,
+  });
 }
 
 export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {

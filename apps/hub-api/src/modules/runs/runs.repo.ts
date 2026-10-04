@@ -3,7 +3,7 @@
 import type { Ask } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { conversations, flows, messages, runs } from "@ai/db/schema/hub";
-import { and, eq, isNull, type SQL, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
 export type Owner = { tenantId: string; userId: string };
@@ -195,4 +195,32 @@ export async function updateFlowAfterRun(
         : { pendingAsk: p.pendingAsk, agentId: p.agentId },
     )
     .where(eq(flows.id, p.flowId));
+}
+
+/**
+ * §5.2 · gia hạn lease 30 s các run của `owner`; trả id đã gia hạn. `FOR UPDATE SKIP LOCKED`: hàng đang bị khoá
+ * (kết thúc/huỷ/E9 giữ nhiều hàng `runs`) bị bỏ qua lượt này thay vì chờ — một câu khoá nhiều hàng theo thứ tự tuỳ ý
+ * có thể tạo vòng chờ với E9 (§3.5). Người gọi tự kiểm hàng bị bỏ qua (`ownedRunning`).
+ */
+export async function renewLeases(tx: Tx, ids: string[], owner: string): Promise<string[]> {
+  const free = tx
+    .select({ id: runs.id })
+    .from(runs)
+    .where(and(inArray(runs.id, ids), eq(runs.owner, owner), eq(runs.status, "running")))
+    .for("update", { skipLocked: true });
+  const rows = await tx
+    .update(runs)
+    .set({ leaseUntil: LEASE })
+    .where(inArray(runs.id, free))
+    .returning({ id: runs.id });
+  return rows.map((r) => r.id);
+}
+
+/** Run trong `ids` còn `running` và còn của `owner` (đọc không khoá, trạng thái đã COMMIT). */
+export async function ownedRunning(tx: Tx, ids: string[], owner: string): Promise<string[]> {
+  const rows = await tx
+    .select({ id: runs.id })
+    .from(runs)
+    .where(and(inArray(runs.id, ids), eq(runs.owner, owner), eq(runs.status, "running")));
+  return rows.map((r) => r.id);
 }

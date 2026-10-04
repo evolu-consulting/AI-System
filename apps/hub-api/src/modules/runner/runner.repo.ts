@@ -152,3 +152,20 @@ export async function finishStep(
   if (!row?.finishedAt) return null;
   return { startedAt: row.startedAt, finishedAt: row.finishedAt };
 }
+
+export type OrphanJob = { id: string; runId: string };
+
+/**
+ * plan-db §5.5 (nguyên văn, Hub và Runtime cùng chạy): job `running` mất heartbeat > 60 s → `failed` `orphaned`.
+ * Chỉ bên nhận dòng trong `RETURNING` phát `job.failed`.
+ */
+export async function sweepOrphanJobs(tx: Tx): Promise<OrphanJob[]> {
+  const rows = await tx.execute<{
+    id: string;
+    run_id: string;
+  }>(sql`UPDATE hub.jobs SET status = 'failed',
+    error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now()
+    WHERE status = 'running' AND heartbeat_at < now() - interval '60 seconds'
+    RETURNING id, run_id, worker_id, pgid`);
+  return [...rows].map((r) => ({ id: r.id, runId: r.run_id }));
+}

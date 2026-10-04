@@ -32,7 +32,7 @@ export type CancelServiceDeps = {
   log: Logger;
 };
 
-type Cancelled = { target: CancelTarget; error: CancelWrite["error"] };
+export type Cancelled = { target: CancelTarget; error: CancelWrite["error"] };
 
 const cancelError = (locale: repo.Locale): CancelWrite["error"] => ({
   code: "CANCELLED",
@@ -97,19 +97,29 @@ export class CancelService {
     for (const c of done ?? []) await this.#announce(c);
   }
 
-  /** Sau COMMIT: dừng writer cục bộ (finish của nó sẽ 0 dòng) rồi "XADD bên ngoài". Lỗi Redis → E13 dựng lại từ DB. */
-  async #announce({ target: t, error }: Cancelled): Promise<void> {
-    this.d.registry.get(t.runId)?.abort();
-    const ev = {
-      event: "run.failed" as const,
-      data: { run_id: t.runId, message_id: t.answerMessageId, ...error },
-    };
-    try {
-      const seq = await appendExternal(this.d.redis, t.runId, ev, this.d.log);
-      if (seq === null) return;
-      await withHubScope(this.d.db, { kind: "system" }, (tx) => setFinalSeq(tx, t.runId, seq));
-    } catch (err) {
-      this.d.log.error("run-cancel-publish-failed", { run_id: t.runId, ...safeErrorFields(err) });
-    }
+  #announce(c: Cancelled): Promise<void> {
+    return announceClosed(this.d, c);
+  }
+}
+
+/**
+ * Sau COMMIT đóng run (huỷ §5.7, sweeper §5.8): dừng writer cục bộ (finish của nó sẽ 0 dòng) rồi "XADD bên ngoài"
+ * `run.failed`. Lỗi Redis → log, E13 dựng lại từ DB.
+ */
+export async function announceClosed(
+  d: Pick<CancelServiceDeps, "db" | "redis" | "registry" | "log">,
+  { target: t, error }: Cancelled,
+): Promise<void> {
+  d.registry.get(t.runId)?.abort();
+  const ev = {
+    event: "run.failed" as const,
+    data: { run_id: t.runId, message_id: t.answerMessageId, ...error },
+  };
+  try {
+    const seq = await appendExternal(d.redis, t.runId, ev, d.log);
+    if (seq === null) return;
+    await withHubScope(d.db, { kind: "system" }, (tx) => setFinalSeq(tx, t.runId, seq));
+  } catch (err) {
+    d.log.error("run-close-publish-failed", { run_id: t.runId, ...safeErrorFields(err) });
   }
 }

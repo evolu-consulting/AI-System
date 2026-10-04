@@ -58,7 +58,15 @@ async function startInst(owner: string): Promise<Inst> {
   const ac = new AbortController();
   const app = createApp(
     { version: "0.0.0-test", corsOrigins: [] },
-    { db, redis, jwtPublicKey: k.publicKey, appEnv: "test", instanceId: owner, runDriver: driver },
+    {
+      db,
+      redis,
+      jwtPublicKey: k.publicKey,
+      appEnv: "test",
+      instanceId: owner,
+      runDriver: driver,
+      signal: ac.signal,
+    },
   );
   const server = Bun.serve({ port: 0, fetch: app.fetch, idleTimeout: 0 });
   return {

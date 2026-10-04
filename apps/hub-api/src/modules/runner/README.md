@@ -7,6 +7,7 @@ Một job `agent.cli` cho một step của run, plan H1 §5.6, P7/P8/P11, contra
 | `job-agent-runner.ts` | `AgentRunner` (`run(task, signal): AsyncIterable<RunEvent>`), `JobAgentRunner`, `runJob` (→ `JobOutcome` cho B8) |
 | `run-stream-reader.ts` | `RunStreamReader`: một kết nối `XREAD BLOCK 1000` multiplex `run:<id>`, đọc từ đầu stream, người gọi lọc `job_id` |
 | `runner.repo.ts` | `provider_state`, `run_steps` + `INSERT jobs` + `pg_notify('job_enqueued')` một transaction, đọc job, hết hạn `queued`, slot tenant |
+| `orphan-sweep.ts` | B10 · quét orphan phía Hub (plan-db §5.5, 10 s): `failed orphaned` + XADD `job.failed` (`seq` = epoch ms) vào `run:<id>` |
 | `runner.rules.ts` | thuần: `buildJobPayload`, `providerBlocked`, `eventFromJobRow` (dựng từ DB), `syntheticFailed`, `runErrorCodeOf` |
 
 Luồng `run`: payload (bước 0 profile, đã `JobPayloadSchema`) → provider `cooldown/logged_out/error` ⇒ `job.failed ALL_PROVIDERS_EXHAUSTED provider_unavailable`, không job, không step → đăng ký `run:<id>` → transaction `system` (run_steps `running` → jobs → NOTIFY) → `step.started` → sự kiện job; im 2 s ⇒ đọc `jobs` (kết thúc ⇒ dựng từ DB; `queued` quá `maxWaitS` ⇒ `UPDATE … WHERE status='queued'` + `queueTimeoutReason`) → step `ok/failed` (`detail` giữ `message` gốc, P11) → `step.finished` → sự kiện kết thúc. `signal` abort ⇒ dừng, không ghi.

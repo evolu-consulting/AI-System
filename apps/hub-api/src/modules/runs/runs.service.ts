@@ -42,8 +42,6 @@ export type RunContext = {
 export interface RunDriver {
   start(ctx: RunContext): void;
 }
-/** Bản tạm tới B8: không làm gì, run giữ `running` như đang chờ Runtime (huỷ B9 / sweeper B10 đóng). */
-export const pendingRunDriver: RunDriver = { start: () => {} };
 
 export type RunServiceDeps = {
   db: Db;
