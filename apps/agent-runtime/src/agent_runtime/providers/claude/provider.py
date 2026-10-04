@@ -28,6 +28,7 @@ from agent_runtime.providers.claude.mapping import (
     final_event,
     init_model,
     init_session_id,
+    mcp_statuses,
     rate_limit_event,
     result_signal,
     tool_events,
@@ -70,6 +71,9 @@ class _Turn:
     async def handle(self, msg: Message) -> None:
         if isinstance(msg, SystemMessage):
             self.model = init_model(msg) or self.model
+            for status in mcp_statuses(msg):
+                if status != "connected":  # §4.5: không fail job, tool không có
+                    get_logger().warning("job.mcp_unavailable", status=status)
             await self.session(init_session_id(msg))
         elif isinstance(msg, AssistantMessage):
             for ev in tool_events(msg):

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from agent_runtime.sandbox.hook import SandboxPolicy, decide, make_path_guard
+from agent_runtime.sandbox.hook import SandboxPolicy, decide, deny_output, make_path_guard
 from agent_runtime.sandbox.paths import is_path_allowed
 
 JOB = "c3000000-0000-4000-8000-000000000001"
@@ -130,3 +130,38 @@ def test_wrk_br_07_structured_output_only_for_agent(policy: SandboxPolicy) -> No
     agent = replace(policy, tools=frozenset(), structured_output=True)
     assert decide(agent, "StructuredOutput", data).allowed
     assert decide(agent, "Read", {"file_path": "a.txt"}).reason == "tool_not_allowed"
+
+
+MCP_TOOL = "mcp__hub__check-invoice"
+
+
+@pytest.mark.parametrize(
+    ("tool", "tool_input", "want"),
+    [
+        (MCP_TOOL, {"path": "/etc/passwd", "glob": "{..}/**"}, None),  # không kiểm path
+        (MCP_TOOL, {}, None),
+        ("mcp__hub__create-trello-card", {}, "tool_not_allowed"),  # ∉ `payload.mcp.tools`
+        ("mcp__other__check-invoice", {}, "tool_not_allowed"),
+        ("mcp__other__x", {}, "tool_not_allowed"),
+        ("ListMcpResourcesTool", {}, "tool_not_allowed"),
+        ("ReadMcpResourceTool", {"uri": "x"}, "tool_not_allowed"),
+        ("Read", {"file_path": "/etc/passwd"}, "path_not_allowed"),  # luật H1 giữ nguyên
+    ],
+)
+def test_wrk_fr_13_decide_mcp_tools(
+    policy: SandboxPolicy, tool: str, tool_input: dict[str, object], want: str | None
+) -> None:
+    """H2a §4.3 · R19: `mcp_tools` → allow không kiểm path; `mcp__*` khác / tool MCP phụ → deny."""
+    mcp = replace(policy, mcp_tools=frozenset({MCP_TOOL}))
+    got = decide(mcp, tool, tool_input)
+    assert got.reason == want
+    assert got.allowed is (want is None)
+
+
+async def test_wrk_fr_13_guard_mcp_allow_is_empty(policy: SandboxPolicy) -> None:
+    """Spike S5: allow = `{}` (không `permissionDecision:"allow"` vượt `allowed_tools`); không
+    `mcp_tools` (H1) → `mcp__hub__*` deny."""
+    allowed = make_path_guard(replace(policy, mcp_tools=frozenset({MCP_TOOL})))
+    assert await allowed({"tool_name": MCP_TOOL, "tool_input": {"x": 1}}, None, None) == {}
+    h1 = await make_path_guard(policy)({"tool_name": MCP_TOOL, "tool_input": {}}, None, None)
+    assert h1 == deny_output("tool_not_allowed")

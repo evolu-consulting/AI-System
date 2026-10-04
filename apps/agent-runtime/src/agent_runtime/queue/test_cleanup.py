@@ -53,6 +53,16 @@ def test_wrk_fr_23_fake_state_entries_by_mtime(tmp_path: Path) -> None:
     assert (cfg.work_root / ".fake-state").is_dir()
 
 
+def test_wrk_fr_13_mcp_config_files_by_mtime(tmp_path: Path) -> None:
+    """H2a §4.2: file MCP sót (`.mcp/<job_id>.json`, có token) quá 24 h bị xoá; thư mục giữ."""
+    cfg = _cfg(tmp_path)
+    old = _mk(cfg.work_root / ".mcp" / "j1.json", 25 * H, is_dir=False)
+    new = _mk(cfg.work_root / ".mcp" / "j2.json", 1 * H, is_dir=False)
+    os.utime(cfg.work_root / ".mcp", (NOW - 99 * H, NOW - 99 * H))
+    cleanup_once(cfg, frozenset(), NOW)
+    assert not old.exists() and new.exists()
+
+
 def test_wrk_nfr_04_logs_older_than_7_days_removed(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path)
     old = _mk(cfg.log_dir / "2026-01-01", 8 * 24 * H)

@@ -10,7 +10,9 @@ kỳ đâu hoặc `{` (brace `{..}/{..}/x`, `{..,a}/**` — review H1 #3), `[` (
 đoạn `.` + `?`/`*` hoặc đoạn khớp `..` khi wildcard ăn cả `.` (`?.`, `*.*`; trừ `*`/`**`) → deny
 (review H1 v2 N3; đánh đổi: chặn cả mẫu vô hại như `.*rc`, `*.*`, lớp ký tự); tuyệt đối / `~` →
 kiểm như đường dẫn. `StructuredOutput` (tool CLI thêm khi có `output_format`, S2) chỉ được phép khi
-`policy.structured_output` (job agent), không có trường đường dẫn.
+`policy.structured_output` (job agent), không có trường đường dẫn. H2a §4.3: tool MCP Hub
+`mcp__hub__<k>` ∈ `policy.mcp_tools` → allow (= `{}`, không `permissionDecision:"allow"` — spike
+S5: `dontAsk` + `allowed_tools` vẫn là hàng rào sau hook), không kiểm path; `mcp__*` khác → deny.
 Deny trả lý do cố định, không lặp lại đường dẫn; log chỉ `tool_name`, nhãn, `job_id`.
 Lỗi bất ngờ → deny (fail-closed).
 """
@@ -41,6 +43,8 @@ class SandboxPolicy:
     forbidden_roots: tuple[Path, ...]
     tools: frozenset[str]
     structured_output: bool = False  # job có `output_format` (agent) ⇒ cho `StructuredOutput`
+    # H2a §4.3: tên đầy đủ `mcp__hub__<k>` của `payload.mcp.tools` (job có MCP); rỗng = H1.
+    mcp_tools: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -115,6 +119,8 @@ def decide(policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, objec
     """Quyết định thuần cho một lần gọi tool."""
     if tool_name == STRUCTURED_OUTPUT_TOOL and policy.structured_output:
         return _ALLOW  # dữ liệu trả lời theo schema, không phải đường dẫn (S2)
+    if tool_name in policy.mcp_tools:
+        return _ALLOW  # đối số đi tới Hub/Dify, không chạm FS Worker — không kiểm path (§4.3)
     if _tool_denied(policy, tool_name):
         return HookDecision(allowed=False, reason="tool_not_allowed", label="tool")
     for raw in _candidates(tool_name, tool_input):

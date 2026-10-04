@@ -18,6 +18,14 @@ CLI_QUIET_ENV: dict[str, str] = {
     "DISABLE_ERROR_REPORTING": "1",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
 }
+# H2a `plan-runtime` §4.2: Hub `/mcp` chạy loopback — luôn bỏ proxy (vô hại khi không có proxy).
+NO_PROXY_ENV: dict[str, str] = {"NO_PROXY": "localhost,127.0.0.1"}
+MCP_TOOL_TIMEOUT = "MCP_TOOL_TIMEOUT"  # ms, chỉ khi job có MCP (spike S3)
+
+
+def mcp_env(tool_timeout_ms: int) -> dict[str, str]:
+    """Khoá thêm vào env job host khi job có MCP (spike S3) — không thêm biến khác."""
+    return {MCP_TOOL_TIMEOUT: str(tool_timeout_ms)}
 
 
 def job_host_env(
@@ -31,6 +39,7 @@ def job_host_env(
         "TMPDIR": str(job_work / TMP_SUBDIR),
         "APP_ENV": app_env,
         **CLI_QUIET_ENV,
+        **NO_PROXY_ENV,
     }
     for key in ("VIRTUAL_ENV", "PYTHONPATH"):
         value = (python_env or {}).get(key)

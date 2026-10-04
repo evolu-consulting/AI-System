@@ -37,6 +37,7 @@ from agent_runtime.providers.base import (
     ToolUse,
     UsageEv,
 )
+from agent_runtime.providers.claude.mcp import MCP_SERVER, TOOL_PREFIX
 
 RATE_RE = re.compile(r"usage limit|rate limit|\b429\b", re.IGNORECASE)
 AUTH_RE = re.compile(r"/login|not logged in|\b401\b|invalid api key|oauth token", re.IGNORECASE)
@@ -48,6 +49,7 @@ TOOL_LABELS = {
     "Glob": "Đang liệt kê tệp",
 }
 DEFAULT_TOOL_LABEL = "Đang dùng công cụ"
+MCP_TOOL_LABEL = "Đang gọi công cụ"  # H2a §4.4: tool `mcp__hub__<k>` — nhãn tĩnh (H1-R26)
 _FENCE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 
 
@@ -83,7 +85,31 @@ def tool_events(msg: AssistantMessage) -> Iterator[ProviderEvent]:
     for block in msg.content:
         if isinstance(block, ToolUseBlock):
             yield ToolUse(name=block.name[:200] or "?")
-            yield Progress(label=TOOL_LABELS.get(block.name, DEFAULT_TOOL_LABEL))
+            yield Progress(label=tool_label(block.name))
+
+
+def tool_label(name: str) -> str:
+    if name.startswith(TOOL_PREFIX):
+        return MCP_TOOL_LABEL
+    return TOOL_LABELS.get(name, DEFAULT_TOOL_LABEL)
+
+
+def mcp_statuses(msg: SystemMessage) -> list[str]:
+    """§4.5 · trạng thái server `hub` ở init (`data["mcp_servers"][].status`); chỉ `status`, không
+    lấy `error`/config (S4: `get_mcp_status()` có header nguyên văn — không dùng)."""
+    if msg.subtype != "init":
+        return []
+    servers: object = msg.data.get("mcp_servers")
+    if not isinstance(servers, list):
+        return []
+    out: list[str] = []
+    for item in cast(list[object], servers):
+        if isinstance(item, dict):
+            entry = cast(dict[str, object], item)
+            status = entry.get("status")
+            if entry.get("name") == MCP_SERVER:
+                out.append(status[:40] if isinstance(status, str) else "?")
+    return out
 
 
 def rate_limit_event(msg: RateLimitEvent) -> RateLimit | None:

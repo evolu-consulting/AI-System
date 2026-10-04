@@ -139,6 +139,9 @@ class ProviderJob(BaseModel):
     cli_path: str | None = None
     # PY-10: lần thử lại khi JSON agent hỏng — thay `payload.prompt`, `tools=[]` (WRK-BR-04).
     retry_prompt: str | None = None
+    # H2a PY-04 (`plan-runtime` §4.2): file cấu hình MCP 0600 (`.mcp/<job_id>.json`, có token
+    # claim) cha ghi khi agent có `payload.mcp` (không ở lần thử lại); None = không MCP.
+    mcp_config_path: str | None = None
 
 
 class Provider(Protocol):

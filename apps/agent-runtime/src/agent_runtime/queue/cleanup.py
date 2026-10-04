@@ -1,6 +1,7 @@
 """WRK-FR-23 · WRK-NFR-04 · Dọn đĩa định kỳ (plan-runtime §9): `work/<job_id>/` (+ mục trong
-`.fake-state/`, `.fake-sessions/`) quá 24 giờ; thư mục log `<YYYY-MM-DD>/` quá 7 ngày. Theo mtime;
-không đi theo symlink; không đụng thư mục của job process này đang giữ (`Supervisor.held`).
+`.fake-state/`, `.fake-sessions/`, `.mcp/` — H2a) quá 24 giờ; thư mục log `<YYYY-MM-DD>/` quá
+7 ngày. Theo mtime; không đi theo symlink; không đụng thư mục của job process này đang giữ
+(`Supervisor.held`).
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from agent_runtime.log import get_logger
 
 WORK_MAX_AGE_S = 24 * 3600.0
 LOG_MAX_AGE_S = 7 * 24 * 3600.0
-STATE_DIRS = frozenset({".fake-state", ".fake-sessions"})
+STATE_DIRS = frozenset({".fake-state", ".fake-sessions", ".mcp"})  # `.mcp`: H2a §4.2
 _DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 

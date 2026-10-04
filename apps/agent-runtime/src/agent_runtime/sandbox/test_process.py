@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from agent_runtime.sandbox.env import CLI_QUIET_ENV, job_host_env
+from agent_runtime.sandbox.env import CLI_QUIET_ENV, NO_PROXY_ENV, job_host_env, mcp_env
 from agent_runtime.sandbox.process import (
     descendants,
     group_pids,
@@ -59,10 +59,17 @@ def test_wrk_br_02_env_whitelist_only() -> None:
         {"VIRTUAL_ENV": "/opt/venv", "REDIS_URL": "redis://x", "PYTHONPATH": ""},
     )
     base = {"HOME", "PATH", "LANG", "TMPDIR", "APP_ENV", "VIRTUAL_ENV"}
-    assert set(env) == base | set(CLI_QUIET_ENV)
+    assert set(env) == base | set(CLI_QUIET_ENV) | set(NO_PROXY_ENV)
     assert CLI_QUIET_ENV["DISABLE_AUTOUPDATER"] == "1"  # S5
+    assert env["NO_PROXY"] == "localhost,127.0.0.1"  # H2a §4.2: luôn đặt
+    assert "MCP_TOOL_TIMEOUT" not in env
     assert env["HOME"] == "/home/w" and env["TMPDIR"] == "/w/work/j1/.tmp"
     assert env["PATH"] == "/usr/local/bin:/usr/bin:/bin"
+
+
+def test_wrk_fr_13_env_mcp_tool_timeout() -> None:
+    """H2a §4.2 · spike S3: job có MCP → `MCP_TOOL_TIMEOUT` (ms); không thêm khoá khác."""
+    assert mcp_env(65_000) == {"MCP_TOOL_TIMEOUT": "65000"}
 
 
 def _stat_line(pid: int, state: str, ppid: int, pgrp: int) -> str:

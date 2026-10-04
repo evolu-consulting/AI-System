@@ -30,6 +30,7 @@ from agent_runtime.providers.base import (
     ToolUse,
     UsageEv,
 )
+from agent_runtime.providers.claude import mcp
 from agent_runtime.runtimes.cli.joblog import append_envelope, events_log_path, stderr_log_path
 from agent_runtime.runtimes.cli.outcome import BROKEN_SIGNALS, Seen
 from agent_runtime.runtimes.cli.protocol import (
@@ -42,7 +43,7 @@ from agent_runtime.runtimes.cli.protocol import (
 )
 from agent_runtime.runtimes.cli.stdout_pipe import StdoutPipe
 from agent_runtime.sandbox import process as pg
-from agent_runtime.sandbox.env import TMP_SUBDIR, forbidden_roots, job_host_env
+from agent_runtime.sandbox.env import TMP_SUBDIR, forbidden_roots, job_host_env, mcp_env
 
 if TYPE_CHECKING:
     from agent_runtime.runtimes.cli.job_run import StopControl
@@ -85,9 +86,27 @@ class HostProcess:
         self.out: asyncio.StreamReader | None = None
         self.tree: dict[int, int] = {}  # N2: hậu duệ đã thấy khi job host còn sống (pid→start)
         self.wait_since: float | None = None  # N1: reader đang chờ `readline()` từ lúc này
+        self.mcp_path: Path | None = None  # H2a §4.2: file cấu hình MCP của lần chạy hiện tại
 
     def reset(self) -> None:
         self.killed, self.tree, self.wait_since = False, {}, None
+        self.mcp_path = None
+
+    def _write_mcp(self) -> Path | None:
+        """§4.2: agent có `payload.mcp`, không phải lần thử lại định dạng → ghi file 0600 (token
+        claim) ngoài `work/<job_id>`; Orchestrator có `mcp` → bỏ qua + `warn` (H1-R17)."""
+        payload, job = self.run.payload, self.run.job
+        if payload.mcp is None:
+            return None
+        if payload.output != "agent_result":
+            get_logger().warning("mcp.ignored", reason="orchestrator")
+            return None
+        if not mcp.mcp_enabled(payload, retry=self.run.retry is not None):
+            return None
+        if not job.token:  # claim luôn sinh token (RT1) — phòng hờ
+            get_logger().warning("mcp.ignored", reason="no_token")
+            return None
+        return mcp.write_config(self.cfg.work_root, job.id, payload.mcp.url, job.token)
 
     def _prepare_work(self) -> None:
         self.run.work.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -100,8 +119,11 @@ class HostProcess:
 
     async def spawn(self) -> None:
         self._prepare_work()
+        self.mcp_path = self._write_mcp()
         py_env = {k: os.environ[k] for k in _PY_ENV_KEYS if os.environ.get(k)}
         env = job_host_env(self.cfg.home, self.run.work, self.cfg.app_env, py_env)
+        if self.mcp_path is not None:
+            env |= mcp_env(mcp.tool_timeout_ms(self.run.payload.timeout_s))
         self.pipe = pipe = StdoutPipe()
         err_fd = self._open_stderr()
         try:
@@ -143,6 +165,7 @@ class HostProcess:
             forbidden_roots=[str(r) for r in roots],
             resume_session_id=self.run.resume_id,
             retry_prompt=self.run.retry,
+            mcp_config_path=str(self.mcp_path) if self.mcp_path is not None else None,
         )
         return req.model_dump_json().encode() + b"\n"
 
@@ -280,3 +303,6 @@ class HostProcess:
         finally:
             if self.pipe is not None:
                 self.pipe.close()
+            if self.mcp_path is not None:  # §4.2: xoá ngay sau lần chạy (cleanup 24 h phòng hờ)
+                mcp.remove_config(self.mcp_path)
+                self.mcp_path = None

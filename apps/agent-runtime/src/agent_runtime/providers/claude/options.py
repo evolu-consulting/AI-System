@@ -18,6 +18,7 @@ from claude_agent_sdk import ClaudeAgentOptions, HookMatcher
 from claude_agent_sdk.types import HookCallback, HookContext, HookInput, HookJSONOutput
 
 from agent_runtime.providers.base import ProviderJob
+from agent_runtime.providers.claude.mcp import MCP_BLOCK, mcp_enabled, mcp_tool_names
 from agent_runtime.providers.context import neutralize_mentions
 from agent_runtime.sandbox.hook import PathGuard, SandboxPolicy, make_path_guard
 
@@ -105,6 +106,15 @@ def sdk_hook(guard: PathGuard) -> HookCallback:
     return hook
 
 
+def mcp_tools_of(job: ProviderJob) -> list[str]:
+    """§4.2: tên `mcp__hub__<k>` khi job có file cấu hình MCP (agent, không phải lần thử lại)."""
+    if job.mcp_config_path is None:
+        return []
+    if not mcp_enabled(job.payload, retry=job.retry_prompt is not None):
+        return []
+    return mcp_tool_names(job.payload)
+
+
 def policy_of(job: ProviderJob, tools: list[str]) -> SandboxPolicy:
     return SandboxPolicy(
         job_id=str(job.payload.job_id),
@@ -112,6 +122,7 @@ def policy_of(job: ProviderJob, tools: list[str]) -> SandboxPolicy:
         forbidden_roots=tuple(Path(r) for r in job.forbidden_roots),
         tools=frozenset(tools),
         structured_output=job.payload.output == "agent_result",  # có `output_format` (S2)
+        mcp_tools=frozenset(mcp_tools_of(job)),
     )
 
 
@@ -120,16 +131,26 @@ def _stderr_line(line: str) -> None:
     sys.stderr.write(line.rstrip("\n") + "\n")
 
 
+def _system_prompt(job: ProviderJob, *, agent: bool, mcp: bool) -> str:
+    p = job.payload
+    text = p.system_prompt + FORMAT_BLOCK if agent else p.system_prompt
+    return neutralize_mentions(text + MCP_BLOCK if mcp else text)
+
+
 def build_options(job: ProviderJob) -> ClaudeAgentOptions:
-    """§3.1: `cwd` = work của job, tool tối thiểu, hook sandbox, env tường minh."""
+    """§3.1: `cwd` = work của job, tool tối thiểu, hook sandbox, env tường minh. H2a §4.2: có MCP
+    → `mcp_servers=<đường dẫn file>` (không dict — dict lên argv), `allowed_tools` thêm
+    `mcp__hub__<k>`, `MCP_BLOCK`; `tools`/`disallowed_tools` không đổi."""
     p = job.payload
     tools = job_tools(job)
     agent = p.output == "agent_result"
+    mcp = mcp_tools_of(job)
     guard = make_path_guard(policy_of(job, tools))
     return ClaudeAgentOptions(
         cwd=job.work_dir,
         tools=tools,
-        allowed_tools=list(tools),
+        allowed_tools=[*tools, *mcp],
+        mcp_servers=job.mcp_config_path if mcp and job.mcp_config_path else {},
         disallowed_tools=disallowed(tools, structured=agent),
         permission_mode=PERMISSION_MODE,
         hooks={
@@ -138,14 +159,12 @@ def build_options(job: ProviderJob) -> ClaudeAgentOptions:
             ]
         },
         setting_sources=[],
-        strict_mcp_config=True,  # S3: chỉ MCP truyền qua `mcp_servers` (không có)
+        strict_mcp_config=True,  # S3: chỉ MCP truyền qua `mcp_servers` (file Hub hoặc không có)
         resume=job.resume_session_id if p.use_session else None,
         max_turns=max(p.max_turns, AGENT_MIN_TURNS) if agent else p.max_turns,
         model=p.model.root if p.model is not None else None,
         env=dict(CLAUDE_ENV if agent else ORCHESTRATOR_ENV),
-        system_prompt=neutralize_mentions(
-            p.system_prompt + FORMAT_BLOCK if agent else p.system_prompt
-        ),
+        system_prompt=_system_prompt(job, agent=agent, mcp=bool(mcp)),
         output_format={"type": "json_schema", "schema": AGENT_RESULT_SCHEMA} if agent else None,
         cli_path=job.cli_path,
         stderr=_stderr_line,
