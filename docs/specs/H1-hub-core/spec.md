@@ -14,7 +14,7 @@ requirements:
    WRK-BR-06, WRK-BR-07, WRK-NFR-01, WRK-NFR-02, WRK-NFR-03, WRK-NFR-04, WRK-NFR-06,
    AC-H06, AC-H07, AC-H08, AC-H09, AC-H13, AC-H14, AC-H15,
    AC-W02, AC-W03, AC-W04, AC-W05, AC-W07, AC-W08, AC-W09, AC-W10, AC-W11,
-   CHAT-AC-31, CHAT-AC-32, CHAT-AC-33]
+   CHAT-AC-31, CHAT-AC-32, CHAT-AC-33, CR-030]
 design:
   - docs/design/agent-hub/ba-agent-hub.md (§6.1, 6.3, 6.5, 6.8, §8, §9, §11)
   - docs/design/worker/ba-worker.md (§5, §6, §7, §10)
@@ -41,7 +41,7 @@ owner: backend-lead (TS + Python)
 | 9 | Contract Hub↔Runtime: zod → JSON Schema → pydantic, CI kiểm khớp | ADR-0007 #6 |
 | 10 | Provider giả `fake-cli` (chỉ dev/test) cho test/CI | §7 |
 
-**Không làm (H1):** Studio UI/API (`/studio/*`, CRUD agent/provider/profile, Playground, dry-run, routing tests, audit cấu hình Hub); command `/` + Dify + MCP (`/mcp`, WRK-FR-13) và HUB-BR-01 (H2); runtime `llm`/`python`/`dify-*`, Codex/Gemini; fallback nhiều bước và `ALL_PROVIDERS_EXHAUSTED` ngoài profile 1 bước; quota, overage, `price_book`, `billable_usd` (để `null`), `/agent-grants` + Kiểm tra quyền, `/admin/usage` (H3); attachments; trace API và xem trace theo role (HUB-FR-52, 87); `maint.probe` (WRK-FR-22).
+**Không làm (H1):** Studio UI/API (`/studio/*`, CRUD agent/provider/profile, Playground, dry-run, routing tests, audit cấu hình Hub); command `/` + Dify + MCP (`/mcp`, WRK-FR-13) và HUB-BR-01 (H2); runtime `llm`/`python`/`dify-*`, Codex/Gemini; fallback nhiều bước và `ALL_PROVIDERS_EXHAUSTED` ngoài profile 1 bước; quota, overage, `price_book`, `billable_usd` (để `null`), `/agent-grants` + Kiểm tra quyền, `/admin/usage` (H3); attachments; trace API và xem trace theo role (HUB-FR-52, 87); `maint.probe` (WRK-FR-22). **Runtime không phát `delta`** (WRK-FR-03: Hub cắt từ kết quả agent, Runtime stream từ H2, CR-031); **log stdout CLI chỉ khung** (WRK-NFR-04); HUB-FR-31 **chỉ 1 bước, fallback H2**.
 
 ## 2. Nghiệp vụ
 Chỉ phần cụ thể hoá BA.
@@ -149,29 +149,11 @@ Nguyên văn AC-H/AC-W ở BA (`ba-agent-hub` §11, `ba-worker` §10); bảng n�
 Lệnh xong mốc (chốt ở plan): `bun run typecheck && bun test && bun run test:int && bun run test:contract:chat` (HUB_URL=hub-api) · `bun run contracts:check` · Python (`cd apps/agent-runtime`): `uv run ruff check . && uv run pyright && uv run pytest && uv run pytest -m int` · `bun run check:size --all` · `bunx depcruise --all` · `bun run test:lock:verify` · `bun run trace --check`.
 
 ## 9. Quyết định
-### Trước Gate (đã chốt với người dùng)
-- Hub TS + Agent Runtime Python (CR-028/ADR-0007), WSL2 (CR-029), subscription chỉ dev/test và profile 1 bước được phép (CR-019), mọi tin qua Orchestrator (CR-025), Orchestrator là một agent (CR-020).
-- **Q1 (người dùng 2026-10-04):** chưa có API key → Orchestrator và agent đều chạy `agentic-cli` qua `claude-sub` (CLI). Q2–Q10: chưa có ý kiến khác → dùng mặc định bên dưới.
-- Phiên Hub không sửa Chat/Admin/test khoá C1. Cần dùng chung `access.rules.ts`, `jwt.ts`… của Admin → đề xuất chuyển sang `packages/*` (ghi TECH-DEBT), không sửa file Admin.
-
-### Câu hỏi mở (mỗi câu có mặc định; PLAN dùng mặc định nếu không có trả lời)
-| # | Câu hỏi | Mặc định đề xuất |
-|---|---|---|
-| Q1 | Orchestrator chạy bằng gì khi dev chưa có API key? | `agentic-cli` qua `claude-sub` (H1-R17), chấp nhận chậm; test/CI dùng profile `fake-cli`. Profile API thêm ở H2 |
-| Q2 | Test contract gọi `/auth/*` tại `AUTH_URL`; Hub thật không phát JWT | Chạy với `AUTH_URL`=admin-api thật (cùng khoá JWT). Nếu `/auth/*` của admin-api lệch contract chat → ghi "Tranh chấp test", việc của phiên Chat khi combine; Hub không sửa test khoá. User fixture (`lan, hoa, an, khoa`) tạo bằng script trong `tools/` gọi admin-api bằng `platform_admin` (không sửa seed Admin) |
-| Q3 | Cổng dev | hub-api `4000` (`HUB_PORT`); agent-runtime không mở cổng |
-| Q4 | Vị trí contract | Chat: `@ai/contracts/chat` (chỉ import). Hub↔Runtime: `@ai/contracts/hub` (mới) |
-| Q5 | Runtime (WSL2) gọi Postgres/Redis Docker trên Windows | `networkingMode=mirrored`, `localhost`. Dự phòng: host IP trong env |
-| Q6 | Id SSE so với id Redis Stream | **Đã giải** (CR-030 đã sửa HUB-FR-42, ADR-0007 #5); TTL `sse:` = `RUN_EVENTS_RETENTION_S` (600 s) |
-| Q7 | Cách ly tenant ở DB | **Chốt** (`plan.md` §3.4): lọc ở repo + RLS 5 bảng hội thoại (`hub_rw`); bảng Runtime không RLS, câu Hub lọc `tenant_id`; `usage_logs` không RLS (Admin đọc toàn nền) |
-| Q8 | Seed: user nào được grant, chạy ở môi trường nào | Grant theo `tenant_key + username` trong yaml (tra id lúc seed; thiếu user → bỏ qua + cảnh báo); seed chạy mọi môi trường (chưa có Studio), `fake-cli` chỉ nạp khi `APP_ENV` ∈ dev/test |
-| Q9 | Thư viện mới | ADR-0008 (Python), ADR-0009 (TS + codegen), Proposed |
-| Q10 | `max_wait_s` khi hết slot · sandbox gốc Claude Code hay chỉ hook | 30 s, test đặt qua env · H1 chỉ hook WRK-BR-07 + `allowed_tools` (không Bash) |
-
-### Trong lúc làm (agent tự quyết theo Luật 2)
-- 2026-10-04 · docs-architect · H1-R09, R10, R12, R13 và `fake-cli` thuộc agent-runtime: BA không nói; contract chat đòi id 1..n, nhiều instance cần chủ run, test cần CLI tất định.
-- 2026-10-04 · backend-lead · `plan.md` §1: P1 migration Hub tách thư mục (test khoá Admin assert `{main: 9, dev: 3}`) · P4 JWT chép verify + test vector · P5 claim một advisory lock toàn cục (thay "theo provider" ở H1-R19: slot tenant đếm chung mọi provider) · P6 kết quả agent đệm rồi cắt `delta` · P7/P8 Hub cũng quét orphan và hết hạn `queued` quá `max_wait_s`.
-- 2026-10-04 · backend-lead · `orphaned` = `failed` + `error_reason=orphaned`; thứ tự khoá `flows → runs → run_steps → messages → jobs` (`plan.md` §3.5); một URL DB/role (`HUB_DATABASE_URL`).
+Toàn bộ chuyển sang [spec-decisions.md](spec-decisions.md). Tóm tắt:
+- Nền: Hub TS + Runtime Python (CR-028), WSL2 (CR-029), subscription chỉ dev/test (CR-019), mọi tin qua Orchestrator (CR-025/020).
+- **Q1 (ND 2026-10-04):** chưa có API key → Orchestrator và agent chạy `agentic-cli` qua `claude-sub`; Q2–Q10 dùng mặc định.
+- Readiness lần 1: người dùng chấp nhận mặc định #1–#33; câu 1 = "chưa" (WSL2/đăng nhập `claude`) ⇒ W0, PY-02, AC-02 `blocked`, dời I2.
+- Lệch BA sửa chữ ở CR-031; ADR-0008/0009 Proposed trình ở Gate.
 
 ## 10. Tranh chấp test
 - (không)

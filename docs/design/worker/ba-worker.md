@@ -70,8 +70,8 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
 | WRK-FR-01 | Lấy job từ **Postgres**: `SELECT … FOR UPDATE SKIP LOCKED` trên `hub.jobs` theo loại, `priority`, `created_at`; `LISTEN job_enqueued` để được đánh thức (kèm poll dự phòng). Bỏ Redis queue (CR-028). Worker khai báo mình phục vụ những loại job và provider nào khi khởi động | **MUST** |
-| WRK-FR-02 | Cập nhật `hub.jobs` khi chuyển trạng thái. Gửi heartbeat mỗi 15 giây khi đang chạy | **MUST** |
-| WRK-FR-03 | Đẩy sự kiện `job.progress` và `delta` bằng `XADD` vào Redis Stream `run:<run_id>` (TTL ~24 giờ); Hub `XREAD`, đánh số lại và phát qua `sse:<run_id>` (HUB-FR-42, CR-030); Agent Runtime không đặt `id` SSE | **MUST** |
+| WRK-FR-02 | Cập nhật `hub.jobs` khi chuyển trạng thái. Gửi heartbeat mỗi 10 giây khi đang chạy | **MUST** |
+| WRK-FR-03 | Đẩy sự kiện `job.progress` và `delta` bằng `XADD` vào Redis Stream `run:<run_id>` (TTL 24 giờ); Hub `XREAD`, đánh số lại và phát qua `sse:<run_id>` (HUB-FR-42, CR-030); Agent Runtime không đặt `id` SSE. `delta` của câu trả lời: ở H1 do Hub cắt từ kết quả agent; Runtime phát `delta` trực tiếp từ H2 (CR-031) | **MUST** |
 | WRK-FR-04 | Tôn trọng `timeout_s` của job. Quá hạn thì dừng tiến trình và đặt `timed_out` | **MUST** |
 | WRK-FR-05 | Nghe tín hiệu huỷ (`LISTEN job_cancel`, kiểm `jobs.cancel_requested_at`; kiểm lại khi khởi động và mỗi heartbeat) và dừng tiến trình trong ≤ 5 giây (dừng nhẹ trước, ép dừng sau) | **MUST** |
 | WRK-FR-06 | Retry theo chính sách của từng loại job (mục 2), với backoff 2 giây rồi 8 giây | **MUST** |
@@ -95,11 +95,11 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
-| WRK-FR-20 | Giới hạn số job chạy đồng thời theo `max_concurrency` của từng provider: đếm các job `running` của provider đó trong **cùng transaction lấy job**, dưới advisory lock theo provider (CR-028) | **MUST** |
+| WRK-FR-20 | Giới hạn số job chạy đồng thời theo `max_concurrency` của từng provider: đếm các job `running` của provider đó trong **cùng transaction lấy job**, dưới khoá claim toàn cục (một advisory lock; CR-028, sửa CR-031) | **MUST** |
 | WRK-FR-21 | Dự phòng: tạo job mới với bước kế tiếp của profile (có trong payload). Gửi `step.finished{status: fallback, reason}` để trace ghi lại | **MUST** |
 | WRK-FR-22 | Probe định kỳ từng CLI (đã đăng nhập chưa, còn quota không) rồi ghi `hub.provider_state`. Agent Studio (Models và Vận hành) đọc trạng thái này để hiển thị | **SHOULD** |
 | WRK-FR-23 | Dọn thư mục làm việc sau 24 giờ. Đánh dấu job `orphaned` khi mất heartbeat quá 60 giây | **MUST** |
-| WRK-FR-24 | Giới hạn slot subscription theo tenant: đếm job subscription `running` của từng tenant trong cùng transaction lấy job (advisory lock theo provider; không còn bộ đếm Redis `sub_slots`), không cho vượt `tenants.max_concurrent_sub`. `null` = không giới hạn. Slot tự trả khi job rời trạng thái `running` (xong, lỗi, huỷ, orphaned). Đọc giới hạn từ `admin.tenants` (chỉ đọc, cache ≤ 5 giây) | **MUST** |
+| WRK-FR-24 | Giới hạn slot subscription theo tenant: đếm job subscription `running` của từng tenant trong cùng transaction lấy job (khoá claim toàn cục; slot tenant đếm chung mọi provider, CR-031; không còn bộ đếm Redis `sub_slots`), không cho vượt `tenants.max_concurrent_sub`. `null` = không giới hạn. Slot tự trả khi job rời trạng thái `running` (xong, lỗi, huỷ, orphaned). Đọc giới hạn từ `admin.tenants` (chỉ đọc, cache ≤ 5 giây) | **MUST** |
 | WRK-FR-25 | **Manifest loại agent** (CR-028, HUB-FR-90): khi khởi động ghi/cập nhật `hub.agent_types` (key, runtime, mô tả, JSON Schema tham số cấu hình, version) cho mọi class agent đã đăng ký, gồm các runtime `llm`, `agentic-cli` và agent `python` nội bộ. Loại agent bị gỡ khỏi code thì đánh dấu không còn khả dụng, không xoá agent đang trỏ tới | **MUST** |
 | WRK-FR-26 | **Agent `python` chạy trong process con** (CR-028): mỗi job một process con, môi trường không mang secret của hệ thống (như WRK-BR-02), chỉ nhận đúng thứ được cấp trong payload (prompt, tool MCP, thư mục `work/<job_id>/`, token MCP của job). Giao tiếp với Agent Runtime qua interface (stdin/stdout JSON theo contract pydantic); cùng huỷ theo process group, timeout, thư mục làm việc và hook đường dẫn như `agent.cli` | **MUST** |
 
@@ -169,9 +169,9 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 | WRK-NFR-01 | **Thời gian nhận job:** job bắt đầu chạy trong ≤ 2 giây sau khi vào queue (khi còn slot) |
 | WRK-NFR-02 | **Cách ly:** job này không đọc được thư mục làm việc của job khác, kể cả cùng tenant. Khi mở cho nhiều người hơn thì nâng lên container riêng cho từng job |
 | WRK-NFR-03 | **Phục hồi:** Worker khởi động lại thì không mất job `queued`. Job `running` được xử lý theo luật orphaned. Slot theo tenant và theo provider vốn đếm từ các job `running` trong DB nên không cần dựng lại |
-| WRK-NFR-04 | **Quan sát:** log có `job_id`, `run_id` và `tenant_id`. Lưu stdout/stderr của CLI 7 ngày để debug |
+| WRK-NFR-04 | **Quan sát:** log có `job_id`, `run_id` và `tenant_id`. Lưu stderr của CLI 7 ngày để debug; stdout chỉ lưu khung message (loại, tên tool, token, lỗi), không lưu nội dung (CR-031) |
 | WRK-NFR-05 | **Quy mô v1:** 1 máy Worker, mỗi subscription 1–2 slot, 5 job `workflow.async` chạy đồng thời |
-| WRK-NFR-06 | **Môi trường (CR-029):** máy Worker là Windows, Worker chạy trong **WSL2 Ubuntu** (code Worker chỉ nhắm Linux). Mỗi tiến trình CLI chạy trong process group riêng; huỷ = SIGTERM cả group, sau 3 giây SIGKILL, không còn process con nào sống. Dùng sandbox của Claude Code (Linux) khi provider hỗ trợ, cộng hook ở WRK-BR-07. File đăng nhập CLI chỉ nằm trong `/home/worker`, không nằm trên ổ Windows |
+| WRK-NFR-06 | **Môi trường (CR-029):** máy Worker là Windows, Worker chạy trong **WSL2 Ubuntu** (code Worker chỉ nhắm Linux). Mỗi tiến trình CLI chạy trong process group riêng; huỷ = SIGTERM cả group, sau 3 giây SIGKILL, không còn process con nào sống. Sandbox gốc của Claude Code (Linux) là tuỳ chọn; H1 chỉ dùng hook ở WRK-BR-07 + `allowed_tools` (CR-031). File đăng nhập CLI chỉ nằm trong `/home/worker`, không nằm trên ổ Windows |
 
 ## 10. Tiêu chí nghiệm thu
 
