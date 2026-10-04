@@ -296,3 +296,31 @@ Lệch task: 2 ca P28 nằm ngoài file của PY-01 — `test_p28_settings_defau
 | # | Test | Phán quyết (qc, 2026-10-05) | Sửa | Kết quả |
 |---|---|---|---|---|
 | TC-1 (B-B3-9) | H1 A28 `tests/acceptance/H1/runner.int.test.ts` — "tin bắt đầu `/` vẫn đi qua Orchestrator" | **Test sai** (lỗi thời). H1-R05 tự giới hạn "tin bắt đầu `/` coi là text thường **tới H2**"; H2a-R01 (HUB-BR-01, FR-11) đổi: `/xxx` → Command Runner (không tồn tại → 404 `CMD_NOT_FOUND`), `//xxx` → bỏ một `/`, đi Orchestrator. B3 (`794d0ea`) cài đúng H2a. | A28 (giữ id) gửi `//tong-hop hoá đơn tháng 9`; kỳ vọng job Orchestrator, prompt chứa `/tong-hop hoá đơn tháng 9` và **không** chứa `//tong-hop`; tên ca thêm `[H2a-R01]`. `tests/.lock` chỉ cập nhật dòng hash của file này (không `test:lock:write` vì có file QW-P chưa khoá). | DB riêng `ai_system_h2a_a28_test`: `runner.int.test.ts` 9/9 xanh (A28 xanh). `test:lock:verify` chỉ còn `UNLOCKED` các file Python chưa khoá dưới `apps/agent-runtime/tests/acceptance/` (`_dify.py`, `dify_*_int_test.py`, `mcp_int_test.py`). |
+
+### QW-P · `apps/agent-runtime/tests/acceptance/{dify_job,dify_retry,dify_requeue,dify_leak,mcp}_int_test.py` + `tests/acceptance/H2a/stack/*.stack.test.ts` (2026-10-05, trên `3977db1`…`572408a`)
+Python: `pytest -m int` (container `scripts/run.ts`, DB riêng `ai_system_h2a_qwp_hub_test` qua `HUB_TEST_DATABASE_URL`/`AGENT_RT_TEST_DATABASE_URL`, `.env.test-h2a_qwp.local`): **27 ID (P01–P27) / 44 ca** · **44 đỏ đúng lý do**, 0 xanh trước code, 0 lỗi collect/`PostgresError`/`TypeError`: job `workflow.async` (payload `WorkflowAsyncJob`), provider `dify`, mock `dify_mock.py` + credential xác thực Bearer bằng DB như Hub đều dựng được trước điểm đỏ. Stack: `bun --env-file=.env.local --env-file=.env.test-h2a_qwp.local test --timeout 300000 tests/acceptance/H2a/stack`: **3 ca (S01–S03) · 3 đỏ đúng lý do**; hub-api thật + Runtime container + MK boot xanh. Helper `_dify.py` (payload, `dify_env`, `QcDifyMock`, quét rò rỉ), `stack/_stack.ts` (`bootStackH2a`, `startHubProcH2a`, `startRuntimeH2a`). ruff check/format, pyright strict, `tsc -p tsconfig.tests.json`, biome, `check:size --all`, `trace --check` sạch; `pytest` mặc định 394 xanh.
+
+| File | ID | Đỏ đúng lý do / tổng | Lý do đỏ |
+|---|---|---|---|
+| `dify_job_int_test.py` | P02–P05, P13–P17 | 17/17 | `ModuleNotFoundError: agent_runtime.runtimes.dispatch` (PY-03, `need_router()` trong `DifyEnv.runtime()`, sau khi job + mock đã dựng) |
+| `dify_retry_int_test.py` | P06–P12 | 12/12 | như trên |
+| `dify_requeue_int_test.py` | P18–P22 | 6/6 | như trên |
+| `dify_leak_int_test.py` | P23 | 2/2 | như trên |
+| `mcp_int_test.py` | P01 (agent.cli) | 1/1 | chờ `token_hash` sau claim hết hạn 5 s (`CLAIM_UPDATE` chưa ghi — PY-03) |
+| `mcp_int_test.py` | P01 (MCP), P24–P27 | 6/6 | `ModuleNotFoundError: tests.support.mcp_mock` (PY-06) |
+| `stack/confirm` | S01 | 1/1 | `ask` không có (`expect(ask?.data?.choices)` = undefined) — fake-cli chưa gọi `/mcp` (PY-06), chưa ép `need_input` (PY-05) |
+| `stack/mcp` | S02 | 1/1 | không có file `/tmp/qc-work/.mcp/<job>.json` sau 30 s (PY-04) |
+| `stack/requeue` | S03 | 1/1 | Runtime `fake-cli,dify` thoát `runtime.config_invalid AGENT_RT_PROVIDERS: ['dify']` (PY-03) |
+
+Xanh trước code tiềm năng (không xảy ra vì `need_router` chặn trước): P20 `attempts=3` → `failed orphaned` là hành vi quét H1; P26 (tool ngoài `mcp.tools`) là nghĩa H1 — cả hai chỉ đỏ ở import.
+
+Lệch plan / cần backend-lead:
+- **S01 vế "Đồng ý → delegate lại" cần thêm cho `fake-cli`** (PY-06): `isAgreeReply` so khớp nguyên câu (R56) nên tin trả lời không mang được `#fake:delegate=…`; Orchestrator giả chỉ đọc khối `<message>` hiện tại ⇒ không thể delegate lại. Đề xuất mặc định (đơn giản nhất): Orchestrator `fake-cli` khi tin hiện tại là câu đồng ý (`isAgreeReply` bản Python) ∧ `history` có tin user trước chứa `#fake:delegate=<a>` → delegate lại `<a>` với task của tin đó. Không có thì S01 không thể xanh.
+- **API `mcp_mock.py` do test định** (PY-06 làm theo, docstring `mcp_int_test.py`): `start_mcp_mock(tools: dict[key, mô tả], confirm: dict[key, {question, choices}] | None)` (async CM) → `.url` (URL `/mcp` đầy đủ), `.calls(method=None)` → bản ghi `.method`, `.params`, `.auth`.
+- **`dify_mock.py` thiếu kịch bản** (mock khoá ở Q3, không sửa): luồng đứt sau sự kiện đầu (P10), `node_started` có tiêu đề (P17), HTTP 429 (P09, RQ4), thân lỗi chứa key (P23) → `QcDifyMock` (lớp con trong `_dify.py`) thêm key `qc-cut`, `qc-node`, `qc-429`, `LEAK_KEY_ECHO*`; key khác giữ nguyên hành vi mock. Đã tự kiểm 4 kịch bản qua `DifyClient` PY-02 (`read`/`http_4xx`/che key đúng).
+- **P06 tiến độ**: gộp 1 `job.progress`/giây (§3.5) có thể nuốt "(1/2)" khi backoff 0.2 s ⇒ tách ca: khoảng thời gian với `0.2,0.8`; thông điệp "(1/2)", "(2/2)" với `AGENT_RT_DIFY_BACKOFF_S=1.2,1.2`.
+- **P11 đếm lần thử qua log**: dòng JSON `event="dify.attempt"` có `job_id` (bind_job) và `err_kind="connect"` ×3 (`-dify` §3.4) — PY-03 phải log đúng tên khoá này.
+- **P13 credential 5xx**: hiểu "thử lại như hàng kết nối" = tối đa 3 lời gọi credential rồi `NOT_CONFIGURED`/`credential`; 503 một lần rồi 200 → `succeeded` (2 lời gọi).
+- **P18**: Runtime B vừa requeue vừa claim ngay nên trạng thái `queued` quan sát qua NOTIFY `job_enqueued{provider_key:"dify"}` + `job.started` ×2 + 2 token Bearer khác nhau + 1 sự kiện kết thúc, không poll `queued`. P20 dựng mồ côi bằng SQL (worker `qc-ghost`, heartbeat −61 s), thêm ca biên `attempts=2` → requeue → `attempts=3` `succeeded`.
+- **P24** đường file MCP = `AGENT_RT_WORK_DIR/.mcp/<job_id>.json` (§4.2); P27 kiểm có dòng log mức `warning` chứa `"mcp` (tên sự kiện chưa chốt).
+- **Stack**: container tới Hub/MK qua `host.docker.internal` (`--add-host …:host-gateway`); `HUB_PUBLIC_INTERNAL_URL` và `base_url` catalog dùng tên này; bỏ `--rm` của `dockerArgs` để giữ log khi Runtime thoát sớm. S01/S02 Runtime `fake-cli`; S03 `fake-cli,dify`.
