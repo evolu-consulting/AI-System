@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 
 from agent_runtime.providers.context import current_message
@@ -14,16 +15,23 @@ _OPEN, _CLOSE = "<message>", "</message>"
 
 
 def message_of(prompt: str, *, orchestrator: bool) -> str:
-    """Orchestrator: nội dung khối `<message>` cuối (sau `<steps_left>`); agent: `prompt` (bỏ khối
-    "Ngữ cảnh trước" nếu runner dựng từ history — PY-11)."""
+    """Orchestrator: nội dung khối `<message>` cuối (sau `<steps_left>`; Hub có thể nối câu nhắc
+    sau khối khi thử lại); Hub ghi khối là chuỗi JSON (plan H1 §6.2) → giải mã, không phải JSON
+    thì giữ nguyên. Agent: `prompt` (bỏ khối "Ngữ cảnh trước" nếu runner dựng từ history —
+    PY-11)."""
     if not orchestrator:
         return current_message(prompt)
-    body = prompt.rstrip()
-    floor = body.rfind("</steps_left>")
-    start = body.find(_OPEN, max(floor, 0))
-    if start < 0 or not body.endswith(_CLOSE):
+    floor = max(prompt.rfind("</steps_left>"), 0)
+    end = prompt.rfind(_CLOSE)
+    start = prompt.find(_OPEN, floor, max(end, 0))
+    if start < 0 or end < start:
         return prompt
-    return body[start + len(_OPEN) : -len(_CLOSE)]
+    raw = prompt[start + len(_OPEN) : end].strip()
+    try:
+        decoded = json.loads(raw)
+    except ValueError:
+        return raw
+    return decoded if isinstance(decoded, str) else raw
 
 
 def directives(msg: str) -> dict[str, str]:

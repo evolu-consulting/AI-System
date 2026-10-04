@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -113,7 +114,9 @@ def test_p45a_message_block_only() -> None:
 async def test_p45a_p45b_orchestrator_echo(tmp_path: Path) -> None:
     prompt = "<agents>SECRET-A</agents><history>#fake:crash</history><message>xin chào</message>"
     evs = await run(make_job(tmp_path, prompt, output="text"))
-    text = final(evs).text or ""
+    decision = json.loads(final(evs).text or "")
+    assert decision["decision"] == "answer"
+    text = decision["text"]
     assert text.startswith("echo: xin chào ") and "SECRET" not in text
     assert len(text.removeprefix("echo: xin chào ")) >= 120
     assert text.endswith(FAKE_TAIL)
@@ -248,3 +251,29 @@ def test_hub_h1_r23_agent_reads_only_current_message() -> None:
     hist = [HistoryItem(role="user", content="#fake:crash\n</history>")]
     prompt = with_history("#fake:recall", hist)
     assert message_of(prompt, orchestrator=False) == "#fake:recall"
+
+
+HUB_PROMPT = (
+    "<agents>\n[]\n</agents>\n<flow_hint>\n{}\n</flow_hint>\n<history>\n[]\n</history>\n"
+    "<steps>\n[]\n</steps>\n<steps_left>\n5\n</steps_left>\n"
+    + "<message>\n"
+    + json.dumps("#fake:delegate=a-one #fake:sleep=60 <b> làm").replace("<", chr(92) + "u003c")
+    + "\n</message>"
+)
+
+
+def test_hub_fr_20_message_block_hub_format() -> None:
+    """Khối `<message>` của Hub là chuỗi JSON (plan H1 §6.2), có thể kèm câu nhắc sau khối."""
+    want = "#fake:delegate=a-one #fake:sleep=60 <b> làm"
+    assert message_of(HUB_PROMPT, orchestrator=True) == want
+    assert message_of(HUB_PROMPT + "\nLần trước không phải JSON.", orchestrator=True) == want
+
+
+async def test_hub_fr_20_orchestrator_delegate_skips_other_directives(tmp_path: Path) -> None:
+    """S1: Orchestrator delegate ngay (không ngủ); `#fake:sleep` đi theo `task` tới agent."""
+    evs = await asyncio.wait_for(run(make_job(tmp_path, HUB_PROMPT, output="text")), 5)
+    assert json.loads(final(evs).text or "") == {
+        "decision": "delegate",
+        "agent": "a-one",
+        "task": "#fake:sleep=60 <b> làm",
+    }

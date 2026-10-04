@@ -92,7 +92,7 @@ async function ensureUser(api: Api, tenantId: string, u: FixtureUser): Promise<v
   const q = `/admin/users?tenant_id=${tenantId}&q=${u.username}&limit=50`;
   let user = ((await call(api, "GET", q)).items as Json[]).find((x) => x.username === u.username);
   if (!user) {
-    const body = { username: u.username, display_name: u.username, role: "user", locale: "vi" };
+    const body = { username: u.username, display_name: u.username, role: "member", locale: "vi" };
     const created = await call(api, "POST", `/admin/users?tenant_id=${tenantId}`, body);
     user = created.user as Json;
     await setDevPassword(api, u, String(created.temp_password));

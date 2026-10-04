@@ -93,7 +93,7 @@ def _orchestrator(msg: str, found: dict[str, str], body: str) -> Final:
     elif "ask" in found:
         text = json.dumps({"decision": "ask", "question": "Bạn muốn gì?", "choices": ["A", "B"]})
     else:
-        text = body
+        text = json.dumps({"decision": "answer", "text": body}, ensure_ascii=False)
     return Final(kind="text", text=text)
 
 
@@ -153,6 +153,44 @@ async def _ratelimit(found: dict[str, str], kind: str, emit: Emit) -> None:
     )
 
 
+async def _badjson(job: ProviderJob, found: dict[str, str], emit: Emit) -> bool:
+    """`#fake:badjson=<n>`: n lần đầu của run trả JSON hỏng (bộ đếm theo run). True = đã phát."""
+    limit = int(found["badjson"]) if found.get("badjson", "").isdigit() else 0
+    if not (limit and bump_badjson(job.work_dir, str(job.payload.run_id), limit)):
+        return False
+    text_out = job.payload.output == "text"
+    kind = "text" if text_out else "agent_result"
+    await emit(Final(kind=kind, raw_json=BAD_JSON, text=BAD_JSON if text_out else None))
+    return True
+
+
+async def _side_effects(job: ProviderJob, found: dict[str, str], emit: Emit) -> None:
+    """`spawn-child`, `usage`, `sleep` — trước khi trả kết quả."""
+    if "spawn-child" in found:
+        # Cùng process group với job host (không start_new_session) — AC-W10.
+        await asyncio.create_subprocess_exec(
+            "sleep",
+            "300",
+            cwd=job.work_dir,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,  # không giữ pipe giao thức của job host
+        )
+    # usage trước sleep: huỷ giữa chừng vẫn có usage đã báo (H1-R25).
+    if "usage" in found:
+        tin, tout = usage_pair(found["usage"])
+        await emit(UsageEv.model_validate({"in": tin, "out": tout, "model": "fake"}))
+    if "sleep" in found:
+        await _sleep(seconds(found["sleep"]), emit)
+
+
+async def _finish(emit: Emit, final: Final, *, reported: bool) -> None:
+    """CLI thật luôn kèm usage ở kết quả cuối (plan-runtime §8: `usage_logs` chỉ khi có) → chưa có
+    `#fake:usage` thì phát usage mặc định 10,20 như chỉ thị không số (plan-runtime-fake §7)."""
+    if not reported:
+        await emit(UsageEv.model_validate({"in": 10, "out": 20, "model": "fake"}))
+    await emit(final)
+
+
 class FakeProvider:
     key = KEY
 
@@ -166,29 +204,19 @@ class FakeProvider:
         memory = await _session(job, found, kind, emit)
         if memory is None:
             return
-        if "spawn-child" in found:
-            # Cùng process group với job host (không start_new_session) — AC-W10.
-            await asyncio.create_subprocess_exec(
-                "sleep",
-                "300",
-                cwd=job.work_dir,
-                stdin=asyncio.subprocess.DEVNULL,
-                stdout=asyncio.subprocess.DEVNULL,  # không giữ pipe giao thức của job host
-            )
-        # usage trước sleep: huỷ giữa chừng vẫn có usage đã báo (H1-R25).
-        if "usage" in found:
-            tin, tout = usage_pair(found["usage"])
-            await emit(UsageEv.model_validate({"in": tin, "out": tout, "model": "fake"}))
-        if "sleep" in found:
-            await _sleep(seconds(found["sleep"]), emit)
+        if text_out and "delegate" in found:
+            # Orchestrator chỉ quyết định; chỉ thị khác (sleep, usage…) theo `task` tới agent (S1).
+            if not await _badjson(job, found, emit):
+                await _finish(emit, _orchestrator(msg, found, ""), reported=False)
+            return
+        await _side_effects(job, found, emit)
         if "ratelimit" in found:
             await _ratelimit(found, kind, emit)
             return
-        limit = int(found["badjson"]) if found.get("badjson", "").isdigit() else 0
-        if limit and bump_badjson(job.work_dir, str(job.payload.run_id), limit):
-            await emit(Final(kind=kind, raw_json=BAD_JSON, text=BAD_JSON if text_out else None))
+        if await _badjson(job, found, emit):
             return
         body = await _body(job, msg, found, emit)
         if "recall" in found:
             body = f"recall: {memory.get('word', '')}"
-        await emit(_orchestrator(msg, found, body) if text_out else _agent(found, body))
+        final = _orchestrator(msg, found, body) if text_out else _agent(found, body)
+        await _finish(emit, final, reported="usage" in found)

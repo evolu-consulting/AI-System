@@ -1,6 +1,7 @@
 // HUB-NFR-04 · điểm khởi động hub-api: nơi duy nhất đọc env và mở cổng (plan H1 §4, §7).
 // Thứ tự: env → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → Orchestrator hợp lệ (HUB-BR-08) → Redis (connect + ping) → serve.
 // Lỗi bước nào → log `fatal` + exit 1.
+import { SSE_HEARTBEAT_S } from "@ai/contracts/chat";
 import pkg from "../package.json";
 import { createApp } from "./app";
 import { type Env, loadEnv } from "./config/env";
@@ -49,18 +50,22 @@ function readEnv(): Env {
   }
 }
 
+/** HUB-BR-08: Orchestrator thiếu/tắt → exit 1 trước khi mở cổng. */
+async function assertOrchestrator(db: Db): Promise<void> {
+  const problem = await bootOrchestratorProblem(db).catch((err) => fail("orchestrator", err));
+  if (!problem) return;
+  logger.fatal("orchestrator-invalid", { reason: problem });
+  await db.close();
+  process.exit(1);
+}
+
 async function main(): Promise<void> {
   const env = readEnv();
   const jwtPublicKey = await importJwtPublicKey(env.JWT_PUBLIC_KEY).catch((err) =>
     fail("jwt", err),
   );
   const db = await openDb(env).catch((err) => fail("db", err));
-  const problem = await bootOrchestratorProblem(db).catch((err) => fail("orchestrator", err));
-  if (problem) {
-    logger.fatal("orchestrator-invalid", { reason: problem });
-    await db.close();
-    process.exit(1);
-  }
+  await assertOrchestrator(db);
   const redis = await openRedis(env).catch((err) => fail("redis", err));
   const stop = new AbortController();
   const app = createApp(
@@ -77,7 +82,12 @@ async function main(): Promise<void> {
       signal: stop.signal,
     },
   );
-  const server = Bun.serve({ port: env.HUB_PORT, fetch: app.fetch });
+  // SSE: Bun mặc định đóng kết nối im > 10 s, trước nhịp `: ping` (SSE_HEARTBEAT_S) → đặt gấp đôi nhịp ping.
+  const server = Bun.serve({
+    port: env.HUB_PORT,
+    fetch: app.fetch,
+    idleTimeout: SSE_HEARTBEAT_S * 2,
+  });
   logger.info("listening", {
     port: server.port,
     app_env: env.APP_ENV,
