@@ -35,7 +35,7 @@ export type RunInfo = {
   locale: repo.Locale;
 };
 
-/** `agentId`: `undefined` = giữ `flows.agent_id`. `content` của run lỗi mặc định "". */
+/** `agentId`: `undefined` = giữ `flows.agent_id`; `ask` + `agentId` ⇒ `flows.pending_ask`. `content` của run lỗi mặc định "". */
 export type RunOutcome =
   | { kind: "finished"; content: string; ask?: Ask | null; agentId?: string | null }
   | { kind: "failed"; code: ChatRunErrorCode; content?: string; agentId?: string | null };
@@ -144,10 +144,12 @@ export class SseWriter {
         runId: r.id,
         ask,
       });
+      // Chỉ `ask` của agent (need_input, có `agentId`) mới chờ trả lời: Orchestrator tự hỏi thì tin kế phải qua
+      // Orchestrator, không route về `flows.agent_id` cũ (plan §6.1, AC-H15).
       await repo.updateFlowAfterRun(tx, {
         flowId: r.flowId,
         agentId: o.agentId,
-        pendingAsk: !!ask,
+        pendingAsk: !!ask && typeof o.agentId === "string",
       });
       return t;
     });

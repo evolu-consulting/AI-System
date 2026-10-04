@@ -73,7 +73,7 @@ export async function expiredLeaseRuns(
 
 /**
  * §5.7 một run: `flows FOR UPDATE` → `UPDATE runs … WHERE status='running'` (0 dòng → false, không ghi gì thêm) →
- * tin assistant → job `queued` thành `cancelled` → job `running` đặt `cancel_requested_at` + `pg_notify('job_cancel')`.
+ * tin assistant → `flows.pending_ask=false` → job `queued` thành `cancelled` → job `running` đặt `cancel_requested_at` + `pg_notify('job_cancel')`.
  */
 export function cancelRun(tx: Tx, w: CancelWrite): Promise<boolean> {
   return closeRun(tx, w, { status: "cancelled", where: eq(runs.status, "running") });
@@ -117,6 +117,8 @@ async function closeRun(
       runId: t.runId,
     },
   );
+  // Run đóng không có `ask` ⇒ flow không còn chờ trả lời (giữ `agent_id`).
+  await repo.updateFlowAfterRun(tx, { flowId: t.flowId, pendingAsk: false });
   await cancelJobs(tx, t);
   return true;
 }

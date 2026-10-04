@@ -132,6 +132,7 @@ describe("E15 · chủ là instance này [HUB-FR-43 · H1-R14]", () => {
     const { s, ctx, runId } = await started("hoa");
     await ctx.writer.emit({ event: "delta", data: { text: "Một " } });
     await ctx.writer.emit({ event: "delta", data: { text: "phần" } });
+    await sql`update hub.flows set pending_ask = true where id = ${ctx.writer.run.flowId}`;
     const res = await cancel(runId, a, "hoa");
     expect(res.status).toBe(200);
     expect(res.json).toMatchObject({ id: runId, status: "running", last_event_id: 3, error: null });
@@ -151,6 +152,8 @@ describe("E15 · chủ là instance này [HUB-FR-43 · H1-R14]", () => {
     const msgs =
       await sql`select content from hub.messages where run_id = ${runId} and role = 'assistant'`;
     expect(msgs.map((m) => m.content)).toEqual(["Một phần"]);
+    const [f] = await sql`select pending_ask from hub.flows where id = ${ctx.writer.run.flowId}`;
+    expect(f?.pending_ask).toBe(false);
     const len = (await sseStream(a.redis, runId)).length;
     const again = await cancel(runId, a, "hoa");
     expect(again.json).toMatchObject({ status: "cancelled", last_event_id: 4 });

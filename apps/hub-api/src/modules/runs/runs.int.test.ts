@@ -20,6 +20,7 @@ import {
   type UserKey,
 } from "../../../../../tests/acceptance/H1/_fixtures";
 import {
+  AG,
   idGen,
   insertConv,
   insertHubConfig,
@@ -101,7 +102,8 @@ describe("B6 · SseWriter kết thúc run [HUB-FR-41 · H1-R12 · P12]", () => {
     await ctx.writer.emit({ event: "delta", data: { text: "Xin " } });
     await ctx.writer.emit({ event: "delta", data: { text: "chào" } });
     const ask = { question: "Tiếp không?", choices: ["Có"] };
-    expect(await ctx.writer.finish({ kind: "finished", content: "Xin chào", ask })).toBe(true);
+    const fin = { kind: "finished", content: "Xin chào", ask, agentId: AG.assistant } as const;
+    expect(await ctx.writer.finish(fin)).toBe(true);
     const end = await s.terminal();
     s.close();
     expect(end?.data?.content).toBe("Xin chào");
@@ -129,6 +131,20 @@ describe("B6 · SseWriter kết thúc run [HUB-FR-41 · H1-R12 · P12]", () => {
     expect(f?.pending_ask).toBe(true);
     const e14 = await call(hub, "GET", `/runs/${runId}`, { token: await tok("lan") });
     expect(RunSchema.parse(e14.json)).toMatchObject({ status: "finished", last_event_id: 6 });
+  });
+});
+
+describe("B6 · Orchestrator tự hỏi [plan §6.1 · AC-H15]", () => {
+  it("AC-H15 · ask không agentId → tin có ask nhưng flows.pending_ask=false, giữ agent_id cũ", async () => {
+    const { s, ctx } = await started();
+    const flowId = ctx.writer.run.flowId;
+    await sql`update hub.flows set agent_id = ${AG.assistant}, pending_ask = true where id = ${flowId}`;
+    const ask = { question: "Bạn cần gì?", choices: [] };
+    expect(await ctx.writer.finish({ kind: "finished", content: "Bạn cần gì?", ask })).toBe(true);
+    expect((await s.terminal())?.event).toBe("run.finished");
+    s.close();
+    const [f] = await sql`select pending_ask, agent_id from hub.flows where id = ${flowId}`;
+    expect(f).toEqual({ pending_ask: false, agent_id: AG.assistant });
   });
 });
 
