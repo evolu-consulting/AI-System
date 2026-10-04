@@ -1,0 +1,12 @@
+{
+  "key": "writer",
+  "runtime": "python",
+  "description": {
+    "vi": "Viết",
+    "en": "Write"
+  },
+  "config_schema": {
+    "type": "object"
+  },
+  "version": 3
+}

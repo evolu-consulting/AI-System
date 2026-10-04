@@ -1,0 +1,5 @@
+{
+  "status": "need_input",
+  "question": "Bạn muốn gì?",
+  "choices": ["A", "B"]
+}

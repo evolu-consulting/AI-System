@@ -1,0 +1,731 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "JobPayload": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "type": {
+              "type": "string",
+              "const": "agent.cli"
+            },
+            "runtime": {
+              "type": "string",
+              "const": "agentic-cli"
+            },
+            "job_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "run_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "step_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "tenant_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "user_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "conversation_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "flow_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "feature_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "agent_type_key": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,47}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mcp": {
+              "type": "null"
+            },
+            "agent": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "key": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{1,47}$"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": ["orchestrator", "agent"]
+                }
+              },
+              "required": ["id", "key", "role"],
+              "additionalProperties": false
+            },
+            "provider_key": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,47}$"
+            },
+            "model": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "step_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "max_turns": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "profile_steps": {
+              "minItems": 1,
+              "maxItems": 5,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "provider_key": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{1,47}$"
+                  },
+                  "model": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "on": {
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["error", "quota", "timeout"]
+                    }
+                  }
+                },
+                "required": ["provider_key", "model", "on"],
+                "additionalProperties": false
+              }
+            },
+            "system_prompt": {
+              "type": "string",
+              "maxLength": 20000
+            },
+            "prompt": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200000
+            },
+            "history": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": ["user", "assistant"]
+                  },
+                  "content": {
+                    "type": "string",
+                    "maxLength": 64000
+                  }
+                },
+                "required": ["role", "content"],
+                "additionalProperties": false
+              }
+            },
+            "use_session": {
+              "type": "boolean"
+            },
+            "allowed_tools": {
+              "maxItems": 3,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["Read", "Grep", "Glob"]
+              }
+            },
+            "output": {
+              "type": "string",
+              "enum": ["agent_result", "text"]
+            },
+            "timeout_s": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 3600
+            }
+          },
+          "required": [
+            "v",
+            "type",
+            "runtime",
+            "job_id",
+            "run_id",
+            "step_id",
+            "tenant_id",
+            "user_id",
+            "conversation_id",
+            "flow_id",
+            "feature_id",
+            "agent_type_key",
+            "mcp",
+            "agent",
+            "provider_key",
+            "model",
+            "step_index",
+            "max_turns",
+            "profile_steps",
+            "system_prompt",
+            "prompt",
+            "history",
+            "use_session",
+            "allowed_tools",
+            "output",
+            "timeout_s"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RunEvent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "job_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": {
+              "type": "string",
+              "const": "job.started"
+            },
+            "worker_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "provider_key": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,47}$"
+            }
+          },
+          "required": ["v", "job_id", "seq", "at", "type", "worker_id", "provider_key"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "job_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": {
+              "type": "string",
+              "const": "job.progress"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "percent": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["v", "job_id", "seq", "at", "type", "message", "percent"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "job_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": {
+              "type": "string",
+              "const": "job.result"
+            },
+            "output": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "agent_result"
+                    },
+                    "result": {
+                      "$ref": "#/$defs/AgentResult"
+                    }
+                  },
+                  "required": ["kind", "result"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "text"
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 64000
+                    }
+                  },
+                  "required": ["kind", "text"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "usage": {
+              "type": "object",
+              "properties": {
+                "input_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "output_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["input_tokens", "output_tokens"],
+              "additionalProperties": false
+            },
+            "session_resumed": {
+              "type": "boolean"
+            }
+          },
+          "required": ["v", "job_id", "seq", "at", "type", "output", "usage", "session_resumed"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "job_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": {
+              "type": "string",
+              "const": "job.failed"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["failed", "cancelled", "timed_out"]
+            },
+            "code": {
+              "type": "string",
+              "enum": [
+                "ALL_PROVIDERS_EXHAUSTED",
+                "TIMEOUT",
+                "CANCELLED",
+                "UPSTREAM_ERROR",
+                "INTERNAL_ERROR"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "quota",
+                    "tenant_slots",
+                    "provider_busy",
+                    "provider_unavailable",
+                    "orphaned",
+                    "crash",
+                    "cancelled",
+                    "timeout",
+                    "invalid_payload",
+                    "invalid_output",
+                    "sandbox"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "usage": {
+              "type": "object",
+              "properties": {
+                "input_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "output_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["input_tokens", "output_tokens"],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "v",
+            "job_id",
+            "seq",
+            "at",
+            "type",
+            "status",
+            "code",
+            "reason",
+            "message",
+            "usage"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "AgentResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "done"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64000
+            }
+          },
+          "required": ["status", "text"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "partial"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64000
+            },
+            "missing": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          "required": ["status", "text", "missing"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "need_input"
+            },
+            "question": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "choices": {
+              "maxItems": 6,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          },
+          "required": ["status", "question", "choices"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "OrchestratorDecision": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "decision": {
+              "type": "string",
+              "const": "delegate"
+            },
+            "agent": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,47}$"
+            },
+            "task": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            }
+          },
+          "required": ["decision", "agent", "task"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "decision": {
+              "type": "string",
+              "const": "answer"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64000
+            }
+          },
+          "required": ["decision", "text"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "decision": {
+              "type": "string",
+              "const": "ask"
+            },
+            "question": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "choices": {
+              "maxItems": 6,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          },
+          "required": ["decision", "question", "choices"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "AgentTypeManifest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,47}$"
+        },
+        "runtime": {
+          "type": "string",
+          "enum": ["agentic-cli", "llm", "python"]
+        },
+        "description": {
+          "type": "object",
+          "properties": {
+            "vi": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            },
+            "en": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            }
+          },
+          "required": ["vi", "en"],
+          "additionalProperties": false
+        },
+        "config_schema": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["key", "runtime", "description", "config_schema", "version"],
+      "additionalProperties": false
+    },
+    "JobEnqueuedPayload": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "number",
+          "const": 1
+        },
+        "job_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "provider_key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,47}$"
+        }
+      },
+      "required": ["v", "job_id", "provider_key"],
+      "additionalProperties": false
+    },
+    "JobCancelPayload": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "number",
+          "const": 1
+        },
+        "job_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "run_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": ["v", "job_id", "run_id"],
+      "additionalProperties": false
+    },
+    "HubConfigChangedPayload": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "number",
+          "const": 1
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["v", "version"],
+      "additionalProperties": false
+    }
+  }
+}

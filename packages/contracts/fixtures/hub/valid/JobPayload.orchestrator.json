@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "type": "agent.cli",
+  "runtime": "agentic-cli",
+  "job_id": "11111111-1111-4111-8111-111111111111",
+  "run_id": "11111111-1111-4111-8111-111111111111",
+  "step_id": "11111111-1111-4111-8111-111111111111",
+  "tenant_id": "11111111-1111-4111-8111-111111111111",
+  "user_id": "11111111-1111-4111-8111-111111111111",
+  "conversation_id": "11111111-1111-4111-8111-111111111111",
+  "flow_id": "11111111-1111-4111-8111-111111111111",
+  "feature_id": null,
+  "agent_type_key": null,
+  "mcp": null,
+  "agent": {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "key": "orchestrator",
+    "role": "orchestrator"
+  },
+  "provider_key": "claude-code",
+  "model": null,
+  "step_index": 0,
+  "max_turns": 3,
+  "profile_steps": [
+    {
+      "provider_key": "claude-code",
+      "model": null,
+      "on": []
+    }
+  ],
+  "system_prompt": "",
+  "prompt": "xin chào",
+  "history": [
+    {
+      "role": "user",
+      "content": "chào"
+    }
+  ],
+  "use_session": false,
+  "allowed_tools": [],
+  "output": "text",
+  "timeout_s": 600
+}

@@ -19,6 +19,7 @@ dev = [
   "import-linter>=2.3",
   "asyncpg>=0.31",
   "redis>=8.1",
+  "datamodel-code-generator>=0.71",
 ]
 
 [build-system]
@@ -86,7 +87,7 @@ type = "forbidden"
 source_modules = [
   "agent_runtime.providers",
   "agent_runtime.sandbox",
-  "agent_runtime.contracts.**",
+  "agent_runtime.contracts",
   "agent_runtime.agents",
   "agent_runtime.runtimes.cli.child.**",
 ]

@@ -5,6 +5,7 @@ export * from "./errors";
 export * from "./events";
 export * from "./export";
 export * from "./job";
+export * from "./json-schema";
 export * from "./manifest";
 export * from "./notify";
 export * from "./result";
