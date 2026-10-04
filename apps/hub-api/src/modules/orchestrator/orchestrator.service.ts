@@ -94,11 +94,12 @@ export async function driveRun(d: OrchestratorDeps, base: RunContext): Promise<v
     const end: LoopEnd = input
       ? await runLoop(loopIo(d, ctx), input)
       : { kind: "failed", code: "INTERNAL_ERROR" };
-    await deliver(writer, end);
+    // Log trước khi phát sự kiện kết thúc: client thấy `run.finished` thì dòng log đã có (A52).
     log.info("run-orchestrated", {
       outcome: end.kind,
       code: end.kind === "failed" ? end.code : null,
     });
+    await deliver(writer, end);
   } catch (err) {
     if (writer.signal.aborted || writer.done) return;
     log.error("orchestrator-failed", safeErrorFields(err));
