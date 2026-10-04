@@ -18,13 +18,19 @@ const snap: AccessSnapshot = {
     { id: "b", key: "beta", enabled: true, description: "Agent B", runtime: CLI },
     { id: "a", key: "alpha", enabled: true, runtime: CLI },
     { id: "l", key: "llm-only", enabled: true, runtime: "llm" },
+    { id: "d", key: "dify-tom", enabled: true, runtime: "dify-workflow" },
   ],
-  entitlements: ["o", "a", "b", "l"].map((agentId) => ({ agentId, tenantId: T, revokedAt: null })),
+  entitlements: ["o", "a", "b", "l", "d"].map((agentId) => ({
+    agentId,
+    tenantId: T,
+    revokedAt: null,
+  })),
   grants: [
     { agentId: "o", tenantId: T, subject: U },
     { agentId: "a", tenantId: T, subject: G },
     { agentId: "b", tenantId: T, subject: U },
     { agentId: "l", tenantId: T, subject: U },
+    { agentId: "d", tenantId: T, subject: U },
   ],
   orchestrator: { agentId: "o" },
 };
@@ -35,6 +41,7 @@ describe("agent-access [HUB-FR-77 · HUB-BR-03 · HUB-BR-06]", () => {
     expect(visibleAgents(accessInput(snap, who))).toEqual([
       { id: "a", key: "alpha", description: "" },
       { id: "b", key: "beta", description: "Agent B" },
+      { id: "d", key: "dify-tom", description: "" },
     ]);
   });
 
@@ -46,14 +53,20 @@ describe("agent-access [HUB-FR-77 · HUB-BR-03 · HUB-BR-06]", () => {
     expect(canDelegate(accessInput(snap, { ...who, groupIds: new Set() }), "alpha")).toBeNull();
   });
 
-  it("HUB-FR-77 · H1 chỉ agentic-cli: agent runtime khác không thấy, không delegate được", () => {
+  it("HUB-FR-77 · chỉ runtime chạy được (agentic-cli, dify-*): runtime khác không thấy, không delegate được", () => {
     const i = accessInput(snap, who);
     expect(visibleAgents(i).map((a) => a.key)).not.toContain("llm-only");
     expect(canDelegate(i, "llm-only")).toBeNull();
+    expect(canDelegate(i, "dify-tom")?.id).toBe("d");
   });
 
   it("HUB-BR-06 · ảnh không có Orchestrator → không loại agent nào theo id", () => {
     const i = accessInput({ ...snap, orchestrator: null }, who);
-    expect(visibleAgents(i).map((a) => a.key)).toEqual(["alpha", "beta", "orchestrator"]);
+    expect(visibleAgents(i).map((a) => a.key)).toEqual([
+      "alpha",
+      "beta",
+      "dify-tom",
+      "orchestrator",
+    ]);
   });
 });

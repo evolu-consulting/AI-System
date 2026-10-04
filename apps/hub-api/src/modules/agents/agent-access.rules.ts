@@ -19,8 +19,14 @@ export type VisibleAgentsInput = {
   orchestratorId: string;
 };
 
-/** Runtime duy nhất H1 chạy được (job `agent.cli`, plan §2.2); agent runtime khác chờ mốc sau. */
+/** Runtime H1 (job `agent.cli`, plan §2.2). */
 export const H1_RUNTIME = "agentic-cli";
+/** Runtime chạy được: H1 + agent `dify-*` do Hub gọi Dify (H2a-R14, `RoutingRunner`); runtime khác chờ mốc sau. */
+export const RUNNABLE_RUNTIMES: ReadonlySet<string> = new Set([
+  H1_RUNTIME,
+  "dify-workflow",
+  "dify-agent",
+]);
 
 /** Phần của `ConfigSnapshot` cần cho quyền — kiểu cấu trúc để không import ngược `config`. */
 export type AccessSnapshot = {
@@ -32,12 +38,12 @@ export type AccessSnapshot = {
 export type AccessSubject = { tenantId: string; userId: string; groupIds: ReadonlySet<string> };
 
 /**
- * HUB-BR-06: quyền tính trên ảnh run giữ lúc bắt đầu, không đọc ảnh mới giữa run. Chỉ agent `H1_RUNTIME` vào danh
- * sách (không thấy, không delegate được): agent runtime khác không có job H1 chạy nổi.
+ * HUB-BR-06: quyền tính trên ảnh run giữ lúc bắt đầu, không đọc ảnh mới giữa run. Chỉ agent `RUNNABLE_RUNTIMES` vào
+ * danh sách (không thấy, không delegate được): agent runtime khác không có runner chạy nổi.
  */
 export function accessInput(s: AccessSnapshot, who: AccessSubject): VisibleAgentsInput {
   return {
-    agents: s.agents.filter((a) => a.runtime === H1_RUNTIME),
+    agents: s.agents.filter((a) => RUNNABLE_RUNTIMES.has(a.runtime)),
     entitlements: s.entitlements,
     grants: s.grants,
     orchestratorId: s.orchestrator?.agentId ?? "",

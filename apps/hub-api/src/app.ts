@@ -11,7 +11,8 @@ import {
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { commandDriverFor, mountH2a } from "./app.h2a";
-import { mountMcp, runnerMcp } from "./app.mcp";
+import { mountMcp } from "./app.mcp";
+import { agentRunner } from "./app.runner";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
@@ -21,7 +22,6 @@ import { type ConfigCache, startConfigCache } from "./modules/config/config.serv
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
 import { orchestratorDriver } from "./modules/orchestrator/orchestrator.service";
-import { JobAgentRunner } from "./modules/runner/job-agent-runner";
 import { startOrphanSweep } from "./modules/runner/orphan-sweep";
 import { RunStreamReader } from "./modules/runner/run-stream-reader";
 import { cancelRoutes } from "./modules/runs/close/cancel.routes";
@@ -102,17 +102,19 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
 /** `runs.owner` của instance (= `HUB_INSTANCE_ID`; test khung vắng → host:pid). */
 const instanceOwner = (deps: AppDeps): string => deps.instanceId ?? `${hostname()}:${process.pid}`;
 
-/** B8 · vòng Orchestrator (plan §6) chạy job qua runner B7 (§5.6); dừng theo `deps.signal`. */
+/** B8 · vòng Orchestrator (plan §6) chạy bước qua `RoutingRunner` (H1 §5.6 + H2a §5.4); dừng theo `deps.signal`. */
 function defaultRunDriver(db: Db, redis: Redis, deps: AppDeps, config: ConfigCache): RunDriver {
   const reader = new RunStreamReader(redis, logger, deps.signal);
   const maxWaitS = deps.jobMaxWaitS ?? DEFAULT_JOB_MAX_WAIT_S;
-  const runner = new JobAgentRunner({
+  const runner = agentRunner({
     db,
     owner: instanceOwner(deps),
     reader,
     maxWaitS,
+    config,
     log: logger,
-    mcp: runnerMcp(deps.publicInternalUrl, config),
+    publicInternalUrl: deps.publicInternalUrl,
+    secretMasterKey: deps.secretMasterKey,
   });
   return orchestratorDriver({ db, runner, users: config, log: logger });
 }

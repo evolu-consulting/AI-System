@@ -5,6 +5,7 @@ Một job `agent.cli` cho một step của run, plan H1 §5.6, P7/P8/P11, contra
 | File | Vai trò |
 |---|---|
 | `job-agent-runner.ts` | `AgentRunner` (`run(task, signal): AsyncIterable<RunEvent>`), `JobAgentRunner`, `runJob` (→ `JobOutcome` cho B8) |
+| `routing-runner.ts` | H2a B7 · `RoutingRunner`: `agentic-cli` → `JobAgentRunner`; `dify-workflow`/`dify-agent` → runner tiêm vào (`modules/dify/dify-agent-runner.ts`; vắng → `job.failed NOT_CONFIGURED`). Dựng ở `app.runner.ts` |
 | `run-stream-reader.ts` | `RunStreamReader`: một kết nối `XREAD BLOCK 1000` multiplex `run:<id>`, đọc từ đầu stream, người gọi lọc `job_id` |
 | `runner.repo.ts` | `provider_state`, `run_steps` + `INSERT jobs` + `pg_notify('job_enqueued')` một transaction, đọc job, hết hạn `queued`, slot tenant |
 | `orphan-sweep.ts` | B10 · quét orphan phía Hub (plan-db §5.5, 10 s): `failed orphaned` + XADD `job.failed` (`seq` = epoch ms) vào `run:<id>` |
