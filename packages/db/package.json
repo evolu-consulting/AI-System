@@ -8,6 +8,7 @@
     "./test-db": "./src/test-db.ts",
     "./seed": "./src/seed.ts",
     "./migrate-hub": "./src/migrate-hub.ts",
+    "./hub-scope": "./src/hub-scope.ts",
     "./schema/hub": "./src/schema/hub.ts"
   },
   "scripts": {

@@ -1,5 +1,6 @@
 // HUB-FR-75, WRK-FR-24 · runHubMigrations trên DB riêng `ai_system_h1_test` (plan H1 §1 P1, §7; không đụng TEST_DATABASE_URL).
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import postgres from "postgres";
 import { runMigrations } from "./migrate";
 import { runHubMigrations } from "./migrate-hub";
@@ -10,6 +11,15 @@ if (!BASE)
   throw new Error("HUB_TEST_DATABASE_URL/TEST_DATABASE_URL chưa đặt — chạy `bun run keys:dev`");
 const URL = process.env.HUB_TEST_DATABASE_URL ?? withDatabase(BASE, "ai_system_h1_test");
 const sql = postgres(URL, { max: 1, onnotice: () => {} });
+/** Số migration Hub = số entry journal (thêm migration không phải sửa test). */
+const HUB_N = (
+  JSON.parse(
+    readFileSync(
+      new globalThis.URL("../migrations-hub/meta/_journal.json", import.meta.url),
+      "utf8",
+    ),
+  ) as { entries: unknown[] }
+).entries.length;
 
 beforeAll(async () => {
   const name = "ai_system_h1_test";
@@ -66,7 +76,7 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
   test("DB sạch (production): main → hub đủ 18 bảng, không hub-dev; lần 2 {0,0}", async () => {
     expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 9, dev: 0 });
     expect(await runHubMigrations({ url: URL, appEnv: "production" })).toEqual({
-      hub: 1,
+      hub: HUB_N,
       hubDev: 0,
     });
     expect(await hubTables()).toEqual(HUB_TABLES);
@@ -85,7 +95,7 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
     await sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
       values (${crypto.randomUUID()}, ${tid}, 'user', ${crypto.randomUUID()})`;
     await sql`insert into hub.usage_logs (tenant_id, billing) values (${tid}, 'api')`;
-    expect(await runHubMigrations({ url: URL, appEnv: "test" })).toEqual({ hub: 1, hubDev: 1 });
+    expect(await runHubMigrations({ url: URL, appEnv: "test" })).toEqual({ hub: HUB_N, hubDev: 1 });
     expect(await runHubMigrations({ url: URL, appEnv: "development" })).toEqual({
       hub: 0,
       hubDev: 0,
