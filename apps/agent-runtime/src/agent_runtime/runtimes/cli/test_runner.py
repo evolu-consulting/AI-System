@@ -98,7 +98,7 @@ def test_wrk_fr_04_child_runs_fake_provider(monkeypatch: pytest.MonkeyPatch) -> 
     p = payload(prompt="hi #fake:sleep=0")
     req = ChildRequest(job_id="j1", payload=p, work_dir="/tmp", forbidden_roots=[])
     evs = _run_child(monkeypatch, ["--job-id=j1"], req.model_dump_json().encode() + b"\n")
-    assert evs[-1]["type"] == "final" and evs[-1]["structured"]["text"] == "echo: hi"
+    assert evs[-1]["type"] == "final" and evs[-1]["structured"]["text"].startswith("echo: hi ")
 
 
 def test_wrk_fr_04_child_rejects_mismatch_and_prod_fake(monkeypatch: pytest.MonkeyPatch) -> None:

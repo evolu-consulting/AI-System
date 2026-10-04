@@ -14,6 +14,7 @@ from collections.abc import Sequence
 
 from pydantic import ValidationError
 
+from agent_runtime.log import configure_logging
 from agent_runtime.providers.base import Fatal, ProviderEvent
 from agent_runtime.providers.registry import get_provider
 from agent_runtime.runtimes.cli.protocol import ChildRequest, encode_event
@@ -50,6 +51,8 @@ async def run(req: ChildRequest) -> None:
 
 
 def main(argv: Sequence[str]) -> int:
+    # stdout là kênh giao thức: log của con (vd hook sandbox) đi stderr.
+    configure_logging("info", "child", sys.stderr)
     job_id = job_id_arg(argv)
     try:
         req = ChildRequest.model_validate_json(sys.stdin.buffer.readline())
