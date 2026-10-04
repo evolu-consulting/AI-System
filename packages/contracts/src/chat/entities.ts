@@ -179,10 +179,27 @@ export type ConversationCreateRequest = z.infer<typeof ConversationCreateRequest
 export const ConversationUpdateRequestSchema = z.strictObject({ title: TitleInputSchema });
 export type ConversationUpdateRequest = z.infer<typeof ConversationUpdateRequestSchema>;
 
-/** E12 · không `flow_id` → flow mới (C1-R01). */
+export const MESSAGE_SELECTION_MAX = 16_000;
+export const MESSAGE_PAGE_URL_MAX = 2_048;
+export const MESSAGE_PAGE_TEXT_MAX = 50_000;
+
+/** HUB-FR-11 · ngữ cảnh trang (nguồn fallback `$selection`, `$page.*`) — H2a plan §2.1. Không trim: giữ nguyên văn bản người dùng chọn. */
+export const MessageContextSchema = z.strictObject({
+  selection: z.string().min(1).max(MESSAGE_SELECTION_MAX).optional(),
+  page_url: z
+    .string()
+    .max(MESSAGE_PAGE_URL_MAX)
+    .regex(/^https?:\/\//)
+    .optional(),
+  page_text: z.string().min(1).max(MESSAGE_PAGE_TEXT_MAX).optional(),
+});
+export type MessageContext = z.infer<typeof MessageContextSchema>;
+
+/** E12 · không `flow_id` → flow mới (C1-R01); `context` tuỳ chọn (H2a, chỉ thêm). */
 export const SendMessageRequestSchema = z.strictObject({
   content: z.string().trim().min(1).max(CHAT_CONTENT_MAX),
   flow_id: UuidSchema.optional(),
+  context: MessageContextSchema.optional(),
 });
 export type SendMessageRequest = z.infer<typeof SendMessageRequestSchema>;
 

@@ -27,3 +27,27 @@ export const CHAT_RUN_ERROR_CODES = [
   "NOT_CONFIGURED",
   "INTERNAL_ERROR",
 ] as const;
+
+// HUB-FR-11, HUB-FR-14 · `CMD_*` (H2a plan §2.1, P3): hằng riêng — thêm vào `CHAT_API_ERRORS` làm đỏ test khoá C1 (đúng 6 mã).
+export const CMD_SUGGESTIONS_MAX = 3;
+export const CMD_ARG_LIST_MAX = 50;
+
+/** Lỗi E12 khi tin là lệnh `/…`: trả JSON trước khi tạo run (R07). */
+export const CHAT_COMMAND_ERRORS = {
+  CMD_NOT_FOUND: 404,
+  CMD_MISSING_ARG: 422,
+} as const satisfies Record<string, 404 | 422>;
+
+export type ChatCommandErrorCode = keyof typeof CHAT_COMMAND_ERRORS;
+export const CHAT_COMMAND_ERROR_CODES = Object.keys(CHAT_COMMAND_ERRORS) as ChatCommandErrorCode[];
+
+export const CmdNotFoundDetailsSchema = z.strictObject({
+  suggestions: z.array(z.string()).max(CMD_SUGGESTIONS_MAX),
+});
+export type CmdNotFoundDetails = z.infer<typeof CmdNotFoundDetailsSchema>;
+
+export const CmdMissingArgDetailsSchema = z.strictObject({
+  missing: z.array(z.string()).max(CMD_ARG_LIST_MAX),
+  invalid: z.array(z.string()).max(CMD_ARG_LIST_MAX),
+});
+export type CmdMissingArgDetails = z.infer<typeof CmdMissingArgDetailsSchema>;
