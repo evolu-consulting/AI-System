@@ -221,3 +221,22 @@ Chưa chạy (chưa viết test). Sau QW: bảng `ID · ca đỏ đúng lý do /
 | `contracts-h2a` | R70–R74 | 0/5 | R70–R74 — contract C1/C2 đã có (`fc19f86`, `f753471`) |
 
 Ghi chú: R36 theo spec H2a-R02 + M3-R11 (`core` hiệu lực **không cần grant**), khác câu chữ cases §1.4 ("`core` không grant → không") — nhánh Admin xanh xác nhận; sửa cases khi khoá Q2. R61 giả định tham số `url` của `mcpConfigFor` là URL `/mcp` đầy đủ (Hub dựng `<HUB_PUBLIC_INTERNAL_URL>/mcp` trước khi gọi). Kiểm chéo: 29 ca `command-parse`/`command-input`/`suggest` xanh trên một bản cài tham chiếu tạm (đã xoá) — kỳ vọng nhất quán.
+
+### QW-A1 · `tests/acceptance/H2a/{commands,command-run,dify-errors,secret,db}.int.test.ts` (2026-10-05, trên `6a8562d`)
+`bun --env-file=.env.local --env-file=.env.test-h2a_qwa1.local --config=bunfig.int.toml test --timeout 30000 <5 file>` (DB riêng `ai_system_h2a_qwa1_test`): **40 ID / 44 ca** (A08 ×4 biến thể, A89 + A89b) · **36 đỏ đúng lý do** · **8 xanh trước code** (có lý do). Không đỏ nào do fixture/import: catalog §7 + secret mã bằng `encryptSecret` Admin + agent H2a + job SQL (payload qua `JobPayloadSchema`) đều chèn được. `tsc -p tsconfig.tests.json`, biome, `check:size` sạch. Helper: `_h2a.ts` (catalog, proxy Dify, `startHubH2a`, `adminVisible`, `leakForms`, `dumpRun`), `_runtime2.ts` (`ScriptRuntime2.claimAsync` có token, `insertSqlJob`, `credential`, `mcp`) — QW-A2 dùng lại.
+
+| File | ID | Đỏ đúng lý do / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `commands` | A01–A09 | 12/12 | `GET /commands` 404; `/lệnh` vẫn đi luồng H1 (200 SSE thay vì 404/422, MK 0 lời gọi); `//abc` tới Orchestrator còn `//abc` | — |
+| `command-run` | A10–A19 | 9/10 | MK 0 lời gọi / `run.kind='orchestrated'` / không `usage_logs` / không 422 | A19 — `context` sai đã 400 nhờ `SendMessageRequestSchema` C1 |
+| `dify-errors` | A20–A26 | 7/7 | MK 0 lời gọi; `run.failed` = `ALL_PROVIDERS_EXHAUSTED` (luồng H1) thay vì mã Dify | — |
+| `secret` | A80–A86, A83b | 6/8 | Hub không tạo job `workflow.async`; `/internal/jobs/:id/dify-credential` 404 | A84, A85 — DB thuần, D2 đã có (test-plan §8 chấp nhận) |
+| `db` | A87–A92 | 2/7 | A89b: `jobs_error_code_check`/`jobs_error_reason_check` chưa nhận `NOT_CONFIGURED`/`credential`/`upstream` (**lệch D1**, xem dưới); A92 `/mcp` 404 | A87, A88, A89, A90, A91 — CHECK/RLS/unique của D1 đã có |
+
+Lệch plan / cần backend-lead:
+- **D1 thiếu CHECK `hub.jobs`** (A89b đỏ ở DB): `jobs_error_code_check` chưa có `NOT_CONFIGURED`, `jobs_error_reason_check` chưa có `credential`, `upstream` — trong khi C2 đã thêm vào `HUB_JOB_ERROR_CODES`/`JOB_FAIL_REASONS` (plan §2.2, `plan-errors` §2). `plan-db` §1.1 không liệt kê đổi hai CHECK này ⇒ Runtime ghi `failed NOT_CONFIGURED` sẽ 23514. Cần migration mới (không sửa `0002`).
+- **Seam deps H2a** (`createApp` không đọc env, như H1): test truyền thêm `secretMasterKey`, `internalToken`, `publicInternalUrl`, `difyTimeoutMaxS` (tuỳ chọn) + H1 `jobMaxWaitS: 5`.
+- **App-key ngắn không lưu được**: CHECK `admin.secrets.ciphertext` ≥ 24 byte ⇒ `mk-ok`, `mk-401/404/400` (< 8 ký tự) không chèn được. `_h2a.ts` lưu `<kịch bản>~pad` và đặt proxy trước MK bỏ hậu tố (MK vẫn ghi `calls()` với key gốc). Đề xuất MK nhận tiền tố khi khoá Q-T1.
+- **MK không có kịch bản "thân lỗi chứa key"** (A26, A80) và RMB/chunk 95 ký tự (A15 vế RMB, A17 vế 95 ký tự): proxy trả 400 chứa key cho `LEAK_KEY_ECHO…`; vế RMB và chunk dài để cho R47 / R-unit.
+- A25 "secret không có" không dựng được: `admin.workflows.secret_id` NOT NULL + FK ⇒ `workflow_secret` luôn 1 dòng; thay bằng bản mã hỏng + `key_version` lệch.
+- A14 "`output.field` null → khoá `text`": `CommandOutputSchema.field` bắt buộc ⇒ chỉ phủ `field="text"`.
