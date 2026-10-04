@@ -39,9 +39,43 @@ const missingArg = (missing: string[], invalid: string[]) =>
   appError("CMD_MISSING_ARG", { missing, invalid });
 
 /** Tên báo thiếu khi app `chat`/`agent` không có `query`: tham số map vào input `query`, không thì `query`. */
-function queryLabel(c: CatalogCommand): string {
-  const e = c.inputMap[QUERY_INPUT];
+function queryLabel(inputMap: CatalogCommand["inputMap"]): string {
+  const e = inputMap[QUERY_INPUT];
   return e?.source === "arg" ? e.value : QUERY_INPUT;
+}
+
+/** Đầu vào gán tham số + dựng `inputs` (E12 `prepare` và test-run nháp B10 dùng chung). */
+export type BindCommandInput = {
+  command: Pick<CatalogCommand, "args" | "inputMap">;
+  workflow: Pick<CatalogWorkflow, "inputSchema" | "appType">;
+  rest: string;
+  ctx: MessageContext;
+  userId: string;
+  tenantId: string;
+};
+export type BoundCommand = {
+  inputs: Record<string, WorkflowInputValue>;
+  query: string | null;
+  extraTokens: number;
+};
+
+/** R05–R06: `bindArgs` → `buildInputs` → app `chat`/`agent` cần `query`; thiếu/sai → ném `CMD_MISSING_ARG`. */
+export function bindCommandInputs(i: BindCommandInput): BoundCommand {
+  const { command, workflow } = i;
+  const bound = bindArgs(command.args, i.rest, i.ctx);
+  const built = buildInputs({
+    inputMap: command.inputMap,
+    inputSchema: workflow.inputSchema,
+    args: command.args,
+    values: bound.values,
+    ctx: i.ctx,
+    userId: i.userId,
+    tenantId: i.tenantId,
+  });
+  if (!built.ok) throw missingArg(built.missing, built.invalid);
+  if (appNeedsQuery(workflow.appType) && built.query === null)
+    throw missingArg([queryLabel(command.inputMap)], []);
+  return { inputs: built.inputs, query: built.query, extraTokens: bound.extra };
 }
 
 function findUsable(v: UsableView, name: string): UsableCatalogCommand | undefined {
@@ -83,28 +117,23 @@ export class CommandService {
     }
     const { catalog } = view;
     const { command, workflow } = hit;
-    const bound = bindArgs(command.args, req.rest, req.ctx);
-    const built = buildInputs({
-      inputMap: command.inputMap,
-      inputSchema: workflow.inputSchema,
-      args: command.args,
-      values: bound.values,
+    const bound = bindCommandInputs({
+      command,
+      workflow,
+      rest: req.rest,
       ctx: req.ctx,
       userId: u.userId,
       tenantId: u.tenantId,
     });
-    if (!built.ok) throw missingArg(built.missing, built.invalid);
-    if (appNeedsQuery(workflow.appType) && built.query === null)
-      throw missingArg([queryLabel(command)], []);
     return {
       command,
       workflow,
       featureId: hit.featureId,
-      inputs: built.inputs,
-      query: built.query,
+      inputs: bound.inputs,
+      query: bound.query,
       sideEffect: workflow.sideEffect,
       tenantKey: catalog.tenantKeys.get(u.tenantId) ?? u.tenantId,
-      extraTokens: bound.extra,
+      extraTokens: bound.extraTokens,
     };
   }
 }

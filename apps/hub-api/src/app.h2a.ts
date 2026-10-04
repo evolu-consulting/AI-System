@@ -1,6 +1,7 @@
 // HUB-FR-10, HUB-FR-11 · route H2a của hub-api (plan H2a §4: `mountH2a` tách khỏi `app.ts` để giữ ≤ 250 dòng).
 // `/commands` nằm trong `PROTECTED_PREFIXES` của `app.ts` (JWT ở gốc, 401 trước 404).
 import type { Env, Hono } from "hono";
+import { DEFAULT_DIFY_TIMEOUT_MAX_S } from "./app.mcp";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import { type CommandDriverDeps, commandDriver } from "./modules/commands/command-driver";
@@ -9,6 +10,8 @@ import { CommandService, type PreparedCommand } from "./modules/commands/command
 import type { ConfigCache } from "./modules/config/config.service";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
 import { DifyClient } from "./modules/dify/dify.client";
+import { testRunRoutes } from "./modules/internal/test-run.routes";
+import { TestRunService } from "./modules/internal/test-run.service";
 import type { PrepareCommand } from "./modules/runs/runs.routes";
 import type { RunDriver } from "./modules/runs/runs.service";
 
@@ -65,4 +68,27 @@ export function mountH2a<E extends Env>(
     };
   };
   return { commands, prepareCommand };
+}
+
+export type TestRunMountDeps = CommandDriverMountDeps & {
+  config: ConfigCache;
+  /** = `HUB_INTERNAL_TOKEN`; vắng → 503 `UNAVAILABLE`. */
+  internalToken?: string;
+  difyTimeoutMaxS?: number;
+};
+
+/** B10 · POST `/internal/test-run` (token dịch vụ, không JWT — H2a-R24). Gọi trước `notFound`. */
+export function mountTestRun<E extends Env>(app: Hono<E>, m: TestRunMountDeps): void {
+  const svc = new TestRunService({
+    config: m.config,
+    credentials: new CredentialService({
+      db: m.db,
+      masterKey: loadMasterKey(m.secretMasterKey),
+      log: m.log,
+    }),
+    dify: new DifyClient(),
+    log: m.log,
+    timeoutMaxS: m.difyTimeoutMaxS ?? DEFAULT_DIFY_TIMEOUT_MAX_S,
+  });
+  app.route("/internal", testRunRoutes(svc, m.internalToken));
 }

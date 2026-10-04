@@ -10,7 +10,7 @@ import {
 } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { commandDriverFor, mountH2a } from "./app.h2a";
+import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountMcp } from "./app.mcp";
 import { agentRunner } from "./app.runner";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
@@ -225,6 +225,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   mountProtected(app, deps, config);
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger });
+  if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
 
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
