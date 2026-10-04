@@ -6,7 +6,8 @@ mỗi 100 ms tới 1,5 s; còn pid → SIGKILL từng pid + log `pg_leak`.
 **Dự phòng §13** (CLI có thể sinh con thoát group): chụp cây `ppid` của job host trước khi giết và
 giết cả cây; Runtime đặt `PR_SET_CHILD_SUBREAPER` để cháu mồ côi về tay mình (thu zombie ở đây:
 cây đã chụp + mọi zombie khác có `ppid` = Runtime, trừ job host asyncio đang theo dõi — review
-H1 #7).
+H1 #7). Cháu `setsid` ra đời rồi job host chết trước khi chụp cây (ppid = Runtime, pgid riêng)
+→ người gọi truyền `extra` (cây tích luỹ khi job host còn sống + `pipe_holders` — review H1 v2 N2).
 `PR_SET_DUMPABLE=0` ở cha (review H1 #11): process cùng uid không đọc được `/proc/<cha>/environ`
 (secret); `execve` của job host đặt lại dumpable nên con không bị ảnh hưởng.
 """
@@ -19,7 +20,7 @@ import ctypes
 import os
 import signal
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from pathlib import Path
 
 from agent_runtime.log import get_logger
@@ -79,6 +80,37 @@ def descendants(root: int, proc: Path = PROC) -> set[int]:
     return found
 
 
+def start_time(pid: int, proc: Path = PROC) -> int | None:
+    """`starttime` (trường 22 của `/proc/<pid>/stat`) — phân biệt pid bị tái dùng."""
+    try:
+        raw = (proc / str(pid) / "stat").read_text()
+    except OSError:
+        return None
+    return int(raw[raw.rfind(")") + 2 :].split()[19])
+
+
+def stamp(pids: set[int], proc: Path = PROC) -> dict[int, int]:
+    """`{pid: starttime}` của các pid còn sống (để giết sau mà không trúng pid tái dùng)."""
+    return {p: t for p in _alive(pids, proc) if (t := start_time(p, proc)) is not None}
+
+
+def still_alive(stamped: Mapping[int, int], proc: Path = PROC) -> set[int]:
+    """Pid trong `stamp()` còn sống và chưa bị tái dùng."""
+    return {p for p, t in stamped.items() if start_time(p, proc) == t and _alive({p}, proc)}
+
+
+def pipe_holders(inode: int, proc: Path = PROC) -> set[int]:
+    """Pid (trừ chính Runtime) còn mở pipe `inode` — cháu giữ stdout của job host."""
+    target, me, found = f"pipe:[{inode}]", os.getpid(), set[int]()
+    for p in proc.iterdir():
+        if not p.name.isdigit() or int(p.name) == me:
+            continue
+        with contextlib.suppress(OSError):
+            if any(os.readlink(fd) == target for fd in (p / "fd").iterdir()):
+                found.add(int(p.name))
+    return found
+
+
 def _alive(pids: set[int], proc: Path) -> set[int]:
     return {p for p in pids if (st := _stat(p, proc)) and st[0] != "Z"}
 
@@ -122,11 +154,16 @@ async def _confirm(pgid: int, tree: set[int], proc: Path) -> set[int]:
 
 
 async def kill_group(
-    pgid: int, wait_exit: Callable[[], Awaitable[object]], grace_s: float, proc: Path = PROC
+    pgid: int,
+    wait_exit: Callable[[], Awaitable[object]],
+    grace_s: float,
+    extra: Mapping[int, int] | None = None,
 ) -> set[int]:
-    """Giết group + cây của job host (`pgid` = pid job host; asyncio tự thu pid này).
-    Trả pid sót (đã SIGKILL từng pid)."""
-    tree = (descendants(pgid, proc) | set(group_pids(pgid, proc))) - {pgid}
+    """Giết group + cây của job host (`pgid` = pid job host; asyncio tự thu pid này) + `extra`
+    (`stamp()` các pid ngoài cây đã biết thuộc job). Trả pid sót (đã SIGKILL từng pid)."""
+    proc = PROC
+    more = still_alive(extra or {}, proc)
+    tree = (descendants(pgid, proc) | set(group_pids(pgid, proc)) | more) - {pgid}
     _signal_group(pgid, signal.SIGTERM)
     _signal_pids(tree, signal.SIGTERM)
     with contextlib.suppress(TimeoutError):

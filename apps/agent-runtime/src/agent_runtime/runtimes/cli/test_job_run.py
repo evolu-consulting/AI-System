@@ -21,8 +21,14 @@ from agent_runtime.runtimes.cli import job_run as jr
 from agent_runtime.runtimes.cli import runner
 from agent_runtime.runtimes.cli.job_run import JobRun
 from agent_runtime.runtimes.cli.outcome import CRASHED, Seen, decide_exit
-from agent_runtime.runtimes.cli.protocol import EVENT_TOO_LARGE, INVALID_EVENT, parse_event
-from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
+from agent_runtime.runtimes.cli.protocol import (
+    EVENT_TOO_LARGE,
+    INVALID_EVENT,
+    MAX_LINE_BYTES,
+    parse_event,
+)
+from agent_runtime.runtimes.cli.runner import CliJobHost, FinishWriteFailed, HostConfig
+from agent_runtime.runtimes.cli.stdout_pipe import StdoutPipe
 from agent_runtime.runtimes.cli.test_runner import payload
 
 JOB = ClaimedJob("c3000000-0000-4000-8000-000000000001", {"run_id": "r"})
@@ -43,6 +49,10 @@ class JobControl:
 class _Events:
     def __init__(self) -> None:
         self.forgot: list[str] = []
+        self.progress_s = 0.0  # Redis chậm (review H1 v2 N1)
+
+    async def progress(self, job: ClaimedJob, label: str) -> None:
+        await asyncio.sleep(self.progress_s)
 
     def forget(self, job_id: str) -> None:
         self.forgot.append(job_id)
@@ -57,22 +67,29 @@ class _Host:
         self.closed.append(v)
 
 
-def _run(tmp_path: Path, control: JobControl | None = None) -> tuple[JobRun, _Host]:
+def make_run(tmp_path: Path, control: JobControl | None = None) -> tuple[JobRun, _Host]:
     cfg = HostConfig("w-1", tmp_path / "work", tmp_path / "logs", tmp_path, "test", 0.2)
     host = _Host(cfg)
     run = JobRun(host, JOB, payload(), control or JobControl())  # pyright: ignore[reportArgumentType]
     return run, host
 
 
-async def _proc(script: str) -> asyncio.subprocess.Process:
-    return await asyncio.create_subprocess_exec(
-        "sh",
-        "-c",
-        script,
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-        start_new_session=True,
-    )
+async def start(run: JobRun, script: str) -> asyncio.subprocess.Process:
+    """Như `JobRun._spawn` nhưng chạy `sh -c script` (pipe stdout do cha tạo)."""
+    run.pipe = pipe = StdoutPipe()
+    try:
+        run.proc = await asyncio.create_subprocess_exec(
+            "sh",
+            "-c",
+            script,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=pipe.write_fd,
+            start_new_session=True,
+        )
+    finally:
+        pipe.close_write()
+    run.out = await pipe.attach(MAX_LINE_BYTES)
+    return run.proc
 
 
 def test_wrk_fr_15_parent_faults_do_not_count_provider_error() -> None:
@@ -92,8 +109,8 @@ def test_wrk_fr_15_parent_faults_do_not_count_provider_error() -> None:
 
 async def test_wrk_fr_24_stdout_held_by_grandchild_stops_reading(tmp_path: Path) -> None:
     """#9: job host thoát, cháu giữ stdout → ngừng đọc sau `DRAIN_S`, giết cây."""
-    run, _ = _run(tmp_path)
-    run.proc = await _proc("sleep 30 & exit 0")
+    run, _ = make_run(tmp_path)
+    await start(run, "sleep 30 & exit 0")
     t0 = time.monotonic()
     assert await run._supervise() == "exited"  # pyright: ignore[reportPrivateUsage]
     assert time.monotonic() - t0 < jr.DRAIN_S + 2
@@ -106,8 +123,8 @@ async def test_wrk_fr_15_reader_error_is_parent_fault(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """#5: reader ném lỗi → `INTERNAL_ERROR`, không đếm lỗi provider, group bị giết."""
-    run, _ = _run(tmp_path)
-    run.proc = await _proc("sleep 30")
+    run, _ = make_run(tmp_path)
+    proc = await start(run, "sleep 30")
 
     async def boom() -> None:
         raise RuntimeError("x")
@@ -116,14 +133,14 @@ async def test_wrk_fr_15_reader_error_is_parent_fault(
     assert await run._supervise() == "exited"  # pyright: ignore[reportPrivateUsage]
     assert run.seen.fatal is jr.READER_FAILED and run.seen.parent_fault
     await run._kill_leftovers()  # pyright: ignore[reportPrivateUsage]
-    assert run.proc.returncode is not None
+    assert proc.returncode is not None
     assert decide_exit(run.payload, run.seen).provider == "none"
 
 
 async def test_wrk_fr_15_signaled_host_not_provider_error(tmp_path: Path) -> None:
     """#2c: job host chết vì SIGTERM không do cha gửi → `signaled`, không đếm lỗi provider."""
-    run, _ = _run(tmp_path)
-    run.proc = await _proc("kill -TERM $$")
+    run, _ = make_run(tmp_path)
+    await start(run, "kill -TERM $$")
     assert await run._supervise() == "exited"  # pyright: ignore[reportPrivateUsage]
     assert run.seen.signaled
     assert decide_exit(run.payload, run.seen).provider == "none"
@@ -131,7 +148,7 @@ async def test_wrk_fr_15_signaled_host_not_provider_error(tmp_path: Path) -> Non
 
 async def test_wrk_fr_02_parent_stopping_no_write(tmp_path: Path) -> None:
     """#2b: cờ dừng (signal handler) → không ghi lỗi; kết quả thành công vẫn ghi."""
-    run, host = _run(tmp_path)
+    run, host = make_run(tmp_path)
     host.cfg.stopping.set()
     assert run.stopping() and not run._retryable("exited")  # pyright: ignore[reportPrivateUsage]
     await run._apply("exited")  # pyright: ignore[reportPrivateUsage]
@@ -144,9 +161,22 @@ async def test_wrk_fr_02_parent_stopping_no_write(tmp_path: Path) -> None:
 async def test_wrk_fr_02_shutdown_reason_no_write(tmp_path: Path) -> None:
     control = JobControl()
     control.request_stop("shutdown")
-    run, host = _run(tmp_path, control)
+    run, host = make_run(tmp_path, control)
     await run._apply("exited")  # pyright: ignore[reportPrivateUsage]
     assert host.closed == [] and host.events.forgot == [JOB.id]
+    await run._apply("stopped")  # pyright: ignore[reportPrivateUsage]
+    assert host.closed == []
+
+
+async def test_wrk_fr_02_shutdown_after_valid_final_still_written(tmp_path: Path) -> None:
+    """Review H1 v2 M3: shutdown khi đã đọc `Final` hợp lệ (`stopped`) → vẫn ghi kết quả."""
+    control = JobControl()
+    control.request_stop("shutdown")
+    run, host = make_run(tmp_path, control)
+    run.seen.final = Final(kind="agent_result", structured={"status": "done", "text": "x"})
+    await run._apply("stopped")  # pyright: ignore[reportPrivateUsage]
+    assert len(host.closed) == 1 and host.closed[0].failure is None
+    assert host.events.forgot == []
 
 
 class _FlakyPool:
@@ -164,7 +194,7 @@ class _FlakyPool:
 async def test_wrk_fr_24_finish_retried_with_backoff(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """#1: ghi "Kết thúc" lỗi DB → thử lại; hết lượt → ném (heartbeat dọn job lạc)."""
+    """#1: ghi "Kết thúc" lỗi DB → thử lại; hết lượt → `FinishWriteFailed` (heartbeat dọn)."""
     monkeypatch.setattr(runner, "FINISH_BACKOFF_S", (0.0, 0.0))
 
     async def finish_tx(*_a: object) -> Finished:
@@ -176,5 +206,5 @@ async def test_wrk_fr_24_finish_retried_with_backoff(
     ok = CliJobHost(_FlakyPool(2), None, cfg)  # pyright: ignore[reportArgumentType]
     assert await ok._finish(JOB, tx) == Finished()  # pyright: ignore[reportPrivateUsage]
     bad = CliJobHost(_FlakyPool(3), None, cfg)  # pyright: ignore[reportArgumentType]
-    with pytest.raises(_PG.PostgresConnectionError):
+    with pytest.raises(FinishWriteFailed):
         await bad._finish(JOB, tx)  # pyright: ignore[reportPrivateUsage]

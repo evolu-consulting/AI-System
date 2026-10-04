@@ -7,7 +7,8 @@ Dừng (plan-runtime §1.5, review H1 #2): process cha đang dừng (cờ đặt
 hoặc `control.reason == "shutdown"` → không thử lại, không ghi (cha ghi `orphaned`) — trừ job đã có
 kết quả thành công. Job host chết vì tín hiệu mà cha không gửi → không đếm lỗi provider.
 Reader lỗi / dòng hỏng / dòng quá dài = lỗi phía cha → `INTERNAL_ERROR`, không đụng provider.
-Job host đã thoát mà stdout còn bị cháu giữ → ngừng đọc sau `DRAIN_S`, giết group.
+Job host đã thoát, stdout bị cháu giữ → reader chờ `readline()` liền `DRAIN_S` sau lúc thoát thì
+bỏ đọc (v2 N1); giết group + cây tích luỹ + process giữ pipe (`stdout_pipe.py`), đóng pipe (v2 N2).
 """
 
 from __future__ import annotations
@@ -56,8 +57,9 @@ from agent_runtime.runtimes.cli.protocol import (
 )
 from agent_runtime.runtimes.cli.result import build_output, validation_hint
 from agent_runtime.runtimes.cli.session import resume_failed, session_key
+from agent_runtime.runtimes.cli.stdout_pipe import StdoutPipe
+from agent_runtime.sandbox import process as pg
 from agent_runtime.sandbox.env import TMP_SUBDIR, forbidden_roots, job_host_env
-from agent_runtime.sandbox.process import group_pids, kill_group, track_host, untrack_host
 
 if TYPE_CHECKING:
     from agent_runtime.runtimes.cli.runner import CliJobHost
@@ -97,6 +99,10 @@ class JobRun:
         self.skey = session_key(payload)
         self.deadline = time.monotonic() + payload.timeout_s
         self.killed = False  # cha đã gửi tín hiệu cho group của lần chạy hiện tại
+        self.pipe: StdoutPipe | None = None
+        self.out: asyncio.StreamReader | None = None
+        self.tree: dict[int, int] = {}  # N2: hậu duệ đã thấy khi job host còn sống (pid→start)
+        self.wait_since: float | None = None  # N1: reader đang chờ `readline()` từ lúc này
 
     def stopping(self) -> bool:
         """Process cha đang dừng (SIGTERM) — không thử lại, không ghi lỗi."""
@@ -152,7 +158,7 @@ class JobRun:
 
     async def _attempt(self) -> Outcome:
         outcome: Outcome = "lost"
-        self.killed = False
+        self.killed, self.tree, self.wait_since = False, {}, None
         try:
             self.proc = await self._spawn()
             if await self._record_pgid():
@@ -174,21 +180,23 @@ class JobRun:
         self._prepare_work()
         py_env = {k: os.environ[k] for k in _PY_ENV_KEYS if os.environ.get(k)}
         env = job_host_env(self.cfg.home, self.work, self.cfg.app_env, py_env)
+        self.pipe = pipe = StdoutPipe()
         err_fd = self._open_stderr()
         try:
             proc = await asyncio.create_subprocess_exec(
                 *child_argv(self.cfg.python, self.job.id),
                 stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
+                stdout=pipe.write_fd,
                 stderr=err_fd,
                 cwd=self.work,
                 env=env,
                 start_new_session=True,  # group mới, pgid = pid con
-                limit=MAX_LINE_BYTES,
             )
         finally:
             os.close(err_fd)
-        track_host(proc.pid)
+            pipe.close_write()
+        pg.track_host(proc.pid)
+        self.out = await pipe.attach(MAX_LINE_BYTES)
         return proc
 
     async def _record_pgid(self) -> bool:
@@ -242,12 +250,20 @@ class JobRun:
         return "stopped" if stop in done else "timeout"
 
     async def _host_gone(self) -> None:
-        """Xong khi job host đã thoát được `DRAIN_S` (không chờ pipe đóng)."""
+        """Xong khi job host đã thoát và reader chờ `readline()` liền `DRAIN_S` tính từ
+        max(lúc thoát, lúc bắt đầu chờ) — xử lý sự kiện chậm (Redis) không tính (N1)."""
         proc = self.proc
         assert proc is not None
-        while proc.returncode is None:  # noqa: ASYNC110 — `wait()` chờ cả pipe
+        while proc.returncode is None:  # noqa: ASYNC110 — `wait()` chờ cả pipe stdin
+            self.tree.update(pg.stamp(pg.descendants(proc.pid)))  # N2: trước khi cháu mồ côi
             await asyncio.sleep(EXIT_POLL_S)
-        await asyncio.sleep(DRAIN_S)
+        exited = time.monotonic()
+        while not self._pipe_held(exited):  # noqa: ASYNC110
+            await asyncio.sleep(EXIT_POLL_S)
+
+    def _pipe_held(self, exited: float) -> bool:
+        since = self.wait_since
+        return since is not None and time.monotonic() - max(since, exited) >= DRAIN_S
 
     @staticmethod
     async def _stop_reader(reader: asyncio.Task[None]) -> None:
@@ -268,18 +284,22 @@ class JobRun:
         self.seen.signaled = code is not None and code < 0 and not self.killed
 
     async def _read(self) -> None:
-        proc = self.proc
-        assert proc is not None and proc.stdin is not None and proc.stdout is not None
+        proc, out = self.proc, self.out
+        assert proc is not None and proc.stdin is not None and out is not None
+        self.wait_since = time.monotonic()  # ghi stdin cũng là chờ pipe (cháu giữ đầu đọc)
         with suppress(BrokenPipeError, ConnectionResetError):
             proc.stdin.write(self._request())
             await proc.stdin.drain()
             proc.stdin.close()
         while True:
+            self.wait_since = time.monotonic()
             try:
-                line = await proc.stdout.readline()
+                line = await out.readline()
             except ValueError:  # dòng vượt MAX_LINE_BYTES
                 self.seen.fatal, self.seen.parent_fault = EVENT_TOO_LARGE, True
                 return
+            finally:
+                self.wait_since = None
             if not line:
                 break
             if await self._on_event(parse_event(line)):
@@ -315,25 +335,36 @@ class JobRun:
         if proc is None:
             return
         self.killed = True
-        left = await kill_group(proc.pid, proc.wait, self.cfg.kill_grace_s)
+        left = await pg.kill_group(proc.pid, proc.wait, self.cfg.kill_grace_s, self._extra())
         if left:
             get_logger().error("job.group_leak", count=len(left))
 
+    def _extra(self) -> dict[int, int]:
+        """N2: cây đã tích luỹ + process còn giữ pipe stdout (cháu `setsid` ngoài cây/group)."""
+        held = pg.pipe_holders(self.pipe.inode) if self.pipe is not None else set[int]()
+        return {**self.tree, **pg.stamp(held)}
+
     async def _kill_leftovers(self) -> None:
-        """Job host đã thoát / lỗi giữa chừng: group còn pid (cháu) → giết."""
+        """Job host đã thoát / lỗi giữa chừng: group / cháu còn sống → giết; đóng pipe stdout."""
         proc = self.proc
-        if proc is None:
-            return
-        if proc.returncode is None or group_pids(proc.pid):
-            await self._kill()
-        with suppress(ProcessLookupError):
-            await proc.wait()
-        untrack_host(proc.pid)
+        try:
+            if proc is not None:
+                left = pg.group_pids(proc.pid) or pg.still_alive(self._extra())
+                if proc.returncode is None or left:
+                    await self._kill()
+                with suppress(ProcessLookupError):
+                    await proc.wait()
+                pg.untrack_host(proc.pid)
+        finally:
+            if self.pipe is not None:
+                self.pipe.close()
 
     async def _apply(self, outcome: Outcome) -> None:
         reason = self.control.reason
         exited = outcome == "exited"
-        if exited and self.stopping() and not self._succeeded():
+        if outcome == "stopped" and reason == "shutdown" and self._succeeded():
+            outcome = "exited"  # M3: đã đọc `Final` hợp lệ trước shutdown → vẫn ghi kết quả
+        elif exited and self.stopping() and not self._succeeded():
             outcome, reason = "stopped", "shutdown"
         if outcome == "timeout":
             await self._close(Verdict(TIMED_OUT))

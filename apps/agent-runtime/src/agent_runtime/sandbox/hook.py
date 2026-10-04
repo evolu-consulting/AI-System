@@ -5,14 +5,17 @@ Không phụ thuộc SDK: nhận/trả dict đúng hình `HookCallback` của Cl
 **Dự phòng §13** (tên trường Glob/Grep/LS chưa xác minh ở W0): kiểm mọi giá trị chuỗi của khoá
 chứa `path`; khoá chứa `glob` (và `pattern`, trừ `Grep` — ở đó là regex nội dung, không mở rộng
 thành đường dẫn) **fail-closed**: chứa `..` ở bất kỳ đâu hoặc `{` (brace `{..}/{..}/x`,
-`{..,a}/**` mở rộng ra ngoài `work/<job>` — review H1 #3) → deny; tuyệt đối / `~` → kiểm như
-đường dẫn. **Xác minh lại ở W0/PY-02** (tên trường + cách CLI mở rộng glob).
+`{..,a}/**` mở rộng ra ngoài `work/<job>` — review H1 #3), `[` (`[.][.]`), backslash (escape),
+đoạn `.` + `?`/`*` hoặc đoạn khớp `..` khi wildcard ăn cả `.` (`?.`, `*.*`; trừ `*`/`**`) → deny
+(review H1 v2 N3; đánh đổi: chặn cả mẫu vô hại như `.*rc`, `*.*`, lớp ký tự); tuyệt đối / `~` →
+kiểm như đường dẫn. **Xác minh lại ở W0/PY-02** (tên trường + cách CLI mở rộng glob).
 Deny trả lý do cố định, không lặp lại đường dẫn; log chỉ `tool_name`, nhãn, `job_id`.
 Lỗi bất ngờ → deny (fail-closed).
 """
 
 from collections.abc import Awaitable, Callable, Iterator, Mapping
 from dataclasses import dataclass
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Literal
 
@@ -56,8 +59,21 @@ _INVALID = HookDecision(allowed=False, reason="path_not_allowed", label="invalid
 _UNSAFE_PATTERN = HookDecision(allowed=False, reason="path_not_allowed", label="pattern")
 
 
+_UNSAFE_PARTS = ("..", "{", "[", "\\")  # `[.][.]`, `\.\.` cũng ra `..` (review H1 v2 N3)
+_STAR_SEGMENTS = frozenset({"*", "**"})  # globber không trả `..` cho `*`/`**`
+
+
+def _segment_unsafe(seg: str) -> bool:
+    """Đoạn có thể khớp `..`: `.` + `?`/`*` (`.?`, `.*`), hoặc khớp `..` khi `?`/`*` ăn cả `.`."""
+    if seg[:1] == "." and seg[1:2] in ("?", "*"):
+        return True
+    return seg not in _STAR_SEGMENTS and fnmatchcase("..", seg)
+
+
 def _pattern_unsafe(value: str) -> bool:
-    return ".." in value or "{" in value
+    if any(p in value for p in _UNSAFE_PARTS):
+        return True
+    return any(_segment_unsafe(seg) for seg in value.split("/"))
 
 
 def _pattern_is_path(value: str) -> bool:

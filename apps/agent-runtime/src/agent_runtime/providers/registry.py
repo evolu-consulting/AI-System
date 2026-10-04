@@ -12,7 +12,8 @@ from agent_runtime.providers.fake.provider import KEY as _FAKE
 from agent_runtime.providers.fake.provider import FakeProvider
 from agent_runtime.providers.keys import CLAUDE_KEY, DEV_APP_ENVS, FAKE_KEY, is_available
 
-assert (_CLAUDE, _FAKE) == (CLAUDE_KEY, FAKE_KEY)  # khoá hai nơi phải khớp
+if (_CLAUDE, _FAKE) != (CLAUDE_KEY, FAKE_KEY):  # khoá hai nơi phải khớp (không dùng assert: -O)
+    raise RuntimeError("provider keys mismatch (registry vs keys.py)")
 __all__ = ["DEV_APP_ENVS", "get_provider", "is_available"]
 
 

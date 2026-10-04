@@ -10,7 +10,8 @@ Spawn `python -m agent_runtime.runtimes.cli.child --job-id=<id>` với `start_ne
 (WRK-FR-24). XADD chỉ sau commit có dòng (plan-db §8 R2).
 Session §6 (luật `session.py`): resume theo `cli_sessions` + tenant, mất session → dựng từ history.
 Một lần chạy (spawn → giám sát → kết quả) ở `job_run.py` `JobRun`; ở đây: payload, transaction
-"Kết thúc" (lỗi DB → thử lại có backoff), XADD sau commit.
+"Kết thúc" (lỗi DB → thử lại có backoff; hết lượt → `FinishWriteFailed` lên Supervisor, không ghi
+`crashed` — heartbeat `orphaned` job lạc), XADD sau commit.
 """
 
 from __future__ import annotations
@@ -23,9 +24,10 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from agent_runtime.contracts.hub import JobPayload1
+from agent_runtime.db import jobs_sql
 from agent_runtime.db.finish_sql import Finished, FinishTx, finish_tx
 from agent_runtime.db.jobs_sql import ClaimedJob
-from agent_runtime.db.pool import DB_ERRORS, Pool
+from agent_runtime.db.pool import DB_ERRORS, Conn, Pool
 from agent_runtime.events.job_events import Failure, RunEvents, Tokens
 from agent_runtime.log import bind_job, get_logger
 from agent_runtime.runtimes.cli.job_run import JobRun, StopControl
@@ -61,6 +63,11 @@ _Seen = Seen  # tên cũ (test đơn vị PY-10)
 __all__ = ["StopControl", "build_output", "events_log_path", "fatal_failure", "stderr_log_path"]
 
 
+class FinishWriteFailed(Exception):
+    """Ghi "Kết thúc" hết lượt thử (review H1 v2 M1): đi thẳng lên Supervisor, không chuyển
+    `crashed` (có thể ghi đè kết quả đúng); heartbeat `orphaned` job còn `running` không ai giữ."""
+
+
 class CliJobHost:
     """`JobHost` (queue/host.py) chạy job `agentic-cli` trong job host process con."""
 
@@ -77,6 +84,8 @@ class CliJobHost:
                 return
             try:
                 await JobRun(self, job, payload, control).execute()
+            except FinishWriteFailed:
+                raise
             except Exception as err:  # spawn/IO lỗi: không để job `running` mãi (heartbeat)
                 get_logger().error("job.host_failed", error=type(err).__name__)
                 await self.finish_failed(job, CRASHED)
@@ -103,18 +112,31 @@ class CliJobHost:
                 await self.events.failed(q.id, q.run_id, queued_failure(b), Tokens())
 
     async def _finish(self, job: ClaimedJob, tx: FinishTx) -> Finished | None:
-        """Transaction "Kết thúc", lỗi DB → thử lại có backoff; hết lượt → ném (heartbeat sẽ
-        `orphaned` job lạc). Lần trước có thể đã commit → lần sau 0 dòng → không XADD (R2)."""
+        """Transaction "Kết thúc", lỗi DB → thử lại có backoff; hết lượt → `FinishWriteFailed`.
+        Lần trước lỗi có thể đã commit (mất ack, review H1 v2 M2): lần sau 0 dòng mà job của mình đã
+        ở đúng trạng thái `tx.finish` → coi như đã ghi (XADD đúng một lần; job `queued` bị fail cùng
+        lần commit đó không XADD được — rủi ro chấp nhận, spec-decisions)."""
+        retried = False
         for wait_s in (*FINISH_BACKOFF_S, None):
             try:
                 async with self.pool.acquire() as conn:
-                    return await finish_tx(conn, job.id, self.cfg.worker_id, tx)
+                    done = await finish_tx(conn, job.id, self.cfg.worker_id, tx)
+                    if done is None and retried and await self._ack_lost(conn, job, tx):
+                        return Finished()
+                    return done
             except DB_ERRORS as err:
                 if wait_s is None:
-                    raise
+                    raise FinishWriteFailed from err
+                retried = True
                 get_logger().warning("job.finish_retry", error=type(err).__name__)
                 await asyncio.sleep(wait_s)
         return None
+
+    async def _ack_lost(self, conn: Conn, job: ClaimedJob, tx: FinishTx) -> bool:
+        if not await jobs_sql.finished_as(conn, job.id, self.cfg.worker_id, tx.finish):
+            return False
+        get_logger().warning("job.finish_ack_lost")
+        return True
 
     async def finish_failed(self, job: ClaimedJob, f: Failure) -> None:
         """Lỗi trước khi có kết quả (payload sai, spawn lỗi): không usage, không đụng provider."""

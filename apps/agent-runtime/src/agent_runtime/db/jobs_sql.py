@@ -55,6 +55,10 @@ RESTART_ORPHANS = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERN
 # giữ (ghi kết thúc lỗi DB) → `orphaned`; điều kiện `worker_id` + `running` như câu gốc.
 ORPHAN_ONE = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE id = $1 AND worker_id = $2 AND status = 'running' RETURNING id, run_id, pgid;"""  # noqa: E501
 
+# Mất ack của "Kết thúc" (review H1 v2 M2): lần thử sau 0 dòng → job đã ở đúng trạng thái kết thúc
+# mình định ghi (cùng `worker_id`, status, mã, lý do; sweeper ghi `orphaned` nên không trùng).
+FINISHED_AS = """SELECT 1 FROM hub.jobs WHERE id = $1 AND worker_id = $2 AND status = $3 AND error_code IS NOT DISTINCT FROM $4 AND error_reason IS NOT DISTINCT FROM $5;"""  # noqa: E501
+
 RESET_PROVIDERS = """UPDATE hub.provider_state SET status = 'ok', consecutive_errors = 0, cooldown_until = NULL, updated_at = now() WHERE provider_key = ANY($1::text[]) AND status IN ('error','logged_out');"""  # noqa: E501
 
 
@@ -126,6 +130,14 @@ async def finish_job(conn: Conn, job_id: str, worker_id: str, f: Finish) -> bool
         FINISH, job_id, worker_id, f.status, result, f.error_code, f.error_reason, f.error_message
     )
     return status == "UPDATE 1"
+
+
+async def finished_as(conn: Conn, job_id: str, worker_id: str, f: Finish) -> bool:
+    """True nếu job của `worker_id` đã ở đúng trạng thái kết thúc `f` (commit trước đó mất ack)."""
+    row = await conn.fetchrow(
+        FINISHED_AS, job_id, worker_id, f.status, f.error_code, f.error_reason
+    )
+    return row is not None
 
 
 async def heartbeat(conn: Conn, worker_id: str) -> dict[str, bool]:

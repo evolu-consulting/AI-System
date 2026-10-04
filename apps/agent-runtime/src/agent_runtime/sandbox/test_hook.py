@@ -95,6 +95,15 @@ async def test_wrk_br_07_guard_fail_closed(policy: SandboxPolicy) -> None:
         ("Grep", {"pattern": "x", "glob": "{..}/{..}/**"}),
         ("Grep", {"pattern": "x", "glob": ["*.py", "{..,a}/*"]}),
         ("LS", {"ignore_globs": ["{..}/*"]}),
+        # review H1 v2 N3: escape / lớp ký tự / wildcard khớp `..`
+        ("Glob", {"pattern": r"\.\./\.\./.claude/*"}),
+        ("Glob", {"pattern": "[.][.]/[.][.]/.claude/*"}),
+        ("Glob", {"pattern": ".[.]/x/*"}),
+        ("Glob", {"pattern": ".?/.?/.claude/*"}),
+        ("Glob", {"pattern": ".*/x/*"}),
+        ("Glob", {"pattern": "?./x/*"}),
+        ("Glob", {"pattern": "sub/??/*.json"}),
+        ("Grep", {"pattern": "x", "glob": "[.][.]/**"}),
     ],
 )
 def test_wrk_br_07_brace_and_dotdot_patterns_denied(
