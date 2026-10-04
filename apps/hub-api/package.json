@@ -4,10 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "bun --env-file=../../.env.local --watch src/server.ts",
     "typecheck": "tsc -p . --noEmit"
   },
   "dependencies": {
-    "@ai/contracts": "workspace:*"
+    "@ai/contracts": "workspace:*",
+    "@ai/db": "workspace:*",
+    "drizzle-orm": "0.45.3",
+    "hono": "4.13.12",
+    "ioredis": "6.0.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@ai/config": "workspace:*",

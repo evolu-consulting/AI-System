@@ -1,0 +1,78 @@
+// HUB-NFR-04 · H1-R26 · dựng app Hono của hub-api (plan H1 §4). Factory thuần: không đọc env, để test in-process.
+// Middleware: request_id → logger (child có request_id) → CORS. Lỗi theo `CHAT_API_ERRORS` (contract chat).
+import { HealthResponseSchema } from "@ai/contracts/chat";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
+import { type Logger, logger } from "./lib/logger";
+
+export type AppVars = { Variables: { requestId: string; log: Logger } };
+export type AppConfig = { version: string; corsOrigins: string[] };
+/** Kiểm phụ thuộc cho /health; ném lỗi = không sẵn sàng → 503. Vắng (test khung) → luôn ok. */
+export type HealthProbe = () => Promise<void>;
+export type AppDeps = { probes?: HealthProbe[] };
+
+const REQUEST_ID_HEADER = "X-Request-Id";
+const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
+const ALLOW_HEADERS = [
+  "Content-Type",
+  "Authorization",
+  "X-Client",
+  "Last-Event-ID",
+  REQUEST_ID_HEADER,
+];
+
+function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
+  const r = new Hono<AppVars>();
+  r.get("/", async (c) => {
+    const results = await Promise.allSettled(probes.map((p) => p()));
+    const failed = results.find((x): x is PromiseRejectedResult => x.status === "rejected");
+    if (failed) {
+      c.get("log").warn("health-unavailable", safeErrorFields(failed.reason));
+      return c.json(toErrorBody("INTERNAL_ERROR", "Service unavailable"), 503);
+    }
+    // `.parse`: version sai định dạng thành 500, không trả body sai contract.
+    return c.json(HealthResponseSchema.parse({ status: "ok", version: cfg.version }));
+  });
+  return r;
+}
+
+export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
+  const app = new Hono<AppVars>();
+
+  // Không bao giờ log body, Authorization, Cookie (CONVENTIONS §5, A52).
+  app.use(async (c, next) => {
+    const incoming = c.req.header(REQUEST_ID_HEADER);
+    const id = incoming && REQUEST_ID_RE.test(incoming) ? incoming : crypto.randomUUID();
+    c.set("requestId", id);
+    c.set("log", logger.child({ request_id: id }));
+    const t0 = performance.now();
+    await next();
+    c.res.headers.set(REQUEST_ID_HEADER, id);
+    c.get("log").info("request", {
+      method: c.req.method,
+      path: c.req.path,
+      status: c.res.status,
+      ms: Math.round((performance.now() - t0) * 10) / 10,
+    });
+  });
+  app.use(
+    cors({
+      origin: cfg.corsOrigins,
+      credentials: true,
+      allowHeaders: ALLOW_HEADERS,
+      exposeHeaders: [REQUEST_ID_HEADER],
+    }),
+  );
+
+  app.route("/health", healthRoutes(cfg, deps.probes ?? []));
+
+  app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
+  app.onError((err, c) => {
+    const { status, body } = mapError(err);
+    if (status >= 500) c.get("log").error("unhandled", safeErrorFields(err));
+    return c.json(body, status);
+  });
+
+  return app;
+}

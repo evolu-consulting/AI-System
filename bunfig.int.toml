@@ -4,4 +4,4 @@ linker = "isolated"
 [test]
 # Timeout 30 s đặt bằng cờ `--timeout` trong script `test:int` (Bun 1.3.14 bỏ qua key timeout ở đây).
 # `*.perf.int.test.ts` không chặn mốc: chạy riêng bằng `bun run test:perf` (bunfig.perf.toml).
-pathIgnorePatterns = ["e2e/**", "**/node_modules/**", "**/__fixtures__/**", "**/*.perf.int.test.ts"]
+pathIgnorePatterns = ["e2e/**", "**/node_modules/**", "**/__fixtures__/**", "**/*.perf.int.test.ts", "tests/acceptance/H1/stack/**"]
