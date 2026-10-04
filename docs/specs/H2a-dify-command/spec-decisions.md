@@ -70,6 +70,9 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 | B-D2-2 | Thêm `GRANT USAGE ON SCHEMA hub TO hub_ro` trong `0003` | `plan-db` §1.3 bỏ sót: không có USAGE thì `SET ROLE hub_ro; select * from hub.workflow_secret(…)` → 42501. Không kèm quyền bảng nào (schema `hub` không có default privileges cho `hub_ro`); M2/M3 chạy trên DB Admin không có migration Hub nên không đổi |
 | B-D2-3 | Test D2 = `packages/db/src/hub-h2a.int.test.ts` (D1 là `hub-h2a-schema.int.test.ts`); chạy cục bộ trên DB Hub riêng `ai_system_h2a_d2_hub_test` (`HUB_TEST_DATABASE_URL` trong `.env.test-h2a_d2.local`) | `db:test:create` chép nguyên `HUB_TEST_DATABASE_URL` = `ai_system_h1_test` dùng chung giữa các agent → test Hub các phiên giẫm nhau |
 
+## BUILD — D1b (backend-lead, 2026-10-05)
+- B-D1b-1: Migration mới `migrations-hub/0004_h2a_jobs_checks.sql` (+ `_journal.json`) nới `jobs_error_code_check` thêm `NOT_CONFIGURED`, `jobs_error_reason_check` thêm `credential`/`upstream` theo C2 (`HUB_JOB_ERROR_CODES`, `JOB_FAIL_REASONS`; `plan-errors` §2) — D1 sót (qc A89b); DROP+ADD trong `DO $$` chỉ khi định nghĩa cũ thiếu giá trị; các CHECK khác (`runs_error_code_ck` = `CHAT_RUN_ERROR_CODES`, `jobs_status`, `agent_types_runtime`) đã khớp contract; `schema/hub.ts` không có hằng mã lỗi job nên không đổi.
+
 ## WRITE — QW-R (qc) — 2026-10-05
 - R36: H2a-R02 ghi "∧ F cấp cho user/group" nhưng luật gốc M3-R11 và code Admin cho `core` hiệu lực **không cần grant**; R02 yêu cầu "đúng luật M3" + parity ⇒ theo Admin. Sửa `test-plan-cases` R36 (điều phối, trước Q2).
 - R61: `mcpConfigFor(…, url)` nhận URL `/mcp` đầy đủ, trả nguyên văn (ghi `plan-rules`).

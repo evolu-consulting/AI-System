@@ -1,6 +1,9 @@
 // HUB-FR-95 · WRK-FR-06 · migration 0002_h2a_dify phần cột/CHECK/bảng (D1, plan H2a §3, plan-db §1.1–1.2).
+// D1b: migration 0004_h2a_jobs_checks nới CHECK jobs.error_code/error_reason theo C2.
 // Chạy trên DB Hub riêng (HUB_TEST_DATABASE_URL); hàm D2 có test riêng.
+
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { HUB_JOB_ERROR_CODES, JOB_FAIL_REASONS } from "@ai/contracts/hub";
 import { sql as dsql } from "drizzle-orm";
 import postgres from "postgres";
 import { createDb } from "./client";
@@ -122,6 +125,22 @@ describe("HUB-FR-95 · 0002_h2a_dify D1 (int)", () => {
     expect(await code(insertJob("agent.cli", AG, tok))).toBe("ok");
     expect(await code(insertJob("agent.run", AG, tok))).toBe("23505");
     expect(await code(insertJob("agent.run", AG, Buffer.alloc(16, 1)))).toBe("23514");
+  });
+
+  test("jobs D1b: error_code/error_reason nhận đủ HUB_JOB_ERROR_CODES/JOB_FAIL_REASONS (C2); giá trị lạ 23514", async () => {
+    const ch = chains.a as Chain;
+    const failed = (errCode: string, reason: string | null) =>
+      owner`insert into hub.jobs (tenant_id, user_id, run_id, step_id, conversation_id, agent_id, type,
+        provider_key, payload, status, finished_at, error_code, error_reason, error_message)
+        values (${T1}, ${U1}, ${ch.run}, ${ch.step}, ${ch.conv}, null, 'workflow.async', 'dify', '{}'::jsonb,
+          'failed', now(), ${errCode}, ${reason}, 'lỗi thử')`;
+    expect(await code(failed("NOT_CONFIGURED", "credential"))).toBe("ok");
+    expect(await code(failed("NOT_CONFIGURED", "upstream"))).toBe("ok");
+    expect(await code(failed("UPSTREAM_ERROR", "upstream"))).toBe("ok");
+    for (const c of HUB_JOB_ERROR_CODES) expect(await code(failed(c, null))).toBe("ok");
+    for (const r of JOB_FAIL_REASONS) expect(await code(failed("INTERNAL_ERROR", r))).toBe("ok");
+    expect(await code(failed("BUDGET_EXCEEDED", "upstream"))).toBe("23514");
+    expect(await code(failed("NOT_CONFIGURED", "khac"))).toBe("23514");
   });
 
   test("providers: vendor dify hợp lệ, giá trị lạ vẫn bị chặn", async () => {
