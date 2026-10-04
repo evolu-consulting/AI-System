@@ -140,3 +140,23 @@ HUB-FR-31 fallback nhiều bước → H2 (Q-T6) · HUB-FR-02 command/workflow/f
 **Lý do đỏ bước 3:** 1 ca của Admin M4 (không thuộc H1/Hub): `poll` ở `tests/acceptance/M4/_ab.ts:129` chờ `["pending", 1, "MAIL_SEND_FAILED"]`, nhận `["pending", 2, "MAIL_SEND_FAILED"]` (`attempts` 2 thay vì 1; dòng 150 của `quota-alerts.int.test.ts`). Chạy riêng file đó 3 lần ngay sau: 11/11 xanh cả 3 → **không ổn định (đua thời gian khi tải nặng)**: dispatcher thử lại lần 2 trước khi `poll` kịp đọc `attempts=1`. Không phát hiện đỏ ở code Hub/Runtime. Chưa phân biệt được test thiếu chịu đua hay code alert thử lại quá nhanh.
 
 **Tranh chấp test (qc, không sửa test):** M4-AC18 khẳng định tức thời `attempts == 1` sau lần gửi lỗi đầu, nhưng không loại trừ lần thử lại tự nhiên của dispatcher; cần chủ M4 (qc/backend Admin) phân xử. Hub/H1 không bị ảnh hưởng. Dọn: không còn process :4000/:3001 hay container `ai-hub-dev-runtime`/`qc-h1-stack-*`.
+
+**`done:h1` lượt cuối sau review — lượt 2 · 2026-10-04** (sau lượt 1 đỏ do M4-AC18 chập chờn; điều phối quyết chạy lại) — HEAD `24a8947`, đủ một lượt, 24 m 14 s: **XANH 13/13** (bước 1–11 chặn, 12–13 báo cáo). Lượt 2 là kết quả được dùng.
+
+| # | Bước | Kết quả | Ghi chú |
+|---|---|---|---|
+| 1 | `turbo typecheck` Hub | xanh | cache |
+| 2 | `bun test` contracts/db/rules/R14 | xanh | 350 pass |
+| 3 | int H1 + M + ADM-NFR-06 | xanh | 1572 pass, 0 fail, 17,6 phút (M4-AC18 xanh lần này) |
+| 4 | `contracts:check` | xanh | 13 pass |
+| 5 | Python (ruff, pyright, lint-imports, pytest, `-m int`) | xanh | 243 unit + 67 int |
+| 6 | `test:h1:stack` | xanh | 4 pass, 1,6 phút |
+| 7 | contract chat, Hub thật + admin-api | xanh | 41 pass |
+| 8 | `test:lock:verify` | xanh | |
+| 9 | `trace --check` | xanh | |
+| 10 | `check:size --all` | xanh | |
+| 11 | depcruise Hub | xanh | |
+| 12 | `tsc -p tsconfig.tests.json` (báo cáo) | xanh | |
+| 13 | `depcruise --all` (báo cáo) | xanh | |
+
+Ghi chú cho phiên Admin: M4-AC18 chập chờn khi tải nặng — `_ab.ts:129` chờ attempts=1 nhận 2 (lượt 1 đỏ, chạy riêng 3/3 xanh, lượt 2 xanh); phiên Admin phân xử.
