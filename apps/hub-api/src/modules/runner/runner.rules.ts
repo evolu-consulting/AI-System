@@ -14,9 +14,12 @@ import {
   JOB_FAIL_REASONS,
   type JobFailReason,
   JobOutputSchema,
+  type McpConfig,
   type RunEvent,
   type TokenUsage,
+  type WorkflowAsyncJob,
 } from "@ai/contracts/hub";
+import type { WorkflowJobInput } from "../commands/catalog.types";
 import type { AgentConfig, ProfileConfig } from "../config/config.rules";
 
 export type AgentRole = "orchestrator" | "agent";
@@ -215,4 +218,33 @@ export function compareStreamId(a: string, b: string): number {
   if (am !== bm) return am < bm ? -1 : 1;
   if (as !== bs) return as < bs ? -1 : 1;
   return 0;
+}
+
+// HUB-FR-89, HUB-FR-50 · H2a-R13, R18, P10 · job `workflow.async`, cấu hình MCP, requeue orphan (plan-rules).
+// B0: chỉ chữ ký — thân làm ở B6/B8.
+
+export type OrphanJob = {
+  type: "agent.cli" | "workflow.async";
+  attempts: number;
+  sideEffect: boolean;
+  dispatched: boolean;
+};
+
+/** Kết quả parse `WorkflowAsyncJobSchema`; không khoá secret/URL; `side_effect` theo cờ workflow. */
+export function buildWorkflowJobPayload(i: WorkflowJobInput): WorkflowAsyncJob {
+  throw new Error(`not implemented: buildWorkflowJobPayload(${i.jobId})`);
+}
+
+/** `toolKeys` rỗng → `null`; có → `{url, tools}` (token không ở đây, P4). */
+export function mcpConfigFor(
+  agent: AgentConfig,
+  toolKeys: readonly string[],
+  url: string,
+): McpConfig | null {
+  throw new Error(`not implemented: mcpConfigFor(${agent.key}, ${toolKeys.length}, ${url.length})`);
+}
+
+/** R13/P10: `workflow.async` ∧ `attempts < 3` ∧ ¬(`sideEffect` ∧ `dispatched`) → requeue; còn lại → fail. */
+export function orphanAction(j: OrphanJob): "requeue" | "fail" {
+  throw new Error(`not implemented: orphanAction(${j.type}, ${j.attempts})`);
 }

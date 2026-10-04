@@ -51,3 +51,14 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 - Áp mặc định của biên bản (điều phối): S1 → `plan.md` §6 (`server/discover` chế độ 2026-07-28: `resultType`, `ttlMs`, `cacheScope:"private"`, `id` chuỗi; `initialize` 2025-11-25) + `test-plan.md` A52 (trước QW, test chưa viết); S2 → `plan-runtime` §5 (content str tách tại `
 ` đầu); S3 → §4.2 `MCP_TOOL_TIMEOUT`; S4 → §4.2 không log `get_mcp_status`; S5 → §4.3 allow = `{}`.
 - Biên bản đổi tên `spike-s1.md` → `spike-mcp.md` cho khớp tasks/plan-runtime/test-plan-cases.
+
+## BUILD — B0 (backend-lead, 2026-10-05)
+| # | Quyết định | Lý do |
+|---|---|---|
+| B-B0-1 | Stub ném `Error("not implemented: <hàm>(…)")`, message chỉ chứa độ dài/kiểu tham số (không giá trị) | Test qc đỏ đúng lý do; dùng tham số nên không cần đổi tên `_x` (giữ chữ ký `plan-rules`) |
+| B-B0-2 | Kiểu tự đặt tên (không có trong `plan-rules`): `ClassifiedMessage`, `BoundArgs`, `BuildInputsInput/Result`, `UsableCommand`, `SuggestCandidate`, `McpToolsInput`, `ToolArgsResult`, `OrphanJob`, `ConfirmationPrompt`, `WorkflowInputValue` (`catalog.types`) | Gom hình đã chốt trong `plan-rules` thành tên export cho test/service dùng lại |
+| B-B0-3 | `DifyEvent` = `delta{text}` · `meta{taskId?, conversationId?}` · `finished{status: string, outputs \| null, usage: unknown}` (`message_end` → `status:"succeeded"`) · `error{message: string \| null}` · `ignore`; `usage` để thô, chuẩn hoá bằng `difyUsage` | `message` để ghi `run_steps.detail.upstream` (đã `maskSecret`, plan §5.2); `status` chuỗi vì Dify có thể thêm trạng thái — luật `failed/stopped` ở B4 |
+| B-B0-4 | `RpcRequest{kind:"request", id: RpcId \| null, method, params}` (`id=null` = notification) · `RpcError{kind:"error", id, code: -32700\|-32600\|-32601\|-32602\|-32603, message}`; `JsonSchemaObject{type:"object", properties{type, description, enum?}, required}` | Phân biệt bằng `kind`; `select` → `enum` (R52) |
+| B-B0-5 | `lib/secret-crypto.ts` Hub chỉ chép phần **giải mã** (`isMasterKeyB64`, `parseMasterKey`, `secretAad`, `decryptSecret`) — không `encryptSecret`/`selfTestSecretKey`. Vector: khoá thử byte 0x00..0x1f, 2 ca (key_version 1/2, Unicode) sinh bằng `encryptSecret` Admin rand cố định, nhúng trong test | P6; Hub không mã hoá. Tự kiểm khởi động (plan §8) để B4 quyết (vd giải thử một vector cố định) |
+| B-B0-6 | `lib/job-token.ts` thêm `JOB_TOKEN_RE`/`isJobToken` (43 ký tự base64url, plan §6 Auth) cạnh `hashJobToken`; băm UTF-8 (= ASCII với token hợp lệ). Vector sha256 tính độc lập bằng `sha256sum` | Kiểm hình token trước khi tra DB (B6/B8) |
+| B-B0-7 | Stub `buildWorkflowJobPayload`/`mcpConfigFor`/`orphanAction` thêm cuối `runner/runner.rules.ts` (218 → 250 dòng); `runner` import kiểu `WorkflowJobInput` từ `commands/catalog.types` | `plan-rules` ghi `runner.rules.ts (+)`; chỉ import kiểu, depcruise xanh |
