@@ -9,6 +9,7 @@ import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
 import { type Logger, logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
+import { conversationRoutes } from "./modules/conversations/conversations.routes";
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
 export type AppVars = {
@@ -65,6 +66,13 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
   return r;
 }
 
+/** JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E11. Vắng `db` (test khung) ⇒ không mount. */
+function mountProtected(app: Hono<AppVars>, deps: AppDeps): void {
+  const auth = requireAuth(deps.jwtPublicKey);
+  for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
+  if (deps.db) app.route("/conversations", conversationRoutes(deps.db));
+}
+
 export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   const app = new Hono<AppVars>();
   const config = deps.db
@@ -101,11 +109,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
     }),
   );
 
-  const auth = requireAuth(deps.jwtPublicKey);
-  // `/x/*` của Hono khớp cả `/x`.
-  for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
-
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
+  mountProtected(app, deps);
 
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
