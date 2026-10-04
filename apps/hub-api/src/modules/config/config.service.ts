@@ -70,6 +70,8 @@ export class ConfigCache {
   readonly #opts: ConfigCacheOptions;
   #hub: ConfigSnapshot | null = null;
   #adminVersion = -1;
+  /** Tăng mỗi lần bắt đầu nạp Admin: `user()` chỉ cache khi không có lần nạp nào xen giữa (tránh ghi đè dữ liệu mới). */
+  #adminGen = 0;
   #tenants = new Map<string, TenantState>();
   #users = new Map<string, UserState>();
   #unlisten: (() => Promise<void>)[] = [];
@@ -134,8 +136,9 @@ export class ConfigCache {
     await this.ready();
     const hit = this.#users.get(id);
     if (hit) return hit;
+    const gen = this.#adminGen;
     const [u] = await this.#src.loadUsers([id]);
-    if (u && !this.#users.has(id)) this.#users.set(id, u);
+    if (u && gen === this.#adminGen && !this.#users.has(id)) this.#users.set(id, u);
     return u;
   }
 
@@ -161,6 +164,7 @@ export class ConfigCache {
   }
 
   async #loadAdmin(): Promise<void> {
+    this.#adminGen++;
     // Đọc phiên bản TRƯỚC dữ liệu: thay đổi xen giữa làm phiên bản mới hơn ⇒ vòng poll sau nạp lại, không bỏ sót.
     const { admin } = await this.#src.readVersions();
     const tenants = await this.#src.loadTenants();

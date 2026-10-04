@@ -237,3 +237,34 @@ describe("ConfigCache · nạp lỗi", () => {
     await c.stop();
   });
 });
+
+describe("ConfigCache · đua user() với nạp Admin", () => {
+  test("HUB-FR-03 · user() đọc cũ xen lần nạp Admin → không cache bản cũ; lần sau đọc bản mới", async () => {
+    const src = fakeSource();
+    const U2 = "00000000-0000-4000-8000-000000000022";
+    const old: UserState = { ...(src.db.users[0] as UserState), id: U2, locale: "vi" };
+    src.db.users.push(old);
+    const c = startCache(src);
+    await c.ready();
+    const load = src.loadUsers;
+    let release = () => {};
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    src.loadUsers = async (ids) => {
+      const rows = await load(ids);
+      if (ids.length === 1 && ids[0] === U2) await gate;
+      return rows;
+    };
+    const slow = c.user(U2);
+    await tick();
+    src.db.users = src.db.users.map((u) => (u.id === U2 ? { ...u, locale: "en" } : u));
+    src.db.admin = 2;
+    await c.reloadAdmin();
+    release();
+    expect((await slow)?.locale).toBe("vi");
+    src.loadUsers = load;
+    expect((await c.user(U2))?.locale).toBe("en");
+    await c.stop();
+  });
+});
