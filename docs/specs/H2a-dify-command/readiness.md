@@ -17,3 +17,15 @@
 | 10–23 | Thấp | nhiều | R18 theo P4; spec credential đủ `{base_url, api_key, app_type}`; AC-H22 `create-trello-card`; HUB-FR-33 phạm vi; kiểu `WorkflowJobInput`/`CatalogCommand`; `ClaimedJob.token` default `""`; `NO_PROXY` luôn đặt; đường dẫn test H1 sai; ma trận FR-24→R61, FR-80→A10/A15/A56/A70/P02; M03 (spike) không blocked W1; fixture `/hoi`, `/so`; `levenshtein` trên NFC; test-plan > 25 600 B; ghi TLS `/internal/*`, `/mcp` vào PRODUCTION-NOTES (→ ghi `spec-decisions` mục combine, không sửa file dùng chung) | Theo bảng của readiness | BE / qc |
 
 **Mâu thuẫn tài liệu (sửa trước Gate):** HUB-BR-11 tên tool vs key có `-` (giữ key, CR sửa BA); HUB-FR-24 "payload gồm token MCP" vs P4 (giữ P4, CR sửa BA); Q1 người dùng chấp nhận GRANT cột vs P1 hàm SECURITY DEFINER (giữ P1, nêu ở Gate); ROADMAP H2a còn `chat-ext` (sửa).
+
+## Lần 2 · 2026-10-05 · spec-readiness (Opus) · **NOT READY** (phần đổi `637f337..HEAD`)
+Đóng: #1–#23 + 4 mâu thuẫn (Q1 ↔ P1 còn trình ở Gate). Mới do sửa song song:
+
+| # | Mức | Vị trí | Lỗ hổng | Mặc định (áp dụng) |
+|---|---|---|---|---|
+| N1 | Cao | plan-runtime §3.1 `retry_delay(…, sent)` ↔ -dify §3.4 ↔ cases §1.9 | `sent` chưa định nghĩa | Bỏ `sent`: `connect` = chưa gửi; còn lại theo §3.4 (`side_effect` ∧ ≠`connect` ⇒ `None`) |
+| N2 | Cao | tasks QW-PU ↔ Q3 | Test QW-PU khoá sau PY-01 | Task `Q-PU` khoá `test_dify_rules.py` ngay sau QW-PU; PY-01 phụ thuộc Q-PU |
+| N3 | Cao | plan §7 `maskInputs` | Cắt rồi mới che ⇒ lộ một phần key | Che trước rồi cắt; A55 thêm key bắt đầu ở vị trí 190 |
+| N4 | Cao | cases P30; tasks QW-PU Đọc | P30 không có bảng ca, trỏ sai mục | Trỏ -dify §3.2, §3.4, §3.5, §3.7; thêm vào Đọc QW-PU; ca tối thiểu `map_failure` 7 `ErrKind`, `usage_row`, `reduce` |
+| N5 | Cao | tasks PY-01 Đọc | Thiếu plan-runtime §3.1 | Thêm |
+| N6–N11 | Thấp | cases §1.9 nhãn `ErrKind` + hàng `read`/`empty`; Q-T3 đóng (CR-035); tổng số ca 197, QW-A1 40; plan-errors thêm `UNAVAILABLE` 503, A71 ghi mã; plan §5.3 thời điểm `step.started` async + bỏ qua `job.started` lặp; sinh lại `ba-*.html` ở I3 | Theo readiness |
