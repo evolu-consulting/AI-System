@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hướng dẫn test Admin</title>
+<style>
+:root{--bg:#f7f7f9;--card:#fff;--fg:#1d1d24;--muted:#5f5f6e;--line:#e3e3ea;--accent:#4b47c4;--ok:#1f7a4d;--warn:#9a5b00;--code:#f0f0f5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15151b;--card:#1e1e26;--fg:#ececf2;--muted:#a3a3b3;--line:#32323e;--accent:#9a97ff;--ok:#5fd39a;--warn:#f0b35a;--code:#2a2a35}}
+:root[data-theme="dark"]{--bg:#15151b;--card:#1e1e26;--fg:#ececf2;--muted:#a3a3b3;--line:#32323e;--accent:#9a97ff;--ok:#5fd39a;--warn:#f0b35a;--code:#2a2a35}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:920px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:26px;margin:0 0 4px}
+h2{font-size:19px;margin:32px 0 8px;padding-top:8px;border-top:1px solid var(--line)}
+h3{font-size:15px;margin:18px 0 6px}
+p,li{color:var(--fg)}
+.sub{color:var(--muted);margin:0 0 16px}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;background:var(--code);border-radius:6px}
+code{padding:1px 5px}
+pre{padding:10px 12px;overflow-x:auto;margin:6px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.kv b{display:block;font-size:12px;color:var(--muted);font-weight:500}
+.step{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line)}
+.step:last-child{border-bottom:0}
+.step input{margin-top:4px;width:18px;height:18px;accent-color:var(--accent);flex:none}
+.step label{flex:1;cursor:pointer}
+.exp{display:block;color:var(--muted);font-size:13.5px;margin-top:2px}
+.exp::before{content:"Kỳ vọng: ";color:var(--ok);font-weight:600}
+.done label{opacity:.6}
+.tag{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);margin-left:6px;vertical-align:middle}
+.warn{border-left:3px solid var(--warn)}
+.bar{position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:2;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.progress{flex:1;min-width:160px;height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.progress span{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+button{font:inherit;font-size:13px;padding:5px 10px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:12.5px}
+</style>
+</head>
+<body>
+<main>
+<h1>Hướng dẫn test Admin app</h1>
+<p class="sub">Phạm vi M0–M4 · cập nhật 2026-10-04 · chạy local trên <code>main</code></p>
+
+<div class="bar">
+  <div class="progress" aria-hidden="true"><span id="pbar"></span></div>
+  <span id="ptext">0/0</span>
+  <button type="button" id="reset">Xoá tick</button>
+  <button type="button" id="theme">Đổi giao diện</button>
+</div>
+
+<h2>1. Chuẩn bị</h2>
+<div class="card">
+<p>Chạy trong thư mục <code>D:\AI\ai-system</code>. Trong Claude Code gõ <code>!</code> trước lệnh.</p>
+<pre>docker compose up -d --wait
+bun run db:migrate
+bun run db:seed
+bun run dev</pre>
+<p>Cần có trong <code>.env.local</code>: <code>SECRET_MASTER_KEY</code> (tạo bằng <code>bun run keys:dev</code> nếu thiếu), <code>SEED_ADMIN_PASSWORD</code>, <code>SMTP_URL=smtp://127.0.0.1:1025</code>.</p>
+<div class="grid">
+  <div class="kv"><b>Web admin</b><a href="http://localhost:3000">http://localhost:3000</a></div>
+  <div class="kv"><b>API</b><a href="http://localhost:3001">http://localhost:3001</a></div>
+  <div class="kv"><b>Hộp thư test (Mailpit)</b><a href="http://localhost:8025">http://localhost:8025</a></div>
+  <div class="kv"><b>Đăng nhập đầu tiên</b>Mã công ty <code>platform</code> · user <code>admin</code> · mật khẩu = <code>SEED_ADMIN_PASSWORD</code></div>
+</div>
+</div>
+<div class="card warn">Máy đang ít RAM: nên tắt các phiên Claude/Chat khác khi test để dev server không bị dừng.</div>
+
+<h2>2. Các bước test</h2>
+<p class="sub">Tick từng bước khi đạt kỳ vọng. Tiến độ lưu trong trình duyệt này.</p>
+
+<h3>A. Đăng nhập &amp; tài khoản <span class="tag">M1</span></h3>
+<div class="card" data-group>
+<div class="step"><input type="checkbox" id="a1"><label for="a1">Đăng nhập <code>platform</code> / <code>admin</code>.<span class="exp">Vào Tổng quan của platform; sidebar có nhóm Hệ thống (Chi phí &amp; quota, Nhật ký, Import / Export).</span></label></div>
+<div class="step"><input type="checkbox" id="a2"><label for="a2">Đăng nhập sai mật khẩu 5 lần với một user thử.<span class="exp">Lần 5 bị khoá tạm 15 phút, có câu "Tạm khoá đến hh:mm".</span></label></div>
+<div class="step"><input type="checkbox" id="a3"><label for="a3">Đổi ngôn ngữ VI ↔ EN ở menu avatar.<span class="exp">Toàn bộ chữ đổi, không hiện key thô.</span></label></div>
+</div>
+
+<h3>B. Tenant &amp; User <span class="tag">M1</span></h3>
+<div class="card">
+<div class="step"><input type="checkbox" id="b1"><label for="b1">Tenants › Tạo tenant <code>acme</code> kèm tenant_admin đầu tiên (có email).<span class="exp">Tenant xuất hiện; tự có group <code>beta-testers</code>.</span></label></div>
+<div class="step"><input type="checkbox" id="b2"><label for="b2">Users › tạo thêm 2–3 member cho <code>acme</code>.<span class="exp">Danh sách có cột Groups; lọc theo group được.</span></label></div>
+<div class="step"><input type="checkbox" id="b3"><label for="b3">Mở cùng một user ở 2 tab, sửa ở tab 1 rồi lưu tab 2.<span class="exp">Hộp thoại "Có người vừa lưu bản mới hơn" kèm bảng khác biệt, có Ghi đè / Tải bản mới.</span></label></div>
+<div class="step"><input type="checkbox" id="b4"><label for="b4">Đăng xuất, đăng nhập bằng tenant_admin của <code>acme</code>.<span class="exp">Chỉ thấy dữ liệu của <code>acme</code>; không có Import / Export.</span></label></div>
+</div>
+
+<h3>C. Catalog: Secret, Workflow, Command, Feature <span class="tag">M2</span></h3>
+<div class="card">
+<div class="step"><input type="checkbox" id="c1"><label for="c1">(platform) Secrets › tạo secret.<span class="exp">Chỉ hiện 4 ký tự cuối; không bao giờ xem lại được giá trị.</span></label></div>
+<div class="step"><input type="checkbox" id="c2"><label for="c2">Workflows › tạo workflow có mô tả và input.<span class="exp">Lưu được; workflow chưa gắn command hiện "Chưa gắn".</span></label></div>
+<div class="step"><input type="checkbox" id="c3"><label for="c3">Commands › tạo <code>/dich</code>, map input (thử map sai kiểu).<span class="exp">Sai kiểu chỉ cảnh báo, vẫn lưu được.</span></label></div>
+<div class="step"><input type="checkbox" id="c4"><label for="c4">Features › tạo feature "Kế toán", gắn command, cấp entitlement cho <code>acme</code>.<span class="exp">Tab "Ai dùng được" của command hiện tenant và số user thấy.</span></label></div>
+</div>
+
+<h3>D. Group &amp; Phân quyền <span class="tag">M3</span></h3>
+<div class="card">
+<div class="step"><input type="checkbox" id="d1"><label for="d1">Groups › tạo group "Kế toán", dán danh sách username để thêm thành viên.<span class="exp">Báo số đã thêm / không tìm thấy / đã có.</span></label></div>
+<div class="step"><input type="checkbox" id="d2"><label for="d2">Phân quyền › Ma trận: tick "Kế toán" × group "Kế toán", Lưu.<span class="exp">Lưu một lần; feature chưa entitlement không tick được.</span></label></div>
+<div class="step"><input type="checkbox" id="d3"><label for="d3">Phân quyền › Kiểm tra quyền: chọn một thành viên và một user ngoài group.<span class="exp">Thành viên thấy command; user kia có "Vì sao không?" và gợi ý "Cấp cho group…".</span></label></div>
+<div class="step"><input type="checkbox" id="d4"><label for="d4">(platform) Thu hồi entitlement "Kế toán" của <code>acme</code>, rồi cấp lại.<span class="exp">Thu hồi: mất quyền; cấp lại: grant cũ có hiệu lực lại, không phải cấp lại.</span></label></div>
+</div>
+
+<h3>E. Quota, cảnh báo, Chi phí, Tổng quan <span class="tag">M4</span></h3>
+<div class="card">
+<div class="step"><input type="checkbox" id="e1"><label for="e1">(platform) Tenants › <code>acme</code> › tab Quota: thêm quota "Kế toán" 1000 run/tháng, Lưu.<span class="exp">Lưu được; sửa tab Thông tin sau đó không bị báo xung đột.</span></label></div>
+<div class="step"><input type="checkbox" id="e2"><label for="e2">Sinh usage nền (60 ngày, 3 feature mẫu):<pre>bun run mock:quota -- --tenant acme --seed</pre><span class="exp">Màn Chi phí &amp; quota có biểu đồ theo ngày và bảng top.</span></label></div>
+<div class="step"><input type="checkbox" id="e3"><label for="e3">Đẩy feature "Kế toán" lên 85% (thay <code>ke-toan</code> bằng key thật của feature):<pre>bun run mock:quota -- --tenant acme --feature ke-toan --runs 850</pre><span class="exp">Mailpit nhận 1 mail "80%" gửi tenant_admin; tenant_admin thấy banner "Đã dùng 85% quota tháng này", không có nút đóng.</span></label></div>
+<div class="step"><input type="checkbox" id="e3b"><label for="e3b">Vượt 100%:<pre>bun run mock:quota -- --tenant acme --feature ke-toan --runs 200</pre><span class="exp">Mailpit nhận 1 mail "100%" (không gửi lại mail 80%); banner chuyển mức vượt quota.</span></label></div>
+<div class="step"><input type="checkbox" id="e4"><label for="e4">Chi phí &amp; quota: đổi kỳ, xuất CSV; so sánh platform với tenant_admin.<span class="exp">tenant_admin không thấy cột chi phí/biên; hàng thiếu giá hiện "Chưa định giá"; CSV mở được bằng Excel.</span></label></div>
+<div class="step"><input type="checkbox" id="e5"><label for="e5">Tổng quan (cả 2 role).<span class="exp">Có KPI, tenant gần chạm quota, thay đổi gần đây; thẻ cần Hub hiện "—" kèm chú thích.</span></label></div>
+</div>
+
+<h3>F. Nhật ký &amp; Khôi phục <span class="tag">M4</span></h3>
+<div class="card">
+<div class="step"><input type="checkbox" id="f1"><label for="f1">Sửa command <code>/dich</code> 2 lần, rồi vào Nhật ký.<span class="exp">Dòng "admin đã sửa command /dich"; lọc theo loại / hành động / thời gian được.</span></label></div>
+<div class="step"><input type="checkbox" id="f2"><label for="f2">Mở chi tiết thay đổi mới nhất › "Khôi phục bản trước".<span class="exp">Command về lại bản trước; Nhật ký có thêm dòng khôi phục.</span></label></div>
+<div class="step"><input type="checkbox" id="f3"><label for="f3">Mở chi tiết thay đổi của secret.<span class="exp">Không hiện giá trị secret; chỉ ghi "đã đổi giá trị". Không có nút khôi phục cho user/tenant/secret/grant.</span></label></div>
+<div class="step"><input type="checkbox" id="f4"><label for="f4">(tenant_admin) mở Nhật ký.<span class="exp">Chỉ thấy thay đổi của <code>acme</code>; không có nút khôi phục.</span></label></div>
+</div>
+
+<h3>G. Import / Export <span class="tag">M4 · platform</span></h3>
+<div class="card">
+<div class="step"><input type="checkbox" id="g1"><label for="g1">Import / Export › Export: chọn các loại, tải file YAML.<span class="exp">File không chứa giá trị secret (chỉ tên).</span></label></div>
+<div class="step"><input type="checkbox" id="g2"><label for="g2">Sửa nhẹ file (đổi mô tả một workflow, thêm một command), Import.<span class="exp">Xem trước liệt kê Thêm / Sửa / Không đổi kèm diff; chưa ghi gì.</span></label></div>
+<div class="step"><input type="checkbox" id="g3"><label for="g3">Bấm Áp dụng.<span class="exp">Áp dụng một lần; Nhật ký có một dòng "đã import".</span></label></div>
+<div class="step"><input type="checkbox" id="g4"><label for="g4">Xem trước, rồi sửa gì đó ở tab khác, rồi mới Áp dụng.<span class="exp">Báo cấu hình đã đổi, yêu cầu xem trước lại.</span></label></div>
+<div class="step"><input type="checkbox" id="g5"><label for="g5">Import file hỏng / file &gt; 1 MB / file thiếu secret.<span class="exp">Báo lỗi rõ theo dòng; file thiếu secret thì yêu cầu nhập giá trị secret.</span></label></div>
+</div>
+
+<h3>H. Xác thực hai bước (2FA) <span class="tag">M4</span></h3>
+<div class="card">
+<div class="step"><input type="checkbox" id="h1"><label for="h1">Menu avatar › Xác thực hai bước › Bật: nhập mật khẩu, quét QR bằng Google Authenticator / Microsoft Authenticator, nhập mã.<span class="exp">Hiện 10 mã dự phòng; phải tải/sao chép và tick xác nhận mới Hoàn tất.</span></label></div>
+<div class="step"><input type="checkbox" id="h2"><label for="h2">Đăng xuất, đăng nhập lại.<span class="exp">Sau mật khẩu có bước "Mã xác thực" (6 số, tự gửi khi đủ).</span></label></div>
+<div class="step"><input type="checkbox" id="h3"><label for="h3">Đăng nhập bằng một mã dự phòng (chọn "Dùng mã dự phòng").<span class="exp">Vào được; dùng lại đúng mã đó lần sau bị từ chối.</span></label></div>
+<div class="step"><input type="checkbox" id="h4"><label for="h4">Nhập sai mã 5 lần.<span class="exp">Lần 6 bị khoá tạm 15 phút.</span></label></div>
+<div class="step"><input type="checkbox" id="h5"><label for="h5">(admin khác) Users › ⋯ › Tắt 2FA cho user đó.<span class="exp">User đăng nhập lại không còn bước mã; phiên đang mở của user vẫn giữ.</span></label></div>
+<div class="step"><input type="checkbox" id="h6"><label for="h6">Member mở <code>/account/2fa</code>.<span class="exp">Bị chuyển về trang member.</span></label></div>
+</div>
+
+<h2>3. Chưa có trong bản này</h2>
+<div class="card">
+<table>
+<tr><th>Mục</th><th>Lý do</th></tr>
+<tr><td>Nút Test command, cấp agent cho group, kiểm tra quyền phần agent</td><td>Cần Agent Hub (mốc M5)</td></tr>
+<tr><td>Thẻ "Command lỗi nhiều nhất", "Agent Studio" ở Tổng quan</td><td>Cần dữ liệu run của Hub — hiện "—"</td></tr>
+<tr><td>Tab Feature trong màn Tenant</td><td>Để sau (TECH-DEBT #29); cấp entitlement ở màn Features</td></tr>
+<tr><td>Đo hiệu năng</td><td>Đánh giá sau (<code>bun run test:perf</code>, TECH-DEBT #27)</td></tr>
+<tr><td>Import khi một loại có &gt; 5000 mục</td><td>Giới hạn hiện tại (TECH-DEBT #35)</td></tr>
+</table>
+</div>
+
+<h2>4. Báo lỗi</h2>
+<div class="card">
+<p>Gửi cho Claude theo mẫu, mỗi lỗi một mục:</p>
+<pre>Bước: E3 (hoặc mô tả ngắn)
+Đăng nhập: platform/admin hay acme/&lt;user&gt;
+Làm gì: …
+Thấy gì: … (ảnh chụp nếu có)
+Mong đợi: …</pre>
+</div>
+</main>
+<script>
+(function(){
+  var KEY="admin-test-guide-v1";
+  var boxes=[].slice.call(document.querySelectorAll('.step input[type=checkbox]'));
+  var saved={};
+  try{saved=JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){saved={}}
+  function render(){
+    var n=0;
+    boxes.forEach(function(b){b.closest('.step').classList.toggle('done',b.checked);if(b.checked)n++});
+    document.getElementById('pbar').style.width=(boxes.length?n*100/boxes.length:0)+'%';
+    document.getElementById('ptext').textContent=n+'/'+boxes.length;
+  }
+  boxes.forEach(function(b){
+    b.checked=!!saved[b.id];
+    b.addEventListener('change',function(){
+      saved[b.id]=b.checked;
+      try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}
+      render();
+    });
+  });
+  document.getElementById('reset').addEventListener('click',function(){
+    saved={};boxes.forEach(function(b){b.checked=false});
+    try{localStorage.removeItem(KEY)}catch(e){}
+    render();
+  });
+  document.getElementById('theme').addEventListener('click',function(){
+    var r=document.documentElement,cur=r.getAttribute('data-theme');
+    var dark=cur?cur==="dark":matchMedia('(prefers-color-scheme: dark)').matches;
+    r.setAttribute('data-theme',dark?'light':'dark');
+  });
+  render();
+})();
+</script>
+</body>
+</html>
