@@ -53,9 +53,11 @@ Luật: composition (`JobRun` giữ `self.proc_host: HostProcess`), không mixin
 ErrKind = Literal["connect", "http_5xx", "read", "http_4xx", "sse_error", "finished_failed", "empty"]
 # connect: ConnectError/ConnectTimeout (chưa gửi) · read: ReadError/RemoteProtocolError/ReadTimeout · empty: kết quả rỗng
 BACKOFF: tuple[float, ...] = (2.0, 8.0)          # Settings.dify_backoff_s (AGENT_RT_DIFY_BACKOFF_S)
-def retry_delay(err_kind: ErrKind, attempt: int, first_seen: bool, side_effect: bool, sent: bool,
+def retry_delay(err_kind: ErrKind, attempt: int, first_seen: bool, side_effect: bool,
                 backoff: tuple[float, ...] = BACKOFF) -> float | None: ...
     # attempt = số lần đã gọi (1-based): 1 → backoff[0], 2 → backoff[1], ≥ 3 → None; bảng `-dify` §3.4
+    # không có tham số `sent`: err_kind == "connect" ⇔ request chưa gửi (retry kể cả side_effect);
+    # side_effect ∧ err_kind ≠ "connect" ⇒ None
 def map_failure(err_kind: ErrKind, http_status: int | None) -> tuple[Literal["UPSTREAM_ERROR", "NOT_CONFIGURED"], Literal["upstream", "invalid_output"]]: ...
     # http_4xx ∧ status ∈ {401, 403, 404} → NOT_CONFIGURED/upstream · empty → UPSTREAM_ERROR/invalid_output · còn lại → UPSTREAM_ERROR/upstream
 @dataclass(frozen=True)
@@ -229,5 +231,5 @@ PY-00, PY-S1 (ngay sau Gate, song song) → C2 → PY-01 → … → PY-06. Bả
 | RQ5 | Lỗi đọc giữa stream sau sự kiện đầu | Không retry, `UPSTREAM_ERROR`, stop best-effort |
 | RQ6 | Tiến độ lộ số bước | Chỉ số thứ tự, không tên node |
 | RQ7 | Credential 401 sau claim | ✓ đổi: `NOT_CONFIGURED`/`credential` (`plan-errors` §2); Kết thúc vô hại nếu job không còn của mình |
-| RQ8 | `output_field = null` lấy khoá nào | `"text"` ở cả hai bên — `finalText` TS cần ghi rõ (plan §7) |
+| RQ8 | `output_field = null` lấy khoá nào | `"text"` ở cả hai bên — `finalText` TS cần ghi rõ (`plan-rules.md`) |
 | RQ9 | `app_type` credential ≠ payload | `NOT_CONFIGURED`/`credential`, không gọi Dify |

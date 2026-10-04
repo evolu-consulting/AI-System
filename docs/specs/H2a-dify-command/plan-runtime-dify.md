@@ -18,7 +18,7 @@ Tách từ `plan-runtime.md` §3 (trần 30 KB); **số mục giữ nguyên** (�
 - Không phát `delta` (R12); Hub nhận `job.result{output:{kind:"text", text}}` (RT7).
 
 ### 3.4 Vòng thử và retry (WRK-FR-06, R13, Q6)
-Hàm thuần `retry_delay(err_kind, attempt, first_seen, side_effect, sent) -> float | None` (`policy.py`, chữ ký đủ kiểu + `ErrKind`: `plan-runtime` §3.1; cột Lỗi ghi `err_kind`); `BACKOFF = AGENT_RT_DIFY_BACKOFF_S` mặc định `(2, 8)` (test `(0.2, 0.8)`).
+Hàm thuần `retry_delay(err_kind, attempt, first_seen, side_effect) -> float | None` (không có `sent`: `connect` = request **chưa gửi** ⇒ retry được kể cả `side_effect`; `side_effect=true` ∧ `err_kind ≠ connect` ⇒ `None`; còn lại theo bảng) (`policy.py`, chữ ký đủ kiểu + `ErrKind`: `plan-runtime` §3.1; cột Lỗi ghi `err_kind`); `BACKOFF = AGENT_RT_DIFY_BACKOFF_S` mặc định `(2, 8)` (test `(0.2, 0.8)`).
 
 | Lỗi | `first_seen` (đã nhận `workflow_started`/chunk/`message` đầu) | `side_effect` | Retry? | Mã · `reason` cuối |
 |---|---|---|---|---|

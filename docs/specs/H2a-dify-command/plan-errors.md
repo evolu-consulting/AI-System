@@ -9,6 +9,7 @@ Câu **nguyên văn** (kể cả dấu chấm). Không tham số động, không
 | `CMD_MISSING_ARG` | 422 | Missing or invalid command argument | `{missing: string[], invalid: string[]}` (luôn đủ hai khoá) |
 | `UNAUTHORIZED` (`/internal/*`) | 401 | Unauthorized | — |
 | `NOT_CONFIGURED` (credential, test-run trước khi gọi) | 409 | Not configured | — |
+| `UNAVAILABLE` (`/internal/test-run` khi vắng `HUB_INTERNAL_TOKEN`) | 503 | Service unavailable | — |
 `/mcp` 401: body rỗng, header `WWW-Authenticate: Bearer`.
 
 ## 2. Ánh xạ lỗi Dify (R11) — `mapDifyHttpError` / `interpretDifyEvent`, dùng chung TS và Python (RT3)
