@@ -41,6 +41,10 @@ SET_PGID = (
     """UPDATE hub.jobs SET pgid = $3 WHERE id = $1 AND worker_id = $2 AND status = 'running';"""  # noqa: E501
 )
 
+FINISH = """UPDATE hub.jobs SET status = $3, result = $4, error_code = $5, error_reason = $6, error_message = $7,
+  finished_at = now(), pgid = NULL
+WHERE id = $1 AND worker_id = $2 AND status = 'running';"""  # noqa: E501 — nguyên văn plan-db §5.4 "Kết thúc"
+
 HEARTBEAT = """UPDATE hub.jobs SET heartbeat_at = now() WHERE worker_id = $1 AND status = 'running' RETURNING id, cancel_requested_at IS NOT NULL AS cancel;"""  # noqa: E501
 
 SWEEP_ORPHANS = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE status = 'running' AND heartbeat_at < now() - make_interval(secs => $1) RETURNING id, run_id, worker_id, pgid;"""  # noqa: E501
@@ -98,6 +102,26 @@ async def claim_one(conn: Conn, providers: list[str], worker_id: str) -> Claimed
 
 async def set_pgid(conn: Conn, job_id: str, worker_id: str, pgid: int) -> bool:
     return await conn.execute(SET_PGID, job_id, worker_id, pgid) == "UPDATE 1"
+
+
+@dataclass(frozen=True)
+class Finish:
+    """Câu đầu của transaction "Kết thúc" (usage/cli_sessions/provider_state: PY-11/PY-12)."""
+
+    status: str
+    result: dict[str, Any] | None = None
+    error_code: str | None = None
+    error_reason: str | None = None
+    error_message: str | None = None
+
+
+async def finish_job(conn: Conn, job_id: str, worker_id: str, f: Finish) -> bool:
+    """True nếu job còn `running` của mình và đã chuyển trạng thái (0 dòng → không XADD, R2)."""
+    result = json.dumps(f.result) if f.result is not None else None
+    status = await conn.execute(
+        FINISH, job_id, worker_id, f.status, result, f.error_code, f.error_reason, f.error_message
+    )
+    return status == "UPDATE 1"
 
 
 async def heartbeat(conn: Conn, worker_id: str) -> dict[str, bool]:

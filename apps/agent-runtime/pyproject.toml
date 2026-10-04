@@ -8,6 +8,7 @@ requires-python = ">=3.12"
 dependencies = [
   "asyncpg>=0.31",
   "pydantic-settings>=2.15",
+  "redis>=8.1",
   "structlog>=26.1",
 ]
 
@@ -18,7 +19,6 @@ dev = [
   "pytest>=8.4",
   "pytest-asyncio>=1.0",
   "import-linter>=2.3",
-  "redis>=8.1",
   "datamodel-code-generator>=0.71",
 ]
 

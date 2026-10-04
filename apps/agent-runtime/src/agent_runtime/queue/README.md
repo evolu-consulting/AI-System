@@ -9,4 +9,4 @@
 | `sweeper.py` | **chỉ** quét orphan (`AGENT_RT_ORPHAN_S`); khởi động lại/dừng → `orphaned` |
 | `orphans.py` | giết group job host sót (kiểm `cmdline` có `--job-id=<id>`) |
 | `supervisor.py` | job đang giữ + lý do dừng (`cancel`/`lost`/`shutdown`) |
-| `host.py` | chỗ cắm `JobHost` (PY-06) và `JobEvents` (PY-05); bản tạm chỉ log |
+| `host.py` | Protocol `JobHost`/`JobEvents` + `JobControl`; bản thật `runtimes/cli/runner.py`, `events/job_events.py` (nối ở `main`) |

@@ -2,6 +2,7 @@
 (plan-runtime §1.5). PY-03: config (sai → exit 2), log, chờ SIGTERM/SIGINT → exit 0; dịch vụ chết
 → exit 1 (systemd chạy lại). PY-04: khởi động hàng đợi (pool + LISTEN, manifest, dọn job sót),
 dịch vụ claimer/listener/heartbeat/sweeper; SIGTERM → ngừng claim, job đang chạy → `orphaned`.
+PY-06: Redis PING + XADD (`RunEvents`), job host process con (`CliJobHost`).
 """
 
 import asyncio
@@ -13,10 +14,13 @@ from typing import Any
 from pydantic import ValidationError
 
 from agent_runtime.config import Settings, load_settings
+from agent_runtime.db.pool import Pool
+from agent_runtime.events.job_events import RunEvents
 from agent_runtime.log import configure_logging, get_logger
 from agent_runtime.queue import runtime as queue_runtime
-from agent_runtime.queue.host import LogJobEvents, PendingJobHost
 from agent_runtime.queue.runtime import QueueRuntime
+from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
+from agent_runtime.sandbox.process import enable_subreaper
 
 Service = Callable[[], Coroutine[Any, Any, None]]
 
@@ -61,9 +65,20 @@ def build_services(rt: QueueRuntime) -> list[Service]:
     return rt.services()
 
 
+def host_config(settings: Settings) -> HostConfig:
+    s = settings
+    return HostConfig(s.worker_id, s.work_dir, s.log_dir, s.home, s.app_env, s.kill_grace_s)
+
+
 async def start_queue(settings: Settings) -> QueueRuntime:
-    # TODO(WRK-FR-03): PY-05/PY-06 — thay `LogJobEvents`/`PendingJobHost` bằng XADD + job host thật.
-    return await queue_runtime.start(settings, PendingJobHost(), LogJobEvents())
+    """Bước 3–8 §1.5; job host thật + XADD `run:<id>`; subreaper (dự phòng §13, plan §2.3)."""
+    enable_subreaper()
+    cfg = host_config(settings)
+
+    def make_host(pool: Pool, events: RunEvents) -> CliJobHost:
+        return CliJobHost(pool, events, cfg)
+
+    return await queue_runtime.start(settings, make_host)
 
 
 async def _start_unless_stopped(settings: Settings, stop: asyncio.Event) -> QueueRuntime | None:

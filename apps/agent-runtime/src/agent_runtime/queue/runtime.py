@@ -1,9 +1,9 @@
 """WRK-FR-01 · WRK-FR-02 · WRK-FR-23 · H1-R20 · Khởi động / dừng phần hàng đợi của process cha
 (plan-runtime §1.5 bước 3, 5–9 và pha SIGTERM; §2.4).
 
-Thứ tự: pool + kết nối LISTEN → registry provider → manifest `agent_types` (mốc "sẵn sàng") →
-dọn job sót của `worker_id` + reset provider `error`/`logged_out` → dịch vụ claimer, listener,
-heartbeat, sweeper. Dừng: ngừng claim (TaskGroup đã huỷ dịch vụ) → dừng job đang chạy →
+Thứ tự: pool + kết nối LISTEN → Redis PING → registry provider → manifest `agent_types` (mốc
+"sẵn sàng") → dọn job sót của `worker_id` + reset provider `error`/`logged_out` → dịch vụ claimer,
+listener, heartbeat, sweeper. Dừng: ngừng claim (TaskGroup đã huỷ dịch vụ) → dừng job đang chạy →
 `orphaned` → đóng DB.
 """
 
@@ -15,19 +15,23 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any
 
+from redis.asyncio import Redis
+
 from agent_runtime.agents.manifest import manifests
 from agent_runtime.config import Settings
 from agent_runtime.db import agent_types_sql, jobs_sql
 from agent_runtime.db.pool import ListenConn, Pool, connect_listen, create_pool
+from agent_runtime.events.job_events import RunEvents, connect_redis
 from agent_runtime.log import get_logger
 from agent_runtime.queue.claimer import Claimer
 from agent_runtime.queue.heartbeat import run_heartbeat
-from agent_runtime.queue.host import JobEvents, JobHost
+from agent_runtime.queue.host import JobHost
 from agent_runtime.queue.listener import Listener
 from agent_runtime.queue.supervisor import Supervisor
 from agent_runtime.queue.sweeper import SweepConfig, orphan_own_jobs, run_sweeper
 
 Service = Callable[[], Coroutine[Any, Any, None]]
+HostFactory = Callable[[Pool, RunEvents], JobHost]
 CLOSE_TIMEOUT_S = 2.0
 
 
@@ -44,7 +48,8 @@ class QueueRuntime:
     settings: Settings
     pool: Pool
     listen: ListenConn
-    events: JobEvents
+    redis: Redis
+    events: RunEvents
     supervisor: Supervisor
     claimer: Claimer
 
@@ -73,7 +78,7 @@ class QueueRuntime:
             if n:
                 log.warning("runtime.jobs_orphaned", count=n)
         finally:
-            await _close(self.listen.close(), self.pool.close())
+            await _close(self.listen.close(), self.pool.close(), self.redis.aclose())
 
 
 async def _close(*aws: Coroutine[Any, Any, None]) -> None:
@@ -82,11 +87,13 @@ async def _close(*aws: Coroutine[Any, Any, None]) -> None:
             await asyncio.gather(*aws, return_exceptions=True)
 
 
-async def start(settings: Settings, host: JobHost, events: JobEvents) -> QueueRuntime:
+async def start(settings: Settings, make_host: HostFactory) -> QueueRuntime:
     log = get_logger()
     dsn = settings.database_url.get_secret_value()
     pool = await create_pool(dsn)
     listen = await connect_listen(dsn)
+    redis = await connect_redis(settings.redis_url.get_secret_value())
+    events = RunEvents(redis, settings.worker_id)
     providers = registry_providers(settings)
     async with pool.acquire() as conn:
         await agent_types_sql.write_manifest(conn, settings.worker_id, manifests())
@@ -95,6 +102,6 @@ async def start(settings: Settings, host: JobHost, events: JobEvents) -> QueueRu
     async with pool.acquire() as conn:
         await jobs_sql.reset_providers(conn, providers)
     log.info("runtime.ready", providers=providers, orphaned=n)
-    sup = Supervisor(host)
+    sup = Supervisor(make_host(pool, events))
     claimer = Claimer(pool, sup, events, providers)
-    return QueueRuntime(settings, pool, listen, events, sup, claimer)
+    return QueueRuntime(settings, pool, listen, redis, events, sup, claimer)
