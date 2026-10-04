@@ -129,66 +129,90 @@ export type RunEventStreamOpts = {
   pingMs?: number;
 };
 
+const ENC = new TextEncoder();
+type Ctl = ReadableStreamDefaultController<Uint8Array>;
+
+/** Một người xem: đẩy entry `seq > last`, ping, đóng đúng một lần (sự kiện kết thúc / đã có / tắt instance). */
+class EventStreamSession {
+  #last: number;
+  #closed = false;
+  #unsub = () => {};
+  #ping: ReturnType<typeof setInterval> | undefined;
+  readonly #onAbort = () => this.end();
+
+  constructor(
+    private readonly o: RunEventStreamOpts,
+    private readonly ctl: Ctl,
+  ) {
+    this.#last = o.after;
+  }
+
+  async start(): Promise<void> {
+    const { o } = this;
+    if (o.signal?.aborted) return this.end();
+    o.signal?.addEventListener("abort", this.#onAbort, { once: true });
+    this.#ping = setInterval(() => this.#tick(), o.pingMs ?? SSE_HEARTBEAT_S * 1000);
+    try {
+      this.#push(await o.reader.range(o.runId, o.after));
+      if (this.#closed) return;
+      this.#unsub = o.reader.subscribe(o.runId, this.#last, (e) => this.#push(e));
+      await this.#check();
+    } catch (err) {
+      if (this.#closed) return;
+      this.stop();
+      this.ctl.error(err);
+    }
+  }
+
+  stop(): void {
+    this.#closed = true;
+    clearInterval(this.#ping);
+    this.#unsub();
+    this.o.signal?.removeEventListener("abort", this.#onAbort);
+  }
+
+  end(): void {
+    if (this.#closed) return;
+    this.stop();
+    this.ctl.close();
+  }
+
+  #tick(): void {
+    if (this.#closed) return;
+    this.ctl.enqueue(ENC.encode(SSE_PING_FRAME));
+    this.#check().catch((err) => this.o.log.warn("sse-ensure-failed", safeErrorFields(err)));
+  }
+
+  /** Id kết thúc đã biết ≤ id đã gửi → client có đủ, đóng. */
+  async #check(): Promise<void> {
+    const seq = await this.o.ensureTerminal();
+    if (seq !== null && seq <= this.#last) this.end();
+  }
+
+  #push(entries: SseEntry[]): void {
+    for (const e of entries) {
+      if (this.#closed || e.seq <= this.#last) continue;
+      this.#last = e.seq;
+      this.ctl.enqueue(ENC.encode(sseFrame(e)));
+      if (isTerminalEvent(e.event)) this.end();
+    }
+  }
+}
+
 /**
  * Stream SSE của một run: entry `seq > after` rồi theo dõi tới sự kiện kết thúc (đóng stream). Mỗi nhịp ping cũng
  * gọi `ensureTerminal` (chủ chết sau COMMIT trước XADD). Client ngắt → huỷ đăng ký, run vẫn chạy (HUB-FR-42).
  * Client đã có sự kiện kết thúc (`Last-Event-ID` ≥ id của nó) → đóng ngay, không giữ đăng ký + ping.
  */
 export function runEventStream(o: RunEventStreamOpts): ReadableStream<Uint8Array> {
-  const enc = new TextEncoder();
-  let stop = () => {};
+  let session: EventStreamSession | undefined;
   return new ReadableStream<Uint8Array>({
     start(ctl) {
-      let last = o.after;
-      let closed = false;
-      let unsub = () => {};
-      const end = () => {
-        if (closed) return;
-        stop();
-        ctl.close();
-      };
-      const check = async () => {
-        const seq = await o.ensureTerminal();
-        if (seq !== null && seq <= last) end();
-      };
-      const ping = setInterval(
-        () => {
-          if (closed) return;
-          ctl.enqueue(enc.encode(SSE_PING_FRAME));
-          check().catch((err) => o.log.warn("sse-ensure-failed", safeErrorFields(err)));
-        },
-        o.pingMs ?? SSE_HEARTBEAT_S * 1000,
-      );
-      const onAbort = () => end();
-      stop = () => {
-        closed = true;
-        clearInterval(ping);
-        unsub();
-        o.signal?.removeEventListener("abort", onAbort);
-      };
-      if (o.signal?.aborted) return end();
-      o.signal?.addEventListener("abort", onAbort, { once: true });
-      const push = (entries: SseEntry[]) => {
-        for (const e of entries) {
-          if (closed || e.seq <= last) continue;
-          last = e.seq;
-          ctl.enqueue(enc.encode(sseFrame(e)));
-          if (isTerminalEvent(e.event)) end();
-        }
-      };
-      return (async () => {
-        push(await o.reader.range(o.runId, o.after));
-        if (closed) return;
-        unsub = o.reader.subscribe(o.runId, last, push);
-        await check();
-      })().catch((err) => {
-        if (closed) return;
-        stop();
-        ctl.error(err);
-      });
+      session = new EventStreamSession(o, ctl);
+      return session.start();
     },
     cancel() {
-      stop();
+      session?.stop();
     },
   });
 }
