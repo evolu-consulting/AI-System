@@ -16,6 +16,7 @@ from contextlib import suppress
 from pathlib import Path
 
 from agent_runtime.contracts.hub import JobPayload1
+from agent_runtime.providers.base import ProviderJob
 
 MCP_SERVER = "hub"
 TOOL_PREFIX = f"mcp__{MCP_SERVER}__"
@@ -44,6 +45,16 @@ def mcp_tool_names(payload: JobPayload1) -> list[str]:
     if payload.mcp is None:
         return []
     return [tool_name(t.root) for t in payload.mcp.tools]
+
+
+def job_mcp_tools(job: ProviderJob) -> list[str]:
+    """Tên `mcp__hub__<k>` của job con khi cha đã ghi file cấu hình (agent, không phải lần thử
+    lại); `claude-sub` và `fake-cli` dùng chung (hook `SandboxPolicy.mcp_tools`)."""
+    if job.mcp_config_path is None:
+        return []
+    if not mcp_enabled(job.payload, retry=job.retry_prompt is not None):
+        return []
+    return mcp_tool_names(job.payload)
 
 
 def tool_timeout_ms(timeout_s: int) -> int:

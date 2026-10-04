@@ -2,6 +2,10 @@
 (plan-runtime-fake §7). Chạy trong job host như provider thật; chỉ nạp khi `APP_ENV` ∈
 {development, test} (`providers/registry.py`). Session giả (`remember`/`recall`/`lost-session`,
 `sessions.py`) chỉ khi `use_session` — AC-W04, H1-R23 (PY-11).
+H2a (PY-06, `plan-runtime` §6): `#fake:tool=<key>` với key ∈ `payload.mcp.tools` (job có file MCP)
+→ `tool_use{mcp__hub__<key>}` → hook (policy có `mcp_tools`) → `tools/call` thật (`mcp_call.py`);
+`CONFIRMATION_REQUIRED` → `Confirm` (cha ép `need_input`). Key ngoài danh sách → nghĩa H1.
+`#fake:mcp-list` → `tools/list`. Orchestrator: câu đồng ý → delegate lại theo tin trước (S01).
 """
 
 from __future__ import annotations
@@ -13,6 +17,7 @@ from pathlib import Path
 from typing import cast
 
 from agent_runtime.providers.base import (
+    Confirm,
     Emit,
     Final,
     Progress,
@@ -22,14 +27,18 @@ from agent_runtime.providers.base import (
     ToolUse,
     UsageEv,
 )
+from agent_runtime.providers.claude.mcp import job_mcp_tools, read_bearer, tool_name
 from agent_runtime.providers.fake.directives import (
     clean,
     directives,
     message_of,
+    redelegate_message,
     seconds,
     task_without_delegate,
+    tool_args,
     usage_pair,
 )
+from agent_runtime.providers.fake.mcp_call import call_tool, list_tools
 from agent_runtime.providers.fake.sessions import load, new_id, save
 from agent_runtime.providers.fake.state import bump_badjson
 from agent_runtime.sandbox.hook import SandboxPolicy, make_path_guard
@@ -40,6 +49,7 @@ FAKE_TAIL = (
     "đoạn delta khi phát luồng trả lời cho người dùng cuối trong các bài kiểm thử."
 )
 BAD_JSON = '{"status": "done", "text": '
+MCP_PROGRESS = "Đang gọi công cụ"  # = nhãn `claude-sub` (§4.4)
 
 
 async def _sleep(total_s: float, emit: Emit) -> None:
@@ -58,6 +68,7 @@ async def _guarded(job: ProviderJob, tool: str, tool_input: dict[str, object]) -
         Path(job.work_dir),
         tuple(Path(p) for p in job.forbidden_roots),
         frozenset(job.payload.allowed_tools),
+        mcp_tools=frozenset(job_mcp_tools(job)),
     )
     out = await make_path_guard(policy)({"tool_name": tool, "tool_input": tool_input}, None, None)
     spec = cast("dict[str, object]", out.get("hookSpecificOutput") or {})
@@ -71,6 +82,48 @@ def _read_len(job: ProviderJob, raw: str) -> int:
         return len(Path(job.work_dir, raw).read_text(errors="replace"))
     except OSError:
         return 0
+
+
+def _mcp_target(job: ProviderJob, found: dict[str, str]) -> tuple[str, str, str] | None:
+    """(url, Authorization, key) khi job có MCP và `#fake:tool=<key>` ∈ `payload.mcp.tools`."""
+    mcp, path, key = job.payload.mcp, job.mcp_config_path, found.get("tool")
+    if mcp is None or path is None or key is None or tool_name(key) not in job_mcp_tools(job):
+        return None
+    return mcp.url, read_bearer(path) or "", key
+
+
+async def _mcp_tool(job: ProviderJob, msg: str, target: tuple[str, str, str], emit: Emit) -> str:
+    url, auth, key = target
+    name = tool_name(key)
+    await emit(ToolUse(name=name))
+    await emit(Progress(label=MCP_PROGRESS))
+    args = tool_args(msg)
+    if args is None:
+        return "bad_args"
+    denied = await _guarded(job, name, args)
+    if denied:
+        return f"denied:{denied}"
+    got = await call_tool(url, auth, key, dict(args))
+    if isinstance(got, Confirm):
+        await emit(got)  # cha ép `need_input{question, choices}` (§5 #4)
+        return "confirmation_required"
+    return got
+
+
+async def _mcp_list(job: ProviderJob) -> str:
+    if job.payload.mcp is None or job.mcp_config_path is None or not job_mcp_tools(job):
+        return "mcp_unavailable"
+    return await list_tools(job.payload.mcp.url, read_bearer(job.mcp_config_path) or "")
+
+
+async def _mcp_first(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -> str | None:
+    """Gọi MCP **trước** `sleep`/`usage` (job còn `running` sau lời gọi — P01, P24); None = không
+    có chỉ thị MCP áp dụng (giữ nghĩa H1)."""
+    if (target := _mcp_target(job, found)) is not None:
+        return await _mcp_tool(job, msg, target, emit)
+    if "mcp-list" in found:
+        return await _mcp_list(job)
+    return None
 
 
 async def _body(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -> str:
@@ -198,6 +251,8 @@ class FakeProvider:
         text_out = job.payload.output == "text"
         kind = "text" if text_out else "agent_result"
         msg = message_of(job.payload.prompt, orchestrator=text_out)
+        if text_out and (prev := redelegate_message(job.payload.prompt, msg)) is not None:
+            msg = prev  # S01: "Đồng ý" → delegate lại agent của tin trước, cùng `task`
         found = directives(msg)
         if "crash" in found:
             os._exit(3)
@@ -209,13 +264,14 @@ class FakeProvider:
             if not await _badjson(job, found, emit):
                 await _finish(emit, _orchestrator(msg, found, ""), reported=False)
             return
+        mcp_body = None if text_out else await _mcp_first(job, msg, found, emit)
         await _side_effects(job, found, emit)
         if "ratelimit" in found:
             await _ratelimit(found, kind, emit)
             return
         if await _badjson(job, found, emit):
             return
-        body = await _body(job, msg, found, emit)
+        body = mcp_body if mcp_body is not None else await _body(job, msg, found, emit)
         if "recall" in found:
             body = f"recall: {memory.get('word', '')}"
         final = _orchestrator(msg, found, body) if text_out else _agent(found, body)

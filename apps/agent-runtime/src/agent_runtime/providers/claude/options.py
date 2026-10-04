@@ -18,7 +18,7 @@ from claude_agent_sdk import ClaudeAgentOptions, HookMatcher
 from claude_agent_sdk.types import HookCallback, HookContext, HookInput, HookJSONOutput
 
 from agent_runtime.providers.base import ProviderJob
-from agent_runtime.providers.claude.mcp import MCP_BLOCK, mcp_enabled, mcp_tool_names
+from agent_runtime.providers.claude.mcp import MCP_BLOCK, job_mcp_tools
 from agent_runtime.providers.context import neutralize_mentions
 from agent_runtime.sandbox.hook import PathGuard, SandboxPolicy, make_path_guard
 
@@ -106,15 +106,6 @@ def sdk_hook(guard: PathGuard) -> HookCallback:
     return hook
 
 
-def mcp_tools_of(job: ProviderJob) -> list[str]:
-    """§4.2: tên `mcp__hub__<k>` khi job có file cấu hình MCP (agent, không phải lần thử lại)."""
-    if job.mcp_config_path is None:
-        return []
-    if not mcp_enabled(job.payload, retry=job.retry_prompt is not None):
-        return []
-    return mcp_tool_names(job.payload)
-
-
 def policy_of(job: ProviderJob, tools: list[str]) -> SandboxPolicy:
     return SandboxPolicy(
         job_id=str(job.payload.job_id),
@@ -122,7 +113,7 @@ def policy_of(job: ProviderJob, tools: list[str]) -> SandboxPolicy:
         forbidden_roots=tuple(Path(r) for r in job.forbidden_roots),
         tools=frozenset(tools),
         structured_output=job.payload.output == "agent_result",  # có `output_format` (S2)
-        mcp_tools=frozenset(mcp_tools_of(job)),
+        mcp_tools=frozenset(job_mcp_tools(job)),
     )
 
 
@@ -144,7 +135,7 @@ def build_options(job: ProviderJob) -> ClaudeAgentOptions:
     p = job.payload
     tools = job_tools(job)
     agent = p.output == "agent_result"
-    mcp = mcp_tools_of(job)
+    mcp = job_mcp_tools(job)
     guard = make_path_guard(policy_of(job, tools))
     return ClaudeAgentOptions(
         cwd=job.work_dir,
