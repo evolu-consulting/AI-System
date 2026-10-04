@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Quyền agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px}
+.btn{font:inherit;font-size:14px;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn-d{border-color:#B42318;color:#B42318}
+.nav a{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;color:#3B3450;text-decoration:none}
+.nav a:hover{background:#F7F6FA;color:#1D1733}
+.nav a.on{background:#EDE6FB;color:#4A3278;font-weight:600}
+.grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#736C89;margin:16px 12px 6px}
+.sub{font-size:12px;color:#635C78}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 14px;border-bottom:1px solid #E6E3EE;white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.cell{font:inherit;display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:110px;min-height:44px;padding:6px 10px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#4F4865;cursor:pointer;text-align:left}
+.cell.on{background:#E3F4EC;border-color:#9FD4BC;color:#05603F}
+.cell.sel{outline:2px solid #6B4FA0;outline-offset:2px}
+h2{margin:0;font-size:16px;font-weight:600}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh">
+<nav class="nav" aria-label="Agent Studio" style="flex: 1 1 220px; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6E3EE; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 14px; font-weight: 700; font-size: 16px; color: #2E2150"><span style="color: #6B4FA0">✦</span>Agent Studio</div>
+<a href="#">Tổng quan</a>
+<div class="grp">Cấu hình agent</div>
+<a href="Main.dc.html">Agents <span class="badge b-info">6</span></a>
+<a href="Orchestrator.dc.html">Orchestrator</a>
+<a href="#">Tools</a>
+<a href="Models.dc.html">Models <span class="badge b-warn">1</span></a>
+<a href="#">Secrets</a>
+<div class="grp">Truy cập</div>
+<a href="Access.dc.html" class="on" aria-current="page">Quyền agent</a>
+<div class="grp">Thử nghiệm</div>
+<a href="Playground.dc.html">Playground</a>
+<div class="grp">Vận hành</div>
+<a href="#">Runs</a>
+<a href="#">Chi phí &amp; usage</a>
+<a href="#">Jobs &amp; Worker</a>
+<div class="grp">Hệ thống</div>
+<a href="#">Nhật ký thay đổi</a>
+<a href="#">Import / Export</a>
+</nav>
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 32px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE">
+<div style="font-size: 13px; color: #635C78">Agent Studio <span style="color: #B3ADC4">/</span> <span style="color: #1D1733; font-weight: 500">Quyền agent</span></div>
+<span class="badge b-off mono">hub config v18</span>
+</header>
+<main style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; max-width: 1240px; width: 100%; box-sizing: border-box">
+<div>
+<h1 style="margin: 0; font-size: 22px; font-weight: 700">Quyền agent</h1>
+<p style="margin: 6px 0 0; color: #635C78">Tầng 1 ở đây: tenant nào được có agent nào (entitlement). Tầng 2 — group/user nào trong tenant được dùng — do tenant admin cấp ở Admin › Groups.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" style="flex: 999 1 560px; min-width: 0; overflow-x: auto">
+<table>
+<thead><tr><th>Agent \ Tenant</th><th class="mono">platform</th><th class="mono">acme</th><th class="mono">beta-co</th><th class="mono">gamma</th></tr></thead>
+<tbody>
+<tr><td><strong style="font-weight: 600">Kiểm tra hoá đơn</strong><div class="mono sub">hoadon</div></td>
+<td><button class="cell on" type="button" aria-pressed="true">Đã cấp<span class="sub">1 group</span></button></td>
+<td><button class="cell on sel" type="button" aria-pressed="true">Đã cấp<span class="sub">2 group · 1 user</span></button></td>
+<td><button class="cell on" type="button" aria-pressed="true">Đã cấp<span class="sub">chưa grant</span></button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td></tr>
+<tr><td><strong style="font-weight: 600">Trợ lý chung</strong><div class="mono sub">assistant</div></td>
+<td><button class="cell on" type="button" aria-pressed="true">Đã cấp<span class="sub">tất cả</span></button></td>
+<td><button class="cell on" type="button" aria-pressed="true">Đã cấp<span class="sub">beta-testers</span></button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td></tr>
+<tr><td><strong style="font-weight: 600">Tạo thẻ Trello</strong><div class="mono sub">trello</div></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td>
+<td><button class="cell on" type="button" aria-pressed="true">Đã cấp<span class="sub">1 group</span></button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td></tr>
+<tr><td><strong style="font-weight: 600">Dev helper</strong><div class="mono sub">dev-helper</div></td>
+<td><button class="cell on" type="button" aria-pressed="true">Đã cấp<span class="sub">Kỹ thuật</span></button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td></tr>
+<tr style="color: #8A839E"><td><strong style="font-weight: 600">Báo cáo bán hàng</strong><div class="mono sub">sales-report · đang tắt</div></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td>
+<td><button class="cell" type="button" aria-pressed="false">Chưa cấp</button></td></tr>
+</tbody>
+</table>
+</section>
+<aside class="card" aria-label="Chi tiết hoadon × acme" style="flex: 1 1 320px; min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+<div><div class="sub">Chi tiết</div><h2><span class="mono" style="font-size: 15px">hoadon</span> × <span class="mono" style="font-size: 15px">acme</span></h2></div>
+<dl style="margin: 0; display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; font-size: 13px">
+<dt class="sub">Cấp lúc</dt><dd style="margin: 0">02/10/2026 09:12</dd>
+<dt class="sub">Người cấp</dt><dd style="margin: 0">Minh (platform_admin)</dd>
+</dl>
+<div><div class="sub" style="margin-bottom: 8px">Grant trong tenant (chỉ xem)</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<li style="display: flex; justify-content: space-between"><span>Group <strong style="font-weight: 600">Kế toán</strong></span><span class="sub">bởi tadmin</span></li>
+<li style="display: flex; justify-content: space-between"><span>Group <strong style="font-weight: 600">Mua hàng</strong></span><span class="sub">bởi tadmin</span></li>
+<li style="display: flex; justify-content: space-between"><span>User <strong style="font-weight: 600">lan</strong></span><span class="sub">bởi tadmin</span></li>
+</ul></div>
+<p class="sub" style="margin: 0">Grant do tenant admin cấp trong Admin › Groups.</p>
+<button class="btn btn-d" type="button">Thu hồi entitlement…</button>
+<p class="sub" style="margin: 0">Thu hồi: 3 grant trong <span class="mono">acme</span> mất hiệu lực trong ≤ 5 giây (run đang chạy vẫn xong). Grant được giữ lại, tự có hiệu lực khi cấp lại.</p>
+</aside>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

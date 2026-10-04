@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Playground</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}.b-ink{background:#2E2150;color:#E4DCF7}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px}
+.btn{font:inherit;font-size:14px;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.nav a{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;color:#3B3450;text-decoration:none}
+.nav a:hover{background:#F7F6FA;color:#1D1733}
+.nav a.on{background:#EDE6FB;color:#4A3278;font-weight:600}
+.grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#736C89;margin:16px 12px 6px}
+.sub{font-size:12px;color:#635C78}
+.lbl{display:block;font-size:12px;font-weight:500;color:#635C78;margin-bottom:4px}
+.inp{font:inherit;width:100%;box-sizing:border-box;min-height:38px;border:1px solid #D9D5E3;border-radius:8px;padding:8px 12px;background:#fff;color:#1D1733}
+.bar{height:10px;border-radius:3px}
+.row{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr) 70px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #F0EEF4;font-size:13px}
+h2{margin:0;font-size:15px;font-weight:600}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh">
+<nav class="nav" aria-label="Agent Studio" style="flex: 1 1 220px; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6E3EE; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 14px; font-weight: 700; font-size: 16px; color: #2E2150"><span style="color: #6B4FA0">✦</span>Agent Studio</div>
+<a href="#">Tổng quan</a>
+<div class="grp">Cấu hình agent</div>
+<a href="Main.dc.html">Agents <span class="badge b-info">6</span></a>
+<a href="Orchestrator.dc.html">Orchestrator</a>
+<a href="#">Tools</a>
+<a href="Models.dc.html">Models <span class="badge b-warn">1</span></a>
+<a href="#">Secrets</a>
+<div class="grp">Truy cập</div>
+<a href="Access.dc.html">Quyền agent</a>
+<div class="grp">Thử nghiệm</div>
+<a href="Playground.dc.html" class="on" aria-current="page">Playground</a>
+<div class="grp">Vận hành</div>
+<a href="#">Runs</a>
+<a href="#">Chi phí &amp; usage</a>
+<a href="#">Jobs &amp; Worker</a>
+<div class="grp">Hệ thống</div>
+<a href="#">Nhật ký thay đổi</a>
+<a href="#">Import / Export</a>
+</nav>
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 32px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE">
+<div style="font-size: 13px; color: #635C78">Agent Studio <span style="color: #B3ADC4">/</span> <span style="color: #1D1733; font-weight: 500">Playground</span></div>
+<span class="badge b-off mono">hub config v18 + bản nháp</span>
+</header>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; padding: 16px 32px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE">
+<div style="flex: 1 1 200px"><label class="lbl" for="tg">Đích</label><select id="tg" class="inp"><option>Toàn hệ thống (qua Orchestrator)</option><option>Một agent…</option></select></div>
+<div style="flex: 1 1 220px"><label class="lbl" for="ru">Chạy như user</label><select id="ru" class="inp"><option>acme · lan (member)</option><option>Bạn (platform_admin)</option></select></div>
+<div style="flex: 1 1 180px"><label class="lbl" for="pt">Profile tạm cho lượt thử</label><select id="pt" class="inp"><option>Theo cấu hình</option><option>fake-1</option><option>anthropic-api</option></select></div>
+<label style="display: flex; align-items: center; gap: 8px; min-height: 38px"><input type="checkbox" checked> Dùng bản nháp chưa lưu</label>
+</div>
+<main style="padding: 20px 32px 40px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; width: 100%; box-sizing: border-box">
+<section class="card" aria-label="Chat thử" style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column">
+<div style="padding: 20px 22px; display: flex; flex-direction: column; gap: 16px">
+<div style="align-self: flex-end; max-width: 80%; background: #2E2150; color: #FFFFFF; padding: 12px 14px; border-radius: 14px 14px 4px 14px">Kiểm tra hoá đơn đính kèm rồi tạo thẻ Trello nếu sai<div style="margin-top: 8px"><span class="badge b-info">hoa-don-0912.pdf</span></div></div>
+<div style="display: flex; gap: 10px; align-items: flex-start">
+<span role="img" aria-label="Consultant" style="width: 30px; height: 30px; border-radius: 50%; background: #EDE6FB; color: #4A3278; display: grid; place-items: center; font-size: 12px; font-weight: 700; flex: none">C</span>
+<div style="flex: 1; min-width: 0">
+<div style="font-weight: 600; margin-bottom: 6px">Consultant</div>
+<ol style="list-style: none; margin: 0 0 10px; padding: 10px 12px; border: 1px solid #E6E3EE; border-radius: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+<li>✓ Hiểu yêu cầu <span class="sub">3,2 s</span></li>
+<li>✓ Đang kiểm tra hoá đơn <span class="sub">8,4 s</span></li>
+<li>✓ Đang tạo thẻ Trello <span class="sub">2,1 s</span></li>
+</ol>
+<p style="margin: 0; line-height: 1.6">Hoá đơn 0912 sai thuế suất: dòng 3 áp 10% nhưng mặt hàng thuộc nhóm 8%. Tôi đã tạo thẻ “Hoá đơn 0912 — sai thuế suất dòng 3” trên bảng Kế toán.</p>
+</div>
+</div>
+</div>
+<div style="margin-top: auto; padding: 14px 16px; border-top: 1px solid #E6E3EE; display: flex; gap: 10px">
+<label for="msg" style="position: absolute; left: -9999px">Tin nhắn</label>
+<input id="msg" class="inp" placeholder="Nhập yêu cầu… gõ / cho lệnh, @ để gọi thẳng agent">
+<button class="btn btn-p" type="button">Gửi</button>
+</div>
+</section>
+<section class="card" aria-label="Trace" style="flex: 1 1 480px; min-width: 0; padding: 18px 20px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px"><h2>Trace</h2><div style="display: flex; gap: 8px; align-items: center"><span class="badge b-ok">xong · 13,9 s</span><span class="sub">21 480 token</span><button class="btn" type="button">Lưu làm câu kiểm thử</button></div></div>
+<div class="sub" style="display: grid; grid-template-columns: minmax(0,190px) minmax(0,1fr) 70px; gap: 10px; padding: 6px 0; border-bottom: 1px solid #E6E3EE"><span>Bước</span><span>0 s ─────────── 14 s</span><span>Thời gian</span></div>
+<div class="row"><span><span class="badge b-ink">orchestrator</span> delegate</span><div style="padding-left: 0%"><div class="bar" style="width: 23%; background: #6B4FA0"></div></div><span class="sub">3,2 s</span></div>
+<div class="row"><span style="padding-left: 14px"><span class="mono">hoadon</span> · claude-sub</span><div style="padding-left: 23%"><div class="bar" style="width: 60%; background: #9C89C9"></div></div><span class="sub">8,4 s</span></div>
+<div class="row"><span style="padding-left: 28px"><span class="mono">check_invoice</span> · tool</span><div style="padding-left: 40%"><div class="bar" style="width: 27%; background: #CFC7E2"></div></div><span class="sub">3,8 s</span></div>
+<div class="row"><span><span class="badge b-ink">orchestrator</span> delegate</span><div style="padding-left: 83%"><div class="bar" style="width: 2%; background: #6B4FA0"></div></div><span class="sub">0,3 s</span></div>
+<div class="row"><span style="padding-left: 14px"><span class="mono">trello</span> · dify</span><div style="padding-left: 85%"><div class="bar" style="width: 15%; background: #9C89C9"></div></div><span class="sub">2,1 s</span></div>
+<div style="margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: #F7F6FA; font-size: 13px">
+<div style="font-weight: 600; margin-bottom: 6px">Bước đang chọn · <span class="mono">orchestrator</span> lượt 1</div>
+<pre class="mono" style="margin: 0; white-space: pre-wrap; line-height: 1.6">{"decision":"delegate","agent":"hoadon","task":"Kiểm tra hoa-don-0912.pdf, báo các điểm sai"}</pre>
+<div class="sub" style="margin-top: 6px">Agent Orchestrator thấy (theo quyền của lan): hoadon, trello, assistant.</div>
+</div>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sửa agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}.b-ink{background:#2E2150;color:#E4DCF7}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px}
+.btn{font:inherit;font-size:14px;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.nav a{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;color:#3B3450;text-decoration:none}
+.nav a:hover{background:#F7F6FA;color:#1D1733}
+.nav a.on{background:#EDE6FB;color:#4A3278;font-weight:600}
+.grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#736C89;margin:16px 12px 6px}
+.sub{font-size:12px;color:#635C78}
+.lbl{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+.inp{font:inherit;width:100%;box-sizing:border-box;min-height:38px;border:1px solid #D9D5E3;border-radius:8px;padding:8px 12px;background:#fff;color:#1D1733}
+.step{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;margin:0 0 16px}
+.num{width:26px;height:26px;border-radius:50%;background:#EDE6FB;color:#4A3278;display:grid;place-items:center;font-size:13px;font-weight:700}
+.seg{font:inherit;font-size:13px;min-height:36px;padding:0 12px;border:1px solid #D9D5E3;background:#fff;color:#3B3450;cursor:pointer}
+.seg.on{background:#2E2150;border-color:#2E2150;color:#fff}
+.pre{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;background:#F7F6FA;border:1px solid #E6E3EE;border-radius:8px;padding:12px;white-space:pre-wrap;margin:0}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh">
+<nav class="nav" aria-label="Agent Studio" style="flex: 1 1 220px; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6E3EE; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 14px; font-weight: 700; font-size: 16px; color: #2E2150"><span style="color: #6B4FA0">✦</span>Agent Studio</div>
+<a href="#">Tổng quan</a>
+<div class="grp">Cấu hình agent</div>
+<a href="Main.dc.html" class="on" aria-current="page">Agents <span class="badge b-info">6</span></a>
+<a href="Orchestrator.dc.html">Orchestrator</a>
+<a href="#">Tools</a>
+<a href="Models.dc.html">Models <span class="badge b-warn">1</span></a>
+<a href="#">Secrets</a>
+<div class="grp">Truy cập</div>
+<a href="Access.dc.html">Quyền agent</a>
+<div class="grp">Thử nghiệm</div>
+<a href="Playground.dc.html">Playground</a>
+<div class="grp">Vận hành</div>
+<a href="#">Runs</a>
+<a href="#">Chi phí &amp; usage</a>
+<a href="#">Jobs &amp; Worker</a>
+<div class="grp">Hệ thống</div>
+<a href="#">Nhật ký thay đổi</a>
+<a href="#">Import / Export</a>
+</nav>
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 32px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE">
+<div style="font-size: 13px; color: #635C78"><a href="Main.dc.html">Agents</a> <span style="color: #B3ADC4">/</span> <span style="color: #1D1733; font-weight: 500">Kiểm tra hoá đơn</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span class="badge b-warn">Bản nháp chưa lưu</span><a class="btn" href="Main.dc.html">Huỷ</a><button class="btn" type="button">Chạy thử</button><button class="btn btn-p" type="button">Lưu · kiểm thử định tuyến</button></div>
+</header>
+<main style="padding: 28px 32px 48px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; max-width: 1240px; width: 100%; box-sizing: border-box">
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><h1 style="margin: 0; font-size: 22px; font-weight: 700">Kiểm tra hoá đơn</h1><span class="mono badge b-off">hoadon</span><span class="badge b-ok">Bật</span></div>
+<section class="card" style="padding: 20px 24px">
+<h2 class="step"><span class="num">1</span>Thông tin</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<div><label class="lbl" for="n-vi">Tên hiển thị (VI)</label><input id="n-vi" class="inp" value="Kiểm tra hoá đơn"></div>
+<div><label class="lbl" for="n-en">Tên hiển thị (EN)</label><input id="n-en" class="inp" value="Invoice checker"></div>
+</div>
+<div style="margin-top: 16px"><label class="lbl" for="desc">Mô tả cho Orchestrator <span style="color: #9B1C1C">*</span></label>
+<textarea id="desc" class="inp" rows="3" style="resize: vertical">Dùng khi người dùng gửi hoá đơn điện tử (PDF, XML, ảnh) và cần kiểm tra mã số thuế, tổng tiền, thuế suất hoặc chữ ký số. Không dùng cho báo giá hay hợp đồng.</textarea>
+<div style="display: flex; justify-content: space-between; margin-top: 4px"><span class="sub">Nói rõ khi nào dùng và khi nào không. Orchestrator chọn agent gần như chỉ dựa vào đoạn này.</span><span class="sub">158 / 400</span></div></div>
+</section>
+<section class="card" style="padding: 20px 24px">
+<h2 class="step"><span class="num">2</span>Runtime &amp; model</h2>
+<div role="group" aria-label="Runtime" style="display: flex; flex-wrap: wrap; gap: 0"><button class="seg on" type="button" aria-pressed="true" style="border-radius: 8px 0 0 8px">agentic-cli</button><button class="seg" type="button" aria-pressed="false">llm</button><button class="seg" type="button" aria-pressed="false">dify-workflow</button><button class="seg" type="button" aria-pressed="false">dify-agent</button><button class="seg" type="button" aria-pressed="false" style="border-radius: 0 8px 8px 0">python</button></div>
+<p class="sub" style="margin: 8px 0 16px">agentic-cli: agent chạy bằng Claude Code (Agent SDK) trên Agent Runtime, đọc file đính kèm và gọi workflow qua MCP.</p>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<div><label class="lbl" for="cli">CLI</label><select id="cli" class="inp"><option>Claude Code (Agent SDK)</option><option>Codex</option><option>Gemini CLI</option></select></div>
+<div><label class="lbl" for="prof">Model profile</label><select id="prof" class="inp"><option>claude-sub-1</option><option>coder</option><option>smart</option></select>
+<div class="sub" style="margin-top: 6px">Lúc này sẽ chạy bằng: <span class="mono">claude-sub</span> <span class="badge b-ok">ok · 1/2 slot</span></div></div>
+</div>
+<div style="margin-top: 16px"><span class="lbl">Tool có sẵn được phép</span>
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<label style="display: flex; align-items: center; gap: 6px"><input type="checkbox" checked> Read</label>
+<label style="display: flex; align-items: center; gap: 6px"><input type="checkbox" checked> Grep</label>
+<label style="display: flex; align-items: center; gap: 6px"><input type="checkbox"> Glob</label>
+<label style="display: flex; align-items: center; gap: 6px"><input type="checkbox"> Edit</label>
+<label style="display: flex; align-items: center; gap: 6px; color: #635C78"><input type="checkbox" disabled> Bash <span class="badge b-off">tắt ở v1</span></label>
+</div>
+<div class="sub" style="margin-top: 6px">Agent chỉ đọc/ghi trong thư mục làm việc của job. Thư mục home, ổ Windows và job khác luôn bị chặn.</div></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 16px">
+<div><label class="lbl" for="to">Timeout (giây)</label><input id="to" class="inp" value="600"></div>
+<div><label class="lbl" for="tb">Ngân sách token</label><input id="tb" class="inp" value="200 000"></div>
+<div><label class="lbl" for="mt">Số lượt tối đa</label><input id="mt" class="inp" value="30"></div>
+<div><span class="lbl">Giữ session</span><label style="display: flex; align-items: center; gap: 8px; min-height: 38px"><input type="checkbox" checked> Resume lượt trước</label></div>
+</div>
+</section>
+<section class="card" style="padding: 20px 24px">
+<h2 class="step"><span class="num">3</span>Workflow được gắn làm tool</h2>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #E6E3EE; border-radius: 10px"><span class="mono" style="font-weight: 500">check_invoice</span><span class="badge b-off">workflow</span><span class="sub" style="flex: 1 1 240px">Kiểm tra một hoá đơn điện tử: mã số thuế, tổng tiền, thuế suất…</span><button class="btn" type="button">Xem như model thấy</button><button class="btn" type="button" aria-label="Gỡ check_invoice">Gỡ</button></div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #E6E3EE; border-radius: 10px"><span class="mono" style="font-weight: 500">lookup_tax_code</span><span class="badge b-off">workflow</span><span class="badge b-warn">có tác dụng phụ: không</span><span class="sub" style="flex: 1 1 240px">Tra cứu thông tin doanh nghiệp theo mã số thuế…</span><button class="btn" type="button">Xem như model thấy</button><button class="btn" type="button" aria-label="Gỡ lookup_tax_code">Gỡ</button></div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px"><button class="btn" type="button">+ Gắn workflow từ catalog</button><span class="sub">Tên và mô tả tool lấy từ workflow ở Admin. Muốn sửa mô tả thì sửa ở <a href="#">Admin › Workflows ↗</a>.</span></div>
+</section>
+<section class="card" style="padding: 20px 24px">
+<h2 class="step"><span class="num">4</span>System prompt</h2>
+<label class="lbl" for="sp" style="position: absolute; left: -9999px">System prompt</label>
+<textarea id="sp" class="inp mono" rows="7" style="resize: vertical; line-height: 1.6">Bạn là trợ lý kiểm tra hoá đơn điện tử của doanh nghiệp.
+- Đọc file đính kèm trong thư mục làm việc.
+- Gọi check_invoice cho từng hoá đơn; tra mã số thuế khi cần.
+- Trả về: hoá đơn hợp lệ hay không, các điểm sai, đề xuất xử lý.
+- Thiếu thông tin thì hỏi lại người dùng (need_input), không đoán.</textarea>
+</section>
+<section class="card" style="padding: 20px 24px">
+<h2 class="step"><span class="num">5</span>Quyền</h2>
+<p style="margin: 0">Đã cấp cho <strong>3 tenant</strong>: <span class="mono">platform</span>, <span class="mono">acme</span>, <span class="mono">beta-co</span>. Tenant admin tự cấp cho group trong Admin › Groups.</p>
+<a class="btn" href="Access.dc.html" style="margin-top: 12px">Quản lý quyền agent</a>
+</section>
+</div>
+<aside style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<section class="card" style="padding: 18px 20px">
+<h2 style="margin: 0 0 4px; font-size: 15px; font-weight: 600">Xem như Orchestrator thấy</h2>
+<p class="sub" style="margin: 0 0 12px">Đoạn Orchestrator nhận về agent này, đặt cạnh các agent khác để soát mô tả trùng ý.</p>
+<pre class="pre">- hoadon: Dùng khi người dùng gửi hoá đơn điện tử (PDF, XML, ảnh) và cần kiểm tra…
+- trello: Dùng khi cần tạo hoặc cập nhật thẻ trên bảng Trello của nhóm…
+- assistant: Trợ lý chung cho câu hỏi không thuộc agent chuyên trách…</pre>
+<div class="badge b-ok" style="margin-top: 10px">Không thấy mô tả trùng ý</div>
+</section>
+<section class="card" style="padding: 18px 20px">
+<h2 style="margin: 0 0 4px; font-size: 15px; font-weight: 600">Chạy thử bản nháp</h2>
+<p class="sub" style="margin: 0 0 12px">Gọi thẳng agent, bỏ qua Orchestrator. Không lưu, không tính quota tenant.</p>
+<label class="lbl" for="try">Yêu cầu thử</label>
+<textarea id="try" class="inp" rows="3">Kiểm tra giúp hoá đơn này có đúng thuế suất không</textarea>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center"><span class="badge b-info">hoa-don-0912.pdf</span><button class="btn" type="button">Đính kèm</button><button class="btn btn-p" type="button" style="margin-left: auto">Chạy thử</button></div>
+<ol style="list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<li style="display: flex; justify-content: space-between"><span>✓ Đọc file đính kèm</span><span class="sub">1,2 s</span></li>
+<li style="display: flex; justify-content: space-between"><span>✓ Gọi <span class="mono">check_invoice</span></span><span class="sub">3,8 s</span></li>
+<li style="display: flex; justify-content: space-between"><span>✓ Kết quả <span class="badge b-ok">done</span></span><span class="sub">claude-sub · 4 812 token</span></li>
+</ol>
+</section>
+</aside>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

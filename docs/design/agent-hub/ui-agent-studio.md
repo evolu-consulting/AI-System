@@ -40,6 +40,8 @@ Agent Studio  (/studio · role=platform_admin)
 
 Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở *Tools* → gắn vào *Agents* → chỉnh *Orchestrator* → cấp cho tenant ở *Quyền agent* → thử ở *Playground*. Trên menu, Agents đứng đầu vì được mở nhiều nhất.
 
+> ✅ **Canvas đã duyệt hướng (2026-10-04):** 6 artboard ở [`canvas/`](canvas/README.md) (Agents, Agent editor, Orchestrator, Models, Quyền agent, Playground) — đầu vào mốc H4.
+
 ## 3. Khung ứng dụng
 
 [[WF agent-hub/ui-agent-studio.html#1]]

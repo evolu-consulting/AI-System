@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Models</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}.b-ink{background:#2E2150;color:#E4DCF7}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px}
+.btn{font:inherit;font-size:14px;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.nav a{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;color:#3B3450;text-decoration:none}
+.nav a:hover{background:#F7F6FA;color:#1D1733}
+.nav a.on{background:#EDE6FB;color:#4A3278;font-weight:600}
+.grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#736C89;margin:16px 12px 6px}
+.sub{font-size:12px;color:#635C78}
+.tab{font:inherit;font-size:14px;min-height:44px;padding:0 4px;border:0;border-bottom:2px solid transparent;background:none;color:#635C78;cursor:pointer}
+.tab.on{border-bottom-color:#6B4FA0;color:#1D1733;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 14px;border-bottom:1px solid #E6E3EE;white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.slot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:3px}
+.s-on{background:#6B4FA0}.s-off{background:#E6E3EE}
+h2{margin:0;font-size:16px;font-weight:600}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh">
+<nav class="nav" aria-label="Agent Studio" style="flex: 1 1 220px; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6E3EE; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 14px; font-weight: 700; font-size: 16px; color: #2E2150"><span style="color: #6B4FA0">✦</span>Agent Studio</div>
+<a href="#">Tổng quan</a>
+<div class="grp">Cấu hình agent</div>
+<a href="Main.dc.html">Agents <span class="badge b-info">6</span></a>
+<a href="Orchestrator.dc.html">Orchestrator</a>
+<a href="#">Tools</a>
+<a href="Models.dc.html" class="on" aria-current="page">Models <span class="badge b-warn">1</span></a>
+<a href="#">Secrets</a>
+<div class="grp">Truy cập</div>
+<a href="Access.dc.html">Quyền agent</a>
+<div class="grp">Thử nghiệm</div>
+<a href="Playground.dc.html">Playground</a>
+<div class="grp">Vận hành</div>
+<a href="#">Runs</a>
+<a href="#">Chi phí &amp; usage</a>
+<a href="#">Jobs &amp; Worker</a>
+<div class="grp">Hệ thống</div>
+<a href="#">Nhật ký thay đổi</a>
+<a href="#">Import / Export</a>
+</nav>
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 32px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE">
+<div style="font-size: 13px; color: #635C78">Agent Studio <span style="color: #B3ADC4">/</span> <span style="color: #1D1733; font-weight: 500">Models</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span class="badge b-off mono">hub config v18</span><button class="btn btn-p" type="button">+ Thêm provider</button></div>
+</header>
+<main style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; max-width: 1240px; width: 100%; box-sizing: border-box">
+<div>
+<h1 style="margin: 0; font-size: 22px; font-weight: 700">Models</h1>
+<p style="margin: 6px 0 0; color: #635C78">Provider là nơi gọi model (API hoặc CLI subscription). Profile là chuỗi bước dự phòng; agent chỉ trỏ tới profile.</p>
+</div>
+<div role="tablist" aria-label="Models" style="display: flex; gap: 24px; border-bottom: 1px solid #E6E3EE">
+<button class="tab on" role="tab" aria-selected="true" type="button">Providers</button>
+<button class="tab" role="tab" aria-selected="false" type="button">Profiles</button>
+<button class="tab" role="tab" aria-selected="false" type="button">Đơn giá</button>
+</div>
+<section class="card" style="overflow-x: auto">
+<table>
+<thead><tr><th>Provider</th><th>Loại</th><th>Hãng</th><th>Trạng thái</th><th>Slot</th><th>Ghi chú</th><th><span style="position: absolute; left: -9999px">Thao tác</span></th></tr></thead>
+<tbody>
+<tr><td class="mono" style="font-weight: 500">claude-sub</td><td><span class="badge b-info">Subscription</span></td><td>Anthropic</td><td><span class="badge b-ok">ok</span></td><td><span class="slot s-on"></span><span class="slot s-off"></span> 1/2</td><td class="sub">Đăng nhập CLI trên máy Agent Runtime (WSL2)</td><td><button class="btn" type="button">Kiểm tra lại</button></td></tr>
+<tr><td class="mono" style="font-weight: 500">codex-sub</td><td><span class="badge b-info">Subscription</span></td><td>OpenAI</td><td><span class="badge b-warn">cooldown</span></td><td><span class="slot s-off"></span> 0/1</td><td class="sub">Hết quota · mở lại sau 42 phút (14:30)</td><td><button class="btn" type="button">Hướng dẫn</button></td></tr>
+<tr><td class="mono" style="font-weight: 500">anthropic-api</td><td><span class="badge b-off">API</span></td><td>Anthropic</td><td><span class="badge b-ok">ok</span></td><td class="sub">—</td><td class="sub">Key <span class="mono">••••7Kq2</span></td><td><button class="btn" type="button">Kiểm tra key</button></td></tr>
+<tr><td class="mono" style="font-weight: 500">openai-api</td><td><span class="badge b-off">API</span></td><td>OpenAI</td><td><span class="badge b-err">chưa có key</span></td><td class="sub">—</td><td class="sub">Profile <span class="mono">smart</span> sẽ bỏ qua bước này</td><td><button class="btn" type="button">Nhập key</button></td></tr>
+<tr><td class="mono" style="font-weight: 500">fake-cli</td><td><span class="badge b-info">Subscription</span></td><td>—</td><td><span class="badge b-off">chỉ dev/test</span></td><td class="sub">—</td><td class="sub">Không nạp ở production</td><td></td></tr>
+</tbody>
+</table>
+</section>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" style="flex: 1 1 260px; min-width: 0; padding: 18px 20px">
+<h2 style="margin-bottom: 12px">Profiles</h2>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<a href="#" style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 8px; background: #EDE6FB; color: #4A3278; text-decoration: none; font-weight: 600"><span class="mono">coder</span><span class="sub">2 agent</span></a>
+<a href="#" style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 8px; color: #1D1733; text-decoration: none"><span class="mono">claude-sub-1</span><span class="sub">3 agent</span></a>
+<a href="#" style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 8px; color: #1D1733; text-decoration: none"><span class="mono">smart</span><span class="sub">1 agent</span></a>
+<a href="#" style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 8px; color: #1D1733; text-decoration: none"><span class="mono">fake-1</span><span class="sub">dev</span></a>
+</div>
+<button class="btn" type="button" style="margin-top: 12px">+ Profile mới</button>
+</section>
+<section class="card" style="flex: 999 1 560px; min-width: 0; padding: 20px 24px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px"><h2>Profile <span class="mono" style="font-size: 15px">coder</span></h2><button class="btn" type="button">+ Thêm bước</button></div>
+<div role="status" style="margin: 12px 0 16px; padding: 10px 14px; border-radius: 10px; background: #FDF0DF; color: #7F3C04; font-size: 13px">Lúc này sẽ chạy bằng <strong>bước 2 · claude-sub</strong> — bước 1 đang cooldown.</div>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #E6E3EE; border-radius: 10px; background: #FBFAFD"><span class="sub" aria-hidden="true">⋮⋮</span><strong style="font-weight: 600">1</strong><span class="mono">codex-sub</span><span class="badge b-warn">cooldown · bỏ qua</span><span class="sub" style="margin-left: auto">chuyển khi: error · quota · timeout</span></li>
+<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border: 2px solid #6B4FA0; border-radius: 10px"><span class="sub" aria-hidden="true">⋮⋮</span><strong style="font-weight: 600">2</strong><span class="mono">claude-sub</span><span class="badge b-ok">đang dùng</span><span class="sub" style="margin-left: auto">chuyển khi: error · quota · timeout</span></li>
+<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #E6E3EE; border-radius: 10px"><span class="sub" aria-hidden="true">⋮⋮</span><strong style="font-weight: 600">3</strong><span class="mono">anthropic-api</span><span class="mono sub">claude-sonnet</span><span class="badge b-ok">sẵn sàng</span><span class="sub" style="margin-left: auto">bước cuối</span></li>
+</ol>
+<p class="sub" style="margin: 14px 0 0">Kéo để đổi thứ tự. Profile chỉ có bước subscription vẫn hợp lệ (chỉ cho dev/test); hết bước thì trả lỗi rõ <span class="mono">ALL_PROVIDERS_EXHAUSTED</span>.</p>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

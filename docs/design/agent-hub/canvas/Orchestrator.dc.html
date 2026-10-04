@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Orchestrator</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}.b-ink{background:#2E2150;color:#E4DCF7}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px}
+.btn{font:inherit;font-size:14px;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.nav a{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;color:#3B3450;text-decoration:none}
+.nav a:hover{background:#F7F6FA;color:#1D1733}
+.nav a.on{background:#EDE6FB;color:#4A3278;font-weight:600}
+.grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#736C89;margin:16px 12px 6px}
+.sub{font-size:12px;color:#635C78}
+.lbl{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+.inp{font:inherit;width:100%;box-sizing:border-box;min-height:38px;border:1px solid #D9D5E3;border-radius:8px;padding:8px 12px;background:#fff;color:#1D1733}
+.tab{font:inherit;font-size:14px;min-height:44px;padding:0 4px;border:0;border-bottom:2px solid transparent;background:none;color:#635C78;cursor:pointer}
+.tab.on{border-bottom-color:#6B4FA0;color:#1D1733;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 14px;border-bottom:1px solid #E6E3EE;white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+h2{margin:0;font-size:16px;font-weight:600}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh">
+<nav class="nav" aria-label="Agent Studio" style="flex: 1 1 220px; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6E3EE; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 14px; font-weight: 700; font-size: 16px; color: #2E2150"><span style="color: #6B4FA0">✦</span>Agent Studio</div>
+<a href="#">Tổng quan</a>
+<div class="grp">Cấu hình agent</div>
+<a href="Main.dc.html">Agents <span class="badge b-info">6</span></a>
+<a href="Orchestrator.dc.html" class="on" aria-current="page">Orchestrator</a>
+<a href="#">Tools</a>
+<a href="Models.dc.html">Models <span class="badge b-warn">1</span></a>
+<a href="#">Secrets</a>
+<div class="grp">Truy cập</div>
+<a href="Access.dc.html">Quyền agent</a>
+<div class="grp">Thử nghiệm</div>
+<a href="Playground.dc.html">Playground</a>
+<div class="grp">Vận hành</div>
+<a href="#">Runs</a>
+<a href="#">Chi phí &amp; usage</a>
+<a href="#">Jobs &amp; Worker</a>
+<div class="grp">Hệ thống</div>
+<a href="#">Nhật ký thay đổi</a>
+<a href="#">Import / Export</a>
+</nav>
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 32px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE">
+<div style="font-size: 13px; color: #635C78">Agent Studio <span style="color: #B3ADC4">/</span> <span style="color: #1D1733; font-weight: 500">Orchestrator</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span class="badge b-off mono">hub config v18</span><button class="btn btn-p" type="button">Lưu · kiểm thử định tuyến</button></div>
+</header>
+<main style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; max-width: 1240px; width: 100%; box-sizing: border-box">
+<div>
+<h1 style="margin: 0; font-size: 22px; font-weight: 700">Orchestrator</h1>
+<p style="margin: 6px 0 0; color: #635C78">Agent nhận mọi tin nhắn, chọn agent chuyên trách (delegate), tự trả lời (answer) hoặc hỏi lại (ask). Tin bắt đầu bằng <span class="mono">@agent</span> đi thẳng tới agent đó.</p>
+</div>
+<div role="tablist" aria-label="Orchestrator" style="display: flex; gap: 24px; border-bottom: 1px solid #E6E3EE">
+<button class="tab on" role="tab" aria-selected="true" type="button">Mặc định (toàn hệ thống)</button>
+<button class="tab" role="tab" aria-selected="false" type="button">Theo tenant <span class="badge b-info">2</span></button>
+<button class="tab" role="tab" aria-selected="false" type="button">Kiểm thử định tuyến <span class="badge b-ok">9/9</span></button>
+<button class="tab" role="tab" aria-selected="false" type="button">Dry-run</button>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" style="flex: 999 1 520px; min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<h2>Cấu hình mặc định</h2>
+<div><label class="lbl" for="oa">Agent làm Orchestrator</label><select id="oa" class="inp"><option>Điều phối viên (orchestrator) · agentic-cli</option><option>Điều phối nhanh (orchestrator-api) · llm</option></select></div>
+<div role="note" style="display: flex; gap: 10px; padding: 12px 14px; border-radius: 10px; background: #FDF0DF; color: #7F3C04; font-size: 13px"><strong style="font-weight: 600">Chậm</strong><span>Agent này chạy CLI: mỗi quyết định khởi động CLI vài giây và chiếm slot subscription. Khi có API key, nên chuyển sang runtime <span class="mono">llm</span> với model rẻ.</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<div><label class="lbl" for="ms">Số bước tối đa</label><input id="ms" class="inp" value="5"></div>
+<div><label class="lbl" for="bg">Ngân sách token / run</label><input id="bg" class="inp" value="200 000"></div>
+<div><label class="lbl" for="hn">Số tin lịch sử</label><input id="hn" class="inp" value="10"></div>
+</div>
+<fieldset style="border: 0; padding: 0; margin: 0"><legend class="lbl">Không có agent nào phù hợp</legend>
+<div style="display: flex; flex-wrap: wrap; gap: 20px"><label style="display: flex; align-items: center; gap: 6px"><input type="radio" name="nm" checked> Tự trả lời (chat chung)</label><label style="display: flex; align-items: center; gap: 6px"><input type="radio" name="nm"> Hỏi lại người dùng</label></div></fieldset>
+<div class="sub">Lưu thay đổi ở đây sẽ chạy bộ câu kiểm thử định tuyến (mỗi câu 3 lần, lấy đa số). Tụt quá 1 câu so với baseline thì không lưu, trừ khi lưu đè có lý do.</div>
+</section>
+<section class="card" style="flex: 1 1 380px; min-width: 0; padding: 20px 24px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px"><h2>Orchestrator theo tenant</h2><button class="btn" type="button">+ Thêm cho tenant</button></div>
+<div style="overflow-x: auto"><table>
+<thead><tr><th>Tenant</th><th>Agent</th><th>Bước</th><th>Kiểm thử</th></tr></thead>
+<tbody>
+<tr><td><strong style="font-weight: 600">Mặc định</strong><div class="sub">toàn hệ thống</div></td><td class="mono">orchestrator</td><td>5</td><td><span class="badge b-ok">9/9</span></td></tr>
+<tr><td class="mono">acme</td><td class="mono">orch-acme</td><td>4</td><td><span class="badge b-ok">6/6</span><div class="sub">riêng + kế thừa chung</div></td></tr>
+<tr><td class="mono">beta-co</td><td class="mono">orch-legal</td><td>3</td><td><span class="badge b-warn">4/5</span></td></tr>
+</tbody></table></div>
+<p class="sub" style="margin: 12px 0 0">Hub chọn bản của tenant trước, không có thì dùng mặc định. Tenant admin không thấy mục này.</p>
+</section>
+</div>
+<section class="card" style="padding: 20px 24px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px">
+<div><h2>Kiểm thử định tuyến · mặc định</h2><div class="sub">Lần chạy gần nhất 03/10 21:14 · 9/9 đúng · baseline 9/9 · sai số cho phép 1 câu</div></div>
+<div style="display: flex; gap: 8px"><button class="btn" type="button">+ Thêm câu</button><button class="btn" type="button">Chạy lại</button></div>
+</div>
+<div style="overflow-x: auto"><table>
+<thead><tr><th>Câu kiểm thử</th><th>File</th><th>Agent mong đợi</th><th>Kết quả (3 lần)</th></tr></thead>
+<tbody>
+<tr><td>Kiểm tra hoá đơn đính kèm rồi tạo thẻ Trello nếu sai</td><td>có</td><td class="mono">hoadon → trello</td><td><span class="badge b-ok">✓ 3/3</span></td></tr>
+<tr><td>Hoá đơn này thuế suất bao nhiêu?</td><td>có</td><td class="mono">hoadon</td><td><span class="badge b-ok">✓ 3/3</span></td></tr>
+<tr><td>Tạo thẻ "Gọi lại khách Minh Phát" trên bảng Sales</td><td>—</td><td class="mono">trello</td><td><span class="badge b-ok">✓ 2/3</span></td></tr>
+<tr><td>Viết giúp email cảm ơn khách hàng</td><td>—</td><td class="mono">assistant</td><td><span class="badge b-ok">✓ 3/3</span></td></tr>
+<tr><td>Doanh số tuần này theo khu vực</td><td>—</td><td class="mono">sales-report</td><td><span class="badge b-off">bỏ qua · agent đang tắt</span></td></tr>
+</tbody></table></div>
+</section>
+<section class="card" style="padding: 20px 24px">
+<h2 style="margin-bottom: 12px">Dry-run · xem Orchestrator sẽ chọn gì</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 10px"><label for="dr" style="position: absolute; left: -9999px">Câu hỏi thử</label><input id="dr" class="inp" style="flex: 1 1 360px; width: auto" value="Kiểm tra hoá đơn đính kèm rồi tạo thẻ Trello nếu sai"><button class="btn btn-p" type="button">Dry-run</button><button class="btn" type="button">Lưu làm câu kiểm thử</button></div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; align-items: center"><span class="badge b-ink">delegate</span><span class="mono">hoadon</span><span class="sub">→ sau đó</span><span class="badge b-ink">delegate</span><span class="mono">trello</span><span class="sub" style="flex: 1 1 320px">Lý do: yêu cầu có hai việc — kiểm tra hoá đơn (hoadon) và tạo thẻ khi có lỗi (trello).</span></div>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

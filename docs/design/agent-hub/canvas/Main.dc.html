@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Agents</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}.b-ink{background:#2E2150;color:#E4DCF7}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px}
+.btn{font:inherit;font-size:14px;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.nav a{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;color:#3B3450;text-decoration:none}
+.nav a:hover{background:#F7F6FA;color:#1D1733}
+.nav a.on{background:#EDE6FB;color:#4A3278;font-weight:600}
+.grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#736C89;margin:16px 12px 6px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;font-weight:500;color:#635C78;padding:10px 16px;border-bottom:1px solid #E6E3EE;white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid #F0EEF4;vertical-align:middle}
+.chip{font:inherit;font-size:13px;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid #D9D5E3;background:#fff;color:#3B3450;cursor:pointer}
+.chip.on{background:#2E2150;border-color:#2E2150;color:#fff}
+.sub{font-size:12px;color:#635C78}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh">
+<nav class="nav" aria-label="Agent Studio" style="flex: 1 1 220px; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6E3EE; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 14px; font-weight: 700; font-size: 16px; color: #2E2150"><span style="color: #6B4FA0">✦</span>Agent Studio</div>
+<a href="#">Tổng quan</a>
+<div class="grp">Cấu hình agent</div>
+<a href="Main.dc.html" class="on" aria-current="page">Agents <span class="badge b-info">6</span></a>
+<a href="Orchestrator.dc.html">Orchestrator</a>
+<a href="#">Tools</a>
+<a href="Models.dc.html">Models <span class="badge b-warn">1</span></a>
+<a href="#">Secrets</a>
+<div class="grp">Truy cập</div>
+<a href="Access.dc.html">Quyền agent</a>
+<div class="grp">Thử nghiệm</div>
+<a href="Playground.dc.html">Playground</a>
+<div class="grp">Vận hành</div>
+<a href="#">Runs <span class="badge b-info">3</span></a>
+<a href="#">Chi phí &amp; usage</a>
+<a href="#">Jobs &amp; Worker</a>
+<div class="grp">Hệ thống</div>
+<a href="#">Nhật ký thay đổi</a>
+<a href="#">Import / Export</a>
+</nav>
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 32px; background: #FFFFFF; border-bottom: 1px solid #E6E3EE">
+<div style="font-size: 13px; color: #635C78">Agent Studio <span style="color: #B3ADC4">/</span> <span style="color: #1D1733; font-weight: 500">Agents</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span class="badge b-off mono">hub config v18</span><a class="btn" href="#">⇄ Admin</a><span role="img" aria-label="Minh · platform_admin" style="width: 34px; height: 34px; border-radius: 50%; background: #2E2150; color: #E4DCF7; display: grid; place-items: center; font-size: 13px; font-weight: 600">M</span></div>
+</header>
+<main style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; max-width: 1240px; width: 100%; box-sizing: border-box">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div>
+<h1 style="margin: 0; font-size: 22px; font-weight: 700">Agents</h1>
+<p style="margin: 6px 0 0; color: #635C78">Mỗi agent = runtime + model profile + system prompt + workflow được gắn làm tool. Orchestrator chỉ thấy agent mà user được cấp.</p>
+</div>
+<div style="display: flex; gap: 10px"><button class="btn" type="button">Import yaml</button><a class="btn btn-p" href="AgentEditor.dc.html">+ Tạo agent</a></div>
+</div>
+<div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; background: #FDF0DF; color: #7F3C04">
+<strong style="font-weight: 600">Cần chú ý</strong>
+<span>dev-helper đang chạy bằng bước dự phòng: <span class="mono">codex-sub</span> cooldown tới 14:30. Báo cáo bán hàng chưa cấp cho tenant nào.</span>
+<a href="Models.dc.html" style="color: #7F3C04; font-weight: 600">Xem Models</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<label for="q" style="position: absolute; left: -9999px">Tìm agent</label>
+<input id="q" placeholder="Tìm theo tên, key, mô tả…" style="font: inherit; min-height: 38px; width: 280px; max-width: 100%; box-sizing: border-box; border: 1px solid #D9D5E3; border-radius: 8px; padding: 0 12px; background: #FFFFFF">
+<button class="chip on" type="button" aria-pressed="true">Tất cả</button>
+<button class="chip" type="button" aria-pressed="false">agentic-cli</button>
+<button class="chip" type="button" aria-pressed="false">llm</button>
+<button class="chip" type="button" aria-pressed="false">dify-workflow</button>
+<button class="chip" type="button" aria-pressed="false">python</button>
+<button class="chip" type="button" aria-pressed="false">Đang tắt</button>
+</div>
+<div class="card" style="overflow-x: auto">
+<table>
+<thead><tr><th>Agent</th><th>Runtime</th><th>Profile · lúc này chạy bằng</th><th>Workflow</th><th>Tenant</th><th>24 giờ</th><th>Trạng thái</th><th><span style="position: absolute; left: -9999px">Thao tác</span></th></tr></thead>
+<tbody>
+<tr><td><div style="display: flex; align-items: center; gap: 8px"><a href="Orchestrator.dc.html" style="font-weight: 600; color: #1D1733; text-decoration: none">Điều phối viên</a><span class="badge b-ink">Orchestrator</span></div><div class="mono sub">orchestrator</div></td><td><span class="badge b-info mono">agentic-cli</span></td><td><div class="mono">claude-sub-1</div><div class="sub">claude-sub · <span class="badge b-ok">ok</span></div></td><td>—</td><td>tất cả</td><td>412 run<div class="sub">lỗi 0,5%</div></td><td><span class="badge b-ok">Bật</span></td><td><button class="btn" type="button" aria-label="Thao tác cho orchestrator">⋯</button></td></tr>
+<tr><td><a href="AgentEditor.dc.html" style="font-weight: 600; color: #1D1733; text-decoration: none">Kiểm tra hoá đơn</a><div class="mono sub">hoadon</div></td><td><span class="badge b-info mono">agentic-cli</span></td><td><div class="mono">claude-sub-1</div><div class="sub">claude-sub · <span class="badge b-ok">ok</span></div></td><td>2</td><td>3</td><td>94 run<div class="sub">lỗi 0%</div></td><td><span class="badge b-ok">Bật</span></td><td><button class="btn" type="button" aria-label="Thao tác cho hoadon">⋯</button></td></tr>
+<tr><td><span style="font-weight: 600">Trợ lý chung</span><div class="mono sub">assistant</div></td><td><span class="badge b-info mono">agentic-cli</span></td><td><div class="mono">claude-sub-1</div><div class="sub">claude-sub · <span class="badge b-ok">ok</span></div></td><td>0</td><td>2</td><td>186 run<div class="sub">lỗi 1,1%</div></td><td><span class="badge b-ok">Bật</span></td><td><button class="btn" type="button" aria-label="Thao tác cho assistant">⋯</button></td></tr>
+<tr><td><span style="font-weight: 600">Tạo thẻ Trello</span><div class="mono sub">trello</div></td><td><span class="badge b-off mono">dify-workflow</span></td><td class="sub">— (chạy trên Dify)</td><td>1</td><td>1</td><td>41 run<div><span class="badge b-warn">lỗi 12%</span></div></td><td><span class="badge b-ok">Bật</span></td><td><button class="btn" type="button" aria-label="Thao tác cho trello">⋯</button></td></tr>
+<tr><td><span style="font-weight: 600">Dev helper</span><div class="mono sub">dev-helper</div></td><td><span class="badge b-info mono">llm</span></td><td><div class="mono">coder</div><div class="sub">anthropic-api · <span class="badge b-warn">dự phòng</span></div></td><td>3</td><td>1</td><td>27 run<div class="sub">lỗi 3,7%</div></td><td><span class="badge b-ok">Bật</span></td><td><button class="btn" type="button" aria-label="Thao tác cho dev-helper">⋯</button></td></tr>
+<tr><td><span style="font-weight: 600">Báo cáo bán hàng</span><div class="mono sub">sales-report · agent nội bộ</div></td><td><span class="badge b-info mono">python</span></td><td><div class="mono">sales_report v1.2</div><div class="sub">từ manifest Agent Runtime</div></td><td>0</td><td><span class="badge b-warn">Chưa cấp</span></td><td class="sub">—</td><td><span class="badge b-off">Tắt</span></td><td><button class="btn" type="button" aria-label="Thao tác cho sales-report">⋯</button></td></tr>
+</tbody>
+</table>
+</div>
+<p class="sub" style="margin: 0">Menu ⋯: Nhân bản · Thử trong Playground · Cấp cho tenant… · Đặt làm Orchestrator · Bật/Tắt · Xoá. Agent đang làm Orchestrator không tắt/xoá được.</p>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
