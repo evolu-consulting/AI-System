@@ -1,7 +1,9 @@
 // HUB-FR-75, WRK-FR-24 · HUB-H1-AC-08 · ADM-NFR-06 · test-plan H1 §5 A48–A51 + readiness lần 4 #51 (CHECK `runs_error_cols_ck`):
 // migration Hub trên DB sạch và DB có stub cho cùng schema, không đụng số migration Admin, stub Admin M4 vẫn dùng được,
 // quyền role. Ca DB thuần (schema D1) — có thể xanh trước code hub-api (test-plan §8, chấp nhận).
+
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
 import { runMigrations } from "@ai/db";
 import { runHubMigrations } from "@ai/db/migrate-hub";
 import { resetTestDb, withDatabase } from "@ai/db/test-db";
@@ -19,7 +21,25 @@ import {
   USERS,
 } from "./_fixtures";
 
-const STUB_DB = "ai_system_h1stub_test";
+// Tên DB stub suy từ DB test (HUB_TEST_DATABASE_URL): `<tên>_test` -> `<tên>_stub_test`, mỗi DB test có stub riêng (agent chạy song song);
+// DB mặc định `ai_system_h1_test` giữ tên cũ `ai_system_h1stub_test`.
+const OWNER_DB = decodeURIComponent(new URL(OWNER_URL).pathname.slice(1));
+const STUB_DB =
+  OWNER_DB === "ai_system_h1_test"
+    ? "ai_system_h1stub_test"
+    : OWNER_DB.endsWith("_test")
+      ? `${OWNER_DB.slice(0, -5)}_stub_test`
+      : `${OWNER_DB}_stub`;
+/** Số migration Hub hiện có = số entry journal (đọc lúc chạy), không khoá theo số file D1. */
+const journalCount = (dir: string): number =>
+  (
+    JSON.parse(
+      readFileSync(
+        new URL(`../../../packages/db/${dir}/meta/_journal.json`, import.meta.url),
+        "utf8",
+      ),
+    ) as { entries: unknown[] }
+  ).entries.length;
 const STUB_URL = withDatabase(OWNER_URL, STUB_DB);
 let sql: Sql;
 let stub: Sql;
@@ -90,8 +110,8 @@ const can = async (db: Sql, role: string, table: string, priv: string): Promise<
 describe("A48–A51 · migration Hub và quyền [HUB-H1-AC-08 · HUB-FR-75]", () => {
   it("A48 · DB sạch và DB có stub: schema hub giống nhau (cột, CHECK, index, policy, RLS); lần 2 = {hub:0, hubDev:0} [HUB-H1-AC-08]", async () => {
     expect(await runHubMigrations({ url: STUB_URL, appEnv: "test" })).toEqual({
-      hub: 1,
-      hubDev: 1,
+      hub: journalCount("migrations-hub"),
+      hubDev: journalCount("migrations-hub-dev"),
     });
     expect(await hubSchema(stub)).toEqual(await hubSchema(sql));
     for (const url of [OWNER_URL, STUB_URL])
