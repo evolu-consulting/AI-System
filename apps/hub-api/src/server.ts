@@ -1,11 +1,12 @@
 // HUB-NFR-04 · điểm khởi động hub-api: nơi duy nhất đọc env và mở cổng (plan H1 §4, §7).
-// Thứ tự: env → DB (`HUB_DATABASE_URL`, ping) → Orchestrator hợp lệ (HUB-BR-08) → Redis (connect + ping) → serve.
+// Thứ tự: env → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → Orchestrator hợp lệ (HUB-BR-08) → Redis (connect + ping) → serve.
 // Lỗi bước nào → log `fatal` + exit 1.
 import pkg from "../package.json";
 import { createApp } from "./app";
 import { type Env, loadEnv } from "./config/env";
 import { connectDb, type Db, pingDb } from "./lib/db";
 import { safeErrorFields } from "./lib/errors";
+import { importJwtPublicKey } from "./lib/jwt";
 import { logger, setMinLevel } from "./lib/logger";
 import { createRedis, pingRedis, type Redis } from "./lib/redis";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
@@ -46,6 +47,9 @@ async function main(): Promise<void> {
     fail("env", err);
   }
   setMinLevel(env.LOG_LEVEL);
+  const jwtPublicKey = await importJwtPublicKey(env.JWT_PUBLIC_KEY).catch((err) =>
+    fail("jwt", err),
+  );
   const db = await openDb(env).catch((err) => fail("db", err));
   const problem = await bootOrchestratorProblem(db).catch((err) => fail("orchestrator", err));
   if (problem) {
@@ -61,6 +65,7 @@ async function main(): Promise<void> {
       probes: [() => pingDb(db), () => pingRedis(redis)],
       db,
       redis,
+      jwtPublicKey,
       appEnv: env.APP_ENV,
       instanceId: env.HUB_INSTANCE_ID,
       jobMaxWaitS: env.HUB_JOB_MAX_WAIT_S,

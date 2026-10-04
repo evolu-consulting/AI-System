@@ -3,14 +3,17 @@
 import { HealthResponseSchema } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
 import { type Logger, logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 
-/** `config` có khi app được dựng kèm `db` (cache cấu hình, plan §4). */
-export type AppVars = { Variables: { requestId: string; log: Logger; config?: ConfigCache } };
+/** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
+export type AppVars = {
+  Variables: { requestId: string; log: Logger; config?: ConfigCache; user: AuthUser };
+};
 export type AppConfig = { version: string; corsOrigins: string[] };
 /** Kiểm phụ thuộc cho /health; ném lỗi = không sẵn sàng → 503. Vắng (test khung) → luôn ok. */
 export type HealthProbe = () => Promise<void>;
@@ -34,6 +37,8 @@ export type AppDeps = {
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
+/** Gốc các route cần JWT (E5–E15). Chặn ở gốc ⇒ 401 trước 404, kể cả route chưa mount; `/health` mở. */
+const PROTECTED_PREFIXES = ["/conversations", "/runs"];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
@@ -95,6 +100,10 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
       exposeHeaders: [REQUEST_ID_HEADER],
     }),
   );
+
+  const auth = requireAuth(deps.jwtPublicKey);
+  // `/x/*` của Hono khớp cả `/x`.
+  for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
 
