@@ -21,6 +21,14 @@ from agent_runtime.providers.base import (
 )
 
 
+def stderr_log_path(log_dir: Path, job_id: str) -> Path:
+    return log_dir / datetime.now(UTC).strftime("%Y-%m-%d") / f"{job_id}.stderr.log"
+
+
+def events_log_path(log_dir: Path, job_id: str) -> Path:
+    return log_dir / datetime.now(UTC).strftime("%Y-%m-%d") / f"{job_id}.events.jsonl"
+
+
 def event_envelope(ev: ProviderEvent) -> dict[str, Any]:
     out: dict[str, Any] = {"type": ev.type}
     if isinstance(ev, ToolUse):

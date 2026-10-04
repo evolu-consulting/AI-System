@@ -64,17 +64,19 @@ def build_services(rt: QueueRuntime) -> list[Service]:
     return rt.services()
 
 
-def host_config(settings: Settings) -> HostConfig:
+def host_config(settings: Settings, stopping: asyncio.Event) -> HostConfig:
     s = settings
-    return HostConfig(s.worker_id, s.work_dir, s.log_dir, s.home, s.app_env, s.kill_grace_s)
+    return HostConfig(
+        s.worker_id, s.work_dir, s.log_dir, s.home, s.app_env, s.kill_grace_s, stopping=stopping
+    )
 
 
-async def start_queue(settings: Settings) -> QueueRuntime:
+async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRuntime:
     """Bước 3–8 §1.5; job host thật + XADD `run:<id>`; subreaper (dự phòng §13, plan §2.3);
-    không dumpable (review H1 #11)."""
+    không dumpable (review H1 #11). `stopping` = sự kiện SIGTERM (job host biết cha đang dừng)."""
     enable_subreaper()
     disable_dumpable()
-    cfg = host_config(settings)
+    cfg = host_config(settings, stopping)
 
     def make_host(pool: Pool, events: RunEvents) -> CliJobHost:
         return CliJobHost(pool, events, cfg)
@@ -84,7 +86,7 @@ async def start_queue(settings: Settings) -> QueueRuntime:
 
 async def _start_unless_stopped(settings: Settings, stop: asyncio.Event) -> QueueRuntime | None:
     """Khởi động (bước 3–8 §1.5); SIGTERM lúc đang khởi động → None (thoát 0)."""
-    starting = asyncio.create_task(start_queue(settings))
+    starting = asyncio.create_task(start_queue(settings, stop))
     stopping = asyncio.create_task(stop.wait())
     await asyncio.wait({starting, stopping}, return_when=asyncio.FIRST_COMPLETED)
     stopping.cancel()
@@ -100,6 +102,7 @@ async def run(settings: Settings) -> int:
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
+        # Cờ đặt ngay trong handler: job host chết cùng lúc (systemd) đọc được trước `shutdown`.
         loop.add_signal_handler(sig, stop.set)
     log.info("runtime.start", **settings.safe_summary())
     try:

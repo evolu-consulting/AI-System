@@ -4,7 +4,9 @@
 Luật provider (§3.3): rate limit `rejected` → `cooldown` (giờ reset, không có → now + 30 phút,
 WRK-FR-15) · `logged_out` → `logged_out` · `fatal` / thoát không `final` (≡ ProcessError) → đếm lỗi
 (3 liên tiếp → `error`) · thành công → về 0 · còn lại (huỷ, timeout, `is_error`, JSON sai hình)
-không đụng provider.
+không đụng provider. Review H1 #2c/#5/#10: lỗi phía cha (dòng sự kiện hỏng/quá dài, reader lỗi)
+và job host chết vì tín hiệu không do cha gửi (vd systemd dừng cả cgroup) → **không** đếm lỗi
+provider.
 """
 
 from __future__ import annotations
@@ -72,6 +74,8 @@ class Seen:
     rate_limit: RateLimit | None = None
     tool_used: bool = False  # đã có `tool_use` (resume lỗi sau đó không dựng lại — §6, BR-04)
     carried: UsageSum = field(default_factory=UsageSum)  # usage của lần chạy trước (thử lại)
+    parent_fault: bool = False  # `fatal` do phía cha dựng (giao thức/reader), không phải provider
+    signaled: bool = False  # job host thoát vì tín hiệu mà cha không gửi (returncode < 0)
 
     def total(self) -> UsageSum:
         return self.carried if self.usage is None else self.carried.plus(self.usage)
@@ -82,6 +86,7 @@ class Seen:
     def next_attempt(self) -> None:
         """Lần thử lại: giữ usage đã tiêu + session, bỏ final/fatal cũ."""
         self.carried, self.final, self.fatal, self.usage = self.total(), None, None, None
+        self.parent_fault = self.signaled = False
 
 
 @dataclass(frozen=True)
@@ -122,9 +127,9 @@ def decide_exit(payload: JobPayload1, seen: Seen) -> Verdict:
         failure = LOGGED_OUT if rl.status == "logged_out" else RATE_LIMITED
         return Verdict(failure, provider=broken_of(rl))
     if seen.fatal is not None:
-        return Verdict(fatal_failure(seen.fatal), provider="error")
+        return Verdict(fatal_failure(seen.fatal), provider="none" if seen.parent_fault else "error")
     if seen.final is None:
-        return Verdict(CRASHED, provider="error")
+        return Verdict(CRASHED, provider="none" if seen.signaled else "error")
     if seen.final.is_error:
         return Verdict(PROVIDER_ERROR)
     output = build_output(payload, seen.final)

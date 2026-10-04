@@ -1,4 +1,5 @@
 # WRK-NFR-06 · Agent Runtime (plan-runtime §1.3). Cài trong WSL2 Ubuntu:
+#   (cd ~/ai-system/apps/agent-runtime && uv sync --frozen)   # tạo .venv cho ExecStart
 #   sudo cp ai-worker.service /etc/systemd/system/ && sudo install -m 0600 -o root \
 #     ai-worker.env.example /etc/ai-worker.env   # rồi điền giá trị thật
 #   sudo systemctl daemon-reload && sudo systemctl enable --now ai-worker
@@ -14,10 +15,15 @@ User=worker
 WorkingDirectory=/home/worker/ai-system/apps/agent-runtime
 EnvironmentFile=/etc/ai-worker.env
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/home/worker/.local/bin/uv run --frozen python -m agent_runtime
+# Gọi thẳng python của venv (`uv sync --frozen` lúc cài): SIGTERM tới đúng process cha, không qua
+# `uv run` (review H1 #2). Venv mặc định của uv: <project>/.venv.
+ExecStart=/home/worker/ai-system/apps/agent-runtime/.venv/bin/python -m agent_runtime
 Restart=always
 RestartSec=2
-KillMode=control-group
+# `mixed`: SIGTERM chỉ tới process cha (cha tự dừng job host → `orphaned`, plan-runtime §1.5); hết
+# TimeoutStopSec thì SIGKILL cả cgroup. `control-group` gửi SIGTERM cả job host → job chết trước
+# khi cha kịp `shutdown` (review H1 #2).
+KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=15
 NoNewPrivileges=yes

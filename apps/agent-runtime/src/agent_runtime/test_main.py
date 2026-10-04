@@ -66,7 +66,7 @@ async def test_wrk_nfr_04_sigterm_exits_0(monkeypatch: pytest.MonkeyPatch, tmp_p
     settings = _settings(monkeypatch, tmp_path)
     fake = _FakeQueue()
 
-    async def start(_s: Settings) -> Any:
+    async def start(_s: Settings, _stop: asyncio.Event) -> Any:
         return fake
 
     monkeypatch.setattr(main_mod, "start_queue", start)
@@ -80,7 +80,7 @@ async def test_wrk_nfr_04_sigterm_during_startup_exits_0(
 ) -> None:
     settings = _settings(monkeypatch, tmp_path)
 
-    async def start(_s: Settings) -> Any:
+    async def start(_s: Settings, _stop: asyncio.Event) -> Any:
         await asyncio.sleep(3600)
 
     monkeypatch.setattr(main_mod, "start_queue", start)
@@ -93,7 +93,7 @@ async def test_wrk_nfr_04_startup_failure_exits_1(
 ) -> None:
     settings = _settings(monkeypatch, tmp_path)
 
-    async def start(_s: Settings) -> Any:
+    async def start(_s: Settings, _stop: asyncio.Event) -> Any:
         raise OSError("postgres://a:pw_y@h/d unreachable")
 
     monkeypatch.setattr(main_mod, "start_queue", start)

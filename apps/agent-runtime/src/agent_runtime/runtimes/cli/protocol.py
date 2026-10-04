@@ -37,6 +37,9 @@ ChildEvent = Annotated[
     Field(discriminator="type"),
 ]
 _EVENT: TypeAdapter[ProviderEvent] = TypeAdapter(ChildEvent)
+# Lỗi giao thức phía cha (review H1 #10): cùng một đối tượng để runner nhận ra bằng `is`.
+INVALID_EVENT = Fatal(code="INTERNAL_ERROR", msg="invalid child event")
+EVENT_TOO_LARGE = Fatal(code="INTERNAL_ERROR", msg="child event too large")
 
 
 def encode_event(event: ProviderEvent) -> bytes:
@@ -48,7 +51,7 @@ def parse_event(line: bytes) -> ProviderEvent:
     try:
         return _EVENT.validate_json(line)
     except ValidationError:
-        return Fatal(code="INTERNAL_ERROR", msg="invalid child event")
+        return INVALID_EVENT
 
 
 def child_argv(python: str, job_id: str) -> list[str]:
