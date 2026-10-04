@@ -85,7 +85,7 @@ layers = [
 ]
 
 [[tool.importlinter.contracts]]
-name = "db, events chỉ main/queue/runtimes.cli.runner import"
+name = "db, events chỉ main/queue/runtimes (cli.runner, dify) import"
 type = "forbidden"
 source_modules = [
   "agent_runtime.providers",
@@ -116,3 +116,8 @@ forbidden_modules = [
   "agent_runtime.sandbox",
   "agent_runtime.runtimes.cli",
 ]
+
+[[tool.importlinter.contracts]]
+name = "runtimes.cli và runtimes.dify độc lập; dispatch chỉ ghép ở main (plan-runtime 3.1)"
+type = "independence"
+modules = ["agent_runtime.runtimes.cli", "agent_runtime.runtimes.dify"]

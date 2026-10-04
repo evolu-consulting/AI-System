@@ -3,6 +3,8 @@
 → exit 1 (systemd chạy lại). PY-04: khởi động hàng đợi (pool + LISTEN, manifest, dọn job sót),
 dịch vụ claimer/listener/heartbeat/sweeper; SIGTERM → ngừng claim, job đang chạy → `orphaned`.
 PY-06: Redis PING + XADD (`RunEvents`), job host process con (`CliJobHost`).
+H2a PY-03: `JobRouter` theo `payload.type` — `agent.cli` → `CliJobHost`, `workflow.async` →
+`DifyJobHost` (chỉ khi `dify` ∈ `AGENT_RT_PROVIDERS`, RT6).
 """
 
 import asyncio
@@ -20,6 +22,8 @@ from agent_runtime.log import configure_logging, get_logger
 from agent_runtime.queue import runtime as queue_runtime
 from agent_runtime.queue.runtime import QueueRuntime, UnknownProviders, registry_providers
 from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
+from agent_runtime.runtimes.dify.host import DifyConfig, DifyJobHost
+from agent_runtime.runtimes.dispatch import JobRouter, TypedHost
 from agent_runtime.sandbox.process import disable_dumpable, enable_subreaper
 
 Service = Callable[[], Coroutine[Any, Any, None]]
@@ -71,15 +75,36 @@ def host_config(settings: Settings, stopping: asyncio.Event) -> HostConfig:
     )
 
 
+def dify_config(settings: Settings) -> DifyConfig | None:
+    """None khi `dify` ∉ `AGENT_RT_PROVIDERS` (không claim job `dify`, RT6)."""
+    s = settings
+    if "dify" not in s.providers or not s.hub_url:
+        return None
+    return DifyConfig(
+        s.worker_id, s.hub_url, s.dify_backoff_s, s.dify_read_timeout_s, s.dify_stop_timeout_s
+    )
+
+
+def make_router(
+    pool: Pool, events: RunEvents, cfg: HostConfig, dify: DifyConfig | None
+) -> JobRouter:
+    cli = CliJobHost(pool, events, cfg)
+    hosts: dict[str, TypedHost] = {"agent.cli": cli}
+    if dify is not None:
+        hosts["workflow.async"] = DifyJobHost(pool, events, dify)
+    return JobRouter(hosts, default=cli)
+
+
 async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRuntime:
     """Bước 3–8 §1.5; job host thật + XADD `run:<id>`; subreaper (dự phòng §13, plan §2.3);
     không dumpable (review H1 #11). `stopping` = sự kiện SIGTERM (job host biết cha đang dừng)."""
     enable_subreaper()
     disable_dumpable()
     cfg = host_config(settings, stopping)
+    dify = dify_config(settings)
 
-    def make_host(pool: Pool, events: RunEvents) -> CliJobHost:
-        return CliJobHost(pool, events, cfg)
+    def make_host(pool: Pool, events: RunEvents) -> JobRouter:
+        return make_router(pool, events, cfg, dify)
 
     return await queue_runtime.start(settings, make_host)
 

@@ -35,6 +35,9 @@ from agent_runtime.queue.sweeper import SweepConfig, orphan_own_jobs, run_sweepe
 Service = Callable[[], Coroutine[Any, Any, None]]
 HostFactory = Callable[[Pool, RunEvents], JobHost]
 CLOSE_TIMEOUT_S = 2.0
+# H2a RT6: provider chạy bằng HTTP trong process cha (`workflow.async`, không job host CLI) — claim
+# khi có trong `AGENT_RT_PROVIDERS`, không đụng `provider_state`.
+HTTP_PROVIDERS = frozenset({"dify"})
 
 
 class UnknownProviders(ValueError):
@@ -49,7 +52,7 @@ def registry_providers(settings: Settings) -> list[str]:
     """Provider claim được = `AGENT_RT_PROVIDERS` ∩ registry theo `APP_ENV` (WRK-FR-10); khoá lạ →
     `UnknownProviders` (không claim job mà job host sẽ không chạy được)."""
     keys = list(dict.fromkeys(settings.providers))
-    unknown = [k for k in keys if not is_available(k, settings.app_env)]
+    unknown = [k for k in keys if k not in HTTP_PROVIDERS and not is_available(k, settings.app_env)]
     if unknown:
         raise UnknownProviders(unknown)
     return keys
@@ -114,7 +117,7 @@ async def start(settings: Settings, make_host: HostFactory) -> QueueRuntime:
     sweep = SweepConfig(settings.worker_id, settings.orphan_s, settings.kill_grace_s)
     n = await orphan_own_jobs(pool, events, sweep)
     async with pool.acquire() as conn:
-        await jobs_sql.reset_providers(conn, providers)
+        await jobs_sql.reset_providers(conn, [k for k in providers if k not in HTTP_PROVIDERS])
     log.info("runtime.ready", providers=providers, orphaned=n)
     sup = Supervisor(make_host(pool, events))
     claimer = Claimer(pool, sup, events, providers)

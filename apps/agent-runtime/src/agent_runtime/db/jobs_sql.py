@@ -1,5 +1,6 @@
-"""WRK-FR-01 · WRK-FR-02 · WRK-FR-20 · WRK-FR-23 · WRK-FR-24 · WRK-BR-04 · WRK-BR-05 · H1-R20 —
-SQL `hub.jobs` của Runtime, nguyên văn `plan-db.md` §5.4–5.5 (tham số asyncpg).
+"""WRK-FR-01 · WRK-FR-02 · WRK-FR-20 · WRK-FR-23 · WRK-FR-24 · WRK-BR-04 · WRK-BR-05 · H1-R20 ·
+AC-W06 · H2a-RT1 · RT4 — SQL `hub.jobs` của Runtime, nguyên văn `plan-db.md` §5.4–5.5 (tham số
+asyncpg) + H2a: claim ghi `token_hash` (RT1), requeue orphan `workflow.async` (H2a `plan-db` §2).
 
 Chỉ đánh lại số tham số cho liền mạch (asyncpg không suy được kiểu tham số bị bỏ trống) và đổi hằng
 `interval '60 seconds'` của quét orphan thành `$1` giây (`AGENT_RT_ORPHAN_S`).
@@ -7,7 +8,9 @@ Chỉ đánh lại số tham số cho liền mạch (asyncpg không suy được
 
 from __future__ import annotations
 
+import hashlib
 import json
+import secrets
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -34,8 +37,9 @@ ORDER BY j.priority, j.created_at, j.id
 LIMIT 1
 FOR UPDATE OF j SKIP LOCKED;"""  # noqa: E501 — nguyên văn plan-db §5.4
 
-CLAIM_UPDATE = """UPDATE hub.jobs SET status = 'running', worker_id = $2, started_at = now(), heartbeat_at = now(), attempts = attempts + 1
-WHERE id = $1 AND status = 'queued';"""  # noqa: E501 — nguyên văn plan-db §5.4 ($3 → $1)
+# H2a RT1: thêm `token_hash = $3` (sha256 của token claim, mọi job — `plan-runtime` §3.3 bước 0).
+CLAIM_UPDATE = """UPDATE hub.jobs SET status = 'running', worker_id = $2, started_at = now(), heartbeat_at = now(), attempts = attempts + 1, token_hash = $3
+WHERE id = $1 AND status = 'queued';"""  # noqa: E501 — nguyên văn plan-db §5.4 ($3 → $1) + RT1
 
 SET_PGID = (
     """UPDATE hub.jobs SET pgid = $3 WHERE id = $1 AND worker_id = $2 AND status = 'running';"""  # noqa: E501
@@ -48,6 +52,23 @@ WHERE id = $1 AND worker_id = $2 AND status = 'running';"""  # noqa: E501 — ng
 HEARTBEAT = """UPDATE hub.jobs SET heartbeat_at = now() WHERE worker_id = $1 AND status = 'running' RETURNING id, cancel_requested_at IS NOT NULL AS cancel;"""  # noqa: E501
 
 SWEEP_ORPHANS = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE status = 'running' AND heartbeat_at < now() - make_interval(secs => $1) RETURNING id, run_id, worker_id, pgid;"""  # noqa: E501
+
+# H2a R7 · RT4 (`plan-db` §2 "Requeue orphan", nguyên văn): `workflow.async` mồ côi còn lượt →
+# `queued`; chạy **trước** `SWEEP_ORPHANS`/`RESTART_ORPHANS` cùng kết nối (không cột `requeued`).
+_REQUEUE_SET = """UPDATE hub.jobs SET status = 'queued', worker_id = NULL, pgid = NULL, heartbeat_at = NULL, started_at = NULL,
+  token_hash = NULL, dispatched_at = NULL, queued_at = now()"""  # noqa: E501
+_REQUEUE_WHERE = """AND attempts < 3 AND cancel_requested_at IS NULL
+  AND NOT (coalesce((payload->>'side_effect')::boolean, false) AND dispatched_at IS NOT NULL)
+RETURNING id, run_id, worker_id, pgid;"""
+REQUEUE_ORPHANS = f"""{_REQUEUE_SET}
+WHERE status = 'running' AND type = 'workflow.async' AND heartbeat_at < now() - make_interval(secs => $1)
+  {_REQUEUE_WHERE}"""  # noqa: E501
+# Bản "khởi động lại" (plan-runtime §3.8): điều kiện heartbeat thay bằng `worker_id = $1`.
+REQUEUE_RESTART = f"""{_REQUEUE_SET}
+WHERE status = 'running' AND type = 'workflow.async' AND worker_id = $1
+  {_REQUEUE_WHERE}"""
+NOTIFY_ENQUEUED = "SELECT pg_notify('job_enqueued', $1);"
+TOKEN_BYTES = 32
 
 RESTART_ORPHANS = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE worker_id = $1 AND status = 'running' RETURNING id, run_id, pgid;"""  # noqa: E501
 
@@ -87,6 +108,18 @@ def _payload(raw: object) -> dict[str, Any]:
     return dict(value) if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownArgumentType]
 
 
+def new_token() -> tuple[str, bytes]:
+    """RT1 · token claim (32 byte CSPRNG, base64url không padding, 43 ký tự) + sha256 (32 byte,
+    = `hashJobToken` TS). Token rõ chỉ trong bộ nhớ cha — không log, không vào payload/DB/XADD."""
+    token = secrets.token_urlsafe(TOKEN_BYTES)
+    return token, token_hash(token)
+
+
+def token_hash(token: str) -> bytes:
+    """sha256(ASCII) 32 byte = `hashJobToken` TS = `hub.jobs.token_hash`."""
+    return hashlib.sha256(token.encode("ascii")).digest()
+
+
 def _orphan(row: Row) -> OrphanRow:
     pgid = row["pgid"]
     return OrphanRow(
@@ -98,16 +131,18 @@ def _orphan(row: Row) -> OrphanRow:
 
 
 async def claim_one(conn: Conn, providers: list[str], worker_id: str) -> ClaimedJob | None:
-    """Một transaction READ COMMITTED: `K_CLAIM` → SELECT … SKIP LOCKED → `running`."""
+    """Một transaction READ COMMITTED: `K_CLAIM` → SELECT … SKIP LOCKED → `running` + `token_hash`
+    (RT1, mọi job; claim lại sau requeue → token mới)."""
+    token, digest = new_token()
     async with conn.transaction():
         await conn.execute(K_CLAIM)
         row = await conn.fetchrow(CLAIM_SELECT, providers)
         if row is None:
             return None
-        status = await conn.execute(CLAIM_UPDATE, row["id"], worker_id)
+        status = await conn.execute(CLAIM_UPDATE, row["id"], worker_id, digest)
         if status != "UPDATE 1":
             return None
-        return ClaimedJob(id=str(row["id"]), payload=_payload(row["payload"]))
+        return ClaimedJob(id=str(row["id"]), payload=_payload(row["payload"]), token=token)
 
 
 async def set_pgid(conn: Conn, job_id: str, worker_id: str, pgid: int) -> bool:
@@ -150,6 +185,25 @@ async def heartbeat(conn: Conn, worker_id: str) -> dict[str, bool]:
 
 async def sweep_orphans(conn: Conn, orphan_s: float) -> list[OrphanRow]:
     return [_orphan(r) for r in await conn.fetch(SWEEP_ORPHANS, float(orphan_s))]
+
+
+async def _requeue(conn: Conn, sql: str, arg: object) -> list[OrphanRow]:
+    """Requeue + NOTIFY `job_enqueued{provider_key:"dify"}` mỗi dòng trong một transaction (NOTIFY
+    gửi khi COMMIT). Không XADD (job chưa kết thúc)."""
+    async with conn.transaction():
+        rows = [_orphan(r) for r in await conn.fetch(sql, arg)]
+        for row in rows:
+            note = {"v": 1, "job_id": row.id, "provider_key": "dify"}
+            await conn.execute(NOTIFY_ENQUEUED, json.dumps(note))
+    return rows
+
+
+async def requeue_orphans(conn: Conn, orphan_s: float) -> list[OrphanRow]:
+    return await _requeue(conn, REQUEUE_ORPHANS, float(orphan_s))
+
+
+async def requeue_restart(conn: Conn, worker_id: str) -> list[OrphanRow]:
+    return await _requeue(conn, REQUEUE_RESTART, worker_id)
 
 
 async def restart_orphans(conn: Conn, worker_id: str) -> list[OrphanRow]:
