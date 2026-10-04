@@ -74,25 +74,26 @@ Chỉ phần cụ thể hoá BA; nguồn BA ở cột cuối.
 | H2a-R25 | Tương thích C1: request không bắt đầu `/` và không dùng trường mới → response/SSE parse được bằng `@ai/contracts/chat` (strict) như H1; bộ `test:contract:chat` 41 ca xanh không sửa | H1-R01, CHAT-AC-33 |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead: plan.md §2. Ràng buộc đã biết dưới đây. -->
-- **Không sửa `@ai/contracts/chat`** (của C1). Phần mới cho client ở subpath mới **`@ai/contracts/chat-ext`** (superset, Hub sở hữu tới khi combine): `GET /commands` (`CommandMenuItem{name, aliases, description{vi,en}, args[{name, description, required, has_fallback}]}`), `SendMessageRequestExt` (+`context`), mã lỗi HTTP mới `CMD_NOT_FOUND` (404, `details.suggestions: string[] ≤ 3`), `CMD_MISSING_ARG` (422, `details.missing[]`, `details.invalid[]`). Kênh SSE giữ nguyên tập sự kiện C1. Ghi **CR-impact** cho phiên Chat (menu `/`, gửi `context`, hiện lỗi pre-run) — Q3.
-- **Hub↔Runtime `@ai/contracts/hub`:** `JobPayload` thêm biến thể `workflow.async`; `agent.cli.mcp` từ `null` → `{url, token, tools[]} | null`; `RunEvent` thêm tiến độ cho workflow nếu cần; `contracts:gen` + `contracts:check` (ADR-0009).
-- **Nội bộ:** `/mcp` (R18–R22) · `POST /internal/test-run` (R24) · cách Runtime lấy app-key cho `workflow.async` (Q5).
+Chi tiết từng trường: `plan.md` §2 (quyết định P1–P15 ở §1). Tóm tắt:
+- **`@ai/contracts/chat` — sửa thẳng, chỉ thêm (Q3):** `MessageContextSchema` + `SendMessageRequest.context?` · `chat/commands.ts` (`CommandMenuItem`, `CommandMenuResponse{items}`) · hằng **riêng** `CHAT_COMMAND_ERRORS {CMD_NOT_FOUND: 404, CMD_MISSING_ARG: 422}` + schema `details`. **Không** thêm vào `CHAT_API_ERRORS` (unit `chat/entities.test.ts:142` assert đúng 6 mã; `tools/mocks/src/chat/http.ts` `Record<ChatErrorCode>`). Không thêm sự kiện SSE. Đã đối chiếu `tests/contract/chat/**`, `tests/acceptance/C1/**`: không ca nào đỏ (plan §2.1). CR-impact Chat: menu `/`, `context`, hiện lỗi `CMD_*`.
+- **`@ai/contracts/hub`:** `WorkflowAsyncJob` (không secret) · `agent.cli.mcp = {url, tools[]} | null` (token **không** ở payload: Runtime sinh lúc claim, lưu `jobs.token_hash` — chỉnh R18, plan P4) · `HUB_JOB_ERROR_CODES` + `NOT_CONFIGURED` · `JOB_FAIL_REASONS` + `credential`, `upstream` · `RunEvent` không đổi · `contracts:gen/check`.
+- **`@ai/contracts/hub-internal` (mới):** `TestRunRequest/Response`, `DifyCredentialResponse`, `HUB_INTERNAL_ERRORS`, `MCP_PROTOCOL_VERSIONS`, `ToolConfirmationRequired`.
 
-| Method | Path | Role | Request | Response | Lỗi (HTTP · code) |
-|---|---|---|---|---|---|
-| GET | `/commands` | mọi user | — | `CommandMenuItem[]` | 401 |
-| POST | `/conversations/:id/messages` | chủ hội thoại | `SendMessageRequestExt` | SSE (C1) | 404 `CMD_NOT_FOUND` · 422 `CMD_MISSING_ARG` · như C1 |
-| POST | `/mcp` | token job | JSON-RPC | JSON-RPC | 401 |
-| POST | `/internal/test-run` | service token | xem R24 | xem R24 | 401 · 400 · lỗi R11 |
+| Method | Path | Auth | Request → Response | Lỗi (HTTP · code) |
+|---|---|---|---|---|
+| GET | `/commands` | JWT | — → `CommandMenuResponse` | 401 |
+| POST | `/conversations/:id/messages` | JWT chủ hội thoại | `SendMessageRequest` (+`context`) → SSE C1 | như C1 + 404 `CMD_NOT_FOUND` · 422 `CMD_MISSING_ARG` (JSON, trước khi tạo run) |
+| POST | `/mcp` | Bearer token job | JSON-RPC (plan §6) | 401 · GET/DELETE 405 |
+| POST | `/internal/test-run` | Bearer `HUB_INTERNAL_TOKEN` | `TestRunRequest` → `TestRunResponse{ok,…}` (200 cả khi run lỗi) | 401 · 400 · 422 |
+| POST | `/internal/jobs/:job_id/dify-credential` (Q5) | Bearer token job | — → `{api_key}` | 401 · 409 `NOT_CONFIGURED` |
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead: plan.md §3 / plan-db.md. Ràng buộc đã biết: -->
-- `hub.runs`: `kind` thêm `command`, cột `command_id`, `feature_id` (không FK sang `admin`). `run_steps.type` thêm `workflow`, `tool` + `workflow_id`.
-- `hub.jobs`: `type` thêm `workflow.async`; `mcp_token_hash` (hoặc bảng riêng), `attempts` dùng cho R13.
-- Mới `hub.tool_confirmations` (tenant_id, user_id, flow_id, agent_id, workflow_id, status `pending|confirmed|declined|consumed`, run_id, timestamps; RLS như bảng hội thoại).
-- Quyền đọc `admin.*` của `hub_ro`: features, feature_commands, feature_entitlements, feature_grants, commands, command_names, workflows — kiểm grant hiện có (0000 mặc định, TECH-DEBT #34). **`admin.secrets`: `hub_ro` bị REVOKE ALL (M2 `0004_catalog_rls.sql`)** → cần GRANT cột `(id, ciphertext, iv, key_version)` + policy SELECT cho `hub_ro` (Q1, phụ thuộc Admin).
-- Seed yaml: agent `dify-*` (`runtime_options.workflow_key`), `agent_workflows` cho agent `agentic-cli` mẫu, `workflow_flags` (R23). Test int Admin giữ nguyên (HUB-H1-AC-08).
+`migrations-hub/0002_h2a_dify.sql` — SQL nguyên văn `plan-db.md` §1:
+- `runs` + `command_id`, `feature_id`, CHECK `kind`; `run_steps.type` + `workflow`, `tool`, cột `workflow_id`; `seq` cấp trong DB (P11).
+- `jobs`: `type` + `workflow.async`, `agent_id` nullable cho job đó, + `token_hash` (unique), `queued_at`, `dispatched_at` (requeue R13, P10); provider seed `dify` (P9).
+- Mới `tool_confirmations` (RLS như bảng hội thoại; `pending|confirmed|declined|consumed|expired`), `workflow_flags` (Q2).
+- **Q1:** hàm `hub.workflow_secret(workflow_id)` SECURITY DEFINER, EXECUTE `hub_ro` — trả bản mã secret gắn workflow; **không** GRANT cột `admin.secrets` (giữ đúng test khoá M2/M3 "hub_ro không SELECT secrets"). Usage `dify` của Hub qua hàm `hub.log_dify_usage` (test khoá H1 A51: `hub_api` không INSERT `usage_logs`).
+- Đọc `admin.*` đã có grant (M2/M3); seed yaml: plan-db §4.
 
 ## 5. UI
 Không có UI Hub. Menu `/`, `context`, lỗi pre-run: phiên Chat (Q3). Nút Test: M5.
@@ -100,24 +101,23 @@ Không có UI Hub. Menu `/`, `context`, lỗi pre-run: phiên Chat (Q3). Nút Te
 ## 6. Hiệu năng
 | Chỉ tiêu | Ngưỡng | Đo bằng |
 |---|---|---|
-| `GET /commands`, `tools/list` (từ cache) | ≤ 50 ms p95 | `test:perf` (không chặn) |
+| `GET /commands`, `tools/list` (từ cache, 0 query) | ≤ 50 ms p95 | `test:perf` (không chặn) |
 | Overhead Hub trước khi gọi Dify | ≤ 200 ms p95 | `test:perf` |
-| Chunk Dify → `delta` tới client | ≤ 100 ms thêm | int (mock stream có dấu thời gian) |
-| Sửa/tắt command/feature ở Admin → `GET /commands` đổi | ≤ 5 s (NOTIFY `config_changed`) | acceptance AC-H05 (chặn) |
+| Chunk Dify → `delta` tới client | ≤ 100 ms thêm | int (mock có dấu thời gian) |
+| Sửa/tắt command/feature ở Admin → `GET /commands` đổi | ≤ 5 s (`config_changed`) | acceptance AC-H05 (chặn) |
 | Huỷ command sync/async | ≤ 5 s | acceptance (chặn) |
+Index từng query mới: `plan.md` §8.
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
 |---|---|
-| **Dify thật** | Chỉ smoke thủ công `DIFY_LIVE=1` (Q10) |
-| **Mock Dify** | `tools/mocks/src/dify.ts` hiện **chỉ `blocking`** (từ chối `response_mode≠blocking`), 3 kịch bản theo token (`ok/unauthorized/timeout`), không stream, không stop, không 5xx/`failed`. H2a cần: SSE `workflows/run` + `chat-messages` (`text_chunk`, `message`, `agent_message`, `agent_thought`, `workflow_finished`, `message_end`, `error`, `ping`), API stop, kịch bản 5xx n lần, `status=failed`, chậm, `metadata.usage`. Mặc định: **mock riêng của Hub** (in-process Hono trong test support/`tools/hub-dev`), không sửa `tools/mocks` (Admin/M0 đang dùng, có test khoá) — Q9 |
-| Admin (secret, `side_effect`, M5) | Q1 grant secret; Q2 cờ `side_effect` qua seed; M5 gọi `/internal/test-run` khi combine |
-| Claude Agent SDK + MCP HTTP | `fake-cli` thêm chỉ thị `#fake:tool=<key>[ args=<json>]` gọi `/mcp` thật bằng token job (đường token, side_effect, timeout là code thật); `claude-sub` + MCP chỉ smoke `HUB_LIVE=1` |
-| API key model | Không cần ở H2a (Q1 H1 vẫn hiệu lực: Orchestrator `agentic-cli`/`claude-sub`; test `fake-cli`) |
+| Dify thật | Chỉ smoke `DIFY_LIVE=1` (Q10) |
+| Mock Dify (Q9) | **Mock riêng của Hub** `tools/hub-dev/src/dify-mock.ts` (SSE workflow/chat/agent, stop, 4xx/5xx n lần, `failed`, chậm, `usage`; kịch bản theo api key) — `plan.md` §9; `tools/mocks` không đổi (`dify.ts` chỉ `blocking`, có test khoá) |
+| Admin (secret, `side_effect`, M5) | Q1 hàm `workflow_secret`; Q2 `workflow_flags` qua seed; M5 gọi `/internal/test-run` khi combine |
+| Claude Agent SDK + MCP HTTP | `fake-cli #fake:tool=<key>[ args=<json>]` gọi `/mcp` thật bằng token job; `claude-sub` + MCP chỉ smoke `HUB_LIVE=1` |
+| API key model | Không cần (Q1 H1 vẫn hiệu lực) |
 
-Env mới (tên · dev): `SECRET_MASTER_KEY` (Hub, chung giá trị với admin-api) · `HUB_INTERNAL_TOKEN` (chung với admin-api cho M5) · `HUB_MCP_URL=http://localhost:4000/mcp` (URL Runtime/CLI gọi, WSL2 mirrored) · `HUB_DIFY_TIMEOUT_MAX_S=300` · `DIFY_LIVE` (smoke). Không env chứa app-key Dify (key nằm ở `admin.secrets`).
-
-Nguồn tham khảo cách gọi Dify (không chép giá trị): auto-pilot `apps/extension-hub/src/core/dify/{chat-client,client}.ts`, `apps/copilot-hub/apps/api/src/brain/dify-agent-brain.ts`.
+Env mới (`plan.md` §8): `SECRET_MASTER_KEY` (chung admin-api) · `HUB_INTERNAL_TOKEN` (chung admin-api cho M5) · `HUB_PUBLIC_INTERNAL_URL=http://localhost:4000` (dựng URL `/mcp` + credential cho Runtime, WSL2 mirrored) · `HUB_DIFY_TIMEOUT_MAX_S=300` · `DIFY_LIVE`. Không env chứa app-key Dify. Tham khảo cách gọi Dify (không chép giá trị): auto-pilot `apps/extension-hub/src/core/dify/{chat-client,client}.ts`, `apps/copilot-hub/apps/api/src/brain/dify-agent-brain.ts`.
 
 ## 8. Tiêu chí nghiệm thu (qc)
 Nguyên văn AC ở BA (`ba-agent-hub` §11, `ba-worker` §10).
@@ -153,18 +153,22 @@ Lệnh xong mốc: `done:h2a` (qc định nghĩa ở `test-plan.md` §7, mẫu `
 ## 9. Câu hỏi mở (mặc định dùng nếu người dùng không trả lời)
 | # | Câu hỏi | Mặc định | Mức |
 |---|---|---|---|
-| Q1 | `hub_ro` không đọc được `admin.secrets` (M2 REVOKE). Ai cấp quyền? | Migration trong `packages/db/migrations-hub/` (Hub sở hữu): `GRANT SELECT (id, ciphertext, iv, key_version) ON admin.secrets TO hub_ro` + policy `FOR SELECT TO hub_ro`; ghi CR-impact để phiên Admin rà khi combine. Hub chỉ đọc bản mã, giải mã bằng `SECRET_MASTER_KEY` | Cao (secret) |
+| Q1 | `hub_ro` không đọc được `admin.secrets` | **Chốt 2026-10-05** (spec-decisions); thực hiện bằng hàm `hub.workflow_secret` (plan P1) | Cao |
 | Q2 | `admin.workflows.side_effect` chưa có (CR-034, phiên Admin) | R23: đọc cột nếu có, không thì `workflow_flags` trong seed yaml Hub; xoá nhánh dự phòng khi combine | Thường |
-| Q3 | Contract chat mới (`GET /commands`, `context`, `CMD_*`) | Subpath `@ai/contracts/chat-ext` (superset, không sửa `chat`); lỗi pre-run HTTP 404/422; không thêm sự kiện SSE; CR-impact cho phiên Chat | Cao (contract) |
+| Q3 | Contract chat mới | **Chốt:** sửa thẳng `chat`, chỉ thêm (plan P3, §2.1) | Cao |
 | Q4 | Command thuộc nhiều feature → `feature_id` | Feature key nhỏ nhất user được cấp (BA §12 câu 4) | Thường |
-| Q5 | Runtime lấy app-key Dify cho `workflow.async` thế nào (Runtime không đọc `admin.*`, payload không chứa secret)? | Endpoint nội bộ Hub `POST /internal/jobs/:job_id/dify-credential` xác thực bằng token job (như MCP), chỉ khi job `running`, trả key qua TLS/localhost, Runtime giữ trong bộ nhớ tới hết job. Phương án B: Hub tự chạy async (không job) — đơn giản hơn nhưng lệch BA-W §2 | Cao (secret) |
+| Q5 | Runtime lấy app-key cho `workflow.async` | **Chốt:** `POST /internal/jobs/:id/dify-credential`, token job (plan P4) | Cao |
 | Q6 | Retry/đưa lại queue workflow `side_effect` | Không, sau khi request đã gửi (tránh chạy hai lần) — chặt hơn BA-W §2 | Thường |
 | Q7 | Timeout tool | min(`agents.timeout_s`, `HUB_DIFY_TIMEOUT_MAX_S`=300) (BA §12 câu 7) | Thường |
-| Q8 | Thư viện MCP server TS (`@modelcontextprotocol/sdk`) hay tự viết JSON-RPC tối thiểu? | Tự viết tập con (`initialize`, `tools/list`, `tools/call`, response JSON không SSE) — không thêm thư viện; nếu backend-lead chọn thư viện → ADR-0010 Proposed, Gate trình người dùng (Luật 2b) | Thường |
-| Q9 | Mock Dify streaming đặt ở đâu | Mock riêng của Hub (test support / `tools/hub-dev`); `tools/mocks` không đổi | Thường |
+| Q8 | Thư viện MCP server? | Tự viết tập con (plan P7), không ADR | Thường |
+| Q9 | Mock Dify streaming ở đâu | `tools/hub-dev/src/dify-mock.ts` (plan §9) | Thường |
 | Q10 | Có Dify thật để smoke không? | Smoke `DIFY_LIVE=1` cuối mốc (như I2 của H1), `blocked` tới khi người dùng tạo workflow + secret ở Admin; không chặn `done:h2a` | Thường |
 | Q11 | Agent `dify-*` map task → input | `query`, hoặc input chuỗi bắt buộc duy nhất; khác → seed từ chối (R14) | Thường |
 | Q12 | Đường sync dùng `blocking` hay `streaming`? | `streaming` (app agent của Dify chỉ hỗ trợ streaming; cho `delta` sớm) | Thường |
+| Q13 | Test-run (không tenant) có ghi `usage_logs`? | Không; trả `usage` trong response | Thường |
+| Q14 | `//abc` lưu tin user là gì? | `/abc` (đã bỏ một `/`) | Thường |
+| Q15 | AC-H22 dùng `create_trello_card` nhưng key workflow không cho `_` | Dùng `create-trello-card` | Thường |
+| Q16 | Test-run trả thân lỗi Dify cho Admin? | Có, `error.detail` ≤ 300 ký tự, đã che key | Thường |
 
 Quyết định trong lúc làm: `spec-decisions.md` (mẫu H1).
 

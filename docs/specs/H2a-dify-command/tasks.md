@@ -3,38 +3,38 @@
 Mỗi task: một commit `[FR]`, diff ≈ ≤ 400 dòng. Tick khi lệnh "xong" xanh. `blocked` kèm lý do → báo cáo cuối.
 Cột `Đọc`: đúng các mục tài liệu task cần (agent BUILD chỉ đọc chừng đó + bàn giao). Cột `Rủi ro` (`cao` / `thường`) quyết định model khi BUILD — `docs/WORKFLOW.md` "Chính sách model".
 
-<!-- Khung do docs-architect (2026-10-05). backend-lead sửa khi viết `plan.md` (BE TS) ∥ `plan-runtime.md` (Python); số `plan §` điền sau. Không có frontend (spec §5).
+<!-- Khung do docs-architect (2026-10-05). Hàng TS/DB/Contract/QA: `plan.md` (+ `plan-db.md`, `plan-errors.md`); hàng PY: `plan-runtime.md`. Không có frontend (spec §5).
 Nhóm: Tiền đề · DB · Contract · BE-TS (hub-api) · PY (agent-runtime) · QA. `BA-H` = ba-agent-hub.md, `BA-W` = ba-worker.md. Lệnh Python chạy trong `apps/agent-runtime`. -->
 
-## Thứ tự (đề xuất, backend-lead chốt ở plan)
-1. Gate → C1, D1, PY-00 (tách `job_run.py`) → B0 (stub chữ ký).
-2. qc WRITE theo nhóm → khoá `tests/.lock`.
-3. Sau khoá: D2, C2, B1–B9, PY-01–PY-04.
+## Thứ tự (backend-lead chốt, plan §1)
+1. Gate → C1, C2, D1, D2, MK, PY-00, PY-S1 → B0 (stub chữ ký `plan §7`).
+2. qc WRITE theo nhóm (dùng mock MK) → khoá `tests/.lock`.
+3. Sau khoá: D3, B1–B10, PY-01–PY-06 (PY-02 cần hình endpoint B6; PY-03 cần D1).
 4. I1 (`done:h2a`) → I2 (smoke `DIFY_LIVE=1` + `HUB_LIVE=1`, `blocked` tới khi người dùng có Dify thật) → I3 (docs).
 
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
 | **Tiền đề** | | | | | | | | |
 | W1 | Người dùng (tuỳ chọn): Dify thật + workflow mẫu + secret nhập ở Admin cho smoke | người dùng | thường | `spec §7`, `§9 Q10` | máy (không repo) | — | smoke I2 chạy được | [ ] |
-| B0 | Stub chữ ký sau Gate (hàm thuần parse/map/quyền/gợi ý/ánh xạ lỗi Dify, MCP handler, confirmation) | backend-lead | thường | `plan §…` | `apps/hub-api/src/modules/{commands,dify,mcp}/` | Gate | `bun run typecheck` | [ ] |
+| B0 | Stub chữ ký hàm thuần + kiểu (`plan §7`), module rỗng `commands/dify/mcp/internal`, `lib/{secret-crypto,job-token}.ts` (P6, test vector) | backend-lead | cao | `plan §1 P5–P6, §4, §7` | `apps/hub-api/src/modules/{commands,dify,mcp,internal}/`, `apps/hub-api/src/lib/` | C1, C2 | `bun run typecheck` · `bun test apps/hub-api/src/lib` | [ ] |
 | **DB** | | | | | | | | |
-| D1 | Migration hub: `runs.kind/command_id/feature_id`, `run_steps.type/workflow_id`, `jobs.type workflow.async` + token MCP hash, `tool_confirmations` (+ RLS) | backend-lead | cao | `spec §4`, `§2 R13, R18, R21–R22`, `H1 plan-db.md` | `packages/db/migrations-hub/`, `packages/db/src/schema/hub.ts` | Gate | `bun run test:int packages/db` | [ ] |
-| D2 | Quyền đọc `admin.*` cho `hub_ro` (catalog + cột bản mã `admin.secrets`, Q1) + test không lộ cột khác | backend-lead | cao | `spec §4`, `§9 Q1`, `M2 plan §3.1–3.2` | `packages/db/migrations-hub/` | D1 | `bun run test:int packages/db` · test int Admin xanh | [ ] |
-| D3 | Seed yaml: agent `dify-*`, `agent_workflows`, `workflow_flags` + validate | backend-lead | thường | `spec §2 R14, R23`, `H1 plan §3.6` | `apps/hub-api/seed/*.yaml`, `apps/hub-api/src/modules/seed/` | D1 | `bun run test:int apps/hub-api/src/modules/seed` | [ ] |
+| D1 | Migration `0002_h2a_dify.sql` phần cột/CHECK/bảng (`runs`, `run_steps`, `jobs` token/queued/dispatched, `providers.vendor`, `tool_confirmations` + RLS, `workflow_flags`, grant `cli_sessions`) + `schema/hub.ts` | backend-lead | cao | `plan-db §1.1–1.2`, `plan §3`, `H1 plan.md §3.4–3.5` | `packages/db/migrations-hub/`, `packages/db/src/schema/hub.ts` | Gate | `bun run test:int packages/db` · H1 A48–A51 xanh | [ ] |
+| D2 | Hàm `hub.workflow_secret` (Q1, P1) + `hub.log_dify_usage` (P2) + test D2 | backend-lead | cao | `plan-db §1.3`, `plan §1 P1–P2` | `packages/db/migrations-hub/0002_h2a_dify.sql`, `packages/db/src/hub-h2a.int.test.ts` | D1 | `bun run test:int packages/db` · test int Admin M2/M3 xanh | [ ] |
+| D3 | Seed: provider `dify`, agent `dify-*`, `workflows.yaml` (`agent_workflows`, `workflow_flags`) + luật từ chối | backend-lead | thường | `plan-db §4`, `H1 plan §3.6` | `apps/hub-api/seed/*.yaml`, `apps/hub-api/src/modules/seed/` | D1, B0 | `bun run test:int apps/hub-api/src/modules/seed` | [ ] |
 | **Contract** | | | | | | | | |
-| C1 | `@ai/contracts/chat-ext` (`CommandMenuItem`, `SendMessageRequestExt`, `CMD_NOT_FOUND`, `CMD_MISSING_ARG`) — không sửa `chat` | backend-lead | cao | `spec §3`, `§9 Q3`, `C1 spec §3` | `packages/contracts/src/chat-ext/*`, `packages/contracts/package.json` | Gate | `bun test packages/contracts/src/chat-ext` | [ ] |
-| C2 | `@ai/contracts/hub`: job `workflow.async`, `agent.cli.mcp`, sự kiện tiến độ; `contracts:gen` + `contracts:check` | backend-lead | cao | `spec §3`, `ADR-0009` | `packages/contracts/src/hub/*`, `apps/agent-runtime/contracts/*` | C1 | `bun run contracts:check` | [ ] |
+| C1 | `@ai/contracts/chat` **chỉ thêm** (Q3): `MessageContext`, `context?`, `chat/commands.ts`, `CHAT_COMMAND_ERRORS` + details — không đổi `CHAT_API_ERRORS` | backend-lead | cao | `plan §1 P3, §2.1` | `packages/contracts/src/chat/{entities,commands,errors,index}.ts` + test cạnh | Gate | `bun test packages/contracts/src/chat` · `bun run test:contract:chat` (41 ca) · typecheck `apps/chat-web`, `tools/mocks` | [ ] |
+| C2 | `@ai/contracts/hub` (`WorkflowAsyncJob`, `mcp`, mã/lý do) + fixture + `contracts:gen`; subpath `hub-internal` | backend-lead | cao | `plan §2.2–2.3`, `ADR-0009` | `packages/contracts/src/{hub,hub-internal}/*`, `packages/contracts/fixtures/hub/*`, `packages/contracts/package.json`, `apps/agent-runtime/contracts/*`, `…/agent_runtime/contracts/hub.py` | Gate | `bun run contracts:check` · test khoá H1 `contracts-hub` xanh | [ ] |
 | **BE-TS** | | | | | | | | |
-| B1 | Cache catalog Admin + quyền command (hàm thuần tương đương M3 Kiểm tra quyền) | backend-lead | cao | `spec §2 R02, R03`, `apps/admin-api/src/modules/access/access.rules.ts` (chỉ đọc) | `apps/hub-api/src/modules/{config,commands}/` | D2 | `bun test` + int đối chiếu (HUB-H2a-AC-10) | [ ] |
-| B2 | `GET /commands` | backend-lead | thường | `spec §2 R03`, `§3` | `apps/hub-api/src/modules/commands/` | B1, C1 | acceptance AC-H05, H11 | [ ] |
-| B3 | Router `/` `//` + parse + input map + validate + gợi ý + lỗi pre-run | backend-lead | thường | `spec §2 R01, R04–R07, R16` | `apps/hub-api/src/modules/{runs,commands}/` | B1, C1 | unit HUB-H2a-AC-01 · acceptance AC-H01, H02, AC-09 | [ ] |
-| B4 | Dify client TS (streaming SSE, stop, ánh xạ lỗi, usage) + giải mã secret | backend-lead | cao | `spec §2 R09–R11, R15, R17`, `M2 plan §3.2` | `apps/hub-api/src/modules/dify/` | D2 | int với mock Dify Hub (Q9) · HUB-H2a-AC-03, 04 | [ ] |
-| B5 | Command Runner sync (run `kind=command`, snapshot, delta, timeout, cancel) | backend-lead | thường | `spec §2 R08–R10` | `apps/hub-api/src/modules/commands/` | B3, B4 | HUB-H2a-AC-02, 03 | [ ] |
-| B6 | Command async: tạo job `workflow.async`, dịch tiến độ → step; endpoint lấy app-key cho job (Q5) | backend-lead | cao | `spec §2 R12, R13`, `§9 Q5` | `apps/hub-api/src/modules/{commands,runner}/` | B5, C2 | acceptance async · AC-W06 (phần TS) | [ ] |
-| B7 | Runtime agent `dify-workflow` / `dify-agent` trong Orchestrator | backend-lead | thường | `spec §2 R14` | `apps/hub-api/src/modules/{orchestrator,dify}/` | B4, D3 | HUB-H2a-AC-07 | [ ] |
-| B8 | MCP `/mcp` (token job, `tools/list`, `tools/call`) + payload `agent.cli.mcp` | backend-lead | cao | `spec §2 R18–R20`, `§9 Q7, Q8` | `apps/hub-api/src/modules/mcp/`, `modules/runner/` | B4, C2, D1 | HUB-H2a-AC-05 · AC-H12 | [ ] |
-| B9 | Xác nhận `side_effect` (pending/confirmed/consumed) | backend-lead | cao | `spec §2 R21–R23` | `apps/hub-api/src/modules/mcp/`, `modules/runs/` | B8 | AC-H22 | [ ] |
-| B10 | `POST /internal/test-run` | backend-lead | cao | `spec §2 R24` | `apps/hub-api/src/modules/internal/` | B5 | HUB-H2a-AC-08 | [ ] |
+| B1 | Cache catalog Admin (`CatalogSnapshot`) + `usableCommands` (P5, Q4) | backend-lead | cao | `plan §1 P5, §3 (đọc admin.*), §4 config/commands, §7 command-access` | `apps/hub-api/src/modules/{config,commands}/` | B0, D2 | `bun test` · int đối chiếu HUB-H2a-AC-10 | [ ] |
+| B2 | `GET /commands` (`toMenuItem`, 0 query) | backend-lead | thường | `plan §2.1, §2.4, §7 menu` | `apps/hub-api/src/modules/commands/`, `app.h2a.ts` | B1 | acceptance AC-H05, H11 | [ ] |
+| B3 | E12: `classifyMessage`, `prepare` (parse/bind/inputs/gợi ý), lỗi `CMD_*` trước run, `RunService.start` nhận `kind=command`; `lib/errors` thêm mã | backend-lead | thường | `plan §5.1, §7 parse/input/suggest`, `plan-errors §1` | `apps/hub-api/src/modules/{runs,commands}/`, `apps/hub-api/src/lib/errors.ts` | B1, C1 | unit HUB-H2a-AC-01 · acceptance AC-H01, H02, AC-09 | [ ] |
+| B4 | Dify client TS (SSE, stop, `dify.rules`), `credential.service` (hàm `workflow_secret` + giải mã), `dify.usage` | backend-lead | cao | `plan §5.2, §7 dify`, `plan-errors §2`, `plan-db §2 Secret` | `apps/hub-api/src/modules/dify/` | B0, D2, MK | int mock MK · HUB-H2a-AC-03, 04 | [ ] |
+| B5 | `command-driver` sync: step `workflow`, delta, timeout + stop, cancel, usage | backend-lead | thường | `plan §5.1–5.2`, `plan-errors §3` | `apps/hub-api/src/modules/commands/command-driver.ts` | B3, B4 | HUB-H2a-AC-02, 03 | [ ] |
+| B6 | Async: `WorkflowJobRunner` (enqueue, `queued_at`, hạn run qua requeue), `orphan-sweep` requeue, `POST /internal/jobs/:id/dify-credential` (Q5) | backend-lead | cao | `plan §2.4, §5.3, §10 R5/R7/R9`, `plan-db §2` | `apps/hub-api/src/modules/{runner,internal,commands}/` | B5, C2, D1 | acceptance async · AC-W06 (phần TS) · int credential 401/409 | [ ] |
+| B7 | `RoutingRunner` + `DifyAgentRunner` (`dify-workflow`/`dify-agent`, `cli_sessions` provider `dify`) | backend-lead | thường | `plan §5.4, §7 difyAgentInput`, `plan-db §2 Phiên` | `apps/hub-api/src/modules/{runner,dify,orchestrator}/` | B4, D3 | HUB-H2a-AC-07 | [ ] |
+| B8 | `insertStep` cấp `seq` trong DB (P11) cho mọi bước; MCP `/mcp` (token, `initialize`/`server/discover`/`tools/list`/`tools/call`); `buildJobPayload` thêm `mcp` | backend-lead | cao | `plan §1 P4/P7/P11–P12, §6, §7 mcp`, `plan-db §2`, `plan-errors §4` | `apps/hub-api/src/modules/{mcp,runner,orchestrator}/` | B4, C2, D1 | HUB-H2a-AC-05 · AC-H12 · H1 acceptance xanh | [ ] |
+| B9 | Xác nhận `side_effect`: E12 quyết định, `tools/call` tiêu thụ/pending, nguồn cờ R23 | backend-lead | cao | `plan-db §3`, `plan §2.3 ToolConfirmationRequired`, `plan-errors §5` | `apps/hub-api/src/modules/{mcp,runs}/` | B8 | AC-H22 | [ ] |
+| B10 | `POST /internal/test-run` (token dịch vụ, sync không kiểm quyền, không ghi hội thoại) | backend-lead | cao | `plan §2.3–2.4`, `spec §2 R24`, `§9 Q13, Q16` | `apps/hub-api/src/modules/internal/` | B5 | HUB-H2a-AC-08 | [ ] |
 | **PY** | | | | | | | | |
 | PY-00 | Tách `runtimes/cli/job_run.py` (398/400) → `job_run.py` (điều phối) + `host_proc.py` (`HostProcess`: spawn/giám sát/giết group) — không đổi hành vi, không sửa logic test | backend-lead | thường | `plan-runtime §2`, `H1 spec-decisions "Nợ chuyển TECH-DEBT"` | `apps/agent-runtime/src/agent_runtime/runtimes/cli/{job_run,host_proc}.py` | Gate | `pytest` + `pytest -m int` (310 ca H1) xanh · `lint-imports` · `check:size` | [ ] |
 | PY-S1 | Spike MCP với CLI thật trong WSL (10 điểm `plan-runtime §4.6`, server MCP giả stdlib, ≤ 6 lượt model) → `spike-mcp.md`; không sửa `src/**` | backend-lead | cao | `plan-runtime §4`, `H1 spike-py02.md` (S3) | `apps/agent-runtime/spikes/mcp_spike.py`, `docs/specs/H2a-dify-command/spike-mcp.md` | Gate | biên bản 10 điểm | [ ] |
@@ -45,7 +45,8 @@ Nhóm: Tiền đề · DB · Contract · BE-TS (hub-api) · PY (agent-runtime) �
 | PY-05 | `side_effect` phía agent: `mapping` → `Confirm`, `result.build_output` ép `need_input`, không retry sau `Confirm` | backend-lead | cao | `plan-runtime §5`, `§9 R6`, `spec §2 R21` | `apps/agent-runtime/src/agent_runtime/{providers/base.py,providers/claude/mapping.py,runtimes/cli/{result,job_run}.py}` | PY-04 | unit `test_hub_fr_95_*` | [ ] |
 | PY-06 | `fake-cli`: `#fake:tool=<key>` gọi `/mcp` thật khi key ∈ `payload.mcp.tools` (giữ nghĩa H1 khi không), `#fake:args`, `#fake:mcp-list`, `CONFIRMATION_REQUIRED` → `need_input`; mock `tests/support/mcp_mock.py` | backend-lead | thường | `plan-runtime §6`, `H1 plan-runtime-fake.md §7` | `apps/agent-runtime/src/agent_runtime/providers/fake/{provider,directives,mcp_call}.py`, `tests/support/mcp_mock.py` | PY-05 | unit + int fake · acceptance AC-H22, AC-H12 (qc) | [ ] |
 | **QA** | | | | | | | | |
-| QW | qc: test-plan + acceptance/int theo §8 (đỏ đúng lý do) + mock Dify streaming của Hub (Q9) + script `done:h2a` | qc | cao | `spec §8`, `§7`, `H1 test-plan.md §7` | `tests/acceptance/H2a/**`, `tools/hub-dev/` | Gate | đỏ đúng lý do | [ ] |
+| MK | Mock Dify Hub `tools/hub-dev/src/dify-mock.ts` + script `hub:dify-mock` (kịch bản `plan §9`) | backend-lead | thường | `plan §9`, `plan-errors §2` | `tools/hub-dev/src/dify-mock.ts`, `package.json` (script) | Gate | `bun test tools/hub-dev` | [ ] |
+| QW | qc: test-plan + acceptance/int theo spec §8 (đỏ đúng lý do, dùng MK) + script `done:h2a` | qc | cao | `spec §8`, `plan §2, §7, §9`, `plan-db §1.3 Test D2`, `H1 test-plan.md §7` | `tests/acceptance/H2a/**` | Gate, MK, B0 | đỏ đúng lý do | [ ] |
 | Q2 | Khoá test (`tests/.lock`) | qc | thường | `WORKFLOW` "Luật khoá test" | `tests/.lock` | QW | `bun run test:lock:verify` | [ ] |
 | I1 | `done:h2a` toàn bộ + hồi quy `test:contract:chat` (HUB-H2a-AC-11) | qc | thường | `test-plan §7` | — | mọi task | `bun run done:h2a` | [ ] |
 | I2 | Smoke thật Dify (`DIFY_LIVE=1`) + `claude-sub` gọi MCP (`HUB_LIVE=1`) | backend-lead | cao | `spec §7`, `§9 Q10` | `docs/specs/H2a-dify-command/smoke.md` | I1, W1 | biên bản smoke | [ ] |
