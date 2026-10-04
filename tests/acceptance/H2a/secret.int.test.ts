@@ -145,6 +145,7 @@ describe("A80 · secret không rò qua mọi đường gọi Dify [HUB-H2a-AC-04
       tools: [WF_KEY.checkInvoice],
       mcpUrl: `${hub.base}/mcp`,
     });
+    await redis.del(`run:${mj.runId}`, `sse:${mj.runId}`); // TC-B6-1: id cố định, xoá stream sót lần trước
     runIds.push(mj.runId);
     const mres = await mcp(hub, mj.token, "tools/call", {
       name: WF_KEY.checkInvoice,

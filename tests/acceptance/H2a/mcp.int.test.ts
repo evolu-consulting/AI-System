@@ -249,6 +249,7 @@ describe("A55–A58 · tools/call [HUB-FR-50 · HUB-BR-12 · H2a-R20]", () => {
   it("HUB-BR-12 · A55 · check-invoice {x: 190a+S, y: 250b} → MK đúng 1 lời gọi user acme:<lan>; result text, isError false; bước tool: inputs che trước rồi cắt (x = 190a+***, y = 200b), không LEAK_KEY; không SSE live [HUB-FR-50 · HUB-BR-12 · P12]", async () => {
     dify.mock.reset();
     const j = await hoadon();
+    await redis.del(`run:${j.runId}`, `sse:${j.runId}`); // TC-B6-1: id cố định, xoá stream sót lần trước
     const x = "a".repeat(190) + LEAK_INVOICE;
     const y = "b".repeat(250);
     const { res, result } = await toolCall(hub, j.token, WF_KEY.checkInvoice, { x, y });

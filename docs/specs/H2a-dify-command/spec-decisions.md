@@ -245,6 +245,7 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 | B-B6-8 | `WorkflowJobRunner` có `RunStreamReader` riêng (kết nối `XREAD BLOCK` thứ ba của instance, chỉ mở khi có lệnh async đang chờ) thay vì dùng chung đầu đọc của vòng Orchestrator | Tránh sửa `defaultRunDriver` (B7 đang sửa song song). Gộp một đầu đọc là việc dọn sau (không đổi hành vi) |
 | B-B6-9 | Test cạnh code: `runner/workflow-job-runner.test.ts` (unit `outcomeOfEvent`, `asyncOutcome`), `internal/credential.int.test.ts` (route + service trên DB test/role `hub_api`: 200 + no-store, 401 bảy biến thể cùng body, 409 secret hỏng/ngoài catalog/vắng master key, workflow tắt 200) | int credential 401/409 |
 | TC-B6-1 | Không tranh chấp test. Ghi chú môi trường: `tests/acceptance/H2a/async.int.test.ts` A37 đọc `run:<run_id>` trên Redis test DB 15 dùng chung; id cố định (`idGen2(5000)`) ⇒ stream còn sót `job.failed` từ lần chạy của phiên khác (TTL 24 h) làm A37 đỏ giả. Chạy với `HUB_TEST_REDIS_URL` riêng (vd DB 9) thì xanh. Đề nghị qc: `DEL run:<id>` trong `orphan()` hoặc dùng Redis DB riêng mỗi phiên | Không phải lỗi code |
+| TC-B6-1 → qc | **Test sai** (test-plan §10 TC-3): `orphan()` + A55 + A80 xoá `run:<id>`/`sse:<id>` sau `insertSqlJob` id cố định; xanh 2 lần liên tiếp trên Redis DB 15 dùng chung | Test tự cô lập, không phụ thuộc dữ liệu sót |
 | BL-B6-1 | Chưa chạy `test:h2a:stack` S03 (`requeue.stack.test.ts`, cần image Runtime PY-03 + Docker kill) — để I1 | Ngoài lệnh xong của B6 |
 
 ## BUILD — PY-04/05/06 (backend-lead, 2026-10-05)

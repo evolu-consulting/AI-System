@@ -322,6 +322,8 @@ describe("A37–A39 · quét orphan phía Hub (mỗi 10 s, ngưỡng 60 s) [AC-W
       type === "workflow.async"
         ? await insertSqlJob(sql, id, { type, workflowId: WF.dich, workflowKey: "dich" })
         : await insertSqlJob(sql, id, { type, agentId: AG.hoadon, agentKey: "hoadon" });
+    // TC-B6-1: id cố định + Redis dùng chung (TTL 24 h) → xoá stream sót từ lần chạy trước trước khi quét
+    await redis.del(`run:${j.runId}`, `sse:${j.runId}`);
     await sql.unsafe(
       `update hub.jobs set heartbeat_at = now() - interval '61 seconds', dispatched_at = now() - interval '62 seconds'
        ${patch} where id = $1`,
