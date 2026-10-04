@@ -4,7 +4,7 @@
 Server MCP giả (`mcp_fake.py`, stdlib `http.server`, JSON-RPC thường, không SSE, `GET` → 405, không
 `Mcp-Session-Id`) ghi mọi request. Token MCP truyền bằng file cấu hình 0600
 (`mcp_servers=<path>`), so với dạng dict (argv). 10 điểm: `plan-runtime.md` §4.6.
-Chạy: xem `spikes/README.md`. Kết quả: `docs/specs/H2a-dify-command/spike-s1.md`.
+Chạy: xem `spikes/README.md`. Kết quả: `docs/specs/H2a-dify-command/spike-mcp.md`.
 """
 
 from __future__ import annotations

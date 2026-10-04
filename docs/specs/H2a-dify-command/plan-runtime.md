@@ -131,13 +131,14 @@ Spike PY-02 S3 + `options.py`: `strict_mcp_config=True` (chỉ MCP truyền qua 
 | `tools` (`--tools`) | giữ `payload.allowed_tools` — chỉ lọc tool dựng sẵn [CX: không ẩn tool MCP; spike H1 #2a thấy MCP vẫn nạp khi `tools=[]`] |
 | `disallowed_tools` | giữ `KNOWN_TOOLS − tools` (không chứa tên MCP) |
 | `system_prompt` | thêm `MCP_BLOCK` (sau `FORMAT_BLOCK`): "Tool trả lỗi có `code: CONFIRMATION_REQUIRED` → dừng, trả `need_input` với đúng `question` và `choices` trong lỗi" |
-| Env job host | **luôn** đặt `NO_PROXY=localhost,127.0.0.1` (vô hại khi không có proxy); không thêm biến khác |
+| Env job host | **luôn** đặt `NO_PROXY=localhost,127.0.0.1` (vô hại khi không có proxy); khi có MCP thêm `MCP_TOOL_TIMEOUT` (ms) = timeout tool Hub `/mcp` + 5 s (spike S3: CLI báo "timed out" + gửi `notifications/cancelled` thay vì treo tới timeout job); không thêm biến khác |
+| Log | `ClaudeSDKClient.get_mcp_status()` trả header `Authorization` **nguyên văn** (spike S4) ⇒ không log/không trả ra ngoài; chỉ log `status` từ init `SystemMessage.mcp_servers` |
 
 ### 4.3 Hook sandbox (`sandbox/hook.py`)
 | Đổi | Luật |
 |---|---|
 | `SandboxPolicy.mcp_tools: frozenset[str]` (mặc định rỗng) | = tên đầy đủ `mcp__hub__<k>` của `payload.mcp.tools`; `options.policy_of` điền; `fake-cli` điền như nhau |
-| `decide` | thứ tự: `StructuredOutput` (như H1) → **`tool_name ∈ policy.mcp_tools` ⇒ allow, không kiểm đường dẫn** (đối số đi tới Hub/Dify, không chạm FS Worker) → `mcp__*` khác ⇒ deny `tool_not_allowed` → luật H1 |
+| `decide` | thứ tự: `StructuredOutput` (như H1) → **`tool_name ∈ policy.mcp_tools` ⇒ allow (= trả `{}`, không trả `permissionDecision:"allow"` tường minh — spike S5), không kiểm đường dẫn** (đối số đi tới Hub/Dify, không chạm FS Worker) → `mcp__*` khác ⇒ deny `tool_not_allowed` → luật H1 |
 | Tool MCP phụ CLI tự thêm (`ListMcpResourcesTool`, `ReadMcpResourceTool` [CX]) | không trong `tools` ⇒ deny (luật H1) |
 | Log | như H1: chỉ `tool_name`, nhãn, `job_id` — không log `tool_input` |
 Hai hàng rào: Hub `/mcp` chỉ nhận tool ∈ `payload.mcp.tools` ∩ enabled ∩ `agent_workflows` (R19) **và** hook Runtime.
@@ -170,7 +171,9 @@ Thẩm quyền là **Hub** (`/mcp` không gọi Dify khi chưa có `confirmed` c
 | Bước | Cơ chế | File |
 |---|---|---|
 | 1 | Hub trả `tools/call` → `{isError:true, content:[{type:"text", text: JSON.stringify({code:"CONFIRMATION_REQUIRED", question, choices})}, {type:"text", text:<câu chỉ dẫn>}], structuredContent:{…cùng object}}` (R6, plan §2.3, `plan-errors` §5) | Hub |
-| 2 | `parse_confirmation(content) -> Confirm \| None` (thuần, `providers/base.py`, dùng chung `fake-cli`): duyệt khối text **theo thứ tự**, khối đầu `json.loads` được thành dict có `code == "CONFIRMATION_REQUIRED"`, `question` str 1–2 000, `choices` đúng 2 str → `Confirm{question, choices}`; khối khác (câu chỉ dẫn) và `structuredContent` bỏ qua; `content` dạng str → coi như một khối. `mapping.py`: `UserMessage` có `ToolResultBlock(is_error=True)` của tool_use id thuộc `mcp__hub__*` (nhớ id từ `ToolUseBlock`) → gọi hàm trên → ProviderEvent `Confirm` (mới, `base.py`, `protocol.py`) | providers |
+| 2 | `parse_confirmation(content) -> Confirm \| None` (thuần, `providers/base.py`, dùng chung `fake-cli`): duyệt khối text **theo thứ tự**, khối đầu `json.loads` được thành dict có `code == "CONFIRMATION_REQUIRED"`, `question` str 1–2 000, `choices` đúng 2 str → `Confirm{question, choices}`; khối khác (câu chỉ dẫn) và `structuredContent` bỏ qua; `content` dạng str (CLI trả str khi `is_error`: các khối text nối bằng `
+` — spike S2) → tách tại `
+` đầu tiên, `json.loads` phần trước (`content[0]` là `JSON.stringify` một dòng). `mapping.py`: `UserMessage` có `ToolResultBlock(is_error=True)` của tool_use id thuộc `mcp__hub__*` (nhớ id từ `ToolUseBlock`) → gọi hàm trên → ProviderEvent `Confirm` (mới, `base.py`, `protocol.py`) | providers |
 | 3 | `HostProcess._on_event` ghi `seen.confirm` (giữ cái đầu) | runtimes/cli |
 | 4 | `result.build_output`: `seen.confirm` ≠ None ∧ kết quả agent ≠ `need_input` → thay bằng `need_input{question, choices}` của Hub; log `info job.confirmation_forced` (không nội dung). Có `need_input` của model → giữ | runtimes/cli/result.py |
 | 5 | Không resume/không retry sau khi có `Confirm` (lượt sau là run mới của flow, có session) | job_run |

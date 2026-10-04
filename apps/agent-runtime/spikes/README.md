@@ -21,7 +21,7 @@ thật. Ca: `prod-at-file` (S1 mọi biến thể `@` + S3/S4/S6/S9, 1 lượt) 
 
 `mcp_spike.py` — PY-S1 (H2a): MCP Hub với CLI thật, server MCP giả stdlib `mcp_fake.py` trong cùng process (không cần
 Hub/C2), token truyền bằng file cấu hình 0600 (`mcp_servers=<path>`). Kết quả:
-`docs/specs/H2a-dify-command/spike-s1.md`. Cùng cách chạy (`env -i … python spikes/mcp_spike.py <ca...>`).
+`docs/specs/H2a-dify-command/spike-mcp.md`. Cùng cách chạy (`env -i … python spikes/mcp_spike.py <ca...>`).
 Ca không tốn API: `init-file` · `init-argv` (đối chứng token trên argv) · `init-discover` · `init-401` ·
 `init-down`. Ca tốn 1 lượt mỗi ca: `call` · `confirm` · `timeout` · `call-discover`.
 `SPIKE_DEBUG=1` → CLI `--debug mcp` (log ở `~/.claude/debug/`). JSON từng ca ở `/tmp/spike-mcp/out/`.

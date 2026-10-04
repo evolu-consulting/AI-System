@@ -45,3 +45,9 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 | B-C2-2 | `HUB_JSON_SCHEMAS` thêm `JobPayloadWorkflowAsync` (→ `$ref` trong `JobPayload`, pydantic `JobPayloadWorkflowAsync`; `agent.cli` giữ `JobPayload1`) và `DifyCredentialResponse` (từ `hub-internal`, cho PY-02) + fixture | Tên model ổn định cho `plan-runtime` §3.1; mẫu hai chiều C2 |
 | B-C2-3 | Header `hub.py` sinh thêm `# pyright: reportInvalidTypeForm=false` (`tools/contracts-gen/hub.ts`) | datamodel-codegen sinh `dict[constr(pattern=…), …]` cho khoá regex; hợp lệ lúc chạy |
 | B-C2-4 | `apps/hub-api` runner (H1) gõ kiểu `AgentCliJob` thay `JobPayload` | `JobPayload` thành union → `p.agent` lỗi kiểu; B6 mở rộng cho `workflow.async` |
+
+## BUILD — PY-S1 (spike MCP, `spike-mcp.md`) — 2026-10-05
+- Token MCP qua file 0600 + `strict_mcp_config=True`: **đạt** (#1, #10) — không token trên `/proc/*/cmdline` ⇒ PY-04 không `blocked`.
+- Áp mặc định của biên bản (điều phối): S1 → `plan.md` §6 (`server/discover` chế độ 2026-07-28: `resultType`, `ttlMs`, `cacheScope:"private"`, `id` chuỗi; `initialize` 2025-11-25) + `test-plan.md` A52 (trước QW, test chưa viết); S2 → `plan-runtime` §5 (content str tách tại `
+` đầu); S3 → §4.2 `MCP_TOOL_TIMEOUT`; S4 → §4.2 không log `get_mcp_status`; S5 → §4.3 allow = `{}`.
+- Biên bản đổi tên `spike-s1.md` → `spike-mcp.md` cho khớp tasks/plan-runtime/test-plan-cases.

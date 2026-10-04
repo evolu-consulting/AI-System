@@ -1,6 +1,6 @@
 # Spike PY-S1 · MCP Hub với Claude CLI thật (WSL) — biên bản
 
-Phụ lục `plan-runtime.md` §4.6 (nơi khác gọi là `spike-mcp.md`). Script: `apps/agent-runtime/spikes/mcp_spike.py` (server MCP giả stdlib `mcp_fake.py`, cách chạy ở `spikes/README.md`). Ngày 2026-10-05.
+Phụ lục `plan-runtime.md` §4.6. Script: `apps/agent-runtime/spikes/mcp_spike.py` (server MCP giả stdlib `mcp_fake.py`, cách chạy ở `spikes/README.md`). Ngày 2026-10-05.
 
 **Môi trường:** WSL Ubuntu, user `worker`, `claude-agent-sdk` 0.2.163 → CLI **bundled 2.1.286** (`cli_path=None` như `options.py`; `claude` hệ thống 2.1.289 không dùng). Mọi ca: `setting_sources=[]`, `permission_mode="dontAsk"`, `tools=["Read"]`, `strict_mcp_config=True`, env `ENABLE_CLAUDEAI_MCP_SERVERS=false` + `NO_PROXY=localhost,127.0.0.1`, env sạch (`env -i`).
 **Lượt model: 4** (`call`, `confirm`, `timeout`, `call-discover`) ≤ 6. Ca `init-*` chỉ `connect` + `get_mcp_status()`, không query → 0 lượt.
