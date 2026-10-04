@@ -46,3 +46,4 @@ Phụ lục của [`test-plan-cases.md`](test-plan-cases.md) §1.9, §5: ca tố
 | `text_chunk` `{text:"ab"}` rồi `{text:"c"}` (workflow) · `message` `{answer:"x"}` (chat) | `text` cộng dồn `"abc"` · `"x"`, `first_seen=true`, `None` |
 | `workflow_started` `{task_id:"t1"}` | `task_id="t1"`, `first_seen=true`, `None` |
 | `workflow_finished` `status:"stopped"` | `Failed("finished_failed")` |
+| `node_finished` (sự kiện lạ) | `first_seen=true`, `Step` = `None` |

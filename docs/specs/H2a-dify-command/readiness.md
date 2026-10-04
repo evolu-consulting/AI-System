@@ -29,3 +29,9 @@
 | N4 | Cao | cases P30; tasks QW-PU Đọc | P30 không có bảng ca, trỏ sai mục | Trỏ -dify §3.2, §3.4, §3.5, §3.7; thêm vào Đọc QW-PU; ca tối thiểu `map_failure` 7 `ErrKind`, `usage_row`, `reduce` |
 | N5 | Cao | tasks PY-01 Đọc | Thiếu plan-runtime §3.1 | Thêm |
 | N6–N11 | Thấp | cases §1.9 nhãn `ErrKind` + hàng `read`/`empty`; Q-T3 đóng (CR-035); tổng số ca 197, QW-A1 40; plan-errors thêm `UNAVAILABLE` 503, A71 ghi mã; plan §5.3 thời điểm `step.started` async + bỏ qua `job.started` lặp; sinh lại `ba-*.html` ở I3 | Theo readiness |
+
+## Lần 3 · 2026-10-05 · spec-readiness · NOT READY
+M1 (Cao) `retry_delay` 5 tham số > `max-args=4` → `RetryFlags`; M2 (Cao) Q-PU sau Q2 + điều kiện một dòng UNLOCKED; M3 (Cao) A55 đo được; M4–M8 Thấp. Sửa một lượt `052ed49` + R13 `dbda02e`.
+
+## Lần 4 · 2026-10-05 · spec-readiness · NOT READY → điều phối sửa → READY
+Đóng M1–M8. Còn N1 (Cao) QW-PU phải chờ Q2 (nếu không Q2 `test:lock:write` khoá luôn file QW-PU); N2–N4 Thấp (mô tả `x`/`y` cho A52; Lệnh xong PY-01 chạy test khoá P28–P30; ca `node_finished`). Điều phối sửa trực tiếp 4 chỗ (sửa chữ, đúng mặc định readiness): `tasks.md` (QW-PU phụ thuộc Q2, thứ tự `C2 → (Q2) → QW-PU → Q-PU → PY-01`, Lệnh xong PY-01), `test-plan-cases.md` §5/§7, `test-plan.md` A52, `test-plan-py.md`. Không còn Chặn/Cao, không câu hỏi mới ⇒ **READY**. Gate trình người dùng: ADR-0010 Proposed + Q1 thực hiện bằng hàm SECURITY DEFINER (P1).

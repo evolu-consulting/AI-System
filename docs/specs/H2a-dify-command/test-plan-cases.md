@@ -145,7 +145,7 @@ JSON đúng hình ở khối đầu → `Confirm`; khối thứ 2 là câu chỉ
 | Hiệu năng spec §6 (trừ ≤ 5 s cấu hình/huỷ) | `test:perf`, không chặn |
 
 ## 5. P · Python (`apps/agent-runtime/tests/acceptance/`) · S
-Thứ tự: QW-PU (P28–P30, `test_dify_rules.py`) viết **sau C2, trước PY-01** (test trước code; chữ ký `plan-runtime §3.1`: `ErrKind`, `RetryFlags`, `retry_delay`, `map_failure`, `usage_row`, `reduce`). QW-P (int), QW-S viết **sau PY-02** (cần `dify_mock.py`; fixture phải xanh) và khoá lần 2 (Q3) **trước PY-03**; ca `fake-cli` MCP (P24–P27, S01–S02) đỏ vì chỉ thị chưa có tới PY-06 — đúng lý do.
+Thứ tự: QW-PU (P28–P30, `test_dify_rules.py`) viết **sau C2 và Q2 (chuỗi `Q2 → QW-PU → Q-PU`), trước PY-01** (test trước code; chữ ký `plan-runtime §3.1`: `ErrKind`, `RetryFlags`, `retry_delay`, `map_failure`, `usage_row`, `reduce`). QW-P (int), QW-S viết **sau PY-02** (cần `dify_mock.py`; fixture phải xanh) và khoá lần 2 (Q3) **trước PY-03**; ca `fake-cli` MCP (P24–P27, S01–S02) đỏ vì chỉ thị chưa có tới PY-06 — đúng lý do.
 File: `dify_job_int_test.py` (P02–P05, P13–P17) · `dify_retry_int_test.py` (P06–P12) · `dify_requeue_int_test.py` (P18–P22) · `dify_leak_int_test.py` (P23) · `mcp_int_test.py` (P01, P24–P27) · `test_dify_rules.py` (P28–P30, unit, QW-PU). Helper `_dify.py` (payload `workflow.async`, chạy mock Python).
 
 | ID | Mã | Given/When → Then |
@@ -219,7 +219,7 @@ File: `secret` (A80–A86) · `dify-agent` (A40–A46) · `test-run` (A70–A75)
 ## 7. Catalog fixture (`_h2a.ts`, SQL owner vào `admin.*`)
 | Đối tượng | Giá trị |
 |---|---|
-| workflows | `dich` (workflow, inputs `source_text` string req, `target_lang` select[en,vi,ja] req, `tone` string opt) key `mk-ok` · `tom` (workflow) · `hoi` (chat, `query` req) · `tro-ly` (agent app) · `check-invoice` (workflow, mô tả "Kiểm tra một hoá đơn điện tử…", inputs `x`, `y` string opt) · `create-trello-card` (workflow, `side_effect`, input `title` req) · `so` (input number + boolean) · `tat` (enabled=false) |
+| workflows | `dich` (workflow, inputs `source_text` string req, `target_lang` select[en,vi,ja] req, `tone` string opt) key `mk-ok` · `tom` (workflow) · `hoi` (chat, `query` req) · `tro-ly` (agent app) · `check-invoice` (workflow, mô tả "Kiểm tra một hoá đơn điện tử…", inputs `x` string opt mô tả "Mã hoá đơn", `y` string opt mô tả "Ghi chú") · `create-trello-card` (workflow, `side_effect`, input `title` req) · `so` (input number + boolean) · `tat` (enabled=false) |
 | args/input_map | `/hoi`: arg `q` (rest) → `query←arg q`, tin `/hoi` trống → `missing:["q"]` · `/so`: args `n` (number), `flag` (boolean) → `n←arg n`, `flag←arg flag` (số/boolean ép kiểu; `abc`/`maybe` → `invalid`) |
 | commands | `/dich` (alias `translate`; args `lang`, `text` `rest` fallback `$selection`; input_map `target_lang←arg lang`, `source_text←arg text`, `tone←const "neutral"`) · `/tom` (feature `summary`) · `/hoi` · `/so` · `/tat` (workflow tắt) · `/dong` (`enabled=false`) |
 | features | `core` (`/hoi`), `translate` on (`/dich`, `/so`), `summary` on không entitlement `acme` (`/tom`), `labs` beta (`/so`), `aaa-dup` on chứa `/dich` (kiểm Q4 key nhỏ nhất) |
