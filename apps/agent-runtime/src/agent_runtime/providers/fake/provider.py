@@ -1,7 +1,7 @@
 """WRK-FR-04 · WRK-FR-05 · WRK-FR-10 · AC-W02 · AC-W03 · AC-W10 · AC-W11 · Provider giả `fake-cli`
 (plan-runtime-fake §7). Chạy trong job host như provider thật; chỉ nạp khi `APP_ENV` ∈
-{development, test} (`providers/registry.py`). Session giả (`remember`/`recall`/`lost-session`) do
-PY-11.
+{development, test} (`providers/registry.py`). Session giả (`remember`/`recall`/`lost-session`,
+`sessions.py`) chỉ khi `use_session` — AC-W04, H1-R23 (PY-11).
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from agent_runtime.providers.base import (
     Progress,
     ProviderJob,
     RateLimit,
+    Session,
     ToolUse,
     UsageEv,
 )
@@ -29,6 +30,7 @@ from agent_runtime.providers.fake.directives import (
     task_without_delegate,
     usage_pair,
 )
+from agent_runtime.providers.fake.sessions import load, new_id, save
 from agent_runtime.providers.fake.state import bump_badjson
 from agent_runtime.sandbox.hook import SandboxPolicy, make_path_guard
 
@@ -105,6 +107,52 @@ def _agent(found: dict[str, str], body: str) -> Final:
     return Final(kind="agent_result", structured=res)
 
 
+async def _session(
+    job: ProviderJob, found: dict[str, str], kind: str, emit: Emit
+) -> dict[str, str] | None:
+    """`use_session`: resume/lưu session giả, phát `session`. None = resume lỗi (đã phát `final`
+    lỗi, trước mọi `tool_use` — runner dựng lại từ history)."""
+    if not job.payload.use_session:
+        return {}
+    sid = job.resume_session_id
+    data = load(job.work_dir, sid) if sid else {}
+    if sid and (data is None or "lost-session" in found):
+        await emit(
+            Final.model_validate(
+                {
+                    "kind": kind,
+                    "is_error": True,
+                    "subtype": "error_during_execution",
+                    "errors": ["No conversation found with session ID"],
+                }
+            )
+        )
+        return None
+    data = dict(data or {})
+    sid = sid or new_id()
+    if "remember" in found:
+        data["word"] = found["remember"]
+    save(job.work_dir, sid, data)
+    await emit(Session(session_id=sid))
+    return data
+
+
+async def _ratelimit(found: dict[str, str], kind: str, emit: Emit) -> None:
+    ts = int(found["ratelimit"]) if found["ratelimit"].isdigit() else None
+    await emit(RateLimit(status="rejected", resets_at=ts))
+    await emit(
+        Final.model_validate(
+            {
+                "kind": kind,
+                "is_error": True,
+                "subtype": "rate_limit",
+                "api_error_status": 429,
+                "errors": ["rate limited"],
+            }
+        )
+    )
+
+
 class FakeProvider:
     key = KEY
 
@@ -115,6 +163,9 @@ class FakeProvider:
         found = directives(msg)
         if "crash" in found:
             os._exit(3)
+        memory = await _session(job, found, kind, emit)
+        if memory is None:
+            return
         if "spawn-child" in found:
             # Cùng process group với job host (không start_new_session) — AC-W10.
             await asyncio.create_subprocess_exec(
@@ -131,21 +182,13 @@ class FakeProvider:
         if "sleep" in found:
             await _sleep(seconds(found["sleep"]), emit)
         if "ratelimit" in found:
-            ts = int(found["ratelimit"]) if found["ratelimit"].isdigit() else None
-            await emit(RateLimit(status="rejected", resets_at=ts))
-            await emit(
-                Final(
-                    kind=kind,
-                    is_error=True,
-                    subtype="rate_limit",
-                    api_error_status=429,
-                    errors=["rate limited"],
-                )
-            )
+            await _ratelimit(found, kind, emit)
             return
         limit = int(found["badjson"]) if found.get("badjson", "").isdigit() else 0
         if limit and bump_badjson(job.work_dir, str(job.payload.run_id), limit):
             await emit(Final(kind=kind, raw_json=BAD_JSON, text=BAD_JSON if text_out else None))
             return
         body = await _body(job, msg, found, emit)
+        if "recall" in found:
+            body = f"recall: {memory.get('word', '')}"
         await emit(_orchestrator(msg, found, body) if text_out else _agent(found, body))

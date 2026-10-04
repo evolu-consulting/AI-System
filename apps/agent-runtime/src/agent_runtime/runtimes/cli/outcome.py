@@ -70,6 +70,7 @@ class Seen:
     usage: UsageEv | None = None
     session_id: str | None = None
     rate_limit: RateLimit | None = None
+    tool_used: bool = False  # đã có `tool_use` (resume lỗi sau đó không dựng lại — §6, BR-04)
     carried: UsageSum = field(default_factory=UsageSum)  # usage của lần chạy trước (thử lại)
 
     def total(self) -> UsageSum:
@@ -90,6 +91,7 @@ class Verdict:
     failure: Failure | None
     output: dict[str, Any] | None = None
     provider: ProviderEffect = "none"
+    session_resumed: bool = False  # `job.result.session_resumed` (WRK-FR-14)
 
     def finish(self) -> Finish:
         f = self.failure

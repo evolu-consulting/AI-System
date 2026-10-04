@@ -1,4 +1,5 @@
-"""WRK-FR-04 · WRK-FR-05 · WRK-FR-24 · WRK-BR-02 · WRK-NFR-06 · AC-W03 · AC-W10 · HUB-H1-AC-04 —
+"""WRK-FR-04 · WRK-FR-05 · WRK-FR-14 · WRK-FR-24 · WRK-BR-02 · WRK-BR-03 · WRK-BR-06 · WRK-NFR-06 ·
+AC-W03 · AC-W04 · AC-W10 · HUB-H1-AC-04 · H1-R23 —
 Job host phía cha (plan-runtime §1.2, §2.3): `CliJobHost.run(job, control)`.
 
 Spawn `python -m agent_runtime.runtimes.cli.child --job-id=<id>` với `start_new_session=True`
@@ -7,6 +8,7 @@ Spawn `python -m agent_runtime.runtimes.cli.child --job-id=<id>` với `start_ne
 `cancel` → giết group → `cancelled` · `lost` → giết group, không ghi · `shutdown` → chỉ giết group
 (cha ghi `orphaned`). Hết `timeout_s` → giết group → `timed_out`. Rời `running` = trả slot
 (WRK-FR-24). XADD chỉ sau commit có dòng (plan-db §8 R2).
+Session §6 (luật `session.py`): resume theo `cli_sessions` + tenant, mất session → dựng từ history.
 """
 
 from __future__ import annotations
@@ -16,7 +18,7 @@ import os
 import sys
 import time
 from contextlib import suppress
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, Protocol
@@ -24,7 +26,7 @@ from typing import Literal, Protocol
 from pydantic import ValidationError
 
 from agent_runtime.contracts.hub import JobPayload1
-from agent_runtime.db import jobs_sql
+from agent_runtime.db import jobs_sql, sessions_sql
 from agent_runtime.db.finish_sql import FinishTx, finish_tx
 from agent_runtime.db.jobs_sql import ClaimedJob
 from agent_runtime.db.pool import Pool
@@ -37,8 +39,10 @@ from agent_runtime.providers.base import (
     ProviderEvent,
     RateLimit,
     Session,
+    ToolUse,
     UsageEv,
 )
+from agent_runtime.providers.context import with_history
 from agent_runtime.runtimes.cli.joblog import append_envelope
 from agent_runtime.runtimes.cli.outcome import (
     BROKEN_SIGNALS,
@@ -61,6 +65,7 @@ from agent_runtime.runtimes.cli.protocol import (
     parse_event,
 )
 from agent_runtime.runtimes.cli.result import build_output, validation_hint
+from agent_runtime.runtimes.cli.session import resume_failed, session_key
 from agent_runtime.sandbox.env import TMP_SUBDIR, forbidden_roots, job_host_env
 from agent_runtime.sandbox.process import group_pids, kill_group
 
@@ -133,7 +138,7 @@ class CliJobHost:
             self.events.forget(job.id)
             return
         if f is None:
-            await self.events.result(job, v.output or {}, tokens)
+            await self.events.result(job, v.output or {}, tokens, v.session_resumed)
         else:
             await self.events.failed(job.id, job.run_id, f, tokens)
         if done.broken is not None:
@@ -163,18 +168,46 @@ class _Run:
         self.proc: asyncio.subprocess.Process | None = None
         self.retry: str | None = None  # prompt lần thử lại (agent, JSON hỏng)
         self.resume_id: str | None = None
+        self.resumed = False  # lần chạy hiện tại resume session từ `cli_sessions`
+        self.prompt = payload.prompt  # prompt gửi provider (có thể kèm khối history)
+        self.skey = session_key(payload)
         self.deadline = time.monotonic() + payload.timeout_s
 
     async def execute(self) -> None:
+        await self._load_session()
         outcome = await self._attempt()
+        if outcome == "exited" and resume_failed(self.seen, self.resumed):
+            self._rebuild_from_history()
+            outcome = await self._attempt()
         if outcome == "exited" and (hint := self._invalid_hint()) is not None:
             sid = self.seen.session_id if self.payload.use_session else None
-            self.retry = retry_prompt(self.payload.prompt, hint, resumed=sid is not None)
+            self.retry = retry_prompt(self.prompt, hint, resumed=sid is not None)
             self.resume_id = sid
             self.seen.next_attempt()
             get_logger().info("job.output_retry", resumed=sid is not None)
             outcome = await self._attempt()
         await self._apply(outcome)
+
+    async def _load_session(self) -> None:
+        """§6: session cùng khoá + tenant (BR-06) → resume; không → prompt kèm history (BR-03)."""
+        if self.skey is not None:
+            async with self.host.pool.acquire() as conn:
+                self.resume_id = await sessions_sql.find_session(conn, self.skey)
+        self.resumed = self.resume_id is not None
+        if not self.resumed:
+            self._use_history()
+
+    def _use_history(self) -> None:
+        if self.payload.output == "agent_result":  # Orchestrator đã có `<history>` trong prompt
+            self.prompt = with_history(self.payload.prompt, self.payload.history)
+
+    def _rebuild_from_history(self) -> None:
+        """H1-R23: mất session → chạy lại 1 lần không resume, không báo lỗi user."""
+        get_logger().info("job.session_lost")
+        self.resume_id, self.resumed = None, False
+        self.seen.next_attempt()
+        self.seen.session_id = None
+        self._use_history()
 
     def _invalid_hint(self) -> str | None:
         """Agent trả JSON sai hình (chưa thử lại) → lý do ngắn; ngược lại None."""
@@ -235,9 +268,12 @@ class _Run:
 
     def _request(self) -> bytes:
         roots = forbidden_roots(self.cfg.home, self.cfg.work_root)
+        payload = self.payload
+        if self.prompt != payload.prompt:
+            payload = payload.model_copy(update={"prompt": self.prompt})
         req = ChildRequest(
             job_id=self.job.id,
-            payload=self.payload,
+            payload=payload,
             work_dir=str(self.work),
             forbidden_roots=[str(r) for r in roots],
             resume_session_id=self.resume_id,
@@ -294,6 +330,8 @@ class _Run:
             self.seen.usage = ev
         elif isinstance(ev, Session):
             self.seen.session_id = ev.session_id
+        elif isinstance(ev, ToolUse):
+            self.seen.tool_used = True
         elif isinstance(ev, Final):
             self.seen.final = ev
         elif isinstance(ev, RateLimit):
@@ -301,7 +339,7 @@ class _Run:
                 self.seen.rate_limit = ev
             else:
                 get_logger().info("provider.rate_limit_signal", status=ev.status[:40])
-        elif isinstance(ev, Fatal):
+        else:  # Fatal
             self.seen.fatal = ev
             return True
         return False
@@ -340,11 +378,16 @@ class _Run:
         total = self.seen.total()
         latency = int((time.monotonic() - self.started) * 1000)
         f = v.failure
+        sid = self.seen.session_id
+        session = (self.skey, sid) if self.skey is not None and sid and f is None else None
         tx = FinishTx(
             v.finish(),
             self.payload.provider_key,
             usage_row(self.payload, total, latency),
             v.provider,
             f.message if f is not None else "",
+            session,
         )
+        if f is None:
+            v = replace(v, session_resumed=self.resumed)
         await self.host.close(self.job, tx, v, total.tokens())

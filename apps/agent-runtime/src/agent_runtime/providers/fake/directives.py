@@ -6,15 +6,18 @@ from __future__ import annotations
 
 import re
 
+from agent_runtime.providers.context import current_message
+
 _DIRECTIVE = re.compile(r"#fake:([a-z_-]+)(?:=(\S+))?")
 _DELEGATE = re.compile(r"#fake:delegate=\S*")
 _OPEN, _CLOSE = "<message>", "</message>"
 
 
 def message_of(prompt: str, *, orchestrator: bool) -> str:
-    """Orchestrator: nội dung khối `<message>` cuối (sau `<steps_left>`); agent: `prompt`."""
+    """Orchestrator: nội dung khối `<message>` cuối (sau `<steps_left>`); agent: `prompt` (bỏ khối
+    "Ngữ cảnh trước" nếu runner dựng từ history — PY-11)."""
     if not orchestrator:
-        return prompt
+        return current_message(prompt)
     body = prompt.rstrip()
     floor = body.rfind("</steps_left>")
     start = body.find(_OPEN, max(floor, 0))

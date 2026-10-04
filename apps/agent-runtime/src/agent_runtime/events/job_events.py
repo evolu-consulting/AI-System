@@ -95,13 +95,15 @@ class RunEvents:
         body = {"type": "job.progress", "job_id": job.id, "message": message[:200], "percent": None}
         await self._publish(job.run_id, self._next(job.id), body)
 
-    async def result(self, job: ClaimedJob, output: dict[str, Any], usage: Tokens) -> None:
+    async def result(
+        self, job: ClaimedJob, output: dict[str, Any], usage: Tokens, resumed: bool = False
+    ) -> None:
         body = {
             "type": "job.result",
             "job_id": job.id,
             "output": output,
             "usage": usage.as_dict(),
-            "session_resumed": False,  # TODO(WRK-FR-14): PY-11 — resume session.
+            "session_resumed": resumed,  # WRK-FR-14: lần chạy thành công đã resume session
         }
         await self._publish(job.run_id, self._next(job.id), body)
         self._seq.pop(job.id, None)
