@@ -1,6 +1,6 @@
 # ADR-0010 · HTTP client cho Agent Runtime: httpx2 (H2a)
 
-Trạng thái: **Proposed** (Gate H2a) · Ngày: 2026-10-05 · Spec: `docs/specs/H2a-dify-command/plan-runtime.md` §8 · Kế thừa: ADR-0007, ADR-0008
+Trạng thái: **Accepted** (Gate H2a, 2026-10-05) · Ngày: 2026-10-05 · Spec: `docs/specs/H2a-dify-command/plan-runtime.md` §8 · Kế thừa: ADR-0007, ADR-0008
 
 ## Bối cảnh
 H2a cho Agent Runtime (Python, WSL2) ba việc gọi HTTP: (1) job `workflow.async` gọi Dify `response_mode=streaming` (SSE), API stop, retry 2 s/8 s (WRK-FR-06/07); (2) lấy app-key qua endpoint nội bộ của Hub bằng token job (spec-decisions Q5); (3) `fake-cli` gọi MCP `/mcp` của Hub (JSON-RPC qua HTTP) trong test. ADR-0008 chưa có HTTP client. Test cần giả lập SSE không cần server thật (unit).

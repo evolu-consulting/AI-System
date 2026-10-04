@@ -32,3 +32,8 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 | # | Ghi chú |
 |---|---|
 | C1 | `/internal/*` và `/mcp` (token Bearer bản rõ) **bắt buộc TLS hoặc mạng nội bộ** khi Runtime chạy ở máy khác Hub; cùng máy (WSL2 mirrored, `localhost`) không cần. Chuyển vào `docs/PRODUCTION-NOTES.md` khi combine (không sửa file dùng chung ở H2a) |
+
+## Gate duyệt — 2026-10-05
+- Người dùng duyệt Gate H2a (ADR-0010 Accepted; Q1 bằng hàm `hub.workflow_secret` SECURITY DEFINER; Q3 contract chat chỉ thêm).
+- **Dify thật:** người dùng chỉ định lấy cấu hình ở `D:\AI\evoluconsulting\auto-pilot`. Dify API `http://149.202.83.5:4203/v1` (kiểm 2026-10-05: `GET /parameters` app translate → 200, 0,54 s). App-key ở `apps/copilot-hub/.env` (`DIFY_KEY_TRANSLATE`, `DIFY_KEY_CHATBOT`, `DIFY_AGENT_API_KEY`, `DIFY_EXTRACT_API_KEY`, `DIFY_KEY_GMAIL`…) và `apps/extension-hub/.env` (`WXT_DIFY_KEY_MISAINVOICECHECK`). **Không chép key vào repo này:** smoke `DIFY_LIVE=1` đọc key lúc chạy qua env `DIFY_LIVE_ENV_FILE` (đường dẫn tới file `.env` của auto-pilot) và seed vào `admin.secrets` (mã hoá) của DB dev/smoke. Smoke M01 không còn "blocked W1" — chạy được sau khi B*/PY xong.
+- **Rủi ro (combine/production):** Dify đang mở HTTP thường trên IP công khai — app-key đi không mã hoá. Ghi để xử lý trước production (TLS hoặc mạng nội bộ).

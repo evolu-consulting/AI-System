@@ -2,7 +2,7 @@
 id: H2a-dify-command
 title: Dify + command `/` + MCP (Command Runner, workflow.async, agent dify-*, tool side_effect)
 milestone: H2a
-status: draft                 # draft → ready → approved → in-progress → done
+status: approved               # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-10, HUB-FR-11, HUB-FR-12, HUB-FR-13, HUB-FR-14, HUB-FR-23, HUB-FR-24, HUB-FR-50, HUB-FR-51,
    HUB-FR-76, HUB-FR-80, HUB-FR-95, HUB-BR-01, HUB-BR-04, HUB-BR-06, HUB-BR-11, HUB-BR-12, HUB-BR-19, HUB-BR-20,

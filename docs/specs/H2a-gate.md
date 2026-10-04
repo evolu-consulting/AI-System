@@ -1,6 +1,6 @@
 # Gate H2a — Dify + command `/` + MCP
 
-Ngày: 2026-10-05 · Trạng thái: **CHỜ NGƯỜI DÙNG DUYỆT** · Readiness: READY (`H2a-dify-command/readiness.md`, 4 lần)
+Ngày: 2026-10-05 · Trạng thái: **ĐÃ DUYỆT 2026-10-05** (người dùng: "duyệt"; Dify thật lấy cấu hình từ `D:AIevoluconsultinguto-pilot`) · Readiness: READY (`H2a-dify-command/readiness.md`, 4 lần)
 
 **Không tự duyệt (Luật 2b):** có ADR thư viện mới (ADR-0010) và một quyết định của người dùng được thực hiện theo cách khác (Q1). Người dùng đã chốt Q1/Q3/Q5 và Codex/Gemini để sau (`spec-decisions.md`).
 
