@@ -2,7 +2,7 @@
 
 Phụ lục của [`test-plan.md`](test-plan.md): §1 bảng ca hàm thuần (R, R-P) · §2 hồi quy khoá (K) · §3 thủ công/blocked (M) · §4 không phủ · §5 Python/stack (P, S) · §6 A tách ra (agent `dify-*`, test-run, DB/seed) · §7 catalog fixture · bảng ca P30: [`test-plan-py.md`](test-plan-py.md).
 
-## 1. R · Hàm thuần — bảng ca (chữ ký `plan.md` §7)
+## 1. R · Hàm thuần — bảng ca (chữ ký `plan-rules.md`)
 
 ### 1.1 `command-parse` (R01–R14) · R05, HUB-BR-01, HUB-H2a-AC-01
 | ID | Đầu vào → kỳ vọng |
@@ -106,17 +106,8 @@ Mỗi ca chạy **hai lần** (`describe.each`): `usableCommands` (Hub) và `com
 | R73 | `JobPayloadSchema`: fixture valid mới + cũ ok, invalid mới lỗi; `WorkflowAsyncJob` có `api_key`/`base_url`/`job_token` → lỗi; `McpConfig` có `token` / `tools:[]` / 21 tool → lỗi; `NOT_CONFIGURED ∈ HUB_JOB_ERROR_CODES ⊂ CHAT_RUN_ERROR_CODES`; `JOB_FAIL_REASONS` ∋ `credential`, `upstream` |
 | R74 | `TestRunRequest` default (`args []`, `timeout_s 30`); `TestRunResponse` union `ok`; `DifyCredentialResponse` strict; `MCP_PROTOCOL_VERSIONS[0]="2026-07-28"`; `ToolConfirmationRequired.choices` đúng 2 |
 
-### 1.9 R-P · Python `retry_delay(err_kind, attempt, first_seen, side_effect)` — P28 (`plan-runtime-dify` §3.4, BACKOFF mặc định `(2, 8)`)
-Cột Ca = giá trị `ErrKind`. `connect` = chưa gửi request (retry được kể cả `side_effect`); `side_effect` ∧ `ErrKind` ≠ `connect` ⇒ `None`.
-| Ca (`ErrKind`) | Kỳ vọng |
-|---|---|
-| `connect`, attempt 1/2/3, `side_effect` bất kỳ | 2.0 / 8.0 / `None` |
-| `http_5xx`, `first_seen=false`, `side_effect=false`, attempt 1/2/3 | 2.0 / 8.0 / `None` |
-| `read`, `first_seen=false`, `side_effect=false`, attempt 1/2/3 | 2.0 / 8.0 / `None` |
-| `http_5xx` hoặc `read`, `first_seen=false`, `side_effect=true` | `None` |
-| `http_5xx`, `read`, `connect` với `first_seen=true` | `None` |
-| `http_4xx` (401/403/404, 400, 413, 415, 422, 429), `sse_error`, `finished_failed` | `None` |
-| `empty` | `None` |
+### 1.9 R-P · Python `retry_delay(err_kind, attempt, flags: RetryFlags, backoff)` — P28 (`plan-runtime` §3.1, `-dify` §3.4)
+Bảng ca: [`test-plan-py.md`](test-plan-py.md) mục `retry_delay`.
 
 Ngưỡng heartbeat mặc định = 60 s (Q-T5): đọc `Settings` không env (kiểm riêng, không thuộc `retry_delay`).
 
@@ -154,7 +145,7 @@ JSON đúng hình ở khối đầu → `Confirm`; khối thứ 2 là câu chỉ
 | Hiệu năng spec §6 (trừ ≤ 5 s cấu hình/huỷ) | `test:perf`, không chặn |
 
 ## 5. P · Python (`apps/agent-runtime/tests/acceptance/`) · S
-Thứ tự: QW-PU (P28–P30, `test_dify_rules.py`) viết **sau C2, trước PY-01** (test trước code; chữ ký `plan-runtime §3.1`: `ErrKind`, `retry_delay`, `map_failure`, `usage_row`, `reduce`). QW-P (int), QW-S viết **sau PY-02** (cần `dify_mock.py`; fixture phải xanh) và khoá lần 2 (Q3) **trước PY-03**; ca `fake-cli` MCP (P24–P27, S01–S02) đỏ vì chỉ thị chưa có tới PY-06 — đúng lý do.
+Thứ tự: QW-PU (P28–P30, `test_dify_rules.py`) viết **sau C2, trước PY-01** (test trước code; chữ ký `plan-runtime §3.1`: `ErrKind`, `RetryFlags`, `retry_delay`, `map_failure`, `usage_row`, `reduce`). QW-P (int), QW-S viết **sau PY-02** (cần `dify_mock.py`; fixture phải xanh) và khoá lần 2 (Q3) **trước PY-03**; ca `fake-cli` MCP (P24–P27, S01–S02) đỏ vì chỉ thị chưa có tới PY-06 — đúng lý do.
 File: `dify_job_int_test.py` (P02–P05, P13–P17) · `dify_retry_int_test.py` (P06–P12) · `dify_requeue_int_test.py` (P18–P22) · `dify_leak_int_test.py` (P23) · `mcp_int_test.py` (P01, P24–P27) · `test_dify_rules.py` (P28–P30, unit, QW-PU). Helper `_dify.py` (payload `workflow.async`, chạy mock Python).
 
 | ID | Mã | Given/When → Then |
@@ -186,7 +177,7 @@ File: `dify_job_int_test.py` (P02–P05, P13–P17) · `dify_retry_int_test.py` 
 | P25 | FR-95 | `mcp_mock` trả `CONFIRMATION_REQUIRED` đúng hình → job `succeeded` `need_input{question, choices}` = của Hub; 1 lời gọi tool, không retry/resume |
 | P26 | R19 | `#fake:tool=x` với `x` ∉ `payload.mcp.tools` → không gọi MCP (nghĩa H1); `mcp__other__x` deny |
 | P27 | H1-R17 | Orchestrator (`output=text`) có `mcp` ≠ null → bỏ qua, log `warn`, không gọi MCP |
-| P28 | unit · QW-PU | `retry_delay` (cases §1.9) với BACKOFF `(2, 8)` → 2.0, 8.0, `None` lần 3; `ErrKind` đủ giá trị |
+| P28 | unit · QW-PU | `retry_delay(…, RetryFlags(first_seen, side_effect))` (`test-plan-py`) BACKOFF `(2, 8)` → 2.0, 8.0, `None` lần 3; `ErrKind` đủ giá trị |
 | P29 | unit · QW-PU | `parse_confirmation` (cases §1.10); fixtures `hub.py` valid/invalid mới |
 | P30 | unit · QW-PU | `map_failure` (R11), `usage_row` (R15), `reduce` (workflow/chat) — bảng ca tối thiểu [`test-plan-py.md`](test-plan-py.md); nguồn `plan-runtime-dify` §3.2, §3.4, §3.5, §3.7; chữ ký `plan-runtime §3.1` |
 
@@ -228,10 +219,10 @@ File: `secret` (A80–A86) · `dify-agent` (A40–A46) · `test-run` (A70–A75)
 ## 7. Catalog fixture (`_h2a.ts`, SQL owner vào `admin.*`)
 | Đối tượng | Giá trị |
 |---|---|
-| workflows | `dich` (workflow, inputs `source_text` string req, `target_lang` select[en,vi,ja] req, `tone` string opt) key `mk-ok` · `tom` (workflow) · `hoi` (chat, `query` req) · `tro-ly` (agent app) · `check-invoice` (workflow, mô tả "Kiểm tra một hoá đơn điện tử…") · `create-trello-card` (workflow, `side_effect`, input `title` req) · `so` (input number + boolean) · `tat` (enabled=false) |
+| workflows | `dich` (workflow, inputs `source_text` string req, `target_lang` select[en,vi,ja] req, `tone` string opt) key `mk-ok` · `tom` (workflow) · `hoi` (chat, `query` req) · `tro-ly` (agent app) · `check-invoice` (workflow, mô tả "Kiểm tra một hoá đơn điện tử…", inputs `x`, `y` string opt) · `create-trello-card` (workflow, `side_effect`, input `title` req) · `so` (input number + boolean) · `tat` (enabled=false) |
 | args/input_map | `/hoi`: arg `q` (rest) → `query←arg q`, tin `/hoi` trống → `missing:["q"]` · `/so`: args `n` (number), `flag` (boolean) → `n←arg n`, `flag←arg flag` (số/boolean ép kiểu; `abc`/`maybe` → `invalid`) |
 | commands | `/dich` (alias `translate`; args `lang`, `text` `rest` fallback `$selection`; input_map `target_lang←arg lang`, `source_text←arg text`, `tone←const "neutral"`) · `/tom` (feature `summary`) · `/hoi` · `/so` · `/tat` (workflow tắt) · `/dong` (`enabled=false`) |
 | features | `core` (`/hoi`), `translate` on (`/dich`, `/so`), `summary` on không entitlement `acme` (`/tom`), `labs` beta (`/so`), `aaa-dup` on chứa `/dich` (kiểm Q4 key nhỏ nhất) |
 | grants | `core` + `translate` → group `acme/staff` (`lan`,`hoa`); `aaa-dup` → user `hoa`; `labs` → `lan`; `lan` ∈ `beta-testers`; `beta/an` grant `translate` + entitlement beta |
 | agents (`hub.*`) | `trello` (`agentic-cli`) ↔ `create-trello-card`; `hoadon` ↔ `check-invoice`, `tat`; `dify-dich` (`dify-workflow`, `workflow_key: dich`); `dify-tro-ly` (`dify-agent`, `tro-ly`) |
-| secrets | mỗi workflow một secret mã: app-key = tên kịch bản MK; `dich` ở ca rò rỉ = `LEAK_KEY_7f3a…` |
+| secrets | mỗi workflow một secret mã: app-key = tên kịch bản MK; `dich` ở ca rò rỉ = `LEAK_KEY_7f3a…`; `check-invoice` (A55) = `LEAK_KEY_a55` + 20 hex = `LEAK_KEY_a550f1e2d3c4b5a6978899a` |

@@ -42,7 +42,7 @@ Luật: composition (`JobRun` giữ `self.proc_host: HostProcess`), không mixin
 | `runtimes/dify/client.py` | `DifyClient`: `run_stream(cred, req) -> AsyncIterator[ServerSentEvent]` (httpx2 `EventSource`), `stop(cred, task_id, user)` | |
 | `runtimes/dify/credential.py` | `fetch_credential(hub_url, job_id, token) -> DifyCredential \| CredentialError`; `DifyCredential.__repr__` che key | |
 | `runtimes/dify/stream.py` | `StreamState`, `reduce`, `final_text` (chữ ký dưới bảng) | ✓ |
-| `runtimes/dify/policy.py` | `ErrKind`, `retry_delay`, `map_failure` (= `plan-errors` §2), `usage_row`, `mask` (chữ ký dưới bảng) | ✓ |
+| `runtimes/dify/policy.py` | `ErrKind`, `RetryFlags`, `retry_delay`, `map_failure` (= `plan-errors` §2), `usage_row`, `mask` (chữ ký dưới bảng) | ✓ |
 | `db/jobs_sql.py` (sửa) | `CLAIM_UPDATE` + `token_hash` (§3.3); `REQUEUE_ORPHANS`, `REQUEUE_RESTART` (§3.8) | |
 | `db/workflow_sql.py` | `mark_dispatched`, INSERT usage `billing='dify'` (`-dify` §3.7) | |
 | `tests/support/dify_mock.py` | mock Dify + endpoint credential của Hub (§7) | |
@@ -53,11 +53,13 @@ Luật: composition (`JobRun` giữ `self.proc_host: HostProcess`), không mixin
 ErrKind = Literal["connect", "http_5xx", "read", "http_4xx", "sse_error", "finished_failed", "empty"]
 # connect: ConnectError/ConnectTimeout (chưa gửi) · read: ReadError/RemoteProtocolError/ReadTimeout · empty: kết quả rỗng
 BACKOFF: tuple[float, ...] = (2.0, 8.0)          # Settings.dify_backoff_s (AGENT_RT_DIFY_BACKOFF_S)
-def retry_delay(err_kind: ErrKind, attempt: int, first_seen: bool, side_effect: bool,
+@dataclass(frozen=True)
+class RetryFlags: first_seen: bool; side_effect: bool   # gộp cờ: ruff max-args = 4 (CONVENTIONS ≤ 4 tham số)
+def retry_delay(err_kind: ErrKind, attempt: int, flags: RetryFlags,
                 backoff: tuple[float, ...] = BACKOFF) -> float | None: ...
     # attempt = số lần đã gọi (1-based): 1 → backoff[0], 2 → backoff[1], ≥ 3 → None; bảng `-dify` §3.4
-    # không có tham số `sent`: err_kind == "connect" ⇔ request chưa gửi (retry kể cả side_effect);
-    # side_effect ∧ err_kind ≠ "connect" ⇒ None
+    # flags.first_seen ⇒ None (mọi err_kind); err_kind == "connect" ⇔ chưa gửi (retry kể cả side_effect);
+    # flags.side_effect ∧ err_kind ≠ "connect" ⇒ None
 def map_failure(err_kind: ErrKind, http_status: int | None) -> tuple[Literal["UPSTREAM_ERROR", "NOT_CONFIGURED"], Literal["upstream", "invalid_output"]]: ...
     # http_4xx ∧ status ∈ {401, 403, 404} → NOT_CONFIGURED/upstream · empty → UPSTREAM_ERROR/invalid_output · còn lại → UPSTREAM_ERROR/upstream
 @dataclass(frozen=True)
@@ -65,7 +67,7 @@ class UsageRow: input_tokens: int; output_tokens: int; cost_usd: Decimal; latenc
 def usage_row(app_type: Literal["workflow", "chat", "agent"], usage: Mapping[str, Any] | None,
               latency_ms: int, feature_id: str | None) -> UsageRow: ...
     # usage = `workflow_finished.data` (workflow) | `message_end.metadata.usage` (chat/agent) | None → 0, 0, Decimal(0); bảng `-dify` §3.7
-def mask(text: str, key: str, max_len: int = 300) -> str: ...   # thô/base64/hex của key → "***", cắt ≤ max_len
+def mask(text: str, key: str, max_len: int = 300) -> str: ...   # che trước (thô/base64/hex của key → "***"), cắt ≤ max_len sau
 # stream.py
 @dataclass(frozen=True)
 class StreamState:

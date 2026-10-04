@@ -1,7 +1,7 @@
 # Test plan · H2a-dify-command (qc)
 
 Chế độ **TEST-PLAN** · 2026-10-05. Chưa có file test, chưa khoá; viết + "đỏ đúng lý do" sau Gate (§8), rồi Q2 khoá. Ca hàm thuần (R), checklist thủ công (M), không phủ, hồi quy khoá chi tiết: [`test-plan-cases.md`](test-plan-cases.md).
-"Đúng" = spec §2 (H2a-R01…R25), §8 (AC + HUB-H2a-AC-01…11); chữ ký `plan.md` §7; câu chữ `plan-errors.md`; SQL `plan-db.md` §2–3; Runtime `plan-runtime.md` §3–6, `plan-runtime-dify.md` §3.4–3.7. BA chỉ ở mục AC được trỏ (`ba-agent-hub` §11, `ba-worker` §10).
+"Đúng" = spec §2 (H2a-R01…R25), §8 (AC + HUB-H2a-AC-01…11); chữ ký `plan-rules.md`; câu chữ `plan-errors.md`; SQL `plan-db.md` §2–3; Runtime `plan-runtime.md` §3–6, `plan-runtime-dify.md` §3.4–3.7. BA chỉ ở mục AC được trỏ (`ba-agent-hub` §11, `ba-worker` §10).
 
 ## 1. Quy ước
 
@@ -69,7 +69,7 @@ Chế độ **TEST-PLAN** · 2026-10-05. Chưa có file test, chưa khoá; viế
 
 **Không phủ / không test được** (lý do + mốc): cases §4 — vế Studio AC-H12 (H4); HUB-FR-24 `llm`/`python` (H2d); FR-13 "trả ngay `job_id`" (R12: client không đổi, A30); Dify thật + CLI thật gọi MCP (M01–M02, blocked W1; M03 chạy sau Gate); perf §6 không chặn.
 
-## 4. R · Hàm thuần TS (chữ ký `plan.md` §7)
+## 4. R · Hàm thuần TS (chữ ký `plan-rules.md`)
 Bảng ca đủ: cases §1. Nhóm:
 
 | ID | File (`rules/`) | Hàm | Số ca |
@@ -132,7 +132,7 @@ File: `commands` (A01–A09) · `command-run` (A10–A19) · `dify-errors` (A20�
 | A52 | FR-50 · BR-11 | `initialize` (`2025-06-18` → giữ; `1999-01-01` → `2026-07-28`), `server/discover` có `supportedVersions`; `tools/list` (token job `hoadon`) = `[check-invoice]`, `description` = mô tả workflow, `inputSchema` JSON Schema có mô tả từng tham số |
 | A53 | AC-05 · BR-19 | Token job `trello` → `tools/call check-invoice` → JSON-RPC `-32602` "Unknown tool" (không lộ lý do), MK 0 lời gọi; user của job **không** có feature chứa workflow → vẫn gọi được tool của mình (BR-19) |
 | A54 | AC-H12 | Sửa `workflows.description` (adminChange) → job **mới** `tools/list` thấy mô tả mới ≤ 5 000 ms |
-| A55 | FR-50 · BR-12 | `tools/call check-invoice {…}` (một input 250 ký tự + một chứa secret + một giá trị có `LEAK_KEY_…` bắt đầu ở vị trí 190) → MK nhận đúng 1 lời gọi `user="acme:<lan>"`, response `{content:[{type:"text"}], isError:false}`; `run_steps` `type='tool'`, `workflow_id`, `detail.inputs` qua `maskInputs` (che trước, cắt ≤ 200 sau): secret → `***`, không còn mảnh key nào sau che + cắt (kể cả key vắt qua vị trí 200); không SSE live (P12) |
+| A55 | FR-50 · BR-12 | `tools/call check-invoice {x, y}`, secret `S` = `LEAK_KEY_a550f1e2d3c4b5a6978899a` (cases §7), `x = "a".repeat(190) + S`, `y = "b".repeat(250)` → MK nhận đúng 1 lời gọi `user="acme:<lan>"`, response `{content:[{type:"text"}], isError:false}`; `run_steps` `type='tool'`, `workflow_id`, `detail.inputs` qua `maskInputs` (che trước, cắt ≤ 200 sau): `detail.inputs.x === "a".repeat(190) + "***"` (che trước; cắt trước sẽ để lộ mảnh `S`), `detail.inputs.y === "b".repeat(200)`; `detail` không chứa `LEAK_KEY`; không SSE live (P12) |
 | A56 | R20 | Tham số sai → `isError` "Invalid arguments for this tool."; `mk-401` → "This tool is not configured."; `mk-failed` → "The tool's service returned an error."; usage 1 dòng `feature_id NULL` |
 | A57 | AC-05 · tenant | Token job tenant `beta` không thấy/ghi run/flow/`tool_confirmations` của `acme` (xác nhận `confirmed` của acme giữ nguyên; `run_steps` chỉ ghi vào run beta) |
 | A58 | R20 | Timeout tool = min(`agents.timeout_s`, 300): `agents.timeout_s=1` + `mk-slow` → "The tool took too long to respond." + stop |
@@ -173,10 +173,10 @@ Kế thừa `done:h1` (mọi bước của nó nằm trong danh sách trên) + `
 
 | Nhóm | File | Số ca (≈) | Phải đỏ đúng lý do vì |
 |---|---|---|---|
-| QW-R | 11 file `rules/` | 78 (R30–R39 chạy ×2) | stub `plan §7` ném (B0); R parity: nhánh Admin **xanh**, nhánh Hub đỏ (ghi §10) |
+| QW-R | 11 file `rules/` | 78 (R30–R39 chạy ×2) | stub `plan-rules.md` ném (B0); R parity: nhánh Admin **xanh**, nhánh Hub đỏ (ghi §10) |
 | QW-A1 (cao) | `commands`, `command-run`, `dify-errors`, `secret`, `db` | A01–A26, A80–A92 (+A83b) = 40 | route 404 / `expect`; fixture catalog + secret SQL phải xanh; A84/A85 có thể **xanh** trước code (chấp nhận, ghi §10) |
 | QW-A2 (cao) | `async`, `dify-agent`, `mcp`, `confirm`, `test-run`, `seed` | A30–A75, A93–A95 = 43 | như QW-A1 |
-| QW-PU | `test_dify_rules.py` (P28–P30, unit) — viết sau C2, **trước PY-01** | 3 | `ModuleNotFoundError`/import hàm chưa có (`ErrKind`, `retry_delay`, `map_failure`, `usage_row`, `reduce`, `parse_confirmation`: chữ ký `plan-runtime §3.1`) |
+| QW-PU | `test_dify_rules.py` (P28–P30, unit) — viết sau C2, **trước PY-01** | 3 | `ModuleNotFoundError`/import hàm chưa có (`ErrKind`, `RetryFlags`, `retry_delay`, `map_failure`, `usage_row`, `reduce`, `parse_confirmation`: chữ ký `plan-runtime §3.1`) |
 | QW-P | 5 file Python int | 27 | `ModuleNotFoundError` trong thân test / chờ trạng thái hết hạn; DB/Redis/mock phải xanh |
 | QW-S | 3 `.stack.test.ts` | 3 | stack/`expect` |
 | K | có sẵn | 41 contract chat + C1 + M2/M3/H1 | chạy lại, không viết mới |

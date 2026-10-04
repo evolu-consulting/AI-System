@@ -18,11 +18,11 @@ Tách từ `plan-runtime.md` §3 (trần 30 KB); **số mục giữ nguyên** (�
 - Không phát `delta` (R12); Hub nhận `job.result{output:{kind:"text", text}}` (RT7).
 
 ### 3.4 Vòng thử và retry (WRK-FR-06, R13, Q6)
-Hàm thuần `retry_delay(err_kind, attempt, first_seen, side_effect) -> float | None` (không có `sent`: `connect` = request **chưa gửi** ⇒ retry được kể cả `side_effect`; `side_effect=true` ∧ `err_kind ≠ connect` ⇒ `None`; còn lại theo bảng) (`policy.py`, chữ ký đủ kiểu + `ErrKind`: `plan-runtime` §3.1; cột Lỗi ghi `err_kind`); `BACKOFF = AGENT_RT_DIFY_BACKOFF_S` mặc định `(2, 8)` (test `(0.2, 0.8)`).
+Hàm thuần `retry_delay(err_kind, attempt, flags: RetryFlags(first_seen, side_effect), backoff=BACKOFF) -> float | None` (≤ 4 tham số, ruff `max-args`; không có `sent`: `connect` = request **chưa gửi** ⇒ retry được kể cả `side_effect`; `first_seen=true` ⇒ `None` với mọi `err_kind`, kể cả `connect`; `side_effect=true` ∧ `err_kind ≠ connect` ⇒ `None`; còn lại theo bảng). `first_seen` = đã nhận **bất kỳ** sự kiện SSE nào khác `ping` trong lần gọi này (`reduce` đặt `first_seen=true`) (`policy.py`, chữ ký đủ kiểu + `ErrKind`: `plan-runtime` §3.1; cột Lỗi ghi `err_kind`); `BACKOFF = AGENT_RT_DIFY_BACKOFF_S` mặc định `(2, 8)` (test `(0.2, 0.8)`).
 
-| Lỗi | `first_seen` (đã nhận `workflow_started`/chunk/`message` đầu) | `side_effect` | Retry? | Mã · `reason` cuối |
+| Lỗi | `first_seen` (đã nhận sự kiện ≠ `ping`) | `side_effect` | Retry? | Mã · `reason` cuối |
 |---|---|---|---|---|
-| `connect` (`ConnectError`, `ConnectTimeout`) — request **chưa gửi** | — | bất kỳ | ✓ (2 s, 8 s) | `UPSTREAM_ERROR` · `upstream` |
+| `connect` (`ConnectError`, `ConnectTimeout`) — request **chưa gửi** | ✗ | bất kỳ | ✓ (2 s, 8 s) | `UPSTREAM_ERROR` · `upstream` |
 | `http_5xx`, `read` (`ReadError`/`RemoteProtocolError`/`ReadTimeout`) trước sự kiện đầu | ✗ | `false` | ✓ | `UPSTREAM_ERROR` · `upstream` |
 | như trên | ✗ | `true` | ✗ (Q6: request có thể đã chạy) | `UPSTREAM_ERROR` · `upstream` |
 | bất kỳ lỗi sau sự kiện đầu | ✓ | bất kỳ | ✗ | `UPSTREAM_ERROR` · `upstream` |
