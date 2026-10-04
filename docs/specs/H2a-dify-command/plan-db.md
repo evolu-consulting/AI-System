@@ -101,7 +101,7 @@ WHERE status = 'running' AND type = 'workflow.async' AND heartbeat_at < now() - 
   AND NOT (coalesce((payload->>'side_effect')::boolean, false) AND dispatched_at IS NOT NULL)
 RETURNING id, run_id, worker_id, pgid;
 ```
-Mỗi dòng: `pg_notify('job_enqueued', {v:1, job_id, provider_key:'dify'})`; Runtime giết `pgid` nếu `worker_id` là mình. Không XADD (job chưa kết thúc). `$1` = cùng ngưỡng orphan của câu `failed` H1 (không hằng 60 s). Bản **khởi động lại** của Runtime: cùng câu, thay điều kiện heartbeat bằng `worker_id = $1`.
+Mỗi dòng: `pg_notify('job_enqueued', {v:1, job_id, provider_key:'dify'})`; Runtime giết `pgid` nếu `worker_id` là mình. Không XADD (job chưa kết thúc). `$1` (giây) = ngưỡng orphan của câu `failed` H1 cùng phía: **Hub `$1 = 60`** (cùng hằng `interval '60 seconds'` của `runner.repo.ts` H1; khai hằng `ORPHAN_S = 60` dùng chung hai câu) · **Runtime `$1 = AGENT_RT_ORPHAN_S`** (`Settings.orphan_s`, mặc định 60; test rút ngắn 5). Bản **khởi động lại** của Runtime: cùng câu, thay điều kiện heartbeat bằng `worker_id = $1`.
 **`insertStep` (P11):**
 ```sql
 INSERT INTO hub.run_steps (id, tenant_id, user_id, run_id, seq, type, agent_id, provider_key, job_id, workflow_id,

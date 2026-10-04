@@ -9,7 +9,7 @@ Tách từ `plan-runtime.md` §3 (trần 30 KB); **số mục giữ nguyên** (�
 | `chat` / `agent` | `POST {base_url}/chat-messages` body `{inputs, query, response_mode:"streaming", conversation_id:"", user}` | `message.answer` · `agent_message.answer` · `agent_thought` (tiến độ) · `message_end.metadata.usage{prompt_tokens, completion_tokens, total_tokens, total_price, currency}` · `error` · `ping` |
 | Huỷ | workflow `POST {base_url}/workflows/tasks/{task_id}/stop` · chat `POST {base_url}/chat-messages/{task_id}/stop`, body `{user}` | best-effort, timeout 2 s |
 
-- `base_url`, `api_key`, `app_type` lấy từ credential (`plan-runtime` §3.3), **không** từ payload; `app_type` của credential khác `payload.app_type` → `NOT_CONFIGURED`/`credential` (workflow vừa đổi cấu hình).
+- `base_url`, `api_key`, `app_type` lấy từ credential (`plan-runtime` §3.3), **không** từ payload; `app_type` của credential khác `payload.app_type` → `NOT_CONFIGURED`/`credential` (workflow vừa đổi cấu hình). Credential **không** xét `workflows.enabled` (workflow tắt khi job đã `queued` → job vẫn chạy tới `finished`, R08); Hub chỉ 409 khi secret thiếu/giải mã lỗi.
 - Header `Authorization: Bearer <api_key>`; `user` = `payload.dify_user` (`<tenant_key>:<user_id>`, Hub dựng — R15; Runtime không đọc `admin.*`).
 - `inputs`/`query` Hub đã map + validate (R05, R06); Runtime gửi nguyên văn.
 - Timeout httpx2: connect 10 s, read `AGENT_RT_DIFY_READ_TIMEOUT_S`=30 s (Dify gửi `ping` ~10 s), tổng = deadline job (`plan-runtime` §3.6).
@@ -18,17 +18,17 @@ Tách từ `plan-runtime.md` §3 (trần 30 KB); **số mục giữ nguyên** (�
 - Không phát `delta` (R12); Hub nhận `job.result{output:{kind:"text", text}}` (RT7).
 
 ### 3.4 Vòng thử và retry (WRK-FR-06, R13, Q6)
-Hàm thuần `retry_delay(err_kind, attempt, first_seen, side_effect, sent) -> float | None` (`policy.py`); `BACKOFF = AGENT_RT_DIFY_BACKOFF_S` mặc định `(2, 8)` (test `(0.2, 0.8)`).
+Hàm thuần `retry_delay(err_kind, attempt, first_seen, side_effect, sent) -> float | None` (`policy.py`, chữ ký đủ kiểu + `ErrKind`: `plan-runtime` §3.1; cột Lỗi ghi `err_kind`); `BACKOFF = AGENT_RT_DIFY_BACKOFF_S` mặc định `(2, 8)` (test `(0.2, 0.8)`).
 
 | Lỗi | `first_seen` (đã nhận `workflow_started`/chunk/`message` đầu) | `side_effect` | Retry? | Mã · `reason` cuối |
 |---|---|---|---|---|
-| Kết nối (`ConnectError`, `ConnectTimeout`) — request **chưa gửi** | — | bất kỳ | ✓ (2 s, 8 s) | `UPSTREAM_ERROR` · `upstream` |
-| 5xx, `ReadError`/`RemoteProtocolError`/`ReadTimeout` trước sự kiện đầu | ✗ | `false` | ✓ | `UPSTREAM_ERROR` · `upstream` |
+| `connect` (`ConnectError`, `ConnectTimeout`) — request **chưa gửi** | — | bất kỳ | ✓ (2 s, 8 s) | `UPSTREAM_ERROR` · `upstream` |
+| `http_5xx`, `read` (`ReadError`/`RemoteProtocolError`/`ReadTimeout`) trước sự kiện đầu | ✗ | `false` | ✓ | `UPSTREAM_ERROR` · `upstream` |
 | như trên | ✗ | `true` | ✗ (Q6: request có thể đã chạy) | `UPSTREAM_ERROR` · `upstream` |
 | bất kỳ lỗi sau sự kiện đầu | ✓ | bất kỳ | ✗ | `UPSTREAM_ERROR` · `upstream` |
-| HTTP 401/403/404 | — | — | ✗ | `NOT_CONFIGURED` · `upstream` |
-| HTTP 400 (`invalid_param`…), 413, 415, 422, 429, 4xx khác, SSE `error`, `status=failed/stopped` | — | — | ✗ | `UPSTREAM_ERROR` · `upstream` |
-| Kết quả rỗng | — | — | ✗ | `UPSTREAM_ERROR` · `invalid_output` |
+| `http_4xx` 401/403/404 | — | — | ✗ | `NOT_CONFIGURED` · `upstream` |
+| `http_4xx` 400 (`invalid_param`…), 413, 415, 422, 429, 4xx khác · `sse_error` · `finished_failed` (`status=failed/stopped`) | — | — | ✗ | `UPSTREAM_ERROR` · `upstream` |
+| `empty` (kết quả rỗng) | — | — | ✗ | `UPSTREAM_ERROR` · `invalid_output` |
 
 Tối đa 3 lần gọi trong một lần claim (1 + 2 retry). Ngủ backoff bằng `asyncio.wait_for(control.stopped.wait(), delay)` để huỷ/timeout cắt được. Mỗi lần thử log `info dify.attempt{n, http_status?, err_kind}` (không thân, không key).
 

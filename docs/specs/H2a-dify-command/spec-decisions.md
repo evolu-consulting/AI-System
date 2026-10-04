@@ -22,8 +22,13 @@ Chi tiết: `plan.md` §1 (P1–P15), trả lời plan-runtime §9 ở `plan.md`
 Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload không token/URL, requeue hai câu (R7), reason `credential`/`upstream`, xác nhận R6. Bảng ✓/✗: `plan-runtime.md` §9; chi tiết gọi Dify tách `plan-runtime-dify.md`.
 | # | Sửa phía TS / spec | Lý do |
 |---|---|---|
-| X1 | `plan-db` §2 câu requeue: ngưỡng heartbeat `interval '60 seconds'` → `make_interval(secs => $1)` (cùng ngưỡng câu `failed` H1) | Hai câu chạy nối tiếp; ngưỡng `failed` H1 là tham số — nếu < 60 s, job `workflow.async` bị `failed orphaned` trước khi kịp requeue (vỡ AC-W06) |
+| X1 | `plan-db` §2 câu requeue: ngưỡng heartbeat `make_interval(secs => $1)` — Hub `$1 = 60` (cùng hằng H1 phía Hub), Runtime `$1 = AGENT_RT_ORPHAN_S` (cùng `SWEEP_ORPHANS`) | Hai câu chạy nối tiếp; ngưỡng `failed` H1 là tham số — nếu < 60 s, job `workflow.async` bị `failed orphaned` trước khi kịp requeue (vỡ AC-W06) |
 | X2 | `plan-errors` §5: câu chỉ dẫn là `content[1].text` (không phải `content[0]`) | Mâu thuẫn `plan.md` §2.3 (`content[0].text` = JSON để Runtime parse, R6) |
 | X3 | `plan-db` §3.2: kết quả xác nhận ghi đủ `content[0]` JSON + `content[1]` + `structuredContent` | Cùng X2 |
 | X4 | `spec` AC-H01: `chat-ext` → `chat` | Q3 đã chốt sửa thẳng contract chat |
 | X5 | Credential 401 → Runtime `NOT_CONFIGURED`/`credential` (trước: coi như mất job) | Theo `plan-errors` §2; tránh job treo `running` khi token lệch; SQL Kết thúc có `worker_id ∧ running` nên vô hại |
+
+## Ghi chú khi combine (readiness lần 1)
+| # | Ghi chú |
+|---|---|
+| C1 | `/internal/*` và `/mcp` (token Bearer bản rõ) **bắt buộc TLS hoặc mạng nội bộ** khi Runtime chạy ở máy khác Hub; cùng máy (WSL2 mirrored, `localhost`) không cần. Chuyển vào `docs/PRODUCTION-NOTES.md` khi combine (không sửa file dùng chung ở H2a) |

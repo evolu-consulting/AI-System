@@ -41,18 +41,52 @@ Luật: composition (`JobRun` giữ `self.proc_host: HostProcess`), không mixin
 | `runtimes/dify/host.py` | `DifyJobHost`: validate payload (`JobPayloadWorkflowAsync` sinh từ C2), `bind_job`, credential (§3.3), vòng thử (`-dify` §3.4), huỷ/timeout (§3.6), kết thúc (`-dify` §3.7) | |
 | `runtimes/dify/client.py` | `DifyClient`: `run_stream(cred, req) -> AsyncIterator[ServerSentEvent]` (httpx2 `EventSource`), `stop(cred, task_id, user)` | |
 | `runtimes/dify/credential.py` | `fetch_credential(hub_url, job_id, token) -> DifyCredential \| CredentialError`; `DifyCredential.__repr__` che key | |
-| `runtimes/dify/stream.py` | `StreamState` + `reduce(state, event) -> Step` (text, `task_id`, `first_seen`, `finished`, usage, progress), `final_text` | ✓ |
-| `runtimes/dify/policy.py` | `retry_delay(...)`, `map_failure(...) -> (code, reason)` (= `plan-errors` §2), `usage_row(...)`, `mask(text, key)` | ✓ |
+| `runtimes/dify/stream.py` | `StreamState`, `reduce`, `final_text` (chữ ký dưới bảng) | ✓ |
+| `runtimes/dify/policy.py` | `ErrKind`, `retry_delay`, `map_failure` (= `plan-errors` §2), `usage_row`, `mask` (chữ ký dưới bảng) | ✓ |
 | `db/jobs_sql.py` (sửa) | `CLAIM_UPDATE` + `token_hash` (§3.3); `REQUEUE_ORPHANS`, `REQUEUE_RESTART` (§3.8) | |
 | `db/workflow_sql.py` | `mark_dispatched`, INSERT usage `billing='dify'` (`-dify` §3.7) | |
 | `tests/support/dify_mock.py` | mock Dify + endpoint credential của Hub (§7) | |
+
+**Chữ ký hàm thuần (chốt — qc viết P28–P30 trước, nhóm QW-PU):**
+```python
+# policy.py
+ErrKind = Literal["connect", "http_5xx", "read", "http_4xx", "sse_error", "finished_failed", "empty"]
+# connect: ConnectError/ConnectTimeout (chưa gửi) · read: ReadError/RemoteProtocolError/ReadTimeout · empty: kết quả rỗng
+BACKOFF: tuple[float, ...] = (2.0, 8.0)          # Settings.dify_backoff_s (AGENT_RT_DIFY_BACKOFF_S)
+def retry_delay(err_kind: ErrKind, attempt: int, first_seen: bool, side_effect: bool, sent: bool,
+                backoff: tuple[float, ...] = BACKOFF) -> float | None: ...
+    # attempt = số lần đã gọi (1-based): 1 → backoff[0], 2 → backoff[1], ≥ 3 → None; bảng `-dify` §3.4
+def map_failure(err_kind: ErrKind, http_status: int | None) -> tuple[Literal["UPSTREAM_ERROR", "NOT_CONFIGURED"], Literal["upstream", "invalid_output"]]: ...
+    # http_4xx ∧ status ∈ {401, 403, 404} → NOT_CONFIGURED/upstream · empty → UPSTREAM_ERROR/invalid_output · còn lại → UPSTREAM_ERROR/upstream
+@dataclass(frozen=True)
+class UsageRow: input_tokens: int; output_tokens: int; cost_usd: Decimal; latency_ms: int; feature_id: str | None
+def usage_row(app_type: Literal["workflow", "chat", "agent"], usage: Mapping[str, Any] | None,
+              latency_ms: int, feature_id: str | None) -> UsageRow: ...
+    # usage = `workflow_finished.data` (workflow) | `message_end.metadata.usage` (chat/agent) | None → 0, 0, Decimal(0); bảng `-dify` §3.7
+def mask(text: str, key: str, max_len: int = 300) -> str: ...   # thô/base64/hex của key → "***", cắt ≤ max_len
+# stream.py
+@dataclass(frozen=True)
+class StreamState:
+    app_type: Literal["workflow", "chat", "agent"]; text: str = ""; task_id: str | None = None
+    first_seen: bool = False; nodes: int = 0; outputs: Mapping[str, Any] | None = None; usage: Mapping[str, Any] | None = None
+@dataclass(frozen=True)
+class Progress: n: int                              # `node_started`/`agent_thought` → "Đang chạy bước {n}"
+@dataclass(frozen=True)
+class Finished: pass                               # `workflow_finished(succeeded)` / `message_end`
+@dataclass(frozen=True)
+class Failed: kind: Literal["sse_error", "finished_failed"]
+Step = Progress | Finished | Failed | None          # None: `ping`, chunk, sự kiện lạ
+def reduce(state: StreamState, event: str, data: Mapping[str, Any]) -> tuple[StreamState, Step]: ...
+def final_text(acc: str, outputs: Mapping[str, Any] | None, field: str | None) -> str | None: ...  # `-dify` §3.2
+```
+`parse_confirmation(content: str | Sequence[Mapping[str, Any]]) -> Confirm | None` (`providers/base.py`) — §5 #2.
 
 `-dify` = `plan-runtime-dify.md`. `main.py`: `make_host` trả `JobRouter({"agent.cli": CliJobHost(...), "workflow.async": DifyJobHost(...)})`. Import-linter: `agent_runtime.runtimes.dify` trong lớp `runtimes` (đã có), forbidden mới: `runtimes.dify` không import `providers`, `sandbox`, `runtimes.cli`. Claim job `dify` chỉ khi `dify` ∈ `AGENT_RT_PROVIDERS` (RT6); không đụng `provider_state` của `dify`.
 
 ### 3.3 Token job (RT1, P4) và app-key (Q5, R17, RT2)
 | Bước | Chi tiết |
 |---|---|
-| 0 · claim | `claim_one` sinh `token = secrets.token_urlsafe(32)` (32 byte CSPRNG, base64url không padding, 43 ký tự) cho **mọi** job; `token_hash = hashlib.sha256(token.encode("ascii")).digest()` (32 byte, = `hashJobToken` TS). `CLAIM_UPDATE` (H1-DB §5.4 + RT1) = `UPDATE hub.jobs SET status='running', worker_id=$2, started_at=now(), heartbeat_at=now(), attempts=attempts+1, token_hash=$3 WHERE id=$1 AND status='queued'` (thứ tự tham số theo `jobs_sql.py`). `ClaimedJob.token: str = field(repr=False)` chỉ trong bộ nhớ cha; **không** log, không vào payload/`jobs`/XADD/argv. Process con chỉ thấy token qua file MCP 0600 (§4.2). Requeue xoá `token_hash` → claim sau sinh token mới |
+| 0 · claim | `claim_one` sinh `token = secrets.token_urlsafe(32)` (32 byte CSPRNG, base64url không padding, 43 ký tự) cho **mọi** job; `token_hash = hashlib.sha256(token.encode("ascii")).digest()` (32 byte, = `hashJobToken` TS). `CLAIM_UPDATE` (H1-DB §5.4 + RT1) = `UPDATE hub.jobs SET status='running', worker_id=$2, started_at=now(), heartbeat_at=now(), attempts=attempts+1, token_hash=$3 WHERE id=$1 AND status='queued'` (thứ tự tham số theo `jobs_sql.py`). `ClaimedJob.token: str = field(default="", repr=False)` (mặc định rỗng: dựng `ClaimedJob` H1 trong test không đổi) chỉ trong bộ nhớ cha; **không** log, không vào payload/`jobs`/XADD/argv. Process con chỉ thấy token qua file MCP 0600 (§4.2). Requeue xoá `token_hash` → claim sau sinh token mới |
 | 1 | Trước lời gọi Dify đầu: `POST {AGENT_RT_HUB_URL}/internal/jobs/{job_id}/dify-credential`, `Authorization: Bearer <token claim>`, không body. URL gốc chỉ từ **env** (payload không có URL Hub/`base_url`/token) |
 | 2 | 200 → `DifyCredential{base_url, api_key, app_type}` (`DifyCredentialResponseSchema`) trong bộ nhớ `DifyJobHost` tới hết lần claim; `__repr__`/`__str__` che `api_key`; không vào log, `jobs.result`, XADD, `error_message` |
 | 3 | 409 `NOT_CONFIGURED` hoặc 401 → `job.failed{NOT_CONFIGURED, reason:"credential"}` (`plan-errors` §2), không retry; SQL Kết thúc có `worker_id` ∧ `status='running'` nên vô hại nếu job đã bị huỷ/lấy lại (0 dòng → bỏ qua như H1); log `warn job.credential_rejected{status}` · 5xx / lỗi mạng → thử lại như `-dify` §3.4 hàng "kết nối" (an toàn với `side_effect` vì chưa gửi Dify); hết lượt → `NOT_CONFIGURED`/`credential` |
@@ -73,7 +107,7 @@ Hạn tổng của run do Hub giữ qua requeue (R9, plan §5.3); Runtime chỉ 
 
 | Hằng (`jobs_sql.py`) | SQL | Sau đó |
 |---|---|---|
-| `REQUEUE_ORPHANS` (sweeper, mỗi 10 s, trước `SWEEP_ORPHANS`) | nguyên văn `plan-db` §2 "Requeue orphan", ngưỡng heartbeat = `make_interval(secs => $1)` (cùng `orphan_s` với `SWEEP_ORPHANS`) | mỗi dòng: `pg_notify('job_enqueued', {v:1, job_id, provider_key:"dify"})`; **không** XADD; kill `pgid` nếu `worker_id` là mình (luôn NULL với `dify`) |
+| `REQUEUE_ORPHANS` (sweeper, mỗi 10 s, trước `SWEEP_ORPHANS`) | nguyên văn `plan-db` §2 "Requeue orphan", ngưỡng heartbeat = `make_interval(secs => $1)`, `$1 = AGENT_RT_ORPHAN_S` (`Settings.orphan_s`, mặc định 60; cùng tham số `SWEEP_ORPHANS`) | mỗi dòng: `pg_notify('job_enqueued', {v:1, job_id, provider_key:"dify"})`; **không** XADD; kill `pgid` nếu `worker_id` là mình (luôn NULL với `dify`) |
 | `REQUEUE_RESTART` (khởi động lại / dừng, trước `RESTART_ORPHANS`) | cùng câu, điều kiện heartbeat thay bằng `worker_id = $1` | như trên |
 Các dòng còn lại → `SWEEP_ORPHANS`/`RESTART_ORPHANS` H1 (XADD `job.failed` như H1). `ORPHAN_ONE` (host con chết) không áp cho `dify`. Claim lại: `CLAIM_UPDATE` (attempts + 1, token mới) → `job.started` lặp — Hub chấp nhận, không lọc `seq` (plan §5.3). Usage `ON CONFLICT (job_id) DO NOTHING`.
 
@@ -88,12 +122,12 @@ Spike PY-02 S3 + `options.py`: `strict_mcp_config=True` (chỉ MCP truyền qua 
 | Khi nào | `payload.output == "agent_result"` ∧ `payload.mcp is not None` (`{url, tools: 1–20}`, RT8) ∧ không phải lần thử lại định dạng (lần thử lại `tools=[]`, **không MCP** — tránh gọi lại tool `side_effect`, WRK-BR-04). Orchestrator (`output="text"`) có `mcp` ≠ null → bỏ qua + log `warn` |
 | Tên server | `"hub"` (hằng `MCP_SERVER`) → tool `mcp__hub__<workflow_key>` (key `^[a-z0-9-]{2,32}$`, có `-` [CX chuẩn hoá]) |
 | `mcp_servers` | `{"hub": {"type": "http", "url": payload.mcp.url, "headers": {"Authorization": "Bearer <ClaimedJob.token>"}}}` (`McpHttpServerConfig` [V `types.py` 640]); token từ claim (§3.3), payload **không** có token |
-| Truyền token | Dict trong `ClaudeAgentOptions` bị SDK chuyển thành `--mcp-config <json>` trên **argv** [V `subprocess_cli.py` 667–692] ⇒ lộ qua `/proc/<pid>/cmdline`. Chọn: cha (`HostProcess`) ghi `{"mcpServers": <dict trên>}` vào `AGENT_RT_WORK_DIR/.mcp/<job_id>.json` (0600, **ngoài** `work/<job_id>/` ⇒ hook deny đọc — nhãn `other_job`), `ChildRequest.mcp_config_path`; `mcp_servers=<path>` (SDK nhận `str \| Path` [V 2010]); xoá file trong `finally` của lần chạy + cleanup 24 h. Dự phòng nếu spike thấy file không nạp header: dict (argv) — rủi ro chấp nhận vì token chỉ sống khi job `running`, cùng user |
+| Truyền token | Dict trong `ClaudeAgentOptions` bị SDK chuyển thành `--mcp-config <json>` trên **argv** [V `subprocess_cli.py` 667–692] ⇒ lộ qua `/proc/<pid>/cmdline`. Chọn: cha (`HostProcess`) ghi `{"mcpServers": <dict trên>}` vào `AGENT_RT_WORK_DIR/.mcp/<job_id>.json` (0600, **ngoài** `work/<job_id>/` ⇒ hook deny đọc — nhãn `other_job`), `ChildRequest.mcp_config_path`; `mcp_servers=<path>` (SDK nhận `str \| Path` [V 2010]); xoá file trong `finally` của lần chạy + cleanup 24 h. **Không** dự phòng argv: spike #1 hoặc #10 thất bại (file không nạp header / token thấy trên argv) → PY-04 `blocked`, báo người dùng (token lộ cho tiến trình cùng user, tenant khác — quyết định bảo mật) |
 | `allowed_tools` | `tools` + `[f"mcp__hub__{k}" for k in payload.mcp.tools]` (tự duyệt dưới `permission_mode="dontAsk"`; thiếu ⇒ bị từ chối [V H1 S3 docs]) |
 | `tools` (`--tools`) | giữ `payload.allowed_tools` — chỉ lọc tool dựng sẵn [CX: không ẩn tool MCP; spike H1 #2a thấy MCP vẫn nạp khi `tools=[]`] |
 | `disallowed_tools` | giữ `KNOWN_TOOLS − tools` (không chứa tên MCP) |
 | `system_prompt` | thêm `MCP_BLOCK` (sau `FORMAT_BLOCK`): "Tool trả lỗi có `code: CONFIRMATION_REQUIRED` → dừng, trả `need_input` với đúng `question` và `choices` trong lỗi" |
-| Env job host | thêm `NO_PROXY=localhost,127.0.0.1` [CX cần?]; không thêm biến khác |
+| Env job host | **luôn** đặt `NO_PROXY=localhost,127.0.0.1` (vô hại khi không có proxy); không thêm biến khác |
 
 ### 4.3 Hook sandbox (`sandbox/hook.py`)
 | Đổi | Luật |
@@ -124,7 +158,7 @@ Script `apps/agent-runtime/spikes/mcp_spike.py` + server MCP giả tối thiểu
 | 7 | Tool trả `isError:true` + `content[0]` JSON `CONFIRMATION_REQUIRED` + `content[1]` câu chỉ dẫn + `structuredContent` → `ToolResultBlock(is_error, content)` thấy đủ hai khối text?; model thấy `structuredContent` không; có trả `need_input` theo `MCP_BLOCK` | §5 |
 | 8 | Server trả JSON thường (không SSE), `GET` → 405, không `Mcp-Session-Id` — CLI chấp nhận?; `protocolVersion`/`server/discover` CLI gửi | `plan.md` P7 |
 | 9 | Server tắt / 401 lúc init | §4.5 |
-| 10 | `ps -o args` của CLI khi dùng file: không thấy token | §4.2 |
+| 10 | `ps -o args` của CLI khi dùng file: không thấy token | §4.2 — #1 hoặc #10 ✗ ⇒ PY-04 `blocked`, báo người dùng |
 
 ## 5. Xác nhận `side_effect` phía agent CLI (HUB-FR-95, R21–R22, AC-H22)
 Thẩm quyền là **Hub** (`/mcp` không gọi Dify khi chưa có `confirmed` cho (flow, agent, workflow); tiêu thụ nguyên tử — `plan-db` §3). Runtime bảo đảm **kết quả job** là `need_input` khi Hub đã từ chối, không phụ thuộc model tuân lệnh. Hub không kiểm thêm khi nhận `job.result` (RQ3).
@@ -189,7 +223,7 @@ PY-00, PY-S1 (ngay sau Gate, song song) → C2 → PY-01 → … → PY-06. Bả
 | # | Câu hỏi | Mặc định |
 |---|---|---|
 | RQ1 | `workflow.async` chạy trong process cha hay process con | Process cha (§1) |
-| RQ2 | Token MCP truyền cho CLI qua argv (dict) hay file | File 0600 ngoài `work/<job_id>` (§4.2); spike PY-S1 #1, #10 quyết |
+| RQ2 | Token MCP truyền cho CLI qua argv (dict) hay file | File 0600 ngoài `work/<job_id>` (§4.2); spike #1/#10 thất bại → PY-04 `blocked`, báo người dùng (không tự chuyển argv) |
 | RQ3 | Ai ép `need_input` khi có `CONFIRMATION_REQUIRED` | ✓ chốt: Hub chặn gọi Dify, Runtime ép kết quả (§5); Hub không kiểm thêm |
 | RQ4 | Retry 429 của Dify | Không; `UPSTREAM_ERROR`/`upstream` |
 | RQ5 | Lỗi đọc giữa stream sau sự kiện đầu | Không retry, `UPSTREAM_ERROR`, stop best-effort |
