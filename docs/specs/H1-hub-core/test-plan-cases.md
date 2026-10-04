@@ -98,3 +98,17 @@ HUB-FR-31 fallback nhiều bước → H2 (Q-T6) · HUB-FR-02 command/workflow/f
 | QW-A2 · A37 phán quyết 2026-10-04 | `_runtime.ts` `tryNext` | — | — | — | Claim 0 dòng (job vừa bị huỷ) = không có job → thử job kế/chờ; A37 giữ nguyên; lock đã ghi lại |
 - Sửa A40 + R25 (phân xử) · 2026-10-04 · `lease.int.test.ts` so id Redis `<seq>-0` thay `ev.id`; `usage_int_test.py` chờ `job.progress` đầu trước khi huỷ; lease 4/4, usage 5/5 xanh; lock đổi đúng 2 dòng.
 - Sửa AC-04 (phân xử) · 2026-10-04 · `orphan_int_test.py`: chờ `job.failed` ≤ 5 s sau khi pgid chết (XADD sau kill theo plan §2.4); vẫn đúng một `INTERNAL_ERROR`; file 9/9 xanh, lock cập nhật.
+
+**`done:h1` (I1) · 2026-10-04** — `bun run done:h1` (test-plan §7.1), Windows + Python trong container:
+
+| # | Bước | Kết quả | Ghi chú |
+|---|---|---|---|
+| 1 | `turbo typecheck` Hub | xanh | |
+| 2 | `bun test` contracts/db/rules/R14 | xanh | 350 |
+| 3 | int H1 + M + ADM-NFR-06 | xanh | 1572; A52 đua log (code sửa: log trước `run.finished`) |
+| 4 | `contracts:check` | xanh | |
+| 5 | Python (ruff, pyright, lint-imports, pytest, `-m int`) | **đỏ 2/240** | `P45a`, `test_wrk_text_output_verbatim`: **Tranh chấp test** (spec-decisions, I1) — fake-cli Orchestrator trả `answer{text}` theo plan-runtime-fake §7 |
+| 6 | `test:h1:stack` | xanh (`--from=6`) | 4/4 sau sửa: `idleTimeout` hub-api, fake-cli khối `<message>` JSON + delegate + usage mặc định |
+| 7 | contract chat, Hub thật + admin-api | xanh (`--from=6`) | 41 pass, 21 skip (`isMock`) |
+| 8–11 | lock · trace · check:size · depcruise Hub | xanh (`--from=6`) | |
+| — | `tsc -p tsconfig.tests.json` · `depcruise --all` (báo cáo) | xanh · xanh | `.venv` bỏ khỏi depcruise |
