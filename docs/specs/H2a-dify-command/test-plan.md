@@ -52,7 +52,7 @@ Chế độ **TEST-PLAN** · 2026-10-05. Chưa có file test, chưa khoá; viế
 | HUB-BR-01 · HUB-H2a-AC-09 | R01–R04, A06, A09 | R, A |
 | HUB-BR-04 · HUB-H2a-AC-03 | R43–R49, A20–A26, P05, P07–P10 | R, A, P |
 | HUB-BR-06 · AC-H05 | A03, A04, A18, A34 | A |
-| HUB-BR-11 | A52 (tên tool = key, có `-`) · **Q-T3** | A |
+| HUB-BR-11 | A52 (tên tool = key, có `-`) | A |
 | HUB-BR-12 | A55 (tool chỉ gọi Dify, `calls()`) | A |
 | HUB-BR-19 | R37, A53 | R, A |
 | AC-H11 | A02, A07 | A |
@@ -132,7 +132,7 @@ File: `commands` (A01–A09) · `command-run` (A10–A19) · `dify-errors` (A20�
 | A52 | FR-50 · BR-11 | `initialize` (`2025-06-18` → giữ; `1999-01-01` → `2026-07-28`), `server/discover` có `supportedVersions`; `tools/list` (token job `hoadon`) = `[check-invoice]`, `description` = mô tả workflow, `inputSchema` JSON Schema có mô tả từng tham số |
 | A53 | AC-05 · BR-19 | Token job `trello` → `tools/call check-invoice` → JSON-RPC `-32602` "Unknown tool" (không lộ lý do), MK 0 lời gọi; user của job **không** có feature chứa workflow → vẫn gọi được tool của mình (BR-19) |
 | A54 | AC-H12 | Sửa `workflows.description` (adminChange) → job **mới** `tools/list` thấy mô tả mới ≤ 5 000 ms |
-| A55 | FR-50 · BR-12 | `tools/call check-invoice {…}` (một input 250 ký tự + một chứa secret) → MK nhận đúng 1 lời gọi `user="acme:<lan>"`, response `{content:[{type:"text"}], isError:false}`; `run_steps` `type='tool'`, `workflow_id`, `detail.inputs` qua `maskInputs`: cắt ≤ 200, secret → `***`; không SSE live (P12) |
+| A55 | FR-50 · BR-12 | `tools/call check-invoice {…}` (một input 250 ký tự + một chứa secret + một giá trị có `LEAK_KEY_…` bắt đầu ở vị trí 190) → MK nhận đúng 1 lời gọi `user="acme:<lan>"`, response `{content:[{type:"text"}], isError:false}`; `run_steps` `type='tool'`, `workflow_id`, `detail.inputs` qua `maskInputs` (che trước, cắt ≤ 200 sau): secret → `***`, không còn mảnh key nào sau che + cắt (kể cả key vắt qua vị trí 200); không SSE live (P12) |
 | A56 | R20 | Tham số sai → `isError` "Invalid arguments for this tool."; `mk-401` → "This tool is not configured."; `mk-failed` → "The tool's service returned an error."; usage 1 dòng `feature_id NULL` |
 | A57 | AC-05 · tenant | Token job tenant `beta` không thấy/ghi run/flow/`tool_confirmations` của `acme` (xác nhận `confirmed` của acme giữ nguyên; `run_steps` chỉ ghi vào run beta) |
 | A58 | R20 | Timeout tool = min(`agents.timeout_s`, 300): `agents.timeout_s=1` + `mk-slow` → "The tool took too long to respond." + stop |
@@ -146,7 +146,7 @@ File: `commands` (A01–A09) · `command-run` (A10–A19) · `dify-errors` (A20�
 | A67 | R23 | Không cột `admin.workflows.side_effect` → `workflow_flags` quyết; có cột (thêm bằng SQL owner rồi reload) → cột thắng |
 
 ## 6. P · Python · S · K
-P01–P30, S01–S03: [cases §5](test-plan-cases.md); K01–K08: cases §2. Secret A80–A86 (+A83b), agent `dify-*` A40–A46, test-run A70–A75, DB/seed A87–A95: cases §6. Catalog fixture `_h2a.ts`: cases §7.
+P01–P30, S01–S03: [cases §5](test-plan-cases.md) (bảng ca P30: [`test-plan-py.md`](test-plan-py.md)); K01–K08: cases §2. Secret A80–A86 (+A83b), agent `dify-*` A40–A46, test-run A70–A75, DB/seed A87–A95: cases §6. Catalog fixture `_h2a.ts`: cases §7.
 
 ## 7. Lệnh
 
@@ -174,7 +174,7 @@ Kế thừa `done:h1` (mọi bước của nó nằm trong danh sách trên) + `
 | Nhóm | File | Số ca (≈) | Phải đỏ đúng lý do vì |
 |---|---|---|---|
 | QW-R | 11 file `rules/` | 78 (R30–R39 chạy ×2) | stub `plan §7` ném (B0); R parity: nhánh Admin **xanh**, nhánh Hub đỏ (ghi §10) |
-| QW-A1 (cao) | `commands`, `command-run`, `dify-errors`, `secret`, `db` | A01–A26, A80–A92 = 39 | route 404 / `expect`; fixture catalog + secret SQL phải xanh; A84/A85 có thể **xanh** trước code (chấp nhận, ghi §10) |
+| QW-A1 (cao) | `commands`, `command-run`, `dify-errors`, `secret`, `db` | A01–A26, A80–A92 (+A83b) = 40 | route 404 / `expect`; fixture catalog + secret SQL phải xanh; A84/A85 có thể **xanh** trước code (chấp nhận, ghi §10) |
 | QW-A2 (cao) | `async`, `dify-agent`, `mcp`, `confirm`, `test-run`, `seed` | A30–A75, A93–A95 = 43 | như QW-A1 |
 | QW-PU | `test_dify_rules.py` (P28–P30, unit) — viết sau C2, **trước PY-01** | 3 | `ModuleNotFoundError`/import hàm chưa có (`ErrKind`, `retry_delay`, `map_failure`, `usage_row`, `reduce`, `parse_confirmation`: chữ ký `plan-runtime §3.1`) |
 | QW-P | 5 file Python int | 27 | `ModuleNotFoundError` trong thân test / chờ trạng thái hết hạn; DB/Redis/mock phải xanh |
@@ -182,7 +182,7 @@ Kế thừa `done:h1` (mọi bước của nó nằm trong danh sách trên) + `
 | K | có sẵn | 41 contract chat + C1 + M2/M3/H1 | chạy lại, không viết mới |
 | perf | 1 | 3 | không chặn |
 
-Tổng mới ≈ **196** ca (R 78, A 83, P 30, S 3, perf 3) + K + M (3 checklist blocked). Theo nhóm: quyền 22, MCP/`side_effect` ~40, lỗi/huỷ/retry ~35, secret ~12.
+Tổng mới ≈ **197** ca (R 78, A 83, P 30, S 3, perf 3) + K + M (3 checklist blocked). Theo nhóm: quyền 22, MCP/`side_effect` ~40, lỗi/huỷ/retry ~35, secret ~12.
 
 ## 9. Rủi ro test · câu hỏi (mặc định dùng nếu không trả lời)
 
@@ -190,7 +190,7 @@ Tổng mới ≈ **196** ca (R 78, A 83, P 30, S 3, perf 3) + K + M (3 checklist
 |---|---|---|
 | Q-T1 | Hai mock (MK TS, `dify_mock.py`, `mcp_mock.py`) do backend-lead viết, ngoài `tests/acceptance` → agent code có thể sửa mock cho xanh | Sau QW, qc thêm 3 file vào danh sách khoá (`LOCKED_DIRS`/`tests/.lock`); sửa mock = tranh chấp test |
 | Q-T2 | R import tĩnh `*.rules.ts` chưa có | Như H1 Q-T2: B0 tạo stub chữ ký (thân `throw`) trước QW |
-| Q-T3 | BA HUB-BR-11 tên tool `^[a-z][a-z0-9_]{2,40}$` ≠ plan (tên = key `^[a-z0-9-]{2,32}$`, có `-`) | Test theo spec/plan (A52: tên = key, `create-trello-card`); ghi "Cần bổ sung" docs-architect sửa BA/CR khi I3 |
+| Q-T3 | BA HUB-BR-11 regex tên tool ≠ plan | **Đóng**: đã sửa bởi CR-035; A52 theo plan (tên = key, có `-`) |
 | Q-T4 | Test-run secret thiếu: 409 (`plan-errors` §1) hay 200 `ok:false NOT_CONFIGURED` | 409 `NOT_CONFIGURED` trước khi gọi Dify; lỗi **từ** Dify (401) → 200 `ok:false` |
 | Q-T5 | AC-W06 "> 60 s" không chờ thật | Hub: A37 lùi `heartbeat_at` 61 s (hằng 60); Runtime: `AGENT_RT_ORPHAN_S=5`; mặc định 60 kiểm unit (P28) |
 | Q-T6 | Đo "≤ 5 s" (AC-H05, H12, huỷ) có thể chập chờn trên Windows | Poll 100 ms, ngưỡng `≤ 5 000 ms` từ lúc NOTIFY; ghi thời gian đo vào tên lỗi |

@@ -1,6 +1,6 @@
 # Test plan · H2a-dify-command · phụ lục ca (qc)
 
-Phụ lục của [`test-plan.md`](test-plan.md): §1 bảng ca hàm thuần (R, R-P) · §2 hồi quy khoá (K) · §3 thủ công/blocked (M) · §4 không phủ · §5 Python/stack (P, S) · §6 A tách ra (agent `dify-*`, test-run, DB/seed) · §7 catalog fixture.
+Phụ lục của [`test-plan.md`](test-plan.md): §1 bảng ca hàm thuần (R, R-P) · §2 hồi quy khoá (K) · §3 thủ công/blocked (M) · §4 không phủ · §5 Python/stack (P, S) · §6 A tách ra (agent `dify-*`, test-run, DB/seed) · §7 catalog fixture · bảng ca P30: [`test-plan-py.md`](test-plan-py.md).
 
 ## 1. R · Hàm thuần — bảng ca (chữ ký `plan.md` §7)
 
@@ -106,15 +106,19 @@ Mỗi ca chạy **hai lần** (`describe.each`): `usableCommands` (Hub) và `com
 | R73 | `JobPayloadSchema`: fixture valid mới + cũ ok, invalid mới lỗi; `WorkflowAsyncJob` có `api_key`/`base_url`/`job_token` → lỗi; `McpConfig` có `token` / `tools:[]` / 21 tool → lỗi; `NOT_CONFIGURED ∈ HUB_JOB_ERROR_CODES ⊂ CHAT_RUN_ERROR_CODES`; `JOB_FAIL_REASONS` ∋ `credential`, `upstream` |
 | R74 | `TestRunRequest` default (`args []`, `timeout_s 30`); `TestRunResponse` union `ok`; `DifyCredentialResponse` strict; `MCP_PROTOCOL_VERSIONS[0]="2026-07-28"`; `ToolConfirmationRequired.choices` đúng 2 |
 
-### 1.9 R-P · Python `retry_delay(err_kind, attempt, first_seen, side_effect, sent)` — P28 (`plan-runtime-dify` §3.4, BACKOFF mặc định `(2, 8)`)
-| Ca | Kỳ vọng |
+### 1.9 R-P · Python `retry_delay(err_kind, attempt, first_seen, side_effect)` — P28 (`plan-runtime-dify` §3.4, BACKOFF mặc định `(2, 8)`)
+Cột Ca = giá trị `ErrKind`. `connect` = chưa gửi request (retry được kể cả `side_effect`); `side_effect` ∧ `ErrKind` ≠ `connect` ⇒ `None`.
+| Ca (`ErrKind`) | Kỳ vọng |
 |---|---|
-| kết nối chưa gửi, attempt 1/2/3, `side_effect` bất kỳ | 2.0 / 8.0 / `None` |
-| 5xx trước sự kiện đầu, `side_effect=false` | 2.0 / 8.0 / `None` |
-| 5xx trước sự kiện đầu, `side_effect=true` ∧ `sent` | `None` |
-| bất kỳ lỗi sau sự kiện đầu | `None` |
-| 401/403/404, 400, 413, 415, 422, 429, SSE `error`, `failed` | `None` |
-| Ngưỡng heartbeat mặc định = 60 s (Q-T5) | đọc `Settings` không env |
+| `connect`, attempt 1/2/3, `side_effect` bất kỳ | 2.0 / 8.0 / `None` |
+| `http_5xx`, `first_seen=false`, `side_effect=false`, attempt 1/2/3 | 2.0 / 8.0 / `None` |
+| `read`, `first_seen=false`, `side_effect=false`, attempt 1/2/3 | 2.0 / 8.0 / `None` |
+| `http_5xx` hoặc `read`, `first_seen=false`, `side_effect=true` | `None` |
+| `http_5xx`, `read`, `connect` với `first_seen=true` | `None` |
+| `http_4xx` (401/403/404, 400, 413, 415, 422, 429), `sse_error`, `finished_failed` | `None` |
+| `empty` | `None` |
+
+Ngưỡng heartbeat mặc định = 60 s (Q-T5): đọc `Settings` không env (kiểm riêng, không thuộc `retry_delay`).
 
 ### 1.10 R-P · `parse_confirmation(content)` — P29 (`plan-runtime` §5)
 JSON đúng hình ở khối đầu → `Confirm`; khối thứ 2 là câu chỉ dẫn → bỏ qua; `content` là str → một khối; `code` khác / `choices` 1 hoặc 3 phần tử / `question` rỗng hoặc 2 001 ký tự / không phải JSON → `None`.
@@ -148,7 +152,6 @@ JSON đúng hình ở khối đầu → `Confirm`; khối thứ 2 là câu chỉ
 | Đính kèm, `attachment` thật | H2c (chỉ `CMD_MISSING_ARG`, R25) |
 | Dify thật, CLI thật + MCP | M01–M02 blocked W1 |
 | Hiệu năng spec §6 (trừ ≤ 5 s cấu hình/huỷ) | `test:perf`, không chặn |
-| HUB-BR-11 regex BA có `_` | Q-T3 |
 
 ## 5. P · Python (`apps/agent-runtime/tests/acceptance/`) · S
 Thứ tự: QW-PU (P28–P30, `test_dify_rules.py`) viết **sau C2, trước PY-01** (test trước code; chữ ký `plan-runtime §3.1`: `ErrKind`, `retry_delay`, `map_failure`, `usage_row`, `reduce`). QW-P (int), QW-S viết **sau PY-02** (cần `dify_mock.py`; fixture phải xanh) và khoá lần 2 (Q3) **trước PY-03**; ca `fake-cli` MCP (P24–P27, S01–S02) đỏ vì chỉ thị chưa có tới PY-06 — đúng lý do.
@@ -185,7 +188,7 @@ File: `dify_job_int_test.py` (P02–P05, P13–P17) · `dify_retry_int_test.py` 
 | P27 | H1-R17 | Orchestrator (`output=text`) có `mcp` ≠ null → bỏ qua, log `warn`, không gọi MCP |
 | P28 | unit · QW-PU | `retry_delay` (cases §1.9) với BACKOFF `(2, 8)` → 2.0, 8.0, `None` lần 3; `ErrKind` đủ giá trị |
 | P29 | unit · QW-PU | `parse_confirmation` (cases §1.10); fixtures `hub.py` valid/invalid mới |
-| P30 | unit · QW-PU | `map_failure` (ánh xạ lỗi R11), `usage_row` (R15), `reduce` (workflow/chat) — bảng ca `plan-runtime-dify` §3.5–3.7; chữ ký tại `plan-runtime §3.1` |
+| P30 | unit · QW-PU | `map_failure` (R11), `usage_row` (R15), `reduce` (workflow/chat) — bảng ca tối thiểu [`test-plan-py.md`](test-plan-py.md); nguồn `plan-runtime-dify` §3.2, §3.4, §3.5, §3.7; chữ ký `plan-runtime §3.1` |
 
 | ID | Loại | Ca |
 |---|---|---|
@@ -206,7 +209,7 @@ File: `secret` (A80–A86) · `dify-agent` (A40–A46) · `test-run` (A70–A75)
 | A45 | FR-24 | Delegate `trello` → payload `agent.cli.mcp = {url:"<HUB_PUBLIC_INTERNAL_URL>/mcp", tools:["create-trello-card"]}`, không `token`; agent không gắn workflow → `mcp: null`; Orchestrator → `mcp: null` |
 | A46 | FR-24 | `hoadon` gắn `check-invoice` + `tat` (tắt) → `tools` chỉ `["check-invoice"]` |
 | A70 | FR-51 · AC-08 | `POST /internal/test-run` Bearer đúng, command nháp `/dich` → 200 `{ok:true, output, steps≤10, usage, ms}`; MK `user="platform:<padmin>"`; `counts()` conversations/runs/messages/usage_logs/jobs không đổi (Q13) |
-| A71 | AC-08 | Không header / sai token / JWT `padmin` hợp lệ → 401 `UNAUTHORIZED`; `HUB_INTERNAL_TOKEN` vắng → 503 |
+| A71 | AC-08 | Không header / sai token / JWT `padmin` hợp lệ → 401 `UNAUTHORIZED`; `HUB_INTERNAL_TOKEN` vắng → 503 `UNAVAILABLE` |
 | A72 | R24 | Command nháp có workflow user không có feature → vẫn chạy (không kiểm quyền) |
 | A73 | R24 | Thiếu arg → 422 `CMD_MISSING_ARG`; body sai → 400; `mk-failed` → 200 `ok:false, error.code=UPSTREAM_ERROR, error.detail` ≤ 300 đã che key (Q16) |
 | A74 | R24 | Secret thiếu → 409 `NOT_CONFIGURED` (`plan-errors` §1) · Q-T4 |
