@@ -2,13 +2,15 @@
 
 Không phụ thuộc SDK: nhận/trả dict đúng hình `HookCallback` của Claude Agent SDK, nên provider
 `claude-sub` (PY-08) gắn qua `HookMatcher` và `fake-cli` (PY-09) gọi trực tiếp.
-**Dự phòng §13** (tên trường Glob/Grep/LS chưa xác minh ở W0): kiểm mọi giá trị chuỗi của khoá
-chứa `path`; khoá chứa `glob` (và `pattern`, trừ `Grep` — ở đó là regex nội dung, không mở rộng
-thành đường dẫn) **fail-closed**: chứa `..` ở bất kỳ đâu hoặc `{` (brace `{..}/{..}/x`,
-`{..,a}/**` mở rộng ra ngoài `work/<job>` — review H1 #3), `[` (`[.][.]`), backslash (escape),
+Đã xác minh ở spike PY-02 (`spike-py02.md` #1, #3): `Read {file_path}` (CLI đổi sang tuyệt đối),
+`Grep {pattern, path?, glob?}`, `Glob {pattern, path?}` (`path` giữ tương đối), không có `LS`;
+Glob **có** mở rộng brace và lớp ký tự. Vẫn kiểm mọi giá trị chuỗi của khoá chứa `path`; khoá
+chứa `glob` (và `pattern`, trừ `Grep` — ở đó là regex nội dung) **fail-closed**: chứa `..` ở bất
+kỳ đâu hoặc `{` (brace `{..}/{..}/x`, `{..,a}/**` — review H1 #3), `[` (`[.][.]`), backslash,
 đoạn `.` + `?`/`*` hoặc đoạn khớp `..` khi wildcard ăn cả `.` (`?.`, `*.*`; trừ `*`/`**`) → deny
 (review H1 v2 N3; đánh đổi: chặn cả mẫu vô hại như `.*rc`, `*.*`, lớp ký tự); tuyệt đối / `~` →
-kiểm như đường dẫn. **Xác minh lại ở W0/PY-02** (tên trường + cách CLI mở rộng glob).
+kiểm như đường dẫn. `StructuredOutput` (tool CLI thêm khi có `output_format`, S2) chỉ được phép khi
+`policy.structured_output` (job agent), không có trường đường dẫn.
 Deny trả lý do cố định, không lặp lại đường dẫn; log chỉ `tool_name`, nhãn, `job_id`.
 Lỗi bất ngờ → deny (fail-closed).
 """
@@ -29,6 +31,7 @@ PathGuard = Callable[[Mapping[str, object], str | None, object], Awaitable[HookO
 ALWAYS_DENIED = frozenset({"Bash", "Agent", "Task"})
 _DENIED_PREFIXES = ("mcp__",)
 _PATTERN_FREE_TOOLS = frozenset({"Grep"})
+STRUCTURED_OUTPUT_TOOL = "StructuredOutput"
 
 
 @dataclass(frozen=True)
@@ -37,6 +40,7 @@ class SandboxPolicy:
     work_dir: Path
     forbidden_roots: tuple[Path, ...]
     tools: frozenset[str]
+    structured_output: bool = False  # job có `output_format` (agent) ⇒ cho `StructuredOutput`
 
 
 @dataclass(frozen=True)
@@ -109,6 +113,8 @@ def _candidates(tool_name: str, tool_input: Mapping[str, object]) -> Iterator[st
 
 def decide(policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, object]) -> HookDecision:
     """Quyết định thuần cho một lần gọi tool."""
+    if tool_name == STRUCTURED_OUTPUT_TOOL and policy.structured_output:
+        return _ALLOW  # dữ liệu trả lời theo schema, không phải đường dẫn (S2)
     if _tool_denied(policy, tool_name):
         return HookDecision(allowed=False, reason="tool_not_allowed", label="tool")
     for raw in _candidates(tool_name, tool_input):

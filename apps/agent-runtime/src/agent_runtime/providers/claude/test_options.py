@@ -1,5 +1,5 @@
-"""WRK-FR-10 · WRK-FR-11 · WRK-BR-07 · `build_options` (plan-runtime §3.1, §4; dự phòng §13 —
-xác minh lại sau W0+PY-02)."""
+"""WRK-FR-10 · WRK-FR-11 · WRK-BR-07 · `build_options` (plan-runtime §3.1, §4; spike PY-02
+S1–S4, S6, S7)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from claude_agent_sdk.types import HookContext, HookInput
 
 from agent_runtime.providers.claude.options import (
     AGENT_RESULT_SCHEMA,
+    CLAUDE_ENV,
     HOOK_TIMEOUT_S,
     KNOWN_TOOLS,
     build_options,
@@ -30,11 +31,15 @@ def test_wrk_fr_10_agent_options(tmp_path: Path) -> None:
     assert opts.cwd == job.work_dir
     assert opts.tools == ["Read", "Grep"] and opts.allowed_tools == ["Read", "Grep"]
     assert set(opts.disallowed_tools) == set(KNOWN_TOOLS) - {"Read", "Grep"}
-    assert {"Bash", "Write", "Edit", "WebFetch", "Agent", "Task"} <= set(opts.disallowed_tools)
+    assert {"Bash", "Write", "Edit", "WebFetch", "Task", "Skill"} <= set(opts.disallowed_tools)
+    assert "StructuredOutput" not in opts.disallowed_tools and "LS" not in KNOWN_TOOLS
     assert opts.permission_mode == "dontAsk"
-    assert opts.setting_sources == []
+    assert opts.setting_sources == [] and opts.strict_mcp_config
     assert (opts.resume, opts.max_turns, opts.model) == ("sess-old", 7, "claude-sonnet-x")
-    assert opts.env == {}
+    assert opts.env == {
+        "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
+        "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+    }
     assert opts.output_format == {"type": "json_schema", "schema": AGENT_RESULT_SCHEMA}
     assert isinstance(opts.system_prompt, str) and opts.system_prompt.startswith("Bạn là agent.")
     assert "JSON" in opts.system_prompt
@@ -44,9 +49,9 @@ def test_wrk_fr_10_agent_options(tmp_path: Path) -> None:
 def test_wrk_fr_10_orchestrator_options(tmp_path: Path) -> None:
     opts = build_options(job_of(tmp_path, "text", use_session=False, allowed_tools=[]))
     assert opts.tools == [] and opts.allowed_tools == []
-    assert set(opts.disallowed_tools) == set(KNOWN_TOOLS)
-    assert opts.resume is None
-    assert opts.env == {"CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1"}
+    assert opts.disallowed_tools == ["*"]  # S4: đã xác minh = không tool nào
+    assert opts.resume is None and opts.strict_mcp_config
+    assert opts.env == {**CLAUDE_ENV, "CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1"}
     assert opts.output_format is None and opts.system_prompt == "Bạn là agent."
 
 
@@ -89,3 +94,15 @@ def test_wrk_br_04_retry_has_no_tools(tmp_path: Path) -> None:
     assert opts.tools == [] and opts.allowed_tools == []
     assert set(opts.disallowed_tools) == set(KNOWN_TOOLS)
     assert opts.output_format == {"type": "json_schema", "schema": AGENT_RESULT_SCHEMA}
+
+
+def test_wrk_fr_10_agent_min_two_turns(tmp_path: Path) -> None:
+    """S7: structured output tốn 1 lượt ⇒ agent `max_turns ≥ 2`; Orchestrator giữ nguyên."""
+    assert build_options(job_of(tmp_path / "a", max_turns=1)).max_turns == 2
+    assert build_options(job_of(tmp_path / "o", "text", max_turns=1)).max_turns == 1
+
+
+def test_wrk_br_07_system_prompt_mentions_neutralized(tmp_path: Path) -> None:
+    """S1: `system_prompt` (Hub dựng) cũng qua `neutralize_mentions`."""
+    job = job_of(tmp_path, "text", system_prompt="x @~/.claude/y")
+    assert build_options(job).system_prompt == "x \u200b@~/.claude/y"

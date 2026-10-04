@@ -2,8 +2,10 @@
 (plan-runtime §3.2, §3.3, §4).
 
 Progress chỉ nhãn tĩnh theo tên tool (không đường dẫn/nội dung). Lỗi không lặp lại stderr/nội dung.
-**Xác minh lại sau W0+PY-02** (§13): chữ lỗi hết quota / chưa đăng nhập (regex dưới), định dạng
-giờ reset trong text (chưa parse → `resets_at=None` ⇒ cooldown mặc định 30 phút ở PY-12).
+Spike PY-02 đã xác minh chữ chưa đăng nhập (`Not logged in · Please run /login`), mất session
+(`ResultError`), `RateLimitEvent.status`; chữ hết quota thật + giờ reset trong text **chưa đo**
+(chưa parse → `resets_at=None` ⇒ cooldown mặc định 30 phút ở PY-12). `model_usage` có nhiều khoá
+(model phụ haiku đứng đầu) ⇒ model `usage` = model init, không có thì khoá `costUSD` lớn nhất (S9).
 """
 
 from __future__ import annotations
@@ -57,6 +59,26 @@ def init_session_id(msg: SystemMessage) -> str | None:
     return sid if isinstance(sid, str) and sid else None
 
 
+def init_model(msg: SystemMessage) -> str | None:
+    """`SystemMessage(init).data["model"]` — model chính của lượt (S9)."""
+    if msg.subtype != "init":
+        return None
+    model = msg.data.get("model")
+    return model if isinstance(model, str) and model else None
+
+
+def _cost(entry: object) -> float:
+    cost = entry.get("costUSD") if isinstance(entry, dict) else None  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    return float(cost) if isinstance(cost, int | float) else 0.0  # pyright: ignore[reportUnknownArgumentType]
+
+
+def main_model(model_usage: dict[str, Any] | None) -> str | None:
+    """Khoá `model_usage` có `costUSD` lớn nhất (không lấy khoá đầu — thường là haiku phụ)."""
+    if not model_usage:
+        return None
+    return max(model_usage, key=lambda k: _cost(model_usage[k]))
+
+
 def tool_events(msg: AssistantMessage) -> Iterator[ProviderEvent]:
     for block in msg.content:
         if isinstance(block, ToolUseBlock):
@@ -98,9 +120,9 @@ def _int(usage: dict[str, Any], key: str) -> int:
     return value if isinstance(value, int) and value >= 0 else 0
 
 
-def usage_event(msg: ResultMessage) -> UsageEv | None:
+def usage_event(msg: ResultMessage, init: str | None = None) -> UsageEv | None:
     usage = msg.usage or {}
-    model = next(iter(msg.model_usage or {}), None)
+    model = init or main_model(msg.model_usage)
     if not usage and model is None:
         return None
     return UsageEv.model_validate(

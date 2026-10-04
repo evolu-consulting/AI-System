@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from agent_runtime.sandbox.env import job_host_env
+from agent_runtime.sandbox.env import CLI_QUIET_ENV, job_host_env
 from agent_runtime.sandbox.process import (
     descendants,
     group_pids,
@@ -58,7 +58,9 @@ def test_wrk_br_02_env_whitelist_only() -> None:
         "test",
         {"VIRTUAL_ENV": "/opt/venv", "REDIS_URL": "redis://x", "PYTHONPATH": ""},
     )
-    assert set(env) == {"HOME", "PATH", "LANG", "TMPDIR", "APP_ENV", "VIRTUAL_ENV"}
+    base = {"HOME", "PATH", "LANG", "TMPDIR", "APP_ENV", "VIRTUAL_ENV"}
+    assert set(env) == base | set(CLI_QUIET_ENV)
+    assert CLI_QUIET_ENV["DISABLE_AUTOUPDATER"] == "1"  # S5
     assert env["HOME"] == "/home/w" and env["TMPDIR"] == "/w/work/j1/.tmp"
     assert env["PATH"] == "/usr/local/bin:/usr/bin:/bin"
 

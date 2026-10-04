@@ -1,5 +1,6 @@
 """WRK-BR-07 · WRK-FR-12 · hook `PreToolUse` (plan-runtime §5.2, dự phòng §13) + nhãn §5.1."""
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -109,8 +110,8 @@ async def test_wrk_br_07_guard_fail_closed(policy: SandboxPolicy) -> None:
 def test_wrk_br_07_brace_and_dotdot_patterns_denied(
     policy: SandboxPolicy, tool: str, tool_input: dict[str, object]
 ) -> None:
-    """Review H1 #3 · AC-W11: mẫu brace / `..` lọt khỏi `work/<job>` → deny.
-    Xác minh lại W0/PY-02."""
+    """Review H1 #3 · AC-W11: mẫu brace / `..` lọt khỏi `work/<job>` → deny (spike PY-02 #3: Glob
+    có mở rộng brace + lớp ký tự)."""
     got = decide(policy, tool, tool_input)
     assert (got.allowed, got.reason, got.label) == (False, "path_not_allowed", "pattern")
 
@@ -119,3 +120,13 @@ def test_wrk_br_07_grep_content_regex_not_a_path(policy: SandboxPolicy) -> None:
     """`pattern` của Grep là regex nội dung (không mở rộng thành đường dẫn) → không kiểm."""
     assert decide(policy, "Grep", {"pattern": r"\.\./x|{a,b}", "glob": "*.py"}).allowed
     assert decide(policy, "Glob", {"pattern": "src/**/*.py", "path": "."}).allowed
+
+
+def test_wrk_br_07_structured_output_only_for_agent(policy: SandboxPolicy) -> None:
+    """S2 (spike PY-02 #5): CLI gọi hook cho `StructuredOutput` — agent (có `output_format`) cho
+    phép, Orchestrator/không `output_format` deny; tool khác ngoài `tools` vẫn deny."""
+    data = {"status": "done", "text": "/home/x ../y"}
+    assert not decide(policy, "StructuredOutput", data).allowed
+    agent = replace(policy, tools=frozenset(), structured_output=True)
+    assert decide(agent, "StructuredOutput", data).allowed
+    assert decide(agent, "Read", {"file_path": "a.txt"}).reason == "tool_not_allowed"

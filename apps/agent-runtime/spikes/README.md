@@ -14,3 +14,7 @@ env -i HOME=$HOME PATH=/usr/local/bin:/usr/bin:/bin LANG=C.UTF-8 TMPDIR=/tmp \
 Ca: `tools-list` (HOME rỗng, không tốn API) · `lost-session` (không tốn API) · `client-tools` ·
 `query-hook` · `no-tools` · `control-claude-md` · `structured` · `resume` (sau `structured`) · `at-file`.
 Không đối số = chạy hết (≈ 7 lượt gọi model). Dữ liệu giả ở `/tmp/spike*`; JSON từng ca ở `/tmp/spike/out/`.
+
+`i2_verify.py` — I2 sau PY-02: chạy **đúng** `build_options`/`neutralize_mentions` của `src/` với Claude
+thật. Ca: `prod-at-file` (S1 mọi biến thể `@` + S3/S4/S6/S9, 1 lượt) · `prod-structured` (S2/S7, 1 lượt) ·
+`prod-orch` (Orchestrator `["*"]`, HOME rỗng, không tốn API). Cùng cách chạy, thay tên file.

@@ -1,9 +1,11 @@
 """WRK-FR-10 · WRK-FR-11 · WRK-BR-07 · Dựng `ClaudeAgentOptions` cho một job (plan-runtime
 §3.1, §4).
 
-**Xác minh lại sau W0+PY-02** (plan-runtime §13): `disallowed_tools` dùng danh sách tên đủ thay vì
-`["*"]`; `tools=[]` = không tool; `setting_sources=[]` = không nạp settings user; schema
-`output_format` phẳng (union chưa xác minh); `CLAUDE_CODE_SKIP_PROMPT_HISTORY` cho Orchestrator.
+Đã xác minh ở spike PY-02 (`spike-py02.md`, CLI đóng gói 2.1.286): `tools` (allowlist `--tools`)
+là hàng rào chính; `disallowed_tools=["*"]` ⇒ không tool (Orchestrator); `setting_sources=[]` không
+nạp CLAUDE.md/settings; `output_format` schema phẳng ⇒ CLI thêm tool `StructuredOutput` (tốn 1
+lượt, hook cho phép — S2); env tắt connector claude.ai (S3) + auto-memory (S6);
+`CLAUDE_CODE_SKIP_PROMPT_HISTORY` cho Orchestrator. `system_prompt` qua `neutralize_mentions` (S1).
 """
 
 from __future__ import annotations
@@ -16,33 +18,47 @@ from claude_agent_sdk import ClaudeAgentOptions, HookMatcher
 from claude_agent_sdk.types import HookCallback, HookContext, HookInput, HookJSONOutput
 
 from agent_runtime.providers.base import ProviderJob
+from agent_runtime.providers.context import neutralize_mentions
 from agent_runtime.sandbox.hook import PathGuard, SandboxPolicy, make_path_guard
 
 HOOK_TIMEOUT_S = 10.0
 PERMISSION_MODE = "dontAsk"  # không `bypassPermissions` (§3.1)
-# Dự phòng §4 (thay `disallowed_tools=["*"]` chưa xác minh): mọi tool dựng sẵn biết tên.
+# Tool dựng sẵn của CLI 2.1.286 (init `tools` mặc định, spike #2b) + `Glob`/`Grep` (chỉ có khi ghi
+# rõ trong `tools`). Không có `StructuredOutput` (CLI tự thêm khi có `output_format`).
 KNOWN_TOOLS: tuple[str, ...] = (
-    "Read",
-    "Write",
-    "Edit",
-    "NotebookEdit",
-    "Glob",
-    "Grep",
-    "LS",
+    "Task",
     "Bash",
+    "CronCreate",
+    "CronDelete",
+    "CronList",
+    "DesignSync",
+    "Edit",
+    "EnterWorktree",
+    "ExitWorktree",
+    "ListAgents",
+    "NotebookEdit",
+    "Read",
+    "ReportFindings",
+    "ScheduleWakeup",
+    "SendMessage",
+    "Skill",
+    "TaskStop",
+    "ToolSearch",
     "WebFetch",
     "WebSearch",
-    "Agent",
-    "Task",
-    "TodoWrite",
-    # Review H1: tool dựng sẵn khác của Claude Code (xác minh lại danh sách ở W0/PY-02).
-    "MultiEdit",
-    "Skill",
-    "SlashCommand",
-    "BashOutput",
-    "KillShell",
-    "ExitPlanMode",
+    "Workflow",
+    "Write",
+    "Glob",
+    "Grep",
 )
+ALL_TOOLS = "*"  # đã xác minh: `disallowed_tools=["*"]` xoá mọi tool (kể cả tool trong `tools`)
+AGENT_MIN_TURNS = 2  # S7: structured output tốn 1 lượt (`num_turns=2` khi trả lời ngay)
+# S3/S6: không nạp MCP connector claude.ai của tài khoản; không đọc/ghi auto-memory.
+CLAUDE_ENV: dict[str, str] = {
+    "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+}
+ORCHESTRATOR_ENV: dict[str, str] = {**CLAUDE_ENV, "CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1"}
 # Dự phòng §4: schema phẳng thay `discriminatedUnion` AgentResult; runner validate chặt (C2).
 AGENT_RESULT_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -70,7 +86,11 @@ def job_tools(job: ProviderJob) -> list[str]:
     return list(dict.fromkeys(job.payload.allowed_tools))
 
 
-def disallowed(tools: list[str]) -> list[str]:
+def disallowed(tools: list[str], *, structured: bool) -> list[str]:
+    """Orchestrator (không `output_format`) → `["*"]`; agent → mọi tool dựng sẵn ngoài `tools`
+    (không dùng `*` để khỏi xoá `StructuredOutput` — hàng rào thứ hai sau `tools`)."""
+    if not structured:
+        return [ALL_TOOLS]
     return [name for name in KNOWN_TOOLS if name not in tools]
 
 
@@ -91,6 +111,7 @@ def policy_of(job: ProviderJob, tools: list[str]) -> SandboxPolicy:
         work_dir=Path(job.work_dir),
         forbidden_roots=tuple(Path(r) for r in job.forbidden_roots),
         tools=frozenset(tools),
+        structured_output=job.payload.output == "agent_result",  # có `output_format` (S2)
     )
 
 
@@ -109,7 +130,7 @@ def build_options(job: ProviderJob) -> ClaudeAgentOptions:
         cwd=job.work_dir,
         tools=tools,
         allowed_tools=list(tools),
-        disallowed_tools=disallowed(tools),
+        disallowed_tools=disallowed(tools, structured=agent),
         permission_mode=PERMISSION_MODE,
         hooks={
             "PreToolUse": [
@@ -117,11 +138,14 @@ def build_options(job: ProviderJob) -> ClaudeAgentOptions:
             ]
         },
         setting_sources=[],
+        strict_mcp_config=True,  # S3: chỉ MCP truyền qua `mcp_servers` (không có)
         resume=job.resume_session_id if p.use_session else None,
-        max_turns=p.max_turns,
+        max_turns=max(p.max_turns, AGENT_MIN_TURNS) if agent else p.max_turns,
         model=p.model.root if p.model is not None else None,
-        env={} if agent else {"CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1"},
-        system_prompt=p.system_prompt + FORMAT_BLOCK if agent else p.system_prompt,
+        env=dict(CLAUDE_ENV if agent else ORCHESTRATOR_ENV),
+        system_prompt=neutralize_mentions(
+            p.system_prompt + FORMAT_BLOCK if agent else p.system_prompt
+        ),
         output_format={"type": "json_schema", "schema": AGENT_RESULT_SCHEMA} if agent else None,
         cli_path=job.cli_path,
         stderr=_stderr_line,

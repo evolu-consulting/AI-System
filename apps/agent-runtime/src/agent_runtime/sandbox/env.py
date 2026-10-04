@@ -1,8 +1,9 @@
 """WRK-BR-02 · WRK-FR-26 · Env tường minh của job host (plan-runtime §5.3).
 
 Danh sách trắng duy nhất — không kế thừa `os.environ`; không `AGENT_RT_*`, `REDIS_URL`,
-`DATABASE_URL*`, `ANTHROPIC_API_KEY`, `JWT_*`, `HUB_*`. Biến tắt auto-update/telemetry CLI chưa
-xác minh (W0/PY-02) ⇒ chưa thêm (plan-runtime §13).
+`DATABASE_URL*`, `ANTHROPIC_API_KEY`, `JWT_*`, `HUB_*`. Biến tắt auto-update/telemetry/báo lỗi/
+traffic không thiết yếu của CLI (S5): tên đã xác minh trong binary CLI 2.1.286 (spike PY-02 #10),
+tác dụng chưa đo.
 """
 
 from __future__ import annotations
@@ -11,6 +12,12 @@ from pathlib import Path
 
 BASE_PATH = "/usr/local/bin:/usr/bin:/bin"
 TMP_SUBDIR = ".tmp"
+CLI_QUIET_ENV: dict[str, str] = {
+    "DISABLE_AUTOUPDATER": "1",
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+}
 
 
 def job_host_env(
@@ -23,6 +30,7 @@ def job_host_env(
         "LANG": "C.UTF-8",
         "TMPDIR": str(job_work / TMP_SUBDIR),
         "APP_ENV": app_env,
+        **CLI_QUIET_ENV,
     }
     for key in ("VIRTUAL_ENV", "PYTHONPATH"):
         value = (python_env or {}).get(key)

@@ -3,11 +3,18 @@ session → prompt = `payload.history` (cũ → mới) + tin hiện tại.
 
 `<history>` là **một dòng JSON** (không chứa xuống dòng thô) ⇒ tách tin hiện tại không nhập nhằng
 (`fake-cli` chỉ đọc chỉ thị từ tin hiện tại, không đọc history).
+
+WRK-BR-07 · spike PY-02 S1: CLI Claude coi `@<đường dẫn>` (`@/x`, `@~/x`, `@./x`, `@"a b"`) đứng đầu
+chuỗi hoặc sau khoảng trắng / dấu câu CJK là mention và **tự đọc file** vào ngữ cảnh, không qua tool
+hay hook (regex CLI 2.1.286: `@` ở đầu chuỗi hoặc sau khoảng trắng JS / U+3002 U+3001 U+FF1F
+U+FF01). Chèn U+200B trước các `@` đó ⇒ không còn khớp; `@` giữa từ (email) giữ nguyên.
+Đã xác minh bằng ca `prod-at-file` của spike.
 """
 
 from __future__ import annotations
 
 import json
+import re
 
 from agent_runtime.contracts.hub import HistoryItem
 
@@ -16,6 +23,14 @@ _HIST_END = "\n</history>\n\n<message>\n"
 _MSG_END = "\n</message>"
 PROMPT_MAX = 200_000  # = JobPayload1.prompt max_length (con validate lại)
 ITEM_MAX = 4_000  # mỗi tin ≤ 4000 ký tự như `<history>` của Orchestrator (plan.md §6.2)
+ZWSP = "\u200b"
+# Đầu chuỗi hoặc sau ký tự JS `\s` (Python `\s` + U+FEFF) / dấu câu CJK mà CLI chấp nhận.
+_MENTION_AT = re.compile(r"(?:^|(?<=[\s\ufeff\u3002\u3001\uff1f\uff01]))@")
+
+
+def neutralize_mentions(text: str) -> str:
+    """Chèn U+200B trước `@` mà CLI có thể hiểu là mention (S1); idempotent."""
+    return _MENTION_AT.sub(ZWSP + "@", text)
 
 
 def _items(history: list[HistoryItem], budget: int) -> list[dict[str, str]]:

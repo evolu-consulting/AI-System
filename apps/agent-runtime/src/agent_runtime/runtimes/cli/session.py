@@ -1,8 +1,9 @@
 """WRK-FR-14 · WRK-BR-03 · WRK-BR-06 · H1-R23 — luật session job `agentic-cli` (plan-runtime §6).
 
 Job agent có `use_session` mới dùng `cli_sessions` (Orchestrator không — H1-R23). Resume lỗi trước
-`tool_use` đầu → dựng lại từ `history`; dự phòng §13 (W0 chưa xong): **mọi** lỗi (fatal, thoát không
-`final`, `final.is_error`) trừ rate limit/đăng xuất — xác minh lại chữ lỗi sau W0+PY-02.
+`tool_use` đầu → dựng lại từ `history`: **mọi** lỗi (fatal, thoát không `final`, `final.is_error`)
+trừ rate limit/đăng xuất. Spike PY-02 #8: mất session = `ResultError` "No conversation found…" trước
+`tool_use` (khớp luật này).
 """
 
 from __future__ import annotations
