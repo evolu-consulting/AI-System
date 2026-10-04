@@ -1,6 +1,6 @@
 # Plan · H1 · Agent Runtime Python (`apps/agent-runtime`)
 
-Chủ: backend-lead (Runtime). Song song với `plan.md` (Hub TS, cùng backend-lead khác) — **contract `@ai/contracts/hub`, schema `hub` + RLS + role `agent_runtime`, nguyên văn SQL claim/heartbeat/finish/đếm slot thuộc `plan.md` (bảng + SQL Runtime ở phụ lục `plan-db.md` §3.3, §5.4–5.5)**; plan này chỉ dùng tên; yêu cầu §12 đã được `plan.md` §8 trả lời. Nguồn: `spec.md` §2 (H1-R17…R26), §6, §7; `ba-worker.md` §3–§9; ADR-0007; `CONVENTIONS` §9; ADR-0008 (thư viện, Proposed).
+Chủ: backend-lead (Runtime). Song song với `plan.md` (Hub TS, cùng backend-lead khác) — **contract `@ai/contracts/hub`, schema `hub` + RLS + role `agent_runtime`, nguyên văn SQL claim/heartbeat/finish/đếm slot thuộc `plan.md` (bảng + SQL Runtime ở phụ lục `plan-db.md` §3.3, §5.4–5.5)**; plan này chỉ dùng tên; yêu cầu §12 đã được trả lời ở `plan-db.md` §8 (ràng buộc: `plan.md` §8). Nguồn: `spec.md` §2 (H1-R17…R26), §6, §7; `ba-worker.md` §3–§9; ADR-0007; `CONVENTIONS` §9; ADR-0008 (thư viện, Proposed).
 
 Ký hiệu nguồn SDK: **[V]** = đã xác minh trong tài liệu/mã nguồn ngày 2026-10-04 (dẫn link) · **[CX]** = chưa xác minh → kiểm ở PY-02 (spike).
 - [S1] https://code.claude.com/docs/en/agent-sdk/python · [S2] …/agent-sdk/hooks · [S3] …/agent-sdk/permissions · [S4] …/agent-sdk/sessions
@@ -17,7 +17,7 @@ Ký hiệu nguồn SDK: **[V]** = đã xác minh trong tài liệu/mã nguồn n
 | `config.py` | `Settings` (pydantic-settings), env §1.4 | **chỉ process cha** import |
 | `log.py` | structlog JSON + `bind_job(job_id, run_id, tenant_id)` (contextvars) | §9 |
 | `db/` | `pool.py` (asyncpg pool + kết nối LISTEN riêng) · `jobs_sql.py` · `usage_sql.py` · `sessions_sql.py` · `provider_state_sql.py` · `agent_types_sql.py` | SQL nguyên văn lấy từ `plan-db.md` §5.4–5.5 |
-| `queue/` | `claimer.py` (vòng claim) · `listener.py` (LISTEN `job_enqueued`, `job_cancel`) · `heartbeat.py` · `sweeper.py` (orphaned, hết `max_wait_s`) · `supervisor.py` (bảng job đang chạy trong process: job_id → `JobHandle`) | |
+| `queue/` | `claimer.py` (vòng claim) · `listener.py` (LISTEN `job_enqueued`, `job_cancel`) · `heartbeat.py` · `sweeper.py` (**chỉ** quét orphaned — không hết hạn `queued`, không xử lý cooldown: `plan-db.md` §8 R11; cooldown hết hạn do điều kiện trong SQL claim) · `supervisor.py` (bảng job đang chạy trong process: job_id → `JobHandle`) | |
 | `events/` | `stream.py`: `XADD run:<run_id> MAXLEN ~ 10000` + `EXPIRE` 86400 s (`plan-db.md` §5.4) | |
 | `runtimes/cli/` | `runner.py` (cha: spawn process con, đọc giao thức, áp kết quả) · `child.py` (con: chạy provider, `python -m agent_runtime.runtimes.cli.child`) · `protocol.py` (pydantic: `ChildRequest`, `ChildEvent`) · `result.py` (validate `AgentResult`/`OrchestratorDecision` + retry) · `prompt.py` (system prompt định dạng, dựng history) | |
 | `providers/` | `base.py` (`Provider` Protocol) · `claude/{options.py,messages.py,ratelimit.py}` · `fake/{provider.py,directives.py}` · `registry.py` (lọc `fake-cli` theo `APP_ENV`) | |
@@ -48,12 +48,12 @@ Giao thức cha↔con: stdin = 1 dòng JSON `ChildRequest` (payload contract + `
 | CLI | dùng CLI đóng gói trong wheel SDK [V S6: wheel manylinux ~103 MB gồm CLI; `_find_cli` ưu tiên bản đóng gói rồi `which claude` — V S5]. Đăng nhập một lần `claude` (bản đóng gói, hoặc CLI cài riêng cùng `~/.claude`) dưới user `worker` [CX: bản đóng gói dùng chung `~/.claude/.credentials.json`] |
 
 ### 1.4 Env (process cha)
-`APP_ENV` (development\|test\|production) · `AGENT_RT_DATABASE_URL` (role `agent_runtime`) · `REDIS_URL` · `AGENT_RT_WORKER_ID` (mặc định `hostname`) · `AGENT_RT_PROVIDERS` (vd `claude-sub,fake-cli`) · `AGENT_RT_WORK_DIR=/home/worker/work` (validate: tuyệt đối, không dưới `/mnt/`) · `AGENT_RT_LOG_DIR=/home/worker/logs` · `AGENT_RT_POLL_S=1` · `AGENT_RT_HEARTBEAT_S=10` · `AGENT_RT_ORPHAN_S=60` · `AGENT_RT_KILL_GRACE_S=3` · `AGENT_RT_CLI_PATH` (tuỳ chọn).
+`APP_ENV` (development\|test\|production) · `AGENT_RT_DATABASE_URL` (role `agent_runtime`) · `REDIS_URL` · `AGENT_RT_WORKER_ID` (mặc định `hostname`) · `AGENT_RT_PROVIDERS` (vd `claude-sub,fake-cli`) · `AGENT_RT_WORK_DIR=/home/worker/work` (validate: tuyệt đối, không dưới `/mnt/`) · `AGENT_RT_LOG_DIR=/home/worker/logs` · `AGENT_RT_POLL_S=1` · `AGENT_RT_HEARTBEAT_S=10` · `AGENT_RT_ORPHAN_S=60` · `AGENT_RT_KILL_GRACE_S=3` · `AGENT_RT_CLEANUP_S=3600` (chu kỳ cleanup §9) · `AGENT_RT_CLI_PATH` (tuỳ chọn) · `HOME` (đọc vào `Settings.home`, bắt buộc tuyệt đối; prod `/home/worker`, test = thư mục tạm — Q-T4). Test int: `AGENT_RT_TEST_DATABASE_URL` (role `agent_runtime`, DB `ai_system_h1_test` — `plan.md` §7).
 
 ### 1.5 Vòng đời process cha
 | Pha | Việc |
 |---|---|
-| Khởi động | 1 config (sai → exit 2) · 2 log · 3 pool asyncpg + kết nối LISTEN · 4 Redis ping · 5 registry provider (`fake-cli` chỉ khi `APP_ENV`∈{development,test}, khác → bỏ + log `warn`; có trong `AGENT_RT_PROVIDERS` mà production → exit 2) · 6 manifest `agent_types` (§8) · 7 **dọn job sót** của `worker_id` mình (§2.4) · 8 LISTEN · 9 chạy task: claimer, heartbeat, sweeper, log-cleanup |
+| Khởi động | 1 config (sai → exit 2) · 2 log · 3 pool asyncpg + kết nối LISTEN · 4 Redis ping · 5 registry provider (`fake-cli` chỉ khi `APP_ENV`∈{development,test}, khác → bỏ + log `warn`; có trong `AGENT_RT_PROVIDERS` mà production → exit 2) · 6 manifest `agent_types` (§8) · 7 **dọn job sót** của `worker_id` mình (§2.4) · 8 LISTEN · 9 chạy task: claimer, heartbeat, sweeper (orphan), cleanup (`AGENT_RT_CLEANUP_S`) |
 | Chạy | `asyncio.TaskGroup`; task chết → log `error`, exit 1 (systemd chạy lại) |
 | SIGTERM | ngừng claim → huỷ job đang chạy (§2.3, `failed` + `error_reason=orphaned`, XADD `job.failed INTERNAL_ERROR`) → exit 0 trong ≤ 10 s |
 
@@ -66,7 +66,7 @@ Giao thức cha↔con: stdin = 1 dòng JSON `ChildRequest` (payload contract + `
 | Claim | **SQL claim `plan-db.md` §5.4** (advisory lock **toàn cục** `K_CLAIM` — `plan.md` P5, không theo provider → đếm `running` provider + tenant, đọc `max_concurrent_sub` trong cùng transaction nên không cần cache → `SKIP LOCKED` → `running` + `worker_id`). Lặp tới khi rỗng |
 | Lọc (trong SQL) | provider của registry (`= ANY($providers)`); bỏ job có `(conversation_id, agent_id)` đang `running` hoặc có job `queued` trước nó (BR-05) |
 | Sau claim | ghi `jobs.pgid` sau spawn (SQL `plan-db.md`); `bind_job`; XADD `job.started` (`plan.md` §2.3) |
-| Hết chờ (`max_wait_s`) | **Runtime không làm** (`plan.md` §8 R11): chỉ Hub hết hạn job `queued` theo `HUB_JOB_MAX_WAIT_S` (`plan.md` P8, §5.6). Provider chuyển `cooldown/logged_out/error` → Runtime fail ngay job `queued` của provider đó bằng SQL **Provider hỏng** (§3.3) + XADD `job.failed{ALL_PROVIDERS_EXHAUSTED, reason}` từng job (H1-R18) |
+| Hết chờ (`max_wait_s`) | **Runtime không làm** (`plan-db.md` §8 R11): chỉ Hub hết hạn job `queued` theo `HUB_JOB_MAX_WAIT_S` (`plan.md` P8, §5.6). Provider chuyển `cooldown/logged_out/error` → Runtime fail ngay job `queued` của provider đó bằng SQL **Provider hỏng** (§3.3) + XADD `job.failed{ALL_PROVIDERS_EXHAUSTED, reason}` từng job (H1-R18) |
 | LISTEN rớt | mở lại sau 1 s (lũy thừa tới 10 s); vẫn poll |
 
 ### 2.2 Heartbeat, orphaned (WRK-FR-02, 23, BR-04, H1-R20)
@@ -143,11 +143,11 @@ Phân biệt bằng `JobPayload.output` (`agent_result` \| `text`) + `use_sessio
 
 | Mục | `output="agent_result"` (agent) | `output="text"` (Orchestrator) |
 |---|---|---|
-| Tool / MCP | `tools=allowed_tools` (không Bash); MCP: H1 không | `tools=[]`, `disallowed_tools=["*"]`, không MCP |
+| Tool / MCP | `tools=allowed_tools` (không Bash); MCP: H1 không | `tools=[]`, `disallowed_tools=["*"]` [CX → PY-02; dự phòng (code ngay): danh sách tên đủ `Read, Write, Edit, NotebookEdit, Glob, Grep, LS, Bash, WebFetch, WebSearch, Agent, Task, TodoWrite`], không MCP |
 | Session | §6 | không `cli_sessions`; `CLAUDE_CODE_SKIP_PROMPT_HISTORY=1` |
 | Ép định dạng | `output_format` = JSON Schema `AgentResult` (C2) + khối "chỉ trả MỘT đối tượng JSON" trong system prompt | không `output_format`; prompt (có schema `OrchestratorDecision`) do Hub dựng |
 | Trích | `structured_output`, không có thì JSON cuối trong `result` (bóc ```json) → pydantic | `result` nguyên văn |
-| Hỏng | thử lại **1 lần trong job**: `resume` session vừa tạo + nhắc định dạng kèm lỗi pydantic ≤ 300 ký tự (không chạy lại tool); vẫn hỏng → `job.failed{UPSTREAM_ERROR, reason:invalid_output}` (§12 R5) | Hub `parseDecision` + retry (H1-R06, `plan.md` §6.1) |
+| Hỏng | thử lại **1 lần trong job**: `resume` session vừa tạo + nhắc định dạng kèm lỗi pydantic ≤ 300 ký tự, lần thử lại `tools=[]` + `disallowed_tools` như Orchestrator (không chạy lại tool — WRK-BR-04); vẫn hỏng → `job.failed{UPSTREAM_ERROR, reason:invalid_output}` (§12 R5) | Hub `parseDecision` + retry (H1-R06, `plan.md` §6.1) |
 | XADD | `job.result{output:{kind:"agent_result", result}, usage, session_resumed}` | `job.result{output:{kind:"text", text}, usage, session_resumed:false}` |
 
 Runtime không phát `delta`; Hub cắt (H1-R08, R09). [CX] `output_format` với `discriminatedUnion` → dự phòng schema phẳng `{status, text?, missing?, question?, choices?}` + pydantic chặt.
@@ -162,7 +162,7 @@ Runtime không phát `delta`; Hub cắt (H1-R08, R09). [CX] `output_format` vớ
 | 2 | tương đối → nối với `work_dir` |
 | 3 | `realpath(strict=False)` (theo symlink, kể cả symlink trỏ ra ngoài; thành phần chưa tồn tại giữ nguyên) |
 | 4 | allow ⇔ kết quả == `realpath(work_dir)` hoặc bắt đầu bằng `realpath(work_dir) + "/"` |
-| 5 | (thông tin log) nhãn lý do: `home` (dưới `$HOME` của `worker` — gồm `~/.claude`, `~/.codex`, `~/.gemini`), `mnt` (`/mnt/*`), `other_job` (dưới `AGENT_RT_WORK_DIR` nhưng job khác), `outside` |
+| 5 | (thông tin log) nhãn lý do: `home` (dưới `Settings.home` — gồm `~/.claude`, `~/.codex`, `~/.gemini`), `mnt` (`/mnt/*`), `other_job` (dưới `AGENT_RT_WORK_DIR` nhưng job khác), `outside` |
 
 ### 5.2 Hook `PreToolUse` (`sandbox/hook.py`)
 | Tool | Trường kiểm | Ghi chú |
@@ -175,7 +175,7 @@ Runtime không phát `delta`; Hub cắt (H1-R08, R09). [CX] `output_format` vớ
 Deny trả `permissionDecisionReason` cố định (`path_not_allowed`/`tool_not_allowed`) — **không** lặp lại đường dẫn; log `warn` chỉ `tool_name`, nhãn lý do, `job_id`. Hook lỗi bất ngờ → deny (fail-closed); `HookMatcher.timeout=10` (timeout ⇒ tool không chạy [V S2]).
 
 ### 5.3 Env job host (`sandbox/env.py`, WRK-BR-02)
-Danh sách trắng duy nhất: `HOME=/home/worker` (CLI cần đọc phiên đăng nhập; tool vẫn bị hook chặn), `PATH=/usr/local/bin:/usr/bin:/bin`, `LANG=C.UTF-8`, `TMPDIR=work/<job_id>/.tmp`, `APP_ENV`, `PYTHONPATH`/`VIRTUAL_ENV` của venv, tắt auto-update/telemetry CLI [CX tên biến — tra https://code.claude.com/docs/en/env-vars ở PY-02]. **Không** `AGENT_RT_*`, `REDIS_URL`, `DATABASE_URL*`, `ANTHROPIC_API_KEY`. Test: env ∩ khoá secret = ∅ (unit); `#fake:env` (int).
+Danh sách trắng duy nhất: `HOME` = `Settings.home` của cha (CLI cần đọc phiên đăng nhập; tool vẫn bị hook chặn; test đặt HOME tạm có `.claude/.credentials.json` mồi — Q-T4), `PATH=/usr/local/bin:/usr/bin:/bin`, `LANG=C.UTF-8`, `TMPDIR=work/<job_id>/.tmp`, `APP_ENV`, `PYTHONPATH`/`VIRTUAL_ENV` của venv, tắt auto-update/telemetry CLI [CX tên biến — tra https://code.claude.com/docs/en/env-vars ở PY-02]. **Không** `AGENT_RT_*`, `REDIS_URL`, `DATABASE_URL*`, `ANTHROPIC_API_KEY`. `forbidden_roots` (§5.1) = `(Settings.home, Path("/mnt"), AGENT_RT_WORK_DIR)` tính lúc khởi động, truyền vào job host qua `ChildRequest` (con không import `config`). Test: env ∩ khoá secret = ∅ (unit); `#fake:env` (int).
 
 ### 5.4 Test
 | AC | Test | Loại |
@@ -197,22 +197,7 @@ Danh sách trắng duy nhất: `HOME=/home/worker` (CLI cần đọc phiên đă
 | AC-W04 kiểm | `fake-cli` `#fake:remember=xanh` → lượt 2 `#fake:recall` trả "xanh" chỉ khi resume đúng id; `#fake:lost-session` → prompt có history |
 
 ## 7. Provider giả `fake-cli` (spec §7)
-Cùng interface `Provider`, chạy **trong job host** (cùng env, group, hook, cwd). Chỉ nạp khi `APP_ENV ∈ {development, test}` (spec §7); production → bỏ, có trong `AGENT_RT_PROVIDERS` → exit 2.
-
-| Chỉ thị (trong prompt, nhiều chỉ thị được) | Hành vi tất định |
-|---|---|
-| (không) | `done{text: "echo: <prompt>"}` (agent) / `answer{text}` (Orchestrator) |
-| `#fake:delegate=<key>` | Orchestrator → `delegate{agent, task}` |
-| `#fake:ask` · `#fake:partial` · `#fake:need_input` | `ask{question}` / `partial{text,missing}` / `need_input{question, choices:["A","B"]}` |
-| `#fake:sleep=<s>` | ngủ, `progress` mỗi 1 s (huỷ/timeout) |
-| `#fake:spawn-child` | `Popen(["sleep","300"])` cùng group rồi ngủ — AC-W10 |
-| `#fake:read=<path>` | qua đúng `sandbox.hook.path_guard` (`file_path`); allow → trả độ dài, deny → `done{text:"denied"}` |
-| `#fake:ratelimit[=<unix_ts>]` | phát `rate_limit{status:"rejected", resets_at}` rồi `final is_error` |
-| `#fake:badjson=<n>` | n lần đầu trả JSON hỏng, đếm theo `run_id` (agent: n=1 qua nhờ retry; Orchestrator: Hub retry — HUB-H1-AC-10) |
-| `#fake:crash` | `os._exit(3)` giữa chừng → `fatal` |
-| `#fake:usage=<in>,<out>` | usage giả (mặc định 10,20), `model="fake"` |
-| `#fake:remember=<w>` · `recall` · `lost-session` | session giả lưu ở `AGENT_RT_WORK_DIR/.fake-sessions/` (§6) |
-| `#fake:env` | trả danh sách **khoá** env (không giá trị) — kiểm §5.3 |
+Chỉ thị, đầu vào `msg`, bộ đếm `badjson`, `#fake:tool`: **`plan-runtime-fake.md` §7**. Chạy trong job host như provider thật; chỉ `APP_ENV ∈ {development, test}`.
 
 ## 8. Ghi DB khi xong job
 | Bảng | Khi | Giá trị (SQL `plan-db.md` §5.4) |
@@ -228,17 +213,16 @@ Cùng interface `Provider`, chạy **trong job host** (cùng env, group, hook, c
 |---|---|
 | Log process cha | structlog JSON ra stdout (journald): `ts, level, event, job_id, run_id, tenant_id, worker_id`; cấm `print`; không log prompt, nội dung file, `tool_input`, env |
 | File/job | `AGENT_RT_LOG_DIR/<YYYY-MM-DD>/<job_id>.stderr.log` (stderr CLI qua callback `stderr` + stderr job host) và `<job_id>.events.jsonl` (envelope message SDK: `type, subtype, tool_name, usage, is_error, errors` — **không** text/tool result để không lưu nội dung file); quyền 0600 |
-| Giữ | task cleanup mỗi giờ: xoá thư mục ngày > 7 ngày; `work/<job_id>/` > 24 h (WRK-FR-23) |
+| Giữ | task cleanup mỗi `AGENT_RT_CLEANUP_S` (3600 s): xoá thư mục ngày > 7 ngày; `work/<job_id>/` > 24 h (WRK-FR-23) |
 
 ## 10. Lệnh xong mốc (phần Python)
-`cd apps/agent-runtime && uv sync --frozen && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run lint-imports && uv run pytest && uv run pytest -m int` (WSL2, Docker Postgres/Redis chạy) · gốc: `bun run check:size --all` (gồm `.py`) · `bun run trace --check` (gồm `.py`).
+Chuẩn duy nhất: `test-plan.md` §7.1, chạy bằng `bun run done:h1` (I1). Phần Python trong đó: `uv sync --frozen`, `ruff check`, `ruff format --check`, `pyright`, `lint-imports`, `pytest`, `pytest -m int` (WSL2, Docker Postgres/Redis chạy); `check:size --all`, `trace --check` gồm `.py` (sau PY-01).
 
 ## 11. Task PY
-13 task `PY-01`…`PY-13` (Rủi ro, Đọc, File, Lệnh xong) nằm ở `tasks.md` khối **PY** (thay P1–P8 cũ). Cao: PY-02 spike, 04 hàng đợi/slot, 06 cancel/process group, 07 hook, 08 provider/quota, 11 session/tenant, 12 usage. PY-01 gồm mở rộng `check:size` + `trace` quét `.py`; PY-02 là spike SDK trong WSL2 (điền §13) và phải xong trước PY-08.
-Thứ tự: PY-01 → PY-02 ∥ PY-03 → PY-04, PY-05, PY-07 → PY-06 → PY-09 → PY-10 → PY-08 → PY-11 → PY-12 → PY-13.
+13 task `PY-01`…`PY-13` ở `tasks.md` khối **PY** (Rủi ro, Đọc, File, Lệnh xong, thứ tự). Người dùng **chưa** chuẩn bị WSL2 + đăng nhập `claude` (2026-10-04) ⇒ task **W0** (người dùng) chặn PY-02 và smoke HUB-H1-AC-02; PY-04/06/07/11 code theo **dự phòng** đã ghi ở §1.3, §2.3, §5.2, §6 (cột "Dự phòng" §13), PY-08 test bằng SDK giả (monkeypatch `ClaudeSDKClient`); xác minh lại sau W0 + PY-02 ở I2.
 
 ## 12. Yêu cầu gửi plan BE (contract/DB) — đã đối chiếu
-Trả lời đầy đủ: `plan.md` §8 (bảng "Trả lời"). Runtime theo cột Chốt. Số R3, R4, R9 không dùng.
+Trả lời đầy đủ: `plan-db.md` §8. Runtime theo cột Chốt. Số R3, R4, R9 không dùng.
 | # | Đã yêu cầu | Chốt (BE) |
 |---|---|---|
 | R1 | `output`, `use_session`, `job.*` (+ `seq`), `HUB_JOB_ERROR_CODES`, NOTIFY `{v, job_id, …}` | ✓ |
@@ -252,10 +236,19 @@ Trả lời đầy đủ: `plan.md` §8 (bảng "Trả lời"). Runtime theo c�
 | R12 | Hub tự kiểm `jobs.status`/`heartbeat_at` khi Runtime chết | ✓ AgentRunner đọc mỗi 2 s khi im (P7) + Hub quét orphan 10 s |
 | R13 | `SELECT hub.providers`; claim xuyên tenant | ✓ role duy nhất `agent_runtime` (bỏ `agent_rt`); bảng Runtime không RLS |
 
-## 13. Kết quả spike (PY-02 điền)
-| Mục [CX] | Kết quả | Ảnh hưởng |
+## 13. Kết quả spike (PY-02 điền — `blocked` chờ W0)
+| Mục [CX] | Dự phòng code trước (task) | Kết quả spike |
 |---|---|---|
-| hook với `query()` vs `ClaudeSDKClient` · `tools=[]` · `setting_sources=[]` · tên trường `tool_input` Glob/Grep/LS · `output_format` union · resume khác `cwd` + `CLAUDE_CODE_PROJECT_DIR_NAME` · chữ lỗi mất session / hết quota / logged_out · CLI sinh con ngoài group · bản CLI đóng gói dùng `~/.claude` · biến tắt auto-update/telemetry · mirrored `localhost` | (trống) | |
+| hook với `query()` vs `ClaudeSDKClient` | dùng `ClaudeSDKClient` (PY-08) | |
+| `tools=[]` · `disallowed_tools=["*"]` · `setting_sources=[]` | thêm danh sách tên đủ (§4) (PY-08, PY-10) | |
+| tên trường `tool_input` Glob/Grep/LS | kiểm mọi chuỗi của khoá chứa `path`/`pattern`/`glob` (PY-07) | |
+| `output_format` union | schema phẳng + pydantic chặt (§4) (PY-10) | |
+| resume khác `cwd` + `CLAUDE_CODE_PROJECT_DIR_NAME` · chữ lỗi mất session | mọi lỗi resume trước `tool_use` đầu → dựng từ `history` (§6) (PY-11) | |
+| chữ lỗi hết quota / logged_out | regex §3.3 + `api_error_status` (PY-08) | |
+| CLI sinh con ngoài group | `PR_SET_CHILD_SUBREAPER` + quét cây `ppid` sau `killpg` (§2.3) (PY-06) | |
+| bản CLI đóng gói dùng `~/.claude` · biến tắt auto-update/telemetry | `AGENT_RT_CLI_PATH` trỏ CLI cài riêng; bỏ biến chưa xác minh (PY-06, PY-08) | |
+| mirrored `localhost` | IP host trong env (§1.3) (PY-04) | |
+| token một lượt Orchestrator (cả cache) | seed `token_budget` 200 000; > 20 000/lượt → nâng (`plan.md` §3.6) | |
 
 ## 14. Câu hỏi còn lại (có mặc định)
 | # | Câu hỏi | Mặc định |
@@ -265,5 +258,5 @@ Trả lời đầy đủ: `plan.md` §8 (bảng "Trả lời"). Runtime theo c�
 | RQ3 | Mỗi job một process Python con (thêm ~0,5–1 s khởi động) thay vì SDK chạy trong process cha | Chấp nhận (cần cho BR-02 + process group); xem lại nếu spike đo > 1,5 s |
 | RQ4 | Tên unit systemd | `ai-worker.service` (BA-W §8) |
 | RQ5 | `bun run test` ở gốc trên Windows chạy Python thế nào | script gọi `wsl.exe … uv run …` khi win32; Linux gọi `uv` thẳng |
-| RQ6 | Tính `input_tokens` có gồm cache | **Đã chốt** (`plan.md` §8 R6): có, + 2 cột cache |
-| RQ7 | `max_turns` mặc định agent | **Đã chốt** (`plan.md` §2.2): Hub điền 30 / Orchestrator 3 |
+
+RQ6, RQ7 đã chốt: `plan-db.md` §8 R6 (input gồm cache) · §2.2 (`max_turns` 30/3).

@@ -1,6 +1,6 @@
 # Plan · H1 · DB Hub↔Runtime (phụ lục `plan.md`)
 
-Bảng Runtime (§3.3) và SQL Runtime nguyên văn (§5.4–5.5) — tách khỏi `plan.md` để giữ trần (WORKFLOW Kỷ luật token #5); số mục giữ như `plan.md`. Quy ước cột, role/GRANT, thứ tự khoá: `plan.md` §3, §3.4, §3.5. Trả lời yêu cầu Runtime: `plan.md` §8.
+Bảng Runtime (§3.3) và SQL Runtime nguyên văn (§5.4–5.5) — tách khỏi `plan.md` để giữ trần (WORKFLOW Kỷ luật token #5); số mục giữ như `plan.md`. Quy ước cột, role/GRANT, thứ tự khoá: `plan.md` §3, §3.4, §3.5. Ràng buộc gửi Runtime: `plan.md` §8; trả lời yêu cầu Runtime: §8 dưới đây.
 
 ### 3.3 Runtime (Python ghi, ADR-0007 #9)
 | Bảng | Cột | Index (câu dùng) |
@@ -11,7 +11,7 @@ Bảng Runtime (§3.3) và SQL Runtime nguyên văn (§5.4–5.5) — tách kh�
 | `agent_types` | `key PK, runtime, description jsonb, config_schema jsonb, version, worker_id, available boolean DEFAULT true, registered_at` | |
 | `usage_logs` (stub) | giữ mọi cột/CHECK/index; **thêm** (đều nullable, không default — Admin M4 và test khoá INSERT không đổi): `job_id uuid`, `cache_read_tokens int CHECK ≥ 0`, `cache_write_tokens int CHECK ≥ 0`. `input_tokens` = **tổng** token vào (gồm cache); hai cột cache là phần bên trong, null = SDK không báo | `usage_logs_job_uq UNIQUE (job_id) WHERE job_id IS NOT NULL`; `usage_logs_at_idx (at)` (IF NOT EXISTS — production cần như dev) |
 
-Hàm `hub.tenant_sub_limit(uuid) RETURNS int` — `sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp`, trả `admin.tenants.max_concurrent_sub`: Runtime không cần quyền `admin.*`.
+Hàm `hub.tenant_sub_limit(uuid) RETURNS int` — `sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp`, trả `admin.tenants.max_concurrent_sub`: Runtime không cần quyền `admin.*`. Ngay sau `CREATE`: `REVOKE EXECUTE ON FUNCTION hub.tenant_sub_limit(uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION hub.tenant_sub_limit(uuid) TO agent_runtime;` (mặc định Postgres cho PUBLIC EXECUTE).
 
 ### 5.4 SQL Runtime (nguyên văn, tham số asyncpg)
 **Claim** — một transaction READ COMMITTED; advisory lock **toàn cục** `K_CLAIM` (P5, không theo provider), câu khoá tách riêng để snapshot câu sau thấy mọi claim đã commit:
@@ -67,3 +67,19 @@ ON CONFLICT (conversation_id, agent_id, provider_key) DO UPDATE
 
 ### 5.5 Quét orphan (Hub và Runtime, mỗi 10 s)
 `UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE status = 'running' AND heartbeat_at < now() - interval '60 seconds' RETURNING id, run_id, worker_id, pgid;` Bên nhận dòng XADD `job.failed` (chỉ một bên nhận được). Runtime: pgid của `worker_id` mình còn sống → giết group.
+
+### 8. Trả lời `plan-runtime.md` §12 (chuyển từ `plan.md` §8)
+Cột "Chỗ": §3.3, §5.4–5.5 là mục của file này; mục khác là của `plan.md`. Ràng buộc R1–R8 gửi Runtime: `plan.md` §8.
+
+| # | Chốt | Chỗ |
+|---|---|---|
+| R1 | ✓ nhận | §2.2–2.6 |
+| R2 | ✓ nhận, tên theo contract: `history[{role, content}]` (không `text`), `model` (nullable), **thêm** `max_turns` int 1–100 | §2.2 |
+| R5 | ✓ nhận: retry 1 lần trong job rồi `job.failed{UPSTREAM_ERROR, reason:"invalid_output"}` | §8 R3 |
+| R6 | ✓ nhận: `job_id`, `cache_read_tokens`, `cache_write_tokens` nullable; `input_tokens` = tổng gồm cache | §3.3, §5.4 Kết thúc |
+| R7 | ✓ nhận, tên theo plan: `error_reason` (không `reason`); không có status `orphaned` (= `failed` + `error_reason='orphaned'`); `timed_out` là status | §2.5, §3.3 |
+| R8 | ✓ nhận (heartbeat gộp theo `worker_id`; thêm SQL Provider OK/lỗi/hỏng, reset provider khi khởi động, `available`). Hết hạn `queued`: xem R11 | §5.4–5.5 |
+| R10 | Một phần: `provider_state` giữ tên cột `status` (không `state`), có `consecutive_errors`; ✓ `agent_types.available`; **từ chối** unique 4 cột cho `cli_sessions` — `conversation_id` là uuid toàn cục, PK 3 cột + điều kiện `tenant_id` ở mọi SELECT/UPSERT đủ cho BR-06 | §3.3 |
+| R11 | **Từ chối** `max_wait_s` ở payload/`providers`: chỉ Hub hết hạn job `queued` theo env `HUB_JOB_MAX_WAIT_S` (P8, §5.6 bước 5). Runtime không có env/logic `max_wait_s`; provider hỏng → Runtime fail ngay job `queued` của provider đó (Provider hỏng) | §1 P8, §5.6 |
+| R12 | ✓ đã có, chặt hơn: AgentRunner đọc `jobs.status` mỗi 2 s khi im; Hub cũng quét orphan 10 s (heartbeat > 60 s) | §1 P7, §5.6 bước 4, §5.5 |
+| R13 | ✓ nhận: một role `agent_runtime` (bỏ tên `agent_rt`), có SELECT `providers`; bảng Runtime không RLS | §3.4 |
