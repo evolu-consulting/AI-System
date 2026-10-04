@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./test-db": "./src/test-db.ts",
-    "./seed": "./src/seed.ts"
+    "./seed": "./src/seed.ts",
+    "./migrate-hub": "./src/migrate-hub.ts",
+    "./schema/hub": "./src/schema/hub.ts"
   },
   "scripts": {
     "typecheck": "tsc -p . --noEmit",

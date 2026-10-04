@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { type AppEnv, loadDbEnv } from "./env";
+import { runHubMigrations } from "./migrate-hub";
 
 const MAIN_DIR = fileURLToPath(new URL("../migrations", import.meta.url));
 const DEV_DIR = fileURLToPath(new URL("../migrations-dev", import.meta.url));
@@ -57,7 +58,11 @@ if (import.meta.main) {
   try {
     const env = loadDbEnv(process.env);
     const r = await runMigrations({ url: env.DATABASE_URL, appEnv: env.APP_ENV });
-    console.log(`db:migrate OK (${env.APP_ENV}): main +${r.main}, dev +${r.dev}`);
+    // HUB-FR-75 · plan H1 §1 P1: schema hub chạy sau main/dev (runMigrations giữ nguyên).
+    const h = await runHubMigrations({ url: env.DATABASE_URL, appEnv: env.APP_ENV });
+    console.log(
+      `db:migrate OK (${env.APP_ENV}): main +${r.main}, dev +${r.dev}, hub +${h.hub}, hub-dev +${h.hubDev}`,
+    );
   } catch (err) {
     console.error(`db:migrate lỗi: ${describeError(err)}`);
     process.exit(1);

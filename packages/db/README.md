@@ -5,6 +5,7 @@ Schema Drizzle, migration SQL và RLS cho Postgres. FR: ADM-NFR-06, ADM-NFR-07, 
 - Vào: `src/` (schema, client), `migrations/` (SQL chính thức), `migrations-dev/` (chỉ dev).
 - Thêm: `src/scope.ts` (`withScope`: transaction + `app.tenant_id`, chạy lại 40P01/40001 ≤ 3 lần), `src/password.ts` (argon2id), `src/seed.ts` (idempotent), `schema/admin.ts` (10 bảng: 4 M1 + 6 catalog M2), `schema/permissions.ts` (4 bảng M3: groups, group_members, feature_grants, config_meta; RLS + trigger `beta-testers` ở `0006`).
 - Chạy: `bun run db:migrate`, `bun run db:seed`, `bun run db:setup`.
+- Hub (H1, HUB-FR-75): `migrations-hub/` (mọi môi trường) + `migrations-hub-dev/` (mật khẩu login `hub_api`, `agent_runtime`) — `runHubMigrations` (`src/migrate-hub.ts`, bảng theo dõi `drizzle.__drizzle_migrations_hub[_dev]`); `db:migrate` gọi **sau** `runMigrations` (không đổi, test khoá Admin `{main: 9, dev: 3}`). SQL viết tay idempotent với stub; kiểu Drizzle `src/schema/hub.ts`. Test Hub dùng DB riêng `ai_system_h1_test`, **không** migrate Hub trên `TEST_DATABASE_URL`.
 
 ## Bẫy
 - Callback của `withScope` có thể chạy lại: chỉ làm việc DB, không gửi gì ra ngoài (TECH-DEBT #13).
