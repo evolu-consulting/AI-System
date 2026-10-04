@@ -159,6 +159,7 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 | Máy Windows khởi động lại | WSL không tự chạy khi chưa có ai đăng nhập: đặt Task Scheduler "At startup" chạy `wsl -d Ubuntu --exec /bin/true` và `vmIdleTimeout=-1` để WSL không tự tắt. Kiểm tra `systemctl status ai-worker` trong Ubuntu |
 | Provider báo `logged_out` | SSH vào máy Worker và đăng nhập lại CLI tương ứng. Trong lúc chờ, job tự dự phòng sang API |
 | Provider `cooldown` liên tục | Giảm `max_concurrency`, thêm tài khoản, hoặc đưa bước API lên trước trong profile |
+| Chỉ có subscription, chưa có API key (CR-034) | Đặt `max_concurrency` của `claude-sub` = 2–3. **Rủi ro nghẽn:** mọi tin đều qua Orchestrator, nếu Orchestrator chạy bằng subscription thì mỗi quyết định chiếm một slot, vài user cùng hỏi là hàng đợi đầy và mọi agent chờ theo. Cho Orchestrator dùng API key càng sớm càng tốt (HUB-FR-62) |
 | Một tenant chiếm gần hết slot subscription | Đặt `max_concurrent_sub` cho tenant đó ở Admin › Tenants. Xem slot theo tenant ở Agent Studio › Vận hành › Jobs & Worker (tab pool) |
 | Job treo | Xem `hub.jobs` theo `heartbeat_at`. Job cleanup tự đánh dấu orphaned. Có thể huỷ tay từ trace |
 
@@ -167,7 +168,7 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 | ID | Yêu cầu |
 |---|---|
 | WRK-NFR-01 | **Thời gian nhận job:** job bắt đầu chạy trong ≤ 2 giây sau khi vào queue (khi còn slot) |
-| WRK-NFR-02 | **Cách ly:** job này không đọc được thư mục làm việc của job khác, kể cả cùng tenant. Khi mở cho nhiều người hơn thì nâng lên container riêng cho từng job |
+| WRK-NFR-02 | **Cách ly:** job này không đọc được thư mục làm việc của job khác, kể cả cùng tenant. **Container riêng cho mỗi job là bắt buộc trước khi phục vụ tenant thật** (mốc trước production, CR-034). Trước đó (dev/test) chỉ cần thư mục riêng + hook WRK-BR-07 |
 | WRK-NFR-03 | **Phục hồi:** Worker khởi động lại thì không mất job `queued`. Job `running` được xử lý theo luật orphaned. Slot theo tenant và theo provider vốn đếm từ các job `running` trong DB nên không cần dựng lại |
 | WRK-NFR-04 | **Quan sát:** log có `job_id`, `run_id` và `tenant_id`. Lưu stderr của CLI 7 ngày để debug; stdout chỉ lưu khung message (loại, tên tool, token, lỗi), không lưu nội dung (CR-031) |
 | WRK-NFR-05 | **Quy mô v1:** 1 máy Worker, mỗi subscription 1–2 slot, 5 job `workflow.async` chạy đồng thời |
@@ -224,4 +225,4 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
 3. ~~Thư viện queue cụ thể~~ Đã chốt (CR-028, ADR-0007): Postgres `SKIP LOCKED` + `NOTIFY`, không dùng thư viện queue.
 4. Tenant chạm `max_concurrent_sub`: chờ `max_wait_s` rồi dự phòng (đang chọn), hay dự phòng sang API ngay?
 5. Ai tính `billable_usd`: Worker tính lúc ghi usage (đang chọn), hay Hub tính lại theo lô? Cờ `overage` do Hub đánh dấu theo bộ đếm quota, Worker không kiểm quota. Cần chốt cùng BA Agent Hub.
-6. Vì đã phục vụ tenant bên ngoài, có cần đưa container sandbox từng job lên sớm hơn v1 không?
+6. ~~Có cần đưa container sandbox từng job lên sớm hơn v1 không?~~ Đã chốt (CR-034): **bắt buộc container riêng mỗi job trước khi phục vụ tenant thật** (WRK-NFR-02).
