@@ -3,14 +3,37 @@
 import { HealthResponseSchema } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
 import { type Logger, logger } from "./lib/logger";
+import type { Redis } from "./lib/redis";
+import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 
-export type AppVars = { Variables: { requestId: string; log: Logger } };
+/** `config` có khi app được dựng kèm `db` (cache cấu hình, plan §4). */
+export type AppVars = { Variables: { requestId: string; log: Logger; config?: ConfigCache } };
 export type AppConfig = { version: string; corsOrigins: string[] };
 /** Kiểm phụ thuộc cho /health; ném lỗi = không sẵn sàng → 503. Vắng (test khung) → luôn ok. */
 export type HealthProbe = () => Promise<void>;
-export type AppDeps = { probes?: HealthProbe[] };
+/**
+ * Phụ thuộc của app (seam test ↔ hub-api: spec-decisions QW-A1, QW-A2). Mọi trường tuỳ chọn; vắng `db` ⇒ không có vòng nền
+ * (test khung). Có `db` ⇒ vòng nền tự chạy ngay trong `createApp` và dừng khi `signal` abort.
+ */
+export type AppDeps = {
+  probes?: HealthProbe[];
+  db?: Db;
+  redis?: Redis;
+  jwtPublicKey?: CryptoKey;
+  appEnv?: "development" | "test" | "production";
+  /** = `HUB_INSTANCE_ID` (chủ run/lease). */
+  instanceId?: string;
+  /** = `HUB_JOB_MAX_WAIT_S`. */
+  jobMaxWaitS?: number;
+  /** = `HUB_CONFIG_POLL_S` (mặc định 60). */
+  configPollS?: number;
+  signal?: AbortSignal;
+};
+
+const DEFAULT_CONFIG_POLL_S = 60;
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
@@ -39,6 +62,13 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
 
 export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   const app = new Hono<AppVars>();
+  const config = deps.db
+    ? startConfigCache(deps.db, {
+        pollS: deps.configPollS ?? DEFAULT_CONFIG_POLL_S,
+        log: logger,
+        signal: deps.signal,
+      })
+    : undefined;
 
   // Không bao giờ log body, Authorization, Cookie (CONVENTIONS §5, A52).
   app.use(async (c, next) => {
@@ -46,6 +76,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
     const id = incoming && REQUEST_ID_RE.test(incoming) ? incoming : crypto.randomUUID();
     c.set("requestId", id);
     c.set("log", logger.child({ request_id: id }));
+    if (config) c.set("config", config);
     const t0 = performance.now();
     await next();
     c.res.headers.set(REQUEST_ID_HEADER, id);

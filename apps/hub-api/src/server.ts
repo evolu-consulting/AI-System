@@ -1,5 +1,6 @@
 // HUB-NFR-04 · điểm khởi động hub-api: nơi duy nhất đọc env và mở cổng (plan H1 §4, §7).
-// Thứ tự: env → DB (`HUB_DATABASE_URL`, ping) → Redis (connect + ping) → serve. Lỗi bước nào → log `fatal` + exit 1.
+// Thứ tự: env → DB (`HUB_DATABASE_URL`, ping) → Orchestrator hợp lệ (HUB-BR-08) → Redis (connect + ping) → serve.
+// Lỗi bước nào → log `fatal` + exit 1.
 import pkg from "../package.json";
 import { createApp } from "./app";
 import { type Env, loadEnv } from "./config/env";
@@ -7,6 +8,7 @@ import { connectDb, type Db, pingDb } from "./lib/db";
 import { safeErrorFields } from "./lib/errors";
 import { logger, setMinLevel } from "./lib/logger";
 import { createRedis, pingRedis, type Redis } from "./lib/redis";
+import { bootOrchestratorProblem } from "./modules/config/config.service";
 
 function fail(step: string, err: unknown): never {
   logger.fatal(step, safeErrorFields(err));
@@ -45,10 +47,26 @@ async function main(): Promise<void> {
   }
   setMinLevel(env.LOG_LEVEL);
   const db = await openDb(env).catch((err) => fail("db", err));
+  const problem = await bootOrchestratorProblem(db).catch((err) => fail("orchestrator", err));
+  if (problem) {
+    logger.fatal("orchestrator-invalid", { reason: problem });
+    await db.close();
+    process.exit(1);
+  }
   const redis = await openRedis(env).catch((err) => fail("redis", err));
+  const stop = new AbortController();
   const app = createApp(
     { version: pkg.version, corsOrigins: env.HUB_CORS_ORIGINS },
-    { probes: [() => pingDb(db), () => pingRedis(redis)] },
+    {
+      probes: [() => pingDb(db), () => pingRedis(redis)],
+      db,
+      redis,
+      appEnv: env.APP_ENV,
+      instanceId: env.HUB_INSTANCE_ID,
+      jobMaxWaitS: env.HUB_JOB_MAX_WAIT_S,
+      configPollS: env.HUB_CONFIG_POLL_S,
+      signal: stop.signal,
+    },
   );
   const server = Bun.serve({ port: env.HUB_PORT, fetch: app.fetch });
   logger.info("listening", {
@@ -60,6 +78,7 @@ async function main(): Promise<void> {
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info("shutdown", { signal });
+    stop.abort();
     await server.stop();
     redis.disconnect();
     await db.close();
