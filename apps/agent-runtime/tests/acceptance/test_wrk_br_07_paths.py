@@ -89,3 +89,41 @@ def test_wrk_br_07_ac_w05_allow(tree: Tree, raw: str) -> None:
     got = decide(tree, raw.format(job=tree.job))
     assert got.allowed is True
     assert got.reason is None
+
+
+UNSAFE_PATTERNS: list[tuple[str, dict[str, object]]] = [
+    ("Glob", {"pattern": r"\.\./\.\./.claude/*"}),
+    ("Glob", {"pattern": "[.][.]/[.][.]/.claude/*"}),
+    ("Glob", {"pattern": ".?/.?/.claude/*"}),
+    ("Glob", {"pattern": "?./x/*"}),
+    ("Glob", {"pattern": "{..}/{..}/.claude/*"}),
+    ("Glob", {"pattern": "{..,x}/**"}),
+    ("Grep", {"pattern": "x", "glob": "[.][.]/**"}),
+]
+
+
+def _policy(tree: Tree, *, tools: frozenset[str], structured_output: bool = False) -> Any:
+    hook = importlib.import_module("agent_runtime.sandbox.hook")
+    return hook.SandboxPolicy(JOB, tree.job, tree.forbidden, tools, structured_output)
+
+
+@pytest.mark.parametrize(("tool", "data"), UNSAFE_PATTERNS)
+def test_wrk_br_07_ac_w11_glob_escape_patterns_denied(
+    tree: Tree, tool: str, data: dict[str, object]
+) -> None:
+    """AC-W11 · mẫu glob thoát `work/<job>` (escape, lớp ký tự, `?`, brace) → deny `pattern`."""
+    hook = importlib.import_module("agent_runtime.sandbox.hook")
+    pol = _policy(tree, tools=frozenset({"Glob", "Grep"}))
+    got = hook.decide(pol, tool, data)
+    assert (got.allowed, got.reason, got.label) == (False, "path_not_allowed", "pattern")
+
+
+def test_wrk_br_07_structured_output_by_role(tree: Tree) -> None:
+    """WRK-BR-07 · `StructuredOutput`: agent có `output_format` được phép; Orchestrator deny."""
+    hook = importlib.import_module("agent_runtime.sandbox.hook")
+    data = {"status": "done", "text": "/home/x ../y"}
+    agent = _policy(tree, tools=frozenset(), structured_output=True)
+    orch = _policy(tree, tools=frozenset())
+    assert hook.decide(agent, "StructuredOutput", data).allowed is True
+    got = hook.decide(orch, "StructuredOutput", data)
+    assert (got.allowed, got.reason) == (False, "tool_not_allowed")

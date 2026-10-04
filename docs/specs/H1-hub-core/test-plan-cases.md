@@ -115,3 +115,5 @@ HUB-FR-31 fallback nhiều bước → H2 (Q-T6) · HUB-FR-02 command/workflow/f
 | 13 | `depcruise --all` (báo cáo) | xanh | |
 
 **Phân xử P45a / verbatim (qc, I1):** test sai, sửa tối thiểu: Orchestrator `fake-cli` không chỉ thị trả `answer{text}` JSON (plan-runtime-fake §7; plan §8 R3 Runtime trả `text` nguyên văn, Hub tự parse). P45a `json.loads` rồi kiểm `decision=="answer"`, `text` bắt đầu `echo: xin chào `, không `<agents>`/history trên chuỗi thô; verbatim kiểm `text` là `str` và `json.loads(text)["text"]` bắt đầu `echo: chào {"a":1} `. Lock đã ghi lại (2 dòng).
+
+**Bổ sung sandbox (qc, sau spike PY-02):** `test_wrk_br_07_paths.py` +8 ca xanh trên code hiện tại (7 mẫu glob escape/lớp ký tự/`?`/brace deny `pattern` — `\.\./`, `[.][.]/`, `.?/`; `StructuredOutput` cho phép với agent, deny với Orchestrator) [WRK-BR-07 · AC-W11]. Lock ghi lại (1 dòng).
