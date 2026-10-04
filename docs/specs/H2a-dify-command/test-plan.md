@@ -28,8 +28,8 @@ Chế độ **TEST-PLAN** · 2026-10-05. Chưa có file test, chưa khoá; viế
 | Mock MCP Python | `tests/support/mcp_mock.py` (PY-06) cho P không cần Hub; S dùng `/mcp` Hub thật | backend-lead PY-06 |
 | `fake-cli` (P, S) | chỉ thị `plan-runtime` §6: `#fake:tool=<key>`, `#fake:args=<json>`, `#fake:mcp-list` | backend-lead PY-06 |
 | Stack (S) | `tools/hub-dev` (H1 I1) + `hub:dify-mock` :4030 + Runtime `AGENT_RT_PROVIDERS=fake-cli,dify`, `AGENT_RT_HUB_URL=http://localhost:4000`; dùng lại `stack/_stack.ts` (`bootStack`, `kill9`) | backend-lead I1 |
-| Env test | `SECRET_MASTER_KEY` test · `HUB_INTERNAL_TOKEN=qc-internal-token-0123456789abcdef0123` · `HUB_PUBLIC_INTERNAL_URL` = base hub test · `HUB_DIFY_TIMEOUT_MAX_S=300` · `AGENT_RT_DIFY_BACKOFF_S=0.2,0.8` · ngưỡng orphan rút ngắn (`ORPHAN_S=5`, H1) | qc / backend-lead |
-| Dify thật · CLI thật | `DIFY_LIVE=1` (I2) và spike PY-S1 (CLI thật WSL): **M**, blocked tới W1 — checklist cases §3 | người dùng / backend-lead |
+| Env test | `SECRET_MASTER_KEY` test · `HUB_INTERNAL_TOKEN=qc-internal-token-0123456789abcdef0123` · `HUB_PUBLIC_INTERNAL_URL` = base hub test · `HUB_DIFY_TIMEOUT_MAX_S=300` · `AGENT_RT_DIFY_BACKOFF_S=0.2,0.8` · `AGENT_RT_ORPHAN_S=5` (chỉ Runtime) | qc / backend-lead |
+| Dify thật · CLI thật | `DIFY_LIVE=1` (I2): **M01–M02** blocked tới W1; M03 (spike PY-S1) chạy ngay sau Gate — checklist cases §3 | người dùng / backend-lead |
 | Lock | `tests/acceptance/H2a/**` + file mới trong `apps/agent-runtime/tests/acceptance/`; đề xuất khoá thêm hai mock (Q-T1) | qc |
 
 ## 3. Ma trận mã → test
@@ -43,11 +43,11 @@ Chế độ **TEST-PLAN** · 2026-10-05. Chưa có file test, chưa khoá; viế
 | HUB-FR-13 (async) · WRK-FR-07 | A30–A36, P02–P05, P17 | A, P |
 | HUB-FR-14 · AC-H02 | R27–R29, A05–A07 | R, A |
 | HUB-FR-23 · HUB-H2a-AC-07 | R55, A40–A44 | R, A |
-| HUB-FR-24 (phần `mcp`) | A45, A46, R60 | A, R |
+| HUB-FR-24 (phần `mcp`) | A45, A46, R61 | A, R |
 | HUB-FR-50 · WRK-FR-13 · HUB-H2a-AC-05 | R50–R54, A50–A58, P01, P24, P26, P27, S02 | R, A, P, S |
 | HUB-FR-51 · HUB-H2a-AC-08 | A70–A75 | A |
 | HUB-FR-76 · HUB-H2a-AC-10 | R30–R39 (Hub ∥ Admin), A08 | R, A |
-| HUB-FR-80 | A10, A51, A70, P02 | A, P |
+| HUB-FR-80 | A10, A15, A56, A70, P02 | A, P |
 | HUB-FR-95 · HUB-BR-20 · AC-H22 | R56–R59, A60–A67, P25, S01 | R, A, P, S |
 | HUB-BR-01 · HUB-H2a-AC-09 | R01–R04, A06, A09 | R, A |
 | HUB-BR-04 · HUB-H2a-AC-03 | R43–R49, A20–A26, P05, P07–P10 | R, A, P |
@@ -67,7 +67,7 @@ Chế độ **TEST-PLAN** · 2026-10-05. Chưa có file test, chưa khoá; viế
 | D1/D2 (grant, RLS, hàm) | A84–A92 | A |
 | Seed R14 | A93–A95 | A |
 
-**Không phủ / không test được** (lý do + mốc): cases §4 — vế Studio AC-H12 (H4); HUB-FR-24 `llm`/`python` (H2d); FR-13 "trả ngay `job_id`" (R12: client không đổi, A30); Dify thật + CLI thật gọi MCP (M01–M03, blocked W1); perf §6 không chặn.
+**Không phủ / không test được** (lý do + mốc): cases §4 — vế Studio AC-H12 (H4); HUB-FR-24 `llm`/`python` (H2d); FR-13 "trả ngay `job_id`" (R12: client không đổi, A30); Dify thật + CLI thật gọi MCP (M01–M02, blocked W1; M03 chạy sau Gate); perf §6 không chặn.
 
 ## 4. R · Hàm thuần TS (chữ ký `plan.md` §7)
 Bảng ca đủ: cases §1. Nhóm:
@@ -87,7 +87,7 @@ Bảng ca đủ: cases §1. Nhóm:
 | R70–R74 | `contracts-h2a.test.ts` | chat chỉ thêm; `hub` union mới; `hub-internal` | 5 |
 
 ## 5. A · hub-api int (`tests/acceptance/H2a/`)
-File: `commands` (A01–A09) · `command-run` (A10–A19) · `dify-errors` (A20–A26) · `async` (A30–A39) · `dify-agent` (A40–A46) · `mcp` (A50–A58) · `confirm` (A60–A67) · `test-run` (A70–A75) · `secret` (A80–A86) · `db` (A87–A92) · `seed` (A93–A95) `.int.test.ts`.
+File: `commands` (A01–A09) · `command-run` (A10–A19) · `dify-errors` (A20–A26) · `async` (A30–A39) · `dify-agent` (A40–A46) · `mcp` (A50–A58) · `confirm` (A60–A67) · `test-run` (A70–A75) · `secret` (A80–A86, cases §6) · `db` (A87–A92) · `seed` (A93–A95) `.int.test.ts`.
 
 | ID | Mã | Given/When → Then |
 |---|---|---|
@@ -118,13 +118,13 @@ File: `commands` (A01–A09) · `command-run` (A10–A19) · `dify-errors` (A20�
 | A25 | R11 | Secret không có (`workflow_secret` 0 dòng) / ciphertext hỏng → `NOT_CONFIGURED`, MK 0 lời gọi; log có `secret_decrypt_failed` + `workflow_id`, không bản mã/key |
 | A26 | R11 | Thân lỗi mock chứa key → `run_steps.detail.upstream` ≤ 300 ký tự, key → `***` |
 | A30 | FR-13 async | `/dich` `mode=async` → 1 hàng `jobs` `type='workflow.async'`, `provider_key='dify'`, `agent_id NULL`, payload parse `WorkflowAsyncJobSchema`; **không** khoá `api_key/base_url/token/job_token`, không chuỗi `mk-`/`LEAK_KEY_`; `dify_user="acme:<lan>"`, `side_effect=false`, `timeout_s`=`commands.timeout_s`; SSE như sync (client không đổi) |
-| A31 | R12 | ScriptRuntime XADD `job.progress` ×3 → SSE **không** có sự kiện ngoài `CHAT_EVENT_NAMES`, không `job.progress`; `job.result{text}` → `delta` ≤ 40 + `run.finished` |
+| A31 | R12 | ScriptRuntime XADD `job.progress` ×3 → SSE có đúng 1 cặp `step.started`/`step.finished` (step `workflow`, P13), không `job.progress`, không sự kiện ngoài `CHAT_EVENT_NAMES`; `job.result{text}` → `delta` ≤ 40 + `run.finished` |
 | A32 | R12 | `job.failed{code:UPSTREAM_ERROR}` → `run.failed UPSTREAM_ERROR`; `NOT_CONFIGURED` → `NOT_CONFIGURED` |
 | A33 | R12 | Provider `dify` `enabled=false` → `run.failed NOT_CONFIGURED`, 0 job |
 | A34 | R13 · P10 | Hạn run giữ qua requeue: `timeout_s=3`, ScriptRuntime claim → giả requeue (SQL) → claim lại → không trả kết quả → ≤ 3 s + biên: `run.failed TIMEOUT`, `jobs.cancel_requested_at` đặt + NOTIFY `job_cancel`; `job.started` lặp không làm hỏng SSE |
 | A35 | R12 | Hết hạn `queued` tính từ `queued_at` (không `created_at`): job `created_at` cũ, `queued_at` mới → chưa hết hạn |
 | A36 | E15 | Cancel run async → `cancel_requested_at` + NOTIFY; ScriptRuntime XADD `job.failed CANCELLED` → `run.failed CANCELLED` ≤ 5 s |
-| A37 | AC-W06 (Hub sweep) | Job `workflow.async` `running`, heartbeat cũ > ngưỡng, `attempts=1` → sweep Hub → `queued`, `token_hash/dispatched_at/worker_id NULL`, `queued_at` mới, NOTIFY `job_enqueued{provider_key:"dify"}`, **không** XADD `job.failed` |
+| A37 | AC-W06 (Hub sweep) | Job `workflow.async` `running`, `heartbeat_at = now() - 61 s` (Hub hằng 60 s), `attempts=1` → sweep Hub → `queued`, `token_hash/dispatched_at/worker_id NULL`, `queued_at` mới, NOTIFY `job_enqueued{provider_key:"dify"}`, **không** XADD `job.failed` |
 | A38 | Q6 | Như A37 với `side_effect=true` ∧ `dispatched_at` đặt → `failed` `orphaned` (H1); `attempts=3` → `failed`; `cancel_requested_at` đặt → không requeue |
 | A39 | H1 hồi quy | Job `agent.cli` mồ côi → vẫn `failed orphaned` (HUB-H1-AC-04 không đổi) |
 | A50 | AC-05 | `/mcp` không header / `Bearer` sai / token đúng hình nhưng không có hash → 401 body rỗng + `WWW-Authenticate: Bearer`; GET/DELETE `/mcp` → 405 |
@@ -132,7 +132,7 @@ File: `commands` (A01–A09) · `command-run` (A10–A19) · `dify-errors` (A20�
 | A52 | FR-50 · BR-11 | `initialize` (`2025-06-18` → giữ; `1999-01-01` → `2026-07-28`), `server/discover` có `supportedVersions`; `tools/list` (token job `hoadon`) = `[check-invoice]`, `description` = mô tả workflow, `inputSchema` JSON Schema có mô tả từng tham số |
 | A53 | AC-05 · BR-19 | Token job `trello` → `tools/call check-invoice` → JSON-RPC `-32602` "Unknown tool" (không lộ lý do), MK 0 lời gọi; user của job **không** có feature chứa workflow → vẫn gọi được tool của mình (BR-19) |
 | A54 | AC-H12 | Sửa `workflows.description` (adminChange) → job **mới** `tools/list` thấy mô tả mới ≤ 5 000 ms |
-| A55 | FR-50 · BR-12 | `tools/call check-invoice {…}` → MK nhận đúng 1 lời gọi `user="acme:<lan>"`, response `{content:[{type:"text"}], isError:false}`; `run_steps` `type='tool'`, `workflow_id`, `detail.inputs` đã che; không SSE live (P12) |
+| A55 | FR-50 · BR-12 | `tools/call check-invoice {…}` (một input 250 ký tự + một chứa secret) → MK nhận đúng 1 lời gọi `user="acme:<lan>"`, response `{content:[{type:"text"}], isError:false}`; `run_steps` `type='tool'`, `workflow_id`, `detail.inputs` qua `maskInputs`: cắt ≤ 200, secret → `***`; không SSE live (P12) |
 | A56 | R20 | Tham số sai → `isError` "Invalid arguments for this tool."; `mk-401` → "This tool is not configured."; `mk-failed` → "The tool's service returned an error."; usage 1 dòng `feature_id NULL` |
 | A57 | AC-05 · tenant | Token job tenant `beta` không thấy/ghi run/flow/`tool_confirmations` của `acme` (xác nhận `confirmed` của acme giữ nguyên; `run_steps` chỉ ghi vào run beta) |
 | A58 | R20 | Timeout tool = min(`agents.timeout_s`, 300): `agents.timeout_s=1` + `mk-slow` → "The tool took too long to respond." + stop |
@@ -144,16 +144,9 @@ File: `commands` (A01–A09) · `command-run` (A10–A19) · `dify-errors` (A20�
 | A65 | R21 | Xác nhận flow F không dùng được cho flow G, agent khác, workflow khác |
 | A66 | R21 | `locale=en` → `["Agree","Cancel"]` + câu en |
 | A67 | R23 | Không cột `admin.workflows.side_effect` → `workflow_flags` quyết; có cột (thêm bằng SQL owner rồi reload) → cột thắng |
-| A80 | AC-04 | Secret `LEAK_KEY_…`: chạy sync, async (ScriptRuntime + credential), MCP, `dify-*`, test-run, lỗi `mk-401` có key trong thân → quét `LEAK_KEY`/base64/hex trong: SSE thô, response JSON, `jobs.payload/result/error_*`, `run_steps.detail`, `usage_logs`, `messages`, `tool_confirmations`, Redis `run:<id>`, log hub-api (bắt stdout như H1 A52) → 0 |
-| A81 | R17 | Credential endpoint: token job `workflow.async` `running` → 200 `{base_url, api_key, app_type}` + `Cache-Control: no-store`; log không có `Authorization`/key |
-| A82 | Q5 | Credential 401 (cùng body) cho: không token, token sai, token job khác (`job_id` ≠), job không `running`, job `agent.cli` |
-| A83 | Q5 | Secret thiếu / giải mã lỗi / workflow tắt → 409 `NOT_CONFIGURED` |
-| A84 | P1 · khoá M2 | Trên DB h1 **sau** `0002`: `SET ROLE hub_ro` `select id from admin.secrets` → 42501; `has_table_privilege('hub_ro','admin.secrets','SELECT')=false`; `hub.workflow_secret(<wf>)` trả đúng 1 secret của workflow, workflow khác/không secret → 0 dòng; `hub_rw`/`agent_runtime` không EXECUTE |
-| A85 | P2 · khoá H1 A51 | `hub_api` vẫn không INSERT/UPDATE `usage_logs`; `log_dify_usage` cố định `billing/provider/model` |
-| A86 | R17 | Token job rõ không có trong DB (Runtime kịch bản giữ token): chỉ `token_hash` 32 byte; `jobs_token_hash_uq` chặn trùng |
 
 ## 6. P · Python · S · K
-P01–P30, S01–S03: [cases §5](test-plan-cases.md); K01–K08: cases §2. Agent `dify-*` A40–A46, test-run A70–A75, DB/seed A87–A95: cases §6. Catalog fixture `_h2a.ts`: cases §7.
+P01–P30, S01–S03: [cases §5](test-plan-cases.md); K01–K08: cases §2. Secret A80–A86 (+A83b), agent `dify-*` A40–A46, test-run A70–A75, DB/seed A87–A95: cases §6. Catalog fixture `_h2a.ts`: cases §7.
 
 ## 7. Lệnh
 
@@ -161,7 +154,7 @@ P01–P30, S01–S03: [cases §5](test-plan-cases.md); K01–K08: cases §2. Age
 ```
 bunx turbo run typecheck --filter=@ai/hub-api --filter=@ai/contracts --filter=@ai/db --filter=@ai/hub-dev --filter=@ai/chat-web --filter=@ai/mocks
 bun test packages/contracts packages/db tools/hub-dev apps/admin-api/src/modules/access tests/acceptance/C1 \
-  tests/acceptance/H1/rules tests/acceptance/H1/contracts-hub.test.ts tests/acceptance/H2a/rules
+  tests/acceptance/H1/rules tests/acceptance/H2a/rules
 bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 \
   tests/acceptance/H1/ tests/acceptance/H2a/ tests/acceptance/M tests/acceptance/ADM-NFR-06     # H1+H2a int (DB h1) + khoá Admin M1–M4
 bun run contracts:check
@@ -174,7 +167,7 @@ bun run test:lock:verify && bun run trace --check && bun run check:size --all \
 ```
 Kế thừa `done:h1` (mọi bước của nó nằm trong danh sách trên) + `H2a/` + khoá C1/M2/M3. Chạy riêng, chỉ báo cáo: `tsc -p tsconfig.tests.json`, `bun run test:perf tests/acceptance/H2a`. `test:h2a:stack` = `test:h1:stack` với `tests/acceptance/H2a/stack` (thêm vào `pathIgnorePatterns` như H1).
 
-### 7.2 Thủ công / blocked: Dify thật (`DIFY_LIVE=1`), `claude-sub` + MCP (`HUB_LIVE=1`), spike PY-S1 — checklist cases §3.
+### 7.2 Thủ công / blocked: Dify thật (`DIFY_LIVE=1`), `claude-sub` + MCP (`HUB_LIVE=1`), spike PY-S1 (M03, không blocked) — checklist cases §3.
 
 ## 8. Ước lượng và nhóm WRITE (sau Gate)
 
@@ -183,12 +176,13 @@ Kế thừa `done:h1` (mọi bước của nó nằm trong danh sách trên) + `
 | QW-R | 11 file `rules/` | 78 (R30–R39 chạy ×2) | stub `plan §7` ném (B0); R parity: nhánh Admin **xanh**, nhánh Hub đỏ (ghi §10) |
 | QW-A1 (cao) | `commands`, `command-run`, `dify-errors`, `secret`, `db` | A01–A26, A80–A92 = 39 | route 404 / `expect`; fixture catalog + secret SQL phải xanh; A84/A85 có thể **xanh** trước code (chấp nhận, ghi §10) |
 | QW-A2 (cao) | `async`, `dify-agent`, `mcp`, `confirm`, `test-run`, `seed` | A30–A75, A93–A95 = 43 | như QW-A1 |
-| QW-P | 6 file Python | 30 (unit 3 nhóm, int 27) | `ModuleNotFoundError` trong thân test / chờ trạng thái hết hạn; DB/Redis/mock phải xanh |
+| QW-PU | `test_dify_rules.py` (P28–P30, unit) — viết sau C2, **trước PY-01** | 3 | `ModuleNotFoundError`/import hàm chưa có (`ErrKind`, `retry_delay`, `map_failure`, `usage_row`, `reduce`, `parse_confirmation`: chữ ký `plan-runtime §3.1`) |
+| QW-P | 5 file Python int | 27 | `ModuleNotFoundError` trong thân test / chờ trạng thái hết hạn; DB/Redis/mock phải xanh |
 | QW-S | 3 `.stack.test.ts` | 3 | stack/`expect` |
 | K | có sẵn | 41 contract chat + C1 + M2/M3/H1 | chạy lại, không viết mới |
 | perf | 1 | 3 | không chặn |
 
-Tổng mới ≈ **196** ca (R 78, A 82, P 30, S 3, perf 3) + K + M (3 checklist blocked). Theo nhóm: quyền 22, MCP/`side_effect` ~40, lỗi/huỷ/retry ~35, secret ~12.
+Tổng mới ≈ **196** ca (R 78, A 83, P 30, S 3, perf 3) + K + M (3 checklist blocked). Theo nhóm: quyền 22, MCP/`side_effect` ~40, lỗi/huỷ/retry ~35, secret ~12.
 
 ## 9. Rủi ro test · câu hỏi (mặc định dùng nếu không trả lời)
 
@@ -198,7 +192,7 @@ Tổng mới ≈ **196** ca (R 78, A 82, P 30, S 3, perf 3) + K + M (3 checklist
 | Q-T2 | R import tĩnh `*.rules.ts` chưa có | Như H1 Q-T2: B0 tạo stub chữ ký (thân `throw`) trước QW |
 | Q-T3 | BA HUB-BR-11 tên tool `^[a-z][a-z0-9_]{2,40}$` ≠ plan (tên = key `^[a-z0-9-]{2,32}$`, có `-`) | Test theo spec/plan (A52: tên = key, `create-trello-card`); ghi "Cần bổ sung" docs-architect sửa BA/CR khi I3 |
 | Q-T4 | Test-run secret thiếu: 409 (`plan-errors` §1) hay 200 `ok:false NOT_CONFIGURED` | 409 `NOT_CONFIGURED` trước khi gọi Dify; lỗi **từ** Dify (401) → 200 `ok:false` |
-| Q-T5 | AC-W06 "> 60 s" không chờ thật | Ngưỡng env rút ngắn (`ORPHAN_S=5`); kiểm mặc định cấu hình = 60 bằng unit (P28) |
+| Q-T5 | AC-W06 "> 60 s" không chờ thật | Hub: A37 lùi `heartbeat_at` 61 s (hằng 60); Runtime: `AGENT_RT_ORPHAN_S=5`; mặc định 60 kiểm unit (P28) |
 | Q-T6 | Đo "≤ 5 s" (AC-H05, H12, huỷ) có thể chập chờn trên Windows | Poll 100 ms, ngưỡng `≤ 5 000 ms` từ lúc NOTIFY; ghi thời gian đo vào tên lỗi |
 | Q-T7 | Admin `computeEffectiveAccess` đổi chữ ký khi combine | R30–R39 import Admin trực tiếp; vỡ → tranh chấp, không sửa Admin |
 | Q-T8 | A60–A66 giả claim bằng SQL (token cố định) thay vì Runtime thật | Chấp nhận (hộp đen Hub); đường Runtime thật phủ ở S01, S02, P24 |

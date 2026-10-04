@@ -131,7 +131,7 @@ JSON đúng hình ở khối đầu → `Confirm`; khối thứ 2 là câu chỉ
 | K07 | `apps/admin-api/src/modules/access/*.test.ts` + typecheck `@ai/chat-web`, `@ai/mocks` | không sửa Admin/Chat |
 | K08 | Test khoá Admin dùng `tools/mocks/src/dify.ts` | mock Admin không đổi (P15) |
 
-## 3. M · Thủ công / blocked (I2, chờ W1)
+## 3. M · Thủ công (M01–M02 blocked I2/W1; M03 chạy ngay sau Gate)
 | ID | Checklist (biên bản `smoke.md`) |
 |---|---|
 | M01 | `DIFY_LIVE=1`: workflow `dich` + secret nhập ở Admin → `/dich en` có selection: stream về, ≥ 2 `delta`; Dify log thấy `user=<tenant>:<user>`; key sai → `NOT_CONFIGURED`; huỷ giữa chừng → Dify hiện `stopped`; `dify-agent` lượt 2 giữ `conversation_id`; `usage_logs` có token thật; grep log hub-api/Runtime không có key |
@@ -146,13 +146,13 @@ JSON đúng hình ở khối đầu → `Confirm`; khối thứ 2 là câu chỉ
 | HUB-FR-13 "trả ngay `job_id`" | R12: client không đổi (SSE như sync) — A30 kiểm thay |
 | HUB-FR-33 quota/overage cho Dify | H3 |
 | Đính kèm, `attachment` thật | H2c (chỉ `CMD_MISSING_ARG`, R25) |
-| Dify thật, CLI thật + MCP | M01–M03 blocked W1 |
+| Dify thật, CLI thật + MCP | M01–M02 blocked W1 |
 | Hiệu năng spec §6 (trừ ≤ 5 s cấu hình/huỷ) | `test:perf`, không chặn |
 | HUB-BR-11 regex BA có `_` | Q-T3 |
 
 ## 5. P · Python (`apps/agent-runtime/tests/acceptance/`) · S
-Thứ tự: QW-P, QW-S viết **sau PY-02** (cần `dify_mock.py`; fixture phải xanh) và khoá lần 2 (Q3) **trước PY-03**; ca `fake-cli` MCP (P24–P27, S01–S02) đỏ vì chỉ thị chưa có tới PY-06 — đúng lý do.
-File: `dify_job_int_test.py` (P02–P05, P13–P17) · `dify_retry_int_test.py` (P06–P12) · `dify_requeue_int_test.py` (P18–P22) · `dify_leak_int_test.py` (P23) · `mcp_int_test.py` (P01, P24–P27) · `test_dify_rules.py` (P28–P30, unit). Helper `_dify.py` (payload `workflow.async`, chạy mock Python).
+Thứ tự: QW-PU (P28–P30, `test_dify_rules.py`) viết **sau C2, trước PY-01** (test trước code; chữ ký `plan-runtime §3.1`: `ErrKind`, `retry_delay`, `map_failure`, `usage_row`, `reduce`). QW-P (int), QW-S viết **sau PY-02** (cần `dify_mock.py`; fixture phải xanh) và khoá lần 2 (Q3) **trước PY-03**; ca `fake-cli` MCP (P24–P27, S01–S02) đỏ vì chỉ thị chưa có tới PY-06 — đúng lý do.
+File: `dify_job_int_test.py` (P02–P05, P13–P17) · `dify_retry_int_test.py` (P06–P12) · `dify_requeue_int_test.py` (P18–P22) · `dify_leak_int_test.py` (P23) · `mcp_int_test.py` (P01, P24–P27) · `test_dify_rules.py` (P28–P30, unit, QW-PU). Helper `_dify.py` (payload `workflow.async`, chạy mock Python).
 
 | ID | Mã | Given/When → Then |
 |---|---|---|
@@ -173,7 +173,7 @@ File: `dify_job_int_test.py` (P02–P05, P13–P17) · `dify_retry_int_test.py` 
 | P15 | R10 | Huỷ (`job_cancel`) giữa stream `mk-slow` → `cancelled` + `job.failed CANCELLED` ≤ 5 s + mock nhận stop đúng `task_id` |
 | P16 | R12 | `timeout_s=1` → `timed_out` + `TIMEOUT` + stop |
 | P17 | R12 · RT7 | Mock gửi `node_started{title:"NODE_SECRET_TITLE"}` → `job.progress.message` ∈ {"Đang chạy lệnh","Đang chạy bước n"}, không chứa title; ≤ 1/giây |
-| P18 | AC-W06 | Job đang chạy (`mk-slow`), `kill -9` Runtime A → heartbeat quá `ORPHAN_S` → Runtime B `REQUEUE_ORPHANS` → `queued` (`token_hash`,`dispatched_at` NULL, không XADD) → B claim (token khác) → `succeeded`, `attempts=2`, `run:<id>` đúng 1 sự kiện kết thúc |
+| P18 | AC-W06 | Job đang chạy (`mk-slow`), `kill -9` Runtime A → heartbeat quá `AGENT_RT_ORPHAN_S=5` → Runtime B `REQUEUE_ORPHANS` → `queued` (`token_hash`,`dispatched_at` NULL, không XADD) → B claim (token khác) → `succeeded`, `attempts=2`, `run:<id>` đúng 1 sự kiện kết thúc |
 | P19 | Q6 | Như P18 với `side_effect` + `dispatched_at` → `failed orphaned` (H1), không lời gọi Dify thứ 2 |
 | P20 | R13 | `attempts=3` mồ côi → `failed orphaned` |
 | P21 | RT4 | Runtime khởi động lại cùng `WORKER_ID` → `REQUEUE_RESTART` đưa job của mình về `queued` |
@@ -183,7 +183,9 @@ File: `dify_job_int_test.py` (P02–P05, P13–P17) · `dify_retry_int_test.py` 
 | P25 | FR-95 | `mcp_mock` trả `CONFIRMATION_REQUIRED` đúng hình → job `succeeded` `need_input{question, choices}` = của Hub; 1 lời gọi tool, không retry/resume |
 | P26 | R19 | `#fake:tool=x` với `x` ∉ `payload.mcp.tools` → không gọi MCP (nghĩa H1); `mcp__other__x` deny |
 | P27 | H1-R17 | Orchestrator (`output=text`) có `mcp` ≠ null → bỏ qua, log `warn`, không gọi MCP |
-| P28–P30 | unit | `retry_delay` bảng `-dify` §3.4 với BACKOFF mặc định `(2, 8)` → 2.0, 8.0, `None` lần 3; `parse_confirmation` (cases §1.10); fixtures `hub.py` valid/invalid mới |
+| P28 | unit · QW-PU | `retry_delay` (cases §1.9) với BACKOFF `(2, 8)` → 2.0, 8.0, `None` lần 3; `ErrKind` đủ giá trị |
+| P29 | unit · QW-PU | `parse_confirmation` (cases §1.10); fixtures `hub.py` valid/invalid mới |
+| P30 | unit · QW-PU | `map_failure` (ánh xạ lỗi R11), `usage_row` (R15), `reduce` (workflow/chat) — bảng ca `plan-runtime-dify` §3.5–3.7; chữ ký tại `plan-runtime §3.1` |
 
 | ID | Loại | Ca |
 |---|---|---|
@@ -192,7 +194,7 @@ File: `dify_job_int_test.py` (P02–P05, P13–P17) · `dify_retry_int_test.py` 
 | S03 | AC-W06 | Stack: `/dich` async `mk-slow` → `kill9` Runtime → Runtime mới → `run.finished` (client chỉ thấy một `run.finished`) |
 
 ## 6. A tách ra (`tests/acceptance/H2a/`)
-File: `dify-agent` (A40–A46) · `test-run` (A70–A75) · `db` (A87–A92) · `seed` (A93–A95) `.int.test.ts`.
+File: `secret` (A80–A86) · `dify-agent` (A40–A46) · `test-run` (A70–A75) · `db` (A87–A92) · `seed` (A93–A95) `.int.test.ts`.
 
 | ID | Mã | Given/When → Then |
 |---|---|---|
@@ -209,6 +211,14 @@ File: `dify-agent` (A40–A46) · `test-run` (A70–A75) · `db` (A87–A92) · 
 | A73 | R24 | Thiếu arg → 422 `CMD_MISSING_ARG`; body sai → 400; `mk-failed` → 200 `ok:false, error.code=UPSTREAM_ERROR, error.detail` ≤ 300 đã che key (Q16) |
 | A74 | R24 | Secret thiếu → 409 `NOT_CONFIGURED` (`plan-errors` §1) · Q-T4 |
 | A75 | R24 | Không SSE: `content-type` JSON; `timeout_s` nháp hết → `ok:false TIMEOUT` + stop |
+| A80 | AC-04 | Secret `LEAK_KEY_…`: chạy sync, async (ScriptRuntime + credential), MCP, `dify-*`, test-run, lỗi `mk-401` có key trong thân → quét `LEAK_KEY`/base64/hex trong: SSE thô, response JSON, `jobs.payload/result/error_*`, `run_steps.detail`, `usage_logs`, `messages`, `tool_confirmations`, Redis `run:<id>`, log hub-api (bắt stdout như H1 A52) → 0 |
+| A81 | R17 | Credential endpoint: token job `workflow.async` `running` → 200 `{base_url, api_key, app_type}` + `Cache-Control: no-store`; log không có `Authorization`/key |
+| A82 | Q5 | Credential 401 (cùng body) cho: không token, token sai, token job khác (`job_id` ≠), job không `running`, job `agent.cli` |
+| A83 | Q5 · R08 | Secret thiếu / giải mã lỗi → 409 `NOT_CONFIGURED`; credential **không** xét `workflows.enabled` |
+| A83b | HUB-BR-06 · AC-H05 | Async: job `queued`, tắt workflow (Admin) trước claim → Runtime claim + credential 200 → run vẫn `finished` (không `failed`) |
+| A84 | P1 · khoá M2 | Trên DB h1 **sau** `0002`: `SET ROLE hub_ro` `select id from admin.secrets` → 42501; `has_table_privilege('hub_ro','admin.secrets','SELECT')=false`; `hub.workflow_secret(<wf>)` trả đúng 1 secret của workflow, workflow khác/không secret → 0 dòng; `hub_rw`/`agent_runtime` không EXECUTE |
+| A85 | P2 · khoá H1 A51 | `hub_api` vẫn không INSERT/UPDATE `usage_logs`; `log_dify_usage` cố định `billing/provider/model` |
+| A86 | R17 | Token job rõ không có trong DB (Runtime kịch bản giữ token): chỉ `token_hash` 32 byte; `jobs_token_hash_uq` chặn trùng |
 | A87–A92 | D1 | CHECK `runs.kind`/`command_id`; `run_steps` `workflow_id` ↔ type; `jobs.agent_id NULL` chỉ `workflow.async`; RLS `tool_confirmations` (tenant khác 0 hàng, ghi chéo 42501); unique mở `(flow,agent,workflow)`; `insertStep` song song (MCP + vòng) → `seq` liên tục không trùng (P11) |
 | A93–A95 | R14 · seed | `dify-*` `workflow_key` sai loại app / không map được `query` / `runtime_options` thừa khoá → seed exit 1; workflow không có trong `admin.workflows` → bỏ dòng + cảnh báo; `workflow_flags` upsert |
 
@@ -216,6 +226,7 @@ File: `dify-agent` (A40–A46) · `test-run` (A70–A75) · `db` (A87–A92) · 
 | Đối tượng | Giá trị |
 |---|---|
 | workflows | `dich` (workflow, inputs `source_text` string req, `target_lang` select[en,vi,ja] req, `tone` string opt) key `mk-ok` · `tom` (workflow) · `hoi` (chat, `query` req) · `tro-ly` (agent app) · `check-invoice` (workflow, mô tả "Kiểm tra một hoá đơn điện tử…") · `create-trello-card` (workflow, `side_effect`, input `title` req) · `so` (input number + boolean) · `tat` (enabled=false) |
+| args/input_map | `/hoi`: arg `q` (rest) → `query←arg q`, tin `/hoi` trống → `missing:["q"]` · `/so`: args `n` (number), `flag` (boolean) → `n←arg n`, `flag←arg flag` (số/boolean ép kiểu; `abc`/`maybe` → `invalid`) |
 | commands | `/dich` (alias `translate`; args `lang`, `text` `rest` fallback `$selection`; input_map `target_lang←arg lang`, `source_text←arg text`, `tone←const "neutral"`) · `/tom` (feature `summary`) · `/hoi` · `/so` · `/tat` (workflow tắt) · `/dong` (`enabled=false`) |
 | features | `core` (`/hoi`), `translate` on (`/dich`, `/so`), `summary` on không entitlement `acme` (`/tom`), `labs` beta (`/so`), `aaa-dup` on chứa `/dich` (kiểm Q4 key nhỏ nhất) |
 | grants | `core` + `translate` → group `acme/staff` (`lan`,`hoa`); `aaa-dup` → user `hoa`; `labs` → `lan`; `lan` ∈ `beta-testers`; `beta/an` grant `translate` + entitlement beta |
