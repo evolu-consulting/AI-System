@@ -51,6 +51,10 @@ SWEEP_ORPHANS = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL
 
 RESTART_ORPHANS = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE worker_id = $1 AND status = 'running' RETURNING id, run_id, pgid;"""  # noqa: E501
 
+# Biến thể "Khởi động lại" cho một job (review H1 #1): job `running` của mình mà process không còn
+# giữ (ghi kết thúc lỗi DB) → `orphaned`; điều kiện `worker_id` + `running` như câu gốc.
+ORPHAN_ONE = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE id = $1 AND worker_id = $2 AND status = 'running' RETURNING id, run_id, pgid;"""  # noqa: E501
+
 RESET_PROVIDERS = """UPDATE hub.provider_state SET status = 'ok', consecutive_errors = 0, cooldown_until = NULL, updated_at = now() WHERE provider_key = ANY($1::text[]) AND status IN ('error','logged_out');"""  # noqa: E501
 
 
@@ -136,6 +140,11 @@ async def sweep_orphans(conn: Conn, orphan_s: float) -> list[OrphanRow]:
 
 async def restart_orphans(conn: Conn, worker_id: str) -> list[OrphanRow]:
     return [_orphan(r) for r in await conn.fetch(RESTART_ORPHANS, worker_id)]
+
+
+async def orphan_one(conn: Conn, job_id: str, worker_id: str) -> OrphanRow | None:
+    row = await conn.fetchrow(ORPHAN_ONE, job_id, worker_id)
+    return _orphan(row) if row is not None else None
 
 
 async def reset_providers(conn: Conn, providers: list[str]) -> None:

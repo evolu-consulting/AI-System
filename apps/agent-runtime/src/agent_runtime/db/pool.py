@@ -19,6 +19,13 @@ _PG: Any = asyncpg
 POOL_MIN = 1
 POOL_MAX = 4
 CONNECT_TIMEOUT_S = 10.0
+# Lỗi DB tạm thời (mạng, timeout, lỗi Postgres, kết nối asyncpg hỏng): vòng nền thử lại chu kỳ sau.
+DB_ERRORS: tuple[type[Exception], ...] = (
+    OSError,
+    TimeoutError,
+    _PG.PostgresError,
+    _PG.InterfaceError,
+)
 
 
 class Conn(Protocol):

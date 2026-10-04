@@ -2,7 +2,7 @@
 
 Đánh thức bằng `LISTEN job_enqueued` (chỉ là tín hiệu) hoặc poll `AGENT_RT_POLL_S`; mỗi lần thức
 claim lặp tới khi rỗng (SQL claim plan-db §5.4, khoá `K_CLAIM` toàn cục, slot provider + tenant đếm
-trong DB) rồi giao job cho `Supervisor`, XADD `job.started` sau COMMIT.
+trong DB) rồi XADD `job.started` sau COMMIT, sau đó mới giao job cho `Supervisor`.
 """
 
 from __future__ import annotations
@@ -34,8 +34,9 @@ class Claimer:
             if job is None:
                 return n
             n += 1
-            self._sup.start(job)
+            # `job.started` phải đứng trước mọi sự kiện của job (task job host chạy từ `start`).
             await self._events.started(job)
+            self._sup.start(job)
 
     async def run(self, worker_id: str, poll_s: float) -> None:
         log = get_logger()

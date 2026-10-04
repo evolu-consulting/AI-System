@@ -26,7 +26,7 @@ from agent_runtime.log import get_logger
 from agent_runtime.providers.keys import is_available
 from agent_runtime.queue.claimer import Claimer
 from agent_runtime.queue.cleanup import CleanupConfig, run_cleanup
-from agent_runtime.queue.heartbeat import run_heartbeat
+from agent_runtime.queue.heartbeat import Heartbeat
 from agent_runtime.queue.host import JobHost
 from agent_runtime.queue.listener import Listener
 from agent_runtime.queue.supervisor import Supervisor
@@ -78,7 +78,7 @@ class QueueRuntime:
         return [
             lambda: self.claimer.run(s.worker_id, s.poll_s),
             lambda: listener.run(self.listen),
-            lambda: run_heartbeat(self.pool, sup, s.worker_id, s.heartbeat_s),
+            lambda: Heartbeat(self.pool, sup, self.events, self.sweep).run(s.heartbeat_s),
             lambda: run_sweeper(self.pool, self.events, sup, self.sweep),
             lambda: run_cleanup(clean, sup.held),
         ]

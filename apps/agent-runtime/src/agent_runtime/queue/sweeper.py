@@ -13,7 +13,7 @@ from dataclasses import dataclass, replace
 
 from agent_runtime.db import jobs_sql
 from agent_runtime.db.jobs_sql import OrphanRow
-from agent_runtime.db.pool import Pool
+from agent_runtime.db.pool import DB_ERRORS, Pool
 from agent_runtime.log import get_logger
 from agent_runtime.queue.host import JobEvents
 from agent_runtime.queue.orphans import kill_job_group
@@ -33,7 +33,8 @@ class SweepConfig:
         return min(SWEEP_MAX_S, self.orphan_s)
 
 
-async def _settle(rows: list[OrphanRow], events: JobEvents, kill_grace_s: float) -> None:
+async def settle(rows: list[OrphanRow], events: JobEvents, kill_grace_s: float) -> None:
+    """Sau COMMIT: giết group sót (kiểm cmdline) rồi XADD `job.failed` orphaned."""
     for row in rows:
         await kill_job_group(row.pgid, row.id, kill_grace_s)
         await events.orphaned(row)
@@ -42,14 +43,14 @@ async def _settle(rows: list[OrphanRow], events: JobEvents, kill_grace_s: float)
 async def sweep_once(pool: Pool, events: JobEvents, sup: Supervisor, cfg: SweepConfig) -> int:
     async with pool.acquire() as conn:
         rows = await jobs_sql.sweep_orphans(conn, cfg.orphan_s)
-    settle: list[OrphanRow] = []
+    todo: list[OrphanRow] = []
     for row in rows:
         if row.worker_id == cfg.worker_id:
             sup.stop(row.id, "lost")
-            settle.append(row)
+            todo.append(row)
         else:  # pgid của máy/worker khác: không giết, chỉ XADD
-            settle.append(replace(row, pgid=None))
-    await _settle(settle, events, cfg.kill_grace_s)
+            todo.append(replace(row, pgid=None))
+    await settle(todo, events, cfg.kill_grace_s)
     return len(rows)
 
 
@@ -60,7 +61,7 @@ async def run_sweeper(pool: Pool, events: JobEvents, sup: Supervisor, cfg: Sweep
             n = await sweep_once(pool, events, sup, cfg)
             if n:
                 log.warning("sweep.orphaned", count=n)
-        except (OSError, TimeoutError) as err:
+        except DB_ERRORS as err:  # DB chập chờn / lỗi Postgres: thử lại chu kỳ sau
             log.warning("sweep.failed", error=type(err).__name__)
         await asyncio.sleep(cfg.every_s)
 
@@ -69,5 +70,5 @@ async def orphan_own_jobs(pool: Pool, events: JobEvents, cfg: SweepConfig) -> in
     """SQL "Khởi động lại": mọi `running` của `worker_id` → `orphaned`, giết pgid còn sống."""
     async with pool.acquire() as conn:
         rows = await jobs_sql.restart_orphans(conn, cfg.worker_id)
-    await _settle(rows, events, cfg.kill_grace_s)
+    await settle(rows, events, cfg.kill_grace_s)
     return len(rows)
