@@ -13,6 +13,8 @@ from agent_runtime import main as main_mod
 from agent_runtime.config import Settings, load_settings
 from agent_runtime.log import configure_logging
 from agent_runtime.main import EXIT_CONFIG, main, run, serve
+from agent_runtime.providers.keys import is_available
+from agent_runtime.queue.runtime import registry_providers
 
 
 @pytest.fixture(autouse=True)
@@ -110,3 +112,22 @@ def test_wrk_nfr_04_invalid_config_exits_2(
     out = capsys.readouterr().out
     assert "runtime.config_invalid" in out and "REDIS_URL" in out
     assert "secret_in_env" not in out
+
+
+def test_wrk_fr_10_unknown_provider_exits_2(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    """Review H1 #8: `AGENT_RT_PROVIDERS` lọc theo registry (`APP_ENV`); khoá lạ → exit 2 có log."""
+    _settings(monkeypatch, tmp_path)
+    monkeypatch.setenv("AGENT_RT_PROVIDERS", "claude-sub,nope-cli")
+    assert main() == EXIT_CONFIG
+    out = capsys.readouterr().out
+    assert "runtime.config_invalid" in out and "nope-cli" in out
+
+
+def test_wrk_fr_10_registry_providers_by_app_env(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("AGENT_RT_PROVIDERS", "fake-cli,claude-sub,fake-cli")
+    assert registry_providers(_settings(monkeypatch, tmp_path)) == ["fake-cli", "claude-sub"]
+    assert not is_available("fake-cli", "production") and is_available("claude-sub", "production")

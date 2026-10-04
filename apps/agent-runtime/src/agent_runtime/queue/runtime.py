@@ -23,6 +23,7 @@ from agent_runtime.db import agent_types_sql, jobs_sql
 from agent_runtime.db.pool import ListenConn, Pool, connect_listen, create_pool
 from agent_runtime.events.job_events import RunEvents, connect_redis
 from agent_runtime.log import get_logger
+from agent_runtime.providers.keys import is_available
 from agent_runtime.queue.claimer import Claimer
 from agent_runtime.queue.cleanup import CleanupConfig, run_cleanup
 from agent_runtime.queue.heartbeat import run_heartbeat
@@ -36,12 +37,22 @@ HostFactory = Callable[[Pool, RunEvents], JobHost]
 CLOSE_TIMEOUT_S = 2.0
 
 
-def registry_providers(settings: Settings) -> list[str]:
-    """Provider claim được. `production` + `fake-cli` đã bị chặn ở config (exit 2).
+class UnknownProviders(ValueError):
+    """`AGENT_RT_PROVIDERS` có khoá registry không có ở `APP_ENV` này (main → exit 2)."""
 
-    TODO(WRK-FR-10): PY-09 — registry provider thật (chỉ provider có implementation).
-    """
-    return list(dict.fromkeys(settings.providers))
+    def __init__(self, keys: list[str]) -> None:
+        super().__init__("unknown providers")
+        self.keys = keys
+
+
+def registry_providers(settings: Settings) -> list[str]:
+    """Provider claim được = `AGENT_RT_PROVIDERS` ∩ registry theo `APP_ENV` (WRK-FR-10); khoá lạ →
+    `UnknownProviders` (không claim job mà job host sẽ không chạy được)."""
+    keys = list(dict.fromkeys(settings.providers))
+    unknown = [k for k in keys if not is_available(k, settings.app_env)]
+    if unknown:
+        raise UnknownProviders(unknown)
+    return keys
 
 
 @dataclass

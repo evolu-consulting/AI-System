@@ -18,7 +18,7 @@ from agent_runtime.db.pool import Pool
 from agent_runtime.events.job_events import RunEvents
 from agent_runtime.log import configure_logging, get_logger
 from agent_runtime.queue import runtime as queue_runtime
-from agent_runtime.queue.runtime import QueueRuntime
+from agent_runtime.queue.runtime import QueueRuntime, UnknownProviders, registry_providers
 from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
 from agent_runtime.sandbox.process import disable_dumpable, enable_subreaper
 
@@ -125,4 +125,9 @@ def main() -> int:
         get_logger().error("runtime.config_invalid", errors=config_errors(err))
         return EXIT_CONFIG
     configure_logging(settings.log_level, worker_id=settings.worker_id)
+    try:
+        registry_providers(settings)
+    except UnknownProviders as err:  # khoá do người vận hành đặt, không phải secret
+        get_logger().error("runtime.config_invalid", errors=[f"AGENT_RT_PROVIDERS: {err.keys}"])
+        return EXIT_CONFIG
     return asyncio.run(run(settings))
