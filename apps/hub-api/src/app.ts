@@ -18,10 +18,13 @@ import type { Redis } from "./lib/redis";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
+import { orchestratorDriver } from "./modules/orchestrator/orchestrator.service";
+import { JobAgentRunner } from "./modules/runner/job-agent-runner";
+import { RunStreamReader } from "./modules/runner/run-stream-reader";
 import { cancelRoutes } from "./modules/runs/cancel.routes";
 import { CancelService } from "./modules/runs/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
-import { pendingRunDriver, type RunDriver, RunService } from "./modules/runs/runs.service";
+import { type RunDriver, RunService } from "./modules/runs/runs.service";
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
 export type AppVars = {
@@ -47,11 +50,13 @@ export type AppDeps = {
   /** = `HUB_CONFIG_POLL_S` (mặc định 60). */
   configPollS?: number;
   signal?: AbortSignal;
-  /** Vòng chạy run (B8 Orchestrator). Vắng → `pendingRunDriver` (run giữ `running`). */
+  /** Vòng chạy run. Vắng → vòng Orchestrator (B8) qua `JobAgentRunner` (B7). */
   runDriver?: RunDriver;
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
+/** = `HUB_JOB_MAX_WAIT_S` mặc định (plan §7). */
+const DEFAULT_JOB_MAX_WAIT_S = 30;
 /** Gốc các route cần JWT (E5–E15). Chặn ở gốc ⇒ 401 trước 404, kể cả route chưa mount; `/health` mở. */
 const PROTECTED_PREFIXES = ["/conversations", "/runs"];
 
@@ -80,6 +85,14 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
   return r;
 }
 
+/** B8 · vòng Orchestrator (plan §6) chạy job qua runner B7 (§5.6); dừng theo `deps.signal`. */
+function defaultRunDriver(db: Db, redis: Redis, deps: AppDeps, config: ConfigCache): RunDriver {
+  const reader = new RunStreamReader(redis, logger, deps.signal);
+  const maxWaitS = deps.jobMaxWaitS ?? DEFAULT_JOB_MAX_WAIT_S;
+  const runner = new JobAgentRunner({ db, reader, maxWaitS, log: logger });
+  return orchestratorDriver({ db, runner, users: config, log: logger });
+}
+
 /**
  * JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E14. Vắng `db` (test khung) ⇒ không mount;
  * E12–E14 cần thêm `redis` + cache cấu hình.
@@ -98,7 +111,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     redis: deps.redis,
     config,
     owner,
-    driver: deps.runDriver ?? pendingRunDriver,
+    driver: deps.runDriver ?? defaultRunDriver(deps.db, deps.redis, deps, config),
     log: logger,
     signal: deps.signal,
   });

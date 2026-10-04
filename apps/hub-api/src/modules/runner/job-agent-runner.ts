@@ -40,6 +40,9 @@ export type AgentTask = {
   history: readonly HistoryItem[];
   /** `run_steps.seq` (người gọi đánh số, gồm cả step `skipped`); SSE `step_id = s<seq>` như E10/E11. */
   seq: number;
+  /** `run_steps.id` do người gọi chọn (vắng → mới); `reopen` = thử lại cùng step (Orchestrator JSON hỏng, plan §6.1). */
+  stepId?: string;
+  reopen?: boolean;
   /** Phát `step.started`/`step.finished` (vd `writer.emit`); vắng → không phát. */
   emit?: (ev: SseEventBody) => Promise<unknown>;
 };
@@ -93,6 +96,11 @@ class EventQueue {
 
 const stepType = (role: AgentRole) => (role === "orchestrator" ? "orchestrator" : "delegate");
 
+function stepInsert(task: AgentTask, stepId: string): repo.StepInsert {
+  const type = stepType(task.role);
+  return { stepId, seq: task.seq, type, labelKey: `step.${type}`, reopen: task.reopen };
+}
+
 export class JobAgentRunner implements AgentRunner {
   constructor(private readonly d: JobAgentRunnerDeps) {}
 
@@ -118,7 +126,7 @@ export class JobAgentRunner implements AgentRunner {
 
   async *run(task: AgentTask, signal: AbortSignal): AsyncGenerator<RunEvent> {
     const jobId = crypto.randomUUID();
-    const stepId = crypto.randomUUID();
+    const stepId = task.stepId ?? crypto.randomUUID();
     const payload = this.#payload(task, jobId, stepId);
     if (!payload) {
       this.d.log.error("job-payload-invalid", { run_id: task.run.id, agent_id: task.agent.id });
@@ -146,9 +154,7 @@ export class JobAgentRunner implements AgentRunner {
     });
     try {
       const type = stepType(task.role);
-      await this.#system((tx) =>
-        repo.enqueueJob(tx, payload, { stepId, seq: task.seq, type, labelKey: `step.${type}` }),
-      );
+      await this.#system((tx) => repo.enqueueJob(tx, payload, stepInsert(task, stepId)));
       await this.#emit(task, {
         event: "step.started",
         data: { step_id: `s${task.seq}`, label: stepLabel(type, task.run.locale) },

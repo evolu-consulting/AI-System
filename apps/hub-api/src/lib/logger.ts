@@ -12,13 +12,17 @@ export type LogContext = {
 const SENSITIVE_KEY = /pass|secret|token|key|authorization|cookie|jwt|content|prompt|body|text/i;
 const JWT_LIKE = /eyJ[\w-]*\.[\w-]+\.[\w-]*|Bearer\s+\S+/g;
 const RANK: Record<Level, number> = { debug: 0, info: 1, warn: 2, error: 3, fatal: 4 };
-// Dưới `bun test` bỏ log debug/info cho gọn; server gọi setMinLevel(LOG_LEVEL).
-let minLevel: Level = Bun.env.NODE_ENV === "test" ? "warn" : "info";
-let sink: (level: Level, line: string) => void = (level, line) => {
+const QUIET_TEST = Bun.env.NODE_ENV === "test";
+const stdSink = (level: Level, line: string): void => {
   if (RANK[level] < RANK.warn) console.log(line);
   else console.error(line);
 };
+let sink: (level: Level, line: string) => void = stdSink;
+/** null = mặc định: `info`; dưới `bun test` sink stdout bỏ debug/info cho gọn, sink của test (`setSink`, A52) vẫn nhận `info`. */
+let minLevel: Level | null = null;
+const effectiveMin = (): Level => minLevel ?? (QUIET_TEST && sink === stdSink ? "warn" : "info");
 
+/** Server gọi với `LOG_LEVEL`. */
 export function setMinLevel(level: Level): void {
   minLevel = level;
 }
@@ -52,7 +56,7 @@ function make(ctx: LogContext): Logger {
   const write =
     (level: Level) =>
     (msg: string, fields: LogFields = {}): void => {
-      if (RANK[level] < RANK[minLevel]) return;
+      if (RANK[level] < RANK[effectiveMin()]) return;
       const rec = {
         level,
         time: new Date().toISOString(),

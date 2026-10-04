@@ -24,6 +24,8 @@ export type StepInsert = {
   seq: number;
   type: "orchestrator" | "delegate";
   labelKey: string;
+  /** Step đã có (thử lại cùng step): mở lại `running` với job mới thay vì INSERT. */
+  reopen?: boolean;
 };
 
 /**
@@ -31,20 +33,8 @@ export type StepInsert = {
  * giao khi COMMIT nên Runtime nhận NOTIFY là thấy dòng job.
  */
 export async function enqueueJob(tx: Tx, p: JobPayload, step: StepInsert): Promise<void> {
-  await tx.insert(runSteps).values({
-    id: step.stepId,
-    tenantId: p.tenant_id,
-    userId: p.user_id,
-    runId: p.run_id,
-    seq: step.seq,
-    type: step.type,
-    agentId: p.agent.id,
-    providerKey: p.provider_key,
-    jobId: p.job_id,
-    labelKey: step.labelKey,
-    status: "running",
-    startedAt: NOW_MS,
-  });
+  if (step.reopen) await reopenStep(tx, p, step.stepId);
+  else await insertStep(tx, p, step);
   await tx.insert(jobs).values({
     id: p.job_id,
     tenantId: p.tenant_id,
@@ -59,6 +49,31 @@ export async function enqueueJob(tx: Tx, p: JobPayload, step: StepInsert): Promi
   });
   const note: JobEnqueuedPayload = { v: 1, job_id: p.job_id, provider_key: p.provider_key };
   await tx.execute(sql`select pg_notify(${JOB_ENQUEUED_CHANNEL}, ${JSON.stringify(note)})`);
+}
+
+async function insertStep(tx: Tx, p: JobPayload, step: StepInsert): Promise<void> {
+  await tx.insert(runSteps).values({
+    id: step.stepId,
+    tenantId: p.tenant_id,
+    userId: p.user_id,
+    runId: p.run_id,
+    seq: step.seq,
+    type: step.type,
+    agentId: p.agent.id,
+    providerKey: p.provider_key,
+    jobId: p.job_id,
+    labelKey: step.labelKey,
+    status: "running",
+    startedAt: NOW_MS,
+  });
+}
+
+/** Thử lại cùng step: trỏ sang job mới, `running` lại (giữ `started_at`). */
+async function reopenStep(tx: Tx, p: JobPayload, stepId: string): Promise<void> {
+  await tx
+    .update(runSteps)
+    .set({ jobId: p.job_id, status: "running", finishedAt: null })
+    .where(and(eq(runSteps.id, stepId), eq(runSteps.runId, p.run_id)));
 }
 
 /** §5.6 bước 4–5 · trạng thái job + đã `queued` quá `maxWaitS` chưa (đồng hồ DB, cùng gốc `created_at`). */
