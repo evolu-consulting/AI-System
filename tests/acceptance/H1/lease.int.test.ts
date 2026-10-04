@@ -146,9 +146,9 @@ describe("A39–A41, A54 · nhiều instance, lease, mồ côi [HUB-H1-AC-03 · 
       3_000,
     );
     expect(after.map((e) => e.id)).toEqual(after.map((_, i) => `${i + 1}-0`));
+    expect(after.at(-1)?.id).toBe(`${before.length + 1}-0`);
     expect(after.at(-1)?.ev).toMatchObject({
       event: "run.failed",
-      id: before.length + 1,
       data: { code: "INTERNAL_ERROR", message: t.message, hint: t.hint },
     });
     await rt.decide(job, { decision: "answer", text: "Muộn." });

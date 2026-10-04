@@ -65,6 +65,12 @@ async def test_hub_h1_r25_cancel_with_usage_one_row(ctx: Ctx) -> None:
     job = await ctx.job(tenant=BETA, prompt="#fake:usage=7,8 #fake:sleep=60")
     ctx.runtime()
     await ctx.until_running(job)
+
+    async def progressed() -> bool | None:
+        return any(e["type"] == "job.progress" for e in await ctx.evs(job)) or None
+
+    # `usage` đã phát trước `job.progress` đầu tiên: chỉ huỷ sau đó (Runtime không bịa số)
+    await wait_until(progressed, 15, f"job.progress đầu của {job.id}", ctx.alive)
     await cancel_job(ctx.conn, job)
     await ctx.until_status(job, ["cancelled"], 5)
     rows = await usage_rows(ctx, job)
