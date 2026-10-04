@@ -1,6 +1,6 @@
 // HUB-FR-40 · HUB-FR-45 · HUB-BR-14 · nghiệp vụ E5–E11 (C1 plan §2.4). Mọi đọc/ghi qua `withHubScope(user)` (D2);
 // không thấy (khác chủ / khác tenant / đã xoá / không có) → cùng một 404 `NOT_FOUND` (H1-R03). Không biết HTTP.
-// E9 ở đây chỉ xoá mềm hội thoại; huỷ run đang chạy của E9 thuộc B9 (plan §5.7).
+// E9 ở đây xoá mềm hội thoại; huỷ run đang chạy cắm qua `remove(…, inTx)` (B9 `runs/cancel.service`, plan §5.7).
 import {
   type ChatPage,
   type Conversation,
@@ -172,10 +172,18 @@ export function conversationService(db: Db) {
         if (!(await repo.renameConversation(tx, o, id, titled(title)))) throw notFound();
         return toConversation(await requireLive(tx, o, id));
       }),
-    /** E9 · xoá mềm; lần 2 → 404. */
-    remove: (u: AuthUser, id: string): Promise<void> =>
+    /**
+     * E9 · xoá mềm; lần 2 → 404. `inTx` chạy cùng transaction ngay sau khi khoá hội thoại (huỷ run B9, plan §5.7);
+     * chỉ được làm việc DB (transaction có thể chạy lại khi deadlock).
+     */
+    remove: <T = void>(
+      u: AuthUser,
+      id: string,
+      inTx?: (tx: Tx, o: Owner) => Promise<T>,
+    ): Promise<T | undefined> =>
       scoped(u, async (tx, o) => {
         if (!(await repo.softDeleteConversation(tx, o, id))) throw notFound();
+        return inTx?.(tx, o);
       }),
     flows: (u: AuthUser, id: string, q: FlowListQuery) =>
       scoped(u, (tx, o) => flowPage(tx, o, id, q)),

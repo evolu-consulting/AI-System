@@ -8,13 +8,17 @@ import {
   MessageListQuerySchema,
 } from "@ai/contracts/chat";
 import { Hono } from "hono";
-import type { AuthVars } from "../../lib/auth.middleware";
+import type { AuthUser, AuthVars } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
 import { conversationService } from "./conversations.service";
 
-export function conversationRoutes(db: Db): Hono<AuthVars> {
+/** E9 thay thế (huỷ run cùng transaction, B9). Vắng → chỉ xoá mềm. */
+export type RemoveConversation = (u: AuthUser, id: string) => Promise<void>;
+
+export function conversationRoutes(db: Db, remove?: RemoveConversation): Hono<AuthVars> {
   const svc = conversationService(db);
+  const removeFn: RemoveConversation = remove ?? (async (u, id) => void (await svc.remove(u, id)));
   const r = new Hono<AuthVars>();
 
   r.get("/", async (c) =>
@@ -36,7 +40,7 @@ export function conversationRoutes(db: Db): Hono<AuthVars> {
   });
 
   r.delete("/:id", async (c) => {
-    await svc.remove(c.var.user, parseIdParam(c));
+    await removeFn(c.var.user, parseIdParam(c));
     return c.body(null, 204);
   });
 

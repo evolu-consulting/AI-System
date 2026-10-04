@@ -214,29 +214,31 @@ export function parseEntry(fields: string[]): SseEventBody | null {
 /**
  * "XADD bên ngoài" (§5.2): bên không phải chủ (huỷ B9, sweeper B10, dựng lại §5.3) phát sự kiện kết thúc sau COMMIT.
  * `seq` = id cuối + 1; lỗi id → đọc lại: đã có sự kiện kết thúc → thôi; chưa → thử lại (tối đa 3 lần) rồi log.
+ * Trả `seq` đã ghi, `null` khi không ghi.
  */
 export async function appendExternal(
   redis: Redis,
   runId: string,
   ev: SseEventBody,
   log: Logger,
-): Promise<boolean> {
+): Promise<number | null> {
   for (let attempt = 1; attempt <= EXTERNAL_ATTEMPTS; attempt++) {
     const last = await lastSseEntry(redis, runId);
-    if (last.event && isTerminalEvent(last.event)) return false;
+    if (last.event && isTerminalEvent(last.event)) return null;
+    const seq = last.seq + 1;
     try {
-      await redis.xadd(sseKey(runId), `${last.seq + 1}-0`, SSE_FIELD, JSON.stringify(ev));
+      await redis.xadd(sseKey(runId), `${seq}-0`, SSE_FIELD, JSON.stringify(ev));
       if (isTerminalEvent(ev.event)) {
         await redis.expire(sseKey(runId), RUN_EVENTS_RETENTION_S);
         await redis.del(runStreamKey(runId));
       }
-      return true;
+      return seq;
     } catch (err) {
       if (!isIdTooSmall(err)) throw err;
     }
   }
   log.error("sse-external-xadd-failed", { run_id: runId });
-  return false;
+  return null;
 }
 
 /** Run đang chạy trên instance này (B9 huỷ → `abort()`, B10 lease lấy danh sách id). */

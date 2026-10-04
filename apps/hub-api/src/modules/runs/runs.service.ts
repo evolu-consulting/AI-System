@@ -117,6 +117,20 @@ async function terminalFromDb(tx: Tx, o: repo.Owner, r: repo.RunRecord): Promise
   return { event: "run.finished", data: { ...base, content, ms } };
 }
 
+/** `Run` (contract chat) từ dòng `runs`; `lastEventId` do người gọi chọn (E14 · E15). */
+export function toRun(r: repo.RunRecord, lastEventId: number): Run {
+  return {
+    id: r.id,
+    conversation_id: r.conversationId,
+    flow_id: r.flowId,
+    status: r.status,
+    started_at: r.startedAt.toISOString(),
+    finished_at: r.finishedAt?.toISOString() ?? null,
+    last_event_id: lastEventId,
+    error: toRunError(r),
+  };
+}
+
 function toRunError(r: repo.RunRecord): RunError | null {
   if (!r.errorCode) return null;
   return {
@@ -124,6 +138,11 @@ function toRunError(r: repo.RunRecord): RunError | null {
     message: r.errorMessage ?? r.errorCode,
     hint: r.errorHint ?? "",
   };
+}
+
+/** E14/E15 · run xong → `runs.last_seq`; đang chạy → id cuối `sse:<id>`. */
+export async function lastEventIdOf(redis: Redis, r: repo.RunRecord): Promise<number> {
+  return r.status === "running" ? (await lastSseEntry(redis, r.id)).seq : r.lastSeq;
 }
 
 export type StartedRun = {
@@ -207,17 +226,7 @@ export class RunService {
   /** E14 · `last_event_id`: run xong → `runs.last_seq`; đang chạy → id cuối `sse:<id>`. */
   async get(u: AuthUser, id: string): Promise<Run> {
     const r = await this.#findOr404(u, id);
-    const lastId = r.status === "running" ? (await lastSseEntry(this.d.redis, id)).seq : r.lastSeq;
-    return {
-      id: r.id,
-      conversation_id: r.conversationId,
-      flow_id: r.flowId,
-      status: r.status,
-      started_at: r.startedAt.toISOString(),
-      finished_at: r.finishedAt?.toISOString() ?? null,
-      last_event_id: lastId,
-      error: toRunError(r),
-    };
+    return toRun(r, await lastEventIdOf(this.d.redis, r));
   }
 
   #stream(u: AuthUser, runId: string, after: number): ReadableStream<Uint8Array> {

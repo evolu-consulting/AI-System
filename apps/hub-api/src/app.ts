@@ -18,6 +18,8 @@ import type { Redis } from "./lib/redis";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
+import { cancelRoutes } from "./modules/runs/cancel.routes";
+import { CancelService } from "./modules/runs/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
 import { pendingRunDriver, type RunDriver, RunService } from "./modules/runs/runs.service";
 
@@ -86,19 +88,36 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
   if (!deps.db) return;
-  app.route("/conversations", conversationRoutes(deps.db));
-  if (!deps.redis || !config) return;
+  if (!deps.redis || !config) {
+    app.route("/conversations", conversationRoutes(deps.db));
+    return;
+  }
+  const owner = deps.instanceId ?? `${hostname()}:${process.pid}`;
   const runs = new RunService({
     db: deps.db,
     redis: deps.redis,
     config,
-    owner: deps.instanceId ?? `${hostname()}:${process.pid}`,
+    owner,
     driver: deps.runDriver ?? pendingRunDriver,
     log: logger,
     signal: deps.signal,
   });
-  app.route("/conversations", sendMessageRoutes(conversationService(deps.db), runs));
+  const conversations = conversationService(deps.db);
+  const cancel = new CancelService({
+    db: deps.db,
+    redis: deps.redis,
+    owner,
+    registry: runs.registry,
+    conversations,
+    log: logger,
+  });
+  app.route(
+    "/conversations",
+    conversationRoutes(deps.db, (u, id) => cancel.removeConversation(u, id)),
+  );
+  app.route("/conversations", sendMessageRoutes(conversations, runs));
   app.route("/runs", runRoutes(runs));
+  app.route("/runs", cancelRoutes(cancel));
 }
 
 export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
