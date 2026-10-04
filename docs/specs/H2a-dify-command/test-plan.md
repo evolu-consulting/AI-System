@@ -276,3 +276,18 @@ DB riêng `ai_system_h2a_q2_test` (`.env.test-h2a_q2.local`, Hub/Runtime URL tr�
 | `rules/dify` | 7/7 | R48 đỏ ở stub `not implemented` |
 
 0 lỗi `PostgresError`/`TypeError` trong dựng dữ liệu. Khoá: `tests/.lock` thêm 26 file `tests/acceptance/H2a/**` + `tools/hub-dev/src/dify-mock.ts` (qua `LOCKED_DIRS`) = +27 dòng, tổng 261 file; `stack/` chưa viết (QW-P, khoá ở Q3).
+
+### QW-PU · `apps/agent-runtime/tests/acceptance/test_dify_rules.py` (2026-10-05, trên `4079190`)
+`uv run pytest tests/acceptance/test_dify_rules.py` (container `scripts/run.ts`): **85 ca / 3 nhóm** (P28 31 · P29 19 · P30 35) · **85 đỏ đúng lý do**, 0 xanh trước code, 0 lỗi collect/cú pháp. Import trong thân test (`importlib`, như `test_contracts_hub.py`) để mỗi ca đỏ riêng. ruff check/format, pyright strict, `check:size` sạch; `pytest` toàn bộ: 245 ca cũ xanh.
+
+| Nhóm | Hàm | Đỏ / tổng | Lý do đỏ |
+|---|---|---|---|
+| P28 | `ErrKind`, `BACKOFF`, `RetryFlags`, `retry_delay` | 29/29 | `ModuleNotFoundError: agent_runtime.runtimes.dify` |
+| P28 | `ClaimedJob.token` (+ vector sha256 = `job-token.test.ts`) | 1/1 | `AttributeError: 'ClaimedJob' … 'token'` |
+| P28 | `Settings.orphan_s`=60, `dify_backoff_s` (2, 8) / env `0.2,0.8` (Q-T5) | 1/1 | `AttributeError: 'Settings' … 'dify_backoff_s'` |
+| P29 | `parse_confirmation` (khối list + `content` str spike S2) | 19/19 | `AttributeError: providers.base … 'parse_confirmation'` |
+| P30 | `map_failure` 15 · `usage_row` 7 · `mask` 2 · `reduce` 11 | 35/35 | `ModuleNotFoundError: agent_runtime.runtimes.dify` |
+
+Chốt diễn giải (PY-01 làm theo): `reduce(state, event, data)` — `data` = object JSON nguyên dòng `data:` SSE (`task_id`, `data{text|status|outputs}`, `answer`, `metadata{usage}`), như `dify-mock.ts`; bảng `test-plan-py` ghi tắt. `mask`: thô / base64 chuẩn / hex thường → `***`, cắt ≤ `max_len` sau khi che. `agent_thought` → `Progress`, `agent_message.answer` cộng dồn (§3.5, §3.2). `Confirm.choices` so bằng `list(...)`.
+
+Lệch task: 2 ca P28 nằm ngoài file của PY-01 — `test_p28_settings_defaults_backoff_and_orphan` (`config.py`, PY-02) và `test_p28_job_token_claimed_job_and_vector` (`ClaimedJob.token`, `jobs_sql.py`, PY-03). PY-01 xong = 83/85 xanh (hai ca này xanh ở PY-02/PY-03), hoặc điều phối cho PY-01 thêm hai trường đó.
