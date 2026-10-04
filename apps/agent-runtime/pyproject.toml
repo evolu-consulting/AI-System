@@ -62,7 +62,7 @@ markers = ["int: cần Postgres/Redis thật (pytest -m int)"]
 root_package = "agent_runtime"
 
 # Chiều import plan-runtime §1.1: main -> queue -> runtimes -> providers -> sandbox -> contracts.
-# Lớp trong ngoặc là tuỳ chọn (module chưa tồn tại ở khung; B0/PY-xx thêm dần).
+# Lớp trong ngoặc là tuỳ chọn (main, contracts chưa tồn tại; PY-xx thêm dần).
 [[tool.importlinter.contracts]]
 name = "Chiều import theo lớp (plan-runtime 1.1)"
 type = "layers"
@@ -79,10 +79,10 @@ layers = [
 name = "db, events chỉ main/queue/runtimes.cli.runner import"
 type = "forbidden"
 source_modules = [
-  "agent_runtime.providers.**",
-  "agent_runtime.sandbox.**",
+  "agent_runtime.providers",
+  "agent_runtime.sandbox",
   "agent_runtime.contracts.**",
-  "agent_runtime.agents.**",
+  "agent_runtime.agents",
   "agent_runtime.runtimes.cli.child.**",
 ]
 forbidden_modules = ["agent_runtime.db", "agent_runtime.events"]
@@ -93,7 +93,7 @@ name = "Process con không cầm secret (WRK-BR-02)"
 type = "forbidden"
 source_modules = [
   "agent_runtime.runtimes.cli.child.**",
-  "agent_runtime.providers.**",
-  "agent_runtime.sandbox.**",
+  "agent_runtime.providers",
+  "agent_runtime.sandbox",
 ]
 forbidden_modules = ["agent_runtime.config", "agent_runtime.db", "agent_runtime.events"]

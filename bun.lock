@@ -126,6 +126,18 @@
         "typescript": "6.0.3",
       },
     },
+    "apps/hub-api": {
+      "name": "@ai/hub-api",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ai/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@ai/config": "workspace:*",
+        "@types/bun": "1.3.14",
+        "typescript": "6.0.3",
+      },
+    },
     "packages/config": {
       "name": "@ai/config",
       "version": "0.0.0",
@@ -208,6 +220,8 @@
     "@ai/contracts": ["@ai/contracts@workspace:packages/contracts"],
 
     "@ai/db": ["@ai/db@workspace:packages/db"],
+
+    "@ai/hub-api": ["@ai/hub-api@workspace:apps/hub-api"],
 
     "@ai/i18n": ["@ai/i18n@workspace:packages/i18n"],
 
