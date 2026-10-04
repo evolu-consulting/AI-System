@@ -6,6 +6,8 @@ import { HUB_CONFIG_CHANNEL, HubConfigChangedPayloadSchema } from "@ai/contracts
 import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
+import { loadCatalogRows } from "./catalog.repo";
+import { buildCatalog, type CatalogRows, type CatalogSnapshot } from "./catalog.rules";
 import {
   loadHubSnapshot,
   loadTenants,
@@ -28,6 +30,8 @@ export type ConfigSource = {
   loadHub(): Promise<ConfigSnapshot>;
   loadTenants(): Promise<TenantState[]>;
   loadUsers(ids: readonly string[]): Promise<UserState[]>;
+  /** Catalog Admin H2a (P5, P14); nạp cùng phần Admin. */
+  loadCatalog(adminVersion: number): Promise<CatalogRows>;
   listen(channel: string, onPayload: (payload: string) => void): Promise<() => Promise<void>>;
 };
 
@@ -37,6 +41,7 @@ export function dbConfigSource(db: Db): ConfigSource {
     loadHub: () => loadHubSnapshot(db),
     loadTenants: () => loadTenants(db),
     loadUsers: (ids) => loadUsers(db, ids),
+    loadCatalog: (v) => loadCatalogRows(db, v),
     listen: (channel, fn) => db.listen(channel, fn),
   };
 }
@@ -74,6 +79,7 @@ export class ConfigCache {
   #adminGen = 0;
   #tenants = new Map<string, TenantState>();
   #users = new Map<string, UserState>();
+  #catalog: CatalogSnapshot | null = null;
   #unlisten: (() => Promise<void>)[] = [];
   #subscribing = false;
   #timer: ReturnType<typeof setInterval> | null = null;
@@ -142,6 +148,13 @@ export class ConfigCache {
     return u;
   }
 
+  /** Catalog Admin hiện hành (H2a §4) — bất biến; menu/`prepare` chụp một lần mỗi request (HUB-BR-06). */
+  async catalog(): Promise<CatalogSnapshot> {
+    if (!this.#catalog) await this.reloadAdmin();
+    if (!this.#catalog) throw new Error("catalog snapshot unavailable");
+    return this.#catalog;
+  }
+
   /** H1-R04 theo cache: tenant hoạt động, user hoạt động, không bị tenant khoá, đúng tenant. */
   async accountUsable(tenantId: string, userId: string): Promise<boolean> {
     const [t, u] = await Promise.all([this.tenant(tenantId), this.user(userId)]);
@@ -169,6 +182,9 @@ export class ConfigCache {
     const { admin } = await this.#src.readVersions();
     const tenants = await this.#src.loadTenants();
     const users = await this.#src.loadUsers([...this.#users.keys()]);
+    const { catalog, dropped } = buildCatalog(await this.#src.loadCatalog(admin));
+    if (dropped.length > 0) this.#opts.log.warn("catalog-rows-dropped", { dropped });
+    this.#catalog = catalog;
     this.#tenants = new Map(tenants.map((t) => [t.id, t]));
     this.#users = new Map(users.map((u) => [u.id, u]));
     this.#adminVersion = admin;

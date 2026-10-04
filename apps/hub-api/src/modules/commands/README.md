@@ -11,5 +11,5 @@ Spec H2a-dify-command (R01–R08, R16); plan §4–§5.1, chữ ký hàm thuần
 | `suggest.rules.ts` | `levenshtein`, `suggestCommands` (R04) |
 | `menu.rules.ts` | `toMenuItem` (GET `/commands`) |
 
-Trạng thái: B0 chỉ có chữ ký (thân ném `not implemented`); route/service/driver ở B1–B5.
+Trạng thái: `usableCommands` xong (B1; catalog cache ở `modules/config/catalog.*`); hàm khác còn stub B0, route/service/driver ở B2–B5.
 Phụ thuộc: `@ai/contracts` (kiểu). Luật thuần, không I/O.

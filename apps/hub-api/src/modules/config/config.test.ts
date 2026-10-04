@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { CONFIG_CHANNEL } from "@ai/contracts";
 import { HUB_CONFIG_CHANNEL } from "@ai/contracts/hub";
 import type { Logger } from "../../lib/logger";
+import type { CatalogRows } from "./catalog.rules";
 import {
   type AgentConfig,
   accountUsable,
@@ -96,6 +97,7 @@ function fakeSource(): Fake {
       return db.tenants.map((t) => ({ ...t }));
     },
     loadUsers: async (ids) => db.users.filter((u) => ids.includes(u.id)).map((u) => ({ ...u })),
+    loadCatalog: async (adminVersion) => ({ ...EMPTY_CATALOG, adminVersion }),
     listen: async (c, fn) => {
       listeners.set(c, fn);
       return async () => {
@@ -104,6 +106,20 @@ function fakeSource(): Fake {
     },
   };
 }
+const EMPTY_CATALOG: CatalogRows = {
+  adminVersion: 0,
+  workflows: [],
+  sideEffectColumn: null,
+  flags: [],
+  commands: [],
+  names: [],
+  features: [],
+  featureCommands: [],
+  entitlements: [],
+  grants: [],
+  groups: [],
+  tenants: [],
+};
 const tick = () => new Promise((r) => setTimeout(r, 5));
 
 function startCache(src: Fake, signal?: AbortSignal): ConfigCache {

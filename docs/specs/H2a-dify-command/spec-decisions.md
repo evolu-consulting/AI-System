@@ -82,3 +82,9 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 - QA2-2 Chấp nhận diễn giải QW-A2 (`test-plan` §10): A94 workflow không có → bỏ dòng + cảnh báo (đúng `plan-db` §4); A56 usage chỉ tính trên lời gọi Dify thành công; A61 kiểm `confirmed`/`consumed` trong `run_steps.detail`; A67 thêm/xoá cột `admin.workflows.side_effect` trong DB test, dọn ở `finally`; A43/A58 dùng `timeout_s=10` (CHECK `agents_timeout_s_check` 10–3600).
 - QA2-3 A32 hết blocked bởi DB: migration `0004` (`8f7c9a9`) đã thêm `NOT_CONFIGURED`/`credential`/`upstream`; chạy lại đỏ đúng lý do (chưa có code). A89b (QW-A1) nay xanh.
 - QA2-4 Q2: `tools/hub-dev/src/dify-mock.ts` thêm vào `LOCKED_DIRS` (`tools/scripts/src/test-lock.ts`) — sửa mock = tranh chấp test (`test-plan` §9 Q-T1).
+
+## BUILD — D3 (backend-lead, 2026-10-05)
+- `plan-db` §4: ví dụ `dify-dich` sửa thành `dify-tom` ↔ `tom` (một input chuỗi bắt buộc) theo QA2-1; seed mặc định `agents.yaml` dùng `dify-tom`, `dify-tro-ly`.
+- Luật seed ở `modules/seed/seed.workflows.ts`: `runtime_options` agent `dify-*` = `strictObject({workflow_key})` kiểm thuần trước DB; đối chiếu `admin.workflows` trong transaction seed (sau khoá `config_meta`), lỗi → rollback toàn bộ (A93 "DB không đổi"); cảnh báo log sau commit như Q8.
+- `workflow_flags.side_effect` seed chỉ **bật** (upsert `true`), không tắt cờ của workflow vắng trong yaml (đồng nghĩa "upsert, không xoá"); `workflows.yaml` mặc định để danh sách rỗng + ví dụ comment (không cấp tool cho `assistant` ngầm).
+- `agent_workflows.agent` phải có trong seed (như grant/entitlement); agent `dify-*` bị bỏ vì workflow vắng thì các dòng tham chiếu nó ghi 0 hàng (không lỗi).
