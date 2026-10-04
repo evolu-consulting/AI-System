@@ -143,7 +143,7 @@ describe("config.rules", () => {
   });
 });
 
-describe("ConfigCache", () => {
+describe("ConfigCache · NOTIFY", () => {
   test("HUB-FR-02 · nạp đầu + LISTEN 2 kênh; config_changed → nạp lại admin (tenant khoá thấy ngay)", async () => {
     const src = fakeSource();
     const c = startCache(src);
@@ -185,7 +185,9 @@ describe("ConfigCache", () => {
     expect(src.calls.hub).toBe(before);
     await c.stop();
   });
+});
 
+describe("ConfigCache · poll", () => {
   test("HUB-FR-03 · poll: đổi phiên bản không NOTIFY → nạp lại đúng phần đổi", async () => {
     const src = fakeSource();
     const c = startCache(src);
@@ -217,7 +219,9 @@ describe("ConfigCache", () => {
     await c.poll();
     expect((await c.snapshot()).version).toBe(1);
   });
+});
 
+describe("ConfigCache · nạp lỗi", () => {
   test("HUB-FR-02 · nạp đầu lỗi → lần gọi sau thử lại", async () => {
     const src = fakeSource();
     let fail = true;

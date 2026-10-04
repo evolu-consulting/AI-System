@@ -153,7 +153,7 @@ describe("runLoop · answer, ask, pass-through, need_input [HUB-FR-27 · HUB-FR-
   });
 });
 
-describe("runLoop · JSON hỏng, ngoài quyền, ngân sách [HUB-FR-21 · H1-R06 · H1-R07]", () => {
+describe("HUB-FR-21 · runLoop · JSON hỏng, ngoài quyền, ngân sách [H1-R06 · H1-R07]", () => {
   it("H1-R06 · hỏng 1 lần → thử lại cùng step (reopen, kèm nhắc); hỏng 2 lần → UPSTREAM_ERROR", async () => {
     const f = fakeIo((_j, n) =>
       n === 1 ? say("không phải JSON") : say({ decision: "answer", text: "ok" }),
@@ -193,5 +193,40 @@ describe("runLoop · JSON hỏng, ngoài quyền, ngân sách [HUB-FR-21 · H1-R
     const end = await runLoop(f.io, input());
     expect(f.jobs.length).toBe(2);
     expect(end.kind === "text" && end.text.startsWith("DO-DANG")).toBe(true);
+  });
+});
+
+const block = (prompt: string, name: string): unknown =>
+  JSON.parse(new RegExp(`<${name}>\\n([\\s\\S]*?)\\n</${name}>`).exec(prompt)?.[1] ?? "null");
+
+describe("runLoop · không agent khớp, trả lời câu hỏi lại [HUB-FR-25 · HUB-FR-28]", () => {
+  it("HUB-FR-25 · user không được dùng agent nào → <agents> rỗng, Orchestrator tự trả lời (1 job, không delegate)", async () => {
+    const base = input();
+    const access = accessInput(
+      {
+        agents: AGENTS,
+        entitlements: [{ agentId: ORCH.id, tenantId: T, revokedAt: null }],
+        grants: [],
+        orchestrator: { agentId: ORCH.id },
+      },
+      { tenantId: T, userId: U, groupIds: new Set() },
+    );
+    const f = fakeIo(() => say({ decision: "answer", text: "tự trả lời" }));
+    const out = await runLoop(f.io, { ...base, access, visible: visibleAgents(access) });
+    expect(out).toEqual({ kind: "text", text: "tự trả lời" });
+    expect(f.jobs.map((j) => j.role)).toEqual(["orchestrator"]);
+    expect(block(f.jobs[0]?.prompt ?? "", "agents")).toEqual([]);
+  });
+
+  it("HUB-FR-28 · tin trả lời sau ask vẫn qua Orchestrator, flow_hint waiting_for = agent đã hỏi → delegate về agent đó", async () => {
+    const hint = { last_agent: "assistant", waiting_for: "assistant" };
+    const f = fakeIo((_j, n) =>
+      n === 1 ? DELEGATE() : res({ status: "done", text: "đã đặt 9h" }),
+    );
+    const out = await runLoop(f.io, { ...input(), hint, message: "9h" });
+    expect(out).toEqual({ kind: "text", text: "đã đặt 9h", agentId: "a" });
+    expect(f.jobs.map((j) => j.role)).toEqual(["orchestrator", "agent"]);
+    expect(block(f.jobs[0]?.prompt ?? "", "flow_hint")).toEqual(hint);
+    expect(f.jobs[1]?.agent.key).toBe("assistant");
   });
 });

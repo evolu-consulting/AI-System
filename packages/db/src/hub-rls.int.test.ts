@@ -130,7 +130,9 @@ describe("HUB-FR-75 · RLS hội thoại hub_rw (int)", () => {
     );
     expect(await code(own)).toBe("ok");
   });
+});
 
+describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
   test("HUB-FR-75 · withHubScope chạy lại khi 40001, không chạy lại lỗi khác", async () => {
     let n = 0;
     const out = await withHubScope(db, lan, async () => {

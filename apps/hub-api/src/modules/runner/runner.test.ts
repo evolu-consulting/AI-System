@@ -183,3 +183,31 @@ describe("HUB-FR-89 · compareStreamId", () => {
     expect(compareStreamId("11-0", "0-0")).toBe(1);
   });
 });
+
+describe("HUB-FR-31 · HUB-FR-32 · bước profile → job Runtime (H1-R18: chỉ bước đầu)", () => {
+  const twoSteps: ProfileConfig = {
+    ...profile,
+    steps: [
+      { provider_key: "claude-sub", model: "sonnet", on: ["error", "timeout", "lạ"] },
+      { provider_key: "fake-cli", model: null, on: [] },
+    ],
+  };
+
+  it("HUB-FR-31 · profile nhiều bước: job phục vụ bằng bước 0, profile_steps chỉ bước đó, trigger lạ bị bỏ", () => {
+    const p = buildJobPayload(input({ profile: twoSteps }));
+    expect(p?.step_index).toBe(0);
+    expect(p?.profile_steps).toEqual([
+      { provider_key: "claude-sub", model: "sonnet", on: ["error", "timeout"] },
+    ]);
+  });
+
+  it("HUB-FR-32 · bước subscription của agent agentic-cli → job agent.cli cho Runtime, provider/model theo bước", () => {
+    const p = buildJobPayload(input({ profile: twoSteps }));
+    expect(p).toMatchObject({
+      type: "agent.cli",
+      runtime: "agentic-cli",
+      provider_key: "claude-sub",
+      model: "sonnet",
+    });
+  });
+});

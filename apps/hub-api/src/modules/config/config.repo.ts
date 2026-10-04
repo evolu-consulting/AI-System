@@ -42,26 +42,64 @@ export async function readVersions(db: Db): Promise<Versions> {
   return { admin: a?.v ?? 0, hub: h?.v ?? 0 };
 }
 
+type AgentRow = typeof agents.$inferSelect;
+type OrchRow = typeof orchestratorSettings.$inferSelect;
+
+const toAgent = (a: AgentRow): ConfigSnapshot["agents"][number] => ({
+  id: a.id,
+  key: a.key,
+  name: NameSchema.parse(a.name),
+  description: a.description,
+  runtime: a.runtime,
+  agentTypeKey: a.agentTypeKey,
+  profileId: a.profileId,
+  systemPrompt: a.systemPrompt,
+  runtimeOptions: OptionsSchema.parse(a.runtimeOptions),
+  timeoutS: a.timeoutS,
+  tokenBudget: a.tokenBudget,
+  enabled: a.enabled,
+  version: a.version,
+});
+
+const toOrchestrator = (o: OrchRow | undefined): ConfigSnapshot["orchestrator"] =>
+  o
+    ? {
+        agentId: o.agentId,
+        maxSteps: o.maxSteps,
+        tokenBudget: o.tokenBudget,
+        historyN: o.historyN,
+        onNoMatch: o.onNoMatch,
+        version: o.version,
+      }
+    : null;
+
+type Tx = Parameters<Parameters<Db["db"]["transaction"]>[0]>[0];
+
+async function readHubRows(tx: Tx) {
+  const [meta] = await tx
+    .select({ v: hubConfigMeta.hubConfigVersion })
+    .from(hubConfigMeta)
+    .where(eq(hubConfigMeta.id, 1));
+  const [orch] = await tx.select().from(orchestratorSettings).where(eq(orchestratorSettings.id, 1));
+  return {
+    version: meta?.v ?? 0,
+    prov: await tx.select().from(providers).orderBy(providers.key),
+    prof: await tx.select().from(modelProfiles).orderBy(modelProfiles.key),
+    ag: await tx.select().from(agents).orderBy(agents.key),
+    orch,
+    ent: await tx.select().from(agentEntitlements),
+    gr: await tx.select().from(agentGrants),
+  };
+}
+
 /** Ảnh Hub đọc trong một transaction REPEATABLE READ: `version` khớp đúng dữ liệu đi kèm. */
 export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
   return db.db.transaction(
     async (tx) => {
-      const [meta] = await tx
-        .select({ v: hubConfigMeta.hubConfigVersion })
-        .from(hubConfigMeta)
-        .where(eq(hubConfigMeta.id, 1));
-      const prov = await tx.select().from(providers).orderBy(providers.key);
-      const prof = await tx.select().from(modelProfiles).orderBy(modelProfiles.key);
-      const ag = await tx.select().from(agents).orderBy(agents.key);
-      const [orch] = await tx
-        .select()
-        .from(orchestratorSettings)
-        .where(eq(orchestratorSettings.id, 1));
-      const ent = await tx.select().from(agentEntitlements);
-      const gr = await tx.select().from(agentGrants);
+      const r = await readHubRows(tx);
       return Object.freeze({
-        version: meta?.v ?? 0,
-        providers: prov.map((p) => ({
+        version: r.version,
+        providers: r.prov.map((p) => ({
           key: p.key,
           kind: p.kind,
           vendor: p.vendor,
@@ -69,38 +107,19 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
           enabled: p.enabled,
           devOnly: p.devOnly,
         })),
-        profiles: prof.map((p) => ({ id: p.id, key: p.key, steps: StepsSchema.parse(p.steps) })),
-        agents: ag.map((a) => ({
-          id: a.id,
-          key: a.key,
-          name: NameSchema.parse(a.name),
-          description: a.description,
-          runtime: a.runtime,
-          agentTypeKey: a.agentTypeKey,
-          profileId: a.profileId,
-          systemPrompt: a.systemPrompt,
-          runtimeOptions: OptionsSchema.parse(a.runtimeOptions),
-          timeoutS: a.timeoutS,
-          tokenBudget: a.tokenBudget,
-          enabled: a.enabled,
-          version: a.version,
-        })),
-        orchestrator: orch
-          ? {
-              agentId: orch.agentId,
-              maxSteps: orch.maxSteps,
-              tokenBudget: orch.tokenBudget,
-              historyN: orch.historyN,
-              onNoMatch: orch.onNoMatch,
-              version: orch.version,
-            }
-          : null,
-        entitlements: ent.map((e) => ({
+        profiles: r.prof.map((p) => ({ id: p.id, key: p.key, steps: StepsSchema.parse(p.steps) })),
+        agents: r.ag.map(toAgent),
+        orchestrator: toOrchestrator(r.orch),
+        entitlements: r.ent.map((e) => ({
           agentId: e.agentId,
           tenantId: e.tenantId,
           revokedAt: e.revokedAt,
         })),
-        grants: gr.map((g) => ({ agentId: g.agentId, tenantId: g.tenantId, subject: g.subjectId })),
+        grants: r.gr.map((g) => ({
+          agentId: g.agentId,
+          tenantId: g.tenantId,
+          subject: g.subjectId,
+        })),
       });
     },
     { isolationLevel: "repeatable read", accessMode: "read only" },

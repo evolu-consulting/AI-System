@@ -39,14 +39,18 @@ async function openRedis(env: Env): Promise<Redis> {
   }
 }
 
-async function main(): Promise<void> {
-  let env: Env;
+function readEnv(): Env {
   try {
-    env = loadEnv(process.env);
+    const env = loadEnv(process.env);
+    setMinLevel(env.LOG_LEVEL);
+    return env;
   } catch (err) {
     fail("env", err);
   }
-  setMinLevel(env.LOG_LEVEL);
+}
+
+async function main(): Promise<void> {
+  const env = readEnv();
   const jwtPublicKey = await importJwtPublicKey(env.JWT_PUBLIC_KEY).catch((err) =>
     fail("jwt", err),
   );

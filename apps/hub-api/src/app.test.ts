@@ -52,7 +52,9 @@ describe("hub-api app", () => {
     const other = await app.request("/health", { headers: { Origin: "http://evil.test" } });
     expect(other.headers.get("Access-Control-Allow-Origin")).toBeNull();
   });
+});
 
+describe("hub-api app · lỗi", () => {
   test("CHAT-AC-31 · route lạ → 404 NOT_FOUND; AppError → status theo CHAT_API_ERRORS; lỗi lạ → 500", async () => {
     const app = createApp(cfg);
     app.get("/x/busy", () => {

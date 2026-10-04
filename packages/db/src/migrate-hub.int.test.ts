@@ -72,6 +72,22 @@ const code = (p: Promise<unknown>) =>
     (e: { code?: string }) => e.code,
   );
 
+/** DB stub M4 (test) có sẵn 1 grant + 1 usage_logs cũ, rồi migrate Hub. Trả tenant của dòng cũ. */
+async function migrateOverStub(): Promise<string> {
+  expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 9, dev: 3 });
+  const tid = crypto.randomUUID();
+  await sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
+    values (${crypto.randomUUID()}, ${tid}, 'user', ${crypto.randomUUID()})`;
+  await sql`insert into hub.usage_logs (tenant_id, billing) values (${tid}, 'api')`;
+  expect(await runHubMigrations({ url: URL, appEnv: "test" })).toEqual({ hub: HUB_N, hubDev: 1 });
+  return tid;
+}
+
+const migrateAll = async (appEnv: "test" | "production") => {
+  await runMigrations({ url: URL, appEnv });
+  await runHubMigrations({ url: URL, appEnv });
+};
+
 describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
   test("DB sạch (production): main → hub đủ 18 bảng, không hub-dev; lần 2 {0,0}", async () => {
     expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 9, dev: 0 });
@@ -89,13 +105,8 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
     expect(await runHubMigrations({ url: URL, appEnv: "test" })).toEqual({ hub: 0, hubDev: 1 });
   });
 
-  test("DB có stub: dòng cũ giữ (FK NOT VALID), dòng mới phải có agent; cột usage_logs mới nullable; lần 2 {0,0}", async () => {
-    expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 9, dev: 3 });
-    const tid = crypto.randomUUID();
-    await sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
-      values (${crypto.randomUUID()}, ${tid}, 'user', ${crypto.randomUUID()})`;
-    await sql`insert into hub.usage_logs (tenant_id, billing) values (${tid}, 'api')`;
-    expect(await runHubMigrations({ url: URL, appEnv: "test" })).toEqual({ hub: HUB_N, hubDev: 1 });
+  test("DB có stub: dòng cũ giữ (FK NOT VALID), dòng mới phải có agent; lần 2 {0,0}", async () => {
+    await migrateOverStub();
     expect(await runHubMigrations({ url: URL, appEnv: "development" })).toEqual({
       hub: 0,
       hubDev: 0,
@@ -112,21 +123,45 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
       await code(sql`insert into hub.agent_workflows (agent_id, workflow_id)
         values (${crypto.randomUUID()}, ${crypto.randomUUID()})`),
     ).toBe("23503");
+  });
+});
+
+describe("HUB-FR-83 · usage_logs trên DB có stub (int)", () => {
+  test("HUB-FR-83 · cột mới nullable (dòng cũ giữ), token ≥ 0, billing ∈ {api, subscription, dify}; admin_rw đọc được", async () => {
+    const tid = await migrateOverStub();
     const [u] = await sql`select job_id, cache_read_tokens, cache_write_tokens from hub.usage_logs`;
     expect(u).toEqual({ job_id: null, cache_read_tokens: null, cache_write_tokens: null });
-    expect(
-      await code(
-        sql`insert into hub.usage_logs (tenant_id, billing, cache_read_tokens) values (${tid}, 'api', -1)`,
-      ),
-    ).toBe("23514");
+    const ins = (cols: Record<string, string | number>) =>
+      code(sql`insert into hub.usage_logs ${sql({ tenant_id: tid, billing: "api", ...cols })}`);
+    expect(await ins({ cache_read_tokens: -1 })).toBe("23514");
+    expect(await ins({ input_tokens: -1 })).toBe("23514");
+    expect(await ins({ billing: "free" })).toBe("23514");
+    expect(await ins({ billing: "subscription", cost_usd: 0 })).toBe("ok");
     for (const t of ["hub.agent_workflows", "hub.agent_grants", "hub.usage_logs"])
       expect(await can("admin_rw", t, "SELECT")).toBe(true);
     expect(await can("admin_rw", "hub.runs", "SELECT")).toBe(false);
   });
 
-  test("role + GRANT: agent_runtime chỉ bảng runtime + tenant_sub_limit; hub_api = hub_rw + hub_ro, không BYPASSRLS", async () => {
-    await runMigrations({ url: URL, appEnv: "test" });
-    await runHubMigrations({ url: URL, appEnv: "test" });
+  test("HUB-FR-33 · mỗi job tối đa một dòng usage (unique job_id; ON CONFLICT bỏ qua), dòng không job không giới hạn", async () => {
+    const tid = await migrateOverStub();
+    const job = crypto.randomUUID();
+    const ins = (jobId: string | null) =>
+      code(sql`insert into hub.usage_logs (tenant_id, billing, job_id)
+        values (${tid}, 'subscription', ${jobId})`);
+    expect(await ins(job)).toBe("ok");
+    expect(await ins(job)).toBe("23505");
+    await sql`insert into hub.usage_logs (tenant_id, billing, job_id)
+      values (${tid}, 'subscription', ${job}) on conflict (job_id) where job_id is not null do nothing`;
+    expect(await ins(null)).toBe("ok");
+    const [n] = await sql<{ n: number }[]>`
+      select count(*)::int as n from hub.usage_logs where job_id = ${job}`;
+    expect(n?.n).toBe(1);
+  });
+});
+
+describe("HUB-FR-75 · role + GRANT (int)", () => {
+  test("agent_runtime chỉ bảng runtime; hub_api = hub_rw + hub_ro, không BYPASSRLS", async () => {
+    await migrateAll("test");
     const roles = await sql<{ rolname: string; rolcanlogin: boolean; rolbypassrls: boolean }[]>`
       select rolname, rolcanlogin, rolbypassrls from pg_roles
       where rolname in ('hub_rw', 'hub_api', 'agent_runtime') order by 1`;
@@ -147,22 +182,31 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
     expect(await can("hub_rw", "hub.runs", "DELETE")).toBe(true);
     expect(await can("hub_rw", "hub.jobs", "DELETE")).toBe(false);
     expect(await can("hub_rw", "hub.cli_sessions", "SELECT")).toBe(false);
+  });
+});
+
+describe("HUB-FR-86 · hub.tenant_sub_limit — slot subscription theo tenant (int)", () => {
+  test("HUB-FR-86 · chỉ agent_runtime EXECUTE; trả max_concurrent_sub của tenant (null = không giới hạn)", async () => {
+    await migrateAll("test");
     const [ex] = await sql<{ rt: boolean; pub: boolean }[]>`
       select has_function_privilege('agent_runtime', 'hub.tenant_sub_limit(uuid)', 'EXECUTE') as rt,
              has_function_privilege('hub_api', 'hub.tenant_sub_limit(uuid)', 'EXECUTE') as pub`;
     expect(ex).toEqual({ rt: true, pub: false });
-    const [t] = await sql<{ id: string }[]>`
-      insert into admin.tenants (key, name, max_concurrent_sub) values ('h1-mig', 'H1', 3) returning id`;
-    const limit = await sql.begin(async (tx) => {
-      await tx`set local role agent_runtime`;
-      const [r] = await tx<
-        { n: number | null }[]
-      >`select hub.tenant_sub_limit(${t?.id ?? ""}::uuid) as n`;
-      return r?.n;
-    });
-    expect(limit).toBe(3);
+    const ts = await sql<{ id: string }[]>`
+      insert into admin.tenants (key, name, max_concurrent_sub)
+      values ('h1-mig', 'H1', 3), ('h1-mig-free', 'H1 free', null) returning id`;
+    const limit = (id: string) =>
+      sql.begin(async (tx) => {
+        await tx`set local role agent_runtime`;
+        const [r] = await tx<{ n: number | null }[]>`select hub.tenant_sub_limit(${id}::uuid) as n`;
+        return r?.n;
+      });
+    expect(await limit(ts[0]?.id ?? "")).toBe(3);
+    expect(await limit(ts[1]?.id ?? "")).toBeNull();
   });
+});
 
+describe("HUB-FR-75 · runs CHECK (int)", () => {
   test("runs: CHECK runs_error_cols_ck, error_code ⇔ failed/cancelled, locale; unique run running mỗi flow", async () => {
     await runMigrations({ url: URL, appEnv: "production" });
     await runHubMigrations({ url: URL, appEnv: "production" });
