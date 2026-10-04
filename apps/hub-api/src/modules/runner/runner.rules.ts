@@ -46,9 +46,13 @@ export type PayloadInput = {
   history: readonly HistoryItem[];
 };
 
-function maxTurns(opts: Record<string, unknown>, role: AgentRole): number {
+/** Agent kẹp ≥ 2: structured output tốn một lượt (Runtime đã tự ép, Hub khớp). */
+export const AGENT_MIN_TURNS = 2;
+
+export function maxTurns(opts: Record<string, unknown>, role: AgentRole): number {
   const v = opts.max_turns;
-  return typeof v === "number" && Number.isInteger(v) ? v : DEFAULT_MAX_TURNS[role];
+  const n = typeof v === "number" && Number.isInteger(v) ? v : DEFAULT_MAX_TURNS[role];
+  return role === "agent" ? Math.max(n, AGENT_MIN_TURNS) : n;
 }
 
 /** Agent: `runtime_options.allowed_tools` ∩ {Read, Grep, Glob} (vắng → Read, Grep); Orchestrator: không tool. */

@@ -246,4 +246,18 @@ describe("E9 · xoá hội thoại huỷ run [HUB-FR-43 · plan §5.7]", () => {
     const ok = await cancel(first.runId);
     expect(ok.json?.status).toBe("cancelled");
   });
+
+  it("HUB-FR-43 · run đã có delta → xoá hội thoại: tin assistant = nối delta (E9)", async () => {
+    const { ctx, runId, conv, s } = await started("lan");
+    await ctx.writer.emit({ event: "delta", data: { text: "Xin " } });
+    await ctx.writer.emit({ event: "delta", data: { text: "chào" } });
+    const del = await call(a, "DELETE", `/conversations/${conv}`, { token: await tok("lan") });
+    expect(del.status).toBe(204);
+    expectCancelled(await s.terminal(5_000), "lan");
+    s.close();
+    expect((await runRow(sql, runId))?.status).toBe("cancelled");
+    const msgs =
+      await sql`select content from hub.messages where run_id = ${runId} and role = 'assistant'`;
+    expect(msgs.map((m) => m.content)).toEqual(["Xin chào"]);
+  });
 });

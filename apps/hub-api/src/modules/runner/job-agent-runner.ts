@@ -161,9 +161,9 @@ export class JobAgentRunner implements AgentRunner {
     try {
       const type = stepType(task.role);
       // Huỷ/mất lease → không INSERT job (job mồ côi giữ slot tới timeout); `runJob` quy về `aborted`.
-      if (signal.aborted) return;
-      const step = stepInsert(task, stepId, this.d.owner);
-      if (!(await this.#system((tx) => repo.enqueueJob(tx, payload, step)))) return;
+      const skip = await this.#enqueue(task, payload, stepId, signal);
+      if (skip)
+        return this.d.log.info("job-enqueue-skipped", { run_id: task.run.id, reason: skip });
       await this.#emit(task, {
         event: "step.started",
         data: { step_id: `s${task.seq}`, label: stepLabel(type, task.run.locale) },
@@ -176,6 +176,18 @@ export class JobAgentRunner implements AgentRunner {
     } finally {
       unsub();
     }
+  }
+
+  /** Lý do bỏ qua INSERT job (null = đã vào hàng đợi). */
+  async #enqueue(
+    task: AgentTask,
+    payload: JobPayload,
+    stepId: string,
+    signal: AbortSignal,
+  ): Promise<"aborted" | "not_enqueued" | null> {
+    if (signal.aborted) return "aborted";
+    const step = stepInsert(task, stepId, this.d.owner);
+    return (await this.#system((tx) => repo.enqueueJob(tx, payload, step))) ? null : "not_enqueued";
   }
 
   async *#follow(

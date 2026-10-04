@@ -6,6 +6,7 @@ import {
   buildJobPayload,
   compareStreamId,
   eventFromJobRow,
+  maxTurns,
   type PayloadInput,
   providerBlocked,
   syntheticFailed,
@@ -215,5 +216,16 @@ describe("HUB-FR-31 · HUB-FR-32 · bước profile → job Runtime (H1-R18: ch�
       provider_key: "claude-sub",
       model: "sonnet",
     });
+  });
+});
+
+describe("I2/S7 · maxTurns", () => {
+  it("agent kẹp ≥ 2; orchestrator giữ nguyên; vắng → mặc định", () => {
+    expect(maxTurns({ max_turns: 1 }, "agent")).toBe(2);
+    expect(maxTurns({ max_turns: 0 }, "agent")).toBe(2);
+    expect(maxTurns({ max_turns: 5 }, "agent")).toBe(5);
+    expect(maxTurns({}, "agent")).toBe(30);
+    expect(maxTurns({ max_turns: 1 }, "orchestrator")).toBe(1);
+    expect(maxTurns({}, "orchestrator")).toBe(3);
   });
 });
