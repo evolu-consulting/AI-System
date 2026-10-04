@@ -15,6 +15,9 @@ const LOCKED_DIRS = [
   "apps/agent-runtime/tests/acceptance",
   // H2a test-plan §9 Q-T1: mock Dify (MK) do backend-lead viết, test H2a phụ thuộc — khoá như test.
   "tools/hub-dev/src/dify-mock.ts",
+  // H2a Q3 (Q-T1): mock Dify + credential Python (PY-02) và test của mock — khoá như test. `mcp_mock.py` khoá sau PY-06.
+  "apps/agent-runtime/tests/support/dify_mock.py",
+  "apps/agent-runtime/tests/support/test_dify_mock.py",
 ];
 
 export type LockDiff = { kind: "CHANGED" | "MISSING" | "UNLOCKED"; path: string };

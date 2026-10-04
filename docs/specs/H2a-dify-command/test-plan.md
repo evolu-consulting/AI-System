@@ -188,7 +188,7 @@ Tổng mới ≈ **197** ca (R 78, A 83, P 30, S 3, perf 3) + K + M (3 checklist
 
 | # | Rủi ro / câu hỏi | Mặc định |
 |---|---|---|
-| Q-T1 | Hai mock (MK TS, `dify_mock.py`, `mcp_mock.py`) do backend-lead viết, ngoài `tests/acceptance` → agent code có thể sửa mock cho xanh | Sau QW, qc thêm 3 file vào danh sách khoá (`LOCKED_DIRS`/`tests/.lock`); sửa mock = tranh chấp test. **Q2 xong**: `tools/hub-dev/src/dify-mock.ts` đã vào `LOCKED_DIRS` + `tests/.lock`; `dify_mock.py` ở Q3, `mcp_mock.py` sau PY-06 |
+| Q-T1 | Hai mock (MK TS, `dify_mock.py`, `mcp_mock.py`) do backend-lead viết, ngoài `tests/acceptance` → agent code có thể sửa mock cho xanh | Sau QW, qc thêm 3 file vào danh sách khoá (`LOCKED_DIRS`/`tests/.lock`); sửa mock = tranh chấp test. **Q2 xong**: `tools/hub-dev/src/dify-mock.ts` đã vào `LOCKED_DIRS` + `tests/.lock`; **Q3 xong**: `apps/agent-runtime/tests/support/dify_mock.py` + `test_dify_mock.py` vào `LOCKED_DIRS` + `tests/.lock`; `mcp_mock.py` sau PY-06 |
 | Q-T2 | R import tĩnh `*.rules.ts` chưa có | Như H1 Q-T2: B0 tạo stub chữ ký (thân `throw`) trước QW |
 | Q-T3 | BA HUB-BR-11 regex tên tool ≠ plan | **Đóng**: đã sửa bởi CR-035; A52 theo plan (tên = key, có `-`) |
 | Q-T4 | Test-run secret thiếu: 409 (`plan-errors` §1) hay 200 `ok:false NOT_CONFIGURED` | 409 `NOT_CONFIGURED` trước khi gọi Dify; lỗi **từ** Dify (401) → 200 `ok:false` |
@@ -324,3 +324,6 @@ Lệch plan / cần backend-lead:
 - **P18**: Runtime B vừa requeue vừa claim ngay nên trạng thái `queued` quan sát qua NOTIFY `job_enqueued{provider_key:"dify"}` + `job.started` ×2 + 2 token Bearer khác nhau + 1 sự kiện kết thúc, không poll `queued`. P20 dựng mồ côi bằng SQL (worker `qc-ghost`, heartbeat −61 s), thêm ca biên `attempts=2` → requeue → `attempts=3` `succeeded`.
 - **P24** đường file MCP = `AGENT_RT_WORK_DIR/.mcp/<job_id>.json` (§4.2); P27 kiểm có dòng log mức `warning` chứa `"mcp` (tên sự kiện chưa chốt).
 - **Stack**: container tới Hub/MK qua `host.docker.internal` (`--add-host …:host-gateway`); `HUB_PUBLIC_INTERNAL_URL` và `base_url` catalog dùng tên này; bỏ `--rm` của `dockerArgs` để giữ log khi Runtime thoát sớm. S01/S02 Runtime `fake-cli`; S03 `fake-cli,dify`.
+
+### Q3 · khoá lần 2 (2026-10-05, trên `2c8f680`)
+`test:lock:verify` trước khi ghi: đúng 12 dòng `UNLOCKED` (10 file QW-P + `tests/support/dify_mock.py`, `tests/support/test_dify_mock.py` thêm vào `LOCKED_DIRS` của `tools/scripts/src/test-lock.ts`), không file khoá nào `CHANGED`/`MISSING`. `test:lock:write` → `tests/.lock` +12 dòng, 0 dòng xoá, tổng 274 file; verify xanh. Sửa hai mock = tranh chấp test (Q-T1). `mcp_mock.py` khoá khi PY-06 xong.
