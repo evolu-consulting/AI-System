@@ -2,10 +2,12 @@
 
 import io
 import json
+import logging
 
 import pytest
 
 from agent_runtime.log import (
+    HTTP_LOGGERS,
     REDACTED,
     bind_job,
     configure_logging,
@@ -97,3 +99,13 @@ def test_wrk_nfr_04_exception_text_redacted() -> None:
         get_logger().exception("db.error")
     assert "leaked_pw" not in buf.getvalue()
     assert "u:***@h" in buf.getvalue()
+
+
+def test_h2a_r17_http_loggers_warning() -> None:
+    """ADR-0010: httpx2/httpcore2 không log URL/header ở DEBUG/INFO."""
+    for name in HTTP_LOGGERS:
+        logging.getLogger(name).setLevel(logging.DEBUG)
+    configure_logging("debug", "w1", io.StringIO())
+    assert set(HTTP_LOGGERS) == {"httpx2", "httpcore2"}
+    for name in HTTP_LOGGERS:
+        assert logging.getLogger(name).getEffectiveLevel() == logging.WARNING

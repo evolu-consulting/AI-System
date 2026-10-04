@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     cli_path: Path | None = None
     # `workflow.async` (plan-runtime-dify §3.4): backoff giữa các lần thử, "2,8" = `policy.BACKOFF`.
     dify_backoff_s: Annotated[tuple[float, ...], NoDecode] = (2.0, 8.0)
+    # plan-runtime §8: URL gốc Hub cho credential (Q5) — chỉ từ env, bắt buộc khi có `dify`.
+    hub_url: str | None = Field(default=None, pattern=r"^https?://[^\s]+$", max_length=2048)
+    dify_read_timeout_s: float = Field(default=30.0, gt=0)
+    dify_stop_timeout_s: float = Field(default=2.0, gt=0)
 
     @field_validator("providers", mode="before")
     @classmethod
@@ -72,6 +76,11 @@ class Settings(BaseSettings):
             raise ValueError("AGENT_RT_DIFY_BACKOFF_S: danh sách giây > 0, vd 2,8")
         return value
 
+    @field_validator("hub_url")
+    @classmethod
+    def _strip_hub_url(cls, value: str | None) -> str | None:
+        return value.rstrip("/") if value else value
+
     @field_validator("home", "log_dir")
     @classmethod
     def _absolute(cls, value: Path) -> Path:
@@ -91,6 +100,12 @@ class Settings(BaseSettings):
             raise ValueError("fake-cli chỉ dùng khi APP_ENV là development|test")
         return self
 
+    @model_validator(mode="after")
+    def _hub_url_for_dify(self) -> Self:
+        if "dify" in self.providers and not self.hub_url:
+            raise ValueError("AGENT_RT_HUB_URL bắt buộc khi AGENT_RT_PROVIDERS có dify")
+        return self
+
     def safe_summary(self) -> dict[str, object]:
         """Cấu hình để log lúc khởi động — URL đã che mật khẩu."""
         return {
@@ -103,6 +118,7 @@ class Settings(BaseSettings):
             "log_dir": str(self.log_dir),
             "home": str(self.home),
             "cleanup_s": self.cleanup_s,
+            "hub_url": redact_url(self.hub_url) if self.hub_url else None,
         }
 
 

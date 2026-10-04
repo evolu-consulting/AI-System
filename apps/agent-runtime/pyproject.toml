@@ -8,6 +8,8 @@ requires-python = ">=3.12"
 dependencies = [
   "asyncpg>=0.31",
   "claude-agent-sdk==0.2.163",
+  # ADR-0010 (H2a PY-02): đã có bắc cầu qua claude-agent-sdk → mcp; khai báo trực tiếp, không thêm gói.
+  "httpx2>=2.13,<3",
   "pydantic-settings>=2.15",
   "redis>=8.1",
   "structlog>=26.1",

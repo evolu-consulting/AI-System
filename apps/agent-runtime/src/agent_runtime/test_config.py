@@ -20,6 +20,9 @@ _VARS = (
     "AGENT_RT_LOG_DIR",
     "AGENT_RT_CLEANUP_S",
     "AGENT_RT_CLI_PATH",
+    "AGENT_RT_HUB_URL",
+    "AGENT_RT_DIFY_READ_TIMEOUT_S",
+    "AGENT_RT_DIFY_STOP_TIMEOUT_S",
 )
 
 
@@ -93,3 +96,32 @@ def test_wrk_br_02_secrets_masked_in_repr_and_summary() -> None:
     assert summary["database_url"] == "postgres://agent_runtime:***@localhost:5432/ai_system"
     assert summary["redis_url"] == "redis://:***@localhost:6379/0"
     assert "redis_pw" not in str(summary)
+
+
+def test_wrk_fr_06_dify_env_defaults_and_hub_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """PY-02 · plan-runtime §8: `AGENT_RT_HUB_URL` bắt buộc khi có `dify`; timeout mặc định."""
+    s = load_settings()
+    assert (s.hub_url, s.dify_read_timeout_s, s.dify_stop_timeout_s) == (None, 30.0, 2.0)
+    monkeypatch.setenv("AGENT_RT_PROVIDERS", "claude-sub,dify")
+    with pytest.raises(ValidationError, match="AGENT_RT_HUB_URL"):
+        load_settings()
+    monkeypatch.setenv("AGENT_RT_HUB_URL", "http://localhost:4000/")
+    monkeypatch.setenv("AGENT_RT_DIFY_READ_TIMEOUT_S", "5")
+    s = load_settings()
+    assert (s.hub_url, s.dify_read_timeout_s) == ("http://localhost:4000", 5.0)
+    assert s.safe_summary()["hub_url"] == "http://localhost:4000"
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("AGENT_RT_HUB_URL", "localhost:4000"),
+        ("AGENT_RT_HUB_URL", "ftp://hub"),
+        ("AGENT_RT_DIFY_READ_TIMEOUT_S", "0"),
+        ("AGENT_RT_DIFY_STOP_TIMEOUT_S", "-1"),
+    ],
+)
+def test_wrk_fr_06_dify_env_invalid(monkeypatch: pytest.MonkeyPatch, name: str, value: str) -> None:
+    monkeypatch.setenv(name, value)
+    with pytest.raises(ValidationError):
+        load_settings()

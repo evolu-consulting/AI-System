@@ -3,6 +3,7 @@ tenant_id, worker_id`. Mọi giá trị chuỗi đi qua `redact` (URL có mật 
 khoá PEM); khoá tên nhạy cảm bị thay hẳn. Không log prompt, nội dung file, `tool_input`, env.
 """
 
+import logging
 import re
 import sys
 from collections.abc import Generator, Mapping
@@ -13,6 +14,8 @@ import structlog
 from structlog.typing import EventDict, FilteringBoundLogger, WrappedLogger
 
 REDACTED = "[REDACTED]"
+# ADR-0010 · R17: httpx2/httpcore2 ở DEBUG/INFO in URL, header — chặn ở WARNING.
+HTTP_LOGGERS = ("httpx2", "httpcore2")
 
 _SECRET_KEYS = frozenset(
     {
@@ -80,8 +83,14 @@ def redact_processor(_logger: WrappedLogger, _method: str, event_dict: EventDict
     return cast("EventDict", out)
 
 
+def quiet_http_loggers() -> None:
+    for name in HTTP_LOGGERS:
+        logging.getLogger(name).setLevel(logging.WARNING)
+
+
 def configure_logging(level: str, worker_id: str, stream: TextIO | None = None) -> None:
     """Cấu hình structlog JSON ra `stream` (mặc định stdout → journald)."""
+    quiet_http_loggers()
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
