@@ -22,9 +22,17 @@ const TABLE_HEAD =
 const DEFAULT_PRELUDE =
   "# TRACE — yêu cầu → spec → code → test\n\nSinh tự động bằng `bun run trace`. Không sửa tay.\n\n";
 
-const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
-const SKIP = /(^|\/)(__fixtures__|node_modules|dist)\//;
-export const isTestFile = (p: string) => /^(tests|e2e)\//.test(p) || /\.(test|spec)\.tsx?$/.test(p);
+const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py)$/;
+const SKIP = /(^|\/)(__fixtures__|__pycache__|node_modules|dist|\.venv)\//;
+// Python: t\u00EAn h\u00E0m test ch\u1EE9a m\u00E3 d\u1EA1ng snake_case (test_wrk_fr_05_\u2026); docstring \u0111\u1EA7u module n\u00EAu m\u00E3.
+const PY_TEST_NAME =
+  /^\s*(?:async\s+)?def\s+test_((?:adm|hub|wrk)_(?:fr|nfr|br)_\d{2,3})(?![0-9])/gim;
+const PY_HEAD_DOC = /^(?:\s*#[^\n]*\n)*\s*[rRuU]?("""|''')([\s\S]*?)\1/;
+const isPy = (p: string) => p.endsWith(".py");
+export const isTestFile = (p: string) =>
+  /^(tests|e2e|apps\/agent-runtime\/tests)\//.test(p) ||
+  /\.(test|spec)\.tsx?$/.test(p) ||
+  /(^|\/)test_[^/]*\.py$|_test\.py$|(^|\/)conftest\.py$/.test(p);
 export const isCodeFile = (p: string) =>
   /^(apps|packages|tools)\//.test(p) && CODE_EXT.test(p) && !isTestFile(p);
 
@@ -59,8 +67,18 @@ export function parseSpecs(files: TextFile[]): SpecRef[] {
   return out;
 }
 
-/** Mã một file test "phủ": mã trong path ∪ mã ở đầu tên it/test/describe (T-TRACE-2). */
+/** Python: m\u00E3 trong path \u222A docstring \u0111\u1EA7u module \u222A t\u00EAn h\u00E0m test_<m\u00E3 snake_case>. */
+function pyTestRefs(path: string, text: string): string[] {
+  const doc = PY_HEAD_DOC.exec(text)?.[2] ?? "";
+  const inNames = [...text.matchAll(PY_TEST_NAME)].map((m) =>
+    (m[1] ?? "").toUpperCase().replace(/_/g, "-"),
+  );
+  return uniq([...(path.match(idRe()) ?? []), ...(doc.match(idRe()) ?? []), ...inNames]);
+}
+
+/** M\u00E3 m\u1ED9t file test "ph\u1EE7": mã trong path ∪ mã ở đầu tên it/test/describe (T-TRACE-2). */
 export function testRefs(path: string, text: string): string[] {
+  if (isPy(path)) return pyTestRefs(path, text);
   const inPath = path.match(idRe()) ?? [];
   const inNames = [...text.matchAll(TEST_NAME)].map((m) => m[1] ?? "");
   return uniq([...inPath, ...inNames]).filter(Boolean);

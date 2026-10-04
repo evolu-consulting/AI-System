@@ -143,3 +143,35 @@ describe("ADM-NFR-06 · trace build/render (T-TRACE-3, T-TRACE-4)", () => {
     ).toHaveLength(4);
   });
 });
+
+describe("WRK-NFR-06 · trace quét .py", () => {
+  test("testRefs Python: docstring đầu module, tên hàm test_<mã>, path; không tính comment/chuỗi giữa file", () => {
+    const text = [
+      "# comment đầu",
+      '"""WRK-FR-01 · HUB-FR-89 · claim job."""',
+      "",
+      "def test_wrk_fr_05_cancel_kills_group():",
+      "    pass",
+      "",
+      "async def test_wrk_br_02_env_explicit():",
+      "    x = 'WRK-FR-99'",
+      "",
+      "def test_wrk_fr_040_longer():",
+      "    pass",
+      "",
+      "def test_helper_without_code():",
+      "    pass",
+    ].join("\n");
+    expect(
+      testRefs("apps/agent-runtime/src/agent_runtime/queue/test_claimer.py", text).sort(),
+    ).toEqual(["HUB-FR-89", "WRK-BR-02", "WRK-FR-01", "WRK-FR-040", "WRK-FR-05"]);
+  });
+
+  test("isTestFile / isCodeFile cho .py", () => {
+    expect(isTestFile("apps/agent-runtime/src/agent_runtime/queue/test_claimer.py")).toBe(true);
+    expect(isTestFile("apps/agent-runtime/src/agent_runtime/db/pool_int_test.py")).toBe(true);
+    expect(isTestFile("apps/agent-runtime/tests/acceptance/x.py")).toBe(true);
+    expect(isCodeFile("apps/agent-runtime/src/agent_runtime/main.py")).toBe(true);
+    expect(isCodeFile("apps/agent-runtime/src/agent_runtime/queue/test_claimer.py")).toBe(false);
+  });
+});

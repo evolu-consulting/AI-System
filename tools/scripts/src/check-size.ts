@@ -5,8 +5,8 @@ import { changedFiles, listFiles, notIgnored, repoRoot, toRepoPath } from "./lib
 
 export type Violation = { path: string; lines: number; limit: number };
 
-const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
-const TEST_FILE = /\.(test|spec)\.tsx?$/;
+const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py)$/;
+const TEST_FILE = /\.(test|spec)\.tsx?$|(^|\/)test_[^/]*\.py$|_test\.py$|(^|\/)conftest\.py$/;
 const EXEMPT_DIRS = ["/components/ui/", "/migrations/", "/migrations-dev/"];
 const EXEMPT_FILE = /\.(gen|generated)\.ts$/;
 export const CODE_LIMIT = 400;
@@ -25,7 +25,11 @@ export function limitFor(path: string): number | null {
   if (!CODE_EXT.test(path)) return null;
   const slashed = `/${path}`;
   if (EXEMPT_DIRS.some((d) => slashed.includes(d)) || EXEMPT_FILE.test(path)) return null;
-  const isTest = TEST_FILE.test(path) || path.startsWith("tests/") || path.startsWith("e2e/");
+  const isTest =
+    TEST_FILE.test(path) ||
+    path.startsWith("tests/") ||
+    path.startsWith("e2e/") ||
+    path.startsWith("apps/agent-runtime/tests/");
   return isTest ? TEST_LIMIT : CODE_LIMIT;
 }
 

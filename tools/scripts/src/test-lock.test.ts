@@ -84,3 +84,16 @@ describe("ADM-NFR-06 · test-lock CLI", () => {
     expect(cli(dir, "khac").code).toBe(1);
   });
 });
+
+describe("WRK-NFR-06 · test-lock khoá test Python", () => {
+  test("apps/agent-runtime/tests/acceptance được khoá, __pycache__ bị bỏ qua", () => {
+    const dir = repo({
+      "apps/agent-runtime/tests/acceptance/test_a.py": "def test_x(): ...\n",
+      "apps/agent-runtime/tests/acceptance/__pycache__/a.pyc": "bin",
+      "apps/agent-runtime/tests/unit/test_b.py": "x\n",
+    });
+    expect(cli(dir, "write").code).toBe(0);
+    const v = cli(dir, "verify");
+    expect(v.out).toContain("test:lock OK (1 file)");
+  });
+});

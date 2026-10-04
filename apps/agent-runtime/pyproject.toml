@@ -1,0 +1,99 @@
+[project]
+name = "agent-runtime"
+version = "0.0.0"
+description = "AI System · Agent Runtime (Worker Python, chỉ nhắm Linux)"
+requires-python = ">=3.12"
+# Runtime deps (asyncpg, redis, claude-agent-sdk, structlog, pydantic-settings...) theo ADR-0008
+# được thêm ở task dùng tới (PY-03...); khung chỉ khai dev deps.
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "ruff>=0.14",
+  "pyright[nodejs]>=1.1.400",
+  "pytest>=8.4",
+  "pytest-asyncio>=1.0",
+  "import-linter>=2.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_runtime"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "T20", "C901", "PLR0913", "PLR0915", "S603", "S604", "S602"]
+
+[tool.ruff.lint.pylint]
+max-args = 4
+max-statements = 50
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+"**/test_*.py" = ["S", "PLR0913"]
+"**/*_int_test.py" = ["S", "PLR0913"]
+"tests/**" = ["S", "PLR0913"]
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = ["**/__pycache__", "spikes"]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+
+[tool.pytest.ini_options]
+testpaths = ["src", "tests"]
+python_files = ["test_*.py", "*_int_test.py"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-m 'not int'"
+markers = ["int: cần Postgres/Redis thật (pytest -m int)"]
+
+[tool.importlinter]
+root_package = "agent_runtime"
+
+# Chiều import plan-runtime §1.1: main -> queue -> runtimes -> providers -> sandbox -> contracts.
+# Lớp trong ngoặc là tuỳ chọn (module chưa tồn tại ở khung; B0/PY-xx thêm dần).
+[[tool.importlinter.contracts]]
+name = "Chiều import theo lớp (plan-runtime 1.1)"
+type = "layers"
+layers = [
+  "(agent_runtime.main)",
+  "(agent_runtime.queue)",
+  "(agent_runtime.runtimes)",
+  "(agent_runtime.providers)",
+  "(agent_runtime.sandbox)",
+  "(agent_runtime.contracts)",
+]
+
+[[tool.importlinter.contracts]]
+name = "db, events chỉ main/queue/runtimes.cli.runner import"
+type = "forbidden"
+source_modules = [
+  "agent_runtime.providers.**",
+  "agent_runtime.sandbox.**",
+  "agent_runtime.contracts.**",
+  "agent_runtime.agents.**",
+  "agent_runtime.runtimes.cli.child.**",
+]
+forbidden_modules = ["agent_runtime.db", "agent_runtime.events"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Process con không cầm secret (WRK-BR-02)"
+type = "forbidden"
+source_modules = [
+  "agent_runtime.runtimes.cli.child.**",
+  "agent_runtime.providers.**",
+  "agent_runtime.sandbox.**",
+]
+forbidden_modules = ["agent_runtime.config", "agent_runtime.db", "agent_runtime.events"]

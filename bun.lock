@@ -80,6 +80,10 @@
         "typescript": "6.0.3",
       },
     },
+    "apps/agent-runtime": {
+      "name": "@ai/agent-runtime",
+      "version": "0.0.0",
+    },
     "apps/chat-web": {
       "name": "@ai/chat-web",
       "version": "0.0.0",
@@ -194,6 +198,8 @@
     "@ai/admin-api": ["@ai/admin-api@workspace:apps/admin-api"],
 
     "@ai/admin-web": ["@ai/admin-web@workspace:apps/admin-web"],
+
+    "@ai/agent-runtime": ["@ai/agent-runtime@workspace:apps/agent-runtime"],
 
     "@ai/chat-web": ["@ai/chat-web@workspace:apps/chat-web"],
 

@@ -8,7 +8,12 @@ import { listFiles, repoRoot } from "./lib/git";
 export const LOCK_PATH = "tests/.lock";
 export const LOCK_HEADER =
   "# tests/.lock — sinh bởi bun run test:lock:write (chỉ qc). Không sửa tay.";
-const LOCKED_DIRS = ["tests/acceptance", "e2e", "tests/contract"];
+const LOCKED_DIRS = [
+  "tests/acceptance",
+  "e2e",
+  "tests/contract",
+  "apps/agent-runtime/tests/acceptance",
+];
 
 export type LockDiff = { kind: "CHANGED" | "MISSING" | "UNLOCKED"; path: string };
 
@@ -50,6 +55,7 @@ export function diffLock(expected: Map<string, string>, actual: Map<string, stri
 
 function lockedFiles(root: string): { path: string; text: string }[] {
   return listFiles(root, LOCKED_DIRS)
+    .filter((p) => !p.includes("__pycache__/"))
     .filter((p) => existsSync(join(root, p)))
     .map((path) => ({ path, text: readFileSync(join(root, path), "utf8") }));
 }

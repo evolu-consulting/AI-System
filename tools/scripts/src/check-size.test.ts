@@ -64,3 +64,22 @@ describe("ADM-NFR-06 · check:size checkFiles (T-SIZE-5)", () => {
     expect(checkFiles([{ path: "a.ts", text: lines(400).slice(0, -1) }])).toHaveLength(0);
   });
 });
+
+describe("WRK-NFR-06 · check:size quét .py", () => {
+  test.each([
+    ["apps/agent-runtime/src/agent_runtime/main.py", 400],
+    ["apps/agent-runtime/src/agent_runtime/queue/test_claimer.py", 600],
+    ["apps/agent-runtime/src/agent_runtime/db/pool_int_test.py", 600],
+    ["apps/agent-runtime/tests/acceptance/helpers.py", 600],
+    ["apps/agent-runtime/pyproject.toml", null],
+  ])("%s → %p", (path, want) => {
+    expect(limitFor(path)).toBe(want);
+  });
+
+  test("file .py 401 dòng vi phạm", () => {
+    const v = checkFiles([{ path: "apps/agent-runtime/src/agent_runtime/a.py", text: lines(401) }]);
+    expect(v).toEqual([
+      { path: "apps/agent-runtime/src/agent_runtime/a.py", lines: 401, limit: 400 },
+    ]);
+  });
+});
