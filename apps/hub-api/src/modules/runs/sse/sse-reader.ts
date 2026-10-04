@@ -70,7 +70,13 @@ export class SseReader {
     if (this.#conn) return this.#conn;
     const conn = this.redis.duplicate({ connectionName: "hub-api-sse-reader" });
     conn.on("error", (err) => this.log.warn("sse-reader-conn", safeErrorFields(err)));
-    await conn.connect();
+    try {
+      await conn.connect();
+    } catch (err) {
+      // Không để lại kết nối dở (ioredis tự nối lại) mỗi lần thử của vòng đọc.
+      conn.disconnect();
+      throw err;
+    }
     this.#conn = conn;
     return conn;
   }
