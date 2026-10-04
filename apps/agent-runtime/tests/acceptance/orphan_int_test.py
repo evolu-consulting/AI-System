@@ -50,9 +50,13 @@ async def test_hub_h1_ac_04_restart_after_kill9(ctx: Ctx) -> None:
         return not group_pids(pgid)
 
     await wait_until(gone, 5, f"pgid {pgid} của job sót bị giết", ctx.alive)
-    assert [e["code"] for e in await ctx.evs(job) if e["type"] == "job.failed"] == [
-        "INTERNAL_ERROR"
-    ]
+
+    async def failed_codes() -> list[object] | None:
+        # plan-runtime §2.4: COMMIT → giết pgid → rồi mới XADD, nên sự kiện tới sau khi group chết.
+        return [e["code"] for e in await ctx.evs(job) if e["type"] == "job.failed"] or None
+
+    codes = await wait_until(failed_codes, 5, "job.failed orphan tới stream", ctx.alive)
+    assert codes == ["INTERNAL_ERROR"]
     await ctx.until_status(later, ["succeeded"], 15)
 
 
