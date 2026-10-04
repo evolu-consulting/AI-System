@@ -1,1 +1,1 @@
-"""WRK-NFR-06 · Package agents (rỗng, B0)."""
+"""WRK-FR-25 · Package agents: loại agent nội bộ, registry → manifest `hub.agent_types`."""

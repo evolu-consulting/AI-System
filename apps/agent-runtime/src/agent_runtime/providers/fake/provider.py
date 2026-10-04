@@ -124,11 +124,12 @@ class FakeProvider:
                 stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.DEVNULL,  # không giữ pipe giao thức của job host
             )
-        if "sleep" in found:
-            await _sleep(seconds(found["sleep"]), emit)
+        # usage trước sleep: huỷ giữa chừng vẫn có usage đã báo (H1-R25).
         if "usage" in found:
             tin, tout = usage_pair(found["usage"])
             await emit(UsageEv.model_validate({"in": tin, "out": tout, "model": "fake"}))
+        if "sleep" in found:
+            await _sleep(seconds(found["sleep"]), emit)
         if "ratelimit" in found:
             ts = int(found["ratelimit"]) if found["ratelimit"].isdigit() else None
             await emit(RateLimit(status="rejected", resets_at=ts))

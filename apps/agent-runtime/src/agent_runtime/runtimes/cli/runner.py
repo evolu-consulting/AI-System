@@ -25,7 +25,8 @@ from pydantic import ValidationError
 
 from agent_runtime.contracts.hub import JobPayload1
 from agent_runtime.db import jobs_sql
-from agent_runtime.db.jobs_sql import ClaimedJob, Finish
+from agent_runtime.db.finish_sql import FinishTx, finish_tx
+from agent_runtime.db.jobs_sql import ClaimedJob
 from agent_runtime.db.pool import Pool
 from agent_runtime.events.job_events import Failure, RunEvents, Tokens
 from agent_runtime.log import bind_job, get_logger
@@ -34,10 +35,24 @@ from agent_runtime.providers.base import (
     Final,
     Progress,
     ProviderEvent,
+    RateLimit,
     Session,
     UsageEv,
 )
 from agent_runtime.runtimes.cli.joblog import append_envelope
+from agent_runtime.runtimes.cli.outcome import (
+    BROKEN_SIGNALS,
+    CANCELLED,
+    CRASHED,
+    INVALID_PAYLOAD,
+    TIMED_OUT,
+    Seen,
+    Verdict,
+    decide_exit,
+    fatal_failure,
+    queued_failure,
+    usage_row,
+)
 from agent_runtime.runtimes.cli.prompt import retry_prompt
 from agent_runtime.runtimes.cli.protocol import (
     MAX_LINE_BYTES,
@@ -50,15 +65,6 @@ from agent_runtime.sandbox.env import TMP_SUBDIR, forbidden_roots, job_host_env
 from agent_runtime.sandbox.process import group_pids, kill_group
 
 Outcome = Literal["exited", "stopped", "timeout", "lost"]
-JOB_ERROR_CODES = frozenset(
-    {"ALL_PROVIDERS_EXHAUSTED", "TIMEOUT", "CANCELLED", "UPSTREAM_ERROR", "INTERNAL_ERROR"}
-)
-CANCELLED = Failure("cancelled", "CANCELLED", "cancelled", "job cancelled")
-TIMED_OUT = Failure("timed_out", "TIMEOUT", "timeout", "job timed out")
-CRASHED = Failure("failed", "INTERNAL_ERROR", "crash", "job host exited without result")
-INVALID_PAYLOAD = Failure("failed", "INTERNAL_ERROR", "invalid_payload", "invalid job payload")
-INVALID_OUTPUT = Failure("failed", "UPSTREAM_ERROR", "invalid_output", "invalid provider output")
-PROVIDER_ERROR = Failure("failed", "UPSTREAM_ERROR", None, "provider returned an error")
 _PY_ENV_KEYS = ("VIRTUAL_ENV", "PYTHONPATH")
 
 
@@ -82,26 +88,8 @@ class HostConfig:
     python: str = field(default=sys.executable)
 
 
-@dataclass
-class _Seen:
-    final: Final | None = None
-    fatal: Fatal | None = None
-    usage: UsageEv | None = None
-    session_id: str | None = None
-    carried: Tokens = field(default_factory=Tokens)  # usage của lần chạy trước (thử lại)
-
-    def tokens(self) -> Tokens:
-        u = self.usage
-        if u is None:
-            return self.carried
-        return Tokens(
-            self.carried.input_tokens + u.input + u.cache_read + u.cache_write,
-            self.carried.output_tokens + u.output,
-        )
-
-    def next_attempt(self) -> None:
-        """Lần thử lại: giữ usage đã tiêu + session, bỏ final/fatal cũ."""
-        self.carried, self.final, self.fatal, self.usage = self.tokens(), None, None, None
+_Seen = Seen  # tên cũ (test đơn vị PY-10)
+__all__ = ["build_output", "fatal_failure"]
 
 
 def stderr_log_path(log_dir: Path, job_id: str) -> Path:
@@ -110,11 +98,6 @@ def stderr_log_path(log_dir: Path, job_id: str) -> Path:
 
 def events_log_path(log_dir: Path, job_id: str) -> Path:
     return log_dir / datetime.now(UTC).strftime("%Y-%m-%d") / f"{job_id}.events.jsonl"
-
-
-def fatal_failure(f: Fatal) -> Failure:
-    code = f.code if f.code in JOB_ERROR_CODES else "INTERNAL_ERROR"
-    return Failure("failed", code, f.reason or "crash", f.msg or "job host fatal")
 
 
 class CliJobHost:
@@ -129,26 +112,41 @@ class CliJobHost:
             try:
                 payload = JobPayload1.model_validate(job.payload)
             except ValidationError:
-                await self.finish_failed(job, INVALID_PAYLOAD, Tokens())
+                await self.finish_failed(job, INVALID_PAYLOAD)
                 return
             try:
                 await _Run(self, job, payload, control).execute()
             except Exception as err:  # spawn/IO lỗi: không để job `running` mãi (heartbeat)
                 get_logger().error("job.host_failed", error=type(err).__name__)
-                await self.finish_failed(job, CRASHED, Tokens())
+                await self.finish_failed(job, CRASHED)
 
-    async def finish(self, job: ClaimedJob, f: Finish) -> bool:
+    async def close(self, job: ClaimedJob, tx: FinishTx, v: Verdict, tokens: Tokens) -> None:
+        """Transaction "Kết thúc" rồi XADD sau commit (R2): job mình, rồi job `queued` bị fail."""
         async with self.pool.acquire() as conn:
-            ok = await jobs_sql.finish_job(conn, job.id, self.cfg.worker_id, f)
-        get_logger().info("job.finished", status=f.status, code=f.error_code, written=ok)
-        return ok
-
-    async def finish_failed(self, job: ClaimedJob, f: Failure, usage: Tokens) -> None:
-        row = Finish(f.status, None, f.code, f.reason, f.message[:500])
-        if await self.finish(job, row):
-            await self.events.failed(job.id, job.run_id, f, usage)
-        else:
+            done = await finish_tx(conn, job.id, self.cfg.worker_id, tx)
+        f = v.failure
+        log = get_logger()
+        log.info(
+            "job.finished", status=tx.finish.status, code=tx.finish.error_code, written=bool(done)
+        )
+        if done is None:
             self.events.forget(job.id)
+            return
+        if f is None:
+            await self.events.result(job, v.output or {}, tokens)
+        else:
+            await self.events.failed(job.id, job.run_id, f, tokens)
+        if done.broken is not None:
+            b = done.broken
+            log.warning("provider.broken", status=b.status, queued=len(done.queued_failed))
+            for q in done.queued_failed:
+                await self.events.failed(q.id, q.run_id, queued_failure(b), Tokens())
+
+    async def finish_failed(self, job: ClaimedJob, f: Failure) -> None:
+        """Lỗi trước khi có kết quả (payload sai, spawn lỗi): không usage, không đụng provider."""
+        v = Verdict(f)
+        key = str(job.payload.get("provider_key", ""))
+        await self.close(job, FinishTx(v.finish(), key), v, Tokens())
 
 
 class _Run:
@@ -159,7 +157,8 @@ class _Run:
     ) -> None:
         self.host, self.job, self.payload, self.control = host, job, payload, control
         self.cfg = host.cfg
-        self.seen = _Seen()
+        self.seen = Seen()
+        self.started = time.monotonic()
         self.work = self.cfg.work_root / job.id
         self.proc: asyncio.subprocess.Process | None = None
         self.retry: str | None = None  # prompt lần thử lại (agent, JSON hỏng)
@@ -297,10 +296,14 @@ class _Run:
             self.seen.session_id = ev.session_id
         elif isinstance(ev, Final):
             self.seen.final = ev
+        elif isinstance(ev, RateLimit):
+            if ev.status in BROKEN_SIGNALS:
+                self.seen.rate_limit = ev
+            else:
+                get_logger().info("provider.rate_limit_signal", status=ev.status[:40])
         elif isinstance(ev, Fatal):
             self.seen.fatal = ev
             return True
-        # TODO(WRK-FR-14): PY-08/PY-11 — tool_use, session, rate_limit.
         return False
 
     async def _kill(self) -> None:
@@ -324,26 +327,24 @@ class _Run:
     async def _apply(self, outcome: Outcome) -> None:
         reason = self.control.reason
         if outcome == "timeout":
-            await self.host.finish_failed(self.job, TIMED_OUT, self.seen.tokens())
+            await self._close(Verdict(TIMED_OUT))
         elif outcome == "stopped" and reason == "cancel":
-            await self.host.finish_failed(self.job, CANCELLED, self.seen.tokens())
+            await self._close(Verdict(CANCELLED))
         elif outcome in ("stopped", "lost"):
             get_logger().info("job.stopped_no_write", reason=reason or outcome)
             self.host.events.forget(self.job.id)
         else:
-            await self._apply_exit()
+            await self._close(decide_exit(self.payload, self.seen))
 
-    async def _apply_exit(self) -> None:
-        seen, tokens = self.seen, self.seen.tokens()
-        if seen.fatal is not None:
-            await self.host.finish_failed(self.job, fatal_failure(seen.fatal), tokens)
-        elif seen.final is None:
-            await self.host.finish_failed(self.job, CRASHED, tokens)
-        elif seen.final.is_error:
-            await self.host.finish_failed(self.job, PROVIDER_ERROR, tokens)
-        elif (output := build_output(self.payload, seen.final)) is None:
-            await self.host.finish_failed(self.job, INVALID_OUTPUT, tokens)
-        elif await self.host.finish(self.job, Finish("succeeded", output)):
-            await self.host.events.result(self.job, output, tokens)
-        else:
-            self.host.events.forget(self.job.id)
+    async def _close(self, v: Verdict) -> None:
+        total = self.seen.total()
+        latency = int((time.monotonic() - self.started) * 1000)
+        f = v.failure
+        tx = FinishTx(
+            v.finish(),
+            self.payload.provider_key,
+            usage_row(self.payload, total, latency),
+            v.provider,
+            f.message if f is not None else "",
+        )
+        await self.host.close(self.job, tx, v, total.tokens())
