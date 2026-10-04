@@ -44,3 +44,21 @@ Phạm vi: spec, plan, plan-db, plan-runtime, test-plan, tasks; ADR-0007/0008/00
 **Phụ thuộc phiên khác (không chặn H1):** `/auth/*` admin-api lệch contract chat (K-A1…A7); typecheck/test toàn repo đỏ do code dở của Chat.
 
 **Câu hỏi cho người dùng:** (1) chuẩn bị WSL2 + đăng nhập `claude` dưới user `worker`, cho spike dùng quota thật? (2) Gate có ADR-0008/0009 Proposed → phải trình người dùng.
+
+## Lần 2 · 2026-10-04 · spec-readiness (Opus) · **NOT READY** (chỉ phần đổi `f33100a..HEAD`)
+Đóng: #1–#20, #22–#31, #33 (#32 tách spec §9 xong; phần kích thước chuyển #43). Không có câu hỏi mới cho người dùng; Gate phải trình người dùng vì ADR-0008/0009 Proposed.
+
+| # | TT | Mức | Vị trí | Lỗ hổng | Mặc định (áp dụng, Luật 2) |
+|---|---|---|---|---|---|
+| 21 | Còn | Trung | spec §8 ↔ test-plan §7.1 ↔ tasks I1 | Ba bản Lệnh xong; `tsc -p tsconfig.tests.json` nằm trong chuỗi `&&` nhưng ghi "không chặn" | spec §8 một dòng trỏ test-plan §7.1; I1 dùng đúng §7.1; tách `tsc -p tsconfig.tests.json` ra khỏi `&&`, chỉ báo cáo |
+| 34 | Mới | **Chặn** | plan §6.4 ↔ R15d | Regex `parseLastEventId` tối đa 15 chữ số ↔ test 16 chữ số | `^(0\|[1-9]\d*)$` + `Number.isSafeInteger`, không an toàn → 0 |
+| 35 | Mới | Cao | plan §6.4 ↔ contract chat `hint: z.string()` | `hint: string\|null`; chưa có câu nguyên văn vi/en 7 mã | `hint: string` (`""` khi không có); vi lấy nguyên văn `tools/mocks/src/chat/scenarios.ts`, bổ sung vi/en còn thiếu, bảng ở plan §6.4/phụ lục |
+| 36 | Mới | Cao | test-plan-cases A54 | Given không dựng được hộp đen | Lease A lùi quá khứ, sweeper B chiếm ∥ A nhận `job.result`; đúng 1 sự kiện kết thúc |
+| 37 | Mới | Cao | test-plan-cases A37b | Thiếu nhánh run đã kết thúc trước E9 (chập chờn); "E9 đổi tên" sai | Runtime kịch bản giữ job suốt ca; "E8 (đổi tên) ∥ E9 (xoá)" |
+| 38 | Mới | Cao | tasks QW-R/A2/P cột Đọc | Không trỏ `test-plan-cases §1` ⇒ thiếu 13 ca | Thêm vào Đọc; QW-A2 "A8–A52 + A37b, A54–A57, P45b(A)" |
+| 39 | Mới | Cao | tasks QW-A2 | Test khoá/lease/huỷ/quyền DB ghi `thường` | `cao` |
+| 40 | Mới | Thấp | test-plan §8 ↔ tasks | Một nhóm QW-A; A48–A51 ghi "đỏ" dù D1 làm trước; B1 "không đổi kết quả test" | Tách QW-A1/A2; A48–A51 (+A3) "xanh trước khoá, chấp nhận, ghi §10"; bỏ cụm ở tasks |
+| 41 | Mới | Thấp | plan §5.7 E9 | "0 dòng → 200 + Run" là phản hồi E15 | E9: 0 dòng → bỏ qua run đó |
+| 42 | Mới | Thấp | spec-decisions | Ghi thứ tự khoá cũ | Thêm "(đã thay bởi plan §3.5, readiness #1)" |
+| 43 | Mới | Thấp | tasks Q1; plan-runtime 30 694/30 720 B | Q1 `≤ 30 KB` sai; plan-runtime sát trần | Q1 `≤ 25 600 B`; tách plan-runtime §12 thành một dòng trỏ plan-db §8 |
+| 44 | Mới | Thấp | tasks B1 | "(nếu cần preload Hub)" không có tiêu chí | B1 sửa `bunfig.int.toml` `pathIgnorePatterns` cho `tests/acceptance/H1/stack/**`; không sửa `bunfig.contract.toml` |

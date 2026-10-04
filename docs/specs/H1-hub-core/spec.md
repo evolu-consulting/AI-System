@@ -146,7 +146,7 @@ Nguyên văn AC-H/AC-W ở BA (`ba-agent-hub` §11, `ba-worker` §10); bảng n�
 | HUB-H1-AC-11 | Given seed chạy 2 lần, Then không trùng dòng, `hub_config_version` tăng; yaml sai → không ghi gì; thiếu Orchestrator hợp lệ → hub-api không khởi động | int |
 | HUB-H1-AC-12 | Given user A có tin ở hai flow, When Orchestrator chạy ở flow 1, Then prompt chỉ chứa message của flow 1 (C1-R02) | acceptance |
 
-Lệnh xong mốc (chốt ở plan): `bun run typecheck && bun test && bun run test:int && bun run test:contract:chat` (HUB_URL=hub-api) · `bun run contracts:check` · Python (`cd apps/agent-runtime`): `uv run ruff check . && uv run pyright && uv run pytest && uv run pytest -m int` · `bun run check:size --all` · `bunx depcruise --all` · `bun run test:lock:verify` · `bun run trace --check`.
+Lệnh xong mốc: **chuẩn duy nhất là `test-plan.md` §7.1** (script `bun run done:h1`, task I1).
 
 ## 9. Quyết định
 Toàn bộ chuyển sang [spec-decisions.md](spec-decisions.md). Tóm tắt:
