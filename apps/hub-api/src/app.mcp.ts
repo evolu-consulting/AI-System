@@ -7,6 +7,7 @@ import type { CatalogSnapshot } from "./modules/config/catalog.rules";
 import type { ConfigCache } from "./modules/config/config.service";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
 import { DifyClient } from "./modules/dify/dify.client";
+import { confirmationGate } from "./modules/mcp/confirm.service";
 import { mcpRoutes } from "./modules/mcp/mcp.routes";
 import { McpService } from "./modules/mcp/mcp.service";
 
@@ -53,6 +54,7 @@ export function mountMcp<E extends Env>(app: Hono<E>, d: McpMountDeps): void {
     dify: new DifyClient(),
     difyTimeoutMaxS,
     log: d.log,
+    sideEffect: confirmationGate({ db: d.db, log: d.log }),
   });
   app.route("/mcp", mcpRoutes(svc, { requestTimeoutS: difyTimeoutMaxS + MCP_IDLE_MARGIN_S }));
 }

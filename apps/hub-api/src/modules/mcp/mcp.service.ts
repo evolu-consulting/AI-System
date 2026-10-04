@@ -49,8 +49,8 @@ export type McpContext = {
 };
 
 /**
- * Chỗ nối xác nhận `side_effect` (B9, plan-db §3): trả kết quả thay cho lời gọi Dify (vd yêu cầu xác nhận), hoặc null =
- * được chạy (đã tiêu thụ xác nhận). Mặc định B8: từ chối — không bao giờ chạy tool `side_effect` khi chưa có luồng xác nhận.
+ * Cổng xác nhận `side_effect` (plan-db §3.2; bản thật `confirmationGate` ở `confirm.service.ts`, nối trong `app.mcp.ts`):
+ * trả kết quả thay cho lời gọi Dify (yêu cầu xác nhận), hoặc null = được chạy (đã tiêu thụ xác nhận). Vắng → từ chối.
  */
 export type SideEffectGate = (ctx: McpContext, wf: CatalogWorkflow) => Promise<ToolResult | null>;
 
@@ -66,6 +66,8 @@ export type McpServiceDeps = {
 };
 
 type ToolArgs = { inputs: Record<string, WorkflowInputValue>; query: string | null };
+/** Trace thêm vào `detail` bước `tool` (R22: `confirmation: "consumed"`). */
+type StepTrace = { confirmation?: "consumed" };
 
 export class McpService {
   constructor(private readonly d: McpServiceDeps) {}
@@ -139,15 +141,19 @@ export class McpService {
   async #callTool(ctx: McpContext, wf: CatalogWorkflow, rawArgs: unknown): Promise<ToolResult> {
     const args = validateToolArgs(wf.inputSchema, rawArgs);
     if (!args.ok) return toolError("INVALID_ARGS");
-    if (wf.sideEffect) {
-      const gated = await (this.d.sideEffect ?? refuseSideEffect(this.d.log))(ctx, wf);
-      if (gated) return gated;
-    }
-    return this.#runTool(ctx, wf, args);
+    if (!wf.sideEffect) return this.#runTool(ctx, wf, args, {});
+    const gated = await (this.d.sideEffect ?? refuseSideEffect(this.d.log))(ctx, wf);
+    // Qua cổng = đã tiêu thụ xác nhận (R22) → trace `consumed` trên bước `tool`; gọi Dify đúng một lần, không retry.
+    return gated ?? this.#runTool(ctx, wf, args, { confirmation: "consumed" });
   }
 
-  /** Lấy key → bước `tool` `running` → Dify gom → kết thúc bước + usage. */
-  async #runTool(ctx: McpContext, wf: CatalogWorkflow, args: ToolArgs): Promise<ToolResult> {
+  /** Lấy key → bước `tool` `running` → Dify gom → kết thúc bước + usage. `trace` gộp vào `detail` của bước. */
+  async #runTool(
+    ctx: McpContext,
+    wf: CatalogWorkflow,
+    args: ToolArgs,
+    trace: StepTrace,
+  ): Promise<ToolResult> {
     const stepId = crypto.randomUUID();
     let apiKey: string;
     try {
@@ -156,7 +162,7 @@ export class McpService {
       if (!isCredentialError(err)) throw err;
       const inputs = maskInputs(args.inputs, "");
       await this.#startStep(ctx, wf, stepId, inputs);
-      await this.#finishStep(ctx, stepId, { inputs, code: "NOT_CONFIGURED" });
+      await this.#finishStep(ctx, stepId, { ...trace, inputs, code: "NOT_CONFIGURED" });
       return toolError("NOT_CONFIGURED");
     }
     const inputs = maskInputs(args.inputs, apiKey);
@@ -176,7 +182,8 @@ export class McpService {
     const out = await this.d.dify.runStreaming(req, timeout, () => {});
     const code = errorCodeOf(out);
     const upstream = out.kind === "failed" ? out.detail : null;
-    await this.#finishStep(ctx, stepId, { inputs, code, ...(upstream ? { upstream } : {}) });
+    const detail = { ...trace, inputs, code, ...(upstream ? { upstream } : {}) };
+    await this.#finishStep(ctx, stepId, detail);
     await this.#usage(ctx, stepId, out);
     return out.kind === "finished" ? toolText(out.text) : toolError(code ?? "UPSTREAM_ERROR");
   }
@@ -210,7 +217,11 @@ export class McpService {
   #finishStep(
     ctx: McpContext,
     stepId: string,
-    detail: { inputs: Record<string, string>; code: ToolErrorCode | null; upstream?: string },
+    detail: StepTrace & {
+      inputs: Record<string, string>;
+      code: ToolErrorCode | null;
+      upstream?: string;
+    },
   ): Promise<void> {
     const status = detail.code ? "failed" : "ok";
     return withHubScope(this.d.db, { kind: "system" }, (tx) =>
@@ -251,7 +262,7 @@ function errorCodeOf(out: DifyRunOutcome): ToolErrorCode | null {
   return out.code;
 }
 
-/** Mặc định tới B9: tool `side_effect` không chạy (không có xác nhận ⇒ không gọi Dify). */
+/** Mặc định khi không nối cổng: tool `side_effect` không chạy (không có xác nhận ⇒ không gọi Dify). */
 function refuseSideEffect(log: Logger): SideEffectGate {
   return async (ctx, wf) => {
     log.warn("tool-side-effect-unconfirmed", { run_id: ctx.runId, workflow_id: wf.id });

@@ -92,3 +92,56 @@ export async function finishToolStep(
       ),
     );
 }
+
+// ---------- xác nhận `side_effect` (plan-db §3.2; transaction `user` theo tenant/user của job) ----------
+export type ConfirmKey = {
+  tenantId: string;
+  userId: string;
+  flowId: string;
+  runId: string;
+  agentId: string;
+  workflowId: string;
+};
+
+/** Bước 1: tiêu thụ nguyên tử `confirmed` do E12 quyết cho đúng run này; true = được gọi Dify một lần. */
+export async function consumeConfirmation(tx: Tx, k: ConfirmKey): Promise<boolean> {
+  const rows = await tx.execute<{ id: string }>(sql`UPDATE hub.tool_confirmations
+    SET status = 'consumed', consumed_at = now()
+    WHERE flow_id = ${k.flowId} AND agent_id = ${k.agentId} AND workflow_id = ${k.workflowId}
+      AND status = 'confirmed' AND decided_run_id = ${k.runId}
+    RETURNING id`);
+  return rows.length > 0;
+}
+
+/** Bước 2 (0 dòng ở bước 1): bước `tool` `failed` CONFIRMATION_REQUIRED rồi `pending` (thứ tự khoá run_steps → tool_confirmations). */
+export async function requireConfirmation(tx: Tx, k: ConfirmKey): Promise<void> {
+  await insertStep(tx, {
+    id: crypto.randomUUID(),
+    tenantId: k.tenantId,
+    userId: k.userId,
+    runId: k.runId,
+    type: "tool",
+    agentId: k.agentId,
+    workflowId: k.workflowId,
+    providerKey: null,
+    jobId: null,
+    labelKey: "step.tool",
+    status: "failed",
+    detail: { code: "CONFIRMATION_REQUIRED" },
+    finished: true,
+  });
+  await tx.execute(sql`INSERT INTO hub.tool_confirmations
+      (tenant_id, user_id, flow_id, run_id, agent_id, workflow_id, status)
+    VALUES (${k.tenantId}, ${k.userId}, ${k.flowId}, ${k.runId}, ${k.agentId}, ${k.workflowId}, 'pending')
+    ON CONFLICT (flow_id, agent_id, workflow_id) WHERE status IN ('pending', 'confirmed')
+    DO UPDATE SET run_id = EXCLUDED.run_id, created_at = now()
+    WHERE hub.tool_confirmations.status = 'pending'`);
+}
+
+/** `runs.locale` của run của job (câu hỏi xác nhận theo locale, plan-errors §5). */
+export async function runLocale(tx: Tx, runId: string, tenantId: string): Promise<"vi" | "en"> {
+  const rows = await tx.execute<{ locale: "vi" | "en" }>(
+    sql`SELECT locale FROM hub.runs WHERE id = ${runId} AND tenant_id = ${tenantId}`,
+  );
+  return rows[0]?.locale ?? "vi";
+}

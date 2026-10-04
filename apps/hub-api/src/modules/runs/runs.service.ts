@@ -17,7 +17,9 @@ import type { Logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
 import type { ConfigSnapshot } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
+import { isAgreeReply } from "../mcp/confirm.rules";
 import { setFinalSeq } from "./close/cancel.repo";
+import { decideConfirmations } from "./confirm.repo";
 import * as repo from "./runs.repo";
 import { eventsExpired } from "./runs.rules";
 import { runEventStream, SseReader } from "./sse/sse-reader";
@@ -78,7 +80,7 @@ function flowBusy(err: unknown): boolean {
 
 type Created = RunInfo & { userMessageId: string };
 
-/** §5.1 · một transaction `user`, thứ tự khoá §3.5: conversations → flows → runs → messages. */
+/** §5.1 · một transaction `user`, thứ tự khoá §3.5: conversations → flows → runs → messages → tool_confirmations. */
 async function createRunTx(
   tx: Tx,
   o: repo.Owner,
@@ -122,6 +124,10 @@ async function createRunTx(
     content: p.req.content,
     runId: r.id,
   });
+  if (p.req.flow_id) {
+    const agree = isAgreeReply(p.req.content);
+    await decideConfirmations(tx, o, { flowId: r.flowId, runId: r.id, agree });
+  }
 }
 
 /** Sự kiện kết thúc dựng từ cột `runs` + tin assistant (không gọi lại `runErrorText`, plan-errors §Ghi). */
