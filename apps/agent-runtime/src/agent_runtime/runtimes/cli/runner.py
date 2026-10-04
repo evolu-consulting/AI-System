@@ -95,8 +95,13 @@ class CliJobHost:
         done = await self._finish(job, tx)
         f = v.failure
         log = get_logger()
+        # `resumed` (WRK-FR-14): Hub không lưu `session_resumed` — log để smoke/ops thấy (I2)
         log.info(
-            "job.finished", status=tx.finish.status, code=tx.finish.error_code, written=bool(done)
+            "job.finished",
+            status=tx.finish.status,
+            code=tx.finish.error_code,
+            written=bool(done),
+            resumed=v.session_resumed,
         )
         if done is None:
             self.events.forget(job.id)

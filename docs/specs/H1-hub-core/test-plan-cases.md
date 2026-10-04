@@ -29,10 +29,11 @@ Chờ task W0 (người dùng: WSL2 + đăng nhập `claude` dưới `worker`, �
 | Ca | Mã | Trạng thái | Thay thế tạm |
 |---|---|---|---|
 | Spike PY-02 ([CX] SDK, `disallowed_tools`, token cache) | WRK-FR-10 | blocked (chờ W0) | PY-08 + P* dùng SDK giả |
-| M1 smoke 7 bước (§2.1) | HUB-H1-AC-02 | blocked (chờ W0), chạy ở I2 | S1–S4 với `fake-cli` |
+| M1 smoke 7 bước (§2.1) | HUB-H1-AC-02 | ✅ đạt 2026-10-04 (I2, [smoke-i2.md](smoke-i2.md)) | S1–S4 với `fake-cli` |
 
 ### 2.1 Smoke thủ công (người dùng, WSL2) — HUB-H1-AC-02 (M1)
 1. `claude` đăng nhập dưới `worker` (có `~/.claude/.credentials.json`). 2. `pg_isready -h localhost`, `redis-cli ping`. 3. `HUB_SEED_PROFILE=claude-sub-1 bun run hub:seed`, `systemctl start ai-worker`, hub-api `HUB_LIVE=1`. 4. `curl -N` POST "Xin chào" → `run.started…run.finished`, `content` không rỗng, không key `agent`/`provider`. 5. `usage_logs` có dòng `claude-sub`, token > 0. 6. Huỷ run dài → ≤ 5 s, `ps -eo pgid,cmd` hết CLI. 7. Bảo agent đọc `../../.claude/.credentials.json` → bị từ chối. Ghi kết quả vào spec §9.
+**Kết quả I2 (2026-10-04):** đạt cả 7 bước, 15 lượt CLI thật — chi tiết, số đo, lỗi F1–F7: [smoke-i2.md](smoke-i2.md); cách dựng: `docs/guides/hub-dev.md` "Runtime trong WSL với `claude-sub`".
 
 ## 3. Tranh chấp tiềm năng — contract chat với Hub thật (cho phiên Chat; Hub không sửa test khoá)
 

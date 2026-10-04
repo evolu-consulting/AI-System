@@ -175,9 +175,22 @@ async def kill_group(
     if left:
         get_logger().error("pg_leak", pgid=pgid, count=len(left))
         _signal_pids(left, signal.SIGKILL)
-    reap(tree | left)
-    reap_strays(proc)
+    await _reap_settle(tree | left, proc)
     return left
+
+
+async def _reap_settle(pids: set[int], proc: Path) -> None:
+    """Thu zombie tới khi không còn pid nào của job là zombie con Runtime (≤ `CONFIRM_S`).
+    Smoke I2: cháu `claude` thành zombie (ppid = Runtime) sau lần `reap` duy nhất → `<defunct>`."""
+    me, deadline = os.getpid(), time.monotonic() + CONFIRM_S
+    while True:
+        reap(pids)
+        reap_strays(proc)
+        if not any((st := _stat(p, proc)) and st[1] == me for p in pids):
+            return
+        if time.monotonic() >= deadline:
+            return
+        await asyncio.sleep(POLL_S)
 
 
 def _prctl(option: int, value: int) -> bool:

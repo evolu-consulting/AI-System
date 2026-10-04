@@ -1,6 +1,7 @@
 // HUB-H1-AC-01 · spec H1 §7, §9 Q2/Q3/Q5 · `bun run hub:dev`: dựng môi trường dev Hub trên DB `ai_system`
 // (compose): migrate → admin-api (:3001, dùng lại nếu đang chạy) → user fixture → `hub:seed` → hub-api (:4000)
 // → agent-runtime (`fake-cli`; Windows: container Linux như `tests/acceptance/H1/stack/_stack.ts`, Linux/WSL2: `uv` thẳng).
+// `HUB_DEV_RUNTIME=none` bỏ bước Runtime (tự chạy trong WSL với `claude-sub`, docs/guides/hub-dev.md).
 // Ctrl+C dừng những gì script này đã bật. Env đọc từ `.env.local` (script gọi bằng `bun --env-file=.env.local`).
 import { resolve } from "node:path";
 import { dockerArgs } from "../../../apps/agent-runtime/scripts/run";
@@ -169,9 +170,13 @@ export async function startHubDev(): Promise<HubDev> {
         }),
       );
     else notes.push("hub-api :4000 đã chạy sẵn — dùng lại");
-    stops.push(
-      process.platform === "linux" ? await startRuntimeLocal() : await startRuntimeContainer(),
-    );
+    // biome-ignore lint/suspicious/noUndeclaredEnvVars: chỉ script dev — `none` = Runtime tự chạy ngoài (WSL, claude-sub)
+    if (process.env.HUB_DEV_RUNTIME === "none")
+      notes.push("HUB_DEV_RUNTIME=none — không bật agent-runtime");
+    else
+      stops.push(
+        process.platform === "linux" ? await startRuntimeLocal() : await startRuntimeContainer(),
+      );
     return { stop, notes };
   } catch (err) {
     await stop();
