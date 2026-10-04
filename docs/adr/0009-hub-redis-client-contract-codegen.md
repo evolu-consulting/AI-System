@@ -1,6 +1,6 @@
 # ADR-0009 · Hub: Redis client (ioredis) và toolchain contract zod → JSON Schema → pydantic
 
-Trạng thái: **Proposed** (Gate H1) · Ngày: 2026-10-04 · Spec: `docs/specs/H1-hub-core/` (plan §1 P10, §2.6) · Liên quan: ADR-0001 (dòng ioredis), ADR-0007 #5–#6, ADR-0008
+Trạng thái: **Accepted** (Gate H1, 2026-10-04) · Ngày: 2026-10-04 · Spec: `docs/specs/H1-hub-core/` (plan §1 P10, §2.6) · Liên quan: ADR-0001 (dòng ioredis), ADR-0007 #5–#6, ADR-0008
 
 ## Bối cảnh
 hub-api (Bun) cần: `XADD` có id tường minh (`<seq>-0`) vào `sse:<run_id>`, `XREAD BLOCK` multiplex nhiều stream trên kết nối riêng, `XRANGE/XREVRANGE`, `EXPIRE`, `DEL` (plan §5). ADR-0001 đã ghi "Redis 7 (ioredis)" và pin `ioredis 6.0.0` nhưng chưa cài; Bun 1.3 có client Redis dựng sẵn — cần chốt lại. Contract Hub↔Runtime (ADR-0007 #6) cần cách xuất JSON Schema từ zod và sinh pydantic v2 cho Python, kiểm khớp được.

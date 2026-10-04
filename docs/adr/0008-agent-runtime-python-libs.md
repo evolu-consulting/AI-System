@@ -1,6 +1,6 @@
 # ADR-0008 · Thư viện Python cho Agent Runtime (H1)
 
-Trạng thái: **Proposed** (Gate H1) · Ngày: 2026-10-04 · Spec: `docs/specs/H1-hub-core/plan-runtime.md` · Kế thừa: ADR-0007 #11 (uv, ruff, pyright, pytest, pydantic đã duyệt)
+Trạng thái: **Accepted** (Gate H1, 2026-10-04) · Ngày: 2026-10-04 · Spec: `docs/specs/H1-hub-core/plan-runtime.md` · Kế thừa: ADR-0007 #11 (uv, ruff, pyright, pytest, pydantic đã duyệt)
 
 ## Bối cảnh
 `apps/agent-runtime` (Python 3.12, WSL2 Ubuntu) cần: hàng đợi Postgres (`SKIP LOCKED`, `LISTEN job_enqueued/job_cancel`), ghi Redis Streams, chạy Claude Code qua Claude Agent SDK Python (WRK-FR-10), log JSON có `job_id/run_id/tenant_id` (WRK-NFR-04), đọc env có kiểu, test async, kiểm chiều import (CONVENTIONS §9). Chỉ đề xuất cái thực sự cần; không thêm `psutil`, `fakeredis`, ORM.

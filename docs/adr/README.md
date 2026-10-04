@@ -10,5 +10,5 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0005 | Thư viện M4: nodemailer, qrcode, yaml; TOTP tự viết; biểu đồ Admin không recharts | Accepted (2026-10-03) |
 | 0006 | Render markdown + highlight code cho Chat App (react-markdown, remark-gfm, highlight.js core) | Accepted (Gate C1, 2026-10-04) |
 | 0007 | Hub TypeScript, Agent Runtime Python (queue Postgres, sự kiện Redis Streams) | Accepted (người dùng, 2026-10-04) |
-| 0008 | Thư viện Python cho Agent Runtime (asyncpg, redis-py, claude-agent-sdk, structlog, pydantic-settings, pytest-asyncio, import-linter) | Proposed (Gate H1) |
-| 0009 | Hub: Redis client ioredis + toolchain contract (z.toJSONSchema, datamodel-code-generator) | Proposed (Gate H1) |
+| 0008 | Thư viện Python cho Agent Runtime (asyncpg, redis-py, claude-agent-sdk, structlog, pydantic-settings, pytest-asyncio, import-linter) | Accepted (Gate H1, 2026-10-04) |
+| 0009 | Hub: Redis client ioredis + toolchain contract (z.toJSONSchema, datamodel-code-generator) | Accepted (Gate H1, 2026-10-04) |

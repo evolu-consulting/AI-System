@@ -1,6 +1,6 @@
 # Gate H1 — Hub lõi (TS) + Agent Runtime tối thiểu (Python)
 
-Ngày: 2026-10-04 · Trạng thái: **CHỜ NGƯỜI DÙNG DUYỆT** · Readiness: READY (`H1-hub-core/readiness.md`, 4 lần)
+Ngày: 2026-10-04 · Trạng thái: **ĐÃ DUYỆT 2026-10-04** (người dùng: "Duyệt") · Readiness: READY (`H1-hub-core/readiness.md`, 4 lần)
 
 **Không tự duyệt (Luật 2b):** có ADR thư viện mới (ADR-0008, ADR-0009 Proposed). Người dùng đã chốt Q1 (chưa có API key → Orchestrator và agent chạy CLI qua `claude-sub`), chấp nhận mọi mặc định readiness lần 1 (+ lần 2–4 không có câu hỏi mới), trả lời W0 = "chưa" (chưa chuẩn bị WSL2/đăng nhập `claude`).
 
