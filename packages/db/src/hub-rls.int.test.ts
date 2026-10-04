@@ -156,12 +156,14 @@ describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", ()
     expect(await code(rt`select count(*) from admin.users`)).toBe("42501");
   });
 
-  test("HUB-FR-75 · RLS bật trên đúng 5 bảng hội thoại, policy chỉ cho hub_rw", async () => {
+  test("HUB-FR-75 · RLS bật trên đúng 5 bảng hội thoại (+ tool_confirmations H2a), policy chỉ cho hub_rw", async () => {
     const rows = await owner<{ t: string; roles: string }[]>`
       select c.relname as t, array_to_string(p.polroles::regrole[], ',') as roles
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       left join pg_policy p on p.polrelid = c.oid
       where n.nspname = 'hub' and c.relrowsecurity order by 1`;
-    expect([...rows]).toEqual([...TABLES].sort().map((t) => ({ t, roles: "hub_rw" })));
+    expect([...rows]).toEqual(
+      [...TABLES, "tool_confirmations"].sort().map((t) => ({ t, roles: "hub_rw" })),
+    );
   });
 });

@@ -1,9 +1,10 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
 // Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts`
 // (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
 import {
   boolean,
+  customType,
   integer,
   jsonb,
   primaryKey,
@@ -16,6 +17,7 @@ import { hub } from "./hub-readonly";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true });
 const createdAt = () => ts("created_at").notNull().defaultNow();
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
 
 export const RUN_STATUS_VALUES = ["running", "finished", "failed", "cancelled"] as const;
 export const RUN_STEP_STATUS_VALUES = ["running", "ok", "failed", "skipped"] as const;
@@ -26,6 +28,16 @@ export const JOB_STATUS_VALUES = [
   "failed",
   "cancelled",
   "timed_out",
+] as const;
+export const RUN_KIND_VALUES = ["orchestrated", "command"] as const;
+export const RUN_STEP_TYPE_VALUES = ["orchestrator", "delegate", "workflow", "tool"] as const;
+export const JOB_TYPE_VALUES = ["agent.cli", "agent.run", "workflow.async"] as const;
+export const TOOL_CONFIRMATION_STATUS_VALUES = [
+  "pending",
+  "confirmed",
+  "declined",
+  "consumed",
+  "expired",
 ] as const;
 export const PROVIDER_STATE_VALUES = ["ok", "busy", "cooldown", "error", "logged_out"] as const;
 export const AGENT_RUNTIME_VALUES = [
@@ -46,7 +58,7 @@ export const providers = hub.table("providers", {
   id: uuid("id").primaryKey().defaultRandom(),
   key: text("key").notNull(),
   kind: text("kind", { enum: ["subscription", "api"] }).notNull(),
-  vendor: text("vendor", { enum: ["anthropic", "openai", "google", "fake"] }).notNull(),
+  vendor: text("vendor", { enum: ["anthropic", "openai", "google", "fake", "dify"] }).notNull(),
   baseUrl: text("base_url"),
   secretId: uuid("secret_id"),
   maxConcurrency: integer("max_concurrency").notNull().default(1),
@@ -150,7 +162,9 @@ export const runs = hub.table("runs", {
   ...owned(),
   conversationId: uuid("conversation_id").notNull(),
   flowId: uuid("flow_id").notNull(),
-  kind: text("kind").notNull().default("orchestrated"),
+  kind: text("kind", { enum: RUN_KIND_VALUES }).notNull().default("orchestrated"),
+  commandId: uuid("command_id"),
+  featureId: uuid("feature_id"),
   status: text("status", { enum: RUN_STATUS_VALUES }).notNull(),
   configVersion: integer("config_version").notNull(),
   userMessageId: uuid("user_message_id").notNull(),
@@ -173,7 +187,8 @@ export const runSteps = hub.table("run_steps", {
   ...owned(),
   runId: uuid("run_id").notNull(),
   seq: integer("seq").notNull(),
-  type: text("type", { enum: ["orchestrator", "delegate"] }).notNull(),
+  type: text("type", { enum: RUN_STEP_TYPE_VALUES }).notNull(),
+  workflowId: uuid("workflow_id"),
   agentId: uuid("agent_id"),
   providerKey: text("provider_key"),
   jobId: uuid("job_id"),
@@ -190,8 +205,9 @@ export const jobs = hub.table("jobs", {
   runId: uuid("run_id").notNull(),
   stepId: uuid("step_id").notNull(),
   conversationId: uuid("conversation_id").notNull(),
-  agentId: uuid("agent_id").notNull(),
-  type: text("type", { enum: ["agent.cli", "agent.run"] }).notNull(),
+  /** null chỉ khi `type = workflow.async` (CHECK `jobs_agent_ck`). */
+  agentId: uuid("agent_id"),
+  type: text("type", { enum: JOB_TYPE_VALUES }).notNull(),
   providerKey: text("provider_key").notNull(),
   priority: smallint("priority").notNull().default(100),
   payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
@@ -207,7 +223,31 @@ export const jobs = hub.table("jobs", {
   errorCode: text("error_code"),
   errorReason: text("error_reason"),
   errorMessage: text("error_message"),
+  /** sha256 (32 byte) token job — Runtime ghi lúc claim, requeue xoá (plan H2a P4/RT1). */
+  tokenHash: bytea("token_hash"),
+  queuedAt: ts("queued_at").notNull().defaultNow(),
+  dispatchedAt: ts("dispatched_at"),
   createdAt: createdAt(),
+});
+
+// ── H2a (0002_h2a_dify): xác nhận tool side_effect (RLS như bảng hội thoại), cờ workflow (seed ghi) ──
+export const toolConfirmations = hub.table("tool_confirmations", {
+  ...owned(),
+  flowId: uuid("flow_id").notNull(),
+  runId: uuid("run_id").notNull(),
+  agentId: uuid("agent_id").notNull(),
+  workflowId: uuid("workflow_id").notNull(),
+  status: text("status", { enum: TOOL_CONFIRMATION_STATUS_VALUES }).notNull(),
+  decidedRunId: uuid("decided_run_id"),
+  createdAt: createdAt(),
+  decidedAt: ts("decided_at"),
+  consumedAt: ts("consumed_at"),
+});
+
+export const workflowFlags = hub.table("workflow_flags", {
+  workflowId: uuid("workflow_id").primaryKey(),
+  sideEffect: boolean("side_effect").notNull().default(false),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 
 export const providerState = hub.table("provider_state", {
