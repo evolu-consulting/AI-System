@@ -16,6 +16,22 @@ agents:
     profile: $HUB_SEED_PROFILE
     system_prompt: >-
       Bạn là trợ lý hữu ích. Trả lời ngắn gọn, chính xác, bằng ngôn ngữ của người dùng.
+  # H2a plan-db §4 · R14: agent `dify-*` chạy app Dify của workflow Admin `runtime_options.workflow_key`. `profile` chỉ để
+  # hợp schema (không dùng khi chạy). Workflow chưa có trong `admin.workflows` → seed bỏ agent + cảnh báo; sai app_type
+  # (`dify-workflow` ↔ workflow, `dify-agent` ↔ chat|agent) hoặc không có input nhận tin (`query` / đúng một input chuỗi
+  # bắt buộc, QA2-1) → lỗi seed.
+  - key: dify-tom
+    name: { vi: Tóm tắt (Dify), en: Summarize (Dify) }
+    description: Tóm tắt văn bản người dùng gửi bằng workflow Dify "tom" (một input văn bản bắt buộc).
+    runtime: dify-workflow
+    profile: $HUB_SEED_PROFILE
+    runtime_options: { workflow_key: tom }
+  - key: dify-tro-ly
+    name: { vi: Trợ lý (Dify), en: Assistant (Dify) }
+    description: Trợ lý hội thoại chạy bằng app chat/agent Dify "tro-ly", giữ phiên hội thoại Dify.
+    runtime: dify-agent
+    profile: $HUB_SEED_PROFILE
+    runtime_options: { workflow_key: tro-ly }
 
 orchestrator:
   agent: orchestrator

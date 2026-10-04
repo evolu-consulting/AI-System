@@ -1,5 +1,6 @@
-// HUB-FR-60, HUB-FR-61, HUB-FR-62, HUB-FR-89 · HUB-BR-08 · H1-R16 · `hub:seed`: yaml → zod → một transaction upsert (owner)
-// → `hub_config_version + 1` → NOTIFY `hub_config_changed` (plan H1 §3.6). CLI: `bun run hub:seed`.
+// HUB-FR-60, HUB-FR-61, HUB-FR-62, HUB-FR-89, HUB-FR-23 · HUB-BR-08 · H1-R16 · H2a-R14 · `hub:seed`: yaml → zod → một
+// transaction (owner): `hub_config_version + 1` → đối chiếu `admin.workflows` (H2a plan-db §4) → upsert → NOTIFY
+// `hub_config_changed` (plan H1 §3.6). CLI: `bun run hub:seed`.
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import postgres from "postgres";
@@ -7,14 +8,18 @@ import { z } from "zod";
 import { logger } from "../../lib/logger";
 import {
   bumpHubConfigVersion,
+  insertAgentWorkflows,
+  loadCatalogWorkflows,
   notifyHubConfigChanged,
   upsertAgents,
   upsertOrchestrator,
   upsertProfiles,
   upsertProviders,
+  upsertSideEffectFlags,
   writeAccess,
 } from "./seed.repo";
 import { buildSeedPlan, type SeedSource, SeedValidationError } from "./seed.rules";
+import { resolveWorkflows, workflowKeysOf } from "./seed.workflows";
 
 export type RunHubSeedOptions = { url: string; dir: string; appEnv: string; profile?: string };
 
@@ -45,13 +50,17 @@ export async function runHubSeed(o: RunHubSeedOptions): Promise<{ version: numbe
   try {
     const { version, warnings } = await sql.begin(async (tx) => {
       const v = await bumpHubConfigVersion(tx);
+      const wf = resolveWorkflows(plan, await loadCatalogWorkflows(tx, workflowKeysOf(plan)));
+      if (wf.issues.length) throw new SeedValidationError(wf.issues);
       await upsertProviders(tx, plan.providers);
       await upsertProfiles(tx, plan.profiles);
-      await upsertAgents(tx, plan.agents);
+      await upsertAgents(tx, wf.agents);
       await upsertOrchestrator(tx, plan.orchestrator);
+      await insertAgentWorkflows(tx, wf.agentWorkflows);
+      await upsertSideEffectFlags(tx, wf.sideEffectIds);
       const w = await writeAccess(tx, plan);
       await notifyHubConfigChanged(tx, v);
-      return { version: v, warnings: w };
+      return { version: v, warnings: [...wf.warnings, ...w] };
     });
     for (const w of warnings) logger.warn(w, { module: "seed" });
     return { version };

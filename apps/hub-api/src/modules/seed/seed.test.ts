@@ -39,12 +39,14 @@ function patched(name: string, edit: (d: Record<string, unknown>) => void): Seed
 }
 
 describe("HUB-FR-60 · seed yaml mặc định", () => {
-  it("HUB-FR-60 · development: có fake-cli, agent orchestrator + assistant dùng fake-1", () => {
+  it("HUB-FR-60 · development: có fake-cli + dify, mọi agent dùng fake-1", () => {
     const p = buildSeedPlan(defaults(), { appEnv: "development" });
-    expect(p.providers.map((x) => x.key).sort()).toEqual(["claude-sub", "fake-cli"]);
+    expect(p.providers.map((x) => x.key).sort()).toEqual(["claude-sub", "dify", "fake-cli"]);
     expect(p.agents.map((a) => [a.key, a.profile])).toEqual([
       ["orchestrator", "fake-1"],
       ["assistant", "fake-1"],
+      ["dify-tom", "fake-1"],
+      ["dify-tro-ly", "fake-1"],
     ]);
     expect(p.orchestrator).toMatchObject({ agent: "orchestrator", token_budget: 200_000 });
     expect(p.grants.map((g) => g.subject)).toContain("group:beta-testers");
@@ -52,7 +54,7 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
 
   it("HUB-FR-61 · production: bỏ provider dev_only và profile hết step, agent dùng claude-sub-1", () => {
     const p = buildSeedPlan(defaults(), { appEnv: "production" });
-    expect(p.providers.map((x) => x.key)).toEqual(["claude-sub"]);
+    expect(p.providers.map((x) => x.key)).toEqual(["claude-sub", "dify"]);
     expect(p.profiles.map((x) => x.key)).toEqual(["claude-sub-1"]);
     expect(new Set(p.agents.map((a) => a.profile))).toEqual(new Set(["claude-sub-1"]));
   });

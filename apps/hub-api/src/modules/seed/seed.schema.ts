@@ -1,14 +1,14 @@
-// HUB-FR-60, HUB-FR-61, HUB-FR-62 · schema zod của seed yaml Hub (plan H1 §3.1, §3.6). strictObject: trường lạ (vd `secret`)
-// bị từ chối — yaml không được chứa secret (H1-R16).
+// HUB-FR-60, HUB-FR-61, HUB-FR-62, HUB-FR-23 · schema zod của seed yaml Hub (plan H1 §3.1, §3.6; H2a plan-db §4).
+// strictObject: trường lạ (vd `secret`) bị từ chối — yaml không được chứa secret/app-key (H1-R16).
 
 import { USERNAME_RE } from "@ai/contracts";
-import { AgentKeySchema, ProfileStepSchema } from "@ai/contracts/hub";
+import { AgentKeySchema, ProfileStepSchema, WorkflowKeySchema } from "@ai/contracts/hub";
 import { z } from "zod";
 
 /** Giá trị `profile` của agent được thay bằng profile seed (`HUB_SEED_PROFILE`, plan §3.6). */
 export const SEED_PROFILE_TOKEN = "$HUB_SEED_PROFILE";
 export const PROVIDER_KINDS = ["subscription", "api"] as const;
-export const PROVIDER_VENDORS = ["anthropic", "openai", "google", "fake"] as const;
+export const PROVIDER_VENDORS = ["anthropic", "openai", "google", "fake", "dify"] as const;
 export const SEED_AGENT_RUNTIMES = [
   "agentic-cli",
   "llm",
@@ -56,6 +56,21 @@ export const SeedAgentSchema = z.strictObject({
   enabled: z.boolean().default(true),
 });
 
+/** H2a plan-db §4: agent `dify-*` chỉ có `workflow_key` (key Admin, `CATALOG_KEY_RE`); thừa khoá → lỗi seed. */
+export const DIFY_RUNTIMES = ["dify-workflow", "dify-agent"] as const;
+export type DifyRuntime = (typeof DIFY_RUNTIMES)[number];
+export const DifyRuntimeOptionsSchema = z.strictObject({ workflow_key: WorkflowKeySchema });
+
+export const SeedAgentWorkflowSchema = z.strictObject({
+  agent: AgentKeySchema,
+  workflow: WorkflowKeySchema,
+});
+
+/** Chỉ bật cờ (upsert `side_effect = true`), không tắt cờ workflow vắng mặt. */
+export const SeedWorkflowFlagsSchema = z.strictObject({
+  side_effect: z.array(WorkflowKeySchema).default([]),
+});
+
 export const SeedOrchestratorSchema = z.strictObject({
   agent: AgentKeySchema,
   max_steps: z.number().int().min(1).max(20).default(5),
@@ -90,6 +105,8 @@ export const SeedFileSchema = z.strictObject({
   orchestrator: SeedOrchestratorSchema.optional(),
   entitlements: z.array(SeedEntitlementSchema).default([]),
   grants: z.array(SeedGrantSchema).default([]),
+  agent_workflows: z.array(SeedAgentWorkflowSchema).default([]),
+  workflow_flags: SeedWorkflowFlagsSchema.optional(),
 });
 
 export type SeedProvider = z.infer<typeof SeedProviderSchema>;
@@ -98,4 +115,5 @@ export type SeedAgent = z.infer<typeof SeedAgentSchema>;
 export type SeedOrchestrator = z.infer<typeof SeedOrchestratorSchema>;
 export type SeedEntitlement = z.infer<typeof SeedEntitlementSchema>;
 export type SeedGrant = z.infer<typeof SeedGrantSchema>;
+export type SeedAgentWorkflow = z.infer<typeof SeedAgentWorkflowSchema>;
 export type SeedFile = z.infer<typeof SeedFileSchema>;

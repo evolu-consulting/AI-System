@@ -123,3 +123,9 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 | B-B4-7 | Stop: `POST <stop url>` body `{user}`, Bearer key, `AbortSignal.timeout(2 s)`; không `taskId` ⇒ bỏ qua. Lỗi HTTP run: đọc ≤ 8 KiB thân rồi `maskSecret(…, apiKey)` ≤ 300 vào `detail`; SSE `event:error` `message` cũng che | plan §5.2; A23/A24/A26 |
 | B-B4-8 | `AppDeps.secretMasterKey` (đúng tên seam qc) — server truyền `env.SECRET_MASTER_KEY`; người dùng (B5/B6/B10) gọi `loadMasterKey(deps.secretMasterKey)`. `app.ts`/`server.ts`/`env.ts` chỉ thêm đúng các dòng này | File dùng chung, sửa tối thiểu |
 | B-B4-9 | Test cạnh code: `dify.client.test.ts` (mock MK trong tiến trình: SSE, bảng lỗi, stop, che key) + `credential.int.test.ts` (DB test + role `hub_api`: `workflow_secret` dưới `hub_ro`, hỏng/`key_version`, tự kiểm/probe, `log_dify_usage`, chuỗi credential → client → MK proxy → usage) | Ca khoá A20–A26, A80–A83 cần route (B3/B5/B6) |
+
+## BUILD — D3 (backend-lead, 2026-10-05)
+- `plan-db` §4: ví dụ `dify-dich` sửa thành `dify-tom` ↔ `tom` (một input chuỗi bắt buộc) theo QA2-1; seed mặc định `agents.yaml` dùng `dify-tom`, `dify-tro-ly`.
+- Luật seed ở `modules/seed/seed.workflows.ts`: `runtime_options` agent `dify-*` = `strictObject({workflow_key})` kiểm thuần trước DB; đối chiếu `admin.workflows` trong transaction seed (sau khoá `config_meta`), lỗi → rollback toàn bộ (A93 "DB không đổi"); cảnh báo log sau commit như Q8.
+- `workflow_flags.side_effect` seed chỉ **bật** (upsert `true`), không tắt cờ của workflow vắng trong yaml (đồng nghĩa "upsert, không xoá"); `workflows.yaml` mặc định để danh sách rỗng + ví dụ comment (không cấp tool cho `assistant` ngầm).
+- `agent_workflows.agent` phải có trong seed (như grant/entitlement); agent `dify-*` bị bỏ vì workflow vắng thì các dòng tham chiếu nó ghi 0 hàng (không lỗi).

@@ -11,6 +11,12 @@ providers:
     vendor: fake
     max_concurrency: 2
     dev_only: true
+  # H2a plan-db §4: Dify chạy agent `dify-*` + workflow.async. Không có key ở đây — app-key là secret của từng workflow
+  # trong Admin (`admin.workflows.secret_id`), Hub/Runtime đọc lúc chạy. Không thuộc profile nào.
+  - key: dify
+    kind: api
+    vendor: dify
+    max_concurrency: 5
 
 model_profiles:
   - key: claude-sub-1

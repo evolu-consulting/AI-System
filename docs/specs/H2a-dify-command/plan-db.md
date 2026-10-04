@@ -136,7 +136,7 @@ Thứ tự khoá: `run_steps → tool_confirmations` (H1 §3.5 + `plan.md` §3).
 | File | Thêm |
 |---|---|
 | `providers.yaml` | `dify`: `kind: api`, `vendor: dify`, `max_concurrency: 5`, không `dev_only` |
-| `agents.yaml` | ví dụ `dify-dich` (`runtime: dify-workflow`, `runtime_options.workflow_key`), `dify-tro-ly` (`dify-agent`); `profile` bắt buộc theo schema H1 (không dùng khi chạy) |
+| `agents.yaml` | ví dụ `dify-tom` (`runtime: dify-workflow`, `runtime_options.workflow_key: tom` — workflow có đúng một input chuỗi bắt buộc, QA2-1; **không** trỏ `dich`: 2 input bắt buộc ⇒ `difyAgentInput` = null), `dify-tro-ly` (`dify-agent`, `tro-ly`); `profile` bắt buộc theo schema H1 (không dùng khi chạy) |
 | `workflows.yaml` (mới) | `agent_workflows: [{agent, workflow}]` (upsert, không xoá) · `workflow_flags: {side_effect: [<key>…]}` (upsert `workflow_flags`) |
 
 Luật seed (`seed.rules.ts`): `workflow_key`/`workflow` không có trong `admin.workflows` → bỏ dòng + cảnh báo (môi trường chưa nhập catalog, như grant Q8 H1); có mà `app_type` không khớp runtime (`dify-workflow`↔`workflow`, `dify-agent`↔`chat|agent`) hoặc `difyAgentInput` = null → **lỗi seed** (exit 1, R14). `runtime_options` thừa khoá → lỗi. Key workflow theo `CATALOG_KEY_RE` (gạch nối, không gạch dưới: tool AC-H22 = `create-trello-card`).

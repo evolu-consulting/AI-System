@@ -1,8 +1,9 @@
 // HUB-FR-60, HUB-FR-61, HUB-FR-62 · ghi seed vào bảng cấu hình Hub (plan H1 §3.1, §3.6): upsert theo `key`, không xoá; hàng
-// không đổi giữ nguyên `version`/`updated_at` (`IS DISTINCT FROM`). Chỉ ĐỌC `admin.*` để tìm tenant/user/group.
+// không đổi giữ nguyên `version`/`updated_at` (`IS DISTINCT FROM`). Chỉ ĐỌC `admin.*` (tenant/user/group, workflows H2a).
 import { HUB_CONFIG_CHANNEL, HUB_CONTRACT_VERSION } from "@ai/contracts/hub";
 import type postgres from "postgres";
 import { parseSubject, type SeedPlan } from "./seed.rules";
+import type { ResolvedWorkflows, SeedCatalogWorkflow } from "./seed.workflows";
 
 export type Tx = postgres.TransactionSql;
 
@@ -139,6 +140,34 @@ export async function writeAccess(tx: Tx, plan: SeedPlan): Promise<string[]> {
   await insertEntitlements(tx, plan, tenants, warn);
   await insertGrants(tx, plan, tenants, warn);
   return warn;
+}
+
+/** H2a plan-db §4: chỉ ĐỌC `admin.workflows` theo key seed tham chiếu. */
+export async function loadCatalogWorkflows(tx: Tx, keys: string[]): Promise<SeedCatalogWorkflow[]> {
+  if (!keys.length) return [];
+  return tx<
+    SeedCatalogWorkflow[]
+  >`select id, key, app_type as "appType", input_schema as "inputSchema"
+    from admin.workflows where key in ${tx(keys)}`;
+}
+
+/** `agent_workflows`: thêm nếu chưa có, không xoá (agent đã bị bỏ → 0 dòng). */
+export async function insertAgentWorkflows(
+  tx: Tx,
+  rows: ResolvedWorkflows["agentWorkflows"],
+): Promise<void> {
+  for (const r of rows)
+    await tx`insert into hub.agent_workflows (agent_id, workflow_id)
+      select a.id, ${r.workflowId}::uuid from hub.agents a where a.key = ${r.agent}
+      on conflict (agent_id, workflow_id) do nothing`;
+}
+
+/** `workflow_flags.side_effect = true` (upsert); không tắt cờ workflow vắng trong seed. */
+export async function upsertSideEffectFlags(tx: Tx, workflowIds: string[]): Promise<void> {
+  for (const id of workflowIds)
+    await tx`insert into hub.workflow_flags (workflow_id, side_effect) values (${id}::uuid, true)
+      on conflict (workflow_id) do update set side_effect = true, updated_at = now()
+      where hub.workflow_flags.side_effect is distinct from true`;
 }
 
 /** NOTIFY trong transaction: Postgres chỉ giao khi commit — lỗi thì không ai nhận. */

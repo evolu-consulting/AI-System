@@ -1,9 +1,10 @@
 // HUB-FR-60, HUB-FR-61, HUB-FR-62 · H1-R16 · hàm thuần: parse + gộp yaml seed, kiểm tham chiếu, lọc `dev_only`, chọn profile
-// (plan H1 §3.6). Không I/O — `seed.ts` đọc file và ghi DB.
+// (plan H1 §3.6; H2a plan-db §4: `agent_workflows`, `workflow_flags`, `runtime_options` agent `dify-*`). Không I/O.
 import type { z } from "zod";
 import {
   SEED_PROFILE_TOKEN,
   type SeedAgent,
+  type SeedAgentWorkflow,
   type SeedEntitlement,
   SeedFileSchema,
   type SeedGrant,
@@ -11,6 +12,7 @@ import {
   type SeedProfile,
   type SeedProvider,
 } from "./seed.schema";
+import { checkDifyOptions } from "./seed.workflows";
 
 export type SeedIssue = { path: string; message: string; value?: unknown };
 
@@ -36,6 +38,9 @@ export type SeedPlan = {
   orchestrator: SeedOrchestrator;
   entitlements: SeedEntitlement[];
   grants: SeedGrant[];
+  /** H2a: key workflow Admin — đổi sang id ở `resolveWorkflows` (cần đọc `admin.workflows`). */
+  agentWorkflows: SeedAgentWorkflow[];
+  sideEffect: string[];
 };
 
 export type SeedSource = { name: string; data: unknown };
@@ -80,6 +85,8 @@ function mergeSources(sources: SeedSource[]): Merged {
     orchestrator: [],
     entitlements: [],
     grants: [],
+    agentWorkflows: [],
+    sideEffect: [],
   };
   for (const s of sources) {
     const r = SeedFileSchema.safeParse(s.data ?? {});
@@ -93,6 +100,8 @@ function mergeSources(sources: SeedSource[]): Merged {
     if (r.data.orchestrator) m.orchestrator.push(r.data.orchestrator);
     m.entitlements.push(...r.data.entitlements);
     m.grants.push(...r.data.grants);
+    m.agentWorkflows.push(...r.data.agent_workflows);
+    m.sideEffect.push(...(r.data.workflow_flags?.side_effect ?? []));
   }
   if (issues.length) throw new SeedValidationError(issues);
   return m;
@@ -129,6 +138,7 @@ function checkRefs(m: Merged, issues: SeedIssue[]): void {
     ...m.orchestrator.map((o) => ["orchestrator.agent", o.agent] as const),
     ...m.entitlements.map((e) => ["entitlements.agent", e.agent] as const),
     ...m.grants.map((g) => ["grants.agent", g.agent] as const),
+    ...m.agentWorkflows.map((w) => ["agent_workflows.agent", w.agent] as const),
   ];
   for (const [path, key] of refs)
     if (!agents.has(key)) issues.push({ path, message: "agent không có trong seed", value: key });
@@ -170,6 +180,7 @@ function checkStructure(m: Merged): void {
       value: m.orchestrator.length,
     });
   checkRefs(m, issues);
+  checkDifyOptions(m.agents, issues);
   if (issues.length) throw new SeedValidationError(issues);
 }
 
@@ -201,6 +212,8 @@ export function buildSeedPlan(sources: SeedSource[], o: PlanOptions): SeedPlan {
     orchestrator,
     entitlements: m.entitlements,
     grants: m.grants,
+    agentWorkflows: m.agentWorkflows,
+    sideEffect: [...new Set(m.sideEffect)],
   };
 }
 

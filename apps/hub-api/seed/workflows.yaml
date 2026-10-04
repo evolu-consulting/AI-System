@@ -1,0 +1,11 @@
+# HUB-FR-23 · HUB-FR-95 · H2a plan-db §4: workflow Admin (key `CATALOG_KEY_RE`) mà agent `agentic-cli` được gọi làm tool MCP
+# (`agent_workflows`, upsert, không xoá) + cờ `side_effect` cần người dùng xác nhận trước khi chạy (`workflow_flags`,
+# chỉ bật, không tắt). Workflow chưa có trong `admin.workflows` → bỏ dòng + cảnh báo. Không chứa app-key/secret.
+# Ví dụ (AC-H22):
+#   agent_workflows:
+#     - { agent: assistant, workflow: create-trello-card }
+#   workflow_flags:
+#     side_effect: [create-trello-card]
+agent_workflows: []
+workflow_flags:
+  side_effect: []
