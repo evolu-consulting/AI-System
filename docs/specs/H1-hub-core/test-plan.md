@@ -49,7 +49,7 @@ File: R `rules/{jwt,orchestrator,agent-access,runs}.test.ts`, `contracts-hub.tes
 | HUB-FR-27, 29 · H1-R08 | R5, A16, A17, P28 |
 | HUB-FR-28 · AC-H15 · AC-H14 | A18, A19, S2 |
 | HUB-FR-77 · HUB-BR-03 · AC-H09 · H1-R06 | R7, A14, A21, A25, A27 |
-| HUB-BR-04 · HUB-BR-06 · H1-R15 | A20, A26, A30, A56 · A25 |
+| HUB-BR-04 · HUB-BR-06 · H1-R15 | A20, A26, A30, A56, R16 · A25 |
 | HUB-FR-60, 61, 62 · HUB-BR-08 · H1-R16, R17 · HUB-H1-AC-11 | A42–A47 |
 | HUB-FR-89, 32 · H1-R18 | A29–A32 |
 | HUB-FR-86 · AC-H13 · AC-W07, W08 · HUB-H1-AC-07 | A31, P2–P4 |
@@ -215,9 +215,9 @@ bun run contracts:check
   && uv run lint-imports && uv run pytest && uv run pytest -m int)   # WSL2
 bun run test:h1:stack                               # cần tools/hub-dev chạy
 HUB_URL=http://localhost:4000 AUTH_URL=http://localhost:3001 CHAT_CONTRACT_USERS='<json>' bun run test:contract:chat
-bun run test:lock:verify && bun run trace --check && bun run check:size --all && bunx depcruise --all
+bun run test:lock:verify && bun run trace --check && bun run check:size --all && bunx depcruise apps/hub-api packages/contracts/src/hub packages/db tools/hub-dev
 ```
-Chạy riêng, **chỉ báo cáo, không chặn** (ngoài chuỗi `&&`): `tsc -p tsconfig.tests.json`.
+Chạy riêng, **chỉ báo cáo**: `tsc -p tsconfig.tests.json`, `bunx depcruise --all`.
 `trace --check`, `check:size` quét `.py` chỉ sau PY-01. `test:perf` không thuộc Lệnh xong. Đỏ ngoài bộ lọc (depcruise, `bun test` toàn repo) **do code dở của Chat** = phụ thuộc combine, không chặn H1; ghi tên file đỏ vào bàn giao.
 
 ### 7.2 Smoke thủ công — HUB-H1-AC-02 · **blocked (chờ W0)**, I2 cuối H1: [`test-plan-cases.md`](test-plan-cases.md) §2.1
