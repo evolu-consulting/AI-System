@@ -35,6 +35,13 @@ KNOWN_TOOLS: tuple[str, ...] = (
     "Agent",
     "Task",
     "TodoWrite",
+    # Review H1: tool dựng sẵn khác của Claude Code (xác minh lại danh sách ở W0/PY-02).
+    "MultiEdit",
+    "Skill",
+    "SlashCommand",
+    "BashOutput",
+    "KillShell",
+    "ExitPlanMode",
 )
 # Dự phòng §4: schema phẳng thay `discriminatedUnion` AgentResult; runner validate chặt (C2).
 AGENT_RESULT_SCHEMA: dict[str, Any] = {

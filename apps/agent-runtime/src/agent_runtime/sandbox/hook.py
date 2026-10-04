@@ -3,8 +3,10 @@
 Không phụ thuộc SDK: nhận/trả dict đúng hình `HookCallback` của Claude Agent SDK, nên provider
 `claude-sub` (PY-08) gắn qua `HookMatcher` và `fake-cli` (PY-09) gọi trực tiếp.
 **Dự phòng §13** (tên trường Glob/Grep/LS chưa xác minh ở W0): kiểm mọi giá trị chuỗi của khoá
-chứa `path`; khoá chứa `glob` (và `pattern`, trừ `Grep` — ở đó là regex nội dung) được kiểm như
-đường dẫn khi tuyệt đối, bắt đầu `~` hoặc có thành phần `..`.
+chứa `path`; khoá chứa `glob` (và `pattern`, trừ `Grep` — ở đó là regex nội dung, không mở rộng
+thành đường dẫn) **fail-closed**: chứa `..` ở bất kỳ đâu hoặc `{` (brace `{..}/{..}/x`,
+`{..,a}/**` mở rộng ra ngoài `work/<job>` — review H1 #3) → deny; tuyệt đối / `~` → kiểm như
+đường dẫn. **Xác minh lại ở W0/PY-02** (tên trường + cách CLI mở rộng glob).
 Deny trả lý do cố định, không lặp lại đường dẫn; log chỉ `tool_name`, nhãn, `job_id`.
 Lỗi bất ngờ → deny (fail-closed).
 """
@@ -50,8 +52,16 @@ def _tool_denied(policy: SandboxPolicy, tool_name: str) -> bool:
     return tool_name not in policy.tools
 
 
+_INVALID = HookDecision(allowed=False, reason="path_not_allowed", label="invalid")
+_UNSAFE_PATTERN = HookDecision(allowed=False, reason="path_not_allowed", label="pattern")
+
+
+def _pattern_unsafe(value: str) -> bool:
+    return ".." in value or "{" in value
+
+
 def _pattern_is_path(value: str) -> bool:
-    return value.startswith(("/", "~")) or ".." in Path(value).parts
+    return value.startswith(("/", "~"))
 
 
 def _strings(value: object) -> Iterator[str | None]:
@@ -65,14 +75,19 @@ def _strings(value: object) -> Iterator[str | None]:
         yield None
 
 
-def _candidates(tool_name: str, tool_input: Mapping[str, object]) -> Iterator[str | None]:
+def _candidates(tool_name: str, tool_input: Mapping[str, object]) -> Iterator[str | HookDecision]:
+    """Đường dẫn cần `is_path_allowed`, hoặc quyết định deny sẵn (kiểu lạ, mẫu không an toàn)."""
     for key, value in tool_input.items():
         low = key.lower()
         if "path" in low:
-            yield from _strings(value)
+            yield from (_INVALID if item is None else item for item in _strings(value))
         elif "glob" in low or ("pattern" in low and tool_name not in _PATTERN_FREE_TOOLS):
             for item in _strings(value):
-                if item is None or _pattern_is_path(item):
+                if item is None:
+                    yield _INVALID
+                elif _pattern_unsafe(item):
+                    yield _UNSAFE_PATTERN
+                elif _pattern_is_path(item):
                     yield item
 
 
@@ -81,8 +96,8 @@ def decide(policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, objec
     if _tool_denied(policy, tool_name):
         return HookDecision(allowed=False, reason="tool_not_allowed", label="tool")
     for raw in _candidates(tool_name, tool_input):
-        if raw is None:
-            return HookDecision(allowed=False, reason="path_not_allowed", label="invalid")
+        if isinstance(raw, HookDecision):
+            return raw
         got = is_path_allowed(raw, policy.work_dir, policy.forbidden_roots)
         if not got.allowed:
             return HookDecision(allowed=False, reason="path_not_allowed", label=got.reason)

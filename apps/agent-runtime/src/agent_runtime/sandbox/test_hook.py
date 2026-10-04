@@ -80,3 +80,33 @@ async def test_wrk_br_07_guard_fail_closed(policy: SandboxPolicy) -> None:
     assert bad != {}
     missing = await guard({}, None, None)
     assert missing != {}
+
+
+@pytest.mark.parametrize(
+    ("tool", "tool_input"),
+    [
+        ("Glob", {"pattern": "{..}/{..}/.claude/*"}),
+        ("Glob", {"pattern": f"../{JOB}x/**"}),
+        ("Glob", {"pattern": "{..,x}/**"}),
+        ("Glob", {"pattern": "x/{..,y}/**/*.json"}),
+        ("Glob", {"pattern": "sub/.{.}/a"}),
+        ("Glob", {"pattern": "a..b/*"}),  # `..` ở bất kỳ đâu → deny (fail-closed)
+        ("Glob", {"pattern": "**/*.{ts,tsx}"}),  # brace vô hại vẫn deny (ưu tiên an toàn)
+        ("Grep", {"pattern": "x", "glob": "{..}/{..}/**"}),
+        ("Grep", {"pattern": "x", "glob": ["*.py", "{..,a}/*"]}),
+        ("LS", {"ignore_globs": ["{..}/*"]}),
+    ],
+)
+def test_wrk_br_07_brace_and_dotdot_patterns_denied(
+    policy: SandboxPolicy, tool: str, tool_input: dict[str, object]
+) -> None:
+    """Review H1 #3 · AC-W11: mẫu brace / `..` lọt khỏi `work/<job>` → deny.
+    Xác minh lại W0/PY-02."""
+    got = decide(policy, tool, tool_input)
+    assert (got.allowed, got.reason, got.label) == (False, "path_not_allowed", "pattern")
+
+
+def test_wrk_br_07_grep_content_regex_not_a_path(policy: SandboxPolicy) -> None:
+    """`pattern` của Grep là regex nội dung (không mở rộng thành đường dẫn) → không kiểm."""
+    assert decide(policy, "Grep", {"pattern": r"\.\./x|{a,b}", "glob": "*.py"}).allowed
+    assert decide(policy, "Glob", {"pattern": "src/**/*.py", "path": "."}).allowed
