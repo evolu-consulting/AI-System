@@ -20,7 +20,7 @@ from agent_runtime.log import configure_logging, get_logger
 from agent_runtime.queue import runtime as queue_runtime
 from agent_runtime.queue.runtime import QueueRuntime
 from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
-from agent_runtime.sandbox.process import enable_subreaper
+from agent_runtime.sandbox.process import disable_dumpable, enable_subreaper
 
 Service = Callable[[], Coroutine[Any, Any, None]]
 
@@ -70,8 +70,10 @@ def host_config(settings: Settings) -> HostConfig:
 
 
 async def start_queue(settings: Settings) -> QueueRuntime:
-    """Bước 3–8 §1.5; job host thật + XADD `run:<id>`; subreaper (dự phòng §13, plan §2.3)."""
+    """Bước 3–8 §1.5; job host thật + XADD `run:<id>`; subreaper (dự phòng §13, plan §2.3);
+    không dumpable (review H1 #11)."""
     enable_subreaper()
+    disable_dumpable()
     cfg = host_config(settings)
 
     def make_host(pool: Pool, events: RunEvents) -> CliJobHost:

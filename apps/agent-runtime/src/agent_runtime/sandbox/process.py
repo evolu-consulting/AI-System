@@ -4,7 +4,11 @@
 SIGTERM group → chờ job host thoát ≤ `grace_s` → SIGKILL group → quét `/proc/*/stat` (`pgrp`)
 mỗi 100 ms tới 1,5 s; còn pid → SIGKILL từng pid + log `pg_leak`.
 **Dự phòng §13** (CLI có thể sinh con thoát group): chụp cây `ppid` của job host trước khi giết và
-giết cả cây; Runtime đặt `PR_SET_CHILD_SUBREAPER` để cháu mồ côi về tay mình (thu zombie ở đây).
+giết cả cây; Runtime đặt `PR_SET_CHILD_SUBREAPER` để cháu mồ côi về tay mình (thu zombie ở đây:
+cây đã chụp + mọi zombie khác có `ppid` = Runtime, trừ job host asyncio đang theo dõi — review
+H1 #7).
+`PR_SET_DUMPABLE=0` ở cha (review H1 #11): process cùng uid không đọc được `/proc/<cha>/environ`
+(secret); `execve` của job host đặt lại dumpable nên con không bị ảnh hưởng.
 """
 
 from __future__ import annotations
@@ -24,6 +28,16 @@ PROC = Path("/proc")
 CONFIRM_S = 1.5
 POLL_S = 0.1
 PR_SET_CHILD_SUBREAPER = 36
+PR_SET_DUMPABLE = 4
+_HOSTS: set[int] = set()  # pid job host asyncio đang chờ (không được `waitpid` hộ)
+
+
+def track_host(pid: int) -> None:
+    _HOSTS.add(pid)
+
+
+def untrack_host(pid: int) -> None:
+    _HOSTS.discard(pid)
 
 
 def _stat(pid: int, proc: Path) -> tuple[str, int, int] | None:
@@ -87,6 +101,17 @@ def reap(pids: set[int]) -> None:
             os.waitpid(p, os.WNOHANG)
 
 
+def reap_strays(proc: Path = PROC) -> int:
+    """Thu zombie con của Runtime (cháu mồ côi về subreaper) không phải job host đang theo dõi
+    (job host luôn là trưởng group — `start_new_session` — nên bỏ cả `pgrp == pid`)."""
+    me, n = os.getpid(), 0
+    for pid, (st, ppid, pgrp) in _all_stats(proc).items():
+        if st == "Z" and ppid == me and pid not in _HOSTS and pgrp != pid:
+            with contextlib.suppress(ChildProcessError, OSError):
+                n += os.waitpid(pid, os.WNOHANG)[0] == pid
+    return n
+
+
 async def _confirm(pgid: int, tree: set[int], proc: Path) -> set[int]:
     deadline = time.monotonic() + CONFIRM_S
     while True:
@@ -114,16 +139,29 @@ async def kill_group(
         get_logger().error("pg_leak", pgid=pgid, count=len(left))
         _signal_pids(left, signal.SIGKILL)
     reap(tree | left)
+    reap_strays(proc)
     return left
+
+
+def _prctl(option: int, value: int) -> bool:
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+        return libc.prctl(option, value, 0, 0, 0) == 0
+    except (OSError, AttributeError):
+        return False
+
+
+def disable_dumpable() -> bool:
+    """`prctl(PR_SET_DUMPABLE, 0)` cho process cha; lỗi → False (chỉ log)."""
+    ok = _prctl(PR_SET_DUMPABLE, 0)
+    if not ok:
+        get_logger().warning("dumpable.unchanged")
+    return ok
 
 
 def enable_subreaper() -> bool:
     """`prctl(PR_SET_CHILD_SUBREAPER, 1)` cho process cha; lỗi → False (chỉ log)."""
-    try:
-        libc = ctypes.CDLL(None, use_errno=True)
-        ok = libc.prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0) == 0
-    except (OSError, AttributeError):
-        ok = False
+    ok = _prctl(PR_SET_CHILD_SUBREAPER, 1)
     if not ok:
         get_logger().warning("subreaper.unavailable")
     return ok
