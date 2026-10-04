@@ -255,5 +255,5 @@ Tổng mới ≈ **181** ca (TS 129, Python 52; +13 theo readiness 1) + 40 K + M
 
 **Tranh chấp tiềm năng contract chat (K):** [`test-plan-cases.md`](test-plan-cases.md) §3.
 
-## 10. Kết quả đỏ đúng lý do (điền ở QW-*)
-(trống)
+## 10. Đỏ đúng lý do
+Bảng: [cases §10](test-plan-cases.md)

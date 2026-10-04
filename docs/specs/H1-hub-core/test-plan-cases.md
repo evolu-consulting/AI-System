@@ -47,3 +47,18 @@ Chờ task W0 (người dùng: WSL2 + đăng nhập `claude` dưới `worker`, �
 
 ## 4. Không phủ (đủ) ở H1
 HUB-FR-31 fallback nhiều bước → H2 (Q-T6) · HUB-FR-02 command/workflow/feature/quota → H2/H3 · HUB-FR-60/61 CRUD Studio → H4 (H1 qua seed) · AC-H08 `/runs/:id/trace` → H3 · AC-H09 "cấp ≤ 5 s qua API" → H3 · AC-H13, AC-W02, AC-W07 dự phòng sang API → H2/H3 (H1 kết thúc `ALL_PROVIDERS_EXHAUSTED`) · AC-W09 `billable_usd`/`price_book`, HUB-FR-83 `overage` → H3 · HUB-NFR-03 bộ đếm quota Redis → H3 · WRK-FR-03 `delta` từ Runtime (P6: Hub cắt) · WRK-FR-10 SDK thật chỉ thủ công · AC-W06 (`workflow.async` đưa lại queue) không thuộc H1 — thay bằng HUB-H1-AC-04.
+
+## 5. Ghi chú readiness lần 4 (qc nhận ở QW)
+- **#53:** danh sách file nhóm R (test-plan §3 dòng `File:`, §8 hàng QW-R) gồm thêm `rules/run-errors.test.ts` (R16). Cột `Mã` của A47 (test-plan §5) đọc là `H1-R16` (luật seed), không phải ca R16.
+
+## 10. Kết quả viết test (đỏ đúng lý do; test-plan §10 trỏ về đây)
+
+| Nhóm · ngày | File | Ca | Đỏ đúng lý do | Xanh trước code (chấp nhận) | Ghi chú |
+|---|---|---|---|---|---|
+| QW-R · 2026-10-04 | `rules/orchestrator.test.ts` (R1–R6) | 28 | 28 (`not implemented`) | 0 | |
+| | `rules/agent-access.test.ts` (R7) | 8 | 8 (`not implemented`) | 0 | trả `AgentRef` = `{id}`: test so `id` — xem spec-decisions (B0) |
+| | `rules/runs.test.ts` (R8–R10, R15a–d) | 14 | 14 (`not implemented`) | 0 | |
+| | `rules/jwt.test.ts` (R11–R13) | 11 | 11 (`not implemented`) | 0 | `beforeAll` sinh khoá EdDSA xanh; R13 ký bằng `signAccessToken` Admin |
+| | `rules/run-errors.test.ts` (R16) | 9 | 9 (`not implemented`) | 0 | |
+| | `contracts-hub.test.ts` (R14) | 4 | 1 (`expect`: chưa có `fixtures/hub`, chờ C2) | 3 (mã ⊂, `toJSONSchema`, `v:2`) — C1 đã có | quy ước tên mẫu: `fixtures/hub/{valid,invalid}/<Tên HUB_JSON_SCHEMAS>[._-]*.json` |
+| **QW-R tổng** | 6 file | **74** | **71/71 ca đỏ** (70 `not implemented` + 1 `expect`); 0 đỏ ở import/fixture/`TypeError` | **3** | `tsc -p tsconfig.tests.json` sạch · biome sạch · **chưa khoá** (Q2 sau QW-S) |
