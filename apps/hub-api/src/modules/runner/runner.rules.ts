@@ -2,6 +2,8 @@
 // provider dùng được không, dựng sự kiện job từ dòng `hub.jobs` (P7), mã lỗi job → mã lỗi run.
 import type { ChatRunErrorCode } from "@ai/contracts/chat";
 import {
+  type AgentCliJob,
+  AgentCliJobSchema,
   ALLOWED_TOOLS,
   type AllowedTool,
   FALLBACK_TRIGGERS,
@@ -12,8 +14,6 @@ import {
   JOB_FAIL_REASONS,
   type JobFailReason,
   JobOutputSchema,
-  type JobPayload,
-  JobPayloadSchema,
   type RunEvent,
   type TokenUsage,
 } from "@ai/contracts/hub";
@@ -70,13 +70,13 @@ const isTrigger = (s: string): s is (typeof FALLBACK_TRIGGERS)[number] =>
  * `JobPayload` (plan §2.2) đã qua `JobPayloadSchema` — sai contract (vd `timeout_s` ngoài 10–3600) → null.
  * H1 chỉ chạy bước 0 của profile (H1-R18).
  */
-export function buildJobPayload(i: PayloadInput): JobPayload | null {
+export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
   const step = i.profile.steps[0];
   // H1 chỉ có job `agent.cli` (runtime `agentic-cli`); runtime khác → không dựng payload sai loại.
   if (!step || i.agent.runtime !== "agentic-cli") return null;
   const opts = i.agent.runtimeOptions;
   const isAgent = i.role === "agent";
-  const parsed = JobPayloadSchema.safeParse({
+  const parsed = AgentCliJobSchema.safeParse({
     v: HUB_CONTRACT_VERSION,
     type: "agent.cli",
     runtime: "agentic-cli",

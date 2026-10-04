@@ -1,4 +1,4 @@
-// HUB-FR-89 · payload `hub.jobs.payload` Hub ghi, Runtime đọc (plan H1 §2.2). `agent.run` thêm ở H2.
+// HUB-FR-89 · payload `hub.jobs.payload` Hub ghi, Runtime đọc (plan H1 §2.2; H2a §2.2: `workflow.async`, `mcp`).
 import { z } from "zod";
 import {
   AgentKeySchema,
@@ -7,6 +7,7 @@ import {
   HubUuidSchema,
   VersionSchema,
 } from "./common";
+import { McpConfigSchema, WorkflowAsyncJobSchema } from "./workflow";
 
 export const PROFILE_STEPS_MAX = 5;
 export const HISTORY_MAX = 50;
@@ -53,7 +54,7 @@ export const AgentCliJobSchema = z.strictObject({
   flow_id: HubUuidSchema,
   feature_id: HubUuidSchema.nullable(),
   agent_type_key: AgentKeySchema.nullable(),
-  mcp: z.null(),
+  mcp: McpConfigSchema.nullable(),
   agent: JobAgentSchema,
   provider_key: AgentKeySchema,
   model: ModelSchema,
@@ -75,5 +76,8 @@ export const AgentCliJobSchema = z.strictObject({
 });
 export type AgentCliJob = z.infer<typeof AgentCliJobSchema>;
 
-export const JobPayloadSchema = z.discriminatedUnion("type", [AgentCliJobSchema]);
+export const JobPayloadSchema = z.discriminatedUnion("type", [
+  AgentCliJobSchema,
+  WorkflowAsyncJobSchema,
+]);
 export type JobPayload = z.infer<typeof JobPayloadSchema>;

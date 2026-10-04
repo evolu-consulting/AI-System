@@ -7,6 +7,7 @@ export const HUB_JOB_ERROR_CODES = [
   "CANCELLED",
   "UPSTREAM_ERROR",
   "INTERNAL_ERROR",
+  "NOT_CONFIGURED",
 ] as const;
 export const HubJobErrorCodeSchema = z.enum(HUB_JOB_ERROR_CODES);
 export type HubJobErrorCode = z.infer<typeof HubJobErrorCodeSchema>;
@@ -23,6 +24,8 @@ export const JOB_FAIL_REASONS = [
   "invalid_payload",
   "invalid_output",
   "sandbox",
+  "credential",
+  "upstream",
 ] as const;
 export const JobFailReasonSchema = z.enum(JOB_FAIL_REASONS);
 export type JobFailReason = z.infer<typeof JobFailReasonSchema>;

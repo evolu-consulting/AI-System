@@ -2,7 +2,7 @@
 // NOTIFY → theo dõi `run:<run_id>` (lọc `job_id`) → im 2 s thì đọc `jobs` (dựng từ DB / hết hạn `queued`) → ghi `run_steps`.
 // Không biết HTTP; vòng Orchestrator (B8) gọi `run`/`runJob` với ảnh cấu hình của run (HUB-BR-06).
 import type { ChatRunErrorCode } from "@ai/contracts/chat";
-import type { HistoryItem, JobOutput, JobPayload, RunEvent, TokenUsage } from "@ai/contracts/hub";
+import type { AgentCliJob, HistoryItem, JobOutput, RunEvent, TokenUsage } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
@@ -114,7 +114,7 @@ export class JobAgentRunner implements AgentRunner {
     return withHubScope(this.d.db, { kind: "system" }, fn);
   }
 
-  #payload(task: AgentTask, jobId: string, stepId: string): JobPayload | null {
+  #payload(task: AgentTask, jobId: string, stepId: string): AgentCliJob | null {
     const profile = task.snapshot.profiles.find((p) => p.id === task.agent.profileId);
     if (!profile) return null;
     return buildJobPayload({
@@ -181,7 +181,7 @@ export class JobAgentRunner implements AgentRunner {
   /** Lý do bỏ qua INSERT job (null = đã vào hàng đợi). */
   async #enqueue(
     task: AgentTask,
-    payload: JobPayload,
+    payload: AgentCliJob,
     stepId: string,
     signal: AbortSignal,
   ): Promise<"aborted" | "not_enqueued" | null> {

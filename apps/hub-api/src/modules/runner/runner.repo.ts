@@ -1,6 +1,6 @@
 // HUB-FR-89 · HUB-FR-24 · SQL của AgentRunner (plan H1 §5.6, plan-db §3.3). Gọi trong `withHubScope(system)` (việc nền
 // của chủ run); `hub.jobs`/`provider_state` không RLS. Thứ tự khoá §3.5: runs → run_steps → jobs.
-import { JOB_ENQUEUED_CHANNEL, type JobEnqueuedPayload, type JobPayload } from "@ai/contracts/hub";
+import { type AgentCliJob, JOB_ENQUEUED_CHANNEL, type JobEnqueuedPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { jobs, providerState, runSteps } from "@ai/db/schema/hub";
 import { and, eq, sql } from "drizzle-orm";
@@ -36,7 +36,7 @@ export type StepInsert = {
  */
 export async function enqueueJob(
   tx: Tx,
-  p: JobPayload,
+  p: AgentCliJob,
   step: StepInsert & { owner: string },
 ): Promise<boolean> {
   const live = await tx.execute(sql`select 1 from hub.runs
@@ -61,7 +61,7 @@ export async function enqueueJob(
   return true;
 }
 
-async function insertStep(tx: Tx, p: JobPayload, step: StepInsert): Promise<void> {
+async function insertStep(tx: Tx, p: AgentCliJob, step: StepInsert): Promise<void> {
   await tx.insert(runSteps).values({
     id: step.stepId,
     tenantId: p.tenant_id,
@@ -79,7 +79,7 @@ async function insertStep(tx: Tx, p: JobPayload, step: StepInsert): Promise<void
 }
 
 /** Thử lại cùng step: trỏ sang job mới, `running` lại (giữ `started_at`). */
-async function reopenStep(tx: Tx, p: JobPayload, stepId: string): Promise<void> {
+async function reopenStep(tx: Tx, p: AgentCliJob, stepId: string): Promise<void> {
   await tx
     .update(runSteps)
     .set({ jobId: p.job_id, status: "running", finishedAt: null })

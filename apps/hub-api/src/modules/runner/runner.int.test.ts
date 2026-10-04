@@ -2,7 +2,7 @@
 // (`tests/acceptance/H1/_runtime.ts`, chỉ đọc). Vòng chạy = driver tạm "delegate thẳng agent `assistant`" (thay B8).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { ChatEventSchema } from "@ai/contracts/chat";
-import { JobEnqueuedPayloadSchema, type JobPayload } from "@ai/contracts/hub";
+import { type AgentCliJob, JobEnqueuedPayloadSchema } from "@ai/contracts/hub";
 import { withHubScope } from "@ai/db/hub-scope";
 import {
   HUB_API_URL,
@@ -191,7 +191,7 @@ describe("B7 · không INSERT job cho run đã đóng / không còn của mình 
   it("H1-R14 · enqueueJob: owner khác → false; run đã kết thúc → false; không ghi jobs/run_steps", async () => {
     const { s, runId } = await start("Câu B7 đóng");
     const job = await rt.next(runId);
-    const p = job.payload as JobPayload;
+    const p = job.payload as AgentCliJob;
     const step = (owner: string) => ({
       stepId: p.step_id,
       seq: 1,

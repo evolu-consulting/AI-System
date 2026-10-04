@@ -179,7 +179,7 @@ describe("HUB-FR-89 · manifest, NOTIFY, mã", () => {
   });
 
   test("HUB-FR-89 · z.toJSONSchema không ném với mọi schema xuất", () => {
-    expect(Object.keys(HUB_JSON_SCHEMAS)).toHaveLength(8);
+    expect(Object.keys(HUB_JSON_SCHEMAS)).toHaveLength(10);
     for (const s of Object.values(HUB_JSON_SCHEMAS)) {
       expect(() => z.toJSONSchema(s, { unrepresentable: "throw" })).not.toThrow();
       expect(() =>

@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./chat": "./src/chat/index.ts",
-    "./hub": "./src/hub/index.ts"
+    "./hub": "./src/hub/index.ts",
+    "./hub-internal": "./src/hub-internal/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p . --noEmit"

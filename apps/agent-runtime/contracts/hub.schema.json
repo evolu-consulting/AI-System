@@ -69,7 +69,33 @@
               ]
             },
             "mcp": {
-              "type": "null"
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2048,
+                      "pattern": "^https?:\\/\\/"
+                    },
+                    "tools": {
+                      "minItems": 1,
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9-]{2,32}$"
+                      }
+                    }
+                  },
+                  "required": ["url", "tools"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "agent": {
               "type": "object",
@@ -230,6 +256,9 @@
             "timeout_s"
           ],
           "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/JobPayloadWorkflowAsync"
         }
       ]
     },
@@ -433,7 +462,8 @@
                 "TIMEOUT",
                 "CANCELLED",
                 "UPSTREAM_ERROR",
-                "INTERNAL_ERROR"
+                "INTERNAL_ERROR",
+                "NOT_CONFIGURED"
               ]
             },
             "reason": {
@@ -451,7 +481,9 @@
                     "timeout",
                     "invalid_payload",
                     "invalid_output",
-                    "sandbox"
+                    "sandbox",
+                    "credential",
+                    "upstream"
                   ]
                 },
                 {
@@ -725,6 +757,189 @@
         }
       },
       "required": ["v", "version"],
+      "additionalProperties": false
+    },
+    "JobPayloadWorkflowAsync": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "number",
+          "const": 1
+        },
+        "type": {
+          "type": "string",
+          "const": "workflow.async"
+        },
+        "provider_key": {
+          "type": "string",
+          "const": "dify"
+        },
+        "job_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "run_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "step_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "flow_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "workflow_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "feature_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "command_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workflow_key": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]{2,32}$"
+        },
+        "app_type": {
+          "type": "string",
+          "enum": ["workflow", "chat", "agent"]
+        },
+        "inputs": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+          },
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64000
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        "query": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output_field": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dify_user": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "side_effect": {
+          "type": "boolean"
+        },
+        "timeout_s": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        }
+      },
+      "required": [
+        "v",
+        "type",
+        "provider_key",
+        "job_id",
+        "run_id",
+        "step_id",
+        "tenant_id",
+        "user_id",
+        "conversation_id",
+        "flow_id",
+        "workflow_id",
+        "feature_id",
+        "command_id",
+        "workflow_key",
+        "app_type",
+        "inputs",
+        "query",
+        "output_field",
+        "dify_user",
+        "side_effect",
+        "timeout_s"
+      ],
+      "additionalProperties": false
+    },
+    "DifyCredentialResponse": {
+      "type": "object",
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^https?:\\/\\/"
+        },
+        "api_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "app_type": {
+          "type": "string",
+          "enum": ["workflow", "chat", "agent"]
+        }
+      },
+      "required": ["base_url", "api_key", "app_type"],
       "additionalProperties": false
     }
   }

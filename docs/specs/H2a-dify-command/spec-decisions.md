@@ -37,3 +37,11 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 - Người dùng duyệt Gate H2a (ADR-0010 Accepted; Q1 bằng hàm `hub.workflow_secret` SECURITY DEFINER; Q3 contract chat chỉ thêm).
 - **Dify thật:** người dùng chỉ định lấy cấu hình ở `D:\AI\evoluconsulting\auto-pilot`. Dify API `http://149.202.83.5:4203/v1` (kiểm 2026-10-05: `GET /parameters` app translate → 200, 0,54 s). App-key ở `apps/copilot-hub/.env` (`DIFY_KEY_TRANSLATE`, `DIFY_KEY_CHATBOT`, `DIFY_AGENT_API_KEY`, `DIFY_EXTRACT_API_KEY`, `DIFY_KEY_GMAIL`…) và `apps/extension-hub/.env` (`WXT_DIFY_KEY_MISAINVOICECHECK`). **Không chép key vào repo này:** smoke `DIFY_LIVE=1` đọc key lúc chạy qua env `DIFY_LIVE_ENV_FILE` (đường dẫn tới file `.env` của auto-pilot) và seed vào `admin.secrets` (mã hoá) của DB dev/smoke. Smoke M01 không còn "blocked W1" — chạy được sau khi B*/PY xong.
 - **Rủi ro (combine/production):** Dify đang mở HTTP thường trên IP công khai — app-key đi không mã hoá. Ghi để xử lý trước production (TLS hoặc mạng nội bộ).
+
+## BUILD — C2 (backend-lead, 2026-10-05)
+| # | Quyết định | Lý do |
+|---|---|---|
+| B-C2-1 | `WorkflowAsyncJob.inputs` ≤ 50 khoá là luật Hub, không ở schema | `z.record` không có `maxProperties` hai phía (cấm `refine`, H1 §2); Hub dựng từ `input_map` ≤ `INPUT_SCHEMA_MAX` |
+| B-C2-2 | `HUB_JSON_SCHEMAS` thêm `JobPayloadWorkflowAsync` (→ `$ref` trong `JobPayload`, pydantic `JobPayloadWorkflowAsync`; `agent.cli` giữ `JobPayload1`) và `DifyCredentialResponse` (từ `hub-internal`, cho PY-02) + fixture | Tên model ổn định cho `plan-runtime` §3.1; mẫu hai chiều C2 |
+| B-C2-3 | Header `hub.py` sinh thêm `# pyright: reportInvalidTypeForm=false` (`tools/contracts-gen/hub.ts`) | datamodel-codegen sinh `dict[constr(pattern=…), …]` cho khoá regex; hợp lệ lúc chạy |
+| B-C2-4 | `apps/hub-api` runner (H1) gõ kiểu `AgentCliJob` thay `JobPayload` | `JobPayload` thành union → `p.agent` lỗi kiểu; B6 mở rộng cho `workflow.async` |
