@@ -17,3 +17,25 @@ Chưa chạy (TEST-PLAN). Sau mỗi nhóm WRITE (QW-R, QW-A1, QW-A2 + MK-U, QW-P
 | B7 | TC-4/TC-7: helper tự chèn dữ liệu sau `counts()`, đếm trước khi run của ca ghi xong | Tạo hội thoại trước `counts()`; `settleRuns` trước khi đếm |
 | B8 | Lọc test sai: `bun run test:int <path>` chạy cả repo | `bun --env-file=… --config=bunfig.int.toml test --timeout 30000 ./tests/acceptance/H2c/<file>`; stack/hubdev `--config=bunfig.stack.toml` |
 | B9 | AC-08 H2c: ca không dựng được qua int (F15, L4) | Gọi thẳng `fetch_attachments`; không ép int vào nhánh không tới được |
+
+### QW-R · hàm thuần `tests/acceptance/H2c/rules/` (2026-10-05)
+`bun test ./tests/acceptance/H2c/rules` → **66 ca / 10 file: 50 đỏ, 16 xanh** (342 `expect`). Không DB/Redis/đĩa. typecheck (`tsc -p tsconfig.tests.json`: 0 lỗi ở `rules/`), biome, `check:size`, `check:fn`, `trace --check` xanh. Helper `rules/_rules.ts` (byte mẫu, `uid` dải `a2c0…`, `payloadInput`, `ch()` code point, `lookup` hàm stub thiếu). Chưa khoá (Q2).
+
+| File | ID | Đỏ đúng lý do / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `attachment-name.test.ts` | R01–R10 | 14/14 | stub `not implemented` (`parseFilenameHeader`, `displayName`, `splitExt`, `extOf`, `safeName`, `contentDisposition`, `difyFileType`) | — |
+| `sniff.test.ts` | R11–R16 | 7/7 | stub `isExecutableHead`/`headOk`/`FileInspector.push`/`extOf` | — |
+| `run-files.test.ts` | R17–R24 | 10/10 | stub `pickRunFiles`, `jobFileNames`, `jobAttachments`, `*FilesBlock`, `withOutHint`; R21 `orchestratorPrompt` + R24 `buildJobPayload`: `expect` (khối `<attachments>`/khoá `attachments` chưa có — B4/B6) | — |
+| `attach-limits.test.ts` | R25–R30 | 6/6 | stub `overQuota`, `parseAttachEnv`, `storageKey`/`keyUnder`, `orphanCandidate`; R27 `expect(msg).not.toMatch(/^not implemented/)` (chặn stub ném "lọt" ca ném) | — |
+| `command-input-h2c.test.ts` | R31–R34 | 5/8 | `expect`: `buildInputs` chưa dựng `files`, chưa `invalid` khi lệch map (B7) | R31 hồi quy H2a (vắng/`null`); R32 vắng file → `missing`, tuỳ chọn → ok; R34 `file` không map → `missing` (hành vi H2a đã đúng) |
+| `mcp-h2c.test.ts` | R35–R38 | 3/6 | R35 `hasFiles` false/true + R36 `withFiles`: `expect` (tham số chưa dùng — B8); R37 stub `fileArg` | R35 `hasFiles` vắng (H2a); R36 `withFiles` vắng (H2a); R38 `TOOL_FILE_TEXT` (hằng có từ B0) |
+| `dify-upload.test.ts` | R39–R40 | 2/2 | **module `dify/dify-upload.ts` chưa có** → nạp động, ném `not implemented: dify/dify-upload.ts (stub thiếu)` | — |
+| `run-errors-h2c.test.ts` | R41 | 1/2 | `expect`: hint `file_rejected` chưa có | R41 vế hồi quy (7 mã × 2 locale, `refused` H2b) |
+| `messages-h2c.test.ts` | R42–R43 | 2/3 | R42 `expect` (`toMessage` bỏ qua tham số `refs`); R43 `toAttachmentRef` **chưa có** → `lookup` ném `not implemented` | R42 `refs` vắng/`[]` → y hệt H2b |
+| `contracts-h2c.test.ts` | R44–R49 | 0/8 | — | cả 8: contract C2 (`b3658f0`) đã có hằng/schema/fixture — xanh đúng (P2 chỉ thêm) |
+
+**Lệch plan / cần backend-lead** (stub B0 `3f54974` thiếu so với plan-rules; test viết theo plan-rules, biên dịch được, đỏ nêu rõ "stub thiếu"):
+1. `apps/hub-api/src/modules/dify/dify-upload.ts` (`mapDifyUploadError`, `difyUploadId`, plan-rules §5) **không tồn tại** — test nạp động `import(MODULE)`; khi thêm file đúng đường dẫn/tên export, test chạy thẳng.
+2. `conversations.rules.ts`: thiếu `toAttachmentRef` và tham số thứ 4 `refs?: readonly AttachmentRef[]` của `toMessage` — test gọi qua `lookup`/kiểu hàm rộng hơn (gán được).
+3. `orchestrator.prompt.ts` `PromptInput.attachments?` và `runner.rules.ts` `PayloadInput.attachments?` chưa khai báo — test truyền qua `as PromptInput`/`as PayloadInput`.
+4. `mcp.rules.ts` `toolInputSchema(inputs, withFiles)`: plan-rules dùng `i.description ?? i.name` nhưng `WorkflowInput.description` bắt buộc (contract M2) — R36 dựng input thiếu mô tả bằng ép kiểu; nếu catalog luôn có mô tả, nhánh `?? i.name` chỉ là phòng thủ.
