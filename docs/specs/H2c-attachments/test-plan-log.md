@@ -101,3 +101,28 @@ Cùng lệnh QW-A1, DB riêng `ai_system_h2c_qwa2_test` + `ai_system_h2c_qwa2_hu
 
 ### Q2 · khoá test TS (2026-10-05, sau QW-A2 `e73ee31`)
 Trước ghi: hồi quy MK-U xanh (`bun test tools/hub-dev` 11 pass; H2a int dùng MK 90 pass; `test:h2a:stack` 3 pass — mục QW-A2). `test:lock:verify` → đúng **29 `UNLOCKED`** `tests/acceptance/H2c/**` (`_h2c.ts`, `_h2c2.ts`, 16 `*.int.test.ts`/perf, `rules/` 11; chưa có `stack/`, `hubdev/`) + đúng **1 `CHANGED tools/hub-dev/src/dify-mock.ts`**, không dòng khác. `test:lock:write` → **342 file**; `verify` OK. `git diff tests/.lock`: +29 dòng H2c, đổi đúng 1 dòng `dify-mock.ts`. `dify-mock.test.ts` không khoá.
+
+### QW-PU · unit Python thuần `apps/agent-runtime/tests/acceptance/test_files_rules.py` (2026-10-05, sau Q2 `6b88da9`, PY-00 `bca7ca0`)
+`bun apps/agent-runtime/scripts/run.ts "uv run pytest tests/acceptance/test_files_rules.py"` → **92 ca (đã tham số hoá) / 1 file: 90 đỏ, 2 xanh**; 90/90 đỏ ở `NotImplementedError` của stub PY-00 (đếm `--tb=line`), không lỗi collect (import `importlib` trong thân test). Không DB/Redis/mạng (P25 dùng `httpx2.MockTransport` + `tmp_path`). Cả bộ `pytest` (unit): 717 pass, chỉ 90 ca này đỏ. ruff check/format, pyright (0 lỗi), `check:size` xanh.
+
+| File | ID | Đỏ đúng lý do / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `test_files_rules.py` | P01 `valid_job_file_name` | 32/32 | stub `NotImplementedError` | — |
+| | P02 `classify_fetch` | 11/11 | stub | — |
+| | P03 `backoff` + hằng | 4/5 | stub `backoff` | `FETCH_BACKOFF_S`, `FETCH_TIMEOUT_S` (hằng có từ PY-00) |
+| | P04 hằng ↔ contract | 0/1 | — | hằng PY-00 + `JobAttachment` schema (`maxLength` 120, `maximum` 20 971 520); contract không sinh `JOB_FILE_NAME_MAX`/`JOB_OUTPUTS_MAX` ⇒ nhánh `hasattr` bỏ qua |
+| | P05 `pick_outputs` | 5/5 | stub | — |
+| | P06 `filename_header` | 17/17 | stub | — |
+| | P07 `classify_output` | 12/12 | stub | — |
+| | P08 `wants_outputs` | 6/6 | stub | — |
+| | P25 (vế gọi thẳng, F15/L4/B9) `fetch_attachments` | 3/3 | stub `fetch_attachments` | — |
+
+P25 ở unit: `name="../x"` (dựng `JobAttachment.model_construct`, contract cấm) → `FetchFailed(bad_name)`, 0 GET, `dest` rỗng, không file ngoài; `a.pdf` hợp lệ rồi `../x` → 1 GET, `dest` rỗng sau `FetchFailed`; symlink đặt sẵn `a.pdf → victim` → `exists`, `victim` nguyên, 0 GET.
+
+**Lệch plan / cần backend-lead**:
+1. P25 vế "`dest/sub` symlink ra ngoài → `path`" **không dựng được**: `valid_job_file_name` cấm `/`, `\` nên `target.parent == dest` luôn ⇒ nhánh `path` (§3.2 bước 1) không tới được qua `fetch_attachments`; không viết ca (giống B9 — không ép nhánh không tới). `path` còn đường thật từ `prepare_job_dirs` (lỗi OS, §3.1) — để int QW-P.
+2. P05: test không ép thứ tự phần tử trong danh sách `skipped` (plan chỉ nói thứ tự **luật** loại) — so `Counter`; `over_limit` một mục mỗi file.
+3. P25 symlink đặt sẵn: không ép `dest` rỗng sau `exists` (plan §3.2 chỉ xoá "file đã ghi"; symlink đặt sẵn không do Runtime ghi).
+
+### Q-PU · khoá `test_files_rules.py` (2026-10-05)
+`test:lock:verify` trước ghi → đúng **1 `UNLOCKED apps/agent-runtime/tests/acceptance/test_files_rules.py`**, không dòng khác. `test:lock:write` → **343 file**; `verify` OK. `git diff tests/.lock`: +1 dòng đúng file đó.
