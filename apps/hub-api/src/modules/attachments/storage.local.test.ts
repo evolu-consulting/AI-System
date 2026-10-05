@@ -1,7 +1,7 @@
 // HUB-FR-44 · H2c-R04, R05 · PL1, P23 · driver `local` trên thư mục tạm: gốc tạo/ghi thử, lỗi không lộ đường dẫn, hai pha
 // stage → commit/discard, bộ đếm byte, inspect, `.part` không ghi đè, open/blob/remove/list, body không bị huỷ khi lỗi.
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { StorageKeyError, StorageRejected, StorageTooLarge } from "./storage";
@@ -172,4 +172,37 @@ describe("list con trỏ (key, partial) [RV-9]", () => {
     expect(p3.map((e) => e.key)).toEqual([`${T}/${id(2)}`]);
     expect((await s.list({ after: k, limit: 5 })).map((e) => e.key)).toEqual([`${T}/${id(2)}`]);
   });
+});
+
+/** Windows không quyền tạo symlink (EPERM) ⇒ bỏ ca. */
+async function canSymlink(): Promise<boolean> {
+  const d = await mkdtemp(join(tmpdir(), "hub-att-ln-"));
+  try {
+    await writeFile(join(d, "t"), "x");
+    await symlink(join(d, "t"), join(d, "l"), "file");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await rm(d, { recursive: true, force: true });
+  }
+}
+const LN = await canSymlink();
+
+describe("#existing không theo symlink [RV-10]", () => {
+  test.skipIf(!LN)(
+    "<tenant>/<id> là symlink tới file ngoài gốc ⇒ open/blob null (không coi là file có sẵn)",
+    async () => {
+      const dir = await temp();
+      const out = await temp();
+      await writeFile(join(out, "secret"), "secret");
+      const s = await createLocalStorage({ dir });
+      await mkdir(join(dir, T), { recursive: true });
+      await symlink(join(out, "secret"), join(dir, T, id(1)), "file");
+      expect(await s.open(`${T}/${id(1)}`)).toBeNull();
+      expect(await s.blob(`${T}/${id(1)}`, "application/pdf")).toBeNull();
+      await writeFile(join(dir, T, id(2)), "ok");
+      expect((await s.open(`${T}/${id(2)}`))?.size).toBe(2);
+    },
+  );
 });

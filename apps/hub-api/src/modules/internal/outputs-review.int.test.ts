@@ -6,7 +6,13 @@ import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { FILENAME_HEADER } from "@ai/contracts/chat";
-import { type Keys, makeKeys, type Sql, USERS } from "../../../../../tests/acceptance/H1/_fixtures";
+import {
+  type Keys,
+  makeKeys,
+  type Sql,
+  USERS,
+  waitFor,
+} from "../../../../../tests/acceptance/H1/_fixtures";
 import type { HubX } from "../../../../../tests/acceptance/H1/_hub";
 import { AG } from "../../../../../tests/acceptance/H1/_hub";
 import {
@@ -14,7 +20,12 @@ import {
   newJobToken,
   tokenHash,
 } from "../../../../../tests/acceptance/H2a/_runtime2";
-import { type H2bExtra, setupH2b, startHubH2b } from "../../../../../tests/acceptance/H2b/_h2b";
+import {
+  captureLogs,
+  type H2bExtra,
+  setupH2b,
+  startHubH2b,
+} from "../../../../../tests/acceptance/H2b/_h2b";
 import type { logger } from "../../lib/logger";
 import type { AttachmentStorage } from "../attachments/storage";
 import { createLocalStorage } from "../attachments/storage.local";
@@ -105,7 +116,8 @@ describe("RV-2 · gửi lại cùng tên trong lần claim = thay", () => {
 });
 
 describe("RV-1 · claim đổi giữa lúc đọc thân", () => {
-  it("requeue (token mới) trước khi thân xong ⇒ 401 UNAUTHORIZED; 0 hàng, 0 .part", async () => {
+  it("requeue (token mới) trước khi thân xong ⇒ 401 UNAUTHORIZED + log output-claim-lost; 0 hàng, 0 .part", async () => {
+    const log = captureLogs();
     const j = await agentJob();
     let release: () => void = () => {};
     const gate = new Promise<void>((r) => {
@@ -120,16 +132,25 @@ describe("RV-1 · claim đổi giữa lúc đọc thân", () => {
       },
     });
     const res = post(j.jobId, j.token, "late.md", body);
-    await Bun.sleep(300);
+    // Thân đã bắt đầu ghi (`.part` có) ⇒ đã qua xác thực, đang đọc thân — tín hiệu thay cho sleep cố định.
+    expect((await waitFor(partFiles, (p) => p.length > 0, 10_000)).length).toBe(1);
     await sql`update hub.jobs set started_at = clock_timestamp(), attempts = attempts + 1,
       token_hash = ${tokenHash(newJobToken())} where id = ${j.jobId}`;
     release();
-    const r = await res;
+    const r = await res.finally(log.restore);
     expect(r.status).toBe(401);
     const err = (await r.json()) as { error: { code: string } };
     expect(err.error.code).toBe("UNAUTHORIZED");
     expect(await rowsOf(j.jobId)).toEqual([]);
     expect(await partFiles()).toEqual([]);
+    const hit = log.lines.find((l) => l.rec.msg === "output-claim-lost");
+    expect({ level: hit?.level, job: hit?.rec.job_id, token: "token" in (hit?.rec ?? {}) }).toEqual(
+      {
+        level: "info",
+        job: j.jobId,
+        token: false,
+      },
+    );
   });
 });
 

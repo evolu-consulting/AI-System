@@ -120,8 +120,10 @@ export class InternalAttachmentService {
       const out: Attachment = await this.d.files.ingestOutput(job, input, this.d.log);
       return { kind: "ok", id: out.id };
     } catch (e) {
-      if (e instanceof OutputClaimLost) return UNAUTHORIZED;
-      throw e;
+      if (!(e instanceof OutputClaimLost)) throw e;
+      // RV2-5 · 401 vì claim đổi giữa chừng (khác token sai) — vết vận hành; không log token.
+      this.d.log.info("output-claim-lost", { job_id: jobId });
+      return UNAUTHORIZED;
     }
   }
 }
