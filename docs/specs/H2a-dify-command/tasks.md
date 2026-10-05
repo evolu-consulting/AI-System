@@ -54,5 +54,5 @@ Nhóm: Tiền đề · DB · Contract · BE-TS (hub-api) · PY (agent-runtime) �
 | QW-P | qc WRITE Python + stack: P01–P27, S01–S03 (`test-plan-cases §5`) | qc | cao | `test-plan-cases §1.9–1.10, §5`, `plan-runtime §3.3–3.8, §5–7`, `plan-runtime-dify §3.4–3.7` | `apps/agent-runtime/tests/acceptance/{dify_*,mcp_*}_int_test.py`, `_dify.py`, `tests/acceptance/H2a/stack/*` | PY-02 (mock Python), Q2 | đỏ đúng lý do | [x] |
 | Q3 | Khoá lần 2 (Python + stack) + `tests/support/dify_mock.py` vào danh sách khoá — **trước PY-03** (`mcp_mock.py` khoá khi PY-06 xong) | qc | thường | `WORKFLOW` "Luật khoá test" | `tests/.lock` | QW-P | `bun run test:lock:verify` | [x] |
 | I1 | `done:h2a` toàn bộ + hồi quy `test:contract:chat` (HUB-H2a-AC-11) | qc | thường | `test-plan §7` | — | mọi task | `bun run done:h2a` | [x] |
-| I2 | Smoke thật Dify (`DIFY_LIVE=1`) + `claude-sub` gọi MCP (`HUB_LIVE=1`) | backend-lead | cao | `spec §7`, `§9 Q10` | `docs/specs/H2a-dify-command/smoke.md` | I1, W1 | biên bản smoke | [ ] |
+| I2 | Smoke thật Dify (`DIFY_LIVE=1`) + `claude-sub` gọi MCP (`HUB_LIVE=1`) | backend-lead | cao | `spec §7`, `§9 Q10` | `docs/specs/H2a-dify-command/smoke.md` | I1, W1 | biên bản smoke | [x] |
 | I3 | docs: CODEMAP, TRACE, README module, STATE, CR-impact cho Chat/Admin | docs-architect | thường | `WORKFLOW` bước 10 | `docs/**` | I1 | `bun run trace --check` | [ ] |
