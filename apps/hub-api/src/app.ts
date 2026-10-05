@@ -8,10 +8,11 @@ import {
   MESSAGE_ID_HEADER,
   RUN_ID_HEADER,
 } from "@ai/contracts/chat";
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
 import { DEFAULT_JOB_MAX_WAIT_S, mountDifyCredential, workflowJobs } from "./app.async";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
+import { mountH2b } from "./app.h2b";
 import { mountMcp } from "./app.mcp";
 import { agentRunner } from "./app.runner";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
@@ -71,7 +72,7 @@ export type AppDeps = {
 
 const DEFAULT_CONFIG_POLL_S = 60;
 /** Gốc các route cần JWT (E5–E15). Chặn ở gốc ⇒ 401 trước 404, kể cả route chưa mount; `/health` mở. */
-const PROTECTED_PREFIXES = ["/conversations", "/runs", "/commands"];
+const PROTECTED_PREFIXES = ["/conversations", "/runs", "/commands", "/agents"];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
@@ -188,18 +189,9 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   });
 }
 
-export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
-  const app = new Hono<AppVars>();
-  const config = deps.db
-    ? startConfigCache(deps.db, {
-        pollS: deps.configPollS ?? DEFAULT_CONFIG_POLL_S,
-        log: logger,
-        signal: deps.signal,
-      })
-    : undefined;
-
-  // Không bao giờ log body, Authorization, Cookie (CONVENTIONS §5, A52).
-  app.use(async (c, next) => {
+/** request_id → logger child → cache cấu hình; log một dòng mỗi request. Không bao giờ log body, Authorization, Cookie (CONVENTIONS §5, A52). */
+function requestContext(config?: ConfigCache): MiddlewareHandler<AppVars> {
+  return async (c, next) => {
     const incoming = c.req.header(REQUEST_ID_HEADER);
     const id = incoming && REQUEST_ID_RE.test(incoming) ? incoming : crypto.randomUUID();
     c.set("requestId", id);
@@ -214,7 +206,20 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
       status: c.res.status,
       ms: Math.round((performance.now() - t0) * 10) / 10,
     });
-  });
+  };
+}
+
+export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
+  const app = new Hono<AppVars>();
+  const config = deps.db
+    ? startConfigCache(deps.db, {
+        pollS: deps.configPollS ?? DEFAULT_CONFIG_POLL_S,
+        log: logger,
+        signal: deps.signal,
+      })
+    : undefined;
+
+  app.use(requestContext(config));
   app.use(
     cors({
       origin: cfg.corsOrigins,
@@ -226,6 +231,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   mountProtected(app, deps, config);
+  if (deps.db && config) mountH2b(app, config);
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
 
