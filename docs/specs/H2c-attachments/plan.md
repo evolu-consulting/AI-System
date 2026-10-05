@@ -139,8 +139,8 @@ Mỗi lượt **một transaction** `system` giữ `pg_try_advisory_xact_lock(ha
 ## 7. Hiệu năng · env
 | Chỉ tiêu (spec §6) | Cách đạt |
 |---|---|
-| Upload 20 MiB ≤ 1,5 s p95; RSS ≤ 8 MiB/upload | stream `ReadableStream` → `FileHandle.write` từng chunk, sha256 tăng dần, inspector chỉ giữ ≤ 16 byte đầu + trạng thái UTF-8; không `arrayBuffer()` |
-| R09 + R11 (10 id) ≤ 5 ms | PK `id = ANY`; `runFiles` dùng `attachments_message_idx` + `messages_flow_idx` |
+| Upload 20 MiB ≤ 1,5 s p95; RSS ≤ 16 MiB/upload (nới 2026-10-05) | stream `ReadableStream` → `FileHandle.write` từng chunk, sha256 tăng dần, inspector chỉ giữ ≤ 16 byte đầu + trạng thái UTF-8; không `arrayBuffer()` |
+| R09 + R11 (10 id) ≤ 40 ms (nới 2026-10-05) | PK `id = ANY`; `runFiles` dùng `attachments_message_idx` + `messages_flow_idx` |
 | Hạn mức | `attachments_tenant_live_idx … INCLUDE (size)` ⇒ index-only `SUM` |
 | Sweeper lô 500 ≤ 2 s | index partial `unbound`/`conv_live`/`conversations_deleted_idx`; `SKIP LOCKED` |
 

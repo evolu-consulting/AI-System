@@ -172,3 +172,31 @@ P32 perf (L10, báo cáo): 10 × 2 MiB tải 131 ms.
 
 ### Q3 · khoá lần 2 (2026-10-05, sau QW-P `ac39836`, trước PY-03)
 `test:lock:verify` trước ghi → đúng **9 `UNLOCKED`** (`apps/agent-runtime/tests/acceptance/{_hub_files.py, attachments_int_test.py, outputs_int_test.py}`, `tests/acceptance/H2c/stack/{_stack.ts, files, out, async-file, orchestrated}.stack.test.ts`, `H2c/hubdev/attach.hubdev.test.ts`), không `CHANGED`/`MISSING` (sửa `apps/hub-api` của B2/B3/B5/B10 không thuộc file khoá). `test:lock:write` → **352 file**; `verify` OK. `git diff tests/.lock`: +9 dòng, 0 dòng xoá/đổi.
+
+### I1 · 2026-10-05 (sau B0–B10, PY-00…04, C1–C2, D1, MK; HEAD `48faf8a`)
+`bun run done:h2c` — DB riêng: `TEST_DATABASE_URL` = `ai_system_h2c_i1_test` (`db:test:create h2c_i1`), `HUB_TEST_DATABASE_URL`/`AGENT_RT_TEST_DATABASE_URL` = `ai_system_h2c_i1_hub_test` (tạo tay); chỉ export `*DATABASE_URL`; Redis mặc định; compose chạy; không chạy song song (~2,4 GB RAM trống, không thiếu RAM). Lượt 1 đầy đủ: 1–2 xanh, **3 đỏ** (1 ca Admin chập chờn) ⇒ dừng. Áp quyết định nới perf (spec-decisions "Quyết định người dùng — nới perf") rồi lượt 2 `--from=4`: 4–11 xanh, **12 đỏ (c)**. Bước 13–16 chạy tay sau lượt 2 (runner dừng ở đỏ): xanh. DB test đã drop.
+
+| # | Bước | Kết quả |
+|---|---|---|
+| 1 | typecheck (turbo, 6 gói) | xanh |
+| 2 | unit (… + `H2c/rules`) | xanh — 612 pass, 13 skip, 0 fail |
+| 3 | int `H1/ H2a/ H2b/ H2c/ M ADM-NFR-06` | lượt 1 **đỏ (a) chập chờn, không thuộc H2c**: 2106/2107 (21,9 phút) — `M4/quota-alerts.int.test.ts:150` M4-AC18 chờ `attempts=1` nhận 2 (đã gặp ở `done:h1` lượt 1, H1 test-plan-cases §10; dispatcher thử lại trước khi `poll` đọc). Chạy riêng file 3 lần: 11/11 ×3 xanh. `command-file.int` xanh (không đỏ lẻ) |
+| 4 | `contracts:check` | xanh (21 pytest + 25 bun) |
+| 5 | agent-runtime: ruff, format, pyright, lint-imports, pytest, pytest -m int | xanh — 856 unit + 181 int |
+| 6 | `test:h1:stack` | xanh — 4/4 |
+| 7 | `test:h2a:stack` | xanh — 3/3 |
+| 8 | `test:h2b:stack` | xanh — 14/14 |
+| 9 | `test:h2c:stack` (S01–S07) | xanh — 9/9 (S05 `async-file` xanh) |
+| 10 | `test:contract:chat` (Hub thật) | xanh — 41 pass, 21 skip; không cần dọn hội thoại `lan` (CHAT-AC-19 xanh) |
+| 11 | H01 `H2b/hubdev` | xanh — 2/2 |
+| 12 | H01 `H2c/hubdev` | **đỏ (c) code sai — `tools/hub-dev/src/dev.ts` (MK)**: SSE `[run.started, step.started, step.finished, run.failed]`, log Hub `job-failed code=INTERNAL_ERROR reason=attachment "attachment fetch failed: no_hub_url"`. `runtimeEnv()` của hub-dev không đặt `AGENT_RT_HUB_URL` (và container hub-dev không `--add-host host.docker.internal:host-gateway` như harness stack H2a/H2c) ⇒ Runtime không tải được file đính kèm (`runtimes/cli/files/fetch.py` ⇒ `no_hub_url`). Test đúng (AC-01: gửi tin có file qua hub-dev ⇒ `run.finished`). Không sửa (không phải file qc) |
+| 13 | `test:lock:verify` | xanh (352 file) — chạy tay |
+| 14 | `trace --check` | xanh (190 mã) — chạy tay |
+| 15 | `check:size --all` | xanh (1663 file) — chạy tay |
+| 16 | depcruise | xanh (292 module) — chạy tay |
+| 17 | `tsc -p tsconfig.tests.json` (báo cáo) | xanh cả 2 lượt |
+| 18 | `test:perf H2a H2b H2c` (báo cáo) | lượt 1 (ngân sách cũ) 587/594: **PF1** RSS 9,82 MiB/upload > 8 MiB (p95 thời gian đạt); **PF2** +14,3 ms p95 > 5 ms; PF3 xanh; H2b/H2c `hubdev` "Unable to connect" (hub-dev không chạy vì lượt dừng ở 3); Admin ADM-FR-53 5,51 ms > 5, ADM-NFR-03 users +24,6 ms > 20. Lượt 2 (ngân sách mới PF1 ≤ 16 MiB, PF2 ≤ 40 ms) 590/594: **PF1–PF3 xanh**; đỏ: H2c H01 (= bước 12), Admin ADM-FR-53 6,18 ms > 5, ADM-NFR-03 members 387 ms > 200, grants 112 ms > 100 (Admin, nhiễu máy bận, không thuộc H2c) |
+
+**S05 IP:** `tests/acceptance/H2c/stack/_stack.ts` `hostIp()` lấy động qua `os.networkInterfaces()` (IPv4 đầu tiên `!internal`, vắng ⇒ `host.docker.internal`), không ghi cứng `192.168.2.18` ⇒ không sửa. Ghi chú: máy này IPv4 đầu tiên là `vEthernet (WSL)` 172.26.0.1 (không phải Wi-Fi 192.168.2.18) — Hub (host) và Runtime (container) đều tới được, S05 xanh. Nếu máy khác chọn phải adapter không tới được thì cân nhắc ưu tiên adapter có gateway.
+
+**Lỗi code:** 1 — hub-dev thiếu `AGENT_RT_HUB_URL` cho Runtime (bước 12). Đề xuất (backend-lead, MK): `runtimeEnv(inContainer)` thêm `AGENT_RT_HUB_URL` = `http://host.docker.internal:<cổng hub-dev>` (container, kèm `--add-host host.docker.internal:host-gateway`) / `http://localhost:<cổng>` (tiến trình), rồi chạy lại `bun run done:h2c --from=12`. **I1 chưa tick.**

@@ -118,8 +118,8 @@ Không có UI Hub. Chip, tải lên, lỗi, file trả lời: Chat khi combine (
 ## 6. Hiệu năng
 | Chỉ tiêu | Ngưỡng | Đo bằng |
 |---|---|---|
-| `POST /attachments` 20 MiB (localhost) | ≤ 1,5 s p95; RSS tăng ≤ 8 MiB/upload | int |
-| Kiểm R09 + gắn R11 (10 id) thêm vào E12 | ≤ 5 ms p95 | `test:perf` |
+| `POST /attachments` 20 MiB (localhost) | ≤ 1,5 s p95; RSS tăng ≤ 16 MiB/upload (nới 2026-10-05, quyết định người dùng — xem spec-decisions) | int |
+| Kiểm R09 + gắn R11 (10 id) thêm vào E12 | ≤ 40 ms p95 (nới 2026-10-05, quyết định người dùng — xem spec-decisions) | `test:perf` |
 | Runtime tải `A` 10 × 2 MiB | ≤ 2 s | Python int (chỉ báo cáo — L10) |
 | Sweeper lô 500 | ≤ 2 s | int |
 

@@ -190,6 +190,6 @@ Phụ lục của [`test-plan.md`](test-plan.md) §5. Chung: `startHubH2c` (`_h2
 ## 2.16 `perf.perf.int.test.ts` (PF1–PF3) · spec §6 (không chặn)
 | ID | Ca |
 |---|---|
-| PF1 | `POST /attachments` 20 MiB × 10 → p95 ≤ 1,5 s; RSS tăng ≤ 8 MiB/upload (`process.memoryUsage().rss` cùng tiến trình) |
-| PF2 | E12 với 10 id (R09 + R11) − E12 không id: p95 thêm ≤ 5 ms (100 lần) |
+| PF1 | `POST /attachments` 20 MiB × 10 → p95 ≤ 1,5 s; RSS tăng ≤ 16 MiB/upload (nới 2026-10-05) (`process.memoryUsage().rss` cùng tiến trình) |
+| PF2 | E12 với 10 id (R09 + R11) − E12 không id: p95 thêm ≤ 40 ms (100 lần; nới 2026-10-05) |
 | PF3 | `sweepOnce` lô 500 (hàng hết hạn + file 1 KB) ≤ 2 s |

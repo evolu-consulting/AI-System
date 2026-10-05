@@ -264,3 +264,13 @@ BA chỉ nêu ví dụ "PDF, ảnh, XML" (US-H07). Hub không quét virus ở H2
 | B8-5 | Lỗi upload | `file_rejected` ⇒ `TOOL_FILE_TEXT.REJECTED`; `NOT_CONFIGURED`/`UPSTREAM_ERROR` ⇒ `TOOL_ERROR_TEXT` H2a; abort ⇒ `TIMEOUT` (hết hạn tool) / `CANCELLED` (kết nối đóng → trả `UPSTREAM_ERROR`, không ai đọc). Bước `tool` `failed` với `code` + `upload` trace (+ `reason`, `http_status`, `upstream` đã che); thành công ⇒ `detail.upload` như lệnh (B7). Không usage khi chưa gọi workflow. Kho không có nội dung ⇒ log `attachment-content-missing` + ném ⇒ bước `INTERNAL_ERROR`, `-32603` (như H2a REVIEW 1 #3) | plan-errors §3–4 |
 | B8-6 | Wiring | `McpServiceDeps.storage?` (+ `fetch?` cho test) ← `McpMountDeps.attachments?.storage` (`app.ts` đã rải `...deps`, không sửa `app.ts`); vắng ⇒ tool có file ⇒ `-32603` (PL14) | P14 |
 | B8-7 | Kiểm | `mcp-file.int` 7/7 (A110–A116), `agent-job.int` 10/10 (A78), `rules/mcp-h2c` xanh; H2a int 175/175 (`mcp.int` 9, `confirm.int` 11), H1 161/161, H2b 165/165 (lần chạy đầu 1 hook lỗi chập chờn — chạy lại xanh), H2c int 195/195 | — |
+
+## Quyết định người dùng — nới perf (2026-10-05)
+Nguồn: điều phối chuyển quyết định người dùng trong I1 (qc). **Nới ngân sách, không tối ưu code.** Cả hai ca vẫn thuộc `test:perf` (báo cáo, không chặn mốc).
+
+| # | Ngân sách | Cũ | Mới | Lý do (số đo) |
+|---|---|---|---|---|
+| PERF-1 | PF2 · E12 có 10 `attachment_ids` − E12 không id, p95 | ≤ 5 ms | **≤ 40 ms** | Windows dev Postgres local: B4-7 ~+25 ms; I1 lượt 1 +14,3 ms. R10 bắt kiểm ngoài transaction tạo run ⇒ không gộp được khứ hồi |
+| PERF-2 | PF1 · `POST /attachments` 20 MiB, RSS tăng/upload | ≤ 8 MiB | **≤ 16 MiB** (p95 ≤ 1,5 s giữ nguyên) | B2-4: 8,7–10,6 MiB/lần ở 3/5 lượt, phần lớn khởi động lần đầu; I1 lượt 1 9,8 MiB (10 295 296 B) |
+
+Áp: `tests/acceptance/H2c/perf.perf.int.test.ts` (ngưỡng + tiêu đề ca, `tests/.lock` chỉ dòng file này), `spec.md` §6, `plan.md` §7, `test-plan-int.md` PF1/PF2. Đề xuất: đo lại trên Linux/CI khi có, siết lại nếu số đo cho phép.

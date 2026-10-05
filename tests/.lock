@@ -196,7 +196,7 @@ cec4a18f88de8475b749ecb95e68563e00c792572514c7d754bd90dc7f4c8170  tests/acceptan
 107da20d5e06980c39f568b2b67ac7fa8eef36bdaa6ac951ad49f521259f8c79  tests/acceptance/H2c/internal-download.int.test.ts
 35869f732a8ac4b896f3627376e23087fbd14d2dfee8e44a09dfe0059935cfd7  tests/acceptance/H2c/mcp-file.int.test.ts
 db5a31ad2f02d1f2703cf9ca941e4352ca7f9c8d48dd96d8cf3da94557d0e504  tests/acceptance/H2c/outputs.int.test.ts
-b3cbbea3ac36f38b4d7b2bec77027c13c6bb2c17ecd9f77e6de5c0ed26cb44fc  tests/acceptance/H2c/perf.perf.int.test.ts
+b7a21f8cd94c1d834125d26677491dbab9c757d7b9493a10b7782358da82535e  tests/acceptance/H2c/perf.perf.int.test.ts
 5659875b83192554fc3f9bff8b23b1f7cc60d51a420f9ac87f9f6454fae11f0c  tests/acceptance/H2c/quota.int.test.ts
 b009f5b654e91aa99dbf7737cc8d1aa63dabfedb1c5fc9837c1fe862876845c5  tests/acceptance/H2c/rules/_rules.ts
 3f819640c224989070ad089cd9e43cc09725f9b9b4a422e633fe9713a339d4fd  tests/acceptance/H2c/rules/attach-limits.test.ts
