@@ -146,7 +146,7 @@ bb522949eab1a76ba786213c790e9423f5e0327e855a92b12ab09ae91878a322  tests/acceptan
 24b222414c397148de3ee7266051d3065de199025c2ad582f759a735a3b5ef29  tests/acceptance/H2a/test-run.int.test.ts
 142f0cbab1c1a53a15772af7555a62695b09ec9e086a3114f411a3693d56b932  tests/acceptance/H2b/_h2b.ts
 e4588822e53c5713929540ebe2697f973ece5ea428070a2f502b1d44a05235d6  tests/acceptance/H2b/_stream.ts
-9067dd7ccaa807f3a4a3959bde9b665a02efee4d7e9529d4d20882be9b894aaf  tests/acceptance/H2b/agents-menu.int.test.ts
+72d6b52aaab03bf0bed51f3c9fc01a57c282f673167ca2b2acb8aa9357ba2e35  tests/acceptance/H2b/agents-menu.int.test.ts
 fe1915cbd11007a6f9cb8ba3b340224b98ecf012831cdd7f63e56367ddb48ab6  tests/acceptance/H2b/compat.int.test.ts
 5044ae2deeffad737b18018f89d5cd801652080eb0a095cc48c99622c0966515  tests/acceptance/H2b/confirm-tag.int.test.ts
 0acd258a5351ba3944c742e8ea74537e3c61c73425d5c74fb6f42e6c8fe74338  tests/acceptance/H2b/db.int.test.ts

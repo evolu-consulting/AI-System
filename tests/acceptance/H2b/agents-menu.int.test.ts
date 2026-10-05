@@ -140,6 +140,8 @@ describe("A53–A56 · thu hồi, Orchestrator tenant, runtime, cache [HUB-FR-77
         await tx`update hub.agent_entitlements set revoked_at = null
           where agent_id = ${AG.helper} and tenant_id = ${T.acme}`;
       });
+      // Dọn sạch: cache Hub nạp lại bất đồng bộ (≤ 5 s) — chờ menu khôi phục để ca sau độc lập.
+      await menuWithin("lan", (x) => x.join() === LAN_AU.join());
     }
   });
 
@@ -167,6 +169,8 @@ describe("A53–A56 · thu hồi, Orchestrator tenant, runtime, cache [HUB-FR-77
       }
     } finally {
       await dropTenantOrch(sql, T.beta);
+      // Dọn sạch như A53: chờ cache khôi phục helper trước khi kết thúc.
+      await menuWithin("lan", (x) => x.join() === LAN_AU.join());
     }
   });
 
