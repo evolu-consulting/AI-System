@@ -181,6 +181,7 @@ BA chỉ nêu ví dụ "PDF, ảnh, XML" (US-H07). Hub không quét virus ở H2
 | B10-3 | Con trỏ quét mồ côi | `WeakMap<AttachmentStorage, key>`: lô đầy (500) ⇒ lượt sau `after = key cuối`; thiếu ⇒ về đầu | "con trỏ trong bộ nhớ" (plan §5.8), nhiều storage trong cùng tiến trình test không lẫn nhau |
 | B10-4 | Log | `info attachment-sweep{expired, purged, orphans, ms}` chỉ khi tổng > 0; `warn attachment-remove-failed{attachment_id}` cho cả lỗi `remove` và `promote` | plan-errors §5 |
 | B10-5 | Ca phụ thuộc task khác | A122/A123 (GET `/attachments*` 404 — B3), A124 (E10 `available`, E12 `attachment_ids` — B4), A125 vế `/content` 200 (B3) chỉ xanh khi B3/B4 xong; phần sweeper của các ca này đúng (kiểm DB/đĩa) | Phụ thuộc tasks |
+| B5-5/TC | `internal-download` A81/A83, `sweeper` A129 (qc) | Phán test sai, sửa tối thiểu giữ id: A81 `tools: [WF_KEY.dich]`; A83 lệch tenant qua `hub.jobs.tenant_id`; A129 giả lỗi `remove` bằng storage bọc ngoài (thay file chỉ đọc/chmod). Lock: chỉ 2 dòng hash | `test-plan-log` "Tranh chấp" TC-1..3; code sản phẩm không đổi |
 
 ## BUILD — B2/B3 (backend-lead, 2026-10-05)
 | # | Chỗ | Quyết định | Lý do |

@@ -126,3 +126,12 @@ P25 ở unit: `name="../x"` (dựng `JobAttachment.model_construct`, contract c�
 
 ### Q-PU · khoá `test_files_rules.py` (2026-10-05)
 `test:lock:verify` trước ghi → đúng **1 `UNLOCKED apps/agent-runtime/tests/acceptance/test_files_rules.py`**, không dòng khác. `test:lock:write` → **343 file**; `verify` OK. `git diff tests/.lock`: +1 dòng đúng file đó.
+
+### Tranh chấp (qc, 2026-10-05, sau B5 `77ab61d`/B10 `cc539ef`/B3 `50b37cb`; sd "BUILD — B5/B10" B5-5)
+| # | Test | Phán quyết | Sửa | Kết quả |
+|---|---|---|---|---|
+| TC-1 | `internal-download.int.test.ts` A81 | **Test sai**: `jobInRun(..., {tools: []})` ⇒ `mcp.tools` vi phạm `min(1)` (`McpConfigSchema`), helper H2a `expect(JobPayloadSchema…)` đỏ trước khi gọi Hub | `tools: [WF_KEY.dich]` (job anh em cùng run, chỉ cần token hợp lệ) | xanh |
+| TC-2 | cùng file A83 | **Test sai**: `update hub.attachments set tenant_id` vi phạm `attachments_key_ck` (D1, `storage_key = tenant_id/id`) ⇒ lỗi SQL trước khi gọi Hub | Lệch tenant dựng qua `update hub.jobs set tenant_id = beta` (file giữ tenant acme, id vẫn trong payload; không FK/trigger trên `jobs.tenant_id`) — đúng ý ca `attachments.tenant_id ≠ jobs.tenant_id` | xanh |
+| TC-3 | `sweeper.int.test.ts` A129 | **Test sai (phụ thuộc nền tảng)**: file chỉ đọc (Windows) không chặn được xoá với Bun 1.3.14 ⇒ đỏ dù code đúng | Giả lỗi bằng storage bọc ngoài: `remove(a.key)` ném lỗi, mọi phương thức khác uỷ quyền `expectStorage(hub)`; thêm kiểm hàng + file còn sau lượt lỗi; lượt sau (storage thật) dọn. Bỏ `chmod`/`join`/`WIN` | xanh |
+
+Kiểm trên DB riêng `ai_system_h2c_tc_{,hub_}test` (chỉ `*DATABASE_URL`), mỗi file **3 lần liên tiếp**: `internal-download` 10/10 ×3; `sweeper` 8/9 ×3 — đỏ còn lại **A124** (E10 `available` / E12 `attachment_ids` — chờ **B4**, sd B10-5). Một lượt giữa chừng A125 đỏ khi B3 đang dở (sau commit `50b37cb` xanh), một lượt lỗi môi trường (`ALTER ROLE … tuple concurrently updated` / DB hub bị agent khác drop) — không do test. Đã drop cả hai DB. `tests/.lock`: chỉ đổi 2 dòng hash (`hashFile`), không `test:lock:write`; `verify` chỉ còn `UNLOCKED` của file người khác (`H2c/stack/*`), không `CHANGED`.

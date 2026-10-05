@@ -4,9 +4,9 @@
 // hàng purged mà file mất; lô 500; khoá toàn cục (`skipped`); `remove` lỗi → `warn`, lượt sau dọn.
 // Dữ liệu: hàng SQL owner + file ghi thẳng `<dir>/<tenant>/<id>` (mtime bằng `utimes` — Q-T4).
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { chmod, rm, utimes, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { rm, utimes, writeFile } from "node:fs/promises";
 import { logger } from "../../../apps/hub-api/src/lib/logger";
+import type { AttachmentStorage } from "../../../apps/hub-api/src/modules/attachments/storage";
 import { sweepOnce } from "../../../apps/hub-api/src/modules/attachments/sweeper";
 import { call, type Json, type Keys, makeKeys, type Sql, sign, T, USERS } from "../H1/_fixtures";
 import { insertConv, insertFlow, runIdOf } from "../H1/_hub";
@@ -27,7 +27,6 @@ import {
   writeStored,
 } from "./_h2c";
 
-const WIN = process.platform === "win32";
 const HOUR = 3_600_000;
 let sql: Sql;
 let k: Keys;
@@ -242,18 +241,29 @@ describe("A125–A129 · mồ côi, lô, khoá, lỗi xoá [H2c-R29 · PL2 · PL
     expect(rs.some((r) => !r.skipped)).toBe(true);
   });
 
-  it("HUB-FR-44 · A129 · remove lỗi (Windows: file chỉ đọc; Linux: chmod thư mục tenant 0500) → warn attachment-remove-failed{attachment_id}; trả quyền → lượt sau dọn [H2c-R29 · P23]", async () => {
+  it("HUB-FR-44 · A129 · remove lỗi (storage bọc ngoài: `remove(<key>)` ném lỗi — mọi nền tảng) → warn attachment-remove-failed{attachment_id}, hàng còn; hết lỗi → lượt sau dọn [H2c-R29 · P23]", async () => {
     const a = await stored({ createdAgoMs: DAY_MS + 60_000 });
-    const target = WIN ? pathOf(hub.dir, a.key) : join(hub.dir, T.acme);
-    await chmod(target, WIN ? 0o444 : 0o500);
-    try {
-      await sweep(new Date());
-      const w = log.lines.filter((l) => l.rec.msg === "attachment-remove-failed");
-      expect(w[0]?.level).toBe("warn");
-      expect(w[0]?.rec).toMatchObject({ attachment_id: a.id });
-    } finally {
-      await chmod(target, WIN ? 0o644 : 0o700);
-    }
+    const base = expectStorage(hub);
+    const failing: AttachmentStorage = {
+      driver: base.driver,
+      stage: (key, body, o) => base.stage(key, body, o),
+      open: (key) => base.open(key),
+      blob: (key, type) => base.blob(key, type),
+      remove: async (key) => {
+        if (key === a.key) throw new Error("qc: remove lỗi giả (A129)");
+        return base.remove(key);
+      },
+      promote: (key) => base.promote(key),
+      list: (o) => base.list(o),
+    };
+    await sweepOnce({ db: hub.db, storage: failing, now: new Date(), log: logger });
+    const w = log.lines.filter((l) => l.rec.msg === "attachment-remove-failed");
+    expect(w[0]?.level).toBe("warn");
+    expect(w[0]?.rec).toMatchObject({ attachment_id: a.id });
+    expect({ row: !!(await attRow(sql, a.id)), file: await exists(a.key) }).toEqual({
+      row: true,
+      file: true,
+    });
     await sweep(new Date());
     expect({ row: !!(await attRow(sql, a.id)), file: await exists(a.key) }).toEqual({
       row: false,

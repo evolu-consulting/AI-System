@@ -7,7 +7,7 @@ import { unlink } from "node:fs/promises";
 import { CONTENT_SHA256_HEADER } from "@ai/contracts/hub-internal";
 import { type Keys, makeKeys, type Sql, sign, T, USERS } from "../H1/_fixtures";
 import { AG } from "../H1/_hub";
-import { type Dify, startDify, WF } from "../H2a/_h2a";
+import { type Dify, startDify, WF, WF_KEY } from "../H2a/_h2a";
 import { jobInRun } from "../H2a/_h2a2";
 import { insertSqlJob } from "../H2a/_runtime2";
 import { captureLogs } from "../H2b/_h2b";
@@ -104,7 +104,7 @@ describe("A81–A84, A89 · 401 một thân [H2c-R17 · HUB-H2c-AC-07 · T18]", 
     const sibling = await jobInRun(sql, () => crypto.randomUUID(), j.runId, {
       agentId: AG.hoadon,
       agentKey: "hoadon",
-      tools: [],
+      tools: [WF_KEY.dich],
       mcpUrl: `${hub.base}/mcp`,
     });
     const outside = await storedFile(sql, hub, "khac.pdf", sample.pdf(500));
@@ -137,10 +137,10 @@ describe("A81–A84, A89 · 401 một thân [H2c-R17 · HUB-H2c-AC-07 · T18]", 
     expect((await internalGet(hub, live.jobId, fileOf(live).id, live.token)).status).toBe(200);
   });
 
-  it("HUB-FR-75 · A83 · lệch tenant: attachments.tenant_id ≠ jobs.tenant_id (id vẫn trong payload) → 401 [H2c-R17 · HUB-FR-75]", async () => {
+  it("HUB-FR-75 · A83 · lệch tenant: attachments.tenant_id ≠ jobs.tenant_id (id vẫn trong payload; dựng bằng jobs.tenant_id khác — attachments_key_ck giữ tenant file) → 401 [H2c-R17 · HUB-FR-75]", async () => {
     const j = await job();
     expect((await internalGet(hub, j.jobId, fileOf(j, 1).id, j.token)).status).toBe(200);
-    await sql`update hub.attachments set tenant_id = ${T.beta} where id = ${fileOf(j).id}`;
+    await sql`update hub.jobs set tenant_id = ${T.beta} where id = ${j.jobId}`;
     expect401(await internalGet(hub, j.jobId, fileOf(j).id, j.token), "lệch tenant");
   });
 
