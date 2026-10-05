@@ -91,8 +91,8 @@ Unit (AC-01, AC-02 vế thuần, probe_due bảng đủ 5 trạng thái × start
 ## 5. `fake-cli` (R18)
 | Chỗ | Cú pháp | Tác dụng |
 |---|---|---|
-| Probe | file `AGENT_RT_FAKE_PROBE_FILE` (đọc **mỗi lượt** bởi cha; vắng file/rỗng ⇒ `ok`); dòng đầu: `ok` · `rejected[:<resets_at>[:<type>]]` · `logged_out` · `revoked` · `warning:<util>[:<resets_at>]` · `hang` · `error` | §4.1–4.2; giá trị sai cú pháp ⇒ `error` |
-| Đếm lời gọi | cha ghi thêm một dòng `auth` / `turn` vào `<AGENT_RT_FAKE_PROBE_FILE>.calls` trước mỗi bước | AC-09 "0 lời gọi provider" |
+| Probe | file `AGENT_RT_FAKE_PROBE_FILE` (đọc **mỗi lượt** bởi cha; vắng file/rỗng ⇒ `ok`); dòng đầu: `ok` · `rejected[:<resets_at>[:<type>]]` · `logged_out` · `revoked` · `warning:<util>[:<resets_at>]` · `ok:<ms>` (ms nguyên 1–60 000: `FakeProvider.probe` ngủ `ms/1000` s rồi trả `ok`; ngoài khoảng/không số ⇒ `error`; dựng AC-10, PY-03) · `hang` · `error` | §4.1–4.2; giá trị sai cú pháp ⇒ `error` |
+| Đếm lời gọi | cha ghi thêm một dòng `auth` / `turn` vào `<AGENT_RT_FAKE_PROBE_FILE>.calls` trước mỗi bước | AC-09 "0 lời gọi provider". File `.calls` **chỉ** ghi khi có `AGENT_RT_FAKE_PROBE_FILE` (vắng env ⇒ không tạo file nào) |
 | Job | `#fake:ratelimit=<ts>[,<type>]` (mở rộng H1, `ts` vắng ⇒ không `resets_at`) · `#fake:ratewarn=<util>[,<ts>]` ⇒ `RateLimit(allowed_warning)` rồi chạy tiếp như `ok` | AC-03, AC-01 vế job |
 
 ## 6. Env (`config.py`, prefix `AGENT_RT_`)
@@ -121,7 +121,8 @@ Cấm: stdout/stderr `auth status`, email, `organization`, token, prompt/câu tr
 ## 8. Test và giả lập (qc)
 | Lớp | File | AC |
 |---|---|---|
-| Unit thuần (khoá trước PY-01) | `tests/acceptance/test_quota_rules.py` | AC-01, AC-02 (thuần), `probe_due`, `auth_logged_in`, `raw_shape`, `parse_fake_probe`, `probe_transition` |
+| Unit thuần (khoá trước PY-01) | `tests/acceptance/test_quota_rules.py` | AC-01, AC-02 (thuần), `probe_due`, `auth_logged_in`, `raw_shape`, `parse_fake_probe` (gồm `ok:<ms>`), `probe_transition` |
+| Hàm thuần H1 `mapping.result_signal` (`apps/agent-runtime/.../mapping.py:151`) | dùng cho ca P12: `ResultMessage` 429 + "Not logged in" ⇒ `RateLimit(rejected)`; 401 ⇒ `logged_out`; chữ usage limit ⇒ `rejected`; `is_error=False` ⇒ `None`. Không thêm chỉ thị fake | AC-02 vế job |
 | Unit cạnh code (backend-lead) | `providers/claude/test_probe.py` (SDK giả như `test_provider.py`), `runtimes/cli/probe/test_auth.py` (script giả in JSON/exit 1/treo), `queue/test_probe_loop.py` (đồng hồ tiêm, pool giả) | — |
 | Python int (`fake-cli`, `AGENT_RT_FAKE_PROBE_FILE`, biên dev nhỏ) | `tests/acceptance/probe_int_test.py`, `quota_int_test.py` | AC-03, AC-04 (Runtime không claim; job `queued` fail khi probe/job chuyển `cooldown`), AC-08, AC-09, AC-10, AC-11 |
 | Stack (hub-dev + Runtime thật `fake-cli`) | `tests/acceptance/H3a/stack/*.test.ts` | AC-W02, AC-05 |
