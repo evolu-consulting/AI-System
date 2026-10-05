@@ -16,12 +16,19 @@ S5: `dontAsk` + `allowed_tools` vẫn là hàng rào sau hook), không kiểm pa
 H2c PL9 (opt-in theo agent, `Write` ∈ `policy.tools`): ngoài luật trên, mọi đường dẫn của `Write`
 phải sau `realpath` nằm **trực tiếp** trong `work/<job_id>/out/` (không thư mục con, không
 `attachments/`, không gốc job; symlink trỏ ra ngoài bị bắt vì so `dirname(realpath(p))`) — sai ⇒
-`path_not_allowed` nhãn `write_scope`; `Write` không có đường dẫn ⇒ deny.
+`path_not_allowed` nhãn `write_scope`; `Write` không có đường dẫn ⇒ deny. Review H2c v1 #6: `out/`
+phải là thư mục thật (`S_ISDIR(lstat)`, không symlink) và — khi cha truyền `out_id` — đúng
+(`st_dev`, `st_ino`) ghi lúc `prepare_job_dirs`; sai ⇒ `write_scope`.
+Điều kiện an toàn (review H2c v1 #8, TOCTOU): hook kiểm đường dẫn **trước** khi CLI ghi; giữa hai
+lúc đó không gì trong job được đổi `out/<tên>` thành symlink chỉ vì **không agent nào có tool tạo
+symlink/đổi tên** (`Bash` luôn bị chặn; `Edit`/`NotebookEdit` không mở; `Write` chỉ tạo file
+thường). Mở thêm tool có thể tạo symlink/đổi tên (hoặc chạy lệnh) phải xem lại luật này.
 Deny trả lý do cố định, không lặp lại đường dẫn; log chỉ `tool_name`, nhãn, `job_id`.
 Lỗi bất ngờ → deny (fail-closed).
 """
 
 import os
+import stat
 from collections.abc import Awaitable, Callable, Iterator, Mapping
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
@@ -52,6 +59,9 @@ class SandboxPolicy:
     structured_output: bool = False  # job có `output_format` (agent) ⇒ cho `StructuredOutput`
     # H2a §4.3: tên đầy đủ `mcp__hub__<k>` của `payload.mcp.tools` (job có MCP); rỗng = H1.
     mcp_tools: frozenset[str] = frozenset()
+    # Review H2c v1 #6: (`st_dev`, `st_ino`) của `out/` lúc `prepare_job_dirs`; None = chỉ kiểm
+    # `out/` là thư mục thật (không symlink).
+    out_id: tuple[int, int] | None = None
 
 
 @dataclass(frozen=True)
@@ -123,11 +133,26 @@ def _candidates(tool_name: str, tool_input: Mapping[str, object]) -> Iterator[st
                     yield item
 
 
-def in_out_dir(raw: str, work_dir: Path) -> bool:
-    """PL9: `realpath(p)` nằm trực tiếp trong `realpath(work_dir/out)` (sau `is_path_allowed`)."""
+def out_dir_ok(out: Path, out_id: tuple[int, int] | None) -> bool:
+    """`out/` là thư mục thật (lstat, không theo symlink) và đúng danh tính `out_id` (nếu có)."""
+    try:
+        st = out.lstat()
+    except OSError:
+        return False
+    if not stat.S_ISDIR(st.st_mode):
+        return False
+    return out_id is None or (st.st_dev, st.st_ino) == out_id
+
+
+def in_out_dir(raw: str, work_dir: Path, out_id: tuple[int, int] | None = None) -> bool:
+    """PL9: `out/` hợp lệ (`out_dir_ok`) và `realpath(p)` nằm trực tiếp trong `realpath(work/out)`
+    (sau `is_path_allowed`)."""
+    out = work_dir / OUT_DIR
+    if not out_dir_ok(out, out_id):
+        return False
     joined = raw if os.path.isabs(raw) else os.path.join(work_dir, raw)
     target = os.path.realpath(joined)
-    return os.path.dirname(target) == os.path.realpath(work_dir / OUT_DIR)
+    return os.path.dirname(target) == os.path.realpath(out)
 
 
 def decide(policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, object]) -> HookDecision:
@@ -146,7 +171,7 @@ def decide(policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, objec
         got = is_path_allowed(raw, policy.work_dir, policy.forbidden_roots)
         if not got.allowed:
             return HookDecision(allowed=False, reason="path_not_allowed", label=got.reason)
-        if write and not in_out_dir(raw, policy.work_dir):
+        if write and not in_out_dir(raw, policy.work_dir, policy.out_id):
             return _WRITE_SCOPE
         seen = True
     return _WRITE_SCOPE if write and not seen else _ALLOW

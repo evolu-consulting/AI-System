@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-from agent_runtime.contracts.hub import RunEvent, RunEvent3
+from agent_runtime.contracts.hub import RunEvent
 
 if TYPE_CHECKING:
     from redis.asyncio import Redis
@@ -24,9 +24,10 @@ def stream_key(run_id: str) -> str:
 
 def encode_event(event: RunEvent) -> str:
     """H2c F10: `job.result.outputs` (C2, tuỳ chọn) chỉ có khoá khi ≠ ∅ — không dump `null`
-    (sự kiện giữ y hệt H2b khi job không có output)."""
+    (sự kiện giữ y hệt H2b khi job không có output). Nhận `job.result` theo `type` (review H2c v1
+    #5), không theo tên lớp codegen `RunEventN` (đổi khi thứ tự `oneOf` đổi)."""
     root = event.root
-    if isinstance(root, RunEvent3) and root.outputs is None:
+    if root.type == "job.result" and root.outputs is None:
         return root.model_dump_json(exclude={"outputs"})
     return event.model_dump_json()
 

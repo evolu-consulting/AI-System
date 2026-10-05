@@ -152,6 +152,9 @@ class ProviderJob(BaseModel):
     # H2a PY-04 (`plan-runtime` §4.2): file cấu hình MCP 0600 (`.mcp/<job_id>.json`, có token
     # claim) cha ghi khi agent có `payload.mcp` (không ở lần thử lại); None = không MCP.
     mcp_config_path: str | None = None
+    # Review H2c v1 #6: (`st_dev`, `st_ino`) của `out/` lúc cha `prepare_job_dirs` (job agent);
+    # hook `Write` so lại (`SandboxPolicy.out_id`). None = không `out/` / không so.
+    out_dir_id: tuple[int, int] | None = None
 
 
 class Provider(Protocol):

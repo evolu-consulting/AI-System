@@ -93,3 +93,13 @@ def test_wrk_fr_18_result_outputs_key_only_when_present() -> None:
     assert json.loads(encode_event(_progress()))["percent"] is None  # None khác giữ nguyên
     got = json.loads(encode_event(_result([JOB])))
     assert got["outputs"] == [JOB]
+
+
+def test_wrk_fr_18_encode_by_type_not_codegen_class() -> None:
+    """Review H2c v1 #5: chỉ `type == "job.result"` bỏ `outputs` rỗng; loại khác dump nguyên."""
+    full = {"outputs": None}
+    for ev, dropped in ((_progress(), {}), (_result(None), full), (_result([JOB]), {})):
+        want = json.loads(ev.model_dump_json())
+        for key in dropped:
+            del want[key]
+        assert json.loads(encode_event(ev)) == want

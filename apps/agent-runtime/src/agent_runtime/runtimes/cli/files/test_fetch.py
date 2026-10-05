@@ -1,7 +1,9 @@
 """H2c · WRK-FR-11 · R16 — `fetch_attachments` + `httpx2.MockTransport` (plan-runtime H2c §3.2)."""
 
 import asyncio
+import errno
 import hashlib
+import os
 import stat
 import time
 import uuid
@@ -203,3 +205,36 @@ async def test_wrk_fr_11_stop_cancels(tmp_path: Path) -> None:
     )
     assert res == FetchStopped()
     assert list(dest.iterdir()) == []
+
+
+async def test_wrk_fr_11_os_error_on_write_is_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review H2c v1 #1: ENOSPC/EIO khi ghi ⇒ `FetchFailed("path")`, không ném lên; dest sạch."""
+
+    def full(fd: int, data: bytes) -> None:
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+    monkeypatch.setattr(fetch, "_write_all", full)
+    item = _att("a.pdf", b"x")
+    res, dest = await _run(tmp_path, lambda r: httpx2.Response(200, content=b"x"), [item])
+    assert res == FetchFailed("path", str(item.id))
+    assert list(dest.iterdir()) == []
+
+
+def test_wrk_br_07_opened_inside_checks_after_open(tmp_path: Path) -> None:
+    """Review H2c v1 #7: kiểm sau `open` — tên bị thay (file khác / symlink) ⇒ False."""
+    dest = tmp_path / "attachments"
+    dest.mkdir()
+    target = dest / "a.pdf"
+    fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        assert fetch._opened_inside(fd, target, dest)  # pyright: ignore[reportPrivateUsage]
+        target.unlink()
+        target.write_bytes(b"other")
+        assert not fetch._opened_inside(fd, target, dest)  # pyright: ignore[reportPrivateUsage]
+        target.unlink()
+        target.symlink_to(tmp_path / "elsewhere")
+        assert not fetch._opened_inside(fd, target, dest)  # pyright: ignore[reportPrivateUsage]
+    finally:
+        os.close(fd)

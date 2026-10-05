@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import errno
 import hashlib
 import time
 import uuid
@@ -13,10 +14,12 @@ from pathlib import Path
 from typing import Any
 
 import httpx2
+import pytest
 
 from agent_runtime.db.finish_sql import FinishTx
 from agent_runtime.db.jobs_sql import ClaimedJob
 from agent_runtime.events.job_events import Failure
+from agent_runtime.runtimes.cli import job_run
 from agent_runtime.runtimes.cli.job_run import JobRun
 from agent_runtime.runtimes.cli.outcome import CANCELLED, TIMED_OUT, Verdict
 from agent_runtime.runtimes.cli.runner import HostConfig
@@ -183,5 +186,51 @@ async def test_wrk_fr_18_close_no_send_unless_done(tmp_path: Path) -> None:
 async def test_wrk_fr_18_close_orchestrator_no_send(tmp_path: Path) -> None:
     seen: list[httpx2.Request] = []
     run, host = _run(tmp_path, _posted(seen), attachments=False, role="orchestrator")
+    await run._close(Verdict(None, _agent_out("done"), "ok"))  # pyright: ignore[reportPrivateUsage]
+    assert (seen, host.verdicts[0].outputs) == ([], ())
+
+
+async def test_wrk_fr_11_fetch_failed_while_stopping_no_write(tmp_path: Path) -> None:
+    """Review H2c v1 #4 (H1): tải lỗi khi cha đang dừng ⇒ `stopped` (không `failed`, không ghi)."""
+    run, host = _run(tmp_path, lambda r: httpx2.Response(404))
+    run.cfg.stopping.set()
+    assert await run._prepare_files() is False  # pyright: ignore[reportPrivateUsage]
+    assert (host.failed, host.closed, host.events.forgot) == ([], [], [JOB.id])
+
+
+async def test_wrk_fr_18_close_outputs_error_keeps_verdict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review H2c v1 #1: lỗi bất ngờ khi đẩy `out/` (ENOSPC/EIO) ⇒ job vẫn `done`, không outputs."""
+
+    async def boom(*_a: object) -> tuple[str, ...]:
+        raise OSError(errno.EIO, "io")
+
+    monkeypatch.setattr(job_run, "send_outputs", boom)
+    run, host = _run(tmp_path, _ok, attachments=False)
+    assert await run._prepare_files() is True  # pyright: ignore[reportPrivateUsage]
+    await run._close(Verdict(None, _agent_out("done"), "ok"))  # pyright: ignore[reportPrivateUsage]
+    assert (host.closed, host.verdicts[0].outputs) == ([None], ())
+
+
+async def test_wrk_fr_18_close_shutdown_skips_outputs(tmp_path: Path) -> None:
+    """Review H2c v1 #2 (spec-decisions): cha đang dừng ⇒ không gửi `out/`, kết quả vẫn ghi."""
+    seen: list[httpx2.Request] = []
+    run, host = _run(tmp_path, _posted(seen), attachments=False)
+    assert await run._prepare_files() is True  # pyright: ignore[reportPrivateUsage]
+    (run.work / "out" / "r.md").write_text("x")
+    run.cfg.stopping.set()
+    await run._close(Verdict(None, _agent_out("done"), "ok"))  # pyright: ignore[reportPrivateUsage]
+    assert (seen, host.closed, host.verdicts[0].outputs) == ([], [None], ())
+
+
+async def test_wrk_fr_18_close_out_replaced_not_sent(tmp_path: Path) -> None:
+    """Review H2c v1 #6: `out/` bị thay (thư mục khác) sau `prepare_job_dirs` ⇒ không gửi."""
+    seen: list[httpx2.Request] = []
+    run, host = _run(tmp_path, _posted(seen), attachments=False)
+    assert await run._prepare_files() is True  # pyright: ignore[reportPrivateUsage]
+    (run.work / "out").rename(run.work / "old")
+    (run.work / "out").mkdir()
+    (run.work / "out" / "r.md").write_text("x")
     await run._close(Verdict(None, _agent_out("done"), "ok"))  # pyright: ignore[reportPrivateUsage]
     assert (seen, host.verdicts[0].outputs) == ([], ())

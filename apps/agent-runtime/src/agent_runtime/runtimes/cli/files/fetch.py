@@ -1,17 +1,21 @@
 """H2c · WRK-FR-11 · R16 — tải file đính kèm của job từ Hub (plan-runtime H2c §3.2).
 
-Tuần tự theo thứ tự payload. Mỗi file: kiểm tên (`valid_job_file_name`) + `realpath` thư mục →
-`os.open(O_EXCL|O_NOFOLLOW)` (symlink/file đặt sẵn ⇒ `exists`, trước khi GET) → `GET
+Tuần tự theo thứ tự payload. Mỗi file: kiểm tên (`valid_job_file_name`) →
+`os.open(O_EXCL|O_NOFOLLOW)` (symlink/file đặt sẵn ⇒ `exists`, trước khi GET) → kiểm **sau khi mở**
+(review H2c v1 #7): `fstat(fd)` cùng (dev, ino) với `lstat(target)` và `realpath(target)` nằm trực
+tiếp trong `realpath(dest)` — sai ⇒ `path` → `GET
 /internal/jobs/:id/attachments/:att` (Bearer token job) stream 64 KiB + sha256 + đếm byte → so
 `size`/`sha256` của payload → `fchmod 0o400`. 5xx/mạng/timeout 60 s ⇒ thử lại theo `backoff`
 (file dở xoá, mở lại `O_EXCL`). Hạn job ⇒ `FetchTimedOut`; `stop` ⇒ `FetchStopped`. Mọi kết cục
-khác `FetchOk` ⇒ xoá mọi file đã ghi. Không log token, tên file, URL.
+khác `FetchOk` ⇒ xoá mọi file đã ghi. Lỗi OS khi ghi/đổi quyền (ENOSPC, EIO… — review H2c v1 #1)
+⇒ `FetchFailed("path")` (job `failed` reason `attachment`). Không log token, tên file, URL.
 """
 
 import asyncio
 import errno
 import hashlib
 import os
+import stat
 import time
 from collections.abc import Coroutine, Sequence
 from dataclasses import dataclass
@@ -126,10 +130,11 @@ async def until_stopped[T](
 
 
 class _Failed(Exception):
-    def __init__(self, why: FetchWhy, status: int | None = None) -> None:
+    def __init__(self, why: FetchWhy, status: int | None = None, error: str | None = None) -> None:
         super().__init__(why)
         self.why: FetchWhy = why
         self.status: int | None = status
+        self.error: str | None = error  # tên lớp lỗi OS (log), không thông điệp (có thể chứa path)
 
 
 async def fetch_attachments(
@@ -150,7 +155,11 @@ async def fetch_attachments(
         if isinstance(total, _Failed):
             aid = run.current
             log.warning(
-                "job.attachment_failed", attachment_id=aid, why=total.why, status=total.status
+                "job.attachment_failed",
+                attachment_id=aid,
+                why=total.why,
+                status=total.status,
+                error=total.error,
             )
             res = FetchFailed(total.why, aid)
         elif done and total is None:
@@ -165,9 +174,16 @@ async def fetch_attachments(
     return res
 
 
-def _inside(target: Path, dest: Path) -> bool:
-    """`realpath(target.parent) == realpath(dest)` (phòng thủ lớp hai, §3.2 bước 1)."""
-    return os.path.realpath(target.parent) == os.path.realpath(dest)
+def _opened_inside(fd: int, target: Path, dest: Path) -> bool:
+    """Kiểm thật sau `open` (review H2c v1 #7): fd đúng là file thường tại `target` (cùng dev/ino,
+    `lstat` — không theo symlink) và `realpath(target)` nằm trực tiếp trong `realpath(dest)`."""
+    try:
+        got, at = os.fstat(fd), os.lstat(target)
+    except OSError:
+        return False
+    if not stat.S_ISREG(at.st_mode) or (got.st_dev, got.st_ino) != (at.st_dev, at.st_ino):
+        return False
+    return os.path.dirname(os.path.realpath(target)) == os.path.realpath(dest)
 
 
 def _open_new(target: Path) -> int:
@@ -199,20 +215,22 @@ class _Fetch:
             return err
         except TimeoutError:
             return None
+        except OSError as err:  # sau TimeoutError (lớp con của OSError): ENOSPC/EIO khi ghi
+            return _Failed("path", None, type(err).__name__)
         return total
 
     async def _one(self, item: JobAttachment) -> int:
         if not valid_job_file_name(item.name):
             raise _Failed("bad_name")
         target = self.dest / item.name
-        if not _inside(target, self.dest):
-            raise _Failed("path")
         url = job_url(self.hub_url, self.call.job.id, f"attachments/{quote(str(item.id), safe='')}")
         attempt = 0
         while True:
             fd = _open_new(target)
-            self.written.append(target)
+            self.written.append(target)  # đã tạo ⇒ xoá khi lỗi (kể cả `path` ngay dưới)
             try:
+                if not _opened_inside(fd, target, self.dest):
+                    raise _Failed("path")
                 status = await _download(self.call, url, item, fd)
                 if status == _HTTP_OK:
                     os.fchmod(fd, 0o400)

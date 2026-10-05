@@ -34,6 +34,7 @@ from agent_runtime.providers.base import (
 )
 from agent_runtime.providers.claude import mcp
 from agent_runtime.runtimes.cli.delta_pump import DeltaPump
+from agent_runtime.runtimes.cli.files.dirs import DirId
 from agent_runtime.runtimes.cli.joblog import (
     LOG_WRITE_ERRORS,
     append_envelope,
@@ -79,6 +80,7 @@ class RunState(Protocol):
     prompt: str
     retry: str | None
     resume_id: str | None
+    out_id: DirId | None  # danh tính `out/` (review H2c v1 #6) → `ChildRequest.out_dir_id`
 
     def stopping(self) -> bool: ...
 
@@ -175,6 +177,7 @@ class HostProcess:
             resume_session_id=self.run.resume_id,
             retry_prompt=self.run.retry,
             mcp_config_path=str(self.mcp_path) if self.mcp_path is not None else None,
+            out_dir_id=self.run.out_id.pair() if self.run.out_id is not None else None,
         )
         return req.model_dump_json().encode() + b"\n"
 

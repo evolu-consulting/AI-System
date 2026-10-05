@@ -93,6 +93,7 @@ async def _guarded(job: ProviderJob, tool: str, tool_input: dict[str, object]) -
         tuple(Path(p) for p in job.forbidden_roots),
         frozenset(job.payload.allowed_tools),
         mcp_tools=frozenset(job_mcp_tools(job)),
+        out_id=job.out_dir_id,
     )
     out = await make_path_guard(policy)({"tool_name": tool, "tool_input": tool_input}, None, None)
     spec = cast("dict[str, object]", out.get("hookSpecificOutput") or {})

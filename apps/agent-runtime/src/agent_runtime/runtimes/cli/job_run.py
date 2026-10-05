@@ -24,7 +24,12 @@ from agent_runtime.events.job_events import Failure
 from agent_runtime.log import get_logger
 from agent_runtime.providers.context import with_history
 from agent_runtime.runtimes.cli.delta_pump import DeltaPump
-from agent_runtime.runtimes.cli.files.dirs import ATTACHMENTS_SUBDIR, OUT_SUBDIR, prepare_job_dirs
+from agent_runtime.runtimes.cli.files.dirs import (
+    ATTACHMENTS_SUBDIR,
+    OUT_SUBDIR,
+    DirId,
+    prepare_job_dirs,
+)
 from agent_runtime.runtimes.cli.files.fetch import (
     FetchFailed,
     FetchOk,
@@ -93,6 +98,7 @@ class JobRun:
         self.deadline = time.monotonic() + payload.timeout_s
         self.proc_host = HostProcess(self)
         self.pump = DeltaPump(host.events, job, self.cfg)  # H2b §3.5: một bộ gom cho cả job
+        self.out_id: DirId | None = None  # danh tính `out/` lúc tạo (review H2c v1 #6)
 
     def stopping(self) -> bool:
         """Process cha đang dừng (SIGTERM) — không thử lại, không ghi lỗi."""
@@ -129,7 +135,7 @@ class JobRun:
         if not items and not out:
             return True
         try:
-            prepare_job_dirs(self.work, attachments=bool(items), out=out)
+            self.out_id = prepare_job_dirs(self.work, attachments=bool(items), out=out)
         except OSError as err:
             get_logger().warning("job.attachment_failed", why="path", error=type(err).__name__)
             await self.host.finish_failed(self.job, attachment_failure("path"))
@@ -143,12 +149,12 @@ class JobRun:
             res = await fetch_attachments(call, items, self.work / ATTACHMENTS_SUBDIR)
         if isinstance(res, FetchOk):
             return True
-        if isinstance(res, FetchFailed):
+        if isinstance(res, FetchFailed) and not self.stopping():
             await self.host.finish_failed(self.job, attachment_failure(res.why))
         elif isinstance(res, FetchTimedOut):
             await self._close(Verdict(TIMED_OUT))
-        else:  # FetchStopped: cancel ⇒ `cancelled`; shutdown/lost ⇒ không ghi
-            await self._apply("stopped")
+        else:  # FetchStopped / lỗi khi cha đang dừng (H1, review H2c v1 #4): cancel ⇒ `cancelled`;
+            await self._apply("stopped")  # shutdown/lost ⇒ không ghi
         return False
 
     def _retryable(self, outcome: Outcome) -> bool:
@@ -238,15 +244,25 @@ class JobRun:
 
     async def _send_outputs(self, v: Verdict) -> Verdict:
         """H2c R25 (§5): job agent thành công `done`/`partial` ⇒ đẩy `out/` (lần claim hiện hành —
-        `prepare_job_dirs` đã làm mới) lên Hub **trước** `FinishTx` (job còn `running`). Không làm
-        job `failed`; huỷ giữa chừng ⇒ ngừng, giữ id đã có."""
+        `prepare_job_dirs` đã làm mới) lên Hub **trước** `FinishTx` (job còn `running`). Không bao
+        giờ làm job `failed`/`crashed` (review H2c v1 #1: lỗi bất ngờ ⇒ log, trả `v`); huỷ giữa
+        chừng ⇒ ngừng, giữ id đã có. Cha đang dừng (shutdown) ⇒ không gửi, kết quả vẫn ghi không
+        `outputs` (review H2c v1 #2, spec-decisions)."""
         if v.failure is not None or not wants_outputs(self.payload.agent.role, v.output):
             return v
-        async with make_hub_client(self.cfg.hub_transport) as client:
-            call = FilesCall(
-                client, self.cfg.hub_url, self.job, self.deadline, self.control.stopped
-            )
-            ids = await send_outputs(call, self.work / OUT_SUBDIR)
+        log = get_logger()
+        if self.stopping():
+            log.info("job.outputs_skipped", reason="shutdown")
+            return v
+        try:
+            async with make_hub_client(self.cfg.hub_transport) as client:
+                call = FilesCall(
+                    client, self.cfg.hub_url, self.job, self.deadline, self.control.stopped
+                )
+                ids = await send_outputs(call, self.work / OUT_SUBDIR, self.out_id)
+        except Exception as err:  # noqa: BLE001 — job đã xong: không đổi kết cục vì file
+            log.warning("job.outputs_error", error=type(err).__name__)
+            return v
         return replace(v, outputs=ids) if ids else v
 
     async def _close(self, v: Verdict) -> None:

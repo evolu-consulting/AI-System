@@ -207,3 +207,20 @@ def test_wrk_br_07_write_symlink_and_missing_path(policy: SandboxPolicy, tmp_pat
     assert decide(policy, "Write", {"content": "x"}).label == "write_scope"
     read_only = replace(policy, tools=frozenset({"Read", "Grep"}))
     assert decide(read_only, "Write", {"file_path": "out/a.md"}).reason == "tool_not_allowed"
+
+
+def test_wrk_br_07_write_out_must_be_real_same_dir(policy: SandboxPolicy) -> None:
+    """Review H2c v1 #6: `out/` symlink (kể cả trong job) / vắng / khác `out_id` ⇒ `write_scope`."""
+    elsewhere = policy.work_dir / "alt"
+    elsewhere.mkdir()
+    out = policy.work_dir / "out"
+    assert decide(policy, "Write", {"file_path": "out/a.md"}).label == "write_scope"  # vắng
+    out.symlink_to(elsewhere, target_is_directory=True)
+    assert decide(policy, "Write", {"file_path": "out/a.md"}).label == "write_scope"
+    out.unlink()
+    out.mkdir()
+    st = out.lstat()
+    same = replace(policy, out_id=(st.st_dev, st.st_ino))
+    assert decide(same, "Write", {"file_path": "out/a.md"}).allowed is True
+    other = replace(policy, out_id=(st.st_dev, st.st_ino + 1))
+    assert decide(other, "Write", {"file_path": "out/a.md"}).label == "write_scope"

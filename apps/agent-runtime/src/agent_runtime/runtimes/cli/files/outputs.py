@@ -1,11 +1,17 @@
 """H2c · WRK-FR-18 · R25 — đẩy file `out/` của job agent lên Hub (plan-runtime H2c §5).
 
-Liệt kê `os.scandir(out)` (không theo symlink) → `pick_outputs` (≤ 5, sắp tên) → mỗi file:
-`realpath` phòng thủ, `os.open(O_RDONLY|O_NOFOLLOW)`, `fstat` (thường, size khớp, ≤ max) →
-`POST /internal/jobs/:id/outputs` (Bearer, `X-Filename` pct, thân thô stream từ fd).
-`classify_output`: `ok` ⇒ id · `skip` ⇒ bỏ file · `stop` ⇒ ngừng · `retry` ⇒ ≤ 2 lần nữa.
-Không bao giờ làm job `failed`; `stop` (cancel) / hết thời gian ⇒ ngừng, giữ id đã có.
-Log không tên file.
+Mở `out/` một lần `O_DIRECTORY|O_NOFOLLOW` (review H2c v1 #6: phải là thư mục thật và đúng
+`DirId` ghi lúc `prepare_job_dirs` — bị thay bằng symlink/thư mục khác ⇒ không gửi gì) → liệt kê
+`os.scandir(fd)` (không theo symlink) → `pick_outputs` (≤ 5, sắp tên) → mỗi file:
+`os.open(<tên>, O_RDONLY|O_NOFOLLOW, dir_fd=fd out/)` (tương đối fd đã kiểm, không qua đường dẫn),
+`fstat` (thường, size khớp, ≤ max) → `POST /internal/jobs/:id/outputs` (Bearer, `X-Filename` pct,
+thân thô stream từ fd). `classify_output`: `ok` ⇒ id · `skip` ⇒ bỏ file · `stop` ⇒ ngừng ·
+`retry` ⇒ ≤ 2 lần nữa. Không bao giờ làm job `failed`; `stop` (cancel) / hết thời gian ⇒ ngừng, giữ
+id đã có. Log không tên file.
+
+Thử lại sau timeout/mạng/5xx (review H2c v1 #3): lần trước có thể đã được Hub lưu (mất phản hồi) ⇒
+POST lại cùng file. Runtime giữ thử lại; chống trùng ở **Hub**: cùng lần claim + cùng `safe_name` ⇒
+Hub thay hàng cũ (không thêm hàng), nên id trả lần sau là id hiện hành.
 """
 
 import asyncio
@@ -21,6 +27,7 @@ from pydantic import ValidationError
 
 from agent_runtime.contracts.hub import JobOutputResponse
 from agent_runtime.log import get_logger
+from agent_runtime.runtimes.cli.files.dirs import DirId
 from agent_runtime.runtimes.cli.files.fetch import (
     CHUNK_BYTES,
     FilesCall,
@@ -40,15 +47,42 @@ from agent_runtime.runtimes.cli.files.rules import (
 )
 
 _OPEN_READ = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC
+_OPEN_DIR = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 _STOP: Literal["stop"] = "stop"
 
 
-async def send_outputs(call: FilesCall, out: Path) -> tuple[str, ...]:
+async def send_outputs(call: FilesCall, out: Path, out_id: DirId | None = None) -> tuple[str, ...]:
     """`pick_outputs` → POST `/internal/jobs/{id}/outputs` từng file; trả id (≤ 5). Không làm job
-    `failed`; huỷ/hết hạn ⇒ ngừng, giữ id đã có."""
+    `failed`; huỷ/hết hạn ⇒ ngừng, giữ id đã có. `out_id` = danh tính `out/` lúc tạo."""
+    dfd = open_out(out, out_id)
+    if dfd is None:
+        return ()
+    try:
+        return await _send_from(call, dfd)
+    finally:
+        os.close(dfd)
+
+
+def open_out(out: Path, out_id: DirId | None) -> int | None:
+    """fd thư mục `out/` (không theo symlink) đúng `out_id`; vắng/sai ⇒ None (log khi đã có
+    `out_id` — `out/` bị đổi trong lúc chạy)."""
+    try:
+        dfd = os.open(out, _OPEN_DIR)
+    except OSError:
+        dfd = None
+    if dfd is not None and (out_id is None or out_id.matches(os.fstat(dfd))):
+        return dfd
+    if dfd is not None:
+        os.close(dfd)
+    if out_id is not None:
+        get_logger().warning("job.outputs_skipped", reason="out_changed")
+    return None
+
+
+async def _send_from(call: FilesCall, dfd: int) -> tuple[str, ...]:
     log = get_logger()
     started = time.monotonic()
-    picked, skipped = pick_outputs(scan_out(out))
+    picked, skipped = pick_outputs(scan_out(dfd))
     for why in skipped:
         log.info("job.output_skipped", why=why, status=None)
     if not picked:
@@ -56,7 +90,7 @@ async def send_outputs(call: FilesCall, out: Path) -> tuple[str, ...]:
     if call.hub_url is None:
         log.warning("job.outputs_skipped", reason="no_hub_url")
         return ()
-    sender = _Sender(call, job_url(call.hub_url, call.job.id, "outputs"), out)
+    sender = _Sender(call, job_url(call.hub_url, call.job.id, "outputs"), dfd)
     budget = max(FETCH_TIMEOUT_S, call.deadline - time.monotonic())
     await until_stopped(sender.all(picked, budget), call.stop)
     ids = tuple(sender.ids)
@@ -65,8 +99,8 @@ async def send_outputs(call: FilesCall, out: Path) -> tuple[str, ...]:
     return ids
 
 
-def scan_out(out: Path) -> list[OutEntry]:
-    """`os.scandir` không theo symlink; thư mục vắng/lỗi đọc ⇒ []."""
+def scan_out(out: Path | int) -> list[OutEntry]:
+    """`os.scandir` (đường dẫn hoặc fd thư mục) không theo symlink; vắng/lỗi đọc ⇒ []."""
     entries: list[OutEntry] = []
     try:
         with os.scandir(out) as it:
@@ -97,15 +131,15 @@ def _entry(d: os.DirEntry[str]) -> OutEntry:
 class _Sender:
     """Gửi lần lượt; `ids` giữ id đã nhận kể cả khi bị huỷ/hết thời gian giữa chừng."""
 
-    def __init__(self, call: FilesCall, url: str, out: Path) -> None:
-        self.call, self.url, self.out = call, url, out
+    def __init__(self, call: FilesCall, url: str, dfd: int) -> None:
+        self.call, self.url, self.dfd = call, url, dfd
         self.ids: list[str] = []
 
     async def all(self, picked: list[OutEntry], budget: float) -> None:
         try:
             async with asyncio.timeout(budget):
                 for e in picked:
-                    got = await _send_one(self.call, self.url, self.out, e)
+                    got = await _send_one(self.call, self.url, self.dfd, e)
                     if got == _STOP:
                         return
                     if got is not None:
@@ -114,15 +148,12 @@ class _Sender:
             get_logger().warning("job.outputs_timeout", sent=len(self.ids))
 
 
-def _open_checked(out: Path, e: OutEntry) -> int | None:
-    """fd file thường đúng `out/<name>`, size khớp — sai ⇒ log bỏ, None."""
-    path = out / e.name
+def _open_checked(dfd: int, e: OutEntry) -> int | None:
+    """fd file thường `<name>` ngay trong fd thư mục `out/` (không theo symlink), size khớp — sai ⇒
+    log bỏ, None. Tên từ `scandir` nên không có `/`."""
     log = get_logger()
-    if Path(os.path.realpath(path)).parent != Path(os.path.realpath(out)):
-        log.info("job.output_skipped", why="other", status=None)
-        return None
     try:
-        fd = os.open(path, _OPEN_READ)
+        fd = os.open(e.name, _OPEN_READ, dir_fd=dfd)
     except OSError:
         log.info("job.output_skipped", why="other", status=None)
         return None
@@ -139,9 +170,9 @@ def _open_checked(out: Path, e: OutEntry) -> int | None:
     return fd
 
 
-async def _send_one(call: FilesCall, url: str, out: Path, e: OutEntry) -> str | None:
+async def _send_one(call: FilesCall, url: str, dfd: int, e: OutEntry) -> str | None:
     """id · None (bỏ file) · `"stop"` (401 — ngừng phần còn lại)."""
-    fd = _open_checked(out, e)
+    fd = _open_checked(dfd, e)
     if fd is None:
         return None
     log = get_logger()

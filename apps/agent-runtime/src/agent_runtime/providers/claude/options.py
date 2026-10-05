@@ -121,6 +121,7 @@ def policy_of(job: ProviderJob, tools: list[str]) -> SandboxPolicy:
         tools=frozenset(tools),
         structured_output=job.payload.output == "agent_result",  # có `output_format` (S2)
         mcp_tools=frozenset(job_mcp_tools(job)),
+        out_id=job.out_dir_id,
     )
 
 

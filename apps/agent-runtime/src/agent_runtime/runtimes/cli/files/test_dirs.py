@@ -43,3 +43,12 @@ def test_wrk_br_07_preplaced_symlink_and_file_replaced(tmp_path: Path) -> None:
     for sub in ("attachments", "out"):
         assert stat.S_ISDIR((work / sub).lstat().st_mode)
     assert (outside / "keep").read_text() == "keep"
+
+
+def test_wrk_br_07_returns_out_dir_id(tmp_path: Path) -> None:
+    """Review H2c v1 #6: trả `DirId` của `out/` vừa tạo; không `out/` ⇒ None."""
+    work = tmp_path / "job"
+    assert prepare_job_dirs(work, attachments=True, out=False) is None
+    got = prepare_job_dirs(work, attachments=False, out=True)
+    st = (work / "out").lstat()
+    assert got is not None and got.matches(st) and got.pair() == (st.st_dev, st.st_ino)

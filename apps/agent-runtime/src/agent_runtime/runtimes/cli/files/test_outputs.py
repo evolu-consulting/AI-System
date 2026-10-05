@@ -12,6 +12,7 @@ import httpx2
 import pytest
 
 from agent_runtime.runtimes.cli.files import outputs
+from agent_runtime.runtimes.cli.files.dirs import DirId
 from agent_runtime.runtimes.cli.files.fetch import FilesCall
 from agent_runtime.runtimes.cli.files.outputs import scan_out, send_outputs
 
@@ -38,13 +39,16 @@ def _created(req: httpx2.Request) -> httpx2.Response:
 
 
 async def _send(
-    out: Path, handler: Handler, hub_url: str | None = "http://hub.test"
+    out: Path,
+    handler: Handler,
+    hub_url: str | None = "http://hub.test",
+    out_id: DirId | None = None,
 ) -> tuple[str, ...]:
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler)) as client:
         call = FilesCall(
             client, hub_url, _Job("j-1", "tok"), time.monotonic() + 30, asyncio.Event()
         )
-        return await send_outputs(call, out)
+        return await send_outputs(call, out, out_id)
 
 
 def _out(tmp_path: Path, **files: str) -> Path:
@@ -128,3 +132,23 @@ def test_wrk_fr_18_scan_kinds(tmp_path: Path) -> None:
     os.symlink(out / "f.md", out / "l.md")
     got = {e.name: (e.kind, e.size) for e in scan_out(out)}
     assert got == {"f.md": ("file", 3), "d": ("dir", 0), "l.md": ("symlink", 0)}
+
+
+async def test_wrk_br_07_out_must_be_same_real_dir(tmp_path: Path) -> None:
+    """Review H2c v1 #6: `out/` là symlink, hoặc thư mục khác `DirId` lúc tạo ⇒ không gửi gì."""
+    seen: list[httpx2.Request] = []
+
+    def handler(req: httpx2.Request) -> httpx2.Response:
+        seen.append(req)
+        return _created(req)
+
+    real = _out(tmp_path, **{"a.md": "x"})
+    first = DirId.of(real.lstat())
+    assert len(await _send(real, handler, out_id=first)) == 1
+    link = tmp_path / "link"
+    link.symlink_to(real, target_is_directory=True)
+    assert await _send(link, handler) == ()
+    real.rename(tmp_path / "old")
+    _out(tmp_path, **{"a.md": "x"})
+    assert await _send(real, handler, out_id=first) == ()
+    assert len(seen) == 1
