@@ -21,7 +21,7 @@ Phụ lục của [`test-plan.md`](test-plan.md). Chữ ký: `plan.md` §4.1 (`b
 | R11 | như R10, `"en"` | `"The AI service has used up the current plan's limit."` · `"Try again later; the limit will reset automatically."` |
 | R12 | `"vi"`, `"provider_unavailable"` | `"Dịch vụ AI đang tạm ngưng để quản trị viên kiểm tra."` · `"Báo quản trị viên nếu lỗi kéo dài."` |
 | R13 | `"en"`, `"provider_unavailable"` | `"The AI service is paused for an administrator to check."` · `"Contact your administrator if this persists."` |
-| R14 | reason `null` · `undefined` · `"tenant_slots"` · `"provider_busy"` · `"timeout"` · `"zzz"` (vi, en) | `toEqual(runErrorText("ALL_PROVIDERS_EXHAUSTED", locale))` (câu H1) |
+| R14 | reason `null` · `"tenant_slots"` · `"provider_busy"` · `"timeout"` · `"zzz"` (vi, en) | `toEqual(runErrorText("ALL_PROVIDERS_EXHAUSTED", locale))` (câu H1) |
 | R15 | mã khác + reason `quota`/`provider_unavailable`: `TIMEOUT`, `INTERNAL_ERROR`, `UPSTREAM_ERROR` (vi, en) | `toEqual(runErrorText(code, locale))` — reason chỉ áp cho `ALL_PROVIDERS_EXHAUSTED` |
 | R16 | `runErrorText("ALL_PROVIDERS_EXHAUSTED", vi/en)` | không đổi (so chuỗi H1 — trùng H1 `rules/run-errors.test.ts`, `plan` P4) |
 | R17 | 4 câu mới (message + hint) | độ dài ≤ `CHAT_ERROR_TEXT_MAX` (import từ `@ai/contracts/chat`); không khớp `/\d/` (không giờ/số), `/claude\|anthropic\|sub\|fake/i`, `@`, `http` (H1-R26, Q5=A) |

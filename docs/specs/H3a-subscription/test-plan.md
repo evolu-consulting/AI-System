@@ -20,11 +20,11 @@ Như H2c §1 (tên test, hộp đen, chờ theo điều kiện không `sleep`, c
 | Mục | Đề xuất | Ai |
 |---|---|---|
 | DB | DB riêng qc như H2c §2 (`ai_system_h3a_<nhóm>_test` + `_hub_test`); `0008` áp qua `db:migrate`/`ensure_schema` | qc |
-| `fake-cli` probe | `AGENT_RT_FAKE_PROBE_FILE` (đọc mỗi lượt; vắng ⇒ `ok`) + `<file>.calls` (`rt` §5); **thêm** `ok:<ms>` (G2) | backend-lead PY-03 |
+| `fake-cli` probe | `AGENT_RT_FAKE_PROBE_FILE` (đọc mỗi lượt; vắng ⇒ `ok`) + `<file>.calls` (`rt` §5); **thêm** `ok:<ms>` (số nguyên 1–60 000; ngoài khoảng/không số ⇒ `error`) (G2, đã xử lý) | backend-lead PY-03 |
 | `fake-cli` job | `#fake:ratelimit=<ts>[,<type>]`, `#fake:ratewarn=<util>[,<ts>]` (`rt` §5); có sẵn `#fake:is-error=rate\|auth`, `#fake:sleep`, `#fake:crash` | backend-lead PY-02 |
-| Env Python int | `ctx.runtime(AGENT_RT_PROBE_S=…, AGENT_RT_PROBE_LOGGED_OUT_S=1, AGENT_RT_PROBE_TIMEOUT_S=2, AGENT_RT_FAKE_PROBE_FILE=<tmp_path>/probe.txt)` — biên dev PL6 | qc |
+| Env Python int | `ctx.runtime(AGENT_RT_PROBE_S=…, AGENT_RT_PROBE_LOGGED_OUT_S=1, AGENT_RT_PROBE_TIMEOUT_S=10, AGENT_RT_FAKE_PROBE_FILE=<tmp_path>/probe.txt)` — biên dev PL6; chỉ ca treo (P22, P38) đặt `AGENT_RT_PROBE_TIMEOUT_S=2` (N1, đã xử lý) | qc |
 | Fixture `_proc.py`/`_rt.py` (khoá H1) | **Không sửa**: test khoá chạy với `AGENT_RT_PROBE_S` mặc định 1200 (probe bật, file vắng ⇒ `ok`) — đúng điều kiện production để bắt K6 | — |
-| Stack | `test:h3a:stack` (MK): env Runtime như trên + file probe trong thư mục bind-mount host↔container (G6) | backend-lead MK |
+| Stack | `test:h3a:stack` (MK): env Runtime như trên + helper riêng `tests/acceptance/H3a/stack/_stack.ts` `startRuntimeBoxH3a(name, worker, env)` (qc viết, mẫu H2a; dùng `dockerArgs`); file chỉ thị probe host `<REPO>/.data/h3a-stack/probe.txt` ⇔ container `/work/.data/h3a-stack/probe.txt` (repo đã mount `/work`; `.data/` trong `.gitignore`) (G6, đã xử lý) | backend-lead MK |
 | Smoke | `HOME` tạm + symlink (PL10); không chạm file credential; tối đa 2 lượt haiku | backend-lead I2, qc duyệt |
 | Lock | `tests/acceptance/H3a/**`, `H2b/direct.int.test.ts` (T1, CHANGED), `apps/agent-runtime/tests/acceptance/{test_quota_rules.py,probe_int_test.py,quota_int_test.py,_h3a.py}`. `tests/smoke/**` không khoá | qc |
 
@@ -39,7 +39,7 @@ Như H2c §1 (tên test, hộp đen, chờ theo điều kiện không `sleep`, c
 |---|---|---|
 | **AC-W02** (vế subscription) | S01; P48; K07 `provider_int_test::ac_w02` | S, P, K |
 | **HUB-H3a-AC-01** (R02 biên) | P01–P03; P42 | P |
-| **AC-02** (R01 thứ tự) | P08 (vế thuần); P48 + K07 `refusal_int_test` (vế job) — G1 | P, K |
+| **AC-02** (R01 thứ tự) | P08 (vế thuần `probe_result`); **P12** (vế job: `mapping.result_signal`); P48 + K07 `refusal_int_test` — G1 (đã xử lý) | P, K |
 | **AC-03** (R03 `allowed_warning`) | P04; P40, P41, P36 | P |
 | **AC-04** (R06) | A01–A05, A10–A13; P21, P43; S03; K03 A30 | A, P, S |
 | **AC-05** (R07) | A14; P47; S02 | A, P, S |
@@ -104,13 +104,13 @@ Không thuộc `done:h3a`: `HUB_LIVE=1 bun run test:smoke:live` (I2, AC-12). `do
 | QW-R | sau B0 | `rules/blocked-reason`, `run-errors-h3a`, `contracts-h3a` | R01–R21 (16 ID, ~60 dòng bảng) | `blockedReason` stub ném `not implemented`; `runErrorTextFor` trả câu H1 ⇒ `expect` lệch. **Xanh trước code chấp nhận**: R14–R16, R18 (hồi quy), R20, R21 |
 | QW-A | sau QW-R, D1, MK | `blocked`, `queue-wait`, `job-reason`, `command`, `db`, `compat` + **T1** | A01–A25 (~30) | câu H1 thay câu R08; reason `provider_unavailable` thay `quota` (A01, A05, A10). Xanh trước code: A06 vế trạng thái, A08, A12, A13, A18, A19, A20–A25 (D1 có), T1 **đỏ** (đúng: câu H1) |
 | **Q2** | sau QW-A | khoá TS | — | verify: chỉ `UNLOCKED` H3a + đúng 1 `CHANGED` T1 |
-| QW-PU | sau Q2, PY-00, **trước PY-01** | `test_quota_rules.py` | P01–P11 (~110 dòng bảng) | `NotImplementedError` (P11 xanh trước code — hằng có trong stub) |
+| QW-PU | sau Q2, PY-00, **trước PY-01** | `test_quota_rules.py` | P01–P12 (~115 dòng bảng; P11, P12 xanh trước code nếu hằng/`result_signal` có sẵn) | `NotImplementedError` (P11 xanh trước code — hằng có trong stub) |
 | **Q-PU** | sau QW-PU | đúng 1 `UNLOCKED` | — | — |
 | QW-P | sau PY-02 | `_h3a.py`, `probe_int_test.py`, `quota_int_test.py`, `stack/quota.stack.test.ts` | P20–P49 (30), S01–S04 | P40–P49: phần lớn xanh (PY-02 xong) — đỏ: P43 (vòng probe chưa có ⇒ `last_probe_at` NULL, hết hạn chờ — đỏ đúng); P20–P39: chưa có vòng probe (PY-03/04) ⇒ hết hạn `wait_until` có thông điệp; S01–S03 đỏ ở câu R08 nếu B1 chưa vào. Fixture/DB/Runtime boot phải xanh |
 | **Q3** | sau QW-P, **trước PY-03** | khoá P int + stack | — | verify chỉ `UNLOCKED` QW-P |
 | SM | I2 | `tests/smoke/h3a-live.test.ts` | SM1–SM4 | không khoá |
 
-Tổng mới ≈ **101** ca: R 16 ID (~60 dòng bảng) · A 25 · P unit 11 ID (~110 dòng bảng) · P int 30 · S 4 · SM 4 · K 12 · M 4 · sửa T1 1. Model: QW-R/QW-A/QW-PU/QW-P = Opus (`cao` — `provider_state`, khoá, PII), Q2/Q-PU/Q3/I1 = Sonnet.
+Tổng mới ≈ **101** ca: R 16 ID (~60 dòng bảng) · A 25 · P unit 12 ID (~110 dòng bảng) · P int 30 · S 4 · SM 4 · K 12 · M 4 · sửa T1 1. Model: QW-R/QW-A/QW-PU/QW-P = Opus (`cao` — `provider_state`, khoá, PII), Q2/Q-PU/Q3/I1 = Sonnet.
 
 ## 8. Chỗ hở cho readiness (mặc định dùng nếu không trả lời)
 | # | Hở | Mặc định đề xuất | Agent |
@@ -123,8 +123,10 @@ Tổng mới ≈ **101** ca: R 16 ID (~60 dòng bảng) · A 25 · P unit 11 ID 
 | G6 | Stack: Runtime ở container ⇒ `AGENT_RT_FAKE_PROBE_FILE` phải nằm trong bind-mount; `plan §7`/MK chưa nêu | MK thêm mount `<tmp>/probe:/probe` + env | backend-lead MK |
 | G7 | `rt §5` "vắng file ⇒ `ok`" ⇒ mọi test khoá Python cũ sẽ có probe `ok` thật chạy (F1) — chấp nhận có chủ đích (PL2) | giữ; F1 chạy 3 lần | — |
 
+**Readiness lần 1 (2026-10-06): G1–G7, N1, N2 đã xử lý trong test-plan.** G1 → P12; G2 → `ok:<ms>` ở P10/P33/P34; G3 → `from agent_runtime.db.jobs_sql import K_CLAIM` (P37); G4/G5/G7 → việc của docs-architect/backend-lead (spec/plan/rt, ngoài phạm vi file này; G5: chỉ probe đưa về `ok`, PL15 — P49 giữ); G6 → helper `H3a/stack/_stack.ts`; N1 → timeout int mặc định 10 s; N2 → bỏ `undefined` khỏi R14. N3/N4 không ảnh hưởng test.
+
 ## 9. Cần bổ sung (agent: việc)
-- backend-lead: G1, G2, G3, G5, G6 trước QW-P (G2/G6 chặn P33/P34/S04 nếu không có — khi thiếu ⇒ ca đó ghi "chờ" không khoá).
+- backend-lead: G2 (`ok:<ms>` ở `parse_fake_probe` + `FakeProvider.probe`, PY-03), G1 (ghi `result_signal` vào rt §8), G5 (PL15), G7 (chữ rt §5), MK (script `test:h3a:stack`, bỏ qua `H3a/stack/**`).
 - docs-architect: G4.
 
 ## 10. Đỏ đúng lý do · nhật ký
