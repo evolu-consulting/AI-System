@@ -50,6 +50,7 @@ const snap = (version: number, o: Partial<ConfigSnapshot> = {}): ConfigSnapshot 
   entitlements: [],
   grants: [],
   agentWorkflows: new Map(),
+  orchestratorTenants: new Map(),
   ...o,
 });
 

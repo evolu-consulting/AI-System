@@ -1,9 +1,9 @@
 // HUB-FR-23 · H2a-R11, R14 · luật thuần của agent `dify-*` (plan H2a §5.4): workflow theo `runtime_options.workflow_key`,
 // task → input (`difyAgentInput`), kết quả Dify → kết cục bước (bảng lỗi plan-errors §2). Không I/O.
 import { AGENT_TEXT_MAX, type HubJobErrorCode, type JobFailReason } from "@ai/contracts/hub";
-import type { CatalogWorkflow, WorkflowInputValue } from "../commands/catalog.types";
-import type { DifyRunOutcome } from "./dify.client";
-import { difyAgentInput } from "./dify.rules";
+import type { CatalogWorkflow, WorkflowInputValue } from "../../commands/catalog.types";
+import type { DifyRunOutcome } from "../dify.client";
+import { difyAgentInput } from "../dify.rules";
 
 /** Loại app Dify hợp lệ cho từng runtime (R14, khớp luật seed). */
 const APP_TYPES: Readonly<Record<string, readonly string[]>> = {

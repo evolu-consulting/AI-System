@@ -4,8 +4,8 @@ import { type AgentCliJob, JOB_ENQUEUED_CHANNEL, type JobEnqueuedPayload } from 
 import type { Tx } from "@ai/db";
 import { jobs, providerState, runSteps } from "@ai/db/schema/hub";
 import { and, eq, sql } from "drizzle-orm";
-import { insertStep } from "../../lib/run-steps";
-import type { JobRow } from "./runner.rules";
+import { insertStep } from "../../../lib/run-steps";
+import type { JobRow } from "../runner.rules";
 
 const NOW_MS = sql`date_trunc('milliseconds', now())`;
 

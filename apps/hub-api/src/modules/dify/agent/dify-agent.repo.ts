@@ -3,7 +3,7 @@
 import type { Tx } from "@ai/db";
 import { runSteps } from "@ai/db/schema/hub";
 import { and, eq, sql } from "drizzle-orm";
-import { insertStep } from "../../lib/run-steps";
+import { insertStep } from "../../../lib/run-steps";
 
 const NOW_MS = sql`date_trunc('milliseconds', now())`;
 /** `cli_sessions.provider_key` / `run_steps.provider_key` của agent `dify-*`. */

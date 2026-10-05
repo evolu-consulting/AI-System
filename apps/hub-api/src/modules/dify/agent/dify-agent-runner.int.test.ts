@@ -11,19 +11,19 @@ import {
   prepareDb,
   type Sql,
   USERS,
-} from "../../../../../tests/acceptance/H1/_fixtures";
-import { insertHubConfig } from "../../../../../tests/acceptance/H1/_hub";
+} from "../../../../../../tests/acceptance/H1/_fixtures";
+import { insertHubConfig } from "../../../../../../tests/acceptance/H1/_hub";
 import {
   AG2,
   idGen2,
   insertCatalog,
   insertH2aAgents,
-} from "../../../../../tests/acceptance/H2a/_h2a";
-import { connectDb, type Db } from "../../lib/db";
-import { logger } from "../../lib/logger";
-import { type ConfigCache, startConfigCache } from "../config/config.service";
-import type { AgentTask } from "../runner/job-agent-runner";
-import type { DifyClient, DifyRunOutcome, DifyRunRequest } from "./dify.client";
+} from "../../../../../../tests/acceptance/H2a/_h2a";
+import { connectDb, type Db } from "../../../lib/db";
+import { logger } from "../../../lib/logger";
+import { type ConfigCache, startConfigCache } from "../../config/config.service";
+import type { AgentTask } from "../../runner/job/job-agent-runner";
+import type { DifyClient, DifyRunOutcome, DifyRunRequest } from "../dify.client";
 import { DifyAgentRunner } from "./dify-agent-runner";
 
 const OWNER = "rv1-dify-agent";

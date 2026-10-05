@@ -9,7 +9,7 @@ import { CredentialService, loadMasterKey } from "./modules/dify/credential.serv
 import { credentialRoutes } from "./modules/internal/credential.routes";
 import { DifyCredentialService } from "./modules/internal/credential.service";
 import { RunStreamReader } from "./modules/runner/run-stream-reader";
-import { WorkflowJobRunner } from "./modules/runner/workflow-job-runner";
+import { WorkflowJobRunner } from "./modules/runner/workflow/workflow-job-runner";
 
 /** = `HUB_JOB_MAX_WAIT_S` mặc định (plan H1 §7). */
 export const DEFAULT_JOB_MAX_WAIT_S = 30;

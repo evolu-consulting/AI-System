@@ -11,7 +11,7 @@ import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { startLoop } from "../../lib/loop";
 import type { Redis } from "../../lib/redis";
-import { type OrphanJob, requeueOrphanJobs, sweepOrphanJobs } from "./runner.repo";
+import { type OrphanJob, requeueOrphanJobs, sweepOrphanJobs } from "./job/runner.repo";
 import { syntheticFailed } from "./runner.rules";
 
 export const ORPHAN_SWEEP_MS = 10_000;

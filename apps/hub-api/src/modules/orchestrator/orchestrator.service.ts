@@ -6,7 +6,7 @@ import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { accessInput, visibleAgents } from "../agents/agent-access.rules";
 import type { UserState } from "../config/config.rules";
-import { type AgentRunner, runJob } from "../runner/job-agent-runner";
+import { type AgentRunner, runJob } from "../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../runs/runs.service";
 import type { SseWriter } from "../runs/sse/sse-writer";
 import { type LoopEnd, type LoopInput, type LoopIo, runLoop } from "./orchestrator.loop";

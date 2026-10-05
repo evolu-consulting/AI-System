@@ -59,3 +59,15 @@ const TEXTS: Record<ChatRunErrorCode, Record<RunLocale, RunErrorText>> = {
 export function runErrorText(code: ChatRunErrorCode, locale: RunLocale): RunErrorText {
   return { ...TEXTS[code][locale] };
 }
+
+/**
+ * H2b-R27 (F4): như `runErrorText`, trừ `UPSTREAM_ERROR` + `reason = "refused"` → `hint` riêng (`plan-errors` §2).
+ * B0: chỉ chữ ký (B11).
+ */
+export function runErrorTextFor(
+  _code: ChatRunErrorCode,
+  _locale: RunLocale,
+  _reason: string | null,
+): RunErrorText {
+  throw new Error("not implemented: runErrorTextFor");
+}

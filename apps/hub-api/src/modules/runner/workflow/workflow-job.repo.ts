@@ -8,8 +8,8 @@ import {
 import type { Tx } from "@ai/db";
 import { jobs } from "@ai/db/schema/hub";
 import { eq, sql } from "drizzle-orm";
-import { insertStep } from "../../lib/run-steps";
-import type { JobRow } from "./runner.rules";
+import { insertStep } from "../../../lib/run-steps";
+import type { JobRow } from "../runner.rules";
 
 /**
  * `runs FOR SHARE` (còn `running` ∧ còn của `owner`) → provider `dify` bật (đọc DB trong transaction, không tin cache:

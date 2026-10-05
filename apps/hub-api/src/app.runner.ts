@@ -4,10 +4,10 @@ import { runnerMcp } from "./app.mcp";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import type { ConfigCache } from "./modules/config/config.service";
+import { DifyAgentRunner } from "./modules/dify/agent/dify-agent-runner";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
 import { DifyClient } from "./modules/dify/dify.client";
-import { DifyAgentRunner } from "./modules/dify/dify-agent-runner";
-import { type AgentRunner, JobAgentRunner } from "./modules/runner/job-agent-runner";
+import { type AgentRunner, JobAgentRunner } from "./modules/runner/job/job-agent-runner";
 import { RoutingRunner } from "./modules/runner/routing-runner";
 import type { RunStreamReader } from "./modules/runner/run-stream-reader";
 

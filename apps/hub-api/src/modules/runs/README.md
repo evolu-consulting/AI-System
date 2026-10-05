@@ -14,7 +14,8 @@ Thư mục con: `sse/` (hai đầu stream `sse:<id>`), `close/` (đóng run bở
 | `sse/sse-reader.ts` | `SseReader` (một kết nối `XREAD BLOCK 1000` multiplex), `runEventStream` (XRANGE → theo dõi → đóng ở sự kiện kết thúc, ping 15 s) |
 | `close/cancel.routes.ts` · `close/cancel.service.ts` · `close/cancel.repo.ts` | E15 `POST /runs/:id/cancel` + phần huỷ run của E9 (HUB-FR-43, §5.7): `flows FOR UPDATE` → `runs` (chiếm `owner`) → tin assistant → jobs + `NOTIFY job_cancel`; sau COMMIT `abort()` writer cục bộ + `appendExternal` |
 | `close/lease.ts` · `close/sweeper.ts` | B10: gia hạn lease 10 s (`registry.ids()`, `FOR UPDATE SKIP LOCKED`; mất run → `abort()`) · sweeper lease §5.8 (`failExpiredRun` + `announceClosed`) |
-| `runs.rules.ts` · `run-errors.ts` | thuần: `parseLastEventId`, `eventsExpired`, `leaseExpired`, `queueTimeoutReason` · `runErrorText` (plan-errors) |
+| `runs.rules.ts` · `run-errors.ts` | thuần: `parseLastEventId`, `eventsExpired`, `leaseExpired`, `queueTimeoutReason` · `runErrorText` (plan-errors); H2b `runErrorTextFor` (F4, B0 chỉ chữ ký — B11) |
+| `run-limit.rules.ts` | H2b (HUB-FR-94, R16): `overLimit`, `parseMaxConcurrentRuns`. B0: chỉ chữ ký (B5) |
 
 Luật:
 - Hub ghi duy nhất `sse:<id>`; entry field `e` = JSON `{event, data}`; TTL 24 h khi chạy, 600 s sau kết thúc; `DEL run:<id>` khi kết thúc.

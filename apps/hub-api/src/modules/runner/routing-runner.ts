@@ -2,7 +2,7 @@
 // `JobAgentRunner` (job `agent.cli`), `dify-workflow`/`dify-agent` → `DifyAgentRunner` (Hub gọi Dify, không hàng `jobs`).
 // Runner thật tiêm từ ngoài (không import `modules/dify`), nên vòng Orchestrator chỉ biết `AgentRunner`.
 import type { RunEvent } from "@ai/contracts/hub";
-import type { AgentRunner, AgentTask } from "./job-agent-runner";
+import type { AgentRunner, AgentTask } from "./job/job-agent-runner";
 import { syntheticFailed } from "./runner.rules";
 
 /** Runtime agent `dify-*` chạy trong Hub (R14). */

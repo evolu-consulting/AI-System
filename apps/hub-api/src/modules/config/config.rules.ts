@@ -59,6 +59,8 @@ export type ConfigSnapshot = Readonly<{
   grants: readonly GrantRow[];
   /** H2a · `hub.agent_workflows`: agent id → workflow id gắn (tool MCP, R18–R19). */
   agentWorkflows: ReadonlyMap<string, ReadonlySet<string>>;
+  /** H2b-R13 · `orchestrator_settings` có `tenant_id`: tenant id → bản Orchestrator riêng. */
+  orchestratorTenants: ReadonlyMap<string, OrchestratorConfig>;
 }>;
 
 /** Workflow gắn agent (rỗng khi không có). */
@@ -81,6 +83,20 @@ export function orchestratorProblem(s: ConfigSnapshot): OrchestratorProblem | nu
   if (!agent.enabled) return "disabled";
   if (agent.runtime !== "agentic-cli") return "not_agentic_cli";
   return null;
+}
+
+export type PickedOrchestrator = {
+  config: OrchestratorConfig;
+  tenantId: string | null;
+  invalid: boolean;
+};
+
+/**
+ * HUB-FR-62 · H2b-R14: bản tenant hợp lệ (agent ∈ `s.agents` ∧ bật) → bản đó; hỏng → mặc định + `invalid`;
+ * mặc định thiếu → null. B0: chỉ chữ ký (B1).
+ */
+export function pickOrchestrator(_s: ConfigSnapshot, _tenantId: string): PickedOrchestrator | null {
+  throw new Error("not implemented: pickOrchestrator");
 }
 
 /** H1-R04: tenant khoá / user không hoạt động / bị tenant khoá / không thuộc tenant → không được dùng Hub. */

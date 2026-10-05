@@ -79,6 +79,22 @@ export const SeedOrchestratorSchema = z.strictObject({
   on_no_match: z.enum(["answer", "ask"]).default("answer"),
 });
 
+/**
+ * H2b-R13: một mục `orchestrator_tenants` — trường thiếu lấy từ bản mặc định cùng yaml (không `default` ở đây).
+ * B0: chỉ schema/kiểu; B2 gắn vào `SeedFileSchema`.
+ */
+export const SeedOrchestratorTenantSchema = z.union([
+  z.strictObject({
+    tenant_key: TenantKeySchema,
+    agent: AgentKeySchema,
+    max_steps: z.number().int().min(1).max(20).optional(),
+    token_budget: z.number().int().min(1).optional(),
+    history_n: z.number().int().min(1).max(50).optional(),
+    on_no_match: z.enum(["answer", "ask"]).optional(),
+  }),
+  z.strictObject({ tenant_key: TenantKeySchema, remove: z.literal(true) }),
+]);
+
 export const SeedEntitlementSchema = z.strictObject({
   agent: AgentKeySchema,
   tenant_key: TenantKeySchema,
@@ -113,6 +129,7 @@ export type SeedProvider = z.infer<typeof SeedProviderSchema>;
 export type SeedProfile = z.infer<typeof SeedProfileSchema>;
 export type SeedAgent = z.infer<typeof SeedAgentSchema>;
 export type SeedOrchestrator = z.infer<typeof SeedOrchestratorSchema>;
+export type SeedOrchestratorTenant = z.infer<typeof SeedOrchestratorTenantSchema>;
 export type SeedEntitlement = z.infer<typeof SeedEntitlementSchema>;
 export type SeedGrant = z.infer<typeof SeedGrantSchema>;
 export type SeedAgentWorkflow = z.infer<typeof SeedAgentWorkflowSchema>;

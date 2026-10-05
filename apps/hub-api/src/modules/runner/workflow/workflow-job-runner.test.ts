@@ -2,8 +2,8 @@
 // run (`asyncOutcome`: hạn → TIMEOUT, huỷ → stopped).
 import { describe, expect, it } from "bun:test";
 import type { RunEvent } from "@ai/contracts/hub";
-import { asyncOutcome } from "../commands/command-async-driver";
-import { syntheticFailed, ZERO_USAGE } from "./runner.rules";
+import { asyncOutcome } from "../../commands/driver/command-async-driver";
+import { syntheticFailed, ZERO_USAGE } from "../runner.rules";
 import { outcomeOfEvent } from "./workflow-job-runner";
 
 const JOB = "00000000-0000-4000-8000-000000000001";

@@ -136,6 +136,8 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
           subject: g.subjectId,
         })),
         agentWorkflows: groupAgentWorkflows(r.aw),
+        // H2b B0: chưa đọc bản tenant (cột `tenant_id` ở migration 0006) — B1 điền.
+        orchestratorTenants: new Map(),
       });
     },
     { isolationLevel: "repeatable read", accessMode: "read only" },

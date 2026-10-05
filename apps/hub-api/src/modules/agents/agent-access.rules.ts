@@ -17,6 +17,10 @@ export type VisibleAgentsInput = {
   userId: string;
   groupIds: ReadonlySet<string>;
   orchestratorId: string;
+  /** H2b-R15: id agent là Orchestrator ở mọi phạm vi — loại khỏi AU. B0: chỉ kiểu (B1 áp dụng). */
+  excludeIds?: ReadonlySet<string>;
+  /** H2b-R09: thu hẹp theo tag. B0: chỉ kiểu (B1 áp dụng). */
+  onlyKeys?: ReadonlySet<string>;
 };
 
 /** Runtime H1 (job `agent.cli`, plan §2.2). */
@@ -34,6 +38,8 @@ export type AccessSnapshot = {
   entitlements: readonly EntitlementRow[];
   grants: readonly GrantRow[];
   orchestrator: { agentId: string } | null;
+  /** H2b-R13: bản Orchestrator theo tenant (khoá = `tenant_id`). */
+  orchestratorTenants?: ReadonlyMap<string, { agentId: string }>;
 };
 export type AccessSubject = { tenantId: string; userId: string; groupIds: ReadonlySet<string> };
 
@@ -41,7 +47,11 @@ export type AccessSubject = { tenantId: string; userId: string; groupIds: Readon
  * HUB-BR-06: quyền tính trên ảnh run giữ lúc bắt đầu, không đọc ảnh mới giữa run. Chỉ agent `RUNNABLE_RUNTIMES` vào
  * danh sách (không thấy, không delegate được): agent runtime khác không có runner chạy nổi.
  */
-export function accessInput(s: AccessSnapshot, who: AccessSubject): VisibleAgentsInput {
+export function accessInput(
+  s: AccessSnapshot,
+  who: AccessSubject,
+  _opts?: { onlyKeys?: ReadonlySet<string> },
+): VisibleAgentsInput {
   return {
     agents: s.agents.filter((a) => RUNNABLE_RUNTIMES.has(a.runtime)),
     entitlements: s.entitlements,
@@ -49,6 +59,14 @@ export function accessInput(s: AccessSnapshot, who: AccessSubject): VisibleAgent
     orchestratorId: s.orchestrator?.agentId ?? "",
     ...who,
   };
+}
+
+/** H2b-R15: id agent Orchestrator mặc định ∪ mọi bản tenant. B0: chỉ chữ ký (B1). */
+export function orchestratorIds(_s: {
+  orchestrator: { agentId: string } | null;
+  orchestratorTenants?: ReadonlyMap<string, { agentId: string }>;
+}): Set<string> {
+  throw new Error("not implemented: orchestratorIds");
 }
 
 /** HUB-FR-77: bật ∧ entitlement chưa thu hồi của tenant ∧ grant (user ∨ group của user) ∧ ≠ Orchestrator; sắp `key`. */

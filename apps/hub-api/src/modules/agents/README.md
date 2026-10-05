@@ -5,6 +5,7 @@ Luật thuần, không I/O (plan H1 §6.1, §6.4; spec H1-R05, R06). Dùng bởi
 | File | Vai trò |
 |---|---|
 | `agent-access.rules.ts` | `accessInput(ảnh run, user)` (chỉ agent `H1_RUNTIME` = `agentic-cli`) · `visibleAgents` (bật ∧ entitlement chưa thu hồi ∧ grant user/group ∧ ≠ Orchestrator, sắp `key`) · `canDelegate` (null → step `skipped not_allowed`) |
+| `agent-menu.rules.ts` | H2b (HUB-FR-92, R11): `toAgentMenuItem`, `agentMenu` — menu `@` (`GET /agents`). B0: chỉ chữ ký (B3) |
 | `agent-access.test.ts` | unit `accessInput`/`canDelegate`; R7 `visibleAgents` khoá ở `tests/acceptance/H1/rules/agent-access.test.ts` |
 
 Luật:

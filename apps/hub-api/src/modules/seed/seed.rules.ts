@@ -6,6 +6,7 @@ import {
   type SeedAgent,
   SeedFileSchema,
   type SeedOrchestrator,
+  type SeedOrchestratorTenant,
 } from "./seed.schema";
 import type { SeedIssue, SeedPlan } from "./seed.types";
 import { checkDifyOptions } from "./seed.workflows";
@@ -199,6 +200,31 @@ export function buildSeedPlan(sources: SeedSource[], o: PlanOptions): SeedPlan {
     agentWorkflows: m.agentWorkflows,
     sideEffect: [...new Set(m.sideEffect)],
   };
+}
+
+export type OrchestratorTenantUpsert = {
+  tenantId: string;
+  agent: string;
+  maxSteps: number;
+  tokenBudget: number;
+  historyN: number;
+  onNoMatch: "answer" | "ask";
+};
+export type OrchestratorTenantsPlan =
+  | { upserts: OrchestratorTenantUpsert[]; removes: string[]; unknownTenants: string[] }
+  | { error: { path: string; message: string; value: unknown } };
+
+/**
+ * HUB-FR-62 · H2b-R13: kiểm + dựng `orchestrator_tenants` (`tenants`: tenant_key → tenant id). Thứ tự lỗi: trùng
+ * `tenant_key` → agent lạ → agent tắt → runtime ≠ `agentic-cli` → không `profile`. B0: chỉ chữ ký (B2).
+ */
+export function planOrchestratorTenants(_i: {
+  entries: readonly SeedOrchestratorTenant[];
+  defaults: SeedOrchestrator;
+  agents: readonly SeedAgent[];
+  tenants: ReadonlyMap<string, string>;
+}): OrchestratorTenantsPlan {
+  throw new Error("not implemented: planOrchestratorTenants");
 }
 
 /** `user:lan` → {type:"user", name:"lan"} (schema đã kiểm dạng). */

@@ -7,19 +7,19 @@
 import type { ChatRunErrorCode } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
-import type { Db } from "../../lib/db";
-import { safeErrorFields } from "../../lib/errors";
-import type { Logger } from "../../lib/logger";
-import { stepLabel } from "../conversations/conversations.rules";
-import { type CredentialService, isCredentialError } from "../dify/credential.service";
-import type { DifyClient, DifyRunOutcome } from "../dify/dify.client";
-import { difyUser } from "../dify/dify.rules";
-import { recordDifyUsage } from "../dify/dify.usage";
-import { chunkText } from "../orchestrator/orchestrator.rules";
-import type { RunContext, RunDriver } from "../runs/runs.service";
-import type { SseWriter } from "../runs/sse/sse-writer";
+import type { Db } from "../../../lib/db";
+import { safeErrorFields } from "../../../lib/errors";
+import type { Logger } from "../../../lib/logger";
+import { stepLabel } from "../../conversations/conversations.rules";
+import { type CredentialService, isCredentialError } from "../../dify/credential.service";
+import type { DifyClient, DifyRunOutcome } from "../../dify/dify.client";
+import { difyUser } from "../../dify/dify.rules";
+import { recordDifyUsage } from "../../dify/dify.usage";
+import { chunkText } from "../../orchestrator/orchestrator.rules";
+import type { RunContext, RunDriver } from "../../runs/runs.service";
+import type { SseWriter } from "../../runs/sse/sse-writer";
+import type { PreparedCommand } from "../commands.service";
 import * as repo from "./command-run.repo";
-import type { PreparedCommand } from "./commands.service";
 
 export type CommandDriverDeps = {
   db: Db;

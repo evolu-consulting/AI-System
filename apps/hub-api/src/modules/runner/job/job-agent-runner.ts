@@ -13,17 +13,16 @@ import {
 } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
-import type { Db } from "../../lib/db";
-import { safeErrorFields } from "../../lib/errors";
-import type { Logger } from "../../lib/logger";
-import type { CatalogSnapshot } from "../config/catalog.rules";
-import { type AgentConfig, agentWorkflowIds, type ConfigSnapshot } from "../config/config.rules";
-import { stepLabel } from "../conversations/conversations.rules";
-import { mcpToolsFor } from "../mcp/mcp.rules";
-import { queueTimeoutReason } from "../runs/runs.rules";
-import type { SseEventBody } from "../runs/sse/sse-writer";
-import type { RunStreamReader } from "./run-stream-reader";
-import * as repo from "./runner.repo";
+import type { Db } from "../../../lib/db";
+import { safeErrorFields } from "../../../lib/errors";
+import type { Logger } from "../../../lib/logger";
+import type { CatalogSnapshot } from "../../config/catalog.rules";
+import { type AgentConfig, agentWorkflowIds, type ConfigSnapshot } from "../../config/config.rules";
+import { stepLabel } from "../../conversations/conversations.rules";
+import { mcpToolsFor } from "../../mcp/mcp.rules";
+import { queueTimeoutReason } from "../../runs/runs.rules";
+import type { SseEventBody } from "../../runs/sse/sse-writer";
+import type { RunStreamReader } from "../run-stream-reader";
 import {
   type AgentRole,
   buildJobPayload,
@@ -35,7 +34,8 @@ import {
   runErrorCodeOf,
   syntheticFailed,
   ZERO_USAGE,
-} from "./runner.rules";
+} from "../runner.rules";
+import * as repo from "./runner.repo";
 
 /** P7: im lâu hơn mức này → đọc `jobs.status`. */
 export const JOB_POLL_MS = 2000;

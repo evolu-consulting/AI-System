@@ -1,7 +1,7 @@
 // HUB-FR-23 · H2a-R14 · unit `RoutingRunner` (plan H2a §5.4): `agentic-cli` → job runner, `dify-*` → dify runner.
 import { describe, expect, it } from "bun:test";
 import type { RunEvent } from "@ai/contracts/hub";
-import type { AgentRunner, AgentTask } from "./job-agent-runner";
+import type { AgentRunner, AgentTask } from "./job/job-agent-runner";
 import { RoutingRunner } from "./routing-runner";
 
 function fake(name: string, calls: string[]): AgentRunner {

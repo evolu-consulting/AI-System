@@ -9,18 +9,18 @@
 import type { RunEvent, TokenUsage } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
-import type { Db } from "../../lib/db";
-import { safeErrorFields } from "../../lib/errors";
-import type { Logger } from "../../lib/logger";
-import { type CatalogSnapshot, tenantKeyOf } from "../config/catalog.rules";
-import { stepLabel } from "../conversations/conversations.rules";
-import type { AgentRunner, AgentTask } from "../runner/job-agent-runner";
-import { syntheticFailed } from "../runner/runner.rules";
-import type { SseEventBody } from "../runs/sse/sse-writer";
-import { type CredentialService, isCredentialError } from "./credential.service";
-import type { DifyClient, DifyRunOutcome } from "./dify.client";
-import { difyUser } from "./dify.rules";
-import { recordDifyUsage } from "./dify.usage";
+import type { Db } from "../../../lib/db";
+import { safeErrorFields } from "../../../lib/errors";
+import type { Logger } from "../../../lib/logger";
+import { type CatalogSnapshot, tenantKeyOf } from "../../config/catalog.rules";
+import { stepLabel } from "../../conversations/conversations.rules";
+import type { AgentRunner, AgentTask } from "../../runner/job/job-agent-runner";
+import { syntheticFailed } from "../../runner/runner.rules";
+import type { SseEventBody } from "../../runs/sse/sse-writer";
+import { type CredentialService, isCredentialError } from "../credential.service";
+import type { DifyClient, DifyRunOutcome } from "../dify.client";
+import { difyUser } from "../dify.rules";
+import { recordDifyUsage } from "../dify.usage";
 import * as repo from "./dify-agent.repo";
 import {
   type DifyAgentEnd,

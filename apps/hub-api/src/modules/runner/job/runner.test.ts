@@ -1,7 +1,7 @@
 // HUB-FR-89 · HUB-BR-03 · H1-R18, R21 · P7 · luật thuần AgentRunner (`runner.rules.ts`).
 import { describe, expect, it } from "bun:test";
 import { RunEventSchema } from "@ai/contracts/hub";
-import type { AgentConfig, ProfileConfig } from "../config/config.rules";
+import type { AgentConfig, ProfileConfig } from "../../config/config.rules";
 import {
   buildJobPayload,
   compareStreamId,
@@ -11,7 +11,7 @@ import {
   providerBlocked,
   syntheticFailed,
   ZERO_USAGE,
-} from "./runner.rules";
+} from "../runner.rules";
 
 const U = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const agent = (o: Partial<AgentConfig> = {}): AgentConfig => ({
