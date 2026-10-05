@@ -110,17 +110,20 @@ async function visit(step: Step, n: number, st: RunState): Promise<Result> {
   return { step, outcome, ms: performance.now() - t0, ...(devErr ? { note: devErr } : {}) };
 }
 
-export async function main(argv: string[]): Promise<number> {
+/** Chạy tuần tự `steps` (dừng ở bước chặn đỏ, `--from=N`), in bảng `done:<name>`; dùng chung cho done:h2a/h2b. */
+export async function runDone(name: string, steps: Step[], argv: string[]): Promise<number> {
   const from = Number(argv.find((a) => a.startsWith("--from="))?.slice(7) ?? "1");
   const st: RunState = { blocked: false, from };
   const results: Result[] = [];
-  for (const [i, step] of h2aSteps().entries()) results.push(await visit(step, i + 1, st));
+  for (const [i, step] of steps.entries()) results.push(await visit(step, i + 1, st));
   await st.dev?.stop();
-  console.log(formatTable(results).replace("done:h1", "done:h2a"));
+  console.log(formatTable(results).replace("done:h1", `done:${name}`));
   const ok = overallGreen(results) && !st.blocked;
-  const partial = from > 1 ? ` (từ bước ${from} — chưa phải done:h2a đủ)` : "";
-  console.log(ok ? `done:h2a XANH${partial}` : "done:h2a ĐỎ");
+  const partial = from > 1 ? ` (từ bước ${from} — chưa phải done:${name} đủ)` : "";
+  console.log(ok ? `done:${name} XANH${partial}` : `done:${name} ĐỎ`);
   return ok ? 0 : 1;
 }
+
+export const main = (argv: string[]): Promise<number> => runDone("h2a", h2aSteps(), argv);
 
 if (import.meta.main) process.exit(await main(process.argv.slice(2)));

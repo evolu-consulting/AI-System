@@ -1,0 +1,7 @@
+[install]
+linker = "isolated"
+
+[test]
+# Bộ stack/hub-dev/smoke H2b (`tests/acceptance/H2b/{stack,hubdev}`, `tests/smoke`): chạy bằng `bun run test:h2b:stack`,
+# bước H01 của `done:h2b`, `bun run test:smoke:live`. bunfig.toml + bunfig.int.toml bỏ các thư mục đó (L6) nên cần file riêng.
+pathIgnorePatterns = ["e2e/**", "**/node_modules/**", "**/__fixtures__/**"]
