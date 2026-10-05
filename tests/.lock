@@ -173,7 +173,7 @@ b78bbcbf37edd03b6be864bfd9a022377cd0ad7fb5d2f609430c72fc33e1dc29  tests/acceptan
 bf9e026e1ffc916b6e6717493cca081ff8501bbec9e722efd2c9b5814d8285d4  tests/acceptance/H2b/rules/run-errors-h2b.test.ts
 41a84abe21cde3cb6bcfdb1aafa10705acca9be0c9ea7f8f395b4796cade3115  tests/acceptance/H2b/rules/run-limit.test.ts
 61a44f7a3556ce4739312d627dbf441b1532787b0f685c2d90dbcb0df8b07015  tests/acceptance/H2b/rules/seed-tenants.test.ts
-79c01c816b2733d0db3220c2a904c38318a3c244f4feafc4dea77cc5ab9b6c8a  tests/acceptance/H2b/run-limit.int.test.ts
+dc5b89fac4af464ed190b98e39eda288679e074a71d0f2d49e6601befe2e9fda  tests/acceptance/H2b/run-limit.int.test.ts
 cf2fb727bef4952821be9b1e5964b0b7a0b7aca1d001745b8e705fba9c9e56c4  tests/acceptance/H2b/scope.int.test.ts
 a561e703d707a07b3462ef530bfabdb84e4f7aec3def5687bceac4e601d2e6e6  tests/acceptance/H2b/seed-tenant.int.test.ts
 f6413b1c364c9ea6d626d3f52d47d828b7dd8b3a720759eb21909534ab19b146  tests/acceptance/H2b/stack/_stack.ts

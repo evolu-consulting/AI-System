@@ -103,8 +103,10 @@ describe("A80–A82 · ngưỡng 2 run/user, nguyên tử, FLOW_BUSY thắng [AC
     const r1 = await hold();
     await hold();
     expect(await runsRunning(sql, "lan")).toBe(2);
+    const conv = await newConv("lan");
     const before = await counts(sql);
     const third = await post("lan", "Tin thứ ba A80", {
+      conv,
       headers: { origin: "http://localhost:3100" },
     });
     expectTooMany(third);
@@ -192,6 +194,7 @@ describe("A83–A86 · mọi kind đều tính; ask/test-run/user khác không t
     await settleRuns(hub, sql, k);
 
     await hold();
+    await setAppKey(sql, "dich", "mk-slow-800"); // ~4 s: còn chạy khi POST, xong trước hạn 10 s của `call`
     dify.mock.reset();
     const testRun = call(hub, "POST", "/internal/test-run", {
       headers: { authorization: `Bearer ${INTERNAL_TOKEN}` },
@@ -215,6 +218,7 @@ describe("A83–A86 · mọi kind đều tính; ask/test-run/user khác không t
     expect((await post("lan", "Trong lúc test-run A84")).status).toBe(200);
     expectTooMany(await post("lan", "Vượt ngưỡng A84"));
     expect((await testRun).status).toBe(200);
+    await setAppKey(sql, "dich", "mk-slow-2000");
 
     expect((await post("hoa", "Hoa gửi khi lan đủ ngưỡng A84")).status).toBe(200);
   }, 60_000);
