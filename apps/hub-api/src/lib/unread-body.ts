@@ -3,6 +3,8 @@
 // (≤ `MAX_REQUEST_BODY_BYTES`, ≤ `DRAIN_MS`) trước khi trả. Lý do (đo trên Bun 1.3.14): Bun.serve tự bỏ phần dư khi có
 // `Content-Length` nhưng **không** đóng socket theo `Connection: close`; client `fetch` của Bun bỏ dở thân `chunked` rồi
 // dùng lại kết nối ⇒ request kế bị đọc như chunk (400). Thân JSON không áp (route JSON đọc trọn thân, thân nhỏ).
+// REVIEW 1 — Hub RV-4: chỉ đọc bỏ cho route upload (`POST /attachments`, `POST /internal/jobs/:job_id/outputs`) và **không**
+// khi 401 (chưa xác thực — chống giữ kết nối kiểu slowloris); route khác / 401 ⇒ chỉ `Connection: close` ngay.
 import type { MiddlewareHandler } from "hono";
 
 /** `Bun.serve({maxRequestBodySize})` (plan P4: 32 MiB, chặn ngoài; mặc định Bun 128 MiB). */
@@ -19,6 +21,18 @@ export function hasRequestBody(req: Request): boolean {
 
 const isJson = (req: Request): boolean =>
   (req.headers.get("content-type") ?? "").toLowerCase().includes("application/json");
+
+const UPLOAD_PATH_RE = /^\/(attachments|internal\/jobs\/[^/]+\/outputs)\/?$/;
+
+/** Route nhận thân nhị phân lớn (upload người dùng / output job). */
+export function isUploadRoute(req: Request): boolean {
+  return req.method === "POST" && UPLOAD_PATH_RE.test(new URL(req.url).pathname);
+}
+
+/** Được đọc bỏ phần dư `chunked`: route upload, lỗi đã qua xác thực (≠ 401), không `Content-Length`. */
+export function shouldDrain(req: Request, status: number): boolean {
+  return status !== 401 && isUploadRoute(req) && !req.headers.has("content-length");
+}
 
 /** Thân cần xử lý khi lỗi: có thân, không phải JSON. */
 export function needsClose(req: Request, status: number): boolean {
@@ -63,7 +77,7 @@ export function closeUnreadBody(
     await next();
     const req = c.req.raw;
     if (!needsClose(req, c.res.status)) return;
-    if (!req.headers.has("content-length")) await drainBody(req.body, o);
+    if (shouldDrain(req, c.res.status)) await drainBody(req.body, o);
     c.res.headers.set("Connection", "close");
   };
 }

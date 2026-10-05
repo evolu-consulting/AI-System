@@ -161,7 +161,9 @@ describe("HUB-FR-44 · 0007_h2c_attachments D1 — CHECK (int)", () => {
       "23503:attachments_message_id_fkey",
     );
   });
+});
 
+describe("HUB-FR-44 · 0007_h2c_attachments D1 — CHECK FK/xoá/cột mới (int)", () => {
   test("xoá message ⇒ message_id NULL, hàng còn (bound_at/position giữ)", async () => {
     const m = await newMessage();
     const id = crypto.randomUUID();
@@ -243,7 +245,9 @@ describe("HUB-FR-75 · 0007_h2c_attachments D1 — RLS/GRANT (int)", () => {
     expect(await raw("admin")).toBe(0);
     expect(await raw("")).toBe(0);
   });
+});
 
+describe("HUB-FR-75 · 0007_h2c_attachments D1 — RLS WITH CHECK/GRANT (int)", () => {
   test("user INSERT hàng của người khác → 42501 (WITH CHECK)", async () => {
     const ins = (over: Att) =>
       code(

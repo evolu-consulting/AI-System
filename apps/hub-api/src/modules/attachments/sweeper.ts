@@ -4,13 +4,15 @@
 // (b) R28 hội thoại đã xoá: claim + `purged_at = now` → xoá nội dung (hàng còn) → (c) mồ côi trên kho (lô `list` xoay vòng,
 // con trỏ trong bộ nhớ theo storage): `.part`/file > 1 h không hàng sống ⇒ xoá; `.part` có hàng sống ⇒ `promote` (PL13).
 // Đồng hồ tiêm (`now`) — không `now()` trong câu (AC-13). Xoá lỗi ⇒ `warn attachment-remove-failed`, lượt sau làm lại.
+// (c) chạy trong savepoint + bắt lỗi (`warn attachment-sweep-orphans-failed {code}`): lỗi `list` (EACCES/EPERM…) không
+// rollback (a)/(b) — file đã xoá thì hàng phải được commit (spec-decisions "REVIEW 1 — Hub" RV-3).
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../lib/db";
 import { type Logger, logger } from "../../lib/logger";
 import { startLoop } from "../../lib/loop";
-import type { AttachmentStorage, StoredEntry } from "./storage";
+import type { AttachmentStorage, StoreCursor, StoredEntry } from "./storage";
 import { orphanCandidate, SWEEP_BATCH, UNBOUND_TTL_MS } from "./sweeper.rules";
 
 export type SweepDeps = { db: Db; storage: AttachmentStorage; now: Date; log?: Logger };
@@ -20,8 +22,8 @@ type Claimed = { id: string; storage_key: string };
 type Ctx = { storage: AttachmentStorage; log: Logger; now: Date };
 
 const SKIPPED: SweepResult = { expired: 0, purged: 0, orphans: 0, skipped: true };
-/** Con trỏ quét kho (khoá cuối lô trước; null = từ đầu) — theo instance storage, chỉ trong bộ nhớ. */
-const cursors = new WeakMap<AttachmentStorage, string | null>();
+/** Con trỏ quét kho ((key, partial) cuối lô trước; null = từ đầu) — theo instance storage, chỉ trong bộ nhớ (RV-9). */
+const cursors = new WeakMap<AttachmentStorage, StoreCursor | null>();
 
 /** Mảng uuid → literal mảng Postgres (tham số hoá, ép `::uuid[]` ở câu). Id lấy từ DB hoặc tên đã qua `isUuidName`. */
 const uuidArray = (ids: readonly string[]): string => `{${ids.join(",")}}`;
@@ -77,7 +79,11 @@ async function sweepOrphans(tx: Tx, c: Ctx): Promise<number> {
     after: cursors.get(c.storage) ?? null,
     limit: SWEEP_BATCH,
   });
-  cursors.set(c.storage, entries.length < SWEEP_BATCH ? null : (entries.at(-1)?.key ?? null));
+  const last = entries.at(-1);
+  cursors.set(
+    c.storage,
+    entries.length < SWEEP_BATCH || !last ? null : { key: last.key, partial: last.partial },
+  );
   if (entries.length === 0) return 0;
   const ids = [...new Set(entries.map((e) => idOf(e.key)))];
   const liveRows = await tx.execute<{ storage_key: string }>(sql`SELECT storage_key
@@ -88,6 +94,19 @@ async function sweepOrphans(tx: Tx, c: Ctx): Promise<number> {
   for (const e of entries) if (orphanCandidate(e, nowMs, live) && (await settle(c, e, live))) n++;
   return n;
 }
+
+/** (c) trong savepoint; lỗi (kho không đọc được, câu lỗi) ⇒ warn, 0 — (a)/(b) vẫn commit (RV-3). */
+async function sweepOrphansSafe(tx: Tx, c: Ctx): Promise<number> {
+  try {
+    return await tx.transaction((sp) => sweepOrphans(sp, c));
+  } catch (e) {
+    c.log.warn("attachment-sweep-orphans-failed", { code: errCode(e) });
+    return 0;
+  }
+}
+
+const errCode = (e: unknown): string =>
+  typeof e === "object" && e !== null && "code" in e ? String(e.code) : "EUNKNOWN";
 
 /** `.part` của hàng sống ⇒ hoàn tất rename (PL13); khác ⇒ xoá. */
 async function settle(c: Ctx, e: StoredEntry, live: ReadonlySet<string>): Promise<boolean> {
@@ -112,7 +131,7 @@ export async function sweepOnce(d: SweepDeps): Promise<SweepResult> {
     if (!lock?.ok) return SKIPPED;
     const expired = await sweepUnbound(tx, c);
     const purged = await sweepDeletedConversations(tx, c);
-    const orphans = await sweepOrphans(tx, c);
+    const orphans = await sweepOrphansSafe(tx, c);
     return { expired, purged, orphans, skipped: false };
   });
   if (r.expired + r.purged + r.orphans > 0)

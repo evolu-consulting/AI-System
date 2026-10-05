@@ -67,7 +67,7 @@ async function uploadFirst(
   if (typeof apiKey !== "string") return apiKey;
   const r = writer.run;
   const res = await uploadCommandFiles(
-    { storage: d.storage ?? null, fetch: d.fetch, log: x.log },
+    { storage: d.storage ?? null, db: d.db, fetch: d.fetch, log: x.log },
     { p, files: x.files, tenantId: r.tenantId, apiKey, user: difyUser(p.tenantKey, r.userId) },
     AbortSignal.any([writer.signal, x.timeout]),
   );

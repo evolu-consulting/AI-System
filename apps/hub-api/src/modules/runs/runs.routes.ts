@@ -19,6 +19,7 @@ import {
 import { Hono } from "hono";
 import type { AuthUser, AuthVars } from "../../lib/auth.middleware";
 import { parseIdParam, parseJson } from "../../lib/http";
+import { normalizeAttachmentIds } from "../attachments/run-files";
 import type { RunFile } from "../attachments/run-files.rules";
 import type { ConversationService } from "../conversations/conversations.service";
 import type { MentionPlan, MentionRouted } from "../mention/mention.service";
@@ -56,7 +57,11 @@ export function sendMessageRoutes(
   r.post("/:id/messages", async (c) => {
     const id = parseIdParam(c);
     await conversations.get(c.var.user, id);
-    const body = await parseJson(c, SendMessageRequestSchema);
+    const parsed = await parseJson(c, SendMessageRequestSchema);
+    // RV-7: id file chữ thường trước R09/R11 (`[U1,u1]` = trùng ⇒ 400).
+    const body = parsed.attachment_ids
+      ? { ...parsed, attachment_ids: normalizeAttachmentIds(parsed.attachment_ids) }
+      : parsed;
     const u = c.var.user;
     const files = body.attachment_ids ? await runs.checkSendable(u, body.attachment_ids) : [];
     const msg = routeMessage(body.content);

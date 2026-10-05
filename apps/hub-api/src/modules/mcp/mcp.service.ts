@@ -275,7 +275,12 @@ export class McpService {
   ): Promise<ToolUploadResult> {
     const { ctx, wf } = call;
     if (o.args.files.length === 0) return { kind: "ok", inputs: o.args.inputs, upload: null };
-    const deps = { storage: this.d.storage ?? null, fetch: this.d.fetch, log: this.d.log };
+    const deps = {
+      storage: this.d.storage ?? null,
+      db: this.d.db,
+      fetch: this.d.fetch,
+      log: this.d.log,
+    };
     const x = {
       tenantId: ctx.tenantId,
       workflowId: wf.id,

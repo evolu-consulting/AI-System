@@ -8,6 +8,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import { appError } from "../../lib/errors";
+import { validationError } from "../../lib/http";
 import { bindAttachments, bindOutputs, runFileRows, sendableFiles } from "./attachments.repo";
 import { type FileRow, pickRunFiles, type RunFile, toRunFile } from "./run-files.rules";
 
@@ -16,13 +17,25 @@ export type RunKind = "orchestrated" | "direct" | "command";
 
 const notFound = (ids: readonly string[]) => appError("ATTACHMENT_NOT_FOUND", { ids: [...ids] });
 
+/**
+ * RV-7 · uuid chữ hoa ≡ chữ thường (Postgres so không phân biệt hoa): chuẩn hoá chữ thường; trùng sau chuẩn hoá (`[U1,u1]`)
+ * ⇒ 400 như issue zod `duplicate` của contract (không đổi contract).
+ */
+export function normalizeAttachmentIds(ids: readonly string[]): string[] {
+  const out = ids.map((id) => id.toLowerCase());
+  if (new Set(out).size !== out.length)
+    throw validationError([{ path: ["attachment_ids"], code: "custom", message: "duplicate" }]);
+  return out;
+}
+
 /** R09 (plan-db §2.1) · scope `user`; thiếu id nào ⇒ 404 `ATTACHMENT_NOT_FOUND{ids}`; đủ ⇒ file theo thứ tự `ids`. */
 export async function checkSendable(
   db: Db,
   u: AuthUser,
-  ids: readonly string[],
+  raw: readonly string[],
 ): Promise<RunFile[]> {
   const o = { tenantId: u.tenantId, userId: u.userId };
+  const ids = normalizeAttachmentIds(raw);
   const rows = await withHubScope(db, { kind: "user", ...o }, (tx) => sendableFiles(tx, o, ids));
   const byId = new Map(rows.map((r) => [r.id, r]));
   const missing = ids.filter((id) => !byId.has(id));

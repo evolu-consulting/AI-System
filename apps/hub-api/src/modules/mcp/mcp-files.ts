@@ -6,6 +6,7 @@ import type { JobAttachment } from "@ai/contracts/hub";
 import type { Logger } from "../../lib/logger";
 import {
   type AttachmentDifyDeps,
+  AttachmentUnavailable,
   type DifyUploadTarget,
   difyFileInput,
   type UploadTrace,
@@ -64,8 +65,31 @@ export type ToolUploadResult =
   /** `signal` đã abort (hạn tool / kết nối `/mcp` đóng) — người gọi quyết `TIMEOUT`/`CANCELLED`. */
   | { kind: "aborted"; upload: UploadTrace };
 
-/** Upload tuần tự mọi `files` (vắng ⇒ `inputs` giữ nguyên). Ném `AttachmentContentMissing` khi kho không có nội dung. */
+/** RV-8 · file đã dọn trước khi upload ⇒ câu tĩnh `NOT_ATTACHED` (`isError`, R38 khoá câu chữ), bước `INVALID_ARGS`. */
+const unavailable = (): ToolUploadResult => ({
+  kind: "failed",
+  code: "INVALID_ARGS",
+  result: notAttached(),
+  trace: {},
+});
+
+/** Upload tuần tự mọi `files` (vắng ⇒ `inputs` giữ nguyên); file đã dọn ⇒ `unavailable` (RV-8). */
 export async function uploadToolFiles(
+  d: ToolFilesDeps,
+  x: { tenantId: string; workflowId: string; target: DifyUploadTarget },
+  args: { inputs: Record<string, WorkflowInputValue>; files: readonly ToolFile[] },
+  signal: AbortSignal,
+): Promise<ToolUploadResult> {
+  try {
+    return await uploadEach(d, x, args, signal);
+  } catch (e) {
+    if (e instanceof AttachmentUnavailable) return unavailable();
+    throw e;
+  }
+}
+
+/** Ném `AttachmentContentMissing` khi kho không có nội dung. */
+async function uploadEach(
   d: ToolFilesDeps,
   x: { tenantId: string; workflowId: string; target: DifyUploadTarget },
   args: { inputs: Record<string, WorkflowInputValue>; files: readonly ToolFile[] },

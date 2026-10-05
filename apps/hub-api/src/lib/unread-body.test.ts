@@ -2,7 +2,14 @@
 // còn dư ⇒ đọc bỏ (giới hạn) để kết nối dùng lại không đọc nhầm phần dư thành request kế.
 import { describe, expect, test } from "bun:test";
 import { Hono } from "hono";
-import { closeUnreadBody, drainBody, hasRequestBody, needsClose } from "./unread-body";
+import {
+  closeUnreadBody,
+  drainBody,
+  hasRequestBody,
+  isUploadRoute,
+  needsClose,
+  shouldDrain,
+} from "./unread-body";
 
 const MiB = 1_048_576;
 const streamBody = (n: number, chunk = 256 * 1024) => {
@@ -33,6 +40,20 @@ describe("unread-body [B1-3]", () => {
     ).toBe(false);
   });
 
+  test("isUploadRoute / shouldDrain: chỉ POST upload/output, không 401, không Content-Length [RV-4]", () => {
+    const post = (path: string, h: Record<string, string> = {}) =>
+      new Request(`http://x${path}`, { method: "POST", headers: h });
+    expect(isUploadRoute(post("/attachments"))).toBe(true);
+    expect(isUploadRoute(post("/internal/jobs/abc/outputs"))).toBe(true);
+    expect(isUploadRoute(post("/attachments/x"))).toBe(false);
+    expect(isUploadRoute(post("/conversations/x/messages"))).toBe(false);
+    expect(isUploadRoute(new Request("http://x/attachments"))).toBe(false);
+    expect(shouldDrain(post("/attachments"), 413)).toBe(true);
+    expect(shouldDrain(post("/attachments"), 401)).toBe(false);
+    expect(shouldDrain(post("/attachments", { "content-length": "9" }), 413)).toBe(false);
+    expect(shouldDrain(post("/other"), 413)).toBe(false);
+  });
+
   test("drainBody: đọc hết → true; vượt maxBytes → false; stream đang khoá → false", async () => {
     expect(await drainBody(streamBody(MiB), { maxBytes: 2 * MiB, ms: 5_000 })).toBe(true);
     expect(await drainBody(streamBody(3 * MiB), { maxBytes: 2 * MiB, ms: 5_000 })).toBe(false);
@@ -47,14 +68,14 @@ describe("closeUnreadBody trên Bun.serve [B1-3]", () => {
   test("Bun.serve thật: 413 sớm cho upload chunked → kèm Connection: close; request kế trên client fetch vẫn 200", async () => {
     const app = new Hono();
     app.use(closeUnreadBody());
-    app.post("/up", (c) => c.json({ e: 1 }, 413));
+    app.post("/attachments", (c) => c.json({ e: 1 }, 413));
     app.get("/health", (c) => c.text("ok"));
     const server = Bun.serve({ port: 0, fetch: app.fetch });
     try {
       const base = `http://localhost:${server.port}`;
       const seen: (number | string | null)[] = [];
       for (let i = 0; i < 3; i++) {
-        const r = await fetch(`${base}/up`, {
+        const r = await fetch(`${base}/attachments`, {
           method: "POST",
           headers: { "content-type": "application/octet-stream" },
           body: streamBody(4 * MiB),

@@ -78,7 +78,9 @@ describe("H2c chat attachments", () => {
     expect(AttachmentNotFoundDetailsSchema.safeParse({ ids: [U1] }).success).toBe(true);
     expect(AttachmentNotFoundDetailsSchema.safeParse({ ids: [] }).success).toBe(false);
   });
+});
 
+describe("H2c chat attachments — tin nhắn", () => {
   test("SendMessageRequest.attachment_ids: vắng giữ nguyên, 1–10, không trùng", () => {
     expect(SendMessageRequestSchema.parse({ content: "hi" })).toEqual({ content: "hi" });
     expect(SendMessageRequestSchema.parse({ content: "hi", attachment_ids: [U1, U2] })).toEqual({

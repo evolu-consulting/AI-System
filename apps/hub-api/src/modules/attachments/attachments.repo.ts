@@ -90,6 +90,17 @@ export async function findOwnedAttachment(
   };
 }
 
+/**
+ * RV-8 · file còn dùng được trước khi gửi Dify: hàng của tenant, `purged_at IS NULL`, hội thoại (nếu có) chưa xoá. Scope
+ * `system` (lệnh/MCP chạy nền theo run).
+ */
+export async function fileAvailable(tx: Tx, tenantId: string, id: string): Promise<boolean> {
+  const rows = await tx.execute<{ ok: number }>(sql`select 1 as ok
+    from hub.attachments a left join hub.conversations c on c.id = a.conversation_id
+    where a.id = ${id} and a.tenant_id = ${tenantId} and a.purged_at is null and c.deleted_at is null`);
+  return rows.length > 0;
+}
+
 /** Mảng uuid → literal `{…}` (tham số `::uuid[]`; drizzle `sql` nở mảng JS thành danh sách — B10-2). Id đã qua zod uuid. */
 export const uuidArray = (ids: readonly string[]): string => `{${ids.join(",")}}`;
 
@@ -153,12 +164,37 @@ export async function runFileRows(
     limit 11`);
 }
 
-/** P21 · PL10 (plan-db §2.5) · số output của lần claim hiện hành (`created_at >= jobs.started_at`). Scope `system`. */
-export async function countJobOutputs(tx: Tx, jobId: string): Promise<number> {
-  const [r] = await tx.execute<{ n: number }>(sql`select count(*)::int as n
+/**
+ * P21 · PL10 (plan-db §2.5) · số **tên** output còn sống của lần claim hiện hành (`created_at >= jobs.started_at`), không
+ * tính tên `except` (gửi lại cùng tên = thay, không chiếm suất — RV-2, khớp `bindOutputs` DISTINCT ON). Scope `system`.
+ */
+export async function countJobOutputs(tx: Tx, jobId: string, except: string): Promise<number> {
+  const [r] = await tx.execute<{ n: number }>(sql`select count(distinct a.safe_name)::int as n
     from hub.attachments a join hub.jobs j on j.id = a.job_id
-    where a.job_id = ${jobId} and a.origin = 'output' and a.created_at >= j.started_at`);
+    where a.job_id = ${jobId} and a.origin = 'output' and a.created_at >= j.started_at
+      and a.purged_at is null and a.safe_name <> ${except}`);
   return Number(r?.n ?? 0);
+}
+
+/**
+ * RV-2 · output cùng `safe_name` của lần claim hiện hành, chưa gắn ⇒ `purged_at = now()` (thay bằng bản mới; sweeper R27
+ * xoá hàng + nội dung lượt sau, hạn mức tenant nhả ngay). Gọi sau khoá tenant, **trước** khoá `jobs` (P8: attachments → jobs).
+ */
+export async function supersedeJobOutput(tx: Tx, jobId: string, safeName: string): Promise<void> {
+  await tx.execute(sql`update hub.attachments a set purged_at = now()
+    from hub.jobs j
+    where j.id = a.job_id and a.job_id = ${jobId} and a.origin = 'output' and a.safe_name = ${safeName}
+      and a.message_id is null and a.purged_at is null and a.created_at >= j.started_at`);
+}
+
+/**
+ * RV-1 · lần claim đã xác thực còn giữ: job `running` với đúng `token_hash` — `FOR SHARE` tới hết transaction INSERT
+ * (requeue/kết thúc job chờ commit) ⇒ output không gắn nhầm sang lần claim mới.
+ */
+export async function claimHeld(tx: Tx, jobId: string, tokenHash: Buffer): Promise<boolean> {
+  const rows = await tx.execute<{ ok: number }>(sql`select 1 as ok from hub.jobs
+    where id = ${jobId} and token_hash = ${tokenHash} and status = 'running' for share`);
+  return rows.length > 0;
 }
 
 /**

@@ -8,6 +8,7 @@ import { writeSync } from "node:fs";
 import {
   chmod,
   type FileHandle,
+  lstat,
   mkdir,
   open,
   readdir,
@@ -26,6 +27,7 @@ import {
   StorageKeyError,
   StorageRejected,
   StorageTooLarge,
+  type StoreCursor,
   type StoredEntry,
 } from "./storage";
 
@@ -178,11 +180,11 @@ class LocalStorage implements AttachmentStorage {
     return file ? Bun.file(file.path, { type }) : null;
   }
 
-  /** File đã commit (không `.part`) dưới gốc; không có ⇒ null. */
+  /** File thường đã commit (không `.part`, không symlink — `lstat`, RV-10) dưới gốc; không có ⇒ null. */
   async #existing(key: string): Promise<{ path: string; size: number; blob: Blob } | null> {
     const p = await this.#paths(key, false);
     if (!p) return null;
-    const st = await stat(p.file).catch((e) => (missing(e) ? null : Promise.reject(e)));
+    const st = await lstat(p.file).catch((e) => (missing(e) ? null : Promise.reject(e)));
     if (!st?.isFile()) return null;
     return { path: p.file, size: st.size, blob: Bun.file(p.file) };
   }
@@ -205,26 +207,35 @@ class LocalStorage implements AttachmentStorage {
     await rename(p.part, p.file).catch((e) => (missing(e) ? undefined : Promise.reject(e)));
   }
 
-  /** Mục sắp theo (key, partial); chỉ `<uuid>/<uuid>` và `<uuid>/<uuid>.part`; trang sau = key > `after`. */
-  async list(o: { after: string | null; limit: number }): Promise<StoredEntry[]> {
+  /**
+   * Mục sắp theo (key, partial); chỉ `<uuid>/<uuid>` và `<uuid>/<uuid>.part`; trang sau = (key, partial) > `after`
+   * (chuỗi = sau mọi mục của khoá đó — RV-9).
+   */
+  async list(o: { after: string | StoreCursor | null; limit: number }): Promise<StoredEntry[]> {
     const out: StoredEntry[] = [];
-    const afterTenant = o.after?.split("/")[0] ?? "";
+    const after = typeof o.after === "string" ? { key: o.after, partial: true } : o.after;
+    const afterTenant = after?.key.split("/")[0] ?? "";
     const tenants = (await readdir(this.root)).filter(isUuidName).sort();
     for (const t of tenants) {
       if (out.length >= o.limit) break;
       if (t < afterTenant) continue;
-      await this.#listTenant(t, o.after, o.limit - out.length, out);
+      await this.#listTenant(t, after, o.limit - out.length, out);
     }
     return out;
   }
 
-  async #listTenant(t: string, after: string | null, n: number, out: StoredEntry[]): Promise<void> {
+  async #listTenant(
+    t: string,
+    after: StoreCursor | null,
+    n: number,
+    out: StoredEntry[],
+  ): Promise<void> {
     const dir = path.join(this.root, t);
     const names = await readdir(dir).catch((e) => (missing(e) ? [] : Promise.reject(e)));
     const items = names
       .map((name) => entryName(t, name))
       .filter((x): x is { key: string; partial: boolean; name: string } => x !== null)
-      .filter((x) => after === null || x.key > after)
+      .filter((x) => after === null || isAfter(x, after))
       .sort((a, b) =>
         a.key === b.key ? Number(a.partial) - Number(b.partial) : a.key < b.key ? -1 : 1,
       );
@@ -234,6 +245,11 @@ class LocalStorage implements AttachmentStorage {
         out.push({ key: x.key, partial: x.partial, size: st.size, mtimeMs: st.mtimeMs });
     }
   }
+}
+
+/** (key, partial) > `c` — `false < true` (file trước `.part` cùng khoá). */
+function isAfter(x: StoreCursor, c: StoreCursor): boolean {
+  return x.key > c.key || (x.key === c.key && x.partial && !c.partial);
 }
 
 function ignoreExists(e: unknown): void {

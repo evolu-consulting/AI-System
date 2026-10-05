@@ -3,13 +3,16 @@
 // §5.7, P22). Thứ tự kiểm plan §2.4: header (400) → đuôi (415) → `Content-Length` (413/400) → hạn mức sớm (409) → stream ra
 // `.part` (413/415/400) → transaction khoá tenant (409 chốt; output: ≤ 5/lần claim chốt — P21) → INSERT → commit DB → rename
 // (R05). Hạn mức là **theo tenant** ⇒ câu SUM/khoá/INSERT chạy scope `system` với `tenant_id`/`user_id` của chủ (JWT hoặc
-// job) (spec-decisions "BUILD — B2/B3" B2-1). Không log tên file, không byte thân.
+// job) (spec-decisions "BUILD — B2/B3" B2-1). Không log tên file, không byte thân. REVIEW 1 — Hub: ≤ 3 upload đồng thời
+// mỗi user (RV-5, 429 `TOO_MANY_RUNS`); output: cùng tên trong lần claim = thay (RV-2), claim còn giữ dưới khoá (RV-1).
 import { randomUUID } from "node:crypto";
 import {
   ATTACH_MAX_BYTES,
   type AttachMime,
   type Attachment,
   type AttachmentDetail,
+  RETRY_AFTER_HEADER,
+  TOO_MANY_RUNS_RETRY_AFTER_S,
 } from "@ai/contracts/chat";
 import { JOB_OUTPUTS_MAX } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
@@ -29,6 +32,7 @@ import {
   safeName,
 } from "./attachment.rules";
 import {
+  claimHeld,
   countJobOutputs,
   deleteAttachment,
   findOwnedAttachment,
@@ -36,6 +40,7 @@ import {
   lockTenantQuota,
   type OwnedAttachment,
   quotaUsed,
+  supersedeJobOutput,
 } from "./attachments.repo";
 import { countedBody } from "./counted-body";
 import { FileInspector } from "./sniff.rules";
@@ -64,13 +69,18 @@ export type IngestTarget = {
   jobId: string | null;
   conversationId: string | null;
   flowId: string | null;
-  /** Kiểm thêm trong transaction INSERT, sau khoá tenant (output: P21 ≤ 5/lần claim) — ném `AppError` ⇒ rollback. */
-  guard?: (tx: Tx) => Promise<void>;
+  /**
+   * Kiểm thêm trong transaction INSERT, ngay sau khoá tenant, trước hạn mức chốt (output: thay cùng tên RV-2, claim còn giữ
+   * RV-1, P21 ≤ 5 tên/lần claim) — ném ⇒ rollback + xoá `.part`.
+   */
+  guard?: (tx: Tx, row: { safeName: string }) => Promise<void>;
 };
 
 /** Job agent đã xác thực (token → job `running`, role `agent`) — chủ + nơi của output (plan §5.5). */
 export type OutputJob = {
   jobId: string;
+  /** Hash token của lần claim đã xác thực — kiểm lại dưới khoá (RV-1). */
+  tokenHash: Buffer;
   tenantId: string;
   userId: string;
   conversationId: string;
@@ -78,6 +88,16 @@ export type OutputJob = {
 };
 
 export type AttachmentServiceDeps = { db: Db; storage: AttachmentStorage; tenantMaxBytes: number };
+
+/** RV-5 · upload `POST /attachments` đồng thời tối đa mỗi user (trong tiến trình — v1 một Hub). */
+export const UPLOADS_PER_USER_MAX = 3;
+
+/** RV-1 · lần claim đã xác thực không còn giữ khi chốt (requeue/kết thúc giữa chừng) ⇒ người gọi trả 401. */
+export class OutputClaimLost extends Error {
+  constructor() {
+    super("output claim lost");
+  }
+}
 
 /**
  * Nội dung + header R13 của `/content` (plan §5.7). `Blob` (đọc lười từ đĩa) thay vì stream: Bun chỉ gửi `Content-Length`
@@ -88,6 +108,23 @@ export type ContentResult = { body: Blob; headers: Record<string, string> };
 const SYSTEM = { kind: "system" } as const;
 const tooLarge = () => appError("ATTACHMENT_TOO_LARGE", { max_bytes: ATTACH_MAX_BYTES });
 const badField = (field: "X-Filename" | "body") => appError("VALIDATION_ERROR", { field });
+const tooManyUploads = () =>
+  appError("TOO_MANY_RUNS", undefined, {
+    [RETRY_AFTER_HEADER]: String(TOO_MANY_RUNS_RETRY_AFTER_S),
+  });
+
+/** P21 chốt: ≥ `JOB_OUTPUTS_MAX` tên output khác `name` trong lần claim ⇒ 409. */
+async function outputsFull(tx: Tx, jobId: string, name: string): Promise<void> {
+  if ((await countJobOutputs(tx, jobId, name)) >= JOB_OUTPUTS_MAX)
+    throw appError("ATTACHMENT_QUOTA_EXCEEDED");
+}
+
+/** Guard output dưới khoá tenant — thứ tự khoá P8: attachments (thay cùng tên) → jobs (`FOR SHARE`). */
+async function outputGuard(tx: Tx, j: OutputJob, name: string): Promise<void> {
+  await supersedeJobOutput(tx, j.jobId, name);
+  if (!(await claimHeld(tx, j.jobId, j.tokenHash))) throw new OutputClaimLost();
+  await outputsFull(tx, j.jobId, name);
+}
 /** Trường log chung (không tên file); `output` thêm `job_id` (plan-errors §5). */
 const logBase = (t: IngestTarget) => ({
   tenant_id: t.tenantId,
@@ -111,9 +148,12 @@ function checkName(raw: string | undefined): {
 }
 
 export class AttachmentService {
+  /** Số upload đang chạy theo user (RV-5). */
+  readonly #active = new Map<string, number>();
+
   constructor(private readonly d: AttachmentServiceDeps) {}
 
-  /** `POST /attachments` → `Attachment` (201). Lỗi 400/409/413/415 ⇒ log `attachment-rejected`. */
+  /** `POST /attachments` → `Attachment` (201). Lỗi 400/409/413/415/429 ⇒ log `attachment-rejected`. */
   async upload(u: AuthUser, i: UploadInput, log: Logger): Promise<Attachment> {
     const t: IngestTarget = {
       tenantId: u.tenantId,
@@ -123,22 +163,37 @@ export class AttachmentService {
       conversationId: null,
       flowId: null,
     };
-    return this.ingest(t, i, log);
+    const n = this.#active.get(u.userId) ?? 0;
+    if (n >= UPLOADS_PER_USER_MAX) {
+      log.info("attachment-rejected", { ...logBase(t), code: 429 });
+      throw tooManyUploads();
+    }
+    this.#active.set(u.userId, n + 1);
+    try {
+      return await this.ingest(t, i, log);
+    } finally {
+      const left = (this.#active.get(u.userId) ?? 1) - 1;
+      if (left > 0) this.#active.set(u.userId, left);
+      else this.#active.delete(u.userId);
+    }
   }
 
   /**
-   * `POST /internal/jobs/:job_id/outputs` (R25, plan §5.5) sau khi đã xác thực job: ≥ `JOB_OUTPUTS_MAX` output của lần
-   * claim hiện hành ⇒ 409 (P21, PL10) — kiểm sớm (trước khi đọc thân) và chốt dưới khoá tenant — rồi luồng §5.1 với
-   * `origin='output'`, chủ = `jobs.user_id`, hội thoại/flow của payload (chưa `message_id`).
+   * `POST /internal/jobs/:job_id/outputs` (R25, plan §5.5) sau khi đã xác thực job: ≥ `JOB_OUTPUTS_MAX` tên output (khác
+   * tên này) của lần claim hiện hành ⇒ 409 (P21, PL10) — kiểm sớm (trước khi đọc thân) và chốt dưới khoá tenant (claim
+   * còn giữ — RV-1; cùng tên ⇒ thay bản cũ — RV-2) — rồi luồng §5.1 với `origin='output'`, chủ = `jobs.user_id`, hội
+   * thoại/flow của payload (chưa `message_id`). Claim mất khi chốt ⇒ ném `OutputClaimLost`.
    */
   async ingestOutput(j: OutputJob, i: UploadInput, log: Logger): Promise<Attachment> {
-    const full = async (tx: Tx) => {
-      if ((await countJobOutputs(tx, j.jobId)) >= JOB_OUTPUTS_MAX)
-        throw appError("ATTACHMENT_QUOTA_EXCEEDED");
+    const { tokenHash: _h, ...owner } = j;
+    const t: IngestTarget = {
+      ...owner,
+      origin: "output",
+      guard: (tx, row) => outputGuard(tx, j, row.safeName),
     };
-    const t: IngestTarget = { ...j, origin: "output", guard: full };
     try {
-      await withHubScope(this.d.db, SYSTEM, full);
+      const name = safeName(checkName(i.filenameRaw).filename);
+      await withHubScope(this.d.db, SYSTEM, (tx) => outputsFull(tx, j.jobId, name));
     } catch (e) {
       if (e instanceof AppError) log.info("attachment-rejected", { ...logBase(t), code: e.status });
       throw e;
@@ -236,16 +291,17 @@ export class AttachmentService {
     return appError("INTERNAL_ERROR");
   }
 
-  /** Transaction: khoá tenant → hạn mức chốt (409) → `guard` → INSERT (R05, R06, P21). */
+  /** Transaction: khoá tenant → `guard` → hạn mức chốt (409) → INSERT (R05, R06, P21, RV-1, RV-2). */
   async #insert(
     t: IngestTarget,
     o: { id: string; filename: string; mime: AttachMime; staged: Staged },
   ): Promise<Date> {
+    const name = safeName(o.filename);
     return withHubScope(this.d.db, SYSTEM, async (tx) => {
       await lockTenantQuota(tx, t.tenantId);
+      await t.guard?.(tx, { safeName: name });
       if (overQuota(await quotaUsed(tx, t.tenantId), o.staged.size, this.d.tenantMaxBytes))
         throw appError("ATTACHMENT_QUOTA_EXCEEDED");
-      await t.guard?.(tx);
       return insertAttachment(tx, {
         id: o.id,
         tenantId: t.tenantId,
@@ -255,7 +311,7 @@ export class AttachmentService {
         conversationId: t.conversationId,
         flowId: t.flowId,
         filename: o.filename,
-        safeName: safeName(o.filename),
+        safeName: name,
         mime: o.mime,
         size: o.staged.size,
         sha256: o.staged.sha256,

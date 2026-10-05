@@ -30,10 +30,12 @@ export function attachmentRoutes(svc: AttachmentService): Hono<AuthVars> {
     return c.json(out, 201);
   });
 
-  r.get("/:id", async (c) => c.json(await svc.get(c.var.user, parseIdParam(c))));
+  // uuid chữ hoa ≡ chữ thường (RV-7) — id chuẩn hoá trước khi tới service.
+  r.get("/:id", async (c) => c.json(await svc.get(c.var.user, parseIdParam(c).toLowerCase())));
 
   r.get("/:id/content", async (c) => {
-    const { body, headers } = await svc.content(c.var.user, parseIdParam(c), c.var.log);
+    const id = parseIdParam(c).toLowerCase();
+    const { body, headers } = await svc.content(c.var.user, id, c.var.log);
     // Thân `Bun.file` ⇒ Bun tự trả 206 theo `Range` ⇒ có `Range`: thân stream, 200 toàn bộ (R13 "Range bỏ qua"; mất
     // `Content-Length` — Bun gửi chunked). Không `Range`: `blobResponse` giữ `Content-Length` (spec-decisions B3-1).
     if (c.req.header("range") === undefined) return blobResponse(c, body, 200, headers);

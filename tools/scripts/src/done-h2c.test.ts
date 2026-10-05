@@ -11,17 +11,17 @@ const ROOT = join(import.meta.dir, "../../..");
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
 const pkg = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
 
-describe("HUB-H2c · done:h2c", () => {
-  const b = h2bSteps({});
-  const c = h2cSteps({});
-  const titles = c.map((s) => s.title);
-  const idx = (prefix: string) => titles.findIndex((t) => t.startsWith(prefix));
-  const step = (i: number) => {
-    const s = c[i];
-    if (!s) throw new Error(`thiếu bước ${i + 1}`);
-    return s;
-  };
+const b = h2bSteps({});
+const c = h2cSteps({});
+const titles = c.map((s) => s.title);
+const idx = (prefix: string) => titles.findIndex((t) => t.startsWith(prefix));
+const step = (i: number) => {
+  const s = c[i];
+  if (!s) throw new Error(`thiếu bước ${i + 1}`);
+  return s;
+};
 
+describe("HUB-H2c · done:h2c", () => {
   it("18 bước; mọi bước done:h2b có mặt, giữ thứ tự (unit/int/perf chỉ nối thêm H2c)", () => {
     expect(c).toHaveLength(18);
     const pos = b.map((s) =>
@@ -61,7 +61,9 @@ describe("HUB-H2c · done:h2c", () => {
     expect(h01.argv.at(-1)).toBe("tests/acceptance/H2c/hubdev");
     expect(h01.env).toEqual({ HUB_URL, AUTH_URL });
   });
+});
 
+describe("HUB-H2c · done:h2c — khoá, báo cáo, python", () => {
   it("13–16 khoá/trace/size/depcruise; chỉ hai bước báo cáo, đứng cuối", () => {
     expect(titles.slice(12, 16).map((t) => t.split(" ").slice(0, 3).join(" "))).toEqual([
       "bun run test:lock:verify",

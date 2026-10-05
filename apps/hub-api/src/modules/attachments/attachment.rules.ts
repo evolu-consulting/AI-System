@@ -25,13 +25,17 @@ export function parseFilenameHeader(raw: string | undefined): string | null {
   return out;
 }
 
-// Điều khiển C0/C1, zero-width + LRM/RLM, nhúng/ghi đè bidi, cô lập bidi (plan-rules §1 displayName bước 3).
+// Điều khiển C0/C1, ALM (U+061C), zero-width + LRM/RLM, LS/PS (U+2028/2029), nhúng/ghi đè bidi, cô lập bidi, BOM/ZWNBSP
+// (U+FEFF) — plan-rules §1 displayName bước 3 (+ REVIEW 1 — Hub RV-6).
 const INVISIBLE_RANGES: [number, number][] = [
   [0x00, 0x1f],
   [0x7f, 0x9f],
+  [0x061c, 0x061c],
   [0x200b, 0x200f],
+  [0x2028, 0x2029],
   [0x202a, 0x202e],
   [0x2066, 0x2069],
+  [0xfeff, 0xfeff],
 ];
 /** Dựng từ mã số (không để ký tự vô hình/điều khiển dạng thô trong source). */
 const INVISIBLE_RE = new RegExp(
@@ -86,7 +90,15 @@ export function mimeOf(ext: AttachExt): AttachMime {
 
 const SAFE_NAME_MAX_BYTES = 120;
 const UNSAFE_RE = /[^\p{L}\p{N} ._-]/gu;
-const DEVICE_RE = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/;
+/** Tên thiết bị Windows, kể cả số mũ `¹²³` (Windows coi `COM¹` = thiết bị) — RV-6. */
+const DEVICE_RE = /^(CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])$/u;
+
+/** Phần trước dấu `.` đầu tiên là tên thiết bị (`CON.tar.pdf` ⇒ Windows vẫn mở `CON`) ⇒ chèn `_` sau phần đó. */
+function undevice(stem: string): string {
+  const dot = stem.indexOf(".");
+  const head = dot < 0 ? stem : stem.slice(0, dot);
+  return DEVICE_RE.test(head.toUpperCase()) ? `${head}_${stem.slice(head.length)}` : stem;
+}
 
 /** Bớt code point cuối của `s` tới khi `utf8Len(s) + extra` ≤ `max`. */
 function cutBytes(s: string, max: number): string {
@@ -96,13 +108,13 @@ function cutBytes(s: string, max: number): string {
   return cps.join("");
 }
 
-/** Tên an toàn trên đĩa/trong job: ký tự lạ → `_`, gộp `_`, tên thiết bị Windows, ≤ 120 byte UTF-8 giữ đuôi. */
+/** Tên an toàn trên đĩa/trong job: ký tự lạ → `_`, gộp `_`, tên thiết bị Windows (phần trước `.` đầu), ≤ 120 byte giữ đuôi. */
 export function safeName(filename: string): string {
   let s = filename.replace(UNSAFE_RE, "_").replace(/_+/g, "_");
   if (s.startsWith(".") || s.startsWith("-")) s = `_${s}`;
   const { stem, ext } = splitExt(s);
   const tail = ext === null ? "" : `.${ext}`;
-  let body = DEVICE_RE.test(stem.toUpperCase()) ? `${stem}_` : stem;
+  let body = undevice(stem);
   if (utf8Len(body) + utf8Len(tail) > SAFE_NAME_MAX_BYTES)
     body = cutBytes(body, SAFE_NAME_MAX_BYTES - utf8Len(tail));
   return body === "" ? "file" : body + tail;

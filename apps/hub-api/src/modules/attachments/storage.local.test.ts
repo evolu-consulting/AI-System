@@ -152,3 +152,24 @@ describe("promote [PL13]", () => {
     await s.promote(`${id(9)}/${id(9)}`);
   });
 });
+
+describe("list con trỏ (key, partial) [RV-9]", () => {
+  test("<key> và <key>.part cùng có: trang 1 dừng ở file ⇒ trang 2 (cặp) vẫn có .part; chuỗi = bỏ cả khoá", async () => {
+    const dir = await temp();
+    const s = await createLocalStorage({ dir });
+    const k = `${T}/${id(1)}`;
+    await (await s.stage(k, streamOf(enc("done")), { maxBytes: 9 })).commit();
+    await writeFile(join(dir, T, `${id(1)}.part`), "stale");
+    await (await s.stage(`${T}/${id(2)}`, streamOf(enc("b")), { maxBytes: 9 })).commit();
+    const p1 = await s.list({ after: null, limit: 1 });
+    expect(p1.map((e) => [e.key, e.partial])).toEqual([[k, false]]);
+    const p2 = await s.list({ after: { key: k, partial: false }, limit: 5 });
+    expect(p2.map((e) => [e.key, e.partial])).toEqual([
+      [k, true],
+      [`${T}/${id(2)}`, false],
+    ]);
+    const p3 = await s.list({ after: { key: k, partial: true }, limit: 5 });
+    expect(p3.map((e) => e.key)).toEqual([`${T}/${id(2)}`]);
+    expect((await s.list({ after: k, limit: 5 })).map((e) => e.key)).toEqual([`${T}/${id(2)}`]);
+  });
+});

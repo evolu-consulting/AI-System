@@ -15,6 +15,9 @@ export type Staged = {
 /** Mục trên kho (quét mồ côi): `partial` = `.part`. */
 export type StoredEntry = { key: string; partial: boolean; size: number; mtimeMs: number };
 
+/** Con trỏ `list`: mục cuối lô trước theo cặp (key, partial) — không bỏ sót `<key>.part` sau `<key>` (RV-9). */
+export type StoreCursor = Pick<StoredEntry, "key" | "partial">;
+
 export interface AttachmentStorage {
   readonly driver: "local";
   stage(
@@ -31,8 +34,8 @@ export interface AttachmentStorage {
    * Hoàn tất `commit` dở (PL13, sweeper): `<key>.part` → `<key>`; `<key>` đã có ⇒ chỉ xoá `.part`; không có `.part` = ok.
    */
   promote(key: string): Promise<void>;
-  /** Sắp theo key. */
-  list(o: { after: string | null; limit: number }): Promise<StoredEntry[]>;
+  /** Sắp theo (key, partial); `after` chuỗi = sau mọi mục của khoá đó, cặp = sau đúng mục đó. */
+  list(o: { after: string | StoreCursor | null; limit: number }): Promise<StoredEntry[]>;
 }
 
 /** Vượt `maxBytes` khi ghi (413). */

@@ -11,7 +11,11 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
-import { AttachmentContentMissing, type UploadTrace } from "../../attachments/attachment-dify";
+import {
+  AttachmentContentMissing,
+  AttachmentUnavailable,
+  type UploadTrace,
+} from "../../attachments/attachment-dify";
 import type { RunFile } from "../../attachments/run-files.rules";
 import type { AttachmentStorage } from "../../attachments/storage";
 import { stepLabel } from "../../conversations/conversations.rules";
@@ -221,7 +225,7 @@ async function callDify(
   const signal = AbortSignal.any([writer.signal, timeout]);
   const user = difyUser(p.tenantKey, r.userId);
   const files = await uploadCommandFiles(
-    { storage: l.d.storage ?? null, fetch: l.d.fetch, log: l.log },
+    { storage: l.d.storage ?? null, db: l.d.db, fetch: l.d.fetch, log: l.log },
     { p, files: l.files, tenantId: r.tenantId, apiKey, user },
     signal,
   );
@@ -245,7 +249,9 @@ async function callDify(
 
 /** Lỗi bất ngờ của driver → log (nội dung file mất ⇒ `attachment-content-missing`, plan-errors §5). */
 export function logDriverError(log: Logger, err: unknown): void {
-  if (err instanceof AttachmentContentMissing)
+  if (err instanceof AttachmentUnavailable)
+    log.info("attachment-unavailable", { attachment_id: err.attachmentId });
+  else if (err instanceof AttachmentContentMissing)
     log.error("attachment-content-missing", { attachment_id: err.attachmentId });
   else log.error("command-run-failed", safeErrorFields(err));
 }

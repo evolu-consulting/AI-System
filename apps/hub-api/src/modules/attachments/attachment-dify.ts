@@ -2,8 +2,11 @@
 // B8). Đọc nội dung từ kho (`storageKey(tenant, id)`), gửi tên `safe_name` + mime; trả kết quả upload + trace
 // `detail.upload` (plan-errors §4: `{mime, size, ms}` + `status`/`reason` khi lỗi). Không log tên file / app-key.
 import type { DifyFileInput } from "@ai/contracts/hub";
+import { withHubScope } from "@ai/db/hub-scope";
+import type { Db } from "../../lib/db";
 import { type DifyUploadResult, uploadDifyFile } from "../dify/dify-upload";
 import { difyFileType } from "./attachment.rules";
+import { fileAvailable } from "./attachments.repo";
 import type { RunFile } from "./run-files.rules";
 import { type AttachmentStorage, storageKey } from "./storage";
 
@@ -13,6 +16,12 @@ export class AttachmentContentMissing extends Error {
     super("attachment-content-missing");
   }
 }
+
+/**
+ * RV-8 · hàng file đã dọn (`purged_at`) / hội thoại đã xoá trước khi upload — trạng thái hợp lệ, không phải lỗi kho: MCP trả
+ * câu tĩnh (`isError`), lệnh kết thúc `INTERNAL_ERROR` (câu H1 tĩnh) với log info `attachment-unavailable`.
+ */
+export class AttachmentUnavailable extends AttachmentContentMissing {}
 
 export type DifyUploadTarget = { baseUrl: string; apiKey: string; user: string };
 
@@ -29,6 +38,8 @@ export type AttachmentUpload = { result: DifyUploadResult; trace: UploadTrace };
 
 export type AttachmentDifyDeps = {
   storage: Pick<AttachmentStorage, "blob"> | null;
+  /** Kiểm hàng còn dùng được trước khi upload (RV-8); vắng ⇒ bỏ kiểm (unit test). */
+  db?: Db;
   fetch?: typeof fetch;
 };
 
@@ -47,13 +58,23 @@ function traceOf(file: RunFile, r: DifyUploadResult): UploadTrace {
   return { ...t, ...(r.status !== null && { status: r.status }), reason: r.reason };
 }
 
-/** Một file → một upload (T8). Ném `AttachmentContentMissing` khi kho vắng/không có nội dung. */
+/**
+ * Một file → một upload (T8). Hàng đã dọn ⇒ `AttachmentUnavailable` (RV-8); kho vắng/không có nội dung ⇒
+ * `AttachmentContentMissing`.
+ */
 export async function uploadToDify(
   d: AttachmentDifyDeps,
   f: { tenantId: string; file: RunFile },
   target: DifyUploadTarget,
   signal: AbortSignal,
 ): Promise<AttachmentUpload> {
+  const { db } = d;
+  if (db) {
+    const ok = await withHubScope(db, { kind: "system" }, (tx) =>
+      fileAvailable(tx, f.tenantId, f.file.id),
+    );
+    if (!ok) throw new AttachmentUnavailable(f.file.id);
+  }
   const blob = d.storage
     ? await d.storage.blob(storageKey(f.tenantId, f.file.id), f.file.mime)
     : null;

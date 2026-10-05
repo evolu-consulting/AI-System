@@ -10,7 +10,12 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { hashJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
-import type { AttachmentService, OutputJob, UploadInput } from "../attachments/attachments.service";
+import {
+  type AttachmentService,
+  OutputClaimLost,
+  type OutputJob,
+  type UploadInput,
+} from "../attachments/attachments.service";
 import type { AttachmentStorage } from "../attachments/storage";
 import * as repo from "./credential.repo";
 import { bearerJobToken } from "./credential.service";
@@ -61,6 +66,7 @@ async function outputJob(tx: Tx, token: string, jobId: string): Promise<OutputJo
   if (found?.payload.agent.role !== "agent") return null;
   return {
     jobId: found.job.id,
+    tokenHash: hashJobToken(token),
     tenantId: found.job.tenantId,
     userId: found.job.userId,
     conversationId: found.payload.conversation_id,
@@ -96,7 +102,8 @@ export class InternalAttachmentService {
 
   /**
    * `POST /internal/jobs/:job_id/outputs` (R25): xác thực như `download` (+ role `agent`) rồi `ingestOutput`. Lỗi tải lên
-   * (400/409/413/415/500) ném `AppError` như `POST /attachments`.
+   * (400/409/413/415/500) ném `AppError` như `POST /attachments`. Claim mất trước khi chốt INSERT (requeue/kết thúc giữa
+   * chừng — RV-1) ⇒ 401 như mọi sai xác thực (đã rollback + xoá `.part`).
    */
   async output(
     authorization: string | undefined,
@@ -109,7 +116,12 @@ export class InternalAttachmentService {
       outputJob(tx, token, jobId),
     );
     if (!job) return UNAUTHORIZED;
-    const out: Attachment = await this.d.files.ingestOutput(job, input, this.d.log);
-    return { kind: "ok", id: out.id };
+    try {
+      const out: Attachment = await this.d.files.ingestOutput(job, input, this.d.log);
+      return { kind: "ok", id: out.id };
+    } catch (e) {
+      if (e instanceof OutputClaimLost) return UNAUTHORIZED;
+      throw e;
+    }
   }
 }
