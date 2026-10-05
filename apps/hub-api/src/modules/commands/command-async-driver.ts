@@ -12,7 +12,15 @@ import { difyUser } from "../dify/dify.rules";
 import { buildWorkflowJobPayload } from "../runner/runner.rules";
 import type { WorkflowJobOutcome, WorkflowJobRunner } from "../runner/workflow-job-runner";
 import type { RunContext, RunDriver } from "../runs/runs.service";
-import { closeStep, DeltaPipe, deliver, type Outcome, type StepLive } from "./command-driver";
+import {
+  closeStep,
+  DeltaPipe,
+  deliver,
+  failOpenStep,
+  type Outcome,
+  type Step,
+  type StepLive,
+} from "./command-driver";
 import type { PreparedCommand } from "./commands.service";
 
 export type AsyncCommandDriverDeps = {
@@ -30,11 +38,15 @@ export function asyncOutcome(o: WorkflowJobOutcome, timedOut: boolean): Outcome 
   return { kind: "stopped", trace: { code: "CANCELLED", reason: "cancelled" } };
 }
 
+/** Step đã mở (sau COMMIT enqueue) mà chưa đóng — để `catch` đóng `INTERNAL_ERROR` (REVIEW 1 Hub #3). */
+type OpenStep = { step: Step | null };
+
 /** Job `workflow.async` tới kết cục, đóng step. null = không enqueue (run đã đóng / không còn của mình). */
 async function runJob(
   d: AsyncCommandDriverDeps,
   l: StepLive,
   timeout: AbortSignal,
+  open: OpenStep,
 ): Promise<Outcome | null> {
   const { p, writer } = l;
   const r = writer.run;
@@ -56,6 +68,7 @@ async function runJob(
     timeoutS: p.command.timeoutS,
   });
   const onEnqueued = async (seq: number) => {
+    open.step = { id: payload.step_id, seq };
     const data = { step_id: `s${seq}`, label: stepLabel("workflow", r.locale) };
     await writer.emit({ event: "step.started", data }).catch(() => {});
   };
@@ -65,6 +78,7 @@ async function runJob(
   if (res.kind === "not_enqueued") return null;
   const o = asyncOutcome(res, timeout.aborted && !writer.signal.aborted);
   await closeStep(l, { id: payload.step_id, seq: res.seq }, o);
+  open.step = null;
   return o;
 }
 
@@ -78,13 +92,15 @@ export async function driveAsyncCommand(
   const log = ctx.log.child({ run_id: r.id, tenant_id: r.tenantId, user_id: r.userId });
   const l: StepLive = { d, p, writer };
   const timeout = AbortSignal.timeout(p.command.timeoutS * 1000);
+  const open: OpenStep = { step: null };
   try {
-    const o = await runJob(d, l, timeout);
+    const o = await runJob(d, l, timeout, open);
     if (!o) return;
     const code = o.kind === "finished" ? null : o.kind === "failed" ? o.code : "CANCELLED";
     log.info("command-run", { command_id: p.command.id, workflow_id: p.workflow.id, code });
     await deliver(l, new DeltaPipe(writer), o);
   } catch (err) {
+    await failOpenStep(l, open.step, log);
     if (writer.signal.aborted || writer.done) return;
     log.error("command-run-failed", safeErrorFields(err));
     await writer.finishOrAbort({ kind: "failed", code: "INTERNAL_ERROR" });

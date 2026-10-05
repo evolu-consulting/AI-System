@@ -4,13 +4,15 @@
 // `delta`) trong hạn `agents.timeout_s` → `RunEvent` tổng hợp (`job_id` = id bước): `job.started` → `job.result{agent_result:
 // done{text}}` / `job.failed`. `dify-agent` đọc/ghi `cli_sessions(provider_key='dify')`. Usage `billing=dify` (`agent_id`,
 // `feature_id` NULL). Huỷ run → client gọi stop, bước `failed`, không phát sự kiện kết thúc. Không log/ghi app-key.
+// Phiên `dify-agent` mà Dify trả 404 (conversation lạ/đã xoá) → xoá dòng `cli_sessions` rồi thử lại đúng một lần không kèm
+// `conversation_id` (REVIEW 1 Hub #5).
 import type { RunEvent, TokenUsage } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
-import type { CatalogSnapshot } from "../config/catalog.rules";
+import { type CatalogSnapshot, tenantKeyOf } from "../config/catalog.rules";
 import { stepLabel } from "../conversations/conversations.rules";
 import type { AgentRunner, AgentTask } from "../runner/job-agent-runner";
 import { syntheticFailed } from "../runner/runner.rules";
@@ -41,6 +43,7 @@ export type DifyAgentRunnerDeps = {
 };
 
 type Step = { id: string; seq: number };
+type DifyRequest = Parameters<DifyClient["runStreaming"]>[0];
 type Ran = { end: DifyAgentEnd; usage: TokenUsage; resumed: boolean };
 
 const ZERO: TokenUsage = { input_tokens: 0, output_tokens: 0 };
@@ -119,23 +122,32 @@ export class DifyAgentRunner implements AgentRunner {
     }
     const session = agent.runtime === DIFY_AGENT_RUNTIME ? await this.#session(task) : null;
     const timeout = AbortSignal.timeout((await this.#timeoutS(task)) * 1000);
-    const req = {
+    const req: DifyRequest = {
       appType: wf.appType,
       baseUrl: wf.baseUrl,
       apiKey,
       ...difyAgentRequestParts(wf, target.inputName, task.prompt),
-      user: difyUser(catalog.tenantKeys.get(r.tenantId) ?? "", r.userId),
+      user: difyUser(tenantKeyOf(catalog, r.tenantId), r.userId),
       conversationId: session,
       outputField: wf.outputField,
     };
-    const out = await this.d.dify.runStreaming(req, AbortSignal.any([signal, timeout]), () => {});
+    const both = AbortSignal.any([signal, timeout]);
+    let out = await this.d.dify.runStreaming(req, both, () => {});
     await this.#usage(task, step, out);
+    let resumed = session !== null;
+    if (resumed && isStaleSession(out) && !both.aborted) {
+      await this.#forget(task);
+      this.d.log.warn("dify-agent-session-stale", { run_id: r.id, agent_id: agent.id });
+      out = await this.d.dify.runStreaming({ ...req, conversationId: null }, both, () => {});
+      await this.#usage(task, step, out);
+      resumed = false;
+    }
     // plan-db §2: chỉ ghi phiên khi Dify xong và trả `conversation_id` (dify-workflow không có phiên).
     if (agent.runtime === DIFY_AGENT_RUNTIME && out.kind === "finished" && out.conversationId)
       await this.#save(task, out.conversationId);
     const end = difyAgentEnd(out, timeout.aborted && !signal.aborted);
     const usage = { input_tokens: out.usage.input_tokens, output_tokens: out.usage.output_tokens };
-    return { end, usage, resumed: session !== null };
+    return { end, usage, resumed };
   }
 
   async #timeoutS(task: AgentTask): Promise<number> {
@@ -157,6 +169,13 @@ export class DifyAgentRunner implements AgentRunner {
     const r = task.run;
     const k = { conversationId: r.conversationId, agentId: task.agent.id, tenantId: r.tenantId };
     return this.#system((tx) => repo.saveDifySession(tx, { ...k, sessionId }));
+  }
+
+  /** Phiên Dify không còn (404) → xoá để lượt sau không gửi lại. */
+  #forget(task: AgentTask): Promise<void> {
+    const r = task.run;
+    const k = { conversationId: r.conversationId, agentId: task.agent.id, tenantId: r.tenantId };
+    return this.#system((tx) => repo.deleteDifySession(tx, k));
   }
 
   /** R15: một dòng `billing=dify` khi Dify xong hoặc đã cấp `task_id`; lỗi ghi chỉ cảnh báo. */
@@ -213,6 +232,11 @@ export class DifyAgentRunner implements AgentRunner {
       this.d.log.warn("step-emit-failed", { run_id: task.run.id, ...safeErrorFields(err) });
     }
   }
+}
+
+/** Dify 404 khi có `conversation_id` = phiên lạ/đã xoá phía Dify. */
+function isStaleSession(out: DifyRunOutcome): boolean {
+  return out.kind === "failed" && out.httpStatus === 404;
 }
 
 function stepDetail(ran: Ran): Record<string, unknown> {

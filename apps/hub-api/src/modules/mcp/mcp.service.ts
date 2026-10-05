@@ -9,6 +9,7 @@ import { safeErrorFields } from "../../lib/errors";
 import { hashJobToken, isJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
 import type { CatalogWorkflow, WorkflowInputValue } from "../commands/catalog.types";
+import { tenantKeyOf } from "../config/catalog.rules";
 import { agentWorkflowIds } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
 import { type CredentialService, isCredentialError } from "../dify/credential.service";
@@ -68,6 +69,17 @@ export type McpServiceDeps = {
 type ToolArgs = { inputs: Record<string, WorkflowInputValue>; query: string | null };
 /** Trace thêm vào `detail` bước `tool` (R22: `confirmation: "consumed"`). */
 type StepTrace = { confirmation?: "consumed" };
+/** Mã trong `detail` bước `tool`: mã tool, hoặc `CANCELLED` (kết nối `/mcp` đóng) / `INTERNAL_ERROR` (ngoại lệ). */
+type StepCode = ToolErrorCode | "CANCELLED" | "INTERNAL_ERROR";
+/** Một lời gọi tool; `signal` = kết nối `/mcp` của request (đóng = huỷ run → abort Dify + stop). */
+type ToolCall = { ctx: McpContext; wf: CatalogWorkflow; signal?: AbortSignal };
+type Invoke = {
+  args: ToolArgs;
+  trace: StepTrace;
+  apiKey: string;
+  stepId: string;
+  inputs: Record<string, string>;
+};
 
 export class McpService {
   constructor(private readonly d: McpServiceDeps) {}
@@ -94,8 +106,13 @@ export class McpService {
     };
   }
 
-  /** Một request JSON-RPC (có `id`). Method lạ → `-32601`. */
-  async handle(ctx: McpContext, req: RpcRequest, headerVersion?: string): Promise<RpcResponse> {
+  /** Một request JSON-RPC (có `id`). Method lạ → `-32601`. `signal` = kết nối HTTP (`c.req.raw.signal`). */
+  async handle(
+    ctx: McpContext,
+    req: RpcRequest,
+    headerVersion?: string,
+    signal?: AbortSignal,
+  ): Promise<RpcResponse> {
     const { id, params } = req;
     switch (req.method) {
       case "initialize":
@@ -107,7 +124,7 @@ export class McpService {
       case "tools/list":
         return rpcResult(id, toolsListResult(await this.tools(ctx)), true);
       case "tools/call":
-        return this.#call(ctx, req, isStatelessRequest(headerVersion, params));
+        return this.#call(ctx, req, isStatelessRequest(headerVersion, params), signal);
       default:
         return rpcError(id, -32601, "Method not found");
     }
@@ -126,7 +143,12 @@ export class McpService {
     });
   }
 
-  async #call(ctx: McpContext, req: RpcRequest, stateless: boolean): Promise<RpcResponse> {
+  async #call(
+    ctx: McpContext,
+    req: RpcRequest,
+    stateless: boolean,
+    signal?: AbortSignal,
+  ): Promise<RpcResponse> {
     const { name, args } = toolCallParams(req.params);
     const tools = await this.tools(ctx);
     const catalog = await this.d.config.catalog();
@@ -134,26 +156,23 @@ export class McpService {
     // Không nói lý do (agent khác / tắt / ngoài payload) — HUB-BR-19.
     if (!name || !wf || !tools.some((t) => t.name === name))
       return rpcError(req.id, -32602, MCP_UNKNOWN_TOOL);
-    const result = await this.#callTool(ctx, wf, args);
+    const result = await this.#callTool({ ctx, wf, signal }, args);
     return rpcResult(req.id, result, stateless);
   }
 
-  async #callTool(ctx: McpContext, wf: CatalogWorkflow, rawArgs: unknown): Promise<ToolResult> {
+  async #callTool(call: ToolCall, rawArgs: unknown): Promise<ToolResult> {
+    const { ctx, wf } = call;
     const args = validateToolArgs(wf.inputSchema, rawArgs);
     if (!args.ok) return toolError("INVALID_ARGS");
-    if (!wf.sideEffect) return this.#runTool(ctx, wf, args, {});
+    if (!wf.sideEffect) return this.#runTool(call, args, {});
     const gated = await (this.d.sideEffect ?? refuseSideEffect(this.d.log))(ctx, wf);
     // Qua cổng = đã tiêu thụ xác nhận (R22) → trace `consumed` trên bước `tool`; gọi Dify đúng một lần, không retry.
-    return gated ?? this.#runTool(ctx, wf, args, { confirmation: "consumed" });
+    return gated ?? this.#runTool(call, args, { confirmation: "consumed" });
   }
 
   /** Lấy key → bước `tool` `running` → Dify gom → kết thúc bước + usage. `trace` gộp vào `detail` của bước. */
-  async #runTool(
-    ctx: McpContext,
-    wf: CatalogWorkflow,
-    args: ToolArgs,
-    trace: StepTrace,
-  ): Promise<ToolResult> {
+  async #runTool(call: ToolCall, args: ToolArgs, trace: StepTrace): Promise<ToolResult> {
+    const { ctx, wf } = call;
     const stepId = crypto.randomUUID();
     let apiKey: string;
     try {
@@ -162,30 +181,58 @@ export class McpService {
       if (!isCredentialError(err)) throw err;
       const inputs = maskInputs(args.inputs, "");
       await this.#startStep(ctx, wf, stepId, inputs);
-      await this.#finishStep(ctx, stepId, { ...trace, inputs, code: "NOT_CONFIGURED" });
+      const detail = { ...trace, inputs, code: "NOT_CONFIGURED" as const };
+      await this.#guarded(ctx, stepId, inputs, () => this.#finishStep(ctx, stepId, detail));
       return toolError("NOT_CONFIGURED");
     }
     const inputs = maskInputs(args.inputs, apiKey);
     await this.#startStep(ctx, wf, stepId, inputs);
-    const tenantKey = (await this.d.config.catalog()).tenantKeys.get(ctx.tenantId) ?? "";
+    const o: Invoke = { args, trace, apiKey, stepId, inputs };
+    return this.#guarded(ctx, stepId, inputs, () => this.#invoke(call, o));
+  }
+
+  /** REVIEW 1 Hub #3: ngoại lệ sau khi mở bước → đóng bước `failed INTERNAL_ERROR` (best-effort) rồi ném tiếp (-32603). */
+  async #guarded<T>(
+    ctx: McpContext,
+    stepId: string,
+    inputs: Record<string, string>,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await fn();
+    } catch (err) {
+      await this.#finishStep(ctx, stepId, { inputs, code: "INTERNAL_ERROR" }).catch((e) =>
+        this.d.log.warn("tool-step-close-failed", { run_id: ctx.runId, ...safeErrorFields(e) }),
+      );
+      throw err;
+    }
+  }
+
+  /** Dify gom trong hạn tool, nghe thêm kết nối `/mcp` (đóng → abort + stop, bước `CANCELLED`). */
+  async #invoke(call: ToolCall, o: Invoke): Promise<ToolResult> {
+    const { ctx, wf } = call;
+    const tenantKey = tenantKeyOf(await this.d.config.catalog(), ctx.tenantId);
     const timeout = AbortSignal.timeout((await this.#timeoutS(ctx)) * 1000);
+    const signal = call.signal ? AbortSignal.any([timeout, call.signal]) : timeout;
     const req = {
       appType: wf.appType,
       baseUrl: wf.baseUrl,
-      apiKey,
-      inputs: args.inputs,
-      query: args.query,
+      apiKey: o.apiKey,
+      inputs: o.args.inputs,
+      query: o.args.query,
       user: difyUser(tenantKey, ctx.userId),
       conversationId: null,
       outputField: wf.outputField,
     };
-    const out = await this.d.dify.runStreaming(req, timeout, () => {});
-    const code = errorCodeOf(out);
+    const out = await this.d.dify.runStreaming(req, signal, () => {});
+    const code = stepCodeOf(out, timeout.aborted);
     const upstream = out.kind === "failed" ? out.detail : null;
-    const detail = { ...trace, inputs, code, ...(upstream ? { upstream } : {}) };
-    await this.#finishStep(ctx, stepId, detail);
-    await this.#usage(ctx, stepId, out);
-    return out.kind === "finished" ? toolText(out.text) : toolError(code ?? "UPSTREAM_ERROR");
+    const detail = { ...o.trace, inputs: o.inputs, code, ...(upstream ? { upstream } : {}) };
+    await this.#finishStep(ctx, o.stepId, detail);
+    await this.#usage(ctx, o.stepId, out);
+    if (out.kind === "finished") return toolText(out.text);
+    // `CANCELLED`: kết nối đã đóng, không ai đọc kết quả này.
+    return toolError(code === "TIMEOUT" || code === "NOT_CONFIGURED" ? code : "UPSTREAM_ERROR");
   }
 
   /** R20: `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` theo cấu hình Hub hiện hành. */
@@ -219,7 +266,7 @@ export class McpService {
     stepId: string,
     detail: StepTrace & {
       inputs: Record<string, string>;
-      code: ToolErrorCode | null;
+      code: StepCode | null;
       upstream?: string;
     },
   ): Promise<void> {
@@ -255,10 +302,10 @@ export class McpService {
   }
 }
 
-/** Kết quả Dify → mã lỗi tool (plan-errors §4); xong → null. Huỷ chỉ do hết hạn tool → `TIMEOUT`. */
-function errorCodeOf(out: DifyRunOutcome): ToolErrorCode | null {
+/** Kết quả Dify → mã bước (plan-errors §4); xong → null. Huỷ do hết hạn tool → `TIMEOUT`; do kết nối đóng → `CANCELLED`. */
+function stepCodeOf(out: DifyRunOutcome, timedOut: boolean): StepCode | null {
   if (out.kind === "finished") return null;
-  if (out.kind === "aborted") return "TIMEOUT";
+  if (out.kind === "aborted") return timedOut ? "TIMEOUT" : "CANCELLED";
   return out.code;
 }
 

@@ -297,3 +297,8 @@ export function usableCatalogCommands(
   }
   return out;
 }
+
+/** R15: `tenant_key` cho `difyUser`; tenant thiếu key trong cache ⇒ dùng tenant id (một luật cho lệnh `/`, MCP, agent Dify). */
+export function tenantKeyOf(c: Pick<CatalogSnapshot, "tenantKeys">, tenantId: string): string {
+  return c.tenantKeys.get(tenantId) ?? tenantId;
+}

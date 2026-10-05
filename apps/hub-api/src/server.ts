@@ -5,6 +5,7 @@ import { SSE_HEARTBEAT_S } from "@ai/contracts/chat";
 import pkg from "../package.json";
 import { createApp } from "./app";
 import { type Env, loadEnv } from "./config/env";
+import { envAppDeps } from "./config/env-deps";
 import { connectDb, type Db, pingDb } from "./lib/db";
 import { safeErrorFields } from "./lib/errors";
 import { importJwtPublicKey } from "./lib/jwt";
@@ -107,13 +108,7 @@ async function main(): Promise<void> {
       db,
       redis,
       jwtPublicKey,
-      appEnv: env.APP_ENV,
-      instanceId: env.HUB_INSTANCE_ID,
-      jobMaxWaitS: env.HUB_JOB_MAX_WAIT_S,
-      configPollS: env.HUB_CONFIG_POLL_S,
-      secretMasterKey: env.SECRET_MASTER_KEY,
-      publicInternalUrl: env.HUB_PUBLIC_INTERNAL_URL,
-      difyTimeoutMaxS: env.HUB_DIFY_TIMEOUT_MAX_S,
+      ...envAppDeps(env, logger),
       signal: stop.signal,
     },
   );

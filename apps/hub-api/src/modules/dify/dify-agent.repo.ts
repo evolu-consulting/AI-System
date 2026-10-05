@@ -79,3 +79,10 @@ export async function saveDifySession(
       set session_id = excluded.session_id, updated_at = now()
       where hub.cli_sessions.tenant_id = excluded.tenant_id`);
 }
+
+/** Xoá phiên Dify của (hội thoại, agent) — Dify báo conversation không còn (404); lọc `tenant_id` (BR-06). */
+export async function deleteDifySession(tx: Tx, k: DifySessionKey): Promise<void> {
+  await tx.execute(sql`delete from hub.cli_sessions
+    where conversation_id = ${k.conversationId} and agent_id = ${k.agentId}
+      and provider_key = ${DIFY_PROVIDER_KEY} and tenant_id = ${k.tenantId}`);
+}

@@ -28,7 +28,9 @@ export function mcpRoutes(svc: McpService, o: { requestTimeoutS: number }): Hono
     if (req.id === null) return c.body(null, 202);
     (c.env as IdleTimeoutControl | undefined)?.timeout?.(c.req.raw, o.requestTimeoutS);
     try {
-      return c.json(await svc.handle(ctx, req, c.req.header("mcp-protocol-version")));
+      const version = c.req.header("mcp-protocol-version");
+      // Kết nối đóng (Runtime huỷ run / CLI chết) → abort Dify + stop (REVIEW 1 Hub #4).
+      return c.json(await svc.handle(ctx, req, version, c.req.raw.signal));
     } catch (err) {
       c.get("log").error("mcp-failed", {
         run_id: ctx.runId,

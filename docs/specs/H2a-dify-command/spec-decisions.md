@@ -267,3 +267,23 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 - TC-5: **test sai** — S03 Runtime 2 `AGENT_RT_ORPHAN_S=5` < heartbeat mặc định 10 s ⇒ tự requeue job đang chạy (`attempts=3`); thêm `AGENT_RT_HEARTBEAT_S=1`. Code đúng.
 - TC-6: lệnh §7.1 `--filter=@ai/hub-dev` (không phải workspace) → `--filter=@ai/scripts` (typecheck `tools/hub-dev/src` qua import); sửa `done-h2a.ts` theo.
 - I1: `done:h2a` XANH (DB TS và DB Hub/Runtime tách riêng); không lỗi code sản phẩm. Bảng: test-plan §10 "I1".
+
+## REVIEW 1 — Hub (backend-lead, 2026-10-05)
+| # | Quyết định / sửa | Lý do |
+|---|---|---|
+| RV1-H1 | `HUB_INTERNAL_TOKEN: z.string().min(32).optional()` vào `EnvSchema`; ánh xạ env → `AppDeps` tách `config/env-deps.ts` (`envAppDeps`, test `env-deps.test.ts`), `server.ts` trải vào `createApp` ⇒ `internalToken` tới `/internal/test-run` | Deploy thật trước đây luôn 503; `server.ts` có top-level `main()` nên không test được trực tiếp |
+| RV1-H2 | `command-driver` ghi usage (`recordDifyUsage`) trong try/catch + `warn command-usage-failed` (như `mcp.service`/`DifyAgentRunner`) | Lỗi ghi usage không được biến run Dify đã xong thành `INTERNAL_ERROR` |
+| RV1-H3 | Ngoại lệ sau khi mở step → đóng step `failed INTERNAL_ERROR` (best-effort, lỗi đóng chỉ `warn`): `command-driver`/`command-async-driver` dùng chung `failOpenStep` (async: step ghi nhận ở `onEnqueued`, xoá khi đã `closeStep`); `mcp.service` `#guarded` bọc phần sau `#startStep` (kể cả `#finishStep` ném) rồi ném tiếp (route trả `-32603`). Các câu đóng chỉ đổi step còn `running` nên đóng lại vô hại | Step không treo `running` (như `DifyAgentRunner#execute`) |
+| RV1-H4 | `/mcp` `tools/call`: signal Dify = `AbortSignal.any([timeout tool, c.req.raw.signal])`. Kết nối đóng (Runtime huỷ run/CLI chết) → client Dify abort + stop; bước `tool` `failed` `detail.code = CANCELLED` (hết hạn vẫn `TIMEOUT`). `McpService.handle` thêm tham số `signal?` (không phụ thuộc Hono) | Huỷ run phải dừng Dify, không chạy tới hết hạn tool |
+| RV1-H5 | `DifyAgentRunner`: `dify-agent` có phiên mà Dify trả HTTP 404 → xoá dòng `cli_sessions(provider_key='dify')` (lọc `tenant_id`) rồi thử lại **đúng một lần** với `conversation_id = null` (cùng signal/hạn); 404 lần hai → lỗi như cũ (`NOT_CONFIGURED`), phiên đã xoá. `session_resumed=false` sau thử lại. Cần quyền DELETE: migration mới `0005_h2a_rv1_cli_sessions_delete.sql` (`GRANT DELETE ON hub.cli_sessions TO hub_rw`; 0002 chỉ SELECT/INSERT/UPDATE). Mock MK khoá không có kịch bản "conversation lạ → 404" ⇒ test int cạnh code `dify/dify-agent-runner.int.test.ts` với client Dify giả (3 ca: thử lại thành công + lưu phiên mới, 404 hai lần không thử lần ba, không phiên không thử lại) | Phiên Dify bị xoá/hết hạn phía Dify làm agent hỏng vĩnh viễn trong hội thoại |
+| RV1-H6 | `mcpToolsFor` bỏ workflow app `chat`/`agent` mà `input_schema` không có input `query` (dùng `appNeedsQuery` của lệnh `/`) — áp cho cả `tools/list`, `tools/call` và `payload.mcp.tools`. Test khoá R50–R55 (rules) và A50–A58 (int) vẫn xanh (fixture `hoi`/`tro-ly` có `query`) | Model không thể truyền `query` ⇒ Dify chat luôn lỗi; ẩn như lệnh `/` báo thiếu tham số |
+| RV1-H7 | Một luật `tenantKeyOf(catalog, tenantId)` (`config/catalog.rules.ts`: thiếu key ⇒ tenant id) cho `commands.service`, `mcp.service`, `DifyAgentRunner` khi dựng `difyUser` | Trước: MCP/agent dùng `""` ⇒ `user = ":<user_id>"` lệch lệnh `/` |
+| RV1-H8 | `probeMasterKey` chỉ dò workflow có `secret_id is not null`. Ghi chú: `admin.workflows.secret_id` hiện `NOT NULL` ở DB (Admin 0003) ⇒ điều kiện là phòng thủ, không có ca int dựng được | Workflow chưa gắn secret không phải dấu hiệu lệch khoá |
+| RV1-H10 | `HUB_PUBLIC_INTERNAL_URL` không còn `default` trong schema: `loadEnv` đặt `http://localhost:4000` chỉ khi `APP_ENV` = development/test; production vắng → `publicInternalUrl` undefined ⇒ payload `mcp = null` (đường `runnerMcp` sẵn có) + `warn mcp_disabled` đúng một lần lúc dựng app, không crash | Production không được âm thầm trỏ MCP về localhost |
+| RV1-H12 | Idle timeout request `/internal/test-run` = `min(timeout_s, HUB_DIFY_TIMEOUT_MAX_S) + 30` (`testRunIdleS`); `testRunRoutes(svc, {internalToken, timeoutMaxS})` | Khớp hạn chạy thật của `TestRunService` |
+
+### Nợ H2a (REVIEW 1 — Hub, không làm ở vòng này)
+| # | Nợ | Ghi chú |
+|---|---|---|
+| N-RV1-9 | Huỷ run **trước** sự kiện SSE đầu tiên của Dify (chưa có `task_id`) không gọi được stop — Dify chạy tiếp tới hết phía Dify | Dify chỉ cấp `task_id` trong luồng; cần API khác (vd. stop theo `user`) hoặc chờ `task_id` rồi stop — để H2b/sau |
+| N-RV1-11 | Module > 10 file (`runner`, `dify`, `internal`, `commands`…) chưa tách thư mục con | Dọn cấu trúc, không đổi hành vi |

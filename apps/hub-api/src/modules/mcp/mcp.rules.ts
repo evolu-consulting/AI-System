@@ -3,6 +3,7 @@
 import type { WorkflowInput } from "@ai/contracts";
 import { MCP_PROTOCOL_VERSIONS } from "@ai/contracts/hub-internal";
 import type { CatalogWorkflow, WorkflowInputValue } from "../commands/catalog.types";
+import { appNeedsQuery } from "../commands/command-input.rules";
 
 export type RpcId = string | number;
 /** Không `id` = notification (→ 202). */
@@ -87,13 +88,20 @@ export function toolInputSchema(inputs: readonly WorkflowInput[]): JsonSchemaObj
 const hasRequiredFile = (w: CatalogWorkflow): boolean =>
   w.inputSchema.some((i) => i.type === "file" && i.required);
 
-/** R19: `agentWorkflowIds` ∩ `enabled` ∩ `allowed`; bỏ workflow có input `file` bắt buộc; sắp `name`. */
+/** App `chat`/`agent` cần `query` (như lệnh `/`) — `input_schema` không có `query` thì model không thể gọi đúng. */
+const lacksQuery = (w: CatalogWorkflow): boolean =>
+  appNeedsQuery(w.appType) && !w.inputSchema.some((i) => i.name === QUERY_INPUT);
+
+/**
+ * R19: `agentWorkflowIds` ∩ `enabled` ∩ `allowed`; bỏ workflow có input `file` bắt buộc và app `chat`/`agent` thiếu input
+ * `query` (REVIEW 1 Hub #6); sắp `name`.
+ */
 export function mcpToolsFor(i: McpToolsInput): McpTool[] {
   const allowed = new Set(i.allowed);
+  const usable = (w: CatalogWorkflow): boolean =>
+    i.agentWorkflowIds.has(w.id) && w.enabled && allowed.has(w.key);
   return i.workflows
-    .filter(
-      (w) => i.agentWorkflowIds.has(w.id) && w.enabled && allowed.has(w.key) && !hasRequiredFile(w),
-    )
+    .filter((w) => usable(w) && !hasRequiredFile(w) && !lacksQuery(w))
     .map((w) => ({
       name: w.key,
       description: w.description ?? w.name,

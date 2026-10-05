@@ -107,6 +107,43 @@ export async function closeStep(l: StepLive, step: Step, o: Outcome): Promise<vo
     .catch(() => {});
 }
 
+const INTERNAL: Outcome = {
+  kind: "failed",
+  code: "INTERNAL_ERROR",
+  trace: { code: "INTERNAL_ERROR", reason: null },
+};
+
+/**
+ * REVIEW 1 Hub #3: ngoại lệ sau khi mở step (DB lấy key, ghi/đóng…) → đóng step `failed INTERNAL_ERROR` (best-effort, như
+ * `DifyAgentRunner#execute`) để step không treo `running`. `closeStep` chỉ đổi step còn `running` nên gọi lại vô hại.
+ */
+export async function failOpenStep(l: StepLive, step: Step | null, log: Logger): Promise<void> {
+  if (!step) return;
+  await closeStep(l, step, INTERNAL).catch((err) =>
+    log.warn("command-step-close-failed", safeErrorFields(err)),
+  );
+}
+
+/** R15: usage `billing=dify`; lỗi ghi chỉ cảnh báo — Dify đã xong, run không thành `INTERNAL_ERROR` (REVIEW 1 Hub #2). */
+async function usageOf(l: Live, step: Step, res: DifyRunOutcome): Promise<void> {
+  if (res.kind !== "finished" && res.taskId === null) return;
+  const r = l.writer.run;
+  try {
+    await recordDifyUsage(l.d.db, {
+      tenantId: r.tenantId,
+      runId: r.id,
+      stepId: step.id,
+      userId: r.userId,
+      featureId: l.p.featureId,
+      agentId: null,
+      usage: res.usage,
+      latencyMs: res.ms,
+    });
+  } catch (err) {
+    l.log.warn("command-usage-failed", safeErrorFields(err));
+  }
+}
+
 /** Kết quả client Dify → kết cục run (plan-errors §2). `timedOut` chỉ xét khi client trả `aborted`. */
 function outcomeOf(res: DifyRunOutcome, timedOut: boolean): Outcome {
   if (res.kind === "finished") return { kind: "finished", text: res.text };
@@ -152,16 +189,7 @@ async function callDify(
   };
   const res = await l.d.dify.runStreaming(req, signal, (t) => pipe.push(t));
   await pipe.flushed();
-  if (res.kind === "finished" || res.taskId !== null) {
-    const usage = { tenantId: r.tenantId, runId: r.id, stepId: step.id, userId: r.userId };
-    await recordDifyUsage(l.d.db, {
-      ...usage,
-      featureId: p.featureId,
-      agentId: null,
-      usage: res.usage,
-      latencyMs: res.ms,
-    });
-  }
+  await usageOf(l, step, res);
   return outcomeOf(res, timeout.aborted && !writer.signal.aborted);
 }
 
@@ -191,15 +219,19 @@ export async function driveCommand(
   const log = ctx.log.child({ run_id: r.id, tenant_id: r.tenantId, user_id: r.userId });
   const l: Live = { d, p, writer, log };
   const timeout = AbortSignal.timeout(p.command.timeoutS * 1000);
+  let open: Step | null = null;
   try {
     const step = await openStep(l);
+    open = step;
     const pipe = new DeltaPipe(writer);
     const o = await callDify(l, step, pipe, timeout);
     await closeStep(l, step, o);
+    open = null;
     const code = o.kind === "finished" ? null : o.kind === "failed" ? o.code : "CANCELLED";
     log.info("command-run", { command_id: p.command.id, workflow_id: p.workflow.id, code });
     await deliver(l, pipe, o);
   } catch (err) {
+    await failOpenStep(l, open, log);
     if (writer.signal.aborted || writer.done) return;
     log.error("command-run-failed", safeErrorFields(err));
     await writer.finishOrAbort({ kind: "failed", code: "INTERNAL_ERROR" });

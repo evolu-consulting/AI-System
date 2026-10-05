@@ -5,7 +5,7 @@ import type { CommandMenuResponse, MessageContext } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";
 import type { CatalogSnapshot, UsableCatalogCommand } from "../config/catalog.rules";
-import { usableCatalogCommands } from "../config/catalog.rules";
+import { tenantKeyOf, usableCatalogCommands } from "../config/catalog.rules";
 import type { ConfigCache } from "../config/config.service";
 import type { CatalogCommand, CatalogWorkflow, WorkflowInputValue } from "./catalog.types";
 import { appNeedsQuery, buildInputs, QUERY_INPUT } from "./command-input.rules";
@@ -132,7 +132,7 @@ export class CommandService {
       inputs: bound.inputs,
       query: bound.query,
       sideEffect: workflow.sideEffect,
-      tenantKey: catalog.tenantKeys.get(u.tenantId) ?? u.tenantId,
+      tenantKey: tenantKeyOf(catalog, u.tenantId),
       extraTokens: bound.extraTokens,
     };
   }

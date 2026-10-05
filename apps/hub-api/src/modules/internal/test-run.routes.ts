@@ -12,13 +12,21 @@ type IdleTimeoutControl = { timeout?: (req: Request, seconds: number) => void };
 /** Biên trên hạn chạy thử (stop Dify ≤ 2 s + ghi đáp). */
 const IDLE_MARGIN_S = 30;
 
-export function testRunRoutes(svc: TestRunService, internalToken: string | undefined): Hono {
+/** Idle timeout của request = hạn chạy thật `min(timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` + biên (REVIEW 1 Hub #12). */
+export function testRunIdleS(timeoutS: number, timeoutMaxS: number): number {
+  return Math.min(timeoutS, timeoutMaxS) + IDLE_MARGIN_S;
+}
+
+export function testRunRoutes(
+  svc: TestRunService,
+  o: { internalToken: string | undefined; timeoutMaxS: number },
+): Hono {
   const r = new Hono();
-  r.post("/test-run", requireServiceToken(internalToken), async (c) => {
+  r.post("/test-run", requireServiceToken(o.internalToken), async (c) => {
     const req = await parseJson(c, TestRunRequestSchema);
     (c.env as IdleTimeoutControl | undefined)?.timeout?.(
       c.req.raw,
-      req.command.timeout_s + IDLE_MARGIN_S,
+      testRunIdleS(req.command.timeout_s, o.timeoutMaxS),
     );
     return c.json(await svc.run(req));
   });

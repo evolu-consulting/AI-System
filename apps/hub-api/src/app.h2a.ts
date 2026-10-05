@@ -87,6 +87,7 @@ export type TestRunMountDeps = CommandDriverMountDeps & {
 
 /** B10 · POST `/internal/test-run` (token dịch vụ, không JWT — H2a-R24). Gọi trước `notFound`. */
 export function mountTestRun<E extends Env>(app: Hono<E>, m: TestRunMountDeps): void {
+  const timeoutMaxS = m.difyTimeoutMaxS ?? DEFAULT_DIFY_TIMEOUT_MAX_S;
   const svc = new TestRunService({
     config: m.config,
     credentials: new CredentialService({
@@ -96,7 +97,7 @@ export function mountTestRun<E extends Env>(app: Hono<E>, m: TestRunMountDeps): 
     }),
     dify: new DifyClient(),
     log: m.log,
-    timeoutMaxS: m.difyTimeoutMaxS ?? DEFAULT_DIFY_TIMEOUT_MAX_S,
+    timeoutMaxS,
   });
-  app.route("/internal", testRunRoutes(svc, m.internalToken));
+  app.route("/internal", testRunRoutes(svc, { internalToken: m.internalToken, timeoutMaxS }));
 }

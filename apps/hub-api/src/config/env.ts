@@ -33,12 +33,19 @@ export const EnvSchema = z.object({
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
   // H2a plan §8: chung với admin-api (base64 32 byte). Vắng → gọi Dify luôn NOT_CONFIGURED; sai → env lỗi (fatal).
   SECRET_MASTER_KEY: z.string().refine(isMasterKeyB64).optional(),
-  // H2a plan §8: `mcp.url` = `<HUB_PUBLIC_INTERNAL_URL>/mcp` trong payload job agent; hạn tối đa một lời gọi tool Dify.
-  HUB_PUBLIC_INTERNAL_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:4000"),
+  // H2a plan §8: token dịch vụ của `/internal/test-run` (≥ 32 ký tự); vắng → route đó 503 `UNAVAILABLE`.
+  HUB_INTERNAL_TOKEN: z.string().min(32).optional(),
+  // H2a plan §8: `mcp.url` = `<HUB_PUBLIC_INTERNAL_URL>/mcp` trong payload job agent. Mặc định chỉ ở development/test
+  // (`loadEnv`); môi trường khác vắng → MCP tắt (payload `mcp=null`) — REVIEW 1 Hub #10.
+  HUB_PUBLIC_INTERNAL_URL: z.url({ protocol: /^https?$/ }).optional(),
+  // Hạn tối đa một lời gọi tool Dify.
   HUB_DIFY_TIMEOUT_MAX_S: z.coerce.number().int().min(1).max(3600).default(300),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
+
+/** Mặc định `HUB_PUBLIC_INTERNAL_URL` khi `APP_ENV` = development/test (Hub cùng máy Runtime). */
+export const DEV_PUBLIC_INTERNAL_URL = "http://localhost:4000";
 
 /** Chuỗi rỗng (`HUB_INSTANCE_ID=` trong .env.example) coi như vắng để nhận mặc định. */
 function dropEmpty(source: Record<string, string | undefined>): Record<string, string> {
@@ -47,10 +54,15 @@ function dropEmpty(source: Record<string, string | undefined>): Record<string, s
   return out;
 }
 
+function withDevDefaults(env: Env): Env {
+  if (env.HUB_PUBLIC_INTERNAL_URL !== undefined || env.APP_ENV === "production") return env;
+  return { ...env, HUB_PUBLIC_INTERNAL_URL: DEV_PUBLIC_INTERNAL_URL };
+}
+
 /** Ném Error liệt kê tên biến sai; không bao giờ in giá trị (có thể là secret). */
 export function loadEnv(source: Record<string, string | undefined>): Env {
   const r = EnvSchema.safeParse(dropEmpty(source));
-  if (r.success) return r.data;
+  if (r.success) return withDevDefaults(r.data);
   const names = [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "?")))];
   throw new Error(`Env không hợp lệ: ${names.join(", ")}`);
 }

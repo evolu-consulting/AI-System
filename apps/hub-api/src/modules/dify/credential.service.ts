@@ -92,7 +92,8 @@ export function loadMasterKey(b64: string | undefined): SecretKey | null {
 
 /**
  * Dò khớp khoá với Admin (chỉ cảnh báo, không fatal — một secret hỏng không được làm sập Hub): giải thử secret của một
- * workflow bất kỳ có secret. Trả `ok` / `mismatch` / `none` (chưa có secret nào).
+ * workflow mới nhất có `secret_id` (workflow chưa gắn secret không phải dấu hiệu lệch khoá). Trả `ok` / `mismatch` /
+ * `none` (chưa có secret nào).
  */
 export async function probeMasterKey(
   db: Db,
@@ -101,7 +102,7 @@ export async function probeMasterKey(
 ): Promise<"ok" | "mismatch" | "none"> {
   const rows = (await db.db.transaction(async (tx) => {
     await tx.execute(sql`set local role hub_ro`);
-    return tx.execute(sql`select id from admin.workflows
+    return tx.execute(sql`select id from admin.workflows where secret_id is not null
       order by updated_at desc limit 1`);
   })) as unknown as { id: string }[];
   const wf = rows[0]?.id;
