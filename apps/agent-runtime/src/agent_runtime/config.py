@@ -26,6 +26,11 @@ def _norm_abs(value: Path, name: str) -> Path:
     return Path(os.path.normpath(value))
 
 
+def _in_range(name: str, value: int, low: int, high: int) -> None:
+    if not low <= value <= high:
+        raise ValueError(f"{name} phải trong {low}–{high}")
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="AGENT_RT_",
@@ -58,6 +63,12 @@ class Settings(BaseSettings):
     # H2b plan-runtime §8: gom `job.delta` (`DeltaPump`) — xả theo giờ / theo số ký tự.
     delta_flush_ms: int = Field(default=100, ge=10, le=1000)
     delta_flush_chars: int = Field(default=200, ge=1, le=4000)
+    # H3a plan-runtime §6: probe quota (biên chặt hơn ở production — `_probe_bounds`).
+    probe_s: int = 1200
+    probe_logged_out_s: int = 60
+    probe_timeout_s: int = 60
+    cooldown_default_s: int = 1800
+    fake_probe_file: Path | None = None
 
     @field_validator("providers", mode="before")
     @classmethod
@@ -105,6 +116,21 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _probe_bounds(self) -> Self:
+        """PL6: biên theo APP_ENV (production chặt hơn development|test)."""
+        prod = self.app_env == "production"
+        if not (self.probe_s == 0 or (60 if prod else 1) <= self.probe_s <= 3600):
+            raise ValueError(f"AGENT_RT_PROBE_S phải 0 hoặc {60 if prod else 1}–3600")
+        _in_range("AGENT_RT_PROBE_LOGGED_OUT_S", self.probe_logged_out_s, 10 if prod else 1, 600)
+        _in_range("AGENT_RT_PROBE_TIMEOUT_S", self.probe_timeout_s, 10 if prod else 1, 300)
+        _in_range("AGENT_RT_COOLDOWN_DEFAULT_S", self.cooldown_default_s, 60 if prod else 1, 86400)
+        if self.fake_probe_file is not None:
+            if prod:
+                raise ValueError("AGENT_RT_FAKE_PROBE_FILE chỉ dùng khi APP_ENV development|test")
+            _norm_abs(self.fake_probe_file, "AGENT_RT_FAKE_PROBE_FILE")
+        return self
+
+    @model_validator(mode="after")
     def _hub_url_for_dify(self) -> Self:
         if "dify" in self.providers and not self.hub_url:
             raise ValueError("AGENT_RT_HUB_URL bắt buộc khi AGENT_RT_PROVIDERS có dify")
@@ -139,6 +165,10 @@ class Settings(BaseSettings):
             "home": str(self.home),
             "cleanup_s": self.cleanup_s,
             "hub_url": redact_url(self.hub_url) if self.hub_url else None,
+            "probe_s": self.probe_s,
+            "probe_logged_out_s": self.probe_logged_out_s,
+            "probe_timeout_s": self.probe_timeout_s,
+            "cooldown_default_s": self.cooldown_default_s,
         }
 
 

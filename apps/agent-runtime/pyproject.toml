@@ -94,6 +94,7 @@ source_modules = [
   "agent_runtime.contracts",
   "agent_runtime.agents",
   "agent_runtime.runtimes.cli.child.**",
+  "agent_runtime.runtimes.cli.probe.child",
 ]
 forbidden_modules = ["agent_runtime.db", "agent_runtime.events"]
 allow_indirect_imports = true
@@ -103,6 +104,7 @@ name = "Process con không cầm secret (WRK-BR-02)"
 type = "forbidden"
 source_modules = [
   "agent_runtime.runtimes.cli.child.**",
+  "agent_runtime.runtimes.cli.probe.child",
   "agent_runtime.providers",
   "agent_runtime.sandbox",
 ]
@@ -132,5 +134,6 @@ source_modules = [
   "agent_runtime.providers.claude.usage_acc",
   "agent_runtime.runtimes.cli.delta",
   "agent_runtime.runtimes.cli.refusal",
+  "agent_runtime.runtimes.cli.quota_rules",
 ]
 forbidden_modules = ["claude_agent_sdk", "agent_runtime.providers.claude.mapping"]

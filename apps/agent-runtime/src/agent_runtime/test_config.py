@@ -25,6 +25,11 @@ _VARS = (
     "AGENT_RT_DIFY_STOP_TIMEOUT_S",
     "AGENT_RT_HEARTBEAT_S",
     "AGENT_RT_ORPHAN_S",
+    "AGENT_RT_PROBE_S",
+    "AGENT_RT_PROBE_LOGGED_OUT_S",
+    "AGENT_RT_PROBE_TIMEOUT_S",
+    "AGENT_RT_COOLDOWN_DEFAULT_S",
+    "AGENT_RT_FAKE_PROBE_FILE",
 )
 
 
@@ -155,3 +160,62 @@ def test_review1_c2_orphan_heartbeat_accepted(
     monkeypatch.setenv("AGENT_RT_ORPHAN_S", orphan)
     s = load_settings()
     assert (s.heartbeat_s, s.orphan_s) == (float(heartbeat), float(orphan))
+
+
+def test_wrk_fr_22_probe_defaults_and_summary() -> None:
+    """PY-00 · plan-runtime H3a §6: mặc định probe 20 phút."""
+    s = load_settings()
+    assert (s.probe_s, s.probe_logged_out_s, s.probe_timeout_s, s.cooldown_default_s) == (
+        1200,
+        60,
+        60,
+        1800,
+    )
+    assert s.fake_probe_file is None
+    summary = s.safe_summary()
+    assert (summary["probe_s"], summary["cooldown_default_s"]) == (1200, 1800)
+
+
+@pytest.mark.parametrize(
+    ("env", "name", "value", "ok"),
+    [
+        ("production", "AGENT_RT_PROBE_S", "0", True),
+        ("production", "AGENT_RT_PROBE_S", "59", False),
+        ("production", "AGENT_RT_PROBE_S", "60", True),
+        ("production", "AGENT_RT_PROBE_S", "3601", False),
+        ("test", "AGENT_RT_PROBE_S", "1", True),
+        ("test", "AGENT_RT_PROBE_S", "-1", False),
+        ("production", "AGENT_RT_PROBE_LOGGED_OUT_S", "9", False),
+        ("production", "AGENT_RT_PROBE_LOGGED_OUT_S", "600", True),
+        ("test", "AGENT_RT_PROBE_LOGGED_OUT_S", "1", True),
+        ("test", "AGENT_RT_PROBE_LOGGED_OUT_S", "601", False),
+        ("production", "AGENT_RT_PROBE_TIMEOUT_S", "9", False),
+        ("test", "AGENT_RT_PROBE_TIMEOUT_S", "1", True),
+        ("test", "AGENT_RT_PROBE_TIMEOUT_S", "301", False),
+        ("production", "AGENT_RT_COOLDOWN_DEFAULT_S", "59", False),
+        ("production", "AGENT_RT_COOLDOWN_DEFAULT_S", "86400", True),
+        ("test", "AGENT_RT_COOLDOWN_DEFAULT_S", "1", True),
+        ("test", "AGENT_RT_COOLDOWN_DEFAULT_S", "0", False),
+    ],
+)
+def test_wrk_fr_22_probe_env_bounds_by_app_env(
+    monkeypatch: pytest.MonkeyPatch, env: str, name: str, value: str, ok: bool
+) -> None:
+    monkeypatch.setenv("APP_ENV", env)
+    monkeypatch.setenv(name, value)
+    if ok:
+        load_settings()
+    else:
+        with pytest.raises(ValidationError, match=name):
+            load_settings()
+
+
+def test_wrk_fr_22_fake_probe_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AGENT_RT_FAKE_PROBE_FILE", "rel/probe.txt")
+    with pytest.raises(ValidationError, match="AGENT_RT_FAKE_PROBE_FILE"):
+        load_settings()
+    monkeypatch.setenv("AGENT_RT_FAKE_PROBE_FILE", "/tmp/probe.txt")
+    assert load_settings().fake_probe_file == Path("/tmp/probe.txt")
+    monkeypatch.setenv("APP_ENV", "production")
+    with pytest.raises(ValidationError, match="AGENT_RT_FAKE_PROBE_FILE"):
+        load_settings()
