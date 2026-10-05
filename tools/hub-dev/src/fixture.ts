@@ -1,4 +1,4 @@
-// HUB-H1-AC-01 · spec H1 §9 Q2: user fixture cho bộ contract chat với Hub thật, tạo qua admin-api bằng platform_admin.
+// HUB-H1-AC-01 · spec H1 §9 Q2 · H2b-R26: user fixture cho bộ contract chat với Hub thật, tạo qua admin-api bằng platform_admin.
 // Idempotent: tenant/user đã có thì giữ, chỉ đặt lại mật khẩu khi đăng nhập bằng mật khẩu dev không được.
 // Mật khẩu dev dùng chung (mock C1 plan §3.4), không phải secret.
 
@@ -104,7 +104,26 @@ async function ensureUser(api: Api, tenantId: string, u: FixtureUser): Promise<v
     await call(api, "POST", `/admin/users/${String(user.id)}/lock`);
 }
 
-/** Tạo tenant `acme`, `beta` + user `lan, hoa, an, khoa(khoá)` qua admin-api tại `adminUrl`. */
+/** H2b-R26 (F3): `lan` (acme) vào group `beta-testers` → dùng được agent seed `assistant`; `hoa` giữ ngoài (ca phủ định). */
+export const BETA_TESTERS: Record<string, string[]> = { acme: ["lan"] };
+const BETA_GROUP_KEY = "beta-testers";
+
+/** Thêm idempotent (`POST …/members`: đã là thành viên → bỏ qua). Group do trigger Admin 0006 tạo cùng mọi tenant. */
+async function ensureBetaTesters(api: Api, tenantId: string, usernames: string[]): Promise<void> {
+  const list = await call(
+    api,
+    "GET",
+    `/admin/groups?tenant_id=${tenantId}&q=${BETA_GROUP_KEY}&limit=50`,
+  );
+  const group = (list.items as Json[]).find((g) => g.key === BETA_GROUP_KEY);
+  if (!group) throw new Error(`tenant ${tenantId} thiếu group ${BETA_GROUP_KEY}`);
+  const res = await call(api, "POST", `/admin/groups/${String(group.id)}/members`, { usernames });
+  const missing = (res.not_found as string[] | undefined) ?? [];
+  if (missing.length > 0)
+    throw new Error(`${BETA_GROUP_KEY}: không thấy user ${missing.join(", ")}`);
+}
+
+/** Tạo tenant `acme`, `beta` + user `lan, hoa, an, khoa(khoá)` qua admin-api tại `adminUrl`; `lan` vào `beta-testers`. */
 export async function ensureContractFixture(adminUrl: string): Promise<void> {
   const api: Api = { base: adminUrl, token: await adminToken(adminUrl) };
   const tenantIds = new Map<string, string>();
@@ -115,5 +134,9 @@ export async function ensureContractFixture(adminUrl: string): Promise<void> {
       tenantIds.set(u.tenant_key, tid);
     }
     await ensureUser(api, tid, u);
+  }
+  for (const [tenantKey, usernames] of Object.entries(BETA_TESTERS)) {
+    const tid = tenantIds.get(tenantKey);
+    if (tid) await ensureBetaTesters(api, tid, usernames);
   }
 }
