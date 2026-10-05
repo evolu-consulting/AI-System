@@ -102,8 +102,10 @@ Chạy 2026-10-06, WSL Ubuntu user `worker`, CLI **bundled** của `claude-agent
 
 **Rủi ro:** (1) (a) không phát hiện token bị thu hồi phía server / refresh hết hạn — (b) và lỗi job (R01/PY-02) bù. (2) Probe haiku thấy giới hạn `five_hour` chung; giới hạn riêng theo model (vd tuần cho opus) có thể không lộ ở probe ⇒ job opus vẫn có thể bị `rejected` — R01–R02 đã xử lý từ tín hiệu job. (3) Chữ/khoá `auth status` là CLI nội bộ, có thể đổi khi nâng SDK ⇒ khoá theo bản ghim, kiểm lại khi nâng (PY-02). (4) ~5 s cố định mỗi lần (a); không chặn claim (chạy nền). (5) stdout chứa PII (email/org) ⇒ cấm log.
 
+**Số đo smoke I2 (2026-10-06, Runtime thật `probe_loop`, chi tiết `smoke.md`):** (a) `auth status` 5,1 s (vòng `logged_out`, 0 token) · cả lượt (a)+(b) 13,3 s ⇒ (b) ≈ 8,1–8,2 s · token (b) theo `probe.result` (in gồm cache) 393 / 76 và 393 / 64 (thấp hơn #8 = 4 211 vào — chưa tra nguyên nhân, có thể do `probe_options` gọn: `setting_sources=[]`, `strict_mcp_config`) · `total_cost_usd` không log ở probe — quy đổi theo tỷ lệ giá đo ở #8 (0,0044 USD cho 4 211/45) ≈ **0,0007–0,0008 USD/lượt** · `RateLimitEvent` đến ~0,2 s trước `ResultMessage`.
+
 ## Spike S2 — tín hiệu hết quota thật
-(chưa gặp — ghi khi log `claude.rate_limit` có `rejected`/`allowed_warning` thật)
+**`rejected` thật: chưa gặp** (không cố tạo). **`allowed_warning` thật: gặp tự nhiên ở smoke I2 (2026-10-06)** — cả 2 lượt probe haiku: `status:"allowed_warning"`, `rate_limit_type:"seven_day"`, `utilization:0.52`, `resets_at` có (int, ~3,5 ngày sau). Khoá `raw` (R04): `status`, `resetsAt`, `rateLimitType`, `utilization` (float), `isUsingOverage` (bool), `unifiedWindows` (dict) — hai khoá cuối chưa dùng. Runtime ghi `provider_state.rate_limit_type/utilization` đúng, `status` giữ `ok` (R03) và `provider.quota_warning` đúng 1 lần cho 2 lượt cùng `resets_at`. Nhận xét: cảnh báo đến ở mức 0,52 (ngưỡng do server quyết, không phải 0,8 cố định) và từ cửa sổ `seven_day` dù probe dùng haiku ⇒ tín hiệu tuần chung lộ được qua probe (Spike S1 rủi ro 2 nhẹ hơn dự kiến với cửa sổ tuần chung; cửa sổ riêng theo model vẫn chưa kiểm).
 
 ## Quyết định trong lúc làm
 PLAN (backend-lead, 2026-10-06) — chính xác hoá spec theo Luật 2 (spec → BA → ADR → CONVENTIONS → code hiện có → đơn giản nhất). Chi tiết: `plan.md`, `plan-db.md`, `plan-runtime.md`.
@@ -148,6 +150,7 @@ PLAN (backend-lead, 2026-10-06) — chính xác hoá spec theo Luật 2 (spec �
 | PY-04d | `probe.skipped{reason:"recent"}` (debug) ghi cả khi lượt `startup` thấy `probe_due` false ở `PROBE_TARGETS` (một lần mỗi process/provider; nhịp sau không ghi — tránh log mỗi 5 s) | `rt §4.3`, `§7`; P26 |
 | PY-04e | Khoá phiên nhả ngay sau `apply_probe` (trước log/XADD); `PROBE_UNLOCK` lỗi ⇒ nuốt `DB_ERRORS`, dựa asyncpg pool `reset()` khi trả kết nối (`pg_advisory_unlock_all`) / bỏ kết nối hỏng — không gọi `terminate` (Protocol `Conn` không có) | `rt §4.3` bước 6, plan §5 |
 | PY-04f | `ProbeResult.ms` = cả lượt (a)+(b) đo ở `ProbeLoop`; `now` của `probe_result` = giờ UTC Runtime (chỉ dùng cho `cooldown_until` mặc định/kiểm biên `resets_at`), so sánh giờ khác dùng `db_now`. Lượt probe lỗi bất kỳ (`Exception`) ⇒ `probe.failed{provider, error}` (warn), vòng chạy tiếp; probe đưa sang hỏng log thêm `provider.broken` như runner | `rt §4.3`, `§7` |
+| I2a | Smoke SM2: provider vừa probe `ok` ⇒ R12 hoãn lượt kế `AGENT_RT_PROBE_S` (1 200 s) — test đổi symlink **trước** rồi lùi `last_probe_at`/`last_ok_at` 2 h bằng SQL (không đổi `status`/`updated_at`) để nhịp kế (≤ 5 s) probe ngay bằng (a); giữ `PROBE_S=1200` như test-plan, 0 lượt model thừa. Smoke tự dựng/dọn DB, Redis, Runtime WSL (`tests/smoke/h3a-live.test.ts`), chạy venv python trực tiếp (pid ổn định cho SM3 "cùng pid") thay `uv run` | test-plan-py §4; đơn giản nhất |
 
 ## REVIEW 1 — Runtime (backend-lead, 2026-10-06)
 Nguồn: review vòng 1 H3a phần `apps/agent-runtime`. Không đổi contract/mã lỗi; test khoá không đổi.
