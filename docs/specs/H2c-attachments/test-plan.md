@@ -53,7 +53,7 @@ Như H2b §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo
 | **HUB-FR-50** · AC-11 | R35–R38, A110–A116 | R, A |
 | **WRK-FR-11** · AC-07 · AC-08 | R17–R24, A70–A79, P01–P04, P20–P32, S01, S02, S07 | R, A, P, S |
 | **WRK-BR-06** (phần file) | A80–A89, P20–P29, S02 | A, P, S |
-| **WRK-BR-07** (tên/đường dẫn) | R02, R07, R08, R47, P01, P24, P25, P28, P29, S02 | R, P, S |
+| **WRK-BR-07** (tên/đường dẫn, hook `Write`) | R02, R07, R08, R47, P01, P24, P25, P28, P29, P51, S02 | R, P, S |
 | **WRK-FR-18** · AC-12 | R23, R48, A74, A90–A99, P05–P08, P40–P51, S03, S04 | R, A, P, S |
 | **AC-H03** (vế đính kèm) | A79, S06 | A, S |
 | HUB-H2c-AC-16 · R30 | A140–A142, K01–K12 | A, K |

@@ -1,0 +1,43 @@
+# Gate H2c — Đính kèm file (`POST /attachments`, gắn vào tin, file cho agent CLI, Dify `/files/upload`, `out/`)
+
+Ngày: 2026-10-05 · Trạng thái: **CHỜ DUYỆT** · Readiness: READY (`H2c-attachments/readiness.md`, 2 lần)
+
+**Không tự duyệt (Luật 2b):** có CR sửa chữ BA (CR-039), một quyết định bảo mật mới do readiness thêm (tool `Write` cho agent, mặc định tắt) và hành vi H2a đổi (K10). Không ADR / thư viện mới (plan P20). Bạn đã chốt U1–U5 và Q1 = A, Q2 = A, Q3 = A (`spec-decisions.md`).
+
+## 1. Phạm vi (`H2c-attachments/spec.md` §1)
+- **Tải lên:** `POST /attachments` thân thô (không multipart) + header `X-Filename`, ≤ 20 MiB, stream thẳng ra đĩa (không giữ cả file trong RAM); 13 loại file cho phép (Q1) + kiểm chữ ký nội dung; tên an toàn; hạn mức 5 GiB/tenant (env chung).
+- **Lưu:** ổ đĩa Hub sau interface `AttachmentStorage`, driver `local`, thư mục theo tenant, tên trên đĩa chỉ là uuid.
+- **Gắn vào tin:** `attachment_ids` (≤ 10) trong tin gửi, gắn nguyên tử cùng lúc tạo run; `attachments` trong tin; `GET /attachments/:id` + `/content` (chỉ chủ, luôn tải về).
+- **Agent CLI:** job mang danh sách file; Runtime tải qua endpoint nội bộ bằng token job vào `work/<job_id>/attachments/` (kiểm sha256); Orchestrator chỉ thấy tên/loại/cỡ. Lượt sau trong cùng flow vẫn thấy file cũ (≤ 10 file, ≤ 100 MiB).
+- **Dify:** input map `attachment` của command (sync + async) và input `file` của tool MCP → Hub tải lên Dify `/files/upload` rồi mới gọi workflow.
+- **`out/` (Q3 = A):** agent ghi file vào `out/` → Runtime đẩy lên Hub (≤ 5 file/job) → gắn vào tin trả lời.
+- **Vòng đời:** file chưa gắn tự xoá sau 24 h; xoá hội thoại → nội dung file xoá ≤ 10 phút (giữ metadata, `available=false`); sweeper trong Hub.
+- **Không làm:** quét virus, S3/MinIO, hạn mức theo tenant/tính phí (H3), file cho agent Dify chạy trong Hub, OCR/chuyển định dạng, runtime `llm`/`python` (H2d), sửa `apps/chat-web`, Admin, test khoá C1.
+
+## 2. Cần bạn duyệt
+| Mục | Nội dung |
+|---|---|
+| **CR-039 (sửa chữ BA)** | Áp vào BA ở I3: (1) câu hỏi mở 2 BA-H chốt = ổ đĩa Hub + interface Storage; (2) HUB-FR-44: 20 MiB, danh sách loại (Q1), hạn mức tenant, 24 h, giữ theo Q2; (3) §4 bỏ `messages.attachments (jsonb)`, thay bằng bảng `attachments` + `runs.attachment_ids`; (4) §9.1 thêm 4 endpoint; (5) WRK-FR-11/18: Runtime tải/đẩy file qua endpoint nội bộ bằng token job; (6) ADM-FR-21 `$attachment` = file đầu của tin; **(7) mới ở readiness:** agent ghi `out/` bằng tool `Write`, bật theo agent, hook chỉ cho ghi trong `out/` |
+| **Q1–Q3 = A (đã chốt)** | Làm đúng như bạn chọn: allowlist 13 loại + chữ ký; giữ file theo hội thoại; `out/` ngay ở H2c (≤ 5 file/job) |
+| **Storage = ổ đĩa Hub + interface (U1)** | `HUB_ATTACH_DRIVER=local` (khác ⇒ Hub không lên), `HUB_ATTACH_DIR` tuyệt đối. Ghi `.part` → fsync → rename **sau** khi DB commit. Driver S3 sau này chỉ cần cài lại interface |
+| **Tool `Write` cho agent (PL9) — quyết định mới** | Readiness phát hiện agent CLI hiện chỉ có `Read/Grep/Glob` ⇒ **không ghi được `out/`** (Q3 chỉ chạy với agent giả). Mặc định đã áp: thêm `Write` vào danh sách tool cho phép, **tắt mặc định** — chỉ agent được cấu hình `runtime_options.allowed_tools` có `Write` (seed) mới dùng; hook chỉ cho ghi file **trực tiếp** trong `work/<job_id>/out/`, chặn mọi nơi khác; câu nhắc `out/` chỉ thêm cho agent đó. Hệ quả: agent hiện có không đổi gì; muốn agent trả file thì bật cho từng agent. Phương án khác: bật cho mọi agent (đỏ test khoá H1 A27, mở quyền ghi rộng) hoặc hoãn `out/` thật (Q3 chỉ còn trên giấy) |
+| **Đổi hành vi H2a (K10, PL8)** | (a) Tool MCP: workflow có input `file` chỉ xuất hiện khi job có file (trước đây workflow có `file` tuỳ chọn luôn hiện); (b) command map lệch (`file ← arg`, input chữ ← `attachment`) nay trả 422 `CMD_MISSING_ARG invalid` thay vì chạy với giá trị rỗng. **Không làm đỏ test khoá H1/H2a/H2b** (đã rà: không fixture nào có input `file`/map `attachment`; hàm giữ nhánh cũ khi trường mới vắng). Lệch còn lại: Admin (M2-R17) cho lưu `file ← arg` không cảnh báo — Hub sẽ từ chối lúc chạy; CR-impact Admin ở I3 |
+| **Làm khác/chính xác hơn spec (PL1–PL14)** | PL1 Storage hai pha `stage → commit/discard`; **PL2 + PL11 sweeper đánh dấu `purged_at` trước khi xoá nội dung**, cả lượt trong một transaction giữ khoá toàn cục (tin gửi đúng lúc sweeper xoá → 404, không bao giờ trỏ file mất); PL3 không dùng `hono/body-limit` (một bộ đếm trong Storage); PL4 Hub (không phải Runtime) nối khối file/câu `out/` vào prompt; PL5 câu lỗi tool MCP chỉ tiếng Anh; PL6 + **PL10** output của job chạy lại chỉ tính lần chạy cuối; PL7 file sắp hết 24 h không gắn được; PL8 = K10; PL9 tool `Write` (trên); **PL12** tên hiển thị cắt ≤ 200 đơn vị UTF-16 (khớp kiểm contract); **PL13** sweeper hoàn tất file bị crash giữa chừng thay vì xoá; **PL14** kiểm/gắn file trong tin không phụ thuộc cấu hình storage (khung test cũ vẫn chạy) |
+| Không quyết định nào của bạn bị làm khác cách đã chọn | U1–U5, Q1–Q3 giữ nguyên |
+
+## 3. Contract / dữ liệu
+`plan.md` §2: **chat chỉ thêm** — `chat/attachments.ts`, hằng riêng `CHAT_ATTACHMENT_ERRORS {404, 409, 413, 415}` (không vào `CHAT_API_ERRORS`/`CHAT_RUN_ERROR_CODES`), `attachment_ids?`, `attachments?` (vắng khi không file), không sự kiện SSE mới; **hub** — `AgentCliJob.attachments?`, `DifyFileInput`, `JOB_FAIL_REASONS + attachment`, `job.result.outputs?`, `ALLOWED_TOOLS + Write`, sinh lại pydantic; **hub-internal** — `JobOutputResponse`, lỗi 404/409/413/415. Endpoint: `POST/GET /attachments(/:id(/content))`, E12 + 404 `ATTACHMENT_NOT_FOUND` (sau body, trước router), `GET /internal/jobs/:id/attachments/:att`, `POST /internal/jobs/:id/outputs`. `plan-db.md`: migration `0007_h2c_attachments.sql` — bảng `hub.attachments` (RLS tenant + user như `messages`, CHECK loại/cỡ/sha256/khoá, index hạn mức/hết hạn/hội thoại xoá), `runs.attachment_ids`, `jobs` reason `attachment`; chỉ thêm, không mất dữ liệu. `plan-rules.md` (hàm thuần cho qc), `plan-errors.md`, `plan-runtime.md` (tải `O_EXCL|O_NOFOLLOW` + sha256, `out/`, hook `Write`, `fake-cli`), `spec-ac.md` (AC).
+
+## 4. Test (`test-plan.md` + `-cases`, `-int`, `-py`)
+≈ 272 ca mới: hàm thuần TS 49 ID (~200 dòng bảng), int hub-api ~120 (A01–A142), Python ~49 (P01–P08 unit, P20–P51 int), stack 7, hub-dev 1, perf 3 + P32 (chỉ báo cáo), smoke `HUB_LIVE` 3 (không chặn, không khoá); chạy lại toàn bộ test khoá C1, M1–M4, H1, H2a, H2b + 41 ca contract chat với Hub thật. Mock Dify khoá (`dify-mock.ts`) được sửa thêm `/files/upload` và khoá lại ở Q2 (đúng 1 dòng `CHANGED`). Khoá 3 đợt: Q2 (TS) → Q-PU (unit Python, trước PY-01) → Q3 (Python int + stack + hub-dev, trước PY-03). Lệnh xong `done:h2c` (18 bước, kế thừa mọi bước `done:h2b`).
+
+## 5. Rủi ro / phụ thuộc
+- **K8** Bun xử lý thân request khác kỳ vọng (`Content-Length` giả, chunked, client đứt) — bộ đếm trong Storage là chốt, ca test riêng. **K9** tách `job-agent-runner.ts` (TD #52) trước, không đổi hành vi. **K10** đổi hành vi H2a (mục 2). **K11** đường dẫn/symlink — `realpath` + `O_NOFOLLOW` + làm mới thư mục khi chạy lại. **K12** thêm khoá vào transaction tạo run — thứ tự khoá cố định, test song song + `lock-order`. **K15** tool `Write` (opt-in, chỉ `out/`). **K16** Word/Excel/PowerPoint: agent CLI chỉ thấy tên (không Bash để giải nén), Dify đọc được.
+- **K13 · `work/<job_id>/` không được dọn (TD #59):** file khách nằm lại trên máy Runtime vô thời hạn (hiện trạng H1) — cần dọn sau job hoặc container mỗi job trước production.
+- **v1 chỉ một Hub (K1):** driver `local` buộc các Hub dùng chung thư mục; nhiều Hub cần ổ chia sẻ hoặc driver S3. Sweeper có khoá toàn cục nên chạy nhiều Hub không hỏng dữ liệu.
+- **K14 · file trả lời không qua SSE:** tin assistant có file `out/` chỉ thấy khi tải lại lịch sử (không thêm sự kiện SSE — giữ contract C1).
+- Không quét virus (K2) — chỉ allowlist + chữ ký + tải về an toàn; ghi PRODUCTION-NOTES. Dify có giới hạn file riêng (~15 MB tài liệu, 10 MB ảnh — K4).
+- **Combine Chat/Admin (CR-impact ở I3):** Chat — chip tải lên gửi thân thô + `X-Filename` (pct UTF-8), xử 413/415/409/404 `ATTACHMENT_*`, `attachments` trong tin (cả tin trả lời), tải về `/content`. Admin — `file ← arg` sẽ bị Hub từ chối; bật `Write` cho agent qua seed (`runtime_options.allowed_tools`), Studio sau. Production — env `HUB_ATTACH_*`, sao lưu `HUB_ATTACH_DIR`, quét virus, TD #59.
+
+## 6. Thứ tự BUILD sau duyệt
+Gate → C1 ∥ C2 ∥ D1 (∥ PY-00, MK) → B0 (TD #52 + stub) → qc QW-R → QW-A1 → QW-A2 (+ mock Dify `/files/upload`) → **Q2** → QW-PU → **Q-PU** → B1 → (B2 → B3; B2 → B4 → B6 → B8; B4 → B7; B1 → B5; B4 → B9; B1/B4 → B10) ∥ PY-01 → PY-02 → qc QW-P → **Q3** → PY-03 (gồm hook `Write`) → PY-04 → `done:h2c` (I1) → smoke `HUB_LIVE` (I2) → review (≤ 2 vòng) → docs (I3, áp CR-039). Trên `main`, không push.
