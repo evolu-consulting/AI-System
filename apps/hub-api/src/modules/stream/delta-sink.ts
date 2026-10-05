@@ -37,7 +37,13 @@ export class DeltaSink {
     this.#prev = ev.seq;
     if (ev.type !== "job.delta" || !this.accept.includes(ev.kind)) return;
     for (const part of chunkDelta(ev.text)) {
-      await this.emit(part);
+      // Lỗi phát SSE (fencing/Redis) không dừng job: ngừng chuyển tiếp, runner vẫn chạy tới kết thúc (đóng step).
+      try {
+        await this.emit(part);
+      } catch {
+        this.#open = false;
+        return;
+      }
       this.#text += part;
     }
   }

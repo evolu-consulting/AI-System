@@ -28,6 +28,7 @@ import {
   difyAgentRequestParts,
   difyAgentTarget,
 } from "./dify-agent.rules";
+import { DifyDeltaFeed } from "./dify-agent-stream";
 
 export type DifyAgentRunnerDeps = {
   db: Db;
@@ -45,9 +46,12 @@ export type DifyAgentRunnerDeps = {
 type Step = { id: string; seq: number };
 type DifyRequest = Parameters<DifyClient["runStreaming"]>[0];
 type Ran = { end: DifyAgentEnd; usage: TokenUsage; resumed: boolean };
+/** Huỷ run + mẩu chữ Dify (P14: `job.delta` khi stream). */
+type CallIo = { signal: AbortSignal; onDelta: (text: string) => void };
 
 const ZERO: TokenUsage = { input_tokens: 0, output_tokens: 0 };
 const DIFY_AGENT_RUNTIME = "dify-agent";
+const NO_DELTA = (_text: string): void => {};
 const fail = (
   code: "NOT_CONFIGURED" | "INTERNAL_ERROR",
   reason: "credential" | null,
@@ -83,23 +87,31 @@ export class DifyAgentRunner implements AgentRunner {
       data: { step_id: `s${seq}`, label: stepLabel("delegate", r.locale) },
     });
     yield startedEvent(id);
-    const ran = await this.#execute(task, step, signal);
+    // P14: job được stream ⇒ mỗi mẩu chữ Dify → `job.delta{done}` tổng hợp, phát ngay khi tới.
+    const feed = task.stream ? new DifyDeltaFeed(id) : null;
+    const work = this.#execute(task, step, signal, feed?.push ?? NO_DELTA);
+    const ran = feed ? yield* feed.follow(work) : await work;
     await this.#close(task, step, ran);
-    const ev = endEvent(id, ran);
+    const ev = endEvent(id, ran, (feed?.seq ?? 1) + 1);
     if (ev) yield ev;
   }
 
   /** Lỗi bất ngờ (DB/catalog) → `INTERNAL_ERROR` để bước không treo `running`. */
-  async #execute(task: AgentTask, step: Step, signal: AbortSignal): Promise<Ran> {
+  async #execute(
+    task: AgentTask,
+    step: Step,
+    signal: AbortSignal,
+    onDelta: (text: string) => void,
+  ): Promise<Ran> {
     try {
-      return await this.#call(task, step, signal);
+      return await this.#call(task, step, { signal, onDelta });
     } catch (err) {
       this.d.log.error("dify-agent-error", { run_id: task.run.id, ...safeErrorFields(err) });
       return { end: fail("INTERNAL_ERROR", null), usage: ZERO, resumed: false };
     }
   }
 
-  async #call(task: AgentTask, step: Step, signal: AbortSignal): Promise<Ran> {
+  async #call(task: AgentTask, step: Step, io: CallIo): Promise<Ran> {
     const { agent, run: r } = task;
     const catalog = await this.d.catalog();
     const target = difyAgentTarget(agent, catalog.workflows.values());
@@ -131,21 +143,21 @@ export class DifyAgentRunner implements AgentRunner {
       conversationId: session,
       outputField: wf.outputField,
     };
-    const both = AbortSignal.any([signal, timeout]);
-    let out = await this.d.dify.runStreaming(req, both, () => {});
+    const both = AbortSignal.any([io.signal, timeout]);
+    let out = await this.d.dify.runStreaming(req, both, io.onDelta);
     await this.#usage(task, step, out);
     let resumed = session !== null;
     if (resumed && isStaleSession(out) && !both.aborted) {
       await this.#forget(task);
       this.d.log.warn("dify-agent-session-stale", { run_id: r.id, agent_id: agent.id });
-      out = await this.d.dify.runStreaming({ ...req, conversationId: null }, both, () => {});
+      out = await this.d.dify.runStreaming({ ...req, conversationId: null }, both, io.onDelta);
       await this.#usage(task, step, out);
       resumed = false;
     }
     // plan-db §2: chỉ ghi phiên khi Dify xong và trả `conversation_id` (dify-workflow không có phiên).
     if (agent.runtime === DIFY_AGENT_RUNTIME && out.kind === "finished" && out.conversationId)
       await this.#save(task, out.conversationId);
-    const end = difyAgentEnd(out, timeout.aborted && !signal.aborted);
+    const end = difyAgentEnd(out, timeout.aborted && !io.signal.aborted);
     const usage = { input_tokens: out.usage.input_tokens, output_tokens: out.usage.output_tokens };
     return { end, usage, resumed };
   }
@@ -266,7 +278,7 @@ function startedEvent(jobId: string): RunEvent {
 }
 
 /** `cancelled` → null (run đã đóng bởi bên huỷ; `runJob` quy về `aborted`). */
-function endEvent(jobId: string, ran: Ran): RunEvent | null {
+function endEvent(jobId: string, ran: Ran, seq: number): RunEvent | null {
   const { end, usage } = ran;
   if (end.kind === "cancelled") return null;
   if (end.kind === "failed") {
@@ -276,14 +288,14 @@ function endEvent(jobId: string, ran: Ran): RunEvent | null {
       message: `dify ${end.code}`,
       status: end.status,
     };
-    return { ...syntheticFailed(jobId, f), seq: 2, usage };
+    return { ...syntheticFailed(jobId, f), seq, usage };
   }
   const output = { kind: "agent_result", result: { status: "done", text: end.text } } as const;
   const at = new Date().toISOString();
   return {
     v: 1,
     job_id: jobId,
-    seq: 2,
+    seq,
     at,
     type: "job.result",
     output,
