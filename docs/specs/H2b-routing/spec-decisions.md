@@ -78,3 +78,15 @@ BA (CR-033): user tự tag thì câu trả lời hiện **tên hiển thị củ
 - **F3-1** `tools/hub-dev/src/fixture.ts`: `BETA_TESTERS = { acme: ["lan"] }` → sau khi tạo user, `ensureContractFixture` tra group `beta-testers` của tenant (`GET /admin/groups?q=`) và `POST /admin/groups/:id/members {usernames}` (idempotent: đã có → `already`; `not_found` ⇒ ném lỗi). `hoa` giữ ngoài (R26). Chạy lại fixture hai lần: OK, DB `acme|lan`.
 - **F3-2** Chạy `bun run test:contract:chat` với Hub thật (`hub:dev`, Runtime container `fake-cli`) trong **worktree sạch tại HEAD `50b5ad7`** (+ fixture mới) — vì cây làm việc đang có D1/C2 dở (`0006_h2b_routing.sql`, `schema/hub.ts`), `hub:dev` sẽ `db:migrate` bản dở vào DB dev. Kết quả: **41 pass, 0 fail** (62 ca, phần còn lại skip như H2a). Không sửa test khoá C1.
 - **F3-3** Chưa thể đỏ do 429: giới hạn `TOO_MANY_RUNS` (B5) chưa cài. `hub:dev` đã đặt sẵn `HUB_MAX_CONCURRENT_RUNS=20` (MK-3). **Chạy lại ở I1** (bước 9 `done:h2b`) sau B5 để xác nhận K4b.
+
+## Spike PY-S2 → plan (2026-10-05, biên bản `spike-stream.md` `e8e218e`)
+`claude-sub` stream được (#1, #2 ✓) ⇒ không lùi K10. Áp đề xuất §4 của biên bản vào docs trước QW-PU (test Python chưa viết):
+| # | Mức | Quyết định | Áp vào |
+|---|---|---|---|
+| S1 | Cao | F5 lấy usage từ `StreamEvent`: `message_start.message.usage` (nhớ `message.id`) rồi `message_delta.usage` cùng id (bản sau thay bản trước — luật `UsageAcc.add`). **Không** dùng `AssistantMessage.usage` (ảnh chụp lúc `message_start`, output gần 0). Huỷ giữa chừng = **cận dưới** (message đang dở chỉ có output ảnh chụp) | `rt` §2 #6, §5, H11; spec R28; tasks PY-01/PY-02; py P08 (chuỗi spike), P27, SM3 |
+| S2 | Cao | `include_partial_messages=True` cho **mọi** job `claude-sub`; scanner/`Delta` chỉ khi `payload.stream is True ∧ retry_prompt is None`. Không chọn phương án lùi (F5 qua `AssistantMessage` + TECH-DEBT) | `rt` §1, §3.4; tasks PY-02 |
+| S3 | Thường | Chọn khối theo `content_block_start` (`text` cho Orchestrator, `tool_use` `StructuredOutput` cho agent), bỏ theo index khối: `thinking`, `input_json_delta` của `Read`/MCP; `SystemMessage` `status`/`thinking_tokens`/lạ bỏ qua | `rt` §3.4; tasks PY-02 |
+| S4 | Thấp | Mốc "khối xong" = `content_block_stop` (`AssistantMessage` tới trước) | `rt` §3.4 |
+| S5 | Thấp | Smoke I2/AC-12 với `claude-sub` thật: chỉ "≥ 1 `job.delta` trước `job.result`", không ngưỡng độ trễ (agent có thể im ~8 s do thinking). Ngưỡng thời gian giữ cho `fake-cli` (S01, A101, spec §6) | tasks I2; py §4 SM1–SM3; cases M02 |
+| BC6 | — | Áp chữ: zod 4/pydantic đếm **code point**. Runtime vẫn cắt theo UTF-16 (`split_utf16`, `responderOf`) — luôn hợp lệ, chặt hơn cần thiết; test **không** assert zod đếm UTF-16 | `rt` §3.3, §9 H3 (✓); plan §2.2 `JOB_DELTA_TEXT_MAX`; `rules` `responderOf`; cases R43 (4 000/4 001 emoji); py P05 |
+Không đổi `FORMAT_BLOCK` (#4 ✓), `AGENT_RESULT_SCHEMA` (#3 ✓), `DeltaBuffer` mặc định 100 ms/200 ký tự (chunk SDK ≈ 9–12 ký tự, ≈ 20/s). spec giữ ≤ 25 600 B (R28 rút gọn chữ).

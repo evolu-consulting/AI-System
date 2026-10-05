@@ -40,7 +40,7 @@ Hành vi mới với client C1: tin bắt đầu `@` (không `@@`) → có thể
 | Tên | Định nghĩa |
 |---|---|
 | `DELTA_KINDS` | `["answer", "done", "partial"] as const` · `DeltaKindSchema` |
-| `JOB_DELTA_TEXT_MAX` | `4000` (đơn vị UTF-16 như zod `max`; Runtime cắt theo đơn vị này — `plan-runtime` §3.3) |
+| `JOB_DELTA_TEXT_MAX` | `4000` (zod `max` đếm **code point** — đo ở C2, BC6; Runtime vẫn cắt theo đơn vị UTF-16 `plan-runtime` §3.3 ⇒ luôn hợp lệ, chặt hơn cần thiết) |
 | `JobDeltaEventSchema` | `strictObject{...base (v, job_id, seq, at), type: literal("job.delta"), kind: DeltaKind, text: string 1–4000}` → thêm vào `RunEventSchema` (union `type`) |
 | `AgentCliJobSchema` | + `stream: z.boolean().optional()` (P3) |
 | `JOB_FAIL_REASONS` | + `refused` (F4, R27) |

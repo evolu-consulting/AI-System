@@ -76,7 +76,7 @@ Phụ lục của [`test-plan.md`](test-plan.md): §1 hàm thuần (R) · §2 in
 | R40 | `AgentMenuItemSchema`: khoá thừa → lỗi; `description` 19/401 ký tự → lỗi, 20/400 ok; key sai regex → lỗi; `AgentMenuResponseSchema` 501 item → lỗi |
 | R41 | `CHAT_ROUTING_ERRORS` = `{AGENT_NOT_FOUND:404, TOO_MANY_RUNS:429}`; `CHAT_API_ERRORS`, `CHAT_RUN_ERROR_CODES`, `CHAT_COMMAND_ERRORS`, `CHAT_EVENT_NAMES` không chứa mã/sự kiện mới; `RETRY_AFTER_HEADER="Retry-After"`, `TOO_MANY_RUNS_RETRY_AFTER_S=5`; `AgentNotFoundDetailsSchema` 4 gợi ý → lỗi |
 | R42 | `MessageSchema`: assistant + `responder` ok; user + `responder` → lỗi; vắng ok; `responder:null` → lỗi (`.optional()`, không nullable); `RunStartedDataSchema` có/không `responder` ok |
-| R43 | Hub: fixture valid mới (`RunEvent.delta-answer`, `delta-partial`, `JobPayload.agent-stream`) parse; invalid (`delta-4001`, `delta-bad-kind`, `delta-empty`, `JobPayload.stream-string`) lỗi; fixture cũ vẫn valid; `text` 2 000 emoji (4 000 đơn vị) ok, 2 001 → lỗi |
+| R43 | Hub: fixture valid mới (`RunEvent.delta-answer`, `delta-partial`, `JobPayload.agent-stream`) parse; invalid (`delta-4001`, `delta-bad-kind`, `delta-empty`, `JobPayload.stream-string`) lỗi; fixture cũ vẫn valid; `text` 4 000 emoji ok, 4 001 emoji → lỗi (zod đếm **code point**, BC6 — không assert đếm UTF-16) |
 | R44 | `JOB_FAIL_REASONS` ∋ `refused`; `RunEventSchema` nhận `type:"job.delta"`; `AgentCliJob` thiếu `stream` ok |
 
 ## 2. A · hub-api int (`tests/acceptance/H2b/`)
@@ -203,5 +203,5 @@ Chung: `startHubH2b` (`_h2b.ts`) + `maxConcurrentRuns: 2`, `jobMaxWaitS` lớn; 
 | ID | Checklist |
 |---|---|
 | M01 | `spike-stream.md` đủ 9 điểm `plan-runtime` §2, mỗi điểm ✓/✗ + quyết định áp vào PY-02/B9; qc chỉ kiểm biên bản |
-| M02 | `smoke.md` (I2): SM1–SM3 với `claude-sub` thật, kết quả theo spike |
+| M02 | `smoke.md` (I2): SM1–SM3 với `claude-sub` thật, kết quả theo spike; chỉ ≥ 1 `job.delta` trước `job.result`, không ngưỡng độ trễ (S5); usage huỷ = cận dưới |
 | M03 | `docs/guides/hub-dev.md` không còn câu "không code nào đọc" `HUB_LIVE` |

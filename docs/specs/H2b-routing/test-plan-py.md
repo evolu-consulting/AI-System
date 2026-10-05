@@ -11,10 +11,10 @@ Import trong thân test (`importlib`) → mỗi ca đỏ riêng `ModuleNotFoundE
 | P02 | `StreamScanner("agent")` | `status:"done"`/`"partial"` trước `text` → `kind` tương ứng; `need_input` → `off`; `text` trước `status` → `off`; `status` lồng (`"x":{"status":"done"}`) không tính |
 | P03 | escape | `\n \t \r \b \f \" \\ \/ á` giải đúng; escape cắt giữa chunk (`"\\"`|`"n"`, `"\\u00"`|`"e1"`) → không phát dở; `\ud83d`|`\ude00` ở hai chunk → phát một `"😀"`, không bao giờ phát surrogate lẻ; `\ud83d` + `x` → `"�"`; UTF-8 thô (`á`, emoji) đi qua |
 | P04 | thuộc tính | 200 JSON sinh ngẫu nhiên (seed cố định; `text` có escape, emoji, `{`, `"`) × cách cắt ngẫu nhiên → nối `feed` = `json.loads(doc)["text"]` khi khoá vai đứng trước |
-| P05 | `split_utf16` | `""` → `[]`; 4 000 ASCII → 1; 4 001 → 2; 3 999 ASCII + emoji → `[3999, emoji]` (không cắt code point); 8 001 → 3; mọi phần ≤ 4 000 đơn vị UTF-16; nối = gốc |
+| P05 | `split_utf16` | `""` → `[]`; 4 000 ASCII → 1; 4 001 → 2; 3 999 ASCII + emoji → `[3999, emoji]` (không cắt code point); 8 001 → 3; mọi phần ≤ 4 000 đơn vị UTF-16; nối = gốc (chỉ assert hàm Runtime; **không** assert zod/pydantic đếm UTF-16 — chúng đếm code point, BC6) |
 | P06 | `DeltaBuffer` (đồng hồ giả) | `add` 50 ký tự t=0 → `[]`, `due()` false; t=0.1 s → `due()` true, `add` → xả; `add` 250 ký tự → xả ngay; `take()` xả phần còn; `wait_s()` = thời gian còn tới 100 ms; `flush_chars=200, flush_ms=100` mặc định; mỗi chunk ≤ `max_units`; nối mọi chunk = nối đầu vào |
 | P07 | `classify_is_error` | không khớp mẫu ∧ output > 0 → `None`; khớp rate/auth → phân loại bất kể output; `"You've hit your usage limit"`, `"Rate limit exceeded"`, `"Error 429"` → `rate`; `"Not logged in · Please run /login"`, `"Invalid API key"`, `"OAuth token has expired"`, `"HTTP 401"` → `auth`; `"403 Forbidden"` → `refused` (`AUTH_RE` H1 không có 403); có cả rate và auth → `rate`; `"I can't help with that."`, `None`, `""` → `refused`; mẫu ở ký tự 301+ → `refused`; không phân biệt hoa; `"4290"` không khớp `\b429\b` |
-| P08 | `UsageAcc` | 2 `message_id` khác → cộng (`input`, `output`, `cache_read`, `cache_creation`); cùng id 2 lần → bản sau thay, không cộng đôi; tổng không đổi → `None`; `usage=None` → `None`; id `None` → mỗi lần là message mới (Q-T7) |
+| P08 | `UsageAcc` | 2 `message_id` khác → cộng (`input`, `output`, `cache_read`, `cache_creation`); cùng id 2 lần → bản sau thay, không cộng đôi; chuỗi như spike #6: `add("m1", {in:2, cache_creation:1049, out:8})` (`message_start`) rồi `add("m1", {in:2, cache_creation:1049, out:702})` (`message_delta`) → tổng out = 702 (không 710), rồi `add("m2", {in:2, cache_read:2194, out:24})` → out 726, cache_read 2194; tổng không đổi → `None`; `usage=None` → `None`; id `None` → mỗi lần là message mới (Q-T7) |
 | P09 | `Settings` | `delta_flush_ms` 100 (10–1 000), `delta_flush_chars` 200 (1–4 000); ngoài khoảng → `ValidationError` (xanh ở PY-03, L8) |
 
 ## 2. P · int Runtime thật (`fake-cli`) — QW-P, khoá Q3
@@ -29,7 +29,7 @@ Payload `agent.cli` có `stream` qua helper mới `_stream.py` (bọc `build_pay
 | P24 | R21 | `#fake:stream=1 #fake:answer-len=9000` → ≥ 3 `job.delta`, mỗi `text` ≤ 4 000 đơn vị UTF-16 |
 | P25 | R21 · H7 | Agent `#fake:stream=5 #fake:stream-badjson` → `job.failed{UPSTREAM_ERROR, invalid_output}`, không dòng log `job.output_retry`; đối chứng `#fake:badjson=1` (không stream) → `succeeded` (H1 AC-10) |
 | P26 | `refusal_int_test.py` · WRK-FR-15 · AC-08 | `#fake:is-error=rate` → `job.failed ALL_PROVIDERS_EXHAUSTED`/`quota`, `provider_state` `cooldown` (+30 phút ± 1); `=auth` → `ALL_PROVIDERS_EXHAUSTED`/`provider_unavailable`, `provider_state` `logged_out`; `=refused` → `UPSTREAM_ERROR`/`refused`, `provider_state` không đổi; `=refused #fake:usage=10,5` → `UPSTREAM_ERROR`, reason `null` (H1); chữ result không có trong `job.failed.message`, `jobs.error_message`, XADD; log có chữ đã che ≤ 300 |
-| P27 | `usage_h2b_int_test.py` · WRK-FR-17 · AC-09 | `#fake:turns=2 #fake:usage=100,50 #fake:sleep=10` → chờ ~200 ms → huỷ → `cancelled`, `usage_logs` **1** dòng `input=200, output=100`, `billing=subscription`, `cost_usd=0`; `job.failed.usage` cùng số. `#fake:sleep=10` (huỷ trước usage) → 0 dòng. `timeout_s` nhỏ sau 2 lượt → `timed_out`, 1 dòng |
+| P27 | `usage_h2b_int_test.py` · WRK-FR-17 · AC-09 (`fake-cli` phát `UsageEv` cộng dồn trực tiếp — nguồn `StreamEvent` của `claude-sub` kiểm ở unit PY-02 + SM3) | `#fake:turns=2 #fake:usage=100,50 #fake:sleep=10` → chờ ~200 ms → huỷ → `cancelled`, `usage_logs` **1** dòng `input=200, output=100`, `billing=subscription`, `cost_usd=0`; `job.failed.usage` cùng số. `#fake:sleep=10` (huỷ trước usage) → 0 dòng. `timeout_s` nhỏ sau 2 lượt → `timed_out`, 1 dòng |
 | P28 | WRK-FR-17 | `#fake:turns=3 #fake:usage=10,5` chạy hết → 1 dòng = tổng cuối (30, 15), không cộng đôi |
 
 ## 3. S · stack (`tests/acceptance/H2b/stack/*.stack.test.ts`) — QW-P, khoá Q3
@@ -47,8 +47,10 @@ Hub thật trên host (`HUB_MAX_CONCURRENT_RUNS=2`), Runtime container `fake-cli
 | S08 | AC-08 | `@assistant #fake:is-error=refused x` → `run.failed UPSTREAM_ERROR` + hint refused |
 
 ## 4. SM · smoke `tests/smoke/h2b-live.test.ts` (`HUB_LIVE=1`, không chặn, không khoá)
-| ID | Ca (kỳ vọng theo `spike-stream.md`) |
+Kỳ vọng theo `spike-stream.md` (#1, #2 ✓). Với `claude-sub` thật **không** đặt ngưỡng độ trễ (agent có thể im ~8 s do thinking — S5); timeout ca chỉ là giới hạn treo. Ngưỡng thời gian chỉ áp cho `fake-cli` (S01, A101).
+
+| ID | Ca |
 |---|---|
-| SM1 | `claude-sub`: `@assistant` câu trả lời ~800 ký tự → ≥ 2 `delta` trước `step.finished` (nếu spike #2 ✗: 0, ghi ✗) |
-| SM2 | Orchestrator `answer` dài → ≥ 2 `delta` trước `run.finished` (spike #1) |
-| SM3 | Huỷ sau lượt có tool → `usage_logs` 1 dòng token > 0 (spike #9) |
+| SM1 | `claude-sub`: `@assistant` câu trả lời ~800 ký tự → ≥ 1 `job.delta`/`delta` trước `job.result`/`step.finished` |
+| SM2 | Orchestrator `answer` dài → ≥ 1 `delta` trước `run.finished` |
+| SM3 | Huỷ sau lượt có tool → `usage_logs` 1 dòng token > 0 = **cận dưới** (message đang dở chỉ có output ảnh chụp `message_start`; không so bằng với tổng thật) (spike #9) |
