@@ -100,3 +100,6 @@ BA chỉ nêu ví dụ "PDF, ảnh, XML" (US-H07). Hub không quét virus ở H2
 | PL12 | R02 | `displayName` cắt ≤ 200 **đơn vị UTF-16** (không tách cặp surrogate) thay cho 200 code point | zod `string().max(200)` đếm UTF-16 (bài học H2b readiness #6): 199 emoji + đuôi ⇒ `AttachmentSchema` từ chối response. DB `char_length ≤ 200` vẫn đúng (code point ≤ đơn vị) |
 | PL13 | R29 | Quét mồ côi: `.part` > 1 h mà id còn hàng sống (crash giữa DB commit và rename, R05) ⇒ `rename` (hoàn tất `commit`) thay vì xoá | Không để hàng `available=true` mất nội dung vĩnh viễn |
 | PL14 | R09–R11, R14 | Kiểm/gắn/tập file run chỉ cần DB — chạy mọi khi E12 có `db`, **không** phụ thuộc `AppDeps.attachments`. Vắng `attachments` ⇒ chỉ không mount `POST/GET /attachments*`, `/internal/jobs/:id/{attachments,outputs}`, sweeper; `/attachments` vẫn trong `PROTECTED_PREFIXES` (401 trước 404 — A141). Driver cần nội dung (Dify upload R22) mà vắng storage ⇒ `run.failed INTERNAL_ERROR` (chỉ xảy ra ở khung test) | Khung test H1/H2a/H2b dựng app không storage; tránh hai nhánh E12 |
+
+## Gate duyệt — 2026-10-05
+- Người dùng duyệt Gate H2c ("Oke"): CR-039 (gồm mục 7 tool `Write`), Q1–Q3 = A, storage ổ đĩa Hub + interface, tool `Write` tắt mặc định — bật theo agent qua seed, hook chỉ cho ghi `work/<job_id>/out/`, đổi hành vi H2a K10, PL1–PL14.

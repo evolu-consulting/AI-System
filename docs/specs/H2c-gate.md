@@ -1,6 +1,6 @@
 # Gate H2c — Đính kèm file (`POST /attachments`, gắn vào tin, file cho agent CLI, Dify `/files/upload`, `out/`)
 
-Ngày: 2026-10-05 · Trạng thái: **CHỜ DUYỆT** · Readiness: READY (`H2c-attachments/readiness.md`, 2 lần)
+Ngày: 2026-10-05 · Trạng thái: **ĐÃ DUYỆT 2026-10-05** (người dùng: "Oke", gồm tool `Write` opt-in) · Readiness: READY (`H2c-attachments/readiness.md`, 2 lần)
 
 **Không tự duyệt (Luật 2b):** có CR sửa chữ BA (CR-039), một quyết định bảo mật mới do readiness thêm (tool `Write` cho agent, mặc định tắt) và hành vi H2a đổi (K10). Không ADR / thư viện mới (plan P20). Bạn đã chốt U1–U5 và Q1 = A, Q2 = A, Q3 = A (`spec-decisions.md`).
 
