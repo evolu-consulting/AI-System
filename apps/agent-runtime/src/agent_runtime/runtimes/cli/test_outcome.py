@@ -22,15 +22,26 @@ from agent_runtime.runtimes.cli.test_runner import payload
 
 def test_wrk_fr_15_rate_limit_cooldown_reset_or_30min() -> None:
     now = datetime(2026, 1, 1, tzinfo=UTC)
-    b = broken_of(RateLimit(status="rejected", resets_at=1_800_000_000), now)
-    assert (b.status, b.until, b.reason) == (
-        "cooldown",
-        datetime.fromtimestamp(1_800_000_000, UTC),
-        "quota",
-    )
+    reset = now + timedelta(hours=1)
+    b = broken_of(RateLimit(status="rejected", resets_at=int(reset.timestamp())), now)
+    assert (b.status, b.until, b.reason) == ("cooldown", reset, "quota")
     assert broken_of(RateLimit(status="rejected"), now).until == now + timedelta(minutes=30)
     out = broken_of(RateLimit(status="logged_out"), now)
     assert (out.status, out.until, out.reason) == ("logged_out", None, "provider_unavailable")
+
+
+def test_wrk_fr_15_h3a_r02_reset_out_of_range_uses_default_s() -> None:
+    """H3a-R02: `resets_at` quá 8 ngày / đã qua ⇒ `now + default_s` (env `COOLDOWN_DEFAULT_S`)."""
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    far = int((now + timedelta(days=8, seconds=1)).timestamp())
+    past = int((now - timedelta(seconds=1)).timestamp())
+    for ts in (far, past):
+        got = broken_of(RateLimit(status="rejected", resets_at=ts), now, 60)
+        assert got.until == now + timedelta(seconds=60)
+    edge = now + timedelta(days=8)
+    assert broken_of(RateLimit(status="rejected", resets_at=int(edge.timestamp())), now).until == (
+        edge
+    )
 
 
 def test_wrk_fr_15_decide_exit_provider_effect() -> None:

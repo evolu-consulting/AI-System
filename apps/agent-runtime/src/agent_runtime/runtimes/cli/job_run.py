@@ -221,7 +221,7 @@ class JobRun:
             get_logger().info("job.stopped_no_write", reason=reason or outcome)
             self.host.events.forget(self.job.id)
         else:
-            v = decide_exit(self.payload, self.seen)
+            v = decide_exit(self.payload, self.seen, self.cfg.cooldown_default_s)
             self._log_is_error()
             if v.failure is None and confirmation_forced(
                 self.payload, self.seen.final, self.seen.confirm
@@ -240,7 +240,7 @@ class JobRun:
             append_is_error(events_log_path(self.cfg.log_dir, self.job.id), kind, is_error_text(f))
 
     def _succeeded(self) -> bool:
-        return decide_exit(self.payload, self.seen).failure is None
+        return decide_exit(self.payload, self.seen, self.cfg.cooldown_default_s).failure is None
 
     async def _send_outputs(self, v: Verdict) -> Verdict:
         """H2c R25 (§5): job agent thành công `done`/`partial` ⇒ đẩy `out/` (lần claim hiện hành —

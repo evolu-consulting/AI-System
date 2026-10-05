@@ -15,7 +15,7 @@ H2b F4 (plan-runtime §4, R27): `is_error` chưa có `RateLimit` → phân loạ
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 from agent_runtime.contracts.hub import JobPayload1
@@ -24,6 +24,7 @@ from agent_runtime.db.provider_state_sql import Broken, ProviderEffect
 from agent_runtime.db.usage_sql import UsageKeys, UsageRow
 from agent_runtime.events.job_events import Failure, Tokens
 from agent_runtime.providers.base import Confirm, Fatal, Final, RateLimit, UsageEv
+from agent_runtime.runtimes.cli.quota_rules import cooldown_until
 from agent_runtime.runtimes.cli.refusal import IsErrorKind, classify_is_error
 from agent_runtime.runtimes.cli.result import build_output, forced_need_input
 
@@ -41,7 +42,7 @@ LOGGED_OUT = Failure(
     "failed", "ALL_PROVIDERS_EXHAUSTED", "provider_unavailable", "provider logged out"
 )
 REFUSED = Failure("failed", "UPSTREAM_ERROR", "refused", "provider refused the request")
-DEFAULT_COOLDOWN = timedelta(minutes=30)  # WRK-FR-15: không có giờ reset
+DEFAULT_COOLDOWN_S = 1800  # WRK-FR-15 · H3a-R02: mặc định `AGENT_RT_COOLDOWN_DEFAULT_S`
 BROKEN_SIGNALS = frozenset({"rejected", "logged_out"})
 
 
@@ -119,22 +120,22 @@ def fatal_failure(f: Fatal) -> Failure:
     return Failure("failed", code, f.reason or "crash", f.msg or "job host fatal")
 
 
-def broken_of(rl: RateLimit, now: datetime | None = None) -> Broken:
+def broken_of(
+    rl: RateLimit, now: datetime | None = None, default_s: int = DEFAULT_COOLDOWN_S
+) -> Broken:
+    """H3a-R02: `resets_at` ngoài `(now, now + 8 ngày]` / vắng ⇒ `now + default_s`."""
     if rl.status == "logged_out":
         return Broken("logged_out", None, LOGGED_OUT.message)
-    if rl.resets_at is not None:
-        until = datetime.fromtimestamp(rl.resets_at, UTC)
-    else:
-        until = (now or datetime.now(UTC)) + DEFAULT_COOLDOWN
+    until = cooldown_until(rl.resets_at, now or datetime.now(UTC), default_s)
     return Broken("cooldown", until, RATE_LIMITED.message)
 
 
-def decide_exit(payload: JobPayload1, seen: Seen) -> Verdict:
+def decide_exit(payload: JobPayload1, seen: Seen, default_s: int = DEFAULT_COOLDOWN_S) -> Verdict:
     """Job host đã thoát (không huỷ/timeout): kết quả + ảnh hưởng provider."""
     rl = seen.rate_limit
     if rl is not None:
         failure = LOGGED_OUT if rl.status == "logged_out" else RATE_LIMITED
-        return Verdict(failure, provider=broken_of(rl))
+        return Verdict(failure, provider=broken_of(rl, default_s=default_s))
     if seen.confirm is not None and payload.output == "agent_result":
         if seen.fatal is not None or seen.final is None:
             # Review 1 C10: CLI chết / lỗi sau CONFIRMATION_REQUIRED — câu hỏi xác nhận của Hub vẫn
@@ -145,7 +146,7 @@ def decide_exit(payload: JobPayload1, seen: Seen) -> Verdict:
     if seen.final is None:
         return Verdict(CRASHED, provider="none" if seen.signaled else "error")
     if seen.final.is_error and seen.confirm is None:
-        return is_error_verdict(is_error_kind(seen))
+        return is_error_verdict(is_error_kind(seen), default_s)
     output = build_output(payload, seen.final, seen.confirm)
     if output is None:
         return Verdict(INVALID_OUTPUT)
@@ -164,10 +165,11 @@ def is_error_kind(seen: Seen) -> IsErrorKind | None:
     return classify_is_error(is_error_text(f), seen.total().output_tokens, f.stop_reason)
 
 
-def is_error_verdict(kind: IsErrorKind | None) -> Verdict:
+def is_error_verdict(kind: IsErrorKind | None, default_s: int = DEFAULT_COOLDOWN_S) -> Verdict:
     """Chỉ tới khi chưa có `RateLimit` (claude-sub đã phân loại bằng `result_signal` H1)."""
     if kind == "rate":
-        return Verdict(RATE_LIMITED, provider=broken_of(RateLimit(status="rejected")))
+        rejected = RateLimit(status="rejected")
+        return Verdict(RATE_LIMITED, provider=broken_of(rejected, default_s=default_s))
     if kind == "auth":
         return Verdict(LOGGED_OUT, provider=broken_of(RateLimit(status="logged_out")))
     return Verdict(REFUSED if kind == "refused" else PROVIDER_ERROR)

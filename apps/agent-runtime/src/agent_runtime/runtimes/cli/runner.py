@@ -35,6 +35,7 @@ from agent_runtime.runtimes.cli.job_run import JobRun, StopControl
 from agent_runtime.runtimes.cli.joblog import events_log_path, stderr_log_path
 from agent_runtime.runtimes.cli.outcome import (
     CRASHED,
+    DEFAULT_COOLDOWN_S,
     INVALID_PAYLOAD,
     Seen,
     Verdict,
@@ -61,6 +62,7 @@ class HostConfig:
     delta_flush_ms: int = 100  # H2b §8 `AGENT_RT_DELTA_FLUSH_MS`
     delta_flush_chars: int = 200  # H2b §8 `AGENT_RT_DELTA_FLUSH_CHARS`
     hub_url: str | None = None  # H2c §2 `AGENT_RT_HUB_URL` (tải file/đẩy `out/`)
+    cooldown_default_s: int = DEFAULT_COOLDOWN_S  # H3a-R02 `AGENT_RT_COOLDOWN_DEFAULT_S`
     hub_transport: httpx2.AsyncBaseTransport | None = field(default=None, compare=False)
 
 
