@@ -185,7 +185,7 @@ Tổng mới ≈ **210** ca (R ~95 dòng bảng / 40 ID, A ~92, P ~35, S 8, H 1,
 Readiness lần 1: L1 áp **có sửa** (vắng ⇒ không giới hạn; `envAppDeps` điền; helper `startHubH2b`); L2 áp + usage `out:0`, không `RateLimit` (`plan-runtime` §6); L3–L8 áp nguyên (spec §6, tasks QW/MK/B3/PY-01).
 
 ## 10. Đỏ đúng lý do · nhật ký
-QW-R, QW-A1, QW-A2 xong, Q2 khoá (dưới); QW-PU, QW-P chưa viết. Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
+QW-R, QW-A1, QW-A2, QW-PU xong, Q2 + Q-PU khoá (dưới); QW-P chưa viết. Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
 
 ### QW-R · 2026-10-05 (sau B0 `5ef4b90`, C1, C2, D1 `adba6a3`)
 `bun test tests/acceptance/H2b/rules`: **46 test / 10 file** (+ helper `_access.ts`) — **38 đỏ đúng lý do, 8 xanh**. `tsc -p tsconfig.tests.json` 0 lỗi · biome sạch · `check:size` OK · `trace --check` OK (HUB-FR-91/92/94 có test).
@@ -259,3 +259,25 @@ Không đỏ do import/cú pháp/kiểu/fixture (`PostgresError`/`TypeError` = 0
 
 ### Q2 · 2026-10-05
 `bun run test:lock:verify` trước ghi: **27 dòng `UNLOCKED`, đều `tests/acceptance/H2b/**`** (helper `_h2b.ts`, `_stream.ts`, `rules/_access.ts`; 10 file `rules/`; 14 file int/perf), 0 `MISMATCH`/file khác ⇒ `bun run test:lock:write` → verify xanh; `git diff tests/.lock` chỉ thêm 27 dòng H2b. Chưa có `stack/`, `hubdev/` (QW-P → Q3). `tests/smoke/**` không khoá (Q-T6).
+
+### QW-PU · 2026-10-05 (sau Q2, C2, spike PY-S2)
+`bun run --cwd apps/agent-runtime` qua `scripts/run.ts` · `pytest tests/acceptance/test_stream_rules.py`: **97 test (27 hàm) / 1 file** — **97 đỏ đúng lý do, 0 xanh**. ruff check/format · pyright strict 0 lỗi · `check:size` OK (599/600). Tự kiểm: bản tham chiếu tạm theo §3.2–§5 (không commit) → P01–P08 87/87 xanh (ca không mâu thuẫn plan).
+
+| File | ID | Đỏ / tổng | Lý do đỏ | Xanh trước code |
+|---|---|---|---|---|
+| `test_stream_rules.py` | P01–P04 (+ bảng `off` chung P01/P02) | 41/41 | `ModuleNotFoundError providers.stream_scan` | — |
+| | P05–P06 | 17/17 | `ModuleNotFoundError runtimes.cli.delta` | — |
+| | P07 | 23/23 | `ModuleNotFoundError runtimes.cli.refusal` (22) / `providers.patterns` (1) | — |
+| | P08 | 6/6 | `ModuleNotFoundError providers.claude.usage_acc` | — |
+| | P09 | 10/10 | `Settings` thiếu `delta_flush_ms`/`delta_flush_chars` (`AssertionError` 9, `AttributeError` 1) — xanh ở PY-03 (L8) | — |
+
+**Lệch plan / cần backend-lead:**
+- P08 nguồn theo spike S1: `message_start` (out 8) → `message_delta` cùng id (out 702, kèm `output_tokens_details`/`iterations` — phải bỏ qua) → tổng 702, không 710; `cache_creation_input_tokens` → `UsageEv.cache_write`; khoá vắng = 0; `ev.model` = `model` truyền vào. Không có ca `AssistantMessage.usage` (PY-02 unit).
+- P01/P02 ép `state="off"` cho JSON hỏng trước khi stream (thiếu `:`, khoá không ngoặc kép) và `status` lạ (`weird`); `state="seeking"` lúc mới tạo; `kind=None` khi `off`.
+- P03 surrogate lẻ: high + chữ thường / high + `á` / low trơ / high cuối chuỗi → `U+FFFD` (high cuối chuỗi: phát khi đóng chuỗi).
+- P06 `wait_s()` khi đã tới hạn ≤ 0 (cho phép 0 hoặc âm); không ép `due()` khi bộ đệm rỗng. "Ký tự" của `flush_chars` chỉ kiểm bằng ASCII.
+- P07 thêm ca biên 300: mẫu kết thúc đúng ký tự 300 → khớp; vắt qua 300 → không; `patterns.RATE_RE`/`AUTH_RE` cùng `pattern` với `mapping`.
+- P05 không assert zod/pydantic đếm UTF-16 (BC6, H3).
+
+### Q-PU · 2026-10-05
+`bun run test:lock:verify` trước ghi: **đúng 1 dòng** `UNLOCKED apps/agent-runtime/tests/acceptance/test_stream_rules.py`, 0 `MISMATCH`/file khác ⇒ `bun run test:lock:write` → verify xanh (304 file); `git diff tests/.lock` chỉ thêm 1 dòng.
