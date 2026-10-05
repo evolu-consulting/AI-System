@@ -1,7 +1,8 @@
 // HUB-FR-41 · HUB-FR-94 · H2b-R16–R18 · E12: transaction `user` tạo run (plan H1 §5.1, H2b plan §5.1 bước 2, P7, P8,
 // plan-db §2). Thứ tự khoá H1 §3.5 thêm **đầu** `[advisory user]`: advisory user → conversations → flows → `flowRunning`
-// (409 `FLOW_BUSY`) → `countRunning` (429 `TOO_MANY_RUNS` + `Retry-After`) → runs → messages → tool_confirmations.
-// Lỗi ném trong transaction ⇒ ROLLBACK (không flow/run/message — R17).
+// (409 `FLOW_BUSY`) → `countRunning` (429 `TOO_MANY_RUNS` + `Retry-After`) → runs → messages → attachments (H2c P8:
+// gắn R11 + tập file R14 → `runs.attachment_ids`) → tool_confirmations.
+// Lỗi ném trong transaction ⇒ ROLLBACK (không flow/run/message, file chưa gắn — R17, H2c-R11).
 import {
   deriveTitle,
   RETRY_AFTER_HEADER,
@@ -12,6 +13,8 @@ import {
 import type { Tx } from "@ai/db";
 import { appError } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
+import { bindRunFiles, type RunKind } from "../attachments/run-files";
+import type { RunFile } from "../attachments/run-files.rules";
 import { isAgreeReply } from "../mcp/confirm.rules";
 import type { MentionPlan } from "../mention/mention.service";
 import { type ConfirmTag, decideConfirmations } from "./confirm.repo";
@@ -89,8 +92,34 @@ async function assertUnderLimit(tx: Tx, o: repo.Owner, p: CreateRunInput): Promi
   throw tooManyRuns();
 }
 
-/** §5.1 · một transaction `user` (gọi trong `withHubScope(user)`). 23505 `FLOW_RUNNING_UQ` do người gọi đổi `FLOW_BUSY`. */
-export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<void> {
+const runKind = (p: CreateRunInput): RunKind =>
+  p.command ? "command" : p.direct ? "direct" : "orchestrated";
+
+/** H2c P7 · sau INSERT tin user: gắn file (R11, 404 ⇒ rollback) → tập file run (R14) → `runs.attachment_ids` khi ≠ ∅. */
+async function attachFiles(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<RunFile[]> {
+  const r = p.run;
+  const files = await bindRunFiles(tx, o, {
+    ids: p.req.attachment_ids,
+    newFlow: !p.req.flow_id,
+    kind: runKind(p),
+    messageId: r.userMessageId,
+    conversationId: r.conversationId,
+    flowId: r.flowId,
+  });
+  if (files.length > 0)
+    await repo.setRunFiles(
+      tx,
+      r.id,
+      files.map((f) => f.id),
+    );
+  return files;
+}
+
+/**
+ * §5.1 · một transaction `user` (gọi trong `withHubScope(user)`). 23505 `FLOW_RUNNING_UQ` do người gọi đổi `FLOW_BUSY`.
+ * Trả tập file của run (H2c-R14, `RunContext.files`).
+ */
+export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<RunFile[]> {
   const r = p.run;
   await repo.lockUserRuns(tx, o);
   if (!(await repo.touchConversation(tx, o, r.conversationId))) throw appError("NOT_FOUND");
@@ -115,7 +144,9 @@ export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Pro
     content: p.req.content,
     runId: r.id,
   });
+  const files = await attachFiles(tx, o, p);
   if (p.req.flow_id) {
     await decideConfirmations(tx, o, { flowId: r.flowId, runId: r.id, ...confirmReply(p) });
   }
+  return files;
 }

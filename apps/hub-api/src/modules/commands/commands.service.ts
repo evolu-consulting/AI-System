@@ -4,11 +4,17 @@
 import type { CommandMenuResponse, MessageContext } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";
+import type { RunFile } from "../attachments/run-files.rules";
 import type { CatalogSnapshot, UsableCatalogCommand } from "../config/catalog.rules";
 import { tenantKeyOf, usableCatalogCommands } from "../config/catalog.rules";
 import type { ConfigCache } from "../config/config.service";
 import type { CatalogCommand, CatalogWorkflow, WorkflowInputValue } from "./catalog.types";
-import { appNeedsQuery, buildInputs, QUERY_INPUT } from "./command-input.rules";
+import {
+  appNeedsQuery,
+  type BuildInputsFile,
+  buildInputs,
+  QUERY_INPUT,
+} from "./command-input.rules";
 import { bindArgs } from "./command-parse.rules";
 import { toMenuItem } from "./menu.rules";
 import { suggestCommands } from "./suggest.rules";
@@ -30,9 +36,17 @@ export type PreparedCommand = {
   tenantKey: string;
   /** Số token thừa bị bỏ (R05, ghi trace). */
   extraTokens: number;
+  /** H2c P13 · input `file` nhận file của tin (driver tải lên Dify — B7); vắng khi không có. */
+  files?: BuildInputsFile[];
 };
 
-export type CommandRequest = { name: string; rest: string; ctx: MessageContext };
+/** H2c: `attachments` = file của tin (R09 đã kiểm, thứ tự gửi); chỉ file đầu vào input `file` (T9). */
+export type CommandRequest = {
+  name: string;
+  rest: string;
+  ctx: MessageContext;
+  attachments?: readonly RunFile[];
+};
 
 const notFound = (suggestions: string[]) => appError("CMD_NOT_FOUND", { suggestions });
 const missingArg = (missing: string[], invalid: string[]) =>
@@ -52,11 +66,14 @@ export type BindCommandInput = {
   ctx: MessageContext;
   userId: string;
   tenantId: string;
+  /** H2c P13 · file đầu của tin; vắng ≡ null. */
+  attachment?: { id: string } | null;
 };
 export type BoundCommand = {
   inputs: Record<string, WorkflowInputValue>;
   query: string | null;
   extraTokens: number;
+  files?: BuildInputsFile[];
 };
 
 /** R05–R06: `bindArgs` → `buildInputs` → app `chat`/`agent` cần `query`; thiếu/sai → ném `CMD_MISSING_ARG`. */
@@ -71,11 +88,13 @@ export function bindCommandInputs(i: BindCommandInput): BoundCommand {
     ctx: i.ctx,
     userId: i.userId,
     tenantId: i.tenantId,
+    attachment: i.attachment,
   });
   if (!built.ok) throw missingArg(built.missing, built.invalid);
   if (appNeedsQuery(workflow.appType) && built.query === null)
     throw missingArg([queryLabel(command.inputMap)], []);
-  return { inputs: built.inputs, query: built.query, extraTokens: bound.extra };
+  const { inputs, query, files } = built;
+  return { inputs, query, extraTokens: bound.extra, ...(files && { files }) };
 }
 
 function findUsable(v: UsableView, name: string): UsableCatalogCommand | undefined {
@@ -124,6 +143,7 @@ export class CommandService {
       ctx: req.ctx,
       userId: u.userId,
       tenantId: u.tenantId,
+      attachment: req.attachments?.[0] ?? null,
     });
     return {
       command,
@@ -134,6 +154,7 @@ export class CommandService {
       sideEffect: workflow.sideEffect,
       tenantKey: tenantKeyOf(catalog, u.tenantId),
       extraTokens: bound.extraTokens,
+      ...(bound.files && { files: bound.files }),
     };
   }
 }

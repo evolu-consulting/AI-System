@@ -15,6 +15,8 @@ import type { Db } from "../../lib/db";
 import { appError, safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
+import { checkSendable } from "../attachments/run-files";
+import type { RunFile } from "../attachments/run-files.rules";
 import {
   type ConfigSnapshot,
   type PickedOrchestrator,
@@ -55,6 +57,8 @@ export type RunContext = {
   direct?: DirectRunStart;
   /** H2b R09 · run `orchestrated` nhiều tag: key agent được tag (thu hẹp `<agents>` + `canDelegate`); vắng = đủ AU. */
   scope?: ReadonlySet<string>;
+  /** H2c-R14, P9 · tập file của run (`runs.attachment_ids`, chốt ở `createRunTx`); `[]` khi không file. */
+  files: RunFile[];
   log: Logger;
 };
 /** Chỗ cắm B8 (Orchestrator, dùng runner B7). Không chờ: chạy nền, tự `finish`. */
@@ -205,7 +209,7 @@ export class RunService {
     const direct =
       plan?.kind === "direct" ? directOnSnapshot(plan, snapshot, who, run.locale) : undefined;
     const orchestrator = command ? null : this.#pick(snapshot, run, plan);
-    await this.#create(u, {
+    const files = await this.#create(u, {
       run,
       req,
       configVersion: snapshot.version,
@@ -230,6 +234,7 @@ export class RunService {
       orchestrator,
       scope: scoped?.onlyKeys,
       direct,
+      files,
       log: this.d.log,
     });
     const stream = this.#stream(u, run.id, 0);
@@ -250,9 +255,14 @@ export class RunService {
     return picked;
   }
 
-  async #create(u: AuthUser, p: CreateRunInput): Promise<void> {
+  /** H2c-R09, R10 · E12 sau body, trước router: file gửi được (404 `ATTACHMENT_NOT_FOUND{ids}`), theo thứ tự `ids`. */
+  checkSendable(u: AuthUser, ids: readonly string[]): Promise<RunFile[]> {
+    return checkSendable(this.d.db, u, ids);
+  }
+
+  async #create(u: AuthUser, p: CreateRunInput): Promise<RunFile[]> {
     try {
-      await this.#scoped(u, (tx, o) => createRunTx(tx, o, p));
+      return await this.#scoped(u, (tx, o) => createRunTx(tx, o, p));
     } catch (err) {
       if (flowBusy(err)) throw appError("FLOW_BUSY");
       throw err;

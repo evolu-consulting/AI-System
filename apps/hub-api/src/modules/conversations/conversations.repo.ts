@@ -4,7 +4,7 @@ import type { Tx } from "@ai/db";
 import { conversations } from "@ai/db/schema/hub";
 import { and, desc, eq, isNull, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import type { ConversationRow, PageKey } from "./conversations.rules";
+import type { AttachmentRefRow, ConversationRow, PageKey } from "./conversations.rules";
 
 export type Owner = { tenantId: string; userId: string };
 
@@ -96,4 +96,35 @@ export async function softDeleteConversation(tx: Tx, o: Owner, id: string): Prom
     .where(and(live(o), eq(c.id, id)))
     .returning({ id: c.id });
   return rows.length > 0;
+}
+
+/**
+ * H2c-R12 (plan-db §2.6) · file của các tin trong trang (một câu cho cả trang E10/E11), theo `position`. Scope `user`
+ * (RLS + lọc tường minh).
+ */
+export async function messageAttachments(
+  tx: Tx,
+  o: Owner,
+  messageIds: readonly string[],
+): Promise<Map<string, AttachmentRefRow[]>> {
+  const out = new Map<string, AttachmentRefRow[]>();
+  if (messageIds.length === 0) return out;
+  const rows = await tx.execute<{
+    message_id: string;
+    id: string;
+    filename: string;
+    mime: AttachmentRefRow["mime"];
+    size: string | number;
+    purged_at: Date | string | null;
+  }>(sql`select message_id, id, filename, mime, size, purged_at from hub.attachments
+    where message_id = any(${`{${messageIds.join(",")}}`}::uuid[])
+      and tenant_id = ${o.tenantId} and user_id = ${o.userId}
+    order by message_id, position`);
+  for (const r of rows) {
+    const list = out.get(r.message_id) ?? [];
+    const purgedAt = r.purged_at === null ? null : new Date(r.purged_at);
+    list.push({ id: r.id, filename: r.filename, mime: r.mime, size: Number(r.size), purgedAt });
+    out.set(r.message_id, list);
+  }
+  return out;
 }

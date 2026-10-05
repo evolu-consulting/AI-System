@@ -26,6 +26,7 @@ import {
   type PageKey,
   takePage,
   titleSearchPattern,
+  toAttachmentRef,
   toConversation,
   toMessage,
   toRunSummary,
@@ -79,9 +80,15 @@ async function runSummaries(
 
 async function toMessages(tx: Tx, o: Owner, rows: readonly MessageRow[]): Promise<Message[]> {
   const sums = await runSummaries(tx, o, rows);
+  const files = await repo.messageAttachments(
+    tx,
+    o,
+    rows.map((r) => r.id),
+  );
   return rows.map((r) => {
     const v = r.runId ? sums.get(r.runId) : undefined;
-    return toMessage(r, v?.summary ?? null, v?.responder);
+    const refs = files.get(r.id)?.map(toAttachmentRef);
+    return toMessage(r, v?.summary ?? null, v?.responder, refs);
   });
 }
 

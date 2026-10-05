@@ -4,6 +4,8 @@
 // H2a §5.1 (HUB-BR-01) + H2b §5.1 (P4): sau body → `routeMessage`: `/lệnh` → `prepareCommand` (404/422 `CMD_*` trước khi
 // tạo run); `//…` → tin thường bỏ một `/`; `@tag` → `prepareMention` (404 `AGENT_NOT_FOUND` / 422 `CMD_MISSING_ARG` trước
 // khi tạo run); `@@…` → tin thường bỏ một `@`.
+// H2c-R10: sau body, **trước** router → `attachment_ids` qua `checkSendable` (404 `ATTACHMENT_NOT_FOUND{ids}`, không ghi
+// gì); file gắn trong transaction tạo run (R11). Lệnh `/` nhận file của tin (`attachments`, R20).
 import {
   FLOW_ID_HEADER,
   LAST_EVENT_ID_HEADER,
@@ -17,6 +19,7 @@ import {
 import { Hono } from "hono";
 import type { AuthUser, AuthVars } from "../../lib/auth.middleware";
 import { parseIdParam, parseJson } from "../../lib/http";
+import type { RunFile } from "../attachments/run-files.rules";
 import type { ConversationService } from "../conversations/conversations.service";
 import type { MentionPlan, MentionRouted } from "../mention/mention.service";
 import { routeMessage } from "../mention/mention-parse.rules";
@@ -30,10 +33,13 @@ const SSE_HEADERS = {
   "X-Accel-Buffering": "no",
 } as const;
 
-/** H2a · lệnh `/` → run `kind=command` (ném `CMD_NOT_FOUND`/`CMD_MISSING_ARG`, không ghi gì). */
+/**
+ * H2a · lệnh `/` → run `kind=command` (ném `CMD_NOT_FOUND`/`CMD_MISSING_ARG`, không ghi gì). H2c: `attachments` = file của
+ * tin (đã qua R09, thứ tự gửi; vắng/rỗng = không file).
+ */
 export type PrepareCommand = (
   u: AuthUser,
-  req: { name: string; rest: string; ctx: MessageContext },
+  req: { name: string; rest: string; ctx: MessageContext; attachments?: readonly RunFile[] },
 ) => Promise<CommandRunStart>;
 
 /** H2b · tin có tag `@` → kế hoạch run (ném `AGENT_NOT_FOUND`/`CMD_MISSING_ARG`, không ghi gì). */
@@ -51,12 +57,13 @@ export function sendMessageRoutes(
     const id = parseIdParam(c);
     await conversations.get(c.var.user, id);
     const body = await parseJson(c, SendMessageRequestSchema);
-    const msg = routeMessage(body.content);
     const u = c.var.user;
+    const files = body.attachment_ids ? await runs.checkSendable(u, body.attachment_ids) : [];
+    const msg = routeMessage(body.content);
     let s: StartedRun;
     if (msg.kind === "text") s = await runs.start(u, id, { ...body, content: msg.content });
     else if (msg.kind === "command") {
-      const req = { name: msg.name, rest: msg.rest, ctx: body.context ?? {} };
+      const req = { name: msg.name, rest: msg.rest, ctx: body.context ?? {}, attachments: files };
       s = await runs.start(u, id, body, await prepareCommand(u, req));
     } else {
       // Lỗi tag trả trước khi tạo run (không ghi gì). 1 tag → run `direct` (agent kiểm lại trên ảnh của run); ≥ 2 tag →

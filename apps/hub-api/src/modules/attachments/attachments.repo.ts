@@ -89,3 +89,66 @@ export async function findOwnedAttachment(
     storageKey: r.storage_key,
   };
 }
+
+/** Mảng uuid → literal `{…}` (tham số `::uuid[]`; drizzle `sql` nở mảng JS thành danh sách — B10-2). Id đã qua zod uuid. */
+export const uuidArray = (ids: readonly string[]): string => `{${ids.join(",")}}`;
+
+type SendRow = {
+  id: string;
+  safe_name: string;
+  mime: string;
+  size: string | number;
+  sha256: string;
+};
+
+/** E12 R09 (plan-db §2.1, PL7) · file gửi được của chủ trong `ids`; scope `user`, ngoài transaction tạo run. */
+export async function sendableFiles(
+  tx: Tx,
+  o: { tenantId: string; userId: string },
+  ids: readonly string[],
+): Promise<SendRow[]> {
+  return tx.execute<SendRow>(sql`select id, safe_name, mime, size, sha256 from hub.attachments
+    where id = any(${uuidArray(ids)}::uuid[]) and tenant_id = ${o.tenantId} and user_id = ${o.userId}
+      and message_id is null and purged_at is null and created_at > now() - interval '24 hours'`);
+}
+
+/** R11 (plan-db §2.2) · gắn vào tin user trong `createRunTx` (sau INSERT messages — P8); trả id gắn được. */
+export async function bindAttachments(
+  tx: Tx,
+  o: { tenantId: string; userId: string },
+  p: { ids: readonly string[]; messageId: string; conversationId: string; flowId: string },
+): Promise<string[]> {
+  const ids = uuidArray(p.ids);
+  const rows = await tx.execute<{ id: string }>(sql`update hub.attachments a
+    set message_id = ${p.messageId}, conversation_id = ${p.conversationId}, flow_id = ${p.flowId}, bound_at = now(),
+      position = array_position(${ids}::uuid[], a.id) - 1
+    where a.id = any(${ids}::uuid[]) and a.tenant_id = ${o.tenantId} and a.user_id = ${o.userId}
+      and a.message_id is null and a.purged_at is null and a.created_at > now() - interval '24 hours'
+    returning a.id`);
+  return rows.map((r) => r.id);
+}
+
+export type RunFileRow = {
+  id: string;
+  message_id: string;
+  message_created_at: Date | string;
+  position: number;
+  safe_name: string;
+  mime: string;
+  size: string | number;
+  sha256: string;
+};
+
+/** R14 (plan-db §2.3) · ứng viên tập file của run (≤ 11 hàng, `available`); `command` → chỉ tin hiện tại. */
+export async function runFileRows(
+  tx: Tx,
+  p: { flowId: string; currentMessageId: string; command: boolean },
+): Promise<RunFileRow[]> {
+  return tx.execute<RunFileRow>(sql`select a.id, a.message_id, m.created_at as message_created_at, a.position,
+      a.safe_name, a.mime, a.size, a.sha256
+    from hub.messages m join hub.attachments a on a.message_id = m.id
+    where m.flow_id = ${p.flowId} and a.purged_at is null
+      and (${!p.command}::boolean or m.id = ${p.currentMessageId})
+    order by (m.id = ${p.currentMessageId}) desc, m.created_at desc, m.id desc, a.position
+    limit 11`);
+}

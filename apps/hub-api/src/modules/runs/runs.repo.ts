@@ -135,6 +135,13 @@ export async function insertMessage(
   await tx.insert(messages).values({ ...o, ...p, ask: p.ask ?? null, createdAt: NOW_MS });
 }
 
+/** H2c-R14 (plan-db §2.3) · chốt tập file của run (chỉ gọi khi ≠ ∅); cùng transaction tạo run. */
+export async function setRunFiles(tx: Tx, runId: string, ids: readonly string[]): Promise<void> {
+  await tx.execute(
+    sql`update hub.runs set attachment_ids = ${`{${ids.join(",")}}`}::uuid[] where id = ${runId}`,
+  );
+}
+
 export type RunRecord = {
   id: string;
   tenantId: string;

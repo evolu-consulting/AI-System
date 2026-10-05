@@ -6,9 +6,9 @@ Hội thoại, flow, tin nhắn theo contract chat C1 (`@ai/contracts/chat`, C1 
 |---|---|
 | `conversations.routes.ts` | E5 list · E6 tạo · E7 đọc · E8 đổi tên · E9 xoá mềm · E10 flows · E11 messages |
 | `conversations.service.ts` | mọi câu trong `withHubScope({kind:"user"})` (RLS); không thấy → 404 `NOT_FOUND` |
-| `conversations.repo.ts` | `hub.conversations` (lọc `tenant_id`+`user_id` tường minh, `deleted_at IS NULL`) |
+| `conversations.repo.ts` | `hub.conversations` (lọc `tenant_id`+`user_id` tường minh, `deleted_at IS NULL`); H2c `messageAttachments(tx, o, messageIds)` (một câu cho cả trang E10/E11) |
 | `flows.repo.ts` | `hub.flows`, `messages`, `runs`, `run_steps` cho E10/E11 |
-| `conversations.rules.ts` | thuần: cursor keyset, mẫu `q` (`foldVi`), map DB → `Conversation`/`Message`/`RunSummary` |
+| `conversations.rules.ts` | thuần: cursor keyset, mẫu `q` (`foldVi`), map DB → `Conversation`/`Message`/`RunSummary`; H2c `toMessage(..., refs?)` (`attachments` vắng khi rỗng), `toAttachmentRef` (`available` = `purged_at` null) |
 
 Luật:
 - Thứ tự kiểm: 401 (middleware) → `:id` không phải uuid 404 → sở hữu 404 → body/query 400 (route gọi `svc.get` trước khi parse).

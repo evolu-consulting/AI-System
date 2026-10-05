@@ -3,6 +3,8 @@
 import {
   type Ask,
   AskSchema,
+  type AttachMime,
+  type AttachmentRef,
   type Conversation,
   foldVi,
   type Message,
@@ -156,14 +158,36 @@ export type MessageRow = {
   createdAt: Date;
 };
 
+/** Hàng `hub.attachments` của một tin (plan-db §2.6). */
+export type AttachmentRefRow = {
+  id: string;
+  filename: string;
+  mime: AttachMime;
+  size: number;
+  purgedAt: Date | null;
+};
+
+/** H2c-R12 · `available = purgedAt === null` (nội dung còn). */
+export function toAttachmentRef(r: AttachmentRefRow): AttachmentRef {
+  return {
+    id: r.id,
+    filename: r.filename,
+    mime: r.mime,
+    size: r.size,
+    available: r.purgedAt === null,
+  };
+}
+
 /**
  * `ask` jsonb validate ở biên; sai dạng → null. Tin user không bao giờ có `run`/`ask`/`responder`. H2b P1/P2: `responder`
- * chỉ ở tin assistant của run `direct` — khoá **vắng** ở tin khác (không `null`).
+ * chỉ ở tin assistant của run `direct` — khoá **vắng** ở tin khác (không `null`). H2c-R12 (P2): `attachments` chỉ khi
+ * `refs` ≥ 1 (thứ tự `position`), vắng khi không file.
  */
 export function toMessage(
   m: MessageRow,
   run: RunSummary | null,
   responder?: Responder | null,
+  refs?: readonly AttachmentRef[],
 ): Message {
   const isAssistant = m.role === "assistant";
   const ask = isAssistant ? AskSchema.safeParse(m.ask) : null;
@@ -178,5 +202,6 @@ export function toMessage(
     run: isAssistant ? run : null,
     ask: ask?.success ? (ask.data as Ask) : null,
     ...(isAssistant && responder ? { responder } : {}),
+    ...(refs && refs.length > 0 ? { attachments: [...refs] } : {}),
   };
 }

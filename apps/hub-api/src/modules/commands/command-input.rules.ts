@@ -12,7 +12,7 @@ export type BuildInputsInput = {
   ctx: MessageContext;
   userId: string;
   tenantId: string;
-  /** H2c P13 · file đầu tiên của tin (input map `source = attachment`). B0: chưa dùng (B7). */
+  /** H2c P13 · file đầu tiên của tin (input map `source = attachment`); vắng ≡ null. */
   attachment?: { id: string } | null;
 };
 
@@ -60,7 +60,7 @@ function source(
     case "tenant_id":
       return { raw: i.tenantId, label: name };
     default:
-      // `attachment` — H2c: chưa có file ⇒ rỗng.
+      // `attachment` — xử lý riêng ở `fileInput` (P13); input không phải `file` đã bị chặn trước đó.
       return { raw: null, label: name };
   }
 }
@@ -89,12 +89,32 @@ function ordered(labels: readonly string[], args: readonly CommandArg[]): string
   return uniq.sort((a, b) => rank(a) - rank(b));
 }
 
+type Acc = { missing: string[]; invalid: string[]; files: BuildInputsFile[] };
+
+/**
+ * H2c P13 (R20) · lệch map: `file` map nguồn ≠ `attachment`, hoặc input khác `file` map `attachment` → `invalid` (bất kể
+ * giá trị). `file` ← `attachment`: có file → `files`, không có + bắt buộc → `missing`. Trả true khi đã xử lý input.
+ */
+function fileInput(i: BuildInputsInput, inp: WorkflowInput, acc: Acc): boolean {
+  const e = i.inputMap[inp.name];
+  const isFile = inp.type === "file";
+  if (!e || (!isFile && e.source !== "attachment")) return false;
+  if (isFile !== (e.source === "attachment")) {
+    acc.invalid.push(source(i, inp.name, e).label);
+    return true;
+  }
+  if (i.attachment) acc.files.push({ input: inp.name, attachmentId: i.attachment.id });
+  else if (inp.required) acc.missing.push(inp.name);
+  return true;
+}
+
 /** number = `Number()` hữu hạn; boolean ∈ {true,false,1,0,yes,no} (không phân biệt hoa); select ∉ options → invalid. */
 export function buildInputs(i: BuildInputsInput): BuildInputsResult {
   const inputs: Record<string, WorkflowInputValue> = {};
-  const missing: string[] = [];
-  const invalid: string[] = [];
+  const acc: Acc = { missing: [], invalid: [], files: [] };
+  const { missing, invalid } = acc;
   for (const inp of i.inputSchema) {
+    if (fileInput(i, inp, acc)) continue;
     const { raw, label } = source(i, inp.name, i.inputMap[inp.name]);
     if (raw === null || raw.trim() === "") {
       if (inp.required) missing.push(label);
@@ -104,12 +124,22 @@ export function buildInputs(i: BuildInputsInput): BuildInputsResult {
     if (v === undefined) invalid.push(label);
     else inputs[inp.name] = v;
   }
+  return result(i, inputs, acc);
+}
+
+/** Lỗi trước (thiếu trùng tên sai kiểu → chỉ `invalid`); ok → `query` + `files` (vắng khi rỗng). */
+function result(
+  i: BuildInputsInput,
+  inputs: Record<string, WorkflowInputValue>,
+  { missing, invalid, files }: Acc,
+): BuildInputsResult {
   const bad = new Set(invalid);
   const miss = missing.filter((m) => !bad.has(m));
   if (miss.length > 0 || invalid.length > 0)
     return { ok: false, missing: ordered(miss, i.args), invalid: ordered(invalid, i.args) };
   const q = inputs[QUERY_INPUT];
-  return { ok: true, inputs, query: q === undefined ? null : String(q) };
+  const query = q === undefined ? null : String(q);
+  return files.length > 0 ? { ok: true, inputs, query, files } : { ok: true, inputs, query };
 }
 
 /** `chat`/`agent` cần `query`; `workflow` không. */
