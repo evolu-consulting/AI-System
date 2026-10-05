@@ -83,10 +83,10 @@ Mốc con **đầu** của H3 (chia H3a/H3b/H3c — `docs/ROADMAP.md`, lý do: [
 | H3a-R20 | Admin M4 đọc `hub.usage_logs` không đổi (H3a không đổi cột `usage_logs`) | M4 |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead --> Phác (chốt ở PLAN): không endpoint mới; `@ai/contracts/hub` có thể thêm hằng `PROVIDER_STATE_VALUES` (đã có ở `@ai/db`) / kiểu `ProbeResult` nếu Python cần qua JSON Schema; `run-errors.ts` thêm bảng câu theo reason. Không sửa `@ai/contracts/chat`.
+**Không đổi** (plan P2, `spec-decisions` PL1): không endpoint mới; `@ai/contracts/chat`, `@ai/contracts/hub`, `hub-internal` giữ nguyên (`JOB_FAIL_REASONS` đã có `quota`, `provider_unavailable`). Chỉ đổi chữ `run.failed.message/hint` theo `(code, reason)` — bảng nguyên văn: `plan.md` §4.3. Kiểu nội bộ Runtime (`RateLimit` + 3 trường tuỳ chọn, `ProbeRequest`): `plan-runtime.md` §2.
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead --> Phác: migration `migrations-hub/0008_h3a_provider_state.sql` thêm cột R05 vào `hub.provider_state` (nullable, không xoá/đổi dữ liệu cũ); `schema/hub.ts` cập nhật. Không bảng mới.
+Migration `migrations-hub/0008_h3a_provider_state.sql`: `hub.provider_state` + `last_probe_at`, `last_ok_at`, `rate_limit_type` (CHECK regex), `utilization` (CHECK 0–1), `warn_at`, `warn_resets_at` — tất cả NULL, không xoá/đổi dữ liệu cũ, RLS/GRANT không đổi; `schema/hub.ts` cập nhật. Không bảng/index mới. SQL + thứ tự khoá: `plan-db.md`, `plan.md` §5.
 
 ## 5. UI
 Không có UI. Trạng thái provider xem bằng log + SQL (runbook `docs/guides/hub-dev.md` thêm mục); UI ở Agent Studio H4 (WRK-FR-22 "Studio đọc"). Không CR-impact Chat/Admin (câu lỗi đi qua `run.failed.message/hint` sẵn có).

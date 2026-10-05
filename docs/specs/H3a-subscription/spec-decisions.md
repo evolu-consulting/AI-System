@@ -106,4 +106,21 @@ Chạy 2026-10-06, WSL Ubuntu user `worker`, CLI **bundled** của `claude-agent
 (chưa gặp — ghi khi log `claude.rate_limit` có `rejected`/`allowed_warning` thật)
 
 ## Quyết định trong lúc làm
-- (trống)
+PLAN (backend-lead, 2026-10-06) — chính xác hoá spec theo Luật 2 (spec → BA → ADR → CONVENTIONS → code hiện có → đơn giản nhất). Chi tiết: `plan.md`, `plan-db.md`, `plan-runtime.md`.
+
+| # | Quyết định | Nguồn / lý do |
+|---|---|---|
+| PL1 | **Contract không đổi** (chat, hub, hub-internal): `JOB_FAIL_REASONS` đã có `quota`/`provider_unavailable`; probe không đi qua job/Redis/HTTP ⇒ không cần `ProbeResult` trong contract (kiểu nội bộ pydantic) | spec §3 ("có thể"); đơn giản nhất |
+| PL2 | Khởi động Runtime: `AGENT_RT_PROBE_S>0` ⇒ bỏ reset mù H1, lượt probe `startup` chạy nền (không chặn "sẵn sàng"); `=0` ⇒ giữ reset mù H1 | R13, R17; test khoá `orphan_int_test` restart (về `ok` ≤ 10 s) |
+| PL3 | `probe_due`: `cooldown` chưa tới `cooldown_until` ⇒ **không** probe, kể cả lúc khởi động (job opus có thể bị chặn theo cửa sổ riêng mà haiku không thấy — Spike S1 rủi ro 2); `error` ⇒ probe lúc khởi động + mỗi `AGENT_RT_PROBE_S` (R13 không liệt kê `error`) | R13; test khoá `test_wrk_restart_keeps_cooldown` |
+| PL4 | Probe `ok` khi provider đang khoẻ (`ok`/`busy`/chưa có hàng) = một UPSERT chỉ ghi `last_probe_at`/`last_ok_at`/quota — **không** reset `consecutive_errors`, không đổi `updated_at` (đếm lỗi H1 là lỗi **job**; probe haiku không chứng minh đường job). `consecutive_errors=0` (R15) chỉ áp khi probe đưa provider hỏng về `ok`. Quy ước: `updated_at` chỉ đổi khi `status`/`cooldown_until`/`consecutive_errors` đổi (mốc rào R15) | R15, K4; tránh đua với `orphan_int_test` 3 crash → `error` |
+| PL5 | Probe lỗi (timeout, CLI không chạy, parse sai): `consecutive_errors+1`; chỉ chuyển `error` (+ fail job `queued`) khi provider đang khoẻ và chạm ngưỡng 3 (như H1 "Kết thúc"); provider đã `logged_out`/`cooldown`/`error` ⇒ chỉ đếm, giữ trạng thái | R15 "như H1"; không ghi đè lý do hỏng cụ thể bằng `error` chung |
+| PL6 | Biên env: production đúng spec (`PROBE_S` 0 hoặc 60–3 600…); `APP_ENV` development/test cho phép tới 1 s để int test không chờ 60 s. `AGENT_RT_FAKE_PROBE_FILE` chỉ dev/test | R11 (biên), R18; như `fake-cli` chỉ dev (H1) |
+| PL7 | (a) exit 0 mà stdout không phải JSON có `loggedIn` boolean ⇒ **lỗi probe** (PL5), không suy ra `logged_out`; exit ≠ 0 ⇒ `logged_out` (Spike S1 #4) | R14; chữ CLI nội bộ có thể đổi khi nâng SDK |
+| PL8 | Probe chuyển provider sang hỏng (`cooldown`/`logged_out`/`error`) ⇒ fail job `queued` của provider như H1 "Kết thúc" trong một transaction ngắn `K_CLAIM → jobs → provider_state` **sau** khi probe xong. Spec §6 "probe không giữ `K_CLAIM`" hiểu là: không giữ trong lúc gọi provider; probe khoẻ 0 lần `K_CLAIM` | R06 ("job queued bị fail ngay khi provider hỏng"), R15 ("không giữ khoá claim lâu") |
+| PL9 | stderr của `auth status` và con probe ⇒ `DEVNULL` (không file log): có thể chứa email/org; kết quả chỉ qua exit code + sự kiện | HUB-NFR-04, R14 "không log stdout" |
+| PL10 | Smoke AC-12 "`CLAUDE_CONFIG_DIR` trỏ thư mục trống" làm bằng **`HOME` tạm có symlink** `.claude`/`.claude.json` → thư mục thật (đổi symlink sang thư mục rỗng rồi trả lại): env con là danh sách trắng (`sandbox/env.py`, không có `CLAUDE_CONFIG_DIR`) và không được đụng/đổi tên file credential thật | WRK-BR-02; tránh mất dữ liệu đăng nhập |
+| PL11 | `logged_out` mà (a) báo `loggedIn:true` ⇒ chạy (b) để xác nhận rồi mới về `ok` (token có thể bị thu hồi phía server — Spike S1 rủi ro 1). "Vòng `logged_out` chỉ dùng (a)" = khi (a) còn `false` | R14 |
+| PL12 | R06 khe hở: job `queued` quá `max_wait_s` ⇒ Hub đọc `provider_state`: đang chặn ⇒ reason theo `blockedReason` (`cooldown` ⇒ `quota`); không chặn ⇒ `queueTimeoutReason` H1 (chữ ký không đổi — test khoá H1 R10) | R06 ("PLAN xác nhận reason `quota`") |
+| PL13 | Admin test-run (`internal/test-run.service.ts`) giữ `runErrorText(code)` (không theo reason) — R08 nói câu lỗi Run của user | R08 phạm vi; U3 |
+| PL14 | R03 "một lần mỗi cửa sổ" giữa nhiều Runtime: cột `warn_resets_at` + `NOTE_WARNING … RETURNING first`; vắng `resets_at` ⇒ cửa sổ = đầu giờ UTC (tối đa 1 log/giờ). Job thành công luôn ghi `last_ok_at` (`PROVIDER_OK` thành UPSERT) cho R12 | R03, R12 |
