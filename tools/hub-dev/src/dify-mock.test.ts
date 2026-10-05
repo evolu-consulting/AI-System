@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import { scenarioOf, startDifyMock } from "./dify-mock";
+import { scenarioOf, startDifyMock, uploadDirectiveOf } from "./dify-mock";
 
 const m = startDifyMock({ allowBlocking: true });
 afterAll(() => m.close());
@@ -86,5 +86,90 @@ describe("dify-mock kịch bản", () => {
   test("parameters", async () => {
     const r = await fetch(`${m.url}/v1/parameters`, { headers: { authorization: "Bearer mk-ok" } });
     expect(r.status).toBe(200);
+  });
+});
+
+// ---------- H2c MK-U: /v1/files/upload ----------
+type UploadBody = {
+  user: string | null;
+  file: { name: string; type: string; size: number; sha256: string } | null;
+};
+const up = (name: string | null, key = "mk-ok", type = "application/pdf") => {
+  const fd = new FormData();
+  fd.set("user", "acme:u1");
+  if (name !== null)
+    fd.set("file", new File([new Uint8Array([37, 80, 68, 70, 45, 49])], name, { type }));
+  return fetch(`${m.url}/v1/files/upload`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${key}` },
+    body: fd,
+  });
+};
+
+describe("dify-mock /v1/files/upload (H2c MK-U)", () => {
+  test("201 id upl-<n> + ghi multipart (user, tên, type, size, sha256)", async () => {
+    const r = await up("hoadon.pdf");
+    expect(r.status).toBe(201);
+    const b = (await r.json()) as Record<string, unknown>;
+    expect(b).toMatchObject({ id: "upl-1", name: "hoadon.pdf", size: 6, extension: "pdf" });
+    expect(b.mime_type).toBe("application/pdf");
+    expect(((await (await up("b.png", "mk-ok", "image/png")).json()) as { id: string }).id).toBe(
+      "upl-2",
+    );
+    const c = m.calls()[0];
+    expect(c?.path).toBe("/v1/files/upload");
+    expect(c?.auth).toBe("Bearer mk-ok");
+    const body = c?.body as UploadBody;
+    expect(body.user).toBe("acme:u1");
+    expect(body.file).toEqual({
+      name: "hoadon.pdf",
+      type: "application/pdf",
+      size: 6,
+      sha256: new Bun.CryptoHasher("sha256")
+        .update(new Uint8Array([37, 80, 68, 70, 45, 49]))
+        .digest("hex"),
+    });
+  });
+
+  test("chỉ thị theo tên file: 413/415/400-too-large/500/noid/slow", async () => {
+    expect(uploadDirectiveOf("upload-slow-80-a.pdf")).toEqual({ kind: "slow", ms: 80 });
+    const st = async (n: string) => {
+      const r = await up(n);
+      return { status: r.status, body: (await r.json()) as Record<string, unknown> };
+    };
+    expect((await st("upload-413-a.pdf")).body.code).toBe("file_too_large");
+    expect((await st("upload-413-a.pdf")).status).toBe(413);
+    const u415 = await st("upload-415.pdf");
+    expect([u415.status, u415.body.code]).toEqual([415, "unsupported_file_type"]);
+    const b400 = await st("upload-400-too-large.pdf");
+    expect([b400.status, b400.body.code]).toEqual([400, "file_too_large"]);
+    expect((await st("upload-500.pdf")).status).toBe(500);
+    const noid = await st("upload-noid.pdf");
+    expect(noid.status).toBe(201);
+    expect("id" in noid.body).toBe(false);
+    const t0 = Date.now();
+    expect((await st("upload-slow-120-x.pdf")).status).toBe(201);
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(100);
+  });
+});
+
+describe("dify-mock /v1/files/upload lỗi + tương thích (H2c MK-U)", () => {
+  test("key mk-401/404/400 → status như workflow; thiếu file → 400 no_file_uploaded; mọi lần đều ghi", async () => {
+    expect((await up("a.pdf", "mk-401")).status).toBe(401);
+    expect((await up("a.pdf", "mk-404")).status).toBe(404);
+    expect((await up("a.pdf", "mk-400")).status).toBe(400);
+    const r = await up(null);
+    expect(r.status).toBe(400);
+    expect(((await r.json()) as { code: string }).code).toBe("no_file_uploaded");
+    expect(m.calls().filter((c) => c.path === "/v1/files/upload")).toHaveLength(4);
+  });
+
+  test("JSON workflow cũ không đổi sau upload; reset đặt lại bộ đếm upl", async () => {
+    await up("a.pdf");
+    const ev = await events(await post("/v1/workflows/run", "mk-ok", stream));
+    expect(ev.at(-1)).toBe("workflow_finished");
+    expect((m.calls().at(-1)?.body as { inputs?: unknown } | undefined)?.inputs).toEqual({ a: 1 });
+    m.reset();
+    expect(((await (await up("c.pdf")).json()) as { id: string }).id).toBe("upl-1");
   });
 });

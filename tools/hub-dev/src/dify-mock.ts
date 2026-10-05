@@ -2,6 +2,9 @@
 // Ghi lại request nhận được (`calls()` / `GET /__mock/requests`) để test assert `user`, `inputs`, Bearer.
 // Khoá kịch bản: mk-ok · mk-outputs · mk-empty · mk-failed · mk-error-event · mk-401/404/400 · mk-503x<n> ·
 // mk-slow-<ms> · mk-agent · LEAK_KEY_* (= ok). Chạy riêng: `bun run hub:dify-mock` (PORT, mặc định 5001).
+// H2c (MK-U): `POST /v1/files/upload` multipart — xử lý trước `record()` (đọc JSON); ghi `body: {user, file: {name, type,
+// size, sha256}}`; 201 `{id: "upl-<n>", …}`. Chỉ thị theo tên file: upload-413* · upload-415* · upload-400-too-large* ·
+// upload-500* · upload-noid* · upload-slow-<ms>*; theo key: mk-401/404/400 (như workflow); thiếu `file` → 400.
 
 export type MockCall = { path: string; auth: string; body: unknown; at: number };
 export type DifyMock = {
@@ -160,6 +163,7 @@ type State = {
   flaky: Map<string, number>;
   stopped: Set<string>;
   seq: number;
+  uploads: number;
 };
 
 async function record(st: State, req: Request, path: string, auth: string): Promise<Json> {
@@ -190,10 +194,68 @@ function runApp(st: State, body: Json, chat: boolean, key: string) {
   return st.opts.allowBlocking ? json(200, blockingBody(s, c)) : errBody(400, "invalid_param");
 }
 
+// ---------- /v1/files/upload (H2c, MK-U) ----------
+type UploadDirective =
+  | { kind: "http"; status: number; code: string }
+  | { kind: "noid" }
+  | { kind: "slow"; ms: number }
+  | { kind: "ok" };
+const UPLOAD_HTTP: [string, number, string][] = [
+  ["upload-400-too-large", 400, "file_too_large"],
+  ["upload-413", 413, "file_too_large"],
+  ["upload-415", 415, "unsupported_file_type"],
+  ["upload-500", 500, "internal_server_error"],
+];
+
+/** Chỉ thị upload theo tên file (Hub gửi `safe_name`). */
+export function uploadDirectiveOf(name: string): UploadDirective {
+  for (const [prefix, status, code] of UPLOAD_HTTP)
+    if (name.startsWith(prefix)) return { kind: "http", status, code };
+  if (name.startsWith("upload-noid")) return { kind: "noid" };
+  const slow = /^upload-slow-(\d+)/.exec(name);
+  return slow ? { kind: "slow", ms: Number(slow[1]) } : { kind: "ok" };
+}
+
+/** Thân multipart; hỏng/không phải multipart → null. */
+function readForm(req: Request) {
+  return req.formData().catch(() => null);
+}
+
+async function upload(st: State, req: Request, path: string, auth: string): Promise<Response> {
+  const form = await readForm(req);
+  const part = form?.get("file");
+  const file = part instanceof Blob ? part : null;
+  const bytes = file ? new Uint8Array(await file.arrayBuffer()) : null;
+  const name = file && "name" in file ? String(file.name) : "";
+  const info =
+    file && bytes ? { name, type: file.type, size: bytes.length, sha256: hex(bytes) } : null;
+  const user = form?.get("user");
+  st.log.push({
+    path,
+    auth,
+    body: { user: typeof user === "string" ? user : null, file: info },
+    at: Date.now(),
+  });
+  const http = HTTP_KEYS[auth.replace(/^Bearer\s+/i, "")];
+  if (http) return errBody(http[0], http[1]);
+  if (!info) return errBody(400, "no_file_uploaded");
+  const d = uploadDirectiveOf(name);
+  if (d.kind === "http") return errBody(d.status, d.code);
+  if (d.kind === "slow") await wait(d.ms);
+  st.uploads += 1;
+  const ext = /\.([^.]+)$/.exec(name)?.[1] ?? "";
+  const meta = { name, size: info.size, extension: ext, mime_type: info.type, created_by: "mock" };
+  const created_at = Math.floor(Date.now() / 1000);
+  if (d.kind === "noid") return json(201, { ...meta, created_at });
+  return json(201, { id: `upl-${st.uploads}`, ...meta, created_at });
+}
+const hex = (b: Uint8Array) => new Bun.CryptoHasher("sha256").update(b).digest("hex");
+
 async function route(st: State, req: Request): Promise<Response> {
   const path = new URL(req.url).pathname;
   if (path === "/__mock/requests") return json(200, { requests: st.log });
   const auth = req.headers.get("authorization") ?? "";
+  if (req.method === "POST" && path === "/v1/files/upload") return upload(st, req, path, auth);
   const body = await record(st, req, path, auth);
   if (req.method === "GET" && path === "/v1/parameters")
     return json(200, { user_input_form: [], opening_statement: "" });
@@ -210,7 +272,7 @@ async function route(st: State, req: Request): Promise<Response> {
 }
 
 export function startDifyMock(opts: DifyMockOptions = {}): DifyMock {
-  const st: State = { opts, log: [], flaky: new Map(), stopped: new Set(), seq: 0 };
+  const st: State = { opts, log: [], flaky: new Map(), stopped: new Set(), seq: 0, uploads: 0 };
   const server = Bun.serve({
     port: opts.port ?? 0,
     fetch: (req) => route(st, req),
@@ -224,6 +286,7 @@ export function startDifyMock(opts: DifyMockOptions = {}): DifyMock {
       st.flaky.clear();
       st.stopped.clear();
       st.seq = 0;
+      st.uploads = 0;
     },
     close: async () => {
       await server.stop(true);

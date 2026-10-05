@@ -72,3 +72,29 @@ Xanh khác §8: A40, A48 (C1 có sẵn — đúng); A141, A142, A05 đỏ vì g�
 8. A16 dùng 4 MiB (kiểm giữa stream ở 2 MiB) thay 20 MiB; A07 vế "413 trước 409" dùng hub phụ `tenantMaxBytes: 1`; A15 cũng trên hub phụ đó (chunked → 409 chốt).
 9. A129 Windows: file chỉ đọc (`chmod 0444` → `unlink` EPERM) thay `chmod` thư mục; A125 `now` = giờ thật (mtime đặt bằng `utimes`).
 10. `/sai-map` map `note` (text) ← `attachment` (workflow `hoadon-file` không có `q`) — vẫn là "input text ← attachment ⇒ invalid" (R20).
+
+### QW-A2 + MK-U · int Dify/MCP/nội bộ `tests/acceptance/H2c/*.int.test.ts` (2026-10-05, sau QW-A1 `dc05dda`)
+Cùng lệnh QW-A1, DB riêng `ai_system_h2c_qwa2_test` + `ai_system_h2c_qwa2_hub_test` (**đã drop**). **48 ca / 5 file + helper `_h2c2.ts` — 45 đỏ đúng lý do, 3 xanh.** Mọi đỏ là `expect` (0 TypeError/fixture/mạng; fixture SQL, file trên đĩa, job SQL, chuỗi `ScriptRuntime` chạy xanh trước `expect` đỏ — A79 chạy thử bỏ vế file: hết chuỗi `run.finished`). `tsc -p tsconfig.tests.json` 0 lỗi · biome sạch · `check:size`/`check:fn` OK · `trace --check` OK.
+
+| File | ID | Đỏ / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `agent-job` | A70–A79 | 8/10 | `attachment_ids` chưa gắn/chốt (B4) ⇒ prompt Orchestrator không `<attachments>`, payload agent không `attachments`/khối file (B6); A74 `system_prompt` không `OUT_HINT` (vế `allowed_tools [Read, Grep, Write]` đã xanh — C2 + catalog); A78 `mcp.tools` thiếu `hoadon-file` (`hasFiles` — B8) | A71, A76 (vắng file ⇒ y hệt H2b) |
+| `internal-download` | A80–A89 | 10/10 | `GET /internal/jobs/:job/attachments/:att` 404 `NOT_FOUND` (chưa mount) thay 200/401/404 đúng thân; đối chứng 200 đỏ trước | — |
+| `outputs` | A90–A99 | 9/10 | `POST /internal/jobs/:job/outputs` 404; A96–A99 output không gắn vào tin trả lời (R26 — `SseWriter.finish`) | A95 (contract C2 đã có `job.result.outputs`; Hub chấp nhận) |
+| `command-file` | A100–A109 | 11/11 | `attachment_ids` bị bỏ qua ⇒ `/hoadon*` + file → 422 `CMD_MISSING_ARG{missing:[file]}` thay 200/upload; A106 `/sai-map` `invalid` rỗng, `/file-arg` chạy (P13 chưa có); A107 file không gắn vào tin `/dich` | — |
+| `mcp-file` | A110–A116 | 7/7 | `tools/list` job có file thiếu `hoadon-file` (H2a bỏ workflow `file` bắt buộc); A114 job không file vẫn có `anh-tuy-chon` (K10 chưa đổi); `tools/call hoadon-file` → `Unknown tool`; A115 `anh-tuy-chon {img}` → invalid thay xác nhận (vế `create-trello-card` xác nhận đã xanh) | — |
+
+**MK-U** (`tools/hub-dev/src/dify-mock.ts`, khoá — `CHANGED` ở Q2): `POST /v1/files/upload` xử lý **trước** `record()` bằng `req.formData()`; ghi `MockCall{path, auth, body:{user, file:{name, type, size, sha256}}}`; 201 `{id:"upl-<n>", name, size, extension, mime_type, created_by:"mock", created_at}` (`n` đếm riêng, `reset()` về 0); chỉ thị theo **tiền tố tên file**: `upload-413*` → 413 `file_too_large`, `upload-415*` → 415 `unsupported_file_type`, `upload-400-too-large*` → 400 `{code:"file_too_large"}`, `upload-500*` → 500, `upload-noid*` → 201 không `id`, `upload-slow-<ms>*` → chờ; key `mk-401/404/400` → như workflow (ghi lại trước); thiếu phần `file`/không multipart → 400 `no_file_uploaded`. JSON cũ không đổi. `dify-mock.test.ts` (không khoá) +4 ca upload: `bun test tools/hub-dev` **11 pass**. Hồi quy sau sửa mock (DB `qwa2`): H2a int dùng MK `async` 13 · `command-run` 10 · `commands` 12 · `confirm` 11 · `db` 7 · `dify-agent` 7 · `dify-errors` 7 · `mcp` 9 · `secret` 8 · `test-run` 6 = **90 pass / 0 fail**; `bun run test:h2a:stack` **3 pass / 0 fail**. `dify_mock.py` không sửa.
+
+**Helper `_h2c2.ts`** (`_h2c.ts` 572 dòng gần trần): `storedFile` (hàng `upload` chưa gắn + nội dung đĩa) · `fileJob` (`insertSqlJob` + file gắn tin user + `payload.attachments` + `runs.attachment_ids`) · `attachToJob` · `internalGet`/`postOutput` (`keepalive: false`) · `reclaim` (token + `started_at` mới) · `agentWithOutputs` (`job.result.outputs`) · `requeue` · `outputRow` (`created_at = started_at + 1 s`) · `endSqlRuns` · `uploadsOf`/`difyUser`/`setWorkflowKey` · câu chữ `OUT_HINT`, `orchBlock`/`agentBlock` (dựng lại từ plan-rules, không gọi stub), `FILE_REJECTED_HINT`, `TOOL_FILE`, `UNAUTHORIZED`.
+
+**Lệch plan / cần backend-lead:**
+1. A79 (L5) / A97: H2b-R19 — delegate đầu `done` + stream ⇒ trả thẳng ⇒ bước giữa dùng `partial` (A79: `hoadon` → `partial "sai"`) để Orchestrator đi tiếp; `max_steps` fixture H1 = 5 < số bước ⇒ đặt 10 trong `beforeAll` (trước khi dựng hub).
+2. A74 vế "sát `SYSTEM_PROMPT_MAX`" dùng agent `writer` (H2b; `system_prompt` 19 990 ký tự + `allowed_tools [Read, Grep, Write]` đặt trước khi dựng hub) thay `hoadon` — tránh đổi cấu hình giữa file (TC-6).
+3. A115 "workflow có file + side_effect" = `anh-tuy-chon` (`workflow_flags` + gắn agent `hoadon`, chỉ DB của `mcp-file`); `hoadon-file` không `side_effect`.
+4. A96–A99: output chèn SQL (`outputRow`) + `job.result.outputs` XADD tay — tách R26 khỏi endpoint `/outputs` (A90–A94). Nếu `bindOutputs` chỉ dựa `outputs` của sự kiện hay chỉ dựa `job_id`/`started_at`, test vẫn đúng (cả hai được cấp). A99 thêm đối chứng run `finished` → gắn.
+5. A77 resume: file tin 1 gắn bằng SQL (tách khỏi R11); A81 "token job khác cùng run" bằng `jobInRun` (H2a).
+6. A116 `{file: 123}`: plan-errors §3 (NOT_ATTACHED "không phải chuỗi") vs validate schema H2a (`Invalid arguments…`) — test nhận một trong hai câu; thiếu `file` bắt buộc → `Invalid arguments…` nguyên văn.
+7. A103 `upload-slow-65000`: `/hoadon` `timeout_s = 30` < hạn upload 60 s ⇒ assert `TIMEOUT` hoặc `UPSTREAM_ERROR` trong ≤ 70 s (ca riêng, timeout 100 s).
+8. A100/A108 `upload_file_id = "upl-1"` (sau `dify.mock.reset()`, MK đếm theo instance); đếm MK theo tên file của ca (TC-2).
+9. A85/A88 không ép mức log khác `error attachment-content-missing`; A88 kiểm vắng token/`authorization` trong mọi dòng log của các ca 401/404.
