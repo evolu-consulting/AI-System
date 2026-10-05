@@ -8,8 +8,8 @@ không đụng provider. Review H1 #2c/#5/#10: lỗi phía cha (dòng sự kiệ
 và job host chết vì tín hiệu không do cha gửi (vd systemd dừng cả cgroup) → **không** đếm lỗi
 provider.
 H2b F4 (plan-runtime §4, R27): `is_error` chưa có `RateLimit` → phân loại chữ result
-(`classify_is_error`): mẫu rate/auth như H1 (`cooldown`/`logged_out`), không mẫu ∧ 0 output token →
-`UPSTREAM_ERROR refused`, còn lại `PROVIDER_ERROR` H1.
+(`classify_is_error`): mẫu rate/auth như H1 (`cooldown`/`logged_out`), `Final.stop_reason ==
+"refusal"` ∧ 0 output token → `UPSTREAM_ERROR refused` (TC-8), còn lại `PROVIDER_ERROR` H1.
 """
 
 from __future__ import annotations
@@ -159,7 +159,8 @@ def is_error_text(f: Final) -> str:
 def is_error_kind(seen: Seen) -> IsErrorKind | None:
     """H2b F4 (plan-runtime §4): `Final.is_error` → `rate`/`auth`/`refused`/None."""
     assert seen.final is not None
-    return classify_is_error(is_error_text(seen.final), seen.total().output_tokens)
+    f = seen.final
+    return classify_is_error(is_error_text(f), seen.total().output_tokens, f.stop_reason)
 
 
 def is_error_verdict(kind: IsErrorKind | None) -> Verdict:

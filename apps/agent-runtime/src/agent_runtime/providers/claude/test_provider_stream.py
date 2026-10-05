@@ -296,3 +296,31 @@ def test_wrk_fr_17_delta_missing_keys_keep_start_values() -> None:
     got = ps.handle({"type": "message_delta", "usage": {"output_tokens": 702}}, MODEL)
     tot = [(u.input, u.output, u.cache_read, u.cache_write) for u in got if isinstance(u, UsageEv)]
     assert tot == [(2, 702, 30, 1049)]
+
+
+def refusal_delta() -> StreamEvent:
+    usage = {"output_tokens": 0}
+    return se({"type": "message_delta", "delta": {"stop_reason": "refusal"}, "usage": usage})
+
+
+async def test_wrk_fr_15_tc8_stop_reason_to_final(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """TC-8 F4: `Final.stop_reason` = của Result; Result không có ⇒ `message_delta.delta
+    .stop_reason` cuối ⇒ `AssistantMessage.stop_reason`; không đâu có ⇒ None."""
+    err = {"is_error": True, "result": "x", "usage": None}
+    script: list[Message] = [msg_start("m1", 0), refusal_delta(), result(**err)]
+    evs = await run(monkeypatch, job_of(tmp_path / "a"), script)
+    assert evs[-1]["type"] == "final" and evs[-1]["stop_reason"] == "refusal"
+    script = [msg_start("m1", 0), refusal_delta(), result(stop_reason="end_turn", **err)]
+    evs = await run(monkeypatch, job_of(tmp_path / "b"), script)
+    assert evs[-1]["stop_reason"] == "end_turn"
+    am = AssistantMessage([TextBlock("x")], MODEL, stop_reason="refusal")
+    evs = await run(monkeypatch, job_of(tmp_path / "c"), [am, result(**err)])
+    assert evs[-1]["stop_reason"] == "refusal"
+    evs = await run(monkeypatch, job_of(tmp_path / "d"), [msg_start("m1", 0), result(**err)])
+    assert evs[-1]["stop_reason"] is None
+    ps = PartialStream(None)
+    ps.handle(refusal_delta().event, MODEL)
+    ps.handle({"type": "message_delta", "delta": {"stop_reason": None}}, MODEL)
+    assert ps.stop_reason == "refusal"

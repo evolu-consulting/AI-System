@@ -207,13 +207,15 @@ def agent_structured(msg: ResultMessage) -> dict[str, Any] | None:
     return {k: v for k, v in obj.items() if v is not None}
 
 
-def final_event(msg: ResultMessage, kind: str) -> Final:
+def final_event(msg: ResultMessage, kind: str, stop_reason: str | None = None) -> Final:
+    """`stop_reason`: của Result, không có ⇒ của stream/AssistantMessage (TC-8 F4)."""
     errors = [e[:500] for e in (msg.errors or [])][:10]
     common: dict[str, Any] = {
         "is_error": msg.is_error,
         "subtype": msg.subtype,
         "api_error_status": msg.api_error_status,
         "errors": errors,
+        "stop_reason": msg.stop_reason or stop_reason,
     }
     if kind == "agent_result":
         structured = None if msg.is_error else agent_structured(msg)

@@ -7,8 +7,9 @@ H2a (PY-06, `plan-runtime` §6): `#fake:tool=<key>` với key ∈ `payload.mcp.t
 `CONFIRMATION_REQUIRED` → `Confirm` (cha ép `need_input`). Key ngoài danh sách → nghĩa H1.
 `#fake:mcp-list` → `tools/list`. Orchestrator: câu đồng ý → delegate lại theo tin trước (S01).
 H2b (PY-04, `plan-runtime` §6): `#fake:stream*`/`answer-len` (`stream.py`), `#fake:turns=<n>` (n
-`UsageEv` cộng dồn trước `sleep`), `#fake:is-error=<rate|auth|refused>` (`Final.is_error` chữ cố
-định, không `RateLimit`, usage `{in:10, out:0}` trừ khi có `#fake:usage`); agent nhận câu đồng ý
+`UsageEv` cộng dồn trước `sleep`), `#fake:is-error=<rate|auth|refused|error>` (`Final.is_error` chữ
+cố định, không `RateLimit`, usage `{in:10, out:0}` trừ khi có `#fake:usage`; chỉ `refused` (và giá
+trị lạ) kèm `stop_reason="refusal"` — TC-8); agent nhận câu đồng ý
 không chỉ thị → chạy lại tin user trước trong `payload.history`.
 """
 
@@ -67,6 +68,7 @@ IS_ERROR_TEXT = {  # test-plan L2: mẫu rate / auth (`patterns.py`) / không m�
     "rate": "You've hit your usage limit",
     "auth": "Not logged in · Please run /login",
     "refused": "I can't help with that.",
+    "error": "API Error: 500 Internal server error",  # TC-8: lỗi provider, không tín hiệu từ chối
 }
 
 
@@ -265,8 +267,10 @@ async def _early_end(job: ProviderJob, found: dict[str, str], kind: str, emit: E
     if "is-error" in found:  # F4 (L2): không `RateLimit` — cha phân loại theo chữ result
         if "usage" not in found:
             await emit(UsageEv.model_validate({"in": 10, "out": 0, "model": "fake"}))
-        text = IS_ERROR_TEXT.get(found["is-error"], IS_ERROR_TEXT["refused"])
-        await emit(Final.model_validate({"kind": kind, "is_error": True, "text": text}))
+        key = found["is-error"] if found["is-error"] in IS_ERROR_TEXT else "refused"
+        stop = "refusal" if key == "refused" else None
+        final = {"kind": kind, "is_error": True, "text": IS_ERROR_TEXT[key], "stop_reason": stop}
+        await emit(Final.model_validate(final))
         return True
     return await _badjson(job, found, emit)
 

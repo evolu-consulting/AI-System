@@ -75,6 +75,7 @@ class Final(_Ev):
     subtype: str | None = None
     api_error_status: int | None = None
     errors: list[str] = Field(default_factory=list[str])
+    stop_reason: str | None = None  # TC-8 F4: Anthropic `stop_reason` (`"refusal"` = từ chối)
 
 
 class Fatal(_Ev):

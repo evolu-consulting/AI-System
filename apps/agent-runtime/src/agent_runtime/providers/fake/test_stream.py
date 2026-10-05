@@ -117,11 +117,12 @@ async def test_wrk_fr_17_turns_cumulative_usage(tmp_path: Path) -> None:
     assert turns({}) == 1 and turns({"turns": "99"}) == 10 and turns({"turns": "x"}) == 1
 
 
-@pytest.mark.parametrize("kind", ["rate", "auth", "refused"])
+@pytest.mark.parametrize("kind", ["rate", "auth", "refused", "error"])
 async def test_wrk_fr_15_is_error(tmp_path: Path, kind: str) -> None:
     evs = await go(tmp_path, f"#fake:is-error={kind} a", None)
     f = last_final(evs)
     assert f.is_error and f.text == IS_ERROR_TEXT[kind]
+    assert f.stop_reason == ("refusal" if kind == "refused" else None)  # TC-8
     assert not any(isinstance(e, RateLimit) for e in evs)
     assert [(u.input, u.output) for u in evs if isinstance(u, UsageEv)] == [(10, 0)]
     evs = await go(tmp_path / "u", f"#fake:is-error={kind} #fake:usage=10,5 a", None)

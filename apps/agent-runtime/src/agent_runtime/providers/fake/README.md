@@ -9,6 +9,6 @@
 | `sessions.py` | session giả (`remember`/`recall`/`lost-session`) trong `<WORK_DIR>/.fake-sessions/` |
 | `state.py` | bộ đếm `#fake:badjson=<n>` theo `run_id` (file, ghi nguyên tử) |
 
-Mock MCP cho test: `tests/support/mcp_mock.py` (khoá). H2b (PY-04): `#fake:turns=<n>` (với `#fake:usage`: n `UsageEv` cộng dồn trước `sleep`), `#fake:is-error=<rate|auth|refused>` (`Final.is_error` chữ cố định, không `RateLimit`, usage `{in:10, out:0}` trừ khi có `#fake:usage`). "Đồng ý": Orchestrator chỉ delegate lại khi `<steps>` rỗng (TD #47 đã đóng), tin trước `@<key> …` (đúng một tag) ⇒ delegate `<key>`; agent nhận câu đồng ý không chỉ thị ⇒ chạy lại tin user trước trong `payload.history` (bỏ tag đầu).
+Mock MCP cho test: `tests/support/mcp_mock.py` (khoá). H2b (PY-04): `#fake:turns=<n>` (với `#fake:usage`: n `UsageEv` cộng dồn trước `sleep`), `#fake:is-error=<rate|auth|refused|error>` (`Final.is_error` chữ cố định, không `RateLimit`, usage `{in:10, out:0}` trừ khi có `#fake:usage`; chỉ `refused`/giá trị lạ kèm `stop_reason="refusal"`, `error` = lỗi provider không tín hiệu — TC-8). "Đồng ý": Orchestrator chỉ delegate lại khi `<steps>` rỗng (TD #47 đã đóng), tin trước `@<key> …` (đúng một tag) ⇒ delegate `<key>`; agent nhận câu đồng ý không chỉ thị ⇒ chạy lại tin user trước trong `payload.history` (bỏ tag đầu).
 
 Chỉ nạp khi `APP_ENV` ∈ {development, test}; production + `fake-cli` → exit 2.

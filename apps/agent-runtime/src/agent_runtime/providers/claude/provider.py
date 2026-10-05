@@ -57,6 +57,7 @@ class _Turn:
     mcp_ids: set[str] = field(default_factory=set[str])  # id `ToolUseBlock` `mcp__hub__*` (§5)
     final_sent: bool = False
     partial: PartialStream = field(init=False)  # H2b §3.4, §5: `StreamEvent` → `Delta`/F5
+    stop_reason: str | None = None  # `AssistantMessage.stop_reason` cuối (TC-8 F4, dự phòng)
 
     def __post_init__(self) -> None:
         self.partial = PartialStream(stream_mode(self.job))
@@ -77,7 +78,8 @@ class _Turn:
         usage = usage_event(msg, self.model)
         if usage is not None:
             await self.emit(usage)
-        await self.emit(final_event(msg, self.job.payload.output))
+        stop = self.partial.stop_reason or self.stop_reason
+        await self.emit(final_event(msg, self.job.payload.output, stop))
         self.final_sent = True
 
     async def system(self, msg: SystemMessage) -> None:
@@ -99,6 +101,7 @@ class _Turn:
             await self.system(msg)
         elif isinstance(msg, AssistantMessage):
             self.mcp_ids.update(mcp_tool_ids(msg))
+            self.stop_reason = msg.stop_reason or self.stop_reason
             for ev in tool_events(msg):
                 await self.emit(ev)
         elif isinstance(msg, UserMessage):
