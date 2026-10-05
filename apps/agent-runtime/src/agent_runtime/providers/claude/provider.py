@@ -1,8 +1,10 @@
 """WRK-FR-10 · WRK-FR-14 · WRK-FR-15 · Provider `claude-sub` (plan-runtime §3): một lượt
 `ClaudeSDKClient` (hook `PreToolUse` cần client — dự phòng §13) trong job host.
 
-Thứ tự phát: `session` (init) → `tool_use`/`progress` → `rate_limit` (nếu có) → `session` (Result,
-nếu khác) → `usage` → `final`. Lỗi SDK → `rate_limit?` + `fatal` (mapping.py).
+Thứ tự phát: `session` (init) → `tool_use`/`progress`/`usage` cộng dồn/`delta` (H2b, `StreamEvent`
+— `partial.py`) → `rate_limit` (nếu có) → `session` (Result, nếu khác) → `usage` → `final`.
+`SystemMessage` khác `init` (`status`, `thinking_tokens` khi bật partial — PY-S2 #8) bỏ qua.
+Lỗi SDK → `rate_limit?` + `fatal` (mapping.py).
 Đã xác minh ở spike PY-02: init/Result, RateLimitEvent, chữ lỗi, resume. Prompt gửi CLI qua
 `neutralize_mentions` (S1 — CLI không tự đọc `@đường/dẫn`); model của `usage` = model init (S9).
 """
@@ -18,6 +20,7 @@ from claude_agent_sdk import (
     Message,
     RateLimitEvent,
     ResultMessage,
+    StreamEvent,
     SystemMessage,
     UserMessage,
 )
@@ -38,6 +41,7 @@ from agent_runtime.providers.claude.mapping import (
     usage_event,
 )
 from agent_runtime.providers.claude.options import build_options
+from agent_runtime.providers.claude.partial import PartialStream, stream_mode
 from agent_runtime.providers.context import neutralize_mentions
 
 KEY = "claude-sub"
@@ -52,6 +56,10 @@ class _Turn:
     rate_limited: set[str] = field(default_factory=set[str])
     mcp_ids: set[str] = field(default_factory=set[str])  # id `ToolUseBlock` `mcp__hub__*` (§5)
     final_sent: bool = False
+    partial: PartialStream = field(init=False)  # H2b §3.4, §5: `StreamEvent` → `Delta`/F5
+
+    def __post_init__(self) -> None:
+        self.partial = PartialStream(stream_mode(self.job))
 
     async def session(self, sid: str | None) -> None:
         if sid and sid != self.session_id:
@@ -79,8 +87,15 @@ class _Turn:
                 get_logger().warning("job.mcp_unavailable", status=status)
         await self.session(init_session_id(msg))
 
+    async def stream(self, msg: StreamEvent) -> None:
+        if msg.parent_tool_use_id is None:  # spike #7: bỏ sự kiện của subagent
+            for ev in self.partial.handle(msg.event, self.model):
+                await self.emit(ev)
+
     async def handle(self, msg: Message) -> None:
-        if isinstance(msg, SystemMessage):
+        if isinstance(msg, StreamEvent):
+            await self.stream(msg)
+        elif isinstance(msg, SystemMessage):
             await self.system(msg)
         elif isinstance(msg, AssistantMessage):
             self.mcp_ids.update(mcp_tool_ids(msg))

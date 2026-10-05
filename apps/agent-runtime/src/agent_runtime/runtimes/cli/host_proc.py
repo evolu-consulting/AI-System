@@ -270,14 +270,17 @@ class HostProcess:
         elif isinstance(ev, Final):
             self.run.seen.final = ev
         elif isinstance(ev, RateLimit):
-            if ev.status in BROKEN_SIGNALS:
-                self.run.seen.rate_limit = ev
-            else:
-                get_logger().info("provider.rate_limit_signal", status=ev.status[:40])
-        else:  # Fatal
+            self._rate_limit(ev)
+        elif isinstance(ev, Fatal):  # `Delta`: PY-03 (`DeltaPump`), PY-02 bỏ qua
             self.run.seen.fatal, self.run.seen.parent_fault = ev, ev is INVALID_EVENT
             return True
         return False
+
+    def _rate_limit(self, ev: RateLimit) -> None:
+        if ev.status in BROKEN_SIGNALS:
+            self.run.seen.rate_limit = ev
+        else:
+            get_logger().info("provider.rate_limit_signal", status=ev.status[:40])
 
     async def _kill(self) -> None:
         proc = self.proc

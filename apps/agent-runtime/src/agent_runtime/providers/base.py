@@ -54,6 +54,15 @@ class UsageEv(_Ev):
     model: str | None = None
 
 
+class Delta(_Ev):
+    """H2b WRK-FR-03 · R19 · mảnh chữ đã giải mã của `text` trong JSON kết quả (`StreamScanner`),
+    chỉ khi `payload.stream` ∧ không phải lần thử lại; cha gom + XADD `job.delta` (PY-03)."""
+
+    type: Literal["delta"] = "delta"
+    kind: Literal["answer", "done", "partial"]
+    text: Annotated[str, Field(min_length=1)]
+
+
 class Final(_Ev):
     """Kết quả cuối. `kind`: `agent_result` (dùng `structured`) | `text` (dùng `text`)."""
 
@@ -121,7 +130,7 @@ def parse_confirmation(content: str | Sequence[Mapping[str, Any]]) -> Confirm | 
     return Confirm(question=question, choices=(str(items[0]), str(items[1])))
 
 
-ProviderEvent = Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal | Confirm
+ProviderEvent = Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal | Confirm | Delta
 Emit = Callable[[ProviderEvent], Awaitable[None]]
 
 

@@ -159,4 +159,7 @@ def build_options(job: ProviderJob) -> ClaudeAgentOptions:
         output_format={"type": "json_schema", "schema": AGENT_RESULT_SCHEMA} if agent else None,
         cli_path=job.cli_path,
         stderr=_stderr_line,
+        # H2b §3.4 (PY-S2 S2): mọi job — F5 cần `StreamEvent` cả khi không stream (huỷ/timeout);
+        # scanner/`Delta` chỉ khi `payload.stream` ∧ không phải lần thử lại (`provider.py`).
+        include_partial_messages=True,
     )
