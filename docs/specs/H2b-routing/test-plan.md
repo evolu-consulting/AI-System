@@ -185,4 +185,27 @@ Tổng mới ≈ **210** ca (R ~95 dòng bảng / 40 ID, A ~92, P ~35, S 8, H 1,
 Readiness lần 1: L1 áp **có sửa** (vắng ⇒ không giới hạn; `envAppDeps` điền; helper `startHubH2b`); L2 áp + usage `out:0`, không `RateLimit` (`plan-runtime` §6); L3–L8 áp nguyên (spec §6, tasks QW/MK/B3/PY-01).
 
 ## 10. Đỏ đúng lý do · nhật ký
-Chưa chạy (chưa viết test). Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
+QW-R xong (dưới); QW-A1, QW-A2, QW-PU, QW-P chưa viết. Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
+
+### QW-R · 2026-10-05 (sau B0 `5ef4b90`, C1, C2, D1 `adba6a3`)
+`bun test tests/acceptance/H2b/rules`: **46 test / 10 file** (+ helper `_access.ts`) — **38 đỏ đúng lý do, 8 xanh**. `tsc -p tsconfig.tests.json` 0 lỗi · biome sạch · `check:size` OK · `trace --check` OK (HUB-FR-91/92/94 có test).
+
+| File | ID | Đỏ / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `mention-parse.test.ts` | R01–R08 | 8/8 | stub `not implemented: routeMessage` | — |
+| `mention.test.ts` | R10–R14 | 4/5 | stub `suggestAgents`/`firstUnknownTag`/`directText`/`responderOf` | R14 (`classifyMessage("@a x")` = text — hồi quy H2a, giữ) |
+| `agent-access-h2b.test.ts` | R15–R19 | 5/6 | R15–R17 `expect`: `visibleAgents` bỏ qua `excludeIds`/`onlyKeys` (B0 chỉ kiểu); R18 stub `orchestratorIds`; R19b `expect`: `accessInput` không điền `excludeIds`, bỏ qua `opts.onlyKeys` | R19a hồi quy H1 (input không trường mới) |
+| `agent-menu.test.ts` | R20–R21 | 3/3 | stub `toAgentMenuItem`/`agentMenu` | — |
+| `orchestrator-pick.test.ts` | R22–R24 | 2/3 | stub `pickOrchestrator` | R24 (`orchestratorProblem` không đổi) |
+| `delta.test.ts` | R25–R29 | 5/5 | stub `streamAccept`/`nextSeqOk`/`reconcileStream` | — |
+| `run-errors-h2b.test.ts` | R30 | 2/2 | stub `runErrorTextFor` | — |
+| `seed-tenants.test.ts` | R31–R35 | 7/7 | stub `planOrchestratorTenants` | — |
+| `run-limit.test.ts` | R36 | 2/2 | stub `overLimit`/`parseMaxConcurrentRuns` | — |
+| `contracts-h2b.test.ts` | R40–R44 | 0/5 | — | R40–R44 (contract C1/C2 đã có) |
+
+Không ca xanh bất thường (8 xanh đúng danh sách §8). Không đỏ do import/cú pháp/kiểu.
+
+**Lệch plan / cần backend-lead:**
+- `agentMenu(s: AccessSnapshot, …)`: `AccessSnapshot.agents` không có `name` ⇒ không tra được `AgentConfig` nếu giữ đúng kiểu. Test truyền `ConfigSnapshot` (gán được vào `AccessSnapshot`). B3: đổi tham số sang `ConfigSnapshot` (hoặc `AccessSnapshot & {agents: AgentConfig[]}`) — test không phải sửa.
+- `planOrchestratorTenants`: thứ tự lỗi plan có "không `profile`" nhưng input không có danh sách profile và `SeedAgent.profile` bắt buộc ⇒ R33 không phủ vế này (chỉ phủ: trùng → agent lạ; tắt thắng runtime sai). Vị trí lỗi: test chỉ ép `path` chứa `orchestrator_tenants` + chỉ số, `value` = `tenant_key` trùng / key agent lạ; vế tắt/runtime không ép `value`.
+- `pickOrchestrator` khi mặc định thiếu: test chỉ ép `null` khi **không** có bản tenant hợp lệ cho tenant hỏi (plan không chốt bản tenant hợp lệ + mặc định thiếu).
