@@ -1,6 +1,7 @@
 # tests/.lock — sinh bởi bun run test:lock:write (chỉ qc). Không sửa tay.
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  apps/agent-runtime/tests/acceptance/__init__.py
 79548a62b194f71f747d6c47d8ad6266f4436eb5af4228f1ee8a43b15bd871b6  apps/agent-runtime/tests/acceptance/_dify.py
+6a65a60053645620dd2014470bc512f7f2aafa887d3ac1a2847e29ec23f303e8  apps/agent-runtime/tests/acceptance/_h3a.py
 c71decb8b8de028bf8aa16734c4a974b8de9f6dc4fae73e9ad4ce753e3cd1add  apps/agent-runtime/tests/acceptance/_hub_files.py
 1c823f550ba3a5c345f0545ebf4a5ee70df38f27972e08a96456b03265d25100  apps/agent-runtime/tests/acceptance/_proc.py
 ec92180994ef95f8e7a98c2e3cdbdf7bd424ee4b7ff9924cc8645e17ea4000eb  apps/agent-runtime/tests/acceptance/_rt.py
@@ -16,7 +17,9 @@ a0f028ba5247bd591c06b7b70c46e2c495e441be0390566c6c6d3f0f05eccfb9  apps/agent-run
 6a73b36ee1a767e5b5b5e35b4f634fe1d4ccaa2d63289aef004f93182f68ac40  apps/agent-runtime/tests/acceptance/mcp_int_test.py
 4c1ee9282627fc38f104c7b5e1da08b2d747dbd92180846acc98d99c0dd31f97  apps/agent-runtime/tests/acceptance/orphan_int_test.py
 7263c7b6cb06f4d189bb652d7949de86eebcabb1f6d13ea2150b14130664e737  apps/agent-runtime/tests/acceptance/outputs_int_test.py
+dbda1f62a59ff13ff2bfaff7dda50678a95e2fc6a159590c4f3cc68a4d25e415  apps/agent-runtime/tests/acceptance/probe_int_test.py
 030f39b70c92631cf35c64f71eca50fe63a4468e762f8316b2e5c0dd3df6038f  apps/agent-runtime/tests/acceptance/provider_int_test.py
+14f1749da7e47b7e1b732f8d655c4ae20a15939875463efc4712d6517fa5f82e  apps/agent-runtime/tests/acceptance/quota_int_test.py
 818634f99652c3a40c7e643a5a0eead8eab09abed0ac16fe8f5ccce205cd0ee7  apps/agent-runtime/tests/acceptance/refusal_int_test.py
 742ce693ee55137101669f1ef0415744b1ce2a8e2afb19c6a390b02567f0afe0  apps/agent-runtime/tests/acceptance/result_int_test.py
 e76683f44eb12692790f50fd992f690571f859ce505979fd96deee4cab2643a9  apps/agent-runtime/tests/acceptance/sandbox_int_test.py
@@ -231,6 +234,8 @@ b4ee5f2e16fd5cb07f9f28c185dd6563686583df8856382862c2bec7ec921202  tests/acceptan
 1c6684f272e1bb13bfd444b4a4b556838ecd67cbf3520ed0d9a72fdf6a404243  tests/acceptance/H3a/rules/blocked-reason.test.ts
 5b28c76bdcad9c290d68a8da07ac6a3b1a667aa3c4147cf9a681d92cf8eb6212  tests/acceptance/H3a/rules/contracts-h3a.test.ts
 394721eecc0298ff1acd2d4477f79d8e5b35121a24127f010fdc4d7b50714232  tests/acceptance/H3a/rules/run-errors-h3a.test.ts
+6533831561b5117e74ece90f8efcc672d24e2a1e899e61f8d71c4ac55d26a2c9  tests/acceptance/H3a/stack/_stack.ts
+a5528c529ae48d4ffe0f326b2a9f27d15dae8fc51c9c979167b13ebfda1d4dff  tests/acceptance/H3a/stack/quota.stack.test.ts
 485e75650171f0003c62315cf010b16fdbd214e0fdad48ada5952f13b9b583f3  tests/acceptance/M1/_data.ts
 4b1929cdd07d5b5a9cd4ad66a0e3ae41139df76288428f40ccc7b67b4b9f30e3  tests/acceptance/M1/_fixtures.ts
 bc6b2417f10557e403ec460ce301de5a070ec9c77ecd584f285c66b97400acf7  tests/acceptance/M1/_modules.ts

@@ -101,3 +101,6 @@ Chạy 2026-10-06 trên code hiện tại (PY-01 + PY-02 + B1 có; **chưa** PY-
 8. F1 (chạy `pytest -m int` toàn bộ 3 lần) để lại cho PY-04 — QW-P không đổi fixture khoá (`_rt.py`, `_proc.py`, `conftest.py`).
 
 **Cần khoá ở Q3** (5 file mới): `apps/agent-runtime/tests/acceptance/{_h3a.py,probe_int_test.py,quota_int_test.py}`, `tests/acceptance/H3a/stack/{_stack.ts,quota.stack.test.ts}`.
+
+## Q3 — khoá lần 2 (điều phối, 2026-10-06)
+`test:lock:verify` trước khi ghi: đúng 5 UNLOCKED (`_h3a.py`, `probe_int_test.py`, `quota_int_test.py`, `tests/acceptance/H3a/stack/{_stack.ts,quota.stack.test.ts}`), 0 CHANGED → `test:lock:write` → verify OK.
