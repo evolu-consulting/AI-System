@@ -340,7 +340,7 @@ describe("HUB-FR-44 · 0007_h2c_attachments D1 — idempotent (int)", () => {
     expect(await snap()).toEqual(before);
   });
 
-  test("DB đã có 0006 (gỡ 0007 + dòng journal) → áp 0007 = {hub: 1}; run cũ nhận attachment_ids {}", async () => {
+  test("DB đã có 0006 (gỡ 0007 + dòng journal) → áp 0007 (+ migration sau nó); run cũ nhận attachment_ids {}", async () => {
     const before = await snap();
     await owner`drop table hub.attachments`;
     await owner`drop index hub.conversations_deleted_idx`;
@@ -350,10 +350,18 @@ describe("HUB-FR-44 · 0007_h2c_attachments D1 — idempotent (int)", () => {
       alter table hub.jobs add constraint jobs_error_reason_check check (error_reason is null or error_reason in
       ('quota', 'tenant_slots', 'provider_busy', 'provider_unavailable', 'orphaned', 'crash', 'cancelled', 'timeout',
        'invalid_payload', 'invalid_output', 'sandbox', 'credential', 'upstream', 'refused'))`);
+    // Gỡ dòng journal của 0007 và mọi migration sau nó (0008+ idempotent, áp lại không đổi gì).
+    const journal = JSON.parse(
+      readFileSync(new URL("../migrations-hub/meta/_journal.json", import.meta.url), "utf8"),
+    ) as { entries: { idx: number; when: number }[] };
+    const from = journal.entries.filter((e) => e.idx >= 7);
     await owner.unsafe(
-      `delete from drizzle.${HUB_TABLE} where id = (select max(id) from drizzle.${HUB_TABLE})`,
+      `delete from drizzle.${HUB_TABLE} where created_at >= ${Math.min(...from.map((e) => e.when))}`,
     );
-    expect(await runHubMigrations({ url: OWNER, appEnv: "test" })).toEqual({ hub: 1, hubDev: 0 });
+    expect(await runHubMigrations({ url: OWNER, appEnv: "test" })).toEqual({
+      hub: from.length,
+      hubDev: 0,
+    });
     const [r] = await owner<
       { ids: string[] }[]
     >`select attachment_ids as ids from hub.runs where id = ${ch.run}`;

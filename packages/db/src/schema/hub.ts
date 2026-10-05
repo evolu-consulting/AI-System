@@ -1,5 +1,5 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
 // Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts`
 // (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
 import { sql } from "drizzle-orm";
@@ -10,6 +10,7 @@ import {
   integer,
   jsonb,
   primaryKey,
+  real,
   smallint,
   text,
   timestamp,
@@ -269,6 +270,13 @@ export const providerState = hub.table("provider_state", {
   lastError: text("last_error"),
   consecutiveErrors: integer("consecutive_errors").notNull().default(0),
   updatedAt: ts("updated_at").notNull().defaultNow(),
+  // H3a (0008_h3a_provider_state, WRK-FR-22): probe + tín hiệu quota; CHECK regex/[0,1] chỉ ở SQL.
+  lastProbeAt: ts("last_probe_at"),
+  lastOkAt: ts("last_ok_at"),
+  rateLimitType: text("rate_limit_type"),
+  utilization: real("utilization"),
+  warnAt: ts("warn_at"),
+  warnResetsAt: ts("warn_resets_at"),
 });
 
 export const agentTypes = hub.table("agent_types", {

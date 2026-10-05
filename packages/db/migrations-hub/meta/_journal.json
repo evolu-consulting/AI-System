@@ -57,6 +57,13 @@
       "when": 1791676800000,
       "tag": "0007_h2c_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791763200000,
+      "tag": "0008_h3a_provider_state",
+      "breakpoints": true
     }
   ]
 }
