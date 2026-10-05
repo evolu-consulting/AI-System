@@ -281,3 +281,8 @@ Không đỏ do import/cú pháp/kiểu/fixture (`PostgresError`/`TypeError` = 0
 
 ### Q-PU · 2026-10-05
 `bun run test:lock:verify` trước ghi: **đúng 1 dòng** `UNLOCKED apps/agent-runtime/tests/acceptance/test_stream_rules.py`, 0 `MISMATCH`/file khác ⇒ `bun run test:lock:write` → verify xanh (304 file); `git diff tests/.lock` chỉ thêm 1 dòng.
+
+### Tranh chấp
+- **TC-1 · 2026-10-05 · B1-4 (a) · `orchestrator-pick.test.ts` R23** — **test sai.** Ca chờ `pickOrchestrator(snapshot({orchestrator:null}), BETA)` = `null`, nhưng `snapshot()` có bản BETA hợp lệ (`orch-beta` bật) ⇒ theo "WRITE — QW-R chốt" (bản tenant hợp lệ dùng được kể cả khi mặc định thiếu) phải trả `{config: orch-beta, tenantId: BETA, invalid:false}`; code B1 đúng chốt. Sửa: giữ biểu thức cũ, chờ bản BETA; thêm vế `null` trên ảnh chỉ có bản ACME (mặc định thiếu) hỏi BETA. Giữ id R23.
+- **TC-2 · 2026-10-05 · B1-4 (b) · `agent-access-h2b.test.ts` R19 (accessInput)** — **test sai.** Ảnh chỉ có bản ACME (chính ca assert `excludeIds = {orch, orch-acme}`) nên `orch-beta` không phải Orchestrator, có entitlement + grant ⇒ AU giữ (khớp R15 dùng `H1_LAN` ∋ `orch-beta`). Sửa kỳ vọng: `["assistant","helper","orch-beta","writer"]`. Giữ id R19.
+- Kiểm: `bun test tests/acceptance/H2b/rules` — R15–R19, R22–R24 xanh (31 đỏ còn lại là stub B2+); biome sạch; `tests/.lock` chỉ đổi 2 dòng hash (tính bằng `hashFile`), `test:lock:verify` xanh (304 file). Không sửa code sản phẩm.

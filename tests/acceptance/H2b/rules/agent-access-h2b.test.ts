@@ -82,7 +82,12 @@ describe("HUB-FR-77 · AU H2b: loại Orchestrator mọi phạm vi, thu hẹp th
     const s = snapshot({ orchestratorTenants: new Map([[ACME, orchCfg(A.orchAcme)]]) });
     const i = accessInput(s, LAN_WHO);
     expect(i.excludeIds).toEqual(new Set([A.orch, A.orchAcme]));
-    expect(visibleAgents(i).map((a) => a.key)).toEqual(["assistant", "helper", "writer"]);
+    expect(visibleAgents(i).map((a) => a.key)).toEqual([
+      "assistant",
+      "helper",
+      "orch-beta",
+      "writer",
+    ]);
     const only = new Set(["writer"]);
     expect(accessInput(s, LAN_WHO, { onlyKeys: only }).onlyKeys).toEqual(only);
   });

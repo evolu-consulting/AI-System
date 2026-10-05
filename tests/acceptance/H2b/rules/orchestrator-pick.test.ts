@@ -34,7 +34,16 @@ describe("HUB-FR-62 · chọn Orchestrator theo tenant [R22–R24]", () => {
     const off = withAgent(A.orchAcme, { enabled: false });
     expect(pickOrchestrator(withAcme(ACME_CFG, off), ACME)).toEqual(broken);
     expect(pickOrchestrator(withAcme(orchCfg(GHOST)), ACME)).toEqual(broken);
-    expect(pickOrchestrator(snapshot({ orchestrator: null }), BETA)).toBeNull();
+    expect(pickOrchestrator(snapshot({ orchestrator: null }), BETA)).toEqual({
+      config: orchCfg(A.orchBeta),
+      tenantId: BETA,
+      invalid: false,
+    });
+    const acmeOnly = snapshot({
+      orchestrator: null,
+      orchestratorTenants: withAcme().orchestratorTenants,
+    });
+    expect(pickOrchestrator(acmeOnly, BETA)).toBeNull();
     const none = snapshot({ orchestrator: null, orchestratorTenants: new Map() });
     expect(pickOrchestrator(none, ACME)).toBeNull();
   });
