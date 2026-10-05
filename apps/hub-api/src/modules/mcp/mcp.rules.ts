@@ -28,7 +28,7 @@ export type McpToolsInput = {
   agentWorkflowIds: ReadonlySet<string>;
   workflows: readonly CatalogWorkflow[];
   allowed: readonly string[];
-  /** H2c P12 · vắng → H2a nguyên văn; `false` → bỏ workflow có input `file`; `true` → giữ + input `file`. B0: chưa dùng (B8). */
+  /** H2c P12 · vắng → H2a nguyên văn; `false` → bỏ workflow có input `file`; `true` → giữ + input `file`. */
   hasFiles?: boolean;
 };
 
@@ -76,15 +76,23 @@ function propertyOf(i: WorkflowInput): JsonSchemaProperty | null {
   }
 }
 
-/** H2c P12 · `withFiles` → input `file` = chuỗi tên file trong `attachments/` (plan-rules §5). B0: chưa dùng (B8). */
+/** Mô tả input `file` cho model (R23): tên file trong thư mục `attachments/` của job. */
+const FILE_DESC_SUFFIX = " (file name in attachments/)";
+
+const fileProperty = (i: WorkflowInput): JsonSchemaProperty => ({
+  type: "string",
+  description: (i.description ?? i.name) + FILE_DESC_SUFFIX,
+});
+
+/** H2c P12 · `withFiles` → input `file` = chuỗi tên file trong `attachments/` (plan-rules §5); vắng → H2a. */
 export function toolInputSchema(
   inputs: readonly WorkflowInput[],
-  _withFiles = false,
+  withFiles = false,
 ): JsonSchemaObject {
   const properties: Record<string, JsonSchemaProperty> = {};
   const required: string[] = [];
   for (const i of inputs) {
-    const p = propertyOf(i);
+    const p = withFiles && i.type === "file" ? fileProperty(i) : propertyOf(i);
     if (!p) continue;
     properties[i.name] = p;
     if (i.required) required.push(i.name);
@@ -94,25 +102,33 @@ export function toolInputSchema(
 
 const hasRequiredFile = (w: CatalogWorkflow): boolean =>
   w.inputSchema.some((i) => i.type === "file" && i.required);
+const hasFileInput = (w: CatalogWorkflow): boolean => w.inputSchema.some((i) => i.type === "file");
+
+/** P12: vắng → H2a (bỏ file bắt buộc); `false` → bỏ mọi workflow có input `file`; `true` → giữ. */
+function fileFilter(hasFiles: boolean | undefined): (w: CatalogWorkflow) => boolean {
+  if (hasFiles === undefined) return (w) => !hasRequiredFile(w);
+  return hasFiles ? () => true : (w) => !hasFileInput(w);
+}
 
 /** App `chat`/`agent` cần `query` (như lệnh `/`) — `input_schema` không có `query` thì model không thể gọi đúng. */
 const lacksQuery = (w: CatalogWorkflow): boolean =>
   appNeedsQuery(w.appType) && !w.inputSchema.some((i) => i.name === QUERY_INPUT);
 
 /**
- * R19: `agentWorkflowIds` ∩ `enabled` ∩ `allowed`; bỏ workflow có input `file` bắt buộc và app `chat`/`agent` thiếu input
- * `query` (REVIEW 1 Hub #6); sắp `name`.
+ * R19: `agentWorkflowIds` ∩ `enabled` ∩ `allowed`; lọc input `file` theo `hasFiles` (H2c P12, R23) và bỏ app `chat`/`agent`
+ * thiếu input `query` (REVIEW 1 Hub #6); sắp `name`.
  */
 export function mcpToolsFor(i: McpToolsInput): McpTool[] {
   const allowed = new Set(i.allowed);
   const usable = (w: CatalogWorkflow): boolean =>
     i.agentWorkflowIds.has(w.id) && w.enabled && allowed.has(w.key);
+  const files = fileFilter(i.hasFiles);
   return i.workflows
-    .filter((w) => usable(w) && !hasRequiredFile(w) && !lacksQuery(w))
+    .filter((w) => usable(w) && files(w) && !lacksQuery(w))
     .map((w) => ({
       name: w.key,
       description: w.description ?? w.name,
-      inputSchema: toolInputSchema(w.inputSchema),
+      inputSchema: toolInputSchema(w.inputSchema, i.hasFiles === true),
     }))
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
@@ -121,6 +137,8 @@ export function mcpToolsFor(i: McpToolsInput): McpTool[] {
 function argValue(i: WorkflowInput, v: unknown): WorkflowInputValue | undefined {
   switch (i.type) {
     case "text":
+    // H2c R23: `file` = tên/id file của job (chuỗi) — `fileArg` đối chiếu `payload.attachments` sau bước này (B7-7).
+    case "file":
       return typeof v === "string" && v.length <= TEXT_MAX ? v : undefined;
     case "number":
       return typeof v === "number" && Number.isFinite(v) ? v : undefined;
@@ -180,8 +198,9 @@ export const TOOL_FILE_TEXT = {
 } as const;
 
 /** H2c P12 · tham số `file` của tool → file của job: chuỗi; khớp `name` chính xác trước, rồi `id`; khác → null. */
-export function fileArg(_v: unknown, _files: readonly JobAttachment[]): JobAttachment | null {
-  throw new Error("not implemented: fileArg");
+export function fileArg(v: unknown, files: readonly JobAttachment[]): JobAttachment | null {
+  if (typeof v !== "string" || v === "") return null;
+  return files.find((f) => f.name === v) ?? files.find((f) => f.id === v) ?? null;
 }
 
 export type ToolResult = {

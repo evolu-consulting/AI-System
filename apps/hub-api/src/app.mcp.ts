@@ -3,6 +3,7 @@
 import type { Env, Hono } from "hono";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
+import type { AttachmentStorage } from "./modules/attachments/storage";
 import type { CatalogSnapshot } from "./modules/config/catalog.rules";
 import type { ConfigCache } from "./modules/config/config.service";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
@@ -37,6 +38,8 @@ export type McpMountDeps = {
   /** = `SECRET_MASTER_KEY` (đã kiểm ở `server.ts`); vắng → mọi tool `NOT_CONFIGURED`. */
   secretMasterKey?: string;
   difyTimeoutMaxS?: number;
+  /** H2c B8 · kho file (`AppDeps.attachments`) để upload file của `tools/call` lên Dify. */
+  attachments?: { storage: Pick<AttachmentStorage, "blob"> };
 };
 
 /** POST `/mcp` (+ 405 GET/DELETE). Gọi trước `notFound`. */
@@ -55,6 +58,7 @@ export function mountMcp<E extends Env>(app: Hono<E>, d: McpMountDeps): void {
     difyTimeoutMaxS,
     log: d.log,
     sideEffect: confirmationGate({ db: d.db, log: d.log }),
+    storage: d.attachments?.storage ?? null,
   });
   app.route("/mcp", mcpRoutes(svc, { requestTimeoutS: difyTimeoutMaxS + MCP_IDLE_MARGIN_S }));
 }

@@ -2,12 +2,16 @@
 // (`hashJobToken` → job `agent.cli` `running`), JSON-RPC `initialize`/`server/discover`/`ping`/`tools/list`/`tools/call`.
 // `tools/call` gọi Dify gom (bỏ `delta`, lấy kết quả cuối) với timeout `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)`,
 // ghi bước `tool` (inputs che secret rồi cắt) + usage `billing=dify`. Không bao giờ log token/app-key/tham số.
-import { AgentCliJobSchema } from "@ai/contracts/hub";
+// H2c (B8, P12, R23): `tools/list` theo `payload.attachments` (`hasFiles`); `tools/call` input `file` → `fileArg` → xác nhận
+// `side_effect` (không đổi) → upload Dify (`mcp-files.ts`) → gọi workflow.
+import { AgentCliJobSchema, type JobAttachment } from "@ai/contracts/hub";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
 import { hashJobToken, isJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
+import { AttachmentContentMissing, type UploadTrace } from "../attachments/attachment-dify";
+import type { AttachmentStorage } from "../attachments/storage";
 import type { CatalogWorkflow, WorkflowInputValue } from "../commands/catalog.types";
 import { tenantKeyOf } from "../config/catalog.rules";
 import { agentWorkflowIds } from "../config/config.rules";
@@ -37,6 +41,13 @@ import {
   toolTimeoutS,
   validateToolArgs,
 } from "./mcp.rules";
+import {
+  notAttached,
+  resolveToolFiles,
+  type ToolFile,
+  type ToolUploadResult,
+  uploadToolFiles,
+} from "./mcp-files";
 
 /** Ngữ cảnh của token (plan §6 Auth). `tools` = `payload.mcp.tools`. */
 export type McpContext = {
@@ -47,6 +58,8 @@ export type McpContext = {
   flowId: string;
   agentId: string;
   tools: readonly string[];
+  /** H2c · `payload.attachments` (vắng ⇒ []). */
+  files: readonly JobAttachment[];
 };
 
 /**
@@ -64,11 +77,19 @@ export type McpServiceDeps = {
   difyTimeoutMaxS: number;
   log: Logger;
   sideEffect?: SideEffectGate;
+  /** H2c · kho file (`AppDeps.attachments.storage`); vắng/null ⇒ tool có file ném `AttachmentContentMissing` (-32603). */
+  storage?: Pick<AttachmentStorage, "blob"> | null;
+  /** Test: `fetch` cho Dify `/files/upload`. */
+  fetch?: typeof fetch;
 };
 
-type ToolArgs = { inputs: Record<string, WorkflowInputValue>; query: string | null };
-/** Trace thêm vào `detail` bước `tool` (R22: `confirmation: "consumed"`). */
-type StepTrace = { confirmation?: "consumed" };
+type ToolArgs = {
+  inputs: Record<string, WorkflowInputValue>;
+  query: string | null;
+  files: readonly ToolFile[];
+};
+/** Trace thêm vào `detail` bước `tool` (R22: `confirmation: "consumed"`; H2c: `upload` + lỗi upload). */
+type StepTrace = { confirmation?: "consumed"; upload?: UploadTrace } & Record<string, unknown>;
 /** Mã trong `detail` bước `tool`: mã tool, hoặc `CANCELLED` (kết nối `/mcp` đóng) / `INTERNAL_ERROR` (ngoại lệ). */
 type StepCode = ToolErrorCode | "CANCELLED" | "INTERNAL_ERROR";
 /** Một lời gọi tool; `signal` = kết nối `/mcp` của request (đóng = huỷ run → abort Dify + stop). */
@@ -103,6 +124,7 @@ export class McpService {
       flowId: p.data.flow_id,
       agentId: job.agentId,
       tools: p.data.mcp?.tools ?? [],
+      files: p.data.attachments ?? [],
     };
   }
 
@@ -130,7 +152,7 @@ export class McpService {
     }
   }
 
-  /** R19 từ cache (0 query DB): workflow gắn agent ∩ `enabled` ∩ `payload.mcp.tools`. */
+  /** R19 từ cache (0 query DB): workflow gắn agent ∩ `enabled` ∩ `payload.mcp.tools`; H2c `hasFiles` = job có file. */
   async tools(ctx: McpContext): Promise<McpTool[]> {
     const [snapshot, catalog] = await Promise.all([
       this.d.config.snapshot(),
@@ -140,6 +162,7 @@ export class McpService {
       agentWorkflowIds: agentWorkflowIds(snapshot, ctx.agentId),
       workflows: [...catalog.workflows.values()],
       allowed: ctx.tools,
+      hasFiles: ctx.files.length > 0,
     });
   }
 
@@ -162,8 +185,12 @@ export class McpService {
 
   async #callTool(call: ToolCall, rawArgs: unknown): Promise<ToolResult> {
     const { ctx, wf } = call;
-    const args = validateToolArgs(wf.inputSchema, rawArgs);
-    if (!args.ok) return toolError("INVALID_ARGS");
+    const valid = validateToolArgs(wf.inputSchema, rawArgs);
+    if (!valid.ok) return toolError("INVALID_ARGS");
+    // H2c R23: validate (H2a) trước, rồi file thuộc job — sai ⇒ câu tĩnh, 0 lời gọi Dify, không bước (B7-7).
+    const files = resolveToolFiles(wf, valid.inputs, ctx.files);
+    if (!files.ok) return notAttached();
+    const args: ToolArgs = { inputs: valid.inputs, query: valid.query, files: files.files };
     if (!wf.sideEffect) return this.#runTool(call, args, {});
     const gated = await (this.d.sideEffect ?? refuseSideEffect(this.d.log))(ctx, wf);
     // Qua cổng = đã tiêu thụ xác nhận (R22) → trace `consumed` trên bước `tool`; gọi Dify đúng một lần, không retry.
@@ -214,25 +241,68 @@ export class McpService {
     const tenantKey = tenantKeyOf(await this.d.config.catalog(), ctx.tenantId);
     const timeout = AbortSignal.timeout((await this.#timeoutS(ctx)) * 1000);
     const signal = call.signal ? AbortSignal.any([timeout, call.signal]) : timeout;
+    const user = difyUser(tenantKey, ctx.userId);
+    const up = await this.#upload(call, o, user, signal);
+    if (up.kind !== "ok") return this.#uploadFailed(ctx, o, up, timeout.aborted);
+    const trace: StepTrace = { ...o.trace, ...(up.upload && { upload: up.upload }) };
     const req = {
       appType: wf.appType,
       baseUrl: wf.baseUrl,
       apiKey: o.apiKey,
-      inputs: o.args.inputs,
+      inputs: up.inputs,
       query: o.args.query,
-      user: difyUser(tenantKey, ctx.userId),
+      user,
       conversationId: null,
       outputField: wf.outputField,
     };
     const out = await this.d.dify.runStreaming(req, signal, () => {});
     const code = stepCodeOf(out, timeout.aborted);
     const upstream = out.kind === "failed" ? out.detail : null;
-    const detail = { ...o.trace, inputs: o.inputs, code, ...(upstream ? { upstream } : {}) };
+    const detail = { ...trace, inputs: o.inputs, code, ...(upstream ? { upstream } : {}) };
     await this.#finishStep(ctx, o.stepId, detail);
     await this.#usage(ctx, o.stepId, out);
     if (out.kind === "finished") return toolText(out.text);
     // `CANCELLED`: kết nối đã đóng, không ai đọc kết quả này.
     return toolError(code === "TIMEOUT" || code === "NOT_CONFIGURED" ? code : "UPSTREAM_ERROR");
+  }
+
+  /** H2c P14: file của tool → Dify `/files/upload` (key + `user` như lời gọi workflow); không file ⇒ `ok` ngay. */
+  async #upload(
+    call: ToolCall,
+    o: Invoke,
+    user: string,
+    signal: AbortSignal,
+  ): Promise<ToolUploadResult> {
+    const { ctx, wf } = call;
+    if (o.args.files.length === 0) return { kind: "ok", inputs: o.args.inputs, upload: null };
+    const deps = { storage: this.d.storage ?? null, fetch: this.d.fetch, log: this.d.log };
+    const x = {
+      tenantId: ctx.tenantId,
+      workflowId: wf.id,
+      target: { baseUrl: wf.baseUrl, apiKey: o.apiKey, user },
+    };
+    try {
+      return await uploadToolFiles(deps, x, o.args, signal);
+    } catch (err) {
+      if (err instanceof AttachmentContentMissing)
+        this.d.log.error("attachment-content-missing", { attachment_id: err.attachmentId });
+      throw err;
+    }
+  }
+
+  /** Upload lỗi/huỷ → đóng bước `failed` (trace `upload`), 0 lời gọi workflow (plan-errors §3). */
+  async #uploadFailed(
+    ctx: McpContext,
+    o: Invoke,
+    up: Exclude<ToolUploadResult, { kind: "ok" }>,
+    timedOut: boolean,
+  ): Promise<ToolResult> {
+    const code = up.kind === "failed" ? up.code : timedOut ? "TIMEOUT" : "CANCELLED";
+    const failed = up.kind === "failed" ? up.trace : { upload: up.upload };
+    await this.#finishStep(ctx, o.stepId, { ...o.trace, ...failed, inputs: o.inputs, code });
+    if (up.kind === "failed") return up.result;
+    // `CANCELLED`: kết nối đã đóng, không ai đọc kết quả này.
+    return toolError(code === "TIMEOUT" ? "TIMEOUT" : "UPSTREAM_ERROR");
   }
 
   /** R20: `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` theo cấu hình Hub hiện hành. */
