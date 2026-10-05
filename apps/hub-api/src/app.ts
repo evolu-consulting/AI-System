@@ -14,9 +14,11 @@ import { cors } from "hono/cors";
 import { mountDifyCredential, workflowJobs } from "./app.async";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountH2b } from "./app.h2b";
+import { mountH2c } from "./app.h2c";
 import { mountMcp } from "./app.mcp";
 import { runDrivers, startRunLoops } from "./app.runner";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
+import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
 import { type Logger, logger } from "./lib/logger";
@@ -187,6 +189,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
 
   app.use(requestContext(config));
   app.use(closeUnreadBody());
+  app.use(keepBlobBody());
   app.use(
     cors({
       origin: cfg.corsOrigins,
@@ -206,6 +209,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   mountProtected(app, deps, config);
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
+  if (deps.db && deps.attachments)
+    mountH2c(app, { db: deps.db, attachments: deps.attachments, log: logger, signal: deps.signal });
 
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
