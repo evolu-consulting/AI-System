@@ -15,7 +15,7 @@ Như H2a §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo
 | Id (bài học TC-3) | Run/flow/job do test chèn SQL dùng `crypto.randomUUID()`/`uuid4()`; ca bắt buộc id cố định → `DEL run:<id> sse:<id>` trước khi dùng. Run do Hub tạo: id ngẫu nhiên sẵn |
 | Đếm MK (TC-2) | Đếm lời gọi theo input/kịch bản của ca, không đếm tổng sau `reset()` |
 | Log | `setSink` (`apps/hub-api/src/lib/logger`) bắt `warn`/`info` theo tên `plan-errors` §3; Runtime: dòng JSON `event=` |
-| Seam deps | `startHubX` + `maxConcurrentRuns` (Lệch L1); test int luôn truyền **2** |
+| Seam deps | `startHubH2b` (`_h2b.ts`, mẫu `startHubH2a`; không sửa helper khoá) truyền `maxConcurrentRuns: 2` (L1; vắng = không giới hạn) |
 
 ## 2. Hạ tầng và giả lập
 | Mục | Đề xuất | Ai |
@@ -38,7 +38,7 @@ Như H2a §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo
 | `llmbot` | runtime `llm`, entitlement acme, grant `lan` |
 | `orch-acme`, `orch-alt` | agentic-cli, profile `fake-1`, không grant |
 | Tên | `assistant` = `{vi:"Trợ lý", en:"Assistant"}` (A20–A22) |
-| Helper | `tenantOrch(sql, tenant, agent, opts)` + config change; `ScriptRuntime3` (`delta`, `skipSeq`, `rawDecide`); `runsRunning(user)`; `endRunsSql(user)` |
+| Helper | `startHubH2b(k, extra)` (L1) · `tenantOrch(sql, tenant, agent, opts)` + config change; `ScriptRuntime3` (`delta`, `skipSeq`, `rawDecide`); `runsRunning(user)`; `endRunsSql(user)` |
 | uuid | `crypto.randomUUID()` cho dữ liệu chèn trong ca; id agent cố định dải `a2b0…` |
 
 ## 3. Ma trận mã → test
@@ -181,6 +181,8 @@ Tổng mới ≈ **210** ca (R ~95 dòng bảng / 40 ID, A ~92, P ~35, S 8, H 1,
 | L6 | R26 kiểm trên hub-dev cần bước `needsDev` + thư mục mới; hub-dev có thể đặt 20 làm stack H2b thừa hưởng | MK: `done-h2b.ts` bước 10, `bunfig.int.toml`/`bunfig.toml` bỏ `tests/acceptance/H2b/{stack,hubdev}/**`; stack H2b đặt `HUB_MAX_CONCURRENT_RUNS=2` |
 | L7 | `PROTECTED_PREFIXES` (`app.ts`) chưa có `/agents` ⇒ không JWT có thể 404 thay vì 401 | B3 thêm `/agents` (A51 kỳ vọng 401 `AUTH_EXPIRED`) |
 | L8 | P09 (env `AGENT_RT_DELTA_*`, `config.py`) thuộc PY-03, không thuộc PY-01 (như H2a QW-PU) | PY-01 xong = P01–P08 xanh; P09 xanh ở PY-03 |
+
+Readiness lần 1: L1 áp **có sửa** (vắng ⇒ không giới hạn; `envAppDeps` điền; helper `startHubH2b`); L2 áp + usage `out:0`, không `RateLimit` (`plan-runtime` §6); L3–L8 áp nguyên (spec §6, tasks QW/MK/B3/PY-01).
 
 ## 10. Đỏ đúng lý do · nhật ký
 Chưa chạy (chưa viết test). Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.

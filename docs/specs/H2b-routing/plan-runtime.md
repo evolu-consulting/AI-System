@@ -15,7 +15,7 @@ Luật: spec R19–R21, R25, R27, R28 (WRK-FR-03, WRK-FR-15, WRK-FR-17). Hub: `p
 | `runtimes/cli/delta_pump.py` (mới) · `events/job_events.py` | `DeltaPump` (gom + hẹn giờ + XADD), `RunEvents.delta` | PY-03 |
 | `runtimes/cli/{host_proc,job_run,outcome}.py` | `_on_event(Delta)`; không thử lại khi đã phát; xả trước kết quả; F4 trong `decide_exit` | PY-03 |
 | `config.py` | `AGENT_RT_DELTA_FLUSH_MS` (mặc định 100, 10–1 000), `AGENT_RT_DELTA_FLUSH_CHARS` (200, 1–4 000) | PY-03 |
-| `providers/fake/{provider,directives,stream}.py` | `#fake:stream*`, `#fake:turns`, `#fake:answer-len`; #47; delegate lại theo tag; agent "Đồng ý" dùng lại chỉ thị (§6) | PY-04 |
+| `providers/fake/{provider,directives,stream}.py` | `#fake:stream*`, `#fake:turns`, `#fake:answer-len`, `#fake:is-error`; #47; delegate lại theo tag; agent "Đồng ý" dùng lại chỉ thị (§6) | PY-04 |
 | `contracts/hub.py` | sinh lại từ C2 (không sửa tay) | C2 |
 `host_proc.py` (312 dòng) chỉ thêm ≤ 10 dòng (K6); logic gom ở `delta_pump.py`.
 
@@ -48,7 +48,7 @@ Con (`claude`/`fake`, chỉ khi `payload.stream is True` ∧ `retry_prompt is No
 - Không ném; JSON hỏng ⇒ `off` nếu chưa `streaming`, giữ `closed`/dừng nếu đang `streaming`.
 
 ### 3.3 `runtimes/cli/delta.py` (thuần) + `delta_pump.py`
-`split_utf16(text: str, max_units: int = 4000) -> list[str]` (đếm đơn vị UTF-16 như zod; không cắt giữa code point) · `class DeltaBuffer(flush_chars=200, flush_ms=100, max_units=4000, clock=time.monotonic)`: `add(text) -> list[str]` (trả các chunk phải XADD ngay: bộ đệm ≥ `flush_chars` ký tự **hoặc** ≥ `flush_ms` từ lần xả trước), `due() -> bool`, `take() -> list[str]` (xả hết), `wait_s() -> float` (thời gian tới hạn). Chunk ≤ `max_units`.
+`split_utf16(text: str, max_units: int = 4000) -> list[str]` (đếm đơn vị UTF-16 như zod; không cắt giữa code point) · `class DeltaBuffer(flush_chars=200, flush_ms=100, max_units=4000, clock=time.monotonic)`: `add(text) -> list[str]` (trả các chunk phải XADD ngay: bộ đệm ≥ `flush_chars` ký tự **hoặc** ≥ `flush_ms` từ lần xả trước; mốc ban đầu = lúc tạo bộ đệm), `due() -> bool`, `take() -> list[str]` (xả hết), `wait_s() -> float` (thời gian tới hạn). Chunk ≤ `max_units`.
 `DeltaPump(events, job, cfg)`: `async add(kind, text)` (kind đầu tiên chốt; kind khác ⇒ bỏ + log `job.delta_kind_changed`), hẹn giờ `asyncio` xả khi `due`, `asyncio.Lock` giữa xả do hẹn giờ và `drain`; `async drain()`; `streamed: bool` = đã gọi XADD ít nhất một lần (kể cả XADD lỗi — Hub tự phát hiện hở bằng `seq`, P11).
 
 ### 3.4 Phía con `claude-sub`
@@ -58,10 +58,10 @@ Con (`claude`/`fake`, chỉ khi `payload.stream is True` ∧ `retry_prompt is No
 `host_proc._on_event`: `Delta` ∧ `payload.stream` ⇒ `await pump.add(...)`; `seen.streamed = pump.streamed`. `job_run`: `_retryable` thêm `and not self.seen.streamed` (R21: không thử lại JSON, không dựng lại session sau khi đã phát); `_apply`: `await pump.drain()` trước `_close` (mọi nhánh trừ `stopped_no_write`). `Seen.next_attempt` giữ `streamed`.
 
 ## 4. F4 — `is_error` 0 token (R27, WRK-FR-15)
-`runtimes/cli/refusal.py`: `classify_is_error(text: str | None, output_tokens: int) -> Literal["rate","auth","refused"] | None` — `output_tokens > 0` ⇒ None; xét `text[:300]` không phân biệt hoa: mẫu `plan-errors` §4 (rate trước auth). `outcome.decide_exit` nhánh `final.is_error ∧ confirm is None`: `kind = classify_is_error(final.text or final.raw_json or " ".join(final.errors), seen.total().output_tokens)` ⇒ `rate`: `Verdict(RATE_LIMITED, provider=broken_of(RateLimit("rejected")))` · `auth`: `Verdict(Failure("failed","NOT_CONFIGURED","credential","provider logged out"), provider=Broken("logged_out", None, …))` · `refused`: `Verdict(Failure("failed","UPSTREAM_ERROR","refused","provider refused the request"))` · None ⇒ `PROVIDER_ERROR` (H1). Chữ result chỉ vào log job (che, ≤ 300).
+`runtimes/cli/refusal.py`: `classify_is_error(text: str | None, output_tokens: int) -> Literal["rate","auth","refused"] | None` — `classify_text(text[:300])` H1 (một nguồn mẫu `RATE_RE`/`AUTH_RE`, rate trước auth; chuyển 2 regex + `classify_text` từ `providers/claude/mapping.py` sang module thuần `providers/patterns.py`, `mapping.py` import lại — không đổi hành vi, cha không import SDK): `rejected` ⇒ `rate`, `logged_out` ⇒ `auth` (bất kể output); không khớp ∧ `output_tokens == 0` ⇒ `refused`; còn lại ⇒ None. `outcome.decide_exit` nhánh `final.is_error ∧ confirm is None` (chỉ tới khi `seen.rate_limit is None` — claude-sub đã phân loại bằng `result_signal` H1): `kind = classify_is_error(final.text or final.raw_json or " ".join(final.errors), seen.total().output_tokens)` ⇒ `rate`: `Verdict(RATE_LIMITED, provider=broken_of(RateLimit(status="rejected")))` · `auth`: `Verdict(LOGGED_OUT, provider=broken_of(RateLimit(status="logged_out")))` (như H1) · `refused`: `Verdict(Failure("failed","UPSTREAM_ERROR","refused","provider refused the request"))` · None ⇒ `PROVIDER_ERROR` (H1). Chữ result chỉ vào log job (che, ≤ 300).
 
 ## 5. F5 — usage cộng dồn (R28, WRK-FR-17, AC-W09)
-`providers/claude/usage_acc.py`: `class UsageAcc` · `add(message_id: str | None, usage: Mapping[str, Any] | None, model: str | None) -> UsageEv | None` — khử trùng theo `message_id` (cùng id ⇒ lấy bản sau, không cộng hai lần), cộng `input_tokens`, `output_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens`; trả `UsageEv` **cộng dồn** khi tổng đổi, None khi không. `_Turn`: mỗi `AssistantMessage` (hoặc `message_delta` theo spike #6) ⇒ `emit(UsageEv)` cộng dồn; `ResultMessage` ⇒ `UsageEv` tổng như H1 (thay thế). Cha giữ `seen.usage = ev` (bản sau thay bản trước — sẵn có) ⇒ huỷ/timeout/fatal ghi đúng 1 dòng `usage_logs` qua `usage_row` (H1, `ON CONFLICT (job_id)`); chưa có usage ⇒ không ghi (sẵn có).
+`providers/claude/usage_acc.py`: `class UsageAcc` · `add(message_id: str | None, usage: Mapping[str, Any] | None, model: str | None) -> UsageEv | None` — khử trùng theo `message_id` (cùng id ⇒ lấy bản sau, không cộng hai lần; `None` ⇒ message mới, cộng — Q-T7), cộng `input_tokens`, `output_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens`; trả `UsageEv` **cộng dồn** khi tổng đổi, None khi không. `_Turn`: mỗi `AssistantMessage` (hoặc `message_delta` theo spike #6) ⇒ `emit(UsageEv)` cộng dồn; `ResultMessage` ⇒ `UsageEv` tổng như H1 (thay thế). Cha giữ `seen.usage = ev` (bản sau thay bản trước — sẵn có) ⇒ huỷ/timeout/fatal ghi đúng 1 dòng `usage_logs` qua `usage_row` (H1, `ON CONFLICT (job_id)`); chưa có usage ⇒ không ghi (sẵn có).
 
 ## 6. `fake-cli` (R25, TD #47, AC-H22 vế `@`)
 | Chỉ thị / luật | Hành vi |
@@ -72,6 +72,7 @@ Con (`claude`/`fake`, chỉ khi `payload.stream is True` ∧ `retry_prompt is No
 | `#fake:stream-badjson` | Sau stream, `Final` Orchestrator `text` JSON hỏng / agent `raw_json` hỏng (`structured=None`) ⇒ Hub `stream_unparsed`; Runtime không thử lại (R21) |
 | `#fake:answer-len=<n>` | `body` đệm/cắt đúng `n` ký tự (n ≤ 64 000) |
 | `#fake:turns=<n>` (1–10) với `#fake:usage=<in>,<out>` | phát `n` `UsageEv` cộng dồn (lượt k: k×in, k×out) cách nhau 50 ms **trước** `#fake:sleep` (AC-09); không có ⇒ như H1 |
+| `#fake:is-error=<rate\|auth\|refused>` (test-plan L2) | `Final{is_error:true, text}` với chữ cố định: "You've hit your usage limit" / "Not logged in · Please run /login" / "I can't help with that."; **không** phát `RateLimit` (đi nhánh phân loại §4); usage `{in:10, out:0}` trừ khi có `#fake:usage` (khi đó dùng số đó) |
 | TD #47 `redelegate_message` | chỉ trả tin cũ khi khối `<steps>` của prompt là `[]` (run chưa có kết quả delegate) |
 | Delegate lại theo tag (Orchestrator, tin "Đồng ý") | tin user trước (bỏ tin đồng ý) bắt đầu `@<key>` (đúng một tag, cú pháp R01) ⇒ trả `#fake:delegate=<key> <phần sau tag>` |
 | Agent nhận "Đồng ý" / "Agree" không chỉ thị | lấy chỉ thị từ tin `user` gần nhất **không** phải câu đồng ý trong `payload.history` (bỏ tag `@…` đầu) ⇒ chạy như tin đó (gọi lại `#fake:tool`) |
@@ -102,7 +103,7 @@ Không chỉ thị mới ⇒ hành vi H1/H2a giữ nguyên (test khoá xanh).
 | H7 | Thử lại sau khi phát | Orchestrator: Hub không `reopen` khi S≠"" | Agent/Orchestrator: không thử lại JSON, không dựng lại session | ✓ | R21 |
 | H8 | JSON cuối hỏng agent | `invalid_output` sau stream ⇒ `content=S` (P12) | gửi `job.failed{UPSTREAM_ERROR, invalid_output}` như H1 | ✓ | Runtime không bịa `done` |
 | H9 | Chữ phát | so tiền tố với `decision.text` / `result.text` | chữ đã giải mã JSON | ✓ | — |
-| H10 | F4 | `refused` ⇒ hint (P15); `NOT_CONFIGURED` ⇒ câu H1 | §4 | ✓ | CHECK `refused` (`plan-db` §1) |
+| H10 | F4 | `refused` ⇒ hint (P15); rate/auth ⇒ mã H1 (`ALL_PROVIDERS_EXHAUSTED`) | §4 | ✓ | CHECK `refused` (`plan-db` §1) |
 | H11 | F5 | không đổi (usage từ `job.failed.usage`) | §5 | ✓ | — |
 | H12 | Dify agent stream | Hub tự phát `job.delta` tổng hợp (P14) | — (không qua Runtime) | ✓ | — |
 | H13 | `workflow.async` | không `stream` | không phát | ✓ | — |

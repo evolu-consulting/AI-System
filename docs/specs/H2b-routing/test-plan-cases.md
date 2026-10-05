@@ -21,7 +21,7 @@ Phụ lục của [`test-plan.md`](test-plan.md): §1 hàm thuần (R) · §2 in
 | R10 | `suggestAgents("asistant", [assistant, helper, writer])` → `["assistant"]`; `"ASISTANT"` → như trên; ngưỡng max(2, ⌊len/3⌋): `"xyz"` → `[]`; 4 key cùng khoảng cách → 3 đầu sắp (khoảng cách, key); `keys=[]` → `[]`; kết quả không có `@` |
 | R11 | `firstUnknownTag([a,b], {a,b})` → `null`; `([a,x,y], {a})` → `"x"`; `([x,a], {a})` → `"x"` |
 | R12 | `directText({partial,"A","B"}, "vi")` = `"A\n\nPhần chưa làm được: B"`; `"en"` = `"A\n\nNot done yet: B"` (nguyên văn `plan-errors` §2) |
-| R13 | `responderOf({key:"assistant", name:{vi:"Trợ lý", en:"Assistant"}}, "vi")` → `{key:"assistant", name:"Trợ lý"}`, `"en"` → `"Assistant"`; tên 99 ký tự + 3 emoji → ≤ 100 code point, không surrogate lẻ; parse `ResponderSchema` |
+| R13 | `responderOf({key:"assistant", name:{vi:"Trợ lý", en:"Assistant"}}, "vi")` → `{key:"assistant", name:"Trợ lý"}`, `"en"` → `"Assistant"`; tên 99 ký tự + 3 emoji → ≤ 100 đơn vị UTF-16 (còn 99 ký tự), không surrogate lẻ; parse `ResponderSchema` |
 | R14 | Bất biến: `classifyMessage("@a x")` vẫn `{text}` (test khoá H2a `command-parse` — chạy chung file để ghi rõ) |
 
 ### 1.3 `agent-access-h2b` (R15–R19) · R09, R11, R15 · HUB-FR-77, HUB-BR-03
@@ -130,7 +130,7 @@ Chung: `startHubX` + `maxConcurrentRuns: 2`, `jobMaxWaitS` lớn; `counts()` = s
 | A74 | R13 | `{tenant_key:acme, remove:true}` → xoá; bản `beta` không nhắc → giữ |
 | A75 | R13 | yaml không có `orchestrator_tenants` → hàng tenant giữ nguyên |
 | A76 | R13 | Seed đặt bản `beta` = agent đang là Orchestrator mặc định → hợp lệ (cùng agent); menu không đổi |
-| A80 | AC-H21 · R17 | 2 run `lan` `running` (ScriptRuntime không trả) → tin thứ 3 (flow mới) → 429, header `Retry-After: 5`, body `{error:{code:"TOO_MANY_RUNS", message:"Too many running requests"}}` không khoá `details`; 0 ghi; trả kết quả 1 run → gửi được |
+| A80 | AC-H21 · R17 | 2 run `lan` `running` (ScriptRuntime không trả) → tin thứ 3 (flow mới) → 429, header `Retry-After: 5`, body `{error:{code:"TOO_MANY_RUNS", message:"Too many running requests"}}` không khoá `details`; 0 ghi; trả kết quả 1 run → gửi được; có `Origin` hợp lệ → `access-control-expose-headers` ∋ `retry-after` |
 | A81 | HUB-H2b-AC-03 | 5 vòng: 0 đang chạy, 10 POST song song (flow mới) → đúng 2 run + 8 × 429; vòng có sẵn 1 → đúng 1; `pgDeadlocks` không tăng |
 | A82 | AC-03 · R18 | Đủ 2 run, POST vào flow có run `running` → 409 `FLOW_BUSY` (không 429); song song 5 POST cùng flow + đủ ngưỡng → chỉ 409 |
 | A83 | R16 | 1 run `orchestrated` + 1 `command` (`/dich`, `mk-slow-2000`) → `@assistant x` → 429; 1 `direct` + 1 `orchestrated` → 429 |
@@ -144,8 +144,8 @@ Chung: `startHubX` + `maxConcurrentRuns: 2`, `jobMaxWaitS` lớn; `counts()` = s
 |---|---|---|
 | A90 | AC-H22 · R12 | Catalog H2a + MK. `lan` `@trello Tạo thẻ` → run `direct`; claim có token (`claimWithToken`) → `tools/call create-trello-card` → `CONFIRMATION_REQUIRED`, MK 0 (lời gọi có input `title`); agent `need_input` → SSE `ask`; `tool_confirmations` 1 `pending` |
 | A91 | AC-H22 | `Đồng ý` (không tag) → run `orchestrated`, xác nhận `confirmed`, `decided_run_id`; job `trello` (Orchestrator giả delegate) gọi tool → MK đúng 1 |
-| A92 | AC-H22 · T4 | (flow mới) `@trello Đồng ý` → run `direct`, `confirmed`; tool → MK 1; gọi lần 2 → `CONFIRMATION_REQUIRED` |
-| A93 | R12 | `@helper Đồng ý`, `@trello @helper Đồng ý`, `@trello Huỷ` → `declined`; tool sau đó → `CONFIRMATION_REQUIRED`, MK 0 |
+| A92 | AC-H22 · T4 | Flow riêng: `@trello Tạo thẻ` → `ask` (như A90) → `@trello Đồng ý` **cùng flow** → run `direct`, `confirmed`; tool → MK 1; gọi lần 2 → `CONFIRMATION_REQUIRED` |
+| A93 | R12 | Mỗi vế một flow có `pending` (như A90): `@helper Đồng ý`, `@trello @helper Đồng ý`, `@trello Huỷ` → `declined`; tool sau đó → `CONFIRMATION_REQUIRED`, MK 0 |
 | A94 | R05, R12 | `@nope Đồng ý` → 404, xác nhận vẫn `pending`; rồi `Đồng ý` → `confirmed` |
 | A95 | R12 | `hoa`: `@Trello  agree ` → `confirmed` |
 | A96 | H2a-R22 | `confirmed` qua `@trello Đồng ý` → 5 `tools/call` song song → MK 1 |

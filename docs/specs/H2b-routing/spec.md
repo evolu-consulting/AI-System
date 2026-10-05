@@ -90,7 +90,7 @@ Chỉ phần cụ thể hoá BA; nguồn ở cột cuối. "Agent dùng được
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
 | H2b-R26 | **F3:** fixture `tools/hub-dev` thêm `lan` (acme) vào group `beta-testers` → `lan` dùng được `assistant`; `hoa` giữ ngoài (user không có agent nào, dùng cho ca phủ định). Bộ 41 ca contract chat chạy lại với Hub thật phải xanh | smoke-i2 F3 |
-| H2b-R27 | **F4:** `Final.is_error=true` ∧ output token = 0 → phân loại theo ≤ 300 ký tự đầu của chữ result (không phân biệt hoa): khớp mẫu rate/usage limit → như H1-R24 (`quota`, cooldown, `ALL_PROVIDERS_EXHAUSTED`); khớp mẫu đăng nhập/khoá (not logged in, `/login`, invalid api key, 401, 403) → `NOT_CONFIGURED`, reason `credential`, `provider_state=logged_out`; còn lại → `UPSTREAM_ERROR` reason mới `refused`, `hint` = "Yêu cầu chưa xử lý được — hãy diễn đạt lại hoặc chia nhỏ." / "The request could not be handled — rephrase or split it.". Mẫu ở plan; chữ result chỉ vào trace (đã che). `is_error` có output > 0 → như H1 | WRK-FR-15, BR-04 |
+| H2b-R27 | **F4:** `Final.is_error=true` chưa có tín hiệu rate-limit/đăng xuất của provider → phân loại ≤ 300 ký tự đầu chữ result bằng **đúng mẫu H1** (`RATE_RE`, `AUTH_RE`): rate → như H1-R24 (`ALL_PROVIDERS_EXHAUSTED`, `quota`, cooldown); đăng nhập → như H1 đăng xuất (`ALL_PROVIDERS_EXHAUSTED`, `provider_unavailable`, `provider_state=logged_out`); còn lại ∧ output token = 0 → `UPSTREAM_ERROR` reason mới `refused`, `hint` = "Yêu cầu chưa xử lý được — hãy diễn đạt lại hoặc chia nhỏ." / "The request could not be handled — rephrase or split it.". Chữ result chỉ vào log (đã che). Output > 0 → như H1 | WRK-FR-15, BR-04 |
 | H2b-R28 | **F5:** Runtime cộng dồn usage theo từng message assistant (sự kiện stream `message_start`/`message_delta`, hoặc `AssistantMessage.usage`). Job kết thúc `cancelled`/`timed_out`/`failed` mà đã có usage > 0 → ghi **1** dòng `usage_logs` (như H1-R25: billing theo provider, `cost_usd=0` với subscription) với token đã cộng dồn; `job.failed.usage` cùng số. Chưa có usage → không ghi (không bịa) | WRK-FR-17, AC-W09 |
 | H2b-R29 | **F7:** `HUB_LIVE=1` là cờ bật bộ smoke tự động `bun run test:smoke:live` (Hub thật + Runtime + `claude-sub`; kịch bản §8 HUB-H2b-AC-12); vắng cờ → mọi ca `skip`, exit 0. Không thuộc `done:h2b`. Cập nhật `docs/guides/hub-dev.md` (bỏ câu "không code nào đọc") | smoke-i2 F7 |
 | H2b-R30 | Tương thích: tin không bắt đầu `@`/`/` và không dùng trường mới → response/SSE như H2a; `test:contract:chat` 41 ca xanh không sửa; test khoá H1, H2a xanh nguyên văn | H1-R01, H2a-R25 |
@@ -120,7 +120,7 @@ Không có UI Hub. Menu `@`, `AGENT_NOT_FOUND`/`TOO_MANY_RUNS`, `responder`, `de
 | `GET /agents` (cache, 0 query) | ≤ 50 ms p95 | `test:perf` |
 | Router `@` + kiểm `TOO_MANY_RUNS` thêm vào E12 | ≤ 10 ms p95 | `test:perf` |
 | `job.delta` (XADD) → SSE `delta` | ≤ 150 ms | int (dấu thời gian) |
-| Delta đầu tiên với `#fake:stream` trước `job.result` | delta đầu tới client trước `run.finished` ≥ 200 ms | acceptance (chặn) |
+| Delta đầu tiên với `#fake:stream=10` trước `job.result` | delta đầu tới client trước `run.finished` ≥ 200 ms | acceptance (chặn) |
 | Thu hồi agent → hết ở `GET /agents` | ≤ 5 s | acceptance (chặn) |
 
 ## 7. Phụ thuộc & giả lập
@@ -155,7 +155,7 @@ Nguyên văn AC ở BA `ba-agent-hub` §11.
 | HUB-H2b-AC-05 | Run `direct` agent `#fake:stream` `done` → delta sớm; `partial` → content = text + câu R07; delegate đầu tiên `done` stream → pass-through, 1 job Orchestrator; delegate thứ hai stream → **không** chuyển tiếp | acceptance |
 | HUB-H2b-AC-06 | Lệch R23: `F` không bắt đầu bằng `S` → `content = S`, trace `delta_mismatch`; huỷ giữa stream → `run.failed CANCELLED` ≤ 5 s | acceptance |
 | HUB-H2b-AC-07 | Python: bộ phân tích JSON tăng dần — khoá ngược thứ tự → không phát; `\n`, `á`, emoji cặp surrogate cắt giữa chunk → giải mã đúng; gom 200 ký tự/100 ms; đã phát → không thử lại JSON | Python unit/int |
-| HUB-H2b-AC-08 | F4: ba mẫu chữ result (rate limit / not logged in / từ chối) → `ALL_PROVIDERS_EXHAUSTED` + cooldown / `NOT_CONFIGURED` + `logged_out` / `UPSTREAM_ERROR` hint "diễn đạt lại" | Python int + acceptance |
+| HUB-H2b-AC-08 | F4: ba mẫu chữ result (rate limit / not logged in / từ chối) → `ALL_PROVIDERS_EXHAUSTED` + cooldown / `ALL_PROVIDERS_EXHAUSTED` + `logged_out` / `UPSTREAM_ERROR` hint "diễn đạt lại" | Python int + acceptance |
 | HUB-H2b-AC-09 | F5: huỷ job sau 2 lượt có usage → 1 dòng `usage_logs` đúng token cộng dồn; huỷ trước usage → 0 dòng | Python int |
 | HUB-H2b-AC-10 | Seed `orchestrator_tenants`: tenant lạ → bỏ + cảnh báo; agent tắt / key trùng → lỗi seed, không ghi dở; bản tenant mất hiệu lực → mặc định + log | int |
 | HUB-H2b-AC-11 | Dify agent `@dify-tro-ly` (mock chậm 5 chunk) → delta trước `run.finished`; `responder` có | acceptance |

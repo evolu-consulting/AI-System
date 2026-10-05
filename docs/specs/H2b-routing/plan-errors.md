@@ -38,6 +38,6 @@ Thứ tự kiểm `@`: `empty_tag` → tag sai đầu tiên → nội dung rỗn
 | Mẫu (≤ 300 ký tự đầu chữ result, không phân biệt hoa) | `job.failed.code` | `reason` | `provider_state` | `run.failed` |
 |---|---|---|---|---|
 | `usage limit` · `rate limit` · `\b429\b` (= `RATE_RE` H1) | `ALL_PROVIDERS_EXHAUSTED` | `quota` | `cooldown` (giờ reset hoặc +30 phút, H1-R24) | `ALL_PROVIDERS_EXHAUSTED` |
-| `/login` · `not logged in` · `invalid api key` · `oauth token` · `\b401\b` · `\b403\b` | `NOT_CONFIGURED` | `credential` | `logged_out` | `NOT_CONFIGURED` |
-| còn lại | `UPSTREAM_ERROR` | `refused` | không đổi | `UPSTREAM_ERROR` + hint §2 |
-`is_error` có output token > 0 → như H1 (`UPSTREAM_ERROR`, reason `null`). Chữ result chỉ vào trace job (đã che, ≤ 300) — không vào `run.failed`.
+| `/login` · `not logged in` · `\b401\b` · `invalid api key` · `oauth token` (= `AUTH_RE` H1) | `ALL_PROVIDERS_EXHAUSTED` | `provider_unavailable` | `logged_out` (= `LOGGED_OUT` H1) | `ALL_PROVIDERS_EXHAUSTED` |
+| còn lại ∧ output token = 0 | `UPSTREAM_ERROR` | `refused` | không đổi | `UPSTREAM_ERROR` + hint §2 |
+Chỉ xét khi Runtime chưa có `RateLimit` (claude-sub: `result_signal` H1 đã phân loại cùng mẫu → nhánh `rl` của `decide_exit`, kết quả như bảng). Khớp rate/auth → phân loại bất kể output; không khớp ∧ output token > 0 → như H1 (`UPSTREAM_ERROR`, reason `null`). Chữ result chỉ vào trace job (đã che, ≤ 300) — không vào `run.failed`.
