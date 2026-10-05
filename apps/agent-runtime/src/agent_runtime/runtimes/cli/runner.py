@@ -21,6 +21,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import httpx2
 from pydantic import ValidationError
 
 from agent_runtime.contracts.hub import JobPayload1
@@ -59,6 +60,8 @@ class HostConfig:
     stopping: asyncio.Event = field(default_factory=asyncio.Event, compare=False)
     delta_flush_ms: int = 100  # H2b §8 `AGENT_RT_DELTA_FLUSH_MS`
     delta_flush_chars: int = 200  # H2b §8 `AGENT_RT_DELTA_FLUSH_CHARS`
+    hub_url: str | None = None  # H2c §2 `AGENT_RT_HUB_URL` (tải file/đẩy `out/`)
+    hub_transport: httpx2.AsyncBaseTransport | None = field(default=None, compare=False)
 
 
 _Seen = Seen  # tên cũ (test đơn vị PY-10)

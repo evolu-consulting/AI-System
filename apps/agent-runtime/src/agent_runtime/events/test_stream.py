@@ -6,7 +6,7 @@ import json
 from typing import Any, Self, cast
 
 from agent_runtime.contracts.hub import RunEvent
-from agent_runtime.events.stream import publish_run_event, stream_key
+from agent_runtime.events.stream import encode_event, publish_run_event, stream_key
 
 JOB = "11111111-1111-4111-8111-111111111111"
 
@@ -69,3 +69,27 @@ async def test_publish_xadd_maxlen_and_expire() -> None:
 
 def test_stream_key() -> None:
     assert stream_key("abc") == "run:abc"
+
+
+def _result(outputs: list[str] | None) -> RunEvent:
+    body: dict[str, Any] = {
+        "v": 1,
+        "job_id": JOB,
+        "seq": 3,
+        "at": "2026-10-04T00:00:00Z",
+        "type": "job.result",
+        "output": {"kind": "text", "text": "ok"},
+        "usage": {"input_tokens": 1, "output_tokens": 2},
+        "session_resumed": False,
+    }
+    if outputs is not None:
+        body["outputs"] = outputs
+    return RunEvent.model_validate(body)
+
+
+def test_wrk_fr_18_result_outputs_key_only_when_present() -> None:
+    """H2c F10: không `outputs` ⇒ không khoá (y hệt H2b); có ⇒ mảng id."""
+    assert "outputs" not in json.loads(encode_event(_result(None)))
+    assert json.loads(encode_event(_progress()))["percent"] is None  # None khác giữ nguyên
+    got = json.loads(encode_event(_result([JOB])))
+    assert got["outputs"] == [JOB]

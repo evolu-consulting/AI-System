@@ -20,9 +20,19 @@ from agent_runtime.contracts.hub import JobPayload1
 from agent_runtime.db import sessions_sql
 from agent_runtime.db.finish_sql import FinishTx
 from agent_runtime.db.jobs_sql import ClaimedJob
+from agent_runtime.events.job_events import Failure
 from agent_runtime.log import get_logger
 from agent_runtime.providers.context import with_history
 from agent_runtime.runtimes.cli.delta_pump import DeltaPump
+from agent_runtime.runtimes.cli.files.dirs import ATTACHMENTS_SUBDIR, prepare_job_dirs
+from agent_runtime.runtimes.cli.files.fetch import (
+    FetchFailed,
+    FetchOk,
+    FetchTimedOut,
+    FetchWhy,
+    FilesCall,
+    fetch_attachments,
+)
 from agent_runtime.runtimes.cli.host_proc import HostProcess, Outcome
 from agent_runtime.runtimes.cli.joblog import LOG_WRITE_ERRORS, append_is_error, events_log_path
 from agent_runtime.runtimes.cli.outcome import (
@@ -42,9 +52,15 @@ from agent_runtime.runtimes.cli.result import (
     validation_hint,
 )
 from agent_runtime.runtimes.cli.session import resume_failed, session_key
+from agent_runtime.runtimes.hub_http import make_hub_client
 
 if TYPE_CHECKING:
     from agent_runtime.runtimes.cli.runner import CliJobHost
+
+
+def attachment_failure(why: FetchWhy) -> Failure:
+    """H2c F5: tải file lỗi ⇒ `failed INTERNAL_ERROR attachment` (Hub: `run.failed` câu H1)."""
+    return Failure("failed", "INTERNAL_ERROR", "attachment", f"attachment fetch failed: {why}")
 
 
 class StopControl(Protocol):
@@ -87,6 +103,8 @@ class JobRun:
             await self.pump.close()  # `_close` đã xả; còn lại = dừng không ghi / lỗi giữa chừng
 
     async def _execute(self) -> None:
+        if not await self._prepare_files():
+            return
         await self._load_session()
         outcome = await self._attempt()
         if self._retryable(outcome) and resume_failed(self.seen, self.resumed):
@@ -100,6 +118,36 @@ class JobRun:
             get_logger().info("job.output_retry", resumed=sid is not None)
             outcome = await self._attempt()
         await self._apply(outcome)
+
+    async def _prepare_files(self) -> bool:
+        """H2c §3.1/§3.3: làm mới `attachments/` (có file) và `out/` (role `agent`), tải file
+        trước khi chạy provider. Một lần mỗi claim (thử lại trong claim không tải lại)."""
+        items = self.payload.attachments or []
+        out = self.payload.agent.role == "agent"
+        if not items and not out:
+            return True
+        try:
+            prepare_job_dirs(self.work, attachments=bool(items), out=out)
+        except OSError as err:
+            get_logger().warning("job.attachment_failed", why="path", error=type(err).__name__)
+            await self.host.finish_failed(self.job, attachment_failure("path"))
+            return False
+        if not items:
+            return True
+        async with make_hub_client(self.cfg.hub_transport) as client:
+            call = FilesCall(
+                client, self.cfg.hub_url, self.job, self.deadline, self.control.stopped
+            )
+            res = await fetch_attachments(call, items, self.work / ATTACHMENTS_SUBDIR)
+        if isinstance(res, FetchOk):
+            return True
+        if isinstance(res, FetchFailed):
+            await self.host.finish_failed(self.job, attachment_failure(res.why))
+        elif isinstance(res, FetchTimedOut):
+            await self._close(Verdict(TIMED_OUT))
+        else:  # FetchStopped: cancel ⇒ `cancelled`; shutdown/lost ⇒ không ghi
+            await self._apply("stopped")
+        return False
 
     def _retryable(self, outcome: Outcome) -> bool:
         """HUB-FR-95 §5 #5: đã có `Confirm` → không resume/thử lại (lượt sau là run mới). H2b R21:

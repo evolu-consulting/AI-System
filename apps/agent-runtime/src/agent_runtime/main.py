@@ -80,6 +80,7 @@ def host_config(settings: Settings, stopping: asyncio.Event) -> HostConfig:
         stopping=stopping,
         delta_flush_ms=s.delta_flush_ms,
         delta_flush_chars=s.delta_flush_chars,
+        hub_url=s.hub_url,
     )
 
 
