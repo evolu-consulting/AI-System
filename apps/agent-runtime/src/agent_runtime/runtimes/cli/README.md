@@ -14,5 +14,6 @@
 | `delta_pump.py` | H2b (cha): `DeltaPump` — gom `Delta` của job host, hẹn giờ xả, XADD `job.delta{kind, text}` (`seq` chung bộ đếm job) qua `RunEvents.delta`; `drain` trước `_close`, mẻ đang XADD bọc `asyncio.shield`; `streamed` ⇒ không thử lại JSON / dựng lại session |
 | `refusal.py` | H2b F4 (WRK-FR-15): `classify_is_error(text, output_tokens, stop_reason)` — rate/auth như H1; `refused` chỉ khi `stop_reason == "refusal"` ∧ 0 output (TC-8); còn lại None ⇒ `PROVIDER_ERROR` |
 | `session.py` | (cha) luật session §6: khoá `cli_sessions` (+`tenant_id`), resume lỗi trước `tool_use` → dựng từ history (PY-11) |
+| `files/` | H2c (WRK-FR-11, WRK-FR-18): `rules.py` luật thuần (§4), `dirs.py` `prepare_job_dirs`, `fetch.py` `fetch_attachments`, `outputs.py` `send_outputs` — PY-00 stub, thân PY-01…03 |
 
 Còn: `result.py`/`prompt.py` (PY-10), usage/provider_state (PY-12), file log events (PY-13).

@@ -121,3 +121,11 @@ BA chỉ nêu ví dụ "PDF, ảnh, XML" (US-H07). Hub không quét virus ở H2
 | BC5 | C2 | `check:size` miễn `apps/agent-runtime/src/agent_runtime/contracts/hub.py` (sinh, 435 dòng > 400) — `tools/scripts/src/check-size.ts` + ca unit | File sinh "DO NOT EDIT", như `*.gen.ts`; không chia được |
 | BC6 | C2 | Typecheck `apps/hub-api` xanh không cần sửa: `WorkflowInputValue` ở Hub là kiểu riêng (`commands/catalog.types.ts`), không suy từ contract. `runner.rules.allowedTools` (giao với `ALLOWED_TOOLS`) nay cho qua `Write` khi agent cấu hình — đúng PL9 (opt-in); mặc định giữ Read, Grep | — |
 | BC7 | C2 | Unit (không khoá) sửa: `delta.test.ts` (15 lý do, `attachment` cuối), `hub.test.ts` (ca sai `Edit` thay `Write`; `HUB_JSON_SCHEMAS` 12 key), `hub-internal.test.ts` (`toEqual` +4 mã) | plan §2.2–2.3 |
+
+## BUILD — PY-00/MK (backend-lead, 2026-10-05)
+| # | Chỗ | Quyết định | Lý do |
+|---|---|---|---|
+| PY0-1 | `runtimes/hub_http.py` | Chuyển nguyên văn `make_hub_client`/`NO_PROXY_MOUNTS`/`CREDENTIAL_TIMEOUT`; `dify/credential.py` export lại bằng `import X as X` (pyright strict coi là re-export); `dify/client.py` import thẳng từ `hub_http` | Không đổi hành vi; test dify import theo đường cũ vẫn chạy |
+| PY0-2 | `cli/files/fetch.py`, `outputs.py` (rt §3.2, §5) | Gộp `client, hub_url, job, deadline, stop` vào dataclass `FilesCall` ⇒ `fetch_attachments(call, items, dest)`, `send_outputs(call, out) -> tuple[str, ...]`; `items: Sequence[JobAttachment]` (contract sinh C2); `job` qua Protocol `JobRef(id, token)` (khớp `ClaimedJob`) | ruff `PLR0913` (≤ 4 tham số, repo không dùng `noqa`); ngữ nghĩa giữ như plan |
+| PY0-3 | stub `rules.py` | Đủ hằng §4 + alias `FetchClass`/`OutputClass`/`OutKind`/`OutSkip` + `OutEntry`; mọi hàm ném `NotImplementedError` (QW-PU đỏ đúng lý do) | — |
+| PY0-4 | `pytest -m int` | 133/134 xanh (mọi dify H2a xanh, chạy DB tạm riêng vì DB test H1 dùng chung đang bị test khác migrate dở). Đỏ `result_int_test::test_wrk_fr_03_event_sequence`: `job.result` có khoá `outputs` thừa — do contract C2 thêm `JobResultEvent.outputs` (Runtime dump `None`); sửa ở PY-03 (rt §1 `events.result`: khoá `outputs` chỉ khi ≠ ∅) | Không thuộc PY-00 (tách file) |

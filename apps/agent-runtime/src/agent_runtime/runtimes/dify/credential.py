@@ -15,15 +15,11 @@ import httpx2
 from pydantic import ValidationError
 
 from agent_runtime.contracts.hub import DifyCredentialResponse
+from agent_runtime.runtimes.hub_http import CREDENTIAL_TIMEOUT as CREDENTIAL_TIMEOUT
+from agent_runtime.runtimes.hub_http import NO_PROXY_MOUNTS as NO_PROXY_MOUNTS
+from agent_runtime.runtimes.hub_http import make_hub_client as make_hub_client
 
 AppType = Literal["workflow", "chat", "agent"]
-CREDENTIAL_TIMEOUT = httpx2.Timeout(10.0)
-# Hub và mock chạy loopback: không đi qua proxy env (tương đương `NO_PROXY=localhost,127.0.0.1`).
-NO_PROXY_MOUNTS: dict[str, httpx2.AsyncBaseTransport | None] = {
-    "all://localhost": None,
-    "all://127.0.0.1": None,
-    "all://[::1]": None,
-}
 _MASKED = "***"
 
 
@@ -54,19 +50,6 @@ class CredentialError:
 
 def credential_url(hub_url: str, job_id: str) -> str:
     return f"{hub_url.rstrip('/')}/internal/jobs/{quote(job_id, safe='')}/dify-credential"
-
-
-def make_hub_client(transport: httpx2.AsyncBaseTransport | None = None) -> httpx2.AsyncClient:
-    """Client gọi Hub nội bộ: không redirect, timeout 10 s, `trust_env=False` (review 1 C3: Hub luôn
-    là mạng nội bộ — không đi qua `HTTP(S)_PROXY`, không đọc `.netrc`/`SSL_CERT_*` từ env; token
-    job không bao giờ tới proxy)."""
-    return httpx2.AsyncClient(
-        timeout=CREDENTIAL_TIMEOUT,
-        follow_redirects=False,
-        trust_env=False,
-        mounts=NO_PROXY_MOUNTS,
-        transport=transport,
-    )
 
 
 def _parse(resp: httpx2.Response) -> DifyCredential | CredentialError:

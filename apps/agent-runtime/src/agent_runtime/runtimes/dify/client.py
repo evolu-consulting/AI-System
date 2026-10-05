@@ -18,8 +18,9 @@ from typing import Any, Self, cast
 
 import httpx2
 
-from agent_runtime.runtimes.dify.credential import NO_PROXY_MOUNTS, DifyCredential
+from agent_runtime.runtimes.dify.credential import DifyCredential
 from agent_runtime.runtimes.dify.policy import DETAIL_MAX, ErrKind, mask
+from agent_runtime.runtimes.hub_http import NO_PROXY_MOUNTS
 
 CONNECT_TIMEOUT_S = 10.0
 _ERROR_BODY_READ = 4096
