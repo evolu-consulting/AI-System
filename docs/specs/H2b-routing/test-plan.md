@@ -1,0 +1,186 @@
+# Test plan · H2b-routing (qc)
+
+Chế độ **TEST-PLAN** · 2026-10-05. Chưa có file test, chưa khoá; viết + "đỏ đúng lý do" sau Gate (§8), rồi Q2 → Q-PU → Q3. Bảng ca: hàm thuần (R), int hub-api (A), hồi quy khoá (K), thủ công (M), không phủ → [`test-plan-cases.md`](test-plan-cases.md); Python (P), stack (S), smoke → [`test-plan-py.md`](test-plan-py.md).
+"Đúng" = spec §2 (H2b-R01…R30), §8 (AC + HUB-H2b-AC-01…13); chữ ký `plan-rules.md`; câu chữ/trace `plan-errors.md`; SQL `plan-db.md` §2–4; luồng `plan.md` §5; Runtime `plan-runtime.md` §3–6. BA chỉ ở AC được trỏ (`ba-agent-hub` §11).
+
+## 1. Quy ước
+Như H2a §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo`), thêm:
+
+| Mục | Quy ước H2b |
+|---|---|
+| Tên test | TS `"<mã BA> · <ID> · mô tả [H2b-Rxx]"` — **mã BA đứng đầu** (`trace --check`: HUB-FR-91/92/94 đang thiếu test); Python `test_<mã_snake>_…` + docstring mã |
+| Loại | **R** unit TS · **A** int hub-api (DB/Redis thật, `ScriptRuntime` XADD tay, MK) · **P** Python (unit thuần + int Runtime thật `fake-cli`) · **S** stack (Hub thật + Runtime container + MK) · **H** hub-dev (`tools/hub-dev` thật, fixture R26) · **K** khoá có sẵn · **M** thủ công · **SM** smoke `HUB_LIVE=1` |
+| Vị trí | R `tests/acceptance/H2b/rules/*.test.ts` · A `tests/acceptance/H2b/*.int.test.ts` · S `tests/acceptance/H2b/stack/*.stack.test.ts` · H `tests/acceptance/H2b/hubdev/*.hubdev.test.ts` · P `apps/agent-runtime/tests/acceptance/{test_stream_rules.py,*_int_test.py}` · perf `tests/acceptance/H2b/perf.perf.int.test.ts` · SM `tests/smoke/h2b-live.test.ts` |
+| Dữ liệu | Fixture H1 (`T`, `USERS`, `AG`, `insertHubConfig`) + H2a (`_h2a.ts` catalog/agent `trello`, `dify-*`) + `_h2b.ts` mới (§2.1): agent `writer` (grant `lan`), `llmbot` (runtime `llm`, grant `lan`), `orch-acme`, `orch-alt` (agentic-cli, profile `fake-1`), tên vi/en khác nhau cho `assistant` |
+| Id (bài học TC-3) | Run/flow/job do test chèn SQL dùng `crypto.randomUUID()`/`uuid4()`; ca bắt buộc id cố định → `DEL run:<id> sse:<id>` trước khi dùng. Run do Hub tạo: id ngẫu nhiên sẵn |
+| Đếm MK (TC-2) | Đếm lời gọi theo input/kịch bản của ca, không đếm tổng sau `reset()` |
+| Log | `setSink` (`apps/hub-api/src/lib/logger`) bắt `warn`/`info` theo tên `plan-errors` §3; Runtime: dòng JSON `event=` |
+| Seam deps | `startHubX` + `maxConcurrentRuns` (Lệch L1); test int luôn truyền **2** |
+
+## 2. Hạ tầng và giả lập
+| Mục | Đề xuất | Ai |
+|---|---|---|
+| DB TS (bài học I1 H2a) | `TEST_DATABASE_URL`/`TEST_ADMIN_API_DATABASE_URL` = `ai_system_h2b_<nhóm>_test`; DB Hub/Runtime **riêng** `ai_system_h2b_<nhóm>_hub_test` (`HUB_TEST_DATABASE_URL`, `AGENT_RT_TEST_DATABASE_URL`) — chung DB → `DuplicateTableError` ở `ensure_schema` | qc |
+| Env | File `.env.test-h2b_<nhóm>.local`; khi chạy chỉ **export 4 biến DB** (không `source` cả file: PEM nhiều dòng hỏng). `scripts/run.ts` (Windows → container) **truyền env DB ngay trong chuỗi lệnh** (`AGENT_RT_TEST_DATABASE_URL=… HUB_TEST_DATABASE_URL=… uv run pytest -m int …`) | qc |
+| Redis | `redis://localhost:6379/15` dùng chung → id ngẫu nhiên / xoá key (TC-3) | qc |
+| Runtime kịch bản (A) | `_h2b.ts` bọc `ScriptRuntime` (không sửa `_runtime.ts` khoá): `delta(job, kind, text)` qua `emit` (cần C2: `job.delta` trong `RunEventSchema`), `skipSeq(job, n)` (hở `seq`, P11), `rawDecide(job, text)` (JSON hỏng) | qc |
+| MK TS | `tools/hub-dev/src/dify-mock.ts` (khoá) — đủ: `mk-ok`, `mk-slow-<ms>` (5 chunk), `mk-agent`; side_effect qua catalog H2a (`create-trello-card`). **Không cần kịch bản mới** | — |
+| Mock Python | `tests/support/{dify_mock,mcp_mock}.py` (khoá) — H2b P không dùng (Dify trong Hub; `fake-cli` không MCP ở P) | — |
+| `fake-cli` | Chỉ thị `plan-runtime` §6 (`#fake:stream[=n]`, `stream-order`, `stream-diverge`, `stream-badjson`, `answer-len`, `turns`) + có sẵn (`partial`, `need_input`, `delegate`, `tool`, `args`, `usage`, `sleep`) + **`#fake:is-error=<rate\|auth\|refused>`** (Lệch L2) | backend-lead PY-04 |
+| Stack (S) | Mẫu `H2a/stack/_stack.ts`: hub-api **trên host**, catalog `base_url` = `http://localhost:<MK>/v1`; chỉ container Runtime dùng `host.docker.internal` (`--add-host …:host-gateway`) (TC-4). Runtime `AGENT_RT_PROVIDERS=fake-cli`; nếu đặt `AGENT_RT_ORPHAN_S=5` thì **`AGENT_RT_HEARTBEAT_S=1`** (TC-5/7). Hub `HUB_MAX_CONCURRENT_RUNS=2` **tường minh** (không thừa hưởng 20 của hub-dev, L6) | qc / MK |
+| Hub-dev (H) | `startHubDev`/`ensureContractFixture` như bước contract của `done:h2a` (`needsDev`) | MK |
+| Lock | `tests/acceptance/H2b/**`, `apps/agent-runtime/tests/acceptance/*` mới; mock không đổi. `tests/smoke/**` **không** khoá (Q-T6) | qc |
+
+### 2.1 Fixture `_h2b.ts` (SQL owner, sau `insertHubConfig` + `insertH2aAgents`/`insertCatalog` khi cần)
+| Mục | Giá trị |
+|---|---|
+| `writer` | agentic-cli, profile `fake-1`, entitlement acme, grant `lan` (AU `lan` = assistant, helper, writer) |
+| `llmbot` | runtime `llm`, entitlement acme, grant `lan` |
+| `orch-acme`, `orch-alt` | agentic-cli, profile `fake-1`, không grant |
+| Tên | `assistant` = `{vi:"Trợ lý", en:"Assistant"}` (A20–A22) |
+| Helper | `tenantOrch(sql, tenant, agent, opts)` + config change; `ScriptRuntime3` (`delta`, `skipSeq`, `rawDecide`); `runsRunning(user)`; `endRunsSql(user)` |
+| uuid | `crypto.randomUUID()` cho dữ liệu chèn trong ca; id agent cố định dải `a2b0…` |
+
+## 3. Ma trận mã → test
+| Mã | Test | Loại |
+|---|---|---|
+| HUB-FR-91 · HUB-BR-18 · AC-H17/H18/H19 · HUB-H2b-AC-01 | R01–R14, A01–A07, A20–A31, A40–A44 | R, A |
+| HUB-FR-92 · HUB-FR-77 · HUB-H2b-AC-02 | R15–R21, A50–A56, H01, PF1 | R, A, H |
+| HUB-FR-94 · AC-H21 · HUB-H2b-AC-03 | R36, A07, A80–A88, PF2 | R, A |
+| HUB-FR-62 · HUB-BR-08 · AC-H16 (vế runtime) · HUB-H2b-AC-10 | R18, R22–R24, R31–R35, A60–A67, A70–A76 | R, A |
+| HUB-BR-03 (Orchestrator ở mọi phạm vi) | R15, R18, R21, A43, A54, A66 | R, A |
+| HUB-BR-06 (chốt lúc tạo run) | A22, A28, A63 | A |
+| HUB-FR-95 · HUB-BR-20 · AC-H22 (vế `@`) | A90–A96, S05 | A, S |
+| WRK-FR-03 (delta) · HUB-H2b-AC-04/05/06/07/11 | R25–R29, A100–A117, A120–A123, P01–P06, P20–P25, S01–S04, S06, PF3 | R, A, P, S |
+| WRK-FR-15 (F4) · HUB-H2b-AC-08 | R30, P07, P26, A130–A132, S08 | R, P, A, S |
+| WRK-FR-17 (F5) · AC-W09 · HUB-H2b-AC-09 | P08, P27, P28 | P |
+| HUB-H2b-AC-12 · R29 (F7) | SM1–SM3, M02, K11 | SM, M, K |
+| HUB-H2b-AC-13 · R26 (F3) · R30 | A150, H01, K01–K10 | A, H, K |
+| Contract chat/hub (spec §3) | R40–R44 | R |
+| DB `0006` (spec §4) | A140–A143 | A |
+| TD #44 (B0, không đổi hành vi) · TD #47 | K04, K05, K09 · S05 (vế 1 delegate) | K, S |
+
+**Luật → ca** (mỗi luật ≥ 1 ca):
+
+| Luật | Ca | Luật | Ca | Luật | Ca |
+|---|---|---|---|---|---|
+| R01 | R01–R08, A02, A05, A06 | R11 | R20, R21, A50–A56 | R21 | P05, P06, P23–P25 |
+| R02 | R11, A01, A04, A55 | R12 | A90–A96, S05 | R22 | R25, A101–A106 |
+| R03 | R10, A01 | R13 | R31–R35, A70–A76 | R23 | R27, A107–A112, S04 |
+| R04 | R04, R05, A03 | R14 | R22–R24, A60–A64 | R24 | A120–A123 |
+| R05 | A01, A03, A04 | R15 | R15, R18, R21, A43, A54, A65, A66 | R25 | P20–P22, S01–S04, S06 |
+| R06 | A20, A26–A30 | R16 | R36, A83, A84, A87 | R26 | H01, K03 |
+| R07 | R12, A23–A25 | R17 | A80, A81, A86 | R27 | R30, P07, P26, A130–A132, S08 |
+| R08 | A24 | R18 | A07, A82 | R28 | P08, P27, P28 |
+| R09 | R16, R17, A40–A44 | R19 | R25, A100 | R29 | SM1–SM3, K11, M02 |
+| R10 | R13, A20–A22 | R20 | P01–P04, P20, P22, S06 | R30 | A150, K01–K10 |
+
+**Không phủ ở H2b:**
+
+| Mã / vế | Lý do · mốc |
+|---|---|
+| AC-H16 vế `tenant_admin` bị từ chối, API/Studio sửa Orchestrator | H4 |
+| Bộ câu kiểm thử định tuyến | H4 |
+| Menu `@`, hiển thị `responder`/lỗi mới/`delta` khi step mở trên Chat | combine (CR-impact I3), e2e Chat |
+| `claude-sub` stream thật | SM/M02, không chặn |
+| `/agent-grants`, quota | H3 |
+
+## 4. R · Hàm thuần TS (chữ ký `plan-rules.md`) — bảng ca: cases §1
+| ID | File (`rules/`) | Hàm | Số ca |
+|---|---|---|---|
+| R01–R08 | `mention-parse.test.ts` | `routeMessage`, `parseMention` (HUB-H2b-AC-01) | 8 (bảng ~40 dòng) |
+| R10–R14 | `mention.test.ts` | `suggestAgents`, `firstUnknownTag`, `directText`, `responderOf` | 5 |
+| R15–R19 | `agent-access-h2b.test.ts` | `visibleAgents` (`excludeIds`, `onlyKeys`), `canDelegate`, `orchestratorIds`, `accessInput` | 5 |
+| R20–R21 | `agent-menu.test.ts` | `toAgentMenuItem`, `agentMenu` | 2 |
+| R22–R24 | `orchestrator-pick.test.ts` | `pickOrchestrator`, `orchestratorProblem` (không đổi) | 3 |
+| R25–R29 | `delta.test.ts` | `streamAccept`, `nextSeqOk`, `reconcileStream` | 5 |
+| R30 | `run-errors-h2b.test.ts` | `runErrorTextFor` | 1 |
+| R31–R35 | `seed-tenants.test.ts` | `planOrchestratorTenants` | 5 |
+| R36 | `run-limit.test.ts` | `overLimit`, `parseMaxConcurrentRuns` | 1 |
+| R40–R44 | `contracts-h2b.test.ts` | chat chỉ thêm; hub `JobDeltaEvent`, `stream`, `refused`; fixture | 5 |
+
+## 5. A · hub-api int — bảng ca: cases §2
+| File (`H2b/`) | ID | Mã đầu tên |
+|---|---|---|
+| `mention.int.test.ts` | A01–A07 | HUB-FR-91 / HUB-BR-18 / HUB-FR-94 (A07) |
+| `direct.int.test.ts` | A20–A31 | HUB-FR-91 |
+| `scope.int.test.ts` | A40–A44 | HUB-FR-91 / HUB-BR-03 |
+| `agents-menu.int.test.ts` | A50–A56 | HUB-FR-92 / HUB-FR-77 |
+| `orchestrator-tenant.int.test.ts` | A60–A67 | HUB-FR-62 / HUB-BR-08 / HUB-BR-06 |
+| `seed-tenant.int.test.ts` | A70–A76 | HUB-FR-62 |
+| `run-limit.int.test.ts` | A80–A88 | HUB-FR-94 |
+| `confirm-tag.int.test.ts` | A90–A96 | HUB-BR-20 / HUB-FR-95 |
+| `delta.int.test.ts` | A100–A117 | WRK-FR-03 |
+| `dify-stream.int.test.ts` | A120–A123 | WRK-FR-03 / HUB-FR-91 |
+| `refused.int.test.ts` | A130–A132 | WRK-FR-15 |
+| `db.int.test.ts` | A140–A143 | HUB-FR-91 / HUB-FR-62 / WRK-FR-15 |
+| `compat.int.test.ts` | A150 | HUB-FR-91 |
+| `perf.perf.int.test.ts` | PF1–PF3 | HUB-FR-92 / HUB-FR-94 / WRK-FR-03 (không chặn) |
+
+## 6. P · S · H · SM · K · M
+P01–P09 (unit, `test_stream_rules.py`), P20–P28 (int), S01–S08, SM1–SM3: [`test-plan-py.md`](test-plan-py.md). H01, K01–K11, M01–M03: cases §3–§4.
+
+## 7. Lệnh
+### 7.1 `bun run done:h2b` (`tools/scripts/src/done-h2b.ts`, mẫu `done-h2a.ts`; tuần tự, DB không song song) — **mọi bước `done:h2a`** + phần H2b (**in đậm**)
+| # | Bước | Chặn |
+|---|---|---|
+| 1 | `bunx turbo run typecheck --filter=@ai/hub-api --filter=@ai/contracts --filter=@ai/db --filter=@ai/scripts --filter=@ai/chat-web --filter=@ai/mocks` (TC-6: `@ai/scripts`, không `@ai/hub-dev`) | ✓ |
+| 2 | `bun test packages/contracts packages/db tools/hub-dev apps/admin-api/src/modules/access tests/acceptance/C1 tests/acceptance/H1/rules tests/acceptance/H2a/rules` **`tests/acceptance/H2b/rules`** | ✓ |
+| 3 | `bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 tests/acceptance/H1/ tests/acceptance/H2a/ ` **`tests/acceptance/H2b/`** `tests/acceptance/M tests/acceptance/ADM-NFR-06` (`bunfig.int.toml` bỏ qua `H2b/stack/**`, `H2b/hubdev/**`) | ✓ |
+| 4 | `bun run contracts:check` | ✓ |
+| 5 | `bun apps/agent-runtime/scripts/run.ts "<env DB> uv sync --frozen && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run lint-imports && uv run pytest && uv run pytest -m int"` (gồm `test_stream_rules.py`, P20–P28) | ✓ |
+| 6–8 | `bun run test:h1:stack` · `bun run test:h2a:stack` · **`bun run test:h2b:stack`** (S01–S08) | ✓ |
+| 9 | `HUB_URL=… AUTH_URL=… CHAT_CONTRACT_USERS='<json>' bun run test:contract:chat` (hub-dev, `needsDev`; 41 pass — HUB-H2b-AC-13) | ✓ |
+| 10 | **`bun --env-file=.env.local test tests/acceptance/H2b/hubdev`** (H01, `needsDev`, cùng HUB_URL/AUTH_URL) | ✓ |
+| 11–14 | `bun run test:lock:verify` · `bun run trace --check` · `bun run check:size --all` · `bunx depcruise apps/hub-api packages/contracts/src/hub packages/contracts/src/hub-internal packages/db tools/hub-dev` | ✓ |
+| 15 | `tsc -p tsconfig.tests.json` | báo cáo |
+| 16 | `bun run test:perf tests/acceptance/H2a` **`tests/acceptance/H2b`** | báo cáo |
+
+Không thuộc `done:h2b`: `HUB_LIVE=1 bun run test:smoke:live` (I2, AC-12); vắng cờ → exit 0 (K11, qc kiểm một lần ở I1).
+
+### 7.2 Thủ công: spike PY-S2 (M01), smoke `HUB_LIVE` (M02), `docs/guides/hub-dev.md` (M03) — cases §4.
+
+## 8. Nhóm WRITE · đợt khoá (sau Gate)
+| Nhóm | Khi | File | Ca (≈) | Phải đỏ đúng lý do vì |
+|---|---|---|---|---|
+| QW-R | sau B0 (stub), C1, C2 | 10 file `rules/` | 40 ID / ~95 dòng bảng | stub `throw not implemented`. **Xanh trước code chấp nhận**: R40–R44 (contract C1/C2 đã có), R19 (hồi quy H1), R24 (`orchestratorProblem` không đổi) |
+| QW-A1 | sau QW-R, D1 | `mention`, `direct`, `scope`, `agents-menu`, `orchestrator-tenant`, `seed-tenant`, `run-limit`, `confirm-tag`, `db`, `compat` | ~62 | `@` đi Orchestrator như text (200 SSE thay vì 404/422/direct), `GET /agents` 404, không 429, seed từ chối `orchestrator_tenants`. Xanh trước code: A140–A143 (D1), A150 (hành vi H2a), A82 vế 409 |
+| QW-A2 | sau QW-A1, C2 | `delta`, `dify-stream`, `refused`, perf | ~30 | Hub bỏ `job.delta` (không SSE `delta` trước `job.result`), `payload.stream` vắng, hint `refused` = câu H1 |
+| **Q2** | sau QW-A2 | khoá `tests/acceptance/H2b/**` (trừ `stack/`, `hubdev/`) | — | verify: chỉ `UNLOCKED` file mới |
+| QW-PU | sau Q2, C2, **trước PY-01** | `test_stream_rules.py` | P01–P09 (~70 dòng) | `ModuleNotFoundError` (`providers.stream_scan`, `runtimes.cli.{delta,refusal}`, `providers.claude.usage_acc`) — import trong thân test (`importlib`) |
+| **Q-PU** | sau QW-PU | `test:lock:verify` đúng **1** dòng `UNLOCKED` → `test:lock:write` | — | — |
+| QW-P | sau PY-02 | `stream_int_test.py`, `refusal_int_test.py`, `usage_h2b_int_test.py`; `stack/*` (S01–S08), `hubdev/` (H01) | P20–P28 ~25 · S 8 · H 1 | P: chưa có `job.delta`/phân loại F4/usage cộng dồn (chờ hết hạn, `expect`); S: SSE thiếu `delta`/`ask`; H: `lan` không thấy `assistant` (F3 chưa) hoặc `GET /agents` 404. Fixture/DB/MK/Runtime boot phải xanh |
+| **Q3** | sau QW-P, **trước PY-03** | khoá P int + `stack/` + `hubdev/` | — | verify: chỉ `UNLOCKED` file QW-P |
+| SM | QW-A2 | `tests/smoke/h2b-live.test.ts` | 3 | không khoá; vắng `HUB_LIVE` → skip |
+
+Tổng mới ≈ **210** ca (R ~95 dòng bảng / 40 ID, A ~92, P ~35, S 8, H 1, perf 3) + K + M 3 + SM 3. Model: QW-R/A1/A2/PU/P = Opus (`cao`), Q2/Q-PU/Q3/I1 = Sonnet.
+
+## 9. Rủi ro test · câu hỏi (mặc định dùng nếu không trả lời)
+| # | Rủi ro / câu hỏi | Mặc định |
+|---|---|---|
+| Q-T1 | `test:contract:chat` 41 ca gặp 429 với limit 2 | Phân tích: ca Hub thật đều chờ sự kiện kết thúc, tuần tự trong file; ca huỷ/`#scn:` chỉ mock (`describe.if(isMock)`); K-R6 đóng body nhưng run vẫn xong nhanh (`fake-cli`) ⇒ nguy cơ thấp. F3 chạy **với 2 trước**, ghi kết quả; đỏ do 429 → hub-dev đặt 20 (plan §2.1), không sửa test; stack/int H2b vẫn 2 tường minh |
+| Q-T2 | R import `*.rules.ts` chưa có | B0 stub chữ ký (như H2a Q-T2) |
+| Q-T3 | AC-03 không tất định (song song) | 5 vòng × 10 POST, uuid mới mỗi vòng, dọn run bằng SQL owner giữa vòng; kiểm đúng 2/8 mỗi vòng + `pgDeadlocks` không tăng |
+| Q-T4 | Ngưỡng thời gian trên Windows (≤ 5 s menu, ≤ 150 ms delta, ≥ 200 ms delta sớm) | Poll 100 ms; ≤ 150 ms đo trung vị 10 chunk (A115); ≥ 200 ms dùng `n=10` (L3); perf không chặn |
+| Q-T5 | PY-S2 ✗ (#1/#2) | Không đổi test chặn (chỉ `fake-cli`/Dify); SM1/SM2 ghi ✗ theo `spike-stream.md` |
+| Q-T6 | Smoke có khoá? | Không khoá (`tests/smoke` ∉ `LOCKED_DIRS`; chạy tay, I2 chỉnh theo spike) |
+| Q-T7 | `UsageAcc.add` với `message_id=None` | Mỗi lần gọi `None` = message mới (cộng) — P08 ghi giả định; plan khác → sửa ca trước Q-PU |
+| Q-T8 | `parseMention` với token `@@b` sau tag (`"@a @@b x"`) | Không kiểm (plan không chốt); ngoài phạm vi AC-01 |
+| Q-T9 | `""` cho `HUB_MAX_CONCURRENT_RUNS` | Không kiểm (plan chỉ chốt "vắng → 2") |
+| Q-T10 | Mục `orchestrator_tenants` có tenant lạ **và** agent lạ | Lỗi seed (kiểm agent mọi mục trước khi xét tenant) — R35 |
+| R-WIN | P/S không chạy trên Windows | P qua `scripts/run.ts` (container), S ở WSL2/Docker như H2a |
+
+### Lệch plan (readiness xử)
+| # | Lệch | Đề xuất |
+|---|---|---|
+| L1 | `AppDeps` chưa có trường giới hạn run (H2a: `createApp` không đọc env — seam deps) | Thêm `maxConcurrentRuns?: number` (= `HUB_MAX_CONCURRENT_RUNS`, vắng → env → 2) vào `AppDeps` (B5) |
+| L2 | `plan-runtime` §6 không có chỉ thị tạo `Final.is_error` 0 token với chữ result tuỳ ý — P26/S08 (AC-08) không dựng được | PY-04 thêm `#fake:is-error=<rate\|auth\|refused>`: `Final{is_error:true, text:<mẫu cố định: "You've hit your usage limit" / "Not logged in · Please run /login" / "I can't help with that.">}`, output token 0; kèm `#fake:usage=a,b` (b>0) → output > 0 |
+| L3 | Spec §6 "delta đầu trước `run.finished` ≥ 200 ms" với `#fake:stream=5`: 5 đoạn × 50 ms = 200 ms tổng, gom 100 ms ⇒ khoảng ~100 ms, không đạt | AC-04 giữ `=5` cho các vế khác; vế thời gian dùng `#fake:stream=10` (S01) / 5 chunk cách 100 ms (A101) |
+| L4 | `tasks` QW-A2 ghi "stack delta" trước Q2, nhưng stack cần PY-03/04 | Ngữ nghĩa Hub (lọc `kind`, `seq`, `reconcileStream`, pass-through) ở **A** (XADD tay, QW-A2, Q2); end-to-end ở **S** (QW-P, Q3) |
+| L5 | AC-02 "`hoa` → `items=[]`" chỉ đúng ở fixture hub-dev; fixture int H1 cấp agent cho `hoa` | A52 dùng `tadmin` (0 grant); vế `hoa` ở H01 (hub-dev) |
+| L6 | R26 kiểm trên hub-dev cần bước `needsDev` + thư mục mới; hub-dev có thể đặt 20 làm stack H2b thừa hưởng | MK: `done-h2b.ts` bước 10, `bunfig.int.toml`/`bunfig.toml` bỏ `tests/acceptance/H2b/{stack,hubdev}/**`; stack H2b đặt `HUB_MAX_CONCURRENT_RUNS=2` |
+| L7 | `PROTECTED_PREFIXES` (`app.ts`) chưa có `/agents` ⇒ không JWT có thể 404 thay vì 401 | B3 thêm `/agents` (A51 kỳ vọng 401 `AUTH_EXPIRED`) |
+| L8 | P09 (env `AGENT_RT_DELTA_*`, `config.py`) thuộc PY-03, không thuộc PY-01 (như H2a QW-PU) | PY-01 xong = P01–P08 xanh; P09 xanh ở PY-03 |
+
+## 10. Đỏ đúng lý do · nhật ký
+Chưa chạy (chưa viết test). Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
