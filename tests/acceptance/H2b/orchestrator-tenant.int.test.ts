@@ -253,6 +253,9 @@ describe("A64–A67 · bản tenant hỏng, khởi động, loại khỏi AU, ru
     });
     await tenantOrch(sql, T.acme, AG3.orchAcme);
     try {
+      // Hai thay đổi cấu hình liền nhau: chờ cache nạp bản tenant (thay đổi cuối, snapshot gồm cả grant) — "menu
+      // không có orch-acme" thoả cả khi cache chưa nạp gì nên không đủ làm điều kiện chờ (qc TC A66, B7-5).
+      expect((await orchWithin("lan", "orch-acme")).key).toBe("orch-acme");
       for (const who of ["lan", "an"] as const) {
         const ks = await waitFor(
           async () => menuKeys(hub, await tok(who)),
