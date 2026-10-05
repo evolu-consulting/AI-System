@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { IsoDateTime, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX, LIST_Q_MAX, UuidSchema } from "../common";
 import { ChatAgentKeySchema } from "./agents";
+import { ATTACH_PER_MESSAGE_MAX, AttachmentRefSchema } from "./attachments";
 import { CHAT_RUN_ERROR_CODES } from "./errors";
 
 export const CHAT_CONTENT_MAX = 16_000;
@@ -107,6 +108,8 @@ export const MessageSchema = z
     ask: AskSchema.nullable(),
     /** H2b: chỉ tin assistant của run `direct`. */
     responder: ResponderSchema.optional(),
+    /** H2c: file gắn vào tin (user: gửi kèm; assistant: file `out/`); vắng khi không có file. */
+    attachments: z.array(AttachmentRefSchema).min(1).max(ATTACH_PER_MESSAGE_MAX).optional(),
   })
   .superRefine((m, ctx) => {
     if (m.role !== "user") return;
@@ -209,11 +212,18 @@ export const MessageContextSchema = z.strictObject({
 });
 export type MessageContext = z.infer<typeof MessageContextSchema>;
 
-/** E12 · không `flow_id` → flow mới (C1-R01); `context` tuỳ chọn (H2a, chỉ thêm). */
+/** E12 · không `flow_id` → flow mới (C1-R01); `context` tuỳ chọn (H2a), `attachment_ids` tuỳ chọn (H2c) — chỉ thêm. */
 export const SendMessageRequestSchema = z.strictObject({
   content: z.string().trim().min(1).max(CHAT_CONTENT_MAX),
   flow_id: UuidSchema.optional(),
   context: MessageContextSchema.optional(),
+  /** H2c: id file đã upload (1–10, không trùng); vắng khi không file. */
+  attachment_ids: z
+    .array(UuidSchema)
+    .min(1)
+    .max(ATTACH_PER_MESSAGE_MAX)
+    .refine((ids) => new Set(ids).size === ids.length, "duplicate")
+    .optional(),
 });
 export type SendMessageRequest = z.infer<typeof SendMessageRequestSchema>;
 

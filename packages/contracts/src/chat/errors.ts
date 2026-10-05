@@ -1,6 +1,8 @@
 // CHAT-AC-31, HUB-FR-43 · mã lỗi HTTP kênh chat + mã `run.failed` (spec C1 §3, plan §2.4–§2.5).
 // `/auth/*` giữ mã của Admin (`API_ERRORS` trong `../common`), không lặp ở đây.
 import { z } from "zod";
+import { UuidSchema } from "../common";
+import { ATTACH_PER_MESSAGE_MAX } from "./attachments";
 
 /** Mã lỗi HTTP của endpoint Hub (không phải `/auth/*`) → status. */
 export const CHAT_API_ERRORS = {
@@ -70,3 +72,22 @@ export const AgentNotFoundDetailsSchema = z.strictObject({
   suggestions: z.array(z.string()).max(AGENT_SUGGESTIONS_MAX),
 });
 export type AgentNotFoundDetails = z.infer<typeof AgentNotFoundDetailsSchema>;
+
+// HUB-FR-44, HUB-FR-12 · lỗi đính kèm (H2c plan §2.1, P2): hằng riêng — không đổi `CHAT_API_ERRORS`.
+/** Lỗi `POST /attachments` (413/415/409) và E12 (404 `ATTACHMENT_NOT_FOUND{ids}`). */
+export const CHAT_ATTACHMENT_ERRORS = {
+  ATTACHMENT_NOT_FOUND: 404,
+  ATTACHMENT_QUOTA_EXCEEDED: 409,
+  ATTACHMENT_TOO_LARGE: 413,
+  ATTACHMENT_TYPE_NOT_ALLOWED: 415,
+} as const satisfies Record<string, 404 | 409 | 413 | 415>;
+
+export type ChatAttachmentErrorCode = keyof typeof CHAT_ATTACHMENT_ERRORS;
+export const CHAT_ATTACHMENT_ERROR_CODES = Object.keys(
+  CHAT_ATTACHMENT_ERRORS,
+) as ChatAttachmentErrorCode[];
+
+export const AttachmentNotFoundDetailsSchema = z.strictObject({
+  ids: z.array(UuidSchema).min(1).max(ATTACH_PER_MESSAGE_MAX),
+});
+export type AttachmentNotFoundDetails = z.infer<typeof AttachmentNotFoundDetailsSchema>;

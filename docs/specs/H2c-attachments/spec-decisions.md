@@ -103,3 +103,9 @@ BA chỉ nêu ví dụ "PDF, ảnh, XML" (US-H07). Hub không quét virus ở H2
 
 ## Gate duyệt — 2026-10-05
 - Người dùng duyệt Gate H2c ("Oke"): CR-039 (gồm mục 7 tool `Write`), Q1–Q3 = A, storage ổ đĩa Hub + interface, tool `Write` tắt mặc định — bật theo agent qua seed, hook chỉ cho ghi `work/<job_id>/out/`, đổi hành vi H2a K10, PL1–PL14.
+
+## BUILD — C1/C2 (backend-lead, không đổi nghiệp vụ)
+| # | Task | Quyết định | Lý do |
+|---|---|---|---|
+| BC1 | C1 | `ATTACH_MAX_BYTES`/`ATTACH_ALLOWED`/`AttachMime`/`ATTACH_MIMES`/`AttachMimeSchema` đặt ở `packages/contracts/src/attach.ts`, `common.ts` re-export (`export * from "./attach"`) — import `../common` như plan | `common.ts` 403 dòng > trần 400 (`check:size`) |
+| BC2 | C1 | `AttachmentNotFoundDetailsSchema.ids` max = `ATTACH_PER_MESSAGE_MAX` (10) — `errors.ts` import `./attachments` (không vòng: `attachments.ts` chỉ import `../common`) | Một nguồn hằng |

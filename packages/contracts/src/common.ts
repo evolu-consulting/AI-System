@@ -373,3 +373,6 @@ export const NotEntitledDetailsSchema = z.strictObject({
   feature_ids: z.array(UuidSchema).min(1),
 });
 export type NotEntitledDetails = z.infer<typeof NotEntitledDetailsSchema>;
+
+// HUB-FR-44 · hằng đính kèm H2c (plan H2c §2.1) — file riêng vì trần 400 dòng.
+export * from "./attach";

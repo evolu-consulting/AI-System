@@ -22,6 +22,7 @@ export {
 export { type ErrorResponse, ErrorResponseSchema } from "../errors";
 export { type HealthResponse, HealthResponseSchema } from "../health";
 export * from "./agents";
+export * from "./attachments";
 export * from "./commands";
 export * from "./entities";
 export * from "./errors";
