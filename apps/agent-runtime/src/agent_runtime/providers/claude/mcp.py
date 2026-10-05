@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import stat
 from contextlib import suppress
 from pathlib import Path
 
@@ -71,16 +72,37 @@ def server_config(url: str, token: str) -> dict[str, object]:
     return {"mcpServers": {MCP_SERVER: hub}}
 
 
+class UnsafeMcpDir(OSError):
+    """`.mcp` không phải thư mục thật của uid này (symlink / file / chủ khác) → không ghi token."""
+
+
+def ensure_dir(path: Path) -> None:
+    """Review 1 C4: `.mcp` phải là thư mục thật (`lstat`, không symlink) thuộc uid process; quyền
+    rộng hơn 0700 (vd tạo sẵn bởi `mkdir` với umask, hoặc bị nới) → `chmod 0o700`."""
+    path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    st = path.lstat()
+    if not stat.S_ISDIR(st.st_mode):
+        raise UnsafeMcpDir(f"{MCP_DIR} không phải thư mục thật")
+    if st.st_uid != os.getuid():
+        raise UnsafeMcpDir(f"{MCP_DIR} không thuộc uid của Runtime")
+    if stat.S_IMODE(st.st_mode) != 0o700:
+        os.chmod(path, 0o700, follow_symlinks=False)
+
+
 def write_config(work_root: Path, job_id: str, url: str, token: str) -> Path:
-    """Ghi file 0600 (thư mục 0700); tạo mới bằng `O_EXCL` sau khi xoá bản cũ (không theo
-    symlink)."""
+    """Ghi file 0600 (thư mục 0700, `ensure_dir`); tạo mới bằng `O_EXCL` sau khi xoá bản cũ (không
+    theo symlink). Lỗi giữa chừng (review 1 C11) → xoá file dở (không để token sót trên đĩa)."""
     path = config_path(work_root, job_id)
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    ensure_dir(path.parent)
     remove_config(path)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        os.fchmod(f.fileno(), 0o600)
-        json.dump(server_config(url, token), f)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            os.fchmod(f.fileno(), 0o600)
+            json.dump(server_config(url, token), f)
+    except BaseException:
+        remove_config(path)
+        raise
     return path
 
 

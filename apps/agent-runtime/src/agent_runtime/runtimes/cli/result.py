@@ -49,6 +49,12 @@ def confirmation_forced(payload: JobPayload1, final: Final | None, confirm: Conf
     return _model_asked(final) is None
 
 
+def forced_need_input(confirm: Confirm) -> dict[str, Any]:
+    """`job.result.output` = `need_input{question, choices}` của Hub (HUB-FR-95 §5 #4)."""
+    forced = {"status": "need_input", "question": confirm.question, "choices": [*confirm.choices]}
+    return {"kind": "agent_result", "result": forced}
+
+
 def build_output(
     payload: JobPayload1, final: Final, confirm: Confirm | None = None
 ) -> dict[str, Any] | None:
@@ -60,12 +66,7 @@ def build_output(
         asked = _model_asked(final)
         if asked is not None:
             return {"kind": "agent_result", "result": asked.model_dump(mode="json")}
-        forced = {
-            "status": "need_input",
-            "question": confirm.question,
-            "choices": [*confirm.choices],
-        }
-        return {"kind": "agent_result", "result": forced}
+        return forced_need_input(confirm)
     if payload.output == "text":
         text = final.text if final.text is not None else final.raw_json
         if text is None or len(text) > MAX_TEXT:

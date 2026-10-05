@@ -21,7 +21,7 @@ from agent_runtime.db.provider_state_sql import Broken, ProviderEffect
 from agent_runtime.db.usage_sql import UsageKeys, UsageRow
 from agent_runtime.events.job_events import Failure, Tokens
 from agent_runtime.providers.base import Confirm, Fatal, Final, RateLimit, UsageEv
-from agent_runtime.runtimes.cli.result import build_output
+from agent_runtime.runtimes.cli.result import build_output, forced_need_input
 
 JOB_ERROR_CODES = frozenset(
     {"ALL_PROVIDERS_EXHAUSTED", "TIMEOUT", "CANCELLED", "UPSTREAM_ERROR", "INTERNAL_ERROR"}
@@ -128,6 +128,11 @@ def decide_exit(payload: JobPayload1, seen: Seen) -> Verdict:
     if rl is not None:
         failure = LOGGED_OUT if rl.status == "logged_out" else RATE_LIMITED
         return Verdict(failure, provider=broken_of(rl))
+    if seen.confirm is not None and payload.output == "agent_result":
+        if seen.fatal is not None or seen.final is None:
+            # Review 1 C10: CLI chết / lỗi sau CONFIRMATION_REQUIRED — câu hỏi xác nhận của Hub vẫn
+            # là kết quả đúng (người dùng trả lời rồi chạy lại); không đếm lỗi provider.
+            return Verdict(None, forced_need_input(seen.confirm), "none")
     if seen.fatal is not None:
         return Verdict(fatal_failure(seen.fatal), provider="none" if seen.parent_fault else "error")
     if seen.final is None:

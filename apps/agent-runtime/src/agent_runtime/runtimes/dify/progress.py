@@ -1,7 +1,7 @@
 """H2a-R12 · RT7 · Gộp `job.progress` của job `workflow.async` (`plan-runtime-dify` §3.5): tối đa 1
 sự kiện/giây, giữ sự kiện mới nhất (phát khi hết khoảng chờ). `message` là câu tĩnh do host dựng
-(không tên node/workflow). `close()` bỏ sự kiện còn chờ và chờ lần phát đang dở — gọi trước XADD kết
-thúc để không có `job.progress` sau `job.result`/`job.failed`.
+(không tên node/workflow). `close()` chờ lần phát đang dở rồi phát nốt sự kiện còn chờ (`flush`, giữ
+khoảng 1 s) — gọi trước XADD kết thúc để không có `job.progress` sau `job.result`/`job.failed`.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ class Throttle:
         self._last: float | None = None
         self._pending: str | None = None
         self._timer: asyncio.Task[None] | None = None
-        self._sending: asyncio.Task[None] | None = None
+        self._sending = False
         self._closed = False
 
     def push(self, message: str) -> None:
@@ -39,33 +39,49 @@ class Throttle:
             return
         self._pending = message
         if self._timer is None or self._timer.done():
-            self._timer = asyncio.create_task(self._flush_later())
+            self._timer = asyncio.create_task(self._drain())
 
-    async def _flush_later(self) -> None:
+    async def _drain(self) -> None:
+        """Phát tới khi hết tin chờ: tin `push` lúc đang XADD được phát ở lượt sau (review 1 C9)."""
+        while self._pending is not None and not self._closed:
+            await self._wait_slot()
+            if self._closed:
+                return
+            await self._send_pending()
+
+    async def _wait_slot(self) -> None:
         if self._last is not None:
             wait = self._last + self._interval - time.monotonic()
             if wait > 0:
                 await asyncio.sleep(wait)
+
+    async def _send_pending(self) -> None:
         message, self._pending = self._pending, None
-        if message is None or self._closed:
+        if message is None:
             return
         self._last = time.monotonic()
-        self._sending = asyncio.current_task()
+        self._sending = True
         try:
             await asyncio.shield(self._publish(message))
         finally:
-            self._sending = None
+            self._sending = False
 
-    async def close(self) -> None:
+    async def close(self, flush: bool = True) -> None:
+        """Dừng nhận tin. Lần phát đang dở → chờ xong (giữ thứ tự seq). `flush` → phát nốt tin chờ
+        (vẫn giữ khoảng ≥ `interval`) trước khi người gọi XADD kết thúc; `flush=False` (job `lost`/
+        `shutdown`, không ghi kết thúc) → bỏ tin chờ."""
         self._closed = True
-        self._pending = None
         timer = self._timer
-        if timer is None or timer.done():
-            return
-        if self._sending is timer:  # đang XADD: chờ xong (giữ thứ tự seq)
+        if timer is not None and not timer.done():
+            if self._sending:
+                with suppress(Exception):
+                    await timer
+            else:
+                timer.cancel()
+                with suppress(asyncio.CancelledError):
+                    await timer
+        if flush and self._pending is not None:
+            await self._wait_slot()
             with suppress(Exception):
-                await timer
-            return
-        timer.cancel()
-        with suppress(asyncio.CancelledError):
-            await timer
+                await self._send_pending()
+        self._pending = None

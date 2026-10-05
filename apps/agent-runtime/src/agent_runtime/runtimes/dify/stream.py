@@ -15,6 +15,9 @@ from typing import Any, Literal, cast
 AppType = Literal["workflow", "chat", "agent"]
 _PROGRESS_EVENTS = frozenset({"node_started", "agent_thought"})
 _TEXT_EVENTS = frozenset({"message", "agent_message"})
+# `job.result.output.text` tối đa 64 000 ký tự (contract). Review 1 C5: ngừng nối khi đã đủ — bộ nhớ
+# không tăng theo stream dài; phần bị bỏ chỉ đếm (`dropped`) để log độ dài gốc.
+OUTPUT_MAX = 64_000
 
 
 @dataclass(frozen=True)
@@ -26,6 +29,7 @@ class StreamState:
     nodes: int = 0
     outputs: Mapping[str, Any] | None = None
     usage: Mapping[str, Any] | None = None
+    dropped: int = 0  # số ký tự text bị bỏ vì vượt `OUTPUT_MAX`
 
 
 @dataclass(frozen=True)
@@ -54,6 +58,15 @@ def _str(value: object) -> str:
     return value if isinstance(value, str) else ""
 
 
+def _append(state: StreamState, chunk: str) -> StreamState:
+    """Nối `chunk` vào `text`, giữ `len(text) ≤ OUTPUT_MAX` (64k đầu — như cắt cuối ở host)."""
+    room = OUTPUT_MAX - len(state.text)
+    if len(chunk) <= room:
+        return replace(state, text=state.text + chunk) if chunk else state
+    keep = max(room, 0)
+    return replace(state, text=state.text + chunk[:keep], dropped=state.dropped + len(chunk) - keep)
+
+
 def _finished(state: StreamState, body: Mapping[str, Any]) -> tuple[StreamState, Step]:
     """`workflow_finished.data{status, outputs, total_tokens…}` → giữ `outputs`, `usage` = data."""
     s = replace(state, outputs=_obj(body.get("outputs")), usage=body)
@@ -73,9 +86,9 @@ def reduce(state: StreamState, event: str, data: Mapping[str, Any]) -> tuple[Str
         s = replace(s, nodes=s.nodes + 1)
         return s, Progress(n=s.nodes)
     if event == "text_chunk":
-        return replace(s, text=s.text + _str(body.get("text"))), None
+        return _append(s, _str(body.get("text"))), None
     if event in _TEXT_EVENTS:
-        return replace(s, text=s.text + _str(data.get("answer"))), None
+        return _append(s, _str(data.get("answer"))), None
     if event == "workflow_finished":
         return _finished(s, body)
     if event == "message_end":

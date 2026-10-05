@@ -104,3 +104,11 @@ async def test_q5_credential_redirect_not_followed() -> None:
         out = await fetch_credential(client, HUB, "j1", TOKEN)
     assert out == CredentialError(retryable=False, http_status=307)
     assert len(seen) == 1
+
+
+async def test_review1_c3_hub_client_ignores_proxy_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """C3: client gọi Hub không đọc `HTTP(S)_PROXY` (token job không tới proxy)."""
+    monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalid:3128")
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.invalid:3128")
+    async with make_hub_client() as client:
+        assert client.trust_env is False

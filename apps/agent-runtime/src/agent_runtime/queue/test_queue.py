@@ -86,3 +86,38 @@ def test_wrk_fr_01_payload_parse() -> None:
     assert _payload('{"run_id": "r"}') == {"run_id": "r"}
     assert _payload({"a": 1}) == {"a": 1}
     assert _payload("[1]") == {}
+
+
+class _SlowHost:
+    """Job host có pha dọn dẹp sau khi bị dừng (như Dify đóng stream) — đo chạy chồng."""
+
+    def __init__(self) -> None:
+        self.active = 0
+        self.max_active = 0
+        self.runs: list[str | None] = []
+
+    async def run(self, job: ClaimedJob, control: JobControl) -> None:
+        self.active += 1
+        self.max_active = max(self.max_active, self.active)
+        try:
+            await control.stopped.wait()
+            await asyncio.sleep(0.02)  # dọn dẹp sau khi bị dừng
+            self.runs.append(control.reason)
+        finally:
+            self.active -= 1
+
+
+async def test_review1_c1_reclaim_same_job_waits_old_task_and_keeps_new_entry() -> None:
+    """C1: requeue rồi claim lại cùng `id` khi task cũ chưa thoát → task cũ dừng `lost`, task mới
+    chỉ chạy sau khi task cũ thoát; task cũ thoát không gỡ entry của lần claim mới."""
+    host = _SlowHost()
+    sup = Supervisor(host)
+    sup.start(ClaimedJob(JOB, {"run_id": "r"}, token="t1"))
+    await asyncio.sleep(0)
+    sup.start(ClaimedJob(JOB, {"run_id": "r"}, token="t2"))
+    await asyncio.sleep(0.05)
+    assert host.runs == ["lost"] and host.max_active == 1
+    assert sup.holds(JOB) and host.active == 1  # lần claim mới đang chạy, vẫn được theo dõi
+    assert sup.stop(JOB, "cancel") is True
+    await asyncio.sleep(0.05)
+    assert host.runs == ["lost", "cancel"] and sup.held() == []

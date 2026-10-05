@@ -23,6 +23,8 @@ _VARS = (
     "AGENT_RT_HUB_URL",
     "AGENT_RT_DIFY_READ_TIMEOUT_S",
     "AGENT_RT_DIFY_STOP_TIMEOUT_S",
+    "AGENT_RT_HEARTBEAT_S",
+    "AGENT_RT_ORPHAN_S",
 )
 
 
@@ -125,3 +127,31 @@ def test_wrk_fr_06_dify_env_invalid(monkeypatch: pytest.MonkeyPatch, name: str, 
     monkeypatch.setenv(name, value)
     with pytest.raises(ValidationError):
         load_settings()
+
+
+@pytest.mark.parametrize(
+    ("heartbeat", "orphan", "needle"),
+    [
+        ("10", "5", "AGENT_RT_ORPHAN_S=5"),
+        ("10", "19.9", "AGENT_RT_ORPHAN_S"),
+        ("30", "120", "AGENT_RT_HEARTBEAT_S=30"),
+        ("45", "600", "AGENT_RT_HEARTBEAT_S"),
+    ],
+)
+def test_review1_c2_orphan_heartbeat_rejected(
+    monkeypatch: pytest.MonkeyPatch, heartbeat: str, orphan: str, needle: str
+) -> None:
+    monkeypatch.setenv("AGENT_RT_HEARTBEAT_S", heartbeat)
+    monkeypatch.setenv("AGENT_RT_ORPHAN_S", orphan)
+    with pytest.raises(ValidationError, match=needle):
+        load_settings()
+
+
+@pytest.mark.parametrize(("heartbeat", "orphan"), [("10", "60"), ("10", "20"), ("1", "5")])
+def test_review1_c2_orphan_heartbeat_accepted(
+    monkeypatch: pytest.MonkeyPatch, heartbeat: str, orphan: str
+) -> None:
+    monkeypatch.setenv("AGENT_RT_HEARTBEAT_S", heartbeat)
+    monkeypatch.setenv("AGENT_RT_ORPHAN_S", orphan)
+    s = load_settings()
+    assert (s.heartbeat_s, s.orphan_s) == (float(heartbeat), float(orphan))

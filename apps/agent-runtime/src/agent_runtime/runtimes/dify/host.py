@@ -58,6 +58,11 @@ class DifyConfig:
     dify_transport: httpx2.AsyncBaseTransport | None = field(default=None, compare=False)
 
 
+class JobTimedOut(Exception):
+    """Hết `payload.timeout_s` của lần claim (review 1 C8: tách khỏi `TimeoutError` khác, vd pool
+    DB/asyncpg — cái đó là lỗi nội bộ → `INTERNAL_ERROR`/`crash`)."""
+
+
 class FinishWriteFailed(Exception):
     """Ghi "Kết thúc" hết lượt thử: lên Supervisor; heartbeat/sweeper xử lý job lạc."""
 
@@ -77,13 +82,14 @@ class DifyJobHost:
                 await self.close(job, None, Outcome(INVALID_PAYLOAD))
                 return
             run = DifyRun(self, job, payload)
+            outcome: Outcome | None = None
             try:
                 outcome = await self._supervise(run, control)
             except Exception as err:  # lỗi lập trình/IO lạ: không để job `running` mãi
                 get_logger().error("job.host_failed", error=type(err).__name__)
                 outcome = Outcome(CRASHED, usage=run.usage())
-            finally:
-                await run.progress.close()
+            finally:  # C9: phát nốt tiến độ chờ chỉ khi sắp ghi kết thúc
+                await run.progress.close(flush=outcome is not None)
             if outcome is None:
                 self.events.forget(job.id)
                 return
@@ -103,7 +109,7 @@ class DifyJobHost:
             return res
         if isinstance(res, asyncio.CancelledError):
             return await self._stopped(run, control.reason)
-        if isinstance(res, TimeoutError):
+        if isinstance(res, JobTimedOut):
             await run.stop()
             return Outcome(TIMED_OUT, usage=run.usage())
         if isinstance(res, LostJob):
@@ -119,8 +125,14 @@ class DifyJobHost:
 
     @staticmethod
     async def _timed(run: DifyRun) -> Outcome:
-        async with asyncio.timeout(run.p.timeout_s):
-            return await run.execute()
+        deadline = asyncio.timeout(run.p.timeout_s)
+        try:
+            async with deadline:
+                return await run.execute()
+        except TimeoutError as err:
+            if deadline.expired():
+                raise JobTimedOut from err
+            raise  # TimeoutError khác (DB…) → `run` bắt → `CRASHED` (INTERNAL_ERROR)
 
     # ---------- Kết thúc (§3.7) ----------
 
@@ -152,11 +164,10 @@ class DifyJobHost:
         for wait_s in (*FINISH_BACKOFF_S, None):
             try:
                 async with self.pool.acquire() as conn:
-                    if await workflow_sql.finish_dify(conn, job.id, self.cfg.worker_id, done):
+                    wid = self.cfg.worker_id
+                    if await workflow_sql.finish_dify(conn, job, wid, done):
                         return True
-                    return retried and await jobs_sql.finished_as(
-                        conn, job.id, self.cfg.worker_id, done[0]
-                    )
+                    return retried and await jobs_sql.finished_as_fenced(conn, job, wid, done[0])
             except DB_ERRORS as err:
                 if wait_s is None:
                     raise FinishWriteFailed from err

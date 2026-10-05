@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import base64
 from decimal import Decimal
+from urllib.parse import quote, quote_plus
 
 from agent_runtime.runtimes.dify.policy import RetryFlags, mask, retry_delay, usage_row
 
@@ -38,3 +40,16 @@ def test_wrk_fr_06_mask_forms_and_empty_key() -> None:
     assert mask(text, key) == "*** ***"
     assert mask("abc", "") == "abc"
     assert mask("abc", "k", max_len=0) == ""
+
+
+def test_review1_c7_mask_base64url_nopad_and_percent() -> None:
+    """C7: key có ký tự base64url/URL đặc biệt — base64url không padding, percent-encoded (hoa,
+    thường, `+` cho dấu cách) đều bị che."""
+    key = "k?>~ a/b+c=1"  # base64 có `+`/`/`, URL cần mã hoá
+    b64u = base64.urlsafe_b64encode(key.encode()).decode().rstrip("=")
+    pct = quote(key, safe="")
+    forms = (b64u, pct, pct.lower(), quote_plus(key, safe=""))
+    out = mask(" | ".join(forms), key)
+    for form in forms:
+        assert form not in out
+    assert out == " | ".join(["***"] * 4)

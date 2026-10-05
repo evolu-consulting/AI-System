@@ -7,10 +7,12 @@ Thử lại (`plan-runtime-dify` §3.4), ánh xạ lỗi Dify (`plan-errors` §2
 from __future__ import annotations
 
 import base64
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal
+from urllib.parse import quote, quote_plus
 
 ErrKind = Literal[
     "connect", "http_5xx", "read", "http_4xx", "sse_error", "finished_failed", "empty"
@@ -105,13 +107,19 @@ def usage_row(
 
 
 def _key_forms(key: str) -> list[str]:
-    """Các dạng mã hoá của key (thô, base64 ± padding, base64url, hex thường/hoa), dài trước."""
+    """Các dạng mã hoá của key (thô, base64 ± padding, base64url ± padding, hex thường/hoa,
+    percent-encoded `%XX` hoa/thường, `+` cho dấu cách — review 1 C7), dài trước."""
     raw = key.encode("utf-8")
     b64 = base64.b64encode(raw).decode("ascii")
+    b64u = base64.urlsafe_b64encode(raw).decode("ascii")
     hx = raw.hex()
-    forms = {key, b64, b64.rstrip("="), base64.urlsafe_b64encode(raw).decode("ascii"), hx}
-    forms.add(hx.upper())
+    forms = {key, b64, b64.rstrip("="), b64u, b64u.rstrip("="), hx, hx.upper()}
+    for pct in (quote(key, safe=""), quote_plus(key, safe="")):
+        forms |= {pct, _PCT.sub(lambda m: m.group(0).lower(), pct)}
     return sorted((f for f in forms if f), key=len, reverse=True)
+
+
+_PCT = re.compile(r"%[0-9A-F]{2}")
 
 
 def mask(text: str, key: str, max_len: int = DETAIL_MAX) -> str:

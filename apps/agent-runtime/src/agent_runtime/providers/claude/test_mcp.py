@@ -147,3 +147,53 @@ async def test_wrk_fr_13_mcp_unavailable_not_fatal(
     evs = await run(monkeypatch, mcp_job(tmp_path), [init, result()])
     assert [e["type"] for e in evs][-1] == "final"
     assert all(e["type"] != "fatal" for e in evs)
+
+
+def test_review1_c4_mcp_dir_symlink_rejected(tmp_path: Path) -> None:
+    """C4: `.mcp` là symlink (trỏ ra ngoài) → không ghi token, không tạo file ở đích."""
+    root, elsewhere = tmp_path / "work", tmp_path / "elsewhere"
+    root.mkdir()
+    elsewhere.mkdir()
+    (root / mcp.MCP_DIR).symlink_to(elsewhere, target_is_directory=True)
+    with pytest.raises(mcp.UnsafeMcpDir):
+        mcp.write_config(root, JOB, URL, TOKEN)
+    assert list(elsewhere.iterdir()) == []
+
+
+def test_review1_c4_mcp_dir_file_rejected(tmp_path: Path) -> None:
+    root = tmp_path / "work"
+    root.mkdir()
+    (root / mcp.MCP_DIR).write_text("x")
+    with pytest.raises(OSError):  # mkdir(exist_ok) gặp file → FileExistsError, hoặc UnsafeMcpDir
+        mcp.write_config(root, JOB, URL, TOKEN)
+
+
+def test_review1_c4_mcp_dir_mode_tightened(tmp_path: Path) -> None:
+    """C4: thư mục `.mcp` có sẵn quyền rộng → siết về 0700 trước khi ghi."""
+    d = tmp_path / "work" / mcp.MCP_DIR
+    d.mkdir(parents=True)
+    d.chmod(0o755)
+    mcp.write_config(tmp_path / "work", JOB, URL, TOKEN)
+    assert stat.S_IMODE(d.lstat().st_mode) == 0o700
+
+
+def test_review1_c4_mcp_dir_wrong_uid_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(mcp.os, "getuid", lambda: 4242)
+    with pytest.raises(mcp.UnsafeMcpDir):
+        mcp.write_config(tmp_path / "work", JOB, URL, TOKEN)
+
+
+def test_review1_c11_write_failure_removes_partial_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C11: lỗi giữa lúc ghi (sau khi đã tạo file) → file bị xoá, không sót token."""
+
+    def boom(*_a: object, **_k: object) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(mcp.json, "dump", boom)
+    with pytest.raises(OSError, match="disk full"):
+        mcp.write_config(tmp_path / "work", JOB, URL, TOKEN)
+    assert not mcp.config_path(tmp_path / "work", JOB).exists()

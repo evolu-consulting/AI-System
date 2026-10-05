@@ -44,6 +44,7 @@ from agent_runtime.runtimes.dify.policy import (
 )
 from agent_runtime.runtimes.dify.progress import RUNNING, Throttle, retry_message, step_message
 from agent_runtime.runtimes.dify.stream import (
+    OUTPUT_MAX,
     Failed,
     Finished,
     Progress,
@@ -55,7 +56,6 @@ from agent_runtime.runtimes.dify.stream import (
 if TYPE_CHECKING:
     from agent_runtime.runtimes.dify.host import DifyJobHost
 
-OUTPUT_MAX = 64_000
 _TRANSPORT_ERRORS = (httpx2.HTTPError, httpx2.SSEError, DifyHTTPError, DifyStreamError)
 _NO_STOP: frozenset[ErrKind] = frozenset({"finished_failed", "empty"})
 
@@ -170,7 +170,7 @@ class DifyRun:
         if self.dispatched or not self.p.side_effect:
             return
         async with self.host.pool.acquire() as conn:
-            ok = await workflow_sql.mark_dispatched(conn, self.job.id, self.host.cfg.worker_id)
+            ok = await workflow_sql.mark_dispatched(conn, self.job, self.host.cfg.worker_id)
         if not ok:
             raise LostJob
         self.dispatched = True
@@ -203,8 +203,9 @@ class DifyRun:
         text = final_text(self.state.text, self.state.outputs, self._field())
         if text is None:
             return Outcome(dify_failure("empty", None), usage=self.usage())
-        if len(text) > OUTPUT_MAX:
-            get_logger().warning("job.output_truncated", length=len(text))
+        dropped = self.state.dropped if self.state.text else 0  # text nối đã bị cắt khi stream
+        if len(text) + dropped > OUTPUT_MAX:
+            get_logger().warning("job.output_truncated", length=len(text) + dropped)
             text = text[:OUTPUT_MAX]
         return Outcome(None, text=text, usage=self.usage())
 

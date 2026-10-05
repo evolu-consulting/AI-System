@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from pathlib import Path
 
-from agent_runtime.providers.base import Confirm, Final
+from agent_runtime.providers.base import Confirm, Fatal, Final
 from agent_runtime.runtimes.cli.outcome import Seen, decide_exit
 from agent_runtime.runtimes.cli.protocol import INVALID_EVENT, encode_event, parse_event
 from agent_runtime.runtimes.cli.result import build_output, confirmation_forced
@@ -54,12 +54,25 @@ def test_hub_fr_95_text_output_not_forced() -> None:
 
 def test_hub_fr_95_decide_exit_confirm_overrides_is_error() -> None:
     """Đã có `Confirm` + `final.is_error` (vd hết lượt sau tool) → `succeeded` `need_input`;
-    `fatal` / không `final` vẫn là lỗi như H1."""
+    không `Confirm` → lỗi như H1."""
     p = payload()
     v = decide_exit(p, Seen(final=_agent(None, is_error=True), confirm=HUB))
     assert v.failure is None and v.output == FORCED and v.provider == "ok"
-    assert decide_exit(p, Seen(confirm=HUB)).failure is not None
     assert decide_exit(p, Seen(final=_agent(None, is_error=True))).failure is not None
+    assert decide_exit(p, Seen()).failure is not None
+
+
+def test_hub_fr_95_review1_c10_confirm_wins_over_fatal_and_no_final() -> None:
+    """C10: CLI chết sau CONFIRMATION_REQUIRED (`fatal` hoặc thoát không `final`) → vẫn
+    `need_input` của Hub, không đếm lỗi provider."""
+    p = payload()
+    for seen in (
+        Seen(confirm=HUB),
+        Seen(confirm=HUB, signaled=True),
+        Seen(confirm=HUB, fatal=Fatal(code="INTERNAL_ERROR", msg="boom")),
+    ):
+        v = decide_exit(p, seen)
+        assert (v.failure, v.output, v.provider) == (None, FORCED, "none")
 
 
 def test_hub_fr_95_confirm_survives_next_attempt() -> None:

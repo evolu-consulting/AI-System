@@ -105,7 +105,12 @@ def classify(exc: BaseException) -> tuple[ErrKind, int | None]:
 
 
 class DifyClient:
-    """Một `AsyncClient` dùng chung cho mọi job `workflow.async` của process (≤ 5 đồng thời)."""
+    """Một `AsyncClient` cho **một lần claim** job `workflow.async` (mở trong `DifyRun.execute`,
+    đóng khi job xong; `stop` ngoài vòng thử mở client ngắn riêng) — không chia sẻ giữa job.
+
+    Proxy (review 1 C3): giữ `trust_env` mặc định — Dify có thể là dịch vụ ngoài (cloud) cần proxy
+    ra Internet của máy chủ; loopback luôn bỏ proxy (`NO_PROXY_MOUNTS`), host nội bộ khác dùng
+    `NO_PROXY` của môi trường."""
 
     def __init__(
         self,

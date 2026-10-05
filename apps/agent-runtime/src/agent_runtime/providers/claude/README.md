@@ -7,6 +7,7 @@ Chạy Claude Code qua **Claude Agent SDK Python** (`claude-agent-sdk==0.2.163`,
 |---|---|
 | `options.py` | `build_options(job)` → `ClaudeAgentOptions` (§3.1): `cwd`, `tools`=`allowed_tools`, `disallowed_tools` (agent: `KNOWN_TOOLS` CLI 2.1.286 ngoài `tools`; Orchestrator: `["*"]`), `permission_mode="dontAsk"`, hook `PreToolUse` = `make_path_guard` (timeout 10 s, cho `StructuredOutput` khi agent), `setting_sources=[]`, `strict_mcp_config`, `resume`, `max_turns` (agent ≥ 2), `model`, `env` (`ENABLE_CLAUDEAI_MCP_SERVERS=false`, `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`; Orchestrator thêm `SKIP_PROMPT_HISTORY`), `system_prompt` qua `neutralize_mentions`, `output_format` |
 | `mapping.py` | message SDK → `ProviderEvent` (§3.2), nhận diện rate limit / logged_out (§3.3), lỗi SDK → `fatal` |
+| `mcp.py` | MCP Hub cho agent (H2a §4.2): file `AGENT_RT_WORK_DIR/.mcp/<job_id>.json` 0600 (token claim, không qua argv); `.mcp` phải là thư mục thật (`lstat`, không symlink) của uid Runtime, quyền khác 0700 → `chmod 0o700`; lỗi giữa lúc ghi → xoá file dở; `remove_config` sau mỗi lần chạy |
 | `provider.py` | `ClaudeProvider.run` — một lượt `ClaudeSDKClient` (`query(neutralize_mentions(prompt))` + `receive_response`); model `usage` = `init.data["model"]`, không có thì khoá `costUSD` lớn nhất của `model_usage` |
 
 Sự kiện: `session` (init, Result) · `tool_use` + `progress` nhãn tĩnh (không đường dẫn) · `rate_limit{status:"rejected", resets_at}` hoặc `{status:"logged_out"}` cho PY-12 · `usage` · `final` (`structured` cho `agent_result`, `text` cho Orchestrator).

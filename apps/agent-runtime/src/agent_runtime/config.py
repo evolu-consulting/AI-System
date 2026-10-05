@@ -17,6 +17,7 @@ AppEnv = Literal["development", "test", "production"]
 LogLevel = Literal["debug", "info", "warning", "error"]
 DEV_ONLY_PROVIDERS = frozenset({"fake-cli"})
 _MNT = Path("/mnt")
+HUB_ORPHAN_S = 60.0  # hằng ngưỡng orphan phía Hub (H1, `spec-decisions` X1)
 
 
 def _norm_abs(value: Path, name: str) -> Path:
@@ -104,6 +105,22 @@ class Settings(BaseSettings):
     def _hub_url_for_dify(self) -> Self:
         if "dify" in self.providers and not self.hub_url:
             raise ValueError("AGENT_RT_HUB_URL bắt buộc khi AGENT_RT_PROVIDERS có dify")
+        return self
+
+    @model_validator(mode="after")
+    def _orphan_vs_heartbeat(self) -> Self:
+        """Review 1 C2: ngưỡng orphan phải ≥ 2 nhịp heartbeat (một nhịp trễ không thành orphan), và
+        heartbeat < 30 s vì Hub quét orphan với ngưỡng cố định 60 s (= 2 × 30)."""
+        if self.heartbeat_s >= HUB_ORPHAN_S / 2:
+            raise ValueError(
+                f"AGENT_RT_HEARTBEAT_S={self.heartbeat_s:g} phải < {HUB_ORPHAN_S / 2:g} "
+                f"(Hub coi job mồ côi sau {HUB_ORPHAN_S:g} s không heartbeat)"
+            )
+        if self.orphan_s < 2 * self.heartbeat_s:
+            raise ValueError(
+                f"AGENT_RT_ORPHAN_S={self.orphan_s:g} phải ≥ 2 × AGENT_RT_HEARTBEAT_S="
+                f"{self.heartbeat_s:g} (= {2 * self.heartbeat_s:g})"
+            )
         return self
 
     def safe_summary(self) -> dict[str, object]:

@@ -49,6 +49,10 @@ FINISH = """UPDATE hub.jobs SET status = $3, result = $4, error_code = $5, error
   finished_at = now(), pgid = NULL
 WHERE id = $1 AND worker_id = $2 AND status = 'running';"""  # noqa: E501 — nguyên văn plan-db §5.4 "Kết thúc"
 
+# Review 1 C1 (job `workflow.async` có thể requeue rồi chính worker này claim lại cùng `id`): câu
+# ghi của lần claim cũ phải rào theo `token_hash` của lần claim đó, không chỉ `worker_id`.
+FINISH_FENCED = FINISH.removesuffix(";") + " AND token_hash = $8;"
+
 HEARTBEAT = """UPDATE hub.jobs SET heartbeat_at = now() WHERE worker_id = $1 AND status = 'running' RETURNING id, cancel_requested_at IS NOT NULL AS cancel;"""  # noqa: E501
 
 SWEEP_ORPHANS = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE status = 'running' AND heartbeat_at < now() - make_interval(secs => $1) RETURNING id, run_id, worker_id, pgid;"""  # noqa: E501
@@ -80,6 +84,8 @@ ORPHAN_ONE = """UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ER
 # mình định ghi (cùng `worker_id`, status, mã, lý do; sweeper ghi `orphaned` nên không trùng).
 FINISHED_AS = """SELECT 1 FROM hub.jobs WHERE id = $1 AND worker_id = $2 AND status = $3 AND error_code IS NOT DISTINCT FROM $4 AND error_reason IS NOT DISTINCT FROM $5;"""  # noqa: E501
 
+FINISHED_AS_FENCED = FINISHED_AS.removesuffix(";") + " AND token_hash = $6;"
+
 RESET_PROVIDERS = """UPDATE hub.provider_state SET status = 'ok', consecutive_errors = 0, cooldown_until = NULL, updated_at = now() WHERE provider_key = ANY($1::text[]) AND status IN ('error','logged_out');"""  # noqa: E501
 
 
@@ -93,6 +99,11 @@ class ClaimedJob:
     @property
     def run_id(self) -> str:
         return str(self.payload.get("run_id", ""))
+
+    @property
+    def fence(self) -> bytes:
+        """`token_hash` của lần claim này (C1) — rào câu ghi theo lần claim, không chỉ `id`."""
+        return token_hash(self.token)
 
 
 @dataclass(frozen=True)
@@ -169,12 +180,25 @@ async def finish_job(conn: Conn, job_id: str, worker_id: str, f: Finish) -> bool
     return status == "UPDATE 1"
 
 
+async def finish_job_fenced(conn: Conn, job: ClaimedJob, worker_id: str, f: Finish) -> bool:
+    """Như `finish_job` + `token_hash` của đúng lần claim `job` (review 1 C1)."""
+    result = json.dumps(f.result) if f.result is not None else None
+    args = (job.id, worker_id, f.status, result, f.error_code, f.error_reason, f.error_message)
+    return await conn.execute(FINISH_FENCED, *args, job.fence) == "UPDATE 1"
+
+
 async def finished_as(conn: Conn, job_id: str, worker_id: str, f: Finish) -> bool:
     """True nếu job của `worker_id` đã ở đúng trạng thái kết thúc `f` (commit trước đó mất ack)."""
     row = await conn.fetchrow(
         FINISHED_AS, job_id, worker_id, f.status, f.error_code, f.error_reason
     )
     return row is not None
+
+
+async def finished_as_fenced(conn: Conn, job: ClaimedJob, worker_id: str, f: Finish) -> bool:
+    """Như `finished_as` + `token_hash` của đúng lần claim `job` (review 1 C1)."""
+    args = (job.id, worker_id, f.status, f.error_code, f.error_reason, job.fence)
+    return await conn.fetchrow(FINISHED_AS_FENCED, *args) is not None
 
 
 async def heartbeat(conn: Conn, worker_id: str) -> dict[str, bool]:

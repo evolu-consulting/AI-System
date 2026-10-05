@@ -15,10 +15,11 @@ from decimal import Decimal
 from uuid import UUID
 
 from agent_runtime.db import jobs_sql
-from agent_runtime.db.jobs_sql import Finish
+from agent_runtime.db.jobs_sql import ClaimedJob, Finish
 from agent_runtime.db.pool import Conn
 
-MARK_DISPATCHED = """UPDATE hub.jobs SET dispatched_at = now() WHERE id = $1 AND worker_id = $2 AND status = 'running';"""  # noqa: E501 — nguyên văn -dify §3.4
+# -dify §3.4 + review 1 C1: rào `token_hash = $3` (lần claim này; claim lại → token mới).
+MARK_DISPATCHED = """UPDATE hub.jobs SET dispatched_at = now() WHERE id = $1 AND worker_id = $2 AND status = 'running' AND token_hash = $3;"""  # noqa: E501
 
 INSERT_DIFY_USAGE = """INSERT INTO hub.usage_logs (tenant_id, run_id, step_id, user_id, feature_id, agent_id, provider_key, model, billing,
   input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd, billable_usd, overage, latency_ms, job_id)
@@ -41,8 +42,8 @@ class DifyUsage:
     latency_ms: int
 
 
-async def mark_dispatched(conn: Conn, job_id: str, worker_id: str) -> bool:
-    return await conn.execute(MARK_DISPATCHED, job_id, worker_id) == "UPDATE 1"
+async def mark_dispatched(conn: Conn, job: ClaimedJob, worker_id: str) -> bool:
+    return await conn.execute(MARK_DISPATCHED, job.id, worker_id, job.fence) == "UPDATE 1"
 
 
 async def insert_dify_usage(conn: Conn, job_id: str, u: DifyUsage) -> None:
@@ -66,16 +67,17 @@ class _NotOwned(Exception):
 
 
 async def finish_dify(
-    conn: Conn, job_id: str, worker_id: str, done: tuple[Finish, DifyUsage | None]
+    conn: Conn, job: ClaimedJob, worker_id: str, done: tuple[Finish, DifyUsage | None]
 ) -> bool:
-    """True = đã commit (người gọi XADD sau). False = 0 dòng (không XADD)."""
+    """True = đã commit (người gọi XADD sau). False = 0 dòng (không XADD). Rào `token_hash` của lần
+    claim `job` (review 1 C1): lần claim cũ không ghi đè lần claim mới của cùng job."""
     finish, usage = done
     try:
         async with conn.transaction():
-            if not await jobs_sql.finish_job(conn, job_id, worker_id, finish):
+            if not await jobs_sql.finish_job_fenced(conn, job, worker_id, finish):
                 raise _NotOwned
             if usage is not None:
-                await insert_dify_usage(conn, job_id, usage)
+                await insert_dify_usage(conn, job.id, usage)
     except _NotOwned:
         return False
     return True

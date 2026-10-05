@@ -57,10 +57,13 @@ def credential_url(hub_url: str, job_id: str) -> str:
 
 
 def make_hub_client(transport: httpx2.AsyncBaseTransport | None = None) -> httpx2.AsyncClient:
-    """Client gọi Hub nội bộ: không redirect, timeout 10 s, bỏ proxy cho loopback."""
+    """Client gọi Hub nội bộ: không redirect, timeout 10 s, `trust_env=False` (review 1 C3: Hub luôn
+    là mạng nội bộ — không đi qua `HTTP(S)_PROXY`, không đọc `.netrc`/`SSL_CERT_*` từ env; token
+    job không bao giờ tới proxy)."""
     return httpx2.AsyncClient(
         timeout=CREDENTIAL_TIMEOUT,
         follow_redirects=False,
+        trust_env=False,
         mounts=NO_PROXY_MOUNTS,
         transport=transport,
     )
