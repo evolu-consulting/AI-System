@@ -68,7 +68,7 @@ async def test_wrk_ac_w06_p18_orphan_requeued_and_rerun(ctx: Ctx) -> None:
     async with dify_env(ctx) as d, enqueued_notes() as notes:
         job = await d.job(cred=SLOW)
         _, first_hash = await start_and_kill(d, job, "qc-a")
-        d.runtime("qc-b", AGENT_RT_ORPHAN_S="5")
+        d.runtime("qc-b", AGENT_RT_ORPHAN_S="5", AGENT_RT_HEARTBEAT_S="1")
         row = await ctx.until_status(job, ["succeeded"], SWEEP_S)
         assert (row["attempts"], row["worker_id"]) == (2, "qc-b")
         assert row["token_hash"] != first_hash
@@ -87,7 +87,7 @@ async def test_wrk_ac_w06_p19_side_effect_dispatched_orphaned(ctx: Ctx) -> None:
         job = await d.job(DifySpec(side_effect=True), SLOW)
         await start_and_kill(d, job, "qc-a")
         assert (await ctx.until_status(job, ["running"], 1))["dispatched_at"] is not None
-        d.runtime("qc-b", AGENT_RT_ORPHAN_S="5")
+        d.runtime("qc-b", AGENT_RT_ORPHAN_S="5", AGENT_RT_HEARTBEAT_S="1")
         row = await ctx.until_status(job, ["failed"], SWEEP_S)
         assert (row["error_code"], row["error_reason"], row["attempts"]) == (
             "INTERNAL_ERROR",
@@ -117,7 +117,7 @@ async def test_wrk_h2a_r13_p20_attempts_3_orphaned(ctx: Ctx) -> None:
     """P20 · R13 · mồ côi với `attempts=3` → `failed INTERNAL_ERROR/orphaned`, Dify 0 lời gọi."""
     async with dify_env(ctx) as d:
         job = await ghost_running(d, 3)
-        d.runtime("qc-b", AGENT_RT_ORPHAN_S="5")
+        d.runtime("qc-b", AGENT_RT_ORPHAN_S="5", AGENT_RT_HEARTBEAT_S="1")
         row = await ctx.until_status(job, ["failed"], SWEEP_S)
         assert (row["error_code"], row["error_reason"]) == ("INTERNAL_ERROR", "orphaned")
         assert len(d.runs()) == 0
@@ -128,7 +128,7 @@ async def test_wrk_h2a_r13_p20_attempts_2_requeued(ctx: Ctx) -> None:
     `attempts=3`, 1 lời gọi Dify."""
     async with dify_env(ctx) as d:
         job = await ghost_running(d, 2)
-        d.runtime("qc-b", AGENT_RT_ORPHAN_S="5")
+        d.runtime("qc-b", AGENT_RT_ORPHAN_S="5", AGENT_RT_HEARTBEAT_S="1")
         row = await ctx.until_status(job, ["succeeded"], SWEEP_S)
         assert (row["attempts"], row["worker_id"]) == (3, "qc-b")
         assert len(d.runs()) == 1

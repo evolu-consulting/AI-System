@@ -68,7 +68,7 @@ async def test_wrk_fr_23_other_runtime_sweeps_orphan(ctx: Ctx) -> None:
     await ctx.until_running(job)
     a.signal(signal.SIGKILL)
     await a.wait_exit(5)
-    ctx.runtime("qc-b", AGENT_RT_ORPHAN_S="5")
+    ctx.runtime("qc-b", AGENT_RT_ORPHAN_S="5", AGENT_RT_HEARTBEAT_S="1")
     row = await ctx.until_status(job, ["failed"], 15)
     assert orphan_failed(row) == ("failed", "INTERNAL_ERROR", "orphaned")
     assert len([e for e in await ctx.evs(job) if e["type"] == "job.failed"]) == 1
