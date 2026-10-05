@@ -25,3 +25,8 @@ Hub/C2), token truyền bằng file cấu hình 0600 (`mcp_servers=<path>`). K�
 Ca không tốn API: `init-file` · `init-argv` (đối chứng token trên argv) · `init-discover` · `init-401` ·
 `init-down`. Ca tốn 1 lượt mỗi ca: `call` · `confirm` · `timeout` · `call-discover`.
 `SPIKE_DEBUG=1` → CLI `--debug mcp` (log ở `~/.claude/debug/`). JSON từng ca ở `/tmp/spike-mcp/out/`.
+
+`stream_spike.py` — PY-S2 (H2b): stream `include_partial_messages` với CLI thật, dùng đúng `build_options` của
+`src/`. Kết quả: `docs/specs/H2b-routing/spike-stream.md`. Cùng cách chạy. Ca: `orch` (1 lượt) · `agent`
+(`output_format`, 2 lượt) · `agent-kill` (`Read` + MCP giả, kill sau lượt 2). `SPIKE_NO_PARTIAL=1` = đối chứng
+không partial. JSONL/JSON từng ca ở `/tmp/spike-stream/out/` (chỉ kiểu/khoá/độ dài, không nội dung).
