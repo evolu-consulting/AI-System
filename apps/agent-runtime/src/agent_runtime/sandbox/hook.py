@@ -13,10 +13,15 @@ kiểm như đường dẫn. `StructuredOutput` (tool CLI thêm khi có `output_
 `policy.structured_output` (job agent), không có trường đường dẫn. H2a §4.3: tool MCP Hub
 `mcp__hub__<k>` ∈ `policy.mcp_tools` → allow (= `{}`, không `permissionDecision:"allow"` — spike
 S5: `dontAsk` + `allowed_tools` vẫn là hàng rào sau hook), không kiểm path; `mcp__*` khác → deny.
+H2c PL9 (opt-in theo agent, `Write` ∈ `policy.tools`): ngoài luật trên, mọi đường dẫn của `Write`
+phải sau `realpath` nằm **trực tiếp** trong `work/<job_id>/out/` (không thư mục con, không
+`attachments/`, không gốc job; symlink trỏ ra ngoài bị bắt vì so `dirname(realpath(p))`) — sai ⇒
+`path_not_allowed` nhãn `write_scope`; `Write` không có đường dẫn ⇒ deny.
 Deny trả lý do cố định, không lặp lại đường dẫn; log chỉ `tool_name`, nhãn, `job_id`.
 Lỗi bất ngờ → deny (fail-closed).
 """
 
+import os
 from collections.abc import Awaitable, Callable, Iterator, Mapping
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
@@ -34,6 +39,8 @@ ALWAYS_DENIED = frozenset({"Bash", "Agent", "Task"})
 _DENIED_PREFIXES = ("mcp__",)
 _PATTERN_FREE_TOOLS = frozenset({"Grep"})
 STRUCTURED_OUTPUT_TOOL = "StructuredOutput"
+WRITE_TOOL = "Write"  # H2c PL9: chỉ ghi trực tiếp trong `out/`
+OUT_DIR = "out"
 
 
 @dataclass(frozen=True)
@@ -65,6 +72,7 @@ def _tool_denied(policy: SandboxPolicy, tool_name: str) -> bool:
 
 _INVALID = HookDecision(allowed=False, reason="path_not_allowed", label="invalid")
 _UNSAFE_PATTERN = HookDecision(allowed=False, reason="path_not_allowed", label="pattern")
+_WRITE_SCOPE = HookDecision(allowed=False, reason="path_not_allowed", label="write_scope")
 
 
 _UNSAFE_PARTS = ("..", "{", "[", "\\")  # `[.][.]`, `\.\.` cũng ra `..` (review H1 v2 N3)
@@ -115,6 +123,13 @@ def _candidates(tool_name: str, tool_input: Mapping[str, object]) -> Iterator[st
                     yield item
 
 
+def in_out_dir(raw: str, work_dir: Path) -> bool:
+    """PL9: `realpath(p)` nằm trực tiếp trong `realpath(work_dir/out)` (sau `is_path_allowed`)."""
+    joined = raw if os.path.isabs(raw) else os.path.join(work_dir, raw)
+    target = os.path.realpath(joined)
+    return os.path.dirname(target) == os.path.realpath(work_dir / OUT_DIR)
+
+
 def decide(policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, object]) -> HookDecision:
     """Quyết định thuần cho một lần gọi tool."""
     if tool_name == STRUCTURED_OUTPUT_TOOL and policy.structured_output:
@@ -123,13 +138,18 @@ def decide(policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, objec
         return _ALLOW  # đối số đi tới Hub/Dify, không chạm FS Worker — không kiểm path (§4.3)
     if _tool_denied(policy, tool_name):
         return HookDecision(allowed=False, reason="tool_not_allowed", label="tool")
+    write = tool_name == WRITE_TOOL
+    seen = False
     for raw in _candidates(tool_name, tool_input):
         if isinstance(raw, HookDecision):
             return raw
         got = is_path_allowed(raw, policy.work_dir, policy.forbidden_roots)
         if not got.allowed:
             return HookDecision(allowed=False, reason="path_not_allowed", label=got.reason)
-    return _ALLOW
+        if write and not in_out_dir(raw, policy.work_dir):
+            return _WRITE_SCOPE
+        seen = True
+    return _WRITE_SCOPE if write and not seen else _ALLOW
 
 
 def deny_output(reason: HookReason) -> HookOutput:

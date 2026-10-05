@@ -1,5 +1,6 @@
-"""H2c · WRK-FR-11 · R16 · R24 — `JobRun._prepare_files` (plan-runtime H2c §3.3): thư mục, tải,
-kết cục khi lỗi/hết hạn/dừng; không chạy provider khi tải lỗi."""
+"""H2c · WRK-FR-11 · WRK-FR-18 · R16 · R24 · R25 — `JobRun._prepare_files` (plan-runtime H2c
+§3.3): thư mục, tải, kết cục khi lỗi/hết hạn/dừng; không chạy provider khi tải lỗi. `_close` →
+`send_outputs` (§5) chỉ khi job agent thành công `done`/`partial`; id vào `Verdict.outputs`."""
 
 from __future__ import annotations
 
@@ -17,7 +18,7 @@ from agent_runtime.db.finish_sql import FinishTx
 from agent_runtime.db.jobs_sql import ClaimedJob
 from agent_runtime.events.job_events import Failure
 from agent_runtime.runtimes.cli.job_run import JobRun
-from agent_runtime.runtimes.cli.outcome import CANCELLED, TIMED_OUT
+from agent_runtime.runtimes.cli.outcome import CANCELLED, TIMED_OUT, Verdict
 from agent_runtime.runtimes.cli.runner import HostConfig
 from agent_runtime.runtimes.cli.test_job_run import JobControl
 from agent_runtime.runtimes.cli.test_runner import payload
@@ -38,10 +39,12 @@ class _Host:
     def __init__(self, cfg: HostConfig) -> None:
         self.cfg, self.events = cfg, _Events()
         self.closed: list[Any] = []
+        self.verdicts: list[Verdict] = []
         self.failed: list[Failure] = []
 
     async def close(self, job: ClaimedJob, tx: FinishTx, v: Any, tokens: Any) -> None:
         self.closed.append(v.failure)
+        self.verdicts.append(v)
 
     async def finish_failed(self, job: ClaimedJob, f: Failure) -> None:
         self.failed.append(f)
@@ -135,3 +138,50 @@ async def test_wrk_fr_11_cancel_and_shutdown(tmp_path: Path) -> None:
         run, host = _run(tmp_path / reason, held, control=ctl)
         assert await run._prepare_files() is False  # pyright: ignore[reportPrivateUsage]
         assert (host.closed, host.events.forgot) == (closed, forgot)
+
+
+OUT_ID = "44444444-4444-4444-8444-444444444444"
+CANCELLED_V = Verdict(CANCELLED)
+
+
+def _agent_out(status: str) -> dict[str, Any]:
+    return {"kind": "agent_result", "result": {"status": status, "text": "t"}}
+
+
+def _posted(seen: list[httpx2.Request]) -> Callable[[httpx2.Request], httpx2.Response]:
+    def handler(req: httpx2.Request) -> httpx2.Response:
+        seen.append(req)
+        return httpx2.Response(201, json={"id": OUT_ID})
+
+    return handler
+
+
+async def test_wrk_fr_18_close_sends_outputs_before_finish(tmp_path: Path) -> None:
+    seen: list[httpx2.Request] = []
+    run, host = _run(tmp_path, _posted(seen), attachments=False)
+    assert await run._prepare_files() is True  # pyright: ignore[reportPrivateUsage]
+    (run.work / "out" / "r.md").write_text("x")
+    await run._close(Verdict(None, _agent_out("done"), "ok"))  # pyright: ignore[reportPrivateUsage]
+    assert [r.url.path for r in seen] == [f"/internal/jobs/{JOB.id}/outputs"]
+    assert seen[0].headers["authorization"] == "Bearer tok"
+    assert host.verdicts[0].outputs == (OUT_ID,)
+
+
+async def test_wrk_fr_18_close_no_send_unless_done(tmp_path: Path) -> None:
+    for i, v in enumerate(
+        (Verdict(None, _agent_out("need_input"), "ok"), CANCELLED_V, Verdict(None, None))
+    ):
+        seen: list[httpx2.Request] = []
+        run, host = _run(tmp_path / str(i), _posted(seen), attachments=False)
+        assert await run._prepare_files() is True  # pyright: ignore[reportPrivateUsage]
+        (run.work / "out" / "r.md").write_text("x")
+        await run._close(v)  # pyright: ignore[reportPrivateUsage]
+        assert seen == []
+        assert host.verdicts[0].outputs == ()
+
+
+async def test_wrk_fr_18_close_orchestrator_no_send(tmp_path: Path) -> None:
+    seen: list[httpx2.Request] = []
+    run, host = _run(tmp_path, _posted(seen), attachments=False, role="orchestrator")
+    await run._close(Verdict(None, _agent_out("done"), "ok"))  # pyright: ignore[reportPrivateUsage]
+    assert (seen, host.verdicts[0].outputs) == ([], ())

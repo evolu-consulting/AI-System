@@ -8,7 +8,7 @@ from typing import Any, cast
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from agent_runtime.db.jobs_sql import ClaimedJob, OrphanRow
-from agent_runtime.events.job_events import RunEvents, Tokens
+from agent_runtime.events.job_events import ResultMeta, RunEvents, Tokens
 from agent_runtime.events.test_stream import FakeClient
 
 JOB = "11111111-1111-4111-8111-111111111111"
@@ -66,3 +66,16 @@ class _BrokenClient:
 async def test_wrk_fr_03_redis_down_does_not_raise() -> None:
     ev = RunEvents(cast(Any, _BrokenClient()), "w1")
     await ev.started(_job())
+
+
+async def test_wrk_fr_18_result_outputs_key_only_when_non_empty() -> None:
+    """H2c F10: `job.result.outputs` chỉ có khoá khi ≠ ∅ (không file ⇒ như H2b)."""
+    client = FakeClient()
+    ev = RunEvents(cast(Any, client), "w1")
+    out = {"kind": "text", "text": "hi"}
+    await ev.result(_job(), out, Tokens())
+    ids = ("33333333-3333-4333-8333-333333333333",)
+    await ev.result(_job(), out, Tokens(), ResultMeta(outputs=ids))
+    plain, with_out = _events(client)
+    assert "outputs" not in plain
+    assert with_out["outputs"] == list(ids)

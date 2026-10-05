@@ -154,7 +154,7 @@ class DifyJobHost:
         if not written:
             self.events.forget(job.id)
         elif f is None:
-            await self.events.result(job, output, tokens, False)
+            await self.events.result(job, output, tokens)
         else:
             await self.events.failed(job.id, job.run_id, f, tokens)
 

@@ -165,3 +165,45 @@ async def test_wrk_fr_13_guard_mcp_allow_is_empty(policy: SandboxPolicy) -> None
     assert await allowed({"tool_name": MCP_TOOL, "tool_input": {"x": 1}}, None, None) == {}
     h1 = await make_path_guard(policy)({"tool_name": MCP_TOOL, "tool_input": {}}, None, None)
     assert h1 == deny_output("tool_not_allowed")
+
+
+@pytest.mark.parametrize(
+    ("target", "label"),
+    [
+        ("out/a.md", None),
+        ("out/../out/b.md", None),
+        ("attachments/x.md", "write_scope"),
+        ("a.md", "write_scope"),
+        ("out/sub/a.md", "write_scope"),
+        ("out", "write_scope"),
+        ("../x.md", "other_job"),
+        ("/tmp/x.md", "outside"),
+    ],
+)
+def test_wrk_br_07_write_only_directly_in_out(
+    policy: SandboxPolicy, target: str, label: str | None
+) -> None:
+    """H2c PL9: `Write` chỉ khi `dirname(realpath(p)) == realpath(work/out)`."""
+    (policy.work_dir / "out").mkdir()
+    got = decide(policy, "Write", {"file_path": target, "content": "x"})
+    assert got.allowed is (label is None)
+    assert got.label == label
+    if label is not None:
+        assert got.reason == "path_not_allowed"
+
+
+def test_wrk_br_07_write_symlink_and_missing_path(policy: SandboxPolicy, tmp_path: Path) -> None:
+    """PL9: symlink trong `out/` trỏ ra ngoài / vào thư mục khác của job → deny; `Write` không
+    đường dẫn → deny (fail-closed); không `Write` trong `tools` → `tool_not_allowed`."""
+    out = policy.work_dir / "out"
+    out.mkdir()
+    (policy.work_dir / "attachments").mkdir()
+    victim = tmp_path / "victim"
+    victim.write_text("v")
+    (out / "l.md").symlink_to(victim)
+    (out / "in.md").symlink_to(policy.work_dir / "attachments" / "a.pdf")
+    assert decide(policy, "Write", {"file_path": "out/l.md"}).allowed is False
+    assert decide(policy, "Write", {"file_path": "out/in.md"}).label == "write_scope"
+    assert decide(policy, "Write", {"content": "x"}).label == "write_scope"
+    read_only = replace(policy, tools=frozenset({"Read", "Grep"}))
+    assert decide(read_only, "Write", {"file_path": "out/a.md"}).reason == "tool_not_allowed"

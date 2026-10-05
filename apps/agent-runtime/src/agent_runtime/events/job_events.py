@@ -44,6 +44,14 @@ class Tokens:
         return {"input_tokens": self.input_tokens, "output_tokens": self.output_tokens}
 
 
+@dataclass(frozen=True)
+class ResultMeta:
+    """Phần tuỳ chọn của `job.result` (gộp tham số — ruff PLR0913 ≤ 4)."""
+
+    session_resumed: bool = False  # WRK-FR-14
+    outputs: tuple[str, ...] = ()  # H2c R25: id file `out/` Hub đã nhận
+
+
 ORPHANED = Failure("failed", "INTERNAL_ERROR", "orphaned", "job orphaned (worker stopped)")
 
 
@@ -102,15 +110,19 @@ class RunEvents:
         await self._publish(job.run_id, self._next(job.id), body)
 
     async def result(
-        self, job: ClaimedJob, output: dict[str, Any], usage: Tokens, resumed: bool = False
+        self, job: ClaimedJob, output: dict[str, Any], usage: Tokens, meta: ResultMeta | None = None
     ) -> None:
-        body = {
+        """H2c F10: khoá `outputs` (id file `out/`, ≤ 5) **chỉ khi** ≠ ∅ — không file ⇒ như H2b."""
+        m = meta or ResultMeta()
+        body: dict[str, Any] = {
             "type": "job.result",
             "job_id": job.id,
             "output": output,
             "usage": usage.as_dict(),
-            "session_resumed": resumed,  # WRK-FR-14: lần chạy thành công đã resume session
+            "session_resumed": m.session_resumed,  # WRK-FR-14: lần chạy thành công đã resume
         }
+        if m.outputs:
+            body["outputs"] = list(m.outputs)
         await self._publish(job.run_id, self._next(job.id), body)
         self._seq.pop(job.id, None)
 

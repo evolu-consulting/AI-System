@@ -29,7 +29,7 @@ from agent_runtime.db import jobs_sql
 from agent_runtime.db.finish_sql import Finished, FinishTx, finish_tx
 from agent_runtime.db.jobs_sql import ClaimedJob
 from agent_runtime.db.pool import DB_ERRORS, Conn, Pool
-from agent_runtime.events.job_events import Failure, RunEvents, Tokens
+from agent_runtime.events.job_events import Failure, ResultMeta, RunEvents, Tokens
 from agent_runtime.log import bind_job, get_logger
 from agent_runtime.runtimes.cli.job_run import JobRun, StopControl
 from agent_runtime.runtimes.cli.joblog import events_log_path, stderr_log_path
@@ -112,7 +112,8 @@ class CliJobHost:
             self.events.forget(job.id)
             return
         if f is None:
-            await self.events.result(job, v.output or {}, tokens, v.session_resumed)
+            meta = ResultMeta(v.session_resumed, v.outputs)
+            await self.events.result(job, v.output or {}, tokens, meta)
         else:
             await self.events.failed(job.id, job.run_id, f, tokens)
         if done.broken is not None:

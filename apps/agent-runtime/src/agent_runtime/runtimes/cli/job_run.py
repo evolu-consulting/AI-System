@@ -24,7 +24,7 @@ from agent_runtime.events.job_events import Failure
 from agent_runtime.log import get_logger
 from agent_runtime.providers.context import with_history
 from agent_runtime.runtimes.cli.delta_pump import DeltaPump
-from agent_runtime.runtimes.cli.files.dirs import ATTACHMENTS_SUBDIR, prepare_job_dirs
+from agent_runtime.runtimes.cli.files.dirs import ATTACHMENTS_SUBDIR, OUT_SUBDIR, prepare_job_dirs
 from agent_runtime.runtimes.cli.files.fetch import (
     FetchFailed,
     FetchOk,
@@ -33,6 +33,8 @@ from agent_runtime.runtimes.cli.files.fetch import (
     FilesCall,
     fetch_attachments,
 )
+from agent_runtime.runtimes.cli.files.outputs import send_outputs
+from agent_runtime.runtimes.cli.files.rules import wants_outputs
 from agent_runtime.runtimes.cli.host_proc import HostProcess, Outcome
 from agent_runtime.runtimes.cli.joblog import LOG_WRITE_ERRORS, append_is_error, events_log_path
 from agent_runtime.runtimes.cli.outcome import (
@@ -234,8 +236,22 @@ class JobRun:
     def _succeeded(self) -> bool:
         return decide_exit(self.payload, self.seen).failure is None
 
+    async def _send_outputs(self, v: Verdict) -> Verdict:
+        """H2c R25 (§5): job agent thành công `done`/`partial` ⇒ đẩy `out/` (lần claim hiện hành —
+        `prepare_job_dirs` đã làm mới) lên Hub **trước** `FinishTx` (job còn `running`). Không làm
+        job `failed`; huỷ giữa chừng ⇒ ngừng, giữ id đã có."""
+        if v.failure is not None or not wants_outputs(self.payload.agent.role, v.output):
+            return v
+        async with make_hub_client(self.cfg.hub_transport) as client:
+            call = FilesCall(
+                client, self.cfg.hub_url, self.job, self.deadline, self.control.stopped
+            )
+            ids = await send_outputs(call, self.work / OUT_SUBDIR)
+        return replace(v, outputs=ids) if ids else v
+
     async def _close(self, v: Verdict) -> None:
         await self.pump.drain()  # H2b H6: mọi `job.delta` trước `job.result`/`job.failed`
+        v = await self._send_outputs(v)
         total = self.seen.total()
         latency = int((time.monotonic() - self.started) * 1000)
         f = v.failure

@@ -105,6 +105,7 @@ class Verdict:
     output: dict[str, Any] | None = None
     provider: ProviderEffect = "none"
     session_resumed: bool = False  # `job.result.session_resumed` (WRK-FR-14)
+    outputs: tuple[str, ...] = ()  # H2c R25: id file `out/` Hub đã nhận (≤ 5, lần claim hiện hành)
 
     def finish(self) -> Finish:
         f = self.failure
