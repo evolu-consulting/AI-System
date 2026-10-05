@@ -8,20 +8,20 @@ PY-02) — không `isinstance`. `ProbeResult.message` là câu cố định (kh�
 import json
 import math
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
-from itertools import islice
 from typing import Literal, Protocol, cast
 
+from agent_runtime.providers.base import RAW_SHAPE_MAX_KEY as RAW_SHAPE_MAX_KEY
+from agent_runtime.providers.base import RAW_SHAPE_MAX_KEYS as RAW_SHAPE_MAX_KEYS
 from agent_runtime.providers.base import Fatal, Final, RateLimit, UsageEv
+from agent_runtime.providers.base import raw_shape as raw_shape  # R04 (dùng chung với mapping)
 from agent_runtime.providers.patterns import LOGGED_OUT, REJECTED, classify_text
 
 COOLDOWN_MAX = timedelta(days=8)
 RATE_TYPE_PATTERN = r"^[a-z0-9_]{1,40}$"
 RATE_TYPE_RE = re.compile(RATE_TYPE_PATTERN)
-RAW_SHAPE_MAX_KEYS = 30
-RAW_SHAPE_MAX_KEY = 60
 FAKE_MS_MAX = 60_000
 _DIGITS = re.compile(r"^[0-9]{1,12}$")
 
@@ -124,14 +124,6 @@ def clean_util(value: object) -> float | None:
 def warn_window(resets_at: int | None, now: datetime) -> datetime:
     """R03."""
     return _reset_time(resets_at, now) or now.replace(minute=0, second=0, microsecond=0)
-
-
-def raw_shape(raw: Mapping[str, object] | None) -> dict[str, str] | None:
-    """R04."""
-    if not isinstance(raw, Mapping):
-        return None
-    items = islice(raw.items(), RAW_SHAPE_MAX_KEYS)
-    return {str(k)[:RAW_SHAPE_MAX_KEY]: type(v).__name__ for k, v in items}
 
 
 def _elapsed(since: datetime | None, now: datetime, seconds: int) -> bool:

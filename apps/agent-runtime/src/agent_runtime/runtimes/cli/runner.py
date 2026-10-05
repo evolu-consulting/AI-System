@@ -70,6 +70,27 @@ _Seen = Seen  # tên cũ (test đơn vị PY-10)
 __all__ = ["StopControl", "build_output", "events_log_path", "fatal_failure", "stderr_log_path"]
 
 
+def _log_provider(tx: FinishTx, done: Finished) -> None:
+    """H3a `rt §7` (sau commit): `provider.cooldown` / `provider.logged_out` (nguồn job),
+    `provider.quota_warning` chỉ khi `NOTE_WARNING.first`."""
+    log, key, b, w = get_logger(), tx.provider_key, done.broken, tx.warning
+    if b is not None and b.status == "cooldown":
+        until = b.until.isoformat() if b.until else None
+        log.warning(
+            "provider.cooldown", provider=key, until=until, type=b.rate_limit_type, source="job"
+        )
+    elif b is not None and b.status == "logged_out":
+        log.warning("provider.logged_out", provider=key, source="job")
+    if done.warned and w is not None:
+        log.warning(
+            "provider.quota_warning",
+            provider=key,
+            utilization=w.utilization,
+            type=w.rate_limit_type,
+            resets_at=w.window.isoformat(),
+        )
+
+
 class FinishWriteFailed(Exception):
     """Ghi "Kết thúc" hết lượt thử (review H1 v2 M1): đi thẳng lên Supervisor, không chuyển
     `crashed` (có thể ghi đè kết quả đúng); heartbeat `orphaned` job còn `running` không ai giữ."""
@@ -118,6 +139,7 @@ class CliJobHost:
             await self.events.result(job, v.output or {}, tokens, meta)
         else:
             await self.events.failed(job.id, job.run_id, f, tokens)
+        _log_provider(tx, done)
         if done.broken is not None:
             b = done.broken
             log.warning("provider.broken", status=b.status, queued=len(done.queued_failed))

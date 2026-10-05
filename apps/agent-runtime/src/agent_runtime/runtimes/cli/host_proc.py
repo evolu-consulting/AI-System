@@ -50,6 +50,7 @@ from agent_runtime.runtimes.cli.protocol import (
     child_argv,
     parse_event,
 )
+from agent_runtime.runtimes.cli.quota_rules import clean_type, clean_util
 from agent_runtime.runtimes.cli.stdout_pipe import StdoutPipe
 from agent_runtime.sandbox import process as pg
 from agent_runtime.sandbox.env import TMP_SUBDIR, forbidden_roots, job_host_env, mcp_env
@@ -295,10 +296,23 @@ class HostProcess:
             self.run.seen.streamed = self.run.pump.streamed
 
     def _rate_limit(self, ev: RateLimit) -> None:
+        """H3a `rt §7`: log `claude.rate_limit` (khung, không giá trị — R04);
+        `rejected`/`logged_out` → hỏng; `allowed_warning` → `Seen.warning` (R03); `allowed` bỏ
+        qua."""
+        get_logger().info(
+            "claude.rate_limit",
+            provider=self.run.payload.provider_key,
+            source="job",
+            status=ev.status[:40],
+            rate_limit_type=clean_type(ev.rate_limit_type),
+            utilization=clean_util(ev.utilization),
+            resets_at=ev.resets_at,
+            keys=ev.raw_shape,
+        )
         if ev.status in BROKEN_SIGNALS:
             self.run.seen.rate_limit = ev
-        else:
-            get_logger().info("provider.rate_limit_signal", status=ev.status[:40])
+        elif ev.status == "allowed_warning":
+            self.run.seen.warning = ev
 
     async def _kill(self) -> None:
         proc = self.proc

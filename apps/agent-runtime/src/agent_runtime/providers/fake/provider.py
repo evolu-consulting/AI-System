@@ -14,6 +14,8 @@ không chỉ thị → chạy lại tin user trước trong `payload.history`.
 H2c (PY-04, `plan-runtime` §6, `files.py`): `#fake:files` (dòng `<tên>:<sha>` của `attachments/`),
 `#fake:out=<a>,…`/`out-size`/`out-link` (ghi thẳng `out/`, sau `sleep`), `#fake:write=<path>` (hook
 thật `Write`, PL9 — sau `sleep`: P51 đặt symlink trong lúc ngủ).
+H3a (PY-02, `plan-runtime` §5): `#fake:ratelimit=<ts>[,<type>]` (`rejected` kèm loại cửa sổ),
+`#fake:ratewarn=<util>[,<ts>]` (`allowed_warning` rồi chạy tiếp như `ok`).
 """
 
 from __future__ import annotations
@@ -41,6 +43,8 @@ from agent_runtime.providers.fake.directives import (
     clean,
     directives,
     message_of,
+    ratelimit_args,
+    ratewarn_args,
     redelegate_message,
     seconds,
     task_without_delegate,
@@ -229,8 +233,8 @@ async def _session(
 
 
 async def _ratelimit(found: dict[str, str], kind: str, emit: Emit) -> None:
-    ts = int(found["ratelimit"]) if found["ratelimit"].isdigit() else None
-    await emit(RateLimit(status="rejected", resets_at=ts))
+    ts, rate_type = ratelimit_args(found["ratelimit"])
+    await emit(RateLimit(status="rejected", resets_at=ts, rate_limit_type=rate_type))
     await emit(
         Final.model_validate(
             {
@@ -257,6 +261,9 @@ async def _badjson(job: ProviderJob, found: dict[str, str], emit: Emit) -> bool:
 
 async def _side_effects(job: ProviderJob, found: dict[str, str], emit: Emit) -> None:
     """`spawn-child`, `usage`, `sleep` — trước khi trả kết quả."""
+    if "ratewarn" in found:  # H3a: `allowed_warning` rồi chạy tiếp như `ok`
+        util, ts = ratewarn_args(found["ratewarn"])
+        await emit(RateLimit(status="allowed_warning", resets_at=ts, utilization=util))
     if "spawn-child" in found:
         # Cùng process group với job host (không start_new_session) — AC-W10.
         await asyncio.create_subprocess_exec(

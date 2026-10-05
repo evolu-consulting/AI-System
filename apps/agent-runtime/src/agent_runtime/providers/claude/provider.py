@@ -112,10 +112,7 @@ class _Turn:
             for confirm in confirm_events(msg, self.mcp_ids):
                 await self.emit(confirm)
         elif isinstance(msg, RateLimitEvent):
-            ev = rate_limit_event(msg)
-            if ev is None:
-                get_logger().info("claude.rate_limit", status=msg.rate_limit_info.status)
-            await self.rate_limit(ev)
+            await self.rate_limit(rate_limit_event(msg))  # H3a: cha log `claude.rate_limit`
         elif isinstance(msg, ResultMessage):
             await self.result(msg)
 

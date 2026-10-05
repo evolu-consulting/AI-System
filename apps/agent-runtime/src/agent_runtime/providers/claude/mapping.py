@@ -11,6 +11,7 @@ Spike PY-02 đã xác minh chữ chưa đăng nhập (`Not logged in · Please r
 from __future__ import annotations
 
 import json
+import math
 import re
 from collections.abc import Iterator
 from typing import Any, cast
@@ -41,6 +42,7 @@ from agent_runtime.providers.base import (
     ToolUse,
     UsageEv,
     parse_confirmation,
+    raw_shape,
 )
 from agent_runtime.providers.claude.mcp import MCP_SERVER, TOOL_PREFIX
 from agent_runtime.providers.patterns import LOGGED_OUT, REJECTED, classify_text
@@ -140,12 +142,35 @@ def mcp_statuses(msg: SystemMessage) -> list[str]:
     return out
 
 
-def rate_limit_event(msg: RateLimitEvent) -> RateLimit | None:
-    """Chỉ `status=="rejected"` → sự kiện; `allowed_warning` để người gọi log."""
-    info = msg.rate_limit_info
-    if info.status != REJECTED:
+RATE_STATUSES = frozenset({"allowed", "allowed_warning", REJECTED})
+
+
+def _num(value: object) -> float | None:
+    """Số JSON (không bool); khác ⇒ None. Cha làm sạch biên (`quota_rules.clean_util`)."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
         return None
-    return RateLimit(status=REJECTED, resets_at=info.resets_at)
+    return float(value)
+
+
+def rate_limit_event(msg: RateLimitEvent) -> RateLimit | None:
+    """H3a `rt §2`: mọi status SDK (`allowed`/`allowed_warning`/`rejected`) → sự kiện kèm loại cửa
+    sổ, mức dùng, khung `raw` (R04: tên khoá → tên kiểu, không giá trị). Status lạ ⇒ None."""
+    info = msg.rate_limit_info
+    status = cast(object, info.status)
+    if not isinstance(status, str) or status not in RATE_STATUSES:
+        return None
+    resets = _num(cast(object, info.resets_at))
+    kind = cast(object, info.rate_limit_type)
+    raw = cast(object, info.raw)
+    return RateLimit(
+        status=status,
+        resets_at=int(resets) if resets is not None and math.isfinite(resets) else None,
+        rate_limit_type=kind[:40] if isinstance(kind, str) else None,
+        utilization=_num(cast(object, info.utilization)),
+        raw_shape=raw_shape(cast(dict[str, object], raw))
+        if isinstance(raw, dict) and raw
+        else None,
+    )
 
 
 def result_signal(msg: ResultMessage) -> RateLimit | None:

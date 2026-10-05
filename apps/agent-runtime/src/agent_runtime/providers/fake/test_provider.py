@@ -191,6 +191,25 @@ async def test_wrk_fr_15_ratelimit(tmp_path: Path) -> None:
     assert isinstance(evs[0], RateLimit) and evs[0].resets_at is None
 
 
+async def test_wrk_fr_22_ratelimit_type_and_ratewarn(tmp_path: Path) -> None:
+    """WRK-FR-22 · H3a `rt §5`: `ratelimit=<ts>,<type>` (type giữ nguyên) · `ratewarn` chạy tiếp."""
+    evs = await run(make_job(tmp_path, "#fake:ratelimit=1900000000,Bad-Type"))
+    assert isinstance(evs[0], RateLimit)
+    assert (evs[0].resets_at, evs[0].rate_limit_type) == (1900000000, "Bad-Type")
+    evs = await run(make_job(tmp_path, "#fake:ratelimit=,seven_day"))
+    assert isinstance(evs[0], RateLimit)
+    assert (evs[0].resets_at, evs[0].rate_limit_type) == (None, "seven_day")
+    evs = await run(make_job(tmp_path, "#fake:ratewarn=0.85,1900000000"))
+    warn = [e for e in evs if isinstance(e, RateLimit)]
+    assert [(w.status, w.utilization, w.resets_at) for w in warn] == [
+        ("allowed_warning", 0.85, 1900000000)
+    ]
+    assert not final(evs).is_error
+    evs = await run(make_job(tmp_path, "#fake:ratewarn=x"))
+    warn = [e for e in evs if isinstance(e, RateLimit)]
+    assert [(w.utilization, w.resets_at) for w in warn] == [(None, None)]
+
+
 async def test_hub_h1_ac_10_badjson_counter_atomic(tmp_path: Path) -> None:
     job = make_job(tmp_path, "#fake:badjson=1")
     first = final(await run(job))

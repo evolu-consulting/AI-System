@@ -14,7 +14,7 @@ H2b F4 (plan-runtime §4, R27): `is_error` chưa có `RateLimit` → phân loạ
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -24,7 +24,15 @@ from agent_runtime.db.provider_state_sql import Broken, ProviderEffect
 from agent_runtime.db.usage_sql import UsageKeys, UsageRow
 from agent_runtime.events.job_events import Failure, Tokens
 from agent_runtime.providers.base import Confirm, Fatal, Final, RateLimit, UsageEv
-from agent_runtime.runtimes.cli.quota_rules import cooldown_until
+from agent_runtime.runtimes.cli.quota_rules import (
+    Warning as QuotaWarning,
+)
+from agent_runtime.runtimes.cli.quota_rules import (
+    clean_type,
+    clean_util,
+    cooldown_until,
+    warn_window,
+)
 from agent_runtime.runtimes.cli.refusal import IsErrorKind, classify_is_error
 from agent_runtime.runtimes.cli.result import build_output, forced_need_input
 
@@ -78,6 +86,7 @@ class Seen:
     usage: UsageEv | None = None
     session_id: str | None = None
     rate_limit: RateLimit | None = None
+    warning: RateLimit | None = None  # H3a R03: `allowed_warning` cuối (giữ qua `next_attempt`)
     tool_used: bool = False  # đã có `tool_use` (resume lỗi sau đó không dựng lại — §6, BR-04)
     carried: UsageSum = field(default_factory=UsageSum)  # usage của lần chạy trước (thử lại)
     parent_fault: bool = False  # `fatal` do phía cha dựng (giao thức/reader), không phải provider
@@ -107,6 +116,7 @@ class Verdict:
     provider: ProviderEffect = "none"
     session_resumed: bool = False  # `job.result.session_resumed` (WRK-FR-14)
     outputs: tuple[str, ...] = ()  # H2c R25: id file `out/` Hub đã nhận (≤ 5, lần claim hiện hành)
+    warning: QuotaWarning | None = None  # H3a R03: `NOTE_WARNING` trong "Kết thúc"
 
     def finish(self) -> Finish:
         f = self.failure
@@ -124,10 +134,27 @@ def broken_of(
     rl: RateLimit, now: datetime | None = None, default_s: int = DEFAULT_COOLDOWN_S
 ) -> Broken:
     """H3a-R02: `resets_at` ngoài `(now, now + 8 ngày]` / vắng ⇒ `now + default_s`."""
+    rate_type, util = clean_type(rl.rate_limit_type), clean_util(rl.utilization)
     if rl.status == "logged_out":
-        return Broken("logged_out", None, LOGGED_OUT.message)
+        return Broken("logged_out", None, LOGGED_OUT.message, rate_type, util)
     until = cooldown_until(rl.resets_at, now or datetime.now(UTC), default_s)
-    return Broken("cooldown", until, RATE_LIMITED.message)
+    return Broken("cooldown", until, RATE_LIMITED.message, rate_type, util)
+
+
+def warning_of(rl: RateLimit | None, now: datetime | None = None) -> QuotaWarning | None:
+    """H3a R03: `allowed_warning` → `Warning` (làm sạch type/util; cửa sổ `warn_window`)."""
+    if rl is None or rl.status != "allowed_warning":
+        return None
+    window = warn_window(rl.resets_at, now or datetime.now(UTC))
+    return QuotaWarning(clean_util(rl.utilization), clean_type(rl.rate_limit_type), window)
+
+
+def with_warning(v: Verdict, seen: Seen) -> Verdict:
+    """Gắn cảnh báo quota đã thấy vào kết cục — trừ khi provider hỏng (`MARK_BROKEN` thay)."""
+    if isinstance(v.provider, Broken):
+        return v
+    w = warning_of(seen.warning)
+    return v if w is None else replace(v, warning=w)
 
 
 def decide_exit(payload: JobPayload1, seen: Seen, default_s: int = DEFAULT_COOLDOWN_S) -> Verdict:

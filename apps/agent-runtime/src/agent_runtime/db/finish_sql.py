@@ -3,7 +3,9 @@
 `cli_sessions` + `provider_state`; người gọi XADD **sau** commit (R2).
 
 Thứ tự khoá: `K_CLAIM` (chỉ khi job có thể làm provider hỏng — rate limit / lỗi) → `jobs` (job của
-mình, rồi job `queued` cùng provider khi hỏng) → `usage_logs` → `cli_sessions` → `provider_state`.
+mình, rồi job `queued` cùng provider khi hỏng) → `usage_logs` → `cli_sessions` → `provider_state`
+(H3a: `PROVIDER_OK` | `PROVIDER_ERROR` → `MARK_BROKEN` → `ENSURE_ROW` + `NOTE_WARNING`, cùng một
+hàng — plan-db H3a §2).
 Job không còn `running` của mình → ROLLBACK, không ghi gì, không XADD.
 """
 
@@ -15,7 +17,7 @@ from agent_runtime.db import jobs_sql
 from agent_runtime.db import provider_state_sql as ps
 from agent_runtime.db.jobs_sql import K_CLAIM, Finish
 from agent_runtime.db.pool import Conn
-from agent_runtime.db.provider_state_sql import Broken, ProviderEffect, QueuedFail
+from agent_runtime.db.provider_state_sql import Broken, ProviderEffect, QueuedFail, WarningLike
 from agent_runtime.db.sessions_sql import SessionKey, upsert_session
 from agent_runtime.db.usage_sql import UsageRow, insert_usage
 
@@ -31,6 +33,7 @@ class FinishTx:
     provider: ProviderEffect = "none"
     error_message: str = ""
     session: tuple[SessionKey, str] | None = None
+    warning: WarningLike | None = None  # H3a R03: `allowed_warning` đã thấy (đã làm sạch)
 
 
 @dataclass(frozen=True)
@@ -39,6 +42,7 @@ class Finished:
 
     broken: Broken | None = None
     queued_failed: list[QueuedFail] = field(default_factory=list[QueuedFail])
+    warned: bool = False  # H3a: `NOTE_WARNING.first` ⇒ người gọi log `provider.quota_warning`
 
 
 class _NotOwned(Exception):
@@ -75,4 +79,6 @@ async def _body(conn: Conn, job_id: str, worker_id: str, tx: FinishTx) -> Finish
         await ps.provider_error(conn, key, tx.error_message)
     if broken is not None:
         await ps.mark_broken(conn, key, broken)
-    return Finished(broken, queued)
+    w = tx.warning
+    warned = w is not None and await ps.note_warning(conn, key, w)
+    return Finished(broken, queued, warned)

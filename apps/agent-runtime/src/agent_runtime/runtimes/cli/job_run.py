@@ -51,6 +51,7 @@ from agent_runtime.runtimes.cli.outcome import (
     is_error_kind,
     is_error_text,
     usage_row,
+    with_warning,
 )
 from agent_runtime.runtimes.cli.prompt import retry_prompt
 from agent_runtime.runtimes.cli.result import (
@@ -267,7 +268,7 @@ class JobRun:
 
     async def _close(self, v: Verdict) -> None:
         await self.pump.drain()  # H2b H6: mọi `job.delta` trước `job.result`/`job.failed`
-        v = await self._send_outputs(v)
+        v = with_warning(await self._send_outputs(v), self.seen)  # H3a R03
         total = self.seen.total()
         latency = int((time.monotonic() - self.started) * 1000)
         f = v.failure
@@ -280,6 +281,7 @@ class JobRun:
             v.provider,
             f.message if f is not None else "",
             session,
+            v.warning,
         )
         if f is None:
             v = replace(v, session_resumed=self.resumed)

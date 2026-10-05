@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Awaitable, Callable, Mapping, Sequence
+from itertools import islice
 from typing import Annotated, Any, Literal, Protocol, cast
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -39,10 +40,29 @@ class Session(_Ev):
     session_id: Annotated[str, Field(min_length=1, max_length=200)]
 
 
+RAW_SHAPE_MAX_KEYS = 30
+RAW_SHAPE_MAX_KEY = 60
+
+
+def raw_shape(raw: Mapping[str, object] | None) -> dict[str, str] | None:
+    """H3a-R04: khung `rate_limit_info.raw` — ≤ 30 khoá đầu (cắt 60 ký tự) → tên kiểu giá trị;
+    **không** chép giá trị. None/không phải Mapping ⇒ None."""
+    if not isinstance(raw, Mapping):
+        return None
+    items = islice(raw.items(), RAW_SHAPE_MAX_KEYS)
+    return {str(k)[:RAW_SHAPE_MAX_KEY]: type(v).__name__ for k, v in items}
+
+
 class RateLimit(_Ev):
+    """H3a `rt §2`: `status` ∈ `allowed`/`allowed_warning`/`rejected`/`logged_out`; trường mới tuỳ
+    chọn (dòng sự kiện cũ vẫn parse). Cha làm sạch `rate_limit_type`/`utilization` (`clean_*`)."""
+
     type: Literal["rate_limit"] = "rate_limit"
     status: str
     resets_at: int | None = None
+    rate_limit_type: Annotated[str, Field(max_length=40)] | None = None
+    utilization: float | None = None
+    raw_shape: Annotated[dict[str, str], Field(max_length=RAW_SHAPE_MAX_KEYS)] | None = None
 
 
 class UsageEv(_Ev):

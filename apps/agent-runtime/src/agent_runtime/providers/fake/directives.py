@@ -68,6 +68,24 @@ def usage_pair(raw: str) -> tuple[int, int]:
         return 10, 20
 
 
+def ratelimit_args(raw: str) -> tuple[int | None, str | None]:
+    """H3a `rt §5` `#fake:ratelimit=<ts>[,<type>]`: `ts` không phải chữ số ⇒ không `resets_at`;
+    `type` giữ nguyên (cha làm sạch — P46), rỗng ⇒ None."""
+    ts, _, kind = raw.partition(",")
+    return (int(ts) if ts.isdigit() else None), (kind[:40] or None)
+
+
+def ratewarn_args(raw: str) -> tuple[float | None, int | None]:
+    """H3a `rt §5` `#fake:ratewarn=<util>[,<ts>]`: `util` không phải số ⇒ None
+    (cha làm sạch biên)."""
+    util, _, ts = raw.partition(",")
+    try:
+        value: float | None = float(util)
+    except ValueError:
+        value = None
+    return value, (int(ts) if ts.isdigit() else None)
+
+
 TURNS_MAX = 10
 
 

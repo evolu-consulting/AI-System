@@ -30,7 +30,7 @@ from claude_agent_sdk import (
 from agent_runtime.contracts.hub import JobPayload1
 from agent_runtime.providers.base import ProviderEvent, ProviderJob
 from agent_runtime.providers.claude import provider as mod
-from agent_runtime.providers.claude.mapping import main_model
+from agent_runtime.providers.claude.mapping import main_model, rate_limit_event
 from agent_runtime.providers.claude.provider import ClaudeProvider
 from agent_runtime.providers.registry import get_provider
 
@@ -138,8 +138,8 @@ def init(sid: str = "sess-1") -> SystemMessage:
     return SystemMessage(subtype="init", data={"session_id": sid, "cwd": "/secret/path"})
 
 
-def rate(status: str, resets_at: int | None = None) -> RateLimitEvent:
-    info = RateLimitInfo(status=status, resets_at=resets_at)  # pyright: ignore[reportArgumentType]
+def rate(status: str, resets_at: int | None = None, **more: Any) -> RateLimitEvent:
+    info = RateLimitInfo(status=status, resets_at=resets_at, **more)  # pyright: ignore[reportArgumentType]
     return RateLimitEvent(rate_limit_info=info, uuid="u", session_id="sess-1")
 
 
@@ -217,9 +217,31 @@ async def test_wrk_fr_15_rate_limit_rejected(
         result(is_error=True, subtype="error_during_execution", structured_output=None),
     ]
     evs = await run(monkeypatch, job_of(tmp_path), script)
-    limits = [e for e in evs if e["type"] == "rate_limit"]
-    assert limits == [{"type": "rate_limit", "status": "rejected", "resets_at": 1_900_000_000}]
+    limits = [(e["status"], e["resets_at"]) for e in evs if e["type"] == "rate_limit"]
+    assert limits == [("allowed_warning", None), ("rejected", 1_900_000_000)]
     assert evs[-1]["is_error"] is True and evs[-1]["structured"] is None
+
+
+def test_wrk_fr_22_rate_limit_event_fields() -> None:
+    """WRK-FR-22 · H3a R04 · mọi status + type/util/khung `raw` (tên kiểu, không giá trị)."""
+    raw = {"status": "allowed_warning", "resetsAt": 1_900_000_000, "secret": "abc", "n": None}
+    ev = rate_limit_event(
+        rate(
+            "allowed_warning", 1_900_000_000, rate_limit_type="seven_day", utilization=0.85, raw=raw
+        )
+    )
+    assert ev is not None
+    assert (ev.status, ev.resets_at, ev.rate_limit_type, ev.utilization) == (
+        "allowed_warning",
+        1_900_000_000,
+        "seven_day",
+        0.85,
+    )
+    assert ev.raw_shape == {"status": "str", "resetsAt": "int", "secret": "str", "n": "NoneType"}
+    assert "abc" not in ev.model_dump_json()
+    allowed = rate_limit_event(rate("allowed", utilization=True))
+    assert allowed is not None and allowed.utilization is None and allowed.raw_shape is None
+    assert rate_limit_event(rate("weird")) is None
 
 
 @pytest.mark.parametrize(
@@ -236,9 +258,8 @@ async def test_wrk_fr_15_result_error_signal(
 ) -> None:
     msg = result(is_error=True, structured_output=None, **over)
     evs = await run(monkeypatch, job_of(tmp_path), [msg])
-    assert [e for e in evs if e["type"] == "rate_limit"] == [
-        {"type": "rate_limit", "status": status, "resets_at": None}
-    ]
+    limits = [(e["status"], e["resets_at"]) for e in evs if e["type"] == "rate_limit"]
+    assert limits == [(status, None)]
     assert evs[-1]["type"] == "final" and evs[-1]["is_error"] is True
 
 
