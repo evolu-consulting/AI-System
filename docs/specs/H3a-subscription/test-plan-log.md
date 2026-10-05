@@ -69,3 +69,35 @@ Chạy 2026-10-06 trên code hiện tại (stub B0 `blockedReason` ném `not imp
 
 ## Q2 + Q-PU — khoá lần 1 (điều phối, 2026-10-06)
 `test:lock:verify` trước khi ghi: đúng 12 UNLOCKED (11 file `tests/acceptance/H3a/**` gồm `_h3a.ts`, `_r08.ts`; `apps/agent-runtime/tests/acceptance/test_quota_rules.py`) + 1 CHANGED (`tests/acceptance/H2b/direct.int.test.ts` — T1, R19) → `test:lock:write` → verify OK (364 file).
+
+## QW-P · Python int `probe_int_test.py` (P20–P39), `quota_int_test.py` (P40–P49) + stack `H3a/stack/` (S01–S04)
+
+Chạy 2026-10-06 trên code hiện tại (PY-01 + PY-02 + B1 có; **chưa** PY-03/PY-04: không có con probe, vòng probe, `probe_sql`; khởi động vẫn reset mù H1). Python trong WSL (venv `~/.venvs/agent-runtime`), DB riêng `ai_system_h3a_qwp_hub_test` (`HUB_TEST_DATABASE_URL`/`AGENT_RT_TEST_DATABASE_URL` export, `ensure_schema` áp tới `0008`), Redis DB 15; DB đã drop sau khi chạy. `ruff check` + `ruff format --check` + `pyright` 3 file Python: sạch; `tsc -p tsconfig.tests.json` (H3a/stack): 0 lỗi; biome sạch; `check:size` OK.
+
+**Python** `pytest -m int tests/acceptance/{probe_int_test,quota_int_test}.py` → **36 ca: 20 đỏ, 16 xanh**. 0 đỏ ở dựng dữ liệu (fixture `ctx`, `set_state`, `add_job`, khởi động Runtime với env probe — config PY-00 nhận `AGENT_RT_FAKE_PROBE_FILE`/biên dev).
+
+| File | ID | Đỏ đúng lý do / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `probe_int_test.py` | P20–P39 | 18/20 | mọi ca đỏ ở `wait_until` (AssertionError "quá 15 s chưa thấy": `provider_state` `logged_out`/`cooldown`/`ok`/`error`, `last_probe_at`, `.calls` có `turn`, log `probe.result`) — chưa có vòng probe (PY-03/04); P30 thấy reset mù H1 (`ok`) thay `logged_out` | P28 (`last_ok_at` mới ⇒ 0 lời gọi — đúng vì chưa probe; sau PY-04 phải giữ xanh), P31 (`PROBE_S=0` ⇒ reset mù H1 — hồi quy) |
+| `quota_int_test.py` | P40–P49 | 2/16 | P43 ×2 (`logged_out`, `error`): chờ `last_probe_at ≥ jobs.created_at` quá 15 s (chưa có vòng probe) | P40, P41, P42 ×4, P44, P45, P46 ×2, P47, P48 ×2, P49 — vế job PY-02 đã làm (chỉ thị `#fake:ratelimit`/`#fake:ratewarn`, `NOTE_WARNING`, log `provider.cooldown`/`logged_out`/`quota_warning`/`claude.rate_limit`) |
+
+**Stack** `bun run test:h3a:stack` → **4 ca: 1 đỏ, 3 xanh** (container `qc-h3a-stack-quota`, ~29 s).
+
+| ID | Kết quả | Ghi chú |
+|---|---|---|
+| S01 | xanh | `run.failed ALL_PROVIDERS_EXHAUSTED` + câu R08 quota vi, **2 535 ms** (≤ 5 000); `cooldown_until` = ts |
+| S02 | xanh | 1 job, `attempts=1`, `failed`, `quota` |
+| S03 | xanh | chặn trước enqueue **124 ms** (≤ 3 000), 0 job mới |
+| S04 | **đỏ đúng lý do** | `cooldown_until = now()+2 s` ⇒ 20 s vẫn `cooldown` (`expect(...).toBe("ok")`) — chưa có probe (PY-04) |
+
+**Quyết định / lệch test-plan (ghi rõ):**
+1. Helper Python `apps/agent-runtime/tests/acceptance/_h3a.py` (test-plan §2.1): `start(ctx, probe_s, worker, timeout_s, **env)` đặt env probe (N1: timeout 10, ca treo P22/P38 = 2) + `AGENT_RT_FAKE_PROBE_FILE=<tmp_path>/probe.txt`; `set_state` UPSERT bằng biểu thức SQL; `until_log` chờ dòng log (F6; `from_=` ⇒ khoá `from`); `probe_children` = pid có ppid = Runtime và cmdline chứa `probe`; `owner_conn` kết nối owner thứ hai (P37 giữ `K_CLAIM` ngoài `ctx.conn` để `now()` không đóng băng).
+2. Mức log "warn" chấp nhận `warn`|`warning` (structlog `add_log_level` ghi `warning`).
+3. P22: kỳ vọng dãy `consecutive_errors` quan sát được tăng 1→2(→3) không nhảy và cuối `status=error` — không ép giá trị 3 trong hàng (plan-db §4 nhánh `error` chạm ngưỡng đi như `broken`, không qua `PROBE_ERROR`); con probe: tối đa 1 pid còn sống (lượt đang chạy).
+4. P35: quét PII chỉ trên log `probe.*`/`provider.*`/`claude.*` — `runtime.start` có URL DB dạng `user:***@host` (H1, không phải PII probe).
+5. P38: dùng 2 Runtime nối tiếp trong ca (`qc-1` probe `ok` rồi kiểm `pg_locks` = 0 và tắt; `qc-2` file `hang`, SIGTERM ngay khi thấy con probe ⇒ con biến mất ≤ 5 s).
+6. `quota_int_test` (trừ P43) đặt `AGENT_RT_PROBE_S=0` để chỉ đo đường job (sau PY-04 probe mặc định không chen `last_ok_at`/`utilization`); P43 bật probe `PROBE_S=2`.
+7. Stack: `_stack.ts` dùng lại `bootStackH2b` (khoá) với env H3a; thêm `startRuntimeBoxH3a(name, worker, hubUrl, env)` (thêm `hubUrl` so với test-plan — `startRuntimeH2a` cần); `bootStackH3a` đặt `HUB_ATTACH_DIR` tạm vì script `test:h3a:stack` (MK) bật `HUB_ATTACH_DRIVER=local` (mẫu H2c); `afterAll` đưa `provider_state` về `ok` + xoá file chỉ thị (F5).
+8. F1 (chạy `pytest -m int` toàn bộ 3 lần) để lại cho PY-04 — QW-P không đổi fixture khoá (`_rt.py`, `_proc.py`, `conftest.py`).
+
+**Cần khoá ở Q3** (5 file mới): `apps/agent-runtime/tests/acceptance/{_h3a.py,probe_int_test.py,quota_int_test.py}`, `tests/acceptance/H3a/stack/{_stack.ts,quota.stack.test.ts}`.
