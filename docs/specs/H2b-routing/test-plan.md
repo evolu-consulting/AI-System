@@ -185,7 +185,7 @@ Tổng mới ≈ **210** ca (R ~95 dòng bảng / 40 ID, A ~92, P ~35, S 8, H 1,
 Readiness lần 1: L1 áp **có sửa** (vắng ⇒ không giới hạn; `envAppDeps` điền; helper `startHubH2b`); L2 áp + usage `out:0`, không `RateLimit` (`plan-runtime` §6); L3–L8 áp nguyên (spec §6, tasks QW/MK/B3/PY-01).
 
 ## 10. Đỏ đúng lý do · nhật ký
-QW-R, QW-A1, QW-A2, QW-PU xong, Q2 + Q-PU khoá (dưới); QW-P chưa viết. Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
+QW-R, QW-A1, QW-A2, QW-PU, QW-P xong, Q2 + Q-PU + Q3 khoá (dưới). Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
 
 ### QW-R · 2026-10-05 (sau B0 `5ef4b90`, C1, C2, D1 `adba6a3`)
 `bun test tests/acceptance/H2b/rules`: **46 test / 10 file** (+ helper `_access.ts`) — **38 đỏ đúng lý do, 8 xanh**. `tsc -p tsconfig.tests.json` 0 lỗi · biome sạch · `check:size` OK · `trace --check` OK (HUB-FR-91/92/94 có test).
@@ -281,6 +281,32 @@ Không đỏ do import/cú pháp/kiểu/fixture (`PostgresError`/`TypeError` = 0
 
 ### Q-PU · 2026-10-05
 `bun run test:lock:verify` trước ghi: **đúng 1 dòng** `UNLOCKED apps/agent-runtime/tests/acceptance/test_stream_rules.py`, 0 `MISMATCH`/file khác ⇒ `bun run test:lock:write` → verify xanh (304 file); `git diff tests/.lock` chỉ thêm 1 dòng.
+
+### QW-P · 2026-10-05 (sau PY-01 `646d445`, PY-02 `90594d5`; chưa PY-03/PY-04, B5–B11)
+P: `bun apps/agent-runtime/scripts/run.ts "<env DB @postgres> uv run pytest -m int …"` (DB riêng `ai_system_h2b_qwp_{,hub_}test`, đã drop) · S: `HUB_MAX_CONCURRENT_RUNS=2 bun --env-file=.env.test-h2b_qwp.local --config=bunfig.stack.toml test --timeout 120000 tests/acceptance/H2b/stack/<file>` (từng file, tuần tự) · H: `hub:dev` (`HUB_DEV_RUNTIME=none`) + `HUB_URL`/`AUTH_URL` `--config=bunfig.stack.toml`. **9 file** (helper `_stream.py`, `stack/_stack.ts`; 3 file P, 3 file S, 1 file H) — **P 21 test: 14 đỏ, 7 xanh · S 14 test: 13 đỏ, 1 xanh · H 2 xanh**. ruff check/format · pyright strict 0 lỗi · `tsc -p tsconfig.tests.json` 0 lỗi · biome sạch · `check:size` OK · `trace --check` OK. DB/Redis/MK/Runtime (host + container) khởi động xanh; payload `stream:true` được Runtime nhận (job `succeeded`).
+
+| File | ID | Đỏ / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `stream_int_test.py` | P20–P25 | 7/13 | `#fake:stream*`/`answer-len`/`stream-badjson` chưa có (PY-04) + cha chưa XADD (PY-03): sự kiện chỉ `['job.started','job.result']` (P20, P22 done/partial, P23 ×2, P24, P25) | P21 ×2 (`stream` vắng/false — hồi quy H1), P22 ×3 phủ định (`need_input`, `delegate`, `text-first`), P25 đối chứng `#fake:badjson=1` (H1 AC-10, log `job.output_retry` có ⇒ cách đọc log P25 đúng) |
+| `refusal_int_test.py` | P26 | 4/4 | `#fake:is-error` chưa có (L2, PY-04): job `succeeded` thay `failed` (rate/auth/refused/có output) | — |
+| `usage_h2b_int_test.py` | P27–P28 | 3/4 | `#fake:turns` chưa có (PY-04): `usage_logs` (100, 50) thay (200, 100) (huỷ, timeout); (10, 5) thay (30, 15) | P27 huỷ trước usage → 0 dòng (hành vi H1) |
+| `stack/stream.stack.test.ts` | S01–S04, S06, S07 | 9/10 | `delta` chỉ tới sau `step.finished` (S01, S03; S01 thời gian 30 ms < 200); `@assistant`/`@dify-tro-ly` đi Orchestrator — `responder` vắng, không job `assistant` (S02 ×2, S07; B6); `detail.stream` vắng (S04 diverge/badjson; B9 + PY-04); `#fake:stream=50` không kéo dài ⇒ run xong trước khi huỷ (`run.finished` thay `run.failed`) | S06 (`text-first` — phủ định) |
+| `stack/confirm-tag.stack.test.ts` | S05 | 3/3 | `@trello …` → run `orchestrated`, Orchestrator giả trả `denied:tool_not_allowed` ⇒ không `ask` (B6/B8 + PY-04) | — |
+| `stack/refused.stack.test.ts` | S08 | 1/1 | `#fake:is-error` chưa có: `run.finished` thay `run.failed` (PY-04 + PY-03 F4 + B11) | — |
+| `hubdev/fixture.hubdev.test.ts` | H01 | 0/2 | — | H01 ×2 (F3 + B3 đã xong: `lan` thấy `assistant`, `hoa` `items=[]`) |
+
+Không đỏ do import/cú pháp/kiểu/fixture/boot.
+
+**Lệch plan / cần backend-lead:**
+- `_stream.py` (test-plan-py §2) chèn job qua `add_job` (khoá) với `notify=False` trong transaction ngoài, vá `payload.stream`, rồi NOTIFY — không sửa `_rt.py`. `stream=None` ⇒ payload không khoá `stream`.
+- P27 timeout: contract `timeout_s ≥ 10` ⇒ dùng `timeout_s=10` + `#fake:sleep=30` (plan ghi "timeout_s nhỏ"). Huỷ P27 chờ `job.progress` đầu (sleep phát sau 1 s, mọi lượt usage đã phát trước) thay "chờ ~200 ms".
+- P26 "log có chữ đã che ≤ 300": kiểm chữ result có trong log Runtime (stdout + `AGENT_RT_LOG_DIR`), không ép tên trường; không lộ ở `jobs.error_message`, mọi XADD `run:<id>`.
+- S: H1 Hub vẫn phát `delta` (cắt content) **sau** kết quả job ⇒ "có delta" không phân biệt; mọi ca ép vị trí delta so với `step.finished` (S01–S03), thời gian (S01, S07) hoặc `detail.stream` (S04). S04 huỷ: `#fake:stream=50 #fake:answer-len=2000` (≈ 2,5 s stream). S07 dùng MK trong tiến trình (`setAppKey troLy mk-slow-300`), content = `MOCK_TEXT` như A120.
+- S05 vế 1 ép thêm MK `inputs.title = "A"` và đúng 1 job `trello` ở run 2; vế 3 (`@helper Đồng ý`) chỉ ép MK không đổi + run kết thúc (không ép `run.finished`/`failed`).
+- H01 xanh trước code (F3, B3 đã có) — cần `hub:dev` chạy (bước `needsDev` của `done:h2b`).
+
+### Q3 · 2026-10-05
+`bun run test:lock:verify` trước ghi: **đúng 9 dòng `UNLOCKED`, đều file QW-P** (`apps/agent-runtime/tests/acceptance/{_stream,stream_int_test,refusal_int_test,usage_h2b_int_test}.py`, `tests/acceptance/H2b/stack/{_stack,stream.stack.test,confirm-tag.stack.test,refused.stack.test}.ts`, `tests/acceptance/H2b/hubdev/fixture.hubdev.test.ts`), 0 `MISMATCH`/file khác (thay đổi `apps/hub-api` của B4 không thuộc file khoá) ⇒ `bun run test:lock:write` → verify xanh (313 file); `git diff tests/.lock` chỉ thêm 9 dòng.
 
 ### Tranh chấp
 - **TC-1 · 2026-10-05 · B1-4 (a) · `orchestrator-pick.test.ts` R23** — **test sai.** Ca chờ `pickOrchestrator(snapshot({orchestrator:null}), BETA)` = `null`, nhưng `snapshot()` có bản BETA hợp lệ (`orch-beta` bật) ⇒ theo "WRITE — QW-R chốt" (bản tenant hợp lệ dùng được kể cả khi mặc định thiếu) phải trả `{config: orch-beta, tenantId: BETA, invalid:false}`; code B1 đúng chốt. Sửa: giữ biểu thức cũ, chờ bản BETA; thêm vế `null` trên ảnh chỉ có bản ACME (mặc định thiếu) hỏi BETA. Giữ id R23.
