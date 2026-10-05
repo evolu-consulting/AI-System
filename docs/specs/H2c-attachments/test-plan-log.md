@@ -98,3 +98,6 @@ Cùng lệnh QW-A1, DB riêng `ai_system_h2c_qwa2_test` + `ai_system_h2c_qwa2_hu
 7. A103 `upload-slow-65000`: `/hoadon` `timeout_s = 30` < hạn upload 60 s ⇒ assert `TIMEOUT` hoặc `UPSTREAM_ERROR` trong ≤ 70 s (ca riêng, timeout 100 s).
 8. A100/A108 `upload_file_id = "upl-1"` (sau `dify.mock.reset()`, MK đếm theo instance); đếm MK theo tên file của ca (TC-2).
 9. A85/A88 không ép mức log khác `error attachment-content-missing`; A88 kiểm vắng token/`authorization` trong mọi dòng log của các ca 401/404.
+
+### Q2 · khoá test TS (2026-10-05, sau QW-A2 `e73ee31`)
+Trước ghi: hồi quy MK-U xanh (`bun test tools/hub-dev` 11 pass; H2a int dùng MK 90 pass; `test:h2a:stack` 3 pass — mục QW-A2). `test:lock:verify` → đúng **29 `UNLOCKED`** `tests/acceptance/H2c/**` (`_h2c.ts`, `_h2c2.ts`, 16 `*.int.test.ts`/perf, `rules/` 11; chưa có `stack/`, `hubdev/`) + đúng **1 `CHANGED tools/hub-dev/src/dify-mock.ts`**, không dòng khác. `test:lock:write` → **342 file**; `verify` OK. `git diff tests/.lock`: +29 dòng H2c, đổi đúng 1 dòng `dify-mock.ts`. `dify-mock.test.ts` không khoá.
