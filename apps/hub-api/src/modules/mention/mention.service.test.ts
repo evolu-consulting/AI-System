@@ -1,7 +1,7 @@
 // HUB-FR-91 · H2b-R02–R05, R09 · prepareMention: thứ tự lỗi (empty_tag → tag sai đầu tiên → nội dung rỗng), kế hoạch run.
 import { describe, expect, test } from "bun:test";
 import type { AgentConfig, ConfigSnapshot } from "../config/config.rules";
-import { type MentionRouted, prepareMention } from "./mention.service";
+import { directOnSnapshot, type MentionRouted, prepareMention } from "./mention.service";
 import { parseMention } from "./mention-parse.rules";
 
 const T = "00000000-0000-4000-8000-000000000001";
@@ -95,5 +95,49 @@ describe("prepareMention [H2b-R02–R05]", () => {
       only: ["helper", "assistant"],
       content: "làm cùng",
     });
+  });
+});
+
+describe("directOnSnapshot — REVIEW 1 Hub #2 (TOCTOU ảnh A/ảnh B) [H2b-R06, HUB-BR-06]", () => {
+  const plan = () => {
+    const d = prep("@assistant x");
+    if (d.kind !== "direct") throw new Error("cần direct");
+    return d;
+  };
+  test("ảnh run còn thấy agent → agent + responder lấy từ ảnh run", () => {
+    const renamed = {
+      ...snapshot,
+      agents: AGENTS.map((a) =>
+        a.key === "assistant" ? { ...a, name: { vi: "Mới", en: "New" }, version: 2 } : a,
+      ),
+    };
+    const d = directOnSnapshot(plan(), renamed, who, "vi");
+    expect({ v: d.agent.version, responder: d.responder, content: d.content }).toEqual({
+      v: 2,
+      responder: { key: "assistant", name: "Mới" },
+      content: "x",
+    });
+  });
+  test("ảnh run: agent tắt / mất grant / bị đặt làm Orchestrator → AGENT_NOT_FOUND", () => {
+    const off = {
+      ...snapshot,
+      agents: AGENTS.map((a) => (a.key === "assistant" ? { ...a, enabled: false } : a)),
+    };
+    const noGrant = {
+      ...snapshot,
+      grants: snapshot.grants.filter((g) => g.agentId !== AGENTS[1]?.id),
+    };
+    const asOrch = {
+      ...snapshot,
+      orchestrator: snapshot.orchestrator && {
+        ...snapshot.orchestrator,
+        agentId: AGENTS[1]?.id ?? "",
+      },
+    };
+    for (const s of [off, noGrant, asOrch]) {
+      expect(() => directOnSnapshot(plan(), s, who, "vi")).toThrow(
+        expect.objectContaining({ code: "AGENT_NOT_FOUND" }),
+      );
+    }
   });
 });

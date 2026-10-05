@@ -217,7 +217,7 @@ export class JobAgentRunner implements AgentRunner {
       return;
     }
     const queue = new EventQueue();
-    const unsub = this.d.reader.subscribe(task.run.id, (e) => {
+    const unsub = await this.d.reader.subscribe(task.run.id, (e) => {
       if (e.job_id === jobId) queue.push(e);
     });
     try {

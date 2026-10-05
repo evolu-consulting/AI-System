@@ -58,6 +58,22 @@ export function prepareMention(i: PrepareMentionInput): MentionPlan {
   return { kind: "orchestrated", content: routed.content, onlyKeys: new Set(routed.tags) };
 }
 
+/**
+ * REVIEW 1 — Hub #2 (TOCTOU): `prepareMention` kiểm AU trên ảnh A, run tạo trên ảnh B (`RunService.start` đọc lại). Kiểm lại
+ * agent `direct` trên ảnh của run; ngoài AU → `AGENT_NOT_FOUND` (trước khi ghi gì). Agent + `responder` lấy từ ảnh run.
+ */
+export function directOnSnapshot(
+  d: DirectRunStart,
+  snapshot: ConfigSnapshot,
+  who: AccessSubject,
+  locale: MentionLocale,
+): DirectRunStart {
+  const keys = visibleAgents(accessInput(snapshot, who)).map((a) => a.key);
+  const agent = keys.includes(d.agent.key) && snapshot.agents.find((a) => a.key === d.agent.key);
+  if (!agent) throw agentNotFound(suggestAgents(d.agent.key, keys));
+  return { ...d, agent, responder: responderOf(agent, locale) };
+}
+
 export type MentionConfig = Pick<ConfigCache, "snapshot" | "user" | "poll">;
 
 export class MentionService {

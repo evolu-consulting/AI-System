@@ -21,7 +21,11 @@ import {
   pickOrchestrator,
 } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
-import type { DirectRunStart, MentionPlan } from "../mention/mention.service";
+import {
+  type DirectRunStart,
+  directOnSnapshot,
+  type MentionPlan,
+} from "../mention/mention.service";
 import { setFinalSeq } from "./close/cancel.repo";
 import { type Created, type CreateRunInput, createRunTx } from "./create-run";
 import * as repo from "./runs.repo";
@@ -136,6 +140,24 @@ export async function lastEventIdOf(redis: Redis, r: repo.RunRecord): Promise<nu
   return r.status === "running" ? (await lastSseEntry(redis, r.id)).seq : r.lastSeq;
 }
 
+/** Id mới của run + tin (E12); `flowId` theo `req.flow_id` hoặc flow mới. */
+function newRun(
+  u: AuthUser,
+  conversationId: string,
+  req: SendMessageRequest,
+  locale: Created["locale"],
+): Created {
+  return {
+    id: crypto.randomUUID(),
+    ...ownerOf(u),
+    conversationId,
+    flowId: req.flow_id ?? crypto.randomUUID(),
+    answerMessageId: crypto.randomUUID(),
+    userMessageId: crypto.randomUUID(),
+    locale,
+  };
+}
+
 export type StartedRun = {
   runId: string;
   flowId: string;
@@ -175,18 +197,13 @@ export class RunService {
     plan?: RunPlan,
   ): Promise<StartedRun> {
     const snapshot = await this.d.config.snapshot();
-    const locale = (await this.d.config.user(u.userId))?.locale ?? "vi";
-    const run: Created = {
-      id: crypto.randomUUID(),
-      ...ownerOf(u),
-      conversationId,
-      flowId: req.flow_id ?? crypto.randomUUID(),
-      answerMessageId: crypto.randomUUID(),
-      userMessageId: crypto.randomUUID(),
-      locale,
-    };
+    const user = await this.d.config.user(u.userId);
+    const run = newRun(u, conversationId, req, user?.locale ?? "vi");
     const command = plan?.kind === "command" ? plan : undefined;
-    const direct = plan?.kind === "direct" ? plan : undefined;
+    // REVIEW 1 #2: agent `direct` kiểm lại trên ảnh của run (ảnh `prepareMention` có thể cũ hơn) — trước khi ghi gì.
+    const who = { ...ownerOf(u), groupIds: user?.groupIds ?? new Set<string>() };
+    const direct =
+      plan?.kind === "direct" ? directOnSnapshot(plan, snapshot, who, run.locale) : undefined;
     const orchestrator = command ? null : this.#pick(snapshot, run, plan);
     await this.#create(u, {
       run,
@@ -195,7 +212,7 @@ export class RunService {
       owner: this.d.owner,
       command,
       direct: direct && { agentId: direct.agent.id, responder: direct.responder },
-      mention: plan?.kind === "command" ? undefined : plan,
+      mention: plan?.kind === "command" ? undefined : (direct ?? plan),
       orchestratorTenantId: plan?.kind === "direct" ? null : orchestrator?.tenantId,
       maxConcurrentRuns: this.d.maxConcurrentRuns,
       log: this.d.log,

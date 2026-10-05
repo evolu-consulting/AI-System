@@ -333,3 +333,16 @@ describe("config H2b · Orchestrator theo tenant", () => {
     expect(splitOrchestratorRows([]).orchestratorTenants.size).toBe(0);
   });
 });
+
+describe("config H2b · REVIEW 1 Hub #3", () => {
+  test("REVIEW 1 Hub #3 · pickOrchestrator: agent bản tenant runtime ≠ agentic-cli → mặc định + invalid (như orchestratorProblem)", () => {
+    const own = { ...ORCH_CFG, agentId: U1 };
+    const s = snap(1, {
+      orchestrator: ORCH_CFG,
+      agents: [agent(), agent({ id: U1, key: "orch-t1", runtime: "dify-agent" })],
+      orchestratorTenants: new Map([[T1, own]]),
+    });
+    expect(pickOrchestrator(s, T1)).toEqual({ config: ORCH_CFG, tenantId: null, invalid: true });
+    expect(pickOrchestrator({ ...s, orchestrator: null }, T1)).toBeNull();
+  });
+});

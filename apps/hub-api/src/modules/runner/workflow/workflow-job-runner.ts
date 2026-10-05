@@ -66,7 +66,7 @@ export class WorkflowJobRunner {
     const p = task.payload;
     if (signal.aborted) return { kind: "not_enqueued" };
     const queue = new EventQueue();
-    const unsub = this.d.reader.subscribe(p.run_id, (e) => {
+    const unsub = await this.d.reader.subscribe(p.run_id, (e) => {
       if (e.job_id === p.job_id) queue.push(e);
     });
     try {

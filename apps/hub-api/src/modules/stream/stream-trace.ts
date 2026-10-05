@@ -14,7 +14,7 @@ export type StreamTrace =
 
 type Where = { db: Db; log: Logger; runId: string; stepId: string };
 
-function patchOf(t: StreamTrace): Record<string, unknown> {
+function patchOf(t: StreamTrace): Record<string, unknown> & { stream: StreamTrace["stream"] } {
   if (t.stream === "delta_gap")
     return { stream: t.stream, seq_expected: t.gap.expected, seq_seen: t.gap.seen };
   if (t.stream === "delta_mismatch")

@@ -11,11 +11,11 @@ import {
 } from "@ai/contracts/chat";
 import { Hono, type MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
-import { DEFAULT_JOB_MAX_WAIT_S, mountDifyCredential, workflowJobs } from "./app.async";
+import { mountDifyCredential, workflowJobs } from "./app.async";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountH2b } from "./app.h2b";
 import { mountMcp } from "./app.mcp";
-import { agentRunner } from "./app.runner";
+import { runDrivers, startRunLoops } from "./app.runner";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
@@ -24,17 +24,10 @@ import type { Redis } from "./lib/redis";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
-import { directDriver } from "./modules/mention/direct-driver";
-import { orchestratorDriver } from "./modules/orchestrator/orchestrator.service";
-import { startOrphanSweep } from "./modules/runner/orphan-sweep";
-import { RunStreamReader } from "./modules/runner/run-stream-reader";
 import { cancelRoutes } from "./modules/runs/close/cancel.routes";
 import { CancelService } from "./modules/runs/close/cancel.service";
-import { startLeaseLoop } from "./modules/runs/close/lease";
-import { startLeaseSweeper } from "./modules/runs/close/sweeper";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
 import { type RunDriver, RunService } from "./modules/runs/runs.service";
-import type { RunRegistry } from "./modules/runs/sse/sse-writer";
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
 export type AppVars = {
@@ -106,49 +99,6 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
 /** `runs.owner` của instance (= `HUB_INSTANCE_ID`; test khung vắng → host:pid). */
 const instanceOwner = (deps: AppDeps): string => deps.instanceId ?? `${hostname()}:${process.pid}`;
 
-/**
- * B8 · vòng Orchestrator (plan §6) chạy bước qua `RoutingRunner` (H1 §5.6 + H2a §5.4); dừng theo `deps.signal`. H2b P10 ·
- * run `direct` dùng chung runner (một job agent, không Orchestrator). `deps.runDriver` (test) → mọi run đi driver đó.
- */
-function runDrivers(
-  db: Db,
-  redis: Redis,
-  deps: AppDeps,
-  config: ConfigCache,
-): { driver: RunDriver; directDriver?: RunDriver } {
-  if (deps.runDriver) return { driver: deps.runDriver };
-  const reader = new RunStreamReader(redis, logger, deps.signal);
-  const maxWaitS = deps.jobMaxWaitS ?? DEFAULT_JOB_MAX_WAIT_S;
-  const runner = agentRunner({
-    db,
-    owner: instanceOwner(deps),
-    reader,
-    maxWaitS,
-    config,
-    log: logger,
-    publicInternalUrl: deps.publicInternalUrl,
-    secretMasterKey: deps.secretMasterKey,
-  });
-  return {
-    driver: orchestratorDriver({ db, runner, users: config, log: logger }),
-    directDriver: directDriver({ db, runner, log: logger }),
-  };
-}
-
-/** B10 · vòng nền của instance (plan §5.2 lease, §5.8 sweeper lease, plan-db §5.5 orphan); dừng khi `signal` abort. */
-function startRunLoops(d: {
-  db: Db;
-  redis: Redis;
-  owner: string;
-  registry: RunRegistry;
-  signal?: AbortSignal;
-}): void {
-  const deps = { ...d, log: logger };
-  startLeaseLoop(deps);
-  startLeaseSweeper(deps);
-  startOrphanSweep(deps);
-}
-
 /** H2a · driver lệnh `/` (B5 sync Dify, B6 async qua job `workflow.async`). */
 function commandDrivers(deps: AppDeps, db: Db) {
   return commandDriverFor({
@@ -176,17 +126,9 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     app.route("/conversations", conversationRoutes(deps.db));
     return;
   }
-  const owner = instanceOwner(deps);
-  const runs = new RunService({
-    db: deps.db,
-    redis: deps.redis,
-    config,
-    owner,
-    ...runDrivers(deps.db, deps.redis, deps, config),
-    log: logger,
-    signal: deps.signal,
-    maxConcurrentRuns: deps.maxConcurrentRuns,
-  });
+  const base = { ...deps, db: deps.db, redis: deps.redis, owner: instanceOwner(deps), log: logger };
+  const { owner } = base;
+  const runs = new RunService({ ...base, config, ...runDrivers({ ...base, config }) });
   const conversations = conversationService(deps.db);
   const cancel = new CancelService({
     db: deps.db,
@@ -206,13 +148,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   );
   app.route("/runs", runRoutes(runs));
   app.route("/runs", cancelRoutes(cancel));
-  startRunLoops({
-    db: deps.db,
-    redis: deps.redis,
-    owner,
-    registry: runs.registry,
-    signal: deps.signal,
-  });
+  startRunLoops({ ...base, registry: runs.registry });
 }
 
 /** request_id → logger child → cache cấu hình; log một dòng mỗi request. Không bao giờ log body, Authorization, Cookie (CONVENTIONS §5, A52). */

@@ -92,13 +92,17 @@ export type PickedOrchestrator = {
 };
 
 /**
- * HUB-FR-62 · H2b-R14: bản tenant hợp lệ (agent ∈ `s.agents` ∧ bật) → bản đó, kể cả khi mặc định thiếu; bản tenant hỏng
+ * HUB-FR-62 · H2b-R14: bản tenant hợp lệ (agent ∈ `s.agents` ∧ bật ∧ runtime `agentic-cli` — như `orchestratorProblem`,
+ * REVIEW 1 Hub #3) → bản đó, kể cả khi mặc định thiếu; bản tenant hỏng
  * → mặc định + `invalid` (service log `orchestrator_tenant_invalid`); null chỉ khi không có bản tenant hợp lệ ∧ mặc
  * định thiếu (spec-decisions "WRITE — QW-R chốt").
  */
 export function pickOrchestrator(s: ConfigSnapshot, tenantId: string): PickedOrchestrator | null {
   const own = s.orchestratorTenants.get(tenantId);
-  if (own && s.agents.some((a) => a.id === own.agentId && a.enabled)) {
+  if (
+    own &&
+    s.agents.some((a) => a.id === own.agentId && a.enabled && a.runtime === "agentic-cli")
+  ) {
     return { config: own, tenantId, invalid: false };
   }
   if (!s.orchestrator) return null;

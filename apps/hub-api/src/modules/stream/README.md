@@ -6,7 +6,7 @@ Spec H2b-routing (R19–R24); plan §1 P11–P13, §5.5; chữ ký hàm thuần 
 |---|---|
 | `delta.rules.ts` | thuần: `streamAccept` (loại delta theo vai job), `nextSeqOk`, `reconcileStream`, `chunkDelta` (≤ 40 đơn vị UTF-16) |
 | `delta-sink.ts` | `DeltaSink` (một per job được stream): kiểm `seq` liền mạch, lọc `accept`, phát SSE `delta`, gom S |
-| `stream-trace.ts` | trace `run_steps.detail.stream` (`delta_gap`/`delta_mismatch`/`stream_unparsed`) + log `warn` |
+| `stream-trace.ts` | trace `run_steps.detail.stream` (`delta_gap`/`delta_mismatch`/`stream_unparsed`; nhãn sau cùng) + `detail.streams` (mọi nhãn) + log `warn` |
 | `stream.repo.ts` | SQL gộp `detail` của step |
 
 Luồng: driver (`orchestrator.service`, `mention/direct-driver`) tạo sink → `AgentTask.stream` → `runJob` đưa mọi sự kiện

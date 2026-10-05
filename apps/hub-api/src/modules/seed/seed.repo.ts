@@ -82,25 +82,36 @@ export async function loadTenantIds(tx: Tx, keys: readonly string[]): Promise<Ma
   return new Map(rows.map((r) => [r.key, r.id]));
 }
 
-/** H2b-R13 · plan-db §4: upsert bản tenant theo `tenant_id` (không đổi → giữ `version`/`updated_at`); `remove` → xoá. */
+/**
+ * H2b-R13 · plan-db §4: upsert bản tenant theo `tenant_id` (không đổi → giữ `version`/`updated_at`); `remove` → xoá.
+ * REVIEW 1: KHÔNG dùng `insert … on conflict` — Postgres tính DEFAULT `nextval` (sequence `smallint`) cho mọi hàng ứng viên
+ * kể cả khi rơi vào nhánh conflict, nên mỗi lần seed lại tiêu một số dù không đổi gì. Hàng đã có → UPDATE (chỉ khi khác);
+ * chưa có → INSERT (mới lấy `nextval`). Seed tuần tự hoá bằng khoá `config_meta` (`bumpHubConfigVersion`) nên không đua.
+ */
 export async function writeOrchestratorTenants(
   tx: Tx,
   p: { upserts: readonly OrchestratorTenantUpsert[]; removes: readonly string[] },
 ): Promise<void> {
-  for (const t of p.upserts)
-    await tx`insert into hub.orchestrator_settings (tenant_id, agent_id, max_steps, token_budget, history_n, on_no_match)
-      select ${t.tenantId}::uuid, a.id, ${t.maxSteps}, ${t.tokenBudget}, ${t.historyN}, ${t.onNoMatch}
-      from hub.agents a where a.key = ${t.agent}
-      on conflict (tenant_id) where tenant_id is not null do update set agent_id = excluded.agent_id,
-        max_steps = excluded.max_steps, token_budget = excluded.token_budget, history_n = excluded.history_n,
-        on_no_match = excluded.on_no_match, version = hub.orchestrator_settings.version + 1, updated_at = now()
-      where (hub.orchestrator_settings.agent_id, hub.orchestrator_settings.max_steps,
-             hub.orchestrator_settings.token_budget, hub.orchestrator_settings.history_n,
-             hub.orchestrator_settings.on_no_match)
-        is distinct from (excluded.agent_id, excluded.max_steps, excluded.token_budget, excluded.history_n,
-             excluded.on_no_match)`;
+  for (const t of p.upserts) await upsertOrchestratorTenant(tx, t);
   for (const tenantId of p.removes)
     await tx`delete from hub.orchestrator_settings where tenant_id = ${tenantId}::uuid`;
+}
+
+async function upsertOrchestratorTenant(tx: Tx, t: OrchestratorTenantUpsert): Promise<void> {
+  const [row] = await tx<{ id: number }[]>`select id from hub.orchestrator_settings
+    where tenant_id = ${t.tenantId}::uuid for update`;
+  if (row) {
+    await tx`update hub.orchestrator_settings s set agent_id = a.id, max_steps = ${t.maxSteps},
+        token_budget = ${t.tokenBudget}, history_n = ${t.historyN}, on_no_match = ${t.onNoMatch},
+        version = s.version + 1, updated_at = now()
+      from hub.agents a where a.key = ${t.agent} and s.tenant_id = ${t.tenantId}::uuid
+        and (s.agent_id, s.max_steps, s.token_budget, s.history_n, s.on_no_match)
+          is distinct from (a.id, ${t.maxSteps}::int, ${t.tokenBudget}::int, ${t.historyN}::int, ${t.onNoMatch}::text)`;
+    return;
+  }
+  await tx`insert into hub.orchestrator_settings (tenant_id, agent_id, max_steps, token_budget, history_n, on_no_match)
+    select ${t.tenantId}::uuid, a.id, ${t.maxSteps}, ${t.tokenBudget}, ${t.historyN}, ${t.onNoMatch}
+    from hub.agents a where a.key = ${t.agent}`;
 }
 
 const tenantIds = (tx: Tx, plan: SeedPlan): Promise<Map<string, string>> =>
