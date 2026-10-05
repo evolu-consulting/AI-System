@@ -2,6 +2,7 @@
 import { type HistoryItem, OrchestratorDecisionSchema } from "@ai/contracts/hub";
 import { z } from "zod";
 import type { HubAgentRef } from "../agents/agent-access.rules";
+import { type FileBrief, orchestratorFilesBlock } from "../attachments/run-files.rules";
 
 /** Mỗi tin trong `<history>` ≤ 4000 ký tự (§6.2). */
 export const HISTORY_ITEM_MAX = 4000;
@@ -32,6 +33,8 @@ export type PromptInput = {
   steps: readonly StepNote[];
   stepsLeft: number;
   message: string;
+  /** H2c P11 · tập file của run (R15); ≥ 1 → khối `<attachments>` ngay trước `<message>`; vắng/rỗng → như H1. */
+  attachments?: readonly FileBrief[];
 };
 
 const cut = (s: string, max: number): string => {
@@ -58,8 +61,10 @@ export function orchestratorPrompt(p: PromptInput, retry = false): string {
     ),
     tag("steps", json(p.steps)),
     tag("steps_left", String(Math.max(0, p.stepsLeft))),
-    tag("message", json(p.message)),
   ];
+  const files = orchestratorFilesBlock(p.attachments ?? []);
+  if (files) blocks.push(files);
+  blocks.push(tag("message", json(p.message)));
   if (retry) blocks.push(RETRY_REMINDER);
   return blocks.join("\n");
 }

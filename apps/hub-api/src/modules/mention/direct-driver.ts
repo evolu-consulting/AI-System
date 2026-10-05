@@ -106,6 +106,8 @@ async function runDirect(d: DirectDriverDeps, ctx: RunContext, plan: DirectRunSt
     role: "agent" as const,
     prompt: plan.content,
     history,
+    // H2c P9 · tập file của run → `payload.attachments` + khối file trong `prompt` (P10).
+    files: ctx.files,
     stream: deltaSinkFor(
       { role: "agent", runKind: "direct", firstDelegate: false },
       deltaEmit(writer),

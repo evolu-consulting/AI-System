@@ -12,6 +12,7 @@ import {
   HUB_JOB_ERROR_CODES,
   type HubJobErrorCode,
   JOB_FAIL_REASONS,
+  type JobAttachment,
   type JobFailReason,
   JobOutputSchema,
   type McpConfig,
@@ -50,6 +51,8 @@ export type PayloadInput = {
   history: readonly HistoryItem[];
   /** H2a · `mcpConfigFor(...)` (P4: không token); vắng/null → `mcp: null`. */
   mcp?: McpConfig | null;
+  /** H2c P11 · `jobAttachments(A)`; ≥ 1 → khoá `attachments`, vắng/rỗng → payload y hệt H2b (không khoá). */
+  attachments?: readonly JobAttachment[];
   /** H2b P10 · `payload.stream` (vắng/false → khoá vắng, fixture H1/H2a giữ nguyên hình). */
   stream?: boolean;
 };
@@ -63,7 +66,7 @@ export function maxTurns(opts: Record<string, unknown>, role: AgentRole): number
   return role === "agent" ? Math.max(n, AGENT_MIN_TURNS) : n;
 }
 
-/** Agent: `runtime_options.allowed_tools` ∩ {Read, Grep, Glob} (vắng → Read, Grep); Orchestrator: không tool. */
+/** Agent: `runtime_options.allowed_tools` ∩ `ALLOWED_TOOLS` (vắng → Read, Grep; `Write` opt-in — H2c PL9); Orchestrator: không tool. */
 function allowedTools(opts: Record<string, unknown>, role: AgentRole): AllowedTool[] {
   if (role === "orchestrator") return [];
   const v = opts.allowed_tools;
@@ -114,6 +117,7 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
     output: isAgent ? "agent_result" : "text",
     timeout_s: i.agent.timeoutS,
     ...(i.stream ? { stream: true } : {}),
+    ...(i.attachments?.length ? { attachments: [...i.attachments] } : {}),
   });
   return parsed.success ? parsed.data : null;
 }

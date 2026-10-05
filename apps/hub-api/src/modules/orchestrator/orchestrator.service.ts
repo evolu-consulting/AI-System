@@ -6,6 +6,7 @@ import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { accessInput, visibleAgents } from "../agents/agent-access.rules";
+import { fileBrief } from "../attachments/run-files.rules";
 import type { UserState } from "../config/config.rules";
 import { type AgentRunner, runJob } from "../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../runs/runs.service";
@@ -55,6 +56,7 @@ async function loadInput(d: OrchestratorDeps, ctx: RunContext): Promise<LoopInpu
     message: ctx.content,
     locale: r.locale,
     ...(scope ? { stepDetail: { scope: [...scope].sort() } } : {}),
+    ...(ctx.files.length > 0 ? { attachments: ctx.files.map(fileBrief) } : {}),
     stream: true,
   };
 }
@@ -74,6 +76,8 @@ function loopIo(d: OrchestratorDeps, ctx: RunContext): LoopIo {
         snapshot,
         stream: sink,
         emit: writer.emit.bind(writer),
+        // H2c P9 · job agent (delegate) mang tập file của run; Orchestrator chỉ thấy khối `<attachments>` (P11).
+        ...(j.role === "agent" ? { files: ctx.files } : {}),
       };
       const o = await runJob(d.runner, task, writer.signal, log);
       if (o.kind !== "aborted") await gapTrace({ db: d.db, log, runId: writer.run.id }, o);

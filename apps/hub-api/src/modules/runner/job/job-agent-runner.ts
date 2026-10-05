@@ -10,6 +10,7 @@ import {
   MCP_TOOLS_MAX,
   type McpConfig,
   type RunEvent,
+  SYSTEM_PROMPT_MAX,
   type TokenUsage,
 } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
@@ -17,6 +18,12 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
+import {
+  agentFilesBlock,
+  jobAttachments,
+  type RunFile,
+  withOutHint,
+} from "../../attachments/run-files.rules";
 import type { CatalogSnapshot } from "../../config/catalog.rules";
 import { type AgentConfig, agentWorkflowIds, type ConfigSnapshot } from "../../config/config.rules";
 import { stepLabel } from "../../conversations/conversations.rules";
@@ -56,6 +63,8 @@ export type AgentTask = {
   reopen?: boolean;
   /** H2b P13 · gộp vào `run_steps.detail` (lúc tạo và lúc kết thúc step), vd `{scope}` (R09). */
   detail?: Readonly<Record<string, unknown>>;
+  /** H2c P9 · tập file của run (`RunContext.files`); chỉ job vai `agent` dùng (P10); vắng/rỗng = như H2b. */
+  files?: readonly RunFile[];
   /** Phát `step.started`/`step.finished` (vd `writer.emit`); vắng → không phát. */
   emit?: (ev: SseEventBody) => Promise<unknown>;
 };
@@ -92,6 +101,10 @@ export type JobAgentRunnerDeps = {
   mcp?: { url: string; catalog: () => Promise<CatalogSnapshot> };
 };
 
+/** H2c P9–P11 · file của job: chỉ vai `agent` (Orchestrator thấy khối `<attachments>` trong prompt, không `payload.attachments`). */
+const agentFiles = (task: AgentTask): readonly RunFile[] =>
+  task.role === "agent" ? (task.files ?? []) : [];
+
 const stepType = (role: AgentRole) => (role === "orchestrator" ? "orchestrator" : "delegate");
 
 function stepInsert(
@@ -111,8 +124,8 @@ function stepInsert(
 }
 
 /**
- * R19 (phía payload): workflow gắn agent ∩ `enabled` (bỏ input `file` bắt buộc), sắp key, ≤ `MCP_TOOLS_MAX`.
- * H2c P12: `hasFiles` chuyển cho `mcpToolsFor` (vắng → H2a nguyên văn).
+ * R19 (phía payload): workflow gắn agent ∩ `enabled`, sắp key, ≤ `MCP_TOOLS_MAX`.
+ * H2c P12: `hasFiles` chuyển cho `mcpToolsFor` (vắng → H2a nguyên văn; Hub luôn truyền = run có file).
  */
 export function agentToolKeys(
   ids: ReadonlySet<string>,
@@ -145,7 +158,8 @@ export class JobAgentRunner implements AgentRunner {
     const ids = agentWorkflowIds(task.snapshot, task.agent.id);
     if (ids.size === 0) return null;
     try {
-      return mcpConfigFor(task.agent, agentToolKeys(ids, await m.catalog()), m.url);
+      const keys = agentToolKeys(ids, await m.catalog(), agentFiles(task).length > 0);
+      return mcpConfigFor(task.agent, keys, m.url);
     } catch (err) {
       this.d.log.warn("job-mcp-unavailable", { run_id: task.run.id, ...safeErrorFields(err) });
       return null;
@@ -159,7 +173,9 @@ export class JobAgentRunner implements AgentRunner {
   ): AgentCliJob | null {
     const profile = task.snapshot.profiles.find((p) => p.id === task.agent.profileId);
     if (!profile) return null;
-    return buildJobPayload({
+    const attachments = jobAttachments(agentFiles(task));
+    const block = agentFilesBlock(attachments);
+    const payload = buildJobPayload({
       jobId: ids.jobId,
       stepId: ids.stepId,
       mcp,
@@ -167,11 +183,24 @@ export class JobAgentRunner implements AgentRunner {
       agent: task.agent,
       role: task.role,
       profile,
-      prompt: task.prompt,
+      prompt: block ? `${task.prompt}\n\n${block}` : task.prompt,
       systemPrompt: task.systemPrompt ?? task.agent.systemPrompt,
       history: task.history,
       stream: task.stream !== undefined,
+      attachments,
     });
+    return payload && this.#outHint(task, payload);
+  }
+
+  /** P10, PL9 · job có `Write` (chỉ agent `agent.cli` cấu hình) → `system_prompt` + `OUT_HINT`; chạm trần → giữ + `warn`. */
+  #outHint(task: AgentTask, payload: AgentCliJob): AgentCliJob {
+    if (!payload.allowed_tools.includes("Write")) return payload;
+    const hint = withOutHint(payload.system_prompt, SYSTEM_PROMPT_MAX);
+    if (hint.dropped) {
+      const f = { run_id: task.run.id, agent_id: task.agent.id };
+      this.d.log.warn("attachment-out-hint-dropped", f);
+    }
+    return { ...payload, system_prompt: hint.text };
   }
 
   async *run(task: AgentTask, signal: AbortSignal): AsyncGenerator<RunEvent> {

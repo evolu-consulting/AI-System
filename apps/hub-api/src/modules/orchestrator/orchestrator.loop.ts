@@ -15,6 +15,7 @@ import {
   type HubAgentRef,
   type VisibleAgentsInput,
 } from "../agents/agent-access.rules";
+import type { FileBrief } from "../attachments/run-files.rules";
 import type { AgentConfig } from "../config/config.rules";
 import type { AgentRole } from "../runner/runner.rules";
 import {
@@ -77,6 +78,8 @@ export type LoopInput = {
   locale: "vi" | "en";
   /** H2b P13 · `detail` cho mọi step Orchestrator (run thu hẹp: `{scope}`). */
   stepDetail?: Readonly<Record<string, unknown>>;
+  /** H2c P11 · tập file của run (R15) cho khối `<attachments>` của prompt Orchestrator; vắng/rỗng = như H1. */
+  attachments?: readonly FileBrief[];
   /** H2b P11 · run được stream (Orchestrator + delegate đầu, plan §5.5); vắng = như H1. */
   stream?: boolean;
 };
@@ -187,6 +190,7 @@ async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
         steps: s.notes,
         stepsLeft: c.settings.maxSteps - s.steps,
         message: c.message,
+        ...(c.attachments?.length ? { attachments: c.attachments } : {}),
       },
       retry,
     );
