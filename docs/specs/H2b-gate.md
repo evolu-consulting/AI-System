@@ -1,6 +1,6 @@
 # Gate H2b — Định tuyến mở rộng (`@agent`, Orchestrator theo tenant, giới hạn run, `delta` từ Runtime) + nợ H1
 
-Ngày: 2026-10-05 · Trạng thái: **CHỜ DUYỆT** · Readiness: READY (`H2b-routing/readiness.md`, 2 lần)
+Ngày: 2026-10-05 · Trạng thái: **ĐÃ DUYỆT 2026-10-05** (người dùng: "Oke") · Readiness: READY (`H2b-routing/readiness.md`, 2 lần)
 
 **Không tự duyệt (Luật 2b):** có CR sửa chữ BA (CR-037) và hành vi lệch câu chữ BA (thứ tự kiểm 429). Không có ADR / thư viện mới (plan P18). Bạn đã chốt U1–U7 và Q1 = B (`spec-decisions.md`).
 

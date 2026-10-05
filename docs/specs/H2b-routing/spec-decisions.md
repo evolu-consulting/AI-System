@@ -55,3 +55,6 @@ BA (CR-033): user tự tag thì câu trả lời hiện **tên hiển thị củ
 ## CR
 - **CR-037** (đề xuất, chờ Gate H2b): sửa chữ BA cho khớp spec — thuật ngữ Run có 3 loại; thứ tự kiểm 429 sau Router (T11); agent là Orchestrator ở mọi phạm vi không delegate/tag được (T5); WRK-FR-03 chi tiết `delta` chỉ cho job có thể là câu trả lời cuối, Hub cắt ≤ 40 (T12, T13); HUB-FR-62 xoá bản tenant qua seed `remove` (T6). Áp vào design sau Gate (docs-architect).
 - CR-impact Chat/Admin của H2b (menu `@`, `AGENT_NOT_FOUND`, `TOO_MANY_RUNS` + `Retry-After`, `responder` nếu Q1=B, `delta` đến khi step còn mở) ghi ở I3 như CR-036.
+
+## Gate duyệt — 2026-10-05
+- Người dùng duyệt Gate H2b ("Oke"): CR-037 (sửa chữ BA), Q1 = B, contract chat chỉ thêm, F4 giữ mã H1 + `refused`, `maxConcurrentRuns` vắng = không giới hạn (server luôn điền từ env, mặc định 2).
