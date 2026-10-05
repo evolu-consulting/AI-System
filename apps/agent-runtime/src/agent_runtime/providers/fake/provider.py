@@ -11,6 +11,9 @@ H2b (PY-04, `plan-runtime` §6): `#fake:stream*`/`answer-len` (`stream.py`), `#f
 cố định, không `RateLimit`, usage `{in:10, out:0}` trừ khi có `#fake:usage`; chỉ `refused` (và giá
 trị lạ) kèm `stop_reason="refusal"` — TC-8); agent nhận câu đồng ý
 không chỉ thị → chạy lại tin user trước trong `payload.history`.
+H2c (PY-04, `plan-runtime` §6, `files.py`): `#fake:files` (dòng `<tên>:<sha>` của `attachments/`),
+`#fake:out=<a>,…`/`out-size`/`out-link` (ghi thẳng `out/`, sau `sleep`), `#fake:write=<path>` (hook
+thật `Write`, PL9 — sau `sleep`: P51 đặt symlink trong lúc ngủ).
 """
 
 from __future__ import annotations
@@ -45,6 +48,7 @@ from agent_runtime.providers.fake.directives import (
     turns,
     usage_pair,
 )
+from agent_runtime.providers.fake.files import files_text, write_file, write_outputs
 from agent_runtime.providers.fake.mcp_call import call_tool, list_tools
 from agent_runtime.providers.fake.sessions import load, new_id, save
 from agent_runtime.providers.fake.state import bump_badjson
@@ -146,7 +150,20 @@ async def _mcp_first(job: ProviderJob, msg: str, found: dict[str, str], emit: Em
     return None
 
 
+async def _write(job: ProviderJob, raw: str) -> str:
+    """H2c `#fake:write=<path>` (PL9): hook thật với `Write {file_path}` — cho ⇒ ghi, `written`."""
+    denied = await _guarded(job, "Write", {"file_path": raw})
+    if denied:
+        return f"denied:{denied}"
+    write_file(job.work_dir, raw)
+    return "written"
+
+
 async def _body(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -> str:
+    if "files" in found:
+        return files_text(job.work_dir)
+    if "write" in found:
+        return await _write(job, found["write"])
     if "read" in found:
         denied = await _guarded(job, "Read", {"file_path": found["read"]})
         return "denied" if denied else f"read: {_read_len(job, found['read'])} chars"
@@ -257,6 +274,7 @@ async def _side_effects(job: ProviderJob, found: dict[str, str], emit: Emit) -> 
             await emit(UsageEv.model_validate({"in": k * tin, "out": k * tout, "model": "fake"}))
     if "sleep" in found:
         await _sleep(seconds(found["sleep"]), emit)
+    write_outputs(job.work_dir, found)  # H2c `#fake:out*`: sau `sleep`, trước kết quả (§6)
 
 
 async def _early_end(job: ProviderJob, found: dict[str, str], kind: str, emit: Emit) -> bool:
