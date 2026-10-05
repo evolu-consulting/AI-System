@@ -6,8 +6,8 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
 import { runMigrations } from "./migrate";
-import { HUB_TABLE, runHubMigrations } from "./migrate-hub";
-import { resetTestDb, withDatabase } from "./test-db";
+import { runHubMigrations } from "./migrate-hub";
+import { resetTestDb, rollbackJournalFrom, withDatabase } from "./test-db";
 
 const BASE = process.env.HUB_TEST_DATABASE_URL ?? process.env.TEST_DATABASE_URL;
 if (!BASE)
@@ -133,15 +133,9 @@ describe("WRK-FR-22 · 0008_h3a_provider_state D1 — idempotent (int)", () => {
     await owner.unsafe(`alter table hub.provider_state drop column last_probe_at, drop column last_ok_at,
       drop column rate_limit_type, drop column utilization, drop column warn_at, drop column warn_resets_at`);
     // Gỡ dòng journal của 0008 và mọi migration sau nó (migration sau idempotent, áp lại không đổi gì).
-    const journal = JSON.parse(
-      readFileSync(new URL("../migrations-hub/meta/_journal.json", import.meta.url), "utf8"),
-    ) as { entries: { idx: number; when: number }[] };
-    const from = journal.entries.filter((e) => e.idx >= 8);
-    await owner.unsafe(
-      `delete from drizzle.${HUB_TABLE} where created_at >= ${Math.min(...from.map((e) => e.when))}`,
-    );
+    const removed = await rollbackJournalFrom(owner, 8);
     expect(await runHubMigrations({ url: OWNER, appEnv: "test" })).toEqual({
-      hub: from.length,
+      hub: removed,
       hubDev: 0,
     });
     const [r] = await owner`select status, consecutive_errors as n, utilization, last_probe_at

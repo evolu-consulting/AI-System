@@ -1,7 +1,7 @@
 // HUB-FR-89 · H1-R18 · P7, P8, P11 · H2c P18 (TD #52): phần theo dõi một job `agent.cli` đã vào hàng đợi, tách khỏi
 // `job-agent-runner.ts` không đổi hành vi — sự kiện `run:<run_id>` (đã lọc `job_id`) qua `EventQueue`; im `JOB_POLL_MS`
 // thì đọc `jobs` (dựng từ DB / hết hạn `queued`); sự kiện kết thúc → `run_steps` ok/failed + `step.finished`.
-import type { RunEvent } from "@ai/contracts/hub";
+import type { JobFailReason, RunEvent } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
@@ -124,10 +124,7 @@ export class JobFollower {
   }
 
   /** H3a-R06/PL12: provider đang chặn → lý do theo provider (`cooldown` → `quota`); không chặn → `queueTimeoutReason` H1. */
-  async #expiredReason(
-    tx: Tx,
-    j: FollowJob,
-  ): Promise<"quota" | "provider_unavailable" | "tenant_slots" | "provider_busy"> {
+  async #expiredReason(tx: Tx, j: FollowJob): Promise<JobFailReason> {
     const blocked = blockedReason(await repo.providerStateOf(tx, j.providerKey), new Date());
     if (blocked) return blocked;
     const r = j.task.run;

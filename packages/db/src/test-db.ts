@@ -1,5 +1,7 @@
 // ADM-NFR-06 · dọn DB test trước mỗi test tích hợp. Chỉ chạy trên DB tên kết thúc `_test`.
+import { readFileSync } from "node:fs";
 import postgres from "postgres";
+import { HUB_TABLE } from "./migrate-hub";
 
 export async function resetTestDb(url: string | undefined): Promise<void> {
   if (!url) throw new Error("TEST_DATABASE_URL chưa đặt");
@@ -43,4 +45,19 @@ export function testEnvFile(envText: string, name: string): string {
   const missing = keys.filter((k) => !seen.has(k));
   if (missing.length) throw new Error(`.env thiếu ${missing.join(", ")}`);
   return lines.join("\n");
+}
+
+/** Test: gỡ dòng journal Hub của migration `idx` và mọi migration sau nó; trả số migration bị gỡ (= số sẽ áp lại). */
+export async function rollbackJournalFrom(
+  owner: { unsafe: (q: string) => PromiseLike<unknown> },
+  idx: number,
+): Promise<number> {
+  const journal = JSON.parse(
+    readFileSync(new URL("../migrations-hub/meta/_journal.json", import.meta.url), "utf8"),
+  ) as { entries: { idx: number; when: number }[] };
+  const from = journal.entries.filter((e) => e.idx >= idx);
+  await owner.unsafe(
+    `delete from drizzle.${HUB_TABLE} where created_at >= ${Math.min(...from.map((e) => e.when))}`,
+  );
+  return from.length;
 }
