@@ -2,7 +2,7 @@
 id: H2c-attachments
 title: Đính kèm file (`POST /attachments`, gắn vào message, file cho agent CLI qua endpoint nội bộ, Dify `/files/upload`, `out/`)
 milestone: H2c
-status: draft                  # draft → ready → approved → in-progress → done
+status: approved               # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-44, HUB-FR-75, HUB-FR-12, HUB-FR-50,
    WRK-FR-11, WRK-FR-18, WRK-BR-06, WRK-BR-07,
@@ -157,7 +157,7 @@ Env mới (Hub): `HUB_ATTACH_DRIVER=local` · `HUB_ATTACH_DIR` (dev `.data/attac
 Lệnh xong mốc: `done:h2c` (qc, `test-plan.md`, mẫu `done:h2b`).
 
 ## 9. Câu hỏi mở
-Q1 (loại file), Q2 (giữ file bao lâu), Q3 (`out/` ở H2c) — [spec-decisions](spec-decisions.md). Không trả lời → mặc định (A, A, A).
+Đã chốt 2026-10-05 (người dùng): **Q1 = A**, **Q2 = A**, **Q3 = A** — [spec-decisions](spec-decisions.md) "Trả lời người dùng".
 
 ## 10. Rủi ro
 | # | Rủi ro | Giảm thiểu |

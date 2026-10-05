@@ -71,3 +71,22 @@ BA chỉ nêu ví dụ "PDF, ảnh, XML" (US-H07). Hub không quét virus ở H2
 - `job-agent-runner.ts` 380 dòng (TD #52) — tách trước khi thêm R15.
 - `work/<job_id>/` không được dọn sau job (hiện trạng) → ghi TECH-DEBT (spec K7).
 - Mock Dify `tools/hub-dev/src/dify-mock.ts` thêm `/files/upload`; `.gitignore` thêm `.data/`.
+
+## Trả lời người dùng (2026-10-05) — spec chuyển `approved`
+| # | Chọn | Áp vào |
+|---|---|---|
+| Q1 | **A** — danh sách cho phép `pdf`, `png`, `jpg`/`jpeg`, `gif`, `webp`, `docx`, `xlsx`, `pptx`, `txt`, `md`, `csv`, `xml`, `json` + kiểm chữ ký nội dung | R03 nguyên văn; cùng luật cho file `out/` (R25) — plan-rules `sniff` |
+| Q2 | **A** — giữ theo hội thoại; xoá hội thoại → xoá nội dung file ≤ 10 phút (1 chu kỳ sweeper 600 s), hàng metadata giữ (`purged_at`, `available=false`) | R28, R29; plan-db §4 |
+| Q3 | **A** — làm `out/` ngay ở H2c, tối đa 5 file/job | R24–R26, AC-12; plan-runtime §5 |
+
+## PLAN — chính xác hoá spec (backend-lead, không đổi nghiệp vụ)
+| # | Luật | Chính xác hoá | Lý do |
+|---|---|---|---|
+| PL1 | R04 | `put` tách hai pha: `stage(key, body, {maxBytes, inspect})` ghi `<key>.part` + đếm + sha256 + kiểm R03 → `Staged{size, sha256, commit(), discard()}`; `commit` = fsync + rename (gọi **sau** khi DB commit, R05). Thêm `blob(key, mime)` (Dify upload, `Bun.file` lười) | R05 đòi rename sau commit; FormData cần `Blob` |
+| PL2 | R29 | Thứ tự sweeper: **đánh dấu `purged_at` trước** (UPDATE … `FOR UPDATE SKIP LOCKED` RETURNING) → xoá nội dung → R27 xoá hàng. Nội dung còn sót (crash/lỗi xoá) do bước quét mồ côi (file > 1 h không có hàng hoặc hàng đã `purged_at`) dọn | "Xoá nội dung trước" để hở cửa: E12 gắn (R11) file đúng lúc sweeper đã xoá nội dung ⇒ tin trỏ file mất. Đánh dấu trước ⇒ R11 (`purged_at IS NULL`) không gắn được |
+| PL3 | T2 | Không dùng `hono/body-limit`: bộ đếm byte trong `stage` (một chỗ, cả thân chunked); `Bun.serve.maxRequestBodySize = 32 MiB` làm chặn ngoài | Tránh hai lớp đếm cùng luật |
+| PL4 | R24 | Câu `out/` do **Hub** nối vào **`system_prompt`** job agent; khối file (R15) nối vào `prompt` **chỉ khi** `A` ≠ ∅. Runtime không sửa prompt | Test khoá H1 A16 / H2b `direct.int:305` so `payload.prompt` nguyên văn |
+| PL5 | R23 | Câu `isError` của tool MCP chỉ tiếng Anh (như `TOOL_ERROR_TEXT` H2a — model đọc): "This file is not attached to this message." | Một nguồn câu tool |
+| PL6 | R26 | Gắn output: mỗi `(job_id, safe_name)` lấy bản mới nhất (`DISTINCT ON`) | Job bị requeue (cùng `job_id`) có thể đã đẩy output ở lần claim trước |
+| PL7 | R09 | Thêm điều kiện `created_at > now() − 24 h` vào kiểm và câu gắn | Không gắn file sweeper sắp xoá |
+| PL8 | R20 | `file ← arg` (Admin M2-R17 không cảnh báo) ở Hub là `invalid` như spec; command có input không phải `file` map `attachment` trước đây chạy với giá trị rỗng nay trả 422 `invalid` | Spec R20; ghi rủi ro K10 (`tasks.md`) |
