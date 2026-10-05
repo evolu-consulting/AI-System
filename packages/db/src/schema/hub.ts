@@ -1,7 +1,8 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
 // Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts`
 // (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
+import { sql } from "drizzle-orm";
 import {
   boolean,
   customType,
@@ -29,7 +30,7 @@ export const JOB_STATUS_VALUES = [
   "cancelled",
   "timed_out",
 ] as const;
-export const RUN_KIND_VALUES = ["orchestrated", "command"] as const;
+export const RUN_KIND_VALUES = ["orchestrated", "command", "direct"] as const;
 export const RUN_STEP_TYPE_VALUES = ["orchestrator", "delegate", "workflow", "tool"] as const;
 export const JOB_TYPE_VALUES = ["agent.cli", "agent.run", "workflow.async"] as const;
 export const TOOL_CONFIRMATION_STATUS_VALUES = [
@@ -95,7 +96,9 @@ export const agents = hub.table("agents", {
 });
 
 export const orchestratorSettings = hub.table("orchestrator_settings", {
-  id: smallint("id").primaryKey(),
+  // 0006 (H2b): id=1 = bản mặc định (tenant_id NULL); hàng tenant lấy id từ sequence (scope CHECK ở SQL).
+  id: smallint("id").primaryKey().default(sql`nextval('hub.orchestrator_settings_id_seq')`),
+  tenantId: uuid("tenant_id"),
   agentId: uuid("agent_id").notNull(),
   maxSteps: integer("max_steps").notNull().default(5),
   tokenBudget: integer("token_budget").notNull().default(200000),
@@ -165,6 +168,11 @@ export const runs = hub.table("runs", {
   kind: text("kind", { enum: RUN_KIND_VALUES }).notNull().default("orchestrated"),
   commandId: uuid("command_id"),
   featureId: uuid("feature_id"),
+  // 0006 (H2b): run `direct` (agent_id + responder_*), Orchestrator theo tenant.
+  agentId: uuid("agent_id"),
+  orchestratorTenantId: uuid("orchestrator_tenant_id"),
+  responderKey: text("responder_key"),
+  responderName: text("responder_name"),
   status: text("status", { enum: RUN_STATUS_VALUES }).notNull(),
   configVersion: integer("config_version").notNull(),
   userMessageId: uuid("user_message_id").notNull(),
