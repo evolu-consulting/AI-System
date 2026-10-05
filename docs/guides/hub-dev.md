@@ -58,4 +58,7 @@ exec uv run --frozen python -m agent_runtime   # chờ log `runtime.ready`
 
 - Log job: `~/smoke/logs/<ngày>/<job_id>.events.jsonl` (khung sự kiện, không nội dung) + `.stderr.log`; log Runtime có `job.finished … resumed=`.
 - Kiểm process sau huỷ: `ps -eo pgid,pid,stat,cmd | grep _bundled/claude` (không được còn, kể cả `<defunct>`).
-- `HUB_LIVE` trong checklist cũ không được code nào đọc — bỏ qua. Mỗi tin ≈ 1 lượt CLI (~10 s); delegate = 2 lượt.
+- Mỗi tin ≈ 1 lượt CLI (~10 s); delegate = 2 lượt.
+
+### Smoke stream H2b (`HUB_LIVE=1`, F7)
+`HUB_LIVE=1 bun run test:smoke:live` chạy `tests/smoke/h2b-live.test.ts` (SM1–SM3, vắng cờ → bỏ qua, exit 0; không chặn `done:h2b`). Env: `HUB_URL`, `AUTH_URL` (hoặc `SMOKE_TOKEN` = JWT sẵn, bỏ đăng nhập — dùng khi Hub chạy trên DB fixture không có admin-api), `SMOKE_USER`, `DATABASE_URL` (owner, đọc `hub.usage_logs`), `SMOKE_CANCEL_MS` (SM3 huỷ sau N ms nếu chưa có delta, mặc định 12 000 — 8 000 từng huỷ trước lượt model đầu khi CLI khởi động chậm ~6,7 s). Cần Orchestrator + `assistant` dùng profile `claude-sub-1` và Runtime WSL như trên. Quy trình + kết quả lần đầu: `docs/specs/H2b-routing/smoke.md`.

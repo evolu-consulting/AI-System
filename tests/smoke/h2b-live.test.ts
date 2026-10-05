@@ -3,7 +3,8 @@
 // (Q-T6) — I2 chỉnh theo kết quả spike. Kỳ vọng theo `spike-stream.md`: chỉ "≥ 1 `delta` khi step còn mở", KHÔNG ngưỡng độ
 // trễ (S5: agent có thể im ~8 s do thinking); usage khi huỷ = cận dưới (spike #9).
 // Env: `HUB_URL` (Hub thật), `AUTH_URL` (vắng → `ADMIN_API_URL` → `HUB_URL`), `SMOKE_USER` (JSON `{tenant_key, username,
-// password}`; vắng → `lan`/acme mật khẩu dev), `DATABASE_URL` (owner, chỉ đọc `hub.usage_logs` cho SM3).
+// password}`; vắng → `lan`/acme mật khẩu dev), `SMOKE_TOKEN` (JWT có sẵn — có thì bỏ đăng nhập; DB smoke fixture không
+// có admin-api), `DATABASE_URL` (owner, chỉ đọc `hub.usage_logs` cho SM3). Mỗi ca in số đo (không nội dung).
 import { describe, expect, it } from "bun:test";
 import postgres from "postgres";
 
@@ -16,9 +17,11 @@ const USER = env("SMOKE_USER")
   ? JSON.parse(env("SMOKE_USER") as string)
   : { tenant_key: "acme", username: "lan", password: "dev-password-1" };
 
-type Ev = { id: number | null; event: string; data: Record<string, unknown> | null };
+type Ev = { id: number | null; event: string; data: Record<string, unknown> | null; t: number };
 
 async function login(): Promise<string> {
+  const pre = env("SMOKE_TOKEN");
+  if (pre) return pre;
   const res = await fetch(`${AUTH}/auth/login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -48,7 +51,7 @@ function parseFrame(raw: string): Ev | null {
     else if (line.startsWith("event:")) event = v;
     else if (line.startsWith("data:")) data.push(v);
   }
-  return data.length ? { id, event, data: JSON.parse(data.join("\n")) } : null;
+  return data.length ? { id, event, data: JSON.parse(data.join("\n")), t: 0 } : null;
 }
 
 /** Gửi tin vào hội thoại mới; đọc SSE tới sự kiện kết thúc; `onEvent` có thể huỷ run giữa chừng. */
@@ -59,6 +62,7 @@ async function ask(
 ): Promise<{ events: Ev[]; runId: string }> {
   const conv = await api(token, "POST", "/conversations", { title: `smoke h2b ${Date.now()}` });
   const convId = ((await conv.json()) as { id: string }).id;
+  const t0 = performance.now();
   const res = await api(token, "POST", `/conversations/${convId}/messages`, { content });
   expect(res.status).toBe(200);
   const runId = res.headers.get("x-run-id") ?? "";
@@ -75,12 +79,24 @@ async function ask(
     for (const f of frames) {
       const e = parseFrame(f);
       if (!e) continue;
+      e.t = Math.round(performance.now() - t0);
       events.push(e);
       await onEvent?.(e, runId);
     }
     if (events.some((e) => e.event === "run.finished" || e.event === "run.failed")) break;
   }
   await reader.cancel().catch(() => undefined);
+  const deltas = events.filter((e) => e.event === "delta");
+  const at = (n: string) => events.find((e) => e.event === n)?.t;
+  console.log(
+    `[smoke] run=${runId} events=${events
+      .map((e) => e.event)
+      .filter((n) => n !== "delta")
+      .join(",")} ` +
+      `delta=${deltas.length} chars=${deltas.reduce((a, e) => a + String(e.data?.text ?? "").length, 0)} ` +
+      `firstDelta=${deltas[0]?.t}ms lastDelta=${deltas.at(-1)?.t}ms stepFinished=${at("step.finished")}ms ` +
+      `end=${events.at(-1)?.t}ms responder=${JSON.stringify(events.find((e) => e.event === "run.started")?.data?.responder ?? null)}`,
+  );
   return { events, runId };
 }
 
@@ -99,6 +115,9 @@ describe.if(LIVE)("SM1–SM3 · smoke H2b claude-sub thật [HUB-H2b-AC-12 · H2
   it("WRK-FR-03 · SM1 · '@assistant' câu trả lời ~800 ký tự → ≥ 1 delta trước step.finished (job.delta trước job.result) [HUB-H2b-AC-12]", async () => {
     const { events } = await ask(await login(), `@assistant ${LONG}`);
     expect(events.at(-1)?.event).toBe("run.finished");
+    expect(
+      (events.find((e) => e.event === "run.started")?.data?.responder as { key?: string })?.key,
+    ).toBe("assistant");
     expectEarlyDelta(events);
   });
 
@@ -110,17 +129,26 @@ describe.if(LIVE)("SM1–SM3 · smoke H2b claude-sub thật [HUB-H2b-AC-12 · H2
 
   it("WRK-FR-17 · SM3 · huỷ sau lượt có tool → usage_logs 1 dòng token > 0 (cận dưới, không so tổng thật) [HUB-H2b-AC-12 · spike #9]", async () => {
     const token = await login();
+    // Huỷ ở delta đầu HOẶC `SMOKE_CANCEL_MS` (mặc định 12 000) sau `run.started` — tuỳ cái nào trước: agent dùng
+    // `StructuredOutput` có thể dồn mọi delta về cuối job (smoke I2), khi đó huỷ theo delta không còn "giữa chừng".
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const cancel = async (id: string) => {
+      if (cancelled) return;
+      cancelled = true;
+      clearTimeout(timer);
+      await api(token, "POST", `/runs/${id}/cancel`);
+    };
     const { events, runId } = await ask(
       token,
       "@assistant Dùng công cụ đọc danh sách file trong thư mục làm việc, rồi viết bài 1500 từ mô tả từng file.",
       async (e, id) => {
-        if (!cancelled && e.event === "delta") {
-          cancelled = true;
-          await api(token, "POST", `/runs/${id}/cancel`);
-        }
+        if (e.event === "run.started" && !timer)
+          timer = setTimeout(() => void cancel(id), Number(env("SMOKE_CANCEL_MS") ?? 12_000));
+        if (e.event === "delta") await cancel(id);
       },
     );
+    clearTimeout(timer);
     expect(events.at(-1)?.event).toBe("run.failed");
     expect(events.at(-1)?.data?.code).toBe("CANCELLED");
     const db = postgres(env("DATABASE_URL") as string, { max: 1, onnotice: () => {} });
@@ -131,6 +159,7 @@ describe.if(LIVE)("SM1–SM3 · smoke H2b claude-sub thật [HUB-H2b-AC-12 · H2
           await db`select input_tokens, output_tokens from hub.usage_logs where run_id = ${runId}`;
         if (rows.length === 0) await Bun.sleep(500);
       }
+      console.log(`[smoke] SM3 usage_logs=${JSON.stringify(rows)}`);
       expect(rows.length).toBe(1);
       expect((rows[0]?.input_tokens ?? 0) + (rows[0]?.output_tokens ?? 0)).toBeGreaterThan(0);
     } finally {
