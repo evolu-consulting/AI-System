@@ -11,7 +11,12 @@ from typing import Any
 import pytest
 
 from agent_runtime.providers.base import Delta, Final, ProviderEvent, RateLimit, UsageEv
-from agent_runtime.providers.fake.directives import agreed_message, redelegate_message, turns
+from agent_runtime.providers.fake.directives import (
+    agreed_message,
+    redelegate_message,
+    strip_tags,
+    turns,
+)
 from agent_runtime.providers.fake.provider import IS_ERROR_TEXT
 from agent_runtime.providers.fake.test_mcp import (
     _orch_prompt,  # pyright: ignore[reportPrivateUsage]
@@ -153,3 +158,13 @@ async def test_hub_fr_95_agent_agree_runs_previous_message(tmp_path: Path) -> No
     history = [{"role": "user", "content": "@helper #fake:partial làm"}]
     evs = await go(tmp_path, "Đồng ý", None, history=history)
     assert (last_final(evs).structured or {})["status"] == "partial"
+
+
+def test_hub_fr_95_strip_tags_keeps_newlines() -> None:
+    """Review 1 #8: bỏ tag đầu bằng cắt tiền tố — xuống dòng/khoảng trắng bên trong giữ nguyên."""
+    assert strip_tags("@trello  @helper\nDòng 1\n\nDòng  2 \n") == "Dòng 1\n\nDòng  2"
+    assert strip_tags("@trello") == ""
+    assert strip_tags("@@x a") == "@@x a"
+    assert strip_tags("@trello,x b") == "@trello,x b"
+    history = [("user", "@trello #fake:tool=a\n  dòng hai"), ("user", "Đồng ý")]
+    assert agreed_message("@trello\tĐồng ý", history) == "#fake:tool=a\n  dòng hai"

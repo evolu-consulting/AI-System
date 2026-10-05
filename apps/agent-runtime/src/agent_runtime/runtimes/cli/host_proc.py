@@ -34,7 +34,12 @@ from agent_runtime.providers.base import (
 )
 from agent_runtime.providers.claude import mcp
 from agent_runtime.runtimes.cli.delta_pump import DeltaPump
-from agent_runtime.runtimes.cli.joblog import append_envelope, events_log_path, stderr_log_path
+from agent_runtime.runtimes.cli.joblog import (
+    LOG_WRITE_ERRORS,
+    append_envelope,
+    events_log_path,
+    stderr_log_path,
+)
 from agent_runtime.runtimes.cli.outcome import BROKEN_SIGNALS, Seen
 from agent_runtime.runtimes.cli.protocol import (
     EVENT_TOO_LARGE,
@@ -257,7 +262,7 @@ class HostProcess:
 
     async def _on_event(self, ev: ProviderEvent) -> bool:
         """True = ngừng đọc (fatal)."""
-        with suppress(OSError):  # khung message, không nội dung (RQ1)
+        with suppress(*LOG_WRITE_ERRORS):  # khung message, không nội dung (RQ1)
             append_envelope(events_log_path(self.cfg.log_dir, self.run.job.id), ev)
         if isinstance(ev, Progress):
             await self.run.host.events.progress(self.run.job, ev.label)

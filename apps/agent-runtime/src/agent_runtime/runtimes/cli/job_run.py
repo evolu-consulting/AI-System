@@ -24,7 +24,7 @@ from agent_runtime.log import get_logger
 from agent_runtime.providers.context import with_history
 from agent_runtime.runtimes.cli.delta_pump import DeltaPump
 from agent_runtime.runtimes.cli.host_proc import HostProcess, Outcome
-from agent_runtime.runtimes.cli.joblog import append_is_error, events_log_path
+from agent_runtime.runtimes.cli.joblog import LOG_WRITE_ERRORS, append_is_error, events_log_path
 from agent_runtime.runtimes.cli.outcome import (
     CANCELLED,
     TIMED_OUT,
@@ -180,7 +180,7 @@ class JobRun:
             return
         kind = is_error_kind(self.seen)
         get_logger().info("job.is_error", kind=kind, rate_limit=self.seen.rate_limit is not None)
-        with suppress(OSError):
+        with suppress(*LOG_WRITE_ERRORS):
             append_is_error(events_log_path(self.cfg.log_dir, self.job.id), kind, is_error_text(f))
 
     def _succeeded(self) -> bool:

@@ -9,6 +9,9 @@ khi đó chữ đầu bị xả lẻ ngay). `kind` đầu tiên chốt; `kind` k
 (mọi `job.delta` trước sự kiện kết thúc, H6). `streamed` bật khi đã **nhận** chữ (chắc chắn được
 XADD ở lần xả kế tiếp / `drain`) — chặt hơn "đã XADD": quyết định không thử lại (R21) đúng cả khi
 chữ còn trong bộ đệm lúc job host thoát (`spec-decisions` PY03-2).
+Mẻ chữ đã lấy khỏi bộ đệm được XADD trong task riêng bọc `asyncio.shield` (review 1 #3): huỷ reader
+/ hẹn giờ giữa XADD không làm mất mẩu đã `take()` (hở `seq`); lần xả sau và `close` chờ mẻ đang
+bay xong trước (giữ thứ tự, không XADD sau sự kiện kết thúc).
 """
 
 from __future__ import annotations
@@ -55,6 +58,7 @@ class DeltaPump:
         self._kind: DeltaKind | None = None
         self._lock = asyncio.Lock()
         self._timer: asyncio.Task[None] | None = None
+        self._inflight: asyncio.Task[None] | None = None  # mẻ XADD đang bay (shield)
         self.streamed = False  # đã nhận chữ để phát (R21: không thử lại / dựng lại session)
         self.sent = 0  # số `job.delta` đã XADD
 
@@ -69,15 +73,13 @@ class DeltaPump:
         if not self.streamed:  # mốc thời gian = chữ đầu tiên (không tính lúc spawn job host)
             self._buf = self._new_buf()
         self.streamed = True
-        async with self._lock:
-            await self._send(self._buf.add(text))
+        await self._flush(lambda: self._buf.add(text))
         if self._buf.pending and (self._timer is None or self._timer.done()):
             self._timer = asyncio.create_task(self._tick())
 
     async def drain(self) -> None:
         """Xả hết chữ còn trong bộ đệm rồi dừng hẹn giờ — gọi trước `job.result`/`job.failed`."""
-        async with self._lock:
-            await self._send(self._buf.take())
+        await self._flush(self._buf.take)
         await self.close()
 
     async def close(self) -> None:
@@ -87,18 +89,34 @@ class DeltaPump:
             timer.cancel()
             with suppress(asyncio.CancelledError):
                 await timer
+        await self._settle()
 
     async def _tick(self) -> None:
         while self._buf.pending:
             await asyncio.sleep(max(0.0, self._buf.wait_s()))
-            async with self._lock:
-                if self._buf.due():
-                    await self._send(self._buf.take())
+            await self._flush(lambda: self._buf.take() if self._buf.due() else [])
 
-    async def _send(self, chunks: list[str]) -> None:
-        kind = self._kind
-        if kind is None:
+    async def _flush(self, chunks_of: Callable[[], list[str]]) -> None:
+        """Dưới khoá: chờ mẻ trước xong, lấy chunk từ bộ đệm, XADD trong task được shield."""
+        async with self._lock:
+            await self._settle()
+            chunks, kind = chunks_of(), self._kind
+            if kind is None or not chunks:
+                return
+            self._inflight = task = asyncio.ensure_future(self._send(kind, chunks))
+            await asyncio.shield(task)
+
+    async def _settle(self) -> None:
+        """Chờ mẻ XADD đang bay (người gọi trước bị huỷ giữa chừng); lỗi của nó đã/không báo."""
+        task = self._inflight
+        if task is None:
             return
+        if not task.done():
+            await asyncio.wait({task})
+        if not task.cancelled():
+            task.exception()  # đã đánh dấu đọc — người gọi gốc (bị huỷ) không nhận được
+
+    async def _send(self, kind: DeltaKind, chunks: list[str]) -> None:
         for text in chunks:
             self.sent += 1
             await self._events.delta(self._job, kind, text)

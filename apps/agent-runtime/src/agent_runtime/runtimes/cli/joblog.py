@@ -52,24 +52,34 @@ def event_envelope(ev: ProviderEvent) -> dict[str, Any]:
 
 
 def append_envelope(path: Path, ev: ProviderEvent) -> None:
-    """Một dòng JSON; lỗi ghi file không được làm hỏng job (gọi nơi bắt `OSError`)."""
+    """Một dòng JSON; lỗi ghi file không được làm hỏng job (gọi nơi bắt `LOG_WRITE_ERRORS`)."""
     _append(path, event_envelope(ev))
 
 
 IS_ERROR_TEXT_MAX = 300
+LOG_WRITE_ERRORS = (OSError, UnicodeError)  # người gọi bắt: lỗi ghi log không làm hỏng job
 
 
 def append_is_error(path: Path, kind: str | None, text: str) -> None:
-    """F4: phân loại + chữ result đã che, ≤ 300 ký tự (chỉ log job, không sự kiện/DB)."""
-    _append(path, {"type": "is_error", "kind": kind, "text": redact_text(text[:IS_ERROR_TEXT_MAX])})
+    """F4: phân loại + chữ result đã che rồi mới cắt ≤ 300 ký tự (bí mật vắt qua mốc cắt vẫn bị
+    che — review 1 #6); chỉ log job, không sự kiện/DB."""
+    _append(path, {"type": "is_error", "kind": kind, "text": redact_text(text)[:IS_ERROR_TEXT_MAX]})
+
+
+def log_line(body: dict[str, Any]) -> bytes:
+    """Một dòng JSONL (review 1 #7): U+2028/U+2029 escape (trình đọc theo dòng không tách nhầm);
+    surrogate lẻ ⇒ `?` thay vì ném `UnicodeEncodeError`."""
+    line = {"ts": datetime.now(UTC).isoformat(timespec="milliseconds"), **body}
+    data = json.dumps(line, separators=(",", ":"), ensure_ascii=False)
+    data = data.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
+    return data.encode("utf-8", errors="replace") + b"\n"
 
 
 def _append(path: Path, body: dict[str, Any]) -> None:
-    line = {"ts": datetime.now(UTC).isoformat(timespec="milliseconds"), **body}
+    data = log_line(body)
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
     try:
-        data = json.dumps(line, separators=(",", ":"), ensure_ascii=False)
-        os.write(fd, data.encode() + b"\n")
+        os.write(fd, data)
     finally:
         os.close(fd)

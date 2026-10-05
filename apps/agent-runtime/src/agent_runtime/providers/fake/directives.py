@@ -81,6 +81,7 @@ _ARGS = "#fake:args="
 _ASCII_WS = " \t\n\r\f\v"
 _WS_SPLIT = re.compile(r"[ \t\n\r\f\v]+")
 _TAG = re.compile(r"@[A-Za-z0-9][A-Za-z0-9_-]*")
+_LEAD_TAG = re.compile(_TAG.pattern + r"(?=[ \t\n\r\f\v]|\Z)")  # tag = trọn một token đầu
 _STEPS_OPEN, _STEPS_CLOSE = "<steps>", "</steps>"
 _AGREE = frozenset({"đồng ý", "agree"})
 _HISTORY_OPEN, _HISTORY_CLOSE = "<history>", "</history>"
@@ -131,12 +132,12 @@ def _is_tag(token: str) -> bool:
 
 
 def strip_tags(text: str) -> str:
-    """Bỏ các tag `@<key>` đầu tin (cú pháp R01; `@@` là chữ thường)."""
-    toks = _tokens(text)
-    i = 0
-    while i < len(toks) and _is_tag(toks[i]):
-        i += 1
-    return " ".join(toks[i:])
+    """Bỏ các tag `@<key>` đầu tin (cú pháp R01; `@@` là chữ thường) — cắt tiền tố, phần còn lại
+    giữ nguyên văn (xuống dòng/khoảng trắng bên trong không gộp — review 1 #8)."""
+    rest = text.strip(_ASCII_WS)
+    while (m := _LEAD_TAG.match(rest)) is not None:
+        rest = rest[m.end() :].lstrip(_ASCII_WS)
+    return rest
 
 
 def tag_delegate(text: str) -> str | None:

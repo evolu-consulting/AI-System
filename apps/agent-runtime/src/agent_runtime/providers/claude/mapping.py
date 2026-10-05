@@ -165,10 +165,12 @@ def _int(usage: dict[str, Any], key: str) -> int:
 
 
 def usage_event(msg: ResultMessage, init: str | None = None) -> UsageEv | None:
-    usage = msg.usage or {}
-    model = init or main_model(msg.model_usage)
-    if not usage and model is None:
+    """Usage tổng của Result (thay phần cộng dồn từ `StreamEvent`); Result không mang `usage` ⇒
+    None — không phát `UsageEv{0,…}` đè phần đã tích (review 1 F5)."""
+    usage = msg.usage
+    if not usage:
         return None
+    model = init or main_model(msg.model_usage)
     return UsageEv.model_validate(
         {
             "in": _int(usage, "input_tokens"),

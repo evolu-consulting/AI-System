@@ -166,3 +166,52 @@ async def test_wrk_fr_03_stopped_no_write_drops_deltas(tmp_path: Path) -> None:
     await run._apply("lost")  # pyright: ignore[reportPrivateUsage]
     await run.pump.close()
     assert sink.log == [("forget", JOB.id)]
+
+
+class GateSink(Sink):
+    """XADD treo tới khi mở cổng (giả Redis chậm) — để huỷ reader giữa XADD."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.gate, self.entered = asyncio.Event(), asyncio.Event()
+
+    async def delta(self, job: ClaimedJob, kind: str, text: str) -> None:
+        self.entered.set()
+        await self.gate.wait()
+        self.log.append((kind, text))
+
+
+async def test_wrk_fr_03_cancel_mid_xadd_keeps_taken_chunks() -> None:
+    """Review 1 #3: huỷ reader giữa XADD ⇒ mẻ đã `take()` vẫn XADD đủ (không hở `seq`); chữ sau
+    và `drain` chờ mẻ đang bay xong (giữ thứ tự)."""
+    sink = GateSink()
+    pump = DeltaPump(sink, JOB, Cfg(1000, 1))
+    reader = asyncio.create_task(pump.add("done", "😀" * 2500))  # 2 chunk: 4 000 + 1 000 đơn vị
+    await sink.entered.wait()
+    reader.cancel()
+    await asyncio.gather(reader, return_exceptions=True)
+    later = asyncio.create_task(pump.add("done", "z"))
+    await asyncio.sleep(0.01)
+    assert sink.log == []
+    sink.gate.set()
+    await later
+    await pump.drain()
+    assert [len(t.encode("utf-16-le")) // 2 for _, t in sink.log] == [4000, 1000, 1]
+    assert sink.log[-1] == ("done", "z") and pump.sent == 3
+
+
+async def test_wrk_fr_03_close_waits_inflight_xadd() -> None:
+    """Review 1 #3: `close` (dừng không ghi / lỗi giữa chừng) chờ mẻ đang bay — không XADD sau
+    sự kiện kết thúc."""
+    sink = GateSink()
+    pump = DeltaPump(sink, JOB, Cfg(1000, 1))
+    reader = asyncio.create_task(pump.add("answer", "ab"))
+    await sink.entered.wait()
+    reader.cancel()
+    await asyncio.gather(reader, return_exceptions=True)
+    closing = asyncio.create_task(pump.close())
+    await asyncio.sleep(0.01)
+    assert not closing.done()
+    sink.gate.set()
+    await closing
+    assert sink.log == [("answer", "ab")]

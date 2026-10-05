@@ -21,6 +21,7 @@ from claude_agent_sdk import (
     ToolUseBlock,
 )
 
+from agent_runtime.providers.base import UsageEv
 from agent_runtime.providers.claude.options import build_options
 from agent_runtime.providers.claude.partial import PartialStream
 from agent_runtime.providers.claude.test_provider import job_of, result, run, types
@@ -259,3 +260,39 @@ def test_wrk_fr_10_partial_messages_on_for_every_job(tmp_path: Path) -> None:
     orch = job_of(tmp_path / "o", "text", use_session=False, allowed_tools=[], stream=True)
     retry = agent.model_copy(update={"retry_prompt": "sửa"})
     assert all(build_options(j).include_partial_messages for j in (agent, orch, retry))
+
+
+async def test_wrk_fr_17_result_without_usage_keeps_stream_total(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Review 1 F5: Result không mang `usage` (model vẫn có) ⇒ không phát `UsageEv{0,…}` đè phần
+    đã tích từ `message_start`/`message_delta` — usage cuối = tổng cộng dồn."""
+    script: list[Message] = [msg_start("m1", 8, 1049), msg_delta(702, 1049), result(usage=None)]
+    evs = await run(monkeypatch, job_of(tmp_path), script)
+    assert usages(evs) == [(2, 8, 0, 1049), (2, 702, 0, 1049)]
+    assert types(evs)[-1] == "final"
+
+
+def test_wrk_fr_17_message_without_id_not_doubled() -> None:
+    """Review 1 #4: `message_start` thiếu id ⇒ `message_delta` sau thay bản start (không cộng
+    đôi); message thiếu id kế tiếp là message mới (cộng)."""
+    ps = PartialStream(None)
+    start = {"type": "message_start", "message": {"usage": {"input_tokens": 2, "output_tokens": 8}}}
+    delta = {"type": "message_delta", "usage": {"input_tokens": 2, "output_tokens": 702}}
+    got = [ev for e in (start, delta, start, delta) for ev in ps.handle(e, MODEL)]
+    assert [(u.input, u.output) for u in got if isinstance(u, UsageEv)] == [
+        (2, 8),
+        (2, 702),
+        (4, 710),
+        (4, 1404),
+    ]
+
+
+def test_wrk_fr_17_delta_missing_keys_keep_start_values() -> None:
+    """Review 1 #5: `message_delta` chỉ mang `output_tokens` ⇒ input/cache của `message_start`
+    cùng id giữ nguyên (tổng không giảm)."""
+    ps = PartialStream(None)
+    ps.handle(msg_start("m1", 8, 1049, 30).event, MODEL)
+    got = ps.handle({"type": "message_delta", "usage": {"output_tokens": 702}}, MODEL)
+    tot = [(u.input, u.output, u.cache_read, u.cache_write) for u in got if isinstance(u, UsageEv)]
+    assert tot == [(2, 702, 30, 1049)]

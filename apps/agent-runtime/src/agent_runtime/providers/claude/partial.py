@@ -8,6 +8,7 @@ Nhận `StreamEvent.event` thô (dict API Anthropic) — không import SDK, test
   mới); đã phát ở một khối ⇒ khối khác bỏ qua (Hub đối chiếu chữ cuối).
 - F5 (S1): `message_start.message.usage` (id = `message.id`) rồi `message_delta.usage` (cùng id,
   bản sau thay) qua `UsageAcc`; `AssistantMessage.usage` không dùng (ảnh chụp lúc start).
+  `message_start` thiếu id ⇒ id tạm riêng cho message đó (`message_delta` sau thay, không cộng đôi).
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from agent_runtime.providers.claude.usage_acc import UsageAcc
 from agent_runtime.providers.stream_scan import Mode, StreamScanner
 
 STRUCTURED_TOOL = "StructuredOutput"  # CLI thêm khi có `output_format` (spike PY-02 S2)
+_ANON_ID = "anon:"  # tiền tố id tạm (id API dạng `msg_…` ⇒ không trùng)
 
 
 def stream_mode(job: ProviderJob) -> Mode | None:
@@ -61,13 +63,13 @@ class PartialStream:
     block: int | None = None  # index khối đang gắn scanner (trong message hiện tại)
     scanner: StreamScanner | None = None
     emitted: bool = False
+    anon: int = 0  # số message thiếu id đã gặp (id tạm)
 
     def handle(self, event: Mapping[str, Any], model: str | None) -> list[ProviderEvent]:
         kind = event.get("type")
         if kind == "message_start":
             msg = _dict(event.get("message"))
-            mid = msg.get("id")
-            self.message_id = mid if isinstance(mid, str) else None
+            self.message_id = self._message_id(msg.get("id"))
             self.block, self.scanner = None, None
             return self._usage(msg.get("usage"), model)
         if kind == "message_delta":
@@ -82,6 +84,14 @@ class PartialStream:
         elif kind == "content_block_stop" and index == self.block:
             self.block, self.scanner = None, None
         return []
+
+    def _message_id(self, mid: object) -> str:
+        """Review 1 #4: thiếu id ⇒ id tạm mới — `message_delta` sau (không mang id) thay bản
+        `message_start` của cùng message thay vì cộng đôi."""
+        if isinstance(mid, str) and mid:
+            return mid
+        self.anon += 1
+        return f"{_ANON_ID}{self.anon}"
 
     def _usage(self, usage: object, model: str | None) -> list[ProviderEvent]:
         if not isinstance(usage, dict):
