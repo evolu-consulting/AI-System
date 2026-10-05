@@ -5,7 +5,8 @@
 là hàng rào chính; `disallowed_tools=["*"]` ⇒ không tool (Orchestrator); `setting_sources=[]` không
 nạp CLAUDE.md/settings; `output_format` schema phẳng ⇒ CLI thêm tool `StructuredOutput` (tốn 1
 lượt, hook cho phép — S2); env tắt connector claude.ai (S3) + auto-memory (S6);
-`CLAUDE_CODE_SKIP_PROMPT_HISTORY` cho Orchestrator. `system_prompt` qua `neutralize_mentions` (S1).
+`CLAUDE_CODE_SKIP_PROMPT_HISTORY` cho Orchestrator; fine-grained tool streaming cho
+`StructuredOutput` (H2b smoke F1). `system_prompt` qua `neutralize_mentions` (S1).
 """
 
 from __future__ import annotations
@@ -55,9 +56,15 @@ KNOWN_TOOLS: tuple[str, ...] = (
 ALL_TOOLS = "*"  # đã xác minh: `disallowed_tools=["*"]` xoá mọi tool (kể cả tool trong `tools`)
 AGENT_MIN_TURNS = 2  # S7: structured output tốn 1 lượt (`num_turns=2` khi trả lời ngay)
 # S3/S6: không nạp MCP connector claude.ai của tài khoản; không đọc/ghi auto-memory.
+# H2b smoke F1 (`smoke.md` "Điều tra delta agent"): env job host tắt telemetry/traffic phụ
+# (`CLI_QUIET_ENV`) ⇒ CLI tắt GrowthBook ⇒ cờ `tengu_fgts` = mặc định false ⇒ tool không gắn
+# `eager_input_streaming` ⇒ API đệm `input_json_delta` của `StructuredOutput` tới cuối (dồn cục).
+# Bật tường minh fine-grained tool streaming (CLI 2.1.286 đọc biến này, đo lại bằng spike).
+FGTS_ENV = "CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING"
 CLAUDE_ENV: dict[str, str] = {
     "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
     "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+    FGTS_ENV: "1",
 }
 ORCHESTRATOR_ENV: dict[str, str] = {**CLAUDE_ENV, "CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1"}
 # Dự phòng §4: schema phẳng thay `discriminatedUnion` AgentResult; runner validate chặt (C2).

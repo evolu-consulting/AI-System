@@ -30,3 +30,6 @@ Ca không tốn API: `init-file` · `init-argv` (đối chứng token trên argv
 `src/`. Kết quả: `docs/specs/H2b-routing/spike-stream.md`. Cùng cách chạy. Ca: `orch` (1 lượt) · `agent`
 (`output_format`, 2 lượt) · `agent-kill` (`Read` + MCP giả, kill sau lượt 2). `SPIKE_NO_PARTIAL=1` = đối chứng
 không partial. JSONL/JSON từng ca ở `/tmp/spike-stream/out/` (chỉ kiểu/khoá/độ dài, không nội dung).
+`stream_fgts_spike.py` (smoke H2b F1, 2 lượt): agent như `assistant` seed (`Read`/`Grep`); chạy `env -i` kèm đúng
+`CLI_QUIET_ENV` (`DISABLE_TELEMETRY=1 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 …`); `SPIKE_FGTS=0` bỏ / `=1` đặt
+`CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING` ⇒ so thời điểm `input_json_delta` (kiểm lại khi nâng CLI).

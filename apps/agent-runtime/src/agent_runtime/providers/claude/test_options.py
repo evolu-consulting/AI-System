@@ -11,11 +11,13 @@ from claude_agent_sdk.types import HookContext, HookInput
 from agent_runtime.providers.claude.options import (
     AGENT_RESULT_SCHEMA,
     CLAUDE_ENV,
+    FGTS_ENV,
     HOOK_TIMEOUT_S,
     KNOWN_TOOLS,
     build_options,
 )
 from agent_runtime.providers.claude.test_provider import job_of
+from agent_runtime.sandbox.env import job_host_env
 
 
 def _matcher(tmp_path: Path, output: str = "agent_result") -> HookMatcher:
@@ -39,6 +41,7 @@ def test_wrk_fr_10_agent_options(tmp_path: Path) -> None:
     assert opts.env == {
         "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
         "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+        "CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING": "1",
     }
     assert opts.output_format == {"type": "json_schema", "schema": AGENT_RESULT_SCHEMA}
     assert isinstance(opts.system_prompt, str) and opts.system_prompt.startswith("Bạn là agent.")
@@ -53,6 +56,18 @@ def test_wrk_fr_10_orchestrator_options(tmp_path: Path) -> None:
     assert opts.resume is None and opts.strict_mcp_config
     assert opts.env == {**CLAUDE_ENV, "CLAUDE_CODE_SKIP_PROMPT_HISTORY": "1"}
     assert opts.output_format is None and opts.system_prompt == "Bạn là agent."
+
+
+def test_wrk_fr_03_agent_fine_grained_tool_streaming(tmp_path: Path) -> None:
+    """H2b smoke F1: env job host (`CLI_QUIET_ENV`) tắt GrowthBook của CLI ⇒ phải bật tường minh
+    fine-grained tool streaming, nếu không `input_json_delta` của `StructuredOutput` dồn cục cuối
+    (spike `stream_fgts_spike.py`: 136/140 mảnh trong 26 ms ↔ bật: 95 mảnh trải 4,9 s)."""
+    env = job_host_env(tmp_path, tmp_path / "w", "development")
+    assert env["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] == "1"  # lý do phải bật tường minh
+    for output in ("agent_result", "text"):
+        opts = build_options(job_of(tmp_path / output, output))
+        assert opts.env[FGTS_ENV] == "1"
+        assert {**env, **opts.env}[FGTS_ENV] == "1"  # SDK: env tiến trình + `options.env` đè
 
 
 def test_wrk_fr_10_text_output_ignores_allowed_tools(tmp_path: Path) -> None:
