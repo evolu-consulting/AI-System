@@ -30,6 +30,7 @@ from claude_agent_sdk import (
     UserMessage,
 )
 
+from agent_runtime.providers import patterns
 from agent_runtime.providers.base import (
     Confirm,
     Fatal,
@@ -42,11 +43,12 @@ from agent_runtime.providers.base import (
     parse_confirmation,
 )
 from agent_runtime.providers.claude.mcp import MCP_SERVER, TOOL_PREFIX
+from agent_runtime.providers.patterns import LOGGED_OUT, REJECTED, classify_text
 
-RATE_RE = re.compile(r"usage limit|rate limit|\b429\b", re.IGNORECASE)
-AUTH_RE = re.compile(r"/login|not logged in|\b401\b|invalid api key|oauth token", re.IGNORECASE)
-REJECTED = "rejected"
-LOGGED_OUT = "logged_out"
+# H2b §4: mẫu chữ một nguồn ở `providers/patterns.py` (cha dùng lại cho F4) — giữ tên cũ.
+RATE_RE = patterns.RATE_RE
+AUTH_RE = patterns.AUTH_RE
+
 TOOL_LABELS = {
     "Read": "Đang đọc tệp",
     "Grep": "Đang tìm trong tệp",
@@ -144,16 +146,6 @@ def rate_limit_event(msg: RateLimitEvent) -> RateLimit | None:
     if info.status != REJECTED:
         return None
     return RateLimit(status=REJECTED, resets_at=info.resets_at)
-
-
-def classify_text(*texts: str | None) -> str | None:
-    """`rejected` (hết quota) | `logged_out` | None theo regex §3.3."""
-    joined = "\n".join(t for t in texts if t)
-    if RATE_RE.search(joined):
-        return REJECTED
-    if AUTH_RE.search(joined):
-        return LOGGED_OUT
-    return None
 
 
 def result_signal(msg: ResultMessage) -> RateLimit | None:

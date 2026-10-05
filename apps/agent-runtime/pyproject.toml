@@ -69,6 +69,7 @@ markers = ["int: cần Postgres/Redis thật (pytest -m int)"]
 
 [tool.importlinter]
 root_package = "agent_runtime"
+include_external_packages = true
 
 # Chiều import plan-runtime §1.1: main -> queue -> runtimes -> providers -> sandbox -> contracts.
 # Lớp trong ngoặc là tuỳ chọn (main, contracts chưa tồn tại; PY-xx thêm dần).
@@ -121,3 +122,15 @@ forbidden_modules = [
 name = "runtimes.cli và runtimes.dify độc lập; dispatch chỉ ghép ở main (plan-runtime 3.1)"
 type = "independence"
 modules = ["agent_runtime.runtimes.cli", "agent_runtime.runtimes.dify"]
+
+[[tool.importlinter.contracts]]
+name = "Lõi thuần H2b không import SDK (plan-runtime H2b 3.2-5: cha dùng lại không kéo SDK)"
+type = "forbidden"
+source_modules = [
+  "agent_runtime.providers.patterns",
+  "agent_runtime.providers.stream_scan",
+  "agent_runtime.providers.claude.usage_acc",
+  "agent_runtime.runtimes.cli.delta",
+  "agent_runtime.runtimes.cli.refusal",
+]
+forbidden_modules = ["claude_agent_sdk", "agent_runtime.providers.claude.mapping"]
