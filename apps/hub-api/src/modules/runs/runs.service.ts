@@ -2,6 +2,7 @@
 // Mọi đọc/ghi 5 bảng hội thoại qua `withHubScope` (D2): request → `user`, kết thúc run → `system` (SseWriter).
 // Vòng chạy run (Orchestrator B8 / runner B7) cắm qua `RunDriver`; không biết HTTP.
 import {
+  type Responder,
   RUN_EVENTS_RETENTION_S,
   type Run,
   type RunError,
@@ -20,7 +21,7 @@ import {
   pickOrchestrator,
 } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
-import type { MentionPlan } from "../mention/mention.service";
+import type { DirectRunStart, MentionPlan } from "../mention/mention.service";
 import { setFinalSeq } from "./close/cancel.repo";
 import { type Created, type CreateRunInput, createRunTx } from "./create-run";
 import * as repo from "./runs.repo";
@@ -46,6 +47,8 @@ export type RunContext = {
    * có bản hợp lệ nào. Driver không chọn lại.
    */
   orchestrator: PickedOrchestrator | null;
+  /** H2b P10 · run `direct`: agent + nội dung R04 (driver `directDriver`); vắng = không phải run `direct`. */
+  direct?: DirectRunStart;
   /** H2b R09 · run `orchestrated` nhiều tag: key agent được tag (thu hẹp `<agents>` + `canDelegate`); vắng = đủ AU. */
   scope?: ReadonlySet<string>;
   log: Logger;
@@ -73,6 +76,8 @@ export type RunServiceDeps = {
   /** = `HUB_INSTANCE_ID`, ghi vào `runs.owner`. */
   owner: string;
   driver: RunDriver;
+  /** H2b P10 · driver run `direct` (`mention/direct-driver.ts`); vắng → `driver`. */
+  directDriver?: RunDriver;
   log: Logger;
   signal?: AbortSignal;
   /** H2b R16 · = `AppDeps.maxConcurrentRuns`; vắng ⇒ không giới hạn (L1). */
@@ -161,7 +166,7 @@ export class RunService {
   /**
    * E12 · ném 404 (hội thoại/flow), 409 `FLOW_BUSY`, 429 `TOO_MANY_RUNS`. Trả stream đọc từ `sse:<id>` (P9). `plan`:
    * `command` → run lệnh (H2a); tag `@` (H2b) → `pickOrchestrator` gọi cả cho `direct` (P10, không ghi
-   * `orchestrator_tenant_id`). Tới B6/B7: `direct`/`orchestrated` vẫn chạy Orchestrator với nội dung nguyên văn.
+   * `orchestrator_tenant_id`); `direct` → `directDriver` + `responder` ở `run.started` (P1, P10).
    */
   async start(
     u: AuthUser,
@@ -181,6 +186,7 @@ export class RunService {
       locale,
     };
     const command = plan?.kind === "command" ? plan : undefined;
+    const direct = plan?.kind === "direct" ? plan : undefined;
     const orchestrator = command ? null : this.#pick(snapshot, run, plan);
     await this.#create(u, {
       run,
@@ -188,14 +194,15 @@ export class RunService {
       configVersion: snapshot.version,
       owner: this.d.owner,
       command,
+      direct: direct && { agentId: direct.agent.id, responder: direct.responder },
       orchestratorTenantId: plan?.kind === "direct" ? null : orchestrator?.tenantId,
       maxConcurrentRuns: this.d.maxConcurrentRuns,
       log: this.d.log,
     });
     const writer = new SseWriter(run, this.d);
     this.registry.add(writer);
-    await this.#announce(writer);
-    const driver = command?.driver ?? this.d.driver;
+    await this.#announce(writer, direct?.responder);
+    const driver = command?.driver ?? (direct && this.d.directDriver) ?? this.d.driver;
     const scoped = plan?.kind === "orchestrated" ? plan : undefined;
     const content = scoped?.content ?? req.content;
     driver.start({
@@ -204,6 +211,7 @@ export class RunService {
       content,
       orchestrator,
       scope: scoped?.onlyKeys,
+      direct,
       log: this.d.log,
     });
     const stream = this.#stream(u, run.id, 0);
@@ -234,13 +242,17 @@ export class RunService {
   }
 
   /** `run.started` (id 1) ngay sau COMMIT, trước khi gọi vòng chạy (H1-R10). Redis lỗi → kết thúc run lỗi (DB cũng lỗi → `abort`, sweeper đóng) rồi ném. */
-  async #announce(writer: SseWriter): Promise<void> {
+  async #announce(writer: SseWriter, responder?: Responder): Promise<void> {
     const r = writer.run;
+    // P1 · `responder` chỉ ở run `direct` (khoá vắng ở run khác, P2).
+    const data = {
+      run_id: r.id,
+      flow_id: r.flowId,
+      quota: QUOTA_OK,
+      ...(responder && { responder }),
+    };
     try {
-      await writer.emit({
-        event: "run.started",
-        data: { run_id: r.id, flow_id: r.flowId, quota: QUOTA_OK },
-      });
+      await writer.emit({ event: "run.started", data });
     } catch (err) {
       await writer.finishOrAbort({ kind: "failed", code: "INTERNAL_ERROR" });
       throw err;

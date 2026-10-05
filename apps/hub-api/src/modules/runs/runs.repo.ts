@@ -68,12 +68,16 @@ export type RunInsert = {
   answerMessageId: string;
   owner: string;
   locale: Locale;
-  /** H2a-R08 · vắng = `orchestrated`; `command` kèm `commandId` + `featureId`. */
-  kind?: "orchestrated" | "command";
+  /** H2a-R08 · vắng = `orchestrated`; `command` kèm `commandId` + `featureId`; H2b `direct` kèm `agentId` + `responder*`. */
+  kind?: "orchestrated" | "command" | "direct";
   commandId?: string | null;
   featureId?: string | null;
   /** H2b P7 · bản Orchestrator riêng đã chọn lúc tạo run (null = mặc định); chỉ run `orchestrated`. */
   orchestratorTenantId?: string | null;
+  /** H2b P1 · run `direct`: agent được tag + `responder` chốt lúc tạo run (`runs_direct_ck`, `runs_responder_ck`). */
+  agentId?: string | null;
+  responderKey?: string | null;
+  responderName?: string | null;
 };
 
 /**

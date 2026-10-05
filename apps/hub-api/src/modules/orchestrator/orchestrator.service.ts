@@ -1,5 +1,6 @@
 // HUB-FR-20 · HUB-FR-27 · HUB-FR-28 · HUB-FR-29 · CR-025 · driver mặc định của run (plan H1 §6): dựng đầu vào từ ảnh cấu
 // hình của run (HUB-BR-06) + flow, chạy `runLoop` qua runner B7, rồi phát `delta` (P6, H1-R09) và kết thúc run.
+import type { HistoryItem } from "@ai/contracts/hub";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
@@ -122,4 +123,9 @@ export function orchestratorDriver(d: OrchestratorDeps): RunDriver {
       void driveRun(d, ctx);
     },
   };
+}
+
+/** H2b P10 · `history_n` tin gần nhất của flow cho run `direct` (cùng câu với vòng Orchestrator, không nhánh SQL mới). */
+export function flowHistoryOf(db: Db, run: repo.RunKey, historyN: number): Promise<HistoryItem[]> {
+  return withHubScope(db, { kind: "system" }, (tx) => repo.flowHistory(tx, run, historyN));
 }

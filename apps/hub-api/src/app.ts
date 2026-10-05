@@ -24,6 +24,7 @@ import type { Redis } from "./lib/redis";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
+import { directDriver } from "./modules/mention/direct-driver";
 import { orchestratorDriver } from "./modules/orchestrator/orchestrator.service";
 import { startOrphanSweep } from "./modules/runner/orphan-sweep";
 import { RunStreamReader } from "./modules/runner/run-stream-reader";
@@ -105,8 +106,17 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
 /** `runs.owner` của instance (= `HUB_INSTANCE_ID`; test khung vắng → host:pid). */
 const instanceOwner = (deps: AppDeps): string => deps.instanceId ?? `${hostname()}:${process.pid}`;
 
-/** B8 · vòng Orchestrator (plan §6) chạy bước qua `RoutingRunner` (H1 §5.6 + H2a §5.4); dừng theo `deps.signal`. */
-function defaultRunDriver(db: Db, redis: Redis, deps: AppDeps, config: ConfigCache): RunDriver {
+/**
+ * B8 · vòng Orchestrator (plan §6) chạy bước qua `RoutingRunner` (H1 §5.6 + H2a §5.4); dừng theo `deps.signal`. H2b P10 ·
+ * run `direct` dùng chung runner (một job agent, không Orchestrator). `deps.runDriver` (test) → mọi run đi driver đó.
+ */
+function runDrivers(
+  db: Db,
+  redis: Redis,
+  deps: AppDeps,
+  config: ConfigCache,
+): { driver: RunDriver; directDriver?: RunDriver } {
+  if (deps.runDriver) return { driver: deps.runDriver };
   const reader = new RunStreamReader(redis, logger, deps.signal);
   const maxWaitS = deps.jobMaxWaitS ?? DEFAULT_JOB_MAX_WAIT_S;
   const runner = agentRunner({
@@ -119,7 +129,10 @@ function defaultRunDriver(db: Db, redis: Redis, deps: AppDeps, config: ConfigCac
     publicInternalUrl: deps.publicInternalUrl,
     secretMasterKey: deps.secretMasterKey,
   });
-  return orchestratorDriver({ db, runner, users: config, log: logger });
+  return {
+    driver: orchestratorDriver({ db, runner, users: config, log: logger }),
+    directDriver: directDriver({ db, runner, log: logger }),
+  };
 }
 
 /** B10 · vòng nền của instance (plan §5.2 lease, §5.8 sweeper lease, plan-db §5.5 orphan); dừng khi `signal` abort. */
@@ -169,7 +182,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     redis: deps.redis,
     config,
     owner,
-    driver: deps.runDriver ?? defaultRunDriver(deps.db, deps.redis, deps, config),
+    ...runDrivers(deps.db, deps.redis, deps, config),
     log: logger,
     signal: deps.signal,
     maxConcurrentRuns: deps.maxConcurrentRuns,

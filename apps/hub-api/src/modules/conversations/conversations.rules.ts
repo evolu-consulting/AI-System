@@ -6,6 +6,7 @@ import {
   type Conversation,
   foldVi,
   type Message,
+  type Responder,
   type RunError,
   type RunSummary,
   type StepSummary,
@@ -103,6 +104,8 @@ export type RunRow = {
   errorCode: string | null;
   errorMessage: string | null;
   errorHint: string | null;
+  /** H2b P1 · `runs.responder_*` (chỉ run `direct`, chốt lúc tạo run); null ở run khác. */
+  responder?: Responder | null;
 };
 
 const msBetween = (a: Date, b: Date | null): number =>
@@ -153,8 +156,15 @@ export type MessageRow = {
   createdAt: Date;
 };
 
-/** `ask` jsonb validate ở biên; sai dạng → null. Tin user không bao giờ có `run`/`ask`. */
-export function toMessage(m: MessageRow, run: RunSummary | null): Message {
+/**
+ * `ask` jsonb validate ở biên; sai dạng → null. Tin user không bao giờ có `run`/`ask`/`responder`. H2b P1/P2: `responder`
+ * chỉ ở tin assistant của run `direct` — khoá **vắng** ở tin khác (không `null`).
+ */
+export function toMessage(
+  m: MessageRow,
+  run: RunSummary | null,
+  responder?: Responder | null,
+): Message {
   const isAssistant = m.role === "assistant";
   const ask = isAssistant ? AskSchema.safeParse(m.ask) : null;
   return {
@@ -167,5 +177,6 @@ export function toMessage(m: MessageRow, run: RunSummary | null): Message {
     created_at: m.createdAt.toISOString(),
     run: isAssistant ? run : null,
     ask: ask?.success ? (ask.data as Ask) : null,
+    ...(isAssistant && responder ? { responder } : {}),
   };
 }

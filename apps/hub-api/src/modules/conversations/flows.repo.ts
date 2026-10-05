@@ -129,6 +129,8 @@ export async function runsWithSteps(
       errorCode: runs.errorCode,
       errorMessage: runs.errorMessage,
       errorHint: runs.errorHint,
+      responderKey: runs.responderKey,
+      responderName: runs.responderName,
     })
     .from(runs)
     .where(and(ownedBy(runs, o), inArray(runs.id, runIds)));
@@ -144,7 +146,11 @@ export async function runsWithSteps(
     .from(runSteps)
     .where(and(ownedBy(runSteps, o), inArray(runSteps.runId, runIds)));
   return {
-    runs: runRows.map((r) => ({ ...r, locale: r.locale as Locale })),
+    runs: runRows.map(({ responderKey, responderName, ...r }) => ({
+      ...r,
+      locale: r.locale as Locale,
+      responder: responderKey && responderName ? { key: responderKey, name: responderName } : null,
+    })),
     steps: stepRows.map((s) => ({ ...s, type: s.type as StepType })),
   };
 }

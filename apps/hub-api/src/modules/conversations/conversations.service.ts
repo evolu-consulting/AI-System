@@ -10,6 +10,7 @@ import {
   foldVi,
   type Message,
   type MessageListQuery,
+  type Responder,
   type RunSummary,
 } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
@@ -50,12 +51,14 @@ async function requireLive(tx: Tx, o: Owner, id: string) {
   return row;
 }
 
-/** Tóm tắt run cho các tin assistant (run đang chạy → null). */
+type RunView = { summary: RunSummary | null; responder: Responder | null };
+
+/** Tóm tắt run (run đang chạy → null) + `responder` (run `direct`, P1) cho các tin assistant. */
 async function runSummaries(
   tx: Tx,
   o: Owner,
   rows: readonly MessageRow[],
-): Promise<Map<string, RunSummary | null>> {
+): Promise<Map<string, RunView>> {
   const ids = [
     ...new Set(rows.flatMap((r) => (r.role === "assistant" && r.runId ? [r.runId] : []))),
   ];
@@ -63,17 +66,23 @@ async function runSummaries(
   return new Map(
     runs.map((r) => [
       r.id,
-      toRunSummary(
-        r,
-        steps.filter((s) => s.runId === r.id),
-      ),
+      {
+        summary: toRunSummary(
+          r,
+          steps.filter((s) => s.runId === r.id),
+        ),
+        responder: r.responder ?? null,
+      },
     ]),
   );
 }
 
 async function toMessages(tx: Tx, o: Owner, rows: readonly MessageRow[]): Promise<Message[]> {
   const sums = await runSummaries(tx, o, rows);
-  return rows.map((r) => toMessage(r, r.runId ? (sums.get(r.runId) ?? null) : null));
+  return rows.map((r) => {
+    const v = r.runId ? sums.get(r.runId) : undefined;
+    return toMessage(r, v?.summary ?? null, v?.responder);
+  });
 }
 
 async function toFlows(tx: Tx, o: Owner, rows: readonly threads.FlowRow[]): Promise<Flow[]> {

@@ -50,6 +50,8 @@ export type PayloadInput = {
   history: readonly HistoryItem[];
   /** H2a · `mcpConfigFor(...)` (P4: không token); vắng/null → `mcp: null`. */
   mcp?: McpConfig | null;
+  /** H2b P10 · `payload.stream` (vắng/false → khoá vắng, fixture H1/H2a giữ nguyên hình). */
+  stream?: boolean;
 };
 
 /** Agent kẹp ≥ 2: structured output tốn một lượt (Runtime đã tự ép, Hub khớp). */
@@ -111,6 +113,7 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
     allowed_tools: allowedTools(opts, i.role),
     output: isAgent ? "agent_result" : "text",
     timeout_s: i.agent.timeoutS,
+    ...(i.stream ? { stream: true } : {}),
   });
   return parsed.success ? parsed.data : null;
 }

@@ -49,6 +49,8 @@ export type AgentTask = {
   /** Vắng → `agent.systemPrompt` (Orchestrator: B8 nối khối định dạng §6.3). */
   systemPrompt?: string;
   history: readonly HistoryItem[];
+  /** H2b P10 · `payload.stream=true` (run `direct`); vắng = không stream. */
+  stream?: boolean;
   /** `run_steps.id` do người gọi chọn (vắng → mới); `reopen` = thử lại cùng step (Orchestrator JSON hỏng, plan §6.1). */
   stepId?: string;
   reopen?: boolean;
@@ -175,6 +177,7 @@ export class JobAgentRunner implements AgentRunner {
       prompt: task.prompt,
       systemPrompt: task.systemPrompt ?? task.agent.systemPrompt,
       history: task.history,
+      stream: task.stream,
     });
   }
 

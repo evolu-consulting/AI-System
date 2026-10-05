@@ -5,6 +5,7 @@
 import {
   deriveTitle,
   RETRY_AFTER_HEADER,
+  type Responder,
   type SendMessageRequest,
   TOO_MANY_RUNS_RETRY_AFTER_S,
 } from "@ai/contracts/chat";
@@ -26,6 +27,8 @@ export type CreateRunInput = {
   owner: string;
   /** H2a run `kind=command`. */
   command?: { commandId: string; featureId: string };
+  /** H2b P1 · run `direct`: agent + `responder` chốt lúc tạo run (không `orchestrator_tenant_id`). */
+  direct?: { agentId: string; responder: Responder };
   /** H2b P7 · `orchestrated`: bản Orchestrator riêng đã chọn (null/vắng = mặc định). */
   orchestratorTenantId?: string | null;
   /** H2b R16 · = `AppDeps.maxConcurrentRuns`; vắng ⇒ không giới hạn (L1). */
@@ -37,6 +40,19 @@ const tooManyRuns = () =>
   appError("TOO_MANY_RUNS", undefined, {
     [RETRY_AFTER_HEADER]: String(TOO_MANY_RUNS_RETRY_AFTER_S),
   });
+
+/** Cột theo loại run: `command` (H2a) · `direct` (H2b P1) · `orchestrated` (+ bản Orchestrator riêng, P7). */
+function kindCols(p: CreateRunInput): Partial<repo.RunInsert> {
+  if (p.command) {
+    const { commandId, featureId } = p.command;
+    return { kind: "command", commandId, featureId };
+  }
+  if (p.direct) {
+    const { agentId, responder } = p.direct;
+    return { kind: "direct", agentId, responderKey: responder.key, responderName: responder.name };
+  }
+  return { orchestratorTenantId: p.orchestratorTenantId ?? null };
+}
 
 /** Flow có sẵn (404 / 409 `FLOW_BUSY`) hoặc flow mới. */
 async function prepareFlow(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<void> {
@@ -77,9 +93,7 @@ export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Pro
     answerMessageId: r.answerMessageId,
     owner: p.owner,
     locale: r.locale,
-    ...(p.command
-      ? { kind: "command" as const, commandId: p.command.commandId, featureId: p.command.featureId }
-      : { orchestratorTenantId: p.orchestratorTenantId ?? null }),
+    ...kindCols(p),
   });
   await repo.insertMessage(tx, o, {
     id: r.userMessageId,
