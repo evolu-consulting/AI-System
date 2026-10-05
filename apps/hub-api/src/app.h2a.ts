@@ -4,6 +4,7 @@ import type { Env, Hono } from "hono";
 import { DEFAULT_DIFY_TIMEOUT_MAX_S } from "./app.mcp";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
+import type { AttachmentStorage } from "./modules/attachments/storage";
 import { commandRoutes } from "./modules/commands/commands.routes";
 import { CommandService, type PreparedCommand } from "./modules/commands/commands.service";
 import { asyncCommandDriver } from "./modules/commands/driver/command-async-driver";
@@ -35,6 +36,8 @@ export type CommandDriverMountDeps = {
   secretMasterKey?: string;
   /** B6 · runner job `workflow.async` (`app.async.ts`); vắng → lệnh async `pendingCommandDriver`. */
   jobs?: Pick<WorkflowJobRunner, "run">;
+  /** H2c B7 · kho file (`AppDeps.attachments.storage`) để upload file lệnh lên Dify; vắng ⇒ lệnh có file `INTERNAL_ERROR`. */
+  storage?: Pick<AttachmentStorage, "blob">;
 };
 
 /** B5 · lệnh `sync` → `command-driver` (Dify streaming); B6 · `async` → `command-async-driver` (job `workflow.async`). */
@@ -48,11 +51,14 @@ export function commandDriverFor(m: CommandDriverMountDeps): CommandDriverFor {
     }),
     dify: new DifyClient(),
     log: m.log,
+    storage: m.storage ?? null,
   };
   const jobs = m.jobs;
   return (p) => {
     if (p.command.mode === "sync") return commandDriver(d, p);
-    return jobs ? asyncCommandDriver({ db: m.db, jobs, log: m.log }, p) : pendingCommandDriver(p);
+    if (!jobs) return pendingCommandDriver(p);
+    const { db, log, credentials, storage } = d;
+    return asyncCommandDriver({ db, jobs, log, credentials, storage }, p);
   };
 }
 

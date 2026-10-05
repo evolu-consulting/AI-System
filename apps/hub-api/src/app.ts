@@ -113,6 +113,7 @@ function commandDrivers(deps: AppDeps, db: Db) {
     db,
     log: logger,
     secretMasterKey: deps.secretMasterKey,
+    storage: deps.attachments?.storage,
     jobs: workflowJobs({ ...deps, db, owner: instanceOwner(deps), log: logger }),
   });
 }

@@ -184,14 +184,18 @@ export function maskSecret(text: string, secret: string, max = DIFY_UPSTREAM_DET
   return out.slice(0, Math.max(0, max));
 }
 
-/** R20: mỗi giá trị `maskSecret(String(v), secret)` rồi cắt ≤ 200. */
+/** R20: mỗi giá trị `maskSecret(String(v), secret)` (object — file Dify H2c — dạng JSON) rồi cắt ≤ 200. */
 export function maskInputs(
   inputs: Record<string, unknown>,
   secret: string,
 ): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(inputs))
-    out[k] = maskSecret(String(v), secret, DIFY_INPUT_LOG_MAX);
+    out[k] = maskSecret(
+      typeof v === "object" && v !== null ? JSON.stringify(v) : String(v),
+      secret,
+      DIFY_INPUT_LOG_MAX,
+    );
   return out;
 }
 

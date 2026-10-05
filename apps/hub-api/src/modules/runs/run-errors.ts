@@ -66,14 +66,28 @@ const REFUSED_HINT: Record<RunLocale, string> = {
   en: "The request could not be handled — rephrase or split it.",
 };
 
-/** H2b-R27 (F4, P15): như `runErrorText`, trừ `UPSTREAM_ERROR` + `reason = "refused"` → `hint` riêng (`plan-errors` §2). */
+/** H2c-R22 · hint khi Dify từ chối file (`/files/upload` 413/415/400 mã file — reason Hub `file_rejected`, `plan-errors` §2). */
+const FILE_REJECTED_HINT: Record<RunLocale, string> = {
+  vi: "Dify không nhận file này (loại hoặc kích thước).",
+  en: "Dify rejected this file (type or size).",
+};
+
+const UPSTREAM_HINTS: ReadonlyMap<string, Record<RunLocale, string>> = new Map([
+  ["refused", REFUSED_HINT],
+  ["file_rejected", FILE_REJECTED_HINT],
+]);
+
+/**
+ * H2b-R27 (F4, P15) · H2c-R22: như `runErrorText`, trừ `UPSTREAM_ERROR` + `reason` ∈ {`refused`, `file_rejected`} → `hint`
+ * riêng (`plan-errors` §2); `message` giữ câu H1.
+ */
 export function runErrorTextFor(
   code: ChatRunErrorCode,
   locale: RunLocale,
   reason: string | null,
 ): RunErrorText {
   const t = runErrorText(code, locale);
-  return code === "UPSTREAM_ERROR" && reason === "refused"
-    ? { ...t, hint: REFUSED_HINT[locale] }
-    : t;
+  const hint =
+    code === "UPSTREAM_ERROR" && reason !== null ? UPSTREAM_HINTS.get(reason) : undefined;
+  return hint ? { ...t, hint: hint[locale] } : t;
 }

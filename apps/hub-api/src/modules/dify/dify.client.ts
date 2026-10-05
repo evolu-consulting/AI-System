@@ -112,7 +112,7 @@ function applyFrame(st: RunState, data: string, onDelta: (t: string) => void): b
   }
 }
 
-async function readBodyText(res: Response, max: number): Promise<string> {
+export async function readBodyText(res: Response, max: number): Promise<string> {
   const reader = res.body?.getReader();
   if (!reader) return "";
   const dec = new TextDecoder();

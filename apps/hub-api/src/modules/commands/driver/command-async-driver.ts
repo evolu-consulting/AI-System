@@ -4,10 +4,15 @@
 // `run.finished`; `job.failed` → `run.failed <code>`. Hạn = `commands.timeout_s` tính từ lúc driver bắt đầu (≈ tạo run), giữ
 // qua mọi lần requeue: hết hạn → `run.failed TIMEOUT` (`SseWriter.finish` huỷ job như E15: `cancel_requested_at` + NOTIFY
 // `job_cancel`). Huỷ E15 / mất lease → chỉ đóng step. Payload không chứa secret/URL/token (Runtime lấy key qua Q5).
+// H2c (B7, T7): lệnh có `files` → Hub lấy key + upload Dify **trước** INSERT job; payload `inputs` mang object file (P3),
+// step `detail.upload`; upload lỗi/hết hạn ⇒ step `workflow` mở-đóng `failed`, `run.failed`, không job.
 import type { Db } from "../../../lib/db";
-import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
+import type { UploadTrace } from "../../attachments/attachment-dify";
+import type { RunFile } from "../../attachments/run-files.rules";
+import type { AttachmentStorage } from "../../attachments/storage";
 import { stepLabel } from "../../conversations/conversations.rules";
+import type { CredentialService } from "../../dify/credential.service";
 import { difyUser } from "../../dify/dify.rules";
 import { buildWorkflowJobPayload } from "../../runner/runner.rules";
 import type {
@@ -15,22 +20,69 @@ import type {
   WorkflowJobRunner,
 } from "../../runner/workflow/workflow-job-runner";
 import type { RunContext, RunDriver } from "../../runs/runs.service";
+import type { WorkflowInputValue } from "../catalog.types";
 import type { PreparedCommand } from "../commands.service";
 import {
   closeStep,
   DeltaPipe,
   deliver,
   failOpenStep,
+  fileOutcome,
+  logDriverError,
   type Outcome,
+  openStep,
   type Step,
   type StepLive,
+  workflowKey,
 } from "./command-driver";
+import { uploadCommandFiles } from "./command-files";
 
 export type AsyncCommandDriverDeps = {
   db: Db;
   jobs: Pick<WorkflowJobRunner, "run">;
   log: Logger;
+  /** H2c · key workflow cho upload file (chỉ khi lệnh có `files`). */
+  credentials: Pick<CredentialService, "apiKey">;
+  storage?: Pick<AttachmentStorage, "blob"> | null;
+  fetch?: typeof fetch;
 };
+
+/** `inputs` sau upload (H2c) + trace upload cho step. */
+type Ready = {
+  kind: "ready";
+  inputs: Record<string, WorkflowInputValue>;
+  upload: UploadTrace | null;
+};
+type FilesCtx = { files: readonly RunFile[]; log: Logger; timeout: AbortSignal };
+
+/** T7: upload file lệnh trước enqueue; không file ⇒ `inputs` H2a nguyên văn, không lấy key. */
+async function uploadFirst(
+  d: AsyncCommandDriverDeps,
+  l: StepLive,
+  x: FilesCtx,
+): Promise<Ready | Outcome> {
+  const { p, writer } = l;
+  if (!p.files?.length) return { kind: "ready", inputs: p.inputs, upload: null };
+  const apiKey = await workflowKey(d.credentials, p.workflow.id);
+  if (typeof apiKey !== "string") return apiKey;
+  const r = writer.run;
+  const res = await uploadCommandFiles(
+    { storage: d.storage ?? null, fetch: d.fetch, log: x.log },
+    { p, files: x.files, tenantId: r.tenantId, apiKey, user: difyUser(p.tenantKey, r.userId) },
+    AbortSignal.any([writer.signal, x.timeout]),
+  );
+  if (res.kind === "ok") return { kind: "ready", inputs: res.inputs, upload: res.upload };
+  return fileOutcome(res, x.timeout.aborted && !writer.signal.aborted);
+}
+
+/** Upload lỗi trước job: step `workflow` mở rồi đóng theo kết cục (trace `upload`). */
+async function failBeforeJob(l: StepLive, o: Outcome, open: OpenStep): Promise<Outcome> {
+  const step = await openStep(l);
+  open.step = step;
+  await closeStep(l, step, o);
+  open.step = null;
+  return o;
+}
 
 /** Kết cục runner → kết cục run. `aborted` do hạn (writer còn sống) → `TIMEOUT`; còn lại = huỷ/mất lease. */
 export function asyncOutcome(o: WorkflowJobOutcome, timedOut: boolean): Outcome {
@@ -48,9 +100,9 @@ type OpenStep = { step: Step | null };
 async function runJob(
   d: AsyncCommandDriverDeps,
   l: StepLive,
-  timeout: AbortSignal,
-  open: OpenStep,
+  x: { timeout: AbortSignal; open: OpenStep; ready: Ready },
 ): Promise<Outcome | null> {
+  const { timeout, open, ready } = x;
   const { p, writer } = l;
   const r = writer.run;
   const payload = buildWorkflowJobPayload({
@@ -64,7 +116,7 @@ async function runJob(
     featureId: p.featureId,
     commandId: p.command.id,
     workflow: p.workflow,
-    inputs: p.inputs,
+    inputs: ready.inputs,
     query: p.query,
     outputField: p.command.output.field,
     difyUser: difyUser(p.tenantKey, r.userId),
@@ -75,12 +127,16 @@ async function runJob(
     const data = { step_id: `s${seq}`, label: stepLabel("workflow", r.locale) };
     await writer.emit({ event: "step.started", data }).catch(() => {});
   };
-  const stepDetail = p.extraTokens > 0 ? { extra_tokens: p.extraTokens } : null;
+  const detail = {
+    ...(p.extraTokens > 0 && { extra_tokens: p.extraTokens }),
+    ...(ready.upload && { upload: ready.upload }),
+  };
+  const stepDetail = Object.keys(detail).length > 0 ? detail : null;
   const signal = AbortSignal.any([writer.signal, timeout]);
   const res = await d.jobs.run({ payload, stepDetail, onEnqueued }, signal);
   if (res.kind === "not_enqueued") return null;
   const o = asyncOutcome(res, timeout.aborted && !writer.signal.aborted);
-  await closeStep(l, { id: payload.step_id, seq: res.seq }, o);
+  await closeStep(l, { id: payload.step_id, seq: res.seq, upload: ready.upload }, o);
   open.step = null;
   return o;
 }
@@ -97,7 +153,11 @@ export async function driveAsyncCommand(
   const timeout = AbortSignal.timeout(p.command.timeoutS * 1000);
   const open: OpenStep = { step: null };
   try {
-    const o = await runJob(d, l, timeout, open);
+    const ready = await uploadFirst(d, l, { files: ctx.files, log, timeout });
+    const o =
+      ready.kind === "ready"
+        ? await runJob(d, l, { timeout, open, ready })
+        : await failBeforeJob(l, ready, open);
     if (!o) return;
     const code = o.kind === "finished" ? null : o.kind === "failed" ? o.code : "CANCELLED";
     log.info("command-run", { command_id: p.command.id, workflow_id: p.workflow.id, code });
@@ -105,7 +165,7 @@ export async function driveAsyncCommand(
   } catch (err) {
     await failOpenStep(l, open.step, log);
     if (writer.signal.aborted || writer.done) return;
-    log.error("command-run-failed", safeErrorFields(err));
+    logDriverError(log, err);
     await writer.finishOrAbort({ kind: "failed", code: "INTERNAL_ERROR" });
   } finally {
     if (!writer.done) writer.abort();

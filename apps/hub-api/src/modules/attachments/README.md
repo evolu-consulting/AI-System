@@ -8,6 +8,7 @@ Spec H2c-attachments (R01–R29); plan §1 P4–P23, §4, §5; chữ ký hàm th
 | `sniff.rules.ts` | thuần: `SNIFF_HEAD`, `isExecutableHead`, `headOk`, `FileInspector` (kiểm từng chunk, plan-rules §2) |
 | `run-files.rules.ts` | thuần: `pickRunFiles`, `jobFileNames`, `jobAttachments`, `fileSizeKb`, `orchestratorFilesBlock`, `agentFilesBlock`, `OUT_HINT`/`withOutHint` (plan-rules §3) |
 | `run-files.ts` | **B4** · E12: `checkSendable(db, u, ids)` (R09, scope `user`, ngoài transaction — R10; mọi sai ⇒ 404 `ATTACHMENT_NOT_FOUND{ids}`) · `bindRunFiles(tx, o, p)` trong `createRunTx` sau INSERT messages (R11 gắn, số hàng ≠ ⇒ 404 rollback; R14 `runFileRows` → `pickRunFiles`). Chỉ cần DB (PL14) |
+| `attachment-dify.ts` | **B7** · `uploadToDify(deps, {tenantId, file}, target, signal)` (kho → `dify/dify-upload` `uploadDifyFile`, tên `safe_name`) + trace `detail.upload`; `difyFileInput`; `AttachmentContentMissing` (kho vắng/mất ⇒ `INTERNAL_ERROR`). Dùng ở `commands/driver/command-files.ts`, MCP (B8) |
 | `attach-env.rules.ts` | thuần: `parseAttachEnv` (`HUB_ATTACH_*`, plan §7) |
 | `storage.ts` | interface `AttachmentStorage` (`stage/open/blob/remove/promote/list`, PL1; `promote` = hoàn tất `.part` cho sweeper, PL13), lỗi `StorageTooLarge`/`StorageRejected`/`StorageKeyError`, khoá `storageKey`/`isStorageKey`/`keyUnder` |
 | `storage.local.ts` | driver `local`: `createLocalStorage({dir, platform?})` (L8, P23) |
