@@ -1,17 +1,23 @@
-// HUB-FR-44 · H2c-R01–R07 · nghiệp vụ `POST /attachments` (plan §5.1). Thứ tự kiểm plan §2.4: header (400) → đuôi
-// (415) → `Content-Length` (413/400) → hạn mức sớm (409) → stream ra `.part` (413/415/400) → transaction khoá tenant
-// (409 chốt) → INSERT → commit DB → rename (R05).
+// HUB-FR-44 · HUB-FR-75 · H2c-R01–R07, R13 · nghiệp vụ `POST /attachments` (plan §5.1) và `GET /attachments/:id(/content)`
+// (plan §5.7, P22). Thứ tự kiểm plan §2.4: header (400) → đuôi (415) → `Content-Length` (413/400) → hạn mức sớm (409) →
+// stream ra `.part` (413/415/400) → transaction khoá tenant (409 chốt) → INSERT → commit DB → rename (R05).
 // Hạn mức là **theo tenant** ⇒ câu SUM/khoá/INSERT chạy scope `system` với `tenant_id`/`user_id` lấy từ JWT (RLS scope
 // `user` chỉ thấy hàng của chính user — spec-decisions "BUILD — B2/B3" B2-1). Không log tên file, không byte thân.
 import { randomUUID } from "node:crypto";
-import { ATTACH_MAX_BYTES, type AttachMime, type Attachment } from "@ai/contracts/chat";
+import {
+  ATTACH_MAX_BYTES,
+  type AttachMime,
+  type Attachment,
+  type AttachmentDetail,
+} from "@ai/contracts/chat";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
-import { AppError, appError } from "../../lib/errors";
+import { AppError, appError, safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import {
   type AttachExt,
+  contentDisposition,
   displayName,
   extOf,
   mimeOf,
@@ -19,7 +25,14 @@ import {
   parseFilenameHeader,
   safeName,
 } from "./attachment.rules";
-import { deleteAttachment, insertAttachment, lockTenantQuota, quotaUsed } from "./attachments.repo";
+import {
+  deleteAttachment,
+  findOwnedAttachment,
+  insertAttachment,
+  lockTenantQuota,
+  type OwnedAttachment,
+  quotaUsed,
+} from "./attachments.repo";
 import { FileInspector } from "./sniff.rules";
 import {
   type AttachmentStorage,
@@ -39,6 +52,12 @@ export type UploadInput = {
 };
 
 export type AttachmentServiceDeps = { db: Db; storage: AttachmentStorage; tenantMaxBytes: number };
+
+/**
+ * Nội dung + header R13 của `/content` (plan §5.7). `Blob` (đọc lười từ đĩa) thay vì stream: Bun chỉ gửi `Content-Length`
+ * khi thân có kích thước biết trước (stream ⇒ chunked) — spec-decisions "BUILD — B2/B3" B3-1.
+ */
+export type ContentResult = { body: Blob; headers: Record<string, string> };
 
 const SYSTEM = { kind: "system" } as const;
 const tooLarge = () => appError("ATTACHMENT_TOO_LARGE", { max_bytes: ATTACH_MAX_BYTES });
@@ -241,4 +260,58 @@ export class AttachmentService {
       throw e;
     }
   }
+
+  async #owned(u: AuthUser, id: string): Promise<OwnedAttachment> {
+    const row = await withHubScope(
+      this.d.db,
+      { kind: "user", tenantId: u.tenantId, userId: u.userId },
+      (tx) => findOwnedAttachment(tx, { tenantId: u.tenantId, userId: u.userId, id }),
+    );
+    if (!row) throw appError("NOT_FOUND");
+    return row;
+  }
+
+  /** `GET /attachments/:id` (R13): khác chủ / hội thoại đã xoá / không có ⇒ 404. */
+  async get(u: AuthUser, id: string): Promise<AttachmentDetail> {
+    const r = await this.#owned(u, id);
+    return {
+      id: r.id,
+      filename: r.filename,
+      mime: r.mime as AttachMime,
+      size: r.size,
+      created_at: r.createdAt.toISOString(),
+      available: r.purgedAt === null,
+    };
+  }
+
+  /** `GET /attachments/:id/content` (R13): `available=false` / file mất ⇒ 404 (+ log `attachment-content-missing`). */
+  async content(u: AuthUser, id: string, log: Logger): Promise<ContentResult> {
+    const r = await this.#owned(u, id);
+    if (r.purgedAt !== null) throw appError("NOT_FOUND");
+    let file: Blob | null;
+    try {
+      file = await this.d.storage.blob(r.storageKey, r.mime);
+    } catch (e) {
+      if (e instanceof StorageKeyError) log.error("attachment-path-escape", { key: r.id });
+      else log.error("attachment-open-failed", { attachment_id: r.id, ...safeErrorFields(e) });
+      throw appError("INTERNAL_ERROR");
+    }
+    if (!file) {
+      log.error("attachment-content-missing", { attachment_id: r.id });
+      throw appError("NOT_FOUND");
+    }
+    return { body: file, headers: contentHeaders(r, file.size) };
+  }
+}
+
+/** Header tải về (R13, plan §5.7): không đoán kiểu, sandbox, luôn `attachment`, không cache dùng chung. */
+export function contentHeaders(r: { filename: string; mime: string }, size: number) {
+  return {
+    "Content-Type": r.mime,
+    "Content-Length": String(size),
+    "Content-Disposition": contentDisposition(r.filename),
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'none'; sandbox",
+    "Cache-Control": "private, no-store",
+  };
 }

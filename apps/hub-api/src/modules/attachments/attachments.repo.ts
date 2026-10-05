@@ -51,3 +51,41 @@ export async function deleteAttachment(tx: Tx, id: string, tenantId: string): Pr
     sql`delete from hub.attachments where id = ${id} and tenant_id = ${tenantId} and message_id is null`,
   );
 }
+
+export type OwnedAttachment = {
+  id: string;
+  filename: string;
+  mime: string;
+  size: number;
+  createdAt: Date;
+  purgedAt: Date | null;
+  storageKey: string;
+};
+
+/** File của chủ, hội thoại (nếu có) chưa xoá (plan-db §2.6, P22); không có → null. Scope `user`. */
+export async function findOwnedAttachment(
+  tx: Tx,
+  o: { tenantId: string; userId: string; id: string },
+): Promise<OwnedAttachment | null> {
+  const [r] = await tx.execute<{
+    id: string;
+    filename: string;
+    mime: string;
+    size: string | number;
+    created_at: Date | string;
+    purged_at: Date | string | null;
+    storage_key: string;
+  }>(sql`select a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key
+    from hub.attachments a left join hub.conversations c on c.id = a.conversation_id
+    where a.id = ${o.id} and a.tenant_id = ${o.tenantId} and a.user_id = ${o.userId} and c.deleted_at is null`);
+  if (!r) return null;
+  return {
+    id: r.id,
+    filename: r.filename,
+    mime: r.mime,
+    size: Number(r.size),
+    createdAt: new Date(r.created_at),
+    purgedAt: r.purged_at === null ? null : new Date(r.purged_at),
+    storageKey: r.storage_key,
+  };
+}
