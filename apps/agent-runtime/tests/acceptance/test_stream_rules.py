@@ -448,27 +448,28 @@ def test_p06_random_sequence_preserves_text() -> None:
 LONG = "x" * 300
 
 
-# fmt: off
-P07_CASES: list[tuple[str | None, int, str | None]] = [
-    ("You've hit your usage limit", 0, "rate"), ("Rate limit exceeded", 0, "rate"),
-    ("Error 429", 0, "rate"), ("USAGE LIMIT reached", 0, "rate"),
-    ("You've hit your usage limit", 120, "rate"), ("Please run /login — usage limit", 0, "rate"),
-    ("x" * 289 + "usage limit", 0, "rate"),
-    ("Not logged in · Please run /login", 0, "auth"), ("Invalid API key", 0, "auth"),
-    ("OAuth token has expired", 0, "auth"), ("HTTP 401", 0, "auth"), ("not logged in", 7, "auth"),
-    ("403 Forbidden", 0, "refused"), ("I can't help with that.", 0, "refused"),
-    (None, 0, "refused"), ("", 0, "refused"), ("Error 4290", 0, "refused"),
-    (LONG + "usage limit", 0, "refused"), ("x" * 295 + "usage limit", 0, "refused"),
-    ("I can't help with that.", 5, None), (LONG + "usage limit", 3, None), ("Error 4290", 1, None),
+# TC-8: mỗi chữ × (output, stop_reason); `refused` chỉ khi `stop_reason == "refusal"` ∧ 0 output.
+RATE = ["You've hit your usage limit", "Rate limit exceeded", "Error 429", "USAGE LIMIT reached",
+        "x" * 289 + "usage limit", "Please run /login — usage limit"]  # fmt: skip
+AUTH = ["Not logged in · Please run /login", "Invalid API key", "OAuth token has expired",
+        "HTTP 401", "not logged in"]  # fmt: skip
+OTHER = ["403 Forbidden", "I can't help with that.", None, "", "Error 4290",
+         LONG + "usage limit", "x" * 295 + "usage limit", "Prompt is too long"]  # fmt: skip
+SIG = [(0, None), (120, None), (0, "refusal"), (7, "refusal"), (0, "end_turn")]
+P07_CASES: list[tuple[str | None, int, str | None, str | None]] = [
+    *[(t, o, r, "rate") for t in RATE for o, r in SIG],
+    *[(t, o, r, "auth") for t in AUTH for o, r in SIG],
+    *[(t, o, r, "refused" if (o, r) == (0, "refusal") else None) for t in OTHER for o, r in SIG],
 ]
-# fmt: on
 
 
-@pytest.mark.parametrize(("text", "out_tokens", "expected"), P07_CASES, ids=range(len(P07_CASES)))
-def test_p07_classify_is_error(text: str | None, out_tokens: int, expected: str | None) -> None:
-    """P07 · rate trước auth, bất kể output; không khớp ∧ output 0 → `refused`; 300 ký tự đầu."""
+@pytest.mark.parametrize(("text", "out", "stop", "expected"), P07_CASES, ids=range(len(P07_CASES)))
+def test_p07_classify_is_error(text: Any, out: int, stop: Any, expected: Any) -> None:
+    """P07 · TC-8: rate trước auth, bất kể output/tín hiệu; `stop_reason == "refusal"` ∧ output 0
+    → `refused`; còn lại None (PROVIDER_ERROR H1); 300 ký tự đầu; chữ ký 2 tham số cũ vẫn dùng."""
     refusal = importlib.import_module("agent_runtime.runtimes.cli.refusal")
-    assert refusal.classify_is_error(text, out_tokens) == expected
+    assert stop is not None or refusal.classify_is_error(text, out) == expected
+    assert refusal.classify_is_error(text, out, stop_reason=stop) == expected
 
 
 def test_p07_patterns_module_single_source() -> None:

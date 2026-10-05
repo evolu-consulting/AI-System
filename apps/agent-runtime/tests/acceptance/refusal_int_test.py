@@ -1,13 +1,14 @@
 """WRK-FR-15 · HUB-H2b-AC-08 · H2b-R27 · P26 (test-plan-py §2): F4 — `is_error` 0 token phân loại
 theo chữ result (`classify_is_error`, `plan-runtime` §4): mẫu rate → `ALL_PROVIDERS_EXHAUSTED quota`
 + `cooldown` 30 phút; mẫu auth → `ALL_PROVIDERS_EXHAUSTED provider_unavailable` + `logged_out`;
-không mẫu + 0 output → `UPSTREAM_ERROR refused`, `provider_state` không đổi; có output → H1
+tín hiệu từ chối (`stop_reason="refusal"`, TC-8) + 0 output → `UPSTREAM_ERROR refused`,
+`provider_state` không đổi; có output → H1
 (`UPSTREAM_ERROR`, reason null). Chữ result không lộ ra `job.failed.message`/`jobs.error_message`/
 XADD; chỉ vào log (đã che, ≤ 300).
 
-Chỉ thị `#fake:is-error=<rate|auth|refused>` (test-plan L2, `plan-runtime` §6 — PY-04): `Final{
-is_error:true}` với chữ cố định dưới, không `RateLimit`, usage `{in:10, out:0}` trừ khi có
-`#fake:usage`.
+Chỉ thị `#fake:is-error=<rate|auth|refused|error>` (test-plan L2, `plan-runtime` §6 — PY-04):
+`Final{is_error:true}` với chữ cố định dưới, không `RateLimit`, usage `{in:10, out:0}` trừ khi có
+`#fake:usage`; chỉ `=refused` kèm `stop_reason="refusal"` (TC-8).
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ TEXT = {
     "rate": "You've hit your usage limit",
     "auth": "Not logged in · Please run /login",
     "refused": "I can't help with that.",
+    "error": "API Error: 500 Internal server error",
 }
 
 
@@ -87,7 +89,8 @@ async def test_wrk_fr_15_p26_is_error_auth(ctx: Ctx) -> None:
 
 
 async def test_wrk_fr_15_p26_is_error_refused(ctx: Ctx) -> None:
-    """P26 · AC-08 · `#fake:is-error=refused` (0 output) → `UPSTREAM_ERROR refused`;
+    """P26 · AC-08 · `#fake:is-error=refused` (`stop_reason="refusal"`, 0 output) →
+    `UPSTREAM_ERROR refused`;
     `provider_state` không đổi (không có hàng / không `cooldown`/`logged_out`); chữ result không
     lộ."""
     row, evs = await run_refusal(ctx, "#fake:is-error=refused")
@@ -113,3 +116,19 @@ async def test_wrk_fr_15_p26_is_error_with_output_is_h1(ctx: Ctx) -> None:
     )
     assert failed_of(evs) == [("UPSTREAM_ERROR", None)]
     await assert_text_hidden(ctx, row, str(row["run_id"]), TEXT["refused"])
+
+
+async def test_wrk_fr_15_p26_is_error_without_signal_is_h1(ctx: Ctx) -> None:
+    """P26 · TC-8 · `#fake:is-error=error` (lỗi provider, 0 output, **không** `stop_reason=
+    "refusal"`, không mẫu rate/auth) → `UPSTREAM_ERROR` reason `null` (PROVIDER_ERROR H1), không
+    `refused`; `provider_state` không `cooldown`/`logged_out`; chữ result không lộ."""
+    row, evs = await run_refusal(ctx, "#fake:is-error=error")
+    assert (row["status"], row["error_code"], row["error_reason"]) == (
+        "failed",
+        "UPSTREAM_ERROR",
+        None,
+    )
+    assert failed_of(evs) == [("UPSTREAM_ERROR", None)]
+    st = await provider_state(ctx)
+    assert st is None or st["status"] not in ("cooldown", "logged_out")
+    await assert_text_hidden(ctx, row, str(row["run_id"]), TEXT["error"])
