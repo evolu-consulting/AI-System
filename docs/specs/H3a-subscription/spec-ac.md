@@ -16,5 +16,5 @@ Phụ lục của [`spec.md`](spec.md) §8. qc bổ sung cột "Test" chi tiết
 | HUB-H3a-AC-09 | R12/R13: job thành công trong chu kỳ → lượt probe bị bỏ (0 lời gọi provider); `cooldown_until` qua → probe ngay; khởi động Runtime → probe thay reset mù | Python int (đồng hồ tiêm) |
 | HUB-H3a-AC-10 | R15 chống ghi đè: job ghi `cooldown` trong lúc probe đang chạy (kết quả `ok`) → trạng thái cuối = `cooldown` | Python int |
 | HUB-H3a-AC-11 | R04/R17: log `claude.rate_limit` chỉ có tên khoá `raw` + kiểu; log `probe.result` có token; 0 hàng `usage_logs` do probe; quét log không có prompt/token xác thực/email | Python int |
-| HUB-H3a-AC-12 | Smoke `HUB_LIVE=1` (không chặn): probe thật `claude-sub` → `ok` + `last_probe_at`; `CLAUDE_CONFIG_DIR` trỏ thư mục trống → `logged_out` → trả lại → probe kế `ok`; ghi token/thời gian probe vào `spec-decisions` (S1) | smoke |
+| HUB-H3a-AC-12 | Smoke `HUB_LIVE=1` (không chặn): probe thật `claude-sub` → `ok` + `last_probe_at`; `HOME` tạm có symlink `.claude` → thư mục thật (PL10), đổi sang thư mục rỗng → `logged_out` → trả lại → probe kế `ok`; ghi token/thời gian probe vào `spec-decisions` (S1) | smoke |
 | HUB-H3a-AC-13 | Hồi quy (R19/R20): `test:contract:chat` 41 ca, test khoá H1/H2a/H2b/H2c, Admin M4 usage xanh | contract + CI |

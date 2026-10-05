@@ -4,7 +4,7 @@ title: Subscription `claude-sub` — probe định kỳ → `hub.provider_state`
 milestone: H3a
 status: draft                  # draft → ready → approved → in-progress → done
 requirements:
-  [WRK-FR-22, WRK-FR-15, WRK-FR-20, HUB-FR-86, HUB-FR-89, HUB-BR-04,
+  [WRK-FR-22, WRK-FR-15, WRK-FR-20, HUB-FR-86 (bối cảnh, không đổi), HUB-FR-89 (bối cảnh, không đổi), HUB-BR-04,
    AC-W02, CR-041]
 design:
   - docs/design/worker/ba-worker.md (§3 job `maint.probe`; §4 bảng trạng thái provider; §5 WRK-FR-15, 20, 22; §8 runbook "Provider báo logged_out", "cooldown liên tục"; §10 AC-W02)
@@ -37,7 +37,7 @@ Mốc con **đầu** của H3 (chia H3a/H3b/H3c — `docs/ROADMAP.md`, lý do: [
 |---|---|---|
 | 1 | Spike **S1** (cách probe không/ít tốn quota) + **S2** (ghi lại tín hiệu hết quota thật) trước PLAN chốt | WRK-FR-22, 15 |
 | 2 | Vòng probe trong Agent Runtime cho provider `kind='subscription'` → `hub.provider_state` (đăng nhập, quota, mức dùng) | WRK-FR-22 |
-| 3 | Probe/ job thành công đưa `logged_out`/`cooldown`/`error` về `ok` **không cần khởi động lại** | WRK-FR-22, runbook §8 |
+| 3 | **Chỉ probe** thành công đưa `logged_out`/`cooldown`/`error` về `ok` **không cần khởi động lại**; job thành công chỉ ghi `last_ok_at`, không đổi `status` (PL15 trong spec-decisions) | WRK-FR-22, runbook §8 |
 | 4 | Ghi thêm tín hiệu quota từ job thật (`allowed_warning`, `utilization`, `rate_limit_type`, `resets_at`) vào `provider_state` + log | WRK-FR-15 |
 | 5 | Kiểm biên `cooldown_until`; không thử lại vô hạn; không claim / không enqueue tới giờ reset (giữ H1, thêm test) | WRK-FR-15, 20 |
 | 6 | Câu lỗi Run theo **lý do** (`quota` / `provider_unavailable`) — vẫn mã `ALL_PROVIDERS_EXHAUSTED`, contract chat không đổi | HUB-BR-04 |
@@ -72,8 +72,8 @@ Mốc con **đầu** của H3 (chia H3a/H3b/H3c — `docs/ROADMAP.md`, lý do: [
 | H3a-R13 | Probe ngay (không chờ chu kỳ) khi: Runtime khởi động (thay cho reset mù H1); `cooldown_until` vừa qua; `logged_out` mỗi `AGENT_RT_PROBE_LOGGED_OUT_S` (mặc định 60) | Q3 |
 | H3a-R14 | **Cách probe** (chốt bởi spike S1, `spec-decisions` "Spike S1") — hai bước: **(a)** chạy CLI **bundled** của SDK `auth status --json` (cwd thư mục probe, hạn 15 s; không mạng, không tốn quota; chỉ đọc khoá `loggedIn`, **không log stdout** — có email/org): `exit≠0` hoặc `loggedIn≠true` ⇒ `logged_out`, dừng (vòng `logged_out` chỉ dùng (a)). **(b)** (a) ok và R12 không bỏ lượt ⇒ một lượt `ClaudeSDKClient`: `model='haiku'`, `system_prompt` cố định ngắn, prompt cố định ngắn, `tools=[]`, `mcp_servers={}`, `setting_sources=[]`, `max_turns=1`, cwd thư mục probe riêng (sandbox H1), hạn `AGENT_RT_PROBE_TIMEOUT_S` (mặc định 60). Đọc `RateLimitEvent` + `ResultMessage` như job (R01); chữ chưa đăng nhập ở (b) ⇒ `logged_out`. Đo S1: (a) ~5 s; (b) ~9 s, ~4,2 K token vào / ~45 ra | WRK-FR-22 |
 | H3a-R15 | Kết quả probe → `provider_state` (một UPSERT, không giữ khoá claim lâu): thành công → `status='ok'`, `consecutive_errors=0`, `cooldown_until=NULL`, `last_probe_at`, `last_ok_at`; `rejected` → `cooldown` (R02); chưa đăng nhập → `logged_out`; lỗi khác (timeout, CLI không chạy) → `consecutive_errors+1`, ngưỡng 3 → `error` (như H1). Probe **không ghi đè** trạng thái mới hơn do job ghi trong lúc probe chạy (so `updated_at` lúc bắt đầu probe) | WRK-FR-22 |
-| H3a-R16 | Chuyển trạng thái do probe/job: log `provider.recovered{provider, from}` khi về `ok`; `provider.logged_out` khi sang `logged_out` (log mức `warn`, để runbook §8 "đăng nhập lại" có tín hiệu) | WRK-FR-22 |
-| H3a-R17 | Probe **không** ghi `usage_logs` (không có tenant/run); token probe chỉ ghi log `probe.result{provider, ok, ms, input_tokens, output_tokens}`. Tắt probe: `AGENT_RT_PROBE_S=0` (dev) | — |
+| H3a-R16 | Chuyển trạng thái: **chỉ probe** đưa provider về `ok` và log `provider.recovered{provider, from}`; job thành công chỉ ghi `last_ok_at` (PL15); `provider.logged_out` khi sang `logged_out` (log mức `warn`, để runbook §8 "đăng nhập lại" có tín hiệu) | WRK-FR-22 |
+| H3a-R17 | Probe **không** ghi `usage_logs` (không có tenant/run); token probe chỉ ghi log `probe.result{provider, ok, ms, input_tokens, output_tokens}`. Tắt probe: `AGENT_RT_PROBE_S=0` hợp lệ mọi môi trường (= tắt probe, giữ reset khi khởi động của H1; khớp rt §6) | — |
 | H3a-R18 | `fake-cli` (provider giả, test): chỉ thị probe theo biến môi trường test (`ok`, `rejected[:resets_at]`, `logged_out`, `warning:<util>`, `hang`) — backend-lead chốt cú pháp; không chạm CLI thật | test |
 
 ### 2.4 Tương thích
