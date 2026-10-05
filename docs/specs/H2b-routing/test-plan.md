@@ -321,3 +321,27 @@ Không đỏ do import/cú pháp/kiểu/fixture/boot.
 - Kiểm: `orchestrator-tenant.int` cả file 8/8 xanh 3 lần liên tiếp (DB riêng `ai_system_h2b_a66_*`, đã drop); `tests/.lock` cập nhật đúng 1 dòng hash file này.
 - **TC-7 · 2026-10-05 · B4-6 (b) (B11-3) · `mention.int.test.ts` A07** — **test sai** (đếm khi run của chính ca chưa ghi xong). `call` huỷ body SSE ngay khi nhận header 200; Hub tạo job Orchestrator của run **bất đồng bộ sau** khi trả header (driver ghi `hub.jobs` + NOTIFY), nên `rejected("@nope x", {flow: busyFlow})` ngay sau `first` (và `rejected("@assistant")` sau `second`) có thể đếm `before` trước khi job đó vào ⇒ `jobs` +1 (conversations/flows/messages/runs không đổi; 404/422 đúng, request bị từ chối không ghi gì). Không phải run của ca trước (`settleRuns` đã huỷ). Xác minh: bản khoá cũ chạy cả file đỏ 2/9 lần, luôn tại dòng 198 (`rejected` sau `first`), `jobs` lệch đúng 1. Sửa: helper `jobQueued(res)` — `waitFor(jobsOf(run x-run-id) ≠ [])` ≤ 5 s sau `first` và `second`, trước khi `rejected` đếm; giữ mọi assert và id A07. Code sản phẩm đúng spec (R18: lỗi trước khi tạo run).
 - Kiểm: `mention.int` cả file 12/12 xanh 6 lần liên tiếp (DB riêng `ai_system_h2b_i1_*`); `tests/.lock` chỉ đổi 1 dòng hash (`hashFile`), `test:lock:verify` xanh (313 file).
+
+### I1 · 2026-10-05 (sau B0–B11, PY-01…04, C1–C2, D1, MK, F3; TC-7 `15c20d5`)
+`bun run done:h2b` — DB riêng: `TEST_DATABASE_URL` = `ai_system_h2b_i1_test` (`db:test:create h2b_i1`), `HUB_TEST_DATABASE_URL`/`AGENT_RT_TEST_DATABASE_URL` = `ai_system_h2b_i1_hub_test` (tạo tay); chỉ export `*DATABASE_URL`; Redis mặc định; compose chạy. Lần 1 bước 1–8 xanh, dừng ở 9; sau dọn dữ liệu dev chạy lại `--from=9` → 9–16 xanh. DB test đã drop.
+
+| # | Bước | Kết quả |
+|---|---|---|
+| 1 | typecheck (turbo, 6 gói) | xanh |
+| 2 | unit (`packages/*`, `tools/hub-dev`, access, C1, `H1/H2a/H2b rules`) | xanh — 537 pass, 13 skip, 0 fail |
+| 3 | int `H1/ H2a/ H2b/ M ADM-NFR-06` | xanh — 1912 pass, 0 fail (20,5 phút; `mention.int` A07 xanh) |
+| 4 | `contracts:check` | xanh (pytest 19 + 25 bun) |
+| 5 | agent-runtime: ruff, format, pyright, lint-imports, pytest, pytest -m int | xanh — 627 unit + 133 int (P20–P28) |
+| 6 | `test:h1:stack` | xanh — 4/4 |
+| 7 | `test:h2a:stack` | xanh — 3/3 |
+| 8 | `test:h2b:stack` (S01–S08, limit 2 tường minh) | xanh — 14/14 |
+| 9 | `test:contract:chat` (hub-dev, Hub thật) | lần 1 **đỏ (a) hạ tầng/dữ liệu**: CHAT-AC-19 (`conversations.contract.test.ts:149`, limit=1 đi cursor ≠ danh sách `limit=200`) — DB dev `ai_system` tích 229 hội thoại của `lan` do 9 lần chạy contract trước (bộ contract không xoá hội thoại tự tạo) ⇒ `limit=200` cắt, phân trang thấy 201. Không do code H2b. Dọn: soft-delete 228 hội thoại tên mẫu contract (`… #n`) của `lan` trong DB dev. Lần 2 **xanh — 41 pass, 21 skip (mock-only)**; **0 phản hồi 429** (Q-T1/K4b: hub-dev limit 20) |
+| 10 | H01 `H2b/hubdev` | xanh — 2/2 |
+| 11 | `test:lock:verify` | xanh (313 file) |
+| 12 | `trace --check` | xanh |
+| 13 | `check:size --all` | xanh |
+| 14 | depcruise | xanh |
+| 15 | `tsc -p tsconfig.tests.json` (báo cáo) | xanh |
+| 16 | `test:perf H2a H2b` (báo cáo) | lần 1: 385/386 — đỏ ADM-FR-53 (M3, `config-write.int.test.ts:315`, trung vị 5,61 ms > 5 ms, nhiễu máy bận, không thuộc H2b); lần 2 386/386. PF1–PF3 xanh cả 2 lần |
+
+K11: `bun run test:smoke:live` vắng `HUB_LIVE` → "bỏ qua", exit 0 ✓. Lỗi code: không. Ghi chú cho chủ bộ contract: CHAT-AC-19 phụ thuộc tổng hội thoại của `lan` ≤ 200 — chạy lặp trên DB dev sẽ đỏ lại sau ~8 lần (đề xuất bộ contract xoá hội thoại tự tạo hoặc so sánh trong cửa sổ hội thoại của chính ca).
