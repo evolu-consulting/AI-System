@@ -137,6 +137,7 @@ WITH latest AS (
   SELECT DISTINCT ON (a.job_id, a.safe_name) a.id, a.job_id, a.safe_name, j.created_at AS job_created_at
   FROM hub.jobs j JOIN hub.attachments a ON a.job_id = j.id
   WHERE j.run_id = ${runId} AND a.origin = 'output' AND a.message_id IS NULL AND a.purged_at IS NULL
+    AND a.created_at >= j.started_at  -- PL10: chỉ lần claim hiện hành (claim đặt started_at = now())
   ORDER BY a.job_id, a.safe_name, a.created_at DESC
 ), picked AS (
   SELECT id, (row_number() OVER (ORDER BY job_created_at, job_id, safe_name) - 1)::smallint AS pos
@@ -151,7 +152,7 @@ Thứ tự khoá trong `finish`: `flows → runs → messages → attachments �
 ### 2.5 Endpoint nội bộ (R17, R25) — scope `system`
 - Token → job: `credential.repo.jobByTokenHash` (H2a, đã có `tenant_id`, `user_id` trong SELECT) — mở rộng kiểu trả về `CredentialJob` + `tenantId`, `userId`, `runId`.
 - File của job: `SELECT id, storage_key, size, sha256, purged_at FROM hub.attachments WHERE id = ${attId} AND tenant_id = ${jobTenantId}` (không hàng ⇒ 401).
-- Đếm output: `SELECT count(*)::int FROM hub.attachments WHERE job_id = ${jobId} AND origin = 'output'`.
+- Đếm output (PL10): `SELECT count(*)::int FROM hub.attachments a JOIN hub.jobs j ON j.id = a.job_id WHERE a.job_id = ${jobId} AND a.origin = 'output' AND a.created_at >= j.started_at`.
 
 ### 2.6 Xem lại (R13, P22) — scope `user`
 ```sql
@@ -175,9 +176,10 @@ VALUES (${id}, ${t}, ${u}, ${origin}, ${jobId}, ${conversationId}, ${flowId}, ${
 ```
 Khoá advisory 2 khoá không gian riêng (`hub.attach.tenant`) ≠ `hub.runs.user` (H2b) ≠ `K_CLAIM` (1 khoá) ⇒ không chu trình.
 
-## 4. Sweeper (R27–R29, PL2) — scope `system`, mỗi lượt một transaction ngắn cho mỗi bước claim
+## 4. Sweeper (R27–R29, PL2, PL11) — `sweepOnce`: **một** transaction scope `system` mỗi lượt (khoá thử → 4.1 → 4.2 → 4.3 → commit)
 ```sql
--- lượt: SELECT pg_try_advisory_xact_lock(hashtext('hub.attach.sweep')) → false ⇒ bỏ lượt (Hub khác đang quét)
+-- lượt: SELECT pg_try_advisory_xact_lock(hashtext('hub.attach.sweep')) → false ⇒ {skipped: true} (Hub/lượt khác đang quét)
+-- khoá giữ tới commit cuối lượt; E12 (R11) chạm hàng đang claim ⇒ chờ khoá hàng, rồi thấy purged_at ⇒ 0 hàng ⇒ 404
 -- 4.1 R27 · chưa gắn quá 24 h (kể cả hàng đã claim lượt trước mà xoá dở)
 WITH c AS (
   SELECT id FROM hub.attachments
@@ -197,6 +199,7 @@ UPDATE hub.attachments a SET purged_at = ${now} FROM c WHERE a.id = c.id RETURNI
 --   → storage.remove(key) (lỗi ⇒ log; nội dung còn sót do 4.3 dọn — hàng đã purged ⇒ không còn "live")
 -- 4.3 Mồ côi: id (phần sau `/` của key) trong lô `storage.list` còn sống? (PK, không cần index `storage_key`)
 SELECT storage_key FROM hub.attachments WHERE id = ANY(${ids}::uuid[]) AND purged_at IS NULL;
+--   `.part` > 1 h mà id có trong kết quả ⇒ rename `.part` → key (PL13); không có ⇒ remove
 ```
 `${now}` = đồng hồ tiêm (`Date`), không dùng `now()` trong câu sweeper (AC-13). Câu 4.1 dùng `attachments_unbound_idx`; 4.2 dùng `conversations_deleted_idx` + `attachments_conv_live_idx`; 4.3 dùng PK.
 

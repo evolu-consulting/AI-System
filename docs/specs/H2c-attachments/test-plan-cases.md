@@ -9,7 +9,7 @@ Phụ lục của [`test-plan.md`](test-plan.md): §1 hàm thuần (R) · §3 hu
 | R01 | `parseFilenameHeader`: `undefined`, `""` → null; `"a%20b.pdf"` → `"a b.pdf"`; `"Ho%C3%A1%20%C4%91%C6%A1n.pdf"` → `"Hoá đơn.pdf"`; ký tự thô ngoài `0x20–0x7E` (`"Hoá.pdf"`, `"a\tb"`) → null; `"%E0%A4%A"` / `"%ZZ"` (`decodeURIComponent` ném) → null; `"%00"` → `"\u0000"` (không lọc ở đây); 1 024 byte UTF-8 sau giải mã → ok, 1 025 → null (đếm byte, không ký tự: 342 × `ạ` = 1 026 byte → null); không trim (`"%20a"` → `" a"`), không NFC (`"a%CC%81"` giữ NFD) |
 | R02 | `displayName`: NFD `"a\u0301.txt"` → NFC `"á.txt"`; `"../../etc/passwd.txt"` → `"passwd.txt"`; `"a\\b.txt"` → `"b.txt"`; `"x/"` → `"file"`; bỏ U+0000–001F, U+007F–009F, U+200B–200F, U+202A–202E, U+2066–2069 ở mọi vị trí (`"a\u200Bb.txt"` → `"ab.txt"`, `"\u202Egnp.exe.txt"` → `"gnp.exe.txt"`) |
 | R03 | `displayName` trim hai đầu `\s` Unicode và `.` lặp: `"  .. a.md . "` → `"a.md"`; `"\u3000a.md"` → `"a.md"`; `".env.md"` → `"env.md"`; `"   "`, `"..."`, `""` → `"file"`; giữa tên giữ (`"a  b.md"`) |
-| R04 | `displayName` > 200 code point: 300 × `a` + `.pdf` → 196 `a` + `.pdf` (200); emoji đếm 1 code point (199 × `😀` + `.md` → cắt còn 197 + `.md`); không có đuôi hợp lệ → cắt 200 đầu; không surrogate lẻ |
+| R04 | `displayName` > 200 đơn vị UTF-16 (PL12): 300 × `a` + `.pdf` → 196 `a` + `.pdf` (`.length` 200); emoji 2 đơn vị (199 × `😀` + `.md` → 98 × `😀` + `.md`, `.length` 199, không tách cặp surrogate); không có đuôi hợp lệ → ≤ 200 đơn vị đầu; kết quả parse `AttachmentSchema.shape.filename` |
 | R05 | `splitExt`: `"a.pdf"` → `{a, pdf}`; `"a.PDF"` giữ hoa; `".env"` → `{".env", null}` (vị trí 0); `"a."` → null; `"a.tar.gz"` → `{"a.tar", "gz"}`; đuôi 11 code point → null; `"a.p-f"` → null; `"a.đ"` → `{a, "đ"}` |
 | R06 | `extOf`: `"x.PDF"` → `pdf`, `"x.JPG"` → `jpg`, `"x.jpeg"` → `jpeg`; `"x.exe"`, `"x.html"`, `"x.svg"`, `"x"`, `"x.pdf.exe"` → null; mỗi khoá `ATTACH_ALLOWED` (14) → chính nó; `mimeOf` = `ATTACH_ALLOWED[ext]` (`jpg`/`jpeg` → `image/jpeg`) |
 | R07 | `safeName` bảng AC-04 (`safeName(displayName(x))`, plan-rules §1 "Bảng mẫu" nguyên văn): `../../etc/passwd.txt` → `passwd.txt` · `a\b.txt` → `b.txt` · `‮gnp.exe.txt` → `gnp.exe.txt` · `CON.txt` → disp `CON.txt`, safe `CON_.txt` · `.env.md` → `env.md` · `-x.md` → `_-x.md` · `Hoá đơn tháng 9.pdf` giữ nguyên (NFC) · `a<b>\|c.csv` → `a_b_c.csv` · `"   "` → `file` · 300 × `a` + `.pdf` → ≤ 120 byte, kết thúc `.pdf` |
@@ -36,7 +36,7 @@ Phụ lục của [`test-plan.md`](test-plan.md): §1 hàm thuần (R) · §3 hu
 | R20 | `jobAttachments([])` → `[]`; 2 file → `{id, name (đã khử trùng), mime, size, sha256}` đúng thứ tự, parse `JobAttachmentSchema`; `fileSizeKb`: 1 → 1, 1024 → 1, 1025 → 2, 20 971 520 → 20 480 |
 | R21 | `orchestratorFilesBlock([])` → null; 2 mục → nguyên văn `"<attachments>\n- hoadon.pdf (application/pdf, 1024 KB)\n- a.md (text/markdown, 1 KB)\n</attachments>"`; `orchestratorPrompt` có `attachments` → khối nằm **giữa** `</steps_left>` và `<message>`; vắng / `[]` → chuỗi **===** kết quả H1 cùng đầu vào |
 | R22 | `agentFilesBlock` → nguyên văn plan-rules §3 (câu "The user attached these files. They are in your working directory; read them by relative path:" + `- attachments/<name> (<mime>, <n> KB)`); `[]` → null |
-| R23 | `withOutHint("", 8000)` → `{text: OUT_HINT, dropped:false}`; `("S", 8000)` → `"S\n\n" + OUT_HINT`; độ dài code point = `max` → giữ; `max + 1` → `{text:"S…", dropped:true}`; `OUT_HINT` nguyên văn plan-rules §3 |
+| R23 | `withOutHint("", 8000)` → `{text: OUT_HINT, dropped:false}`; `("S", 8000)` → `"S\n\n" + OUT_HINT`; `text.length` (UTF-16) = `max` → giữ; system có emoji đếm 2 đơn vị; `max + 1` → `{text:"S…", dropped:true}`; `OUT_HINT` nguyên văn plan-rules §3 |
 | R24 | `buildJobPayload` (`runner.rules`): `attachments` vắng / `[]` → `toEqual` payload H2b (không khoá `attachments`); 2 mục → khoá `attachments` đúng mảng, parse `AgentCliJobSchema` |
 
 ### 1.4 `attach-limits.test.ts` (R25–R30) · R04, R06, R29 · HUB-H2c-AC-14, AC-15
@@ -85,7 +85,7 @@ Phụ lục của [`test-plan.md`](test-plan.md): §1 hàm thuần (R) · §3 hu
 | R45 | `AttachmentSchema`: thừa khoá → lỗi; `size` 0 / 20 971 521 → lỗi, 1 / max ok; `filename` 201 → lỗi; mime ngoài `ATTACH_MIMES` → lỗi; `AttachmentDetailSchema` cần `available`; `AttachmentNotFoundDetailsSchema` `ids` 0 / 11 → lỗi |
 | R46 | `SendMessageRequestSchema`: `{content:"hi"}` → `toEqual({content:"hi"})` (không thêm khoá); `attachment_ids` 1/10 ok; 0 / 11 / trùng / không uuid → lỗi; khoá lạ vẫn lỗi (`strictObject`). `MessageSchema`: `attachments:[]` → lỗi (min 1); vắng ok; 11 → lỗi |
 | R47 | Hub: `JobAttachmentSchema` `name` hợp lệ (`Hoá đơn.pdf`, `a-2.pdf`, `_-x.md`) ok; `../x`, `a/b`, `a\\b`, `.env`, `-x`, `""`, NUL, 121 ký tự → lỗi; `sha256` hoa / 63 ký tự → lỗi; `AgentCliJob` thiếu `attachments` ok, 11 → lỗi |
-| R48 | `JOB_FAIL_REASONS.at(-1) === "attachment"`, độ dài 15; `JobResultEventSchema` `outputs` vắng ok, `[]` / 6 → lỗi; `DifyFileInputSchema` `transfer_method:"remote_url"` → lỗi, `type:"video"` → lỗi; `WorkflowInputValue` nhận object file |
+| R48 | `ALLOWED_TOOLS` = `[Read, Grep, Glob, Write]` (PL9), `AgentCliJob.allowed_tools` `[Read, Write]` ok, `Edit` / 5 phần tử → lỗi; `buildJobPayload` agent `runtime_options.allowed_tools` ∋ `Write` → có `Write`, vắng → `[Read, Grep]` (hồi quy H1 A27); `JOB_FAIL_REASONS.at(-1) === "attachment"`, độ dài 15; `JobResultEventSchema` `outputs` vắng ok, `[]` / 6 → lỗi; `DifyFileInputSchema` `transfer_method:"remote_url"` → lỗi, `type:"video"` → lỗi; `WorkflowInputValue` nhận object file |
 | R49 | Fixture `packages/contracts/fixtures/hub/{valid,invalid}` mới (plan §2.2: 5 valid, 8 invalid) parse đúng chiều; fixture cũ vẫn valid; `hub-internal` `JobOutputResponseSchema{id}` strict, `CONTENT_SHA256_HEADER = "X-Content-SHA256"`, `HUB_INTERNAL_ERRORS` ∋ `NOT_FOUND:404`, `ATTACHMENT_*` 409/413/415 |
 
 ## 3. H · hub-dev · K · hồi quy khoá (chạy lại, không sửa)
@@ -108,6 +108,6 @@ Phụ lục của [`test-plan.md`](test-plan.md): §1 hàm thuần (R) · §3 hu
 ## 4. M · Thủ công
 | ID | Checklist |
 |---|---|
-| M01 | `smoke.md` (I2): SM1–SM2 + Dify thật (app vô hại có input `file` qua `GET /parameters`; không có ⇒ ghi "bỏ qua"); không chép key |
+| M01 | `smoke.md` (I2): SM1–SM3 + Dify thật (app vô hại có input `file` qua `GET /parameters`; không có ⇒ ghi "bỏ qua"); không chép key |
 | M02 | `docs/guides/hub-dev.md` có `UPLOAD_FILE_SIZE_LIMIT` (K4) và `HUB_ATTACH_*` |
 | M03 | PRODUCTION-NOTES (I3): quét virus (T15), ổ chia sẻ (K1), giới hạn Dify (K4), sao lưu `HUB_ATTACH_DIR`, TD #59 |

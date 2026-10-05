@@ -41,7 +41,7 @@ Mốc con thứ ba của H2. Quyết định: [spec-decisions.md](spec-decisions
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
 | H2c-R01 | `POST /attachments` (JWT, mọi role). Thân = **byte của file** (không multipart, T1); header bắt buộc `X-Filename` (tên gốc, percent-encode UTF-8, ≤ 1 024 byte sau giải mã). `Content-Length` > `MAX_FILE` → 413 `ATTACHMENT_TOO_LARGE` **trước khi đọc thân**; thân stream thẳng ra file tạm, đếm byte, vượt `MAX_FILE` → huỷ, xoá file tạm, 413. Thân rỗng / thiếu `X-Filename` / giải mã lỗi → 400 `VALIDATION_ERROR`. Không giữ cả file trong RAM | HUB-FR-44 |
-| H2c-R02 | Tên hiển thị `filename`: giải mã → NFC → lấy phần sau `/` hoặc `\` cuối → bỏ ký tự điều khiển (C0, C1, U+200B–U+200F, U+202A–U+202E, U+2066–U+2069) → trim khoảng trắng và `.` hai đầu → rỗng thì `file` → ≤ 200 ký tự (cắt phần thân, giữ đuôi). Tên trong work `safe_name`: từ `filename`, ký tự ngoài `[\p{L}\p{N} ._-]` → `_`, gộp `_` liên tiếp, không bắt đầu bằng `.`/`-` (thêm `_`), thân trùng tên thiết bị Windows (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9`, không phân biệt hoa) → thêm `_`, ≤ 120 byte UTF-8 (giữ đuôi). Không tên nào của user dùng làm đường dẫn trên ổ Hub | WRK-BR-07 |
+| H2c-R02 | Tên hiển thị `filename`: giải mã → NFC → lấy phần sau `/` hoặc `\` cuối → bỏ ký tự điều khiển (C0, C1, U+200B–U+200F, U+202A–U+202E, U+2066–U+2069) → trim khoảng trắng và `.` hai đầu → rỗng thì `file` → ≤ 200 đơn vị UTF-16 (cắt phần thân, giữ đuôi, không tách cặp surrogate — khớp zod `max(200)`, PL12). Tên trong work `safe_name`: từ `filename`, ký tự ngoài `[\p{L}\p{N} ._-]` → `_`, gộp `_` liên tiếp, không bắt đầu bằng `.`/`-` (thêm `_`), thân trùng tên thiết bị Windows (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9`, không phân biệt hoa) → thêm `_`, ≤ 120 byte UTF-8 (giữ đuôi). Không tên nào của user dùng làm đường dẫn trên ổ Hub | WRK-BR-07 |
 | H2c-R03 | Loại file (Q1): đuôi của `filename` (không phân biệt hoa) phải thuộc danh sách cho phép; `mime` do **server** gán theo đuôi (bỏ `Content-Type` của client). Kiểm nội dung: `pdf` bắt đầu `%PDF-`; `png`/`jpg`/`jpeg`/`gif`/`webp` đúng chữ ký; `docx`/`xlsx`/`pptx` bắt đầu `PK\x03\x04`; nhóm chữ (`txt`, `md`, `csv`, `xml`, `json`) là UTF-8 hợp lệ (cho phép BOM), không byte NUL. Mọi file bắt đầu `MZ`, `\x7fELF`, `#!` → từ chối. Sai bất kỳ → 415 `ATTACHMENT_TYPE_NOT_ALLOWED`, xoá file tạm | Q1 |
 | H2c-R04 | `AttachmentStorage` = `put(key, stream, maxBytes) → {size, sha256}` · `open(key) → stream` · `remove(key)` · `list(prefix)` (sweeper). Env `HUB_ATTACH_DRIVER` ∈ {`local`} (khác → hub-api không lên). Driver `local`: gốc `HUB_ATTACH_DIR` (tuyệt đối; khởi động tạo nếu thiếu, quyền 0700, thử ghi; lỗi → không lên). Key = `<tenant_id>/<attachment_id>` (chỉ uuid). Ghi `<key>.part` (`O_CREAT\|O_EXCL`, 0600) → fsync → rename. Mọi đường dẫn sau `realpath` phải dưới gốc, không → lỗi 500 + log | U1 |
 | H2c-R05 | Thứ tự: stream ra `.part` + sha256 + kiểm R03 → transaction: khoá advisory theo tenant → kiểm hạn mức R06 → INSERT `attachments` (`origin='upload'`) → commit → rename. Lỗi sau khi ghi → xoá file. File không có hàng (crash giữa chừng) do sweeper R29 dọn | — |
@@ -65,7 +65,7 @@ Mốc con thứ ba của H2. Quyết định: [spec-decisions.md](spec-decisions
 | H2c-R15 | Job Orchestrator: không nhận file; prompt có khối `<attachments>` mỗi dòng `- <safe_name> (<mime>, <size> KB)` cho `A` (vắng khi `A` rỗng) để định tuyến. Job agent (`direct`, delegate): payload `attachments: [{id, name, mime, size, sha256}]` = `A` (`name` = `safe_name`, Hub khử trùng trong job bằng hậu tố `-2`, `-3`… trước đuôi); prompt thêm khối tĩnh (tiếng Anh) liệt kê `attachments/<name>` + mime + size và câu "đọc bằng đường dẫn tương đối" | WRK-FR-11 |
 | H2c-R16 | Runtime trước khi chạy CLI, mỗi file: `GET {AGENT_RT_HUB_URL}/internal/jobs/<job_id>/attachments/<id>` Bearer token job → ghi `work/<job_id>/attachments/<name>`: thư mục 0700; `name` khớp lại luật R02 (sai → từ chối); `realpath` của đích dưới `work/<job_id>/attachments/`; mở `O_CREAT\|O_EXCL\|O_NOFOLLOW` 0600; đếm byte ≤ `size`, sha256 khớp; xong chmod 0400. Hạn 60 s/file (trong `timeout_s`), lỗi mạng/5xx thử lại 2 lần (1 s, 3 s). Thiếu `AGENT_RT_HUB_URL`, 401/404, sai size/sha256 → xoá file đã ghi, job `failed` `INTERNAL_ERROR` reason mới `attachment`, `run.failed INTERNAL_ERROR` (câu tĩnh) | WRK-FR-11, BR-06 |
 | H2c-R17 | Hub `GET /internal/jobs/:job_id/attachments/:attachment_id` (không JWT/CORS, như H2a-R17): token job → job `running` ∧ `id` khớp ∧ `type='agent.cli'` ∧ `attachment_id` ∈ `payload.attachments` ∧ `attachments.tenant_id = jobs.tenant_id` → 200 stream `application/octet-stream`, `Content-Length`, `X-Content-SHA256`, `Cache-Control: no-store`. Mọi sai → 401 `UNAUTHORIZED` một thân. Đúng nhưng nội dung đã xoá → 404 `NOT_FOUND`. Không log token/thân | U2, WRK-BR-06 |
-| H2c-R18 | Sandbox không đổi (H1-R21, WRK-BR-07): hook `realpath` chỉ cho trong `work/<job_id>/`; file của job khác (kể cả cùng flow) bị chặn. Resume session (H1-R23): job mới tải lại `A` vào thư mục job mới; đường dẫn cũ trong phiên bị hook chặn, prompt mới liệt kê đường dẫn mới | H1-R21, R23 |
+| H2c-R18 | Sandbox H1 giữ nguyên (H1-R21, WRK-BR-07) + một luật mới cho `Write` (R24): hook `realpath` chỉ cho trong `work/<job_id>/`; file của job khác (kể cả cùng flow) bị chặn. Resume session (H1-R23): job mới tải lại `A` vào thư mục job mới; đường dẫn cũ trong phiên bị hook chặn, prompt mới liệt kê đường dẫn mới | H1-R21, R23 |
 | H2c-R19 | `fake-cli`: `#fake:files` → kết quả `done` text = các dòng `<name>:<sha256>` của `attachments/` (sắp tên); `#fake:read=<path>` (đã có) dùng để kiểm chặn đường dẫn; `#fake:out=<tên>[,<tên>…]` → ghi file chữ ngắn vào `out/` (R25) | test |
 
 ### 2.4 Dify: command và tool
@@ -79,21 +79,21 @@ Mốc con thứ ba của H2. Quyết định: [spec-decisions.md](spec-decisions
 ### 2.5 `out/` (Q3)
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
-| H2c-R24 | Runtime tạo `work/<job_id>/out/` (0700) trước khi chạy CLI; prompt job agent thêm câu "file muốn trả cho user thì ghi vào `out/`". Chỉ job agent, không job Orchestrator | WRK-FR-18 |
+| H2c-R24 | Runtime tạo `work/<job_id>/out/` (0700) trước khi chạy CLI (chỉ job agent). Agent ghi file bằng tool CLI `Write` — **bật theo agent** qua `runtime_options.allowed_tools` (`ALLOWED_TOOLS` + `Write`; mặc định vẫn Read, Grep); hook chỉ cho `Write` vào file **trực tiếp** trong `work/<job_id>/out/` (`realpath` thư mục cha = `out/`), nơi khác → deny `path_not_allowed`. Hub nối câu "file muốn trả cho user thì ghi vào `out/`" vào `system_prompt` job agent **chỉ khi** job có `Write` (PL4, PL9). Không job Orchestrator | WRK-FR-18, WRK-BR-07 |
 | H2c-R25 | Job kết thúc `done`/`partial`: Runtime liệt kê file thường **trực tiếp** trong `out/` (không đệ quy, bỏ symlink, `realpath` dưới `out/`), sắp tên, ≤ 5 file, mỗi file ≤ `MAX_FILE`; còn lại bỏ + log. Mỗi file: `POST /internal/jobs/:job_id/outputs` (token job, thân thô, `X-Filename`) **trước** khi phát `job.result`. Hub áp R02, R03, R06 → `origin='output'`, `job_id`, `user_id` = user của run, chưa gắn → 201 `{id}`; R03/R06 sai → 415/409, Runtime bỏ file + log, **không** làm hỏng job. `job.result.outputs: [id]` | WRK-FR-18 |
-| H2c-R26 | Run `finished` có tin assistant → gắn mọi output của các job **trong run** vào tin đó (thứ tự job rồi tên, ≤ 10), cùng transaction ghi tin. Run `failed`/`cancelled` → output không gắn, hết hạn theo R27 | WRK-FR-18 |
+| H2c-R26 | Run `finished` có tin assistant → gắn mọi output của các job **trong run** (lần claim cuối của mỗi job — PL10) vào tin đó (thứ tự job rồi tên, ≤ 10), cùng transaction ghi tin. Run `failed`/`cancelled` → output không gắn, hết hạn theo R27 | WRK-FR-18 |
 
 ### 2.6 Vòng đời
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
 | H2c-R27 | File chưa gắn (`message_id IS NULL`) quá 24 h từ `created_at` → xoá nội dung **và** hàng. Không có endpoint xoá cho user (T4) | T4 |
 | H2c-R28 | File đã gắn (Q2 = A): sống theo hội thoại. Hội thoại bị xoá (`deleted_at`) → nội dung bị xoá ≤ 1 chu kỳ sweeper; hàng giữ với `purged_at` (`available=false`) | Q2 |
-| H2c-R29 | Sweeper trong hub-api (`lib/loop.ts`), mỗi `HUB_ATTACH_SWEEP_S` (mặc định 600 s), khoá advisory toàn cục (một Hub chạy), lô 500: R27, R28, file `.part`/file không có hàng cũ > 1 h. Xoá nội dung trước, cập nhật hàng sau (lỗi → lượt sau làm lại). Đồng hồ tiêm được | — |
+| H2c-R29 | Sweeper trong hub-api (`lib/loop.ts`), mỗi `HUB_ATTACH_SWEEP_S` (mặc định 600 s), mỗi lượt **một transaction** giữ khoá advisory toàn cục (Hub khác bỏ lượt), lô 500: R27, R28, file `.part`/file không có hàng cũ > 1 h. Đánh dấu `purged_at` → xoá nội dung → xoá hàng (R27) (PL2, PL11; lỗi → lượt sau làm lại). Đồng hồ tiêm được (`sweepOnce`) | — |
 | H2c-R30 | Tương thích: không `attachment_ids` → response/SSE như H2b; `test:contract:chat` 41 ca xanh không sửa; test khoá H1/H2a/H2b xanh nguyên văn | H2b-R30 |
 
 ## 3. Contract (backend-lead)
 - **`@ai/contracts/chat` — sửa thẳng, chỉ thêm** (U3): `chat/attachments.ts`: `AttachmentSchema{id, filename ≤ 200, mime, size 1…MAX_FILE, created_at}`, `AttachmentRefSchema{id, filename, mime, size, available}`, hằng `ATTACH_MAX_BYTES`, `ATTACH_PER_MESSAGE_MAX = 10`, `ATTACH_ALLOWED` (đuôi → mime, Q1), `FILENAME_HEADER = "X-Filename"`; `SendMessageRequestSchema` + `attachment_ids?`; `MessageSchema` + `attachments?` (≥ 1 phần tử khi có); hằng **riêng** `CHAT_ATTACHMENT_ERRORS {ATTACHMENT_NOT_FOUND: 404, ATTACHMENT_QUOTA_EXCEEDED: 409, ATTACHMENT_TOO_LARGE: 413, ATTACHMENT_TYPE_NOT_ALLOWED: 415}` + `AttachmentNotFoundDetails{ids ≤ 10}` — **không** thêm vào `CHAT_API_ERRORS`/`CHAT_RUN_ERROR_CODES`. Không sự kiện SSE mới.
-- **`@ai/contracts/hub`:** `AgentCliJob` + `attachments?: JobAttachment[] ≤ 10` (`{id, name, mime, size, sha256 /^[0-9a-f]{64}$/}`) · `WorkflowInputValue` + `DifyFileInput{type: image|document, transfer_method:"local_file", upload_file_id}` · `JOB_FAIL_REASONS` + `attachment` · `job.result` + `outputs?: uuid[] ≤ 5` · `contracts:gen/check`.
+- **`@ai/contracts/hub`:** `AgentCliJob` + `attachments?: JobAttachment[] ≤ 10` (`{id, name, mime, size, sha256 /^[0-9a-f]{64}$/}`) · `WorkflowInputValue` + `DifyFileInput{type: image|document, transfer_method:"local_file", upload_file_id}` · `JOB_FAIL_REASONS` + `attachment` · `job.result` + `outputs?: uuid[] ≤ 5` · `ALLOWED_TOOLS` + `Write` (cuối; R24, PL9) · `contracts:gen/check`.
 - **`@ai/contracts/hub-internal`:** `JobOutputResponse{id}`; `HUB_INTERNAL_ERRORS` + `NOT_FOUND: 404`, `ATTACHMENT_*` (413, 415, 409).
 
 | Method | Path | Auth | Request → Response | Lỗi |
@@ -120,7 +120,7 @@ Không có UI Hub. Chip, tải lên, lỗi, file trả lời: Chat khi combine (
 |---|---|---|
 | `POST /attachments` 20 MiB (localhost) | ≤ 1,5 s p95; RSS tăng ≤ 8 MiB/upload | int |
 | Kiểm R09 + gắn R11 (10 id) thêm vào E12 | ≤ 5 ms p95 | `test:perf` |
-| Runtime tải `A` 10 × 2 MiB | ≤ 2 s | Python int |
+| Runtime tải `A` 10 × 2 MiB | ≤ 2 s | Python int (chỉ báo cáo — L10) |
 | Sweeper lô 500 | ≤ 2 s | int |
 
 ## 7. Phụ thuộc & giả lập
@@ -133,28 +133,7 @@ Không có UI Hub. Chip, tải lên, lỗi, file trả lời: Chat khi combine (
 Env mới (Hub): `HUB_ATTACH_DRIVER=local` · `HUB_ATTACH_DIR` (dev `.data/attachments`, gitignore) · `HUB_ATTACH_TENANT_MAX_BYTES=5368709120` · `HUB_ATTACH_SWEEP_S=600`. Runtime: `AGENT_RT_HUB_URL` (đã có) — cần khi job có file.
 
 ## 8. Tiêu chí nghiệm thu (qc)
-| AC | Given / When / Then | Test |
-|---|---|---|
-| AC-H03 | Vế đính kèm: `lan` tải `hoadon.pdf`, gửi "kiểm tra hoá đơn đính kèm rồi tạo thẻ Trello nếu sai" + id; Orchestrator giả thấy `hoadon.pdf` trong `<attachments>`, delegate `hoadon` (`#fake:files` đúng sha256) → `trello` → `answer` | acceptance |
-| HUB-H2c-AC-01 | PDF 1 MiB → 201; file ở `<dir>/<tenant>/<id>`, sha256 đúng; `/content` trả đúng byte + đủ header R13 | acceptance |
-| HUB-H2c-AC-02 | Đúng 20 MiB → 201; 20 MiB + 1 → 413, 0 hàng, 0 file `.part`; `Content-Length` giả nhỏ hơn thân → 413; thân rỗng / thiếu `X-Filename` → 400 | acceptance |
-| HUB-H2c-AC-03 | 415: `.exe`; `MZ` đổi đuôi `.pdf`; `.pdf` chứa PNG; `.html`; `.svg`; `.txt` có NUL; `#!` đuôi `.md`. 201: `.docx`, `.csv` BOM, `.JPG` | acceptance |
-| HUB-H2c-AC-04 | Tên: `../../etc/passwd.txt`, `a\b.txt`, `‮gnp.exe.txt` (U+202E), `CON.txt`, `.env.md`, tên 300 ký tự, tiếng Việt có dấu → đúng bảng plan; ổ Hub chỉ có uuid | unit + acceptance |
-| HUB-H2c-AC-05 | Cách ly: user `beta` GET file của `acme` → 404; gửi tin với id `acme` → 404 `ATTACHMENT_NOT_FOUND` `details.ids`, 0 run/message; cùng tenant khác user → 404 | acceptance |
-| HUB-H2c-AC-06 | Gắn: 2 id → `attachments` đúng thứ tự trong E11/E10/lịch sử; dùng lại id → 404; 2 POST song song cùng id → đúng 1 thành công, 1 × 404, file gắn đúng 1 message; 11 id / id trùng → 400; tin không file → không có khoá `attachments` | acceptance + int concurrency |
-| HUB-H2c-AC-07 | Agent CLI: `@assistant #fake:files` + 2 file → đúng `name:sha256`; prompt có khối file; `#fake:read=../<job khác>/attachments/x` → deny; token job khác / id ngoài payload / job đã xong → 401; lệch tenant → 401 | acceptance + stack |
-| HUB-H2c-AC-08 | Runtime: Hub trả sai sha256 / thiếu byte / `name` có `..` / đích là symlink sẵn → job `failed` reason `attachment`, không còn file, `run.failed INTERNAL_ERROR`; lỗi 5xx 1 lần → thử lại thành công | Python int |
-| HUB-H2c-AC-09 | Command sync `/hoadon` (input `file` bắt buộc map `attachment`): mock Dify nhận `/files/upload` (`user=<tenant>:<user>`, tên `safe_name`) rồi `inputs` có `upload_file_id`; không file → 422 `CMD_MISSING_ARG` `missing`; map `attachment` vào input `text` → `invalid`; Dify upload 415 → `run.failed UPSTREAM_ERROR` hint R22 | acceptance |
-| HUB-H2c-AC-10 | Command async: job `workflow.async` có object file trong `inputs`, Runtime gửi nguyên; mock không nhận `/files/upload` từ Runtime | acceptance + stack |
-| HUB-H2c-AC-11 | Tool MCP: job có file → `tools/list` có workflow input `file`; `tools/call` với `name` → 1 upload + 1 lời gọi; tên ngoài job → `isError`, 0 lời gọi; job không file → workflow vắng | acceptance |
-| HUB-H2c-AC-12 | `out/` (Q3 = A): `#fake:out=report.md` → tin assistant `attachments=[report.md]`, `/content` đúng; symlink trong `out/` bị bỏ; 6 file → 5; `.exe` trong `out/` → bỏ, job vẫn `done`; run huỷ → output không gắn | acceptance + Python int |
-| HUB-H2c-AC-13 | Vòng đời (đồng hồ tiêm): chưa gắn 24 h + 1 s → mất file + hàng; xoá hội thoại → sau 1 chu kỳ nội dung mất, `purged_at`, `available=false`, `/content` 404; file `.part` mồ côi > 1 h → xoá | int |
-| HUB-H2c-AC-14 | Hạn mức: env 1 MiB, 3 upload 400 KiB song song → đúng 2 thành công, 1 × 409 | int |
-| HUB-H2c-AC-15 | Khởi động: `HUB_ATTACH_DRIVER=s3` / `HUB_ATTACH_DIR` tương đối / không ghi được → hub-api không lên; key giả `../x` → Storage từ chối | unit + int |
-| HUB-H2c-AC-16 | Hồi quy: `test:contract:chat` 41 ca xanh; test khoá H1/H2a/H2b xanh nguyên văn; `contracts:check` xanh | contract + CI |
-| HUB-H2c-AC-17 | Smoke `HUB_LIVE=1` (không chặn): `claude-sub` đọc PDF 2 trang và ảnh PNG đính kèm, trả đúng nội dung | smoke |
-
-Lệnh xong mốc: `done:h2c` (qc, `test-plan.md`, mẫu `done:h2b`).
+Bảng AC-H03 + HUB-H2c-AC-01…17: [`spec-ac.md`](spec-ac.md). Lệnh xong mốc: `done:h2c`.
 
 ## 9. Câu hỏi mở
 Đã chốt 2026-10-05 (người dùng): **Q1 = A**, **Q2 = A**, **Q3 = A** — [spec-decisions](spec-decisions.md) "Trả lời người dùng".
@@ -169,6 +148,7 @@ Lệnh xong mốc: `done:h2c` (qc, `test-plan.md`, mẫu `done:h2b`).
 | K5 | Đầy ổ Hub | Hạn mức R06 + sweeper R27–R29; cảnh báo dung lượng → H3/ops |
 | K6 | Thêm khoá vào transaction tạo run (R11) → deadlock | UPDATE theo id sau mọi khoá H2b; int concurrency AC-06 + `lock-order` |
 | K7 | `work/<job_id>/` không được dọn sau job (hiện trạng H1) → file đính kèm nằm lại trên máy Runtime | TECH-DEBT ở PLAN; container mỗi job (WRK-NFR-02) |
+| K8–K16 | Rủi ro kỹ thuật thêm (Bun thân request, TD #52, đổi hành vi H2a, symlink, deadlock, `work/` không dọn, `out/` không qua SSE, tool `Write`, Office không đọc được bằng CLI) | `tasks.md` "Rủi ro thêm" |
 
 ## 11. Tranh chấp test
 - (không)

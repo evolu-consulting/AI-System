@@ -7,14 +7,14 @@ Python: `plan-runtime.md`. SQL nguyên văn: `plan-db.md`. Chữ ký hàm thuầ
 |---|---|---|
 | P1 | Q1 = A, Q2 = A, Q3 = A (người dùng 2026-10-05) | spec-decisions "Trả lời người dùng" |
 | P2 | Contract chat **chỉ thêm**: file mới `chat/attachments.ts`; hằng **riêng** `CHAT_ATTACHMENT_ERRORS`; `attachment_ids?` và `attachments?` là khoá **vắng** khi không file | `entities.test.ts:142` `CHAT_API_ERRORS` đúng 6 mã; H2b `contracts-h2b:86` `CHAT_RUN_ERROR_CODES` 7 mã; `SendMessageRequest` test `toEqual({content:"hi"})`; `FORBIDDEN_KEYS` (`tests/contract/chat/_client.ts:234`: `agent/provider/model/usage`) không trùng `id/filename/mime/size/available`; `tools/mocks` `Record<ChatErrorCode>` không đổi |
-| P3 | Contract hub: `AgentCliJob.attachments?`, `JobResultEvent.outputs?` (vắng = không có; Hub/Runtime **không** ghi mảng rỗng); `WorkflowInputValue` + `DifyFileInput`; `JOB_FAIL_REASONS` + `attachment` (cuối); `HUB_JSON_SCHEMAS` + `JobOutputResponse` | Fixture cũ còn hợp lệ (H1 R14, H2a R73, H2b R44); pydantic sinh khớp (luật H1 §2: không `refine/transform/default`) |
+| P3 | Contract hub: `AgentCliJob.attachments?`, `JobResultEvent.outputs?` (vắng = không có; Hub/Runtime **không** ghi mảng rỗng); `WorkflowInputValue` + `DifyFileInput`; `JOB_FAIL_REASONS` + `attachment` (cuối); `ALLOWED_TOOLS` + `Write` (cuối, PL9); `HUB_JSON_SCHEMAS` + `JobOutputResponse` | Fixture cũ còn hợp lệ (H1 R14, H2a R73, H2b R44); pydantic sinh khớp (luật H1 §2: không `refine/transform/default`) |
 | P4 | Upload thân thô + `X-Filename`; bộ đếm byte trong `AttachmentStorage.stage` (PL3), không `hono/body-limit`; `Bun.serve({maxRequestBodySize: 32 MiB})` chặn ngoài (mặc định Bun 128 MiB) | T1, T2; không giữ file trong RAM |
 | P5 | Storage hai pha (PL1): `stage → Staged{commit, discard}`; `commit` sau DB commit (R05); `blob()` cho Dify | R05; FormData cần `Blob` (local: `Bun.file`, đọc lười) |
 | P6 | Hạn mức: **kiểm sớm** theo `Content-Length` (không khoá, trước khi đọc thân) → 409 sớm; **kiểm chốt** dưới `pg_advisory_xact_lock(hashtext('hub.attach.tenant'), hashtext(tenant_id))` trong transaction INSERT | R06 + AC-14 (song song đúng 2/3); tránh ghi 20 MiB rồi mới 409 |
 | P7 | E12: kiểm R09 ở `runs.routes` **sau body, trước router** (R10) → `checkSendable` (đọc, scope `user`); gắn R11 trong `createRunTx` **sau** `insertMessage`, **trước** `decideConfirmations`; cùng transaction tính `A` (R14) → `runs.attachment_ids` | R10, R11; một transaction (rollback = không message/run) |
 | P8 | Thứ tự khoá thêm `attachments` sau `messages`: `[advisory user (E12)] → [K_CLAIM] → conversations → flows → runs → run_steps → messages → attachments → tool_confirmations → jobs → usage_logs → cli_sessions → provider_state`. Upload/output: `[advisory tenant attach] → attachments` (không bảng khác). Sweeper: chỉ `attachments` (+ đọc `conversations` không khoá) | K6; không chu trình: E12 không lấy khoá tenant; finish (`SseWriter.finish`) `flows → runs → messages → attachments → jobs` cùng chiều |
 | P9 | `RunContext.files: RunFile[]` (= `A`, chốt ở `createRunTx`) → driver: Orchestrator khối `<attachments>` (R15); job agent `payload.attachments` + khối file; command: file đầu của tin hiện tại (R20, T9) | Driver không đọc lại DB; `A` bất biến theo run |
-| P10 | Prompt do Hub dựng (PL4): khối file nối vào `prompt` chỉ khi `A ≠ ∅`; câu `out/` nối vào `system_prompt` mọi job **agent** `agent.cli` (không Orchestrator, không Dify agent); vượt `SYSTEM_PROMPT_MAX` → bỏ câu + `warn` | Test khoá so `payload.prompt` nguyên văn (H1 A16, H2b `direct.int:305`); chỉ `orchestrator.int:134` kiểm `system_prompt` (Orchestrator, `startsWith`) |
+| P10 | Prompt do Hub dựng (PL4): khối file nối vào `prompt` chỉ khi `A ≠ ∅`; câu `out/` nối vào `system_prompt` job **agent** `agent.cli` **có `Write`** trong `allowed_tools` (PL9; không Orchestrator, không Dify agent); vượt `SYSTEM_PROMPT_MAX` → bỏ câu + `warn` | Test khoá so `payload.prompt` nguyên văn (H1 A16, H2b `direct.int:305`); chỉ `orchestrator.int:134` kiểm `system_prompt` (Orchestrator, `startsWith`) |
 | P11 | `PromptInput.attachments?` (Orchestrator) và `BuildJobPayloadInput.attachments?` tuỳ chọn — vắng ⇒ kết quả như cũ | Test khoá H1 `orchestrator.int`, H2a `rules/runner.test` |
 | P12 | MCP: `mcpToolsFor(i)` + `hasFiles?: boolean`; **vắng ⇒ hành vi H2a nguyên văn** (bỏ workflow có `file` bắt buộc, input `file` không vào schema); có ⇒ R23 (`false`: bỏ **mọi** workflow có input `file`; `true`: giữ, `file` → `{type:"string"}` + mô tả). `toolInputSchema(inputs, withFiles = false)`. Hub luôn truyền `hasFiles` | Test khoá H2a `rules/mcp.test.ts:81` |
 | P13 | `buildInputs` + `attachment?: {id} \| null` (vắng ≡ null) → kết quả thêm `files: {input, attachmentId}[]` (input `file` **không** vào `inputs`; driver điền sau khi upload). Lệch map (R20) → `invalid` **bất kể có giá trị** | Test khoá H2a `command-input.test.ts:103` (map `attachment` bắt buộc, không file → `missing`) giữ xanh; PL8 |
@@ -25,7 +25,7 @@ Python: `plan-runtime.md`. SQL nguyên văn: `plan-db.md`. Chữ ký hàm thuầ
 | P18 | TD #52 (B0): tách `runner/job/job-agent-runner.ts` (380 dòng) → `runner/job/job-follow.ts` (`EventQueue`, `#follow`/`#poll`/`#finishStep` thành lớp `JobFollower`), **không đổi hành vi** | B6 thêm `attachments`/prompt vào cùng file (trần 400) |
 | P19 | Module mới `apps/hub-api/src/modules/attachments/` (README); route mỏng, service, repo, rules thuần, storage | CONVENTIONS §2 |
 | P20 | **Không ADR**: không thư viện mới. TS: `node:fs/promises` (`open 'wx' 0o600`, `fsync`, `rename`, `realpath`), `node:crypto` sha256, `TextDecoder({fatal:true})`, `FormData` + `Bun.file`. Python: `httpx2` (ADR-0010) stream, `os.open(O_EXCL\|O_NOFOLLOW)`, `hashlib` | WORKFLOW "Đề xuất công nghệ" |
-| P21 | Output mỗi job ≤ 5 kiểm cả ở Hub (thứ 6 → 409 `ATTACHMENT_QUOTA_EXCEEDED`) | Runtime không bao giờ gửi > 5 (R25); phòng thủ |
+| P21 | Output mỗi job ≤ 5 (lần claim hiện hành, PL10) kiểm cả ở Hub (thứ 6 → 409 `ATTACHMENT_QUOTA_EXCEEDED`) | Runtime không bao giờ gửi > 5 (R25); phòng thủ |
 | P22 | `GET /attachments/:id(/content)`: file có `conversation_id` mà hội thoại `deleted_at` → 404 ngay (kể cả trước khi sweeper chạy) | R13 |
 | P23 | Windows (dev Hub): bỏ kiểm quyền 0700 khi `process.platform === "win32"`; `rename` đích không tồn tại (uuid); xoá lỗi `EBUSY`/`EPERM` → lượt sweeper sau | Hub dev chạy Windows; Runtime chỉ Linux |
 
@@ -48,6 +48,7 @@ Python: `plan-runtime.md`. SQL nguyên văn: `plan-db.md`. Chữ ký hàm thuầ
 | `JobAttachmentSchema` | `strictObject{id: HubUuid, name: string 1–120 regex /^[^./\\\x00-\x1f\x7f-][^/\\\x00-\x1f\x7f]*$/ (không lookahead — pydantic-core regex Rust), mime: AttachMime, size: int 1–ATTACH_MAX_BYTES, sha256: /^[0-9a-f]{64}$/}` (≤ 120 **byte** kiểm ở `plan-rules` `safeName`) |
 | `AgentCliJobSchema` | + `attachments: z.array(JobAttachmentSchema).max(10).optional()` |
 | `DifyFileInputSchema` | `strictObject{type: enum["image","document"], transfer_method: literal("local_file"), upload_file_id: string 1–100}` → `WorkflowInputValueSchema` thêm vào union (job `workflow.async`) |
+| `ALLOWED_TOOLS` | + `"Write"` (cuối; PL9) ⇒ `allowed_tools.max` = 4; `hub.test.ts:70` (unit, không khoá) đổi ca sai sang `Edit`. `runner.rules` `allowedTools` giữ (giao với `ALLOWED_TOOLS`, mặc định Read, Grep) |
 | `JOB_FAIL_REASONS` | + `"attachment"` (cuối; 15 phần tử) — `src/hub/delta.test.ts` (unit, không khoá) sửa `toHaveLength(15)`, `at(-1)` |
 | `JobResultEventSchema` | + `outputs: z.array(HubUuidSchema).min(1).max(5).optional()` |
 | `HUB_JSON_SCHEMAS` | + `JobOutputResponse` (từ `hub-internal`) |
@@ -91,9 +92,9 @@ Python: `plan-runtime.md`. SQL nguyên văn: `plan-db.md`. Chữ ký hàm thuầ
 | `mention/direct-driver.ts`, `orchestrator.service.ts` | truyền `ctx.files` vào `AgentTask.files` (delegate, direct) |
 | `conversations/` | `conversations.repo.ts` `messageAttachments(tx, messageIds)`; `toMessage(m, run, responder?, refs?)` (P2: vắng khi `refs` rỗng) — E10, E11, preview |
 | `lib/errors.ts` | `HubErrorCode` + `ChatAttachmentErrorCode`; `ERROR_MESSAGES` (`plan-errors` §1) |
-| `config/{env,env-deps}.ts` | env §7 → `AppDeps.attachments?: {storage, tenantMaxBytes, sweepS}`; **vắng ⇒ không mount `/attachments`** (test khung H1/H2a/H2b dựng app không truyền) |
+| `config/{env,env-deps}.ts` | env §7 → `AppDeps.attachments?: {storage, tenantMaxBytes, sweepS, sweep?: boolean}` (`sweep: false` ⇒ không vòng nền — test, L1); **vắng ⇒ không mount** `/attachments*`, nội bộ file, sweeper; R09/R11/R14 vẫn chạy (PL14) |
 | `app.h2c.ts` (mới) | `mountH2c(app, deps)`: `/attachments`, `/internal/jobs/:id/{attachments,outputs}`, sweeper; `app.ts` (213 dòng) chỉ gọi + P17 |
-| `server.ts` | `maxRequestBodySize` (P4); `createLocalStorage(env)` lỗi ⇒ thoát ≠ 0 (R04, AC-15) |
+| `server.ts` | `maxRequestBodySize` (P4); `parseAttachEnv` → `createLocalStorage({dir, platform})` (L8; ném ⇒ thoát ≠ 0 — R04, AC-15) |
 
 ## 5. Luồng
 ### 5.1 Upload (R01–R07) — `AttachmentService.upload(u, {filenameRaw, contentLength, body})`
@@ -112,14 +113,14 @@ Python: `plan-runtime.md`. SQL nguyên văn: `plan-db.md`. Chữ ký hàm thuầ
 ### 5.3 Job agent CLI (R15, R18, R24)
 - `RunFile = {id, name: safe_name, mime, size, sha256, messageId}`. `jobFileNames(files)` khử trùng `-2`, `-3` (trước đuôi, giữ ≤ 120 byte).
 - Orchestrator: `PromptInput.attachments = files.map({name, mime, size})` → khối `<attachments>` ngay **trước** `<message>` (sau `<steps_left>`; `fake` tìm `<message>` sau `</steps_left>` — vẫn đúng); vắng khi `A = ∅`. Không `payload.attachments`.
-- Agent (`direct`, delegate): `payload.attachments = jobAttachments(files)` khi `A ≠ ∅`; `prompt = prompt + "\n\n" + agentFilesBlock(names)`; `system_prompt = withOutHint(system_prompt)` (P10). MCP `agentToolKeys(..., hasFiles = A ≠ ∅)`.
+- Agent (`direct`, delegate): `payload.attachments = jobAttachments(files)` khi `A ≠ ∅`; `prompt = prompt + "\n\n" + agentFilesBlock(names)`; `system_prompt = withOutHint(system_prompt)` khi `allowed_tools` ∋ `Write` (P10, PL9). MCP `agentToolKeys(..., hasFiles = A ≠ ∅)`.
 - Resume (H1-R23): job mới luôn mang `A` của run mới — không cần nhánh riêng.
 
 ### 5.4 Endpoint nội bộ tải file (R17) — `InternalAttachmentService.download(auth, jobId, attId)`
 `bearerJobToken` → `jobByTokenHash` (running) → `id === jobId` ∧ `type === 'agent.cli'` ∧ `AgentCliJobSchema.safeParse(payload)` ∧ `attId ∈ payload.attachments[].id` → `jobAttachment(tx, attId, job.tenant_id)` (`plan-db` §2.5; system scope, lọc `tenant_id`) → không hàng ⇒ 401; `purged_at` ⇒ 404 → `storage.open(key)` (mất file ⇒ 404 + `error attachment-content-missing`) → stream. Không log token.
 
 ### 5.5 Output (R25, R26)
-`POST /internal/jobs/:job_id/outputs`: như 5.4 (job `running`, `agent.cli`, `payload.agent.role='agent'`) → `countOutputs(job) ≥ 5` ⇒ 409 (P21) → luồng 5.1 với `origin='output'`, `user_id = jobs.user_id`, `job_id`, `conversation_id`/`flow_id` = payload (chưa `message_id`) → 201 `{id}`. Finish run `finished` (P15): `bindOutputs(tx, {runId, messageId, conversationId, flowId})` (`plan-db` §2.4). Run `failed`/`cancelled`: không gắn (R27 dọn sau 24 h).
+`POST /internal/jobs/:job_id/outputs`: như 5.4 (job `running`, `agent.cli`, `payload.agent.role='agent'`) → `countOutputs(job)` (từ `jobs.started_at`, PL10) ≥ 5 ⇒ 409 (P21) → luồng 5.1 với `origin='output'`, `user_id = jobs.user_id`, `job_id`, `conversation_id`/`flow_id` = payload (chưa `message_id`) → 201 `{id}`. Finish run `finished` (P15): `bindOutputs(tx, {runId, messageId, conversationId, flowId})` (`plan-db` §2.4). Run `failed`/`cancelled`: không gắn (R27 dọn sau 24 h).
 
 ### 5.6 Dify (R20–R23)
 - `buildInputs` (P13) → `files: [{input, attachmentId}]` (≤ 1 — T9: chỉ file đầu, mọi input `file` map `attachment` nhận **cùng** file).
@@ -130,8 +131,8 @@ Python: `plan-runtime.md`. SQL nguyên văn: `plan-db.md`. Chữ ký hàm thuầ
 ### 5.7 Xem lại (R12, R13)
 `GET /attachments/:id` / `/content` (scope `user`, RLS + `plan-db` §2.6). `/content` header: `Content-Type: mime` · `Content-Length: size` · `Content-Disposition: contentDisposition(filename)` · `X-Content-Type-Options: nosniff` · `Content-Security-Policy: default-src 'none'; sandbox` · `Cache-Control: private, no-store`. `Range` bỏ qua (200 toàn bộ). E10/E11/preview: `messageAttachments` một câu cho cả trang (`message_id = ANY`).
 
-### 5.8 Sweeper (R27–R29, PL2) — `startAttachmentSweeper` (`lib/loop.ts`, `everyMs = HUB_ATTACH_SWEEP_S·1000`, `now` tiêm được)
-Mỗi lượt, trong `pg_try_advisory_xact_lock(hashtext('hub.attach.sweep'))` (không được ⇒ bỏ lượt): (a) R27 claim ≤ 500 (`plan-db` §4.1) → `storage.remove` → DELETE hàng; (b) R28 claim ≤ 500 (§4.2) → `remove`; (c) quét mồ côi: `storage.list({after: cursor, limit: 500})` (xoay vòng theo key, con trỏ trong bộ nhớ) — `.part` hoặc file > 1 h (`mtime`) mà `liveKeys` (§4.3) không có ⇒ `remove`. Log `info attachment-sweep {expired, purged, orphans, ms}` khi > 0.
+### 5.8 Sweeper (R27–R29, PL2, PL11) — `sweepOnce({db, storage, now, log?})`; `startAttachmentSweeper` (`lib/loop.ts`, `everyMs = HUB_ATTACH_SWEEP_S·1000`) gọi nó với `new Date()`
+Mỗi lượt **một transaction** `system` giữ `pg_try_advisory_xact_lock(hashtext('hub.attach.sweep'))` (không được ⇒ `skipped`): (a) R27 claim ≤ 500 (`plan-db` §4.1) → `storage.remove` → DELETE hàng; (b) R28 claim ≤ 500 (§4.2) → `remove`; (c) quét mồ côi: `storage.list({after: cursor, limit: 500})` (xoay vòng theo key, con trỏ trong bộ nhớ) — `.part` hoặc file > 1 h (`mtime`) mà `liveKeys` (§4.3) không có ⇒ `remove`; `.part` > 1 h mà id còn sống ⇒ `rename` (PL13). Log `info attachment-sweep {expired, purged, orphans, ms}` khi > 0.
 
 ## 6. Hàm thuần — chữ ký chốt: `plan-rules.md`
 

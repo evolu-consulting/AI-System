@@ -1,7 +1,7 @@
 # Test plan · H2c-attachments (qc)
 
 Chế độ **TEST-PLAN** · 2026-10-05. Chưa có file test, chưa khoá; viết + "đỏ đúng lý do" sau Gate (§8), rồi Q2 → Q-PU → Q3 như H2b. Bảng ca: hàm thuần (R), hub-dev (H), hồi quy khoá (K), thủ công (M) → [`test-plan-cases.md`](test-plan-cases.md); int hub-api (A, PF) → [`test-plan-int.md`](test-plan-int.md); Python (P), stack (S), smoke (SM) → [`test-plan-py.md`](test-plan-py.md); nhật ký §10 → [`test-plan-log.md`](test-plan-log.md).
-"Đúng" = spec §2 (H2c-R01…R30), §8 (AC-H03 vế đính kèm + HUB-H2c-AC-01…17); chữ ký `plan-rules.md`; câu chữ/log `plan-errors.md`; SQL `plan-db.md` §2–4; luồng `plan.md` §5; Runtime `plan-runtime.md` §3–6, §9 (F1–F15); chốt PL1–PL8 (`spec-decisions.md`). BA chỉ ở mã được trỏ.
+"Đúng" = spec §2 (H2c-R01…R30), §8 → [`spec-ac.md`](spec-ac.md) (AC-H03 vế đính kèm + HUB-H2c-AC-01…17); chữ ký `plan-rules.md`; câu chữ/log `plan-errors.md`; SQL `plan-db.md` §2–4; luồng `plan.md` §5; Runtime `plan-runtime.md` §3–6, §9 (F1–F16); chốt PL1–PL14 (`spec-decisions.md`). BA chỉ ở mã được trỏ.
 
 ## 1. Quy ước
 Như H2b §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo`), thêm:
@@ -26,7 +26,7 @@ Như H2b §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo
 | Env | `.env.test-h2c_<nhóm>.local`; chỉ **export 4 biến DB** (không `source` cả file: PEM nhiều dòng hỏng). `apps/agent-runtime/scripts/run.ts` (Windows → container) **truyền env DB ngay trong chuỗi lệnh**: `bun apps/agent-runtime/scripts/run.ts "AGENT_RT_TEST_DATABASE_URL=… HUB_TEST_DATABASE_URL=… uv run pytest -m int tests/acceptance/attachments_int_test.py"` | qc |
 | Lọc test | `bun --env-file=… --config=bunfig.int.toml test --timeout 30000 ./tests/acceptance/H2c/upload.int.test.ts` (đường dẫn `./`); **không** `bun run test:int <path>` (script có sẵn bộ lọc `.int.test` ⇒ chạy cả repo). Stack/hubdev: `--config=bunfig.stack.toml` |
 | Redis | `redis://localhost:6379/15` dùng chung → id ngẫu nhiên / xoá key (TC-3) | qc |
-| Storage (A) | `mkdtemp` mỗi file test → `AppDeps.attachments = {storage: await createLocalStorage({dir}), tenantMaxBytes, sweepS}` (Lệch L1, L8); `afterAll` xoá thư mục | qc |
+| Storage (A) | `mkdtemp` mỗi file test → `AppDeps.attachments = {storage: await createLocalStorage({dir}), tenantMaxBytes, sweepS: 600, sweep: false}` (L1, L8); `afterAll` xoá thư mục | qc |
 | Runtime kịch bản (A) | `ScriptRuntime3` (H2b) + claim có `token_hash` (`_h2a2.ts` `claimWithToken`) → gọi `GET /internal/jobs/:id/attachments/:att`, `POST …/outputs` bằng token như Runtime | qc |
 | MK TS — **sửa mock khoá** | `tools/hub-dev/src/dify-mock.ts` + `/v1/files/upload` (task **MK-U**, qc, trong QW-A2; spec §7, plan-runtime F14): xử lý **trước** `record()` (hàm này `req.text()` + `JSON.parse` ⇒ multipart mất) bằng `req.formData()`; ghi `MockCall{path, auth, body:{user, file:{name, type, size, sha256}}}`; trả **201** `{id:"upl-<seq>", name, size, extension, mime_type, created_by:"mock", created_at}`; chỉ thị theo **tên file** (Hub gửi `safe_name` ⇒ test chọn qua `X-Filename`): `upload-413*` → 413 `file_too_large`, `upload-415*` → 415 `unsupported_file_type`, `upload-400-too-large*` → 400 `{code:"file_too_large"}`, `upload-500*` → 500, `upload-noid*` → 201 thân không `id`, `upload-slow-<ms>*` → chờ; theo **key**: `mk-401/404/400` → status như workflow (`NOT_CONFIGURED` cho 401/404); thiếu phần `file` → 400 `no_file_uploaded`. Mọi kịch bản cũ giữ byte-for-byte (JSON vẫn qua `record`). Test mock `tools/hub-dev/src/dify-mock.test.ts` thêm ca upload (không khoá). **Khoá lại**: ở Q2 `test:lock:verify` phải ra đúng **1 `CHANGED tools/hub-dev/src/dify-mock.ts`** + các `UNLOCKED` H2c; trước khi ghi chạy `bun test tools/hub-dev` + `tests/acceptance/H2a/{command-run,async,mcp,dify-errors}.int.test.ts` + `bun run test:h2a:stack` xanh nguyên văn ⇒ `test:lock:write` | qc |
 | Mock Python Dify | `apps/agent-runtime/tests/support/dify_mock.py` (khoá) — **không sửa**: `_record` ghi **mọi** path trước khi định tuyến, path lạ → 404 ⇒ đủ để assert Runtime 0 lời gọi `/v1/files/upload` (AC-10, P38). Readiness muốn route tường minh → sửa + khoá như MK-U ở Q3 (`CHANGED` đúng 1 dòng, `test_dify_mock.py` xanh) | — |
@@ -41,8 +41,8 @@ Như H2b §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo
 | Workflow `hoadon-file` | input `file` (type `file`, bắt buộc, mô tả "Hoá đơn PDF") + `note` (text, tuỳ chọn); key `mk-ok` |
 | Workflow `anh-tuy-chon` | input `img` (type `file`, **tuỳ chọn**) + `q` (text bắt buộc) — K10 `mcpToolsFor` |
 | Command | `/hoadon` (sync: `file ← attachment`, `note ← arg rest`) · `/hoadon-async` (async, như trên) · `/sai-map` (`q` text ← `attachment` ⇒ `invalid`) · `/file-arg` (`file ← arg` ⇒ `invalid`) · `/hoadon-tuy` (`file` tuỳ chọn ← `attachment`) |
-| Agent | `hoadon` + entitlement acme (AC-H03; chỉ DB của file dùng) ↔ `hoadon-file`, `create-trello-card`; `trello` (H2a) |
-| Helper | `startHubH2c(k, {tenantMaxBytes?, extra})` (bọc `startHubH2b`) · `upload(hub, who, bytes, name, o?: {contentLength?: number \| null, chunked?: boolean})` · `rawUpload(port, headers, body)` (socket thô, L3) · `send(hub, who, conv, content, ids)` · `diskFiles(dir)` · `sample.{pdf,png,jpg,docx,csv,txt,md}(n)` · `insertAttachmentRow(sql, o)` (hàng giả cỡ lớn cho R14, không file) · `claimWithToken(sql, runId)` · `internalGet(hub, job, token, att)` · `postOutput(hub, job, token, name, bytes)` · `sweepOnce(deps, now)` (L1) |
+| Agent | `hoadon` + entitlement acme (AC-H03; chỉ DB của file dùng) ↔ `hoadon-file`, `create-trello-card`, `runtime_options.allowed_tools = [Read, Grep, Write]` (PL9 — A74); `trello` (H2a, không `Write`) |
+| Helper | `startHubH2c(k, {tenantMaxBytes?, extra})` (bọc `startHubH2b`) · `upload(hub, who, bytes, name, o?: {contentLength?: number \| null, chunked?: boolean})` · `rawUpload(port, headers, body)` (socket thô, L3) · `send(hub, who, conv, content, ids)` · `diskFiles(dir)` · `sample.{pdf,png,jpg,docx,csv,txt,md}(n)` · `insertAttachmentRow(sql, o)` (hàng giả cỡ lớn cho R14, không file) · `claimWithToken(sql, runId)` · `internalGet(hub, job, token, att)` · `postOutput(hub, job, token, name, bytes)` · `sweepOnce({db: hub.db, storage, now})` (import từ hub-api — L1, PL11) |
 
 ## 3. Ma trận mã → test
 | Mã | Test | Loại |
@@ -54,10 +54,10 @@ Như H2b §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo
 | **WRK-FR-11** · AC-07 · AC-08 | R17–R24, A70–A79, P01–P04, P20–P32, S01, S02, S07 | R, A, P, S |
 | **WRK-BR-06** (phần file) | A80–A89, P20–P29, S02 | A, P, S |
 | **WRK-BR-07** (tên/đường dẫn) | R02, R07, R08, R47, P01, P24, P25, P28, P29, S02 | R, P, S |
-| **WRK-FR-18** · AC-12 | R23, A90–A99, P05–P08, P40–P50, S03, S04 | R, A, P, S |
+| **WRK-FR-18** · AC-12 | R23, R48, A74, A90–A99, P05–P08, P40–P51, S03, S04 | R, A, P, S |
 | **AC-H03** (vế đính kèm) | A79, S06 | A, S |
 | HUB-H2c-AC-16 · R30 | A140–A142, K01–K12 | A, K |
-| HUB-H2c-AC-17 | SM1, SM2, M01 | SM, M |
+| HUB-H2c-AC-17 | SM1–SM3, M01 | SM, M |
 | Contract chat/hub/hub-internal (spec §3) | R44–R49 | R |
 | DB `0007` (spec §4) | A130–A134 (+ D1 `packages/db/src/hub-h2c.int.test.ts`, K10) | A |
 | K10 (đổi hành vi H2a) | R33, R35, A106, A114 | R, A |
@@ -69,8 +69,8 @@ Như H2b §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo
 | R01 | R01, A01–A08 | R11 | A44–A46, A53–A55 | R21 | A100, A104, A105, A108, P38, S05 |
 | R02 | R02–R08, A09, A10 | R12 | R42, A47–A49 | R22 | R10, R39–R41, A101–A103 |
 | R03 | R11–R16, A11–A14 | R13 | R09, A30–A37 | R23 | R35–R38, A110–A116 |
-| R04 | R26–R29, A25–A29 | R14 | R17, R18, A56–A62 | R24 | R23, A74, P47 |
-| R05 | A15–A17 | R15 | R19–R22, R24, A70–A78 | R25 | P05–P08, A90–A95, P40–P50, S03 |
+| R04 | R26–R29, A25–A29 | R14 | R17, R18, A56–A62 | R24 | R23, A74, P47, P51 |
+| R05 | A15–A17 | R15 | R19–R22, R24, A70–A78 | R25 | P05–P08, A90–A95, P40–P51, S03 |
 | R06 | R25, A20–A24 | R16 | P01–P04, P20–P32 | R26 | A96–A99, S03, S04 |
 | R07 | A18, A19 | R17 | A80–A89 | R27 | R30, A120, A121 |
 | R08 | A40, A41 | R18 | P29, S02, S07 | R28 | A122–A124 |
@@ -121,7 +121,7 @@ Như H2b §1 (tên test, hộp đen, chờ không `sleep`, cấm `skip/only/todo
 | `perf.perf.int.test.ts` | PF1–PF3 | HUB-FR-44 (không chặn) |
 
 ## 6. P · S · H · SM · K · M
-P01–P08 (unit `test_files_rules.py`), P20–P32 (`attachments_int_test.py`), P38 (async Dify), P40–P50 (`outputs_int_test.py`), S01–S07, SM1–SM2: [`test-plan-py.md`](test-plan-py.md). H01, K01–K12, M01–M03: cases §3–§4.
+P01–P08 (unit `test_files_rules.py`), P20–P32 (`attachments_int_test.py`), P38 (async Dify), P40–P51 (`outputs_int_test.py`), S01–S07, SM1–SM3: [`test-plan-py.md`](test-plan-py.md). H01, K01–K12, M01–M03: cases §3–§4.
 
 ## 7. Lệnh
 ### 7.1 `bun run done:h2c` (`tools/scripts/src/done-h2c.ts`, mẫu `done-h2b.ts`: `h2cSteps()` dựng từ `h2bSteps()` bằng `byTitle`/`extend`; tuần tự) — **mọi bước `done:h2b`** + phần H2c (**in đậm**)
@@ -153,11 +153,11 @@ Không thuộc `done:h2c`: `HUB_LIVE=1 bun run test:smoke:live` (I2, AC-17). `do
 | **Q2** | sau QW-A2 | khoá `tests/acceptance/H2c/**` (trừ `stack/`, `hubdev/`) + `dify-mock.ts` | — | verify trước ghi: chỉ `UNLOCKED` H2c + đúng 1 `CHANGED dify-mock.ts`; hồi quy MK-U xanh (§2) |
 | QW-PU | sau Q2, PY-00, **trước PY-01** | `test_files_rules.py` | P01–P08 (~60 dòng) | `NotImplementedError` của stub PY-00 (import đầu file được vì stub có — khác H2b) |
 | **Q-PU** | sau QW-PU | `test:lock:verify` đúng **1** `UNLOCKED` → `test:lock:write` | — | — |
-| QW-P | sau PY-02 | `_hub_files.py`, `attachments_int_test.py`, `outputs_int_test.py`; `stack/*` (S01–S07), `hubdev/` (H01) | P ~40 · S 7 · H 1 | P tải: xanh phần lớn (PY-02 xong) — đỏ: `#fake:files` (PY-04); P out: `outputs` vắng (PY-03); S: chờ B5/B6/B9 + PY-03/04. Fixture/DB/mock/Runtime boot phải xanh |
+| QW-P | sau PY-02 | `_hub_files.py`, `attachments_int_test.py`, `outputs_int_test.py`; `stack/*` (S01–S07), `hubdev/` (H01) | P ~41 · S 7 · H 1 | P tải: xanh phần lớn (PY-02 xong) — đỏ: `#fake:files` (PY-04); P out: `outputs` vắng (PY-03); P51: `#fake:write` chưa có (PY-04) / hook chưa giới hạn `Write` (PY-03); S: chờ B5/B6/B9 + PY-03/04. Fixture/DB/mock/Runtime boot phải xanh |
 | **Q3** | sau QW-P, **trước PY-03** | khoá P int + `stack/` + `hubdev/` | — | verify: chỉ `UNLOCKED` file QW-P |
-| SM | I2 (backend-lead viết, qc duyệt) | `tests/smoke/h2c-live.test.ts` | 2 | không khoá; vắng `HUB_LIVE` → skip |
+| SM | I2 (backend-lead viết, qc duyệt) | `tests/smoke/h2c-live.test.ts` | 3 | không khoá; vắng `HUB_LIVE` → skip |
 
-Tổng mới ≈ **270** ca (R ~200 dòng bảng / 49 ID, A ~120, P ~48, S 7, H 1, PF 3) + K 12 + M 3 + SM 2. Model: QW-R/A1/A2/PU/P = Opus (`cao` — quyền/tenant/đường dẫn), Q2/Q-PU/Q3/I1 = Sonnet.
+Tổng mới ≈ **270** ca (R ~200 dòng bảng / 49 ID, A ~120, P ~48, S 7, H 1, PF 3) + K 12 + M 3 + SM 3. Model: QW-R/A1/A2/PU/P = Opus (`cao` — quyền/tenant/đường dẫn), Q2/Q-PU/Q3/I1 = Sonnet.
 
 ## 9. Rủi ro test · câu hỏi (mặc định dùng nếu không trả lời — **không có câu hỏi bắt buộc cho người dùng**)
 | # | Rủi ro / câu hỏi | Mặc định |
@@ -170,19 +170,8 @@ Tổng mới ≈ **270** ca (R ~200 dòng bảng / 49 ID, A ~120, P ~48, S 7, H 
 | Q-T6 | Bun và `Content-Length` sai/chunked (K8) | L3 |
 | R-WIN | P/S không chạy trên Windows | P qua `scripts/run.ts` (container), S ở WSL2/Docker như H2b |
 
-### Lệch plan (readiness xử)
-| # | Lệch | Đề xuất |
-|---|---|---|
-| L1 | Plan §5.8 "`now` tiêm được" nhưng không chốt seam để int chạy **một lượt** sweeper với đồng hồ giả; vòng lặp nền 600 s có thể chen vào ca | `attachments/sweeper.ts` export `sweepOnce(d: {sql, storage, now: Date}) → {expired, purged, orphans}` (dùng cho cả loop); `AppDeps.attachments.sweep?: false` tắt vòng nền trong test |
-| L2 | AC-14 "env 1 MiB" mâu thuẫn `parseAttachEnv` (< `ATTACH_MAX_BYTES` ⇒ ném) | A20–A22 truyền `tenantMaxBytes = 1 MiB` qua `AppDeps` (seam); vế env chỉ ở R26 |
-| L3 | AC-02 "`Content-Length` giả nhỏ hơn thân → 413": HTTP/1.1 server đọc đúng `Content-Length` byte, phần dư là rác của request sau ⇒ không thể có 413 theo chốt đếm | Chia: (a) **chunked** không `Content-Length`, 20 MiB + 1 → 413, 0 hàng/`.part` (A04); (b) socket thô `Content-Length: 1024` + thân 20 MiB + 1 → không lưu file > 1 024 B, không `.part`, Hub phục vụ request kế (A05) — không ép 413 |
-| L4 | AC-08 "đích là symlink sẵn" không dựng được qua int: `prepare_job_dirs` xoá/làm mới `attachments/` trước khi tải (plan-runtime §3.1) | Như F15: vế `O_EXCL\|O_NOFOLLOW` ⇒ gọi thẳng `fetch_attachments` với `dest` có symlink (P25, trong `attachments_int_test.py`, `FetchFailed(exists)`, đích ngoài không đổi); int: symlink `attachments`/`out` đặt sẵn bị thay, đích ngoài nguyên vẹn, job chạy đúng (P28) |
-| L5 | AC-H03 chuỗi `hoadon → trello → answer`: `fake-cli` Orchestrator chỉ đọc chỉ thị tin hiện tại ⇒ không có kịch bản nhiều bước | Chuỗi đủ ở **A79** (`ScriptRuntime` quyết định từng bước); stack S06 một delegate `hoadon` + `#fake:files` (đọc file thật). Không thêm chỉ thị fake |
-| L6 | plan-runtime §8 đặt mock Hub file ở `tests/support/hub_files_mock.py` — ngoài `LOCKED_DIRS` | Đặt `tests/acceptance/_hub_files.py` (tự khoá như `_dify.py`, `_stream.py`); không sửa `test-lock.ts` |
-| L7 | AC-12 "`.exe` trong `out/`": `#fake:out=x.exe` ghi chữ ⇒ Hub 415 do **đuôi** (đúng luật), không do chữ ký | Thêm vế chữ ký: S03 `#fake:out=bad.pdf` (nội dung chữ, đuôi `.pdf`) → 415 → bỏ |
-| L8 | Plan §4 `createLocalStorage(env)` chưa chốt chữ ký; int cần dựng driver với thư mục tạm | `createLocalStorage(o: {dir: string; platform?: NodeJS.Platform}): Promise<AttachmentStorage>` (ném khi tạo/ghi thử lỗi) export từ `storage.local.ts` |
-| L9 | R13 `available=false` của file trong hội thoại **đã xoá** không quan sát được qua API (P22 ⇒ 404) | A123 kiểm `purged_at` (SQL owner) + `/content` 404; `available=false` quan sát ở hội thoại **còn** bằng hàng gắn có `purged_at` đặt qua SQL owner (A124: E10 `available:false`, `GET` `available:false`, `/content` 404, không vào `A` của run sau) và R43 |
-| L10 | Perf Python 10 × 2 MiB ≤ 2 s (spec §6) trong container Windows dao động | P32 ghi số đo, không chặn (như PF) |
+### Lệch plan — đã áp (readiness lần 1, [`readiness.md`](readiness.md))
+L1 `sweepOnce({db, storage, now})` + `AppDeps.attachments.sweep: false` (sửa: `db: Db` = `hub.db`, không `sql`; PL11) · L2 hạn mức 1 MiB qua `AppDeps` · L3 AC-02 tách chunked (A04) / socket thô (A05) · L4 symlink + `bad_name` gọi thẳng `fetch_attachments` (P25), int P28 · L5 chuỗi nhiều bước ở A79 (`ScriptRuntime`), S06 một delegate · L6 mock `tests/acceptance/_hub_files.py` · L7 S03 `bad.pdf` · L8 `createLocalStorage({dir, platform?})` · L9 `available=false` qua `purged_at` SQL (A124) · L10 P32 chỉ báo cáo. Spec AC đã sửa chữ theo L2–L5, L7, L9 (`spec-ac.md`).
 
 ## 10. Đỏ đúng lý do · nhật ký
 Tách sang [`test-plan-log.md`](test-plan-log.md) ngay từ đầu (trần 25 600 B mỗi file).

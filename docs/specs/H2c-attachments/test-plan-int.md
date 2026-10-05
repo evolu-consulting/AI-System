@@ -97,7 +97,7 @@ Phụ lục của [`test-plan.md`](test-plan.md) §5. Chung: `startHubH2c` (`_h2
 | A71 | Không file → prompt Orchestrator **===** H2b (so với run tương tự không file, khác id) |
 | A72 | `@assistant x` + 2 file → payload `attachments` = `jobAttachments(A)` (id, name, mime, size, sha256 = cột), parse `AgentCliJobSchema`; `prompt` = prompt H2b + `"\n\n" + agentFilesBlock` |
 | A73 | Trùng tên (`a.pdf`, `A.pdf`) → `name` `a.pdf`, `A-2.pdf` |
-| A74 | `system_prompt` job agent kết thúc `OUT_HINT` (cả khi không file); Orchestrator **không** có `OUT_HINT`; system prompt agent sát `SYSTEM_PROMPT_MAX` → không `OUT_HINT`, log `warn attachment-out-hint-dropped{run_id, agent_id}` |
+| A74 | PL9: job agent `hoadon` (`allowed_tools` ∋ `Write`) → payload `allowed_tools` = `[Read, Grep, Write]`, `system_prompt` kết thúc `OUT_HINT` (cả khi không file); agent `assistant` (mặc định Read, Grep) → `system_prompt` **===** H2b, không `Write`; Orchestrator **không** có `OUT_HINT`; `hoadon` system prompt sát `SYSTEM_PROMPT_MAX` (đếm `.length`) → không `OUT_HINT`, log `warn attachment-out-hint-dropped{run_id, agent_id}` |
 | A75 | Delegate (`ScriptRuntime` Orchestrator → `delegate assistant`) → job agent mang `A` + khối file như A72 |
 | A76 | Không file → payload agent không khoá `attachments`, `prompt` **===** H2b |
 | A77 | Resume (H1-R23): tin 2 cùng flow → job mới mang `A` của run 2 (file tin 1) |
@@ -123,13 +123,13 @@ Phụ lục của [`test-plan.md`](test-plan.md) §5. Chung: `startHubH2c` (`_h2
 |---|---|
 | A90 | Job agent `running` + token: `POST /internal/jobs/:job/outputs` `X-Filename: report.md` thân chữ → 201 `{id}` (`JobOutputResponseSchema`); hàng `origin='output'`, `job_id`, `user_id` = user run, `conversation_id`/`flow_id` = payload, `message_id NULL`; file `<dir>/<tenant>/<id>` |
 | A91 | Sai: `.exe` → 415; `.pdf` thân chữ → 415; 20 MiB + 1 → 413; thiếu `X-Filename` → 400; thân rỗng → 400 (thân `toErrorBody`, `no-store`); 0 hàng/`.part` |
-| A92 | P21: 5 output → 201 × 5; thứ 6 → 409 `ATTACHMENT_QUOTA_EXCEEDED`; hạn mức tenant đầy → 409 |
+| A92 | P21: 5 output → 201 × 5; thứ 6 → 409 `ATTACHMENT_QUOTA_EXCEEDED`; hạn mức tenant đầy → 409; PL10: requeue (claim lại, `started_at` mới) → lại được 5 output |
 | A93 | Token sai / job Orchestrator (`role≠agent`) / job đã xong / `workflow.async` → 401 một thân |
 | A94 | Log `attachment_uploaded{origin:"output", job_id}`; không tên file |
 | A95 | `job.result` (XADD tay) có `outputs:[ids]` → Hub chấp nhận (contract); thiếu `outputs` → như H2b |
 | A96 | R26: run `finished` (2 output từ job agent) → tin assistant E10 `attachments` = 2 ref sắp `safe_name`, `available:true`; `/content` (JWT chủ) đúng byte |
 | A97 | 3 job agent trong run (delegate × 3) × 4 output → gắn 10 đầu theo (thứ tự job, tên); 2 còn chưa gắn |
-| A98 | PL6: cùng job (requeue) đẩy `report.md` 2 lần → chỉ bản **mới nhất** gắn; bản cũ chưa gắn (hết hạn R27) |
+| A98 | PL6/PL10: cùng job, lần claim 1 đẩy `report.md` + `old.md`, requeue, lần claim 2 đẩy `report.md` → chỉ `report.md` lần 2 gắn; `old.md` và bản cũ chưa gắn (hết hạn R27) |
 | A99 | Run `cancelled` / `failed` sau khi job đẩy output → output không gắn (`message_id NULL`); sweeper +24 h xoá (A120) |
 
 ## 2.11 `command-file.int.test.ts` (A100–A109) · R20–R22 · AC-09, AC-10 (vế Hub) · HUB-FR-12 · ADM-FR-21
@@ -165,10 +165,10 @@ Phụ lục của [`test-plan.md`](test-plan.md) §5. Chung: `startHubH2c` (`_h2
 | A122 | AC-13: hội thoại xoá → sau 1 lượt: nội dung mất, `purged_at = now`, hàng còn |
 | A123 | Sau A122: `/content` 404, GET 404 (P22, L9) |
 | A124 | Hàng gắn `purged_at` (SQL) trong hội thoại còn → E10 `available:false`, không vào `A` run sau |
-| A125 | Mồ côi: `.part` mtime −1 h −1 s → xoá; −59 min → giữ; file không hàng −2 h → xoá; file có hàng sống −2 h → giữ; file của hàng `purged_at` → xoá |
+| A125 | Mồ côi: `.part` mtime −1 h −1 s → xoá; −59 min → giữ; file không hàng −2 h → xoá; file có hàng sống −2 h → giữ; file của hàng `purged_at` → xoá; `.part` −2 h mà id có hàng sống (crash giữa commit DB và rename) → thành file `<key>`, `/content` 200 (PL13) |
 | A126 | PL2: hàng `purged_at` chưa gắn mà file đã mất (crash giả) → lượt sau DELETE hàng, không lỗi |
 | A127 | Lô 500: 501 hàng hết hạn → lượt 1 xoá 500, lượt 2 xoá 1; log `info attachment-sweep{expired, purged, orphans, ms}` chỉ khi > 0 |
-| A128 | Khoá toàn cục: hai `sweepOnce` song song → tổng xoá = số hàng, không lỗi, một lượt bỏ (0) |
+| A128 | Khoá toàn cục (PL11): hai `sweepOnce` song song → đúng một kết quả `skipped:true` (0 việc), lượt kia xoá đủ; tổng xoá = số hàng, không lỗi |
 | A129 | `remove` lỗi (file bị khoá/không quyền — Linux `chmod` thư mục) → `warn attachment-remove-failed`, lượt sau dọn |
 
 ## 2.14 `db.int.test.ts` (A130–A134) · spec §4 · `plan-db` §1
@@ -184,7 +184,7 @@ Phụ lục của [`test-plan.md`](test-plan.md) §5. Chung: `startHubH2c` (`_h2
 | ID | Ca |
 |---|---|
 | A140 | Tin không `attachment_ids`: SSE, `run.started`, E10/E11 cùng tập khoá H2b; payload job như H2b (A71, A76) |
-| A141 | App dựng **không** `attachments` deps (khung H1/H2a/H2b) → `POST /attachments` có JWT → 404, không JWT → 401; E12 không ids như H2b |
+| A141 | App dựng **không** `attachments` deps (khung H1/H2a/H2b) → `POST /attachments` có JWT → 404, không JWT → 401 (`PROTECTED_PREFIXES`); E12 không ids như H2b; E12 có ids (hàng chèn SQL) vẫn kiểm/gắn (PL14) |
 | A142 | Preview/danh sách hội thoại: tin cuối có file → `attachments` theo `toMessage`; không file → không khoá (C1 không đổi); test khung H1/H2a/H2b xanh nguyên văn (K03–K05) |
 
 ## 2.16 `perf.perf.int.test.ts` (PF1–PF3) · spec §6 (không chặn)

@@ -36,7 +36,7 @@ Hub giả: `_hub_files.py` (test-plan §2, L6) trên `127.0.0.1:<port>` = `AGENT
 | P31 | Hạn/huỷ: `slow=5000` + `timeout_s=10` 3 file → `timed_out`, file đã ghi bị xoá; huỷ run khi đang tải → `cancelled` ≤ 5 s, `attachments/` rỗng; shutdown khi đang tải → `stopped_no_write` (không ghi kết cục) |
 | P32 | Không `attachments` / `[]` → 0 GET, kết quả **như H2b** (cùng sự kiện, không thư mục `attachments`); perf 10 × 2 MiB: ghi `ms` (L10, báo cáo — ngưỡng 2 s không chặn) |
 
-### 2.2 `outputs_int_test.py` (P38, P40–P50) · WRK-FR-18 · HUB-H2c-AC-10 (Runtime) · AC-12
+### 2.2 `outputs_int_test.py` (P38, P40–P51) · WRK-FR-18 · HUB-H2c-AC-10 (Runtime) · AC-12
 | ID | Given/When → Then |
 |---|---|
 | P38 | AC-10 (Runtime): job `workflow.async` `inputs.file = {type:"document", transfer_method:"local_file", upload_file_id:"u1"}` (dify_mock.py) → `/v1/workflows/run` nhận `inputs` **nguyên** (so dict); `calls("/v1/files/upload") == []` |
@@ -51,6 +51,7 @@ Hub giả: `_hub_files.py` (test-plan §2, L6) trên `127.0.0.1:<port>` = `AGENT
 | P48 | `#fake:need_input #fake:out=a.md` / job `failed` (`#fake:badjson=3`) / huỷ khi `#fake:sleep` → 0 POST |
 | P49 | Thiếu `AGENT_RT_HUB_URL` + file `out/` → `warn job.outputs_skipped{reason:"no_hub_url"}`, job `succeeded`, không khoá `outputs` |
 | P50 | Không file `out/` → `job.result` **không** khoá `outputs` (so với H2b); log `job.outputs` không tên file |
+| P51 | PL9 · hook `Write` thật (`#fake:write`, WRK-BR-07): `allowed_tools=[Read, Write]` → `#fake:write=out/a.md` → `written`, rồi `a.md` được POST (`outputs` 1 id); `#fake:write=attachments/x.md`, `=a.md` (gốc `work/<job_id>`), `=out/sub/a.md`, `=../x.md`, `=/tmp/x.md` → `denied:path_not_allowed`, không file nào được tạo; `out/` có sẵn symlink `l.md → <tmp>/victim` + `#fake:write=out/l.md` → `denied` (realpath ngoài), `victim` không đổi; `allowed_tools=[Read, Grep]` + `#fake:write=out/a.md` → `denied:tool_not_allowed` |
 
 ## 3. S · stack (`tests/acceptance/H2c/stack/*.stack.test.ts`) — QW-P, khoá Q3
 Hub thật trên host (env `HUB_ATTACH_*` thư mục tạm, `HUB_MAX_CONCURRENT_RUNS=2`), Runtime container `fake-cli` (`AGENT_RT_HUB_URL=http://host.docker.internal:<hub>`), MK (`/files/upload`); harness theo H2b `_stack.ts` (TC-4, TC-5). Đỏ đúng lý do trước PY-03/04, B5/B6/B9.
@@ -70,3 +71,4 @@ Hub thật trên host (env `HUB_ATTACH_*` thư mục tạm, `HUB_MAX_CONCURRENT_
 |---|---|
 | SM1 | `claude-sub`: `@assistant` + PDF 2 trang (mỗi trang một câu khác nhau) "nêu câu ở trang 2" → câu trả lời chứa câu trang 2 |
 | SM2 | `claude-sub`: `@assistant` + PNG có chữ lớn → trả đúng chữ; Dify thật (nếu có app vô hại input `file`) `/files/upload` + một lần chạy, không thì ghi "bỏ qua" (M01) |
+| SM3 | `claude-sub`: agent smoke có `allowed_tools` ∋ `Write` (seed DB smoke riêng) — "viết tóm tắt vào out/report.md" → tin assistant có `attachments=[report.md]`, `/content` khác rỗng; hook không chặn (PL9) |

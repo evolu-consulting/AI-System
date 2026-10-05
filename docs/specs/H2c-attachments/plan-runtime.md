@@ -14,8 +14,8 @@ Luật: spec R15–R19, R24, R25 (WRK-FR-11, WRK-FR-18, WRK-BR-06, WRK-BR-07). H
 | `runtimes/cli/job_run.py` | `_prepare_files()` đầu `_execute`; `_close` gọi `send_outputs` khi thành công (§3.3, §5) |
 | `runtimes/cli/outcome.py` | `Verdict.outputs: tuple[str, ...] = ()` |
 | `runtimes/cli/runner.py` · `events/job_events.py` | `events.result(job, output, usage, resumed, outputs=())` — khoá `outputs` **chỉ khi** ≠ ∅ |
-| `providers/fake/{directives,files}.py` | `#fake:files`, `#fake:out`, `#fake:out-size`, `#fake:out-link` (§6) |
-| `sandbox/**` | **không đổi** (R18): `attachments/`, `out/` nằm dưới `work/<job_id>/` ⇒ hook `realpath` cho phép; job khác ⇒ `other_job` |
+| `providers/fake/{directives,files}.py` | `#fake:files`, `#fake:out`, `#fake:out-size`, `#fake:out-link`, `#fake:write` (§6) |
+| `sandbox/hook.py` | luật H1 giữ (R18): `attachments/`, `out/` dưới `work/<job_id>/` ⇒ cho; job khác ⇒ `other_job`. **Thêm** (PL9): `tool_name == "Write"` (đã ∈ `policy.tools`) ⇒ mọi chuỗi khoá `*path*` phải qua `is_path_allowed` **và** `realpath(dirname(p)) == realpath(work_dir / "out")`; sai ⇒ deny `path_not_allowed` nhãn `write_scope`. Unit `sandbox/test_hook.py` (dev) thêm ca |
 
 ## 2. Payload, cấu hình
 - `payload.attachments` vắng/`None`/`[]` ⇒ không tải (H2b y hệt). Có ⇒ tải **bất kể** vai (Hub chỉ gửi cho job agent, R15).
@@ -64,6 +64,7 @@ async def _execute(self) -> None:
 - Liệt kê: `os.scandir(out)` (`is_symlink()`, `is_file(follow_symlinks=False)`, `stat(follow_symlinks=False).st_size`) → `OutEntry` → `pick_outputs`. Mỗi file chọn: `realpath(path).parent == realpath(out)` (phòng thủ) → `os.open(O_RDONLY|O_NOFOLLOW|O_CLOEXEC)` → `fstat` (thường, size khớp, ≤ max — lệch ⇒ bỏ `too_large`/`other`).
 - Gửi: `POST {hub_url}/internal/jobs/{id}/outputs`, `Authorization: Bearer <token>`, `X-Filename: filename_header(name)`, `Content-Type: application/octet-stream`, `Content-Length: size`, thân stream từ fd; `asyncio.timeout(60)` mỗi lần; `classify_output`: `ok` ⇒ `JobOutputResponse.model_validate_json` → id (thân sai ⇒ bỏ); `skip` ⇒ bỏ file; `stop` ⇒ ngừng; `retry` ⇒ ≤ 2 lần nữa.
 - Kết quả: `tuple(ids)` (≤ 5) ⇒ `Verdict.outputs`. Không bao giờ làm job `failed`. Huỷ (cancel) trong lúc gửi ⇒ ngừng gửi, giữ id đã có, tiếp `_close`.
+- Thời gian: mỗi lần gửi `asyncio.timeout(60)`; tổng `send_outputs` ≤ `max(60, deadline − now)` s — hết ⇒ ngừng gửi, giữ id đã có (job không treo ở `_close`).
 - Log `job.outputs{sent, skipped, ms}`, `job.output_skipped{why, status}` (không tên file).
 
 ## 6. `fake-cli` (R19; `providers/fake/files.py`, đăng ký trong `directives.py`)
@@ -74,7 +75,8 @@ async def _execute(self) -> None:
 | `#fake:out=<a>[,<b>…]` | trước kết quả: ghi `out/<tên>` nội dung `fake output <tên>\n` (UTF-8); tên chứa `/` hoặc `\` ⇒ bỏ; tối đa 10 tên |
 | `#fake:out-size=<n>` | đi kèm `#fake:out`: nội dung = `n` byte `a` (0 ≤ n ≤ 20 971 521) |
 | `#fake:out-link=<tên>` | tạo symlink `out/<tên>` → `/etc/hostname` (AC-12: bị bỏ) |
-Chỉ thị khác (H1–H2b) giữ nguyên; kết hợp được (`#fake:files #fake:out=report.md`).
+| `#fake:write=<path>` | qua `_guarded(job, "Write", {"file_path": path})` (hook thật, PL9): cho ⇒ ghi `fake write\n` vào `path` (tương đối `work/<job_id>`), kết quả `written`; chặn ⇒ `denied:<reason>` (như `#fake:read`) |
+`#fake:out*` ghi thẳng (giả lập kết quả của `Write`, không qua hook — kiểm đường Runtime → Hub); luật hook kiểm bằng `#fake:write`. Chỉ thị khác (H1–H2b) giữ nguyên; kết hợp được (`#fake:files #fake:out=report.md`).
 
 ## 7. Env
 Không env mới. `.env.example` ghi chú: `AGENT_RT_HUB_URL` cần cho job có file/`out/`.
@@ -83,8 +85,8 @@ Không env mới. `.env.example` ghi chú: `AGENT_RT_HUB_URL` cần cho job có 
 | Lớp | File | Nội dung |
 |---|---|---|
 | Unit thuần (QW-PU, khoá trước PY-01) | `tests/acceptance/test_files_rules.py` | §4 mọi hàm; mẫu tên giống bảng AC-04 Hub |
-| Mock Hub | `tests/support/hub_files_mock.py` (mới, cùng kiểu `dify_mock.py`) | `GET …/attachments/:id` + `POST …/outputs`; chỉ thị theo `attachment_id`: `sha-wrong`, `short`, `5xx-once`, `401`, `404`, `slow`; ghi lại header (`Authorization`, `X-Filename`) |
-| Python int (QW-P) | `tests/acceptance/attachments_int_test.py` · `outputs_int_test.py` | AC-08 (sha sai, thiếu byte, `name` có `..`, symlink đặt sẵn, 5xx một lần → thành công, `no_hub_url`) · AC-12 phía Runtime (symlink, 6 file → 5, `.exe`/415 → bỏ, job `succeeded`; `outputs` trong `job.result`) · perf 10 × 2 MiB ≤ 2 s · requeue cùng `job_id` ⇒ thư mục làm mới |
+| Mock Hub | `tests/acceptance/_hub_files.py` (qc, tự khoá theo `LOCKED_DIRS` — L6; cùng kiểu `dify_mock.py`) | `GET …/attachments/:id` + `POST …/outputs`; chỉ thị theo `attachment_id`: `sha-wrong`, `short`, `5xx-once`, `401`, `404`, `slow`; ghi lại header (`Authorization`, `X-Filename`) |
+| Python int (QW-P) | `tests/acceptance/attachments_int_test.py` · `outputs_int_test.py` | AC-08 (sha sai, thiếu byte, `name` có `..`, symlink đặt sẵn, 5xx một lần → thành công, `no_hub_url`) · AC-12 phía Runtime (symlink, 6 file → 5, `.exe`/415 → bỏ, job `succeeded`; `outputs` trong `job.result`) · hook `Write` (PL9, `#fake:write`) · perf 10 × 2 MiB ≤ 2 s · requeue cùng `job_id` ⇒ thư mục làm mới |
 | Stack (QW-P) | `tests/acceptance/H2c/stack/*` | AC-07, AC-10, AC-12, AC-H03 (Hub thật + Runtime thật + `fake`) |
 | Unit dev (PY-*) | `runtimes/cli/files/test_*.py` | `dirs`, `fetch` (transport giả `httpx2.MockTransport`), `outputs` |
 
@@ -106,6 +108,7 @@ Không env mới. `.env.example` ghi chú: `AGENT_RT_HUB_URL` cần cho job có 
 | F12 | `workflow.async` có file | Hub upload Dify trước enqueue, `inputs` mang object | gửi nguyên `inputs` (`_inputs` không đổi); không gọi `/files/upload` | ✓ | T7 |
 | F13 | Thiếu `AGENT_RT_HUB_URL` | — | tải ⇒ `failed`; out ⇒ bỏ + `warn` | ✓ | — |
 | F14 | `fake` | — | §6 | ✓ | `tools/hub-dev/src/dify-mock.ts` (khoá) — qc thêm `/files/upload` |
+| F16 | Tool `Write` | `ALLOWED_TOOLS` + `Write` (opt-in); `OUT_HINT` chỉ khi có `Write` | hook chỉ cho `Write` trực tiếp trong `out/`; `allowed_tools` pydantic sinh lại (`max_length=4`) | ✗ | PL9 (H1 không có tool ghi ⇒ `out/` không dùng được với CLI thật) |
 | F15 | AC-08 "`name` có `..`" | contract `JobAttachment.name` cấm `/`, `\`, `.` đầu ⇒ Hub không thể gửi | payload sai hình ⇒ `invalid_payload` (H1) trước khi tải; `bad_name` (`attachment`) là lớp phòng thủ thứ hai | ✗ | AC-08 vế tên: qc kiểm ở unit `fetch_attachments` (gọi thẳng với mục dựng tay) + int payload `../x` ⇒ `failed invalid_payload`, không file nào ghi |
 
 ## 10. TECH-DEBT
