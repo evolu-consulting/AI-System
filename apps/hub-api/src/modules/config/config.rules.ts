@@ -92,11 +92,17 @@ export type PickedOrchestrator = {
 };
 
 /**
- * HUB-FR-62 · H2b-R14: bản tenant hợp lệ (agent ∈ `s.agents` ∧ bật) → bản đó; hỏng → mặc định + `invalid`;
- * mặc định thiếu → null. B0: chỉ chữ ký (B1).
+ * HUB-FR-62 · H2b-R14: bản tenant hợp lệ (agent ∈ `s.agents` ∧ bật) → bản đó, kể cả khi mặc định thiếu; bản tenant hỏng
+ * → mặc định + `invalid` (service log `orchestrator_tenant_invalid`); null chỉ khi không có bản tenant hợp lệ ∧ mặc
+ * định thiếu (spec-decisions "WRITE — QW-R chốt").
  */
-export function pickOrchestrator(_s: ConfigSnapshot, _tenantId: string): PickedOrchestrator | null {
-  throw new Error("not implemented: pickOrchestrator");
+export function pickOrchestrator(s: ConfigSnapshot, tenantId: string): PickedOrchestrator | null {
+  const own = s.orchestratorTenants.get(tenantId);
+  if (own && s.agents.some((a) => a.id === own.agentId && a.enabled)) {
+    return { config: own, tenantId, invalid: false };
+  }
+  if (!s.orchestrator) return null;
+  return { config: s.orchestrator, tenantId: null, invalid: own !== undefined };
 }
 
 /** H1-R04: tenant khoá / user không hoạt động / bị tenant khoá / không thuộc tenant → không được dùng Hub. */

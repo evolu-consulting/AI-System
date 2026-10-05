@@ -4,11 +4,14 @@ import { CONFIG_CHANNEL } from "@ai/contracts";
 import { HUB_CONFIG_CHANNEL } from "@ai/contracts/hub";
 import type { Logger } from "../../lib/logger";
 import type { CatalogRows } from "./catalog.rules";
+import { splitOrchestratorRows } from "./config.repo";
 import {
   type AgentConfig,
   accountUsable,
   type ConfigSnapshot,
+  type OrchestratorConfig,
   orchestratorProblem,
+  pickOrchestrator,
   type TenantState,
   type UserState,
 } from "./config.rules";
@@ -34,19 +37,20 @@ const agent = (o: Partial<AgentConfig> = {}): AgentConfig => ({
   version: 1,
   ...o,
 });
+const ORCH_CFG: OrchestratorConfig = {
+  agentId: ORCH,
+  maxSteps: 5,
+  tokenBudget: 200000,
+  historyN: 10,
+  onNoMatch: "answer",
+  version: 1,
+};
 const snap = (version: number, o: Partial<ConfigSnapshot> = {}): ConfigSnapshot => ({
   version,
   providers: [],
   profiles: [],
   agents: [agent()],
-  orchestrator: {
-    agentId: ORCH,
-    maxSteps: 5,
-    tokenBudget: 200000,
-    historyN: 10,
-    onNoMatch: "answer",
-    version: 1,
-  },
+  orchestrator: ORCH_CFG,
   entitlements: [],
   grants: [],
   agentWorkflows: new Map(),
@@ -284,5 +288,48 @@ describe("ConfigCache · đua user() với nạp Admin", () => {
     src.loadUsers = load;
     expect((await c.user(U2))?.locale).toBe("en");
     await c.stop();
+  });
+});
+
+describe("config H2b · Orchestrator theo tenant", () => {
+  test("HUB-FR-62 · H2b-R14 · pickOrchestrator: bản tenant hợp lệ dùng cả khi mặc định thiếu; null khi cả hai thiếu", () => {
+    const own = { ...ORCH_CFG, agentId: U1, maxSteps: 2 };
+    const s = snap(1, {
+      orchestrator: null,
+      agents: [agent(), agent({ id: U1, key: "orch-t1" })],
+      orchestratorTenants: new Map([[T1, own]]),
+    });
+    expect(pickOrchestrator(s, T1)).toEqual({ config: own, tenantId: T1, invalid: false });
+    expect(pickOrchestrator(s, ORCH)).toBeNull();
+    const off = { ...s, agents: [agent({ id: U1, enabled: false })] };
+    expect(pickOrchestrator(off, T1)).toBeNull();
+    const withDefault = { ...off, orchestrator: ORCH_CFG };
+    expect(pickOrchestrator(withDefault, T1)).toEqual({
+      config: ORCH_CFG,
+      tenantId: null,
+      invalid: true,
+    });
+  });
+
+  test("H2b P6 · splitOrchestratorRows: tenant_id NULL → mặc định, còn lại → orchestratorTenants", () => {
+    const row = (id: number, tenantId: string | null, agentId: string) => ({
+      id,
+      tenantId,
+      agentId,
+      maxSteps: 5,
+      tokenBudget: 200000,
+      historyN: 10,
+      onNoMatch: "answer" as const,
+      version: id,
+      updatedBy: null,
+      updatedAt: new Date(0),
+    });
+    const r = splitOrchestratorRows([row(1, null, ORCH), row(2, T1, U1)]);
+    expect(r.orchestrator?.agentId).toBe(ORCH);
+    expect([...r.orchestratorTenants.keys()]).toEqual([T1]);
+    expect(r.orchestratorTenants.get(T1)).toMatchObject({ agentId: U1, version: 2 });
+    const onlyTenant = splitOrchestratorRows([row(2, T1, U1)]);
+    expect(onlyTenant.orchestrator).toBeNull();
+    expect(splitOrchestratorRows([]).orchestratorTenants.size).toBe(0);
   });
 });

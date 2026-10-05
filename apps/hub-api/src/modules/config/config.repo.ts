@@ -61,17 +61,29 @@ const toAgent = (a: AgentRow): ConfigSnapshot["agents"][number] => ({
   version: a.version,
 });
 
-const toOrchestrator = (o: OrchRow | undefined): ConfigSnapshot["orchestrator"] =>
-  o
-    ? {
-        agentId: o.agentId,
-        maxSteps: o.maxSteps,
-        tokenBudget: o.tokenBudget,
-        historyN: o.historyN,
-        onNoMatch: o.onNoMatch,
-        version: o.version,
-      }
-    : null;
+type OrchestratorConfig = NonNullable<ConfigSnapshot["orchestrator"]>;
+
+const toOrchestrator = (o: OrchRow): OrchestratorConfig => ({
+  agentId: o.agentId,
+  maxSteps: o.maxSteps,
+  tokenBudget: o.tokenBudget,
+  historyN: o.historyN,
+  onNoMatch: o.onNoMatch,
+  version: o.version,
+});
+
+/**
+ * H2b P6: mọi hàng `orchestrator_settings` → mặc định (`id=1`, `tenant_id` NULL) + bản theo tenant (khoá `tenant_id`).
+ * CHECK `(id = 1) = (tenant_id IS NULL)` bảo đảm hai nhóm không chồng nhau.
+ */
+export function splitOrchestratorRows(
+  rows: readonly OrchRow[],
+): Pick<ConfigSnapshot, "orchestrator" | "orchestratorTenants"> {
+  const def = rows.find((o) => o.tenantId === null);
+  const tenants = new Map<string, OrchestratorConfig>();
+  for (const o of rows) if (o.tenantId !== null) tenants.set(o.tenantId, toOrchestrator(o));
+  return { orchestrator: def ? toOrchestrator(def) : null, orchestratorTenants: tenants };
+}
 
 type Tx = Parameters<Parameters<Db["db"]["transaction"]>[0]>[0];
 
@@ -80,7 +92,7 @@ async function readHubRows(tx: Tx) {
     .select({ v: hubConfigMeta.hubConfigVersion })
     .from(hubConfigMeta)
     .where(eq(hubConfigMeta.id, 1));
-  const [orch] = await tx.select().from(orchestratorSettings).where(eq(orchestratorSettings.id, 1));
+  const orch = await tx.select().from(orchestratorSettings).orderBy(orchestratorSettings.id);
   return {
     version: meta?.v ?? 0,
     prov: await tx.select().from(providers).orderBy(providers.key),
@@ -124,7 +136,7 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
         })),
         profiles: r.prof.map((p) => ({ id: p.id, key: p.key, steps: StepsSchema.parse(p.steps) })),
         agents: r.ag.map(toAgent),
-        orchestrator: toOrchestrator(r.orch),
+        ...splitOrchestratorRows(r.orch),
         entitlements: r.ent.map((e) => ({
           agentId: e.agentId,
           tenantId: e.tenantId,
@@ -136,8 +148,6 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
           subject: g.subjectId,
         })),
         agentWorkflows: groupAgentWorkflows(r.aw),
-        // H2b B0: chưa đọc bản tenant (cột `tenant_id` ở migration 0006) — B1 điền.
-        orchestratorTenants: new Map(),
       });
     },
     { isolationLevel: "repeatable read", accessMode: "read only" },

@@ -17,9 +17,9 @@ export type VisibleAgentsInput = {
   userId: string;
   groupIds: ReadonlySet<string>;
   orchestratorId: string;
-  /** H2b-R15: id agent là Orchestrator ở mọi phạm vi — loại khỏi AU. B0: chỉ kiểu (B1 áp dụng). */
+  /** H2b-R15: id agent là Orchestrator ở mọi phạm vi — loại khỏi AU. */
   excludeIds?: ReadonlySet<string>;
-  /** H2b-R09: thu hẹp theo tag. B0: chỉ kiểu (B1 áp dụng). */
+  /** H2b-R09: thu hẹp theo tag (so đúng `key`); chỉ thu hẹp, không mở rộng ngoài AU. */
   onlyKeys?: ReadonlySet<string>;
 };
 
@@ -45,31 +45,40 @@ export type AccessSubject = { tenantId: string; userId: string; groupIds: Readon
 
 /**
  * HUB-BR-06: quyền tính trên ảnh run giữ lúc bắt đầu, không đọc ảnh mới giữa run. Chỉ agent `RUNNABLE_RUNTIMES` vào
- * danh sách (không thấy, không delegate được): agent runtime khác không có runner chạy nổi.
+ * danh sách (không thấy, không delegate được): agent runtime khác không có runner chạy nổi. H2b-R15: loại mọi
+ * Orchestrator (`excludeIds = orchestratorIds(s)`); `opts.onlyKeys` thu hẹp theo tag (R09).
  */
 export function accessInput(
   s: AccessSnapshot,
   who: AccessSubject,
-  _opts?: { onlyKeys?: ReadonlySet<string> },
+  opts?: { onlyKeys?: ReadonlySet<string> },
 ): VisibleAgentsInput {
   return {
     agents: s.agents.filter((a) => RUNNABLE_RUNTIMES.has(a.runtime)),
     entitlements: s.entitlements,
     grants: s.grants,
     orchestratorId: s.orchestrator?.agentId ?? "",
+    excludeIds: orchestratorIds(s),
+    ...(opts?.onlyKeys ? { onlyKeys: opts.onlyKeys } : {}),
     ...who,
   };
 }
 
-/** H2b-R15: id agent Orchestrator mặc định ∪ mọi bản tenant. B0: chỉ chữ ký (B1). */
-export function orchestratorIds(_s: {
+/** H2b-R15: id agent Orchestrator mặc định ∪ mọi bản tenant (kể cả bản hỏng — vẫn là Orchestrator đã khai). */
+export function orchestratorIds(s: {
   orchestrator: { agentId: string } | null;
   orchestratorTenants?: ReadonlyMap<string, { agentId: string }>;
 }): Set<string> {
-  throw new Error("not implemented: orchestratorIds");
+  const ids = new Set<string>();
+  if (s.orchestrator) ids.add(s.orchestrator.agentId);
+  for (const t of s.orchestratorTenants?.values() ?? []) ids.add(t.agentId);
+  return ids;
 }
 
-/** HUB-FR-77: bật ∧ entitlement chưa thu hồi của tenant ∧ grant (user ∨ group của user) ∧ ≠ Orchestrator; sắp `key`. */
+/**
+ * HUB-FR-77: bật ∧ entitlement chưa thu hồi của tenant ∧ grant (user ∨ group của user) ∧ ≠ Orchestrator; sắp `key`.
+ * H2b: ∧ ∉ `excludeIds` (R15) ∧ (`onlyKeys` vắng ∨ `key` ∈ `onlyKeys`) (R09).
+ */
 export function visibleAgents(i: VisibleAgentsInput): HubAgentRef[] {
   const entitled = new Set<string>();
   for (const e of i.entitlements) {
@@ -81,10 +90,15 @@ export function visibleAgents(i: VisibleAgentsInput): HubAgentRef[] {
       granted.add(g.agentId);
     }
   }
+  const allowed = (a: AgentRow): boolean =>
+    a.enabled &&
+    a.id !== i.orchestratorId &&
+    !i.excludeIds?.has(a.id) &&
+    (!i.onlyKeys || i.onlyKeys.has(a.key)) &&
+    entitled.has(a.id) &&
+    granted.has(a.id);
   return i.agents
-    .filter(
-      (a) => a.enabled && a.id !== i.orchestratorId && entitled.has(a.id) && granted.has(a.id),
-    )
+    .filter(allowed)
     .map((a) => ({ id: a.id, key: a.key, description: a.description ?? "" }))
     .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
