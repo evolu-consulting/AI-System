@@ -2,7 +2,9 @@
 host, gom bằng `DeltaBuffer` (≥ `flush_chars` ký tự hoặc ≥ `flush_ms`), hẹn giờ `asyncio` xả phần
 còn lại, XADD `job.delta{kind, text}` qua `RunEvents.delta` (`seq` chung bộ đếm job).
 
-`kind` đầu tiên chốt; `kind` khác ⇒ bỏ + log `job.delta_kind_changed` (Hub lọc theo kind đầu, H4).
+Mốc thời gian gom = lúc nhận chữ đầu tiên (không phải lúc tạo pump — spawn job host có thể > 1 s,
+khi đó chữ đầu bị xả lẻ ngay). `kind` đầu tiên chốt; `kind` khác ⇒ bỏ + log
+`job.delta_kind_changed` (Hub lọc theo kind đầu, H4).
 `asyncio.Lock` giữa xả do hẹn giờ và `drain` ⇒ thứ tự chữ giữ nguyên, `drain` xong là hết chữ
 (mọi `job.delta` trước sự kiện kết thúc, H6). `streamed` bật khi đã **nhận** chữ (chắc chắn được
 XADD ở lần xả kế tiếp / `drain`) — chặt hơn "đã XADD": quyết định không thử lại (R21) đúng cả khi
@@ -48,7 +50,8 @@ class DeltaPump:
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._events, self._job = events, job
-        self._buf = DeltaBuffer(cfg.delta_flush_chars, cfg.delta_flush_ms, clock=clock)
+        self._new_buf = lambda: DeltaBuffer(cfg.delta_flush_chars, cfg.delta_flush_ms, clock=clock)
+        self._buf = self._new_buf()
         self._kind: DeltaKind | None = None
         self._lock = asyncio.Lock()
         self._timer: asyncio.Task[None] | None = None
@@ -63,6 +66,8 @@ class DeltaPump:
         elif kind != self._kind:
             get_logger().warning("job.delta_kind_changed", first=self._kind, kind=kind)
             return
+        if not self.streamed:  # mốc thời gian = chữ đầu tiên (không tính lúc spawn job host)
+            self._buf = self._new_buf()
         self.streamed = True
         async with self._lock:
             await self._send(self._buf.add(text))

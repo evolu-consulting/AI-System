@@ -1,6 +1,8 @@
 """WRK-FR-10 · Phân tích `msg` của `fake-cli` (plan-runtime-fake §7): chỉ thị `#fake:*` và khối
 `<message>` của Orchestrator (Q-T8: không echo cả prompt). Chỉ đọc tin hiện tại, không đọc history
-— trừ H2a S01: tin hiện tại là câu đồng ý → đọc tin user trước đó trong `<history>` để delegate lại.
+— trừ H2a S01: tin hiện tại là câu đồng ý → đọc tin user trước đó trong `<history>` để delegate lại
+(H2b PY-04: chỉ khi `<steps>` rỗng — TD #47; tin trước `@<key> …` ⇒ delegate `<key>`), và agent
+nhận câu đồng ý không chỉ thị → chạy lại tin user trước trong `payload.history` (plan-runtime §6).
 """
 
 from __future__ import annotations
@@ -66,7 +68,20 @@ def usage_pair(raw: str) -> tuple[int, int]:
         return 10, 20
 
 
+TURNS_MAX = 10
+
+
+def turns(found: dict[str, str]) -> int:
+    """H2b `#fake:turns=<n>` (1–10); vắng / sai → 1 (như H1)."""
+    raw = found.get("turns", "")
+    return min(TURNS_MAX, max(1, int(raw))) if raw.isdigit() else 1
+
+
 _ARGS = "#fake:args="
+_ASCII_WS = " \t\n\r\f\v"
+_WS_SPLIT = re.compile(r"[ \t\n\r\f\v]+")
+_TAG = re.compile(r"@[A-Za-z0-9][A-Za-z0-9_-]*")
+_STEPS_OPEN, _STEPS_CLOSE = "<steps>", "</steps>"
 _AGREE = frozenset({"đồng ý", "agree"})
 _HISTORY_OPEN, _HISTORY_CLOSE = "<history>", "</history>"
 
@@ -89,17 +104,54 @@ def is_agree(text: str) -> bool:
     return unicodedata.normalize("NFC", text).strip().lower() in _AGREE
 
 
+def _block(prompt: str, opening: str, closing: str) -> object:
+    """Khối JSON `<tag>…</tag>` đầu tiên của prompt Orchestrator; vắng / hỏng → None."""
+    start = prompt.find(opening)
+    end = prompt.find(closing, start)
+    if start < 0 or end < 0:
+        return None
+    try:
+        return json.loads(prompt[start + len(opening) : end])
+    except ValueError:
+        return None
+
+
+def _has_steps(prompt: str) -> bool:
+    """TD #47: run đã có kết quả step (khối `<steps>` khác `[]`)."""
+    steps = _block(prompt, _STEPS_OPEN, _STEPS_CLOSE)
+    return isinstance(steps, list) and len(cast(list[object], steps)) > 0
+
+
+def _tokens(text: str) -> list[str]:
+    return [t for t in _WS_SPLIT.split(text.strip(_ASCII_WS)) if t]
+
+
+def _is_tag(token: str) -> bool:
+    return _TAG.fullmatch(token) is not None
+
+
+def strip_tags(text: str) -> str:
+    """Bỏ các tag `@<key>` đầu tin (cú pháp R01; `@@` là chữ thường)."""
+    toks = _tokens(text)
+    i = 0
+    while i < len(toks) and _is_tag(toks[i]):
+        i += 1
+    return " ".join(toks[i:])
+
+
+def tag_delegate(text: str) -> str | None:
+    """Tin bắt đầu bằng **đúng một** tag `@<key>` + nội dung → `#fake:delegate=<key> <nội dung>`."""
+    toks = _tokens(text)
+    if len(toks) < 2 or not _is_tag(toks[0]) or _is_tag(toks[1]):
+        return None
+    rest = text.strip(_ASCII_WS)[len(toks[0]) :].strip(_ASCII_WS)
+    return f"#fake:delegate={toks[0][1:].lower()} {rest}"
+
+
 def _history_users(prompt: str) -> list[str]:
     """Tin `user` trong khối `<history>` của prompt Orchestrator (JSON, `<` đã escape — plan H1
     §6.2), cũ → mới."""
-    start = prompt.find(_HISTORY_OPEN)
-    end = prompt.find(_HISTORY_CLOSE, start)
-    if start < 0 or end < 0:
-        return []
-    try:
-        items: object = json.loads(prompt[start + len(_HISTORY_OPEN) : end])
-    except ValueError:
-        return []
+    items = _block(prompt, _HISTORY_OPEN, _HISTORY_CLOSE)
     if not isinstance(items, list):
         return []
     out: list[str] = []
@@ -113,12 +165,27 @@ def _history_users(prompt: str) -> list[str]:
 
 
 def redelegate_message(prompt: str, msg: str) -> str | None:
-    """S01 (H2a AC-H22): tin hiện tại là câu đồng ý và tin user gần nhất trước đó (bỏ các câu đồng
-    ý) có `#fake:delegate=<a>` → trả tin đó để Orchestrator giả delegate lại `<a>` cùng `task`."""
-    if not is_agree(msg):
+    """S01 (H2a AC-H22): tin hiện tại là câu đồng ý, run chưa có kết quả step (`<steps>` `[]`,
+    TD #47) và tin user gần nhất trước đó (bỏ các câu đồng ý) bắt đầu `@<key>` (đúng một tag) →
+    `#fake:delegate=<key> <phần sau tag>`; có `#fake:delegate=<a>` → trả tin đó (delegate lại `<a>`
+    cùng `task`)."""
+    if not is_agree(msg) or _has_steps(prompt):
         return None
     for prev in reversed(_history_users(prompt)):
         if is_agree(prev):
             continue
+        if (tagged := tag_delegate(prev)) is not None:
+            return tagged
         return prev if "delegate" in directives(prev) else None
+    return None
+
+
+def agreed_message(msg: str, history: list[tuple[str, str]]) -> str | None:
+    """Agent nhận câu đồng ý không chỉ thị → tin `user` gần nhất trong `history` (cũ → mới) không
+    phải câu đồng ý, bỏ tag `@…` đầu — chạy lại như tin đó (gọi lại `#fake:tool`). Khác → None."""
+    if directives(msg) or not is_agree(strip_tags(msg)):
+        return None
+    for role, content in reversed(history):
+        if role == "user" and not is_agree(strip_tags(content)):
+            return strip_tags(content)
     return None

@@ -6,6 +6,10 @@ H2a (PY-06, `plan-runtime` §6): `#fake:tool=<key>` với key ∈ `payload.mcp.t
 → `tool_use{mcp__hub__<key>}` → hook (policy có `mcp_tools`) → `tools/call` thật (`mcp_call.py`);
 `CONFIRMATION_REQUIRED` → `Confirm` (cha ép `need_input`). Key ngoài danh sách → nghĩa H1.
 `#fake:mcp-list` → `tools/list`. Orchestrator: câu đồng ý → delegate lại theo tin trước (S01).
+H2b (PY-04, `plan-runtime` §6): `#fake:stream*`/`answer-len` (`stream.py`), `#fake:turns=<n>` (n
+`UsageEv` cộng dồn trước `sleep`), `#fake:is-error=<rate|auth|refused>` (`Final.is_error` chữ cố
+định, không `RateLimit`, usage `{in:10, out:0}` trừ khi có `#fake:usage`); agent nhận câu đồng ý
+không chỉ thị → chạy lại tin user trước trong `payload.history`.
 """
 
 from __future__ import annotations
@@ -29,6 +33,7 @@ from agent_runtime.providers.base import (
 )
 from agent_runtime.providers.claude.mcp import job_mcp_tools, read_bearer, tool_name
 from agent_runtime.providers.fake.directives import (
+    agreed_message,
     clean,
     directives,
     message_of,
@@ -36,11 +41,19 @@ from agent_runtime.providers.fake.directives import (
     seconds,
     task_without_delegate,
     tool_args,
+    turns,
     usage_pair,
 )
 from agent_runtime.providers.fake.mcp_call import call_tool, list_tools
 from agent_runtime.providers.fake.sessions import load, new_id, save
 from agent_runtime.providers.fake.state import bump_badjson
+from agent_runtime.providers.fake.stream import (
+    STREAM_GAP_S,
+    agent_doc,
+    orchestrator_answer,
+    sized,
+    stream_final,
+)
 from agent_runtime.sandbox.hook import SandboxPolicy, make_path_guard
 
 KEY = "fake-cli"
@@ -50,6 +63,11 @@ FAKE_TAIL = (
 )
 BAD_JSON = '{"status": "done", "text": '
 MCP_PROGRESS = "Đang gọi công cụ"  # = nhãn `claude-sub` (§4.4)
+IS_ERROR_TEXT = {  # test-plan L2: mẫu rate / auth (`patterns.py`) / không mẫu
+    "rate": "You've hit your usage limit",
+    "auth": "Not logged in · Please run /login",
+    "refused": "I can't help with that.",
+}
 
 
 async def _sleep(total_s: float, emit: Emit) -> None:
@@ -146,7 +164,7 @@ def _orchestrator(msg: str, found: dict[str, str], body: str) -> Final:
     elif "ask" in found:
         text = json.dumps({"decision": "ask", "question": "Bạn muốn gì?", "choices": ["A", "B"]})
     else:
-        text = json.dumps({"decision": "answer", "text": body}, ensure_ascii=False)
+        text = orchestrator_answer(body, found)
     return Final(kind="text", text=text)
 
 
@@ -157,7 +175,7 @@ def _agent(found: dict[str, str], body: str) -> Final:
         res = {"status": "need_input", "question": "Bạn chọn gì?", "choices": ["A", "B"]}
     else:
         res = {"status": "done", "text": body}
-    return Final(kind="agent_result", structured=res)
+    return Final(kind="agent_result", structured=agent_doc(res, found))
 
 
 async def _session(
@@ -229,11 +247,38 @@ async def _side_effects(job: ProviderJob, found: dict[str, str], emit: Emit) -> 
             stdout=asyncio.subprocess.DEVNULL,  # không giữ pipe giao thức của job host
         )
     # usage trước sleep: huỷ giữa chừng vẫn có usage đã báo (H1-R25).
-    if "usage" in found:
+    if "usage" in found:  # H2b `#fake:turns=<n>`: lượt k báo k×in, k×out (cộng dồn, AC-09)
         tin, tout = usage_pair(found["usage"])
-        await emit(UsageEv.model_validate({"in": tin, "out": tout, "model": "fake"}))
+        for k in range(1, turns(found) + 1):
+            if k > 1:
+                await asyncio.sleep(STREAM_GAP_S)
+            await emit(UsageEv.model_validate({"in": k * tin, "out": k * tout, "model": "fake"}))
     if "sleep" in found:
         await _sleep(seconds(found["sleep"]), emit)
+
+
+async def _early_end(job: ProviderJob, found: dict[str, str], kind: str, emit: Emit) -> bool:
+    """`ratelimit`, `is-error`, `badjson` — True = đã phát `final`."""
+    if "ratelimit" in found:
+        await _ratelimit(found, kind, emit)
+        return True
+    if "is-error" in found:  # F4 (L2): không `RateLimit` — cha phân loại theo chữ result
+        if "usage" not in found:
+            await emit(UsageEv.model_validate({"in": 10, "out": 0, "model": "fake"}))
+        text = IS_ERROR_TEXT.get(found["is-error"], IS_ERROR_TEXT["refused"])
+        await emit(Final.model_validate({"kind": kind, "is_error": True, "text": text}))
+        return True
+    return await _badjson(job, found, emit)
+
+
+def _message(job: ProviderJob, text_out: bool) -> str:
+    """Tin để đọc chỉ thị: Orchestrator "Đồng ý" → delegate lại (S01, TD #47, tag); agent "Đồng ý"
+    không chỉ thị → tin user trước trong `payload.history`."""
+    msg = message_of(job.payload.prompt, orchestrator=text_out)
+    if text_out:
+        return redelegate_message(job.payload.prompt, msg) or msg
+    history = [(h.role, h.content) for h in job.payload.history]
+    return agreed_message(msg, history) or msg
 
 
 async def _finish(emit: Emit, final: Final, *, reported: bool) -> None:
@@ -250,9 +295,7 @@ class FakeProvider:
     async def run(self, job: ProviderJob, emit: Emit) -> None:
         text_out = job.payload.output == "text"
         kind = "text" if text_out else "agent_result"
-        msg = message_of(job.payload.prompt, orchestrator=text_out)
-        if text_out and (prev := redelegate_message(job.payload.prompt, msg)) is not None:
-            msg = prev  # S01: "Đồng ý" → delegate lại agent của tin trước, cùng `task`
+        msg = _message(job, text_out)
         found = directives(msg)
         if "crash" in found:
             os._exit(3)
@@ -262,17 +305,17 @@ class FakeProvider:
         if text_out and "delegate" in found:
             # Orchestrator chỉ quyết định; chỉ thị khác (sleep, usage…) theo `task` tới agent (S1).
             if not await _badjson(job, found, emit):
-                await _finish(emit, _orchestrator(msg, found, ""), reported=False)
+                final = await stream_final(job, found, _orchestrator(msg, found, ""), emit)
+                await _finish(emit, final, reported=False)
             return
         mcp_body = None if text_out else await _mcp_first(job, msg, found, emit)
         await _side_effects(job, found, emit)
-        if "ratelimit" in found:
-            await _ratelimit(found, kind, emit)
-            return
-        if await _badjson(job, found, emit):
+        if await _early_end(job, found, kind, emit):
             return
         body = mcp_body if mcp_body is not None else await _body(job, msg, found, emit)
         if "recall" in found:
             body = f"recall: {memory.get('word', '')}"
+        body = sized(body, found, FAKE_TAIL)
         final = _orchestrator(msg, found, body) if text_out else _agent(found, body)
+        final = await stream_final(job, found, final, emit)
         await _finish(emit, final, reported="usage" in found)
