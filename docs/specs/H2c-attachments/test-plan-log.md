@@ -161,3 +161,6 @@ P32 perf (L10, báo cáo): 10 × 2 MiB tải 131 ms.
 6. S05 (TC-4 + upload): `hoadon-file` vừa Hub (host) upload vừa Runtime (container) chạy ⇒ `base_url` = IPv4 không-loopback của host (`hostIp()`, container tới được — thử trên Docker Desktop; hosts Windows `host.docker.internal` = IP cũ).
 7. S02 run 3 `#fake:read=attachments/a.pdf` dựa R14 (file của flow vào job sau); S06 tìm job Orchestrator theo `payload.agent.role`.
 8. Môi trường: `ALTER ROLE … tuple concurrently updated` khi agent khác migrate cùng lúc ⇒ chạy lại (không do test).
+
+### Q3 · khoá lần 2 (2026-10-05, sau QW-P `ac39836`, trước PY-03)
+`test:lock:verify` trước ghi → đúng **9 `UNLOCKED`** (`apps/agent-runtime/tests/acceptance/{_hub_files.py, attachments_int_test.py, outputs_int_test.py}`, `tests/acceptance/H2c/stack/{_stack.ts, files, out, async-file, orchestrated}.stack.test.ts`, `H2c/hubdev/attach.hubdev.test.ts`), không `CHANGED`/`MISSING` (sửa `apps/hub-api` của B2/B3/B5/B10 không thuộc file khoá). `test:lock:write` → **352 file**; `verify` OK. `git diff tests/.lock`: +9 dòng, 0 dòng xoá/đổi.

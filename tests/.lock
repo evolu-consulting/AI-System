@@ -1,9 +1,11 @@
 # tests/.lock — sinh bởi bun run test:lock:write (chỉ qc). Không sửa tay.
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  apps/agent-runtime/tests/acceptance/__init__.py
 79548a62b194f71f747d6c47d8ad6266f4436eb5af4228f1ee8a43b15bd871b6  apps/agent-runtime/tests/acceptance/_dify.py
+c71decb8b8de028bf8aa16734c4a974b8de9f6dc4fae73e9ad4ce753e3cd1add  apps/agent-runtime/tests/acceptance/_hub_files.py
 1c823f550ba3a5c345f0545ebf4a5ee70df38f27972e08a96456b03265d25100  apps/agent-runtime/tests/acceptance/_proc.py
 ec92180994ef95f8e7a98c2e3cdbdf7bd424ee4b7ff9924cc8645e17ea4000eb  apps/agent-runtime/tests/acceptance/_rt.py
 39c30eded9b46a278a7dce0889ba9e48bb69262cb16a128a445200edc9be6d2c  apps/agent-runtime/tests/acceptance/_stream.py
+f65dcde3da36d7526a7b6a41fd4583916e68934a21b67259ee8801cb425dda3e  apps/agent-runtime/tests/acceptance/attachments_int_test.py
 1eeca3d37449dcf2f9b2ab6ce4550bcfdbc72a464bb888018704c19968d061be  apps/agent-runtime/tests/acceptance/cancel_int_test.py
 d8cb97057902868e97cc21f1747fa9cadb4a140b215a549ff99826b1c7d1e721  apps/agent-runtime/tests/acceptance/claim_int_test.py
 c480de7180710cd66a62e464099fe1e253fc1e39b248ea9f28333796de335537  apps/agent-runtime/tests/acceptance/conftest.py
@@ -13,6 +15,7 @@ b1385c9d86bb7c093418603020f5bedfa5ac484e9d04d77d07bbaf7ce48f4fe5  apps/agent-run
 a0f028ba5247bd591c06b7b70c46e2c495e441be0390566c6c6d3f0f05eccfb9  apps/agent-runtime/tests/acceptance/dify_retry_int_test.py
 6a73b36ee1a767e5b5b5e35b4f634fe1d4ccaa2d63289aef004f93182f68ac40  apps/agent-runtime/tests/acceptance/mcp_int_test.py
 4c1ee9282627fc38f104c7b5e1da08b2d747dbd92180846acc98d99c0dd31f97  apps/agent-runtime/tests/acceptance/orphan_int_test.py
+7263c7b6cb06f4d189bb652d7949de86eebcabb1f6d13ea2150b14130664e737  apps/agent-runtime/tests/acceptance/outputs_int_test.py
 030f39b70c92631cf35c64f71eca50fe63a4468e762f8316b2e5c0dd3df6038f  apps/agent-runtime/tests/acceptance/provider_int_test.py
 818634f99652c3a40c7e643a5a0eead8eab09abed0ac16fe8f5ccce205cd0ee7  apps/agent-runtime/tests/acceptance/refusal_int_test.py
 742ce693ee55137101669f1ef0415744b1ce2a8e2afb19c6a390b02567f0afe0  apps/agent-runtime/tests/acceptance/result_int_test.py
@@ -189,6 +192,7 @@ f6413b1c364c9ea6d626d3f52d47d828b7dd8b3a720759eb21909534ab19b146  tests/acceptan
 fbe92abc8278fbb5ddd7d3c1ee2613ad3d0e09722a61ff353337ac9b10ef2456  tests/acceptance/H2c/compat.int.test.ts
 cec4a18f88de8475b749ecb95e68563e00c792572514c7d754bd90dc7f4c8170  tests/acceptance/H2c/content.int.test.ts
 8656fb10f3cb69dc53b0644ad3360a5d18b68a97f35323ac7895dc78d994277d  tests/acceptance/H2c/db.int.test.ts
+20fafcc37cf76a0a15e6a4bbc7018119f74b1b74d08c0d4f652f74a6db5a5574  tests/acceptance/H2c/hubdev/attach.hubdev.test.ts
 107da20d5e06980c39f568b2b67ac7fa8eef36bdaa6ac951ad49f521259f8c79  tests/acceptance/H2c/internal-download.int.test.ts
 35869f732a8ac4b896f3627376e23087fbd14d2dfee8e44a09dfe0059935cfd7  tests/acceptance/H2c/mcp-file.int.test.ts
 84c19c7413c877b02371e572bacf56089d117cf0c7e9d46bf7a41979074ad4e7  tests/acceptance/H2c/outputs.int.test.ts
@@ -207,6 +211,11 @@ bd5ab74c8b9b8d5b904bf7d46a0921644f774b7904b60e9bab3ff8e4f0f3b748  tests/acceptan
 e684906ea4a437a497ec71f847e1aacd88e5588439efded03498c59ed4194fdf  tests/acceptance/H2c/rules/sniff.test.ts
 1ce5637a57cb18ffee28e97d25751c0b1e0f556199a9b89e5b0bdde5978135f2  tests/acceptance/H2c/run-files.int.test.ts
 4434724b6fd92c96120e312e7769a00920560e1ee69f3196700c998f939ded9c  tests/acceptance/H2c/send.int.test.ts
+4a6e9430bf374a8220a829e31e2034828eb04af7791f0a939da02d5949692394  tests/acceptance/H2c/stack/_stack.ts
+56ac86fbd0b11d6ba7e6d2cf0432e6e2690c592457516c6c3f8083d43969b2ac  tests/acceptance/H2c/stack/async-file.stack.test.ts
+c2eb7b21188b5e244cd675cac12ee541323eeb344c56160708f7d500669a51bc  tests/acceptance/H2c/stack/files.stack.test.ts
+130122e47aeca3fc2ec942afaa7cdcaf6ee7e06dbc9f0f39e89a6c6d797a8ac3  tests/acceptance/H2c/stack/orchestrated.stack.test.ts
+d35245e93ae1063e8eb223a4ab7e17184b65c796af5f65ad982e76e515b8296a  tests/acceptance/H2c/stack/out.stack.test.ts
 6fddb9d033672e8bff2b9c0bd92561008948f5e3314e7dcae3f7e09b5202384e  tests/acceptance/H2c/storage.int.test.ts
 94eb211fe504477692b31d00992d59ea37b4b64be3f03fc19fd1688c5c11be6e  tests/acceptance/H2c/sweeper.int.test.ts
 acd1bd2f569bf9123d6790da71137ba7d68045a968af0720c70246429110dc42  tests/acceptance/H2c/upload.int.test.ts
