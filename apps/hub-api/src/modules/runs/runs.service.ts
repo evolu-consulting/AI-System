@@ -2,7 +2,6 @@
 // Mọi đọc/ghi 5 bảng hội thoại qua `withHubScope` (D2): request → `user`, kết thúc run → `system` (SseWriter).
 // Vòng chạy run (Orchestrator B8 / runner B7) cắm qua `RunDriver`; không biết HTTP.
 import {
-  deriveTitle,
   RUN_EVENTS_RETENTION_S,
   type Run,
   type RunError,
@@ -15,11 +14,15 @@ import type { Db } from "../../lib/db";
 import { appError, safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
-import type { ConfigSnapshot } from "../config/config.rules";
+import {
+  type ConfigSnapshot,
+  type PickedOrchestrator,
+  pickOrchestrator,
+} from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
-import { isAgreeReply } from "../mcp/confirm.rules";
+import type { MentionPlan } from "../mention/mention.service";
 import { setFinalSeq } from "./close/cancel.repo";
-import { decideConfirmations } from "./confirm.repo";
+import { type Created, type CreateRunInput, createRunTx } from "./create-run";
 import * as repo from "./runs.repo";
 import { eventsExpired } from "./runs.rules";
 import { runEventStream, SseReader } from "./sse/sse-reader";
@@ -27,7 +30,6 @@ import {
   appendExternal,
   isTerminalEvent,
   lastSseEntry,
-  type RunInfo,
   RunRegistry,
   type SseEventBody,
   SseWriter,
@@ -39,6 +41,11 @@ export type RunContext = {
   /** Ảnh cấu hình chụp lúc tạo run (H1-R15, HUB-BR-06). */
   snapshot: ConfigSnapshot;
   content: string;
+  /**
+   * H2b P7 · Orchestrator chọn lúc tạo run (`pickOrchestrator`, gọi cả cho `direct` để lấy `history_n`, P10); null = không
+   * có bản hợp lệ nào. Driver không chọn lại.
+   */
+  orchestrator: PickedOrchestrator | null;
   log: Logger;
 };
 /** Chỗ cắm B8 (Orchestrator, dùng runner B7). Không chờ: chạy nền, tự `finish`. */
@@ -54,6 +61,9 @@ export type CommandRunStart = {
   driver: RunDriver;
 };
 
+/** H2b plan §4 `runs/` · kế hoạch run từ E12: lệnh `/` (H2a) hoặc tag `@` (`direct` / `orchestrated` thu hẹp). */
+export type RunPlan = CommandRunStart | MentionPlan;
+
 export type RunServiceDeps = {
   db: Db;
   redis: Redis;
@@ -63,6 +73,8 @@ export type RunServiceDeps = {
   driver: RunDriver;
   log: Logger;
   signal?: AbortSignal;
+  /** H2b R16 · = `AppDeps.maxConcurrentRuns`; vắng ⇒ không giới hạn (L1). */
+  maxConcurrentRuns?: number;
 };
 
 /** Quota thật ở H3 (H1-R10). */
@@ -76,58 +88,6 @@ function flowBusy(err: unknown): boolean {
   const e = err as { code?: unknown; constraint_name?: unknown; cause?: unknown } | null;
   const pg = (e?.code === undefined ? e?.cause : e) as typeof e;
   return pg?.code === "23505" && pg.constraint_name === repo.FLOW_RUNNING_UQ;
-}
-
-type Created = RunInfo & { userMessageId: string };
-
-/** §5.1 · một transaction `user`, thứ tự khoá §3.5: conversations → flows → runs → messages → tool_confirmations. */
-async function createRunTx(
-  tx: Tx,
-  o: repo.Owner,
-  p: {
-    run: Created;
-    req: SendMessageRequest;
-    configVersion: number;
-    owner: string;
-    command?: CommandRunStart;
-  },
-): Promise<void> {
-  const r = p.run;
-  if (!(await repo.touchConversation(tx, o, r.conversationId))) throw appError("NOT_FOUND");
-  if (p.req.flow_id) {
-    const ok = await repo.touchFlow(tx, o, { conversationId: r.conversationId, flowId: r.flowId });
-    if (!ok) throw appError("NOT_FOUND");
-  } else {
-    const title = deriveTitle(p.req.content);
-    await repo.insertFlow(tx, o, { id: r.flowId, conversationId: r.conversationId, title });
-  }
-  await repo.insertRun(tx, o, {
-    id: r.id,
-    conversationId: r.conversationId,
-    flowId: r.flowId,
-    configVersion: p.configVersion,
-    userMessageId: r.userMessageId,
-    answerMessageId: r.answerMessageId,
-    owner: p.owner,
-    locale: r.locale,
-    ...(p.command && {
-      kind: "command" as const,
-      commandId: p.command.commandId,
-      featureId: p.command.featureId,
-    }),
-  });
-  await repo.insertMessage(tx, o, {
-    id: r.userMessageId,
-    conversationId: r.conversationId,
-    flowId: r.flowId,
-    role: "user",
-    content: p.req.content,
-    runId: r.id,
-  });
-  if (p.req.flow_id) {
-    const agree = isAgreeReply(p.req.content);
-    await decideConfirmations(tx, o, { flowId: r.flowId, runId: r.id, agree });
-  }
 }
 
 /** Sự kiện kết thúc dựng từ cột `runs` + tin assistant (không gọi lại `runErrorText`, plan-errors §Ghi). */
@@ -196,12 +156,16 @@ export class RunService {
     return run;
   }
 
-  /** E12 · ném 404 (hội thoại/flow), 409 `FLOW_BUSY`. Trả stream đọc từ `sse:<id>` (P9). `command` → run lệnh (H2a). */
+  /**
+   * E12 · ném 404 (hội thoại/flow), 409 `FLOW_BUSY`, 429 `TOO_MANY_RUNS`. Trả stream đọc từ `sse:<id>` (P9). `plan`:
+   * `command` → run lệnh (H2a); tag `@` (H2b) → `pickOrchestrator` gọi cả cho `direct` (P10, không ghi
+   * `orchestrator_tenant_id`). Tới B6/B7: `direct`/`orchestrated` vẫn chạy Orchestrator với nội dung nguyên văn.
+   */
   async start(
     u: AuthUser,
     conversationId: string,
     req: SendMessageRequest,
-    command?: CommandRunStart,
+    plan?: RunPlan,
   ): Promise<StartedRun> {
     const snapshot = await this.d.config.snapshot();
     const locale = (await this.d.config.user(u.userId))?.locale ?? "vi";
@@ -214,22 +178,48 @@ export class RunService {
       userMessageId: crypto.randomUUID(),
       locale,
     };
-    const { owner } = this.d;
+    const command = plan?.kind === "command" ? plan : undefined;
+    const orchestrator = command ? null : this.#pick(snapshot, run, plan);
+    await this.#create(u, {
+      run,
+      req,
+      configVersion: snapshot.version,
+      owner: this.d.owner,
+      command,
+      orchestratorTenantId: plan?.kind === "direct" ? null : orchestrator?.tenantId,
+      maxConcurrentRuns: this.d.maxConcurrentRuns,
+      log: this.d.log,
+    });
+    const writer = new SseWriter(run, this.d);
+    this.registry.add(writer);
+    await this.#announce(writer);
+    const driver = command?.driver ?? this.d.driver;
+    driver.start({ writer, snapshot, content: req.content, orchestrator, log: this.d.log });
+    const stream = this.#stream(u, run.id, 0);
+    return { runId: run.id, flowId: run.flowId, messageId: run.userMessageId, stream };
+  }
+
+  /** P7 · chọn Orchestrator lúc tạo run; bản tenant hỏng (run dùng Orchestrator) → `warn orchestrator_tenant_invalid`. */
+  #pick(s: ConfigSnapshot, run: Created, plan?: RunPlan): PickedOrchestrator | null {
+    const picked = pickOrchestrator(s, run.tenantId);
+    if (picked?.invalid && plan?.kind !== "direct") {
+      const agentId = s.orchestratorTenants.get(run.tenantId)?.agentId;
+      this.d.log.warn("orchestrator_tenant_invalid", {
+        run_id: run.id,
+        tenant_id: run.tenantId,
+        agent_id: agentId,
+      });
+    }
+    return picked;
+  }
+
+  async #create(u: AuthUser, p: CreateRunInput): Promise<void> {
     try {
-      await this.#scoped(u, (tx, o) =>
-        createRunTx(tx, o, { run, req, configVersion: snapshot.version, owner, command }),
-      );
+      await this.#scoped(u, (tx, o) => createRunTx(tx, o, p));
     } catch (err) {
       if (flowBusy(err)) throw appError("FLOW_BUSY");
       throw err;
     }
-    const writer = new SseWriter(run, { ...this.d, owner });
-    this.registry.add(writer);
-    await this.#announce(writer);
-    const driver = command?.driver ?? this.d.driver;
-    driver.start({ writer, snapshot, content: req.content, log: this.d.log });
-    const stream = this.#stream(u, run.id, 0);
-    return { runId: run.id, flowId: run.flowId, messageId: run.userMessageId, stream };
   }
 
   /** `run.started` (id 1) ngay sau COMMIT, trước khi gọi vòng chạy (H1-R10). Redis lỗi → kết thúc run lỗi (DB cũng lỗi → `abort`, sweeper đóng) rồi ném. */

@@ -40,6 +40,8 @@ export const EnvSchema = z.object({
   HUB_PUBLIC_INTERNAL_URL: z.url({ protocol: /^https?$/ }).optional(),
   // Hạn tối đa một lời gọi tool Dify.
   HUB_DIFY_TIMEOUT_MAX_S: z.coerce.number().int().min(1).max(3600).default(300),
+  // H2b plan §4 · số run `running` tối đa mỗi user; kiểm ở `envAppDeps` (`parseMaxConcurrentRuns`: vắng → 2, 1–20).
+  HUB_MAX_CONCURRENT_RUNS: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

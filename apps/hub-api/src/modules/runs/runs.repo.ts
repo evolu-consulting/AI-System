@@ -72,7 +72,38 @@ export type RunInsert = {
   kind?: "orchestrated" | "command";
   commandId?: string | null;
   featureId?: string | null;
+  /** H2b P7 · bản Orchestrator riêng đã chọn lúc tạo run (null = mặc định); chỉ run `orchestrated`. */
+  orchestratorTenantId?: string | null;
 };
+
+/**
+ * H2b P8 · khoá giao dịch theo user, **đầu tiên** trong E12 (trước `conversations`, thứ tự H1 §3.5 + `[advisory user]`).
+ * Dạng 2 khoá (không gian `hub.runs.user`) ⇒ không đụng `K_CLAIM` 1 khoá. Chỉ E12 lấy ⇒ không chu trình với E9/kết thúc/huỷ.
+ */
+export async function lockUserRuns(tx: Tx, o: Owner): Promise<void> {
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(hashtext('hub.runs.user'), hashtext(${o.userId}::text))`,
+  );
+}
+
+/** H2b R18 · flow có run `running` (kiểm tường minh để `FLOW_BUSY` thắng 429; unique index vẫn là chốt chặn). */
+export async function flowRunning(tx: Tx, flowId: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ id: runs.id })
+    .from(runs)
+    .where(and(eq(runs.flowId, flowId), eq(runs.status, "running")))
+    .limit(1);
+  return row !== undefined;
+}
+
+/** H2b R16 · số run `running` của user (mọi `kind`; index `runs_user_running_idx`). */
+export async function countRunning(tx: Tx, o: Owner): Promise<number> {
+  const [row] = await tx
+    .select({ n: sql<number>`count(*)::int` })
+    .from(runs)
+    .where(and(ownedBy(runs, o), eq(runs.status, "running")));
+  return row?.n ?? 0;
+}
 
 /** §5.1 bước 3 · `owner` + lease 30 s. Trả `started_at` (đã cắt ms). 23505 `FLOW_RUNNING_UQ` do người gọi xử lý. */
 export async function insertRun(tx: Tx, o: Owner, p: RunInsert): Promise<Date> {

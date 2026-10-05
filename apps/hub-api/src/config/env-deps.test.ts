@@ -83,3 +83,20 @@ describe("hub-api env → deps · HUB_PUBLIC_INTERNAL_URL", () => {
     expect(envAppDeps(env, recorder().log).publicInternalUrl).toBe("https://hub.example:4000");
   });
 });
+
+describe("hub-api env → deps · HUB_MAX_CONCURRENT_RUNS (H2b R16, L1)", () => {
+  test("vắng / trống → 2 (server luôn điền); hợp lệ → số", () => {
+    expect(envAppDeps(loadEnv(base), recorder().log).maxConcurrentRuns).toBe(2);
+    const empty = loadEnv({ ...base, HUB_MAX_CONCURRENT_RUNS: "" });
+    expect(envAppDeps(empty, recorder().log).maxConcurrentRuns).toBe(2);
+    const twenty = loadEnv({ ...base, HUB_MAX_CONCURRENT_RUNS: "20" });
+    expect(envAppDeps(twenty, recorder().log).maxConcurrentRuns).toBe(20);
+  });
+
+  test("sai (0, 21, abc) → envAppDeps ném (server.ts thoát ≠ 0)", () => {
+    for (const bad of ["0", "21", "abc"]) {
+      const env = loadEnv({ ...base, HUB_MAX_CONCURRENT_RUNS: bad });
+      expect(() => envAppDeps(env, recorder().log), bad).toThrow(/HUB_MAX_CONCURRENT_RUNS/);
+    }
+  });
+});

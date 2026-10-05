@@ -52,6 +52,15 @@ function readEnv(): Env {
   }
 }
 
+/** Phần `AppDeps` từ env; giá trị sai (vd. `HUB_MAX_CONCURRENT_RUNS`, H2b R16) → fatal trước khi mở DB. */
+function readEnvDeps(env: Env): ReturnType<typeof envAppDeps> {
+  try {
+    return envAppDeps(env, logger);
+  } catch (err) {
+    fail("env", err);
+  }
+}
+
 /** HUB-BR-08: Orchestrator thiếu/tắt → exit 1 trước khi mở cổng. */
 async function assertOrchestrator(db: Db): Promise<void> {
   const problem = await bootOrchestratorProblem(db).catch((err) => fail("orchestrator", err));
@@ -93,6 +102,7 @@ function serve(
 
 async function main(): Promise<void> {
   const env = readEnv();
+  const fromEnv = readEnvDeps(env);
   const jwtPublicKey = await importJwtPublicKey(env.JWT_PUBLIC_KEY).catch((err) =>
     fail("jwt", err),
   );
@@ -108,7 +118,7 @@ async function main(): Promise<void> {
       db,
       redis,
       jwtPublicKey,
-      ...envAppDeps(env, logger),
+      ...fromEnv,
       signal: stop.signal,
     },
   );

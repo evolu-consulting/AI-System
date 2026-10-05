@@ -69,6 +69,8 @@ export type AppDeps = {
   publicInternalUrl?: string;
   /** H2a · = `HUB_DIFY_TIMEOUT_MAX_S` (mặc định 300). */
   difyTimeoutMaxS?: number;
+  /** H2b · = `HUB_MAX_CONCURRENT_RUNS` (server điền, mặc định 2). Vắng ⇒ không giới hạn (L1: test khoá H1/H2a). */
+  maxConcurrentRuns?: number;
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -170,6 +172,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     driver: deps.runDriver ?? defaultRunDriver(deps.db, deps.redis, deps, config),
     log: logger,
     signal: deps.signal,
+    maxConcurrentRuns: deps.maxConcurrentRuns,
   });
   const conversations = conversationService(deps.db);
   const cancel = new CancelService({

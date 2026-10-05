@@ -59,10 +59,8 @@ export function sendMessageRoutes(
       const req = { name: msg.name, rest: msg.rest, ctx: body.context ?? {} };
       s = await runs.start(u, id, body, await prepareCommand(u, req));
     } else {
-      await prepareMention(u, msg);
-      // B4: lỗi tag đã trả trước khi tạo run. B5/B6 chạy theo kế hoạch (`direct` / `onlyKeys`); tới đó tin tag hợp lệ
-      // đi Orchestrator như tin thường (nguyên văn).
-      s = await runs.start(u, id, body);
+      // Lỗi tag trả trước khi tạo run. Tới B6/B7 (`direct` / `onlyKeys`) run vẫn đi Orchestrator, nội dung nguyên văn.
+      s = await runs.start(u, id, body, await prepareMention(u, msg));
     }
     return new Response(s.stream, {
       status: 200,
