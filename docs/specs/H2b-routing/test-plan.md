@@ -185,7 +185,7 @@ Tổng mới ≈ **210** ca (R ~95 dòng bảng / 40 ID, A ~92, P ~35, S 8, H 1,
 Readiness lần 1: L1 áp **có sửa** (vắng ⇒ không giới hạn; `envAppDeps` điền; helper `startHubH2b`); L2 áp + usage `out:0`, không `RateLimit` (`plan-runtime` §6); L3–L8 áp nguyên (spec §6, tasks QW/MK/B3/PY-01).
 
 ## 10. Đỏ đúng lý do · nhật ký
-QW-R, QW-A1 xong (dưới); QW-A2, QW-PU, QW-P chưa viết. Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
+QW-R, QW-A1, QW-A2 xong, Q2 khoá (dưới); QW-PU, QW-P chưa viết. Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
 
 ### QW-R · 2026-10-05 (sau B0 `5ef4b90`, C1, C2, D1 `adba6a3`)
 `bun test tests/acceptance/H2b/rules`: **46 test / 10 file** (+ helper `_access.ts`) — **38 đỏ đúng lý do, 8 xanh**. `tsc -p tsconfig.tests.json` 0 lỗi · biome sạch · `check:size` OK · `trace --check` OK (HUB-FR-91/92/94 có test).
@@ -235,3 +235,27 @@ Không đỏ do import/cú pháp/kiểu/fixture; xanh bất thường ngoài §8
 - A56: `pg_terminate_backend` phiên `hub_api` làm postgres.js trong tiến trình test ném `TypeError socket.write` (sập server) ⇒ đổi sang giữ khoá `ACCESS EXCLUSIVE` bảng cấu hình/nhóm/`conversations` (đối chứng `GET /conversations` bị chặn, `/agents` phải 200 ≤ 1,5 s).
 - A60/A63 "dừng sau 3 bước": Orchestrator giả luôn delegate `hoadon` (∉ AU; `writer` ∈ AU `lan`), ép `<steps_left>` đầu = 3 (an: 5) + `run_steps` ≤ 3. A67 chỉ vế `direct` (vế `command` + tenant chặn bởi `runs_orch_tenant_ck`, A140).
 - A73 vế "không profile" không dựng được qua yaml (`profile` bắt buộc) — như QW-R. A91, A93–A96 dựng `pending` bằng run SQL (Q-T8 H2a); A90, A92 đi trọn `@trello`. A04 thêm `@assistant @helpr x` → `[helper]` (chứng minh xét tag thứ 2).
+
+### QW-A2 · 2026-10-05 (sau QW-A1 `53fcb4d`, C2 `5e7dbf5`)
+`bun --config=bunfig.int.toml test --timeout 30000 ./tests/acceptance/H2b/<file>` (DB riêng `ai_system_h2b_qwa2_{,hub_}test`, tuần tự); perf `PERF=1 … --config=bunfig.perf.toml`: **39 test / 4 file** + helper `_stream.ts` — **30 đỏ đúng lý do, 9 xanh**; smoke `tests/smoke/h2b-live.test.ts` 3 ca (vắng `HUB_LIVE` → 3 skip; không khoá, Q-T6). `tsc -p tsconfig.tests.json` 0 lỗi · biome sạch · `check:size`/`check:fn` OK · `trace --check` OK.
+
+| File | ID | Đỏ / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `delta` | A100–A117 | 20/25 | `payload.stream` vắng (A100); `@assistant` → job Orchestrator (A100 direct, A102 direct, A103, A109, A113 `need_input`); không SSE `delta` trước kết quả job (A101, A104, A107, A108, A110 ×2, A111, A112, A113 F=S, A114, A116, A117); A115 trung vị = ∞ (delta không tới) | A100 `/dich-async` (job `workflow.async` không khoá `stream`), A102 Orchestrator `kind=done`, A105, A106, A113 Orchestrator `ask` — phủ định/hồi quy H1 |
+| `dify-stream` | A120–A123 | 3/4 | `@dify-tro-ly` → không `responder` (đi Orchestrator) (A120, A123); A121 `delta` chỉ tới sau `step.finished` của step delegate (Dify chưa stream) | A122 (delegate thứ 2 không stream — phủ định) |
+| `refused` | A130–A132 | 4/7 | A130 `@assistant` → job Orchestrator; A131 `hint` = câu H1 thay câu `refused` (vi/en) | A132 ×3 (`null`/`upstream`/`NOT_CONFIGURED credential` giữ câu H1) |
+| `perf.perf` | PF1–PF3 | 3/3 | PF1 `GET /agents` 404; PF2 run `@assistant` là `orchestrated`; PF3 p95 = ∞ | — |
+
+Không đỏ do import/cú pháp/kiểu/fixture (`PostgresError`/`TypeError` = 0).
+
+**Lệch plan / cần backend-lead:**
+- A114 (cases chưa chốt kịch bản): `job.delta{answer}` của job delegate (đã có kết quả `partial`) XADD **sau khi** job Orchestrator vòng 2 được tạo, **trước** `job.started` của nó ⇒ `DeltaSink` phải lọc theo `job_id` (subscription đọc `run:<id>` từ đầu).
+- A101 "delta đầu trước `run.finished` ≥ 200 ms" và A120/A121 "trước khi MK gửi chunk cuối" đo bằng đồng hồ test (poll 5 ms): A120/A121 ép delta đầu sớm hơn kết thúc ≥ 600 ms (`mk-slow-300`, 5 chunk ⇒ ~1,5 s). "Delta khi step còn mở" = `delta` đầu đứng trước `step.finished` của step đó trong SSE.
+- A110 vế `timed_out`: `job.failed{status: timed_out, code: TIMEOUT, reason: timeout}` → `run.failed TIMEOUT` (mã H1). A112: `seq` hở tạo bằng `skipSeq` (bỏ seq 3); `job.result` sau đó mang seq 5 — Hub vẫn phải nhận kết quả.
+- A100 `/dich-async` cần catalog `extras` (file `delta` gọi `insertCatalog(…, {extras: true})` sau `setupH2b()`).
+- PF2 đo thời gian tới header SSE E12, so p95 (`@assistant` − tin thường), 30 mẫu mỗi loại, dọn run giữa mẫu (limit 2).
+- SM (không khoá): env `HUB_URL`, `AUTH_URL` (→ `ADMIN_API_URL` → `HUB_URL`), `SMOKE_USER` (JSON; vắng → `lan`/acme mật khẩu dev), `DATABASE_URL` (owner, SM3 đọc `usage_logs`). SM2 kiểm `delta` đầu đứng trước `step.finished` **cuối** (không chỉ "trước `run.finished`" — luôn đúng ở H1). I2 chỉnh khi chạy thật.
+- Không thuộc QW-A2: H01 (`hubdev/`, F3) ở QW-P theo `tasks`; F5 phía Hub không có ca A (usage huỷ/timeout kiểm ở P27/P28, SM3).
+
+### Q2 · 2026-10-05
+`bun run test:lock:verify` trước ghi: **27 dòng `UNLOCKED`, đều `tests/acceptance/H2b/**`** (helper `_h2b.ts`, `_stream.ts`, `rules/_access.ts`; 10 file `rules/`; 14 file int/perf), 0 `MISMATCH`/file khác ⇒ `bun run test:lock:write` → verify xanh; `git diff tests/.lock` chỉ thêm 27 dòng H2b. Chưa có `stack/`, `hubdev/` (QW-P → Q3). `tests/smoke/**` không khoá (Q-T6).
