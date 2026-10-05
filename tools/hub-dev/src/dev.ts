@@ -1,10 +1,12 @@
 // HUB-H1-AC-01 · spec H1 §7, §9 Q2/Q3/Q5 · `bun run hub:dev`: dựng môi trường dev Hub trên DB `ai_system`
 // (compose): migrate → admin-api (:3001, dùng lại nếu đang chạy) → user fixture → `hub:seed` → hub-api (:4000)
-// (`HUB_MAX_CONCURRENT_RUNS` mặc định 20, `hubApiEnv`) → agent-runtime (`fake-cli`; Windows: container Linux như
+// (`HUB_MAX_CONCURRENT_RUNS` mặc định 20, `HUB_ATTACH_*` thư mục tạm mỗi lần — `hubApiEnv`) → agent-runtime (`fake-cli`; Windows: container Linux như
 // `tests/acceptance/H1/stack/_stack.ts`, Linux/WSL2: `uv` thẳng).
 // `HUB_DEV_RUNTIME=none` bỏ bước Runtime (tự chạy trong WSL với `claude-sub`, docs/guides/hub-dev.md).
 // Ctrl+C dừng những gì script này đã bật. Env đọc từ `.env.local` (script gọi bằng `bun --env-file=.env.local`).
-import { resolve } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { dockerArgs } from "../../../apps/agent-runtime/scripts/run";
 import { contractUsersJson, ensureContractFixture } from "./fixture";
 
@@ -156,14 +158,27 @@ async function fixtureStep(notes: string[]): Promise<void> {
  * không chạm 429; ghi đè bằng env `HUB_MAX_CONCURRENT_RUNS`. Stack H2b đặt 2 tường minh (`test:h2b:stack`, L6). */
 export const HUB_DEV_MAX_CONCURRENT_RUNS = "20";
 
+/** Env hub-api của hub-dev. H2c (plan §7, MK): `HUB_ATTACH_DRIVER=local`; `HUB_ATTACH_DIR` = env (tuyệt đối) nếu
+ * có, không thì `attachDir` (thư mục tạm mỗi lần `startHubDev`, xoá khi dừng). Hạn mức/sweeper: mặc định của Hub. */
 export function hubApiEnv(
   env: Record<string, string | undefined> = process.env,
+  attachDir?: string,
 ): Record<string, string> {
+  const dir = env.HUB_ATTACH_DIR?.trim() || attachDir;
   return {
     APP_ENV: "development",
     HUB_PORT: "4000",
     HUB_MAX_CONCURRENT_RUNS: env.HUB_MAX_CONCURRENT_RUNS?.trim() || HUB_DEV_MAX_CONCURRENT_RUNS,
+    HUB_ATTACH_DRIVER: "local",
+    ...(dir ? { HUB_ATTACH_DIR: dir } : {}),
   };
+}
+
+/** Thư mục file đính kèm tạm cho một lần hub-dev; `stop` xoá. */
+function tempAttachDir(stops: Stop[]): string {
+  const dir = mkdtempSync(join(tmpdir(), "hub-dev-attach-"));
+  stops.push(() => rmSync(dir, { recursive: true, force: true }));
+  return dir;
 }
 
 /** Dựng toàn bộ; trả `stop` cho phần đã bật. Bước hạ tầng hỏng → ném lỗi (đã dừng phần đã bật). */
@@ -177,9 +192,10 @@ export async function startHubDev(): Promise<HubDev> {
     if (bunRun(["packages/db/src/migrate.ts"]) !== 0) throw new Error("db:migrate lỗi");
     if (await adminStep(stops, notes)) await fixtureStep(notes);
     if (bunRun(["apps/hub-api/src/modules/seed/seed.ts"]) !== 0) throw new Error("hub:seed lỗi");
-    if (!(await healthy(HUB_URL)))
-      stops.push(await startServer("hub-api", "apps/hub-api/src/server.ts", HUB_URL, hubApiEnv()));
-    else notes.push("hub-api :4000 đã chạy sẵn — dùng lại");
+    if (!(await healthy(HUB_URL))) {
+      const env = hubApiEnv(process.env, tempAttachDir(stops));
+      stops.push(await startServer("hub-api", "apps/hub-api/src/server.ts", HUB_URL, env));
+    } else notes.push("hub-api :4000 đã chạy sẵn — dùng lại");
     // biome-ignore lint/suspicious/noUndeclaredEnvVars: chỉ script dev — `none` = Runtime tự chạy ngoài (WSL, claude-sub)
     if (process.env.HUB_DEV_RUNTIME === "none")
       notes.push("HUB_DEV_RUNTIME=none — không bật agent-runtime");

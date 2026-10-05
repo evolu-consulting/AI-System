@@ -18,7 +18,7 @@ export const HUBDEV_ARGS = [
 ];
 
 /** Thay `from` → `to` trong cả tiêu đề lẫn argv (một token argv có thể là cả chuỗi lệnh). */
-function extend(step: Step, from: string, to: string): Step {
+export function extend(step: Step, from: string, to: string): Step {
   return {
     ...step,
     title: step.title.replace(from, to),
@@ -26,7 +26,7 @@ function extend(step: Step, from: string, to: string): Step {
   };
 }
 
-const byTitle = (steps: Step[], prefix: string): Step => {
+export const byTitle = (steps: Step[], prefix: string): Step => {
   const s = steps.find((x) => x.title.startsWith(prefix));
   if (!s) throw new Error(`done:h2a thiếu bước "${prefix}"`);
   return s;

@@ -10,3 +10,6 @@ playwright-report/
 blob-report/
 .DS_Store
 Thumbs.db
+
+# H2c: file đính kèm Hub dev (HUB_ATTACH_DIR, plan H2c §7)
+.data/
