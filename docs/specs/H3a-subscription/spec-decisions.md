@@ -71,7 +71,7 @@ Ghi chú cho H3c (để không phá M4): Admin M4 đã có `GET /admin/usage` (a
 | **A (đề xuất)** | Làm S1 trước PLAN chốt: nếu CLI bản đang ghim có cách kiểm đăng nhập không gọi model → dùng cho vế đăng nhập; vế quota luôn cần lượt tối thiểu R14(b) (chỉ khi R12 không bỏ lượt). Chưa có kết quả S1 → PLAN theo (b) |
 | B | Chỉ (b), bỏ S1 | Đơn giản; mỗi probe tốn một lượt nhỏ |
 
-**Mặc định: A.**
+**Mặc định: A.** → **Đã chốt bởi Spike S1: (a) `auth status` cho đăng nhập + (b) lượt haiku cho quota** (xem mục Spike S1).
 
 ### Q7 · Ai được báo khi `logged_out` / `cooldown` / `allowed_warning`?
 | Lựa chọn | Nội dung |
@@ -82,7 +82,25 @@ Ghi chú cho H3c (để không phá M4): Admin M4 đã có `GET /admin/usage` (a
 **Mặc định: A.**
 
 ## Spike S1 — cách probe
-(chưa chạy — backend-lead ghi kết quả: lệnh đã thử, bản CLI, token/thời gian một lượt, có `RateLimitEvent` không)
+Chạy 2026-10-06, WSL Ubuntu user `worker`, CLI **bundled** của `claude-agent-sdk==0.2.163` = `2.1.286` (`~/.local/bin/claude` = 2.1.289 — **khác bản**, probe phải gọi bản bundled như Runtime). Không logout/login, không đọc/in giá trị token (chỉ tên khoá + hạn).
+
+| # | Lệnh / thử | Kết quả |
+|---|---|---|
+| 1 | `claude --help`, `claude auth --help` | Có `auth status [--json\|--text]` (JSON mặc định), `auth login/logout`, `doctor` (kiểm cài đặt, không phải đăng nhập), `setup-token` |
+| 2 | `claude auth status` (đã đăng nhập) | exit 0, JSON `loggedIn:true, authMethod:"claude.ai", subscriptionType:"max"` + email/orgId (PII — **không log**). ~5,1 s (cố định) |
+| 3 | như 2 nhưng `unshare -rn` (không mạng, không DNS) | Vẫn `loggedIn:true`, exit 0, ~5,1 s ⇒ **chỉ đọc file local, không xác thực với server** |
+| 4 | `CLAUDE_CONFIG_DIR=<tmp rỗng>` hoặc `HOME=<tmp rỗng>` | exit **1**, `loggedIn:false, authMethod:"none"` |
+| 5 | SDK: `ClaudeSDKClient` connect (không `query`) → `get_server_info()["account"]` | Đăng nhập: `{email, organization, subscriptionType:"Claude Max", apiProvider}`; config rỗng: `{tokenSource:"none"}`. ~5,8–7 s; cũng chạy được không mạng ⇒ cùng tính chất #3. SDK không có hàm auth riêng |
+| 6 | `.credentials.json` (chỉ khoá/hạn) | `claudeAiOauth.{accessToken, refreshToken, expiresAt, refreshTokenExpiresAt, scopes, subscriptionType, rateLimitTier}`; access hết hạn sau ~6,7 h (CLI tự refresh), refresh ~28,5 ngày |
+| 7 | **Lượt thật #1**: `max_turns=1`, `tools=[]`, `setting_sources=[]`, `mcp_servers={}`, prompt `Reply with: ok`, model mặc định | `RateLimitEvent{status:allowed, rate_limit_type:five_hour, resets_at}` (đến **trước** câu trả lời) · Result success · usage opus in 2 / out 4 / cache_creation 3 833 + lượt phụ haiku in 896 / out 8 · `total_cost_usd` 0,0317 (quy đổi, trừ vào hạn mức gói) · connect 5,8 s, API 2,0 s, tổng 9,5 s |
+| 8 | **Lượt thật #2**: như #7 + `model='haiku'`, `system_prompt='Reply ok.'` | `RateLimitEvent` như #7 · haiku in 4 211 / out 45 · cost 0,0044 (~7× rẻ hơn) · connect 6,1 s, API 1,7 s, tổng 8,7 s |
+
+**Kết luận — chọn (a)+(b) lai:**
+- **(a) vế đăng nhập, miễn phí:** `<bundled claude> auth status --json`, cwd thư mục probe, hạn 15 s. `exit≠0` hoặc `loggedIn≠true` ⇒ `logged_out` **không gọi model**. Chỉ đọc khoá `loggedIn` (bỏ email/orgId, không log stdout). Vòng `logged_out` mỗi `AGENT_RT_PROBE_LOGGED_OUT_S` chỉ dùng (a).
+- **(b) vế quota + token thật còn dùng được:** (a) ok và R12 không bỏ lượt ⇒ một lượt như #8 (`model='haiku'`, system prompt ngắn cố định, không tool/MCP/setting). Đọc `RateLimitEvent` + `ResultMessage` như job; lỗi "Not logged in"/401 ở (b) ⇒ `logged_out` (token bị thu hồi/refresh hết hạn mà (a) không thấy).
+- Chi phí (b): ~4,2 K token vào / ~45 ra trên haiku, ~9 s; với `AGENT_RT_PROBE_S=1200` tối đa 72 lượt/ngày khi rảnh.
+
+**Rủi ro:** (1) (a) không phát hiện token bị thu hồi phía server / refresh hết hạn — (b) và lỗi job (R01/PY-02) bù. (2) Probe haiku thấy giới hạn `five_hour` chung; giới hạn riêng theo model (vd tuần cho opus) có thể không lộ ở probe ⇒ job opus vẫn có thể bị `rejected` — R01–R02 đã xử lý từ tín hiệu job. (3) Chữ/khoá `auth status` là CLI nội bộ, có thể đổi khi nâng SDK ⇒ khoá theo bản ghim, kiểm lại khi nâng (PY-02). (4) ~5 s cố định mỗi lần (a); không chặn claim (chạy nền). (5) stdout chứa PII (email/org) ⇒ cấm log.
 
 ## Spike S2 — tín hiệu hết quota thật
 (chưa gặp — ghi khi log `claude.rate_limit` có `rejected`/`allowed_warning` thật)
