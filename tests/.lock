@@ -158,7 +158,7 @@ f40501ff6d2859a74390a08172d3595fc3b2ff7937dfb6b1ad84a73225caa514  tests/acceptan
 6e2cce3b1547ff440d03a75501bd651862d970a914573b74b53e963a976fbd96  tests/acceptance/H2b/dify-stream.int.test.ts
 8ad49d52c6bf513b1822667f5369aea0c2c27e48c881bb8f1cc96726df4378c9  tests/acceptance/H2b/direct.int.test.ts
 828604923aae90f626095c3fc89b73eb496c3356f03e7f3c0daaf5ba70070652  tests/acceptance/H2b/hubdev/fixture.hubdev.test.ts
-ccbdb615eb195dad042ad96d8d311e875e51aea3bf542e89d5e7f867132ed94c  tests/acceptance/H2b/mention.int.test.ts
+32613e8541026709a249af4da7a1880230df8b5ac05586d21e280b46153d770f  tests/acceptance/H2b/mention.int.test.ts
 1a0693d082f5203cd2a2d2a1440fa5085d9c4db96413c509a9a7582f43211aac  tests/acceptance/H2b/orchestrator-tenant.int.test.ts
 d3d628899791d1c4f531302e23811c5a5177b5a0d7a8823c26440a2b536ab48a  tests/acceptance/H2b/perf.perf.int.test.ts
 e4e515a6658568d5cfdc0bbc30f0c81693b2bdc319b1c095debef7d100ab9328  tests/acceptance/H2b/refused.int.test.ts

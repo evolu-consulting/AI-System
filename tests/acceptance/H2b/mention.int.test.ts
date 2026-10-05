@@ -81,6 +81,16 @@ async function rejected(content: string, o: { conv?: string; flow?: string } = {
   if (res.status !== 200) expect(await counts(sql)).toEqual(before);
   return res;
 }
+/** Chờ job đầu của run (200 SSE) đã ghi — Hub tạo job bất đồng bộ sau khi trả header (TC-7). */
+async function jobQueued(res: Res): Promise<void> {
+  const runId = res.headers.get("x-run-id") ?? "";
+  const jobs = await waitFor(
+    () => jobsOf(sql, runId),
+    (js) => js.length > 0,
+    5_000,
+  );
+  expect(jobs.length).toBeGreaterThan(0);
+}
 const subsetOfAu = (s: string[]) =>
   expect(s.every((x) => (LAN_AU as readonly string[]).includes(x))).toBe(true);
 
@@ -194,10 +204,12 @@ describe("A07 · thứ tự kiểm E12 với '@' [H2b-R18 · HUB-FR-94]", () => 
 
     const first = await post("Việc đang chạy A07", { conv });
     expect(first.status).toBe(200);
+    await jobQueued(first); // job Orchestrator của run vừa tạo ghi sau 200 (TC-7) — chờ trước khi `rejected` đếm
     const busyFlow = first.headers.get("x-flow-id") ?? "";
     expectAgentNotFound(await rejected("@nope x", { conv, flow: busyFlow }));
     const second = await post("Việc thứ hai A07");
     expect(second.status).toBe(200);
+    await jobQueued(second);
     expectMissingContent(await rejected("@assistant"));
   });
 });
