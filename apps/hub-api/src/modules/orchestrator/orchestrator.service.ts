@@ -105,7 +105,7 @@ async function deliver(d: OrchestratorDeps, ctx: RunContext, end: LoopEnd): Prom
   const { writer } = ctx;
   if (end.kind === "aborted") return;
   if (end.kind === "failed") {
-    await writer.finish({ kind: "failed", code: end.code });
+    await writer.finish({ kind: "failed", code: end.code, reason: end.reason ?? null });
     return;
   }
   const text = end.kind === "text" ? end.text : end.ask.question;

@@ -95,7 +95,7 @@ export type LoopStreamEnd = {
 export type LoopEnd =
   | { kind: "text"; text: string; agentId?: string; stream?: LoopStreamEnd }
   | { kind: "ask"; ask: Ask; agentId?: string }
-  | { kind: "failed"; code: ChatRunErrorCode }
+  | { kind: "failed"; code: ChatRunErrorCode; reason?: JobFailReason }
   | { kind: "aborted" };
 
 type Stop = Extract<LoopEnd, { kind: "failed" | "aborted" }>;
@@ -113,9 +113,13 @@ const addUsage = (s: State, o: LoopJobOutcome) => {
   if (o.kind !== "aborted") s.tokens += o.usage.input_tokens + o.usage.output_tokens;
 };
 
-/** Job lỗi → run lỗi cùng mã (P11); huỷ → dừng. */
-const stopOf = (o: Exclude<LoopJobOutcome, { kind: "result" }>): Stop =>
-  o.kind === "failed" ? { kind: "failed", code: o.code } : { kind: "aborted" };
+/** Job lỗi → run lỗi cùng mã (P11) + `reason` (P15, vd `refused` ⇒ hint F4; khoá vắng khi null); huỷ → dừng. */
+function stopOf(o: Exclude<LoopJobOutcome, { kind: "result" }>): Stop {
+  if (o.kind === "aborted") return o;
+  return o.reason
+    ? { kind: "failed", code: o.code, reason: o.reason }
+    : { kind: "failed", code: o.code };
+}
 
 /** P12 · đã phát rồi `invalid_output` (JSON cuối hỏng) → kết thúc với S (`stream_unparsed`); lỗi khác → null (như H1). */
 function stoppedAfterStream(

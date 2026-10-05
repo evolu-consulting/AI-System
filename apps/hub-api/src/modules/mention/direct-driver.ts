@@ -65,7 +65,8 @@ export function directOutcome(o: JobOutcome, agentId: string, locale: "vi" | "en
   if (o.kind === "aborted") return o;
   if (o.kind === "failed") {
     const unparsed = o.streamed !== "" && o.reason === "invalid_output";
-    return unparsed ? streamedEnd(o, null, agentId) : { kind: "failed", code: o.code };
+    if (unparsed) return streamedEnd(o, null, agentId);
+    return { kind: "failed", code: o.code, reason: o.reason };
   }
   const r = o.output.kind === "agent_result" ? o.output.result : null;
   if (o.streamed) return streamedEnd(o, r ? finalOf(r, locale) : null, agentId);

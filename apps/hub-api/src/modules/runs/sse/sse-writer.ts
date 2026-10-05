@@ -9,7 +9,7 @@ import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
 import { cancelJobs } from "../close/cancel.repo";
-import { runErrorText } from "../run-errors";
+import { runErrorTextFor } from "../run-errors";
 import * as repo from "../runs.repo";
 
 /** TTL `sse:<id>` khi run còn chạy (HUB-FR-42); sau kết thúc = `RUN_EVENTS_RETENTION_S`. */
@@ -42,7 +42,19 @@ export type RunInfo = {
  */
 export type RunOutcome =
   | { kind: "finished"; content: string; ask?: Ask | null; agentId?: string | null }
-  | { kind: "failed"; code: ChatRunErrorCode; agentId?: string | null };
+  | {
+      kind: "failed";
+      code: ChatRunErrorCode;
+      agentId?: string | null;
+      /** H2b P15 · `reason` của `job.failed` (vd `refused` ⇒ hint F4); vắng = như H1. */
+      reason?: string | null;
+    };
+
+/** Lỗi run (mã + câu theo locale; P15 `reason` ⇒ hint F4); `finished` ⇒ null. */
+function runErrorOf(o: RunOutcome, locale: repo.Locale) {
+  if (o.kind !== "failed") return null;
+  return { code: o.code, ...runErrorTextFor(o.code, locale, o.reason ?? null) };
+}
 
 export class RunFencedError extends Error {
   constructor(runId: string) {
@@ -140,8 +152,7 @@ export class SseWriter {
     if (this.#done) return false;
     const ask = o.kind === "finished" ? (o.ask ?? null) : null;
     const lastSeq = this.#seq + (ask ? 2 : 1);
-    const error =
-      o.kind === "failed" ? { code: o.code, ...runErrorText(o.code, this.run.locale) } : null;
+    const error = runErrorOf(o, this.run.locale);
     const status =
       o.kind === "finished" ? "finished" : o.code === "CANCELLED" ? "cancelled" : "failed";
     const content = o.kind === "finished" ? o.content : this.#deltas;

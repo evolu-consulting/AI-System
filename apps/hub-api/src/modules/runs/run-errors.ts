@@ -60,14 +60,20 @@ export function runErrorText(code: ChatRunErrorCode, locale: RunLocale): RunErro
   return { ...TEXTS[code][locale] };
 }
 
-/**
- * H2b-R27 (F4): như `runErrorText`, trừ `UPSTREAM_ERROR` + `reason = "refused"` → `hint` riêng (`plan-errors` §2).
- * B0: chỉ chữ ký (B11).
- */
+/** `hint` F4 khi Runtime phân loại `is_error` 0 token là `refused` (`plan-errors` §2, nguyên văn). */
+const REFUSED_HINT: Record<RunLocale, string> = {
+  vi: "Yêu cầu chưa xử lý được — hãy diễn đạt lại hoặc chia nhỏ.",
+  en: "The request could not be handled — rephrase or split it.",
+};
+
+/** H2b-R27 (F4, P15): như `runErrorText`, trừ `UPSTREAM_ERROR` + `reason = "refused"` → `hint` riêng (`plan-errors` §2). */
 export function runErrorTextFor(
-  _code: ChatRunErrorCode,
-  _locale: RunLocale,
-  _reason: string | null,
+  code: ChatRunErrorCode,
+  locale: RunLocale,
+  reason: string | null,
 ): RunErrorText {
-  throw new Error("not implemented: runErrorTextFor");
+  const t = runErrorText(code, locale);
+  return code === "UPSTREAM_ERROR" && reason === "refused"
+    ? { ...t, hint: REFUSED_HINT[locale] }
+    : t;
 }
