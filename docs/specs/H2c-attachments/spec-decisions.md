@@ -274,3 +274,14 @@ Nguồn: điều phối chuyển quyết định người dùng trong I1 (qc). *
 | PERF-2 | PF1 · `POST /attachments` 20 MiB, RSS tăng/upload | ≤ 8 MiB | **≤ 16 MiB** (p95 ≤ 1,5 s giữ nguyên) | B2-4: 8,7–10,6 MiB/lần ở 3/5 lượt, phần lớn khởi động lần đầu; I1 lượt 1 9,8 MiB (10 295 296 B) |
 
 Áp: `tests/acceptance/H2c/perf.perf.int.test.ts` (ngưỡng + tiêu đề ca, `tests/.lock` chỉ dòng file này), `spec.md` §6, `plan.md` §7, `test-plan-int.md` PF1/PF2. Đề xuất: đo lại trên Linux/CI khi có, siết lại nếu số đo cho phép.
+
+## I1 — sửa MK (hub-dev) (backend-lead, 2026-10-05)
+Nguồn: `test-plan-log` I1 bước 12 đỏ (c) — `attachment fetch failed: no_hub_url`. File của task MK (`tools/hub-dev/src/dev.ts`); test khoá không đổi.
+
+| # | Chỗ | Quyết định | Lý do |
+|---|---|---|---|
+| I1-1 | `runtimeEnv(inContainer)` | Thêm `AGENT_RT_HUB_URL = hubUrlForRuntime(inContainer)`: container ⇒ `http://host.docker.internal:4000`, tiến trình thường (Linux/WSL2 `uv`) ⇒ `http://localhost:4000` | Runtime tải file đính kèm (`runtimes/cli/files/fetch.py`) và lấy credential qua URL này; vắng ⇒ `no_hub_url` |
+| I1-2 | `startRuntimeContainer` | `--add-host host.docker.internal:host-gateway` (như `startRuntimeH2a` harness H2a/H2c) | Tên phân giải chắc chắn trong container trên Docker Desktop/WSL2 |
+| I1-3 | `HUB_PUBLIC_INTERNAL_URL` (cùng lỗi, MCP) | Có cùng vấn đề: hub-api trên host mặc định dev `http://localhost:4000` ⇒ `payload.mcp.url` = `localhost` ⇒ CLI trong container không gọi được `/mcp`. `hubApiEnv(env, attachDir, runtime)` đặt `HUB_PUBLIC_INTERNAL_URL = hubUrlForRuntime(runtime === "container")`, **ghi đè** `.env.local` (`.env.example` có `localhost:4000`; hub-dev quyết topo). `runtimeMode()` = `none` (`HUB_DEV_RUNTIME=none`, WSL mirrored ⇒ `localhost`) / `local` (linux) / `container`. hub-api `:4000` đã chạy sẵn ⇒ dùng lại + ghi chú URL MCP cần | Đồng bộ AGENT_RT_HUB_URL; tham số `runtime` mặc định `local` ⇒ test `done-h2b/h2c` của `hubApiEnv` giữ nguyên |
+| I1-4 | TC-4 H2a | Chỉ container dùng `host.docker.internal`; hub-api (host) không gọi URL này (chỉ chuyển vào payload job) | hosts Windows có thể trỏ IP cũ cho tiến trình trên host |
+| I1-5 | Kiểm | `done:h2c --from=12` (DB `ai_system_h2c_i1b_{,hub_}test`): 12–17 xanh (H01 `H2c/hubdev` 1/1); 18 báo cáo — xem `test-plan-log` I1 | — |

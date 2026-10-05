@@ -2,6 +2,10 @@
 // (compose): migrate → admin-api (:3001, dùng lại nếu đang chạy) → user fixture → `hub:seed` → hub-api (:4000)
 // (`HUB_MAX_CONCURRENT_RUNS` mặc định 20, `HUB_ATTACH_*` thư mục tạm mỗi lần — `hubApiEnv`) → agent-runtime (`fake-cli`; Windows: container Linux như
 // `tests/acceptance/H1/stack/_stack.ts`, Linux/WSL2: `uv` thẳng).
+// Runtime → Hub (H2c I1, như harness H2a/H2c): `AGENT_RT_HUB_URL` (tải file đính kèm, credential) và `HUB_PUBLIC_INTERNAL_URL`
+// (`<url>/mcp` trong payload job) = `hubUrlForRuntime`: container ⇒ `http://host.docker.internal:4000` + `--add-host
+// host.docker.internal:host-gateway`; tiến trình thường ⇒ `http://localhost:4000`. TC-4 H2a: chỉ container dùng tên này
+// (hosts Windows có thể trỏ sai cho tiến trình trên host) — hub-api trên host không gọi URL này.
 // `HUB_DEV_RUNTIME=none` bỏ bước Runtime (tự chạy trong WSL với `claude-sub`, docs/guides/hub-dev.md).
 // Ctrl+C dừng những gì script này đã bật. Env đọc từ `.env.local` (script gọi bằng `bun --env-file=.env.local`).
 import { mkdtempSync, rmSync } from "node:fs";
@@ -13,6 +17,9 @@ import { contractUsersJson, ensureContractFixture } from "./fixture";
 export const REPO = resolve(import.meta.dir, "../../..");
 export const HUB_URL = "http://localhost:4000";
 export const AUTH_URL = "http://localhost:3001";
+export const HUB_PORT = "4000";
+/** Tên host của máy chủ nhìn từ container (Docker Desktop / WSL2), kèm `--add-host …:host-gateway`. */
+export const HOST_ALIAS = "host.docker.internal";
 const RT_CONTAINER = "ai-hub-dev-runtime";
 const RT_DB_DEFAULT = "postgres://agent_runtime:agent_runtime_dev_pw@localhost:5432/ai_system";
 
@@ -75,7 +82,23 @@ function inNet(url: string, host: string, port: number): string {
   return u.toString();
 }
 
-function runtimeEnv(inContainer: boolean): Record<string, string> {
+/** Runtime chạy ở đâu: `none` (`HUB_DEV_RUNTIME=none`, tự chạy ngoài — WSL mirrored ⇒ `localhost`), `local` (Linux/WSL2),
+ * `container` (còn lại). */
+export type RuntimeMode = "none" | "local" | "container";
+export function runtimeMode(
+  env: Record<string, string | undefined> = process.env,
+  platform: string = process.platform,
+): RuntimeMode {
+  if (env.HUB_DEV_RUNTIME === "none") return "none";
+  return platform === "linux" ? "local" : "container";
+}
+
+/** URL Hub mà Runtime (và CLI/MCP trong nó) gọi được. */
+export function hubUrlForRuntime(inContainer: boolean): string {
+  return inContainer ? `http://${HOST_ALIAS}:${HUB_PORT}` : `http://localhost:${HUB_PORT}`;
+}
+
+export function runtimeEnv(inContainer: boolean): Record<string, string> {
   // biome-ignore lint/suspicious/noUndeclaredEnvVars: env Runtime chỉ của script dev, không ảnh hưởng cache turbo
   const db = process.env.AGENT_RT_DATABASE_URL || RT_DB_DEFAULT;
   const redis = process.env.REDIS_URL || "redis://localhost:6379";
@@ -83,6 +106,7 @@ function runtimeEnv(inContainer: boolean): Record<string, string> {
     APP_ENV: "development",
     AGENT_RT_DATABASE_URL: inContainer ? inNet(db, "postgres", 5432) : db,
     REDIS_URL: inContainer ? inNet(redis, "redis", 6379) : redis,
+    AGENT_RT_HUB_URL: hubUrlForRuntime(inContainer),
     AGENT_RT_WORKER_ID: "hub-dev",
     AGENT_RT_PROVIDERS: "fake-cli",
     AGENT_RT_WORK_DIR: "/tmp/hub-dev-work",
@@ -103,7 +127,16 @@ async function startRuntimeContainer(): Promise<Stop> {
   ].join("; ");
   const args = dockerArgs(REPO.split("\\").join("/"), cmd);
   const extra = Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
-  args.splice(1, 0, "-d", "--name", RT_CONTAINER, ...extra);
+  args.splice(
+    1,
+    0,
+    "-d",
+    "--name",
+    RT_CONTAINER,
+    "--add-host",
+    `${HOST_ALIAS}:host-gateway`,
+    ...extra,
+  );
   const r = docker(args);
   if (r.exitCode !== 0) throw new Error(`docker run lỗi: ${r.stderr.toString().slice(0, 400)}`);
   const until = Date.now() + 120_000;
@@ -159,15 +192,18 @@ async function fixtureStep(notes: string[]): Promise<void> {
 export const HUB_DEV_MAX_CONCURRENT_RUNS = "20";
 
 /** Env hub-api của hub-dev. H2c (plan §7, MK): `HUB_ATTACH_DRIVER=local`; `HUB_ATTACH_DIR` = env (tuyệt đối) nếu
- * có, không thì `attachDir` (thư mục tạm mỗi lần `startHubDev`, xoá khi dừng). Hạn mức/sweeper: mặc định của Hub. */
+ * có, không thì `attachDir` (thư mục tạm mỗi lần `startHubDev`, xoá khi dừng). Hạn mức/sweeper: mặc định của Hub.
+ * `HUB_PUBLIC_INTERNAL_URL` = `hubUrlForRuntime` theo `runtime` (I1 — ghi đè `.env.local`, vì hub-dev quyết định topo). */
 export function hubApiEnv(
   env: Record<string, string | undefined> = process.env,
   attachDir?: string,
+  runtime: RuntimeMode = "local",
 ): Record<string, string> {
   const dir = env.HUB_ATTACH_DIR?.trim() || attachDir;
   return {
     APP_ENV: "development",
-    HUB_PORT: "4000",
+    HUB_PORT,
+    HUB_PUBLIC_INTERNAL_URL: hubUrlForRuntime(runtime === "container"),
     HUB_MAX_CONCURRENT_RUNS: env.HUB_MAX_CONCURRENT_RUNS?.trim() || HUB_DEV_MAX_CONCURRENT_RUNS,
     HUB_ATTACH_DRIVER: "local",
     ...(dir ? { HUB_ATTACH_DIR: dir } : {}),
@@ -188,21 +224,20 @@ export async function startHubDev(): Promise<HubDev> {
   const stop = async () => {
     for (const s of stops.reverse()) await s();
   };
+  const mode = runtimeMode();
   try {
     if (bunRun(["packages/db/src/migrate.ts"]) !== 0) throw new Error("db:migrate lỗi");
     if (await adminStep(stops, notes)) await fixtureStep(notes);
     if (bunRun(["apps/hub-api/src/modules/seed/seed.ts"]) !== 0) throw new Error("hub:seed lỗi");
     if (!(await healthy(HUB_URL))) {
-      const env = hubApiEnv(process.env, tempAttachDir(stops));
+      const env = hubApiEnv(process.env, tempAttachDir(stops), mode);
       stops.push(await startServer("hub-api", "apps/hub-api/src/server.ts", HUB_URL, env));
-    } else notes.push("hub-api :4000 đã chạy sẵn — dùng lại");
-    // biome-ignore lint/suspicious/noUndeclaredEnvVars: chỉ script dev — `none` = Runtime tự chạy ngoài (WSL, claude-sub)
-    if (process.env.HUB_DEV_RUNTIME === "none")
-      notes.push("HUB_DEV_RUNTIME=none — không bật agent-runtime");
-    else
-      stops.push(
-        process.platform === "linux" ? await startRuntimeLocal() : await startRuntimeContainer(),
+    } else
+      notes.push(
+        `hub-api :4000 đã chạy sẵn — dùng lại (MCP cần HUB_PUBLIC_INTERNAL_URL=${hubUrlForRuntime(mode === "container")})`,
       );
+    if (mode === "none") notes.push("HUB_DEV_RUNTIME=none — không bật agent-runtime");
+    else stops.push(mode === "local" ? await startRuntimeLocal() : await startRuntimeContainer());
     return { stop, notes };
   } catch (err) {
     await stop();

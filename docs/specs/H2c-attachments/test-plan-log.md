@@ -200,3 +200,19 @@ P32 perf (L10, báo cáo): 10 × 2 MiB tải 131 ms.
 **S05 IP:** `tests/acceptance/H2c/stack/_stack.ts` `hostIp()` lấy động qua `os.networkInterfaces()` (IPv4 đầu tiên `!internal`, vắng ⇒ `host.docker.internal`), không ghi cứng `192.168.2.18` ⇒ không sửa. Ghi chú: máy này IPv4 đầu tiên là `vEthernet (WSL)` 172.26.0.1 (không phải Wi-Fi 192.168.2.18) — Hub (host) và Runtime (container) đều tới được, S05 xanh. Nếu máy khác chọn phải adapter không tới được thì cân nhắc ưu tiên adapter có gateway.
 
 **Lỗi code:** 1 — hub-dev thiếu `AGENT_RT_HUB_URL` cho Runtime (bước 12). Đề xuất (backend-lead, MK): `runtimeEnv(inContainer)` thêm `AGENT_RT_HUB_URL` = `http://host.docker.internal:<cổng hub-dev>` (container, kèm `--add-host host.docker.internal:host-gateway`) / `http://localhost:<cổng>` (tiến trình), rồi chạy lại `bun run done:h2c --from=12`. **I1 chưa tick.**
+
+**Sửa (backend-lead, I1 lượt 3 · 2026-10-05):** `tools/hub-dev/src/dev.ts` (MK) — `AGENT_RT_HUB_URL` + `HUB_PUBLIC_INTERNAL_URL` = `http://host.docker.internal:4000` khi Runtime trong container (kèm `--add-host host.docker.internal:host-gateway`), `http://localhost:4000` khi tiến trình thường (sd "I1 — sửa MK (hub-dev)"). `HUB_PUBLIC_INTERNAL_URL` có cùng lỗi (MCP `payload.mcp.url` = `localhost` với container) ⇒ sửa đồng bộ. Test khoá không đổi.
+
+`bun run done:h2c --from=12` — DB riêng `TEST_DATABASE_URL` = `ai_system_h2c_i1b_test` (`db:test:create h2c_i1b`), `HUB_TEST_DATABASE_URL`/`AGENT_RT_TEST_DATABASE_URL` = `ai_system_h2c_i1b_hub_test` (tạo tay); chỉ export `*DATABASE_URL`. Runner: `done:h2c XANH (từ bước 12)`. DB test đã drop.
+
+| # | Bước | Kết quả |
+|---|---|---|
+| 12 | H01 `H2c/hubdev` | **xanh** — 1/1 (log Hub `attachment-served` → `GET /internal/jobs/:id/attachments/:id` 200) |
+| 13 | `test:lock:verify` | xanh (352 file) |
+| 14 | `trace --check` | xanh (190 mã) |
+| 15 | `check:size --all` | xanh (1663 file) |
+| 16 | depcruise | xanh (292 module) |
+| 17 | `tsc -p tsconfig.tests.json` (báo cáo) | xanh |
+| 18 | `test:perf H2a H2b H2c` (báo cáo) | 592/594 — PF1–PF3 xanh, H01 H2b/H2c xanh. Đỏ: (1) Admin ADM-FR-53 6,13 ms > 5 (máy bận, TD #56, không thuộc H2c); (2) `H2c/command-file.int.test.ts:285` A108 `ups[0].at <= jobs.created_at` sai **chập chờn khi máy bận** (so đồng hồ tiến trình MK trên host với `now()` của Postgres trong container) — chạy riêng file 3 lần trên cùng DB: 11/11 ×3 xanh; bước 3 lượt 1 cũng xanh. Đề xuất qc xem có cần dung sai đồng hồ. ADM-NFR-03 lần này xanh |
+
+Bước 1–11: theo lượt 1–2 ở trên (bước 3 đỏ chập chờn Admin M4-AC18, không thuộc H2c, chạy riêng 3/3 xanh — không chạy lại). **I1 tick.**
