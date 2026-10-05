@@ -1,13 +1,16 @@
-// HUB-FR-75 · WRK-BR-06 · H2c-R17 · P16 · `GET /internal/jobs/:job_id/attachments/:attachment_id` (plan H2c §5.4): token job
-// (Bearer, chỉ so hash) → job `running` có đúng `id` ∧ `type='agent.cli'` ∧ payload hợp `AgentCliJobSchema` ∧ `attId` ∈
-// `payload.attachments[].id` → hàng `attachments` cùng tenant của job (plan-db §2.5, scope `system`). Mọi sai → cùng
-// `unauthorized` (không lộ tồn tại); `purged_at` / file mất trên kho → `not_found`. Không log token/Authorization.
-import { AgentCliJobSchema } from "@ai/contracts/hub";
+// HUB-FR-75 · WRK-BR-06 · WRK-FR-18 · H2c-R17, R25 · P16, P21 · endpoint file nội bộ (plan H2c §5.4, §5.5): token job
+// (Bearer, chỉ so hash) → job `running` có đúng `id` ∧ `type='agent.cli'` ∧ payload hợp `AgentCliJobSchema`.
+// Tải (R17): ∧ `attId` ∈ `payload.attachments[].id` → hàng `attachments` cùng tenant của job (plan-db §2.5, scope `system`);
+// `purged_at` / file mất trên kho → `not_found`. Output (R25): ∧ `payload.agent.role='agent'` → `AttachmentService.ingestOutput`
+// (≤ 5/lần claim, luồng tải lên). Mọi sai xác thực → cùng `unauthorized` (không lộ tồn tại). Không log token/Authorization.
+import type { Attachment } from "@ai/contracts/chat";
+import { type AgentCliJob, AgentCliJobSchema } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { hashJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
+import type { AttachmentService, OutputJob, UploadInput } from "../attachments/attachments.service";
 import type { AttachmentStorage } from "../attachments/storage";
 import * as repo from "./credential.repo";
 import { bearerJobToken } from "./credential.service";
@@ -17,7 +20,14 @@ export type JobDownloadResult =
   | { kind: "unauthorized" }
   | { kind: "not_found" };
 
-export type InternalAttachmentDeps = { db: Db; storage: AttachmentStorage; log: Logger };
+export type JobOutputResult = { kind: "ok"; id: string } | { kind: "unauthorized" };
+
+export type InternalAttachmentDeps = {
+  db: Db;
+  storage: AttachmentStorage;
+  files: AttachmentService;
+  log: Logger;
+};
 
 const UNAUTHORIZED = { kind: "unauthorized" } as const;
 const NOT_FOUND = { kind: "not_found" } as const;
@@ -25,16 +35,37 @@ export const OCTET = "application/octet-stream";
 
 type Found = { row: repo.JobAttachmentRow } | null;
 
-/** Token → job → payload → hàng file (một transaction `system`); null = mọi sai (401). */
-async function findJobFile(tx: Tx, token: string, jobId: string, attId: string): Promise<Found> {
+type AgentJob = { job: repo.CredentialJob; payload: AgentCliJob };
+
+/** Token → job `running` đúng `id`, `agent.cli`, payload hợp contract; null = mọi sai (401). */
+async function agentJob(tx: Tx, token: string, jobId: string): Promise<AgentJob | null> {
   const job = await repo.jobByTokenHash(tx, hashJobToken(token));
   if (!job || job.id !== jobId || job.type !== "agent.cli") return null;
   const payload = AgentCliJobSchema.safeParse(job.payload);
-  if (!payload.success) return null;
+  return payload.success ? { job, payload: payload.data } : null;
+}
+
+/** Token → job → payload → hàng file (một transaction `system`); null = mọi sai (401). */
+async function findJobFile(tx: Tx, token: string, jobId: string, attId: string): Promise<Found> {
+  const found = await agentJob(tx, token, jobId);
+  if (!found) return null;
   // So nguyên văn (uuid chữ thường của payload) ⇒ id sai dạng / chữ hoa không tới DB (A89).
-  if (!(payload.data.attachments ?? []).some((a) => a.id === attId)) return null;
-  const row = await repo.jobAttachment(tx, attId, job.tenantId);
+  if (!(found.payload.attachments ?? []).some((a) => a.id === attId)) return null;
+  const row = await repo.jobAttachment(tx, attId, found.job.tenantId);
   return row ? { row } : null;
+}
+
+/** R25: job agent (role `agent`, không Orchestrator) → chủ + nơi của output; null = 401. */
+async function outputJob(tx: Tx, token: string, jobId: string): Promise<OutputJob | null> {
+  const found = await agentJob(tx, token, jobId);
+  if (found?.payload.agent.role !== "agent") return null;
+  return {
+    jobId: found.job.id,
+    tenantId: found.job.tenantId,
+    userId: found.job.userId,
+    conversationId: found.payload.conversation_id,
+    flowId: found.payload.flow_id,
+  };
 }
 
 export class InternalAttachmentService {
@@ -61,5 +92,24 @@ export class InternalAttachmentService {
     }
     this.d.log.info("attachment-served", { attachment_id: row.id, job_id: jobId });
     return { kind: "ok", blob: file, sha256: row.sha256 };
+  }
+
+  /**
+   * `POST /internal/jobs/:job_id/outputs` (R25): xác thực như `download` (+ role `agent`) rồi `ingestOutput`. Lỗi tải lên
+   * (400/409/413/415/500) ném `AppError` như `POST /attachments`.
+   */
+  async output(
+    authorization: string | undefined,
+    jobId: string,
+    input: UploadInput,
+  ): Promise<JobOutputResult> {
+    const token = bearerJobToken(authorization);
+    if (!token) return UNAUTHORIZED;
+    const job = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+      outputJob(tx, token, jobId),
+    );
+    if (!job) return UNAUTHORIZED;
+    const out: Attachment = await this.d.files.ingestOutput(job, input, this.d.log);
+    return { kind: "ok", id: out.id };
   }
 }

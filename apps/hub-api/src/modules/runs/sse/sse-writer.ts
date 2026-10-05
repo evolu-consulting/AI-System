@@ -3,11 +3,13 @@
 // Kết thúc chỉ khi `UPDATE runs … WHERE status='running' AND owner=$me` trả 1 dòng; 0 dòng → không XADD.
 import type { Ask, ChatEventName, ChatRunErrorCode } from "@ai/contracts/chat";
 import { RUN_EVENTS_RETENTION_S, TERMINAL_EVENTS } from "@ai/contracts/chat";
+import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
+import { bindRunOutputs } from "../../attachments/run-files";
 import { cancelJobs } from "../close/cancel.repo";
 import { runErrorTextFor } from "../run-errors";
 import * as repo from "../runs.repo";
@@ -145,8 +147,8 @@ export class SseWriter {
   }
 
   /**
-   * Kết thúc run (§5.2): transaction `system` (flows FOR UPDATE → runs P12 → tin assistant → flows → jobs khi lỗi) **rồi** XADD
-   * `ask?` + sự kiện kết thúc, `EXPIRE sse 600`, `DEL run:<id>`. Trả false khi không còn là chủ (không ghi gì).
+   * Kết thúc run (§5.2): transaction `system` (flows FOR UPDATE → runs P12 → tin assistant → output H2c R26 → flows → jobs
+   * khi lỗi) **rồi** XADD `ask?` + sự kiện kết thúc, `EXPIRE sse 600`, `DEL run:<id>`. Trả false khi không còn là chủ.
    */
   async finish(o: RunOutcome): Promise<boolean> {
     if (this.#done) return false;
@@ -167,16 +169,7 @@ export class SseWriter {
         error,
       });
       if (!t) return null;
-      const o2 = { tenantId: r.tenantId, userId: r.userId };
-      await repo.insertMessage(tx, o2, {
-        id: r.answerMessageId,
-        conversationId: r.conversationId,
-        flowId: r.flowId,
-        role: "assistant",
-        content,
-        runId: r.id,
-        ask,
-      });
+      await this.#insertAnswer(tx, { content, ask, finished: status === "finished" });
       // Chỉ `ask` của agent (need_input, có `agentId`) mới chờ trả lời: Orchestrator tự hỏi thì tin kế phải qua
       // Orchestrator, không route về `flows.agent_id` cũ (plan §6.1, AC-H15).
       await repo.updateFlowAfterRun(tx, {
@@ -196,6 +189,34 @@ export class SseWriter {
     const ms = Math.max(0, times.finishedAt.getTime() - times.startedAt.getTime());
     await this.#publishEnd(ask, error ? { ...error } : null, { content, ms });
     return true;
+  }
+
+  /** Tin assistant (P8: sau `runs`) → H2c R26 (P15): output job gắn vào tin — chỉ khi `finished` (R27 dọn phần còn lại). */
+  async #insertAnswer(
+    tx: Tx,
+    p: { content: string; ask: Ask | null; finished: boolean },
+  ): Promise<void> {
+    const r = this.run;
+    await repo.insertMessage(
+      tx,
+      { tenantId: r.tenantId, userId: r.userId },
+      {
+        id: r.answerMessageId,
+        conversationId: r.conversationId,
+        flowId: r.flowId,
+        role: "assistant",
+        content: p.content,
+        runId: r.id,
+        ask: p.ask,
+      },
+    );
+    if (!p.finished) return;
+    await bindRunOutputs(tx, {
+      runId: r.id,
+      messageId: r.answerMessageId,
+      conversationId: r.conversationId,
+      flowId: r.flowId,
+    });
   }
 
   async #publishEnd(

@@ -229,6 +229,17 @@ BA chỉ nêu ví dụ "PDF, ảnh, XML" (US-H07). Hub không quét virus ở H2
 | B6-5 | `jobFileNames` | Bớt byte bằng helper riêng trong `run-files.rules.ts` (không export `cutBytes` của `attachment.rules.ts` — tránh đụng file B7 đang sửa); không đuôi → `name-2` | plan-rules §3 |
 | B6-6 | `prompt` + khối > `PROMPT_MAX` | Không cắt: `buildJobPayload` → null ⇒ `job-payload-invalid` như H1 (khối ≤ 10 dòng, `PROMPT_MAX` 200 000) | Hiếm; không tự đổi nội dung người dùng |
 
+## BUILD — B9 (backend-lead, 2026-10-05)
+| # | Chỗ | Quyết định | Lý do |
+|---|---|---|---|
+| B9-1 | `AttachmentService.ingest(target, input, log)` | Luồng §5.1 tách khỏi `upload` thành `ingest` theo `IngestTarget{tenantId, userId, origin, jobId, conversationId, flowId, guard?}`; `upload(u, …)` = `ingest` origin `upload` (hành vi B2 giữ nguyên); `ingestOutput(job, …)` cho R25 (plan §4 ghi `ingestOutput` trong service). `countedBody` chuyển sang `attachments/counted-body.ts` | Một luồng tên/loại/chữ ký/20 MiB/hạn mức/hai pha cho cả upload và output (R25 "Hub áp R02, R03, R06"); `check:size` |
+| B9-2 | P21 · PL10 | `countJobOutputs` (plan-db §2.5, `created_at >= jobs.started_at`) ≥ `JOB_OUTPUTS_MAX` (5) ⇒ 409 `ATTACHMENT_QUOTA_EXCEEDED` — kiểm **sớm** (transaction `system` riêng, trước khi đọc thân) **và chốt** trong transaction INSERT sau khoá tenant (`guard`) ⇒ gửi song song cùng job không vượt 5. Thứ tự lỗi: 401 → 409 (≥ 5) → 400 header → 415 đuôi → 413/400 `Content-Length` → 409 hạn mức sớm → (thân) 413/415 chữ ký/400 rỗng → 409 chốt | plan §5.5; khoá tenant đã tuần tự hoá INSERT của tenant |
+| B9-3 | Xác thực `/outputs` | `bearerJobToken` → `jobByTokenHash` (`running`) → `id` khớp ∧ `agent.cli` ∧ `AgentCliJobSchema` ∧ `payload.agent.role = 'agent'` (dùng chung `agentJob` với tải R17); mọi sai ⇒ 401 `UNAUTHORIZED` một thân + `WWW-Authenticate: Bearer`. Chủ = `jobs.tenant_id`/`jobs.user_id`, `conversation_id`/`flow_id` = payload, chưa `message_id` | P16, plan §5.5; A93 |
+| B9-4 | Lỗi `/outputs` | Route bắt lỗi → `mapError` → `toErrorBody` + `Cache-Control: no-store` (`app.onError` không thêm `no-store`); 500 log `attachment-output-failed` (`safeErrorFields`, không tên file/token). Log `attachment_uploaded`/`attachment-rejected` origin `output` thêm `job_id` | plan-errors §1 nội bộ, §5; A91, A94 |
+| B9-5 | `bindOutputs` (R26, P15, PL6) | SQL plan-db §2.4 nguyên văn ở `attachments.repo`, gọi qua `run-files.bindRunOutputs` (depcruise `no-cross-module-repo`) trong `SseWriter.#insertAnswer` ngay sau INSERT tin assistant, **chỉ** khi `status='finished'` (failed/cancelled không gắn — R27 dọn). Thứ tự khoá `flows → runs → messages → attachments → flows → jobs` (P8). `finish` tách `#insertAnswer` | `check:fn` (`finish` 57 > 50 dòng) |
+| B9-6 | `X-Content-SHA256` | Không dùng ở `/outputs`: Runtime không gửi (plan-runtime §5), phản hồi chỉ `JobOutputResponse{id}` (plan §2.4); Hub tự tính sha256 khi `stage`. Header vẫn chỉ ở tải nội bộ R17 (B5) | plan §2.4, rt §9 F3/F8 |
+| B9-7 | **Tranh chấp test khoá** A90 | `outputs.int.test.ts:116` `toMatchObject({…, size: body.length})` so với `attRow` (`select *`): cột `size bigint` ⇒ postgres.js trả **chuỗi** `"32"` ⇒ A90 đỏ chỉ vì kiểu (mọi trường khác khớp, 201 + `JobOutputResponse` + file trên đĩa đúng). Không sửa test — đề xuất qc: `size: String(body.length)` hoặc `Number(row.size)` | Không có cách phía code trả `size` dạng số qua `select *` của client test |
+
 ## BUILD — B7 (backend-lead, 2026-10-05)
 | # | Chỗ | Quyết định | Lý do |
 |---|---|---|---|

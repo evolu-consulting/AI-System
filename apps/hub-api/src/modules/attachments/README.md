@@ -8,6 +8,7 @@ Spec H2c-attachments (R01–R29); plan §1 P4–P23, §4, §5; chữ ký hàm th
 | `sniff.rules.ts` | thuần: `SNIFF_HEAD`, `isExecutableHead`, `headOk`, `FileInspector` (kiểm từng chunk, plan-rules §2) |
 | `run-files.rules.ts` | thuần: `pickRunFiles`, `jobFileNames`, `jobAttachments`, `fileSizeKb`, `orchestratorFilesBlock`, `agentFilesBlock`, `OUT_HINT`/`withOutHint` (plan-rules §3) |
 | `run-files.ts` | **B4** · E12: `checkSendable(db, u, ids)` (R09, scope `user`, ngoài transaction — R10; mọi sai ⇒ 404 `ATTACHMENT_NOT_FOUND{ids}`) · `bindRunFiles(tx, o, p)` trong `createRunTx` sau INSERT messages (R11 gắn, số hàng ≠ ⇒ 404 rollback; R14 `runFileRows` → `pickRunFiles`). Chỉ cần DB (PL14) |
+| `run-files.ts` (B9) · `counted-body.ts` | `bindRunOutputs(tx, p)` (R26, PL6, PL10 — plan-db §2.4) gọi từ `SseWriter.finish` khi run `finished`; `countedBody` (đếm byte thân, dùng chung upload/output) |
 | `attachment-dify.ts` | **B7** · `uploadToDify(deps, {tenantId, file}, target, signal)` (kho → `dify/dify-upload` `uploadDifyFile`, tên `safe_name`) + trace `detail.upload`; `difyFileInput`; `AttachmentContentMissing` (kho vắng/mất ⇒ `INTERNAL_ERROR`). Dùng ở `commands/driver/command-files.ts`, MCP (B8) |
 | `attach-env.rules.ts` | thuần: `parseAttachEnv` (`HUB_ATTACH_*`, plan §7) |
 | `storage.ts` | interface `AttachmentStorage` (`stage/open/blob/remove/promote/list`, PL1; `promote` = hoàn tất `.part` cho sweeper, PL13), lỗi `StorageTooLarge`/`StorageRejected`/`StorageKeyError`, khoá `storageKey`/`isStorageKey`/`keyUnder` |
@@ -18,4 +19,4 @@ Spec H2c-attachments (R01–R29); plan §1 P4–P23, §4, §5; chữ ký hàm th
 Trạng thái: **B1** xong storage `local` + `parseAttachEnv` + khởi động (`server.ts`, `config/env-deps.ts` `attachEnvOf`;
 `lib/unread-body.ts` đóng/đọc bỏ thân khi lỗi sớm — spec-decisions B1-1…B1-7); hàm còn lại vẫn stub `not implemented`. B2/B3: `POST/GET /attachments*`
 (`attachments.{repo,service,routes}.ts`, `app.h2c.ts`); B4: E12 gắn file + tập file run (`run-files.ts`, `pickRunFiles`); B6/B7/B8: job agent, Dify, MCP;
-B9: output; B10: sweeper.
+B9: output (`AttachmentService.ingest`/`ingestOutput`, `countJobOutputs`/`bindOutputs` — spec-decisions B9-1…B9-7); B10: sweeper.

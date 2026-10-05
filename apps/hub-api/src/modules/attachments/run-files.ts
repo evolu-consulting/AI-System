@@ -8,7 +8,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import { appError } from "../../lib/errors";
-import { bindAttachments, runFileRows, sendableFiles } from "./attachments.repo";
+import { bindAttachments, bindOutputs, runFileRows, sendableFiles } from "./attachments.repo";
 import { type FileRow, pickRunFiles, type RunFile, toRunFile } from "./run-files.rules";
 
 type Owner = { tenantId: string; userId: string };
@@ -84,4 +84,15 @@ export async function bindRunFiles(tx: Tx, o: Owner, p: RunFilesInput): Promise<
     kind: p.kind,
   });
   return picked.map(toRunFile);
+}
+
+/**
+ * R26 · P15 · PL6 · PL10 (plan-db §2.4) · `SseWriter.finish` khi run `finished` (scope `system`, sau INSERT tin assistant):
+ * gắn output của job thuộc run (lần claim hiện hành, bản mới nhất mỗi tên, ≤ 10) vào tin trả lời. Trả số file gắn.
+ */
+export function bindRunOutputs(
+  tx: Tx,
+  p: { runId: string; messageId: string; conversationId: string; flowId: string },
+): Promise<number> {
+  return bindOutputs(tx, p);
 }

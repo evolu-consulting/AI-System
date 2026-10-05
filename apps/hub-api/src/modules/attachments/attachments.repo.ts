@@ -152,3 +152,38 @@ export async function runFileRows(
     order by (m.id = ${p.currentMessageId}) desc, m.created_at desc, m.id desc, a.position
     limit 11`);
 }
+
+/** P21 · PL10 (plan-db §2.5) · số output của lần claim hiện hành (`created_at >= jobs.started_at`). Scope `system`. */
+export async function countJobOutputs(tx: Tx, jobId: string): Promise<number> {
+  const [r] = await tx.execute<{ n: number }>(sql`select count(*)::int as n
+    from hub.attachments a join hub.jobs j on j.id = a.job_id
+    where a.job_id = ${jobId} and a.origin = 'output' and a.created_at >= j.started_at`);
+  return Number(r?.n ?? 0);
+}
+
+/**
+ * R26 · PL6 · PL10 (plan-db §2.4, nguyên văn) · trong `SseWriter.finish` (scope `system`, run `finished`, sau INSERT tin
+ * assistant — P8): mỗi (job, `safe_name`) của lần claim hiện hành lấy bản mới nhất, ≤ 10 theo (thứ tự job, tên) → gắn
+ * vào tin trả lời. Trả số hàng gắn.
+ */
+export async function bindOutputs(
+  tx: Tx,
+  p: { runId: string; messageId: string; conversationId: string; flowId: string },
+): Promise<number> {
+  const rows = await tx.execute<{ id: string }>(sql`with latest as (
+      select distinct on (a.job_id, a.safe_name) a.id, a.job_id, a.safe_name, j.created_at as job_created_at
+      from hub.jobs j join hub.attachments a on a.job_id = j.id
+      where j.run_id = ${p.runId} and a.origin = 'output' and a.message_id is null and a.purged_at is null
+        and a.created_at >= j.started_at
+      order by a.job_id, a.safe_name, a.created_at desc
+    ), picked as (
+      select id, (row_number() over (order by job_created_at, job_id, safe_name) - 1)::smallint as pos
+      from latest order by job_created_at, job_id, safe_name limit 10
+    )
+    update hub.attachments a
+    set message_id = ${p.messageId}, conversation_id = ${p.conversationId}, flow_id = ${p.flowId}, bound_at = now(),
+      position = p.pos
+    from picked p where a.id = p.id
+    returning a.id`);
+  return rows.length;
+}

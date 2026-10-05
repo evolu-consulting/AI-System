@@ -1,8 +1,9 @@
-// HUB-FR-44 · HUB-FR-75 · H2c-R01–R07, R13 · nghiệp vụ `POST /attachments` (plan §5.1) và `GET /attachments/:id(/content)`
-// (plan §5.7, P22). Thứ tự kiểm plan §2.4: header (400) → đuôi (415) → `Content-Length` (413/400) → hạn mức sớm (409) →
-// stream ra `.part` (413/415/400) → transaction khoá tenant (409 chốt) → INSERT → commit DB → rename (R05).
-// Hạn mức là **theo tenant** ⇒ câu SUM/khoá/INSERT chạy scope `system` với `tenant_id`/`user_id` lấy từ JWT (RLS scope
-// `user` chỉ thấy hàng của chính user — spec-decisions "BUILD — B2/B3" B2-1). Không log tên file, không byte thân.
+// HUB-FR-44 · HUB-FR-75 · WRK-FR-18 · H2c-R01–R07, R13, R25 · nghiệp vụ `POST /attachments` (plan §5.1), output job
+// (`ingest` origin `output`, plan §5.5 — gọi từ `internal/attachments.service`) và `GET /attachments/:id(/content)` (plan
+// §5.7, P22). Thứ tự kiểm plan §2.4: header (400) → đuôi (415) → `Content-Length` (413/400) → hạn mức sớm (409) → stream ra
+// `.part` (413/415/400) → transaction khoá tenant (409 chốt; output: ≤ 5/lần claim chốt — P21) → INSERT → commit DB → rename
+// (R05). Hạn mức là **theo tenant** ⇒ câu SUM/khoá/INSERT chạy scope `system` với `tenant_id`/`user_id` của chủ (JWT hoặc
+// job) (spec-decisions "BUILD — B2/B3" B2-1). Không log tên file, không byte thân.
 import { randomUUID } from "node:crypto";
 import {
   ATTACH_MAX_BYTES,
@@ -10,6 +11,8 @@ import {
   type Attachment,
   type AttachmentDetail,
 } from "@ai/contracts/chat";
+import { JOB_OUTPUTS_MAX } from "@ai/contracts/hub";
+import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
@@ -26,6 +29,7 @@ import {
   safeName,
 } from "./attachment.rules";
 import {
+  countJobOutputs,
   deleteAttachment,
   findOwnedAttachment,
   insertAttachment,
@@ -33,6 +37,7 @@ import {
   type OwnedAttachment,
   quotaUsed,
 } from "./attachments.repo";
+import { countedBody } from "./counted-body";
 import { FileInspector } from "./sniff.rules";
 import {
   type AttachmentStorage,
@@ -51,6 +56,27 @@ export type UploadInput = {
   body: ReadableStream<Uint8Array> | null;
 };
 
+/** Chủ + nguồn của hàng mới. `output`: `jobId` + hội thoại/flow của payload job, chưa `message_id` (plan §5.5). */
+export type IngestTarget = {
+  tenantId: string;
+  userId: string;
+  origin: "upload" | "output";
+  jobId: string | null;
+  conversationId: string | null;
+  flowId: string | null;
+  /** Kiểm thêm trong transaction INSERT, sau khoá tenant (output: P21 ≤ 5/lần claim) — ném `AppError` ⇒ rollback. */
+  guard?: (tx: Tx) => Promise<void>;
+};
+
+/** Job agent đã xác thực (token → job `running`, role `agent`) — chủ + nơi của output (plan §5.5). */
+export type OutputJob = {
+  jobId: string;
+  tenantId: string;
+  userId: string;
+  conversationId: string;
+  flowId: string;
+};
+
 export type AttachmentServiceDeps = { db: Db; storage: AttachmentStorage; tenantMaxBytes: number };
 
 /**
@@ -62,46 +88,13 @@ export type ContentResult = { body: Blob; headers: Record<string, string> };
 const SYSTEM = { kind: "system" } as const;
 const tooLarge = () => appError("ATTACHMENT_TOO_LARGE", { max_bytes: ATTACH_MAX_BYTES });
 const badField = (field: "X-Filename" | "body") => appError("VALIDATION_ERROR", { field });
-
-/** Thân request kèm bộ đếm byte (log `attachment-upload-aborted`) và cờ lỗi đọc (client đứt). */
-type CountedBody = {
-  stream: ReadableStream<Uint8Array>;
-  st: { bytes: number; readError: boolean };
-  /** Nhả khoá đọc thân gốc (không huỷ) — tầng HTTP còn đọc bỏ phần dư (spec-decisions B1-3, B1-4). */
-  release: () => void;
-};
-
-function countedBody(src: ReadableStream<Uint8Array>): CountedBody {
-  const reader = src.getReader();
-  const st = { bytes: 0, readError: false };
-  let released = false;
-  const stream = new ReadableStream<Uint8Array>(
-    {
-      async pull(ctl) {
-        try {
-          const { done, value } = await reader.read();
-          if (done) return ctl.close();
-          st.bytes += value.length;
-          ctl.enqueue(value);
-        } catch (e) {
-          st.readError = true;
-          ctl.error(e);
-        }
-      },
-    },
-    { highWaterMark: 0 },
-  );
-  const release = () => {
-    if (released) return;
-    released = true;
-    try {
-      reader.releaseLock();
-    } catch {
-      // đã nhả / đang đọc dở: tầng HTTP tự bỏ thân
-    }
-  };
-  return { stream, st, release };
-}
+/** Trường log chung (không tên file); `output` thêm `job_id` (plan-errors §5). */
+const logBase = (t: IngestTarget) => ({
+  tenant_id: t.tenantId,
+  user_id: t.userId,
+  origin: t.origin,
+  ...(t.jobId ? { job_id: t.jobId } : {}),
+});
 
 /** Tên + loại đã kiểm từ `X-Filename` (400 → 415). */
 function checkName(raw: string | undefined): {
@@ -122,44 +115,65 @@ export class AttachmentService {
 
   /** `POST /attachments` → `Attachment` (201). Lỗi 400/409/413/415 ⇒ log `attachment-rejected`. */
   async upload(u: AuthUser, i: UploadInput, log: Logger): Promise<Attachment> {
+    const t: IngestTarget = {
+      tenantId: u.tenantId,
+      userId: u.userId,
+      origin: "upload",
+      jobId: null,
+      conversationId: null,
+      flowId: null,
+    };
+    return this.ingest(t, i, log);
+  }
+
+  /**
+   * `POST /internal/jobs/:job_id/outputs` (R25, plan §5.5) sau khi đã xác thực job: ≥ `JOB_OUTPUTS_MAX` output của lần
+   * claim hiện hành ⇒ 409 (P21, PL10) — kiểm sớm (trước khi đọc thân) và chốt dưới khoá tenant — rồi luồng §5.1 với
+   * `origin='output'`, chủ = `jobs.user_id`, hội thoại/flow của payload (chưa `message_id`).
+   */
+  async ingestOutput(j: OutputJob, i: UploadInput, log: Logger): Promise<Attachment> {
+    const full = async (tx: Tx) => {
+      if ((await countJobOutputs(tx, j.jobId)) >= JOB_OUTPUTS_MAX)
+        throw appError("ATTACHMENT_QUOTA_EXCEEDED");
+    };
+    const t: IngestTarget = { ...j, origin: "output", guard: full };
     try {
-      return await this.#upload(u, i, log);
+      await withHubScope(this.d.db, SYSTEM, full);
+    } catch (e) {
+      if (e instanceof AppError) log.info("attachment-rejected", { ...logBase(t), code: e.status });
+      throw e;
+    }
+    return this.ingest(t, i, log);
+  }
+
+  /** Luồng tải lên chung (plan §5.1) cho `t`; lỗi 4xx ⇒ log `attachment-rejected` rồi ném lại. */
+  async ingest(t: IngestTarget, i: UploadInput, log: Logger): Promise<Attachment> {
+    try {
+      return await this.#ingest(t, i, log);
     } catch (e) {
       if (e instanceof AppError && e.status < 500)
-        log.info("attachment-rejected", {
-          tenant_id: u.tenantId,
-          user_id: u.userId,
-          code: e.status,
-          origin: "upload",
-        });
+        log.info("attachment-rejected", { ...logBase(t), code: e.status });
       throw e;
     }
   }
 
-  async #upload(u: AuthUser, i: UploadInput, log: Logger): Promise<Attachment> {
+  async #ingest(t: IngestTarget, i: UploadInput, log: Logger): Promise<Attachment> {
     const { filename, ext, mime } = checkName(i.filenameRaw);
     if (i.contentLength !== null && i.contentLength > ATTACH_MAX_BYTES) throw tooLarge();
     if (i.contentLength === 0 || !i.body) throw badField("body");
-    if (i.contentLength !== null) await this.#checkQuota(u.tenantId, i.contentLength);
+    if (i.contentLength !== null) await this.#checkQuota(t.tenantId, i.contentLength);
     const id = randomUUID();
     const staged = await this.#stage(
-      u,
+      t,
       { id, ext, body: i.body, contentLength: i.contentLength },
       log,
     );
-    const created = await this.#insert(u, { id, filename, mime, staged }).catch(async (e) => {
+    const created = await this.#insert(t, { id, filename, mime, staged }).catch(async (e) => {
       await staged.discard().catch(() => {});
       throw e;
     });
-    await this.#commit(u.tenantId, id, staged);
-    log.info("attachment_uploaded", {
-      attachment_id: id,
-      tenant_id: u.tenantId,
-      user_id: u.userId,
-      size: staged.size,
-      mime,
-      origin: "upload",
-    });
+    await this.#commit(t.tenantId, id, staged);
+    log.info("attachment_uploaded", { attachment_id: id, ...logBase(t), size: staged.size, mime });
     return { id, filename, mime, size: staged.size, created_at: created.toISOString() };
   }
 
@@ -171,7 +185,7 @@ export class AttachmentService {
 
   /** Stream thân ra `<tenant>/<id>.part` (đếm + sha256 + `FileInspector`); 0 byte / thiếu so với `Content-Length` ⇒ bỏ. */
   async #stage(
-    u: AuthUser,
+    t: IngestTarget,
     o: {
       id: string;
       ext: AttachExt;
@@ -181,7 +195,7 @@ export class AttachmentService {
     log: Logger,
   ): Promise<Staged> {
     const body = countedBody(o.body);
-    const key = storageKey(u.tenantId, o.id);
+    const key = storageKey(t.tenantId, o.id);
     let staged: Staged;
     try {
       staged = await this.d.storage.stage(key, body.stream, {
@@ -189,14 +203,14 @@ export class AttachmentService {
         inspect: new FileInspector(o.ext),
       });
     } catch (e) {
-      throw this.#stageError(e, { u, id: o.id, bytes: body.st, log });
+      throw this.#stageError(e, { t, id: o.id, bytes: body.st, log });
     } finally {
       body.release();
     }
     const short = o.contentLength !== null && staged.size !== o.contentLength;
     if (staged.size === 0 || short) {
       await staged.discard().catch(() => {});
-      if (short) throw this.#aborted(u, body.st.bytes, log);
+      if (short) throw this.#aborted(t, body.st.bytes, log);
       throw badField("body");
     }
     return staged;
@@ -205,7 +219,7 @@ export class AttachmentService {
   /** Lỗi `stage` → lỗi HTTP (413/415/500) + log (path-escape / client đứt). */
   #stageError(
     e: unknown,
-    c: { u: AuthUser; id: string; bytes: { bytes: number; readError: boolean }; log: Logger },
+    c: { t: IngestTarget; id: string; bytes: { bytes: number; readError: boolean }; log: Logger },
   ): unknown {
     if (e instanceof StorageTooLarge) return tooLarge();
     if (e instanceof StorageRejected) return appError("ATTACHMENT_TYPE_NOT_ALLOWED");
@@ -213,32 +227,33 @@ export class AttachmentService {
       c.log.error("attachment-path-escape", { key: c.id });
       return appError("INTERNAL_ERROR");
     }
-    if (c.bytes.readError) return this.#aborted(c.u, c.bytes.bytes, c.log);
+    if (c.bytes.readError) return this.#aborted(c.t, c.bytes.bytes, c.log);
     return e;
   }
 
-  #aborted(u: AuthUser, bytes: number, log: Logger): AppError {
-    log.warn("attachment-upload-aborted", { tenant_id: u.tenantId, user_id: u.userId, bytes });
+  #aborted(t: IngestTarget, bytes: number, log: Logger): AppError {
+    log.warn("attachment-upload-aborted", { tenant_id: t.tenantId, user_id: t.userId, bytes });
     return appError("INTERNAL_ERROR");
   }
 
-  /** Transaction: khoá tenant → hạn mức chốt (409) → INSERT (R05, R06). */
+  /** Transaction: khoá tenant → hạn mức chốt (409) → `guard` → INSERT (R05, R06, P21). */
   async #insert(
-    u: AuthUser,
+    t: IngestTarget,
     o: { id: string; filename: string; mime: AttachMime; staged: Staged },
   ): Promise<Date> {
     return withHubScope(this.d.db, SYSTEM, async (tx) => {
-      await lockTenantQuota(tx, u.tenantId);
-      if (overQuota(await quotaUsed(tx, u.tenantId), o.staged.size, this.d.tenantMaxBytes))
+      await lockTenantQuota(tx, t.tenantId);
+      if (overQuota(await quotaUsed(tx, t.tenantId), o.staged.size, this.d.tenantMaxBytes))
         throw appError("ATTACHMENT_QUOTA_EXCEEDED");
+      await t.guard?.(tx);
       return insertAttachment(tx, {
         id: o.id,
-        tenantId: u.tenantId,
-        userId: u.userId,
-        origin: "upload",
-        jobId: null,
-        conversationId: null,
-        flowId: null,
+        tenantId: t.tenantId,
+        userId: t.userId,
+        origin: t.origin,
+        jobId: t.jobId,
+        conversationId: t.conversationId,
+        flowId: t.flowId,
         filename: o.filename,
         safeName: safeName(o.filename),
         mime: o.mime,
