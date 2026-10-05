@@ -2,7 +2,7 @@
 id: H3a-subscription
 title: Subscription `claude-sub` — probe định kỳ → `hub.provider_state`, xử lý hết quota / bị giới hạn (lỗi rõ, không claim job mới tới giờ reset)
 milestone: H3a
-status: approved                  # draft → ready → approved → in-progress → done
+status: done                      # draft → ready → approved → in-progress → done
 requirements:
   [WRK-FR-22, WRK-FR-15, WRK-FR-20, HUB-FR-86 (bối cảnh, không đổi), HUB-FR-89 (bối cảnh, không đổi), HUB-BR-04,
    AC-W02, CR-041]

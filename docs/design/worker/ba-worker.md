@@ -24,7 +24,7 @@ Agent Runtime (gọi tắt Worker, giữ mã `WRK-*`) lấy job từ hàng đợ
 | `agent.run` | Agent runtime `llm` hoặc `python` (HUB-FR-24) | Chạy vòng lặp agent với system prompt, tool (MCP của Hub) và model qua bản Python của Model Gateway; hoặc chạy class agent Python nội bộ trong process con (WRK-FR-26) | Không retry tự động (như `agent.cli`); lỗi trước khi gọi tool thì dự phòng theo profile |
 | `workflow.async` | Command `mode=async` hoặc agent `dify-workflow` chạy lâu | Gọi Dify workflow (dùng chế độ streaming hoặc poll), đẩy tiến độ về | Tối đa 2 lần, chỉ khi lỗi mạng hoặc 5xx |
 | `agent.cli` | Agent runtime `agentic-cli` | Chạy Claude Code (Claude Agent SDK Python), Codex hoặc Gemini CLI với prompt, tool và MCP được cấp | Không retry. Hết quota thì dự phòng sang bước sau của profile |
-| `maint.probe` | Lịch định kỳ (5 phút) | Kiểm tra từng CLI còn đăng nhập và còn quota không, rồi cập nhật `provider_state` | — |
+| `maint.probe` | **Không phải job (CR-042):** vòng lặp trong Agent Runtime, chu kỳ 20 phút (`AGENT_RT_PROBE_S`) theo người dùng | Kiểm tra từng CLI còn đăng nhập và còn quota không, rồi cập nhật `provider_state` | — |
 | `maint.cleanup` | Lịch định kỳ (mỗi giờ) | Xoá thư mục làm việc quá hạn và job treo | — |
 
 ## 3. Vòng đời job
@@ -97,7 +97,7 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 |---|---|---|
 | WRK-FR-20 | Giới hạn số job chạy đồng thời theo `max_concurrency` của từng provider: đếm các job `running` của provider đó trong **cùng transaction lấy job**, dưới khoá claim toàn cục (một advisory lock; CR-028, sửa CR-031) | **MUST** |
 | WRK-FR-21 | Dự phòng: tạo job mới với bước kế tiếp của profile (có trong payload). Gửi `step.finished{status: fallback, reason}` để trace ghi lại | **MUST** |
-| WRK-FR-22 | Probe định kỳ từng CLI (đã đăng nhập chưa, còn quota không) rồi ghi `hub.provider_state`. Agent Studio (Models và Vận hành) đọc trạng thái này để hiển thị | **SHOULD** |
+| WRK-FR-22 | Probe định kỳ từng CLI (đã đăng nhập chưa, còn quota không) rồi ghi `hub.provider_state`. Agent Studio (Models và Vận hành) đọc trạng thái này để hiển thị. **Probe 2 tầng (CR-042, Spike S1):** (a) `claude auth status --json` (miễn phí, đọc file local) mỗi chu kỳ; (b) chỉ khi (a) báo đã đăng nhập: một lượt haiku nhỏ khi rảnh để đọc quota/`allowed_warning`. Vòng lặp trong Runtime (không là job), 20 phút/lượt; provider `logged_out` thử lại (a) mỗi 60 s và tự về `ok` khi đăng nhập lại, không khởi động lại Runtime. **Chỉ probe** đưa provider về `ok` (job thành công không đổi `status`) | **SHOULD** |
 | WRK-FR-23 | Dọn thư mục làm việc sau 24 giờ. Đánh dấu job `orphaned` khi mất heartbeat quá 60 giây | **MUST** |
 | WRK-FR-24 | Giới hạn slot subscription theo tenant: đếm job subscription `running` của từng tenant trong cùng transaction lấy job (khoá claim toàn cục; slot tenant đếm chung mọi provider, CR-031; không còn bộ đếm Redis `sub_slots`), không cho vượt `tenants.max_concurrent_sub`. `null` = không giới hạn. Slot tự trả khi job rời trạng thái `running` (xong, lỗi, huỷ, orphaned). Đọc giới hạn từ `admin.tenants` (chỉ đọc, cache ≤ 5 giây) | **MUST** |
 | WRK-FR-25 | **Manifest loại agent** (CR-028, HUB-FR-90): khi khởi động ghi/cập nhật `hub.agent_types` (key, runtime, mô tả, JSON Schema tham số cấu hình, version) cho mọi class agent đã đăng ký, gồm các runtime `llm`, `agentic-cli` và agent `python` nội bộ. Loại agent bị gỡ khỏi code thì đánh dấu không còn khả dụng, không xoá agent đang trỏ tới | **MUST** |

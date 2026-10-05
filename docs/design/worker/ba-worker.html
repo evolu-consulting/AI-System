@@ -73,7 +73,7 @@
     <tr><th>Type</th><th>Nguồn tạo</th><th>Việc</th><th>Retry tự động</th></tr>
     <tr><td><code>workflow.async</code></td><td>Command <code>mode=async</code> hoặc agent <code>dify-workflow</code> chạy lâu</td><td>Gọi Dify workflow (dùng chế độ streaming hoặc poll), đẩy tiến độ về</td><td>Tối đa 2 lần, chỉ khi lỗi mạng hoặc 5xx</td></tr>
     <tr><td><code>agent.cli</code></td><td>Agent runtime <code>agentic-cli</code></td><td>Chạy Claude Code (Agent SDK), Codex hoặc Gemini CLI với prompt, tool và MCP được cấp</td><td>Không retry. Hết quota thì dự phòng sang bước sau của profile</td></tr>
-    <tr><td><code>maint.probe</code></td><td>Lịch định kỳ (5 phút)</td><td>Kiểm tra từng CLI còn đăng nhập và còn quota không, rồi cập nhật <code>provider_state</code></td><td>—</td></tr>
+    <tr><td><code>maint.probe</code></td><td><strong>Không phải job (CR-042):</strong> vòng lặp trong Agent Runtime, chu kỳ 20 phút (<code>AGENT_RT_PROBE_S</code>) theo người dùng</td><td>Kiểm tra từng CLI còn đăng nhập và còn quota không, rồi cập nhật <code>provider_state</code></td><td>—</td></tr>
     <tr><td><code>maint.cleanup</code></td><td>Lịch định kỳ (mỗi giờ)</td><td>Xoá thư mục làm việc quá hạn và job treo</td><td>—</td></tr>
   </table></div>
 </section>
@@ -144,7 +144,7 @@
     <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
     <tr><td class="id">WRK-FR-20</td><td>Giới hạn số job chạy đồng thời theo <code>max_concurrency</code> của từng provider</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-21</td><td>Dự phòng: tạo job mới với bước kế tiếp của profile (có trong payload). Gửi <code>step.finished{status: fallback, reason}</code> để trace ghi lại</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">WRK-FR-22</td><td>Probe định kỳ từng CLI (đã đăng nhập chưa, còn quota không) rồi ghi <code>hub.provider_state</code>. Agent Studio (Models và Vận hành) đọc trạng thái này để hiển thị</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">WRK-FR-22</td><td>Probe định kỳ từng CLI (đã đăng nhập chưa, còn quota không) rồi ghi <code>hub.provider_state</code>. Agent Studio (Models và Vận hành) đọc trạng thái này để hiển thị. <strong>Probe 2 tầng (CR-042, Spike S1):</strong> (a) <code>claude auth status --json</code> (miễn phí, đọc file local) mỗi chu kỳ; (b) chỉ khi (a) báo đã đăng nhập: một lượt haiku nhỏ khi rảnh để đọc quota/<code>allowed_warning</code>. Vòng lặp trong Runtime (không là job), 20 phút/lượt; provider <code>logged_out</code> thử lại (a) mỗi 60 s và tự về <code>ok</code> khi đăng nhập lại, không khởi động lại Runtime. <strong>Chỉ probe</strong> đưa provider về <code>ok</code> (job thành công không đổi <code>status</code>)</td><td><span class="pri should">SHOULD</span></td></tr>
     <tr><td class="id">WRK-FR-23</td><td>Dọn thư mục làm việc sau 24 giờ. Đánh dấu job <code>orphaned</code> khi mất heartbeat quá 60 giây</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-24</td><td>Giới hạn slot subscription theo tenant: đếm job subscription đang chạy của từng tenant (bộ đếm Redis <code>sub_slots:&lt;tenant_id&gt;</code>), không cho vượt <code>tenants.max_concurrent_sub</code>. <code>null</code> = không giới hạn. Slot trả lại khi job xong, lỗi, huỷ hoặc orphaned. Đọc giới hạn từ <code>admin.tenants</code> (chỉ đọc, cache ≤ 5 giây)</td><td><span class="pri must">MUST</span></td></tr>
   </table></div>

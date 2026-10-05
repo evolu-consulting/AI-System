@@ -173,3 +173,26 @@ Review vòng 1 Hub TS + DB + scripts: **APPROVED** (0 Blocker/Major). 3 Minor s�
 | RV1-H3 | `job-follow.ts` `#expiredReason` liệt kê tay 4 lý do | Trả `Promise<JobFailReason>` |
 
 Kiểm: `check:fn --files`, `check:size`, tsc `packages/db` + `apps/hub-api`, biome, int `hub-h2c` 15 + `hub-h3a` 7 + H3a `queue-wait` 4, `depcruise --all`, lock 369 xanh.
+
+## Kết luận H3a (docs-architect I3, 2026-10-06)
+Spec `status: done`.
+
+| Mục | Kết quả |
+|---|---|
+| Phạm vi | Probe `claude-sub` 2 tầng trong vòng lặp Runtime (Q4; (a) `auth status --json`, (b) một lượt haiku; 20 phút, `logged_out` thử lại 60 s) → `hub.provider_state` (migration `0008`: 6 cột + 2 CHECK); nhận diện hết quota/`allowed_warning` từ job (`quota_rules.py`, `cooldown_until`, `utilization`); Hub `blockedReason` (R09: `cooldown`/`logged_out`/`error` ⇒ không tạo job, câu lỗi ≤ 1 s) + job `queued` quá `max_wait_s` ⇒ `error_reason='quota'` (R06) + `runErrorTextFor` theo lý do (HUB-BR-04); chỉ probe đưa về `ok` (PL15). Contract chat không đổi. Không ADR mới |
+| Gate | Tự duyệt Luật 2b (Q1–Q7 mặc định; Q1 không chuyển tài khoản, Q4 vòng lặp Runtime, U5 20 phút). CR-042 áp BA-W §3, WRK-FR-22, PL15 + CR-impact Chat/Admin/Studio |
+| `done:h3a` (I1 `3c02b2b`) | **Xanh** (18 bước chặn): int 2149, Python 1076 unit + 217 int, stack H1–H3a; PY-04 `pytest -m int` 3 lượt 217/217. Báo cáo (không chặn): perf đỏ 2 ngưỡng thời gian (nới, TD perf) |
+| Review | Vòng 1: Hub **APPROVED** (3 Minor, sửa `e860d7f`); Runtime **CHANGES REQUESTED** 1 Major **M1** (lỗi probe khi khoẻ phải giữ `K_CLAIM`, quyết theo số đọc dưới khoá) sửa `b14e653` (int 219). Vòng 2: **APPROVED**, 1 Minor — nhánh chạm ngưỡng bị rào bởi `PROVIDER_OK` ⇒ mất một lần đếm lỗi probe (TECH-DEBT #71) |
+| Smoke I2 (`d43cbf6`) | `HUB_LIVE=1` `claude-sub` thật **4/4**: khởi động `ok`, symlink rỗng ⇒ `logged_out` (chỉ (a)), trả lại ⇒ `recovered` cùng pid. 2 lượt haiku ≈ **0,0015 USD**. Tài khoản đang `allowed_warning`, cửa sổ `seven_day` **52%**. **Hết quota thật (Spike S2) chưa gặp** — mới có fake + `allowed_warning` thật. Biên bản: [smoke.md](smoke.md) |
+| Tranh chấp test | **1** (T1 trong `test-plan-log.md`): H2b `direct.int` A25 kỳ vọng câu H1 cho `quota` — test sai theo BA mới (HUB-BR-04/R08), sửa trong QW; code sai 0 |
+| Nợ → TECH-DEBT | **#69** (probe giữ 1/4 kết nối pool ~80 s) · **#70** (`PROBE_S>0` bỏ reset mù cho provider CLI ngoài tập probe, xử lý ở H2d) · **#71** (nhánh chạm ngưỡng bị rào `PROVIDER_OK`) |
+| Điểm mở | (1) **S2** hết quota thật chưa quan sát — tín hiệu `rejected`/`resets_at` mới kiểm bằng fake; ghi nhận khi gặp; (2) chuyển sang tài khoản khác (Q1, WRK-FR-21 subscription → subscription) chưa làm (một tài khoản); (3) UI trạng thái provider ở Agent Studio — H4; (4) e2e tích hợp 3 app (Dify thật) chờ người dùng |
+| Combine | CR-042 (BA-W, CR-impact Chat: chỉ chữ; Admin/Studio: đọc `provider_state`, UI H4) |
+
+### Chờ thêm vào PRODUCTION-NOTES (file đang bị phiên khác sửa dở)
+Điều phối/docs-architect thêm một dòng "H3a subscription (I3, CR-042)" khi `docs/PRODUCTION-NOTES.md` sạch, gồm:
+- **Env Runtime:** `AGENT_RT_PROBE_S` (mặc định 1 200 s = 20 phút; 0 tắt vòng probe và giữ reset mù H1), `AGENT_RT_PROBE_LOGGED_OUT_S` (60 s; prod 10–300), `AGENT_RT_PROBE_TIMEOUT_S` (hạn lượt (b)), `AGENT_RT_COOLDOWN_DEFAULT_S` (1 800 s khi CLI không báo giờ reset; prod 60–86 400). Trống = mặc định. Biên theo `APP_ENV` (`.env.example`).
+- **Chi phí probe:** mỗi 20 phút khi rảnh tốn **một lượt haiku nhỏ** (~0,0007 USD, tính vào hạn mức gói subscription); (a) miễn phí. Chỉnh `AGENT_RT_PROBE_S` nếu muốn thưa hơn.
+- **Migration Hub `0008`** (`0008_h3a_provider_state.sql`: 6 cột NULL + 2 CHECK trên `hub.provider_state`, idempotent) — chạy trước khi Runtime mới khởi động.
+- **Runbook đăng nhập lại:** provider `logged_out` ⇒ đăng nhập lại CLI trên máy Worker; Runtime tự `ok` trong ≤ 60 s, **không** khởi động lại. Xem `docs/guides/hub-dev.md` mục "Provider subscription". `cooldown` tự mở khi qua `cooldown_until`, không có lệnh bỏ.
+- **Chưa xác minh:** hết quota thật (S2) — theo dõi log `provider.cooldown`/`claude.rate_limit` ở lần đầu gặp.
