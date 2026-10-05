@@ -185,7 +185,7 @@ Tổng mới ≈ **210** ca (R ~95 dòng bảng / 40 ID, A ~92, P ~35, S 8, H 1,
 Readiness lần 1: L1 áp **có sửa** (vắng ⇒ không giới hạn; `envAppDeps` điền; helper `startHubH2b`); L2 áp + usage `out:0`, không `RateLimit` (`plan-runtime` §6); L3–L8 áp nguyên (spec §6, tasks QW/MK/B3/PY-01).
 
 ## 10. Đỏ đúng lý do · nhật ký
-QW-R xong (dưới); QW-A1, QW-A2, QW-PU, QW-P chưa viết. Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
+QW-R, QW-A1 xong (dưới); QW-A2, QW-PU, QW-P chưa viết. Sau mỗi nhóm: bảng `File · ID · đỏ đúng lý do / tổng · lý do đỏ · xanh trước code (lý do)` + "Lệch plan / cần backend-lead"; Q2/Q-PU/Q3: số dòng `UNLOCKED` trước ghi, tổng file lock; tranh chấp: bảng TC như H2a (`#`, test, phán quyết, sửa, kết quả); I1: bảng 16 bước §7.1.
 
 ### QW-R · 2026-10-05 (sau B0 `5ef4b90`, C1, C2, D1 `adba6a3`)
 `bun test tests/acceptance/H2b/rules`: **46 test / 10 file** (+ helper `_access.ts`) — **38 đỏ đúng lý do, 8 xanh**. `tsc -p tsconfig.tests.json` 0 lỗi · biome sạch · `check:size` OK · `trace --check` OK (HUB-FR-91/92/94 có test).
@@ -209,3 +209,29 @@ Không ca xanh bất thường (8 xanh đúng danh sách §8). Không đỏ do i
 - `agentMenu(s: AccessSnapshot, …)`: `AccessSnapshot.agents` không có `name` ⇒ không tra được `AgentConfig` nếu giữ đúng kiểu. Test truyền `ConfigSnapshot` (gán được vào `AccessSnapshot`). B3: đổi tham số sang `ConfigSnapshot` (hoặc `AccessSnapshot & {agents: AgentConfig[]}`) — test không phải sửa.
 - `planOrchestratorTenants`: thứ tự lỗi plan có "không `profile`" nhưng input không có danh sách profile và `SeedAgent.profile` bắt buộc ⇒ R33 không phủ vế này (chỉ phủ: trùng → agent lạ; tắt thắng runtime sai). Vị trí lỗi: test chỉ ép `path` chứa `orchestrator_tenants` + chỉ số, `value` = `tenant_key` trùng / key agent lạ; vế tắt/runtime không ép `value`.
 - `pickOrchestrator` khi mặc định thiếu: test chỉ ép `null` khi **không** có bản tenant hợp lệ cho tenant hỏi (plan không chốt bản tenant hợp lệ + mặc định thiếu).
+
+### QW-A1 · 2026-10-05 (sau QW-R `3c8335d`, D1 `adba6a3`)
+`bun --config=bunfig.int.toml test --timeout 30000 ./tests/acceptance/H2b/<file>` (DB riêng `ai_system_h2b_qwa1_{,hub_}test`, chạy tuần tự): **83 test / 10 file** + helper `_h2b.ts` — **71 đỏ đúng lý do, 12 xanh**. `tsc -p tsconfig.tests.json` 0 lỗi · biome sạch · `check:size`/`check:fn` OK.
+
+| File | ID | Đỏ / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `mention` | A01–A07 | 11/12 | tin `@…` đi Orchestrator (200 SSE thay 404/422); `@@abc` → `<message>` `@@abc`; flow lạ → `NOT_FOUND`, flow bận → 409 trước tag | A06 (`x @assistant` = chữ, hành vi H2a) |
+| `direct` | A20–A31 | 14/14 | job đầu là Orchestrator; `run.started` không `responder` | — |
+| `scope` | A40–A44 | 5/5 | `<agents>` đủ AU; delegate `writer` chạy job; `@orchestrator` → 200 | — |
+| `agents-menu` | A50–A56 | 7/7 | `GET /agents` 404 (A51: 404 thay 401) | — |
+| `orchestrator-tenant` | A60–A67 | 6/8 | bản tenant bị bỏ qua (luôn `orchestrator`); A66 menu 404 | A61 (beta = mặc định), A65 (Hub lên dù bản tenant hỏng) |
+| `seed-tenant` | A70–A76 | 10/11 | `SeedValidationError … Unrecognized key "orchestrator_tenants"` (A73 ép lỗi không phải "unrecognized"); A76 menu 404 | A75 (yaml không khoá → hàng tenant giữ) |
+| `run-limit` | A80–A88 | 11/12 | không 429 (200; A81 10 × 200); A87 env sai server không thoát, `=1` không chặn | A82 (409, đúng §8) |
+| `confirm-tag` | A90–A96 | 7/9 | `@trello …` → run `orchestrated`; "Đồng ý" so trên cả tin → `declined`; `@nope` → 200 | A91 (không tag = H2a), A93 vế `@trello @helper` (`declined` tình cờ) |
+| `db` | A140–A143 | 0/4 | — | cả 4 (D1) |
+| `compat` | A150 | 0/1 | — | A150 (hành vi H2a) |
+
+Không đỏ do import/cú pháp/kiểu/fixture; xanh bất thường ngoài §8: A06, A61, A65, A75, A91, A93 (2 tag) — đều là ca phủ định/hồi quy, kết quả đúng với code hiện tại.
+
+**Helper `_h2b.ts` (QW-A2 dùng lại):** `setupH2b({catalogBaseUrl?})` (fixture H1 + Hub H1 [+ catalog/agent H2a] + `writer`/`llmbot`/`orch-acme`/`orch-alt`, `assistant` = Trợ lý/Assistant, kết thúc `runLive` của `lan`) · `startHubH2b(k, extra)` (`maxConcurrentRuns: 2`, `jobMaxWaitS: 30`, qua `startHubH2a` — không sửa helper khoá) · `settleRuns` (`afterEach`: huỷ E15 run của hub, sót → SQL) · `tenantOrch`/`dropTenantOrch` · `runsRunning` · `expectAgentNotFound`/`expectMissingContent`/`routingError` · `menuKeys` · `messageOf`/`jobsOf` · `captureLogs` · `ScriptRuntime3` (`delta`, `skipSeq`, `rawDecide`).
+
+**Lệch plan / cần backend-lead:**
+- A71 "seed lại y hệt → version không tăng" trái test khoá H1 A42 (mỗi lần seed `hub_config_version` +1): test chỉ ép hàng tenant giữ `version`/`updated_at`, không ép `hub_config_version`.
+- A56: `pg_terminate_backend` phiên `hub_api` làm postgres.js trong tiến trình test ném `TypeError socket.write` (sập server) ⇒ đổi sang giữ khoá `ACCESS EXCLUSIVE` bảng cấu hình/nhóm/`conversations` (đối chứng `GET /conversations` bị chặn, `/agents` phải 200 ≤ 1,5 s).
+- A60/A63 "dừng sau 3 bước": Orchestrator giả luôn delegate `hoadon` (∉ AU; `writer` ∈ AU `lan`), ép `<steps_left>` đầu = 3 (an: 5) + `run_steps` ≤ 3. A67 chỉ vế `direct` (vế `command` + tenant chặn bởi `runs_orch_tenant_ck`, A140).
+- A73 vế "không profile" không dựng được qua yaml (`profile` bắt buộc) — như QW-R. A91, A93–A96 dựng `pending` bằng run SQL (Q-T8 H2a); A90, A92 đi trọn `@trello`. A04 thêm `@assistant @helpr x` → `[helper]` (chứng minh xét tag thứ 2).
