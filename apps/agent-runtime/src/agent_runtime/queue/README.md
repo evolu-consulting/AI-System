@@ -2,7 +2,8 @@
 
 | File | Nội dung |
 |---|---|
-| `runtime.py` | khởi động (pool, LISTEN, manifest, dọn job sót, reset provider) · dịch vụ · dừng SIGTERM |
+| `runtime.py` | khởi động (pool, LISTEN, manifest, dọn job sót, reset provider chỉ khi `AGENT_RT_PROBE_S=0` — H3a PL2) · dịch vụ · dừng SIGTERM |
+| `probe_loop.py` | H3a vòng probe provider subscription: lượt `startup` thay reset mù, nhịp ≤ 5 s, `probe_due` → khoá phiên → (a) `auth` → (b) lượt → `apply_probe` → log + XADD job `queued` bị fail |
 | `claimer.py` | vòng claim: `job_enqueued` hoặc poll `AGENT_RT_POLL_S`, claim tới khi rỗng; mỗi lần claim sinh token job (H2a RT1, chỉ lưu `token_hash` trong DB — `db/jobs_sql.py` `new_token`) |
 | `listener.py` | LISTEN `job_enqueued`/`job_cancel`, mở lại 1→10 s |
 | `heartbeat.py` | heartbeat theo `worker_id`; `cancel` → huỷ, mất job → `lost`; job `running` mà không giữ (2 lần liền) → `orphaned` + XADD |

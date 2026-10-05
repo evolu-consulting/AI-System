@@ -5,11 +5,13 @@ dịch vụ claimer/listener/heartbeat/sweeper; SIGTERM → ngừng claim, job �
 PY-06: Redis PING + XADD (`RunEvents`), job host process con (`CliJobHost`).
 H2a PY-03: `JobRouter` theo `payload.type` — `agent.cli` → `CliJobHost`, `workflow.async` →
 `DifyJobHost` (chỉ khi `dify` ∈ `AGENT_RT_PROVIDERS`, RT6).
+H3a PY-04: `ProbeHostCfg` từ `Settings` → vòng probe (`queue/probe_loop.py`) khi `PROBE_S>0`.
 """
 
 import asyncio
 import signal
 import socket
+import sys
 from collections.abc import Callable, Coroutine, Sequence
 from typing import Any
 
@@ -21,6 +23,7 @@ from agent_runtime.events.job_events import RunEvents
 from agent_runtime.log import configure_logging, get_logger
 from agent_runtime.queue import runtime as queue_runtime
 from agent_runtime.queue.runtime import QueueRuntime, UnknownProviders, registry_providers
+from agent_runtime.runtimes.cli.probe import ProbeHostCfg
 from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
 from agent_runtime.runtimes.dify.host import DifyConfig, DifyJobHost
 from agent_runtime.runtimes.dispatch import JobRouter, TypedHost
@@ -85,6 +88,21 @@ def host_config(settings: Settings, stopping: asyncio.Event) -> HostConfig:
     )
 
 
+def probe_host_config(settings: Settings) -> ProbeHostCfg:
+    """H3a `rt §6` (PY-03e): cấu hình probe phía cha từ `Settings`."""
+    s = settings
+    return ProbeHostCfg(
+        python=sys.executable,
+        home=s.home,
+        work_dir=s.work_dir,
+        app_env=s.app_env,
+        cli_path=str(s.cli_path) if s.cli_path is not None else None,
+        kill_grace_s=s.kill_grace_s,
+        timeout_s=float(s.probe_timeout_s),
+        fake_file=s.fake_probe_file,
+    )
+
+
 def dify_config(settings: Settings) -> DifyConfig | None:
     """None khi `dify` ∉ `AGENT_RT_PROVIDERS` (không claim job `dify`, RT6)."""
     s = settings
@@ -116,7 +134,7 @@ async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRunti
     def make_host(pool: Pool, events: RunEvents) -> JobRouter:
         return make_router(pool, events, cfg, dify)
 
-    return await queue_runtime.start(settings, make_host)
+    return await queue_runtime.start(settings, make_host, probe_host_config(settings))
 
 
 async def _start_unless_stopped(settings: Settings, stop: asyncio.Event) -> QueueRuntime | None:
