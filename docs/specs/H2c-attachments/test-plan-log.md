@@ -39,3 +39,36 @@ Chưa chạy (TEST-PLAN). Sau mỗi nhóm WRITE (QW-R, QW-A1, QW-A2 + MK-U, QW-P
 2. `conversations.rules.ts`: thiếu `toAttachmentRef` và tham số thứ 4 `refs?: readonly AttachmentRef[]` của `toMessage` — test gọi qua `lookup`/kiểu hàm rộng hơn (gán được).
 3. `orchestrator.prompt.ts` `PromptInput.attachments?` và `runner.rules.ts` `PayloadInput.attachments?` chưa khai báo — test truyền qua `as PromptInput`/`as PayloadInput`.
 4. `mcp.rules.ts` `toolInputSchema(inputs, withFiles)`: plan-rules dùng `i.description ?? i.name` nhưng `WorkflowInput.description` bắt buộc (contract M2) — R36 dựng input thiếu mô tả bằng ép kiểu; nếu catalog luôn có mô tả, nhánh `?? i.name` chỉ là phòng thủ.
+
+### QW-A1 · int hub-api `tests/acceptance/H2c/*.int.test.ts` (2026-10-05, sau QW-R `e9fe12d`, D1 `3b5bd02`, B0 `3f54974`)
+`bun --env-file=<chỉ *DATABASE_URL> --config=bunfig.int.toml test --timeout 30000 ./tests/acceptance/H2c/<file>` (tuần tự; DB riêng `ai_system_h2c_qwa1_test` + `ai_system_h2c_qwa1_hub_test`, **đã drop**); perf `PERF=1 … --config=bunfig.perf.toml`. **84 ca / 11 file + helper `_h2c.ts` — 76 đỏ đúng lý do, 8 xanh.** `tsc -p tsconfig.tests.json` 0 lỗi ở `H2c/*.ts` · biome sạch · `check:size`/`check:fn` OK · `trace --check` OK. Mọi đỏ là `expect` (hoặc stub `not implemented`), không TypeError/fixture/mạng.
+
+| File | ID | Đỏ / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `upload` | A01–A19 | 19/19 | `POST /attachments` 404 (chưa mount); A05 vế 401 (`/attachments` chưa ở `PROTECTED_PREFIXES` → 404) | — |
+| `quota` | A20–A24 | 5/5 | upload 404 thay 201/409 | — |
+| `storage` | A25–A29 | 8/8 | A25 (4 cấu hình; Linux thêm `chmod 0500`) server **không thoát** sau 10 s; A26 thư mục không được tạo; A27–A29 stub `not implemented: createLocalStorage` | — |
+| `content` | A30–A37 | 8/8 | `GET /attachments/:id(/content)` 404 (đối chứng chủ 200 đỏ), A32 404 thay 401, A37 upload 404 thay 415 | — |
+| `send` | A40–A52 | 11/13 | id lạ/khác chủ/hết hạn → 200 thay 404 AF; id hợp lệ không gắn (`message_id` NULL); R10: `CMD_NOT_FOUND`/`NOT_FOUND` flow/409/429 trước 404 AF; E10/E11 không `attachments` | A40 (400 do `SendMessageRequestSchema` C1), A48 (không file → không khoá, C1) |
+| `bind-race` | A53–A55 | 3/3 | 2 × 200 thay 200 + 404; id không gắn; A55 `storageError` (`createLocalStorage` stub) | — |
+| `run-files` | A56–A62 | 7/7 | `runs.attachment_ids` = `{}`; A62 `/hoadon` + file → 422 `CMD_MISSING_ARG` (B4/B7) | — |
+| `sweeper` | A120–A129 | 9/9 | `expectStorage`: `not implemented: createLocalStorage` (sau đó `sweepOnce` stub); dữ liệu SQL/đĩa dựng xanh trước đó | — |
+| `db` | A130–A134 | 0/5 | — | cả 5 (D1) |
+| `compat` | A140–A142 | 3/4 | A141 401→404 (`PROTECTED_PREFIXES`), ids không kiểm/gắn khi vắng deps (PL14); A142 preview/E11 không `attachments` | A140 (tin không file = H2b) |
+| `perf.perf` | PF1–PF3 | 3/3 | upload 404; ids không gắn; `storageError` | — |
+
+Xanh khác §8: A40, A48 (C1 có sẵn — đúng); A141, A142, A05 đỏ vì gộp vế mới (401 `/attachments`, PL14, preview có file) — vế hồi quy trong cùng ca xanh.
+
+**Helper `_h2c.ts` (QW-A2 dùng lại):** `setupH2c({catalogBaseUrl?})` (= `setupH2b` + catalog H2c: `hoadon-file`, `anh-tuy-chon`, `/hoadon`, `/hoadon-async`, `/sai-map`, `/file-arg`, `/hoadon-tuy` thuộc feature `translate`; agent `hoadon` ↔ `hoadon-file` + `create-trello-card`, `allowed_tools [Read, Grep, Write]`) · `startHubH2c(k, {tenantMaxBytes?, attachments?: false, extra?})` → `HubC{dir, storage, storageError, port}` (thư mục tạm riêng, `stop()` xoá) · `expectStorage` · `upload(hub, token, bytes, name, {rawName?, chunked?, headers?})` (`keepalive: false`) · `uploadOk` · `rawUpload(port, headers, {bytes} | {total, chunk, everyMs, prefix?, abortAfter?, onChunk?})` · `rawGet` · `sendWith(hub, token, conv, content, ids?, flowId?)` · `expectAttachNotFound` · `codeOf` · `diskFiles`/`parts`/`KEY_RE`/`pathOf`/`writeStored` · `sample.{pdf,png,jpg,docx,csv,txt,md}(n)` · `sha256` · `insertAttachmentRow(sql, {who, origin, jobId, content+dir, size, createdAgoMs, purged, bind})` · `attRow` · `countsH2c` · `ageAttachment` · `userMessages`. Có sẵn ở H2a/H2b: `claimWithToken`, `jobInRun`, `startDify`, `captureLogs`, `settleRuns`, `ScriptRuntime3`.
+
+**Lệch plan / cần backend-lead:**
+1. `AppDeps.attachments` chưa có ở B0 ⇒ helper truyền qua `extra` (ép kiểu); B1 thêm khoá đúng tên `attachments: {storage, tenantMaxBytes, sweepS, sweep}` thì test chạy thẳng. `createLocalStorage` stub ⇒ hub dựng **không** deps file, ca đọc `storageError`.
+2. Bun giữ kết nối keep-alive khi server trả lỗi trước khi đọc hết thân ⇒ byte thân còn lại bị đọc như request kế (`GET /health` → 400). Test dùng kết nối mới (`keepalive: false`, `rawGet`). Đề nghị Hub trả 413/415/409 sớm kèm `Connection: close` (hoặc đọc bỏ phần dư) — không ép trong test.
+3. A24: hàng `origin='output'` chèn SQL (không qua `/outputs` của QW-A2) — ca chỉ kiểm hạn mức tính cả output.
+4. A27: không ép log `attachment-path-escape` ở mức driver (`createLocalStorage` không nhận logger; plan-errors ghi log ở service) — chỉ ép `StorageKeyError` + không file ngoài gốc; symlink thư mục tenant: junction trên Windows, `dir` trên Linux (Q-T5).
+5. A41: vế "tin không ids → không câu SQL `attachments` thêm" không quan sát được hộp đen ⇒ bỏ; thay bằng gắn đúng 1 và 10 id.
+6. A128: "đúng một `skipped`" không tất định khi hai lượt không chồng nhau ⇒ test giữ khoá `pg_advisory_xact_lock(hashtext('hub.attach.sweep'))` (plan-db §4 nguyên văn) ⇒ `{0,0,0,skipped:true}`; song song: tổng `expired` = số hàng, lượt `skipped` không làm gì, ≥ 1 lượt chạy.
+7. Đối chứng thêm (chống xanh giả do `notFound` JSON của app): A31/A33/A35 GET chủ 200 trước; A46/A52 gửi lại khi rảnh → gắn.
+8. A16 dùng 4 MiB (kiểm giữa stream ở 2 MiB) thay 20 MiB; A07 vế "413 trước 409" dùng hub phụ `tenantMaxBytes: 1`; A15 cũng trên hub phụ đó (chunked → 409 chốt).
+9. A129 Windows: file chỉ đọc (`chmod 0444` → `unlink` EPERM) thay `chmod` thư mục; A125 `now` = giờ thật (mtime đặt bằng `utimes`).
+10. `/sai-map` map `note` (text) ← `attachment` (workflow `hoadon-file` không có `q`) — vẫn là "input text ← attachment ⇒ invalid" (R20).
