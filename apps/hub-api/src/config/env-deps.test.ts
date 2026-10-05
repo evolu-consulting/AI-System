@@ -2,7 +2,7 @@
 // `HUB_PUBLIC_INTERNAL_URL` chỉ có mặc định ở development/test; production vắng → MCP tắt + cảnh báo một lần.
 import { describe, expect, test } from "bun:test";
 import { DEV_PUBLIC_INTERNAL_URL, loadEnv } from "./env";
-import { envAppDeps } from "./env-deps";
+import { attachEnvOf, envAppDeps } from "./env-deps";
 
 const PEM = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAsecretvalue\n-----END PUBLIC KEY-----";
 const base = {
@@ -98,5 +98,33 @@ describe("hub-api env → deps · HUB_MAX_CONCURRENT_RUNS (H2b R16, L1)", () => 
       const env = loadEnv({ ...base, HUB_MAX_CONCURRENT_RUNS: bad });
       expect(() => envAppDeps(env, recorder().log), bad).toThrow(/HUB_MAX_CONCURRENT_RUNS/);
     }
+  });
+});
+
+describe("HUB_ATTACH_* → attachEnvOf (H2c R04, spec-decisions B1-1)", () => {
+  test("vắng cả driver lẫn dir ngoài production → null + cảnh báo; production → ném", () => {
+    const r = recorder();
+    expect(attachEnvOf(loadEnv(base), r.log, "linux")).toBeNull();
+    expect(r.warns.map((w) => w.msg)).toEqual(["attachments_disabled"]);
+    const empty = loadEnv({ ...base, HUB_ATTACH_DRIVER: "", HUB_ATTACH_DIR: "" });
+    expect(attachEnvOf(empty, recorder().log, "linux")).toBeNull();
+    const prod = loadEnv({ ...base, APP_ENV: "production" });
+    expect(() => attachEnvOf(prod, recorder().log, "linux")).toThrow(/HUB_ATTACH_DRIVER/);
+  });
+
+  test("có một biến → kiểm chặt; hợp lệ → cấu hình (mặc định 5 GiB / 600 s)", () => {
+    const onlyDir = loadEnv({ ...base, HUB_ATTACH_DIR: "/srv/a" });
+    expect(() => attachEnvOf(onlyDir, recorder().log, "linux")).toThrow(/HUB_ATTACH_DRIVER/);
+    const rel = loadEnv({ ...base, HUB_ATTACH_DRIVER: "local", HUB_ATTACH_DIR: "rel/x" });
+    expect(() => attachEnvOf(rel, recorder().log, "linux")).toThrow(/HUB_ATTACH_DIR/);
+    const ok = loadEnv({ ...base, HUB_ATTACH_DRIVER: "local", HUB_ATTACH_DIR: "/srv/a" });
+    const r = recorder();
+    expect(attachEnvOf(ok, r.log, "linux")).toEqual({
+      driver: "local",
+      dir: "/srv/a",
+      tenantMaxBytes: 5_368_709_120,
+      sweepS: 600,
+    });
+    expect(r.warns).toEqual([]);
   });
 });

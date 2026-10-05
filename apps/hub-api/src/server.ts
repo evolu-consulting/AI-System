@@ -1,16 +1,18 @@
 // HUB-NFR-04 · điểm khởi động hub-api: nơi duy nhất đọc env và mở cổng (plan H1 §4, §7).
-// Thứ tự: env → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → Orchestrator hợp lệ (HUB-BR-08) → master key (H2a) → Redis (connect + ping) → serve.
+// Thứ tự: env → storage file (H2c, `HUB_ATTACH_*`) → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → Orchestrator hợp lệ (HUB-BR-08) → master key (H2a) → Redis (connect + ping) → serve.
 // Lỗi bước nào → log `fatal` + exit 1.
 import { SSE_HEARTBEAT_S } from "@ai/contracts/chat";
 import pkg from "../package.json";
 import { createApp } from "./app";
 import { type Env, loadEnv } from "./config/env";
-import { envAppDeps } from "./config/env-deps";
+import { attachEnvOf, envAppDeps } from "./config/env-deps";
 import { connectDb, type Db, pingDb } from "./lib/db";
 import { safeErrorFields } from "./lib/errors";
 import { importJwtPublicKey } from "./lib/jwt";
 import { logger, setMinLevel } from "./lib/logger";
 import { createRedis, pingRedis, type Redis } from "./lib/redis";
+import type { AttachmentDeps } from "./modules/attachments/storage";
+import { createLocalStorage } from "./modules/attachments/storage.local";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
 import { loadMasterKey, probeMasterKey } from "./modules/dify/credential.service";
 
@@ -61,6 +63,22 @@ function readEnvDeps(env: Env): ReturnType<typeof envAppDeps> {
   }
 }
 
+/**
+ * H2c R04 · AC-15: `HUB_ATTACH_*` sai hoặc thư mục không tạo/ghi được → fatal (log không chứa giá trị env/đường dẫn).
+ * Vắng cả driver lẫn dir ngoài production → không có storage (route file không mount, PL14).
+ */
+async function openAttachments(env: Env): Promise<AttachmentDeps | undefined> {
+  let a: ReturnType<typeof attachEnvOf>;
+  try {
+    a = attachEnvOf(env, logger);
+  } catch (err) {
+    fail("env", err);
+  }
+  if (!a) return undefined;
+  const storage = await createLocalStorage({ dir: a.dir }).catch((err) => fail("attachments", err));
+  return { storage, tenantMaxBytes: a.tenantMaxBytes, sweepS: a.sweepS };
+}
+
 /** HUB-BR-08: Orchestrator thiếu/tắt → exit 1 trước khi mở cổng. */
 async function assertOrchestrator(db: Db): Promise<void> {
   const problem = await bootOrchestratorProblem(db).catch((err) => fail("orchestrator", err));
@@ -103,6 +121,7 @@ function serve(
 async function main(): Promise<void> {
   const env = readEnv();
   const fromEnv = readEnvDeps(env);
+  const attachments = await openAttachments(env);
   const jwtPublicKey = await importJwtPublicKey(env.JWT_PUBLIC_KEY).catch((err) =>
     fail("jwt", err),
   );
@@ -119,6 +138,7 @@ async function main(): Promise<void> {
       redis,
       jwtPublicKey,
       ...fromEnv,
+      attachments,
       signal: stop.signal,
     },
   );

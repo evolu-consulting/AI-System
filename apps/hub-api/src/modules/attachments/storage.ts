@@ -1,5 +1,5 @@
 // HUB-FR-44 · H2c-R04, R05, R29 · PL1 · interface lưu nội dung file (driver `local`: `storage.local.ts`) + khoá
-// `<tenant_id>/<id>` (plan-rules §4). B0: interface + chữ ký (thân ném `not implemented`) — B1.
+// `<tenant_id>/<id>` (plan-rules §4). Hàm thuần ở đây; I/O (`realpath` + so gốc) ở driver.
 
 /** Kiểm từng chunk khi ghi (`sniff.rules.ts` `FileInspector`); `false` = từ chối. */
 export type ChunkInspector = { push(chunk: Uint8Array): boolean; end(): boolean };
@@ -38,17 +38,37 @@ export class StorageRejected extends Error {}
 /** Khoá sai / thư mục tenant ngoài gốc. */
 export class StorageKeyError extends Error {}
 
+/** Phụ thuộc file của app (`AppDeps.attachments`, plan §4): vắng ⇒ không mount route file/nội bộ file/sweeper (PL14). */
+export type AttachmentDeps = {
+  storage: AttachmentStorage;
+  tenantMaxBytes: number;
+  sweepS: number;
+  /** `false` ⇒ không chạy vòng sweeper nền (test, L1). Vắng = chạy. */
+  sweep?: boolean;
+};
+
+const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+const UUID_RE = new RegExp(`^${UUID}$`);
+const KEY_RE = new RegExp(`^${UUID}/${UUID}$`);
+
+/** uuid chữ thường (tên thư mục tenant / tên file trên kho). */
+export function isUuidName(s: string): boolean {
+  return UUID_RE.test(s);
+}
+
 /** `tenantId + "/" + id`. */
-export function storageKey(_tenantId: string, _id: string): string {
-  throw new Error("not implemented: storageKey");
+export function storageKey(tenantId: string, id: string): string {
+  return `${tenantId}/${id}`;
 }
 
 /** `<uuid>/<uuid>` chữ thường. */
-export function isStorageKey(_k: string): boolean {
-  throw new Error("not implemented: isStorageKey");
+export function isStorageKey(k: string): boolean {
+  return KEY_RE.test(k);
 }
 
 /** Khoá hợp lệ → `root + sep + tenant + sep + id`; khác → null (`realpath` + so gốc ở driver). */
-export function keyUnder(_root: string, _key: string, _sep: "/" | "\\"): string | null {
-  throw new Error("not implemented: keyUnder");
+export function keyUnder(root: string, key: string, sep: "/" | "\\"): string | null {
+  if (!isStorageKey(key)) return null;
+  const [tenant, id] = key.split("/") as [string, string];
+  return `${root}${sep}${tenant}${sep}${id}`;
 }

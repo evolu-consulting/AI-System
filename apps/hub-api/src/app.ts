@@ -21,6 +21,8 @@ import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
 import { type Logger, logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
+import { closeUnreadBody } from "./lib/unread-body";
+import type { AttachmentDeps } from "./modules/attachments/storage";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
@@ -65,6 +67,8 @@ export type AppDeps = {
   difyTimeoutMaxS?: number;
   /** H2b · = `HUB_MAX_CONCURRENT_RUNS` (server điền, mặc định 2). Vắng ⇒ không giới hạn (L1: test khoá H1/H2a). */
   maxConcurrentRuns?: number;
+  /** H2c · storage + hạn mức + sweeper (`HUB_ATTACH_*`, server điền). Vắng ⇒ không mount route file (PL14). */
+  attachments?: AttachmentDeps;
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -182,6 +186,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
     : undefined;
 
   app.use(requestContext(config));
+  app.use(closeUnreadBody());
   app.use(
     cors({
       origin: cfg.corsOrigins,
