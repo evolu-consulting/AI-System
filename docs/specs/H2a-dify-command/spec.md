@@ -2,7 +2,7 @@
 id: H2a-dify-command
 title: Dify + command `/` + MCP (Command Runner, workflow.async, agent dify-*, tool side_effect)
 milestone: H2a
-status: approved               # draft → ready → approved → in-progress → done
+status: done                   # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-10, HUB-FR-11, HUB-FR-12, HUB-FR-13, HUB-FR-14, HUB-FR-23, HUB-FR-24, HUB-FR-50, HUB-FR-51,
    HUB-FR-76, HUB-FR-80, HUB-FR-95, HUB-BR-01, HUB-BR-04, HUB-BR-06, HUB-BR-11, HUB-BR-12, HUB-BR-19, HUB-BR-20,
@@ -172,5 +172,11 @@ Lệnh xong mốc: `done:h2a` (qc định nghĩa ở `test-plan.md` §7, mẫu `
 
 Quyết định trong lúc làm: `spec-decisions.md` (mẫu H1).
 
+## 9b. Kết luận H2a (2026-10-05)
+Chi tiết: [spec-decisions.md](spec-decisions.md) "Kết luận H2a".
+- `done:h2a` **xanh** (I1): 481 unit TS · 1747 int (H1 + H2a + Admin) · 468 + 111 Python · stack H1 4/4 + H2a 3/3 · 41 contract chat (HUB-H2a-AC-11) · lock/trace/size/depcruise xanh ([test-plan.md](test-plan.md) §10 "I1").
+- Review 2 vòng (vòng 1 Hub + Runtime, vòng 2 sửa `baae90b`). Smoke I2 với Dify thật + `claude-sub` gọi MCP: **6/6 kịch bản đạt**, 0 lần lộ key ([smoke.md](smoke.md)).
+- Điểm mở F1 (Dify không đổi trạng thái khi stop), F3 (`fake-cli` delegate lại sau "Đồng ý"), nợ chuyển TECH-DEBT; CR-036 cho Chat/Admin khi combine.
+
 ## 10. Tranh chấp test
-- (không)
+- 7 tranh chấp TC-1…TC-7, đều **test sai / lệnh sai**, code đúng: [test-plan.md](test-plan.md) §10 "Tranh chấp".

@@ -4,6 +4,7 @@ Quyết định nhỏ, "đã thử & bỏ vì…", bẫy đã gặp. Mới nhấ
 
 | Ngày | Chủ đề | Ghi chú |
 |---|---|---|
+| 2026-10-05 | H2a mạng / Dify (I3, CR-036) | `/internal/*` (test-run, credential) và `/mcp` nhận Bearer bản rõ (token dịch vụ / token job) → khi Runtime hoặc Admin ở máy khác Hub **bắt buộc TLS hoặc mạng nội bộ**. Dify hiện mở HTTP thường trên IP công khai (app-key đi không mã hoá) → TLS/mạng nội bộ trước production. Production phải đặt `HUB_PUBLIC_INTERNAL_URL` (vắng → agent không có MCP, chỉ cảnh báo) và `HUB_INTERNAL_TOKEN` (vắng → test-run 503). WSL NAT: xem `docs/guides/hub-dev.md`. |
 | 2026-10-05 | H2a DB (D2) | Migration Hub (`0003_h2a_dify_fn`) phải chạy bằng role chủ `admin.secrets` và `hub.usage_logs` (owner): `hub.workflow_secret` / `hub.log_dify_usage` là SECURITY DEFINER, chủ hàm = role chạy migration. Hub đọc secret Dify **chỉ** qua hàm (EXECUTE `hub_ro`), không có quyền cột `admin.secrets`. |
 | 2026-10-04 | M4 mail / cấu hình | Cảnh báo quota và đặt lại gửi email qua `SMTP_URL` (dev: Mailpit trong `compose.yaml`, `smtp://127.0.0.1:1025`), `MAIL_FROM` (tuỳ chọn), `ADMIN_WEB_URL` (link trong mail). Production phải đặt SMTP thật; mail gửi sau commit (TECH-DEBT #13). |
 | 2026-10-04 | M4 2FA / khoá | `SECRET_MASTER_KEY` nay mã hoá cả secret TOTP (`user_totp`, bảng riêng, Hub không đọc được): mất khoá = người dùng bật 2FA không đăng nhập được bằng mã (còn mã dự phòng HMAC). Chưa xoay khoá (#16). |

@@ -314,3 +314,23 @@ Runtime theo plan TS (`plan.md` §10): token sinh lúc claim (RT1), payload khô
 | RV2-3 | Đánh đổi RV1-H7: tenant thiếu `key` đổi Dify `user` từ `":<user_id>"` sang `"<tenant_id>:<user_id>"` ⇒ phiên `dify-agent` lưu trước đó (gắn `user` cũ) có thể nhận 404 "Conversation Not Exists" **một lần**, bị xoá và mở phiên mới (mất ngữ cảnh hội thoại cũ). **Chấp nhận** — chỉ ảnh hưởng tenant thiếu key, một lần | Thống nhất `user` giữa lệnh `/`, MCP, agent |
 | RV2-4 | Runtime `Supervisor`: `snapshot() → {id: JobControl}`; `stop(id, reason, expected=None)` chỉ dừng khi entry hiện hành vẫn là `expected`. `heartbeat.reconcile(sup, held: dict[str, JobControl], beat)` chụp `snapshot()` **trước** câu heartbeat và truyền `expected` ⇒ claim lại cùng `id` trong lúc heartbeat chạy không bị dừng nhầm. Unit `test_review2_reconcile_does_not_stop_newer_claim_of_same_id` | `held` chụp dạng id có thể dừng nhầm lần claim mới |
 | RV2-5 | `Supervisor.shutdown`: gộp task cũ đang dọn (`_Held.before`, chưa xong) vào danh sách chờ/huỷ. Unit `test_review2_shutdown_cancels_old_task_still_cleaning_up` | SIGTERM không được bỏ sót task cũ của lần claim lại |
+
+## Kết luận H2a (2026-10-05, docs-architect I3)
+- **Gate:** người dùng duyệt 2026-10-05 (ADR-0010 `httpx2` Accepted; Q1 bằng hàm `hub.workflow_secret` SECURITY DEFINER; Q3 sửa thẳng contract `chat` nhưng chỉ thêm; Q5 credential qua `/internal` với token job). Dify thật lấy cấu hình từ auto-pilot qua `DIFY_LIVE_ENV_FILE`, không chép key.
+- **Quyết định lớn:** P1 (secret qua hàm SECURITY DEFINER, không GRANT cột) · P2 (usage Dify qua `hub.log_dify_usage`) · P3 (`CHAT_COMMAND_ERRORS` riêng, không đổi `CHAT_API_ERRORS`) · P4/RT1 (token job Runtime sinh lúc claim, DB chỉ giữ `token_hash`; rào lần claim ở mọi câu ghi Dify — RV1-R1) · P11 (`seq` step do DB cấp) · requeue `workflow.async` chạy trước câu `failed` H1 ở cả Hub và Runtime (X1, B-B6-4) · MCP tự viết tập con, token qua file 0600 (spike PY-S1) · ép `need_input` sau `CONFIRMATION_REQUIRED` (B-PY05-2, RV1-R10) · validator `heartbeat_s < 30`, `orphan_s ≥ 2 × heartbeat_s` (RV1-R2).
+- **Tranh chấp test TC-1…TC-7** (`test-plan.md` §10): đều test/lệnh sai, code đúng — TC-1 H1 A28 lỗi thời theo H2a-R01 · TC-2 A62 đếm quá rộng · TC-3 stream Redis sót (id cố định) · TC-4 harness stack `host.docker.internal` cho Hub trên host · TC-5 S03 orphan < heartbeat · TC-6 `--filter=@ai/hub-dev` không là workspace · TC-7 Python P18–P20 + H1 FR-23 orphan < heartbeat (validator).
+- **Review 2 vòng:** vòng 1 Hub (RV1-H1…H12) + Runtime (RV1-R1…R12); vòng 2 sửa RV2-1…5 (`baae90b`).
+- **`done:h2a` xanh** (I1, trên `0af8dc5` + TC-4…TC-6): 481 unit TS · 1747 int · 468 + 111 Python · stack 4/4 + 3/3 · 41 contract chat · lock 276 / trace 190 mã / size 1498 / depcruise xanh. `test:perf` 200/202 (2 đỏ của Admin, không chặn).
+- **Smoke I2** (`smoke.md`): Dify thật sync/async/huỷ/key sai, `dify-agent` 2 lượt cùng phiên, `claude-sub` gọi `mcp__hub__dich`, `side_effect` hỏi → "Đồng ý" → đúng 1 lời gọi Dify, quét lộ key 0 lần. Phát hiện F1–F5 (F2 đã ghi vào `docs/guides/hub-dev.md` ở I3).
+- **CR-impact Chat/Admin/Production:** [CR-036](../../CHANGE-REQUESTS.md).
+
+### Nợ chuyển TECH-DEBT (I3 đã chép vào `docs/TECH-DEBT.md` #43–#51)
+- N-RV1-9: huỷ run trước sự kiện SSE đầu của Dify (chưa có `task_id`) không gọi được stop.
+- N-RV1-11: module Hub > 10 file (`runner` 13, `dify` 11, `commands` 11 file mã + test) chưa tách thư mục con.
+- B-B6-8: `WorkflowJobRunner` có đầu đọc Redis (`RunStreamReader`) riêng cho async → gộp một đầu đọc.
+- F1: stop Dify trả `success` nhưng Dify không đổi trạng thái run → ghi kết quả stop (`stop_ok`) vào `run_steps.detail`.
+- F3: Orchestrator `fake-cli` delegate lại ở mọi bước sau "Đồng ý" → chỉ delegate lại khi `<history>` của run chưa có kết quả delegate.
+- F4: key agent ở auto-pilot (`DIFY_AGENT_API_KEY`) bị Dify trả 401 — chỉ ghi chú cho người dùng, không ghi key.
+- `bun run db:test:create` chép `HUB_TEST_DATABASE_URL` trỏ DB dùng chung → Hub/Runtime đụng DB TS (I1: `DuplicateTableError`); cần DB Hub riêng theo tag.
+- `apps/agent-runtime/scripts/run.ts` trên Windows không chuyển env host vào container (phải nhúng URL DB vào chuỗi lệnh).
+- `tools/hub-dev` không có `tsconfig`/`package.json` riêng (typecheck gián tiếp qua `@ai/scripts`, TC-6).

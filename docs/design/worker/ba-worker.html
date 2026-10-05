@@ -131,7 +131,7 @@
     <tr><td class="id">WRK-FR-10</td><td>Claude Code chạy qua <strong>Claude Agent SDK</strong>. Codex và Gemini chạy qua CLI ở chế độ không tương tác, đọc output dạng JSON stream</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-11</td><td>Mỗi job có một thư mục làm việc riêng <code>work/&lt;job_id&gt;/</code>. File đính kèm của run được copy vào đây. CLI bị giới hạn trong thư mục này</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-12</td><td>Áp đúng danh sách tool được phép trong payload. Mặc định không có Bash và không có quyền ghi ra ngoài thư mục làm việc</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">WRK-FR-13</td><td>Kết nối MCP tools của Hub bằng token của job (gắn <code>tenant_id</code> và <code>user_id</code>, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (<code>hub.agent_workflows</code>); tên tool là key của workflow. Chỉ những tool có trong payload</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-13</td><td>Kết nối MCP tools của Hub bằng token của job (do Agent Runtime sinh lúc claim, DB chỉ lưu hash <code>jobs.token_hash</code>, không nằm trong payload; gắn <code>tenant_id</code> và <code>user_id</code>, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (<code>hub.agent_workflows</code>); tên tool là key của workflow. Chỉ những tool có trong payload</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-14</td><td>Giữ ngữ cảnh: có <code>session_id</code> cũ cùng provider thì resume, xong thì ghi <code>session_id</code> mới vào <code>hub.cli_sessions</code></td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-15</td><td>Nhận diện hết quota hoặc rate limit từ output/mã lỗi của từng CLI. Có thông tin thời điểm reset thì đặt cooldown đến lúc đó, không có thì mặc định 30 phút</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-16</td><td>Chuyển tiến trình của CLI (tool đang gọi, file đang đọc) thành <code>job.progress</code> có nhãn dễ hiểu</td><td><span class="pri should">SHOULD</span></td></tr>
@@ -185,7 +185,7 @@ WORKER(workflow.async) ──user=&lt;tenant&gt;:&lt;user_id&gt;──▶ Dify</
   "step_index": 0,
   "prompt": "...", "system_prompt": "...",
   "allowed_tools": ["Read", "Grep", "Edit"],
-  "mcp": {"url": "https://hub/mcp", "token": "job-scoped", "tools": ["translate_text", "check_invoice"]},
+  "mcp": {"url": "https://hub/mcp", "tools": ["translate_text", "check_invoice"]},
   "attachments": ["att_1"], "resume_session": "sess_abc",
   "timeout_s": 600
 }</code></pre>
