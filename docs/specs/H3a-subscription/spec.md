@@ -67,7 +67,7 @@ Mốc con **đầu** của H3 (chia H3a/H3b/H3c — `docs/ROADMAP.md`, lý do: [
 ### 2.3 Probe (WRK-FR-22)
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
-| H3a-R11 | Vòng probe trong Agent Runtime (không phải job trong `hub.jobs` — Q4), mỗi `AGENT_RT_PROBE_S` (mặc định 300; 60–3 600; sai → Runtime không khởi động), cho mỗi provider `kind='subscription'`, `enabled` mà Runtime này phục vụ. Nhiều Runtime: khoá advisory theo provider (`pg_try_advisory_lock`), Runtime khác bỏ lượt | WRK-FR-22 |
+| H3a-R11 | Vòng probe trong Agent Runtime (không phải job trong `hub.jobs` — Q4), mỗi `AGENT_RT_PROBE_S` (mặc định 1 200 = 20 phút — người dùng 2026-10-06; 60–3 600; sai → Runtime không khởi động), cho mỗi provider `kind='subscription'`, `enabled` mà Runtime này phục vụ. Nhiều Runtime: khoá advisory theo provider (`pg_try_advisory_lock`), Runtime khác bỏ lượt | WRK-FR-22 |
 | H3a-R12 | **Bỏ qua lượt probe** khi provider `ok` **và** có job thành công trong `AGENT_RT_PROBE_S` vừa qua (`last_ok_at`) — job thật đã là bằng chứng, không tốn quota | Q3 |
 | H3a-R13 | Probe ngay (không chờ chu kỳ) khi: Runtime khởi động (thay cho reset mù H1); `cooldown_until` vừa qua; `logged_out` mỗi `AGENT_RT_PROBE_LOGGED_OUT_S` (mặc định 60) | Q3 |
 | H3a-R14 | **Cách probe** = kết quả spike S1 (§7). Ứng viên theo thứ tự ưu tiên: (a) cách kiểm đăng nhập không gọi model (chưa xác minh có tồn tại — **không giả định**); (b) một lượt `ClaudeSDKClient` tối thiểu: prompt cố định ngắn, không tool, không MCP, `max_turns=1`, cwd thư mục probe riêng (sandbox H1), hạn `AGENT_RT_PROBE_TIMEOUT_S` (mặc định 60). Đọc `RateLimitEvent` + `ResultMessage` như job (R01) | WRK-FR-22 |
@@ -107,7 +107,7 @@ Không có UI. Trạng thái provider xem bằng log + SQL (runbook `docs/guides
 | — | CLI `claude-sub` | `fake-cli` (R18) cho unit/int/stack; thật chỉ smoke `HUB_LIVE=1` |
 | — | Dify | Không dùng (R10 kiểm bằng mock Dify H2a) |
 
-Env mới (Runtime): `AGENT_RT_PROBE_S=300` · `AGENT_RT_PROBE_LOGGED_OUT_S=60` · `AGENT_RT_PROBE_TIMEOUT_S=60` · `AGENT_RT_COOLDOWN_DEFAULT_S=1800`.
+Env mới (Runtime): `AGENT_RT_PROBE_S=1200` · `AGENT_RT_PROBE_LOGGED_OUT_S=60` · `AGENT_RT_PROBE_TIMEOUT_S=60` · `AGENT_RT_COOLDOWN_DEFAULT_S=1800`.
 
 ## 8. Tiêu chí nghiệm thu
 Bảng AC: [spec-ac.md](spec-ac.md) (AC-W02 vế subscription, HUB-H3a-AC-01…13). Lệnh xong mốc: `done:h3a` (qc, mẫu `done:h2c`).
@@ -118,7 +118,7 @@ Q1–Q7 — [spec-decisions.md](spec-decisions.md). Không trả lời → dùng
 ## 10. Rủi ro
 | # | Rủi ro | Giảm thiểu |
 |---|---|---|
-| K1 | Probe tốn quota gói chung của mọi tenant | R12 bỏ qua khi có job thành công; chu kỳ 5 phút; prompt tối thiểu; S1 tìm cách không gọi model |
+| K1 | Probe tốn quota gói chung của mọi tenant | R12 bỏ qua khi có job thành công; chu kỳ 20 phút (người dùng); prompt tối thiểu; S1 tìm cách không gọi model |
 | K2 | Chữ/sự kiện hết quota thật khác giả định (rủi ro H1) | Ba tín hiệu R01; mặc định 30 phút khi thiếu `resets_at`; S2 + log R04 để sửa nhanh |
 | K3 | Một tài khoản duy nhất → hết quota là Hub (phần agent) ngưng tới giờ reset | Lỗi rõ R08; Dify vẫn chạy (R10); Q1 nhiều tài khoản là việc sau; runbook §8 |
 | K4 | Probe chạy đồng thời với job → ghi đè trạng thái | R15 so `updated_at`; khoá advisory theo provider (R11) |

@@ -7,6 +7,7 @@
 | U2 | (2026-10-05) Không chạm Dify thật; smoke chỉ `claude-sub`; e2e tích hợp 3 app chờ người dùng ghép | §7, AC-07, AC-12 |
 | U3 | Phiên Hub/Worker: code H3 chỉ ở `apps/hub-api`, `apps/agent-runtime`, `packages/**`; UI Admin/Chat → CR-impact cho phiên Chat/Admin | §5 |
 | U4 | Trên `main`, không push | — |
+| U5 | (2026-10-06) **Chu kỳ probe 20 phút** (`AGENT_RT_PROBE_S=1200`); Q3 phần còn lại và Q1, Q2, Q4–Q7 theo mặc định | R11, R12, K1, Q3 |
 
 ## D1 · Chia H3 thành mốc con (docs-architect đề xuất, ghi ROADMAP)
 H3 gộp 3 khối độc lập, ước > 3 000 dòng diff, chạm 3 nhóm rủi ro cao khác nhau (subscription/khoá provider · quyền · quota/chi phí) → chia như H2:
@@ -42,7 +43,7 @@ Ghi chú cho H3c (để không phá M4): Admin M4 đã có `GET /admin/usage` (a
 ### Q3 · Chu kỳ probe
 | Lựa chọn | Nội dung |
 |---|---|
-| **A (đề xuất)** | 5 phút (BA-W §3) `AGENT_RT_PROBE_S=300`; bỏ lượt khi có job thành công trong chu kỳ (R12); probe ngay khi khởi động / `cooldown_until` qua; `logged_out` mỗi 60 s (R13) |
+| **A (chốt — người dùng 2026-10-06: 20 phút)** | **20 phút** `AGENT_RT_PROBE_S=1200` (BA-W §3 ghi 5 phút — lệch, ghi CR khi đóng mốc cùng Q4); bỏ lượt khi có job thành công trong chu kỳ (R12); probe ngay khi khởi động / `cooldown_until` qua; `logged_out` mỗi 60 s (R13) |
 | B | Probe cố định 5 phút, không bỏ lượt | Đơn giản hơn; tốn quota gói ~288 lượt/ngày |
 | C | Không probe định kỳ, chỉ probe khi khởi động + khi `cooldown_until` qua | Ít tốn nhất; `logged_out` phát hiện muộn (chỉ khi user gửi tin) |
 
