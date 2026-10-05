@@ -66,3 +66,6 @@ Chạy 2026-10-06 trên code hiện tại (stub B0 `blockedReason` ném `not imp
 | # | Test | Phán quyết | Sửa | Kết quả |
 |---|---|---|---|---|
 | T1 | H2b `direct.int.test.ts` A25 (dòng 225–231 cũ): job agent trực tiếp fail `ALL_PROVIDERS_EXHAUSTED` + reason `quota` ⇒ kỳ vọng `message = runErrorText(code, "vi").message` (câu H1 "quá tải") | **Test sai theo BA mới**: HUB-BR-04 / H3a-R08 — reason `quota` ⇒ câu "Dịch vụ AI đã dùng hết hạn mức của gói hiện tại."; R19/`plan` P11: BA thắng. qc tự phân xử (dự kiến từ PLAN, không cần agent code nêu) | Giữ vòng `["ALL_PROVIDERS_EXHAUSTED","TIMEOUT"]` + reason; EXHAUSTED ⇒ `runErrorTextFor(code, "vi", "quota").message` **và** chuỗi nguyên văn R10 (`R08.quota.vi`); `TIMEOUT` giữ `runErrorText`. Tên thêm `[H3a-R08]`, comment trỏ mục này | Đỏ đúng lý do tới B1; Q2: `test:lock:verify` phải ra đúng 1 `CHANGED tests/acceptance/H2b/direct.int.test.ts` + `UNLOCKED` H3a |
+
+## Q2 + Q-PU — khoá lần 1 (điều phối, 2026-10-06)
+`test:lock:verify` trước khi ghi: đúng 12 UNLOCKED (11 file `tests/acceptance/H3a/**` gồm `_h3a.ts`, `_r08.ts`; `apps/agent-runtime/tests/acceptance/test_quota_rules.py`) + 1 CHANGED (`tests/acceptance/H2b/direct.int.test.ts` — T1, R19) → `test:lock:write` → verify OK (364 file).
