@@ -33,9 +33,9 @@ import type { DeltaGap, DeltaSink } from "../../stream/delta-sink";
 import type { RunStreamReader } from "../run-stream-reader";
 import {
   type AgentRole,
+  blockedReason,
   buildJobPayload,
   mcpConfigFor,
-  providerBlocked,
   type RunRef,
   runErrorCodeOf,
   syntheticFailed,
@@ -218,10 +218,11 @@ export class JobAgentRunner implements AgentRunner {
       return;
     }
     const state = await this.#system((tx) => repo.providerStateOf(tx, payload.provider_key));
-    if (providerBlocked(state, new Date())) {
+    const blocked = blockedReason(state, new Date());
+    if (blocked) {
       const f = {
         code: "ALL_PROVIDERS_EXHAUSTED",
-        reason: "provider_unavailable",
+        reason: blocked,
         message: `provider ${state?.status}`,
       } as const;
       yield syntheticFailed(jobId, f);

@@ -77,15 +77,49 @@ const UPSTREAM_HINTS: ReadonlyMap<string, Record<RunLocale, string>> = new Map([
   ["file_rejected", FILE_REJECTED_HINT],
 ]);
 
+/** H3a-R08 (HUB-BR-04, plan §4.3) · `ALL_PROVIDERS_EXHAUSTED` theo reason — câu tĩnh, không giờ/tên provider (Q5). */
+const EXHAUSTED_TEXTS: ReadonlyMap<string, Record<RunLocale, RunErrorText>> = new Map([
+  [
+    "quota",
+    {
+      vi: {
+        message: "Dịch vụ AI đã dùng hết hạn mức của gói hiện tại.",
+        hint: "Thử lại sau; hạn mức sẽ tự mở lại.",
+      },
+      en: {
+        message: "The AI service has used up the current plan's limit.",
+        hint: "Try again later; the limit will reset automatically.",
+      },
+    },
+  ],
+  [
+    "provider_unavailable",
+    {
+      vi: {
+        message: "Dịch vụ AI đang tạm ngưng để quản trị viên kiểm tra.",
+        hint: "Báo quản trị viên nếu lỗi kéo dài.",
+      },
+      en: {
+        message: "The AI service is paused for an administrator to check.",
+        hint: "Contact your administrator if this persists.",
+      },
+    },
+  ],
+]);
+
 /**
  * H2b-R27 (F4, P15) · H2c-R22: như `runErrorText`, trừ `UPSTREAM_ERROR` + `reason` ∈ {`refused`, `file_rejected`} → `hint`
- * riêng (`plan-errors` §2); `message` giữ câu H1.
+ * riêng (`plan-errors` §2); `message` giữ câu H1. H3a-R08: `ALL_PROVIDERS_EXHAUSTED` + `reason` ∈ {`quota`,
+ * `provider_unavailable`} → thay cả `message` và `hint`; reason khác/null → câu H1.
  */
 export function runErrorTextFor(
   code: ChatRunErrorCode,
   locale: RunLocale,
   reason: string | null,
 ): RunErrorText {
+  const exhausted =
+    code === "ALL_PROVIDERS_EXHAUSTED" && reason !== null ? EXHAUSTED_TEXTS.get(reason) : undefined;
+  if (exhausted) return { ...exhausted[locale] };
   const t = runErrorText(code, locale);
   const hint =
     code === "UPSTREAM_ERROR" && reason !== null ? UPSTREAM_HINTS.get(reason) : undefined;

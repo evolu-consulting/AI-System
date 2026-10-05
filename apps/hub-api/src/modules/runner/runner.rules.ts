@@ -135,10 +135,11 @@ export function providerBlocked(
 
 /** H3a-R09 · lý do khi provider đang chặn (khớp `providerBlocked`): cooldown → quota; logged_out/error → provider_unavailable; không chặn → null. */
 export function blockedReason(
-  _s: { status: string; cooldownUntil: Date | null } | undefined,
-  _now: Date,
+  s: { status: string; cooldownUntil: Date | null } | undefined,
+  now: Date,
 ): "quota" | "provider_unavailable" | null {
-  throw new Error("not implemented");
+  if (!s || !providerBlocked(s, now)) return null;
+  return s.status === "cooldown" ? "quota" : "provider_unavailable";
 }
 
 export const isJobTerminal = (e: RunEvent): boolean =>

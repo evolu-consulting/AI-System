@@ -10,6 +10,7 @@ import type { Logger } from "../../../lib/logger";
 import { queueTimeoutReason } from "../../runs/runs.rules";
 import type { SseEventBody } from "../../runs/sse/sse-writer";
 import {
+  blockedReason,
   eventFromJobRow,
   isJobTerminal,
   type RunRef,
@@ -115,14 +116,24 @@ export class JobFollower {
         return eventFromJobRow(j.jobId, row, usage);
       }
       if (!row.queueExpired) return null;
-      const r = j.task.run;
-      const reason = queueTimeoutReason(
-        await repo.slotCounts(tx, { tenantId: r.tenantId, providerKey: j.providerKey }),
-      );
+      const reason = await this.#expiredReason(tx, j);
       if (!(await repo.expireQueued(tx, j.jobId, reason))) return null;
       const f = { code: "ALL_PROVIDERS_EXHAUSTED", reason, message: "queue wait expired" } as const;
       return syntheticFailed(j.jobId, f);
     });
+  }
+
+  /** H3a-R06/PL12: provider đang chặn → lý do theo provider (`cooldown` → `quota`); không chặn → `queueTimeoutReason` H1. */
+  async #expiredReason(
+    tx: Tx,
+    j: FollowJob,
+  ): Promise<"quota" | "provider_unavailable" | "tenant_slots" | "provider_busy"> {
+    const blocked = blockedReason(await repo.providerStateOf(tx, j.providerKey), new Date());
+    if (blocked) return blocked;
+    const r = j.task.run;
+    return queueTimeoutReason(
+      await repo.slotCounts(tx, { tenantId: r.tenantId, providerKey: j.providerKey }),
+    );
   }
 
   /** `run_steps` ok/failed (+ bản gốc lỗi Runtime vào `detail`, P11) rồi `step.finished`. */
