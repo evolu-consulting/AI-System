@@ -95,6 +95,12 @@ class RunEvents:
         body = {"type": "job.progress", "job_id": job.id, "message": message[:200], "percent": None}
         await self._publish(job.run_id, self._next(job.id), body)
 
+    async def delta(self, job: ClaimedJob, kind: str, text: str) -> None:
+        """H2b WRK-FR-03: `job.delta{kind, text ≤ 4 000}` — `seq` chung bộ đếm job (P11: Hub phát
+        hiện hở bằng `seq`); người gọi (`DeltaPump`) đã cắt `text` (`split_utf16`)."""
+        body = {"type": "job.delta", "job_id": job.id, "kind": kind, "text": text}
+        await self._publish(job.run_id, self._next(job.id), body)
+
     async def result(
         self, job: ClaimedJob, output: dict[str, Any], usage: Tokens, resumed: bool = False
     ) -> None:

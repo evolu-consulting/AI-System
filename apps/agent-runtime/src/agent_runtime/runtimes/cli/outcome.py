@@ -7,6 +7,9 @@ WRK-FR-15) · `logged_out` → `logged_out` · `fatal` / thoát không `final` (
 không đụng provider. Review H1 #2c/#5/#10: lỗi phía cha (dòng sự kiện hỏng/quá dài, reader lỗi)
 và job host chết vì tín hiệu không do cha gửi (vd systemd dừng cả cgroup) → **không** đếm lỗi
 provider.
+H2b F4 (plan-runtime §4, R27): `is_error` chưa có `RateLimit` → phân loại chữ result
+(`classify_is_error`): mẫu rate/auth như H1 (`cooldown`/`logged_out`), không mẫu ∧ 0 output token →
+`UPSTREAM_ERROR refused`, còn lại `PROVIDER_ERROR` H1.
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ from agent_runtime.db.provider_state_sql import Broken, ProviderEffect
 from agent_runtime.db.usage_sql import UsageKeys, UsageRow
 from agent_runtime.events.job_events import Failure, Tokens
 from agent_runtime.providers.base import Confirm, Fatal, Final, RateLimit, UsageEv
+from agent_runtime.runtimes.cli.refusal import IsErrorKind, classify_is_error
 from agent_runtime.runtimes.cli.result import build_output, forced_need_input
 
 JOB_ERROR_CODES = frozenset(
@@ -36,6 +40,7 @@ RATE_LIMITED = Failure("failed", "ALL_PROVIDERS_EXHAUSTED", "quota", "provider r
 LOGGED_OUT = Failure(
     "failed", "ALL_PROVIDERS_EXHAUSTED", "provider_unavailable", "provider logged out"
 )
+REFUSED = Failure("failed", "UPSTREAM_ERROR", "refused", "provider refused the request")
 DEFAULT_COOLDOWN = timedelta(minutes=30)  # WRK-FR-15: không có giờ reset
 BROKEN_SIGNALS = frozenset({"rejected", "logged_out"})
 
@@ -78,6 +83,7 @@ class Seen:
     signaled: bool = False  # job host thoát vì tín hiệu mà cha không gửi (returncode < 0)
     # HUB-FR-95 §5 #3: Hub từ chối tool `side_effect` (giữ cái đầu; không reset khi thử lại)
     confirm: Confirm | None = None
+    streamed: bool = False  # H2b R21: đã phát `job.delta` → không thử lại (giữ qua `next_attempt`)
 
     def total(self) -> UsageSum:
         return self.carried if self.usage is None else self.carried.plus(self.usage)
@@ -138,11 +144,31 @@ def decide_exit(payload: JobPayload1, seen: Seen) -> Verdict:
     if seen.final is None:
         return Verdict(CRASHED, provider="none" if seen.signaled else "error")
     if seen.final.is_error and seen.confirm is None:
-        return Verdict(PROVIDER_ERROR)
+        return is_error_verdict(is_error_kind(seen))
     output = build_output(payload, seen.final, seen.confirm)
     if output is None:
         return Verdict(INVALID_OUTPUT)
     return Verdict(None, output, "ok")
+
+
+def is_error_text(f: Final) -> str:
+    """Chữ result để phân loại F4 (chỉ vào log job, không vào sự kiện/DB)."""
+    return f.text or f.raw_json or " ".join(f.errors)
+
+
+def is_error_kind(seen: Seen) -> IsErrorKind | None:
+    """H2b F4 (plan-runtime §4): `Final.is_error` → `rate`/`auth`/`refused`/None."""
+    assert seen.final is not None
+    return classify_is_error(is_error_text(seen.final), seen.total().output_tokens)
+
+
+def is_error_verdict(kind: IsErrorKind | None) -> Verdict:
+    """Chỉ tới khi chưa có `RateLimit` (claude-sub đã phân loại bằng `result_signal` H1)."""
+    if kind == "rate":
+        return Verdict(RATE_LIMITED, provider=broken_of(RateLimit(status="rejected")))
+    if kind == "auth":
+        return Verdict(LOGGED_OUT, provider=broken_of(RateLimit(status="logged_out")))
+    return Verdict(REFUSED if kind == "refused" else PROVIDER_ERROR)
 
 
 def queued_failure(b: Broken) -> Failure:

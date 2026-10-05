@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from contextlib import suppress
 from dataclasses import replace
 from typing import TYPE_CHECKING, Protocol
 
@@ -21,13 +22,17 @@ from agent_runtime.db.finish_sql import FinishTx
 from agent_runtime.db.jobs_sql import ClaimedJob
 from agent_runtime.log import get_logger
 from agent_runtime.providers.context import with_history
+from agent_runtime.runtimes.cli.delta_pump import DeltaPump
 from agent_runtime.runtimes.cli.host_proc import HostProcess, Outcome
+from agent_runtime.runtimes.cli.joblog import append_is_error, events_log_path
 from agent_runtime.runtimes.cli.outcome import (
     CANCELLED,
     TIMED_OUT,
     Seen,
     Verdict,
     decide_exit,
+    is_error_kind,
+    is_error_text,
     usage_row,
 )
 from agent_runtime.runtimes.cli.prompt import retry_prompt
@@ -69,12 +74,19 @@ class JobRun:
         self.skey = session_key(payload)
         self.deadline = time.monotonic() + payload.timeout_s
         self.proc_host = HostProcess(self)
+        self.pump = DeltaPump(host.events, job, self.cfg)  # H2b §3.5: một bộ gom cho cả job
 
     def stopping(self) -> bool:
         """Process cha đang dừng (SIGTERM) — không thử lại, không ghi lỗi."""
         return self.control.reason == "shutdown" or self.cfg.stopping.is_set()
 
     async def execute(self) -> None:
+        try:
+            await self._execute()
+        finally:
+            await self.pump.close()  # `_close` đã xả; còn lại = dừng không ghi / lỗi giữa chừng
+
+    async def _execute(self) -> None:
         await self._load_session()
         outcome = await self._attempt()
         if self._retryable(outcome) and resume_failed(self.seen, self.resumed):
@@ -90,7 +102,10 @@ class JobRun:
         await self._apply(outcome)
 
     def _retryable(self, outcome: Outcome) -> bool:
-        """HUB-FR-95 §5 #5: đã có `Confirm` → không resume/thử lại (lượt sau là run mới)."""
+        """HUB-FR-95 §5 #5: đã có `Confirm` → không resume/thử lại (lượt sau là run mới). H2b R21:
+        đã phát `job.delta` → không thử lại JSON, không dựng lại session."""
+        if self.seen.streamed:
+            return False
         return outcome == "exited" and not self.stopping() and self.seen.confirm is None
 
     async def _load_session(self) -> None:
@@ -151,16 +166,28 @@ class JobRun:
             self.host.events.forget(self.job.id)
         else:
             v = decide_exit(self.payload, self.seen)
+            self._log_is_error()
             if v.failure is None and confirmation_forced(
                 self.payload, self.seen.final, self.seen.confirm
             ):
                 get_logger().info("job.confirmation_forced")  # không nội dung (§5 #4)
             await self._close(v)
 
+    def _log_is_error(self) -> None:
+        """F4: chữ result của `is_error` chỉ vào log job (che, ≤ 300) — không vào sự kiện/DB."""
+        f = self.seen.final
+        if f is None or not f.is_error or self.seen.confirm is not None:
+            return
+        kind = is_error_kind(self.seen)
+        get_logger().info("job.is_error", kind=kind, rate_limit=self.seen.rate_limit is not None)
+        with suppress(OSError):
+            append_is_error(events_log_path(self.cfg.log_dir, self.job.id), kind, is_error_text(f))
+
     def _succeeded(self) -> bool:
         return decide_exit(self.payload, self.seen).failure is None
 
     async def _close(self, v: Verdict) -> None:
+        await self.pump.drain()  # H2b H6: mọi `job.delta` trước `job.result`/`job.failed`
         total = self.seen.total()
         latency = int((time.monotonic() - self.started) * 1000)
         f = v.failure

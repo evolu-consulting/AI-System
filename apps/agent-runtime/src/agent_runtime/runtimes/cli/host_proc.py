@@ -22,6 +22,7 @@ from agent_runtime.db.jobs_sql import ClaimedJob
 from agent_runtime.log import get_logger
 from agent_runtime.providers.base import (
     Confirm,
+    Delta,
     Fatal,
     Final,
     Progress,
@@ -32,6 +33,7 @@ from agent_runtime.providers.base import (
     UsageEv,
 )
 from agent_runtime.providers.claude import mcp
+from agent_runtime.runtimes.cli.delta_pump import DeltaPump
 from agent_runtime.runtimes.cli.joblog import append_envelope, events_log_path, stderr_log_path
 from agent_runtime.runtimes.cli.outcome import BROKEN_SIGNALS, Seen
 from agent_runtime.runtimes.cli.protocol import (
@@ -66,6 +68,7 @@ class RunState(Protocol):
     control: StopControl
     cfg: HostConfig
     seen: Seen
+    pump: DeltaPump
     work: Path
     deadline: float
     prompt: str
@@ -265,16 +268,23 @@ class HostProcess:
         elif isinstance(ev, ToolUse):
             self.run.seen.tool_used = True
         elif isinstance(ev, Confirm):
-            if self.run.seen.confirm is None:  # §5 #3: giữ cái đầu
-                self.run.seen.confirm = ev
+            self.run.seen.confirm = self.run.seen.confirm or ev  # §5 #3: giữ cái đầu
         elif isinstance(ev, Final):
             self.run.seen.final = ev
         elif isinstance(ev, RateLimit):
             self._rate_limit(ev)
-        elif isinstance(ev, Fatal):  # `Delta`: PY-03 (`DeltaPump`), PY-02 bỏ qua
+        elif isinstance(ev, Delta):
+            await self._delta(ev)
+        else:  # `Fatal`
             self.run.seen.fatal, self.run.seen.parent_fault = ev, ev is INVALID_EVENT
             return True
         return False
+
+    async def _delta(self, ev: Delta) -> None:
+        """H2b §3.5: chỉ job `stream`, không phải lần thử lại định dạng."""
+        if self.run.payload.stream is True and self.run.retry is None:
+            await self.run.pump.add(ev.kind, ev.text)
+            self.run.seen.streamed = self.run.pump.streamed
 
     def _rate_limit(self, ev: RateLimit) -> None:
         if ev.status in BROKEN_SIGNALS:

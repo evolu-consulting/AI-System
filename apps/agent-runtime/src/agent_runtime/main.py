@@ -71,7 +71,15 @@ def build_services(rt: QueueRuntime) -> list[Service]:
 def host_config(settings: Settings, stopping: asyncio.Event) -> HostConfig:
     s = settings
     return HostConfig(
-        s.worker_id, s.work_dir, s.log_dir, s.home, s.app_env, s.kill_grace_s, stopping=stopping
+        s.worker_id,
+        s.work_dir,
+        s.log_dir,
+        s.home,
+        s.app_env,
+        s.kill_grace_s,
+        stopping=stopping,
+        delta_flush_ms=s.delta_flush_ms,
+        delta_flush_chars=s.delta_flush_chars,
     )
 
 

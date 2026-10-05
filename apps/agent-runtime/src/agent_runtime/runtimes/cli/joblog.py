@@ -1,6 +1,7 @@
 """WRK-NFR-04 · RQ1 · File log theo job (plan-runtime §9): `<LOG_DIR>/<ngày>/<job_id>.events.jsonl`
 ghi **khung** message của job host (loại, tên tool, token, lỗi) — không text, label, tool result,
-`session_id`. Quyền 0600; stderr nằm ở `<job_id>.stderr.log` (runner).
+`session_id`. Quyền 0600; stderr nằm ở `<job_id>.stderr.log` (runner). Ngoại lệ H2b F4
+(plan-runtime §4): chữ result của `is_error` (đã che, ≤ 300) — `append_is_error`.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from agent_runtime.log import redact_text
 from agent_runtime.providers.base import (
     Fatal,
     Final,
@@ -51,10 +53,23 @@ def event_envelope(ev: ProviderEvent) -> dict[str, Any]:
 
 def append_envelope(path: Path, ev: ProviderEvent) -> None:
     """Một dòng JSON; lỗi ghi file không được làm hỏng job (gọi nơi bắt `OSError`)."""
-    line = {"ts": datetime.now(UTC).isoformat(timespec="milliseconds"), **event_envelope(ev)}
+    _append(path, event_envelope(ev))
+
+
+IS_ERROR_TEXT_MAX = 300
+
+
+def append_is_error(path: Path, kind: str | None, text: str) -> None:
+    """F4: phân loại + chữ result đã che, ≤ 300 ký tự (chỉ log job, không sự kiện/DB)."""
+    _append(path, {"type": "is_error", "kind": kind, "text": redact_text(text[:IS_ERROR_TEXT_MAX])})
+
+
+def _append(path: Path, body: dict[str, Any]) -> None:
+    line = {"ts": datetime.now(UTC).isoformat(timespec="milliseconds"), **body}
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
     try:
-        os.write(fd, json.dumps(line, separators=(",", ":")).encode() + b"\n")
+        data = json.dumps(line, separators=(",", ":"), ensure_ascii=False)
+        os.write(fd, data.encode() + b"\n")
     finally:
         os.close(fd)

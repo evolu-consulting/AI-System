@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     hub_url: str | None = Field(default=None, pattern=r"^https?://[^\s]+$", max_length=2048)
     dify_read_timeout_s: float = Field(default=30.0, gt=0)
     dify_stop_timeout_s: float = Field(default=2.0, gt=0)
+    # H2b plan-runtime §8: gom `job.delta` (`DeltaPump`) — xả theo giờ / theo số ký tự.
+    delta_flush_ms: int = Field(default=100, ge=10, le=1000)
+    delta_flush_chars: int = Field(default=200, ge=1, le=4000)
 
     @field_validator("providers", mode="before")
     @classmethod

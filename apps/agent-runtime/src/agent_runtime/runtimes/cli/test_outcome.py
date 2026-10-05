@@ -11,6 +11,7 @@ from agent_runtime.runtimes.cli.outcome import (
     LOGGED_OUT,
     PROVIDER_ERROR,
     RATE_LIMITED,
+    REFUSED,
     Seen,
     broken_of,
     decide_exit,
@@ -44,7 +45,8 @@ def test_wrk_fr_15_decide_exit_provider_effect() -> None:
     assert (crash.failure, crash.provider) == (CRASHED, "error")
     fatal = decide_exit(p, Seen(fatal=Fatal(code="UPSTREAM_ERROR", msg="x", reason="crash")))
     assert fatal.provider == "error"
-    is_err = decide_exit(p, Seen(final=Final(kind="agent_result", is_error=True)))
+    out = UsageEv.model_validate({"in": 1, "out": 3})
+    is_err = decide_exit(p, Seen(final=Final(kind="agent_result", is_error=True), usage=out))
     assert (is_err.failure, is_err.provider) == (PROVIDER_ERROR, "none")
     ok = Final(kind="agent_result", structured={"status": "done", "text": "xong"})
     good = decide_exit(p, Seen(final=ok))
@@ -68,3 +70,25 @@ def test_hub_h1_r25_usage_row_totals_and_absent() -> None:
         4,
     )
     assert (row.model, row.latency_ms, row.keys.agent_id) == ("m1", 42, p.agent.id)
+
+
+def test_wrk_fr_15_h2b_f4_is_error_classified() -> None:
+    """H2b F4 (plan-runtime §4): `is_error` chưa có `RateLimit` → mẫu rate/auth (bất kể output),
+    không mẫu ∧ 0 output → `refused`; chữ lấy `text` → `raw_json` → `errors`."""
+    p = payload()
+
+    def verdict(final: Final, out: int = 0) -> tuple[object, object]:
+        usage = UsageEv.model_validate({"in": 10, "out": out})
+        v = decide_exit(p, Seen(final=final, usage=usage))
+        return v.failure, v.provider
+
+    rate, prov = verdict(Final(kind="text", is_error=True, text="You've hit your usage limit"), 7)
+    assert rate == RATE_LIMITED and isinstance(prov, Broken) and prov.status == "cooldown"
+    auth, prov = verdict(Final(kind="text", is_error=True, raw_json="Not logged in · /login"))
+    assert auth == LOGGED_OUT and isinstance(prov, Broken) and prov.status == "logged_out"
+    err = Final(kind="agent_result", is_error=True, errors=["I can't help with that."])
+    assert verdict(err) == (REFUSED, "none")
+    assert REFUSED.code == "UPSTREAM_ERROR" and REFUSED.reason == "refused"
+    assert verdict(err, 5) == (PROVIDER_ERROR, "none")
+    rl = Seen(rate_limit=RateLimit(status="rejected"), final=err)  # nhánh H1 `result_signal`
+    assert decide_exit(p, rl).failure == RATE_LIMITED

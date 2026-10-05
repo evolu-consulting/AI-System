@@ -55,6 +55,11 @@ class DeltaBuffer:
             return self.take()
         return []
 
+    @property
+    def pending(self) -> bool:
+        """Còn chữ chờ xả."""
+        return self._len > 0
+
     def due(self) -> bool:
         """Có chữ chờ và đã tới hạn theo thời gian."""
         return self._len > 0 and self.wait_s() <= 0

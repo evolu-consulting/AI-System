@@ -57,6 +57,8 @@ class HostConfig:
     # Đặt ngay trong signal handler SIGTERM/SIGINT của cha (review H1 #2): job host chết theo cha
     # trước khi `Supervisor.shutdown` kịp `request_stop` → coi như `shutdown`, không ghi.
     stopping: asyncio.Event = field(default_factory=asyncio.Event, compare=False)
+    delta_flush_ms: int = 100  # H2b §8 `AGENT_RT_DELTA_FLUSH_MS`
+    delta_flush_chars: int = 200  # H2b §8 `AGENT_RT_DELTA_FLUSH_CHARS`
 
 
 _Seen = Seen  # tên cũ (test đơn vị PY-10)
