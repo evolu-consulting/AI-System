@@ -73,6 +73,8 @@ export const AgentCliJobSchema = z.strictObject({
   allowed_tools: z.array(AllowedToolSchema).max(ALLOWED_TOOLS.length),
   output: z.enum(JOB_OUTPUTS),
   timeout_s: z.number().int().min(10).max(3600),
+  /** H2b P3: Runtime phát `job.delta`; vắng = `false` (không `default` — pydantic sinh khớp). */
+  stream: z.boolean().optional(),
 });
 export type AgentCliJob = z.infer<typeof AgentCliJobSchema>;
 

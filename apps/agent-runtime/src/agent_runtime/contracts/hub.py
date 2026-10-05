@@ -89,6 +89,7 @@ class JobPayload1(BaseModel):
     allowed_tools: Annotated[list[Literal["Read", "Grep", "Glob"]], Field(max_length=3)]
     output: Literal["agent_result", "text"]
     timeout_s: Annotated[int, Field(ge=10, le=3600)]
+    stream: bool | None = None
 
 
 class RunEvent1(BaseModel):
@@ -170,11 +171,25 @@ class RunEvent4(BaseModel):
             "sandbox",
             "credential",
             "upstream",
+            "refused",
         ]
         | None
     )
     message: Annotated[str, Field(max_length=500, min_length=1)]
     usage: Usage
+
+
+class RunEvent5(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    v: Literal[1]
+    job_id: UUID
+    seq: Annotated[int, Field(ge=1, le=9007199254740991)]
+    at: AwareDatetime
+    type: Literal["job.delta"]
+    kind: Literal["answer", "done", "partial"]
+    text: Annotated[str, Field(max_length=4000, min_length=1)]
 
 
 class AgentResult1(BaseModel):
@@ -362,5 +377,5 @@ class RunEvent3(BaseModel):
     session_resumed: bool
 
 
-class RunEvent(RootModel[RunEvent1 | RunEvent2 | RunEvent3 | RunEvent4]):
-    root: RunEvent1 | RunEvent2 | RunEvent3 | RunEvent4
+class RunEvent(RootModel[RunEvent1 | RunEvent2 | RunEvent3 | RunEvent4 | RunEvent5]):
+    root: RunEvent1 | RunEvent2 | RunEvent3 | RunEvent4 | RunEvent5

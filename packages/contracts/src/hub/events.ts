@@ -59,11 +59,27 @@ export const JobFailedEventSchema = z.strictObject({
   usage: TokenUsageSchema,
 });
 
+// HUB-FR-92, WRK-FR-03 · H2b plan §2.2 (P3, P11): chữ trả lời phát dần; `seq` liền mạch theo job.
+export const DELTA_KINDS = ["answer", "done", "partial"] as const;
+export const DeltaKindSchema = z.enum(DELTA_KINDS);
+export type DeltaKind = z.infer<typeof DeltaKindSchema>;
+/** zod 4.6 `max` và pydantic `max_length` đều đếm code point; Runtime cắt theo UTF-16 (plan-runtime §3.3, luôn ≥ số code point) ⇒ luôn hợp lệ. */
+export const JOB_DELTA_TEXT_MAX = 4000;
+
+export const JobDeltaEventSchema = z.strictObject({
+  ...base,
+  type: z.literal("job.delta"),
+  kind: DeltaKindSchema,
+  text: z.string().min(1).max(JOB_DELTA_TEXT_MAX),
+});
+export type JobDeltaEvent = z.infer<typeof JobDeltaEventSchema>;
+
 export const RunEventSchema = z.discriminatedUnion("type", [
   JobStartedEventSchema,
   JobProgressEventSchema,
   JobResultEventSchema,
   JobFailedEventSchema,
+  JobDeltaEventSchema,
 ]);
 export type RunEvent = z.infer<typeof RunEventSchema>;
 export type RunEventType = RunEvent["type"];

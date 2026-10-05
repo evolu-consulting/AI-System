@@ -26,6 +26,8 @@ export const JOB_FAIL_REASONS = [
   "sandbox",
   "credential",
   "upstream",
+  // H2b F4 (R27): model/CLI từ chối — Hub chọn `hint` riêng, mã `run.failed` giữ như H1.
+  "refused",
 ] as const;
 export const JobFailReasonSchema = z.enum(JOB_FAIL_REASONS);
 export type JobFailReason = z.infer<typeof JobFailReasonSchema>;

@@ -225,6 +225,9 @@
               "type": "integer",
               "minimum": 10,
               "maximum": 3600
+            },
+            "stream": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -483,7 +486,8 @@
                     "invalid_output",
                     "sandbox",
                     "credential",
-                    "upstream"
+                    "upstream",
+                    "refused"
                   ]
                 },
                 {
@@ -526,6 +530,43 @@
             "message",
             "usage"
           ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number",
+              "const": 1
+            },
+            "job_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": {
+              "type": "string",
+              "const": "job.delta"
+            },
+            "kind": {
+              "type": "string",
+              "enum": ["answer", "done", "partial"]
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            }
+          },
+          "required": ["v", "job_id", "seq", "at", "type", "kind", "text"],
           "additionalProperties": false
         }
       ]
