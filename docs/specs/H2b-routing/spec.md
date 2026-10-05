@@ -2,7 +2,7 @@
 id: H2b-routing
 title: Định tuyến mở rộng (`@agent`, `GET /agents`, Orchestrator theo tenant, `max_concurrent_runs`, `delta` từ Runtime) + nợ H1 F3–F7
 milestone: H2b
-status: approved               # draft → ready → approved → in-progress → done
+status: done                   # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-62, HUB-FR-77, HUB-FR-91, HUB-FR-92, HUB-FR-94, HUB-FR-95,
    HUB-BR-03, HUB-BR-06, HUB-BR-08, HUB-BR-18, HUB-BR-20,
@@ -165,7 +165,7 @@ Nguyên văn AC ở BA `ba-agent-hub` §11.
 Lệnh xong mốc: `done:h2b` (qc, `test-plan.md`, mẫu `done:h2a`).
 
 ## 9. Câu hỏi mở
-Không còn: Q1 = B (2026-10-05), T1–T18 — [spec-decisions.md](spec-decisions.md).
+Không còn: Q1 = B, T1–T18 — [spec-decisions](spec-decisions.md).
 
 ## 10. Rủi ro
 | # | Rủi ro | Giảm thiểu |
@@ -176,7 +176,7 @@ Không còn: Q1 = B (2026-10-05), T1–T18 — [spec-decisions.md](spec-decision
 | K4 | F3: `lan` thấy `assistant` → contract chat có thể đổi | `fake-cli` chỉ delegate khi có `#fake:delegate`; AC-13 đỏ → hard stop |
 | K5 | Mẫu chữ F4 lệch thực tế | Mẫu một chỗ (plan), smoke `HUB_LIVE`; lệch → `UPSTREAM_ERROR` như H1 |
 | K6 | `host_proc.py` (312 dòng) gần trần | Bộ phân tích tăng dần ở module riêng |
-| K7 | `responder` vượt chữ ROADMAP | Q1=B đã chốt; ROADMAP sửa ở I3 |
+| K7 | `responder` vượt chữ ROADMAP | Q1=B; đã sửa (I3) |
 
 ## 11. Tranh chấp test
-- (chưa có)
+- TC-1…8 test sai: spec-decisions

@@ -1,4 +1,4 @@
-# Runbook · Hub dev + `done:h1` / `done:h2a` (H1, H2a)
+# Runbook · Hub dev + `done:h1` / `done:h2a` / `done:h2b` (H1, H2a, H2b)
 
 | Việc | Lệnh | Ghi chú |
 |---|---|---|
@@ -7,6 +7,8 @@
 | Dev Hub | `bun run hub:dev` | migrate DB `ai_system` → admin-api `:3001` (dùng lại nếu đang chạy) → user fixture `lan/hoa/an/khoa` (mật khẩu `dev-password-1`, `khoa` bị khoá) qua platform_admin → `hub:seed` → hub-api `:4000` → agent-runtime `fake-cli` (Windows: container `ai-hub-dev-runtime`; Linux/WSL2: `uv` thẳng). Ctrl+C dừng phần script đã bật. In ra `CHAT_CONTRACT_USERS` |
 | Mock Dify (H2a) | `bun run hub:dify-mock` | mock Dify streaming (`tools/hub-dev/src/dify-mock.ts`, cổng `PORT`, mặc định 5001); kịch bản chọn theo app-key (`mk-ok`, `mk-401`, `mk-503x<n>`, `mk-slow-<ms>`, `mk-agent`…); `GET /__mock/requests` xem lời gọi |
 | Xong mốc H2a | `bun run done:h2a` | `test-plan H2a §7.1` (14 bước: typecheck, unit, int H1+H2a+Admin, contracts, Python, stack H1/H2a, contract chat, lock/trace/size/depcruise). DB TS (`TEST_DATABASE_URL`) và DB Hub/Runtime (`HUB_TEST_DATABASE_URL` = `AGENT_RT_TEST_DATABASE_URL`) phải **khác nhau**; chỉ export 4 biến DB từ `.env.test-<tag>.local` (không `source` cả file — PEM nhiều dòng hỏng) |
+| Xong mốc H2b | `bun run done:h2b` | `test-plan H2b §7.1` (16 bước: **mọi bước `done:h2a`** + int/rules H2b, Python P20–P28, `test:h2b:stack`, H01 `H2b/hubdev` cần `hub:dev`, `test:perf H2a H2b` chỉ báo cáo). DB như `done:h2a`; `--from=N` chạy lại từ bước N. Contract chat tích hội thoại trên DB dev → CHAT-AC-19 có thể đỏ sau nhiều lần chạy (TECH-DEBT #55, dọn hội thoại mẫu của `lan`) |
+| Stack H2b | `bun run test:h2b:stack` | S01–S08 (`bunfig.stack.toml`, đặt `HUB_MAX_CONCURRENT_RUNS=2` tường minh): stream `fake-cli`, xác nhận với tag, `refused` |
 | Stack H2a | `bun run test:h2a:stack` | S01–S03: hub-api trên host + Runtime container + mock Dify; Hub gọi mock qua `localhost`, Runtime qua `host.docker.internal` |
 | Xong mốc H1 | `bun run done:h1` | chạy đúng `test-plan H1 §7.1`; bước contract chat tự bật `hub:dev` nếu `:4000`/`:3001` chưa chạy. `--from=N` chạy lại từ bước N (không tính là xong đủ) |
 
@@ -25,6 +27,16 @@
 | `AGENT_RT_HUB_URL` | Runtime | URL Hub cho credential `workflow.async`; **bắt buộc** khi `AGENT_RT_PROVIDERS` có `dify` |
 | `AGENT_RT_DIFY_BACKOFF_S` · `AGENT_RT_DIFY_READ_TIMEOUT_S` · `AGENT_RT_DIFY_STOP_TIMEOUT_S` | Runtime | backoff giữa các lần thử (mặc định `2,8`), timeout đọc (30), timeout stop (2) |
 | `AGENT_RT_HEARTBEAT_S` · `AGENT_RT_ORPHAN_S` | Runtime | ràng buộc: `HEARTBEAT_S` < 30 và `ORPHAN_S` ≥ 2 × `HEARTBEAT_S` (mặc định 10/60); sai → Runtime thoát lúc khởi động. Test rút ngắn: 1/5 |
+
+## Env H2b
+
+| Biến | Bên | Ghi chú |
+|---|---|---|
+| `HUB_MAX_CONCURRENT_RUNS` | hub-api | số run `running` tối đa mỗi user (HUB-FR-94), nguyên 1–20; vắng → 2; sai → server thoát lúc khởi động. Vượt → `429 TOO_MANY_RUNS` + `Retry-After: 5` (kiểm sau lỗi Router và `FLOW_BUSY`). `hub:dev` đặt 20 (bộ 41 ca contract chat không đụng 429); `test:h2b:stack` đặt 2 |
+| `AGENT_RT_DELTA_FLUSH_MS` · `AGENT_RT_DELTA_FLUSH_CHARS` | Runtime | gom `job.delta` trước khi XADD: xả khi ≥ N ms (10–1000, mặc định 100) hoặc ≥ N ký tự (1–4000, mặc định 200) |
+| `CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING` | Runtime → CLI (tự đặt) | Runtime luôn đặt `=1` trong env của `claude-sub` (`providers/claude/options.py` `FGTS_ENV`) — **không cấu hình**. Thiếu cờ (do `CLI_QUIET_ENV` tắt GrowthBook) thì agent `StructuredOutput` dồn hết `delta` tới cuối. Biến không công khai: nâng CLI/SDK → chạy lại `apps/agent-runtime/spikes/stream_fgts_spike.py` (`SPIKE_FGTS=0/1`) (TECH-DEBT #53) |
+
+Orchestrator theo tenant: mục `orchestrator_tenants` trong seed yaml (`{tenant_key, agent, max_steps?, …}`, xoá `{tenant_key, remove: true}`; ví dụ chú thích trong `apps/hub-api/seed/agents.yaml`) → `bun run hub:seed`. Chạy int một thư mục: `bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 ./tests/acceptance/H2b` (`bun run test:int <path>` chạy **cả repo**, TECH-DEBT #57).
 
 ### WSL NAT (smoke H2a F2)
 Runbook giả định WSL **mirrored** (`localhost` của WSL = Windows). Máy chạy **NAT** (không có `.wslconfig` `networkingMode=mirrored`): `localhost:5432/6379` vẫn tới được nhờ Docker Desktop, nhưng `localhost:<cổng hub-api trên Windows>` bị từ chối. Khi đó:

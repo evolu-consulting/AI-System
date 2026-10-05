@@ -48,7 +48,7 @@ Viết tắt: `plan` = `plan.md`, `rules` = `plan-rules.md`, `db` = `plan-db.md`
 | **Kết** | | | | | | | | |
 | I1 | `done:h2b` toàn bộ (gồm `done:h2a`, `test:contract:chat` 41 ca Hub thật, `contracts:check`, `test:lock:verify`) — HUB-H2b-AC-13 | qc | thường | `test-plan §7` | — | mọi task | `bun run done:h2b` | [x] |
 | I2 | Smoke `HUB_LIVE=1 bun run test:smoke:live` (AC-12: `@assistant` câu dài stream, Orchestrator answer dài, huỷ có usage; chỉ đòi ≥ 1 `job.delta` trước `job.result`, **không** ngưỡng độ trễ — agent có thể im ~8 s do thinking, PY-S2 S5) + sửa `docs/guides/hub-dev.md` (bỏ câu "không code nào đọc") → `smoke.md` | backend-lead | cao | `spec R29, §8 AC-12`, `spike-stream.md` | `docs/specs/H2b-routing/smoke.md`, `docs/guides/hub-dev.md` | I1 | biên bản smoke (không chặn `done:h2b`) | [x] |
-| I3 | docs: CODEMAP, TRACE, README module (`mention`, `stream`, `agents`, thư mục con TD #44), STATE, ROADMAP (contract chat thêm `responder`, K7), CR-037 áp BA, CR-impact Chat/Admin (menu `@`, `responder`, `AGENT_NOT_FOUND`, `TOO_MANY_RUNS`, delta khi step mở) | docs-architect | thường | `WORKFLOW` bước 10 | `docs/**` | I1 | `bun run trace --check` | [ ] |
+| I3 | docs: CODEMAP, TRACE, README module (`mention`, `stream`, `agents`, thư mục con TD #44), STATE, ROADMAP (contract chat thêm `responder`, K7), CR-037 áp BA, CR-impact Chat/Admin (menu `@`, `responder`, `AGENT_NOT_FOUND`, `TOO_MANY_RUNS`, delta khi step mở) | docs-architect | thường | `WORKFLOW` bước 10 | `docs/**` | I1 | `bun run trace --check` | [x] |
 
 ## Rủi ro thêm (ngoài spec §10)
 | # | Rủi ro | Giảm thiểu |

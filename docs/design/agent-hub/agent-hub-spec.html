@@ -177,7 +177,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td>Run</td>
-<td>Một lần xử lý cho một message của user. Có hai loại: <code>command</code> hoặc <code>orchestrated</code></td>
+<td>Một lần xử lý cho một message của user. Có ba loại: <code>command</code> (lệnh <code>/</code>), <code>orchestrated</code> (qua Orchestrator, kể cả nhiều tag <code>@</code>) hoặc <code>direct</code> (một tag <code>@agent</code>, gọi thẳng agent) (CR-033, CR-037)</td>
 </tr>
 <tr>
 <td>Step</td>
@@ -321,10 +321,12 @@ Hub chỉ đọc schema <code>admin</code>.</p>
   │
   ├─ 1. Auth guard: verify JWT → user_id, tenant_id, role
   │     tính quyền từ cache schema admin (feature, group) + hub (agent)
-  ├─ 2. Lưu message(user) · tạo run (gắn tenant_id)
+  ├─ 2. Router (bước 3) phân loại TRƯỚC khi tạo run: lỗi CMD_NOT_FOUND / CMD_MISSING_ARG / AGENT_NOT_FOUND trả ngay, không ghi gì
+  │     rồi trong một transaction (khoá theo user): flow đang có run → 409 FLOW_BUSY
+  │     → user đang chạy ≥ max_concurrent_runs → 429 TOO_MANY_RUNS + Retry-After, không tạo run (HUB-FR-94, CR-037)
+  │     → lưu message(user) · tạo run (gắn tenant_id; kind command / orchestrated / direct)
   │     kiểm tra quota tenant: mặc định KHÔNG chặn · ≥ 80% / 100% → cảnh báo, đánh dấu overage
      (tenant bật chặn cứng và ≥ 100% → 403 QUOTA_BLOCKED, HUB-FR-93)
-     user đang chạy ≥ max_concurrent_runs → 429 TOO_MANY_RUNS, không tạo run (HUB-FR-94)
   ├─ 3. Router
   │     ├─ bắt đầu &quot;/&quot; + khớp command user được dùng ─▶ COMMAND RUNNER
   │     │      parse args → áp input_map (args/selection/page/attachment)
@@ -508,7 +510,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td>HUB-FR-94</td>
-<td><strong>Giới hạn run đồng thời mỗi user</strong> (CR-034; mốc H2): <code>max_concurrent_runs</code> mặc định 2 (cấu hình Hub). User đã đủ số run <code>running</code> thì tin mới nhận <code>429 TOO_MANY_RUNS</code> (kèm <code>Retry-After</code>), run không được tạo. Đếm từ <code>runs</code> trong Postgres</td>
+<td><strong>Giới hạn run đồng thời mỗi user</strong> (CR-034; mốc H2): <code>max_concurrent_runs</code> mặc định 2 (cấu hình Hub). User đã đủ số run <code>running</code> thì tin mới nhận <code>429 TOO_MANY_RUNS</code> (kèm <code>Retry-After</code>), run không được tạo. Đếm từ <code>runs</code> trong Postgres. Thứ tự kiểm (CR-037): <strong>sau</strong> Router (lỗi <code>CMD_*</code>, <code>AGENT_NOT_FOUND</code> trả trước, không mở transaction) và <strong>sau</strong> <code>FLOW_BUSY</code> (409 thắng 429)</td>
 <td><strong>MUST</strong></td>
 </tr>
 <tr>
@@ -646,7 +648,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td>HUB-FR-62</td>
-<td>Cấu hình <strong>Orchestrator</strong> (CR-032): luôn có <strong>một bản mặc định toàn hệ thống</strong>; <code>platform_admin</code> có thể thêm <strong>bản riêng cho một tenant</strong>. Khi bắt đầu run Hub chọn bản riêng của tenant của user, không có thì dùng mặc định, và chốt vào snapshot của run (HUB-BR-06). <code>tenant_admin</code> không sửa được. Mốc: runtime chọn theo tenant ở H2 (seed yaml được), UI cấu hình ở H4. Mỗi bản: chọn <strong>một agent</strong> làm Orchestrator (<code>agent_id</code>; profile và system prompt là của agent đó, runtime <code>llm</code>/API hoặc <code>agentic-cli</code>/subscription; <strong>mặc định <code>llm</code>/model rẻ</strong> (khi chưa có API key, H1 tạm chạy <code>agentic-cli</code> qua <code>claude-sub</code>, CR-031; nên chuyển sang API key càng sớm càng tốt, CR-034) vì mọi tin đều qua nó, chọn <code>agentic-cli</code> thì Studio cảnh báo chậm: mỗi quyết định khởi động CLI vài giây và chiếm slot subscription, CR-025), <code>max_steps</code>, ngân sách token mỗi run, số message lịch sử đưa vào, hành vi khi không có agent nào khớp (tự trả lời / hỏi lại). Agent đang làm Orchestrator không tắt/xoá được, không nằm trong danh sách delegate, trả <code>delegate|answer|ask</code> bằng JSON có cấu trúc; chạy bằng CLI thì không tool, không MCP. <strong>Hub giữ vòng lặp điều phối</strong> (kiểm quyền mỗi bước, <code>max_steps</code>, huỷ, trace, chi phí), không để CLI tự gọi agent khác (CR-020)</td>
+<td>Cấu hình <strong>Orchestrator</strong> (CR-032): luôn có <strong>một bản mặc định toàn hệ thống</strong>; <code>platform_admin</code> có thể thêm <strong>bản riêng cho một tenant</strong>. Khi bắt đầu run Hub chọn bản riêng của tenant của user, không có thì dùng mặc định, và chốt vào snapshot của run (HUB-BR-06). <code>tenant_admin</code> không sửa được. Mốc: runtime chọn theo tenant ở H2 (seed yaml được), UI cấu hình ở H4; tới H4 bản của tenant chỉ thêm/sửa/xoá qua seed (<code>orchestrator_tenants</code>, xoá bằng <code>{tenant_key, remove: true}</code>) (CR-037). Mỗi bản: chọn <strong>một agent</strong> làm Orchestrator (<code>agent_id</code>; profile và system prompt là của agent đó, runtime <code>llm</code>/API hoặc <code>agentic-cli</code>/subscription; <strong>mặc định <code>llm</code>/model rẻ</strong> (khi chưa có API key, H1 tạm chạy <code>agentic-cli</code> qua <code>claude-sub</code>, CR-031; nên chuyển sang API key càng sớm càng tốt, CR-034) vì mọi tin đều qua nó, chọn <code>agentic-cli</code> thì Studio cảnh báo chậm: mỗi quyết định khởi động CLI vài giây và chiếm slot subscription, CR-025), <code>max_steps</code>, ngân sách token mỗi run, số message lịch sử đưa vào, hành vi khi không có agent nào khớp (tự trả lời / hỏi lại). Agent đang làm Orchestrator ở <strong>bất kỳ</strong> phạm vi (bản mặc định hoặc bản của tenant nào) không tắt/xoá được, không nằm trong danh sách delegate, không có trong menu <code>@</code> và không tag được (CR-037), trả <code>delegate|answer|ask</code> bằng JSON có cấu trúc; chạy bằng CLI thì không tool, không MCP. <strong>Hub giữ vòng lặp điều phối</strong> (kiểm quyền mỗi bước, <code>max_steps</code>, huỷ, trace, chi phí), không để CLI tự gọi agent khác (CR-020)</td>
 <td><strong>MUST</strong></td>
 </tr>
 <tr>
@@ -823,7 +825,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td>HUB-BR-03</td>
-<td>Orchestrator chỉ thấy agent đang bật mà user được dùng. Agent chuyên trách <strong>không được</strong> gọi ngược lại Orchestrator (độ sâu tối đa là 1)</td>
+<td>Orchestrator chỉ thấy agent đang bật mà user được dùng. Agent chuyên trách <strong>không được</strong> gọi ngược lại Orchestrator (độ sâu tối đa là 1). Agent đang là Orchestrator ở bất kỳ phạm vi nào (mặc định hoặc tenant nào) không vào danh sách delegate, menu <code>@</code>, không tag được (CR-037)</td>
 </tr>
 <tr>
 <td>HUB-BR-04</td>
@@ -843,7 +845,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td>HUB-BR-08</td>
-<td>Luôn có đúng một Orchestrator <strong>mặc định toàn hệ thống</strong> hợp lệ (trỏ tới một agent đang bật có profile; agent đó không tắt/xoá được khi đang được chọn, CR-020). Mỗi tenant có thêm tối đa một Orchestrator riêng do <code>platform_admin</code> đặt (CR-032); thứ tự chọn: riêng của tenant → mặc định. <code>tenant_admin</code> không sửa được. Orchestrator chỉ thấy các agent đang bật mà user được dùng</td>
+<td>Luôn có đúng một Orchestrator <strong>mặc định toàn hệ thống</strong> hợp lệ (trỏ tới một agent đang bật có profile; agent đó không tắt/xoá được khi đang được chọn, CR-020). Mỗi tenant có thêm tối đa một Orchestrator riêng do <code>platform_admin</code> đặt (CR-032); thứ tự chọn: riêng của tenant (hợp lệ) → mặc định. <code>tenant_admin</code> không sửa được. Orchestrator chỉ thấy các agent đang bật mà user được dùng, trừ mọi agent đang là Orchestrator ở bất kỳ phạm vi nào (CR-037)</td>
 </tr>
 <tr>
 <td>HUB-BR-09</td>
@@ -1388,7 +1390,7 @@ Given workflow <code>create_trello_card</code> có <code>side_effect = true</cod
 </tr>
 <tr>
 <td>WRK-FR-03</td>
-<td>Đẩy sự kiện <code>job.progress</code> và <code>delta</code> bằng <code>XADD</code> vào Redis Stream <code>run:&lt;run_id&gt;</code> (TTL 24 giờ); Hub <code>XREAD</code>, đánh số lại và phát qua <code>sse:&lt;run_id&gt;</code> (HUB-FR-42, CR-030); Agent Runtime không đặt <code>id</code> SSE. <code>delta</code> của câu trả lời: ở H1 do Hub cắt từ kết quả agent; Runtime phát <code>delta</code> trực tiếp từ H2 (CR-031)</td>
+<td>Đẩy sự kiện <code>job.progress</code> và <code>delta</code> bằng <code>XADD</code> vào Redis Stream <code>run:&lt;run_id&gt;</code> (TTL 24 giờ); Hub <code>XREAD</code>, đánh số lại và phát qua <code>sse:&lt;run_id&gt;</code> (HUB-FR-42, CR-030); Agent Runtime không đặt <code>id</code> SSE. <code>delta</code> của câu trả lời: ở H1 do Hub cắt từ kết quả agent; Runtime phát <code>delta</code> trực tiếp từ H2 (CR-031). Cách phát (H2b, CR-037): Runtime chỉ phát <code>job.delta</code> cho job Hub đánh dấu <code>stream</code> — job <strong>có thể là câu trả lời cuối</strong> (Orchestrator <code>answer</code>, agent gọi thẳng <code>@agent</code> <code>done</code>/<code>partial</code>, delegate đầu tiên <code>done</code>); gom theo <code>AGENT_RT_DELTA_FLUSH_MS</code>/<code>_CHARS</code>, <code>seq</code> chung bộ đếm job; Hub kiểm <code>seq</code> liền mạch, cắt mỗi <code>delta</code> ≤ 40 ký tự; đã phát thì <strong>không rút lại</strong> (kết quả cuối nối tiếp phần đã phát → Hub phát nốt; lệch → giữ nội dung đã phát, ghi trace), không thử lại định dạng sau khi đã phát</td>
 <td><strong>MUST</strong></td>
 </tr>
 <tr>

@@ -14,4 +14,5 @@ Luồng E12 (`runs/runs.routes.ts`): body → `routeMessage` → lỗi `@` trả
 
 Run `direct` (B6): `RunService.start` ghi `runs.kind='direct'`, `agent_id`, `responder_key/name` (chốt lúc tạo run, P1) —
 không `orchestrator_tenant_id`; `run.started.responder`; E10/E11 đọc `responder` từ hàng `runs` (E14 không có). Tin user
-lưu nguyên văn (kể cả tag). ≥ 2 tag → Orchestrator thu hẹp (B7). Chuyển tiếp `job.delta` là B9.
+lưu nguyên văn (kể cả tag). ≥ 2 tag → Orchestrator thu hẹp (`onlyKeys`, B7). `directDriver` stream qua `modules/stream` (`DeltaSink`, `payload.stream` `done`/`partial`).
+RV1-H2: `directOnSnapshot` kiểm lại agent trên ảnh của run trước khi ghi (đổi/tắt/mất grant/thành Orchestrator giữa lúc tạo ⇒ `AGENT_NOT_FOUND`).

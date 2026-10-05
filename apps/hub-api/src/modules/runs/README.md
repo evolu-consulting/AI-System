@@ -1,6 +1,8 @@
 # modules/runs — E12–E15, SSE hai stream, huỷ (HUB-FR-41, HUB-FR-42, HUB-FR-43, HUB-BR-04)
 
 Tạo run + SSE theo contract chat C1 (`@ai/contracts/chat`, C1 plan §2.4–2.5), plan H1 §5.1–5.3, P9/P11/P12, CR-030.
+H2b (spec H2b-routing R08–R18): run 3 loại `command`/`orchestrated`/`direct`; `direct` ghi `agent_id` + `responder_key/name` (chốt lúc tạo run) và
+kiểm lại agent trên ảnh của run (`mention.service.directOnSnapshot`, RV1-H2); `orchestrated` ghi `orchestrator_tenant_id` khi dùng bản tenant.
 
 Thư mục con: `sse/` (hai đầu stream `sse:<id>`), `close/` (đóng run bởi bên không phải chủ: huỷ, lease, sweeper).
 
@@ -15,7 +17,7 @@ Thư mục con: `sse/` (hai đầu stream `sse:<id>`), `close/` (đóng run bở
 | `sse/sse-reader.ts` | `SseReader` (một kết nối `XREAD BLOCK 1000` multiplex), `runEventStream` (XRANGE → theo dõi → đóng ở sự kiện kết thúc, ping 15 s) |
 | `close/cancel.routes.ts` · `close/cancel.service.ts` · `close/cancel.repo.ts` | E15 `POST /runs/:id/cancel` + phần huỷ run của E9 (HUB-FR-43, §5.7): `flows FOR UPDATE` → `runs` (chiếm `owner`) → tin assistant → jobs + `NOTIFY job_cancel`; sau COMMIT `abort()` writer cục bộ + `appendExternal` |
 | `close/lease.ts` · `close/sweeper.ts` | B10: gia hạn lease 10 s (`registry.ids()`, `FOR UPDATE SKIP LOCKED`; mất run → `abort()`) · sweeper lease §5.8 (`failExpiredRun` + `announceClosed`) |
-| `runs.rules.ts` · `run-errors.ts` | thuần: `parseLastEventId`, `eventsExpired`, `leaseExpired`, `queueTimeoutReason` · `runErrorText` (plan-errors); H2b `runErrorTextFor` (F4, B0 chỉ chữ ký — B11) |
+| `runs.rules.ts` · `run-errors.ts` | thuần: `parseLastEventId`, `eventsExpired`, `leaseExpired`, `queueTimeoutReason` · `runErrorText` (plan-errors); H2b `runErrorTextFor(code, locale, reason)` (F4: `UPSTREAM_ERROR` + `reason: refused` → gợi ý riêng; `runErrorText` không đổi) |
 | `run-limit.rules.ts` | H2b (HUB-FR-94, R16): `overLimit` (`running >= limit`), `parseMaxConcurrentRuns` (vắng → 2; nguyên 1–20; khác → ném) — gọi ở `envAppDeps` |
 
 Luật:
