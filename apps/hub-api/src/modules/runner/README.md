@@ -7,7 +7,8 @@ Thư mục con (TD #44, H2b B0): `job/` (job `agent.cli`: runner, repo, test) ·
 
 | File | Vai trò |
 |---|---|
-| `job/job-agent-runner.ts` | `AgentRunner` (`run(task, signal): AsyncIterable<RunEvent>`), `JobAgentRunner`, `runJob` (→ `JobOutcome`; H2b: `task.stream` → `payload.stream`, mọi sự kiện không kết thúc của job (`job.delta`) vào `DeltaSink`, `JobOutcome.streamed/gap/stepId`, `reason` của `job.failed`). 380/400 dòng — TECH-DEBT #52 |
+| `job/job-agent-runner.ts` | `AgentRunner` (`run(task, signal): AsyncIterable<RunEvent>`), `JobAgentRunner`, `runJob` (→ `JobOutcome`; H2b: `task.stream` → `payload.stream`, mọi sự kiện không kết thúc của job (`job.delta`) vào `DeltaSink`, `JobOutcome.streamed/gap/stepId`, `reason` của `job.failed`); `agentToolKeys(ids, catalog, hasFiles?)`. H2c B0 (TD #52): phần theo dõi job tách sang `job-follow.ts`; `EventQueue`/`JOB_POLL_MS` vẫn re-export ở đây |
+| `job/job-follow.ts` | H2c B0 (TD #52, P18) · `EventQueue`, `JOB_POLL_MS`, `JobFollower.follow` (sự kiện job → im `JOB_POLL_MS` thì `#poll` đọc `jobs` / hết hạn `queued` → `#finishStep` ghi `run_steps` + `step.finished`), `emitStep` (lỗi phát SSE chỉ log) — không đổi hành vi |
 | `routing-runner.ts` | H2a B7 · `RoutingRunner`: `agentic-cli` → `JobAgentRunner`; `dify-workflow`/`dify-agent` → runner tiêm vào (`modules/dify/agent/dify-agent-runner.ts`; vắng → `job.failed NOT_CONFIGURED`). Dựng ở `app.runner.ts` |
 | `run-stream-reader.ts` | `RunStreamReader`: một kết nối `XREAD BLOCK 1000` multiplex `run:<id>`, `await subscribe` trước INSERT job ⇒ đọc từ id cuối hiện có (XREVRANGE), người gọi lọc `job_id`; khoá mới ⇒ `CLIENT UNBLOCK` (thử lại ngắn), `CLIENT ID` lấy lại mỗi `ready` |
 | `job/runner.repo.ts` | `provider_state`, `run_steps` + `INSERT jobs` + `pg_notify('job_enqueued')` một transaction, đọc job, hết hạn `queued`, slot tenant |

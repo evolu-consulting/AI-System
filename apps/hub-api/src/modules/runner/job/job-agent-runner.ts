@@ -21,15 +21,12 @@ import type { CatalogSnapshot } from "../../config/catalog.rules";
 import { type AgentConfig, agentWorkflowIds, type ConfigSnapshot } from "../../config/config.rules";
 import { stepLabel } from "../../conversations/conversations.rules";
 import { mcpToolsFor } from "../../mcp/mcp.rules";
-import { queueTimeoutReason } from "../../runs/runs.rules";
 import type { SseEventBody } from "../../runs/sse/sse-writer";
 import type { DeltaGap, DeltaSink } from "../../stream/delta-sink";
 import type { RunStreamReader } from "../run-stream-reader";
 import {
   type AgentRole,
   buildJobPayload,
-  eventFromJobRow,
-  isJobTerminal,
   mcpConfigFor,
   providerBlocked,
   type RunRef,
@@ -37,10 +34,11 @@ import {
   syntheticFailed,
   ZERO_USAGE,
 } from "../runner.rules";
+import { EventQueue, emitStep, JobFollower } from "./job-follow";
 import * as repo from "./runner.repo";
 
-/** P7: im lâu hơn mức này → đọc `jobs.status`. */
-export const JOB_POLL_MS = 2000;
+/** TD #52 (H2c P18): giữ đường import cũ cho người gọi (`workflow-job-runner.ts`). */
+export { EventQueue, JOB_POLL_MS } from "./job-follow";
 
 export type AgentTask = {
   run: RunRef & { locale: "vi" | "en" };
@@ -94,34 +92,6 @@ export type JobAgentRunnerDeps = {
   mcp?: { url: string; catalog: () => Promise<CatalogSnapshot> };
 };
 
-/** Hàng đợi sự kiện một job: `next` trả sự kiện kế, null khi hết `ms` hoặc `signal` abort. */
-export class EventQueue {
-  readonly #items: RunEvent[] = [];
-  #wake: (() => void) | null = null;
-
-  push(e: RunEvent): void {
-    this.#items.push(e);
-    this.#wake?.();
-  }
-
-  async next(ms: number, signal: AbortSignal): Promise<RunEvent | null> {
-    const ready = this.#items.shift();
-    if (ready || signal.aborted) return ready ?? null;
-    await new Promise<void>((resolve) => {
-      const done = () => {
-        clearTimeout(t);
-        signal.removeEventListener("abort", done);
-        this.#wake = null;
-        resolve();
-      };
-      const t = setTimeout(done, ms);
-      signal.addEventListener("abort", done, { once: true });
-      this.#wake = done;
-    });
-    return this.#items.shift() ?? null;
-  }
-}
-
 const stepType = (role: AgentRole) => (role === "orchestrator" ? "orchestrator" : "delegate");
 
 function stepInsert(
@@ -140,17 +110,29 @@ function stepInsert(
   };
 }
 
-/** R19 (phía payload): workflow gắn agent ∩ `enabled` (bỏ input `file` bắt buộc), sắp key, ≤ `MCP_TOOLS_MAX`. */
-export function agentToolKeys(ids: ReadonlySet<string>, catalog: CatalogSnapshot): string[] {
+/**
+ * R19 (phía payload): workflow gắn agent ∩ `enabled` (bỏ input `file` bắt buộc), sắp key, ≤ `MCP_TOOLS_MAX`.
+ * H2c P12: `hasFiles` chuyển cho `mcpToolsFor` (vắng → H2a nguyên văn).
+ */
+export function agentToolKeys(
+  ids: ReadonlySet<string>,
+  catalog: CatalogSnapshot,
+  hasFiles?: boolean,
+): string[] {
   const workflows = [...catalog.workflows.values()];
   const allowed = workflows.map((w) => w.key);
-  return mcpToolsFor({ agentWorkflowIds: ids, workflows, allowed })
+  const input = { agentWorkflowIds: ids, workflows, allowed };
+  return mcpToolsFor(hasFiles === undefined ? input : { ...input, hasFiles })
     .map((t) => t.name)
     .slice(0, MCP_TOOLS_MAX);
 }
 
 export class JobAgentRunner implements AgentRunner {
-  constructor(private readonly d: JobAgentRunnerDeps) {}
+  readonly #follower: JobFollower;
+
+  constructor(private readonly d: JobAgentRunnerDeps) {
+    this.#follower = new JobFollower(d);
+  }
 
   #system<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
     return withHubScope(this.d.db, { kind: "system" }, fn);
@@ -226,11 +208,13 @@ export class JobAgentRunner implements AgentRunner {
       const seq = await this.#enqueue(task, payload, stepId, signal);
       if (typeof seq !== "number")
         return this.d.log.info("job-enqueue-skipped", { run_id: task.run.id, reason: seq });
-      await this.#emit(task, {
-        event: "step.started",
-        data: { step_id: `s${seq}`, label: stepLabel(type, task.run.locale) },
-      });
-      yield* this.#follow(
+      const label = stepLabel(type, task.run.locale);
+      await emitStep(
+        task,
+        { event: "step.started", data: { step_id: `s${seq}`, label } },
+        this.d.log,
+      );
+      yield* this.#follower.follow(
         { task, jobId, stepId, seq, providerKey: payload.provider_key },
         queue,
         signal,
@@ -250,95 +234,6 @@ export class JobAgentRunner implements AgentRunner {
     if (signal.aborted) return "aborted";
     const step = stepInsert(task, stepId, this.d.owner);
     return (await this.#system((tx) => repo.enqueueJob(tx, payload, step))) ?? "not_enqueued";
-  }
-
-  async *#follow(
-    j: { task: AgentTask; jobId: string; stepId: string; seq: number; providerKey: string },
-    queue: EventQueue,
-    signal: AbortSignal,
-  ): AsyncGenerator<RunEvent> {
-    while (!signal.aborted) {
-      const ev =
-        (await queue.next(this.d.pollMs ?? JOB_POLL_MS, signal)) ?? (await this.#poll(j, signal));
-      if (!ev || signal.aborted) continue;
-      if (isJobTerminal(ev)) {
-        await this.#finishStep(j.task, { id: j.stepId, seq: j.seq }, ev);
-        yield ev;
-        return;
-      }
-      yield ev;
-    }
-  }
-
-  /** P7/P8 · im `JOB_POLL_MS`: job đã kết thúc → dựng từ DB; còn `queued` quá `maxWaitS` → hết hạn (§5.6 bước 5). */
-  async #poll(
-    j: { task: AgentTask; jobId: string; providerKey: string },
-    signal: AbortSignal,
-  ): Promise<RunEvent | null> {
-    if (signal.aborted) return null;
-    return this.#system(async (tx) => {
-      const row = await repo.readJob(tx, j.jobId, this.d.maxWaitS);
-      if (!row) return null;
-      if (row.status !== "queued") {
-        const usage = row.status === "running" ? ZERO_USAGE : await repo.jobUsage(tx, j.jobId);
-        return eventFromJobRow(j.jobId, row, usage);
-      }
-      if (!row.queueExpired) return null;
-      const r = j.task.run;
-      const reason = queueTimeoutReason(
-        await repo.slotCounts(tx, { tenantId: r.tenantId, providerKey: j.providerKey }),
-      );
-      if (!(await repo.expireQueued(tx, j.jobId, reason))) return null;
-      const f = { code: "ALL_PROVIDERS_EXHAUSTED", reason, message: "queue wait expired" } as const;
-      return syntheticFailed(j.jobId, f);
-    });
-  }
-
-  /** `run_steps` ok/failed (+ bản gốc lỗi Runtime vào `detail`, P11) rồi `step.finished`. */
-  async #finishStep(
-    task: AgentTask,
-    step: { id: string; seq: number },
-    ev: RunEvent,
-  ): Promise<void> {
-    const failed = ev.type === "job.failed";
-    const detail = failed
-      ? {
-          code: ev.code,
-          reason: ev.reason,
-          status: ev.status,
-          message: ev.message,
-          usage: ev.usage,
-        }
-      : { usage: ev.type === "job.result" ? ev.usage : ZERO_USAGE };
-    const merged = { ...task.detail, ...detail };
-    if (failed) {
-      this.d.log.warn("job-failed", {
-        run_id: task.run.id,
-        job_id: ev.job_id,
-        code: ev.code,
-        reason: ev.reason,
-        job_message: ev.message,
-      });
-    }
-    const status = failed ? "failed" : "ok";
-    const t = await this.#system((tx) =>
-      repo.finishStep(tx, { stepId: step.id, runId: task.run.id, status, detail: merged }),
-    );
-    if (!t) return;
-    const ms = Math.max(0, t.finishedAt.getTime() - t.startedAt.getTime());
-    await this.#emit(task, {
-      event: "step.finished",
-      data: { step_id: `s${step.seq}`, status, ms },
-    });
-  }
-
-  /** Lỗi phát SSE (fencing/Redis) không dừng job; `signal` của writer báo dừng. */
-  async #emit(task: AgentTask, ev: SseEventBody): Promise<void> {
-    try {
-      await task.emit?.(ev);
-    } catch (err) {
-      this.d.log.warn("step-emit-failed", { run_id: task.run.id, ...safeErrorFields(err) });
-    }
   }
 }
 

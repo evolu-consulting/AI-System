@@ -12,10 +12,20 @@ export type BuildInputsInput = {
   ctx: MessageContext;
   userId: string;
   tenantId: string;
+  /** H2c P13 · file đầu tiên của tin (input map `source = attachment`). B0: chưa dùng (B7). */
+  attachment?: { id: string } | null;
 };
 
+/** H2c P13 · input `file` nhận file (vắng khi không có). */
+export type BuildInputsFile = { input: string; attachmentId: string };
+
 export type BuildInputsResult =
-  | { ok: true; inputs: Record<string, WorkflowInputValue>; query: string | null }
+  | {
+      ok: true;
+      inputs: Record<string, WorkflowInputValue>;
+      query: string | null;
+      files?: BuildInputsFile[];
+    }
   | { ok: false; missing: string[]; invalid: string[] };
 
 const BOOL: Record<string, boolean> = {

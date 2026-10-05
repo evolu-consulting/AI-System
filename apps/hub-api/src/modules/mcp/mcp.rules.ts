@@ -1,6 +1,7 @@
 // HUB-FR-50, HUB-FR-95, WRK-FR-13 · H2a-R18–R20, P7 · luật thuần MCP `/mcp` (plan §6, plan-rules): JSON-RPC 2.0,
 // thương lượng phiên bản, danh sách tool theo agent ∩ enabled ∩ payload, kiểm tham số tool, timeout tool.
 import type { WorkflowInput } from "@ai/contracts";
+import type { JobAttachment } from "@ai/contracts/hub";
 import { MCP_PROTOCOL_VERSIONS } from "@ai/contracts/hub-internal";
 import type { CatalogWorkflow, WorkflowInputValue } from "../commands/catalog.types";
 import { appNeedsQuery } from "../commands/command-input.rules";
@@ -27,6 +28,8 @@ export type McpToolsInput = {
   agentWorkflowIds: ReadonlySet<string>;
   workflows: readonly CatalogWorkflow[];
   allowed: readonly string[];
+  /** H2c P12 · vắng → H2a nguyên văn; `false` → bỏ workflow có input `file`; `true` → giữ + input `file`. B0: chưa dùng (B8). */
+  hasFiles?: boolean;
 };
 
 export type ToolArgsResult =
@@ -73,7 +76,11 @@ function propertyOf(i: WorkflowInput): JsonSchemaProperty | null {
   }
 }
 
-export function toolInputSchema(inputs: readonly WorkflowInput[]): JsonSchemaObject {
+/** H2c P12 · `withFiles` → input `file` = chuỗi tên file trong `attachments/` (plan-rules §5). B0: chưa dùng (B8). */
+export function toolInputSchema(
+  inputs: readonly WorkflowInput[],
+  _withFiles = false,
+): JsonSchemaObject {
   const properties: Record<string, JsonSchemaProperty> = {};
   const required: string[] = [];
   for (const i of inputs) {
@@ -165,6 +172,17 @@ export const TOOL_ERROR_TEXT: Record<ToolErrorCode, string> = {
   UPSTREAM_ERROR: "The tool's service returned an error.",
   TIMEOUT: "The tool took too long to respond.",
 };
+
+/** H2c R23, PL5 · câu `isError` của tool khi tham số `file` sai / Dify từ chối file (tiếng Anh, model đọc). */
+export const TOOL_FILE_TEXT = {
+  NOT_ATTACHED: "This file is not attached to this message.",
+  REJECTED: "Dify rejected this file (type or size).",
+} as const;
+
+/** H2c P12 · tham số `file` của tool → file của job: chuỗi; khớp `name` chính xác trước, rồi `id`; khác → null. */
+export function fileArg(_v: unknown, _files: readonly JobAttachment[]): JobAttachment | null {
+  throw new Error("not implemented: fileArg");
+}
 
 export type ToolResult = {
   content: { type: "text"; text: string }[];
