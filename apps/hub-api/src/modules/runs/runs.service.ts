@@ -195,6 +195,7 @@ export class RunService {
       owner: this.d.owner,
       command,
       direct: direct && { agentId: direct.agent.id, responder: direct.responder },
+      mention: plan?.kind === "command" ? undefined : plan,
       orchestratorTenantId: plan?.kind === "direct" ? null : orchestrator?.tenantId,
       maxConcurrentRuns: this.d.maxConcurrentRuns,
       log: this.d.log,

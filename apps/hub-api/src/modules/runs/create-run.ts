@@ -13,7 +13,8 @@ import type { Tx } from "@ai/db";
 import { appError } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { isAgreeReply } from "../mcp/confirm.rules";
-import { decideConfirmations } from "./confirm.repo";
+import type { MentionPlan } from "../mention/mention.service";
+import { type ConfirmTag, decideConfirmations } from "./confirm.repo";
 import { overLimit } from "./run-limit.rules";
 import * as repo from "./runs.repo";
 import type { RunInfo } from "./sse/sse-writer";
@@ -29,6 +30,8 @@ export type CreateRunInput = {
   command?: { commandId: string; featureId: string };
   /** H2b P1 · run `direct`: agent + `responder` chốt lúc tạo run (không `orchestrator_tenant_id`). */
   direct?: { agentId: string; responder: Responder };
+  /** H2b R12 · tin có tag `@` (đã phân giải): xác nhận so trên nội dung R04 + tag; vắng = không tag (cả tin). */
+  mention?: MentionPlan;
   /** H2b P7 · `orchestrated`: bản Orchestrator riêng đã chọn (null/vắng = mặc định). */
   orchestratorTenantId?: string | null;
   /** H2b R16 · = `AppDeps.maxConcurrentRuns`; vắng ⇒ không giới hạn (L1). */
@@ -52,6 +55,15 @@ function kindCols(p: CreateRunInput): Partial<repo.RunInsert> {
     return { kind: "direct", agentId, responderKey: responder.key, responderName: responder.name };
   }
   return { orchestratorTenantId: p.orchestratorTenantId ?? null };
+}
+
+/** R12 · `agree` trên nội dung R04 (không tag: cả tin); một tag luôn là `direct` (R06), ≥ 2 tag là `orchestrated`. */
+function confirmReply(p: CreateRunInput): { agree: boolean; tag: ConfirmTag } {
+  const m = p.mention;
+  if (!m) return { agree: isAgreeReply(p.req.content), tag: { kind: "none" } };
+  const tag: ConfirmTag =
+    m.kind === "direct" ? { kind: "single", agentId: m.agent.id } : { kind: "multi" };
+  return { agree: isAgreeReply(m.content), tag };
 }
 
 /** Flow có sẵn (404 / 409 `FLOW_BUSY`) hoặc flow mới. */
@@ -104,7 +116,6 @@ export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Pro
     runId: r.id,
   });
   if (p.req.flow_id) {
-    const agree = isAgreeReply(p.req.content);
-    await decideConfirmations(tx, o, { flowId: r.flowId, runId: r.id, agree });
+    await decideConfirmations(tx, o, { flowId: r.flowId, runId: r.id, ...confirmReply(p) });
   }
 }
