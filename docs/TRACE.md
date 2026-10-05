@@ -24,7 +24,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | ADM-FR-14 | MUST | docs/specs/M2-catalog-command/spec.md | 20 file | 5 file | có test |
 | ADM-FR-15 | MUST | docs/specs/M2-catalog-command/spec.md | 12 file | 5 file | có test |
 | ADM-FR-20 | MUST | docs/specs/M2-catalog-command/spec.md | 41 file | 16 file | có test |
-| ADM-FR-21 | MUST | docs/specs/M2-catalog-command/spec.md | 11 file | 4 file | có test |
+| ADM-FR-21 | MUST | docs/specs/H2c-attachments/spec.md<br>docs/specs/M2-catalog-command/spec.md | 11 file | 5 file | có test |
 | ADM-FR-22 | MUST | docs/specs/M2-catalog-command/spec.md | 12 file | 11 file | có test |
 | ADM-FR-23 | MUST |  |  |  | chưa spec |
 | ADM-FR-24 | SHOULD | docs/specs/M2-catalog-command/spec.md<br>docs/specs/M3-permissions/spec.md | 12 file | 12 file | có test |
@@ -70,7 +70,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-04 | MUST |  |  |  | chưa spec |
 | HUB-FR-10 | MUST | docs/specs/H2a-dify-command/spec.md | 8 file | 3 file | có test |
 | HUB-FR-11 | MUST | docs/specs/H2a-dify-command/spec.md | 7 file | 1 file | có test |
-| HUB-FR-12 | MUST | docs/specs/H2a-dify-command/spec.md | 3 file | 1 file | có test |
+| HUB-FR-12 | MUST | docs/specs/H2a-dify-command/spec.md<br>docs/specs/H2c-attachments/spec.md | 8 file | 8 file | có test |
 | HUB-FR-13 | MUST | docs/specs/H2a-dify-command/spec.md | 7 file | 5 file | có test |
 | HUB-FR-14 | SHOULD | docs/specs/H2a-dify-command/spec.md | 3 file | 1 file | có test |
 | HUB-FR-20 | MUST | docs/specs/H1-hub-core/spec.md | 5 file | 2 file | có test |
@@ -83,7 +83,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-27 | MUST | docs/specs/H1-hub-core/spec.md | 7 file | 3 file | có test |
 | HUB-FR-28 | MUST | docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
 | HUB-FR-29 | SHOULD | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
-| HUB-FR-89 | MUST | docs/specs/H1-hub-core/spec.md | 41 file | 12 file | có test |
+| HUB-FR-89 | MUST | docs/specs/H1-hub-core/spec.md | 42 file | 12 file | có test |
 | HUB-FR-90 | MUST | docs/specs/H1-hub-core/spec.md | 4 file | 1 file | có test |
 | HUB-FR-91 | MUST | docs/specs/H2b-routing/spec.md | 9 file | 10 file | có test |
 | HUB-FR-92 | MUST | docs/specs/H2b-routing/spec.md | 5 file | 6 file | có test |
@@ -98,8 +98,8 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-45 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 8 file | 3 file | có test |
 | HUB-FR-42 | SHOULD | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 7 file | 3 file | có test |
 | HUB-FR-43 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 8 file | 3 file | có test |
-| HUB-FR-44 | MUST |  |  |  | chưa spec |
-| HUB-FR-50 | MUST | docs/specs/H2a-dify-command/spec.md | 9 file | 7 file | có test |
+| HUB-FR-44 | MUST | docs/specs/H2c-attachments/spec.md | 20 file | 20 file | có test |
+| HUB-FR-50 | MUST | docs/specs/H2a-dify-command/spec.md<br>docs/specs/H2c-attachments/spec.md | 13 file | 11 file | có test |
 | HUB-FR-51 | MUST | docs/specs/H2a-dify-command/spec.md | 5 file | 3 file | có test |
 | HUB-FR-52 | SHOULD |  |  |  | chưa spec |
 | HUB-FR-53 | SHOULD |  |  |  | chưa spec |
@@ -118,7 +118,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-72 | MUST |  |  |  | chưa spec |
 | HUB-FR-73 | MUST |  |  |  | chưa spec |
 | HUB-FR-74 | MUST | docs/specs/H1-hub-core/spec.md | 1 file | 1 file | có test |
-| HUB-FR-75 | MUST | docs/specs/H1-hub-core/spec.md | 4 file | 2 file | có test |
+| HUB-FR-75 | MUST | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2c-attachments/spec.md | 14 file | 10 file | có test |
 | HUB-FR-76 | MUST | docs/specs/H2a-dify-command/spec.md | 4 file | 3 file | có test |
 | HUB-FR-77 | MUST | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2b-routing/spec.md | 1 file | 4 file | có test |
 | HUB-FR-78 | MUST |  |  |  | chưa spec |
@@ -167,14 +167,14 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | WRK-FR-06 | MUST | docs/specs/H2a-dify-command/spec.md | 8 file | 11 file | có test |
 | WRK-FR-07 | MUST | docs/specs/H2a-dify-command/spec.md | 14 file | 6 file | có test |
 | WRK-FR-10 | MUST | docs/specs/H1-hub-core/spec.md | 14 file | 5 file | có test |
-| WRK-FR-11 | MUST | docs/specs/H1-hub-core/spec.md | 1 file | 2 file | có test |
+| WRK-FR-11 | MUST | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2c-attachments/spec.md | 8 file | 14 file | có test |
 | WRK-FR-12 | MUST | docs/specs/H1-hub-core/spec.md | 1 file | 3 file | có test |
 | WRK-FR-13 | MUST | docs/specs/H2a-dify-command/spec.md | 10 file | 10 file | có test |
 | WRK-FR-14 | MUST | docs/specs/H1-hub-core/spec.md | 11 file | 5 file | có test |
 | WRK-FR-15 | MUST | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2b-routing/spec.md | 7 file | 15 file | có test |
 | WRK-FR-16 | SHOULD |  |  |  | chưa spec |
 | WRK-FR-17 | MUST | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2b-routing/spec.md | 6 file | 6 file | có test |
-| WRK-FR-18 | COULD |  |  |  | chưa spec |
+| WRK-FR-18 | COULD | docs/specs/H2c-attachments/spec.md | 8 file | 14 file | có test |
 | WRK-FR-20 | MUST | docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
 | WRK-FR-21 | MUST |  |  |  | chưa spec |
 | WRK-FR-22 | SHOULD |  |  |  | chưa spec |
@@ -187,8 +187,8 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | WRK-BR-03 | — |  | 5 file | 2 file | chưa spec |
 | WRK-BR-04 | — | docs/specs/H1-hub-core/spec.md | 7 file | 5 file | có test |
 | WRK-BR-05 | — | docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
-| WRK-BR-07 | — | docs/specs/H1-hub-core/spec.md | 5 file | 7 file | có test |
-| WRK-BR-06 | — | docs/specs/H1-hub-core/spec.md | 4 file | 2 file | có test |
+| WRK-BR-07 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2c-attachments/spec.md | 5 file | 17 file | có test |
+| WRK-BR-06 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2c-attachments/spec.md | 6 file | 3 file | có test |
 | WRK-NFR-01 | — | docs/specs/H1-hub-core/spec.md | 1 file | 1 file | có test |
 | WRK-NFR-02 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
 | WRK-NFR-03 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |

@@ -2,7 +2,7 @@
 id: H2c-attachments
 title: Đính kèm file (`POST /attachments`, gắn vào message, file cho agent CLI qua endpoint nội bộ, Dify `/files/upload`, `out/`)
 milestone: H2c
-status: approved               # draft → ready → approved → in-progress → done
+status: done                   # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-44, HUB-FR-75, HUB-FR-12, HUB-FR-50,
    WRK-FR-11, WRK-FR-18, WRK-BR-06, WRK-BR-07,

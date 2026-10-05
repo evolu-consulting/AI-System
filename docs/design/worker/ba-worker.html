@@ -129,14 +129,14 @@
   <div class="table-scroll"><table>
     <tr><th>ID</th><th>Yêu cầu</th><th>Ưu tiên</th></tr>
     <tr><td class="id">WRK-FR-10</td><td>Claude Code chạy qua <strong>Claude Agent SDK</strong>. Codex và Gemini chạy qua CLI ở chế độ không tương tác, đọc output dạng JSON stream</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">WRK-FR-11</td><td>Mỗi job có một thư mục làm việc riêng <code>work/&lt;job_id&gt;/</code>. File đính kèm của run được copy vào đây. CLI bị giới hạn trong thư mục này</td><td><span class="pri must">MUST</span></td></tr>
+    <tr><td class="id">WRK-FR-11</td><td>Mỗi job có một thư mục làm việc riêng <code>work/&lt;job_id&gt;/</code>. File đính kèm của run được Runtime tải qua endpoint nội bộ của Hub bằng token job vào <code>work/&lt;job_id&gt;/attachments/</code> (kiểm sha256; CR-039). CLI bị giới hạn trong thư mục này</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-12</td><td>Áp đúng danh sách tool được phép trong payload. Mặc định không có Bash và không có quyền ghi ra ngoài thư mục làm việc</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-13</td><td>Kết nối MCP tools của Hub bằng token của job (do Agent Runtime sinh lúc claim, DB chỉ lưu hash <code>jobs.token_hash</code>, không nằm trong payload; gắn <code>tenant_id</code> và <code>user_id</code>, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (<code>hub.agent_workflows</code>); tên tool là key của workflow. Chỉ những tool có trong payload</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-14</td><td>Giữ ngữ cảnh: có <code>session_id</code> cũ cùng provider thì resume, xong thì ghi <code>session_id</code> mới vào <code>hub.cli_sessions</code></td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-15</td><td>Nhận diện hết quota hoặc rate limit từ output/mã lỗi của từng CLI. Có thông tin thời điểm reset thì đặt cooldown đến lúc đó, không có thì mặc định 30 phút</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">WRK-FR-16</td><td>Chuyển tiến trình của CLI (tool đang gọi, file đang đọc) thành <code>job.progress</code> có nhãn dễ hiểu</td><td><span class="pri should">SHOULD</span></td></tr>
     <tr><td class="id">WRK-FR-17</td><td>Ghi usage vào <code>hub.usage_logs</code> cho mọi job: <code>tenant_id</code>, <code>feature_id</code>, provider, model, token vào/ra, <code>billing</code>, <code>cost_usd</code>, <code>billable_usd</code>. Với subscription: <code>billing=subscription</code>, <code>cost_usd=0</code>, vẫn ghi đủ token để tính <code>billable_usd</code> theo <code>hub.price_book</code>. Chưa có đơn giá thì để <code>billable_usd</code> trống, tính sau</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">WRK-FR-18</td><td>File agent tạo ra trong thư mục <code>out/</code> được đính kèm vào câu trả lời</td><td><span class="pri could">COULD</span></td></tr>
+    <tr><td class="id">WRK-FR-18</td><td>File agent tạo ra trong thư mục <code>out/</code> được Runtime tải lên Hub qua endpoint nội bộ (≤ 5 file/job) và đính kèm vào câu trả lời. Agent ghi bằng tool CLI <code>Write</code> — bật theo agent (<code>runtime_options.allowed_tools</code>, mặc định chỉ Read, Grep), hook chỉ cho ghi trực tiếp trong <code>out/</code> (CR-039)</td><td><span class="pri could">COULD</span></td></tr>
   </table></div>
 
   <h3>5.3 Pool &amp; bảo trì</h3>
@@ -186,7 +186,7 @@ WORKER(workflow.async) ──user=&lt;tenant&gt;:&lt;user_id&gt;──▶ Dify</
   "prompt": "...", "system_prompt": "...",
   "allowed_tools": ["Read", "Grep", "Edit"],
   "mcp": {"url": "https://hub/mcp", "tools": ["translate_text", "check_invoice"]},
-  "attachments": ["att_1"], "resume_session": "sess_abc",
+  "attachments": [{"id": "att_1", "name": "hoa-don.pdf", "mime": "application/pdf", "size": 12345, "sha256": "…"}], "resume_session": "sess_abc",
   "timeout_s": 600
 }</code></pre>
   <p><code>feature_id</code> có giá trị khi job đến từ command (feature chứa command đó). Job của agent chat để <code>null</code>. <code>mcp.tools</code> là key của các workflow được gắn cho agent.</p>

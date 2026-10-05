@@ -1,7 +1,7 @@
-# modules/internal — endpoint nội bộ Hub (HUB-FR-89, H2a-R24, Q5)
+# modules/internal — endpoint nội bộ Hub (HUB-FR-89, H2a-R24, Q5; H2c HUB-FR-44, WRK-FR-18)
 
 Plan H2a §2.3–2.4: `POST /internal/test-run` (Admin, Bearer `HUB_INTERNAL_TOKEN`) và
-`POST /internal/jobs/:job_id/dify-credential` (Runtime, Bearer token job — `lib/job-token.ts`).
+`POST /internal/jobs/:job_id/dify-credential` (Runtime, Bearer token job — `lib/job-token.ts`); H2c: `GET …/attachments/:attachment_id` (Runtime tải file) + `POST …/outputs` (Runtime đẩy `out/`).
 Không qua middleware JWT/CORS; không log header `Authorization` hay body.
 
 | File | Vai trò |

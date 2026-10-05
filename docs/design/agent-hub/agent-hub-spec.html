@@ -589,7 +589,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td>HUB-FR-44</td>
-<td>Upload file đính kèm (≤ 20MB/file). Lưu cục bộ hoặc object storage (chỗ lưu: câu hỏi mở 2), gắn <code>tenant_id</code>, gắn vào message, và chuyển cho Dify hoặc agent khi cần. <strong>Mốc H2</strong> (CR-034)</td>
+<td>Upload file đính kèm (≤ 20 MiB/file, loại file theo danh sách cho phép + kiểm chữ ký nội dung, hạn mức dung lượng tenant). Lưu trên ổ đĩa của Hub (thư mục cấu hình, tách theo tenant) sau interface Storage, driver <code>local</code>; S3/MinIO là driver làm sau. Gắn <code>tenant_id</code>, gắn vào message (một file gắn đúng một tin), file chưa gắn hết hạn sau 24 giờ, file giữ theo hội thoại (xoá hội thoại ⇒ xoá nội dung ≤ 10 phút), và chuyển cho Dify (<code>/files/upload</code>) hoặc agent (Runtime tải qua endpoint nội bộ) khi cần. <strong>Mốc H2c</strong> (CR-034, CR-039)</td>
 <td><strong>MUST</strong></td>
 </tr>
 </tbody>
@@ -912,7 +912,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td><code>messages</code></td>
-<td>id, conversation_id, role (user/assistant/system), content, context (jsonb), attachments (jsonb), run_id, created_at</td>
+<td>id, conversation_id, role (user/assistant/system), content, context (jsonb), run_id, created_at</td>
 </tr>
 <tr>
 <td><code>runs</code></td>
@@ -996,7 +996,7 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 </tr>
 <tr>
 <td><code>attachments</code></td>
-<td>id, tenant_id, user_id, filename, mime, size, storage_path, created_at</td>
+<td>id, tenant_id, user_id, origin (upload/output), job_id, conversation_id, flow_id, message_id, filename, safe_name, mime, size, sha256, storage_key, created_at, bound_at, purged_at (CR-039; file gắn tin qua <code>message_id</code>, <code>runs.attachment_ids</code> = file của lượt chạy)</td>
 </tr>
 </tbody>
 </table>
@@ -1040,8 +1040,8 @@ Hub chỉ đọc schema <code>admin</code>.</p>
 <td>Điều khiển và xem run (trace theo HUB-FR-87)</td>
 </tr>
 <tr>
-<td><code>POST /attachments</code></td>
-<td>Upload file</td>
+<td><code>POST /attachments</code> · <code>GET /attachments/:id</code> · <code>GET /attachments/:id/content</code></td>
+<td>Upload file (thân thô, tên qua header <code>X-Filename</code> percent-encoded; 201 metadata) · metadata · tải nội dung (scope <code>user</code>). Nội bộ (token job, không qua JWT): <code>GET /internal/jobs/:job_id/attachments/:attachment_id</code> (Runtime tải file vào <code>work/&lt;job_id&gt;/attachments/</code>), <code>POST /internal/jobs/:job_id/outputs</code> (Runtime đẩy file <code>out/</code>, ≤ 5/job). Lỗi <code>ATTACHMENT_*</code> (CR-039)</td>
 </tr>
 <tr>
 <td><code>GET /admin/usage</code></td>
@@ -1248,7 +1248,7 @@ Given workflow <code>create_trello_card</code> có <code>side_effect = true</cod
 <h4 id="a-cau-hoi-mo">Câu hỏi mở</h4>
 <ol>
 <li>~~Orchestrator dùng model nào mặc định?~~ Đã chốt (CR-025): runtime <code>llm</code>/API model rẻ; vẫn cho chọn <code>agentic-cli</code> nhưng Studio cảnh báo chậm. H1 tạm chạy CLI tới khi có API key (CR-031); nên chuyển sang API key càng sớm càng tốt (CR-034).</li>
-<li>File đính kèm lưu ở ổ đĩa cục bộ hay object storage (S3/MinIO)?</li>
+<li>~~File đính kèm lưu ở ổ đĩa cục bộ hay object storage (S3/MinIO)?~~ Đã chốt (CR-039, người dùng 2026-10-05): ổ đĩa của Hub (thư mục cấu hình, tách theo tenant) sau interface Storage, driver <code>local</code>; S3/MinIO là driver làm sau. Khi Hub chạy nhiều bản cần ổ chia sẻ (PRODUCTION-NOTES).</li>
 <li>Extension có cần WebSocket hai chiều (Hub ra lệnh ngược cho extension) ở v1 không?</li>
 <li>Command thuộc nhiều feature thì <code>feature_id</code> của run lấy feature nào? Tạm: feature đầu tiên (theo key) mà user được cấp. Job agent chat và run orchestrated có <code>feature_id = null</code>, nên chỉ tính vào quota cả tenant.</li>
 <li><code>max_usd</code> của quota so với <code>billable_usd</code> hay <code>cost_usd</code>? Tạm: <code>billable_usd</code>.</li>
@@ -1432,7 +1432,7 @@ Given workflow <code>create_trello_card</code> có <code>side_effect = true</cod
 </tr>
 <tr>
 <td>WRK-FR-11</td>
-<td>Mỗi job có một thư mục làm việc riêng <code>work/&lt;job_id&gt;/</code>. File đính kèm của run được copy vào đây. CLI bị giới hạn trong thư mục này</td>
+<td>Mỗi job có một thư mục làm việc riêng <code>work/&lt;job_id&gt;/</code>. File đính kèm của run được Runtime <strong>tải qua endpoint nội bộ của Hub bằng token job</strong> vào <code>work/&lt;job_id&gt;/attachments/</code> (kiểm sha256; CR-039). CLI bị giới hạn trong thư mục này</td>
 <td><strong>MUST</strong></td>
 </tr>
 <tr>
@@ -1467,7 +1467,7 @@ Given workflow <code>create_trello_card</code> có <code>side_effect = true</cod
 </tr>
 <tr>
 <td>WRK-FR-18</td>
-<td>File agent tạo ra trong thư mục <code>out/</code> được đính kèm vào câu trả lời</td>
+<td>File agent tạo ra trong thư mục <code>out/</code> được Runtime tải lên Hub qua endpoint nội bộ (≤ 5 file/job) và đính kèm vào câu trả lời. Agent ghi bằng tool CLI <code>Write</code> — bật theo agent (<code>runtime_options.allowed_tools</code>, mặc định chỉ Read, Grep), hook chỉ cho ghi trực tiếp trong <code>out/</code> (CR-039)</td>
 <td><strong>COULD</strong></td>
 </tr>
 </tbody>
@@ -1582,7 +1582,7 @@ WORKER(workflow.async) ──user=&lt;tenant&gt;:&lt;user_id&gt;──▶ Dify
   &quot;prompt&quot;: &quot;...&quot;, &quot;system_prompt&quot;: &quot;...&quot;,
   &quot;allowed_tools&quot;: [&quot;Read&quot;, &quot;Grep&quot;, &quot;Edit&quot;],
   &quot;mcp&quot;: {&quot;url&quot;: &quot;https://hub/mcp&quot;, &quot;tools&quot;: [&quot;translate_text&quot;, &quot;check_invoice&quot;]},
-  &quot;attachments&quot;: [&quot;att_1&quot;], &quot;resume_session&quot;: &quot;sess_abc&quot;,
+  &quot;attachments&quot;: [{&quot;id&quot;: &quot;att_1&quot;, &quot;name&quot;: &quot;hoa-don.pdf&quot;, &quot;mime&quot;: &quot;application/pdf&quot;, &quot;size&quot;: 12345, &quot;sha256&quot;: &quot;…&quot;}], &quot;resume_session&quot;: &quot;sess_abc&quot;,
   &quot;timeout_s&quot;: 600
 }
 </code></pre>

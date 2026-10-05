@@ -109,7 +109,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
 | ADM-FR-20 | CRUD command: tên, alias, mô tả, workflow, danh sách tham số, input map, output (field + kiểu hiển thị), chế độ sync/async, timeout, bật/tắt, **feature (≥ 1, mặc định `core`)** | **MUST** |
-| ADM-FR-21 | Input map hỗ trợ các nguồn: `$args.<tên>`, `$selection` (đoạn bôi đen), `$page.url`, `$page.text`, `$attachment`, `$user.id`, `$tenant.id`, và giá trị hằng | **MUST** |
+| ADM-FR-21 | Input map hỗ trợ các nguồn: `$args.<tên>`, `$selection` (đoạn bôi đen), `$page.url`, `$page.text`, `$attachment` (file đầu tiên của tin hiện tại, CR-039), `$user.id`, `$tenant.id`, và giá trị hằng | **MUST** |
 | ADM-FR-22 | Khi lưu phải validate: mọi input bắt buộc của workflow đều đã được map, và không map vào biến không tồn tại | **MUST** |
 | ADM-FR-23 | Nút Test: nhập tham số mẫu, Admin nhờ Hub chạy thử **bằng bản đang sửa (chưa cần lưu)**, gửi cấu hình nháp trong body, rồi hiện kết quả, thời gian chạy và lỗi (nếu có). Có ô "Chạy với tư cách user…" để kiểm tra quyền | **MUST** |
 | ADM-FR-24 | Tab "Ai dùng được": danh sách tenant, group và số user thấy command này, kèm lý do (qua feature nào, grant nào). *M2 chỉ phần tenant (feature + entitlement); phần group/grant ở M3 ([CR-013](../../CHANGE-REQUESTS.md))* | **SHOULD** |

@@ -82,14 +82,14 @@ Pool **dùng chung cho mọi tenant**. Để một tenant không chiếm hết s
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
 | WRK-FR-10 | Claude Code chạy qua **Claude Agent SDK (Python)**. Codex và Gemini chạy qua CLI ở chế độ không tương tác, đọc output dạng JSON stream | **MUST** |
-| WRK-FR-11 | Mỗi job có một thư mục làm việc riêng `work/<job_id>/`. File đính kèm của run được copy vào đây. CLI bị giới hạn trong thư mục này | **MUST** |
+| WRK-FR-11 | Mỗi job có một thư mục làm việc riêng `work/<job_id>/`. File đính kèm của run được Runtime **tải qua endpoint nội bộ của Hub bằng token job** vào `work/<job_id>/attachments/` (kiểm sha256; CR-039). CLI bị giới hạn trong thư mục này | **MUST** |
 | WRK-FR-12 | Áp đúng danh sách tool được phép trong payload. Mặc định không có Bash và không có quyền ghi ra ngoài thư mục làm việc | **MUST** |
 | WRK-FR-13 | Kết nối MCP tools của Hub bằng token của job (do Agent Runtime sinh lúc claim, DB chỉ lưu hash `jobs.token_hash`, không nằm trong payload; gắn `tenant_id` và `user_id`, hết hạn khi job kết thúc). MCP tool chính là các workflow được gắn cho agent (`hub.agent_workflows`); tên tool là key của workflow. Chỉ những tool có trong payload | **MUST** |
 | WRK-FR-14 | Giữ ngữ cảnh: có `session_id` cũ cùng provider thì resume, xong thì ghi `session_id` mới vào `hub.cli_sessions` | **MUST** |
 | WRK-FR-15 | Nhận diện hết quota hoặc rate limit từ output/mã lỗi của từng CLI. Có thông tin thời điểm reset thì đặt cooldown đến lúc đó, không có thì mặc định 30 phút | **MUST** |
 | WRK-FR-16 | Chuyển tiến trình của CLI (tool đang gọi, file đang đọc) thành `job.progress` có nhãn dễ hiểu | **SHOULD** |
 | WRK-FR-17 | Ghi usage vào `hub.usage_logs` cho mọi job: `tenant_id`, `feature_id`, provider, model, token vào/ra, `billing`, `cost_usd`, `billable_usd`. Với subscription: `billing=subscription`, `cost_usd=0`, vẫn ghi đủ token để tính `billable_usd` theo `hub.price_book`. Chưa có đơn giá thì để `billable_usd` trống, tính sau | **MUST** |
-| WRK-FR-18 | File agent tạo ra trong thư mục `out/` được đính kèm vào câu trả lời | **COULD** |
+| WRK-FR-18 | File agent tạo ra trong thư mục `out/` được Runtime tải lên Hub qua endpoint nội bộ (≤ 5 file/job) và đính kèm vào câu trả lời. Agent ghi bằng tool CLI `Write` — bật theo agent (`runtime_options.allowed_tools`, mặc định chỉ Read, Grep), hook chỉ cho ghi trực tiếp trong `out/` (CR-039) | **COULD** |
 
 ### 5.3 Pool & bảo trì
 
@@ -144,7 +144,7 @@ WORKER(workflow.async) ──user=<tenant>:<user_id>──▶ Dify
   "prompt": "...", "system_prompt": "...",
   "allowed_tools": ["Read", "Grep", "Edit"],
   "mcp": {"url": "https://hub/mcp", "tools": ["translate_text", "check_invoice"]},
-  "attachments": ["att_1"], "resume_session": "sess_abc",
+  "attachments": [{"id": "att_1", "name": "hoa-don.pdf", "mime": "application/pdf", "size": 12345, "sha256": "…"}], "resume_session": "sess_abc",
   "timeout_s": 600
 }
 ```

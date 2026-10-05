@@ -208,7 +208,7 @@
     <tr><td class="id">HUB-FR-41</td><td>Gửi message thì trả về SSE stream các sự kiện chuẩn (mục 9.2)</td><td><span class="pri must">MUST</span></td></tr>
     <tr><td class="id">HUB-FR-42</td><td>Client mất kết nối rồi nối lại thì được xem tiếp sự kiện từ <code>Last-Event-ID</code>. Run không dừng khi client rớt mạng</td><td><span class="pri should">SHOULD</span></td></tr>
     <tr><td class="id">HUB-FR-43</td><td><code>POST /runs/:id/cancel</code> huỷ run và các job con. Worker phải dừng trong ≤ 5 giây</td><td><span class="pri must">MUST</span></td></tr>
-    <tr><td class="id">HUB-FR-44</td><td>Upload file đính kèm (≤ 20MB/file). Lưu cục bộ hoặc object storage, gắn <code>tenant_id</code>, gắn vào message, và chuyển cho Dify hoặc agent khi cần</td><td><span class="pri should">SHOULD</span></td></tr>
+    <tr><td class="id">HUB-FR-44</td><td>Upload file đính kèm (≤ 20 MiB/file, loại file theo danh sách cho phép + kiểm chữ ký nội dung, hạn mức dung lượng tenant). Lưu trên ổ đĩa của Hub (thư mục cấu hình, tách theo tenant) sau interface Storage, driver <code>local</code>; S3/MinIO là driver làm sau. Gắn <code>tenant_id</code>, gắn vào message (một file gắn đúng một tin), file chưa gắn hết hạn sau 24 giờ, file giữ theo hội thoại (xoá hội thoại ⇒ xoá nội dung ≤ 10 phút), và chuyển cho Dify (<code>/files/upload</code>) hoặc agent (Runtime tải qua endpoint nội bộ) khi cần. <strong>Mốc H2c</strong> (CR-034, CR-039)</td><td><span class="pri should">SHOULD</span></td></tr>
   </table></div>
   <h3>6.6 MCP, test, báo cáo</h3>
   <div class="table-scroll"><table>
@@ -288,7 +288,7 @@
   <div class="table-scroll"><table>
     <tr><th>Bảng</th><th>Trường chính</th></tr>
     <tr><td><code>conversations</code></td><td>id, tenant_id, user_id, title, created_at, updated_at, deleted_at</td></tr>
-    <tr><td><code>messages</code></td><td>id, conversation_id, role (user/assistant/system), content, context (jsonb), attachments (jsonb), run_id, created_at</td></tr>
+    <tr><td><code>messages</code></td><td>id, conversation_id, role (user/assistant/system), content, context (jsonb), run_id, created_at</td></tr>
     <tr><td><code>runs</code></td><td>id, tenant_id, conversation_id, user_id, kind (command/orchestrated), command_id, feature_id, status, config_version, started_at, finished_at, error_code, error_message</td></tr>
     <tr><td><code>run_steps</code></td><td>id, run_id, seq, type (delegate/workflow/model/tool), agent_id, workflow_id (→ <code>admin.workflows</code>), provider_key, model, input (jsonb, đã che secret), output (jsonb), status, started_at, finished_at</td></tr>
     <tr><td><code>jobs</code></td><td>id, tenant_id, run_id, step_id, type, payload (jsonb), status, attempts, worker_id, heartbeat_at, result (jsonb), error, created_at, finished_at</td></tr>
@@ -307,7 +307,7 @@
     <tr><td><code>audit_log</code> · <code>config_meta</code></td><td>Giống cấu trúc của Admin (có <code>tenant_id</code>), áp dụng cho cấu hình và quyền agent của Hub</td></tr>
     <tr><td><code>routing_tests</code></td><td>id, prompt, has_attachment, expected_agents (text[] theo thứ tự), note, enabled, created_by</td></tr>
     <tr><td><code>routing_test_runs</code></td><td>id, trigger (save/manual), config_draft_hash, passed, total, pass_rate, results (jsonb), accepted (bool), by, at</td></tr>
-    <tr><td><code>attachments</code></td><td>id, tenant_id, user_id, filename, mime, size, storage_path, created_at</td></tr>
+    <tr><td><code>attachments</code></td><td>id, tenant_id, user_id, origin (upload/output), job_id, conversation_id, flow_id, message_id, filename, safe_name, mime, size, sha256, storage_key, created_at, bound_at, purged_at (CR-039; file gắn tin qua <code>message_id</code>, <code>runs.attachment_ids</code> = file của lượt chạy)</td></tr>
   </table></div>
   <p>Hub chỉ <strong>đọc</strong> schema <code>admin</code>: <code>tenants</code>, <code>groups</code>, <code>group_members</code>, <code>features</code>, <code>feature_commands</code>, <code>feature_entitlements</code>, <code>feature_grants</code>, <code>tenant_quotas</code>, <code>commands</code>, <code>workflows</code> và secret của workflow. Hub <strong>ghi</strong> schema <code>hub</code> (cấu hình agent, quyền agent, bảng giá, dữ liệu runtime). Admin chỉ <strong>đọc</strong> (không ghi) 3 bảng <code>hub.agent_workflows</code>, <code>hub.agent_grants</code>, <code>hub.usage_logs</code>. <code>user_id</code>, <code>tenant_id</code>, <code>role</code> lấy từ JWT, không cần join sang bảng users mỗi request.</p>
 </section>
@@ -323,7 +323,7 @@
     <tr><td><code>POST /conversations/:id/messages</code></td><td>Gửi message, trả về SSE stream</td></tr>
     <tr><td><code>GET /runs/:id/events</code></td><td>Nối lại stream (hỗ trợ <code>Last-Event-ID</code>)</td></tr>
     <tr><td><code>POST /runs/:id/cancel</code> · <code>GET /runs/:id</code> · <code>GET /runs/:id/trace</code></td><td>Điều khiển và xem run (trace theo HUB-FR-87)</td></tr>
-    <tr><td><code>POST /attachments</code></td><td>Upload file</td></tr>
+    <tr><td><code>POST /attachments</code> · <code>GET /attachments/:id</code> · <code>GET /attachments/:id/content</code></td><td>Upload file (thân thô, tên qua header <code>X-Filename</code> percent-encoded; 201 metadata) · metadata · tải nội dung (scope <code>user</code>). Nội bộ (token job, không qua JWT): <code>GET /internal/jobs/:job_id/attachments/:attachment_id</code> (Runtime tải file vào <code>work/&lt;job_id&gt;/attachments/</code>), <code>POST /internal/jobs/:job_id/outputs</code> (Runtime đẩy file <code>out/</code>, ≤ 5/job). Lỗi <code>ATTACHMENT_*</code> (CR-039)</td></tr>
     <tr><td><code>GET /admin/usage</code></td><td>Báo cáo chi phí theo tenant × feature × tháng. <code>platform_admin</code>: mọi tenant, cả <code>cost_usd</code> và <code>billable_usd</code>. <code>tenant_admin</code>: tenant mình</td></tr>
     <tr><td><code>GET/POST/DELETE /agent-grants</code></td><td>Cấp agent cho group/user (Admin UI trang Groups gọi, bằng JWT của <code>tenant_admin</code>). Chỉ role <code>tenant_admin</code>/<code>platform_admin</code>. Chỉ trong đúng <code>tenant_id</code> của JWT, chỉ với agent đã có entitlement cho tenant đó. <code>GET</code> trả các agent đã có entitlement cho tenant kèm grant. Không nằm dưới <code>/studio</code></td></tr>
     <tr><td><code>GET /agent-grants/effective/:user_id</code></td><td>Agent user thấy được kèm lý do (cho "Kiểm tra quyền" của Admin)</td></tr>
@@ -412,7 +412,7 @@ event: run.failed      data: {run_id, code, message, hint}</code></pre>
   <h3>Câu hỏi mở</h3>
   <ol>
     <li>Orchestrator dùng model nào mặc định: profile rẻ (nhanh) hay profile mạnh (chọn đúng hơn)?</li>
-    <li>File đính kèm lưu ở ổ đĩa cục bộ hay object storage (S3/MinIO)?</li>
+    <li><s>File đính kèm lưu ở ổ đĩa cục bộ hay object storage (S3/MinIO)?</s> Đã chốt (CR-039, người dùng 2026-10-05): ổ đĩa của Hub (thư mục cấu hình, tách theo tenant) sau interface Storage, driver <code>local</code>; S3/MinIO là driver làm sau. Khi Hub chạy nhiều bản cần ổ chia sẻ (PRODUCTION-NOTES).</li>
     <li>Extension có cần WebSocket hai chiều (Hub ra lệnh ngược cho extension) ở v1 không?</li>
     <li>Command thuộc nhiều feature thì <code>feature_id</code> của run lấy feature nào? Tạm: feature đầu tiên (theo key) mà user được cấp. Job agent chat và run orchestrated có <code>feature_id = null</code>, nên chỉ tính vào quota cả tenant.</li>
     <li><code>max_usd</code> của quota so với <code>billable_usd</code> hay <code>cost_usd</code>? Tạm: <code>billable_usd</code>.</li>

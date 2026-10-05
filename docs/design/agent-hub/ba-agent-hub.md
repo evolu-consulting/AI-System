@@ -183,7 +183,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | HUB-FR-45 | **Flow** (CR-021): một conversation gồm nhiều flow. Gửi message không kèm `flow_id` thì tạo flow mới. **Mọi tin đều qua Orchestrator**, kể cả tin thứ 2+ trong flow (CR-025): flow là nhóm hiển thị + nguồn context (context = message của flow đó); Orchestrator nhận thêm gợi ý "agent gần nhất của flow" (`flows.agent_id`, đổi được) và thường delegate lại agent đó (resume session), nhưng được chọn agent khác khi user đổi chủ đề hoặc hỏi nhiều việc. Flow không có trạng thái đóng: mỗi lượt là một job riêng, lượt sau resume session CLI (mất session thì dựng lại từ message đã lưu), không có tiến trình CLI sống nối giữa các lượt | **MUST** |
 | HUB-FR-42 | Client mất kết nối rồi nối lại thì được xem tiếp sự kiện từ `Last-Event-ID`: hai stream: Agent Runtime `XADD run:<run_id>` (nội bộ), Hub là bên ghi duy nhất của `sse:<run_id>` với id tường minh `<seq>-0` (TTL `run:` 24 giờ; `sse:` 24 giờ khi run đang chạy, `RUN_EVENTS_RETENTION_S` = 600 s sau khi kết thúc, CR-031); `id` SSE = `seq` (số nguyên 1…n theo run, đúng contract chat C1-R06), nên nối lại vào bất kỳ instance Hub nào cũng được (CR-028, CR-030). Run không dừng khi client rớt mạng | **SHOULD** |
 | HUB-FR-43 | `POST /runs/:id/cancel` huỷ run và các job con. Agent Runtime phải dừng trong ≤ 5 giây (Hub ghi `cancel_requested_at` + `NOTIFY job_cancel`) | **MUST** |
-| HUB-FR-44 | Upload file đính kèm (≤ 20MB/file). Lưu cục bộ hoặc object storage (chỗ lưu: câu hỏi mở 2), gắn `tenant_id`, gắn vào message, và chuyển cho Dify hoặc agent khi cần. **Mốc H2** (CR-034) | **MUST** |
+| HUB-FR-44 | Upload file đính kèm (≤ 20 MiB/file, loại file theo danh sách cho phép + kiểm chữ ký nội dung, hạn mức dung lượng tenant). Lưu trên ổ đĩa của Hub (thư mục cấu hình, tách theo tenant) sau interface Storage, driver `local`; S3/MinIO là driver làm sau. Gắn `tenant_id`, gắn vào message (một file gắn đúng một tin), file chưa gắn hết hạn sau 24 giờ, file giữ theo hội thoại (xoá hội thoại ⇒ xoá nội dung ≤ 10 phút), và chuyển cho Dify (`/files/upload`) hoặc agent (Runtime tải qua endpoint nội bộ) khi cần. **Mốc H2c** (CR-034, CR-039) | **MUST** |
 
 ### 6.6 MCP, test, báo cáo
 
@@ -268,7 +268,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | Bảng | Trường chính |
 |---|---|
 | `conversations` | id, tenant_id, user_id, title, created_at, updated_at, deleted_at |
-| `messages` | id, conversation_id, role (user/assistant/system), content, context (jsonb), attachments (jsonb), run_id, created_at |
+| `messages` | id, conversation_id, role (user/assistant/system), content, context (jsonb), run_id, created_at |
 | `runs` | id, tenant_id, conversation_id, user_id, kind (command/orchestrated/direct; `direct` = `@agent`, CR-033), command_id, feature_id, status, config_version, started_at, finished_at, error_code, error_message |
 | `run_steps` | id, run_id, seq, type (delegate/workflow/model/tool), agent_id, workflow_id (→ `admin.workflows`), provider_key, model, input (jsonb, đã che secret), output (jsonb), status, started_at, finished_at |
 | `jobs` | id, tenant_id, run_id, step_id, type (`agent.run`/`agent.cli`/`workflow.async`/`maint.*`), priority, payload (jsonb), status, attempts, worker_id, heartbeat_at, `cancel_requested_at`, result (jsonb), error, created_at, finished_at. Hàng đợi: `SELECT … FOR UPDATE SKIP LOCKED` theo `priority`, `created_at` (CR-028) |
@@ -289,7 +289,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | `audit_log` · `config_meta` | Giống cấu trúc của Admin (có `tenant_id`), áp dụng cho cấu hình và quyền agent của Hub |
 | `routing_tests` | id, tenant_id (null = bộ chung, CR-032), prompt, has_attachment, expected_agents (text[] theo thứ tự), note, enabled, created_by |
 | `routing_test_runs` | id, orchestrator_scope (tenant_id hoặc null), trigger (save/manual), config_draft_hash, passed, total, pass_rate, results (jsonb, 3 lần/câu), accepted (bool), override_reason, by, at |
-| `attachments` | id, tenant_id, user_id, filename, mime, size, storage_path, created_at |
+| `attachments` | id, tenant_id, user_id, origin (upload/output), job_id, conversation_id, flow_id, message_id, filename, safe_name, mime, size, sha256, storage_key, created_at, bound_at, purged_at (CR-039; file gắn tin qua `message_id`, `runs.attachment_ids` = file của lượt chạy) |
 
 Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `features`, `feature_commands`, `feature_entitlements`, `feature_grants`, `tenant_quotas`, `commands`, `workflows` và secret của workflow. Hub **ghi** schema `hub` (cấu hình agent, quyền agent, bảng giá, dữ liệu runtime); Agent Runtime (Python, SQL thuần) ghi `jobs`, `usage_logs`, `cli_sessions`, `provider_state`, `agent_types`. Drizzle vẫn quản migration. Admin chỉ **đọc** (không ghi) 3 bảng `hub.agent_workflows`, `hub.agent_grants`, `hub.usage_logs`. `user_id`, `tenant_id`, `role` lấy từ JWT, không cần join sang bảng users mỗi request. Phần Admin cần thêm (phiên Admin áp dụng): `admin.tenant_quotas.hard_block` (HUB-FR-93), `admin.workflows.side_effect` (HUB-FR-95), CR-034.
 
@@ -306,7 +306,7 @@ Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `feat
 | `POST /conversations/:id/messages` | Gửi message (body có `flow_id?`, CR-021), trả về SSE stream. `GET /conversations/:id/flows` liệt kê flow |
 | `GET /runs/:id/events` | Nối lại stream (hỗ trợ `Last-Event-ID`) |
 | `POST /runs/:id/cancel` · `GET /runs/:id` · `GET /runs/:id/trace` | Điều khiển và xem run (trace theo HUB-FR-87) |
-| `POST /attachments` | Upload file |
+| `POST /attachments` · `GET /attachments/:id` · `GET /attachments/:id/content` | Upload file (thân thô, tên qua header `X-Filename` percent-encoded; 201 metadata) · metadata · tải nội dung (scope `user`). Nội bộ (token job, không qua JWT): `GET /internal/jobs/:job_id/attachments/:attachment_id` (Runtime tải file vào `work/<job_id>/attachments/`), `POST /internal/jobs/:job_id/outputs` (Runtime đẩy file `out/`, ≤ 5/job). Lỗi `ATTACHMENT_*` (CR-039) |
 | `GET /admin/usage` | Báo cáo chi phí theo tenant × feature × tháng. `platform_admin`: mọi tenant, cả `cost_usd` và `billable_usd`. `tenant_admin`: tenant mình |
 | `GET/POST/DELETE /agent-grants` | Cấp agent cho group/user (Admin UI trang Groups gọi, bằng JWT của `tenant_admin`). Chỉ role `tenant_admin`/`platform_admin`. Chỉ trong đúng `tenant_id` của JWT, chỉ với agent đã có entitlement cho tenant đó. `GET` trả các agent đã có entitlement cho tenant kèm grant. Không nằm dưới `/studio` |
 | `GET /agent-grants/effective/:user_id` | Agent user thấy được kèm lý do (cho "Kiểm tra quyền" của Admin) |
@@ -438,7 +438,7 @@ Vượt quota tenant mặc định **không** phải lỗi (trừ khi tenant b�
 ### Câu hỏi mở
 
 1. ~~Orchestrator dùng model nào mặc định?~~ Đã chốt (CR-025): runtime `llm`/API model rẻ; vẫn cho chọn `agentic-cli` nhưng Studio cảnh báo chậm. H1 tạm chạy CLI tới khi có API key (CR-031); nên chuyển sang API key càng sớm càng tốt (CR-034).
-2. File đính kèm lưu ở ổ đĩa cục bộ hay object storage (S3/MinIO)?
+2. ~~File đính kèm lưu ở ổ đĩa cục bộ hay object storage (S3/MinIO)?~~ Đã chốt (CR-039, người dùng 2026-10-05): ổ đĩa của Hub (thư mục cấu hình, tách theo tenant) sau interface Storage, driver `local`; S3/MinIO là driver làm sau. Khi Hub chạy nhiều bản cần ổ chia sẻ (PRODUCTION-NOTES).
 3. Extension có cần WebSocket hai chiều (Hub ra lệnh ngược cho extension) ở v1 không?
 4. Command thuộc nhiều feature thì `feature_id` của run lấy feature nào? Tạm: feature đầu tiên (theo key) mà user được cấp. Job agent chat và run orchestrated có `feature_id = null`, nên chỉ tính vào quota cả tenant.
 5. `max_usd` của quota so với `billable_usd` hay `cost_usd`? Tạm: `billable_usd`.
