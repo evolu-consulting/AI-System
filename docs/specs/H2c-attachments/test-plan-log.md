@@ -135,3 +135,29 @@ P25 ở unit: `name="../x"` (dựng `JobAttachment.model_construct`, contract c�
 | TC-3 | `sweeper.int.test.ts` A129 | **Test sai (phụ thuộc nền tảng)**: file chỉ đọc (Windows) không chặn được xoá với Bun 1.3.14 ⇒ đỏ dù code đúng | Giả lỗi bằng storage bọc ngoài: `remove(a.key)` ném lỗi, mọi phương thức khác uỷ quyền `expectStorage(hub)`; thêm kiểm hàng + file còn sau lượt lỗi; lượt sau (storage thật) dọn. Bỏ `chmod`/`join`/`WIN` | xanh |
 
 Kiểm trên DB riêng `ai_system_h2c_tc_{,hub_}test` (chỉ `*DATABASE_URL`), mỗi file **3 lần liên tiếp**: `internal-download` 10/10 ×3; `sweeper` 8/9 ×3 — đỏ còn lại **A124** (E10 `available` / E12 `attachment_ids` — chờ **B4**, sd B10-5). Một lượt giữa chừng A125 đỏ khi B3 đang dở (sau commit `50b37cb` xanh), một lượt lỗi môi trường (`ALTER ROLE … tuple concurrently updated` / DB hub bị agent khác drop) — không do test. Đã drop cả hai DB. `tests/.lock`: chỉ đổi 2 dòng hash (`hashFile`), không `test:lock:write`; `verify` chỉ còn `UNLOCKED` của file người khác (`H2c/stack/*`), không `CHANGED`.
+
+### QW-P · Python int + mock Hub file + stack + hubdev (2026-10-05, sau PY-02 `7b43db2`; Hub B2/B3/B5/B10 vào giữa chừng)
+Python: `bun apps/agent-runtime/scripts/run.ts "export HUB_TEST_DATABASE_URL='…@postgres:5432/ai_system_h2c_qwp_hub_test' AGENT_RT_TEST_DATABASE_URL='…'; uv run pytest -m int tests/acceptance/<file>"` (env trong chuỗi lệnh, host `@postgres`). Stack: `HUB_MAX_CONCURRENT_RUNS=2 HUB_ATTACH_DRIVER=local bun --env-file=.env.test-h2c_qwp.local --config=bunfig.stack.toml test --timeout 120000 ./tests/acceptance/H2c/stack` (tuần tự). DB `ai_system_h2c_qwp_{,hub_}test` (**đã drop**). **47 ca P (25 đỏ, 22 xanh) + 9 ca S (7 đỏ, 2 xanh) + H01 (viết, chưa chạy)**. Mọi đỏ là `assert`/`expect` (0 lỗi collect/fixture/mạng); DB/Redis/mock/Runtime boot xanh. ruff check/format, pyright 0 lỗi; `tsc -p tsconfig.tests.json` 0 lỗi ở `H2c/{stack,hubdev}`; biome, `check:size`, `check:fn`, `trace --check` xanh.
+
+| File | ID | Đỏ / tổng | Lý do đỏ | Xanh trước code (lý do) |
+|---|---|---|---|---|
+| `_hub_files.py` (mock, L6) | — | — | — | GET/POST nội bộ, chỉ thị `sha-wrong/short/long/5xx-once/5xx-always/401/404/slow=`, `*.exe/quota-/deny-/flaky-/hold-<ms>-`; Bearer so `token_hash` ∧ `running` qua DB |
+| `attachments_int_test.py` | P20–P24, P26–P32 | 4/19 | P20, P26 (5xx-once), P28, P32 perf: text `echo:` thay `<tên>:<sha>` (`#fake:files` — PY-04); mọi vế tải/quyền/GET trước đó xanh | P21–P23 (3), P24, P26 5xx-always, P27 (2), P29 (2), P30, P31 (3), P32 vắng/`[]` (2) — PY-02 |
+| `outputs_int_test.py` | P38, P40–P51 | 21/28 | P40–P46: 0 POST `/outputs` (`send_outputs` chưa nối `_close` — PY-03; `#fake:out*` — PY-04), P41 chờ POST quá 30 s; P46 empty/too_large: thiếu log `job.output_skipped`; P49 thiếu `job.outputs_skipped`; P50 log: 0 POST; P51 ×8: text `echo:` thay `written`/`denied:*` (`#fake:write` — PY-04) | P38 (F12, Runtime gửi nguyên `inputs`), P47 ×2 (PY-02 `out/` chỉ agent, 0700), P48 ×3 (0 POST — vế phủ định), P50 không file (PY-02 `encode_event`) |
+| `stack/files` | S01, S02, S07 | 3/3 | S01/S02: content `echo:` (PY-04); S07: job tin 2 không có `attachments` (B4/B6) | — |
+| `stack/out` | S03 ×3, S04 | 2/4 | S03: tin assistant không `attachments` (B9 `bindOutputs` + PY-03/04) | S03 `out-link` (không khoá — vế phủ định), S04 (0 hàng output — vế phủ định) |
+| `stack/async-file` | S05 | 1/1 | 422 `CMD_MISSING_ARG` (B4/B7 bỏ qua `attachment_ids`) | — |
+| `stack/orchestrated` | S06 | 1/1 | prompt Orchestrator không `<attachments>` (B4/B6) | — |
+| `hubdev/attach` | H01 | — | chưa chạy: cần hub-dev (bước 12 `done:h2c`, `needsDev`) | — |
+
+P32 perf (L10, báo cáo): 10 × 2 MiB tải 131 ms.
+
+**Lệch plan / cần backend-lead:**
+1. P42 dùng `Báo-cáo.md` (pct `B%C3%A1o-c%C3%A1o.md`): chỉ thị `#fake:*` tách theo `\S+` ⇒ tên có khoảng trắng không truyền được.
+2. P25 không lặp ở int (đã ở unit `test_files_rules.py`, L4/B9). P21–P23: file **thứ hai** lỗi để kiểm "xoá cả file đã tải".
+3. P51 symlink `out/l.md`: `prepare_job_dirs` làm mới `out/` khi claim ⇒ không đặt sẵn được; test tạo symlink trong lúc `#fake:sleep=3` — giả định PY-04 xử lý `#fake:write` sau `sleep` (như `_body` hiện hành).
+4. P31 shutdown: kỳ vọng `failed INTERNAL_ERROR orphaned` (cha ghi như H1 §1.5) — JobRun `stopped_no_write` không ghi `attachment`.
+5. P49: kỳ vọng đúng 1 log `job.outputs_skipped{reason:"no_hub_url", level:"warning"}`; P50 log: chỉ ép `job.outputs.sent == 1` và không dòng log nào chứa tên file.
+6. S05 (TC-4 + upload): `hoadon-file` vừa Hub (host) upload vừa Runtime (container) chạy ⇒ `base_url` = IPv4 không-loopback của host (`hostIp()`, container tới được — thử trên Docker Desktop; hosts Windows `host.docker.internal` = IP cũ).
+7. S02 run 3 `#fake:read=attachments/a.pdf` dựa R14 (file của flow vào job sau); S06 tìm job Orchestrator theo `payload.agent.role`.
+8. Môi trường: `ALTER ROLE … tuple concurrently updated` khi agent khác migrate cùng lúc ⇒ chạy lại (không do test).
