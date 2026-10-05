@@ -26,7 +26,7 @@ from claude_agent_sdk import (
 )
 
 from agent_runtime.log import get_logger
-from agent_runtime.providers.base import Emit, ProviderJob, RateLimit, Session
+from agent_runtime.providers.base import Emit, ProbeRequest, ProviderJob, RateLimit, Session
 from agent_runtime.providers.claude.mapping import (
     confirm_events,
     error_events,
@@ -42,6 +42,7 @@ from agent_runtime.providers.claude.mapping import (
 )
 from agent_runtime.providers.claude.options import build_options
 from agent_runtime.providers.claude.partial import PartialStream, stream_mode
+from agent_runtime.providers.claude.probe import claude_probe
 from agent_runtime.providers.context import neutralize_mentions
 
 KEY = "claude-sub"
@@ -119,6 +120,10 @@ class _Turn:
 
 class ClaudeProvider:
     key = KEY
+
+    async def probe(self, req: ProbeRequest, emit: Emit) -> None:
+        """H3a R14(b) (`probe.py`)."""
+        await claude_probe(req, emit)
 
     async def run(self, job: ProviderJob, emit: Emit) -> None:
         turn = _Turn(job, emit)

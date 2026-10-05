@@ -15,5 +15,7 @@
 | `refusal.py` | H2b F4 (WRK-FR-15): `classify_is_error(text, output_tokens, stop_reason)` — rate/auth như H1; `refused` chỉ khi `stop_reason == "refusal"` ∧ 0 output (TC-8); còn lại None ⇒ `PROVIDER_ERROR` |
 | `session.py` | (cha) luật session §6: khoá `cli_sessions` (+`tenant_id`), resume lỗi trước `tool_use` → dựng từ history (PY-11) |
 | `files/` | H2c (WRK-FR-11, WRK-FR-18): tải file đính kèm vào `work/<job_id>/attachments/` và đẩy `out/` lên Hub — xem `files/README.md`; gọi từ `job_run.py` (`_prepare_files`, `_close`) |
+| `quota_rules.py` | H3a (WRK-FR-22, WRK-FR-15): luật thuần quota/probe (`plan-runtime` H3a §3); `clean_*`, `parse_fake_probe` re-export từ `providers` (PY-03a) |
+| `probe/` | H3a (WRK-FR-22, PY-03): probe quota — xem `probe/README.md`; vòng gọi ở `queue/probe_loop.py` (PY-04) |
 
 Còn: `result.py`/`prompt.py` (PY-10), usage/provider_state (PY-12), file log events (PY-13).

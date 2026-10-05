@@ -11,6 +11,7 @@ Chạy Claude Code qua **Claude Agent SDK Python** (`claude-agent-sdk==0.2.163`,
 | `partial.py` | H2b (WRK-FR-03/17): `PartialStream` — `StreamEvent` (`include_partial_messages`) → `Delta` (khối `text` của Orchestrator / `tool_use StructuredOutput` của agent, chọn theo `content_block_start`, xong ở `content_block_stop`) + usage cộng dồn F5 + `stop_reason` cuối (F4, TC-8) |
 | `usage_acc.py` | H2b F5: `UsageAcc` — usage theo message (`message_start` rồi `message_delta` cùng id: bản sau thay; huỷ = cận dưới) |
 | `provider.py` | `ClaudeProvider.run` — một lượt `ClaudeSDKClient` (`query(neutralize_mentions(prompt))` + `receive_response`); model `usage` = `init.data["model"]`, không có thì khoá `costUSD` lớn nhất của `model_usage` |
+| `probe.py` | H3a (PY-03, R14(b), Spike S1 #8): `ClaudeProvider.probe` — `probe_options` (haiku, `Reply ok.`, `tools=[]`, `allowed_tools=[]`, `mcp_servers={}` + `strict_mcp_config`, `setting_sources=[]`, `max_turns=1`, không hook/session/env thêm), prompt `Reply with: ok`; `rate_limit` (mỗi status 1 lần) + `result_signal` + `usage` + `final` **`text=None`** (không phát câu trả lời); lỗi SDK → `error_events` |
 
 Sự kiện: `session` (init, Result) · `tool_use` + `progress` nhãn tĩnh (không đường dẫn) · `rate_limit{status:"rejected", resets_at}` hoặc `{status:"logged_out"}` cho PY-12 · `usage` · `final` (`structured` cho `agent_result`, `text` cho Orchestrator).
 

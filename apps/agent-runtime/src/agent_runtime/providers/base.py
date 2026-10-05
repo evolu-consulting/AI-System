@@ -9,6 +9,8 @@ Không import `config`/`db`/`events` (process con không cầm secret).
 from __future__ import annotations
 
 import json
+import math
+import re
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from itertools import islice
 from typing import Annotated, Any, Literal, Protocol, cast
@@ -51,6 +53,26 @@ def raw_shape(raw: Mapping[str, object] | None) -> dict[str, str] | None:
         return None
     items = islice(raw.items(), RAW_SHAPE_MAX_KEYS)
     return {str(k)[:RAW_SHAPE_MAX_KEY]: type(v).__name__ for k, v in items}
+
+
+RATE_TYPE_PATTERN = r"^[a-z0-9_]{1,40}$"
+RATE_TYPE_RE = re.compile(RATE_TYPE_PATTERN)
+
+
+def clean_type(value: object) -> str | None:
+    """H3a `rt §3`: regex `RATE_TYPE_PATTERN`; sai ⇒ None. Ở đây (không ở `quota_rules`) để
+    `providers/fake/probe.py` dùng chung — lớp `providers` không import `runtimes` (PY-03a)."""
+    if isinstance(value, str) and RATE_TYPE_RE.fullmatch(value):
+        return value
+    return None
+
+
+def clean_util(value: object) -> float | None:
+    """H3a `rt §3`: số hữu hạn ∈ [0,1]; sai ⇒ None (bool ⇒ None)."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    x = float(value)
+    return x if math.isfinite(x) and 0.0 <= x <= 1.0 else None
 
 
 class RateLimit(_Ev):
@@ -177,7 +199,23 @@ class ProviderJob(BaseModel):
     out_dir_id: tuple[int, int] | None = None
 
 
+class ProbeRequest(BaseModel):
+    """H3a `rt §2`: dòng stdin đầu của con probe (`runtimes/cli/probe/child.py`). `fake` = chỉ thị
+    `fake-cli` cha đọc từ `AGENT_RT_FAKE_PROBE_FILE` mỗi lượt (provider thật bỏ qua)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    provider_key: Annotated[str, Field(min_length=1, max_length=100)]
+    work_dir: str
+    cli_path: str | None = None
+    fake: str | None = None
+
+
 class Provider(Protocol):
     key: str
 
     async def run(self, job: ProviderJob, emit: Emit) -> None: ...
+
+    async def probe(self, req: ProbeRequest, emit: Emit) -> None:
+        """H3a R14(b): một lượt tối thiểu → `rate_limit`/`usage`/`final` (không nội dung)."""
+        ...

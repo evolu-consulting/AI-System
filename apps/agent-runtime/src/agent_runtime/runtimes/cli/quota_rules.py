@@ -6,29 +6,30 @@ PY-02) — không `isinstance`. `ProbeResult.message` là câu cố định (kh�
 """
 
 import json
-import math
-import re
-from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from typing import Literal, Protocol, cast
 
+# PY-03a: thân ở lớp `providers` (con probe `fake-cli` dùng; `providers` không import `runtimes`).
+from agent_runtime.providers.base import RATE_TYPE_PATTERN as RATE_TYPE_PATTERN
+from agent_runtime.providers.base import RATE_TYPE_RE as RATE_TYPE_RE
 from agent_runtime.providers.base import RAW_SHAPE_MAX_KEY as RAW_SHAPE_MAX_KEY
 from agent_runtime.providers.base import RAW_SHAPE_MAX_KEYS as RAW_SHAPE_MAX_KEYS
 from agent_runtime.providers.base import Fatal, Final, RateLimit, UsageEv
+from agent_runtime.providers.base import clean_type as clean_type
+from agent_runtime.providers.base import clean_util as clean_util
 from agent_runtime.providers.base import raw_shape as raw_shape  # R04 (dùng chung với mapping)
+from agent_runtime.providers.fake.probe import FAKE_MS_MAX as FAKE_MS_MAX
+from agent_runtime.providers.fake.probe import FakeProbe as FakeProbe
+from agent_runtime.providers.fake.probe import FakeProbeKind as FakeProbeKind
+from agent_runtime.providers.fake.probe import parse_fake_probe as parse_fake_probe
 from agent_runtime.providers.patterns import LOGGED_OUT, REJECTED, classify_text
 
 COOLDOWN_MAX = timedelta(days=8)
-RATE_TYPE_PATTERN = r"^[a-z0-9_]{1,40}$"
-RATE_TYPE_RE = re.compile(RATE_TYPE_PATTERN)
-FAKE_MS_MAX = 60_000
-_DIGITS = re.compile(r"^[0-9]{1,12}$")
 
 Transition = Literal["healthy", "recover", "seen", "broken", "error"]
 ProbeKind = Literal["ok", "cooldown", "logged_out", "error"]
 ProbeStep = Literal["auth", "turn"]
-FakeProbeKind = Literal["ok", "rejected", "logged_out", "revoked", "warning", "hang", "error"]
 
 
 @dataclass(frozen=True)
@@ -68,15 +69,6 @@ class ProbeResult:
     step: ProbeStep
 
 
-@dataclass(frozen=True)
-class FakeProbe:
-    kind: FakeProbeKind
-    resets_at: int | None = None
-    rate_limit_type: str | None = None
-    utilization: float | None = None
-    ms: int | None = None
-
-
 class ProbeSeenLike(Protocol):
     """Tín hiệu gom từ process con probe (`ProbeSeen`, PY-03; trường theo plan-runtime §2)."""
 
@@ -104,21 +96,6 @@ def _reset_time(resets_at: object, now: datetime) -> datetime | None:
 def cooldown_until(resets_at: int | None, now: datetime, default_s: int) -> datetime:
     """R02."""
     return _reset_time(resets_at, now) or now + timedelta(seconds=default_s)
-
-
-def clean_type(value: object) -> str | None:
-    """Regex `RATE_TYPE_PATTERN`; sai ⇒ None."""
-    if isinstance(value, str) and RATE_TYPE_RE.fullmatch(value):
-        return value
-    return None
-
-
-def clean_util(value: object) -> float | None:
-    """Số hữu hạn ∈ [0,1]; sai ⇒ None (bool ⇒ None)."""
-    if isinstance(value, bool) or not isinstance(value, int | float):
-        return None
-    x = float(value)
-    return x if math.isfinite(x) and 0.0 <= x <= 1.0 else None
 
 
 def warn_window(resets_at: int | None, now: datetime) -> datetime:
@@ -253,66 +230,3 @@ def probe_transition(snap: ProviderSnap, result: ProbeResult) -> Transition:
         return "error"
     same = s == kind and (kind == "logged_out" or result.until == snap.cooldown_until)
     return "seen" if same else "broken"
-
-
-def _digits(value: str, low: int, high: int) -> int | None:
-    if not _DIGITS.fullmatch(value):
-        return None
-    n = int(value)
-    return n if low <= n <= high else None
-
-
-def _fake_ok(args: list[str]) -> FakeProbe | None:
-    if not args:
-        return FakeProbe("ok")
-    ms = _digits(args[0], 1, FAKE_MS_MAX) if len(args) == 1 else None
-    return None if ms is None else FakeProbe("ok", ms=ms)
-
-
-def _fake_rejected(args: list[str]) -> FakeProbe | None:
-    if not args:
-        return FakeProbe("rejected")
-    ts = _digits(args[0], 0, 10**12)
-    typ = clean_type(args[1]) if len(args) == 2 else None
-    if ts is None or len(args) > 2 or (len(args) == 2 and typ is None):
-        return None
-    return FakeProbe("rejected", resets_at=ts, rate_limit_type=typ)
-
-
-def _fake_warning(args: list[str]) -> FakeProbe | None:
-    if not 1 <= len(args) <= 2:
-        return None
-    try:
-        util = clean_util(float(args[0]))
-    except ValueError:
-        return None
-    ts = _digits(args[1], 0, 10**12) if len(args) == 2 else None
-    if util is None or (len(args) == 2 and ts is None):
-        return None
-    return FakeProbe("warning", resets_at=ts, utilization=util)
-
-
-def _fake_bare(kind: FakeProbeKind) -> Callable[[list[str]], FakeProbe | None]:
-    return lambda args: None if args else FakeProbe(kind)
-
-
-_FAKE_PARSERS: dict[str, Callable[[list[str]], FakeProbe | None]] = {
-    "ok": _fake_ok,
-    "rejected": _fake_rejected,
-    "warning": _fake_warning,
-    "logged_out": _fake_bare("logged_out"),
-    "revoked": _fake_bare("revoked"),
-    "hang": _fake_bare("hang"),
-    "error": _fake_bare("error"),
-}
-
-
-def parse_fake_probe(text: str | None) -> FakeProbe:
-    """R18 (plan-runtime H3a §5): dòng đầu; vắng/rỗng ⇒ ok; sai cú pháp ⇒ error."""
-    line = (text or "").partition("\n")[0].strip()
-    if not line:
-        return FakeProbe("ok")
-    kind, *args = line.split(":")
-    parser = _FAKE_PARSERS.get(kind)
-    got = parser(args) if parser is not None else None
-    return got or FakeProbe("error")

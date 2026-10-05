@@ -30,6 +30,7 @@ from agent_runtime.providers.base import (
     Confirm,
     Emit,
     Final,
+    ProbeRequest,
     Progress,
     ProviderJob,
     RateLimit,
@@ -54,6 +55,7 @@ from agent_runtime.providers.fake.directives import (
 )
 from agent_runtime.providers.fake.files import files_text, write_file, write_outputs
 from agent_runtime.providers.fake.mcp_call import call_tool, list_tools
+from agent_runtime.providers.fake.probe import fake_probe
 from agent_runtime.providers.fake.sessions import load, new_id, save
 from agent_runtime.providers.fake.state import bump_badjson
 from agent_runtime.providers.fake.stream import (
@@ -321,6 +323,10 @@ async def _finish(emit: Emit, final: Final, *, reported: bool) -> None:
 
 class FakeProvider:
     key = KEY
+
+    async def probe(self, req: ProbeRequest, emit: Emit) -> None:
+        """H3a R18 · `rt §4.2` (`probe.py`)."""
+        await fake_probe(req, emit)
 
     async def run(self, job: ProviderJob, emit: Emit) -> None:
         text_out = job.payload.output == "text"
