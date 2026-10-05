@@ -4,12 +4,15 @@ kết quả probe (plan-db H3a §3–4).
 Thứ tự khoá (plan H3a §5): khoá phiên `hub.provider.probe` (người gọi, ngoài transaction) → khoẻ:
 chỉ hàng `provider_state` (0 lần `K_CLAIM`) · chuyển sang hỏng: `K_CLAIM → jobs (FAIL_QUEUED) →
 provider_state`. Rào R15: so `updated_at` của snapshot đọc sau khi có khoá — trạng thái mới hơn (job
-hoặc người khác ghi trong lúc probe) thắng, `apply_probe` trả `None` (log `probe.stale`).
+hoặc người khác ghi trong lúc probe) thắng, `apply_probe` trả `None` (log `probe.stale`). Lỗi probe
+khi snapshot khoẻ: luôn `K_CLAIM`, đọc lại `PROBE_STATE` dưới khoá, rào theo `updated_at` vừa đọc
+(RV1-R1).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from agent_runtime.db.jobs_sql import K_CLAIM
 from agent_runtime.db.pool import Conn, Row
@@ -18,7 +21,6 @@ from agent_runtime.db.provider_state_sql import (
     Broken,
     BrokenStatus,
     QueuedFail,
-    errors_now,
     fail_queued,
     note_warning,
 )
@@ -43,6 +45,8 @@ PROBE_RECOVER = """UPDATE hub.provider_state SET status = 'ok', consecutive_erro
 PROBE_MARK_BROKEN = """INSERT INTO hub.provider_state (provider_key, status, cooldown_until, last_error, rate_limit_type, utilization, last_probe_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, now(), now()) ON CONFLICT (provider_key) DO UPDATE SET status = EXCLUDED.status, cooldown_until = EXCLUDED.cooldown_until, last_error = EXCLUDED.last_error, rate_limit_type = coalesce(EXCLUDED.rate_limit_type, hub.provider_state.rate_limit_type), utilization = coalesce(EXCLUDED.utilization, hub.provider_state.utilization), last_probe_at = now(), updated_at = now() WHERE hub.provider_state.updated_at IS NOT DISTINCT FROM $7 RETURNING 1;"""  # noqa: E501
 
 PROBE_ERROR = """INSERT INTO hub.provider_state (provider_key, consecutive_errors, last_error, last_probe_at, updated_at) VALUES ($1, 1, $2, now(), now()) ON CONFLICT (provider_key) DO UPDATE SET consecutive_errors = hub.provider_state.consecutive_errors + 1, last_error = EXCLUDED.last_error, last_probe_at = now(), updated_at = now() RETURNING consecutive_errors, status;"""  # noqa: E501
+
+PROBE_STATE = """SELECT status, consecutive_errors, updated_at FROM hub.provider_state WHERE provider_key = $1;"""  # noqa: E501 — RV1-R1: đọc dưới K_CLAIM
 
 PROBE_SEEN = """UPDATE hub.provider_state SET last_probe_at = now() WHERE provider_key = $1;"""
 
@@ -128,29 +132,51 @@ def _broken_of(result: ProbeResult) -> Broken:
 
 
 async def _error(conn: Conn, key: str, snap: ProviderSnap, result: ProbeResult) -> Applied | None:
-    """PL5: chỉ chuyển `error` khi provider đang khoẻ và chạm ngưỡng; còn lại chỉ đếm."""
-    if snap.status not in _HEALTHY or snap.consecutive_errors + 1 < ERROR_THRESHOLD:
-        await conn.execute(PROBE_ERROR, key, result.message[:500])
+    """PL5 · RV1-R1: snapshot khoẻ ⇒ luôn vào `K_CLAIM`, quyết định theo số đọc dưới khoá (mọi lần
+    đếm lỗi đều giữ `K_CLAIM` — H1 "Kết thúc"); chỉ provider đã hỏng mới đếm không khoá."""
+    msg = result.message[:500]
+    if snap.status not in _HEALTHY:
+        await conn.execute(PROBE_ERROR, key, msg)
         return Applied(snap.status, snap.status)
-    return await _broken(conn, key, snap, Broken("error", None, result.message))
-
-
-async def _broken(conn: Conn, key: str, snap: ProviderSnap, b: Broken) -> Applied | None:
-    """`K_CLAIM → jobs → provider_state` (PL8). `error` (lỗi probe): đọc lại số lỗi dưới khoá (mọi
-    lần đếm lỗi job đều giữ `K_CLAIM`), chưa tới ngưỡng ⇒ chỉ đếm."""
-    msg, count = b.message[:500], b.status == "error"
     try:
         async with conn.transaction():
             await conn.execute(K_CLAIM)
-            if count and await errors_now(conn, key) + 1 < ERROR_THRESHOLD:
-                await conn.execute(PROBE_ERROR, key, msg)
-                return Applied(snap.status, snap.status)
+            return await _error_locked(conn, key, msg)
+    except _Fenced:
+        return None
+
+
+async def _error_locked(conn: Conn, key: str, msg: str) -> Applied:
+    """Dưới `K_CLAIM`: trạng thái thật (job có thể đã đếm/đổi giữa snapshot và lúc ghi). Chạm ngưỡng
+    ⇒ `FAIL_QUEUED → PROBE_MARK_BROKEN` (rào `updated_at` vừa đọc) → `PROBE_ERROR` (lần chạm ngưỡng
+    cũng được đếm như H1); provider đã hỏng dưới khoá ⇒ chỉ đếm (PL5)."""
+    row = await conn.fetchrow(PROBE_STATE, key)
+    status = None if row is None else row["status"]
+    errors = 0 if row is None else int(row["consecutive_errors"])
+    if status not in _HEALTHY or errors + 1 < ERROR_THRESHOLD:
+        await conn.execute(PROBE_ERROR, key, msg)
+        return Applied(status, status)
+    b = Broken("error", None, msg)
+    queued = await fail_queued(conn, key, b.reason)
+    await _mark(conn, key, b, None if row is None else row["updated_at"])
+    await conn.execute(PROBE_ERROR, key, msg)
+    return Applied(status, b.status, queued, b)
+
+
+async def _broken(conn: Conn, key: str, snap: ProviderSnap, b: Broken) -> Applied | None:
+    """`K_CLAIM → jobs → provider_state` (PL8), rào `updated_at` của snapshot (R15)."""
+    try:
+        async with conn.transaction():
+            await conn.execute(K_CLAIM)
             queued = await fail_queued(conn, key, b.reason)
-            args = (key, b.status, b.until, msg, b.rate_limit_type, b.utilization, snap.updated_at)
-            if await conn.fetchrow(PROBE_MARK_BROKEN, *args) is None:
-                raise _Fenced
-            if count:  # như H1 "Kết thúc": lần lỗi chạm ngưỡng cũng được đếm
-                await conn.execute(PROBE_ERROR, key, msg)
+            await _mark(conn, key, b, snap.updated_at)
             return Applied(snap.status, b.status, queued, b)
     except _Fenced:
         return None
+
+
+async def _mark(conn: Conn, key: str, b: Broken, fence: datetime | None) -> None:
+    """`PROBE_MARK_BROKEN` 0 hàng (trạng thái mới hơn `fence`) ⇒ `_Fenced` ⇒ ROLLBACK."""
+    args = (key, b.status, b.until, b.message[:500], b.rate_limit_type, b.utilization, fence)
+    if await conn.fetchrow(PROBE_MARK_BROKEN, *args) is None:
+        raise _Fenced

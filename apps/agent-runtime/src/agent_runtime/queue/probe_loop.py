@@ -79,23 +79,26 @@ class ProbeLoop:
     async def run(self) -> None:
         startup = True
         while True:
-            await self.round(startup=startup)
-            startup = False
+            # RV1-R3: giữ cờ `startup` tới khi đọc được `PROBE_TARGETS` (DB chưa lên lúc khởi động).
+            if await self.round(startup=startup):
+                startup = False
             await self._sleep(self.cfg.tick_s)
 
-    async def round(self, *, startup: bool) -> None:
+    async def round(self, *, startup: bool) -> bool:
+        """False = chưa đọc được `PROBE_TARGETS` (lượt bị bỏ)."""
         log = get_logger()
         try:
             async with self.pool.acquire() as conn:
                 rows = await probe_sql.targets(conn, list(self.cfg.providers))
         except DB_ERRORS as err:
             log.warning("probe.failed", provider=None, error=type(err).__name__)
-            return
+            return False
         for key, snap in rows:
             if probe_due(snap, self.cfg.rules, startup=startup):
                 await self.one(key, startup=startup)
             elif startup:
                 log.debug("probe.skipped", provider=key, reason="recent")
+        return True
 
     async def one(self, key: str, *, startup: bool) -> None:
         """Một lượt một provider; mọi lỗi (DB/Redis/IO) ⇒ `probe.failed`, không làm chết vòng."""

@@ -13,7 +13,7 @@ import pytest
 
 from agent_runtime.db import probe_sql as q
 from agent_runtime.db.jobs_sql import K_CLAIM
-from agent_runtime.db.provider_state_sql import ERRORS_NOW, FAIL_QUEUED
+from agent_runtime.db.provider_state_sql import FAIL_QUEUED
 from agent_runtime.events.job_events import Failure, Tokens
 from agent_runtime.queue.probe_loop import ProbeLoop, ProbeLoopCfg, Sleep
 from agent_runtime.runtimes.cli.probe import ProbeHostCfg
@@ -22,6 +22,7 @@ from agent_runtime.runtimes.cli.quota_rules import ProbeCfg, ProbeKind, ProbeRes
 KEY = "fake-cli"
 NOW = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
 UPD = NOW - timedelta(hours=1)
+REAL_UPD = NOW - timedelta(seconds=1)  # `updated_at` đọc dưới K_CLAIM (job vừa đếm lỗi)
 
 
 class _Stop(Exception):
@@ -49,7 +50,10 @@ class _Conn:
         self.row, self.locked, self.fenced = row, locked, fenced
         self.sql: list[str] = []
         n = row["consecutive_errors"]
+        # Trạng thái "thật" dưới K_CLAIM (`PROBE_STATE`): mặc định = snapshot; ca RV1-R1 đổi.
         self.errors = n if isinstance(n, int) else 0
+        self.status = row["status"]
+        self.args: dict[str, tuple[object, ...]] = {}
 
     async def execute(self, query: str, *args: object) -> str:
         self.sql.append(query)
@@ -63,10 +67,12 @@ class _Conn:
 
     async def fetchrow(self, query: str, *args: object) -> dict[str, object] | None:
         self.sql.append(query)
+        self.args[query] = args
+        real = {"status": self.status, "consecutive_errors": self.errors, "updated_at": REAL_UPD}
         answers: dict[str, dict[str, object] | None] = {
             q.PROBE_TRY_LOCK: {"ok": not self.locked},
             q.PROBE_SNAPSHOT: self.row,
-            ERRORS_NOW: {"consecutive_errors": self.errors},
+            q.PROBE_STATE: real if self.status is not None else None,
         }
         if query in answers:
             return answers[query]
@@ -97,10 +103,12 @@ class _Pool:
 class _Events:
     def __init__(self) -> None:
         self.failed_jobs: list[tuple[str, str]] = []
+        self.reasons: list[str | None] = []
 
     async def failed(self, job_id: str, run_id: str, f: Failure, usage: Tokens) -> None:
-        assert (f.code, f.reason) == ("ALL_PROVIDERS_EXHAUSTED", "quota")
+        assert f.code == "ALL_PROVIDERS_EXHAUSTED"
         self.failed_jobs.append((job_id, run_id))
+        self.reasons.append(f.reason)
 
 
 def _result(kind: ProbeKind = "ok", until: datetime | None = None) -> ProbeResult:
@@ -159,7 +167,7 @@ async def test_wrk_fr_22_pl8_broken_claim_lock_order_and_xadd() -> None:
     i = conn.sql.index(K_CLAIM)
     assert conn.sql[i - 1] == "BEGIN"
     assert conn.sql[i + 1 : i + 4] == [FAIL_QUEUED, q.PROBE_MARK_BROKEN, "COMMIT"]
-    assert events.failed_jobs == [("j1", "r1")]
+    assert events.failed_jobs == [("j1", "r1")] and events.reasons == ["quota"]
     assert conn.sql[-1] == q.PROBE_UNLOCK
 
 
@@ -170,19 +178,59 @@ async def test_wrk_fr_22_r15_fenced_broken_rolls_back_no_xadd() -> None:
     assert "ROLLBACK" in conn.sql and events.failed_jobs == []
 
 
-async def test_wrk_fr_22_pl5_error_below_threshold_only_counts() -> None:
+async def test_wrk_fr_22_pl5_error_below_threshold_counts_under_claim_lock() -> None:
+    """RV1-R1: snapshot khoẻ ⇒ mọi lần đếm lỗi đều giữ K_CLAIM (bất biến H1)."""
     conn = _Conn(_row("ok", errors=1))
-    loop, _, _ = _loop(conn, _result("error"))
+    loop, events, _ = _loop(conn, _result("error"))
     await loop.round(startup=True)
-    assert q.PROBE_ERROR in conn.sql and K_CLAIM not in conn.sql
+    i = conn.sql.index(K_CLAIM)
+    assert conn.sql[i - 1] == "BEGIN"
+    assert conn.sql[i + 1 : i + 4] == [q.PROBE_STATE, q.PROBE_ERROR, "COMMIT"]
+    assert FAIL_QUEUED not in conn.sql and events.failed_jobs == []
 
 
 async def test_wrk_fr_22_pl5_error_reaches_threshold_under_claim_lock() -> None:
     conn = _Conn(_row("ok", errors=2))
-    loop, _, _ = _loop(conn, _result("error"))
+    loop, events, _ = _loop(conn, _result("error"))
     await loop.round(startup=True)
     i = conn.sql.index(K_CLAIM)
-    assert conn.sql[i + 1 : i + 5] == [ERRORS_NOW, FAIL_QUEUED, q.PROBE_MARK_BROKEN, q.PROBE_ERROR]
+    assert conn.sql[i + 1 : i + 5] == [
+        q.PROBE_STATE,
+        FAIL_QUEUED,
+        q.PROBE_MARK_BROKEN,
+        q.PROBE_ERROR,
+    ]
+    assert events.reasons == ["provider_unavailable"]
+
+
+async def test_rv1_r1_wrk_fr_15_count_changed_between_snapshot_and_write() -> None:
+    """Snapshot 1 lỗi; job lỗi chen giữa lượt probe ⇒ thật 2; probe timeout ⇒ 3 ⇒ `error` + job
+    `queued` bị fail; rào `PROBE_MARK_BROKEN` theo `updated_at` đọc dưới khoá."""
+    conn = _Conn(_row("ok", errors=1))
+    conn.errors = 2
+    loop, events, _ = _loop(conn, _result("error"))
+    await loop.round(startup=True)
+    i = conn.sql.index(K_CLAIM)
+    assert conn.sql[i + 1 : i + 6] == [
+        q.PROBE_STATE,
+        FAIL_QUEUED,
+        q.PROBE_MARK_BROKEN,
+        q.PROBE_ERROR,
+        "COMMIT",
+    ]
+    assert conn.args[q.PROBE_MARK_BROKEN][1] == "error"
+    assert conn.args[q.PROBE_MARK_BROKEN][-1] == REAL_UPD
+    assert events.failed_jobs == [("j1", "r1")] and events.reasons == ["provider_unavailable"]
+
+
+async def test_rv1_r1_provider_broke_under_lock_only_counts() -> None:
+    """Snapshot `ok` nhưng job đã đưa sang `cooldown` trước khi ghi ⇒ chỉ đếm (PL5)."""
+    conn = _Conn(_row("ok", errors=2))
+    conn.status = "cooldown"
+    loop, events, _ = _loop(conn, _result("error"))
+    await loop.round(startup=True)
+    assert q.PROBE_ERROR in conn.sql and q.PROBE_MARK_BROKEN not in conn.sql
+    assert events.failed_jobs == []
 
 
 async def test_wrk_fr_22_pl5_broken_provider_error_keeps_status() -> None:
@@ -190,6 +238,7 @@ async def test_wrk_fr_22_pl5_broken_provider_error_keeps_status() -> None:
     loop, _, _ = _loop(conn, _result("error"))
     await loop.round(startup=True)
     assert q.PROBE_ERROR in conn.sql and q.PROBE_MARK_BROKEN not in conn.sql
+    assert K_CLAIM not in conn.sql  # đã hỏng: đếm không khoá
 
 
 async def test_wrk_fr_22_probe_failure_logged_lock_released() -> None:
@@ -215,3 +264,30 @@ async def test_wrk_fr_22_r13_run_startup_round_then_ticks() -> None:
     assert sleeps == [1.0, 1.0, 1.0] and probed == [KEY]
     assert conn.sql.count(q.PROBE_TARGETS) == 3 and conn.sql.count(q.PROBE_TRY_LOCK) == 1
     assert q.PROBE_SEEN in conn.sql  # logged_out → logged_out: chỉ ghi mốc
+
+
+class _DownOnce(_Conn):
+    """`PROBE_TARGETS` lỗi DB lần đầu (DB chưa sẵn lúc khởi động), sau đó bình thường."""
+
+    async def fetch(self, query: str, *args: object) -> list[dict[str, object]]:
+        if query == q.PROBE_TARGETS and q.PROBE_TARGETS not in self.sql:
+            self.sql.append(query)
+            raise OSError("db down")
+        return await super().fetch(query, *args)
+
+
+async def test_rv1_r3_wrk_fr_22_startup_kept_until_targets_read() -> None:
+    """`logged_out` vừa probe chỉ được probe ở lượt `startup` ⇒ lượt startup lỗi DB không mất cờ."""
+    conn = _DownOnce(_row("logged_out", last_probe_at=NOW))
+    sleeps: list[float] = []
+
+    async def sleep(s: float) -> None:
+        sleeps.append(s)
+        if len(sleeps) == 3:
+            raise _Stop
+
+    loop, _, probed = _loop(conn, _result("logged_out"), sleep)
+    with pytest.raises(_Stop):
+        await loop.run()
+    assert probed == [KEY] and conn.sql.count(q.PROBE_TARGETS) == 3
+    assert conn.sql.count(q.PROBE_TRY_LOCK) == 1

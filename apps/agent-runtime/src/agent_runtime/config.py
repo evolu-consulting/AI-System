@@ -101,6 +101,12 @@ class Settings(BaseSettings):
     def _absolute(cls, value: Path) -> Path:
         return _norm_abs(value, "đường dẫn")
 
+    @field_validator("fake_probe_file")
+    @classmethod
+    def _abs_fake_probe(cls, value: Path | None) -> Path | None:
+        """RV1-R5: dùng bản đã chuẩn hoá (`normpath`), như `home`/`log_dir`."""
+        return None if value is None else _norm_abs(value, "AGENT_RT_FAKE_PROBE_FILE")
+
     @field_validator("work_dir")
     @classmethod
     def _work_dir_not_mnt(cls, value: Path) -> Path:
@@ -124,10 +130,8 @@ class Settings(BaseSettings):
         _in_range("AGENT_RT_PROBE_LOGGED_OUT_S", self.probe_logged_out_s, 10 if prod else 1, 600)
         _in_range("AGENT_RT_PROBE_TIMEOUT_S", self.probe_timeout_s, 10 if prod else 1, 300)
         _in_range("AGENT_RT_COOLDOWN_DEFAULT_S", self.cooldown_default_s, 60 if prod else 1, 86400)
-        if self.fake_probe_file is not None:
-            if prod:
-                raise ValueError("AGENT_RT_FAKE_PROBE_FILE chỉ dùng khi APP_ENV development|test")
-            _norm_abs(self.fake_probe_file, "AGENT_RT_FAKE_PROBE_FILE")
+        if self.fake_probe_file is not None and prod:
+            raise ValueError("AGENT_RT_FAKE_PROBE_FILE chỉ dùng khi APP_ENV development|test")
         return self
 
     @model_validator(mode="after")

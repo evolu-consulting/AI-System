@@ -219,3 +219,8 @@ def test_wrk_fr_22_fake_probe_file(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_ENV", "production")
     with pytest.raises(ValidationError, match="AGENT_RT_FAKE_PROBE_FILE"):
         load_settings()
+
+
+def test_rv1_r5_fake_probe_file_normalized(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AGENT_RT_FAKE_PROBE_FILE", "/tmp/a/../probe.txt")
+    assert load_settings().fake_probe_file == Path("/tmp/probe.txt")

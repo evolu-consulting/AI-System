@@ -118,3 +118,13 @@ def test_wrk_nfr_04_events_log_mode_0600(tmp_path: Path) -> None:
     assert "SECRET" not in path.read_text()
     if os.name == "posix":
         assert stat.S_IMODE(path.stat().st_mode) == 0o600
+
+
+def test_rv1_r2_wrk_fr_23_probe_dir_kept_old_entries_removed(tmp_path: Path) -> None:
+    """H3a: `<work>/.probe/` là thư mục trạng thái — giữ lại; chỉ mục con quá 24 h bị xoá."""
+    cfg = _cfg(tmp_path)
+    old = _mk(cfg.work_root / ".probe" / "old-provider", 30 * H)
+    new = _mk(cfg.work_root / ".probe" / "fake-cli", 1 * H)
+    os.utime(cfg.work_root / ".probe", (NOW - 99 * H, NOW - 99 * H))
+    cleanup_once(cfg, frozenset(), NOW)
+    assert not old.exists() and new.exists() and (cfg.work_root / ".probe").is_dir()

@@ -12,7 +12,7 @@ Không ORM, không migration (migration ở `packages/db`, CONVENTIONS §8). SQL
 | `finish_sql.py` | transaction "Kết thúc": `jobs` → `usage_logs` → `cli_sessions` → `provider_state` |
 | `sessions_sql.py` | SELECT/UPSERT `cli_sessions` (khoá 3 cột + `tenant_id`, BR-06) |
 | `usage_sql.py` · `provider_state_sql.py` | INSERT `usage_logs` · Provider OK/lỗi/hỏng (+ fail job `queued`) |
-| `probe_sql.py` | H3a probe: `PROBE_TARGETS`/`SNAPSHOT`, khoá phiên `hub.provider.probe`, `apply_probe` (khoẻ = UPSERT không `K_CLAIM`; hỏng = `K_CLAIM → jobs → provider_state`, rào `updated_at`) |
+| `probe_sql.py` | H3a probe: `PROBE_TARGETS`/`SNAPSHOT`, khoá phiên `hub.provider.probe`, `apply_probe` (khoẻ = UPSERT không `K_CLAIM`; hỏng = `K_CLAIM → jobs → provider_state`, rào `updated_at`; lỗi probe khi khoẻ luôn `K_CLAIM`, quyết theo số đọc dưới khoá — RV1-R1) |
 
 Rào lần claim (review 1 C1): job `workflow.async` có thể requeue rồi **cùng** `worker_id` claim lại ⇒
 `worker_id` + `running` không đủ phân biệt lần claim. Mọi câu ghi theo job đang chạy của Dify
