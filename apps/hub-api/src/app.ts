@@ -6,6 +6,7 @@ import {
   FLOW_ID_HEADER,
   HealthResponseSchema,
   MESSAGE_ID_HEADER,
+  RETRY_AFTER_HEADER,
   RUN_ID_HEADER,
 } from "@ai/contracts/chat";
 import { Hono, type MiddlewareHandler } from "hono";
@@ -133,6 +134,16 @@ function startRunLoops(d: {
   startOrphanSweep(deps);
 }
 
+/** H2a · driver lệnh `/` (B5 sync Dify, B6 async qua job `workflow.async`). */
+function commandDrivers(deps: AppDeps, db: Db) {
+  return commandDriverFor({
+    db,
+    log: logger,
+    secretMasterKey: deps.secretMasterKey,
+    jobs: workflowJobs({ ...deps, db, owner: instanceOwner(deps), log: logger }),
+  });
+}
+
 /**
  * JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E14. Vắng `db` (test khung) ⇒ không mount;
  * E12–E14 cần thêm `redis` + cache cấu hình. B6: kèm `/internal/jobs/:job_id/dify-credential` (ngoài `PROTECTED_PREFIXES`,
@@ -142,15 +153,11 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
   if (!deps.db) return;
-  const drivers = commandDriverFor({
-    db: deps.db,
-    log: logger,
-    secretMasterKey: deps.secretMasterKey,
-    jobs: workflowJobs({ ...deps, db: deps.db, owner: instanceOwner(deps), log: logger }),
-  });
+  const drivers = commandDrivers(deps, deps.db);
   if (config) mountDifyCredential(app, { ...deps, db: deps.db, config, log: logger });
   const h2a = config && mountH2a(app, config, drivers);
-  if (!deps.redis || !config || !h2a) {
+  const h2b = config && mountH2b(app, config);
+  if (!deps.redis || !config || !h2a || !h2b) {
     app.route("/conversations", conversationRoutes(deps.db));
     return;
   }
@@ -177,7 +184,10 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     "/conversations",
     conversationRoutes(deps.db, (u, id) => cancel.removeConversation(u, id)),
   );
-  app.route("/conversations", sendMessageRoutes(conversations, runs, h2a.prepareCommand));
+  app.route(
+    "/conversations",
+    sendMessageRoutes(conversations, runs, h2a.prepareCommand, h2b.prepareMention),
+  );
   app.route("/runs", runRoutes(runs));
   app.route("/runs", cancelRoutes(cancel));
   startRunLoops({
@@ -225,21 +235,26 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
       origin: cfg.corsOrigins,
       credentials: true,
       allowHeaders: ALLOW_HEADERS,
-      exposeHeaders: [REQUEST_ID_HEADER, RUN_ID_HEADER, FLOW_ID_HEADER, MESSAGE_ID_HEADER],
+      exposeHeaders: [
+        REQUEST_ID_HEADER,
+        RUN_ID_HEADER,
+        FLOW_ID_HEADER,
+        MESSAGE_ID_HEADER,
+        RETRY_AFTER_HEADER,
+      ],
     }),
   );
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   mountProtected(app, deps, config);
-  if (deps.db && config) mountH2b(app, config);
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
 
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
-    const { status, body } = mapError(err);
+    const { status, body, headers } = mapError(err);
     if (status >= 500) c.get("log").error("unhandled", safeErrorFields(err));
-    return c.json(body, status);
+    return c.json(body, status, headers);
   });
 
   return app;

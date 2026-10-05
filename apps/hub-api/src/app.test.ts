@@ -75,4 +75,22 @@ describe("hub-api app · lỗi", () => {
       error: { code: "INTERNAL_ERROR", message: "Internal server error" },
     });
   });
+
+  test("HUB-FR-94 · H2b P9 · AppError kèm header → header ra response; CORS expose Retry-After; /agents 401 trước 404", async () => {
+    const app = createApp(cfg);
+    app.get("/x/limit", () => {
+      throw appError("TOO_MANY_RUNS", undefined, { "Retry-After": "5" });
+    });
+    const res = await app.request("/x/limit", { headers: { Origin: "http://localhost:3100" } });
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBe("5");
+    expect((res.headers.get("Access-Control-Expose-Headers") ?? "").toLowerCase()).toContain(
+      "retry-after",
+    );
+    expect(await res.json()).toEqual({
+      error: { code: "TOO_MANY_RUNS", message: "Too many running requests" },
+    });
+    const menu = await app.request("/agents");
+    expect(menu.status).toBe(401);
+  });
 });

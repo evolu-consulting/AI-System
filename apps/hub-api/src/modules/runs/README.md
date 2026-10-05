@@ -6,7 +6,7 @@ Thư mục con: `sse/` (hai đầu stream `sse:<id>`), `close/` (đóng run bở
 
 | File | Vai trò |
 |---|---|
-| `runs.routes.ts` | E12 `POST /conversations/:id/messages` (mount dưới `/conversations`; H2a: `classifyMessage` → `/lệnh` qua `prepareCommand` — 404/422 `CMD_*` trước run; `//…` → tin thường bỏ một `/`) · E13 `GET /runs/:id/events` · E14 `GET /runs/:id` |
+| `runs.routes.ts` | E12 `POST /conversations/:id/messages` (mount dưới `/conversations`; H2b: `routeMessage` (bọc `classifyMessage` H2a) → `/lệnh` qua `prepareCommand` — 404/422 `CMD_*` trước run; `//…` → tin thường bỏ một `/`; `@tag` qua `prepareMention` — 404 `AGENT_NOT_FOUND`/422 `CMD_MISSING_ARG` trước run; `@@…` → tin thường bỏ một `@`) · E13 `GET /runs/:id/events` · E14 `GET /runs/:id` |
 | `runs.service.ts` | `RunService`: E12 transaction `user` (conversations → flows → runs → messages), 409 `FLOW_BUSY`, `run.started`; E13/E14; `RunDriver` (chỗ cắm B8); `start(…, CommandRunStart)` → run `kind=command` + `command_id`/`feature_id`, driver riêng (H2a-R08) |
 | `runs.repo.ts` | SQL run (lọc `tenant_id`+`user_id`); `finishRun` = `flows FOR UPDATE` → `UPDATE runs … status='running' AND owner=$me` |
 | `confirm.repo.ts` | H2a-R22 (plan-db §3.1): `decideConfirmations` trong E12 (flow đã có, sau INSERT messages) — `pending` → `confirmed` (`isAgreeReply`) / `declined`, `confirmed` chưa dùng → `expired`; trace bước `tool` `skipped` `detail.confirmation` cho mỗi dòng vừa quyết |

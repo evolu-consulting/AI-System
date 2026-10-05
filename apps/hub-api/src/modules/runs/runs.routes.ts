@@ -1,8 +1,9 @@
 // HUB-FR-41 · HUB-FR-42 · E12 `POST /conversations/:id/messages`, E13 `GET /runs/:id/events`, E14 `GET /runs/:id`
 // (C1 plan §2.4). Thứ tự kiểm: auth (401, middleware gốc) → path uuid (404) → sở hữu (404) → body (400) → 409/410.
 // Lỗi trước khi mở stream trả JSON. Parse bằng contract chat → gọi service → trả response. Không logic.
-// H2a §5.1 (HUB-BR-01): sau body → `classifyMessage`: `/lệnh` → `prepareCommand` (404/422 `CMD_*` trước khi tạo run);
-// `//…` → tin thường bỏ một `/`.
+// H2a §5.1 (HUB-BR-01) + H2b §5.1 (P4): sau body → `routeMessage`: `/lệnh` → `prepareCommand` (404/422 `CMD_*` trước khi
+// tạo run); `//…` → tin thường bỏ một `/`; `@tag` → `prepareMention` (404 `AGENT_NOT_FOUND` / 422 `CMD_MISSING_ARG` trước
+// khi tạo run); `@@…` → tin thường bỏ một `@`.
 import {
   FLOW_ID_HEADER,
   LAST_EVENT_ID_HEADER,
@@ -16,10 +17,11 @@ import {
 import { Hono } from "hono";
 import type { AuthUser, AuthVars } from "../../lib/auth.middleware";
 import { parseIdParam, parseJson } from "../../lib/http";
-import { classifyMessage } from "../commands/command-parse.rules";
 import type { ConversationService } from "../conversations/conversations.service";
+import type { MentionPlan, MentionRouted } from "../mention/mention.service";
+import { routeMessage } from "../mention/mention-parse.rules";
 import { parseLastEventId } from "./runs.rules";
-import type { CommandRunStart, RunService } from "./runs.service";
+import type { CommandRunStart, RunService, StartedRun } from "./runs.service";
 
 /** Header chống đệm cho SSE (nginx `X-Accel-Buffering`). */
 const SSE_HEADERS = {
@@ -34,28 +36,34 @@ export type PrepareCommand = (
   req: { name: string; rest: string; ctx: MessageContext },
 ) => Promise<CommandRunStart>;
 
+/** H2b · tin có tag `@` → kế hoạch run (ném `AGENT_NOT_FOUND`/`CMD_MISSING_ARG`, không ghi gì). */
+export type PrepareMention = (u: AuthUser, routed: MentionRouted) => Promise<MentionPlan>;
+
 /** E12 · mount dưới `/conversations` (cạnh route E5–E11). Kiểm sở hữu hội thoại trước khi parse body (404 trước 400). */
 export function sendMessageRoutes(
   conversations: ConversationService,
   runs: RunService,
   prepareCommand: PrepareCommand,
+  prepareMention: PrepareMention,
 ) {
   const r = new Hono<AuthVars>();
   r.post("/:id/messages", async (c) => {
     const id = parseIdParam(c);
     await conversations.get(c.var.user, id);
     const body = await parseJson(c, SendMessageRequestSchema);
-    const msg = classifyMessage(body.content);
+    const msg = routeMessage(body.content);
     const u = c.var.user;
-    const s =
-      msg.kind === "text"
-        ? await runs.start(u, id, { ...body, content: msg.content })
-        : await runs.start(
-            u,
-            id,
-            body,
-            await prepareCommand(u, { name: msg.name, rest: msg.rest, ctx: body.context ?? {} }),
-          );
+    let s: StartedRun;
+    if (msg.kind === "text") s = await runs.start(u, id, { ...body, content: msg.content });
+    else if (msg.kind === "command") {
+      const req = { name: msg.name, rest: msg.rest, ctx: body.context ?? {} };
+      s = await runs.start(u, id, body, await prepareCommand(u, req));
+    } else {
+      await prepareMention(u, msg);
+      // B4: lỗi tag đã trả trước khi tạo run. B5/B6 chạy theo kế hoạch (`direct` / `onlyKeys`); tới đó tin tag hợp lệ
+      // đi Orchestrator như tin thường (nguyên văn).
+      s = await runs.start(u, id, body);
+    }
     return new Response(s.stream, {
       status: 200,
       headers: {
