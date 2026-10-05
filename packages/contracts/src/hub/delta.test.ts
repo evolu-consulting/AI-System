@@ -34,8 +34,9 @@ describe("hub contract H2b", () => {
     expect(JobPayloadSchema.safeParse({ ...base, stream: "true" }).success).toBe(false);
   });
 
-  test("JOB_FAIL_REASONS thêm refused ở cuối", () => {
-    expect(JOB_FAIL_REASONS.at(-1)).toBe("refused");
-    expect(JOB_FAIL_REASONS).toHaveLength(14);
+  test("JOB_FAIL_REASONS: refused (H2b) rồi attachment (H2c) ở cuối", () => {
+    expect(JOB_FAIL_REASONS.at(-2)).toBe("refused");
+    expect(JOB_FAIL_REASONS.at(-1)).toBe("attachment");
+    expect(JOB_FAIL_REASONS).toHaveLength(15);
   });
 });

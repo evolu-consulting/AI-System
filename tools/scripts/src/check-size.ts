@@ -8,7 +8,9 @@ export type Violation = { path: string; lines: number; limit: number };
 const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py)$/;
 const TEST_FILE = /\.(test|spec)\.tsx?$|(^|\/)test_[^/]*\.py$|_test\.py$|(^|\/)conftest\.py$/;
 const EXEMPT_DIRS = ["/components/ui/", "/migrations/", "/migrations-dev/"];
-const EXEMPT_FILE = /\.(gen|generated)\.ts$/;
+// H2c C2: pydantic sinh bởi `contracts:gen` (DO NOT EDIT) — không chia tay được.
+const EXEMPT_FILE =
+  /\.(gen|generated)\.ts$|^apps\/agent-runtime\/src\/agent_runtime\/contracts\/hub\.py$/;
 export const CODE_LIMIT = 400;
 export const TEST_LIMIT = 600;
 

@@ -8,7 +8,12 @@ export const HUB_INTERNAL_ERRORS = {
   CMD_MISSING_ARG: 422,
   INTERNAL_ERROR: 500,
   UNAVAILABLE: 503,
-} as const satisfies Record<string, 400 | 401 | 409 | 422 | 500 | 503>;
+  // H2c (plan §2.3): endpoint file nội bộ của job.
+  NOT_FOUND: 404,
+  ATTACHMENT_QUOTA_EXCEEDED: 409,
+  ATTACHMENT_TOO_LARGE: 413,
+  ATTACHMENT_TYPE_NOT_ALLOWED: 415,
+} as const satisfies Record<string, 400 | 401 | 404 | 409 | 413 | 415 | 422 | 500 | 503>;
 
 export type HubInternalErrorCode = keyof typeof HUB_INTERNAL_ERRORS;
 export type HubInternalErrorStatus = (typeof HUB_INTERNAL_ERRORS)[HubInternalErrorCode];

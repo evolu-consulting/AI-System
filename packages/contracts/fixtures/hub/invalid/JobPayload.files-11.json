@@ -1,0 +1,127 @@
+{
+  "v": 1,
+  "type": "agent.cli",
+  "runtime": "agentic-cli",
+  "job_id": "11111111-1111-4111-8111-111111111111",
+  "run_id": "11111111-1111-4111-8111-111111111111",
+  "step_id": "11111111-1111-4111-8111-111111111111",
+  "tenant_id": "11111111-1111-4111-8111-111111111111",
+  "user_id": "11111111-1111-4111-8111-111111111111",
+  "conversation_id": "11111111-1111-4111-8111-111111111111",
+  "flow_id": "11111111-1111-4111-8111-111111111111",
+  "feature_id": "22222222-2222-4222-8222-222222222222",
+  "agent_type_key": "writer",
+  "mcp": null,
+  "agent": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "key": "writer",
+    "role": "agent"
+  },
+  "provider_key": "claude-code",
+  "model": "sonnet",
+  "step_index": 1,
+  "max_turns": 30,
+  "profile_steps": [
+    {
+      "provider_key": "claude-code",
+      "model": null,
+      "on": ["quota"]
+    },
+    {
+      "provider_key": "codex",
+      "model": "gpt",
+      "on": ["error", "timeout"]
+    }
+  ],
+  "system_prompt": "",
+  "prompt": "xin chào",
+  "history": [
+    {
+      "role": "user",
+      "content": "chào"
+    }
+  ],
+  "use_session": true,
+  "allowed_tools": ["Read", "Grep"],
+  "output": "agent_result",
+  "timeout_s": 600,
+  "attachments": [
+    {
+      "id": "33333333-3333-4333-8333-000000000000",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000001",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000002",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000003",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000004",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000005",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000006",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000007",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000008",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000009",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000010",
+      "name": "bao-cao.pdf",
+      "mime": "application/pdf",
+      "size": 2048,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ]
+}

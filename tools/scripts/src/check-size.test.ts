@@ -33,6 +33,7 @@ describe("ADM-NFR-06 · check:size limitFor (T-SIZE-1…3)", () => {
     ["packages/db/migrations-dev/x.ts", null],
     ["apps/admin-web/src/routeTree.gen.ts", null],
     ["x.generated.ts", null],
+    ["apps/agent-runtime/src/agent_runtime/contracts/hub.py", null],
     ["docs/TRACE.md", null],
     ["bun.lock", null],
     ["a.json", null],

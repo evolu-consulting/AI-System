@@ -67,7 +67,7 @@ describe("HUB-FR-89 · JobPayload", () => {
     expect(bad({ max_turns: 0 })).toBe(false);
     expect(bad({ profile_steps: [] })).toBe(false);
     expect(bad({ prompt: "" })).toBe(false);
-    expect(bad({ allowed_tools: ["Write"] })).toBe(false);
+    expect(bad({ allowed_tools: ["Edit"] })).toBe(false);
     expect(bad({ timeout_s: 9 })).toBe(false);
   });
 });
@@ -179,7 +179,7 @@ describe("HUB-FR-89 · manifest, NOTIFY, mã", () => {
   });
 
   test("HUB-FR-89 · z.toJSONSchema không ném với mọi schema xuất", () => {
-    expect(Object.keys(HUB_JSON_SCHEMAS)).toHaveLength(10);
+    expect(Object.keys(HUB_JSON_SCHEMAS)).toHaveLength(12);
     for (const s of Object.values(HUB_JSON_SCHEMAS)) {
       expect(() => z.toJSONSchema(s, { unrepresentable: "throw" })).not.toThrow();
       expect(() =>

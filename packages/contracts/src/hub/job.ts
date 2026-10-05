@@ -1,5 +1,6 @@
 // HUB-FR-89 · payload `hub.jobs.payload` Hub ghi, Runtime đọc (plan H1 §2.2; H2a §2.2: `workflow.async`, `mcp`).
 import { z } from "zod";
+import { ATTACH_MAX_BYTES, AttachMimeSchema } from "../common";
 import {
   AgentKeySchema,
   ALLOWED_TOOLS,
@@ -17,6 +18,24 @@ export const PROMPT_MAX = 200_000;
 export const FALLBACK_TRIGGERS = ["error", "quota", "timeout"] as const;
 export const AGENT_ROLES = ["orchestrator", "agent"] as const;
 export const JOB_OUTPUTS = ["agent_result", "text"] as const;
+
+// HUB-FR-44, WRK-FR-11 · H2c (plan §2.2): file đính kèm job agent CLI; Runtime tải qua `/internal/jobs/:id/attachments/:aid`.
+export const JOB_ATTACHMENTS_MAX = 10;
+export const JOB_OUTPUTS_MAX = 5;
+export const JOB_FILE_NAME_MAX = 120;
+/** Không bắt đầu bằng `.`/`-`, không `/`, `\`, ký tự điều khiển (không lookahead — pydantic-core regex Rust). ≤ 120 byte kiểm ở Hub. */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: cấm ký tự điều khiển trong tên file job
+export const JOB_FILE_NAME_RE = /^[^./\\\x00-\x1f\x7f-][^/\\\x00-\x1f\x7f]*$/;
+export const SHA256_HEX_RE = /^[0-9a-f]{64}$/;
+
+export const JobAttachmentSchema = z.strictObject({
+  id: HubUuidSchema,
+  name: z.string().min(1).max(JOB_FILE_NAME_MAX).regex(JOB_FILE_NAME_RE),
+  mime: AttachMimeSchema,
+  size: z.number().int().min(1).max(ATTACH_MAX_BYTES),
+  sha256: z.string().regex(SHA256_HEX_RE),
+});
+export type JobAttachment = z.infer<typeof JobAttachmentSchema>;
 
 /** null = mặc định của CLI. */
 const ModelSchema = z.string().min(1).max(100).nullable();
@@ -75,6 +94,8 @@ export const AgentCliJobSchema = z.strictObject({
   timeout_s: z.number().int().min(10).max(3600),
   /** H2b P3: Runtime phát `job.delta`; vắng = `false` (không `default` — pydantic sinh khớp). */
   stream: z.boolean().optional(),
+  /** H2c F1: chỉ khi run có file (vắng = không file; Hub không ghi mảng rỗng). */
+  attachments: z.array(JobAttachmentSchema).max(JOB_ATTACHMENTS_MAX).optional(),
 });
 export type AgentCliJob = z.infer<typeof AgentCliJobSchema>;
 

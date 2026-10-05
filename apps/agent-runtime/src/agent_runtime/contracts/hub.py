@@ -59,39 +59,6 @@ class HistoryItem(BaseModel):
     content: Annotated[str, Field(max_length=64000)]
 
 
-class JobPayload1(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    v: Literal[1]
-    type: Literal["agent.cli"]
-    runtime: Literal["agentic-cli"]
-    job_id: UUID
-    run_id: UUID
-    step_id: UUID
-    tenant_id: UUID
-    user_id: UUID
-    conversation_id: UUID
-    flow_id: UUID
-    feature_id: UUID | None
-    agent_type_key: AgentTypeKey | None
-    mcp: Mcp | None
-    agent: Agent
-    provider_key: Annotated[str, Field(pattern="^[a-z][a-z0-9-]{1,47}$")]
-    model: Model1 | None
-    step_index: Annotated[int, Field(ge=0, le=4)]
-    max_turns: Annotated[int, Field(ge=1, le=100)]
-    profile_steps: Annotated[list[ProfileStep], Field(max_length=5, min_length=1)]
-    system_prompt: Annotated[str, Field(max_length=20000)]
-    prompt: Annotated[str, Field(max_length=200000, min_length=1)]
-    history: Annotated[list[HistoryItem], Field(max_length=50)]
-    use_session: bool
-    allowed_tools: Annotated[list[Literal["Read", "Grep", "Glob"]], Field(max_length=3)]
-    output: Literal["agent_result", "text"]
-    timeout_s: Annotated[int, Field(ge=10, le=3600)]
-    stream: bool | None = None
-
-
 class RunEvent1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -172,6 +139,7 @@ class RunEvent4(BaseModel):
             "credential",
             "upstream",
             "refused",
+            "attachment",
         ]
         | None
     )
@@ -307,6 +275,15 @@ class Inputs(RootModel[str]):
     root: Annotated[str, Field(max_length=64000)]
 
 
+class Inputs1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Literal["image", "document"]
+    transfer_method: Literal["local_file"]
+    upload_file_id: Annotated[str, Field(max_length=100, min_length=1)]
+
+
 class Query(RootModel[str]):
     root: Annotated[str, Field(max_length=16000, min_length=1)]
 
@@ -334,7 +311,10 @@ class JobPayloadWorkflowAsync(BaseModel):
     command_id: UUID | None
     workflow_key: Annotated[str, Field(pattern="^[a-z0-9-]{2,32}$")]
     app_type: Literal["workflow", "chat", "agent"]
-    inputs: dict[constr(pattern=r"^[A-Za-z_][A-Za-z0-9_]{0,63}$"), Inputs | float | bool]
+    inputs: dict[
+        constr(pattern=r"^[A-Za-z_][A-Za-z0-9_]{0,63}$"),
+        Inputs | float | bool | Inputs1,
+    ]
     query: Query | None
     output_field: OutputField | None
     dify_user: Annotated[str, Field(max_length=200, min_length=1)]
@@ -349,6 +329,79 @@ class DifyCredentialResponse(BaseModel):
     base_url: Annotated[str, Field(max_length=2048, min_length=1, pattern="^https?:\\/\\/")]
     api_key: Annotated[str, Field(max_length=2048, min_length=1)]
     app_type: Literal["workflow", "chat", "agent"]
+
+
+class JobOutputResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: UUID
+
+
+class JobAttachment(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    id: UUID
+    name: Annotated[
+        str,
+        Field(
+            max_length=120,
+            min_length=1,
+            pattern="^[^./\\\\\\x00-\\x1f\\x7f-][^/\\\\\\x00-\\x1f\\x7f]*$",
+        ),
+    ]
+    mime: Literal[
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "text/plain",
+        "text/markdown",
+        "text/csv",
+        "application/xml",
+        "application/json",
+    ]
+    size: Annotated[int, Field(ge=1, le=20971520)]
+    sha256: Annotated[str, Field(pattern="^[0-9a-f]{64}$")]
+
+
+class JobPayload1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    v: Literal[1]
+    type: Literal["agent.cli"]
+    runtime: Literal["agentic-cli"]
+    job_id: UUID
+    run_id: UUID
+    step_id: UUID
+    tenant_id: UUID
+    user_id: UUID
+    conversation_id: UUID
+    flow_id: UUID
+    feature_id: UUID | None
+    agent_type_key: AgentTypeKey | None
+    mcp: Mcp | None
+    agent: Agent
+    provider_key: Annotated[str, Field(pattern="^[a-z][a-z0-9-]{1,47}$")]
+    model: Model1 | None
+    step_index: Annotated[int, Field(ge=0, le=4)]
+    max_turns: Annotated[int, Field(ge=1, le=100)]
+    profile_steps: Annotated[list[ProfileStep], Field(max_length=5, min_length=1)]
+    system_prompt: Annotated[str, Field(max_length=20000)]
+    prompt: Annotated[str, Field(max_length=200000, min_length=1)]
+    history: Annotated[list[HistoryItem], Field(max_length=50)]
+    use_session: bool
+    allowed_tools: Annotated[list[Literal["Read", "Grep", "Glob", "Write"]], Field(max_length=4)]
+    output: Literal["agent_result", "text"]
+    timeout_s: Annotated[int, Field(ge=10, le=3600)]
+    stream: bool | None = None
+    attachments: Annotated[list[JobAttachment] | None, Field(max_length=10)] = None
 
 
 class JobPayload(RootModel[JobPayload1 | JobPayloadWorkflowAsync]):
@@ -375,6 +428,7 @@ class RunEvent3(BaseModel):
     output: Output | Output1
     usage: Usage
     session_resumed: bool
+    outputs: Annotated[list[UUID] | None, Field(max_length=5, min_length=1)] = None
 
 
 class RunEvent(RootModel[RunEvent1 | RunEvent2 | RunEvent3 | RunEvent4 | RunEvent5]):

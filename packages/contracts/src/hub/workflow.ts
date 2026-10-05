@@ -35,10 +35,21 @@ export const WORKFLOW_INPUT_TEXT_MAX = 64_000;
 export const WORKFLOW_QUERY_MAX = 16_000;
 export const DIFY_USER_MAX = 200;
 
+// HUB-FR-50 · H2c R22: input `file` của Dify — Hub upload `/files/upload` trước khi enqueue, chỉ gửi id.
+export const DIFY_FILE_TYPES = ["image", "document"] as const;
+export const DIFY_UPLOAD_FILE_ID_MAX = 100;
+export const DifyFileInputSchema = z.strictObject({
+  type: z.enum(DIFY_FILE_TYPES),
+  transfer_method: z.literal("local_file"),
+  upload_file_id: z.string().min(1).max(DIFY_UPLOAD_FILE_ID_MAX),
+});
+export type DifyFileInput = z.infer<typeof DifyFileInputSchema>;
+
 export const WorkflowInputValueSchema = z.union([
   z.string().max(WORKFLOW_INPUT_TEXT_MAX),
   z.number(),
   z.boolean(),
+  DifyFileInputSchema,
 ]);
 
 export const WorkflowAsyncJobSchema = z.strictObject({

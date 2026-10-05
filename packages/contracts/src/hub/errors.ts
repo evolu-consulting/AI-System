@@ -28,6 +28,8 @@ export const JOB_FAIL_REASONS = [
   "upstream",
   // H2b F4 (R27): model/CLI từ chối — Hub chọn `hint` riêng, mã `run.failed` giữ như H1.
   "refused",
+  // H2c R19: tải file đính kèm thất bại (hết lượt thử/sha256 lệch/vượt kích thước).
+  "attachment",
 ] as const;
 export const JobFailReasonSchema = z.enum(JOB_FAIL_REASONS);
 export type JobFailReason = z.infer<typeof JobFailReasonSchema>;

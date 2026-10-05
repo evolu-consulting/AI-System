@@ -10,8 +10,8 @@ export const AGENT_KEY_PATTERN = /^[a-z][a-z0-9-]{1,47}$/;
 export const AgentKeySchema = z.string().regex(AGENT_KEY_PATTERN);
 export type AgentKey = z.infer<typeof AgentKeySchema>;
 
-/** H1-R21: agent chỉ đọc. */
-export const ALLOWED_TOOLS = ["Read", "Grep", "Glob"] as const;
+/** H1-R21: agent chỉ đọc; H2c PL9: `Write` (cuối) opt-in theo agent, hook Runtime chỉ cho ghi `work/<job_id>/out/`. */
+export const ALLOWED_TOOLS = ["Read", "Grep", "Glob", "Write"] as const;
 export const AllowedToolSchema = z.enum(ALLOWED_TOOLS);
 export type AllowedTool = z.infer<typeof AllowedToolSchema>;
 

@@ -210,11 +210,11 @@
               "type": "boolean"
             },
             "allowed_tools": {
-              "maxItems": 3,
+              "maxItems": 4,
               "type": "array",
               "items": {
                 "type": "string",
-                "enum": ["Read", "Grep", "Glob"]
+                "enum": ["Read", "Grep", "Glob", "Write"]
               }
             },
             "output": {
@@ -228,6 +228,13 @@
             },
             "stream": {
               "type": "boolean"
+            },
+            "attachments": {
+              "maxItems": 10,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/JobAttachment"
+              }
             }
           },
           "required": [
@@ -425,6 +432,15 @@
             },
             "session_resumed": {
               "type": "boolean"
+            },
+            "outputs": {
+              "minItems": 1,
+              "maxItems": 5,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
             }
           },
           "required": ["v", "job_id", "seq", "at", "type", "output", "usage", "session_resumed"],
@@ -487,7 +503,8 @@
                     "sandbox",
                     "credential",
                     "upstream",
-                    "refused"
+                    "refused",
+                    "attachment"
                   ]
                 },
                 {
@@ -894,6 +911,26 @@
               },
               {
                 "type": "boolean"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["image", "document"]
+                  },
+                  "transfer_method": {
+                    "type": "string",
+                    "const": "local_file"
+                  },
+                  "upload_file_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": ["type", "transfer_method", "upload_file_id"],
+                "additionalProperties": false
               }
             ]
           }
@@ -981,6 +1018,61 @@
         }
       },
       "required": ["base_url", "api_key", "app_type"],
+      "additionalProperties": false
+    },
+    "JobOutputResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": ["id"],
+      "additionalProperties": false
+    },
+    "JobAttachment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[^./\\\\\\x00-\\x1f\\x7f-][^/\\\\\\x00-\\x1f\\x7f]*$"
+        },
+        "mime": {
+          "type": "string",
+          "enum": [
+            "application/pdf",
+            "image/png",
+            "image/jpeg",
+            "image/gif",
+            "image/webp",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "text/plain",
+            "text/markdown",
+            "text/csv",
+            "application/xml",
+            "application/json"
+          ]
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20971520
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": ["id", "name", "mime", "size", "sha256"],
       "additionalProperties": false
     }
   }

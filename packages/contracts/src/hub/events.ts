@@ -9,6 +9,7 @@ import {
   VersionSchema,
 } from "./common";
 import { HubJobErrorCodeSchema, JobFailReasonSchema } from "./errors";
+import { JOB_OUTPUTS_MAX } from "./job";
 import { AGENT_TEXT_MAX, AgentResultSchema } from "./result";
 
 const base = {
@@ -45,6 +46,8 @@ export const JobResultEventSchema = z.strictObject({
   output: JobOutputSchema,
   usage: TokenUsageSchema,
   session_resumed: z.boolean(),
+  /** H2c F10: id file `out/` đã đẩy lên Hub (chỉ để trace; vắng = không có). */
+  outputs: z.array(HubUuidSchema).min(1).max(JOB_OUTPUTS_MAX).optional(),
 });
 
 export const JOB_FAILED_STATUSES = ["failed", "cancelled", "timed_out"] as const;
