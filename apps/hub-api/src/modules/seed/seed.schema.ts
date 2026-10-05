@@ -80,8 +80,8 @@ export const SeedOrchestratorSchema = z.strictObject({
 });
 
 /**
- * H2b-R13: một mục `orchestrator_tenants` — trường thiếu lấy từ bản mặc định cùng yaml (không `default` ở đây).
- * B0: chỉ schema/kiểu; B2 gắn vào `SeedFileSchema`.
+ * H2b-R13: một mục `orchestrator_tenants` — trường thiếu lấy từ bản mặc định cùng yaml (không `default` ở đây;
+ * `planOrchestratorTenants` điền).
  */
 export const SeedOrchestratorTenantSchema = z.union([
   z.strictObject({
@@ -123,6 +123,8 @@ export const SeedFileSchema = z.strictObject({
   grants: z.array(SeedGrantSchema).default([]),
   agent_workflows: z.array(SeedAgentWorkflowSchema).default([]),
   workflow_flags: SeedWorkflowFlagsSchema.optional(),
+  /** H2b-R13: bản Orchestrator riêng theo tenant (vắng = giữ nguyên hàng tenant trong DB). */
+  orchestrator_tenants: z.array(SeedOrchestratorTenantSchema).max(1000).default([]),
 });
 
 export type SeedProvider = z.infer<typeof SeedProviderSchema>;

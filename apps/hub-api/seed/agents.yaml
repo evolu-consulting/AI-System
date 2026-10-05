@@ -39,3 +39,10 @@ orchestrator:
   token_budget: 200000
   history_n: 10
   on_no_match: answer
+# H2b-R13 · HUB-FR-62: bản Orchestrator riêng theo tenant (tuỳ chọn). Trường thiếu lấy từ `orchestrator:` ở trên; bản không
+# nhắc giữ nguyên trong DB; `remove: true` xoá bản riêng. Agent phải có trong seed, bật, runtime `agentic-cli` (sai → lỗi
+# seed, không ghi dở); `tenant_key` trùng → lỗi; tenant chưa có trong `admin.tenants` → bỏ + `warn
+# seed-orchestrator-tenant-unknown`. Ví dụ (không bật):
+# orchestrator_tenants:
+#   - { tenant_key: acme, agent: orchestrator, max_steps: 3 }
+#   - { tenant_key: beta, remove: true }

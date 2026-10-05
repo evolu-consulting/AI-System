@@ -10,15 +10,24 @@ import {
   bumpHubConfigVersion,
   insertAgentWorkflows,
   loadCatalogWorkflows,
+  loadTenantIds,
   notifyHubConfigChanged,
+  type Tx,
   upsertAgents,
   upsertOrchestrator,
   upsertProfiles,
   upsertProviders,
   upsertSideEffectFlags,
   writeAccess,
+  writeOrchestratorTenants,
 } from "./seed.repo";
-import { buildSeedPlan, type SeedSource, SeedValidationError } from "./seed.rules";
+import {
+  buildSeedPlan,
+  planOrchestratorTenants,
+  type SeedPlan,
+  type SeedSource,
+  SeedValidationError,
+} from "./seed.rules";
 import { resolveWorkflows, workflowKeysOf } from "./seed.workflows";
 
 export type RunHubSeedOptions = { url: string; dir: string; appEnv: string; profile?: string };
@@ -44,6 +53,27 @@ export function readSeedDir(dir: string): SeedSource[] {
   });
 }
 
+/**
+ * H2b-R13: kiểm `orchestrator_tenants` trước mọi lần ghi (lỗi → `SeedValidationError`, rollback). Tenant lạ → bỏ +
+ * `seed-orchestrator-tenant-unknown` (giá trị nằm trong `msg`: logger che trường tên `*key*`).
+ */
+async function planTenants(tx: Tx, plan: SeedPlan) {
+  const entries = plan.orchestratorTenants;
+  const tenants = await loadTenantIds(
+    tx,
+    entries.map((e) => e.tenant_key),
+  );
+  const r = planOrchestratorTenants({
+    entries,
+    defaults: plan.orchestrator,
+    agents: plan.agents,
+    tenants,
+  });
+  if ("error" in r) throw new SeedValidationError([r.error]);
+  const warnings = r.unknownTenants.map((k) => `seed-orchestrator-tenant-unknown: tenant_key=${k}`);
+  return { ...r, warnings };
+}
+
 export async function runHubSeed(o: RunHubSeedOptions): Promise<{ version: number }> {
   const plan = buildSeedPlan(readSeedDir(o.dir), { appEnv: o.appEnv, profile: o.profile });
   const sql = postgres(o.url, { max: 1, onnotice: () => {} });
@@ -52,15 +82,17 @@ export async function runHubSeed(o: RunHubSeedOptions): Promise<{ version: numbe
       const v = await bumpHubConfigVersion(tx);
       const wf = resolveWorkflows(plan, await loadCatalogWorkflows(tx, workflowKeysOf(plan)));
       if (wf.issues.length) throw new SeedValidationError(wf.issues);
+      const tenants = await planTenants(tx, plan);
       await upsertProviders(tx, plan.providers);
       await upsertProfiles(tx, plan.profiles);
       await upsertAgents(tx, wf.agents);
       await upsertOrchestrator(tx, plan.orchestrator);
+      await writeOrchestratorTenants(tx, tenants);
       await insertAgentWorkflows(tx, wf.agentWorkflows);
       await upsertSideEffectFlags(tx, wf.sideEffectIds);
       const w = await writeAccess(tx, plan);
       await notifyHubConfigChanged(tx, v);
-      return { version: v, warnings: [...wf.warnings, ...w] };
+      return { version: v, warnings: [...wf.warnings, ...tenants.warnings, ...w] };
     });
     for (const w of warnings) logger.warn(w, { module: "seed" });
     return { version };

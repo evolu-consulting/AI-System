@@ -72,6 +72,7 @@ function mergeSources(sources: SeedSource[]): Merged {
     grants: [],
     agentWorkflows: [],
     sideEffect: [],
+    orchestratorTenants: [],
   };
   for (const s of sources) {
     const r = SeedFileSchema.safeParse(s.data ?? {});
@@ -87,6 +88,7 @@ function mergeSources(sources: SeedSource[]): Merged {
     m.grants.push(...r.data.grants);
     m.agentWorkflows.push(...r.data.agent_workflows);
     m.sideEffect.push(...(r.data.workflow_flags?.side_effect ?? []));
+    m.orchestratorTenants.push(...r.data.orchestrator_tenants);
   }
   if (issues.length) throw new SeedValidationError(issues);
   return m;
@@ -199,6 +201,7 @@ export function buildSeedPlan(sources: SeedSource[], o: PlanOptions): SeedPlan {
     grants: m.grants,
     agentWorkflows: m.agentWorkflows,
     sideEffect: [...new Set(m.sideEffect)],
+    orchestratorTenants: m.orchestratorTenants,
   };
 }
 
@@ -214,17 +217,70 @@ export type OrchestratorTenantsPlan =
   | { upserts: OrchestratorTenantUpsert[]; removes: string[]; unknownTenants: string[] }
   | { error: { path: string; message: string; value: unknown } };
 
-/**
- * HUB-FR-62 · H2b-R13: kiểm + dựng `orchestrator_tenants` (`tenants`: tenant_key → tenant id). Thứ tự lỗi: trùng
- * `tenant_key` → agent lạ → agent tắt → runtime ≠ `agentic-cli` → không `profile`. B0: chỉ chữ ký (B2).
- */
-export function planOrchestratorTenants(_i: {
+type TenantsInput = {
   entries: readonly SeedOrchestratorTenant[];
   defaults: SeedOrchestrator;
   agents: readonly SeedAgent[];
   tenants: ReadonlyMap<string, string>;
-}): OrchestratorTenantsPlan {
-  throw new Error("not implemented: planOrchestratorTenants");
+};
+type TenantsError = Extract<OrchestratorTenantsPlan, { error: unknown }>["error"];
+
+const entryPath = (i: number, field: string): string => `orchestrator_tenants.${i}.${field}`;
+
+/** Agent dùng làm Orchestrator tenant: tồn tại → bật → `agentic-cli` (null = hợp lệ). */
+function agentProblem(a: SeedAgent | undefined): string | null {
+  if (!a) return "agent không có trong seed";
+  if (!a.enabled) return "agent đang tắt (enabled=false)";
+  if (a.runtime !== "agentic-cli") return `agent runtime ${a.runtime} ≠ agentic-cli`;
+  return null;
+}
+
+/** Lỗi đầu tiên theo thứ tự: trùng `tenant_key` (cả danh sách) → agent lạ → tắt → runtime ≠ `agentic-cli`. */
+function tenantsError(i: TenantsInput): TenantsError | null {
+  const seen = new Set<string>();
+  for (const [n, e] of i.entries.entries()) {
+    if (seen.has(e.tenant_key))
+      return { path: entryPath(n, "tenant_key"), message: "trùng tenant_key", value: e.tenant_key };
+    seen.add(e.tenant_key);
+  }
+  const agents = new Map(i.agents.map((a) => [a.key, a]));
+  for (const [n, e] of i.entries.entries()) {
+    if (!("agent" in e)) continue;
+    const message = agentProblem(agents.get(e.agent));
+    if (message) return { path: entryPath(n, "agent"), message, value: e.agent };
+  }
+  return null;
+}
+
+/**
+ * HUB-FR-62 · H2b-R13: kiểm + dựng `orchestrator_tenants` (`tenants`: tenant_key → tenant id). Thứ tự lỗi: trùng
+ * `tenant_key` → agent lạ → agent tắt → runtime ≠ `agentic-cli` (không có bước "không profile": `SeedAgent.profile`
+ * bắt buộc). Lỗi xét trước tenant lạ (R35). Trường thiếu = bản mặc định `defaults`.
+ */
+export function planOrchestratorTenants(i: TenantsInput): OrchestratorTenantsPlan {
+  const error = tenantsError(i);
+  if (error) return { error };
+  const plan = {
+    upserts: [] as OrchestratorTenantUpsert[],
+    removes: [] as string[],
+    unknownTenants: [] as string[],
+  };
+  const d = i.defaults;
+  for (const e of i.entries) {
+    const tenantId = i.tenants.get(e.tenant_key);
+    if (!tenantId) plan.unknownTenants.push(e.tenant_key);
+    else if (!("agent" in e)) plan.removes.push(tenantId);
+    else
+      plan.upserts.push({
+        tenantId,
+        agent: e.agent,
+        maxSteps: e.max_steps ?? d.max_steps,
+        tokenBudget: e.token_budget ?? d.token_budget,
+        historyN: e.history_n ?? d.history_n,
+        onNoMatch: e.on_no_match ?? d.on_no_match,
+      });
+  }
+  return plan;
 }
 
 /** `user:lan` → {type:"user", name:"lan"} (schema đã kiểm dạng). */

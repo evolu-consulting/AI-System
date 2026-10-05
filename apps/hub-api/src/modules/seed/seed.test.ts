@@ -114,6 +114,32 @@ describe("H1-R16 · seed sai → SeedValidationError nêu trường/giá trị",
   });
 });
 
+describe("HUB-FR-62 · H2b-R13 · orchestrator_tenants trong yaml", () => {
+  it("HUB-FR-62 · seed mặc định không có mục → []; gộp mục của nhiều file; trường lạ bị từ chối", () => {
+    expect(buildSeedPlan(defaults(), { appEnv: "test" }).orchestratorTenants).toEqual([]);
+    const extra: SeedSource[] = [
+      {
+        name: "90-a.yaml",
+        data: { orchestrator_tenants: [{ tenant_key: "acme", agent: "assistant" }] },
+      },
+      { name: "91-b.yaml", data: { orchestrator_tenants: [{ tenant_key: "beta", remove: true }] } },
+    ];
+    expect(
+      buildSeedPlan([...defaults(), ...extra], { appEnv: "test" }).orchestratorTenants,
+    ).toEqual([
+      { tenant_key: "acme", agent: "assistant" },
+      { tenant_key: "beta", remove: true },
+    ]);
+    const bad: SeedSource = {
+      name: "92-c.yaml",
+      data: { orchestrator_tenants: [{ tenant_key: "acme", agent: "assistant", secret: "x" }] },
+    };
+    expect(thrown(() => buildSeedPlan([...defaults(), bad], { appEnv: "test" })).message).toContain(
+      "orchestrator_tenants.0",
+    );
+  });
+});
+
 describe("HUB-FR-62 · tiện ích", () => {
   it("HUB-FR-62 · parseSubject", () => {
     expect(parseSubject("user:lan")).toEqual({ type: "user", name: "lan" });

@@ -6,6 +6,7 @@ import type {
   SeedEntitlement,
   SeedGrant,
   SeedOrchestrator,
+  SeedOrchestratorTenant,
   SeedProfile,
   SeedProvider,
 } from "./seed.schema";
@@ -22,4 +23,6 @@ export type SeedPlan = {
   /** H2a: key workflow Admin — đổi sang id ở `resolveWorkflows` (cần đọc `admin.workflows`). */
   agentWorkflows: SeedAgentWorkflow[];
   sideEffect: string[];
+  /** H2b-R13: chưa kiểm agent/tenant — `planOrchestratorTenants` trong transaction (cần `admin.tenants`). */
+  orchestratorTenants: SeedOrchestratorTenant[];
 };

@@ -6,7 +6,11 @@ Nạp cấu hình Hub từ `apps/hub-api/seed/*.yaml` (nguồn cấu hình duy n
   `APP_ENV`, `HUB_SEED_DIR` (mặc định `apps/hub-api/seed`), `HUB_SEED_PROFILE`.
 - `seed.schema.ts` zod từng mục yaml (strict: không trường lạ, không secret) · `seed.rules.ts` gộp file, kiểm tham chiếu,
   lọc `dev_only`, thay `$HUB_SEED_PROFILE` (thuần) · `seed.repo.ts` SQL upsert.
-- H2b (R13): `SeedOrchestratorTenantSchema` + `planOrchestratorTenants` — B0 chỉ schema/chữ ký, chưa gắn vào yaml (B2).
+- H2b (R13): mục `orchestrator_tenants` (`SeedOrchestratorTenantSchema`, ≤ 1 000/file) → `planOrchestratorTenants` (thuần)
+  trong transaction sau khi đọc `admin.tenants`: trùng `tenant_key` / agent lạ / tắt / runtime ≠ `agentic-cli` →
+  `SeedValidationError` (path `orchestrator_tenants.<i>.<trường>`), rollback; tenant lạ → bỏ + `warn
+  seed-orchestrator-tenant-unknown`. Ghi sau `orchestrator_settings` mặc định: upsert theo `tenant_id` (`id ≥ 2`),
+  `remove` → xoá; bản không nhắc giữ nguyên.
 - Một transaction: khoá + tăng `hub.config_meta.hub_config_version` → upsert providers → model_profiles → agents →
   orchestrator_settings → entitlements/grants (không xoá; hàng không đổi giữ `version`) → `pg_notify('hub_config_changed')`.
 - Tenant/user/group thiếu → bỏ mục đó + log `warn` sau commit (Q8). Chỉ đọc `admin.*`, không ghi.

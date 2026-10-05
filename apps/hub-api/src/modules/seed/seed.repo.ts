@@ -2,7 +2,7 @@
 // không đổi giữ nguyên `version`/`updated_at` (`IS DISTINCT FROM`). Chỉ ĐỌC `admin.*` (tenant/user/group, workflows H2a).
 import { HUB_CONFIG_CHANNEL, HUB_CONTRACT_VERSION } from "@ai/contracts/hub";
 import type postgres from "postgres";
-import { parseSubject, type SeedPlan } from "./seed.rules";
+import { type OrchestratorTenantUpsert, parseSubject, type SeedPlan } from "./seed.rules";
 import type { ResolvedWorkflows, SeedCatalogWorkflow } from "./seed.workflows";
 
 export type Tx = postgres.TransactionSql;
@@ -72,14 +72,42 @@ export async function upsertOrchestrator(tx: Tx, o: SeedPlan["orchestrator"]): P
            excluded.on_no_match)`;
 }
 
-async function tenantIds(tx: Tx, plan: SeedPlan): Promise<Map<string, string>> {
-  const keys = [...new Set([...plan.entitlements, ...plan.grants].map((x) => x.tenant_key))];
-  if (!keys.length) return new Map();
+/** H2b-R13: id tenant theo key (chỉ ĐỌC `admin.tenants`); key lạ vắng trong Map. */
+export async function loadTenantIds(tx: Tx, keys: readonly string[]): Promise<Map<string, string>> {
+  const uniq = [...new Set(keys)];
+  if (!uniq.length) return new Map();
   const rows = await tx<
     { id: string; key: string }[]
-  >`select id, key from admin.tenants where key in ${tx(keys)}`;
+  >`select id, key from admin.tenants where key in ${tx(uniq)}`;
   return new Map(rows.map((r) => [r.key, r.id]));
 }
+
+/** H2b-R13 · plan-db §4: upsert bản tenant theo `tenant_id` (không đổi → giữ `version`/`updated_at`); `remove` → xoá. */
+export async function writeOrchestratorTenants(
+  tx: Tx,
+  p: { upserts: readonly OrchestratorTenantUpsert[]; removes: readonly string[] },
+): Promise<void> {
+  for (const t of p.upserts)
+    await tx`insert into hub.orchestrator_settings (tenant_id, agent_id, max_steps, token_budget, history_n, on_no_match)
+      select ${t.tenantId}::uuid, a.id, ${t.maxSteps}, ${t.tokenBudget}, ${t.historyN}, ${t.onNoMatch}
+      from hub.agents a where a.key = ${t.agent}
+      on conflict (tenant_id) where tenant_id is not null do update set agent_id = excluded.agent_id,
+        max_steps = excluded.max_steps, token_budget = excluded.token_budget, history_n = excluded.history_n,
+        on_no_match = excluded.on_no_match, version = hub.orchestrator_settings.version + 1, updated_at = now()
+      where (hub.orchestrator_settings.agent_id, hub.orchestrator_settings.max_steps,
+             hub.orchestrator_settings.token_budget, hub.orchestrator_settings.history_n,
+             hub.orchestrator_settings.on_no_match)
+        is distinct from (excluded.agent_id, excluded.max_steps, excluded.token_budget, excluded.history_n,
+             excluded.on_no_match)`;
+  for (const tenantId of p.removes)
+    await tx`delete from hub.orchestrator_settings where tenant_id = ${tenantId}::uuid`;
+}
+
+const tenantIds = (tx: Tx, plan: SeedPlan): Promise<Map<string, string>> =>
+  loadTenantIds(
+    tx,
+    [...plan.entitlements, ...plan.grants].map((x) => x.tenant_key),
+  );
 
 /** Entitlement: thêm nếu chưa có; KHÔNG bỏ `revoked_at` đã đặt (seed không ghi đè thu hồi). */
 async function insertEntitlements(
