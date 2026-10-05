@@ -159,3 +159,14 @@ Nguồn: review vòng 1 H3a phần `apps/agent-runtime`. Không đổi contract/
 | RV1-R3 | `queue/probe_loop.py` `run`/`round` | `round` trả `bool` (False = `PROBE_TARGETS` lỗi DB); cờ `startup=True` giữ tới lượt đọc được targets | DB chưa sẵn ở lượt đầu ⇒ mất lượt startup thay reset mù (PL2): `logged_out` vừa probe kẹt tới `PROBE_LOGGED_OUT_S` |
 | RV1-R4 | TECH-DEBT #69, #70 | m1 (probe giữ 1/4 kết nối pool ~80 s) · m4 (`PROBE_S>0` bỏ reset mù cho provider CLI không thuộc tập probe — xử lý ở H2d) | Ngoài phạm vi sửa review |
 | RV1-R5 | `config.py` `_abs_fake_probe` | `fake_probe_file` chuẩn hoá bằng `field_validator` (`_norm_abs` trả về được dùng — `Settings` frozen, không gán trong `model_validator`); kiểm production giữ ở `_probe_bounds` | Kết quả `normpath` từng bị bỏ |
+
+## REVIEW 1 — Hub (điều phối ghi, 2026-10-06)
+Review vòng 1 Hub TS + DB + scripts: **APPROVED** (0 Blocker/Major). 3 Minor sửa ở `e860d7f` (backend-lead):
+
+| # | Mục | Sửa |
+|---|---|---|
+| RV1-H1 | `check:fn` đỏ ở `describe` của `packages/db/src/hub-h2c.int.test.ts` (56 dòng) và `hub-h3a.int.test.ts` (53 dòng) | Gộp thành helper `rollbackJournalFrom(owner, idx)` trong `packages/db/src/test-db.ts`; cả hai ≤ 50 dòng |
+| RV1-H2 | Logic gỡ journal lặp ở hai file | Dùng chung helper trên |
+| RV1-H3 | `job-follow.ts` `#expiredReason` liệt kê tay 4 lý do | Trả `Promise<JobFailReason>` |
+
+Kiểm: `check:fn --files`, `check:size`, tsc `packages/db` + `apps/hub-api`, biome, int `hub-h2c` 15 + `hub-h3a` 7 + H3a `queue-wait` 4, `depcruise --all`, lock 369 xanh.
