@@ -18,6 +18,8 @@ export const LIST_OFFSET_MAX = 100_000;
 export const LIST_Q_MAX = 100;
 export const TEMP_PASSWORD_LEN = 16;
 export const MAX_CONCURRENT_SUB_MAX = 10_000;
+/** Key agent (`hub.agents.key`), chép từ `hub/common` để kênh chat không import `../hub` (H2b plan §2.1). */
+export const AGENT_KEY_PATTERN = /^[a-z][a-z0-9-]{1,47}$/;
 
 export const ROLES = ["platform_admin", "tenant_admin", "member"] as const;
 export const LOCALES = ["vi", "en"] as const;

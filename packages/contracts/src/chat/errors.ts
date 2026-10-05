@@ -51,3 +51,22 @@ export const CmdMissingArgDetailsSchema = z.strictObject({
   invalid: z.array(z.string()).max(CMD_ARG_LIST_MAX),
 });
 export type CmdMissingArgDetails = z.infer<typeof CmdMissingArgDetailsSchema>;
+
+// HUB-FR-91, HUB-FR-94 · lỗi định tuyến `@` + giới hạn run (H2b plan §2.1, P2, P9): hằng riêng — không đổi `CHAT_API_ERRORS`.
+export const AGENT_SUGGESTIONS_MAX = 3;
+export const RETRY_AFTER_HEADER = "Retry-After";
+export const TOO_MANY_RUNS_RETRY_AFTER_S = 5;
+
+/** Lỗi E12 trước khi tạo run: tag `@` không tìm thấy (404), vượt giới hạn run đang chạy (429 + `Retry-After`). */
+export const CHAT_ROUTING_ERRORS = {
+  AGENT_NOT_FOUND: 404,
+  TOO_MANY_RUNS: 429,
+} as const satisfies Record<string, 404 | 429>;
+
+export type ChatRoutingErrorCode = keyof typeof CHAT_ROUTING_ERRORS;
+export const CHAT_ROUTING_ERROR_CODES = Object.keys(CHAT_ROUTING_ERRORS) as ChatRoutingErrorCode[];
+
+export const AgentNotFoundDetailsSchema = z.strictObject({
+  suggestions: z.array(z.string()).max(AGENT_SUGGESTIONS_MAX),
+});
+export type AgentNotFoundDetails = z.infer<typeof AgentNotFoundDetailsSchema>;

@@ -21,6 +21,7 @@ export {
 } from "../auth";
 export { type ErrorResponse, ErrorResponseSchema } from "../errors";
 export { type HealthResponse, HealthResponseSchema } from "../health";
+export * from "./agents";
 export * from "./commands";
 export * from "./entities";
 export * from "./errors";

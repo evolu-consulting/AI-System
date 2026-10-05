@@ -58,3 +58,11 @@ BA (CR-033): user tự tag thì câu trả lời hiện **tên hiển thị củ
 
 ## Gate duyệt — 2026-10-05
 - Người dùng duyệt Gate H2b ("Oke"): CR-037 (sửa chữ BA), Q1 = B, contract chat chỉ thêm, F4 giữ mã H1 + `refused`, `maxConcurrentRuns` vắng = không giới hạn (server luôn điền từ env, mặc định 2).
+
+## BUILD — C1/C2
+| # | Task | Quyết định tự chọn | Lý do |
+|---|---|---|---|
+| BC1 | C1 | `AGENT_KEY_PATTERN` chép vào `src/common.ts` (cùng tên, cùng regex với `hub/common`); chat dùng `ChatAgentKeySchema` (tên riêng, ở `chat/agents.ts`) | plan §2.1 cấm import `../hub`; tên riêng tránh trùng `AgentKeySchema` của hub khi một file import cả hai subpath |
+| BC2 | C1 | `ResponderSchema` + `RESPONDER_NAME_MAX` đặt ở `entities.ts` (theo plan), `entities` import key từ `./agents` — `agents.ts` chỉ phụ thuộc `../common` (không vòng) | Đúng bảng plan §2.1 |
+| BC3 | C1 | Thêm hằng `AGENT_SUGGESTIONS_MAX = 3`, `AGENT_MENU_NAME_MAX`, `AGENT_MENU_DESC_MIN/MAX` (plan chỉ ghi số) | Không rải số ma thuật; BE/FE dùng chung |
+| BC4 | C1 | Test mới ở `chat/agents.test.ts` (không sửa `entities.test.ts`) | Giữ `entities.test.ts:142` nguyên văn |

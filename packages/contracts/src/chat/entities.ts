@@ -3,6 +3,7 @@
 // Không import I/O: chạy được ở trình duyệt, mock và test.
 import { z } from "zod";
 import { IsoDateTime, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX, LIST_Q_MAX, UuidSchema } from "../common";
+import { ChatAgentKeySchema } from "./agents";
 import { CHAT_RUN_ERROR_CODES } from "./errors";
 
 export const CHAT_CONTENT_MAX = 16_000;
@@ -84,6 +85,14 @@ export const RunSummarySchema = z
   });
 export type RunSummary = z.infer<typeof RunSummarySchema>;
 
+// HUB-FR-91 · H2b P1–P2: agent trả lời run `direct`, chốt lúc tạo run; vắng (không `null`) ở run khác.
+export const RESPONDER_NAME_MAX = 100;
+export const ResponderSchema = z.strictObject({
+  key: ChatAgentKeySchema,
+  name: z.string().min(1).max(RESPONDER_NAME_MAX),
+});
+export type Responder = z.infer<typeof ResponderSchema>;
+
 /** Tin user: `content` ≥ 1, `run`/`ask` luôn null. `content` user lưu nguyên văn (kể cả `#scn:`). */
 export const MessageSchema = z
   .strictObject({
@@ -96,6 +105,8 @@ export const MessageSchema = z
     created_at: IsoDateTime,
     run: RunSummarySchema.nullable(),
     ask: AskSchema.nullable(),
+    /** H2b: chỉ tin assistant của run `direct`. */
+    responder: ResponderSchema.optional(),
   })
   .superRefine((m, ctx) => {
     if (m.role !== "user") return;
@@ -104,6 +115,9 @@ export const MessageSchema = z
     }
     if (m.run !== null) ctx.addIssue({ code: "custom", message: "user has no run", path: ["run"] });
     if (m.ask !== null) ctx.addIssue({ code: "custom", message: "user has no ask", path: ["ask"] });
+    if (m.responder !== undefined) {
+      ctx.addIssue({ code: "custom", message: "user has no responder", path: ["responder"] });
+    }
   });
 export type Message = z.infer<typeof MessageSchema>;
 

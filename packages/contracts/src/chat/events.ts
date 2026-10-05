@@ -9,6 +9,7 @@ import {
   CHAT_STEP_ID_MAX,
   CHAT_TITLE_MAX,
   ChatRunErrorCodeSchema,
+  ResponderSchema,
   STEP_STATUSES,
 } from "./entities";
 
@@ -35,6 +36,8 @@ export const RunStartedDataSchema = z.strictObject({
   run_id: UuidSchema,
   flow_id: UuidSchema,
   quota: z.strictObject({ state: z.enum(QUOTA_STATES), pct: z.number().int().min(0) }),
+  /** H2b: chỉ run `direct`. */
+  responder: ResponderSchema.optional(),
 });
 export const StepStartedDataSchema = z.strictObject({
   step_id: StepIdSchema,
