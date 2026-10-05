@@ -104,3 +104,30 @@ Chạy 2026-10-06 trên code hiện tại (PY-01 + PY-02 + B1 có; **chưa** PY-
 
 ## Q3 — khoá lần 2 (điều phối, 2026-10-06)
 `test:lock:verify` trước khi ghi: đúng 5 UNLOCKED (`_h3a.py`, `probe_int_test.py`, `quota_int_test.py`, `tests/acceptance/H3a/stack/{_stack.ts,quota.stack.test.ts}`), 0 CHANGED → `test:lock:write` → verify OK.
+
+## I1 · 2026-10-06 (HEAD `f502b6b`) — `bun run done:h3a` (19 bước)
+Chạy một lượt từ đầu, không `--from`, Docker postgres/redis sẵn có. Kết quả: **`done:h3a XANH`** (exit 0; 18 bước chặn xanh, bước 19 báo cáo đỏ không chặn). Log gốc: `.data/done-h3a-I1.log` (không commit).
+
+| # | Bước | Kết quả |
+|---|---|---|
+| 1 | typecheck (turbo, 6 gói) | xanh (8,3 s) |
+| 2 | unit (… + `H1/H2a/H2b/H2c/H3a rules`) | xanh — 628 pass, 13 skip, 0 fail |
+| 3 | int `H1/ H2a/ H2b/ H2c/ H3a/ + M ADM-NFR-06` | xanh — 2149 pass, 0 fail, 207 file (22,5 phút); không gặp chập chờn M4-AC18 |
+| 4 | `contracts:check` | xanh (21 pytest + 25 bun) |
+| 5 | agent-runtime: ruff, format, pyright, lint-imports, pytest, pytest -m int | xanh — 1076 unit + 217 int (13,2 phút) |
+| 6 | `test:h1:stack` | xanh — 4/4 |
+| 7 | `test:h2a:stack` | xanh — 3/3 |
+| 8 | `test:h2b:stack` | xanh — 14/14 |
+| 9 | `test:h2c:stack` | xanh — 9/9 |
+| 10 | `test:h3a:stack` (S01–S04) | xanh — 4/4 (14,8 s) |
+| 11 | `test:contract:chat` (Hub thật) | xanh — 41 pass, 21 skip (đúng 41) |
+| 12 | H01 `H2b/hubdev` | xanh — 2/2 |
+| 13 | H01 `H2c/hubdev` | xanh — 9/9 theo script (bước 13 gồm cả tệp) |
+| 14 | `test:lock:verify` | xanh |
+| 15 | `trace --check` | xanh |
+| 16 | `check:size --all` | xanh |
+| 17 | depcruise | xanh |
+| 18 | `tsc -p tsconfig.tests.json` (báo cáo) | xanh |
+| 19 | `test:perf H2a H2b H2c` (báo cáo, không chặn) | đỏ 592/594: (1) `H2b/perf.perf.int.test.ts:67` PF2 `@assistant` +17,2 ms p95 > 10 ms; (2) `apps/admin-api/src/lib/config/config-write.int.test.ts:315` ADM-FR-53 bump+NOTIFY trung vị 6,06 ms > 5 ms. Cả hai là ngưỡng thời gian trên máy bận (RAM ~15 GB, chạy sau ~1 giờ), không phải hành vi H3a; theo chính sách perf (hạ ngưỡng sau), không chặn. |
+
+**Lỗi code H3a:** 0. **Lỗi test/môi trường:** 0 ở bước chặn; 2 ngưỡng perf (báo cáo) nêu trên. **I1 tick.**
