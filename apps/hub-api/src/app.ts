@@ -3,6 +3,7 @@
 
 import { hostname } from "node:os";
 import {
+  FILENAME_HEADER,
   FLOW_ID_HEADER,
   HealthResponseSchema,
   MESSAGE_ID_HEADER,
@@ -75,7 +76,7 @@ export type AppDeps = {
 
 const DEFAULT_CONFIG_POLL_S = 60;
 /** Gốc các route cần JWT (E5–E15). Chặn ở gốc ⇒ 401 trước 404, kể cả route chưa mount; `/health` mở. */
-const PROTECTED_PREFIXES = ["/conversations", "/runs", "/commands", "/agents"];
+const PROTECTED_PREFIXES = ["/conversations", "/runs", "/commands", "/agents", "/attachments"];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
@@ -85,6 +86,7 @@ const ALLOW_HEADERS = [
   "X-Client",
   "Last-Event-ID",
   REQUEST_ID_HEADER,
+  FILENAME_HEADER,
 ];
 
 function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
@@ -201,6 +203,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
         FLOW_ID_HEADER,
         MESSAGE_ID_HEADER,
         RETRY_AFTER_HEADER,
+        "Content-Disposition",
       ],
     }),
   );

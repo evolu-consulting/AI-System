@@ -1,9 +1,12 @@
 // HUB-FR-43 · CHAT-AC-31 · lỗi có mã theo `CHAT_API_ERRORS` (contract chat, plan §4) + `CHAT_COMMAND_ERRORS` (H2a C1,
-// HUB-FR-14) + `CHAT_ROUTING_ERRORS` (H2b, HUB-FR-91/94). Status lấy từ contract (một nguồn).
+// HUB-FR-14) + `CHAT_ROUTING_ERRORS` (H2b, HUB-FR-91/94) + `CHAT_ATTACHMENT_ERRORS` (H2c, HUB-FR-44). Status lấy từ
+// contract (một nguồn).
 import {
   CHAT_API_ERRORS,
+  CHAT_ATTACHMENT_ERRORS,
   CHAT_COMMAND_ERRORS,
   CHAT_ROUTING_ERRORS,
+  type ChatAttachmentErrorCode,
   type ChatCommandErrorCode,
   type ChatErrorCode,
   type ChatRoutingErrorCode,
@@ -26,12 +29,17 @@ export class AppError extends Error {
   headers?: Readonly<Record<string, string>>;
 }
 
-/** Mã HTTP Hub trả cho client chat: C1 + lệnh `/` (H2a, hằng riêng — Q3) + định tuyến `@`/giới hạn run (H2b, P2). */
-export type HubErrorCode = ChatErrorCode | ChatCommandErrorCode | ChatRoutingErrorCode;
+/** Mã HTTP Hub trả cho client chat: C1 + lệnh `/` (H2a, hằng riêng — Q3) + định tuyến `@`/giới hạn run (H2b, P2) + file (H2c, P2). */
+export type HubErrorCode =
+  | ChatErrorCode
+  | ChatCommandErrorCode
+  | ChatRoutingErrorCode
+  | ChatAttachmentErrorCode;
 const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
   ...CHAT_API_ERRORS,
   ...CHAT_COMMAND_ERRORS,
   ...CHAT_ROUTING_ERRORS,
+  ...CHAT_ATTACHMENT_ERRORS,
 };
 
 /** Message tiếng Anh cố định theo mã; client dịch theo `code`. Không chứa dữ liệu người dùng (plan-errors H2a §1). */
@@ -46,6 +54,10 @@ export const ERROR_MESSAGES: Record<HubErrorCode, string> = {
   CMD_MISSING_ARG: "Missing or invalid command argument",
   AGENT_NOT_FOUND: "Agent not found",
   TOO_MANY_RUNS: "Too many running requests",
+  ATTACHMENT_NOT_FOUND: "Attachment not found",
+  ATTACHMENT_QUOTA_EXCEEDED: "Storage quota exceeded",
+  ATTACHMENT_TOO_LARGE: "File too large",
+  ATTACHMENT_TYPE_NOT_ALLOWED: "File type not allowed",
 };
 
 export function appError(

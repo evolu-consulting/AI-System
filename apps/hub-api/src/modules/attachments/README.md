@@ -10,6 +10,7 @@ Spec H2c-attachments (R01–R29); plan §1 P4–P23, §4, §5; chữ ký hàm th
 | `attach-env.rules.ts` | thuần: `parseAttachEnv` (`HUB_ATTACH_*`, plan §7) |
 | `storage.ts` | interface `AttachmentStorage` (`stage/open/blob/remove/promote/list`, PL1; `promote` = hoàn tất `.part` cho sweeper, PL13), lỗi `StorageTooLarge`/`StorageRejected`/`StorageKeyError`, khoá `storageKey`/`isStorageKey`/`keyUnder` |
 | `storage.local.ts` | driver `local`: `createLocalStorage({dir, platform?})` (L8, P23) |
+| `attachments.repo.ts` · `attachments.service.ts` · `attachments.routes.ts` | **B2** `POST /attachments` (kiểm header/đuôi/`Content-Length`/hạn mức sớm → `stage` → transaction `system` khoá tenant → INSERT → `commit`, plan §5.1) — mount ở `app.h2c.ts` |
 | `sweeper.rules.ts` · `sweeper.ts` | **B10** · `orphanCandidate` + hằng; `sweepOnce({db, storage, now, log?})` một transaction `system` mỗi lượt (khoá thử `hub.attach.sweep` ⇒ `skipped`; R27 claim + `purged_at` → xoá nội dung → DELETE; R28 hội thoại xoá; mồ côi lô `list` xoay vòng, `.part` có hàng sống ⇒ `promote`), `startAttachmentSweeper` (`lib/loop`, mount ở `app.h2c.ts` khi `sweep !== false`) |
 
 Trạng thái: **B1** xong storage `local` + `parseAttachEnv` + khởi động (`server.ts`, `config/env-deps.ts` `attachEnvOf`;

@@ -4,6 +4,7 @@
 // ⇒ `StorageKeyError`). Windows (P23): bỏ quyền 0700/0600 (ACL), rename đích không tồn tại (uuid).
 // Lỗi ở `createLocalStorage` không chứa đường dẫn (R04: log khởi động không in giá trị env) — chỉ mã lỗi `fs`.
 import { createHash, randomUUID } from "node:crypto";
+import { writeSync } from "node:fs";
 import {
   chmod,
   type FileHandle,
@@ -73,13 +74,13 @@ export async function createLocalStorage(o: {
   }
 }
 
-/** Ghi trọn `chunk` (FileHandle.write có thể ghi thiếu). */
-async function writeAll(fh: FileHandle, chunk: Uint8Array): Promise<void> {
+/**
+ * Ghi trọn `chunk` bằng `writeSync` (ghi thiếu ⇒ ghi tiếp): ghi đồng bộ vào page cache (khối ≤ vài MiB), đo RSS upload 20 MiB
+ * thấp hơn `FileHandle.write` ~3,5 MiB/lần (Bun giữ bộ đệm ghi async) — spec-decisions "BUILD — B2/B3" B2-4.
+ */
+function writeAll(fh: FileHandle, chunk: Uint8Array): void {
   let off = 0;
-  while (off < chunk.length) {
-    const { bytesWritten } = await fh.write(chunk, off, chunk.length - off);
-    off += bytesWritten;
-  }
+  while (off < chunk.length) off += writeSync(fh.fd, chunk, off, chunk.length - off);
 }
 
 /**
@@ -102,7 +103,7 @@ async function pump(
       if (size > o.maxBytes) throw new StorageTooLarge("attachment too large");
       if (o.inspect && !o.inspect.push(value)) throw new StorageRejected("attachment rejected");
       hash.update(value);
-      await writeAll(fh, value);
+      writeAll(fh, value);
     }
   } finally {
     reader.releaseLock();

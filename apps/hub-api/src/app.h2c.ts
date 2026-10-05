@@ -3,6 +3,8 @@
 import type { Env, Hono } from "hono";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
+import { attachmentRoutes } from "./modules/attachments/attachments.routes";
+import { AttachmentService } from "./modules/attachments/attachments.service";
 import type { AttachmentDeps } from "./modules/attachments/storage";
 import { startAttachmentSweeper } from "./modules/attachments/sweeper";
 import { internalAttachmentRoutes } from "./modules/internal/attachments.routes";
@@ -17,6 +19,13 @@ export type H2cMountDeps = {
 
 /** Route file H2c (gọi trước `notFound`). */
 export function mountH2c<E extends Env>(app: Hono<E>, d: H2cMountDeps): void {
+  // B2/B3: `/attachments*` — JWT đã gắn ở gốc (`PROTECTED_PREFIXES` của `app.ts`).
+  const files = new AttachmentService({
+    db: d.db,
+    storage: d.attachments.storage,
+    tenantMaxBytes: d.attachments.tenantMaxBytes,
+  });
+  app.route("/attachments", attachmentRoutes(files));
   const internal = new InternalAttachmentService({
     db: d.db,
     storage: d.attachments.storage,

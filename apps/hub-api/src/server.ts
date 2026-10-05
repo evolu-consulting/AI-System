@@ -11,6 +11,7 @@ import { safeErrorFields } from "./lib/errors";
 import { importJwtPublicKey } from "./lib/jwt";
 import { logger, setMinLevel } from "./lib/logger";
 import { createRedis, pingRedis, type Redis } from "./lib/redis";
+import { MAX_REQUEST_BODY_BYTES } from "./lib/unread-body";
 import type { AttachmentDeps } from "./modules/attachments/storage";
 import { createLocalStorage } from "./modules/attachments/storage.local";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
@@ -103,12 +104,20 @@ async function checkMasterKey(env: Env, db: Db): Promise<void> {
   else logger.warn("secret_master_key_missing");
 }
 
-/** SSE: Bun mặc định đóng kết nối im > 10 s, trước nhịp `: ping` (SSE_HEARTBEAT_S) → đặt gấp đôi nhịp ping. */
+/**
+ * SSE: Bun mặc định đóng kết nối im > 10 s, trước nhịp `: ping` (SSE_HEARTBEAT_S) → đặt gấp đôi nhịp ping.
+ * H2c P4: thân request ≤ 32 MiB chặn ngoài (mặc định Bun 128 MiB); bộ đếm trong `AttachmentStorage.stage` là chốt.
+ */
 function serve(
   env: Env,
   fetch: (req: Request, server: Bun.Server<undefined>) => Response | Promise<Response>,
 ) {
-  const server = Bun.serve({ port: env.HUB_PORT, fetch, idleTimeout: SSE_HEARTBEAT_S * 2 });
+  const server = Bun.serve({
+    port: env.HUB_PORT,
+    fetch,
+    idleTimeout: SSE_HEARTBEAT_S * 2,
+    maxRequestBodySize: MAX_REQUEST_BODY_BYTES,
+  });
   logger.info("listening", {
     port: server.port,
     app_env: env.APP_ENV,

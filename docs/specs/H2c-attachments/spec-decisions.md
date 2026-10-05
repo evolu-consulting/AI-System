@@ -181,3 +181,14 @@ BA chỉ nêu ví dụ "PDF, ảnh, XML" (US-H07). Hub không quét virus ở H2
 | B10-3 | Con trỏ quét mồ côi | `WeakMap<AttachmentStorage, key>`: lô đầy (500) ⇒ lượt sau `after = key cuối`; thiếu ⇒ về đầu | "con trỏ trong bộ nhớ" (plan §5.8), nhiều storage trong cùng tiến trình test không lẫn nhau |
 | B10-4 | Log | `info attachment-sweep{expired, purged, orphans, ms}` chỉ khi tổng > 0; `warn attachment-remove-failed{attachment_id}` cho cả lỗi `remove` và `promote` | plan-errors §5 |
 | B10-5 | Ca phụ thuộc task khác | A122/A123 (GET `/attachments*` 404 — B3), A124 (E10 `available`, E12 `attachment_ids` — B4), A125 vế `/content` 200 (B3) chỉ xanh khi B3/B4 xong; phần sweeper của các ca này đúng (kiểm DB/đĩa) | Phụ thuộc tasks |
+
+## BUILD — B2/B3 (backend-lead, 2026-10-05)
+| # | Chỗ | Quyết định | Lý do |
+|---|---|---|---|
+| B2-1 | `attachments.service` hạn mức (R06, plan-db §3) | Kiểm sớm + transaction chốt (`pg_advisory_xact_lock(hub.attach.tenant)` → SUM → INSERT) chạy scope **`system`**, `tenant_id`/`user_id` lấy từ JWT, câu lọc `tenant_id` tường minh (plan-db §3 ghi scope `user`) | RLS `attachments_hub_rw` scope `user` lọc cả `user_id` ⇒ SUM chỉ thấy file của chính user, hạn mức tenant (R06) bị vượt khi nhiều user. `GET` (R13) giữ scope `user` |
+| B2-2 | Thân upload | Bọc `req.body` bằng stream đếm (`highWaterMark: 0`, không đệm thêm) để log `attachment-upload-aborted{bytes}` và phân biệt lỗi đọc (client đứt ⇒ 500 + warn) với lỗi I/O; xong/lỗi đều nhả khoá thân gốc (B1-3/B1-4: tầng HTTP đọc bỏ phần dư). Có `Content-Length` mà số byte đọc được ≠ ⇒ coi như client đứt (bỏ `.part`, không INSERT) | AC-02/A08; không INSERT file cụt |
+| B2-3 | Log `attachment-rejected` | Mọi lỗi 4xx của upload (400/409/413/415), `code` = số HTTP, `origin: "upload"`; thêm `error attachment-path-escape{key: id}` khi `stage` ném `StorageKeyError` (500) | plan-errors §5; A11 đếm `code === 415` |
+| B2-4 | `storage.local` `writeAll` (B1) | `writeSync(fh.fd, …)` thay `FileHandle.write` | Đo Bun 1.3.14 (upload 20 MiB × 10, cùng tiến trình): async write giữ bộ đệm ⇒ RSS +7,2–7,8 MiB/lần; `writeSync` +4,1 (≈ chỉ đọc bỏ thân). PF1 (khoá, không chặn mốc): p95 thời gian đạt (~0,1–0,15 s/lần); RSS đo 8,7–10,6 MiB/lần ở 3/5 lượt chạy (2/5 đạt ≤ 8) — phần lớn là khởi động lần đầu (kết nối DB, JIT, bộ đệm thân Bun); vòng thứ 2 trở đi ~1 MiB/lần (đo tạm, không commit) |
+| B2-5 | `parseFilenameHeader`/`displayName` | Dải ký tự vô hình dựng bằng `RegExp` từ mã số | biome đổi escape `\u` trong regex thành ký tự thô (NUL/bidi lọt vào source) |
+| B2-6 | `contentLengthOf` | `Content-Length` không phải số nguyên thập phân ⇒ coi như vắng (bộ đếm `stage` là chốt, PL3) | Bun đã từ chối header sai ở tầng HTTP; phòng thủ |
+| B2-7 | `ERROR_MESSAGES.INTERNAL_ERROR` | Giữ câu H1 "Internal server error" (plan-errors §1 ghi "Internal error") | Không đổi câu đã có (H1); client dịch theo `code` |
