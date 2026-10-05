@@ -5,7 +5,7 @@
 // Orchestrator đã chọn, `payload.stream=true`, session, snapshot. Catalog H2a + mock Dify (MK) cho `/dich` (A21, A30).
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
 import type { Redis } from "../../../apps/hub-api/src/lib/redis";
-import { runErrorText } from "../../../apps/hub-api/src/modules/runs/run-errors";
+import { runErrorText, runErrorTextFor } from "../../../apps/hub-api/src/modules/runs/run-errors";
 import {
   call,
   type Json,
@@ -33,6 +33,7 @@ import {
 } from "../H1/_hub";
 import { echoAnswer, ScriptRuntime } from "../H1/_runtime";
 import { type Dify, startDify } from "../H2a/_h2a";
+import { R08 } from "../H3a/_r08";
 import {
   ASSISTANT_NAME,
   dropTenantOrch,
@@ -222,13 +223,19 @@ describe("A23–A25 · kết quả run direct [H2b-R07 · H2b-R08]", () => {
     await finish(y);
   });
 
+  // T1 (H3a QW, `plan` H3a P11 · R19): BA HUB-BR-04 / H3a-R08 thắng — EXHAUSTED + reason `quota` ⇒ câu hết hạn mức
+  // (`runErrorTextFor`), không còn câu H1 `runErrorText`; `TIMEOUT` giữ nguyên. Lý do: H3a `test-plan-log.md` "Tranh chấp test T1".
   for (const code of ["ALL_PROVIDERS_EXHAUSTED", "TIMEOUT"] as const)
-    it(`HUB-FR-91 · A25 · job.failed ${code} → run.failed ${code}, message = runErrorText; 0 job Orchestrator [H2b-R07]`, async () => {
+    it(`HUB-FR-91 · A25 · job.failed ${code} → run.failed ${code}, message theo (code, reason); 0 job Orchestrator [H2b-R07 · H3a-R08]`, async () => {
       const x = await startDirect("lan", `@assistant Việc lỗi ${code}`);
-      await rt.fail(x.job, code, "lỗi gốc", code === "ALL_PROVIDERS_EXHAUSTED" ? "quota" : null);
+      const reason = code === "ALL_PROVIDERS_EXHAUSTED" ? "quota" : null;
+      await rt.fail(x.job, code, "lỗi gốc", reason);
       const data = await finish(x, "run.failed");
       expect(data?.code).toBe(code);
-      expect(data?.message).toBe(runErrorText(code, "vi").message);
+      if (code === "ALL_PROVIDERS_EXHAUSTED") {
+        expect(data?.message).toBe(runErrorTextFor(code, "vi", reason).message);
+        expect(data?.message).toBe(R08.quota.vi.message);
+      } else expect(data?.message).toBe(runErrorText(code, "vi").message);
       expect((await jobsOf(sql, x.runId)).map((j) => j.role)).toEqual(["agent"]);
     });
 });

@@ -125,4 +125,4 @@ Q1–Q7 — [spec-decisions.md](spec-decisions.md). Không trả lời → dùng
 | K5 | Vi phạm điều khoản gói khi dùng subscription phục vụ nhiều khách | Đã ghi ở BA-H §6.8 "cần xác nhận loại gói" — ngoài phạm vi kỹ thuật; nhắc lại ở PRODUCTION-NOTES khi đóng mốc |
 
 ## 11. Tranh chấp test
-- (không)
+- **T1** (qc, QW 2026-10-06): H2b `direct.int.test.ts` A25 so câu H1 cho `ALL_PROVIDERS_EXHAUSTED`+`quota` — trái H3a-R08 (HUB-BR-04); BA thắng (R19, `plan` P11) ⇒ qc sửa test theo R08. Chi tiết: `test-plan-log.md` "Tranh chấp test T1".

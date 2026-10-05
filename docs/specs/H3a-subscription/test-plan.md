@@ -104,23 +104,23 @@ Không thuộc `done:h3a`: `HUB_LIVE=1 bun run test:smoke:live` (I2, AC-12). `do
 | QW-R | sau B0 | `rules/blocked-reason`, `run-errors-h3a`, `contracts-h3a` | R01–R21 (16 ID, ~60 dòng bảng) | `blockedReason` stub ném `not implemented`; `runErrorTextFor` trả câu H1 ⇒ `expect` lệch. **Xanh trước code chấp nhận**: R14–R16, R18 (hồi quy), R20, R21 |
 | QW-A | sau QW-R, D1, MK | `blocked`, `queue-wait`, `job-reason`, `command`, `db`, `compat` + **T1** | A01–A25 (~30) | câu H1 thay câu R08; reason `provider_unavailable` thay `quota` (A01, A05, A10). Xanh trước code: A06 vế trạng thái, A08, A12, A13, A18, A19, A20–A25 (D1 có), T1 **đỏ** (đúng: câu H1) |
 | **Q2** | sau QW-A | khoá TS | — | verify: chỉ `UNLOCKED` H3a + đúng 1 `CHANGED` T1 |
-| QW-PU | sau Q2, PY-00, **trước PY-01** | `test_quota_rules.py` | P01–P12 (~115 dòng bảng; P11, P12 xanh trước code nếu hằng/`result_signal` có sẵn) | `NotImplementedError` (P11 xanh trước code — hằng có trong stub) |
+| QW-PU | sau Q2, PY-00, **trước PY-01** | `test_quota_rules.py` | P01–P12 (~115 dòng bảng; P11, P12 xanh trước code — hằng có trong stub, `result_signal` có từ H1) | `NotImplementedError` (P11, P12 xanh trước code) |
 | **Q-PU** | sau QW-PU | đúng 1 `UNLOCKED` | — | — |
 | QW-P | sau PY-02 | `_h3a.py`, `probe_int_test.py`, `quota_int_test.py`, `stack/quota.stack.test.ts` | P20–P49 (30), S01–S04 | P40–P49: phần lớn xanh (PY-02 xong) — đỏ: P43 (vòng probe chưa có ⇒ `last_probe_at` NULL, hết hạn chờ — đỏ đúng); P20–P39: chưa có vòng probe (PY-03/04) ⇒ hết hạn `wait_until` có thông điệp; S01–S03 đỏ ở câu R08 nếu B1 chưa vào. Fixture/DB/Runtime boot phải xanh |
 | **Q3** | sau QW-P, **trước PY-03** | khoá P int + stack | — | verify chỉ `UNLOCKED` QW-P |
 | SM | I2 | `tests/smoke/h3a-live.test.ts` | SM1–SM4 | không khoá |
 
-Tổng mới ≈ **101** ca: R 16 ID (~60 dòng bảng) · A 25 · P unit 12 ID (~110 dòng bảng) · P int 30 · S 4 · SM 4 · K 12 · M 4 · sửa T1 1. Model: QW-R/QW-A/QW-PU/QW-P = Opus (`cao` — `provider_state`, khoá, PII), Q2/Q-PU/Q3/I1 = Sonnet.
+Tổng mới ≈ **101** ca: R 16 ID (~60 dòng bảng) · A 25 · P unit 12 ID (~115 dòng bảng) · P int 30 · S 4 · SM 4 · K 12 · M 4 · sửa T1 1. Model: QW-R/QW-A/QW-PU/QW-P = Opus (`cao` — `provider_state`, khoá, PII), Q2/Q-PU/Q3/I1 = Sonnet.
 
 ## 8. Chỗ hở cho readiness (mặc định dùng nếu không trả lời)
 | # | Hở | Mặc định đề xuất | Agent |
 |---|---|---|---|
-| G1 | AC-02 vế job ("429 + chữ not logged in → cooldown") nằm ở `mapping.result_signal` (H1), **không** có chữ ký trong `rt §3`; `fake-cli` không có chỉ thị 429 + chữ tuỳ ý | P08 phủ thứ tự R01 trên `probe_result`; vế job = K07 `refusal_int_test` + P48. Muốn phủ đúng ca 429+auth: backend-lead thêm `#fake:result=<status>:<text>` hoặc công bố chữ ký `classify_result(api_error_status, text)` trong `rt §3` | backend-lead |
-| G2 | AC-10 cần probe **ok nhưng chậm** để job ghi chen giữa; `rt §5` chỉ có `hang` (⇒ lỗi, không ok) | thêm chỉ thị `ok:<ms>` (chờ rồi như `ok`) vào `parse_fake_probe` + `FakeProvider.probe` | backend-lead (PY-03, sửa `rt §5`) |
-| G3 | §6 "0 lần chờ `K_CLAIM`" (P37) cần giá trị khoá | qc import hằng `K_CLAIM` từ module SQL Runtime (tên đã công bố H1 `plan-db` §5.4) | backend-lead xác nhận đường import |
+| G1 | AC-02 vế job ("429 + chữ not logged in → cooldown") nằm ở `mapping.result_signal` (H1), **không** có chữ ký trong `rt §3`; `fake-cli` không có chỉ thị 429 + chữ tuỳ ý | ~~`#fake:result`/`classify_result`~~ → **đã xử lý: P12** gọi thẳng `mapping.result_signal` (H1, có sẵn) + P08 (`probe_result`) + K07/P48 | backend-lead |
+| G2 | AC-10 cần probe **ok nhưng chậm** để job ghi chen giữa; `rt §5` chỉ có `hang` (⇒ lỗi, không ok) | **đã xử lý:** chỉ thị `ok:<ms>` (1–60 000) ở `parse_fake_probe` + `FakeProvider.probe` — §2, P10/P33/P34 | backend-lead (PY-03, sửa `rt §5`) |
+| G3 | §6 "0 lần chờ `K_CLAIM`" (P37) cần giá trị khoá | **đã xử lý:** `from agent_runtime.db.jobs_sql import K_CLAIM` (P37) | backend-lead xác nhận đường import |
 | G4 | `spec-ac` AC-12 còn chữ "`CLAUDE_CONFIG_DIR` trỏ thư mục trống" — PL10 đổi sang symlink `HOME` | sửa chữ AC-12 theo PL10 | docs-architect / backend-lead |
 | G5 | R16 "chuyển trạng thái do probe/**job**: log `provider.recovered`" — theo `plan-db` §2 job thành công không đổi `status` ⇒ đường job không bao giờ phát `recovered` | `recovered` chỉ từ probe; ghi PL15 hoặc sửa chữ R16 | backend-lead |
-| G6 | Stack: Runtime ở container ⇒ `AGENT_RT_FAKE_PROBE_FILE` phải nằm trong bind-mount; `plan §7`/MK chưa nêu | MK thêm mount `<tmp>/probe:/probe` + env | backend-lead MK |
+| G6 | Stack: Runtime ở container ⇒ `AGENT_RT_FAKE_PROBE_FILE` phải nằm trong bind-mount; `plan §7`/MK chưa nêu | ~~mount `<tmp>/probe:/probe`~~ → **đã xử lý:** helper `H3a/stack/_stack.ts` + file `<REPO>/.data/h3a-stack/probe.txt` ⇔ `/work/.data/h3a-stack/probe.txt` (§2) | backend-lead MK |
 | G7 | `rt §5` "vắng file ⇒ `ok`" ⇒ mọi test khoá Python cũ sẽ có probe `ok` thật chạy (F1) — chấp nhận có chủ đích (PL2) | giữ; F1 chạy 3 lần | — |
 
 **Readiness lần 1 (2026-10-06): G1–G7, N1, N2 đã xử lý trong test-plan.** G1 → P12; G2 → `ok:<ms>` ở P10/P33/P34; G3 → `from agent_runtime.db.jobs_sql import K_CLAIM` (P37); G4/G5/G7 → việc của docs-architect/backend-lead (spec/plan/rt, ngoài phạm vi file này; G5: chỉ probe đưa về `ok`, PL15 — P49 giữ); G6 → helper `H3a/stack/_stack.ts`; N1 → timeout int mặc định 10 s; N2 → bỏ `undefined` khỏi R14. N3/N4 không ảnh hưởng test.
@@ -130,4 +130,4 @@ Tổng mới ≈ **101** ca: R 16 ID (~60 dòng bảng) · A 25 · P unit 12 ID 
 - docs-architect: G4.
 
 ## 10. Đỏ đúng lý do · nhật ký
-(trống — ghi theo từng nhóm §7; > 25 KB thì tách `test-plan-log.md` như H2c.)
+Tách sang [`test-plan-log.md`](test-plan-log.md) (QW-PU, QW: R 10/16 đỏ đúng lý do, A 14/26 đỏ đúng lý do + T1 đỏ đúng lý do; tranh chấp T1).
