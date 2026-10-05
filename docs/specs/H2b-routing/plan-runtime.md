@@ -8,7 +8,7 @@ Luật: spec R19–R21, R25, R27, R28 (WRK-FR-03, WRK-FR-15, WRK-FR-17). Hub: `p
 | `spikes/stream_spike.py` (mới) · `docs/specs/H2b-routing/spike-stream.md` | Spike PY-S2 (§2) | PY-S2 |
 | `providers/stream_scan.py` (mới, thuần) | `StreamScanner` JSON tăng dần (§3.2) — dùng chung `claude` + `fake` | PY-01 |
 | `runtimes/cli/delta.py` (mới, thuần) | `DeltaBuffer`, `split_utf16` (§3.3) | PY-01 |
-| `runtimes/cli/refusal.py` (mới, thuần) | `classify_is_error` (§4) | PY-01 |
+| `runtimes/cli/refusal.py` (mới, thuần) · `providers/patterns.py` (mới, thuần) · `providers/claude/mapping.py` | `classify_is_error` (§4); `RATE_RE`/`AUTH_RE`/`classify_text` chuyển sang `patterns.py`, `mapping.py` import lại (không đổi hành vi) | PY-01 |
 | `providers/claude/usage_acc.py` (mới, thuần) | `UsageAcc` (§5) | PY-01 |
 | `providers/base.py` · `runtimes/cli/protocol.py` | `Delta` ProviderEvent + vào `ChildEvent` | PY-02 |
 | `providers/claude/{options,provider,mapping}.py` | `include_partial_messages` khi `payload.stream`; xử lý `StreamEvent` → `Delta`; usage cộng dồn từng message (F5) | PY-02 |

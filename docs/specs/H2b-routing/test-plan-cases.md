@@ -80,7 +80,7 @@ Phụ lục của [`test-plan.md`](test-plan.md): §1 hàm thuần (R) · §2 in
 | R44 | `JOB_FAIL_REASONS` ∋ `refused`; `RunEventSchema` nhận `type:"job.delta"`; `AgentCliJob` thiếu `stream` ok |
 
 ## 2. A · hub-api int (`tests/acceptance/H2b/`)
-Chung: `startHubX` + `maxConcurrentRuns: 2`, `jobMaxWaitS` lớn; `counts()` = số `messages/runs/jobs`; "0 ghi" = `counts()` không đổi + ScriptRuntime không thấy job.
+Chung: `startHubH2b` (`_h2b.ts`) + `maxConcurrentRuns: 2`, `jobMaxWaitS` lớn; `counts()` = số `messages/runs/jobs`; "0 ghi" = `counts()` không đổi + ScriptRuntime không thấy job.
 
 | ID | Mã | Given/When → Then |
 |---|---|---|

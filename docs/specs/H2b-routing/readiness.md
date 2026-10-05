@@ -27,3 +27,14 @@
 | 20 | Thấp | spec.md 25 589 B | Sát trần 25 600 B | Sửa spec sau này phải tách phụ lục (`spec-<chủ đề>.md`) | — |
 
 Kiểm đã khớp code (không lỗ hổng): tên ràng buộc `runs_kind_check`, `orchestrator_settings_id_check`, `jobs_error_reason_check` (0000/0002/0004); `upsertOrchestrator` `on conflict (id)` giữ được; `HUB_JOB_ERROR_CODES` có `NOT_CONFIGURED`; test khoá chỉ dùng `arrayContaining` cho `JOB_FAIL_REASONS`; `CHAT_API_ERRORS` `toEqual` 6 mã (P2 hằng riêng đúng); `MessageSchema` đã có `superRefine`; `RunStreamReader` đọc từ `0-0` (không mất `job.started` seq 1); thứ tự kiểm E12 hiện tại (hội thoại 404 → body 400) khớp R18; advisory 2 khoá `int4` khác không gian `K_CLAIM`; `claude-agent-sdk==0.2.163` có `include_partial_messages`; import-linter cho `runtimes → providers`.
+
+## Lần 2 · 2026-10-05 · spec-readiness (Opus) · **READY** (phần đổi `798987b..2936f82` + mục mở)
+Đóng #1–#20 (kiểm lại từng chỗ sửa ở spec R27/§6/AC-08, plan P9/P10/P11/§4/§5.1/§5.5, plan-rules, plan-errors §4, rt §3.3/§4/§5/§6/§9, tasks, test-plan §1/§2.1, cases R13/A80/A92/A93, py P07/P26/S05). Còn 3 chỗ sót do lần sửa trước (đều Thấp, sửa ngay):
+
+| # | Mức | Vị trí | Lỗ hổng | Mặc định (đã áp) |
+|---|---|---|---|---|
+| N1 | Thấp | cases §2 dòng "Chung" | Còn ghi `startHubX` + `maxConcurrentRuns` (helper khoá không có trường) | `startHubH2b` (`_h2b.ts`) |
+| N2 | Thấp | rt §1, tasks PY-01 | `providers/patterns.py` + sửa import `mapping.py` (#1) chưa có trong bảng file / cột File | Thêm; Lệnh xong PY-01 kèm unit `providers/claude` H1 xanh (không test khoá nào import `RATE_RE`/`classify_text` — đã grep) |
+| N3 | Thấp | tasks PY-04 Lệnh xong | Stack S01–S08 cần Hub B8–B11 | Ghi "khi B8–B11 xong" |
+
+Không còn Chặn/Cao, không câu hỏi cho người dùng ⇒ **READY**. Mọi file ≤ 25 600 B (spec 25 589 B — sửa sau phải tách phụ lục). Gate trình người dùng: CR-037 (sửa chữ BA), Q1 = B (đã chốt), F4 đăng nhập theo mã H1 thay cho `NOT_CONFIGURED` ghi ở spec draft (#1), `maxConcurrentRuns` vắng = không giới hạn (#3) — [`../H2b-gate.md`](../H2b-gate.md).
