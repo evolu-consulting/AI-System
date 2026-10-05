@@ -27,6 +27,10 @@ export interface AttachmentStorage {
   blob(key: string, type: string): Promise<Blob | null>;
   /** Xoá cả `<key>` và `<key>.part`; không có = ok. */
   remove(key: string): Promise<void>;
+  /**
+   * Hoàn tất `commit` dở (PL13, sweeper): `<key>.part` → `<key>`; `<key>` đã có ⇒ chỉ xoá `.part`; không có `.part` = ok.
+   */
+  promote(key: string): Promise<void>;
   /** Sắp theo key. */
   list(o: { after: string | null; limit: number }): Promise<StoredEntry[]>;
 }

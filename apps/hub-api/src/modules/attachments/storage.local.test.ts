@@ -130,3 +130,25 @@ describe("open / blob / remove / list [PL1]", () => {
     expect((await s.list({ after: null, limit: 5 })).map((e) => e.key)).toEqual([`${T}/${id(1)}`]);
   });
 });
+
+describe("promote [PL13]", () => {
+  test(".part → file; file đã có ⇒ chỉ xoá .part; không có gì ⇒ ok", async () => {
+    const dir = await temp();
+    const s = await createLocalStorage({ dir });
+    const k1 = `${T}/${id(1)}`;
+    await s.stage(k1, streamOf(enc("crash")), { maxBytes: 9 });
+    await s.promote(k1);
+    expect(await new Response((await s.open(k1))?.stream).text()).toBe("crash");
+    const k2 = `${T}/${id(2)}`;
+    await (await s.stage(k2, streamOf(enc("done")), { maxBytes: 9 })).commit();
+    await writeFile(join(dir, T, `${id(2)}.part`), "stale");
+    await s.promote(k2);
+    expect((await s.list({ after: null, limit: 9 })).map((e) => [e.key, e.partial])).toEqual([
+      [k1, false],
+      [k2, false],
+    ]);
+    expect(await new Response((await s.open(k2))?.stream).text()).toBe("done");
+    await s.promote(`${T}/${id(3)}`);
+    await s.promote(`${id(9)}/${id(9)}`);
+  });
+});

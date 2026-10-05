@@ -4,6 +4,7 @@ import type { Env, Hono } from "hono";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import type { AttachmentDeps } from "./modules/attachments/storage";
+import { startAttachmentSweeper } from "./modules/attachments/sweeper";
 import { internalAttachmentRoutes } from "./modules/internal/attachments.routes";
 import { InternalAttachmentService } from "./modules/internal/attachments.service";
 
@@ -22,4 +23,13 @@ export function mountH2c<E extends Env>(app: Hono<E>, d: H2cMountDeps): void {
     log: d.log,
   });
   app.route("/internal", internalAttachmentRoutes(internal));
+  // B10: vòng sweeper nền (R27–R29); `sweep: false` ⇒ tắt (test gọi thẳng `sweepOnce`, L1).
+  if (d.attachments.sweep !== false)
+    startAttachmentSweeper({
+      db: d.db,
+      storage: d.attachments.storage,
+      log: d.log,
+      everyMs: d.attachments.sweepS * 1000,
+      signal: d.signal,
+    });
 }

@@ -193,6 +193,17 @@ class LocalStorage implements AttachmentStorage {
     await rm(p.part, { force: true });
   }
 
+  async promote(key: string): Promise<void> {
+    const p = await this.#paths(key, false);
+    if (!p) return;
+    const has = await stat(p.file).then(
+      () => true,
+      (e) => (missing(e) ? false : Promise.reject(e)),
+    );
+    if (has) return rm(p.part, { force: true });
+    await rename(p.part, p.file).catch((e) => (missing(e) ? undefined : Promise.reject(e)));
+  }
+
   /** Mục sắp theo (key, partial); chỉ `<uuid>/<uuid>` và `<uuid>/<uuid>.part`; trang sau = key > `after`. */
   async list(o: { after: string | null; limit: number }): Promise<StoredEntry[]> {
     const out: StoredEntry[] = [];
