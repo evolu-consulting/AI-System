@@ -21,15 +21,19 @@ export type OrchestratorDeps = {
   log: Logger;
 };
 
-/** Ảnh thiếu Orchestrator (BR-08 đã chặn lúc khởi động) → null. */
+/**
+ * Ảnh thiếu Orchestrator (BR-08 đã chặn lúc khởi động) → null. H2b P7: dùng bản đã chọn lúc tạo run
+ * (`ctx.orchestrator`, theo tenant — không chọn lại); R09: `ctx.scope` thu hẹp AU + `detail.scope` của step Orchestrator.
+ */
 async function loadInput(d: OrchestratorDeps, ctx: RunContext): Promise<LoopInput | null> {
-  const { snapshot, writer } = ctx;
-  const settings = snapshot.orchestrator;
+  const { snapshot, writer, scope } = ctx;
+  const settings = ctx.orchestrator?.config;
   const orchestrator = settings && snapshot.agents.find((a) => a.id === settings.agentId);
   if (!settings || !orchestrator) return null;
   const r = writer.run;
   const groupIds = (await d.users.user(r.userId))?.groupIds ?? new Set<string>();
-  const access = accessInput(snapshot, { tenantId: r.tenantId, userId: r.userId, groupIds });
+  const who = { tenantId: r.tenantId, userId: r.userId, groupIds };
+  const access = accessInput(snapshot, who, scope ? { onlyKeys: scope } : undefined);
   const { flow, history } = await withHubScope(d.db, { kind: "system" }, async (tx) => ({
     flow: await repo.flowState(tx, r),
     history: await repo.flowHistory(tx, r, settings.historyN),
@@ -46,6 +50,7 @@ async function loadInput(d: OrchestratorDeps, ctx: RunContext): Promise<LoopInpu
     history,
     message: ctx.content,
     locale: r.locale,
+    ...(scope ? { stepDetail: { scope: [...scope].sort() } } : {}),
   };
 }
 

@@ -38,6 +38,8 @@ export type LoopJob = {
   history: readonly HistoryItem[];
   stepId?: string;
   reopen?: boolean;
+  /** H2b P13 · gộp vào `run_steps.detail` của step (vd `scope` của run thu hẹp, R09). */
+  detail?: Readonly<Record<string, unknown>>;
 };
 
 export type LoopIo = {
@@ -56,6 +58,8 @@ export type LoopInput = {
   history: readonly HistoryItem[];
   message: string;
   locale: "vi" | "en";
+  /** H2b P13 · `detail` cho mọi step Orchestrator (run thu hẹp: `{scope}`). */
+  stepDetail?: Readonly<Record<string, unknown>>;
 };
 
 export type Ask = { question: string; choices: string[] };
@@ -112,6 +116,7 @@ async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
     systemPrompt: orchestratorSystemPrompt(c.orchestrator.systemPrompt),
     history: [],
     stepId: crypto.randomUUID(),
+    ...(c.stepDetail ? { detail: c.stepDetail } : {}),
   };
   const first = prompt(false);
   s.steps++;

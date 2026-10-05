@@ -46,6 +46,8 @@ export type RunContext = {
    * có bản hợp lệ nào. Driver không chọn lại.
    */
   orchestrator: PickedOrchestrator | null;
+  /** H2b R09 · run `orchestrated` nhiều tag: key agent được tag (thu hẹp `<agents>` + `canDelegate`); vắng = đủ AU. */
+  scope?: ReadonlySet<string>;
   log: Logger;
 };
 /** Chỗ cắm B8 (Orchestrator, dùng runner B7). Không chờ: chạy nền, tự `finish`. */
@@ -194,7 +196,16 @@ export class RunService {
     this.registry.add(writer);
     await this.#announce(writer);
     const driver = command?.driver ?? this.d.driver;
-    driver.start({ writer, snapshot, content: req.content, orchestrator, log: this.d.log });
+    const scoped = plan?.kind === "orchestrated" ? plan : undefined;
+    const content = scoped?.content ?? req.content;
+    driver.start({
+      writer,
+      snapshot,
+      content,
+      orchestrator,
+      scope: scoped?.onlyKeys,
+      log: this.d.log,
+    });
     const stream = this.#stream(u, run.id, 0);
     return { runId: run.id, flowId: run.flowId, messageId: run.userMessageId, stream };
   }

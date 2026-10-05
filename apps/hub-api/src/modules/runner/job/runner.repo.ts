@@ -26,6 +26,8 @@ export type StepInsert = {
   labelKey: string;
   /** Step đã có (thử lại cùng step): mở lại `running` với job mới thay vì INSERT. */
   reopen?: boolean;
+  /** H2b P13 · `detail` ban đầu của step mới (vd `{scope}`); vắng = null. */
+  detail?: Readonly<Record<string, unknown>> | null;
 };
 
 /**
@@ -57,7 +59,7 @@ export async function enqueueJob(
         workflowId: null,
         labelKey: step.labelKey,
         status: "running",
-        detail: null,
+        detail: step.detail ?? null,
       });
   if (seq === null) return null;
   await tx.insert(jobs).values({

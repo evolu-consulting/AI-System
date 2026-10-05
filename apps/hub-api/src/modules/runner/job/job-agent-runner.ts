@@ -52,6 +52,8 @@ export type AgentTask = {
   /** `run_steps.id` do người gọi chọn (vắng → mới); `reopen` = thử lại cùng step (Orchestrator JSON hỏng, plan §6.1). */
   stepId?: string;
   reopen?: boolean;
+  /** H2b P13 · gộp vào `run_steps.detail` (lúc tạo và lúc kết thúc step), vd `{scope}` (R09). */
+  detail?: Readonly<Record<string, unknown>>;
   /** Phát `step.started`/`step.finished` (vd `writer.emit`); vắng → không phát. */
   emit?: (ev: SseEventBody) => Promise<unknown>;
 };
@@ -115,7 +117,14 @@ function stepInsert(
   owner: string,
 ): repo.StepInsert & { owner: string } {
   const type = stepType(task.role);
-  return { stepId, type, labelKey: `step.${type}`, reopen: task.reopen, owner };
+  return {
+    stepId,
+    type,
+    labelKey: `step.${type}`,
+    reopen: task.reopen,
+    owner,
+    detail: task.detail ?? null,
+  };
 }
 
 /** R19 (phía payload): workflow gắn agent ∩ `enabled` (bỏ input `file` bắt buộc), sắp key, ≤ `MCP_TOOLS_MAX`. */
@@ -287,6 +296,7 @@ export class JobAgentRunner implements AgentRunner {
           usage: ev.usage,
         }
       : { usage: ev.type === "job.result" ? ev.usage : ZERO_USAGE };
+    const merged = { ...task.detail, ...detail };
     if (failed) {
       this.d.log.warn("job-failed", {
         run_id: task.run.id,
@@ -298,7 +308,7 @@ export class JobAgentRunner implements AgentRunner {
     }
     const status = failed ? "failed" : "ok";
     const t = await this.#system((tx) =>
-      repo.finishStep(tx, { stepId: step.id, runId: task.run.id, status, detail }),
+      repo.finishStep(tx, { stepId: step.id, runId: task.run.id, status, detail: merged }),
     );
     if (!t) return;
     const ms = Math.max(0, t.finishedAt.getTime() - t.startedAt.getTime());
