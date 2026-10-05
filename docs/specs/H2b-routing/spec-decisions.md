@@ -11,7 +11,12 @@
 | U6 | Contract `chat`: sửa thẳng `packages/contracts/src/chat`, **chỉ thêm**; không sửa `apps/chat-web`, `tests/contract/chat`, `tests/acceptance/C1`; thay đổi làm đỏ chúng → nêu, không làm | §3 |
 | U7 | Codex/Gemini → H2d; không ghi ý tưởng "Agent Builder" | §1 |
 
-## Câu hỏi cho người dùng
+## Trả lời người dùng (2026-10-05)
+| # | Trả lời | Áp vào |
+|---|---|---|
+| Q1 | **B** — Hub gửi trường **tuỳ chọn** `responder: {key, name}` trong `run.started` và trong tin trả lời (E11, preview E10), **chỉ** với run gọi thẳng (`kind=direct`); contract chat **chỉ thêm** (không đổi/xoá trường, không sự kiện SSE mới, khoá `agent` vẫn cấm). `name` = tên agent theo `locale` của run, chốt lúc tạo run (`runs.responder_key`/`responder_name`) | spec R10, §3, §4; plan P1–P2 |
+
+## Câu hỏi cho người dùng (đã trả lời — giữ để truy vết)
 Chỉ một câu cần người dùng chọn. Không trả lời → dùng mặc định.
 
 ### Q1 · Tên agent khi user tự tag `@agent` lấy từ đâu? (mức Cao — chạm contract chat)

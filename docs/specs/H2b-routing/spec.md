@@ -2,7 +2,7 @@
 id: H2b-routing
 title: Định tuyến mở rộng (`@agent`, `GET /agents`, Orchestrator theo tenant, `max_concurrent_runs`, `delta` từ Runtime) + nợ H1 F3–F7
 milestone: H2b
-status: draft                  # draft → ready → approved → in-progress → done
+status: approved               # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-62, HUB-FR-77, HUB-FR-91, HUB-FR-92, HUB-FR-94, HUB-FR-95,
    HUB-BR-03, HUB-BR-06, HUB-BR-08, HUB-BR-18, HUB-BR-20,
@@ -19,7 +19,7 @@ owner: backend-lead (TS + Python)
 
 # H2b · Định tuyến mở rộng + nợ H1
 
-Mốc con thứ hai của H2. Nền: H1 + H2a. Quyết định, câu hỏi: [spec-decisions.md](spec-decisions.md).
+Mốc con thứ hai của H2. Nền: H1 + H2a. Quyết định: [spec-decisions.md](spec-decisions.md).
 
 ## 1. Phạm vi
 **Mục tiêu:** user gọi thẳng agent bằng `@agent` (một hoặc nhiều tag), có menu `@`; mỗi tenant có thể có Orchestrator riêng (seed yaml); mỗi user tối đa `max_concurrent_runs` run chạy cùng lúc; câu trả lời dài hiện dần (Runtime phát `delta`); đóng điểm mở F3–F7 của smoke H1.
@@ -28,7 +28,7 @@ Mốc con thứ hai của H2. Nền: H1 + H2a. Quyết định, câu hỏi: [spe
 |---|---|---|
 | 1 | Router `@`: tag đơn → run `kind=direct` (bỏ qua Orchestrator); nhiều tag → Orchestrator chỉ chọn trong agent được tag; `@@` = chữ `@`; `AGENT_NOT_FOUND` + ≤ 3 gợi ý; thiếu nội dung → `CMD_MISSING_ARG` | HUB-FR-91, BR-18, AC-H17/18/19 |
 | 2 | `GET /agents` (menu `@`) | HUB-FR-92 |
-| 3 | Tên agent khi user tự tag (Q1) | HUB-FR-91 (CR-033 sửa một phần CR-022) |
+| 3 | Tên agent khi user tự tag (Q1 = B: `responder`) | HUB-FR-91 (CR-033 sửa một phần CR-022) |
 | 4 | Xác nhận tool `side_effect` cả khi `@agent` (đường H2a-R21/R22) | HUB-BR-20, HUB-FR-95, AC-H22 (vế `@`) |
 | 5 | Orchestrator mặc định + bản riêng theo tenant (seed yaml), chọn lúc tạo run, chốt vào run | HUB-FR-62, BR-08, AC-H16 (vế runtime) |
 | 6 | `max_concurrent_runs` mỗi user → `429 TOO_MANY_RUNS` + `Retry-After` | HUB-FR-94, AC-H21 |
@@ -53,7 +53,7 @@ Chỉ phần cụ thể hoá BA; nguồn ở cột cuối. "Agent dùng được
 | H2b-R07 | Kết quả run `direct`: `done{text}` → `text` (pass-through); `partial{text,missing}` → `text` + `"\n\n"` + câu tĩnh theo `locale` ("Phần chưa làm được: " / "Not done yet: ") + `missing` (không Orchestrator, BR-04); `need_input` → SSE `ask` như H1-R08. Run `finished` → `flows.agent_id` = agent (cả `need_input`: `pending_ask` như H1). Lỗi job → `run.failed` mã như H1/H2a | HUB-FR-27, 28, 91 |
 | H2b-R08 | Tin kế không tag → Orchestrator như H1 (mọi tin trong flow qua Orchestrator — người dùng chốt), gợi ý `last_agent` = `flows.agent_id`, `waiting_for` khi có `pending_ask` (H1-R08) | HUB-FR-91, 28, AC-H17 |
 | H2b-R09 | **Nhiều** agent (≥ 2 sau gộp) → run `kind='orchestrated'`; `<agents>` của Orchestrator = các agent được tag (∈ AU), sắp `key`; message đưa Orchestrator = nội dung R04 (không có tag). Mọi delegate kiểm `canDelegate` trên **danh sách thu hẹp** → agent ngoài danh sách = step `skipped(not_allowed)` (H1-R06). Danh sách tag ghi vào trace của run. Tin kế không tag dùng lại danh sách đầy đủ | HUB-FR-91, AC-H19 |
-| H2b-R10 | Tên hiển thị (theo Q1, mặc định **B**): run `direct` → Hub gửi `responder={key, name}` (`name` = `agents.name[locale của run]`, chốt lúc tạo run) trong `run.started` và trong message assistant của run đó (E11, `preview` E10). Run `orchestrated` (kể cả nhiều tag, kể cả pass-through) và `command` → **không** có trường này (client hiện "Consultant"). Không bao giờ khoá `agent`/`provider`/`model`/`usage` | HUB-FR-91, CR-033, CHAT-AC-30 |
+| H2b-R10 | Tên hiển thị (Q1 = **B**): run `direct` → Hub gửi `responder={key, name}` (`name` = `agents.name[locale của run]`, chốt lúc tạo run) trong `run.started` và trong message assistant của run đó (E11, `preview` E10); lưu `runs.responder_*` (§4). Run `orchestrated` (kể cả nhiều tag, kể cả pass-through) và `command` → **không** có trường này (client hiện "Consultant"). Không bao giờ khoá `agent`/`provider`/`model`/`usage` | HUB-FR-91, CR-033, CHAT-AC-30 |
 
 ### 2.2 Menu `@` và `side_effect`
 | Luật | Điều kiện chính xác | Nguồn |
@@ -106,21 +106,22 @@ Chỉ phần cụ thể hoá BA; nguồn ở cột cuối. "Agent dùng được
 
 ## 4. Dữ liệu (backend-lead)
 Migration `migrations-hub/0006_h2b_routing.sql` (SQL ở `plan-db.md`):
-- `runs`: CHECK `kind` + `'direct'`; cột `agent_id uuid NULL` (CHECK `(kind='direct') = (agent_id IS NOT NULL)`), `orchestrator_tenant_id uuid NULL`; index một phần `runs(tenant_id, user_id) WHERE status='running'` cho đếm R16.
+- `runs`: CHECK `kind` + `'direct'`; cột `agent_id uuid NULL` (CHECK `(kind='direct') = (agent_id IS NOT NULL)`), `orchestrator_tenant_id uuid NULL`, `responder_key`/`responder_name text NULL` (chỉ `direct`, R10); index một phần `runs(tenant_id, user_id) WHERE status='running'` cho đếm R16.
 - `orchestrator_settings`: thêm `tenant_id uuid NULL`, bỏ ràng buộc `id = 1`, duy nhất theo `tenant_id` (đúng một hàng `tenant_id IS NULL`). Hàng mặc định hiện có giữ nguyên.
+- `jobs`: CHECK `error_reason` + `refused` (R27).
 - Không bảng mới; RLS không đổi (đếm R16 trong phạm vi `user` như transaction tạo run).
 
 ## 5. UI
-Không có UI Hub. Menu `@`, `AGENT_NOT_FOUND`/`TOO_MANY_RUNS`, tên agent (R10), `delta` khi step còn mở: phiên Chat khi combine (CR-impact ở I3).
+Không có UI Hub. Menu `@`, `AGENT_NOT_FOUND`/`TOO_MANY_RUNS`, `responder`, `delta` khi step còn mở: Chat khi combine (CR-impact I3).
 
 ## 6. Hiệu năng
 | Chỉ tiêu | Ngưỡng | Đo bằng |
 |---|---|---|
-| `GET /agents` (cache, 0 query) | ≤ 50 ms p95 | `test:perf` (không chặn) |
+| `GET /agents` (cache, 0 query) | ≤ 50 ms p95 | `test:perf` |
 | Router `@` + kiểm `TOO_MANY_RUNS` thêm vào E12 | ≤ 10 ms p95 | `test:perf` |
 | `job.delta` (XADD) → SSE `delta` | ≤ 150 ms | int (dấu thời gian) |
 | Delta đầu tiên với `#fake:stream` trước `job.result` | delta đầu tới client trước `run.finished` ≥ 200 ms | acceptance (chặn) |
-| Thu hồi agent → biến khỏi `GET /agents` | ≤ 5 s | acceptance (chặn) |
+| Thu hồi agent → hết ở `GET /agents` | ≤ 5 s | acceptance (chặn) |
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
@@ -129,7 +130,7 @@ Không có UI Hub. Menu `@`, `AGENT_NOT_FOUND`/`TOO_MANY_RUNS`, tên agent (R10)
 | `claude-sub` thật | Chỉ smoke `HUB_LIVE=1` (R29), không chặn `done:h2b` |
 | Dify | Mock Hub H2a (`tools/hub-dev/src/dify-mock.ts`) cho R24 và AC-H22 vế `@` |
 
-Env mới: `HUB_MAX_CONCURRENT_RUNS=2` (test đặt 2) · `HUB_LIVE` (đã có, nay được đọc). Runtime: `AGENT_RT_DELTA_FLUSH_MS=100`, `AGENT_RT_DELTA_FLUSH_CHARS=200`.
+Env mới: `HUB_MAX_CONCURRENT_RUNS=2` (test đặt 2) · `HUB_LIVE` (nay đọc). Runtime: `AGENT_RT_DELTA_FLUSH_MS=100`, `AGENT_RT_DELTA_FLUSH_CHARS=200`.
 
 ## 8. Tiêu chí nghiệm thu (qc)
 Nguyên văn AC ở BA `ba-agent-hub` §11.
@@ -161,10 +162,10 @@ Nguyên văn AC ở BA `ba-agent-hub` §11.
 | HUB-H2b-AC-12 | Smoke `HUB_LIVE=1` (không chặn): `@assistant` câu dài stream; Orchestrator answer dài stream; huỷ giữa chừng có usage | smoke |
 | HUB-H2b-AC-13 | Hồi quy: `test:contract:chat` 41 ca (Hub thật, fixture R26) xanh; test khoá H1/H2a xanh nguyên văn; `contracts:check` xanh | contract + CI |
 
-Lệnh xong mốc: `done:h2b` (qc định nghĩa ở `test-plan.md`, mẫu `done:h2a`).
+Lệnh xong mốc: `done:h2b` (qc, `test-plan.md`, mẫu `done:h2a`).
 
 ## 9. Câu hỏi mở
-Ở [spec-decisions.md](spec-decisions.md) "Câu hỏi cho người dùng" (Q1) và "Mặc định tự chọn" (T1–T18).
+Không còn: Q1 = B (2026-10-05), T1–T18 — [spec-decisions.md](spec-decisions.md).
 
 ## 10. Rủi ro
 | # | Rủi ro | Giảm thiểu |
@@ -175,7 +176,7 @@ Lệnh xong mốc: `done:h2b` (qc định nghĩa ở `test-plan.md`, mẫu `done
 | K4 | F3: `lan` thấy `assistant` → contract chat có thể đổi | `fake-cli` chỉ delegate khi có `#fake:delegate`; AC-13 đỏ → hard stop |
 | K5 | Mẫu chữ F4 lệch thực tế | Mẫu một chỗ (plan), smoke `HUB_LIVE`; lệch → `UPSTREAM_ERROR` như H1 |
 | K6 | `host_proc.py` (312 dòng) gần trần | Bộ phân tích tăng dần ở module riêng |
-| K7 | `responder` (Q1=B) vượt câu chữ ROADMAP về contract | Hỏi người dùng (Q1) |
+| K7 | `responder` vượt chữ ROADMAP | Q1=B đã chốt; ROADMAP sửa ở I3 |
 
 ## 11. Tranh chấp test
 - (chưa có)
