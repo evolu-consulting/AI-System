@@ -5,6 +5,7 @@ import type { ChatRunErrorCode } from "@ai/contracts/chat";
 import type {
   AgentResult,
   HistoryItem,
+  JobFailReason,
   JobOutput,
   OrchestratorDecision,
   TokenUsage,
@@ -17,6 +18,12 @@ import {
 import type { AgentConfig } from "../config/config.rules";
 import type { AgentRole } from "../runner/runner.rules";
 import {
+  type DeltaKind,
+  type Reconciled,
+  reconcileStream,
+  streamAccept,
+} from "../stream/delta.rules";
+import {
   type FlowHint,
   orchestratorPrompt,
   orchestratorSystemPrompt,
@@ -24,10 +31,18 @@ import {
 } from "./orchestrator.prompt";
 import { budgetExceeded, budgetOutcome, canPassThrough, parseDecision } from "./orchestrator.rules";
 
+/** H2b P11 · phần đã phát (S) của job và step của nó; vắng = không stream. */
+type LoopStreamed = { streamed?: string; stepId?: string };
+
 /** Kết quả một job, cùng dạng `JobOutcome` của runner (B7). */
 export type LoopJobOutcome =
-  | { kind: "result"; output: JobOutput; usage: TokenUsage }
-  | { kind: "failed"; code: ChatRunErrorCode; usage: TokenUsage }
+  | ({ kind: "result"; output: JobOutput; usage: TokenUsage } & LoopStreamed)
+  | ({
+      kind: "failed";
+      code: ChatRunErrorCode;
+      usage: TokenUsage;
+      reason?: JobFailReason | null;
+    } & LoopStreamed)
   | { kind: "aborted" };
 
 export type LoopJob = {
@@ -40,6 +55,8 @@ export type LoopJob = {
   reopen?: boolean;
   /** H2b P13 · gộp vào `run_steps.detail` của step (vd `scope` của run thu hẹp, R09). */
   detail?: Readonly<Record<string, unknown>>;
+  /** H2b P11 · loại delta chuyển tiếp (`streamAccept`); vắng = job không stream. */
+  stream?: readonly DeltaKind[];
 };
 
 export type LoopIo = {
@@ -60,12 +77,23 @@ export type LoopInput = {
   locale: "vi" | "en";
   /** H2b P13 · `detail` cho mọi step Orchestrator (run thu hẹp: `{scope}`). */
   stepDetail?: Readonly<Record<string, unknown>>;
+  /** H2b P11 · run được stream (Orchestrator + delegate đầu, plan §5.5); vắng = như H1. */
+  stream?: boolean;
 };
 
 export type Ask = { question: string; choices: string[] };
+
+/** H2b P12 · kết thúc của job đã phát: `text` (nội dung) bắt đầu bằng `streamed`; `trace` R23 cho step `stepId`. */
+export type LoopStreamEnd = {
+  streamed: string;
+  stepId: string;
+  trace: Reconciled["trace"];
+  finalLen: number;
+};
+
 /** `agentId` vắng = giữ `flows.agent_id`. */
 export type LoopEnd =
-  | { kind: "text"; text: string; agentId?: string }
+  | { kind: "text"; text: string; agentId?: string; stream?: LoopStreamEnd }
   | { kind: "ask"; ask: Ask; agentId?: string }
   | { kind: "failed"; code: ChatRunErrorCode }
   | { kind: "aborted" };
@@ -89,14 +117,62 @@ const addUsage = (s: State, o: LoopJobOutcome) => {
 const stopOf = (o: Exclude<LoopJobOutcome, { kind: "result" }>): Stop =>
   o.kind === "failed" ? { kind: "failed", code: o.code } : { kind: "aborted" };
 
+/** P12 · đã phát rồi `invalid_output` (JSON cuối hỏng) → kết thúc với S (`stream_unparsed`); lỗi khác → null (như H1). */
+function stoppedAfterStream(
+  o: Exclude<LoopJobOutcome, { kind: "result" }>,
+  agentId?: string,
+): LoopEnd | null {
+  if (o.kind !== "failed" || !streamedOf(o) || o.reason !== "invalid_output") return null;
+  return streamEnd(o, null, agentId);
+}
+
+type StreamJob = Parameters<typeof streamAccept>[0];
+
+/** P11 · `stream` của job theo bảng §5.5 khi run được stream; `[]` → không khoá. */
+function acceptOf(c: LoopInput, j: StreamJob): { stream?: readonly DeltaKind[] } {
+  const accept = c.stream ? streamAccept(j) : [];
+  return accept.length > 0 ? { stream: accept } : {};
+}
+
 function budgetEnd(s: State, locale: "vi" | "en"): LoopEnd {
   const o = budgetOutcome(s.answered, locale);
   return o.kind === "fail" ? { kind: "failed", code: o.code } : { kind: "text", text: o.text };
 }
 
-type Decided = { kind: "decision"; decision: OrchestratorDecision } | Stop;
+/** S của job (rỗng nếu không stream). */
+const streamedOf = (o: LoopJobOutcome): string => (o.kind === "aborted" ? "" : (o.streamed ?? ""));
 
-/** Một step Orchestrator; JSON hỏng → thử lại 1 lần cùng step kèm câu nhắc; vẫn hỏng → `UPSTREAM_ERROR` (H1-R06). */
+/** P12 · job đã phát S: kết thúc với `reconcileStream(S, F)` (F null = kết quả cuối hỏng); không rút lại chữ đã gửi. */
+function streamEnd(
+  o: Exclude<LoopJobOutcome, { kind: "aborted" }>,
+  final: string | null,
+  agentId?: string,
+): LoopEnd {
+  const streamed = o.streamed ?? "";
+  const r = reconcileStream(streamed, final);
+  const stream = { streamed, stepId: o.stepId ?? "", trace: r.trace, finalLen: final?.length ?? 0 };
+  return { kind: "text", text: r.content, ...(agentId ? { agentId } : {}), stream };
+}
+
+type Decided =
+  | { kind: "decision"; decision: OrchestratorDecision }
+  | { kind: "end"; end: LoopEnd }
+  | Stop;
+
+/** P12 · Orchestrator đã phát: không thử lại; `answer` → F = `text`; quyết định khác (không thể xảy ra) → lệch. */
+function streamedDecision(
+  o: Extract<LoopJobOutcome, { kind: "result" }>,
+  d: ReturnType<typeof parseDecision> | null,
+): Decided {
+  if (!d?.ok) return { kind: "end", end: streamEnd(o, null) };
+  const final = d.decision.decision === "answer" ? d.decision.text : "";
+  return { kind: "end", end: streamEnd(o, final) };
+}
+
+/**
+ * Một step Orchestrator; JSON hỏng → thử lại 1 lần cùng step kèm câu nhắc; vẫn hỏng → `UPSTREAM_ERROR` (H1-R06). H2b
+ * P11–P12: run stream → job `stream=["answer"]`; đã phát thì không thử lại (R21).
+ */
 async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
   const prompt = (retry: boolean) =>
     orchestratorPrompt(
@@ -117,26 +193,35 @@ async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
     history: [],
     stepId: crypto.randomUUID(),
     ...(c.stepDetail ? { detail: c.stepDetail } : {}),
+    ...acceptOf(c, { role: "orchestrator", runKind: "orchestrated", firstDelegate: false }),
   };
   const first = prompt(false);
   s.steps++;
   for (const retry of [false, true]) {
     const o = await io.job({ ...base, prompt: retry ? prompt(true) : first, reopen: retry });
     addUsage(s, o);
-    if (o.kind !== "result") return stopOf(o);
+    if (o.kind !== "result") {
+      const end = stoppedAfterStream(o);
+      return end ? { kind: "end", end } : stopOf(o);
+    }
     const d = o.output.kind === "text" ? parseDecision(o.output.text) : null;
+    if (streamedOf(o)) return streamedDecision(o, d);
     if (d?.ok) return { kind: "decision", decision: d.decision };
   }
   return { kind: "failed", code: "UPSTREAM_ERROR" };
 }
 
-/** Một step delegate; null = đưa kết quả vào `<steps>` rồi quay lại Orchestrator. */
+/**
+ * Một step delegate; null = đưa kết quả vào `<steps>` rồi quay lại Orchestrator. H2b P11: delegate đầu của run stream →
+ * `stream=["done"]`; đã phát ≥ 1 delta ⇒ kết thúc pass-through bất kể `status` (khác `done` ⇒ S + `delta_mismatch`).
+ */
 async function delegate(
   io: LoopIo,
   c: LoopInput,
   s: State,
   d: { agent: AgentConfig; task: string },
 ): Promise<LoopEnd | null> {
+  const firstDelegate = s.delegates === 0;
   s.steps++;
   s.delegates++;
   const o = await io.job({
@@ -144,11 +229,14 @@ async function delegate(
     role: "agent",
     prompt: d.task,
     history: c.history,
+    ...acceptOf(c, { role: "agent", runKind: "orchestrated", firstDelegate }),
   });
   addUsage(s, o);
-  if (o.kind !== "result") return stopOf(o);
-  if (o.output.kind !== "agent_result") return { kind: "failed", code: "UPSTREAM_ERROR" };
-  return afterAgent(s, d.agent, o.output.result);
+  if (o.kind !== "result") return stoppedAfterStream(o, d.agent.id) ?? stopOf(o);
+  const r = o.output.kind === "agent_result" ? o.output.result : null;
+  if (streamedOf(o)) return streamEnd(o, r?.status === "done" ? r.text : "", d.agent.id);
+  if (!r) return { kind: "failed", code: "UPSTREAM_ERROR" };
+  return afterAgent(s, d.agent, r);
 }
 
 function afterAgent(s: State, agent: AgentConfig, r: AgentResult): LoopEnd | null {
@@ -204,6 +292,7 @@ export async function runLoop(io: LoopIo, c: LoopInput): Promise<LoopEnd> {
     if (budgetExceeded({ steps: s.steps, maxSteps, tokens: s.tokens, tokenBudget }))
       return budgetEnd(s, c.locale);
     const d = await decide(io, c, s);
+    if (d.kind === "end") return d.end;
     if (d.kind !== "decision") return d;
     const dec = d.decision;
     if (dec.decision === "answer") return { kind: "text", text: dec.text };

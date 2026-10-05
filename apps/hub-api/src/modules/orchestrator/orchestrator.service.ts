@@ -10,6 +10,9 @@ import type { UserState } from "../config/config.rules";
 import { type AgentRunner, runJob } from "../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../runs/runs.service";
 import type { SseWriter } from "../runs/sse/sse-writer";
+import { chunkDelta } from "../stream/delta.rules";
+import { DeltaSink } from "../stream/delta-sink";
+import { gapTrace, reconcileTrace } from "../stream/stream-trace";
 import { type LoopEnd, type LoopInput, type LoopIo, runLoop } from "./orchestrator.loop";
 import * as repo from "./orchestrator.repo";
 import { chunkText } from "./orchestrator.rules";
@@ -52,19 +55,30 @@ async function loadInput(d: OrchestratorDeps, ctx: RunContext): Promise<LoopInpu
     message: ctx.content,
     locale: r.locale,
     ...(scope ? { stepDetail: { scope: [...scope].sort() } } : {}),
+    stream: true,
   };
 }
+
+/** P11 · SSE `delta` của sink (chữ đã cắt ≤ 40). */
+export const deltaEmit = (writer: SseWriter) => (text: string) =>
+  writer.emit({ event: "delta", data: { text } });
 
 function loopIo(d: OrchestratorDeps, ctx: RunContext): LoopIo {
   const { writer, snapshot, log } = ctx;
   return {
-    job: (j) =>
-      runJob(
-        d.runner,
-        { ...j, run: writer.run, snapshot, emit: (ev) => writer.emit(ev) },
-        writer.signal,
-        log,
-      ),
+    job: async ({ stream, ...j }) => {
+      const sink = stream ? new DeltaSink(stream, deltaEmit(writer)) : undefined;
+      const task = {
+        ...j,
+        run: writer.run,
+        snapshot,
+        stream: sink,
+        emit: writer.emit.bind(writer),
+      };
+      const o = await runJob(d.runner, task, writer.signal, log);
+      if (o.kind !== "aborted") await gapTrace({ db: d.db, log, runId: writer.run.id }, o);
+      return o;
+    },
     skip: (s) =>
       withHubScope(d.db, { kind: "system" }, (tx) =>
         repo.insertSkippedStep(tx, { run: writer.run, ...s }),
@@ -77,14 +91,26 @@ async function emitText(writer: SseWriter, text: string): Promise<void> {
   for (const part of chunkText(text)) await writer.emit({ event: "delta", data: { text: part } });
 }
 
-async function deliver(writer: SseWriter, end: LoopEnd): Promise<void> {
+/** P12 · đã phát S: trace R23 rồi chỉ phát phần còn lại (`text` luôn bắt đầu bằng S). */
+async function emitRest(d: OrchestratorDeps, ctx: RunContext, end: LoopEnd): Promise<void> {
+  if (end.kind !== "text" || !end.stream?.streamed) return;
+  const { writer } = ctx;
+  const s = end.stream;
+  await reconcileTrace({ db: d.db, log: ctx.log, runId: writer.run.id, stepId: s.stepId }, s);
+  for (const part of chunkDelta(end.text.slice(s.streamed.length)))
+    await writer.emit({ event: "delta", data: { text: part } });
+}
+
+async function deliver(d: OrchestratorDeps, ctx: RunContext, end: LoopEnd): Promise<void> {
+  const { writer } = ctx;
   if (end.kind === "aborted") return;
   if (end.kind === "failed") {
     await writer.finish({ kind: "failed", code: end.code });
     return;
   }
   const text = end.kind === "text" ? end.text : end.ask.question;
-  await emitText(writer, text);
+  if (end.kind === "text" && end.stream?.streamed) await emitRest(d, ctx, end);
+  else await emitText(writer, text);
   const ask = end.kind === "ask" ? end.ask : null;
   await writer.finish({ kind: "finished", content: text, ask, agentId: end.agentId });
 }
@@ -105,7 +131,7 @@ export async function driveRun(d: OrchestratorDeps, base: RunContext): Promise<v
       outcome: end.kind,
       code: end.kind === "failed" ? end.code : null,
     });
-    await deliver(writer, end);
+    await deliver(d, ctx, end);
   } catch (err) {
     if (writer.signal.aborted || writer.done) return;
     log.error("orchestrator-failed", safeErrorFields(err));

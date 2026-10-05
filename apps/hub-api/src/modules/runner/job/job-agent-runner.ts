@@ -5,6 +5,7 @@ import type { ChatRunErrorCode } from "@ai/contracts/chat";
 import {
   type AgentCliJob,
   type HistoryItem,
+  type JobFailReason,
   type JobOutput,
   MCP_TOOLS_MAX,
   type McpConfig,
@@ -22,6 +23,7 @@ import { stepLabel } from "../../conversations/conversations.rules";
 import { mcpToolsFor } from "../../mcp/mcp.rules";
 import { queueTimeoutReason } from "../../runs/runs.rules";
 import type { SseEventBody } from "../../runs/sse/sse-writer";
+import type { DeltaGap, DeltaSink } from "../../stream/delta-sink";
 import type { RunStreamReader } from "../run-stream-reader";
 import {
   type AgentRole,
@@ -49,8 +51,8 @@ export type AgentTask = {
   /** Vắng → `agent.systemPrompt` (Orchestrator: B8 nối khối định dạng §6.3). */
   systemPrompt?: string;
   history: readonly HistoryItem[];
-  /** H2b P10 · `payload.stream=true` (run `direct`); vắng = không stream. */
-  stream?: boolean;
+  /** H2b P11 · có ⇒ `payload.stream=true`, `runJob` chuyển `job.delta` qua sink (plan §5.5); vắng = không stream. */
+  stream?: DeltaSink;
   /** `run_steps.id` do người gọi chọn (vắng → mới); `reopen` = thử lại cùng step (Orchestrator JSON hỏng, plan §6.1). */
   stepId?: string;
   reopen?: boolean;
@@ -65,9 +67,18 @@ export interface AgentRunner {
   run(task: AgentTask, signal: AbortSignal): AsyncIterable<RunEvent>;
 }
 
+/** H2b P11 · phần đã phát (S), `seq` hở (nếu có) và step của job (để ghi trace). */
+export type JobStreamed = { streamed: string; gap: DeltaGap | null; stepId: string };
+
 export type JobOutcome =
-  | { kind: "result"; jobId: string; output: JobOutput; usage: TokenUsage }
-  | { kind: "failed"; jobId: string; code: ChatRunErrorCode; usage: TokenUsage }
+  | ({ kind: "result"; jobId: string; output: JobOutput; usage: TokenUsage } & JobStreamed)
+  | ({
+      kind: "failed";
+      jobId: string;
+      code: ChatRunErrorCode;
+      reason: JobFailReason | null;
+      usage: TokenUsage;
+    } & JobStreamed)
   | { kind: "aborted" };
 
 export type JobAgentRunnerDeps = {
@@ -177,7 +188,7 @@ export class JobAgentRunner implements AgentRunner {
       prompt: task.prompt,
       systemPrompt: task.systemPrompt ?? task.agent.systemPrompt,
       history: task.history,
-      stream: task.stream,
+      stream: task.stream !== undefined,
     });
   }
 
@@ -333,7 +344,7 @@ export class JobAgentRunner implements AgentRunner {
 
 /**
  * Chạy một job tới kết thúc và quy về kết quả cho vòng Orchestrator (B8). Lỗi job → mã run (P11, không mang `message`
- * gốc); lỗi bất ngờ (DB/Redis) → `INTERNAL_ERROR`.
+ * gốc); lỗi bất ngờ (DB/Redis) → `INTERNAL_ERROR`. H2b P11: sự kiện không kết thúc của job → `task.stream` (delta).
  */
 export async function runJob(
   runner: AgentRunner,
@@ -341,17 +352,29 @@ export async function runJob(
   signal: AbortSignal,
   log: Logger,
 ): Promise<JobOutcome> {
+  const t = task.stepId ? task : { ...task, stepId: crypto.randomUUID() };
+  const streamed = (): JobStreamed => ({
+    streamed: t.stream?.text ?? "",
+    gap: t.stream?.gap ?? null,
+    stepId: t.stepId ?? "",
+  });
   try {
-    for await (const ev of runner.run(task, signal)) {
-      if (ev.type === "job.result")
-        return { kind: "result", jobId: ev.job_id, output: ev.output, usage: ev.usage };
-      if (ev.type === "job.failed")
-        return { kind: "failed", jobId: ev.job_id, code: runErrorCodeOf(ev.code), usage: ev.usage };
+    for await (const ev of runner.run(t, signal)) {
+      if (ev.type === "job.result") {
+        const { output, usage } = ev;
+        return { kind: "result", jobId: ev.job_id, output, usage, ...streamed() };
+      }
+      if (ev.type === "job.failed") {
+        const f = { code: runErrorCodeOf(ev.code), reason: ev.reason, usage: ev.usage };
+        return { kind: "failed", jobId: ev.job_id, ...f, ...streamed() };
+      }
+      await t.stream?.onEvent(ev);
     }
   } catch (err) {
     if (signal.aborted) return { kind: "aborted" };
     log.error("job-run-failed", { run_id: task.run.id, ...safeErrorFields(err) });
-    return { kind: "failed", jobId: "", code: "INTERNAL_ERROR", usage: ZERO_USAGE };
+    const f = { code: "INTERNAL_ERROR", reason: null, usage: ZERO_USAGE } as const;
+    return { kind: "failed", jobId: "", ...f, ...streamed() };
   }
   return { kind: "aborted" };
 }

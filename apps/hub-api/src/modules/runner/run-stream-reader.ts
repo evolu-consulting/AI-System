@@ -32,6 +32,9 @@ export class RunStreamReader {
   readonly #subs = new Set<Sub>();
   #conn: Redis | null = null;
   #running = false;
+  /** H2b P11 (≤ 150 ms delta): `CLIENT ID` của kết nối chặn + khoá của `XREAD` đang chờ. */
+  #connId: number | null = null;
+  #reading: ReadonlySet<string> | null = null;
 
   constructor(
     private readonly redis: Redis,
@@ -49,7 +52,19 @@ export class RunStreamReader {
     const sub: Sub = { key: runStreamKey(runId), last: "0-0", push };
     this.#subs.add(sub);
     if (!this.#running) void this.#loop();
+    else if (this.#reading && !this.#reading.has(sub.key)) this.#unblock();
     return () => this.#subs.delete(sub);
+  }
+
+  /**
+   * Khoá mới khi `XREAD BLOCK` đang chờ khoá cũ → `CLIENT UNBLOCK` (kết nối thường) để vòng đọc lấy khoá mới ngay, thay
+   * vì chờ hết `BLOCK_MS` (sự kiện đầu của run — vd `job.delta` — trễ tới 1 s). Lỗi chỉ log: vẫn còn hạn `BLOCK_MS`.
+   */
+  #unblock(): void {
+    if (this.#connId === null) return;
+    this.redis
+      .call("CLIENT", "UNBLOCK", String(this.#connId))
+      .catch((err) => this.log.warn("run-reader-unblock", safeErrorFields(err)));
   }
 
   async #connection(): Promise<Redis> {
@@ -64,6 +79,8 @@ export class RunStreamReader {
       throw err;
     }
     this.#conn = conn;
+    this.#connId = Number(await conn.call("CLIENT", "ID").catch(() => Number.NaN));
+    if (!Number.isInteger(this.#connId)) this.#connId = null;
     return conn;
   }
 
@@ -92,7 +109,13 @@ export class RunStreamReader {
     }
     const keys = [...from.keys()];
     const ids = keys.map((k) => from.get(k) ?? "0-0");
-    const res = await conn.call("XREAD", "BLOCK", BLOCK_MS, "STREAMS", ...keys, ...ids);
+    this.#reading = new Set(keys);
+    let res: unknown;
+    try {
+      res = await conn.call("XREAD", "BLOCK", BLOCK_MS, "STREAMS", ...keys, ...ids);
+    } finally {
+      this.#reading = null;
+    }
     for (const [key, rows] of xreadPairs(res)) this.#dispatch(key, rows);
   }
 
