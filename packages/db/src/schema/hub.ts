@@ -1,9 +1,10 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
 // Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts`
 // (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   customType,
   integer,
@@ -48,6 +49,7 @@ export const AGENT_RUNTIME_VALUES = [
   "dify-workflow",
   "dify-agent",
 ] as const;
+export const ATTACHMENT_ORIGIN_VALUES = ["upload", "output"] as const;
 
 // ── §3.1 Cấu hình ──
 export const hubConfigMeta = hub.table("config_meta", {
@@ -173,6 +175,8 @@ export const runs = hub.table("runs", {
   orchestratorTenantId: uuid("orchestrator_tenant_id"),
   responderKey: text("responder_key"),
   responderName: text("responder_name"),
+  // 0007 (H2c): tập file của run (R14, ≤ 10 — CHECK ở SQL).
+  attachmentIds: uuid("attachment_ids").array().notNull().default(sql`'{}'`),
   status: text("status", { enum: RUN_STATUS_VALUES }).notNull(),
   configVersion: integer("config_version").notNull(),
   userMessageId: uuid("user_message_id").notNull(),
@@ -276,4 +280,27 @@ export const agentTypes = hub.table("agent_types", {
   workerId: text("worker_id").notNull(),
   available: boolean("available").notNull().default(true),
   registeredAt: ts("registered_at").notNull().defaultNow(),
+});
+
+// ── H2c (0007_h2c_attachments): file đính kèm (RLS như bảng hội thoại; FK message_id SET NULL; CHECK ở SQL) ──
+export const attachments = hub.table("attachments", {
+  ...owned(),
+  origin: text("origin", { enum: ATTACHMENT_ORIGIN_VALUES }).notNull(),
+  /** NOT NULL ⇔ origin = output (CHECK `attachments_output_job_ck`). */
+  jobId: uuid("job_id"),
+  conversationId: uuid("conversation_id"),
+  flowId: uuid("flow_id"),
+  messageId: uuid("message_id"),
+  /** Thứ tự trong tin (0–9), đặt khi gắn (R12). */
+  position: smallint("position"),
+  filename: text("filename").notNull(),
+  safeName: text("safe_name").notNull(),
+  mime: text("mime").notNull(),
+  size: bigint("size", { mode: "number" }).notNull(),
+  sha256: text("sha256").notNull(),
+  /** `<tenant_id>/<id>` (CHECK `attachments_key_ck`). */
+  storageKey: text("storage_key").notNull(),
+  createdAt: createdAt(),
+  boundAt: ts("bound_at"),
+  purgedAt: ts("purged_at"),
 });

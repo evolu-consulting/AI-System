@@ -109,3 +109,10 @@ BA chỉ nêu ví dụ "PDF, ảnh, XML" (US-H07). Hub không quét virus ở H2
 |---|---|---|---|
 | BC1 | C1 | `ATTACH_MAX_BYTES`/`ATTACH_ALLOWED`/`AttachMime`/`ATTACH_MIMES`/`AttachMimeSchema` đặt ở `packages/contracts/src/attach.ts`, `common.ts` re-export (`export * from "./attach"`) — import `../common` như plan | `common.ts` 403 dòng > trần 400 (`check:size`) |
 | BC2 | C1 | `AttachmentNotFoundDetailsSchema.ids` max = `ATTACH_PER_MESSAGE_MAX` (10) — `errors.ts` import `./attachments` (không vòng: `attachments.ts` chỉ import `../common`) | Một nguồn hằng |
+
+## BUILD — D1 (backend-lead, 2026-10-05)
+| # | Chỗ | Quyết định | Lý do |
+|---|---|---|---|
+| D1-1 | `attachments_bound_ck` (plan-db §1) | Thêm `position IS NOT NULL` tường minh: `message_id IS NULL OR (bound_at IS NOT NULL AND position IS NOT NULL AND position BETWEEN 0 AND 9 AND conversation_id IS NOT NULL AND flow_id IS NOT NULL)` | `NULL BETWEEN 0 AND 9` = NULL ⇒ CHECK cho qua hàng đã gắn mà `position` NULL (test D1 bắt được). Không đổi nghiệp vụ (R12: hàng gắn luôn có thứ tự) |
+| D1-2 | plan §3 ghi `(message_id IS NULL) = (bound_at IS NULL)` | Theo plan-db §1 (một chiều: có `message_id` ⇒ có `bound_at`) | FK `ON DELETE SET NULL` chỉ xoá `message_id`; CHECK hai chiều làm xoá message lỗi 23514 |
+| D1-3 | Test khoá cũ của `packages/db` (không thuộc `tests/.lock`) | `migrate-hub.int` thêm `attachments` vào danh sách bảng hub (20 → 21); `hub-rls.int` thêm `attachments` vào bảng có RLS | Hai test liệt kê đúng tập bảng/RLS hiện có — cập nhật như H2a đã làm với `tool_confirmations` |

@@ -41,6 +41,7 @@ const HUB_TABLES = [
   "agent_types",
   "agent_workflows",
   "agents",
+  "attachments",
   "cli_sessions",
   "config_meta",
   "conversations",
@@ -91,7 +92,7 @@ const migrateAll = async (appEnv: "test" | "production") => {
 };
 
 describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
-  test("DB sạch (production): main → hub đủ 20 bảng, không hub-dev; lần 2 {0,0}", async () => {
+  test("DB sạch (production): main → hub đủ 21 bảng, không hub-dev; lần 2 {0,0}", async () => {
     expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 9, dev: 0 });
     expect(await runHubMigrations({ url: URL, appEnv: "production" })).toEqual({
       hub: HUB_N,
