@@ -9,7 +9,8 @@ Nhận `StreamEvent.event` thô (dict API Anthropic) — không import SDK, test
 - F5 (S1): `message_start.message.usage` (id = `message.id`) rồi `message_delta.usage` (cùng id,
   bản sau thay) qua `UsageAcc`; `AssistantMessage.usage` không dùng (ảnh chụp lúc start).
   `message_start` thiếu id ⇒ id tạm riêng cho message đó (`message_delta` sau thay, không cộng đôi).
-- TC-8 F4: `message_delta.delta.stop_reason` cuối (vd `"refusal"`) → `stop_reason` (cho `Final`).
+- TC-8 F4: `message_delta.delta.stop_reason` cuối (vd `"refusal"`) → `stop_reason` (cho `Final`);
+  `message_start` đặt lại (REVIEW 2 RV2-2).
 """
 
 from __future__ import annotations
@@ -73,6 +74,7 @@ class PartialStream:
             msg = _dict(event.get("message"))
             self.message_id = self._message_id(msg.get("id"))
             self.block, self.scanner = None, None
+            self.stop_reason = None  # REVIEW 2 RV2-2: chỉ của message cuối
             return self._usage(msg.get("usage"), model)
         if kind == "message_delta":
             stop = _dict(event.get("delta")).get("stop_reason")

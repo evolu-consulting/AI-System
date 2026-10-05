@@ -324,3 +324,21 @@ async def test_wrk_fr_15_tc8_stop_reason_to_final(
     ps.handle(refusal_delta().event, MODEL)
     ps.handle({"type": "message_delta", "delta": {"stop_reason": None}}, MODEL)
     assert ps.stop_reason == "refusal"
+
+
+async def test_wrk_fr_15_rv2_stop_reason_subagent_and_reset(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """REVIEW 2 RV2-2: `AssistantMessage` của subagent (`parent_tool_use_id`) không làm
+    fallback; `message_start` đặt lại `stop_reason` của message trước."""
+    err = {"is_error": True, "result": "x", "usage": None}
+    sub = AssistantMessage([TextBlock("x")], MODEL, parent_tool_use_id="t1", stop_reason="refusal")
+    evs = await run(monkeypatch, job_of(tmp_path / "a"), [sub, result(**err)])
+    assert evs[-1]["stop_reason"] is None
+    script: list[Message] = [msg_start("m1", 0), refusal_delta(), msg_start("m2", 0), result(**err)]
+    evs = await run(monkeypatch, job_of(tmp_path / "b"), script)
+    assert evs[-1]["stop_reason"] is None
+    ps = PartialStream(None)
+    ps.handle(refusal_delta().event, MODEL)
+    ps.handle(msg_start("m3", 0).event, MODEL)
+    assert ps.stop_reason is None

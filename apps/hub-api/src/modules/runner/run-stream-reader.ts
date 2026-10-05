@@ -39,6 +39,7 @@ export class RunStreamReader {
   #connId: number | null = null;
   #reading: ReadonlySet<string> | null = null;
   #unblocking = false;
+  #unblockAgain = false;
 
   constructor(
     private readonly redis: Redis,
@@ -90,20 +91,38 @@ export class RunStreamReader {
    * ngắn (`UNBLOCK_TRIES` × `UNBLOCK_GAP_MS`) tới khi trả 1 hoặc vòng đọc đã lấy khoá mới. Lỗi chỉ log: còn hạn `BLOCK_MS`.
    */
   async #unblock(): Promise<void> {
-    if (this.#unblocking) return;
+    // REVIEW 2 RV2-1: sub mới tới khi UNBLOCK khác đang bay → không thoát im lặng mà đánh dấu chạy lại (lần đang bay
+    // có thể đã gỡ `XREAD` cũ trước khi khoá mới vào `#subs`, vòng đọc mới lại chờ thiếu khoá → trễ tới `BLOCK_MS`).
+    if (this.#unblocking) {
+      this.#unblockAgain = true;
+      return;
+    }
     this.#unblocking = true;
+    this.#unblockAgain = false;
+    let exhausted = false;
     try {
-      for (let i = 0; i < UNBLOCK_TRIES && this.#stale() && this.#connId !== null; i++) {
-        if (i > 0) await Bun.sleep(UNBLOCK_GAP_MS);
-        if (!this.#stale() || this.#connId === null) return;
-        const n = await this.redis.call("CLIENT", "UNBLOCK", String(this.#connId));
-        if (Number(n) === 1) return;
-      }
+      exhausted = !(await this.#unblockTries());
     } catch (err) {
       this.log.warn("run-reader-unblock", safeErrorFields(err));
     } finally {
       this.#unblocking = false;
+      // Chạy lại khi có yêu cầu trong lúc bay, hoặc hết lượt thử mà vẫn chờ thiếu khoá (không lặp khi UNBLOCK đã trả 1
+      // hay lỗi: vòng đọc sắp lấy khoá mới / còn hạn `BLOCK_MS`).
+      const again = this.#unblockAgain || (exhausted && this.#stale());
+      this.#unblockAgain = false;
+      if (again && this.#connId !== null && !this.signal?.aborted) void this.#unblock();
     }
+  }
+
+  /** Một đợt thử UNBLOCK; true = xong (UNBLOCK trả 1 hoặc hết chờ thiếu khoá), false = hết lượt mà vẫn thiếu. */
+  async #unblockTries(): Promise<boolean> {
+    for (let i = 0; i < UNBLOCK_TRIES; i++) {
+      if (i > 0) await Bun.sleep(UNBLOCK_GAP_MS);
+      if (!this.#stale() || this.#connId === null) return true;
+      const n = await this.redis.call("CLIENT", "UNBLOCK", String(this.#connId));
+      if (Number(n) === 1) return true;
+    }
+    return false;
   }
 
   /** REVIEW 1 Hub #4: `CLIENT ID` đổi sau mỗi lần ioredis nối lại → lấy lại ở mỗi `ready`; mất kết nối → null. */

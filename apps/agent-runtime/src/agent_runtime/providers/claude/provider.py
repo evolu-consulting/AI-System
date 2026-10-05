@@ -94,16 +94,20 @@ class _Turn:
             for ev in self.partial.handle(msg.event, self.model):
                 await self.emit(ev)
 
+    async def assistant(self, msg: AssistantMessage) -> None:
+        self.mcp_ids.update(mcp_tool_ids(msg))
+        if msg.parent_tool_use_id is None:  # REVIEW 2 RV2-2: bỏ stop_reason của subagent
+            self.stop_reason = msg.stop_reason or self.stop_reason
+        for ev in tool_events(msg):
+            await self.emit(ev)
+
     async def handle(self, msg: Message) -> None:
         if isinstance(msg, StreamEvent):
             await self.stream(msg)
         elif isinstance(msg, SystemMessage):
             await self.system(msg)
         elif isinstance(msg, AssistantMessage):
-            self.mcp_ids.update(mcp_tool_ids(msg))
-            self.stop_reason = msg.stop_reason or self.stop_reason
-            for ev in tool_events(msg):
-                await self.emit(ev)
+            await self.assistant(msg)
         elif isinstance(msg, UserMessage):
             for confirm in confirm_events(msg, self.mcp_ids):
                 await self.emit(confirm)
