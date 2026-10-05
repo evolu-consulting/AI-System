@@ -15,7 +15,7 @@ Viết tắt: `plan` = `plan.md`, `db` = `plan-db.md`, `rt` = `plan-runtime.md`,
 | **Chuẩn bị** | | | | | | | | |
 | S1 | Spike cách probe (spec §7 S1) → `sd` "Spike S1" | backend-lead | thường | `spec §2.3, §7` | `sd` | — | kết quả ghi | [x] — `e901824`: (a) `auth status --json` + (b) lượt haiku |
 | P0 | PLAN BE: `plan.md`, `plan-db.md`, `plan-runtime.md`, `tasks.md`, spec §3–4, `sd` PL1–PL14 | backend-lead | cao | `spec`, `sd` | `docs/specs/H3a-subscription/*` | S1 | `wc -c` ≤ trần | [x] |
-| QW-T | qc test-plan (`test-plan.md` theo `spec-ac` + `plan §4–5`, `rt §8`) | qc | cao | `spec-ac`, `plan §1 P11, §4, §5, §7`, `rt §3, §5, §8`, `db §4` | `docs/specs/H3a-subscription/test-plan*.md` | P0 | — | [ ] |
+| QW-T | qc test-plan (`test-plan.md` theo `spec-ac` + `plan §4–5`, `rt §8`) | qc | cao | `spec-ac`, `plan §1 P11, §4, §5, §7`, `rt §3, §5, §8`, `db §4` | `docs/specs/H3a-subscription/test-plan*.md` | P0 | — | [x] — `test-plan.md` + `-cases`, `-py`; G1–G7 cho readiness |
 | R | spec-readiness → Gate (Luật 2b) | spec-readiness | — | thư mục spec | `readiness.md`, `docs/specs/H3a-gate.md` | QW-T | READY | [ ] |
 | **DB · khung** | | | | | | | | |
 | D1 | Migration `0008_h3a_provider_state.sql` (6 cột NULL + 2 CHECK, idempotent) + `_journal.json` + `schema/hub.ts` + test D1 | backend-lead | cao | `db §1`, `plan §3` | `packages/db/migrations-hub/0008_h3a_provider_state.sql`, `packages/db/migrations-hub/meta/_journal.json`, `packages/db/src/schema/hub.ts`, `packages/db/src/hub-h3a.int.test.ts` | Gate | `bun run test:int packages/db` · H1 A48–A51, H2a/H2b/H2c `db.int` khoá xanh · `bun run typecheck` | [ ] |
