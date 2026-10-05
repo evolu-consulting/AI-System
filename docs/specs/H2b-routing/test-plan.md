@@ -274,7 +274,7 @@ Không đỏ do import/cú pháp/kiểu/fixture (`PostgresError`/`TypeError` = 0
 **Lệch plan / cần backend-lead:**
 - P08 nguồn theo spike S1: `message_start` (out 8) → `message_delta` cùng id (out 702, kèm `output_tokens_details`/`iterations` — phải bỏ qua) → tổng 702, không 710; `cache_creation_input_tokens` → `UsageEv.cache_write`; khoá vắng = 0; `ev.model` = `model` truyền vào. Không có ca `AssistantMessage.usage` (PY-02 unit).
 - P01/P02 ép `state="off"` cho JSON hỏng trước khi stream (thiếu `:`, khoá không ngoặc kép) và `status` lạ (`weird`); `state="seeking"` lúc mới tạo; `kind=None` khi `off`.
-- P03 surrogate lẻ: high + chữ thường / high + `á` / low trơ / high cuối chuỗi → `U+FFFD` (high cuối chuỗi: phát khi đóng chuỗi).
+- P03 surrogate lẻ: high + chữ thường / high + `\u00e1` / low trơ / high cuối chuỗi → `U+FFFD` (high cuối chuỗi: phát khi đóng chuỗi).
 - P06 `wait_s()` khi đã tới hạn ≤ 0 (cho phép 0 hoặc âm); không ép `due()` khi bộ đệm rỗng. "Ký tự" của `flush_chars` chỉ kiểm bằng ASCII.
 - P07 thêm ca biên 300: mẫu kết thúc đúng ký tự 300 → khớp; vắt qua 300 → không; `patterns.RATE_RE`/`AUTH_RE` cùng `pattern` với `mapping`.
 - P05 không assert zod/pydantic đếm UTF-16 (BC6, H3).
