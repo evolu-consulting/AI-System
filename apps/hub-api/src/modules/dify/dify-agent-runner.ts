@@ -234,9 +234,14 @@ export class DifyAgentRunner implements AgentRunner {
   }
 }
 
-/** Dify 404 khi có `conversation_id` = phiên lạ/đã xoá phía Dify. */
+/** Dify 404 với thân lỗi "Conversation Not Exists" (`{"code":"not_found","message":"Conversation Not Exists."}`)
+ * = phiên lạ/đã xoá phía Dify. 404 khác (sai base_url, app xoá…) giữ phiên, trả lỗi như cũ (REVIEW 2). */
 function isStaleSession(out: DifyRunOutcome): boolean {
-  return out.kind === "failed" && out.httpStatus === 404;
+  return (
+    out.kind === "failed" &&
+    out.httpStatus === 404 &&
+    (out.detail ?? "").toLowerCase().includes("conversation not exist")
+  );
 }
 
 function stepDetail(ran: Ran): Record<string, unknown> {

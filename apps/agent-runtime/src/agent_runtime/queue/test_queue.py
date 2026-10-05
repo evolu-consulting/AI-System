@@ -35,7 +35,7 @@ async def _held(*ids: str) -> tuple[Supervisor, _Host]:
 
 async def test_wrk_fr_05_heartbeat_cancel_and_lost() -> None:
     sup, host = await _held(JOB, JOB2)
-    reconcile(sup, [JOB, JOB2], {JOB: True})
+    reconcile(sup, sup.snapshot(), {JOB: True})
     await asyncio.sleep(0.01)
     assert host.reasons == {JOB: "cancel", JOB2: "lost"}
     assert sup.held() == []
@@ -43,7 +43,7 @@ async def test_wrk_fr_05_heartbeat_cancel_and_lost() -> None:
 
 async def test_wrk_fr_02_heartbeat_keeps_running_job() -> None:
     sup, host = await _held(JOB)
-    reconcile(sup, [JOB], {JOB: False})
+    reconcile(sup, sup.snapshot(), {JOB: False})
     await asyncio.sleep(0.01)
     assert host.reasons == {} and sup.holds(JOB)
     await sup.shutdown(1)
@@ -121,3 +121,53 @@ async def test_review1_c1_reclaim_same_job_waits_old_task_and_keeps_new_entry() 
     assert sup.stop(JOB, "cancel") is True
     await asyncio.sleep(0.05)
     assert host.runs == ["lost", "cancel"] and sup.held() == []
+
+
+async def test_review2_reconcile_does_not_stop_newer_claim_of_same_id() -> None:
+    """Review 2: heartbeat chụp (id, control) trước câu SQL; trong lúc chờ, job bị requeue và claim
+    lại cùng `id` → kết quả heartbeat (vắng `id`) chỉ dừng lần claim đã chụp, không dừng lần mới."""
+    host = _SlowHost()
+    sup = Supervisor(host)
+    sup.start(ClaimedJob(JOB, {"run_id": "r"}, token="t1"))
+    await asyncio.sleep(0)
+    snap = sup.snapshot()  # chụp trước câu heartbeat
+    sup.start(ClaimedJob(JOB, {"run_id": "r"}, token="t2"))  # claim lại trong lúc heartbeat chạy
+    await asyncio.sleep(0.05)
+    reconcile(sup, snap, {})  # heartbeat cũ: JOB không còn của mình
+    await asyncio.sleep(0.05)
+    assert host.runs == ["lost"] and sup.holds(JOB) and host.active == 1
+    assert sup.stop(JOB, "cancel", expected=snap[JOB]) is False
+    await sup.shutdown(1)
+    assert host.runs == ["lost", "shutdown"]
+
+
+class _StuckCleanupHost:
+    """Lần claim đầu dọn dẹp rất lâu sau khi bị dừng; ghi lại task nào bị huỷ."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self.cancelled: list[int] = []
+
+    async def run(self, job: ClaimedJob, control: JobControl) -> None:
+        self.calls += 1
+        n = self.calls
+        try:
+            await control.stopped.wait()
+            if n == 1:
+                await asyncio.sleep(10)
+        except asyncio.CancelledError:
+            self.cancelled.append(n)
+            raise
+
+
+async def test_review2_shutdown_cancels_old_task_still_cleaning_up() -> None:
+    """Review 2: SIGTERM khi task cũ (claim lại) còn dọn — `shutdown` chờ rồi huỷ cả task cũ."""
+    host = _StuckCleanupHost()
+    sup = Supervisor(host)
+    sup.start(ClaimedJob(JOB, {"run_id": "r"}, token="t1"))
+    await asyncio.sleep(0)
+    sup.start(ClaimedJob(JOB, {"run_id": "r"}, token="t2"))
+    await asyncio.sleep(0.01)
+    await asyncio.wait_for(sup.shutdown(0.05), timeout=2)
+    assert host.cancelled == [1]
+    assert all(t.done() for t in asyncio.all_tasks() if t.get_name() == f"job-{JOB}")

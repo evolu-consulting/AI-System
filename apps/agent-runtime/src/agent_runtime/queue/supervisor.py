@@ -5,6 +5,9 @@ Review 1 C1: job `workflow.async` có thể bị requeue rồi chính process n�
 task cũ chưa thoát. `start` khi đã giữ `id` → dừng task cũ (`lost`) và task mới **chờ** task cũ
 thoát rồi mới chạy (không hai lần chạy song song); task cũ thoát chỉ gỡ entry của chính nó. Câu ghi
 SQL của Dify còn rào `token_hash` của lần claim (`db/workflow_sql.py`).
+
+Review 2: nguồn dừng chụp trước một câu SQL (heartbeat) truyền `expected=` (control của lần claim đã
+chụp) để không dừng nhầm lần claim mới cùng `id`; `shutdown` chờ/huỷ cả task cũ đang dọn (`before`).
 """
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ class _Held:
     job: ClaimedJob
     control: JobControl
     task: asyncio.Task[None]
+    before: asyncio.Task[None] | None = None
 
 
 class Supervisor:
@@ -37,7 +41,7 @@ class Supervisor:
         control = JobControl()
         before = prev.task if prev is not None else None
         task = asyncio.create_task(self._run(job, control, before), name=f"job-{job.id}")
-        self._held[job.id] = _Held(job, control, task)
+        self._held[job.id] = _Held(job, control, task, before)
 
     async def _run(
         self, job: ClaimedJob, control: JobControl, before: asyncio.Task[None] | None = None
@@ -56,20 +60,29 @@ class Supervisor:
     def held(self) -> list[str]:
         return list(self._held)
 
+    def snapshot(self) -> dict[str, JobControl]:
+        """`id → control` của lần claim hiện hành — để `stop(..., expected=)` sau một câu SQL."""
+        return {k: h.control for k, h in self._held.items()}
+
     def holds(self, job_id: str) -> bool:
         return job_id in self._held
 
-    def stop(self, job_id: str, reason: StopReason) -> bool:
-        """Yêu cầu dừng job của process này; job lạ → bỏ qua (False)."""
+    def stop(self, job_id: str, reason: StopReason, expected: JobControl | None = None) -> bool:
+        """Yêu cầu dừng job của process này; job lạ → bỏ qua (False). `expected` (review 2): chỉ
+        dừng khi entry hiện hành vẫn là lần claim đã chụp — claim lại sau đó không bị dừng nhầm."""
         held = self._held.get(job_id)
-        if held is None:
+        if held is None or (expected is not None and held.control is not expected):
             return False
         held.control.request_stop(reason)
         return True
 
     async def shutdown(self, grace_s: float) -> None:
         """SIGTERM cha: dừng mọi job (`shutdown`), chờ tối đa `grace_s`, quá thì huỷ task."""
-        tasks = [h.task for h in self._held.values()]
+        tasks: set[asyncio.Task[None]] = set()
+        for h in self._held.values():  # gồm task cũ đang dọn của lần claim lại (review 2)
+            tasks.add(h.task)
+            if h.before is not None and not h.before.done():
+                tasks.add(h.before)
         for h in list(self._held.values()):
             h.control.request_stop("shutdown")
         if not tasks:

@@ -18,18 +18,19 @@ from agent_runtime.db import jobs_sql
 from agent_runtime.db.jobs_sql import OrphanRow
 from agent_runtime.db.pool import DB_ERRORS, Pool
 from agent_runtime.log import get_logger
-from agent_runtime.queue.host import JobEvents
+from agent_runtime.queue.host import JobControl, JobEvents
 from agent_runtime.queue.supervisor import Supervisor
 from agent_runtime.queue.sweeper import SweepConfig, settle
 
 
-def reconcile(sup: Supervisor, held: list[str], beat: dict[str, bool]) -> None:
-    """`held` chụp TRƯỚC câu heartbeat: job claim sau đó không bị coi là `lost`."""
-    for job_id in held:
+def reconcile(sup: Supervisor, held: dict[str, JobControl], beat: dict[str, bool]) -> None:
+    """`held` (`id → control`) chụp TRƯỚC câu heartbeat: job claim sau đó không bị coi là `lost`;
+    cùng `id` claim lại sau khi chụp (control khác) cũng không bị dừng nhầm (review 2)."""
+    for job_id, control in held.items():
         if job_id not in beat:
-            sup.stop(job_id, "lost")
+            sup.stop(job_id, "lost", expected=control)
         elif beat[job_id]:
-            sup.stop(job_id, "cancel")
+            sup.stop(job_id, "cancel", expected=control)
 
 
 def strays(
@@ -50,7 +51,7 @@ class Heartbeat:
 
     async def beat_once(self) -> int:
         """Một chu kỳ; trả số job lạc đã `orphaned`."""
-        held = self.sup.held()
+        held = self.sup.snapshot()
         async with self.pool.acquire() as conn:
             beat = await jobs_sql.heartbeat(conn, self.cfg.worker_id)
         reconcile(self.sup, held, beat)

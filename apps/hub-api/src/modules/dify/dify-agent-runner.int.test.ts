@@ -1,6 +1,7 @@
 // HUB-FR-23 · H2a-R14 · REVIEW 1 Hub #5: phiên `dify-agent` có `conversation_id` mà Dify trả 404 → Hub xoá dòng
 // `cli_sessions(provider_key='dify')` rồi thử lại đúng một lần không kèm `conversation_id`. Mock MK khoá (`tools/hub-dev`)
 // không có kịch bản "conversation lạ → 404" nên dùng client Dify giả cạnh code; DB test + role `hub_api` thật.
+// REVIEW 2: chỉ 404 có thân "Conversation Not Exists" mới là phiên hết hạn; 404 khác giữ phiên, lỗi như cũ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { RunEvent } from "@ai/contracts/hub";
 import {
@@ -59,6 +60,10 @@ const notFound: DifyRunOutcome = {
   httpStatus: 404,
   conversationId: null,
   ...META,
+};
+const otherNotFound: DifyRunOutcome = {
+  ...notFound,
+  detail: '{"code":"not_found","message":"App not found."}',
 };
 const done = (conv: string): DifyRunOutcome => ({
   kind: "finished",
@@ -160,5 +165,23 @@ describe("HUB-FR-23 · phiên dify-agent hết hạn phía Dify (404) [H2a-R14 �
     const events = await runAgent(run, f.dify);
     expect(f.calls).toEqual([null]);
     expect(events.at(-1)).toMatchObject({ type: "job.failed", code: "NOT_CONFIGURED" });
+  });
+
+  it("REVIEW 2 · 404 không phải 'Conversation Not Exists' → giữ phiên, không thử lại, lỗi như cũ", async () => {
+    const run = await liveRun(STALE);
+    const f = fakeDify([otherNotFound]);
+    const events = await runAgent(run, f.dify);
+    expect(f.calls).toEqual([STALE]);
+    expect(events.at(-1)).toMatchObject({ type: "job.failed", code: "NOT_CONFIGURED" });
+    expect(await sessionOf(run)).toEqual([STALE]);
+  });
+
+  it("REVIEW 2 · thông điệp so không phân biệt hoa thường", async () => {
+    const run = await liveRun(STALE);
+    const lower = { ...notFound, detail: '{"message":"conversation not exists"}' };
+    const f = fakeDify([lower, done("conv-moi-2")]);
+    await runAgent(run, f.dify);
+    expect(f.calls).toEqual([STALE, null]);
+    expect(await sessionOf(run)).toEqual(["conv-moi-2"]);
   });
 });

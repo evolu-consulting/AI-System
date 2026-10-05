@@ -183,9 +183,9 @@ describe("HUB-FR-75 · role + GRANT (int)", () => {
     expect(await can("agent_runtime", "hub.cli_sessions", "DELETE")).toBe(true);
     expect(await can("hub_rw", "hub.runs", "DELETE")).toBe(true);
     expect(await can("hub_rw", "hub.jobs", "DELETE")).toBe(false);
-    // H2a (0002): dify-agent đọc/ghi session (R14); không DELETE.
+    // H2a (0002): dify-agent đọc/ghi session (R14); 0005 (REVIEW 1): thêm DELETE để xoá phiên Dify hết hạn (404).
     expect(await can("hub_rw", "hub.cli_sessions", "SELECT")).toBe(true);
-    expect(await can("hub_rw", "hub.cli_sessions", "DELETE")).toBe(false);
+    expect(await can("hub_rw", "hub.cli_sessions", "DELETE")).toBe(true);
   });
 });
 

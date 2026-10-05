@@ -126,7 +126,10 @@ describe("HUB-FR-95 · 0002_h2a_dify D1 (int)", () => {
     expect(await code(insertJob("agent.run", AG, tok))).toBe("23505");
     expect(await code(insertJob("agent.run", AG, Buffer.alloc(16, 1)))).toBe("23514");
   });
+});
 
+// Tách describe (check:fn ≤ 50 dòng/hàm); thứ tự chạy giữ nguyên.
+describe("HUB-FR-95 · 0002_h2a_dify D1 — jobs lỗi, providers, tool_confirmations (int)", () => {
   test("jobs D1b: error_code/error_reason nhận đủ HUB_JOB_ERROR_CODES/JOB_FAIL_REASONS (C2); giá trị lạ 23514", async () => {
     const ch = chains.a as Chain;
     const failed = (errCode: string, reason: string | null) =>
@@ -165,7 +168,9 @@ describe("HUB-FR-95 · 0002_h2a_dify D1 (int)", () => {
     expect(await code(ins("khac", null, crypto.randomUUID()))).toBe("23514");
     await owner`delete from hub.tool_confirmations`;
   });
+});
 
+describe("HUB-FR-95 · 0002_h2a_dify D1 — RLS + GRANT (int)", () => {
   test("tool_confirmations RLS hub_rw: user chỉ thấy/ghi dòng của mình; system thấy hết; xoá run → cascade", async () => {
     const a = chains.a as Chain;
     const b = chains.b as Chain;
@@ -190,7 +195,7 @@ describe("HUB-FR-95 · 0002_h2a_dify D1 (int)", () => {
     expect(await seen({ kind: "system" })).toEqual([T1]);
   });
 
-  test("GRANT: hub_rw CRUD tool_confirmations, SELECT workflow_flags (không ghi), SELECT/INSERT/UPDATE cli_sessions", async () => {
+  test("GRANT: hub_rw CRUD tool_confirmations, SELECT workflow_flags (không ghi), SELECT/INSERT/UPDATE/DELETE cli_sessions (DELETE từ 0005)", async () => {
     const [r] = await owner<Record<string, boolean>[]>`select
       has_table_privilege('hub_rw', 'hub.tool_confirmations', 'SELECT,INSERT,UPDATE,DELETE') as tc,
       has_table_privilege('hub_rw', 'hub.workflow_flags', 'SELECT') as wf_sel,
@@ -207,7 +212,7 @@ describe("HUB-FR-95 · 0002_h2a_dify D1 (int)", () => {
       cs_sel: true,
       cs_ins: true,
       cs_upd: true,
-      cs_del: false,
+      cs_del: true, // 0005: xoá phiên Dify hết hạn
       rt_tc: false,
     });
   });
