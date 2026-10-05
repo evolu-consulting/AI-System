@@ -123,7 +123,7 @@ describe("A90–A94 · POST /internal/jobs/:job/outputs [H2c-R25 · P21 · PL10]
       message_id: null,
       filename: "report.md",
       mime: "text/markdown",
-      size: body.length,
+      size: String(body.length), // cột bigint → postgres.js trả chuỗi (TC B9-7)
     });
     const files = await diskFiles(hub.dir);
     expect(files).toContain(`${USERS.lan.tid}/${p.data?.id}`);

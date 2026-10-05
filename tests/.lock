@@ -195,7 +195,7 @@ cec4a18f88de8475b749ecb95e68563e00c792572514c7d754bd90dc7f4c8170  tests/acceptan
 20fafcc37cf76a0a15e6a4bbc7018119f74b1b74d08c0d4f652f74a6db5a5574  tests/acceptance/H2c/hubdev/attach.hubdev.test.ts
 107da20d5e06980c39f568b2b67ac7fa8eef36bdaa6ac951ad49f521259f8c79  tests/acceptance/H2c/internal-download.int.test.ts
 35869f732a8ac4b896f3627376e23087fbd14d2dfee8e44a09dfe0059935cfd7  tests/acceptance/H2c/mcp-file.int.test.ts
-84c19c7413c877b02371e572bacf56089d117cf0c7e9d46bf7a41979074ad4e7  tests/acceptance/H2c/outputs.int.test.ts
+db5a31ad2f02d1f2703cf9ca941e4352ca7f9c8d48dd96d8cf3da94557d0e504  tests/acceptance/H2c/outputs.int.test.ts
 b3cbbea3ac36f38b4d7b2bec77027c13c6bb2c17ecd9f77e6de5c0ed26cb44fc  tests/acceptance/H2c/perf.perf.int.test.ts
 5659875b83192554fc3f9bff8b23b1f7cc60d51a420f9ac87f9f6454fae11f0c  tests/acceptance/H2c/quota.int.test.ts
 b009f5b654e91aa99dbf7737cc8d1aa63dabfedb1c5fc9837c1fe862876845c5  tests/acceptance/H2c/rules/_rules.ts
@@ -350,4 +350,4 @@ cefe7ca9b5e9241fb480ad33dc1a34dba1bc4ad3e425a6d78021ff09d2524e00  tests/contract
 ca028d54fce5f28d5a34d89ade437e0631255d740bb026fa49cfe3a72852ebd6  tests/contract/chat/messages.contract.test.ts
 4f0165df88d303767a7ae35da2633d123e0ca5e8b9f074a76ce757c4372feeee  tests/contract/chat/resume.contract.test.ts
 ec47809044efbf31d114f610306786b4bfc0a668ab9fdf1c2eb7add101c2b694  tests/contract/chat/stream.contract.test.ts
-b8fde6606062729c81dd1a2ba5e9ffe8d23c391cfaf4c6d0a0ba4ffceda41515  tools/hub-dev/src/dify-mock.ts
+680a4dc9bbd64b17669c4c708874aee0dc2d55c5ae9c30ec6a35c7bd7580c8fc  tools/hub-dev/src/dify-mock.ts

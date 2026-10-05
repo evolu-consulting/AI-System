@@ -60,7 +60,17 @@ const json = (status: number, body: Json) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const errBody = (status: number, code: string) =>
   json(status, { code, message: `mock ${code}`, status });
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** Ngủ `ms`; `signal` huỷ (client đóng kết nối) → dậy sớm, như server thật bỏ request. */
+const wait = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((r) => {
+    if (signal?.aborted) return r();
+    const t = setTimeout(r, ms);
+    const stop = () => {
+      clearTimeout(t);
+      r();
+    };
+    signal?.addEventListener("abort", stop, { once: true });
+  });
 
 type Ids = { task: string; run: string; msg: string; conv: string };
 type Ctx = { chat: boolean; ids: Ids; stopped: Set<string> };
@@ -241,7 +251,10 @@ async function upload(st: State, req: Request, path: string, auth: string): Prom
   if (!info) return errBody(400, "no_file_uploaded");
   const d = uploadDirectiveOf(name);
   if (d.kind === "http") return errBody(d.status, d.code);
-  if (d.kind === "slow") await wait(d.ms);
+  if (d.kind === "slow") {
+    await wait(d.ms, req.signal);
+    if (req.signal.aborted) return errBody(499, "client_closed"); // client đã bỏ — không ai đọc
+  }
   st.uploads += 1;
   const ext = /\.([^.]+)$/.exec(name)?.[1] ?? "";
   const meta = { name, size: info.size, extension: ext, mime_type: info.type, created_by: "mock" };
