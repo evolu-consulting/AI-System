@@ -2,7 +2,7 @@
 id: H4a-studio-shell-agents
 title: Studio khung + đăng nhập + Agents + Orchestrator (mặc định và theo tenant)
 milestone: H4a
-status: draft                        # draft → ready → approved → in-progress → done
+status: approved                        # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-72, HUB-FR-60, HUB-FR-61, HUB-FR-62, HUB-FR-64 (gắn workflow, không có chạy thử), HUB-FR-69 (ghi audit + version + NOTIFY cho agent/Orchestrator; xem/khôi phục → H4d), HUB-FR-90 (đọc `agent_types`), HUB-BR-08, HUB-BR-09 (vế gắn workflow), HUB-BR-06 (bối cảnh)]
 design:
