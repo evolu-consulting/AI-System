@@ -89,3 +89,14 @@ Runtime tự probe provider `kind=subscription` (`AGENT_RT_PROBE_S`, mặc đị
 
 ### Giới hạn file phía Dify (`UPLOAD_FILE_SIZE_LIMIT`, H2c K4)
 Hub nhận file ≤ 20 MiB (`ATTACH_MAX_BYTES`), nhưng **Dify** tự giới hạn khi Hub gọi `/files/upload` (command/tool có input `file`): mặc định ~**15 MB** tài liệu (`UPLOAD_FILE_SIZE_LIMIT`, MB) và ~**10 MB** ảnh (`UPLOAD_IMAGE_FILE_SIZE_LIMIT`), cộng loại file app cho phép (cấu hình input `file` của app). Đây là biến env của **server Dify** (`docker/.env` của Dify), không phải của Hub. Vượt/sai loại ⇒ Dify trả 413/415 (`file_too_large`/`unsupported_file_type`) ⇒ Hub `UPSTREAM_ERROR` hint "Dify không nhận file này (loại hoặc kích thước)." (H2c-R22). Muốn Dify nhận file tới 20 MiB như Hub: đặt `UPLOAD_FILE_SIZE_LIMIT=20` (và ảnh nếu cần) ở Dify rồi khởi động lại API Dify.
+
+## Admin gọi Hub (H3b, R23)
+admin-web (dev `http://localhost:3000`) gọi Hub `:4000` cross-origin cho `/agent-grants*` và `GET /runs/:id/trace`. CORS là danh sách trắng `HUB_CORS_ORIGINS` (`.env.example` đã có `http://localhost:3100,http://localhost:3000`); **mặc định trong `env.ts` chỉ chat-web** — origin admin-web phải khai báo tường minh, không mở ngầm. Đổi env ⇒ khởi động lại hub-api. Production: đặt origin admin-web thật (xem `docs/PRODUCTION-NOTES.md`).
+- **Preflight:** `curl -i -X OPTIONS http://localhost:4000/agent-grants -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization,content-type"` ⇒ `Access-Control-Allow-Origin: http://localhost:3000`. Origin lạ ⇒ không có header này.
+- **JWT dev 3 role:** đăng nhập admin-api `:3001` — `platform_admin` = `SEED_ADMIN_USERNAME`/`SEED_ADMIN_PASSWORD`; `tenant_admin` và `member` = user fixture của tenant dev (mật khẩu `dev-password-1`, tạo qua UI Admin hoặc `hub:dev`; `lan/hoa/an` là member). `TOKEN=$(curl -s -X POST http://localhost:3001/auth/login -H "Content-Type: application/json" -d '{"username":"<u>","password":"<p>"}' | jq -r .access_token)`. Hub dùng chung `JWT_PUBLIC_KEY` nên nhận token này.
+- **Mẫu `curl`** (platform_admin phải thêm `?tenant_id=<uuid>`; tenant_admin tự lấy tenant của mình; member ⇒ 403):
+  - Liệt kê: `curl -H "Authorization: Bearer $TOKEN" "http://localhost:4000/agent-grants?tenant_id=$T"`
+  - Cấp: `curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"agent_id":"<uuid>","subject_type":"group","subject_id":"<uuid>"}' "http://localhost:4000/agent-grants?tenant_id=$T"` (201 mới, 200 trùng)
+  - Thu hồi: `curl -X DELETE -H "Authorization: Bearer $TOKEN" "http://localhost:4000/agent-grants?tenant_id=$T&agent_id=<uuid>&subject_type=group&subject_id=<uuid>"` (204)
+  - Effective: `curl -H "Authorization: Bearer $TOKEN" "http://localhost:4000/agent-grants/effective/<user_id>?tenant_id=$T"`
+  - Trace: `curl -H "Authorization: Bearer $TOKEN" http://localhost:4000/runs/<run_id>/trace`
