@@ -11,6 +11,7 @@ import {
   type TenantEl,
   TRANSFER_TYPES,
   type TransferType,
+  type WorkflowEl,
 } from "@ai/contracts";
 import { runChecks } from "./transfer.checks";
 import {
@@ -112,7 +113,16 @@ function afterOf<T extends TransferType>(t: T, x: Entry<T>, base: BaseView): El<
   if (t === "groups" || t === "grants") {
     if (!tenantUsable(base, (x.e as { tenant: string }).tenant)) return null;
   }
+  if (t === "workflows")
+    return withSideEffect(x.e as WorkflowEl, base.workflows.get(x.key)) as El<T>;
   return x.e;
+}
+
+/** X1: file cũ thiếu `side_effect` ⇒ lấy giá trị DB (không so, không đổi). Tạo mới giữ nguyên phần tử file
+ * (preview `after` = file); `transfer.write` ghi `false`. */
+function withSideEffect(e: WorkflowEl, db: WorkflowEl | undefined): WorkflowEl {
+  if (e.side_effect !== undefined || db?.side_effect === undefined) return e;
+  return { ...e, side_effect: db.side_effect };
 }
 
 function diffAll(file: FileView, base: BaseView): Diffed {

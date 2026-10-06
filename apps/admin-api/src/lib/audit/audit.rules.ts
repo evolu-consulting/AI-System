@@ -34,6 +34,7 @@ export const AUDIT_FIELDS: Readonly<Record<AuditEntity, readonly string[]>> = {
     "input_schema",
     "output_field",
     "enabled",
+    "side_effect",
     "version",
   ],
   command: [

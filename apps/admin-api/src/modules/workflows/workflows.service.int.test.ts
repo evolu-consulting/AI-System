@@ -90,6 +90,19 @@ describe("ADM-FR-13 · workflows.service", () => {
     await deleteWorkflow(call, w.id);
   });
 
+  test("X1 · HUB-FR-95 · side_effect: vắng → false; PATCH đổi → version+1; PATCH vắng → giữ", async () => {
+    const w = await createWorkflow(call, { ...base, key: "se", input_schema: [] });
+    expect(w).toMatchObject({ side_effect: false, version: 1 });
+    const u = await updateWorkflow(call, w.id, { version: 1, side_effect: true });
+    expect(u).toMatchObject({ side_effect: true, version: 2 });
+    const k = await updateWorkflow(call, w.id, { version: 2, name: "Đổi tên" });
+    expect(k).toMatchObject({ side_effect: true, version: 3 });
+    const [r] = await owner<{ s: boolean }[]>`
+      select side_effect as s from admin.workflows where id = ${w.id}`;
+    expect(r?.s).toBe(true);
+    await deleteWorkflow(call, w.id);
+  });
+
   test("ADM-FR-15 · M2-R12 · admin_rw mất SELECT hub.agent_workflows → agents_available=false, không lỗi", async () => {
     const w = await createWorkflow(call, { ...base, key: "ag", input_schema: [] });
     await owner`insert into hub.agent_workflows (agent_id, workflow_id) values (${AGENT}, ${w.id})`;

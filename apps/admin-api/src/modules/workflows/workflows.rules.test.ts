@@ -49,8 +49,10 @@ describe("ADM-FR-13 · workflows.rules", () => {
       inputSchema: [p("a", true)],
       outputField: null,
       enabled: true,
+      sideEffect: false,
     };
     expect(changedWorkflowFields(s, { ...s, inputSchema: [p("a", true)] })).toEqual([]);
     expect(changedWorkflowFields(s, { ...s, enabled: false })).toEqual(["enabled"]);
+    expect(changedWorkflowFields(s, { ...s, sideEffect: true })).toEqual(["sideEffect"]);
   });
 });

@@ -228,6 +228,8 @@ export const workflows = admin.table(
     inputSchema: jsonb("input_schema").notNull().default([]),
     outputField: text("output_field"),
     enabled: boolean("enabled").notNull().default(true),
+    // X1 · HUB-FR-95: cờ tác dụng phụ (Hub đọc cột này thay hub.workflow_flags).
+    sideEffect: boolean("side_effect").notNull().default(false),
     version: versionCol(),
     ...audit(),
     updatedBy: updatedBy(),

@@ -1,5 +1,5 @@
 // HUB-FR-75, WRK-FR-24 · migration schema `hub` (plan H1 §1 P1): `migrations-hub/` (mọi môi trường) + `migrations-hub-dev/`
-// (mật khẩu login dev, khác production). Tách khỏi `runMigrations` để test khoá Admin (`{main: 9, dev: 3}`) không đổi.
+// (mật khẩu login dev, khác production). Tách khỏi `runMigrations` để test khoá Admin (`{main: 10, dev: 3}`) không đổi.
 // Gọi **sau** `runMigrations` (hàm `hub.tenant_sub_limit` đọc `admin.tenants`). CLI: `bun run db:migrate`.
 import { fileURLToPath } from "node:url";
 import { drizzle } from "drizzle-orm/postgres-js";

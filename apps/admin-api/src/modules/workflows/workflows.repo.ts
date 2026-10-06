@@ -19,6 +19,7 @@ export type WorkflowRow = {
   appType: AppType;
   description: string;
   enabled: boolean;
+  sideEffect: boolean;
   secretId: string;
   secretName: string;
   commandCount: number;
@@ -43,6 +44,7 @@ function cols(readable: boolean) {
     appType: workflows.appType,
     description: workflows.description,
     enabled: workflows.enabled,
+    sideEffect: workflows.sideEffect,
     secretId: workflows.secretId,
     secretName: secrets.name,
     commandCount,
@@ -208,6 +210,7 @@ export type WorkflowValues = {
   inputSchema: WorkflowInput[];
   outputField: string | null;
   enabled: boolean;
+  sideEffect: boolean;
 };
 
 export async function insertWorkflow(

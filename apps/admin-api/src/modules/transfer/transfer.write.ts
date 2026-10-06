@@ -91,6 +91,7 @@ async function writeWorkflows(w: WriteCtx, xs: It<WorkflowEl>[]): Promise<void> 
       inputSchema: e.input_schema,
       outputField: e.output_field,
       enabled: e.enabled,
+      sideEffect: e.side_effect ?? false, // vắng chỉ còn ở thêm mới (update: plan điền từ DB)
       updatedBy: w.actorId,
     };
     if (x.op === "add") {

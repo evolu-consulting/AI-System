@@ -52,7 +52,7 @@ const ORDER: Record<TransferType, SQL> = {
 
 const COLS: Record<TransferType, SQL> = {
   workflows: sql`w.key, w.name, w.description, w.app_type, w.base_url, s.name as secret, w.input_schema,
-    w.output_field, w.enabled`,
+    w.output_field, w.enabled, w.side_effect`,
   commands: sql`c.name, c.aliases, c.description, w.key as workflow, c.args, c.input_map, c.output, c.mode,
     c.timeout_s, c.enabled`,
   features: sql`f.key, f.name, f.description, coalesce(f.icon, 'package') as icon, f.status,

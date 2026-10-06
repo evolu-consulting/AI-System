@@ -78,7 +78,7 @@ const code = (p: Promise<unknown>) =>
 
 /** DB stub M4 (test) có sẵn 1 grant + 1 usage_logs cũ, rồi migrate Hub. Trả tenant của dòng cũ. */
 async function migrateOverStub(): Promise<string> {
-  expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 9, dev: 3 });
+  expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 10, dev: 3 });
   const tid = crypto.randomUUID();
   await sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
     values (${crypto.randomUUID()}, ${tid}, 'user', ${crypto.randomUUID()})`;
@@ -94,7 +94,7 @@ const migrateAll = async (appEnv: "test" | "production") => {
 
 describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
   test("DB sạch (production): main → hub đủ 22 bảng (H3b + audit_log), không hub-dev; lần 2 {0,0}", async () => {
-    expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 9, dev: 0 });
+    expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 10, dev: 0 });
     expect(await runHubMigrations({ url: URL, appEnv: "production" })).toEqual({
       hub: HUB_N,
       hubDev: 0,

@@ -23,6 +23,7 @@ const workflow: Workflow = {
   app_type: "workflow",
   description: DESC,
   enabled: true,
+  side_effect: false,
   secret: { id: SECRET_ID, name: "DIFY_TRANSLATE_KEY" },
   command_count: 1,
   agent_count: 0,

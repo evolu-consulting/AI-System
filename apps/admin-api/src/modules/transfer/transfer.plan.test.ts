@@ -132,6 +132,25 @@ describe("ADM-FR-54 · transfer.plan luật", () => {
   });
 });
 
+describe("X1 · HUB-FR-95 · side_effect khi nhập", () => {
+  const db = { ...snap, workflows: [{ ...wf, side_effect: true }] };
+  const wfItems = (w: WorkflowEl) =>
+    planImport(file({ workflows: [w] }), db).items.filter((i) => i.type === "workflow");
+  test("file cũ thiếu side_effect → giữ giá trị DB, không đổi (unchanged)", () => {
+    expect(wfItems(wf)).toEqual([]);
+  });
+  test("có side_effect khác DB → update, after mang giá trị file", () => {
+    const [it] = wfItems({ ...wf, side_effect: false });
+    expect(it?.op).toBe("update");
+    expect(it?.after.side_effect).toBe(false);
+  });
+  test("workflow mới thiếu side_effect → add, after = phần tử file (write ghi false)", () => {
+    const [it] = wfItems({ ...wf, key: "wf-new" });
+    expect(it?.op).toBe("add");
+    expect(it?.after).toEqual({ ...wf, key: "wf-new" });
+  });
+});
+
 describe("ADM-FR-54 · parseConfigText", () => {
   test("alias → YAML_SYNTAX không vị trí; khoá trùng → YAML_SYNTAX có line", () => {
     const a = parseConfigText("a: &x 1\nb: *x\n");

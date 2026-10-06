@@ -108,6 +108,8 @@ const listItemShape = {
   app_type: AppTypeSchema,
   description: z.string().min(WORKFLOW_DESC_MIN).max(WORKFLOW_DESC_MAX),
   enabled: z.boolean(),
+  /** X1 · HUB-FR-95: workflow có tác dụng phụ ⇒ Hub hỏi xác nhận trước khi chạy. */
+  side_effect: z.boolean(),
   secret: SecretRefSchema,
   command_count: CountSchema,
   agent_count: CountSchema,
@@ -153,6 +155,8 @@ export const WorkflowCreateRequestSchema = z.strictObject({
   input_schema: InputSchemaSchema.default([]),
   output_field: OutputFieldSchema.default(null),
   enabled: z.boolean().default(true),
+  /** Không `.default` (giữ output parse của test khoá M2); vắng ⇒ service ghi `false`. */
+  side_effect: z.boolean().optional(),
 });
 export type WorkflowCreateRequest = z.infer<typeof WorkflowCreateRequestSchema>;
 
@@ -167,6 +171,7 @@ export const WorkflowUpdateRequestSchema = z.strictObject({
   input_schema: InputSchemaSchema.optional(),
   output_field: OutputFieldSchema.optional(),
   enabled: z.boolean().optional(),
+  side_effect: z.boolean().optional(),
 });
 export type WorkflowUpdateRequest = z.infer<typeof WorkflowUpdateRequestSchema>;
 

@@ -73,6 +73,7 @@ export type WorkflowState = {
   inputSchema: WorkflowInput[];
   outputField: string | null;
   enabled: boolean;
+  sideEffect: boolean;
 };
 
 const KEYS: (keyof WorkflowState)[] = [
@@ -84,6 +85,7 @@ const KEYS: (keyof WorkflowState)[] = [
   "inputSchema",
   "outputField",
   "enabled",
+  "sideEffect",
 ];
 
 /** Trường thực sự đổi (so sâu `inputSchema`, thứ tự tham số có nghĩa); [] → không ghi, không tăng version. */

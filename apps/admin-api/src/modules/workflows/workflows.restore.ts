@@ -27,6 +27,7 @@ const KEYS = [
   "input_schema",
   "output_field",
   "enabled",
+  "side_effect", // X1: snapshot cũ thiếu ⇒ PATCH giữ giá trị hiện tại, chèn lại ⇒ false
 ] as const;
 
 export async function restoreWorkflow(

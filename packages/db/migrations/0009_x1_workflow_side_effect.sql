@@ -1,0 +1,1 @@
+ALTER TABLE "admin"."workflows" ADD COLUMN "side_effect" boolean DEFAULT false NOT NULL;

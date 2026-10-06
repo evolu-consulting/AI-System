@@ -78,6 +78,8 @@ export const WorkflowElSchema = z.strictObject({
   input_schema: InputSchemaSchema,
   output_field: OutputFieldSchema,
   enabled: z.boolean(),
+  /** X1: vắng (file cũ) ⇒ tạo mới `false`, cập nhật giữ nguyên. Export luôn ghi. */
+  side_effect: z.boolean().optional(),
 });
 export type WorkflowEl = z.infer<typeof WorkflowElSchema>;
 

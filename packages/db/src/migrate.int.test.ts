@@ -17,8 +17,8 @@ const hubTables = async () =>
 describe("ADM-NFR-06 · runMigrations (int)", () => {
   beforeEach(() => resetTestDb(URL));
 
-  test("test: áp main + dev (M4 T9a: 9 main, 3 dev), 3 bảng hub, admin_rw SELECT được usage_logs; lần 2 {0,0}", async () => {
-    expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 9, dev: 3 });
+  test("test: áp main + dev (X1 B1: 10 main, 3 dev), 3 bảng hub, admin_rw SELECT được usage_logs; lần 2 {0,0}", async () => {
+    expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 10, dev: 3 });
     expect(await hubTables()).toEqual(["agent_grants", "agent_workflows", "usage_logs"]);
     const [p] = await sql<{ ok: boolean }[]>`
       select has_table_privilege('admin_rw', 'hub.usage_logs', 'SELECT') as ok`;
@@ -27,11 +27,23 @@ describe("ADM-NFR-06 · runMigrations (int)", () => {
   });
 
   test("production: chỉ main, không bảng hub, không bảng theo dõi dev", async () => {
-    expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 9, dev: 0 });
+    expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 10, dev: 0 });
     expect(await hubTables()).toEqual([]);
     const [r] = await sql<{ r: string | null }[]>`
       select to_regclass('drizzle.__drizzle_migrations_dev')::text as r`;
     expect(r?.r).toBeNull();
+  });
+
+  test("X1 B1 · 0009: admin.workflows.side_effect boolean not null default false; hub_ro SELECT, admin_rw UPDATE", async () => {
+    await runMigrations({ url: URL, appEnv: "production" });
+    const [c] = await sql<{ t: string; n: string; d: string | null }[]>`
+      select data_type as t, is_nullable as n, column_default as d from information_schema.columns
+      where table_schema = 'admin' and table_name = 'workflows' and column_name = 'side_effect'`;
+    expect(c).toEqual({ t: "boolean", n: "NO", d: "false" });
+    const [p] = await sql<{ ro: boolean; rw: boolean }[]>`
+      select has_column_privilege('hub_ro', 'admin.workflows', 'side_effect', 'SELECT') as ro,
+             has_column_privilege('admin_rw', 'admin.workflows', 'side_effect', 'UPDATE') as rw`;
+    expect(p).toEqual({ ro: true, rw: true });
   });
 
   test("production rồi test trên cùng DB: dev áp sau, main không áp lại", async () => {

@@ -58,6 +58,7 @@ export function toWorkflowItem(r: repo.WorkflowRow): WorkflowListItem {
     app_type: r.appType,
     description: r.description,
     enabled: r.enabled,
+    side_effect: r.sideEffect,
     secret: { id: r.secretId, name: r.secretName },
     command_count: r.commandCount,
     agent_count: r.agentCount,
@@ -162,6 +163,7 @@ export async function createWorkflowIn(
     inputSchema: input.input_schema,
     outputField: input.output_field,
     enabled: input.enabled,
+    sideEffect: input.side_effect ?? false,
   };
   await tx.transaction((sp) => repo.insertWorkflow(sp, values)).catch(mapWorkflowConflict);
   ch.changed({ entity: "workflow", tenantId: null });
@@ -180,6 +182,7 @@ const stateOf = (r: repo.WorkflowRow): WorkflowState => ({
   inputSchema: r.inputSchema,
   outputField: r.outputField,
   enabled: r.enabled,
+  sideEffect: r.sideEffect,
 });
 
 function mergeState(cur: WorkflowState, i: WorkflowUpdateRequest): WorkflowState {
@@ -192,6 +195,7 @@ function mergeState(cur: WorkflowState, i: WorkflowUpdateRequest): WorkflowState
     inputSchema: i.input_schema ?? cur.inputSchema,
     outputField: i.output_field === undefined ? cur.outputField : i.output_field,
     enabled: i.enabled ?? cur.enabled,
+    sideEffect: i.side_effect ?? cur.sideEffect,
   };
 }
 
