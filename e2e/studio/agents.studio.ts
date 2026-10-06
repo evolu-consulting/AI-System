@@ -6,8 +6,12 @@ import { ID, isStudioWrite, mockStudio, openAuthed, seedStore } from "./_support
 
 const table = (page: import("@playwright/test").Page) =>
   page.getByRole("table", { name: "Danh sách agent" });
+// Lọc dòng theo nút "Thao tác {key}" (plan-frontend §6) — tên chính xác; `hasText` không phân biệt hoa thường
+// nên "orchestrator" khớp cả badge "Orchestrator…" của dòng khác (spec §10 · phân xử qc F3).
 const row = (page: import("@playwright/test").Page, key: string) =>
-  table(page).getByRole("row").filter({ hasText: key });
+  table(page)
+    .getByRole("row")
+    .filter({ has: page.getByRole("button", { name: `Thao tác ${key}`, exact: true }) });
 
 test("HUB-FR-60 · E06 · danh sách: mỗi agent seed một dòng đúng runtime; badge Orchestrator ở `orchestrator`; Chưa cấp ở agent 0 tenant; không cột 24 giờ [H4a-AC-02 · H4a-R11]", async ({
   page,

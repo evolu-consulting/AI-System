@@ -4,7 +4,12 @@ import { expect, type Page, test } from "@playwright/test";
 import { ID, isStudioWrite, mockStudio, openAuthed } from "./_support";
 
 const table = (page: Page) => page.getByRole("table", { name: "Danh sách agent" });
-const row = (page: Page, key: string) => table(page).getByRole("row").filter({ hasText: key });
+// Lọc dòng theo nút "Thao tác {key}" (plan-frontend §6), tên chính xác — không dùng `hasText` (khớp cả badge
+// "Orchestrator" của dòng khác, không phân biệt hoa thường; spec §10 · phân xử qc F3).
+const row = (page: Page, key: string) =>
+  table(page)
+    .getByRole("row")
+    .filter({ has: page.getByRole("button", { name: `Thao tác ${key}`, exact: true }) });
 const menu = (page: Page, key: string) =>
   page.getByRole("button", { name: `Thao tác ${key}` }).click();
 
