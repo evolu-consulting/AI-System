@@ -34,8 +34,8 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | ADM-FR-33 | MUST | docs/specs/M2-catalog-command/spec.md | 12 file | 6 file | có test |
 | ADM-FR-34 | SHOULD | docs/specs/M2-catalog-command/spec.md | 7 file | 7 file | có test |
 | ADM-FR-35 | SHOULD | docs/specs/M3-permissions/spec.md | 24 file | 12 file | có test |
-| ADM-FR-36 | MUST | docs/specs/M3-permissions/spec.md | 21 file | 12 file | có test |
-| ADM-FR-37 | MUST |  |  |  | chưa spec |
+| ADM-FR-36 | MUST | docs/specs/H3b-agent-grants/spec.md<br>docs/specs/M3-permissions/spec.md | 21 file | 12 file | có test |
+| ADM-FR-37 | MUST | docs/specs/H3b-agent-grants/spec.md | 9 file | 5 file | có test |
 | ADM-FR-40 | MUST | docs/specs/M4-ops/spec.md | 17 file | 10 file | có test |
 | ADM-FR-41 | MUST | docs/specs/M4-ops/spec.md | 24 file | 9 file | có test |
 | ADM-FR-42 | MUST | docs/specs/M4-ops/spec.md | 31 file | 11 file | có test |
@@ -68,7 +68,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-02 | MUST | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
 | HUB-FR-03 | MUST | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
 | HUB-FR-04 | MUST |  |  |  | chưa spec |
-| HUB-FR-10 | MUST | docs/specs/H2a-dify-command/spec.md | 8 file | 3 file | có test |
+| HUB-FR-10 | MUST | docs/specs/H2a-dify-command/spec.md | 8 file | 4 file | có test |
 | HUB-FR-11 | MUST | docs/specs/H2a-dify-command/spec.md | 7 file | 1 file | có test |
 | HUB-FR-12 | MUST | docs/specs/H2a-dify-command/spec.md<br>docs/specs/H2c-attachments/spec.md | 8 file | 8 file | có test |
 | HUB-FR-13 | MUST | docs/specs/H2a-dify-command/spec.md | 7 file | 5 file | có test |
@@ -93,7 +93,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-31 | MUST | docs/specs/H1-hub-core/spec.md |  | 1 file | có test |
 | HUB-FR-32 | MUST | docs/specs/H1-hub-core/spec.md |  | 1 file | có test |
 | HUB-FR-33 | MUST | docs/specs/H1-hub-core/spec.md |  | 1 file | có test |
-| HUB-FR-40 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 5 file | 4 file | có test |
+| HUB-FR-40 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 5 file | 5 file | có test |
 | HUB-FR-41 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 5 file | 3 file | có test |
 | HUB-FR-45 | MUST | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 8 file | 3 file | có test |
 | HUB-FR-42 | SHOULD | docs/specs/C1-chat-ui/spec.md<br>docs/specs/H1-hub-core/spec.md | 7 file | 3 file | có test |
@@ -101,7 +101,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-44 | MUST | docs/specs/H2c-attachments/spec.md | 20 file | 20 file | có test |
 | HUB-FR-50 | MUST | docs/specs/H2a-dify-command/spec.md<br>docs/specs/H2c-attachments/spec.md | 13 file | 11 file | có test |
 | HUB-FR-51 | MUST | docs/specs/H2a-dify-command/spec.md | 5 file | 3 file | có test |
-| HUB-FR-52 | SHOULD |  |  |  | chưa spec |
+| HUB-FR-52 | SHOULD | docs/specs/H3b-agent-grants/spec.md | 8 file | 6 file | có test |
 | HUB-FR-53 | SHOULD |  |  |  | chưa spec |
 | HUB-FR-60 | MUST | docs/specs/H1-hub-core/spec.md | 5 file | 1 file | có test |
 | HUB-FR-61 | MUST | docs/specs/H1-hub-core/spec.md | 4 file | 1 file | có test |
@@ -120,9 +120,9 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-74 | MUST | docs/specs/H1-hub-core/spec.md | 1 file | 1 file | có test |
 | HUB-FR-75 | MUST | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2c-attachments/spec.md | 14 file | 10 file | có test |
 | HUB-FR-76 | MUST | docs/specs/H2a-dify-command/spec.md | 4 file | 3 file | có test |
-| HUB-FR-77 | MUST | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2b-routing/spec.md | 1 file | 4 file | có test |
-| HUB-FR-78 | MUST |  |  |  | chưa spec |
-| HUB-FR-79 | SHOULD |  |  |  | chưa spec |
+| HUB-FR-77 | MUST | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2b-routing/spec.md<br>docs/specs/H3b-agent-grants/spec.md | 1 file | 4 file | có test |
+| HUB-FR-78 | MUST | docs/specs/H3b-agent-grants/spec.md | 14 file | 12 file | có test |
+| HUB-FR-79 | SHOULD | docs/specs/H3b-agent-grants/spec.md | 5 file | 4 file | có test |
 | HUB-FR-80 | MUST | docs/specs/H2a-dify-command/spec.md | 6 file | 4 file | có test |
 | HUB-FR-81 | MUST |  |  |  | chưa spec |
 | HUB-FR-82 | MUST |  |  |  | chưa spec |
@@ -130,15 +130,15 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-84 | MUST |  |  |  | chưa spec |
 | HUB-FR-85 | MUST |  |  |  | chưa spec |
 | HUB-FR-86 | MUST | docs/specs/H1-hub-core/spec.md<br>docs/specs/H3a-subscription/spec.md |  | 1 file | có test |
-| HUB-FR-87 | MUST |  |  |  | chưa spec |
+| HUB-FR-87 | MUST | docs/specs/H3b-agent-grants/spec.md | 5 file | 5 file | có test |
 | HUB-FR-88 | SHOULD | docs/specs/H1-hub-core/spec.md | 1 file | 1 file | có test |
 | HUB-FR-93 | SHOULD |  |  |  | chưa spec |
 | HUB-BR-01 | — | docs/specs/H2a-dify-command/spec.md | 2 file | 1 file | có test |
-| HUB-BR-02 | — | docs/specs/H1-hub-core/spec.md |  |  | có spec |
+| HUB-BR-02 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H3b-agent-grants/spec.md |  |  | có spec |
 | HUB-BR-03 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2b-routing/spec.md | 3 file | 6 file | có test |
 | HUB-BR-04 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2a-dify-command/spec.md<br>docs/specs/H3a-subscription/spec.md | 4 file | 10 file | có test |
 | HUB-BR-05 | — |  |  |  | chưa spec |
-| HUB-BR-06 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2a-dify-command/spec.md<br>docs/specs/H2b-routing/spec.md | 9 file | 4 file | có test |
+| HUB-BR-06 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2a-dify-command/spec.md<br>docs/specs/H2b-routing/spec.md<br>docs/specs/H3b-agent-grants/spec.md | 9 file | 4 file | có test |
 | HUB-BR-07 | — |  |  |  | chưa spec |
 | HUB-BR-08 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2b-routing/spec.md | 5 file | 4 file | có test |
 | HUB-BR-09 | — |  |  |  | chưa spec |
@@ -146,10 +146,10 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-BR-11 | — | docs/specs/H2a-dify-command/spec.md |  |  | có spec |
 | HUB-BR-12 | — | docs/specs/H2a-dify-command/spec.md |  | 1 file | có test |
 | HUB-BR-13 | — |  |  |  | chưa spec |
-| HUB-BR-14 | — | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
+| HUB-BR-14 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H3b-agent-grants/spec.md | 5 file | 4 file | có test |
 | HUB-BR-15 | — |  |  |  | chưa spec |
 | HUB-BR-16 | — |  |  |  | chưa spec |
-| HUB-BR-17 | — |  |  |  | chưa spec |
+| HUB-BR-17 | — | docs/specs/H3b-agent-grants/spec.md | 1 file | 2 file | có test |
 | HUB-BR-18 | — | docs/specs/H2b-routing/spec.md | 1 file | 1 file | có test |
 | HUB-BR-19 | — | docs/specs/H2a-dify-command/spec.md | 2 file |  | có code |
 | HUB-BR-20 | — | docs/specs/H2a-dify-command/spec.md<br>docs/specs/H2b-routing/spec.md | 2 file | 1 file | có test |

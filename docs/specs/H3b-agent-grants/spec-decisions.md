@@ -147,3 +147,16 @@ Hub dev thật (`bun run hub:dev`, DB `ai_system`, không Dify/provider trả ti
 1. `.env.local` của máy dev cũ chỉ có `HUB_CORS_ORIGINS=http://localhost:3100` (chép trước R23) ⇒ preflight `:3000` không có ACAO. Với `HUB_CORS_ORIGINS=http://localhost:3100,http://localhost:3000` ⇒ đúng. Đã bổ sung cảnh báo vào `docs/guides/hub-dev.md`.
 2. Hướng dẫn hub-dev nói `tenant_admin` có sẵn ở "tenant dev" nhưng `hub:dev` chỉ tạo `lan/hoa/an/khoa` (member); `tadmin` (beta) có sẵn trong DB nhưng mật khẩu không phải `dev-password-1`; `acme` không có tenant_admin. Đã sửa guide (reset + `POST /admin/users` cần `email` cho tenant_admin).
 3. Dữ liệu dev còn lại sau I2: user `i2admin` (acme, tenant_admin, mật khẩu `dev-password-1`; thử khoá trả 409 nên giữ nguyên), mật khẩu `tadmin` (beta) đặt lại về `dev-password-1`. Không có lỗi code nào.
+
+### Kết luận H3b (docs-architect, I3, 2026-10-06)
+**Tóm tắt:** `/agent-grants` (GET/POST/DELETE, idempotent, audit + `hub_config_version` + NOTIFY), `GET /agent-grants/effective/:user_id` (Kiểm tra quyền phần agent), `GET /runs/:id/trace` theo role + audit `view_trace` (fail-closed), `hub.audit_log` append-only (migration 0009), CORS admin-web, contract `@ai/contracts/hub-admin`. Q-U1…U4 theo mặc định (A, A, A, A). `done:h3b` xanh (I1 `a549567`); review vòng 1 CHANGES REQUESTED (0 Major code, 1 Major test P35 → `86f5704`; Minor → TECH-DEBT #74, #75, sửa #72 `c88deb3`), vòng 2 APPROVED (`da5c1a4`); tranh chấp test TC1/TC2 đều test sai (`c2dcc1c`); I2 curl tay đạt mọi ca (`6769dc2`). Chỉ số: readiness 2 lần · tranh chấp test 2 (test sai 2) · token chưa đo.
+
+**Điểm mở:** (1) Entitlement API (`platform_admin`) chưa có — H4/Studio; (2) tenant_admin xem metadata trace người khác (Q-U2 phương án B) — mở rộng sau, không phá contract; (3) Nhật ký Admin chưa hiện `hub.audit_log` (CR-043); (4) TECH-DEBT #73 (bump/NOTIFY trùng `seed.repo`), #74 (`LIST_GRANTS` không LIMIT), #75 (câu username trùng); (5) e2e Admin ↔ Hub chờ Admin UI áp CR-043.
+
+**Mục chờ `docs/PRODUCTION-NOTES.md`** (file đang được phiên khác sửa dở — thêm khi sạch):
+- CORS admin-web: `HUB_CORS_ORIGINS` production gồm origin admin-web (dev thêm `http://localhost:3000`); Origin lạ không có `Access-Control-Allow-Origin`.
+- `hub.audit_log` append-only (trigger chặn UPDATE/DELETE): kế hoạch lưu trữ/dọn theo hạn; `hub_rw` chỉ `SELECT, INSERT`.
+- `usage_logs_run_idx` trên prod phải tạo `CREATE INDEX CONCURRENTLY` (migration 0009 tạo thường — plan K12) để không khoá `usage_logs`.
+- `.env.local` dev cũ cần `HUB_CORS_ORIGINS=http://localhost:3100,http://localhost:3000` (guide `docs/guides/hub-dev.md` đã cảnh báo).
+
+**Dữ liệu dev để lại sau I2:** user `i2admin` (tenant `acme`, `tenant_admin`, mật khẩu `dev-password-1`); mật khẩu `tadmin` (tenant `beta`) đặt lại `dev-password-1`; mọi grant thử đã thu hồi.

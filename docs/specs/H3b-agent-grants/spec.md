@@ -2,7 +2,7 @@
 id: H3b-agent-grants
 title: Quyền agent — `/agent-grants` (cấp/thu hồi agent cho group/user), Kiểm tra quyền phần agent, trace run theo role + audit `view_trace`
 milestone: H3b
-status: approved                     # draft → ready → approved → in-progress → done
+status: done                         # draft → ready → approved → in-progress → done
 requirements:
   [HUB-FR-78, HUB-FR-79, HUB-FR-52, HUB-FR-87, HUB-BR-17, HUB-BR-02, HUB-BR-14, HUB-BR-06 (bối cảnh), HUB-FR-77 (bối cảnh, không đổi),
    ADM-FR-37 (vế Hub), ADM-FR-36 (vế agent — dữ liệu Hub), AC-H08 (vế trace), AC-H09 (vế grant), AC-A11 (vế Hub, phần agent)]
