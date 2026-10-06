@@ -58,22 +58,38 @@ owner: backend-lead + frontend-lead
 
 ## 3. Contract (backend-lead)
 <!-- backend-lead -->
-File: `packages/contracts/src/studio/*` (`@ai/contracts/studio`, zod; FE + Hub dùng chung). Khung (backend-lead điền chi tiết khi PLAN):
+File: `packages/contracts/src/studio/{index,errors,common,agents,orchestrator,catalog}.ts` (`@ai/contracts/studio`, zod; FE + Hub dùng chung). **Chi tiết từng trường: [plan §2](plan.md#2-contract-aicontractsstudio); endpoint × lỗi: [plan §3](plan.md#3-endpoint--lỗi-mọi-route-401-auth_expired--403-forbidden-trước-parse).** Mọi route: role `platform_admin`; thứ tự lỗi 401 `AUTH_EXPIRED` → 403 `FORBIDDEN` → 400 → 404 → 409/422.
 
-| Method | Path | Role | Request | Response | Lỗi |
-|---|---|---|---|---|---|
-| GET | `/studio/api/me` | platform_admin | — | `Me` | 401, 403 |
-| GET/POST | `/studio/api/agents` | platform_admin | `AgentInput` | `Agent`, list | 400, 409 |
-| GET/PUT/DELETE | `/studio/api/agents/:id` · `PATCH …/enabled` | platform_admin | `AgentInput`+`version` | `Agent` | 404, 409 (R06, R09) |
-| GET/PUT | `/studio/api/orchestrator` · `/orchestrator/default` | platform_admin | `OrchestratorInput`+`version` | list / bản | 409 |
-| POST/PUT/DELETE | `/studio/api/orchestrator/tenants[/:tenant_id]` | platform_admin | idem | bản | 404, 409 `ORCHESTRATOR_EXISTS` |
-| GET | `/studio/api/{agent-types,model-profiles,providers,workflows,tenants}` | platform_admin | — | danh sách chỉ đọc | — |
+| Method · path | Request | Response | Lỗi riêng |
+|---|---|---|---|
+| `GET /studio/api/me` | — | `Me {user_id, tenant_id, role, hub_config_version}` | — |
+| `GET /studio/api/agents` | `q?, runtime?, enabled?, limit 1–200=50, offset` | `{items: AgentListItem[], total, truncated, hub_config_version}` | 400 |
+| `POST /studio/api/agents` | `AgentCreate` (union theo `runtime`, `bash_ack?`) | 201 `{agent, hub_config_version}` | 400 `VALIDATION_ERROR`/`INVALID_REFERENCE`, 409 `KEY_TAKEN`, 422 `BASH_ACK_REQUIRED` |
+| `GET /studio/api/agents/:id` | — | `Agent` (+ `orchestrator_of`, `warnings`) | 404 |
+| `PUT /studio/api/agents/:id` | `AgentUpdate` (không `key`/`runtime`) + `version` | 200 idem | 404, 409 `VERSION_CONFLICT`/`AGENT_IN_USE_AS_ORCHESTRATOR`, 422 |
+| `PATCH /studio/api/agents/:id/enabled` | `{enabled, version}` | 200 idem | 404, 409 idem |
+| `DELETE /studio/api/agents/:id?version=` | — | 204 | 404, 409 `VERSION_CONFLICT` → `AGENT_IN_USE_AS_ORCHESTRATOR` → `AGENT_HAS_HISTORY` → `AGENT_HAS_ACCESS` |
+| `GET /studio/api/orchestrator` | — | `{default, tenants[], hub_config_version}` | — |
+| `PUT /studio/api/orchestrator/default` | `OrchestratorInput` + `version` | 200 `{orchestrator, hub_config_version}` | 400 `INVALID_REFERENCE`, 409 `VERSION_CONFLICT`/`AGENT_NOT_ORCHESTRATABLE` |
+| `DELETE /studio/api/orchestrator/default` | — | — | 409 `ORCHESTRATOR_DEFAULT_PROTECTED` |
+| `POST /studio/api/orchestrator/tenants` | `OrchestratorInput` + `tenant_id` | 201 | 400, 409 `TENANT_INACTIVE`/`ORCHESTRATOR_EXISTS`/`AGENT_NOT_ORCHESTRATABLE` |
+| `PUT·DELETE /studio/api/orchestrator/tenants/:tenant_id` | Input+`version` · `?version=` | 200 · 204 | 404, 409 |
+| `GET /studio/api/{agent-types,model-profiles,providers,workflows,tenants}` | `q?, limit ≤ 200` | `{items, total, truncated, hub_config_version}` | 400 |
 
-Sự kiện: `hub_config_changed` (đã có từ H1).
+Ràng buộc trường theo CHECK DB (QB2): `key` `^[a-z][a-z0-9-]{1,47}$` · `description` 20–400 · `timeout_s` 10–3600 · `token_budget` 1–10⁷ \| null · Orchestrator `max_steps` 1–20, `token_budget` 1000–10⁷, `history_n` 1–50. Luật thuần (QC test trước): [plan §4](plan.md#4-luật-thuần-qc-viết-test-trước--testsacceptanceh4arules). Sự kiện: `hub_config_changed` (có từ H1, payload không đổi).
 
 ## 4. Dữ liệu (backend-lead)
 <!-- backend-lead -->
-Bảng đã có: `agents`, `orchestrator_settings`, `agent_entitlements`, `audit_log`, `config_meta`, `agent_types`, `providers`, `model_profiles`, `provider_state`. `agent_workflows` hiện là stub ở `hub-readonly.ts` → Hub cần ghi: kiểm migration/role. Dự kiến không thêm bảng; nếu cần cột (vd `updated_by`) → migration mới. Ghi bằng role Hub ghi, đọc `admin.*` bằng `hub_ro`.
+Không bảng mới. Migration **`migrations-hub/0010_h4a_studio.sql`** ([plan §6](plan.md#6-db--migration-packagesdbmigrations-hub0010_h4a_studiosql--metajournaljson-idx-10)):
+
+| # | Thay đổi | Dữ liệu cũ |
+|---|---|---|
+| D1 | `hub_rw` được `INSERT/UPDATE/DELETE` `agents`, `agent_workflows`, `orchestrator_settings` + `USAGE` sequence `orchestrator_settings_id_seq` | — |
+| D2 | `agents.profile_id` cho NULL + CHECK bắt buộc với `llm`/`agentic-cli` (QB4) | không đổi |
+| D3 | `audit_log.tenant_id` cho NULL (cấu hình toàn hệ thống, QB6); CHECK `action` + `create/update/delete/enable/disable`, `entity` + `agent/orchestrator` | thoả CHECK mới |
+| D4 | Index `runs_agent_idx`, `run_steps_agent_idx` (partial `agent_id IS NOT NULL`) cho `AGENT_HAS_HISTORY` | prod: `CONCURRENTLY` thủ công |
+
+**Cách ly:** bảng cấu hình không RLS — chặn bằng `requirePlatformAdmin` ở mọi `/studio/api/*`; transaction Studio dùng scope `system` (đọc `runs`/`run_steps` có RLS khi kiểm lịch sử). Audit: agent + Orchestrator mặc định `tenant_id` NULL (đọc theo tenant không thấy), Orchestrator tenant ghi tenant đích. Ghi an toàn (R09): `config_meta` FOR UPDATE đầu tiên → hàng đích FOR UPDATE → kiểm `version` → ghi → bump → audit → NOTIFY, một transaction ([plan §5.1, §7](plan.md#7-thứ-tự-khoá--đồng-thời)). `dify-*` ghi cả `runtime_options.workflow_key` lẫn `agent_workflows` (QB3). Đọc `admin.workflows`/`admin.tenants` bằng `hub_ro`.
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
@@ -92,6 +108,7 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (route, trạng thái, valida
 Trạng thái: tải (skeleton) · rỗng (ui §13) · lỗi (+ Thử lại) · không quyền · 409 `VERSION_CONFLICT` (ConflictDialog mẫu Admin) · mất mạng (banner) — bảng plan-frontend §3. Dev: rsbuild 3200, base `/studio`, proxy `/auth` → admin-api, `/studio/api` → Hub (cookie refresh không cần CORS); prod `/auth` cần reverse proxy hoặc CR-044. Không thêm thư viện (không ADR).
 ## 6. Hiệu năng
 Theo `CONVENTIONS.md` §6; hiệu năng không chặn mốc (người dùng 2026-10-03). Mục tiêu bundle JS đầu ≤ 150 KB gzip (nới được).
+BE: `/studio/api/*` CRUD p95 < 300 ms với 5 000 agent; mọi list `limit` ≤ 200; mỗi ghi ≤ 8 câu SQL + audit; index từng truy vấn ở [plan §8](plan.md#8-hiệu-năng-conventions-6-spec-6--đo-không-chặn) (mới: D4).
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
@@ -101,7 +118,7 @@ Theo `CONVENTIONS.md` §6; hiệu năng không chặn mốc (người dùng 2026
 | Agent/profile/Orchestrator | seed yaml H1–H2b; provider giả `fake-cli` |
 | `agent_types` | Runtime ghi; test chèn fixture |
 
-Env mới: `HUB_STUDIO_DIST` (thư mục build phục vụ ở `/studio`; vắng thì `/studio` 404) · `HUB_CORS_ORIGINS` thêm `http://localhost:3200` · FE `PUBLIC_ADMIN_API_URL`, `PUBLIC_HUB_URL`, `PUBLIC_ADMIN_WEB_URL`. Cổng dev Studio 3200 (Admin 3000, Chat 3100).
+Env mới: `HUB_STUDIO_DIST` (thư mục build phục vụ ở `/studio`; vắng hoặc thiếu `index.html` thì không mount, `/studio` 404 JSON; test truyền `AppDeps.studioDist`) · `HUB_CORS_ORIGINS` thêm `http://localhost:3200` · FE `PUBLIC_ADMIN_API_URL`, `PUBLIC_HUB_URL`, `PUBLIC_ADMIN_WEB_URL`. Cổng dev Studio 3200 (Admin 3000, Chat 3100).
 
 ## 8. Tiêu chí nghiệm thu (qc)
 Khung — qc viết chi tiết thành `spec-ac.md` ở bước test-plan:
@@ -140,6 +157,13 @@ Lệnh xong: `done:h4a` (qc, mẫu `done:h3b`) = `bun run typecheck && bun test 
 | Q8 | `codex`/`gemini` trong editor (H2d hoãn)? | Hiện, lưu được, cảnh báo "chưa chạy được" (R05) | Ẩn hẳn rồi làm lại ở H2d |
 | Q9 | Nút "⇄ Agent Studio" phía Admin? | Không làm ở H4a (file Admin) → CR-044; Studio có link "⇄ Admin" tới `PUBLIC_ADMIN_WEB_URL` | — |
 | Q10 | Chuỗi i18n để ở đâu? | `packages/i18n` thêm namespace `studio` bằng **file mới**, không sửa chuỗi/file Admin; nếu cấu trúc ép sửa file chung → dừng và hỏi | Đặt chuỗi trong `apps/studio-web` |
+| QB1 | R07 cho `llm` làm Orchestrator, nhưng Hub chỉ chạy Orchestrator `agentic-cli` (`orchestratorProblem`) → lưu `llm` làm mặc định hỏng định tuyến mọi tenant | **Chỉ `agentic-cli`** tới khi `llm` chạy được; 409 `AGENT_NOT_ORCHESTRATABLE` (plan P9) | Cho lưu = Hub lỗi định tuyến |
+| QB2 | Số trong R03/R07 lệch CHECK DB (key không `_`; mô tả 1–1000 vs 20–400; timeout ≥ 1 vs ≥ 10; `history_n` 0 vs 1) | **Theo DB** — §3 thắng R03/R07 (khớp ui §13, Runtime) | Migration nới CHECK + Runtime |
+| QB3 | `dify-*` lưu workflow ở đâu (Runtime H2a đọc `runtime_options.workflow_key`)? | **Cả hai**: `workflow_key` + 1 dòng `agent_workflows`; `dify-agent` nhận app `chat`\|`agent` như seed | Chỉ một nơi = sửa Runtime hoặc Admin mất chặn xoá |
+| QB4 | `agents.profile_id` NOT NULL mà R03 bỏ profile cho `dify-*` | Migration D2 (NULL + CHECK) | Server gán profile giả |
+| QB5 | `key`, `runtime` đổi được sau tạo? | **Bất biến** (đổi runtime = Nhân bản, R12) | Kiểm lại workflow/Orchestrator mỗi lần đổi |
+| QB6 | `audit_log.tenant_id` của cấu hình toàn hệ thống | **NULL** (D3); Orchestrator tenant ghi tenant đích | Tenant của actor ⇒ lẫn vào audit tenant đó |
+| QB7 | Tool `Edit`/`Bash` (Runtime chỉ chạy `Read/Grep/Glob/Write`); JSON Schema của `python` | Lưu được + `warnings`; Hub không kiểm JSON Schema (không ajv, không ADR) | ADR thêm ajv |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - (chưa có)
