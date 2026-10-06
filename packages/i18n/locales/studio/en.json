@@ -88,7 +88,8 @@
     "toChat": "Back to Chat"
   },
   "common": {
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "close": "Close"
   },
   "offline": {
     "banner": "Connection lost, changes not saved"
@@ -305,5 +306,71 @@
     "body": "Unsaved changes will be lost.",
     "stay": "Stay",
     "leave": "Leave"
+  },
+  "orch": {
+    "title": "Orchestrator",
+    "subtitle": "The agent that receives every message and delegates to a specialist agent, answers itself, or asks back. Messages starting with @agent go straight to that agent.",
+    "default": "Default configuration",
+    "save": "Save",
+    "field": {
+      "agent": "Orchestrator agent",
+      "maxSteps": "Max steps",
+      "tokenBudget": "Token budget per run",
+      "historyN": "History messages",
+      "onNoMatch": "When no agent fits",
+      "tenant": "Tenant"
+    },
+    "noMatch": {
+      "answer": "Answer itself (general chat)",
+      "ask": "Ask the user"
+    },
+    "slow": "Slow: each decision starts the CLI for a few seconds and takes a subscription slot. With an API key, prefer an llm runtime with a cheap model.",
+    "tenants": {
+      "title": "Orchestrator per tenant",
+      "add": "+ Add for tenant",
+      "defaultRow": "Default (system-wide)",
+      "empty": "No tenant has its own Orchestrator yet.",
+      "note": "The Hub uses the tenant's own Orchestrator first, otherwise the default.",
+      "col": {
+        "tenant": "Tenant",
+        "agent": "Agent",
+        "steps": "Steps",
+        "updated": "Updated",
+        "actions": "Actions"
+      },
+      "edit": "Edit",
+      "delete": "Delete",
+      "tableLabel": "Orchestrator per tenant"
+    },
+    "sheet": {
+      "titleNew": "Add Orchestrator for a tenant",
+      "titleEdit": "Edit {tenant}'s Orchestrator",
+      "tenant": "Tenant",
+      "pick": "Select a tenant",
+      "noTenant": "No tenant left to add"
+    },
+    "delete": {
+      "title": "Delete {tenant}'s Orchestrator?",
+      "body": "The tenant will go back to the default.",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "saved": "Orchestrator saved · hub config v{n}",
+      "deleted": "Deleted {tenant}'s Orchestrator"
+    },
+    "err": {
+      "agent": "Select an agent to act as Orchestrator",
+      "tenant": "Select a tenant",
+      "maxSteps": "Max steps must be 1–20",
+      "tokenBudget": "Token budget must be at least 1000",
+      "historyN": "History must be 1–50 messages"
+    },
+    "diff": {
+      "agent": "Agent",
+      "maxSteps": "Max steps",
+      "tokenBudget": "Token budget per run",
+      "historyN": "History messages",
+      "onNoMatch": "When no agent fits"
+    }
   }
 }

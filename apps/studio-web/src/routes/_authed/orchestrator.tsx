@@ -1,11 +1,12 @@
-// Khung chờ: màn Orchestrator là task sau.
-import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import { PageHeader } from "#/components/shared/PageHeader";
+// Màn Orchestrator nạp lười (ngân sách JS ban đầu — plan-frontend §8). `?tenant=<tenant_id>|new` mở Sheet bản tenant.
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/orchestrator")({
-  component: function OrchestratorPlaceholder() {
-    const { t } = useTranslation();
-    return <PageHeader title={t("nav.orchestrator")} />;
-  },
+  validateSearch: (raw: Record<string, unknown>): { tenant?: string } => ({
+    tenant: typeof raw.tenant === "string" && raw.tenant !== "" ? raw.tenant : undefined,
+  }),
+  component: lazyRouteComponent(
+    () => import("#/features/orchestrator/pages/OrchestratorPage"),
+    "OrchestratorPage",
+  ),
 });

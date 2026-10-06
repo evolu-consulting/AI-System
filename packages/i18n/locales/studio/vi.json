@@ -88,7 +88,8 @@
     "toChat": "Về Chat"
   },
   "common": {
-    "cancel": "Huỷ"
+    "cancel": "Huỷ",
+    "close": "Đóng"
   },
   "offline": {
     "banner": "Mất kết nối, thay đổi chưa được lưu"
@@ -305,5 +306,71 @@
     "body": "Các thay đổi chưa lưu sẽ mất.",
     "stay": "Ở lại",
     "leave": "Rời trang"
+  },
+  "orch": {
+    "title": "Orchestrator",
+    "subtitle": "Agent nhận mọi tin nhắn, chọn agent chuyên trách (delegate), tự trả lời (answer) hoặc hỏi lại (ask). Tin bắt đầu bằng @agent đi thẳng tới agent đó.",
+    "default": "Cấu hình mặc định",
+    "save": "Lưu",
+    "field": {
+      "agent": "Agent làm Orchestrator",
+      "maxSteps": "Số bước tối đa",
+      "tokenBudget": "Ngân sách token / run",
+      "historyN": "Số tin lịch sử",
+      "onNoMatch": "Không có agent nào phù hợp",
+      "tenant": "Tenant"
+    },
+    "noMatch": {
+      "answer": "Tự trả lời (chat chung)",
+      "ask": "Hỏi lại người dùng"
+    },
+    "slow": "Chậm: mỗi quyết định khởi động CLI vài giây và chiếm slot subscription. Khi có API key, nên chuyển sang runtime llm với model rẻ.",
+    "tenants": {
+      "title": "Orchestrator theo tenant",
+      "add": "+ Thêm cho tenant",
+      "defaultRow": "Mặc định (toàn hệ thống)",
+      "empty": "Chưa tenant nào có Orchestrator riêng.",
+      "note": "Hub chọn bản của tenant trước, không có thì dùng mặc định.",
+      "col": {
+        "tenant": "Tenant",
+        "agent": "Agent",
+        "steps": "Số bước",
+        "updated": "Cập nhật",
+        "actions": "Thao tác"
+      },
+      "edit": "Sửa",
+      "delete": "Xoá",
+      "tableLabel": "Orchestrator theo tenant"
+    },
+    "sheet": {
+      "titleNew": "Thêm Orchestrator cho tenant",
+      "titleEdit": "Sửa Orchestrator của {tenant}",
+      "tenant": "Tenant",
+      "pick": "Chọn tenant",
+      "noTenant": "Không còn tenant nào để thêm"
+    },
+    "delete": {
+      "title": "Xoá Orchestrator của {tenant}?",
+      "body": "Tenant sẽ quay về dùng bản mặc định.",
+      "confirm": "Xoá"
+    },
+    "toast": {
+      "saved": "Đã lưu Orchestrator · hub config v{n}",
+      "deleted": "Đã xoá Orchestrator của {tenant}"
+    },
+    "err": {
+      "agent": "Chọn agent làm Orchestrator",
+      "tenant": "Chọn tenant",
+      "maxSteps": "Số bước tối đa từ 1 đến 20",
+      "tokenBudget": "Ngân sách token tối thiểu 1000",
+      "historyN": "Số tin lịch sử từ 1 đến 50"
+    },
+    "diff": {
+      "agent": "Agent",
+      "maxSteps": "Số bước tối đa",
+      "tokenBudget": "Ngân sách token / run",
+      "historyN": "Số tin lịch sử",
+      "onNoMatch": "Không có agent nào phù hợp"
+    }
   }
 }
