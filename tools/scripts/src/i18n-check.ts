@@ -1,10 +1,11 @@
-// ADM-NFR-06 · `bun run i18n:check`: hai locale vi/en (Admin và chat/) phải cùng tập key phẳng (spec M0 T-I18N-1).
+// ADM-NFR-06 · `bun run i18n:check`: hai locale vi/en (Admin, chat/ và studio/) phải cùng tập key phẳng (spec M0 T-I18N-1).
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repoRoot } from "./lib/git";
 
 const LOCALES_DIR = "packages/i18n/locales";
 const CHAT_DIR = "packages/i18n/locales/chat";
+const STUDIO_DIR = "packages/i18n/locales/studio";
 const LANGS = ["vi", "en"] as const;
 type Lang = (typeof LANGS)[number];
 
@@ -27,6 +28,10 @@ export function diffKeys(vi: unknown, en: unknown): { missingVi: string[]; missi
   };
 }
 
+/** Tiền tố báo lỗi: Admin không có, chat/ và studio/ có. */
+const tag = (dir: string): string =>
+  dir === LOCALES_DIR ? "" : dir === STUDIO_DIR ? "studio:" : "chat:";
+
 function readLocale(root: string, dir: string, lang: Lang): unknown {
   const path = `${dir}/${lang}.json`;
   try {
@@ -43,7 +48,7 @@ function checkPair(root: string, dir: string): number {
     console.log(
       dir === LOCALES_DIR
         ? "i18n:check: chưa có locale, bỏ qua"
-        : "i18n:check: chưa có locale chat, bỏ qua",
+        : `i18n:check: chưa có locale ${tag(dir).replace(":", "")}, bỏ qua`,
     );
     return 0;
   }
@@ -62,8 +67,8 @@ function checkPair(root: string, dir: string): number {
     return 1;
   }
   const { missingVi, missingEn } = diffKeys(vi, en);
-  for (const k of missingVi) console.error(`MISSING_vi ${dir === LOCALES_DIR ? "" : "chat:"}${k}`);
-  for (const k of missingEn) console.error(`MISSING_en ${dir === LOCALES_DIR ? "" : "chat:"}${k}`);
+  for (const k of missingVi) console.error(`MISSING_vi ${tag(dir)}${k}`);
+  for (const k of missingEn) console.error(`MISSING_en ${tag(dir)}${k}`);
   if (missingVi.length || missingEn.length) return 1;
   console.log(`i18n:check OK ${dir} (${flattenKeys(vi).length} key)`);
   return 0;
@@ -71,8 +76,10 @@ function checkPair(root: string, dir: string): number {
 
 function main(): number {
   const root = repoRoot();
-  // Gộp để cả hai cặp đều được báo, không dừng ở cặp đầu.
-  return [LOCALES_DIR, CHAT_DIR].map((d) => checkPair(root, d)).some((c) => c !== 0) ? 1 : 0;
+  // Gộp để mọi cặp đều được báo, không dừng ở cặp đầu.
+  return [LOCALES_DIR, CHAT_DIR, STUDIO_DIR].map((d) => checkPair(root, d)).some((c) => c !== 0)
+    ? 1
+    : 0;
 }
 
 if (import.meta.main) process.exit(main());

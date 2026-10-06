@@ -1,0 +1,33 @@
+{
+  "app": { "name": "✦ Agent Studio" },
+  "nav": {
+    "label": "Studio menu",
+    "skip": "Skip navigation",
+    "group": {
+      "config": "Agent configuration",
+      "access": "Access",
+      "test": "Testing",
+      "ops": "Operations",
+      "system": "System"
+    },
+    "overview": "Overview",
+    "agents": "Agents",
+    "orchestrator": "Orchestrator",
+    "tools": "Tools",
+    "models": "Models",
+    "secrets": "Secrets",
+    "access": "Agent access",
+    "playground": "Playground",
+    "runs": "Runs",
+    "cost": "Cost & usage",
+    "jobs": "Jobs & Worker",
+    "audit": "Change log",
+    "transfer": "Import / Export"
+  },
+  "soon": "Coming soon",
+  "soonH4b": "Coming soon (H4b)",
+  "soonH4c": "Coming soon (H4c)",
+  "topbar": { "configBadge": "hub config v{n}", "toAdmin": "⇄ Admin" },
+  "notFound": { "title": "Page not found", "back": "Back to Agents" },
+  "state": { "error": { "title": "Couldn't load data", "retry": "Retry" } }
+}

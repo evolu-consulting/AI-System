@@ -67,6 +67,14 @@ module.exports = {
       to: { path: ["(^|/)packages/db/", "(^|/)@ai/db(/|$)", "apps/[^/]+-api/"] },
     },
     {
+      name: "studio-web-no-other-web",
+      comment:
+        "HUB-FR-72 (H4a F1): studio-web không import code apps/admin-web hay apps/chat-web (copy-then-own, D7)",
+      severity: "error",
+      from: { path: "apps/studio-web/" },
+      to: { path: "apps/(admin|chat)-web/" },
+    },
+    {
       name: "api-no-web",
       comment: "T-DEP-6: api không import code web",
       severity: "error",

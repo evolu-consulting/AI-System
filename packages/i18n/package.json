@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./locales": "./src/locales.ts",
-    "./chat-locales": "./src/chat-locales.ts"
+    "./chat-locales": "./src/chat-locales.ts",
+    "./studio-locales": "./src/studio-locales.ts"
   },
   "scripts": {
     "test": "bun test",
