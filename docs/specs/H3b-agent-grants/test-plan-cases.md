@@ -24,7 +24,7 @@ Phụ lục của [`test-plan.md`](test-plan.md). Chữ ký: `plan.md` §4.1 (`t
 | R12 | `isOrchestrator: false, entitled: false`, subject `false` | `"NOT_ENTITLED"` |
 | R13 | `false/true`, subject `false` | `"SUBJECT_NOT_FOUND_REF"` |
 | R14 | `false/true`, subject `true` | `null` |
-| R15 | Đủ 9 tổ hợp (`null` × 2 + 2×2×2) | đúng thứ tự R04; hàm không nhận role (gọi 2 lần cùng input ⇒ cùng kết quả — "P không bỏ qua") |
+| R15 | Đủ 10 tổ hợp (`null` × 2 + 2×2×2) | đúng thứ tự R04; hàm không nhận role (gọi 2 lần cùng input ⇒ cùng kết quả — "P không bỏ qua") |
 
 ### 1.3 `effective-agents.test.ts` · H3b-R12–R14 · AC-07 · `HUB-FR-79`
 Snapshot dựng bằng kiểu `AccessSnapshot` (export từ `agent-access.rules.ts`) trong `rules/_snap.ts`; input `Object.freeze` sâu.

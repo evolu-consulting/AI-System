@@ -1,7 +1,7 @@
 # Test plan · H3b-agent-grants (qc)
 
 Chế độ **TEST-PLAN** (task QW-T) · 2026-10-06. Chưa có file test, chưa khoá; viết + "đỏ đúng lý do" ở QW (sau Gate, D1/C1/B0/MK), khoá Q2. Bảng ca chi tiết (R, A, K, M) → [`test-plan-cases.md`](test-plan-cases.md).
-"Đúng" = spec §2 (H3b-R01…R23), [`spec-ac.md`](spec-ac.md) (AC-H08 vế trace, AC-H09 vế grant, AC-A11 vế Hub, HUB-H3b-AC-01…14); contract + endpoint × lỗi + chữ ký luật thuần `plan.md` §2–§4; luồng/khoá `plan.md` §5–§6; migration + SQL + hàng audit `plan-db.md` §1–§5; quyết định U1–U6, Q-K1…Q-K14, PL1–PL14 (`spec-decisions.md`), QP1–QP2 (`plan.md` §10). Hộp đen: không đọc code implementation.
+"Đúng" = spec §2 (H3b-R01…R23 + R49 — L1: docs-architect đổi tên R49 → R24 thì sửa theo), [`spec-ac.md`](spec-ac.md) (AC-H08 vế trace, AC-H09 vế grant, AC-A11 vế Hub, HUB-H3b-AC-01…14); contract + endpoint × lỗi + chữ ký luật thuần `plan.md` §2–§4; luồng/khoá `plan.md` §5–§6; migration + SQL + hàng audit `plan-db.md` §1–§5; quyết định U1–U6, Q-K1…Q-K14, PL1–PL17 (`spec-decisions.md`), QP1–QP2 (`plan.md` §10). Hộp đen: không đọc code implementation.
 
 ## 1. Quy ước
 Như H3a §1 (tên test, chờ theo điều kiện không `sleep`, cấm `skip/only/todo`, id cố định không ngẫu nhiên, ca tự dọn), thêm:
@@ -116,10 +116,10 @@ Mọi bước `done:h3a` + `bun test tests/acceptance/H3b/rules` (bước unit) 
 |---|---|---|---|---|
 | QW-R | sau C1, B0 | `rules/{target-tenant,grant-problem,effective-agents,trace-rules,contracts-h3b}.test.ts` | R01–R61 (40) | stub ném `not implemented`. **Xanh trước code chấp nhận**: R60–R61 (contract C1 có), R42–R45 phần hằng regex (`SENSITIVE_*_RE` thật trong B0) |
 | QW-A | sau D1, MK, QW-R | `H3b/*.int.test.ts` (9 file) | A01–A126 (91) | route chưa có ⇒ 404 thay 200/201/403/400/409 (`expect`). **Xanh trước code chấp nhận**: A01 (401 middleware có sẵn nếu prefix chưa thêm ⇒ 404 — ghi rõ), A101, A110 (CORS chưa đổi code), A120–A126 (D1 xong) |
-| QW-C | cùng QW-A | `H3b-cmd/command-m5.int.test.ts` | A130–A134 (5) | đỏ ⇒ TECH-DEBT, không chặn (Q-K11). **Ngoài `done:h3b`**; qc chạy tay ở I1: `bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 ./tests/acceptance/H3b-cmd`, ghi `test-plan-log.md` (G7) |
+| QW-C | cùng QW-A | `H3b-cmd/command-m5.int.test.ts` | A130–A134 (5) | đỏ ⇒ TECH-DEBT, không chặn (Q-K11). **Ngoài `done:h3b`**; qc chạy tay ở I1: `bun --env-file=.env.local --config=bunfig.stack.toml test --timeout 30000 ./tests/acceptance/H3b-cmd` (**không** dùng `bunfig.int.toml`/`bunfig.toml`: MK đưa `tests/acceptance/H3b-cmd/**` vào `pathIgnorePatterns` ⇒ "0 file"; tasks I1 ghi `bunfig.int.toml` là cũ), ghi `test-plan-log.md` (G7) |
 | **Q2** | sau QW-A | `tests/.lock` | — | verify chỉ `UNLOCKED` H3b, 0 `CHANGED` |
 
-Tổng mới **136** ca: R 40 · A 91 · A-cmd 5; + K 16 nhóm · M 1. Model: QW-R/QW-A = Opus (`cao`), Q2/I1 = Sonnet.
+Tổng mới **136** ca theo kế hoạch (viết thực tế **138**: R 41 — tách R42 hằng regex; A 92 — A02b đếm riêng; A-cmd 5 — xem `test-plan-log.md`); + K 16 nhóm · M 1. Model: QW-R/QW-A = Opus (`cao`), Q2/I1 = Sonnet.
 
 ## 8. Chỗ hở cho readiness (mặc định dùng nếu không trả lời)
 | # | Hở | Mặc định | Agent |
@@ -142,7 +142,8 @@ Tổng mới **136** ca: R 40 · A 91 · A-cmd 5; + K 16 nhóm · M 1. Model: QW
 | Mục | Trạng thái | Xử lý phía qc |
 |---|---|---|
 | G1 | Đã xử lý | So `status` + `content-type` + thân bỏ `request_id` (§1); docs-architect sửa chữ AC-H08 |
-| G2, G3, G5, G13 | Đã xử lý | Nhận mặc định; backend-lead ghi một dòng PL mỗi mục |
+| G2, G3, G13 | Đã xử lý | Đóng theo R04, plan :33/:168 (không cần PL riêng — readiness lần 2 L5) |
+| G5 | Đã xử lý | PL15 (gốc = mức 1, 16 384 byte sau che) |
 | G4 | Đã xử lý | PL16, regex `token(?!s)`; R42/R44 đổi (§8) |
 | G6, G9, G10, G11 | Đã xử lý | Nhận mặc định, không đổi |
 | G7 | Đã xử lý | `H3b-cmd/**` ngoài `done:h3b`; qc chạy tay ở I1, đỏ ⇒ TECH-DEBT (§7); backend-lead thêm File vào tasks QW |
@@ -155,4 +156,4 @@ Tổng mới **136** ca: R 40 · A 91 · A-cmd 5; + K 16 nhóm · M 1. Model: QW
 | N7 | Đã xử lý | `H3bExtra` bọc trong `_h3b.ts`, MK không phải làm gì (§2) |
 
 ## 10. Đỏ đúng lý do · nhật ký
-Chưa chạy (QW sau Gate). Ghi vào `test-plan-log.md` khi có.
+QW chạy 2026-10-06 → [`test-plan-log.md`](test-plan-log.md): R 41 (33 đỏ đúng lý do `not implemented`, 8 xanh trước code) · A 92 (79 đỏ đúng lý do route chưa có ⇒ 404, 13 xanh trước code) · A-cmd 5 xanh (ngoài `done:h3b`). 0 ca đỏ do dựng dữ liệu.
