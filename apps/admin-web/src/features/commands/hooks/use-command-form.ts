@@ -75,7 +75,8 @@ function useDefaultCoreFeature(form: Form, applies: boolean) {
   useEffect(() => {
     const core = features.data?.find((f) => f.isCore);
     if (applies && core && form.getValues("feature_ids").length === 0) {
-      form.reset({ ...form.getValues(), feature_ids: [core.id] });
+      // keepFieldsRef: reset thường xoá ref các ô đã đăng ký tới lần render sau ⇒ gõ vào "Tên command" đúng lúc đó bị mất (I1 X1).
+      form.reset({ ...form.getValues(), feature_ids: [core.id] }, { keepFieldsRef: true });
     }
   }, [features.data, applies, form]);
 }

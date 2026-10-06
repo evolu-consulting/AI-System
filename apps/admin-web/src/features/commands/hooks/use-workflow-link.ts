@@ -44,7 +44,7 @@ export function useWorkflowLink(form: UseFormReturn<CommandFormValues>, fillOutp
     const empty = form.getValues("output_field") === "";
     applyWorkflow(form, wf, { autofillOutput: fillOutputOnLoad && empty });
     // Bảo đảm nạp lần đầu (sửa/nhân bản) không làm form "chưa lưu".
-    if (!fillOutputOnLoad) form.reset(form.getValues());
+    if (!fillOutputOnLoad) form.reset(form.getValues(), { keepFieldsRef: true });
   }, [detail.data, form, fillOutputOnLoad]);
 
   const changeWorkflow = useCallback(
