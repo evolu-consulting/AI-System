@@ -56,3 +56,49 @@ Các mục còn lại của qc, nhận theo mặc định và không cần sửa
 **Chưa kiểm:** `docs/design/agent-hub/ui-operations.md` §4/§8 và `ui-admin.md` §7.14–7.15 (ngoài phạm vi phiên Hub, U1 → CR-impact); không chạy lệnh nào.
 
 Lần chạy lại chỉ đọc `git diff 139accf -- docs/specs/H3b-agent-grants/` và các lỗ hổng N1–N7, G1–G8, PL2.
+
+## Lần 2 · 2026-10-06 · spec-readiness (Opus) · **READY**
+Chỉ đọc `git diff 937c805 -- docs/specs/H3b-agent-grants/ docs/TECH-DEBT.md docs/guides/hub-dev.md` (commit `91fa28a` backend-lead, `9493ba3` docs-architect, `432cc4d` qc), các mục trỏ tới (plan :33/:96–100/:168, plan-db :86, spec R04 :65, §4 :111) và `packages/contracts/src/groups.ts:19` (`BETA_GROUP_KEY` có thật). Trần: lớn nhất `test-plan-cases.md` 24 344 B, `plan.md` 23 710 B, đều ≤ 25 600 B.
+
+**Đối chiếu lần 1, cả 16 mục đã đóng:**
+
+| # | Trạng thái | Bằng chứng |
+|---|---|---|
+| N1 | Đóng | sd PL15 · spec H3b-R49 :90 · plan §4.3 chữ ký `redactTraceDetail(detail, view)` + §5.4 bước 5 · R49 · A97b · test-plan §3.2 R18, AC-10 |
+| G4 | Đóng | sd PL16 · spec R18 :89 · plan §4.3 `token(?!s)` · R42 (thêm `token`/`token_hash`/`tokenBudget`, bỏ `max_tokens`) · R44 (`*_tokens` giữ số) |
+| N2 | Đóng | A02b ⇒ 401 `AUTH_EXPIRED` · test-plan §4 "Role" |
+| G8 | Đóng (phần H3b) | TECH-DEBT #72 · `hub-dev.md` :41 · spec §10 K8. PRODUCTION-NOTES để I3 (xem L4) |
+| G7 | Đóng | tasks QW cột File có `H3b-cmd/**` · I1 có lệnh chạy tay + ghi `test-plan-log.md` · test-plan §7 QW-C |
+| PL2 | Đóng | spec R22 :137 liệt kê đủ GRANT 3 bảng, khớp §4 :111 (còn sót index, xem L3) |
+| N3 | Đóng | test-plan §2.1 · A66 tự khoá `gamma`, trả lại trong `finally` |
+| G5 | Đóng | PL15 + plan §4.3 (gốc = mức 1; `> 16384` byte UTF-8 sau che) · R45/R46 |
+| G1 | Đóng | spec-ac AC-H08 sửa chữ |
+| N4 | Đóng | plan §10 QP1 |
+| N5 | Đóng | plan-db :3 |
+| N6 | Đóng | plan §2 (`is_beta = key === BETA_GROUP_KEY`, hằng có ở `groups.ts:19`) |
+| N7 | Đóng | sd PL17 · test-plan §2 "Hub" |
+| G2 | Đóng, **không cần PL riêng** | Thứ tự đã có ở spec R04 :65 (body hợp lệ → R02) + plan §3 :96–97, A12 khoá cả `tadmin ≠ tid` và `padmin` thiếu `tenant_id` |
+| G3 | Đóng, **không cần PL riêng** | plan :33 (`INTERNAL_ERROR` 500) + :100 + `mapError` (`errors.ts:94`, lần 1); không có lựa chọn nào khác |
+| G13 | Đóng, **không cần PL riêng** | plan §5.2 bước 4 :168 trả `FIND_GRANT` = `id, granted_by, granted_at` của hàng có sẵn (plan-db :86) · A23 |
+
+**Lỗ hổng mới (0 Chặn, 0 Cao, 5 Thấp):**
+
+| # | Mức | Vị trí | Lỗ hổng | Mặc định đề xuất | Ai sửa |
+|---|---|---|---|---|---|
+| L1 | Thấp | spec :90 `H3b-R49` ↔ plan :3, test-plan :4 ("H3b-R01…R23"), test-plan :4 + tasks P0 :16 ("PL1–PL14") | Số luật nhảy từ R23 lên R49 và trùng ID ca unit `R49`; các dải tham chiếu vẫn là R01…R23 và PL1–PL14 | Đổi tên thành `H3b-R24`. Sửa dải thành "R01…R24" và "PL1–PL17" (test-plan :4). tasks P0 đã `[x]` nên giữ nguyên | docs-architect + qc (:4) |
+| L2 | Thấp | plan §4.3 docstring, PL15 | Với view `own`, chưa ghi rõ đo 16 KiB trước hay sau khi bỏ `message`/`upstream`. Cả hai cách đều an toàn, không ca nào phân biệt | Bỏ khoá gốc trước, rồi che, rồi đo kích thước. Ghi nửa dòng vào PL15 | backend-lead |
+| L3 | Thấp | spec R22 :137 ↔ §4 :111, plan-db §1 | R22 "chỉ thêm bảng audit + GRANT" chưa có index `usage_logs_run_idx` | Thêm "· index `usage_logs_run_idx`" vào R22 | docs-architect |
+| L4 | Thấp | spec K8 ("I3: PRODUCTION-NOTES cần thêm câu này") ↔ tasks I3 (danh sách mục chờ PRODUCTION-NOTES) | I3 chưa có mục "YAML seed prod không chứa `grants:`" | Thêm mục này vào I3 | docs-architect |
+| L5 | Thấp | test-plan §9 (G2, G3, G5, G13 "backend-lead ghi một dòng PL mỗi mục") | Chưa có PL nào cho G2, G3, G13, và cũng không cần (xem bảng trên), nên câu này là chữ cũ | Sửa thành "G2/G3/G13 đóng theo R04, plan :33/:168; G5 ở PL15" | qc |
+
+**Nhất quán mới:** đã kiểm PL15/PL16 khớp spec R18/R49, plan §4.3/§5.4, R42/R44/R49, A97b. Nhánh `own` cũng áp dụng cho `platform_admin` khi là chủ run (A95). Điều này khớp `traceAccess` và Q-U4, không mâu thuẫn. Tổng số ca test-plan §7 (R 40, A 91, A-cmd 5, tổng 136) khớp với các ca mới thêm (R49, A97b). Không có mâu thuẫn mới nào ở mức Thường trở lên.
+
+**Không có câu hỏi mới cho người dùng.**
+
+**Checklist:** A, B, C, E, G, H2, H: Đạt (như lần 1). D: Đạt (N1 qua R49/PL15, G8 qua K8 + TECH-DEBT #72). F: Đạt (A02b, A66, R42/R44, I1 `H3b-cmd`). I: Đạt, trừ L1/L3 (Thấp). J: Đạt (N6).
+
+**Quét từ mơ hồ** (chỉ trên diff): 2 kết quả, đều vô hại. "có thể lộ provider…" (spec :90) là câu nêu lý do. "…" (spec-ac, plan-db :114) là chỗ rút gọn.
+
+**Chưa kiểm:** `docs/PRODUCTION-NOTES.md` đang có thay đổi chưa commit của phiên khác (dòng C1, ngoài H3b), không đụng tới. Không chạy lệnh test.
+
+Lần chạy lại (nếu có) chỉ đọc `git diff <commit lần 2> -- docs/specs/H3b-agent-grants/` cho L1–L5.
