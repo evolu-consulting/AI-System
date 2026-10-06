@@ -1,4 +1,4 @@
-// CHAT-AC-05, CHAT-AC-10, HUB-FR-10 · ô nhập: tự giãn ≤ 8 dòng, Enter gửi / Shift+Enter xuống dòng, Gửi↔Dừng, Esc dừng, khoá khi run khác chạy, nháp localStorage, menu `/` (gõ `/` ở đầu tin; `//` không mở), lỗi `CMD_*` ngay trong ô.
+// CHAT-AC-05, CHAT-AC-10, HUB-FR-10 · ô nhập: tự giãn ≤ 8 dòng, Enter gửi / Shift+Enter xuống dòng, Gửi↔Dừng, Esc dừng, khoá khi run khác chạy, nháp localStorage, menu `/` (gõ `/` ở đầu tin; `//` không mở), menu `@` (`@@` không mở), lỗi `CMD_*`/`AGENT_NOT_FOUND`/429 (đếm ngược) ngay trong ô.
 // Dùng lại cho ô chính (F7/F8) và khung flow (F10): khác nhau ở `variant`, `draftKey`, `onSubmit`.
 import { ArrowUp, Square } from "lucide-react";
 import {
@@ -12,17 +12,16 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
-import { replaceCommandName } from "~/features/commands/lib/slash";
 import type { ApiError } from "~/lib/http";
 import { composerKeyHandler } from "../hooks/use-composer-keys";
 import { readDraft, useDraftSaver } from "../hooks/use-draft";
-import { useCommandSuggest } from "../hooks/use-suggest";
+import { useSendError } from "../hooks/use-send-error";
+import { useComposerSuggest } from "../hooks/use-suggest";
 import { COMPOSER_MAX_ROWS, canSend, clampHeight, submitOutcome } from "../lib/composer-logic";
-import { sendErrorView } from "../lib/send-error";
-import { COMMAND_MENU_ID, CommandMenu } from "./CommandMenu";
+import { AgentMenu } from "./AgentMenu";
+import { CommandMenu } from "./CommandMenu";
 import { QuotaNotice } from "./QuotaNotice";
 import { SendErrorNotice } from "./SendErrorNotice";
-import { optionId } from "./SuggestMenu";
 
 // Render server (bun test) không có layout effect.
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -68,7 +67,6 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [text, setText] = useState(() => readDraft(draftKey));
   const [submitting, setSubmitting] = useState(false);
   const [caret, setCaret] = useState(() => text.length);
-  const [sendError, setSendError] = useState<{ error: ApiError; text: string } | null>(null);
   const area = useRef<HTMLTextAreaElement>(null);
   const draft = useDraftSaver(draftKey);
   const flow = variant === "flow";
@@ -86,15 +84,22 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     el.style.overflowY = el.scrollHeight > line * COMPOSER_MAX_ROWS ? "auto" : "hidden";
   }, [text]);
 
-  const suggest = useCommandSuggest(text, caret);
+  const {
+    command: cmdSuggest,
+    agent: agentSuggest,
+    current: suggest,
+    aria,
+  } = useComposerSuggest(text, caret);
+  const sendError = useSendError(text);
+  const { clear: clearSendError } = sendError;
   const change = useCallback(
     (value: string, nextCaret = value.length) => {
       setText(value);
       setCaret(nextCaret);
-      setSendError(null);
+      clearSendError();
       draft.save(value);
     },
-    [draft],
+    [draft, clearSendError],
   );
 
   useImperativeHandle(
@@ -113,7 +118,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   );
 
   const send = useCallback(async () => {
-    if (!canSend(text, locked, submitting)) return;
+    if (!canSend(text, locked, submitting) || sendError.cooling) return;
     setSubmitting(true);
     try {
       const sent = text.trim();
@@ -123,14 +128,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         draft.clear();
         setText("");
         setCaret(0);
-        setSendError(null);
+        sendError.clear();
       } else if (out.kind === "error") {
-        setSendError({ error: out.error, text: sent });
+        sendError.set(out.error, sent);
       }
     } finally {
       setSubmitting(false);
     }
-  }, [text, locked, submitting, onSubmit, draft]);
+  }, [text, locked, submitting, onSubmit, draft, sendError]);
 
   const pickCommand = useCallback(
     (index?: number) => {
@@ -152,9 +157,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     stop: onStop,
   });
 
-  const enabled = canSend(text, locked, submitting);
-  const errorView = sendError ? sendErrorView(sendError.error, sendError.text) : null;
-  const showMenu = suggest.open;
+  const enabled = canSend(text, locked, submitting) && !sendError.cooling;
+  const errorView = sendError.view;
   return (
     <div className="w-full">
       <QuotaNotice over={quotaOver} />
@@ -162,14 +166,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         <SendErrorNotice
           view={errorView}
           onPick={(name) => {
-            const base = sendError?.text ?? text;
             const el = area.current;
-            change(replaceCommandName(base, name));
+            change(sendError.applySuggestion(name));
             el?.focus();
           }}
         />
       )}
-      {suggest.open && <CommandMenu suggest={suggest} onPick={pickCommand} />}
+      {cmdSuggest.open && <CommandMenu suggest={cmdSuggest} onPick={pickCommand} />}
+      {agentSuggest.open && <AgentMenu suggest={agentSuggest} onPick={pickCommand} />}
       {variant === "main" && (
         <p className="mb-1 text-xs text-muted-foreground">
           <span className="font-semibold text-foreground">{t("composer.newLabel")}</span>
@@ -184,12 +188,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           value={text}
           aria-label={t(flow ? "composer.flowInput" : "composer.input")}
           placeholder={t(flow ? "composer.flowPlaceholder" : "composer.placeholder")}
-          aria-controls={showMenu ? COMMAND_MENU_ID : undefined}
-          aria-activedescendant={
-            showMenu && suggest.matches.length > 0
-              ? optionId(COMMAND_MENU_ID, suggest.active)
-              : undefined
-          }
+          aria-controls={aria.controls}
+          aria-activedescendant={aria.activeDescendant}
           onChange={(e) => change(e.target.value, e.target.selectionStart)}
           onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
           onKeyDown={onKeyDown}

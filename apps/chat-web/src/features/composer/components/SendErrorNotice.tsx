@@ -5,7 +5,7 @@ import type { SendErrorView } from "../lib/send-error";
 
 export type SendErrorNoticeProps = {
   view: SendErrorView;
-  /** Nút gợi ý: nhãn đã gồm tiền tố (`/translate`). */
+  /** Nút gợi ý: nhận tên trần (`translate` / `dify-chatbot`), nhãn nút có tiền tố `/` hoặc `@`. */
   onPick(suggestion: string): void;
 };
 
@@ -29,7 +29,7 @@ export function SendErrorNotice({ view, onPick }: SendErrorNoticeProps) {
               variant="outline"
               size="sm"
               onClick={() => onPick(s)}
-            >{`/${s}`}</Button>
+            >{`${view.suggestionPrefix ?? "/"}${s}`}</Button>
           ))}
         </p>
       )}

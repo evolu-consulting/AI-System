@@ -14,6 +14,7 @@ import {
   type RunOrigin,
   type RunState,
 } from "./lib/reducer";
+import { clearResponders, rememberResponder } from "./lib/responder-cache";
 import { buildSendRequest } from "./lib/send-request.rules";
 import type { RunStore } from "./run-store";
 
@@ -150,6 +151,8 @@ export class RunDriver {
 
   /** Bỏ theo dõi (xoá hội thoại, đăng xuất): huỷ fetch + xoá khỏi store. */
   drop(key: string): void {
+    const run = this.store.get(key);
+    if (run?.answerId && run.responder) rememberResponder(run.answerId, run.responder);
     this.controllers.get(key)?.abort();
     this.controllers.delete(key);
     this.store.remove(key);
@@ -158,6 +161,7 @@ export class RunDriver {
   dropAll(): void {
     for (const key of [...this.controllers.keys()]) this.drop(key);
     this.store.clear();
+    clearResponders();
   }
 
   private async requestCancel(runId: string): Promise<void> {

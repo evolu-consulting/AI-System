@@ -117,6 +117,10 @@
     "commandsEmpty": "Bạn chưa được cấp lệnh nào",
     "commandsNoMatch": "Không có lệnh khớp “/{{q}}”",
     "commandsError": "Không tải được danh sách lệnh",
+    "agentsLoading": "Đang tải agent…",
+    "agentsEmpty": "Bạn chưa được cấp agent nào",
+    "agentsNoMatch": "Không có agent khớp “@{{q}}”",
+    "agentsError": "Không tải được danh sách agent",
     "retry": "Thử lại",
     "alias": "(alias /{{alias}})"
   },
@@ -125,7 +129,9 @@
     "cmdNotFound": "Không có lệnh /{{name}}.",
     "cmdMissingArg": "Lệnh /{{name}} thiếu: {{missing}}.",
     "cmdInvalid": "Giá trị không hợp lệ: {{invalid}}.",
-    "tagOnly": "Hãy nhập nội dung sau @{{tag}}."
+    "tagOnly": "Hãy nhập nội dung sau @{{tag}}.",
+    "agentNotFound": "Không tìm thấy agent @{{tag}}.",
+    "tooManyRuns": "Bạn đang có quá nhiều câu trả lời đang chạy. Thử lại sau {{n}} giây."
   },
   "errors": {
     "ALL_PROVIDERS_EXHAUSTED": {

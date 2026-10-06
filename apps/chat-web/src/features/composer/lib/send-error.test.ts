@@ -36,3 +36,27 @@ describe("sendErrorView", () => {
     expect(isComposerError(err("FLOW_BUSY"))).toBe(false);
   });
 });
+
+describe("F2 · agent + 429", () => {
+  const mk = (status: number, code: string, details?: unknown, retryAfter?: number) =>
+    new ApiError(status, code as never, "m", details, retryAfter);
+  test("AGENT_NOT_FOUND: tag từ details (parse tay, bỏ trường thừa), gợi ý tiền tố @", () => {
+    const v = sendErrorView(
+      mk(404, "AGENT_NOT_FOUND", { tag: "x2", suggestions: ["x"], extra: 1 }),
+      "@x2 hi",
+    );
+    expect(v).toEqual({
+      lines: [{ key: "sendError.agentNotFound", params: { tag: "x2" } }],
+      suggestions: ["x"],
+      suggestionPrefix: "@",
+      tag: "x2",
+    });
+  });
+  test("TOO_MANY_RUNS: n = còn lại, mặc định Retry-After, vắng → 5", () => {
+    const e = mk(429, "TOO_MANY_RUNS", undefined, 3);
+    expect(sendErrorView(e, "a")?.lines[0]?.params.n).toBe("3");
+    expect(sendErrorView(e, "a", 1)?.lines[0]?.params.n).toBe("1");
+    expect(sendErrorView(mk(429, "TOO_MANY_RUNS"), "a")?.lines[0]?.params.n).toBe("5");
+    expect(isComposerError(e)).toBe(true);
+  });
+});

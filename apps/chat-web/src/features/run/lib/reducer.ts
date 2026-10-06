@@ -5,9 +5,11 @@ import {
   type ChatEvent,
   isFlowIdle,
   isNewEvent,
+  type Responder,
   type RunError,
   type RunStartedData,
 } from "@ai/contracts/chat";
+import { applyDelta } from "./delta.rules";
 import type { BuildSendInput } from "./send-request.rules";
 
 export type RunPhase =
@@ -55,6 +57,8 @@ export type RunState = {
   ask: Ask | null;
   error: RunError | null;
   quota: RunStartedData["quota"] | null;
+  /** `run.started.responder` (agent trả lời run `direct`); vắng ở run khác. */
+  responder?: Responder;
   lastEventId: number;
   ms: number | null;
   /** Lần nối lại hiện tại (1..5), 0 khi không nối lại. */
@@ -154,9 +158,10 @@ function applyEvent(s: RunState, e: ChatEvent): RunState {
         runId: e.data.run_id,
         flowId: e.data.flow_id,
         quota: e.data.quota,
+        ...(e.data.responder ? { responder: e.data.responder } : {}),
       };
     case "delta":
-      return { ...next, text: next.text + e.data.text };
+      return applyDelta(next, e.data);
     case "ask":
       return { ...next, ask: e.data };
     case "run.finished": {

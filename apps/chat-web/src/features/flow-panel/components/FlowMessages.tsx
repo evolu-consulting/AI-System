@@ -20,7 +20,7 @@ function Question({ text }: { text: string }) {
 function Reply({ answer }: { answer: AnswerView }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <ConsultantAvatar />
+      <ConsultantAvatar name={answer.responder?.name} />
       <Answer answer={answer} />
       <AnswerExtras answer={answer} />
     </div>

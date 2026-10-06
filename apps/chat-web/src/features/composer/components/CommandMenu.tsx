@@ -3,9 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { argSyntax, describe } from "~/features/commands/lib/slash";
 import type { CommandSuggest } from "../hooks/use-suggest";
+import { COMMAND_MENU_ID } from "../lib/menu-ids";
 import { SuggestMenu } from "./SuggestMenu";
-
-export const COMMAND_MENU_ID = "composer-command-menu";
 
 export function CommandMenu({
   suggest,

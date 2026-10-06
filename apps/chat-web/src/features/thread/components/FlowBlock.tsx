@@ -66,7 +66,7 @@ export function FlowBlock({ title, flowId, runId, question, answer, footer }: Fl
       </div>
       {answer && (
         <>
-          <ConsultantAvatar />
+          <ConsultantAvatar name={answer.responder?.name} />
           <Answer answer={answer} />
           <AnswerExtras answer={answer} />
         </>

@@ -1,10 +1,10 @@
 // CHAT-AC-05, HUB-FR-10 · phím của textarea: menu `/` mở thì ↑↓ Enter Tab Esc thuộc menu; còn lại Enter gửi / Esc dừng.
 import type { KeyboardEvent } from "react";
 import { keyAction, type MenuKeyAction, menuKeyAction } from "../lib/composer-logic";
-import type { CommandSuggest } from "./use-suggest";
+import type { Suggest } from "./use-suggest";
 
 export type ComposerKeysDeps = {
-  suggest: CommandSuggest;
+  suggest: Pick<Suggest<unknown>, "open" | "matches" | "move" | "dismiss">;
   running: boolean;
   pickCommand(): void;
   send(): void;

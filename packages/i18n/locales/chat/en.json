@@ -111,6 +111,10 @@
     "commandsEmpty": "No commands have been granted to you",
     "commandsNoMatch": "No command matches “/{{q}}”",
     "commandsError": "Could not load the command list",
+    "agentsLoading": "Loading agents…",
+    "agentsEmpty": "No agents have been granted to you",
+    "agentsNoMatch": "No agent matches “@{{q}}”",
+    "agentsError": "Could not load the agent list",
     "retry": "Retry",
     "alias": "(alias /{{alias}})"
   },
@@ -119,7 +123,9 @@
     "cmdNotFound": "There is no /{{name}} command.",
     "cmdMissingArg": "/{{name}} is missing: {{missing}}.",
     "cmdInvalid": "Invalid value: {{invalid}}.",
-    "tagOnly": "Type a message after @{{tag}}."
+    "tagOnly": "Type a message after @{{tag}}.",
+    "agentNotFound": "Agent @{{tag}} not found.",
+    "tooManyRuns": "Too many answers are running. Try again in {{n}}s."
   },
   "errors": {
     "ALL_PROVIDERS_EXHAUSTED": {

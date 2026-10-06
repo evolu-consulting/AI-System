@@ -1,6 +1,7 @@
 // CHAT-AC-05..07, CHAT-AC-20 · helper thuần của luồng chính: footer khối flow, autoscroll, run chờ flow, khi nào bỏ run.
-import type { Ask, Flow, Message } from "@ai/contracts/chat";
+import type { Ask, Flow, Message, Responder } from "@ai/contracts/chat";
 import { isTerminal, type RunPhase, type RunState } from "~/features/run/lib/reducer";
+import { recallResponder } from "~/features/run/lib/responder-cache";
 
 /** Cách đáy ≤ 80px coi như đang ở đáy (plan-frontend §5 NewMessagesButton). */
 export const NEAR_BOTTOM_PX = 80;
@@ -73,6 +74,8 @@ export type AnswerView = {
   context?: AnswerContext | null;
   /** F9 · flow đã có tin sau câu hỏi lại → chip vô hiệu. */
   askAnswered?: boolean;
+  /** HUB-FR-91 · agent trả lời (run `direct`); vắng → nhãn mặc định "Consultant". */
+  responder?: Responder;
 };
 
 export type AnswerStep = {
@@ -109,6 +112,7 @@ export function answerFromRun(run: RunState): AnswerView {
       origin: run.origin,
     },
     askAnswered: false,
+    ...(run.responder ? { responder: run.responder } : {}),
   };
 }
 
@@ -117,6 +121,7 @@ export function answerFromMessage(
   extra: { context?: AnswerContext | null; askAnswered?: boolean } = {},
 ): AnswerView {
   const status = m.run?.status;
+  const responder = m.responder ?? recallResponder(m.id);
   return {
     text: m.content,
     streaming: false,
@@ -133,5 +138,6 @@ export function answerFromMessage(
     })),
     context: extra.context ?? null,
     askAnswered: extra.askAnswered ?? false,
+    ...(responder ? { responder } : {}),
   };
 }

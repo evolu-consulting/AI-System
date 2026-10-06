@@ -126,3 +126,16 @@ test("gắn lại run đang chạy: streaming, chưa có sự kiện", () => {
 test("C1-R06 · backoff 0,5 → 8 s, 5 lần", () => {
   expect([1, 2, 3, 4, 5, 6].map(reconnectDelay)).toEqual([500, 1000, 2000, 4000, 8000, null]);
 });
+
+test("HUB-FR-91 · run.started.responder vào RunState; vắng thì không có khoá", () => {
+  const withR: ChatEvent = {
+    id: 1,
+    event: "run.started",
+    data: {
+      ...(started.data as object),
+      responder: { key: "dify-chatbot", name: "Chatbot (Dify)" },
+    },
+  } as ChatEvent;
+  expect(feed(fresh(), withR).responder).toEqual({ key: "dify-chatbot", name: "Chatbot (Dify)" });
+  expect("responder" in feed(fresh(), started)).toBe(false);
+});
