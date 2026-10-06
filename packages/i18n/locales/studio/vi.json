@@ -207,7 +207,9 @@
       "tokenBudget": "Ngân sách token",
       "prompt": "System prompt",
       "enabled": "Bật agent",
-      "agentType": "Loại agent"
+      "agentType": "Loại agent",
+      "maxTurns": "Số lượt tối đa (2–100, để trống = mặc định)",
+      "agentConfig": "Cấu hình agent"
     },
     "descHint": "Nói rõ khi nào dùng và khi nào không. Orchestrator chọn agent gần như chỉ dựa vào đoạn này.",
     "counter": "{n} / 400",
@@ -231,7 +233,9 @@
       "attach": "Gắn",
       "needOne": "Agent cần một workflow",
       "missing": "(không còn trong catalog)",
-      "adminLink": "Admin › Workflows ↗"
+      "adminLink": "Admin › Workflows ↗",
+      "filterType": "Lọc theo loại",
+      "typeAll": "Tất cả loại"
     },
     "access": {
       "count": "Đã cấp cho {n} tenant. Tenant admin tự cấp cho group trong Admin › Groups.",
@@ -260,9 +264,13 @@
       "tokenBudget": "Ngân sách token phải ≥ 1 hoặc để trống",
       "agentType": "Chọn loại agent",
       "invalid": "Dữ liệu chưa hợp lệ, kiểm tra lại các trường.",
-      "field": "Giá trị chưa hợp lệ"
+      "field": "Giá trị chưa hợp lệ",
+      "json": "JSON không hợp lệ",
+      "maxTurns": "Số lượt từ 2 đến 100"
     },
-    "cwdHint": "Agent chỉ đọc/ghi trong thư mục làm việc của job. Thư mục home, ổ Windows và job khác luôn bị chặn."
+    "cwdHint": "Agent chỉ đọc/ghi trong thư mục làm việc của job. Thư mục home, ổ Windows và job khác luôn bị chặn.",
+    "cliNotReady": "{cli} chưa chạy được tới khi có H2d. Lưu được để chuẩn bị trước.",
+    "runtimeMissing": "Chưa có Worker đăng ký runtime này — lưu được nhưng chưa chạy được."
   },
   "conflict": {
     "title": "Có người vừa lưu bản mới hơn",

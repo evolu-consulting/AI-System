@@ -15,7 +15,15 @@ import {
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select";
 import type { WorkflowItem } from "../hooks/use-editor-catalogs";
+import { appTypesOf, filterWorkflows } from "../lib/runtime-notice";
 
 type Props = {
   items: WorkflowItem[];
@@ -25,8 +33,7 @@ type Props = {
   onClose: () => void;
 };
 
-const matches = (w: WorkflowItem, q: string) =>
-  `${w.key} ${w.name}`.toLowerCase().includes(q.trim().toLowerCase());
+const ALL = "__all__";
 
 type RowProps = { w: WorkflowItem; single: boolean; picked: boolean; toggle: () => void };
 
@@ -55,20 +62,20 @@ function Row({ w, single, picked, toggle }: RowProps) {
 export function WorkflowPicker({ items, single, selected, onAttach, onClose }: Props) {
   const { t } = useTranslation();
   const [q, setQ] = useState("");
+  const [type, setType] = useState(ALL);
+  const types = appTypesOf(items);
   const [picked, setPicked] = useState<string[]>(selected);
   const toggle = (id: string) =>
     setPicked(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]);
-  const rows = items
-    .filter((w) => matches(w, q))
-    .map((w) => (
-      <Row
-        key={w.id}
-        w={w}
-        single={single}
-        picked={picked.includes(w.id)}
-        toggle={() => toggle(w.id)}
-      />
-    ));
+  const rows = filterWorkflows(items, q, type === ALL ? "" : type).map((w) => (
+    <Row
+      key={w.id}
+      w={w}
+      single={single}
+      picked={picked.includes(w.id)}
+      toggle={() => toggle(w.id)}
+    />
+  ));
   const list = <ul className="max-h-72 divide-y divide-border overflow-auto">{rows}</ul>;
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -84,6 +91,21 @@ export function WorkflowPicker({ items, single, selected, onAttach, onClose }: P
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+        {types.length > 1 ? (
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger aria-label={t("editor.wf.filterType")} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>{t("editor.wf.typeAll")}</SelectItem>
+              {types.map((x) => (
+                <SelectItem key={x} value={x}>
+                  {x}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
         {items.length === 0 ? (
           <p className="text-body text-muted-foreground">{t("editor.wf.pickerEmpty")}</p>
         ) : single ? (

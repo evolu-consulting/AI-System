@@ -207,7 +207,9 @@
       "tokenBudget": "Token budget",
       "prompt": "System prompt",
       "enabled": "Enable agent",
-      "agentType": "Agent type"
+      "agentType": "Agent type",
+      "maxTurns": "Max turns (2–100, empty = default)",
+      "agentConfig": "Agent configuration"
     },
     "descHint": "Say clearly when to use it and when not to. The Orchestrator picks agents almost only from this text.",
     "counter": "{n} / 400",
@@ -231,7 +233,9 @@
       "attach": "Attach",
       "needOne": "The agent needs a workflow",
       "missing": "(no longer in the catalog)",
-      "adminLink": "Admin › Workflows ↗"
+      "adminLink": "Admin › Workflows ↗",
+      "filterType": "Filter by type",
+      "typeAll": "All types"
     },
     "access": {
       "count": "Granted to {n} tenants. Tenant admins grant groups in Admin › Groups.",
@@ -260,9 +264,13 @@
       "tokenBudget": "Token budget must be ≥ 1 or empty",
       "agentType": "Select an agent type",
       "invalid": "Some fields are invalid, please check.",
-      "field": "Invalid value"
+      "field": "Invalid value",
+      "json": "Invalid JSON",
+      "maxTurns": "Max turns must be 2–100"
     },
-    "cwdHint": "The agent can only read/write in the job's working directory. Home, Windows drives and other jobs are always blocked."
+    "cwdHint": "The agent can only read/write in the job's working directory. Home, Windows drives and other jobs are always blocked.",
+    "cliNotReady": "{cli} won't run until H2d. You can save it to prepare.",
+    "runtimeMissing": "No Worker has registered this runtime yet — you can save, but it won't run."
   },
   "conflict": {
     "title": "Someone just saved a newer version",

@@ -2,6 +2,7 @@
 // Trường không áp dụng cho runtime thì ẩn nhưng giữ giá trị trong nháp; khi gửi `toPayload` lọc theo runtime.
 import { AGENT_RUNTIMES } from "@ai/contracts/studio";
 import { useTranslation } from "react-i18next";
+import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
@@ -13,9 +14,11 @@ import {
   SelectValue,
 } from "#/components/ui/select";
 import type { AgentTypeItem, Catalog, ModelProfileItem } from "../hooks/use-editor-catalogs";
+import { runtimeMissing } from "../lib/runtime-notice";
 import { Field, type SectionProps } from "./AgentField";
 import { CatalogAlert } from "./CatalogAlert";
 import { CliOptions } from "./CliOptions";
+import { SchemaForm } from "./SchemaForm";
 
 type Props = SectionProps & {
   hadBash: boolean;
@@ -51,6 +54,36 @@ function CatalogSelect(p: {
   );
 }
 
+function PythonOptions(p: Props) {
+  const { t } = useTranslation();
+  const { draft, set, errors } = p;
+  const types = p.agentTypes.items.filter((x) => x.runtime === "python");
+  const schema = types.find((x) => x.key === draft.agentTypeKey)?.config_schema;
+  return (
+    <>
+      <CatalogSelect
+        id="f-agent-type"
+        label={t("editor.field.agentType")}
+        value={draft.agentTypeKey}
+        error={errors.agent_type_key}
+        items={types.map((x) => ({ key: x.key, value: x.key }))}
+        onChange={(v) => {
+          if (v !== draft.agentTypeKey) set("rawOptions", {});
+          set("agentTypeKey", v);
+        }}
+      />
+      {schema ? (
+        <SchemaForm
+          key={draft.agentTypeKey}
+          schema={schema}
+          value={draft.rawOptions}
+          onChange={(v) => set("rawOptions", v)}
+        />
+      ) : null}
+    </>
+  );
+}
+
 function RuntimeSpecific(p: Props) {
   const { t } = useTranslation();
   const { draft, set, errors } = p;
@@ -72,18 +105,7 @@ function RuntimeSpecific(p: Props) {
           />
         </>
       ) : null}
-      {draft.runtime === "python" ? (
-        <CatalogSelect
-          id="f-agent-type"
-          label={t("editor.field.agentType")}
-          value={draft.agentTypeKey}
-          error={errors.agent_type_key}
-          items={p.agentTypes.items
-            .filter((x) => x.runtime === "python")
-            .map((x) => ({ key: x.key, value: x.key }))}
-          onChange={(v) => set("agentTypeKey", v)}
-        />
-      ) : null}
+      {draft.runtime === "python" ? <PythonOptions {...p} /> : null}
       {draft.runtime === "agentic-cli" ? <CliOptions {...p} /> : null}
     </>
   );
@@ -118,6 +140,15 @@ export function RuntimeSection(p: Props) {
           </RadioGroup>
         )}
       </Field>
+      {runtimeMissing(
+        draft.runtime,
+        p.agentTypes.items,
+        !p.agentTypes.pending && !p.agentTypes.failed,
+      ) ? (
+        <Alert className="border-transparent bg-warning-bg text-warning">
+          <AlertDescription className="text-warning">{t("editor.runtimeMissing")}</AlertDescription>
+        </Alert>
+      ) : null}
       <RuntimeSpecific {...p} />
       <div className="grid gap-4 md:grid-cols-2">
         <Field id="f-timeout" label={t("editor.field.timeout")} error={errors.timeout_s}>

@@ -17,7 +17,8 @@ export type FieldKey =
   | "bash_ack"
   | "timeout_s"
   | "token_budget"
-  | "agent_type_key";
+  | "agent_type_key"
+  | "max_turns";
 export type FieldErrors = Partial<Record<FieldKey, string>>;
 
 export type AgentDraft = {
@@ -165,6 +166,7 @@ const PATHS: Record<string, FieldKey> = {
   timeout_s: "timeout_s",
   token_budget: "token_budget",
   agent_type_key: "agent_type_key",
+  "runtime_options.max_turns": "max_turns",
 };
 
 /** `path` (chuỗi "a.b" hoặc mảng) → trường form; `workflow_ids.0` ⇒ `workflow_ids`; không map được ⇒ null. */
@@ -188,6 +190,7 @@ export const FIELD_MESSAGE: Record<FieldKey, string> = {
   timeout_s: "editor.err.timeout",
   token_budget: "editor.err.tokenBudget",
   agent_type_key: "editor.err.agentType",
+  max_turns: "editor.err.maxTurns",
 };
 
 export type IssueLike = { path?: unknown };
@@ -228,6 +231,7 @@ export const FIELD_ORDER: FieldKey[] = [
   "description",
   "profile_id",
   "agent_type_key",
+  "max_turns",
   "timeout_s",
   "token_budget",
   "workflow_ids",

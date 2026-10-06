@@ -4,9 +4,18 @@ import { CLI_KINDS, CWD_MODES, STUDIO_CLI_TOOLS } from "@ai/contracts/studio";
 import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Checkbox } from "#/components/ui/checkbox";
+import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select";
 import { Switch } from "#/components/ui/switch";
+import { cliNotReady } from "../lib/runtime-notice";
 import { Field, type SectionProps } from "./AgentField";
 
 function Tools({ draft, set }: SectionProps) {
@@ -77,15 +86,47 @@ export function CliOptions(p: SectionProps & { hadBash: boolean }) {
           </RadioGroup>
         )}
       </Field>
+      {cliNotReady(draft.cli) ? (
+        <Alert className="border-transparent bg-warning-bg text-warning">
+          <AlertDescription className="text-warning">
+            {t("editor.cliNotReady", { cli: draft.cli })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <Tools {...p} />
       {askAck ? <BashAck {...p} /> : null}
       <div className="flex items-center gap-2">
         <Switch id="f-mcp" checked={draft.mcp} onCheckedChange={(v) => set("mcp", v)} />
         <Label htmlFor="f-mcp">{t("editor.field.mcp")}</Label>
       </div>
-      <p className="text-label text-muted-foreground">
-        {t("editor.field.cwd")}: {CWD_MODES.join(", ")}. {t("editor.cwdHint")}
-      </p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field id="f-cwd" label={t("editor.field.cwd")} hint={t("editor.cwdHint")}>
+          {(c) => (
+            <Select value={draft.cwdMode} onValueChange={(v) => set("cwdMode", v)}>
+              <SelectTrigger {...c} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CWD_MODES.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </Field>
+        <Field id="f-max-turns" label={t("editor.field.maxTurns")} error={p.errors.max_turns}>
+          {(c) => (
+            <Input
+              {...c}
+              type="number"
+              value={draft.maxTurns}
+              onChange={(e) => set("maxTurns", e.target.value)}
+            />
+          )}
+        </Field>
+      </div>
     </div>
   );
 }
