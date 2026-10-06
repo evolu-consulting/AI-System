@@ -175,7 +175,7 @@ Mô tả workflow/command (≥ 20 ký tự VI) đặt cố định trong `apps.t
 | 5 | Workflow | `GET /admin/workflows?q=<key>` → vắng: POST; khác (`workflowPatch`) ⇒ PUT kèm `version`; 409 `VERSION_CONFLICT` ⇒ đọc lại 1 lần | theo `key` |
 | 6 | Command | theo `name`: vắng ⇒ POST với `feature_ids:[dify-demo]` (**không** để mặc định core — tránh cấp cho mọi người); có ∧ `workflow_id` khác workflow của seed ⇒ **bỏ qua + cảnh báo** (không chiếm lệnh người khác); khác ⇒ PUT | theo `name` |
 | 7 | Entitlement + grant feature | `PUT /admin/features/:id/entitlements/:tenant_id`; `POST /admin/grants?tenant_id= {feature_id, group_id}` (trùng ⇒ coi là đã có) | — |
-| 8 | Agent chatbot (K7) | thư mục tạm = chép `apps/hub-api/seed/*.yaml` + thêm vào `agents.yaml`: `{key:dify-chatbot, name:{vi:"Chatbot (Dify)",en:"Chatbot (Dify)"}, description ≥20, runtime:dify-agent, profile:$HUB_SEED_PROFILE, runtime_options:{workflow_key:dify-chatbot}}`; `access.yaml` thêm `entitlements: {agent:dify-chatbot, tenant_key:acme}` (không thêm `grants:`) → `bun --env-file=.env.local apps/hub-api/src/modules/seed/seed.ts` với `HUB_SEED_DIR=<tmp>` (`HUB_SEED_PROFILE` như `hub:dev`); xoá thư mục tạm | seed upsert |
+| 8 | Agent chatbot (K7) | thư mục tạm = chép `apps/hub-api/seed/*.yaml` + thêm vào `agents.yaml`: `{key:dify-chatbot, name:{vi:"Chatbot (Dify)",en:"Chatbot (Dify)"}, description ≥20, runtime:dify-agent, profile:$HUB_SEED_PROFILE, runtime_options:{workflow_key:dify-chatbot}}`; `access.yaml` thêm `entitlements: {agent:dify-chatbot, tenant_key:acme}` (không thêm `grants:`) → `bun --env-file=.env.local apps/hub-api/src/modules/seed/seed.ts` với `HUB_SEED_DIR=<tmp>` (`HUB_SEED_PROFILE` như `hub:dev`; DB = `DATABASE_URL` của hub-api, truyền cho script — test trỏ DB qc qua env); xoá thư mục tạm | seed upsert |
 | 9 | Grant agent | `GET /agent-grants?tenant_id=&subject_type=group&subject_id=` lấy `agent.id` của `dify-chatbot` → `POST /agent-grants?tenant_id=` `{agent_id, subject_type:"group", subject_id}` (201/200 đều ok) | Hub `on conflict do nothing` |
 
 Dry-run in: từng bước "tạo/cập nhật/giữ nguyên" + tên app, loại, input map, **không** URL đầy đủ có query, không key. Thiếu `DIFY_SEED_ENV_FILE` / thiếu key của app chọn ⇒ exit 1 **trước** bước 1, nêu tên biến (AC17).
@@ -207,6 +207,7 @@ Cổng đang bận bởi tiến trình khác ⇒ dùng lại (như `hub:dev`) + 
 | QD | AC15: gọi `missingAdminColumns` trên DB tạm drop cột (owner) ⇒ `["admin.workflows.side_effect"]`; server thật thoát 1 | `tests/acceptance/X1/` |
 | QE | AC11: stub Hub (`Bun.serve`) cho `POST /admin/commands/test`: 8a–8f, 403, 503 vắng env, 409 side_effect; quét response/log không có token | `tests/acceptance/X1/` |
 | QF | Không thêm mã vào `API_ERRORS` (khoá 48) — dùng `COMMAND_TEST_ERRORS` | — |
+| QG | Smoke AC20: qc viết, đếm bằng bộ đếm trong script (mỗi app đúng 1, không retry, không DB) | `tests/smoke/X1/dify-live.ts` |
 
 ## 8. Cho FE (trả BL1–BL6 của `plan-frontend.md` §5)
 | # | Chốt |

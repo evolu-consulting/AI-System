@@ -24,7 +24,7 @@ Người dùng chốt 2026-10-07 (CR-046): combine làm **trong phiên Hub**, đ
 | E | Stack + hướng dẫn | `bun run combine:dev` + `docs/guides/combine-test.md` theo kịch bản nghiệp vụ (§7) | - |
 | F | Đóng mốc | `done:x1` (§8), review 2 vòng, I2 kiểm tay do người dùng | - |
 
-**Không làm:** H3c (tạm dừng), H4b–d, màn Admin cấu hình `HUB_MAX_CONCURRENT_RUNS`/hạn mức file (CR-038/040: chưa cần), Nhật ký Admin đọc `hub.audit_log` (CR-043 Q-U3, hoãn), e2e Playwright chạy Dify thật (chỉ smoke tay `DIFY_LIVE=1`), sửa contract `@ai/contracts/*` (chỉ **dùng** cái có sẵn; cần đổi → `backend-lead`, ghi CR), TLS/production (PRODUCTION-NOTES).
+**Không làm:** "Chạy với tư cách user để kiểm tra quyền" của ADM-FR-23 (Hub không kiểm quyền ở test-run, K9; TECH-DEBT #89), H3c (tạm dừng), H4b–d, màn Admin cấu hình `HUB_MAX_CONCURRENT_RUNS`/hạn mức file (CR-038/040: chưa cần), Nhật ký Admin đọc `hub.audit_log` (CR-043 Q-U3, hoãn), e2e Playwright chạy Dify thật (chỉ smoke tay `DIFY_LIVE=1`), sửa contract `@ai/contracts/*` (chỉ **dùng** cái có sẵn; cần đổi → `backend-lead`, ghi CR), TLS/production (PRODUCTION-NOTES).
 
 ## 2. Luật (X1-R)
 
@@ -58,7 +58,7 @@ Không thêm contract mới. Dùng: `@ai/contracts/chat` (+ `commands`, `agents`
 | Method | Path | Role | Request | Response | Lỗi |
 |---|---|---|---|---|---|
 | POST/PUT | `/admin/workflows` (đã có) | platform_admin / tenant_admin | thêm `side_effect?: boolean` (mặc định false) | thêm `side_effect` | như hiện có |
-| POST | `/admin/commands/:id/test` (tên chốt ở PLAN) | tenant_admin, platform_admin | cấu hình nháp + tham số mẫu + `run_as?` (ADM-FR-23) | `{ok, output, duration_ms, error?}` | 403, 502 `HUB_UNAVAILABLE`, mã Hub chuyển tiếp |
+| POST | `/admin/commands/:id/test` (tên chốt ở PLAN) | platform_admin (X1; `tenant_admin` → TECH-DEBT #89, sau X1) | cấu hình nháp + tham số mẫu + `run_as?` (ADM-FR-23) | `{ok, output, duration_ms, error?}` | 403, 502 `HUB_UNAVAILABLE`, mã Hub chuyển tiếp |
 
 Admin → Hub: `POST /internal/test-run` (Bearer `HUB_INTERNAL_TOKEN`), `GET/POST/DELETE /agent-grants`, `GET /agent-grants/effective/:user_id` (spec H3b §3).
 
@@ -111,7 +111,7 @@ Tên bảng/cột và cú pháp `$args.*` theo spec H2a §3 và ADM-FR-21; PLAN 
 | S4 | `/lệnh` (menu, thiếu tham số, lệnh sai + gợi ý, `//`) | mock rồi **thật** (`/translate`) |
 | S5 | `@agent`, `@@`, nhiều tag, tag sai | `claude-sub` |
 | S6 | Đính kèm: hợp lệ, quá lớn, sai loại, chip xám; `/ask-image` | mock + 1 lần thật |
-| S7 | Xác nhận `side_effect`: bật cờ ở Admin → Chat hỏi Đồng ý/Huỷ | mock |
+| S7 | Xác nhận `side_effect`: bật cờ workflow `mock-send` ở Admin (không qua seed yaml) → Chat hỏi Đồng ý/Huỷ | mock |
 | S8 | Admin Test command (không lưu) | mock + 1 lần thật |
 | S9 | Studio: sửa agent/Orchestrator từ nút "⇄ Agent Studio"; Chat thấy menu `@` đổi | - |
 | S10 | Dify thật (`DIFY_LIVE=1`): chatbot, translate, gmail-summary, email-reply, screenshot-ask, **mỗi app đúng 1 lần** | thật |
@@ -140,7 +140,7 @@ CHAT-AC-01…36 (C1) giữ xanh. AC mới (Given/When/Then chi tiết ở `test-
 | X1-AC17 | Seed từ chối khi thiếu `DIFY_SEED_ENV_FILE` hoặc thiếu key app chọn → lỗi nêu tên khoá, không ghi dở | unit |
 | X1-AC18 | Quét repo: không có chuỗi giống key Dify, không có lời gọi `/console/api` (X1-R01, R04) | test tĩnh |
 | X1-AC19 | `combine:dev` dựng đủ 6 tiến trình, kiểm `/health`; Ctrl+C dừng đúng thứ đã bật | script test |
-| X1-AC20 | Smoke `DIFY_LIVE=1`: mỗi app chọn đúng 1 lần gọi (đếm ở log Hub); vắng cờ → bỏ qua exit 0 | tay + test bỏ qua |
+| X1-AC20 | Smoke `DIFY_LIVE=1`: mỗi app chọn đúng 1 lần gọi (đếm bằng bộ đếm trong script); vắng cờ → bỏ qua exit 0 | tay + test bỏ qua |
 
 **Lệnh xong `done:x1`** (`tools/scripts/src/done-x1.ts`, mẫu `done-h4a`): `bun run typecheck` · `bun test` · `bun run test:int` · `bun run test:contract:chat` · `bun run e2e:chat` + e2e admin liên quan (M5) + e2e combine mock · `bun run i18n:check` · `bun run trace --check` · `check:bundle` chat-web và admin-web · `bun run test:lock:verify`. `test:perf` không chặn.
 
@@ -162,7 +162,15 @@ CHAT-AC-01…36 (C1) giữ xanh. AC mới (Given/When/Then chi tiết ở `test-
 ### Trước Gate (đã chốt với người dùng)
 - [x] 2026-10-07: combine trong phiên Hub, được sửa Chat/Admin cho mốc này; ràng buộc Dify demo (X1-R01..R05); không đụng H3c, không làm H4b (CR-046).
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- [x] 2026-10-07 (điều phối chốt 2026-10-07 theo Luật 2, 8 lỗ hổng test-plan §8):
+  1. Test command X1 chỉ `platform_admin` (plan Q-B1); `tenant_admin` dùng → TECH-DEBT #89.
+  2. Chạy thử được với bản đang sửa chưa lưu (BL1, ADM-FR-23); bỏ khoá "Lưu lệnh một lần" (plan-frontend §2.2).
+  3. "Chạy với tư cách user để kiểm tra quyền" ngoài phạm vi X1 (K9) → TECH-DEBT #89.
+  4. e2e chat dùng `page.route` cho `/commands`, `/agents`, `/attachments`, `responder`, 429 (mock Hub chat không sửa).
+  5. Seed bước 8 dùng cùng `DATABASE_URL`/env DB của hub-api, truyền cho script (test trỏ DB qc qua env).
+  6. Smoke Dify: qc viết `tests/smoke/X1/dify-live.ts`; đếm lời gọi bằng bộ đếm trong script (mỗi app đúng 1, không retry), không dựa DB.
+  7. plan-frontend export hàm thuần `*.rules.ts` cho AC03, AC06, AC07 để unit test.
+  8. S7 bật `side_effect` của workflow `mock-send` trong Admin, không qua seed yaml.
 
 ## 11. Tranh chấp test
 - (không)

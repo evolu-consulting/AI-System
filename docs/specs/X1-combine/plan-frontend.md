@@ -30,6 +30,13 @@ Chủ: frontend-lead · 2026-10-07 · nguồn: spec §2, §5, §8; CR-036/038/04
 | A11y | textarea `aria-controls`, `aria-expanded`, `aria-activedescendant`; menu `role="listbox"` tên "Lệnh"; dòng `role="option"` `aria-selected` |
 | Trạng thái | tải: "Đang tải lệnh…" · rỗng: "Bạn chưa được cấp lệnh nào" · không khớp: "Không có lệnh khớp “/{q}”" · lỗi: "Không tải được danh sách lệnh" + nút "Thử lại" (401 do `lib/http` refresh; 403 coi như rỗng) |
 
+### 1.1b Hàm thuần cho unit test (qc khoá rules)
+| AC | Export | File |
+|---|---|---|
+| AC03 | `buildSendRequest` | `features/run/lib/send-request.rules.ts` |
+| AC06 | `applyDelta(state, delta)` (reducer nối delta, gọi từ `run-driver`) | `features/run/lib/delta.rules.ts` |
+| AC07 | `validateAttachment(file, existing)` → `{ok}\|{error}` | `features/attachments/lib/validate.rules.ts` (thay `validate.ts`) |
+
 ### 1.2 Menu `@` (F2)
 | Mục | Chi tiết |
 |---|---|
@@ -114,7 +121,7 @@ Câu lỗi upload:
 | Chạy | nút "Chạy thử" / "Test run" (`Ctrl+Enter`); gửi **bản nháp** form (`workflow_id, args, input_map, output, timeout_s`) — không lưu; đang chạy: spinner + nút "Dừng" / "Stop" (abort fetch) |
 | Kết quả | đầu: "{ms} ms · {in}+{out} token" ; tab "Kết quả" (`<pre>` xuống dòng, không thêm lib markdown) · "Raw" (JSON) · "Các bước" (steps: nhãn, ok/failed, ms) |
 | `ok:false` | `Alert` 1 dòng `error.message` + `Collapsible` "Chi tiết từ Dify" / "Details from Dify" (`error.detail`, ẩn khi null); mã run hiện mono |
-| Vô hiệu | lệnh chưa lưu (không `:id`): nút disabled + tooltip "Lưu lệnh một lần để chạy thử" / "Save the command once to test it" (tới khi backend có endpoint không id — §5); form có lỗi validate bắt buộc → disabled + "Sửa lỗi trong form trước" / "Fix form errors first" |
+| Vô hiệu | không khoá theo lưu: bản đang sửa chưa lưu vẫn chạy thử (BL1 `POST /admin/commands/test` không id, ADM-FR-23); form có lỗi validate bắt buộc → disabled + "Sửa lỗi trong form trước" / "Fix form errors first" |
 | Lỗi HTTP | 502 `HUB_UNAVAILABLE`: "Hub không phản hồi. Kiểm tra hub-api rồi thử lại." / "Hub is not responding. Check hub-api and try again." · 403: "Bạn không có quyền chạy thử lệnh này." / "You can't test this command." · 400 `VALIDATION_ERROR`: "Cấu hình nháp chưa hợp lệ: {message}" / "Draft config is invalid: {message}" · mạng: `auth.error.network` có sẵn |
 | Lưu khi chưa test | gợi ý không chặn "Bạn chưa chạy thử bản này" / "You haven't tested this version" (ui-admin §7.4) |
 

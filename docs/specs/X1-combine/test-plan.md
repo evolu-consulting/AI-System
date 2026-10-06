@@ -136,7 +136,7 @@ Không có: Dify thật, WSL, `claude-sub`, `test:perf` (X1-R15). Bước 6–9,
 | email-reply | `/reply <email mẫu>` | 1 | có nháp |
 | screenshot-ask | upload ảnh PNG mẫu nhỏ (sinh trong script) + `/ask-image` | 1 (+1 upload `/v1/files/upload` do Hub) | có mô tả |
 | chatbot | `@dify-chatbot Xin chào` (cần Runtime WSL `dify`) | 1 | có trả lời |
-Đếm: script đọc `hub.log_dify_usage`/audit trước–sau, in số lời gọi mỗi app, **fail nếu > 1**. Không retry, không song song, không gọi `/console/api`, không `/parameters`/`/info`. Agent không tự chạy khi người dùng chưa bảo (Q8).
+Đếm: bộ đếm trong chính script (mỗi app đúng 1 lần, không retry, không đọc DB), in số lời gọi, **fail nếu > 1**. Không retry, không song song, không gọi `/console/api`, không `/parameters`/`/info`. Agent không tự chạy khi người dùng chưa bảo (Q8).
 
 ## 7. Đỏ đúng lý do (điền khi WRITE xong)
 | Nhóm | Số ca | Đỏ đúng lý do / tổng | Ghi chú |
@@ -144,12 +144,14 @@ Không có: Dify thật, WSL, `claude-sub`, `test:perf` (X1-R15). Bước 6–9,
 | QC1a L01–L13 | — | — | |
 | QC1b X1 | — | — | |
 
-## 8. Cần bổ sung
-| Agent | Việc |
-|---|---|
-| frontend-lead | Export thuần cho AC03 (`buildSendRequest` đường dẫn), AC06 (reducer/`run-driver` nhận delta), AC07 (`lib/validate.ts` chữ ký) để qc khoá rules; sửa `plan-frontend §2.2` "Lưu lệnh một lần" — BL1 đã chốt không id ⇒ lệnh chưa lưu chạy được (ADM-FR-23) |
-| backend-lead | Seed bước 8 (Hub seed CLI) nhận DB URL nào — cần cờ/env để test trỏ DB qc (AC16); chữ ký hàm thuần `combine.ts` (AC19); script smoke X1 `tests/smoke/X1/dify-live.ts` do qc viết — xác nhận cách đếm lời gọi Dify (bảng nào ghi mỗi lần) |
-| backend-lead | Mock Hub chat (`tools/mocks/src/chat`) chưa có `/commands`, `/agents`, `/attachments`, `responder`, 429 — mặc định qc dùng `page.route` trong e2e (không sửa `tools/mocks`); AC09 chỉ cần route bất kỳ của mock trả không-HTML |
-| docs-architect | spec §3 ghi Test command cho `tenant_admin`; plan Q-B1 chỉ `platform_admin` ⇒ test theo plan (binh ⇒ 403); spec §5 nhãn "Test command" ⇒ e2e dùng "Chạy thử" (plan-frontend §3) |
-| docs-architect | ADM-FR-23 "Chạy với tư cách user… để kiểm tra quyền": Hub không kiểm quyền actor (K9) ⇒ test chỉ khẳng định `actor_user_id`; phần "kiểm tra quyền" chưa có AC |
-| backend-lead | Seed yaml `side_effect` (Hub) mất tác dụng sau X1 (Q-B2); S7 cần `mock-send` cột `true` — `combine:dev`/`hub:dev` không đặt ⇒ ghi `combine-test.md` bước bật ở Admin (đúng kịch bản S7) |
+## 8. Cần bổ sung — đã chốt (điều phối chốt 2026-10-07 theo Luật 2; spec §10)
+| # | Lỗ hổng | Chốt |
+|---|---|---|
+| 1 | Test command vai trò | [x] chỉ `platform_admin`; binh ⇒ 403; nhãn "Chạy thử" |
+| 2 | "Lưu lệnh một lần" | [x] bỏ khoá (plan-frontend §2.2); chạy thử lệnh chưa lưu |
+| 3 | "Chạy với tư cách user… kiểm tra quyền" | [x] ngoài X1 (K9, TECH-DEBT #89); chỉ khẳng định `actor_user_id` |
+| 4 | Mock Hub chat thiếu route | [x] e2e chat dùng `page.route` (`/commands`, `/agents`, `/attachments`, `responder`, 429), không sửa `tools/mocks`; AC09 chỉ cần route mock trả không-HTML |
+| 5 | Seed bước 8 DB | [x] `DATABASE_URL`/env DB của hub-api (plan S1); AC16 trỏ DB qc qua env |
+| 6 | Smoke AC20 | [x] `tests/smoke/X1/dify-live.ts` do qc viết; bộ đếm trong script |
+| 7 | Export thuần AC03/06/07 | [x] plan-frontend §1.1b (`*.rules.ts`) |
+| 8 | S7 `side_effect` | [x] bật cờ `mock-send` trong Admin, không qua seed yaml |
