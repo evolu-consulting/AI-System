@@ -184,20 +184,7 @@ Dry-run in: từng bước "tạo/cập nhật/giữ nguyên" + tên app, loại
 Đọc file bằng `readFileSync`, tách dòng, chỉ giữ dòng có tên trong danh sách trắng; không `dotenv` toàn file, không gán `process.env`. Key chỉ là đối số `value` của bước 3. Mọi `catch` in `code` + tên bước, không in `err.message` của fetch có body. Không in độ dài/tiền tố/hash. Test AC16: chạy với key giả dạng `app-XXXXXXXX…` rồi quét stdout/stderr + log admin-api giả (thô/base64/base64url/hex, mẫu `leakForms`).
 
 ## 6. Stack (ST1) — `bun run combine:dev`
-File `tools/hub-dev/src/combine.ts` (≤ 400 dòng; tái dùng `startHubDev`, `healthy`, `hubApiEnv` của `dev.ts`; không sửa hành vi `hub:dev`) + hàm thuần `tools/scripts/src/combine.rules.ts` (QC khoá, AC19): `buildCombineEnv(base, opts: {token?, wsl?, mock?}): Record<ProcName, env>` (env §3; token chung); `stopOrder(started: readonly ProcName[]): ProcName[]` (ngược thứ bật). Script `"combine:dev": "bun --env-file=.env.local tools/hub-dev/src/combine.ts"`.
-
-| Bước | Việc | Kiểm |
-|---|---|---|
-| 0 | `docker compose up -d --wait` (Postgres, Redis, Mailpit) | exit 0 |
-| 1 | `HUB_INTERNAL_TOKEN` (§3), đặt `CORS_ORIGINS`, `HUB_CORS_ORIGINS`, `ADMIN_HUB_URL` vào env truyền cho tiến trình con | — |
-| 2 | `startHubDev()` với `HUB_DEV_RUNTIME=none` mặc định: migrate → admin-api `:3001` → fixture user → `hub:seed` → hub-api `:4000` | `/health` 2 cổng |
-| 3 | chat-web `bun run --cwd apps/chat-web dev` (`HUB_URL`, `AUTH_URL`) · admin-web (`ADMIN_API_URL`, `PUBLIC_HUB_URL`, `PUBLIC_STUDIO_URL`, `PUBLIC_CHAT_WEB_URL`) · studio-web (`ADMIN_API_URL`, `HUB_URL`, `PUBLIC_ADMIN_WEB_URL`, `PUBLIC_CHAT_WEB_URL`) | `GET /` 200 ở 3100/3000/3200 (studio `/studio/`), chờ ≤ 60 s |
-| 4 | Runtime: in lệnh WSL (hub-dev.md "Runtime trong WSL") với `AGENT_RT_PROVIDERS=claude-sub,dify`, `AGENT_RT_HUB_URL=<url Hub nhìn từ WSL>`; `COMBINE_WSL=1` ⇒ tự `wsl.exe -d Ubuntu -u worker -- bash -l -s` (stdin = script) | log `runtime.ready` (không chặn) |
-| 2b | Dify mock: `startDifyMock()` (`tools/hub-dev/src/dify-mock.ts`) cổng 5001 nếu trống (bận ⇒ dùng lại + ghi chú); `docs/guides/combine-test.md` S7 (D1): tạo workflow `mock-send` qua Admin (base_url `http://localhost:5001/v1`, secret `mk-ok`) rồi bật cờ `side_effect` | `GET :5001` phản hồi |
-| 5 | In bảng URL + user mẫu; nhắc `bun run seed:dify` (dry-run) | — |
-| Dừng | Ctrl+C/SIGTERM: dừng theo thứ tự ngược đúng các tiến trình script đã bật (không giết tiến trình dùng lại) | AC19 |
-
-Cổng bận ⇒ dùng lại (như `hub:dev`) + ghi chú; web bận ⇒ lỗi rõ (`strictPort`).
+Tách sang [`plan-stack.md`](plan-stack.md) (readiness lần 2: kiểu `ProcName`, thứ tự bật, bước 2b sau bước 2).
 
 ## 7. Cho QC (cần trước/cùng B1)
 | # | Việc | File |

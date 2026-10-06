@@ -193,7 +193,7 @@ Spec §5 ghi nhãn "Test command": glossary ui-admin §12 bắt buộc VI "Chạ
 ## 5. Cần backend-lead (đề xuất, không tự đổi contract)
 | # | Việc | Mặc định FE nếu chưa có |
 |---|---|---|
-| BL1 | Chốt endpoint Test: đề xuất `POST /admin/commands/test` (không id, chạy được command chưa lưu, đúng ADM-FR-23) **hoặc** giữ `/:id/test` | FE gọi `POST /admin/commands/:id/test`, disable khi chưa lưu |
+| BL1 | Chốt endpoint Test: đề xuất `POST /admin/commands/test` (không id, chạy được command chưa lưu, đúng ADM-FR-23) **hoặc** giữ `/:id/test` | Đã chốt: plan §8 BL1 (không id, không khoá theo lưu) |
 | BL2 | Body Test: `{command:{workflow_id,args,input_map,output,timeout_s}, text, context?, run_as_user_id?}` (admin-api tự điền `actor_user_id`); response = nguyên `TestRunResponseSchema` (có `ms`, `steps`, `usage`), không đổi thành `duration_ms` | FE parse `TestRunResponseSchema` |
 | BL3 | Thêm `HUB_UNAVAILABLE: 502` vào `API_ERRORS` admin (spec §3 có, contract chưa có) | FE map theo status 502 nếu mã khác |
 | BL4 | `WorkflowSchema`/create/patch thêm `side_effect` (B1) | — |
