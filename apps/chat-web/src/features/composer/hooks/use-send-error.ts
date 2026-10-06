@@ -6,6 +6,9 @@ import type { ApiError } from "~/lib/http";
 import { retrySecondsOf, type SendErrorView, sendErrorView } from "../lib/send-error";
 import { useCountdown } from "./use-countdown";
 
+/** `onSubmit` của Composer: `true`/`{ok:true}` = đã gửi (xoá chữ + nháp); `false` giữ chữ; `{ok:false,error}` giữ chữ, mã `CMD_*` hiện trong ô. */
+export type SubmitResult = boolean | { ok: true } | { ok: false; error: ApiError };
+
 export function useSendError(currentText: string) {
   const [sent, setSent] = useState<{ error: ApiError; text: string } | null>(null);
   const cooldown = useCountdown();

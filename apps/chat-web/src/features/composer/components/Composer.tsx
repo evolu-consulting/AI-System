@@ -17,10 +17,9 @@ import { Button } from "~/components/ui/button";
 import { AttachButton } from "~/features/attachments/components/AttachButton";
 import { AttachBar } from "~/features/attachments/components/AttachmentChip";
 import { useAttachments } from "~/features/attachments/hooks/use-attachments";
-import type { ApiError } from "~/lib/http";
 import { composerKeyHandler } from "../hooks/use-composer-keys";
 import { readDraft, useDraftSaver } from "../hooks/use-draft";
-import { useSendError } from "../hooks/use-send-error";
+import { type SubmitResult, useSendError } from "../hooks/use-send-error";
 import { useComposerSuggest } from "../hooks/use-suggest";
 import { COMPOSER_MAX_ROWS, canSend, clampHeight, submitOutcome } from "../lib/composer-logic";
 import { AgentMenu } from "./AgentMenu";
@@ -37,8 +36,8 @@ function sendTitle(t: TFunction, locked: boolean, uploading: boolean): string | 
 // Render server (bun test) không có layout effect.
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-/** `true`/`{ok:true}` = đã gửi (xoá chữ + nháp); `false` giữ chữ; `{ok:false,error}` giữ chữ, mã `CMD_*` hiện trong ô. */
-export type SubmitResult = boolean | { ok: true } | { ok: false; error: ApiError };
+// Kiểu ở hook (component không import `~/lib/http` — depcruise component-no-fetch); giữ export cho nơi dùng cũ.
+export type { SubmitResult };
 
 export type ComposerHandle = {
   /** Điền sẵn (thẻ gợi ý): thay nội dung, focus, con trỏ cuối, KHÔNG gửi. */
