@@ -8,6 +8,7 @@ import {
   type RunError,
   type RunStartedData,
 } from "@ai/contracts/chat";
+import type { BuildSendInput } from "./send-request.rules";
 
 export type RunPhase =
   | "sending"
@@ -26,7 +27,13 @@ export type RunStep = {
   status: "running" | "ok" | "failed";
   ms: number | null;
 };
-export type RunRequest = { content: string; flowId?: string };
+/** Đầu vào E12 (dựng body bằng `buildSendRequest`); `context`/`attachmentIds` do extension / đính kèm điền. */
+export type RunRequest = {
+  content: string;
+  flowId?: string;
+  context?: BuildSendInput["context"];
+  attachmentIds?: string[];
+};
 
 export type RunState = {
   /** Khoá cục bộ (có trước `runId`, vì `runId` chỉ biết khi E12 trả header). */

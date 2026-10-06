@@ -36,7 +36,7 @@ function useMainComposer(convId: string, onSent: () => void) {
     async (text: string) => {
       const out = await send.sendMain(convId, text);
       if (out.ok) onSent();
-      return out.ok;
+      return out;
     },
     [send, convId, onSent],
   );

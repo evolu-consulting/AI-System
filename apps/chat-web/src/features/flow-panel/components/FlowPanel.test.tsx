@@ -2,6 +2,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import type { Flow } from "@ai/contracts/chat";
 import { loadChatLocale } from "@ai/i18n/chat-locales";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createInstance, type i18n as I18n } from "i18next";
 import { renderToStaticMarkup } from "react-dom/server";
 import { I18nextProvider, initReactI18next } from "react-i18next";
@@ -48,9 +49,11 @@ const data = (over: Partial<FlowPanelData> = {}): FlowPanelData => ({
 
 const render = (d: FlowPanelData) =>
   renderToStaticMarkup(
-    <I18nextProvider i18n={i18n}>
-      <FlowPanel convId="c1" flow={flow} data={d} onClose={() => {}} />
-    </I18nextProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <I18nextProvider i18n={i18n}>
+        <FlowPanel convId="c1" flow={flow} data={d} onClose={() => {}} />
+      </I18nextProvider>
+    </QueryClientProvider>,
   );
 
 test("aside 'Flow đang mở' + header + tin + ô nhập trong flow", () => {

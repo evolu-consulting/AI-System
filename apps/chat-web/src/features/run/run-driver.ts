@@ -14,6 +14,7 @@ import {
   type RunOrigin,
   type RunState,
 } from "./lib/reducer";
+import { buildSendRequest } from "./lib/send-request.rules";
 import type { RunStore } from "./run-store";
 
 type Body = ReadableStream<Uint8Array>;
@@ -88,11 +89,10 @@ export class RunDriver {
     const key = this.deps.newKey();
     this.store.add(createRunState({ ...input, key }));
     const signal = this.start(key);
-    const { content, flowId } = input.request;
     try {
       const res = await this.deps.sendMessage(
         input.convId,
-        flowId ? { content, flow_id: flowId } : { content },
+        buildSendRequest(input.request),
         signal,
       );
       this.store.dispatch(key, {
@@ -112,11 +112,12 @@ export class RunDriver {
 
   /** Chạy lại / Thử lại: cùng `content`; ô chính → flow mới, trong khung → cùng flow. */
   retry(run: RunState, flowLastActiveAt?: string): Promise<SendOutcome> {
+    const { flowId: _prev, ...base } = run.request;
     const flowId = run.origin === "flow" ? (run.flowId ?? run.request.flowId) : undefined;
     return this.send({
       convId: run.convId,
       origin: run.origin,
-      request: flowId ? { content: run.request.content, flowId } : { content: run.request.content },
+      request: flowId ? { ...base, flowId } : base,
       flowLastActiveAt,
     });
   }

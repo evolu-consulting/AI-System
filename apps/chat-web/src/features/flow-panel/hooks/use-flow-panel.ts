@@ -1,6 +1,7 @@
 // CHAT-AC-14..16 · dữ liệu khung flow: tin E11 + run của flow (stream, cold), gửi kèm `flow_id`, Dừng, bỏ run khi E11 đã có.
 import type { Flow } from "@ai/contracts/chat";
 import { useCallback, useEffect, useMemo } from "react";
+import type { SubmitResult } from "~/features/composer/components/Composer";
 import { useActiveRun, useRunStream } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
 import { answerFromRun } from "~/features/thread/lib/thread-logic";
@@ -13,7 +14,7 @@ function usePanelComposer(convId: string, flow: Flow) {
   const running = active !== undefined && active.flowId === flow.id;
   const { id, last_active_at } = flow;
   const onSubmit = useCallback(
-    async (text: string) => (await send.sendInFlow(convId, { id, last_active_at }, text)).ok,
+    (text: string): Promise<SubmitResult> => send.sendInFlow(convId, { id, last_active_at }, text),
     [send, convId, id, last_active_at],
   );
   return {

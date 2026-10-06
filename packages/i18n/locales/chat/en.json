@@ -104,6 +104,23 @@
     "quotaDismiss": "Dismiss"
   },
   "run": { "cancelled": "Stopped", "rerun": "Run again" },
+  "menu": {
+    "commands": "Commands",
+    "agents": "Agents",
+    "commandsLoading": "Loading commands…",
+    "commandsEmpty": "No commands have been granted to you",
+    "commandsNoMatch": "No command matches “/{{q}}”",
+    "commandsError": "Could not load the command list",
+    "retry": "Retry",
+    "alias": "(alias /{{alias}})"
+  },
+  "sendError": {
+    "didYouMean": "Did you mean:",
+    "cmdNotFound": "There is no /{{name}} command.",
+    "cmdMissingArg": "/{{name}} is missing: {{missing}}.",
+    "cmdInvalid": "Invalid value: {{invalid}}.",
+    "tagOnly": "Type a message after @{{tag}}."
+  },
   "errors": {
     "ALL_PROVIDERS_EXHAUSTED": {
       "title": "The system is overloaded",

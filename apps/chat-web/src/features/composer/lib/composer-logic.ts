@@ -15,6 +15,27 @@ export function keyAction(e: KeyInfo, running: boolean): KeyAction {
   return "none";
 }
 
+/** Kết quả `onSubmit`: `sent` xoá chữ; `error` giữ chữ + có thể hiện thông báo; `kept` chỉ giữ chữ. */
+export function submitOutcome<E>(
+  r: boolean | { ok: true } | { ok: false; error: E },
+): { kind: "sent" } | { kind: "kept" } | { kind: "error"; error: E } {
+  if (r === true || (typeof r === "object" && r.ok)) return { kind: "sent" };
+  return typeof r === "object" && !r.ok ? { kind: "error", error: r.error } : { kind: "kept" };
+}
+
+export type MenuKeyAction = "dismiss" | "next" | "prev" | "pick";
+
+/** Phím khi menu gợi ý đang mở: Esc đóng; ↑↓ và Enter/Tab chỉ khi có dòng; Shift+Enter xuống dòng bình thường. */
+export function menuKeyAction(e: KeyInfo, hasRows: boolean): MenuKeyAction | null {
+  if (e.isComposing) return null;
+  if (e.key === "Escape") return "dismiss";
+  if (!hasRows) return null;
+  if (e.key === "ArrowDown") return "next";
+  if (e.key === "ArrowUp") return "prev";
+  if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) return "pick";
+  return null;
+}
+
 /** Chiều cao textarea: bám nội dung, tối đa `maxRows` dòng (quá thì cuộn trong ô). */
 export function clampHeight(scrollHeight: number, lineHeight: number, maxRows: number): number {
   return Math.min(scrollHeight, lineHeight * maxRows);

@@ -3,7 +3,11 @@ import { deriveTitle } from "@ai/contracts/chat";
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Composer, type ComposerHandle } from "~/features/composer/components/Composer";
+import {
+  Composer,
+  type ComposerHandle,
+  type SubmitResult,
+} from "~/features/composer/components/Composer";
 import { useDraftKey } from "~/features/composer/hooks/use-draft";
 import { useCreateConversation } from "~/features/conversations/hooks/use-conversations";
 import { useRunByKey } from "~/features/run/hooks/use-run-stream";
@@ -25,7 +29,7 @@ export function WelcomePage() {
   const run = useRunByKey(runKey);
 
   const submit = useCallback(
-    async (content: string): Promise<boolean> => {
+    async (content: string): Promise<SubmitResult> => {
       try {
         pendingConv.current ??= (await create.mutateAsync(deriveTitle(content))).id;
       } catch {
@@ -33,11 +37,11 @@ export function WelcomePage() {
       }
       const convId = pendingConv.current;
       const out = await send.sendMain(convId, content);
-      if (!out.ok) return false;
+      if (!out.ok) return out;
       setRunKey(out.key);
       pendingConv.current = null;
       void router.navigate({ to: "/c/$id", params: { id: convId }, replace: true });
-      return true;
+      return out;
     },
     [create, send, router],
   );

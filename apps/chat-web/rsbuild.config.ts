@@ -12,6 +12,9 @@ const proxy = {
   "/auth": AUTH_URL,
   "/conversations": HUB_URL,
   "/runs": HUB_URL,
+  "/agents": HUB_URL,
+  "/commands": HUB_URL,
+  "/attachments": HUB_URL,
   "/health": HUB_URL,
 };
 

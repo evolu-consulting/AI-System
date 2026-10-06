@@ -1,6 +1,13 @@
 // CHAT-AC-03 · fetch wrapper (chép admin-web): JSON, ApiError, Bearer, Accept-Language;
 // 401 bất kỳ mã từ endpoint Hub (C1: `AUTH_EXPIRED`) → refresh đúng 1 lần rồi gửi lại. `/auth/*` không vòng refresh (plan Q-401).
-import type { ChatErrorCode } from "@ai/contracts/chat";
+import {
+  type ChatAttachmentErrorCode,
+  type ChatCommandErrorCode,
+  type ChatErrorCode,
+  type ChatRoutingErrorCode,
+  RETRY_AFTER_HEADER,
+  TOO_MANY_RUNS_RETRY_AFTER_S,
+} from "@ai/contracts/chat";
 
 /** Mã lỗi `/auth/*` (giữ mã Admin, plan Q-401). */
 export type AuthErrorCode =
@@ -10,19 +17,35 @@ export type AuthErrorCode =
   | "UNAUTHORIZED"
   | "ACCOUNT_LOCKED"
   | "TEMP_LOCKED";
-export type ApiErrorCode = ChatErrorCode | AuthErrorCode | "NETWORK_ERROR" | "HTTP_ERROR";
+export type ApiErrorCode =
+  | ChatErrorCode
+  | ChatCommandErrorCode
+  | ChatRoutingErrorCode
+  | ChatAttachmentErrorCode
+  | AuthErrorCode
+  | "NETWORK_ERROR"
+  | "HTTP_ERROR";
 
 export class ApiError extends Error {
   readonly status: number;
   readonly code: ApiErrorCode;
   readonly details: unknown;
+  /** Giây chờ từ header `Retry-After` (429). */
+  readonly retryAfter?: number;
 
-  constructor(status: number, code: ApiErrorCode, message: string, details?: unknown) {
+  constructor(
+    status: number,
+    code: ApiErrorCode,
+    message: string,
+    details?: unknown,
+    retryAfter?: number,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.details = details;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -35,6 +58,8 @@ export type AuthHooks = {
 export type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
+  /** Thân thô (upload): gửi nguyên, không `JSON.stringify`, không ép `Content-Type` JSON. */
+  rawBody?: Blob;
   query?: Record<string, string | number | undefined>;
   headers?: Record<string, string>;
   signal?: AbortSignal;
@@ -50,6 +75,13 @@ export function setAuthHooks(next: AuthHooks | null): void {
 /** Ngôn ngữ UI gửi qua `Accept-Language` (nối từ i18n khi đổi ngôn ngữ). */
 export function setRequestLanguage(lang: string | null): void {
   language = lang;
+}
+
+/** `Retry-After` (giây, số nguyên ≥ 0) của 429; sai định dạng → mặc định hợp đồng. */
+function parseRetryAfter(res: Response): number | undefined {
+  if (res.status !== 429) return undefined;
+  const raw = res.headers.get(RETRY_AFTER_HEADER)?.trim() ?? "";
+  return /^[0-9]+$/.test(raw) ? Number(raw) : TOO_MANY_RUNS_RETRY_AFTER_S;
 }
 
 /** `/auth` và `/auth/*`: lỗi 401 ở đây là kết quả, không phải token hết hạn. */
@@ -75,12 +107,24 @@ async function parseError(res: Response): Promise<ApiError> {
     const e = ((await res.json()) as ErrorBody).error;
     if (e && typeof e.code === "string") {
       const message = typeof e.message === "string" ? e.message : res.statusText;
-      return new ApiError(res.status, e.code as ApiErrorCode, message, e.details);
+      return new ApiError(
+        res.status,
+        e.code as ApiErrorCode,
+        message,
+        e.details,
+        parseRetryAfter(res),
+      );
     }
   } catch {
     // thân không phải JSON (vd 502/504 từ proxy)
   }
-  return new ApiError(res.status, "HTTP_ERROR", res.statusText || `HTTP ${res.status}`);
+  return new ApiError(
+    res.status,
+    "HTTP_ERROR",
+    res.statusText || `HTTP ${res.status}`,
+    undefined,
+    parseRetryAfter(res),
+  );
 }
 
 async function execRaw(
@@ -90,7 +134,8 @@ async function execRaw(
 ): Promise<Response> {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (language) headers["Accept-Language"] = language;
-  if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+  if (opts.rawBody === undefined && opts.body !== undefined)
+    headers["Content-Type"] = "application/json";
   Object.assign(headers, opts.headers);
   if (token) headers.Authorization = `Bearer ${token}`;
   let res: Response;
@@ -98,7 +143,12 @@ async function execRaw(
     res = await fetch(withQuery(path, opts.query), {
       method: opts.method ?? "GET",
       headers,
-      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+      body:
+        opts.rawBody !== undefined
+          ? opts.rawBody
+          : opts.body === undefined
+            ? undefined
+            : JSON.stringify(opts.body),
       signal: opts.signal,
       credentials: "same-origin",
     });

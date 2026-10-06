@@ -110,6 +110,23 @@
     "quotaDismiss": "Ẩn nhắc"
   },
   "run": { "cancelled": "Đã dừng", "rerun": "Chạy lại" },
+  "menu": {
+    "commands": "Lệnh",
+    "agents": "Agent",
+    "commandsLoading": "Đang tải lệnh…",
+    "commandsEmpty": "Bạn chưa được cấp lệnh nào",
+    "commandsNoMatch": "Không có lệnh khớp “/{{q}}”",
+    "commandsError": "Không tải được danh sách lệnh",
+    "retry": "Thử lại",
+    "alias": "(alias /{{alias}})"
+  },
+  "sendError": {
+    "didYouMean": "Ý bạn là:",
+    "cmdNotFound": "Không có lệnh /{{name}}.",
+    "cmdMissingArg": "Lệnh /{{name}} thiếu: {{missing}}.",
+    "cmdInvalid": "Giá trị không hợp lệ: {{invalid}}.",
+    "tagOnly": "Hãy nhập nội dung sau @{{tag}}."
+  },
   "errors": {
     "ALL_PROVIDERS_EXHAUSTED": {
       "title": "Hệ thống đang quá tải",
