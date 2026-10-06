@@ -12,9 +12,9 @@ import {
   hadBash,
   toPayload,
   validateDraft,
-} from "../lib/draft";
-import { diffDrafts } from "../lib/draft-diff";
-import { classifySaveError } from "../lib/save-error";
+} from "../lib/draft/draft";
+import { diffDrafts } from "../lib/draft/draft-diff";
+import { classifySaveError } from "../lib/draft/save-error";
 import { useSaveAgent } from "./use-save-agent";
 
 type Base = { draft: AgentDraft; version: number; hadBash: boolean };

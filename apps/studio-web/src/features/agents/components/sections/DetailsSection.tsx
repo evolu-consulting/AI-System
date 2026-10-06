@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Input } from "#/components/ui/input";
 import { Switch } from "#/components/ui/switch";
 import { Textarea } from "#/components/ui/textarea";
-import { Field, type SectionProps } from "./AgentField";
+import { Field, type SectionProps } from "../editor/AgentField";
 
 export function DetailsSection({ draft, set, errors, mode }: SectionProps) {
   const { t } = useTranslation();

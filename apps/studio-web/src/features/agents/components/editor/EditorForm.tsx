@@ -11,17 +11,17 @@ import { UnsavedGuard } from "#/components/shared/UnsavedGuard";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
-import { useAgentEditor } from "../hooks/use-agent-editor";
-import { useAgentPeers } from "../hooks/use-agent-peers";
-import { useEditorCatalogs } from "../hooks/use-editor-catalogs";
-import type { AgentDraft } from "../lib/draft";
-import { AccessSection } from "./AccessSection";
-import { DetailsSection } from "./DetailsSection";
+import { useAgentEditor } from "../../hooks/use-agent-editor";
+import { useAgentPeers } from "../../hooks/use-agent-peers";
+import { useEditorCatalogs } from "../../hooks/use-editor-catalogs";
+import type { AgentDraft } from "../../lib/draft/draft";
+import { AccessSection } from "../sections/AccessSection";
+import { DetailsSection } from "../sections/DetailsSection";
+import { PromptSection } from "../sections/PromptSection";
+import { RuntimeSection } from "../sections/RuntimeSection";
+import { WorkflowSection } from "../sections/WorkflowSection";
 import { OrchestratorView } from "./OrchestratorView";
-import { PromptSection } from "./PromptSection";
-import { RuntimeSection } from "./RuntimeSection";
 import { StepCard } from "./StepCard";
-import { WorkflowSection } from "./WorkflowSection";
 
 type Props = { initial: AgentDraft; agent?: Agent };
 

@@ -7,9 +7,9 @@ import { HrefLink } from "#/components/shared/HrefLink";
 import { PageHeader } from "#/components/shared/PageHeader";
 import { buttonVariants } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
-import { EditorForm } from "../components/EditorForm";
+import { EditorForm } from "../components/editor/EditorForm";
 import { useAgentSource } from "../hooks/use-agent-source";
-import { cloneDraft, emptyDraft, fromAgent } from "../lib/draft";
+import { cloneDraft, emptyDraft, fromAgent } from "../lib/draft/draft";
 
 type Props = { agentId?: string; from?: string };
 

@@ -1,5 +1,5 @@
 // HUB-FR-61 · H4a-D9 · SchemaForm: dựng ô nhập từ `config_schema` của agent type (renderer tự viết, không rjsf).
-// Giá trị là `runtime_options` của agent `python`; kiểu ngoài danh sách ⇒ textarea JSON, chỉ ghi khi `JSON.parse` được.
+// Giá trị là `runtime_options` của agent `python`; kiểu ngoài danh sách ⇒ textarea JSON, chỉ ghi khi `JSON.parse` được; ô đang sai báo `onBad` ⇒ `draft.badJson` chặn Lưu.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "#/components/ui/checkbox";
@@ -13,12 +13,32 @@ import {
   SelectValue,
 } from "#/components/ui/select";
 import { Textarea } from "#/components/ui/textarea";
-import { buildFields, getAt, parseJson, parseNum, type SField, setAt } from "../lib/schema-form";
+import {
+  buildFields,
+  getAt,
+  parseJson,
+  parseNum,
+  type SField,
+  setAt,
+} from "../../lib/draft/schema-form";
 
 type Opts = Record<string, unknown>;
-type Props = { schema: Opts; value: Opts; onChange: (v: Opts) => void };
+/** `onBad(id, bad)`: ô JSON thô `id` đang sai/đúng — đẩy lên nháp để chặn Lưu. */
+type Props = {
+  schema: Opts;
+  value: Opts;
+  onChange: (v: Opts) => void;
+  onBad: (id: string, bad: boolean) => void;
+};
+type BoxProps = {
+  id: string;
+  label: string;
+  value: unknown;
+  onValue: (v: unknown) => void;
+  onBad: Props["onBad"];
+};
 
-function JsonBox(p: { id: string; label: string; value: unknown; onValue: (v: unknown) => void }) {
+function JsonBox(p: BoxProps) {
   const { t } = useTranslation();
   const [text, setText] = useState(p.value === undefined ? "" : JSON.stringify(p.value, null, 2));
   const [bad, setBad] = useState(false);
@@ -35,6 +55,7 @@ function JsonBox(p: { id: string; label: string; value: unknown; onValue: (v: un
           setText(e.target.value);
           const r = parseJson(e.target.value);
           setBad(!r.ok);
+          p.onBad(p.id, !r.ok);
           if (r.ok) p.onValue(r.value);
         }}
       />
@@ -47,12 +68,19 @@ function JsonBox(p: { id: string; label: string; value: unknown; onValue: (v: un
   );
 }
 
-function Leaf({ f, path, value, onChange }: { f: SField; path: string[] } & Omit<Props, "schema">) {
+function Leaf({
+  f,
+  path,
+  value,
+  onChange,
+  onBad,
+}: { f: SField; path: string[] } & Omit<Props, "schema">) {
   const id = `sf-${path.join("-")}`;
   const label = f.required ? `${f.name} *` : f.name;
   const cur = getAt(value, path);
   const set = (v: unknown) => onChange(setAt(value, path, v));
-  if (f.kind === "json") return <JsonBox id={id} label={label} value={cur} onValue={set} />;
+  if (f.kind === "json")
+    return <JsonBox id={id} label={label} value={cur} onValue={set} onBad={onBad} />;
   if (f.kind === "boolean")
     return (
       <div className="flex items-center gap-2">
@@ -99,13 +127,20 @@ function Node(p: { f: SField; path: string[] } & Omit<Props, "schema">) {
     <fieldset className="space-y-3 rounded-md border border-border p-3">
       <legend className="px-1 text-label font-medium">{p.f.name}</legend>
       {p.f.children.map((c) => (
-        <Leaf key={c.name} f={c} path={[...p.path, c.name]} value={p.value} onChange={p.onChange} />
+        <Leaf
+          key={c.name}
+          f={c}
+          path={[...p.path, c.name]}
+          value={p.value}
+          onChange={p.onChange}
+          onBad={p.onBad}
+        />
       ))}
     </fieldset>
   );
 }
 
-export function SchemaForm({ schema, value, onChange }: Props) {
+export function SchemaForm({ schema, value, onChange, onBad }: Props) {
   const { t } = useTranslation();
   const fields = buildFields(schema);
   return (
@@ -118,6 +153,7 @@ export function SchemaForm({ schema, value, onChange }: Props) {
           id="sf-raw"
           label={t("editor.field.agentConfig")}
           value={Object.keys(value).length === 0 ? undefined : value}
+          onBad={onBad}
           onValue={(v) => {
             if (v === undefined) onChange({});
             else if (typeof v === "object" && v !== null && !Array.isArray(v)) onChange(v as Opts);
@@ -125,7 +161,14 @@ export function SchemaForm({ schema, value, onChange }: Props) {
         />
       ) : (
         fields.map((f) => (
-          <Node key={f.name} f={f} path={[f.name]} value={value} onChange={onChange} />
+          <Node
+            key={f.name}
+            f={f}
+            path={[f.name]}
+            value={value}
+            onChange={onChange}
+            onBad={onBad}
+          />
         ))
       )}
     </div>

@@ -15,8 +15,8 @@ import {
   SelectValue,
 } from "#/components/ui/select";
 import { Switch } from "#/components/ui/switch";
-import { cliNotReady } from "../lib/runtime-notice";
-import { Field, type SectionProps } from "./AgentField";
+import { cliNotReady } from "../../lib/runtime-notice";
+import { Field, type SectionProps } from "../editor/AgentField";
 
 function Tools({ draft, set }: SectionProps) {
   const { t } = useTranslation();

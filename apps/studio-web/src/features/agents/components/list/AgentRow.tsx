@@ -5,7 +5,7 @@ import { HrefLink } from "#/components/shared/HrefLink";
 import { Badge } from "#/components/ui/badge";
 import { Switch } from "#/components/ui/switch";
 import { TableCell, TableRow } from "#/components/ui/table";
-import { isOrchestrator } from "../lib/status";
+import { isOrchestrator } from "../../lib/status";
 import { AgentRowMenu } from "./AgentRowMenu";
 
 export type RowActions = {

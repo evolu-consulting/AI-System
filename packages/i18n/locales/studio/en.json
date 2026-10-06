@@ -235,6 +235,8 @@
       "needOne": "The agent needs a workflow",
       "missing": "(no longer in the catalog)",
       "adminLink": "Admin › Workflows ↗",
+      "adminText": "Admin › Workflows",
+      "pickerNoMatch": "No workflows match the search or filter.",
       "filterType": "Filter by type",
       "typeAll": "All types"
     },

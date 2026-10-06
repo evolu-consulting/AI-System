@@ -2,7 +2,10 @@
 import type { DiffRow } from "#/components/shared/conflict/types";
 import type { AgentDraft } from "./draft";
 
-type Key = Exclude<keyof AgentDraft, "bashAck" | "rawOptions" | "runtime" | "maxTurns" | "cwdMode">;
+type Key = Exclude<
+  keyof AgentDraft,
+  "bashAck" | "rawOptions" | "badJson" | "runtime" | "maxTurns" | "cwdMode"
+>;
 /** Thứ tự + khoá i18n nhãn (`editor.field.*`); `workflowIds` dùng nhãn bước 3. */
 const FIELDS: [Key, string][] = [
   ["key", "editor.field.key"],

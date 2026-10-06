@@ -235,6 +235,8 @@
       "needOne": "Agent cần một workflow",
       "missing": "(không còn trong catalog)",
       "adminLink": "Admin › Workflows ↗",
+      "adminText": "Admin › Workflows",
+      "pickerNoMatch": "Không có workflow nào khớp tìm kiếm hoặc bộ lọc.",
       "filterType": "Lọc theo loại",
       "typeAll": "Tất cả loại"
     },

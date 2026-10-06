@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 import { withBase } from "#/lib/env";
-import { canSetAsOrchestrator, isOrchestrator } from "../lib/status";
+import { canSetAsOrchestrator, isOrchestrator } from "../../lib/status";
 
 type Props = {
   agent: AgentListItem;

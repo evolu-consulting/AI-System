@@ -9,6 +9,7 @@ import {
   fieldOfPath,
   fromAgent,
   mapIssues,
+  markBadJson,
   toPayload,
   validateDraft,
 } from "./draft";
@@ -154,5 +155,27 @@ describe("parseConflict", () => {
     const err = { code: "VERSION_CONFLICT", details: { current: { version: 5 }, updated_at: "x" } };
     expect(parseConflict(err)).toEqual({ current: { version: 5 }, updatedAt: "x" });
     expect(parseConflict({ code: "NOT_FOUND" })).toBeNull();
+  });
+});
+
+describe("JSON thô sai chặn Lưu (RV1 #2)", () => {
+  test("python + badJson ⇒ lỗi options_json = editor.err.json", () => {
+    const d = valid({ runtime: "python", agentTypeKey: "t", badJson: ["sf-raw"] });
+    expect(validateDraft(d, NEW).errors.options_json).toBe("editor.err.json");
+  });
+  test("JSON đúng lại (badJson rỗng) ⇒ không còn lỗi options_json", () => {
+    const d = valid({ runtime: "python", agentTypeKey: "t", badJson: [] });
+    expect(validateDraft(d, NEW).errors.options_json).toBeUndefined();
+  });
+  test("runtime khác python bỏ qua badJson", () => {
+    expect(validateDraft(valid({ badJson: ["sf-raw"] }), NEW).errors.options_json).toBeUndefined();
+  });
+  test("markBadJson thêm/bớt id, không đổi ⇒ cùng mảng", () => {
+    const a: string[] = [];
+    const b = markBadJson(a, "x", true);
+    expect(b).toEqual(["x"]);
+    expect(markBadJson(b, "x", true)).toBe(b);
+    expect(markBadJson(b, "x", false)).toEqual([]);
+    expect(markBadJson(a, "x", false)).toBe(a);
   });
 });

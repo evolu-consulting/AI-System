@@ -22,8 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/components/ui/select";
-import type { WorkflowItem } from "../hooks/use-editor-catalogs";
-import { appTypesOf, filterWorkflows } from "../lib/runtime-notice";
+import type { WorkflowItem } from "../../hooks/use-editor-catalogs";
+import { appTypesOf, filterWorkflows } from "../../lib/runtime-notice";
 
 type Props = {
   items: WorkflowItem[];
@@ -108,6 +108,10 @@ export function WorkflowPicker({ items, single, selected, onAttach, onClose }: P
         ) : null}
         {items.length === 0 ? (
           <p className="text-body text-muted-foreground">{t("editor.wf.pickerEmpty")}</p>
+        ) : rows.length === 0 ? (
+          <p role="status" className="text-body text-muted-foreground">
+            {t("editor.wf.pickerNoMatch")}
+          </p>
         ) : single ? (
           <RadioGroup value={picked[0] ?? ""} onValueChange={(v) => setPicked([v])}>
             {list}

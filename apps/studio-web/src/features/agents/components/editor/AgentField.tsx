@@ -2,7 +2,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Label } from "#/components/ui/label";
-import type { AgentDraft, FieldErrors } from "../lib/draft";
+import type { AgentDraft, FieldErrors } from "../../lib/draft/draft";
 
 /** Props chung của mọi phần (bước) của editor. */
 export type SectionProps = {
@@ -44,7 +44,7 @@ export function Field({ id, label, error, hint, asLabel = true, children }: Prop
         </p>
       ) : null}
       {error ? (
-        <p id={`${id}-err`} className="text-label text-danger">
+        <p id={`${id}-err`} role="alert" className="text-label text-danger">
           {t(error)}
         </p>
       ) : null}

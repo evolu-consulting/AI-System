@@ -3,7 +3,7 @@ import { AGENT_RUNTIMES, type AgentRuntime } from "@ai/contracts/studio";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Input } from "#/components/ui/input";
-import type { AgentFilters as Filters } from "../lib/filters";
+import type { AgentFilters as Filters } from "../../lib/filters";
 
 type Props = {
   filters: Filters;

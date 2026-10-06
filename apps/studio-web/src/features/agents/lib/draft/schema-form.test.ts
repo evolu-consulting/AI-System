@@ -1,8 +1,8 @@
 // HUB-FR-61 · H4a-D9, R04, R05 · SchemaForm (dựng trường, ghi giá trị), cảnh báo codex/gemini, runtimeMissing, lọc picker.
 import { describe, expect, test } from "bun:test";
-import type { WorkflowItem } from "../hooks/use-editor-catalogs";
+import type { WorkflowItem } from "../../hooks/use-editor-catalogs";
+import { appTypesOf, cliNotReady, filterWorkflows, runtimeMissing } from "../runtime-notice";
 import { fieldOfPath } from "./draft";
-import { appTypesOf, cliNotReady, filterWorkflows, runtimeMissing } from "./runtime-notice";
 import { buildFields, getAt, parseJson, parseNum, setAt } from "./schema-form";
 
 describe("buildFields", () => {

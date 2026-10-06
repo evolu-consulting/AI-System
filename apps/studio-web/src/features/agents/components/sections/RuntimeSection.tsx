@@ -13,10 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/components/ui/select";
-import type { AgentTypeItem, Catalog, ModelProfileItem } from "../hooks/use-editor-catalogs";
-import { runtimeMissing } from "../lib/runtime-notice";
-import { Field, type SectionProps } from "./AgentField";
-import { CatalogAlert } from "./CatalogAlert";
+import type { AgentTypeItem, Catalog, ModelProfileItem } from "../../hooks/use-editor-catalogs";
+import { markBadJson } from "../../lib/draft/draft";
+import { runtimeMissing } from "../../lib/runtime-notice";
+import { Field, type SectionProps } from "../editor/AgentField";
+import { CatalogAlert } from "../editor/CatalogAlert";
 import { CliOptions } from "./CliOptions";
 import { SchemaForm } from "./SchemaForm";
 
@@ -61,6 +62,9 @@ function PythonOptions(p: Props) {
   const schema = types.find((x) => x.key === draft.agentTypeKey)?.config_schema;
   return (
     <>
+      {p.agentTypes.failed ? (
+        <CatalogAlert what={t("editor.field.agentType")} retry={p.agentTypes.retry} />
+      ) : null}
       <CatalogSelect
         id="f-agent-type"
         label={t("editor.field.agentType")}
@@ -68,7 +72,10 @@ function PythonOptions(p: Props) {
         error={errors.agent_type_key}
         items={types.map((x) => ({ key: x.key, value: x.key }))}
         onChange={(v) => {
-          if (v !== draft.agentTypeKey) set("rawOptions", {});
+          if (v !== draft.agentTypeKey) {
+            set("rawOptions", {});
+            set("badJson", []);
+          }
           set("agentTypeKey", v);
         }}
       />
@@ -78,6 +85,10 @@ function PythonOptions(p: Props) {
           schema={schema}
           value={draft.rawOptions}
           onChange={(v) => set("rawOptions", v)}
+          onBad={(id, bad) => {
+            const next = markBadJson(draft.badJson, id, bad);
+            if (next !== draft.badJson) set("badJson", next);
+          }}
         />
       ) : null}
     </>

@@ -5,9 +5,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "#/components/ui/button";
 import { ADMIN_URL } from "#/lib/env";
-import type { Catalog, WorkflowItem } from "../hooks/use-editor-catalogs";
-import type { SectionProps } from "./AgentField";
-import { CatalogAlert } from "./CatalogAlert";
+import type { Catalog, WorkflowItem } from "../../hooks/use-editor-catalogs";
+import type { SectionProps } from "../editor/AgentField";
+import { CatalogAlert } from "../editor/CatalogAlert";
 import { WorkflowPicker } from "./WorkflowPicker";
 
 type Props = SectionProps & {
@@ -63,7 +63,6 @@ export function WorkflowSection(p: Props) {
   const single = isSingle(p.draft.runtime);
   const need = single ? p.draft.runtime : "tool";
   const usable = p.workflows.items.filter((w) => (w.usable_for as string[]).includes(need));
-  const adminHref = `${ADMIN_URL.replace(/\/+$/, "")}/workflows`;
   return (
     <div className="space-y-3">
       {p.workflows.failed ? <CatalogAlert what="workflows" retry={p.workflows.retry} /> : null}
@@ -79,9 +78,18 @@ export function WorkflowSection(p: Props) {
         </Button>
         <p className="text-label text-muted-foreground">
           {t("editor.wf.hint")}{" "}
-          <a className="underline" href={adminHref} target="_blank" rel="noreferrer">
-            {t("editor.wf.adminLink")}
-          </a>
+          {ADMIN_URL ? (
+            <a
+              className="underline"
+              href={`${ADMIN_URL}/workflows`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t("editor.wf.adminLink")}
+            </a>
+          ) : (
+            t("editor.wf.adminText")
+          )}
         </p>
       </div>
       {open ? (

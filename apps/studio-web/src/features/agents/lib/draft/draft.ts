@@ -18,7 +18,8 @@ export type FieldKey =
   | "timeout_s"
   | "token_budget"
   | "agent_type_key"
-  | "max_turns";
+  | "max_turns"
+  | "options_json";
 export type FieldErrors = Partial<Record<FieldKey, string>>;
 
 export type AgentDraft = {
@@ -41,6 +42,8 @@ export type AgentDraft = {
   agentTypeKey: string;
   /** `runtime_options` thô của agent `python` (F5 dựng bằng SchemaForm); giữ nguyên khi không sửa. */
   rawOptions: Record<string, unknown>;
+  /** Id các ô JSON thô (SchemaForm) đang chứa JSON sai — chặn Lưu (`editor.err.json`). */
+  badJson: string[];
   bashAck: boolean;
 };
 
@@ -63,6 +66,7 @@ export const emptyDraft = (): AgentDraft => ({
   workflowIds: [],
   agentTypeKey: "",
   rawOptions: {},
+  badJson: [],
   bashAck: false,
 });
 
@@ -191,6 +195,7 @@ export const FIELD_MESSAGE: Record<FieldKey, string> = {
   token_budget: "editor.err.tokenBudget",
   agent_type_key: "editor.err.agentType",
   max_turns: "editor.err.maxTurns",
+  options_json: "editor.err.json",
 };
 
 export type IssueLike = { path?: unknown };
@@ -221,6 +226,8 @@ export function validateDraft(
   const out = r.success ? { errors: {} as FieldErrors, unmapped: 0 } : mapIssues(r.error.issues);
   if (d.runtime === "agentic-cli" && d.tools.includes("Bash") && !d.bashAck && !ctx.hadBash)
     out.errors.bash_ack = FIELD_MESSAGE.bash_ack;
+  if (d.runtime === "python" && d.badJson.length > 0)
+    out.errors.options_json = FIELD_MESSAGE.options_json;
   return out;
 }
 
@@ -232,8 +239,16 @@ export const FIELD_ORDER: FieldKey[] = [
   "profile_id",
   "agent_type_key",
   "max_turns",
+  "options_json",
   "timeout_s",
   "token_budget",
   "workflow_ids",
   "bash_ack",
 ];
+
+/** Cập nhật danh sách ô JSON thô đang sai (`draft.badJson`); không đổi ⇒ trả lại chính mảng cũ. */
+export function markBadJson(list: readonly string[], id: string, bad: boolean): string[] {
+  const has = list.includes(id);
+  if (bad === has) return list as string[];
+  return bad ? [...list, id] : list.filter((x) => x !== id);
+}

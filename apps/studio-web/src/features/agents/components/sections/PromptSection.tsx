@@ -1,7 +1,7 @@
 // HUB-FR-60 · bước ④ System prompt (tối đa 20 000 ký tự, theo contract).
 import { useTranslation } from "react-i18next";
 import { Textarea } from "#/components/ui/textarea";
-import { Field, type SectionProps } from "./AgentField";
+import { Field, type SectionProps } from "../editor/AgentField";
 
 export function PromptSection({ draft, set }: SectionProps) {
   const { t } = useTranslation();
