@@ -126,28 +126,38 @@ describe("HUB-FR-40 · conversations · danh sách E5", () => {
     }
   });
 
-  it("CHAT-AC-19 · limit=1 đi theo next_cursor tới null: không lặp, hợp = danh sách limit=200 [K-C5]", async () => {
-    const { access } = await lan();
-    await newConv(access, title("Trang 1"));
-    await newConv(access, title("Trang 2"));
-    const all = (await listConvs(access)).map((c) => c.id);
-    const seen: string[] = [];
+  // T10 (test-plan X1-combine §7.1): user contract trên DB dev tích > 200 hội thoại qua nhiều lượt chạy
+  // ⇒ một lần limit=200 chỉ là trang đầu. "Đủ" so với hợp các trang limit=200 đi theo cursor tới null.
+  async function walk(token: string, limit: number, max: number): Promise<string[]> {
+    const ids: string[] = [];
     let cursor: string | null = null;
     do {
-      const q: string = cursor ? `limit=1&cursor=${encodeURIComponent(cursor)}` : "limit=1";
+      const q: string = `limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
       const page = await okJson(
-        await call("GET", `/conversations?${q}`, { token: access }),
+        await call("GET", `/conversations?${q}`, { token }),
         200,
         ConvPage,
         q,
       );
-      expect(page.items.length).toBeLessThanOrEqual(1);
-      seen.push(...page.items.map((c) => c.id));
+      expect(page.items.length).toBeLessThanOrEqual(limit);
+      ids.push(...page.items.map((c) => c.id));
       cursor = page.next_cursor;
-    } while (cursor !== null && seen.length <= all.length);
+    } while (cursor !== null && ids.length <= max);
+    return ids;
+  }
+
+  it("CHAT-AC-19 · limit=1 đi theo next_cursor tới null: không lặp, hợp = danh sách limit=200 [K-C5]", async () => {
+    const { access } = await lan();
+    await newConv(access, title("Trang 1"));
+    await newConv(access, title("Trang 2"));
+    const first = (await listConvs(access)).map((c) => c.id);
+    const all = await walk(access, 200, 100_000);
+    expect(new Set(all).size).toBe(all.length);
+    expect(all.slice(0, first.length)).toEqual(first);
+    const seen = await walk(access, 1, all.length);
     expect(new Set(seen).size).toBe(seen.length);
     expect(seen).toEqual(all);
-  });
+  }, 120_000);
 
   it("CHAT-AC-19 · cursor rác → 400 VALIDATION_ERROR [K-C5]", async () => {
     const { access } = await lan();
