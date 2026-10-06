@@ -111,7 +111,7 @@ Input map theo `InputMapEntrySchema` `{source,…}` (plan K5, §5.3), không dù
 | S4 | `/lệnh` (menu, thiếu tham số, lệnh sai + gợi ý, `//`) | mock rồi **thật** (`/translate`) |
 | S5 | `@agent`, `@@`, nhiều tag, tag sai | `claude-sub` |
 | S6 | Đính kèm: hợp lệ, quá lớn, sai loại, chip xám; `/ask-image` | mock + 1 lần thật |
-| S7 | Xác nhận `side_effect`: tạo workflow `mock-send` qua Admin (base_url `http://localhost:5001/v1`, secret `mk-ok`), bật cờ `side_effect` → Chat hỏi Đồng ý/Huỷ | mock |
+| S7 | Xác nhận `side_effect`: tạo workflow `mock-send` qua Admin (base_url `http://localhost:5001/v1`, secret `mk-ok`), bật cờ `side_effect`, gắn workflow làm tool cho một agent `agentic-cli`, hỏi agent việc cần gửi → Chat hỏi Đồng ý/Huỷ (cần Runtime WSL `claude-sub`). Gõ thẳng `/mock-send` thì chạy luôn, không hỏi (HUB-FR-95 chỉ áp tool agent gọi) | mock + Runtime |
 | S8 | Admin Test command (không lưu) | mock + 1 lần thật |
 | S9 | Studio: sửa agent/Orchestrator từ nút "⇄ Agent Studio"; Chat thấy menu `@` đổi | - |
 | S10 | Dify thật (`DIFY_LIVE=1`): chatbot, translate, gmail-summary, email-reply, screenshot-ask, **mỗi app đúng 1 lần** | thật |
@@ -171,6 +171,7 @@ CHAT-AC-01…36 (C1) giữ xanh. AC mới (Given/When/Then chi tiết ở `test-
   6. Smoke Dify: qc viết `tests/smoke/X1/dify-live.ts`; đếm lời gọi bằng bộ đếm trong script (mỗi app đúng 1, không retry), không dựa DB.
   7. plan-frontend export hàm thuần `*.rules.ts` cho AC03, AC06, AC07 để unit test.
   8. S7 bật `side_effect` của workflow `mock-send` trong Admin, không qua seed yaml.
+- [x] 2026-10-07 (điều phối, I1; BA HUB-FR-95/BR-20, H2a-R21 thắng spec): 13. Xác nhận `side_effect` chỉ áp tool agent gọi qua MCP; lệnh `/` user tự gõ chạy thẳng. S7 và combine AC08 sửa theo.
 - [x] 2026-10-07 (điều phối chốt 2026-10-07 (readiness lần 1); plan K5–K7): 9. Agent `dify-chatbot` + entitlement `acme` qua Hub seed CLI (không Studio API). 10. Input map dạng `{source,…}` (không `$args.*`). 11. Secret tên `DIFY_KEY_*` (không `dify-<app>`). 12. `combine:dev` bật Dify mock; S7 tạo `mock-send` qua Admin.
 
 ## 11. Tranh chấp test
