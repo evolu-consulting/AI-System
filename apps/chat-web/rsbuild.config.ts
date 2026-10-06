@@ -23,6 +23,8 @@ export default defineConfig({
     title: "AI Chat",
     favicon: "./public/brand/evoluconsulting-icon.svg",
   },
+  // Lazy compilation + autoCodeSplitting của router → chunk route thiếu module ("reading 'call'") ở dev.
+  dev: { lazyCompilation: false },
   server: { port: 3100, strictPort: true, proxy },
   tools: {
     rspack: {

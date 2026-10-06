@@ -15,6 +15,8 @@ export default defineConfig({
     title: "Admin Console",
     favicon: "./public/brand/evoluconsulting-icon.svg",
   },
+  // Lazy compilation + autoCodeSplitting của router → chunk route thiếu module ("reading 'call'") ở dev.
+  dev: { lazyCompilation: false },
   server: {
     port: 3000,
     strictPort: true,
