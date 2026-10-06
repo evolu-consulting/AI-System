@@ -1,12 +1,13 @@
 // ADM-FR-60 · topbar: nút menu (di động), breadcrumb, badge ("Nền tảng" / tên tenant), menu avatar.
 import { Link, useLocation } from "@tanstack/react-router";
-import { Menu } from "lucide-react";
+import { ArrowLeftRight, Menu } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { useSession } from "@/lib/auth/use-session";
+import { STUDIO_URL } from "@/lib/env";
 import { crumbsFor } from "../lib/nav";
 import { AccountMenu } from "./AccountMenu";
 import { SidebarNav } from "./SidebarNav";
@@ -67,6 +68,16 @@ export function Topbar() {
         ) : (
           <span className="text-label text-muted-foreground">{tenantName}</span>
         )}
+        {role === "platform_admin" && STUDIO_URL ? (
+          <a
+            href={STUDIO_URL}
+            aria-label={t("topbar.studio")}
+            className="inline-flex h-9 items-center gap-2 rounded-md px-2 text-label text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <ArrowLeftRight className="size-4" aria-hidden />
+            <span className="hidden sm:inline">{t("topbar.studio")}</span>
+          </a>
+        ) : null}
         <AccountMenu />
       </div>
     </header>

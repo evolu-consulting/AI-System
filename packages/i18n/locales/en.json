@@ -188,7 +188,8 @@
     "transfer": "Import / Export"
   },
   "topbar": {
-    "platform": "Platform"
+    "platform": "Platform",
+    "studio": "Agent Studio"
   },
   "account": {
     "menu": "Your account",

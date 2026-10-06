@@ -188,7 +188,8 @@
     "transfer": "Import / Export"
   },
   "topbar": {
-    "platform": "Nền tảng"
+    "platform": "Nền tảng",
+    "studio": "Agent Studio"
   },
   "account": {
     "menu": "Tài khoản của bạn",
