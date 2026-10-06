@@ -1,5 +1,7 @@
 {
-  "app": { "name": "✦ Agent Studio" },
+  "app": {
+    "name": "✦ Agent Studio"
+  },
   "nav": {
     "label": "Studio menu",
     "skip": "Skip navigation",
@@ -27,7 +29,62 @@
   "soon": "Coming soon",
   "soonH4b": "Coming soon (H4b)",
   "soonH4c": "Coming soon (H4c)",
-  "topbar": { "configBadge": "hub config v{n}", "toAdmin": "⇄ Admin" },
-  "notFound": { "title": "Page not found", "back": "Back to Agents" },
-  "state": { "error": { "title": "Couldn't load data", "retry": "Retry" } }
+  "topbar": {
+    "configBadge": "hub config v{n}",
+    "toAdmin": "⇄ Admin",
+    "configBadgeLabel": "Hub config version"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "back": "Back to Agents"
+  },
+  "state": {
+    "error": {
+      "title": "Couldn't load data",
+      "retry": "Retry"
+    }
+  },
+  "user": {
+    "account": "Account",
+    "logout": "Sign out",
+    "language": "Language"
+  },
+  "login": {
+    "title": "Sign in to Agent Studio",
+    "subtitle": "For platform administrators. Use your Admin account.",
+    "tenant": "Company code",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "err": {
+      "invalid": "Wrong company code, username or password.",
+      "locked": "This account is locked. Contact your company administrator.",
+      "tempLocked": "Temporarily locked until {time}",
+      "network": "Couldn't reach the server. Please try again.",
+      "server": "Something went wrong, please try again later (code {code})."
+    },
+    "mustChange": "You need to change your password in Admin before using Studio.",
+    "totp": {
+      "title": "Two-step verification",
+      "body": "Enter the 6-digit code from your authenticator app.",
+      "code": "Verification code",
+      "submit": "Verify",
+      "useBackup": "Use a backup code",
+      "backupCode": "Backup code",
+      "useApp": "Use a code from the app",
+      "back": "Back to sign in",
+      "wrong": "The code is incorrect or expired",
+      "expired": "Your verification session expired. Please sign in again.",
+      "backupFormat": "Backup codes look like xxxx-xxxx"
+    }
+  },
+  "session": {
+    "expired": "Your session has expired. Please sign in again."
+  },
+  "forbidden": {
+    "title": "You don't have access to Agent Studio",
+    "body": "Agent Studio is only for platform administrators (platform_admin).",
+    "toChat": "Back to Chat"
+  }
 }

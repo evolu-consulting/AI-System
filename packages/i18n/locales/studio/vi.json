@@ -1,5 +1,7 @@
 {
-  "app": { "name": "✦ Agent Studio" },
+  "app": {
+    "name": "✦ Agent Studio"
+  },
   "nav": {
     "label": "Menu Studio",
     "skip": "Bỏ qua điều hướng",
@@ -27,7 +29,62 @@
   "soon": "Sắp có",
   "soonH4b": "Sắp có (H4b)",
   "soonH4c": "Sắp có (H4c)",
-  "topbar": { "configBadge": "hub config v{n}", "toAdmin": "⇄ Admin" },
-  "notFound": { "title": "Không tìm thấy trang", "back": "Về Agents" },
-  "state": { "error": { "title": "Không tải được dữ liệu", "retry": "Thử lại" } }
+  "topbar": {
+    "configBadge": "hub config v{n}",
+    "toAdmin": "⇄ Admin",
+    "configBadgeLabel": "Phiên bản cấu hình Hub"
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "back": "Về Agents"
+  },
+  "state": {
+    "error": {
+      "title": "Không tải được dữ liệu",
+      "retry": "Thử lại"
+    }
+  },
+  "user": {
+    "account": "Tài khoản",
+    "logout": "Đăng xuất",
+    "language": "Ngôn ngữ"
+  },
+  "login": {
+    "title": "Đăng nhập Agent Studio",
+    "subtitle": "Dành cho quản trị nền tảng. Dùng tài khoản Admin của bạn.",
+    "tenant": "Mã công ty",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "submit": "Đăng nhập",
+    "submitting": "Đang đăng nhập…",
+    "err": {
+      "invalid": "Sai mã công ty, tên đăng nhập hoặc mật khẩu.",
+      "locked": "Tài khoản đã bị khoá. Liên hệ quản trị viên công ty bạn.",
+      "tempLocked": "Tạm khoá đến {time}",
+      "network": "Không kết nối được máy chủ. Hãy thử lại.",
+      "server": "Có lỗi xảy ra, hãy thử lại sau (mã {code})."
+    },
+    "mustChange": "Bạn cần đổi mật khẩu ở Admin trước khi vào Studio.",
+    "totp": {
+      "title": "Xác thực hai bước",
+      "body": "Nhập mã 6 số trong ứng dụng xác thực của bạn.",
+      "code": "Mã xác thực",
+      "submit": "Xác nhận",
+      "useBackup": "Dùng mã dự phòng",
+      "backupCode": "Mã dự phòng",
+      "useApp": "Dùng mã từ ứng dụng",
+      "back": "Quay lại đăng nhập",
+      "wrong": "Mã không đúng hoặc đã hết hạn",
+      "expired": "Phiên xác thực đã hết hạn. Hãy đăng nhập lại.",
+      "backupFormat": "Mã dự phòng có dạng xxxx-xxxx"
+    }
+  },
+  "session": {
+    "expired": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại."
+  },
+  "forbidden": {
+    "title": "Bạn không có quyền vào Agent Studio",
+    "body": "Agent Studio chỉ dành cho quản trị nền tảng (platform_admin).",
+    "toChat": "Về Chat"
+  }
 }

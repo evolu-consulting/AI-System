@@ -3,6 +3,7 @@ import { DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales
 import { loadStudioLocale } from "@ai/i18n/studio-locales";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
+import { setRequestLanguage } from "#/lib/http";
 import { readLocal, writeLocal } from "#/lib/storage";
 
 export const LOCALE_STORAGE_KEY = "studio.locale";
@@ -25,6 +26,7 @@ export function resolveInitialLocale(
 i18next.on("languageChanged", (lng) => {
   if (typeof document !== "undefined") document.documentElement.lang = lng;
   writeLocal(LOCALE_STORAGE_KEY, lng);
+  setRequestLanguage(lng);
 });
 
 const lazyBackend = {

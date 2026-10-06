@@ -1,7 +1,6 @@
-// HUB-FR-72 · khung ứng dụng: skip-link, Sidebar, Topbar, <main id="main">, Toaster.
+// HUB-FR-72 · khung ứng dụng: skip-link, Sidebar, Topbar, <main id="main"> (Toaster ở __root).
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Toaster } from "#/components/ui/sonner";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
@@ -30,7 +29,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
-      <Toaster position="bottom-right" />
     </>
   );
 }

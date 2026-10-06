@@ -10,12 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as ForbiddenRouteImport } from './routes/forbidden'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedOrchestratorRouteImport } from './routes/_authed/orchestrator'
 import { Route as AuthedAgentsIndexRouteImport } from './routes/_authed/agents.index'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForbiddenRoute = ForbiddenRouteImport.update({
+  id: '/forbidden',
+  path: '/forbidden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
@@ -36,10 +48,14 @@ const AuthedAgentsIndexRoute = AuthedAgentsIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
+  '/forbidden': typeof ForbiddenRoute
+  '/login': typeof LoginRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
   '/agents/': typeof AuthedAgentsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/forbidden': typeof ForbiddenRoute
+  '/login': typeof LoginRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
   '/': typeof AuthedIndexRoute
   '/agents': typeof AuthedAgentsIndexRoute
@@ -47,18 +63,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
+  '/forbidden': typeof ForbiddenRoute
+  '/login': typeof LoginRoute
   '/_authed/orchestrator': typeof AuthedOrchestratorRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/agents/': typeof AuthedAgentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/orchestrator' | '/agents/'
+  fullPaths: '/' | '/forbidden' | '/login' | '/orchestrator' | '/agents/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/orchestrator' | '/' | '/agents'
+  to: '/forbidden' | '/login' | '/orchestrator' | '/' | '/agents'
   id:
     | '__root__'
     | '/_authed'
+    | '/forbidden'
+    | '/login'
     | '/_authed/orchestrator'
     | '/_authed/'
     | '/_authed/agents/'
@@ -66,6 +86,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
+  ForbiddenRoute: typeof ForbiddenRoute
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +97,20 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forbidden': {
+      id: '/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof ForbiddenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/': {
@@ -118,6 +154,8 @@ const AuthedRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
+  ForbiddenRoute: ForbiddenRoute,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
