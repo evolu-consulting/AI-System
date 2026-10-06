@@ -1,5 +1,7 @@
 // ADM-FR-23 · X1 F4 · panel "Chạy thử" (plan-frontend §2.2, ui-admin §7.4): chạy BẢN NHÁP đang sửa (kể cả chưa lưu) qua
 // `POST /admin/commands/test`; Ctrl+Enter chạy; "Dừng" huỷ fetch; 409 side effect → hộp xác nhận. Trang đã `PlatformOnly`.
+
+import { TEST_RUN_TEXT_MAX } from "@ai/contracts/hub-internal";
 import { useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -19,6 +21,7 @@ import {
   emptyTestInput,
   pageUrlValid,
   type TestInput,
+  textValid,
 } from "../../lib/test-run";
 import { type RunAs, RunAsPicker } from "./RunAsPicker";
 import { SideEffectConfirm } from "./SideEffectConfirm";
@@ -39,12 +42,13 @@ export function TestPanel() {
   const [input, setInput] = useState<TestInput>(emptyTestInput);
   const [runAs, setRunAs] = useState<RunAs>(null);
   const urlOk = pageUrlValid(input.pageUrl);
+  const textOk = textValid(input.text);
   const running = test.state.status === "running";
   const set = (k: keyof TestInput) => (e: { target: { value: string } }) =>
     setInput((s) => ({ ...s, [k]: e.target.value }));
 
   const start = async () => {
-    if (running || blocked || !urlOk) return;
+    if (running || blocked || !urlOk || !textOk) return;
     if (!(await form.trigger())) return;
     const body = buildTestBody(form.getValues(), { ...input, runAsUserId: runAs?.id ?? "" });
     void test.run(body);
@@ -79,6 +83,7 @@ export function TestPanel() {
           <Textarea
             {...p}
             rows={3}
+            maxLength={TEST_RUN_TEXT_MAX}
             value={input.text}
             onChange={set("text")}
             placeholder={buildSyntax(values.name || "…", values.args ?? [])}
@@ -123,7 +128,7 @@ export function TestPanel() {
           <Button
             type="button"
             onClick={() => void start()}
-            disabled={blocked || !urlOk}
+            disabled={blocked || !urlOk || !textOk}
             aria-keyshortcuts="Control+Enter"
           >
             {t("commands.test.run")}

@@ -14,8 +14,12 @@ export const HUB_KEYS = {
     ["hub", "effective", userId, tenantId ?? ""] as const,
 };
 
-/** `hubUrl` chỉ null khi chưa cấu hình — mọi hook đã chặn bằng `enabled`. */
-const url = (path: string): string => hubUrl(path) ?? path;
+/** `hubUrl` chỉ null khi chưa cấu hình — mọi hook đã chặn bằng `enabled`; lọt qua thì ném lỗi rõ thay vì gọi nhầm origin admin. */
+const url = (path: string): string => {
+  const u = hubUrl(path);
+  if (u === null) throw new Error("PUBLIC_HUB_URL chưa cấu hình: không gọi Hub");
+  return u;
+};
 
 /** Mọi agent của tenant kèm grant của đúng group này (`grants.length > 0` ⇔ đã cấp). */
 export function useGroupAgentGrants(groupId: string, tenantId?: string) {

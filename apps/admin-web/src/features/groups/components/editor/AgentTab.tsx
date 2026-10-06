@@ -2,7 +2,6 @@
 
 import type { Group } from "@ai/contracts";
 import type { AgentGrantListItem } from "@ai/contracts/hub-admin";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -18,50 +17,47 @@ type Tab = ReturnType<typeof useGroupAgents>;
 function useColumns(group: Group, tab: Tab): Column<AgentGrantListItem>[] {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
-  return useMemo(
-    () => [
-      {
-        id: "agent",
-        header: t("groups.agents.col.agent"),
-        cell: (row) => (
-          <div className="flex flex-col">
-            <span className="font-medium">{pickLocalized(row.agent.name, lang)}</span>
-            <span className="font-mono text-label text-muted-foreground">{row.agent.key}</span>
-          </div>
-        ),
-      },
-      {
-        id: "status",
-        header: t("groups.agents.col.status"),
-        cell: (row) => (
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge tone={row.agent.enabled ? "ok" : "off"}>
-              {t(row.agent.enabled ? "common.on" : "common.off")}
-            </StatusBadge>
-            {row.agent.runnable ? null : (
-              <StatusBadge tone="warn">{t("groups.agents.notRunnable")}</StatusBadge>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: "grant",
-        header: t("groups.agents.col.grant"),
-        cell: (row) => (
-          <Switch
-            checked={tab.isGranted(row)}
-            disabled={tab.isPending(row.agent.id)}
-            onCheckedChange={(v) => void tab.toggle(row, v)}
-            aria-label={t("groups.agents.grantLabel", {
-              agent: pickLocalized(row.agent.name, lang),
-              group: pickLocalized(group.name, lang),
-            })}
-          />
-        ),
-      },
-    ],
-    [t, lang, group.name, tab],
-  );
+  return [
+    {
+      id: "agent",
+      header: t("groups.agents.col.agent"),
+      cell: (row) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{pickLocalized(row.agent.name, lang)}</span>
+          <span className="font-mono text-label text-muted-foreground">{row.agent.key}</span>
+        </div>
+      ),
+    },
+    {
+      id: "status",
+      header: t("groups.agents.col.status"),
+      cell: (row) => (
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge tone={row.agent.enabled ? "ok" : "off"}>
+            {t(row.agent.enabled ? "common.on" : "common.off")}
+          </StatusBadge>
+          {row.agent.runnable ? null : (
+            <StatusBadge tone="warn">{t("groups.agents.notRunnable")}</StatusBadge>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "grant",
+      header: t("groups.agents.col.grant"),
+      cell: (row) => (
+        <Switch
+          checked={tab.isGranted(row)}
+          disabled={tab.isPending(row.agent.id)}
+          onCheckedChange={(v) => void tab.toggle(row, v)}
+          aria-label={t("groups.agents.grantLabel", {
+            agent: pickLocalized(row.agent.name, lang),
+            group: pickLocalized(group.name, lang),
+          })}
+        />
+      ),
+    },
+  ];
 }
 
 function AgentTable({ group }: { group: Group }) {
