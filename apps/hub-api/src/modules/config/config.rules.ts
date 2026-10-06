@@ -1,5 +1,9 @@
 // HUB-FR-02, HUB-FR-03, HUB-BR-06, HUB-BR-08 · kiểu cache cấu hình + luật thuần (plan H1 §4 Cache, spec H1-R04, R15, R17).
+import { ORCHESTRATOR_RUNTIMES } from "@ai/contracts/studio";
 import type { EntitlementRow, GrantRow } from "../agents/agent-access.rules";
+
+/** H4a P9/QB1 · runtime được làm Orchestrator — một nguồn với Studio (`@ai/contracts/studio`). */
+const ORCH_RUNTIMES: ReadonlySet<string> = new Set(ORCHESTRATOR_RUNTIMES);
 
 export type TenantState = { id: string; active: boolean; maxConcurrentSub: number | null };
 export type UserState = {
@@ -82,7 +86,7 @@ export function orchestratorProblem(s: ConfigSnapshot): OrchestratorProblem | nu
   const agent = s.agents.find((a) => a.id === id);
   if (!agent) return "missing_agent";
   if (!agent.enabled) return "disabled";
-  if (agent.runtime !== "agentic-cli") return "not_agentic_cli";
+  if (!ORCH_RUNTIMES.has(agent.runtime)) return "not_agentic_cli";
   return null;
 }
 
@@ -102,7 +106,7 @@ export function pickOrchestrator(s: ConfigSnapshot, tenantId: string): PickedOrc
   const own = s.orchestratorTenants.get(tenantId);
   if (
     own &&
-    s.agents.some((a) => a.id === own.agentId && a.enabled && a.runtime === "agentic-cli")
+    s.agents.some((a) => a.id === own.agentId && a.enabled && ORCH_RUNTIMES.has(a.runtime))
   ) {
     return { config: own, tenantId, invalid: false };
   }

@@ -9,6 +9,8 @@ import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
 import type { Logger } from "./lib/logger";
 import { agentRoutes } from "./modules/studio/agents/agents.routes";
 import { AgentsService } from "./modules/studio/agents/agents.service";
+import { orchestratorRoutes } from "./modules/studio/orchestrator/orchestrator.routes";
+import { OrchestratorService } from "./modules/studio/orchestrator/orchestrator.service";
 import { studioReadRoutes } from "./modules/studio/studio.routes";
 import { StudioReadService } from "./modules/studio/studio-read.service";
 import { isStudioDist, mountStudioStatic } from "./modules/studio/studio-static";
@@ -33,6 +35,7 @@ export function mountH4a(app: Hono<AppVars>, deps: H4aDeps): void {
     const audit = deps.hubAudit ?? dbHubAudit;
     app.route(STUDIO_API, studioReadRoutes(new StudioReadService({ db: deps.db })));
     app.route(STUDIO_API, agentRoutes(new AgentsService({ db: deps.db, audit })));
+    app.route(STUDIO_API, orchestratorRoutes(new OrchestratorService({ db: deps.db, audit })));
   }
   mountH4aStatic(app, deps.studioDist, deps.log);
 }

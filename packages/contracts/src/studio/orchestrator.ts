@@ -12,6 +12,7 @@ const inputShape = {
   on_no_match: z.enum(ON_NO_MATCH_VALUES),
 };
 export const OrchestratorInputSchema = z.strictObject(inputShape);
+export type OrchestratorInput = z.infer<typeof OrchestratorInputSchema>;
 export const OrchestratorPutSchema = z.strictObject({ ...inputShape, version: Version });
 export const OrchestratorTenantCreateSchema = z.strictObject({
   ...inputShape,
@@ -47,7 +48,9 @@ export const OrchestratorListSchema = z.strictObject({
   tenants: z.array(OrchestratorSchema).max(200),
   hub_config_version: HubConfigVersionSchema,
 });
+export type OrchestratorList = z.infer<typeof OrchestratorListSchema>;
 export const OrchestratorWriteResponseSchema = z.strictObject({
   orchestrator: OrchestratorSchema,
   hub_config_version: HubConfigVersionSchema,
 });
+export type OrchestratorWriteResponse = z.infer<typeof OrchestratorWriteResponseSchema>;
