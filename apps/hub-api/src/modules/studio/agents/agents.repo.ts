@@ -230,3 +230,63 @@ async function countAgents(tx: Tx, f: AgentListFilter): Promise<number> {
   );
   return r?.n ?? 0;
 }
+
+export type AgentUpdate = Omit<AgentInsert, "key" | "runtime">;
+
+/** PUT · `key`/`runtime` bất biến (QB5) — không nằm trong SET. */
+export async function updateAgent(tx: Tx, id: string, a: AgentUpdate): Promise<AgentDbRow> {
+  const [r] =
+    await tx.execute<RawAgent>(sql`update hub.agents as a set name = ${JSON.stringify(a.name)}::jsonb,
+      description = ${a.description}, agent_type_key = ${a.agentTypeKey}::text, profile_id = ${a.profileId}::uuid,
+      system_prompt = ${a.systemPrompt}, runtime_options = ${JSON.stringify(a.runtimeOptions)}::jsonb,
+      timeout_s = ${a.timeoutS}::int, token_budget = ${a.tokenBudget}::int, enabled = ${a.enabled}::boolean,
+      version = a.version + 1, updated_at = now()
+    where a.id = ${id}::uuid
+    returning ${AGENT_COLS}`);
+  if (!r) throw new Error("update hub.agents không trả hàng");
+  return toRow(r);
+}
+
+export async function setAgentEnabled(tx: Tx, id: string, enabled: boolean): Promise<AgentDbRow> {
+  const [r] = await tx.execute<RawAgent>(sql`update hub.agents as a
+    set enabled = ${enabled}::boolean, version = a.version + 1, updated_at = now()
+    where a.id = ${id}::uuid
+    returning ${AGENT_COLS}`);
+  if (!r) throw new Error("update hub.agents không trả hàng");
+  return toRow(r);
+}
+
+/** Đồng bộ `agent_workflows`: xoá id không còn trong danh sách mới (thêm mới do `insertAgentWorkflows`). */
+export async function deleteAgentWorkflowsExcept(
+  tx: Tx,
+  agentId: string,
+  keep: readonly string[],
+): Promise<void> {
+  await tx.execute(sql`delete from hub.agent_workflows
+    where agent_id = ${agentId}::uuid and not (workflow_id = any(${uuidArr(keep)}))`);
+}
+
+/** R-K2: gọi dưới scope `system` (RLS `runs`/`run_steps` theo tenant không che hàng). */
+export async function agentHasHistory(tx: Tx, agentId: string): Promise<boolean> {
+  const [r] = await tx.execute<{ h: boolean }>(sql`select (
+      exists (select 1 from hub.runs where agent_id = ${agentId}::uuid)
+      or exists (select 1 from hub.run_steps where agent_id = ${agentId}::uuid)) as h`);
+  return r?.h === true;
+}
+
+/** Entitlement còn hiệu lực (`revoked_at IS NULL`) + grant (R06). */
+export async function agentAccessCounts(
+  tx: Tx,
+  agentId: string,
+): Promise<{ entitlements: number; grants: number }> {
+  const [r] = await tx.execute<{ entitlements: number; grants: number }>(sql`select
+      (select count(*) from hub.agent_entitlements
+        where agent_id = ${agentId}::uuid and revoked_at is null)::int as entitlements,
+      (select count(*) from hub.agent_grants where agent_id = ${agentId}::uuid)::int as grants`);
+  return r ?? { entitlements: 0, grants: 0 };
+}
+
+/** Cascade `agent_workflows` + entitlement đã thu hồi; `flows.agent_id` SET NULL (FK DB). */
+export async function deleteAgent(tx: Tx, id: string): Promise<void> {
+  await tx.execute(sql`delete from hub.agents where id = ${id}::uuid`);
+}
