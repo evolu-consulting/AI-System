@@ -22,7 +22,7 @@ Chờ dòng `[combine] sẵn sàng`. Bảng URL:
 | Hub | http://localhost:4000 |
 | Dify mock | http://localhost:5001/v1 (secret `mk-ok`) |
 
-**User mẫu** (mật khẩu dev `dev-password-1`; script cũng in danh sách này): tenant `acme` có `lan`, `hoa`, `minh` (nếu chưa có thì tạo ở S2); tenant `beta` có `an`; `khoa` bị khoá. `tenant_admin` của tenant là `tadmin` (mật khẩu tạm, đổi lần đầu). `platform_admin`: tenant `platform`, user `admin`, mật khẩu = `SEED_ADMIN_PASSWORD`.
+**User mẫu** (mật khẩu dev `dev-password-1`; script cũng in danh sách này): tenant `acme` có `lan`, `hoa`; tenant `beta` có `an`; `khoa` bị khoá (`minh` chỉ có ở Chat mock, stack thật không có — cần thêm user thì tạo ở S2). `tenant_admin` của tenant là `tadmin` (mật khẩu tạm, đổi lần đầu). `platform_admin`: tenant `platform`, user `admin`, mật khẩu = `SEED_ADMIN_PASSWORD`.
 
 **Runtime WSL** (bắt buộc cho chat Orchestrator, agent `claude-sub` và agent `dify-chatbot`; provider `AGENT_RT_PROVIDERS=claude-sub,dify`):
 - Cách 1: tắt stack, chạy lại `COMBINE_WSL=1 bun run combine:dev` (tự chạy Runtime qua `wsl.exe`).
@@ -30,10 +30,12 @@ Chờ dòng `[combine] sẵn sàng`. Bảng URL:
 - Điều kiện WSL (user `worker` đã `claude` login, venv...): `docs/guides/hub-dev.md` mục "Runtime trong WSL".
 - Chờ log `runtime.ready`. Mỗi tin khoảng 10 giây.
 
-## 3. Seed Dify thật (tuỳ chọn, cho S4/S6/S8/S10)
+## 3. Seed Dify thật (cho S4/S6/S8/S10)
+
+> **Đã chạy sẵn 2026-10-07** trên DB dev `ai_system` (key lấy từ `D:\AI\evoluconsultinguto-pilotpps\copilot-hub\.env`): `lan` đã ở group `dify-demo`. Chỉ cần chạy lại khi DB bị reset hoặc đổi key.
 Quan trọng: dùng các app Dify **có sẵn**. Seed chỉ gọi admin-api/Hub của repo này, **không tạo, không sửa flow Dify** và không gọi Dify.
 
-1. Trỏ `DIFY_SEED_ENV_FILE` tới file env chứa `DIFY_API_URL` và các `DIFY_KEY_*` (xem `docs/guides/hub-dev.md`, bộ cấu hình auto-pilot). Đừng chép key vào repo.
+1. Trỏ `DIFY_SEED_ENV_FILE` tới `D:\AI\evoluconsultinguto-pilotpps\copilot-hub\.env` (chứa `DIFY_API_URL` và các `DIFY_KEY_*`). Đừng chép key vào repo.
 2. Dry-run (mặc định, không ghi, không in key):
    `DIFY_SEED_ENV_FILE=<đường dẫn> bun run seed:dify`
 3. Xem kế hoạch rồi áp dụng: `DIFY_SEED_ENV_FILE=<đường dẫn> bun run seed:dify -- --apply` (chạy lại nhiều lần vẫn như một lần).
@@ -71,14 +73,14 @@ Dify mock có sẵn trong stack; "thật" nghĩa là sau khi seed. Mỗi kịch 
 
 ### S7. Xác nhận side_effect (Admin + Chat; cần Runtime WSL)
 Chỉ áp cho **tool do agent gọi**.
-1. Admin, Workflows: tạo workflow `mock-send` (`base_url` `http://localhost:5001/v1`, secret `mk-ok`; tạo secret này ở mục Secrets nếu chưa có), bật cờ `side_effect`.
-2. Gắn `mock-send` làm tool cho một agent loại `agentic-cli` (Studio hoặc cấu hình agent), cấp agent cho group của `lan`.
+1. Admin, Secrets: tạo secret tên `MOCK_SEND_KEY`, giá trị `mk-ok`. Admin, Workflows: tạo workflow `mock-send` (loại workflow, `base_url` `http://localhost:5001/v1`, secret `MOCK_SEND_KEY`), bật **Cần xác nhận trước khi chạy** (`side_effect`).
+2. Studio, Agents: mở (hoặc nhân bản) một agent `agentic-cli`, ở bước workflow/tool chọn `mock-send`, lưu. Admin, Groups, group của `lan`, tab **Agent**: cấp agent đó.
 3. Chat: hỏi agent đó một việc cần gửi.
 - Kỳ vọng: Chat hiện thẻ hỏi **Đồng ý / Huỷ**; Đồng ý thì chạy, Huỷ thì không.
 - Gõ thẳng `/mock-send ...` thì chạy luôn, không hỏi (HUB-FR-95: xác nhận chỉ áp cho tool agent gọi).
 
 ### S8. Chạy thử lệnh (Admin, chỉ platform_admin)
-- Admin, Commands, mở bản nháp (chưa lưu), bấm Chạy thử. Với workflow `side_effect` sẽ có hộp xác nhận, chọn "Vẫn chạy".
+- Admin, Commands, mở một lệnh (hoặc bản đang sửa chưa lưu), khung **Chạy thử** ở cột phải (màn hẹp: tab "Chạy thử"), nhập nội dung sau lệnh, bấm Chạy thử. Với workflow `side_effect` sẽ có hộp xác nhận, chọn "Vẫn chạy".
 - Kỳ vọng: thấy kết quả, thời gian, lỗi; không lưu gì; tenant_admin không thấy nút; Hub tắt thì báo 502 dễ hiểu. Làm thêm 1 lần với Dify thật.
 
 ### S9. Studio (platform_admin)
@@ -87,7 +89,8 @@ Chỉ áp cho **tool do agent gọi**.
 
 ### S10. Dify thật (sau seed)
 - Mỗi app **đúng 1 lần**: chatbot (`@dify-chatbot`, cần Runtime), `/translate`, `/summary`, `/reply`, `/ask-image`.
-- Kỳ vọng: kết quả có nội dung; nếu rỗng xem mục 3.5. Smoke tự động chỉ chạy khi đặt `DIFY_LIVE=1` (theo `hub-dev.md`), mỗi app 1 lần.
+- Kỳ vọng: kết quả có nội dung; nếu rỗng xem mục 3.5.
+- Hoặc smoke bằng script (mỗi app đúng 1 lần, không retry, không gọi console Dify): `DIFY_LIVE=1 SMOKE_PASSWORD=dev-password-1 bun --env-file=.env.local tests/smoke/X1/dify-live.ts --apps translate,gmail-summary,email-reply` (thêm `chatbot` khi Runtime đang chạy).
 
 ## 5. Giới hạn đã biết
 - H3c (quota/chi phí) tạm dừng: chưa có.
