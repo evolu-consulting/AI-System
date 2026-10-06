@@ -142,7 +142,8 @@ Không có: Dify thật, WSL, `claude-sub`, `test:perf` (X1-R15). Bước 6–9,
 | Nhóm | Số ca | Đỏ đúng lý do / tổng | Ghi chú |
 |---|---|---|---|
 | QC1a L01–L13 | — | — | |
-| QC1b X1 | — | — | |
+| QC1b X1 · đợt 1 (rules/unit, tĩnh, smoke) `3a08d81` | 57 | 50/50 đỏ đúng lý do ("Cannot find module" file sản phẩm chưa có, hoặc expect thiếu `side_effect`); 7 xanh = chặn hồi quy (bundle-secret, static key/console, smoke-skip ×2, transfer export/diff đã đúng ở mức rules) | allowlist key AC18 = `tests/acceptance/H3b/_h3b-trace.ts` (key giả cài sẵn trong test đã khoá) |
+| QC1b X1 · đợt 2 (int, contract, e2e) | — | — | chưa viết (bàn giao) |
 
 ## 8. Cần bổ sung — đã chốt (điều phối chốt 2026-10-07 theo Luật 2; spec §10)
 | # | Lỗ hổng | Chốt |
