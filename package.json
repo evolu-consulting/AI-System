@@ -41,6 +41,7 @@
     "db:seed": "bun --env-file=.env.local packages/db/src/seed.ts",
     "db:setup": "bun run db:migrate && bun run db:seed",
     "hub:seed": "bun --env-file=.env.local apps/hub-api/src/modules/seed/seed.ts",
+    "seed:dify": "bun --env-file=.env.local tools/scripts/src/seed-dify-live.ts",
     "mocks": "bun tools/mocks/src/server.ts",
     "mock:quota": "bun --env-file=.env.local tools/mocks/src/quota.ts",
     "contracts:gen": "bun tools/contracts-gen/hub.ts gen",
