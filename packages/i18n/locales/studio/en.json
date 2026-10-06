@@ -174,5 +174,128 @@
     "AGENT_NOT_ORCHESTRATABLE": "This agent can't be the Orchestrator yet (it is disabled or its runtime isn't supported).",
     "ORCHESTRATOR_DEFAULT_PROTECTED": "The default Orchestrator can't be deleted.",
     "TENANT_INACTIVE": "This tenant is locked."
+  },
+  "editor": {
+    "titleNew": "Create agent",
+    "titleEdit": "Edit agent",
+    "copySuffix": "(copy)",
+    "dirty": "Unsaved draft",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "tryRun": "Test run",
+    "loadError": "Couldn't load the agent",
+    "step": {
+      "1": "Details",
+      "2": "Runtime & model",
+      "3": "Workflows attached as tools",
+      "4": "System prompt",
+      "5": "Access"
+    },
+    "field": {
+      "key": "Key",
+      "nameVi": "Display name (VI)",
+      "nameEn": "Display name (EN)",
+      "description": "Description for the Orchestrator",
+      "runtime": "Runtime",
+      "profile": "Model profile",
+      "cli": "CLI",
+      "tools": "Allowed built-in tools",
+      "mcp": "Use MCP",
+      "cwd": "Working directory",
+      "timeout": "Timeout (seconds)",
+      "tokenBudget": "Token budget",
+      "prompt": "System prompt",
+      "enabled": "Enable agent",
+      "agentType": "Agent type"
+    },
+    "descHint": "Say clearly when to use it and when not to. The Orchestrator picks agents almost only from this text.",
+    "counter": "{n} / 400",
+    "keyLocked": "The key can't be changed after creation.",
+    "runtimeLocked": "The runtime can't be changed after creation. To change it, duplicate the agent.",
+    "catalogError": "Couldn't load the catalog ({what}).",
+    "retry": "Retry",
+    "bash": {
+      "warn": "Bash lets the agent run system commands on the Worker machine.",
+      "ack": "I understand the agent can run system commands on the Worker machine"
+    },
+    "wf": {
+      "add": "+ Attach workflow from catalog",
+      "remove": "Remove",
+      "removeKey": "Remove {key}",
+      "hint": "Tool name and description come from the workflow in Admin. To edit the description, go to",
+      "empty": "No workflows attached.",
+      "pickerTitle": "Choose a workflow from the catalog",
+      "pickerSearch": "Search by key or name",
+      "pickerEmpty": "The catalog has no enabled workflows. Workflows are created in Admin.",
+      "attach": "Attach",
+      "needOne": "The agent needs a workflow",
+      "missing": "(no longer in the catalog)",
+      "adminLink": "Admin › Workflows ↗"
+    },
+    "access": {
+      "count": "Granted to {n} tenants. Tenant admins grant groups in Admin › Groups.",
+      "manage": "Manage agent access"
+    },
+    "orchView": {
+      "title": "View as the Orchestrator sees it",
+      "hint": "What the Orchestrator receives about this agent, next to other agents, to spot overlapping descriptions.",
+      "ok": "No overlapping descriptions",
+      "overlap": "Overlaps with {key} ({pct}%)",
+      "draftKey": "(key not entered)"
+    },
+    "toast": {
+      "saved": "Agent saved · hub config v{n}",
+      "notGranted": "No tenant can use this agent yet."
+    },
+    "err": {
+      "key": "Key must be 2–48 chars: lowercase letters, digits, `-`, starting with a letter",
+      "nameVi": "Enter the Vietnamese name",
+      "nameEn": "Enter the English name",
+      "description": "Description must be 20–400 characters",
+      "profile": "Select a model profile",
+      "workflow": "Select a workflow for this agent",
+      "bashAck": "Confirm you understand the risk of enabling Bash",
+      "timeout": "Timeout must be 10–3600 seconds",
+      "tokenBudget": "Token budget must be ≥ 1 or empty",
+      "agentType": "Select an agent type",
+      "invalid": "Some fields are invalid, please check.",
+      "field": "Invalid value"
+    },
+    "cwdHint": "The agent can only read/write in the job's working directory. Home, Windows drives and other jobs are always blocked."
+  },
+  "conflict": {
+    "title": "Someone just saved a newer version",
+    "body": {
+      "anon": "This was just edited at {time} (v{n}). Your copy is based on v{mine}."
+    },
+    "action": {
+      "diff": "View differences",
+      "overwrite": "Overwrite",
+      "reload": "Load latest"
+    },
+    "diff": {
+      "aria": "Differences between your version and the latest",
+      "field": "Field",
+      "mine": "Your version",
+      "latest": "Latest (v{n})",
+      "empty": "No fields differ. The other person may have just re-saved.",
+      "more": "{n} more fields",
+      "none": "(empty)"
+    },
+    "overwrite": {
+      "titleAnon": "Overwrite the latest changes?",
+      "body": "v{n} will be replaced by your version (becoming v{next}).",
+      "history": "History keeps v{n}."
+    },
+    "toast": {
+      "loaded": "Loaded latest · v{n}"
+    }
+  },
+  "unsaved": {
+    "title": "Discard unsaved changes?",
+    "body": "Unsaved changes will be lost.",
+    "stay": "Stay",
+    "leave": "Leave"
   }
 }

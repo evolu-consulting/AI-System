@@ -174,5 +174,128 @@
     "AGENT_NOT_ORCHESTRATABLE": "Agent này chưa làm Orchestrator được (đang tắt hoặc runtime chưa hỗ trợ).",
     "ORCHESTRATOR_DEFAULT_PROTECTED": "Không xoá được Orchestrator mặc định.",
     "TENANT_INACTIVE": "Tenant đang bị khoá."
+  },
+  "editor": {
+    "titleNew": "Tạo agent",
+    "titleEdit": "Sửa agent",
+    "copySuffix": "(bản sao)",
+    "dirty": "Bản nháp chưa lưu",
+    "cancel": "Huỷ",
+    "save": "Lưu",
+    "saving": "Đang lưu…",
+    "tryRun": "Chạy thử",
+    "loadError": "Không tải được agent",
+    "step": {
+      "1": "Thông tin",
+      "2": "Runtime & model",
+      "3": "Workflow được gắn làm tool",
+      "4": "System prompt",
+      "5": "Quyền"
+    },
+    "field": {
+      "key": "Key",
+      "nameVi": "Tên hiển thị (VI)",
+      "nameEn": "Tên hiển thị (EN)",
+      "description": "Mô tả cho Orchestrator",
+      "runtime": "Runtime",
+      "profile": "Model profile",
+      "cli": "CLI",
+      "tools": "Tool có sẵn được phép",
+      "mcp": "Dùng MCP",
+      "cwd": "Thư mục làm việc",
+      "timeout": "Timeout (giây)",
+      "tokenBudget": "Ngân sách token",
+      "prompt": "System prompt",
+      "enabled": "Bật agent",
+      "agentType": "Loại agent"
+    },
+    "descHint": "Nói rõ khi nào dùng và khi nào không. Orchestrator chọn agent gần như chỉ dựa vào đoạn này.",
+    "counter": "{n} / 400",
+    "keyLocked": "Key không đổi được sau khi tạo.",
+    "runtimeLocked": "Runtime không đổi được sau khi tạo. Muốn đổi, hãy Nhân bản agent.",
+    "catalogError": "Không tải được danh mục ({what}).",
+    "retry": "Thử lại",
+    "bash": {
+      "warn": "Bash cho phép agent chạy lệnh hệ thống trên máy Worker.",
+      "ack": "Tôi hiểu agent chạy được lệnh hệ thống trên máy Worker"
+    },
+    "wf": {
+      "add": "+ Gắn workflow từ catalog",
+      "remove": "Gỡ",
+      "removeKey": "Gỡ {key}",
+      "hint": "Tên và mô tả tool lấy từ workflow ở Admin. Muốn sửa mô tả thì sửa ở",
+      "empty": "Chưa gắn workflow nào.",
+      "pickerTitle": "Chọn workflow từ catalog",
+      "pickerSearch": "Tìm theo key hoặc tên",
+      "pickerEmpty": "Catalog chưa có workflow nào đang bật. Workflow được tạo ở Admin.",
+      "attach": "Gắn",
+      "needOne": "Agent cần một workflow",
+      "missing": "(không còn trong catalog)",
+      "adminLink": "Admin › Workflows ↗"
+    },
+    "access": {
+      "count": "Đã cấp cho {n} tenant. Tenant admin tự cấp cho group trong Admin › Groups.",
+      "manage": "Quản lý quyền agent"
+    },
+    "orchView": {
+      "title": "Xem như Orchestrator thấy",
+      "hint": "Đoạn Orchestrator nhận về agent này, đặt cạnh các agent khác để soát mô tả trùng ý.",
+      "ok": "Không thấy mô tả trùng ý",
+      "overlap": "Trùng ý với {key} ({pct}%)",
+      "draftKey": "(key chưa nhập)"
+    },
+    "toast": {
+      "saved": "Đã lưu agent · hub config v{n}",
+      "notGranted": "Chưa tenant nào dùng được agent này."
+    },
+    "err": {
+      "key": "Key 2–48 ký tự: chữ thường, số, `-`, bắt đầu bằng chữ",
+      "nameVi": "Nhập tên tiếng Việt",
+      "nameEn": "Nhập tên tiếng Anh",
+      "description": "Mô tả từ 20 đến 400 ký tự",
+      "profile": "Chọn model profile",
+      "workflow": "Chọn workflow cho agent",
+      "bashAck": "Xác nhận bạn hiểu rủi ro khi bật Bash",
+      "timeout": "Timeout từ 10 đến 3600 giây",
+      "tokenBudget": "Ngân sách token phải ≥ 1 hoặc để trống",
+      "agentType": "Chọn loại agent",
+      "invalid": "Dữ liệu chưa hợp lệ, kiểm tra lại các trường.",
+      "field": "Giá trị chưa hợp lệ"
+    },
+    "cwdHint": "Agent chỉ đọc/ghi trong thư mục làm việc của job. Thư mục home, ổ Windows và job khác luôn bị chặn."
+  },
+  "conflict": {
+    "title": "Có người vừa lưu bản mới hơn",
+    "body": {
+      "anon": "Bản này vừa được sửa lúc {time} (v{n}). Bản của bạn dựa trên v{mine}."
+    },
+    "action": {
+      "diff": "Xem khác biệt",
+      "overwrite": "Ghi đè",
+      "reload": "Tải bản mới"
+    },
+    "diff": {
+      "aria": "Khác biệt giữa bản của bạn và bản mới nhất",
+      "field": "Trường",
+      "mine": "Bản của bạn",
+      "latest": "Bản mới nhất (v{n})",
+      "empty": "Không có trường nào khác nhau. Có thể người kia chỉ lưu lại bản cũ.",
+      "more": "Còn {n} trường khác",
+      "none": "(trống)"
+    },
+    "overwrite": {
+      "titleAnon": "Ghi đè thay đổi mới nhất?",
+      "body": "Bản v{n} sẽ bị thay bằng bản của bạn (thành v{next}).",
+      "history": "Lịch sử vẫn giữ v{n}."
+    },
+    "toast": {
+      "loaded": "Đã tải bản mới nhất · v{n}"
+    }
+  },
+  "unsaved": {
+    "title": "Bỏ thay đổi chưa lưu?",
+    "body": "Các thay đổi chưa lưu sẽ mất.",
+    "stay": "Ở lại",
+    "leave": "Rời trang"
   }
 }

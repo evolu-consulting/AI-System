@@ -15,6 +15,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedOrchestratorRouteImport } from './routes/_authed/orchestrator'
 import { Route as AuthedAgentsIndexRouteImport } from './routes/_authed/agents.index'
+import { Route as AuthedAgentsAgentIdRouteImport } from './routes/_authed/agents.$agentId'
+import { Route as AuthedAgentsNewRouteImport } from './routes/_authed/agents.new'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -45,12 +47,24 @@ const AuthedAgentsIndexRoute = AuthedAgentsIndexRouteImport.update({
   path: '/agents/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedAgentsAgentIdRoute = AuthedAgentsAgentIdRouteImport.update({
+  id: '/agents/$agentId',
+  path: '/agents/$agentId',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAgentsNewRoute = AuthedAgentsNewRouteImport.update({
+  id: '/agents/new',
+  path: '/agents/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
+  '/agents/$agentId': typeof AuthedAgentsAgentIdRoute
+  '/agents/new': typeof AuthedAgentsNewRoute
   '/agents/': typeof AuthedAgentsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -58,6 +72,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
   '/': typeof AuthedIndexRoute
+  '/agents/$agentId': typeof AuthedAgentsAgentIdRoute
+  '/agents/new': typeof AuthedAgentsNewRoute
   '/agents': typeof AuthedAgentsIndexRoute
 }
 export interface FileRoutesById {
@@ -67,13 +83,29 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/orchestrator': typeof AuthedOrchestratorRoute
   '/_authed/': typeof AuthedIndexRoute
+  '/_authed/agents/$agentId': typeof AuthedAgentsAgentIdRoute
+  '/_authed/agents/new': typeof AuthedAgentsNewRoute
   '/_authed/agents/': typeof AuthedAgentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/forbidden' | '/login' | '/orchestrator' | '/agents/'
+  fullPaths:
+    | '/'
+    | '/forbidden'
+    | '/login'
+    | '/orchestrator'
+    | '/agents/$agentId'
+    | '/agents/new'
+    | '/agents/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/forbidden' | '/login' | '/orchestrator' | '/' | '/agents'
+  to:
+    | '/forbidden'
+    | '/login'
+    | '/orchestrator'
+    | '/'
+    | '/agents/$agentId'
+    | '/agents/new'
+    | '/agents'
   id:
     | '__root__'
     | '/_authed'
@@ -81,6 +113,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authed/orchestrator'
     | '/_authed/'
+    | '/_authed/agents/$agentId'
+    | '/_authed/agents/new'
     | '/_authed/agents/'
   fileRoutesById: FileRoutesById
 }
@@ -134,18 +168,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAgentsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/agents/$agentId': {
+      id: '/_authed/agents/$agentId'
+      path: '/agents/$agentId'
+      fullPath: '/agents/$agentId'
+      preLoaderRoute: typeof AuthedAgentsAgentIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/agents/new': {
+      id: '/_authed/agents/new'
+      path: '/agents/new'
+      fullPath: '/agents/new'
+      preLoaderRoute: typeof AuthedAgentsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
   AuthedOrchestratorRoute: typeof AuthedOrchestratorRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedAgentsAgentIdRoute: typeof AuthedAgentsAgentIdRoute
+  AuthedAgentsNewRoute: typeof AuthedAgentsNewRoute
   AuthedAgentsIndexRoute: typeof AuthedAgentsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedOrchestratorRoute: AuthedOrchestratorRoute,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedAgentsAgentIdRoute: AuthedAgentsAgentIdRoute,
+  AuthedAgentsNewRoute: AuthedAgentsNewRoute,
   AuthedAgentsIndexRoute: AuthedAgentsIndexRoute,
 }
 
