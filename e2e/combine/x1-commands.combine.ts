@@ -42,7 +42,7 @@ test("X1-AC02 · lan: '/mock-dich en hi' ⇒ kết quả của Dify mock; '/mock
   await expect(notFound.getByRole("button", { name: "/mock-dich", exact: true })).toBeVisible();
 
   await page.goto("/c/new");
-  await sendChat(page, "/mock-send");
+  await sendChat(page, "/mock-send ");
   await expect(
     page.getByRole("alert").filter({ hasText: "Lệnh /mock-send thiếu: text." }),
   ).toBeVisible();

@@ -161,6 +161,9 @@ Không có: Dify thật, WSL, `claude-sub`, `test:perf` (X1-R15). Bước 6–9,
 | T3 | `tests/acceptance/X1/static-scan.test.ts` (AC18 R01) | **Test sai**: file khoá `tests/acceptance/X1/seed-dify.int.test.ts` có chuỗi console API nguyên văn trong tên ca ⇒ test tự vi phạm luật quét | đổi tên ca thành "…console API)"; phạm vi quét giữ nguyên (vẫn chặn apps/packages/tools/tests/e2e) |
 | T4 | `e2e/x1/_hub-stub.ts` hằng `GROUP` (F5, ADM-FR-37) | **Test sai**: `GroupRefSchema.name` là `LocalizedText {vi, en?}` (contracts/groups.ts), stub dùng chuỗi ⇒ `AgentGrantListResponseSchema.parse` ném ⇒ 500 | `name: { vi: "Kế toán" }`; không còn chỗ tương tự trong `e2e/x1/**` |
 | T5 | `e2e/x1/workflows-side-effect.x1.ts:22`, `e2e/combine/x1-side-effect.combine.ts:28` (F4, ADM-FR-10) | **Test sai**: chờ `method() === "PUT"` nhưng route admin-api là `PATCH /admin/workflows/:id` (workflows.routes.ts:40; AC10 đã ghi "API M2 dùng PATCH") | đổi thành `"PATCH"` ở cả 2 file; `workflows-side-effect` 2/2 xanh |
+| T6 | `tests/acceptance/M2/i18n-labels.test.ts:361` (ADM-FR-50 R28 "không có Chạy thử") | **Test sai**: ADM-FR-23 (X1) thêm nút "Chạy thử" ở editor command (L13) ⇒ giá trị vi.json "Chạy thử" hợp lệ | bỏ `/Chạy thử/` khỏi `FORBIDDEN_VALUE` (e2e L13 đã khẳng định nút) |
+| T7 | `tests/acceptance/X1/static-scan.test.ts` AC18 R04/R01 | **Test sai**: quét mọi file tracked mất ~16s > timeout 5s mặc định của `bun test` (không có `--timeout`) | thêm timeout 60 000 ms cho hai ca quét |
+| T8 | `e2e/combine/x1-commands.combine.ts:48` (AC02, thiếu arg) | **Test sai**: gõ `/mock-send` + Enter khi menu `/` còn mở (khớp đúng tên) ⇒ Enter chỉ điền `/mock-send ` (AC01), không gửi ⇒ không có alert | gõ `/mock-send ` (có dấu cách, menu đóng) rồi Enter |
 
 ## 8. Cần bổ sung — đã chốt (điều phối chốt 2026-10-07 theo Luật 2; spec §10)
 | # | Lỗ hổng | Chốt |

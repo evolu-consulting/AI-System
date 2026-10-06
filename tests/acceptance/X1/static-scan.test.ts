@@ -33,14 +33,14 @@ describe("X1-AC18 · quét tĩnh", () => {
   it("X1-AC18 · X1-R04 · không file tracked nào chứa chuỗi giống key Dify (app-…20+ ký tự)", () => {
     const hits = tracked().filter((f) => !KEY_ALLOW.has(f) && KEY_RE.test(read(f)));
     expect(hits).toEqual([]);
-  });
+  }, 60_000);
 
   it("X1-AC18 · X1-R01 · apps/packages/tools/tests/e2e không chứa đường console API (docs được nhắc luật)", () => {
     const hits = tracked().filter(
       (f) => CODE_DIRS.some((d) => f.startsWith(d)) && read(f).includes(CONSOLE),
     );
     expect(hits).toEqual([]);
-  });
+  }, 60_000);
 
   it("X1-AC18 · X1-R03 · tools/scripts/src/seed-dify-live*.ts tồn tại; không auto-pilot/evoluconsulting, không dotenv, không gán process.env", () => {
     const g = new Bun.Glob("tools/scripts/src/seed-dify-live*.ts");
