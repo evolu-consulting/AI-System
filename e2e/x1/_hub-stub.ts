@@ -53,7 +53,7 @@ const ref = (a: (typeof AGENTS)[number]) => ({
 const NOW = "2026-10-07T03:00:00.000Z";
 const KT = ID3.group.acmeKeToan;
 
-const GROUP = { id: KT, key: "ke-toan", name: "Kế toán", is_beta: false };
+const GROUP = { id: KT, key: "ke-toan", name: { vi: "Kế toán" }, is_beta: false };
 const grantId = (key: string): string =>
   key === "trello"
     ? "0190a000-0000-7000-8000-0000000000b2"
