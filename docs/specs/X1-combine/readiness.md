@@ -17,3 +17,17 @@
 | 9 | Thấp | Tên file theo §1.1b; kiểu `state` của `applyDelta` | plan-frontend |
 | 10 | Thấp | effective-access khi chạy với tư cách user: không làm ở X1 | plan §8 |
 | 11 | Thấp | spec §8 `done:x1` trỏ test-plan §5 | spec |
+
+## Lần 2 — 2026-10-07 — NOT READY (1 Cao, 2 Thấp); 11 mục lần 1 đã khép
+| # | Mức | Việc | Đã áp |
+|---|---|---|---|
+| 1 | Cao | Kiểu `ProcName`/`base`/`opts.mock`; thứ tự bật; AC19 | `plan-stack.md` (tách plan §6): `ProcName`, `START_ORDER`, chữ ký; 2b sau 2 |
+| 2 | Thấp | plan-frontend §5 BL1 lệch | "Đã chốt: plan §8 BL1" |
+| 3 | Thấp | plan.md sát trần | Tách §6 → `plan-stack.md` |
+
+## Lần 3 — 2026-10-07 — NOT READY (1 Cao, 2 Thấp); 3 mục lần 2 đã khép
+| # | Mức | Việc | Đã áp |
+|---|---|---|---|
+| 1 | Cao | Env/`started` nối với `startHubDev()` | plan-stack "Nối với `startHubDev`" |
+| 2 | Thấp | AC19 dify-mock không đòi 200 | test-plan AC19 |
+| 3 | Thấp | Thiếu mục Lần 2 | Thêm mục Lần 2 |
