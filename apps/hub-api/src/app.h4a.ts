@@ -1,8 +1,7 @@
 // HUB-FR-72 · H4a-R01 · plan P3, P4, P12 · route H4a của hub-api (mẫu `app.h3b.ts`): tách khỏi `app.ts` để giữ ≤ 250 dòng.
 // `/studio/api` nằm trong `PROTECTED_PREFIXES` của `app.ts` (JWT ở gốc) ⇒ thứ tự 401 → 403 (`requirePlatformAdmin`) →
 // 400/404, kể cả route chưa mount. Phần tĩnh `/studio` (P12) đăng ký sau route API.
-import type { Hono } from "hono";
-import type { AppVars } from "./app";
+import type { Env, Hono } from "hono";
 import { requirePlatformAdmin } from "./lib/admin-role.middleware";
 import type { Db } from "./lib/db";
 import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
@@ -29,7 +28,7 @@ export type H4aDeps = {
  * Gọi sau khi đã gắn `requireAuth` cho `/studio/api/*`. Role gắn cả khi vắng `db` ⇒ 403 không phụ thuộc route đã mount.
  * Tĩnh `/studio/*` đăng ký SAU route API cùng tiền tố ⇒ route API khớp trước; route ngoài `/studio` không giao nhau.
  */
-export function mountH4a(app: Hono<AppVars>, deps: H4aDeps): void {
+export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): void {
   app.use(`${STUDIO_API}/*`, requirePlatformAdmin());
   if (deps.db) {
     const audit = deps.hubAudit ?? dbHubAudit;
@@ -41,8 +40,8 @@ export function mountH4a(app: Hono<AppVars>, deps: H4aDeps): void {
 }
 
 /** `studioDist` có mà thiếu `index.html` ⇒ cảnh báo, không mount (plan §9). Vắng ⇒ im lặng, `/studio` 404 JSON. */
-function mountH4aStatic(
-  app: Hono<AppVars>,
+function mountH4aStatic<E extends Env>(
+  app: Hono<E>,
   studioDist: string | undefined,
   log: Pick<Logger, "warn">,
 ): void {
