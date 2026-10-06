@@ -13,6 +13,7 @@ import {
   type ErrorResponse,
 } from "@ai/contracts/chat";
 import { HUB_ADMIN_ERRORS, type HubAdminErrorCode } from "@ai/contracts/hub-admin";
+import { STUDIO_ERRORS, type StudioErrorCode } from "@ai/contracts/studio";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export class AppError extends Error {
@@ -39,13 +40,15 @@ export type HubErrorCode =
   | ChatCommandErrorCode
   | ChatRoutingErrorCode
   | ChatAttachmentErrorCode
-  | HubAdminErrorCode;
+  | HubAdminErrorCode
+  | StudioErrorCode;
 const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
   ...CHAT_API_ERRORS,
   ...CHAT_COMMAND_ERRORS,
   ...CHAT_ROUTING_ERRORS,
   ...CHAT_ATTACHMENT_ERRORS,
   ...HUB_ADMIN_ERRORS,
+  ...STUDIO_ERRORS,
 };
 
 /** Message tiếng Anh cố định theo mã; client dịch theo `code`. Không chứa dữ liệu người dùng (plan-errors H2a §1). */
@@ -69,6 +72,16 @@ export const ERROR_MESSAGES: Record<HubErrorCode, string> = {
   INVALID_REFERENCE: "Invalid reference",
   NOT_ENTITLED: "Not entitled",
   AGENT_NOT_GRANTABLE: "Agent cannot be granted",
+  VERSION_CONFLICT: "Version conflict",
+  KEY_TAKEN: "Key already taken",
+  BASH_ACK_REQUIRED: "Bash tool requires acknowledgement",
+  AGENT_IN_USE_AS_ORCHESTRATOR: "Agent is in use as Orchestrator",
+  AGENT_HAS_HISTORY: "Agent has run history",
+  AGENT_HAS_ACCESS: "Agent has access grants",
+  AGENT_NOT_ORCHESTRATABLE: "Agent cannot be Orchestrator",
+  ORCHESTRATOR_EXISTS: "Orchestrator already exists for tenant",
+  ORCHESTRATOR_DEFAULT_PROTECTED: "Default Orchestrator cannot be deleted",
+  TENANT_INACTIVE: "Tenant is inactive",
 };
 
 export function appError(
