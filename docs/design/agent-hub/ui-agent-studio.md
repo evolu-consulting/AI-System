@@ -209,8 +209,9 @@ Admin › Tenants: tạo tenant "acme" (entitlement feature, quota, slot subscri
 
 | Trường | Luật | Câu báo lỗi |
 |---|---|---|
-| Key agent | `^[a-z0-9-]{2,32}$`, không trùng | "Key đã được dùng bởi agent khác" |
-| Mô tả agent | 20–400 ký tự | "Mô tả quá ngắn, model sẽ khó chọn đúng" |
+| Key agent | `^[a-z][a-z0-9-]{1,47}$` (2–48 ký tự, không `_`; CR-045), không trùng, không đổi sau khi tạo | "Key đã được dùng bởi agent khác" |
+| Mô tả agent | 20–400 ký tự, chặn lưu | "Mô tả quá ngắn, model sẽ khó chọn đúng" |
+| Thời gian chờ agent | `timeout_s` 10–3600 giây | — |
 | Workflow gắn cho agent | Có trong catalog, đang bật, tên sinh từ key hợp lệ `^[a-z][a-z0-9_]{2,40}$`, có mô tả và mô tả tham số | "Workflow thiếu mô tả hoặc đang tắt. Sửa ở Admin trước khi gắn" |
 | Agent runtime `llm` | Phải có profile | "Chọn model profile" |
 | Agent runtime `dify-workflow` | Đúng một workflow loại `workflow` | "Chọn workflow cho agent" |
@@ -219,7 +220,7 @@ Admin › Tenants: tạo tenant "acme" (entitlement feature, quota, slot subscri
 | Gỡ workflow khỏi agent | Được phép. Nếu là workflow duy nhất của agent `dify-workflow`/`dify-agent` thì phải chọn workflow khác trước | "Agent cần một workflow" |
 | Thu hồi entitlement | Được phép, bắt xác nhận | Hộp xác nhận nêu số grant sẽ mất hiệu lực |
 | Đơn giá | Giá ≥ 0, `effective_from` không trùng với dòng khác của cùng provider + model | "Đã có đơn giá hiệu lực từ ngày này" |
-| Orchestrator | Phải chọn một agent đang bật có profile hợp lệ (CR-020), max_steps từ 1 đến 10 | "Số bước tối đa từ 1 đến 10" |
+| Orchestrator | Phải chọn một agent `agentic-cli` đang bật (CR-045, thu hẹp CR-020 tới khi runtime `llm` chạy), `max_steps` 1–20, `history_n` 1–50 | "Số bước tối đa từ 1 đến 20" |
 
 Trạng thái đang tải, rỗng, lỗi, xung đột và mất kết nối dùng chung quy ước với Admin (UI/UX Admin, mục 9). Riêng trang rỗng:
 

@@ -585,8 +585,9 @@
   <h2>13. Validation &amp; trạng thái</h2>
   <div class="table-scroll"><table>
     <tr><th>Trường</th><th>Luật</th><th>Câu báo lỗi</th></tr>
-    <tr><td>Key agent</td><td><code>^[a-z0-9-]{2,32}$</code>, không trùng</td><td>"Key đã được dùng bởi agent khác"</td></tr>
-    <tr><td>Mô tả agent</td><td>20–400 ký tự</td><td>"Mô tả quá ngắn, model sẽ khó chọn đúng"</td></tr>
+    <tr><td>Key agent</td><td><code>^[a-z][a-z0-9-]{1,47}$</code> (2–48 ký tự, không <code>_</code>; CR-045), không trùng, không đổi sau khi tạo</td><td>"Key đã được dùng bởi agent khác"</td></tr>
+    <tr><td>Mô tả agent</td><td>20–400 ký tự, chặn lưu</td><td>"Mô tả quá ngắn, model sẽ khó chọn đúng"</td></tr>
+    <tr><td>Thời gian chờ agent</td><td><code>timeout_s</code> 10–3600 giây</td><td>—</td></tr>
     <tr><td>Workflow gắn cho agent</td><td>Có trong catalog, đang bật, tên sinh từ key hợp lệ <code>^[a-z][a-z0-9_]{2,40}$</code>, có mô tả và mô tả tham số</td><td>"Workflow thiếu mô tả hoặc đang tắt. Sửa ở Admin trước khi gắn"</td></tr>
     <tr><td>Agent runtime <code>llm</code></td><td>Phải có profile</td><td>"Chọn model profile"</td></tr>
     <tr><td>Agent runtime <code>dify-workflow</code></td><td>Đúng một workflow loại <code>workflow</code></td><td>"Chọn workflow cho agent"</td></tr>
@@ -595,7 +596,7 @@
     <tr><td>Gỡ workflow khỏi agent</td><td>Được phép. Nếu là workflow duy nhất của agent <code>dify-workflow</code>/<code>dify-agent</code> thì phải chọn workflow khác trước</td><td>"Agent cần một workflow"</td></tr>
     <tr><td>Thu hồi entitlement</td><td>Được phép, bắt xác nhận</td><td>Hộp xác nhận nêu số grant sẽ mất hiệu lực</td></tr>
     <tr><td>Đơn giá</td><td>Giá ≥ 0, <code>effective_from</code> không trùng với dòng khác của cùng provider + model</td><td>"Đã có đơn giá hiệu lực từ ngày này"</td></tr>
-    <tr><td>Orchestrator</td><td>Phải có profile hợp lệ, max_steps từ 1 đến 10</td><td>"Số bước tối đa từ 1 đến 10"</td></tr>
+    <tr><td>Orchestrator</td><td>Phải chọn một agent <code>agentic-cli</code> đang bật (CR-045, thu hẹp CR-020 tới khi runtime <code>llm</code> chạy), <code>max_steps</code> 1–20, <code>history_n</code> 1–50</td><td>"Số bước tối đa từ 1 đến 20"</td></tr>
   </table></div>
   <p>Trạng thái đang tải, rỗng, lỗi, xung đột và mất kết nối dùng chung quy ước với Admin (UI/UX Admin, mục 9). Riêng trang rỗng:</p>
   <ul>
