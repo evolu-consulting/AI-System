@@ -1,5 +1,6 @@
 // HUB-NFR-04 · env của hub-api (plan H1 §7), validate bằng zod. Lỗi chỉ nêu tên biến, không in giá trị.
 import { hostname } from "node:os";
+import { isAbsolute } from "node:path";
 import { z } from "zod";
 import { isMasterKeyB64 } from "../lib/secret-crypto";
 
@@ -47,6 +48,11 @@ export const EnvSchema = z.object({
   HUB_ATTACH_DIR: z.string().optional(),
   HUB_ATTACH_TENANT_MAX_BYTES: z.string().optional(),
   HUB_ATTACH_SWEEP_S: z.string().optional(),
+  // H4a plan §9 · bản build Studio (đường dẫn tuyệt đối); thiếu `index.html` ⇒ warn `studio-dist-missing`, không mount.
+  HUB_STUDIO_DIST: z
+    .string()
+    .refine((p) => isAbsolute(p))
+    .optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

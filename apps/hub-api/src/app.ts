@@ -17,6 +17,7 @@ import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountH2b } from "./app.h2b";
 import { mountH2c } from "./app.h2c";
 import { mountH3b } from "./app.h3b";
+import { mountH4a } from "./app.h4a";
 import { mountMcp } from "./app.mcp";
 import { runDrivers, startRunLoops } from "./app.runner";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
@@ -78,6 +79,7 @@ export type AppDeps = {
   attachments?: AttachmentDeps;
   /** H3b · ghi `hub.audit_log` (grant/revoke/view_trace). Vắng ⇒ `dbHubAudit`; test tiêm lỗi giữa transaction (P12). */
   hubAudit?: HubAuditWriter;
+  studioDist?: string; // H4a · = `HUB_STUDIO_DIST` (dist Studio; vắng ⇒ `/studio` 404, P12).
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -89,6 +91,7 @@ const PROTECTED_PREFIXES = [
   "/agents",
   "/attachments",
   "/agent-grants",
+  "/studio/api",
 ];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -139,6 +142,7 @@ function commandDrivers(deps: AppDeps, db: Db) {
 function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache): void {
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
+  mountH4a(app, { db: deps.db, studioDist: deps.studioDist, log: logger });
   if (!deps.db) return;
   const drivers = commandDrivers(deps, deps.db);
   if (config) mountDifyCredential(app, { ...deps, db: deps.db, config, log: logger });

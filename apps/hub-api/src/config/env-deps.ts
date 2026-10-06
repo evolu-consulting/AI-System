@@ -16,7 +16,7 @@ export type EnvAppDeps = Required<
     | "maxConcurrentRuns"
   >
 > &
-  Pick<AppDeps, "secretMasterKey" | "internalToken" | "publicInternalUrl">;
+  Pick<AppDeps, "secretMasterKey" | "internalToken" | "publicInternalUrl" | "studioDist">;
 
 /**
  * Ánh xạ env → deps của `createApp`. Vắng `HUB_PUBLIC_INTERNAL_URL` (production) → cảnh báo một lần: MCP tắt.
@@ -35,6 +35,7 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
     publicInternalUrl: env.HUB_PUBLIC_INTERNAL_URL,
     difyTimeoutMaxS: env.HUB_DIFY_TIMEOUT_MAX_S,
     maxConcurrentRuns: parseMaxConcurrentRuns(env.HUB_MAX_CONCURRENT_RUNS),
+    studioDist: env.HUB_STUDIO_DIST,
   };
 }
 

@@ -101,3 +101,9 @@ admin-web (dev `http://localhost:3000`) gọi Hub `:4000` cross-origin cho `/age
   - Thu hồi: `curl -X DELETE -H "Authorization: Bearer $TOKEN" "http://localhost:4000/agent-grants?tenant_id=$T&agent_id=<uuid>&subject_type=group&subject_id=<uuid>"` (204)
   - Effective: `curl -H "Authorization: Bearer $TOKEN" "http://localhost:4000/agent-grants/effective/<user_id>?tenant_id=$T"`
   - Trace: `curl -H "Authorization: Bearer $TOKEN" http://localhost:4000/runs/<run_id>/trace`
+
+## Studio dev (H4a)
+Agent Studio = `apps/studio-web` (base `/studio`) + API `/studio/api/*` trên Hub `:4000`. Chỉ `platform_admin` (401 không token → 403 `FORBIDDEN` role khác, trước parse body/query). Không có login riêng: Studio gọi `admin-api POST /auth/login` (token `platform_admin` như mục trên).
+- **Dev 2 tiến trình:** `bun run --cwd apps/studio-web dev` (`:3200`) proxy `/auth` → admin-api, `/studio/api` → Hub ⇒ trình duyệt thấy cùng origin. `HUB_CORS_ORIGINS` đã thêm `http://localhost:3200` (`.env.example`) cho trường hợp gọi Hub thẳng; `.env.local` cũ ⇒ tự thêm rồi chạy lại `hub:dev`.
+- **Hub phục vụ bản build (như prod):** `bun run --cwd apps/studio-web build` rồi đặt `HUB_STUDIO_DIST=<đường dẫn tuyệt đối>/apps/studio-web/dist` và chạy lại Hub ⇒ `http://localhost:4000/studio/` (`/studio` → 308 `/studio/`; đường dẫn sâu không đuôi → `index.html`; file có đuôi không có → 404 JSON; `/studio/static/*` cache 1 năm). Trống ⇒ `/studio` 404; có mà thiếu `index.html` ⇒ log `studio-dist-missing`, không mount.
+- **Mẫu `curl`** (`TOKEN` của platform_admin): `curl -H "Authorization: Bearer $TOKEN" http://localhost:4000/studio/api/me` · catalog `GET /studio/api/{agent-types,model-profiles,providers,workflows,tenants}?q=&limit=` (`limit` 1–200, mặc định 200; `workflows` thêm `app_type`). `providers` chỉ trả `has_secret`, không bao giờ `secret_id`/ciphertext/`last_error` (R13).

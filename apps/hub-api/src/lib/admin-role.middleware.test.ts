@@ -1,23 +1,23 @@
-// HUB-FR-78, HUB-FR-87 · unit B1 H3b: `requireAdminRole` (R01, PL8) + 5 mã `HUB_ADMIN_ERRORS` trong map lỗi Hub.
+// HUB-FR-78, HUB-FR-87, HUB-FR-72 · unit B1 H3b + B3 H4a: `requireAdminRole` (R01, PL8), `requirePlatformAdmin` + 5 mã `HUB_ADMIN_ERRORS` trong map lỗi Hub.
 import { describe, expect, test } from "bun:test";
 import type { Role } from "@ai/contracts";
 import { HUB_ADMIN_ERRORS } from "@ai/contracts/hub-admin";
 import { Hono } from "hono";
-import { requireAdminRole } from "./admin-role.middleware";
+import { isStudioRole, requireAdminRole, requirePlatformAdmin } from "./admin-role.middleware";
 import type { AuthUser, AuthVars } from "./auth.middleware";
 import { appError, ERROR_MESSAGES, mapError } from "./errors";
 
 const TID = "a0000000-0000-4000-8000-000000000001";
 const SUB = "a0000000-0000-4000-8000-0000000000a1";
 
-function app(user?: AuthUser) {
+function app(user?: AuthUser, guard = requireAdminRole()) {
   const a = new Hono<AuthVars>();
   let reached = 0;
   a.use("*", async (c, next) => {
     if (user) c.set("user", user);
     await next();
   });
-  a.use("*", requireAdminRole());
+  a.use("*", guard);
   a.get("/x", (c) => {
     reached++;
     return c.json({ ok: true });
@@ -49,6 +49,24 @@ describe("H3b B1 · requireAdminRole", () => {
     const { a, reached } = app();
     const res = await a.request("/x");
     expect(res.status).toBe(401);
+    expect(reached()).toBe(0);
+  });
+});
+
+describe("H4a B3 · requirePlatformAdmin / isStudioRole", () => {
+  test("HUB-FR-72 · chỉ platform_admin qua; tenant_admin, member ⇒ 403 trước handler", async () => {
+    for (const role of ["platform_admin", "tenant_admin", "member"] as Role[]) {
+      const { a, reached } = app({ userId: SUB, tenantId: TID, role }, requirePlatformAdmin());
+      const res = await a.request("/x?limit=9999");
+      const ok = role === "platform_admin";
+      expect([role, res.status, reached()]).toEqual([role, ok ? 200 : 403, ok ? 1 : 0]);
+      expect(isStudioRole(role)).toBe(ok);
+    }
+  });
+
+  test("HUB-FR-72 · vắng user ⇒ 401 AUTH_EXPIRED (fail-closed)", async () => {
+    const { a, reached } = app(undefined, requirePlatformAdmin());
+    expect((await a.request("/x")).status).toBe(401);
     expect(reached()).toBe(0);
   });
 });
