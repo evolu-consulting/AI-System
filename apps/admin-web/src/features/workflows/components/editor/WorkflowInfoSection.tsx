@@ -1,4 +1,4 @@
-// ADM-FR-10, ADM-FR-14 · tab "Thông tin": key (khoá sau khi lưu), tên, loại, secret, Base URL, output field, mô tả, công tắc Bật.
+// ADM-FR-10, ADM-FR-14 · tab "Thông tin": key (khoá sau khi lưu), tên, loại, secret, Base URL, output field, mô tả, công tắc Bật, `side_effect` (X1).
 import { APP_TYPES } from "@ai/contracts";
 import { Controller, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -147,6 +147,26 @@ export function WorkflowInfoSection({ mode, secrets }: Props) {
           )}
         />
         <Label htmlFor="wf-enabled">{t("workflows.field.enabled")}</Label>
+      </div>
+      <div className="flex items-start gap-3">
+        <Controller
+          control={control}
+          name="side_effect"
+          render={({ field }) => (
+            <Switch
+              id="wf-side-effect"
+              aria-describedby="wf-side-effect-desc"
+              checked={field.value}
+              onCheckedChange={field.onChange}
+            />
+          )}
+        />
+        <div className="space-y-1">
+          <Label htmlFor="wf-side-effect">{t("workflows.field.sideEffect")}</Label>
+          <p id="wf-side-effect-desc" className="text-caption text-muted-foreground">
+            {t("workflows.field.sideEffectHint")}
+          </p>
+        </div>
       </div>
     </div>
   );

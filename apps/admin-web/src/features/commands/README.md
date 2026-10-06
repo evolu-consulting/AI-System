@@ -1,6 +1,6 @@
 # features/commands
 
-Quản lý Commands [ADM-FR-20] [ADM-FR-21] [ADM-FR-22] [ADM-FR-24] (M2): lệnh ngắn người dùng gõ trong Chat/Extension, mỗi lệnh gọi một workflow; chỉ `platform_admin`. Không có nút Chạy thử (FR-23, M5) và không có Lịch sử (M4).
+Quản lý Commands [ADM-FR-20] [ADM-FR-21] [ADM-FR-22] [ADM-FR-23] [ADM-FR-24] (M2, X1): lệnh ngắn người dùng gõ trong Chat/Extension, mỗi lệnh gọi một workflow; chỉ `platform_admin`. Không có Lịch sử (M4).
 
 - Cấu trúc `components/{list,editor,editor-parts}`: `list/` (CommandTable + `command-columns.tsx`, CommandRowMenu, CommandToggle, CommandFilters, CommandDeleteDialog), `editor/` (Step*, ArgRow, InputMapRow, AliasField, FeatureField), `editor-parts/` (WorkflowCard, SyntaxPreview, AccessTab). Hook tách theo hành động trong `hooks/`.
 - `api.ts`: hook TanStack Query cho `/admin/commands*` (list có `counts`, chi tiết, tạo, `PATCH` kèm `version`, xoá, `access`), danh sách chọn Feature/Workflow (≤ 200) và chi tiết workflow (input schema).
@@ -9,3 +9,4 @@ Quản lý Commands [ADM-FR-20] [ADM-FR-21] [ADM-FR-22] [ADM-FR-24] (M2): lệnh
 - Tab "Ai dùng được" (`AccessTab`, `lazy()`): tenant dùng được command, tổng "n tenant · m user" (m = tổng số user thấy) trên tiêu đề tab, cột "Group được cấp" (`AccessGroups`, chip "group · feature") và "Số user thấy" (`visible_user_count`, M3-R14). Khoá khi tạo mới.
 - `hooks/use-command-form`: dựng giá trị ban đầu, lưu; thiếu input bắt buộc → **không gửi request** (AC-A03); ánh xạ lỗi server (`COMMAND_NAME_TAKEN` → ô tên/alias, `COMMAND_NEEDS_FEATURE`, `WORKFLOW_DISABLED`, `INPUT_MAP_INVALID`, `VERSION_CONFLICT` → `ConflictDialog` dùng chung (M3, `use-<f>-conflict`)). `hooks/use-workflow-link`: nạp workflow, điền sẵn output field, gộp map khi đổi workflow.
 - `lib/`: `schemas.ts` (commandSchema), `defaults.ts` (form ↔ body, nhân bản D6), `input-map.ts` (`reconcileMap`, `validateInputMap`, `mapWarnings`: cùng luật với server), `syntax.ts` (`buildSyntax`, `mapSyntax`), `access.ts`. Cột bảng ở `components/list/command-columns.tsx` (có JSX).
+- Chạy thử (X1 F4, `components/test/*`, `lazy()`): `TestPanel` cột phải ≥ 1024px / tab "Chạy thử" khi hẹp (`hooks/use-wide`); gửi BẢN NHÁP form (`lib/test-run.ts` `buildTestBody`) tới `POST /admin/commands/test` (`runCommandTest` trong `api.ts`), không lưu. `hooks/use-command-test`: Dừng = abort, 409 `SIDE_EFFECT_CONFIRM_REQUIRED` → `SideEffectConfirm` → gửi lại `confirm_side_effect:true`. Lỗi → `describeCommandTestError` (`lib/errors.ts`). `RunAsPicker` → `run_as_user_id`.

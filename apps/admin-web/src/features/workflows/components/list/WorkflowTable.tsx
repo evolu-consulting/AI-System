@@ -1,12 +1,27 @@
 // ADM-FR-14 · bảng Workflows: tên + key (mono), loại, "Đang được dùng bởi" (Popover) hoặc "Chưa gắn", trạng thái, menu `⋯`.
 import type { WorkflowListItem } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
+import type { TFunction } from "i18next";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { UsageCell } from "./UsageCell";
 import { WorkflowRowMenu } from "./WorkflowRowMenu";
+
+/** X1 · HUB-FR-95: cột "Xác nhận" — workflow `side_effect` hiện "Hỏi xác nhận", còn lại "—"; không sort. */
+function sideEffectColumn(t: TFunction): Column<WorkflowListItem> {
+  return {
+    id: "sideEffect",
+    header: t("workflows.col.sideEffect"),
+    cell: (w) =>
+      w.side_effect ? (
+        <StatusBadge tone="warn">{t("workflows.sideEffect.asks")}</StatusBadge>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
+  };
+}
 
 type Props = {
   workflows: WorkflowListItem[] | undefined;
@@ -58,6 +73,7 @@ export function WorkflowTable({
         header: t("workflows.col.usedBy"),
         cell: (w) => <UsageCell workflow={w} />,
       },
+      sideEffectColumn(t),
       {
         id: "status",
         header: t("workflows.col.status"),

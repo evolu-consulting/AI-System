@@ -754,7 +754,8 @@
       "workflow": "Workflow",
       "type": "Loại",
       "usedBy": "Đang được dùng bởi",
-      "status": "Trạng thái"
+      "status": "Trạng thái",
+      "sideEffect": "Xác nhận"
     },
     "unattached": "Chưa gắn",
     "menu": {
@@ -783,7 +784,9 @@
       "enabled": "Bật workflow",
       "keyLocked": "Key không đổi được sau khi tạo",
       "descHint": "Viết như đang dặn một người mới: dùng khi nào, không dùng khi nào.",
-      "descCount": "Agent đọc nguyên văn mô tả này để biết khi nào gọi workflow · {n}/400"
+      "descCount": "Agent đọc nguyên văn mô tả này để biết khi nào gọi workflow · {n}/400",
+      "sideEffect": "Cần xác nhận trước khi chạy",
+      "sideEffectHint": "Bật khi workflow gửi, ghi hoặc xoá dữ liệu bên ngoài. Chat sẽ hỏi người dùng Đồng ý/Huỷ trước khi chạy."
     },
     "type": {
       "workflow": "workflow",
@@ -866,12 +869,16 @@
     "schemaBreaksDetail": {
       "missing": "thiếu: {names}",
       "unknown": "không còn: {names}"
+    },
+    "sideEffect": {
+      "asks": "Hỏi xác nhận"
     }
   },
   "commands": {
     "tab": {
       "config": "Cấu hình",
-      "access": "Ai dùng được"
+      "access": "Ai dùng được",
+      "test": "Chạy thử"
     },
     "access": {
       "summary": "{tenants} tenant · {users} user",
@@ -1071,6 +1078,47 @@
     },
     "header": {
       "duplicate": "Nhân bản"
+    },
+    "test": {
+      "title": "Chạy thử",
+      "hint": "Chạy bản đang sửa, kể cả khi chưa lưu. Không ghi gì vào cấu hình.",
+      "text": "Nội dung sau lệnh",
+      "selection": "Đoạn bôi đen",
+      "pageUrl": "URL trang",
+      "pageUrlInvalid": "URL phải bắt đầu bằng http:// hoặc https://",
+      "runAs": "Chạy với tư cách user…",
+      "runAsPlaceholder": "Gõ tên hoặc username",
+      "runAsSelf": "Để trống = chạy với tư cách bạn.",
+      "runAsPicked": "Chạy với tư cách {name}",
+      "runAsClear": "Bỏ chọn {name}",
+      "run": "Chạy thử",
+      "stop": "Dừng",
+      "running": "Đang chạy…",
+      "fixForm": "Sửa lỗi trong form trước",
+      "summary": "{ms} ms · {in}+{out} token",
+      "tabResult": "Kết quả",
+      "tabRaw": "Raw",
+      "tabSteps": "Các bước",
+      "stepOk": "ok",
+      "stepFailed": "lỗi",
+      "difyDetail": "Chi tiết từ Dify",
+      "empty": "Kết quả chạy thử hiện ở đây.",
+      "untested": "Bạn chưa chạy thử bản này",
+      "confirm": {
+        "body": "Workflow này có tác dụng phụ thật (gửi/ghi dữ liệu). Vẫn chạy thử?",
+        "run": "Vẫn chạy",
+        "cancel": "Huỷ"
+      },
+      "error": {
+        "hubUnavailable": "Hub không phản hồi. Kiểm tra hub-api rồi thử lại.",
+        "hubNotConfigured": "Chưa cấu hình kết nối Hub (ADMIN_HUB_URL/token nội bộ của Hub).",
+        "notConfigured": "Workflow chưa sẵn sàng ở Hub (secret/khoá thiếu).",
+        "missingArg": "Lệnh /{name} thiếu: {missing}.",
+        "invalidArg": "Giá trị không hợp lệ: {invalid}.",
+        "invalidReference": "Workflow/user không còn tồn tại.",
+        "forbidden": "Bạn không có quyền chạy thử lệnh này.",
+        "validation": "Cấu hình nháp chưa hợp lệ: {message}"
+      }
     }
   },
   "features": {
@@ -1479,7 +1527,9 @@
     "yesterday": "Hôm qua",
     "viewChanges": "Xem thay đổi",
     "loadMore": "Tải thêm",
-    "scope": { "system": "Toàn hệ thống" },
+    "scope": {
+      "system": "Toàn hệ thống"
+    },
     "filter": {
       "entity": "Loại",
       "action": "Hành động",
@@ -1626,7 +1676,11 @@
     "noFeature": "Không theo feature",
     "noFeatureNote": "Run qua agent chat không gắn feature nào nên đứng riêng một dòng.",
     "unpriced": "Chưa định giá",
-    "unit": { "runs": "Run", "tokens": "Token", "usd": "USD" },
+    "unit": {
+      "runs": "Run",
+      "tokens": "Token",
+      "usd": "USD"
+    },
     "empty": {
       "noData": "Chưa có dữ liệu từ Agent Hub",
       "period": "Không có run nào trong kỳ này.",
@@ -1643,7 +1697,10 @@
   "transfer": {
     "title": "Import / Export",
     "subtitle": "Chuyển cấu hình giữa các môi trường bằng file yaml.",
-    "tab": { "export": "Export", "import": "Import" },
+    "tab": {
+      "export": "Export",
+      "import": "Import"
+    },
     "export": {
       "pick": "Chọn nội dung",
       "selectAll": "Chọn tất cả",
@@ -1676,7 +1733,10 @@
       "updated": "Sửa {n}",
       "unchanged": "Không đổi {n}",
       "unchangedNote": "Mục không đổi không được liệt kê.",
-      "op": { "add": "Thêm", "update": "Sửa" },
+      "op": {
+        "add": "Thêm",
+        "update": "Sửa"
+      },
       "showDiff": "Xem thay đổi",
       "hideDiff": "Ẩn thay đổi",
       "diff": {

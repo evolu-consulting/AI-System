@@ -5,6 +5,8 @@ import type {
   CommandAccessResponse,
   CommandCreateRequest,
   CommandListResponse,
+  CommandTestRequest,
+  CommandTestResponse,
   CommandUpdateRequest,
   FeatureListResponse,
   Workflow,
@@ -171,4 +173,12 @@ export function useCommand(id: string | undefined) {
     enabled: !!id,
     queryFn: () => api<Command>(`/admin/commands/${id}`),
   });
+}
+
+/** ADM-FR-23 · X1 F4: chạy thử bản NHÁP (không id, không lưu) qua admin-api → Hub. Không cache: mỗi lần bấm một lời gọi, huỷ bằng `signal`. */
+export function runCommandTest(
+  body: CommandTestRequest,
+  signal?: AbortSignal,
+): Promise<CommandTestResponse> {
+  return api<CommandTestResponse>("/admin/commands/test", { method: "POST", body, signal });
 }

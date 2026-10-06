@@ -754,7 +754,8 @@
       "workflow": "Workflow",
       "type": "Type",
       "usedBy": "Used by",
-      "status": "Status"
+      "status": "Status",
+      "sideEffect": "Confirm"
     },
     "unattached": "Unattached",
     "menu": {
@@ -783,7 +784,9 @@
       "enabled": "Enable workflow",
       "keyLocked": "Key can't be changed after creation",
       "descHint": "Write it as if briefing a newcomer: when to use it and when not to.",
-      "descCount": "Agents read this description verbatim to decide when to call the workflow · {n}/400"
+      "descCount": "Agents read this description verbatim to decide when to call the workflow · {n}/400",
+      "sideEffect": "Requires confirmation before running",
+      "sideEffectHint": "Turn on when the workflow sends, writes or deletes external data. Chat asks the user to Agree/Cancel first."
     },
     "type": {
       "workflow": "workflow",
@@ -866,12 +869,16 @@
     "schemaBreaksDetail": {
       "missing": "missing: {names}",
       "unknown": "no longer in the workflow: {names}"
+    },
+    "sideEffect": {
+      "asks": "Asks first"
     }
   },
   "commands": {
     "tab": {
       "config": "Configuration",
-      "access": "Who can use it"
+      "access": "Who can use it",
+      "test": "Test run"
     },
     "access": {
       "summary": "{tenants} tenants · {users} users",
@@ -1071,6 +1078,47 @@
     },
     "header": {
       "duplicate": "Duplicate"
+    },
+    "test": {
+      "title": "Test run",
+      "hint": "Runs the version you're editing, even if unsaved. Nothing is saved.",
+      "text": "Text after the command",
+      "selection": "Selected text",
+      "pageUrl": "Page URL",
+      "pageUrlInvalid": "URL must start with http:// or https://",
+      "runAs": "Run as user…",
+      "runAsPlaceholder": "Type a name or username",
+      "runAsSelf": "Leave empty to run as yourself.",
+      "runAsPicked": "Running as {name}",
+      "runAsClear": "Clear {name}",
+      "run": "Test run",
+      "stop": "Stop",
+      "running": "Running…",
+      "fixForm": "Fix form errors first",
+      "summary": "{ms} ms · {in}+{out} tokens",
+      "tabResult": "Result",
+      "tabRaw": "Raw",
+      "tabSteps": "Steps",
+      "stepOk": "ok",
+      "stepFailed": "failed",
+      "difyDetail": "Details from Dify",
+      "empty": "Test results show up here.",
+      "untested": "You haven't tested this version",
+      "confirm": {
+        "body": "This workflow has real side effects (it sends or writes data). Run the test anyway?",
+        "run": "Run anyway",
+        "cancel": "Cancel"
+      },
+      "error": {
+        "hubUnavailable": "Hub is not responding. Check hub-api and try again.",
+        "hubNotConfigured": "Hub connection is not configured (ADMIN_HUB_URL/Hub internal token).",
+        "notConfigured": "The workflow is not ready on the Hub (missing secret/key).",
+        "missingArg": "/{name} is missing: {missing}.",
+        "invalidArg": "Invalid value: {invalid}.",
+        "invalidReference": "The workflow or user no longer exists.",
+        "forbidden": "You can't test this command.",
+        "validation": "Draft config is invalid: {message}"
+      }
     }
   },
   "features": {
@@ -1479,7 +1527,9 @@
     "yesterday": "Yesterday",
     "viewChanges": "View changes",
     "loadMore": "Load more",
-    "scope": { "system": "System-wide" },
+    "scope": {
+      "system": "System-wide"
+    },
     "filter": {
       "entity": "Type",
       "action": "Action",
@@ -1626,7 +1676,11 @@
     "noFeature": "No feature",
     "noFeatureNote": "Agent-chat runs aren't tied to a feature, so they get their own row.",
     "unpriced": "Not priced yet",
-    "unit": { "runs": "Run", "tokens": "Token", "usd": "USD" },
+    "unit": {
+      "runs": "Run",
+      "tokens": "Token",
+      "usd": "USD"
+    },
     "empty": {
       "noData": "No data from Agent Hub yet",
       "period": "No runs in this period.",
@@ -1643,7 +1697,10 @@
   "transfer": {
     "title": "Import / Export",
     "subtitle": "Move configuration between environments with a yaml file.",
-    "tab": { "export": "Export", "import": "Import" },
+    "tab": {
+      "export": "Export",
+      "import": "Import"
+    },
     "export": {
       "pick": "Choose content",
       "selectAll": "Select all",
@@ -1676,7 +1733,10 @@
       "updated": "Update {n}",
       "unchanged": "Unchanged {n}",
       "unchangedNote": "Unchanged items aren't listed.",
-      "op": { "add": "Add", "update": "Update" },
+      "op": {
+        "add": "Add",
+        "update": "Update"
+      },
       "showDiff": "Show changes",
       "hideDiff": "Hide changes",
       "diff": {

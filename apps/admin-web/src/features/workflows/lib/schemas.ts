@@ -36,6 +36,8 @@ export type WorkflowFormValues = {
   output_field: string;
   description: string;
   enabled: boolean;
+  /** X1 · HUB-FR-95: Chat hỏi Đồng ý/Huỷ trước khi chạy. */
+  side_effect: boolean;
   input_schema: ParamValues[];
 };
 
@@ -109,6 +111,7 @@ export const workflowSchema = z
       .min(WORKFLOW_DESC_MIN, "workflows.error.descLength")
       .max(WORKFLOW_DESC_MAX, "workflows.error.descLength"),
     enabled: z.boolean(),
+    side_effect: z.boolean(),
     input_schema: z.array(param).max(INPUT_SCHEMA_MAX, "workflows.schema.max"),
   })
   .superRefine((v, ctx) => checkParams(v.input_schema, ctx));
@@ -122,6 +125,7 @@ export const emptyWorkflowForm = (): WorkflowFormValues => ({
   output_field: "",
   description: "",
   enabled: true,
+  side_effect: false,
   input_schema: [],
 });
 
@@ -135,6 +139,8 @@ export function toFormValues(w: Workflow): WorkflowFormValues {
     output_field: w.output_field ?? "",
     description: w.description,
     enabled: w.enabled,
+    // Response cũ chưa có trường ⇒ coi `false` (plan-frontend §2.1).
+    side_effect: w.side_effect ?? false,
     input_schema: w.input_schema.map((p) => ({
       name: p.name,
       type: p.type,
@@ -167,5 +173,6 @@ export function toRequestBody(v: WorkflowFormValues): Omit<WorkflowCreateRequest
     input_schema: toInputSchema(v.input_schema),
     output_field: v.output_field.trim() === "" ? null : v.output_field.trim(),
     enabled: v.enabled,
+    side_effect: v.side_effect,
   };
 }

@@ -18,7 +18,8 @@ const NONE: MapEntryValues = { source: "", value: "" };
 export const hasSource = (
   e: MapEntryValues | undefined,
 ): e is MapEntryValues & { source: MapSource } =>
-  !!e && e.source !== "" && !(e.source === "arg" && e.value === "");
+  // Ô nguồn chưa chạm: RHF có thể giữ `source` undefined (input mới của workflow) ⇒ coi như chưa chọn.
+  !!e && !!e.source && !(e.source === "arg" && !e.value);
 
 /**
  * Đổi workflow (hoặc args): giữ mục còn hợp lệ, liệt kê mục bị bỏ (`dropped`), input trùng tên tham số tự map `arg` (`autoMapped`).

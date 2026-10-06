@@ -58,6 +58,12 @@ export const ERROR_MESSAGE_KEYS = [
   "hubErrors.notEntitled",
   "hubErrors.notGrantable",
   "hubErrors.network",
+  // X1 F4 (`POST /admin/commands/test`, plan-frontend-copy.md)
+  "commands.test.error.hubUnavailable",
+  "commands.test.error.hubNotConfigured",
+  "commands.test.error.notConfigured",
+  "commands.test.error.invalidReference",
+  "commands.test.error.forbidden",
 ] as const;
 
 function untilTime(details: unknown): string {
@@ -167,6 +173,79 @@ export function describeHubError(err: unknown): MessageSpec {
   }
   const key = (HUB_KEYS as Record<string, string | undefined>)[code];
   return key && err.status < 500 ? { key } : { key: "hubErrors.network" };
+}
+
+type Issue = { path?: unknown; message?: unknown };
+
+/** `VALIDATION_ERROR` của test: `details.issues[]` → "path: message; …" (path `run_as_user_id` đã đổi tên ở admin-api). */
+export function validationIssues(details: unknown): { text: string; paths: string[] } {
+  const raw = (details as { issues?: unknown } | null | undefined)?.issues;
+  const issues = Array.isArray(raw) ? (raw as Issue[]) : [];
+  const paths = issues.map((i) => (Array.isArray(i.path) ? i.path.join(".") : ""));
+  const text = issues
+    .map((i, n) => {
+      const m = typeof i.message === "string" ? i.message : "";
+      return paths[n] ? `${paths[n]}: ${m}` : m;
+    })
+    .filter((x) => x !== "")
+    .join("; ");
+  return { text, paths };
+}
+
+/** Lỗi gắn với ô "Chạy với tư cách": `INVALID_REFERENCE {field}` hoặc issue có path `run_as_user_id`. */
+export function isRunAsError(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return false;
+  if (err.code === "INVALID_REFERENCE")
+    return detailString(err.details, "field") === "run_as_user_id";
+  return (
+    err.code === "VALIDATION_ERROR" &&
+    validationIssues(err.details).paths.includes("run_as_user_id")
+  );
+}
+
+/**
+ * Lỗi "Chạy thử" (`POST /admin/commands/test`, `COMMAND_TEST_ERRORS` + `FORBIDDEN`/`VALIDATION_ERROR`/`INVALID_REFERENCE`).
+ * Trả các dòng hiển thị; `SIDE_EFFECT_CONFIRM_REQUIRED` do panel xử lý (hộp xác nhận), không qua đây.
+ * 5xx khác 503 / mã lạ ⇒ "Hub không phản hồi" (BL3: map theo status 502).
+ */
+export function describeCommandTestError(err: unknown, name: string): MessageSpec[] {
+  if (!(err instanceof ApiError)) return [{ key: "commands.test.error.hubUnavailable" }];
+  const code = err.code as string;
+  const d = (err.details ?? {}) as Record<string, unknown>;
+  switch (code) {
+    case "NETWORK_ERROR":
+      return [{ key: "auth.error.network" }];
+    case "HUB_NOT_CONFIGURED":
+      return [{ key: "commands.test.error.hubNotConfigured" }];
+    case "NOT_CONFIGURED":
+      return [{ key: "commands.test.error.notConfigured" }];
+    case "INVALID_REFERENCE":
+      return [{ key: "commands.test.error.invalidReference" }];
+    case "FORBIDDEN":
+      return [{ key: "commands.test.error.forbidden" }];
+    case "CMD_MISSING_ARG": {
+      const out: MessageSpec[] = [
+        {
+          key: "commands.test.error.missingArg",
+          params: { name, missing: asList(d.missing).join(", ") },
+        },
+      ];
+      const invalid = asList(d.invalid);
+      if (invalid.length) {
+        out.push({
+          key: "commands.test.error.invalidArg",
+          params: { invalid: invalid.join(", ") },
+        });
+      }
+      return out;
+    }
+    case "VALIDATION_ERROR": {
+      const text = validationIssues(err.details).text || err.message;
+      return [{ key: "commands.test.error.validation", params: { message: text } }];
+    }
+    default:
+      return [{ key: "commands.test.error.hubUnavailable" }];
+  }
 }
 
 /** Lỗi đăng nhập: 5xx/mã lạ → `auth.error.server` kèm mã. */
