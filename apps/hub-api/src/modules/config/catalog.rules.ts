@@ -1,4 +1,4 @@
-// HUB-FR-10, HUB-FR-76, HUB-BR-06, HUB-BR-19 · H2a P5, P14, Q4, R23 · catalog Admin trong cache Hub (`CatalogSnapshot`
+// HUB-FR-10, HUB-FR-76, HUB-FR-95, HUB-BR-06, HUB-BR-19 · H2a P5, P14, Q4 · X1 plan §2.3 · catalog Admin trong cache Hub (`CatalogSnapshot`
 // bất biến, plan H2a §3–§4) + đầu vào quyền command theo user. Thuần: jsonb validate bằng zod ở biên (CONVENTIONS §5),
 // hàng hỏng bị bỏ (không làm hỏng cả catalog), người gọi log.
 import {
@@ -16,7 +16,6 @@ import { type CommandAccessInput, usableCommands } from "../commands/command-acc
 import type { TenantState, UserState } from "./config.rules";
 
 export type CatalogFeature = { id: string; key: string; status: FeatureStatus };
-export type SideEffectSource = "column" | "flags";
 
 /** Ảnh catalog bất biến; nạp lại cùng phần Admin (`config_changed`/poll) → ảnh mới. Khoá ghép `a:b` = chuỗi uuid. */
 export type CatalogSnapshot = Readonly<{
@@ -38,7 +37,6 @@ export type CatalogSnapshot = Readonly<{
   /** tenantId → id group `beta-testers`. */
   betaGroups: ReadonlyMap<string, string>;
   tenantKeys: ReadonlyMap<string, string>;
-  sideEffectSource: SideEffectSource;
 }>;
 
 /** Hàng thô đọc từ DB (`catalog.repo`). jsonb để `unknown`. */
@@ -55,10 +53,9 @@ export type CatalogRows = {
     inputSchema: unknown;
     outputField: string | null;
     enabled: boolean;
+    /** Cột `admin.workflows.side_effect` (X1, bắt buộc — `schema-check`). */
+    sideEffect: boolean;
   }[];
-  /** null = cột `admin.workflows.side_effect` không tồn tại (R23 → dùng `flags`). */
-  sideEffectColumn: { id: string; sideEffect: boolean }[] | null;
-  flags: { workflowId: string; sideEffect: boolean }[];
   commands: {
     id: string;
     name: string;
@@ -104,10 +101,7 @@ const AppType = z.enum(["workflow", "chat", "agent"]);
 const Mode = z.enum(["sync", "async"]);
 const Status = z.enum(["on", "off", "beta"]);
 
-function toWorkflow(
-  r: CatalogRows["workflows"][number],
-  sideEffect: boolean,
-): CatalogWorkflow | null {
+function toWorkflow(r: CatalogRows["workflows"][number]): CatalogWorkflow | null {
   const app = AppType.safeParse(r.appType);
   const inputs = InputSchemaSchema.safeParse(r.inputSchema);
   if (!app.success || !inputs.success) return null;
@@ -122,7 +116,7 @@ function toWorkflow(
     inputSchema: inputs.data,
     outputField: r.outputField,
     enabled: r.enabled,
-    sideEffect,
+    sideEffect: r.sideEffect === true,
   });
 }
 
@@ -149,17 +143,10 @@ function toCommand(r: CatalogRows["commands"][number]): CatalogCommand | null {
   });
 }
 
-/** R23: cột `admin.workflows.side_effect` nếu có (thắng hoàn toàn), không thì `hub.workflow_flags`. */
-function sideEffectMap(rows: CatalogRows): ReadonlyMap<string, boolean> {
-  if (rows.sideEffectColumn) return new Map(rows.sideEffectColumn.map((r) => [r.id, r.sideEffect]));
-  return new Map(rows.flags.map((f) => [f.workflowId, f.sideEffect]));
-}
-
 function buildWorkflows(rows: CatalogRows, dropped: DroppedRow[]): Map<string, CatalogWorkflow> {
-  const se = sideEffectMap(rows);
   const out = new Map<string, CatalogWorkflow>();
   for (const r of rows.workflows) {
-    const w = toWorkflow(r, se.get(r.id) ?? false);
+    const w = toWorkflow(r);
     if (w) out.set(w.id, w);
     else dropped.push({ table: "workflows", id: r.id });
   }
@@ -239,7 +226,6 @@ export function buildCatalog(rows: CatalogRows): {
       rows.groups.filter((g) => g.key === BETA_GROUP_KEY).map((g) => [g.tenantId, g.id]),
     ),
     tenantKeys: new Map(rows.tenants.map((t) => [t.id, t.key])),
-    sideEffectSource: rows.sideEffectColumn ? "column" : "flags",
   });
   return { catalog, dropped };
 }

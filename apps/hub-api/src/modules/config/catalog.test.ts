@@ -23,6 +23,7 @@ const wf = (wid: string, o: Partial<CatalogRows["workflows"][number]> = {}) => (
   inputSchema: [{ name: "q", type: "text", required: true, description: "Câu hỏi" }],
   outputField: null,
   enabled: true,
+  sideEffect: false,
   ...o,
 });
 const cmd = (cid: string, name: string, o: Partial<CatalogRows["commands"][number]> = {}) => ({
@@ -41,9 +42,11 @@ const cmd = (cid: string, name: string, o: Partial<CatalogRows["commands"][numbe
 });
 const rows = (o: Partial<CatalogRows> = {}): CatalogRows => ({
   adminVersion: 7,
-  workflows: [wf(W.ok), wf(W.bad, { appType: "nope" }), wf(W.off, { enabled: false })],
-  sideEffectColumn: null,
-  flags: [{ workflowId: W.ok, sideEffect: true }],
+  workflows: [
+    wf(W.ok, { sideEffect: true }),
+    wf(W.bad, { appType: "nope" }),
+    wf(W.off, { enabled: false }),
+  ],
   commands: [
     cmd(C.so, "so"),
     cmd(C.dich, "dich", { aliases: ["translate"] }),
@@ -119,15 +122,16 @@ describe("buildCatalog", () => {
     expect(catalog.tenantKeys.get(T)).toBe("acme");
   });
 
-  test("H2a-R23 · không cột → workflow_flags; có cột → cột thắng hoàn toàn", () => {
-    const flags = buildCatalog(rows()).catalog;
-    expect(flags.sideEffectSource).toBe("flags");
-    expect(flags.workflows.get(W.ok)?.sideEffect).toBe(true);
-    expect(flags.workflows.get(W.off)?.sideEffect).toBe(false);
-    const col = buildCatalog(rows({ sideEffectColumn: [{ id: W.off, sideEffect: true }] })).catalog;
-    expect(col.sideEffectSource).toBe("column");
-    expect(col.workflows.get(W.ok)?.sideEffect).toBe(false);
-    expect(col.workflows.get(W.off)?.sideEffect).toBe(true);
+  test("HUB-FR-95 · X1 · sideEffect lấy từ cột admin.workflows.side_effect của từng hàng", () => {
+    const a = buildCatalog(rows()).catalog;
+    expect(a.workflows.get(W.ok)?.sideEffect).toBe(true);
+    expect(a.workflows.get(W.off)?.sideEffect).toBe(false);
+    const b = buildCatalog(
+      rows({ workflows: [wf(W.ok), wf(W.off, { enabled: false, sideEffect: true })] }),
+    ).catalog;
+    expect(b.workflows.get(W.ok)?.sideEffect).toBe(false);
+    expect(b.workflows.get(W.off)?.sideEffect).toBe(true);
+    expect("sideEffectSource" in b).toBe(false);
   });
 });
 

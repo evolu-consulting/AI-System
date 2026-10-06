@@ -11,7 +11,7 @@ import type { DifyAppType, DifyFileInput } from "@ai/contracts/hub";
 /** H2c P13 · `DifyFileInput` chỉ do driver điền sau upload (B7), không bao giờ từ tham số/MCP. */
 export type WorkflowInputValue = string | number | boolean | DifyFileInput;
 
-/** `admin.workflows` + `hub.workflow_flags` (cờ `side_effect` dự phòng, P14). */
+/** `admin.workflows` (cờ `side_effect` = cột `admin.workflows.side_effect`, X1 HUB-FR-95). */
 export type CatalogWorkflow = {
   id: string;
   key: string;

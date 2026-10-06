@@ -1,4 +1,4 @@
-// HUB-FR-76 · HUB-H2a-AC-10 · HUB-BR-06 · H2a P5, R23 · cache catalog thật (role hub_api) trên dữ liệu cases §7:
+// HUB-FR-76, HUB-FR-95 · HUB-H2a-AC-10 · HUB-BR-06 · H2a P5 · X1 plan §2.3 · cache catalog thật (role hub_api) trên dữ liệu cases §7:
 // `usableCatalogCommands` của lan/hoa/tadmin/an = `visible` của `computeEffectiveAccess` Admin đọc từ CÙNG SQL
 // (`adminVisible`, tests H2a, chỉ đọc), qua các biến thể A08; đổi catalog → NOTIFY → cache mới ≤ 5 s; nguồn side_effect.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -18,6 +18,7 @@ import {
   catalogChange,
   FEAT,
   insertCatalog,
+  markSideEffect,
   WF,
 } from "../../../../../tests/acceptance/H2a/_h2a";
 import { connectDb, type Db } from "../../lib/db";
@@ -111,20 +112,21 @@ describe("HUB-H2a-AC-10 · cache catalog Hub = Admin trên cùng SQL", () => {
   });
 });
 
-describe("H2a-R23 · nguồn side_effect", () => {
-  it("HUB-FR-95 · không cột → workflow_flags (trello true); thêm cột → cột thắng (false)", async () => {
+describe("X1 · nguồn side_effect = cột admin.workflows.side_effect", () => {
+  it("HUB-FR-95 · đổi cột + reloadAdmin ⇒ cờ đổi; hub.workflow_flags không còn tác dụng", async () => {
     await cache.reloadAdmin();
     let cat = await cache.catalog();
-    expect(cat.sideEffectSource).toBe("flags");
     expect(cat.workflows.get(WF.trello)?.sideEffect).toBe(true);
-    await sql`alter table admin.workflows add column side_effect boolean not null default false`;
+    await sql`insert into hub.workflow_flags (workflow_id, side_effect) values (${WF.trello}, true)
+      on conflict (workflow_id) do update set side_effect = excluded.side_effect`;
+    await markSideEffect(sql, WF.trello, false);
     try {
       await cache.reloadAdmin();
       cat = await cache.catalog();
-      expect(cat.sideEffectSource).toBe("column");
       expect(cat.workflows.get(WF.trello)?.sideEffect).toBe(false);
     } finally {
-      await sql`alter table admin.workflows drop column if exists side_effect`;
+      await sql`delete from hub.workflow_flags where workflow_id = ${WF.trello}`;
+      await markSideEffect(sql, WF.trello, true);
       await cache.reloadAdmin();
     }
   });

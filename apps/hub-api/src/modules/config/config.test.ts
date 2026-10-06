@@ -115,8 +115,6 @@ function fakeSource(): Fake {
 const EMPTY_CATALOG: CatalogRows = {
   adminVersion: 0,
   workflows: [],
-  sideEffectColumn: null,
-  flags: [],
   commands: [],
   names: [],
   features: [],

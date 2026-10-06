@@ -1,4 +1,5 @@
-// HUB-FR-10, HUB-FR-76 · H2a P14, R23 · đọc catalog Admin + `hub.workflow_flags` cho cache (role hub_api, chỉ SELECT;
+// HUB-FR-10, HUB-FR-76, HUB-FR-95 · H2a P14 · X1 plan §2.3 · đọc catalog Admin cho cache (role hub_api, chỉ SELECT;
+// cờ `side_effect` chỉ từ cột `admin.workflows.side_effect` — `hub.workflow_flags` không còn đọc;
 // plan H2a §3 "Đọc admin.*"). Bảng catalog toàn hệ thống; RLS `groups`/`feature_grants`/`feature_entitlements` có
 // policy `hub_ro USING (true)`. Một transaction REPEATABLE READ: ảnh nhất quán.
 import {
@@ -12,24 +13,11 @@ import {
   tenants,
   workflows,
 } from "@ai/db";
-import { workflowFlags } from "@ai/db/schema/hub";
-import { isNull, sql } from "drizzle-orm";
+import { isNull } from "drizzle-orm";
 import type { Db } from "../../lib/db";
 import type { CatalogRows } from "./catalog.rules";
 
 type Tx = Parameters<Parameters<Db["db"]["transaction"]>[0]>[0];
-
-/** R23: cột `admin.workflows.side_effect` (CR-034) có thì đọc; không thì null. */
-async function readSideEffectColumn(tx: Tx): Promise<CatalogRows["sideEffectColumn"]> {
-  const has = await tx.execute<{ n: number }>(sql`select count(*)::int as n
-    from information_schema.columns
-    where table_schema = 'admin' and table_name = 'workflows' and column_name = 'side_effect'`);
-  if ((has[0]?.n ?? 0) === 0) return null;
-  const rows = await tx.execute<{ id: string; side_effect: boolean | null }>(
-    sql`select id, side_effect from admin.workflows`,
-  );
-  return rows.map((r) => ({ id: r.id, sideEffect: r.side_effect === true }));
-}
 
 async function readWorkflows(tx: Tx): Promise<CatalogRows["workflows"]> {
   return tx
@@ -44,6 +32,7 @@ async function readWorkflows(tx: Tx): Promise<CatalogRows["workflows"]> {
       inputSchema: workflows.inputSchema,
       outputField: workflows.outputField,
       enabled: workflows.enabled,
+      sideEffect: workflows.sideEffect,
     })
     .from(workflows);
 }
@@ -100,10 +89,6 @@ export function loadCatalogRows(db: Db, adminVersion: number): Promise<CatalogRo
     async (tx) => ({
       adminVersion,
       workflows: await readWorkflows(tx),
-      sideEffectColumn: await readSideEffectColumn(tx),
-      flags: await tx
-        .select({ workflowId: workflowFlags.workflowId, sideEffect: workflowFlags.sideEffect })
-        .from(workflowFlags),
       commands: await readCommands(tx),
       names: await tx
         .select({ name: commandNames.name, commandId: commandNames.commandId })

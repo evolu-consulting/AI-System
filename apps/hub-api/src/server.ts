@@ -1,5 +1,5 @@
 // HUB-NFR-04 · điểm khởi động hub-api: nơi duy nhất đọc env và mở cổng (plan H1 §4, §7).
-// Thứ tự: env → storage file (H2c, `HUB_ATTACH_*`) → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → Orchestrator hợp lệ (HUB-BR-08) → master key (H2a) → Redis (connect + ping) → serve.
+// Thứ tự: env → storage file (H2c, `HUB_ATTACH_*`) → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → cột Admin bắt buộc (X1, HUB-FR-95) → Orchestrator hợp lệ (HUB-BR-08) → master key (H2a) → Redis (connect + ping) → serve.
 // Lỗi bước nào → log `fatal` + exit 1.
 import { SSE_HEARTBEAT_S } from "@ai/contracts/chat";
 import pkg from "../package.json";
@@ -15,6 +15,7 @@ import { MAX_REQUEST_BODY_BYTES } from "./lib/unread-body";
 import type { AttachmentDeps } from "./modules/attachments/storage";
 import { createLocalStorage } from "./modules/attachments/storage.local";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
+import { missingAdminColumns } from "./modules/config/schema-check";
 import { loadMasterKey, probeMasterKey } from "./modules/dify/credential.service";
 
 function fail(step: string, err: unknown): never {
@@ -80,6 +81,15 @@ async function openAttachments(env: Env): Promise<AttachmentDeps | undefined> {
   return { storage, tenantMaxBytes: a.tenantMaxBytes, sweepS: a.sweepS };
 }
 
+/** HUB-FR-95 · X1-AC15: thiếu cột Admin bắt buộc (`admin.workflows.side_effect`) → exit 1 trước khi mở cổng. */
+async function assertAdminSchema(db: Db): Promise<void> {
+  const columns = await missingAdminColumns(db).catch((err) => fail("admin-schema", err));
+  if (columns.length === 0) return;
+  logger.error("admin-schema-missing", { columns, hint: "bun run db:migrate" });
+  await db.close();
+  process.exit(1);
+}
+
 /** HUB-BR-08: Orchestrator thiếu/tắt → exit 1 trước khi mở cổng. */
 async function assertOrchestrator(db: Db): Promise<void> {
   const problem = await bootOrchestratorProblem(db).catch((err) => fail("orchestrator", err));
@@ -135,6 +145,7 @@ async function main(): Promise<void> {
     fail("jwt", err),
   );
   const db = await openDb(env).catch((err) => fail("db", err));
+  await assertAdminSchema(db);
   await assertOrchestrator(db);
   await checkMasterKey(env, db);
   const redis = await openRedis(env).catch((err) => fail("redis", err));
