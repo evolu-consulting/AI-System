@@ -38,6 +38,11 @@ export default defineConfig({
       url: `${WEB}/studio/`,
       reuseExistingServer: false,
       timeout: 180_000,
+      // spec §7: link "⇄ Admin"/Admin › Workflows chỉ hiện khi có URL Admin (E04 cần) — build nhận `PUBLIC_*` từ env.
+      env: { ...process.env, PUBLIC_ADMIN_WEB_URL: "http://localhost:3000" } as Record<
+        string,
+        string
+      >,
     },
   ],
 });
