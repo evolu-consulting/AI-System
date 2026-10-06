@@ -10,7 +10,14 @@ API cấu hình Hub cho Agent Studio (H4a). Chỉ `platform_admin` (`requirePlat
 | `studio-read.map.ts` | Hàm thuần: `toList` (lọc `q`, `limit`, `total`/`truncated`), `usableFor` (QB3), `toProviderItem` (danh sách trắng trường) |
 | `studio-static.ts` | Phục vụ dist Studio ở `/studio` (P12, §5.4): 308 `/studio`→`/studio/`, SPA fallback không đuôi, 404 JSON có đuôi, header bảo mật, chặn `..` |
 
-Sắp có (B4–B6): `studio-write.ts` (`withConfigWrite`), `agents/`, `orchestrator/`.
+| `studio-write.ts` | `withConfigWrite`: MỌI ghi Studio — scope `system` → khoá `config_meta` → `fn` → bump → audit (`AppDeps.hubAudit` tiêm được, P7) → NOTIFY, một transaction (R09) |
+| `agents/agents.routes.ts` | `GET/POST /agents`, `GET /agents/:id` (B4); PUT/PATCH/DELETE ở B5 |
+| `agents/agents.service.ts` | POST: `KEY_TAKEN` → tham chiếu (profile, agent_type, workflow) → Bash ack → INSERT + `agent_workflows` → audit `create`; đọc REPEATABLE READ |
+| `agents/agents.repo.ts` | SQL agent (list một câu + `count(*) over()`; `workflow_count` suy từ `workflow_key` cho dify-* seed cũ — P11) |
+| `agents/agents.map.ts` | Hàng DB → `Agent`/`AgentListItem`, `auditSnapshot`, `changedFields` |
+| `agents/agents.rules.ts` | Luật thuần plan §4.1 (QC test `tests/acceptance/H4a/rules/agents-rules.test.ts`) |
+
+Sắp có (B6): `orchestrator/`.
 
 Luật:
 - Mọi `/studio/api/*` đi qua `requirePlatformAdmin` ở gốc ⇒ route chưa mount vẫn 401/403 đúng thứ tự, path lạ ⇒ 404 JSON (không rơi vào SPA).

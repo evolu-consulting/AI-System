@@ -5,14 +5,23 @@ import type { Hono } from "hono";
 import type { AppVars } from "./app";
 import { requirePlatformAdmin } from "./lib/admin-role.middleware";
 import type { Db } from "./lib/db";
+import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
 import type { Logger } from "./lib/logger";
+import { agentRoutes } from "./modules/studio/agents/agents.routes";
+import { AgentsService } from "./modules/studio/agents/agents.service";
 import { studioReadRoutes } from "./modules/studio/studio.routes";
 import { StudioReadService } from "./modules/studio/studio-read.service";
 import { isStudioDist, mountStudioStatic } from "./modules/studio/studio-static";
 
 export const STUDIO_API = "/studio/api";
 
-export type H4aDeps = { db?: Db; studioDist?: string; log: Pick<Logger, "warn"> };
+/** `hubAudit` vắng ⇒ ghi DB thật; test tiêm lỗi giữa transaction (P7). */
+export type H4aDeps = {
+  db?: Db;
+  studioDist?: string;
+  hubAudit?: HubAuditWriter;
+  log: Pick<Logger, "warn">;
+};
 
 /**
  * Gọi sau khi đã gắn `requireAuth` cho `/studio/api/*`. Role gắn cả khi vắng `db` ⇒ 403 không phụ thuộc route đã mount.
@@ -20,7 +29,11 @@ export type H4aDeps = { db?: Db; studioDist?: string; log: Pick<Logger, "warn"> 
  */
 export function mountH4a(app: Hono<AppVars>, deps: H4aDeps): void {
   app.use(`${STUDIO_API}/*`, requirePlatformAdmin());
-  if (deps.db) app.route(STUDIO_API, studioReadRoutes(new StudioReadService({ db: deps.db })));
+  if (deps.db) {
+    const audit = deps.hubAudit ?? dbHubAudit;
+    app.route(STUDIO_API, studioReadRoutes(new StudioReadService({ db: deps.db })));
+    app.route(STUDIO_API, agentRoutes(new AgentsService({ db: deps.db, audit })));
+  }
   mountH4aStatic(app, deps.studioDist, deps.log);
 }
 

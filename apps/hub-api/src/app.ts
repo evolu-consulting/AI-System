@@ -142,7 +142,7 @@ function commandDrivers(deps: AppDeps, db: Db) {
 function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache): void {
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
-  mountH4a(app, { db: deps.db, studioDist: deps.studioDist, log: logger });
+  mountH4a(app, { ...deps, log: logger });
   if (!deps.db) return;
   const drivers = commandDrivers(deps, deps.db);
   if (config) mountDifyCredential(app, { ...deps, db: deps.db, config, log: logger });

@@ -27,14 +27,19 @@ export function toList<T>(
   };
 }
 
+/** R14 H2a · có input nhận tin cho agent dify-* (`input_schema` hỏng ⇒ false). Dùng chung catalog + ghi agent (B4). */
+export function hasDifyInput(inputSchema: unknown): boolean {
+  const inputs = InputSchemaSchema.safeParse(inputSchema);
+  return inputs.success && difyAgentInput(inputs.data) !== null;
+}
+
 /**
  * QB3 · workflow bật luôn dùng được làm tool MCP; `dify-workflow` cần app `workflow`, `dify-agent` cần app `chat|agent`,
  * cả hai cần input nhận tin (`difyAgentInput ≠ null`, R14 H2a). `input_schema` hỏng ⇒ chỉ `tool`.
  */
 export function usableFor(appType: string, inputSchema: unknown): Usable[] {
   const out: Usable[] = ["tool"];
-  const inputs = InputSchemaSchema.safeParse(inputSchema);
-  if (!inputs.success || difyAgentInput(inputs.data) === null) return out;
+  if (!hasDifyInput(inputSchema)) return out;
   if (appType === "workflow") out.push("dify-workflow");
   if (appType === "chat" || appType === "agent") out.push("dify-agent");
   return out;
