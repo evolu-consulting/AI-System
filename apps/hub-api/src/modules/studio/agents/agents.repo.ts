@@ -134,9 +134,9 @@ export async function agentWorkflowIds(tx: Tx, agentId: string): Promise<string[
 
 export type OrchScope = { tenantId: string | null; tenantKey: string | null };
 
-/** Phạm vi agent đang là Orchestrator (mặc định trước, rồi theo key tenant). */
+/** Phạm vi agent đang là Orchestrator (mặc định trước, rồi theo key tenant). Tenant mất ⇒ key `""` (contract `string`). */
 export function orchScopes(tx: Tx, agentId: string): Promise<OrchScope[]> {
-  return tx.execute<OrchScope>(sql`select o.tenant_id as "tenantId", t.key as "tenantKey"
+  return tx.execute<OrchScope>(sql`select o.tenant_id as "tenantId", case when o.tenant_id is null then null else coalesce(t.key, '') end as "tenantKey"
     from hub.orchestrator_settings o left join admin.tenants t on t.id = o.tenant_id
     where o.agent_id = ${agentId}::uuid order by o.tenant_id nulls first, t.key`);
 }

@@ -1,10 +1,11 @@
 // HUB-FR-62 · HUB-FR-69 · H4a-R07, R08, R09 · map Orchestrator + luật runtime (P9 một nguồn với `config.rules.ts`).
 import { describe, expect, it } from "bun:test";
-import { OrchestratorSchema } from "@ai/contracts/studio";
+import { OrchestratorSchema, OrchestratorVersionConflictDetailsSchema } from "@ai/contracts/studio";
 import {
   orchChangedFields,
   orchEntityName,
   orchSnapshot,
+  orchVersionConflict,
   toOrchestrator,
 } from "./orchestrator.map";
 import type { OrchDbRow } from "./orchestrator.repo";
@@ -54,5 +55,12 @@ describe("orchestrator.map [HUB-FR-62]", () => {
   it("isOrchestratorRuntime: chỉ agentic-cli (QB1)", () => {
     expect(isOrchestratorRuntime("agentic-cli")).toBe(true);
     expect(isOrchestratorRuntime("llm")).toBe(false);
+  });
+
+  it("VERSION_CONFLICT details = {current, updated_at}, khớp contract strict [H4a-R09 · RV1-BE#1]", () => {
+    const d = orchVersionConflict(row({ version: 3 }));
+    expect(OrchestratorVersionConflictDetailsSchema.parse(d)).toEqual(d);
+    expect(d.updated_at).toBe("2026-10-06T00:00:00.000Z");
+    expect(d.current.version).toBe(3);
   });
 });

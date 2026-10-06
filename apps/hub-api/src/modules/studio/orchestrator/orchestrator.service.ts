@@ -18,6 +18,7 @@ import {
   orchChangedFields,
   orchEntityName,
   orchSnapshot,
+  orchVersionConflict,
   toOrchestrator,
 } from "./orchestrator.map";
 import {
@@ -56,9 +57,9 @@ async function checkAgent(tx: Tx, agentId: string): Promise<void> {
   if (p) throw appError("AGENT_NOT_ORCHESTRATABLE", { reason: p });
 }
 
-/** R09: version lệch ⇒ 409 `VERSION_CONFLICT{current}`. */
+/** R09: version lệch ⇒ 409 `VERSION_CONFLICT{current, updated_at}`. */
 function checkVersion(row: OrchDbRow, version: number): void {
-  if (row.version !== version) throw appError("VERSION_CONFLICT", { current: toOrchestrator(row) });
+  if (row.version !== version) throw appError("VERSION_CONFLICT", orchVersionConflict(row));
 }
 
 async function reread(tx: Tx, tenantId: string | null): Promise<Orchestrator> {

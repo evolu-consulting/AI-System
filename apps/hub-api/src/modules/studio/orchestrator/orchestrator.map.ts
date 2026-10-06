@@ -30,6 +30,11 @@ export function toOrchestrator(r: OrchDbRow): Orchestrator {
   };
 }
 
+/** R09 · plan §2.1: details 409 `VERSION_CONFLICT{current, updated_at}` (cùng dạng phía agent). */
+export function orchVersionConflict(r: OrchDbRow): { current: Orchestrator; updated_at: string } {
+  return { current: toOrchestrator(r), updated_at: r.updatedAt };
+}
+
 /** plan §5.1: before/after = `Orchestrator` bỏ `warnings`. */
 export function orchSnapshot(o: Orchestrator): Record<string, unknown> {
   const { warnings: _w, ...rest } = o;
