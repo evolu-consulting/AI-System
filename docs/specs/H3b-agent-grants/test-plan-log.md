@@ -56,3 +56,6 @@ Code H2a (không code mới). Thời gian menu cập nhật: A130 124 ms, A131 t
 
 ### File cần khoá (Q2)
 `tests/acceptance/H3b/{_h3b,_h3b-trace}.ts`, `tests/acceptance/H3b/rules/{_snap.ts,target-tenant,grant-problem,effective-agents,trace-rules,contracts-h3b}.test.ts`, `tests/acceptance/H3b/{role-tenant,grants-write,grants-concurrency,grants-list,effective,propagation,trace,cors,db-grants}.int.test.ts`, `tests/acceptance/H3b-cmd/command-m5.int.test.ts` (18 file). Chưa khoá — Q2 chạy `test:lock:write`.
+
+## Q2 — khoá (điều phối, 2026-10-06)
+`test:lock:verify` trước khi ghi: đúng 18 UNLOCKED (`tests/acceptance/H3b/**` 17 file + `tests/acceptance/H3b-cmd/command-m5.int.test.ts`), 0 CHANGED → `test:lock:write` → verify OK. `tasks.md` I1: lệnh AC-13 đổi sang `--config=bunfig.stack.toml` (bunfig.int.toml bỏ qua `H3b-cmd/**`).
