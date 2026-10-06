@@ -119,11 +119,15 @@ function workflowBody(w: WorkflowWant, secretId: string): Obj {
   return { ...rest, secret_id: secretId };
 }
 
-async function patchWorkflow(c: RunCtx, id: string, want: Obj): Promise<boolean> {
+async function patchWorkflow(c: RunCtx, id: string, want: Obj): Promise<boolean | "skip"> {
   const step = `workflow ${want.key}`;
   for (let attempt = 0; attempt < 2; attempt++) {
     const d = (await c.admin.call(step, { path: `/admin/workflows/${id}` })).body;
     const secret = d.secret as Obj | undefined;
+    if (secret?.id !== undefined && secret.id !== want.secret_id) {
+      c.log(`CẢNH BÁO: ${step} đã có, dùng secret khác (không phải seed tạo) — bỏ qua`);
+      return "skip";
+    }
     const patch = workflowPatch({ ...d, secret_id: secret?.id }, want);
     if (!patch) return false;
     const r = await c.admin.call(step, {
@@ -161,7 +165,8 @@ export async function ensureWorkflows(
     }
     const id = idOf(cur, `workflow ${w.key}`);
     ids.set(w.key, id);
-    c.log(`workflow ${w.key}: ${(await patchWorkflow(c, id, want)) ? "cập nhật" : "giữ nguyên"}`);
+    const pr = await patchWorkflow(c, id, want);
+    if (pr !== "skip") c.log(`workflow ${w.key}: ${pr ? "cập nhật" : "giữ nguyên"}`);
   }
   return ids;
 }

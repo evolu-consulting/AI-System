@@ -88,14 +88,40 @@ export function stopOrder(started: readonly ProcName[]): ProcName[] {
   return [...new Set(started)].reverse();
 }
 
-/** Env web = bản chụp `base` (TRƯỚC khi gộp env admin/hub) bỏ `HUB_INTERNAL_TOKEN` (có thể đến từ `.env.local`) + phần ghi đè. */
+const WEB_ENV_ALLOW = new Set([
+  "PATH",
+  "Path",
+  "PATHEXT",
+  "SystemRoot",
+  "SYSTEMROOT",
+  "windir",
+  "COMSPEC",
+  "ComSpec",
+  "TEMP",
+  "TMP",
+  "TMPDIR",
+  "HOME",
+  "USERPROFILE",
+  "APPDATA",
+  "LOCALAPPDATA",
+  "USER",
+  "USERNAME",
+  "SHELL",
+  "LANG",
+  "NODE_ENV",
+  "HUB_URL",
+  "AUTH_URL",
+  "ADMIN_API_URL",
+]);
+
+/** Env web = danh sách trắng từ `base` (hệ thống + NODE_ENV/HUB_URL/AUTH_URL/ADMIN_API_URL/`PUBLIC_*`; không DB URL, mật khẩu, master key, `HUB_INTERNAL_TOKEN`) + phần ghi đè. */
 export function webEnv(
   base: Record<string, string | undefined>,
   overlay: Record<string, string>,
 ): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(base))
-    if (v !== undefined && k !== "HUB_INTERNAL_TOKEN") out[k] = v;
+    if (v !== undefined && (WEB_ENV_ALLOW.has(k) || k.startsWith("PUBLIC_"))) out[k] = v;
   return { ...out, ...overlay };
 }
 

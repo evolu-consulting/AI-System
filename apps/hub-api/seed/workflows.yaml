@@ -6,6 +6,7 @@
 #     - { agent: assistant, workflow: create-trello-card }
 #   workflow_flags:
 #     side_effect: [create-trello-card]
+# LƯU Ý (X1): `workflow_flags.side_effect` KHÔNG còn hiệu lực — Hub đọc cột `admin.workflows.side_effect` (đặt qua Admin).
 agent_workflows: []
 workflow_flags:
   side_effect: []

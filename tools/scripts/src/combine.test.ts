@@ -29,13 +29,24 @@ describe("combine.rules", () => {
     expect(e["hub-api"].HUB_DEV_RUNTIME).toBe("none");
     expect(e["dify-mock"].PORT).toBe("5001");
   });
+});
 
-  it("webEnv: giữ base, bỏ HUB_INTERNAL_TOKEN (vd từ .env.local), overlay thắng", () => {
+describe("combine.rules · webEnv + tiện ích", () => {
+  it("webEnv: danh sách trắng (bỏ token/secret/DB URL), giữ PUBLIC_*, overlay thắng", () => {
     const out = webEnv(
-      { PATH: "/bin", HUB_INTERNAL_TOKEN: "tok", HUB_URL: "x", GONE: undefined },
+      {
+        PATH: "/bin",
+        PUBLIC_X: "p",
+        HUB_INTERNAL_TOKEN: "tok",
+        SEED_ADMIN_PASSWORD: "pw",
+        DATABASE_URL: "postgres://owner",
+        SECRET_MASTER_KEY: "k",
+        HUB_URL: "x",
+        GONE: undefined,
+      },
       { HUB_URL: URLS.hub },
     );
-    expect(out).toEqual({ PATH: "/bin", HUB_URL: "http://localhost:4000" });
+    expect(out).toEqual({ PATH: "/bin", PUBLIC_X: "p", HUB_URL: "http://localhost:4000" });
   });
 
   it("stopOrder bỏ tên lặp, không đổi mảng gốc", () => {

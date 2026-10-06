@@ -152,7 +152,10 @@ async function startProcs(
     track(t, w, await startWeb(w, webEnv(base, env[w]), opts.webTimeoutMs ?? 90_000));
 }
 
-export async function startCombine(opts: CombineRunOpts = {}): Promise<Combine> {
+export async function startCombine(
+  opts: CombineRunOpts = {},
+  onStop?: (stop: () => Promise<void>) => void,
+): Promise<Combine> {
   const base: Record<string, string | undefined> = { ...process.env }; // chụp TRƯỚC khi gộp env admin/hub
   const env = buildCombineEnv(base, {
     token: base.HUB_INTERNAL_TOKEN,
@@ -169,6 +172,7 @@ export async function startCombine(opts: CombineRunOpts = {}): Promise<Combine> 
     })();
     return stopping;
   };
+  onStop?.(stop);
   try {
     compose();
     await startProcs(t, base, env, opts);
@@ -206,17 +210,22 @@ function banner(c: Combine): void {
 }
 
 if (import.meta.main) {
+  let stopFn: (() => Promise<void>) | undefined;
+  let started: ProcName[] = [];
+  const quit = async () => {
+    console.log(`[combine] dừng: ${stopOrder(started).join(" → ")}`);
+    await stopFn?.();
+    process.exit(0);
+  };
+  process.once("SIGINT", () => void quit());
+  process.once("SIGTERM", () => void quit());
   try {
     // biome-ignore lint/suspicious/noUndeclaredEnvVars: cờ chỉ của script dev, không ảnh hưởng cache turbo
-    const c = await startCombine({ wsl: process.env.COMBINE_WSL === "1" });
+    const c = await startCombine({ wsl: process.env.COMBINE_WSL === "1" }, (s) => {
+      stopFn = s;
+    });
+    started = c.started;
     banner(c);
-    const quit = async () => {
-      console.log(`[combine] dừng: ${stopOrder(c.started).join(" → ")}`);
-      await c.stop();
-      process.exit(0);
-    };
-    process.once("SIGINT", () => void quit());
-    process.once("SIGTERM", () => void quit());
   } catch (err) {
     console.error(`[combine] ${(err as Error).message}`);
     process.exit(1);
