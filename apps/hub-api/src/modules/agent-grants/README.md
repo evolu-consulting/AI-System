@@ -5,7 +5,8 @@ API quản trị Hub (H3b). Chỉ `tenant_admin`/`platform_admin` (`requireAdmin
 | File | Vai trò |
 |---|---|
 | `agent-grants.rules.ts` | `targetTenant` (tenant đích, gọi **một lần** ở route — R02) · `grantProblem` (thứ tự lỗi R04) |
-| `agent-effective.rules.ts` | `effectiveAgents` (Kiểm tra quyền phần agent, R12–R14) — route ở B4 |
+| `agent-effective.rules.ts` | `effectiveAgents` (Kiểm tra quyền phần agent, R12–R14) |
+| `agent-effective.service.ts` | GET `effective/:user_id`: tính trên ảnh cache (kéo theo kịp `hub_config_version` DB) + `GROUP_REFS`; chỉ đọc (R15) |
 | `agent-grants.routes.ts` | GET/POST/DELETE `/agent-grants`: parse query/body (400) → `tenantOf` → service. Không logic |
 | `agent-grants.service.ts` | `grant`/`revoke`/`list`. Ghi: `config_meta` FOR UPDATE → `agent_grants` → bump → audit → NOTIFY trong một transaction; trùng/không có hàng ⇒ không ghi gì (tập hợp, R06/R07) |
 | `agent-grants.repo.ts` | SQL nguyên văn `plan-db` §2 — mọi câu có `tenant_id = T` (bảng không RLS, R03); ngoại lệ có lý do `actorName` + join `gb` (N5/QP2) |

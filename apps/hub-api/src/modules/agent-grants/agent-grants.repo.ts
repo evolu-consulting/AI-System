@@ -185,3 +185,16 @@ export function listGrants(
       and (gr.id is not null or u.id is not null)
     order by g.agent_id, case g.subject_type when 'group' then 0 else 1 end, coalesce(gr.key, u.username)`);
 }
+
+export type GroupRefRow = { id: string; key: string; name: { vi: string; en?: string } };
+
+/** GROUP_REFS (plan-db §4) — tên group cho `reasons` của effective; chỉ group của T (PK). Group đã xoá ⇒ không có hàng. */
+export function groupRefs(
+  tx: Tx,
+  tenantId: string,
+  ids: readonly string[],
+): Promise<GroupRefRow[]> {
+  if (ids.length === 0) return Promise.resolve([]);
+  return tx.execute<GroupRefRow>(sql`select id, key, name from admin.groups
+    where tenant_id = ${tenantId} and id = any(${`{${ids.join(",")}}`}::uuid[])`);
+}
