@@ -9,7 +9,7 @@ import { DifyFileInputSchema } from "@ai/contracts/hub";
 import type { Json, Keys, Sql } from "../H1/_fixtures";
 import { makeKeys } from "../H1/_fixtures";
 import { AG } from "../H1/_hub";
-import { type Dify, startDify, WF_KEY } from "../H2a/_h2a";
+import { type Dify, markSideEffect, startDify, WF_KEY } from "../H2a/_h2a";
 import { isConfirmation, MCP_ERR, rpcRaw, toolCall } from "../H2a/_h2a2";
 import { HOADON_FILE_DESC, type HubC, sample, setupH2c, startHubH2c, WF3 } from "./_h2c";
 import {
@@ -34,7 +34,7 @@ beforeAll(async () => {
   dify = startDify();
   sql = await setupH2c({ catalogBaseUrl: dify.baseUrl });
   await sql`insert into hub.agent_workflows (agent_id, workflow_id) values (${AG.hoadon}, ${WF3.anhTuyChon})`;
-  await sql`insert into hub.workflow_flags (workflow_id, side_effect) values (${WF3.anhTuyChon}, true)`;
+  await markSideEffect(sql, WF3.anhTuyChon);
   k = await makeKeys();
   hub = await startHubH2c(k);
 }, 60_000);

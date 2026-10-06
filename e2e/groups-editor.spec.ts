@@ -101,7 +101,7 @@ test("ADM-FR-62 · M3-R02 · editor beta-testers: nhãn 'Thấy các feature đa
   await expect(toast(page, "Đã lưu Beta nội bộ")).toBeVisible();
 });
 
-test("ADM-FR-62 · M3-R24 · tab 'Agent': text 'Chưa khả dụng', không gọi API agent; đổi tab ghi ?tab= lên URL", async ({
+test("ADM-FR-62 · X1 F5 · tab 'Agent' khi vắng PUBLIC_HUB_URL: 'Chưa cấu hình địa chỉ Hub (PUBLIC_HUB_URL).', không gọi /agent-grants; đổi tab ghi ?tab= lên URL", async ({
   page,
 }) => {
   const agentCalls: string[] = [];
@@ -112,7 +112,7 @@ test("ADM-FR-62 · M3-R24 · tab 'Agent': text 'Chưa khả dụng', không gọ
   await page.goto(`/groups/${KT}`);
   await page.getByRole("tab", { name: "Agent", exact: true }).click();
   await expect(page).toHaveURL(/tab=agents/);
-  await expect(page.getByText("Chưa khả dụng")).toBeVisible();
+  await expect(page.getByText("Chưa cấu hình địa chỉ Hub (PUBLIC_HUB_URL).")).toBeVisible();
   await page.getByRole("tab", { name: "Feature", exact: true }).click();
   await expect(page).toHaveURL(/tab=features/);
   expect(agentCalls).toEqual([]);

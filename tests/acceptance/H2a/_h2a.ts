@@ -411,7 +411,19 @@ export async function insertCatalog(sql: Sql, o: CatalogOpts): Promise<void> {
     (${T.acme}, ${FEAT.labs}, null, ${USERS.lan.id}), (${T.beta}, ${FEAT.translate}, null, ${USERS.an.id})`;
   await sql`insert into hub.providers (key, kind, vendor, max_concurrency, enabled, dev_only)
     values ('dify', 'api', 'dify', 5, true, false) on conflict (key) do nothing`;
-  await sql`insert into hub.workflow_flags (workflow_id, side_effect) values (${WF.trello}, true)`;
+  await markSideEffect(sql, WF.trello);
+}
+
+// X1 L01 (HUB-FR-95, plan X1 §0 K1–K2): có cột admin.workflows.side_effect (sau B1, thắng hẳn — R23) ⇒ update; chưa ⇒ workflow_flags.
+export async function markSideEffect(sql: Sql, workflowId: string, on = true): Promise<void> {
+  const [col] = await sql<{ n: number }[]>`select count(*)::int as n from information_schema.columns
+    where table_schema = 'admin' and table_name = 'workflows' and column_name = 'side_effect'`;
+  if ((col?.n ?? 0) > 0) {
+    await sql`update admin.workflows set side_effect = ${on} where id = ${workflowId}`;
+  } else {
+    await sql`insert into hub.workflow_flags (workflow_id, side_effect) values (${workflowId}, ${on})
+      on conflict (workflow_id) do update set side_effect = excluded.side_effect`;
+  }
 }
 
 export async function betaGroup(sql: Sql, tenantId: string): Promise<string> {

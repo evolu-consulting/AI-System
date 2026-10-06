@@ -99,12 +99,14 @@ test("ADM-BR-06 · ADM-FR-20 · tắt /dich → toast 'Đã tắt /dich' + 'Hoà
   await expect(page.getByText("Bật workflow report-export trước")).toBeVisible();
 });
 
-test("ADM-FR-20 · M2 không làm FR-23: không có nút Chạy thử/Test và menu ⋯ không có 'Lịch sử'", async ({
+test("ADM-FR-23 · X1 F4 · editor command có nút 'Chạy thử'; ADM-FR-20 · menu ⋯ vẫn không có 'Lịch sử'", async ({
   page,
 }) => {
   await loginAdmin(page);
+  await page.goto(`/commands/${ID.command.dich}`);
+  await expect(page.getByRole("textbox", { name: "Tên command" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Chạy thử", exact: true }).first()).toBeVisible();
   await openPage(page, "/commands", "Commands");
-  await expect(page.getByRole("button", { name: /Chạy thử|Test/ })).toHaveCount(0);
   await row(page, "dich").getByRole("button", { name: "Thao tác khác" }).click();
   await expect(page.getByRole("menuitem", { name: "Lịch sử" })).toHaveCount(0);
   await expect(page.getByRole("menuitem", { name: "Nhân bản" })).toBeVisible();

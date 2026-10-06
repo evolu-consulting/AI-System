@@ -31,7 +31,7 @@ const openCheck = async (
 const showHidden = async (page: Page, n: number) =>
   page.getByRole("button", { name: `Hiện command không thấy (${n})` }).click();
 
-test("ADM-FR-36 · M3-R12 · lan: 3 nhóm Feature/Command/Agent; 'Thấy /kiemtra-hoadon' kèm 'qua feature Kế toán · group Kế toán'; tóm tắt 'Thấy 3/5 command'; Agent 'Chưa khả dụng' và KHÔNG gọi API agent", async ({
+test("ADM-FR-36 · M3-R12 · lan: 3 nhóm Feature/Command/Agent; 'Thấy /kiemtra-hoadon' kèm 'qua feature Kế toán · group Kế toán'; tóm tắt 'Thấy 3/5 command'; Agent (X1 F5, vắng PUBLIC_HUB_URL) 'Chưa cấu hình địa chỉ Hub (PUBLIC_HUB_URL).' và KHÔNG gọi API agent của Hub", async ({
   page,
 }) => {
   const agentCalls: string[] = [];
@@ -45,7 +45,7 @@ test("ADM-FR-36 · M3-R12 · lan: 3 nhóm Feature/Command/Agent; 'Thấy /kiemtr
   await expect(page.getByText("Thấy /kiemtra-hoadon")).toBeVisible();
   await expect(page.getByText("qua feature Kế toán · group Kế toán")).toBeVisible();
   await expect(page.getByText("Thấy 3/5 command")).toBeVisible();
-  await expect(page.getByText("Chưa khả dụng")).toBeVisible();
+  await expect(page.getByText("Chưa cấu hình địa chỉ Hub (PUBLIC_HUB_URL).")).toBeVisible();
   expect(agentCalls).toEqual([]);
 });
 

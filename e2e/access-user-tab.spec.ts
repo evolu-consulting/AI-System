@@ -17,7 +17,7 @@ const openDrawer = async (page: Page, username: string) => {
   return page.getByRole("dialog", { name: new RegExp(`${username} · `) });
 };
 
-test("ADM-FR-36 · M3-R13 · lan: tab 'Quyền hiệu lực' chỉ có khi SỬA (dialog 'Tạo user' không có tab); nội dung chỉ đọc: 'Thấy /kiemtra-hoadon', KHÔNG có nút 'Cấp Kế toán cho group…'; Agent 'Chưa khả dụng'", async ({
+test("ADM-FR-36 · M3-R13 · lan: tab 'Quyền hiệu lực' chỉ có khi SỬA (dialog 'Tạo user' không có tab); nội dung chỉ đọc: 'Thấy /kiemtra-hoadon', KHÔNG có nút 'Cấp Kế toán cho group…'; Agent (X1 F5, vắng PUBLIC_HUB_URL) 'Chưa cấu hình địa chỉ Hub (PUBLIC_HUB_URL).'", async ({
   page,
 }) => {
   const drawer = await openDrawer(page, "lan");
@@ -25,7 +25,7 @@ test("ADM-FR-36 · M3-R13 · lan: tab 'Quyền hiệu lực' chỉ có khi SỬA
   await expect(drawer.getByText("Thấy /kiemtra-hoadon")).toBeVisible();
   await expect(drawer.getByRole("button", { name: /Cấp .* cho group…/ })).toHaveCount(0);
   await expect(drawer.getByRole("heading", { level: 3, name: "Agent" })).toBeVisible();
-  await expect(drawer.getByText("Chưa khả dụng")).toBeVisible();
+  await expect(drawer.getByText("Chưa cấu hình địa chỉ Hub (PUBLIC_HUB_URL).")).toBeVisible();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "+ Tạo user" }).click();
   const create = page.getByRole("dialog", { name: "Tạo user" });

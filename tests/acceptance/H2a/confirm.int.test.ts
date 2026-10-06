@@ -26,6 +26,7 @@ import {
   idGen2,
   insertCatalog,
   insertH2aAgents,
+  markSideEffect,
   startDify,
   startHubH2a,
   WF,
@@ -60,7 +61,7 @@ beforeAll(async () => {
   await insertH2aAgents(sql);
   // A65: agent khác cùng workflow; workflow khác cũng side_effect
   await sql`insert into hub.agent_workflows (agent_id, workflow_id) values (${AG.assistant}, ${WF.trello})`;
-  await sql`insert into hub.workflow_flags (workflow_id, side_effect) values (${WF.checkInvoice}, true)`;
+  await markSideEffect(sql, WF.checkInvoice);
   k = await makeKeys();
   hub = await startHubH2a(k);
   redis = await testRedis();
@@ -257,20 +258,20 @@ describe("A62–A66 · quyết định, hết hạn, nguyên tử, ràng buộc,
   });
 });
 
-describe("A67 · nguồn cờ side_effect [H2a-R23]", () => {
-  it("HUB-FR-95 · A67 · không cột admin.workflows.side_effect → workflow_flags quyết (trello: confirm); thêm cột (owner) = false + reload → cột thắng: gọi thẳng Dify [H2a-R23]", async () => {
+describe("A67 · nguồn cờ side_effect [H2a-R23 · X1]", () => {
+  it("HUB-FR-95 · A67 · cột admin.workflows.side_effect quyết: trello true → confirm; update false (owner) + reload → gọi thẳng Dify mock; check-invoice vẫn true → confirm [H2a-R23 · X1 plan §0 K1–K2]", async () => {
     const [col] = await sql<
       { n: number }[]
     >`select count(*)::int as n from information_schema.columns
       where table_schema = 'admin' and table_name = 'workflows' and column_name = 'side_effect'`;
-    expect(col?.n).toBe(0);
+    expect(col?.n).toBe(1);
     const before = await trelloJob();
     expect(isConfirmation((await callTrello(before.token)).result)).toBe(true);
-    await sql`alter table admin.workflows add column side_effect boolean not null default false`;
     try {
       await catalogChange(
         sql,
-        (tx) => tx`update admin.workflows set updated_at = now() where id = ${WF.trello}`,
+        (tx) =>
+          tx`update admin.workflows set side_effect = false, updated_at = now() where id = ${WF.trello}`,
       );
       dify.mock.reset();
       const res = await waitFor(
@@ -282,6 +283,7 @@ describe("A67 · nguồn cờ side_effect [H2a-R23]", () => {
         5_000,
       );
       expect(res).toEqual({ content: [{ type: "text", text: MOCK_TEXT }], isError: false });
+      expect(dify.runs().length).toBeGreaterThanOrEqual(1);
       const inv = await insertSqlJob(sql, id, {
         type: "agent.cli",
         agentId: AG.hoadon,
@@ -290,13 +292,12 @@ describe("A67 · nguồn cờ side_effect [H2a-R23]", () => {
         mcpUrl: mcpUrl(),
       });
       const r2 = await toolCall(hub, inv.token, WF_KEY.checkInvoice, { x: "HD-67" });
-      expect(r2.result?.isError).toBe(false);
-      expect(dify.runs().length).toBeGreaterThanOrEqual(2);
+      expect(isConfirmation(r2.result)).toBe(true);
     } finally {
-      await sql`alter table admin.workflows drop column if exists side_effect`;
       await catalogChange(
         sql,
-        (tx) => tx`update admin.workflows set updated_at = now() where id = ${WF.trello}`,
+        (tx) =>
+          tx`update admin.workflows set side_effect = true, updated_at = now() where id = ${WF.trello}`,
       );
     }
   });

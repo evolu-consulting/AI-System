@@ -14,7 +14,7 @@ afterAll(async () => {
 });
 
 const HUB_TABLES = ["agent_grants", "agent_workflows", "usage_logs"];
-// M2 (Q2): thêm 0003_admin_catalog + 0004_catalog_rls → 10 bảng; M3 (Q2): thêm 0005_admin_permissions + 0006_permissions_rls → 14 bảng admin.* (spec M3 §4); M4 (Q2a, test-plan §5 K1): + 0007_m4_ops, 0008_admin_totp, dev 0002_usage_at_idx → 19 bảng admin.*; sắp collate "C" (không phụ thuộc collation DB).
+// M2 (Q2): thêm 0003_admin_catalog + 0004_catalog_rls → 10 bảng; M3 (Q2): thêm 0005_admin_permissions + 0006_permissions_rls → 14 bảng admin.* (spec M3 §4); M4 (Q2a, test-plan §5 K1): + 0007_m4_ops, 0008_admin_totp, dev 0002_usage_at_idx → 19 bảng admin.*; X1 (B1): + 0009_x1_workflow_side_effect (thêm cột, không bảng) → main 10; sắp collate "C" (không phụ thuộc collation DB).
 const ADMIN_TABLES = [
   "admin.audit_log",
   "admin.command_names",
@@ -50,7 +50,7 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
   it("ADM-NFR-06 · M0-AC03 · có đúng 3 bảng hub.* và 19 bảng admin.* (M4)", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "development" });
-    expect(r).toEqual({ main: 9, dev: 3 });
+    expect(r).toEqual({ main: 10, dev: 3 });
     expect(await tablesIn(["admin", "hub"])).toEqual([
       ...ADMIN_TABLES,
       "hub.agent_grants",
@@ -149,7 +149,10 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
 
   it("ADM-NFR-06 · M0-AC03 · role đã có sẵn (DB reset nhưng role ở mức cluster) vẫn migrate được", async () => {
     await resetTestDb(URL);
-    await expect(runMigrations({ url: URL, appEnv: "test" })).resolves.toEqual({ main: 9, dev: 3 });
+    await expect(runMigrations({ url: URL, appEnv: "test" })).resolves.toEqual({
+      main: 10,
+      dev: 3,
+    });
   });
 
   it("ADM-NFR-06 · M0-AC03 · db:migrate không kết nối được → exit 1, nêu ECONNREFUSED và gợi ý compose", () => {
@@ -167,7 +170,7 @@ describe("ADM-NFR-06 · M0-AC04 · db:migrate (production)", () => {
   it("ADM-NFR-06 · M0-AC04 · có schema admin, hub; 19 bảng admin.* (M4), không có bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 9, dev: 0 });
+    expect(r).toEqual({ main: 10, dev: 0 });
     const ns = await sql<{ nspname: string }[]>`
       select nspname from pg_namespace where nspname in ('admin', 'hub') order by 1`;
     expect(ns.map((n) => n.nspname)).toEqual(["admin", "hub"]);
