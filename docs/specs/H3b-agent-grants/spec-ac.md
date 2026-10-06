@@ -1,0 +1,23 @@
+# H3b · Tiêu chí nghiệm thu (spec §8, qc)
+
+Phụ lục của [`spec.md`](spec.md) §8. qc bổ sung cột "Test" chi tiết ở `test-plan.md`. Dữ liệu chung: tenant `acme`, `beta`; group `ke-toan` (acme) có user X; agent `hoadon` có entitlement cho `acme` (seed/SQL); `tenant_admin` A của `acme`, `platform_admin` P, member M. Run có step dùng `fake-cli` / mock Dify H2a.
+
+| AC | Given / When / Then | Test |
+|---|---|---|
+| AC-H08 (vế trace) | Given run R của `beta`, When X (member `acme`) và A (`tenant_admin` `acme`) gọi `GET /runs/R/trace`, Then cả hai nhận 404 giống hệt ca id không tồn tại (thân + header), 0 hàng audit | int |
+| AC-H09 (vế grant) | Given `hoadon` có entitlement cho `acme`, chưa cấp cho group nào của X; When X gửi tin, Then danh sách agent đưa Orchestrator không có `hoadon`. When A `POST /agent-grants {hoadon, group, ke-toan}` → 201, Then ≤ 5 s sau, lượt gửi kế của X có `hoadon` trong danh sách / `GET /agents` của X có `hoadon` | int (LISTEN thật, 2 instance cache) |
+| AC-A11 (vế Hub, phần agent) | Given grant ở AC-H09; When thu hồi entitlement `hoadon` của `acme` (SQL owner + NOTIFY), Then ≤ 5 s `hoadon` biến khỏi `GET /agents` của X, hàng grant **còn** trong `agent_grants`, effective của X có `missing:[no_entitlement]` + `reasons:[grant_group ke-toan]`. When cấp lại entitlement, Then `hoadon` trở lại không cần cấp lại grant | int |
+| HUB-H3b-AC-01 | R01/R02: M gọi mọi `/agent-grants*` → 403 `FORBIDDEN`, 0 truy vấn ghi. A gửi `tenant_id=<beta>` → 404 ở GET/POST/DELETE/effective, 0 hàng đổi ở `beta`. P thiếu `tenant_id` → 400 `TENANT_REQUIRED`; P với `tenant_id=<beta>` → thao tác đúng `beta` | int |
+| HUB-H3b-AC-02 | R04: agent không có entitlement / đã thu hồi → 409 `NOT_ENTITLED` (cả P); agent không tồn tại → 400 `INVALID_REFERENCE {field:"agent_id"}`; agent là Orchestrator (mặc định hoặc tenant) → 409 `AGENT_NOT_GRANTABLE` (mã theo plan); 0 hàng, 0 bump | int |
+| HUB-H3b-AC-03 | R04: subject là group/user của `beta` hoặc uuid không tồn tại → 400 `INVALID_REFERENCE {field:"subject_id"}`, thân lỗi giống hệt hai ca; 0 hàng | int |
+| HUB-H3b-AC-04 | R06/R07/R08: POST mới → 201, `hub_config_version` +1 đúng 1, đúng 1 hàng audit `grant`, đúng 1 NOTIFY `hub_config_changed` (≤ 1 s sau commit, `version` = giá trị sau ghi). POST trùng → 200 cùng `id`, 0 bump/audit/NOTIFY. DELETE có hàng → 204 + 1 bump + 1 audit `revoke` + 1 NOTIFY; DELETE không có → 204, 0 ghi. Lỗi giữa transaction (hook) → không bump, không audit, không NOTIFY | int |
+| HUB-H3b-AC-05 | R06 đồng thời: 2 POST cùng khoá song song → đúng 1 hàng, version +1 đúng 1, 1 audit; POST ∥ DELETE không deadlock (thứ tự khoá R08) | int (concurrency) |
+| HUB-H3b-AC-06 | R11: `GET /agent-grants` chỉ agent có entitlement chưa thu hồi cho `T`, không Orchestrator, sắp `key`; `grants[]` chỉ của `T`; lọc `subject_type=group&subject_id=ke-toan` chỉ trả grant của group đó; grant mồ côi (group đã xoá) không xuất hiện | int |
+| HUB-H3b-AC-07 | R12–R14: ma trận effective — agent {bật, tắt} × entitlement {có, thu hồi} × grant {user, group, không} × runtime {chạy được, không} × user {active, inactive} × tenant {active, locked} → `visible`, `reasons`, `missing` đúng bảng R14 (thứ tự cố định); tập `visible=true` ≡ `visibleAgents` (cùng ảnh); agent không liên quan `T` không có mặt; user tenant khác → 404 | unit (luật) + int |
+| HUB-H3b-AC-08 | R17(a): X gọi trace run của chính mình → 200 đầy đủ (steps theo `seq`, jobs, usage, tin), 0 hàng audit | int |
+| HUB-H3b-AC-09 | R17(b)/R16: P gọi trace run của X (`acme`) → 200 đầy đủ + đúng 1 hàng audit `view_trace {tenant_id = acme, actor = P, entity_id = R}` mỗi lần gọi (gọi 2 lần → 2 hàng); P xem run của chính P → 0 audit (Q-U4) | int |
+| HUB-H3b-AC-10 | R17(c)/(d): A gọi trace run của X (cùng `acme`) → 404 (Q-U2 mặc định); M gọi trace run của X → 404; R18: thân trace (mọi role) không chứa secret/khoá Dify/token job/`Authorization` (quét chuỗi mẫu đã cài vào step), audit không chứa nội dung tin | int |
+| HUB-H3b-AC-11 | R19: lỗi ghi audit (hook) → 500, không trả trace, không hàng audit | int |
+| HUB-H3b-AC-12 | R23: preflight `OPTIONS /agent-grants` từ origin admin-web có trong `HUB_CORS_ORIGINS` → cho phép; origin lạ → không có `Access-Control-Allow-Origin` | int |
+| HUB-H3b-AC-13 | Đầu vào M5 (CR-015) vế Hub phần command, chỉ test trên code H2a (Q-K11): kill switch / cấp feature cho group → menu `GET /commands` đổi ≤ 5 s; user không được cấp gõ lệnh → `CMD_NOT_FOUND`; thu hồi entitlement feature → mất, cấp lại → hiệu lực lại | int (đỏ → TECH-DEBT, không chặn mốc) |
+| HUB-H3b-AC-14 | Hồi quy (R21/R22): `test:contract:chat` 41 ca; test khoá H1/H2a/H2b/H2c/H3a; Admin M3 `hub-view.int`, M4 usage xanh nguyên văn | contract + CI |

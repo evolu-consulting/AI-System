@@ -59,4 +59,5 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 | `H2a-dify-command` | Command `/` + Command Runner → Dify (sync, `workflow.async`), agent `dify-*`, MCP `/mcp` (workflow làm tool), xác nhận `side_effect`, `/internal/test-run`; contract `@ai/contracts/chat-ext` | H2a | draft (2026-10-05) |
 | `H2b-routing` | `@agent` + `GET /agents`, Orchestrator theo tenant, `TOO_MANY_RUNS`, `delta` từ Runtime, nợ H1 F3–F7 | H2b | done (2026-10-05) |
 | `H2c-attachments` | Đính kèm file (`POST /attachments`, gắn tin, file cho agent CLI, Dify `/files/upload`, `out/`) | H2c | done (2026-10-05) |
-| `H3a-subscription` | Subscription `claude-sub`: probe → `provider_state`, hết quota/bị giới hạn, lỗi rõ (WRK-FR-22, 15; CR-041) · `spec-ac.md`, `spec-decisions.md`, `tasks.md` khung | H3a | draft (2026-10-05) |
+| `H3a-subscription` | Subscription `claude-sub`: probe → `provider_state`, hết quota/bị giới hạn, lỗi rõ (WRK-FR-22, 15; CR-041) · `spec-ac.md`, `spec-decisions.md`, `tasks.md` | H3a | done (2026-10-06) |
+| `H3b-agent-grants` | Quyền agent: `/agent-grants` + `/agent-grants/effective/:user_id` (Kiểm tra quyền phần agent, đóng M5 phần agent), `GET /runs/:id/trace` theo role + audit `view_trace` (HUB-FR-78, 79, 52, 87; HUB-BR-17; ADM-FR-37 vế Hub) · `spec-ac.md`, `spec-decisions.md`, `tasks.md` khung | H3b | draft (2026-10-06) |
