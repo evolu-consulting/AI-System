@@ -47,6 +47,9 @@ beforeAll(async () => {
   tr.mix = await insertTraceRun(x.sql, "lan", RUN.mix, { base: 7000 });
 }, 120_000);
 afterAll(async () => {
+  // DB `ai_system_h1_test` dùng chung với pytest: dòng `usage_logs` job_id NULL không bị CLEAN_SQL của pytest xoá
+  // (REVIEW 1 H3b #1) ⇒ dọn theo run_id của chính file này.
+  if (x) await x.sql`delete from hub.usage_logs where run_id in ${x.sql(Object.values(RUN))}`;
   await x?.stop();
 });
 

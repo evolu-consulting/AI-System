@@ -75,3 +75,13 @@ Phân tích bước 5: ca đo "0 usage_logs" nên 30 dòng là rác từ bước
 Lần 2 `done:h3b --from=5`: **bước 5 xanh** (pytest int pass, kể cả probe P35), 6–17 xanh (h1/h2a/h2b/h2c/h3a:stack, contract:chat 41, H2b/H2c hubdev, lock:verify, trace --check, check:size, depcruise), 18 xanh, 19 perf đỏ (báo cáo, không chặn): chỉ còn `PF2 · E12 '@assistant …' thêm ≤ 10 ms p95` (H2b, chập chờn đã biết/perf). Lần 1 perf còn đỏ thêm H2c upload A06 `snap` và 3 ca H01 hubdev (ConnectionRefused :3001 — perf chạy không có dev stack) — lần 2 không tái hiện.
 Kết luận: toàn bộ bước chặn xanh (bước 1–4 lần 1, 5–17 lần 2); không có lỗi code H3b (mount trace `app.ts`, migration 0009 không gây 10 ca đỏ B5 — int 3 file trong một lệnh xanh 2282/0).
 **AC-13** `bun --env-file=.env.local --config=bunfig.stack.toml test --timeout 30000 ./tests/acceptance/H3b-cmd`: 5 pass / 0 fail (A130 117 ms, A131 tắt 118 / bật 124 ms, A133 121 ms, A134 115 ms ≤ 5 s). Không ghi TECH-DEBT.
+
+## REVIEW 1 #1 (P35) — dọn `usage_logs` rò từ trace.int (qc, 2026-10-06)
+Nguyên nhân: `trace.int` (helper `_h3b-trace.ts:168`) chèn 4 dòng `usage_logs` (`job_id` NULL) × 7 run + 2 dòng A100 (run `RUN.mix`, tenant beta) không dọn; DB `ai_system_h1_test` dùng chung với pytest, `CLEAN_SQL` chỉ xoá `where job_id is not null` ⇒ P35 (đếm toàn bảng) đỏ sau lượt `done:h3b` đầy đủ.
+Sửa (2 file, ý nghĩa "probe không ghi usage_logs" giữ nguyên):
+- `trace.int` `afterAll`: `delete from hub.usage_logs where run_id in RUN.*` — `RUN` gồm đủ 7 run (lan, beta, tam, pad, tad, big, mix); mọi dòng usage của file (kể cả 2 dòng A100) đều mang `run_id` thuộc `RUN` ⇒ dọn hết. `jobs`/`runs`/`steps` rò khác: không gây hại (pytest `reset_data` xoá `hub.jobs`; không ca nào đếm toàn bảng runs/steps) ⇒ không dọn thêm.
+- P35: lấy `t0 = select now()` trước khi start Runtime, đếm `usage_logs where at >= t0` (cột thời gian là `at`, `timestamptz not null default now()`; bản sửa dở dùng `created_at` — không tồn tại ⇒ `UndefinedColumnError`, đã sửa thành `at`). Dòng cũ không còn làm đỏ P35; dòng do Runtime ghi trong ca vẫn bị bắt.
+Tái hiện: (1) `trace.int` 14/14 xanh, sau đó `count(*) hub.usage_logs` = 0. (2) ngay sau đó `pytest -m int tests/acceptance/probe_int_test.py` (đúng cách `pythonCommand` của done-h1: URL host `postgres:5432`, qua `scripts/run.ts`) 20/20 xanh (gồm P35); ruff check/format file sạch. (3) chèn 1 dòng `usage_logs` job_id NULL `at = now() - 1 day` rồi chạy P35 ⇒ xanh; đã xoá dòng thử (count = 0).
+**File cần khoá lại:** `tests/acceptance/H3b/trace.int.test.ts`, `apps/agent-runtime/tests/acceptance/probe_int_test.py` (cả hai có trong `tests/.lock`).
+
+Điều phối: commit hộ qc (qc báo đã commit nhưng chưa); rút ngắn comment dòng 281 `probe_int_test.py` (ruff E501), không đổi logic → ruff check/format xanh.

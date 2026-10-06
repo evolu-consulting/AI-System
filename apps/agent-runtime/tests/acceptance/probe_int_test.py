@@ -278,12 +278,13 @@ async def test_wrk_fr_22_p35_probe_result_log_no_usage_no_pii(ctx: Ctx) -> None:
     """WRK-FR-22 · P35 · `probe.result{ok, step:turn, ms, 10/1 token}`; 0 `usage_logs`; log không
     `Reply`/`@`/`organization`/`accessToken` [H3a-R17 · HUB-H3a-AC-11]"""
     write_probe(ctx, "ok")
+    t0 = await ctx.conn.fetchval("select now()")  # chỉ đếm dòng của ca (DB chung với bun int)
     rt = start(ctx, 60)
     res = (await until_log(ctx, rt, "probe.result"))[0]
     assert (res["provider"], res["ok"], res["step"]) == (FAKE, True, "turn")
     assert isinstance(res["ms"], int)
     assert (res["input_tokens"], res["output_tokens"]) == (10, 1)
-    assert await ctx.conn.fetchval("select count(*) from hub.usage_logs") == 0
+    assert await ctx.conn.fetchval("select count(*) from hub.usage_logs where at >= $1", t0) == 0
     # `runtime.start` có URL DB (`user:***@host`) — chỉ quét log probe/provider/claude của ca
     probe = ("probe.", "provider.", "claude.")
     out = json.dumps([x for x in logs(rt) if str(x.get("event", "")).startswith(probe)])
