@@ -86,5 +86,93 @@
     "title": "You don't have access to Agent Studio",
     "body": "Agent Studio is only for platform administrators (platform_admin).",
     "toChat": "Back to Chat"
+  },
+  "common": {
+    "cancel": "Cancel"
+  },
+  "offline": {
+    "banner": "Connection lost, changes not saved"
+  },
+  "agents": {
+    "title": "Agents",
+    "subtitle": "Each agent = runtime + model profile + system prompt + workflows attached as tools. The Orchestrator only sees agents the user is granted.",
+    "create": "+ Create agent",
+    "createFirst": "+ Create first agent",
+    "empty": "No agents yet. The Orchestrator will answer every question itself.",
+    "noMatch": "No agents match the filters",
+    "clearFilters": "Clear filters",
+    "search": "Search agents",
+    "searchPlaceholder": "Search by name or key…",
+    "filter": {
+      "all": "All",
+      "off": "Disabled",
+      "runtime": "Filter by runtime"
+    },
+    "tableLabel": "Agent list",
+    "col": {
+      "agent": "Agent",
+      "runtime": "Runtime",
+      "profile": "Profile",
+      "workflow": "Workflows",
+      "tenant": "Tenants",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "badge": {
+      "orch": "Orchestrator",
+      "orchTenants": "Orchestrator · {n} tenants",
+      "notGranted": "Not granted",
+      "overlap": "Overlapping description"
+    },
+    "attention": {
+      "title": "Needs attention",
+      "body": "{n} enabled agents are not granted to any tenant: {keys}"
+    },
+    "menu": {
+      "duplicate": "Duplicate",
+      "setOrch": "Set as Orchestrator",
+      "playground": "Try in Playground",
+      "grant": "Grant to tenant…",
+      "enable": "Enable",
+      "disable": "Disable",
+      "delete": "Delete"
+    },
+    "switchLabel": "Enable {key}",
+    "rowMenu": "Actions for {key}",
+    "orchLocked": "This agent is the Orchestrator; it can't be disabled or deleted.",
+    "toast": {
+      "disabled": "Disabled {name}. The Orchestrator will no longer pick this agent.",
+      "undo": "Undo",
+      "enabled": "Enabled {name}",
+      "deleted": "Deleted agent {key}",
+      "orchSet": "Set {name} as the default Orchestrator"
+    },
+    "delete": {
+      "title": "Delete agent {key}?",
+      "body": "This can't be undone. Agents with run history can only be disabled.",
+      "confirm": "Delete agent"
+    },
+    "setOrch": {
+      "title": "Set {name} as the default Orchestrator?",
+      "body": "All messages of tenants without their own Orchestrator will go through this agent.",
+      "confirm": "Set as Orchestrator"
+    },
+    "truncated": "Showing the first 200 agents. Use search to filter on the server."
+  },
+  "errors": {
+    "FORBIDDEN": "You no longer have permission to do this",
+    "VERSION_CONFLICT": "This agent was just changed by someone else. The list was reloaded.",
+    "INVALID_REFERENCE": "The selected item changed or is no longer valid ({field}). Reload and choose again.",
+    "BASH_ACK_REQUIRED": "Confirm you understand the risk of enabling Bash",
+    "AGENT_IN_USE_AS_ORCHESTRATOR": "This agent is the Orchestrator. Choose another Orchestrator first.",
+    "AGENT_HAS_HISTORY": "This agent has run history and can't be deleted. Disable it instead.",
+    "AGENT_HAS_ACCESS": "This agent is still granted to tenants/groups. Revoke access before deleting.",
+    "ORCHESTRATOR_EXISTS": "This tenant already has its own Orchestrator.",
+    "NOT_FOUND": "This item doesn't exist or was deleted.",
+    "VALIDATION_ERROR": "Some fields are invalid, please check.",
+    "KEY_TAKEN": "This key is already used by another agent",
+    "AGENT_NOT_ORCHESTRATABLE": "This agent can't be the Orchestrator yet (it is disabled or its runtime isn't supported).",
+    "ORCHESTRATOR_DEFAULT_PROTECTED": "The default Orchestrator can't be deleted.",
+    "TENANT_INACTIVE": "This tenant is locked."
   }
 }

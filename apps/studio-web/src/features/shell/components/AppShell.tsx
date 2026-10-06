@@ -1,6 +1,7 @@
 // HUB-FR-72 · khung ứng dụng: skip-link, Sidebar, Topbar, <main id="main"> (Toaster ở __root).
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { OfflineBanner } from "./OfflineBanner";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
@@ -18,6 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar />
+          <OfflineBanner />
           <div className="relative flex-1 overflow-y-auto">
             <main
               id="main"

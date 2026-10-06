@@ -86,5 +86,93 @@
     "title": "Bạn không có quyền vào Agent Studio",
     "body": "Agent Studio chỉ dành cho quản trị nền tảng (platform_admin).",
     "toChat": "Về Chat"
+  },
+  "common": {
+    "cancel": "Huỷ"
+  },
+  "offline": {
+    "banner": "Mất kết nối, thay đổi chưa được lưu"
+  },
+  "agents": {
+    "title": "Agents",
+    "subtitle": "Mỗi agent = runtime + model profile + system prompt + workflow được gắn làm tool. Orchestrator chỉ thấy agent mà user được cấp.",
+    "create": "+ Tạo agent",
+    "createFirst": "+ Tạo agent đầu tiên",
+    "empty": "Chưa có agent nào. Orchestrator sẽ tự trả lời mọi câu hỏi.",
+    "noMatch": "Không có agent nào khớp bộ lọc",
+    "clearFilters": "Xoá bộ lọc",
+    "search": "Tìm agent",
+    "searchPlaceholder": "Tìm theo tên hoặc key…",
+    "filter": {
+      "all": "Tất cả",
+      "off": "Đang tắt",
+      "runtime": "Lọc runtime"
+    },
+    "tableLabel": "Danh sách agent",
+    "col": {
+      "agent": "Agent",
+      "runtime": "Runtime",
+      "profile": "Profile",
+      "workflow": "Workflow",
+      "tenant": "Tenant",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "badge": {
+      "orch": "Orchestrator",
+      "orchTenants": "Orchestrator · {n} tenant",
+      "notGranted": "Chưa cấp",
+      "overlap": "Mô tả trùng ý"
+    },
+    "attention": {
+      "title": "Cần chú ý",
+      "body": "{n} agent đang bật nhưng chưa cấp cho tenant nào: {keys}"
+    },
+    "menu": {
+      "duplicate": "Nhân bản",
+      "setOrch": "Đặt làm Orchestrator",
+      "playground": "Thử trong Playground",
+      "grant": "Cấp cho tenant…",
+      "enable": "Bật",
+      "disable": "Tắt",
+      "delete": "Xoá"
+    },
+    "switchLabel": "Bật {key}",
+    "rowMenu": "Thao tác {key}",
+    "orchLocked": "Agent đang là Orchestrator, không tắt hoặc xoá được.",
+    "toast": {
+      "disabled": "Đã tắt {name}. Orchestrator sẽ không còn chọn agent này.",
+      "undo": "Hoàn tác",
+      "enabled": "Đã bật {name}",
+      "deleted": "Đã xoá agent {key}",
+      "orchSet": "Đã đặt {name} làm Orchestrator mặc định"
+    },
+    "delete": {
+      "title": "Xoá agent {key}?",
+      "body": "Không khôi phục được. Agent đã có lịch sử chạy thì chỉ tắt được.",
+      "confirm": "Xoá agent"
+    },
+    "setOrch": {
+      "title": "Đặt {name} làm Orchestrator mặc định?",
+      "body": "Mọi tin nhắn của tenant không có bản riêng sẽ đi qua agent này.",
+      "confirm": "Đặt làm Orchestrator"
+    },
+    "truncated": "Chỉ hiện 200 agent đầu. Dùng ô tìm để lọc trên máy chủ."
+  },
+  "errors": {
+    "FORBIDDEN": "Bạn không còn quyền thực hiện thao tác này",
+    "VERSION_CONFLICT": "Agent vừa được người khác thay đổi. Đã tải lại danh sách.",
+    "INVALID_REFERENCE": "Dữ liệu chọn đã bị đổi hoặc không còn hợp lệ ({field}). Tải lại và chọn lại.",
+    "BASH_ACK_REQUIRED": "Xác nhận bạn hiểu rủi ro khi bật Bash",
+    "AGENT_IN_USE_AS_ORCHESTRATOR": "Agent đang là Orchestrator. Chọn agent khác làm Orchestrator trước.",
+    "AGENT_HAS_HISTORY": "Agent đã có lịch sử chạy nên không xoá được. Hãy tắt agent thay vì xoá.",
+    "AGENT_HAS_ACCESS": "Agent vẫn đang được cấp cho tenant/group. Thu hồi quyền trước khi xoá.",
+    "ORCHESTRATOR_EXISTS": "Tenant này đã có Orchestrator riêng.",
+    "NOT_FOUND": "Mục này không tồn tại hoặc đã bị xoá.",
+    "VALIDATION_ERROR": "Dữ liệu chưa hợp lệ, kiểm tra lại các trường.",
+    "KEY_TAKEN": "Key đã được dùng bởi agent khác",
+    "AGENT_NOT_ORCHESTRATABLE": "Agent này chưa làm Orchestrator được (đang tắt hoặc runtime chưa hỗ trợ).",
+    "ORCHESTRATOR_DEFAULT_PROTECTED": "Không xoá được Orchestrator mặc định.",
+    "TENANT_INACTIVE": "Tenant đang bị khoá."
   }
 }
