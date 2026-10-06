@@ -164,9 +164,10 @@ export async function ensureWorkflows(
       continue;
     }
     const id = idOf(cur, `workflow ${w.key}`);
-    ids.set(w.key, id);
     const pr = await patchWorkflow(c, id, want);
-    if (pr !== "skip") c.log(`workflow ${w.key}: ${pr ? "cập nhật" : "giữ nguyên"}`);
+    if (pr === "skip") continue; // workflow lạ: không gắn command seed vào (RV2 #3)
+    ids.set(w.key, id);
+    c.log(`workflow ${w.key}: ${pr ? "cập nhật" : "giữ nguyên"}`);
   }
   return ids;
 }
@@ -196,7 +197,13 @@ export async function ensureCommands(
   featureId: string,
 ): Promise<void> {
   for (const cmd of c.plan.commands) {
-    const wfId = wfIds.get(cmd.workflow_key) as string;
+    const wfId = wfIds.get(cmd.workflow_key);
+    if (!wfId) {
+      c.log(
+        `CẢNH BÁO: command /${cmd.name} bỏ qua — workflow ${cmd.workflow_key} không do seed quản lý`,
+      );
+      continue;
+    }
     const want = commandBody(cmd);
     const step = `command /${cmd.name}`;
     const cur = await findExact(c.admin, step, "/admin/commands", {
