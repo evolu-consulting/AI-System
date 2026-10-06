@@ -65,3 +65,6 @@ Code H2a (không code mới). Thời gian menu cập nhật: A130 124 ms, A131 t
 - **TC2 — test sai.** `role-tenant` A06 vế `?tenant_id=abc` kỳ vọng `details: undefined`, nhưng contract `VALIDATION_ERROR` luôn có `details.issues` (ValidationErrorDetailsSchema). Sửa: so `[tên endpoint, 400, "VALIDATION_ERROR"]` cho 4 endpoint và thêm kiểm `details.issues.length > 0` (chặt hơn trước). A13 chỉ so status/code nên không đổi.
 - Kết quả: `grants-concurrency` 7/7 xanh. `role-tenant` 11 pass / 4 fail: A04, A05, A13, A06 đỏ ở vế **effective** (endpoint trả 404 NOT_FOUND vì B4 chưa xong — chờ B4), vế `abc` của A06 đã qua assertion tới được (không đỏ vì details).
 - **File cần khoá lại:** `tests/acceptance/H3b/grants-concurrency.int.test.ts`, `tests/acceptance/H3b/role-tenant.int.test.ts`.
+
+## Khoá lại sau TC1/TC2 (điều phối, 2026-10-06)
+`test:lock:verify` trước khi ghi: đúng 2 CHANGED (`grants-concurrency.int.test.ts`, `role-tenant.int.test.ts` — qc `c2dcc1c`), 0 UNLOCKED → `test:lock:write` → verify OK.
