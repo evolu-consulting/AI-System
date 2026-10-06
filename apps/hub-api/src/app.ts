@@ -16,6 +16,7 @@ import { mountDifyCredential, workflowJobs } from "./app.async";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountH2b } from "./app.h2b";
 import { mountH2c } from "./app.h2c";
+import { mountH3b } from "./app.h3b";
 import { mountMcp } from "./app.mcp";
 import { runDrivers, startRunLoops } from "./app.runner";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
@@ -79,7 +80,14 @@ export type AppDeps = {
 
 const DEFAULT_CONFIG_POLL_S = 60;
 /** Gốc các route cần JWT (E5–E15). Chặn ở gốc ⇒ 401 trước 404, kể cả route chưa mount; `/health` mở. */
-const PROTECTED_PREFIXES = ["/conversations", "/runs", "/commands", "/agents", "/attachments"];
+const PROTECTED_PREFIXES = [
+  "/conversations",
+  "/runs",
+  "/commands",
+  "/agents",
+  "/attachments",
+  "/agent-grants",
+];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
@@ -134,6 +142,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   if (config) mountDifyCredential(app, { ...deps, db: deps.db, config, log: logger });
   const h2a = config && mountH2a(app, config, drivers);
   const h2b = config && mountH2b(app, config);
+  if (config) mountH3b(app, { db: deps.db, config, hubAudit: deps.hubAudit });
   if (!deps.redis || !config || !h2a || !h2b) {
     app.route("/conversations", conversationRoutes(deps.db));
     return;
