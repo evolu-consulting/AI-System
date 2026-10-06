@@ -4,7 +4,7 @@ import { ApiError } from "~/lib/http";
 import { isComposerError, sendErrorView } from "./send-error";
 
 const err = (code: ConstructorParameters<typeof ApiError>[1], details?: unknown) =>
-  new ApiError(404, code, "x", details);
+  new ApiError(404, code, "x", { details });
 
 describe("sendErrorView", () => {
   test("CMD_NOT_FOUND: tên lấy từ chữ đã gửi, gợi ý từ details (chấp nhận trường thừa)", () => {
@@ -39,7 +39,7 @@ describe("sendErrorView", () => {
 
 describe("F2 · agent + 429", () => {
   const mk = (status: number, code: string, details?: unknown, retryAfter?: number) =>
-    new ApiError(status, code as never, "m", details, retryAfter);
+    new ApiError(status, code as never, "m", { details, retryAfter });
   test("AGENT_NOT_FOUND: tag từ details (parse tay, bỏ trường thừa), gợi ý tiền tố @", () => {
     const v = sendErrorView(
       mk(404, "AGENT_NOT_FOUND", { tag: "x2", suggestions: ["x"], extra: 1 }),

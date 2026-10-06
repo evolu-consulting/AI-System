@@ -23,7 +23,9 @@ export function useSendError(currentText: string) {
       setSent({ error, text });
       if (error.code === "TOO_MANY_RUNS") cooldown.start(retrySecondsOf(error));
     },
-    clear: () => setSent(null),
+    /** Gõ chữ không xoá thông báo 429 khi còn đếm ngược (Gửi vẫn khoá); hết đếm → tự ẩn. */
+    clear: () =>
+      setSent((cur) => (cur?.error.code === "TOO_MANY_RUNS" && cooldown.left > 0 ? cur : null)),
     /** Nút "Ý bạn là": văn bản mới sau khi thay lệnh/tag bằng gợi ý. */
     applySuggestion(name: string): string {
       const base = sent?.text ?? currentText;

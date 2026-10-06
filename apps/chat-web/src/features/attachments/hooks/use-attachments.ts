@@ -3,11 +3,30 @@ import { type DragEvent, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { ApiError } from "~/lib/http";
-import { isBusy, markMissing, missingIds, readyIds } from "../lib/queue";
+import { type Chip, isBusy, markMissing, missingIds, readyIds } from "../lib/queue";
 import { validateAttachment } from "../lib/validate.rules";
 import { useAttachQueue } from "./use-attach-queue";
 
 export type Attachments = ReturnType<typeof useAttachments>;
+
+type Entry = Pick<Chip, "file" | "status" | "errorKey">;
+
+/** Chặn sớm từng tệp theo luật; `overflow` = vượt số tệp tối đa (báo toast, không thêm chip). */
+function triage(files: readonly File[], chips: readonly Chip[]) {
+  const kept = chips.filter((c) => c.status !== "error").map((c) => c.file);
+  const entries: Entry[] = [];
+  let overflow = false;
+  for (const file of files) {
+    const r = validateAttachment(file, kept);
+    if ("error" in r && r.error === "attach.err.max") overflow = true;
+    else if ("error" in r) entries.push({ file, status: "error", errorKey: r.error });
+    else {
+      entries.push({ file, status: "queued" });
+      kept.push(file);
+    }
+  }
+  return { entries, overflow };
+}
 
 export function useAttachments() {
   const { t } = useTranslation();
@@ -16,18 +35,7 @@ export function useAttachments() {
 
   const add = useCallback(
     (files: readonly File[]) => {
-      const kept = chips.filter((c) => c.status !== "error").map((c) => c.file);
-      const entries: Parameters<typeof push>[0] = [];
-      let overflow = false;
-      for (const file of files) {
-        const r = validateAttachment(file, kept);
-        if ("error" in r && r.error === "attach.err.max") overflow = true;
-        else if ("error" in r) entries.push({ file, status: "error", errorKey: r.error });
-        else {
-          entries.push({ file, status: "queued" });
-          kept.push(file);
-        }
-      }
+      const { entries, overflow } = triage(files, chips);
       push(entries);
       if (overflow) toast.error(t("attach.err.max"));
     },

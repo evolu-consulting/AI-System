@@ -37,15 +37,14 @@ export class ApiError extends Error {
     status: number,
     code: ApiErrorCode,
     message: string,
-    details?: unknown,
-    retryAfter?: number,
+    extra: { details?: unknown; retryAfter?: number } = {},
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
-    this.details = details;
-    this.retryAfter = retryAfter;
+    this.details = extra.details;
+    this.retryAfter = extra.retryAfter;
   }
 }
 
@@ -107,24 +106,17 @@ async function parseError(res: Response): Promise<ApiError> {
     const e = ((await res.json()) as ErrorBody).error;
     if (e && typeof e.code === "string") {
       const message = typeof e.message === "string" ? e.message : res.statusText;
-      return new ApiError(
-        res.status,
-        e.code as ApiErrorCode,
-        message,
-        e.details,
-        parseRetryAfter(res),
-      );
+      return new ApiError(res.status, e.code as ApiErrorCode, message, {
+        details: e.details,
+        retryAfter: parseRetryAfter(res),
+      });
     }
   } catch {
     // thân không phải JSON (vd 502/504 từ proxy)
   }
-  return new ApiError(
-    res.status,
-    "HTTP_ERROR",
-    res.statusText || `HTTP ${res.status}`,
-    undefined,
-    parseRetryAfter(res),
-  );
+  return new ApiError(res.status, "HTTP_ERROR", res.statusText || `HTTP ${res.status}`, {
+    retryAfter: parseRetryAfter(res),
+  });
 }
 
 async function execRaw(

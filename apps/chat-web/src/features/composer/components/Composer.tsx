@@ -200,12 +200,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         className="flex items-end gap-2 rounded-xl border border-input bg-background p-2 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
       >
         <AttachButton onPick={att.add} />
+        {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: plan-frontend §1.1 cần aria-expanded; giữ role textbox vì e2e chọn textbox "Tin nhắn". */}
         <textarea
           ref={area}
           rows={1}
           value={text}
           aria-label={t(flow ? "composer.flowInput" : "composer.input")}
           placeholder={t(flow ? "composer.flowPlaceholder" : "composer.placeholder")}
+          aria-expanded={aria.expanded}
           aria-controls={aria.controls}
           aria-activedescendant={aria.activeDescendant}
           onChange={(e) => change(e.target.value, e.target.selectionStart)}

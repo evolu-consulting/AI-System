@@ -6,11 +6,15 @@ import { type Chip, nextToStart, uploadFailure } from "../lib/queue";
 
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(resolve, ms);
-    signal.addEventListener("abort", () => {
+    const onAbort = () => {
       clearTimeout(timer);
       reject(new DOMException("aborted", "AbortError"));
-    });
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", onAbort, { once: true });
   });
 
 async function uploadOnce429(file: File, signal: AbortSignal) {
@@ -21,6 +25,24 @@ async function uploadOnce429(file: File, signal: AbortSignal) {
     await sleep((err.retryAfter ?? 1) * 1000, signal);
     return uploadAttachment(file, signal);
   }
+}
+
+const failureOf = (err: unknown) =>
+  err instanceof ApiError
+    ? uploadFailure(err)
+    : { errorKey: "attach.err.failed" as const, retryable: true };
+
+type Patch = (uid: number, p: Partial<Chip>) => void;
+
+function runUpload(chip: Chip, aborts: Map<number, AbortController>, patch: Patch) {
+  const ac = new AbortController();
+  aborts.set(chip.uid, ac);
+  uploadOnce429(chip.file, ac.signal)
+    .then((att) => patch(chip.uid, { status: "ready", id: att.id }))
+    .catch((err: unknown) => {
+      if (!ac.signal.aborted) patch(chip.uid, { status: "error", ...failureOf(err) });
+    })
+    .finally(() => aborts.delete(chip.uid));
 }
 
 export function useAttachQueue() {
@@ -36,19 +58,7 @@ export function useAttachQueue() {
     if (start.length === 0) return;
     setChips((cs) => cs.map((c) => (start.includes(c.uid) ? { ...c, status: "uploading" } : c)));
     for (const chip of chips.filter((c) => start.includes(c.uid))) {
-      const ac = new AbortController();
-      aborts.current.set(chip.uid, ac);
-      uploadOnce429(chip.file, ac.signal)
-        .then((att) => patch(chip.uid, { status: "ready", id: att.id }))
-        .catch((err: unknown) => {
-          if (ac.signal.aborted) return;
-          const failure =
-            err instanceof ApiError
-              ? uploadFailure(err)
-              : { errorKey: "attach.err.failed" as const, retryable: true };
-          patch(chip.uid, { status: "error", ...failure });
-        })
-        .finally(() => aborts.current.delete(chip.uid));
+      runUpload(chip, aborts.current, patch);
     }
   }, [chips, patch]);
 

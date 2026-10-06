@@ -17,7 +17,10 @@ export function SendErrorNotice({ view, onPick }: SendErrorNoticeProps) {
       className="mb-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
     >
       {view.lines.map((l) => (
-        <p key={l.key}>{t(l.key, l.params)}</p>
+        // Dòng có số giây đếm ngược: không đọc lại mỗi giây (chỉ lần đầu hiện hộp).
+        <p key={l.key} aria-live={"n" in l.params ? "off" : undefined}>
+          {t(l.key, l.params)}
+        </p>
       ))}
       {view.suggestions.length > 0 && (
         <p className="mt-1 flex flex-wrap items-center gap-2 text-foreground">

@@ -1,10 +1,19 @@
 // HUB-FR-44 · tệp trong tin (`Message.attachments`): bấm tải qua fetch có Authorization; `available=false` → xám.
 import type { AttachmentRef } from "@ai/contracts/chat";
-import { FileText } from "lucide-react";
+import { File, FileImage, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 import { downloadAttachment, formatSize } from "../lib/download";
+
+/** Icon theo MIME: ảnh / văn bản (pdf, text, docx…) / khác. */
+function MimeIcon({ mime }: { mime: string }) {
+  const cls = "size-3.5 shrink-0";
+  if (mime.startsWith("image/")) return <FileImage className={cls} aria-hidden="true" />;
+  if (mime.startsWith("text/") || mime.includes("pdf") || mime.includes("document"))
+    return <FileText className={cls} aria-hidden="true" />;
+  return <File className={cls} aria-hidden="true" />;
+}
 
 export function AttachmentList({ items }: { items?: readonly AttachmentRef[] }) {
   const { t } = useTranslation();
@@ -30,7 +39,7 @@ export function AttachmentList({ items }: { items?: readonly AttachmentRef[] }) 
                 : "cursor-not-allowed text-muted-foreground opacity-60",
             )}
           >
-            <FileText className="size-3.5 shrink-0" aria-hidden="true" />
+            <MimeIcon mime={a.mime} />
             <span className="min-w-0 truncate font-medium">{a.filename}</span>
             <span aria-hidden="true">{formatSize(a.size)}</span>
           </button>

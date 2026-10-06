@@ -39,6 +39,14 @@ export type AgentSuggest = Suggest<AgentMatch>;
 
 type MenuQuery<I> = { items: readonly I[] | undefined; isError: boolean; refetch(): unknown };
 
+function statusOf<I>(menu: MenuQuery<I>, matchCount: number): SuggestStatus {
+  if (menu.isError) return "error";
+  if (!menu.items) return "loading";
+  if (menu.items.length === 0) return "empty";
+  return matchCount === 0 ? "nomatch" : "ready";
+}
+
+// Chỉ mục chọn nằm trong ref (đồng bộ): hai phím liên tiếp không đọc nhầm closure cũ.
 function useSuggestCore<I, M>(opts: {
   text: string;
   caret: number;
@@ -48,21 +56,16 @@ function useSuggestCore<I, M>(opts: {
   fill(text: string, caret: number, m: M): { text: string; caret: number };
 }): Suggest<M> {
   const { text, caret, q, menu, filter, fill } = opts;
+  const { items, refetch } = menu;
   const [dismissedFor, setDismissedFor] = useState<string | null>(null);
   const [, rerender] = useState(0);
-  // Chỉ mục chọn nằm trong ref (đồng bộ): hai phím liên tiếp không đọc nhầm closure cũ.
   const sel = useRef({ q: "", i: 0 });
   const open = q !== null && dismissedFor !== text;
   const idx = sel.current.q === q ? sel.current.i : 0; // đổi chữ lọc → về dòng đầu
 
-  const items = menu.items;
   const matches = useMemo(() => (items && q !== null ? filter(items, q) : []), [items, q, filter]);
 
-  let status: SuggestStatus = "ready";
-  if (menu.isError) status = "error";
-  else if (!items) status = "loading";
-  else if (items.length === 0) status = "empty";
-  else if (matches.length === 0) status = "nomatch";
+  const status = statusOf(menu, matches.length);
 
   const active = matches.length === 0 ? 0 : Math.min(idx, matches.length - 1);
   const latest = useRef({ active, count: matches.length, q: q ?? "" });
@@ -82,7 +85,6 @@ function useSuggestCore<I, M>(opts: {
     },
     [matches, fill, caret],
   );
-  const { refetch } = menu;
   return {
     open,
     q: q ?? "",
@@ -149,6 +151,7 @@ export function useComposerSuggest(text: string, caret: number) {
     Pick<CommandSuggest, "pick"> = agentMode ? agent : command;
   const menuId = agentMode ? AGENT_MENU_ID : COMMAND_MENU_ID;
   const aria = {
+    expanded: current.open,
     controls: current.open ? menuId : undefined,
     activeDescendant:
       current.open && current.matches.length > 0 ? optionId(menuId, current.active) : undefined,

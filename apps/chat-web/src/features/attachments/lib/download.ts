@@ -13,7 +13,7 @@ export async function downloadAttachment(id: string, filename: string): Promise<
     a.click();
   } finally {
     a.remove();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 }
 

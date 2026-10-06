@@ -21,6 +21,7 @@ describe("downloadAttachment", () => {
     URL.revokeObjectURL = (u: string) => void calls.push(`revoke:${u}`);
     try {
       await downloadAttachment("id1", "a.txt");
+      await new Promise((r) => setTimeout(r, 1100)); // URL thu hồi trễ 1 giây
     } finally {
       URL.createObjectURL = createObjectURL;
       URL.revokeObjectURL = revokeObjectURL;
