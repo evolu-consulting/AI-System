@@ -35,11 +35,6 @@ export function x1Steps(): Step[] {
     bunStep("bun run test:int", ["run", "test:int"]),
     bunStep("bun run test:h2a:stack", ["run", "test:h2a:stack"]),
     bunStep("bun run test:h2b:stack", ["run", "test:h2b:stack"]),
-    bunStep(
-      `HUB_URL=${HUB_URL} AUTH_URL=${AUTH_URL} CHAT_CONTRACT_USERS='<json>' bun run test:contract:chat`,
-      ["run", "test:contract:chat"],
-      { env: { HUB_URL, AUTH_URL, CHAT_CONTRACT_USERS: contractUsersJson() }, needsDev: true },
-    ),
     bunStep("bun run e2e:chat", ["run", "e2e:chat"]),
     bunStep("bunx playwright test", pw()),
     bunStep(
@@ -64,6 +59,12 @@ export function x1Steps(): Step[] {
       "apps/chat-web/src",
       "apps/hub-api",
     ]),
+    // Cuối cùng: hub-dev (needsDev) giữ :3001/:4000 tới hết runDone → chạy sau mọi bộ Playwright.
+    bunStep(
+      `HUB_URL=${HUB_URL} AUTH_URL=${AUTH_URL} CHAT_CONTRACT_USERS='<json>' bun run test:contract:chat`,
+      ["run", "test:contract:chat"],
+      { env: { HUB_URL, AUTH_URL, CHAT_CONTRACT_USERS: contractUsersJson() }, needsDev: true },
+    ),
   ];
 }
 
