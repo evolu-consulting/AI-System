@@ -8,6 +8,7 @@
 | U3 | Trên `main`, không push; commit `git add -N` + `git commit -o` | — |
 | U4 | Hiệu năng ưu tiên thấp: nới ngưỡng, đo ở `test:perf`, không chặn mốc | spec §6 |
 | U5 | (CR-017, M3) UI Admin chỉ cấp cho group; cấp cho user chỉ có API — áp tương tự cho agent | spec R04, §5 |
+| U6 | (2026-10-06) **Q-U1–Q-U4 theo mặc định:** Q-U1 `platform_admin` cấp/thu cho tenant khác với `?tenant_id` bắt buộc (tenant_admin chỉ tenant mình); Q-U2 tenant_admin mở trace run người khác ⇒ 404; Q-U3 audit Hub ở bảng mới `hub.audit_log` (CR cho Admin gộp trang Nhật ký); Q-U4 ghi `view_trace` chỉ khi xem run của người khác | Q-U1–Q-U4 |
 
 ## D1 · Phạm vi H3b (docs-architect)
 Theo ROADMAP H3b + D1 của H3a: một spec (ước diff Hub TS ≈ 1 200–1 500 dòng: 3 endpoint grant + effective + trace + migration + audit). Không tách thêm vì cả ba khối dùng chung "role + tenant đích + audit Hub". Entitlement API (platform_admin) để H4 vì BA đặt ở Studio (`/studio/api/agent-entitlements`).
