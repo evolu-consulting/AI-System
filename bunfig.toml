@@ -4,4 +4,4 @@ linker = "isolated"
 
 [test]
 # e2e chạy bằng Playwright, test tích hợp chạy bằng `bun run test:int` (bunfig.int.toml).
-pathIgnorePatterns = ["e2e/**", "**/*.int.test.ts", "tests/contract/**", "**/node_modules/**", "**/__fixtures__/**", "tests/acceptance/H2b/stack/**", "tests/acceptance/H2b/hubdev/**", "tests/acceptance/H2c/stack/**", "tests/acceptance/H3a/stack/**", "tests/acceptance/H2c/hubdev/**", "tests/smoke/**"]
+pathIgnorePatterns = ["e2e/**", "**/*.int.test.ts", "tests/contract/**", "**/node_modules/**", "**/__fixtures__/**", "tests/acceptance/H2b/stack/**", "tests/acceptance/H2b/hubdev/**", "tests/acceptance/H2c/stack/**", "tests/acceptance/H3a/stack/**", "tests/acceptance/H3b-cmd/**", "tests/acceptance/H2c/hubdev/**", "tests/smoke/**"]

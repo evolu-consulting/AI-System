@@ -30,6 +30,7 @@
     "done:h2b": "bun --env-file=.env.local tools/scripts/src/done-h2b.ts",
     "done:h2c": "bun --env-file=.env.local tools/scripts/src/done-h2c.ts",
     "done:h3a": "bun --env-file=.env.local tools/scripts/src/done-h3a.ts",
+    "done:h3b": "bun --env-file=.env.local tools/scripts/src/done-h3b.ts",
     "hub:dev": "bun --env-file=.env.local tools/hub-dev/src/dev.ts",
     "done:h1": "bun --env-file=.env.local tools/scripts/src/done-h1.ts",
     "keys:dev": "bun tools/scripts/src/keys-dev.ts",
