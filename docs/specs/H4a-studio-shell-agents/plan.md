@@ -13,7 +13,7 @@ Luật: spec §2 (H4a-R01…R14). Mặc định Q1–Q10 (spec §9) giữ nguyê
 | P6 | Scope **`system`** cho mọi transaction Studio: bảng cấu hình không RLS, nhưng kiểm `AGENT_HAS_HISTORY` đọc `runs`/`run_steps` (RLS) — scope `user` sẽ thấy 0 hàng ⇒ xoá nhầm agent có lịch sử | R06; 0001_hub_rls |
 | P7 | `AppDeps.hubAudit?` (H3b P12) dùng lại cho Studio ⇒ qc tiêm lỗi audit giữa transaction (AC-03, R09 "audit lỗi ⇒ rollback") | P12 H3b |
 | P8 | Ràng buộc trường theo **CHECK DB hiện có** (key, description 20–400, timeout 10–3600, history_n 1–50), không theo con số lệch trong R03/R07 | QB2 |
-| P9 | Orchestrator chỉ nhận agent runtime ∈ `ORCHESTRATOR_RUNTIMES` = `{agentic-cli}` — **export mới** từ `config.rules.ts` và dùng lại trong `orchestratorProblem`/`pickOrchestrator` (một nguồn) | QB1 |
+| P9 | Orchestrator chỉ nhận agent runtime ∈ `ORCHESTRATOR_RUNTIMES` = `["agentic-cli"] as const` — **định nghĩa ở `@ai/contracts/studio` `common.ts`** (K2); hub-api `config.rules.ts` import lại cho `orchestratorProblem`/`pickOrchestrator`, FE lọc select Orchestrator theo cùng hằng (một nguồn). Mở `llm` sau = sửa hằng | QB1 (người dùng chốt 2026-10-06) |
 | P10 | `key`, `runtime` bất biến sau tạo (body PUT strict, không có hai trường) | QB5 |
 | P11 | `dify-*`: ghi **cả** `runtime_options.workflow_key` (Runtime H2a đọc) **và** 1 dòng `agent_workflows` (Admin đọc để chặn xoá workflow); đọc ra `workflow_ids` từ `agent_workflows`, thiếu thì suy từ `workflow_key` (agent seed cũ) | QB3, R04 |
 | P12 | Serve tĩnh: `studio-static.ts` (`serveStatic` từ `hono/bun`) chỉ khi `HUB_STUDIO_DIST` có `index.html`; mount **sau** route API ⇒ `/studio/api/*` không bao giờ rơi vào SPA fallback | FR-72, Q5, AC-11 |
@@ -45,6 +45,7 @@ export const STUDIO_ERRORS = { FORBIDDEN: 403, INVALID_REFERENCE: 400, VERSION_C
 |---|---|
 | `LocalizedNameSchema` | `{vi: string trim 1–100, en: string trim 1–100}` strict |
 | `AgentRuntimeSchema` | enum `llm \| agentic-cli \| dify-workflow \| dify-agent \| python` |
+| `ORCHESTRATOR_RUNTIMES` | `["agentic-cli"] as const` (K2/QB1) |
 | `STUDIO_CLI_TOOLS` | `["Read","Grep","Glob","Write","Edit","Bash"]` (⊇ `ALLOWED_TOOLS`; Runtime chỉ chạy phần giao — QB7) |
 | `MeSchema` | `{user_id: uuid, tenant_id: uuid, tenant_key, username, display_name, role: "platform_admin", hub_config_version: int ≥ 0}` (E9) |
 | Hằng (E11) | `AGENT_RUNTIMES`, `CLI_KINDS`, `STUDIO_CLI_TOOLS`, `CWD_MODES = ["job"]`, `ON_NO_MATCH_VALUES` |
@@ -67,10 +68,10 @@ export const STUDIO_ERRORS = { FORBIDDEN: 403, INVALID_REFERENCE: 400, VERSION_C
 | `AgentUpdateSchema` | như Create **bỏ** `key`, `runtime` (P10; gửi ⇒ 400) + `version: int ≥ 1`. Runtime để chọn nhánh union lấy từ hàng DB: route parse thô `{runtime}` từ DB rồi `agentUpdateSchemaFor(runtime)` |
 | `AgentEnabledSchema` (PATCH) | `{enabled: bool, version: int ≥ 1}` |
 | `AgentDeleteQuerySchema` | `{version: coerce int ≥ 1}` |
-| `AgentListQuerySchema` | `q?: string trim 1–100` (ILIKE key/name.vi/name.en), `runtime?`, `enabled?: "true"\|"false"`, `limit: 1–200 = 50`, `offset: 0–10 000 = 0` |
+| `AgentListQuerySchema` | `q?: string trim 1–100` (ILIKE key/name.vi/name.en), `runtime?`, `enabled?: "true"\|"false"`, `limit: 1–200 = 200` (K3/G1), `offset: 0–10 000 = 0` |
 | `AgentSchema` (chi tiết) | `id, key, name, description, runtime, agent_type_key: string\|null, profile_id: uuid\|null, system_prompt, runtime_options: record, workflow_ids: uuid[], timeout_s, token_budget: int\|null, enabled, version, created_at, updated_at, runnable: bool` (= `RUNNABLE_RUNTIMES`), `orchestrator_of: {default: bool, tenant_ids: uuid[]}`, `workflows: {id, key, name, app_type, description, enabled}[]` (ghép catalog lúc đọc, không lưu — E2; id đã mất khỏi catalog chỉ còn trong `workflow_ids`), `warnings: AgentWarning[]` |
 | `AgentWarningSchema` | union: `{code:"description_overlap", agent_id: uuid, agent_key, score: number 0–1}` · `{code:"runtime_not_ready"}` (codex/gemini, `llm`, `python`) · `{code:"tools_not_supported", tools: string[]}` (Edit/Bash — Runtime chưa chạy) |
-| `AgentListItemSchema` | `id, key, name, description, runtime, enabled, version, updated_at, profile: {id, key}\|null, workflow_count: int, entitled_tenant_count: int` (`revoked_at IS NULL`; 0 ⇒ "Chưa cấp"), `orchestrator_of: {default, tenant_ids}`, `runnable: bool` — **không** cột 24 giờ (R11). List agents: `limit` mặc định **200** (E1) |
+| `AgentListItemSchema` | `id, key, name, description, runtime, enabled, version, updated_at, profile: {id, key}\|null, workflow_count: int, entitled_tenant_count: int` (`revoked_at IS NULL`; 0 ⇒ "Chưa cấp"), `orchestrator_of: {default, tenant_ids}`, `runnable: bool` — **không** cột 24 giờ (R11). `ListMeta.truncated = (offset + items.length < total)`: `false` khi vừa đủ (A05: ≤ 200 agent ⇒ `false`); FE khi `true` hiện Alert + chuyển tìm sang `?q=` (plan-frontend) |
 | `AgentWriteResponseSchema` | `{agent: Agent, hub_config_version: int}` (POST 201, PUT/PATCH 200); DELETE **204** |
 
 ### 2.4 Orchestrator (`studio/orchestrator.ts`)
@@ -118,13 +119,13 @@ Không có endpoint login (R14): Studio gọi `admin-api POST /auth/login`.
 ### 4.1 `modules/studio/agents/agents.rules.ts`
 | Hàm | Hợp đồng |
 |---|---|
-| `workflowProblem(runtime: AgentRuntime, wfs: readonly WorkflowRef[], requestedIds: readonly string[]): WorkflowProblem \| null` | `WorkflowRef = {id, key, enabled, appType, hasDifyInput}`. Thứ tự: id không có trong `wfs` ⇒ `{reason:"not_found", ids}` → `enabled=false` ⇒ `disabled` → dify-workflow & appType ≠ workflow, dify-agent & appType ∉ {chat, agent} ⇒ `app_type` → dify-* & !hasDifyInput ⇒ `no_input` → null. Số lượng đã chặn ở zod |
+| `workflowProblem(runtime: AgentRuntime, wfs: readonly WorkflowRef[], requestedIds: readonly string[]): WorkflowProblem \| null` · `WorkflowProblem = {reason: "not_found"; ids: string[]} \| {reason: "disabled" \| "app_type" \| "no_input"; ids?: string[]}` (G5: `ids` bắt buộc chỉ với `not_found` = id thiếu) | `WorkflowRef = {id, key, enabled, appType, hasDifyInput}`. Thứ tự: id không có trong `wfs` ⇒ `{reason:"not_found", ids}` → `enabled=false` ⇒ `disabled` → dify-workflow & appType ≠ workflow, dify-agent & appType ∉ {chat, agent} ⇒ `app_type` → dify-* & !hasDifyInput ⇒ `no_input` → null. Số lượng đã chặn ở zod |
 | `needsBashAck(before: readonly string[] \| null, after: readonly string[]): boolean` | `after` có `Bash` ∧ (`before` null ∨ không có `Bash`) — chỉ khi **thêm mới** Bash (R05) |
 | `deleteBlocker(x: {orchestratorScopes: number; hasHistory: boolean; activeEntitlements: number; grants: number}): "AGENT_IN_USE_AS_ORCHESTRATOR" \| "AGENT_HAS_HISTORY" \| "AGENT_HAS_ACCESS" \| null` | đúng thứ tự đó (R06) |
 | `disableBlocked(orchestratorScopes: number, nextEnabled: boolean): boolean` | `!nextEnabled ∧ orchestratorScopes > 0` |
 | `difyOptions(runtime, wf: {key}): {workflow_key: string} \| null` | dify-* ⇒ `{workflow_key: wf.key}`; khác ⇒ null |
-| `descriptionTokens(s: string): Set<string>` · `descriptionOverlap(a, b): number` · `similarAgents(target: {id, description}, others: readonly {id, key, description, enabled}[], threshold = 0.6)` — định nghĩa ở `@ai/contracts/studio` `overlap.ts`, rules re-export | token = `s.normalize("NFC").toLowerCase().split(/[^\p{L}\p{N}]+/u)` lọc độ dài ≥ 3; Jaccard \|A∩B\|/\|A∪B\| (hai tập rỗng ⇒ 0); bỏ chính nó + agent tắt; sắp score giảm, tối đa 5 (R08) |
-| `agentWarnings(a): AgentWarning[]` | `runtime_not_ready` khi runtime ∉ `RUNNABLE_RUNTIMES` ∨ cli ∈ {codex, gemini}; `tools_not_supported` = allowed_tools \ `ALLOWED_TOOLS` (khác rỗng) |
+| `descriptionTokens(s: string): Set<string>` · `descriptionOverlap(a, b): number` · `similarAgents(target: {id, description}, others: readonly {id, key, description, enabled}[], threshold = 0.6): {agent_id: string; agent_key: string; score: number}[]` (G4) — định nghĩa ở `@ai/contracts/studio` `overlap.ts`, rules re-export | token = `s.normalize("NFC").toLowerCase().split(/[^\p{L}\p{N}]+/u)` lọc độ dài ≥ 3; Jaccard \|A∩B\|/\|A∪B\| (hai tập rỗng ⇒ 0); bỏ chính nó + agent tắt; sắp score giảm, tối đa 5 (R08) |
+| `agentWarnings(a: {runtime: AgentRuntime; runtime_options: Record<string, unknown>}): AgentWarning[]` (G3; không gồm `description_overlap` — do `similarAgents`) | `runtime_not_ready` khi runtime ∈ {`llm`, `python`} (∉ `RUNNABLE_RUNTIMES`) ∨ (`agentic-cli` ∧ `runtime_options.cli` ∈ {codex, gemini}); G7: `dify-workflow`/`dify-agent` **không** có `runtime_not_ready`; `agentic-cli` mặc định/claude ⇒ `[]`; `tools_not_supported` = allowed_tools \ `ALLOWED_TOOLS` (khác rỗng) |
 
 ### 4.2 `modules/studio/orchestrator/orchestrator-settings.rules.ts`
 | Hàm | Hợp đồng |
@@ -207,16 +208,16 @@ API CRUD p95 < 300 ms với 5 000 agent; list ≤ 200; ghi ≤ 8 câu + audit. `
 | R-K6 | Đổi `profileId` nullable lan kiểu sang runner | ripple §6; `bun run typecheck` toàn repo + H1/H2b int |
 | R-K7 | `before/after` audit chứa `system_prompt` dài | ≤ 20 000 ký tự; không phải secret (không có secret trong `agents`) |
 
-## 11. Câu hỏi mới (mặc định đã áp dụng trong plan — Gate duyệt hoặc đổi)
+## 11. Câu hỏi mới — **QB1–QB7: người dùng chấp nhận 2026-10-06** (QB1 chốt: chỉ `agentic-cli`, hằng `ORCHESTRATOR_RUNTIMES` ở contracts; G1–G13 cũng chấp nhận)
 | # | Câu hỏi | Mặc định | Nếu đổi |
 |---|---|---|---|
-| QB1 | R07 cho `llm` làm Orchestrator, nhưng Hub chỉ chạy Orchestrator `agentic-cli` (`config.rules` `orchestratorProblem`) — lưu `llm` làm mặc định sẽ làm hỏng định tuyến toàn hệ thống | **Chỉ `agentic-cli`** tới khi `llm` chạy được (H2d/LLM gateway); 409 `AGENT_NOT_ORCHESTRATABLE{runtime_unsupported}`. Mở thêm = sửa một hằng | Cho lưu `llm` = Hub lên với `orchestrator_problem` |
-| QB2 | R03/R07 lệch CHECK DB (key không cho `_`, description 1–1000 vs 20–400, timeout 1 vs 10, history_n 0 vs 1) | **Theo DB** (khớp ui §13 mô tả 20–400, khớp Runtime `timeout_s ≥ 10`) | Nới = migration đổi CHECK + Runtime |
-| QB3 | `dify-*` lưu workflow ở đâu? | **Cả hai**: `runtime_options.workflow_key` (Runtime H2a) + `agent_workflows` (Admin chặn xoá); `dify-agent` nhận app `chat`\|`agent` (như seed H2a) | Chỉ `agent_workflows` = sửa Runtime H2a |
-| QB4 | `agents.profile_id` NOT NULL nhưng R03 bỏ profile với `dify-*` | Migration D2 cho NULL + CHECK bắt buộc với `llm`/`agentic-cli` | Giữ NOT NULL = server tự gán profile giả |
-| QB5 | Đổi `key`/`runtime` sau tạo? | **Bất biến** (đổi runtime = tạo agent mới, Nhân bản R12) | Cho đổi = kiểm lại workflow/Orchestrator mỗi lần |
-| QB6 | `audit_log.tenant_id` cho cấu hình toàn hệ thống | **NULL** (D3); bản Orchestrator tenant ghi tenant đích | Dùng tenant của actor = tenant_admin tenant đó thấy cấu hình platform |
-| QB7 | Tool `Edit`/`Bash` và `runtime_options` của `python` | Lưu được, cảnh báo (`tools_not_supported`, `runtime_not_ready`); Runtime chỉ chạy `ALLOWED_TOOLS`. `python`: Hub **không** kiểm JSON Schema (không thêm ajv/ADR) — Runtime kiểm khi chạy | Kiểm ở Hub = ADR thêm ajv |
+| QB1 ✔ chấp nhận 2026-10-06 | R07 cho `llm` làm Orchestrator, nhưng Hub chỉ chạy Orchestrator `agentic-cli` (`config.rules` `orchestratorProblem`) — lưu `llm` làm mặc định sẽ làm hỏng định tuyến toàn hệ thống | **Chỉ `agentic-cli`** tới khi `llm` chạy được (H2d/LLM gateway); 409 `AGENT_NOT_ORCHESTRATABLE{runtime_unsupported}`. Mở thêm = sửa một hằng | Cho lưu `llm` = Hub lên với `orchestrator_problem` |
+| QB2 ✔ chấp nhận 2026-10-06 | R03/R07 lệch CHECK DB (key không cho `_`, description 1–1000 vs 20–400, timeout 1 vs 10, history_n 0 vs 1) | **Theo DB** (khớp ui §13 mô tả 20–400, khớp Runtime `timeout_s ≥ 10`) | Nới = migration đổi CHECK + Runtime |
+| QB3 ✔ chấp nhận 2026-10-06 | `dify-*` lưu workflow ở đâu? | **Cả hai**: `runtime_options.workflow_key` (Runtime H2a) + `agent_workflows` (Admin chặn xoá); `dify-agent` nhận app `chat`\|`agent` (như seed H2a) | Chỉ `agent_workflows` = sửa Runtime H2a |
+| QB4 ✔ chấp nhận 2026-10-06 | `agents.profile_id` NOT NULL nhưng R03 bỏ profile với `dify-*` | Migration D2 cho NULL + CHECK bắt buộc với `llm`/`agentic-cli` | Giữ NOT NULL = server tự gán profile giả |
+| QB5 ✔ chấp nhận 2026-10-06 | Đổi `key`/`runtime` sau tạo? | **Bất biến** (đổi runtime = tạo agent mới, Nhân bản R12) | Cho đổi = kiểm lại workflow/Orchestrator mỗi lần |
+| QB6 ✔ chấp nhận 2026-10-06 | `audit_log.tenant_id` cho cấu hình toàn hệ thống | **NULL** (D3); bản Orchestrator tenant ghi tenant đích | Dùng tenant của actor = tenant_admin tenant đó thấy cấu hình platform |
+| QB7 ✔ chấp nhận 2026-10-06 | Tool `Edit`/`Bash` và `runtime_options` của `python` | Lưu được, cảnh báo (`tools_not_supported`, `runtime_not_ready`); Runtime chỉ chạy `ALLOWED_TOOLS`. `python`: Hub **không** kiểm JSON Schema (không thêm ajv/ADR) — Runtime kiểm khi chạy | Kiểm ở Hub = ADR thêm ajv |
 
 ## 12. Trả lời đề xuất FE (plan-frontend §10)
 Nhận: E1 (tên trường theo FE, `limit` 200), E2, E4, E6 (`current` = bản đầy đủ; không `updated_by.display_name`), E7, E9, E10, E11, E12. Khác FE: **E3** — không tính `active_step` ở H4a (logic Gateway, H4b); `providers.state` có sẵn, FE ẩn dòng "Lúc này chạy bằng". **E5** — tenant trả `active` (cột thật), không `locked`; Orchestrator trả `tenant{id,key,name}`. **E8** — `KEY_TAKEN{field}`; tenant khoá ⇒ 409 `TENANT_INACTIVE`, tenant không có ⇒ 400 `INVALID_REFERENCE{tenant_id}`, agent không làm được Orchestrator ⇒ 409 `AGENT_NOT_ORCHESTRATABLE{reason}`; validation giữ dạng Hub `details.issues[{path, code, message}]` (không `details.fields`).
