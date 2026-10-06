@@ -84,15 +84,16 @@ Mốc con **thứ hai** của H3 (chia ở `5ca15d8`, lý do: [H3a spec-decision
 |---|---|---|
 | H3b-R16 | **Audit Hub** (Q-U3): bảng mới trong schema `hub`, append-only, cấu trúc theo `admin.audit_log` (tenant_id, actor_id, actor_username, action, entity, entity_id, before/after/summary, `hub_config_version`, at). Hành động H3b: `grant`/`revoke` (entity `agent_grant`), `view_trace` (entity `run`, `tenant_id` = tenant **của run**). Không ghi nội dung chat, prompt, secret | HUB-FR-78, 87; BA-H §8 |
 | H3b-R17 | `GET /runs/:id/trace` — quyết theo thứ tự, **trước** khi đọc bằng scope `system`: (a) chủ run (`tenant_id = tid ∧ user_id = sub`, scope `user` như `GET /runs/:id`) → 200 đầy đủ, không audit; (b) `platform_admin` → 200 đầy đủ run **mọi tenant** (đọc scope `system`) + audit `view_trace` (Q-U4: chỉ khi không phải chủ run); (c) `tenant_admin` không phải chủ: **404** (Q-U2 mặc định — xem chi phí ở Admin "Chi phí & quota"); (d) còn lại (member không phải chủ, run tenant khác, id không có) → **404** giống hệt (AC-H07, AC-H08 — kể cả `tenant_admin`) | HUB-FR-52, 87, BR-14 |
-| H3b-R18 | Nội dung trace: run (id, kind, status, error_code/message, config_version, conversation/flow, started/finished), `steps[]` theo `seq` (type, agent key, workflow, provider_key, model?, status, thời gian, ms, `detail`), `jobs[]` (id, type, status, attempts, error_reason), usage theo step (token vào/ra, `cost_usd`, `billable_usd` nếu có — H3c mới tính), tin user + câu trả lời. **Không** có secret/token job/khoá: backend-lead xác minh `detail` hiện ghi gì và che (`••••`) trước khi trả; test quét (AC-10). Hình chính xác: plan | HUB-FR-52, ui-operations §4 |
+| H3b-R18 | Nội dung trace: run (id, kind, status, error_code/message, config_version, conversation/flow, started/finished), `steps[]` theo `seq` (type, agent key, workflow, provider_key, model?, status, thời gian, ms, `detail`), `jobs[]` (id, type, status, attempts, error_reason), usage theo step (token vào/ra, `cost_usd`, `billable_usd` nếu có — H3c mới tính), tin user + câu trả lời. **Không** có secret/token job/khoá: backend-lead xác minh `detail` hiện ghi gì và che (`••••`) trước khi trả; test quét (AC-10). Regex khoá nhạy cảm: `/(api[_-]?key|secret|token(?!s)|password|passwd|authorization|cookie|credential|private[_-]?key)/i` — `token(?!s)` giữ nguyên số token (`input_tokens`, `output_tokens`, `extra_tokens`), vẫn che `token`, `access_token`, `token_hash`. Hình chính xác: plan | HUB-FR-52, ui-operations §4 |
 | H3b-R19 | Ghi audit `view_trace` **cùng transaction** đọc trace; ghi lỗi → 500, **không** trả trace (fail-closed, Q-K10). Mỗi lần gọi = một hàng (không gộp) | HUB-FR-87 |
 | H3b-R20 | Trace không mở rộng `GET /runs/:id` hiện có; chat-web không dùng trace (contract chat không đổi) | H2c-R30 |
+| H3b-R49 | Che `detail` của step theo người xem: chủ run (nhánh a) **không** thấy khoá gốc `message` và `upstream` trong `detail` (có thể lộ provider, agent, đường dẫn); `platform_admin` (nhánh b) thấy nguyên để debug. Theo H1 P11/R26 (PL15) | HUB-BR-02, H1-R26 |
 
 ### 2.5 Tương thích
 | Luật | Điều kiện | Nguồn |
 |---|---|---|
 | H3b-R21 | `@ai/contracts/chat` **không đổi**; `test:contract:chat` 41 ca xanh nguyên văn; test khoá H1–H3a xanh nguyên văn. Contract mới đặt ở gói Hub riêng (vd `@ai/contracts/hub-admin` — Q-K12) | — |
-| H3b-R22 | Cột `hub.agent_grants` **không đổi** (Admin M3 `hub-view.int` đọc bằng `admin_rw` vẫn xanh); migration chỉ **thêm** GRANT `INSERT, DELETE` cho role Hub + bảng audit | ADM-NFR-06 |
+| H3b-R22 | Cột `hub.agent_grants` **không đổi** (Admin M3 `hub-view.int` đọc bằng `admin_rw` vẫn xanh); migration chỉ **thêm** bảng audit + GRANT cho `hub_rw`: `INSERT, DELETE` `agent_grants` · `UPDATE (hub_config_version)` (một cột) `config_meta` · `SELECT, INSERT` `audit_log` (khớp §4, plan-db) | ADM-NFR-06 |
 | H3b-R23 | `HUB_CORS_ORIGINS` nhận thêm origin admin-web (env; dev `http://localhost:3000`); không `*`, không mặc định mở | — |
 
 ## 3. Contract (backend-lead)
@@ -145,6 +146,7 @@ Q-U1…Q-U4 (cần người dùng — nghiệp vụ/bảo mật) và Q-K1…Q-K1
 | K5 | Grant mồ côi khi Admin xoá group/user (không FK chéo schema) | R11/R13 lọc bằng join; dọn = TECH-DEBT (như #15) |
 | K6 | CORS mở quá rộng khi thêm admin-web | R23 danh sách trắng theo env |
 | K7 | Admin chưa áp CR → tab Agent vẫn "Chưa khả dụng" dù Hub có API | CR-impact ghi rõ; e2e 3 app chờ người dùng |
+| K8 | Seed cộng dồn (`insertGrants` `on conflict do nothing`) chèn lại grant đã thu hồi qua API, không audit; tới H4 seed là cách duy nhất quản entitlement/Orchestrator tenant | YAML seed production không chứa `grants:` (`hub-dev.md`); TECH-DEBT; **I3: PRODUCTION-NOTES cần thêm câu này** |
 
 ## 11. Tranh chấp test
 (chưa có)

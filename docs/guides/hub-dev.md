@@ -38,6 +38,8 @@
 
 Orchestrator theo tenant: mục `orchestrator_tenants` trong seed yaml (`{tenant_key, agent, max_steps?, …}`, xoá `{tenant_key, remove: true}`; ví dụ chú thích trong `apps/hub-api/seed/agents.yaml`) → `bun run hub:seed`. Chạy int một thư mục: `bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 ./tests/acceptance/H2b` (`bun run test:int <path>` chạy **cả repo**, TECH-DEBT #57).
 
+**Cảnh báo (từ H3b):** YAML seed production **không chứa `grants:`** — quản grant qua `/agent-grants`. Seed cộng dồn chèn lại grant đã bị thu hồi qua API (`on conflict do nothing`) và không ghi audit; `grants:` chỉ dùng cho dev.
+
 ### WSL NAT (smoke H2a F2)
 Runbook giả định WSL **mirrored** (`localhost` của WSL = Windows). Máy chạy **NAT** (không có `.wslconfig` `networkingMode=mirrored`): `localhost:5432/6379` vẫn tới được nhờ Docker Desktop, nhưng `localhost:<cổng hub-api trên Windows>` bị từ chối. Khi đó:
 - lấy IP Windows nhìn từ WSL: `ip route | awk '/default/ {print $3}'` (vd `172.26.0.1`; đổi sau mỗi lần khởi động WSL);

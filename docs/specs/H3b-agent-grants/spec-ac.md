@@ -4,7 +4,7 @@ Phụ lục của [`spec.md`](spec.md) §8. qc bổ sung cột "Test" chi tiết
 
 | AC | Given / When / Then | Test |
 |---|---|---|
-| AC-H08 (vế trace) | Given run R của `beta`, When X (member `acme`) và A (`tenant_admin` `acme`) gọi `GET /runs/R/trace`, Then cả hai nhận 404 giống hệt ca id không tồn tại (thân + header), 0 hàng audit | int |
+| AC-H08 (vế trace) | Given run R của `beta`, When X (member `acme`) và A (`tenant_admin` `acme`) gọi `GET /runs/R/trace`, Then cả hai nhận 404 giống hệt ca id không tồn tại (cùng `status`, `content-type`, thân sau khi bỏ `request_id`; bỏ qua header `x-request-id`/`date`), 0 hàng audit | int |
 | AC-H09 (vế grant) | Given `hoadon` có entitlement cho `acme`, chưa cấp cho group nào của X; When X gửi tin, Then danh sách agent đưa Orchestrator không có `hoadon`. When A `POST /agent-grants {hoadon, group, ke-toan}` → 201, Then ≤ 5 s sau, lượt gửi kế của X có `hoadon` trong danh sách / `GET /agents` của X có `hoadon` | int (LISTEN thật, 2 instance cache) |
 | AC-A11 (vế Hub, phần agent) | Given grant ở AC-H09; When thu hồi entitlement `hoadon` của `acme` (SQL owner + NOTIFY), Then ≤ 5 s `hoadon` biến khỏi `GET /agents` của X, hàng grant **còn** trong `agent_grants`, effective của X có `missing:[no_entitlement]` + `reasons:[grant_group ke-toan]`. When cấp lại entitlement, Then `hoadon` trở lại không cần cấp lại grant | int |
 | HUB-H3b-AC-01 | R01/R02: M gọi mọi `/agent-grants*` → 403 `FORBIDDEN`, 0 truy vấn ghi. A gửi `tenant_id=<beta>` → 404 ở GET/POST/DELETE/effective, 0 hàng đổi ở `beta`. P thiếu `tenant_id` → 400 `TENANT_REQUIRED`; P với `tenant_id=<beta>` → thao tác đúng `beta` | int |
