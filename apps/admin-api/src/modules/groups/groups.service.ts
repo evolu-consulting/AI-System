@@ -59,7 +59,7 @@ export function toGroupListItem(r: Omit<repo.GroupRow, "createdAt">): GroupListI
     is_beta: r.key === BETA_GROUP_KEY,
     member_count: r.memberCount,
     feature_count: r.featureCount,
-    agent_count: 0,
+    agent_count: r.agentCount,
     version: r.version,
     updated_at: r.updatedAt.toISOString(),
     updated_by: r.updatedBy,

@@ -2,8 +2,9 @@
 // Khoá: chỉ FOR NO KEY UPDATE (PATCH/DELETE) và FOR SHARE (thành viên, grant) — hạng 3 của thứ tự toàn cục (plan M3 §6).
 import { BETA_GROUP_KEY } from "@ai/contracts";
 import { groups, type Tx } from "@ai/db";
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import { likeArg } from "../../lib/sql";
+import { groupAgentCountExpr, hubGrantsReadable } from "./groups.hub";
 
 export type GroupRow = {
   id: string;
@@ -15,16 +16,20 @@ export type GroupRow = {
   description: string | null;
   memberCount: number;
   featureCount: number;
+  agentCount: number;
   version: number;
   createdAt: Date;
   updatedAt: Date;
   updatedBy: string | null;
 };
 
-const cols = sql`g.id, g.tenant_id as "tenantId", t.key as "tenantKey", t.name as "tenantName", g.key, g.name,
+const colsOf = (
+  agentCount: SQL,
+) => sql`g.id, g.tenant_id as "tenantId", t.key as "tenantKey", t.name as "tenantName", g.key, g.name,
   g.description, g.version, g.created_at as "createdAt", g.updated_at as "updatedAt",
   (select count(*)::int from admin.group_members m where m.group_id = g.id) as "memberCount",
   (select count(*)::int from admin.feature_grants fg where fg.group_id = g.id) as "featureCount",
+  ${agentCount} as "agentCount",
   (select u.username from admin.users u where u.id = g.updated_by) as "updatedBy"`;
 
 const betaFirst = sql`(g.key <> ${BETA_GROUP_KEY}), g.key`;
@@ -45,6 +50,7 @@ export async function listGroups(
   f: GroupFilter,
 ): Promise<{ rows: GroupRow[]; total: number }> {
   const like = f.q ? likeArg(f.q) : null;
+  const cols = colsOf(groupAgentCountExpr(await hubGrantsReadable(tx)));
   const rows = (await tx.execute(sql`
     select ${cols}, count(*) over()::int as total
     from admin.groups g join admin.tenants t on t.id = g.tenant_id
@@ -62,6 +68,7 @@ export async function findGroup(
   tenantId: string | null,
   id: string,
 ): Promise<GroupRow | null> {
+  const cols = colsOf(groupAgentCountExpr(await hubGrantsReadable(tx)));
   const rows = (await tx.execute(sql`
     select ${cols} from admin.groups g join admin.tenants t on t.id = g.tenant_id
     where g.id = ${id} and (${tenantId}::uuid is null or g.tenant_id = ${tenantId})`)) as unknown as Record<
