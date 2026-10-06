@@ -83,7 +83,7 @@ describe("A120–A122 · quyền hub_rw [HUB-FR-78 · H3b-R22 · PL2 · K9]", ()
     });
   });
 
-  it("HUB-FR-78 · A122 · danh sách trắng quyền (G11): agent_grants {S,I,D}; config_meta {S} + UPDATE chỉ hub_config_version; audit_log {S,I}; bảng cấu hình khác không ghi; admin_rw/agent_runtime không quyền audit_log; admin_rw chỉ SELECT agent_grants [H3b-R22 · PL2]", async () => {
+  it("HUB-FR-78 · A122 · danh sách trắng quyền (G11): agent_grants {S,I,D}; config_meta {S} + UPDATE chỉ hub_config_version; audit_log {S,I}; agent_entitlements không ghi; sau H4a D1: agents/agent_workflows {S,I,U,D}, orchestrator_settings {I,U,D} + USAGE sequence; admin_rw/agent_runtime không quyền audit_log; admin_rw chỉ SELECT agent_grants [H3b-R22 · PL2]", async () => {
     const PRIVS = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"];
     const has = async (role: string, table: string) => {
       const out: string[] = [];
@@ -109,8 +109,15 @@ describe("A120–A122 · quyền hub_rw [HUB-FR-78 · H3b-R22 · PL2 · K9]", ()
       metaId: await col("id"),
       audit: await has("hub_rw", "hub.audit_log"),
       ent: writes(await has("hub_rw", "hub.agent_entitlements")),
-      agents: writes(await has("hub_rw", "hub.agents")),
+      // H4a D1 (0010, Gate H4a §2; spec H4a §10 B1): Studio ghi agents/agent_workflows/orchestrator_settings qua hub_rw.
+      agents: await has("hub_rw", "hub.agents"),
+      workflows: await has("hub_rw", "hub.agent_workflows"),
       orch: writes(await has("hub_rw", "hub.orchestrator_settings")),
+      orchSeq: (
+        await owner<
+          { ok: boolean }[]
+        >`select has_sequence_privilege('hub_rw', 'hub.orchestrator_settings_id_seq', 'USAGE') as ok`
+      )[0]?.ok,
       adminAudit: await has("admin_rw", "hub.audit_log"),
       rtAudit: await has("agent_runtime", "hub.audit_log"),
       adminGrants: await has("admin_rw", "hub.agent_grants"),
@@ -121,8 +128,10 @@ describe("A120–A122 · quyền hub_rw [HUB-FR-78 · H3b-R22 · PL2 · K9]", ()
       metaId: false,
       audit: ["SELECT", "INSERT"],
       ent: [],
-      agents: [],
-      orch: [],
+      agents: ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      workflows: ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      orch: ["INSERT", "UPDATE", "DELETE"],
+      orchSeq: true,
       adminAudit: [],
       rtAudit: [],
       adminGrants: ["SELECT"],
