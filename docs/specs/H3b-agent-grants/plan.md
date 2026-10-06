@@ -1,6 +1,6 @@
 # Plan · H3b-agent-grants (Hub TS)
 
-SQL nguyên văn + migration: [`plan-db.md`](plan-db.md). Luật: spec §2 (H3b-R01…R23). Người dùng chốt: `spec-decisions` U1–U6 (Q-U1…Q-U4 = A). Chính xác hoá spec trong PLAN: `spec-decisions` "Quyết định trong lúc làm" PL1–PL14. Không Python, không frontend, **không ADR** (không thư viện mới). Code đã đọc 2026-10-06: `modules/{agents,config,seed,runs}`, `lib/{http,errors,auth.middleware}`, `app.ts`, `config/env.ts`, `packages/db/{schema,migrations-hub}`, `packages/contracts/src/{access,grants,groups}`, admin-api `access.rules`.
+SQL nguyên văn + migration: [`plan-db.md`](plan-db.md). Luật: spec §2 (H3b-R01…R23). Người dùng chốt: `spec-decisions` U1–U6 (Q-U1…Q-U4 = A). Chính xác hoá spec trong PLAN: `spec-decisions` "Quyết định trong lúc làm" PL1–PL17. Không Python, không frontend, **không ADR** (không thư viện mới). Code đã đọc 2026-10-06: `modules/{agents,config,seed,runs}`, `lib/{http,errors,auth.middleware}`, `app.ts`, `config/env.ts`, `packages/db/{schema,migrations-hub}`, `packages/contracts/src/{access,grants,groups}`, admin-api `access.rules`.
 
 ## 1. Quyết định
 | # | Quyết định | Lý do / nguồn |
@@ -21,7 +21,7 @@ SQL nguyên văn + migration: [`plan-db.md`](plan-db.md). Luật: spec §2 (H3b-
 | P14 | **Không ADR** | WORKFLOW "Đề xuất công nghệ" |
 
 ## 2. Contract `@ai/contracts/hub-admin`
-File: `packages/contracts/src/hub-admin/{index,errors,agent-grants,effective,trace}.ts` + `hub-admin.test.ts`; `packages/contracts/package.json` `exports["./hub-admin"]`. Tái dùng từ gốc: `UuidSchema`, `IsoDateTime`, `UpdatedBySchema`, `GrantSubjectSchema` (M3 grants — `{type:"group",group:GroupRef}` \| `{type:"user",user:{id,username,display_name}}`), `GroupRefSchema`, `UserBlocker` (M3 access); từ `hub`: `AgentKeySchema`.
+File: `packages/contracts/src/hub-admin/{index,errors,agent-grants,effective,trace}.ts` + `hub-admin.test.ts`; `packages/contracts/package.json` `exports["./hub-admin"]`. Tái dùng từ gốc: `UuidSchema`, `IsoDateTime`, `UpdatedBySchema`, `GrantSubjectSchema` (M3 grants — `{type:"group",group:GroupRef}` \| `{type:"user",user:{id,username,display_name}}`), `GroupRefSchema` (thêm `is_beta = key === BETA_GROUP_KEY`; SQL chỉ lấy `id, key, name`), `UserBlocker` (M3 access); từ `hub`: `AgentKeySchema`.
 
 ### 2.1 Lỗi
 ```ts
@@ -141,14 +141,14 @@ export function effectiveAgents(i: EffectiveInput): EffectiveAgentCalc[];
 ```ts
 /** H3b-R17 · quyết TRƯỚC khi mở scope system. `ownRun` = đã tìm thấy run bằng scope user {tid, sub}. */
 export function traceAccess(user: { role: Role }, ownRun: boolean): "own" | "platform" | "not_found";
-/** H3b-R18 · bản sao đã che: khoá khớp SENSITIVE_KEY_RE → MASK; chuỗi khớp SENSITIVE_VALUE_RE → MASK; sâu > 6 → MASK; JSON > 16 KiB → {truncated: true}. */
-export const SENSITIVE_KEY_RE = /(api[_-]?key|secret|token|password|passwd|authorization|cookie|credential|private[_-]?key)/i;
+/** H3b-R18 · bản sao đã che: khoá khớp SENSITIVE_KEY_RE → MASK; chuỗi khớp SENSITIVE_VALUE_RE → MASK; sâu > 6 → MASK; JSON > 16 KiB → {truncated: true}; view `own` bỏ khoá gốc `message`, `upstream` (PL15). */
+export const SENSITIVE_KEY_RE = /(api[_-]?key|secret|token(?!s)|password|passwd|authorization|cookie|credential|private[_-]?key)/i;
 export const SENSITIVE_VALUE_RE = /(^bearer\s+\S+|\bapp-[A-Za-z0-9]{16,}|\bsk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)/i;
-export function redactTraceDetail(detail: unknown): Record<string, unknown> | null;
+export function redactTraceDetail(detail: unknown, view: "own" | "platform"): Record<string, unknown> | null;
 /** ms = finished − started (≥ 0), null khi chưa xong. */
 export function stepMs(startedAt: Date, finishedAt: Date | null): number | null;
 ```
-`traceAccess`: `ownRun` ⇒ `own` (kể cả platform_admin — Q-U4 không audit) · `role = platform_admin` ⇒ `platform` · còn lại ⇒ `not_found` (Q-U2: tenant_admin cũng vậy). `redactTraceDetail(null|không phải object) ⇒ null` (mảng gốc ⇒ `{items: […đã che]}`).
+`traceAccess`: `ownRun` ⇒ `own` (kể cả platform_admin — Q-U4 không audit) · `role = platform_admin` ⇒ `platform` · còn lại ⇒ `not_found` (Q-U2: tenant_admin cũng vậy). `redactTraceDetail(null|không phải object) ⇒ null` (mảng gốc ⇒ `{items: […đã che]}`). PL15: "sâu > 6" tính gốc = mức 1; 16 KiB = 16 384 byte UTF-8 của `JSON.stringify` sau khi che (`> 16384` ⇒ truncated). PL16: `token(?!s)` giữ `input_tokens`/`output_tokens`/`extra_tokens`.
 
 ## 5. Luồng
 ### 5.1 Tầng chung (`lib/`)
@@ -178,7 +178,7 @@ export function stepMs(startedAt: Date, finishedAt: Date | null): number | null;
 2. Transaction A — scope `user {tid, sub}`: `TRACE_RUN` (ownedBy). Thấy ⇒ đọc §plan-db 5 trong **cùng** transaction ⇒ 200, không audit.
 3. Không thấy ⇒ `traceAccess(role, false)`: `not_found` ⇒ **404** (không mở scope system).
 4. `platform` ⇒ transaction B — scope `system`: `TRACE_RUN` (không ownedBy) → vắng ⇒ 404, **0 audit** · có ⇒ `hubAudit.insert(view_trace)` (lỗi ⇒ ném ⇒ rollback ⇒ 500, không trả trace — R19) → đọc steps/jobs/usage/messages lọc `tenant_id = run.tenant_id` → commit → 200.
-5. Map: `detail` qua `redactTraceDetail`; `ms` qua `stepMs`; usage gắn theo `step_id`; `usage_total` = tổng mọi hàng.
+5. Map: `detail` qua `redactTraceDetail(detail, view)` (`view` = kết quả `traceAccess`); `ms` qua `stepMs`; usage gắn theo `step_id`; `usage_total` = tổng mọi hàng.
 
 ### 5.5 Gắn vào app
 `app.h3b.ts` (`mountH3b(app, {db, config, hubAudit})`, mẫu `app.h2b.ts`) gọi trong `mountProtected` khi có `db` + `config`: `/agent-grants` (routes grant + effective) và `/runs` trace. `app.ts` chỉ thêm prefix + một dòng gọi (file đang 227 dòng).
@@ -221,7 +221,7 @@ Grant 2xx → hiệu lực ≤ 5 s: NOTIFY khi commit → `ConfigCache` LISTEN `
 ## 10. Câu hỏi (Luật 2 không tự giải trọn — có mặc định, không chặn)
 | # | Câu hỏi | Mặc định đề xuất |
 |---|---|---|
-| QP1 | Actor (tenant_admin) bị khoá/vô hiệu nhưng JWT còn hạn có được cấp grant? | Như mọi endpoint Hub hiện có: chỉ kiểm JWT (TTL ngắn); không kiểm `accountUsable` thêm |
+| QP1 | Actor (tenant_admin) bị khoá/vô hiệu nhưng JWT còn hạn có được cấp grant? | Đã có: `auth.middleware.ts:26` kiểm `accountUsable` từ cache ⇒ 401 sau khi cache nạp lại (≤ 5 s); đóng G12, không cần ca mới |
 | QP2 | `granted_by` hiện username của platform_admin (tenant khác) cho tenant_admin xem | Có (như M3 `UpdatedBy`); không coi là lộ dữ liệu tenant |
 
 ## 11. Task: [`tasks.md`](tasks.md).

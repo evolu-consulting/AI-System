@@ -1,6 +1,6 @@
 # Plan · H3b · DB (migration + SQL nguyên văn)
 
-Phụ lục của [`plan.md`](plan.md) §3, §6. Hub TS dùng Drizzle `sql\`…\`` (tham số `${x}`); ở đây viết `$n` cho gọn. Mọi câu đọc/ghi `agent_grants`, `agent_entitlements`, `admin.groups`, `admin.users`, `jobs`, `usage_logs`, `audit_log` **có `tenant_id = T`** (R03 — bảng không RLS). Câu không ghi ở đây = **không đổi**.
+Phụ lục của [`plan.md`](plan.md) §3, §6. Hub TS dùng Drizzle `sql\`…\`` (tham số `${x}`); ở đây viết `$n` cho gọn. Mọi câu đọc/ghi `agent_grants`, `agent_entitlements`, `admin.groups`, `admin.users`, `jobs`, `usage_logs`, `audit_log` **có `tenant_id = T`** (R03 — bảng không RLS), trừ `ACTOR_NAME` và join `gb` của `LIST_GRANTS`/`granted_by` (cố ý không lọc tenant: actor có thể là platform_admin, chỉ lấy `username`, QP2; rubric RV không coi là lỗi). Câu không ghi ở đây = **không đổi**.
 
 ## 1. Migration `packages/db/migrations-hub/0009_h3b_agent_grants.sql` (D1)
 Viết tay, idempotent (như `0007`/`0008`). Chỉ **thêm**: 1 bảng, 1 index trên bảng có sẵn, GRANT. Không đổi cột/RLS bảng cũ (R22), không mất dữ liệu.

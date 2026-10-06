@@ -88,4 +88,6 @@ PLAN (backend-lead, 2026-10-06) — chính xác hoá spec theo Luật 2 (spec �
 | PL12 | `NOT_ENTITLED.details.agent_ids` luôn đúng 1 phần tử (POST một grant — Q-K5); `INVALID_REFERENCE.details = {field}` | M3 hình lỗi; Q-K5 |
 | PL13 | POST trùng trả `hub_config_version` hiện tại (đọc khi khoá), không bump | R06 |
 | PL14 | CORS không đổi code (`cors({origin: HUB_CORS_ORIGINS})` đã danh sách trắng); chỉ `.env.example` + `hub-dev.md` | R23, Q-K2 |
-
+| PL15 | `redactTraceDetail(detail, view)`: view `own` (chủ run) bỏ khoá gốc `message`, `upstream` của `detail` (theo H1 P11/R26: message thô Runtime không ra client); `platform` giữ nguyên (HUB-BR-02). "Sâu > 6" tính gốc = mức 1; 16 KiB = 16 384 byte UTF-8 sau khi che | readiness N1, G5 |
+| PL16 | `SENSITIVE_KEY_RE` dùng `token(?!s)`: giữ `input_tokens`/`output_tokens`/`extra_tokens`; che `token`, `access_token`, `token_hash` | readiness G4 |
+| PL17 | `HubExtra` (H1) không có `hubAudit`: qc tự bọc kiểu rộng hơn (`Omit<HubExtra,"signal"> & Pick<AppDeps,"hubAudit">`) cho tiêm lỗi; `startHubX` trải `...extra` vào `deps` | readiness N7 |
