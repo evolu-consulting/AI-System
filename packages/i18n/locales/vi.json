@@ -350,6 +350,32 @@
     "versionConflict": "Có người vừa lưu bản mới hơn. Tải lại để xem bản mới nhất.",
     "invalidReference": "Dữ liệu chọn đã cũ. Đã tải lại danh sách, hãy chọn lại."
   },
+  "hub": {
+    "notConfigured": "Chưa cấu hình địa chỉ Hub (PUBLIC_HUB_URL).",
+    "effective": {
+      "grantUser": "Cấp trực tiếp",
+      "grantGroup": "Qua group {group}",
+      "empty": "Không có agent nào",
+      "loadError": "Không tải được quyền agent từ Hub",
+      "missing": {
+        "userInactive": "Tài khoản đang khoá",
+        "tenantLocked": "Công ty đang bị khoá",
+        "agentDisabled": "Agent đang tắt",
+        "runtimeUnavailable": "Runtime chưa sẵn sàng",
+        "noEntitlement": "Công ty chưa được mở agent",
+        "noGrant": "Chưa được cấp"
+      }
+    }
+  },
+  "hubErrors": {
+    "forbidden": "Bạn không có quyền quản lý agent của công ty này.",
+    "tenantRequired": "Chọn công ty trước.",
+    "agentGone": "Agent không còn tồn tại. Tải lại trang.",
+    "subjectGone": "Group không còn tồn tại.",
+    "notEntitled": "Công ty chưa được mở agent này.",
+    "notGrantable": "Agent đang tắt hoặc chưa chạy được, không cấp được.",
+    "network": "Không kết nối được Hub."
+  },
   "format": {
     "ago": {
       "now": "vừa xong",
@@ -1305,7 +1331,20 @@
       "empty": "Group chưa được cấp feature nào ngoài core."
     },
     "agents": {
-      "body": "Cấp agent cho group làm ở Agent Studio, khi Agent Hub sẵn sàng."
+      "body": "Cấp agent cho group làm ở Agent Studio, khi Agent Hub sẵn sàng.",
+      "caption": "Agent của group",
+      "col": {
+        "agent": "Agent",
+        "status": "Trạng thái",
+        "grant": "Cấp cho group"
+      },
+      "notRunnable": "Chưa chạy được",
+      "grantLabel": "Cấp {agent} cho {group}",
+      "granted": "Đã cấp {agent} cho {group}",
+      "revoked": "Đã thu hồi {agent} khỏi {group}",
+      "empty": "Chưa có agent nào trong Agent Studio",
+      "loadError": "Không tải được danh sách agent từ Hub",
+      "truncated": "Chỉ hiện 200 agent đầu."
     },
     "delete": {
       "title": "Xoá {name}?",

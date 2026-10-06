@@ -5,6 +5,7 @@ import { AccessExplainer } from "@/components/shared/access/AccessExplainer";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffectiveAgentsState } from "@/features/hub/hooks/use-effective-agents";
 import { useUserAccess } from "../../hooks/use-user-access";
 
 type Props = { userId: string; username: string; tenantKey: string };
@@ -12,6 +13,7 @@ type Props = { userId: string; username: string; tenantKey: string };
 export function UserAccessTab({ userId, username, tenantKey }: Props) {
   const { t, i18n } = useTranslation();
   const access = useUserAccess(userId);
+  const agents = useEffectiveAgentsState(userId, access.data?.user.tenant_id);
   if (access.loadError) return <ErrorState {...access.loadError} onRetry={access.retry} />;
   if (!access.data || access.isLoading) return <Skeleton className="h-64 w-full" />;
   return (
@@ -21,7 +23,7 @@ export function UserAccessTab({ userId, username, tenantKey }: Props) {
           {t("users.access.openCheck")}
         </Link>
       </Button>
-      <AccessExplainer data={access.data} lang={i18n.language} />
+      <AccessExplainer data={access.data} lang={i18n.language} agents={agents} />
     </div>
   );
 }

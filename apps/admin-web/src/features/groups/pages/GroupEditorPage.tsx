@@ -49,6 +49,7 @@ export function GroupEditorPage() {
         onTab={(tab) => void setSearch({ search: (prev) => ({ ...prev, tab }), replace: true })}
         members={<MembersTab group={group} />}
         features={<GroupFeaturesTab group={group} />}
+        group={group}
       />
       {renaming ? (
         <GroupRenameDialog

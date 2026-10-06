@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { API_ERRORS } from "@ai/contracts";
-import { describeError, describeInputMapErrors, describeLoginError } from "./errors";
+import { HUB_ADMIN_ERROR_CODES } from "@ai/contracts/hub-admin";
+import {
+  describeError,
+  describeHubError,
+  describeInputMapErrors,
+  describeLoginError,
+} from "./errors";
 import { ApiError, type ApiErrorCode } from "./http";
 
 const err = (code: ApiErrorCode, details?: unknown) =>
@@ -96,5 +102,32 @@ describe("ADM-FR-10 · M2-R28 · mã lỗi M2 → câu hiển thị", () => {
       params: { names: "target_lang, tone" },
     });
     expect(describeInputMapErrors(undefined)).toEqual([]);
+  });
+});
+
+describe("ADM-FR-37 · lỗi Hub `/agent-grants*` → key `hubErrors.*`", () => {
+  const hub = (status: number, code: string, details?: unknown) =>
+    new ApiError(status, code as ApiErrorCode, code, details);
+  test("mọi mã HUB_ADMIN_ERRORS có câu riêng", () => {
+    for (const code of HUB_ADMIN_ERROR_CODES) {
+      expect(describeHubError(hub(409, code)).key).not.toBe("hubErrors.network");
+    }
+    expect(describeHubError(hub(409, "NOT_ENTITLED")).key).toBe("hubErrors.notEntitled");
+    expect(describeHubError(hub(409, "AGENT_NOT_GRANTABLE")).key).toBe("hubErrors.notGrantable");
+    expect(describeHubError(hub(403, "FORBIDDEN")).key).toBe("hubErrors.forbidden");
+    expect(describeHubError(hub(400, "TENANT_REQUIRED")).key).toBe("hubErrors.tenantRequired");
+  });
+  test("INVALID_REFERENCE theo details.field", () => {
+    expect(describeHubError(hub(400, "INVALID_REFERENCE", { field: "agent_id" })).key).toBe(
+      "hubErrors.agentGone",
+    );
+    expect(describeHubError(hub(400, "INVALID_REFERENCE", { field: "subject_id" })).key).toBe(
+      "hubErrors.subjectGone",
+    );
+  });
+  test("mạng, 5xx, mã lạ → không kết nối được Hub", () => {
+    expect(describeHubError(hub(0, "NETWORK_ERROR")).key).toBe("hubErrors.network");
+    expect(describeHubError(hub(500, "INTERNAL_ERROR")).key).toBe("hubErrors.network");
+    expect(describeHubError(new Error("x")).key).toBe("hubErrors.network");
   });
 });

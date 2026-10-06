@@ -8,6 +8,7 @@ import { SearchCombobox } from "@/components/shared/SearchCombobox";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
+import { useEffectiveAgentsState } from "@/features/hub/hooks/use-effective-agents";
 import { useAccessCheck } from "../../hooks/use-access-check";
 import { useAddBeta } from "../../hooks/use-add-beta";
 import { useUserPicker } from "../../hooks/use-user-picker";
@@ -28,6 +29,7 @@ export function CheckTab({ tenantId, isPlatform, username, onUser }: Props) {
   const [query, setQuery] = useState("");
   const [granting, setGranting] = useState<FeatureMini | null>(null);
   const data = check.data;
+  const agents = useEffectiveAgentsState(data?.user.id, data?.user.tenant_id);
 
   return (
     <div className="space-y-4">
@@ -55,6 +57,7 @@ export function CheckTab({ tenantId, isPlatform, username, onUser }: Props) {
           data={data}
           query={query}
           lang={i18n.language}
+          agents={agents}
           actions={{
             isPlatform,
             username: data.user.username,

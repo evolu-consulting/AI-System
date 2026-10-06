@@ -1,5 +1,6 @@
 // ADM-FR-01, ADM-FR-04, ADM-FR-60, ADM-FR-10 · M2-R28 · mã lỗi API → key i18n (plan-frontend §6). Không hiển thị `message` của server nếu đã có key.
 
+import type { HubAdminErrorCode } from "@ai/contracts/hub-admin";
 import { formatClock } from "./format";
 import { ApiError } from "./http";
 
@@ -49,6 +50,14 @@ export const ERROR_MESSAGE_KEYS = [
   "groups.error.betaProtected",
   "access.error.notEntitled",
   "access.error.coreProtected",
+  // X1 F5 (Hub `/agent-grants*`)
+  "hubErrors.forbidden",
+  "hubErrors.tenantRequired",
+  "hubErrors.agentGone",
+  "hubErrors.subjectGone",
+  "hubErrors.notEntitled",
+  "hubErrors.notGrantable",
+  "hubErrors.network",
 ] as const;
 
 function untilTime(details: unknown): string {
@@ -139,6 +148,25 @@ export function describeError(
   const key = STATIC_KEYS[err.code];
   if (key) return { key };
   return { key: "toast.saveFailed", params: { reason: err.message } };
+}
+
+const HUB_KEYS: Record<Exclude<HubAdminErrorCode, "INVALID_REFERENCE">, string> = {
+  FORBIDDEN: "hubErrors.forbidden",
+  TENANT_REQUIRED: "hubErrors.tenantRequired",
+  NOT_ENTITLED: "hubErrors.notEntitled",
+  AGENT_NOT_GRANTABLE: "hubErrors.notGrantable",
+};
+
+/** Lỗi từ Hub `/agent-grants*` (`HUB_ADMIN_ERRORS`, plan-frontend §2.3): mạng/5xx/mã lạ → "Không kết nối được Hub". */
+export function describeHubError(err: unknown): MessageSpec {
+  if (!(err instanceof ApiError)) return { key: "hubErrors.network" };
+  const code = err.code as string;
+  if (code === "INVALID_REFERENCE") {
+    const subject = detailString(err.details, "field") === "subject_id";
+    return { key: subject ? "hubErrors.subjectGone" : "hubErrors.agentGone" };
+  }
+  const key = (HUB_KEYS as Record<string, string | undefined>)[code];
+  return key && err.status < 500 ? { key } : { key: "hubErrors.network" };
 }
 
 /** Lỗi đăng nhập: 5xx/mã lạ → `auth.error.server` kèm mã. */

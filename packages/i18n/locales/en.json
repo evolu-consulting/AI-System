@@ -350,6 +350,32 @@
     "versionConflict": "Someone just saved a newer version. Reload to see the latest.",
     "invalidReference": "The selection is out of date. The list was reloaded; please choose again."
   },
+  "hub": {
+    "notConfigured": "Hub address is not configured (PUBLIC_HUB_URL).",
+    "effective": {
+      "grantUser": "Granted directly",
+      "grantGroup": "Via group {group}",
+      "empty": "No agents",
+      "loadError": "Couldn't load agent access from the Hub",
+      "missing": {
+        "userInactive": "User is inactive",
+        "tenantLocked": "Organization is locked",
+        "agentDisabled": "Agent is disabled",
+        "runtimeUnavailable": "Runtime unavailable",
+        "noEntitlement": "Organization not entitled",
+        "noGrant": "Not granted"
+      }
+    }
+  },
+  "hubErrors": {
+    "forbidden": "You can't manage agents for this organization.",
+    "tenantRequired": "Choose an organization first.",
+    "agentGone": "The agent no longer exists. Reload the page.",
+    "subjectGone": "The group no longer exists.",
+    "notEntitled": "This organization isn't entitled to this agent.",
+    "notGrantable": "The agent is disabled or not runnable and can't be granted.",
+    "network": "Couldn't reach the Hub."
+  },
   "format": {
     "ago": {
       "now": "just now",
@@ -1305,7 +1331,20 @@
       "empty": "This group has no features beyond core."
     },
     "agents": {
-      "body": "Granting agents to a group is done in Agent Studio once Agent Hub is ready."
+      "body": "Granting agents to a group is done in Agent Studio once Agent Hub is ready.",
+      "caption": "Group agents",
+      "col": {
+        "agent": "Agent",
+        "status": "Status",
+        "grant": "Granted to group"
+      },
+      "notRunnable": "Not runnable",
+      "grantLabel": "Grant {agent} to {group}",
+      "granted": "Granted {agent} to {group}",
+      "revoked": "Revoked {agent} from {group}",
+      "empty": "No agents in Agent Studio yet",
+      "loadError": "Couldn't load agents from the Hub",
+      "truncated": "Showing the first 200 agents only."
     },
     "delete": {
       "title": "Delete {name}?",
