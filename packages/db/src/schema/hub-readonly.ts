@@ -1,5 +1,5 @@
 // ADM-NFR-06 · kiểu đọc của 3 bảng hub.* Admin được SELECT (spec M0 §4.2, ba-agent-hub.md §8).
-// Chỉ để đọc có kiểu: KHÔNG nằm trong drizzle.config.ts — Hub sở hữu DDL.
+// Chỉ để đọc có kiểu: KHÔNG nằm trong drizzle.config.ts — Hub sở hữu DDL. Hub ghi `agent_grants` từ H3b.
 import {
   boolean,
   index,

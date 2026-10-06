@@ -1,5 +1,5 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
 // Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts`
 // (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
 import { sql } from "drizzle-orm";
@@ -51,6 +51,9 @@ export const AGENT_RUNTIME_VALUES = [
   "dify-agent",
 ] as const;
 export const ATTACHMENT_ORIGIN_VALUES = ["upload", "output"] as const;
+export const HUB_AUDIT_ACTION_VALUES = ["grant", "revoke", "view_trace"] as const;
+export const HUB_AUDIT_ENTITY_VALUES = ["agent_grant", "run"] as const;
+export const HUB_AUDIT_ACTOR_ROLE_VALUES = ["platform_admin", "tenant_admin", "member"] as const;
 
 // ── §3.1 Cấu hình ──
 export const hubConfigMeta = hub.table("config_meta", {
@@ -311,4 +314,26 @@ export const attachments = hub.table("attachments", {
   createdAt: createdAt(),
   boundAt: ts("bound_at"),
   purgedAt: ts("purged_at"),
+});
+
+// ── H3b (0009_h3b_agent_grants): audit Hub append-only (trigger chặn UPDATE/DELETE/TRUNCATE kể cả owner; CHECK ở SQL).
+// Tên `hubAuditLog` tránh trùng `auditLog` (admin.audit_log, `ops.ts`). Không RLS — cách ly tenant ở repo (PL6).
+export const hubAuditLog = hub.table("audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  /** Thứ tự ghi (identity) — sort/phân trang ổn định, `at` có thể trùng. */
+  seq: bigint("seq", { mode: "number" }).generatedAlwaysAsIdentity(),
+  at: ts("at").notNull().defaultNow(),
+  tenantId: uuid("tenant_id").notNull(),
+  actorId: uuid("actor_id"),
+  actorUsername: text("actor_username"),
+  actorRole: text("actor_role", { enum: HUB_AUDIT_ACTOR_ROLE_VALUES }),
+  action: text("action", { enum: HUB_AUDIT_ACTION_VALUES }).notNull(),
+  entity: text("entity", { enum: HUB_AUDIT_ENTITY_VALUES }).notNull(),
+  entityId: uuid("entity_id"),
+  /** ≤ 200 ký tự (CHECK `hub_audit_log_entity_name_check`). */
+  entityName: text("entity_name").notNull().default(""),
+  hubConfigVersion: integer("hub_config_version"),
+  before: jsonb("before").$type<Record<string, unknown>>(),
+  after: jsonb("after").$type<Record<string, unknown>>(),
+  summary: jsonb("summary").$type<Record<string, unknown>>().notNull().default({}),
 });
