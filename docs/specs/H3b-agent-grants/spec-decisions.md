@@ -114,3 +114,36 @@ PLAN (backend-lead, 2026-10-06) — chính xác hoá spec theo Luật 2 (spec �
 |---|---|---|---|
 | TC1 | `grants-concurrency` **A50**, **A51** | A47 (chạy trước, cùng file, không dọn) cấp qua API `hoadon`/`tatt` → user `lan, hoa, tam, nghi, khoa`. A50 POST `hoadon → user hoa`, A51 POST `tatt → user tam` = **đã có** ⇒ đúng R06 trả 200 không bump/audit ⇒ A50 không có backend chờ `audit_log` (`lockWaiters` 0 ≠ 1), A51 nhận `[201, 200]`. Chạy riêng `-t "A5"` (không A47) ⇒ A49–A51 xanh; `-t "A47\|A50\|A51"` ⇒ A50/A51 đỏ — xác nhận do dữ liệu, không do code | Dùng subject không trùng A47 (vd group `kho`/`ke-toan` cho agent khác) hoặc `dropRow`/`clearGrants` đầu A50, A51 **qc phân xử: test sai, đã sửa** (xem test-plan-log "Tranh chấp TC1/TC2") |
 | TC2 | `role-tenant` **A06** (vế `?tenant_id=abc`) | Kỳ vọng `e(400, "VALIDATION_ERROR")` ⇒ `details: undefined`, nhưng contract (plan §2.1, `lib/http` H1) luôn trả `VALIDATION_ERROR` kèm `details.issues` ⇒ GET/POST/DELETE đúng 400 `VALIDATION_ERROR` vẫn lệch ở `details`. Vế `?tenant_id=<không có>` ⇒ 404 xanh | So `[status, code]` như A12/A13, hoặc `toMatchObject` **qc phân xử: test sai, đã sửa** (xem test-plan-log "Tranh chấp TC1/TC2") |
+
+## Kết luận
+### I2 — kiểm tay `curl` Hub dev (backend-lead, 2026-10-06; M01, Q-K14)
+Hub dev thật (`bun run hub:dev`, DB `ai_system`, không Dify/provider trả tiền). Tenant A = `beta` (`tadmin` tenant_admin, `an` member, agent `assistant` có entitlement), tenant B = `acme` (`lan`). `hub_config_version` 19 → 24. Mọi grant tạo ra đã thu hồi (còn đúng 2 hàng grant gốc của seed).
+
+| # | Ca | Kỳ vọng | Thực tế |
+|---|---|---|---|
+| 1 | `member` (an) GET `/agent-grants` | 403 | 403 `FORBIDDEN` |
+| 2a | `tenant_admin` A GET list | 200 | 200 `{tenant_id:A, items:[{agent, grants[]}]}` |
+| 2b | POST `assistant → user an` | 201 | 201 `{grant{id,granted_by:"tadmin"}, hub_config_version:20}` |
+| 2c | POST lại | 200 cùng hàng, không bump | 200 cùng `id`, version vẫn 20 |
+| 2d | GET effective `an` | thấy agent | 200 `visible:true, reasons:[grant_user]` |
+| 2e | POST agent không entitlement (`orchestrator`) | lỗi | 409 `AGENT_NOT_GRANTABLE` |
+| 2f | POST subject tenant khác (`lan`) | lỗi | 400 `INVALID_REFERENCE {field:subject_id}` |
+| 2g | POST group có sẵn (`beta-testers`) | 200 (trùng) | 200 hàng seed, version 20 |
+| 2h | DELETE grant của `an` | thành công | 204, version 21 |
+| 2i | DELETE lại | không ghi gì | 204, version vẫn 21, audit không thêm dòng |
+| 2j | effective `an` sau thu hồi | không còn thấy | 200 `visible:false, missing:[no_grant]` |
+| 2k | `tenant_admin` A `?tenant_id=B`: GET list / POST | 404 | 404 `NOT_FOUND` (cả hai) |
+| 2l | effective user tenant B (có / không `?tenant_id=B`) | 404 | 404 `NOT_FOUND` (cả hai) |
+| 3a | `platform_admin` thiếu `?tenant_id` (list, effective) | 400 `TENANT_REQUIRED` | 400 `TENANT_REQUIRED` |
+| 3b | `platform_admin` có `?tenant_id=A` (list, effective, POST, DELETE) | OK | 200, 200, 201 (`granted_by:"admin"`, v22), 204 (v23) |
+| 4a | Chủ run (`lan`) GET `/runs/:id/trace` | 200, không audit | 200; `audit_log view_trace` = 0 |
+| 4b | `tenant_admin` acme (`i2admin`) không phải chủ | 404 | 404 `NOT_FOUND`, không audit |
+| 4c | `tenant_admin` beta (khác tenant) / member khác | 404 | 404 / 404 |
+| 4d | `platform_admin` | 200 + 1 dòng `view_trace` | 200; `audit_log` seq 5 `view_trace`, `entity=run`, `tenant_id`=acme, `actor_role=platform_admin`, `summary{run_status,run_user_id}`; run không tồn tại ⇒ 404 |
+| 5 | Preflight `OPTIONS /agent-grants` + `/runs/x/trace`, `Origin: http://localhost:3000` | có `Access-Control-Allow-Origin` | có `…: http://localhost:3000` + `Allow-Credentials: true` (sau khi đặt `HUB_CORS_ORIGINS`, xem phát hiện 1); Origin lạ ⇒ không có header ACAO |
+| 6 | `hub.audit_log` + `hub_config_version` | grant/revoke tương ứng, version tăng mỗi lần ghi thật | seq 1–4: `grant`(20) `revoke`(21) `grant`(22) `revoke`(23), `entity_name="assistant → an"`, actor đúng role; POST trùng/DELETE lặp không thêm dòng, không bump |
+
+**Phát hiện (không phải lỗi code H3b):**
+1. `.env.local` của máy dev cũ chỉ có `HUB_CORS_ORIGINS=http://localhost:3100` (chép trước R23) ⇒ preflight `:3000` không có ACAO. Với `HUB_CORS_ORIGINS=http://localhost:3100,http://localhost:3000` ⇒ đúng. Đã bổ sung cảnh báo vào `docs/guides/hub-dev.md`.
+2. Hướng dẫn hub-dev nói `tenant_admin` có sẵn ở "tenant dev" nhưng `hub:dev` chỉ tạo `lan/hoa/an/khoa` (member); `tadmin` (beta) có sẵn trong DB nhưng mật khẩu không phải `dev-password-1`; `acme` không có tenant_admin. Đã sửa guide (reset + `POST /admin/users` cần `email` cho tenant_admin).
+3. Dữ liệu dev còn lại sau I2: user `i2admin` (acme, tenant_admin, mật khẩu `dev-password-1`; thử khoá trả 409 nên giữ nguyên), mật khẩu `tadmin` (beta) đặt lại về `dev-password-1`. Không có lỗi code nào.
