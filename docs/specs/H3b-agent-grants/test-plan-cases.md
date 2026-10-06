@@ -47,13 +47,14 @@ Snapshot dựng bằng kiểu `AccessSnapshot` (export từ `agent-access.rules.
 |---|---|---|
 | R40 | `traceAccess({role}, true)` × 3 role | `"own"` (cả platform_admin — Q-U4) |
 | R41 | `traceAccess({role}, false)`: platform_admin · tenant_admin · member · `"owner"` | `"platform"` · `"not_found"` · `"not_found"` · `"not_found"` (Q-U2) |
-| R42 | khoá: `api_key`, `apiKey`, `client_secret`, `access_token`, `password`, `passwd`, `Authorization`, `Cookie`, `credentials`, `private_key`, `max_tokens` (G4) | giá trị = `MASK`; khoá giữ nguyên |
+| R42 | khoá: `api_key`, `apiKey`, `client_secret`, `access_token`, `password`, `passwd`, `Authorization`, `Cookie`, `credentials`, `private_key`, `token`, `token_hash`, `tokenBudget` (G4: regex `token(?!s)`; bỏ `max_tokens`) | giá trị = `MASK`; khoá giữ nguyên |
 | R43 | giá trị: `"Bearer abc.def"`, `"app-"+16 ký tự`, `"sk-"+16`, `"-----BEGIN RSA PRIVATE KEY-----…"` ở mọi mức, trong mảng | `MASK` |
-| R44 | không nhạy cảm: `{label:"x", model:"haiku", note:"app-short", word:"bearer"}` | giữ nguyên, deep-equal |
+| R44 | không nhạy cảm: `{label:"x", model:"haiku", note:"app-short", word:"bearer"}` · `{input_tokens:5, output_tokens:7, extra_tokens:3, max_tokens:100}` (G4: `token(?!s)` không khớp `*_tokens`) | giữ nguyên, deep-equal (số token giữ số, không `MASK`) |
 | R45 | độ sâu (G5): giá trị mức 6 · mức 7 | giữ · `MASK` |
 | R46 | kích thước (G5): JSON sau che 16 384 byte · 16 385 byte | giữ · `{truncated:true}` |
 | R47 | `null`, `undefined`, `42`, `"s"` · mảng gốc `[{"token":"x"}]` · input object | `null` · `{items:[{token:MASK}]}` · input không bị sửa |
 | R48 | `stepMs(t, null)` · `(t, t)` · `(t, t+1234)` · `(t, t−5)` | `null` · `0` · `1234` · `0` |
+| R49 | `redactTraceDetail(detail, view)` với `detail = {message:"M", upstream:"U", usage:{input_tokens:5}, code:"x"}` (N1/PL15): `"own"` · `"platform"` · `message`/`upstream` lồng ở mức 2 (`own`) | `own`: bỏ hẳn khoá gốc `message`, `upstream`, giữ `usage`/`code` · `platform`: giữ nguyên · khoá lồng không bị bỏ (chỉ khoá gốc); input không bị sửa |
 
 ### 1.5 `contracts-h3b.test.ts` · spec §3 · `plan` §2 · R21
 | ID | Kiểm | Kỳ vọng |
@@ -73,7 +74,7 @@ Endpoint `E` = {GET list, POST, DELETE, GET effective(`lan`)}; mỗi ca chạy t
 | ID | Ai · gửi | Kỳ vọng |
 |---|---|---|
 | A01 | không token · token hết hạn · ký khoá khác (+ `GET /runs/:id/trace`) | 401 `AUTH_EXPIRED`/như H1; 0 ghi |
-| A02 | `lan` (member) · hợp lệ · body sai · `?tenant_id=xyz` · `?tenant_id=beta`; A02b JWT `role:"owner"` | 403 `FORBIDDEN` (trước validate — PL8); 0 ghi |
+| A02 | `lan` (member) · hợp lệ · body sai · `?tenant_id=xyz` · `?tenant_id=beta`; A02b JWT ký đúng nhưng `role:"owner"` | A02: 403 `FORBIDDEN` (trước validate — PL8); 0 ghi · A02b: **401 `AUTH_EXPIRED`** (N2: `jwt.ts` từ chối role lạ ⇒ null), 0 ghi |
 | A03 | `tadmin` `?tenant_id=beta` (body hợp lệ cho `beta`) | 404 `NOT_FOUND`, ≡ (G1) `?tenant_id=UNKNOWN`; 0 ghi ở `beta` và `acme` |
 | A04 | `tadmin` `?tenant_id=acme` | như không gửi (200/201/204) |
 | A05 | `padmin` không `tenant_id` | 400 `TENANT_REQUIRED`; 0 ghi |
@@ -140,7 +141,7 @@ Endpoint `E` = {GET list, POST, DELETE, GET effective(`lan`)}; mỗi ca chạy t
 | ID | Thao tác | Kỳ vọng |
 |---|---|---|
 | A65 | grant `hoadon → ke-toan` + `→ user lan`; effective `lan` | parse schema; `hoadon` `visible`, `reasons = [grant_user, grant_group{group:{id,key:"ke-toan",name}}]`, `missing:[]` |
-| A66 | Đại diện ma trận: `tatt` (`agent_disabled`), `cli-x` (`runtime_unavailable`), `nghi` (`user_inactive`), `khoa` (`tenant_locked`), `gam` qua `padmin ?tenant_id=gamma` (`tenant_locked`), `cu` (`no_entitlement` + reasons), không grant (`no_grant`) | `missing` đúng thứ tự R14 |
+| A66 | Đại diện ma trận: `tatt` (`agent_disabled`), `cli-x` (`runtime_unavailable`), `nghi` (`user_inactive`), `khoa` (`tenant_locked`), `gam` qua `padmin ?tenant_id=gamma` (`tenant_locked`; N3: fixture `gamma` đang hoạt động ⇒ ca tự `UPDATE admin.tenants SET active=false` bằng owner + `adminChange` (NOTIFY), chờ cache, gọi, **trả lại `active=true` trong `finally`**), `cu` (`no_entitlement` + reasons), không grant (`no_grant`) | `missing` đúng thứ tự R14 |
 | A67 | cùng version: effective `lan` vs `GET /agents` của `lan` | tập `visible` ≡ tập key `GET /agents` |
 | A68 | `tadmin`: user `an` · `"abc"` · `UNKNOWN`; `padmin ?tenant_id=beta` user `lan`; `padmin ?tenant_id=acme` user `lan` | 404 ×4 (≡ nhau) · 200 |
 | A69 | — | không `khodu`, `chua`, Orchestrator |
@@ -172,6 +173,7 @@ Dữ liệu `insertTraceRun` (owner): `R_lan` (acme/`lan`: step orchestrator + d
 | A95 | `padmin` · `R_pad` | 200; 0 audit (Q-U4) |
 | A96 | `padmin` · `UNKNOWN` | 404; 0 audit (PL11) |
 | A97 | mọi thân 200 (A90, A93) + mọi hàng audit | không chứa chuỗi `PLANTED`; khoá nhạy cảm ⇒ `"••••"`; jobs không khoá `payload/result/token_hash/error_message`; audit không chứa `MSG_MARK`/`PLANTED` |
+| A97b | `insertTraceRun` `R_lan` có step lỗi `detail = {message:"MSG_ERR", upstream:"UP_ERR", usage:{input_tokens:5,output_tokens:7}}` (N1/PL15; H1-R26). `lan` · `R_lan`; `padmin` · `R_lan` | `lan`: không `detail.message`/`detail.upstream` (không chứa `MSG_ERR`/`UP_ERR`), `usage` giữ số · `padmin`: có `message`/`upstream` nguyên văn (HUB-BR-02) + 1 audit `view_trace`; unit R49 khoá hai view |
 | A98 | `failingAudit(["view_trace"])`: `padmin` · `R_lan`; `lan` · `R_lan` | 500 `INTERNAL_ERROR`, thân không có `R_lan`/`MSG_MARK`; 0 audit · 200 (nhánh chủ không audit) |
 | A99 | run 201 step, 201 job | 200 step, 200 job, `truncated:true` |
 | A100 | owner chèn `jobs`/`usage_logs` cùng `run_id = R_lan` nhưng `tenant_id = beta` | `padmin` và `lan`: không thấy hàng đó, `usage_total` không cộng (K10) |

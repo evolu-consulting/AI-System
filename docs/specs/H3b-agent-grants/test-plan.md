@@ -22,14 +22,14 @@ Như H3a §1 (tên test, chờ theo điều kiện không `sleep`, cấm `skip/o
 | Mục | Đề xuất | Ai |
 |---|---|---|
 | DB | DB riêng qc (`bun run db:test:create qc`), migrate tới `0009` qua `prepareDb` H1 | qc |
-| Hub | `startHubX` (H1) bọc trong `startHubH3b(k, {hubAudit?})` — truyền `AppDeps.hubAudit` (P12/PL10) để tiêm lỗi; hai instance cho AC-H09/A11 | qc |
+| Hub | `startHubX` (H1) bọc trong `startHubH3b(k, {hubAudit?})`; `HubExtra` không có `hubAudit` ⇒ qc tự bọc: `type H3bExtra = Omit<HubExtra,"signal"> & Pick<AppDeps,"hubAudit">` trong `_h3b.ts` (`startHubX` trải `...extra` vào `deps`; N7) để tiêm lỗi audit (fail-closed, P12/PL10); hai instance cho AC-H09/A11 | qc |
 | Seed ∥ POST | hàm seed thật (`bun run hub:seed` với YAML tạm, owner) — A47 | qc; MK xác nhận đường gọi |
 | CORS | `createApp({version, corsOrigins:[…]}, {})` không DB (preflight không chạm DB) — A110–A113 (G9) | qc |
 
 ### 2.1 Dữ liệu chung (`tests/acceptance/H3b/_h3b.ts`, id `idGen` dải riêng H3b)
 | Thứ | Giá trị |
 |---|---|
-| Tenant / user (H1 `_fixtures`) | `acme`: `lan` (X, member), `hoa` (member), `tadmin` (A, tenant_admin), `khoa` (locked), `nghi` (inactive), `tam`; `beta`: `an` (member) + **`badmin`** (tenant_admin `beta`, thêm bằng owner); `platform`: `padmin` (P); `gamma` (tenant không hoạt động): `gam` |
+| Tenant / user (H1 `_fixtures`) | `acme`: `lan` (X, member), `hoa` (member), `tadmin` (A, tenant_admin), `khoa` (locked), `nghi` (inactive), `tam`; `beta`: `an` (member) + **`badmin`** (tenant_admin `beta`, thêm bằng owner); `platform`: `padmin` (P); `gamma` (fixture **đang hoạt động**; ca A66 tự khoá rồi trả lại trong `finally` — N3): `gam` |
 | Group (owner `admin.groups`/`group_members`) | `ke-toan` (acme: `lan`, `hoa`), `kho` (acme: `tam`), `ban-hang` (beta: `an`) |
 | Agent | `hoadon` (bật, runtime chạy được, entitlement `acme`) · `khodu` (entitlement **chỉ** `beta`) · `tatt` (tắt, ent. `acme`) · `cli-x` (runtime ∉ `RUNNABLE_RUNTIMES`, ent. `acme`) · `cu` (ent. `acme` **đã thu hồi**) · `chua` (không ent. ở đâu) · Orchestrator mặc định (H1 `AG`) + Orchestrator tenant `acme` (H2b `orchAcme`), cả hai được cấp entitlement `acme` để ca "Orchestrator" không bị `NOT_ENTITLED` che |
 | Helper | `stateOf(sql)` = `{grants theo tenant (id, khoá), hub_config_version, audit max seq}` · `listenHub(sql)` → `{mark(), since(mark), sentinel()}` · `auditSince(sql, seq, filter)` · `entitle/revokeEnt(sql, agent, tenant)` (bọc `hubConfigChange`) · `holdConfigMeta(sql)` → `release()` (owner tx `SELECT … FOR UPDATE`) · `lockWaiters(sql)` (`pg_stat_activity` `usename='hub_api' ∧ wait_event_type='Lock'`) · `insertTraceRun(sql, {...})` (run + steps + jobs + usage + messages, owner) · `PLANTED` (chuỗi bí mật mẫu) · `failingAudit(actions)` (`HubAuditWriter` ném khi `action ∈ actions`) · `same404(a, b)` |
@@ -49,7 +49,7 @@ Như H3a §1 (tên test, chờ theo điều kiện không `sleep`, cấm `skip/o
 | **AC-07** (R12–R14 effective) | R20–R29; A65–A72 | R, A |
 | **AC-08** (chủ run) | A90 | A |
 | **AC-09** (platform_admin + audit) | A93–A96 | A |
-| **AC-10** (404 + che) | R42–R46; A92, A97, A100 | R, A |
+| **AC-10** (404 + che) | R42–R46, R49; A92, A97, A97b, A100 | R, A |
 | **AC-11** (fail-closed) | A98 | A |
 | **AC-12** (CORS) | A110–A113 | A |
 | **AC-13** (command M5, không chặn) | A130–A134 (G7) | A |
@@ -72,7 +72,7 @@ Như H3a §1 (tên test, chờ theo điều kiện không `sleep`, cấm `skip/o
 | R03 | A03, A10, A11, A30, A56, A68, A100; review | R15 | A70, A71 |
 | R04 | R10–R15; A26–A33 | R16 | A21, A34, A93, A97; A123, A124 |
 | R05 | A25; R28 | R17 | R40, R41; A90–A96 |
-| R06 | A23, A45, A51 | R18 | R42–R47; A97, A99, A102 |
+| R06 | A23, A45, A51 | R18 | R42–R47, R49; A97, A97b, A99, A102 |
 | R07 | A34–A36, A10 | R19 | A98 |
 | R08 | A20–A22, A38, A39, A49, A50 | R20 | A101; K03 |
 | R09 | A80–A83 | R21 | R60, R61; K01, K02, K05 |
@@ -84,13 +84,13 @@ Như H3a §1 (tên test, chờ theo điều kiện không `sleep`, cấm `skip/o
 | Rủi ro | Kiểm |
 |---|---|
 | Chéo tenant (không RLS `agent_grants`, R03) | §3.1 đủ 5 endpoint; mọi ca lỗi kèm `stateOf` trước = sau ở **cả hai** tenant; so 404 giống hệt ca id vắng |
-| Role | member 403 **trước** validate (A02: body/query sai vẫn 403 — PL8); `role` lạ (JWT ký đúng, `role:"owner"`) ⇒ 403 (A02b) |
+| Role | member 403 **trước** validate (A02: body/query sai vẫn 403 — PL8); `role` lạ (JWT ký đúng, `role:"owner"`) ⇒ **401 `AUTH_EXPIRED`** (A02b, N2; `jwt.ts` từ chối; R06 giữ phòng thủ `FORBIDDEN`) |
 | Entitlement chưa thu hồi | A28 (vắng / thu hồi / platform_admin), A84–A86 (thu hồi ⇒ mất ≤ 5 s, grant còn; cấp lại ⇒ về, cùng `id`) |
 | Không cấp Orchestrator | A27 mặc định + tenant `acme` + tenant `beta`; A29 thứ tự trước `NOT_ENTITLED`; R20 effective loại Orchestrator |
 | Tập hợp | A23 trùng ⇒ 200 cùng `id`, 0 bump/audit/NOTIFY (sentinel); A35 xoá không có ⇒ 204, 0 ghi |
 | NOTIFY + version ≤ 5 s | A22 (1 thông điệp, `version` = sau ghi, ≤ 1 s→3 s), A80–A85 (2 instance) |
 | Audit trong transaction | A38/A39 tiêm lỗi ⇒ 0 grant, 0 bump, 0 audit, 0 NOTIFY, lần sau vẫn ghi được (không kẹt khoá); A123 append-only |
-| Trace | A90 chủ run 0 audit · A93/A94 P + 1 audit/lần · A95 P chủ run 0 audit · A96 id vắng 0 audit · A98 audit lỗi ⇒ 500 không thân trace · A92 tenant_admin ⇒ 404 · A97 quét bí mật |
+| Trace | A90 chủ run 0 audit · A93/A94 P + 1 audit/lần · A95 P chủ run 0 audit · A96 id vắng 0 audit · A98 audit lỗi ⇒ 500 không thân trace · A92 tenant_admin ⇒ 404 · A97 quét bí mật · A97b chủ run không thấy `detail.message`/`upstream`, P thấy (N1) |
 | Thứ tự khoá `config_meta → agent_grants → audit_log` | A49 (giữ `config_meta` ⇒ POST chờ ở `config_meta`, chưa khoá `agent_grants`), A50 (khoá `audit_log` ⇒ POST đang giữ `config_meta` + `agent_grants`), A46/A47 POST ∥ DELETE / seed: 0 deadlock |
 | Quyền `hub_rw` (PL2) | A120–A122: đúng cột `hub_config_version` được UPDATE; mọi cột khác `config_meta` 42501; `agent_grants` không UPDATE/TRUNCATE; danh sách trắng quyền |
 | Khoá cũ | K01–K16 (C1 `CHAT_API_ERRORS` 6 mã, `test:contract:chat` 41, H1/H2*/H3a, M3 `hub-view.int`, M4 usage) |
@@ -114,12 +114,12 @@ Mọi bước `done:h3a` + `bun test tests/acceptance/H3b/rules` (bước unit) 
 ## 7. Nhóm WRITE · đợt khoá (sau Gate)
 | Nhóm | Khi | File | Ca | Phải đỏ đúng lý do vì |
 |---|---|---|---|---|
-| QW-R | sau C1, B0 | `rules/{target-tenant,grant-problem,effective-agents,trace-rules,contracts-h3b}.test.ts` | R01–R61 (39) | stub ném `not implemented`. **Xanh trước code chấp nhận**: R60–R61 (contract C1 có), R42–R45 phần hằng regex (`SENSITIVE_*_RE` thật trong B0) |
-| QW-A | sau D1, MK, QW-R | `H3b/*.int.test.ts` (9 file) | A01–A126 (90) | route chưa có ⇒ 404 thay 200/201/403/400/409 (`expect`). **Xanh trước code chấp nhận**: A01 (401 middleware có sẵn nếu prefix chưa thêm ⇒ 404 — ghi rõ), A101, A110 (CORS chưa đổi code), A120–A126 (D1 xong) |
-| QW-C | cùng QW-A | `H3b-cmd/command-m5.int.test.ts` | A130–A134 (5) | đỏ ⇒ TECH-DEBT, không chặn (Q-K11) |
+| QW-R | sau C1, B0 | `rules/{target-tenant,grant-problem,effective-agents,trace-rules,contracts-h3b}.test.ts` | R01–R61 (40) | stub ném `not implemented`. **Xanh trước code chấp nhận**: R60–R61 (contract C1 có), R42–R45 phần hằng regex (`SENSITIVE_*_RE` thật trong B0) |
+| QW-A | sau D1, MK, QW-R | `H3b/*.int.test.ts` (9 file) | A01–A126 (91) | route chưa có ⇒ 404 thay 200/201/403/400/409 (`expect`). **Xanh trước code chấp nhận**: A01 (401 middleware có sẵn nếu prefix chưa thêm ⇒ 404 — ghi rõ), A101, A110 (CORS chưa đổi code), A120–A126 (D1 xong) |
+| QW-C | cùng QW-A | `H3b-cmd/command-m5.int.test.ts` | A130–A134 (5) | đỏ ⇒ TECH-DEBT, không chặn (Q-K11). **Ngoài `done:h3b`**; qc chạy tay ở I1: `bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 ./tests/acceptance/H3b-cmd`, ghi `test-plan-log.md` (G7) |
 | **Q2** | sau QW-A | `tests/.lock` | — | verify chỉ `UNLOCKED` H3b, 0 `CHANGED` |
 
-Tổng mới **134** ca: R 39 · A 90 · A-cmd 5; + K 16 nhóm · M 1. Model: QW-R/QW-A = Opus (`cao`), Q2/I1 = Sonnet.
+Tổng mới **136** ca: R 40 · A 91 · A-cmd 5; + K 16 nhóm · M 1. Model: QW-R/QW-A = Opus (`cao`), Q2/I1 = Sonnet.
 
 ## 8. Chỗ hở cho readiness (mặc định dùng nếu không trả lời)
 | # | Hở | Mặc định | Agent |
@@ -127,7 +127,7 @@ Tổng mới **134** ca: R 39 · A 90 · A-cmd 5; + K 16 nhóm · M 1. Model: QW
 | G1 | AC-H08 "404 giống hệt (thân + header)" — `x-request-id`/`date` luôn khác | so `status` + `content-type` + thân bỏ `request_id` (nếu có) | qc |
 | G2 | Thứ tự `VALIDATION_ERROR` vs `TENANT_REQUIRED`/404 tenant khi cả hai sai (plan §3 vs R04) | `VALIDATION_ERROR` trước (plan §3); không lộ tồn tại tenant vì không phụ thuộc DB — A12 khoá | backend-lead xác nhận |
 | G3 | Mã 500 khi ghi lỗi (POST/DELETE/trace) chưa ghi tên | `INTERNAL_ERROR`, không `details` | backend-lead |
-| G4 | `SENSITIVE_KEY_RE` khớp `token` ⇒ khoá `input_tokens`/`max_tokens` trong `detail` bị che | test theo regex nguyên văn (R42 có ca `max_tokens` → MASK); muốn giữ số token thì backend-lead đổi regex **trước Q2** | backend-lead |
+| G4 | `SENSITIVE_KEY_RE` khớp `token` ⇒ khoá `input_tokens`/`max_tokens` bị che | **Đã xử lý (readiness 1, PL16)**: regex `token(?!s)`; R42 bỏ `max_tokens`, thêm `access_token`/`token_hash`; R44 giữ `input/output/extra/max_tokens` | backend-lead |
 | G5 | `redactTraceDetail`: "sâu > 6" và "> 16 KiB" chưa định nghĩa mốc | gốc = mức 1, giá trị ở mức 7 ⇒ MASK; 16 KiB = 16 384 byte UTF-8 của `JSON.stringify` **sau** che, `> 16384` ⇒ `{truncated:true}` | backend-lead |
 | G6 | Thứ tự `reasons` ở hàm thuần (groupId) vs contract (`group.key`) | R22 so như tập; A65 khoá thứ tự contract (`grant_user` rồi theo `group.key`) | — |
 | G7 | AC-13 "đỏ ⇒ TECH-DEBT, không chặn" mâu thuẫn nếu nằm trong `tests/acceptance/H3b/` (bước int `done:h3b`) | đặt ở `tests/acceptance/H3b-cmd/` (vẫn khoá), **ngoài** `done:h3b`; qc chạy tay ở VERIFY | backend-lead MK |
@@ -138,9 +138,21 @@ Tổng mới **134** ca: R 39 · A 90 · A-cmd 5; + K 16 nhóm · M 1. Model: QW
 | G12 | QP1 (actor bị khoá, JWT còn hạn) — không khoá test | không có ca; theo mặc định QP1 | — |
 | G13 | POST trùng: `granted_by`/`granted_at` của hàng gốc hay actor hiện tại | hàng gốc (`FIND_GRANT`) — A23 | backend-lead xác nhận |
 
-## 9. Cần bổ sung (agent: việc)
-- backend-lead: G2, G3, G4, G5, G13 (một dòng PL mỗi mục); G7 + G9 trong MK/B6; MK: `startHubX` nhận `hubAudit` (qua `HubExtra`/`AppDeps`) — nếu `HubExtra` không chuyển tiếp `AppDeps` thì qc tự bọc `createApp` trong `_h3b.ts`.
-- docs-architect: G8 → TECH-DEBT.
+## 9. Cần bổ sung (agent: việc) · xử lý readiness lần 1 (2026-10-06)
+| Mục | Trạng thái | Xử lý phía qc |
+|---|---|---|
+| G1 | Đã xử lý | So `status` + `content-type` + thân bỏ `request_id` (§1); docs-architect sửa chữ AC-H08 |
+| G2, G3, G5, G13 | Đã xử lý | Nhận mặc định; backend-lead ghi một dòng PL mỗi mục |
+| G4 | Đã xử lý | PL16, regex `token(?!s)`; R42/R44 đổi (§8) |
+| G6, G9, G10, G11 | Đã xử lý | Nhận mặc định, không đổi |
+| G7 | Đã xử lý | `H3b-cmd/**` ngoài `done:h3b`; qc chạy tay ở I1, đỏ ⇒ TECH-DEBT (§7); backend-lead thêm File vào tasks QW |
+| G8 | Đã xử lý | docs-architect: TECH-DEBT + PRODUCTION-NOTES/`hub-dev.md` (YAML prod không chứa `grants`); A47 giữ nguyên |
+| G12 | Đã xử lý | QP1 đã có 401 qua `accountUsable` (N4), không cần ca mới |
+| N1 | Đã xử lý | R49 + A97b (PL15 `redactTraceDetail(detail, view)`) |
+| N2 | Đã xử lý | A02b ⇒ 401 `AUTH_EXPIRED` |
+| N3 | Đã xử lý | A66 tự khoá `gamma`, trả lại trong `finally`; §2.1 sửa |
+| N4, N5, N6 | Không thuộc qc | backend-lead sửa plan/plan-db |
+| N7 | Đã xử lý | `H3bExtra` bọc trong `_h3b.ts`, MK không phải làm gì (§2) |
 
 ## 10. Đỏ đúng lý do · nhật ký
 Chưa chạy (QW sau Gate). Ghi vào `test-plan-log.md` khi có.
