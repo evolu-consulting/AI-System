@@ -77,8 +77,19 @@ Bảng đã có: `agents`, `orchestrator_settings`, `agent_entitlements`, `audit
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
-Artboard: Main (danh sách), AgentEditor (5 bước; nút Chạy thử / Xem như model thấy disabled "Sắp có (H4c)"), Orchestrator (bỏ tab Kiểm thử + Dry-run). Màn thiếu artboard: **Đăng nhập Studio**, "Không có quyền", khung/menu "Sắp có" — theo mẫu Admin (ui-admin §7.1). Route: `/studio/login`, `/studio` (→ agents), `/studio/agents`, `/studio/agents/new`, `/studio/agents/:id`, `/studio/orchestrator`, `/studio/forbidden`.
+Chi tiết: [`plan-frontend.md`](plan-frontend.md) (route, trạng thái, validate, nhãn e2e, bundle, đề xuất API E1–E12) · câu chữ VI/EN: [`plan-frontend-copy.md`](plan-frontend-copy.md).
 
+| Màn | Route (basepath `/studio`) | Artboard / mẫu | Ghi chú |
+|---|---|---|---|
+| Đăng nhập (+ bước TOTP) | `/login?next=` | **mới**, mẫu Admin ui-admin §7.1 | `POST /auth/login`, `/auth/totp/verify`; `password_change_required` → chuyển sang Admin |
+| Không có quyền | `/forbidden` | **mới**, mẫu Admin `state.forbidden` | `me` 403 ⇒ tới đây, không gọi API khác |
+| Khung + menu | mọi route `_authed` | Main (sidebar/topbar) | mục chưa làm `aria-disabled` + "Sắp có"; badge `hub config vN`; "⇄ Admin" |
+| Agents | `/agents`, `/` → `/agents` | Main, bỏ cột "24 giờ", bỏ Import yaml | lọc client; bật/tắt có Hoàn tác; menu Nhân bản / Đặt làm Orchestrator / Xoá |
+| Agent editor | `/agents/new[?from=<id>]`, `/agents/$agentId` | AgentEditor, nút "Lưu" (không kiểm thử định tuyến) | Chạy thử, "Xem như model thấy" disabled "Sắp có (H4c)"; bước 5 chỉ số tenant |
+| Orchestrator | `/orchestrator[?tenant=<id>\|new]` | Orchestrator, bỏ tab Kiểm thử, Dry-run, cột Kiểm thử | bản tenant trong Sheet |
+| 404 | `*` | mẫu Admin `state.notFound` | — |
+
+Trạng thái: tải (skeleton) · rỗng (ui §13) · lỗi (+ Thử lại) · không quyền · 409 `VERSION_CONFLICT` (ConflictDialog mẫu Admin) · mất mạng (banner) — bảng plan-frontend §3. Dev: rsbuild 3200, base `/studio`, proxy `/auth` → admin-api, `/studio/api` → Hub (cookie refresh không cần CORS); prod `/auth` cần reverse proxy hoặc CR-044. Không thêm thư viện (không ADR).
 ## 6. Hiệu năng
 Theo `CONVENTIONS.md` §6; hiệu năng không chặn mốc (người dùng 2026-10-03). Mục tiêu bundle JS đầu ≤ 150 KB gzip (nới được).
 
