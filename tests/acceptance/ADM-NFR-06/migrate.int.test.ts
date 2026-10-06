@@ -144,7 +144,7 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
     expect([await count("__drizzle_migrations"), await count("__drizzle_migrations_dev")]).toEqual(
       before,
     );
-    expect(before).toEqual([9, 3]);
+    expect(before).toEqual([10, 3]);
   });
 
   it("ADM-NFR-06 · M0-AC03 · role đã có sẵn (DB reset nhưng role ở mức cluster) vẫn migrate được", async () => {
