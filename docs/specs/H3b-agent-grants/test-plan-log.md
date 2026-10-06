@@ -59,3 +59,9 @@ Code H2a (không code mới). Thời gian menu cập nhật: A130 124 ms, A131 t
 
 ## Q2 — khoá (điều phối, 2026-10-06)
 `test:lock:verify` trước khi ghi: đúng 18 UNLOCKED (`tests/acceptance/H3b/**` 17 file + `tests/acceptance/H3b-cmd/command-m5.int.test.ts`), 0 CHANGED → `test:lock:write` → verify OK. `tasks.md` I1: lệnh AC-13 đổi sang `--config=bunfig.stack.toml` (bunfig.int.toml bỏ qua `H3b-cmd/**`).
+
+## Tranh chấp TC1/TC2 (qc phân xử, 2026-10-06)
+- **TC1 — test sai.** `grants-concurrency` A50/A51 phụ thuộc thứ tự: A47 (cùng file, không dọn) đã cấp `hoadon → user hoa`, `tatt → user tam`; POST lại = trùng ⇒ 200 đúng R06 (HUB-H3b-AC-04), nên A50 không có backend chờ `audit_log`, A51 nhận `[201, 200]`. Code đúng. Sửa: thêm `dropUserGrant` (xoá hàng bằng SQL, không bump version) đầu A50 (`hoadon→hoa`) và A51 (`cliX→tam`, `tatt→tam`); kỳ vọng giữ nguyên (không yếu đi).
+- **TC2 — test sai.** `role-tenant` A06 vế `?tenant_id=abc` kỳ vọng `details: undefined`, nhưng contract `VALIDATION_ERROR` luôn có `details.issues` (ValidationErrorDetailsSchema). Sửa: so `[tên endpoint, 400, "VALIDATION_ERROR"]` cho 4 endpoint và thêm kiểm `details.issues.length > 0` (chặt hơn trước). A13 chỉ so status/code nên không đổi.
+- Kết quả: `grants-concurrency` 7/7 xanh. `role-tenant` 11 pass / 4 fail: A04, A05, A13, A06 đỏ ở vế **effective** (endpoint trả 404 NOT_FOUND vì B4 chưa xong — chờ B4), vế `abc` của A06 đã qua assertion tới được (không đỏ vì details).
+- **File cần khoá lại:** `tests/acceptance/H3b/grants-concurrency.int.test.ts`, `tests/acceptance/H3b/role-tenant.int.test.ts`.

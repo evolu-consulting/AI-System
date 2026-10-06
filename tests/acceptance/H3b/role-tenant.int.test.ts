@@ -159,7 +159,15 @@ describe("A03–A06 · tenant đích [ADM-FR-37 · HUB-BR-14 · H3b-R02, R03]", 
     const none = eps({ tenant_id: NONE });
     expect(await runAll(none, t)).toEqual(all(none, e(404, "NOT_FOUND")));
     const abc = eps({ tenant_id: "abc" });
-    expect(await runAll(abc, t)).toEqual(all(abc, e(400, "VALIDATION_ERROR")));
+    // VALIDATION_ERROR luôn kèm details.issues (contract ErrorResponse / lib/http) ⇒ so [status, code] + issues không rỗng.
+    const got = await runAll(abc, t);
+    expect(got.map((g) => [g.name, g.err.status, g.err.code])).toEqual(
+      abc.map((ep) => [ep.name, 400, "VALIDATION_ERROR"]),
+    );
+    for (const g of got)
+      expect((g.err.details as { issues?: unknown[] } | undefined)?.issues?.length).toBeGreaterThan(
+        0,
+      );
     await expectNoWrite(x.sql, n, m, s0);
   });
 });

@@ -215,6 +215,10 @@ async function waiterLocks(): Promise<{ pid: number; held: string[]; waiting: st
   };
 }
 
+/** Độc lập thứ tự: A47 (cùng file) đã cấp qua API cho các user này ⇒ xoá hàng trước khi POST "mới" (R06: trùng ⇒ 200, không khoá audit). */
+const dropUserGrant = (agent: string, userId: string) =>
+  dropRow({ agent, type: "user", subject: userId });
+
 describe("A49–A51 · thứ tự khoá, khác khoá song song [HUB-FR-78 · plan §6 · HUB-H3b-AC-05]", () => {
   it("HUB-FR-78 · A49 · owner giữ config_meta, POST ⇒ backend chờ config_meta, CHƯA RowExclusiveLock agent_grants; nhả ⇒ 201 [plan §6 · P6]", async () => {
     const g: GrantRef = { agent: AGT.tatt, type: "group", subject: GRP.kho };
@@ -240,6 +244,7 @@ describe("A49–A51 · thứ tự khoá, khác khoá song song [HUB-FR-78 · pla
 
   it("HUB-FR-78 · A50 · owner LOCK audit_log SHARE ROW EXCLUSIVE, POST ⇒ backend chờ audit_log, đang giữ config_meta + RowExclusiveLock agent_grants; nhả ⇒ 201 [plan §6]", async () => {
     const g: GrantRef = { agent: AGT.hoadon, type: "user", subject: USERS.hoa.id };
+    await dropUserGrant(g.agent, g.subject);
     const r = await x.sql.reserve();
     await r`begin`;
     await r`lock table hub.audit_log in share row exclusive mode`;
@@ -267,6 +272,8 @@ describe("A49–A51 · thứ tự khoá, khác khoá song song [HUB-FR-78 · pla
   it("HUB-FR-78 · A51 · 2 POST khác khoá song song ⇒ 201 cả hai; version v+1, v+2 khác nhau; 2 audit; 2 NOTIFY [H3b-R08]", async () => {
     const a: GrantRef = { agent: AGT.cliX, type: "user", subject: USERS.tam.id };
     const b: GrantRef = { agent: AGT.tatt, type: "user", subject: USERS.tam.id };
+    await dropUserGrant(a.agent, a.subject);
+    await dropUserGrant(b.agent, b.subject);
     const s0 = await stateOf(x.sql);
     const m = n.mark();
     const res = await Promise.all([postGrant(x, "tadmin", a), postGrant(x, "tadmin", b)]);
