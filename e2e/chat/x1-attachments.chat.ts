@@ -26,9 +26,11 @@ const file = (name: string, size = 1024) => ({
   buffer: Buffer.alloc(size, 97),
 });
 const ids = [UUID_A, UUID_B, UUID_C];
+/** `GET /conversations/:id/flows` (E10). */
+const FLOWS_GET = /\/conversations\/[^/]+\/flows(\?|$)/;
 const sendBtn = (page: Page) => page.getByRole("button", { name: "Gửi", exact: true });
 
-type Up = { filename: string; contentType: string; raw: boolean };
+type Up = { filename: string; contentType: string; raw: boolean; id: string };
 
 /** Mock `POST /attachments`: 201 `AttachmentSchema` theo thứ tự id; ghi header/thân. `delayMs` giữ upload lại. */
 async function routeUpload(
@@ -42,10 +44,13 @@ async function routeUpload(
     const h = req.headers();
     const name = decodeURIComponent(h["x-filename"] ?? "");
     const buf = req.postDataBuffer();
+    // Tranh chấp #1 (test-plan §7): id gán NGAY khi nhận request (trước `delay`) — upload song song (≤ 3, CR-040) không được nhận trùng id.
+    const id = ids[seen.length] ?? UUID_C;
     seen.push({
       filename: name,
       contentType: h["content-type"] ?? "",
       raw: !(h["content-type"] ?? "").includes("json") && (buf?.length ?? 0) > 0,
+      id,
     });
     if (opts.delayMs) await new Promise((r) => setTimeout(r, opts.delayMs));
     if (opts.status) {
@@ -57,7 +62,7 @@ async function routeUpload(
     }
     const ext = name.split(".").pop()?.toLowerCase() as keyof typeof ATTACH_ALLOWED;
     const att: Attachment = {
-      id: ids[seen.length - 1] ?? UUID_C,
+      id,
       filename: name,
       mime: ATTACH_ALLOWED[ext],
       size: buf?.length ?? 1,
@@ -86,7 +91,7 @@ test("X1-AC07 · chọn a.txt + b.pdf: upload thân thô, X-Filename mã hoá, C
 test("X1-AC07 · Gửi disabled khi còn đang tải; sau đó body gửi có attachment_ids đúng thứ tự chọn", async ({
   page,
 }) => {
-  await routeUpload(page, { delayMs: 1500 });
+  const seen = await routeUpload(page, { delayMs: 1500 });
   await attach(page, [file("a.txt"), file("b.pdf")]);
   await composer(page).fill("xem tệp");
   await expect(sendBtn(page)).toBeDisabled();
@@ -94,7 +99,10 @@ test("X1-AC07 · Gửi disabled khi còn đang tải; sau đó body gửi có at
   const sent = nextSend(page);
   await composer(page).press("Enter");
   const body = (await sent) as { attachment_ids?: string[] };
-  expect(body.attachment_ids).toEqual([UUID_A, UUID_B]);
+  // Thứ tự chọn (a rồi b), không phụ thuộc thứ tự request tới mock.
+  const idOf = (n: string) => seen.find((s) => s.filename === n)?.id;
+  expect(new Set([idOf("a.txt"), idOf("b.pdf")]).size).toBe(2);
+  expect(body.attachment_ids).toEqual([idOf("a.txt"), idOf("b.pdf")]);
 });
 
 test("X1-AC07 · x.exe: chip lỗi 'Loại tệp không được hỗ trợ.', không gọi upload", async ({
@@ -145,17 +153,28 @@ test("X1-AC07 · 409 ATTACHMENT_QUOTA_EXCEEDED ⇒ 'Đã hết dung lượng lư
 test("X1-AC07 · lịch sử: list 'Tệp trong tin' có 'Tải a.txt' (fetch kèm Authorization); tệp đã xoá aria-disabled", async ({
   page,
 }) => {
+  const atts = [
+    { id: UUID_A, filename: "a.txt", mime: "text/plain", size: 1024, available: true },
+    { id: UUID_B, filename: "cu.pdf", mime: "application/pdf", size: 2048, available: false },
+  ];
+  // Tranh chấp #2 (test-plan §7): luồng chính hiển thị từ E10 `flows[].preview` (FlowBlock); E11 chỉ khi mở khung flow.
+  // Vá cả hai để tin user đầu có `attachments` dù UI đọc nguồn nào.
+  await page.route(FLOWS_GET, async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const res = await route.fetch();
+    const body = (await res.json()) as {
+      items: { preview: { question: { attachments?: unknown[] } } }[];
+    };
+    const f = body.items[0];
+    if (f) f.preview.question.attachments = atts;
+    await route.fulfill({ status: res.status(), headers: stripLength(res.headers()), json: body });
+  });
   await page.route(MESSAGES_GET, async (route) => {
     if (route.request().method() !== "GET") return route.fallback();
     const res = await route.fetch();
     const body = (await res.json()) as { items: { role: string; attachments?: unknown[] }[] };
     const first = body.items.find((m) => m.role === "user");
-    if (first) {
-      first.attachments = [
-        { id: UUID_A, filename: "a.txt", mime: "text/plain", size: 1024, available: true },
-        { id: UUID_B, filename: "cu.pdf", mime: "application/pdf", size: 2048, available: false },
-      ];
-    }
+    if (first) first.attachments = atts;
     await route.fulfill({ status: res.status(), headers: stripLength(res.headers()), json: body });
   });
   let auth: string | undefined;

@@ -55,7 +55,7 @@ ba605caccdb68fb2f96391e1c00f1856b003c6eb61a7190f03bebf2b5633a7a3  e2e/chat/playw
 7c8cf30a3ac8362d089d661090bca04a6278a8563402c528eff585b3842d17c6  e2e/chat/send.chat.ts
 faef5d41ef3e220495e6bffbbbe98f49484347d366c320c1965245ad93e4e59b  e2e/chat/states.chat.ts
 2afce6def09da9ebd0f33977672b719ae9924869eab3416081b5394cf599a75e  e2e/chat/x1-agents.chat.ts
-8d56e28c525c15be893b6895d7bff659cc8d45715508537644584f6fd9453db9  e2e/chat/x1-attachments.chat.ts
+3753797205fb2699e79dfef9d093d2276be5205efceb776f29224fd0ee669bc1  e2e/chat/x1-attachments.chat.ts
 17f7cd9a6be02dd7657308140b12fda85f796f8b78b55cdd0283db6423474b5e  e2e/chat/x1-commands.chat.ts
 2280115aeebee2f68f1b20d5ca1bd541f87105af0bea693d10ae6294fd5c0943  e2e/chat/x1-confirm.chat.ts
 99dd9bf9a3706537fcd5ce28dff73726dfca9a6ab5b1c5482d0852fd264ef4ae  e2e/chat/x1-proxy.chat.ts
@@ -428,7 +428,7 @@ db315ce1a7904794fe817c33244e8662d45b322bf2a9ff653304afc2ab62764a  tests/acceptan
 59d8893b3e22310359bf55e2ac009be8af45b2e7cb3434d0357ca461b504da6b  tests/acceptance/X1/rules/send-request.test.ts
 4a167064dfee47a95476a2543ccdd227cc50a39188d367386215516105b047f9  tests/acceptance/X1/rules/transfer-side-effect.test.ts
 d6e47a1405610968494113ea73c00f5dd88e00dc928aa01990b908a4ff58b34d  tests/acceptance/X1/schema-check.int.test.ts
-8aca363645da803fe13fe2a5da8955918502855b7a65f6acbd08661b11a9fd2f  tests/acceptance/X1/seed-dify.int.test.ts
+f281c22f82a00fae4eabb7771a86378779a66d8273a2f45bbdf61c9f08241414  tests/acceptance/X1/seed-dify.int.test.ts
 72654254202e647bc7a346d77160ff36ac1f839b1d5d636ac8bff2294fefaeb8  tests/acceptance/X1/smoke-skip.test.ts
 56c765b92d5374e29a6e73080ac5d60a6cd6a4ffb03a66dc0b7818a2042afb56  tests/acceptance/X1/static-scan.test.ts
 0ee63d52e514f2e3d0b1f8c7bb5eb72be794f16290e41d21d6acac048ba40a69  tests/acceptance/X1/workflow-side-effect.int.test.ts

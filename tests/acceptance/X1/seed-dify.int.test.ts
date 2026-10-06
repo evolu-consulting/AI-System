@@ -304,7 +304,7 @@ describe("X1-AC16 · dry-run → apply → idempotent → rotate", () => {
 });
 
 describe("X1-AC16 · X1-R01..R04 · không gọi Dify, không lộ key", () => {
-  it("X1-AC16 · X1-R01/R02 · Dify stub 0 lời gọi suốt kịch bản (không /info, /parameters, /console/api)", () => {
+  it("X1-AC16 · X1-R01/R02 · Dify stub 0 lời gọi suốt kịch bản (không /info, /parameters, console API)", () => {
     expect(outputs.length).toBeGreaterThanOrEqual(4);
     expect(dify.calls.map((c) => `${c.method} ${c.path}`)).toEqual([]);
   });
