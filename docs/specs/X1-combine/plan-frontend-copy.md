@@ -5,7 +5,7 @@ Phụ lục của `plan-frontend.md` §2.2 (F4). Key i18n: `packages/i18n/locale
 | Mã (HTTP) | VI | EN |
 |---|---|---|
 | `HUB_UNAVAILABLE` (502) | Hub không phản hồi. Kiểm tra hub-api rồi thử lại. | Hub is not responding. Check hub-api and try again. |
-| `HUB_NOT_CONFIGURED` (503) | Chưa cấu hình kết nối Hub (ADMIN_HUB_URL/HUB_INTERNAL_TOKEN). | Hub connection is not configured (ADMIN_HUB_URL/HUB_INTERNAL_TOKEN). |
+| `HUB_NOT_CONFIGURED` (503) | Chưa cấu hình kết nối Hub (ADMIN_HUB_URL/token nội bộ của Hub). | Hub connection is not configured (ADMIN_HUB_URL/Hub internal token). |
 | `NOT_CONFIGURED` (409) | Workflow chưa sẵn sàng ở Hub (secret/khoá thiếu). | The workflow is not ready on the Hub (missing secret/key). |
 | `CMD_MISSING_ARG` (422) | Dùng lại câu Chat `plan-frontend.md` §1.4: "Lệnh /{name} thiếu: {missing}." (+ dòng "Giá trị không hợp lệ: {invalid}." nếu có) | "/{name} is missing: {missing}." (+ "Invalid value: {invalid}.") |
 | `INVALID_REFERENCE` (400) | Workflow/user không còn tồn tại. | The workflow or user no longer exists. |
