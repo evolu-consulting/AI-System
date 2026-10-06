@@ -96,10 +96,18 @@ Mốc con **thứ hai** của H3 (chia ở `5ca15d8`, lý do: [H3a spec-decision
 | H3b-R23 | `HUB_CORS_ORIGINS` nhận thêm origin admin-web (env; dev `http://localhost:3000`); không `*`, không mặc định mở | — |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead: zod cho AgentGrantList, AgentGrantCreate, AgentGrantDeleteQuery, AgentEffective (khớp EffectiveFeature M3), RunTrace; bảng endpoint × lỗi; hằng lỗi Hub-admin (FORBIDDEN, TENANT_REQUIRED, INVALID_REFERENCE, NOT_ENTITLED, AGENT_NOT_GRANTABLE, NOT_FOUND) -->
+Chỉ **thêm** subpath `@ai/contracts/hub-admin` (`chat`, `hub`, `hub-internal` không đổi — R21). Schema từng trường: `plan.md` §2; bảng endpoint × mã lỗi × HTTP: `plan.md` §3; chữ ký luật thuần cho QC: `plan.md` §4.
+| Endpoint | Thành công | Lỗi |
+|---|---|---|
+| `GET /agent-grants` | 200 `AgentGrantListResponse` | 401 · 403 `FORBIDDEN` · 400 `VALIDATION_ERROR`/`TENANT_REQUIRED` · 404 |
+| `POST /agent-grants` | 201 mới · 200 trùng — `{grant, hub_config_version}` | + 400 `INVALID_REFERENCE {field}` · 409 `AGENT_NOT_GRANTABLE` · 409 `NOT_ENTITLED {agent_ids}` |
+| `DELETE /agent-grants?agent_id&subject_type&subject_id` | 204 | như GET |
+| `GET /agent-grants/effective/:user_id` | 200 `{user, agents: EffectiveAgent[], hub_config_version}` (`EffectiveAgent` = `{agent, visible, reasons, missing}` — dạng `EffectiveFeature` M3) | như GET; user khác `T` → 404 |
+| `GET /runs/:id/trace` | 200 `RunTrace` | 401 · 404 (thân giống hệt mọi ca) · 500 (audit lỗi) |
+Mã mới `HUB_ADMIN_ERRORS = {FORBIDDEN 403, TENANT_REQUIRED 400, INVALID_REFERENCE 400, NOT_ENTITLED 409, AGENT_NOT_GRANTABLE 409}` (không thêm vào `CHAT_API_ERRORS`). NOTIFY `hub_config_changed` payload **không đổi** (`HubConfigChangedPayload` `{v, version}`).
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead: migration 0009 (bảng audit hub + GRANT INSERT/DELETE agent_grants cho hub_rw + quyền audit), schema Drizzle (chuyển agentGrants khỏi stub chỉ đọc hay khai thêm ở hub.ts), thứ tự khoá (config_meta → agent_grants → audit), index cho R11/R13 -->
+Migration `migrations-hub/0009_h3b_agent_grants.sql` — SQL nguyên văn: `plan-db.md` §1. Chỉ thêm: bảng `hub.audit_log` (append-only bằng trigger, CHECK `action ∈ {grant, revoke, view_trace}`, `entity ∈ {agent_grant, run}`, `tenant_id` NOT NULL, 3 index `(tenant_id|entity,entity_id|actor_id, seq DESC)`), index `usage_logs_run_idx`, GRANT cho `hub_rw`: `INSERT, DELETE` `agent_grants` · `UPDATE (hub_config_version)` `config_meta` (PL2 — cần cho khoá + bump) · `SELECT, INSERT` `audit_log`. Cột `agent_grants` không đổi; Drizzle `agentGrants` giữ ở `hub-readonly.ts` (Q-K13), thêm `hubAuditLog` ở `schema/hub.ts`. Thứ tự khoá ghi grant: `config_meta` (FOR UPDATE) → `agent_grants` → `audit_log` (`plan.md` §6). Không RLS mới (Q-K6); index dùng cho từng truy vấn: `plan.md` §7, `plan-db.md` §2, §5.
 
 ## 5. UI
 Không có UI trong phiên này. **CR-impact phiên Admin** (docs-architect ghi `CR-xxx` khi đóng mốc, như CR-040/CR-042): (1) Groups › tab *Agent* gọi `GET/POST/DELETE hub/agent-grants?subject_type=group&subject_id=…` bằng JWT của admin đang đăng nhập (gọi **thẳng** Hub — BA-A §8, BA-H §9.1, architecture; Q-K1), thay "Chưa khả dụng"; (2) danh sách Groups cột *Agent* (`agent_count`) — Admin đọc `hub.agent_grants` (đã có quyền SELECT) hoặc từ `GET /agent-grants`; (3) AccessExplainer + tab "Quyền hiệu lực": gộp `GET hub/agent-grants/effective/:user_id` vào phần agent (`EffectiveAccess.agents` hiện `{available:false}`); (4) cấu hình URL Hub + origin CORS; (5) mã lỗi mới; (6) Nhật ký Admin chưa hiện audit Hub (Q-U3).

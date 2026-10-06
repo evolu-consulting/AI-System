@@ -70,4 +70,22 @@ BA-H HUB-FR-87: "mỗi lần xem trace"; ui-operations §8: "mỗi lần mở tr
 | Q-K14 | Smoke thật | Không cần (`fake-cli` + mock Dify đủ); I2 chỉ chạy Hub dev + `curl` 3 endpoint với JWT dev | U2 |
 
 ## Quyết định trong lúc làm
-(chưa có)
+PLAN (backend-lead, 2026-10-06) — chính xác hoá spec theo Luật 2 (spec → BA → ADR → CONVENTIONS → code hiện có → đơn giản nhất). Chi tiết: `plan.md`, `plan-db.md`. Q-U1…Q-U4 = A (U6); Q-K1…Q-K14 = mặc định, không đổi.
+
+| # | Quyết định | Nguồn / lý do |
+|---|---|---|
+| PL1 | Contract ở `@ai/contracts/hub-admin` (Q-K12 chốt tên); `HUB_ADMIN_ERRORS` riêng, **không** thêm vào `CHAT_API_ERRORS` | test khoá C1 "đúng 6 mã"; R21 |
+| PL2 | **Bổ sung R22**: ngoài `INSERT, DELETE agent_grants` còn cần `GRANT UPDATE (hub_config_version) ON hub.config_meta TO hub_rw` — `hub_rw` hiện chỉ SELECT `config_meta` (`0000` §GRANT) nên không bump được (R08); quyền **một cột**, `FOR UPDATE` dùng được. Reviewer/Gate xem lại (mở quyền DB) | `0000_hub_core.sql:455`; R08 |
+| PL3 | Thứ tự transaction ghi: `LOCK_META` FOR UPDATE **trước** → ghi grant → (có đổi) bump → audit → NOTIFY; trùng/không có hàng ⇒ commit trống. Không bump trước rồi mới biết trùng (sẽ phải rollback) và không ghi grant trước rồi mới khoá `config_meta` (ngược chiều `seed` ⇒ deadlock seed ∥ POST) | R06, R08; `seed.repo.ts` khoá `config_meta` đầu |
+| PL4 | `lib/http.ts parseQuery` bỏ `tenant_id`/`user_id` (H1-R03) ⇒ thêm `parseAdminQuery` chỉ cho `/agent-grants*`; `parseQuery` giữ nguyên | code hiện có; HUB-BR-14 kênh chat |
+| PL5 | `GET /agent-grants` đọc **DB** (thấy ngay sau POST); effective đọc **cache** (R12 "ảnh cache hiện tại", trả `hub_config_version` để Admin biết độ trễ ≤ 5 s) | R11, R12, R15 |
+| PL6 | `hub.audit_log`: `tenant_id` NOT NULL (mọi hành động H3b có tenant), `actor_role` thêm so với `admin.audit_log`, không RLS, không GRANT `admin_rw` (Admin đọc = CR-impact, Q-U3) | R16, Q-U3 |
+| PL7 | Thêm index `usage_logs_run_idx (run_id) WHERE run_id IS NOT NULL` — trace đọc usage theo run, bảng chỉ có index `(tenant_id, at)`. Prod lớn: tạo `CONCURRENTLY` trước (PRODUCTION-NOTES, I3) | CONVENTIONS §6 "query mới có index" |
+| PL8 | Member bị 403 **trước** parse body/query (middleware `requireAdminRole`); sau đó mới đến thứ tự R04 | R01 "không đọc DB" |
+| PL9 | Trace che `detail` bằng `redactTraceDetail` (khoá/giá trị nhạy cảm, sâu > 6, > 16 KiB); không trả `jobs.payload/result/token_hash/error_message` | R18; nguồn ghi đã che (`maskInputs`, upstream Dify) — lưới thứ hai |
+| PL10 | Tiêm lỗi ghi qua `AppDeps.hubAudit?: HubAuditWriter` (một điểm cho AC-04 "lỗi giữa transaction" và AC-11) | mẫu `ConfigWriteOpts.beforeBump` M3 |
+| PL11 | Trace của platform_admin: audit ghi **ngay sau** khi thấy run, trước khi đọc steps/jobs/usage — run không có ⇒ 404 + 0 audit | R17(b), R19, AC-H08 |
+| PL12 | `NOT_ENTITLED.details.agent_ids` luôn đúng 1 phần tử (POST một grant — Q-K5); `INVALID_REFERENCE.details = {field}` | M3 hình lỗi; Q-K5 |
+| PL13 | POST trùng trả `hub_config_version` hiện tại (đọc khi khoá), không bump | R06 |
+| PL14 | CORS không đổi code (`cors({origin: HUB_CORS_ORIGINS})` đã danh sách trắng); chỉ `.env.example` + `hub-dev.md` | R23, Q-K2 |
+
