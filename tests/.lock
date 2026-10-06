@@ -64,7 +64,7 @@ fc01045d0042232bf53ba99ebdf28c9937e57f688456bcb9e99b14cdb1d19a42  e2e/combine/_s
 2f28bb04e7c09cb77e67a5382562447391cf49b14ece3ec914e74d731c604d12  e2e/combine/_support.ts
 b6fb78025942c03e90915d42f2b631e64d6fb9e51487df981f65703fe463fa9b  e2e/combine/playwright.config.ts
 865ab722665330204f5c8abf684787e02d9d573e9bcfbd3fbf6670938dbb6e59  e2e/combine/x1-commands.combine.ts
-ccabe87f89a693435b8df572a2716db1ce4391a1a3b60b66cdec2a56d4a9f5b8  e2e/combine/x1-side-effect.combine.ts
+ae7271a52d7b06576eb7f6beed1cd46b5ddb24feb9f9475b152eae54142c9d06  e2e/combine/x1-side-effect.combine.ts
 adff2c93fa08ec4d31ba0d5aef9301b296a6cdf3678b7fc58edc6d96e776e4bf  e2e/combine/x1-test-run.combine.ts
 3be1f6c62b2d32920e339c654870d92ff2316fe72c5b6a61acfb70425d39c885  e2e/commands.spec.ts
 d300a56ef2a99bfa99325afe5bb1c3bed9b23ec3b4f30966982466465a621377  e2e/conflict-commands.spec.ts
@@ -113,7 +113,7 @@ b4bc71c7db44c18fb4e7cbee359922fb9d7458c44a27a11f41c2b1926555f84c  e2e/support/pr
 8a685b897670a0ebc1b8f0b59c034f6e5fbb8129c37532dbc053caf16a8e1e08  e2e/x1/groups-agent.x1.ts
 915b8756a3538dfe3d2357bc5c932addc8d38523894c3f0dc4bc956f5b4220a1  e2e/x1/playwright.config.ts
 958d5eec80973f8205014b9e71bb7391e43f0a3755ed73a2b5057282cec9fa6b  e2e/x1/studio-link.x1.ts
-81f108e07e26bb73dc74641ad7f43f1fa586cbb61ed222d5a128aec4cc05cbb5  e2e/x1/workflows-side-effect.x1.ts
+14d9aa69664010623b335d6d80ed2844e8c714f2677d415700aaf2544b468702  e2e/x1/workflows-side-effect.x1.ts
 f6c20a9e0371eb9c39baee469f9bd69288d9dd4398083f18c515daaff0f1eaa9  tests/acceptance/ADM-NFR-06/_helpers.ts
 f1c74f00b2c4700a15b95cf946bc7bd0d58e1a1a4f9fc4ec9a049e657ec19fc9  tests/acceptance/ADM-NFR-06/ac07.check.ts
 530550285ecfa8c3466c8373940584d5f61d87da34f637ae9dbe9c0914d57425  tests/acceptance/ADM-NFR-06/check-size.test.ts

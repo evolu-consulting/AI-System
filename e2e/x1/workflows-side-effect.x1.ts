@@ -19,7 +19,7 @@ test("X1-AC10 · editor translate: switch 'Cần xác nhận trước khi chạy
   const saved = page.waitForResponse(
     (r) =>
       r.url().includes(`/admin/workflows/${ID.workflow.translate}`) &&
-      r.request().method() === "PUT",
+      r.request().method() === "PATCH",
   );
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   const res = await saved;

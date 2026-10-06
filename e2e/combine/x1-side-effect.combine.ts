@@ -25,7 +25,8 @@ test("X1-AC08 · bật 'Cần xác nhận trước khi chạy' cho mock-send ⇒
   await expect(sw).toBeVisible();
   await sw.click();
   const saved = admin.waitForResponse(
-    (r) => r.url().includes(`/admin/workflows/${X1_IDS.wfSend}`) && r.request().method() === "PUT",
+    (r) =>
+      r.url().includes(`/admin/workflows/${X1_IDS.wfSend}`) && r.request().method() === "PATCH",
   );
   await admin.getByRole("button", { name: "Lưu", exact: true }).click();
   expect((await saved).status()).toBe(200);
