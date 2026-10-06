@@ -344,6 +344,15 @@ event: run.failed      data: {run_id, code, message, hint}
 | `ALL_PROVIDERS_EXHAUSTED` | Mọi bước trong profile đều thất bại | Thử lại sau, admin kiểm tra provider |
 | `BUDGET_EXCEEDED` | Vượt số bước hoặc ngân sách token của run | Chia nhỏ yêu cầu |
 | `TIMEOUT` · `CANCELLED` | Hết giờ hoặc bị huỷ | — |
+| `FORBIDDEN` | `/studio/api/*` khi role không phải `platform_admin` (403, HUB-FR-72) | UI hiện trang "không có quyền" |
+| `INVALID_REFERENCE` | Studio: tham chiếu không có/đang tắt/sai loại (profile, workflow, agent_type, agent, tenant) (400) | Chọn lại mục hợp lệ |
+| `VERSION_CONFLICT` | Studio: lưu bằng `version` cũ (409, kèm `current`) | Tải bản mới hoặc ghi đè |
+| `KEY_TAKEN` | Studio: key agent đã dùng (409) | Đổi key |
+| `BASH_ACK_REQUIRED` | Studio: chọn tool `Bash` mà chưa xác nhận (422) | Tick xác nhận |
+| `AGENT_IN_USE_AS_ORCHESTRATOR` | Tắt/xoá agent đang là Orchestrator (409) | Đổi Orchestrator trước |
+| `AGENT_HAS_HISTORY` · `AGENT_HAS_ACCESS` | Xoá agent đã có run, hoặc còn entitlement/grant (409) | Tắt agent thay vì xoá / gỡ quyền trước |
+| `AGENT_NOT_ORCHESTRATABLE` | Agent tắt hoặc runtime chưa làm Orchestrator được (chỉ `agentic-cli`, CR-045) (409) | Chọn agent khác |
+| `ORCHESTRATOR_EXISTS` · `ORCHESTRATOR_DEFAULT_PROTECTED` · `TENANT_INACTIVE` | Tenant đã có Orchestrator · xoá bản mặc định · tenant bị khoá (409) | Sửa bản hiện có / không xoá được / mở khoá tenant |
 
 Vượt quota tenant mặc định **không** phải lỗi (trừ khi tenant bật `hard_block` → `QUOTA_BLOCKED`): run vẫn chạy, `run.started` mang `quota.state = "over"` để client hiện dòng nhắc nhẹ.
 
