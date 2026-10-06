@@ -68,3 +68,10 @@ Code H2a (không code mới). Thời gian menu cập nhật: A130 124 ms, A131 t
 
 ## Khoá lại sau TC1/TC2 (điều phối, 2026-10-06)
 `test:lock:verify` trước khi ghi: đúng 2 CHANGED (`grants-concurrency.int.test.ts`, `role-tenant.int.test.ts` — qc `c2dcc1c`), 0 UNLOCKED → `test:lock:write` → verify OK.
+
+## I1 — `done:h3b` + AC-13 (qc, 2026-10-06)
+Lần 1 `bun run done:h3b` (nền, 19 bước): bước 1 typecheck xanh · 2 unit 680 pass/0 fail · 3 int (H1…H3a + H3b) **2282 pass/0 fail** (22,8 phút) · 4 contracts:check xanh (36) · **5 agent-runtime đỏ** (ruff/format/pyright/lint-imports/pytest 1081 xanh; `pytest -m int` 218 pass / 1 fail: `tests/acceptance/probe_int_test.py:286` `test_wrk_fr_22_p35_probe_result_log_no_usage_no_pii`, `select count(*) from hub.usage_logs` = 30, kỳ vọng 0) ⇒ dừng; 18 tsc tests xanh; 19 perf (báo cáo) đỏ.
+Phân tích bước 5: ca đo "0 usage_logs" nên 30 dòng là rác từ bước int trước trong cùng DB test. `H3b/trace.int.test.ts` chạy riêng 14 pass và để lại 0 dòng `usage_logs` ⇒ không quy được cho H3b trace; DB test sau đó 0 dòng. Chập chờn theo thứ tự (không tái lập), không phải lỗi code H3b (agent-runtime không đổi ở H3b).
+Lần 2 `done:h3b --from=5`: **bước 5 xanh** (pytest int pass, kể cả probe P35), 6–17 xanh (h1/h2a/h2b/h2c/h3a:stack, contract:chat 41, H2b/H2c hubdev, lock:verify, trace --check, check:size, depcruise), 18 xanh, 19 perf đỏ (báo cáo, không chặn): chỉ còn `PF2 · E12 '@assistant …' thêm ≤ 10 ms p95` (H2b, chập chờn đã biết/perf). Lần 1 perf còn đỏ thêm H2c upload A06 `snap` và 3 ca H01 hubdev (ConnectionRefused :3001 — perf chạy không có dev stack) — lần 2 không tái hiện.
+Kết luận: toàn bộ bước chặn xanh (bước 1–4 lần 1, 5–17 lần 2); không có lỗi code H3b (mount trace `app.ts`, migration 0009 không gây 10 ca đỏ B5 — int 3 file trong một lệnh xanh 2282/0).
+**AC-13** `bun --env-file=.env.local --config=bunfig.stack.toml test --timeout 30000 ./tests/acceptance/H3b-cmd`: 5 pass / 0 fail (A130 117 ms, A131 tắt 118 / bật 124 ms, A133 121 ms, A134 115 ms ≤ 5 s). Không ghi TECH-DEBT.
