@@ -50,6 +50,15 @@ export function parseQuery<S extends z.ZodType>(c: Context, schema: S): z.output
   return parseWith(schema, withoutScopeKeys(c.req.query()));
 }
 
+/**
+ * Query của API quản trị (`/agent-grants*`, H3b PL4): GIỮ `tenant_id` — platform_admin chọn tenant đích bằng nó, rồi
+ * `targetTenant` (luật thuần) quyết có được dùng không. Chỉ dùng sau `requireAdminRole`; route chat vẫn dùng `parseQuery`
+ * (bỏ khoá phạm vi, H1-R03). Schema nên strict để khoá lạ thành 400.
+ */
+export function parseAdminQuery<S extends z.ZodType>(c: Context, schema: S): z.output<S> {
+  return parseWith(schema, c.req.query());
+}
+
 export function parseIdParam(c: Context, name = "id"): string {
   const id = c.req.param(name);
   if (!UuidSchema.safeParse(id).success) throw appError("NOT_FOUND");

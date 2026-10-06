@@ -1,6 +1,6 @@
 // HUB-FR-43 · CHAT-AC-31 · lỗi có mã theo `CHAT_API_ERRORS` (contract chat, plan §4) + `CHAT_COMMAND_ERRORS` (H2a C1,
-// HUB-FR-14) + `CHAT_ROUTING_ERRORS` (H2b, HUB-FR-91/94) + `CHAT_ATTACHMENT_ERRORS` (H2c, HUB-FR-44). Status lấy từ
-// contract (một nguồn).
+// HUB-FR-14) + `CHAT_ROUTING_ERRORS` (H2b, HUB-FR-91/94) + `CHAT_ATTACHMENT_ERRORS` (H2c, HUB-FR-44) + `HUB_ADMIN_ERRORS`
+// (H3b, HUB-FR-78 — API quản trị, không thuộc contract chat). Status lấy từ contract (một nguồn).
 import {
   CHAT_API_ERRORS,
   CHAT_ATTACHMENT_ERRORS,
@@ -12,6 +12,7 @@ import {
   type ChatRoutingErrorCode,
   type ErrorResponse,
 } from "@ai/contracts/chat";
+import { HUB_ADMIN_ERRORS, type HubAdminErrorCode } from "@ai/contracts/hub-admin";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export class AppError extends Error {
@@ -29,17 +30,22 @@ export class AppError extends Error {
   headers?: Readonly<Record<string, string>>;
 }
 
-/** Mã HTTP Hub trả cho client chat: C1 + lệnh `/` (H2a, hằng riêng — Q3) + định tuyến `@`/giới hạn run (H2b, P2) + file (H2c, P2). */
+/**
+ * Mã HTTP Hub trả: client chat C1 + lệnh `/` (H2a, hằng riêng — Q3) + định tuyến `@`/giới hạn run (H2b, P2) + file (H2c,
+ * P2) + API quản trị `/agent-grants*`, `/runs/:id/trace` (H3b plan §2.1).
+ */
 export type HubErrorCode =
   | ChatErrorCode
   | ChatCommandErrorCode
   | ChatRoutingErrorCode
-  | ChatAttachmentErrorCode;
+  | ChatAttachmentErrorCode
+  | HubAdminErrorCode;
 const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
   ...CHAT_API_ERRORS,
   ...CHAT_COMMAND_ERRORS,
   ...CHAT_ROUTING_ERRORS,
   ...CHAT_ATTACHMENT_ERRORS,
+  ...HUB_ADMIN_ERRORS,
 };
 
 /** Message tiếng Anh cố định theo mã; client dịch theo `code`. Không chứa dữ liệu người dùng (plan-errors H2a §1). */
@@ -58,6 +64,11 @@ export const ERROR_MESSAGES: Record<HubErrorCode, string> = {
   ATTACHMENT_QUOTA_EXCEEDED: "Storage quota exceeded",
   ATTACHMENT_TOO_LARGE: "File too large",
   ATTACHMENT_TYPE_NOT_ALLOWED: "File type not allowed",
+  FORBIDDEN: "Forbidden",
+  TENANT_REQUIRED: "tenant_id is required",
+  INVALID_REFERENCE: "Invalid reference",
+  NOT_ENTITLED: "Not entitled",
+  AGENT_NOT_GRANTABLE: "Agent cannot be granted",
 };
 
 export function appError(

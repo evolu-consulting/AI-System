@@ -22,6 +22,7 @@ import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
+import type { HubAuditWriter } from "./lib/hub-audit";
 import { type Logger, logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
 import { closeUnreadBody } from "./lib/unread-body";
@@ -72,6 +73,8 @@ export type AppDeps = {
   maxConcurrentRuns?: number;
   /** H2c · storage + hạn mức + sweeper (`HUB_ATTACH_*`, server điền). Vắng ⇒ không mount route file (PL14). */
   attachments?: AttachmentDeps;
+  /** H3b · ghi `hub.audit_log` (grant/revoke/view_trace). Vắng ⇒ `dbHubAudit`; test tiêm lỗi giữa transaction (P12). */
+  hubAudit?: HubAuditWriter;
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
