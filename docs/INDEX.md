@@ -43,6 +43,7 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 | `../apps/admin-api/src/modules/{auth,tenants,users,health,secrets,workflows,commands,features}/README.md` | Module API: FR, file vào, bẫy |
 | `../apps/chat-web/README.md`, `../apps/chat-web/src/features/{auth,shell,conversations,thread,composer,run,answer,flow-panel}/README.md`, `../tools/mocks/README.md` | Chat app, feature, mock Hub chat: FR, file vào, bẫy |
 | `../apps/admin-web/README.md`, `../apps/admin-web/src/features/{auth,shell,tenants,users,secrets,workflows,commands,features}/README.md` | App web và feature: FR, file vào, bẫy |
+| `guides/combine-test.md` | Hướng dẫn người dùng test tích hợp 3 app (S1–S10, seed Dify thật) |
 | `specs/_template/` | Mẫu cho spec mới |
 | `readiness/` | Báo cáo spec-readiness trước khi có spec (vd `2026-10-01-admin-m1-m4.md`) |
 
