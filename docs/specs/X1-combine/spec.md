@@ -2,7 +2,7 @@
 id: X1-combine
 title: Combine - tích hợp Chat + Admin + Agent Hub (+ Studio) và nối Dify thật
 milestone: X1
-status: draft            # draft → ready → approved → in-progress → done
+status: done             # draft → ready → approved → in-progress → done
 requirements: [ADM-FR-21, ADM-FR-23, ADM-FR-37, HUB-FR-10, HUB-FR-11, HUB-FR-12, HUB-FR-44, HUB-FR-51, HUB-FR-72, HUB-FR-78, HUB-FR-79, HUB-FR-91, HUB-FR-92, HUB-FR-94, HUB-FR-95, CHAT-AC-01..36, X1-R01..R16, X1-AC01..AC20]
 design: [docs/CHANGE-REQUESTS.md#CR-036, CR-038, CR-040, CR-043, CR-044, CR-046, docs/ROADMAP.md (M5), docs/guides/hub-dev.md ("Admin gọi Hub (H3b, R23)", "Studio dev (H4a)"), docs/specs/H2a-dify-command/smoke.md]
 owner: backend-lead + frontend-lead + qc
