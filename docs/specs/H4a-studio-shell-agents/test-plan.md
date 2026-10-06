@@ -85,7 +85,7 @@ E2E: `e2e/studio/_support.ts` — kho trong bộ nhớ (4 agent: `orchestrator` 
 | `GET` 5 catalog | A01–A03 | A12–A17 | A18 |
 | `/studio/*` tĩnh | — | A67–A69, A71 | A70, A72–A74 |
 
-## 4. Ca phụ thuộc mặc định — **đã chốt 2026-10-06** (người dùng chấp nhận Q1–Q9, QB1 chỉ `agentic-cli`, QB2–QB7, QF1–QF3, G1–G13; Q10 chưa nằm trong quyết định — còn chờ). Bảng giữ để biết ca nào sửa nếu sau này mở lại
+## 4. Ca phụ thuộc mặc định — **đã chốt 2026-10-06** (người dùng chấp nhận Q1–Q9, QB1 chỉ `agentic-cli`, QB2–QB7, QF1–QF3, G1–G13; Q10 đã chốt qua U3 (2026-10-06)). Bảng giữ để biết ca nào sửa nếu sau này mở lại
 | Mặc định | Nội dung dùng trong test | Ca |
 |---|---|---|
 | **QB1** chỉ `agentic-cli` làm Orchestrator | `llm` ⇒ 409 `AGENT_NOT_ORCHESTRATABLE{runtime_unsupported}` | A50, A58, R27, R28 |
@@ -171,4 +171,4 @@ Tổng **154 ca**: R 44 · A 91 · E 19 (readiness 1/M3: +7 e2e). Int: 88/91 đ�
 | G13 | Nhãn e2e `table "Danh sách agent"` có `columnheader` không (E06 kiểm "không cột 24") | dùng `columnheader` theo vai trò bảng chuẩn | frontend-lead giữ `<th>` |
 
 ## 9. Khoá
-Chưa ghi `tests/.lock`. Chế độ LOCK sau Gate: `bun run test:lock:write` cho `tests/acceptance/H4a/**` + `e2e/studio/**`, rồi `bun run test:lock:verify`.
+Đã khoá 2026-10-06 sau Gate (`H4a-gate.md`, 10efe00): `bun run test:lock:write` thêm 17 file (`tests/acceptance/H4a/**` + `e2e/studio/**`) vào `tests/.lock`; `bun run test:lock:verify` OK (404 file). Chạy lại trước khoá: int 94 ca = 3 xanh trước code (A64, A70, A72) + 91 đỏ `expect`, 0 lỗi dựng dữ liệu (không `PostgresError`/`TypeError`/`beforeAll`); 3 file rules đỏ do thiếu module; e2e đỏ do `studio-web` chưa có — khớp §7. N4: Q10 §4 đã sửa.
