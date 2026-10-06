@@ -14,7 +14,8 @@ export const AUDIT_ENTITY_NAME_MAX = 200;
 
 /** Một hàng audit (cột = `hub.audit_log`, trừ `id`/`seq`/`at` do DB sinh). `type` (không `interface`) để gán được vào bản ghi tổng quát. */
 export type HubAuditRow = {
-  tenantId: string;
+  /** Null = audit cấu hình phạm vi system (Studio H4a, 0010 D3). */
+  tenantId: string | null;
   actorId: string | null;
   actorUsername: string | null;
   actorRole: (typeof HUB_AUDIT_ACTOR_ROLE_VALUES)[number] | null;

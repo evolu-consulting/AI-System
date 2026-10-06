@@ -1,5 +1,5 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql`, `0010_h4a_studio.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
 // Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts`
 // (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
 import { sql } from "drizzle-orm";
@@ -51,8 +51,18 @@ export const AGENT_RUNTIME_VALUES = [
   "dify-agent",
 ] as const;
 export const ATTACHMENT_ORIGIN_VALUES = ["upload", "output"] as const;
-export const HUB_AUDIT_ACTION_VALUES = ["grant", "revoke", "view_trace"] as const;
-export const HUB_AUDIT_ENTITY_VALUES = ["agent_grant", "run"] as const;
+// H4a (0010 D3, HUB-FR-69): thêm action/entity Studio — khớp CHECK `hub_audit_log_action_check`/`_entity_check`.
+export const HUB_AUDIT_ACTION_VALUES = [
+  "grant",
+  "revoke",
+  "view_trace",
+  "create",
+  "update",
+  "delete",
+  "enable",
+  "disable",
+] as const;
+export const HUB_AUDIT_ENTITY_VALUES = ["agent_grant", "run", "agent", "orchestrator"] as const;
 export const HUB_AUDIT_ACTOR_ROLE_VALUES = ["platform_admin", "tenant_admin", "member"] as const;
 
 // ── §3.1 Cấu hình ──
@@ -90,7 +100,8 @@ export const agents = hub.table("agents", {
   description: text("description").notNull(),
   runtime: text("runtime", { enum: AGENT_RUNTIME_VALUES }).notNull(),
   agentTypeKey: text("agent_type_key"),
-  profileId: uuid("profile_id").notNull(),
+  /** Null cho runtime dify-workflow/dify-agent/python (0010 D2); CHECK `agents_profile_required_ck` bắt buộc với llm/agentic-cli. */
+  profileId: uuid("profile_id"),
   systemPrompt: text("system_prompt").notNull().default(""),
   runtimeOptions: jsonb("runtime_options").$type<Record<string, unknown>>().notNull().default({}),
   timeoutS: integer("timeout_s").notNull().default(600),
@@ -323,7 +334,8 @@ export const hubAuditLog = hub.table("audit_log", {
   /** Thứ tự ghi (identity) — sort/phân trang ổn định, `at` có thể trùng. */
   seq: bigint("seq", { mode: "number" }).generatedAlwaysAsIdentity(),
   at: ts("at").notNull().defaultNow(),
-  tenantId: uuid("tenant_id").notNull(),
+  /** Null = audit cấu hình phạm vi system (Studio, 0010 D3); đọc theo tenant luôn `WHERE tenant_id = $T`. */
+  tenantId: uuid("tenant_id"),
   actorId: uuid("actor_id"),
   actorUsername: text("actor_username"),
   actorRole: text("actor_role", { enum: HUB_AUDIT_ACTOR_ROLE_VALUES }),

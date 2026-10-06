@@ -174,7 +174,7 @@ Lệnh xong: `done:h4a` (qc, mẫu `done:h3b`) = `bun run typecheck && bun test 
 | QB7 | Tool `Edit`/`Bash` (Runtime chỉ chạy `Read/Grep/Glob/Write`); JSON Schema của `python` | Lưu được + `warnings`; Hub không kiểm JSON Schema (không ajv, không ADR) | ADR thêm ajv |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- B1: `packages/db/src/hub-h3b.int.test.ts` (test unit/int của backend, không phải QC) sửa kỳ vọng `audit_log.tenant_id` NOT NULL → nullable theo D3.
 
 ## 10. Tranh chấp test
-- (không)
+- **B1 · `tests/acceptance/H3b/db-grants.int.test.ts` A122** (khoá H3b) kỳ vọng `hub_rw` không có quyền ghi `hub.agents`/`hub.orchestrator_settings` (`agents: []`, `orch: []`) — mâu thuẫn plan §6 D1 đã duyệt Gate (Studio ghi qua `hub_rw`). Sau 0010: `agents: [INSERT, UPDATE, DELETE]`, `orch: [INSERT, UPDATE, DELETE]` ⇒ A122 đỏ (1/133 H3b). Đề xuất qc: cập nhật kỳ vọng A122 theo D1 (giữ `ent: []`). Backend không sửa test.

@@ -28,7 +28,8 @@ export type AgentConfig = {
   description: string;
   runtime: string;
   agentTypeKey: string | null;
-  profileId: string;
+  /** Null với runtime dify-workflow/dify-agent/python (H4a 0010 D2); runner coi profile vắng = `NOT_CONFIGURED`. */
+  profileId: string | null;
   systemPrompt: string;
   runtimeOptions: Record<string, unknown>;
   timeoutS: number;

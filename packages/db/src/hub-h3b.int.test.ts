@@ -62,7 +62,7 @@ const AUDIT_COLS = [
   "id:uuid:NO:NO",
   "seq:bigint:NO:YES",
   "at:timestamp with time zone:NO:NO",
-  "tenant_id:uuid:NO:NO",
+  "tenant_id:uuid:YES:NO", // H4a 0010 D3: null = audit cấu hình system
   "actor_id:uuid:YES:NO",
   "actor_username:text:YES:NO",
   "actor_role:text:YES:NO",
@@ -112,7 +112,7 @@ afterAll(async () => {
 });
 
 describe("HUB-FR-87 · 0009 D1 — hub.audit_log bảng + index (int)", () => {
-  test("cột đúng thứ tự/kiểu/null; tenant_id NOT NULL; seq identity", async () => {
+  test("cột đúng thứ tự/kiểu/null; tenant_id nullable từ 0010; seq identity", async () => {
     const cols = await owner<{ n: string }[]>`
       select column_name || ':' || data_type || ':' || is_nullable || ':' || is_identity as n
       from information_schema.columns where table_schema = 'hub' and table_name = 'audit_log'
@@ -140,7 +140,7 @@ describe("HUB-FR-87 · 0009 D1 — hub.audit_log bảng + index (int)", () => {
     );
   });
 
-  test("CHECK chặn action/entity/actor_role lạ, entity_name 201 ký tự, tenant_id NULL", async () => {
+  test("CHECK chặn action/entity/actor_role lạ, entity_name 201 ký tự; tenant_id NULL được từ 0010", async () => {
     expect(await code(insertAudit(owner, { action: "x" }))).toBe(
       "23514:hub_audit_log_action_check",
     );
@@ -153,7 +153,7 @@ describe("HUB-FR-87 · 0009 D1 — hub.audit_log bảng + index (int)", () => {
     expect(await code(insertAudit(owner, { entity_name: "a".repeat(201) }))).toBe(
       "23514:hub_audit_log_entity_name_check",
     );
-    expect(await code(insertAudit(owner, { tenant_id: null }))).toBe("23502");
+    expect(await code(insertAudit(owner, { tenant_id: null }))).toBe("ok");
     for (const action of ["grant", "revoke", "view_trace"])
       expect(await code(insertAudit(owner, { action, entity_name: "a".repeat(200) }))).toBe("ok");
     expect(await code(insertAudit(owner, { entity: "run", actor_role: "member" }))).toBe("ok");

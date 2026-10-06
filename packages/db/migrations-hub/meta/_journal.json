@@ -71,6 +71,13 @@
       "when": 1791849600000,
       "tag": "0009_h3b_agent_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791936000000,
+      "tag": "0010_h4a_studio",
+      "breakpoints": true
     }
   ]
 }
