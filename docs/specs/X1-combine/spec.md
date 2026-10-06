@@ -53,12 +53,12 @@ Người dùng chốt 2026-10-07 (CR-046): combine làm **trong phiên Hub**, đ
 | X1-R16 | Không sửa `docs/design/**`, không mở H3c/H4b. 4 file đang sửa dở của phiên khác (`apps/admin-web/rsbuild.config.ts`, `AppShell.tsx`, `apps/chat-web/rsbuild.config.ts`, `docs/PRODUCTION-NOTES.md`) chỉ đụng sau khi phiên đó commit (Q10) |
 
 ## 3. Contract (backend-lead)
-Không thêm contract mới. Dùng: `@ai/contracts/chat` (+ `commands`, `agents`, `attachments`), `@ai/contracts/hub-admin` (`HUB_ADMIN_ERRORS`, `EffectiveAgent`), `@ai/contracts/studio` (seed agent `dify-chatbot` qua Studio API). **Chỉ thêm ở Admin:**
+Không thêm contract mới. Dùng: `@ai/contracts/chat` (+ `commands`, `agents`, `attachments`), `@ai/contracts/hub-admin` (`HUB_ADMIN_ERRORS`, `EffectiveAgent`), `@ai/contracts/studio` (không dùng cho seed: K7). **Chỉ thêm ở Admin:**
 
 | Method | Path | Role | Request | Response | Lỗi |
 |---|---|---|---|---|---|
 | POST/PUT | `/admin/workflows` (đã có) | platform_admin / tenant_admin | thêm `side_effect?: boolean` (mặc định false) | thêm `side_effect` | như hiện có |
-| POST | `/admin/commands/:id/test` (tên chốt ở PLAN) | platform_admin (X1; `tenant_admin` → TECH-DEBT #89, sau X1) | cấu hình nháp + tham số mẫu + `run_as?` (ADM-FR-23) | `{ok, output, duration_ms, error?}` | 403, 502 `HUB_UNAVAILABLE`, mã Hub chuyển tiếp |
+| POST | `/admin/commands/test` (không id; plan §2.2) | platform_admin (X1; `tenant_admin` → TECH-DEBT #89, sau X1) | cấu hình nháp + tham số mẫu + `run_as_user_id?` + `confirm_side_effect?` (ADM-FR-23) | `{ok, output, ms, steps, usage, error?}` | 403, 400 `INVALID_REFERENCE`, 409 `SIDE_EFFECT_CONFIRM_REQUIRED`/`NOT_CONFIGURED`, 422 `CMD_MISSING_ARG`, 502 `HUB_UNAVAILABLE`, 503 `HUB_NOT_CONFIGURED` |
 
 Admin → Hub: `POST /internal/test-run` (Bearer `HUB_INTERNAL_TOKEN`), `GET/POST/DELETE /agent-grants`, `GET /agent-grants/effective/:user_id` (spec H3b §3).
 
@@ -67,7 +67,7 @@ Admin → Hub: `POST /internal/test-run` (Bearer `HUB_INTERNAL_TOKEN`), `GET/POS
 |---|---|---|---|---|---|---|
 | `admin.workflows` | `side_effect` | boolean | không | false | - | giữ nguyên |
 
-Migration `packages/db/migrations/<n>_x1_workflow_side_effect.sql` + Drizzle. Seed Dify ghi `admin.secrets`, `admin.workflows`, `admin.commands`, grant command cho group (tên bảng chốt ở PLAN) và `hub.agents` (`dify-chatbot`) **qua API**, không SQL trực tiếp (X1-R14).
+Migration `packages/db/migrations/<n>_x1_workflow_side_effect.sql` + Drizzle. Seed Dify ghi `admin.secrets`, `admin.workflows`, `admin.commands`, grant command cho group (tên bảng chốt ở PLAN) qua API Admin; agent `dify-chatbot` + entitlement `acme` qua **Hub seed CLI** (overlay tạm), grant bằng `POST /agent-grants` (plan K7, §5.4). Không SQL trực tiếp (X1-R14).
 
 ## 5. UI (frontend-lead)
 Artboard: không có mới, dùng mẫu M3/M4 (Groups tab, AccessExplainer) và C1 (composer, AskCard); nút Test theo ui-admin Commands. Câu chữ VI/EN chốt ở `plan-frontend.md`.
@@ -83,23 +83,23 @@ Artboard: không có mới, dùng mẫu M3/M4 (Groups tab, AccessExplainer) và 
 | Admin nút "⇄ Agent Studio" | chỉ `platform_admin`; vắng env → ẩn | link "Agent Studio" |
 
 ## 6. Seed Dify thật (nhóm D)
-`bun run seed:dify -- [--apply] [--apps a,b] [--tenant acme] [--rotate-secrets]`. Luồng: đăng nhập admin-api (`platform_admin` dev) → đọc `DIFY_SEED_ENV_FILE` (chỉ `DIFY_API_URL` và `DIFY_KEY_*` của app được chọn) → mỗi app: upsert secret (`dify-<app>`), workflow (`app_type`, `base_url`, `secret_id`, input schema, `side_effect`), command (`/<tên>`, input map), grant cho group `dify-demo`; app Chat → agent `dify-chatbot` qua Studio API. Không in key; lỗi chỉ in tên khoá thiếu.
+`bun run seed:dify -- [--apply] [--apps a,b] [--tenant acme] [--rotate-secrets]`. Luồng: đăng nhập admin-api (`platform_admin` dev) → đọc `DIFY_SEED_ENV_FILE` (chỉ `DIFY_API_URL` và `DIFY_KEY_*` của app được chọn) → mỗi app: upsert secret (tên = biến env `DIFY_KEY_*`, K6), workflow (`app_type`, `base_url`, `secret_id`, input schema, `side_effect`), command (`/<tên>`, input map), grant cho group `dify-demo`; app Chat → workflow `dify-chatbot` (`app_type=agent`) + agent `dify-chatbot` qua Hub seed CLI (K7). Không in key; lỗi chỉ in tên khoá thiếu.
 
 | App (auto-pilot) | Loại | Nối mặc định | Command / input map đề xuất |
 |---|---|---|---|
 | chatbot | chat | **có** | agent `dify-chatbot` (không command); Orchestrator chọn hoặc `@dify-chatbot` |
-| translate | workflow | **có** | `/translate`: `text`=`$args.text` (phần còn lại của dòng), `target_lang`=`$args.lang` (mặc định `vi`) |
-| gmail-summary | workflow | **có** | `/summary`: `subject`=`$args.subject` (mặc định "(không tiêu đề)"), `sender`=hằng "(dán từ chat)", `email_body`=`$args.text` (hoặc `$selection`) |
+| translate | workflow | **có** | `/translate`: args `[lang default vi; text rest]`; map `text`←arg `text`, `target_lang`←arg `lang` |
+| gmail-summary | workflow | **có** | `/summary`: args `[text rest, fallback selection]`; `email_body`←arg `text`, `subject`/`sender`←hằng |
 | email-reply | workflow | **có** | `/reply`: như gmail-summary; `side_effect=false` (chỉ soạn nháp) |
-| screenshot-ask | workflow (ảnh) | **có** | `/ask-image`: `image`=`$attachment`, `question`=`$args.text` (kiểm CR-040 với Dify thật) |
+| screenshot-ask | workflow (ảnh) | **có** | `/ask-image`: `image`←`{source:"attachment"}`, `question`←arg `question` (kiểm CR-040 với Dify thật) |
 | web-context | chat | không | cần ngữ cảnh trang (extension), hoãn |
 | semantic-find | workflow | không | cần `passages` từ trang, hoãn |
 | autofill / extract | workflow (ảnh) | không | dành cho extension, hoãn |
 
-Tên bảng/cột và cú pháp `$args.*` theo spec H2a §3 và ADM-FR-21; PLAN xác nhận trước khi viết.
+Input map theo `InputMapEntrySchema` `{source,…}` (plan K5, §5.3), không dùng `$args.*`. Plan K5–K7 là quyết định ở §10.
 
 ## 7. Stack và hướng dẫn (nhóm E)
-`bun run combine:dev` (mở rộng `hub:dev`, `tools/hub-dev`): compose (Postgres, Redis, Mailpit) → migrate → admin-api `:3001` (CORS gồm 3000, 3100, 3200; `HUB_INTERNAL_TOKEN`) → hub-api `:4000` (`HUB_CORS_ORIGINS`) → chat-web `:3100`, admin-web `:3000`, studio-web `:3200` (proxy `/auth` → admin-api, `/studio/api` → Hub; chat-web thêm `/agents`, `/commands`, `/attachments` → Hub). Agent Runtime: `HUB_DEV_RUNTIME=none`; script **in lệnh** WSL `claude-sub` (hub-dev.md "Runtime trong WSL"), tự chạy qua `wsl.exe` khi `COMBINE_WSL=1`. Env: `AUTH_URL`→admin-api, `HUB_URL`→hub-api, `PUBLIC_HUB_URL`, `PUBLIC_STUDIO_URL`, `PUBLIC_ADMIN_WEB_URL`, `PUBLIC_CHAT_WEB_URL`.
+`bun run combine:dev` (mở rộng `hub:dev`, `tools/hub-dev`): compose (Postgres, Redis, Mailpit) → migrate → admin-api `:3001` (CORS gồm 3000, 3100, 3200; `HUB_INTERNAL_TOKEN`) → hub-api `:4000` (`HUB_CORS_ORIGINS`) → chat-web `:3100`, admin-web `:3000`, studio-web `:3200` (proxy `/auth` → admin-api, `/studio/api` → Hub; chat-web thêm `/agents`, `/commands`, `/attachments` → Hub). Dify mock `startDifyMock` (cổng 5001 nếu trống) bật cùng stack (S7, e2e). Agent Runtime: `HUB_DEV_RUNTIME=none`; script **in lệnh** WSL `claude-sub` (hub-dev.md "Runtime trong WSL"), tự chạy qua `wsl.exe` khi `COMBINE_WSL=1`. Env: `AUTH_URL`→admin-api, `HUB_URL`→hub-api, `PUBLIC_HUB_URL`, `PUBLIC_STUDIO_URL`, `PUBLIC_ADMIN_WEB_URL`, `PUBLIC_CHAT_WEB_URL`.
 
 `docs/guides/combine-test.md` (≤ 300 dòng), mỗi kịch bản: bước · kỳ vọng · app:
 
@@ -111,7 +111,7 @@ Tên bảng/cột và cú pháp `$args.*` theo spec H2a §3 và ADM-FR-21; PLAN 
 | S4 | `/lệnh` (menu, thiếu tham số, lệnh sai + gợi ý, `//`) | mock rồi **thật** (`/translate`) |
 | S5 | `@agent`, `@@`, nhiều tag, tag sai | `claude-sub` |
 | S6 | Đính kèm: hợp lệ, quá lớn, sai loại, chip xám; `/ask-image` | mock + 1 lần thật |
-| S7 | Xác nhận `side_effect`: bật cờ workflow `mock-send` ở Admin (không qua seed yaml) → Chat hỏi Đồng ý/Huỷ | mock |
+| S7 | Xác nhận `side_effect`: tạo workflow `mock-send` qua Admin (base_url `http://localhost:5001/v1`, secret `mk-ok`), bật cờ `side_effect` → Chat hỏi Đồng ý/Huỷ | mock |
 | S8 | Admin Test command (không lưu) | mock + 1 lần thật |
 | S9 | Studio: sửa agent/Orchestrator từ nút "⇄ Agent Studio"; Chat thấy menu `@` đổi | - |
 | S10 | Dify thật (`DIFY_LIVE=1`): chatbot, translate, gmail-summary, email-reply, screenshot-ask, **mỗi app đúng 1 lần** | thật |
@@ -142,15 +142,15 @@ CHAT-AC-01…36 (C1) giữ xanh. AC mới (Given/When/Then chi tiết ở `test-
 | X1-AC19 | `combine:dev` dựng đủ 6 tiến trình, kiểm `/health`; Ctrl+C dừng đúng thứ đã bật | script test |
 | X1-AC20 | Smoke `DIFY_LIVE=1`: mỗi app chọn đúng 1 lần gọi (đếm bằng bộ đếm trong script); vắng cờ → bỏ qua exit 0 | tay + test bỏ qua |
 
-**Lệnh xong `done:x1`** (`tools/scripts/src/done-x1.ts`, mẫu `done-h4a`): `bun run typecheck` · `bun test` · `bun run test:int` · `bun run test:contract:chat` · `bun run e2e:chat` + e2e admin liên quan (M5) + e2e combine mock · `bun run i18n:check` · `bun run trace --check` · `check:bundle` chat-web và admin-web · `bun run test:lock:verify`. `test:perf` không chặn.
+**Lệnh xong `done:x1`**: theo `test-plan.md` §5 (12 bước; không chép lại ở đây).
 
 ## 9. Câu hỏi mở (đều có mặc định; không trả lời = chấp nhận mặc định)
 | Q | Câu hỏi | Mặc định đề xuất |
 |---|---|---|
 | Q1 | Nối app Dify nào? | §6: chatbot, translate, gmail-summary, email-reply, screenshot-ask; hoãn web-context, semantic-find, autofill, extract |
-| Q2 | Map input cho chat | §6 (`translate`: `text`=`$args.text`, `lang` mặc định `vi`; gmail-*: dán email vào `text`) |
+| Q2 | Map input cho chat | §6 (`translate`: `text`←arg `text`, `lang` mặc định `vi`, K5; gmail-*: dán email vào `text`) |
 | Q3 | `side_effect` các lệnh Dify thật | `false` cả 5; kịch bản S7 dùng workflow mock `mock-send` (không gọi Dify thật) |
-| Q4 | Seed qua đường nào | API Admin + Studio API (có audit, đúng RLS), không SQL trực tiếp |
+| Q4 | Seed qua đường nào | API Admin (có audit, đúng RLS); agent + entitlement qua Hub seed CLI (K7: Studio không có API entitlement); không SQL trực tiếp |
 | Q5 | Tenant/group nhận lệnh Dify | tenant `acme`, group mới `dify-demo` (thành viên `lan`); `platform` không cấp |
 | Q6 | Bỏ `hub.workflow_flags` | Hub dừng khi thiếu cột (X1-R09); bảng giữ; hoãn nếu int H2a/H2b đỏ |
 | Q7 | Chạy Runtime | in lệnh WSL; `COMBINE_WSL=1` để tự chạy |
@@ -171,6 +171,7 @@ CHAT-AC-01…36 (C1) giữ xanh. AC mới (Given/When/Then chi tiết ở `test-
   6. Smoke Dify: qc viết `tests/smoke/X1/dify-live.ts`; đếm lời gọi bằng bộ đếm trong script (mỗi app đúng 1, không retry), không dựa DB.
   7. plan-frontend export hàm thuần `*.rules.ts` cho AC03, AC06, AC07 để unit test.
   8. S7 bật `side_effect` của workflow `mock-send` trong Admin, không qua seed yaml.
+- [x] 2026-10-07 (điều phối chốt 2026-10-07 (readiness lần 1); plan K5–K7): 9. Agent `dify-chatbot` + entitlement `acme` qua Hub seed CLI (không Studio API). 10. Input map dạng `{source,…}` (không `$args.*`). 11. Secret tên `DIFY_KEY_*` (không `dify-<app>`). 12. `combine:dev` bật Dify mock; S7 tạo `mock-send` qua Admin.
 
 ## 11. Tranh chấp test
 - (không)

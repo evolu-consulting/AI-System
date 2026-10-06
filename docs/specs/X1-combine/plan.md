@@ -57,7 +57,7 @@ Luồng (`apps/admin-api/src/modules/commands/commands.test-run.ts` service + `c
 | Bước | Điều kiện | Kết quả |
 |---|---|---|
 | 1 | role ≠ platform_admin | 403 `FORBIDDEN` (trước parse body) |
-| 2 | body sai | 400 `VALIDATION_ERROR` (issues zod, không echo `text`) |
+| 2 | body sai | 400 `VALIDATION_ERROR` (issues zod, không echo text) |
 | 3 | `ADMIN_HUB_URL` hoặc `HUB_INTERNAL_TOKEN` vắng | 503 `HUB_NOT_CONFIGURED` |
 | 4 | `workflow_id` không có trong `admin.workflows` | 400 `INVALID_REFERENCE {field:"workflow_id", ids:[id]}` (shape M2) |
 | 5 | `workflow.side_effect = true` ∧ `confirm_side_effect !== true` | 409 `SIDE_EFFECT_CONFIRM_REQUIRED {workflow_id}` — FE hỏi Đồng ý rồi gửi lại `confirm_side_effect:true` |
@@ -157,13 +157,13 @@ export function formatPlan(p: SeedPlan): string;   // dry-run; không key
 
 | App | Workflow (`key`, `app_type`, `input_schema`, `output_field`) | Command (`name`, `args`, `input_map`, `output`) |
 |---|---|---|
-| chatbot | `dify-chatbot`, `agent` (smoke H2a: Dify `agent-chat`), `[]`, null | — (agent `dify-chatbot` §5.4) |
+| chatbot | `dify-chatbot`, `agent`, `[]`, null | — (agent `dify-chatbot` §5.4) |
 | translate | `dify-translate`, `workflow`, `text` (text, bắt buộc), `target_lang` (text, bắt buộc), `text` | `translate`: args `[lang default "vi"; text rest, fallback selection]`; map `text←{arg text}`, `target_lang←{arg lang}`; output `{field:"text", render:"markdown"}`. Cú pháp `/translate en Xin chào` (vị trí: từ đầu = ngôn ngữ) |
 | gmail-summary | `dify-gmail-summary`, `workflow`, `subject`, `sender`, `email_body` (text, bắt buộc), `summary` | `summary`: args `[text rest, fallback selection]`; map `email_body←{arg text}`, `subject←{const "(không tiêu đề)"}`, `sender←{const "(dán từ chat)"}`; output `{field:"summary", render:"markdown"}` |
 | email-reply | `dify-email-reply`, `workflow`, như gmail-summary, `text` | `reply`: như `summary`, output field `text` |
 | screenshot-ask | `dify-screenshot-ask`, `workflow`, `image` (file, bắt buộc), `question` (text, bắt buộc), `text` | `ask-image`: args `[question rest, default "Mô tả nội dung ảnh này"]`; map `image←{source:"attachment"}`, `question←{arg question}`; output `{field:"text", render:"markdown"}` |
 
-Mô tả workflow/command (≥ 20 ký tự VI) đặt cố định trong `apps.ts`. `mode:"sync"`, `timeout_s` 60 (translate/summary/reply), 90 (ask-image).
+Mô tả (≥ 20 ký tự VI) cố định trong `apps.ts`. `mode:"sync"`, `timeout_s` 60 (translate/summary/reply), 90 (ask-image).
 
 ### 5.4 Thứ tự ghi (`--apply`), mọi bước qua API (Q4), idempotent (X1-R14), không bao giờ xoá
 | # | Bước | API | Idempotent |
@@ -173,7 +173,7 @@ Mô tả workflow/command (≥ 20 ký tự VI) đặt cố định trong `apps.t
 | 3 | Secret | `GET /admin/secrets?q=<NAME>` → vắng: `POST /admin/secrets {name, value, note:"seed:dify X1"}`; có ∧ `--rotate-secrets`: `PUT /admin/secrets/:name {value}`; có ∧ không cờ: bỏ qua | theo tên |
 | 4 | Feature | `POST /admin/features {key:"dify-demo", name:{vi:"Dify demo",en:"Dify demo"}, status:"on", command_ids:[]}` (tồn tại ⇒ dùng lại) | theo `key` |
 | 5 | Workflow | `GET /admin/workflows?q=<key>` → vắng: POST; khác (`workflowPatch`) ⇒ PUT kèm `version`; 409 `VERSION_CONFLICT` ⇒ đọc lại 1 lần | theo `key` |
-| 6 | Command | theo `name`: vắng ⇒ POST với `feature_ids:[dify-demo]` (**không** để mặc định core — tránh cấp cho mọi người); có ∧ `workflow_id` khác workflow của seed ⇒ **bỏ qua + cảnh báo** (không chiếm lệnh người khác); khác ⇒ PUT | theo `name` |
+| 6 | Command | theo `name`: vắng ⇒ POST với `feature_ids:[dify-demo]` (**không** để mặc định core); có ∧ `workflow_id` khác workflow của seed ⇒ **bỏ qua + cảnh báo** (không chiếm lệnh người khác); khác ⇒ PUT | theo `name` |
 | 7 | Entitlement + grant feature | `PUT /admin/features/:id/entitlements/:tenant_id`; `POST /admin/grants?tenant_id= {feature_id, group_id}` (trùng ⇒ coi là đã có) | — |
 | 8 | Agent chatbot (K7) | thư mục tạm = chép `apps/hub-api/seed/*.yaml` + thêm vào `agents.yaml`: `{key:dify-chatbot, name:{vi:"Chatbot (Dify)",en:"Chatbot (Dify)"}, description ≥20, runtime:dify-agent, profile:$HUB_SEED_PROFILE, runtime_options:{workflow_key:dify-chatbot}}`; `access.yaml` thêm `entitlements: {agent:dify-chatbot, tenant_key:acme}` (không thêm `grants:`) → `bun --env-file=.env.local apps/hub-api/src/modules/seed/seed.ts` với `HUB_SEED_DIR=<tmp>` (`HUB_SEED_PROFILE` như `hub:dev`; DB = `DATABASE_URL` của hub-api, truyền cho script — test trỏ DB qc qua env); xoá thư mục tạm | seed upsert |
 | 9 | Grant agent | `GET /agent-grants?tenant_id=&subject_type=group&subject_id=` lấy `agent.id` của `dify-chatbot` → `POST /agent-grants?tenant_id=` `{agent_id, subject_type:"group", subject_id}` (201/200 đều ok) | Hub `on conflict do nothing` |
@@ -184,19 +184,20 @@ Dry-run in: từng bước "tạo/cập nhật/giữ nguyên" + tên app, loại
 Đọc file bằng `readFileSync`, tách dòng, chỉ giữ dòng có tên trong danh sách trắng; không `dotenv` toàn file, không gán `process.env`. Key chỉ là đối số `value` của bước 3. Mọi `catch` in `code` + tên bước, không in `err.message` của fetch có body. Không in độ dài/tiền tố/hash. Test AC16: chạy với key giả dạng `app-XXXXXXXX…` rồi quét stdout/stderr + log admin-api giả (thô/base64/base64url/hex, mẫu `leakForms`).
 
 ## 6. Stack (ST1) — `bun run combine:dev`
-File `tools/hub-dev/src/combine.ts` (≤ 400 dòng; tái dùng `startHubDev`, `healthy`, `hubApiEnv` của `dev.ts`, thêm tham số env thay vì sửa hành vi `hub:dev`). Script `"combine:dev": "bun --env-file=.env.local tools/hub-dev/src/combine.ts"`.
+File `tools/hub-dev/src/combine.ts` (≤ 400 dòng; tái dùng `startHubDev`, `healthy`, `hubApiEnv` của `dev.ts`; không sửa hành vi `hub:dev`) + hàm thuần `tools/scripts/src/combine.rules.ts` (QC khoá, AC19): `buildCombineEnv(base, opts: {token?, wsl?, mock?}): Record<ProcName, env>` (env §3; token chung); `stopOrder(started: readonly ProcName[]): ProcName[]` (ngược thứ bật). Script `"combine:dev": "bun --env-file=.env.local tools/hub-dev/src/combine.ts"`.
 
 | Bước | Việc | Kiểm |
 |---|---|---|
 | 0 | `docker compose up -d --wait` (Postgres, Redis, Mailpit) | exit 0 |
 | 1 | `HUB_INTERNAL_TOKEN` (§3), đặt `CORS_ORIGINS`, `HUB_CORS_ORIGINS`, `ADMIN_HUB_URL` vào env truyền cho tiến trình con | — |
-| 2 | `startHubDev()` với `HUB_DEV_RUNTIME=none` mặc định: migrate → admin-api `:3001` → fixture user → `hub:seed` → hub-api `:4000` | `/health` 2 cổng; Hub tự thoát nếu thiếu cột (B3) |
+| 2 | `startHubDev()` với `HUB_DEV_RUNTIME=none` mặc định: migrate → admin-api `:3001` → fixture user → `hub:seed` → hub-api `:4000` | `/health` 2 cổng |
 | 3 | chat-web `bun run --cwd apps/chat-web dev` (`HUB_URL`, `AUTH_URL`) · admin-web (`ADMIN_API_URL`, `PUBLIC_HUB_URL`, `PUBLIC_STUDIO_URL`, `PUBLIC_CHAT_WEB_URL`) · studio-web (`ADMIN_API_URL`, `HUB_URL`, `PUBLIC_ADMIN_WEB_URL`, `PUBLIC_CHAT_WEB_URL`) | `GET /` 200 ở 3100/3000/3200 (studio `/studio/`), chờ ≤ 60 s |
 | 4 | Runtime: in lệnh WSL (hub-dev.md "Runtime trong WSL") với `AGENT_RT_PROVIDERS=claude-sub,dify`, `AGENT_RT_HUB_URL=<url Hub nhìn từ WSL>`; `COMBINE_WSL=1` ⇒ tự `wsl.exe -d Ubuntu -u worker -- bash -l -s` (stdin = script) | log `runtime.ready` (không chặn) |
+| 2b | Dify mock: `startDifyMock()` (`tools/hub-dev/src/dify-mock.ts`) cổng 5001 nếu trống (bận ⇒ dùng lại + ghi chú); `docs/guides/combine-test.md` S7 (D1): tạo workflow `mock-send` qua Admin (base_url `http://localhost:5001/v1`, secret `mk-ok`) rồi bật cờ `side_effect` | `GET :5001` phản hồi |
 | 5 | In bảng URL + user mẫu; nhắc `bun run seed:dify` (dry-run) | — |
 | Dừng | Ctrl+C/SIGTERM: dừng theo thứ tự ngược đúng các tiến trình script đã bật (không giết tiến trình dùng lại) | AC19 |
 
-Cổng đang bận bởi tiến trình khác ⇒ dùng lại (như `hub:dev`) + ghi chú; web bận ⇒ lỗi rõ (rsbuild `strictPort`).
+Cổng bận ⇒ dùng lại (như `hub:dev`) + ghi chú; web bận ⇒ lỗi rõ (`strictPort`).
 
 ## 7. Cho QC (cần trước/cùng B1)
 | # | Việc | File |
@@ -218,7 +219,7 @@ Cổng đang bận bởi tiến trình khác ⇒ dùng lại (như `hub:dev`) + 
 | BL4 | `side_effect` có ở `WorkflowSchema`/`WorkflowListItemSchema` (bắt buộc), create/update tuỳ chọn |
 | BL5 | `agent_count` tính thật từ `hub.agent_grants` (B4); FE hiển thị số như cột khác |
 | BL6 | Đúng như FE giả định: `GET /agent-grants?subject_type=group&subject_id=` trả **mọi** agent có entitlement chưa thu hồi của T (trừ Orchestrator); `grants[]` lọc theo subject (H3b-R11, `agent-grants.repo.ts` LIST_AGENTS/LIST_GRANTS) |
-| Khác | "Chạy với tư cách user": Hub không kiểm quyền (K9) ⇒ FE hiện quyền bằng `GET /admin/users/:id/effective-access` có sẵn (tuỳ chọn) |
+| Khác | effective-access khi chạy với tư cách user: **không làm ở X1** (K9, #89) |
 
 ## 9. Trả lời Q1–Q10 (phía backend)
 | Q | Quyết định | Lý do |

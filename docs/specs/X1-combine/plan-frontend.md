@@ -12,7 +12,7 @@ Chủ: frontend-lead · 2026-10-07 · nguồn: spec §2, §5, §8; CR-036/038/04
 | D5 | Kết quả gửi chuyển về composer: `onSubmit(text, extras)` trả `SendOutcome` thay `boolean`; lỗi trước stream có mã riêng (§1.4) hiện **trong composer** (`role="alert"`), không toast; mã khác giữ toast C1 | giữ chữ để sửa |
 | D6 | Admin gọi Hub **thẳng** (X1-R08): `apps/admin-web/src/lib/hub.ts` `hubUrl(path)` = `PUBLIC_HUB_URL` (bỏ `/` cuối) + path, dùng lại `api()` của `lib/http.ts` (Bearer + refresh 1 lần; fetch URL tuyệt đối). Vắng `PUBLIC_HUB_URL` → không gọi, hiện trạng thái "Chưa cấu hình Hub". `PUBLIC_*` Rsbuild tự nhúng ⇒ **không sửa `apps/admin-web/rsbuild.config.ts`**; chỉ thêm kiểu vào `src/env.d.ts` (`PUBLIC_HUB_URL`, `PUBLIC_STUDIO_URL`) | CR-043 Q-K1 |
 | D7 | Nút "⇄ Agent Studio" đặt trong `Topbar.tsx` (không cần `AppShell.tsx`); `<a href>` cùng tab như Studio "⇄ Admin" | ui-admin §4.1 |
-| D8 | Test command: gọi admin-api (giả định `POST /admin/commands/:id/test`, chờ backend-lead chốt ở `plan.md`); `HUB_INTERNAL_TOKEN` không bao giờ ở FE | X1-R08, AC11 |
+| D8 | Test command: gọi admin-api `POST /admin/commands/test` (plan §2.2: `run_as_user_id`, `ms`); `HUB_INTERNAL_TOKEN` không bao giờ ở FE | X1-R08, AC11 |
 | D9 | Feature mới: chat `features/{commands,agents,attachments}` (mỗi cái có `api.ts` + README); admin `features/hub` (api agent-grants + effective). Composer chỉ import hook/kiểu, không fetch | CONVENTIONS §2 |
 
 4 file từng sửa dở đã commit (66299a0) — không còn chờ Q10. File "nhạy" task chạm: `apps/chat-web/rsbuild.config.ts` (F1, 3 dòng proxy). `apps/admin-web/rsbuild.config.ts`, `AppShell.tsx`, `docs/PRODUCTION-NOTES.md`: **không chạm**.
@@ -34,7 +34,7 @@ Chủ: frontend-lead · 2026-10-07 · nguồn: spec §2, §5, §8; CR-036/038/04
 | AC | Export | File |
 |---|---|---|
 | AC03 | `buildSendRequest` | `features/run/lib/send-request.rules.ts` |
-| AC06 | `applyDelta(state, delta)` (reducer nối delta, gọi từ `run-driver`) | `features/run/lib/delta.rules.ts` |
+| AC06 | `applyDelta(state, delta)` (reducer nối delta, gọi từ `run-driver`); `state: RunState` (`run/lib/reducer.ts`), `delta` = data `step.delta` (`@ai/contracts/chat`), trả `RunState` mới | `features/run/lib/delta.rules.ts` |
 | AC07 | `validateAttachment(file, existing)` → `{ok}\|{error}` | `features/attachments/lib/validate.rules.ts` (thay `validate.ts`) |
 
 ### 1.2 Menu `@` (F2)
@@ -69,7 +69,7 @@ Không đổi component: SSE `ask` `choices:["Đồng ý","Huỷ"]` (Hub dịch 
 | Mục | Chi tiết |
 |---|---|
 | Nút | icon kẹp giấy trong composer, `button` aria-label "Đính kèm tệp"/"Attach files"; `<input type="file" multiple hidden accept=...>` từ `ATTACH_ALLOWED`; kéo-thả vào composer cùng luật |
-| Chặn sớm (`lib/validate.ts`) | đuôi ∉ `ATTACH_ALLOWED` → chip lỗi; `size > ATTACH_MAX_BYTES` → chip lỗi; `size = 0` → lỗi; tên > `ATTACH_FILENAME_MAX` hoặc `X-Filename` mã hoá > `ATTACH_FILENAME_HEADER_MAX_BYTES` → lỗi; tổng > `ATTACH_PER_MESSAGE_MAX` → bỏ phần dư + toast |
+| Chặn sớm (`lib/validate.rules.ts`) | đuôi ∉ `ATTACH_ALLOWED` → chip lỗi; `size > ATTACH_MAX_BYTES` → chip lỗi; `size = 0` → lỗi; tên > `ATTACH_FILENAME_MAX` hoặc `X-Filename` mã hoá > `ATTACH_FILENAME_HEADER_MAX_BYTES` → lỗi; tổng > `ATTACH_PER_MESSAGE_MAX` → bỏ phần dư + toast |
 | Upload (`api.ts` `uploadAttachment`) | `POST /attachments`, `rawBody=file`, `Content-Type` = MIME theo đuôi (`ATTACH_ALLOWED`, không tin `file.type`), `X-Filename` = `encodeURIComponent(name)`; 201 parse `AttachmentSchema`; hàng đợi ≤ 3 đồng thời (`hooks/use-attach-queue.ts`); 429 → chờ `retryAfter` rồi thử lại **1 lần** |
 | Chip (`components/AttachmentChip.tsx`) | đang tải (spinner, "Đang tải lên…") · sẵn sàng (tên + cỡ) · lỗi (đỏ, câu lỗi, "Thử lại" nếu lỗi mạng/429) · nút xoá icon aria-label "Xoá {filename}" |
 | Gửi | Gửi `disabled` khi còn chip đang tải; `attachment_ids` = chip sẵn sàng (thứ tự chọn); nội dung chữ vẫn bắt buộc (contract `content.min(1)`); thành công → xoá chip; chip không lưu vào nháp |
@@ -122,7 +122,7 @@ Câu lỗi upload:
 | Kết quả | đầu: "{ms} ms · {in}+{out} token" ; tab "Kết quả" (`<pre>` xuống dòng, không thêm lib markdown) · "Raw" (JSON) · "Các bước" (steps: nhãn, ok/failed, ms) |
 | `ok:false` | `Alert` 1 dòng `error.message` + `Collapsible` "Chi tiết từ Dify" / "Details from Dify" (`error.detail`, ẩn khi null); mã run hiện mono |
 | Vô hiệu | không khoá theo lưu: bản đang sửa chưa lưu vẫn chạy thử (BL1 `POST /admin/commands/test` không id, ADM-FR-23); form có lỗi validate bắt buộc → disabled + "Sửa lỗi trong form trước" / "Fix form errors first" |
-| Lỗi HTTP | 502 `HUB_UNAVAILABLE`: "Hub không phản hồi. Kiểm tra hub-api rồi thử lại." / "Hub is not responding. Check hub-api and try again." · 403: "Bạn không có quyền chạy thử lệnh này." / "You can't test this command." · 400 `VALIDATION_ERROR`: "Cấu hình nháp chưa hợp lệ: {message}" / "Draft config is invalid: {message}" · mạng: `auth.error.network` có sẵn |
+| Lỗi HTTP | 502, 503, 409, 422, 400, 403, mạng + hộp `SIDE_EFFECT_CONFIRM_REQUIRED`: câu VI/EN nguyên văn ở `plan-frontend-copy.md` (điều phối chốt 2026-10-07, readiness lần 1) |
 | Lưu khi chưa test | gợi ý không chặn "Bạn chưa chạy thử bản này" / "You haven't tested this version" (ui-admin §7.4) |
 
 ### 2.3 Groups tab Agent (F5) — thay `AgentTab` "Chưa khả dụng"
@@ -213,7 +213,7 @@ Spec §5 ghi nhãn "Test command": glossary ui-admin §12 bắt buộc VI "Chạ
 |---|---|---|
 | F1 | `apps/chat-web/rsbuild.config.ts` (proxy), `src/lib/http.ts` (D2), `features/commands/{api.ts,README.md,lib/slash.ts}`, `features/composer/{components/SuggestMenu,CommandMenu,SendErrorNotice,Composer}.tsx`, `hooks/use-suggest.ts`, `features/run/{run-driver.ts,lib/send-request.ts,hooks/use-send.ts}`, call site `WelcomePage`, `FlowFooter`, i18n chat | unit `slash`, `use-suggest`, `buildSendRequest`, `http` (rawBody, retryAfter), `SendErrorNotice` |
 | F2 | `features/agents/{api.ts,README.md}`, `composer/components/AgentMenu.tsx`, `run/lib/reducer.ts` (responder), `thread/components/FlowBlock.tsx`, `flow-panel/components/FlowMessages.tsx`, đếm ngược 429 trong `SendErrorNotice` | unit trigger `@`, reducer responder, delta 500, countdown |
-| F3 | `features/attachments/{api.ts,README.md,lib/validate.ts,lib/download.ts,hooks/use-attach-queue.ts,components/AttachButton,AttachmentChip,AttachmentList}.tsx`, gắn vào `Composer`, `FlowBlock`, `FlowMessages` | unit validate (đuôi/cỡ/tên/10), queue ≤ 3, download revoke |
+| F3 | `features/attachments/{api.ts,README.md,lib/validate.rules.ts,lib/download.ts,hooks/use-attach-queue.ts,components/AttachButton,AttachmentChip,AttachmentList}.tsx`, gắn vào `Composer`, `FlowBlock`, `FlowMessages` | unit validate (đuôi/cỡ/tên/10), queue ≤ 3, download revoke |
 | F4 | `admin-web/src/features/workflows/{lib/schemas.ts,lib/defaults?,components/editor/WorkflowInfoSection.tsx,components/list/WorkflowTable.tsx}`, `features/commands/{api.ts,components/test/*,pages/CommandEditorPage.tsx}`, `lib/errors.ts`, i18n admin | unit schema `side_effect`, `TestPanel` (ok/false/502) |
 | F5 | `src/lib/hub.ts`, `src/env.d.ts`, `features/hub/{api.ts,README.md}`, `features/groups/components/editor/AgentTab.tsx`, `components/shared/access/AccessExplainer.tsx`, `features/access/pages/*` + `features/users` tab Quyền hiệu lực, `lib/errors.ts` (`hubErrors`) | unit `hubUrl`, map lỗi Hub, AgentTab (tải/rỗng/lỗi/chưa cấu hình) |
 | F6 | `src/lib/env.ts` (STUDIO_URL), `features/shell/components/Topbar.tsx` | unit hiện/ẩn theo role + env |
