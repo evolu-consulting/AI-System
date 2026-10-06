@@ -16,6 +16,7 @@ import { auditRoutes } from "./modules/audit/audit.routes";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { totpRoutes } from "./modules/auth/totp/totp.routes";
+import type { HubConfig } from "./modules/commands/commands.hub-client";
 import { commandsRoutes } from "./modules/commands/commands.routes";
 import { featuresRoutes } from "./modules/features/features.routes";
 import { grantsRoutes } from "./modules/grants/grants.routes";
@@ -47,6 +48,8 @@ export type AppDeps = {
   mailer?: Mailer;
   /** Gốc admin-web cho link trong mail (`ADMIN_WEB_URL`). */
   adminWebUrl?: string;
+  /** Hub cho "Chạy thử" lệnh (`ADMIN_HUB_URL` + `HUB_INTERNAL_TOKEN`); vắng ⇒ 503 `HUB_NOT_CONFIGURED`. */
+  hub?: HubConfig;
 };
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -85,7 +88,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/secrets", secretsRoutes({ ...ctx, secretKey: deps.secretKey, hooks }));
   app.route("/admin/features", featuresRoutes({ ...ctx, hooks }));
   app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
-  app.route("/admin/commands", commandsRoutes({ ...ctx, hooks }));
+  app.route("/admin/commands", commandsRoutes({ ...ctx, hooks, hub: deps.hub }));
   app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
   app.route("/admin/import", importRoutes({ ...qctx, secretKey: deps.secretKey, hooks }));
   app.route("/admin/audit", auditRoutes({ ...qctx, hooks }));

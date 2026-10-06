@@ -60,6 +60,10 @@ async function main(): Promise<void> {
       secretKey,
       mailer: createMailer(env),
       adminWebUrl: env.ADMIN_WEB_URL,
+      hub:
+        env.ADMIN_HUB_URL && env.HUB_INTERNAL_TOKEN
+          ? { url: env.ADMIN_HUB_URL, token: env.HUB_INTERNAL_TOKEN }
+          : undefined,
     },
   );
   const server = Bun.serve({ port: env.PORT, fetch: app.fetch });

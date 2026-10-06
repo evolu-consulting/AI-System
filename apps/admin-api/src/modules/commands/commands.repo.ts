@@ -10,7 +10,7 @@ import {
   InputMapSchema,
   LocalizedTextSchema,
 } from "@ai/contracts";
-import { commandNames, commands, featureCommands, type Tx, workflows } from "@ai/db";
+import { commandNames, commands, featureCommands, type Tx, users, workflows } from "@ai/db";
 import { and, asc, count, eq, ilike, inArray, ne, or, type SQL, sql } from "drizzle-orm";
 import { likeArg, outer, usernameOf } from "../../lib/sql";
 
@@ -231,4 +231,23 @@ export async function insertNames(tx: Tx, commandId: string, names: readonly str
 
 export async function deleteCommand(tx: Tx, id: string): Promise<void> {
   await tx.delete(commands).where(eq(commands.id, id));
+}
+
+/** Chạy thử (ADM-FR-23): workflow + cờ `side_effect`; `null` khi không có. PK. */
+export async function workflowForTest(
+  tx: Tx,
+  id: string,
+): Promise<{ id: string; sideEffect: boolean } | null> {
+  const [r] = await tx
+    .select({ id: workflows.id, sideEffect: workflows.sideEffect })
+    .from(workflows)
+    .where(eq(workflows.id, id))
+    .limit(1);
+  return r ?? null;
+}
+
+/** Chạy thử: user tồn tại (mọi tenant — scope platform). PK. */
+export async function userExists(tx: Tx, id: string): Promise<boolean> {
+  const [r] = await tx.select({ id: users.id }).from(users).where(eq(users.id, id)).limit(1);
+  return r !== undefined;
 }

@@ -1,4 +1,4 @@
-// ADM-NFR-06, ADM-NFR-07, ADM-NFR-01, ADM-FR-50 · env của admin-api (spec M0 §7, M1 §7, M2 §4). Lỗi chỉ nêu tên biến.
+// ADM-NFR-06, ADM-NFR-07, ADM-NFR-01, ADM-FR-50, ADM-FR-23 · env của admin-api (spec M0 §7, M1 §7, M2 §4). Lỗi chỉ nêu tên biến.
 import { z } from "zod";
 import { isMasterKeyB64 } from "../lib/secret-crypto";
 
@@ -30,6 +30,10 @@ export const EnvSchema = z.object({
   MAIL_FROM: z.string().max(200).optional(),
   /** Gốc admin-web cho link trong mail cảnh báo quota (plan M4 §7). ADM-FR-41. */
   ADMIN_WEB_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:3000"),
+  /** Gốc Hub cho "Chạy thử" lệnh (ADM-FR-23, X1 §2.2). Không dùng tên `HUB_URL` (dành cho chat). Vắng ⇒ 503. */
+  ADMIN_HUB_URL: z.url({ protocol: /^https?$/ }).optional(),
+  /** Token dịch vụ Hub `/internal/*` — chỉ server-side, cùng giá trị với hub-api. Vắng ⇒ 503. */
+  HUB_INTERNAL_TOKEN: z.string().min(32).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
