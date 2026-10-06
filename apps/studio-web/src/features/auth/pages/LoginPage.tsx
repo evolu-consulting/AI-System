@@ -112,10 +112,15 @@ export function LoginPage() {
             {mustChange ? (
               <Alert className="border-warning-solid bg-warning-bg text-warning">
                 <AlertDescription>
-                  {t("login.mustChange")}{" "}
-                  <a href={ADMIN_URL} className="font-medium underline underline-offset-4">
-                    {t("topbar.toAdmin")}
-                  </a>
+                  {t("login.mustChange")}
+                  {ADMIN_URL ? (
+                    <>
+                      {" "}
+                      <a href={ADMIN_URL} className="font-medium underline underline-offset-4">
+                        {t("topbar.toAdmin")}
+                      </a>
+                    </>
+                  ) : null}
                 </AlertDescription>
               </Alert>
             ) : null}

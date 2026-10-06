@@ -47,7 +47,7 @@ export function useOrchEditor(cfg: Cfg) {
     cfg.onSaved?.();
   };
   const fail = (err: unknown) => {
-    const f = classifySaveError(err);
+    const f = classifySaveError(err, { hasTenant: Boolean(cfg.create || cfg.tenantId) });
     setErrors(f.errors);
     if (f.toast) toast.error(t(f.toast.key, f.toast.params));
   };

@@ -4,9 +4,20 @@ import { mapIssues, type OrchErrors } from "./draft";
 
 export type SaveFailure = { errors: OrchErrors; toast?: MessageSpec };
 
-type Detailed = { code?: unknown; details?: { issues?: unknown } | null };
+type Detailed = { code?: unknown; details?: { issues?: unknown; field?: unknown } | null };
 
-export function classifySaveError(err: unknown): SaveFailure {
+/** Form có ô tenant không (Sheet theo tenant: có; form mặc định: không). */
+type Ctx = { hasTenant: boolean };
+
+/** Gắn lỗi vào ô `field` nếu form có ô đó; không có ô tương ứng → toast. */
+function onField(err: unknown, field: unknown, ctx: Ctx): SaveFailure {
+  const code = String((err as Detailed).code);
+  if (field === "agent_id") return { errors: { agent_id: `errors.${code}` } };
+  if (field === "tenant_id" && ctx.hasTenant) return { errors: { tenant_id: `errors.${code}` } };
+  return { errors: {}, toast: describeApiError(err) };
+}
+
+export function classifySaveError(err: unknown, ctx: Ctx = { hasTenant: true }): SaveFailure {
   const e = (err ?? {}) as Detailed;
   switch (e.code) {
     case "VALIDATION_ERROR": {
@@ -16,10 +27,11 @@ export function classifySaveError(err: unknown): SaveFailure {
     }
     case "ORCHESTRATOR_EXISTS":
     case "TENANT_INACTIVE":
+      return onField(err, "tenant_id", ctx);
     case "INVALID_REFERENCE":
-      return { errors: { tenant_id: `errors.${String(e.code)}` } };
+      return onField(err, e.details?.field, ctx);
     case "AGENT_NOT_ORCHESTRATABLE":
-      return { errors: { agent_id: "errors.AGENT_NOT_ORCHESTRATABLE" } };
+      return onField(err, "agent_id", ctx);
     default:
       return { errors: {}, toast: describeApiError(err) };
   }

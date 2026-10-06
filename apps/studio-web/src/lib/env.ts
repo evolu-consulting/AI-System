@@ -6,8 +6,8 @@ export const BASEPATH = "/studio";
 /** Gốc `/auth` (D4): vắng = tương đối cùng origin (dev proxy / reverse proxy prod). Bỏ `/` cuối. */
 export const AUTH_BASE = (import.meta.env.PUBLIC_AUTH_URL ?? "").replace(/\/+$/, "");
 
-/** Admin cùng origin (reverse proxy) hoặc URL tuyệt đối qua `PUBLIC_ADMIN_URL`. */
-export const ADMIN_URL = import.meta.env.PUBLIC_ADMIN_URL || "/";
+/** URL admin-web (`PUBLIC_ADMIN_WEB_URL`, spec §7 · Q9; dev `http://localhost:3000`), bỏ `/` cuối; vắng = "" ⇒ ẩn link Admin. */
+export const ADMIN_URL = (import.meta.env.PUBLIC_ADMIN_WEB_URL ?? "").replace(/\/+$/, "");
 
 /** URL Chat App cho nút "Về Chat" (trang không quyền); vắng = ẩn nút. */
 export const CHAT_URL = import.meta.env.PUBLIC_CHAT_WEB_URL || "";

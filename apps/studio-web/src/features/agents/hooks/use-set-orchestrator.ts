@@ -2,9 +2,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { orchestratorQuery, putOrchestratorDefault } from "#/features/orchestrator/api";
 import { meQuery } from "#/features/shell/api";
 import { describeApiError } from "#/lib/api-error";
-import { AGENTS_KEY, orchestratorQuery, putOrchestratorDefault } from "../api";
+import { AGENTS_KEY } from "../api";
 
 type Vars = { agentId: string; name: string };
 

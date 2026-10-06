@@ -1,4 +1,4 @@
-// HUB-FR-60 · HUB-FR-62 · gọi API Studio cho màn Agents (component không fetch — đi qua hooks/).
+// HUB-FR-60 · gọi API Studio cho màn Agents (component không fetch — đi qua hooks/).
 import type {
   Agent,
   AgentList,
@@ -6,9 +6,6 @@ import type {
   AgentTypeListSchema,
   AgentWriteResponse,
   ModelProfileListSchema,
-  OrchestratorInput,
-  OrchestratorList,
-  OrchestratorWriteResponse,
   WorkflowListSchema,
 } from "@ai/contracts/studio";
 import { queryOptions } from "@tanstack/react-query";
@@ -29,28 +26,22 @@ export const agentsQuery = (params: AgentListParams = {}) =>
     queryFn: ({ signal }) => api<AgentList>("/studio/api/agents", { query: params, signal }),
   });
 
-export const orchestratorQuery = queryOptions({
-  queryKey: ["studio", "orchestrator"] as const,
-  queryFn: ({ signal }) => api<OrchestratorList>("/studio/api/orchestrator", { signal }),
-  staleTime: 0,
-});
-
 export const patchAgentEnabled = (id: string, body: { enabled: boolean; version: number }) =>
-  api<AgentWriteResponse>(`/studio/api/agents/${id}/enabled`, { method: "PATCH", body });
+  api<AgentWriteResponse>(`/studio/api/agents/${encodeURIComponent(id)}/enabled`, {
+    method: "PATCH",
+    body,
+  });
 
 export const deleteAgent = (id: string, version: number) =>
-  api<{ hub_config_version?: number } | undefined>(`/studio/api/agents/${id}`, {
+  api<{ hub_config_version?: number } | undefined>(`/studio/api/agents/${encodeURIComponent(id)}`, {
     method: "DELETE",
     query: { version },
   });
 
-export const putOrchestratorDefault = (body: OrchestratorInput & { version: number }) =>
-  api<OrchestratorWriteResponse>("/studio/api/orchestrator/default", { method: "PUT", body });
-
 export const agentQuery = (id: string) =>
   queryOptions({
     queryKey: [...AGENTS_KEY, "detail", id] as const,
-    queryFn: ({ signal }) => api<Agent>(`/studio/api/agents/${id}`, { signal }),
+    queryFn: ({ signal }) => api<Agent>(`/studio/api/agents/${encodeURIComponent(id)}`, { signal }),
     staleTime: 0,
     gcTime: 0,
   });
@@ -74,4 +65,4 @@ export const createAgent = (body: Record<string, unknown>) =>
   api<AgentWriteResponse>("/studio/api/agents", { method: "POST", body });
 
 export const updateAgent = (id: string, body: Record<string, unknown>) =>
-  api<AgentWriteResponse>(`/studio/api/agents/${id}`, { method: "PUT", body });
+  api<AgentWriteResponse>(`/studio/api/agents/${encodeURIComponent(id)}`, { method: "PUT", body });
