@@ -26,3 +26,4 @@ export function stopOrder(started: readonly ProcName[]): ProcName[]; // ngược
 `base` = env tiến trình cha; `opts.mock=false` ⇒ không có khoá `dify-mock` được bật (env vẫn trả, `stopOrder` không gồm). AC19 "6 tiến trình" = 6 `ProcName` trên; Runtime WSL không tính.
 
 **Nối với `startHubDev` (chốt readiness lần 3, không sửa `dev.ts`):** `combine.ts` gộp `env["admin-api"]` và `env["hub-api"]` vào `process.env` trước khi gọi `startHubDev()`; sau khi hàm trả về luôn thêm `admin-api`, `hub-api` vào `started`. Khi dừng theo `stopOrder`: gặp `hub-api` ⇒ gọi `dev.stop()` một lần (tự bỏ qua tiến trình dùng lại); `admin-api` là no-op. Kiểm AC19 tay: 5 tiến trình `/health` hoặc `GET /` 200; `dify-mock` chỉ cần `GET :5001` có phản hồi (không đòi 200).
+Web (chat/admin/studio) chạy với env `{...base, ...env[web]}`, `base` = bản chụp `process.env` **trước** khi gộp env admin-api/hub-api — `HUB_INTERNAL_TOKEN` chỉ tới admin-api/hub-api (plan R2).

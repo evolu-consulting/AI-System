@@ -31,3 +31,5 @@
 | 1 | Cao | Env/`started` nối với `startHubDev()` | plan-stack "Nối với `startHubDev`" |
 | 2 | Thấp | AC19 dify-mock không đòi 200 | test-plan AC19 |
 | 3 | Thấp | Thiếu mục Lần 2 | Thêm mục Lần 2 |
+
+## Lần 4 — 2026-10-07 — **READY** (3 mục lần 3 khép; 2 Thấp đã áp: ST1 cột Kiểm trỏ AC19; web chạy env từ `base` chụp trước khi gộp — token không tới web)
