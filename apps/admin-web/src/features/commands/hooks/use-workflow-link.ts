@@ -44,7 +44,8 @@ export function useWorkflowLink(form: UseFormReturn<CommandFormValues>, fillOutp
     const empty = form.getValues("output_field") === "";
     applyWorkflow(form, wf, { autofillOutput: fillOutputOnLoad && empty });
     // Bảo đảm nạp lần đầu (sửa/nhân bản) không làm form "chưa lưu".
-    if (!fillOutputOnLoad) form.reset(form.getValues(), { keepFieldsRef: true });
+    // keepValues: chỉ dời mốc "chưa lưu" về giá trị hiện tại, không đụng _fields/giá trị ô (keepFieldsRef làm hỏng aliases — AC-A07 X1).
+    if (!fillOutputOnLoad) form.reset(form.getValues(), { keepValues: true });
   }, [detail.data, form, fillOutputOnLoad]);
 
   const changeWorkflow = useCallback(
