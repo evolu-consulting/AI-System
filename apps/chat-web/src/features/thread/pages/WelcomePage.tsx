@@ -29,14 +29,14 @@ export function WelcomePage() {
   const run = useRunByKey(runKey);
 
   const submit = useCallback(
-    async (content: string): Promise<SubmitResult> => {
+    async (content: string, attachmentIds?: string[]): Promise<SubmitResult> => {
       try {
         pendingConv.current ??= (await create.mutateAsync(deriveTitle(content))).id;
       } catch {
         return false;
       }
       const convId = pendingConv.current;
-      const out = await send.sendMain(convId, content);
+      const out = await send.sendMain(convId, content, attachmentIds);
       if (!out.ok) return out;
       setRunKey(out.key);
       pendingConv.current = null;

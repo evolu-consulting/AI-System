@@ -91,3 +91,17 @@ test("chưa có trả lời: không Consultant; flow chưa có → Trả lời t
   expect(html).not.toContain("Consultant");
   expect(html).toMatch(/disabled=""[^>]*>Trả lời tiếp/);
 });
+
+test("HUB-FR-44 · tệp trong tin: list 'Tệp trong tin', chip tệp đã xoá aria-disabled", () => {
+  const html = render({
+    questionAttachments: [
+      { id: "a", filename: "a.txt", mime: "text/plain", size: 1024, available: true },
+      { id: "b", filename: "cu.pdf", mime: "application/pdf", size: 2048, available: false },
+    ],
+  });
+  expect(html).toContain('aria-label="Tệp trong tin"');
+  expect(html).toContain('aria-label="Tải a.txt"');
+  expect(html).toMatch(
+    /aria-disabled="true"[^>]*>|aria-label="Tải cu.pdf"[^>]*aria-disabled="true"/,
+  );
+});

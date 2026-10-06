@@ -1,5 +1,7 @@
 {
-  "common": { "close": "Close" },
+  "common": {
+    "close": "Close"
+  },
   "login": {
     "title": "Sign in",
     "subtitle": "Use your company code and the account your administrator gave you.",
@@ -16,7 +18,9 @@
     "required": "This field is required",
     "tenantRemembered": "Remembered for your next sign-in"
   },
-  "session": { "expired": "Your session has expired" },
+  "session": {
+    "expired": "Your session has expired"
+  },
   "shell": {
     "brand": "AI Chat · {{tenant}}",
     "newChat": "New chat",
@@ -38,8 +42,17 @@
     "retry": "Retry",
     "noMatch": "No chats match \"{{q}}\""
   },
-  "item": { "more": "More actions", "rename": "Rename", "delete": "Delete" },
-  "rename": { "title": "Rename chat", "label": "Chat name", "save": "Save", "cancel": "Cancel" },
+  "item": {
+    "more": "More actions",
+    "rename": "Rename",
+    "delete": "Delete"
+  },
+  "rename": {
+    "title": "Rename chat",
+    "label": "Chat name",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
   "delete": {
     "title": "Delete chat?",
     "body": "\"{{title}}\" and all its flows will be deleted.",
@@ -50,13 +63,22 @@
     "greeting": "Hi {{name}}, what do you need today?",
     "hint": "Each question opens its own flow. To follow up on one, click Reply in flow on it.",
     "cards": {
-      "email": { "title": "Draft an email", "prompt": "Draft a quotation email to a customer" },
+      "email": {
+        "title": "Draft an email",
+        "prompt": "Draft a quotation email to a customer"
+      },
       "summary": {
         "title": "Summarize",
         "prompt": "Summarize the 3 key points of meeting minutes"
       },
-      "translate": { "title": "Translate", "prompt": "Translate a contract clause into English" },
-      "outline": { "title": "Outline", "prompt": "Outline the monthly report for the sales team" }
+      "translate": {
+        "title": "Translate",
+        "prompt": "Translate a contract clause into English"
+      },
+      "outline": {
+        "title": "Outline",
+        "prompt": "Outline the monthly report for the sales team"
+      }
     },
     "cardsHint": "Click a card to fill the input. Nothing is sent yet."
   },
@@ -83,8 +105,16 @@
     "cold": "Reopening the flow, the first reply may take a few seconds…",
     "noClose": "Flows never close. When idle the system pauses them and restores full context when you chat again."
   },
-  "answer": { "who": "Consultant", "copy": "Copy", "copied": "Copied" },
-  "steps": { "summary": "{{count}} steps · {{seconds}}s", "toggle": "Show steps", "list": "Steps" },
+  "answer": {
+    "who": "Consultant",
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "steps": {
+    "summary": "{{count}} steps · {{seconds}}s",
+    "toggle": "Show steps",
+    "list": "Steps"
+  },
   "ask": {
     "title": "Consultant needs more information",
     "hint": "Clicking a chip sends it right away. You can still type freely."
@@ -103,7 +133,10 @@
     "quotaOver": "Your company has exceeded this month's quota. You can keep using Chat.",
     "quotaDismiss": "Dismiss"
   },
-  "run": { "cancelled": "Stopped", "rerun": "Run again" },
+  "run": {
+    "cancelled": "Stopped",
+    "rerun": "Run again"
+  },
   "menu": {
     "commands": "Commands",
     "agents": "Agents",
@@ -125,20 +158,29 @@
     "cmdInvalid": "Invalid value: {{invalid}}.",
     "tagOnly": "Type a message after @{{tag}}.",
     "agentNotFound": "Agent @{{tag}} not found.",
-    "tooManyRuns": "Too many answers are running. Try again in {{n}}s."
+    "tooManyRuns": "Too many answers are running. Try again in {{n}}s.",
+    "attachmentNotFound": "Some files are no longer available. Remove and attach them again."
   },
   "errors": {
     "ALL_PROVIDERS_EXHAUSTED": {
       "title": "The system is overloaded",
       "body": "AI capacity is temporarily used up. Please try again in a few minutes."
     },
-    "TIMEOUT": { "title": "Processing took too long" },
-    "UPSTREAM_ERROR": { "title": "The AI service is having problems" },
+    "TIMEOUT": {
+      "title": "Processing took too long"
+    },
+    "UPSTREAM_ERROR": {
+      "title": "The AI service is having problems"
+    },
     "BUDGET_EXCEEDED": {
       "title": "The request is too large to process at once. Please split it up"
     },
-    "NOT_CONFIGURED": { "title": "This feature isn't fully configured yet" },
-    "unknown": { "title": "Something went wrong processing the request" },
+    "NOT_CONFIGURED": {
+      "title": "This feature isn't fully configured yet"
+    },
+    "unknown": {
+      "title": "Something went wrong processing the request"
+    },
     "retry": "Retry",
     "report": "Report to admin",
     "meta": "{{code}} · run {{runId}}"
@@ -167,5 +209,27 @@
     "renameFailed": "Couldn't rename. Try again later.",
     "deleteFailed": "Couldn't delete the chat. Try again later.",
     "sendFailed": "Couldn't send. Your text is still in the input."
+  },
+  "attach": {
+    "button": "Attach files",
+    "list": "Attachments",
+    "messageList": "Files in message",
+    "uploading": "Uploading…",
+    "remove": "Remove {{filename}}",
+    "retry": "Retry",
+    "unavailable": "File no longer available",
+    "download": "Download {{filename}}",
+    "waitUpload": "Wait for uploads to finish",
+    "downloadFailed": "Couldn't download the file.",
+    "err": {
+      "tooLarge": "File is larger than 20 MB.",
+      "type": "File type not supported.",
+      "quota": "Your organization's file storage is full. Contact your admin.",
+      "empty": "File is empty.",
+      "name": "File name is too long.",
+      "max": "Up to 10 files per message.",
+      "failed": "Upload failed. Try again.",
+      "missing": "File no longer available. Remove and attach it again."
+    }
   }
 }

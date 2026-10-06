@@ -1,7 +1,9 @@
 // CHAT-AC-14..16 · luồng tin của khung flow: tin E11 (cuộn lên tải cũ hơn) + câu hỏi/trả lời của run đang chạy (stream, cold).
+import type { AttachmentRef } from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
 import { Skeleton } from "~/components/ui/skeleton";
+import { AttachmentList } from "~/features/attachments/components/AttachmentList";
 import { AnswerExtras } from "~/features/thread/components/AnswerExtras";
 import { Answer } from "~/features/thread/components/FlowBlock";
 import type { AnswerView } from "~/features/thread/lib/thread-logic";
@@ -9,11 +11,14 @@ import type { FlowPanelData } from "../hooks/use-flow-panel";
 import { useStickyScroll } from "../hooks/use-sticky-scroll";
 import type { PanelItem } from "../lib/flow-panel-logic";
 
-function Question({ text }: { text: string }) {
+function Question({ text, attachments }: { text: string; attachments?: AttachmentRef[] }) {
   return (
-    <div className="max-w-[85%] self-end whitespace-pre-wrap break-words rounded-[10px] bg-row-divider px-3 py-2">
-      {text}
-    </div>
+    <>
+      <div className="max-w-[85%] self-end whitespace-pre-wrap break-words rounded-[10px] bg-row-divider px-3 py-2">
+        {text}
+      </div>
+      <AttachmentList items={attachments} />
+    </>
   );
 }
 
@@ -28,7 +33,11 @@ function Reply({ answer }: { answer: AnswerView }) {
 }
 
 function Item({ item }: { item: PanelItem }) {
-  return item.kind === "question" ? <Question text={item.text} /> : <Reply answer={item.answer} />;
+  return item.kind === "question" ? (
+    <Question text={item.text} attachments={item.attachments} />
+  ) : (
+    <Reply answer={item.answer} />
+  );
 }
 
 function PanelSkeleton() {

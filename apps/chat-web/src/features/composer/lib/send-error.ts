@@ -10,6 +10,7 @@ const COMPOSER_CODES: ReadonlySet<string> = new Set([
   "CMD_MISSING_ARG",
   "AGENT_NOT_FOUND",
   "TOO_MANY_RUNS",
+  "ATTACHMENT_NOT_FOUND",
 ]);
 
 export const isComposerError = (err: ApiError): boolean => COMPOSER_CODES.has(err.code);
@@ -36,6 +37,24 @@ function detailsOf(err: ApiError): Record<string, unknown> {
   return err.details && typeof err.details === "object"
     ? (err.details as Record<string, unknown>)
     : {};
+}
+
+function missingArgView(d: Record<string, unknown>, text: string): SendErrorView {
+  const tag = leadingTag(text);
+  if (tag !== null && leadingCommand(text) === null) {
+    return { lines: [{ key: "sendError.tagOnly", params: { tag } }], suggestions: [] };
+  }
+  const lines: SendErrorLine[] = [
+    {
+      key: "sendError.cmdMissingArg",
+      params: { name: leadingCommand(text) ?? "", missing: strings(d.missing, 50).join(", ") },
+    },
+  ];
+  const invalid = strings(d.invalid, 50);
+  if (invalid.length > 0) {
+    lines.push({ key: "sendError.cmdInvalid", params: { invalid: invalid.join(", ") } });
+  }
+  return { lines, suggestions: [] };
 }
 
 /** `null` khi mã không thuộc composer. `text` = chữ đã gửi (nguồn của `{name}`/`{tag}`). */
@@ -65,22 +84,9 @@ export function sendErrorView(
     const n = String(Math.max(retryLeft ?? retrySecondsOf(err), 0));
     return { lines: [{ key: "sendError.tooManyRuns", params: { n } }], suggestions: [] };
   }
-  if (err.code === "CMD_MISSING_ARG") {
-    const tag = leadingTag(text);
-    if (tag !== null && leadingCommand(text) === null) {
-      return { lines: [{ key: "sendError.tagOnly", params: { tag } }], suggestions: [] };
-    }
-    const lines: SendErrorLine[] = [
-      {
-        key: "sendError.cmdMissingArg",
-        params: { name: leadingCommand(text) ?? "", missing: strings(d.missing, 50).join(", ") },
-      },
-    ];
-    const invalid = strings(d.invalid, 50);
-    if (invalid.length > 0) {
-      lines.push({ key: "sendError.cmdInvalid", params: { invalid: invalid.join(", ") } });
-    }
-    return { lines, suggestions: [] };
+  if (err.code === "ATTACHMENT_NOT_FOUND") {
+    return { lines: [{ key: "sendError.attachmentNotFound", params: {} }], suggestions: [] };
   }
+  if (err.code === "CMD_MISSING_ARG") return missingArgView(d, text);
   return null;
 }

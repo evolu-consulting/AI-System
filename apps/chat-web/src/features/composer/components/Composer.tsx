@@ -1,5 +1,7 @@
 // CHAT-AC-05, CHAT-AC-10, HUB-FR-10 · ô nhập: tự giãn ≤ 8 dòng, Enter gửi / Shift+Enter xuống dòng, Gửi↔Dừng, Esc dừng, khoá khi run khác chạy, nháp localStorage, menu `/` (gõ `/` ở đầu tin; `//` không mở), menu `@` (`@@` không mở), lỗi `CMD_*`/`AGENT_NOT_FOUND`/429 (đếm ngược) ngay trong ô.
 // Dùng lại cho ô chính (F7/F8) và khung flow (F10): khác nhau ở `variant`, `draftKey`, `onSubmit`.
+
+import type { TFunction } from "i18next";
 import { ArrowUp, Square } from "lucide-react";
 import {
   forwardRef,
@@ -12,6 +14,9 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
+import { AttachButton } from "~/features/attachments/components/AttachButton";
+import { AttachBar } from "~/features/attachments/components/AttachmentChip";
+import { useAttachments } from "~/features/attachments/hooks/use-attachments";
 import type { ApiError } from "~/lib/http";
 import { composerKeyHandler } from "../hooks/use-composer-keys";
 import { readDraft, useDraftSaver } from "../hooks/use-draft";
@@ -22,6 +27,12 @@ import { AgentMenu } from "./AgentMenu";
 import { CommandMenu } from "./CommandMenu";
 import { QuotaNotice } from "./QuotaNotice";
 import { SendErrorNotice } from "./SendErrorNotice";
+
+/** Tooltip nút Gửi khi bị khoá. */
+function sendTitle(t: TFunction, locked: boolean, uploading: boolean): string | undefined {
+  if (locked) return t("composer.busy");
+  return uploading ? t("attach.waitUpload") : undefined;
+}
 
 // Render server (bun test) không có layout effect.
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -46,7 +57,7 @@ export type ComposerProps = {
   /** `run.started.quota.state = over`. */
   quotaOver?: boolean;
   autoFocus?: boolean;
-  onSubmit(text: string): Promise<SubmitResult>;
+  onSubmit(text: string, attachmentIds?: string[]): Promise<SubmitResult>;
   onStop?(): void;
 };
 
@@ -91,6 +102,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     aria,
   } = useComposerSuggest(text, caret);
   const sendError = useSendError(text);
+  const att = useAttachments();
   const { clear: clearSendError } = sendError;
   const change = useCallback(
     (value: string, nextCaret = value.length) => {
@@ -118,24 +130,26 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   );
 
   const send = useCallback(async () => {
-    if (!canSend(text, locked, submitting) || sendError.cooling) return;
+    if (!canSend(text, locked, submitting) || sendError.cooling || att.busy) return;
     setSubmitting(true);
     try {
       const sent = text.trim();
-      const r = await onSubmit(sent);
+      const r = await onSubmit(sent, att.ids);
       const out = submitOutcome(r);
       if (out.kind === "sent") {
         draft.clear();
         setText("");
         setCaret(0);
         sendError.clear();
+        att.clear();
       } else if (out.kind === "error") {
         sendError.set(out.error, sent);
+        att.onSendError(out.error);
       }
     } finally {
       setSubmitting(false);
     }
-  }, [text, locked, submitting, onSubmit, draft, sendError]);
+  }, [text, locked, submitting, onSubmit, draft, sendError, att]);
 
   const pickCommand = useCallback(
     (index?: number) => {
@@ -157,7 +171,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     stop: onStop,
   });
 
-  const enabled = canSend(text, locked, submitting) && !sendError.cooling;
+  const enabled = canSend(text, locked, submitting) && !sendError.cooling && !att.busy;
   const errorView = sendError.view;
   return (
     <div className="w-full">
@@ -181,7 +195,12 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           {t("composer.newHint")}
         </p>
       )}
-      <div className="flex items-end gap-2 rounded-xl border border-input bg-background p-2 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
+      <AttachBar chips={att.chips} onRemove={att.remove} onRetry={att.retry} />
+      <div
+        {...att.dropProps}
+        className="flex items-end gap-2 rounded-xl border border-input bg-background p-2 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
+      >
+        <AttachButton onPick={att.add} />
         <textarea
           ref={area}
           rows={1}
@@ -204,7 +223,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             type="button"
             size="icon"
             aria-label={t(flow ? "composer.sendInFlow" : "composer.send")}
-            title={locked ? t("composer.busy") : undefined}
+            title={sendTitle(t, locked, att.busy)}
             disabled={!enabled}
             onClick={() => void send()}
           >

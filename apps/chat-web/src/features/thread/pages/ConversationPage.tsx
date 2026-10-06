@@ -33,8 +33,8 @@ function useMainComposer(convId: string, onSent: () => void) {
   );
   const running = active?.origin === "main";
   const onSubmit = useCallback(
-    async (text: string) => {
-      const out = await send.sendMain(convId, text);
+    async (text: string, attachmentIds?: string[]) => {
+      const out = await send.sendMain(convId, text, attachmentIds);
       if (out.ok) onSent();
       return out;
     },

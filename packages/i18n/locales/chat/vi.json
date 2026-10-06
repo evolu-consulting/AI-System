@@ -1,5 +1,7 @@
 {
-  "common": { "close": "Đóng" },
+  "common": {
+    "close": "Đóng"
+  },
   "login": {
     "title": "Đăng nhập",
     "subtitle": "Dùng mã công ty và tài khoản do quản trị viên cấp.",
@@ -16,7 +18,9 @@
     "required": "Không được để trống",
     "tenantRemembered": "Được nhớ cho lần đăng nhập sau"
   },
-  "session": { "expired": "Phiên đã hết hạn" },
+  "session": {
+    "expired": "Phiên đã hết hạn"
+  },
   "shell": {
     "brand": "AI Chat · {{tenant}}",
     "newChat": "Hội thoại mới",
@@ -38,7 +42,11 @@
     "retry": "Thử lại",
     "noMatch": "Không có hội thoại khớp \"{{q}}\""
   },
-  "item": { "more": "Thao tác khác", "rename": "Đổi tên", "delete": "Xoá" },
+  "item": {
+    "more": "Thao tác khác",
+    "rename": "Đổi tên",
+    "delete": "Xoá"
+  },
   "rename": {
     "title": "Đổi tên hội thoại",
     "label": "Tên hội thoại",
@@ -55,10 +63,22 @@
     "greeting": "Chào {{name}}, hôm nay cần gì?",
     "hint": "Mỗi câu hỏi mở một flow riêng. Muốn hỏi tiếp việc nào, bấm Trả lời tiếp trên flow đó.",
     "cards": {
-      "email": { "title": "Soạn email", "prompt": "Soạn email báo giá gửi khách hàng" },
-      "summary": { "title": "Tóm tắt văn bản", "prompt": "Tóm tắt 3 ý chính của một biên bản họp" },
-      "translate": { "title": "Dịch", "prompt": "Dịch một đoạn hợp đồng sang tiếng Anh" },
-      "outline": { "title": "Lên dàn ý", "prompt": "Lên dàn ý báo cáo tháng cho phòng kinh doanh" }
+      "email": {
+        "title": "Soạn email",
+        "prompt": "Soạn email báo giá gửi khách hàng"
+      },
+      "summary": {
+        "title": "Tóm tắt văn bản",
+        "prompt": "Tóm tắt 3 ý chính của một biên bản họp"
+      },
+      "translate": {
+        "title": "Dịch",
+        "prompt": "Dịch một đoạn hợp đồng sang tiếng Anh"
+      },
+      "outline": {
+        "title": "Lên dàn ý",
+        "prompt": "Lên dàn ý báo cáo tháng cho phòng kinh doanh"
+      }
     },
     "cardsHint": "Bấm một thẻ để điền sẵn vào ô nhập. Chưa gửi ngay."
   },
@@ -85,7 +105,11 @@
     "cold": "Đang mở lại flow, lần đầu có thể mất vài giây…",
     "noClose": "Flow không có nút đóng. Rảnh lâu thì hệ thống tự nghỉ, chat lại thì tự mở lại đủ ngữ cảnh."
   },
-  "answer": { "who": "Consultant", "copy": "Copy", "copied": "Đã sao chép" },
+  "answer": {
+    "who": "Consultant",
+    "copy": "Copy",
+    "copied": "Đã sao chép"
+  },
   "steps": {
     "summary": "{{count}} bước · {{seconds}}s",
     "toggle": "Xem các bước",
@@ -109,7 +133,10 @@
     "quotaOver": "Công ty bạn đã dùng vượt hạn mức tháng này. Bạn vẫn dùng bình thường.",
     "quotaDismiss": "Ẩn nhắc"
   },
-  "run": { "cancelled": "Đã dừng", "rerun": "Chạy lại" },
+  "run": {
+    "cancelled": "Đã dừng",
+    "rerun": "Chạy lại"
+  },
   "menu": {
     "commands": "Lệnh",
     "agents": "Agent",
@@ -131,18 +158,29 @@
     "cmdInvalid": "Giá trị không hợp lệ: {{invalid}}.",
     "tagOnly": "Hãy nhập nội dung sau @{{tag}}.",
     "agentNotFound": "Không tìm thấy agent @{{tag}}.",
-    "tooManyRuns": "Bạn đang có quá nhiều câu trả lời đang chạy. Thử lại sau {{n}} giây."
+    "tooManyRuns": "Bạn đang có quá nhiều câu trả lời đang chạy. Thử lại sau {{n}} giây.",
+    "attachmentNotFound": "Một số tệp không còn. Hãy xoá và đính kèm lại."
   },
   "errors": {
     "ALL_PROVIDERS_EXHAUSTED": {
       "title": "Hệ thống đang quá tải",
       "body": "AI tạm hết lượt dùng. Hãy thử lại sau ít phút."
     },
-    "TIMEOUT": { "title": "Hệ thống xử lý quá lâu" },
-    "UPSTREAM_ERROR": { "title": "Dịch vụ AI đang gặp sự cố" },
-    "BUDGET_EXCEEDED": { "title": "Yêu cầu quá lớn để xử lý một lần. Hãy chia nhỏ ra" },
-    "NOT_CONFIGURED": { "title": "Tính năng này chưa được cấu hình xong" },
-    "unknown": { "title": "Có lỗi khi xử lý yêu cầu" },
+    "TIMEOUT": {
+      "title": "Hệ thống xử lý quá lâu"
+    },
+    "UPSTREAM_ERROR": {
+      "title": "Dịch vụ AI đang gặp sự cố"
+    },
+    "BUDGET_EXCEEDED": {
+      "title": "Yêu cầu quá lớn để xử lý một lần. Hãy chia nhỏ ra"
+    },
+    "NOT_CONFIGURED": {
+      "title": "Tính năng này chưa được cấu hình xong"
+    },
+    "unknown": {
+      "title": "Có lỗi khi xử lý yêu cầu"
+    },
     "retry": "Thử lại",
     "report": "Báo admin",
     "meta": "{{code}} · run {{runId}}"
@@ -171,5 +209,27 @@
     "renameFailed": "Không đổi được tên. Thử lại sau.",
     "deleteFailed": "Không xoá được hội thoại. Thử lại sau.",
     "sendFailed": "Không gửi được tin. Nội dung vẫn còn trong ô nhập."
+  },
+  "attach": {
+    "button": "Đính kèm tệp",
+    "list": "Tệp đính kèm",
+    "messageList": "Tệp trong tin",
+    "uploading": "Đang tải lên…",
+    "remove": "Xoá {{filename}}",
+    "retry": "Thử lại",
+    "unavailable": "Tệp đã bị xoá",
+    "download": "Tải {{filename}}",
+    "waitUpload": "Chờ tải tệp xong",
+    "downloadFailed": "Không tải được tệp.",
+    "err": {
+      "tooLarge": "Tệp lớn hơn 20 MB.",
+      "type": "Loại tệp không được hỗ trợ.",
+      "quota": "Đã hết dung lượng lưu tệp của công ty. Liên hệ quản trị.",
+      "empty": "Tệp rỗng.",
+      "name": "Tên tệp quá dài.",
+      "max": "Tối đa 10 tệp mỗi tin.",
+      "failed": "Không tải lên được. Thử lại.",
+      "missing": "Tệp không còn. Hãy xoá và đính kèm lại."
+    }
   }
 }

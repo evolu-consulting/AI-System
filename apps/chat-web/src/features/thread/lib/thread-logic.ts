@@ -1,5 +1,5 @@
 // CHAT-AC-05..07, CHAT-AC-20 · helper thuần của luồng chính: footer khối flow, autoscroll, run chờ flow, khi nào bỏ run.
-import type { Ask, Flow, Message, Responder } from "@ai/contracts/chat";
+import type { Ask, AttachmentRef, Flow, Message, Responder } from "@ai/contracts/chat";
 import { isTerminal, type RunPhase, type RunState } from "~/features/run/lib/reducer";
 import { recallResponder } from "~/features/run/lib/responder-cache";
 
@@ -76,6 +76,8 @@ export type AnswerView = {
   askAnswered?: boolean;
   /** HUB-FR-91 · agent trả lời (run `direct`); vắng → nhãn mặc định "Consultant". */
   responder?: Responder;
+  /** HUB-FR-44 · file agent tạo (`Message.attachments`). */
+  attachments?: AttachmentRef[];
 };
 
 export type AnswerStep = {
@@ -139,5 +141,6 @@ export function answerFromMessage(
     context: extra.context ?? null,
     askAnswered: extra.askAnswered ?? false,
     ...(responder ? { responder } : {}),
+    ...(m.attachments ? { attachments: m.attachments } : {}),
   };
 }

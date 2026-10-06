@@ -1,8 +1,10 @@
 // CHAT-AC-05, CHAT-AC-06 · khối flow ở luồng chính: câu hỏi đầu (phải) + Consultant + câu trả lời đầu (stream ngay trong khối) + footer.
+import type { AttachmentRef } from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
 import { AnswerBody } from "~/features/answer/components/AnswerBody";
 import { ColdResumeNote } from "~/features/answer/components/ColdResumeNote";
+import { AttachmentList } from "~/features/attachments/components/AttachmentList";
 import { cn } from "~/lib/utils";
 import type { AnswerView } from "../lib/thread-logic";
 import { AnswerExtras } from "./AnswerExtras";
@@ -14,6 +16,8 @@ export type FlowBlockProps = {
   /** Run đang chạy trong khối (`data-run-id` cho e2e đối chiếu cancel). */
   runId: string | null;
   question: string;
+  /** HUB-FR-44 · file người dùng gửi kèm câu hỏi. */
+  questionAttachments?: AttachmentRef[];
   /** null → chưa có câu trả lời. */
   answer: AnswerView | null;
   footer: FlowFooterProps;
@@ -44,11 +48,20 @@ export function Answer({ answer }: { answer: AnswerView }) {
     >
       {answer.text !== "" && <AnswerBody content={answer.text} streaming={answer.streaming} />}
       {answer.streaming && <StreamingCursor />}
+      <AttachmentList items={answer.attachments} />
     </div>
   );
 }
 
-export function FlowBlock({ title, flowId, runId, question, answer, footer }: FlowBlockProps) {
+export function FlowBlock({
+  title,
+  flowId,
+  runId,
+  question,
+  questionAttachments,
+  answer,
+  footer,
+}: FlowBlockProps) {
   const { t } = useTranslation();
   const live = answer?.streaming ?? false;
   return (
@@ -64,6 +77,7 @@ export function FlowBlock({ title, flowId, runId, question, answer, footer }: Fl
       <div className="max-w-[80%] self-end whitespace-pre-wrap break-words rounded-xl bg-row-divider px-3.5 py-2.5 leading-normal">
         {question}
       </div>
+      <AttachmentList items={questionAttachments} />
       {answer && (
         <>
           <ConsultantAvatar name={answer.responder?.name} />

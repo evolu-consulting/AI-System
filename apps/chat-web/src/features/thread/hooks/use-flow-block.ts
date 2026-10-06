@@ -49,6 +49,7 @@ export function useFlowBlock(convId: string, flow: Flow, openFlowId?: string): F
     flowId: flow.id,
     runId: live ? run.runId : null,
     question: flow.preview.question.content,
+    questionAttachments: flow.preview.question.attachments,
     answer,
     footer: {
       copyValue: answer?.streaming ? "" : (answer?.text ?? ""),

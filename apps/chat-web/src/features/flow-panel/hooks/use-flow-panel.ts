@@ -14,7 +14,8 @@ function usePanelComposer(convId: string, flow: Flow) {
   const running = active !== undefined && active.flowId === flow.id;
   const { id, last_active_at } = flow;
   const onSubmit = useCallback(
-    (text: string): Promise<SubmitResult> => send.sendInFlow(convId, { id, last_active_at }, text),
+    (text: string, attachmentIds?: string[]): Promise<SubmitResult> =>
+      send.sendInFlow(convId, { id, last_active_at }, text, attachmentIds),
     [send, convId, id, last_active_at],
   );
   return {

@@ -12,9 +12,14 @@ export type FlowRef = { id: string; last_active_at: string };
 
 export type RunActions = {
   /** Ô chính: không `flow_id` → Hub tạo flow mới. */
-  sendMain(convId: string, content: string): Promise<SendOutcome>;
+  sendMain(convId: string, content: string, attachmentIds?: string[]): Promise<SendOutcome>;
   /** Khung flow / chip ask: cùng flow; flow nghỉ (`isFlowIdle`) → pha `cold` tới `run.started`. */
-  sendInFlow(convId: string, flow: FlowRef, content: string): Promise<SendOutcome>;
+  sendInFlow(
+    convId: string,
+    flow: FlowRef,
+    content: string,
+    attachmentIds?: string[],
+  ): Promise<SendOutcome>;
   /** "Chạy lại" / "Thử lại" của câu trả lời lỗi. */
   rerun(run: RunState, flowLastActiveAt?: string): Promise<SendOutcome>;
   /** ■ / Esc. */
@@ -34,14 +39,16 @@ export function useSend(): RunActions {
       return o;
     };
     return {
-      sendMain: (convId, content) =>
-        runDriver.send({ convId, origin: "main", request: { content } }).then(report),
-      sendInFlow: (convId, flow, content) =>
+      sendMain: (convId, content, attachmentIds) =>
+        runDriver
+          .send({ convId, origin: "main", request: { content, attachmentIds } })
+          .then(report),
+      sendInFlow: (convId, flow, content, attachmentIds) =>
         runDriver
           .send({
             convId,
             origin: "flow",
-            request: { content, flowId: flow.id },
+            request: { content, flowId: flow.id, attachmentIds },
             flowLastActiveAt: flow.last_active_at,
           })
           .then(report),

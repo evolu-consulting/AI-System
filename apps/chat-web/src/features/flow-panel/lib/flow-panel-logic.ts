@@ -1,5 +1,5 @@
 // CHAT-AC-14..17 · helper thuần của khung flow: ghép trang E11, run chưa có trong E11, khi nào bỏ run, kéo sheet.
-import type { ChatPage, Flow, Message } from "@ai/contracts/chat";
+import type { AttachmentRef, ChatPage, Flow, Message } from "@ai/contracts/chat";
 import { isTerminal, type RunState } from "~/features/run/lib/reducer";
 import { type AnswerView, answerFromMessage } from "~/features/thread/lib/thread-logic";
 
@@ -47,7 +47,7 @@ export function dragShouldClose(dy: number): boolean {
 }
 
 export type PanelItem =
-  | { kind: "question"; id: string; text: string }
+  | { kind: "question"; id: string; text: string; attachments?: AttachmentRef[] }
   | { kind: "answer"; id: string; answer: AnswerView };
 
 /**
@@ -63,7 +63,12 @@ export function buildItems(
   return messages.map((m, i) => {
     if (m.role === "user") {
       lastQuestion = m.content;
-      return { kind: "question", id: m.id, text: m.content };
+      return {
+        kind: "question",
+        id: m.id,
+        text: m.content,
+        ...(m.attachments ? { attachments: m.attachments } : {}),
+      };
     }
     const answer = answerFromMessage(m, {
       context: { ...ctx, content: lastQuestion, origin: "flow" },
