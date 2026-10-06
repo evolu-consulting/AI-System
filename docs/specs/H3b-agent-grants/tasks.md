@@ -14,7 +14,7 @@ Viết tắt: `plan` = `plan.md`, `db` = `plan-db.md`, `sd` = `spec-decisions.md
 |---|---|---|---|---|---|---|---|---|
 | **Chuẩn bị** | | | | | | | | |
 | P0 | PLAN BE: `plan.md`, `plan-db.md`, spec §3–4, `sd` PL1–PL14, `tasks.md` | backend-lead | cao | `spec`, `sd`, `ac` | `docs/specs/H3b-agent-grants/*` | — | `wc -c` ≤ trần | [x] |
-| QW-T | qc test-plan theo `ac` + `plan` | qc | cao | `ac`, `plan §2–§6`, `db §1, §3, §5` | `docs/specs/H3b-agent-grants/test-plan*.md` | P0 | — | [ ] |
+| QW-T | qc test-plan theo `ac` + `plan` | qc | cao | `ac`, `plan §2–§6`, `db §1, §3, §5` | `docs/specs/H3b-agent-grants/test-plan*.md` | P0 | — | [x] |
 | R | spec-readiness → Gate (Luật 2b; U6 đã chốt Q-U1…U4) | spec-readiness | — | thư mục spec | `readiness.md`, `docs/specs/H3b-gate.md` | QW-T | READY | [ ] |
 | **DB · contract · khung** | | | | | | | | |
 | D1 | Migration `0009_h3b_agent_grants.sql` (bảng `hub.audit_log` + trigger append-only + 3 index, `usage_logs_run_idx`, GRANT `INSERT, DELETE agent_grants` / `UPDATE (hub_config_version) config_meta` / `SELECT, INSERT audit_log` cho `hub_rw`) + `_journal.json` + `schema/hub.ts` `hubAuditLog` + comment `hub-readonly.ts` + test D1 | backend-lead | cao | `db §1`, `plan §1 P3` | `packages/db/migrations-hub/0009_h3b_agent_grants.sql`, `packages/db/migrations-hub/meta/_journal.json`, `packages/db/src/schema/{hub,hub-readonly}.ts`, `packages/db/src/hub-h3b.int.test.ts` | Gate | `bun run test:int packages/db` · H1 `db.int` (A48–A51), `ADM-NFR-06/migrate.int`, M3 `db-rls.int`, H2a/H2b/H2c/H3a `db.int` khoá xanh · TS xong | [ ] |
