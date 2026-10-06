@@ -67,3 +67,58 @@ spec 22 187 · plan 29 261 · plan-frontend 23 981 · test-plan 17 771 · copy 1
 
 ## Chưa kiểm
 Canvas `*.dc.html` (đối chiếu nhãn e2e ↔ artboard); nội dung test đã viết ở `tests/acceptance/H4a/`, `e2e/studio/` (chỉ đọc test-plan); `conflict.*`/`auth.login.totp.*` trong `packages/i18n/locales` chỉ xác nhận có file.
+
+---
+
+## Lần 2 · 2026-10-06 · spec-readiness (Opus) · **READY**
+
+## Kết luận: READY
+Phạm vi đã kiểm: `git diff fca5271..HEAD` (4ed0fc6, 0f6a53c, afffca3, 7509496) trên `docs/specs/H4a-studio-shell-agents/` (6 file đổi), `ba-agent-hub.md` §9.3, `CHANGE-REQUESTS.md` CR-045, `e2e/studio/*` + 18 lỗ hổng mở của lần 1 · mã yêu cầu: HUB-FR-72/60/61/62/64/69/90. Đối chiếu thêm: `packages/i18n/locales/vi.json` (`conflict.*` :1180–1183, `auth.login.totp.*` :78–86 — copy chép đúng nguyên văn), `.dependency-cruiser.cjs` (có thật), tasks B2 (contract `common.ts`).
+
+Quyết định người dùng 2026-10-06 đã ghi vào spec §9 (U1–U4), plan §11, plan-frontend D4/D8/D12/§12 → mọi Q/QB/QF/G đóng theo luật strict #3. Không còn Chặn/Cao.
+
+### Đóng từ lần 1
+K1 (spec R03/R07 + plan-frontend §4 + copy "/400" theo DB) · K2 (R07, P9, plan §2.2, D12: chỉ `agentic-cli`, hằng ở `@ai/contracts/studio`) · K3 (`limit` = 200 ở spec §3 + `AgentListQuerySchema`; `truncated` → Alert `agents.truncated` + lọc `?q=` debounce 300 ms) · K4 (U3; tasks F1 có `packages/i18n/package.json`) · H1 (plan-frontend §6 hàng Xung đột + copy `conflict.*`) · H2 (§10 E5/E6/E8 theo plan §12; copy thêm 5 mã) · H3 (plan §4.1 G3/G4/G5/G7) · H4 (copy `login.totp.*` + bảng map lỗi đăng nhập) · H5 (spec §7 theo D3/D4) · M1 (Sheet điền sẵn từ bản mặc định) · M2 (spec §8, tasks QC1/I1, test-plan §6: `bun run e2e:studio`, `done-h4a.ts`) · M3 (E12–E17, E13b; 19 ca e2e) · L1 · L2 (BA §9.3 đã áp) · L4 (R02) · L5 (QC1).
+
+## Lỗ hổng
+| # | Mức | Mục | Vị trí | Vấn đề | Mặc định (sửa trong BUILD, không chặn) |
+|---|---|---|---|---|---|
+| N1 | Trung | Kích thước | `plan.md` 30 723 B > 30 720 B | Vượt trần 3 byte (WORKFLOW Kỷ luật token #5) | backend-lead rút ≥ 3 byte ở lần sửa plan kế tiếp (vd. bỏ một chú thích trong §11); không tách phụ lục |
+| N2 | Trung | H/I | tasks B6 "export `ORCHESTRATOR_RUNTIMES` từ `config.rules.ts`" ↔ tasks đầu bảng, plan P9/§2.2, D12 (định nghĩa ở `@ai/contracts/studio` `common.ts`) | Câu task cũ chưa sửa | Theo P9: B2 định nghĩa hằng trong `packages/contracts/src/studio/common.ts`; B6 chỉ cho `config.rules.ts` import lại (không export từ hub) |
+| N3 | Trung | E/J | plan-frontend §6 hàng Agents/Orchestrator/Đăng nhập ↔ e2e `agents-menu.studio.ts`:38–63, `auth.studio.ts`:94, `orchestrator.studio.ts`:30–31 | 4 nhãn qc tự đặt chưa có ở §6: ConfirmDialog "Đặt làm Orchestrator" (`alertdialog`, nút "Huỷ"/"Đặt làm Orchestrator"); menuitem cho agent không đủ điều kiện ẩn hoặc disabled; TOTP sai mã hiện `alert`; option `combobox "Tenant"` chứa key tenant | frontend-lead chấp nhận đúng 4 mặc định qc và thêm vào §6 ở F3/F6/F2: ConfirmDialog = `alertdialog` + "Huỷ"/"Đặt làm Orchestrator"; menuitem **ẩn** khi agent tắt hoặc runtime ∉ `ORCHESTRATOR_RUNTIMES`; `login.totp.wrong` trong `role="alert"`; nhãn option "{name} ({key})" |
+| N4 | Thấp | I | test-plan §4 tiêu đề "Q10 … còn chờ" | Sai: Q10 đã chốt qua U3 | qc sửa chữ: "Q10 chốt qua U3" |
+| N5 | Thấp | I | spec §3 hàng `GET /studio/api/me` `Me {user_id, tenant_id, role, hub_config_version}` ↔ R02/plan §2.2 `MeSchema` | Liệt kê thiếu trường | Theo `MeSchema` (plan §2.2) |
+| N6 | Thấp | I | ui-agent-studio §13 (CR-045 mục 2) | Chưa sửa theo DB/contract | Áp ở I3 như CR-045 ghi |
+| N7 | Thấp | H | tasks F1 "file cấu hình depcruise gốc" | Không nêu tên file | `.dependency-cruiser.cjs` |
+
+## Mâu thuẫn giữa tài liệu
+- tasks B6 ↔ plan P9/D12 → giữ P9 (N2).
+- test-plan §4 "Q10 còn chờ" ↔ spec §9 U3 → giữ U3 (N4).
+- spec §3 `Me` ↔ `MeSchema` → giữ `MeSchema` (N5).
+
+## Câu hỏi cho người dùng
+Không có câu hỏi mới.
+
+## Checklist
+| Mục | Kết quả | Bằng chứng |
+|---|---|---|
+| A Phạm vi | Đạt | spec §1; R02 trỏ `MeSchema` |
+| B Contract | Đạt | spec §3 `limit = 200`; plan §2.3, §12; copy bảng lỗi (KEY_TAKEN, NOT_ORCHESTRATABLE, DEFAULT_PROTECTED, TENANT_INACTIVE, INTERNAL_ERROR) |
+| C Dữ liệu | Đạt | không đổi từ lần 1 |
+| D Nghiệp vụ | Đạt | spec R03/R07 = §3 = plan P8/P9 |
+| E UI | Đạt (N3 Trung) | plan-frontend §3 (truncated, Sheet M1), §6 Xung đột |
+| F Kiểm chứng | Đạt | test-plan §3 (AC-02, AC-08 + E12–E17), §6 bảng 7 bước |
+| G Phụ thuộc & môi trường | Đạt | spec §7 env + giá trị dev; U3, U4 |
+| H2 Vai trò | Đạt | plan §4.1 chữ ký đủ (G3–G7) |
+| H Task | Đạt (N2, N7) | tasks F1 (U3 file), QC1, I1 có file |
+| I Nhất quán | Đạt (N4–N6 Thấp) | BA §9.3, CR-045 |
+| J Độ chính xác | Đạt | copy `login.totp.*`, map lỗi đăng nhập, `conflict.*` nguyên văn |
+
+## Quét từ mơ hồ
+6 kết quả trên dòng thêm mới; vô hại ("nên" = "vì vậy"; "…" trong danh sách `path` ví dụ — luật map theo `path` tổng quát; tiêu đề test-plan §4 ghi ở N4).
+
+## Kích thước
+spec 24 479 · plan **30 723** (N1) · plan-frontend 25 122 · plan-frontend-copy 18 609 · test-plan 19 136 · tasks 8 638 B.
+
+## Chưa kiểm
+Canvas `*.dc.html`; thân test `tests/acceptance/H4a/` (chỉ đối chiếu nhãn e2e ở `e2e/studio/` với plan-frontend §6).
