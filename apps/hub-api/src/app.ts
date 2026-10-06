@@ -23,7 +23,7 @@ import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
-import type { HubAuditWriter } from "./lib/hub-audit";
+import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
 import { type Logger, logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
 import { closeUnreadBody } from "./lib/unread-body";
@@ -35,6 +35,8 @@ import { cancelRoutes } from "./modules/runs/close/cancel.routes";
 import { CancelService } from "./modules/runs/close/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
 import { type RunDriver, RunService } from "./modules/runs/runs.service";
+import { traceRoutes } from "./modules/runs/trace/trace.routes";
+import { TraceService } from "./modules/runs/trace/trace.service";
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
 export type AppVars = {
@@ -143,6 +145,11 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   const h2a = config && mountH2a(app, config, drivers);
   const h2b = config && mountH2b(app, config);
   if (config) mountH3b(app, { db: deps.db, config, hubAudit: deps.hubAudit });
+  // H3b §5.4: trace chỉ cần db (không redis/config); `/runs/:id/trace` không đụng `GET /runs/:id` (R20).
+  app.route(
+    "/runs",
+    traceRoutes(new TraceService({ db: deps.db, audit: deps.hubAudit ?? dbHubAudit })),
+  );
   if (!deps.redis || !config || !h2a || !h2b) {
     app.route("/conversations", conversationRoutes(deps.db));
     return;

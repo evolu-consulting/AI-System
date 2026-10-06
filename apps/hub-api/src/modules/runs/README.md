@@ -4,7 +4,7 @@ Tạo run + SSE theo contract chat C1 (`@ai/contracts/chat`, C1 plan §2.4–2.5
 H2b (spec H2b-routing R08–R18): run 3 loại `command`/`orchestrated`/`direct`; `direct` ghi `agent_id` + `responder_key/name` (chốt lúc tạo run) và
 kiểm lại agent trên ảnh của run (`mention.service.directOnSnapshot`, RV1-H2); `orchestrated` ghi `orchestrator_tenant_id` khi dùng bản tenant.
 
-Thư mục con: `sse/` (hai đầu stream `sse:<id>`), `close/` (đóng run bởi bên không phải chủ: huỷ, lease, sweeper).
+Thư mục con: `sse/` (hai đầu stream `sse:<id>`), `close/` (đóng run bởi bên không phải chủ: huỷ, lease, sweeper), `trace/` (H3b HUB-FR-52/87 `GET /runs/:id/trace`: chủ run scope `user` không audit · `traceAccess` trước scope `system` · platform_admin audit `view_trace` fail-closed · `redactTraceDetail`; mount ở `app.ts` `mountProtected`).
 
 | File | Vai trò |
 |---|---|
