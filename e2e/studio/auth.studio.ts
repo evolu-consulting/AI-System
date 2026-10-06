@@ -1,8 +1,8 @@
 // HUB-FR-72 · H4a-AC-01, AC-02 · H4a-R01, R02, R14 · plan-frontend §2, §6 · test-plan H4a §3 E01–E05: đăng nhập Studio,
 // trang "không có quyền" cho role khác (không gọi API cấu hình), khung + menu (mục chưa làm "Sắp có", badge hub config),
-// URL đích giữ qua đăng nhập (`next`), 404.
+// URL đích giữ qua đăng nhập (`next`), 404; E14 bước TOTP (QF2).
 import { expect, test } from "@playwright/test";
-import { login, mockStudio, openAuthed } from "./_support";
+import { login, mockStudio, openAuthed, TOTP_CODE } from "./_support";
 
 test("HUB-FR-72 · E01 · chưa phiên → /login?next=; đăng nhập platform_admin → về đúng trang đích + badge `hub config v7` [H4a-R14 · H4a-AC-02]", async ({
   page,
@@ -76,4 +76,26 @@ test('HUB-FR-72 · E05 · `/studio/` → /agents; đường dẫn lạ → "Khô
   await expect(page.getByRole("heading", { name: "Không tìm thấy trang" })).toBeVisible();
   await page.getByRole("link", { name: "Về Agents" }).click();
   await expect(page).toHaveURL(/\/studio\/agents/);
+});
+
+test("HUB-FR-72 · E14 · tài khoản bật 2FA: sau mật khẩu hiện bước `Mã xác thực`; mã sai ⇒ alert, ở lại; mã đúng ⇒ vào đúng trang đích [H4a-QF2 · H4a-R14]", async ({
+  page,
+}) => {
+  await mockStudio(page, { totp: true });
+  await page.goto("/studio/agents");
+  await expect(page).toHaveURL(/\/studio\/login\?next=/);
+  await login(page);
+  const code = page.getByRole("textbox", { name: "Mã xác thực" });
+  await expect(code).toBeVisible();
+  await expect(page).toHaveURL(/\/studio\/login/);
+
+  await code.fill("000000");
+  await page.getByRole("button", { name: "Xác nhận" }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page).toHaveURL(/\/studio\/login/);
+
+  await code.fill(TOTP_CODE);
+  await page.getByRole("button", { name: "Xác nhận" }).click();
+  await expect(page).toHaveURL(/\/studio\/agents$/);
+  await expect(page.getByRole("heading", { name: "Agents", exact: true })).toBeVisible();
 });

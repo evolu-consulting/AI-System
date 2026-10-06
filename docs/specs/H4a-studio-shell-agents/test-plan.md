@@ -36,13 +36,13 @@ E2E: `e2e/studio/_support.ts` — kho trong bộ nhớ (4 agent: `orchestrator` 
 | AC | Given / When / Then (chi tiết qc) | Loại · file | Ca |
 |---|---|---|---|
 | H4a-AC-01 | Không token ⇒ 401 `AUTH_EXPIRED` ở **18** endpoint; `tadmin`/`lan`/`an` ⇒ 403 `FORBIDDEN` ở 18 endpoint + 0 ghi; 403 trước parse (body/query sai vẫn 403); UI role khác ⇒ trang "Bạn không có quyền vào Agent Studio", chỉ gọi `GET /me` | A `role-read` · E `auth` · R `orchestrator-overlap` | A01, A02×3, A03 · E03×2 · R33 |
-| H4a-AC-02 | `padmin` đăng nhập ⇒ danh sách agent seed (total = DB), runtime/profile đúng, badge Orchestrator (`orchestrator_of`), "Chưa cấp" khi 0 tenant, không cột 24 giờ; khung + menu + badge `hub config vN`; `/me` | A `role-read` · E `auth`, `agents` | A04–A10 · E01, E04, E05, E06, E07 |
+| H4a-AC-02 | `padmin` đăng nhập ⇒ danh sách agent seed (total = DB), runtime/profile đúng, badge Orchestrator (`orchestrator_of`), "Chưa cấp" khi 0 tenant, không cột 24 giờ; khung + menu + badge `hub config vN`; `/me` | A `role-read` · E `auth`, `agents` | A04–A10 · E01, E04, E05, E06, E07, E12, E14, E15, E16 |
 | H4a-AC-03 | POST llm ⇒ 201, có trong list, audit +1 (create, before null, tenant null, actor padmin, cùng version), `hub_config_version`+1, NOTIFY ≤ 1 s; thiếu `name.en` ⇒ 400 `VALIDATION_ERROR` có `issues[].path = name.en` + 0 ghi; biên QB2 | A `agents-write` · R `contracts-h4a` | A20–A26 · R43–R45 |
 | H4a-AC-04 | Hai bản cùng `version 1`: bản 1 ⇒ 200 v2; bản 2 ⇒ 409 `VERSION_CONFLICT {current = bản 1, updated_at}`, DB giữ bản 1; UI tab 2 ⇒ `alertdialog "Có người vừa lưu bản mới hơn"` + "Tải bản mới" nạp bản tab 1 | A `agents-write`, `orchestrator` · E `agents` | A37, A40, A53, A60, A62 · E10 |
 | H4a-AC-05 | workflow tắt ⇒ 400 `INVALID_REFERENCE{workflow_ids, disabled}`; không tồn tại ⇒ `not_found` + `ids`; dify-workflow 2 workflow ⇒ 400; app sai ⇒ `app_type`; không input ⇒ `no_input`; hợp lệ ⇒ `agent_workflows` có dòng; picker/`GET /workflows` không có `tat` | A `agents-write`, `role-read` · R `agents-rules` · E `agents` | A12, A13, A24, A28–A32 · R01–R05 · E09 |
 | H4a-AC-06 | Bash không ack / ack false ⇒ 422 `BASH_ACK_REQUIRED` + 0 ghi; ack ⇒ 201 + audit `summary.bash_ack`; sửa giữ Bash không cần ack, thêm Bash cần ack; UI: chưa tick xác nhận không gửi, tick ⇒ POST có `bash_ack: true` | A `agents-write` · R `agents-rules` · E `agents` | A33–A35 · R06–R08 · E08 |
 | H4a-AC-07 | Tắt (PATCH/PUT) hoặc xoá Orchestrator mặc định/tenant ⇒ 409 `AGENT_IN_USE_AS_ORCHESTRATOR{scopes}`; xoá agent có run_steps ở tenant khác actor ⇒ 409 `AGENT_HAS_HISTORY` (R-K2); còn entitlement/grant ⇒ `AGENT_HAS_ACCESS{entitlements, grants}`; version sai đi trước | A `agents-write`, `orchestrator` · R `agents-rules` | A42–A48, A61 · R09–R13 |
-| H4a-AC-08 | POST tenant acme ⇒ 201; lần 2 ⇒ 409 `ORCHESTRATOR_EXISTS`; xoá mặc định ⇒ 409 `ORCHESTRATOR_DEFAULT_PROTECTED`; run mới của `lan` (acme) ≤ 5 s dùng agent bản tenant + `runs.orchestrator_tenant_id = acme`; `gam` (gamma) dùng mặc định, `an` (beta) dùng bản beta | A `orchestrator`, `propagation` · R `orchestrator-overlap` | A54–A60, A62, A63, A64 · R30–R32 |
+| H4a-AC-08 | POST tenant acme ⇒ 201; lần 2 ⇒ 409 `ORCHESTRATOR_EXISTS`; xoá mặc định ⇒ 409 `ORCHESTRATOR_DEFAULT_PROTECTED`; run mới của `lan` (acme) ≤ 5 s dùng agent bản tenant + `runs.orchestrator_tenant_id = acme`; `gam` (gamma) dùng mặc định, `an` (beta) dùng bản beta | A `orchestrator`, `propagation` · R `orchestrator-overlap` · E `agents-menu`, `orchestrator` | A54–A60, A62, A63, A64 · R30–R32 · E13, E13b, E17 |
 | H4a-AC-09 | Run `gam` đang chạy (job 1 có prompt cũ) → PUT `system_prompt` Orchestrator mặc định qua Studio → run mới ≤ 5 s có prompt mới; job Orchestrator kế của run cũ vẫn prompt cũ (BR-06); đổi profile phản ánh ở GET; `/me.hub_config_version` theo kịp | A `propagation` | A65, A66 |
 | H4a-AC-10 | `/providers`: `has_secret` bool; không `secret_id`/`ciphertext`/`iv`/`last_error`/`last4` ở key nào, không id secret trong thân | A `role-read` | A17 |
 | H4a-AC-11 | `/studio` ⇒ 308 `/studio/`; `/studio/` + reload sâu (`/studio/agents/x`, `?tenant=new`, `/login`) ⇒ `index.html` no-cache; asset ⇒ immutable; file có đuôi thiếu ⇒ 404 JSON; header nosniff/DENY/no-referrer; chặn `..`; `/studio/api/*` không rơi vào fallback (R-K5); không dist ⇒ 404 JSON | A `static` | A67–A74 |
@@ -85,7 +85,7 @@ E2E: `e2e/studio/_support.ts` — kho trong bộ nhớ (4 agent: `orchestrator` 
 | `GET` 5 catalog | A01–A03 | A12–A17 | A18 |
 | `/studio/*` tĩnh | — | A67–A69, A71 | A70, A72–A74 |
 
-## 4. Ca phụ thuộc mặc định (Gate đổi ⇒ sửa đúng các ca này)
+## 4. Ca phụ thuộc mặc định — **đã chốt 2026-10-06** (người dùng chấp nhận Q1–Q9, QB1 chỉ `agentic-cli`, QB2–QB7, QF1–QF3, G1–G13; Q10 chưa nằm trong quyết định — còn chờ). Bảng giữ để biết ca nào sửa nếu sau này mở lại
 | Mặc định | Nội dung dùng trong test | Ca |
 |---|---|---|
 | **QB1** chỉ `agentic-cli` làm Orchestrator | `llm` ⇒ 409 `AGENT_NOT_ORCHESTRATABLE{runtime_unsupported}` | A50, A58, R27, R28 |
@@ -102,7 +102,9 @@ E2E: `e2e/studio/_support.ts` — kho trong bộ nhớ (4 agent: `orchestrator` 
 | Q7 lưu thẳng (không `ROUTING_REGRESSION`) | A38, A53, A65 |
 | Q8 codex/gemini lưu được + cảnh báo | A36, R16 |
 | QF1 validate theo contract (không theo số R03) | A24, E08 (câu "Xác nhận bạn hiểu rủi ro khi bật Bash") |
-| QF3 "Đặt làm Orchestrator" ở menu | chưa có ca e2e (§8 G12); vế API = A53 |
+| QF2 bước TOTP ở đăng nhập Studio | E14 |
+| QF3 "Đặt làm Orchestrator" ở menu | E13, E13b (vế API = A53) |
+| R12 Nhân bản (`?from=`) | E12 |
 
 ## 5. Rủi ro chập chờn
 | Rủi ro | Giảm |
@@ -112,13 +114,23 @@ E2E: `e2e/studio/_support.ts` — kho trong bộ nhớ (4 agent: `orchestrator` 
 | Run còn chạy giữa ca | `afterEach settleRuns` (H2b) |
 | e2e build studio-web lâu | `timeout 180 s` webServer; `workers: 1` |
 
-## 6. Lệnh — đề xuất `bun run done:h4a`
-Mẫu `done:h3b` = script gốc `"done:h3b": "bun --env-file=.env.local tools/scripts/src/done-h3b.ts"`. Đề xuất (qc làm ở I1 theo plan §9 — **chưa thêm** vào `package.json` gốc vì cần file `tools/scripts/src/done-h4a.ts` ngoài phạm vi sửa của qc ở WRITE):
+## 6. Lệnh xong mốc — `bun run done:h4a` (thống nhất, readiness M2)
+Một nguồn duy nhất cho spec §8 / tasks / test-plan: lệnh e2e là **`bun run e2e:studio`** (không dùng `bunx playwright test studio`). Việc thêm file/script do task **I1** (cột File: `tools/scripts/src/done-h4a.ts`, `package.json` gốc 2 script) và **F1** (cấu hình depcruise studio-web) — qc không sửa ngoài `tests/**`, `e2e/**`, test-plan. Mẫu `done:h3b`:
 ```
 "done:h4a": "bun --env-file=.env.local tools/scripts/src/done-h4a.ts"
 "e2e:studio": "bunx playwright test -c e2e/studio/playwright.config.ts"
 ```
-`done-h4a.ts` = các bước `done-h3b.ts` + `bun test tests/acceptance/H4a/rules` + `bun run test:int` (gồm `tests/acceptance/H4a/*.int.test.ts`) + `bun run e2e:studio` + `bun run trace --check` + `check:bundle` studio-web. Chạy tay trong lúc chờ:
+`done-h4a.ts` chạy tuần tự (dừng ở bước đỏ đầu tiên), `done:h4a` xanh khi tất cả xanh:
+| # | Bước | Lệnh |
+|---|---|---|
+| 1 | các bước `done-h3b.ts` (typecheck, `bun test`, `test:int`, e2e cũ) | như `done-h3b.ts` |
+| 2 | R H4a | `bun test tests/acceptance/H4a/rules` |
+| 3 | A H4a (gồm hồi quy int bắt buộc plan §7) | `bun run test:int` (gồm `tests/acceptance/H4a/*.int.test.ts`) |
+| 4 | E studio (19 ca) | `bun run e2e:studio` |
+| 5 | vết FR | `bun run trace --check` |
+| 6 | bundle | `check:bundle` studio-web |
+| 7 | khoá test | `bun run test:lock:verify` |
+Chạy tay trong lúc chờ I1:
 ```
 bun test tests/acceptance/H4a/rules
 bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 tests/acceptance/H4a/
@@ -137,9 +149,9 @@ Int bắt buộc chạy lại khi BUILD (plan §7): H1 `concurrency`, A37 `lock-
 | A | `orchestrator.int.test.ts` | 13 | 13 đỏ | `expect`: 404 thay 200/201/400/409 |
 | A | `propagation.int.test.ts` | 4 | 3 đỏ · **1 xanh** | đỏ ở `expect(status)` 404; **A64 xanh trước code** (định tuyến tenant H2b đã có — chấp nhận, khoá hồi quy) |
 | A | `static.int.test.ts` | 8 | 6 đỏ · **2 xanh** | đỏ: 404 thay 308/200/401, thiếu header; **A70, A72 xanh trước code** (404 JSON sẵn có khi `/studio` chưa mount — chấp nhận) |
-| E | `e2e/studio/{auth,agents}.studio.ts` | 12 (E01–E11) | đỏ (cả bộ) | webServer `bun run --filter @ai/studio-web build` ⇒ `No packages matched the filter` — app chưa có; `--list` liệt kê đủ 12 ca (cú pháp hợp lệ) |
+| E | `e2e/studio/{auth,agents,agents-menu,orchestrator}.studio.ts` | 19 (E01–E17 + E03×2 + E13b) | đỏ (cả bộ) | webServer `bun run --filter @ai/studio-web build` ⇒ `No packages matched the filter` — app chưa có; `--list` liệt kê đủ 19 ca (cú pháp hợp lệ); biome sạch; tsc sạch (trừ `process` ở config) |
 
-Tổng **147 ca**: R 44 · A 91 · E 12. Int: 88/91 đỏ đúng lý do (`expect`), 3 xanh trước code chấp nhận; **0 ca đỏ do dựng dữ liệu** (`beforeAll` cả 5 file chạy qua: không `PostgresError`/`TypeError` fixture — đã sửa 4 ca từng đỏ `TypeError` do đọc `json.agent.id` trước khi khẳng định 201). R/E đỏ ở mức module/app chưa có. `tsc -p tsconfig.tests.json`: chỉ lỗi `TS2307/TS2305` module chưa có (5 dòng, 3 file rules) — hết khi B1 tạo contract + file rules (stub `not implemented` như H3b sẽ chuyển R sang đỏ ở `expect`). `biome check` sạch.
+Tổng **154 ca**: R 44 · A 91 · E 19 (readiness 1/M3: +7 e2e). Int: 88/91 đỏ đúng lý do (`expect`), 3 xanh trước code chấp nhận; **0 ca đỏ do dựng dữ liệu** (`beforeAll` cả 5 file chạy qua: không `PostgresError`/`TypeError` fixture — đã sửa 4 ca từng đỏ `TypeError` do đọc `json.agent.id` trước khi khẳng định 201). R/E đỏ ở mức module/app chưa có. `tsc -p tsconfig.tests.json`: chỉ lỗi `TS2307/TS2305` module chưa có (5 dòng, 3 file rules) — hết khi B1 tạo contract + file rules (stub `not implemented` như H3b sẽ chuyển R sang đỏ ở `expect`). `biome check` sạch.
 
 ## 8. Chỗ hở spec (mặc định qc đã dùng) · Cần bổ sung
 | # | Hở | Mặc định trong test | Agent |
@@ -155,7 +167,7 @@ Tổng **147 ca**: R 44 · A 91 · E 12. Int: 88/91 đỏ đúng lý do (`expect
 | G9 | AC-09 "profile mới" không quan sát được qua run (một provider giả) | A66 kiểm qua `GET /agents/:id` + `me` | — |
 | G10 | Nút "Về Chat" ẩn khi vắng `PUBLIC_CHAT_WEB_URL` | E03 không khẳng định link | — |
 | G11 | `GET /studio` 308 hay 301/302 | 308 (plan §5.4) | — |
-| G12 | Chưa có ca e2e: Nhân bản (R12), "Đặt làm Orchestrator" (QF3), TOTP (QF2), banner mất mạng, Hoàn tác tắt agent, Sheet Orchestrator tenant | bổ sung ở đợt sau Gate nếu Gate giữ phạm vi (không chặn: vế API đã có A40, A53, A55) | qc |
+| G12 | ~~Chưa có ca e2e~~ **đã bổ sung** (readiness 1, M3): Nhân bản E12, Đặt làm Orchestrator E13/E13b, TOTP E14, Hoàn tác tắt E15, mất mạng E16, Sheet Orchestrator tenant E17 | nhãn/role theo `plan-frontend.md` §6; câu chữ theo `plan-frontend-copy.md`; phần chưa quy định (role của ConfirmDialog = `alertdialog`, nút Huỷ, nhãn lỗi mã TOTP sai) dùng mặc định cùng kiểu Xoá agent | qc (xong) · frontend-lead giữ role/nhãn |
 | G13 | Nhãn e2e `table "Danh sách agent"` có `columnheader` không (E06 kiểm "không cột 24") | dùng `columnheader` theo vai trò bảng chuẩn | frontend-lead giữ `<th>` |
 
 ## 9. Khoá

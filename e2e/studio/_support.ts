@@ -19,6 +19,7 @@ export const ID = {
   wfDich: u(41),
 } as const;
 export const PASSWORD = "dev-password-1";
+export const TOTP_CODE = "123456";
 const NOW = "2026-10-06T08:00:00.000Z";
 
 type Role = "platform_admin" | "tenant_admin" | "member";
@@ -69,14 +70,25 @@ const agent = (id: string, key: string, o: Record<string, unknown> = {}): Agent 
   ...o,
 });
 
+type OrchSettings = {
+  agent_id: string;
+  max_steps: number;
+  token_budget: number;
+  history_n: number;
+  on_no_match: "answer" | "ask";
+  version: number;
+};
 export type Store = {
   version: number;
   agents: Agent[];
   entitled: Record<string, number>;
+  /** Orchestrator mặc định + bản theo tenant (plan §2/§3 `OrchestratorListSchema`). */
+  orchDefault: OrchSettings;
+  orchTenants: (OrchSettings & { tenant_id: string })[];
   calls: { method: string; path: string; body: unknown }[];
 };
 export function seedStore(): Store {
-  return {
+  const st: Store = {
     version: 7,
     agents: [
       agent(ID.orch, "orchestrator", { orchestrator_of: { default: true, tenant_ids: [] } }),
@@ -90,8 +102,30 @@ export function seedStore(): Store {
       }),
     ],
     entitled: { [ID.orch]: 0, [ID.hoadon]: 2, [ID.helper]: 0, [ID.difyTom]: 1 },
+    orchDefault: {
+      agent_id: ID.orch,
+      max_steps: 5,
+      token_budget: 200000,
+      history_n: 10,
+      on_no_match: "answer",
+      version: 1,
+    },
+    // `beta` đã có bản riêng (nên không được chọn trong Sheet "Thêm cho tenant"); `acme` chưa có.
+    orchTenants: [
+      {
+        tenant_id: ID.beta,
+        agent_id: ID.helper,
+        max_steps: 3,
+        token_budget: 50000,
+        history_n: 4,
+        on_no_match: "ask",
+        version: 1,
+      },
+    ],
     calls: [],
   };
+  syncOrchestratorOf(st);
+  return st;
 }
 
 const listItem = (s: Store, a: Agent) => ({
@@ -125,16 +159,40 @@ export type MockOpts = {
   /** `/auth/refresh` có phiên sẵn (true) hay 401 (mặc định). */
   session?: boolean;
   store?: Store;
+  /** Tài khoản bật 2FA: `/auth/login` trả `totp_required`; `/auth/totp/verify` chỉ nhận `TOTP_CODE`. */
+  totp?: boolean;
   /** Ghi đè phản hồi một lần cho `METHOD path` (vd 409 xung đột). */
   once?: Record<string, { status: number; body: unknown }>;
 };
+
+type Sess = { loggedIn: boolean };
+const TOTP_TOKEN = "eyJ.totp.tok";
+function authLogin(o: MockOpts, sess: Sess, req: Request, grant: () => unknown): Out {
+  const b = req.postDataJSON() as { password?: string };
+  if (b?.password !== PASSWORD)
+    return { status: 401, json: err("INVALID_CREDENTIALS", "Invalid credentials") };
+  if (o.totp)
+    return {
+      status: 200,
+      json: { status: "totp_required", totp_token: TOTP_TOKEN, expires_in: 300 },
+    };
+  sess.loggedIn = true;
+  return { status: 200, json: grant() };
+}
+function authTotp(sess: Sess, req: Request, grant: () => unknown): Out {
+  const b = req.postDataJSON() as { totp_token?: string; code?: string };
+  if (b?.totp_token !== TOTP_TOKEN || b?.code !== TOTP_CODE)
+    return { status: 401, json: err("INVALID_TOTP_CODE", "Invalid code") };
+  sess.loggedIn = true;
+  return { status: 200, json: grant() };
+}
 
 /** Cài mock `/auth/*` + `/studio/api/*`; trả kho để ca đọc/khẳng định. */
 export async function mockStudio(page: Page, o: MockOpts = {}): Promise<Store> {
   const s = o.store ?? seedStore();
   const role = o.role ?? "platform_admin";
   const once = { ...(o.once ?? {}) };
-  let loggedIn = !!o.session;
+  const loggedIn = !!o.session;
   const grant = () => ({
     status: "authenticated",
     access_token: `tok-${role}`,
@@ -143,28 +201,23 @@ export async function mockStudio(page: Page, o: MockOpts = {}): Promise<Store> {
     user: authUser(role),
   });
 
+  const sess = { loggedIn };
+  const authFulfill = (path: string, req: Request): Out => {
+    if (path.endsWith("/auth/login")) return authLogin(o, sess, req, grant);
+    if (path.endsWith("/auth/totp/verify")) return authTotp(sess, req, grant);
+    if (path.endsWith("/auth/refresh"))
+      return sess.loggedIn
+        ? { status: 200, json: grant() }
+        : { status: 401, json: err("AUTH_EXPIRED", "Expired") };
+    if (path.endsWith("/auth/logout")) {
+      sess.loggedIn = false;
+      return { status: 204, body: "" };
+    }
+    return { status: 404, json: err("NOT_FOUND", "Not found") };
+  };
   await page.route(/\/auth\//, async (route) => {
     const req = route.request();
-    const path = new URL(req.url()).pathname;
-    if (path.endsWith("/auth/login")) {
-      const b = req.postDataJSON() as { password?: string };
-      if (b?.password !== PASSWORD)
-        return route.fulfill({
-          status: 401,
-          json: err("INVALID_CREDENTIALS", "Invalid credentials"),
-        });
-      loggedIn = true;
-      return route.fulfill({ status: 200, json: grant() });
-    }
-    if (path.endsWith("/auth/refresh"))
-      return loggedIn
-        ? route.fulfill({ status: 200, json: grant() })
-        : route.fulfill({ status: 401, json: err("AUTH_EXPIRED", "Expired") });
-    if (path.endsWith("/auth/logout")) {
-      loggedIn = false;
-      return route.fulfill({ status: 204, body: "" });
-    }
-    return route.fulfill({ status: 404, json: err("NOT_FOUND", "Not found") });
+    return route.fulfill(authFulfill(new URL(req.url()).pathname, req));
   });
 
   await page.route(/\/studio\/api\//, async (route) => {
@@ -222,22 +275,70 @@ function patchEnabled(s: Store, id: string | undefined, body: Body): Out {
   s.version += 1;
   return { status: 200, json: { agent: a, hub_config_version: s.version } };
 }
-function orchestrator(s: Store): Out {
-  const o = byId(s, ID.orch) as Agent;
-  const def = {
-    id: 1,
-    tenant: null,
-    agent: { id: o.id, key: o.key, name: o.name, runtime: o.runtime, enabled: true },
-    max_steps: 5,
-    token_budget: 200000,
-    history_n: 10,
-    on_no_match: "answer",
-    version: 1,
+const TENANTS = [
+  { id: ID.acme, key: "acme", name: "Acme Corp", active: true },
+  { id: ID.beta, key: "beta", name: "Beta Ltd", active: true },
+];
+function orchView(s: Store, o: OrchSettings, tenantId: string | null) {
+  const a = byId(s, o.agent_id) as Agent;
+  const t = TENANTS.find((x) => x.id === tenantId);
+  return {
+    id: tenantId ? 100 + s.orchTenants.findIndex((x) => x.tenant_id === tenantId) : 1,
+    tenant: t ? { id: t.id, key: t.key, name: t.name } : null,
+    agent: { id: a.id, key: a.key, name: a.name, runtime: a.runtime, enabled: a.enabled },
+    max_steps: o.max_steps,
+    token_budget: o.token_budget,
+    history_n: o.history_n,
+    on_no_match: o.on_no_match,
+    version: o.version,
     updated_by: null,
     updated_at: NOW,
-    warnings: ["agentic_cli_slow"],
+    warnings: a.runtime === "agentic-cli" ? ["agentic_cli_slow"] : [],
   };
-  return { status: 200, json: { default: def, tenants: [], hub_config_version: s.version } };
+}
+function syncOrchestratorOf(s: Store): void {
+  for (const a of s.agents)
+    a.orchestrator_of = {
+      default: a.id === s.orchDefault.agent_id,
+      tenant_ids: s.orchTenants.filter((t) => t.agent_id === a.id).map((t) => t.tenant_id),
+    };
+}
+function orchestrator(s: Store): Out {
+  return {
+    status: 200,
+    json: {
+      default: orchView(s, s.orchDefault, null),
+      tenants: s.orchTenants.map((t) => orchView(s, t, t.tenant_id)),
+      hub_config_version: s.version,
+    },
+  };
+}
+function putOrchDefault(s: Store, body: Body): Out {
+  if (body?.version !== s.orchDefault.version)
+    return { status: 409, json: err("VERSION_CONFLICT", "Version conflict") };
+  Object.assign(s.orchDefault, body, { version: s.orchDefault.version + 1 });
+  s.version += 1;
+  syncOrchestratorOf(s);
+  return {
+    status: 200,
+    json: { orchestrator: orchView(s, s.orchDefault, null), hub_config_version: s.version },
+  };
+}
+function postOrchTenant(s: Store, body: Body): Out {
+  const tid = String(body?.tenant_id);
+  if (s.orchTenants.some((t) => t.tenant_id === tid))
+    return { status: 409, json: err("ORCHESTRATOR_EXISTS", "Orchestrator exists") };
+  const { tenant_id: _t, ...rest } = body as Record<string, unknown>;
+  s.orchTenants.push({ ...(rest as unknown as OrchSettings), tenant_id: tid, version: 1 });
+  s.version += 1;
+  syncOrchestratorOf(s);
+  return {
+    status: 201,
+    json: {
+      orchestrator: orchView(s, s.orchTenants[s.orchTenants.length - 1] as OrchSettings, tid),
+      hub_config_version: s.version,
+    },
+  };
 }
 const WORKFLOWS = [
   {
@@ -294,9 +395,25 @@ const ROUTES: [string, RegExp, Handler][] = [
   ["PUT", /^\/agents\/([^/]+)$/, (s, m, b) => putAgent(s, m[1], b)],
   ["PATCH", /^\/agents\/([^/]+)\/enabled$/, (s, m, b) => patchEnabled(s, m[1], b)],
   ["GET", /^\/orchestrator$/, (s) => orchestrator(s)],
+  ["PUT", /^\/orchestrator\/default$/, (s, _m, b) => putOrchDefault(s, b)],
+  ["POST", /^\/orchestrator\/tenants$/, (s, _m, b) => postOrchTenant(s, b)],
+  [
+    "GET",
+    /^\/tenants$/,
+    (s) => ({
+      status: 200,
+      json: list(
+        TENANTS.map((t) => ({
+          ...t,
+          has_orchestrator: s.orchTenants.some((o) => o.tenant_id === t.id),
+        })),
+        s,
+      ),
+    }),
+  ],
   ["GET", /^\/model-profiles$/, (s) => ({ status: 200, json: list(PROFILES, s) })],
   ["GET", /^\/workflows$/, (s) => ({ status: 200, json: list(WORKFLOWS, s) })],
-  ["GET", /^\/(agent-types|providers|tenants)$/, (s) => ({ status: 200, json: list([], s) })],
+  ["GET", /^\/(agent-types|providers)$/, (s) => ({ status: 200, json: list([], s) })],
 ];
 
 function handle(s: Store, method: string, path: string, body: Body): Out {
