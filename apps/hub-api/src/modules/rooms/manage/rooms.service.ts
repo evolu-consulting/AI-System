@@ -51,9 +51,13 @@ export function guard(row: repo.RoomAccessRow | null, action: RoomAction): repo.
   return row;
 }
 
-/** Khoá hàng `rooms` (đầu tiên, plan-db §6) rồi kiểm lại quyền dưới khoá. Dùng chung cho mọi thay đổi phòng. */
+/**
+ * Khoá hàng `rooms` (đầu tiên, plan-db §6) rồi kiểm lại quyền dưới khoá. Câu thứ hai là bắt buộc: READ COMMITTED lấy
+ * snapshot đầu câu, nên câu `FOR UPDATE` sau khi chờ khoá vẫn thấy `room_members` cũ (vd. vai trò trước khi chuyển chủ).
+ */
 export async function lockFor(tx: Tx, me: Me, roomId: string, action: RoomAction) {
-  return guard(await repo.findAccess(tx, me, roomId, true), action);
+  await repo.findAccess(tx, me, roomId, true);
+  return guard(await repo.findAccess(tx, me, roomId), action);
 }
 
 /** Chi tiết phòng như người gọi thấy (`members` = thành viên hiện tại). */
@@ -63,8 +67,8 @@ export async function loadDetail(tx: Tx, me: Me, roomId: string): Promise<RoomDe
   return toRoomDetail(s, await repo.activeMembers(tx, me, roomId), s.createdAt);
 }
 
-/** RoomSummary của một thành viên khác trong nhóm vừa tạo: cùng phòng, khác `my_role`; mốc đọc = `last_seq` (D6). */
-function summaryAs(d: RoomDetail, role: RoomRole): RoomSummary {
+/** RoomSummary của thành viên khác (nhóm vừa tạo / người vừa được thêm): khác `my_role`; mốc đọc = `last_seq` (D6). */
+export function summaryAs(d: RoomDetail, role: RoomRole): RoomSummary {
   const { owner_id: _o, created_at: _c, members: _m, ...summary } = d;
   return { ...summary, my_role: role, unread: 0 };
 }
