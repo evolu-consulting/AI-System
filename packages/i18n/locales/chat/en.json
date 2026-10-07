@@ -231,5 +231,23 @@
       "failed": "Upload failed. Try again.",
       "missing": "File no longer available. Remove and attach it again."
     }
+  },
+  "rtErr": {
+    "ROOM_NOT_FOUND": "We couldn't find this conversation.",
+    "NOT_ROOM_OWNER": "Only the group owner can do this.",
+    "DM_IMMUTABLE": "Direct messages can't be renamed or changed. You can only hide them.",
+    "ROOM_FULL": "The group is full (50 people).",
+    "OWNER_MUST_TRANSFER": "Transfer ownership to someone else before leaving.",
+    "GROUP_NOT_HIDEABLE": "Groups can't be hidden. You can leave the group instead.",
+    "DM_SELF": "You can't message yourself.",
+    "USER_NOT_FOUND": "We couldn't find this person in your company.",
+    "VALIDATION_ERROR": "Some details are invalid. Check and try again.",
+    "unknown": "Something went wrong. Try again later."
+  },
+  "directory": {
+    "people": "People",
+    "messageTo": "Message {{name}}",
+    "noMatch": "No one matches \"{{q}}\"",
+    "error": "Couldn't search people. Retry"
   }
 }

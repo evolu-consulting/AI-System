@@ -4,6 +4,7 @@ import {
   type ChatAttachmentErrorCode,
   type ChatCommandErrorCode,
   type ChatErrorCode,
+  type ChatRoomErrorCode,
   type ChatRoutingErrorCode,
   RETRY_AFTER_HEADER,
   TOO_MANY_RUNS_RETRY_AFTER_S,
@@ -22,6 +23,7 @@ export type ApiErrorCode =
   | ChatCommandErrorCode
   | ChatRoutingErrorCode
   | ChatAttachmentErrorCode
+  | ChatRoomErrorCode
   | AuthErrorCode
   | "NETWORK_ERROR"
   | "HTTP_ERROR";

@@ -2,7 +2,7 @@
 
 Spec: [`spec.md`](spec.md) §5, §5.3 · [`spec-isolation.md`](spec-isolation.md) §1.1 · canvas `docs/design/chat-app/canvas-x2/` (Main, DM, NewGroup, Mobile; **không** panel agent, **không** hàng chip: spec §5.2) · token `docs/design/canvas/tokens-map.md` (dùng token Tailwind sẵn có: `bg-card`, `bg-accent`, `bg-primary`, `text-muted-foreground`, `bg-warning-bg`…; không hex) · mẫu code: `docs/specs/C1-chat-ui/plan-frontend.md`.
 Yêu cầu: HUB-FR-96, 97, 98, 99, 100, 102, 75 (vế phòng) · UC-09, UC-10 · CHAT-AC-37…45 · X2a-AC06, AC08, AC09, AC12, AC15.
-Contract: chỉ **tiêu thụ** `@ai/contracts/chat` (`rooms`, `directory`, `me-stream`, `CHAT_ROOM_ERRORS`) do backend-lead chốt ở `plan.md`. Tên schema/hàm dưới đây là **giả định** (đánh dấu `[chờ plan BE]`); lệch tên thì đổi theo contract, không đổi hình dạng plan.
+Contract: chỉ **tiêu thụ** `@ai/contracts/chat` (`rooms`, `directory`, `me-stream`, `CHAT_ROOM_ERRORS`) do backend-lead chốt ở `plan.md`. Tên schema/hàm khớp contract B2 (`83f8325`).
 
 ## 0. Quyết định chính
 | # | Quyết định |
@@ -61,7 +61,7 @@ apps/chat-web/src/features/
 ## 3. Dữ liệu, cache, realtime
 **Query key** (`rooms/lib/room-cache.ts` giữ hằng): `['rooms','list']` (infinite, cursor, `GET /rooms`) · `['rooms','detail',id]` · `['rooms','messages',id]` (infinite lùi theo `before_seq`, trang đầu = 50 tin mới nhất, hiển thị `seq` tăng dần) · `['directory',q]` (`staleTime` 30 s, `q` đã debounce 250 ms như sidebar). `unread_total` lấy từ `pages[0]` của `['rooms','list']` (selector `useUnreadTotal`), được vá bởi sự kiện `room.unread`. Đăng xuất → `queryClient.clear()` (đã có) + driver `stop()`.
 
-**Client `/me/stream`** (`me-stream-driver`): `fetch('/me/stream', {headers: Authorization, Accept: text/event-stream, 'Last-Event-ID': lastId?})` qua `~/lib/http` getToken/refresh (401 → refresh 1 lần như C1; refresh hỏng → `session` expired, dừng). Đọc bằng `createSseParser` + zod strict của contract `[chờ plan BE: MeStreamEventSchema/parseMeStreamEvent]`; khung hỏng bị bỏ (như `sse.ts`). Ghi `id:` mỗi khung vào `lastEventId` (chỉ bộ nhớ, không `localStorage`). Stream đóng/lỗi mạng → phase `reconnecting`, nối lại sau 0,5 → 1 → 2 → 4 → 8 s (trần 8 s, **không** bỏ cuộc; từ lần thứ 5 liên tiếp phase `down` ⇒ banner đỏ "Không kết nối được máy chủ" + Thử lại, vẫn tiếp tục thử); nối lại kèm `Last-Event-ID`. Phase `open` khi có byte đầu tiên (kể cả `: ping`). Tab ẩn: vẫn giữ kết nối (không tự đóng) để badge tab nền đúng; `online`/`visibilitychange` visible khi đang `down` → nối ngay. JWT hết hạn: server đóng stream ⇒ vòng nối lại ở trên đi qua refresh. Quá 5 kết nối/user → server đóng kết nối cũ: tab đó nối lại bình thường (chấp nhận, ≤ 5 tab).
+**Client `/me/stream`** (`me-stream-driver`): `fetch('/me/stream', {headers: Authorization, Accept: text/event-stream, 'Last-Event-ID': lastId?})` qua `~/lib/http` getToken/refresh (401 → refresh 1 lần như C1; refresh hỏng → `session` expired, dừng). Đọc bằng `createSseParser` + zod strict của contract (`MeStreamEventSchema`/`parseMeStreamEvent(event, data)`); khung hỏng bị bỏ (như `sse.ts`). Ghi `id:` mỗi khung vào `lastEventId` (chỉ bộ nhớ, không `localStorage`). Stream đóng/lỗi mạng → phase `reconnecting`, nối lại sau 0,5 → 1 → 2 → 4 → 8 s (trần 8 s, **không** bỏ cuộc; từ lần thứ 5 liên tiếp phase `down` ⇒ banner đỏ "Không kết nối được máy chủ" + Thử lại, vẫn tiếp tục thử); nối lại kèm `Last-Event-ID`. Phase `open` khi có byte đầu tiên (kể cả `: ping`). Tab ẩn: vẫn giữ kết nối (không tự đóng) để badge tab nền đúng; `online`/`visibilitychange` visible khi đang `down` → nối ngay. JWT hết hạn: server đóng stream ⇒ vòng nối lại ở trên đi qua refresh. Quá 5 kết nối/user → server đóng kết nối cũ: tab đó nối lại bình thường (chấp nhận, ≤ 5 tab).
 
 | Sự kiện | `event-router` làm gì |
 |---|---|
@@ -110,7 +110,7 @@ Toàn bộ key VI/EN (shell, phòng, dialog, toast, mã lỗi `CHAT_ROOM_ERRORS`
 | Trường | Luật (khớp contract) | Câu lỗi |
 |---|---|---|
 | Tên nhóm (tạo, đổi tên) | trim; 1–80 ký tự (R08) | `rooms.name.empty` / `rooms.name.max` (hiện khi blur/submit; nút Tạo `disabled` khi rỗng) |
-| Thành viên khi tạo | ≤ 49 người khác + chủ; không ép tối thiểu (khớp spec; `[chờ plan BE]` nếu BE đặt `min(1)`) | `rooms.newGroup.full` |
+| Thành viên khi tạo | ≤ 49 người khác + chủ; không ép tối thiểu (khớp spec; contract `member_ids` mặc định `[]`) | `rooms.newGroup.full` |
 | Thêm người | chọn ≥ 1; `đã có + chọn ≤ 50`; người đã trong nhóm `disabled` | `rooms.newGroup.full` |
 | Nội dung tin | trim; 1…16.000 (`CHAT_CONTENT_MAX` từ contract) | nút Gửi `disabled` |
 | Tìm danh bạ | `q` ≤ `LIST_Q_MAX` (cắt ở ô nhập `maxLength`) | — |
@@ -128,7 +128,7 @@ Baseline `check:bundle`: JS 139,9 KB / 150 · CSS 12,9 KB / 25 · chunk lớn nh
 | Mới FE-1 | Mở DM = ô tìm sidebar mục "Người" (không có nút "Tin nhắn mới" riêng, đúng artboard) |
 | Mới FE-2 | Không chip/panel agent; placeholder phòng X2a chưa nhắc `@`/`/` (§5.3) |
 | Mới FE-3 | Mobile giữ Sheet danh sách C1 (D9); không màn danh sách riêng |
-| Mới FE-4 | Tạo nhóm không bắt buộc ≥ 1 thành viên khác (`[chờ plan BE]`) |
+| Mới FE-4 | Tạo nhóm không bắt buộc ≥ 1 thành viên khác (contract B2 xác nhận) |
 
 ## 11. Cần backend-lead / phụ thuộc BE (`plan.md`, tên là giả định)
 | # | Cần | Dùng ở |

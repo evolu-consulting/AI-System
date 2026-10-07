@@ -15,7 +15,7 @@ Client gọi đường dẫn tương đối; `rsbuild.config.ts` proxy cùng ori
 | Đường dẫn | Đích | Mặc định |
 |---|---|---|
 | `/auth` | `AUTH_URL` (trống = `HUB_URL`) | `http://localhost:4020` |
-| `/conversations` `/runs` `/health` | `HUB_URL` | `http://localhost:4020` |
+| `/conversations` `/runs` `/agents` `/commands` `/attachments` `/directory` `/rooms` `/me` `/health` | `HUB_URL` | `http://localhost:4020` |
 
 Chạy với mock: `bun run mocks` rồi `bun run --filter @ai/chat-web dev`. Đổi Hub: `HUB_URL=http://host:port bun run --filter @ai/chat-web dev`.
 

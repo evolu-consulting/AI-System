@@ -231,5 +231,23 @@
       "failed": "Không tải lên được. Thử lại.",
       "missing": "Tệp không còn. Hãy xoá và đính kèm lại."
     }
+  },
+  "rtErr": {
+    "ROOM_NOT_FOUND": "Không tìm thấy cuộc trò chuyện này.",
+    "NOT_ROOM_OWNER": "Chỉ chủ nhóm mới làm được việc này.",
+    "DM_IMMUTABLE": "Tin nhắn riêng không đổi được tên hay thành viên. Bạn chỉ ẩn được hội thoại.",
+    "ROOM_FULL": "Nhóm đã đủ 50 người.",
+    "OWNER_MUST_TRANSFER": "Hãy chuyển quyền chủ nhóm cho người khác trước khi rời.",
+    "GROUP_NOT_HIDEABLE": "Nhóm không ẩn được. Bạn có thể rời nhóm.",
+    "DM_SELF": "Bạn không thể nhắn tin cho chính mình.",
+    "USER_NOT_FOUND": "Không tìm thấy người này trong công ty.",
+    "VALIDATION_ERROR": "Thông tin chưa hợp lệ. Kiểm tra lại.",
+    "unknown": "Có lỗi khi xử lý. Thử lại sau."
+  },
+  "directory": {
+    "people": "Người",
+    "messageTo": "Nhắn tin với {{name}}",
+    "noMatch": "Không có ai khớp \"{{q}}\"",
+    "error": "Không tìm được người. Thử lại"
   }
 }

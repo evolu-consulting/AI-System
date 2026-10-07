@@ -15,6 +15,9 @@ const proxy = {
   "/agents": HUB_URL,
   "/commands": HUB_URL,
   "/attachments": HUB_URL,
+  "/directory": HUB_URL,
+  "/rooms": HUB_URL,
+  "/me": HUB_URL,
   "/health": HUB_URL,
 };
 
