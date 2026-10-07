@@ -14,6 +14,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedCIdRouteImport } from './routes/_authed/c.$id'
 import { Route as AuthedCNewRouteImport } from './routes/_authed/c.new'
+import { Route as AuthedRoomsIdRouteImport } from './routes/_authed/rooms.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -39,18 +40,25 @@ const AuthedCNewRoute = AuthedCNewRouteImport.update({
   path: '/c/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedRoomsIdRoute = AuthedRoomsIdRouteImport.update({
+  id: '/rooms/$id',
+  path: '/rooms/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/c/$id': typeof AuthedCIdRoute
   '/c/new': typeof AuthedCNewRoute
+  '/rooms/$id': typeof AuthedRoomsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/c/$id': typeof AuthedCIdRoute
   '/c/new': typeof AuthedCNewRoute
+  '/rooms/$id': typeof AuthedRoomsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +67,13 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/c/$id': typeof AuthedCIdRoute
   '/_authed/c/new': typeof AuthedCNewRoute
+  '/_authed/rooms/$id': typeof AuthedRoomsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/c/$id' | '/c/new'
+  fullPaths: '/' | '/login' | '/c/$id' | '/c/new' | '/rooms/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/c/$id' | '/c/new'
+  to: '/' | '/login' | '/c/$id' | '/c/new' | '/rooms/$id'
   id:
     | '__root__'
     | '/'
@@ -72,6 +81,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authed/c/$id'
     | '/_authed/c/new'
+    | '/_authed/rooms/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,17 +127,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedCNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/rooms/$id': {
+      id: '/_authed/rooms/$id'
+      path: '/rooms/$id'
+      fullPath: '/rooms/$id'
+      preLoaderRoute: typeof AuthedRoomsIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
   AuthedCIdRoute: typeof AuthedCIdRoute
   AuthedCNewRoute: typeof AuthedCNewRoute
+  AuthedRoomsIdRoute: typeof AuthedRoomsIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCIdRoute: AuthedCIdRoute,
   AuthedCNewRoute: AuthedCNewRoute,
+  AuthedRoomsIdRoute: AuthedRoomsIdRoute,
 }
 
 const AuthedRouteWithChildren =

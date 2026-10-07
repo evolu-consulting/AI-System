@@ -23,3 +23,15 @@ export function initialsOf(name: string): string {
   const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
   return (first + last).toUpperCase();
 }
+
+/** `/rooms/<id>` → id; đường khác → null. */
+export function roomIdOf(pathname: string): string | null {
+  const m = /^\/rooms\/([^/]+)\/?$/.exec(pathname);
+  const raw = m?.[1];
+  if (!raw) return null;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}

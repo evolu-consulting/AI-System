@@ -14,7 +14,7 @@ import { useDebouncedValue } from "../hooks/use-debounced-value";
 import { useIsDesktop } from "../hooks/use-is-desktop";
 import { useSettings } from "../hooks/use-settings";
 import { useShortcuts } from "../hooks/use-shortcuts";
-import { conversationIdOf } from "../lib/conversation-path";
+import { conversationIdOf, roomIdOf } from "../lib/conversation-path";
 import { SettingsDialog } from "./SettingsDialog";
 import { Sidebar } from "./Sidebar";
 
@@ -58,6 +58,7 @@ export function AppShell() {
       onQueryChange={setQuery}
       searchRef={searchRef}
       activeId={conversationIdOf(pathname)}
+      activeRoomId={roomIdOf(pathname)}
       onNavigate={onNavigate}
       onOpenSettings={() => setSettingsOpen(true)}
     />

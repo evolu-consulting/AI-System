@@ -1,3 +1,4 @@
 # shell — khung app (CHAT-AC-04, 19..22, 28, 29, 35, 36)
 `components/AppShell` (sidebar ≥ 1024, Sheet khi hẹp; `ConnectionBanner`), `Sidebar` + `ConversationList`/`ConversationItem` (nhóm theo thời gian, tìm, đổi tên/xoá qua `RenameDialog`/`DeleteDialog`), `UserMenu`, `SettingsDialog` (ngôn ngữ, giao diện Sáng/Tối/Hệ thống, đăng xuất).
 Hooks: `use-shortcuts` (Ctrl⇧O hội thoại mới), `use-connection`, `use-settings`, `use-is-desktop`. Điều hướng hội thoại dùng `to: "/c/$id"` có kiểu; `lib/conversation-path` cho `href` và đọc id từ URL.
+X2a (F3): `RoomSections` (mục "Tin nhắn & Nhóm": `rooms/RoomListItem`, huy hiệu, tổng chưa đọc, lọc theo ô tìm) + `PeopleResults` (tìm "Người" → mở DM); mục "Hỏi AI" bọc `ConversationList` trong `Sidebar`; `roomIdOf` cho `activeRoomId`. Nút "Nhóm mới" bị vô hiệu tới khi F5 truyền `onNewGroup`.

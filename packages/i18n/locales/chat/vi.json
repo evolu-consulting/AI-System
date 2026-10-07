@@ -23,11 +23,12 @@
   },
   "shell": {
     "brand": "AI Chat · {{tenant}}",
-    "newChat": "Hội thoại mới",
-    "search": "Tìm hội thoại",
+    "newChat": "Hỏi AI",
+    "search": "Tìm hội thoại, người, nhóm",
     "settings": "Cài đặt",
     "nav": "Hội thoại",
-    "openList": "Danh sách hội thoại"
+    "openList": "Danh sách hội thoại",
+    "newGroup": "Nhóm mới"
   },
   "group": {
     "today": "Hôm nay",
@@ -249,5 +250,21 @@
     "messageTo": "Nhắn tin với {{name}}",
     "noMatch": "Không có ai khớp \"{{q}}\"",
     "error": "Không tìm được người. Thử lại"
+  },
+  "rooms": {
+    "section": "Tin nhắn & Nhóm",
+    "sectionAi": "Hỏi AI",
+    "unreadBadge": "{{count}} tin chưa đọc",
+    "preview": {
+      "you": "Bạn: {{text}}",
+      "other": "{{name}}: {{text}}"
+    },
+    "list": {
+      "empty": "Chưa có tin nhắn hay nhóm nào. Tìm một người ở ô tìm, hoặc bấm Nhóm mới.",
+      "error": "Không tải được danh sách tin nhắn",
+      "retry": "Thử lại",
+      "more": "Tải thêm",
+      "noMatch": "Không có tin nhắn hay nhóm khớp \"{{q}}\""
+    }
   }
 }

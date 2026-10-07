@@ -23,11 +23,12 @@
   },
   "shell": {
     "brand": "AI Chat · {{tenant}}",
-    "newChat": "New chat",
-    "search": "Search chats",
+    "newChat": "Ask AI",
+    "search": "Search chats, people, groups",
     "settings": "Settings",
     "nav": "Chats",
-    "openList": "Chat list"
+    "openList": "Chat list",
+    "newGroup": "New group"
   },
   "group": {
     "today": "Today",
@@ -249,5 +250,21 @@
     "messageTo": "Message {{name}}",
     "noMatch": "No one matches \"{{q}}\"",
     "error": "Couldn't search people. Retry"
+  },
+  "rooms": {
+    "section": "Messages & Groups",
+    "sectionAi": "Ask AI",
+    "unreadBadge": "{{count}} unread",
+    "preview": {
+      "you": "You: {{text}}",
+      "other": "{{name}}: {{text}}"
+    },
+    "list": {
+      "empty": "No messages or groups yet. Search for a person, or tap New group.",
+      "error": "Couldn't load your messages",
+      "retry": "Retry",
+      "more": "Load more",
+      "noMatch": "No messages or groups match \"{{q}}\""
+    }
   }
 }

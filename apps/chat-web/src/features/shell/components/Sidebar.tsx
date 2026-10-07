@@ -1,11 +1,13 @@
 // CHAT-AC-19, CHAT-AC-21 · `nav "Hội thoại"` 260px: logo + "AI Chat · công ty", Hội thoại mới, tìm, danh sách, người dùng.
 import { Link } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Plus, UsersRound } from "lucide-react";
 import type { Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandLogo } from "~/components/shared/BrandLogo";
+import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { ConversationList } from "./ConversationList";
+import { RoomSections } from "./RoomSections";
 import { UserMenu } from "./UserMenu";
 
 type Props = {
@@ -18,6 +20,9 @@ type Props = {
   onQueryChange: (q: string) => void;
   searchRef: Ref<HTMLInputElement>;
   activeId: string | null;
+  activeRoomId: string | null;
+  /** F5 nối hộp thoại "Tạo nhóm"; vắng thì nút bị vô hiệu. */
+  onNewGroup?: () => void;
   onNavigate?: () => void;
   onOpenSettings: () => void;
 };
@@ -38,17 +43,26 @@ export function Sidebar(p: Props) {
           {t("shell.brand", { tenant: p.tenantName })}
         </span>
       </div>
-      <Link
-        to="/c/new"
-        onClick={p.onNavigate}
-        className="flex h-10 items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm font-semibold outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <Plus className="size-[18px]" aria-hidden />
-        {t("shell.newChat")}
-        <kbd className="ml-auto font-mono text-[11px] font-normal text-muted-foreground">
-          Ctrl⇧O
-        </kbd>
-      </Link>
+      <div className="flex gap-2">
+        <Link
+          to="/c/new"
+          onClick={p.onNavigate}
+          className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm font-semibold outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Plus className="size-[18px] shrink-0" aria-hidden />
+          <span className="truncate">{t("shell.newChat")}</span>
+        </Link>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 shrink-0 gap-2 px-3"
+          disabled={!p.onNewGroup}
+          onClick={p.onNewGroup}
+        >
+          <UsersRound className="size-[18px]" aria-hidden />
+          {t("shell.newGroup")}
+        </Button>
+      </div>
       <Input
         ref={p.searchRef}
         type="search"
@@ -59,7 +73,17 @@ export function Sidebar(p: Props) {
         className="h-9 bg-muted"
       />
       <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
-        <ConversationList q={p.debouncedQuery} activeId={p.activeId} onNavigate={p.onNavigate} />
+        <RoomSections
+          q={p.debouncedQuery}
+          activeRoomId={p.activeRoomId}
+          onNavigate={p.onNavigate}
+        />
+        <section aria-labelledby="ai-section-h" className="mt-3 flex flex-col gap-0.5">
+          <h3 id="ai-section-h" className="px-2 pt-2 text-xs font-semibold text-muted-foreground">
+            {t("rooms.sectionAi")}
+          </h3>
+          <ConversationList q={p.debouncedQuery} activeId={p.activeId} onNavigate={p.onNavigate} />
+        </section>
       </div>
       <UserMenu
         displayName={p.displayName}

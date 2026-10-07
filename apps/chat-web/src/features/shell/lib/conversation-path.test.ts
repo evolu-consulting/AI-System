@@ -1,6 +1,6 @@
 // CHAT-AC-20
 import { describe, expect, test } from "bun:test";
-import { conversationIdOf, conversationPath, initialsOf } from "./conversation-path";
+import { conversationIdOf, conversationPath, initialsOf, roomIdOf } from "./conversation-path";
 
 describe("conversation-path", () => {
   test("đường dẫn ↔ id", () => {
@@ -18,5 +18,14 @@ describe("conversation-path", () => {
     expect(initialsOf("Nguyễn Văn An")).toBe("NA");
     expect(initialsOf("admin")).toBe("A");
     expect(initialsOf("  ")).toBe("?");
+  });
+});
+
+describe("roomIdOf", () => {
+  test("/rooms/<id> → id; đường khác → null", () => {
+    expect(roomIdOf("/rooms/abc")).toBe("abc");
+    expect(roomIdOf("/rooms/abc/")).toBe("abc");
+    expect(roomIdOf("/c/abc")).toBeNull();
+    expect(roomIdOf("/rooms/a/b")).toBeNull();
   });
 });
