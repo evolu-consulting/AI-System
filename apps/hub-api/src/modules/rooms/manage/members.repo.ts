@@ -31,10 +31,10 @@ export async function addMembers(
       where hub.room_members.left_at is not null`);
 }
 
-/** Bớt / rời: đặt `left_at` cho một thành viên hiện tại. */
+/** Bớt / rời: đặt `left_at` (`clock_timestamp()` sau khi giữ khoá phòng ⇒ không sớm hơn tin vừa gửi trước đó, P07). */
 export async function markLeft(tx: Tx, me: Me, roomId: string, userId: string): Promise<void> {
   await tx.execute(sql`
-    update hub.room_members set left_at = date_trunc('milliseconds', now())
+    update hub.room_members set left_at = date_trunc('milliseconds', clock_timestamp())
     where room_id = ${roomId} and tenant_id = ${me.tenantId} and user_id = ${userId} and left_at is null`);
 }
 

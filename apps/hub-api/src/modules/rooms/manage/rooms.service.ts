@@ -36,7 +36,7 @@ type Me = repo.Me;
 
 const meOf = (u: AuthUser): Me => ({ tenantId: u.tenantId, userId: u.userId });
 /** SQLSTATE (DrizzleQueryError bọc lỗi driver ở `cause`, mẫu `lib/run-steps`). */
-const pgCode = (err: unknown): unknown => {
+export const pgCode = (err: unknown): unknown => {
   const e = err as { code?: unknown; cause?: { code?: unknown } } | null;
   return e?.code ?? e?.cause?.code;
 };
