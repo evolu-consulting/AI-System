@@ -8,7 +8,8 @@ import { appError } from "./errors";
 import { verifyAccessToken } from "./jwt";
 import type { Logger } from "./logger";
 
-export type AuthUser = { userId: string; tenantId: string; role: Role };
+/** `exp` (giây epoch, optional — X2a D14) chỉ `/me/stream` dùng để đóng stream đúng lúc token hết hạn. */
+export type AuthUser = { userId: string; tenantId: string; role: Role; exp?: number };
 /** Biến context middleware cần/gắn (AppVars của app là tập cha). */
 export type AuthVars = { Variables: { log: Logger; config?: ConfigCache; user: AuthUser } };
 
@@ -25,7 +26,7 @@ export async function authenticate(
   // Fail-closed: không có cache (app dựng không kèm db) ⇒ không xác minh được trạng thái ⇒ từ chối.
   const usable = await c.var.config?.accountUsable(claims.tid, claims.sub);
   if (usable !== true) throw appError("AUTH_EXPIRED");
-  return { userId: claims.sub, tenantId: claims.tid, role: claims.role };
+  return { userId: claims.sub, tenantId: claims.tid, role: claims.role, exp: claims.exp };
 }
 
 /** `key` vắng (test khung) ⇒ mọi request vào route được bảo vệ đều 401. */

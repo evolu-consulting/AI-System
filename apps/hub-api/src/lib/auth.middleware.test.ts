@@ -43,7 +43,7 @@ function token(claims: Record<string, unknown> = { tid: TID, role: "member" }, e
 
 describe("HUB-FR-74 · verifyAccessToken", () => {
   test("HUB-FR-74 · test vector cố định (khoá RFC 8037) verify ra đúng claims", async () => {
-    expect(await verifyAccessToken(key, VECTOR)).toEqual({
+    expect(await verifyAccessToken(key, VECTOR)).toMatchObject({
       sub: SUB,
       tid: TID,
       role: "member",
@@ -105,7 +105,8 @@ describe("HUB-FR-88 · requireAuth", () => {
     try {
       const r = await call(true, `Bearer ${await token({ tid: TID, role: "tenant_admin" })}`);
       expect(r.status).toBe(200);
-      expect(r.seen).toEqual([{ userId: SUB, tenantId: TID, role: "tenant_admin" }]);
+      expect(r.seen).toMatchObject([{ userId: SUB, tenantId: TID, role: "tenant_admin" }]);
+      expect(typeof r.seen[0]?.exp).toBe("number");
       const line = lines.find((l) => l.includes("probe")) ?? "";
       expect(line).toContain(`"tenant_id":"${TID}"`);
       expect(line).toContain(`"user_id":"${SUB}"`);

@@ -9,7 +9,14 @@ export const ISSUER = "admin";
 export const ACCESS_AUDIENCE = "ai-system";
 
 /** `sid` = family_id phiên Admin; Hub không dùng, giữ để khớp dạng claims của Admin. */
-export type AccessClaims = { sub: string; tid: string; role: Role; sid: string | null };
+/** `exp` (giây epoch) — X2a D14: `/me/stream` đóng lúc token hết hạn. */
+export type AccessClaims = {
+  sub: string;
+  tid: string;
+  role: Role;
+  sid: string | null;
+  exp: number;
+};
 
 /** PEM SPKI Ed25519 (`JWT_PUBLIC_KEY`) → CryptoKey. Sai định dạng → ném (server exit 1). */
 export function importJwtPublicKey(pem: string): Promise<CryptoKey> {
@@ -38,5 +45,6 @@ export async function verifyAccessToken(
     return null;
   }
   if (!isUuid(p.sub) || !isUuid(p.tid) || !isRole(p.role)) return null;
-  return { sub: p.sub, tid: p.tid, role: p.role, sid: isStr(p.sid) ? p.sid : null };
+  if (typeof p.exp !== "number") return null;
+  return { sub: p.sub, tid: p.tid, role: p.role, sid: isStr(p.sid) ? p.sid : null, exp: p.exp };
 }
