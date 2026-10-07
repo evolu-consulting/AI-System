@@ -12,7 +12,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { dockerArgs } from "../../../apps/agent-runtime/scripts/run";
-import { contractUsersJson, ensureContractFixture } from "./fixture";
+import { contractUsersJson, ensureContractFixture, ensureDemoFixture } from "./fixture";
 
 export const REPO = resolve(import.meta.dir, "../../..");
 export const HUB_URL = "http://localhost:4000";
@@ -184,6 +184,11 @@ async function fixtureStep(notes: string[]): Promise<void> {
     await ensureContractFixture(AUTH_URL);
   } catch (err) {
     notes.push(`user fixture: ${(err as Error).message}`);
+  }
+  try {
+    await ensureDemoFixture(AUTH_URL);
+  } catch (err) {
+    notes.push(`demo fixture evolu: ${(err as Error).message}`);
   }
 }
 

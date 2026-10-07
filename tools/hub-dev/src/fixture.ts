@@ -4,7 +4,14 @@
 
 export const DEV_PASSWORD = "dev-password-1";
 
-type FixtureUser = { tenant_key: string; username: string; password: string; locked?: boolean };
+type FixtureUser = {
+  tenant_key: string;
+  username: string;
+  password: string;
+  locked?: boolean;
+  display_name?: string;
+  role?: "member" | "tenant_admin";
+};
 
 /** Khoá theo `tests/contract/chat/_env.ts` (`a`, `b`, `other_tenant`, `locked`). */
 export const CONTRACT_USERS: Record<"a" | "b" | "other_tenant" | "locked", FixtureUser> = {
@@ -58,13 +65,13 @@ async function adminToken(base: string): Promise<string> {
   return String(r.access_token);
 }
 
-async function ensureTenant(api: Api, key: string): Promise<string> {
+async function ensureTenant(api: Api, key: string, name = key.toUpperCase()): Promise<string> {
   const list = await call(api, "GET", `/admin/tenants?q=${key}&limit=50`);
   const hit = (list.items as Json[]).find((t) => t.key === key);
   if (hit) return String(hit.id);
   const created = await call(api, "POST", "/admin/tenants", {
     key,
-    name: key.toUpperCase(),
+    name,
     first_admin: { username: "tadmin", display_name: "Tenant Admin", email: `tadmin@${key}.local` },
   });
   return String((created.tenant as Json).id);
@@ -92,7 +99,12 @@ async function ensureUser(api: Api, tenantId: string, u: FixtureUser): Promise<v
   const q = `/admin/users?tenant_id=${tenantId}&q=${u.username}&limit=50`;
   let user = ((await call(api, "GET", q)).items as Json[]).find((x) => x.username === u.username);
   if (!user) {
-    const body = { username: u.username, display_name: u.username, role: "member", locale: "vi" };
+    const body = {
+      username: u.username,
+      display_name: u.display_name ?? u.username,
+      role: u.role ?? "member",
+      locale: "vi",
+    };
     const created = await call(api, "POST", `/admin/users?tenant_id=${tenantId}`, body);
     user = created.user as Json;
     await setDevPassword(api, u, String(created.temp_password));
@@ -139,4 +151,32 @@ export async function ensureContractFixture(adminUrl: string): Promise<void> {
     const tid = tenantIds.get(tenantKey);
     if (tid) await ensureBetaTesters(api, tid, usernames);
   }
+}
+
+/** Dữ liệu demo do người dùng yêu cầu (2026-10-07): công ty `evolu`, 4 người; mật khẩu dev 10 ký tự (PASSWORD_MIN_LEN). */
+export const DEMO_TENANT = { key: "evolu", name: "Evolu" };
+export const DEMO_PASSWORD = "1234567890";
+export const DEMO_USERS: FixtureUser[] = [
+  ["julian.bui", "Julian Bui", "tenant_admin"],
+  ["thomas.tran", "Thomas Tran", "member"],
+  ["vio.ngo", "Vio Ngo", "member"],
+  ["edgar.nguyen", "Edgar Nguyen", "member"],
+].map(([username, display_name, role]) => ({
+  tenant_key: DEMO_TENANT.key,
+  username: String(username),
+  display_name: String(display_name),
+  role: role as FixtureUser["role"],
+  password: DEMO_PASSWORD,
+}));
+
+/** Tạo tenant `evolu` + 4 user demo (idempotent), tất cả vào `beta-testers` để dùng được agent seed. */
+export async function ensureDemoFixture(adminUrl: string): Promise<void> {
+  const api: Api = { base: adminUrl, token: await adminToken(adminUrl) };
+  const tid = await ensureTenant(api, DEMO_TENANT.key, DEMO_TENANT.name);
+  for (const u of DEMO_USERS) await ensureUser(api, tid, u);
+  await ensureBetaTesters(
+    api,
+    tid,
+    DEMO_USERS.map((u) => u.username),
+  );
 }
