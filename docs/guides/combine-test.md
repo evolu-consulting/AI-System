@@ -29,6 +29,7 @@ Chờ dòng `[combine] sẵn sàng`. Bảng URL:
 - Cách 2: làm theo lệnh `combine:dev` in ra (lưu `rt.sh`, chạy `wsl.exe -d Ubuntu -u worker -- bash -l -s < rt.sh`).
 - Điều kiện WSL (user `worker` đã `claude` login, venv...): `docs/guides/hub-dev.md` mục "Runtime trong WSL".
 - Chờ log `runtime.ready`. Mỗi tin khoảng 10 giây.
+- **Máy này WSL chạy NAT** (WSL không thấy `localhost` của Windows): lấy IP `ip route | awk '/default/ {print $3}'` trong WSL (vd `172.26.0.1`), bật stack bằng `HUB_PUBLIC_INTERNAL_URL=http://<ip>:4000 bun run combine:dev`, trong `rt.sh` đổi `AGENT_RT_HUB_URL=http://<ip>:4000`. WSL không ra được internet ⇒ dùng `uv run --frozen --no-sync` (venv có sẵn).
 
 ## 3. Seed Dify thật (cho S4/S6/S8/S10)
 
