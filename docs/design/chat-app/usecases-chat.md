@@ -18,9 +18,9 @@ C1 chạy với **mock Hub** (chưa có Hub/Claude CLI thật). Actor chung: **M
 | UC-06 | Trả lời tiếp trong flow | CHAT-AC-14…17 | FlowOpen, Mobile, States |
 | UC-07 | Quản lý hội thoại | CHAT-AC-18…23 | Welcome, Main |
 | UC-08 | Lỗi và kết nối | CHAT-AC-24…30 | States |
-| UC-09 | Nhắn riêng 1-1 (DM) — X2a | CHAT-AC-37…40 | (mockup X2 đang xem) |
-| UC-10 | Nhóm chat — X2a | CHAT-AC-41…45 | (mockup X2) |
-| UC-11 | Agent trong phòng — X2b | CHAT-AC-46…50 | (mockup X2) |
+| UC-09 | Nhắn riêng 1-1 (DM) — X2a | CHAT-AC-37…40 | `canvas-x2/` DM |
+| UC-10 | Nhóm chat — X2a | CHAT-AC-41…45 | `canvas-x2/` Main, NewGroup, Mobile |
+| UC-11 | Agent trong phòng — X2b | CHAT-AC-46…50 | `canvas-x2/` Main (menu `@`, khối flow) |
 
 ---
 
@@ -180,7 +180,7 @@ Nguồn: CR-048, HUB-FR-101, 103, HUB-BR-21.
 
 | AC | Given / When / Then |
 |---|---|
-| CHAT-AC-46 | Given mở một phòng (DM hoặc nhóm), Then panel/thanh "Agent" liệt kê **chỉ agent chính user này được dùng** (tên + mô tả); bấm một agent thì chèn `@key` vào composer; gõ `@` vẫn hiện menu |
+| CHAT-AC-46 | Given mở một phòng (DM hoặc nhóm), When gõ `@` ở composer, Then menu `@` liệt kê **chỉ agent chính user này được dùng** (tên + `@key` + mô tả); chọn một agent thì chèn `@key`; placeholder gợi ý gõ `@`. Không có panel/hàng chip agent (người dùng 2026-10-07, đỡ tốn diện tích; CR-048) |
 | CHAT-AC-47 | Given A gửi "@hoadon …" trong nhóm, Then cả phòng thấy tin của A, trạng thái "hoadon đang xử lý" và kết quả như tin của agent; tin không tag thì agent không trả lời |
 | CHAT-AC-48 | Given agent hỏi lại / cần xác nhận `side_effect`, Then nút "Đồng ý / Huỷ" chỉ hiện và dùng được với **người gọi**; thành viên khác thấy "Đang chờ A xác nhận" |
 | CHAT-AC-49 | Given B không được dùng agent X, When B gõ "@X …", Then thông báo không tìm thấy agent (kèm gợi ý agent B dùng được), không có run |

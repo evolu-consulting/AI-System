@@ -19,7 +19,7 @@
 | Admin (`ADM-*`) | `design/admin/ba-admin.md` | `design/admin/ui-admin.md` (wireframe trong `.html`) |
 | Agent Hub (`HUB-*`) | `design/agent-hub/ba-agent-hub.md` | `design/agent-hub/ui-agent-studio.md`, `design/agent-hub/ui-operations.md` |
 | Worker (`WRK-*`) | `design/worker/ba-worker.md` | — |
-| Chat & Extension | — | `design/chat-app/ui-chat-extension.md` · use case C1 `design/chat-app/usecases-chat.md` (UC-01…11, CHAT-AC-01…50; UC-09…11 = X2, CR-047/048) · canvas `design/chat-app/canvas/` (5 artboard, xem README) |
+| Chat & Extension | — | `design/chat-app/ui-chat-extension.md` · use case C1 `design/chat-app/usecases-chat.md` (UC-01…11, CHAT-AC-01…50; UC-09…11 = X2, CR-047/048) · canvas `design/chat-app/canvas/` (5 artboard, xem README) · canvas X2 `design/chat-app/canvas-x2/` (4 artboard DM/nhóm, README; agent qua menu `@`) |
 | Design đã duyệt (Gate M0) | Canvas: https://claude.ai/artifact/FTSiKuF9ax5DkMBVKMdHDB · bản sao nguồn `design/canvas/` | 18 artboard Admin · token `design/canvas/tokens-map.md` |
 
 Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DEBT.md`).
@@ -63,4 +63,5 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 | `H3a-subscription` | Subscription `claude-sub`: probe → `provider_state`, hết quota/bị giới hạn, lỗi rõ (WRK-FR-22, 15; CR-041) · `spec-ac.md`, `spec-decisions.md`, `tasks.md` | H3a | done (2026-10-06) |
 | `H3b-agent-grants` | Quyền agent: `/agent-grants` + `/agent-grants/effective/:user_id` (Kiểm tra quyền phần agent, đóng M5 phần agent), `GET /runs/:id/trace` theo role + audit `view_trace` (HUB-FR-78, 79, 52, 87; HUB-BR-17; ADM-FR-37 vế Hub) · `spec-ac.md`, `spec-decisions.md`, `tasks.md` khung | H3b | draft (2026-10-06) |
 | `H4a-studio-shell-agents` | Studio: khung `apps/studio-web` + đăng nhập `platform_admin` + `/studio/api` Agents & Orchestrator (mặc định/theo tenant) + ghi an toàn (audit, version, NOTIFY) (HUB-FR-72, 60, 61, 62, 64, 69, 90) · `plan.md`, `plan-frontend.md` (+ `-copy`), `test-plan.md`, `readiness.md`, `tasks.md`, `spec-decisions.md` ("Kết luận H4a") | H4a | done (2026-10-07; I2 kiểm tay chờ người dùng) |
+| `X2a-rooms` | Chat user↔user: DM 1-1 + nhóm, RLS theo thành viên, `/me/stream` (Redis Streams), chưa đọc/đã đọc, `GET /directory`, UI phòng (HUB-FR-96…100, 102; HUB-BR-22; AC-H23–H25; CHAT-AC-37…45; X2a-R01…R24, X2a-AC01…AC16) · `spec-isolation.md` (realtime, ma trận cách ly, rủi ro), `tasks.md` khung | X2a | draft (2026-10-07, kế tiếp PLAN) |
 | `X1-combine` | Combine Chat + Admin + Hub + Studio, đóng M5, seed Dify thật (ADM-FR-21, 23, 37; HUB-FR liên quan; X1-R01…R16, X1-AC01…AC20) · `tasks.md`, `spec-decisions.md` (Kết luận X1), `plan-frontend-copy.md`, `readiness.md` | X1 | done (2026-10-07) |

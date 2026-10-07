@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nhóm chat · Chat App</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA}
+a{color:#6B4FA0}a:hover{color:#4A3278}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-wrap: wrap; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1D1733; font-size: 14px; background: #F7F6FA">
+
+<nav aria-label="Hội thoại" style="flex: 0 0 260px; background: #FFFFFF; border-right: 1px solid #E6E3EE; display: flex; flex-direction: column; padding: 16px 12px; gap: 10px; box-sizing: border-box">
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 4px 6px 8px"><span style="font-size: 18px; font-weight: 700; color: #2E2150">EvoluConsulting</span><span style="font-size: 12px; color: #635C78">AI Chat · Acme Việt Nam</span></div>
+<div style="display: flex; gap: 8px">
+<a href="#" style="flex-grow: 1; height: 40px; border: 1px solid #D9D5E3; border-radius: 8px; background: #FFFFFF; color: #1D1733; font: 600 14px 'Be Vietnam Pro',sans-serif; display: flex; align-items: center; gap: 8px; padding: 0 12px; text-decoration: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Hỏi AI</a>
+<a href="NewGroup.dc.html" style="flex-grow: 1; height: 40px; border: 1px solid #D9D5E3; border-radius: 8px; background: #FFFFFF; color: #1D1733; font: 600 14px 'Be Vietnam Pro',sans-serif; display: flex; align-items: center; gap: 8px; padding: 0 12px; text-decoration: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.6-3.4 3.3-5.5 6.5-5.5s5.9 2.1 6.5 5.5"></path><path d="M19 8v6M16 11h6"></path></svg>Nhóm mới</a>
+</div>
+<label style="display: block"><span style="position: absolute; left: -9999px">Tìm hội thoại, người, nhóm</span>
+<input placeholder="Tìm hội thoại, người, nhóm" style="width: 100%; height: 36px; border: 1px solid #E6E3EE; border-radius: 8px; padding: 0 12px; font: 14px 'Be Vietnam Pro',sans-serif; box-sizing: border-box; background: #F7F6FA; color: #1D1733">
+</label>
+
+<div style="font-size: 12px; font-weight: 600; color: #635C78; padding: 8px 8px 0">Tin nhắn &amp; Nhóm</div>
+<a href="#" aria-current="page" style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; background: #EDE6FB; color: #2E2150; text-decoration: none">
+<span style="width: 28px; height: 28px; border-radius: 8px; background: #2E2150; color: #E4DCF7; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0">MP</span>
+<span style="display: flex; flex-direction: column; min-width: 0; flex-grow: 1"><span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Dự án Minh Phát</span><span style="font-size: 12px; color: #4A3278; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Lan: @dify-chatbot soạn email…</span></span>
+</a>
+<a href="DM.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">
+<span style="width: 28px; height: 28px; border-radius: 999px; background: #E3F4EC; color: #05603F; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0">MT</span>
+<span style="display: flex; flex-direction: column; min-width: 0; flex-grow: 1"><span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Minh Trần</span><span style="font-size: 12px; color: #635C78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Chiều nay họp khách lúc 3h nhé</span></span>
+<span aria-label="2 tin chưa đọc" style="min-width: 20px; height: 20px; border-radius: 999px; background: #6B4FA0; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; padding: 0 6px; box-sizing: border-box">2</span>
+</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">
+<span style="width: 28px; height: 28px; border-radius: 8px; background: #FDF0DF; color: #7F3C04; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0">SQ</span>
+<span style="display: flex; flex-direction: column; min-width: 0; flex-grow: 1"><span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Sales Q4</span><span style="font-size: 12px; color: #635C78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Hoa: Đã cập nhật pipeline</span></span>
+<span aria-label="5 tin chưa đọc" style="min-width: 20px; height: 20px; border-radius: 999px; background: #6B4FA0; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; padding: 0 6px; box-sizing: border-box">5</span>
+</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">
+<span style="width: 28px; height: 28px; border-radius: 999px; background: #EFEDF3; color: #4F4865; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0">LN</span>
+<span style="display: flex; flex-direction: column; min-width: 0; flex-grow: 1"><span style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Lan Nguyễn</span><span style="font-size: 12px; color: #635C78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Bạn: Ok em</span></span>
+</a>
+
+<div style="font-size: 12px; font-weight: 600; color: #635C78; padding: 10px 8px 0">Hỏi AI</div>
+<a href="#" style="display: block; padding: 8px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">Chuẩn bị họp giao ban</a>
+<a href="#" style="display: block; padding: 8px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">Hợp đồng NDA đối tác</a>
+<a href="#" style="display: block; padding: 8px 10px; border-radius: 8px; color: #1D1733; text-decoration: none">Kế hoạch tuyển dụng Q4</a>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px; border-top: 1px solid #E6E3EE">
+<div style="width: 32px; height: 32px; border-radius: 999px; background: #EDE6FB; color: #4A3278; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px">TH</div>
+<div style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-weight: 500">Thu Hà</span><span style="font-size: 12px; color: #635C78">thu.ha</span></div>
+</div>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; background: #F7F6FA">
+<header style="min-height: 60px; border-bottom: 1px solid #E6E3EE; background: #FFFFFF; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 24px; box-sizing: border-box">
+<span style="width: 32px; height: 32px; border-radius: 8px; background: #2E2150; color: #E4DCF7; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">MP</span>
+<div style="display: flex; flex-direction: column"><h1 style="margin: 0; font-size: 16px; font-weight: 600">Dự án Minh Phát</h1><span style="font-size: 12px; color: #635C78">Nhóm · 5 thành viên · chủ nhóm Minh Trần</span></div>
+<div style="flex-grow: 1"></div>
+<div aria-label="Thành viên" style="display: flex; align-items: center">
+<span style="width: 28px; height: 28px; border-radius: 999px; background: #E3F4EC; color: #05603F; border: 2px solid #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600">MT</span>
+<span style="width: 28px; height: 28px; border-radius: 999px; background: #EFEDF3; color: #4F4865; border: 2px solid #FFFFFF; margin-left: -8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600">LN</span>
+<span style="width: 28px; height: 28px; border-radius: 999px; background: #EDE6FB; color: #4A3278; border: 2px solid #FFFFFF; margin-left: -8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600">TH</span>
+<span style="width: 28px; height: 28px; border-radius: 999px; background: #FDF0DF; color: #7F3C04; border: 2px solid #FFFFFF; margin-left: -8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600">+2</span>
+</div>
+<button style="height: 36px; padding: 0 12px; border: 1px solid #D9D5E3; border-radius: 8px; background: #FFFFFF; color: #1D1733; font: 500 13px 'Be Vietnam Pro',sans-serif; display: inline-flex; align-items: center; gap: 6px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm người</button>
+</header>
+
+<div role="log" aria-live="polite" style="flex-grow: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-width: 820px; width: 100%; margin: 0 auto; box-sizing: border-box">
+
+<div style="display: flex; align-items: center; gap: 12px; color: #736C89; font-size: 12px"><span style="flex-grow: 1; height: 1px; background: #E6E3EE"></span>Hôm nay<span style="flex-grow: 1; height: 1px; background: #E6E3EE"></span></div>
+
+<div style="display: flex; gap: 10px; align-items: flex-start">
+<span style="width: 32px; height: 32px; border-radius: 999px; background: #E3F4EC; color: #05603F; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0">MT</span>
+<div style="display: flex; flex-direction: column; gap: 4px; max-width: 78%">
+<div style="display: flex; gap: 8px; align-items: baseline"><span style="font-weight: 600; font-size: 13px">Minh Trần</span><span style="font-size: 12px; color: #736C89">09:12</span></div>
+<div style="background: #FFFFFF; border: 1px solid #E6E3EE; padding: 10px 14px; border-radius: 4px 12px 12px 12px; line-height: 1.5">Khách Minh Phát vừa gửi lại hợp đồng bản sửa, mọi người xem giúp điều khoản thanh toán nhé.</div>
+<div style="display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; border: 1px solid #E6E3EE; background: #FFFFFF; border-radius: 8px; padding: 6px 10px; font-size: 13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B4FA0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg>HD-MinhPhat-v3.pdf<span style="color: #635C78">240 KB</span></div>
+</div>
+</div>
+
+<div style="display: flex; gap: 10px; align-items: flex-start">
+<span style="width: 32px; height: 32px; border-radius: 999px; background: #EFEDF3; color: #4F4865; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0">LN</span>
+<div style="display: flex; flex-direction: column; gap: 4px; max-width: 78%">
+<div style="display: flex; gap: 8px; align-items: baseline"><span style="font-weight: 600; font-size: 13px">Lan Nguyễn</span><span style="font-size: 12px; color: #736C89">09:14</span></div>
+<div style="background: #FFFFFF; border: 1px solid #E6E3EE; padding: 10px 14px; border-radius: 4px 12px 12px 12px; line-height: 1.5">Em thấy điều 5 đổi từ 30 ngày sang 45 ngày.</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px">
+<span style="font-size: 12px; color: #736C89">Bạn · 09:15</span>
+<div style="max-width: 78%; background: #EDE6FB; color: #2E2150; padding: 10px 14px; border-radius: 12px 4px 12px 12px; line-height: 1.5"><span style="font-weight: 600; color: #4A3278; background: #FFFFFF; border-radius: 6px; padding: 1px 6px">@assistant</span> tóm tắt các thay đổi chính trong HD-MinhPhat-v3.pdf so với bản trước, theo từng điều khoản.</div>
+</div>
+
+<article aria-label="Trả lời của agent Trợ lý" style="border: 1px solid #E6E3EE; border-radius: 14px; background: #FFFFFF; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<span style="width: 26px; height: 26px; border-radius: 8px; background: #6B4FA0; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg></span>
+<span style="font-size: 13px; font-weight: 600; color: #4A3278">Trợ lý</span>
+<span style="font: 500 12px 'JetBrains Mono',monospace; color: #635C78">@assistant</span>
+<span style="font-size: 12px; color: #635C78; background: #F0EEF4; padding: 2px 8px; border-radius: 999px">Thu Hà hỏi</span>
+<span style="flex-grow: 1"></span><span style="font-size: 12px; color: #736C89">09:15</span>
+</div>
+<div style="line-height: 1.6">
+<div style="font-weight: 600; margin-bottom: 4px">3 thay đổi chính so với bản v2:</div>
+<div>1. <b>Điều 5 – Thanh toán:</b> hạn thanh toán từ 30 lên 45 ngày; bỏ khoản phạt chậm 0,05%/ngày.</div>
+<div>2. <b>Điều 7 – Bảo hành:</b> rút từ 12 xuống 6 tháng cho hạng mục phần mềm.</div>
+<div>3. <b>Điều 11 – Chấm dứt:</b> thêm quyền đơn phương chấm dứt với báo trước 30 ngày.</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; border-top: 1px solid #EFEDF3; padding-top: 8px; font-size: 12px; color: #635C78; flex-wrap: wrap">
+<span style="display: inline-flex; align-items: center; gap: 4px; color: #05603F"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>2 bước · 12,4s</span>
+<span>Chạy bằng quyền của Thu Hà</span>
+<span style="flex-grow: 1"></span>
+<button style="height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: #635C78; font: 500 12px 'Be Vietnam Pro',sans-serif; cursor: pointer">Copy</button>
+<button style="height: 30px; padding: 0 12px; border: 1px solid #CFC7E2; border-radius: 999px; background: #FFFFFF; color: #4A3278; font: 500 12px 'Be Vietnam Pro',sans-serif; display: inline-flex; align-items: center; gap: 6px; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-4-4 4-4"></path><path d="M5 10h9a5 5 0 0 1 5 5v4"></path></svg>Trả lời tiếp · 2 tin trong luồng</button>
+</div>
+</article>
+
+<div style="display: flex; align-items: center; gap: 12px; color: #6B4FA0; font-size: 12px; font-weight: 600"><span style="flex-grow: 1; height: 1px; background: #CFC7E2"></span>2 tin mới<span style="flex-grow: 1; height: 1px; background: #CFC7E2"></span></div>
+
+<div style="display: flex; gap: 10px; align-items: flex-start">
+<span style="width: 32px; height: 32px; border-radius: 999px; background: #EFEDF3; color: #4F4865; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0">LN</span>
+<div style="display: flex; flex-direction: column; gap: 4px; max-width: 78%">
+<div style="display: flex; gap: 8px; align-items: baseline"><span style="font-weight: 600; font-size: 13px">Lan Nguyễn</span><span style="font-size: 12px; color: #736C89">09:18</span></div>
+<div style="background: #FFFFFF; border: 1px solid #E6E3EE; padding: 10px 14px; border-radius: 4px 12px 12px 12px; line-height: 1.5"><span style="font-weight: 600; color: #4A3278; background: #EDE6FB; border-radius: 6px; padding: 1px 6px">@dify-chatbot</span> soạn email phản hồi khách, đồng ý điều 5, đề nghị giữ bảo hành 12 tháng.</div>
+</div>
+</div>
+
+<article aria-label="Agent Chatbot (Dify) đang chờ xác nhận" style="border: 1px solid #E6E3EE; border-radius: 14px; background: #FFFFFF; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<span style="width: 26px; height: 26px; border-radius: 8px; background: #6B4FA0; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg></span>
+<span style="font-size: 13px; font-weight: 600; color: #4A3278">Chatbot (Dify)</span>
+<span style="font: 500 12px 'JetBrains Mono',monospace; color: #635C78">@dify-chatbot</span>
+<span style="font-size: 12px; color: #635C78; background: #F0EEF4; padding: 2px 8px; border-radius: 999px">Lan Nguyễn hỏi</span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; background: #FDF0DF; color: #7F3C04; border-radius: 10px; padding: 10px 12px; font-size: 13px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+<span>Agent muốn gửi email thật. Đang chờ <b>Lan Nguyễn</b> xác nhận — chỉ người hỏi mới bấm được.</span>
+</div>
+</article>
+
+</div>
+
+<div style="padding: 0 24px 20px; max-width: 820px; width: 100%; margin: 0 auto; box-sizing: border-box; position: relative">
+<sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ true }}">
+<div role="listbox" aria-label="Agent bạn dùng được" style="position: absolute; left: 24px; right: 24px; bottom: calc(100% - 12px); max-width: 460px; background: #FFFFFF; border: 1px solid #E6E3EE; border-radius: 12px; box-shadow: 0 8px 24px rgba(29,23,51,.16); padding: 6px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12px; font-weight: 600; color: #635C78; padding: 6px 10px 4px">Agent bạn dùng được</span>
+<sc-for list="{{ agents }}" as="ag" hint-placeholder-count="3">
+<button role="option" onClick="{{ ag.pick }}" style="display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border: 0; border-radius: 8px; background: {{ ag.bg }}; text-align: left; cursor: pointer; font-family: 'Be Vietnam Pro',sans-serif; color: #1D1733">
+<span style="width: 26px; height: 26px; border-radius: 8px; background: #EDE6FB; color: #4A3278; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 14px; font-weight: 600">{{ ag.name }} <span style="font: 500 12px 'JetBrains Mono',monospace; color: #635C78">@{{ ag.key }}</span></span><span style="font-size: 12px; color: #635C78; line-height: 1.45">{{ ag.desc }}</span></span>
+</button>
+</sc-for>
+<span style="font-size: 12px; color: #736C89; padding: 6px 10px 4px; border-top: 1px solid #F0EEF4">Theo quyền của bạn · ↑↓ chọn · Enter chèn</span>
+</div>
+</sc-if>
+<div style="border: 1px solid #D9D5E3; border-radius: 12px; background: #FFFFFF; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px">
+<label style="display: block"><span style="position: absolute; left: -9999px">Tin nhắn cho nhóm</span>
+<input value="{{ draft }}" onChange="{{ onDraft }}" placeholder="Nhắn cho nhóm… gõ @ để hỏi agent, / để chạy lệnh" style="width: 100%; height: 36px; border: 0; outline: none; font: 14px 'Be Vietnam Pro',sans-serif; color: #1D1733; background: transparent; box-sizing: border-box">
+</label>
+<div style="display: flex; align-items: center; gap: 8px">
+<button aria-label="Đính kèm tệp" style="width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: #635C78; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.5 8.5a5 5 0 0 1-7-7L14 4.5a3.5 3.5 0 0 1 5 5L10.5 18a2 2 0 0 1-3-3L15 7.5"></path></svg></button>
+<span style="font-size: 12px; color: #736C89">Agent chỉ trả lời khi được @ — chạy bằng quyền và quota của người hỏi.</span>
+<span style="flex-grow: 1"></span>
+<button style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #6B4FA0; color: #FFFFFF; font: 600 14px 'Be Vietnam Pro',sans-serif; cursor: pointer">Gửi</button>
+</div>
+</div>
+</div>
+</main>
+
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { draft: '@' };
+  }
+  renderVals() {
+    const agents = [
+      { key: 'orchestrator', short: 'Tự', name: 'Tự chọn agent', desc: 'Không chắc hỏi ai? Orchestrator đọc câu hỏi và chọn agent phù hợp.' },
+      { key: 'assistant', short: 'TL', name: 'Trợ lý', desc: 'Trợ lý chung — trả lời câu hỏi, soạn thảo và tóm tắt văn bản theo yêu cầu.' },
+      { key: 'dify-chatbot', short: 'DF', name: 'Chatbot (Dify)', desc: 'Trò chuyện với chatbot Dify — tra cứu board, soạn email, tạo card.' }
+    ];
+    const m = /(^|\s)@([\w-]*)$/.exec(this.state.draft);
+    const q = m ? m[2].toLowerCase() : null;
+    const shown = q === null ? [] : agents.filter((a) => a.key.indexOf(q) === 0 || a.name.toLowerCase().indexOf(q) >= 0);
+    return {
+      draft: this.state.draft,
+      menuOpen: shown.length > 0,
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      agents: shown.map((a, i) => ({
+        ...a,
+        bg: i === 0 ? '#F8F5FE' : 'transparent',
+        pick: () => {
+          const d = this.state.draft.replace(/@[\w-]*$/, '');
+          this.setState({ draft: d + '@' + a.key + ' ' });
+        }
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>
