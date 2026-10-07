@@ -1,7 +1,9 @@
-// CHAT-AC-28, 29 · trạng thái kết nối của app: run đang nối lại / run `lost` / query lỗi mạng (Hub không với tới).
+// CHAT-AC-28, 29, 40 · trạng thái kết nối của app: run đang nối lại / run `lost` / query lỗi mạng (Hub không với tới).
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useSyncExternalStore } from "react";
 import type { ConnectionKind } from "~/components/shared/ConnectionBanner";
+import { useRealtimePhase } from "~/features/realtime/realtime-store";
+import { meStreamDriver } from "~/features/realtime/runtime";
 import { runStore, useRuns } from "~/features/run/run-store";
 import { runDriver } from "~/features/run/runtime";
 import { ApiError } from "~/lib/http";
@@ -23,11 +25,17 @@ export function useConnection(): { kind: ConnectionKind | null; retry: () => voi
   );
   const reconnecting = useRuns((runs) => runs.some((r) => r.phase === "reconnecting"));
   const lost = useRuns((runs) => runs.some((r) => r.phase === "lost"));
+  const rt = useRealtimePhase();
   const retry = useCallback(() => {
     for (const r of runStore.getRuns()) if (r.phase === "lost") runDriver.reconnect(r.key);
+    meStreamDriver.retry();
     void client.refetchQueries({ type: "active" });
   }, [client]);
   const kind: ConnectionKind | null =
-    netDown || lost ? "down" : reconnecting ? "reconnecting" : null;
+    netDown || lost || rt === "down"
+      ? "down"
+      : reconnecting || rt === "reconnecting"
+        ? "reconnecting"
+        : null;
   return { kind, retry };
 }

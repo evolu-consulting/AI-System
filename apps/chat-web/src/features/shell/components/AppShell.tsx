@@ -7,6 +7,7 @@ import { ConnectionBanner } from "~/components/shared/ConnectionBanner";
 import { Button } from "~/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "~/components/ui/sheet";
 import { useSessionRedirect } from "~/features/auth/hooks/use-session-redirect";
+import { useMeStream } from "~/features/realtime/hooks/use-me-stream";
 import { useSession } from "~/lib/auth/use-session";
 import { useConnection } from "../hooks/use-connection";
 import { useDebouncedValue } from "../hooks/use-debounced-value";
@@ -25,6 +26,7 @@ export function AppShell() {
   const desktop = useIsDesktop();
   const settings = useSettings();
   useSessionRedirect();
+  useMeStream();
   const conn = useConnection();
   const tenantName = useSession((s) => s.me?.tenant.name ?? "");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
