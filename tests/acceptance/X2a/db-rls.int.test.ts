@@ -128,7 +128,7 @@ describe("D01–D08 · đọc theo thành viên [X2a-AC01 · HUB-BR-22]", () => 
   it("HUB-FR-97 · D08 · A ẩn DM ⇒ GUC A vẫn thấy DM (ẩn là của app, không phải RLS) [X2a-R07]", async () => {
     const dm = await seedRoom({
       kind: "dm",
-      members: [{ p: P.lan, hidden: true }, { p: P.hoa }],
+      members: [{ p: P.lan, hidden: true }, { p: P.tam }],
       n: 1,
     });
     expect(await seen(P.lan, dm)).toEqual([1, 2, 1]);

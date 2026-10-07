@@ -179,3 +179,4 @@ RLS đệ quy/lọt hàng khi tạo phòng, sự kiện lọt cho người vừa
 
 ## 12. Tranh chấp test
 - 2026-10-07 [backend-lead, B1] D11b đỏ khi chạy cả file (riêng thì xanh): D08 commit sẵn DM `lan`–`hoa` acme ⇒ `create_room` trả phòng cũ (R05). Đề xuất: D08 dùng cặp khác.
+- 2026-10-07 [qc] Phân xử: test sai (phụ thuộc thứ tự, không phải code) — D08 đổi cặp `lan`–`hoa` sang `lan`–`tam`; D11b giữ nguyên; db-rls 18/18 xanh 2 lần liên tiếp; khoá đã cập nhật.
