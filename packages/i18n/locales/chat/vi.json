@@ -265,6 +265,38 @@
       "retry": "Thử lại",
       "more": "Tải thêm",
       "noMatch": "Không có tin nhắn hay nhóm khớp \"{{q}}\""
+    },
+    "subtitleGroup": "Nhóm · {{count}} thành viên · chủ nhóm {{owner}}",
+    "hide": "Ẩn hội thoại",
+    "log": "Tin nhắn của phòng",
+    "you": "Bạn",
+    "msgMeta": "{{name}}, {{time}}",
+    "today": "Hôm nay",
+    "yesterday": "Hôm qua",
+    "newMessages": "{{count}} tin mới",
+    "start": "Đầu cuộc trò chuyện",
+    "empty": "Chưa có tin nào. Hãy gửi tin đầu tiên.",
+    "loadError": "Không tải được tin nhắn",
+    "retry": "Thử lại",
+    "composer": {
+      "group": "Tin nhắn cho nhóm",
+      "dm": "Tin nhắn cho {{name}}",
+      "count": "{{n}}/16000"
+    },
+    "seen": "Đã xem",
+    "seenBy": "Đã xem bởi {{count}}",
+    "seenMore": "và {{count}} người khác",
+    "notFound": {
+      "title": "Không tìm thấy cuộc trò chuyện",
+      "body": "Cuộc trò chuyện không tồn tại, đã bị xoá, hoặc bạn không còn trong đó.",
+      "back": "Về trang chào"
+    },
+    "toast": {
+      "hidden": "Đã ẩn hội thoại. Tin mới sẽ làm nó hiện lại.",
+      "kicked": "Bạn không còn trong nhóm \"{{name}}\"",
+      "gone": "Nhóm \"{{name}}\" đã bị xoá",
+      "sendFailed": "Không gửi được tin. Nội dung vẫn còn trong ô nhập.",
+      "actionFailed": "Không thực hiện được. Thử lại sau."
     }
   }
 }

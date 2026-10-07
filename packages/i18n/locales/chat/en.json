@@ -265,6 +265,38 @@
       "retry": "Retry",
       "more": "Load more",
       "noMatch": "No messages or groups match \"{{q}}\""
+    },
+    "subtitleGroup": "Group · {{count}} members · owner {{owner}}",
+    "hide": "Hide conversation",
+    "log": "Room messages",
+    "you": "You",
+    "msgMeta": "{{name}}, {{time}}",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "newMessages": "{{count}} new messages",
+    "start": "Start of conversation",
+    "empty": "No messages yet. Send the first one.",
+    "loadError": "Couldn't load messages",
+    "retry": "Retry",
+    "composer": {
+      "group": "Message the group",
+      "dm": "Message {{name}}",
+      "count": "{{n}}/16000"
+    },
+    "seen": "Seen",
+    "seenBy": "Seen by {{count}}",
+    "seenMore": "and {{count}} others",
+    "notFound": {
+      "title": "Conversation not found",
+      "body": "It doesn't exist, was deleted, or you're no longer in it.",
+      "back": "Back to start"
+    },
+    "toast": {
+      "hidden": "Conversation hidden. A new message will bring it back.",
+      "kicked": "You're no longer in \"{{name}}\"",
+      "gone": "The group \"{{name}}\" was deleted",
+      "sendFailed": "Couldn't send. Your message is still in the box.",
+      "actionFailed": "That didn't work. Try again later."
     }
   }
 }

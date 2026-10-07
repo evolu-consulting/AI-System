@@ -1,18 +1,11 @@
-// HUB-FR-96 · khung tạm của màn phòng (F3): chỉ tiêu đề; F4 thay bằng header + dòng thời gian + composer.
+// HUB-FR-96 · `/rooms/$id`: chỉ lấy id từ route rồi giao cho RoomView. `?flow=` được nhận nhưng bỏ qua ở X2a (plan-frontend §2).
 import { getRouteApi } from "@tanstack/react-router";
-import { useRoom } from "../hooks/use-room";
-import { roomTitle } from "../lib/room-logic";
+import { RoomView } from "../components/RoomView";
 
 const route = getRouteApi("/_authed/rooms/$id");
 
 export function RoomPage() {
   const { id } = route.useParams();
-  const { data } = useRoom(id);
-  return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex h-[60px] shrink-0 items-center border-b border-border px-4">
-        <h1 className="truncate text-base font-semibold">{data ? roomTitle(data) : ""}</h1>
-      </header>
-    </div>
-  );
+  // key theo id: đổi phòng → trạng thái cuộn/bám đáy/nháp làm lại từ đầu.
+  return <RoomView key={id} roomId={id} />;
 }

@@ -58,3 +58,34 @@ export function groupByDay(messages: RoomMessage[]): { day: string; items: RoomM
 export function lastSeqOf(messages: RoomMessage[]): number {
   return messages.reduce((mx, m) => Math.max(mx, m.seq), 0);
 }
+
+export type DayLabel = { kind: "today" } | { kind: "yesterday" } | { kind: "date"; text: string };
+
+/** Nhãn ngày của một cụm: Hôm nay / Hôm qua / `dd/MM/yyyy` (khoá ngày địa phương `yyyy-MM-dd`). */
+export function dayLabelOf(day: string, now: Date): DayLabel {
+  const today = dayKey(now.toISOString());
+  const yest = new Date(now);
+  yest.setDate(yest.getDate() - 1);
+  if (day === today) return { kind: "today" };
+  if (day === dayKey(yest.toISOString())) return { kind: "yesterday" };
+  const [y, m, d] = day.split("-");
+  return { kind: "date", text: `${d}/${m}/${y}` };
+}
+
+/** Giờ địa phương `HH:mm` của một mốc ISO. */
+export function timeOf(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/** Tên người đã xem để liệt kê (≤ `max`) + số người còn lại. */
+export function readerNames(
+  readers: Pick<RoomMember, "display_name">[],
+  max = 10,
+): { names: string[]; more: number } {
+  return {
+    names: readers.slice(0, max).map((r) => r.display_name),
+    more: Math.max(0, readers.length - max),
+  };
+}

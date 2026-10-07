@@ -8,6 +8,16 @@ import { tanstackRouter } from "@tanstack/router-plugin/rspack";
 const HUB_URL = process.env.HUB_URL || "http://localhost:4020";
 const AUTH_URL = process.env.AUTH_URL || HUB_URL;
 
+// `/rooms/:id`, `/directory`, `/me` vừa là API vừa là route SPA (`/rooms/$id`): tải trang bằng trình duyệt
+// (GET, Accept text/html) phải nhận index.html chứ không được chuyển sang Hub.
+const spaNavigation = {
+  target: HUB_URL,
+  bypass: (req: { method?: string; headers: Record<string, string | string[] | undefined> }) =>
+    req.method === "GET" && String(req.headers.accept ?? "").includes("text/html")
+      ? "/index.html"
+      : null,
+};
+
 const proxy = {
   "/auth": AUTH_URL,
   "/conversations": HUB_URL,
@@ -15,9 +25,9 @@ const proxy = {
   "/agents": HUB_URL,
   "/commands": HUB_URL,
   "/attachments": HUB_URL,
-  "/directory": HUB_URL,
-  "/rooms": HUB_URL,
-  "/me": HUB_URL,
+  "/directory": spaNavigation,
+  "/rooms": spaNavigation,
+  "/me": spaNavigation,
   "/health": HUB_URL,
 };
 

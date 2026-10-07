@@ -1,7 +1,17 @@
 // X2a · luật thuần phòng.
 import { describe, expect, test } from "bun:test";
 import type { RoomMessage } from "@ai/contracts/chat";
-import { dayKey, groupByDay, lastSeqOf, previewOf, roomTitle, seenBy } from "./room-logic";
+import {
+  dayKey,
+  dayLabelOf,
+  groupByDay,
+  lastSeqOf,
+  previewOf,
+  readerNames,
+  roomTitle,
+  seenBy,
+  timeOf,
+} from "./room-logic";
 
 const ME = "00000000-0000-4000-8000-000000000001";
 const OTHER = "00000000-0000-4000-8000-000000000002";
@@ -58,5 +68,23 @@ describe("room-logic", () => {
     expect(dayKey("2026-10-07T10:00:00")).toBe("2026-10-07");
     expect(lastSeqOf([m(1, ME), m(5, ME), m(3, ME)])).toBe(5);
     expect(lastSeqOf([])).toBe(0);
+  });
+});
+
+describe("dayLabelOf · timeOf · readerNames", () => {
+  const now = new Date(2026, 9, 8, 12, 0);
+  test("Hôm nay / Hôm qua / dd/MM/yyyy", () => {
+    expect(dayLabelOf("2026-10-08", now)).toEqual({ kind: "today" });
+    expect(dayLabelOf("2026-10-07", now)).toEqual({ kind: "yesterday" });
+    expect(dayLabelOf("2026-09-30", now)).toEqual({ kind: "date", text: "30/09/2026" });
+  });
+  test("timeOf: HH:mm địa phương", () => {
+    expect(timeOf(new Date(2026, 9, 8, 9, 5).toISOString())).toBe("09:05");
+  });
+  test("readerNames: cắt 10 tên, đếm phần còn lại", () => {
+    const rs = Array.from({ length: 12 }, (_, i) => ({ display_name: `U${i}` }));
+    const r = readerNames(rs);
+    expect(r.names).toHaveLength(10);
+    expect(r.more).toBe(2);
   });
 });

@@ -149,3 +149,26 @@ test("stop() đóng stream đang mở và không nối lại", async () => {
   expect(t.opens).toHaveLength(1);
   expect(t.store.get().phase).toBe("idle");
 });
+
+test("nối lại khi chưa có lastEventId: báo stream.reset để nạp lại cache; lần đầu thì không", async () => {
+  const err = new ApiError(0, "NETWORK_ERROR", "x");
+  const t = setup([err, { chunks: [": ping\n\n"], hang: true }]);
+  t.driver.start();
+  await Bun.sleep(10);
+  expect(t.events.map((e) => e.event)).toEqual(["stream.reset"]);
+  t.driver.stop();
+  const first = setup([{ chunks: [": ping\n\n"], hang: true }]);
+  first.driver.start();
+  await Bun.sleep(10);
+  expect(first.events).toEqual([]);
+  first.driver.stop();
+});
+
+test("nối lại khi đã có lastEventId: không giả stream.reset (server phát bù)", async () => {
+  const err = new ApiError(0, "NETWORK_ERROR", "x");
+  const t = setup([{ chunks: [deleted("1-0")] }, err, { chunks: [": ping\n\n"], hang: true }]);
+  t.driver.start();
+  await Bun.sleep(10);
+  expect(t.events.map((e) => e.event)).toEqual(["room.deleted"]);
+  t.driver.stop();
+});

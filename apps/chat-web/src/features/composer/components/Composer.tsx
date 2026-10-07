@@ -21,8 +21,16 @@ import { composerKeyHandler } from "../hooks/use-composer-keys";
 import { readDraft, useDraftSaver } from "../hooks/use-draft";
 import { type SubmitResult, useSendError } from "../hooks/use-send-error";
 import { useComposerSuggest } from "../hooks/use-suggest";
-import { COMPOSER_MAX_ROWS, canSend, clampHeight, submitOutcome } from "../lib/composer-logic";
+import {
+  COMPOSER_MAX_ROWS,
+  canSend,
+  clampHeight,
+  inputLabels,
+  overLimit,
+  submitOutcome,
+} from "../lib/composer-logic";
 import { AgentMenu } from "./AgentMenu";
+import { CharCount } from "./CharCount";
 import { CommandMenu } from "./CommandMenu";
 import { QuotaNotice } from "./QuotaNotice";
 import { SendErrorNotice } from "./SendErrorNotice";
@@ -46,7 +54,7 @@ export type ComposerHandle = {
 };
 
 export type ComposerProps = {
-  variant: "main" | "flow";
+  variant: "main" | "flow" | "room";
   /** `draftKey(convId, flowId)`. */
   draftKey: string;
   /** Run khác đang chạy trong hội thoại: gõ được, Gửi disabled + tooltip `composer.busy` (UC-02). */
@@ -56,6 +64,14 @@ export type ComposerProps = {
   /** `run.started.quota.state = over`. */
   quotaOver?: boolean;
   autoFocus?: boolean;
+  /** Menu `/` và `@` (mặc định bật). Tắt: không gọi `GET /commands`/`/agents`, `@x`/`/x` gửi nguyên văn (phòng X2a). */
+  menus?: boolean;
+  /** Nút/hàng đính kèm (mặc định bật). */
+  attachments?: boolean;
+  /** `room`: nhãn textbox, cũng là placeholder (vd "Tin nhắn cho nhóm"). */
+  inputLabel?: string;
+  /** Quá giới hạn ký tự → Gửi disabled; hiện bộ đếm từ 90 %. */
+  maxChars?: number;
   onSubmit(text: string, attachmentIds?: string[]): Promise<SubmitResult>;
   onStop?(): void;
 };
@@ -68,6 +84,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     running = false,
     quotaOver = false,
     autoFocus,
+    menus = true,
+    attachments = true,
+    inputLabel,
+    maxChars,
     onSubmit,
     onStop,
   },
@@ -99,9 +119,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     agent: agentSuggest,
     current: suggest,
     aria,
-  } = useComposerSuggest(text, caret);
+  } = useComposerSuggest(text, caret, menus);
   const sendError = useSendError(text);
   const att = useAttachments();
+  const over = overLimit(text, maxChars);
   const { clear: clearSendError } = sendError;
   const change = useCallback(
     (value: string, nextCaret = value.length) => {
@@ -129,7 +150,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   );
 
   const send = useCallback(async () => {
-    if (!canSend(text, locked, submitting) || sendError.cooling || att.busy) return;
+    if (!canSend(text, locked, submitting) || over || sendError.cooling || att.busy) return;
     setSubmitting(true);
     try {
       const sent = text.trim();
@@ -148,7 +169,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     } finally {
       setSubmitting(false);
     }
-  }, [text, locked, submitting, onSubmit, draft, sendError, att]);
+  }, [text, locked, submitting, over, onSubmit, draft, sendError, att]);
 
   const pickCommand = useCallback(
     (index?: number) => {
@@ -170,8 +191,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     stop: onStop,
   });
 
-  const enabled = canSend(text, locked, submitting) && !sendError.cooling && !att.busy;
+  const enabled = canSend(text, locked, submitting) && !over && !sendError.cooling && !att.busy;
   const errorView = sendError.view;
+  const labels = inputLabels(t, flow, inputLabel);
   return (
     <div className="w-full">
       <QuotaNotice over={quotaOver} />
@@ -194,19 +216,19 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           {t("composer.newHint")}
         </p>
       )}
-      <AttachBar chips={att.chips} onRemove={att.remove} onRetry={att.retry} />
+      {attachments && <AttachBar chips={att.chips} onRemove={att.remove} onRetry={att.retry} />}
       <div
         {...att.dropProps}
         className="flex items-end gap-2 rounded-xl border border-input bg-background p-2 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
       >
-        <AttachButton onPick={att.add} />
+        {attachments && <AttachButton onPick={att.add} />}
         {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: plan-frontend §1.1 cần aria-expanded; giữ role textbox vì e2e chọn textbox "Tin nhắn". */}
         <textarea
           ref={area}
           rows={1}
           value={text}
-          aria-label={t(flow ? "composer.flowInput" : "composer.input")}
-          placeholder={t(flow ? "composer.flowPlaceholder" : "composer.placeholder")}
+          aria-label={labels.input}
+          placeholder={labels.placeholder}
           aria-expanded={aria.expanded}
           aria-controls={aria.controls}
           aria-activedescendant={aria.activeDescendant}
@@ -232,6 +254,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           </Button>
         )}
       </div>
+      {maxChars !== undefined && <CharCount length={text.length} max={maxChars} />}
     </div>
   );
 });

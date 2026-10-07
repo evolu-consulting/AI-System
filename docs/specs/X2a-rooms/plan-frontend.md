@@ -160,6 +160,9 @@ Cuối F6: `bun run typecheck` · `bun test apps/chat-web` · e2e chat C1 cũ kh
 ## 14. Quyết định trong lúc làm (FE, PLAN)
 - 2026-10-07 D1–D9, FE-1…FE-4 ở trên; ngưỡng JS nới 150 → 160 KB nếu vượt (perf thấp ưu tiên).
 - Đổi chữ `shell.newChat`/`shell.search` theo canvas; e2e C1 hiện dùng substring nên không vỡ — qc xác nhận ở QC1.
+- 2026-10-08 (F4) Gửi tin giữ D7 (không optimistic; chèn cache khi POST xong, khử trùng `id` với `room.message`). Header F4 chỉ có tiêu đề, phụ đề nhóm và nút DM "Ẩn hội thoại"; "Thành viên/Thêm người/Tuỳ chọn" đi cùng dialog ở F5/F6. `useRoomLost` (về `/c/new` + toast khi bị bớt/xoá lúc đang mở) làm ngay ở F4 vì cùng màn.
+- 2026-10-08 (F4) `rsbuild.config.ts`: `/rooms`, `/directory`, `/me` vừa là API vừa là route SPA ⇒ proxy `bypass` trả `index.html` cho GET `Accept: text/html` (không thì tải thẳng `/rooms/:id` bị chuyển sang Hub, JSON `AUTH_EXPIRED`).
+- 2026-10-08 (F4) `me-stream-driver`: nối lại sau đứt khi chưa có `lastEventId` (ping không có `id:`) thì server không phát bù ⇒ driver tự phát `stream.reset` để router nạp lại cache (X2a-AC08, e2e E08).
 - Tiêu đề hai mục sidebar là `h3`, giữ `h2` cho nhóm thời gian "Hỏi AI" (khoá bởi e2e C1 `CHAT-AC-19`).
 
 ## 15. Rủi ro

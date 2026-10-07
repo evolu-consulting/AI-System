@@ -41,6 +41,23 @@ export function clampHeight(scrollHeight: number, lineHeight: number, maxRows: n
   return Math.min(scrollHeight, lineHeight * maxRows);
 }
 
+/** Quá `max` ký tự (phòng: `CHAT_CONTENT_MAX`); `max` rỗng = không giới hạn. */
+export function overLimit(text: string, max: number | undefined): boolean {
+  return max !== undefined && text.length > max;
+}
+
+/** Nhãn + placeholder của textbox: `override` (phòng) thắng; không thì theo `flow`. */
+export function inputLabels(
+  t: (key: string) => string,
+  flow: boolean,
+  override?: string,
+): { input: string; placeholder: string } {
+  if (override) return { input: override, placeholder: override };
+  return flow
+    ? { input: t("composer.flowInput"), placeholder: t("composer.flowPlaceholder") }
+    : { input: t("composer.input"), placeholder: t("composer.placeholder") };
+}
+
 export function canSend(text: string, locked: boolean, submitting: boolean): boolean {
   return !locked && !submitting && text.trim() !== "";
 }

@@ -95,7 +95,7 @@ export class MeStreamDriver {
       cancelIdle = this.deps.setTimer(() => conn.abort(), IDLE_TIMEOUT_MS);
     };
     const onBytes = () => {
-      if (this.store.get().phase !== "open") this.store.setPhase("open");
+      this.markOpen();
       this.failures = 0;
       armIdle();
     };
@@ -111,6 +111,19 @@ export class MeStreamDriver {
     } finally {
       cancelIdle();
       conn.abort();
+    }
+  }
+
+  /**
+   * Có byte đầu: phase `open`. Nối lại sau đứt mà chưa có `lastEventId` (chưa nhận sự kiện có id nào) thì server không
+   * phát bù được → coi như `stream.reset` để router nạp lại cache (X2a-AC08: không mất tin lúc đứt).
+   */
+  private markOpen(): void {
+    const { phase, lastEventId } = this.store.get();
+    if (phase === "open") return;
+    this.store.setPhase("open");
+    if ((phase === "reconnecting" || phase === "down") && lastEventId === null) {
+      this.deps.onEvent({ event: "stream.reset", data: {} });
     }
   }
 

@@ -56,3 +56,20 @@ describe("Composer", () => {
     expect(html).toContain('aria-label="Ẩn nhắc"');
   });
 });
+
+describe("Composer variant room (X2a)", () => {
+  const room = { variant: "room" as const, inputLabel: "Tin nhắn cho nhóm" };
+  test("nhãn textbox = placeholder; còn nút 'Gửi'", () => {
+    const html = render(room);
+    expect(html).toContain('aria-label="Tin nhắn cho nhóm"');
+    expect(html).toContain('placeholder="Tin nhắn cho nhóm"');
+    expect(html).toContain('aria-label="Gửi"');
+  });
+  test("attachments=false: không có nút/ô đính kèm", () => {
+    expect(render({ ...room, attachments: false })).not.toContain("Đính kèm");
+    expect(render(room)).toContain("Đính kèm");
+  });
+  test("menus=false: textbox không báo menu mở", () => {
+    expect(render({ ...room, menus: false })).toContain('aria-expanded="false"');
+  });
+});

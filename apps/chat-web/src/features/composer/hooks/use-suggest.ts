@@ -143,9 +143,10 @@ export function useAgentSuggest(text: string, caret: number): AgentSuggest {
 }
 
 /** Hai menu loại trừ nhau (`/…` hoặc `@…`): `current` là menu đang mở (ưu tiên `@`), `aria` cho textarea. */
-export function useComposerSuggest(text: string, caret: number) {
-  const command = useCommandSuggest(text, caret);
-  const agent = useAgentSuggest(text, caret);
+export function useComposerSuggest(text: string, caret: number, enabled = true) {
+  // Tắt (phòng X2a): coi như không có `/`/`@` nào ⇒ không mở menu, không gọi `/commands`, `/agents`.
+  const command = useCommandSuggest(enabled ? text : "", enabled ? caret : 0);
+  const agent = useAgentSuggest(enabled ? text : "", enabled ? caret : 0);
   const agentMode = agent.open;
   const current: Pick<Suggest<unknown>, "open" | "matches" | "active" | "move" | "dismiss"> &
     Pick<CommandSuggest, "pick"> = agentMode ? agent : command;
