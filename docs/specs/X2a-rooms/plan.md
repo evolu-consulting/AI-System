@@ -108,7 +108,7 @@ Chung `/rooms/:id*`: 401 (middleware gốc) → `:id` không uuid → 404 `ROOM_
 |---|---|---|
 | Khoá + phát | `lib/user-stream.ts` | `userStreamKey(uid) = "ustream:" + uid`, field `e` = JSON `{event,data}`; `publishUserEvents(redis, events, log)`: một `pipeline()` gồm mỗi người nhận `XADD key MAXLEN ~ 1000 * e <json>` + `EXPIRE key 604800`; dùng chung rooms (ghi) + me-stream (đọc) |
 | Reader | `modules/me-stream/user-stream-reader.ts` | D12: `subscribe(uid, fromId, push) → unsubscribe`; nhiều sub cùng key (nhiều tab); `redis.duplicate({connectionName:"hub-api-user-reader"})`; entry sai contract → bỏ + log `warn user-event-invalid` |
-| Phiên | `modules/me-stream/me-stream.session.ts` | `ReadableStream`: quyết định nối lại (bảng dưới) → replay `XRANGE key (id +` → `subscribe` từ id cuối đã phát → ping 15 s (kèm `accountUsable`) → đóng lúc `exp` (D14) / client huỷ / bị đẩy ra (giới hạn 5/user/instance: map `uid → phiên[]`, phiên thứ 6 đóng phiên cũ nhất) |
+| Phiên | `modules/me-stream/me-stream.session.ts` | `ReadableStream`: quyết định nối lại (bảng dưới) → replay `XRANGE key (id +` → `subscribe` từ id cuối đã phát → ping mỗi `pingMs` (deps `startHub`, mặc định 15000, test truyền 500; kèm `accountUsable`) → đóng lúc `exp` (D14) / client huỷ / bị đẩy ra (giới hạn 5/user/instance: map `uid → phiên[]`, phiên thứ 6 đóng phiên cũ nhất) |
 | Route | `modules/me-stream/me-stream.routes.ts` | `GET /me/stream`, header SSE như `runs.routes` (`Cache-Control: no-cache`, `X-Accel-Buffering: no`); `Last-Event-ID` chỉ nhận từ header (không query, không token trên URL) |
 
 | `Last-Event-ID` | Điều kiện (`XINFO STREAM`) | Hành vi |

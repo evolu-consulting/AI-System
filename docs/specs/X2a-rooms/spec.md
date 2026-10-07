@@ -37,10 +37,10 @@ CR-047 (2026-10-07): làm trước H4b, phiên Hub được sửa `apps/chat-web
 | X2a-R02 | User "dùng được" = định nghĩa `accountUsable` hiện có của Hub (user active, không `locked_by_tenant`, tenant không khoá). Danh bạ, tạo DM, thêm thành viên chỉ nhận user dùng được; khác → `USER_NOT_FOUND` (404, như không tồn tại) | FR-98, 102 |
 | X2a-R03 | Không phải thành viên hiện tại (chưa từng, đã rời, bị bớt, phòng đã xoá) → **404 `ROOM_NOT_FOUND`** cho mọi endpoint `/rooms/:id*` (đọc **và ghi**), kể cả `tenant_admin`/`platform_admin`; không 403 | FR-96, BR-22, AC-H23 |
 | X2a-R04 | Thành viên nhưng không phải chủ gọi việc của chủ → 403 `NOT_ROOM_OWNER` (họ đã biết phòng tồn tại) | FR-98 |
-| X2a-R05 | DM: đúng 2 thành viên, `name`/`owner_id` null, `dm_key` = hai user id sắp tăng dần nối `:`, unique theo tenant. Mở DM lần 2 trả phòng cũ (200), lần đầu tạo (201). DM với chính mình → 400 `DM_SELF` | FR-97, AC-H24 |
+| X2a-R05 | DM: đúng 2 thành viên, `name` null, khoá DM duy nhất theo tenant (`plan-db.md` §4). Mở DM lần 2 trả phòng cũ (200), lần đầu tạo (201). DM với chính mình → 400 `DM_SELF` | FR-97, AC-H24 |
 | X2a-R06 | DM: đổi tên / thêm / bớt / xoá / chuyển chủ / rời → 409 `DM_IMMUTABLE`. Chỉ được **ẩn phía mình** (`hidden_at`) | FR-97 |
 | X2a-R07 | DM ẩn: biến mất khỏi `GET /rooms` của người ẩn; tin **mới hơn** `hidden_at` (của bất kỳ ai) làm hiện lại (xoá `hidden_at`) + tính chưa đọc. Mở lại DM qua danh bạ cũng bỏ ẩn. | FR-97, CHAT-AC-38 |
-| X2a-R08 | Nhóm: tên bắt buộc, trim, 1–80 ký tự (`VALIDATION_FAILED`). Người tạo = chủ (`role=owner`). Tối đa **50 thành viên tính cả chủ**; tạo/thêm vượt → 409 `ROOM_FULL`, không ghi phần nào | FR-98, CHAT-AC-41 |
+| X2a-R08 | Nhóm: tên bắt buộc, trim, 1–80 ký tự (`VALIDATION_ERROR`). Người tạo = chủ (`role=owner`). Tối đa **50 thành viên tính cả chủ**; tạo/thêm vượt → 409 `ROOM_FULL`, không ghi phần nào | FR-98, CHAT-AC-41 |
 | X2a-R09 | Chỉ chủ: đổi tên, thêm, bớt, xoá phòng, chuyển chủ. Thêm người đã là thành viên → bỏ qua (idempotent, không lỗi) | FR-98, CHAT-AC-42 |
 | X2a-R10 | Rời: thành viên thường tự rời (`left_at`). Chủ rời khi còn thành viên khác → 409 `OWNER_MUST_TRANSFER`; chủ là người duy nhất còn lại → rời = xoá phòng | FR-98, CHAT-AC-43 |
 | X2a-R11 | Chuyển chủ: chỉ sang thành viên hiện tại (khác → `USER_NOT_FOUND`); chủ cũ thành `member`. Mỗi phòng đúng 1 owner (ràng buộc DB) | FR-98 |
@@ -63,13 +63,13 @@ File mới: `packages/contracts/src/chat/{rooms,directory,me-stream}.ts`, thêm 
 
 | Method | Path | Ai | Request | Response | Lỗi |
 |---|---|---|---|---|---|
-| GET | `/directory` | user | `?q=` (≤ `LIST_Q_MAX`, tìm `display_name`/`username`, không phân biệt hoa thường), `?limit` | `{items: DirectoryUser[]}` | 400 `VALIDATION_FAILED` |
+| GET | `/directory` | user | `?q=` (≤ `LIST_Q_MAX`, tìm `display_name`/`username`, không phân biệt hoa thường), `?limit` | `{items: DirectoryUser[]}` | 400 `VALIDATION_ERROR` |
 | GET | `/rooms` | user | `?cursor`, `?limit` | `{items: RoomSummary[], next_cursor, unread_total}` — sắp theo tin cuối mới nhất; gồm `kind`, `name`/`peer` (DM), `last_message` (xem trước), `unread`, `member_count` | — |
-| POST | `/rooms` | user | `{kind:"dm", user_id}` hoặc `{kind:"group", name, member_ids[]}` | DM: 200 phòng cũ / 201 mới; nhóm: 201 · `RoomDetail` | 400 `VALIDATION_FAILED`/`DM_SELF` · 404 `USER_NOT_FOUND` · 409 `ROOM_FULL` |
+| POST | `/rooms` | user | `{kind:"dm", user_id}` hoặc `{kind:"group", name, member_ids[]}` | DM: 200 phòng cũ / 201 mới; nhóm: 201 · `RoomDetail` | 400 `VALIDATION_ERROR`/`DM_SELF` · 404 `USER_NOT_FOUND` · 409 `ROOM_FULL` |
 | GET | `/rooms/:id` | thành viên | — | `RoomDetail` (+ `members[]`: id, display_name, username, role, `last_read_seq`; `my_role`) | 404 `ROOM_NOT_FOUND` |
 | PATCH | `/rooms/:id` | chủ | `{name}` | `RoomDetail` | 404 · 403 `NOT_ROOM_OWNER` · 409 `DM_IMMUTABLE` · 400 |
 | DELETE | `/rooms/:id` | chủ | — | 204 | 404 · 403 · 409 `DM_IMMUTABLE` |
-| POST | `/rooms/:id/members` | chủ | `{user_ids[]}` (1–49) | `RoomDetail` | 404 · 403 · 409 `DM_IMMUTABLE`/`ROOM_FULL` · 404 `USER_NOT_FOUND` |
+| POST | `/rooms/:id/members` | chủ | `{user_ids[]}` (giới hạn: plan D8) | `RoomDetail` | 404 · 403 · 409 `DM_IMMUTABLE`/`ROOM_FULL` · 404 `USER_NOT_FOUND` |
 | DELETE | `/rooms/:id/members/:user_id` | chủ | — (bớt chính mình → dùng `leave`) | 204 | 404 · 403 · 409 `DM_IMMUTABLE` · 400 |
 | POST | `/rooms/:id/leave` | thành viên | — | 204 | 404 · 409 `DM_IMMUTABLE`/`OWNER_MUST_TRANSFER` |
 | POST | `/rooms/:id/transfer` | chủ | `{user_id}` | `RoomDetail` | 404 · 403 · 409 `DM_IMMUTABLE` · 404 `USER_NOT_FOUND` |
@@ -86,19 +86,7 @@ File mới: `packages/contracts/src/chat/{rooms,directory,me-stream}.ts`, thêm 
 **`CHAT_ROOM_ERRORS`** (HTTP · code · câu VI/EN do frontend-lead chốt): 404 `ROOM_NOT_FOUND` · 403 `NOT_ROOM_OWNER` · 409 `DM_IMMUTABLE` · 409 `ROOM_FULL` · 409 `OWNER_MUST_TRANSFER` · 409 `GROUP_NOT_HIDEABLE` · 400 `DM_SELF` · 404 `USER_NOT_FOUND`. Không đặt trùng mã khối khác (`CHAT_API_ERRORS`…).
 
 ## 4. Dữ liệu (backend-lead)
-Migration Hub **`packages/db/migrations-hub/0011_x2a_rooms.sql`** (+ meta, Drizzle `src/schema`), viết tay, idempotent như `0010`. Không sửa migration đã commit.
-
-| Bảng | Cột chính (gợi ý; backend-lead chốt) | RLS (`hub_rw`, GUC `withHubScope`) |
-|---|---|---|
-| `hub.rooms` | `id`, `tenant_id`, `kind` (`dm`/`group`), `name` (null với DM), `owner_id` (null với DM), `dm_key` (unique `(tenant_id, dm_key)` where dm), `last_seq` bigint, `last_message_at`, `created_by`, `created_at`, `deleted_at` | `tenant_id = app.tenant_id` **và** `hub.is_room_member(id)` **và** `deleted_at is null` |
-| `hub.room_members` | `room_id`, `tenant_id`, `user_id`, `role` (`owner`/`member`; unique partial 1 owner/phòng nhóm), `joined_at`, `left_at`, `hidden_at`, `last_read_seq` bigint default 0; unique `(room_id, user_id)` | thấy mọi hàng của phòng mình là thành viên; ghi theo luật §2 |
-| `hub.room_messages` | `id`, `room_id`, `tenant_id`, `seq` (unique `(room_id, seq)`), `sender_type` (`user`/`agent`, X2a CHECK chỉ ghi `user` ở tầng ứng dụng), `sender_id`, `content`, `client_msg_id` (unique `(room_id, sender_id, client_msg_id)`), `run_id` null, `flow_id` null, `trigger_message_id` null (dự phòng X2b, chưa FK), `created_at` | đọc/ghi khi là thành viên; không UPDATE/DELETE (không GRANT) |
-
-- `hub.is_room_member(room_id)`: hàm `SECURITY DEFINER STABLE`, `search_path` cố định, đọc `room_members` theo `app.user_id` + `left_at is null` + cùng `app.tenant_id` — tránh policy đệ quy trên `room_members` (rủi ro §11). Tạo phòng (chưa có thành viên) đi qua hàm/luồng do backend-lead chốt, **không** mở policy rộng.
-- `scope=system` (việc nền) **không** dùng cho API phòng; fan-out sự kiện tính danh sách thành viên trong transaction của request (scope user).
-- `seq`: cấp bằng `UPDATE hub.rooms SET last_seq = last_seq + 1 … RETURNING` trong cùng transaction gửi tin (khoá hàng phòng; thứ tự khoá ghi ở plan).
-- **Admin — danh bạ:** `hub_ro` **đã có** `SELECT (id, tenant_id, username, display_name, …, active, locked_by_tenant)` trên `admin.users` từ `migrations/0002_admin_rls.sql` (policy `users_hub_ro USING (true)`, không lọc tenant ở DB). ⇒ Mặc định **không cần migration Admin mới**; `GET /directory` tự lọc `tenant_id` + chỉ chọn 4 cột (Q1). Lệch với CR-047 R11 ("migration nhỏ") → ghi ở §10.
-- Seed dev: 1 nhóm + 1 DM mẫu cho `acme` (seed Hub dev).
+Migration Hub `packages/db/migrations-hub/0011_x2a_rooms.sql` (viết tay, idempotent như `0010`; không sửa migration đã commit). Bảng `hub.rooms` / `hub.room_members` / `hub.room_messages`, hàm `SECURITY DEFINER`, RLS, `seq`, danh bạ Q1 (không migration Admin), seed dev: **chi tiết ở [`plan-db.md`](plan-db.md) (plan thắng spec)**. Bất biến cần giữ: `scope=system` không dùng cho API phòng; fan-out tính trong transaction của request (scope user). Lệch CR-047 R11 → §10.
 
 ## 5. UI (frontend-lead)
 Canvas `docs/design/chat-app/canvas-x2/` (README). Câu chữ lấy từ artboard; chỗ thiếu frontend-lead bổ sung ở `plan-frontend.md` (VI/EN đủ, a11y như C1).
@@ -155,7 +143,7 @@ Giữ xanh: CHAT-AC-01…36, `test:contract:chat`, AC-H07/H08. Given/When/Then �
 | X2a-AC10 | Danh bạ: không email/role/group (schema strict), không user tenant khác/không dùng được/chính mình; tìm theo tên (R22) | int + contract |
 | X2a-AC11 | Contract chỉ thêm: mọi export cũ của `@ai/contracts/chat` giữ nguyên tên + hình (snapshot), test contract chat C1 xanh (R23) | unit contract |
 | X2a-AC12 | `/me/stream` không token → 401; token không nằm trên URL; JWT hết hạn → stream đóng, client nối lại không mất tin | int + unit FE |
-| X2a-AC13 | Nhóm: tên rỗng/>80 → `VALIDATION_FAILED`; tạo với 50 người (gồm chủ) được, 51 → `ROOM_FULL` không ghi dở (R08) | int |
+| X2a-AC13 | Nhóm: tên rỗng/>80 → `VALIDATION_ERROR`; tạo với 50 người (gồm chủ) được, 51 → `ROOM_FULL` không ghi dở (R08) | int |
 | X2a-AC14 | Chuỗi `@agent` trong tin phòng ở X2a là chữ thường, không tạo run (R16) | int |
 | X2a-AC15 | UI: sidebar 2 mục, huy hiệu chưa đọc cập nhật realtime, pill "n tin mới", banner kết nối lại; không có panel agent/hàng chip; composer phòng chưa bật menu `@`/`/` (§5.2, §5.3) | e2e chat |
 | X2a-AC16 | Không log nội dung tin phòng (R24) | int |
@@ -171,7 +159,7 @@ Giữ xanh: CHAT-AC-01…36, `test:contract:chat`, AC-H07/H08. Given/When/Then �
 | Q4 | Mô hình flow trong phòng (X2b) | Như §5.2 mục 3: kết quả agent = khối flow; "Trả lời tiếp" mở `?flow=`; tin trong flow là `room_messages` có `flow_id` (dòng thời gian chính chỉ hiện khối gốc + "n tin trong luồng"). X2a chỉ chừa cột `flow_id`/`run_id`/`trigger_message_id`; FK + `runs.room_id` + ai được hỏi tiếp trong flow + tin flow có tính chưa đọc không → chốt ở spec X2b |
 | Q5 | Hiển thị "đã xem" | DM "Đã xem"; nhóm "Đã xem bởi n" dưới tin cuối của mình (tooltip tên) |
 | Q6 | Tìm danh bạ bỏ dấu? | Không ở X2a (ILIKE); → TECH-DEBT |
-| Q7 | e2e chat chạy với gì? | hub-api thật + DB test (stack như e2e X1), không mở rộng mock Hub C1 cho realtime; mock chỉ dùng `page.route` cho trạng thái lỗi |
+| Q7 | e2e chat chạy với gì? | hub-api thật + DB test (stack như e2e X1), không mở rộng mock Hub C1 cho **realtime** (không phát sự kiện). Stub tối thiểu không tính là mở rộng: `GET /rooms`, `GET /directory` → `{items:[]}`; `GET /me/stream` → SSE 200 chỉ ping (task B3); mock còn lại chỉ `page.route` cho trạng thái lỗi |
 | Q8 | Giữ bao nhiêu sự kiện/user trong Redis? | `MAXLEN ~ 1000`; quá → `stream.reset` |
 | Q9 | Đường dẫn phòng | `/rooms/:id` (CHAT-AC-45); C1 giữ `/c/:id` |
 
@@ -181,8 +169,9 @@ Giữ xanh: CHAT-AC-01…36, `test:contract:chat`, AC-H07/H08. Given/When/Then �
 - [x] 2026-10-07 UI: canvas X2 đã duyệt (bố cục phòng, tạo nhóm, mobile) + giữ thread/flow C1; **bỏ panel agent/hàng chip, dùng menu `@` trong composer** (người dùng đổi ý cùng ngày, §5.2).
 - Lệch phát hiện khi tách spec: CR-047 R11 giả định cần migration `SELECT` hẹp trên `admin.users`, nhưng `hub_ro` đã có quyền (Q1).
 ### Trong lúc làm (agent tự quyết theo Luật 2)
+- 2026-10-07 [docs-architect, readiness R1, Luật 2b] Stub mock Hub (`tools/mocks/src/*`) cho `/rooms`, `/directory`, `/me/stream` ở mức tối thiểu để e2e C1 xanh, không phải mở rộng realtime (Q7, task B3); `hub.create_room` kiểm `is_tenant_user` (plan-db §4.2); tên FE theo contract BE (`parseMeStreamEvent`, `last_activity_at`, `preview`, `owner_id`+`members[]`); 400 = `VALIDATION_ERROR`; `pingMs` trong deps `startHub` (mặc định 15000); QC1 chỉ khoá `tests/acceptance/X2a/**` + `e2e/chat/x2a-*`, contract `x2a-*` là lưới phụ; token giao diện DataZeus (nếu áp) thuộc mốc UI riêng, không chặn X2a, e2e X2a không khẳng định màu/ảnh chụp.
 - 2026-10-07 [frontend-lead, PLAN P2] Q5 "Đã xem" DM/nhóm dưới tin cuối của mình; Q9 `/rooms/$id`; mở DM qua ô tìm sidebar mục "Người"; mobile giữ Sheet danh sách C1; Composer phòng thêm prop `menus`/`attachments`; `shell.newChat` → "Hỏi AI"; ngưỡng JS chat có thể nới 150 → 160 KB (chi tiết `plan-frontend.md` §0, §14).
-- 2026-10-07 [backend-lead, PLAN P1] Tự quyết D1–D16 → `plan.md` §1 (đổi so với spec: 400 = `VALIDATION_ERROR` thay `VALIDATION_FAILED`; bỏ `rooms.owner_id`; `member_ids`/`user_ids` ≤ 200, > 50 ⇒ `ROOM_FULL`; thêm `client_msg_id`, `last_seq`, `preview`).
+- 2026-10-07 [backend-lead, PLAN P1] Tự quyết D1–D16 → `plan.md` §1 (đổi so với spec: 400 = `VALIDATION_ERROR` (spec cũ ghi mã khác); bỏ `rooms.owner_id`; `member_ids`/`user_ids` ≤ 200, > 50 ⇒ `ROOM_FULL`; thêm `client_msg_id`, `last_seq`, `preview`).
 
 ## 11. Rủi ro → [`spec-isolation.md` §3](spec-isolation.md)
 RLS đệ quy/lọt hàng khi tạo phòng, sự kiện lọt cho người vừa bị bớt, mất sự kiện khi Redis lỗi, tranh chấp `seq`, cạn kết nối SSE, hồi quy C1, `hub_ro` đọc rộng `admin.users`.

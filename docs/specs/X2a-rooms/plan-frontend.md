@@ -61,11 +61,11 @@ apps/chat-web/src/features/
 ## 3. Dữ liệu, cache, realtime
 **Query key** (`rooms/lib/room-cache.ts` giữ hằng): `['rooms','list']` (infinite, cursor, `GET /rooms`) · `['rooms','detail',id]` · `['rooms','messages',id]` (infinite lùi theo `before_seq`, trang đầu = 50 tin mới nhất, hiển thị `seq` tăng dần) · `['directory',q]` (`staleTime` 30 s, `q` đã debounce 250 ms như sidebar). `unread_total` lấy từ `pages[0]` của `['rooms','list']` (selector `useUnreadTotal`), được vá bởi sự kiện `room.unread`. Đăng xuất → `queryClient.clear()` (đã có) + driver `stop()`.
 
-**Client `/me/stream`** (`me-stream-driver`): `fetch('/me/stream', {headers: Authorization, Accept: text/event-stream, 'Last-Event-ID': lastId?})` qua `~/lib/http` getToken/refresh (401 → refresh 1 lần như C1; refresh hỏng → `session` expired, dừng). Đọc bằng `createSseParser` + zod strict của contract `[chờ plan BE: MeStreamEventSchema/toMeStreamEvent]`; khung hỏng bị bỏ (như `sse.ts`). Ghi `id:` mỗi khung vào `lastEventId` (chỉ bộ nhớ, không `localStorage`). Stream đóng/lỗi mạng → phase `reconnecting`, nối lại sau 0,5 → 1 → 2 → 4 → 8 s (trần 8 s, **không** bỏ cuộc; từ lần thứ 5 liên tiếp phase `down` ⇒ banner đỏ "Không kết nối được máy chủ" + Thử lại, vẫn tiếp tục thử); nối lại kèm `Last-Event-ID`. Phase `open` khi có byte đầu tiên (kể cả `: ping`). Tab ẩn: vẫn giữ kết nối (không tự đóng) để badge tab nền đúng; `online`/`visibilitychange` visible khi đang `down` → nối ngay. JWT hết hạn: server đóng stream ⇒ vòng nối lại ở trên đi qua refresh. Quá 5 kết nối/user → server đóng kết nối cũ: tab đó nối lại bình thường (chấp nhận, ≤ 5 tab).
+**Client `/me/stream`** (`me-stream-driver`): `fetch('/me/stream', {headers: Authorization, Accept: text/event-stream, 'Last-Event-ID': lastId?})` qua `~/lib/http` getToken/refresh (401 → refresh 1 lần như C1; refresh hỏng → `session` expired, dừng). Đọc bằng `createSseParser` + zod strict của contract `[chờ plan BE: MeStreamEventSchema/parseMeStreamEvent]`; khung hỏng bị bỏ (như `sse.ts`). Ghi `id:` mỗi khung vào `lastEventId` (chỉ bộ nhớ, không `localStorage`). Stream đóng/lỗi mạng → phase `reconnecting`, nối lại sau 0,5 → 1 → 2 → 4 → 8 s (trần 8 s, **không** bỏ cuộc; từ lần thứ 5 liên tiếp phase `down` ⇒ banner đỏ "Không kết nối được máy chủ" + Thử lại, vẫn tiếp tục thử); nối lại kèm `Last-Event-ID`. Phase `open` khi có byte đầu tiên (kể cả `: ping`). Tab ẩn: vẫn giữ kết nối (không tự đóng) để badge tab nền đúng; `online`/`visibilitychange` visible khi đang `down` → nối ngay. JWT hết hạn: server đóng stream ⇒ vòng nối lại ở trên đi qua refresh. Quá 5 kết nối/user → server đóng kết nối cũ: tab đó nối lại bình thường (chấp nhận, ≤ 5 tab).
 
 | Sự kiện | `event-router` làm gì |
 |---|---|
-| `room.message` | nếu `['rooms','messages',id]` đã nạp: chèn (khử trùng `id`, giữ thứ tự `seq`); cập nhật `last_message`/`last_message_at` trong list và **đưa lên đầu**; phòng chưa có trong list → `invalidate list` |
+| `room.message` | nếu `['rooms','messages',id]` đã nạp: chèn (khử trùng `id`, giữ thứ tự `seq`); cập nhật `last_message`/`last_activity_at` trong list và **đưa lên đầu**; phòng chưa có trong list → `invalidate list` |
 | `room.unread` | vá `unread` của phòng + `unread_total` ở `pages[0]` |
 | `room.read` | vá `members[user_id].last_read_seq = max(cũ, seq)` trong detail (nuôi "Đã xem") |
 | `room.member_added` | `user_id` = tôi và có `room` → chèn vào list; ngược lại `invalidate detail` + `member_count` list |
@@ -134,9 +134,9 @@ Baseline `check:bundle`: JS 139,9 KB / 150 · CSS 12,9 KB / 25 · chunk lớn nh
 | # | Cần | Dùng ở |
 |---|---|---|
 | 1 | Schema `RoomSummary`, `RoomDetail`, `RoomMessage`, `DirectoryUser`, `CreateRoomRequest`, trang `{items,next_cursor,unread_total}`, `{items,has_more}`; hằng `CHAT_CONTENT_MAX`, `LIST_Q_MAX` | `rooms/api.ts`, `directory/api.ts` |
-| 2 | `MeStreamEventSchema` (+ `toMeStreamEvent(raw)`) khớp bảng `spec-isolation.md` §1.1; `ChatRoomErrorCode` export | `realtime`, `lib/http.ts` |
-| 3 | `RoomSummary` có sẵn: `kind`, `name` hoặc `peer{id,display_name,username}`, `last_message{sender{id,display_name},content,created_at,seq}`, `unread`, `member_count`, `last_seq` (để tính "tin cuối") | sidebar, mark-read |
-| 4 | `RoomDetail.members[]` có `last_read_seq` (đã có trong spec §3); `owner` cho subtitle (tên chủ) | header, "Đã xem" |
+| 2 | `MeStreamEventSchema` (+ `parseMeStreamEvent(raw)`) khớp bảng `spec-isolation.md` §1.1; `ChatRoomErrorCode` export | `realtime`, `lib/http.ts` |
+| 3 | `RoomSummary` có sẵn: `kind`, `name` hoặc `peer{id,display_name,username}`, `last_message{sender{id,display_name},preview,created_at,seq}`, `unread`, `member_count`, `last_seq` (để tính "tin cuối") | sidebar, mark-read |
+| 4 | `RoomDetail.members[]` có `last_read_seq` (đã có trong spec §3); `owner_id` + `members[]` cho subtitle (tên chủ) | header, "Đã xem" |
 | 5 | `POST /rooms/:id/messages` trả `RoomMessage` đầy đủ (kể cả 200 do trùng) và `room.message` gửi cả cho người gửi (có trong spec) — để chèn khử trùng theo `id` | gửi tin |
 | 6 | Trong `room.member_added` cho người được thêm có `room: RoomSummary` (có trong spec) | event-router |
 | 7 | Thứ tự id của `/me/stream` (`id:` = id Redis Stream, chuỗi) — FE coi là chuỗi mờ, chỉ lưu và gửi lại | driver |

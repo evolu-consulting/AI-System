@@ -91,7 +91,7 @@ Chuỗi `{{x}}` là biến i18next; plural dùng `_one/_other` cho EN và một 
 | `GROUP_NOT_HIDEABLE` (409) | Nhóm không ẩn được. Bạn có thể rời nhóm. | Groups can't be hidden. You can leave the group instead. |
 | `DM_SELF` (400) | Bạn không thể nhắn tin cho chính mình. | You can't message yourself. |
 | `USER_NOT_FOUND` (404) | Không tìm thấy người này trong công ty. | We couldn't find this person in your company. |
-| `VALIDATION_FAILED` (400) | Thông tin chưa hợp lệ. Kiểm tra lại. | Some details are invalid. Check and try again. |
+| `VALIDATION_ERROR` (400) | Thông tin chưa hợp lệ. Kiểm tra lại. | Some details are invalid. Check and try again. |
 | `unknown` | Có lỗi khi xử lý. Thử lại sau. | Something went wrong. Try again later. |
 
 Câu mã lỗi dùng cho người dùng; `ApiError.message` của server không hiện ra. Cả bảng này `i18n:check` bắt buộc VI/EN đủ; số nhiều EN dùng `_one/_other`.
