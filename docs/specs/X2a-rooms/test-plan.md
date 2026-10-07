@@ -1,6 +1,6 @@
 # Test plan · X2a-rooms (qc)
 
-WRITE — Q1 (2026-10-07): chỉ kế hoạch; **chưa viết test, chưa khoá** (QC1 sau Gate).
+WRITE + LOCK — QC1 (2026-10-07): test đã viết, đỏ đúng lý do (§10), khoá `tests/.lock`.
 "Đúng" = spec §2 (X2a-R01…R24), §8 (X2a-AC01…16, AC-H23…25), `spec-isolation.md` §1–§2, BA AC-H23…25, usecases CHAT-AC-37…45; contract + thứ tự kiểm + chữ ký luật thuần `plan.md` §2, §3, §7, §8, §15; DB/luồng/khoá `plan-db.md` §4–§6; nhãn e2e `plan-frontend-e2e.md` §1. Spec ≠ plan ⇒ theo plan (D1–D16), ghi §9. Hộp đen.
 
 ## 1. Quy ước
@@ -197,7 +197,7 @@ Endpoint `/rooms/:id*` (14): GET, PATCH, DELETE `/rooms/:id` · POST `/members` 
 | T09 | id hợp lệ nhưng key không tồn tại (user chưa có sự kiện) ⇒ `stream.reset` |
 | T10 | **cắt thật**: > 1 100 sự kiện cho B (XADD trực tiếp định dạng plan §7 + 3 tin qua API); tiền đề `XINFO` `max-deleted-entry-id` ≥ id cũ (thiếu trường ⇒ vẫn đòi reset, plan §14); id cũ ⇒ `stream.reset`; id sau điểm cắt ⇒ replay |
 | T11 | JWT `exp` 3 s ⇒ server đóng stream ≤ exp + 2 s; A gửi 2 tin lúc đứt; nối lại token mới + `Last-Event-ID` ⇒ nhận đủ 2, không lặp |
-| T12 | B bị khoá (`locked_by_tenant=true`) khi đang nối ⇒ stream đóng ≤ 20 s (lần ping kế); nối lại ⇒ 401/403 theo `accountUsable` (timeout ca 40 s; xem G7) |
+| T12 | B bị khoá khi đang nối (`pingMs: 500`) ⇒ stream đóng ≤ 2 s sau khi cache thấy khoá; nối lại ⇒ 401/403 (`accountUsable`) |
 | T13 | 6 kết nối B cùng instance ⇒ kết nối cũ nhất bị đóng, 5 cái còn lại vẫn nhận tin |
 | T14 | B có 2 tab; đọc ở tab 1 ⇒ cả 2 tab nhận `room.unread {unread:0}`; A nhận `room.read` |
 | T15 | stream có `: ping` (gộp T12, không chờ riêng); header `text/event-stream`, `Cache-Control: no-cache` |
@@ -248,21 +248,25 @@ bunx playwright test -c e2e/chat/playwright.x2a.config.ts --reporter=line 2>&1 |
 ```
 `done-x2a.ts` (dừng ở bước đỏ đầu): typecheck → `bun test` → `test:int` (gồm X2a D/A + H1 `isolation`, `db`, `concurrency` + A37 `lock-order`) → `test:contract:chat` (C1 + K02) → `e2e:chat` (C1, E13) → `e2e:chat:x2a` → `depcruise --all` → `check:fn` → `check:size` → `test:lock:verify` → `trace --check`.
 
-**Ước lượng: ~205 ca** — R 46 (33 ID, bảng tham số) · D 18 · A 128 (I 15 · S 7 · O 34 · M 16 · Y 8 · P 7 · T 16 · L 2 · Z 1, nhiều ca lặp 14 endpoint) · K 2 (+ 41 ca C1 giữ xanh) · E 13 (+ bộ C1 giữ xanh). Không ca "stack" riêng (2 instance in-process, plan Q7).
+**Thực tế QC1: 159 ca** (R 33 · D 18 · A 93 · K 3 · E 12) + C1 giữ xanh; số theo file ở §10.
 
 ## 9. Lệch tài liệu / chỗ hở (mặc định qc dùng) · Cần bổ sung
 | # | Lệch / hở | Mặc định trong test | Agent |
 |---|---|---|---|
-| G1 | **e2e C1 sẽ vỡ**: sidebar gọi `/rooms` + `/me/stream` mọi trang, mock Hub C1 không có ⇒ banner "Đang kết nối lại…" hiện; `connection.chat.ts:40` đòi banner ẩn (spec Q7 cấm mở rộng mock cho realtime) | E13 đòi C1 xanh; đề xuất stub mock `/rooms`, `/directory` rỗng, `/me/stream` chỉ ping | backend-lead (mock) ở F2/B3; spec ghi quyết định |
-| G2 | `plan-frontend` §3, §11#2 dùng `toMeStreamEvent` — chốt là **`parseMeStreamEvent`** (plan §15) | R31 theo plan | frontend-lead sửa ở F2 |
-| G3 | `plan-frontend` §3 (`room.message` vá `last_message_at`), §11#3 (`last_message.content`), §11#4 (`owner`) — chốt **`last_activity_at`**, **`last_message.preview`**, `owner_id` + `members[]` | R27 | frontend-lead ở F1/F3 |
-| G4 | `plan-frontend-i18n` dòng 94 + spec §2 R08/§3 dùng `VALIDATION_FAILED`; plan D1 = **`VALIDATION_ERROR`** | test 400 khẳng định `VALIDATION_ERROR` | frontend-lead (i18n), docs-architect (spec §2/§3) |
-| G5 | `hub.create_room` không kiểm `app.user_id` thuộc `app.tenant_id` (plan-db §4.2) — GUC giả mạo tạo được phòng tenant khác | D12 đòi `42501` (phòng thủ chiều sâu, chỉ thêm `is_tenant_user(app.user_id)`) | backend-lead xác nhận ở readiness (bảo mật) |
-| G6 | Brief "DM ẩn ⇒ 404" trái R07: người ẩn vẫn là thành viên | I14: `GET /rooms/:id` 200, chỉ mất khỏi `/rooms`; GET không tự bỏ ẩn | — |
-| G7 | Khoá tài khoản chỉ phát hiện ở ping 15 s (D14) ⇒ T12 chậm | chờ ≤ 20 s, timeout ca 40 s; đề xuất seam `pingMs` trong deps | backend-lead (tuỳ chọn) |
-| G8 | spec §4 `rooms.owner_id`, policy `deleted_at is null`, `member_ids` 1–49; plan D2/D4/D8 khác | test theo hành vi plan (owner suy từ `members`, phòng xoá 0 hàng, > 50 ⇒ `ROOM_FULL`) | docs-architect đồng bộ spec |
-| G10 | `tasks.md` QC1 đặt test ở `tests/contract/chat/x2a-*` — ngoài phạm vi `tests/.lock` | test khoá đặt ở `tests/acceptance/X2a/**`; K02 chỉ là lưới phụ | — |
+| G1–G8, G10 | **Đã đóng** ở readiness R2/R3 + spec §10 (stub mock B3; `parseMeStreamEvent`; `last_activity_at`/`preview`/`owner_id`; `VALIDATION_ERROR`; `create_room` kiểm `is_tenant_user` (D12); DM ẩn 200 (I14); `pingMs` (T12); hành vi plan D2/D4/D8; khoá chỉ `tests/acceptance/X2a/**` + `e2e/chat/x2a-*`) | — | — |
+| G13 | Z01: chữ ký seed chưa có ở plan | seam `tools/hub-dev/src/fixture-rooms.ts` export `ensureFixtureRooms(ownerUrl)` | backend-lead B8 |
+| G14 | `likePattern` trả mẫu đã bọc `%…%` (plan-db §4.5 `$p = %q%`) | R23 | backend-lead B3 |
+| G15 | `room-events`: `fanout[]` = hàng `room_fanout` `{user_id, unread, total}`; `readEvents(…, self)` `self = {unread, total}`; 3 hàm còn lại chưa có chữ ký ⇒ chỉ phủ ở int (S04, S05, O15) | R15r–R19r | backend-lead B3 |
+| G16 | e2e dùng fixture M1 (`e2e/support/prepare-db`): B = `thu` "Thu Ha", người tenant khác = `khang` (globex); + 48 user `qe01…` (nhóm 49); DB `ai_system_test`, Redis 14, cổng 3031/4050/3130 | E01–E12 | — |
 | G12 | T10 ghi thẳng Redis theo định dạng plan §7 (field `e`) để tạo > 1 100 sự kiện nhanh | đổi định dạng ⇒ sửa fixture T10 | backend-lead giữ định dạng |
 
 ## 10. Đỏ đúng lý do · nhật ký
-(QC1 ghi: đỏ đúng / tổng theo file.)
+QC1 2026-10-07, DB qc riêng `ai_system_x2a_qc_test` (`HUB_TEST_DATABASE_URL`), code trước B1. **0 ca đỏ do dựng dữ liệu.**
+| Nhóm · file | Tổng | Đỏ đúng lý do | Xanh (khoá hồi quy) |
+|---|---|---|---|
+| R `rules/*` (4 file) | 33 | 31: `Cannot find module` rules/events/me-stream/directory; export X2a `undefined` | R25, R33 |
+| D `db-rls` | 18 | 18: `relation "hub.rooms" does not exist` / `create_room` không có (42883) / thiếu `0011…sql` — trong `it` | — |
+| A `isolation, rooms, members, messages, directory, log, seed, concurrency, me-stream, stream-isolation` | 93 | 92: 404 `NOT_FOUND` (route chưa mount, ≠ 201/200/401/`ROOM_NOT_FOUND`); seed: `Cannot find module fixture-rooms` | I15 |
+| K `x2a-additive.contract` | 3 | 3: mock chưa có `/rooms`, `/directory`, `/me/stream` (B3) | C1 65/65 xanh |
+| E `x2a-*.x2a.ts` | 12 | 12: Hub 404 khi dựng phòng trong ca (10); nhãn UI chưa có — searchbox/`Nhóm mới` (2). Stack thật lên được, đăng nhập 200 | E13: `e2e:chat` 71/71 |
+Hồi quy: `bun test` (ngoài X2a) xanh; H1 `isolation`+`db` 15/15; C1 `contrast` 5/5 (bảng CR-049). Tranh chấp UI-1 (CR-049): `e2e/chat/i18n.chat.ts` nền dark `rgb(20, 17, 28)` → `rgb(15, 16, 32)` (#0F1020, bảng đã duyệt) — test sai sau thay đổi được duyệt, sửa + khoá lại.
