@@ -11,35 +11,35 @@
 
 :root {
   /* Bề mặt và chữ */
-  --background: #f7f6fa;
-  --foreground: #1d1733;
+  --background: #f4f4f9;
+  --foreground: #0a0a0a;
   --card: #ffffff;
-  --card-foreground: #1d1733;
+  --card-foreground: #0a0a0a;
   --popover: #ffffff;
-  --popover-foreground: #1d1733;
-  --muted: #efedf3;
-  --muted-foreground: #635c78;
-  --muted-strong-foreground: #4f4865;
-  --subtle-foreground: #736c89; /* canvas #7A7390, sẫm lại cho AA (tokens-map.md) */
-  --placeholder: #b3adc4;
+  --popover-foreground: #0a0a0a;
+  --muted: #f5f5f5;
+  --muted-foreground: #6b6b6b;
+  --muted-strong-foreground: #525252;
+  --subtle-foreground: #6b6b6b; /* gộp với muted-foreground (tokens-map.md) */
+  --placeholder: #a3a3a3;
 
   /* Thương hiệu */
-  --primary: #6b4fa0;
+  --primary: #4f46e5;
   --primary-foreground: #ffffff;
-  --primary-strong: #4a3278;
-  --secondary: #efedf3;
-  --secondary-foreground: #3b3450;
-  --accent: #ede6fb;
-  --accent-foreground: #4a3278;
-  --ink-strong: #2e2150;
-  --on-ink: #e4dcf7;
-  --on-ink-link: #c9b8ff;
+  --primary-strong: #4338ca;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #404040;
+  --accent: #eef2ff;
+  --accent-foreground: #4338ca;
+  --ink-strong: #1e1b4b;
+  --on-ink: #e0e7ff;
+  --on-ink-link: #a5b4fc;
 
   /* Viền */
-  --border: #e6e3ee;
-  --input: #d9d5e3;
-  --row-divider: #f0eef4;
-  --ring: #6b4fa0;
+  --border: #e5e5e5;
+  --input: #d4d4d8;
+  --row-divider: #f5f5f5;
+  --ring: #4f46e5;
   --error-border: #d92d20;
 
   /* Trạng thái */
@@ -56,67 +56,67 @@
   --overage-hatch-to: #f59e0b;
 
   /* Sidebar (Sidebar.dc.html) */
-  --sidebar: #fcfbfe;
-  --sidebar-foreground: #3b3450;
-  --sidebar-primary: #6b4fa0;
+  --sidebar: #fafafd;
+  --sidebar-foreground: #404040;
+  --sidebar-primary: #4f46e5;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ede6fb;
-  --sidebar-accent-foreground: #4a3278;
-  --sidebar-border: #e6e3ee;
-  --sidebar-ring: #6b4fa0;
+  --sidebar-accent: #eef2ff;
+  --sidebar-accent-foreground: #4338ca;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #4f46e5;
 
   /* Biểu đồ (Đề xuất, M4) */
-  --chart-1: #6b4fa0;
-  --chart-2: #9c84c9;
-  --chart-3: #2e2150;
-  --chart-4: #c9b8ff;
+  --chart-1: #4f46e5;
+  --chart-2: #818cf8;
+  --chart-3: #1e1b4b;
+  --chart-4: #a5b4fc;
   --chart-5: #e08bb4;
 
   --radius: 8px;
 
   /* Code (plan-frontend-theme.md §3, §5) */
-  --code-bg: #f6f4fa;
-  --code-fg: #1d1733;
+  --code-bg: #f5f5fa;
+  --code-fg: #0a0a0a;
   --code-keyword: #8a3fa8;
   --code-string: #0b6b3a;
   --code-number: #9a4a00;
   --code-title: #2a55a8;
-  --code-comment: #6b6580;
+  --code-comment: #6b6b6b;
 
-  --shadow-color-toast: rgb(29 23 51 / 0.25);
-  --shadow-color-dialog: rgb(29 23 51 / 0.28);
-  --shadow-color-drawer: rgb(29 23 51 / 0.18);
+  --shadow-color-toast: rgb(30 27 75 / 0.25);
+  --shadow-color-dialog: rgb(30 27 75 / 0.28);
+  --shadow-color-drawer: rgb(30 27 75 / 0.18);
 }
 
 /* Tối (CR-027, plan-frontend-theme §1): cùng tông tím, đạt AA; đổi qua class `dark` trên <html>. */
 .dark {
-  --background: #14111c;
-  --foreground: #ece8f5;
-  --card: #1c1828;
-  --card-foreground: #ece8f5;
-  --popover: #1c1828;
-  --popover-foreground: #ece8f5;
-  --muted: #262037;
-  --muted-foreground: #a9a2bd;
-  --muted-strong-foreground: #c4bed6;
-  --subtle-foreground: #958dad;
-  --placeholder: #6e6786;
+  --background: #0f1020;
+  --foreground: #e8eaf6;
+  --card: #171833;
+  --card-foreground: #e8eaf6;
+  --popover: #171833;
+  --popover-foreground: #e8eaf6;
+  --muted: #1f2142;
+  --muted-foreground: #a9aed0;
+  --muted-strong-foreground: #c7cbe6;
+  --subtle-foreground: #9ca1c7;
+  --placeholder: #6e7299;
 
-  --primary: #a58bdb;
-  --primary-foreground: #14111c;
-  --primary-strong: #c9b8ff;
-  --secondary: #262037;
-  --secondary-foreground: #cfc9df;
-  --accent: #2e2150;
-  --accent-foreground: #d9ccff;
-  --ink-strong: #3a2a66;
-  --on-ink: #e4dcf7;
-  --on-ink-link: #c9b8ff;
+  --primary: #818cf8;
+  --primary-foreground: #0f1020;
+  --primary-strong: #a5b4fc;
+  --secondary: #1f2142;
+  --secondary-foreground: #d2d5ec;
+  --accent: #1e1b4b;
+  --accent-foreground: #c7d2fe;
+  --ink-strong: #312e81;
+  --on-ink: #e0e7ff;
+  --on-ink-link: #a5b4fc;
 
-  --border: #352d4a;
-  --input: #6e6589;
-  --row-divider: #2a2340;
-  --ring: #a58bdb;
+  --border: #2a2d52;
+  --input: #6670a8;
+  --row-divider: #1f2142;
+  --ring: #818cf8;
   --error-border: #f97066;
 
   --destructive: #b42318;
@@ -131,28 +131,28 @@
   --overage-hatch-from: #c2410c;
   --overage-hatch-to: #f59e0b;
 
-  --sidebar: #1c1828;
-  --sidebar-foreground: #cfc9df;
-  --sidebar-primary: #a58bdb;
-  --sidebar-primary-foreground: #14111c;
-  --sidebar-accent: #2e2150;
-  --sidebar-accent-foreground: #d9ccff;
-  --sidebar-border: #352d4a;
-  --sidebar-ring: #a58bdb;
+  --sidebar: #171833;
+  --sidebar-foreground: #d2d5ec;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #0f1020;
+  --sidebar-accent: #1e1b4b;
+  --sidebar-accent-foreground: #c7d2fe;
+  --sidebar-border: #2a2d52;
+  --sidebar-ring: #818cf8;
 
-  --chart-1: #a58bdb;
-  --chart-2: #9c84c9;
-  --chart-3: #c9b8ff;
-  --chart-4: #6b4fa0;
+  --chart-1: #818cf8;
+  --chart-2: #6366f1;
+  --chart-3: #a5b4fc;
+  --chart-4: #c7d2fe;
   --chart-5: #e08bb4;
 
-  --code-bg: #100d17;
-  --code-fg: #e6e1f2;
+  --code-bg: #0b0c18;
+  --code-fg: #e6e8f5;
   --code-keyword: #d7a6f0;
   --code-string: #8fd9a8;
   --code-number: #f2b872;
   --code-title: #9db8f5;
-  --code-comment: #9790ad;
+  --code-comment: #9a9fc2;
 
   --shadow-color-toast: rgb(0 0 0 / 0.5);
   --shadow-color-dialog: rgb(0 0 0 / 0.5);

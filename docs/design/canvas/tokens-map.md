@@ -2,7 +2,7 @@
 
 Bảng đặt tên cho theme Tailwind/shadcn. Giá trị lấy từ `tokens.md` (sinh tự động từ 18 artboard, 2026-10-01). **Canvas thắng** khi lệch với `ui-admin.md` §5 hoặc `plan-frontend.md` §4. Chỉ light mode (dark mode chưa có trên canvas — Đề xuất ở plan-frontend).
 
-**UI-1 (CR-049, 2026-10-07): bảng màu indigo theo designer — chỉ đổi màu.** Cột "Hex (từ UI-1)" là nguồn chân lý cho cả 3 app (admin-web, chat-web, studio-web); cột "Trước UI-1" giữ giá trị canvas đã duyệt để truy vết (các file `*.dc.html` chưa vẽ lại, **tokens-map thắng** khi lệch). Giữ font, bố cục, bo góc, kích thước, câu chữ. Màu trạng thái (success/warning/danger/destructive/error-border/overage) giữ nguyên vì đã chỉnh AA (xanh/cam của designer không đạt AA cho chữ). Tỉ số tính bằng công thức WCAG 2.x: mọi cặp chữ ≥ 4,5:1; `--placeholder`, `--border`, `--row-divider` chỉ trang trí. **Dark mode Chat (CR-027):** frontend-lead suy ra bộ tối tông indigo ở task UI-1 và kiểm AA (ghi tỉ số vào đây).
+**UI-1 (CR-049, 2026-10-07): bảng màu indigo theo designer — chỉ đổi màu.** Cột "Hex (từ UI-1)" là nguồn chân lý cho cả 3 app (admin-web, chat-web, studio-web); cột "Trước UI-1" giữ giá trị canvas đã duyệt để truy vết (các file `*.dc.html` chưa vẽ lại, **tokens-map thắng** khi lệch). Giữ font, bố cục, bo góc, kích thước, câu chữ. Màu trạng thái (success/warning/danger/destructive/error-border/overage) giữ nguyên vì đã chỉnh AA (xanh/cam của designer không đạt AA cho chữ). Tỉ số tính bằng công thức WCAG 2.x: mọi cặp chữ ≥ 4,5:1; `--placeholder`, `--border`, `--row-divider` chỉ trang trí. **Dark mode Chat (CR-027):** xem mục "Dark mode (UI-1)" cuối file.
 
 ## Màu
 
@@ -56,3 +56,30 @@ Bảng đặt tên cho theme Tailwind/shadcn. Giá trị lấy từ `tokens.md` 
 | Chiều cao | nút & ô nhập **36px** · nút nhỏ 30–32px · nút lớn / ô đăng nhập 40–44px · badge 22px · mục sidebar 36px · topbar 60px |
 | Bố cục | sidebar **248px** · nội dung tối đa 1280px · padding trang 28px · khoảng cách card 16–20px · card padding 16–20px |
 | Bóng | toast `0 8px 24px rgba(29,23,51,.25)` · dialog `0 20px 48px rgba(29,23,51,.28)` · drawer `-12px 0 32px rgba(29,23,51,.18)` |
+
+## Dark mode (UI-1, CR-049) — chat-web `.dark` (admin/studio: tập con đang có, cùng giá trị)
+
+Suy ra bởi frontend-lead 2026-10-07; tỉ số WCAG 2.x tính bằng script. Chữ ≥ 4,5:1, thành phần UI ≥ 3:1. Màu trạng thái giữ bộ tối cũ (đã AA).
+
+| Token | Hex tối | Tỉ số |
+|---|---|---|
+| `--background` / `--card`,`--popover`,`--sidebar` / `--muted`,`--secondary` | `#0F1020` / `#171833` / `#1F2142` | — |
+| `--foreground` | `#E8EAF6` | bg 15,72 · card 14,43 |
+| `--muted-foreground` | `#A9AED0` | bg 8,65 · card 7,94 · muted 7,13 |
+| `--muted-strong-foreground` | `#C7CBE6` | muted 9,68 |
+| `--subtle-foreground` | `#9CA1C7` | bg 7,47 · card 6,86 |
+| `--secondary-foreground` | `#D2D5EC` | card 11,91 |
+| `--primary` / `--ring` | `#818CF8` | bg 6,31 · card 5,79 · muted 5,20 · accent 5,36 |
+| `--primary-foreground` | `#0F1020` | trên primary 6,31 |
+| `--primary-strong` | `#A5B4FC` | card 8,67 |
+| `--accent` / `--accent-foreground` | `#1E1B4B` / `#C7D2FE` | 10,72 |
+| `--ink-strong` / `--on-ink` / `--on-ink-link` | `#312E81` / `#E0E7FF` / `#A5B4FC` | 9,27 · 5,73 |
+| `--input` (viền ô nhập) | `#6670A8` | card 3,66 · bg 3,99 · muted 3,28 (UI ≥ 3) |
+| `--border`, `--row-divider`, `--placeholder` | `#2A2D52`, `#1F2142`, `#6E7299` | trang trí |
+| `--destructive` (chữ trắng) | `#B42318` | 6,57 |
+| `--error-border` | `#F97066` | card 6,20 |
+| success / warning / danger trên bg tương ứng | giữ nguyên | 9,61 · 9,28 · 8,51 |
+| `--code-bg` / `--code-fg` | `#0B0C18` / `#E6E8F5` | 15,95 · keyword 9,82 · string 11,72 · number 10,99 · title 9,82 · comment `#9A9FC2` 7,51 |
+| `--chart-1..4` | `#818CF8` `#6366F1` `#A5B4FC` `#C7D2FE` | card 5,79 · 3,87 · 8,67 · 11,59 |
+
+Light bổ sung: `--sidebar` `#FAFAFD`, chart `#4F46E5 #818CF8 #1E1B4B #A5B4FC`, `--code-bg` `#F5F5FA`, `--code-comment` `#6B6B6B` (4,90:1), bóng `rgb(30 27 75 / …)`.
