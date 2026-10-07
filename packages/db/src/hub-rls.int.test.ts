@@ -132,6 +132,13 @@ describe("HUB-FR-75 · RLS hội thoại hub_rw (int)", () => {
   });
 });
 
+/** X2a (0011): mỗi phần tử = một policy (rooms 2, room_members 3, room_messages 2). */
+const X2A_POLICY_TABLES = [
+  ...Array(2).fill("rooms"),
+  ...Array(3).fill("room_members"),
+  ...Array(2).fill("room_messages"),
+];
+
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
   test("HUB-FR-75 · withHubScope chạy lại khi 40001, không chạy lại lỗi khác", async () => {
     let n = 0;
@@ -156,14 +163,16 @@ describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", ()
     expect(await code(rt`select count(*) from admin.users`)).toBe("42501");
   });
 
-  test("HUB-FR-75 · RLS bật trên đúng 5 bảng hội thoại (+ tool_confirmations H2a, attachments H2c), policy chỉ cho hub_rw", async () => {
+  test("HUB-FR-75 · HUB-FR-96 · RLS bật trên đúng 5 bảng hội thoại (+ tool_confirmations H2a, attachments H2c, 3 bảng phòng X2a: 7 policy), policy chỉ cho hub_rw", async () => {
     const rows = await owner<{ t: string; roles: string }[]>`
       select c.relname as t, array_to_string(p.polroles::regrole[], ',') as roles
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       left join pg_policy p on p.polrelid = c.oid
       where n.nspname = 'hub' and c.relrowsecurity order by 1`;
     expect([...rows]).toEqual(
-      [...TABLES, "tool_confirmations", "attachments"].sort().map((t) => ({ t, roles: "hub_rw" })),
+      [...TABLES, "tool_confirmations", "attachments", ...X2A_POLICY_TABLES]
+        .sort()
+        .map((t) => ({ t, roles: "hub_rw" })),
     );
   });
 });

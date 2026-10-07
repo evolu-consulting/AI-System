@@ -53,6 +53,9 @@ const HUB_TABLES = [
   "orchestrator_settings",
   "provider_state",
   "providers",
+  "room_members",
+  "room_messages",
+  "rooms",
   "run_steps",
   "runs",
   "tool_confirmations",
@@ -93,7 +96,7 @@ const migrateAll = async (appEnv: "test" | "production") => {
 };
 
 describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
-  test("DB sạch (production): main → hub đủ 22 bảng (H3b + audit_log), không hub-dev; lần 2 {0,0}", async () => {
+  test("DB sạch (production): main → hub đủ 25 bảng (H3b + audit_log + 3 bảng phòng X2a), không hub-dev; lần 2 {0,0}", async () => {
     expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 10, dev: 0 });
     expect(await runHubMigrations({ url: URL, appEnv: "production" })).toEqual({
       hub: HUB_N,

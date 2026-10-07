@@ -78,6 +78,13 @@
       "when": 1791936000000,
       "tag": "0010_h4a_studio",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792022400000,
+      "tag": "0011_x2a_rooms",
+      "breakpoints": true
     }
   ]
 }

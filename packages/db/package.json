@@ -9,7 +9,8 @@
     "./seed": "./src/seed.ts",
     "./migrate-hub": "./src/migrate-hub.ts",
     "./hub-scope": "./src/hub-scope.ts",
-    "./schema/hub": "./src/schema/hub.ts"
+    "./schema/hub": "./src/schema/hub.ts",
+    "./schema/hub-rooms": "./src/schema/hub-rooms.ts"
   },
   "scripts": {
     "typecheck": "tsc -p . --noEmit",
