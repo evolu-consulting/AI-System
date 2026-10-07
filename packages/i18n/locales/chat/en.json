@@ -296,7 +296,27 @@
       "kicked": "You're no longer in \"{{name}}\"",
       "gone": "The group \"{{name}}\" was deleted",
       "sendFailed": "Couldn't send. Your message is still in the box.",
-      "actionFailed": "That didn't work. Try again later."
+      "actionFailed": "That didn't work. Try again later.",
+      "created": "Created group \"{{name}}\""
+    },
+    "newGroup": {
+      "title": "Create group",
+      "name": "Group name",
+      "namePh": "e.g. Project Minh Phat",
+      "members": "Members",
+      "picked": "Selected members",
+      "selfOwner": "{{name}} (you) · owner",
+      "count": "{{n}} / 50 · including you",
+      "search": "Search people in your company",
+      "remove": "Remove {{name}}",
+      "full": "The group is full (50 people)",
+      "cancel": "Cancel",
+      "create": "Create group",
+      "creating": "Creating…"
+    },
+    "name": {
+      "empty": "Group name is required",
+      "max": "Group name can be at most 80 characters"
     }
   }
 }

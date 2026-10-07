@@ -1,7 +1,7 @@
 // CHAT-AC-18, CHAT-AC-23 · khung app: ≥ 1024 sidebar 260px cố định; < 1024 header 56px (☰) + sidebar trong Sheet trái.
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConnectionBanner } from "~/components/shared/ConnectionBanner";
 import { Button } from "~/components/ui/button";
@@ -17,6 +17,12 @@ import { useShortcuts } from "../hooks/use-shortcuts";
 import { conversationIdOf, roomIdOf } from "../lib/conversation-path";
 import { SettingsDialog } from "./SettingsDialog";
 import { Sidebar } from "./Sidebar";
+
+const NewGroupDialog = lazy(() =>
+  import("~/features/rooms/components/dialogs/NewGroupDialog").then((m) => ({
+    default: m.NewGroupDialog,
+  })),
+);
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -34,6 +40,7 @@ export function AppShell() {
   const debounced = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [groupOpen, setGroupOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const wantSearch = useRef(false);
 
@@ -60,6 +67,10 @@ export function AppShell() {
       activeId={conversationIdOf(pathname)}
       activeRoomId={roomIdOf(pathname)}
       onNavigate={onNavigate}
+      onNewGroup={() => {
+        onNavigate?.();
+        setGroupOpen(true);
+      }}
       onOpenSettings={() => setSettingsOpen(true)}
     />
   );
@@ -108,6 +119,11 @@ export function AppShell() {
             {sidebar(() => setSheetOpen(false))}
           </SheetContent>
         </Sheet>
+      )}
+      {groupOpen && (
+        <Suspense fallback={null}>
+          <NewGroupDialog open={groupOpen} onOpenChange={setGroupOpen} />
+        </Suspense>
       )}
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} {...settings} />
     </div>

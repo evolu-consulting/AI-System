@@ -21,7 +21,7 @@ type Props = {
   searchRef: Ref<HTMLInputElement>;
   activeId: string | null;
   activeRoomId: string | null;
-  /** F5 nối hộp thoại "Tạo nhóm"; vắng thì nút bị vô hiệu. */
+  /** Mở hộp thoại "Tạo nhóm"; vắng thì nút bị vô hiệu. */
   onNewGroup?: () => void;
   onNavigate?: () => void;
   onOpenSettings: () => void;

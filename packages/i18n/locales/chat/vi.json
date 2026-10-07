@@ -296,7 +296,27 @@
       "kicked": "Bạn không còn trong nhóm \"{{name}}\"",
       "gone": "Nhóm \"{{name}}\" đã bị xoá",
       "sendFailed": "Không gửi được tin. Nội dung vẫn còn trong ô nhập.",
-      "actionFailed": "Không thực hiện được. Thử lại sau."
+      "actionFailed": "Không thực hiện được. Thử lại sau.",
+      "created": "Đã tạo nhóm \"{{name}}\""
+    },
+    "newGroup": {
+      "title": "Tạo nhóm",
+      "name": "Tên nhóm",
+      "namePh": "Ví dụ: Dự án Minh Phát",
+      "members": "Thành viên",
+      "picked": "Thành viên đã chọn",
+      "selfOwner": "{{name}} (bạn) · chủ nhóm",
+      "count": "{{n}} / 50 · gồm bạn",
+      "search": "Tìm người trong công ty",
+      "remove": "Bỏ {{name}}",
+      "full": "Nhóm đã đủ 50 người",
+      "cancel": "Huỷ",
+      "create": "Tạo nhóm",
+      "creating": "Đang tạo…"
+    },
+    "name": {
+      "empty": "Tên nhóm không được để trống",
+      "max": "Tên nhóm tối đa 80 ký tự"
     }
   }
 }
