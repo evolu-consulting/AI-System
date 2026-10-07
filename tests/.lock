@@ -447,7 +447,7 @@ e404879d15d77661e857a676a9fe232bc4500ddcb3a2c24804d66f503415cafd  tests/acceptan
 9fc48d2f49b7e20d5e8f3d35cf872de2c1536c9cf81ba6e23c1c7e36a7b2b65a  tests/acceptance/X2a/directory.int.test.ts
 afc9aaf4f9b2d217ecc5cb3b0b8720aeaae16bbe23094bd0f52a23a1398a8e35  tests/acceptance/X2a/isolation.int.test.ts
 ea909acc0fb4672cc9322aaff9e8ef3bc746d3ac8292783e105b15b29e3be124  tests/acceptance/X2a/log.int.test.ts
-84f2e365b0ca538a54887b6095d88b52d16898edf0289ea0257d87c9faaa7e0d  tests/acceptance/X2a/me-stream.int.test.ts
+e3630fdd36dc9d0f5e2916bf732c068cdf11d9253cc3afaf896745e288b3538d  tests/acceptance/X2a/me-stream.int.test.ts
 f9950653437730a34412e811d2576fb71c352e488d1a2b66c5454b4b684e5eaf  tests/acceptance/X2a/members.int.test.ts
 2c3e814539eea100efa82a4dd7bc9f37c5b1ed37aa1fbc301d8cbcd30e52f076  tests/acceptance/X2a/messages.int.test.ts
 016f69afbe823e6605418c2018336551768064290a4f707e6360bcb79187cc7c  tests/acceptance/X2a/rooms.int.test.ts

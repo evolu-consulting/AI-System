@@ -215,11 +215,11 @@ describe("T07–T10 · stream.reset [X2a-AC08]", () => {
     const g = await mkGroup(c.hub, a, [q.id], "T10");
     for (const t of ["T10-1", "T10-2", "T10-3"]) await say(c.hub, a, g.id, t);
     const info = (await redis.call("XINFO", "STREAM", key)) as unknown[];
-    const maxDel = String(info[info.indexOf("max-deleted-entry-id") + 1] ?? "");
+    const recFirst = String(info[info.indexOf("recorded-first-entry-id") + 1] ?? "");
     const first = (await redis.xrange(key, "-", "+", "COUNT", 1))[0]?.[0] ?? "";
     expect(first !== "" && cmpId(first, oldId) > 0).toBe(true);
-    if (info.includes("max-deleted-entry-id"))
-      expect(cmpId(maxDel, oldId)).toBeGreaterThanOrEqual(0);
+    // Redis 7.4: MAXLEN không đổi max-deleted-entry-id (chỉ XDEL) ⇒ chứng minh cắt bằng recorded-first-entry-id
+    if (info.includes("recorded-first-entry-id")) expect(cmpId(recFirst, oldId)).toBeGreaterThan(0);
     const tq = await sign(c.k, q);
     const s1 = await openMeStream(c.hub, tq, { lastId: oldId });
     expect(s1.status).toBe(200);
