@@ -5,10 +5,12 @@ import {
   CHAT_API_ERRORS,
   CHAT_ATTACHMENT_ERRORS,
   CHAT_COMMAND_ERRORS,
+  CHAT_ROOM_ERRORS,
   CHAT_ROUTING_ERRORS,
   type ChatAttachmentErrorCode,
   type ChatCommandErrorCode,
   type ChatErrorCode,
+  type ChatRoomErrorCode,
   type ChatRoutingErrorCode,
   type ErrorResponse,
 } from "@ai/contracts/chat";
@@ -40,6 +42,7 @@ export type HubErrorCode =
   | ChatCommandErrorCode
   | ChatRoutingErrorCode
   | ChatAttachmentErrorCode
+  | ChatRoomErrorCode
   | HubAdminErrorCode
   | StudioErrorCode;
 const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
@@ -47,6 +50,7 @@ const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
   ...CHAT_COMMAND_ERRORS,
   ...CHAT_ROUTING_ERRORS,
   ...CHAT_ATTACHMENT_ERRORS,
+  ...CHAT_ROOM_ERRORS,
   ...HUB_ADMIN_ERRORS,
   ...STUDIO_ERRORS,
 };
@@ -67,6 +71,14 @@ export const ERROR_MESSAGES: Record<HubErrorCode, string> = {
   ATTACHMENT_QUOTA_EXCEEDED: "Storage quota exceeded",
   ATTACHMENT_TOO_LARGE: "File too large",
   ATTACHMENT_TYPE_NOT_ALLOWED: "File type not allowed",
+  ROOM_NOT_FOUND: "Room not found",
+  USER_NOT_FOUND: "User not found",
+  NOT_ROOM_OWNER: "Only the room owner can do this",
+  DM_IMMUTABLE: "Direct messages cannot be changed",
+  ROOM_FULL: "Room is full",
+  OWNER_MUST_TRANSFER: "Transfer ownership before leaving",
+  GROUP_NOT_HIDEABLE: "Groups cannot be hidden",
+  DM_SELF: "Cannot message yourself",
   FORBIDDEN: "Forbidden",
   TENANT_REQUIRED: "tenant_id is required",
   INVALID_REFERENCE: "Invalid reference",

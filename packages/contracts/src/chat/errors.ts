@@ -91,3 +91,30 @@ export const AttachmentNotFoundDetailsSchema = z.strictObject({
   ids: z.array(UuidSchema).min(1).max(ATTACH_PER_MESSAGE_MAX),
 });
 export type AttachmentNotFoundDetails = z.infer<typeof AttachmentNotFoundDetailsSchema>;
+
+// HUB-FR-96…100 · lỗi phòng chat (X2a plan §2.1): hằng riêng, không đổi `CHAT_API_ERRORS`; 400 khác là `VALIDATION_ERROR`.
+export const CHAT_ROOM_ERRORS = {
+  ROOM_NOT_FOUND: 404,
+  USER_NOT_FOUND: 404,
+  NOT_ROOM_OWNER: 403,
+  DM_IMMUTABLE: 409,
+  ROOM_FULL: 409,
+  OWNER_MUST_TRANSFER: 409,
+  GROUP_NOT_HIDEABLE: 409,
+  DM_SELF: 400,
+} as const satisfies Record<string, 400 | 403 | 404 | 409>;
+
+export type ChatRoomErrorCode = keyof typeof CHAT_ROOM_ERRORS;
+export const CHAT_ROOM_ERROR_CODES = Object.keys(CHAT_ROOM_ERRORS) as ChatRoomErrorCode[];
+
+export const UserNotFoundDetailsSchema = z.strictObject({
+  user_ids: z.array(UuidSchema).min(1).max(200),
+});
+export type UserNotFoundDetails = z.infer<typeof UserNotFoundDetailsSchema>;
+
+/** `requested` = tổng thành viên sau khi thêm (gồm chủ). */
+export const RoomFullDetailsSchema = z.strictObject({
+  max: z.literal(50),
+  requested: z.number().int().min(0),
+});
+export type RoomFullDetails = z.infer<typeof RoomFullDetailsSchema>;
