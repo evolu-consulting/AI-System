@@ -161,6 +161,7 @@ export const DEMO_USERS: FixtureUser[] = [
   ["thomas.tran", "Thomas Tran", "member"],
   ["vio.ngo", "Vio Ngo", "member"],
   ["edgar.nguyen", "Edgar Nguyen", "member"],
+  ["rowan.hoang", "Rowan Hoang", "member"],
 ].map(([username, display_name, role]) => ({
   tenant_key: DEMO_TENANT.key,
   username: String(username),
