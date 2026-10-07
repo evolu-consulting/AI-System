@@ -103,6 +103,8 @@ class MeStreamSession implements Closable {
     d.conns.add(o.user.userId, this);
     if (this.#closed) return;
     if (o.plan.reset) this.#send(RESET_FRAME);
+    // byte đầu ngay khi mở: client đổi phase sang `open` theo byte đầu, không đợi `pingMs`
+    this.#send(SSE_PING_FRAME);
     this.#ping = setInterval(() => this.#tick(), d.pingMs);
     this.#armExpiry();
     try {

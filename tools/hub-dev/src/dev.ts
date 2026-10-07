@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { dockerArgs } from "../../../apps/agent-runtime/scripts/run";
 import { contractUsersJson, ensureContractFixture, ensureDemoFixture } from "./fixture";
+import { ensureDemoRooms, ensureFixtureRooms } from "./fixture-rooms";
 
 export const REPO = resolve(import.meta.dir, "../../..");
 export const HUB_URL = "http://localhost:4000";
@@ -192,6 +193,18 @@ async function fixtureStep(notes: string[]): Promise<void> {
   }
 }
 
+/** Phòng mẫu (X2a B8) sau `db:migrate` + user fixture; ghi trực tiếp DB bằng `DATABASE_URL` (owner). */
+async function roomsStep(notes: string[]): Promise<void> {
+  const url = process.env.DATABASE_URL;
+  if (!url) return void notes.push("phòng mẫu: thiếu DATABASE_URL — bỏ qua");
+  try {
+    await ensureFixtureRooms(url);
+    if (!(await ensureDemoRooms(url))) notes.push("phòng mẫu evolu: chưa có tenant — bỏ qua");
+  } catch (err) {
+    notes.push(`phòng mẫu: ${(err as Error).message}`);
+  }
+}
+
 /** Giới hạn run đồng thời/user cho hub-dev (H2b plan §2.1, K4b): mặc định 20 để bộ 41 ca contract chat (có run chạy dở)
  * không chạm 429; ghi đè bằng env `HUB_MAX_CONCURRENT_RUNS`. Stack H2b đặt 2 tường minh (`test:h2b:stack`, L6). */
 export const HUB_DEV_MAX_CONCURRENT_RUNS = "20";
@@ -236,6 +249,7 @@ export async function startHubDev(): Promise<HubDev> {
   try {
     if (bunRun(["packages/db/src/migrate.ts"]) !== 0) throw new Error("db:migrate lỗi");
     if (await adminStep(stops, notes)) await fixtureStep(notes);
+    await roomsStep(notes);
     if (bunRun(["apps/hub-api/src/modules/seed/seed.ts"]) !== 0) throw new Error("hub:seed lỗi");
     if (!(await healthy(HUB_URL))) {
       const env = hubApiEnv(process.env, tempAttachDir(stops), mode);
