@@ -4,7 +4,7 @@
 
 C1 chạy với **mock Hub** (chưa có Hub/Claude CLI thật). Actor chung: **Member** (user cuối của một tenant). "Consultant" là tên hiển thị duy nhất của mọi câu trả lời (CR-022).
 
-**Ngoài phạm vi C1:** menu `/` và command, đính kèm file, Extension, Knowledge base (CR-024), chat nhóm / agent↔agent (CR-023), Coordinator và Claude CLI thật, schema `hub` thật, Worker.
+**Ngoài phạm vi C1:** menu `/` và command, đính kèm file, Extension, Knowledge base (CR-024), agent↔agent (CR-023; chat user↔user và nhóm: UC-09…11, X2, CR-047/048), Coordinator và Claude CLI thật, schema `hub` thật, Worker.
 
 ## Mục lục
 
@@ -18,6 +18,9 @@ C1 chạy với **mock Hub** (chưa có Hub/Claude CLI thật). Actor chung: **M
 | UC-06 | Trả lời tiếp trong flow | CHAT-AC-14…17 | FlowOpen, Mobile, States |
 | UC-07 | Quản lý hội thoại | CHAT-AC-18…23 | Welcome, Main |
 | UC-08 | Lỗi và kết nối | CHAT-AC-24…30 | States |
+| UC-09 | Nhắn riêng 1-1 (DM) — X2a | CHAT-AC-37…40 | (mockup X2 đang xem) |
+| UC-10 | Nhóm chat — X2a | CHAT-AC-41…45 | (mockup X2) |
+| UC-11 | Agent trong phòng — X2b | CHAT-AC-46…50 | (mockup X2) |
 
 ---
 
@@ -147,6 +150,41 @@ Mọi thẻ lỗi có dòng nhỏ `CODE · run <id>`. "Báo admin" copy sẵn m�
 | CHAT-AC-28 | Given kịch bản "mất kết nối giữa stream" (mock cắt sau N `delta`), Then hiện banner "Đang kết nối lại…", Chat nối lại với `Last-Event-ID` = id sự kiện cuối, nội dung cuối cùng đầy đủ và **không trùng lặp**, banner ẩn |
 | CHAT-AC-29 | Given Hub không trả lời (mock tắt), When gửi hoặc tải danh sách, Then banner đỏ "Không kết nối được máy chủ" + Thử lại; Hub chạy lại và bấm Thử lại thì banner biến mất |
 | CHAT-AC-30 | Given mọi thẻ lỗi ở trên, Then không bao giờ hiện tên agent, provider hay stack trace |
+
+## UC-09 Nhắn riêng 1-1 (DM) — X2a
+
+Mục "Tin nhắn / Nhóm" ở sidebar, **tách** khỏi danh sách hội thoại với agent (trang và API cũ giữ nguyên). Nguồn: CR-047, HUB-FR-96, 97, 100, 102.
+
+| AC | Given / When / Then |
+|---|---|
+| CHAT-AC-37 | Given member, When chọn "Tin nhắn mới" và tìm trong danh bạ, Then chỉ thấy user active **cùng tenant** (tên, username); user tenant khác không bao giờ xuất hiện |
+| CHAT-AC-38 | Given đã có DM với B, When mở DM với B lần nữa, Then vào đúng phòng cũ (không tạo thêm); DM không có nút đổi tên / thêm người / xoá, chỉ "Ẩn" (tin mới làm hiện lại) |
+| CHAT-AC-39 | Given B đang online, When A gửi tin, Then B thấy tin hiện ngay và huy hiệu chưa đọc ở phòng + tổng ở sidebar; mở phòng thì về 0 |
+| CHAT-AC-40 | Given mất kết nối realtime, Then banner "Đang kết nối lại…", nối lại không mất/lặp tin (như CHAT-AC-28) |
+
+## UC-10 Nhóm chat — X2a
+
+Nguồn: CR-047, HUB-FR-96, 98, 99.
+
+| AC | Given / When / Then |
+|---|---|
+| CHAT-AC-41 | Given member bất kỳ, When tạo nhóm (tên + chọn thành viên từ danh bạ), Then người tạo là **chủ phòng**; tối đa 50 thành viên (vượt thì báo "Nhóm đã đủ 50 người") |
+| CHAT-AC-42 | Given chủ phòng, Then thêm/bớt thành viên, đổi tên, xoá phòng được; thành viên thường không thấy các nút này |
+| CHAT-AC-43 | Given thành viên, When bấm "Rời nhóm", Then phòng biến mất khỏi danh sách của họ; chủ phòng phải chuyển chủ hoặc xoá phòng trước khi rời |
+| CHAT-AC-44 | Given người mới được thêm, Then xem được **toàn bộ lịch sử** phòng |
+| CHAT-AC-45 | Given user không phải thành viên (đường dẫn `/rooms/:id` gõ tay), Then trang "Không tìm thấy" (Hub trả 404, không lộ phòng tồn tại) |
+
+## UC-11 Agent trong phòng — X2b
+
+Nguồn: CR-048, HUB-FR-101, 103, HUB-BR-21.
+
+| AC | Given / When / Then |
+|---|---|
+| CHAT-AC-46 | Given mở một phòng (DM hoặc nhóm), Then panel/thanh "Agent" liệt kê **chỉ agent chính user này được dùng** (tên + mô tả); bấm một agent thì chèn `@key` vào composer; gõ `@` vẫn hiện menu |
+| CHAT-AC-47 | Given A gửi "@hoadon …" trong nhóm, Then cả phòng thấy tin của A, trạng thái "hoadon đang xử lý" và kết quả như tin của agent; tin không tag thì agent không trả lời |
+| CHAT-AC-48 | Given agent hỏi lại / cần xác nhận `side_effect`, Then nút "Đồng ý / Huỷ" chỉ hiện và dùng được với **người gọi**; thành viên khác thấy "Đang chờ A xác nhận" |
+| CHAT-AC-49 | Given B không được dùng agent X, When B gõ "@X …", Then thông báo không tìm thấy agent (kèm gợi ý agent B dùng được), không có run |
+| CHAT-AC-50 | Given A gọi agent, Then lượt dùng và chi phí tính cho A (không phải phòng); thành viên khác xem kết quả không cần quyền agent |
 
 ---
 

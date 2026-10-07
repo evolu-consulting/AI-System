@@ -76,6 +76,8 @@ Cả hai cách đều cần: kiểm tra danh tính và quyền, giấu key, ch�
 | US-H11 | Platform admin | cấp một agent cho một tenant | tenant đó dùng được agent |
 | US-H12 | Tenant admin | cấp agent cho một group trong tenant | chỉ đúng nhóm người dùng được agent |
 | US-H13 | Tenant admin | được cảnh báo khi tenant dùng tới 80% và 100% quota | chủ động kiểm soát chi phí mà công việc không bị gián đoạn |
+| US-H14 | Member | nhắn riêng 1-1 với đồng nghiệp cùng công ty và tạo nhóm chat chung | trao đổi công việc ngay trong hệ thống (CR-047) |
+| US-H15 | Member | gọi agent bằng `@agent` ngay trong phòng và thấy danh sách agent mình dùng được | cả phòng thấy kết quả và biết có thể hỏi agent nào (CR-048) |
 
 ## 5. Luồng xử lý
 
@@ -220,7 +222,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
 | HUB-FR-74 | JWT chứa `user_id`, `tenant_id`, `role` (`platform_admin` \| `tenant_admin` \| `member`). Token không chứa danh sách quyền. Hub tự tính quyền từ cache (HUB-FR-02) | **MUST** |
-| HUB-FR-75 | **Cách ly theo tenant:** `conversations`, `runs`, `jobs`, `attachments`, `usage_logs` đều có `tenant_id` lấy từ JWT. Mọi truy vấn lọc theo `tenant_id` và `user_id`. Truy cập tài nguyên của tenant khác trả 404 | **MUST** |
+| HUB-FR-75 | **Cách ly theo tenant:** `conversations`, `runs`, `jobs`, `attachments`, `usage_logs` đều có `tenant_id` lấy từ JWT. Mọi truy vấn lọc theo `tenant_id` và `user_id`. Truy cập tài nguyên của tenant khác trả 404 **Phòng chat (CR-047):** bảng phòng có `tenant_id` + RLS theo **thành viên** — không phải thành viên → 404; hội thoại riêng user↔agent giữ nguyên lọc theo `user_id` (HUB-BR-22) | **MUST** |
 | HUB-FR-76 | **Quyền command:** user dùng được `/cmd` ⇔ cmd thuộc feature F ∧ F bật (hoặc Beta và user thuộc group `beta-testers`) ∧ F có entitlement cho tenant của user ∧ F được cấp cho user hoặc group của user. Áp cho `GET /commands` và kiểm tra lại khi chạy. Không có quyền thì trả `CMD_NOT_FOUND` | **MUST** |
 | HUB-FR-77 | **Quyền agent:** user dùng được agent A ⇔ A bật ∧ A có entitlement cho tenant của user (`hub.agent_entitlements`, chưa thu hồi) ∧ A được cấp cho user hoặc group của user (`hub.agent_grants`). Orchestrator chỉ nhận danh sách agent user được dùng. Hub kiểm tra lại khi delegate và khi Playground chọn một agent | **MUST** |
 | HUB-FR-78 | **Cấp quyền agent:** `platform_admin` cấp và thu hồi entitlement agent cho tenant (trong Studio). `tenant_admin` cấp agent cho group/user trong tenant mình, chỉ với agent đã có entitlement (UI ở trang Groups của Admin, gọi `GET/POST/DELETE /agent-grants` của Hub bằng JWT của chính `tenant_admin`, không qua `/studio`). Thu hồi entitlement thì grant trong tenant mất hiệu lực nhưng vẫn giữ để khôi phục. Mọi thay đổi ghi audit và tăng `hub_config_version` | **MUST** |
@@ -237,6 +239,25 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | HUB-FR-93 | **Chặn cứng quota theo tenant** (CR-034; mốc H3): `platform_admin` đặt `hard_block` (mặc định `false`) cho từng tenant (cấu hình ở Admin, cạnh quota). Khi bật và số đã dùng chạm 100% một giới hạn (tenant hoặc tenant × feature) thì run **mới** bị từ chối `403 QUOTA_BLOCKED` trước khi tạo run; run đang chạy không bị cắt. Tắt `hard_block` thì quay về chỉ cảnh báo (HUB-FR-81). Ghi audit khi đổi | **SHOULD** |
 
 > ℹ️ **Lưu ý:** cần xác nhận loại gói subscription đang dùng cho phép phục vụ nhiều khách hàng.
+
+### 6.9 Phòng chat user↔user, nhóm, agent trong phòng (CR-047, CR-048)
+
+Hội thoại 1-1 user↔agent hiện có (HUB-FR-40…45) **giữ nguyên** trang, API và policy; phòng là thực thể **mới, tách riêng**. Mốc X2a (HUB-FR-96…100, 102) và X2b (HUB-FR-101, 103).
+
+| ID | Yêu cầu | Ưu tiên |
+|---|---|---|
+| HUB-FR-96 | **Phòng (`room`) + thành viên.** Phòng thuộc đúng một tenant; thành viên là user `active` cùng tenant, **không bao giờ khác tenant**, không giới hạn theo group Admin. Tin trong phòng có người gửi, nội dung, thời điểm; không sửa/xoá tin ở v1. **Thành viên mới xem toàn bộ lịch sử phòng.** Không phải thành viên (kể cả `tenant_admin`) → 404 (HUB-BR-14, HUB-BR-22) | **MUST** |
+| HUB-FR-97 | **DM 1-1.** Mở DM với một user cùng tenant: tạo phòng 2 người (loại `dm`) nếu chưa có, trả phòng cũ nếu đã có (mỗi cặp user một DM). DM không đổi tên, không thêm người, không xoá phòng; mỗi bên **ẩn DM phía mình** được (tin mới làm hiện lại) | **MUST** |
+| HUB-FR-98 | **Quản lý nhóm.** Mọi user active tạo được nhóm (tên bắt buộc, ≤ 80 ký tự); người tạo = **chủ phòng**. Chỉ chủ thêm/bớt thành viên, đổi tên, **xoá phòng** (xoá cho mọi người); mọi thành viên tự **rời** được (chủ rời phải chuyển chủ trước hoặc xoá phòng). Tối đa **50 thành viên**. Thêm user ngoài tenant hoặc không active → bị từ chối như không tồn tại | **MUST** |
+| HUB-FR-99 | **Realtime theo user/phòng.** Mỗi user có một luồng SSE riêng (`room.message`, `room.unread`, `room.member_added`/`removed`, `room.updated`/`deleted`), **tách khỏi stream run** (`sse:<run_id>`). Redis Streams theo user (và/hoặc phòng), nối lại bằng `Last-Event-ID`; chạy đúng khi có nhiều instance Hub. Chỉ phát cho thành viên | **MUST** |
+| HUB-FR-100 | **Chưa đọc / đã đọc.** Mỗi (user, phòng) có mốc đã đọc; Hub trả số tin chưa đọc mỗi phòng và tổng; client đánh dấu đã đọc khi mở/xem tới cuối phòng. Tin của chính mình không tính chưa đọc. Presence, "đang gõ", email/push: **COULD**, ngoài v1 | **MUST** |
+| HUB-FR-101 | **`@agent` trong phòng** (X2b). Trong phòng, tin có `@<agent_key>` (hoặc `@orchestrator`) gọi agent như HUB-FR-91 (cùng Router, `@@`, `AGENT_NOT_FOUND`, kiểm quyền HUB-FR-77); **agent không là thành viên cố định, chỉ trả lời khi được tag**, không tự lên tiếng. **Mỗi tin tối đa 1 run** (nhiều tag → Orchestrator thu hẹp như HUB-FR-91). Ngữ cảnh agent = **20 tin gần nhất của phòng + tin gọi**; file đính kèm chỉ dùng được nếu đã gửi vào phòng. Kết quả hiện cho **cả phòng** như tin của agent. `need_input` / xác nhận `side_effect` (HUB-FR-28/95): **chỉ người gọi** bấm trả lời; người khác thấy trạng thái chờ. Agent↔agent: Hoãn (CR-023) | **MUST** |
+| HUB-FR-102 | **Danh bạ cùng tenant.** `GET /directory`: user `active` cùng tenant (id, tên hiển thị, username, trạng thái), có tìm theo tên. Không lộ email, role, group, user tenant khác. Hub đọc `admin.users` qua quyền `SELECT` giới hạn cột (id, tên hiển thị, username, trạng thái) cấp bằng migration nhỏ ở `packages/db` | **MUST** |
+| HUB-FR-103 | **Danh sách agent dùng được hiện trong phòng** (X2b; yêu cầu người dùng). Phòng (DM và nhóm) hiện panel/thanh "Agent": mỗi agent có tên + mô tả, **lọc theo quyền của chính user đang xem** (cùng nguồn `GET /agents`, HUB-FR-92/77), bấm để chèn `@agent` vào composer. Menu `@` khi gõ vẫn có | **MUST** |
+
+> **HUB-BR-21 · Agent trong phòng dùng quyền + quota của người gọi.** `runs.user_id` = người gọi (không phải phòng, không phải chủ phòng); quyền agent (HUB-FR-77), `max_concurrent_runs` (HUB-FR-94), quota/usage tính cho người gọi. Thành viên khác không cần quyền dùng agent đó để **thấy** kết quả; agent không được đọc dữ liệu/file mà người gọi không có. Kết quả hiện cho cả phòng nên người gọi chịu trách nhiệm việc chia sẻ.
+>
+> **HUB-BR-22 · Cách ly phòng (hard stop bảo mật).** Bảng phòng / thành viên / tin phòng / mốc đọc **mới**, RLS theo **thành viên** (không phải thành viên → 404, không 403) và vẫn khoá `tenant_id`. Hội thoại riêng user↔agent giữ nguyên policy cũ và AC-H07. Cần security review riêng khi review X2a.
 
 ## 7. Luật nghiệp vụ
 
@@ -282,6 +303,9 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | `agent_entitlements` | agent_id, tenant_id, granted_by, granted_at, revoked_at |
 | `agent_grants` | id, agent_id, tenant_id, subject_type (group/user), subject_id, granted_by, granted_at |
 | `flows` | id, conversation_id, tenant_id, user_id, agent_id (agent phụ trách gần nhất, đổi được; null đến khi Orchestrator chọn), title, created_at, last_active_at (CR-021). `messages` và `runs` thêm `flow_id` |
+| `rooms` | id, tenant_id, kind (`dm` hoặc `group`), name (null với DM), owner_id (null với DM), dm_key (cặp user, unique với DM), created_at, deleted_at (CR-047) |
+| `room_members` | room_id, tenant_id, user_id, role (`owner`/`member`), joined_at, left_at, hidden_at (DM ẩn phía mình), mốc đã đọc (hoặc bảng `read_markers` riêng) — unique (room_id, user_id) |
+| `room_messages` | id, room_id, tenant_id, sender_type (`user`/`agent`), sender_id, content, run_id (nếu là kết quả agent), trigger_message_id, đính kèm (như HUB-FR-44), created_at. Có thể là `messages` thêm `room_id` — chốt ở spec X2a. `runs` thêm `room_id` (null với hội thoại riêng); `runs.user_id` = người gọi (HUB-BR-21) |
 | `orchestrator_settings` | `tenant_id` nullable (null = bản mặc định toàn hệ thống; unique theo tenant, CR-032), agent_id (thay profile_id, system_prompt, CR-020), max_steps, token_budget, history_n, on_no_match (answer\|ask), inherit_shared_tests (bản tenant), version, updated_by |
 | `providers` | id, key, kind, vendor, base_url, secret_id, max_concurrency, enabled |
 | `model_profiles` | id, key, steps (jsonb [{provider_id, model, on[]}]) |
@@ -301,6 +325,10 @@ Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `feat
 |---|---|
 | `GET /commands` | Menu command cho client, chỉ gồm lệnh user được dùng |
 | `GET /agents` | Menu `@` cho client: agent user được dùng (key, tên vi/en, mô tả ngắn; HUB-FR-92) |
+| `GET /directory` | Danh bạ user active cùng tenant (HUB-FR-102). Tên endpoint phòng dưới đây ở mức BA, chốt ở spec X2a |
+| `GET/POST /rooms` · `GET/PATCH/DELETE /rooms/:id` · `POST/DELETE /rooms/:id/members` · `POST /rooms/:id/leave` | DM/nhóm (HUB-FR-96…98); chỉ thành viên thấy phòng, ngoài ra 404 |
+| `GET/POST /rooms/:id/messages` · `POST /rooms/:id/read` | Lịch sử (phân trang), gửi tin (có `@agent` ⇒ chạy run, HUB-FR-101), đánh dấu đã đọc (HUB-FR-100) |
+| `GET /me/stream` (SSE) | Luồng realtime của user, nối lại `Last-Event-ID` (HUB-FR-99). Danh sách agent trong phòng dùng `GET /agents` (HUB-FR-103) |
 | `GET/POST /conversations` · `PATCH/DELETE /conversations/:id` | Quản lý hội thoại (trong tenant của user) |
 | `GET /conversations/:id/messages` | Lịch sử (phân trang) |
 | `POST /conversations/:id/messages` | Gửi message (body có `flow_id?`, CR-021), trả về SSE stream. `GET /conversations/:id/flows` liệt kê flow |
@@ -329,6 +357,15 @@ event: run.finished    data: {run_id, message_id, usage}
 event: run.failed      data: {run_id, code, message, hint}
 ```
 
+Luồng người dùng `GET /me/stream` (HUB-FR-99, tách khỏi stream run):
+
+```
+event: room.message        data: {room_id, message}            # tin user hoặc kết quả agent
+event: room.unread         data: {room_id, unread, total}
+event: room.member_added   data: {room_id, user_id}   |  room.member_removed  data: {room_id, user_id}
+event: room.updated        data: {room_id, name?}     |  room.deleted         data: {room_id}
+```
+
 ### 9.3 Mã lỗi
 
 | Mã | Ý nghĩa | Gợi ý cho user |
@@ -344,6 +381,8 @@ event: run.failed      data: {run_id, code, message, hint}
 | `ALL_PROVIDERS_EXHAUSTED` | Mọi bước trong profile đều thất bại | Thử lại sau, admin kiểm tra provider |
 | `BUDGET_EXCEEDED` | Vượt số bước hoặc ngân sách token của run | Chia nhỏ yêu cầu |
 | `TIMEOUT` · `CANCELLED` | Hết giờ hoặc bị huỷ | — |
+| `ROOM_NOT_FOUND` | Phòng không có hoặc user không là thành viên (404, HUB-FR-96) | — |
+| `NOT_ROOM_OWNER` · `DM_IMMUTABLE` · `ROOM_FULL` | Không phải chủ phòng (403) · đổi tên/thêm người/xoá DM (409) · quá 50 thành viên (409) (HUB-FR-97, 98) | Nhờ chủ phòng / tạo nhóm |
 | `FORBIDDEN` | `/studio/api/*` khi role không phải `platform_admin` (403, HUB-FR-72) | UI hiện trang "không có quyền" |
 | `INVALID_REFERENCE` | Studio: tham chiếu không có/đang tắt/sai loại (profile, workflow, agent_type, agent, tenant) (400) | Chọn lại mục hợp lệ |
 | `VERSION_CONFLICT` | Studio: lưu bằng `version` cũ (409, kèm `current`) | Tải bản mới hoặc ghi đè |
@@ -388,10 +427,10 @@ Vượt quota tenant mặc định **không** phải lỗi (trừ khi tenant b�
 > Given một run agentic-cli đang chạy, When user bấm huỷ, Then trong ≤ 5 giây run có trạng thái `cancelled`, tiến trình CLI bị dừng, và client nhận `run.failed{code:CANCELLED}`.
 
 > **AC-H07 · Cách ly dữ liệu giữa user**
-> When user A gọi `GET /conversations/:id` với id của user B, Then nhận 404 (không phải 403, để không lộ việc hội thoại đó tồn tại).
+> When user A gọi `GET /conversations/:id` với id của user B, Then nhận 404 (không phải 403, để không lộ việc hội thoại đó tồn tại). Áp cho hội thoại riêng user↔agent; **phòng chat** (CR-047): user không phải thành viên thì xem AC-H23.
 
 > **AC-H08 · Cách ly tenant**
-> Given user X thuộc tenant `acme` và run R thuộc tenant `beta`, When X gọi `GET /runs/R`, `GET /runs/R/trace` hoặc `GET /conversations/:id` của tenant `beta`, Then nhận 404. Kể cả khi X là `tenant_admin` của `acme`.
+> Given user X thuộc tenant `acme` và run R thuộc tenant `beta`, When X gọi `GET /runs/R`, `GET /runs/R/trace` hoặc `GET /conversations/:id` của tenant `beta`, Then nhận 404. Kể cả khi X là `tenant_admin` của `acme`. Phòng chat cũng khoá tenant: phòng của tenant khác → 404.
 
 > **AC-H09 · Agent không được cấp thì Orchestrator không chọn**
 > Given agent `hoadon` có entitlement cho `acme` nhưng chưa cấp cho group nào của user X, When X gửi "kiểm tra hoá đơn này", Then danh sách agent đưa cho Orchestrator không có `hoadon`, trace không có delegate(hoadon), và Orchestrator tự trả lời (hoặc chọn agent khác X được dùng). When `tenant_admin` cấp `hoadon` cho group của X, Then trong ≤ 5 giây lượt gửi tiếp theo có thể delegate(hoadon).
@@ -434,6 +473,20 @@ Vượt quota tenant mặc định **không** phải lỗi (trừ khi tenant b�
 
 > **AC-H22 · Xác nhận hành động có tác dụng phụ**
 > Given workflow `create_trello_card` có `side_effect = true` gắn cho `trello`, When agent muốn gọi tool này, Then run kết thúc với `ask{question, choices:[Đồng ý, Huỷ]}` và tool chưa được gọi; When user trả lời "Đồng ý", Then lượt resume gọi tool đúng một lần. When agent cố gọi mà chưa có xác nhận, Then Hub từ chối và trace ghi `CONFIRMATION_REQUIRED`.
+> **AC-H23 · Phòng chỉ thành viên mới thấy (X2a)**
+> Given nhóm G có thành viên A, B và user C cùng tenant (không phải thành viên) và D tenant khác, When C hoặc D hoặc `tenant_admin` không phải thành viên gọi `GET /rooms/G`, `GET /rooms/G/messages`, hoặc nối `/me/stream`, Then 404 / không nhận sự kiện của G. Hội thoại riêng user↔agent không đổi (AC-H07).
+
+> **AC-H24 · DM và nhóm (X2a)**
+> Given A, B cùng tenant, When A mở DM với B hai lần, Then cùng một phòng; thêm người/đổi tên DM → `DM_IMMUTABLE`. When A tạo nhóm và thêm B, Then B xem toàn bộ lịch sử; chỉ A thêm/bớt được; B tự rời được; thêm người thứ 51 → `ROOM_FULL`; user tenant khác không thấy trong `GET /directory` và không thêm được.
+
+> **AC-H25 · Realtime và chưa đọc (X2a)**
+> Given A, B trong nhóm G, B có luồng `/me/stream`, When A gửi tin, Then B nhận `room.message` + `room.unread` tăng 1 trong ≤ 2 giây (kể cả khi A, B nối hai instance Hub khác nhau); mất kết nối rồi nối lại với `Last-Event-ID` không mất/lặp sự kiện; khi B đánh dấu đã đọc thì `unread = 0`; tin của chính A không làm A có chưa đọc.
+
+> **AC-H26 · `@agent` trong phòng dùng quyền người gọi (X2b)**
+> Given A được dùng agent `hoadon`, B (cùng nhóm) thì không, When B gửi "@hoadon …" thì nhận `AGENT_NOT_FOUND` (không run). When A gửi "@hoadon kiểm tra", Then đúng 1 run, `runs.user_id = A`, usage tính cho A, kết quả hiện cho cả phòng (B thấy); tin không tag thì không có run; hai tag chỉ cho 1 run (Orchestrator thu hẹp). Khi agent `need_input` / `side_effect`, chỉ A trả lời được; B bị từ chối.
+
+> **AC-H27 · Danh sách agent trong phòng (X2b)**
+> Given A được dùng `hoadon`, `trello` còn B chỉ `trello`, When mở phòng, Then panel Agent của A có 2 agent (tên + mô tả), của B có 1; bấm một agent chèn `@key` vào composer; agent bị thu hồi quyền biến mất sau khi tải lại danh sách.
 
 ## 12. Ngoài phạm vi & câu hỏi mở
 
