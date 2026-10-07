@@ -2,37 +2,39 @@
 
 Bảng đặt tên cho theme Tailwind/shadcn. Giá trị lấy từ `tokens.md` (sinh tự động từ 18 artboard, 2026-10-01). **Canvas thắng** khi lệch với `ui-admin.md` §5 hoặc `plan-frontend.md` §4. Chỉ light mode (dark mode chưa có trên canvas — Đề xuất ở plan-frontend).
 
+**UI-1 (CR-049, 2026-10-07): bảng màu indigo theo designer — chỉ đổi màu.** Cột "Hex (từ UI-1)" là nguồn chân lý cho cả 3 app (admin-web, chat-web, studio-web); cột "Trước UI-1" giữ giá trị canvas đã duyệt để truy vết (các file `*.dc.html` chưa vẽ lại, **tokens-map thắng** khi lệch). Giữ font, bố cục, bo góc, kích thước, câu chữ. Màu trạng thái (success/warning/danger/destructive/error-border/overage) giữ nguyên vì đã chỉnh AA (xanh/cam của designer không đạt AA cho chữ). Tỉ số tính bằng công thức WCAG 2.x: mọi cặp chữ ≥ 4,5:1; `--placeholder`, `--border`, `--row-divider` chỉ trang trí. **Dark mode Chat (CR-027):** frontend-lead suy ra bộ tối tông indigo ở task UI-1 và kiểm AA (ghi tỉ số vào đây).
+
 ## Màu
 
-| Token (CSS var shadcn) | Hex | Dùng cho | Số lần |
-|---|---|---|---|
-| `--background` | `#F7F6FA` | Nền trang | 34 |
-| `--card` / `--popover` | `#FFFFFF` | Card, drawer, dialog, topbar | 189 |
-| `--foreground` | `#1D1733` | Chữ chính | 110 |
-| `--muted-foreground` | `#635C78` | Chữ phụ, nhãn cột, mô tả | 275 |
-| `--subtle-foreground` | `#736C89` | Tiêu đề nhóm sidebar, caption. Chỉnh cho AA, lệch canvas có chủ đích (canvas `#7A7390` = 4.17:1 trên nền, 4.48:1 trên trắng); `#736C89` = 4.61:1 trên `#F7F6FA`, 4.96:1 trên `#FFFFFF` | 16 |
-| `--placeholder` | `#B3ADC4` | Dấu `/` breadcrumb, giá trị trống "—" | 9 |
-| `--border` | `#E6E3EE` | Viền card, bảng, header | 122 |
-| `--input` | `#D9D5E3` | Viền ô nhập, nút phụ | 75 |
-| `--row-divider` | `#F0EEF4` | Đường kẻ giữa các hàng bảng | 30 |
-| `--primary` | `#6B4FA0` | Nút chính, link, thanh tiến độ | 108 |
-| `--primary-foreground` | `#FFFFFF` | Chữ trên nút chính | — |
-| `--primary-strong` | `#4A3278` | Link hover, chữ trên nền tím nhạt | 54 |
-| `--accent` | `#EDE6FB` | Mục sidebar đang chọn, badge info, nền số bước | 38 |
-| `--accent-foreground` | `#4A3278` | Chữ trên `--accent` | — |
-| `--ink-strong` | `#2E2150` | Panel nổi bật, avatar, chip lọc đang bật | 38 |
-| `--on-ink` | `#E4DCF7` · `#C9B8FF` | Chữ phụ / link trên nền `--ink-strong` | 3 · 13 |
-| `--muted` | `#EFEDF3` | Badge Tắt, nền thanh quota, skeleton | 45 |
-| `--muted-strong-foreground` | `#4F4865` | Chữ trên `--muted` | 27 |
-| `--secondary-foreground` | `#3B3450` | Chữ mục sidebar thường, chip lọc | 27 |
-| `--success-bg` / `--success` | `#E3F4EC` / `#05603F` | Badge ok, Bật, ✓ | 25 / 24 |
-| `--warning-bg` / `--warning` | `#FDF0DF` / `#7F3C04` | Badge 80% quota, Chưa gắn, banner vàng | 23 / 26 |
-| `--warning-solid` | `#B45309` | Thanh quota ≥ 80% | 5 |
-| `--danger-bg` / `--danger` | `#FDE8E8` / `#9B1C1C` | Badge lỗi, Vượt quota, dấu `*` bắt buộc | 23 / 34 |
-| `--destructive` | `#B42318` | Nút nguy hiểm (Khoá, Xoá) | 20 |
-| `--error-border` | `#D92D20` | Viền ô nhập lỗi | 8 |
-| `--overage-hatch` | `#C2410C` + `#F59E0B` | Vân chéo phần vượt quota (`repeating-linear-gradient 135deg`) | 5 |
-| Logo gradient | `#C9B8FF → #FFC2DD` | Chỉ trong file logo, không dùng cho UI | — |
+| Token (CSS var shadcn) | Hex (từ UI-1) | Trước UI-1 (canvas cũ) | Dùng cho | Số lần | Tương phản (WCAG) |
+|---|---|---|---|---|---|
+| `--background` | **`#F4F4F9`** | `#F7F6FA` | Nền trang | 34 | fg 18,06:1 |
+| `--card` / `--popover` | **`#FFFFFF`** | `#FFFFFF` | Card, drawer, dialog, topbar | 189 | fg 19,80:1 |
+| `--foreground` | **`#0A0A0A`** | `#1D1733` | Chữ chính | 110 | nền 18,06:1 · card 19,80:1 |
+| `--muted-foreground` | **`#6B6B6B`** | `#635C78` | Chữ phụ, nhãn cột, mô tả | 275 | bg 4,86:1 · card 5,33:1 · muted 4,89:1 · accent 4,77:1 |
+| `--subtle-foreground` | **`#6B6B6B`** | `#736C89` | Tiêu đề nhóm sidebar, caption. Chỉnh cho AA, lệch canvas có chủ đích (canvas `#7A7390` = 4.17:1 trên nền, 4.48:1 trên trắng); `#736C89` = 4.61:1 trên `#F7F6FA`, 4.96:1 trên `#FFFFFF` | 16 | như muted-foreground (gộp, hết cần chỉnh riêng) |
+| `--placeholder` | **`#A3A3A3`** | `#B3ADC4` | Dấu `/` breadcrumb, giá trị trống "—" | 9 | 2,52:1 — chỉ trang trí (dấu `/`, "—"), không dùng cho chữ cần đọc |
+| `--border` | **`#E5E5E5`** | `#E6E3EE` | Viền card, bảng, header | 122 | trang trí (1,26:1 trên trắng) |
+| `--input` | **`#D4D4D8`** | `#D9D5E3` | Viền ô nhập, nút phụ | 75 | 1,48:1 trên trắng (viền ô nhập; trước UI-1 cũng < 3:1 — ghi nhận, cải thiện nếu cần ở UI-1) |
+| `--row-divider` | **`#F5F5F5`** | `#F0EEF4` | Đường kẻ giữa các hàng bảng | 30 | trang trí |
+| `--primary` | **`#4F46E5`** | `#6B4FA0` | Nút chính, link, thanh tiến độ | 108 | trên trắng 6,29:1 · bg 5,74:1 · accent 5,62:1 |
+| `--primary-foreground` | **`#FFFFFF`** | `#FFFFFF` | Chữ trên nút chính | — | trên primary 6,29:1 |
+| `--primary-strong` | **`#4338CA`** | `#4A3278` | Link hover, chữ trên nền tím nhạt | 54 | trắng 7,90:1 · accent 7,07:1 |
+| `--accent` | **`#EEF2FF`** | `#EDE6FB` | Mục sidebar đang chọn, badge info, nền số bước | 38 | — |
+| `--accent-foreground` | **`#3730A3`** | `#4A3278` | Chữ trên `--accent` | — | trên accent 8,88:1 |
+| `--ink-strong` | **`#1E1B4B`** | `#2E2150` | Panel nổi bật, avatar, chip lọc đang bật | 38 | trắng trên ink 15,99:1 |
+| `--on-ink` | **`#E0E7FF` · `#A5B4FC`** | `#E4DCF7` · `#C9B8FF` | Chữ phụ / link trên nền `--ink-strong` | 3 · 13 | 12,98:1 · 8,02:1 trên ink |
+| `--muted` | **`#F5F5F5`** | `#EFEDF3` | Badge Tắt, nền thanh quota, skeleton | 45 | — |
+| `--muted-strong-foreground` | **`#525252`** | `#4F4865` | Chữ trên `--muted` | 27 | trên muted 7,17:1 |
+| `--secondary-foreground` | **`#404040`** | `#3B3450` | Chữ mục sidebar thường, chip lọc | 27 | card 10,37:1 · bg 9,46:1 |
+| `--success-bg` / `--success` | `#E3F4EC` / `#05603F` (giữ nguyên) | `#E3F4EC` / `#05603F` | Badge ok, Bật, ✓ | 25 / 24 | đã chỉnh AA, không đổi |
+| `--warning-bg` / `--warning` | `#FDF0DF` / `#7F3C04` (giữ nguyên) | `#FDF0DF` / `#7F3C04` | Badge 80% quota, Chưa gắn, banner vàng | 23 / 26 | đã chỉnh AA, không đổi |
+| `--warning-solid` | `#B45309` (giữ nguyên) | `#B45309` | Thanh quota ≥ 80% | 5 | đã chỉnh AA, không đổi |
+| `--danger-bg` / `--danger` | `#FDE8E8` / `#9B1C1C` (giữ nguyên) | `#FDE8E8` / `#9B1C1C` | Badge lỗi, Vượt quota, dấu `*` bắt buộc | 23 / 34 | đã chỉnh AA, không đổi |
+| `--destructive` | `#B42318` (giữ nguyên) | `#B42318` | Nút nguy hiểm (Khoá, Xoá) | 20 | đã chỉnh AA, không đổi |
+| `--error-border` | `#D92D20` (giữ nguyên) | `#D92D20` | Viền ô nhập lỗi | 8 | đã chỉnh AA, không đổi |
+| `--overage-hatch` | `#C2410C` + `#F59E0B` (giữ nguyên) | `#C2410C` + `#F59E0B` | Vân chéo phần vượt quota (`repeating-linear-gradient 135deg`) | 5 | đã chỉnh AA, không đổi |
+| Logo gradient | `#C9B8FF → #FFC2DD` (giữ nguyên) | `#C9B8FF → #FFC2DD` | Chỉ trong file logo, không dùng cho UI | — | — |
 
 ## Chữ
 

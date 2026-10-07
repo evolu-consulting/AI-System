@@ -1,6 +1,6 @@
 # STATE — trạng thái hiện tại
 
-Cập nhật: 2026-10-07 · Người cập nhật: docs-architect (tách spec X2a-rooms + canvas X2)
+Cập nhật: 2026-10-07 · Người cập nhật: docs-architect (CR-049 UI-1 bảng màu; readiness X2a R2)
 
 ## Đang ở đâu
 - **X2a spec đã tách** (2026-10-07): [`specs/X2a-rooms/spec.md`](specs/X2a-rooms/spec.md) `draft` (X2a-R01…R24, X2a-AC01…AC16 + AC-H23–H25, CHAT-AC-37…45; Q1–Q9 có mặc định) + `spec-isolation.md` + `tasks.md` khung; canvas X2 chép vào `design/chat-app/canvas-x2/`. UI chốt: **không** panel agent/hàng chip — agent qua menu `@` trong composer (X2b); giữ thread/flow C1. Phát hiện: `hub_ro` đã có `SELECT` cột cần trên `admin.users` ⇒ mặc định không migration Admin (Q1).
@@ -26,6 +26,7 @@ Cập nhật: 2026-10-07 · Người cập nhật: docs-architect (tách spec X2
 - M0, M1, M2 xong. Thiết kế v0.4 xong (`design/`); canvas 18 artboard. Khung quy trình xong (`CLAUDE.md`, `WORKFLOW.md`, 7 agent, Luật 2b).
 
 ## Việc kế tiếp (phiên mới: làm ngay, KHÔNG hỏi — Luật 2b)
+UI-1. **Song song X2a (CR-049, 2026-10-07):** đổi bảng màu indigo cho 3 app, chỉ màu — frontend-lead áp `design/canvas/tokens-map.md` cột "từ UI-1" vào token CSS (admin-web, chat-web, studio-web) + suy ra dark mode Chat tông indigo, kiểm AA; qc rà test có hex cứng/ảnh chụp; **xong trước X2a FE (F-tasks)**.
 X2. **Kế tiếp (người dùng ưu tiên, 2026-10-07): X2a đang ở bước PLAN** (spec `docs/specs/X2a-rooms/` đã tách) → **X2b** `@agent` trong phòng, **trước H4b**: backend-lead (P1, Opus) ∥ frontend-lead (P2) PLAN theo `tasks.md` → qc → spec-readiness → Gate (Luật 2b) → BUILD → review (security review riêng cho RLS phòng) → I3. Canvas X2 đã duyệt (`design/chat-app/canvas-x2/`); agent qua menu `@` (không panel). **X1 test tay vẫn chờ** người dùng. **H4b dời sau X2**; H3c vẫn tạm dừng.
 X1. **Sau X1 (2026-10-07):** (1) **người dùng** test toàn luồng theo `docs/guides/combine-test.md` (S1–S10; smoke Dify thật `DIFY_LIVE=1` ≤ 1 lần/app) + feedback, ghi vào `spec-decisions.md` X1; (2) **H4b** (Models/Secrets/Quyền agent) dời **sau X2a/X2b**; (3) **X1b** flow Dify riêng cho chat — đề xuất, chờ người dùng chốt; (4) **H3c vẫn tạm dừng** (không tự bắt đầu). Ràng buộc Dify demo (X1-R01…R05) vẫn hiệu lực: không sửa/publish/import/xoá app/flow, không console API.
 A. **Sau M4:** (1) người dùng test service admin; (2) chạy lại e2e toàn bộ khi đủ bộ nhớ; (3) M5 khi có Hub; (4) TECH-DEBT nổi bật: #27/#28 (perf, RLS InitPlan — cần duyệt), #34 (`hub_ro` trên `admin.tenants`), #35 (mã lỗi riêng cho trần import).

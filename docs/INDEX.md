@@ -20,7 +20,7 @@
 | Agent Hub (`HUB-*`) | `design/agent-hub/ba-agent-hub.md` | `design/agent-hub/ui-agent-studio.md`, `design/agent-hub/ui-operations.md` |
 | Worker (`WRK-*`) | `design/worker/ba-worker.md` | — |
 | Chat & Extension | — | `design/chat-app/ui-chat-extension.md` · use case C1 `design/chat-app/usecases-chat.md` (UC-01…11, CHAT-AC-01…50; UC-09…11 = X2, CR-047/048) · canvas `design/chat-app/canvas/` (5 artboard, xem README) · canvas X2 `design/chat-app/canvas-x2/` (4 artboard DM/nhóm, README; agent qua menu `@`) |
-| Design đã duyệt (Gate M0) | Canvas: https://claude.ai/artifact/FTSiKuF9ax5DkMBVKMdHDB · bản sao nguồn `design/canvas/` | 18 artboard Admin · token `design/canvas/tokens-map.md` |
+| Design đã duyệt (Gate M0) | Canvas: https://claude.ai/artifact/FTSiKuF9ax5DkMBVKMdHDB · bản sao nguồn `design/canvas/` | 18 artboard Admin · token `design/canvas/tokens-map.md` (bảng màu indigo từ UI-1, CR-049) |
 
 Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DEBT.md`).
 
