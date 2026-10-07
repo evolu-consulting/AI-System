@@ -139,7 +139,12 @@ async function startProcs(
     t.notes.push(
       "admin-api :3001 đã chạy sẵn — dùng lại; HUB_INTERNAL_TOKEN/ADMIN_HUB_URL có thể khác (Chạy thử ⇒ 503/401)",
     );
+  if (await healthy(URLS.hub))
+    throw new Error(
+      "hub-api :4000 đang chạy sẵn (có thể là tiến trình mồ côi, thư mục đính kèm đã mất) — dừng nó rồi chạy lại",
+    );
   Object.assign(process.env, env["admin-api"], env["hub-api"]);
+  process.env.HUB_SEED_PROFILE ||= "claude-sub-1"; // Runtime thật (WSL claude-sub), không phải fake-1 của hub:dev
   const dev = await startHubDev();
   track(t, "admin-api"); // dừng cùng `dev.stop` (no-op riêng)
   track(t, "hub-api", dev.stop);
@@ -176,7 +181,10 @@ export async function startCombine(
   try {
     compose();
     await startProcs(t, base, env, opts);
-    const script = wslRuntimeScript(toWslPath(REPO));
+    const script = wslRuntimeScript(
+      toWslPath(REPO),
+      process.env.HUB_PUBLIC_INTERNAL_URL || URLS.hub,
+    );
     if (opts.wsl) runtimeStop = startWslRuntime(script);
     else
       t.notes.push(

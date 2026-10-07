@@ -203,7 +203,10 @@ export function hubApiEnv(
   return {
     APP_ENV: "development",
     HUB_PORT,
-    HUB_PUBLIC_INTERNAL_URL: hubUrlForRuntime(runtime === "container"),
+    // `none` (Runtime tự chạy ngoài, vd WSL NAT): tôn trọng env nếu có; còn lại hub-dev quyết định topo.
+    HUB_PUBLIC_INTERNAL_URL:
+      (runtime === "none" && env.HUB_PUBLIC_INTERNAL_URL?.trim()) ||
+      hubUrlForRuntime(runtime === "container"),
     HUB_MAX_CONCURRENT_RUNS: env.HUB_MAX_CONCURRENT_RUNS?.trim() || HUB_DEV_MAX_CONCURRENT_RUNS,
     HUB_ATTACH_DRIVER: "local",
     ...(dir ? { HUB_ATTACH_DIR: dir } : {}),

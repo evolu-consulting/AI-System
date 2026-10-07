@@ -135,13 +135,17 @@ export function toWslPath(p: string): string {
   );
 }
 
-/** Script bash cho Runtime trong WSL (hub-dev.md "Runtime trong WSL", provider `claude-sub,dify`; mirrored ⇒ localhost). */
-export function wslRuntimeScript(repoWsl = "/mnt/d/AI/ai-system"): string {
+/** Script bash cho Runtime trong WSL (hub-dev.md "Runtime trong WSL", provider `claude-sub,dify`; mirrored ⇒ localhost,
+ * NAT ⇒ `hubUrl` = `HUB_PUBLIC_INTERNAL_URL`). `--no-sync`: dùng venv có sẵn, WSL có thể không ra được PyPI. */
+export function wslRuntimeScript(
+  repoWsl = "/mnt/d/AI/ai-system",
+  hubUrl: string = URLS.hub,
+): string {
   const env = [
     "UV_PROJECT_ENVIRONMENT=$HOME/.venvs/agent-runtime",
     "APP_ENV=development",
     "AGENT_RT_PROVIDERS=claude-sub,dify",
-    `AGENT_RT_HUB_URL=${URLS.hub}`,
+    `AGENT_RT_HUB_URL=${hubUrl}`,
     "AGENT_RT_DATABASE_URL=postgres://agent_runtime:agent_runtime_dev_pw@localhost:5432/ai_system",
     "REDIS_URL=redis://localhost:6379",
     "AGENT_RT_WORKER_ID=combine",
@@ -151,7 +155,7 @@ export function wslRuntimeScript(repoWsl = "/mnt/d/AI/ai-system"): string {
   return [
     `mkdir -p ~/combine/work ~/combine/logs && cd ${repoWsl}/apps/agent-runtime`,
     `export ${env.join(" ")}`,
-    "exec uv run --frozen python -m agent_runtime",
+    "exec uv run --frozen --no-sync python -m agent_runtime",
     "",
   ].join("\n");
 }

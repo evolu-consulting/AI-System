@@ -1,6 +1,7 @@
 // X1 ST1 · test riêng của backend cho `combine.rules.ts` (ngoài AC19 của QC): webEnv bỏ token, token lấy từ base,
 // toWslPath, script WSL, CORS không trùng lặp.
 import { describe, expect, it } from "bun:test";
+import { hubApiEnv } from "../../hub-dev/src/dev";
 import {
   buildCombineEnv,
   newInternalToken,
@@ -67,5 +68,22 @@ describe("combine.rules · webEnv + tiện ích", () => {
     expect(s).toContain("AGENT_RT_HUB_URL=http://localhost:4000");
     expect(s).toContain("cd /mnt/d/r/apps/agent-runtime");
     expect(s).not.toContain("HUB_INTERNAL_TOKEN");
+    expect(s).toContain("uv run --frozen --no-sync");
+  });
+
+  it("script WSL NAT: AGENT_RT_HUB_URL = hubUrl truyền vào", () => {
+    expect(wslRuntimeScript("/mnt/d/r", "http://172.26.0.1:4000")).toContain(
+      "AGENT_RT_HUB_URL=http://172.26.0.1:4000",
+    );
+  });
+
+  it("hubApiEnv: runtime none tôn trọng HUB_PUBLIC_INTERNAL_URL, local thì không", () => {
+    const env = { HUB_PUBLIC_INTERNAL_URL: "http://172.26.0.1:4000" };
+    expect(hubApiEnv(env, undefined, "none").HUB_PUBLIC_INTERNAL_URL).toBe(
+      "http://172.26.0.1:4000",
+    );
+    expect(hubApiEnv(env, undefined, "local").HUB_PUBLIC_INTERNAL_URL).not.toBe(
+      "http://172.26.0.1:4000",
+    );
   });
 });

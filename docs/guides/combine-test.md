@@ -29,7 +29,8 @@ Chờ dòng `[combine] sẵn sàng`. Bảng URL:
 - Cách 2: làm theo lệnh `combine:dev` in ra (lưu `rt.sh`, chạy `wsl.exe -d Ubuntu -u worker -- bash -l -s < rt.sh`).
 - Điều kiện WSL (user `worker` đã `claude` login, venv...): `docs/guides/hub-dev.md` mục "Runtime trong WSL".
 - Chờ log `runtime.ready`. Mỗi tin khoảng 10 giây.
-- **Máy này WSL chạy NAT** (WSL không thấy `localhost` của Windows): lấy IP `ip route | awk '/default/ {print $3}'` trong WSL (vd `172.26.0.1`), bật stack bằng `HUB_PUBLIC_INTERNAL_URL=http://<ip>:4000 bun run combine:dev`, trong `rt.sh` đổi `AGENT_RT_HUB_URL=http://<ip>:4000`. WSL không ra được internet ⇒ dùng `uv run --frozen --no-sync` (venv có sẵn).
+- **Máy này WSL chạy NAT** (WSL không thấy `localhost` của Windows): lấy IP `ip route | awk '/default/ {print $3}'` trong WSL (vd `172.26.0.1`), bật stack bằng `HUB_PUBLIC_INTERNAL_URL=http://<ip>:4000 bun run combine:dev` — script Runtime in ra sẽ tự dùng URL này (đã có `--no-sync`, dùng venv sẵn có).
+- `combine:dev` từ chối chạy nếu `:4000` còn hub-api cũ (mồ côi) — dừng tiến trình đó trước. Agent seed dùng profile `claude-sub-1` (đổi bằng `HUB_SEED_PROFILE`).
 
 ## 3. Seed Dify thật (cho S4/S6/S8/S10)
 
@@ -74,7 +75,7 @@ Dify mock có sẵn trong stack; "thật" nghĩa là sau khi seed. Mỗi kịch 
 
 ### S7. Xác nhận side_effect (Admin + Chat; cần Runtime WSL)
 Chỉ áp cho **tool do agent gọi**.
-1. Admin, Secrets: tạo secret tên `MOCK_SEND_KEY`, giá trị `mk-ok`. Admin, Workflows: tạo workflow `mock-send` (loại workflow, `base_url` `http://localhost:5001/v1`, secret `MOCK_SEND_KEY`), bật **Cần xác nhận trước khi chạy** (`side_effect`).
+1. Admin, Secrets: tạo secret tên `MOCK_SEND_KEY`, giá trị `mk-ok-mock-01` (Admin cần ≥ 8 ký tự; Dify mock coi mọi khoá `mk-ok…` là thành công). Admin, Workflows: tạo workflow `mock-send` (loại workflow, `base_url` `http://localhost:5001/v1`, secret `MOCK_SEND_KEY`), bật **Cần xác nhận trước khi chạy** (`side_effect`).
 2. Studio, Agents: mở (hoặc nhân bản) một agent `agentic-cli`, ở bước workflow/tool chọn `mock-send`, lưu. Admin, Groups, group của `lan`, tab **Agent**: cấp agent đó.
 3. Chat: hỏi agent đó một việc cần gửi.
 - Kỳ vọng: Chat hiện thẻ hỏi **Đồng ý / Huỷ**; Đồng ý thì chạy, Huỷ thì không.
