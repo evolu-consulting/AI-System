@@ -33,6 +33,7 @@ describe("Y01–Y08 · danh bạ [X2a-R22 · X2a-AC10]", () => {
       "?q=zed",
       "?q=padmin",
       "?q=cuc",
+      "?q=tadmin",
     ]) {
       const r = await dir("lan", q);
       expect({ q, s: r.status }).toEqual({ q, s: 200 });
