@@ -159,7 +159,7 @@ Giữ xanh: CHAT-AC-01…36, `test:contract:chat`, AC-H07/H08. Given/When/Then �
 | Q4 | Mô hình flow trong phòng (X2b) | Như §5.2 mục 3: kết quả agent = khối flow; "Trả lời tiếp" mở `?flow=`; tin trong flow là `room_messages` có `flow_id` (dòng thời gian chính chỉ hiện khối gốc + "n tin trong luồng"). X2a chỉ chừa cột `flow_id`/`run_id`/`trigger_message_id`; FK + `runs.room_id` + ai được hỏi tiếp trong flow + tin flow có tính chưa đọc không → chốt ở spec X2b |
 | Q5 | Hiển thị "đã xem" | DM "Đã xem"; nhóm "Đã xem bởi n" dưới tin cuối của mình (tooltip tên) |
 | Q6 | Tìm danh bạ bỏ dấu? | Không ở X2a (ILIKE); → TECH-DEBT |
-| Q7 | e2e chat chạy với gì? | hub-api thật + DB test (stack như e2e X1), không mở rộng mock Hub C1 cho **realtime** (không phát sự kiện). Stub tối thiểu không tính là mở rộng: `GET /rooms`, `GET /directory` → `{items:[]}`; `GET /me/stream` → SSE 200 chỉ ping (task B3); mock còn lại chỉ `page.route` cho trạng thái lỗi |
+| Q7 | e2e chat chạy với gì? | hub-api thật + DB test (stack như e2e X1), không mở rộng mock Hub C1 cho **realtime** (không phát sự kiện). Stub tối thiểu không tính là mở rộng: `GET /rooms` → `{items:[],next_cursor:null,unread_total:0}` (khớp `RoomListResponseSchema`, plan §2), `GET /directory` → `{items:[]}`; `GET /me/stream` → SSE 200 chỉ ping (task B3); mock còn lại chỉ `page.route` cho trạng thái lỗi |
 | Q8 | Giữ bao nhiêu sự kiện/user trong Redis? | `MAXLEN ~ 1000`; quá → `stream.reset` |
 | Q9 | Đường dẫn phòng | `/rooms/:id` (CHAT-AC-45); C1 giữ `/c/:id` |
 

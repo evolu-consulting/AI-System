@@ -185,6 +185,7 @@ Mỗi task B*: `bun run typecheck && bun test <thư mục task> 2>&1 | tail -40 
 6. Danh bạ: đúng 4 cột, lọc tenant + dùng được ở SQL, schema strict.
 7. Không log nội dung tin (R24); `Last-Event-ID` validate regex trước khi đưa vào Redis.
 8. `room_fanout` chỉ trả số đếm cho thành viên cùng phòng, chỉ gọi trong tx của thành viên.
+9. RLS cho phép **mọi thành viên** UPDATE `rooms` và `left_at` của hàng `room_members` người khác (`plan-db.md:33,36`); quyền chủ chỉ ở app (rules + thứ tự kiểm). Reviewer đánh giá: chấp nhận (tenant/phòng vẫn cách ly bởi RLS) hay siết bằng hàm definer/policy cột.
 
 ## 13. Câu hỏi mở Q1–Q9 (phần BE)
 | Q | Trả lời |

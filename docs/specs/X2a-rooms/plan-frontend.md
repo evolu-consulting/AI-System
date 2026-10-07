@@ -134,7 +134,7 @@ Baseline `check:bundle`: JS 139,9 KB / 150 · CSS 12,9 KB / 25 · chunk lớn nh
 | # | Cần | Dùng ở |
 |---|---|---|
 | 1 | Schema `RoomSummary`, `RoomDetail`, `RoomMessage`, `DirectoryUser`, `CreateRoomRequest`, trang `{items,next_cursor,unread_total}`, `{items,has_more}`; hằng `CHAT_CONTENT_MAX`, `LIST_Q_MAX` | `rooms/api.ts`, `directory/api.ts` |
-| 2 | `MeStreamEventSchema` (+ `parseMeStreamEvent(raw)`) khớp bảng `spec-isolation.md` §1.1; `ChatRoomErrorCode` export | `realtime`, `lib/http.ts` |
+| 2 | `MeStreamEventSchema` (+ `parseMeStreamEvent(event: string, data: string)`) khớp bảng `spec-isolation.md` §1.1; `ChatRoomErrorCode` export | `realtime`, `lib/http.ts` |
 | 3 | `RoomSummary` có sẵn: `kind`, `name` hoặc `peer{id,display_name,username}`, `last_message{sender{id,display_name},preview,created_at,seq}`, `unread`, `member_count`, `last_seq` (để tính "tin cuối") | sidebar, mark-read |
 | 4 | `RoomDetail.members[]` có `last_read_seq` (đã có trong spec §3); `owner_id` + `members[]` cho subtitle (tên chủ) | header, "Đã xem" |
 | 5 | `POST /rooms/:id/messages` trả `RoomMessage` đầy đủ (kể cả 200 do trùng) và `room.message` gửi cả cho người gửi (có trong spec) — để chèn khử trùng theo `id` | gửi tin |

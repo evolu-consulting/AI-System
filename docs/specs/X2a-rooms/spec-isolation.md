@@ -42,7 +42,7 @@ Sự kiện `/me/stream` (BA §9.2 + thêm `room.read`, `stream.reset`; `id:` = 
 ## 3. Rủi ro
 | Rủi ro | Giảm thiểu |
 |---|---|
-| Policy RLS đệ quy / lọt hàng khi tạo phòng (chưa có thành viên) | Hàm `SECURITY DEFINER` `is_room_member` + luồng tạo phòng chốt ở plan; int test ma trận §7 ở mức DB (X2a-AC01); **security review riêng** (Opus) ở bước review |
+| Policy RLS đệ quy / lọt hàng khi tạo phòng (chưa có thành viên) | Hàm `SECURITY DEFINER` `is_room_member` + luồng tạo phòng chốt ở plan; int test `test-plan.md` §4 ở mức DB (X2a-AC01); **security review riêng** (Opus) ở bước review |
 | Sự kiện lọt cho người vừa bị bớt | Danh sách nhận tính trong transaction ghi (R20); test X2a-AC03 |
 | Mất sự kiện khi Redis lỗi sau commit | `stream.reset` + client tải lại khi nối lại; chưa đọc luôn tính từ DB |
 | Tranh chấp `seq` khi gửi song song | Khoá hàng `rooms` + unique `(room_id, seq)`; test song song X2a-AC07 |
