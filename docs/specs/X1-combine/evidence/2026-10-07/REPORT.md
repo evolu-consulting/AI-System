@@ -64,3 +64,30 @@ Chrome riêng (CDP :9333, profile tạm) + Playwright `connectOverCDP`, stack `c
 
 ## Dữ liệu QA còn lại
 Secret `QA_MOCK_KEY`, workflow `qa-mock-send` (còn); command `/qa-send`, agent `qa-sender` (đã tắt). Mô tả `dify-chatbot` đã hoàn tác.
+
+## Retest sau sửa combine:dev (2026-10-07)
+
+Môi trường: stack `combine:dev` khởi động lại bởi điều phối (seed `claude-sub-1` cho `orchestrator`/`assistant` — đã kiểm DB `hub.agents.profile_id` → `claude-sub-1`; Hub có thư mục đính kèm; Runtime WSL `AGENT_RT_HUB_URL=http://172.26.0.1:4000`). Chrome CDP riêng :9333, playwright `connectOverCDP`, script `.data/cdp-test/r3.ts`, `r6.ts`, `r4.ts` (kết quả thô `.data/cdp-test/retest.json`).
+
+| Bước | Kỳ vọng | KQ | Ghi chú | Ảnh |
+|---|---|---|---|---|
+| R-S3 | "Chào bạn, 1+1 bằng mấy?" chảy qua Orchestrator, không `ALL_PROVIDERS_EXHAUSTED` | **FAIL** | Vẫn `ALL_PROVIDERS_EXHAUSTED` (run `15398e98…`, hỏng sau ~80 ms ⇒ không có stream, không chụp được ảnh "đang chảy"). Nguyên nhân mới: `hub.provider_state` `claude-sub` = `logged_out`, `last_error = probe timed out` (16+ lỗi liên tiếp). Runtime WSL đang chạy probe (`agent_runtime.runtimes.cli.probe.child --provider=claude-sub` → `claude_agent_sdk/_bundled/claude`) nhưng hết thời gian chờ; `~/.claude/.credentials.json` của user `worker` có tồn tại | [R-S3-answer.png](R-S3-answer.png) |
+| R-S6 txt-chip | Đính kèm qa-note.txt ⇒ chip, không lỗi tải lên | **PASS** | `qa-note.txt 80 B`, POST /attachments 201 (lỗi 500 lượt trước đã hết) | [R-S6-txt-chip.png](R-S6-txt-chip.png) |
+| R-S6 txt-send | "Tóm tắt file này" kèm file ⇒ tin có chip, có trả lời | **FAIL** | Gửi được, tin người dùng có chip `qa-note.txt 80 B`; trả lời lỗi `ALL_PROVIDERS_EXHAUSTED` (cùng nguyên nhân R-S3) | [R-S6-txt-send.png](R-S6-txt-send.png) |
+| R-S6 txt-reopen | Mở lại hội thoại ⇒ chip file còn trong tin | **PASS** | `/c/515afa24-…` chip `qa-note.txt 80 B` | [R-S6-txt-reopen.png](R-S6-txt-reopen.png) |
+| R-S6 ask-image | `/ask-image Ảnh này có gì?` + PNG ⇒ Dify thật trả lời theo ảnh | **PASS** | Gọi Dify THẬT 1 lần: "Ảnh này hiển thị một màn hình đăng nhập với thông báo 'Tài khoản đang bị khóa. Liên hệ quản trị viên công ty.' … trường 'Mật khẩu' và nút 'Đăng nhập'" ✓ 1 bước · 4,4s | [R-S6-ask-image-pending.png](R-S6-ask-image-pending.png), [R-S6-ask-image-real.png](R-S6-ask-image-real.png) |
+| R-TAG a | `@assistant Bạn là ai? Trả lời 1 câu.` ⇒ người trả lời là agent `assistant` (không phải Consultant), run direct | **PASS (định tuyến)** / trả lời lỗi | Nhãn người trả lời "Trợ lý"; DB run `kind=direct`, `responder_key=assistant`, `agent=assistant`. Nội dung trả lời lỗi `ALL_PROVIDERS_EXHAUSTED` (claude-sub logged_out) | [R-TAG-a-direct-assistant.png](R-TAG-a-direct-assistant.png) |
+| R-TAG b | Gõ `@ass` → bàn phím chọn → thêm nội dung ⇒ đúng agent | **PASS (định tuyến)** / trả lời lỗi | Menu lọc còn `Trợ lý @assistant`; Enter chèn `@assistant ` vào composer; gửi "Bạn tên gì?" ⇒ run `direct`, responder `assistant`; trả lời lỗi như trên | [R-TAG-b-menu.png](R-TAG-b-menu.png), [R-TAG-b-keyboard-pick.png](R-TAG-b-keyboard-pick.png) |
+| R-TAG c | `@assistant @dify-chatbot Xin chào` ⇒ Orchestrator chỉ chọn trong nhóm tag | **BLOCKED** | Run `kind=orchestrated` (đúng: nhiều tag ⇒ qua Orchestrator), nhưng Orchestrator (claude-sub) hỏng ngay `ALL_PROVIDERS_EXHAUSTED`, `responder_key` rỗng, nhãn "Consultant" ⇒ chưa kiểm được việc chọn trong nhóm. Dify chatbot KHÔNG được gọi (0 lần) | [R-TAG-c-multi-tag.png](R-TAG-c-multi-tag.png) |
+| R-TAG d1 | `@qa-sender hi` (agent đã tắt) ⇒ AGENT_NOT_FOUND, không tạo run | **PASS** | "Không tìm thấy agent @qa-sender."; `hub.runs` +0. Không có dòng gợi ý (không agent nào gần tên) | [R-TAG-d-disabled-qa-sender.png](R-TAG-d-disabled-qa-sender.png) |
+| R-TAG d2 | `@khongco hi` ⇒ AGENT_NOT_FOUND, không tạo run | **PASS** | "Không tìm thấy agent @khongco."; runs +0; không gợi ý | [R-TAG-d-unknown-khongco.png](R-TAG-d-unknown-khongco.png) |
+| R-TAG e | `@assistant` + Enter ⇒ báo cần nhập nội dung | **PASS** | "Hãy nhập nội dung sau @assistant."; composer giữ nguyên; runs +0 | [R-TAG-e-tag-no-content.png](R-TAG-e-tag-no-content.png) |
+| R-TAG f1 | hoa gõ `@` ⇒ menu không có `dify-chatbot` | **PASS** | Không hiện listbox Agent nào (hoa không có agent gắn tag được) | [R-TAG-f-hoa-at-menu.png](R-TAG-f-hoa-at-menu.png) |
+| R-TAG f2 | hoa `@dify-chatbot hi` ⇒ AGENT_NOT_FOUND | **PASS** | "Không tìm thấy agent @dify-chatbot."; runs +0 | [R-TAG-f-hoa-dify-chatbot.png](R-TAG-f-hoa-dify-chatbot.png) |
+
+**Số lần gọi Dify thật thêm trong retest: 1** (`/ask-image` ×1). Dify chatbot: 0 (bước c hỏng ở Orchestrator trước khi định tuyến). Không mở console Dify, không sửa flow.
+
+### Lỗi còn lại / mới
+1. **Provider `claude-sub` `logged_out` — "probe timed out"** (chặn R-S3, R-S6 txt-send, trả lời ở R-TAG a/b, R-TAG c). Sửa seed profile đã đúng; nay Runtime WSL không probe được Claude subscription (probe child chạy CLI bundled của `claude_agent_sdk` và quá thời gian). Cần kiểm: `claude -p hi` dưới user `worker` trong WSL (token hết hạn / cần đăng nhập lại / mạng), hoặc timeout probe quá ngắn khi khởi động lạnh.
+2. UX: khi provider `logged_out`, Chat vẫn hiện "Hệ thống đang quá tải — AI tạm hết lượt dùng" ⇒ thông báo gây hiểu nhầm (nguyên nhân thật là chưa đăng nhập/probe lỗi).
+3. Đã hết: lỗi 500 đính kèm (R-S6 txt-chip/reopen PASS, `/ask-image` chạy thật).
