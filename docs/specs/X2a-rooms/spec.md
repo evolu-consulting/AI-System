@@ -182,6 +182,7 @@ Giữ xanh: CHAT-AC-01…36, `test:contract:chat`, AC-H07/H08. Given/When/Then �
 - Lệch phát hiện khi tách spec: CR-047 R11 giả định cần migration `SELECT` hẹp trên `admin.users`, nhưng `hub_ro` đã có quyền (Q1).
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - 2026-10-07 [frontend-lead, PLAN P2] Q5 "Đã xem" DM/nhóm dưới tin cuối của mình; Q9 `/rooms/$id`; mở DM qua ô tìm sidebar mục "Người"; mobile giữ Sheet danh sách C1; Composer phòng thêm prop `menus`/`attachments`; `shell.newChat` → "Hỏi AI"; ngưỡng JS chat có thể nới 150 → 160 KB (chi tiết `plan-frontend.md` §0, §14).
+- 2026-10-07 [backend-lead, PLAN P1] Tự quyết D1–D16 → `plan.md` §1 (đổi so với spec: 400 = `VALIDATION_ERROR` thay `VALIDATION_FAILED`; bỏ `rooms.owner_id`; `member_ids`/`user_ids` ≤ 200, > 50 ⇒ `ROOM_FULL`; thêm `client_msg_id`, `last_seq`, `preview`).
 
 ## 11. Rủi ro → [`spec-isolation.md` §3](spec-isolation.md)
 RLS đệ quy/lọt hàng khi tạo phòng, sự kiện lọt cho người vừa bị bớt, mất sự kiện khi Redis lỗi, tranh chấp `seq`, cạn kết nối SSE, hồi quy C1, `hub_ro` đọc rộng `admin.users`.
