@@ -219,3 +219,12 @@ Không có câu hỏi mới cần người dùng (không thư viện mới, khô
 | 7 | Đúng: chuỗi mờ, chỉ lưu và gửi lại header `Last-Event-ID` |
 | 8 | Xác nhận: `member_ids` 0–200, nhóm chỉ mình được (D8) |
 | Thêm | 400 là `VALIDATION_ERROR` (D1); DM mới tạo chưa có tin không hiện ở peer (D7) — tin đầu tới `room.message` với `room_id` lạ ⇒ `invalidate ['rooms']` |
+
+## 16. BUILD — quyết định trong lúc làm & tranh chấp test (spec.md đã vượt trần 25 KB ⇒ ghi ở đây)
+| Task | Loại | Nội dung |
+|---|---|---|
+| B3 | Quyết định | `me-stream.rules.ts` (thuần) làm sớm ở B3 vì `rules/me-stream-rules.test.ts` khoá chung file với `likePattern`; `compareStreamId` dùng lại từ `runner.rules` (D12) |
+| B3 | Quyết định | `readEvents` 5 tham số (chữ ký §8 do test gọi theo vị trí) ⇒ thêm `check-fn.allow.json` có lý do, không đổi chữ ký |
+| B3 | Quyết định | `memberAddedEvents(roomId, added: {userId, room?}[], memberIds)`, `updatedEvents(roomId, memberIds, patch)`, `deletedEvents(roomId, memberIds)`; tạo nhóm (D15) gọi `memberIds=[]` ⇒ mỗi người chỉ nhận bản có `room` |
+| B3 | Quyết định | `UserEvent` = `{userIds} & MeStreamEvent` (trừ `stream.reset`) đặt ở `lib/user-stream.ts`; lỗi pipeline (kể cả lỗi từng lệnh) ⇒ một `warn ustream-publish-failed {room_id, n}` |
+| B3 | **Tranh chấp test** | `directory.int` Y01 đòi `P.tadmin` (display_name/username `tadmin`) có trong kết quả, nhưng không `q` nào của ca (`lan, hoa, tam, khoa, nghi, an, zed, padmin, cuc`) là chuỗi con của `tadmin` ⇒ theo R22 (tìm theo tên/username) không thể khớp. Code đúng plan-db §4.5. Đề xuất qc: thêm `?q=tadmin` (hoặc `?q=adm`) vào danh sách `q` của Y01. Y02–Y08 xanh |

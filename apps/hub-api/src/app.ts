@@ -20,6 +20,7 @@ import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp } from "./app.mcp";
 import { runDrivers, startRunLoops } from "./app.runner";
+import { mountX2a, X2A_PROTECTED_PREFIXES } from "./app.x2a";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
@@ -92,6 +93,7 @@ const PROTECTED_PREFIXES = [
   "/attachments",
   "/agent-grants",
   "/studio/api",
+  ...X2A_PROTECTED_PREFIXES,
 ];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -144,6 +146,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
   mountH4a(app, { ...deps, log: logger });
   if (!deps.db) return;
+  mountX2a(app, { db: deps.db });
   const drivers = commandDrivers(deps, deps.db);
   if (config) mountDifyCredential(app, { ...deps, db: deps.db, config, log: logger });
   const h2a = config && mountH2a(app, config, drivers);

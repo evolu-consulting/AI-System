@@ -6,6 +6,7 @@ import { type ChatVars, createAuthRoutes, requireAccess } from "./auth";
 import { createControlRoutes } from "./control";
 import { createConversationRoutes } from "./conversations.routes";
 import { createMessageRoutes } from "./messages.routes";
+import { createRoomStubRoutes } from "./rooms.routes";
 import { RunEngine } from "./runs";
 import { isScenarioName, type ScenarioName } from "./scenarios";
 import { seedChat } from "./seed";
@@ -39,6 +40,9 @@ export function createChatMock(opts: ChatMockOptions): Hono<ChatVars> {
   const bearer = requireAccess(sessions);
   app.use("/conversations/*", bearer);
   app.use("/runs/*", bearer);
+  // X2a (stub, spec Q7): phòng/danh bạ/luồng người dùng rỗng để chat-web C1 không lỗi.
+  for (const p of ["/rooms/*", "/directory/*", "/me/*"]) app.use(p, bearer);
+  app.route("/", createRoomStubRoutes());
   const onDeleted = (runIds: string[]) => {
     for (const id of runIds) engine.cancel(id);
   };

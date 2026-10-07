@@ -70,6 +70,11 @@
     "reason": "TECH-DEBT #23: callback describe của test 122 dòng (trước M3), tách khi chạm lại"
   },
   {
+    "file": "apps/hub-api/src/modules/rooms/room-events.ts",
+    "name": "readEvents",
+    "reason": "X2a plan §8: chữ ký 5 tham số do test khoá R16r/R17r gọi vị trí (readEvents(room, user, seq, members, self)); không đổi được sau Gate"
+  },
+  {
     "file": "packages/contracts/src/common.test.ts",
     "name": "describe(\"ADM-FR-10 · hằng/regex/enum catalog M2\")",
     "reason": "TECH-DEBT #23: callback describe của test 67 dòng (trước M3), tách khi chạm lại"
