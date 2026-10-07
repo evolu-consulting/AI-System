@@ -34,7 +34,7 @@ Bảng đặt tên cho theme Tailwind/shadcn. Giá trị lấy từ `tokens.md` 
 | `--destructive` | `#B42318` (giữ nguyên) | `#B42318` | Nút nguy hiểm (Khoá, Xoá) | 20 | đã chỉnh AA, không đổi |
 | `--error-border` | `#D92D20` (giữ nguyên) | `#D92D20` | Viền ô nhập lỗi | 8 | đã chỉnh AA, không đổi |
 | `--overage-hatch` | `#C2410C` + `#F59E0B` (giữ nguyên) | `#C2410C` + `#F59E0B` | Vân chéo phần vượt quota (`repeating-linear-gradient 135deg`) | 5 | đã chỉnh AA, không đổi |
-| Logo gradient | `#C9B8FF → #FFC2DD` (giữ nguyên) | `#C9B8FF → #FFC2DD` | Chỉ trong file logo, không dùng cho UI | — | — |
+| Logo gradient | **`#818CF8 → #C4B5FD`** (UI-1, người dùng 2026-10-07 "đổi tông luôn"; chữ logo `#1E1B4B`/`#4F46E5`/`#6366F1`, tagline `#6B6B8A`) | `#C9B8FF → #FFC2DD` | Chỉ trong file logo, không dùng cho UI | — | — |
 
 ## Chữ
 
