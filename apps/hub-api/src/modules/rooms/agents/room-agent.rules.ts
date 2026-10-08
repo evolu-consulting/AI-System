@@ -2,8 +2,7 @@
 // (plan X2b §8, §6; D8, D12–D15). Không DB/IO. Test khoá: `tests/acceptance/X2b/rules/room-agent-rules.test.ts`.
 import type { Ask, RoomAsk } from "@ai/contracts/chat";
 import { HISTORY_CONTENT_MAX, type HistoryItem } from "@ai/contracts/hub";
-import type { MentionRouted } from "../../mention/mention.service";
-import { routeMessage } from "../../mention/mention-parse.rules";
+import { type MentionRouted, routeMessage } from "../../mention/mention-parse.rules";
 
 /** Tag dành riêng trong phòng (D8): Orchestrator đủ AU, hoặc thu hẹp theo các tag đi kèm. */
 export const ORCHESTRATOR_TAG = "orchestrator";

@@ -15,6 +15,8 @@ const TRAILING_WS = /[ \t\n\r\f\v]+$/;
 
 const trimAscii = (s: string): string => s.replace(LEADING_WS, "").replace(TRAILING_WS, "");
 
+export type MentionRouted = Extract<Routed, { kind: "mention" | "mention_error" }>;
+
 /** R01: `/` → `classifyMessage` nguyên văn; `@@` → chữ (bỏ một `@`); `@` → `parseMention`; khác → chữ nguyên văn. */
 export function routeMessage(content: string): Routed {
   const s = content.replace(LEADING_WS, "");

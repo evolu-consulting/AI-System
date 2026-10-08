@@ -8,7 +8,9 @@ import { type AccessSubject, accessInput, visibleAgents } from "../agents/agent-
 import type { AgentConfig, ConfigSnapshot } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
 import { firstUnknownTag, type MentionLocale, responderOf, suggestAgents } from "./mention.rules";
-import type { Routed } from "./mention-parse.rules";
+import type { MentionRouted } from "./mention-parse.rules";
+
+export type { MentionRouted };
 
 /** Một tag hợp lệ → run `direct` (R06, R10): agent + `responder` chốt lúc tạo run, `content` = nội dung sau tag (R04). */
 export type DirectRunStart = {
@@ -24,7 +26,6 @@ export type OrchestratedRunStart = {
   onlyKeys: ReadonlySet<string>;
 };
 export type MentionPlan = DirectRunStart | OrchestratedRunStart;
-export type MentionRouted = Extract<Routed, { kind: "mention" | "mention_error" }>;
 
 export type PrepareMentionInput = {
   routed: MentionRouted;
