@@ -19,12 +19,16 @@ import {
   uniq,
 } from "./_x2a-support";
 
-test('CHAT-AC-37 · CHAT-AC-38 · E02 · A tìm "Thu" ⇒ button "Nhắn tin với Thu Ha" ⇒ /rooms/:id; lần 2 cùng id; DM có "Ẩn hội thoại", không đổi tên/thêm/xoá/rời', async ({
+test('CHAT-AC-37 · CHAT-AC-38 · E02 · A tìm "Thu" ⇒ button "Nhắn tin với Thu Ha" ⇒ /rooms/:id; lần 2 (link DM ở "Users", CR-050) cùng id; DM có "Ẩn hội thoại", không đổi tên/thêm/xoá/rời', async ({
   page,
 }) => {
   await chatLogin(page, "lan");
   await search(page).fill("Thu");
-  await page.getByRole("button", { name: `Nhắn tin với ${NAMES.thu}` }).click();
+  // CR-050: người đã có DM hiện là link phòng trong mục "Users" (DB e2e dùng lại giữa các lần chạy).
+  await page
+    .getByRole("button", { name: `Nhắn tin với ${NAMES.thu}` })
+    .or(roomLink(page, NAMES.thu))
+    .click();
   await expect(page).toHaveURL(/\/rooms\/[0-9a-f-]{36}$/);
   const first = page.url();
   await expect(page.getByRole("heading", { level: 1, name: NAMES.thu })).toBeVisible();
@@ -34,11 +38,11 @@ test('CHAT-AC-37 · CHAT-AC-38 · E02 · A tìm "Thu" ⇒ button "Nhắn tin v�
   await expect(page.getByRole("menuitem", { name: "Đổi tên nhóm" })).toHaveCount(0);
   await page.goto("/c/new");
   await search(page).fill("Thu");
-  await page.getByRole("button", { name: `Nhắn tin với ${NAMES.thu}` }).click();
+  await roomLink(page, NAMES.thu).click();
   await expect(page).toHaveURL(first);
 });
 
-test('CHAT-AC-39 · X2a-AC09 · E03 · A gửi ⇒ B thấy tin ≤ 2 s + unread-badge=1, unread-total; B mở ⇒ 0; A thấy status "Đã xem"', async ({
+test('CHAT-AC-39 · X2a-AC09 · E03 · A gửi ⇒ B thấy tin ≤ 2 s + unread-badge=1, unread-dms; B mở ⇒ 0; A thấy status "Đã xem"', async ({
   browser,
 }) => {
   const a = await token("lan");
@@ -53,7 +57,7 @@ test('CHAT-AC-39 · X2a-AC09 · E03 · A gửi ⇒ B thấy tin ≤ 2 s + unread
     const text = uniq("E03 tin realtime");
     await sendInRoom(u.pa, NAMES.thu, text);
     await expect(badgeOf(u.pb, NAMES.lan)).toHaveText("1", { timeout: 2_000 });
-    await expect(u.pb.getByTestId("unread-total")).toBeVisible();
+    await expect(u.pb.getByTestId("unread-dms")).toBeVisible();
     await roomLink(u.pb, NAMES.lan).click();
     await expect(roomLog(u.pb).getByRole("article").filter({ hasText: text })).toBeVisible();
     await expect(badgeOf(u.pb, NAMES.lan)).toHaveCount(0);

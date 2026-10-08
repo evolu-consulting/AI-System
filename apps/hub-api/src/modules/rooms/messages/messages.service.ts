@@ -2,6 +2,7 @@
 // spec R14–R19). Gửi: `lockFor` khoá hàng `rooms` TRƯỚC rồi kiểm thành viên dưới khoá (bị bớt song song ⇒ 404, P07) ⇒ `seq`
 // liền, không trùng (X2a-AC07); `seq` cấp bằng definer `hub.room_next_seq` (RV1). Đánh dấu đọc cũng khoá phòng trước. Phát sau commit.
 import type {
+  MarkRoomFlowReadResponse,
   MarkRoomReadResponse,
   RoomMessage,
   RoomMessageListQuery,
@@ -107,9 +108,29 @@ export class MessagesService {
         at,
         ...(flowId && { flowId, placement: "flow" as const }),
       });
+      // CR-050: người gửi đã thấy thread tới tin của chính mình.
+      if (flowId) await repo.advanceFlowRead(tx, me, { roomId, flowId, seq });
       const message = toRoomMessage(row);
       const fan = await repo.fanout(tx, roomId);
       return { out: { message, created: true }, events: messageEvents(roomId, message, fan) };
+    });
+  }
+
+  /**
+   * CR-050 · đã xem thread tới `seq` (khung thread đang mở ở đáy): mốc chỉ tăng, kẹp ≤ seq lớn nhất của thread; thread không
+   * thuộc phòng ⇒ 404 `NOT_FOUND` (như `page`). Chỉ chạm hàng của mình ⇒ không phát sự kiện cho người khác.
+   */
+  markFlowRead(
+    u: AuthUser,
+    roomId: string,
+    flowId: string,
+    seq: number,
+  ): Promise<MarkRoomFlowReadResponse> {
+    return this.rooms.commit(u, async (tx, me) => {
+      await lockFor(tx, me, roomId, "read");
+      if (!(await threadRoot(tx, me, roomId, flowId))) throw appError("NOT_FOUND");
+      const unread = await repo.advanceFlowRead(tx, me, { roomId, flowId, seq });
+      return { out: { unread }, events: [] };
     });
   }
 

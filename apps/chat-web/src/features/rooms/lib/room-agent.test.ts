@@ -10,6 +10,7 @@ import {
   finishActiveRun,
   isMainPlacement,
   isOwnTurn,
+  markFlowSeen,
   ownWaitingRunId,
   patchActiveRun,
   pendingRuns,
@@ -110,6 +111,70 @@ test("bumpFlowOf: tăng đếm + last_active_at của khối gốc cùng flow_id
   const next = bumpFlowOf(data, { flow_id: uid(200), created_at: later });
   expect(next?.pages[0]?.items[0]?.flow).toEqual({ message_count: 3, last_active_at: later });
   expect(bumpFlowOf(data, { flow_id: uid(201), created_at: later })).toBe(data);
+});
+
+// CR-050 · `flow.recent` (≤ 3, seq tăng) + `flow.unread` theo tin mới qua realtime; mở thread ⇒ bỏ highlight ≤ mốc.
+const recentOf = (n: number, unread = true) => ({
+  id: uid(600 + n),
+  seq: n,
+  sender_type: "user" as const,
+  sender: { id: LAN, display_name: "Lan" },
+  preview: `c${n}`,
+  created_at: AT,
+  unread,
+});
+const rootWith = (recent: ReturnType<typeof recentOf>[], unread: number): RoomMessagesData => ({
+  pages: [
+    {
+      items: [
+        msg({
+          sender_type: "agent",
+          flow_id: uid(200),
+          flow: { message_count: recent.length, last_active_at: AT, recent, unread },
+        }),
+      ],
+      has_more: false,
+    },
+  ],
+  pageParams: [undefined],
+});
+const flowOf = (d: RoomMessagesData | undefined) => d?.pages[0]?.items[0]?.flow;
+
+test("bumpFlowOf (CR-050): tin người khác ⇒ vào recent (giữ 3 mới nhất), unread +1; tin mình ⇒ không highlight", () => {
+  const data = rootWith([recentOf(5), recentOf(6), recentOf(7)], 3);
+  const other = msg({
+    id: uid(708),
+    seq: 8,
+    flow_id: uid(200),
+    placement: "flow",
+    content: "  mới\n nhé ",
+  });
+  const f = flowOf(bumpFlowOf(data, other, ME));
+  expect(f?.recent?.map((r) => r.seq)).toEqual([6, 7, 8]);
+  expect(f?.recent?.[2]).toMatchObject({ preview: "mới nhé", unread: true });
+  expect(f?.unread).toBe(4);
+  const mine = msg({
+    id: uid(709),
+    seq: 9,
+    flow_id: uid(200),
+    placement: "flow",
+    sender: { id: ME, display_name: "Tôi" },
+  });
+  const g = flowOf(bumpFlowOf(data, mine, ME));
+  expect(g?.recent?.at(-1)?.unread).toBe(false);
+  expect(g?.unread).toBe(3);
+  // Trùng id (đã có trong recent) ⇒ chỉ tăng đếm.
+  expect(
+    flowOf(bumpFlowOf(data, msg({ id: uid(607), seq: 7, flow_id: uid(200) }), ME))?.recent,
+  ).toHaveLength(3);
+});
+
+test("markFlowSeen (CR-050): recent ≤ seq hết highlight, unread = số server trả; flow khác ⇒ giữ nguyên", () => {
+  const data = rootWith([recentOf(5), recentOf(6), recentOf(7)], 3);
+  const f = flowOf(markFlowSeen(data, uid(200), 6, 1));
+  expect(f?.recent?.map((r) => r.unread)).toEqual([false, false, true]);
+  expect(f?.unread).toBe(1);
+  expect(markFlowSeen(data, uid(201), 9, 0)).toBe(data);
 });
 
 // F3 · lượt chờ (`need_input`/`side_effect`) sống qua `run_finished` tới khi có run mới cùng người + flow (BE `room_run_states`).

@@ -84,7 +84,9 @@ const findInList = (d: RoomListData | undefined, id: string) =>
 function onMessage(c: Ctx, { room_id, message }: Of<"room.message">): void {
   // Tin thread (`placement=flow`) không vào timeline chính: chỉ tăng đếm của khối gốc (X2b §3).
   c.client.setQueryData<RoomMessagesData>(roomKeys.messages(room_id), (d) =>
-    isMainPlacement(message) ? insertMessage(d, message) : bumpFlowOf(d, message),
+    isMainPlacement(message)
+      ? insertMessage(d, message)
+      : bumpFlowOf(d, message, c.deps.myId() ?? undefined),
   );
   // Thread đang mở (cache `flow` đã có): mọi tin cùng `flow_id` (cả tin gốc ở timeline) vào khung (X2b D10).
   if (message.flow_id) {

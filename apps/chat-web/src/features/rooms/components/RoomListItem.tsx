@@ -1,7 +1,8 @@
 // HUB-FR-96, HUB-FR-100 · một dòng phòng ở sidebar: avatar chữ cái, tên, xem trước, huy hiệu chưa đọc.
 // Tên accessible = chỉ tên phòng; xem trước + "n tin chưa đọc" nằm ở `aria-describedby` (plan-frontend-e2e §1).
+// CR-050: `menu` = nút `⋯` (Đổi tên / Rời / Xoá / Ẩn) đè lên góc phải khi rê chuột, như dòng hội thoại AI.
 import type { RoomSummary } from "@ai/contracts/chat";
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
 import { initialsOf } from "../../shell/lib/conversation-path";
@@ -12,9 +13,10 @@ type Props = {
   myId: string;
   active: boolean;
   onOpen: (id: string) => void;
+  menu?: ReactNode;
 };
 
-export function RoomListItem({ room, myId, active, onOpen }: Props) {
+export function RoomListItem({ room, myId, active, onOpen, menu }: Props) {
   const { t } = useTranslation();
   const uid = useId();
   const title = roomTitle(room);
@@ -22,7 +24,7 @@ export function RoomListItem({ room, myId, active, onOpen }: Props) {
   const preview = pv ? t(`rooms.preview.${pv.who}`, { name: pv.name, text: pv.text }) : "";
   const unreadText = room.unread > 0 ? t("rooms.unreadBadge", { count: room.unread }) : "";
   return (
-    <li>
+    <li className="group relative">
       <a
         href={`/rooms/${encodeURIComponent(room.id)}`}
         data-room-id={room.id}
@@ -67,6 +69,7 @@ export function RoomListItem({ room, myId, active, onOpen }: Props) {
           </span>
         )}
       </a>
+      {menu}
     </li>
   );
 }

@@ -1,11 +1,14 @@
 // HUB-FR-101, HUB-FR-103 · X2b plan-frontend §0 D6–D9, §3: logic thuần của agent trong phòng — vai theo từng lượt
 // (`caller`), nhãn agent, run đang chạy/chờ (`active_runs`), khử trùng theo `run_id`, tin "của mình" cho pill/đã đọc.
-import type {
-  RoomActiveRun,
-  RoomAgentRef,
-  RoomDetail,
-  RoomMessage,
-  RoomRunStartedEventData,
+import {
+  ROOM_FLOW_RECENT_MAX,
+  ROOM_PREVIEW_MAX,
+  type RoomActiveRun,
+  type RoomAgentRef,
+  type RoomDetail,
+  type RoomFlowRecent,
+  type RoomMessage,
+  type RoomRunStartedEventData,
 } from "@ai/contracts/chat";
 import type { RoomMessagesData } from "./room-cache";
 
@@ -148,7 +151,8 @@ export function pendingRuns(
 /** Tin `placement=flow` mới: tăng `flow.message_count`/`last_active_at` của khối agent gốc cùng `flow_id` ở timeline. */
 export function bumpFlowOf(
   data: RoomMessagesData | undefined,
-  m: Pick<RoomMessage, "flow_id" | "created_at">,
+  m: Pick<RoomMessage, "flow_id" | "created_at"> & Partial<RoomMessage>,
+  myId?: string,
 ): RoomMessagesData | undefined {
   if (!data || !m.flow_id) return data;
   let hit = false;
@@ -157,14 +161,55 @@ export function bumpFlowOf(
     items: p.items.map((x) => {
       if (hit || x.flow_id !== m.flow_id || !x.flow) return x;
       hit = true;
-      return {
-        ...x,
-        flow: {
-          message_count: x.flow.message_count + 1,
-          last_active_at:
-            m.created_at > x.flow.last_active_at ? m.created_at : x.flow.last_active_at,
-        },
-      };
+      return { ...x, flow: withRecent(x.flow, m, myId) };
+    }),
+  }));
+  return hit ? { ...data, pages } : data;
+}
+
+type FlowSummary = NonNullable<RoomMessage["flow"]>;
+
+/** CR-050 · tin `flow` mới: đếm + thời gian; chèn vào `recent` (giữ 3 tin mới nhất); tin người khác ⇒ `unread` + 1. */
+function withRecent(
+  f: FlowSummary,
+  part: Pick<RoomMessage, "created_at"> & Partial<RoomMessage>,
+  myId?: string,
+): FlowSummary {
+  const at = part.created_at > f.last_active_at ? part.created_at : f.last_active_at;
+  const base = { ...f, message_count: f.message_count + 1, last_active_at: at };
+  if (f.recent === undefined || !part.id || f.recent.some((r) => r.id === part.id)) return base;
+  const m = part as RoomMessage;
+  const mine = m.sender_type === "user" ? m.sender.id === myId : m.caller?.id === myId;
+  const item: RoomFlowRecent = {
+    id: m.id,
+    seq: m.seq,
+    sender_type: m.sender_type,
+    sender: m.sender,
+    ...(m.agent && { agent: m.agent }),
+    preview: m.content.replace(/\s+/g, " ").trim().slice(0, ROOM_PREVIEW_MAX),
+    created_at: m.created_at,
+    unread: !mine,
+  };
+  const recent = [...f.recent, item].sort((a, b) => a.seq - b.seq).slice(-ROOM_FLOW_RECENT_MAX);
+  return { ...base, recent, unread: (f.unread ?? 0) + (mine ? 0 : 1) };
+}
+
+/** CR-050 · đã xem thread tới `seq`: tin trong `recent` có seq ≤ mốc hết highlight, `unread` = số server trả. */
+export function markFlowSeen(
+  data: RoomMessagesData | undefined,
+  flowId: string,
+  seq: number,
+  unread: number,
+): RoomMessagesData | undefined {
+  if (!data) return data;
+  let hit = false;
+  const pages = data.pages.map((p) => ({
+    ...p,
+    items: p.items.map((x) => {
+      if (x.flow_id !== flowId || !x.flow || x.placement === "flow") return x;
+      hit = true;
+      const recent = x.flow.recent?.map((r) => (r.seq <= seq ? { ...r, unread: false } : r));
+      return { ...x, flow: { ...x.flow, unread, ...(recent && { recent }) } };
     }),
   }));
   return hit ? { ...data, pages } : data;

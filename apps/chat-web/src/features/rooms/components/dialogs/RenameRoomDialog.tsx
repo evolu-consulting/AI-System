@@ -1,5 +1,5 @@
 // HUB-FR-97 · `dialog "Đổi tên nhóm"`: `textbox "Tên nhóm"` (trim, 1–80) + `button "Lưu"`.
-import { ROOM_NAME_MAX, type RoomDetail } from "@ai/contracts/chat";
+import { ROOM_NAME_MAX, type RoomSummary } from "@ai/contracts/chat";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
@@ -16,7 +16,7 @@ import { useRenameRoom } from "../../hooks/use-room-actions";
 import { roomErrorKeyOf } from "../../lib/room-errors";
 import { roomToast } from "../../lib/room-toast";
 
-type Props = { room: RoomDetail; onClose: () => void };
+type Props = { room: Pick<RoomSummary, "id" | "name">; onClose: () => void };
 
 export function RenameRoomDialog({ room, onClose }: Props) {
   const { t } = useTranslation();

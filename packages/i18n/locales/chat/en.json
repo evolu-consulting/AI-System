@@ -283,6 +283,12 @@
     "toast": {
       "stopFailed": "Couldn't stop. Try again later.",
       "notCaller": "Only the sender of this turn can respond."
+    },
+    "recent": {
+      "label": "Latest comments in the thread",
+      "title": "In thread",
+      "new": "{{count}} new",
+      "unread": "Unread"
     }
   },
   "rooms": {
@@ -409,6 +415,11 @@
     "memberOptions": "Options for {{name}}",
     "transfer": "Transfer ownership",
     "remove": "Remove from group",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "groups": "Groups",
+    "people": "Users",
+    "groupsEmpty": "No groups yet. Tap + to create one.",
+    "peopleEmpty": "No one else in your company yet",
+    "rowMenu": "Options for {{name}}"
   }
 }

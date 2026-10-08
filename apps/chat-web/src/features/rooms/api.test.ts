@@ -98,13 +98,13 @@ describe("rooms api", () => {
 });
 
 describe("directory api", () => {
-  test("fetchDirectory: q cắt khoảng trắng, q rỗng bỏ khỏi query", async () => {
+  test("fetchDirectory: q cắt khoảng trắng, q rỗng bỏ khỏi query; luôn xin tối đa 50 (CR-050)", async () => {
     reply = {
       status: 200,
       body: { items: [{ id: U1, display_name: "Minh", username: "minh", active: true }] },
     };
     expect((await fetchDirectory("  mi ")).items).toHaveLength(1);
     await fetchDirectory("");
-    expect(calls.map((c) => c.url)).toEqual(["/directory?q=mi", "/directory"]);
+    expect(calls.map((c) => c.url)).toEqual(["/directory?q=mi&limit=50", "/directory?limit=50"]);
   });
 });

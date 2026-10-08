@@ -283,6 +283,12 @@
     "toast": {
       "stopFailed": "Không dừng được. Thử lại sau.",
       "notCaller": "Chỉ người gửi lượt này mới trả lời được."
+    },
+    "recent": {
+      "label": "Bình luận gần nhất trong thread",
+      "title": "Trong thread",
+      "new": "{{count}} mới",
+      "unread": "Chưa xem"
     }
   },
   "rooms": {
@@ -409,6 +415,11 @@
     "memberOptions": "Tuỳ chọn của {{name}}",
     "transfer": "Chuyển quyền chủ nhóm",
     "remove": "Bớt khỏi nhóm",
-    "cancel": "Huỷ"
+    "cancel": "Huỷ",
+    "groups": "Nhóm",
+    "people": "Users",
+    "groupsEmpty": "Chưa có nhóm nào. Bấm + để tạo nhóm.",
+    "peopleEmpty": "Chưa có ai khác trong công ty",
+    "rowMenu": "Tuỳ chọn cho {{name}}"
   }
 }

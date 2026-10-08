@@ -28,6 +28,8 @@ export const ROOM_ACTIVE_RUNS_MAX = 50;
 export const ROOM_PLACEMENTS = ["main", "flow"] as const;
 export const ROOM_RUN_STATUSES = ["finished", "failed", "cancelled"] as const;
 export const ROOM_WAIT_KINDS = ["need_input", "side_effect"] as const;
+/** CR-050 · số comment gần nhất của thread gắn trên khối agent. */
+export const ROOM_FLOW_RECENT_MAX = 3;
 const ROOM_LIMIT_MAX = 200;
 const ROOM_LIST_LIMIT_DEFAULT = 50;
 
@@ -116,6 +118,20 @@ export const RoomDetailSchema = RoomSummarySchema.extend({
 });
 export type RoomDetail = z.infer<typeof RoomDetailSchema>;
 
+/** CR-050 · một comment gần nhất của thread; `unread` theo người xem (mốc `room_flow_reads`, tin của mình luôn false). */
+export const RoomFlowRecentSchema = z.strictObject({
+  id: UuidSchema,
+  seq: z.number().int().min(1),
+  sender_type: SenderTypeSchema,
+  sender: SenderSchema,
+  /** Tin agent: tên theo ngôn ngữ (vắng = Orchestrator). */
+  agent: RoomAgentRefSchema.optional(),
+  preview: z.string().max(ROOM_PREVIEW_MAX),
+  created_at: IsoDateTime,
+  unread: z.boolean(),
+});
+export type RoomFlowRecent = z.infer<typeof RoomFlowRecentSchema>;
+
 /** `run_id`/`flow_id`/`trigger_message_id`: chỗ cho agent trong phòng; X2a không gửi. */
 export const RoomMessageSchema = z.strictObject({
   id: UuidSchema,
@@ -137,7 +153,13 @@ export const RoomMessageSchema = z.strictObject({
   ask: RoomAskSchema.optional(),
   steps: z.strictObject({ count: z.number().int().min(0), ms: z.number().min(0) }).optional(),
   flow: z
-    .strictObject({ message_count: z.number().int().min(0), last_active_at: IsoDateTime })
+    .strictObject({
+      message_count: z.number().int().min(0),
+      last_active_at: IsoDateTime,
+      // CR-050 (chỉ thêm): ≤ 3 tin `flow` mới nhất (seq tăng) + số tin người xem chưa xem trong thread.
+      recent: z.array(RoomFlowRecentSchema).max(ROOM_FLOW_RECENT_MAX).optional(),
+      unread: CountSchema.optional(),
+    })
     .optional(),
 });
 export type RoomMessage = z.infer<typeof RoomMessageSchema>;
@@ -213,3 +235,10 @@ export const MarkRoomReadResponseSchema = z.strictObject({
   unread_total: CountSchema,
 });
 export type MarkRoomReadResponse = z.infer<typeof MarkRoomReadResponseSchema>;
+
+/** CR-050 · `POST /rooms/:id/flows/:flow_id/read`: mốc đọc thread chỉ tăng, kẹp ≤ seq lớn nhất của thread. */
+export const MarkRoomFlowReadRequestSchema = z.strictObject({ seq: SeqSchema });
+export type MarkRoomFlowReadRequest = z.infer<typeof MarkRoomFlowReadRequestSchema>;
+
+export const MarkRoomFlowReadResponseSchema = z.strictObject({ unread: CountSchema });
+export type MarkRoomFlowReadResponse = z.infer<typeof MarkRoomFlowReadResponseSchema>;

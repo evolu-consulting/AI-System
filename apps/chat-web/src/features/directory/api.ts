@@ -1,5 +1,9 @@
 // HUB-FR-102 · `GET /directory` (danh bạ cùng tenant). Gọi API chỉ ở file này (plan-frontend §1).
-import { type DirectoryResponse, DirectoryResponseSchema } from "@ai/contracts/chat";
+import {
+  DIRECTORY_LIMIT_MAX,
+  type DirectoryResponse,
+  DirectoryResponseSchema,
+} from "@ai/contracts/chat";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "~/lib/http";
 
@@ -9,7 +13,10 @@ export const DIRECTORY_STALE_MS = 30_000;
 export async function fetchDirectory(q: string, signal?: AbortSignal): Promise<DirectoryResponse> {
   const term = q.trim();
   return DirectoryResponseSchema.parse(
-    await api<unknown>("/directory", { query: { q: term || undefined }, signal }),
+    await api<unknown>("/directory", {
+      query: { q: term || undefined, limit: DIRECTORY_LIMIT_MAX },
+      signal,
+    }),
   );
 }
 

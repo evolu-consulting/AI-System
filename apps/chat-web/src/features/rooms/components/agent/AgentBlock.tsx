@@ -1,7 +1,7 @@
 // HUB-FR-101 · X2b D6, D9, §4: khối kết quả của agent trong timeline phòng. Vai theo từng lượt (`caller`), không theo
 // quyền agent. Lỗi → câu chung cho cả phòng (không lộ quota, R16); huỷ (Dừng / mất quyền) → "Đã huỷ" cho mọi người.
 // "Trả lời tiếp" luôn bật cho mọi thành viên (mở thread `?flow=`). F3: phần chờ (`AgentWait`); `side_effect` đang chờ với
-// người khác chỉ còn WaitingNote (ẩn thân); "Chạy lại" (lỗi/huỷ) chỉ cho người gửi lượt.
+// người khác chỉ còn WaitingNote (ẩn thân); "Chạy lại" (lỗi/huỷ) chỉ cho người gửi lượt. CR-050: ≤ 3 comment mới của thread.
 import type { RoomMessage } from "@ai/contracts/chat";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,7 @@ import { agentName } from "../../lib/room-agent";
 import { timeOf } from "../../lib/room-logic";
 import { AgentBlockHeader } from "./AgentBlockHeader";
 import { AgentWait } from "./AgentWait";
+import { FlowRecent } from "./FlowRecent";
 
 type Props = {
   message: RoomMessage;
@@ -64,7 +65,7 @@ function useTurnLabels(message: RoomMessage, myId: string) {
   };
 }
 
-/** Chân khối ở timeline: Copy · "+n tin trong flow · thời gian" · "Trả lời tiếp" (luôn bật, D9). */
+/** Chân khối ở timeline: (CR-050) ≤ 3 comment mới · Copy · "+n tin trong flow · thời gian" · "Trả lời tiếp" (luôn bật, D9). */
 function BlockFooter({
   message,
   copyValue,
@@ -77,15 +78,19 @@ function BlockFooter({
   const { i18n } = useTranslation();
   const flowId = message.flow_id;
   const flow = message.flow;
+  const open = flowId && onReply ? () => onReply(flowId) : undefined;
   return (
-    <FlowFooter
-      copyValue={copyValue}
-      messageCount={flow?.message_count ?? 0}
-      timeLabel={flow ? relativeTime(flow.last_active_at, Date.now(), i18n.language) : null}
-      openHere={false}
-      busy={false}
-      onReply={flowId && onReply ? () => onReply(flowId) : undefined}
-    />
+    <>
+      {flow && <FlowRecent flow={flow} onOpen={open} />}
+      <FlowFooter
+        copyValue={copyValue}
+        messageCount={flow?.message_count ?? 0}
+        timeLabel={flow ? relativeTime(flow.last_active_at, Date.now(), i18n.language) : null}
+        openHere={false}
+        busy={false}
+        onReply={open}
+      />
+    </>
   );
 }
 

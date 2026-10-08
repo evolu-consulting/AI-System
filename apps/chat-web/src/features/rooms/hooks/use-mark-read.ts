@@ -5,7 +5,7 @@ import { useMarkRoomRead } from "./use-room-actions";
 
 const INTERVAL_MS = 1000;
 
-function useTabVisible(): boolean {
+export function useTabVisible(): boolean {
   const [visible, setVisible] = useState(() => document.visibilityState === "visible");
   useEffect(() => {
     const on = () => setVisible(document.visibilityState === "visible");

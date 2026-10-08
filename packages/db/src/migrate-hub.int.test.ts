@@ -53,6 +53,7 @@ const HUB_TABLES = [
   "orchestrator_settings",
   "provider_state",
   "providers",
+  "room_flow_reads",
   "room_members",
   "room_messages",
   "rooms",

@@ -1,6 +1,6 @@
 // HUB-FR-98 · CHAT-AC-43 · xoá nhóm (chủ) / rời nhóm. Chủ còn người khác → "Chuyển quyền chủ nhóm trước khi rời";
 // chủ một mình → rời = xoá. Thành công: toast + về `/c/new`; hành động của mình được đánh dấu để bỏ toast thừa.
-import type { RoomDetail } from "@ai/contracts/chat";
+import type { RoomSummary } from "@ai/contracts/chat";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,11 +11,13 @@ import { markSelfExit, unmarkSelfExit } from "../../lib/self-exit";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type Props = {
-  room: RoomDetail;
+  room: Pick<RoomSummary, "id" | "member_count">;
   kind: "delete" | "leave";
   isOwner: boolean;
   onClose: () => void;
   onOpenMembers: () => void;
+  /** CR-050: mở từ sidebar với phòng khác phòng đang xem → ở lại trang hiện tại. */
+  stay?: boolean;
 };
 
 type Copy = { title: string; body: string; ok: string };
@@ -35,7 +37,7 @@ function copyOf(kind: Props["kind"], alone: boolean): Copy {
   };
 }
 
-export function ExitRoomDialog({ room, kind, isOwner, onClose, onOpenMembers }: Props) {
+export function ExitRoomDialog({ room, kind, isOwner, onClose, onOpenMembers, stay }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const exit = useRoomExit(room.id, kind);
@@ -65,7 +67,7 @@ export function ExitRoomDialog({ room, kind, isOwner, onClose, onOpenMembers }: 
       onSuccess: () => {
         roomToast(t(kind === "delete" ? "rooms.toast.deleted" : "rooms.toast.left"));
         onClose();
-        void navigate({ to: "/c/new" });
+        if (!stay) void navigate({ to: "/c/new" });
       },
       onError: (err) => {
         unmarkSelfExit(room.id);

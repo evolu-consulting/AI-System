@@ -5,6 +5,7 @@ import type {
   RoomAgentRef,
   RoomAsk,
   RoomDetail,
+  RoomFlowRecent,
   RoomLastMessage,
   RoomMember,
   RoomMessage,
@@ -29,8 +30,21 @@ export type RoomMessageRow = {
   placement?: "main" | "flow";
   /** X2b · tin agent: phần đã chọn theo người xem (D3 — `content`/`ask` riêng chỉ cho người gọi). */
   agent?: AgentPartRow;
-  /** X2b · tóm tắt thread trên tin agent `main` gốc (chỉ khi đọc danh sách). */
-  flow?: { messageCount: number; lastActiveAt: Date };
+  /** X2b · tóm tắt thread trên tin agent `main` gốc (chỉ khi đọc danh sách). CR-050: + chưa xem, ≤ 3 tin mới nhất. */
+  flow?: { messageCount: number; lastActiveAt: Date; unread?: number; recent?: FlowRecentRow[] };
+};
+
+/** CR-050 · một tin `flow` gần nhất của thread (theo người xem). */
+export type FlowRecentRow = {
+  id: string;
+  seq: number;
+  senderType: SenderType;
+  sender: UserRefRow;
+  /** Tin agent: agent đứng tên (null = Orchestrator / tin người). */
+  agent: RoomAgentRef | null;
+  content: string;
+  createdAt: Date;
+  unread: boolean;
 };
 
 export type AgentPartRow = {
@@ -105,8 +119,23 @@ export function toRoomMessage(r: RoomMessageRow): RoomMessage {
       flow: {
         message_count: r.flow.messageCount,
         last_active_at: r.flow.lastActiveAt.toISOString(),
+        ...(r.flow.unread !== undefined && { unread: r.flow.unread }),
+        ...(r.flow.recent && { recent: r.flow.recent.map(toFlowRecent) }),
       },
     }),
+  };
+}
+
+function toFlowRecent(r: FlowRecentRow): RoomFlowRecent {
+  return {
+    id: r.id,
+    seq: r.seq,
+    sender_type: r.senderType,
+    sender: r.agent ? { id: r.sender.id, display_name: r.agent.name.vi } : senderOf(r.sender),
+    ...(r.agent && { agent: r.agent }),
+    preview: previewOf(r.content),
+    created_at: r.createdAt.toISOString(),
+    unread: r.unread,
   };
 }
 

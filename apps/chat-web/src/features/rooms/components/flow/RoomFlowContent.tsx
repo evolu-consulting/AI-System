@@ -9,8 +9,10 @@ import { useDraftKey } from "~/features/composer/hooks/use-draft";
 import type { FlowFrameSlot } from "~/features/flow-panel/components/FlowFrame";
 import { FlowHeader } from "~/features/flow-panel/components/FlowHeader";
 import { type RoomTurnActions, useRerunFromList } from "../../hooks/use-answer-run";
+import { useMarkFlowRead } from "../../hooks/use-mark-flow-read";
 import { useFlowMessages, useFlowSend } from "../../hooks/use-room-flow";
 import { pendingRuns, waitingRunIds } from "../../lib/room-agent";
+import { lastSeqOf } from "../../lib/room-logic";
 import { RoomFlowMessages } from "./RoomFlowMessages";
 
 export type RoomFlowProps = {
@@ -45,6 +47,8 @@ export function RoomFlowContent(p: RoomFlowProps & FlowFrameSlot) {
   const waiting = useMemo(() => waitingRunIds(p.activeRuns), [p.activeRuns]);
   const pending = useMemo(() => pendingRuns(p.pending, messages), [p.pending, messages]);
   const onRerun = useRerunFromList(messages, p.turn.rerun);
+  // CR-050: mở thread = đã xem (bỏ highlight comment trên khối gốc).
+  useMarkFlowRead(p.roomId, p.flowId, msgs.isPending ? 0 : lastSeqOf([...messages]));
   const head = headerOf(messages, t("flow.panel"));
   const failed = msgs.isError && !msgs.unknown;
   return (

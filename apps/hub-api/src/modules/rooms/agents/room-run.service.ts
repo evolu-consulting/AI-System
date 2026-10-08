@@ -145,6 +145,8 @@ async function writeTrigger(tx: Tx, me: Me, w: Write & { threadId: string }): Pr
   const row = await msgs.insertMessage(tx, me, {
     ...{ id, roomId, seq, content, clientMsgId, at, flowId: threadId, placement },
   });
+  // CR-050: người gửi đã thấy thread tới tin của chính mình.
+  if (placement === "flow") await msgs.advanceFlowRead(tx, me, { roomId, flowId: threadId, seq });
   const message = toRoomMessage(row);
   const history = await loadHistory(tx, me, { roomId, triggerSeq: seq, thread: target.thread });
   const fan = await msgs.fanout(tx, roomId);

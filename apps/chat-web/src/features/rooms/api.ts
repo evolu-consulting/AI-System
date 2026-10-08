@@ -2,6 +2,8 @@
 import {
   type CreateRoomRequest,
   FLOW_ID_HEADER,
+  type MarkRoomFlowReadResponse,
+  MarkRoomFlowReadResponseSchema,
   type MarkRoomReadResponse,
   MarkRoomReadResponseSchema,
   type RoomDetail,
@@ -108,5 +110,19 @@ export async function sendRoomMessage(
 export async function markRoomRead(id: string, seq: number): Promise<MarkRoomReadResponse> {
   return MarkRoomReadResponseSchema.parse(
     await api<unknown>(`${base(id)}/read`, { method: "POST", body: { seq } }),
+  );
+}
+
+/** CR-050 · đã xem thread `flowId` tới `seq` (mốc chỉ tăng ở server). */
+export async function markRoomFlowRead(
+  id: string,
+  flowId: string,
+  seq: number,
+): Promise<MarkRoomFlowReadResponse> {
+  return MarkRoomFlowReadResponseSchema.parse(
+    await api<unknown>(`${base(id)}/flows/${encodeURIComponent(flowId)}/read`, {
+      method: "POST",
+      body: { seq },
+    }),
   );
 }

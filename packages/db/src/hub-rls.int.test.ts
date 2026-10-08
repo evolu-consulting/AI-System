@@ -132,11 +132,12 @@ describe("HUB-FR-75 · RLS hội thoại hub_rw (int)", () => {
   });
 });
 
-/** X2a (0011): mỗi phần tử = một policy (rooms 2, room_members 3, room_messages 2). */
+/** X2a (0011): mỗi phần tử = một policy (rooms 2, room_members 3, room_messages 2); CR-050 (0017): room_flow_reads 3. */
 const X2A_POLICY_TABLES = [
   ...Array(2).fill("rooms"),
   ...Array(3).fill("room_members"),
   ...Array(2).fill("room_messages"),
+  ...Array(3).fill("room_flow_reads"),
 ];
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
