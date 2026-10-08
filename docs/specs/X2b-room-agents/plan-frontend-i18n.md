@@ -29,12 +29,10 @@ Key trong `packages/i18n/locales/chat/{vi,en}.json`. Nhóm mới `roomAgent`; th
 | `roomAgent.cancelledNoPerm` | Đã huỷ vì bạn không còn quyền dùng agent này (chỉ người gửi lượt đó thấy). | Cancelled because you no longer have access to this agent. |
 | `roomAgent.cancelledOther` | Đã huỷ | Cancelled |
 | `roomAgent.steps` | {{count}} bước · {{seconds}}s | {{count}} steps · {{seconds}}s |
-| `roomAgent.noReplyAccess` | Bạn chưa được cấp agent {{agent}} nên chưa trả lời tiếp được. Bạn vẫn xem được flow. | You don't have access to agent {{agent}}, so you can't reply here. You can still view the flow. |
-| `roomAgent.flowNoAccess` | Bạn không còn quyền dùng agent {{agent}}. | You no longer have access to agent {{agent}}. |
+| `roomAgent.threadContextHint` | Agent đọc được cả thread này (tối đa 50 tin gần nhất). | Agents can read this whole thread (up to the 50 latest messages). |
 | `roomAgent.flowBusy` | Lượt trước của bạn trong flow này vẫn đang chạy. Đợi xong hoặc bấm Dừng. | Your previous turn in this flow is still running. Wait or press Stop. |
 | `roomAgent.unreadInFlow` | {{count}} tin mới trong flow | {{count}} new in flow |
 | `roomAgent.orchestratorName` | Orchestrator | Orchestrator |
-| `roomAgent.viewFlow` | Xem flow | View flow |
 | `roomAgent.toast.notCaller` | Chỉ người gửi lượt này mới trả lời được. | Only the sender of this turn can respond. |
 | `roomAgent.toast.stopFailed` | Không dừng được. Thử lại sau. | Couldn't stop. Try again later. |
 
@@ -46,6 +44,6 @@ Trình đọc màn hình: `roomAgent.working` trong `role="status"` (đọc mộ
 | `roomAgent.flowLoadError` | Không tải được flow | Couldn't load this flow |
 | `roomAgent.flowRetry` | Thử lại | Retry |
 
-`roomAgent.noReplyAccess` cũng dùng dưới `FlowFooter` và thay composer trong khung flow khi `can_reply=false` (thay `flowReadonly` cũ, đã bỏ). `{{agent}}` = tên agent của flow theo ngôn ngữ.
+`roomAgent.threadContextHint` hiện nhỏ dưới composer thread (`aria-describedby` của textbox). `AGENT_NOT_FOUND` trong thread dùng lại key lỗi tag của §1; đã xoá `noReplyAccess`, `flowNoAccess`, `viewFlow`.
 
 Header khung, đếm tin, ✕/Thu nhỏ, kéo đóng, "Trả lời trong flow…", "Tin nhắn trong flow": dùng lại `flow.*`, `composer.flow*` của C1.

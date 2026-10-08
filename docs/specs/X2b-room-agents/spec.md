@@ -93,7 +93,7 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (+ phụ lục i18n, e2e). **
 | Menu `@` | "Agent bạn dùng được": tên + `@key` + mô tả từ `GET /agents` người xem; tải lại khi mở phòng (R14) (Main) |
 | Khối agent | Tin gọi phẳng; khối "Trả lời của agent X": "<B> hỏi" (B = người gửi lượt của khối), thân C1, "Chạy bằng quyền của <B>", `FlowFooter`; khối "đang xử lý" ở cuối timeline; chỉ người gửi lượt stream + "Dừng" (Main/DM) |
 | Chờ | Người gửi lượt: AskCard/chip Đồng ý-Huỷ; người khác: "Đang chờ <B> xác nhận — chỉ người hỏi mới bấm được.", không mô tả hành động (Q5) (Main) |
-| Khung flow | `?flow=`; "Trả lời tiếp" theo `flow.can_reply` (Q7 mới: mọi thành viên có quyền agent); không quyền: nút tắt + giải thích + "Xem flow" chỉ-đọc (Q11); mỗi lượt ghi tên người gửi + "chạy bằng quyền của <B>"; điện thoại sheet (C1) |
+| Khung flow | `?flow=`; "Trả lời tiếp" luôn bật, mọi thành viên mở thread và có composer + menu `@` (không chỉ-đọc, Q7 lần 2/Q11); tin không tag = người↔người; mỗi lượt ghi tên người gửi + "chạy bằng quyền của <B>"; điện thoại sheet (C1) |
 | Đính kèm | Task F5 cắt được sang X2b-2 (Q9) |
 
 Contract BE đã khớp (`plan.md` §2, §12; `plan-frontend.md` §10). Cần fixture người thứ ba C có `hoadon` (B7).

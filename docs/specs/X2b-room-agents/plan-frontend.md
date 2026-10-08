@@ -1,6 +1,6 @@
 # X2b · Plan frontend (`apps/chat-web`)
 
-Spec: [`spec.md`](spec.md) §1–2, §5, §8–9 (Q1–Q12 mặc định, trừ **Q7 chốt 2026-10-08**: mọi thành viên có quyền agent của flow đều "Trả lời tiếp" được; mỗi lượt = run mới bằng quyền + quota của **người gửi lượt đó**; xác nhận `side_effect`/`need_input` của lượt nào chỉ người gửi lượt đó bấm) · nền X2a: `../X2a-rooms/spec.md` §5.2–5.3, `../X2a-rooms/plan-frontend.md` · canvas `docs/design/chat-app/canvas-x2/` (Main: menu `@`, khối agent, "Đang chờ … xác nhận"; DM: "Dừng"/"Chỉ … dừng được") · token Tailwind sẵn có (indigo UI-1), không hex.
+Spec: [`spec.md`](spec.md) §1–2, §5, §8–9 (Q1–Q12 mặc định, trừ **Q7 chốt 2026-10-08 lần 2**: thread = luồng chung của phòng, mọi thành viên nhắn được; chỉ tag `@agent` mới chạy run, bằng quyền + quota **người tag**; trả lời/xác nhận lượt nào chỉ người tag lượt đó, FE gửi `answer_run_id`) · nền X2a: `../X2a-rooms/spec.md` §5.2–5.3, `../X2a-rooms/plan-frontend.md` · canvas `docs/design/chat-app/canvas-x2/` (Main: menu `@`, khối agent, "Đang chờ … xác nhận"; DM: "Dừng"/"Chỉ … dừng được") · token Tailwind sẵn có (indigo UI-1), không hex.
 Phụ lục: [`plan-frontend-i18n.md`](plan-frontend-i18n.md) (câu chữ VI/EN) · [`plan-frontend-e2e.md`](plan-frontend-e2e.md) (role/nhãn + ca e2e).
 Contract: chỉ **tiêu thụ** `@ai/contracts/chat`; tên trường/lỗi/sự kiện theo contract BE đã chốt ở `plan.md` §2, §12 (commit `8c8ef16`); §10 đối chiếu.
 
@@ -11,15 +11,15 @@ Contract: chỉ **tiêu thụ** `@ai/contracts/chat`; tên trường/lỗi/sự 
 | D2 | Menu `@`: `Composer` thêm giá trị `menus="agents"` (chỉ `@`, **không** `/` — Q10; `/x` gửi nguyên văn). Nguồn `useAgentMenu` = `GET /agents` của người đang xem (R14). Mở phòng → `invalidateQueries(["agents","menu"])` một lần theo `roomId` (agent bị thu hồi biến mất sau tải lại, AC13) |
 | D3 | Không panel, không chip agent (CR-048). DOM phòng không có vùng nào ngoài menu `@` liệt kê agent (AC13 kiểm) |
 | D4 | Placeholder tách khỏi nhãn: giữ `aria-label` X2a (`textbox "Tin nhắn cho nhóm"` / `"Tin nhắn cho <tên>"`, e2e X2a không đổi), thêm prop `placeholder` gợi ý `@` + dòng gợi ý dưới ô (canvas Main) |
-| D5 | Gửi tin phòng trả `SubmitResult` như C1; 201 body = `RoomMessage`, run đọc từ header `X-Run-Id`/`X-Flow-Id` (BE D11). Mã composer (`AGENT_NOT_FOUND` — `details` chỉ `{suggestions}`, tag lấy từ ô nhập; trong flow không tag = mất quyền agent của flow → `roomAgent.flowNoAccess` + invalidate list; `TOO_MANY_RUNS`; `FLOW_BUSY` 409 → `roomAgent.flowBusy`; `CMD_MISSING_ARG` dạng `tagOnly`) → `SendErrorNotice` trong ô, **giữ nguyên chữ**, gợi ý "Ý bạn là" chèn `@key`; 429 đếm ngược `Retry-After`. Mã khác → toast X2a `rooms.toast.sendFailed`. Tin lỗi không vào timeline (Q4) |
+| D5 | Gửi tin phòng trả `SubmitResult` như C1; 201 body = `RoomMessage`, run đọc từ header `X-Run-Id`/`X-Flow-Id` (BE D11). Mã composer (`AGENT_NOT_FOUND` — `details` chỉ `{suggestions}`, tag lấy từ ô nhập; trong thread chỉ khi có tag, `details.suggestions`; `TOO_MANY_RUNS`; `FLOW_BUSY` 409 (cùng người đang chạy) → `roomAgent.flowBusy`; `CMD_MISSING_ARG` dạng `tagOnly`) → `SendErrorNotice` trong ô, **giữ nguyên chữ**, gợi ý "Ý bạn là" chèn `@key`; 429 đếm ngược `Retry-After`. Mã khác → toast X2a `rooms.toast.sendFailed`. Tin lỗi không vào timeline (Q4) |
 | D6 | Khối agent = `AgentBlock` (đầu khối "Tên agent · `@key` · <B> hỏi · giờ" → thân `Answer` C1 → `AnswerExtras` → chân "n bước · s" + "Chạy bằng quyền của <B>" + `FlowFooter`). **<B> = `message.caller` của chính tin đó**: mỗi lượt có thể khác người (Q7), nên khối đầu flow "Lan hỏi", khối trả lời tiếp "Hà hỏi". Tin gọi của người vẫn là tin phẳng (X2a `MessageItem`) |
 | D7 | Khối "đang chạy" (`PendingAgentBlock`) nằm **cuối timeline** (như đang gõ) chứ không ngay dưới tin gọi: kết quả cuối có `seq` lúc xong nên cũng ở cuối → không nhảy chỗ. Nhiều run song song → nhiều khối theo `started_at` |
 | D8 | Stream chữ: chỉ **người gửi lượt** (`caller.id === me`) mở `sse:<run_id>` (`GET /runs/:id/events`, driver C1; `run_id` từ header `X-Run-Id`) với phạm vi `room:<roomId>` trong `run-store`; người khác chỉ thấy "<agent> đang xử lý…" rồi kết quả cuối (Q1). Khử trùng theo `run_id`: có `room.message` agent cùng `run_id` → bỏ khối chờ + `dismiss` run |
-| D9 | Nút theo vai **theo từng lượt** (U2 cũ "người khác chỉ Xem flow" bỏ). Vai = `message.caller.id === me.id`, không suy từ quyền agent. Người gửi lượt: "Dừng", chip trả lời/Đồng ý-Huỷ. Người khác: "Chỉ <B> dừng được", "Đang chờ <B> …" (không tham số, Q5/R12). "Trả lời tiếp" theo `flow.can_reply` của tin gốc (BE tính theo người xem): `true` → nút bật; `false` → nút `aria-disabled` (vẫn focus được, `aria-describedby`) + dòng giải thích `roomAgent.noReplyAccess` hiện sẵn (không chỉ tooltip) + nút phụ "Xem flow" (Q11). `can_reply` đổi theo cache khi list/`room.message` mới về |
+| D9 | Nút theo vai **theo từng lượt**. Vai = `message.caller.id === me.id`, không suy từ quyền agent. Người tag lượt: "Dừng", chip trả lời/Đồng ý-Huỷ. Người khác: "Chỉ <B> dừng được", "Đang chờ <B> …" (không tham số, Q5/R12) và **vẫn nhắn thường** trong thread. "Trả lời tiếp" luôn bật cho mọi thành viên (mở thread, có composer); **không** còn `can_reply`, nút tắt, "Xem flow" chỉ-đọc, `noReplyAccess`, `flowNoAccess` |
 | D10 | Khung flow phòng: `?flow=<flow_id>` trên `/rooms/$id`. Tách `flow-panel/components/FlowFrame.tsx` (aside ≥ 640 / Sheet < 640, Esc, kéo đóng) từ `FlowPanel`/`FlowSheet`; C1 dùng `FlowFrame + FlowContent` như cũ, phòng dùng `FlowFrame + RoomFlowContent`. `RoomFlowPane` `React.lazy`. Nội dung = mọi tin flow (`GET …?flow_id=`, gồm tin gốc), **mỗi lượt ghi tên người gửi** (tin người: tên X2a; tin agent: "<B> hỏi" + "Chạy bằng quyền của <B>"/"của bạn"); FE hiển thị như **một** luồng hội thoại dù server tách flow theo người (BE D12) |
 | D11 | Đính kèm (Q9) BE đề xuất **tách X2b-2** (chờ người dùng duyệt); F5 giữ riêng, **có thể cắt**: chỉ bật `attachments` ở `RoomComposer` + `AttachmentList` trong `MessageItem`; cắt → giữ `attachments={false}` X2a, không ảnh hưởng F1–F4 |
 | D12 | Không thư viện mới, không ADR |
-| D13 | Gửi trong flow: `{content, flow_id, answer_run_id?}`, không cần tag (`@tag` vẫn được). `answer_run_id` = `run_id` của run **của mình** đang `waiting` trong flow (từ `active_runs`/tin agent có `ask` và `caller.id===me`); chip bấm = gửi `choice` kèm id đó. Run chờ của người khác không bao giờ được gắn (UI không có chip; lệch → 403 `NOT_RUN_CALLER`). Run của mình đang chạy trong flow → server `FLOW_BUSY` (D5), composer vẫn cho gõ, nút Dừng hiện |
+| D13 | Gửi trong thread: `{content, flow_id}` cho **mọi** thành viên. Không tag đầu tin = tin người↔người (201, không `X-Run-Id`/`X-Flow-Id`, không chạy agent, không kiểm quyền agent). Tag `@agent` (menu `@` như composer phòng) = run mới bằng quyền + quota người tag; thiếu quyền → 404 `AGENT_NOT_FOUND`: **giữ nội dung composer**, gợi ý từ `details.suggestions`. Trả lời ask/xác nhận lượt **của mình** đang `waiting`: PHẢI gửi `{flow_id, answer_run_id}` (từ `active_runs`/tin agent có `ask` và `caller.id===me`; chip bấm = `choice` kèm id; thiếu `answer_run_id` server coi là tin thường). Người khác không có chip (lệch → 403 `NOT_RUN_CALLER`); run không chờ/thread lạ → 404 `NOT_FOUND` → toast + invalidate. Hai người tag song song → 2 run, 2 khối "đang xử lý" (D7). Cùng người đang chạy → `FLOW_BUSY`. Gợi ý nhỏ dưới composer thread: `roomAgent.threadContextHint` (agent đọc cả thread ≤ `ROOM_THREAD_CONTEXT_MAX` = 50 tin + 20 tin timeline) |
 
 ## 1. Cấu trúc file (file ≤ 250 dòng, component ≤ 200)
 ```
@@ -29,7 +29,7 @@ features/rooms/
 │  ├─ use-send-room-text.ts     # (sửa) trả SubmitResult; có run → runDriver.attach phạm vi phòng
 │  ├─ use-room-runs.ts          # run đang chạy/chờ của phòng (từ detail.active_runs + sự kiện)
 │  ├─ use-agent-block.ts        # RoomMessage agent + run store → props AgentBlock
-│  ├─ use-room-flow.ts          # ?flow= → flow + tin flow (infinite) + gửi trong flow (flow_id, answer_run_id) + can_reply
+│  ├─ use-room-flow.ts          # ?flow= → thread + tin (infinite) + gửi (flow_id, answer_run_id?)
 │  └─ use-agent-menu-refresh.ts # invalidate menu @ khi đổi roomId
 ├─ lib/room-agent.ts            # thuần: vai theo lượt (caller/khác), canReply, answerRunId, nhãn chờ, lọc tin main/flow, đếm chưa đọc/pill, tag đầu tin
 ├─ components/agent/
@@ -39,7 +39,7 @@ features/rooms/
 │  └─ WaitingNote.tsx           # "Đang chờ <B> xác nhận/trả lời" (người không gửi lượt đó)
 ├─ components/flow/
 │  ├─ RoomFlowPane.tsx          # FlowFrame + RoomFlowContent (lazy)
-│  └─ RoomFlowContent.tsx       # FlowHeader + tin flow (tên người gửi từng lượt) + composer (can_reply) | composer tắt + giải thích
+│  └─ RoomFlowContent.tsx       # FlowHeader + tin thread (tên người gửi) + composer (mọi thành viên, menu @)
 ├─ components/timeline/MessageItem.tsx   # (sửa) nhánh agent → AgentBlock; tô `@key` đầu tin
 └─ components/RoomComposer.tsx  # (sửa) menus="agents", placeholder, gợi ý, attachments (F5)
 features/composer/components/{Composer,composer-types}.tsx   # menus: boolean | "agents"; placeholder; menuTitle
@@ -54,7 +54,7 @@ features/answer/components/AskCard.tsx                        # + prop `title?` 
 | Hành vi | Chi tiết |
 |---|---|
 | `/rooms/$id?flow=<flow_id>` | Mở `RoomFlowPane` bên phải (≥ 640) / sheet đáy (< 640). Flow lạ hoặc không thuộc phòng (404 `NOT_FOUND` từ `listFlowMessages`) → bỏ `flow` (replace), không báo lỗi — như C1 `useOpenFlow` |
-| "Trả lời tiếp"/"Xem flow" | `navigate({ search: { flow } })` ("Trả lời tiếp" tắt khi `can_reply=false`, D9); đóng ✕/Esc/kéo → xoá `flow`, focus lại nút trên khối (`[data-flow-reply]`) |
+| "Trả lời tiếp" | `navigate({ search: { flow } })` (luôn bật, D9); đóng ✕/Esc/kéo → xoá `flow`, focus lại nút trên khối (`[data-flow-reply]`) |
 | Mất phòng khi khung mở | X2a `useRoomLost` giữ nguyên (về `/c/new` + toast); khung đóng theo route |
 | Chọn agent ở menu | Chèn `@key ` đầu tin (R15), con trỏ cuối; `@@` không mở menu |
 
@@ -79,18 +79,18 @@ Chưa đọc/pill (R19): `NewMessagesPill` và `lastIsMine` (đánh dấu đã �
 | Menu `@` | Main | tiêu đề "Agent bạn dùng được"; mục = tên (vi/en theo ngôn ngữ) + `@key` mono + mô tả 1 dòng; điện thoại: cùng menu, mục cao ≥ 44px |
 | Tin gọi | Main | tin phẳng X2a; `@key` đầu tin tô `text-primary font-medium` (chỉ hiển thị, R16 X2a giữ chữ) |
 | `PendingAgentBlock` | DM | người gọi: stream chữ + con trỏ + "Dừng"; người khác: "<agent> đang xử lý…" (`role="status"`) + "Chỉ <A> dừng được"; cold-start: `ColdResumeNote` C1 (người gọi) |
-| `AgentBlock` xong | Main | thân Markdown, bước, Copy, "Chạy bằng quyền của <B>", `FlowFooter` ("+n tin trong flow · thời gian", "Trả lời tiếp" theo `can_reply`; false → tắt + `roomAgent.noReplyAccess` + "Xem flow") |
+| `AgentBlock` xong | Main | thân Markdown, bước, Copy, "Chạy bằng quyền của <B>", `FlowFooter` ("+n tin trong flow · thời gian", `button "Trả lời tiếp"` luôn bật) |
 | Chờ `need_input` | (C1 AskCard) | người gửi lượt: AskCard "<agent> cần thêm thông tin" + chip (bấm = gửi trong flow kèm `answer_run_id`); người khác (kể cả A khi lượt là của B): câu hỏi hiện (U1) nhưng **không** chip + "Đang chờ <B> trả lời agent." |
 | Chờ `side_effect` | Main | người gửi lượt: mô tả + chip "Đồng ý"/"Huỷ"; người khác: **chỉ** "Đang chờ <B> xác nhận — chỉ người hỏi mới bấm được." + tên agent, không mô tả (Q5; khác canvas — spec thắng). Chống rò: BE không gửi `question/choices` cho người khác |
 | Lỗi run | — | `ErrorCard` C1 với câu chung `roomAgent.failed` cho cả phòng (không lộ quota, R16); "Chạy lại" chỉ người gửi lượt đó; đã dừng: `CancelledNote` (cùng quy tắc) |
 | Huỷ do mất quyền (Q2/BE D15) | — | tin agent huỷ: "Đã huỷ vì bạn không còn quyền dùng agent này." chỉ **người gửi lượt đó**; người khác "Đã huỷ" |
-| Khung flow | C1 Flow panel | `can_reply=true` (mọi thành viên có quyền, kể cả B ≠ người gọi gốc): như C1 ("Trả lời trong flow…", "Gửi trong flow"); mỗi lượt ghi tên người gửi + "chạy bằng quyền của <B>"; "Dừng" chỉ trên run của mình. `can_reply=false`: composer tắt (không có textbox) + `roomAgent.noReplyAccess`, vẫn đọc được. Đang tải: skeleton C1; lỗi tải: "Không tải được flow" + "Thử lại" |
+| Khung flow | C1 Flow panel | Mọi thành viên mở được và có composer (không còn chỉ-đọc/tắt): như C1 ("Trả lời trong flow…", "Gửi trong flow") + menu `@`; tin người↔người và khối agent xen kẽ, mỗi lượt ghi tên người gửi + "chạy bằng quyền của <B>"; "Dừng" chỉ trên run của mình. Đang tải: skeleton C1; lỗi tải: "Không tải được flow" + "Thử lại"; 404 `NOT_FOUND`: toast `rooms.toast.sendFailed` + invalidate |
 | Mất quyền phòng | X2a | như X2a (về `/c/new`); run của người gọi bị huỷ phía server (Q8), FE chỉ `dismiss` khi nhận `run_finished` |
 | `NOT_RUN_CALLER` (403) | — | chỉ khi **trả lời/xác nhận lượt của người khác** (đua hiếm, UI đã ẩn chip): toast `roomAgent.toast.notCaller` + `invalidate` detail. **Không** liên quan quyền gửi tin flow (thiếu quyền agent = `AGENT_NOT_FOUND` 404, D5) |
 | `TOO_MANY_RUNS` / quota | — | chỉ người gửi lượt đó, trong composer (D5); quota/usage tính người gửi từng lượt; không phát cho phòng (AC08) |
 
 ## 5. Composer phòng
-`<Composer variant="room" menus="agents" attachments={F5} inputLabel={nhãn X2a} placeholder={roomAgent.placeholder.*} menuTitle={menu.agentsYours} />`. Khoá Gửi khi run của chính mình trong phòng đang chạy? **Không** (phòng là chat người↔người; giới hạn do `max_concurrent_runs` server); chỉ khoá khi `submitting`. Nháp theo phòng như X2a. Composer khung flow: `variant="flow"`, `menus="agents"`, chỉ render khi `can_reply`; `running` = run **của mình** trong flow đang chạy → nút Dừng; gửi theo D13.
+`<Composer variant="room" menus="agents" attachments={F5} inputLabel={nhãn X2a} placeholder={roomAgent.placeholder.*} menuTitle={menu.agentsYours} />`. Khoá Gửi khi run của chính mình trong phòng đang chạy? **Không** (phòng là chat người↔người; giới hạn do `max_concurrent_runs` server); chỉ khoá khi `submitting`. Nháp theo phòng như X2a. Composer khung flow: `variant="flow"`, `menus="agents"`, luôn render; `running` = run **của mình** trong flow đang chạy → nút Dừng; gửi theo D13.
 
 ## 6. Validate phía client
 | Trường | Luật | Câu lỗi |
@@ -110,7 +110,7 @@ Chưa đọc/pill (R19): `NewMessagesPill` và `lastIsMine` (đánh dấu đã �
 | Q4 | Lỗi → chữ ở lại ô, không chèn tin (D5) |
 | Q5 | `WaitingNote` không có mô tả/tham số; người gọi thấy đủ |
 | Q6 | Không ảnh hưởng FE |
-| Q7/Q11 | **Q7 mới**: mọi thành viên có quyền agent trả lời tiếp (`can_reply`, D9/D13); Q11: ai cũng xem khung flow, composer tắt nếu `can_reply=false` |
+| Q7/Q11 | **Q7 lần 2**: thread chung, mọi thành viên nhắn; tag = run người tag (D9/D13); Q11: ai cũng mở khung thread và có composer |
 | Q8 | Khối chờ biến mất khi `run_finished: cancelled`; không toast cho người khác |
 | Q9 | BE đề xuất tách X2b-2; F5 giữ riêng, có thể cắt (D11) |
 | Q10 | `menus="agents"`; placeholder không nhắc `/` (khác canvas Main "/ để chạy lệnh" — spec thắng) |
@@ -122,7 +122,7 @@ Chưa đọc/pill (R19): `NewMessagesPill` và `lastIsMine` (đánh dấu đã �
 | F1 | Menu `@` phòng: `menus="agents"`, `placeholder`, `menuTitle`, refresh menu khi mở phòng; gửi trả `SubmitResult` (D5), đọc header run; tô `@key` đầu tin; i18n `roomAgent.placeholder/hint` | `composer/**`, `rooms/components/RoomComposer.tsx`, `rooms/hooks/use-send-room-text.ts`, `rooms/api.ts`, `timeline/MessageItem.tsx` | §0 D2–D5, §5, i18n §1, e2e §1 Composer | `bun test apps/chat-web/src/features/{composer,rooms}` · e2e X2a cũ xanh · AC13 | B2 (contract + stub) |
 | F2 | Khối agent: `event-router` 3 sự kiện run, `use-room-runs`, `PendingAgentBlock` (stream người gửi lượt, Dừng), `AgentBlock` + header theo `caller`, lỗi/đã dừng, pill/đã đọc (§3) | `rooms/components/agent/**`, `rooms/hooks/{use-room-runs,use-agent-block}.ts`, `rooms/lib/room-agent.ts`, `realtime/event-router.ts` | §0 D6–D9, §3, §4, i18n §2 | `bun test …/rooms …/realtime` · AC01, AC16 | F1, B2 (e2e: B4, B5) |
 | F3 | Chờ: AskCard (`title`), chip gửi trong flow kèm `answer_run_id` (người gửi lượt), `WaitingNote` (người khác), `NOT_RUN_CALLER`, huỷ Q2 | `answer/components/AskCard.tsx`, `agent/WaitingNote.tsx`, `use-agent-block.ts` | §0 D13, §4 (chờ), i18n §2 | `bun test …/rooms …/answer` · AC05, AC06, AC17 (vế UI) | F2, B6 |
-| F4 | Khung flow phòng: tách `FlowFrame`, `RoomFlowPane` lazy, `use-room-flow` (`can_reply`, gửi D13), mỗi lượt ghi người gửi, composer tắt khi `can_reply=false`, "Trả lời tiếp" tắt + giải thích ở `FlowFooter`, sheet điện thoại | `flow-panel/components/**`, `rooms/components/flow/**`, `rooms/hooks/use-room-flow.ts` | §0 D9, D10, D13, §2, i18n §3 | `bun test …/flow-panel …/rooms` · AC15, AC17 · `bun run e2e:chat` (C1, AC-H07 không đổi) | F2, B6 |
+| F4 | Khung thread phòng: tách `FlowFrame`, `RoomFlowPane` lazy, `use-room-flow` (gửi D13: không tag/tag/`answer_run_id`), composer + menu `@` cho mọi thành viên, mỗi lượt ghi người gửi, `AGENT_NOT_FOUND` giữ nội dung, hint ngữ cảnh, sheet điện thoại | `flow-panel/components/**`, `rooms/components/flow/**`, `rooms/hooks/use-room-flow.ts` | §0 D9, D10, D13, §2, i18n §3 | `bun test …/flow-panel …/rooms` · AC15, AC17 · `bun run e2e:chat` (C1, AC-H07 không đổi) | F2, B6 |
 | F5 | (**có thể cắt** → X2b-2, chờ người dùng duyệt) Đính kèm trong phòng: bật `attachments`, `attachment_ids`, `AttachmentList`, lỗi `ATTACHMENT_NOT_FOUND` | `rooms/components/RoomComposer.tsx`, `timeline/MessageItem.tsx`, `use-send-room-text.ts` | §0 D11 | `bun test …/rooms …/attachments` · AC11 (vế UI) | F1, BE đính kèm của X2b-2 (không thuộc B1–B7) |
 | F6 | Đóng FE: README `rooms`/`flow-panel`/chat-web, TECH-DEBT, a11y bàn phím menu/khối/nút tắt, `check:bundle` | README, `docs/TECH-DEBT.md` | §7 | `bun run check:fn --all` · `bun run --filter @ai/chat-web build && bun run --filter @ai/chat-web check:bundle` · `bunx playwright test X2b` · `bun run e2e:chat` | F1–F4, B7 (+F5 nếu giữ) |
 
@@ -130,7 +130,7 @@ Chưa đọc/pill (R19): `NewMessagesPill` và `lastIsMine` (đánh dấu đã �
 | FE giả định cũ | BE chốt → FE dùng |
 |---|---|
 | Body `{message, run?}` | Body `RoomMessage`; `X-Run-Id`/`X-Flow-Id`; `AGENT_NOT_FOUND.details` chỉ `{suggestions}` |
-| `status: ok\|failed\|cancelled` | `run_status: finished\|failed\|cancelled`; `agent`, `caller`, `ask{kind,question?,choices?}`, `steps{count,ms}`, `placement`, `flow{message_count,last_active_at,can_reply}` |
+| `status: ok\|failed\|cancelled` | `run_status: finished\|failed\|cancelled`; `agent`, `caller`, `ask{kind,question?,choices?}`, `steps{count,ms}`, `placement`, `flow{message_count,last_active_at}` |
 | `NOT_RUN_CALLER` chặn gửi flow | Chỉ xác nhận/trả lời lượt người khác (`CHAT_ROOM_AGENT_ERRORS`); thiếu quyền agent khi gửi flow = `AGENT_NOT_FOUND` 404 |
 | `run_*` trong `ME_STREAM_EVENTS` | `ME_STREAM_RUN_EVENTS` + `parseMeStreamRunEvent`; `run_finished` có `flow_id`, `message_id` |
 | `active_runs` | Có (`RoomActiveRun`, `agent` null = Orchestrator, `caller`, `wait_kind`) |
@@ -141,7 +141,7 @@ Cần backend-lead/qc: fixture dev có **người thứ ba C có `hoadon`** (B k
 | # | Câu hỏi | Mặc định FE |
 |---|---|---|
 | U1 | Câu hỏi `need_input` có hiện cho người khác? | **Có** (là nội dung trả lời của agent), chỉ ẩn chip; `side_effect` thì ẩn hết (Q5) — [x] Người dùng chấp nhận mặc định 2026-10-08 |
-| U2 | Nút trên khối cho người không phải người gọi gốc? (**sửa theo Q7**) | "Trả lời tiếp" bật khi `flow.can_reply`; không quyền → nút tắt + giải thích + "Xem flow" (D9) |
+| U2 | Nút trên khối cho người không phải người gọi gốc? (**sửa theo Q7 lần 2**) | "Trả lời tiếp" luôn bật; mở thread chung, nhắn thường tự do, tag mới chạy agent (D9) |
 | U3 | Khối "đang xử lý" đặt đâu? | Cuối timeline (D7) — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 | U4 | Canvas DM tag giữa câu ("Ok em. @assistant …") | Không gọi agent (R02); tô màu chỉ `@key` đầu tin — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 
@@ -151,5 +151,5 @@ Cần backend-lead/qc: fixture dev có **người thứ ba C có `hoadon`** (B k
 | Tách `FlowFrame` làm hỏng khung flow C1 | F4 chạy `bun run e2e:chat` + AC-H07; giữ nguyên props/aria C1 |
 | `Composer.tsx` vượt 200 dòng | Logic `menus` vào hook/lib; tách `ComposerMenus` nếu cần |
 | Contract BE khác giả định §10 | F1 làm sau B1; chỉnh tên trong `rooms/api.ts`/`room-agent.ts`, không lan component |
-| `can_reply` cũ khi quyền đổi (B vừa mất `hoadon`) | Gửi trả `AGENT_NOT_FOUND` → `flowNoAccess` + invalidate list/detail; không tin cờ lâu hơn cache |
+| B mất `hoadon` rồi tag trong thread | 404 `AGENT_NOT_FOUND`: giữ nội dung, gợi ý `suggestions`, invalidate menu `@`; tin không tag vẫn gửi được |
 | Lộ `side_effect` qua UI | Không chỉ ẩn ở UI: §10 #3; e2e B kiểm DOM không có mô tả |
