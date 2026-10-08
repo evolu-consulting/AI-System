@@ -97,11 +97,11 @@ afterAll(async () => {
 });
 
 describe("ADM-NFR-06 · migration M3", () => {
-  it("ADM-NFR-06 · spec M3 §4 · development: {main:10, dev:3}; lần 2 {0,0}; 10 hàng __drizzle_migrations", async () => {
-    expect(firstRun).toEqual({ main: 10, dev: 3 });
+  it("ADM-NFR-06 · spec M3 §4 · development: {main: 11, dev:3}; lần 2 {0,0}; 11 hàng __drizzle_migrations", async () => {
+    expect(firstRun).toEqual({ main: 11, dev: 3 });
     expect(secondRun).toEqual({ main: 0, dev: 0 });
     const [n] = await sql`select count(*)::int as n from drizzle.__drizzle_migrations`;
-    expect(n?.n).toBe(10);
+    expect(n?.n).toBe(11);
   });
 
   it("ADM-NFR-06 · spec M3 §4 · đúng 19 bảng admin.* (M4) + 3 bảng hub.* (M4 Q2a K3)", async () => {
@@ -436,9 +436,9 @@ describe("ADM-NFR-06 · migration production M3", () => {
     await runMigrations({ url: URL, appEnv: "development" });
   });
 
-  it("ADM-NFR-06 · spec M3 §4 · production: {main:10, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*", async () => {
+  it("ADM-NFR-06 · spec M3 §4 · production: {main: 11, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*", async () => {
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 10, dev: 0 });
+    expect(r).toEqual({ main: 11, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual(ADMIN19);
   });
 });

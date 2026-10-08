@@ -1,4 +1,4 @@
-// ADM-FR-03 · /member: tài khoản member dùng Chat App, không dùng trang quản trị (D8).
+// ADM-FR-03 · /member: tài khoản member dùng Evolu Copilot, không dùng trang quản trị (D8).
 import { Link, useRouter } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";

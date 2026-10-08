@@ -13,16 +13,49 @@
     "submitting": "Đang đăng nhập…",
     "invalid": "Sai mã công ty, tên đăng nhập hoặc mật khẩu",
     "locked": "Tài khoản đang bị khoá. Liên hệ quản trị viên công ty",
-    "useAdmin": "Tài khoản cần hoàn tất bước bảo mật trong Admin Console trước khi dùng Chat",
+    "useAdmin": "Tài khoản cần hoàn tất bước bảo mật trong Evolu Control trước khi dùng Chat",
     "lockedOk": "Đã hiểu",
     "required": "Không được để trống",
-    "tenantRemembered": "Được nhớ cho lần đăng nhập sau"
+    "tenantRemembered": "Được nhớ cho lần đăng nhập sau",
+    "footer": "© 2026 EvoluConsulting",
+    "lang": {
+      "group": "Ngôn ngữ",
+      "en": "English",
+      "vi": "Tiếng Việt"
+    },
+    "showcase": {
+      "title": "Một đồng nghiệp AI cho cả công ty, ngay trong khung chat.",
+      "description": "Gọi agent bằng @, chạy lệnh bằng /, trò chuyện cùng đồng nghiệp.",
+      "chats": "HỘI THOẠI",
+      "agents": "AGENT",
+      "room": "# tai-chinh",
+      "direct": "Lan · Hoa",
+      "room2": "# ra-mat-q4",
+      "agent1": "@Nova",
+      "agent2": "@Ledger",
+      "agent3": "@Pilot",
+      "msg1": {
+        "author": "Lan",
+        "text": "Đã ai gửi hoá đơn tháng 9 chưa nhỉ?"
+      },
+      "msg2": {
+        "author": "Hoa",
+        "mention": "@Ledger",
+        "text": "tóm tắt hoá đơn tháng 9"
+      },
+      "reply": {
+        "author": "Ledger",
+        "badge": "AI agent",
+        "text": "Đã nhóm hoá đơn tháng 9 theo nhà cung cấp. Bản tóm tắt đính kèm bên dưới."
+      },
+      "composer": "Nhắn tin, hoặc gõ @ để gọi một agent…"
+    }
   },
   "session": {
     "expired": "Phiên đã hết hạn"
   },
   "shell": {
-    "brand": "AI Chat · {{tenant}}",
+    "brand": "Evolu Copilot · {{tenant}}",
     "newChat": "Hỏi AI",
     "search": "Tìm hội thoại, người, nhóm",
     "settings": "Cài đặt",
@@ -421,5 +454,8 @@
     "groupsEmpty": "Chưa có nhóm nào. Bấm + để tạo nhóm.",
     "peopleEmpty": "Chưa có ai khác trong công ty",
     "rowMenu": "Tuỳ chọn cho {{name}}"
+  },
+  "app": {
+    "name": "Evolu Copilot"
   }
 }

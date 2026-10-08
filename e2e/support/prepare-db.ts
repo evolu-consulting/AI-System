@@ -47,6 +47,8 @@ async function main(): Promise<void> {
       }) => Promise<unknown>;
     };
     await runSeed({ url, adminUsername, adminPassword });
+    // [CR-052] seed tạo admin locale 'en' (mặc định mới); e2e kiểm chữ tiếng Việt sau đăng nhập → đặt 'vi' tường minh.
+    await sql`update admin.users set locale = 'vi'`;
     const hashes = await makeHashes();
     await insertFixture(sql, hashes);
     await insertBulk(sql, hashes.pw);

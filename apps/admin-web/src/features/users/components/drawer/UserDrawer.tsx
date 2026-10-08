@@ -51,7 +51,7 @@ const toDefaults = (u: User | undefined): UserCreateValues => ({
   display_name: u?.display_name ?? "",
   email: u?.email ?? "",
   role: u?.role ?? "member",
-  locale: u?.locale ?? "vi",
+  locale: u?.locale ?? "en",
 });
 
 function drawerTitle(t: Translate, p: Props): string {

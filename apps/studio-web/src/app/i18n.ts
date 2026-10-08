@@ -1,4 +1,4 @@
-// HUB-FR-72 · i18next cho studio-web: namespace `studio` nạp động từng ngôn ngữ; mặc định vi (D10), nhớ `studio.locale`.
+// HUB-FR-72 · i18next cho studio-web: namespace `studio` nạp động từng ngôn ngữ; CR-052: `studio.locale` đã lưu, không có thì en (không dò trình duyệt).
 import { DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
 import { loadStudioLocale } from "@ai/i18n/studio-locales";
 import i18next from "i18next";
@@ -12,14 +12,10 @@ export const NAMESPACE = "studio";
 const isSupported = (v: string | null | undefined): v is Locale =>
   SUPPORTED_LOCALES.some((l) => l === v);
 
-/** Thứ tự: `studio.locale` đã lưu → ngôn ngữ trình duyệt (vi hoặc en) → `vi`. */
-export function resolveInitialLocale(
-  saved: string | null,
-  browserLanguage: string | undefined,
-): Locale {
+/** Thứ tự: `studio.locale` đã lưu → `en` (CR-052: không dò ngôn ngữ trình duyệt). */
+export function resolveInitialLocale(saved: string | null): Locale {
   if (isSupported(saved)) return saved;
-  const prefix = browserLanguage?.slice(0, 2).toLowerCase();
-  return isSupported(prefix) ? prefix : DEFAULT_LOCALE;
+  return DEFAULT_LOCALE;
 }
 
 // `<html lang>` đi theo ngôn ngữ đang dùng (a11y §7).
@@ -50,10 +46,7 @@ export const initI18n = (): Promise<unknown> =>
       partialBundledLanguages: true,
       ns: [NAMESPACE],
       defaultNS: NAMESPACE,
-      lng: resolveInitialLocale(
-        readLocal(LOCALE_STORAGE_KEY),
-        typeof navigator === "undefined" ? undefined : navigator.language,
-      ),
+      lng: resolveInitialLocale(readLocal(LOCALE_STORAGE_KEY)),
       fallbackLng: DEFAULT_LOCALE,
       supportedLngs: [...SUPPORTED_LOCALES],
       // Chuỗi dùng {tham_số}, không phải {{...}} mặc định của i18next.

@@ -1,4 +1,4 @@
-// HUB-FR-72 · sidebar 248px: tên app "✦ Agent Studio" + menu; mục chưa làm là `aria-disabled` + SoonBadge (không route chết).
+// HUB-FR-72 · sidebar 248px: tên app "✦ Agent Forge" + menu; mục chưa làm là `aria-disabled` + SoonBadge (không route chết).
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeftRight,

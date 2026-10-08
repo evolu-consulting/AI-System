@@ -67,13 +67,6 @@
       "submit": "Sign in",
       "submitting": "Signing in…",
       "forgot": "Forgot your password? Contact your company administrator to reset it.",
-      "hero": {
-        "title": "One place to manage your company's users, access and AI features.",
-        "b1": "Grant commands like /dich, /tom by department",
-        "b2": "Track monthly usage and quota",
-        "b3": "See at once why someone can't see a command",
-        "footer": "EvoluConsulting · Intelligent automation"
-      },
       "totp": {
         "title": "Two-step verification",
         "body": "Enter the 6-digit code from your authenticator app.",
@@ -86,6 +79,34 @@
         "wrong": "The code is incorrect or expired",
         "expired": "Your verification session expired. Please sign in again.",
         "backupFormat": "Backup codes look like xxxx-xxxx"
+      },
+      "appName": "Evolu Control",
+      "footer": "© 2026 EvoluConsulting",
+      "memberLink": "Team member?",
+      "openChat": "Open Evolu Copilot",
+      "showcase": {
+        "title": "Companies, people and permissions. One place.",
+        "description": "Group-based access, quota per company, every change audited.",
+        "nav": {
+          "overview": "Overview",
+          "companies": "Companies",
+          "users": "Users",
+          "groups": "Groups",
+          "commands": "Commands",
+          "usage": "Quota & usage",
+          "audit": "Audit log"
+        },
+        "kpi": {
+          "companies": "Companies",
+          "users": "Active users",
+          "runs": "Agent runs this month"
+        },
+        "quota": "Monthly quota",
+        "quotaTenant": "acme",
+        "recent": "Recent changes",
+        "change1": "Finance team got access to Ledger",
+        "change2": "New user added to acme",
+        "change3": "/month-close enabled for acme"
       }
     },
     "lang": {
@@ -157,9 +178,9 @@
     }
   },
   "member": {
-    "title": "Your account uses Chat App",
-    "body": "The admin console is for administrators. Open Chat App to get started.",
-    "open": "Open Chat App"
+    "title": "Your account uses Evolu Copilot",
+    "body": "Evolu Control is for administrators. Open Evolu Copilot to get started.",
+    "open": "Open Evolu Copilot"
   },
   "nav": {
     "main": "Main navigation",
@@ -189,7 +210,7 @@
   },
   "topbar": {
     "platform": "Platform",
-    "studio": "Agent Studio"
+    "studio": "Agent Forge"
   },
   "account": {
     "menu": "Your account",
@@ -304,9 +325,9 @@
       }
     },
     "agentStudio": {
-      "title": "Agent Studio",
-      "body": "Agents, coordinators, models and operations live in Agent Studio. Agents pick workflows from the Admin catalog.",
-      "open": "Open Agent Studio"
+      "title": "Agent Forge",
+      "body": "Agents, coordinators, models and operations live in Agent Forge. Agents pick workflows from the Admin catalog.",
+      "open": "Open Agent Forge"
     },
     "topErrors": {
       "title": "Most failing commands (24h)"
@@ -439,7 +460,7 @@
       "unavailableBody": "This section will be available in a later release."
     },
     "agents": {
-      "unavailable": "Agents are granted in Agent Studio. This will be available once Agent Hub is ready."
+      "unavailable": "Agents are granted in Agent Forge. This will be available once Agent Hub is ready."
     },
     "detail": {
       "createdAt": "Created {date}",
@@ -635,7 +656,7 @@
       "displayNameRequired": "Enter a display name",
       "displayNameMax": "At most 64 characters"
     },
-    "empty": "No users besides you. Create users to invite colleagues to Chat App.",
+    "empty": "No users besides you. Create users to invite colleagues to Evolu Copilot.",
     "groups": {
       "more": "Also: {names}"
     },
@@ -737,7 +758,7 @@
       },
       "s3": {
         "title": "Attach to a command or agent",
-        "body": "Commands in Admin · agents in Agent Studio"
+        "body": "Commands in Evolu Control · agents in Agent Forge"
       },
       "dismiss": {
         "aria": "Hide the guide"
@@ -1380,7 +1401,7 @@
       "empty": "This group has no features beyond core."
     },
     "agents": {
-      "body": "Granting agents to a group is done in Agent Studio once Agent Hub is ready.",
+      "body": "Granting agents to a group is done in Agent Forge once Agent Hub is ready.",
       "caption": "Group agents",
       "col": {
         "agent": "Agent",
@@ -1391,7 +1412,7 @@
       "grantLabel": "Grant {agent} to {group}",
       "granted": "Granted {agent} to {group}",
       "revoked": "Revoked {agent} from {group}",
-      "empty": "No agents in Agent Studio yet",
+      "empty": "No agents in Agent Forge yet",
       "loadError": "Couldn't load agents from the Hub",
       "truncated": "Showing the first 200 agents only."
     },
@@ -1713,7 +1734,7 @@
         "groups": "Groups",
         "grants": "Grants"
       },
-      "note": "Secrets are exported by name only, never values. Agent config is exported in Agent Studio.",
+      "note": "Secrets are exported by name only, never values. Agent config is exported in Agent Forge.",
       "download": "Download {file}",
       "none": "Select at least one type to export"
     },

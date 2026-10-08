@@ -3,6 +3,7 @@
 // API giả lập bằng `page.route` (spec §7 "test FE: mock http") — không cần Hub/admin-api/DB.
 // Chạy từ gốc repo: `bunx playwright test -c e2e/studio/playwright.config.ts` (đề xuất script `e2e:studio`).
 import { defineConfig, devices } from "@playwright/test";
+import { viStorageState } from "../support/locale-vi";
 
 const CI = !!process.env.CI;
 // Cổng dev Studio 3200 (spec §7); đổi khi cổng đang bị dev server khác chiếm.
@@ -21,6 +22,7 @@ export default defineConfig({
   use: {
     baseURL: WEB,
     locale: "vi-VN",
+    storageState: viStorageState([WEB]),
     timezoneId: "Asia/Ho_Chi_Minh",
     viewport: { width: 1280, height: 800 },
     trace: "retain-on-failure",

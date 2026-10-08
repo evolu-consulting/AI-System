@@ -75,7 +75,7 @@ async function seedAdmin(
   const ins = await tx`insert into admin.users
     (id, tenant_id, username, password_hash, display_name, email, role, locale, must_change_password)
     values (${Bun.randomUUIDv7()}, ${tenantId}, ${username}, ${hash}, 'Platform Admin', ${a.adminEmail ?? null},
-            'platform_admin', 'vi', false)
+            'platform_admin', 'en', false)
     on conflict (tenant_id, username) do nothing returning id`;
   return ins.length ? "created" : "exists";
 }

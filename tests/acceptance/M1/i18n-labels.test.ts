@@ -39,27 +39,19 @@ const TABLE: Array<[string, string, string]> = [
     "Quên mật khẩu? Liên hệ quản trị viên công ty bạn để được đặt lại.",
     "Forgot your password? Contact your company administrator to reset it.",
   ],
+  // [CR-052] hero.* bị thay bằng showcase.* (cột phải login phương án C)
   [
-    "auth.login.hero.title",
-    "Một nơi quản lý người dùng, quyền và chức năng AI của công ty bạn.",
-    "One place to manage your company's users, access and AI features.",
+    "auth.login.showcase.title",
+    "Công ty, con người và phân quyền. Gói gọn một nơi.",
+    "Companies, people and permissions. One place.",
   ],
   [
-    "auth.login.hero.b1",
-    "Cấp lệnh /dich, /tom theo từng phòng ban",
-    "Grant commands like /dich, /tom by department",
+    "auth.login.showcase.description",
+    "Cấp quyền theo nhóm, hạn mức theo công ty, mọi thay đổi đều được ghi nhật ký.",
+    "Group-based access, quota per company, every change audited.",
   ],
-  ["auth.login.hero.b2", "Theo dõi mức dùng và quota trong tháng", "Track monthly usage and quota"],
-  [
-    "auth.login.hero.b3",
-    "Biết ngay vì sao một người không thấy một lệnh",
-    "See at once why someone can't see a command",
-  ],
-  [
-    "auth.login.hero.footer",
-    "EvoluConsulting · Intelligent automation",
-    "EvoluConsulting · Intelligent automation",
-  ],
+  ["auth.login.appName", "Evolu Control", "Evolu Control"],
+  ["auth.login.footer", "© 2026 EvoluConsulting", "© 2026 EvoluConsulting"],
   ["auth.lang.group", "Ngôn ngữ", "Language"],
   ["auth.lang.vi", "Tiếng Việt", "Tiếng Việt"],
   ["auth.lang.en", "English", "English"],
@@ -94,13 +86,13 @@ const TABLE: Array<[string, string, string]> = [
     "Đăng nhập lại để tiếp tục. Dữ liệu đang nhập được giữ nguyên.",
     "Sign in again to continue. Your unsaved input is kept.",
   ],
-  ["member.title", "Tài khoản của bạn dùng Chat App", "Your account uses Chat App"],
+  ["member.title", "Tài khoản của bạn dùng Evolu Copilot", "Your account uses Evolu Copilot"],
   [
     "member.body",
-    "Trang quản trị chỉ dành cho quản trị viên. Hãy mở Chat App để làm việc.",
-    "The admin console is for administrators. Open Chat App to get started.",
+    "Trang quản trị chỉ dành cho quản trị viên. Hãy mở Evolu Copilot để làm việc.",
+    "Evolu Control is for administrators. Open Evolu Copilot to get started.",
   ],
-  ["member.open", "Mở Chat App", "Open Chat App"],
+  ["member.open", "Mở Evolu Copilot", "Open Evolu Copilot"],
   ["nav.main", "Điều hướng chính", "Main navigation"],
   ["nav.overview", "Tổng quan", "Overview"],
   ["nav.group.access", "TRUY CẬP", "ACCESS"],
@@ -227,7 +219,7 @@ const E2E_LABELS = [
   "Phiên đăng nhập đã hết hạn",
   "Bạn không có quyền xem trang này",
   "Không tìm thấy",
-  "Tài khoản của bạn dùng Chat App",
+  "Tài khoản của bạn dùng Evolu Copilot",
 ];
 
 describe("ADM-FR-01 · M1-R22 · i18n VI/EN", () => {

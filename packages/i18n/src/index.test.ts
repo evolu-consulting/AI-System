@@ -7,8 +7,8 @@ const flat = (obj: unknown, prefix = ""): string[] =>
     : [prefix];
 
 describe("ADM-NFR-06 · @ai/i18n", () => {
-  test("mặc định vi, hỗ trợ vi và en", () => {
-    expect(DEFAULT_LOCALE).toBe("vi");
+  test("mặc định en, hỗ trợ vi và en", () => {
+    expect(DEFAULT_LOCALE).toBe("en");
     expect([...SUPPORTED_LOCALES]).toEqual(["vi", "en"]);
   });
 

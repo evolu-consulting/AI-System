@@ -71,6 +71,13 @@
       "when": 1791313155421,
       "tag": "0009_x1_workflow_side_effect",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791472783270,
+      "tag": "0010_cr052_user_locale_en",
+      "breakpoints": true
     }
   ]
 }

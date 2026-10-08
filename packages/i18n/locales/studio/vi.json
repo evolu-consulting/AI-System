@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "✦ Agent Studio"
+    "name": "Agent Forge"
   },
   "nav": {
     "label": "Menu Studio",
@@ -31,7 +31,7 @@
   "soonH4c": "Sắp có (H4c)",
   "topbar": {
     "configBadge": "hub config v{n}",
-    "toAdmin": "⇄ Admin",
+    "toAdmin": "⇄ Evolu Control",
     "configBadgeLabel": "Phiên bản cấu hình Hub"
   },
   "notFound": {
@@ -50,8 +50,8 @@
     "language": "Ngôn ngữ"
   },
   "login": {
-    "title": "Đăng nhập Agent Studio",
-    "subtitle": "Dành cho quản trị nền tảng. Dùng tài khoản Admin của bạn.",
+    "title": "Đăng nhập Agent Forge",
+    "subtitle": "Cùng tài khoản với Evolu Control. Nếu bật 2FA, bước tiếp theo sẽ hỏi mã xác thực.",
     "tenant": "Mã công ty",
     "username": "Tên đăng nhập",
     "password": "Mật khẩu",
@@ -64,7 +64,7 @@
       "network": "Không kết nối được máy chủ. Hãy thử lại.",
       "server": "Có lỗi xảy ra, hãy thử lại sau (mã {code})."
     },
-    "mustChange": "Bạn cần đổi mật khẩu ở Admin trước khi vào Studio.",
+    "mustChange": "Bạn cần đổi mật khẩu ở Evolu Control trước khi vào Agent Forge.",
     "totp": {
       "title": "Xác thực hai bước",
       "body": "Nhập mã 6 số trong ứng dụng xác thực của bạn.",
@@ -77,15 +77,53 @@
       "wrong": "Mã không đúng hoặc đã hết hạn",
       "expired": "Phiên xác thực đã hết hạn. Hãy đăng nhập lại.",
       "backupFormat": "Mã dự phòng có dạng xxxx-xxxx"
+    },
+    "adminOnly": "Chỉ dành cho quản trị nền tảng",
+    "notAdmin": "Không phải quản trị nền tảng?",
+    "openAdmin": "Mở Evolu Control",
+    "footer": "© 2026 EvoluConsulting",
+    "lang": {
+      "group": "Ngôn ngữ",
+      "en": "English",
+      "vi": "Tiếng Việt"
+    },
+    "showcase": {
+      "title": "Xây dựng agent. Định tuyến theo từng công ty.",
+      "description": "Trình dựng có hướng dẫn, mỗi công ty một Orchestrator, mọi thay đổi đều có phiên bản.",
+      "nav": {
+        "agents": "Agent",
+        "orchestrator": "Orchestrator",
+        "catalog": "Danh mục"
+      },
+      "heading": "Agent",
+      "newAgent": "Agent mới",
+      "agent1": {
+        "name": "Nova",
+        "tag": "Trợ giúp hằng ngày"
+      },
+      "agent2": {
+        "name": "Ledger",
+        "tag": "Tài chính"
+      },
+      "agent3": {
+        "name": "Pilot",
+        "tag": "Dự án"
+      },
+      "editing": "Đang sửa Ledger",
+      "step1": "Hồ sơ",
+      "step2": "Kỹ năng",
+      "step3": "Quyền truy cập",
+      "step4": "Thử nghiệm",
+      "step5": "Xuất bản"
     }
   },
   "session": {
     "expired": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại."
   },
   "forbidden": {
-    "title": "Bạn không có quyền vào Agent Studio",
-    "body": "Agent Studio chỉ dành cho quản trị nền tảng (platform_admin).",
-    "toChat": "Về Chat"
+    "title": "Bạn không có quyền vào Agent Forge",
+    "body": "Agent Forge chỉ dành cho quản trị nền tảng (platform_admin).",
+    "toChat": "Về Evolu Copilot"
   },
   "common": {
     "cancel": "Huỷ",

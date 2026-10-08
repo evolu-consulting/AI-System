@@ -1,4 +1,4 @@
-// HUB-FR-72 · H4a-R01 · "Bạn không có quyền vào Agent Studio" (mẫu Admin `state.forbidden`): Về Chat (ẩn khi không cấu hình) + Đăng xuất.
+// HUB-FR-72 · H4a-R01 · "Bạn không có quyền vào Agent Forge" (mẫu Admin `state.forbidden`): Về Chat (ẩn khi không cấu hình) + Đăng xuất.
 import { ShieldX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "#/components/ui/button";

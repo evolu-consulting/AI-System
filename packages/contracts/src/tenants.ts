@@ -76,7 +76,7 @@ export const TenantCreateRequestSchema = z.strictObject({
     username: UsernameSchema,
     display_name: DisplayNameSchema,
     email: EmailSchema,
-    locale: LocaleSchema.default("vi"),
+    locale: LocaleSchema.default("en"),
   }),
 });
 export type TenantCreateRequest = z.infer<typeof TenantCreateRequestSchema>;

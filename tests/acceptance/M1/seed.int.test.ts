@@ -48,7 +48,7 @@ describe("ADM-NFR-06 · M1-AC01 · seed hai lần", () => {
     expect(u?.role).toBe("platform_admin");
     expect(u?.display_name).toBe("Platform Admin");
     expect(u?.email).toBeNull();
-    expect(u?.locale).toBe("vi");
+    expect(u?.locale).toBe("en");
     expect(u?.must_change_password).toBe(false);
     expect(u?.active).toBe(true);
     expect(u?.tenant_id).toBe(t?.id);

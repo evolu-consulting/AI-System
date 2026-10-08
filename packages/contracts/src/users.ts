@@ -71,7 +71,7 @@ export const UserCreateRequestSchema = z.strictObject({
   display_name: DisplayNameSchema,
   email: EmailSchema.nullable().optional(),
   role: RoleSchema,
-  locale: LocaleSchema.default("vi"),
+  locale: LocaleSchema.default("en"),
 });
 export type UserCreateRequest = z.infer<typeof UserCreateRequestSchema>;
 

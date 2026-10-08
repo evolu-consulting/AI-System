@@ -52,9 +52,9 @@ describe("ADM-FR-04 · list", () => {
 
 describe("ADM-FR-63 · UserCreateRequestSchema", () => {
   const base = { username: "nam", display_name: "Nam", role: "member" } as const;
-  test("chuẩn hoá username, mặc định locale vi, email tuỳ chọn", () => {
+  test("chuẩn hoá username, mặc định locale en, email tuỳ chọn", () => {
     const r = UserCreateRequestSchema.parse({ ...base, username: "NamNguyen" });
-    expect(r).toEqual({ ...base, username: "namnguyen", locale: "vi" });
+    expect(r).toEqual({ ...base, username: "namnguyen", locale: "en" });
     expect(UserCreateRequestSchema.safeParse({ ...base, email: null }).success).toBe(true);
     expect(UserCreateRequestSchema.parse({ ...base, email: "LAN@ACME.test" }).email).toBe(
       "lan@acme.test",

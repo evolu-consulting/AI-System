@@ -42,7 +42,7 @@ describe("ADM-FR-60 · TenantSchema / TenantDetailSchema", () => {
 });
 
 describe("ADM-FR-60 · TenantCreateRequestSchema", () => {
-  test("mặc định max_concurrent_sub null, locale vi; chuẩn hoá key/username/email", () => {
+  test("mặc định max_concurrent_sub null, locale en; chuẩn hoá key/username/email", () => {
     const r = TenantCreateRequestSchema.parse({
       ...create,
       key: " Initech ",
@@ -50,7 +50,7 @@ describe("ADM-FR-60 · TenantCreateRequestSchema", () => {
     });
     expect(r.key).toBe("initech");
     expect(r.max_concurrent_sub).toBeNull();
-    expect(r.first_admin).toEqual({ ...firstAdmin, locale: "vi" });
+    expect(r.first_admin).toEqual({ ...firstAdmin, locale: "en" });
   });
 
   test.each([

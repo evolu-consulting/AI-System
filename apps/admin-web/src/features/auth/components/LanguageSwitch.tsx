@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const OPTIONS = [
-  { code: "vi", short: "VI" },
   { code: "en", short: "EN" },
+  { code: "vi", short: "VI" },
 ] as const;
 
 export function LanguageSwitch() {
@@ -22,8 +22,10 @@ export function LanguageSwitch() {
             aria-label={code === "vi" ? t("auth.lang.vi") : t("auth.lang.en")}
             onClick={() => void i18n.changeLanguage(code)}
             className={cn(
-              "h-8 rounded-md px-3 text-label font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
-              active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-muted",
+              "h-8 rounded-md border border-input px-2.5 text-label focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+              active
+                ? "bg-accent font-semibold text-accent-foreground"
+                : "bg-card text-muted-strong-foreground hover:bg-muted",
             )}
           >
             {short}

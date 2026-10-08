@@ -82,7 +82,7 @@ test("ADM-FR-54 · E-TR-01 · M4-AC09 · tab Export: 6 checkbox có số đếm 
     ).toBeVisible();
   }
   await expect(
-    page.getByText("Secret chỉ xuất tên, không xuất giá trị. Cấu hình agent xuất ở Agent Studio."),
+    page.getByText("Secret chỉ xuất tên, không xuất giá trị. Cấu hình agent xuất ở Agent Forge."),
   ).toBeVisible();
 });
 

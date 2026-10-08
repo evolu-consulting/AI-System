@@ -66,8 +66,8 @@ afterAll(async () => {
 });
 
 describe("ADM-NFR-06 · migration development", () => {
-  it("ADM-NFR-06 · spec §4 · development: {main:10, dev:3}; lần 2 {0,0}", () => {
-    expect(firstRun).toEqual({ main: 10, dev: 3 });
+  it("ADM-NFR-06 · spec §4 · development: {main: 11, dev:3}; lần 2 {0,0}", () => {
+    expect(firstRun).toEqual({ main: 11, dev: 3 });
     expect(secondRun).toEqual({ main: 0, dev: 0 });
   });
 
@@ -196,7 +196,7 @@ describe("ADM-FR-63 · ràng buộc users", () => {
       from admin.users where id = ${U1}`;
     expect(u).toEqual({
       must_change_password: true,
-      locale: "vi",
+      locale: "en",
       active: true,
       locked_by_tenant: false,
       failed_logins: 0,
@@ -281,10 +281,10 @@ describe("ADM-NFR-01 · ràng buộc refresh_tokens và features", () => {
 });
 
 describe("ADM-NFR-06 · migration production", () => {
-  it("ADM-NFR-06 · spec §4 · production: {main:10, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*; không có bảng theo dõi dev", async () => {
+  it("ADM-NFR-06 · spec §4 · production: {main: 11, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 10, dev: 0 });
+    expect(r).toEqual({ main: 11, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual([
       "admin.audit_log",
       "admin.command_names",

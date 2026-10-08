@@ -48,7 +48,7 @@ export function TenantCreateForm({
       username: "",
       display_name: "",
       email: "",
-      locale: "vi",
+      locale: "en",
     },
   });
   const { errors, isDirty } = form.formState;

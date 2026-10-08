@@ -311,7 +311,7 @@ test("ADM-FR-08 · E-2FA-12 · M4-AC12 · an (member): menu không có 'Xác th�
 }) => {
   await loginUI(page, "acme", "an", PW);
   await expect(
-    page.getByRole("heading", { name: "Tài khoản của bạn dùng Chat App" }),
+    page.getByRole("heading", { name: "Tài khoản của bạn dùng Evolu Copilot" }),
   ).toBeVisible();
   await page.goto("/account/2fa");
   await expect(page).toHaveURL(/\/member$/);

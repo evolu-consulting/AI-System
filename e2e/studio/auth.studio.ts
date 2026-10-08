@@ -10,7 +10,7 @@ test("HUB-FR-72 · E01 · chưa phiên → /login?next=; đăng nhập platform_
   await mockStudio(page);
   await page.goto("/studio/orchestrator");
   await expect(page).toHaveURL(/\/studio\/login\?next=/);
-  await expect(page.getByRole("heading", { name: "Đăng nhập Agent Studio" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Đăng nhập Agent Forge" })).toBeVisible();
   await login(page);
   await expect(page).toHaveURL(/\/studio\/orchestrator$/);
   await expect(page.getByRole("heading", { name: "Orchestrator", exact: true })).toBeVisible();
@@ -35,7 +35,7 @@ test("HUB-FR-72 · E02 · sai mật khẩu → alert lỗi, ở lại trang đă
 });
 
 for (const role of ["tenant_admin", "member"] as const) {
-  test(`HUB-FR-72 · E03 · ${role} đăng nhập → "Bạn không có quyền vào Agent Studio" + Về Chat; chỉ gọi /me, không gọi API cấu hình [H4a-AC-01 · H4a-R01]`, async ({
+  test(`HUB-FR-72 · E03 · ${role} đăng nhập → "Bạn không có quyền vào Agent Forge" + Về Chat; chỉ gọi /me, không gọi API cấu hình [H4a-AC-01 · H4a-R01]`, async ({
     page,
   }) => {
     const s = await mockStudio(page, { role });
@@ -43,7 +43,7 @@ for (const role of ["tenant_admin", "member"] as const) {
     await login(page, "tadmin", "acme");
     await expect(page).toHaveURL(/\/studio\/forbidden/);
     await expect(
-      page.getByRole("heading", { name: "Bạn không có quyền vào Agent Studio" }),
+      page.getByRole("heading", { name: "Bạn không có quyền vào Agent Forge" }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Đăng xuất" })).toBeVisible();
     expect(s.calls.map((c) => `${c.method} ${c.path}`)).toEqual(["GET /me"]);
@@ -63,7 +63,7 @@ test('HUB-FR-72 · E04 · khung: menu Studio có link Agents + Orchestrator; Mod
   await expect(nav.locator('[aria-disabled="true"]').filter({ hasText: "Models" })).toHaveCount(1);
   await expect(nav.getByRole("link", { name: "Models" })).toHaveCount(0);
   await expect(nav.getByText("Sắp có").first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "⇄ Admin" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "⇄ Evolu Control" })).toBeVisible();
 });
 
 test('HUB-FR-72 · E05 · `/studio/` → /agents; đường dẫn lạ → "Không tìm thấy trang" + Về Agents [plan-frontend §2]', async ({

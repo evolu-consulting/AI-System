@@ -142,14 +142,14 @@ test("ADM-FR-06 · M1-AC06 · dung → /change-password: không có 'Bỏ qua'; 
   await again.fill("New-Passw0rd-9");
   await go.click();
   await expect(
-    page.getByRole("heading", { name: "Tài khoản của bạn dùng Chat App" }),
+    page.getByRole("heading", { name: "Tài khoản của bạn dùng Evolu Copilot" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Đăng xuất" }).click();
   await expect(page).toHaveURL(/\/login/);
   await loginUI(page, "acme", "dung", "New-Passw0rd-9");
   await expect(page).not.toHaveURL(/\/change-password/);
   await expect(
-    page.getByRole("heading", { name: "Tài khoản của bạn dùng Chat App" }),
+    page.getByRole("heading", { name: "Tài khoản của bạn dùng Evolu Copilot" }),
   ).toBeVisible();
 });
 
@@ -158,7 +158,7 @@ test("ADM-FR-04 · BR-05 · member lan → /member; vào /users bị chuyển v�
 }) => {
   await loginUI(page, "acme", "lan", PW);
   await expect(
-    page.getByRole("heading", { name: "Tài khoản của bạn dùng Chat App" }),
+    page.getByRole("heading", { name: "Tài khoản của bạn dùng Evolu Copilot" }),
   ).toBeVisible();
   await page.goto("/users");
   await expect(page).toHaveURL(/\/member$/);
@@ -169,7 +169,7 @@ test("ADM-FR-06 · M1-R06 · tự đổi mật khẩu /account/password: sai m�
 }) => {
   await loginUI(page, "acme", "lan", PW);
   await expect(
-    page.getByRole("heading", { name: "Tài khoản của bạn dùng Chat App" }),
+    page.getByRole("heading", { name: "Tài khoản của bạn dùng Evolu Copilot" }),
   ).toBeVisible();
   await page.goto("/account/password");
   const current = page.getByLabel("Mật khẩu hiện tại", { exact: true });

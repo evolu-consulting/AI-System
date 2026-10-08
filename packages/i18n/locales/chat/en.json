@@ -13,16 +13,49 @@
     "submitting": "Signing in…",
     "invalid": "Incorrect company code, username or password",
     "locked": "Your account is locked. Contact your company administrator",
-    "useAdmin": "Finish the security step in Admin Console before using Chat",
+    "useAdmin": "Finish the security step in Evolu Control before using Chat",
     "lockedOk": "Got it",
     "required": "This field is required",
-    "tenantRemembered": "Remembered for your next sign-in"
+    "tenantRemembered": "Remembered for your next sign-in",
+    "footer": "© 2026 EvoluConsulting",
+    "lang": {
+      "group": "Language",
+      "en": "English",
+      "vi": "Tiếng Việt"
+    },
+    "showcase": {
+      "title": "An AI teammate for the whole company, right in the chat.",
+      "description": "Summon agents with @, run commands with /, chat with your team.",
+      "chats": "CHATS",
+      "agents": "AGENTS",
+      "room": "# finance",
+      "direct": "Lan · Hoa",
+      "room2": "# q4-launch",
+      "agent1": "@Nova",
+      "agent2": "@Ledger",
+      "agent3": "@Pilot",
+      "msg1": {
+        "author": "Lan",
+        "text": "Did anyone send the September invoices yet?"
+      },
+      "msg2": {
+        "author": "Hoa",
+        "mention": "@Ledger",
+        "text": "summarize September invoices"
+      },
+      "reply": {
+        "author": "Ledger",
+        "badge": "AI agent",
+        "text": "Grouped September invoices by vendor. Summary attached below."
+      },
+      "composer": "Message, or type @ to summon an agent…"
+    }
   },
   "session": {
     "expired": "Your session has expired"
   },
   "shell": {
-    "brand": "AI Chat · {{tenant}}",
+    "brand": "Evolu Copilot · {{tenant}}",
     "newChat": "Ask AI",
     "search": "Search chats, people, groups",
     "settings": "Settings",
@@ -421,5 +454,8 @@
     "groupsEmpty": "No groups yet. Tap + to create one.",
     "peopleEmpty": "No one else in your company yet",
     "rowMenu": "Options for {{name}}"
+  },
+  "app": {
+    "name": "Evolu Copilot"
   }
 }

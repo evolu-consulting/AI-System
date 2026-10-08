@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "✦ Agent Studio"
+    "name": "Agent Forge"
   },
   "nav": {
     "label": "Studio menu",
@@ -31,7 +31,7 @@
   "soonH4c": "Coming soon (H4c)",
   "topbar": {
     "configBadge": "hub config v{n}",
-    "toAdmin": "⇄ Admin",
+    "toAdmin": "⇄ Evolu Control",
     "configBadgeLabel": "Hub config version"
   },
   "notFound": {
@@ -50,8 +50,8 @@
     "language": "Language"
   },
   "login": {
-    "title": "Sign in to Agent Studio",
-    "subtitle": "For platform administrators. Use your Admin account.",
+    "title": "Sign in to Agent Forge",
+    "subtitle": "For platform administrators. Same account as Evolu Control. If 2FA is on, we will ask for a code next.",
     "tenant": "Company code",
     "username": "Username",
     "password": "Password",
@@ -64,7 +64,7 @@
       "network": "Couldn't reach the server. Please try again.",
       "server": "Something went wrong, please try again later (code {code})."
     },
-    "mustChange": "You need to change your password in Admin before using Studio.",
+    "mustChange": "You need to change your password in Evolu Control before using Agent Forge.",
     "totp": {
       "title": "Two-step verification",
       "body": "Enter the 6-digit code from your authenticator app.",
@@ -77,15 +77,53 @@
       "wrong": "The code is incorrect or expired",
       "expired": "Your verification session expired. Please sign in again.",
       "backupFormat": "Backup codes look like xxxx-xxxx"
+    },
+    "adminOnly": "Platform admins only",
+    "notAdmin": "Not a platform admin?",
+    "openAdmin": "Open Evolu Control",
+    "footer": "© 2026 EvoluConsulting",
+    "lang": {
+      "group": "Language",
+      "en": "English",
+      "vi": "Tiếng Việt"
+    },
+    "showcase": {
+      "title": "Build agents. Route them per company.",
+      "description": "Guided builder, one Orchestrator per company, every change versioned.",
+      "nav": {
+        "agents": "Agents",
+        "orchestrator": "Orchestrator",
+        "catalog": "Catalog"
+      },
+      "heading": "Agents",
+      "newAgent": "New agent",
+      "agent1": {
+        "name": "Nova",
+        "tag": "Everyday help"
+      },
+      "agent2": {
+        "name": "Ledger",
+        "tag": "Finance"
+      },
+      "agent3": {
+        "name": "Pilot",
+        "tag": "Projects"
+      },
+      "editing": "Editing Ledger",
+      "step1": "Profile",
+      "step2": "Skills",
+      "step3": "Access",
+      "step4": "Test",
+      "step5": "Publish"
     }
   },
   "session": {
     "expired": "Your session has expired. Please sign in again."
   },
   "forbidden": {
-    "title": "You don't have access to Agent Studio",
-    "body": "Agent Studio is only for platform administrators (platform_admin).",
-    "toChat": "Back to Chat"
+    "title": "You don't have access to Agent Forge",
+    "body": "Agent Forge is only for platform administrators (platform_admin).",
+    "toChat": "Back to Evolu Copilot"
   },
   "common": {
     "cancel": "Cancel",

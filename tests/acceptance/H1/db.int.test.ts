@@ -120,12 +120,12 @@ describe("A48–A51 · migration Hub và quyền [HUB-H1-AC-08 · HUB-FR-75]", (
     expect(old?.n).toBe(1);
   });
 
-  it("A49 · runMigrations Admin không đổi: đã áp {main: 10, dev: 3}, gọi lại = {0, 0} sau khi có Hub [P1 · ADM-NFR-06]", async () => {
+  it("A49 · runMigrations Admin không đổi: đã áp {main: 11, dev: 3}, gọi lại = {0, 0} sau khi có Hub [P1 · ADM-NFR-06]", async () => {
     expect(await runMigrations({ url: OWNER_URL, appEnv: "test" })).toEqual({ main: 0, dev: 0 });
     const [r] = await sql<{ main: number; dev: number }[]>`select
       (select count(*)::int from drizzle.__drizzle_migrations) as main,
       (select count(*)::int from drizzle.__drizzle_migrations_dev) as dev`;
-    expect(r).toEqual({ main: 10, dev: 3 });
+    expect(r).toEqual({ main: 11, dev: 3 });
   });
 
   it("A50 · INSERT kiểu Admin M4 vẫn chạy (cột mới nullable); INSERT usage của Runtime (role agent_runtime, ON CONFLICT job_id) idempotent; admin_rw đọc được [M4 · WRK-FR-24]", async () => {

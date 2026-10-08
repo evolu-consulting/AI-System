@@ -77,7 +77,7 @@ export const users = admin.table(
     role: text("role", { enum: ["platform_admin", "tenant_admin", "member"] }).notNull(),
     locale: text("locale", { enum: ["vi", "en"] })
       .notNull()
-      .default("vi"),
+      .default("en"),
     active: boolean("active").notNull().default(true),
     lockedByTenant: boolean("locked_by_tenant").notNull().default(false),
     mustChangePassword: boolean("must_change_password").notNull().default(true),

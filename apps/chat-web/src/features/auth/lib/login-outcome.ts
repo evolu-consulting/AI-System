@@ -11,7 +11,7 @@ export type LoginOutcome =
 
 const LOCKED_CODES = new Set<string>(["ACCOUNT_LOCKED", "TEMP_LOCKED"]);
 
-/** Chat không có bước đổi mật khẩu / 2FA: hai trạng thái đó → nhắc hoàn tất trong Admin Console. */
+/** Chat không có bước đổi mật khẩu / 2FA: hai trạng thái đó → nhắc hoàn tất trong Evolu Control. */
 export function outcomeOfResponse(res: LoginResponse): LoginOutcome {
   return res.status === "authenticated" ? { kind: "ok" } : { kind: "alert", key: "login.useAdmin" };
 }

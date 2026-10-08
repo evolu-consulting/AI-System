@@ -119,8 +119,8 @@ const TABLE: Row[] = [
   ],
   [
     "groups.agents.body",
-    "Cấp agent cho group làm ở Agent Studio, khi Agent Hub sẵn sàng.",
-    "Granting agents to a group is done in Agent Studio once Agent Hub is ready.",
+    "Cấp agent cho group làm ở Agent Forge, khi Agent Hub sẵn sàng.",
+    "Granting agents to a group is done in Agent Forge once Agent Hub is ready.",
   ],
   ["groups.delete.title", "Xoá {name}?", "Delete {name}?"],
   [

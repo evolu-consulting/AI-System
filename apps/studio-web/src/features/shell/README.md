@@ -1,6 +1,6 @@
 # features/shell
 
-Khung Studio [HUB-FR-72] (H4a): topbar "✦ Agent Studio" + badge `hub config vN` (`ConfigBadge`), sidebar theo `lib/nav.ts` (mục chưa làm mờ "Sắp có"), menu người dùng + đăng xuất (`use-logout`), banner mất mạng (`use-online`, `OfflineBanner`), trang 403/404.
+Khung Studio [HUB-FR-72] (H4a): topbar "✦ Agent Forge" + badge `hub config vN` (`ConfigBadge`), sidebar theo `lib/nav.ts` (mục chưa làm mờ "Sắp có"), menu người dùng + đăng xuất (`use-logout`), banner mất mạng (`use-online`, `OfflineBanner`), trang 403/404.
 
 - `api.ts`: `meQuery` (`GET /studio/api/me`); `use-me` đọc dữ liệu đã nạp ở guard.
 - `lib/guard.ts`: guard `_authed` — chưa có phiên ⇒ `/login?next=`; `me` 403 ⇒ `/forbidden`.

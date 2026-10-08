@@ -143,11 +143,11 @@ describe("ADM-FR-60 · schema tenants", () => {
   const admin = { username: "lumbergh", display_name: "Bill", email: "bill@initech.test" };
   const valid = { key: "initech", name: "Initech", first_admin: admin };
 
-  it("ADM-FR-60 · M1-R15 · TenantCreateRequestSchema: key đúng regex, mặc định max_concurrent_sub null, locale vi", () => {
+  it("ADM-FR-60 · M1-R15 · TenantCreateRequestSchema: key đúng regex, mặc định max_concurrent_sub null, locale en [CR-052]", () => {
     const r = TenantCreateRequestSchema.parse({ ...valid, key: " Initech " });
     expect(r.key).toBe("initech");
     expect(r.max_concurrent_sub).toBeNull();
-    expect(r.first_admin.locale).toBe("vi");
+    expect(r.first_admin.locale).toBe("en");
     for (const key of ["a", "a_b", "a".repeat(33)]) {
       expect(ok(TenantCreateRequestSchema.safeParse({ ...valid, key }))).toBe(false);
     }

@@ -5,6 +5,7 @@
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+import { viStorageState } from "../support/locale-vi";
 
 const CI = !!process.env.CI;
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
@@ -42,6 +43,7 @@ export default defineConfig({
   use: {
     baseURL: WEB,
     locale: "vi-VN",
+    storageState: viStorageState([WEB, STUDIO]),
     timezoneId: "Asia/Ho_Chi_Minh",
     viewport: { width: 1280, height: 800 },
     trace: "retain-on-failure",

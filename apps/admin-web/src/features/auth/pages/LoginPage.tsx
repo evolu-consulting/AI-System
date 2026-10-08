@@ -1,4 +1,4 @@
-// ADM-FR-01, ADM-FR-02, ADM-FR-08 · màn Đăng nhập (canvas Login): 2 cột (trái nền thương hiệu, phải form 380px); < 1024px ẩn cột trái.
+// ADM-FR-01, ADM-FR-02, ADM-FR-08 · CR-052 phương án C · màn Đăng nhập (Evolu Control): cột trái form 520px + cột phải showcase; < 1024px ẩn cột phải.
 import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,15 +11,17 @@ import { normalizeCompanyKey, normalizeUsername } from "@/lib/normalize";
 import { useTr } from "@/lib/use-translate";
 
 import { login } from "../api";
-import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LoginForm } from "../components/LoginForm";
+import { LoginLayout } from "../components/LoginLayout";
+import { LoginShowcase } from "../components/LoginShowcase";
+import { ShowcaseWindow } from "../components/ShowcaseWindow";
 import { LoginTotpStep } from "../components/totp/LoginTotpStep";
 import { useTotpLogin } from "../hooks/use-totp-login";
 import type { LoginValues } from "../lib/schemas";
 
 const loginRoute = getRouteApi("/login");
 const TENANT_STORAGE_KEY = "ai.tenantKey";
-const BULLETS = ["auth.login.hero.b1", "auth.login.hero.b2", "auth.login.hero.b3"] as const;
+const CHAT_APP_URL = import.meta.env.PUBLIC_CHAT_APP_URL;
 
 function rememberedTenant(search: { tenant?: string }): string {
   return search.tenant ?? localStorage.getItem(TENANT_STORAGE_KEY) ?? "";
@@ -70,70 +72,52 @@ export function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-screen bg-background lg:grid-cols-2">
-      <aside className="hidden flex-col justify-between bg-primary-strong p-12 text-on-ink lg:flex">
-        <img
-          src="/brand/evoluconsulting-icon.svg"
-          alt=""
-          width={48}
-          height={48}
-          className="size-12"
-        />
-        <div className="space-y-6">
-          <h2 className="max-w-md text-dialog-title font-semibold">{t("auth.login.hero.title")}</h2>
-          <ul className="space-y-3 text-body">
-            {BULLETS.map((key) => (
-              <li key={key} className="flex gap-3">
-                <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-on-ink-link" />
-                {t(key)}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="text-caption">{t("auth.login.hero.footer")}</p>
-      </aside>
-      <main id="main" className="flex flex-col p-6">
-        <div className="flex justify-end">
-          <LanguageSwitch />
-        </div>
-        <div className="mx-auto flex w-full max-w-[380px] flex-1 flex-col justify-center gap-6 py-8">
-          <img
-            src="/brand/evoluconsulting-logo-horizontal.svg"
-            alt="EvoluConsulting"
-            width={180}
-            height={56}
-            className="h-12 w-auto self-start"
+    <>
+      <LoginLayout
+        appName={t("auth.login.appName")}
+        showcase={
+          <LoginShowcase tip="#67e8f9">
+            <ShowcaseWindow />
+          </LoginShowcase>
+        }
+      >
+        {pendingTotp ? (
+          <LoginTotpStep
+            tenantKey={pendingTotp.tenantKey}
+            username={pendingTotp.username}
+            busy={totp.busy}
+            error={totp.error}
+            onError={totp.setError}
+            onSubmit={totp.submit}
+            onBack={session.clearPendingTotp}
           />
-          {pendingTotp ? (
-            <LoginTotpStep
-              tenantKey={pendingTotp.tenantKey}
-              username={pendingTotp.username}
-              busy={totp.busy}
-              error={totp.error}
-              onError={totp.setError}
-              onSubmit={totp.submit}
-              onBack={session.clearPendingTotp}
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <h1 className="text-[28px] leading-9 font-bold text-foreground">
+                {t("auth.login.title")}
+              </h1>
+              <p className="text-[15px] text-muted-foreground">{t("auth.login.subtitle")}</p>
+            </div>
+            <LoginForm
+              defaultTenant={rememberedTenant(search)}
+              defaultUsername={lastUsername}
+              pending={pending}
+              error={error}
+              onSubmit={submit}
             />
-          ) : (
-            <>
-              <div className="space-y-1">
-                <h1 className="text-page-title font-bold text-foreground">
-                  {t("auth.login.title")}
-                </h1>
-                <p className="text-body text-muted-foreground">{t("auth.login.subtitle")}</p>
-              </div>
-              <LoginForm
-                defaultTenant={rememberedTenant(search)}
-                defaultUsername={lastUsername}
-                pending={pending}
-                error={error}
-                onSubmit={submit}
-              />
-            </>
-          )}
-        </div>
-      </main>
+          </>
+        )}
+        {pendingTotp || !CHAT_APP_URL ? null : (
+          <p className="text-label text-muted-foreground">
+            {t("auth.login.memberLink")}{" "}
+            <a href={CHAT_APP_URL} className="text-primary-strong underline underline-offset-4">
+              {t("auth.login.openChat")}
+            </a>
+          </p>
+        )}
+      </LoginLayout>
       <Toaster position="bottom-right" />
-    </div>
+    </>
   );
 }

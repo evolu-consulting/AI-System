@@ -2,6 +2,7 @@
 // Đuôi `.chat.ts` không khớp testMatch mặc định của config admin ⇒ hai bộ không chạy lẫn.
 // Chạy từ gốc repo: `bun run e2e:chat`. Mock Hub cổng CHAT_E2E_HUB_PORT (mặc định 4020), chat-web 3100.
 import { defineConfig, devices } from "@playwright/test";
+import { viStorageState } from "../support/locale-vi";
 
 const CI = !!process.env.CI;
 const HUB_PORT = Number(process.env.CHAT_E2E_HUB_PORT ?? 4020);
@@ -21,6 +22,7 @@ export default defineConfig({
   use: {
     baseURL: WEB,
     locale: "vi-VN",
+    storageState: viStorageState([WEB]),
     timezoneId: "Asia/Ho_Chi_Minh",
     viewport: { width: 1280, height: 800 },
     trace: "retain-on-failure",

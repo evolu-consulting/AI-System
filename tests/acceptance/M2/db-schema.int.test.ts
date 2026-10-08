@@ -140,8 +140,8 @@ afterAll(async () => {
 });
 
 describe("ADM-NFR-06 · migration M2", () => {
-  it("ADM-NFR-06 · spec M2 §4 · development: {main:10, dev:3}; lần 2 {0,0}", () => {
-    expect(firstRun).toEqual({ main: 10, dev: 3 });
+  it("ADM-NFR-06 · spec M2 §4 · development: {main: 11, dev:3}; lần 2 {0,0}", () => {
+    expect(firstRun).toEqual({ main: 11, dev: 3 });
     expect(secondRun).toEqual({ main: 0, dev: 0 });
   });
 
@@ -459,10 +459,10 @@ describe("ADM-NFR-06 · bất biến M1 và hub-stub", () => {
 });
 
 describe("ADM-NFR-06 · migration production M2", () => {
-  it("ADM-NFR-06 · spec M2 §4 · production: {main:10, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*", async () => {
+  it("ADM-NFR-06 · spec M2 §4 · production: {main: 11, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 10, dev: 0 });
+    expect(r).toEqual({ main: 11, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual(ADMIN19);
   });
 });

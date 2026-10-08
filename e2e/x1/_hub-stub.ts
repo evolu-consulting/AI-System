@@ -65,7 +65,7 @@ function listBody() {
     items: AGENTS.map((a) => ({
       agent: {
         ...ref(a),
-        description: `Agent ${a.key} của Agent Studio`,
+        description: `Agent ${a.key} của Agent Forge`,
         enabled: true,
         runnable: a.runnable,
       },

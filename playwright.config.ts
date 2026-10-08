@@ -3,6 +3,7 @@
 // (DB test phải được chuẩn bị lại) → TẮT `bun run dev` của admin-api trước khi chạy.
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+import { viStorageState } from "./e2e/support/locale-vi";
 
 const CI = !!process.env.CI;
 
@@ -30,6 +31,7 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
     locale: "vi-VN",
+    storageState: viStorageState(["http://localhost:3000"]),
     timezoneId: "Asia/Ho_Chi_Minh",
     trace: "on-first-retry",
   },

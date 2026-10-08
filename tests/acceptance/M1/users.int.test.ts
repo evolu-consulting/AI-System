@@ -142,14 +142,14 @@ describe("ADM-FR-04 · danh sách và bộ lọc", () => {
 });
 
 describe("ADM-FR-04 · tạo user", () => {
-  it("ADM-FR-04 · M1-R17 · binh tạo member → 201 {user, temp_password 16 ký tự}, must_change_password, locale vi, thuộc acme; đăng nhập → password_change_required", async () => {
+  it("ADM-FR-04 · M1-R17 · binh tạo member → 201 {user, temp_password 16 ký tự}, must_change_password, locale en [CR-052], thuộc acme; đăng nhập → password_change_required", async () => {
     const res = await create(binh, member("nam"));
     expect(res.status).toBe(201);
     const b = UserCreateResponseSchema.parse(res.json);
     expect(b.temp_password).toMatch(/^[A-Za-z0-9]{16}$/);
     expect([b.user.must_change_password, b.user.locale, b.user.tenant_key]).toEqual([
       true,
-      "vi",
+      "en",
       "acme",
     ]);
     expect(b.user.tenant_id).toBe(TENANT_ID.acme);

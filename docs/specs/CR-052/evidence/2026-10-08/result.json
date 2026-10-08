@@ -1,0 +1,184 @@
+[
+ {
+  "s": "S1",
+  "app": "admin",
+  "ok": true,
+  "note": "h1=\"Sign in\" pressed=true brand={\"x\":106,\"y\":38,\"width\":113.65625,\"height\":20} badText=false lang=en title=Evolu Control",
+  "img": "01-admin-login-en.png"
+ },
+ {
+  "s": "S2",
+  "app": "admin",
+  "ok": true,
+  "note": "h1 after click=\"Đăng nhập\", after reload=\"Đăng nhập\" ls=[[\"ai.locale\",\"vi\"]]",
+  "img": "02-admin-login-vi*.png"
+ },
+ {
+  "s": "S3",
+  "app": "admin",
+  "ok": true,
+  "note": "1024:{\"sw\":1024,\"iw\":1024,\"sh\":828,\"ih\":768,\"over\":20,\"aside\":[]} form=true | 1366:{\"sw\":1366,\"iw\":1366,\"sh\":768,\"ih\":768,\"over\":7,\"aside\":[]} form=true | 375:{\"sw\":375,\"iw\":375,\"sh\":812,\"ih\":812,\"over\":0,\"aside\":[]} form=true",
+  "img": "03-admin-*.png"
+ },
+ {
+  "s": "S4",
+  "app": "admin",
+  "ok": true,
+  "note": "BUTTON:English|outline=none/1px|shadow=true > BUTTON:Tiếng Việt|outline=none/1px|shadow=true > INPUT:tenant_key|outline=none/1px|shadow=true > INPUT:username|outline=none/1px|shadow=true > INPUT:password|outline=none/1px|shadow=true > BUTTON:Show password|outline=none/1px|shadow=true > BUTTON:Sign in|outline=none/3px|shadow=true",
+  "img": "04-admin-focus-*.png"
+ },
+ {
+  "s": "S5a",
+  "app": "admin",
+  "ok": true,
+  "note": "alert=[\"Wrong company code, username or password.\"]",
+  "img": "05-admin-wrong-pw.png"
+ },
+ {
+  "s": "S5b",
+  "app": "admin",
+  "ok": true,
+  "note": "url=http://localhost:3000/ lang=en title=Evolu Control ls=[[\"ai.tenantKey\",\"platform\"],[\"ai.locale\",\"en\"]] resp=http://localhost:3000/auth/login 200 {\"status\":\"authenticated\",\"access_token\":\"eyJhbGciOiJFZERTQSIsImtpZCI6ImRldi0yMDI2MTAwMSJ9.eyJ0aWQiOiIwMWExMWMxZC0wZTAwLTcwMDAtYmQ2OS02YTBkNjUyNTZkMzkiLCJyb2xlIjoicGxhdGZvcm1fYWRtaW4iLCJzaWQiOiIwMWExMWMzMy1mYjcxLTcwMDAtOWI4ZC05ZGNlN2JlZmIwMDQiLCJzdWIiOiIwMWExMWMxZC0wZTJiLTcwMDAtYmM5NC0yOTE5ZDQ1MzM5MmIiLCJpc3MiOiJhZG1pbiIsImF1ZCI6ImFpLXN5c3RlbSIsImlhdCI6MTc5MTQ3NDUzMSwiZXhwIjoxNzkxNDc1NDMxfQ.OTHg4i ## http://localhost:3000/static/js/async/src_routes__authed_tsx_tsr-split_component.js 200 \"use strict\";\n(globalThis[\"rspackChunk_ai_admin_web\"] ||= []).push([[\"src_routes__authed_tsx_tsr-split_component\"], {\n\"./src/features/shell/components/AuthedLayout.tsx\"(module, __webpack_exports__, __webpack_require__) {\n__webpack_require__.r(__webpack_exports__);\n__webpack_require__.d(__webpack_exports__, {\n  AuthedLayout: () => (AuthedLayout)\n});\n/* import */ var rea body=\"Skip to content\\nOverview\\n\\nFEATURES\\n\\nFeatures\\nCommands\\nWorkflows\\n\\nACCESS\\n\\nTenants\\nUsers\\nGroups\\nAccess\\n\\nSECURITY\\n\\nSecrets\\n\\nSYSTEM\\n\\nUsage & quota\\nAudit log\\nImport / Export\\nP\\n\\nPlatform Admin\\n\\nplatform_adm\"",
+  "img": "05-admin-after-login.png"
+ },
+ {
+  "s": "S8",
+  "app": "admin",
+  "ok": true,
+  "note": "visual review",
+  "img": "08-admin-dark.png"
+ },
+ {
+  "s": "S1",
+  "app": "chat",
+  "ok": true,
+  "note": "h1=\"Sign in\" pressed=true brand={\"x\":106,\"y\":38,\"width\":113.15625,\"height\":20} badText=false lang=en title=Evolu Copilot",
+  "img": "01-chat-login-en.png"
+ },
+ {
+  "s": "S2",
+  "app": "chat",
+  "ok": true,
+  "note": "h1 after click=\"Đăng nhập\", after reload=\"Đăng nhập\" ls=[[\"ai.locale\",\"vi\"]]",
+  "img": "02-chat-login-vi*.png"
+ },
+ {
+  "s": "S3",
+  "app": "chat",
+  "ok": true,
+  "note": "1024:{\"sw\":1024,\"iw\":1024,\"sh\":848,\"ih\":768,\"over\":14,\"aside\":[]} form=true | 1366:{\"sw\":1366,\"iw\":1366,\"sh\":768,\"ih\":768,\"over\":8,\"aside\":[]} form=true | 375:{\"sw\":375,\"iw\":375,\"sh\":812,\"ih\":812,\"over\":0,\"aside\":[]} form=true",
+  "img": "03-chat-*.png"
+ },
+ {
+  "s": "S4",
+  "app": "chat",
+  "ok": true,
+  "note": "BUTTON:English|outline=none/1px|shadow=true > BUTTON:Tiếng Việt|outline=none/1px|shadow=true > INPUT:tenant_key|outline=none/1px|shadow=true > INPUT:username|outline=none/1px|shadow=true > INPUT:password|outline=none/1px|shadow=true > BUTTON:Sign in|outline=none/3px|shadow=true",
+  "img": "04-chat-focus-*.png"
+ },
+ {
+  "s": "S5a",
+  "app": "chat",
+  "ok": true,
+  "note": "alert=[\"Incorrect company code, username or password\"]",
+  "img": "05-chat-wrong-pw.png"
+ },
+ {
+  "s": "S5b",
+  "app": "chat",
+  "ok": true,
+  "note": "url=http://localhost:3100/c/new lang=vi title=Evolu Copilot ls=[[\"chat:tenant_key\",\"evolu\"],[\"ai.locale\",\"vi\"]] resp=http://localhost:3100/auth/login 200 {\"status\":\"authenticated\",\"access_token\":\"eyJhbGciOiJFZERTQSIsImtpZCI6ImRldi0yMDI2MTAwMSJ9.eyJ0aWQiOiIwMWExMWMxZC1jYTRlLTcwMDAtYjRlYi0yMTJkZWZiYjU0OGYiLCJyb2xlIjoibWVtYmVyIiwic2lkIjoiMDFhMTFjMzQtM2Q1MS03MDAwLTg4NjAtMWM3Mzk2ZDA0MGIwIiwic3ViIjoiMDFhMTFjMWQtY2MxZi03MDAwLWI4YTgtNzkxNGI3OGMwYzU1IiwiaXNzIjoiYWRtaW4iLCJhdWQiOiJhaS1zeXN0ZW0iLCJpYXQiOjE3OTE0NzQ1NDgsImV4cCI6MTc5MTQ3NTQ0OH0.Ptu9_Lu7cD2C0C-tP ## http://localhost:3100/static/js/async/src_components_ui_button_tsx-src_features_run_runtime_ts-src_lib_auth_use-session_ts.js 200 \"use strict\";\n(globalThis[\"rspackChunk_ai_chat_web\"] ||= []).push([[\"src_components_ui_button_tsx-src_features_run_runtime_ts-src_lib_auth_use-session_ts\"], {\n\"./src/components/ui/button.tsx\"(module, __webpack_exports__, __webpack_require__) {\n__webpack_require__.r(__webpack_exports__);\n__webpack_require__.d(__webpack_exports__ body=\"Evolu Copilot · Evolu\\nHỏi AI\\nTin nhắn & Nhóm\\nNhóm\\nET\\nEvolu team\\nUsers\\nEN\\nEdgar Nguyen\\n@edgar.nguyen\\nJB\\nJulian Bui\\n@julian.bui\\nRN\\nRowan Nguyen\\n@rowan.nguyen\\nVN\\nVio Ngo\\n@vio.ngo\\nHỏi AI\\n\\nChưa có hội thoạ\"",
+  "img": "05-chat-after-login.png"
+ },
+ {
+  "s": "S8",
+  "app": "chat",
+  "ok": true,
+  "note": "visual review",
+  "img": "08-chat-dark.png"
+ },
+ {
+  "s": "S1",
+  "app": "studio",
+  "ok": true,
+  "note": "h1=\"Sign in to Agent Forge\" pressed=true brand={\"x\":106,\"y\":38,\"width\":103.90625,\"height\":20} badText=false lang=en title=Agent Forge",
+  "img": "01-studio-login-en.png"
+ },
+ {
+  "s": "S2",
+  "app": "studio",
+  "ok": true,
+  "note": "h1 after click=\"Đăng nhập Agent Forge\", after reload=\"Đăng nhập Agent Forge\" ls=[[\"studio.locale\",\"vi\"]]",
+  "img": "02-studio-login-vi*.png"
+ },
+ {
+  "s": "S3",
+  "app": "studio",
+  "ok": true,
+  "note": "1024:{\"sw\":1024,\"iw\":1024,\"sh\":813,\"ih\":768,\"over\":39,\"aside\":[]} form=true | 1366:{\"sw\":1366,\"iw\":1366,\"sh\":768,\"ih\":768,\"over\":7,\"aside\":[]} form=true | 375:{\"sw\":375,\"iw\":375,\"sh\":812,\"ih\":812,\"over\":0,\"aside\":[]} form=true",
+  "img": "03-studio-*.png"
+ },
+ {
+  "s": "S4",
+  "app": "studio",
+  "ok": true,
+  "note": "BUTTON:English|outline=none/1px|shadow=true > BUTTON:Tiếng Việt|outline=none/1px|shadow=true > INPUT:login-tenant|outline=none/1px|shadow=true > INPUT:login-username|outline=none/1px|shadow=true > INPUT:login-password|outline=none/1px|shadow=true > BUTTON:Sign in|outline=none/3px|shadow=true",
+  "img": "04-studio-focus-*.png"
+ },
+ {
+  "s": "S5a",
+  "app": "studio",
+  "ok": true,
+  "note": "alert=[\"Wrong company code, username or password.\"]",
+  "img": "05-studio-wrong-pw.png"
+ },
+ {
+  "s": "S5b",
+  "app": "studio",
+  "ok": true,
+  "note": "url=http://localhost:3200/studio/agents lang=en title=Agent Forge ls=[[\"studio.tenantKey\",\"platform\"],[\"studio.locale\",\"en\"]] resp=http://localhost:3200/auth/login 200 {\"status\":\"authenticated\",\"access_token\":\"eyJhbGciOiJFZERTQSIsImtpZCI6ImRldi0yMDI2MTAwMSJ9.eyJ0aWQiOiIwMWExMWMxZC0wZTAwLTcwMDAtYmQ2OS02YTBkNjUyNTZkMzkiLCJyb2xlIjoicGxhdGZvcm1fYWRtaW4iLCJzaWQiOiIwMWExMWMzNC03ZDJlLTcwMDAtODYzMi0xMGFlNWNjYjI4YjMiLCJzdWIiOiIwMWExMWMxZC0wZTJiLTcwMDAtYmM5NC0yOTE5ZDQ1MzM5MmIiLCJpc3MiOiJhZG1pbiIsImF1ZCI6ImFpLXN5c3RlbSIsImlhdCI6MTc5MTQ3NDU2NCwiZXhwIjoxNzkxNDc1NDY0fQ.JsW_Lb ## http://localhost:3200/studio/api/me 200 {\"user_id\":\"01a11c1d-0e2b-7000-bc94-2919d453392b\",\"tenant_id\":\"01a11c1d-0e00-7000-bd69-6a0d65256d39\",\"tenant_key\":\"platform\",\"username\":\"admin\",\"display_name\":\"Platform Admin\",\"role\":\"platform_admin\",\"hub_config_version\":5} ## http://localhost:3200/studio/static/js/async/src_routes__authed_tsx_tsr-split_component.js 200 \"use strict\";\n(globalThis[\"rspackChunk_ai_studio_web\"] ||= []).push([[\"src_routes__authed_tsx_tsr body=\"Skip navigation\\nAgent Forge\\nOverview\\nComing soon\\n\\nAGENT CONFIGURATION\\n\\nAgents\\nOrchestrator\\nTools\\nComing soon (H4b)\\nModels\\nComing soon (H4b)\\nSecrets\\nComing soon (H4b)\\n\\nACCESS\\n\\nAgent access\\nComing soon \"",
+  "img": "05-studio-after-login.png"
+ },
+ {
+  "s": "S8",
+  "app": "studio",
+  "ok": true,
+  "note": "visual review",
+  "img": "08-studio-dark.png"
+ },
+ {
+  "s": "S6a",
+  "app": "admin",
+  "ok": true,
+  "note": "url=http://localhost:3000/member body=\"Tài khoản của bạn dùng Evolu Copilot\\n\\nTrang quản trị chỉ dành cho quản trị viên. Hãy mở Evolu Copilot để làm việc.\\n\\nĐổi mật khẩu\\nĐăng xuất\" links=[\"Đổi mật khẩu->http://localhost:3000/account/password\"]",
+  "img": "06-admin-member.png"
+ },
+ {
+  "s": "S6b",
+  "app": "studio",
+  "ok": true,
+  "note": "url=http://localhost:3200/studio/forbidden body=\"Agent Forge\\nYou don't have access to Agent Forge\\n\\nAgent Forge is only for platform administrators (platform_admin).\\n\\nBack to Chat\\nSign out\" alert=[] links=[\"Back to Chat->http://localhost:3100/\"]",
+  "img": "06-studio-nonplatform.png"
+ },
+ {
+  "s": "S7",
+  "app": "admin",
+  "ok": true,
+  "note": "{\"url\":\"http://localhost:3000/\",\"title\":\"Evolu Control\",\"top\":\"Skip to content\\nOverview\\n\\nFEATURES\\n\\nFeatures\\nCommands\\nWorkflows\\n\\nACCESS\\n\\nTenants\\nUsers\\nGroups\\nAccess\\n\\nSECURITY\\n\\nSecrets\\n\\nSYSTEM\\n\\nUsage & quota\\nAudit log\\nImport / Export\\nP\\n\\nPlatform Admin\\n\\nplatform_admin · platform\\n\\nOverview\\nPlatform\\nAgent Forge\\nP\\nOverview\\n\\nWhole platform · 1 tenants · updated 22:49\\n\\nNew command\\nNew tenant\\nActive tenants\\n\\n1\\n\\nEnabled commands\\n\\n4\\n\\nWorkflows\\n\\n5\\n\\n1 unattached\\n\\nActive users\\n\\n5\\n\\nRuns (24h)\\n\\n—\\n\\nTenants near or over quota\\n\\nNo tenant has a quota yet.\\n\\nAgent Forge\\n\\nAgents,\",\"links\":[\"Skip to content->http://localhost:3000/#main\",\"Overview->http://localhost:3000/\",\"Features->http://localhost:3000/features\",\"Commands->http://localhost:3000/commands\",\"Workflows->http://localhost:3000/workflows\",\"Tenants->http://localhost:3000/tenants\",\"Users->http://localhost:3000/users\",\"Groups->http://localhost:3000/groups\",\"Access->http://localhost:3000/access\",\"Secrets->http://localhost:3000/secrets\",\"Usage & quota->http://localhost:3000/usage\",\"Audit log->http://localhost:3000/audit\",\"Import / Export->http://localhost:3000/transfer\",\"Agent Forge->http://localhost:3200/studio\",\"P\",\"New command->http://localhost:3000/commands/new\",\"New tenant->http://localhost:3000/tenants/new\",\"—\",\"Open Agent Forge\",\"View audit log->http://localhost:3000/audit\"]}",
+  "img": "07-admin-names.png"
+ },
+ {
+  "s": "S7",
+  "app": "studio",
+  "ok": true,
+  "note": "{\"url\":\"http://localhost:3200/studio/agents\",\"title\":\"Agent Forge\",\"top\":\"Skip navigation\\nAgent Forge\\nOverview\\nComing soon\\n\\nAGENT CONFIGURATION\\n\\nAgents\\nOrchestrator\\nTools\\nComing soon (H4b)\\nModels\\nComing soon (H4b)\\nSecrets\\nComing soon (H4b)\\n\\nACCESS\\n\\nAgent access\\nComing soon (H4b)\\n\\nTESTING\\n\\nPlayground\\nComing soon (H4c)\\n\\nOPERATIONS\\n\\nRuns\\nComing soon\\nCost & usage\\nComing soon\\nJobs & Worker\\nComing soon\\n\\nSYSTEM\\n\\nChange log\\nComing soon\\nImport / Export\\nComing soon\\nhub config v5\\n⇄ Evolu Control\\nPlatform Admin\\nAgents\\n\\nEach agent = runtime + model profile + system prompt + workfl\",\"links\":[\"Skip navigation->http://localhost:3200/studio/agents#main\",\"Agents->http://localhost:3200/studio/agents\",\"Orchestrator->http://localhost:3200/studio/orchestrator\",\"⇄ Evolu Control->http://localhost:3000/\",\"Platform Admin\",\"+ Create agent->http://localhost:3200/studio/agents/new\",\"Assistant->http://localhost:3200/studio/agents/7c34267d-c4ee-4b2a-9f0d-1586bed0098e\",\"Evolu Consultant->http://localhost:3200/studio/agents/42301940-2855-41b0-9025-39173747c454\",\"Chatbot (Dify)->http://localhost:3200/studio/agents/2aebe09f-75d7-437b-bb89-ba0d005051b4\",\"Invoices->http://localhost:3200/studio/agents/72927f65-2f1e-4c9a-a275-94f452e96486\",\"Orchestrator->http://localhost:3200/studio/agents/3df39556-ea92-49c9-9390-cefb1665ba00\"]}",
+  "img": "07-studio-names.png"
+ },
+ {
+  "s": "S7",
+  "app": "chat",
+  "ok": true,
+  "note": "{\"url\":\"http://localhost:3100/c/new\",\"title\":\"Evolu Copilot\",\"top\":\"Evolu Copilot · Evolu\\nHỏi AI\\nTin nhắn & Nhóm\\nNhóm\\nET\\nEvolu team\\nUsers\\nEN\\nEdgar Nguyen\\n@edgar.nguyen\\nJB\\nJulian Bui\\n@julian.bui\\nRN\\nRowan Nguyen\\n@rowan.nguyen\\nVN\\nVio Ngo\\n@vio.ngo\\nHỏi AI\\n\\nChưa có hội thoại nào\\n\\nTT\\nThomas Tran\\nthomas.tran\\nChào Thomas Tran, hôm nay cần gì?\\n\\nMỗi câu hỏi mở một flow riêng. Muốn hỏi tiếp việc nào, bấm Trả lời tiếp trên flow đó.\\n\\nSoạn email\\nSoạn email báo giá gửi khách hàng\\nTóm tắt văn bản\\nTóm tắt 3 ý chính của một biên bản họp\\nDịch\\nDịch một đoạn hợp đồng sang tiếng Anh\\nL\",\"links\":[\"Hỏi AI->http://localhost:3100/c/new\",\"Nhóm\",\"ETEvolu team->http://localhost:3100/rooms/d2a00000-0000-4000-8000-000000000002\",\"Users\",\"ENEdgar Nguyen@edgar.nguy\",\"JBJulian Bui@julian.bui\",\"RNRowan Nguyen@rowan.nguy\",\"VNVio Ngo@vio.ngo\",\"Hỏi AI\",\"Soạn emailSoạn email báo \",\"Tóm tắt văn bảnTóm tắt 3 \",\"DịchDịch một đoạn hợp đồn\",\"Lên dàn ýLên dàn ý báo cá\"]}",
+  "img": "07-chat-names.png"
+ }
+]

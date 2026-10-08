@@ -67,13 +67,6 @@
       "submit": "Đăng nhập",
       "submitting": "Đang đăng nhập…",
       "forgot": "Quên mật khẩu? Liên hệ quản trị viên công ty bạn để được đặt lại.",
-      "hero": {
-        "title": "Một nơi quản lý người dùng, quyền và chức năng AI của công ty bạn.",
-        "b1": "Cấp lệnh /dich, /tom theo từng phòng ban",
-        "b2": "Theo dõi mức dùng và quota trong tháng",
-        "b3": "Biết ngay vì sao một người không thấy một lệnh",
-        "footer": "EvoluConsulting · Intelligent automation"
-      },
       "totp": {
         "title": "Xác thực hai bước",
         "body": "Nhập mã 6 số trong ứng dụng xác thực của bạn.",
@@ -86,6 +79,34 @@
         "wrong": "Mã không đúng hoặc đã hết hạn",
         "expired": "Phiên xác thực đã hết hạn. Hãy đăng nhập lại.",
         "backupFormat": "Mã dự phòng có dạng xxxx-xxxx"
+      },
+      "appName": "Evolu Control",
+      "footer": "© 2026 EvoluConsulting",
+      "memberLink": "Bạn là nhân viên?",
+      "openChat": "Mở Evolu Copilot",
+      "showcase": {
+        "title": "Công ty, con người và phân quyền. Gói gọn một nơi.",
+        "description": "Cấp quyền theo nhóm, hạn mức theo công ty, mọi thay đổi đều được ghi nhật ký.",
+        "nav": {
+          "overview": "Tổng quan",
+          "companies": "Công ty",
+          "users": "Người dùng",
+          "groups": "Nhóm",
+          "commands": "Lệnh",
+          "usage": "Hạn mức & sử dụng",
+          "audit": "Nhật ký"
+        },
+        "kpi": {
+          "companies": "Công ty",
+          "users": "Người dùng hoạt động",
+          "runs": "Lượt chạy agent tháng này"
+        },
+        "quota": "Hạn mức tháng",
+        "quotaTenant": "acme",
+        "recent": "Thay đổi gần đây",
+        "change1": "Nhóm Tài chính được cấp quyền dùng Ledger",
+        "change2": "Đã thêm người dùng mới vào acme",
+        "change3": "Đã bật /month-close cho acme"
       }
     },
     "lang": {
@@ -157,9 +178,9 @@
     }
   },
   "member": {
-    "title": "Tài khoản của bạn dùng Chat App",
-    "body": "Trang quản trị chỉ dành cho quản trị viên. Hãy mở Chat App để làm việc.",
-    "open": "Mở Chat App"
+    "title": "Tài khoản của bạn dùng Evolu Copilot",
+    "body": "Trang quản trị chỉ dành cho quản trị viên. Hãy mở Evolu Copilot để làm việc.",
+    "open": "Mở Evolu Copilot"
   },
   "nav": {
     "main": "Điều hướng chính",
@@ -189,7 +210,7 @@
   },
   "topbar": {
     "platform": "Nền tảng",
-    "studio": "Agent Studio"
+    "studio": "Agent Forge"
   },
   "account": {
     "menu": "Tài khoản của bạn",
@@ -304,9 +325,9 @@
       }
     },
     "agentStudio": {
-      "title": "Agent Studio",
-      "body": "Agent, Coordinator, model và vận hành nằm ở Agent Studio. Agent chọn workflow từ catalog của Admin.",
-      "open": "Mở Agent Studio"
+      "title": "Agent Forge",
+      "body": "Agent, Coordinator, model và vận hành nằm ở Agent Forge. Agent chọn workflow từ catalog của Admin.",
+      "open": "Mở Agent Forge"
     },
     "topErrors": {
       "title": "Command lỗi nhiều nhất 24 giờ"
@@ -439,7 +460,7 @@
       "unavailableBody": "Mục này sẽ khả dụng ở bản sau."
     },
     "agents": {
-      "unavailable": "Cấp agent cho tenant làm ở Agent Studio. Mục này sẽ khả dụng khi Agent Hub sẵn sàng."
+      "unavailable": "Cấp agent cho tenant làm ở Agent Forge. Mục này sẽ khả dụng khi Agent Hub sẵn sàng."
     },
     "detail": {
       "createdAt": "Tạo lúc {date}",
@@ -635,7 +656,7 @@
       "displayNameRequired": "Nhập tên hiển thị",
       "displayNameMax": "Tối đa 64 ký tự"
     },
-    "empty": "Chưa có người dùng nào ngoài bạn. Tạo user để mời đồng nghiệp dùng Chat App.",
+    "empty": "Chưa có người dùng nào ngoài bạn. Tạo user để mời đồng nghiệp dùng Evolu Copilot.",
     "groups": {
       "more": "Còn: {names}"
     },
@@ -737,7 +758,7 @@
       },
       "s3": {
         "title": "Gắn cho command hoặc agent",
-        "body": "Command ở Admin · agent ở Agent Studio"
+        "body": "Command ở Evolu Control · agent ở Agent Forge"
       },
       "dismiss": {
         "aria": "Ẩn hướng dẫn"
@@ -1380,7 +1401,7 @@
       "empty": "Group chưa được cấp feature nào ngoài core."
     },
     "agents": {
-      "body": "Cấp agent cho group làm ở Agent Studio, khi Agent Hub sẵn sàng.",
+      "body": "Cấp agent cho group làm ở Agent Forge, khi Agent Hub sẵn sàng.",
       "caption": "Agent của group",
       "col": {
         "agent": "Agent",
@@ -1391,7 +1412,7 @@
       "grantLabel": "Cấp {agent} cho {group}",
       "granted": "Đã cấp {agent} cho {group}",
       "revoked": "Đã thu hồi {agent} khỏi {group}",
-      "empty": "Chưa có agent nào trong Agent Studio",
+      "empty": "Chưa có agent nào trong Agent Forge",
       "loadError": "Không tải được danh sách agent từ Hub",
       "truncated": "Chỉ hiện 200 agent đầu."
     },
@@ -1713,7 +1734,7 @@
         "groups": "Groups",
         "grants": "Grants"
       },
-      "note": "Secret chỉ xuất tên, không xuất giá trị. Cấu hình agent xuất ở Agent Studio.",
+      "note": "Secret chỉ xuất tên, không xuất giá trị. Cấu hình agent xuất ở Agent Forge.",
       "download": "Tải file {file}",
       "none": "Chọn ít nhất một loại để xuất"
     },

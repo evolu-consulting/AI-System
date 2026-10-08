@@ -50,7 +50,7 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
   it("ADM-NFR-06 · M0-AC03 · có đúng 3 bảng hub.* và 19 bảng admin.* (M4)", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "development" });
-    expect(r).toEqual({ main: 10, dev: 3 });
+    expect(r).toEqual({ main: 11, dev: 3 });
     expect(await tablesIn(["admin", "hub"])).toEqual([
       ...ADMIN_TABLES,
       "hub.agent_grants",
@@ -144,13 +144,13 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
     expect([await count("__drizzle_migrations"), await count("__drizzle_migrations_dev")]).toEqual(
       before,
     );
-    expect(before).toEqual([10, 3]);
+    expect(before).toEqual([11, 3]);
   });
 
   it("ADM-NFR-06 · M0-AC03 · role đã có sẵn (DB reset nhưng role ở mức cluster) vẫn migrate được", async () => {
     await resetTestDb(URL);
     await expect(runMigrations({ url: URL, appEnv: "test" })).resolves.toEqual({
-      main: 10,
+      main: 11,
       dev: 3,
     });
   });
@@ -170,7 +170,7 @@ describe("ADM-NFR-06 · M0-AC04 · db:migrate (production)", () => {
   it("ADM-NFR-06 · M0-AC04 · có schema admin, hub; 19 bảng admin.* (M4), không có bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 10, dev: 0 });
+    expect(r).toEqual({ main: 11, dev: 0 });
     const ns = await sql<{ nspname: string }[]>`
       select nspname from pg_namespace where nspname in ('admin', 'hub') order by 1`;
     expect(ns.map((n) => n.nspname)).toEqual(["admin", "hub"]);

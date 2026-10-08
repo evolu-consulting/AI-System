@@ -4,9 +4,9 @@ import { i18n, initI18n, resolveInitialLocale, syncDocument } from "./i18n";
 describe("ADM-NFR-06 · i18n admin-web", () => {
   beforeAll(() => initI18n());
 
-  test("mặc định vi", () => {
-    expect(i18n.language).toBe("vi");
-    expect(i18n.t("nav.overview")).toBe("Tổng quan");
+  test("mặc định en (CR-052)", () => {
+    expect(i18n.language).toBe("en");
+    expect(i18n.t("nav.overview")).toBe("Overview");
   });
 
   test("đổi sang en", async () => {
@@ -26,11 +26,11 @@ describe("ADM-NFR-06 · i18n admin-web", () => {
     expect(doc.documentElement.lang).toBe("en");
   });
 
-  test("ngôn ngữ ban đầu: đã lưu → trình duyệt → vi", () => {
+  test("ngôn ngữ ban đầu: đã lưu → en (không dò trình duyệt)", () => {
     const store = (v: string | null) => ({ getItem: () => v });
-    expect(resolveInitialLocale(store("en"), "vi-VN")).toBe("en");
-    expect(resolveInitialLocale(store(null), "en-US")).toBe("en");
-    expect(resolveInitialLocale(store("xx"), "fr-FR")).toBe("vi");
-    expect(resolveInitialLocale(undefined, undefined)).toBe("vi");
+    expect(resolveInitialLocale(store("vi"))).toBe("vi");
+    expect(resolveInitialLocale(store(null))).toBe("en");
+    expect(resolveInitialLocale(store("xx"))).toBe("en");
+    expect(resolveInitialLocale(undefined)).toBe("en");
   });
 });

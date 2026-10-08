@@ -1,4 +1,4 @@
-// ADM-NFR-06, ADM-FR-01 · khởi tạo i18next; mặc định vi (hoặc `ai.locale`, rồi ngôn ngữ trình duyệt), `<html lang>` đi theo ngôn ngữ đang dùng.
+// ADM-NFR-06, ADM-FR-01 · khởi tạo i18next; CR-052: `ai.locale` đã lưu, không có thì en (không dò trình duyệt), `<html lang>` đi theo ngôn ngữ đang dùng.
 import { DEFAULT_LOCALE, type Locale, loadLocale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
@@ -16,15 +16,13 @@ export function syncDocument(doc: DocLike, lng: string): void {
 const isSupported = (v: string | null | undefined): v is (typeof SUPPORTED_LOCALES)[number] =>
   SUPPORTED_LOCALES.some((l) => l === v);
 
-/** Thứ tự: `ai.locale` đã lưu → ngôn ngữ trình duyệt (vi hoặc en) → `vi`. */
+/** Thứ tự: `ai.locale` đã lưu → `en` (CR-052: không dò ngôn ngữ trình duyệt). */
 export function resolveInitialLocale(
   storage: StorageLike | undefined,
-  browserLanguage: string | undefined,
 ): (typeof SUPPORTED_LOCALES)[number] {
   const saved = storage?.getItem(LOCALE_STORAGE_KEY);
   if (isSupported(saved)) return saved;
-  const prefix = browserLanguage?.slice(0, 2).toLowerCase();
-  return isSupported(prefix) ? prefix : DEFAULT_LOCALE;
+  return DEFAULT_LOCALE;
 }
 
 // Đăng ký trước `init` để lần init đầu cũng đặt `lang`; `bun test` không có `document`.
@@ -53,10 +51,7 @@ export const initI18n = (): Promise<unknown> =>
     .use(initReactI18next)
     .init({
       partialBundledLanguages: true,
-      lng: resolveInitialLocale(
-        typeof localStorage === "undefined" ? undefined : localStorage,
-        typeof navigator === "undefined" ? undefined : navigator.language,
-      ),
+      lng: resolveInitialLocale(typeof localStorage === "undefined" ? undefined : localStorage),
       fallbackLng: DEFAULT_LOCALE,
       supportedLngs: [...SUPPORTED_LOCALES],
       // Chuỗi dùng {tham_số} (plan-frontend §7), không phải {{...}} mặc định của i18next.
