@@ -1,5 +1,5 @@
-// HUB-FR-99 · unit `/me/stream` backpressure (review X2a RV1 #12): hàng đợi phiên vượt `bufferBytes` ⇒ đóng phiên (phần đã
-// xếp vẫn giao, client nối lại bằng `Last-Event-ID`); dưới trần ⇒ phiên mở bình thường.
+// HUB-FR-99 · unit `/me/stream` backpressure (review X2a RV1 #12, RV2 N4): luồng live vượt `bufferBytes` ⇒ đóng phiên (phần
+// đã xếp vẫn giao, client nối lại bằng `Last-Event-ID`); replay xếp theo khúc (chờ client đọc) ⇒ lô lớn không đóng client nhanh.
 import { describe, expect, test } from "bun:test";
 import type { Logger } from "../../lib/logger";
 import { MeStreamConns, meEventStream } from "./me-stream.session";
@@ -12,12 +12,18 @@ const entry = (n: number): UserEntry => ({
   ev: { event: "room.read", data: { room_id: ROOM, user_id: USER, seq: n } },
 });
 
-function setup(n: number, bufferBytes: number) {
+const entries = (n: number, from = 1) => Array.from({ length: n }, (_, i) => entry(i + from));
+
+/** `n` tin replay; `live` > 0 ⇒ ngay khi đăng ký, đẩy `live` tin live một lượt (client chưa kịp đọc). */
+function setup(n: number, bufferBytes: number, live = 0) {
   const warns: string[] = [];
   const log = { warn: (m: string) => warns.push(m) } as unknown as Logger;
   const reader = {
-    range: async () => Array.from({ length: n }, (_, i) => entry(i + 1)),
-    subscribe: () => () => {},
+    range: async () => entries(n),
+    subscribe: (_u: string, _from: string, cb: (e: UserEntry[]) => void) => {
+      if (live > 0) queueMicrotask(() => cb(entries(live, n + 1)));
+      return () => {};
+    },
   } as unknown as UserStreamReader;
   const ac = new AbortController();
   const stream = meEventStream(
@@ -52,13 +58,30 @@ async function drain(s: ReadableStream<Uint8Array>, ms = 200) {
 }
 
 describe("HUB-FR-99 · backpressure /me/stream", () => {
-  test("HUB-FR-99 · replay vượt trần byte ⇒ đóng phiên, chỉ giao phần đã xếp, log cảnh báo", async () => {
-    const { stream, warns } = setup(500, 2_000);
+  test("HUB-FR-99 · live vượt trần byte ⇒ đóng phiên, chỉ giao phần đã xếp, log cảnh báo", async () => {
+    const { stream, warns } = setup(0, 2_000, 500);
     const out = await drain(stream);
     expect(out.done).toBe(true);
     expect(out.frames).toBeGreaterThan(0);
     expect(out.frames).toBeLessThan(500);
     expect(warns).toContain("me-stream-slow-client");
+  });
+
+  test("HUB-FR-99 · replay lớn gấp nhiều lần trần, client đọc đều ⇒ giao đủ 500, phiên vẫn mở [review-2 N4]", async () => {
+    const { stream, warns, ac } = setup(500, 2_000);
+    const out = await drain(stream, 300);
+    ac.abort();
+    expect(out).toEqual({ frames: 500, done: false });
+    expect(warns).toEqual([]);
+  });
+
+  test("HUB-FR-99 · replay khi client chưa đọc ⇒ chờ ở trần (không đóng); đọc sau ⇒ vẫn đủ 500 [review-2 N4]", async () => {
+    const { stream, warns, ac } = setup(500, 2_000);
+    await new Promise((r) => setTimeout(r, 50));
+    const out = await drain(stream, 300);
+    ac.abort();
+    expect(out).toEqual({ frames: 500, done: false });
+    expect(warns).toEqual([]);
   });
 
   test("HUB-FR-99 · dưới trần ⇒ phiên vẫn mở, giao đủ", async () => {

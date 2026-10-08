@@ -92,6 +92,13 @@
       "when": 1792108800000,
       "tag": "0012_x2a_rooms_rls_tighten",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792195200000,
+      "tag": "0013_x2a_rooms_seq_integrity",
+      "breakpoints": true
     }
   ]
 }

@@ -47,6 +47,9 @@ Ghi chú: hàm STABLE dùng snapshot đầu câu ⇒ trong 1 câu (xoá phòng: 
 ### 4.4b Siết sau security review vòng 1 — `0012_x2a_rooms_rls_tighten.sql` (idx 12)
 Đè lên §4.2–§4.4: thêm definer `room_next_seq` (cấp `seq`, bỏ ẩn DM), `room_last_seq`; `room_fanout` chỉ trả `total` người khác trong đường gửi; `is_tenant_user` đòi active + không khoá; REVOKE UPDATE `last_seq`/`last_activity_at`; trigger `rooms_guard` (name/deleted_at chỉ chủ) + `room_members_guard` (cột theo vai); policy `room_members_update` USING thêm (hàng mình ∨ chủ), `room_messages_insert` thêm `seq = room_last_seq`. Lý do + chi tiết: [`plan-decisions.md`](plan-decisions.md) dòng RV1. §6: đánh dấu đọc và ẩn DM nay cũng `lockFor` trước.
 
+### 4.4c Sau security review vòng 2 — `0013_x2a_rooms_seq_integrity.sql` (idx 13)
+Constraint trigger `rooms_seq_integrity_tg` (deferred, N1: tăng `last_seq` phải kèm tin `seq` đó lúc COMMIT; miễn phiên đặc quyền) · trigger `room_messages_stamp_tg` (N2: `created_at` = `rooms.last_activity_at`, chèn thẳng bởi role chịu RLS) · CHECK `room_messages_user_no_agent_ck` (tin user không mang `run_id`/`flow_id`/`trigger_message_id`) · cảnh báo N4b: `room_members_guard` giả định đúng 1 policy UPDATE. Chi tiết: `plan-decisions.md` RV2.
+
 ### 4.5 Danh bạ — Q1 xác nhận
 `migrations/0002_admin_rls.sql` dòng 48–55: policy `users_hub_ro USING (true)` + `GRANT SELECT (id, tenant_id, username, display_name, email, role, locale, active, locked_by_tenant, …) ON admin.users TO hub_ro`; `hub_api` ∈ `hub_ro` (0000 dòng 462). ⇒ **Không migration Admin**. Lọc ở truy vấn: `WHERE u.tenant_id = $tid AND u.active AND NOT u.locked_by_tenant AND u.id <> $uid [AND (u.display_name ILIKE $p OR u.username ILIKE $p)] ORDER BY lower(u.display_name), u.id LIMIT $n`, chọn **đúng** `id, display_name, username, active`; `$p = %q%` thoát `\ % _`. Tenant đang hoạt động: đã bảo đảm bởi `accountUsable` của người gọi. Index `users_tenant_username_uq (tenant_id, username)`. TECH-DEBT (D1 docs): thu hẹp cột `hub_ro` trên `admin.users` (gần #34).
 
@@ -65,9 +68,9 @@ Mẫu outbox: `fn(tx)` trả `{ out, events: UserEvent[] }`; **sau** khi `withHu
 | Thêm | `FOR UPDATE` → đếm thành viên hiện tại → `planAddMembers` (full ⇒ `ROOM_FULL`, không ghi) → tra dùng được → `INSERT … ON CONFLICT (room_id,user_id) DO UPDATE SET left_at=NULL, role='member', joined_at, hidden_at=NULL, last_read_seq=EXCLUDED WHERE room_members.left_at IS NOT NULL` | `member_added` cho mọi thành viên (mới: kèm `room`) |
 | Bớt / rời | `FOR UPDATE` → đọc thành viên → `leaveOutcome` → `UPDATE … SET left_at` (hoặc nhánh xoá) | `member_removed {user_id}` cho thành viên còn lại **và** người bị bớt (đúng 1, R20) |
 | Chuyển chủ | `FOR UPDATE` → kiểm đích là thành viên → `UPDATE room_members SET role = CASE user_id WHEN $new THEN 'owner' ELSE 'member' END WHERE room_id=$r AND user_id IN ($me,$new)` | `updated {owner_id}` |
-| Ẩn DM | `UPDATE room_members SET hidden_at = now WHERE room_id AND user_id=me AND hidden_at IS NULL` | `unread` cho mình (D15) |
+| Ẩn DM | `lockFor(…, "hide")` (khoá hàng `rooms` FOR UPDATE + kiểm lại thành viên, §4.4b/RV1) → `UPDATE room_members SET hidden_at = clock_timestamp() WHERE room_id AND user_id=me AND hidden_at IS NULL` | `unread` cho mình (D15) |
 | Gửi tin | (1) `SELECT id, kind FROM rooms WHERE id=$r FOR UPDATE` (0 hàng ⇒ 404) (2) tìm `(room, me, client_msg_id)` ⇒ có: trả 200, **không** sự kiện (3) `UPDATE rooms SET last_seq=last_seq+1, last_activity_at=$now RETURNING last_seq` (4) `INSERT room_messages RETURNING` (5) `UPDATE room_members SET last_read_seq=greatest(last_read_seq,$seq) WHERE me` (6) dm: `UPDATE … SET hidden_at=NULL WHERE room_id AND hidden_at IS NOT NULL` (R07) (7) `SELECT * FROM hub.room_fanout($r)` | `message` mọi thành viên (gồm người gửi); `unread {unread,total}` mỗi thành viên từ (7) |
-| Đánh dấu đọc | `SELECT last_seq FROM rooms` (không khoá) → `clampReadSeq` → null ⇒ trả số hiện tại, không sự kiện; khác ⇒ `UPDATE room_members SET last_read_seq=greatest(…)` → `unread_total` (RLS) | `read {user_id, seq}` thành viên khác; `unread` cho mình |
+| Đánh dấu đọc | `lockFor(…, "read")` (khoá hàng `rooms` FOR UPDATE + kiểm lại thành viên, bị bớt ⇒ 404; §4.4b/RV1 #5) → `SELECT last_seq` + mốc đọc của mình → `clampReadSeq` → null ⇒ trả số hiện tại, không sự kiện; khác ⇒ `UPDATE room_members SET last_read_seq=greatest(…)` → `unread_total` (RLS) | `read {user_id, seq}` thành viên khác; `unread` cho mình |
 | Lịch sử | `access` → `SELECT … WHERE room_id AND seq < $before ORDER BY seq DESC LIMIT n+1` (`room_messages_seq_uq`) → đảo tăng; `sender` join `admin.users` (left join, fallback `username`) | — |
 | `GET /rooms` | membership của mình (`left_at IS NULL AND hidden_at IS NULL`, D7) join `rooms` (`deleted_at IS NULL`), keyset `(last_activity_at, id) DESC`, LATERAL tin cuối (`seq = last_seq`, unique), peer/`member_count` một câu gộp; `unread_total` một câu tổng | — |
 
@@ -75,9 +78,9 @@ Gửi trùng song song: bên sau chờ khoá `rooms` ở (1), câu (2) chạy sa
 
 ## 6. Thứ tự khoá & đồng thời
 - **Mọi** thay đổi thành viên/tên/xoá/gửi tin: khoá hàng `hub.rooms` (FOR UPDATE hoặc UPDATE `last_seq`) **đầu tiên** → `room_members` → `room_messages`. Mỗi transaction chỉ một phòng ⇒ không chu trình giữa phòng.
-- Đánh dấu đọc / ẩn chỉ khoá **hàng mình** trong `room_members`, không xin khoá `rooms` ⇒ không chu trình với gửi tin (gửi giữ `rooms` rồi xin hàng thành viên; đọc giữ hàng thành viên và không xin gì thêm).
+- Đánh dấu đọc / ẩn DM cũng khoá hàng `rooms` **trước** (`lockFor`, FOR UPDATE — §4.4b, RV1 #5) rồi mới sửa **hàng mình** trong `room_members` ⇒ cùng thứ tự với gửi tin, không chu trình; đọc/ẩn tuần tự với gửi và với nhau trong cùng phòng (chấp nhận ở X2a; `FOR SHARE` nếu đo thấy tranh chấp — TECH-DEBT #106).
 - Giới hạn 50: đếm + INSERT dưới khoá `rooms` ⇒ hai lần thêm song song tuần tự hoá, không vượt (test song song).
-- `seq`: liền, không trùng (khoá hàng + `room_messages_seq_uq`; X2a-AC07). Rollback sau `UPDATE last_seq` ⇒ `last_seq` cũng rollback, không lỗ hổng.
+- `seq`: liền, không trùng (khoá hàng + `room_messages_seq_uq`; X2a-AC07). Rollback sau `UPDATE last_seq` ⇒ `last_seq` cũng rollback, không lỗ hổng. Tăng `last_seq` mà không chèn tin `seq` đó ⇒ COMMIT lỗi 23514 (constraint trigger `rooms_seq_integrity_tg`, `0013`, security-2 N1).
 - DM song song: `ON CONFLICT … DO NOTHING` trong `create_room` ⇒ đúng 1 phòng, hai bên nhận cùng `id`.
 - Danh sách người nhận sự kiện đọc **sau** khi đã giữ khoá phòng ⇒ nhất quán với thay đổi thành viên (R20).
 - `withHubScope` retry 40P01/40001: `fn` chỉ làm DB (outbox), phát Redis sau commit.

@@ -1,5 +1,5 @@
 // HUB-FR-96 · HUB-BR-22 · kiểu Drizzle cho phòng chat X2a (plan-db X2a §4.1). CHỈ để truy vấn có kiểu: DDL thật, CHECK,
-// FK kép tenant, EXCLUDE 1 owner, RLS và hàm SECURITY DEFINER ở `migrations-hub/0011_x2a_rooms.sql` + siết ở `0012_x2a_rooms_rls_tighten.sql` (viết tay).
+// FK kép tenant, EXCLUDE 1 owner, RLS và hàm SECURITY DEFINER ở `migrations-hub/0011_x2a_rooms.sql` + siết ở `0012_x2a_rooms_rls_tighten.sql`, `0013_x2a_rooms_seq_integrity.sql` (viết tay).
 // Tạo phòng KHÔNG insert trực tiếp `rooms` (không GRANT/policy INSERT): gọi `hub.create_room` (D3).
 import { bigint, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { hub } from "./hub-readonly";

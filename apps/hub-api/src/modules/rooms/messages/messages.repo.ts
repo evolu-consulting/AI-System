@@ -116,7 +116,12 @@ export async function advanceRead(
   return row ? Number(row.last_read_seq) : null;
 }
 
-/** D13 · chưa đọc của phòng + tổng chưa đọc của từng thành viên (definer; tổng người khác chỉ có ngay sau khi gửi, RV1 #4). */
+/**
+ * D13 · chưa đọc của phòng + tổng chưa đọc của từng thành viên (definer; tổng người khác chỉ có ngay sau khi gửi, RV1 #4).
+ * CẢNH BÁO (security-2 N3): `room_fanout` nhận "vừa gửi" bằng `xmin = pg_current_xact_id_if_assigned()` ⇒ nếu INSERT tin
+ * nằm trong SAVEPOINT (subtransaction, vd. `tx.transaction(...)` lồng) thì `xmin` là xid con ≠ xid top ⇒ `total` người khác
+ * = NULL ⇒ phát 0. Gọi cùng mức transaction với `insertMessage`, không bọc INSERT trong savepoint.
+ */
 export async function fanout(tx: Tx, roomId: string): Promise<FanoutRow[]> {
   const rows = await tx.execute<{ user_id: string; unread: Num; total: Num | null }>(sql`
     select user_id, unread, total from hub.room_fanout(${roomId}::uuid)`);

@@ -1,8 +1,9 @@
 // HUB-FR-99 · HUB-BR-22 · X2a-AC08 · X2a-AC12 · phiên `/me/stream` (X2a plan §7, D11–D14; spec-isolation §1): quyết định
 // nối lại (`Last-Event-ID` → tail/replay/`stream.reset`) TRƯỚC khi trả response (sự kiện XADD sau khi client nhận header
 // luôn có id > điểm bắt đầu ⇒ không mất), replay rồi theo dõi, `: ping` mỗi `pingMs` kèm `accountUsable` (bị khoá ⇒ đóng),
-// đóng lúc JWT `exp`, ≤ `USER_STREAM_CONN_MAX` phiên/user/instance (phiên mới đẩy phiên cũ nhất ra). Client đọc chậm: hàng
-// đợi phiên vượt `bufferBytes` ⇒ đóng (phần đã xếp vẫn giao), client nối lại bằng `Last-Event-ID` (review RV1 #12).
+// đóng lúc JWT `exp`, ≤ `USER_STREAM_CONN_MAX` phiên/user/instance (phiên mới đẩy phiên cũ nhất ra). Replay xếp theo khúc:
+// chỉ `enqueue` khi hàng đợi còn chỗ, đầy ⇒ chờ client đọc (`pull`) — lô lớn không giết client nhanh (review-2 N4). Luồng live:
+// hàng đợi vượt `bufferBytes` ⇒ đóng (phần đã xếp vẫn giao), client nối lại bằng `Last-Event-ID` (review RV1 #12).
 import { SSE_PING_FRAME, USER_STREAM_CONN_MAX } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { safeErrorFields } from "../../lib/errors";
@@ -85,6 +86,10 @@ class MeStreamSession implements Closable {
   #unsub = () => {};
   #ping: ReturnType<typeof setInterval> | undefined;
   #expiry: ReturnType<typeof setTimeout> | undefined;
+  /** Đang replay: tràn hàng đợi không đóng phiên (đã tự chờ `pull`). */
+  #replaying = false;
+  /** Replay đang chờ client đọc bớt; `pulled()`/`stop()` gọi để chạy tiếp. */
+  #drain: (() => void) | undefined;
   /**
    * Tắt instance: đóng ở lượt event loop SAU — Bun 1.3 treo `server.stop(true)` khi ≥ 2 stream bị `close()` cùng tick
    * ngay trước nó (đo thật, plan §16 B7); `stop(true)` cắt kết nối trước, `end()` sau đó vô hại.
@@ -113,7 +118,7 @@ class MeStreamSession implements Closable {
     this.#ping = setInterval(() => this.#tick(), d.pingMs);
     this.#armExpiry();
     try {
-      if (o.plan.replay) this.#push(await d.reader.range(o.user.userId, o.plan.from));
+      if (o.plan.replay) await this.#replay(await d.reader.range(o.user.userId, o.plan.from));
       if (this.#closed) return;
       this.#unsub = d.reader.subscribe(o.user.userId, this.#last, (e) => this.#push(e));
     } catch (err) {
@@ -123,8 +128,16 @@ class MeStreamSession implements Closable {
     }
   }
 
+  /** `pull` của stream: hàng đợi còn chỗ ⇒ replay chạy tiếp. */
+  pulled(): void {
+    const go = this.#drain;
+    this.#drain = undefined;
+    go?.();
+  }
+
   stop(): void {
     this.#closed = true;
+    this.pulled();
     clearInterval(this.#ping);
     clearTimeout(this.#expiry);
     this.#unsub();
@@ -165,6 +178,21 @@ class MeStreamSession implements Closable {
       .catch((err) => this.d.log.warn("me-stream-usable-failed", safeErrorFields(err)));
   }
 
+  /** Replay theo khúc: mỗi frame chỉ xếp khi `desiredSize > 0` ⇒ hàng đợi vượt trần tối đa một frame. */
+  async #replay(entries: UserEntry[]): Promise<void> {
+    this.#replaying = true;
+    for (const e of entries) {
+      while (!this.#closed && (this.ctl.desiredSize ?? 0) <= 0) {
+        await new Promise<void>((go) => {
+          this.#drain = go;
+        });
+      }
+      if (this.#closed) return;
+      this.#push([e]);
+    }
+    this.#replaying = false;
+  }
+
   #push(entries: UserEntry[]): void {
     for (const e of entries) {
       if (this.#closed || compareStreamId(e.id, this.#last) <= 0) continue;
@@ -181,7 +209,7 @@ class MeStreamSession implements Closable {
       this.stop();
       return;
     }
-    if ((this.ctl.desiredSize ?? 0) < 0) {
+    if (!this.#replaying && (this.ctl.desiredSize ?? 0) < 0) {
       this.d.log.warn("me-stream-slow-client", { queued_over: -(this.ctl.desiredSize ?? 0) });
       this.end();
     }
@@ -195,7 +223,11 @@ export function meEventStream(d: MeStreamDeps, o: MeStreamOpen): ReadableStream<
     {
       start(ctl) {
         session = new MeStreamSession(d, o, ctl);
-        return session.start();
+        // không trả promise: `pull` chỉ được gọi sau khi `start` xong, mà replay chờ `pull` (lỗi đã xử lý trong `start()`)
+        void session.start();
+      },
+      pull() {
+        session?.pulled();
       },
       cancel() {
         session?.stop();
