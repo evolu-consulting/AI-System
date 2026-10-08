@@ -5,11 +5,13 @@ import {
   CHAT_API_ERRORS,
   CHAT_ATTACHMENT_ERRORS,
   CHAT_COMMAND_ERRORS,
+  CHAT_ROOM_AGENT_ERRORS,
   CHAT_ROOM_ERRORS,
   CHAT_ROUTING_ERRORS,
   type ChatAttachmentErrorCode,
   type ChatCommandErrorCode,
   type ChatErrorCode,
+  type ChatRoomAgentErrorCode,
   type ChatRoomErrorCode,
   type ChatRoutingErrorCode,
   type ErrorResponse,
@@ -43,6 +45,7 @@ export type HubErrorCode =
   | ChatRoutingErrorCode
   | ChatAttachmentErrorCode
   | ChatRoomErrorCode
+  | ChatRoomAgentErrorCode
   | HubAdminErrorCode
   | StudioErrorCode;
 const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
@@ -51,6 +54,7 @@ const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
   ...CHAT_ROUTING_ERRORS,
   ...CHAT_ATTACHMENT_ERRORS,
   ...CHAT_ROOM_ERRORS,
+  ...CHAT_ROOM_AGENT_ERRORS,
   ...HUB_ADMIN_ERRORS,
   ...STUDIO_ERRORS,
 };
@@ -79,6 +83,7 @@ export const ERROR_MESSAGES: Record<HubErrorCode, string> = {
   OWNER_MUST_TRANSFER: "Transfer ownership before leaving",
   GROUP_NOT_HIDEABLE: "Groups cannot be hidden",
   DM_SELF: "Cannot message yourself",
+  NOT_RUN_CALLER: "Only the person who asked the agent can reply",
   FORBIDDEN: "Forbidden",
   TENANT_REQUIRED: "tenant_id is required",
   INVALID_REFERENCE: "Invalid reference",

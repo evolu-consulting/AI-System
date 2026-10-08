@@ -118,3 +118,13 @@ export const RoomFullDetailsSchema = z.strictObject({
   requested: z.number().int().min(0),
 });
 export type RoomFullDetails = z.infer<typeof RoomFullDetailsSchema>;
+
+// HUB-FR-101 · lỗi agent trong phòng (X2b plan §2.1, D9): hằng riêng, không đổi `CHAT_ROOM_ERRORS`. Không `details`.
+export const CHAT_ROOM_AGENT_ERRORS = {
+  NOT_RUN_CALLER: 403,
+} as const satisfies Record<string, 403>;
+
+export type ChatRoomAgentErrorCode = keyof typeof CHAT_ROOM_AGENT_ERRORS;
+export const CHAT_ROOM_AGENT_ERROR_CODES = Object.keys(
+  CHAT_ROOM_AGENT_ERRORS,
+) as ChatRoomAgentErrorCode[];

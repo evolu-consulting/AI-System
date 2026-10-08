@@ -1,7 +1,14 @@
 // HUB-FR-96…100 · phòng chat DM/nhóm: thực thể + request/query (X2a plan §2.3). Mọi object strict; không I/O.
 import { z } from "zod";
 import { CountSchema, DISPLAY_NAME_MAX, IsoDateTime, UuidSchema } from "../common";
-import { CHAT_CONTENT_MAX, ChatCursorSchema } from "./entities";
+import { ChatAgentKeySchema } from "./agents";
+import {
+  CHAT_ASK_CHOICE_MAX,
+  CHAT_ASK_CHOICES_MAX,
+  CHAT_ASK_QUESTION_MAX,
+  CHAT_CONTENT_MAX,
+  ChatCursorSchema,
+} from "./entities";
 
 export const ROOM_NAME_MAX = 80;
 /** Gồm chủ phòng. */
@@ -13,6 +20,14 @@ export const ROOM_KINDS = ["dm", "group"] as const;
 export const ROOM_ROLES = ["owner", "member"] as const;
 export const ROOM_SENDER_TYPES = ["user", "agent"] as const;
 export const ROOM_MESSAGES_LIMIT_DEFAULT = 50;
+// HUB-FR-101, 103 · X2b plan §2.2: agent trong phòng (chỉ thêm).
+export const ROOM_ORCHESTRATOR_TAG = "orchestrator";
+export const ROOM_CONTEXT_MAX = 20;
+export const ROOM_THREAD_CONTEXT_MAX = 50;
+export const ROOM_ACTIVE_RUNS_MAX = 50;
+export const ROOM_PLACEMENTS = ["main", "flow"] as const;
+export const ROOM_RUN_STATUSES = ["finished", "failed", "cancelled"] as const;
+export const ROOM_WAIT_KINDS = ["need_input", "side_effect"] as const;
 const ROOM_LIMIT_MAX = 200;
 const ROOM_LIST_LIMIT_DEFAULT = 50;
 
@@ -65,10 +80,39 @@ export const RoomMemberSchema = z.strictObject({
 });
 export type RoomMember = z.infer<typeof RoomMemberSchema>;
 
+const AgentNameSchema = z.string().min(1).max(100);
+export const RoomAgentRefSchema = z.strictObject({
+  key: ChatAgentKeySchema,
+  name: z.strictObject({ vi: AgentNameSchema, en: AgentNameSchema }),
+});
+export type RoomAgentRef = z.infer<typeof RoomAgentRefSchema>;
+
+/** `question/choices` của `side_effect` chỉ có khi người xem = người gọi (X2b D3). */
+export const RoomAskSchema = z.strictObject({
+  kind: z.enum(ROOM_WAIT_KINDS),
+  question: z.string().min(1).max(CHAT_ASK_QUESTION_MAX).optional(),
+  choices: z.array(z.string().min(1).max(CHAT_ASK_CHOICE_MAX)).max(CHAT_ASK_CHOICES_MAX).optional(),
+});
+export type RoomAsk = z.infer<typeof RoomAskSchema>;
+
+export const RoomActiveRunSchema = z.strictObject({
+  run_id: UuidSchema,
+  flow_id: UuidSchema,
+  trigger_message_id: UuidSchema,
+  /** null = Orchestrator. */
+  agent: RoomAgentRefSchema.nullable(),
+  caller: SenderSchema,
+  status: z.enum(["running", "waiting"]),
+  wait_kind: z.enum(ROOM_WAIT_KINDS).optional(),
+  started_at: IsoDateTime,
+});
+export type RoomActiveRun = z.infer<typeof RoomActiveRunSchema>;
+
 export const RoomDetailSchema = RoomSummarySchema.extend({
   owner_id: UuidSchema.nullable(),
   created_at: IsoDateTime,
   members: z.array(RoomMemberSchema).min(1).max(ROOM_MEMBERS_MAX),
+  active_runs: z.array(RoomActiveRunSchema).max(ROOM_ACTIVE_RUNS_MAX).optional(),
 });
 export type RoomDetail = z.infer<typeof RoomDetailSchema>;
 
@@ -85,6 +129,16 @@ export const RoomMessageSchema = z.strictObject({
   run_id: UuidSchema.optional(),
   flow_id: UuidSchema.optional(),
   trigger_message_id: UuidSchema.optional(),
+  // X2b (vắng ≡ mặc định; không superRefine — tin agent thiếu trường phụ vẫn hợp lệ).
+  placement: z.enum(ROOM_PLACEMENTS).optional(),
+  agent: RoomAgentRefSchema.optional(),
+  caller: SenderSchema.optional(),
+  run_status: z.enum(ROOM_RUN_STATUSES).optional(),
+  ask: RoomAskSchema.optional(),
+  steps: z.strictObject({ count: z.number().int().min(0), ms: z.number().min(0) }).optional(),
+  flow: z
+    .strictObject({ message_count: z.number().int().min(0), last_active_at: IsoDateTime })
+    .optional(),
 });
 export type RoomMessage = z.infer<typeof RoomMessageSchema>;
 
@@ -124,6 +178,7 @@ export const RoomListResponseSchema = z.strictObject({
 export type RoomListResponse = z.infer<typeof RoomListResponseSchema>;
 
 export const RoomMessageListQuerySchema = z.strictObject({
+  flow_id: UuidSchema.optional(),
   before_seq: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(ROOM_LIMIT_MAX).default(ROOM_MESSAGES_LIMIT_DEFAULT),
 });
@@ -136,10 +191,18 @@ export const RoomMessagePageSchema = z.strictObject({
 });
 export type RoomMessagePage = z.infer<typeof RoomMessagePageSchema>;
 
-export const SendRoomMessageRequestSchema = z.strictObject({
-  content: z.string().trim().min(1).max(CHAT_CONTENT_MAX),
-  client_msg_id: UuidSchema,
-});
+export const SendRoomMessageRequestSchema = z
+  .strictObject({
+    content: z.string().trim().min(1).max(CHAT_CONTENT_MAX),
+    client_msg_id: UuidSchema,
+    flow_id: UuidSchema.optional(),
+    answer_run_id: UuidSchema.optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.answer_run_id !== undefined && v.flow_id === undefined) {
+      ctx.addIssue({ code: "custom", path: ["flow_id"], message: "flow_id required" });
+    }
+  });
 export type SendRoomMessageRequest = z.infer<typeof SendRoomMessageRequestSchema>;
 
 export const MarkRoomReadRequestSchema = z.strictObject({ seq: SeqSchema });

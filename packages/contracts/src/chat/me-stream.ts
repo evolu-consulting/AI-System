@@ -2,7 +2,13 @@
 // `stream.reset` không có `id:`; ping dùng `SSE_PING_FRAME` (events.ts).
 import { z } from "zod";
 import { CountSchema, UuidSchema } from "../common";
-import { RoomMessageSchema, RoomSummarySchema } from "./rooms";
+import {
+  ROOM_RUN_STATUSES,
+  ROOM_WAIT_KINDS,
+  RoomAgentRefSchema,
+  RoomMessageSchema,
+  RoomSummarySchema,
+} from "./rooms";
 
 export const ME_STREAM_EVENTS = [
   "room.message",
@@ -81,5 +87,58 @@ export function parseMeStreamEvent(event: string, data: string): MeStreamEvent |
     return null;
   }
   const r = MeStreamEventSchema.safeParse({ event, data: json });
+  return r.success ? r.data : null;
+}
+
+// HUB-FR-101, 103 · sự kiện run trong phòng (X2b plan §2.3, D10): hằng riêng, không đổi `ME_STREAM_EVENTS`.
+export const ME_STREAM_RUN_EVENTS = [
+  "room.run_started",
+  "room.run_waiting",
+  "room.run_finished",
+] as const;
+export type MeStreamRunEventName = (typeof ME_STREAM_RUN_EVENTS)[number];
+
+export const RoomRunStartedEventDataSchema = z.strictObject({
+  room_id,
+  run_id: UuidSchema,
+  flow_id: UuidSchema,
+  trigger_message_id: UuidSchema,
+  agent: RoomAgentRefSchema.nullable(),
+  caller: z.strictObject({ id: UuidSchema, display_name: z.string().min(1) }),
+});
+export const RoomRunWaitingEventDataSchema = z.strictObject({
+  room_id,
+  run_id: UuidSchema,
+  flow_id: UuidSchema,
+  caller_id: UuidSchema,
+  kind: z.enum(ROOM_WAIT_KINDS),
+});
+export const RoomRunFinishedEventDataSchema = z.strictObject({
+  room_id,
+  run_id: UuidSchema,
+  flow_id: UuidSchema,
+  status: z.enum(ROOM_RUN_STATUSES),
+  message_id: UuidSchema.nullable(),
+});
+export type RoomRunStartedEventData = z.infer<typeof RoomRunStartedEventDataSchema>;
+export type RoomRunWaitingEventData = z.infer<typeof RoomRunWaitingEventDataSchema>;
+export type RoomRunFinishedEventData = z.infer<typeof RoomRunFinishedEventDataSchema>;
+
+export const MeStreamRunEventSchema = z.discriminatedUnion("event", [
+  z.strictObject({ event: z.literal("room.run_started"), data: RoomRunStartedEventDataSchema }),
+  z.strictObject({ event: z.literal("room.run_waiting"), data: RoomRunWaitingEventDataSchema }),
+  z.strictObject({ event: z.literal("room.run_finished"), data: RoomRunFinishedEventDataSchema }),
+]);
+export type MeStreamRunEvent = z.infer<typeof MeStreamRunEventSchema>;
+
+/** Như `parseMeStreamEvent`: JSON hỏng, event lạ hoặc khoá thừa trả `null` (không ném). */
+export function parseMeStreamRunEvent(event: string, data: string): MeStreamRunEvent | null {
+  let json: unknown;
+  try {
+    json = JSON.parse(data);
+  } catch {
+    return null;
+  }
+  const r = MeStreamRunEventSchema.safeParse({ event, data: json });
   return r.success ? r.data : null;
 }
