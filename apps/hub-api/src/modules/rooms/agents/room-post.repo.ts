@@ -74,7 +74,7 @@ const toOutcome = (r: OutcomeSql): RunOutcomeRow => ({
  * Kết quả run phòng (tin trả lời ở hội thoại nền, xác nhận pending, số bước). null = không phải run phòng. Không tin cột
  * `runs` đơn lẻ (security-1 #1): `threadId` chỉ có khi flow nền thuộc hội thoại nền của (phòng, người gọi); `content`/`ask`
  * chỉ từ tin assistant của chính run. Definer kiểm lại các điều đó **và** tin gọi (`room_messages` không đọc được ở scope
- * system) ⇒ `threadId` null ⇒ definer chắc chắn `skipped`.
+ * system) ⇒ `threadId` null ⇒ definer chắc chắn `skipped`. Tên agent chỉ khi agent được cấp cho tenant của run (security-2 M1).
  */
 export async function runOutcome(tx: Tx, runId: string): Promise<RunOutcomeRow | null> {
   const [row] = await tx.execute<OutcomeSql>(sql`
@@ -91,6 +91,7 @@ export async function runOutcome(tx: Tx, runId: string): Promise<RunOutcomeRow |
     left join hub.conversations c on c.id = f.conversation_id and c.tenant_id = r.tenant_id
       and c.room_id = r.room_id and c.user_id = r.user_id and f.user_id = r.user_id
     left join hub.agents a on a.id = coalesce(r.agent_id, f.agent_id)
+      and exists (select 1 from hub.agent_entitlements e where e.agent_id = a.id and e.tenant_id = r.tenant_id)
     left join hub.messages pm on pm.id = r.answer_message_id and pm.tenant_id = r.tenant_id and pm.run_id = r.id
       and pm.user_id = r.user_id and pm.flow_id = r.flow_id and pm.role = 'assistant'
     left join admin.users u on u.id = r.user_id and u.tenant_id = r.tenant_id

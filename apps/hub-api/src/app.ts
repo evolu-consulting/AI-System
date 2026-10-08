@@ -178,7 +178,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     log: logger,
     onClosed,
   });
-  mountRoomAgents(x2a, { runs, prepareMention: h2b.prepareMention, config, cancel });
+  mountRoomAgents(x2a, { runs, prepareMention: h2b.prepareMention, config, cancel, log: logger });
   app.route(
     "/conversations",
     conversationRoutes(deps.db, (u, id) => cancel.removeConversation(u, id)),

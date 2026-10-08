@@ -156,6 +156,29 @@ async function writeTrigger(tx: Tx, me: Me, w: Write & { threadId: string }): Pr
   return { out: { message, created: true, run, history }, events };
 }
 
+/**
+ * D15 (review-1 #4) · tin + run đã COMMIT ⇒ không ném: E15 lỗi ⇒ writer cục bộ tự kết thúc `cancelled` (run không treo
+ * `running` tới sweeper; hook `onClosed` vẫn đăng "đã huỷ"); lỗi nữa ⇒ chỉ log, sweeper + reconcile bù.
+ */
+export async function cancelDeclined(
+  d: Pick<RoomRunDeps, "cancel" | "log">,
+  u: AuthUser,
+  runId: string,
+  writer: Pick<SseWriter, "finish"> | undefined,
+): Promise<void> {
+  try {
+    await d.cancel.cancel(u, runId);
+    return;
+  } catch (err) {
+    d.log?.warn("room-decline-cancel-failed", { run_id: runId, ...safeErrorFields(err) });
+  }
+  try {
+    await writer?.finish({ kind: "failed", code: "CANCELLED" });
+  } catch (err) {
+    d.log?.warn("room-decline-finish-failed", { run_id: runId, ...safeErrorFields(err) });
+  }
+}
+
 export class RoomRunService {
   constructor(private readonly d: RoomRunDeps) {}
 
@@ -198,26 +221,8 @@ export class RoomRunService {
       roomHistory: out.history,
       ...(idle && { driver: idle.driver }),
     });
-    if (idle) await this.#cancelDeclined(u, p.run.id, idle.writer());
+    if (idle) await cancelDeclined(this.d, u, p.run.id, idle.writer());
     return { message: out.message, created: true, run: out.run };
-  }
-
-  /**
-   * D15 (review-1 #4) · tin + run đã COMMIT ⇒ không ném: E15 lỗi ⇒ writer cục bộ tự kết thúc `cancelled` (run không treo
-   * `running` tới sweeper; hook `onClosed` vẫn đăng "đã huỷ"); lỗi nữa ⇒ chỉ log, sweeper + reconcile bù.
-   */
-  async #cancelDeclined(u: AuthUser, runId: string, writer: SseWriter | undefined): Promise<void> {
-    try {
-      await this.d.cancel.cancel(u, runId);
-      return;
-    } catch (err) {
-      this.d.log?.warn("room-decline-cancel-failed", { run_id: runId, ...safeErrorFields(err) });
-    }
-    try {
-      await writer?.finish({ kind: "failed", code: "CANCELLED" });
-    } catch (err) {
-      this.d.log?.warn("room-decline-finish-failed", { run_id: runId, ...safeErrorFields(err) });
-    }
   }
 
   /** D8 · tag → `MentionService.prepare` (AU người tag); `@orchestrator` + tag ⇒ Orchestrator thu hẹp; trả lời ⇒ C1. */
