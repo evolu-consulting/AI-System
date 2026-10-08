@@ -278,6 +278,8 @@ describe("D13–D16 · ghi qua RLS + ràng buộc [X2a-R01 · R04 · R11 · R15]
 
   it("HUB-BR-22 · D15 · tin: sender_id ≠ GUC user ⇒ 42501; sender_type='agent' ⇒ 42501; GUC C chèn vào G ⇒ 42501; A đúng ⇒ ok [X2a-R15]", async () => {
     const g = await G();
+    // Sau review-1 (security-1 #3) policy chỉ nhận seq = last_seq ⇒ đặt last_seq=10 (owner) để ca "đúng" chèn seq 10.
+    await owner`update hub.rooms set last_seq = 10 where id = ${g}`;
     const ins = (who: typeof P.lan, sender: string, type = "user", seq = 10) =>
       asUser(api, who, (tx) =>
         pgCode(tx`insert into hub.room_messages (room_id, tenant_id, seq, sender_type, sender_id, content, created_at)
