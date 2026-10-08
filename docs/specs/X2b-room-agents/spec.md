@@ -122,7 +122,7 @@ Env mới: (không dự kiến).
 | X2b-AC08 | `max_concurrent_runs` của A đầy → 429 `TOO_MANY_RUNS`, 0 run mới, lỗi chỉ A thấy; B gọi bình thường | int |
 | X2b-AC09 | Phòng có 30 tin → input run chứa đúng 20 tin gần nhất + tin gọi; không có tin phòng khác/hội thoại riêng | int |
 | X2b-AC10 | Rò ngữ cảnh: C không là thành viên → không kích hoạt run (404 `ROOM_NOT_FOUND`); run của A không chứa dữ liệu/file A không có; C không thấy `runs`/kết quả | int (cách ly) |
-| X2b-AC11 | File gửi vào phòng X dùng được ở X; id file phòng Y/hội thoại riêng → bỏ qua | int |
+| X2b-AC11 | (rút gọn Q9) `attachment_ids` vào tin phòng → 400 `VALIDATION_ERROR`; run phòng không file | int |
 | X2b-AC12 | Tin agent chứa "@hoadon" → không sinh run (chặn vòng lặp) | int |
 | X2b-AC13 | (AC-H27, CHAT-AC-46) A có `hoadon`,`trello`, B chỉ `trello`: gõ `@` → menu A 2 mục, B 1 mục (tên + `@key` + mô tả); chọn chèn `@key`; thu hồi quyền → biến mất sau tải lại; DOM không có panel/chip agent | e2e |
 | X2b-AC14 | Thu hồi quyền `hoadon` của A trước khi gọi → `AGENT_NOT_FOUND`; giữa lúc run chạy → theo Q2 | int |
@@ -135,21 +135,21 @@ Lệnh xong: `bun run typecheck && bun test && bunx playwright test X2b`
 ## 9. Câu hỏi mở (đều có mặc định; không trả lời = chấp nhận mặc định)
 | Q | Câu hỏi | Mặc định đề xuất |
 |---|---|---|
-| Q1 | Run trong phòng phát gì qua `/me/stream`? | Thêm `room.run_started`, `room.run_waiting` (kèm `caller_id`, loại `need_input`/`side_effect`), `room.run_finished`; kết quả vẫn là `room.message`. Không phát token từng đoạn cho cả phòng: người gọi xem stream run `sse:<run_id>` như C1, người khác thấy kết quả cuối |
-| Q2 | Quyền agent bị thu hồi giữa chừng? | Run đang chạy **chạy nốt** (quyền kiểm lúc tạo run, như hội thoại riêng); `side_effect` chưa xác nhận kiểm lại quyền lúc xác nhận, thiếu → huỷ, tin agent "đã huỷ" |
-| Q3 | Giới hạn tần suất gọi agent trong phòng? | Không thêm limit mới: chỉ `max_concurrent_runs` + quota người gọi hiện có. Nếu spam phòng thành vấn đề → TECH-DEBT |
-| Q4 | Tin gọi bị `AGENT_NOT_FOUND`/`TOO_MANY_RUNS` có vào phòng? | **Không lưu**, trả lỗi cho người gửi (không lộ cho người khác); UI giữ nội dung trong composer |
-| Q5 | Người khác thấy gì khi chờ `side_effect`? | Chỉ "Đang chờ A xác nhận" + tên agent; không hiện tham số/hành động; người gọi thấy đầy đủ |
-| Q6 | Tin trong flow (`flow_id`) có vào 20 tin ngữ cảnh? | Run ở timeline chính: 20 tin gần nhất của timeline chính (khối flow gốc tính 1 tin = kết quả cuối). Run trong flow: lịch sử flow + 20 tin timeline gần nhất trước flow |
+| Q1 | Run trong phòng phát gì qua `/me/stream`? | Thêm `room.run_started`, `room.run_waiting` (kèm `caller_id`, loại `need_input`/`side_effect`), `room.run_finished`; kết quả vẫn là `room.message`. Không phát token từng đoạn cho cả phòng: người gọi xem stream run `sse:<run_id>` như C1, người khác thấy kết quả cuối — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q2 | Quyền agent bị thu hồi giữa chừng? | Run đang chạy **chạy nốt** (quyền kiểm lúc tạo run, như hội thoại riêng); `side_effect` chưa xác nhận kiểm lại quyền lúc xác nhận, thiếu → huỷ, tin agent "đã huỷ" — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q3 | Giới hạn tần suất gọi agent trong phòng? | Không thêm limit mới: chỉ `max_concurrent_runs` + quota người gọi hiện có. Nếu spam phòng thành vấn đề → TECH-DEBT — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q4 | Tin gọi bị `AGENT_NOT_FOUND`/`TOO_MANY_RUNS` có vào phòng? | **Không lưu**, trả lỗi cho người gửi (không lộ cho người khác); UI giữ nội dung trong composer — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q5 | Người khác thấy gì khi chờ `side_effect`? | Chỉ "Đang chờ A xác nhận" + tên agent; không hiện tham số/hành động; người gọi thấy đầy đủ — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q6 | Tin trong flow (`flow_id`) có vào 20 tin ngữ cảnh? | Run ở timeline chính: 20 tin gần nhất của timeline chính (khối flow gốc tính 1 tin = kết quả cuối). Run trong flow: lịch sử flow + 20 tin timeline gần nhất trước flow — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 | Q7 | Người không phải người gọi gốc tiếp tục flow? | [x] **Người dùng chốt 2026-10-08:** mọi thành viên có quyền agent trả lời tiếp được; quyền/quota/xác nhận theo người gửi từng lượt (plan D12, D13) |
-| Q8 | Người gọi rời/bị bớt/phòng xoá khi run đang chạy? | Huỷ run (như cancel C1), không ghi tin vào phòng; usage đã dùng vẫn tính người gọi |
-| Q9 | Đính kèm file phòng (X2a Q3 hoãn sang X2b)? | **X2b thêm nút đính kèm ở composer phòng** theo FR-44 (cùng lưu trữ như hội thoại riêng, gắn tin phòng); agent chỉ thấy file của phòng này. Nếu PLAN thấy quá lớn → tách X2b-2, báo điều phối |
-| Q10 | Menu `/` trong phòng? | Không ở X2b; placeholder chỉ gợi ý `@` |
-| Q11 | Quyền xem khung flow cho thành viên khác? | Mọi thành viên **xem** (chỉ-đọc) nội dung flow (đã là tin phòng); không xem trace/tham số công cụ nội bộ |
-| Q12 | Tin agent lưu ở đâu? | `room_messages` (`sender_type=agent`, `run_id`); `runs` giữ vòng đời/usage; không thêm bảng. Tin gọi + tạo run trong **một transaction** |
-| Q13 | Tin trong flow có tính chưa đọc? | Có (mọi tin phòng có `seq`) — plan §13.2 |
-| Q14 | File `out/` agent tạo trong run phòng? | X2b không hiện trong phòng; X2b-2 |
-| Q15 | `@orchestrator` là tag dành riêng chỉ trong phòng? | Có; Studio cấm key `orchestrator` → TECH-DEBT |
+| Q8 | Người gọi rời/bị bớt/phòng xoá khi run đang chạy? | Huỷ run (như cancel C1), không ghi tin vào phòng; usage đã dùng vẫn tính người gọi — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q9 | Đính kèm file phòng (X2a Q3 hoãn sang X2b)? | [x] **Người dùng chốt 2026-10-08: tách X2b-2** (đính kèm file trong phòng; ROADMAP). X2b: gửi file vào tin phòng → 400. Cũ: **X2b thêm nút đính kèm ở composer phòng** theo FR-44 (cùng lưu trữ như hội thoại riêng, gắn tin phòng); agent chỉ thấy file của phòng này. Nếu PLAN thấy quá lớn → tách X2b-2, báo điều phối |
+| Q10 | Menu `/` trong phòng? | Không ở X2b; placeholder chỉ gợi ý `@` — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q11 | Quyền xem khung flow cho thành viên khác? | Mọi thành viên **xem** (chỉ-đọc) nội dung flow (đã là tin phòng); không xem trace/tham số công cụ nội bộ — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q12 | Tin agent lưu ở đâu? | `room_messages` (`sender_type=agent`, `run_id`); `runs` giữ vòng đời/usage; không thêm bảng. Tin gọi + tạo run trong **một transaction** — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q13 | Tin trong flow có tính chưa đọc? | Có (mọi tin phòng có `seq`) — plan §13.2 — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q14 | File `out/` agent tạo trong run phòng? | X2b không hiện trong phòng; X2b-2 — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q15 | `@orchestrator` là tag dành riêng chỉ trong phòng? | Có; Studio cấm key `orchestrator` → TECH-DEBT — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 
 **Q9 — PLAN đề xuất tách X2b-2** (plan §14: đính kèm ≈ 40% mốc, thêm bề mặt rò file): X2b không nhận file trong phòng; AC11 ở X2b rút còn "`attachment_ids` vào tin phòng → 400, run phòng không file".
 
@@ -159,7 +159,7 @@ Lệnh xong: `bun run typecheck && bun test && bunx playwright test X2b`
 ### Trước Gate (đã chốt với người dùng)
 - 2026-10-07 · CR-048: không panel/chip agent; menu `@` trong composer; giữ mô hình thread/flow C1; agent↔agent Hoãn.
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- 2026-10-08 (Luật 2, bắt chước C1): (a) thiếu quyền agent khi gửi tin flow → `AGENT_NOT_FOUND` 404 như C1 (không lộ agent tồn tại), không thêm mã 403 mới; (b) `agent: null` hiện nhãn "Orchestrator" (`roomAgent.orchestratorName`; chat C1 không có key riêng, trùng studio `orchestrator`); (c) fixture dev cần người C có quyền `hoadon`, B không (plan.md).
 
 ## 11. Rủi ro
 | Rủi ro | Giảm |

@@ -86,7 +86,7 @@ Spec: [`spec.md`](spec.md) (X2b-R01…R20, AC01…AC16, §9 Q1–Q12 **dùng m�
 | GRANT | `EXECUTE` 5 hàm → `hub_rw`; `REVOKE ALL … FROM PUBLIC`. Không GRANT/policy mới trên bảng (`runs`, `conversations` đã đủ cho `hub_rw`) |
 | Bất biến giữ | `room_members_guard` (không thêm policy UPDATE), `rooms_seq_integrity_tg` (definer tăng seq + chèn tin cùng tx), test khoá X2a `RV2-N2c` (flow_id ngẫu nhiên ⇒ FK/policy từ chối) |
 
-Drizzle: `schema/hub.ts` (`conversations.roomId`, `runs.roomId/roomPostedAt`), `schema/hub-rooms.ts` (6 cột mới). Seed: không đổi dữ liệu có sẵn.
+Drizzle: `schema/hub.ts` (`conversations.roomId`, `runs.roomId/roomPostedAt`), `schema/hub-rooms.ts` (6 cột mới). Seed: không đổi dữ liệu có sẵn. Fixture dev: người thứ ba C có quyền `hoadon`, B không có (AC17).
 
 ## 5. Luồng và thứ tự khoá
 | Luồng | Transaction (scope) | Thứ tự |

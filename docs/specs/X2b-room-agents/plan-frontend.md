@@ -140,10 +140,10 @@ Cần backend-lead/qc: fixture dev có **người thứ ba C có `hoadon`** (B k
 ## 11. Câu hỏi UX mới (có mặc định)
 | # | Câu hỏi | Mặc định FE |
 |---|---|---|
-| U1 | Câu hỏi `need_input` có hiện cho người khác? | **Có** (là nội dung trả lời của agent), chỉ ẩn chip; `side_effect` thì ẩn hết (Q5) |
+| U1 | Câu hỏi `need_input` có hiện cho người khác? | **Có** (là nội dung trả lời của agent), chỉ ẩn chip; `side_effect` thì ẩn hết (Q5) — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 | U2 | Nút trên khối cho người không phải người gọi gốc? (**sửa theo Q7**) | "Trả lời tiếp" bật khi `flow.can_reply`; không quyền → nút tắt + giải thích + "Xem flow" (D9) |
-| U3 | Khối "đang xử lý" đặt đâu? | Cuối timeline (D7) |
-| U4 | Canvas DM tag giữa câu ("Ok em. @assistant …") | Không gọi agent (R02); tô màu chỉ `@key` đầu tin |
+| U3 | Khối "đang xử lý" đặt đâu? | Cuối timeline (D7) — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| U4 | Canvas DM tag giữa câu ("Ok em. @assistant …") | Không gọi agent (R02); tô màu chỉ `@key` đầu tin — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 
 ## 12. Rủi ro
 | Rủi ro | Giảm |
