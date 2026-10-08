@@ -2,8 +2,10 @@
 // (middleware gốc) → `:id` không uuid ⇒ 404 → không phải thành viên ⇒ 404 (`svc.access` TRƯỚC khi parse) → body/query 400.
 // Parse bằng contract chat → service → response. Không logic.
 import {
+  FLOW_ID_HEADER,
   MarkRoomReadRequestSchema,
   RoomMessageListQuerySchema,
+  RUN_ID_HEADER,
   SendRoomMessageRequestSchema,
 } from "@ai/contracts/chat";
 import { Hono } from "hono";
@@ -25,7 +27,12 @@ export function roomMessagesRoutes(svc: MessagesService): Hono<AuthVars> {
     const id = roomIdParam(c);
     await svc.access(c.var.user, id, "send");
     const body = await parseJson(c, SendRoomMessageRequestSchema);
-    const { message, created } = await svc.send(c.var.user, id, body);
+    const { message, created, run } = await svc.send(c.var.user, id, body);
+    // X2b D11 · body giữ `RoomMessage`; run trả qua header như E12.
+    if (run) {
+      c.header(RUN_ID_HEADER, run.runId);
+      c.header(FLOW_ID_HEADER, run.flowId);
+    }
     return c.json(message, created ? 201 : 200);
   });
 

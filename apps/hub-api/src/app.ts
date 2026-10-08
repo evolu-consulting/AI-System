@@ -20,7 +20,7 @@ import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp } from "./app.mcp";
 import { runDrivers, startRunLoops } from "./app.runner";
-import { mountX2a, X2A_PROTECTED_PREFIXES } from "./app.x2a";
+import { mountRoomAgents, mountX2a, X2A_PROTECTED_PREFIXES } from "./app.x2a";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
@@ -148,13 +148,8 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
   mountH4a(app, { ...deps, log: logger });
   if (!deps.db) return;
-  mountX2a(app, {
-    db: deps.db,
-    redis: deps.redis,
-    log: logger,
-    pingMs: deps.pingMs,
-    signal: deps.signal,
-  });
+  const { redis, pingMs, signal } = deps;
+  const x2a = mountX2a(app, { db: deps.db, redis, log: logger, pingMs, signal });
   const drivers = commandDrivers(deps, deps.db);
   if (config) mountDifyCredential(app, { ...deps, db: deps.db, config, log: logger });
   const h2a = config && mountH2a(app, config, drivers);
@@ -181,6 +176,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     conversations,
     log: logger,
   });
+  mountRoomAgents(x2a, { runs, prepareMention: h2b.prepareMention, config, cancel });
   app.route(
     "/conversations",
     conversationRoutes(deps.db, (u, id) => cancel.removeConversation(u, id)),

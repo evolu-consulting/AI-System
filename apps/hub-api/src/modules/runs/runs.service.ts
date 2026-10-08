@@ -232,19 +232,21 @@ export class RunService {
   }
 
   /**
-   * X2b D6 bước 3 · sau COMMIT: writer, `run.started`, driver (`roomHistory` D7 vào `RunContext`). Redis lỗi ở
+   * X2b D6 bước 3 · sau COMMIT: writer, `run.started`, driver (`roomHistory` D7 vào `RunContext`; `driver` thay driver
+   * mặc định — D15 huỷ ngay). Redis lỗi ở
    * `run.started` → run kết thúc lỗi rồi ném (như E12).
    */
   async launch(
     p: PreparedRun,
     files: RunFile[],
-    opts?: { roomHistory?: readonly HistoryItem[] },
+    opts?: { roomHistory?: readonly HistoryItem[]; driver?: RunDriver },
   ): Promise<void> {
     const { run, direct, command, scoped } = p;
     const writer = new SseWriter(run, this.d);
     this.registry.add(writer);
     await this.#announce(writer, direct?.responder);
-    const driver = command?.driver ?? (direct && this.d.directDriver) ?? this.d.driver;
+    const driver =
+      opts?.driver ?? command?.driver ?? (direct && this.d.directDriver) ?? this.d.driver;
     driver.start({
       writer,
       snapshot: p.snapshot,

@@ -11,6 +11,7 @@ import { DirectoryService } from "./modules/directory/directory.service";
 import { meStreamRoutes } from "./modules/me-stream/me-stream.routes";
 import { MeStreamConns } from "./modules/me-stream/me-stream.session";
 import { UserStreamReader } from "./modules/me-stream/user-stream-reader";
+import { type RoomRunDeps, RoomRunService } from "./modules/rooms/agents/room-run.service";
 import { RoomsService } from "./modules/rooms/manage/rooms.service";
 import { MessagesService } from "./modules/rooms/messages/messages.service";
 import { roomMessagesRoutes } from "./modules/rooms/room-messages.routes";
@@ -28,13 +29,22 @@ export const ME_STREAM_PING_MS_DEFAULT = 15_000;
  */
 export type X2aDeps = { db: Db; redis?: Redis; log: Logger; pingMs?: number; signal?: AbortSignal };
 
+/** Dịch vụ X2a mà X2b nối thêm (gọi agent cần runtime dựng sau trong `app.ts`). */
+export type X2aMounted = { rooms: RoomsService; messages: MessagesService };
+
+/** X2b B4 · nối đường gọi agent vào `POST /rooms/:id/messages` (sau khi có `RunService`/`CancelService`). */
+export function mountRoomAgents(m: X2aMounted, d: Omit<RoomRunDeps, "rooms">): void {
+  m.messages.useAgents(new RoomRunService({ ...d, rooms: m.rooms }));
+}
+
 /** Mount route X2a (gọi sau khi đã gắn `requireAuth`). */
-export function mountX2a<E extends Env>(app: Hono<E>, deps: X2aDeps): void {
+export function mountX2a<E extends Env>(app: Hono<E>, deps: X2aDeps): X2aMounted {
   app.route("/directory", directoryRoutes(new DirectoryService(deps.db)));
   const rooms = new RoomsService(deps);
   app.route("/rooms", roomsRoutes(rooms));
-  app.route("/rooms", roomMessagesRoutes(new MessagesService(rooms)));
-  if (!deps.redis) return;
+  const messages = new MessagesService(rooms);
+  app.route("/rooms", roomMessagesRoutes(messages));
+  if (!deps.redis) return { rooms, messages };
   const reader = new UserStreamReader(deps.redis, deps.log, deps.signal);
   const pingMs = deps.pingMs ?? ME_STREAM_PING_MS_DEFAULT;
   app.route(
@@ -47,4 +57,5 @@ export function mountX2a<E extends Env>(app: Hono<E>, deps: X2aDeps): void {
       signal: deps.signal,
     }),
   );
+  return { rooms, messages };
 }

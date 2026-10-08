@@ -22,6 +22,8 @@ type MessageSqlRow = {
   created_at: Ts;
   display_name: string | null;
   username: string | null;
+  flow_id: string | null;
+  placement: "main" | "flow";
 };
 
 function toRow(r: MessageSqlRow): RoomMessageRow {
@@ -34,11 +36,12 @@ function toRow(r: MessageSqlRow): RoomMessageRow {
     content: r.content,
     clientMsgId: r.client_msg_id,
     createdAt: toDate(r.created_at),
+    ...(r.flow_id && { flowId: r.flow_id, placement: r.placement }),
   };
 }
 
 const COLS = sql`m.id, m.room_id, m.seq, m.sender_type, m.sender_id, m.content, m.client_msg_id, m.created_at,
-  u.display_name, u.username`;
+  u.display_name, u.username, m.flow_id, m.placement`;
 
 /** R15 · tối đa `limit + 1` tin có `seq < before` (vắng ⇒ tin cuối), `seq` giảm dần (`room_messages_seq_uq`). */
 export async function pageDesc(
@@ -85,16 +88,25 @@ export async function bumpSeq(tx: Tx, me: Me, roomId: string): Promise<{ seq: nu
   return { seq: Number(row.last_seq), at: toDate(row.last_activity_at) };
 }
 
-export async function insertMessage(
-  tx: Tx,
-  me: Me,
-  p: { roomId: string; seq: number; content: string; clientMsgId: string; at: Date },
-): Promise<RoomMessageRow> {
+/** Tin người. `id` vắng ⇒ ngẫu nhiên; tin gọi agent: `id = runs.user_message_id` (X2b B1). `flowId` = thread (D12). */
+export type NewMessage = {
+  id?: string;
+  roomId: string;
+  seq: number;
+  content: string;
+  clientMsgId: string;
+  at: Date;
+  flowId?: string;
+  placement?: "main" | "flow";
+};
+
+export async function insertMessage(tx: Tx, me: Me, p: NewMessage): Promise<RoomMessageRow> {
   const [row] = await tx.execute<MessageSqlRow>(sql`
     with m as (
-      insert into hub.room_messages (room_id, tenant_id, seq, sender_type, sender_id, content, client_msg_id, created_at)
-      values (${p.roomId}, ${me.tenantId}, ${p.seq}, 'user', ${me.userId}, ${p.content}, ${p.clientMsgId},
-        ${p.at.toISOString()}::timestamptz)
+      insert into hub.room_messages (id, room_id, tenant_id, seq, sender_type, sender_id, content, client_msg_id,
+        created_at, flow_id, placement)
+      values (${p.id ?? crypto.randomUUID()}, ${p.roomId}, ${me.tenantId}, ${p.seq}, 'user', ${me.userId},
+        ${p.content}, ${p.clientMsgId}, ${p.at.toISOString()}::timestamptz, ${p.flowId ?? null}, ${p.placement ?? "main"})
       returning *)
     select ${COLS} from m
     left join admin.users u on u.id = m.sender_id and u.tenant_id = m.tenant_id`);

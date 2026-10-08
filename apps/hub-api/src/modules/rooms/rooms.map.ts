@@ -21,6 +21,9 @@ export type RoomMessageRow = {
   content: string;
   clientMsgId: string | null;
   createdAt: Date;
+  /** X2b D12 · thread (vắng = tin timeline X2a). */
+  flowId?: string;
+  placement?: "main" | "flow";
 };
 
 export type LastMessageRow = {
@@ -65,6 +68,7 @@ export function toRoomMessage(r: RoomMessageRow): RoomMessage {
     content: r.content,
     client_msg_id: r.clientMsgId,
     created_at: r.createdAt.toISOString(),
+    ...(r.flowId && { flow_id: r.flowId, placement: r.placement ?? "main" }),
   };
 }
 

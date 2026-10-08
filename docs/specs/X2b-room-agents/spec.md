@@ -159,6 +159,7 @@ Lệnh xong: `bun run done:x2b` (typecheck, `bun test`, int X2b bằng `bunfig.i
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - 2026-10-08 (Luật 2, bắt chước C1): (a) thiếu quyền agent khi gửi tin flow → `AGENT_NOT_FOUND` 404 như C1 (không lộ agent tồn tại), không thêm mã 403 mới; (b) `agent: null` hiện nhãn "Orchestrator" (`roomAgent.orchestratorName`; chat C1 không có key riêng, trùng studio `orchestrator`); (c) lý do huỷ không có trong contract (`run_status: cancelled` thôi): mọi người thấy "Đã huỷ", không phân biệt mất quyền (khớp Q2); (d) tin agent tính chưa đọc cho người gọi ở biên D14 (plan); (e) fixture dev cần người C có quyền `hoadon`, B không (plan.md).
 - 2026-10-08 (lần 2) · Người dùng chốt mô hình thread chung (thay Q7 lần 1): tin thread không tag = người↔người; mỗi tag = run người tag; trả lời/xác nhận chỉ người tag (`answer_run_id`); ngữ cảnh thread ≤ 50 + 20 timeline; bỏ `flow.can_reply`; (a) ở trên áp cho **tag** trong thread.
+- 2026-10-08 · B4 (backend-lead, Luật 2): (a) tin gọi agent `poll` phiên bản cấu hình (1 truy vấn) trước khi kiểm AU ⇒ thu hồi quyền có hiệu lực ngay cả khi NOTIFY chưa tới (AC14); (b) run chờ (`answer_run_id`) xác định qua definer `room_run_states` (thành viên thấy run người khác ⇒ 403 `NOT_RUN_CALLER` thay vì 404); (c) D15 = run xác nhận tạo với `declineConfirm` (xác nhận `declined`) + driver rỗng rồi huỷ ngay bằng E15 (`CancelService.cancel`) ⇒ một đường đóng run duy nhất; (d) tin gọi `@orchestrator …` lưu `hub.messages` phần sau tag; tin `@agent` lưu cả tin (như C1); (e) `/me/stream` reader nhận thêm `MeStreamRunEvent` (fallback `parseMeStreamRunEvent`).
 
 ## 11. Rủi ro
 | Rủi ro | Giảm |
@@ -170,4 +171,4 @@ Lệnh xong: `bun run done:x2b` (typecheck, `bun test`, int X2b bằng `bunfig.i
 | Q9 làm phình mốc (đính kèm) | Tách X2b-2 nếu PLAN > 1.500 dòng |
 
 ## 12. Tranh chấp test
-- (không)
+- 2026-10-08 · B4 (backend-lead) · `tests/acceptance/X2a/messages.int.test.ts` M08 "@ là chữ" (X2a-R16/AC14: tin `@assistant tóm tắt` ⇒ 201, 0 run) mâu thuẫn X2b-R02/AC01 (tag đầu tin trong phòng = gọi agent; thiếu quyền ⇒ 404 `AGENT_NOT_FOUND`, Q4). Test khoá X2a không đổi; đề xuất QC: M08 đổi sang `@@assistant …`/tag giữa câu (vẫn là chữ ở X2b) hoặc chuyển sang X2b-AC03. Code giữ hành vi X2b.

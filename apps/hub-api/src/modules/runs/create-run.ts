@@ -39,6 +39,8 @@ export type CreateRunInput = {
   orchestratorTenantId?: string | null;
   /** H2b R16 · = `AppDeps.maxConcurrentRuns`; vắng ⇒ không giới hạn (L1). */
   maxConcurrentRuns?: number;
+  /** X2b D15 · agent chờ xác nhận không còn trong AU người xác nhận ⇒ xác nhận `declined` bất kể nội dung. */
+  declineConfirm?: boolean;
   log: Pick<Logger, "info">;
 };
 
@@ -62,6 +64,7 @@ function kindCols(p: CreateRunInput): Partial<repo.RunInsert> {
 
 /** R12 · `agree` trên nội dung R04 (không tag: cả tin); một tag luôn là `direct` (R06), ≥ 2 tag là `orchestrated`. */
 function confirmReply(p: CreateRunInput): { agree: boolean; tag: ConfirmTag } {
+  if (p.declineConfirm) return { agree: false, tag: { kind: "none" } };
   const m = p.mention;
   if (!m) return { agree: isAgreeReply(p.req.content), tag: { kind: "none" } };
   const tag: ConfirmTag =
