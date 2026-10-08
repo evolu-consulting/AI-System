@@ -172,3 +172,4 @@ Lệnh xong: `bun run done:x2b` (typecheck, `bun test`, int X2b bằng `bunfig.i
 
 ## 12. Tranh chấp test
 - 2026-10-08 · B4 (backend-lead) · `tests/acceptance/X2a/messages.int.test.ts` M08 "@ là chữ" (X2a-R16/AC14: tin `@assistant tóm tắt` ⇒ 201, 0 run) mâu thuẫn X2b-R02/AC01 (tag đầu tin trong phòng = gọi agent; thiếu quyền ⇒ 404 `AGENT_NOT_FOUND`, Q4). Test khoá X2a không đổi; đề xuất QC: M08 đổi sang `@@assistant …`/tag giữa câu (vẫn là chữ ở X2b) hoặc chuyển sang X2b-AC03. Code giữ hành vi X2b.
+  - Kết luận (qc, 2026-10-08): **Test sai — qc sửa**, CR-048 + X2b-R02 (U4) thay X2a-R16 cho tag đầu tin; M08 đổi sang tag giữa câu "Nhờ @assistant tóm tắt giúp" (vẫn 201, nguyên văn, 0 run — giữ ý định R16), lock cập nhật. Code giữ hành vi X2b.

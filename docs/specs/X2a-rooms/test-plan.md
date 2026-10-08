@@ -161,7 +161,7 @@ Endpoint `/rooms/:id*` (14): GET, PATCH, DELETE `/rooms/:id` · POST `/members` 
 | M02b | content ""/"  "/16001 ⇒ 400; 16000 ⇒ 201; content được trim |
 | M04, M05 | cùng `client_msg_id` lần 2 ⇒ 200, cùng `id`, 1 hàng, **không** sự kiện mới; khác người gửi cùng `client_msg_id` ⇒ 2 tin |
 | M06 | người thêm sau 10 tin ⇒ `GET /messages` từ seq 1 (R14); `unread=0` lúc vào (D6) |
-| M08 | tin "@assistant tóm tắt" ⇒ 201, content nguyên văn, `hub.runs` không tăng |
+| M08 | tin "Nhờ @assistant tóm tắt" (tag giữa câu, sửa 2026-10-08 sau X2b-R02) ⇒ 201, content nguyên văn, `hub.runs` không tăng |
 | M09–M11 | A gửi 3 ⇒ B `unread=3`, A `unread=0`; `unread_total` = tổng phòng thấy, không gồm DM ẩn |
 | M12, M13 | `read {seq:2}` sau `{seq:3}` ⇒ không lùi; `{seq:999}` ⇒ `last_read_seq = last_seq`; trả `{unread, unread_total}` |
 | M14 | B đọc ⇒ A, E nhận `room.read {room_id, user_id:B, seq}`; B nhận `room.unread`, không nhận `room.read` của mình |
@@ -270,3 +270,5 @@ QC1 2026-10-07, DB qc riêng `ai_system_x2a_qc_test` (`HUB_TEST_DATABASE_URL`), 
 | K `x2a-additive.contract` | 3 | 3: mock chưa có `/rooms`, `/directory`, `/me/stream` (B3) | C1 65/65 xanh |
 | E `x2a-*.x2a.ts` | 12 | 12: Hub 404 khi dựng phòng trong ca (10); nhãn UI chưa có — searchbox/`Nhóm mới` (2). Stack thật lên được, đăng nhập 200 | E13: `e2e:chat` 71/71 |
 Hồi quy: `bun test` (ngoài X2a) xanh; H1 `isolation`+`db` 15/15; C1 `contrast` 5/5 (bảng CR-049). Tranh chấp UI-1 (CR-049): `e2e/chat/i18n.chat.ts` nền dark `rgb(20, 17, 28)` → `rgb(15, 16, 32)` (#0F1020, bảng đã duyệt) — test sai sau thay đổi được duyệt, sửa + khoá lại.
+
+Tranh chấp M08 (2026-10-08, X2b B4): X2b-R02 (CR-048, chốt U4) cho tag `@key` **đầu tin** phòng gọi agent (thiếu quyền ⇒ 404, tin không lưu) — thay hành vi X2a-R16 cho tag đầu tin. Ý định M08 ("@ là chữ, không run") còn đúng cho tag giữa câu ⇒ test sai sau thay đổi được duyệt: đổi tin thành "Nhờ @assistant tóm tắt giúp", khoá lại. Tag đầu tin / `@@` thuộc X2b-AC01/AC03.

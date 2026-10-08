@@ -141,12 +141,13 @@ describe("M01–M06 · gửi, lịch sử, client_msg_id [X2a-R14 · R15 · X2a-
   });
 });
 
-describe("M08 · @ là chữ [X2a-R16 · X2a-AC14]", () => {
-  it('HUB-FR-96 · M08 · tin "@assistant tóm tắt" ⇒ 201, content nguyên văn, hub.runs không tăng [X2a-R16 · X2a-AC14]', async () => {
+// Tranh chấp 2026-10-08 (X2b B4): X2b-R02 (CR-048) bật gọi agent khi tag **đầu tin**; ý định R16 còn đúng cho tag giữa câu.
+describe("M08 · @ là chữ [X2a-R16 · X2a-AC14 · X2b-R02]", () => {
+  it('HUB-FR-96 · M08 · tin "Nhờ @assistant tóm tắt" (tag giữa câu) ⇒ 201, content nguyên văn, hub.runs không tăng [X2a-R16 · X2a-AC14 · X2b-R02]', async () => {
     const g = await G();
     const [before] = await c.sql`select count(*)::int as n from hub.runs`;
-    const m = await say(c.hub, await c.tok("lan"), g, "@assistant tóm tắt giúp");
-    expect(m.content).toBe("@assistant tóm tắt giúp");
+    const m = await say(c.hub, await c.tok("lan"), g, "Nhờ @assistant tóm tắt giúp");
+    expect(m.content).toBe("Nhờ @assistant tóm tắt giúp");
     const [after] = await c.sql`select count(*)::int as n from hub.runs`;
     expect(after?.n).toBe(before?.n);
   });

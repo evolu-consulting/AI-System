@@ -85,6 +85,9 @@ Lệnh: `HUB_TEST_DATABASE_URL=<qc> bun --env-file=.env.test-qc.local --config=b
 - Nội dung tin gọi của người khác trong ngữ cảnh: test chỉ đòi dòng kết thúc bằng nội dung và có tiền tố tên (plan §6 `"<display_name>: …"`).
 - I05 "AGENT_NOT_FOUND cùng dạng": so `status`, `code`, tập khoá `error` (không so `suggestions`).
 
+### 6.1 Tranh chấp đã xử lý
+- 2026-10-08 · X2a M08 (B4): test sai sau X2b-R02 (CR-048, U4) — tag đầu tin phòng nay gọi agent. Giữ ý định X2a-R16 cho tag giữa câu: M08 gửi "Nhờ @assistant tóm tắt giúp" ⇒ 201, nguyên văn, 0 run. Tag đầu tin/`@@` phủ ở X2b-AC01/AC03. Lock cập nhật.
+
 ## 7. Int realtime / lifecycle / db (qc lần 2, 2026-10-08 — thêm vào §5, chưa LOCK)
 | Mã | AC/R | File | Dữ liệu | Kỳ vọng |
 |---|---|---|---|---|
