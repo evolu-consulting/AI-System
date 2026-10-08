@@ -7,7 +7,7 @@ export function WaitingNote({ kind, callerName }: { kind: RoomAsk["kind"]; calle
   const { t } = useTranslation();
   const key = kind === "side_effect" ? "roomAgent.waitConfirm" : "roomAgent.waitInput";
   return (
-    <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+    <p role="status" className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
       {t(key, { name: callerName })}
     </p>
   );
