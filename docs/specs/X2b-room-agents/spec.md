@@ -3,7 +3,7 @@ id: X2b-room-agents
 title: Agent trong phòng - @agent/@orchestrator trong DM/nhóm, menu @ liệt kê agent dùng được
 milestone: X2b
 status: draft              # draft → ready → approved → in-progress → done
-requirements: [HUB-FR-101, HUB-FR-103, HUB-BR-21, AC-H26, AC-H27, CHAT-AC-46..50, X2b-R01..R20, X2b-AC01..AC16]
+requirements: [HUB-FR-101, HUB-FR-103, HUB-BR-21, AC-H26, AC-H27, CHAT-AC-46..50, X2b-R01..R20, X2b-AC01..AC17]
 design:
   - docs/CHANGE-REQUESTS.md#CR-048 (gồm "Sửa 2026-10-07": bỏ panel/chip agent; CR-023 agent↔agent vẫn Hoãn)
   - docs/design/agent-hub/ba-agent-hub.md (§6.9 FR-101, FR-103; HUB-BR-21; §6 FR-91/92/94/95/77/28; §8 `room_messages` (sender_type, run_id, trigger_message_id), `runs.room_id`; §11 AC-H26, H27)
@@ -39,15 +39,15 @@ CR-048 (2026-10-07): sau X2a, trước H4b. Phiên được sửa `apps/chat-web
 | X2b-R02 | Điều kiện gọi = đúng FR-91: tin **bắt đầu** bằng `@<key>` + nội dung; `@@` thoát; `@orchestrator` gọi Orchestrator. Không có `@` đầu tin → chỉ là tin người, không run, không lỗi | FR-91, 101 |
 | X2b-R03 | Mỗi tin ≤ 1 run. Nhiều tag → Orchestrator thu hẹp (như FR-91); không sinh nhiều run song song | FR-101, AC-H26 |
 | X2b-R04 | Key không có / người gọi không được dùng → `AGENT_NOT_FOUND` (hai trường hợp như nhau, không lộ agent tồn tại), **không run**; tin có vào phòng không: Q4 | FR-77, CHAT-AC-49 |
-| X2b-R05 | `runs.user_id` = người gọi; `runs.room_id` = phòng; không dùng chủ phòng/phòng làm chủ thể. Quyền, `max_concurrent_runs` (429 `TOO_MANY_RUNS`), quota/usage đều của người gọi | BR-21, FR-94 |
+| X2b-R05 | `runs.user_id` = người gọi (= người gửi **lượt** đó, kể cả lượt trả lời tiếp trong flow — sửa 2026-10-08); `runs.room_id` = phòng; không dùng chủ phòng/phòng làm chủ thể. Quyền, `max_concurrent_runs` (429 `TOO_MANY_RUNS`), quota/usage đều của người gọi | BR-21, FR-94 |
 | X2b-R06 | Thành viên khác **không cần** quyền agent để thấy tin/kết quả agent. Agent không đọc dữ liệu/file mà người gọi không có | BR-21, CHAT-AC-50 |
 | X2b-R07 | Ngữ cảnh run = tối đa **20 tin gần nhất của phòng** (user + agent, theo thời gian) + tin gọi; không lấy từ phòng khác/hội thoại riêng. Cách tính tin trong flow: Q6 | FR-101 |
 | X2b-R08 | Ngữ cảnh chỉ gồm nội dung phòng mà **người gọi đang là thành viên**; tin trước khi người gọi vào phòng vẫn tính (thành viên mới xem hết lịch sử, X2a). Cắt tại tin gọi, không lấy tin đến sau | FR-96, BR-21 |
 | X2b-R09 | File đính kèm chỉ dùng được nếu **đã gửi vào phòng** (bản ghi đính kèm của `room_messages` cùng `room_id`); id file khác → bỏ qua như không có. Người gọi không cần là người gửi file | FR-101, Q9 |
 | X2b-R10 | Kết quả = tin `sender_type=agent`, `sender_id` = agent, `run_id`, `trigger_message_id` = tin gọi; trạng thái "<agent> đang xử lý" cả phòng thấy ngay khi nhận tin gọi | FR-101, CHAT-AC-47 |
-| X2b-R11 | `need_input` / `side_effect`: chỉ **người gọi** trả lời / bấm Đồng ý-Huỷ; người khác gọi endpoint → 403 `NOT_RUN_CALLER` (đã là thành viên nên không 404). UI người khác: "Đang chờ <tên người gọi> xác nhận" (ẩn nút) | FR-28, 95, CHAT-AC-48 |
+| X2b-R11 | `need_input` / `side_effect`: chỉ **người gửi lượt sinh ra nó** trả lời / bấm Đồng ý-Huỷ (gửi kèm `answer_run_id`); người khác → 403 `NOT_RUN_CALLER` (sửa 2026-10-08: mã này chỉ dùng cho xác nhận, không chặn gửi tin flow) (đã là thành viên nên không 404). UI người khác: "Đang chờ <tên người gọi> xác nhận" (ẩn nút) | FR-28, 95, CHAT-AC-48 |
 | X2b-R12 | Người khác không thấy tham số/mô tả hành động `side_effect` chưa xác nhận (Q5) | BR-21 |
-| X2b-R13 | "Trả lời tiếp" trên khối flow mở khung flow bên phải (`?flow=`; điện thoại: sheet); tin trong flow là `room_messages` có `flow_id` (X2a Q4). Chỉ người gọi gốc tiếp tục flow (Q7); khung flow xem được bởi mọi thành viên (Q11) | UC-11, X2a §5.2 |
+| X2b-R13 | "Trả lời tiếp" trên khối flow mở khung flow bên phải (`?flow=`; điện thoại: sheet); tin trong flow là `room_messages` có `flow_id` (X2a Q4). **Sửa 2026-10-08 (Q7):** mọi thành viên có quyền dùng agent của flow trả lời tiếp được; mỗi lượt = run mới bằng quyền + quota người gửi lượt; thiếu quyền → `AGENT_NOT_FOUND`. Khung flow xem được bởi mọi thành viên (Q11) | UC-11, X2a §5.2 |
 | X2b-R14 | Menu `@` = `GET /agents` của **chính user đang xem** (tên vi/en, `@key`, mô tả); `@orchestrator` vẫn gõ được như C1. Không panel/chip. Tải lại danh sách khi mở phòng; agent bị thu hồi biến mất sau tải lại | FR-92, 103, AC-H27 |
 | X2b-R15 | Chọn mục menu chèn `@key` (kèm khoảng trắng) đầu tin; placeholder composer gợi ý `@`. Dùng lại thành phần menu C1/X1, bật bằng cờ X2a §5.3 | FR-103 |
 | X2b-R16 | Run lỗi/huỷ: tin agent trạng thái lỗi cho cả phòng (câu chữ chung, không lộ chi tiết quota của người gọi); `TOO_MANY_RUNS`/hết quota chỉ báo riêng người gọi | FR-94 |
@@ -58,10 +58,29 @@ CR-048 (2026-10-07): sau X2a, trước H4b. Phiên được sửa `apps/chat-web
 
 ## 3. Contract (backend-lead)
 <!-- backend-lead -->
+Chi tiết trường, thứ tự kiểm: [`plan.md`](plan.md) §2–§3. `@ai/contracts/chat` **chỉ thêm**; `CHAT_ROOM_ERRORS`, `ME_STREAM_EVENTS` giữ nguyên (test khoá X2a đòi đúng 8).
+
+| Mục | Chốt |
+|---|---|
+| `POST /rooms/:id/messages` | Body + `flow_id?` (trả lời tiếp, mọi thành viên có quyền agent của flow) + `answer_run_id?` (trả lời ask/xác nhận của lượt đó; không `attachment_ids`, X2b-2). Trả 201 `RoomMessage` (tin gọi) + header `X-Run-Id`, `X-Flow-Id` khi có run; 200 trùng `client_msg_id` (không run). Lỗi: 404 `ROOM_NOT_FOUND` · 400 `VALIDATION_ERROR` · 404 `NOT_FOUND` (flow không thuộc phòng) · 403 **`NOT_RUN_CALLER`** (`answer_run_id` của người khác) · 404 `AGENT_NOT_FOUND{suggestions}` · 422 `CMD_MISSING_ARG` · 409 `FLOW_BUSY` · 429 `TOO_MANY_RUNS` + `Retry-After: 5`. Lỗi ⇒ tin không lưu (Q4) |
+| `GET /rooms/:id/messages` | + `flow_id?`: có ⇒ tin của flow; vắng ⇒ timeline (`placement=main`) |
+| `GET /rooms/:id` | + `active_runs[]` ≤ 50: `{run_id, flow_id, trigger_message_id, agent\|null, caller, status running\|waiting, wait_kind?, started_at}` |
+| `RoomMessage` + (optional) | `placement` `main\|flow` · `agent {key, name{vi,en}}` · `caller {id, display_name}` · `run_status` `finished\|failed\|cancelled` · `ask {kind need_input\|side_effect, question?, choices?}` (`side_effect`: question/choices **chỉ người gọi**) · `steps {count, ms}` · `flow {message_count, last_active_at, can_reply}` (tin gốc; `can_reply` theo người xem) |
+| Lỗi mới | `CHAT_ROOM_AGENT_ERRORS = { NOT_RUN_CALLER: 403 }` |
+| `/me/stream` | Hằng riêng `ME_STREAM_RUN_EVENTS`: `room.run_started {room_id, run_id, flow_id, trigger_message_id, agent\|null, caller}`, `room.run_waiting {room_id, run_id, flow_id, caller_id, kind}`, `room.run_finished {room_id, run_id, flow_id, status, message_id\|null}` + `parseMeStreamRunEvent`. Tin agent qua `room.message` (payload theo người nhận) |
+| Không đổi | `GET /agents` (menu `@`), `GET /runs/:id/events`, `POST /runs/:id/cancel`, trace: RLS `runs` ⇒ chỉ người gọi. Hội thoại nền của run phòng ⇒ 404 qua `/conversations*` |
+| Luật thuần | `rooms/agents/room-agent.rules.ts` — chữ ký ở `plan.md` §8 |
 
 ## 4. Dữ liệu (backend-lead)
 <!-- backend-lead -->
-Gợi ý cho PLAN: migration `0014_x2b_*` (sau 0011–0013 X2a); `runs.room_id` nullable (BA §8); kiểm `room_messages` đã có `sender_type`/`run_id`/`trigger_message_id`/`flow_id`/đính kèm từ 0011.
+Migration `0014_x2b_room_agents.sql` — chi tiết [`plan.md`](plan.md) §4–§5. `room_messages` (0011) đã có `sender_type`, `sender_id`, `run_id`, `flow_id`, `trigger_message_id` (chưa FK/index), **không** có đính kèm.
+
+| Bảng | Thay đổi |
+|---|---|
+| `conversations` | `room_id` NULL + FK phòng; unique `(room_id, user_id)` — hội thoại nền ẩn của người gọi (run phòng tái dùng nguyên runtime C1) |
+| `runs` | `room_id` NULL + FK (BA §8), `room_posted_at`; index run đang chạy theo phòng, run chưa đăng |
+| `room_messages` | `placement`, `run_status`, `wait_kind`, `ask` (chỉ `need_input`), `step_count`, `run_ms`; FK `flow_id→flows`, `run_id→runs`, `trigger_message_id`; CHECK user/agent thay `room_messages_user_no_agent_ck`; unique tin agent theo `run_id`; index timeline `(room_id, seq) WHERE placement='main'`, flow `(room_id, flow_id, seq)` |
+| RLS / definer | policy insert tin thêm `flow_id` phải thuộc flow của chính mình; definer `is_room_flow_owner`, `room_flow_owner`, `room_post_agent_message` + `room_fanout_sys` (chỉ scope `system`), `room_run_states` |
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
@@ -79,7 +98,7 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (+ phụ lục i18n, e2e). **
 Cần backend-lead: `plan-frontend.md` §10 (`{message, run?}` khi gửi, trường agent/caller/ask/placement của `RoomMessage`, `active_runs`, 3 sự kiện run, tin flow theo `flow_id`, `NOT_RUN_CALLER`).
 
 ## 6. Hiệu năng
-Mặc định `CONVENTIONS.md` §6 (ưu tiên thấp, nới được). Dựng ngữ cảnh 20 tin = 1 truy vấn dùng index `(room_id, created_at)`.
+Mặc định `CONVENTIONS.md` §6 (ưu tiên thấp, nới được). Dựng ngữ cảnh 20 tin = 1 truy vấn dùng index `(room_id, seq) WHERE placement='main'` (plan §10).
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
@@ -109,6 +128,7 @@ Env mới: (không dự kiến).
 | X2b-AC14 | Thu hồi quyền `hoadon` của A trước khi gọi → `AGENT_NOT_FOUND`; giữa lúc run chạy → theo Q2 | int |
 | X2b-AC15 | "Trả lời tiếp" mở khung `?flow=` (điện thoại: sheet), tin trong flow có `flow_id`; hội thoại riêng C1 không đổi (AC-H07) | e2e |
 | X2b-AC16 | B ở trình duyệt khác thấy "đang xử lý" rồi kết quả, chưa đọc +1 (không tính cho A), qua `/me/stream` (2 instance Hub) | int + e2e |
+| X2b-AC17 | (sửa Q7 2026-10-08) A gọi `@hoadon`, C (cùng phòng, có `hoadon`) trả lời tiếp trong flow → run mới `runs.user_id=C`, usage tính C; B (không có `hoadon`) gửi tin flow → 404 `AGENT_NOT_FOUND`, `flow.can_reply=false` với B; `side_effect` của lượt C: A gửi `answer_run_id` → 403 `NOT_RUN_CALLER`; ngữ cảnh lượt C có tin flow của A | int + e2e |
 
 Lệnh xong: `bun run typecheck && bun test && bunx playwright test X2b`
 
@@ -121,12 +141,17 @@ Lệnh xong: `bun run typecheck && bun test && bunx playwright test X2b`
 | Q4 | Tin gọi bị `AGENT_NOT_FOUND`/`TOO_MANY_RUNS` có vào phòng? | **Không lưu**, trả lỗi cho người gửi (không lộ cho người khác); UI giữ nội dung trong composer |
 | Q5 | Người khác thấy gì khi chờ `side_effect`? | Chỉ "Đang chờ A xác nhận" + tên agent; không hiện tham số/hành động; người gọi thấy đầy đủ |
 | Q6 | Tin trong flow (`flow_id`) có vào 20 tin ngữ cảnh? | Run ở timeline chính: 20 tin gần nhất của timeline chính (khối flow gốc tính 1 tin = kết quả cuối). Run trong flow: lịch sử flow + 20 tin timeline gần nhất trước flow |
-| Q7 | Người không phải người gọi gốc tiếp tục flow? | **Không**: khung flow chỉ-đọc với họ + gợi ý gõ `@agent` ở timeline để mở flow riêng |
+| Q7 | Người không phải người gọi gốc tiếp tục flow? | [x] **Người dùng chốt 2026-10-08:** mọi thành viên có quyền agent trả lời tiếp được; quyền/quota/xác nhận theo người gửi từng lượt (plan D12, D13) |
 | Q8 | Người gọi rời/bị bớt/phòng xoá khi run đang chạy? | Huỷ run (như cancel C1), không ghi tin vào phòng; usage đã dùng vẫn tính người gọi |
 | Q9 | Đính kèm file phòng (X2a Q3 hoãn sang X2b)? | **X2b thêm nút đính kèm ở composer phòng** theo FR-44 (cùng lưu trữ như hội thoại riêng, gắn tin phòng); agent chỉ thấy file của phòng này. Nếu PLAN thấy quá lớn → tách X2b-2, báo điều phối |
 | Q10 | Menu `/` trong phòng? | Không ở X2b; placeholder chỉ gợi ý `@` |
 | Q11 | Quyền xem khung flow cho thành viên khác? | Mọi thành viên **xem** (chỉ-đọc) nội dung flow (đã là tin phòng); không xem trace/tham số công cụ nội bộ |
 | Q12 | Tin agent lưu ở đâu? | `room_messages` (`sender_type=agent`, `run_id`); `runs` giữ vòng đời/usage; không thêm bảng. Tin gọi + tạo run trong **một transaction** |
+| Q13 | Tin trong flow có tính chưa đọc? | Có (mọi tin phòng có `seq`) — plan §13.2 |
+| Q14 | File `out/` agent tạo trong run phòng? | X2b không hiện trong phòng; X2b-2 |
+| Q15 | `@orchestrator` là tag dành riêng chỉ trong phòng? | Có; Studio cấm key `orchestrator` → TECH-DEBT |
+
+**Q9 — PLAN đề xuất tách X2b-2** (plan §14: đính kèm ≈ 40% mốc, thêm bề mặt rò file): X2b không nhận file trong phòng; AC11 ở X2b rút còn "`attachment_ids` vào tin phòng → 400, run phòng không file".
 
 **Hard-stop bảo mật (security review riêng, như X2a):** (1) quyền agent trong phòng: R04–R06, R11–R12, AC01/02/05–08/14; (2) rò ngữ cảnh phòng sang run và ngược lại: R07–R09, R17, AC09–AC12. Không qua review → không `done:x2b`.
 
