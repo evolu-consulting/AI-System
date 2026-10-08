@@ -41,7 +41,8 @@ async function loadInput(d: OrchestratorDeps, ctx: RunContext): Promise<LoopInpu
   const access = accessInput(snapshot, who, scope ? { onlyKeys: scope } : undefined);
   const { flow, history } = await withHubScope(d.db, { kind: "system" }, async (tx) => ({
     flow: await repo.flowState(tx, r),
-    history: await repo.flowHistory(tx, r, settings.historyN),
+    // X2b D7 · run phòng: ngữ cảnh phòng thay flow nền (không đọc `hub.messages`).
+    history: ctx.roomHistory ?? (await repo.flowHistory(tx, r, settings.historyN)),
   }));
   const keyOf = (id: string | null) => snapshot.agents.find((a) => a.id === id)?.key ?? null;
   const last = keyOf(flow.agentId);

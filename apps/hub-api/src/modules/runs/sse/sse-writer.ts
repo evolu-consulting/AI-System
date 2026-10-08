@@ -68,7 +68,27 @@ export class RunFencedError extends Error {
 const isIdTooSmall = (err: unknown): boolean =>
   err instanceof Error && /equal or smaller/i.test(err.message);
 
-export type SseWriterDeps = { db: Db; redis: Redis; owner: string; log: Logger };
+export type SseWriterDeps = {
+  db: Db;
+  redis: Redis;
+  owner: string;
+  log: Logger;
+  /** X2b · gọi sau COMMIT tx1 kết thúc run (chỉ khi writer còn là chủ), sau XADD kết thúc; lỗi chỉ log. */
+  onClosed?: (runId: string) => void;
+};
+
+/** X2b · gọi hook `onClosed` không ném (lỗi đồng bộ → log). */
+export function notifyClosed(
+  d: { onClosed?: (runId: string) => void; log: Logger },
+  runId: string,
+): void {
+  if (!d.onClosed) return;
+  try {
+    d.onClosed(runId);
+  } catch (err) {
+    d.log.error("run-on-closed-failed", { run_id: runId, ...safeErrorFields(err) });
+  }
+}
 
 /**
  * Chỉ instance chủ (`runs.owner`) tạo writer. `seq` sống trong bộ nhớ, bắt đầu từ `runs.last_seq`.
@@ -188,6 +208,7 @@ export class SseWriter {
     }
     const ms = Math.max(0, times.finishedAt.getTime() - times.startedAt.getTime());
     await this.#publishEnd(ask, error ? { ...error } : null, { content, ms });
+    notifyClosed(this.deps, this.run.id);
     return true;
   }
 

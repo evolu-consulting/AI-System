@@ -5,9 +5,9 @@ import {
   type Responder,
   RUN_EVENTS_RETENTION_S,
   type Run,
-  type RunError,
   type SendMessageRequest,
 } from "@ai/contracts/chat";
+import type { HistoryItem } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
@@ -29,18 +29,12 @@ import {
   type MentionPlan,
 } from "../mention/mention.service";
 import { setFinalSeq } from "./close/cancel.repo";
-import { type Created, type CreateRunInput, createRunTx } from "./create-run";
+import { type Created, type CreateRunInput, createRunTx as insertRun } from "./create-run";
+import { lastEventIdOf, terminalFromDb, terminalSeqOf, toRun } from "./run-view";
 import * as repo from "./runs.repo";
 import { eventsExpired } from "./runs.rules";
 import { runEventStream, SseReader } from "./sse/sse-reader";
-import {
-  appendExternal,
-  isTerminalEvent,
-  lastSseEntry,
-  RunRegistry,
-  type SseEventBody,
-  SseWriter,
-} from "./sse/sse-writer";
+import { appendExternal, RunRegistry, SseWriter } from "./sse/sse-writer";
 
 /** Ngữ cảnh một run cho vòng chạy: ghi sự kiện qua `writer`, kết thúc bằng `writer.finish`, dừng khi `writer.signal`. */
 export type RunContext = {
@@ -59,6 +53,11 @@ export type RunContext = {
   scope?: ReadonlySet<string>;
   /** H2c-R14, P9 · tập file của run (`runs.attachment_ids`, chốt ở `createRunTx`); `[]` khi không file. */
   files: RunFile[];
+  /**
+   * X2b D7 · ngữ cảnh phòng (cũ→mới, chụp trong tx gọi, cắt tại tin gọi): có ⇒ Orchestrator / `directDriver` dùng
+   * **thay** `flowHistory` (không đọc `hub.messages`); vắng = C1.
+   */
+  roomHistory?: readonly HistoryItem[];
   log: Logger;
 };
 /** Chỗ cắm B8 (Orchestrator, dùng runner B7). Không chờ: chạy nền, tự `finish`. */
@@ -90,6 +89,8 @@ export type RunServiceDeps = {
   signal?: AbortSignal;
   /** H2b R16 · = `AppDeps.maxConcurrentRuns`; vắng ⇒ không giới hạn (L1). */
   maxConcurrentRuns?: number;
+  /** X2b · gọi sau COMMIT kết thúc run (`SseWriter.finish`, tx1); vắng = C1. */
+  onClosed?: (runId: string) => void;
 };
 
 /** Quota thật ở H3 (H1-R10). */
@@ -103,45 +104,6 @@ function flowBusy(err: unknown): boolean {
   const e = err as { code?: unknown; constraint_name?: unknown; cause?: unknown } | null;
   const pg = (e?.code === undefined ? e?.cause : e) as typeof e;
   return pg?.code === "23505" && pg.constraint_name === repo.FLOW_RUNNING_UQ;
-}
-
-/** Sự kiện kết thúc dựng từ cột `runs` + tin assistant (không gọi lại `runErrorText`, plan-errors §Ghi). */
-async function terminalFromDb(tx: Tx, o: repo.Owner, r: repo.RunRecord): Promise<SseEventBody> {
-  const base = { run_id: r.id, message_id: r.answerMessageId };
-  if (r.status !== "finished") {
-    return { event: "run.failed", data: { ...base, ...toRunError(r) } };
-  }
-  const content = (await repo.messageContent(tx, o, r.answerMessageId)) ?? "";
-  const ms = Math.max(0, (r.finishedAt?.getTime() ?? 0) - r.startedAt.getTime());
-  return { event: "run.finished", data: { ...base, content, ms } };
-}
-
-/** `Run` (contract chat) từ dòng `runs`; `lastEventId` do người gọi chọn (E14 · E15). */
-export function toRun(r: repo.RunRecord, lastEventId: number): Run {
-  return {
-    id: r.id,
-    conversation_id: r.conversationId,
-    flow_id: r.flowId,
-    status: r.status,
-    started_at: r.startedAt.toISOString(),
-    finished_at: r.finishedAt?.toISOString() ?? null,
-    last_event_id: lastEventId,
-    error: toRunError(r),
-  };
-}
-
-function toRunError(r: repo.RunRecord): RunError | null {
-  if (!r.errorCode) return null;
-  return {
-    code: r.errorCode as RunError["code"],
-    message: r.errorMessage ?? r.errorCode,
-    hint: r.errorHint ?? "",
-  };
-}
-
-/** E14/E15 · run xong → `runs.last_seq`; đang chạy → id cuối `sse:<id>`. */
-export async function lastEventIdOf(redis: Redis, r: repo.RunRecord): Promise<number> {
-  return r.status === "running" ? (await lastSseEntry(redis, r.id)).seq : r.lastSeq;
 }
 
 /** Id mới của run + tin (E12); `flowId` theo `req.flow_id` hoặc flow mới. */
@@ -161,6 +123,21 @@ function newRun(
     locale,
   };
 }
+
+/**
+ * X2b D6 · kết quả `prepare` (chưa ghi gì): id run/tin, ảnh cấu hình, Orchestrator đã chọn, agent `direct` đã kiểm lại
+ * trên ảnh, `input` cho `createRunTx`. Người gọi (vd phòng) có thể đặt lại `run.flowId` / `input.req` trước tx.
+ */
+export type PreparedRun = {
+  run: Created;
+  snapshot: ConfigSnapshot;
+  orchestrator: PickedOrchestrator | null;
+  direct?: DirectRunStart;
+  command?: CommandRunStart;
+  /** `orchestrated` nhiều tag (R09) — nội dung + `onlyKeys`. */
+  scoped?: Extract<RunPlan, { kind: "orchestrated" }>;
+  input: CreateRunInput;
+};
 
 export type StartedRun = {
   runId: string;
@@ -193,6 +170,7 @@ export class RunService {
    * E12 · ném 404 (hội thoại/flow), 409 `FLOW_BUSY`, 429 `TOO_MANY_RUNS`. Trả stream đọc từ `sse:<id>` (P9). `plan`:
    * `command` → run lệnh (H2a); tag `@` (H2b) → `pickOrchestrator` gọi cả cho `direct` (P10, không ghi
    * `orchestrator_tenant_id`); `direct` → `directDriver` + `responder` ở `run.started` (P1, P10).
+   * X2b D6 · = `prepare` + tx `user` riêng (`createRunTx`) + `launch`; hành vi C1 không đổi.
    */
   async start(
     u: AuthUser,
@@ -200,6 +178,21 @@ export class RunService {
     req: SendMessageRequest,
     plan?: RunPlan,
   ): Promise<StartedRun> {
+    const p = await this.prepare(u, conversationId, req, plan);
+    const files = await this.#create(u, p.input);
+    await this.launch(p, files);
+    const { run } = p;
+    const stream = this.#stream(u, run.id, 0);
+    return { runId: run.id, flowId: run.flowId, messageId: run.userMessageId, stream };
+  }
+
+  /** X2b D6 bước 1 · ảnh, locale, `directOnSnapshot`, `pickOrchestrator` — chưa ghi DB. */
+  async prepare(
+    u: AuthUser,
+    conversationId: string,
+    req: SendMessageRequest,
+    plan?: RunPlan,
+  ): Promise<PreparedRun> {
     const snapshot = await this.d.config.snapshot();
     const user = await this.d.config.user(u.userId);
     const run = newRun(u, conversationId, req, user?.locale ?? "vi");
@@ -209,7 +202,7 @@ export class RunService {
     const direct =
       plan?.kind === "direct" ? directOnSnapshot(plan, snapshot, who, run.locale) : undefined;
     const orchestrator = command ? null : this.#pick(snapshot, run, plan);
-    const files = await this.#create(u, {
+    const input: CreateRunInput = {
       run,
       req,
       configVersion: snapshot.version,
@@ -220,25 +213,49 @@ export class RunService {
       orchestratorTenantId: plan?.kind === "direct" ? null : orchestrator?.tenantId,
       maxConcurrentRuns: this.d.maxConcurrentRuns,
       log: this.d.log,
-    });
+    };
+    const scoped = plan?.kind === "orchestrated" ? plan : undefined;
+    return { run, snapshot, orchestrator, direct, command, scoped, input };
+  }
+
+  /**
+   * X2b D6 bước 2 · ghi run trong tx **của người gọi** (scope `user` của chủ run), cùng thứ tự khoá `create-run.ts`.
+   * 409 `FLOW_BUSY` / 429 như E12 (lỗi ném ⇒ tx người gọi ROLLBACK).
+   */
+  async createRunTx(tx: Tx, p: PreparedRun): Promise<RunFile[]> {
+    try {
+      return await insertRun(tx, { tenantId: p.run.tenantId, userId: p.run.userId }, p.input);
+    } catch (err) {
+      if (flowBusy(err)) throw appError("FLOW_BUSY");
+      throw err;
+    }
+  }
+
+  /**
+   * X2b D6 bước 3 · sau COMMIT: writer, `run.started`, driver (`roomHistory` D7 vào `RunContext`). Redis lỗi ở
+   * `run.started` → run kết thúc lỗi rồi ném (như E12).
+   */
+  async launch(
+    p: PreparedRun,
+    files: RunFile[],
+    opts?: { roomHistory?: readonly HistoryItem[] },
+  ): Promise<void> {
+    const { run, direct, command, scoped } = p;
     const writer = new SseWriter(run, this.d);
     this.registry.add(writer);
     await this.#announce(writer, direct?.responder);
     const driver = command?.driver ?? (direct && this.d.directDriver) ?? this.d.driver;
-    const scoped = plan?.kind === "orchestrated" ? plan : undefined;
-    const content = scoped?.content ?? req.content;
     driver.start({
       writer,
-      snapshot,
-      content,
-      orchestrator,
+      snapshot: p.snapshot,
+      content: scoped?.content ?? p.input.req.content,
+      orchestrator: p.orchestrator,
       scope: scoped?.onlyKeys,
       direct,
       files,
+      ...(opts?.roomHistory && { roomHistory: opts.roomHistory }),
       log: this.d.log,
     });
-    const stream = this.#stream(u, run.id, 0);
-    return { runId: run.id, flowId: run.flowId, messageId: run.userMessageId, stream };
   }
 
   /** P7 · chọn Orchestrator lúc tạo run; bản tenant hỏng (run dùng Orchestrator) → `warn orchestrator_tenant_invalid`. */
@@ -262,7 +279,7 @@ export class RunService {
 
   async #create(u: AuthUser, p: CreateRunInput): Promise<RunFile[]> {
     try {
-      return await this.#scoped(u, (tx, o) => createRunTx(tx, o, p));
+      return await this.#scoped(u, (tx, o) => insertRun(tx, o, p));
     } catch (err) {
       if (flowBusy(err)) throw appError("FLOW_BUSY");
       throw err;
@@ -339,12 +356,6 @@ export class RunService {
       return null;
     }
   }
-}
-
-/** Id sự kiện kết thúc đang ở cuối `sse:<id>` (null khi chưa có). */
-async function terminalSeqOf(redis: Redis, runId: string): Promise<number | null> {
-  const last = await lastSseEntry(redis, runId);
-  return last.event && isTerminalEvent(last.event) ? last.seq : null;
 }
 
 /** Stream SSE rỗng, đóng ngay. */

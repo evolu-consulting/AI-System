@@ -98,7 +98,8 @@ async function deliver(d: DirectDriverDeps, ctx: RunContext, end: Ended): Promis
 async function runDirect(d: DirectDriverDeps, ctx: RunContext, plan: DirectRunStart) {
   const { writer, snapshot } = ctx;
   const historyN = ctx.orchestrator?.config.historyN ?? FALLBACK_HISTORY_N;
-  const history = await flowHistoryOf(d.db, writer.run, historyN);
+  // X2b D7 · run phòng: ngữ cảnh phòng thay flow nền.
+  const history = ctx.roomHistory ?? (await flowHistoryOf(d.db, writer.run, historyN));
   const task = {
     run: writer.run,
     snapshot,

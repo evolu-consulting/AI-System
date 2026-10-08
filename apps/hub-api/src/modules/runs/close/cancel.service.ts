@@ -10,9 +10,15 @@ import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
 import type { ConversationService } from "../../conversations/conversations.service";
 import { runErrorText } from "../run-errors";
+import { lastEventIdOf, toRun } from "../run-view";
 import * as repo from "../runs.repo";
-import { lastEventIdOf, toRun } from "../runs.service";
-import { appendExternal, parseEntry, type RunRegistry, sseKey } from "../sse/sse-writer";
+import {
+  appendExternal,
+  notifyClosed,
+  parseEntry,
+  type RunRegistry,
+  sseKey,
+} from "../sse/sse-writer";
 import {
   type CancelTarget,
   type CancelWrite,
@@ -30,6 +36,8 @@ export type CancelServiceDeps = {
   registry: RunRegistry;
   conversations: ConversationService;
   log: Logger;
+  /** X2b · gọi sau COMMIT huỷ (E15, E9) + phát `run.failed`; sweeper/lease không gọi (để `reconcile`). */
+  onClosed?: (runId: string) => void;
 };
 
 export type Cancelled = { target: CancelTarget; error: CancelWrite["error"] };
@@ -112,8 +120,9 @@ export class CancelService {
     return out;
   }
 
-  #announce(c: Cancelled): Promise<void> {
-    return announceClosed(this.d, c);
+  async #announce(c: Cancelled): Promise<void> {
+    await announceClosed(this.d, c);
+    notifyClosed(this.d, c.target.runId);
   }
 }
 

@@ -6,7 +6,7 @@ Hội thoại, flow, tin nhắn theo contract chat C1 (`@ai/contracts/chat`, C1 
 |---|---|
 | `conversations.routes.ts` | E5 list · E6 tạo · E7 đọc · E8 đổi tên · E9 xoá mềm · E10 flows · E11 messages |
 | `conversations.service.ts` | mọi câu trong `withHubScope({kind:"user"})` (RLS); không thấy → 404 `NOT_FOUND` |
-| `conversations.repo.ts` | `hub.conversations` (lọc `tenant_id`+`user_id` tường minh, `deleted_at IS NULL`); H2c `messageAttachments(tx, o, messageIds)` (một câu cho cả trang E10/E11) |
+| `conversations.repo.ts` | `hub.conversations` (lọc `tenant_id`+`user_id` tường minh, `deleted_at IS NULL`, X2b D2 `room_id IS NULL` — hội thoại nền của phòng ⇒ 404); H2c `messageAttachments(tx, o, messageIds)` (một câu cho cả trang E10/E11) |
 | `flows.repo.ts` | `hub.flows`, `messages`, `runs`, `run_steps` cho E10/E11 |
 | `conversations.rules.ts` | thuần: cursor keyset, mẫu `q` (`foldVi`), map DB → `Conversation`/`Message`/`RunSummary`; H2c `toMessage(..., refs?)` (`attachments` vắng khi rỗng), `toAttachmentRef` (`available` = `purged_at` null) |
 

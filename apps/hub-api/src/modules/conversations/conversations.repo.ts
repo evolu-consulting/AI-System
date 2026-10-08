@@ -25,8 +25,14 @@ const rowCols = {
   flowCount,
 };
 
+/** Còn sống + không phải hội thoại nền của phòng (X2b D2: `room_id IS NULL` ⇒ mọi E5–E11 / E12 qua C1 thấy 404). */
 const live = (o: Owner): SQL =>
-  and(eq(c.tenantId, o.tenantId), eq(c.userId, o.userId), isNull(c.deletedAt)) as SQL;
+  and(
+    eq(c.tenantId, o.tenantId),
+    eq(c.userId, o.userId),
+    isNull(c.deletedAt),
+    isNull(c.roomId),
+  ) as SQL;
 
 export async function listConversations(
   tx: Tx,
