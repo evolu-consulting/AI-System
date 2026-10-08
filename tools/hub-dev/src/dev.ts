@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { dockerArgs } from "../../../apps/agent-runtime/scripts/run";
 import { contractUsersJson, ensureContractFixture, ensureDemoFixture } from "./fixture";
+import { ensureRoomAgents } from "./fixture-agents";
 import { ensureDemoRooms, ensureFixtureRooms } from "./fixture-rooms";
 
 export const REPO = resolve(import.meta.dir, "../../..");
@@ -205,6 +206,18 @@ async function roomsStep(notes: string[]): Promise<void> {
   }
 }
 
+/** Agent phòng X2b (`hoadon`/`trello` + quyền A/B/C, tenant evolu) — sau `hub:seed` (cần profile + `assistant`). */
+async function agentsStep(notes: string[]): Promise<void> {
+  const url = process.env.DATABASE_URL;
+  if (!url) return void notes.push("agent phòng: thiếu DATABASE_URL — bỏ qua");
+  try {
+    if (!(await ensureRoomAgents(url)))
+      notes.push("agent phòng evolu: chưa có tenant/profile — bỏ qua");
+  } catch (err) {
+    notes.push(`agent phòng: ${(err as Error).message}`);
+  }
+}
+
 /** Giới hạn run đồng thời/user cho hub-dev (H2b plan §2.1, K4b): mặc định 20 để bộ 41 ca contract chat (có run chạy dở)
  * không chạm 429; ghi đè bằng env `HUB_MAX_CONCURRENT_RUNS`. Stack H2b đặt 2 tường minh (`test:h2b:stack`, L6). */
 export const HUB_DEV_MAX_CONCURRENT_RUNS = "20";
@@ -251,6 +264,7 @@ export async function startHubDev(): Promise<HubDev> {
     if (await adminStep(stops, notes)) await fixtureStep(notes);
     await roomsStep(notes);
     if (bunRun(["apps/hub-api/src/modules/seed/seed.ts"]) !== 0) throw new Error("hub:seed lỗi");
+    await agentsStep(notes);
     if (!(await healthy(HUB_URL))) {
       const env = hubApiEnv(process.env, tempAttachDir(stops), mode);
       stops.push(await startServer("hub-api", "apps/hub-api/src/server.ts", HUB_URL, env));

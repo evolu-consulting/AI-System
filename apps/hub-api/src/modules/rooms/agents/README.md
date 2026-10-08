@@ -16,3 +16,13 @@ Luật đăng tin (B5):
 - `p_meta`: `run_status`, `wait_kind`, `ask` (chỉ khi `wait_kind = need_input`, nếu không CHECK 23514), `step_count`, `run_ms`.
 - D3: bản riêng `side_effect` (nội dung + câu hỏi có tham số) chỉ tới người gọi; người khác nhận câu chung, `ask = {kind}`. Timeline lấy bản riêng qua JOIN `runs → messages` dưới scope user (RLS chỉ trả cho người gọi).
 - Thứ tự khoá tx2: `rooms` → `runs` → `room_members` → `room_messages` (không chu trình với đường gọi, plan §5).
+
+Seed dev (B7, `bun run hub:dev`): `tools/hub-dev/src/fixture-agents.ts` (chạy SAU `hub:seed`, cần agent `assistant` để lấy profile) tạo agent `hoadon`, `trello` + entitlement tenant `evolu`; idempotent. Người dùng (mật khẩu dev chung):
+
+| Vai | evolu | hoadon | trello | Ghi chú |
+|---|---|---|---|---|
+| A | `julian.bui` | có | có | chủ nhóm "Evolu team" |
+| B | `thomas.tran` | **không** | có | AC17: menu "@" không có `hoadon`; tag tay `@hoadon` bị từ chối |
+| C | `vio.ngo` | có | không | thấy `hoadon` ⇒ ca "người thứ ba gọi được" |
+
+(e2e `_x2b-stack.ts` dùng tenant `acme` test với `lan`=A, `thu`=B, `an`=C — cùng sơ đồ quyền.) Fixture phòng X2a (`fixture-rooms.ts`) đã có nhóm "Evolu team" đủ 3 người trên.
