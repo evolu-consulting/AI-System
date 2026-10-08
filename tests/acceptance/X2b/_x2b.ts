@@ -174,9 +174,22 @@ export async function invoke(
   expect(s.runId ?? "").toMatch(UUID_RE);
   return s as Sent & { runId: string };
 }
-/** Runtime giả trả `done` cho job kế của run. */
+/**
+ * Như Runtime thật (`agent_runtime/db/usage_sql.py`, `cli/outcome.py`): ghi 1 dòng `hub.usage_logs` cho job, khoá lấy
+ * từ payload job Hub dựng (`user_id` = người Hub giao) — `ScriptRuntime` H1 không ghi usage (tranh chấp B5, spec §12).
+ */
+export async function runtimeUsage(c: CtxB, job: Job): Promise<void> {
+  const p = job.payload;
+  await c.sql`insert into hub.usage_logs (tenant_id, run_id, step_id, user_id, feature_id, agent_id, provider_key,
+      model, billing, input_tokens, output_tokens, cost_usd, overage, latency_ms, job_id)
+    values (${p.tenant_id}, ${p.run_id}, ${p.step_id}, ${p.user_id}, null, ${p.agent.id}, ${p.provider_key},
+      null, 'subscription', 100, 20, 0, false, 10, ${job.id})
+    on conflict (job_id) where job_id is not null do nothing`;
+}
+/** Runtime giả trả `done` cho job kế của run (kèm usage như Runtime thật). */
 export async function answer(c: CtxB, runId: string, text: string): Promise<Job> {
   const job = await c.rt.next(runId);
+  await runtimeUsage(c, job);
   await c.rt.agent(job, { status: "done", text });
   return job;
 }

@@ -13,6 +13,7 @@ import {
   roomMsgCount,
   roomRuns,
   roomUsage,
+  runtimeUsage,
   settle,
   startX2b,
   timeline,
@@ -81,6 +82,7 @@ describe("X2b-AC17 · thread chung [R13 lần 2]", () => {
     ).toBe(true);
     expect(l.some((x) => x.endsWith("kiểm tra HD-12"))).toBe(true);
     expect(JSON.stringify(job.payload)).not.toContain("PHONG-KHAC-C-19");
+    await runtimeUsage(c, job);
     await c.rt.agent(job, { status: "done", text: "Đã xem tiếp." });
     expect(await waitAgentMsg(c, "lan", room, r.runId as string, 8_000)).toBeDefined();
     expect(await roomUsage(c.sql, room, P.cuc.id)).toBeGreaterThan(0);

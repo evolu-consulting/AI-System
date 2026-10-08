@@ -7,7 +7,18 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
 import postgres from "postgres";
 import { HUB_API_URL, R } from "../H1/_fixtures";
 import { asUser, idGenX, mkGroup, pgCode, T } from "../X2a/_x2a";
-import { AGB, answer, type CtxB, invoke, type Json, P, type Sql, settle, startX2b } from "./_x2b";
+import {
+  AGB,
+  answer,
+  type CtxB,
+  invoke,
+  type Json,
+  P,
+  type Sql,
+  settle,
+  startX2b,
+  waitAgentMsg,
+} from "./_x2b";
 
 let c: CtxB;
 let db: Sql;
@@ -252,6 +263,7 @@ describe("X2b · policy insert is_room_thread + RLS (AC10, AC17, §4.2)", () => 
 
   it("HUB-BR-22 · X2b-AC10 · RLS: cuc (ngoài phòng) không thấy tin agent / run; tam (thành viên) thấy tin agent nhưng không thấy run của lan", async () => {
     const t = await thread("Nhóm DB RLS");
+    expect(await waitAgentMsg(c, "tam", t.room, t.runId)).toBeDefined();
     const look = async (who: Who) => {
       let v: Json = {};
       await asUser(db, who, async (tx) => {
