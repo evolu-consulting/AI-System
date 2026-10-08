@@ -76,7 +76,7 @@ Lệnh: `HUB_TEST_DATABASE_URL=<qc> bun --env-file=.env.test-qc.local --config=b
 | `realtime.int.test.ts` | AC16, R18, R19 | 2 instance; B nhận `room.run_started/finished` qua `parseMeStreamRunEvent`, `room.run_waiting{caller_id}`; unread B +2, A 0; C ngoài phòng không nhận (sentinel); lỗi 429 của A không phát |
 | `lifecycle.int.test.ts` | R17, Q8, Q2/D15 | B chủ; A rời / bị bớt / phòng xoá giữa run ⇒ run `cancelled`, 0 tin agent; xác nhận khi agent bị thu hồi ⇒ "đã huỷ" |
 | `db.int.test.ts` | B1 | CHECK `room_messages_user_ck/agent_ck`, unique `(run_id)`, definer scope `system` ⇒ 42501, RV2-N2c giữ |
-| e2e `e2e/chat/x2b-*.x2b.ts` | AC13, 15, 16, 05, 06, 08, 17 (E-A1…A11) | cần stack: `_x2a-stack` + seed agent/quyền A/B/C + Runtime giả (test claim `hub.jobs`, Redis DB 14) — **Cần bổ sung (backend-lead B7):** fixture dev C có `hoadon`; xác nhận nhãn plan-frontend-e2e theo thread lần 2 (bỏ `can_reply`, "Xem flow") |
+| e2e `e2e/chat/x2b-*.x2b.ts` | AC13, 15, 16, 05, 06, 08, 17 (E-A1…A11) | cần stack: `_x2a-stack` + seed agent/quyền A/B/C + Runtime giả (test claim `hub.jobs`, Redis DB 13) — **Cần bổ sung (backend-lead B7):** fixture dev C có `hoadon`; xác nhận nhãn plan-frontend-e2e theo thread lần 2 (bỏ `can_reply`, "Xem flow") |
 | R20 / AC-H07 | R20 | hồi quy bằng bộ C1/H1 hiện có (`tests/acceptance/C1`, `H1`) trong `done:x2b` |
 
 ## 6. Ghi chú / mơ hồ

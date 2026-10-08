@@ -6,7 +6,7 @@ import { type Loose, ROOT } from "../M1/_modules";
 
 export { type Loose, ROOT };
 
-/** plan §8: `routeRoomMessage`, `canTriggerRun`, `replyAccess`, `canReply`, `roomContext`, `agentMessageView`,
+/** plan §8: `routeRoomMessage`, `canTriggerRun`, `answerAccess`, `roomContext`, `agentMessageView`,
  * `askForViewer`, `callerReadAfterPost`, `shouldPost`, `confirmStillAllowed`. Module chưa có ⇒ `{}`. */
 export async function loadRoomAgentRules(): Promise<Loose> {
   try {
