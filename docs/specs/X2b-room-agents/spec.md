@@ -65,7 +65,18 @@ Gợi ý cho PLAN: migration `0014_x2b_*` (sau 0011–0013 X2a); `runs.room_id` 
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
-Bám: bật menu `@` phòng (X2a §5.3), nhánh `sender_type=agent` → `FlowBlock` C1, khung `?flow=`, trạng thái "đang xử lý"/"Đang chờ A", placeholder gợi ý `@`. **Không** panel agent, **không** chip.
+Chi tiết: [`plan-frontend.md`](plan-frontend.md) (+ phụ lục i18n, e2e). **Không** panel agent, **không** chip (CR-048).
+
+| Thành phần | Hành vi chốt (artboard) |
+|---|---|
+| Composer phòng | `menus="agents"` (chỉ `@`, không `/` — Q10); nhãn textbox giữ X2a, placeholder "Nhắn cho nhóm… gõ @ để hỏi agent"; lỗi `AGENT_NOT_FOUND`/`TOO_MANY_RUNS` hiện trong ô, giữ chữ (Q4) (Main/DM/Mobile) |
+| Menu `@` | "Agent bạn dùng được": tên + `@key` + mô tả từ `GET /agents` người xem; tải lại khi mở phòng (R14) (Main) |
+| Khối agent | Tin gọi phẳng; khối "Trả lời của agent X": "<A> hỏi", thân C1, "Chạy bằng quyền của <A>", `FlowFooter`; khối "đang xử lý" ở cuối timeline; chỉ người gọi stream + "Dừng" (Main/DM) |
+| Chờ | Người gọi: AskCard/chip Đồng ý-Huỷ; người khác: "Đang chờ <A> xác nhận — chỉ người hỏi mới bấm được.", không mô tả hành động (Q5) (Main) |
+| Khung flow | `?flow=`; người gọi "Trả lời tiếp", người khác "Xem flow" chỉ-đọc (Q7/Q11); điện thoại sheet (C1) |
+| Đính kèm | Task F5 cắt được sang X2b-2 (Q9) |
+
+Cần backend-lead: `plan-frontend.md` §10 (`{message, run?}` khi gửi, trường agent/caller/ask/placement của `RoomMessage`, `active_runs`, 3 sự kiện run, tin flow theo `flow_id`, `NOT_RUN_CALLER`).
 
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6 (ưu tiên thấp, nới được). Dựng ngữ cảnh 20 tin = 1 truy vấn dùng index `(room_id, created_at)`.
