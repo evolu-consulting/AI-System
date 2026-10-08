@@ -17,6 +17,7 @@ import { RoomsService } from "./modules/rooms/manage/rooms.service";
 import { MessagesService } from "./modules/rooms/messages/messages.service";
 import { roomMessagesRoutes } from "./modules/rooms/room-messages.routes";
 import { roomsRoutes } from "./modules/rooms/rooms.routes";
+import type { CancelService } from "./modules/runs/close/cancel.service";
 
 /** Gốc route X2a cần JWT (`app.ts` gắn `requireAuth` cho từng gốc). */
 export const X2A_PROTECTED_PREFIXES = ["/directory", "/rooms", "/me"] as const;
@@ -33,9 +34,19 @@ export type X2aDeps = { db: Db; redis?: Redis; log: Logger; pingMs?: number; sig
 /** Dịch vụ X2a mà X2b nối thêm (gọi agent cần runtime dựng sau trong `app.ts`). */
 export type X2aMounted = { rooms: RoomsService; messages: MessagesService };
 
-/** X2b B4 · nối đường gọi agent vào `POST /rooms/:id/messages` (sau khi có `RunService`/`CancelService`). */
-export function mountRoomAgents(m: X2aMounted, d: Omit<RoomRunDeps, "rooms">): void {
+/** Huỷ run: E15 (D15) + huỷ run phòng khi rời / bớt / xoá (R17). */
+type RoomCancel = RoomRunDeps["cancel"] & Pick<CancelService, "cancelRoomRuns">;
+
+/**
+ * X2b B4 · nối đường gọi agent vào `POST /rooms/:id/messages` (sau khi có `RunService`/`CancelService`);
+ * B6 · rời / bớt / xoá phòng huỷ run phòng (R17).
+ */
+export function mountRoomAgents(
+  m: X2aMounted,
+  d: Omit<RoomRunDeps, "rooms" | "cancel"> & { cancel: RoomCancel },
+): void {
   m.messages.useAgents(new RoomRunService({ ...d, rooms: m.rooms }));
+  m.rooms.useRunCanceller((p) => d.cancel.cancelRoomRuns(p));
 }
 
 /** X2b B5 · `RoomRunPoster` (tx2 đăng tin agent) + vòng reconcile 5 s; `onClosed` nối vào `RunService` + `CancelService`. */

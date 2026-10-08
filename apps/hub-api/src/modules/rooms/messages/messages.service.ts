@@ -46,11 +46,20 @@ export class MessagesService {
     return this.rooms.access(u, roomId, action);
   }
 
-  /** R14/R15 · `limit` tin trước `before_seq` (vắng ⇒ tin cuối), trả `seq` tăng dần. */
+  /**
+   * R14/R15 · `limit` tin trước `before_seq` (vắng ⇒ tin cuối), trả `seq` tăng dần. X2b: `flow_id` vắng ⇒ timeline
+   * (`main`); có ⇒ thread — không phải thread của phòng ⇒ 404 `NOT_FOUND` (plan §3, sau `access view` + zod).
+   */
   page(u: AuthUser, roomId: string, q: RoomMessageListQuery): Promise<RoomMessagePage> {
     return this.rooms.read(u, async (tx, me) => {
       guard(await rooms.findAccess(tx, me, roomId), "view");
-      const rows = await repo.pageDesc(tx, me, roomId, { beforeSeq: q.before_seq, limit: q.limit });
+      const flowId = q.flow_id;
+      if (flowId && !(await threadRoot(tx, me, roomId, flowId))) throw appError("NOT_FOUND");
+      const rows = await repo.pageDesc(tx, me, roomId, {
+        beforeSeq: q.before_seq,
+        limit: q.limit,
+        ...(flowId && { flowId }),
+      });
       return {
         items: rows.slice(0, q.limit).reverse().map(toRoomMessage),
         has_more: rows.length > q.limit,

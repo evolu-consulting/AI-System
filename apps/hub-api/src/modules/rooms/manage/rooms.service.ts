@@ -13,13 +13,14 @@ import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { Db } from "../../../lib/db";
-import { appError } from "../../../lib/errors";
+import { appError, safeErrorFields } from "../../../lib/errors";
 import { validationError } from "../../../lib/http";
 import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
+import { activeRuns } from "../agents/room-active-runs.repo";
 import { deletedEvents, memberAddedEvents, updatedEvents } from "../room-events";
-import { toRoomDetail, toRoomSummary } from "../rooms.map";
+import { toActiveRun, toRoomDetail, toRoomSummary } from "../rooms.map";
 import {
   decodeRoomCursor,
   encodeRoomCursor,
@@ -32,6 +33,12 @@ import * as repo from "./rooms.repo";
 
 export type RoomsDeps = { db: Db; redis?: Pick<Redis, "pipeline">; log: Pick<Logger, "warn"> };
 export type Tracked<T> = { out: T; events: UserEvent[] };
+/** X2b R17 · huỷ run phòng (`CancelService.cancelRoomRuns`); `userId` vắng = cả phòng. */
+export type RoomRunCanceller = (p: {
+  tenantId: string;
+  roomId: string;
+  userId?: string;
+}) => Promise<unknown>;
 type Me = repo.Me;
 
 const meOf = (u: AuthUser): Me => ({ tenantId: u.tenantId, userId: u.userId });
@@ -74,7 +81,24 @@ export function summaryAs(d: RoomDetail, role: RoomRole): RoomSummary {
 }
 
 export class RoomsService {
+  #cancelRuns?: RoomRunCanceller;
+
   constructor(private readonly d: RoomsDeps) {}
+
+  /** X2b · nối huỷ run (cần `CancelService` ⇒ gắn sau trong `app.ts`); vắng = không có run phòng để huỷ. */
+  useRunCanceller(fn: RoomRunCanceller): void {
+    this.#cancelRuns = fn;
+  }
+
+  /** R17 · Q8 · gọi SAU COMMIT rời / bớt / xoá; lỗi chỉ log (thao tác phòng đã thành công, definer vẫn không đăng). */
+  async cancelRuns(u: AuthUser, roomId: string, userId?: string): Promise<void> {
+    if (!this.#cancelRuns) return;
+    try {
+      await this.#cancelRuns({ tenantId: u.tenantId, roomId, ...(userId && { userId }) });
+    } catch (err) {
+      this.d.log.warn("room-runs-cancel-failed", { room_id: roomId, ...safeErrorFields(err) });
+    }
+  }
 
   /** Ghi + phát sau commit. Lỗi Redis chỉ log trong `publishUserEvents`. */
   async commit<T>(u: AuthUser, fn: (tx: Tx, me: Me) => Promise<Tracked<T>>): Promise<T> {
@@ -97,8 +121,12 @@ export class RoomsService {
     await this.read(u, async (tx, me) => guard(await repo.findAccess(tx, me, roomId), action));
   }
 
+  /** X2b-R10 · chi tiết + `active_runs` (≤ 50, sắp `started_at`; plan §2.2). */
   get(u: AuthUser, roomId: string): Promise<RoomDetail> {
-    return this.read(u, (tx, me) => loadDetail(tx, me, roomId));
+    return this.read(u, async (tx, me) => {
+      const detail = await loadDetail(tx, me, roomId);
+      return { ...detail, active_runs: (await activeRuns(tx, me, roomId)).map(toActiveRun) };
+    });
   }
 
   list(u: AuthUser, q: RoomListQuery): Promise<RoomListResponse> {
@@ -175,13 +203,14 @@ export class RoomsService {
     });
   }
 
-  remove(u: AuthUser, roomId: string): Promise<void> {
-    return this.commit(u, async (tx, me) => {
+  async remove(u: AuthUser, roomId: string): Promise<void> {
+    await this.commit(u, async (tx, me) => {
       await lockFor(tx, me, roomId, "delete");
       const ids = await repo.activeMemberIds(tx, me, roomId);
       await repo.softDeleteRoom(tx, me, roomId);
       return { out: undefined, events: deletedEvents(roomId, ids) };
     });
+    await this.cancelRuns(u, roomId);
   }
 }
 

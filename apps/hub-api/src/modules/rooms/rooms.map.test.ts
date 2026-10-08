@@ -1,9 +1,15 @@
 // HUB-FR-96 · HUB-FR-97 · map hàng DB → contract: kết quả phải qua đúng schema `@ai/contracts/chat` (strict).
 import { describe, expect, test } from "bun:test";
-import { RoomDetailSchema, RoomMessageSchema, RoomSummarySchema } from "@ai/contracts/chat";
+import {
+  RoomActiveRunSchema,
+  RoomDetailSchema,
+  RoomMessageSchema,
+  RoomSummarySchema,
+} from "@ai/contracts/chat";
 import {
   type RoomMemberRow,
   type RoomSummaryRow,
+  toActiveRun,
   toRoomDetail,
   toRoomMessage,
   toRoomSummary,
@@ -65,5 +71,43 @@ describe("rooms.map", () => {
     });
     expect(RoomMessageSchema.parse(m)).toEqual(m);
     expect("run_id" in m).toBe(false);
+  });
+});
+
+describe("rooms.map · X2b", () => {
+  test("X2b-R10 · active_runs: Orchestrator ⇒ agent null; wait_kind chỉ khi có", () => {
+    const run = { runId: R, flowId: R, triggerMessageId: R, caller: ref(A, null), startedAt: at };
+    const a = RoomActiveRunSchema.parse(
+      toActiveRun({ ...run, agent: null, status: "waiting", waitKind: "need_input" }),
+    );
+    expect(a).toMatchObject({ agent: null, status: "waiting", wait_kind: "need_input" });
+    expect(a.caller.display_name).toBe(A);
+    const b = toActiveRun({
+      ...run,
+      agent: { key: "hoadon", name: { vi: "HĐ", en: "Inv" } },
+      status: "running",
+    });
+    expect(RoomActiveRunSchema.parse(b)).toEqual(b);
+    expect("wait_kind" in b).toBe(false);
+  });
+
+  test("X2b · flow{message_count,last_active_at} trên tin gốc", () => {
+    const m = toRoomMessage({
+      id: R,
+      roomId: R,
+      seq: 2,
+      senderType: "user",
+      sender: ref(A, "lan"),
+      content: "x",
+      clientMsgId: null,
+      createdAt: at,
+      flowId: R,
+      placement: "main",
+      flow: { messageCount: 3, lastActiveAt: at },
+    });
+    expect(RoomMessageSchema.parse(m).flow).toEqual({
+      message_count: 3,
+      last_active_at: at.toISOString(),
+    });
   });
 });

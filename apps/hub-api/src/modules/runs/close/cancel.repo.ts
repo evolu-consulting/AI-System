@@ -59,6 +59,30 @@ export async function runningRunsOf(
     .orderBy(runs.flowId);
 }
 
+/** Phạm vi huỷ run phòng (X2b R17): cả phòng (xoá) hoặc chỉ run của `userId` (rời / bị bớt). */
+export type RoomRunsScope = { tenantId: string; roomId: string; userId?: string };
+
+/** X2b R17 · run `running` của phòng, **không khoá** (`runs_room_running_idx`); scope `system`. Tối đa `limit`. */
+export async function runningRoomRuns(
+  tx: Tx,
+  p: RoomRunsScope,
+  limit: number,
+): Promise<(CancelTarget & { locale: repo.Locale })[]> {
+  return tx
+    .select(targetCols)
+    .from(runs)
+    .where(
+      and(
+        eq(runs.tenantId, p.tenantId),
+        eq(runs.roomId, p.roomId),
+        eq(runs.status, "running"),
+        p.userId === undefined ? undefined : eq(runs.userId, p.userId),
+      ),
+    )
+    .orderBy(runs.flowId)
+    .limit(limit);
+}
+
 /** §5.8 ứng viên sweeper, **không khoá** (`runs_lease_idx`); `locale` đọc cùng dòng (plan-errors §Ghi). */
 export async function expiredLeaseRuns(
   tx: Tx,

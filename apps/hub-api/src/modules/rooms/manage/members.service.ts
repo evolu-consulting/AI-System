@@ -56,18 +56,20 @@ export class MembersService {
   /** R09 · `:user_id` không uuid / chính mình ⇒ 400; không phải thành viên hiện tại ⇒ 404 `USER_NOT_FOUND`. */
   removeMember(u: AuthUser, roomId: string, userId: string): Promise<void> {
     if (!UuidSchema.safeParse(userId).success || userId === u.userId) throw badUserId();
-    return this.rooms.commit(u, async (tx, me) => {
+    const done = this.rooms.commit(u, async (tx, me) => {
       await lockFor(tx, me, roomId, "remove");
       const ids = await rooms.activeMemberIds(tx, me, roomId);
       if (!ids.includes(userId)) throw userNotFound([userId]);
       await repo.markLeft(tx, me, roomId, userId);
       return { out: undefined, events: memberRemovedEvents(roomId, userId, without(ids, userId)) };
     });
+    // X2b R17 · sau COMMIT huỷ run phòng của người bị bớt (`then`: kiểm 400 ở trên vẫn ném đồng bộ).
+    return done.then(() => this.rooms.cancelRuns(u, roomId, userId));
   }
 
   /** R10 · thành viên rời; chủ còn người khác ⇒ `OWNER_MUST_TRANSFER`; chủ một mình ⇒ xoá phòng (D4). */
-  leave(u: AuthUser, roomId: string): Promise<void> {
-    return this.rooms.commit(u, async (tx, me) => {
+  async leave(u: AuthUser, roomId: string): Promise<void> {
+    await this.rooms.commit(u, async (tx, me) => {
       const { role } = await lockFor(tx, me, roomId, "leave");
       const ids = await rooms.activeMemberIds(tx, me, roomId);
       const outcome = leaveOutcome(role, ids.length);
@@ -82,6 +84,8 @@ export class MembersService {
       }
       return { out: undefined, events };
     });
+    // R17 · chủ một mình rời ⇒ phòng xoá: chỉ còn run của chính mình.
+    await this.rooms.cancelRuns(u, roomId, u.userId);
   }
 
   /** R11 · đích phải là thành viên hiện tại khác mình (không ⇒ 404 `USER_NOT_FOUND`); một câu `CASE` (D9). */

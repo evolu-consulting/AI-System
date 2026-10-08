@@ -23,6 +23,8 @@ import {
   type CancelTarget,
   type CancelWrite,
   cancelRun,
+  type RoomRunsScope,
+  runningRoomRuns,
   runningRunsOf,
   setFinalSeq,
 } from "./cancel.repo";
@@ -41,6 +43,9 @@ export type CancelServiceDeps = {
 };
 
 export type Cancelled = { target: CancelTarget; error: CancelWrite["error"] };
+
+/** Trần run huỷ một lần (≤ 50 thành viên × `max_concurrent_runs`); dư ⇒ chạy hết tự nhiên, definer vẫn không đăng (R17). */
+const ROOM_CANCEL_MAX = 500;
 
 const cancelError = (locale: repo.Locale): CancelWrite["error"] => ({
   code: "CANCELLED",
@@ -92,6 +97,28 @@ export class CancelService {
     );
     if (done) await this.#announce(done);
     return snapshot;
+  }
+
+  /**
+   * X2b R17 · Q8 · sau COMMIT rời / bớt / xoá phòng: huỷ từng run `running` của phòng (của `userId` nếu có) như E15
+   * (transaction `system` mỗi run) ⇒ `onClosed` ⇒ definer đăng tin thấy không còn thành viên ⇒ `skipped` +
+   * `room.run_finished {cancelled, message_id:null}`. Kết quả trễ của runtime bị bỏ (run không còn `running`).
+   */
+  async cancelRoomRuns(p: RoomRunsScope): Promise<number> {
+    const targets = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+      runningRoomRuns(tx, p, ROOM_CANCEL_MAX),
+    );
+    let n = 0;
+    for (const t of targets) {
+      const content = await deltaContent(this.d.redis, t.runId);
+      const done = await this.#write({ target: t, locale: t.locale, content }, (w) =>
+        withHubScope(this.d.db, { kind: "system" }, (tx) => cancelRun(tx, w)),
+      );
+      if (!done) continue;
+      await this.#announce(done);
+      n++;
+    }
+    return n;
   }
 
   /** E9 · một transaction `user`: xoá mềm hội thoại (khoá đầu tiên) rồi huỷ từng run `running` của nó. 404 như B5. */

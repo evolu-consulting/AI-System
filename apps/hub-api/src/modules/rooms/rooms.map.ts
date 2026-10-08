@@ -1,6 +1,7 @@
 // HUB-FR-96 · HUB-FR-97 · map hàng DB (repo) → kiểu contract `@ai/contracts/chat` (X2a plan §2.3, D2, D5). Thuần.
 // `sender` join `admin.users` (left join): thiếu tên ⇒ fallback `username` rồi id (không bao giờ rỗng).
 import type {
+  RoomActiveRun,
   RoomAgentRef,
   RoomAsk,
   RoomDetail,
@@ -28,6 +29,8 @@ export type RoomMessageRow = {
   placement?: "main" | "flow";
   /** X2b · tin agent: phần đã chọn theo người xem (D3 — `content`/`ask` riêng chỉ cho người gọi). */
   agent?: AgentPartRow;
+  /** X2b · tóm tắt thread trên tin agent `main` gốc (chỉ khi đọc danh sách). */
+  flow?: { messageCount: number; lastActiveAt: Date };
 };
 
 export type AgentPartRow = {
@@ -39,6 +42,19 @@ export type AgentPartRow = {
   /** null = Orchestrator. */
   ref: RoomAgentRef | null;
   caller: UserRefRow;
+};
+
+/** X2b-R10 · một phần tử `active_runs` (definer `room_run_states`). */
+export type ActiveRunRow = {
+  runId: string;
+  flowId: string;
+  triggerMessageId: string;
+  /** null = Orchestrator. */
+  agent: RoomAgentRef | null;
+  caller: UserRefRow;
+  status: "running" | "waiting";
+  waitKind?: "need_input" | "side_effect";
+  startedAt: Date;
 };
 
 export type LastMessageRow = {
@@ -85,6 +101,12 @@ export function toRoomMessage(r: RoomMessageRow): RoomMessage {
     created_at: r.createdAt.toISOString(),
     ...(r.flowId && { flow_id: r.flowId, placement: r.placement ?? "main" }),
     ...(r.agent && agentFields(r.agent)),
+    ...(r.flow && {
+      flow: {
+        message_count: r.flow.messageCount,
+        last_active_at: r.flow.lastActiveAt.toISOString(),
+      },
+    }),
   };
 }
 
@@ -97,6 +119,19 @@ function agentFields(a: AgentPartRow): Partial<RoomMessage> {
     ...(a.ref && { agent: a.ref }),
     ...(a.ask && { ask: a.ask }),
     ...(a.steps && { steps: a.steps }),
+  };
+}
+
+export function toActiveRun(r: ActiveRunRow): RoomActiveRun {
+  return {
+    run_id: r.runId,
+    flow_id: r.flowId,
+    trigger_message_id: r.triggerMessageId,
+    agent: r.agent,
+    caller: senderOf(r.caller),
+    status: r.status,
+    ...(r.waitKind && { wait_kind: r.waitKind }),
+    started_at: r.startedAt.toISOString(),
   };
 }
 

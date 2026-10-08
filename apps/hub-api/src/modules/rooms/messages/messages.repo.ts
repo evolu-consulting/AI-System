@@ -45,22 +45,54 @@ function toRow(r: MessageSqlRow): RoomMessageRow {
 const COLS = sql`m.id, m.room_id, m.seq, m.sender_type, m.sender_id, m.content, m.client_msg_id, m.created_at,
   u.display_name, u.username, m.flow_id, m.placement`;
 
-/** R15 · tối đa `limit + 1` tin có `seq < before` (vắng ⇒ tin cuối), `seq` giảm dần (`room_messages_seq_uq`). */
+/** X2b · tóm tắt thread gắn trên tin agent `main` gốc (vắng ở tin khác: aggregate 0 / null). */
+type FlowSqlCols = { flow_message_count: Num; flow_last_active_at: Ts | null };
+
+/**
+ * `flow{message_count,last_active_at}` (plan §2.2): đếm tin `flow` của thread + tin mới nhất, chỉ tính cho tin agent `main`
+ * (filter một lần theo hàng ngoài); `room_messages_flow_idx (room_id, flow_id, seq)`.
+ */
+const FLOW_LATERAL = sql`
+  left join lateral (
+    select count(*) filter (where t.placement = 'flow') as flow_message_count,
+      max(t.created_at) as flow_last_active_at
+    from hub.room_messages t
+    where m.sender_type = 'agent' and m.placement = 'main' and m.flow_id is not null
+      and t.room_id = m.room_id and t.tenant_id = m.tenant_id and t.flow_id = m.flow_id) fs on true`;
+
+const withFlow = (row: RoomMessageRow, f: FlowSqlCols): RoomMessageRow =>
+  f.flow_last_active_at === null
+    ? row
+    : {
+        ...row,
+        flow: {
+          messageCount: Number(f.flow_message_count),
+          lastActiveAt: toDate(f.flow_last_active_at),
+        },
+      };
+
+/**
+ * R15 · tối đa `limit + 1` tin có `seq < before` (vắng ⇒ tin cuối), `seq` giảm dần. X2b: `flowId` vắng ⇒ timeline
+ * (`placement='main'`, `room_messages_main_idx`); có ⇒ mọi tin của thread (`main`+`flow`, `room_messages_flow_idx`) —
+ * gọi SAU khi đã kiểm thread thuộc phòng (`threadRoot`).
+ */
 export async function pageDesc(
   tx: Tx,
   me: Me,
   roomId: string,
-  q: { beforeSeq?: number; limit: number },
+  q: { beforeSeq?: number; limit: number; flowId?: string },
 ): Promise<RoomMessageRow[]> {
   const before = q.beforeSeq === undefined ? sql`` : sql`and m.seq < ${q.beforeSeq}`;
-  const rows = await tx.execute<MessageSqlRow & AgentSqlCols>(sql`
-    select ${COLS}, ${AGENT_COLS}
+  const where =
+    q.flowId === undefined ? sql`and m.placement = 'main'` : sql`and m.flow_id = ${q.flowId}`;
+  const rows = await tx.execute<MessageSqlRow & AgentSqlCols & FlowSqlCols>(sql`
+    select ${COLS}, ${AGENT_COLS}, fs.flow_message_count, fs.flow_last_active_at
     from hub.room_messages m
-    left join admin.users u on u.id = m.sender_id and u.tenant_id = m.tenant_id ${AGENT_JOINS}
-    where m.room_id = ${roomId} and m.tenant_id = ${me.tenantId} ${before}
+    left join admin.users u on u.id = m.sender_id and u.tenant_id = m.tenant_id ${AGENT_JOINS} ${FLOW_LATERAL}
+    where m.room_id = ${roomId} and m.tenant_id = ${me.tenantId} ${where} ${before}
     order by m.seq desc limit ${q.limit + 1}`);
   // X2b D3 · tin agent theo người xem (bản riêng `side_effect` chỉ có khi RLS `runs` trả hàng = người gọi).
-  return rows.map((r) => rowFor(toRow(r), agentDataOf(r), me.userId));
+  return rows.map((r) => withFlow(rowFor(toRow(r), agentDataOf(r), me.userId), r));
 }
 
 /** Tin đã gửi với cùng `client_msg_id` của chính mình (gửi lại ⇒ 200, X2a-AC07). */
