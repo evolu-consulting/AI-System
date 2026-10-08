@@ -26,3 +26,5 @@ Quyết định nhỏ, "đã thử & bỏ vì…", bẫy đã gặp. Mới nhấ
 | 2026-10-01 | Tài liệu | `documents/` chuyển thành `docs/design/`. Đường dẫn nội bộ giữa các file html/md giữ nguyên (tương đối). |
 | 2026-10-01 | Quy trình | Chọn AI-SDLC gọn: spec → readiness → Gate một lần/mốc → code tự động. Tham khảo AWS AI-DLC, GitHub Spec Kit. |
 | 2026-10-01 | Agent | Agent mới trong `.claude/agents/` chỉ hiện sau khi mở lại phiên; trong phiên hiện tại dùng general-purpose đọc nguyên văn file định nghĩa. |
+| 2026-10-08 | Dev seed | `hub:dev` tạo tenant demo `evolu` (julian.bui tenant_admin + 4 member, mật khẩu `1234567890`, email `<user>@evolu.local`) + phòng mẫu — chỉ dev, không seed ở production. role `tenant_admin` bắt buộc email (`EMAIL_REQUIRED`). |
+| 2026-10-08 | Quy trình | Thêm agent `qc-uat` (Sonnet) cho UAT trình duyệt thật + evidence; không dùng Opus cho việc lái trình duyệt. |
