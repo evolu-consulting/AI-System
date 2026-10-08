@@ -7,6 +7,7 @@ import type {
   RoomSummary,
 } from "@ai/contracts/chat";
 import type { InfiniteData } from "@tanstack/react-query";
+import { messagePreview } from "./message-preview";
 
 export const roomKeys = {
   all: ["rooms"] as const,
@@ -112,4 +113,29 @@ export function patchMemberRead(
       m.id === userId ? { ...m, last_read_seq: Math.max(m.last_read_seq, seq) } : m,
     ),
   };
+}
+
+/** Tin của chính mình vừa gửi: phòng lên đầu, `unread=0`, trừ phần chưa đọc cũ khỏi `unread_total`. Phòng chưa có trong list ⇒ giữ nguyên. */
+export function applySentMessage(
+  data: RoomListData | undefined,
+  id: string,
+  msg: RoomMessage,
+): RoomListData | undefined {
+  const room = findRoomInList(data, id);
+  if (!room) return data;
+  const patched: RoomSummary = {
+    ...room,
+    unread: 0,
+    last_seq: Math.max(room.last_seq, msg.seq),
+    last_activity_at: msg.created_at,
+    last_message: {
+      seq: msg.seq,
+      sender_type: msg.sender_type,
+      sender: msg.sender,
+      preview: messagePreview(msg.content),
+      created_at: msg.created_at,
+    },
+  };
+  const total = Math.max(0, unreadTotalOf(data) - room.unread);
+  return patchUnreadTotal(moveRoomToTop(data, patched), total);
 }

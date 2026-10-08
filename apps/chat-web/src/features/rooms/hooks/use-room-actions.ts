@@ -14,9 +14,9 @@ import {
   transferRoom,
 } from "../api";
 import {
+  applySentMessage,
   findRoomInList,
   insertMessage,
-  moveRoomToTop,
   patchRoomInList,
   patchUnreadTotal,
   type RoomListData,
@@ -95,24 +95,7 @@ export function useSendRoomMessage(id: string) {
     mutationFn: (v: { content: string; client_msg_id: string }) => sendRoomMessage(id, v),
     onSuccess: (msg: RoomMessage) => {
       qc.setQueryData<RoomMessagesData>(roomKeys.messages(id), (d) => insertMessage(d, msg));
-      qc.setQueryData<RoomListData>(roomKeys.list, (d) => {
-        const room = findRoomInList(d, id);
-        if (!room) return d;
-        const patched = {
-          ...room,
-          unread: 0,
-          last_seq: Math.max(room.last_seq, msg.seq),
-          last_activity_at: msg.created_at,
-          last_message: {
-            seq: msg.seq,
-            sender_type: msg.sender_type,
-            sender: msg.sender,
-            preview: msg.content.slice(0, 120),
-            created_at: msg.created_at,
-          },
-        };
-        return moveRoomToTop(d, patched);
-      });
+      qc.setQueryData<RoomListData>(roomKeys.list, (d) => applySentMessage(d, id, msg));
       if (!findRoomInList(qc.getQueryData<RoomListData>(roomKeys.list), id)) void refreshList(qc);
     },
   });

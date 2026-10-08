@@ -2,6 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import type { RoomMessage, RoomSummary } from "@ai/contracts/chat";
 import {
+  applySentMessage,
   insertMessage,
   moveRoomToTop,
   patchMemberRead,
@@ -87,5 +88,22 @@ describe("room-cache", () => {
     };
     expect(patchMemberRead(detail, uid(9), 3)?.members[0]?.last_read_seq).toBe(5);
     expect(patchMemberRead(detail, uid(9), 8)?.members[0]?.last_read_seq).toBe(8);
+  });
+});
+
+describe("applySentMessage (RV1 #10)", () => {
+  test("tin của mình: unread phòng = 0, unread_total trừ phần cũ, phòng lên đầu", () => {
+    const d = list(room(1), room(2, 2)); // unread_total = 3
+    const out = applySentMessage(d, uid(2), { ...msg(1, 5), room_id: uid(2) });
+    expect(out?.pages[0]?.items.map((r) => r.id)).toEqual([uid(2), uid(1)]);
+    expect(out?.pages[0]?.items[0]?.unread).toBe(0);
+    expect(unreadTotalOf(out)).toBe(1);
+  });
+  test("không âm; phòng lạ giữ nguyên; preview gộp khoảng trắng", () => {
+    const d = list(room(1, 9));
+    const out = applySentMessage(d, uid(1), { ...msg(1, 2), content: "a\n  b" });
+    expect(unreadTotalOf(out)).toBe(0);
+    expect(out?.pages[0]?.items[0]?.last_message?.preview).toBe("a b");
+    expect(applySentMessage(d, uid(7), msg(1, 2))).toBe(d);
   });
 });

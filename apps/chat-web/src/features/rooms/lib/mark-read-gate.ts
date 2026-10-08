@@ -14,12 +14,21 @@ export function createMarkReadGate(deps: MarkReadDeps): MarkReadGate {
   let pending = 0;
   let cancel: (() => void) | null = null;
 
-  const fire = (seq: number) => {
+  const fire = (seq: number, isRetry = false) => {
     const prev = sentSeq;
     sentSeq = seq;
     lastAt = deps.now();
     deps.send(seq).catch(() => {
-      if (sentSeq === seq) sentSeq = prev; // lỗi: cho phép thử lại ở lần offer kế
+      if (sentSeq !== seq) return;
+      sentSeq = prev; // lỗi: cho phép thử lại ở lần offer kế
+      if (isRetry || cancel) return;
+      // Hẹn thử lại đúng seq này một lần sau `intervalMs` (lần đọc cuối không bị kẹt chưa đọc).
+      cancel = deps.setTimer(() => {
+        cancel = null;
+        const s = Math.max(seq, pending);
+        pending = 0;
+        if (s > sentSeq) fire(s, true);
+      }, deps.intervalMs);
     });
   };
 

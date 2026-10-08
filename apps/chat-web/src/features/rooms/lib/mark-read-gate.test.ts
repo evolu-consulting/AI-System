@@ -79,3 +79,18 @@ describe("createMarkReadGate", () => {
     expect(sent).toEqual([3, 3]);
   });
 });
+
+describe("createMarkReadGate · lỗi", () => {
+  test("RV1 #9: POST lỗi ⇒ tự thử lại đúng seq một lần sau intervalMs, không lặp vô hạn", async () => {
+    const { gate, sent, advance } = setup(true);
+    gate.offer(5);
+    await Promise.resolve();
+    await Promise.resolve();
+    advance(1000);
+    expect(sent).toEqual([5, 5]);
+    await Promise.resolve();
+    await Promise.resolve();
+    advance(5000);
+    expect(sent).toEqual([5, 5]);
+  });
+});

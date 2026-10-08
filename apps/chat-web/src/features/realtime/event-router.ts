@@ -1,13 +1,8 @@
 // HUB-FR-99, HUB-FR-100, CHAT-AC-37…40, X2a-AC08 · sự kiện `/me/stream` → cập nhật cache TanStack Query (plan-frontend §3).
 // Component chỉ đọc query; không có store riêng cho dữ liệu phòng. Vá cache dùng hàm thuần của `rooms/lib/room-cache`.
-import {
-  type MeStreamEvent,
-  ROOM_PREVIEW_MAX,
-  type RoomDetail,
-  type RoomMessage,
-  type RoomSummary,
-} from "@ai/contracts/chat";
+import type { MeStreamEvent, RoomDetail, RoomMessage, RoomSummary } from "@ai/contracts/chat";
 import type { QueryClient } from "@tanstack/react-query";
+import { messagePreview } from "~/features/rooms/lib/message-preview";
 import {
   insertMessage,
   moveRoomToTop,
@@ -36,7 +31,7 @@ function lastMessageOf(m: RoomMessage) {
     seq: m.seq,
     sender_type: m.sender_type,
     sender: m.sender,
-    preview: m.content.slice(0, ROOM_PREVIEW_MAX),
+    preview: messagePreview(m.content),
     created_at: m.created_at,
   };
 }

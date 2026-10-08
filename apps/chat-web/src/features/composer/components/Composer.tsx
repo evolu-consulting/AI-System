@@ -1,8 +1,5 @@
 // CHAT-AC-05, CHAT-AC-10, HUB-FR-10 · ô nhập: tự giãn ≤ 8 dòng, Enter gửi / Shift+Enter xuống dòng, Gửi↔Dừng, Esc dừng, khoá khi run khác chạy, nháp localStorage, menu `/` (gõ `/` ở đầu tin; `//` không mở), menu `@` (`@@` không mở), lỗi `CMD_*`/`AGENT_NOT_FOUND`/429 (đếm ngược) ngay trong ô.
 // Dùng lại cho ô chính (F7/F8) và khung flow (F10): khác nhau ở `variant`, `draftKey`, `onSubmit`.
-
-import type { TFunction } from "i18next";
-import { ArrowUp, Square } from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -13,13 +10,11 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "~/components/ui/button";
-import { AttachButton } from "~/features/attachments/components/AttachButton";
 import { AttachBar } from "~/features/attachments/components/AttachmentChip";
 import { useAttachments } from "~/features/attachments/hooks/use-attachments";
 import { composerKeyHandler } from "../hooks/use-composer-keys";
 import { readDraft, useDraftSaver } from "../hooks/use-draft";
-import { type SubmitResult, useSendError } from "../hooks/use-send-error";
+import { useSendError } from "../hooks/use-send-error";
 import { useComposerSuggest } from "../hooks/use-suggest";
 import {
   COMPOSER_MAX_ROWS,
@@ -32,49 +27,15 @@ import {
 import { AgentMenu } from "./AgentMenu";
 import { CharCount } from "./CharCount";
 import { CommandMenu } from "./CommandMenu";
+import { ComposerRow, sendTitle } from "./ComposerRow";
+import type { ComposerHandle, ComposerProps } from "./composer-types";
 import { QuotaNotice } from "./QuotaNotice";
 import { SendErrorNotice } from "./SendErrorNotice";
-
-/** Tooltip nút Gửi khi bị khoá. */
-function sendTitle(t: TFunction, locked: boolean, uploading: boolean): string | undefined {
-  if (locked) return t("composer.busy");
-  return uploading ? t("attach.waitUpload") : undefined;
-}
 
 // Render server (bun test) không có layout effect.
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-// Kiểu ở hook (component không import `~/lib/http` — depcruise component-no-fetch); giữ export cho nơi dùng cũ.
-export type { SubmitResult };
-
-export type ComposerHandle = {
-  /** Điền sẵn (thẻ gợi ý): thay nội dung, focus, con trỏ cuối, KHÔNG gửi. */
-  fill(text: string): void;
-  focus(): void;
-};
-
-export type ComposerProps = {
-  variant: "main" | "flow" | "room";
-  /** `draftKey(convId, flowId)`. */
-  draftKey: string;
-  /** Run khác đang chạy trong hội thoại: gõ được, Gửi disabled + tooltip `composer.busy` (UC-02). */
-  locked?: boolean;
-  /** Run của composer này đang chạy: nút Gửi thành Dừng, Esc dừng. */
-  running?: boolean;
-  /** `run.started.quota.state = over`. */
-  quotaOver?: boolean;
-  autoFocus?: boolean;
-  /** Menu `/` và `@` (mặc định bật). Tắt: không gọi `GET /commands`/`/agents`, `@x`/`/x` gửi nguyên văn (phòng X2a). */
-  menus?: boolean;
-  /** Nút/hàng đính kèm (mặc định bật). */
-  attachments?: boolean;
-  /** `room`: nhãn textbox, cũng là placeholder (vd "Tin nhắn cho nhóm"). */
-  inputLabel?: string;
-  /** Quá giới hạn ký tự → Gửi disabled; hiện bộ đếm từ 90 %. */
-  maxChars?: number;
-  onSubmit(text: string, attachmentIds?: string[]): Promise<SubmitResult>;
-  onStop?(): void;
-};
+export type { ComposerHandle, ComposerProps, SubmitResult } from "./composer-types";
 
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer(
   {
@@ -154,7 +115,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     setSubmitting(true);
     try {
       const sent = text.trim();
-      const r = await onSubmit(sent, att.ids);
+      const r = await onSubmit(sent, attachments ? att.ids : undefined);
       const out = submitOutcome(r);
       if (out.kind === "sent") {
         draft.clear();
@@ -169,7 +130,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     } finally {
       setSubmitting(false);
     }
-  }, [text, locked, submitting, over, onSubmit, draft, sendError, att]);
+  }, [text, locked, submitting, over, onSubmit, draft, sendError, att, attachments]);
 
   const pickCommand = useCallback(
     (index?: number) => {
@@ -217,43 +178,22 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         </p>
       )}
       {attachments && <AttachBar chips={att.chips} onRemove={att.remove} onRetry={att.retry} />}
-      <div
-        {...att.dropProps}
-        className="flex items-end gap-2 rounded-xl border border-input bg-background p-2 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
-      >
-        {attachments && <AttachButton onPick={att.add} />}
-        {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: plan-frontend §1.1 cần aria-expanded; giữ role textbox vì e2e chọn textbox "Tin nhắn". */}
-        <textarea
-          ref={area}
-          rows={1}
-          value={text}
-          aria-label={labels.input}
-          placeholder={labels.placeholder}
-          aria-expanded={aria.expanded}
-          aria-controls={aria.controls}
-          aria-activedescendant={aria.activeDescendant}
-          onChange={(e) => change(e.target.value, e.target.selectionStart)}
-          onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
-          onKeyDown={onKeyDown}
-          className="max-h-none min-h-6 flex-1 resize-none bg-transparent px-2 py-1 text-sm leading-6 outline-none placeholder:text-placeholder"
-        />
-        {running ? (
-          <Button type="button" size="icon" aria-label={t("composer.stop")} onClick={onStop}>
-            <Square className="size-4 fill-current" aria-hidden="true" />
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            size="icon"
-            aria-label={t(flow ? "composer.sendInFlow" : "composer.send")}
-            title={sendTitle(t, locked, att.busy)}
-            disabled={!enabled}
-            onClick={() => void send()}
-          >
-            <ArrowUp className="size-4" aria-hidden="true" />
-          </Button>
-        )}
-      </div>
+      <ComposerRow
+        areaRef={area}
+        text={text}
+        labels={labels}
+        aria={aria}
+        flow={flow}
+        running={running}
+        enabled={enabled}
+        sendTitle={sendTitle(t, locked, att.busy)}
+        attach={attachments ? { add: att.add, dropProps: att.dropProps } : null}
+        onChange={change}
+        onCaret={setCaret}
+        onKeyDown={onKeyDown}
+        onSend={() => void send()}
+        onStop={onStop}
+      />
       {maxChars !== undefined && <CharCount length={text.length} max={maxChars} />}
     </div>
   );

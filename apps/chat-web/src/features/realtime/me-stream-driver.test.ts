@@ -23,7 +23,7 @@ function bodyOf(chunks: string[], hang: boolean, signal: AbortSignal) {
   });
 }
 
-function setup(steps: Step[]) {
+function setup(steps: Step[], hasRoomsData?: () => boolean) {
   const store = createRealtimeStore();
   const events: MeStreamEvent[] = [];
   const opens: (string | null)[] = [];
@@ -54,6 +54,7 @@ function setup(steps: Step[]) {
       return () => {};
     },
     onEvent: (e) => events.push(e),
+    hasRoomsData,
   };
   return { store, driver: new MeStreamDriver(store, deps), events, opens, sleeps, timers, done };
 }
@@ -84,7 +85,8 @@ test("stream.reset xoá lastEventId và vẫn chuyển cho router", async () => 
   t.driver.start();
   await t.done;
   expect(t.opens.slice(0, 2)).toEqual([null, null]);
-  expect(t.events.map((e) => e.event)).toEqual(["room.deleted", "stream.reset"]);
+  // reset thứ 2: đóng sạch khi chưa có id ⇒ nối lại phải nạp lại cache.
+  expect(t.events.map((e) => e.event)).toEqual(["room.deleted", "stream.reset", "stream.reset"]);
   t.driver.stop();
 });
 
@@ -170,5 +172,41 @@ test("nối lại khi đã có lastEventId: không giả stream.reset (server ph
   t.driver.start();
   await Bun.sleep(10);
   expect(t.events.map((e) => e.event)).toEqual(["room.deleted"]);
+  t.driver.stop();
+});
+
+test("RV1 #2: lần nối đầu connecting→open mà cache phòng đã có dữ liệu ⇒ stream.reset; chưa có ⇒ không", async () => {
+  const t = setup([{ chunks: [": ping\n\n"], hang: true }], () => true);
+  t.driver.start();
+  await Bun.sleep(10);
+  expect(t.events.map((e) => e.event)).toEqual(["stream.reset"]);
+  t.driver.stop();
+  const empty = setup([{ chunks: [": ping\n\n"], hang: true }], () => false);
+  empty.driver.start();
+  await Bun.sleep(10);
+  expect(empty.events).toEqual([]);
+  empty.driver.stop();
+});
+
+test("RV1 #7: server đóng sạch sau khi open (hết hạn token) ⇒ nối lại ngay, không banner reconnecting, không backoff", async () => {
+  const t = setup([{ chunks: [deleted("3-0")] }, { chunks: [": ping\n\n"], hang: true }]);
+  const phases: string[] = [];
+  t.store.subscribe(() => phases.push(t.store.get().phase));
+  t.driver.start();
+  await Bun.sleep(10);
+  expect(t.opens).toEqual([null, "3-0"]);
+  expect(t.sleeps).toEqual([]);
+  expect(phases).not.toContain("reconnecting");
+  expect(phases).not.toContain("down");
+  expect(t.store.get().phase).toBe("open");
+  t.driver.stop();
+});
+
+test("RV1 #7: đóng sạch quá nhanh liên tục ⇒ tính là sự cố (backoff, không vòng nóng)", async () => {
+  const quick = { chunks: [deleted("3-0")] };
+  const t = setup([quick, quick, quick, quick, quick, quick]);
+  t.driver.start();
+  await t.done;
+  expect(t.sleeps.length).toBeGreaterThan(0);
   t.driver.stop();
 });

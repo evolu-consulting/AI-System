@@ -1,5 +1,6 @@
 // HUB-FR-100 · ghép `MeStreamDriver` với I/O thật: fetch `/me/stream`, đồng hồ, QueryClient. Đăng xuất/hết phiên → dừng.
 import { queryClient } from "~/app/query-client";
+import { roomKeys } from "~/features/rooms/lib/room-cache";
 import { session } from "~/lib/auth/session";
 import { openMeStream } from "./api";
 import { createEventRouter, type RoomLostReason } from "./event-router";
@@ -45,6 +46,7 @@ export const meStreamDriver = new MeStreamDriver(realtimeStore, {
     return () => clearTimeout(t);
   },
   onEvent: route,
+  hasRoomsData: () => queryClient.getQueryData(roomKeys.list) !== undefined,
 });
 
 session.on("cleared", () => meStreamDriver.stop());
