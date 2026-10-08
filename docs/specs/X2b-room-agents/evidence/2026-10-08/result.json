@@ -1,0 +1,121 @@
+{
+  "stamp": "plf6",
+  "log": [
+    {
+      "id": "00",
+      "title": "Đăng nhập A/B/C (evolu)",
+      "ok": true,
+      "ms": 1527
+    },
+    {
+      "id": "01",
+      "title": "A mở Evolu team, gõ @ ⇒ orchestrator, hoadon, trello; không panel/chip agent",
+      "ok": true,
+      "ms": 318,
+      "note": "menu A có 2 option (hoadon, trello), không có orchestrator — đúng spec R14/e2e, lệch manual-test-I2 #1"
+    },
+    {
+      "id": "02",
+      "title": "B gõ @ ⇒ chỉ orchestrator, trello (không hoadon)",
+      "ok": true,
+      "ms": 235,
+      "note": "menu B chỉ có trello (không hoadon, không orchestrator) — đúng spec/e2e"
+    },
+    {
+      "id": "03",
+      "title": "A @hoadon ⇒ B/C thấy 'đang xử lý…' rồi khối 'Julian Bui hỏi'; huy hiệu B +2, A không",
+      "ok": true,
+      "ms": 1889
+    },
+    {
+      "id": "04",
+      "title": "A bấm Dừng khi chạy ⇒ khối 'Đã huỷ' cho mọi người",
+      "ok": true,
+      "ms": 668
+    },
+    {
+      "id": "05",
+      "title": "B @hoadon (không quyền) ⇒ alert 'Không tìm thấy agent @hoadon.', ô giữ chữ, không run",
+      "ok": true,
+      "ms": 172
+    },
+    {
+      "id": "06",
+      "title": "C @hoadon ⇒ khối ghi 'Chạy bằng quyền của Vio Ngo'",
+      "ok": true,
+      "ms": 486
+    },
+    {
+      "id": "07",
+      "title": "A và C gọi gần nhau ⇒ 2 khối song song, không lẫn",
+      "ok": true,
+      "ms": 798
+    },
+    {
+      "id": "08",
+      "title": "A mở thread ⇒ B, C cũng có composer; B nhắn thường OK (không run); C tag @hoadon ⇒ 'Chạy bằng quyền của Vio'",
+      "ok": true,
+      "ms": 1986
+    },
+    {
+      "id": "09",
+      "title": "Trong thread B @trello ⇒ run của B, trả lời hiện trong thread, A xem được; B @hoadon ⇒ lỗi giữ chữ",
+      "ok": true,
+      "ms": 580
+    },
+    {
+      "id": "10",
+      "title": "need_input: A có chip, B thấy 'Đang chờ … trả lời agent.', không nút; B forge answer_run_id ⇒ 403",
+      "ok": true,
+      "ms": 3311
+    },
+    {
+      "id": "11",
+      "title": "side_effect: A thấy Đồng ý/Huỷ; B chỉ 'Đang chờ … xác nhận', DOM B không có chi tiết",
+      "ok": true,
+      "ms": 2669
+    },
+    {
+      "id": "12",
+      "title": "A @orchestrator tóm tắt ⇒ chạy; nhãn gửi 'Orchestrator'",
+      "ok": true,
+      "ms": 782
+    },
+    {
+      "id": "13",
+      "title": "Không có nút đính kèm trong composer phòng",
+      "ok": true,
+      "ms": 63
+    },
+    {
+      "id": "14",
+      "title": "Rời nhóm khi run đang chạy ⇒ run của người rời bị huỷ",
+      "ok": false,
+      "err": "A thấy 'Đã huỷ' ngay (realtime) sau khi B rời |  | expect(received).toBeGreaterThan(expected)"
+    },
+    {
+      "id": "15",
+      "title": "Thu hồi hoadon của C ⇒ C gọi lại bị từ chối ngay (không chờ làm tươi cache)",
+      "ok": true,
+      "ms": 606
+    },
+    {
+      "id": "16",
+      "title": "F5 khi run đang chạy ⇒ khối 'đang xử lý' còn; kết quả hiện khi xong; không mất/lặp tin",
+      "ok": true,
+      "ms": 3318
+    },
+    {
+      "id": "17",
+      "title": "Hỏi AI: /c/new vẫn như cũ, không lẫn tin phòng vào danh sách hội thoại",
+      "ok": true,
+      "ms": 299
+    },
+    {
+      "id": "18",
+      "title": "Điện thoại 390px: thread là dialog 'Flow đang mở', có 'Đóng khung flow'",
+      "ok": true,
+      "ms": 1184
+    }
+  ]
+}
