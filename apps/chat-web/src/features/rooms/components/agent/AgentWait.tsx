@@ -17,7 +17,7 @@ type Props = {
   onAnswer?: (message: RoomMessage, choice: string) => Promise<boolean>;
 };
 
-/** `side_effect` thiếu lựa chọn → "Đồng ý"/"Huỷ" (khớp `isAgreeReply` của Hub ở cả hai ngôn ngữ). */
+/** `side_effect` thiếu lựa chọn → "Đồng ý"/"Huỷ" (khớp `isAgreeReply` của Hub, hai ngôn ngữ). Chỉ là dự phòng: BE (`askForViewer`) đã trả `choices` cho người gọi (TECH-DEBT #111). */
 function choicesOf(ask: NonNullable<RoomMessage["ask"]>, t: TFunction): readonly string[] {
   if (ask.choices && ask.choices.length > 0) return ask.choices;
   return ask.kind === "side_effect" ? [t("roomAgent.confirmYes"), t("roomAgent.confirmNo")] : [];

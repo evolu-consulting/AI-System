@@ -32,7 +32,15 @@ export function useRoomRuns(
   myId: string,
 ): RoomActiveRun[] {
   const pending = useMemo(() => pendingRuns(activeRuns, messages), [activeRuns, messages]);
-  const all = useRuns((runs) => runs);
+  // Selector trả chuỗi khoá (primitive) run phòng đã kết thúc cần dọn ⇒ chỉ render lại khi tập này đổi, không theo delta SSE.
+  const stale = useRuns((runs) => {
+    const conv = roomConvId(roomId);
+    const live = new Set(pending.map((r) => r.run_id));
+    return runs
+      .filter((r) => r.convId === conv && r.runId && !live.has(r.runId) && isTerminal(r.phase))
+      .map((r) => r.key)
+      .join("\n");
+  });
 
   useEffect(() => {
     for (const r of pending) {
@@ -41,14 +49,8 @@ export function useRoomRuns(
   }, [pending, myId, roomId]);
 
   useEffect(() => {
-    const conv = roomConvId(roomId);
-    const live = new Set(pending.map((r) => r.run_id));
-    for (const r of all) {
-      if (r.convId === conv && r.runId && !live.has(r.runId) && isTerminal(r.phase)) {
-        runDriver.drop(r.key);
-      }
-    }
-  }, [all, pending, roomId]);
+    if (stale) for (const key of stale.split("\n")) runDriver.drop(key);
+  }, [stale]);
 
   return pending;
 }
