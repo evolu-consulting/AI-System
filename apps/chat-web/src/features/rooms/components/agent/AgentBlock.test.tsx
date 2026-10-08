@@ -66,6 +66,17 @@ test("need_input: người khác thấy câu hỏi, không chip, 'Đang chờ La
   expect(html(needInput, THU, false)).not.toContain("Đang chờ");
 });
 
+const count = (h: string, s: string) => h.split(s).length - 1;
+
+test("need_input: câu hỏi trùng thân tin chỉ hiện một lần (UAT #10), cả người gọi lẫn người khác", () => {
+  const m = { ...needInput, content: " Số hoá đơn nào? " };
+  expect(count(html(m, LAN), "Số hoá đơn nào?")).toBe(1);
+  expect(count(html(m, THU), "Số hoá đơn nào?")).toBe(1);
+  expect(
+    count(html({ ...needInput, content: "Cần thêm: số hoá đơn" }, LAN), "Số hoá đơn nào?"),
+  ).toBe(1);
+});
+
 test("need_input hết chờ: chip vô hiệu với người gửi lượt", () => {
   expect(html(needInput, LAN, false)).toMatch(/<button[^>]*disabled=""[^>]*>HD-12</);
 });

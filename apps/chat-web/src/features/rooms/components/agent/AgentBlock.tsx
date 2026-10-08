@@ -97,6 +97,9 @@ function AgentBlockImpl(props: Props) {
   const ok = message.run_status === undefined || message.run_status === "finished";
   // Q5: người khác không thấy mô tả hành động đang chờ xác nhận — chỉ WaitingNote.
   const hideBody = !mine && waiting && message.ask?.kind === "side_effect";
+  // UAT #10: thân tin trùng câu hỏi (need_input) → chỉ hiện ở phần chờ, không lặp.
+  const askText = message.ask?.kind === "need_input" ? message.ask.question?.trim() : undefined;
+  const dupQuestion = !!askText && askText === message.content.trim();
   return (
     <article
       aria-label={t(hideBody ? "roomAgent.blockWaiting" : "roomAgent.block", { name })}
@@ -110,7 +113,7 @@ function AgentBlockImpl(props: Props) {
         askedBy={caller ? askedBy : ""}
         time={timeOf(message.created_at)}
       />
-      {!hideBody && (
+      {!hideBody && !dupQuestion && (
         <Body message={message} onRerun={mine && onRerun ? () => onRerun(message) : undefined} />
       )}
       <AgentWait message={message} name={name} mine={mine} waiting={waiting} onAnswer={onAnswer} />
