@@ -78,7 +78,8 @@ export async function settleRuns(): Promise<void> {
   const sql = owner();
   try {
     await sql`update hub.jobs set status = 'succeeded', finished_at = now() where status in ('queued', 'running')`;
-    await sql`update hub.runs set status = 'cancelled', finished_at = now(), owner = null, lease_until = null
+    await sql`update hub.runs set status = 'cancelled', error_code = 'CANCELLED', error_message = 'e2e settle',
+        error_hint = 'e2e settle', finished_at = now(), owner = null, lease_until = null
       where status in ('running', 'waiting')`;
   } finally {
     await sql.end();
