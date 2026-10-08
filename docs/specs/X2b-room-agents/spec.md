@@ -90,12 +90,12 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (+ phụ lục i18n, e2e). **
 |---|---|
 | Composer phòng | `menus="agents"` (chỉ `@`, không `/` — Q10); nhãn textbox giữ X2a, placeholder "Nhắn cho nhóm… gõ @ để hỏi agent"; lỗi `AGENT_NOT_FOUND`/`TOO_MANY_RUNS` hiện trong ô, giữ chữ (Q4) (Main/DM/Mobile) |
 | Menu `@` | "Agent bạn dùng được": tên + `@key` + mô tả từ `GET /agents` người xem; tải lại khi mở phòng (R14) (Main) |
-| Khối agent | Tin gọi phẳng; khối "Trả lời của agent X": "<A> hỏi", thân C1, "Chạy bằng quyền của <A>", `FlowFooter`; khối "đang xử lý" ở cuối timeline; chỉ người gọi stream + "Dừng" (Main/DM) |
-| Chờ | Người gọi: AskCard/chip Đồng ý-Huỷ; người khác: "Đang chờ <A> xác nhận — chỉ người hỏi mới bấm được.", không mô tả hành động (Q5) (Main) |
-| Khung flow | `?flow=`; người gọi "Trả lời tiếp", người khác "Xem flow" chỉ-đọc (Q7/Q11); điện thoại sheet (C1) |
+| Khối agent | Tin gọi phẳng; khối "Trả lời của agent X": "<B> hỏi" (B = người gửi lượt của khối), thân C1, "Chạy bằng quyền của <B>", `FlowFooter`; khối "đang xử lý" ở cuối timeline; chỉ người gửi lượt stream + "Dừng" (Main/DM) |
+| Chờ | Người gửi lượt: AskCard/chip Đồng ý-Huỷ; người khác: "Đang chờ <B> xác nhận — chỉ người hỏi mới bấm được.", không mô tả hành động (Q5) (Main) |
+| Khung flow | `?flow=`; "Trả lời tiếp" theo `flow.can_reply` (Q7 mới: mọi thành viên có quyền agent); không quyền: nút tắt + giải thích + "Xem flow" chỉ-đọc (Q11); mỗi lượt ghi tên người gửi + "chạy bằng quyền của <B>"; điện thoại sheet (C1) |
 | Đính kèm | Task F5 cắt được sang X2b-2 (Q9) |
 
-Cần backend-lead: `plan-frontend.md` §10 (`{message, run?}` khi gửi, trường agent/caller/ask/placement của `RoomMessage`, `active_runs`, 3 sự kiện run, tin flow theo `flow_id`, `NOT_RUN_CALLER`).
+Contract BE đã khớp (`plan.md` §2, §12; `plan-frontend.md` §10). Cần fixture người thứ ba C có `hoadon` (B7).
 
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6 (ưu tiên thấp, nới được). Dựng ngữ cảnh 20 tin = 1 truy vấn dùng index `(room_id, seq) WHERE placement='main'` (plan §10).

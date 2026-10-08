@@ -15,9 +15,9 @@ Key trong `packages/i18n/locales/chat/{vi,en}.json`. Nhóm mới `roomAgent`; th
 |---|---|---|
 | `roomAgent.block` | Trả lời của agent {{name}} | Reply from agent {{name}} |
 | `roomAgent.blockWaiting` | Agent {{name}} đang chờ xác nhận | Agent {{name}} is waiting for confirmation |
-| `roomAgent.askedBy` | {{name}} hỏi | Asked by {{name}} |
+| `roomAgent.askedBy` | {{name}} hỏi (người gửi **lượt đó**) | Asked by {{name}} |
 | `roomAgent.askedByMe` | Bạn hỏi | You asked |
-| `roomAgent.runsAs` | Chạy bằng quyền của {{name}} | Runs with {{name}}'s permissions |
+| `roomAgent.runsAs` | Chạy bằng quyền của {{name}} (người gửi lượt) | Runs with {{name}}'s permissions |
 | `roomAgent.runsAsMe` | Chạy bằng quyền của bạn | Runs with your permissions |
 | `roomAgent.working` | {{agent}} đang xử lý… | {{agent}} is working… |
 | `roomAgent.onlyCallerStop` | Chỉ {{name}} dừng được | Only {{name}} can stop this |
@@ -26,11 +26,16 @@ Key trong `packages/i18n/locales/chat/{vi,en}.json`. Nhóm mới `roomAgent`; th
 | `roomAgent.askTitle` | {{agent}} cần thêm thông tin | {{agent}} needs more information |
 | `roomAgent.confirmTitle` | {{agent}} cần bạn xác nhận trước khi thực hiện | {{agent}} needs your confirmation before acting |
 | `roomAgent.failed` | Agent không trả lời được. Thử hỏi lại sau. | The agent couldn't respond. Try asking again later. |
-| `roomAgent.cancelledNoPerm` | Đã huỷ vì bạn không còn quyền dùng agent này. | Cancelled because you no longer have access to this agent. |
+| `roomAgent.cancelledNoPerm` | Đã huỷ vì bạn không còn quyền dùng agent này (chỉ người gửi lượt đó thấy). | Cancelled because you no longer have access to this agent. |
 | `roomAgent.cancelledOther` | Đã huỷ | Cancelled |
 | `roomAgent.steps` | {{count}} bước · {{seconds}}s | {{count}} steps · {{seconds}}s |
+| `roomAgent.noReplyAccess` | Bạn chưa được cấp agent {{agent}} nên chưa trả lời tiếp được. Bạn vẫn xem được flow. | You don't have access to agent {{agent}}, so you can't reply here. You can still view the flow. |
+| `roomAgent.flowNoAccess` | Bạn không còn quyền dùng agent {{agent}}. | You no longer have access to agent {{agent}}. |
+| `roomAgent.flowBusy` | Lượt trước của bạn trong flow này vẫn đang chạy. Đợi xong hoặc bấm Dừng. | Your previous turn in this flow is still running. Wait or press Stop. |
+| `roomAgent.unreadInFlow` | {{count}} tin mới trong flow | {{count}} new in flow |
+| `roomAgent.orchestratorName` | Orchestrator | Orchestrator |
 | `roomAgent.viewFlow` | Xem flow | View flow |
-| `roomAgent.toast.notCaller` | Chỉ người hỏi mới trả lời được. | Only the asker can respond. |
+| `roomAgent.toast.notCaller` | Chỉ người gửi lượt này mới trả lời được. | Only the sender of this turn can respond. |
 | `roomAgent.toast.stopFailed` | Không dừng được. Thử lại sau. | Couldn't stop. Try again later. |
 
 Trình đọc màn hình: `roomAgent.working` trong `role="status"` (đọc một lần khi bắt đầu); kết quả xong vào `role="log"` của timeline X2a.
@@ -38,8 +43,9 @@ Trình đọc màn hình: `roomAgent.working` trong `role="status"` (đọc mộ
 ## 3. Khung flow phòng
 | Key | VI | EN |
 |---|---|---|
-| `roomAgent.flowReadonly` | Chỉ {{name}} tiếp tục được flow này. Muốn hỏi riêng, gõ @agent ở khung chat chính. | Only {{name}} can continue this flow. To ask yourself, type @agent in the main chat. |
 | `roomAgent.flowLoadError` | Không tải được flow | Couldn't load this flow |
 | `roomAgent.flowRetry` | Thử lại | Retry |
+
+`roomAgent.noReplyAccess` cũng dùng dưới `FlowFooter` và thay composer trong khung flow khi `can_reply=false` (thay `flowReadonly` cũ, đã bỏ). `{{agent}}` = tên agent của flow theo ngôn ngữ.
 
 Header khung, đếm tin, ✕/Thu nhỏ, kéo đóng, "Trả lời trong flow…", "Tin nhắn trong flow": dùng lại `flow.*`, `composer.flow*` của C1.
