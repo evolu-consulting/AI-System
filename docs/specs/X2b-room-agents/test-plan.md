@@ -83,3 +83,45 @@ Lệnh: `HUB_TEST_DATABASE_URL=<qc> bun --env-file=.env.test-qc.local --config=b
 - `side_effect` dựng bằng `tool_confirmations` pending (SQL) trước khi Runtime trả kết quả — giả định poster đọc pending của run (plan §5 "Đăng tin agent"). `workflow_id` giả (không FK). Nếu B5 cần workflow thật ⇒ ghi Tranh chấp.
 - Nội dung tin gọi của người khác trong ngữ cảnh: test chỉ đòi dòng kết thúc bằng nội dung và có tiền tố tên (plan §6 `"<display_name>: …"`).
 - I05 "AGENT_NOT_FOUND cùng dạng": so `status`, `code`, tập khoá `error` (không so `suggestions`).
+
+## 7. Int realtime / lifecycle / db (qc lần 2, 2026-10-08 — thêm vào §5, chưa LOCK)
+| Mã | AC/R | File | Dữ liệu | Kỳ vọng |
+|---|---|---|---|---|
+| I50–I51 | AC16, R18 | `realtime` | B nối hub2 (`qc-x2b-2`), A gọi qua hub1; Runtime "HD-12 hợp lệ." | B nhận `room.run_started {room_id, flow_id = X-Flow-Id, agent.key hoadon, caller A, trigger_message_id}` rồi `room.message` tin agent + `room.run_finished {finished, message_id = tin agent}`; `parseMeStreamRunEvent` ≠ null |
+| I52 | R18 | ″ | E thành viên (hub1), C ngoài phòng (hub2) | E nhận run_started/finished; C 0 sự kiện của phòng (sentinel X2a) |
+| I53 | R18, AC08 | ″ | A 2 run, lần 3 ⇒ 429 | B đúng 2 `run_started`, không `room.message` "việc 3" (sentinel) |
+| I54 | R19, D14 | ″ | sau tin agent | `room.unread` cuối: B 2 (tin gọi + agent), A 0; `GET /rooms` khớp |
+| I55 | R18 | ″ | need_input | B `room.run_waiting {caller_id A, kind need_input, flow_id}` hợp lệ |
+| I56 | R12, AC06 | ″ | `tool_confirmations` pending + "PARAM-SECRET-77" | B, E `run_waiting {side_effect}`; raw mọi sự kiện B/E không chứa tham số; `room.message` của A có |
+| I57 | R11, R18 | ″ | B `answer_run_id` của A ⇒ 403 | B chỉ thấy 1 `run_started` (run gốc) |
+| I60–I62 | R17, Q8 | `lifecycle` | phòng B chủ, A gọi, job đã claim; A rời / B bớt A / B xoá phòng; Runtime trả kết quả trễ | run `cancelled`, 0 tin agent của run; (bớt) E nhận `run_finished {cancelled, message_id: null}` |
+| I63 | R17 (đối chứng) | ″ | E rời giữa run | run A chạy nốt, tin agent `finished` |
+| I64 | AC14, Q2 | ″ | thu hồi grant `hoadon` của A khi run chạy | run chạy nốt `finished` |
+| I65 | D15, Q2 | ″ | side_effect pending, thu hồi, A "Đồng ý" + `answer_run_id` | 201 + `X-Run-Id`; run mới `cancelled`; `tool_confirmations` ⇒ `declined`; tin agent `run_status cancelled` |
+| I66 | D15 (đối chứng) | ″ | còn quyền, A xác nhận | 201; run mới có job cho Runtime |
+| I70 | §4.1 | `db` | `pg_constraint` | có `room_messages_{user,agent,flow,ask}_ck`, `runs_room_posted_ck`; bỏ `room_messages_user_no_agent_ck` |
+| I71 ×5 | §4.1 | ″ | tin agent thiếu `sender_id/run_id/flow_id/trigger_message_id/run_status` (owner) | 23514 |
+| I72 | §4.1 | ″ | 2 tin agent cùng `run_id` | ok, 23505 (`room_messages_run_uq`) |
+| I73 ×7 | §4.1 | ″ | tin user có `run_id/trigger/run_status/wait_kind/ask/step_count/run_ms` | 23514 (2 ca `run_id`/`trigger` **xanh trước code**: CHECK X2a cũ) |
+| I74–I76 | §4.1 | ″ | user + `flow_id` + `placement flow`; `placement flow` không `flow_id` / `'x'`; `ask`+`side_effect`, `run_status running`, `wait_kind` lạ, `step_count -1`; `runs.room_posted_at` khi `room_id` NULL | ok; 23514 |
+| I77 | §4.2, §11 | ″ | `pg_proc` 4 hàm | `prosecdef`, `search_path=` trong `proconfig`, `hub_rw` EXECUTE, không PUBLIC |
+| I78 | §4.2 | ″ | `room_post_agent_message`, `room_fanout_sys` ở scope `user` (hub_rw) | 42501 |
+| I79 | §4.2 | ″ | `is_room_thread(phòng, uuid ngẫu nhiên / flow riêng H1)` | false |
+| I80–I83 | AC17, AC10 | ″ | thread qua API; hoa (không `hoadon`) chèn `flow_id` thread ⇒ ok + `is_room_thread` true; cuc ngoài phòng ⇒ từ chối, 0 hàng; flow ngẫu nhiên / `R.flow2` ⇒ từ chối (**xanh trước code**, hồi quy RV2-N2c); thread phòng khác ⇒ từ chối | |
+| I84 | AC10 | ″ | RLS hub_rw | cuc: 0 tin agent / 0 tin phòng / 0 run; tam: 1 tin agent, 0 run của lan |
+
+### 7.1 Đỏ đúng lý do (DB `ai_system_qc_test`, 2026-10-08, code trước B1)
+| File | Tổng | Đỏ đúng lý do | Xanh trước code (chủ ý) | Chỗ đỏ |
+|---|---|---|---|---|
+| realtime.int | 8 | 8 | 0 | `invoke` `X-Run-Id` (`toMatch`) |
+| lifecycle.int | 7 | 7 | 0 | `invoke` `X-Run-Id` |
+| db.int | 26 | 23 | 3 (I73 `run_id`, `trigger_message_id`; I82 flow lạ) | `expect` — probe trả 42703 (cột 0014 vắng) / hàm vắng / constraint vắng; ca thread đỏ ở `invoke` |
+| **Tổng mới** | **41** | **38/38** | 3 | không ca nào đỏ ở `PostgresError`/`TypeError` fixture (`seedRoom`, `beforeAll` chạy sạch) |
+Tổng X2b: 106 test (65 + 41), đỏ đúng lý do 100/100, xanh chủ ý 6.
+
+### 7.2 Giả định (có thể thành Tranh chấp)
+- I60–I62: "đang chạy" = job đã claim; kết quả Runtime về sau huỷ bị bỏ qua (`rt.agent` lỗi được nuốt). Không đòi usage (Q8) vì Runtime giả không ghi usage trước huỷ.
+- I61: người nhận `run_finished {message_id: null}` khi bớt A gồm E (thành viên hiện tại) — theo plan §2.3.
+- I65 (D15): mã HTTP xác nhận khi mất quyền = 201 + `X-Run-Id` (plan D15 "vẫn lưu tin + tạo run rồi kết thúc ngay"), `tool_confirmations.status = 'declined'`, tin agent `run_status = 'cancelled'`.
+- I54: chưa đọc B = 2 (tin gọi của A + tin agent), đọc qua `room.unread` cuối cùng + `GET /rooms`.
+- I80: chèn tin thread trực tiếp DB với `placement:'flow'`; is_room_thread không kiểm thành viên (lớp thành viên là policy insert).
