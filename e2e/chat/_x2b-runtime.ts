@@ -10,7 +10,15 @@ import {
 import type postgres from "postgres";
 import type { Redis } from "../../apps/hub-api/src/lib/redis";
 
-type Claimed = { id: string; provider: string; seq: number };
+type Payload = {
+  tenant_id: string;
+  run_id: string;
+  step_id: string;
+  user_id: string;
+  agent: { id: string };
+  provider_key?: string;
+};
+type Claimed = { id: string; provider: string; seq: number; payload: Payload };
 
 export class FakeRuntime {
   private readonly claimed = new Map<string, Claimed>();
@@ -45,7 +53,7 @@ export class FakeRuntime {
     if (have) return have;
     const end = Date.now() + ms;
     for (;;) {
-      const rows = await this.sql<{ id: string; payload: { provider_key?: string } }[]>`
+      const rows = await this.sql<{ id: string; payload: Payload }[]>`
         select id, payload from hub.jobs where run_id = ${runId} and status = 'queued'
         order by created_at, id limit 1`;
       const row = rows[0];
@@ -58,6 +66,7 @@ export class FakeRuntime {
             id: row.id,
             provider: row.payload.provider_key ?? "fake-cli",
             seq: 0,
+            payload: row.payload,
           };
           this.claimed.set(runId, c);
           await this.emit(runId, c, {
@@ -79,6 +88,14 @@ export class FakeRuntime {
     const output = { kind: "agent_result", result };
     await this.sql`update hub.jobs set status = 'succeeded', result = ${this.sql.json(output)},
       finished_at = now(), pgid = null where id = ${c.id} and worker_id = 'e2e-rt' and status = 'running'`;
+    // Hub không tự ghi usage: Runtime thật ghi theo `user_id` trong payload job (usage_sql.py; spec X2b §12).
+    const p = c.payload;
+    await this
+      .sql`insert into hub.usage_logs (tenant_id, run_id, step_id, user_id, feature_id, agent_id, provider_key,
+        model, billing, input_tokens, output_tokens, cost_usd, overage, latency_ms, job_id)
+      values (${p.tenant_id}, ${p.run_id}, ${p.step_id}, ${p.user_id}, null, ${p.agent.id}, ${c.provider},
+        null, 'subscription', 100, 20, 0, false, 10, ${c.id})
+      on conflict (job_id) where job_id is not null do nothing`;
     await this.emit(runId, c, {
       type: "job.result",
       output,
