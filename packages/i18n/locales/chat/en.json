@@ -297,7 +297,13 @@
       "gone": "The group \"{{name}}\" was deleted",
       "sendFailed": "Couldn't send. Your message is still in the box.",
       "actionFailed": "That didn't work. Try again later.",
-      "created": "Created group \"{{name}}\""
+      "created": "Created group \"{{name}}\"",
+      "renamed": "Group renamed",
+      "added": "People added to the group: {{count}}",
+      "removed": "Removed {{name}}",
+      "transferred": "Ownership transferred",
+      "left": "You left the group",
+      "deleted": "Group deleted"
     },
     "newGroup": {
       "title": "Create group",
@@ -317,6 +323,58 @@
     "name": {
       "empty": "Group name is required",
       "max": "Group name can be at most 80 characters"
-    }
+    },
+    "members": "Members",
+    "membersN": "Members ({{count}})",
+    "addPeople": "Add people",
+    "menu": "Room options",
+    "rename": "Rename group",
+    "delete": "Delete group",
+    "leave": "Leave group",
+    "owner": "Owner",
+    "add": {
+      "title": "Add people to group",
+      "submit": "Add",
+      "adding": "Adding…",
+      "already": "Already in group",
+      "none": "Select at least one person."
+    },
+    "renameDlg": {
+      "title": "Rename group",
+      "save": "Save"
+    },
+    "deleteDlg": {
+      "title": "Delete group?",
+      "body": "Everyone will lose access to the group and its messages. This can't be undone.",
+      "ok": "Delete"
+    },
+    "leaveDlg": {
+      "title": "Leave group?",
+      "body": "You won't see this group's messages until the owner adds you back.",
+      "ok": "Leave group"
+    },
+    "leaveLast": {
+      "body": "You're the only member, so leaving deletes the group.",
+      "ok": "Leave and delete"
+    },
+    "mustTransfer": {
+      "title": "Transfer ownership before leaving",
+      "body": "You own this group. Transfer ownership to another member, or delete the group.",
+      "open": "Open members"
+    },
+    "transferDlg": {
+      "title": "Transfer ownership?",
+      "body": "{{name}} becomes the owner. You become a regular member.",
+      "ok": "Transfer"
+    },
+    "removeDlg": {
+      "title": "Remove from group?",
+      "body": "{{name}} will lose access to the group.",
+      "ok": "Remove"
+    },
+    "memberOptions": "Options for {{name}}",
+    "transfer": "Transfer ownership",
+    "remove": "Remove from group",
+    "cancel": "Cancel"
   }
 }

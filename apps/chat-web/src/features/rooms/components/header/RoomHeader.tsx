@@ -1,15 +1,23 @@
 // HUB-FR-96, HUB-FR-98 · đầu phòng: tên (h1), phụ đề nhóm "Nhóm · n thành viên · chủ nhóm …"; DM có nút "Ẩn hội thoại".
-// Nút nhóm (Thành viên, Thêm người, Tuỳ chọn) do F5/F6 thêm cùng dialog của chúng.
+// Nhóm: `RoomActions` (Thành viên, Thêm người, Tuỳ chọn phòng) mở dialog quản lý của F6.
 import type { RoomDetail } from "@ai/contracts/chat";
 import { EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { roomTitle } from "../../lib/room-logic";
+import type { RoomDialogKind } from "../dialogs/RoomDialogs";
+import { RoomActions } from "./RoomActions";
 
-type Props = { room: RoomDetail | undefined; onHide(): void; hiding: boolean };
+type Props = {
+  room: RoomDetail | undefined;
+  myId: string;
+  onHide(): void;
+  hiding: boolean;
+  onOpen(kind: RoomDialogKind): void;
+};
 
-export function RoomHeader({ room, onHide, hiding }: Props) {
+export function RoomHeader({ room, myId, onHide, hiding, onOpen }: Props) {
   const { t } = useTranslation();
   const owner = room?.members.find((m) => m.id === room.owner_id)?.display_name ?? "";
   return (
@@ -25,6 +33,9 @@ export function RoomHeader({ room, onHide, hiding }: Props) {
         </div>
       ) : (
         <Skeleton className="h-6 w-48" />
+      )}
+      {room?.kind === "group" && (
+        <RoomActions count={room.member_count} isOwner={room.owner_id === myId} onOpen={onOpen} />
       )}
       {room?.kind === "dm" && (
         <Button

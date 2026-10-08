@@ -3,7 +3,6 @@ import { type DirectoryUser, ROOM_MEMBERS_MAX, ROOM_NAME_MAX } from "@ai/contrac
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -18,6 +17,7 @@ import { PersonPicker } from "~/features/directory/components/PersonPicker";
 import { useSession } from "~/lib/auth/use-session";
 import { useCreateRoom } from "../../hooks/use-room-actions";
 import { roomErrorKeyOf } from "../../lib/room-errors";
+import { roomToast } from "../../lib/room-toast";
 import { PickedChips } from "./PickedChips";
 
 type Props = { open: boolean; onOpenChange: (open: boolean) => void };
@@ -50,7 +50,7 @@ export function NewGroupDialog({ open, onOpenChange }: Props) {
       { kind: "group", name: trimmed, member_ids: picked.map((u) => u.id) },
       {
         onSuccess: (room) => {
-          toast.success(t("rooms.toast.created", { name: room.name ?? trimmed }));
+          roomToast(t("rooms.toast.created", { name: room.name ?? trimmed }));
           onOpenChange(false);
           reset();
           void router.navigate({ to: "/rooms/$id", params: { id: room.id } });

@@ -297,7 +297,13 @@
       "gone": "Nhóm \"{{name}}\" đã bị xoá",
       "sendFailed": "Không gửi được tin. Nội dung vẫn còn trong ô nhập.",
       "actionFailed": "Không thực hiện được. Thử lại sau.",
-      "created": "Đã tạo nhóm \"{{name}}\""
+      "created": "Đã tạo nhóm \"{{name}}\"",
+      "renamed": "Đã đổi tên nhóm",
+      "added": "Đã thêm người vào nhóm: {{count}}",
+      "removed": "Đã bớt {{name}} khỏi nhóm",
+      "transferred": "Đã chuyển quyền chủ nhóm",
+      "left": "Bạn đã rời nhóm",
+      "deleted": "Đã xoá nhóm"
     },
     "newGroup": {
       "title": "Tạo nhóm",
@@ -317,6 +323,58 @@
     "name": {
       "empty": "Tên nhóm không được để trống",
       "max": "Tên nhóm tối đa 80 ký tự"
-    }
+    },
+    "members": "Thành viên",
+    "membersN": "Thành viên ({{count}})",
+    "addPeople": "Thêm người",
+    "menu": "Tuỳ chọn phòng",
+    "rename": "Đổi tên nhóm",
+    "delete": "Xoá nhóm",
+    "leave": "Rời nhóm",
+    "owner": "Chủ nhóm",
+    "add": {
+      "title": "Thêm người vào nhóm",
+      "submit": "Thêm",
+      "adding": "Đang thêm…",
+      "already": "Đã trong nhóm",
+      "none": "Chọn ít nhất một người."
+    },
+    "renameDlg": {
+      "title": "Đổi tên nhóm",
+      "save": "Lưu"
+    },
+    "deleteDlg": {
+      "title": "Xoá nhóm?",
+      "body": "Mọi thành viên sẽ không xem được nhóm và tin nhắn nữa. Không khôi phục được.",
+      "ok": "Xoá"
+    },
+    "leaveDlg": {
+      "title": "Rời nhóm?",
+      "body": "Bạn sẽ không xem được tin của nhóm này nữa, cho tới khi chủ nhóm thêm bạn lại.",
+      "ok": "Rời nhóm"
+    },
+    "leaveLast": {
+      "body": "Bạn là người duy nhất trong nhóm, rời nhóm sẽ xoá nhóm.",
+      "ok": "Rời và xoá nhóm"
+    },
+    "mustTransfer": {
+      "title": "Chuyển quyền chủ nhóm trước khi rời",
+      "body": "Bạn đang là chủ nhóm. Hãy chuyển quyền cho một thành viên khác, hoặc xoá nhóm.",
+      "open": "Mở danh sách thành viên"
+    },
+    "transferDlg": {
+      "title": "Chuyển quyền chủ nhóm?",
+      "body": "{{name}} sẽ là chủ nhóm mới. Bạn trở thành thành viên thường.",
+      "ok": "Chuyển quyền"
+    },
+    "removeDlg": {
+      "title": "Bớt khỏi nhóm?",
+      "body": "{{name}} sẽ không xem được nhóm nữa.",
+      "ok": "Bớt"
+    },
+    "memberOptions": "Tuỳ chọn của {{name}}",
+    "transfer": "Chuyển quyền chủ nhóm",
+    "remove": "Bớt khỏi nhóm",
+    "cancel": "Huỷ"
   }
 }

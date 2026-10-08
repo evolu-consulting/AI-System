@@ -4,5 +4,5 @@ Một kết nối SSE/tab, mở khi `AppShell` mount (`hooks/use-me-stream`), đ
 - `me-stream-driver.ts` — vòng nối lại (0,5→8 s, không bỏ cuộc; `down` từ lần thất bại thứ 5), ping-timeout 45 s, `stream.reset` xoá `lastEventId`, 401 sau refresh → dừng. Thuần (deps tiêm).
 - `realtime-store.ts` — `phase` (`idle|connecting|open|reconnecting|down`) + `lastEventId` (chỉ bộ nhớ); `useRealtimePhase()` cho `shell/hooks/use-connection` (banner).
 - `event-router.ts` — sự kiện → cache TanStack Query (bảng plan-frontend §3), dùng hàm thuần `rooms/lib/room-cache`.
-- `runtime.ts` — singleton `meStreamDriver`; `onRoomLost(listener)` để trang phòng (F6) điều hướng `/c/new` + toast khi mất phòng đang mở.
+- `runtime.ts` — singleton `meStreamDriver`; `onRoomLost(listener)` — `rooms/hooks/use-room-lost` điều hướng `/c/new` + toast khi mất phòng đang mở (bị bớt / bị xoá); sự kiện do chính mình gây ra (xoá/rời nhóm) bị bỏ qua nhờ `rooms/lib/self-exit` (người thao tác tự điều hướng + toast).
 - `lib/read-raw-sse.ts` — ReadableStream → `RawSseEvent`, `onBytes` cho cả `: ping`.

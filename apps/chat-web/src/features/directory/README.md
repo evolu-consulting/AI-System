@@ -1,2 +1,2 @@
 # directory — danh bạ (HUB-FR-102)
-`api.ts`: `fetchDirectory(q)` = `GET /directory?q=` (`DirectoryResponseSchema`, 4 trường: id, display_name, username, active); `useDirectory(q, enabled)` cache 30 s, không retry. `q` debounce 250 ms ở nơi gọi. UI chọn người (PersonPicker) thêm ở F3.
+`api.ts`: `fetchDirectory(q)` = `GET /directory?q=` (`DirectoryResponseSchema`, 4 trường: id, display_name, username, active); `useDirectory(q, enabled)` cache 30 s, không retry. `q` debounce 250 ms ở nơi gọi. `components/PersonPicker`: ô tìm + danh sách `checkbox` (mô tả = username); `excludeIds` ẩn (chính mình), `already` = người đã trong nhóm (luôn hiện, `disabled` + nhãn "Đã trong nhóm"), `full` = đạt trần thì người chưa chọn bị vô hiệu. Dùng bởi `NewGroupDialog`, `AddMembersDialog`.

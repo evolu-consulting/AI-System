@@ -1,5 +1,6 @@
 // HUB-FR-96, HUB-FR-100 · ghép màn phòng: header + dòng thời gian + composer; 404 → RoomNotFound.
 import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
@@ -12,6 +13,8 @@ import { useRoomLost } from "../hooks/use-room-lost";
 import { useRoomScroll } from "../hooks/use-room-scroll";
 import { isRoomNotFound } from "../lib/room-errors";
 import { lastSeqOf, roomTitle, seenBy } from "../lib/room-logic";
+import { roomToast } from "../lib/room-toast";
+import { type RoomDialogKind, RoomDialogs } from "./dialogs/RoomDialogs";
 import { RoomHeader } from "./header/RoomHeader";
 import { RoomComposer } from "./RoomComposer";
 import { RoomNotFound } from "./RoomNotFound";
@@ -29,7 +32,7 @@ function useHide(roomId: string) {
     hide: () =>
       exit.mutate(undefined, {
         onSuccess: () => {
-          toast(t("rooms.toast.hidden"));
+          roomToast(t("rooms.toast.hidden"));
           void navigate({ to: "/c/new" });
         },
         onError: () => toast.error(t("rooms.toast.actionFailed")),
@@ -58,6 +61,7 @@ export function RoomView({ roomId }: { roomId: string }) {
   useMarkRead({ roomId, lastSeq, atBottom: scroll.atBottom, lastIsMine });
   useRoomLost(roomId, room.data ? roomTitle(room.data) : "");
   const { hide, hiding } = useHide(roomId);
+  const [dialog, setDialog] = useState<RoomDialogKind | null>(null);
 
   if (isRoomNotFound(room.error) || isRoomNotFound(msgs.error)) return <RoomNotFound />;
   const group = room.data?.kind === "group";
@@ -69,7 +73,8 @@ export function RoomView({ roomId }: { roomId: string }) {
     <div className="flex min-h-0 min-w-0 flex-1">
       {/* Chỗ cho FlowPane ở X2b: thêm `open.flow && <FlowPane …>` cạnh cột chính. */}
       <div className="flex min-h-0 min-w-0 flex-[1_1_0] flex-col">
-        <RoomHeader room={room.data} onHide={hide} hiding={hiding} />
+        <RoomHeader room={room.data} myId={myId} onHide={hide} hiding={hiding} onOpen={setDialog} />
+        {room.data && <RoomDialogs room={room.data} myId={myId} kind={dialog} onKind={setDialog} />}
         {loading && (
           <div className="flex flex-1 flex-col gap-3 p-6" aria-busy="true">
             {SKELETON_ROWS.map((k) => (
