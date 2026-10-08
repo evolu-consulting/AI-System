@@ -104,13 +104,13 @@ test('X2b-AC17 · E-A10 · B (không có hoadon): nhắn thường trong thread 
     await openThread(u.pc, room.id);
     await openThread(u.pb, room.id);
     await expect(flowBox(u.pb)).toBeVisible();
-    const [{ n: before }] = await sql<{ n: number }[]>`select count(*)::int as n from hub.runs`;
+    const before = (await sql<{ n: number }[]>`select count(*)::int as n from hub.runs`)[0]?.n;
     await sendFlow(u.pb, "Mình xem rồi, ok nhé");
     for (const p of [u.pa, u.pb, u.pc])
       await expect(flowPane(p).getByText("Mình xem rồi, ok nhé")).toBeVisible();
     await expect(flowPane(u.pa).getByText("Thu Ha").first()).toBeVisible();
     await expect(working(u.pb)).toHaveCount(0);
-    const [{ n: after }] = await sql<{ n: number }[]>`select count(*)::int as n from hub.runs`;
+    const after = (await sql<{ n: number }[]>`select count(*)::int as n from hub.runs`)[0]?.n;
     expect(after).toBe(before);
 
     const tagged = "@hoadon kiểm tra giúp";
