@@ -2,7 +2,7 @@
 // Mỗi ca: role `hub_api` + `SET LOCAL ROLE hub_rw` + GUC `set_config(…, true)` như `withHubScope`; dữ liệu phòng chèn
 // bằng SQL owner TRONG `it` (trước B1 đỏ "relation hub.rooms does not exist" trong ca, không ở `beforeAll`).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import postgres from "postgres";
 import { HUB_API_URL } from "../H1/_fixtures";
@@ -376,14 +376,31 @@ describe("D17–D18 · hàm definer, quyền role khác, idempotent [X2a-AC01 ·
     }
   });
 
-  it("HUB-FR-96 · D18 · chạy lại 0011_x2a_rooms.sql lần 2 không lỗi (idempotent) [plan-db §4]", async () => {
-    const file = join(ROOT, "packages/db/migrations-hub/0011_x2a_rooms.sql");
-    const text = readFileSync(file, "utf8");
-    for (const stmt of text.split("--> statement-breakpoint")) {
-      if (stmt.trim()) await owner.unsafe(stmt);
+  it("HUB-FR-96 · D18 · chạy lại MỌI migration X2a (0011→0012→0013…) theo thứ tự lần 2 không lỗi, không hạ cấp lưới [plan-db §4 · security-2 N4a]", async () => {
+    const dir = join(ROOT, "packages/db/migrations-hub");
+    const files = readdirSync(dir)
+      .filter((f) => /^\d{4}_x2a_.*\.sql$/.test(f))
+      .sort();
+    expect(files.length).toBeGreaterThanOrEqual(2);
+    expect(files[0]).toBe("0011_x2a_rooms.sql");
+    for (const f of files) {
+      for (const stmt of readFileSync(join(dir, f), "utf8").split("--> statement-breakpoint")) {
+        if (stmt.trim()) await owner.unsafe(stmt);
+      }
     }
     const [r] = await owner`select count(*)::int as n from pg_policies where schemaname = 'hub'
       and tablename in ('rooms', 'room_members', 'room_messages')`;
     expect(r?.n).toBe(7);
+    // Trạng thái sau cùng vẫn là lưới đã siết (không bị 0011 hạ cấp).
+    const f = (uid: string) =>
+      asUser(api, P.lan, async (tx) => (await tx`select hub.is_tenant_user(${uid}) as v`)[0]?.v);
+    expect({ khoa: await f(P.khoa.id), nghi: await f(P.nghi.id), hoa: await f(P.hoa.id) }).toEqual({
+      khoa: false,
+      nghi: false,
+      hoa: true,
+    });
+    const [g] =
+      await owner`select has_column_privilege('hub_rw', 'hub.rooms', 'last_seq', 'UPDATE') as v`;
+    expect(g?.v).toBe(false);
   });
 });
