@@ -13,12 +13,14 @@ import {
 import type { HistoryItem } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import type { AuthUser } from "../../../lib/auth.middleware";
-import { appError } from "../../../lib/errors";
+import { appError, safeErrorFields } from "../../../lib/errors";
+import type { Logger } from "../../../lib/logger";
 import type { UserEvent } from "../../../lib/user-stream";
 import { accessInput, visibleAgents } from "../../agents/agent-access.rules";
 import type { ConfigCache } from "../../config/config.service";
 import type { MentionPlan, MentionRouted } from "../../mention/mention.service";
 import type { PreparedRun, RunDriver, RunService } from "../../runs/runs.service";
+import type { SseWriter } from "../../runs/sse/sse-writer";
 import type { Me } from "../manage/rooms.repo";
 import { lockFor, pgCode, type RoomsService } from "../manage/rooms.service";
 import * as msgs from "../messages/messages.repo";
@@ -51,6 +53,7 @@ export type RoomRunDeps = {
   config: Pick<ConfigCache, "snapshot" | "user" | "poll">;
   /** D15 · huỷ ngay run xác nhận (E15 C1 ⇒ `onClosed` ⇒ tin agent "đã huỷ"). */
   cancel: { cancel(u: AuthUser, runId: string): Promise<unknown> };
+  log?: Pick<Logger, "warn">;
 };
 
 type Thread = { flowId: string; rootSeq: number };
@@ -60,8 +63,16 @@ type Call = { roomId: string; body: SendRoomMessageRequest; route: AgentRoute };
 type Committed = RoomSent & { history?: HistoryItem[] };
 type Tracked = { out: Committed; events: UserEvent[] };
 
-/** D15 · driver không chạy gì: run được huỷ ngay sau `launch` qua E15. */
-const IDLE_DRIVER: RunDriver = { start: () => {} };
+/** D15 · driver không chạy gì (giữ writer cục bộ): run được huỷ ngay sau `launch` qua E15. */
+function idleDriver(): { driver: RunDriver; writer: () => SseWriter | undefined } {
+  let held: SseWriter | undefined;
+  const driver: RunDriver = {
+    start: (c) => {
+      held = c.writer;
+    },
+  };
+  return { driver, writer: () => held };
+}
 
 /** §3 bước 4 · thread của phòng + run chờ (`answerAccess`). Gọi cả trước tx lẫn dưới khoá `rooms`. */
 async function resolveTarget(tx: Tx, me: Me, c: Call): Promise<Target> {
@@ -112,6 +123,7 @@ async function writeRun(tx: Tx, me: Me, w: Write & { runs: RoomRunDeps["runs"] }
     target.answerFlow ?? (await rt.ensureFlow(tx, me, { conversationId, thread, title }));
   Object.assign(p.run, { conversationId, flowId });
   p.input.req = { ...p.input.req, flow_id: flowId };
+  p.input.room = true;
   await w.runs.createRunTx(tx, p);
   await rt.setRunRoom(tx, me, p.run.id, call.roomId);
   return flowId;
@@ -180,13 +192,32 @@ export class RoomRunService {
     if (decline) p.input.declineConfirm = true;
     const out = await this.d.rooms.commit(u, (tx, me) => this.#commit(tx, me, call, p));
     if (!out.created || !out.run) return out;
+    const idle = decline ? idleDriver() : undefined;
     // D16 · run phòng không mang file (`files = []`).
     await this.d.runs.launch(p, [], {
       roomHistory: out.history,
-      ...(decline && { driver: IDLE_DRIVER }),
+      ...(idle && { driver: idle.driver }),
     });
-    if (decline) await this.d.cancel.cancel(u, p.run.id);
+    if (idle) await this.#cancelDeclined(u, p.run.id, idle.writer());
     return { message: out.message, created: true, run: out.run };
+  }
+
+  /**
+   * D15 (review-1 #4) · tin + run đã COMMIT ⇒ không ném: E15 lỗi ⇒ writer cục bộ tự kết thúc `cancelled` (run không treo
+   * `running` tới sweeper; hook `onClosed` vẫn đăng "đã huỷ"); lỗi nữa ⇒ chỉ log, sweeper + reconcile bù.
+   */
+  async #cancelDeclined(u: AuthUser, runId: string, writer: SseWriter | undefined): Promise<void> {
+    try {
+      await this.d.cancel.cancel(u, runId);
+      return;
+    } catch (err) {
+      this.d.log?.warn("room-decline-cancel-failed", { run_id: runId, ...safeErrorFields(err) });
+    }
+    try {
+      await writer?.finish({ kind: "failed", code: "CANCELLED" });
+    } catch (err) {
+      this.d.log?.warn("room-decline-finish-failed", { run_id: runId, ...safeErrorFields(err) });
+    }
   }
 
   /** D8 · tag → `MentionService.prepare` (AU người tag); `@orchestrator` + tag ⇒ Orchestrator thu hẹp; trả lời ⇒ C1. */

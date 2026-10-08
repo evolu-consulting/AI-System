@@ -84,6 +84,8 @@ export class ConfigCache {
   #subscribing = false;
   #timer: ReturnType<typeof setInterval> | null = null;
   #stopped = false;
+  #polling: Promise<void> | null = null;
+  #queuedPoll: Promise<void> | null = null;
   readonly reloadHub: () => Promise<void>;
   readonly reloadAdmin: () => Promise<void>;
 
@@ -161,8 +163,29 @@ export class ConfigCache {
     return accountUsable(t, u);
   }
 
-  /** Một vòng poll: so phiên bản, khác thì nạp lại phần tương ứng; LISTEN hỏng thì đăng ký lại. */
-  async poll(): Promise<void> {
+  /**
+   * Một vòng poll: so phiên bản, khác thì nạp lại phần tương ứng; LISTEN hỏng thì đăng ký lại. Single-flight (X2b
+   * review-1 #3): tối đa một vòng đang chạy + một vòng chờ; người gọi giữa chừng nhận vòng **chờ** (bắt đầu sau khi họ
+   * gọi ⇒ vẫn thấy thay đổi đã COMMIT trước đó, AC14).
+   */
+  poll(): Promise<void> {
+    if (!this.#polling) return this.#startPoll();
+    this.#queuedPoll ??= this.#polling.then(() => {
+      this.#queuedPoll = null;
+      return this.#startPoll();
+    });
+    return this.#queuedPoll;
+  }
+
+  #startPoll(): Promise<void> {
+    const p: Promise<void> = this.#pollOnce().finally(() => {
+      if (this.#polling === p) this.#polling = null;
+    });
+    this.#polling = p;
+    return p;
+  }
+
+  async #pollOnce(): Promise<void> {
     if (this.#stopped) return;
     try {
       if (this.#unlisten.length === 0) await this.#subscribe();

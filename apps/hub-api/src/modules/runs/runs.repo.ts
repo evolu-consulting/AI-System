@@ -3,7 +3,7 @@
 import type { Ask } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { conversations, flows, messages, runs } from "@ai/db/schema/hub";
-import { and, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
 export type Owner = { tenantId: string; userId: string };
@@ -19,13 +19,28 @@ export const FLOW_RUNNING_UQ = "runs_flow_running_uq";
 const ownedBy = (t: { tenantId: AnyPgColumn; userId: AnyPgColumn }, o: Owner): SQL =>
   and(eq(t.tenantId, o.tenantId), eq(t.userId, o.userId)) as SQL;
 
-/** §5.1 bước 1 · khoá hội thoại đầu tiên (§3.5); không thấy/đã xoá → false. `updated_at` không lùi. */
-export async function touchConversation(tx: Tx, o: Owner, id: string): Promise<boolean> {
+/**
+ * §5.1 bước 1 · khoá hội thoại đầu tiên (§3.5); không thấy/đã xoá → false. `updated_at` không lùi. X2b D2 (security-1
+ * #5): run C1 chỉ trên hội thoại thường (`room_id IS NULL`), run phòng chỉ trên hội thoại nền (`room = true`).
+ */
+export async function touchConversation(
+  tx: Tx,
+  o: Owner,
+  id: string,
+  room = false,
+): Promise<boolean> {
   const c = conversations;
   const rows = await tx
     .update(c)
     .set({ updatedAt: sql`greatest(${c.updatedAt}, ${NOW_MS})` })
-    .where(and(ownedBy(c, o), eq(c.id, id), isNull(c.deletedAt)))
+    .where(
+      and(
+        ownedBy(c, o),
+        eq(c.id, id),
+        isNull(c.deletedAt),
+        room ? isNotNull(c.roomId) : isNull(c.roomId),
+      ),
+    )
     .returning({ id: c.id });
   return rows.length > 0;
 }
@@ -210,7 +225,7 @@ export type FinishUpdate = {
 export async function finishRun(
   tx: Tx,
   p: FinishUpdate,
-): Promise<{ startedAt: Date; finishedAt: Date } | null> {
+): Promise<{ startedAt: Date; finishedAt: Date; roomId: string | null } | null> {
   await tx.execute(sql`select id from hub.flows where id = ${p.flowId} for update`);
   const [row] = await tx
     .update(runs)
@@ -223,9 +238,9 @@ export async function finishRun(
       finishedAt: NOW_MS,
     })
     .where(and(eq(runs.id, p.runId), eq(runs.status, "running"), eq(runs.owner, p.owner)))
-    .returning({ startedAt: runs.startedAt, finishedAt: runs.finishedAt });
+    .returning({ startedAt: runs.startedAt, finishedAt: runs.finishedAt, roomId: runs.roomId });
   if (!row?.finishedAt) return null;
-  return { startedAt: row.startedAt, finishedAt: row.finishedAt };
+  return { startedAt: row.startedAt, finishedAt: row.finishedAt, roomId: row.roomId };
 }
 
 /** Sau tin assistant: flow nhớ agent cuối (`undefined` = giữ) và có đang chờ trả lời `ask` không. */

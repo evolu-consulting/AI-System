@@ -41,6 +41,8 @@ export type CreateRunInput = {
   maxConcurrentRuns?: number;
   /** X2b D15 · agent chờ xác nhận không còn trong AU người xác nhận ⇒ xác nhận `declined` bất kể nội dung. */
   declineConfirm?: boolean;
+  /** X2b D2 · run phòng (hội thoại nền); vắng ⇒ run C1 (hội thoại `room_id IS NULL`). */
+  room?: boolean;
   log: Pick<Logger, "info">;
 };
 
@@ -125,7 +127,7 @@ async function attachFiles(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<Ru
 export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<RunFile[]> {
   const r = p.run;
   await repo.lockUserRuns(tx, o);
-  if (!(await repo.touchConversation(tx, o, r.conversationId))) throw appError("NOT_FOUND");
+  if (!(await repo.touchConversation(tx, o, r.conversationId, p.room))) throw appError("NOT_FOUND");
   await prepareFlow(tx, o, p);
   await assertUnderLimit(tx, o, p);
   await repo.insertRun(tx, o, {

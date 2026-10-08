@@ -207,6 +207,26 @@ describe("ConfigCache · NOTIFY", () => {
   });
 });
 
+describe("ConfigCache · poll single-flight", () => {
+  test("HUB-FR-03 · X2b review-1 #3 · poll single-flight: 10 lượt cùng lúc ⇒ ≤ 2 readVersions, 1 lần nạp", async () => {
+    const src = fakeSource();
+    const c = startCache(src);
+    await c.ready();
+    const read = src.readVersions;
+    let reads = 0;
+    src.readVersions = () => {
+      reads++;
+      return read();
+    };
+    const base = src.calls.hub;
+    src.db.hub = snap(4);
+    await Promise.all(Array.from({ length: 10 }, () => c.poll()));
+    expect({ reads, loads: src.calls.hub - base }).toEqual({ reads: 2, loads: 1 });
+    expect((await c.snapshot()).version).toBe(4);
+    await c.stop();
+  });
+});
+
 describe("ConfigCache · poll", () => {
   test("HUB-FR-03 · poll: đổi phiên bản không NOTIFY → nạp lại đúng phần đổi", async () => {
     const src = fakeSource();

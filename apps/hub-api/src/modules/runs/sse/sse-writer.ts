@@ -208,7 +208,8 @@ export class SseWriter {
     }
     const ms = Math.max(0, times.finishedAt.getTime() - times.startedAt.getTime());
     await this.#publishEnd(ask, error ? { ...error } : null, { content, ms });
-    notifyClosed(this.deps, this.run.id);
+    // X2b review-1 #2: chỉ run phòng (`runs.room_id` đọc trong câu kết thúc) mới tốn tx2 đăng tin.
+    if (times.roomId) notifyClosed(this.deps, this.run.id);
     return true;
   }
 
