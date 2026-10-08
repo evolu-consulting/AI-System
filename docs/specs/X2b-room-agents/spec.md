@@ -57,7 +57,6 @@ CR-048 (2026-10-07): sau X2a, trước H4b. Phiên được sửa `apps/chat-web
 | X2b-R20 | Hội thoại riêng user↔agent (`/c/:id`, bảng `messages`) giữ nguyên, AC-H07 vẫn xanh | BR-22, AC-H07 |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead -->
 Chi tiết trường, thứ tự kiểm: [`plan.md`](plan.md) §2–§3. `@ai/contracts/chat` **chỉ thêm**; `CHAT_ROOM_ERRORS`, `ME_STREAM_EVENTS` giữ nguyên (test khoá X2a đòi đúng 8).
 
 | Mục | Chốt |
@@ -72,7 +71,6 @@ Chi tiết trường, thứ tự kiểm: [`plan.md`](plan.md) §2–§3. `@ai/co
 | Luật thuần | `rooms/agents/room-agent.rules.ts` — chữ ký ở `plan.md` §8 |
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead -->
 Migration `0014_x2b_room_agents.sql` — chi tiết [`plan.md`](plan.md) §4–§5. `room_messages` (0011) đã có `sender_type`, `sender_id`, `run_id`, `flow_id`, `trigger_message_id` (chưa FK/index), **không** có đính kèm.
 
 | Bảng | Thay đổi |
@@ -84,7 +82,6 @@ Migration `0014_x2b_room_agents.sql` — chi tiết [`plan.md`](plan.md) §4–�
 | RLS / definer | policy insert tin thêm `flow_id` phải là thread của phòng (`is_room_thread`; mọi thành viên, không đòi quyền agent); definer `room_post_agent_message` + `room_fanout_sys` (chỉ scope `system`), `room_run_states` |
 
 ## 5. UI (frontend-lead)
-<!-- frontend-lead -->
 Chi tiết: [`plan-frontend.md`](plan-frontend.md) (+ phụ lục i18n, e2e). **Không** panel agent, **không** chip (CR-048).
 
 | Thành phần | Hành vi chốt (artboard) |
@@ -114,7 +111,7 @@ Env mới: (không dự kiến).
 | AC | Given / When / Then (dữ liệu cụ thể) | Test |
 |---|---|---|
 | X2b-AC01 | (AC-H26, CHAT-AC-47) A được dùng `hoadon`, B (cùng nhóm) không. A gửi "@hoadon kiểm tra" → đúng 1 run, `runs.user_id=A`, `runs.room_id`=phòng, usage tính A; A và B đều thấy tin agent | int + e2e |
-| X2b-AC02 | (AC-H26, CHAT-AC-49) B gửi "@hoadon …" → `AGENT_NOT_FOUND`, 0 run, UI báo không tìm thấy kèm gợi ý agent B dùng được | int + e2e |
+| X2b-AC02 | (AC-H26, CHAT-AC-49) B gửi "@hoadon …" → `AGENT_NOT_FOUND`, 0 run, UI báo không tìm thấy; `details.suggestions` = ≤ 3 key gần giống trong quyền B theo `suggestAgents` (Levenshtein, C1), có thể rỗng (dữ liệu AC ⇒ rỗng, không hiện "Ý bạn là"); ca typo `@trelo` ⇒ `["trello"]` | int + e2e |
 | X2b-AC03 | Tin không tag → 0 run; tag giữa câu → 0 run; "@@hoadon" → tin thường | int |
 | X2b-AC04 | (AC-H26) Tin có hai tag → đúng 1 run (Orchestrator thu hẹp) | int |
 | X2b-AC05 | (CHAT-AC-48) Agent `need_input`: A trả lời được (không tag, `answer_run_id`); B gọi endpoint trả lời → 403 `NOT_RUN_CALLER`; UI B thấy "Đang chờ A", không nút | int + e2e |
@@ -128,10 +125,10 @@ Env mới: (không dự kiến).
 | X2b-AC13 | (AC-H27, CHAT-AC-46) A có `hoadon`,`trello`, B chỉ `trello`: gõ `@` → menu A 2 mục, B 1 mục (tên + `@key` + mô tả); chọn chèn `@key`; thu hồi quyền → biến mất sau tải lại; DOM không có panel/chip agent | e2e |
 | X2b-AC14 | Thu hồi quyền `hoadon` của A trước khi gọi → `AGENT_NOT_FOUND`; giữa lúc run chạy → theo Q2 | int |
 | X2b-AC15 | "Trả lời tiếp" mở khung `?flow=` (điện thoại: sheet), tin trong flow có `flow_id`; hội thoại riêng C1 không đổi (AC-H07) | e2e |
-| X2b-AC16 | B ở trình duyệt khác thấy "đang xử lý" rồi kết quả, chưa đọc +1 (không tính cho A), qua `/me/stream` (2 instance Hub) | int + e2e |
+| X2b-AC16 | B ở trình duyệt khác thấy "đang xử lý" rồi kết quả, huy hiệu chưa đọc của B tăng 2 (tin gọi + tin agent, X2a-R17 + R19), của A không tăng, qua `/me/stream` (2 instance Hub) | int + e2e |
 | X2b-AC17 | (viết lại 2026-10-08 lần 2) A gọi `@hoadon` ở timeline → thread T. B (không có `hoadon`) gửi "ok" trong T → 201, 0 run, A và C thấy tin. B gửi "@hoadon …" trong T → 404 `AGENT_NOT_FOUND`, 0 run, tin không lưu. C (có `hoadon`) gửi "@hoadon tiếp" trong T → run mới `runs.user_id=C`, usage tính C; ngữ cảnh run C có tin của A và B trong T (kèm tên) + ≤ 20 tin timeline trước tin gốc, không tin phòng khác. Run C chờ `side_effect`: A gửi `answer_run_id` → 403 `NOT_RUN_CALLER`; C gửi `answer_run_id` không tag → run tiếp. T có 60 tin → ngữ cảnh đúng 50 tin T gần nhất | int + e2e |
 
-Lệnh xong: `bun run typecheck && bun test && bunx playwright test X2b`
+Lệnh xong: `bun run done:x2b` (typecheck, `bun test`, int X2b bằng `bunfig.int.toml`, `tests/acceptance/X2b/rules`, e2e `bun run e2e:chat:x2b`; script do B7 thêm)
 
 ## 9. Câu hỏi mở (đều có mặc định; không trả lời = chấp nhận mặc định)
 | Q | Câu hỏi | Mặc định đề xuất |
@@ -146,7 +143,7 @@ Lệnh xong: `bun run typecheck && bun test && bunx playwright test X2b`
 | Q8 | Người gọi rời/bị bớt/phòng xoá khi run đang chạy? | Huỷ run (như cancel C1), không ghi tin vào phòng; usage đã dùng vẫn tính người gọi — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 | Q9 | Đính kèm file phòng (X2a Q3 hoãn sang X2b)? | [x] **Người dùng chốt 2026-10-08: tách X2b-2** (đính kèm file trong phòng; ROADMAP). X2b: gửi file vào tin phòng → 400. Cũ: **X2b thêm nút đính kèm ở composer phòng** theo FR-44 (cùng lưu trữ như hội thoại riêng, gắn tin phòng); agent chỉ thấy file của phòng này. Nếu PLAN thấy quá lớn → tách X2b-2, báo điều phối |
 | Q10 | Menu `/` trong phòng? | Không ở X2b; placeholder chỉ gợi ý `@` — [x] Người dùng chấp nhận mặc định 2026-10-08 |
-| Q11 | Quyền xem khung flow cho thành viên khác? | Mọi thành viên **xem** (chỉ-đọc) nội dung flow (đã là tin phòng); không xem trace/tham số công cụ nội bộ — [x] Người dùng chấp nhận mặc định 2026-10-08 |
+| Q11 | Quyền xem khung flow cho thành viên khác? | Mọi thành viên xem và nhắn trong thread (Q7 lần 2 thay "chỉ-đọc"); nội dung flow (đã là tin phòng); không xem trace/tham số công cụ nội bộ — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 | Q12 | Tin agent lưu ở đâu? | `room_messages` (`sender_type=agent`, `run_id`); `runs` giữ vòng đời/usage; không thêm bảng. Tin gọi + tạo run trong **một transaction** — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 | Q13 | Tin trong flow có tính chưa đọc? | Có (mọi tin phòng có `seq`) — `plan-questions.md` §13.2 — [x] Người dùng chấp nhận mặc định 2026-10-08 |
 | Q14 | File `out/` agent tạo trong run phòng? | X2b không hiện trong phòng; X2b-2 — [x] Người dùng chấp nhận mặc định 2026-10-08 |
@@ -160,7 +157,7 @@ Lệnh xong: `bun run typecheck && bun test && bunx playwright test X2b`
 ### Trước Gate (đã chốt với người dùng)
 - 2026-10-07 · CR-048: không panel/chip agent; menu `@` trong composer; giữ mô hình thread/flow C1; agent↔agent Hoãn.
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- 2026-10-08 (Luật 2, bắt chước C1): (a) thiếu quyền agent khi gửi tin flow → `AGENT_NOT_FOUND` 404 như C1 (không lộ agent tồn tại), không thêm mã 403 mới; (b) `agent: null` hiện nhãn "Orchestrator" (`roomAgent.orchestratorName`; chat C1 không có key riêng, trùng studio `orchestrator`); (c) fixture dev cần người C có quyền `hoadon`, B không (plan.md).
+- 2026-10-08 (Luật 2, bắt chước C1): (a) thiếu quyền agent khi gửi tin flow → `AGENT_NOT_FOUND` 404 như C1 (không lộ agent tồn tại), không thêm mã 403 mới; (b) `agent: null` hiện nhãn "Orchestrator" (`roomAgent.orchestratorName`; chat C1 không có key riêng, trùng studio `orchestrator`); (c) lý do huỷ không có trong contract (`run_status: cancelled` thôi): mọi người thấy "Đã huỷ", không phân biệt mất quyền (khớp Q2); (d) tin agent tính chưa đọc cho người gọi ở biên D14 (plan); (e) fixture dev cần người C có quyền `hoadon`, B không (plan.md).
 - 2026-10-08 (lần 2) · Người dùng chốt mô hình thread chung (thay Q7 lần 1): tin thread không tag = người↔người; mỗi tag = run người tag; trả lời/xác nhận chỉ người tag (`answer_run_id`); ngữ cảnh thread ≤ 50 + 20 timeline; bỏ `flow.can_reply`; (a) ở trên áp cho **tag** trong thread.
 
 ## 11. Rủi ro

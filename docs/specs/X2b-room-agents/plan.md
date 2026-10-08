@@ -1,6 +1,6 @@
 # Plan · X2b-room-agents — phần Backend (Hub TS)
 
-Spec: [`spec.md`](spec.md) (X2b-R01…R20, AC01…AC16, §9 Q1–Q15 đã chốt; **Q6/Q7 chốt lần 2 2026-10-08**: thread chung cả phòng, tin không tag = người↔người, mỗi tag = run của người tag, ngữ cảnh thread ≤ 50 + 20 timeline; hàng phụ thuộc ghi `[Qn]`). FE: [`plan-frontend.md`](plan-frontend.md) §10 (trả lời ở §12). Nền: X2a `plan.md`/`plan-db.md` (khoá, definer), H2b `create-run.ts` (advisory → `FLOW_BUSY` → `TOO_MANY_RUNS`), H1 `sse-writer.ts` (kết thúc run). Đã đối chiếu code: migrations-hub 0000/0001/0007/0011–0013, `runs/*`, `mention/*`, `rooms/messages/*`, contracts chat, test khoá X2a `contracts-x2a`, `rv2-security`.
+Spec: [`spec.md`](spec.md) (X2b-R01…R20, AC01…AC17, §9 Q1–Q15 đã chốt; **Q6/Q7 chốt lần 2 2026-10-08**: thread chung cả phòng, tin không tag = người↔người, mỗi tag = run của người tag, ngữ cảnh thread ≤ 50 + 20 timeline; hàng phụ thuộc ghi `[Qn]`). FE: [`plan-frontend.md`](plan-frontend.md) §10 (trả lời ở §12). Nền: X2a `plan.md`/`plan-db.md` (khoá, definer), H2b `create-run.ts` (advisory → `FLOW_BUSY` → `TOO_MANY_RUNS`), H1 `sse-writer.ts` (kết thúc run). Đã đối chiếu code: migrations-hub 0000/0001/0007/0011–0013, `runs/*`, `mention/*`, `rooms/messages/*`, contracts chat, test khoá X2a `contracts-x2a`, `rv2-security`.
 
 ## 1. Quyết định chính
 | # | Quyết định | Lý do |
@@ -20,7 +20,7 @@ Spec: [`spec.md`](spec.md) (X2b-R01…R20, AC01…AC16, §9 Q1–Q15 đã chốt
 | D13 | [Q7 chốt lần 2] Tin có `flow_id` (thread) của **mọi thành viên**: (a) không tag đầu tin, không `answer_run_id` ⇒ tin người↔người (đường X2a + `flow_id`, 0 run, không kiểm AU); (b) tag đầu tin (R02) ⇒ run mới của **người tag** trên flow nền của họ cho thread, agent ∉ AU người tag ⇒ 404 `AGENT_NOT_FOUND` (không lưu, Q4); (c) `answer_run_id` = run đang chờ (`need_input`/`side_effect`) của thread: người gửi = `runs.user_id` ⇒ run mới như tin không tag C1 trên flow nền đó (Orchestrator nhận `waiting_for`, như C1), không parse tag; người khác ⇒ 403 `NOT_RUN_CALLER`; run không chờ/không thuộc thread ⇒ 404 `NOT_FOUND`. Tag mới của chính người tag khi đang chờ = tin tag C1 bình thường trên flow nền. Không còn `can_reply` | UC-11, R11, R13, BR-21 |
 | D14 | R19 với bộ đếm `last_seq − last_read_seq`: khi đăng tin agent, mốc đọc người gọi lên `seq` **chỉ khi** đang bằng `seq−1` (đã đọc hết); khác ⇒ tin agent vẫn tính chưa đọc cho người gọi (biên, chấp nhận) | Không thể loại một tin giữa bộ đếm O(1) mà không đếm lại |
 | D15 | Thu hồi quyền giữa chừng [Q2]: run đang chạy chạy nốt (C1). Xác nhận (`answer_run_id`) `side_effect` mà agent chờ ∉ AU người tag (ảnh hiện hành) ⇒ vẫn lưu tin + tạo run rồi **kết thúc ngay** `cancelled` (driver `cancelNow`, `tool_confirmations` → `declined`) ⇒ tin agent "đã huỷ" | Một đường đăng tin duy nhất (D4) |
-| D16 | **Q9 tách X2b-2** (§14): X2b không nhận file trong phòng; `attachment_ids` không có trong `SendRoomMessageRequest` (strict ⇒ 400); run phòng `files = []`; file `out/` của agent gắn vào tin riêng ở hội thoại nền (chỉ người gọi, không hiện trong phòng) [Q14 mới] | Đính kèm ≈ 40% khối lượng mốc |
+| D16 | **Q9 tách X2b-2** (§14): X2b không nhận file trong phòng; `attachment_ids` không có trong `SendRoomMessageRequest` (strict ⇒ 400); run phòng `files = []`, payload job không có khoá `attachments` (như `orchestrator.loop.ts:193`); file `out/` của agent gắn vào tin riêng ở hội thoại nền (chỉ người gọi, không hiện trong phòng) [Q14 mới] | Đính kèm ≈ 40% khối lượng mốc |
 
 ## 2. Contract `@ai/contracts/chat` — chỉ thêm
 ### 2.1 `errors.ts` (khối mới)
@@ -80,7 +80,7 @@ Spec: [`spec.md`](spec.md) (X2b-R01…R20, AC01…AC16, §9 Q1–Q15 đã chốt
 |---|---|
 | `ALTER POLICY room_messages_insert` | WITH CHECK hiện có (0012, thành viên hiện tại + `sender_type='user'`) **AND** `(flow_id IS NULL OR hub.is_room_thread(room_id, flow_id))` — **không** đòi quyền agent ⇒ mọi thành viên nhắn vào thread |
 | `hub.is_room_thread(p_room, p_flow) → boolean` | scope `user`, cùng tenant: (i) đã có `room_messages` `room_id = p_room AND flow_id = p_flow AND placement='main'` (gốc thread), **hoặc** (ii) `hub.flows.id = p_flow`, `room_flow_id = id`, thuộc hội thoại nền `(p_room, auth user)` (người mở, cùng tx). Definer để tránh đệ quy RLS; không nhận `user_id` tham số |
-| `hub.room_post_agent_message(p_run, p_sender, p_content, p_meta jsonb) → TABLE(posted bool, seq bigint, created_at timestamptz, placement text)` | **chỉ scope `system`** (khác ⇒ 42501). Đọc run (không khoá) lấy `room_id` → khoá `rooms` → khoá `runs` FOR UPDATE: `room_posted_at` có/`running` ⇒ `posted=false` (idempotent). Phòng xoá hoặc `runs.user_id` không còn thành viên ⇒ đặt `room_posted_at`, `posted=false` (R17). Khác: `last_seq+1`, `last_activity_at` (ms, như `room_next_seq`), DM bỏ ẩn, INSERT tin agent (`id = runs.answer_message_id`, `flow_id = flows.room_flow_id` của run, `trigger_message_id = runs.user_message_id`, `created_at = last_activity_at`, `placement` = `placement` tin gọi (D12), meta → cột), mốc đọc người gọi theo D14, `room_posted_at = now()` |
+| `hub.room_post_agent_message(p_run, p_sender, p_content, p_meta jsonb) → TABLE(posted bool, reason text, seq bigint, created_at timestamptz, placement text)` | **chỉ scope `system`** (khác ⇒ 42501). Đọc run (không khoá) lấy `room_id` → khoá `rooms` → khoá `runs` FOR UPDATE: `room_posted_at` có/`running` ⇒ `posted=false, reason=already` (idempotent; chỉ phát `run_finished` khi khác `already`; R17 ⇒ `skipped`). Phòng xoá hoặc `runs.user_id` không còn thành viên ⇒ đặt `room_posted_at`, `posted=false` (R17). Khác: `last_seq+1`, `last_activity_at` (ms, như `room_next_seq`), DM bỏ ẩn, INSERT tin agent (`id = runs.answer_message_id`, `flow_id = flows.room_flow_id` của run, `trigger_message_id = runs.user_message_id`, `created_at = last_activity_at`, `placement` = `placement` tin gọi (D12), meta → cột), mốc đọc người gọi theo D14, `room_posted_at = now()` |
 | `hub.room_fanout_sys(p_room) → TABLE(user_id, unread, total)` | chỉ scope `system`; như `room_fanout` cho thành viên hiện tại |
 | `hub.room_run_states(p_room) → TABLE(run_id, flow_id, trigger_message_id, caller_id, agent_id, status, wait_kind, started_at)` | scope `user` + thành viên; (a) `runs` `room_id=p_room AND status='running'`; (b) lượt chờ: tin agent có `wait_kind` mà flow nền của run đó (`runs.flow_id`) chưa có run mới hơn; chỉ người tag còn là thành viên; `LIMIT 50` |
 | GRANT | `EXECUTE` 4 hàm → `hub_rw`; `REVOKE ALL … FROM PUBLIC`. Không GRANT/policy mới trên bảng (`runs`, `conversations` đã đủ cho `hub_rw`) |
@@ -109,7 +109,7 @@ Map: tin user → `role:"user"`, `content = "<display_name>: <content>"` (mọi 
 **Cách ly (security):** 2 truy vấn trong tx gọi, scope user + RLS thành viên, `WHERE tenant_id=$t AND room_id=$r` (+ `flow_id=$f`); `roomContext` bỏ thêm mọi dòng `roomId`/`flowId` lệch (lớp 2, test thuần). Không đọc `hub.messages` (kể cả của người tag) ⇒ không lẫn hội thoại riêng/flow nền/phòng khác (AC09, AC10, AC17). Không lấy file (D16).
 
 ## 7. Realtime
-Ghi `ustream:<uid>` qua `UserStreamWriter` X2a sau COMMIT (không trong tx). Người nhận = thành viên đọc dưới khoá `rooms` trong cùng tx. `room.message` tin agent dựng **theo người nhận**: người gọi nhận `content`/`ask` riêng (từ `messages` hội thoại nền), người khác bản công khai. Người gọi xem stream token qua `GET /runs/:id/events` (C1). `stream.reset` → FE tải lại `GET /rooms/:id` (`active_runs`) + trang tin.
+Ghi `ustream:<uid>` qua `publishUserEvents` (`apps/hub-api/src/lib/user-stream.ts`; `UserEvent` mở rộng nhận `{userIds} & MeStreamRunEvent`, `ME_STREAM_EVENTS` giữ 8) sau COMMIT (không trong tx). Người nhận = thành viên đọc dưới khoá `rooms` trong cùng tx. `room.message` tin agent dựng **theo người nhận**: người gọi nhận `content`/`ask` riêng (từ `messages` hội thoại nền), người khác bản công khai. Người gọi xem stream token qua `GET /runs/:id/events` (C1). `stream.reset` → FE tải lại `GET /rooms/:id` (`active_runs`) + trang tin.
 
 ## 8. Luật thuần — chữ ký (`apps/hub-api/src/modules/rooms/agents/room-agent.rules.ts`; QC viết test trước ở `tests/acceptance/X2b/rules/`)
 ```ts
@@ -172,11 +172,11 @@ Phụ lục [`plan-questions.md`](plan-questions.md) (§12 trả lời `plan-fro
 | Rủi ro | Giảm |
 |---|---|
 | Tách `RunService.start` hỏng C1 | B3 chạy test C1/H2b/H2c + AC-H07 |
-| Quên lọc shim ở một endpoint `/conversations*` | Lọc ở repo (một chỗ `ownedConversation`), test 404 cho từng E5–E15 |
+| Quên lọc shim ở một endpoint `/conversations*` | Lọc ở repo (một chỗ: `findConversation`, `conversations.repo.ts`), test 404 cho từng E5–E15 |
 | Tin agent đến chậm khi instance chết giữa tx1/tx2 | reconcile 5 s; idempotent |
 | Hai người tag song song trong cùng thread (flow nền riêng mỗi người tag ⇒ `FLOW_BUSY` chỉ chặn cùng người) | Chấp nhận; thứ tự theo `seq`, tin agent đăng theo lúc xong |
 | Ngữ cảnh thread 50 tin dài | cắt `HISTORY_CONTENT_MAX`/tin; hiệu năng ưu tiên thấp |
 | Bản phòng/bản riêng lệch | Dựng một lần qua `agentMessageView` lúc đăng |
 
 ## 16. Lệnh xong
-Mỗi task: `bun run typecheck && bun test <phạm vi> 2>&1 | tail -40 && bun run check:size && bun run test:lock:verify`. Mốc: `bun run typecheck && bun test && bunx playwright test X2b` + test khoá X2a/C1/H2b xanh.
+Mỗi task: `bun run typecheck && bun test <phạm vi> 2>&1 | tail -40 && bun run check:size && bun run test:lock:verify`. Mốc: `bun run done:x2b` (B7 thêm `tools/scripts/src/done-x2b.ts` + script `done:x2b`, `e2e:chat:x2b`) + test khoá X2a/C1/H2b xanh.
