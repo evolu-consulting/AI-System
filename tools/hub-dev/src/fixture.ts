@@ -66,14 +66,26 @@ async function adminToken(base: string): Promise<string> {
   return String(r.access_token);
 }
 
-async function ensureTenant(api: Api, key: string, name = key.toUpperCase()): Promise<string> {
+type FirstAdmin = { username: string; display_name: string; email: string };
+
+/** Tạo tenant nếu chưa có; `firstAdmin` vắng ⇒ `tadmin` (CR-051: evolu dùng `julian.bui`, không sinh thêm `tadmin`). */
+async function ensureTenant(
+  api: Api,
+  key: string,
+  name = key.toUpperCase(),
+  firstAdmin?: FirstAdmin,
+): Promise<string> {
   const list = await call(api, "GET", `/admin/tenants?q=${key}&limit=50`);
   const hit = (list.items as Json[]).find((t) => t.key === key);
   if (hit) return String(hit.id);
   const created = await call(api, "POST", "/admin/tenants", {
     key,
     name,
-    first_admin: { username: "tadmin", display_name: "Tenant Admin", email: `tadmin@${key}.local` },
+    first_admin: firstAdmin ?? {
+      username: "tadmin",
+      display_name: "Tenant Admin",
+      email: `tadmin@${key}.local`,
+    },
   });
   return String((created.tenant as Json).id);
 }
@@ -176,7 +188,13 @@ export const DEMO_USERS: FixtureUser[] = [
 /** Tạo tenant `evolu` + 4 user demo (idempotent), tất cả vào `beta-testers` để dùng được agent seed. */
 export async function ensureDemoFixture(adminUrl: string): Promise<void> {
   const api: Api = { base: adminUrl, token: await adminToken(adminUrl) };
-  const tid = await ensureTenant(api, DEMO_TENANT.key, DEMO_TENANT.name);
+  const [admin] = DEMO_USERS;
+  const first = admin && {
+    username: admin.username,
+    display_name: admin.display_name ?? admin.username,
+    email: admin.email ?? `${admin.username}@evolu.local`,
+  };
+  const tid = await ensureTenant(api, DEMO_TENANT.key, DEMO_TENANT.name, first);
   for (const u of DEMO_USERS) await ensureUser(api, tid, u);
   await ensureBetaTesters(
     api,
