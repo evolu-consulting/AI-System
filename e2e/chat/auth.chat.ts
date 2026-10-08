@@ -30,7 +30,7 @@ test("CHAT-AC-01 · đăng nhập acme/minh vào /c/new, thấy lời chào, tok
   expect(await storageHasJwt(page)).toBe(false);
 });
 
-test("CHAT-AC-02 · mật khẩu sai ở lại /login, không cookie ai_rt, không token trong storage [E-A2]", async ({
+test("CHAT-AC-02 · mật khẩu sai ở lại /login, không cookie ai_rt*, không token trong storage [E-A2]", async ({
   page,
   context,
 }) => {
@@ -40,7 +40,8 @@ test("CHAT-AC-02 · mật khẩu sai ở lại /login, không cookie ai_rt, khô
     "Sai mã công ty, tên đăng nhập hoặc mật khẩu",
   );
   await expect(page).toHaveURL(/\/login(\?|$)/);
-  expect((await context.cookies()).some((c) => c.name === "ai_rt")).toBe(false);
+  // CR-053: cookie phiên theo app (`ai_rt_chat`) — chặn mọi biến thể `ai_rt*`.
+  expect((await context.cookies()).some((c) => c.name.startsWith("ai_rt"))).toBe(false);
   expect(await storageHasJwt(page)).toBe(false);
 });
 
