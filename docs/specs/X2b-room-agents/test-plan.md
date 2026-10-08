@@ -35,6 +35,7 @@ Nguồn: spec `d5f39da` (X2b-R01…R20, AC01…AC17, thread chung lần 2), plan
 | I03 | AC07 | ″ | | usage_logs A > 0, B = 0 |
 | I04 | R10 | ″ | đang chạy | `active_runs` running, caller A |
 | I05–I07 | AC02, R04, AC14 | ″ | B "@hoadon"; "@khongco"; thu hồi grant A | 404 `AGENT_NOT_FOUND` cùng dạng, 0 run, tin không lưu |
+| I05b | AC02 | ″ | B "@trelo tạo thẻ họp" (B có `trello`) | 404 `AGENT_NOT_FOUND`, `details.suggestions = ["trello"]`, 0 run, tin không lưu |
 | I08 | AC03 | ″ | không tag / giữa câu / "@@" | 201, 0 run (+ đối chứng tag hợp lệ ⇒ 1 run) |
 | I09 | AC04 | ″ | hai tag | 1 run |
 | I10 | AC12 | ″ | agent trả "@hoadon kiểm tra lại" | vẫn 1 run, 1 tin agent |

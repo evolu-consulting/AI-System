@@ -36,8 +36,8 @@ Stack dựng được (admin-api, hub-api, chat-web, Runtime giả); mọi ca đ
 
 ## 4. Ghi chú / mơ hồ / cần bổ sung
 - Tên agent hiển thị = key ("hoadon") theo ví dụ plan ("hoadon đang xử lý…", option "hoadon"); nếu seed dev (B7) đặt tên "Hoá đơn" thì chỉ cần đổi fixture stack (`name`) — locator dùng chung hằng `agent` ở `_x2b-support.ts`.
-- Huy hiệu E-A3: plan ghi "+1"; test đòi "2" (tin gọi + khối agent, khớp `test-plan.md` §5 realtime "unread B +2"). Cần frontend-lead/qc xác nhận.
-- E-A10: plan nêu gợi ý "Ý bạn là" — test **không** khẳng định (B chỉ có `trello`, không chắc BE trả `suggestions`).
+- Huy hiệu E-A3: B = 2 (tin gọi của A + tin agent; X2a-R17 + X2b-R19) — readiness lần 1 #7 phán test đúng; chữ "+1" ở spec/plan FE do lead sửa.
+- E-A10: test **không** khẳng định "Ý bạn là" (đúng: "hoadon" vs `trello` ⇒ `suggestions` rỗng, readiness #3); ca gợi ý thật nằm ở int `invoke.int.test.ts` (`@trelo` ⇒ `["trello"]`).
 - E-A9: khối của C hiển thị trong khung thread (tin `placement=flow`); test đọc ở khung của A (A mở thread), không ở timeline chính.
 - Gửi trong khung flow dùng `Gửi trong flow` (tag/không tag cùng một composer, D13).
 - **Cần bổ sung (backend-lead B7):** seed dev có C có `hoadon` (stack e2e tự seed nên không chặn); xác nhận tên hiển thị agent và vị trí header `X-Run-Id` qua proxy chat-web (Playwright đọc `x-run-id` từ response của trình duyệt).

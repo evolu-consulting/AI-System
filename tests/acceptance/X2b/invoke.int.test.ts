@@ -93,6 +93,16 @@ describe("X2b-AC02/AC14 · không có quyền → AGENT_NOT_FOUND, không run, k
     expect(await roomMsgCount(c.sql, room)).toBe(before);
   });
 
+  it("HUB-FR-101 · X2b-AC02 · B gõ sai '@trelo …' (B có trello) → 404 AGENT_NOT_FOUND, details.suggestions = ['trello'], 0 run [CHAT-AC-49]", async () => {
+    const room = await group();
+    const before = await roomMsgCount(c.sql, room);
+    const s = await post(c, "hoa", room, { content: "@trelo tạo thẻ họp" });
+    expect(codeOf(s.res)).toEqual({ status: 404, code: "AGENT_NOT_FOUND" });
+    expect(s.res.json.error?.details?.suggestions).toEqual(["trello"]);
+    expect(await runCount(c.sql, room)).toBe(0);
+    expect(await roomMsgCount(c.sql, room)).toBe(before);
+  });
+
   it("HUB-FR-101 · X2b-R04 · key không tồn tại và key không được dùng trả cùng một dạng lỗi (không lộ agent tồn tại)", async () => {
     const room = await group();
     const a = await post(c, "hoa", room, { content: "@hoadon xem" });
