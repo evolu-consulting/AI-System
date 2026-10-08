@@ -28,3 +28,4 @@ Quyết định nhỏ, "đã thử & bỏ vì…", bẫy đã gặp. Mới nhấ
 | 2026-10-01 | Agent | Agent mới trong `.claude/agents/` chỉ hiện sau khi mở lại phiên; trong phiên hiện tại dùng general-purpose đọc nguyên văn file định nghĩa. |
 | 2026-10-08 | Dev seed | `hub:dev` tạo tenant demo `evolu` (julian.bui tenant_admin + 4 member, mật khẩu `1234567890`, email `<user>@evolu.local`) + phòng mẫu — chỉ dev, không seed ở production. role `tenant_admin` bắt buộc email (`EMAIL_REQUIRED`). |
 | 2026-10-08 | Quy trình | Thêm agent `qc-uat` (Sonnet) cho UAT trình duyệt thật + evidence; không dùng Opus cho việc lái trình duyệt. |
+| 2026-10-08 | X2b | Migration `0015` cấp column privileges cho `hub_rw` trên `hub.runs` (chỉ cột cần cho đăng tin agent/huỷ); kiểm lại grant khi dựng DB production. Mỗi DB test chỉ một agent chạy int X2b (dùng chung DB gây đỏ chập chờn). `context.int` X2b-AC09 từng chập chờn khi tải cao (TECH-DEBT). Đính kèm trong phòng chưa có (X2b-2). |
