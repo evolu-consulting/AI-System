@@ -1,6 +1,6 @@
 // HUB-FR-96 · HUB-FR-100 · truy vấn tin phòng: lịch sử, gửi, đã đọc (X2a plan-db §5 hàng Gửi/Đọc/Lịch sử, §6). Chạy trong
 // `withHubScope({kind:"user"})`; mọi câu lọc `tenant_id` tường minh, RLS (`is_room_member`) là lưới. Gửi: chỉ gọi SAU
-// `lockFor` (khoá hàng `rooms` trước `room_members`/`room_messages`). Đánh dấu đọc chỉ chạm hàng của mình, không khoá `rooms`.
+// `lockFor` (khoá hàng `rooms` trước `room_members`/`room_messages`). Đánh dấu đọc cũng sau `lockFor` (RV1 #5), chỉ chạm hàng mình.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { Me } from "../manage/rooms.repo";
@@ -74,15 +74,13 @@ export async function findByClientId(
 }
 
 /**
- * Cấp `seq` kế (dưới khoá hàng `rooms`). Mốc thời gian = `clock_timestamp()` SAU khi giữ khoá (không phải `now()` = đầu
- * transaction) cắt tới ms (cursor `GET /rooms`) ⇒ thứ tự thời gian khớp thứ tự khoá với bớt/rời (P07).
+ * Cấp `seq` kế qua definer `hub.room_next_seq` (RV1 #1: thành viên không sửa `last_seq` trực tiếp): khoá hàng `rooms`, kiểm
+ * thành viên dưới khoá, `last_activity_at = clock_timestamp()` cắt ms (P07), DM ⇒ bỏ ẩn cả hai bên (R07). Gọi SAU `lockFor`.
  */
 export async function bumpSeq(tx: Tx, me: Me, roomId: string): Promise<{ seq: number; at: Date }> {
+  await tx.execute(sql`select hub.room_next_seq(${roomId}::uuid)`);
   const [row] = await tx.execute<{ last_seq: Num; last_activity_at: Ts }>(sql`
-    update hub.rooms set last_seq = last_seq + 1,
-      last_activity_at = date_trunc('milliseconds', clock_timestamp())
-    where id = ${roomId} and tenant_id = ${me.tenantId}
-    returning last_seq, last_activity_at`);
+    select last_seq, last_activity_at from hub.rooms where id = ${roomId} and tenant_id = ${me.tenantId}`);
   if (!row) throw new Error("room vanished under lock");
   return { seq: Number(row.last_seq), at: toDate(row.last_activity_at) };
 }
@@ -118,25 +116,18 @@ export async function advanceRead(
   return row ? Number(row.last_read_seq) : null;
 }
 
-/** R07 · tin mới trong DM ⇒ hết ẩn cho cả hai bên (policy UPDATE cho phép hàng peer, chặn tự nâng owner). */
-export async function unhideAll(tx: Tx, me: Me, roomId: string): Promise<void> {
-  await tx.execute(sql`
-    update hub.room_members set hidden_at = null
-    where room_id = ${roomId} and tenant_id = ${me.tenantId} and left_at is null and hidden_at is not null`);
-}
-
-/** D13 · chưa đọc của phòng + tổng chưa đọc của từng thành viên (hàm definer: người gửi không thấy phòng khác). */
+/** D13 · chưa đọc của phòng + tổng chưa đọc của từng thành viên (definer; tổng người khác chỉ có ngay sau khi gửi, RV1 #4). */
 export async function fanout(tx: Tx, roomId: string): Promise<FanoutRow[]> {
-  const rows = await tx.execute<{ user_id: string; unread: Num; total: Num }>(sql`
+  const rows = await tx.execute<{ user_id: string; unread: Num; total: Num | null }>(sql`
     select user_id, unread, total from hub.room_fanout(${roomId}::uuid)`);
   return rows.map((r) => ({
     user_id: r.user_id,
     unread: Number(r.unread),
-    total: Number(r.total),
+    total: Number(r.total ?? 0),
   }));
 }
 
-/** Đánh dấu đọc: `last_seq` phòng + mốc đọc của mình, không khoá (plan-db §6). null ⇒ không phải thành viên ⇒ 404. */
+/** Đánh dấu đọc: `last_seq` phòng + mốc đọc của mình (gọi SAU `lockFor`, RV1 #5). null ⇒ không phải thành viên ⇒ 404. */
 export async function readState(
   tx: Tx,
   me: Me,

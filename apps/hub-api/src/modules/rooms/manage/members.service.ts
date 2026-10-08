@@ -1,6 +1,6 @@
 // HUB-FR-97 · HUB-FR-98 · thành viên phòng: thêm/bớt/rời/chuyển chủ/ẩn DM (X2a plan §3; plan-db §5, §6; spec R07–R11, R20).
 // Thêm/bớt/rời/chuyển chủ: `lockFor` khoá hàng `rooms` TRƯỚC rồi kiểm lại quyền + đọc thành viên dưới khoá ⇒ giới hạn 50
-// đúng dưới tranh chấp, người nhận sự kiện nhất quán (R20). Ẩn DM chỉ chạm hàng của mình (§6). Phát sau commit (`commit`).
+// đúng dưới tranh chấp, người nhận sự kiện nhất quán (R20). Ẩn DM cũng khoá phòng trước, chỉ ghi hàng mình. Phát sau commit.
 import { UuidSchema } from "@ai/contracts";
 import { ROOM_MEMBERS_MAX, type RoomDetail } from "@ai/contracts/chat";
 import type { AuthUser } from "../../../lib/auth.middleware";
@@ -16,7 +16,7 @@ import {
 import { leaveOutcome, planAddMembers, type RoomAction } from "../rooms.rules";
 import * as repo from "./members.repo";
 import * as rooms from "./rooms.repo";
-import { guard, loadDetail, lockFor, type RoomsService, summaryAs } from "./rooms.service";
+import { loadDetail, lockFor, type RoomsService, summaryAs } from "./rooms.service";
 
 const userNotFound = (ids: string[]) => appError("USER_NOT_FOUND", { user_ids: ids });
 const badUserId = () =>
@@ -98,10 +98,13 @@ export class MembersService {
     });
   }
 
-  /** R07 · ẩn DM của mình (đã ẩn ⇒ 204, không sự kiện); `room.unread` cho chính mình để đồng bộ tab (D15). */
+  /**
+   * R07 · ẩn DM của mình (đã ẩn ⇒ 204, không sự kiện); `room.unread` cho chính mình để đồng bộ tab (D15). Khoá phòng
+   * trước (RV1 review #4) ⇒ tuần tự với gửi: tin commit trước thì cũ hơn `hidden_at`, gửi sau thì bỏ ẩn lại.
+   */
   hide(u: AuthUser, roomId: string): Promise<void> {
     return this.rooms.commit(u, async (tx, me) => {
-      guard(await rooms.findAccess(tx, me, roomId), "hide");
+      await lockFor(tx, me, roomId, "hide");
       const hidden = await repo.hideSelf(tx, me, roomId);
       if (!hidden) return { out: undefined, events: [] };
       const total = await rooms.unreadTotal(tx, me);

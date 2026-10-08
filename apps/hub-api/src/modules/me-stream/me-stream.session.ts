@@ -1,7 +1,8 @@
 // HUB-FR-99 · HUB-BR-22 · X2a-AC08 · X2a-AC12 · phiên `/me/stream` (X2a plan §7, D11–D14; spec-isolation §1): quyết định
 // nối lại (`Last-Event-ID` → tail/replay/`stream.reset`) TRƯỚC khi trả response (sự kiện XADD sau khi client nhận header
 // luôn có id > điểm bắt đầu ⇒ không mất), replay rồi theo dõi, `: ping` mỗi `pingMs` kèm `accountUsable` (bị khoá ⇒ đóng),
-// đóng lúc JWT `exp`, ≤ `USER_STREAM_CONN_MAX` phiên/user/instance (phiên mới đẩy phiên cũ nhất ra).
+// đóng lúc JWT `exp`, ≤ `USER_STREAM_CONN_MAX` phiên/user/instance (phiên mới đẩy phiên cũ nhất ra). Client đọc chậm: hàng
+// đợi phiên vượt `bufferBytes` ⇒ đóng (phần đã xếp vẫn giao), client nối lại bằng `Last-Event-ID` (review RV1 #12).
 import { SSE_PING_FRAME, USER_STREAM_CONN_MAX } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { safeErrorFields } from "../../lib/errors";
@@ -12,6 +13,8 @@ import type { UserEntry, UserStreamReader } from "./user-stream-reader";
 
 const ENC = new TextEncoder();
 const RESET_FRAME = "event: stream.reset\ndata: {}\n\n";
+/** Trần hàng đợi byte mỗi phiên (mặc định) — vượt ⇒ đóng phiên, client nối lại bằng `Last-Event-ID`. */
+export const ME_STREAM_BUFFER_BYTES = 1_048_576;
 /** `setTimeout` tối đa (~24,8 ngày); token sống lâu hơn thì hẹn lại theo nhịp này. */
 const MAX_TIMER_MS = 2_147_483_647;
 
@@ -49,6 +52,8 @@ export type MeStreamDeps = {
   pingMs: number;
   /** Tắt instance ⇒ đóng stream, client tự nối lại instance khác. */
   signal?: AbortSignal;
+  /** Trần hàng đợi byte của phiên (vắng ⇒ `ME_STREAM_BUFFER_BYTES`). */
+  bufferBytes?: number;
 };
 
 /** Điểm bắt đầu của phiên: `reset` ⇒ phát `stream.reset` trước; `replay` ⇒ XRANGE `> from` trước khi theo dõi. */
@@ -174,6 +179,11 @@ class MeStreamSession implements Closable {
       this.ctl.enqueue(ENC.encode(frame));
     } catch {
       this.stop();
+      return;
+    }
+    if ((this.ctl.desiredSize ?? 0) < 0) {
+      this.d.log.warn("me-stream-slow-client", { queued_over: -(this.ctl.desiredSize ?? 0) });
+      this.end();
     }
   }
 }
@@ -181,13 +191,16 @@ class MeStreamSession implements Closable {
 /** Stream SSE của một phiên (`plan` đã tính trước bằng `resumePlan`). Client ngắt ⇒ huỷ đăng ký, rời giới hạn. */
 export function meEventStream(d: MeStreamDeps, o: MeStreamOpen): ReadableStream<Uint8Array> {
   let session: MeStreamSession | undefined;
-  return new ReadableStream<Uint8Array>({
-    start(ctl) {
-      session = new MeStreamSession(d, o, ctl);
-      return session.start();
+  return new ReadableStream<Uint8Array>(
+    {
+      start(ctl) {
+        session = new MeStreamSession(d, o, ctl);
+        return session.start();
+      },
+      cancel() {
+        session?.stop();
+      },
     },
-    cancel() {
-      session?.stop();
-    },
-  });
+    { highWaterMark: d.bufferBytes ?? ME_STREAM_BUFFER_BYTES, size: (c) => c?.byteLength ?? 0 },
+  );
 }

@@ -1,6 +1,6 @@
 // HUB-FR-97 · HUB-FR-98 · truy vấn thành viên phòng: thêm/bớt/rời/chuyển chủ/ẩn DM (X2a plan-db §5 hàng Thêm/Bớt/Chuyển/Ẩn,
 // §6). Chạy trong `withHubScope({kind:"user"})`; mọi câu lọc `tenant_id` tường minh, RLS là lưới. Thêm/bớt/rời/chuyển chủ
-// chỉ gọi SAU `lockFor` (khoá hàng `rooms` trước `room_members`); ẩn DM chỉ chạm hàng của mình, không xin khoá `rooms`.
+// chỉ gọi SAU `lockFor` (khoá hàng `rooms` trước `room_members`); ẩn DM cũng sau `lockFor`, chỉ chạm hàng của mình.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { Me } from "./rooms.repo";
@@ -47,10 +47,10 @@ export async function transferOwner(tx: Tx, me: Me, roomId: string, to: string):
       and user_id in (${me.userId}::uuid, ${to}::uuid)`);
 }
 
-/** R07 · ẩn DM cho mình. Đã ẩn ⇒ null (không đổi, không sự kiện); vừa ẩn ⇒ chưa đọc của phòng. */
+/** R07 · ẩn DM cho mình (gọi SAU `lockFor`; `clock_timestamp()` sau khoá). Đã ẩn ⇒ null; vừa ẩn ⇒ chưa đọc của phòng. */
 export async function hideSelf(tx: Tx, me: Me, roomId: string): Promise<{ unread: number } | null> {
   const [row] = await tx.execute<{ unread: Num }>(sql`
-    update hub.room_members m set hidden_at = date_trunc('milliseconds', now())
+    update hub.room_members m set hidden_at = date_trunc('milliseconds', clock_timestamp())
     from hub.rooms r
     where m.room_id = ${roomId} and m.tenant_id = ${me.tenantId} and m.user_id = ${me.userId}
       and m.left_at is null and m.hidden_at is null and r.id = m.room_id and r.tenant_id = m.tenant_id

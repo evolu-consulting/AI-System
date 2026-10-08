@@ -39,6 +39,8 @@ Sự kiện `/me/stream` (BA §9.2 + thêm `room.read`, `stream.reset`; `id:` = 
 | D tenant khác (kể cả `platform_admin`) | 404 | 404 | không thấy user acme | 404 |
 | `hub_api` DB, GUC user C | 0 hàng ở 3 bảng phòng của G | 0 hàng | — | — |
 
+**Rủi ro chấp nhận (security review vòng 1 #2):** sự kiện đã giao không thu hồi — người đã rời/bị bớt vẫn lấy lại được các sự kiện **cũ** của phòng (chỉ những gì họ đã nhận khi còn là thành viên, không có tin mới) bằng `Last-Event-ID` cũ trên `/me/stream`, trong giới hạn của `ustream:<uid>` (≤ 7 ngày / ≤ 1000 entry). Không cắt chọn lọc được vì stream chung mọi phòng của user; muốn chặt hơn chỉ có cách rút TTL/MAXLEN.
+
 ## 3. Rủi ro
 | Rủi ro | Giảm thiểu |
 |---|---|
@@ -48,5 +50,7 @@ Sự kiện `/me/stream` (BA §9.2 + thêm `room.read`, `stream.reset`; `id:` = 
 | Tranh chấp `seq` khi gửi song song | Khoá hàng `rooms` + unique `(room_id, seq)`; test song song X2a-AC07 |
 | Kết nối SSE dài làm cạn kết nối Redis/DB | Một kết nối chặn/instance (multiplex), không giữ transaction DB trong stream |
 | Sidebar mới làm hồi quy C1 | CHAT-AC-01…36 + contract chat trong `done:x2a` |
-| `hub_ro` đọc được email/role mọi tenant (sẵn có) | Directory chọn đúng 4 cột + lọc tenant; schema strict; TECH-DEBT thu hẹp (Q1) |
+| `hub_ro` đọc được email/role mọi tenant (sẵn có) | Directory chọn đúng 4 cột + lọc tenant; schema strict; TECH-DEBT #104 thu hẹp (Q1) |
+| Lưới RLS quá rộng ở UPDATE (thành viên làm việc của chủ, sửa `last_seq`, chèn `seq` tuỳ ý) | Siết ở `0012_x2a_rooms_rls_tighten.sql` (security review vòng 1 #1 #3 #4 #8): `last_seq` chỉ qua `room_next_seq`, trigger giới hạn cột theo vai; chi tiết `plan-decisions.md` RV1 |
+| `room.read` gửi tới người vừa bị bớt song song | `markRead` khoá phòng + kiểm lại thành viên dưới khoá ⇒ 404 (security #5) |
 

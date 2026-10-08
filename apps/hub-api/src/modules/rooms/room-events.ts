@@ -58,24 +58,31 @@ export function readEvents(
   return out;
 }
 
-/** Thêm thành viên: người mới nhận bản có `room` (summary của họ); thành viên khác nhận `{room_id, user_id}`. */
+/**
+ * Thêm thành viên: mỗi người mới nhận đúng 1 bản có `room` (summary của họ). Thành viên khác (không phải người mới) nhận
+ * đúng 1 `{room_id, user_id}` cho cả lần thêm (`user_id` = người mới đầu tiên; client chỉ làm mới chi tiết/danh sách) ⇒
+ * thêm N người vào phòng M người ≈ N + M lần ghi stream thay vì N×M (review RV1 #8; contract không đổi).
+ */
 export function memberAddedEvents(
   roomId: string,
   added: readonly AddedMember[],
   memberIds: readonly string[],
 ): UserEvent[] {
-  return added.flatMap((a): UserEvent[] => {
-    const others = uniq(memberIds).filter((id) => id !== a.userId);
+  const first = added[0];
+  if (!first) return [];
+  const newIds = new Set(added.map((a) => a.userId));
+  const mine = added.map((a): UserEvent => {
     const base = { room_id: roomId, user_id: a.userId };
-    const mine: UserEvent = {
+    return {
       userIds: [a.userId],
       event: "room.member_added",
       data: a.room ? { ...base, room: a.room } : base,
     };
-    return others.length > 0
-      ? [mine, { userIds: others, event: "room.member_added", data: base }]
-      : [mine];
   });
+  const others = uniq(memberIds).filter((id) => !newIds.has(id));
+  if (others.length === 0) return mine;
+  const base = { room_id: roomId, user_id: first.userId };
+  return [...mine, { userIds: others, event: "room.member_added", data: base }];
 }
 
 /** Bớt/rời: người bị bớt + mọi người còn lại, mỗi người đúng 1 lần (R20). */

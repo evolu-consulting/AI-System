@@ -1,6 +1,6 @@
 // HUB-FR-96 · HUB-FR-100 · tin phòng: lịch sử, gửi, đã đọc (X2a plan §3, D5, D13; plan-db §5 hàng Gửi/Đọc/Lịch sử, §6;
 // spec R14–R19). Gửi: `lockFor` khoá hàng `rooms` TRƯỚC rồi kiểm thành viên dưới khoá (bị bớt song song ⇒ 404, P07) ⇒ `seq`
-// liền, không trùng (X2a-AC07). Đánh dấu đọc chỉ chạm hàng của mình (không chu trình khoá với gửi). Phát sau commit.
+// liền, không trùng (X2a-AC07); `seq` cấp bằng definer `hub.room_next_seq` (RV1). Đánh dấu đọc cũng khoá phòng trước. Phát sau commit.
 import type {
   MarkRoomReadResponse,
   RoomMessage,
@@ -54,10 +54,11 @@ export class MessagesService {
 
   private sendOnce(u: AuthUser, roomId: string, body: SendRoomMessageRequest): Promise<SendResult> {
     return this.rooms.commit<SendResult>(u, async (tx, me) => {
-      const room = await lockFor(tx, me, roomId, "send");
+      await lockFor(tx, me, roomId, "send");
       const dup = await repo.findByClientId(tx, me, roomId, body.client_msg_id);
       if (dup) return { out: { message: toRoomMessage(dup), created: false }, events: [] };
       const { seq, at } = await repo.bumpSeq(tx, me, roomId);
+      await repo.advanceRead(tx, me, roomId, seq);
       const row = await repo.insertMessage(tx, me, {
         roomId,
         seq,
@@ -65,21 +66,24 @@ export class MessagesService {
         clientMsgId: body.client_msg_id,
         at,
       });
-      await repo.advanceRead(tx, me, roomId, seq);
-      if (room.kind === "dm") await repo.unhideAll(tx, me, roomId);
       const message = toRoomMessage(row);
       const fan = await repo.fanout(tx, roomId);
       return { out: { message, created: true }, events: messageEvents(roomId, message, fan) };
     });
   }
 
-  /** R18/R19 · mốc đọc chỉ tăng, kẹp ≤ `last_seq`; không đổi ⇒ trả số hiện tại, không sự kiện. */
+  /**
+   * R18/R19 · mốc đọc chỉ tăng, kẹp ≤ `last_seq`; không đổi ⇒ trả số hiện tại, không sự kiện. Khoá phòng + kiểm lại
+   * thành viên (RV1 #5): bị bớt song song ⇒ 404, người nhận `room.read` đọc dưới khoá (không gửi cho người vừa bị bớt).
+   */
   markRead(u: AuthUser, roomId: string, seq: number): Promise<MarkRoomReadResponse> {
     return this.rooms.commit(u, async (tx, me) => {
+      await lockFor(tx, me, roomId, "read");
       const st = await repo.readState(tx, me, roomId);
       if (!st) throw appError("ROOM_NOT_FOUND");
       const next = clampReadSeq(seq, st.lastReadSeq, st.lastSeq);
       const read = next === null ? null : await repo.advanceRead(tx, me, roomId, next);
+      if (next !== null && read === null) throw appError("ROOM_NOT_FOUND");
       const mark = read ?? st.lastReadSeq;
       const self = { unread: unreadOf(st.lastSeq, mark), total: await rooms.unreadTotal(tx, me) };
       const out = { unread: self.unread, unread_total: self.total };

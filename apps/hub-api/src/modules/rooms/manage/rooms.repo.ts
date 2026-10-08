@@ -230,12 +230,12 @@ export async function renameRoom(tx: Tx, me: Me, roomId: string, name: string): 
     update hub.rooms set name = ${name} where id = ${roomId} and tenant_id = ${me.tenantId}`);
 }
 
-/** D4 · xoá = `deleted_at` + `left_at` cho mọi thành viên còn lại, cùng transaction (rooms trước, room_members sau). */
+/** D4 · xoá = `deleted_at` + `left_at` mọi thành viên, cùng transaction, SAU `lockFor`; `clock_timestamp()` (P07, RV1 #3). */
 export async function softDeleteRoom(tx: Tx, me: Me, roomId: string): Promise<void> {
   await tx.execute(sql`
-    update hub.rooms set deleted_at = date_trunc('milliseconds', now())
+    update hub.rooms set deleted_at = date_trunc('milliseconds', clock_timestamp())
     where id = ${roomId} and tenant_id = ${me.tenantId} and deleted_at is null`);
   await tx.execute(sql`
-    update hub.room_members set left_at = date_trunc('milliseconds', now())
+    update hub.room_members set left_at = date_trunc('milliseconds', clock_timestamp())
     where room_id = ${roomId} and tenant_id = ${me.tenantId} and left_at is null`);
 }
