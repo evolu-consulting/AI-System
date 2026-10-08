@@ -40,7 +40,12 @@ const itemOf = (p: AgentGrantListResponse, agent: string) =>
   p.items.find((i) => i.agent.id === agent);
 const subjectIds = (p: AgentGrantListResponse, agent: string) =>
   (itemOf(p, agent)?.grants ?? []).map((g) =>
-    g.subject.type === "group" ? g.subject.group.id : g.subject.user.id,
+    // CR-054: thêm subject `tenant` (chỉ đổi kiểu).
+    g.subject.type === "group"
+      ? g.subject.group.id
+      : g.subject.type === "user"
+        ? g.subject.user.id
+        : "*",
   );
 
 describe("A55–A59 · nội dung danh sách [HUB-FR-78 · ADM-FR-37 · H3b-R11 · HUB-H3b-AC-06]", () => {

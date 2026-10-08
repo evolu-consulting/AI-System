@@ -33,6 +33,7 @@ class FakeClient:
     script: Sequence[Message] = ()
     error: ClaudeSDKError | None = None
     last: FakeClient | None = None
+    info: dict[str, Any] | None = None  # CR-054 · `initialize` (gồm `models`)
 
     def __init__(self, options: ClaudeAgentOptions | None = None) -> None:
         self.options = options
@@ -47,6 +48,9 @@ class FakeClient:
 
     async def query(self, prompt: str) -> None:
         self.prompts.append(prompt)
+
+    async def get_server_info(self) -> dict[str, Any] | None:
+        return self.info
 
     async def receive_response(self) -> AsyncIterator[Message]:
         for msg in self.script:
@@ -85,8 +89,9 @@ async def run(
     tmp_path: Path,
     script: Sequence[Message],
     error: ClaudeSDKError | None = None,
+    info: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
-    fake = type("Fake", (FakeClient,), {"script": script, "error": error})
+    fake = type("Fake", (FakeClient,), {"script": script, "error": error, "info": info})
     monkeypatch.setattr(mod, "ClaudeSDKClient", fake)
     out: list[ProviderEvent] = []
 
@@ -153,3 +158,32 @@ async def test_wrk_fr_22_probe_sdk_error_fatal(
     evs = await run(monkeypatch, tmp_path, [], CLINotFoundError("no cli at /secret/path"))
     assert evs and evs[-1]["type"] == "fatal"
     assert "/secret/path" not in json.dumps(evs)
+
+
+async def test_cr054_probe_models_from_initialize(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """CR-054 · `initialize.models` → sự kiện `models` đầu (bỏ mục hỏng/trùng), rồi probe như cũ."""
+    info = {
+        "models": [
+            {"value": "haiku", "resolvedModel": "claude-haiku-x", "displayName": "Haiku 4.5"},
+            {"value": "sonnet", "displayName": "Sonnet 5.5", "description": "Cân bằng"},
+            {"value": "haiku", "displayName": "trùng"},
+            {"displayName": "thiếu value"},
+            "hỏng",
+        ]
+    }
+    evs = await run(monkeypatch, tmp_path, [result()], info=info)
+    assert [e["type"] for e in evs] == ["models", "usage", "final"]
+    assert [m["value"] for m in evs[0]["models"]] == ["haiku", "sonnet"]
+    assert evs[0]["models"][0]["resolved_model"] == "claude-haiku-x"
+    assert evs[0]["models"][1]["description"] == "Cân bằng"
+
+
+async def test_cr054_probe_no_models_no_event(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    infos: list[dict[str, Any] | None] = [None, {}, {"models": []}, {"models": "x"}]
+    for info in infos:
+        evs = await run(monkeypatch, tmp_path, [result()], info=info)
+        assert "models" not in [e["type"] for e in evs]

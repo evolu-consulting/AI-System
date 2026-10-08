@@ -12,6 +12,7 @@ import {
   readEnabledWorkflows,
   readHubVersion,
   readMeRow,
+  readModelCatalog,
   readModelProfiles,
   readProviders,
   readTenants,
@@ -70,6 +71,20 @@ export class StudioReadService {
       }));
       return toList(rows, { ...q, version: await readHubVersion(tx), text: (r) => [r.key] });
     });
+  }
+
+  /** CR-054 · danh mục model của Runtime (không phân trang — vài chục mục). */
+  modelCatalog() {
+    return this.#read(async (tx) => ({
+      items: (await readModelCatalog(tx)).map((r) => ({
+        provider_key: r.providerKey,
+        value: r.value,
+        resolved_model: r.resolvedModel,
+        display_name: r.displayName,
+        description: r.description,
+        fetched_at: new Date(r.fetchedAt).toISOString(),
+      })),
+    }));
   }
 
   providers(q: CatalogQuery) {

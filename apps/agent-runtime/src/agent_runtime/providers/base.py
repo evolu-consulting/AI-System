@@ -173,7 +173,28 @@ def parse_confirmation(content: str | Sequence[Mapping[str, Any]]) -> Confirm | 
     return Confirm(question=question, choices=(str(items[0]), str(items[1])))
 
 
-ProviderEvent = Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal | Confirm | Delta
+MODELS_MAX = 60
+
+
+class ModelInfo(_Ev):
+    """CR-054 · một model của CLI (`initialize.models`): giá trị `--model` + tên hiển thị."""
+
+    value: str = Field(min_length=1, max_length=100)
+    resolved_model: str | None = Field(default=None, max_length=100)
+    display_name: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=300)
+
+
+class Models(_Ev):
+    """CR-054 · danh mục model đọc lúc khởi tạo CLI (chỉ probe phát; job không phát)."""
+
+    type: Literal["models"] = "models"
+    models: tuple[ModelInfo, ...] = Field(max_length=MODELS_MAX)
+
+
+ProviderEvent = (
+    Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal | Confirm | Delta | Models
+)
 Emit = Callable[[ProviderEvent], Awaitable[None]]
 
 

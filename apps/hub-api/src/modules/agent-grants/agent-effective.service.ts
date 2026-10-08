@@ -26,12 +26,12 @@ const scopeOf = (actor: AuthUser, tenantId: string): HubScope => ({
   userId: actor.userId,
 });
 
-/** `grant_user` trước, rồi `grant_group` theo `group.key`; group vắng ở `admin.groups` ⇒ bỏ (plan-db §4, không 500). */
+/** `grant_user`/`grant_tenant` (CR-054) trước, rồi `grant_group` theo `group.key`; group vắng ở `admin.groups` ⇒ bỏ (plan-db §4, không 500). */
 function reasonsOf(c: EffectiveAgentCalc, groups: Map<string, GroupRefRow>): AgentAccessReason[] {
   const user: AgentAccessReason[] = [];
   const byGroup: GroupRefRow[] = [];
   for (const r of c.reasons) {
-    if (r.code === "grant_user") user.push({ code: "grant_user" });
+    if (r.code === "grant_user" || r.code === "grant_tenant") user.push({ code: r.code });
     else {
       const g = groups.get(r.groupId);
       if (g) byGroup.push(g);

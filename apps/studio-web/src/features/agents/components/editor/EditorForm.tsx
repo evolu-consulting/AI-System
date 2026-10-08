@@ -81,6 +81,7 @@ export function EditorForm({ initial, agent }: Props) {
           hadBash={ed.hadBash}
           profiles={cat.profiles}
           agentTypes={cat.agentTypes}
+          models={cat.models}
         />
       </StepCard>
       <StepCard n={3}>

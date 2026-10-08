@@ -48,6 +48,8 @@ const common = {
 const RUNTIME_SHAPES = {
   "agentic-cli": {
     profile_id: UuidSchema,
+    /** CR-054 · model ghi đè profile (giá trị từ danh mục Runtime: alias `haiku`/`sonnet`/`opus` hoặc id); null = theo profile. */
+    model: z.string().trim().min(1).max(100).nullable().default(null),
     agent_type_key: nullish,
     runtime_options: CliOptionsSchema.default(() => CliOptionsSchema.parse({})),
     workflow_ids: WfIds(0, 20).default([]),
@@ -153,6 +155,8 @@ export const AgentSchema = z.strictObject({
   runtime: AgentRuntimeSchema,
   agent_type_key: z.string().nullable(),
   profile_id: UuidSchema.nullable(),
+  /** CR-054 · vắng ở bản cũ. */
+  model: z.string().nullable().optional(),
   system_prompt: z.string(),
   runtime_options: z.record(z.string(), z.unknown()),
   workflow_ids: z.array(UuidSchema),

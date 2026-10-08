@@ -15,6 +15,7 @@ from agent_runtime.providers.base import (
     Delta,
     Fatal,
     Final,
+    Models,
     Progress,
     ProviderEvent,
     ProviderJob,
@@ -35,7 +36,7 @@ class ChildRequest(ProviderJob):
 
 
 ChildEvent = Annotated[
-    Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal | Confirm | Delta,
+    Progress | ToolUse | Session | RateLimit | UsageEv | Final | Fatal | Confirm | Delta | Models,
     Field(discriminator="type"),
 ]
 _EVENT: TypeAdapter[ProviderEvent] = TypeAdapter(ChildEvent)

@@ -10,11 +10,19 @@ import {
 } from "../common";
 import { GrantSubjectSchema } from "../grants";
 
+/** Subject của grant agent: group/user (dùng chung M3) + CR-054 `tenant` (cả công ty, chỉ ở hub-admin). */
+export const AgentGrantSubjectSchema = z.union([
+  GrantSubjectSchema,
+  z.strictObject({ type: z.literal("tenant") }),
+]);
+export type AgentGrantSubject = z.infer<typeof AgentGrantSubjectSchema>;
+
 export const AGENT_GRANTS_AGENTS_MAX = 200;
 export const AGENT_GRANTS_PER_AGENT_MAX = 500;
 export const HUB_AGENT_NAME_MAX = 100;
 export const HUB_AGENT_DESC_MAX = 2000;
-export const GRANT_SUBJECT_TYPES = ["group", "user"] as const;
+/** CR-054: `tenant` = cả công ty (`subject_id` = tenant id). */
+export const GRANT_SUBJECT_TYPES = ["group", "user", "tenant"] as const;
 
 export const GrantSubjectTypeSchema = z.enum(GRANT_SUBJECT_TYPES);
 export type GrantSubjectType = z.infer<typeof GrantSubjectTypeSchema>;
@@ -67,7 +75,7 @@ export const AgentGrantSchema = z.strictObject({
   id: UuidSchema,
   tenant_id: UuidSchema,
   agent: HubAgentRefSchema,
-  subject: GrantSubjectSchema,
+  subject: AgentGrantSubjectSchema,
   granted_by: UpdatedBySchema,
   granted_at: IsoDateTime,
 });
@@ -83,7 +91,7 @@ export type AgentGrantWriteResponse = z.infer<typeof AgentGrantWriteResponseSche
 /** Hàng grant trong danh sách theo agent — không lặp `agent`, `tenant_id`. */
 export const AgentGrantRowSchema = z.strictObject({
   id: UuidSchema,
-  subject: GrantSubjectSchema,
+  subject: AgentGrantSubjectSchema,
   granted_by: UpdatedBySchema,
   granted_at: IsoDateTime,
 });

@@ -2,6 +2,7 @@
 import { type HistoryItem, OrchestratorDecisionSchema } from "@ai/contracts/hub";
 import { z } from "zod";
 import type { HubAgentRef } from "../agents/agent-access.rules";
+import type { NoMatchPolicy } from "../agents/default-agent.rules";
 import { type FileBrief, orchestratorFilesBlock } from "../attachments/run-files.rules";
 
 /** Mỗi tin trong `<history>` ≤ 4000 ký tự (§6.2). */
@@ -12,11 +13,21 @@ export const RETRY_REMINDER = "Lần trước không phải JSON hợp lệ theo
 
 const DECISION_SCHEMA = JSON.stringify(z.toJSONSchema(OrchestratorDecisionSchema));
 
-/** §6.3 · nối cuối `system_prompt` của Orchestrator. */
-export const FORMAT_BLOCK =
+/** CR-054 · câu "không agent phù hợp → …" theo chính sách của tenant (vắng = `answer` như H1). */
+function noMatchRule(p?: NoMatchPolicy): string {
+  if (p?.kind === "fallback")
+    return `không agent chuyên môn phù hợp → \`delegate\` agent \`${p.agent.key}\``;
+  if (p?.kind === "ask") return "không agent phù hợp → `ask`";
+  return "không agent phù hợp → `answer`";
+}
+
+/** §6.3 · nối cuối `system_prompt` của Orchestrator (CR-054: câu "không khớp" theo chính sách). */
+export const formatBlock = (p?: NoMatchPolicy): string =>
   `Chỉ trả về MỘT object JSON theo JSON Schema sau, không chữ khác, không code fence: ${DECISION_SCHEMA}. ` +
-  "`delegate` chỉ key trong <agents>; không agent phù hợp → `answer`; mơ hồ → `ask`; " +
+  `\`delegate\` chỉ key trong <agents>; ${noMatchRule(p)}; mơ hồ → \`ask\`; ` +
   "`waiting_for` khác null và tin là câu trả lời → `delegate` agent đó.";
+
+export const FORMAT_BLOCK = formatBlock();
 
 export type FlowHint = { last_agent: string | null; waiting_for: string | null };
 
@@ -46,8 +57,9 @@ const tag = (name: string, body: string): string => `<${name}>\n${body}\n</${nam
 /** JSON không chứa `<` thô: nội dung người dùng không đóng được khối (vd `</message>`). */
 const json = (v: unknown): string => JSON.stringify(v).replace(/</g, "\\u003c");
 
-export function orchestratorSystemPrompt(base: string): string {
-  return base ? `${base}\n\n${FORMAT_BLOCK}` : FORMAT_BLOCK;
+export function orchestratorSystemPrompt(base: string, noMatch?: NoMatchPolicy): string {
+  const block = formatBlock(noMatch);
+  return base ? `${base}\n\n${block}` : block;
 }
 
 /** §6.2 · các khối theo thứ tự, nội dung JSON. */

@@ -35,7 +35,7 @@ export const agentGrants = hub.table(
     id: uuid("id").primaryKey().defaultRandom(),
     agentId: uuid("agent_id").notNull(),
     tenantId: uuid("tenant_id").notNull(),
-    subjectType: text("subject_type", { enum: ["group", "user"] }).notNull(),
+    subjectType: text("subject_type", { enum: ["group", "user", "tenant"] }).notNull(),
     subjectId: uuid("subject_id").notNull(),
     grantedBy: uuid("granted_by"),
     grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),

@@ -5,18 +5,25 @@ import {
   CHAT_API_ERRORS,
   CHAT_ATTACHMENT_ERRORS,
   CHAT_COMMAND_ERRORS,
+  CHAT_DEFAULT_AGENT_ERRORS,
   CHAT_ROOM_AGENT_ERRORS,
   CHAT_ROOM_ERRORS,
   CHAT_ROUTING_ERRORS,
   type ChatAttachmentErrorCode,
   type ChatCommandErrorCode,
+  type ChatDefaultAgentErrorCode,
   type ChatErrorCode,
   type ChatRoomAgentErrorCode,
   type ChatRoomErrorCode,
   type ChatRoutingErrorCode,
   type ErrorResponse,
 } from "@ai/contracts/chat";
-import { HUB_ADMIN_ERRORS, type HubAdminErrorCode } from "@ai/contracts/hub-admin";
+import {
+  HUB_ADMIN_AGENT_ERRORS,
+  HUB_ADMIN_ERRORS,
+  type HubAdminAgentErrorCode,
+  type HubAdminErrorCode,
+} from "@ai/contracts/hub-admin";
 import { STUDIO_ERRORS, type StudioErrorCode } from "@ai/contracts/studio";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
@@ -43,19 +50,23 @@ export type HubErrorCode =
   | ChatErrorCode
   | ChatCommandErrorCode
   | ChatRoutingErrorCode
+  | ChatDefaultAgentErrorCode
   | ChatAttachmentErrorCode
   | ChatRoomErrorCode
   | ChatRoomAgentErrorCode
   | HubAdminErrorCode
+  | HubAdminAgentErrorCode
   | StudioErrorCode;
 const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
   ...CHAT_API_ERRORS,
   ...CHAT_COMMAND_ERRORS,
   ...CHAT_ROUTING_ERRORS,
+  ...CHAT_DEFAULT_AGENT_ERRORS,
   ...CHAT_ATTACHMENT_ERRORS,
   ...CHAT_ROOM_ERRORS,
   ...CHAT_ROOM_AGENT_ERRORS,
   ...HUB_ADMIN_ERRORS,
+  ...HUB_ADMIN_AGENT_ERRORS,
   ...STUDIO_ERRORS,
 };
 
@@ -71,6 +82,7 @@ export const ERROR_MESSAGES: Record<HubErrorCode, string> = {
   CMD_MISSING_ARG: "Missing or invalid command argument",
   AGENT_NOT_FOUND: "Agent not found",
   TOO_MANY_RUNS: "Too many running requests",
+  DEFAULT_AGENT_FORBIDDEN: "You cannot use your company's default agent",
   ATTACHMENT_NOT_FOUND: "Attachment not found",
   ATTACHMENT_QUOTA_EXCEEDED: "Storage quota exceeded",
   ATTACHMENT_TOO_LARGE: "File too large",
@@ -89,6 +101,7 @@ export const ERROR_MESSAGES: Record<HubErrorCode, string> = {
   INVALID_REFERENCE: "Invalid reference",
   NOT_ENTITLED: "Not entitled",
   AGENT_NOT_GRANTABLE: "Agent cannot be granted",
+  AGENT_IS_DEFAULT: "Agent is the company default or fallback",
   VERSION_CONFLICT: "Version conflict",
   KEY_TAKEN: "Key already taken",
   BASH_ACK_REQUIRED: "Bash tool requires acknowledgement",

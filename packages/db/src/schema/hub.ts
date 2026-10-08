@@ -1,5 +1,5 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql`, `0010_h4a_studio.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql`, `0010_h4a_studio.sql`, `0018_cr054_agent_defaults.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
 // Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts`
 // (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
 import { sql } from "drizzle-orm";
@@ -62,7 +62,15 @@ export const HUB_AUDIT_ACTION_VALUES = [
   "enable",
   "disable",
 ] as const;
-export const HUB_AUDIT_ENTITY_VALUES = ["agent_grant", "run", "agent", "orchestrator"] as const;
+export const HUB_AUDIT_ENTITY_VALUES = [
+  "agent_grant",
+  "run",
+  "agent",
+  "orchestrator",
+  // CR-054 (0018)
+  "agent_entitlement",
+  "agent_default",
+] as const;
 export const HUB_AUDIT_ACTOR_ROLE_VALUES = ["platform_admin", "tenant_admin", "member"] as const;
 
 // ── §3.1 Cấu hình ──
@@ -110,7 +118,36 @@ export const agents = hub.table("agents", {
   version: integer("version").notNull().default(1),
   createdAt: createdAt(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
+  /** CR-054 (0018): model ghi đè bước profile (alias `haiku`/`sonnet`/`opus` hoặc id); NULL = theo profile. */
+  model: text("model"),
 });
+
+/** CR-054 (0018): agent mặc định của tenant ở Hỏi AI (vắng hàng ⇒ hành vi cũ). */
+export const tenantAgentDefaults = hub.table("tenant_agent_defaults", {
+  tenantId: uuid("tenant_id").primaryKey(),
+  defaultAgentId: uuid("default_agent_id").notNull(),
+  fallbackAgentId: uuid("fallback_agent_id"),
+  onNoMatch: text("on_no_match", { enum: ["fallback", "answer", "ask"] })
+    .notNull()
+    .default("fallback"),
+  updatedBy: uuid("updated_by"),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
+/** CR-054 (0018): danh mục model Runtime đọc từ CLI (`initialize.models`); Hub/Studio chỉ đọc. */
+export const providerModels = hub.table(
+  "provider_models",
+  {
+    providerKey: text("provider_key").notNull(),
+    value: text("value").notNull(),
+    resolvedModel: text("resolved_model"),
+    displayName: text("display_name").notNull(),
+    description: text("description").notNull().default(""),
+    position: integer("position").notNull().default(0),
+    fetchedAt: ts("fetched_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.providerKey, t.value] })],
+);
 
 export const orchestratorSettings = hub.table("orchestrator_settings", {
   // 0006 (H2b): id=1 = bản mặc định (tenant_id NULL); hàng tenant lấy id từ sequence (scope CHECK ở SQL).

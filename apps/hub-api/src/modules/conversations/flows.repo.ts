@@ -1,7 +1,7 @@
 // HUB-FR-45 · Drizzle query `hub.flows`, `hub.messages`, `hub.runs`, `hub.run_steps` cho E10/E11 (plan H1 §3.2).
 // Gọi trong `withHubScope(user)`; lọc `tenant_id` + `user_id` tường minh như conversations.repo.
 import type { Tx } from "@ai/db";
-import { flows, messages, runSteps, runs } from "@ai/db/schema/hub";
+import { agents, flows, messages, modelProfiles, runSteps, runs } from "@ai/db/schema/hub";
 import { and, asc, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { Owner } from "./conversations.repo";
@@ -115,6 +115,28 @@ export async function listMessagesDesc(
   return rows.map(({ at, ...r }) => ({ ...r, key: [at, r.id] as const }));
 }
 
+// CR-054 · agent của bước (tên + model hiện hành của agent: riêng ?? bước 0 profile) cho phần "Quá trình".
+function stepsOf(tx: Tx, o: Owner, runIds: string[]) {
+  return tx
+    .select({
+      runId: runSteps.runId,
+      seq: runSteps.seq,
+      type: runSteps.type,
+      status: runSteps.status,
+      startedAt: runSteps.startedAt,
+      finishedAt: runSteps.finishedAt,
+      agentKey: agents.key,
+      agentName: agents.name,
+      agentModel: sql<
+        string | null
+      >`coalesce(${agents.model}, ${modelProfiles.steps} -> 0 ->> 'model')`,
+    })
+    .from(runSteps)
+    .leftJoin(agents, eq(agents.id, runSteps.agentId))
+    .leftJoin(modelProfiles, eq(modelProfiles.id, agents.profileId))
+    .where(and(ownedBy(runSteps, o), inArray(runSteps.runId, runIds)));
+}
+
 /** Run + step của các run gắn với tin assistant (tóm tắt `Message.run`). */
 export async function runsWithSteps(
   tx: Tx,
@@ -137,23 +159,17 @@ export async function runsWithSteps(
     })
     .from(runs)
     .where(and(ownedBy(runs, o), inArray(runs.id, runIds)));
-  const stepRows = await tx
-    .select({
-      runId: runSteps.runId,
-      seq: runSteps.seq,
-      type: runSteps.type,
-      status: runSteps.status,
-      startedAt: runSteps.startedAt,
-      finishedAt: runSteps.finishedAt,
-    })
-    .from(runSteps)
-    .where(and(ownedBy(runSteps, o), inArray(runSteps.runId, runIds)));
+  const stepRows = await stepsOf(tx, o, runIds);
   return {
     runs: runRows.map(({ responderKey, responderName, ...r }) => ({
       ...r,
       locale: r.locale as Locale,
       responder: responderKey && responderName ? { key: responderKey, name: responderName } : null,
     })),
-    steps: stepRows.map((s) => ({ ...s, type: s.type as StepType })),
+    steps: stepRows.map(({ agentKey, agentName, agentModel, ...s }) => ({
+      ...s,
+      type: s.type as StepType,
+      agent: agentKey && agentName ? { key: agentKey, name: agentName, model: agentModel } : null,
+    })),
   };
 }

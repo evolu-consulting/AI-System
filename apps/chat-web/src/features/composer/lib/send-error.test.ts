@@ -59,4 +59,12 @@ describe("F2 · agent + 429", () => {
     expect(sendErrorView(mk(429, "TOO_MANY_RUNS"), "a")?.lines[0]?.params.n).toBe("5");
     expect(isComposerError(e)).toBe(true);
   });
+  test("CR-054 · DEFAULT_AGENT_FORBIDDEN: câu riêng trong composer, không gợi ý", () => {
+    const e = new ApiError(403, "DEFAULT_AGENT_FORBIDDEN", "x");
+    expect(isComposerError(e)).toBe(true);
+    expect(sendErrorView(e, "xin chào")).toEqual({
+      lines: [{ key: "sendError.defaultAgentForbidden", params: {} }],
+      suggestions: [],
+    });
+  });
 });

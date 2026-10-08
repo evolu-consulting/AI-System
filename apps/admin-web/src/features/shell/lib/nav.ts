@@ -1,9 +1,11 @@
 // ADM-FR-60, ADM-FR-04, ADM-FR-10 · mục menu theo role: Tổng quan; TRUY CẬP: Tenants (chỉ platform_admin), Users; HỆ THỐNG (cuối, M4): Chi phí & quota, Nhật ký (cả hai role), Import / Export (chỉ platform_admin).
+// CR-054: CHỨC NĂNG có Agents (cả hai role; tenant_admin chỉ thấy Agents trong nhóm này).
 // TRUY CẬP gồm cả Groups và Phân quyền (M3, tenant_admin cũng thấy); CHỨC NĂNG (trên TRUY CẬP, plan-frontend D3): Features, Commands, Workflows; BẢO MẬT (dưới cùng): Secrets (M2, chỉ platform_admin).
 import type { Role } from "@ai/contracts";
 
 export type NavId =
   | "overview"
+  | "agents"
   | "tenants"
   | "users"
   | "features"
@@ -17,6 +19,7 @@ export type NavId =
   | "transfer";
 type NavTo =
   | "/"
+  | "/agents"
   | "/tenants"
   | "/users"
   | "/groups"
@@ -33,6 +36,7 @@ export type NavItem = {
   to: NavTo;
   labelKey:
     | "nav.overview"
+    | "nav.agents"
     | "nav.tenants"
     | "nav.users"
     | "nav.features"
@@ -59,6 +63,7 @@ const item = (id: NavId, to: NavTo): NavItem => ({ id, to, labelKey: `nav.${id}`
 const OVERVIEW = item("overview", "/");
 const TENANTS = item("tenants", "/tenants");
 const USERS = item("users", "/users");
+const AGENTS = item("agents", "/agents");
 const FEATURES = item("features", "/features");
 const COMMANDS = item("commands", "/commands");
 const WORKFLOWS = item("workflows", "/workflows");
@@ -74,7 +79,7 @@ export function navGroups(role: Role | undefined): NavGroup[] {
   if (role === "platform_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },
-      { labelKey: "nav.group.features", items: [FEATURES, COMMANDS, WORKFLOWS] },
+      { labelKey: "nav.group.features", items: [AGENTS, FEATURES, COMMANDS, WORKFLOWS] },
       { labelKey: "nav.group.access", items: [TENANTS, USERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
       { labelKey: "nav.group.system", items: [USAGE, AUDIT, TRANSFER] },
@@ -83,6 +88,7 @@ export function navGroups(role: Role | undefined): NavGroup[] {
   if (role === "tenant_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },
+      { labelKey: "nav.group.features", items: [AGENTS] },
       { labelKey: "nav.group.access", items: [USERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.system", items: [USAGE, AUDIT] },
     ];
@@ -124,6 +130,7 @@ function catalogCrumbs(pathname: string): Crumb[] {
 export function crumbsFor(pathname: string): Crumb[] {
   if (pathname === "/") return [{ labelKey: "nav.overview" }];
   if (pathname === "/users") return [{ labelKey: "nav.users" }];
+  if (pathname === "/agents") return [{ labelKey: "nav.agents" }];
   if (pathname === "/access") return [{ labelKey: "nav.access" }];
   if (pathname === "/secrets") return [{ labelKey: "nav.secrets" }];
   if (pathname === "/account/password") return [{ labelKey: "account.changePassword" }];

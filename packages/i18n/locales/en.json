@@ -185,6 +185,7 @@
   "nav": {
     "main": "Main navigation",
     "overview": "Overview",
+    "agents": "Agents",
     "group": {
       "access": "ACCESS",
       "features": "FEATURES",
@@ -386,7 +387,90 @@
         "runtimeUnavailable": "Runtime unavailable",
         "noEntitlement": "Organization not entitled",
         "noGrant": "Not granted"
-      }
+      },
+      "grantTenant": "Granted to the whole company"
+    }
+  },
+  "agents": {
+    "title": "Agents",
+    "subtitle": "Choose which agents your company can use, who can use them, and exactly one default agent that answers in Ask AI when nobody tags an @agent. Agents are defined in Agent Forge.",
+    "loadError": "Couldn't load agents from Hub.",
+    "grantsError": "Couldn't load agent access from Hub.",
+    "noDefault": "No default agent yet — untagged messages go to the Orchestrator. Click “Set as default” on an agent to choose one.",
+    "list": {
+      "title": "Company agents",
+      "search": "Search agents",
+      "empty": "No agents for this company yet. Agents are created in Agent Forge.",
+      "footnote": "★ Default = the agent that answers when nobody tags an @agent in Ask AI; there is always exactly one (click “Set as default” on another row to change it; the default agent can't be turned off). Only platform admins can change “Enabled for company”. Company admins grant groups/people access to enabled agents. Models are changed in Agent Forge (haiku/sonnet/opus aliases always point to the latest version)."
+    },
+    "col": {
+      "agent": "Agent",
+      "model": "Model",
+      "runtime": "Runs on",
+      "entitled": "Enabled for company",
+      "who": "Who can use",
+      "actions": "Actions"
+    },
+    "badge": {
+      "default": "★ Default",
+      "orchestrator": "Orchestrator"
+    },
+    "model": {
+      "cliDefault": "CLI default"
+    },
+    "runtime": {
+      "cli": "Claude CLI",
+      "dify": "Dify"
+    },
+    "entitled": {
+      "aria": "Enable {agent} for the company",
+      "on": "On",
+      "off": "Off",
+      "platformOnly": "Only platform admins can enable or disable agents for a company."
+    },
+    "who": {
+      "tenant": "Whole company",
+      "none": "Not granted to anyone",
+      "off": "Not enabled for company"
+    },
+    "action": {
+      "makeDefault": "Set as default",
+      "makeDefaultAria": "Set as default · {agent}",
+      "grant": "Grant access",
+      "grantAria": "Grant access · {agent}"
+    },
+    "noMatch": {
+      "label": "No agent matches →",
+      "answer": "Answer itself",
+      "ask": "Ask the user"
+    },
+    "grant": {
+      "title": "Grant access · {agent}",
+      "subtitle": "Who in the company can call this agent",
+      "scope": "Scope",
+      "all": "Whole company",
+      "allNote": "Every user in the company, including people who join later",
+      "some": "Choose groups and people",
+      "someNote": "Only the groups/people selected below",
+      "groups": "Groups",
+      "users": "People",
+      "members": "{n} people",
+      "noGroups": "This company has no groups yet.",
+      "noUsers": "This company has no users yet.",
+      "loadFailed": "Couldn't load the list. Close and reopen the panel to retry.",
+      "summaryAll": "Result: every user in the company can use {agent}.",
+      "summaryNone": "Result: nobody can use {agent} yet.",
+      "summarySome": "Result: {groups} groups ({members} members) and {users} people can use {agent}."
+    },
+    "toast": {
+      "defaultSet": "{agent} is now the default agent.",
+      "noMatchSet": "Saved what happens when no agent matches.",
+      "entitled": "Enabled {agent} for the company.",
+      "unentitled": "Disabled {agent} for the company.",
+      "grantsSaved": "Saved access to {agent}."
+    },
+    "error": {
+      "isDefault": "Can't disable the default or fallback agent. Set another agent as default first."
     }
   },
   "hubErrors": {

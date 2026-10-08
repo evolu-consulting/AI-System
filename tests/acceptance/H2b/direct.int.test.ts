@@ -6,6 +6,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
 import type { Redis } from "../../../apps/hub-api/src/lib/redis";
 import { runErrorText, runErrorTextFor } from "../../../apps/hub-api/src/modules/runs/run-errors";
+import { stripStepAgent } from "../CR-054/_step-agent";
 import {
   call,
   type Json,
@@ -145,7 +146,7 @@ describe("A20–A22 · run direct, responder [AC-H17 · H2b-R06 · H2b-R10]", ()
     const e14 = await call(hub, "GET", `/runs/${d.runId}`, { token: await tok("lan") });
     expect(e14.status).toBe(200);
     expect(Object.keys(e14.json ?? {})).not.toContain("responder");
-    for (const e of d.s.events) expectNoForbiddenKeys(e.data);
+    for (const e of stripStepAgent(d.s.events)) expectNoForbiddenKeys(e.data);
 
     const o = await start("lan", "@assistant @helper so sánh A21");
     const oj = await rt.next(o.runId);
@@ -158,7 +159,7 @@ describe("A20–A22 · run direct, responder [AC-H17 · H2b-R06 · H2b-R10]", ()
       expect("responder" in ((await startedOf(x))?.data ?? {})).toBe(false);
       expect("responder" in ((await assistantMsg("lan", x)) ?? {})).toBe(false);
       expect("responder" in ((await e10Answer("lan", x)) ?? {})).toBe(false);
-      for (const e of x.s.events) expectNoForbiddenKeys(e.data);
+      for (const e of stripStepAgent(x.s.events)) expectNoForbiddenKeys(e.data);
     }
   });
 
@@ -329,7 +330,7 @@ describe("A26–A31 · payload, session, snapshot, tag gộp, lệnh trong nội
     await finish(x);
     const steps = await sql`select type, label_key from hub.run_steps where run_id = ${x.runId}`;
     expect([...steps]).toEqual([{ type: "delegate", label_key: "step.delegate" }]);
-    const stepEvents = x.s.events.filter((e) => e.event.startsWith("step."));
+    const stepEvents = stripStepAgent(x.s.events).filter((e) => e.event.startsWith("step."));
     expect(stepEvents.length).toBeGreaterThan(0);
     for (const bad of ["assistant", ASSISTANT_NAME.vi])
       expect(JSON.stringify(stepEvents)).not.toContain(bad);

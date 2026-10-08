@@ -50,11 +50,20 @@ export const ConversationSchema = z.strictObject({
 });
 export type Conversation = z.infer<typeof ConversationSchema>;
 
+/** CR-054 · agent làm bước (tên theo locale của run, model alias/id hoặc null = mặc định CLI) — chỉ thêm, đổi C1-R04. */
+export const StepAgentSchema = z.strictObject({
+  key: z.string().min(1).max(64),
+  name: z.string().min(1).max(100),
+  model: z.string().min(1).max(100).nullable(),
+});
+export type StepAgent = z.infer<typeof StepAgentSchema>;
+
 export const StepSummarySchema = z.strictObject({
   step_id: z.string().min(1).max(CHAT_STEP_ID_MAX),
   label: z.string().min(1).max(CHAT_TITLE_MAX),
   status: z.enum(STEP_STATUSES),
   ms: CountSchema,
+  agent: StepAgentSchema.optional(),
 });
 export type StepSummary = z.infer<typeof StepSummarySchema>;
 

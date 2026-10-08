@@ -16,6 +16,8 @@ export function studioReadRoutes(svc: StudioReadService): Hono<AuthVars> {
   r.get("/model-profiles", async (c) =>
     c.json(await svc.modelProfiles(parseAdminQuery(c, CatalogQuerySchema))),
   );
+  // CR-054 · danh mục model thật (Agent Forge → ô Model).
+  r.get("/models", async (c) => c.json(await svc.modelCatalog()));
   r.get("/providers", async (c) =>
     c.json(await svc.providers(parseAdminQuery(c, CatalogQuerySchema))),
   );

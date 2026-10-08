@@ -6,6 +6,8 @@ import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
 import { AgentEffectiveService } from "./modules/agent-grants/agent-effective.service";
 import { agentGrantRoutes } from "./modules/agent-grants/agent-grants.routes";
 import { AgentGrantsService } from "./modules/agent-grants/agent-grants.service";
+import { agentSettingsRoutes } from "./modules/agent-settings/agent-settings.routes";
+import { AgentSettingsService } from "./modules/agent-settings/agent-settings.service";
 import type { ConfigCache } from "./modules/config/config.service";
 
 export type H3bDeps = { db: Db; config: ConfigCache; hubAudit?: HubAuditWriter };
@@ -16,4 +18,9 @@ export function mountH3b<E extends Env>(app: Hono<E>, deps: H3bDeps): void {
   const grants = new AgentGrantsService({ db: deps.db, audit });
   const effective = new AgentEffectiveService({ db: deps.db, config: deps.config });
   app.route("/agent-grants", agentGrantRoutes(grants, effective));
+  // CR-054 · agent mặc định + bật/tắt agent cho công ty (Evolu Control → Agents).
+  app.route(
+    "/agent-settings",
+    agentSettingsRoutes(new AgentSettingsService({ db: deps.db, audit })),
+  );
 }

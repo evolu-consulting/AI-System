@@ -14,6 +14,7 @@ const row: AgentDbRow = {
   runtime: "dify-workflow",
   agentTypeKey: null,
   profileId: null,
+  model: null,
   systemPrompt: "",
   runtimeOptions: { workflow_key: "tom" },
   timeoutS: 600,

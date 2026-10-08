@@ -94,6 +94,7 @@ const PROTECTED_PREFIXES = [
   "/agents",
   "/attachments",
   "/agent-grants",
+  "/agent-settings",
   "/studio/api",
   ...X2A_PROTECTED_PREFIXES,
 ];

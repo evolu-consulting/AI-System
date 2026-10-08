@@ -25,6 +25,7 @@ from agent_runtime.providers.base import (
     Delta,
     Fatal,
     Final,
+    Models,
     Progress,
     ProviderEvent,
     RateLimit,
@@ -284,6 +285,8 @@ class HostProcess:
             self._rate_limit(ev)
         elif isinstance(ev, Delta):
             await self._delta(ev)
+        elif isinstance(ev, Models):
+            pass  # CR-054 · chỉ probe phát danh mục model; job bỏ qua
         else:  # `Fatal`
             self.run.seen.fatal, self.run.seen.parent_fault = ev, ev is INVALID_EVENT
             return True

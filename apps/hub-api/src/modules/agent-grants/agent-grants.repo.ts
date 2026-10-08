@@ -5,7 +5,11 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 
-export type GrantKey = { agentId: string; subjectType: "group" | "user"; subjectId: string };
+export type GrantKey = {
+  agentId: string;
+  subjectType: "group" | "user" | "tenant";
+  subjectId: string;
+};
 export type AgentName = { vi: string; en: string };
 export type AgentCheckRow = {
   id: string;
@@ -16,7 +20,8 @@ export type AgentCheckRow = {
 };
 export type SubjectRow =
   | { type: "group"; id: string; key: string; name: { vi: string; en?: string } }
-  | { type: "user"; id: string; username: string; displayName: string };
+  | { type: "user"; id: string; username: string; displayName: string }
+  | { type: "tenant"; id: string };
 export type StoredGrant = { id: string; grantedBy: string | null; grantedAt: string };
 
 const iso = (v: Date | string): string => new Date(v).toISOString();
@@ -53,9 +58,11 @@ export async function agentCheck(
 export async function findSubject(
   tx: Tx,
   tenantId: string,
-  type: "group" | "user",
+  type: "group" | "user" | "tenant",
   id: string,
 ): Promise<SubjectRow | null> {
+  // CR-054: "cả công ty" — subject_id phải đúng tenant đích.
+  if (type === "tenant") return id === tenantId ? { type, id } : null;
   if (type === "group") {
     const [g] = await tx.execute<{ id: string; key: string; name: { vi: string; en?: string } }>(
       sql`select id, key, name from admin.groups where id = ${id} and tenant_id = ${tenantId}`,
@@ -155,7 +162,7 @@ export function listAgents(tx: Tx, tenantId: string, limit: number): Promise<Lis
 export type ListGrantRow = {
   id: string;
   agent_id: string;
-  subject_type: "group" | "user";
+  subject_type: "group" | "user" | "tenant";
   subject_id: string;
   granted_at: Date | string;
   granted_by: string | null;
@@ -170,7 +177,7 @@ export function listGrants(
   tx: Tx,
   tenantId: string,
   agentIds: readonly string[],
-  subject: { type: "group" | "user"; id: string } | null,
+  subject: { type: "group" | "user" | "tenant"; id: string } | null,
 ): Promise<ListGrantRow[]> {
   const ids = `{${agentIds.join(",")}}`;
   return tx.execute<ListGrantRow>(sql`select g.id, g.agent_id, g.subject_type, g.subject_id, g.granted_at,
@@ -182,8 +189,9 @@ export function listGrants(
     where g.tenant_id = ${tenantId} and g.agent_id = any(${ids}::uuid[])
       and (${subject?.type ?? null}::text is null
         or (g.subject_type = ${subject?.type ?? null}::text and g.subject_id = ${subject?.id ?? null}::uuid))
-      and (gr.id is not null or u.id is not null)
-    order by g.agent_id, case g.subject_type when 'group' then 0 else 1 end, coalesce(gr.key, u.username)`);
+      and (gr.id is not null or u.id is not null or (g.subject_type = 'tenant' and g.subject_id = ${tenantId}))
+    order by g.agent_id, case g.subject_type when 'tenant' then 0 when 'group' then 1 else 2 end,
+      coalesce(gr.key, u.username)`);
 }
 
 export type GroupRefRow = { id: string; key: string; name: { vi: string; en?: string } };

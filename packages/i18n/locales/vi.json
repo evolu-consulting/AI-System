@@ -185,6 +185,7 @@
   "nav": {
     "main": "Điều hướng chính",
     "overview": "Tổng quan",
+    "agents": "Agents",
     "group": {
       "access": "TRUY CẬP",
       "features": "CHỨC NĂNG",
@@ -386,7 +387,90 @@
         "runtimeUnavailable": "Runtime chưa sẵn sàng",
         "noEntitlement": "Công ty chưa được mở agent",
         "noGrant": "Chưa được cấp"
-      }
+      },
+      "grantTenant": "Cấp cho cả công ty"
+    }
+  },
+  "agents": {
+    "title": "Agents",
+    "subtitle": "Chọn agent công ty được dùng, ai được dùng, và đúng một agent mặc định trả lời ở Hỏi AI khi người dùng không tag @agent. Agent được định nghĩa ở Agent Forge.",
+    "loadError": "Không tải được danh sách agent từ Hub.",
+    "grantsError": "Không tải được quyền dùng agent từ Hub.",
+    "noDefault": "Chưa đặt agent mặc định — tin không tag đang đi vào Orchestrator. Bấm “Đặt mặc định” ở một agent để chọn.",
+    "list": {
+      "title": "Agent của công ty",
+      "search": "Tìm agent",
+      "empty": "Chưa có agent nào cho công ty này. Agent được tạo ở Agent Forge.",
+      "footnote": "★ Mặc định = agent trả lời khi người dùng không tag @agent ở Hỏi AI; luôn có đúng một (bấm “Đặt mặc định” ở dòng khác để đổi; không tắt được agent đang mặc định). “Bật cho công ty” chỉ quản trị nền tảng đổi được. Quản trị công ty cấp quyền cho nhóm/người trong phạm vi agent đã bật. Model đổi ở Agent Forge (alias haiku/sonnet/opus luôn trỏ bản mới nhất)."
+    },
+    "col": {
+      "agent": "Agent",
+      "model": "Model",
+      "runtime": "Chạy bằng",
+      "entitled": "Bật cho công ty",
+      "who": "Ai được dùng",
+      "actions": "Thao tác"
+    },
+    "badge": {
+      "default": "★ Mặc định",
+      "orchestrator": "Điều phối"
+    },
+    "model": {
+      "cliDefault": "Mặc định CLI"
+    },
+    "runtime": {
+      "cli": "Claude CLI",
+      "dify": "Dify"
+    },
+    "entitled": {
+      "aria": "Bật {agent} cho công ty",
+      "on": "Đang bật",
+      "off": "Đang tắt",
+      "platformOnly": "Chỉ quản trị nền tảng bật/tắt được agent cho công ty."
+    },
+    "who": {
+      "tenant": "Cả công ty",
+      "none": "Chưa cấp cho ai",
+      "off": "Chưa bật cho công ty"
+    },
+    "action": {
+      "makeDefault": "Đặt mặc định",
+      "makeDefaultAria": "Đặt mặc định · {agent}",
+      "grant": "Cấp quyền",
+      "grantAria": "Cấp quyền · {agent}"
+    },
+    "noMatch": {
+      "label": "Không khớp agent nào →",
+      "answer": "Tự trả lời",
+      "ask": "Hỏi lại người dùng"
+    },
+    "grant": {
+      "title": "Cấp quyền · {agent}",
+      "subtitle": "Ai trong công ty được gọi agent này",
+      "scope": "Phạm vi",
+      "all": "Cả công ty",
+      "allNote": "Mọi người dùng của công ty, kể cả người vào sau",
+      "some": "Chọn nhóm và người",
+      "someNote": "Chỉ những nhóm/người được chọn bên dưới",
+      "groups": "Nhóm",
+      "users": "Người",
+      "members": "{n} người",
+      "noGroups": "Công ty chưa có nhóm nào.",
+      "noUsers": "Công ty chưa có người dùng nào.",
+      "loadFailed": "Không tải được danh sách. Đóng và mở lại ngăn để thử lại.",
+      "summaryAll": "Kết quả: mọi người dùng của công ty được dùng {agent}.",
+      "summaryNone": "Kết quả: chưa ai được dùng {agent}.",
+      "summarySome": "Kết quả: {groups} nhóm ({members} thành viên) và {users} người được dùng {agent}."
+    },
+    "toast": {
+      "defaultSet": "Đã đặt {agent} làm agent mặc định.",
+      "noMatchSet": "Đã lưu cách xử lý khi không khớp agent nào.",
+      "entitled": "Đã bật {agent} cho công ty.",
+      "unentitled": "Đã tắt {agent} cho công ty.",
+      "grantsSaved": "Đã lưu quyền dùng {agent}."
+    },
+    "error": {
+      "isDefault": "Không tắt được agent đang là mặc định hoặc dự phòng. Đặt agent khác làm mặc định trước."
     }
   },
   "hubErrors": {

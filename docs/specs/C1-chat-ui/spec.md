@@ -33,7 +33,7 @@ Không chép BA; chỉ phần cụ thể hoá cho C1.
 | C1-R01 | Tin gửi ở ô chính không kèm `flow_id` → Hub tạo flow mới; tin trong khung flow luôn kèm `flow_id` | CR-021, HUB-FR-45 |
 | C1-R02 | Context của AI = flow (không phải cả hội thoại). Mock chứng minh được bằng cách nhận `flow_id` (kịch bản echo số tin của flow) | CR-021 |
 | C1-R03 | Flow không có trạng thái đóng; không có endpoint đóng flow. Mock mô phỏng "nghỉ": kịch bản `flow-cold` làm tin đầu sau nghỉ chậm ≥ 3 s trước `run.started` | CR-021 |
-| C1-R04 | Mọi câu trả lời hiển thị "Consultant" + icon EvoluConsulting. `step.label` chỉ mô tả việc; **payload gửi Chat không có `agent`/`provider`** (member không thấy tên agent). Hub thật phải cắt khỏi SSE kênh chat (Q6) | CR-022 |
+| C1-R04 | Mọi câu trả lời hiển thị "Consultant" + icon EvoluConsulting. `step.label` chỉ mô tả việc; **payload gửi Chat không có `agent`/`provider`** (member không thấy tên agent). Hub thật phải cắt khỏi SSE kênh chat (Q6). **CR-054 đổi:** `step.started.agent` / `StepSummary.agent` = `{key, name, model}` (tên agent trả lời + model ở "Quá trình"); `provider`/workflow/usage vẫn không ra Chat | CR-022 · CR-054 |
 | C1-R05 | Lỗi luôn kèm `code`, `message`, `hint`, `run_id`; Chat hiển thị theo bảng UC-08, không bịa kết quả | HUB-BR-04 |
 | C1-R06 | Mất kết nối khi stream: Chat nối lại bằng `GET /runs/:id/events` + `Last-Event-ID`; mọi sự kiện có `id` tăng dần theo run; nối lại không lặp, không mất `delta` | HUB-FR-42 |
 | C1-R07 | URL Hub lấy từ biến môi trường; đổi mock → thật không sửa code (Q2) | yêu cầu điều phối |
@@ -108,7 +108,7 @@ AC UC-01…UC-08 = **CHAT-AC-01…30** trong `docs/design/chat-app/usecases-chat
 |---|---|---|
 | CHAT-AC-31 | Given bộ test contract, When chạy với `HUB_URL` = mock, Then xanh toàn bộ (login/refresh, CRUD hội thoại, tạo flow, gửi tin vào flow, đủ 7 loại sự kiện SSE, `Last-Event-ID`, cancel, 401/404, cách ly user) | `tests/contract/chat/*.contract.test.ts` (`plan.md` §4) |
 | CHAT-AC-32 | Given bộ test contract, When đổi `HUB_URL` sang địa chỉ khác (instance mock thứ hai), Then không sửa mã mà vẫn xanh. Cam kết: Hub thật pass bộ này thì Chat chạy | như trên |
-| CHAT-AC-33 | Given payload SSE của mock, Then mọi sự kiện parse được bằng zod của contract và **không** có `agent`/`provider` (C1-R04) | như trên |
+| CHAT-AC-33 | Given payload SSE của mock, Then mọi sự kiện parse được bằng zod của contract và **không** có `provider` và chỉ `step.started` được có `agent` = `{key, name, model}` (C1-R04, CR-054) | như trên |
 | CHAT-AC-34 | Given chat-web, When đổi `HUB_URL`/`AUTH_URL` (proxy dev/preview) rồi chạy lại, Then Chat gọi địa chỉ mới (không hằng số URL trong code) | unit hoặc e2e |
 | CHAT-AC-35 | Given e2e Playwright với mock, Then CHAT-AC-01…30 đều có test tự động (UC-08 `drop`, `flow-cold` dùng `MOCK_FAST`) | `e2e/chat/*.chat.ts` |
 | CHAT-AC-36 | Given VI/EN, Then không thiếu khoá i18n (script i18n của repo), mọi chuỗi hiển thị qua `packages/i18n` | script i18n |

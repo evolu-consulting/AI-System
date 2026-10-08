@@ -28,6 +28,7 @@ import {
   findAgentType,
   insertAgent,
   insertAgentWorkflows,
+  isTenantDefault,
   listAgents,
   type OrchScope,
   orchScopes,
@@ -51,6 +52,10 @@ import {
 
 const DIFY: ReadonlySet<AgentRuntime> = new Set(["dify-workflow", "dify-agent"]);
 
+/** CR-054 · chỉ `agentic-cli` có model ghi đè (runtime khác: null). */
+const modelOf = (b: object): string | null =>
+  "model" in b && typeof b.model === "string" ? b.model : null;
+
 /** Trường tham chiếu chung create/update (PUT B5 dùng lại). */
 export type AgentRefs = {
   runtime: AgentRuntime;
@@ -64,6 +69,11 @@ type DistOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
 export type AgentUpdateBody = DistOmit<AgentCreate, "key" | "runtime"> & { version: number };
 
 /** `details.scopes` của `AGENT_IN_USE_AS_ORCHESTRATOR` (plan §2.1). */
+/** CR-054 · không tắt agent đang là mặc định / dự phòng của công ty (đổi mặc định ở Evolu Control trước). */
+async function assertNotDefault(tx: Tx, id: string, nextEnabled: boolean): Promise<void> {
+  if (!nextEnabled && (await isTenantDefault(tx, id))) throw appError("AGENT_IS_DEFAULT");
+}
+
 function inUseError(scopes: readonly OrchScope[]) {
   return appError("AGENT_IN_USE_AS_ORCHESTRATOR", {
     scopes: scopes.map((s) =>
@@ -158,6 +168,7 @@ export class AgentsService {
         runtime: b.runtime,
         agentTypeKey: b.agent_type_key ?? null,
         profileId: DIFY.has(b.runtime) ? null : (b.profile_id ?? null),
+        model: modelOf(b),
         systemPrompt: b.system_prompt,
         runtimeOptions: runtimeOptionsOf(b.runtime, b.runtime_options, wfs),
         timeoutS: b.timeout_s,
@@ -214,6 +225,7 @@ export class AgentsService {
       const runtime = row.runtime as AgentRuntime;
       const scopes = await orchScopes(tx, id);
       if (disableBlocked(scopes.length, b.enabled)) throw inUseError(scopes);
+      await assertNotDefault(tx, id, b.enabled);
       const wfs = await checkRefs(tx, { ...b, runtime });
       const given = b.runtime_options as Record<string, unknown> | undefined;
       const bashAck = needsBashAck(toolsOf(runtime, row.runtimeOptions), toolsOf(runtime, given));
@@ -224,6 +236,7 @@ export class AgentsService {
         description: b.description,
         agentTypeKey: b.agent_type_key ?? null,
         profileId: DIFY.has(runtime) ? null : (b.profile_id ?? null),
+        model: modelOf(b),
         systemPrompt: b.system_prompt,
         runtimeOptions: runtimeOptionsOf(runtime, given, wfs),
         timeoutS: b.timeout_s,
@@ -261,6 +274,7 @@ export class AgentsService {
       const row = await this.#lockAgent(tx, id, b.version);
       const scopes = b.enabled ? [] : await orchScopes(tx, id);
       if (disableBlocked(scopes.length, b.enabled)) throw inUseError(scopes);
+      await assertNotDefault(tx, id, b.enabled);
       const before = auditSnapshot(await this.#detail(tx, row));
       const agent = await this.#detail(tx, await setAgentEnabled(tx, id, b.enabled));
       const after = auditSnapshot(agent);

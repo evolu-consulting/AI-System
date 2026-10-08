@@ -194,7 +194,8 @@
     "tagOnly": "Hãy nhập nội dung sau @{{tag}}.",
     "agentNotFound": "Không tìm thấy agent @{{tag}}.",
     "tooManyRuns": "Bạn đang có quá nhiều câu trả lời đang chạy. Thử lại sau {{n}} giây.",
-    "attachmentNotFound": "Một số tệp không còn. Hãy xoá và đính kèm lại."
+    "attachmentNotFound": "Một số tệp không còn. Hãy xoá và đính kèm lại.",
+    "defaultAgentForbidden": "Bạn chưa có quyền dùng agent mặc định của công ty. Gõ @ để chọn agent bạn được cấp, hoặc liên hệ quản trị viên."
   },
   "errors": {
     "ALL_PROVIDERS_EXHAUSTED": {

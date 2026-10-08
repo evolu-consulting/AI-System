@@ -107,6 +107,16 @@ test("bước: step.started → running, step.finished → ok + ms", () => {
   expect(s.steps).toEqual([{ id: "s1", label: "Đọc dữ liệu", status: "ok", ms: 120 }]);
 });
 
+test("CR-054 · bước có agent: giữ {key, name, model} từ step.started", () => {
+  const agent = { key: "orchestrator", name: "Orchestrator", model: "haiku" };
+  const s = feed(fresh(), started, {
+    id: 2,
+    event: "step.started",
+    data: { step_id: "s1", label: "Phân tích", agent },
+  });
+  expect(s.steps).toEqual([{ id: "s1", label: "Phân tích", status: "running", ms: null, agent }]);
+});
+
 test("nối lại: reconnecting → resumed về streaming; lost; đã kết thúc thì không đổi", () => {
   let s = feed(fresh(), started);
   s = runReducer(s, { type: "reconnecting", attempt: 2 });

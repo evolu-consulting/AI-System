@@ -40,6 +40,14 @@ export type AgentConfig = {
   tokenBudget: number | null;
   enabled: boolean;
   version: number;
+  /** CR-054: model ghi đè bước profile của job `agent.cli` (vắng/null = theo profile). */
+  model?: string | null;
+};
+/** CR-054: agent mặc định của tenant ở Hỏi AI (`hub.tenant_agent_defaults`). */
+export type TenantAgentDefaults = {
+  defaultAgentId: string;
+  fallbackAgentId: string | null;
+  onNoMatch: "fallback" | "answer" | "ask";
 };
 export type OrchestratorConfig = {
   agentId: string;
@@ -66,6 +74,8 @@ export type ConfigSnapshot = Readonly<{
   agentWorkflows: ReadonlyMap<string, ReadonlySet<string>>;
   /** H2b-R13 · `orchestrator_settings` có `tenant_id`: tenant id → bản Orchestrator riêng. */
   orchestratorTenants: ReadonlyMap<string, OrchestratorConfig>;
+  /** CR-054 · tenant id → agent mặc định (vắng tenant ⇒ hành vi cũ: Orchestrator, không cần grant). */
+  tenantDefaults?: ReadonlyMap<string, TenantAgentDefaults>;
 }>;
 
 /** Workflow gắn agent (rỗng khi không có). */

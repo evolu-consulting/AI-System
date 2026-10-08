@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import math
 import re
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from typing import Any, cast
 
 from claude_agent_sdk import (
@@ -33,9 +33,12 @@ from claude_agent_sdk import (
 
 from agent_runtime.providers import patterns
 from agent_runtime.providers.base import (
+    MODELS_MAX,
     Confirm,
     Fatal,
     Final,
+    ModelInfo,
+    Models,
     Progress,
     ProviderEvent,
     RateLimit,
@@ -282,3 +285,38 @@ def error_events(err: ClaudeSDKError) -> list[ProviderEvent]:
     if isinstance(err, CLIJSONDecodeError):
         return [Fatal(code="UPSTREAM_ERROR", msg="claude cli sent invalid json", reason="crash")]
     return [Fatal(code="UPSTREAM_ERROR", msg=f"claude sdk error: {type(err).__name__}")]
+
+
+def models_event(info: Mapping[str, Any] | None) -> Models | None:
+    """CR-054 · `initialize.models` của CLI → `Models` (bỏ mục hỏng/trùng; rỗng ⇒ None)."""
+    raw = (info or {}).get("models")
+    if not isinstance(raw, list):
+        return None
+    seen: set[str] = set()
+    items: list[ModelInfo] = []
+    for m in cast(list[object], raw):
+        if not isinstance(m, Mapping):
+            continue
+        mm = cast(Mapping[str, object], m)
+        value, name = mm.get("value"), mm.get("displayName")
+        if not isinstance(value, str) or not isinstance(name, str) or not value or value in seen:
+            continue
+        resolved = mm.get("resolvedModel")
+        desc = mm.get("description")
+        try:
+            items.append(
+                ModelInfo(
+                    value=value[:100],
+                    resolved_model=resolved[:100]
+                    if isinstance(resolved, str) and resolved
+                    else None,
+                    display_name=name[:100] or value[:100],
+                    description=desc[:300] if isinstance(desc, str) else "",
+                )
+            )
+        except ValueError:
+            continue
+        seen.add(value)
+        if len(items) >= MODELS_MAX:
+            break
+    return Models(models=tuple(items)) if items else None

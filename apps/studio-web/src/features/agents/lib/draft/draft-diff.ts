@@ -13,6 +13,7 @@ const FIELDS: [Key, string][] = [
   ["nameEn", "editor.field.nameEn"],
   ["description", "editor.field.description"],
   ["profileId", "editor.field.profile"],
+  ["model", "editor.field.model"],
   ["cli", "editor.field.cli"],
   ["tools", "editor.field.tools"],
   ["mcp", "editor.field.mcp"],

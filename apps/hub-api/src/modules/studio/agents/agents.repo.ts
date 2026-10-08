@@ -15,6 +15,8 @@ export type AgentDbRow = {
   runtime: string;
   agentTypeKey: string | null;
   profileId: string | null;
+  /** CR-054 · model ghi đè profile. */
+  model: string | null;
   systemPrompt: string;
   runtimeOptions: Record<string, unknown>;
   timeoutS: number;
@@ -31,7 +33,7 @@ type RawAgent = Omit<AgentDbRow, "createdAt" | "updatedAt"> & {
 };
 
 const AGENT_COLS = sql`a.id, a.key, a.name, a.description, a.runtime, a.agent_type_key as "agentTypeKey",
-  a.profile_id as "profileId", a.system_prompt as "systemPrompt", a.runtime_options as "runtimeOptions",
+  a.profile_id as "profileId", a.model, a.system_prompt as "systemPrompt", a.runtime_options as "runtimeOptions",
   a.timeout_s as "timeoutS", a.token_budget as "tokenBudget", a.enabled, a.version,
   a.created_at as "createdAt", a.updated_at as "updatedAt"`;
 
@@ -91,9 +93,9 @@ export type AgentInsert = Omit<AgentDbRow, "id" | "version" | "createdAt" | "upd
 export async function insertAgent(tx: Tx, a: AgentInsert): Promise<AgentDbRow> {
   const [r] =
     await tx.execute<RawAgent>(sql`insert into hub.agents as a (key, name, description, runtime,
-      agent_type_key, profile_id, system_prompt, runtime_options, timeout_s, token_budget, enabled)
+      agent_type_key, profile_id, model, system_prompt, runtime_options, timeout_s, token_budget, enabled)
     values (${a.key}, ${JSON.stringify(a.name)}::jsonb, ${a.description}, ${a.runtime}, ${a.agentTypeKey}::text,
-      ${a.profileId}::uuid, ${a.systemPrompt}, ${JSON.stringify(a.runtimeOptions)}::jsonb, ${a.timeoutS}::int,
+      ${a.profileId}::uuid, ${a.model}::text, ${a.systemPrompt}, ${JSON.stringify(a.runtimeOptions)}::jsonb, ${a.timeoutS}::int,
       ${a.tokenBudget}::int, ${a.enabled}::boolean)
     returning ${AGENT_COLS}`);
   if (!r) throw new Error("insert hub.agents không trả hàng");
@@ -238,7 +240,7 @@ export async function updateAgent(tx: Tx, id: string, a: AgentUpdate): Promise<A
   const [r] =
     await tx.execute<RawAgent>(sql`update hub.agents as a set name = ${JSON.stringify(a.name)}::jsonb,
       description = ${a.description}, agent_type_key = ${a.agentTypeKey}::text, profile_id = ${a.profileId}::uuid,
-      system_prompt = ${a.systemPrompt}, runtime_options = ${JSON.stringify(a.runtimeOptions)}::jsonb,
+      model = ${a.model}::text, system_prompt = ${a.systemPrompt}, runtime_options = ${JSON.stringify(a.runtimeOptions)}::jsonb,
       timeout_s = ${a.timeoutS}::int, token_budget = ${a.tokenBudget}::int, enabled = ${a.enabled}::boolean,
       version = a.version + 1, updated_at = now()
     where a.id = ${id}::uuid
@@ -272,6 +274,13 @@ export async function agentHasHistory(tx: Tx, agentId: string): Promise<boolean>
       exists (select 1 from hub.runs where agent_id = ${agentId}::uuid)
       or exists (select 1 from hub.run_steps where agent_id = ${agentId}::uuid)) as h`);
   return r?.h === true;
+}
+
+/** CR-054 · agent đang là mặc định / dự phòng của ít nhất một tenant (tắt ⇒ tin không tag của tenant đó bị 403). */
+export async function isTenantDefault(tx: Tx, agentId: string): Promise<boolean> {
+  const rows = await tx.execute(sql`select 1 from hub.tenant_agent_defaults
+    where default_agent_id = ${agentId}::uuid or fallback_agent_id = ${agentId}::uuid limit 1`);
+  return rows.length > 0;
 }
 
 /** Entitlement còn hiệu lực (`revoked_at IS NULL`) + grant (R06). */

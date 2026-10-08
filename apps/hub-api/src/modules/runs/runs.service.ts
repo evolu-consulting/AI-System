@@ -15,6 +15,7 @@ import type { Db } from "../../lib/db";
 import { appError, safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
+import { defaultRoute, type NoMatchPolicy } from "../agents/default-agent.rules";
 import { checkSendable } from "../attachments/run-files";
 import type { RunFile } from "../attachments/run-files.rules";
 import {
@@ -30,6 +31,7 @@ import {
 } from "../mention/mention.service";
 import { setFinalSeq } from "./close/cancel.repo";
 import { type Created, type CreateRunInput, createRunTx as insertRun } from "./create-run";
+import { planOf, type Untagged } from "./run-plan";
 import { lastEventIdOf, terminalFromDb, terminalSeqOf, toRun } from "./run-view";
 import * as repo from "./runs.repo";
 import { eventsExpired } from "./runs.rules";
@@ -58,6 +60,8 @@ export type RunContext = {
    * **thay** `flowHistory` (không đọc `hub.messages`); vắng = C1.
    */
   roomHistory?: readonly HistoryItem[];
+  /** CR-054 · tin không tag → Orchestrator là agent mặc định: xử lý khi không khớp (vắng = như trước, `answer`). */
+  noMatch?: NoMatchPolicy;
   log: Logger;
 };
 /** Chỗ cắm B8 (Orchestrator, dùng runner B7). Không chờ: chạy nền, tự `finish`. */
@@ -74,7 +78,8 @@ export type CommandRunStart = {
 };
 
 /** H2b plan §4 `runs/` · kế hoạch run từ E12: lệnh `/` (H2a) hoặc tag `@` (`direct` / `orchestrated` thu hẹp). */
-export type RunPlan = CommandRunStart | MentionPlan;
+export type RunPlan = CommandRunStart | MentionPlan | Untagged;
+export { UNTAGGED } from "./run-plan";
 
 export type RunServiceDeps = {
   db: Db;
@@ -136,6 +141,8 @@ export type PreparedRun = {
   command?: CommandRunStart;
   /** `orchestrated` nhiều tag (R09) — nội dung + `onlyKeys`. */
   scoped?: Extract<RunPlan, { kind: "orchestrated" }>;
+  /** CR-054 · chính sách "không khớp" khi tin không tag đi vào Orchestrator mặc định. */
+  noMatch?: NoMatchPolicy;
   input: CreateRunInput;
 };
 
@@ -145,6 +152,7 @@ export type StartedRun = {
   messageId: string;
   stream: ReadableStream<Uint8Array>;
 };
+
 /** E12/E13/E14 + bảng run đang chạy của instance (`registry`, cho B9/B10). */
 export class RunService {
   readonly registry = new RunRegistry();
@@ -186,19 +194,29 @@ export class RunService {
     return { runId: run.id, flowId: run.flowId, messageId: run.userMessageId, stream };
   }
 
+  /** CR-054 · flow đang chờ trả lời (`pending_ask`) ⇒ Orchestrator như cũ (`waiting_for`), không dùng mặc định. */
+  async #pendingAsk(u: AuthUser, flowId: string | undefined): Promise<boolean> {
+    return !!flowId && (await this.#scoped(u, (tx, o) => repo.flowPendingAsk(tx, o, flowId)));
+  }
+
   /** X2b D6 bước 1 · ảnh, locale, `directOnSnapshot`, `pickOrchestrator` — chưa ghi DB. */
   async prepare(
     u: AuthUser,
     conversationId: string,
     req: SendMessageRequest,
-    plan?: RunPlan,
+    requested?: RunPlan,
   ): Promise<PreparedRun> {
     const snapshot = await this.d.config.snapshot();
     const user = await this.d.config.user(u.userId);
     const run = newRun(u, conversationId, req, user?.locale ?? "vi");
-    const command = plan?.kind === "command" ? plan : undefined;
     // REVIEW 1 #2: agent `direct` kiểm lại trên ảnh của run (ảnh `prepareMention` có thể cũ hơn) — trước khi ghi gì.
     const who = { ...ownerOf(u), groupIds: user?.groupIds ?? new Set<string>() };
+    // CR-054 · tin không tag: agent mặc định của tenant (vắng cấu hình ⇒ Orchestrator như trước); không quyền ⇒ 403.
+    const untagged = requested?.kind === "untagged" && !(await this.#pendingAsk(u, req.flow_id));
+    const route = untagged ? defaultRoute(snapshot, who) : undefined;
+    if (route?.kind === "forbidden") throw appError("DEFAULT_AGENT_FORBIDDEN");
+    const plan = planOf(route, requested, run.locale, req.content);
+    const command = plan?.kind === "command" ? plan : undefined;
     const direct =
       plan?.kind === "direct" ? directOnSnapshot(plan, snapshot, who, run.locale) : undefined;
     const orchestrator = command ? null : this.#pick(snapshot, run, plan);
@@ -215,7 +233,17 @@ export class RunService {
       log: this.d.log,
     };
     const scoped = plan?.kind === "orchestrated" ? plan : undefined;
-    return { run, snapshot, orchestrator, direct, command, scoped, input };
+    const noMatch = route?.kind === "orchestrator" ? route.noMatch : undefined;
+    return {
+      run,
+      snapshot,
+      orchestrator,
+      direct,
+      command,
+      scoped,
+      ...(noMatch && { noMatch }),
+      input,
+    };
   }
 
   /**
@@ -256,6 +284,7 @@ export class RunService {
       direct,
       files,
       ...(opts?.roomHistory && { roomHistory: opts.roomHistory }),
+      ...(p.noMatch && { noMatch: p.noMatch }),
       log: this.d.log,
     });
   }

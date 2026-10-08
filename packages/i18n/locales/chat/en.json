@@ -194,7 +194,8 @@
     "tagOnly": "Type a message after @{{tag}}.",
     "agentNotFound": "Agent @{{tag}} not found.",
     "tooManyRuns": "Too many answers are running. Try again in {{n}}s.",
-    "attachmentNotFound": "Some files are no longer available. Remove and attach them again."
+    "attachmentNotFound": "Some files are no longer available. Remove and attach them again.",
+    "defaultAgentForbidden": "You don't have access to your company's default agent. Type @ to pick an agent you've been granted, or contact your administrator."
   },
   "errors": {
     "ALL_PROVIDERS_EXHAUSTED": {

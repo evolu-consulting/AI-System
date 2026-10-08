@@ -15,7 +15,7 @@ from agent_runtime.providers.base import RATE_TYPE_PATTERN as RATE_TYPE_PATTERN
 from agent_runtime.providers.base import RATE_TYPE_RE as RATE_TYPE_RE
 from agent_runtime.providers.base import RAW_SHAPE_MAX_KEY as RAW_SHAPE_MAX_KEY
 from agent_runtime.providers.base import RAW_SHAPE_MAX_KEYS as RAW_SHAPE_MAX_KEYS
-from agent_runtime.providers.base import Fatal, Final, RateLimit, UsageEv
+from agent_runtime.providers.base import Fatal, Final, ModelInfo, RateLimit, UsageEv
 from agent_runtime.providers.base import clean_type as clean_type
 from agent_runtime.providers.base import clean_util as clean_util
 from agent_runtime.providers.base import raw_shape as raw_shape  # R04 (dùng chung với mapping)
@@ -67,6 +67,8 @@ class ProbeResult:
     tokens: tuple[int, int]
     ms: int
     step: ProbeStep
+    # CR-054 · danh mục model đọc được trong lượt probe (rỗng = không đọc được ⇒ giữ danh mục cũ).
+    models: tuple[ModelInfo, ...] = ()
 
 
 class ProbeSeenLike(Protocol):

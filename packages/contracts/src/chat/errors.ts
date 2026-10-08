@@ -68,6 +68,12 @@ export const CHAT_ROUTING_ERRORS = {
 export type ChatRoutingErrorCode = keyof typeof CHAT_ROUTING_ERRORS;
 export const CHAT_ROUTING_ERROR_CODES = Object.keys(CHAT_ROUTING_ERRORS) as ChatRoutingErrorCode[];
 
+/** CR-054 · tin không tag mà người gửi không được dùng agent mặc định của công ty (không tạo run). Hằng riêng — không đổi `CHAT_ROUTING_ERRORS`. */
+export const CHAT_DEFAULT_AGENT_ERRORS = {
+  DEFAULT_AGENT_FORBIDDEN: 403,
+} as const satisfies Record<string, 403>;
+export type ChatDefaultAgentErrorCode = keyof typeof CHAT_DEFAULT_AGENT_ERRORS;
+
 export const AgentNotFoundDetailsSchema = z.strictObject({
   suggestions: z.array(z.string()).max(AGENT_SUGGESTIONS_MAX),
 });

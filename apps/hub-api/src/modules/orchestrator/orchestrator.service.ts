@@ -57,6 +57,7 @@ async function loadInput(d: OrchestratorDeps, ctx: RunContext): Promise<LoopInpu
     message: ctx.content,
     locale: r.locale,
     ...(scope ? { stepDetail: { scope: [...scope].sort() } } : {}),
+    ...(ctx.noMatch ? { noMatch: ctx.noMatch } : {}),
     ...(ctx.files.length > 0 ? { attachments: ctx.files.map(fileBrief) } : {}),
     stream: true,
   };

@@ -16,7 +16,10 @@ export type EffectiveInput = {
   user: { id: string; active: boolean; lockedByTenant: boolean; groupIds: ReadonlySet<string> };
 };
 
-type Reason = { code: "grant_user" } | { code: "grant_group"; groupId: string };
+type Reason =
+  | { code: "grant_user" }
+  | { code: "grant_tenant" }
+  | { code: "grant_group"; groupId: string };
 
 export type EffectiveAgentCalc = {
   agentId: string;
@@ -33,6 +36,13 @@ type TenantIndex = {
   reasons: Map<string, Reason[]>;
 };
 
+/** Grant áp cho user này? user · cả công ty (CR-054) · group của user; không áp ⇒ null. */
+function reasonOf(subject: string, i: EffectiveInput): Reason | null {
+  if (subject === i.user.id) return { code: "grant_user" };
+  if (subject === i.tenantId) return { code: "grant_tenant" };
+  return i.user.groupIds.has(subject) ? { code: "grant_group", groupId: subject } : null;
+}
+
 /** Chỉ đọc entitlement/grant của T; reasons khử trùng theo subject. */
 function indexTenant(i: EffectiveInput): TenantIndex {
   const entitled = new Set<string>();
@@ -45,12 +55,11 @@ function indexTenant(i: EffectiveInput): TenantIndex {
   for (const g of i.snapshot.grants) {
     if (g.tenantId !== i.tenantId) continue;
     granted.add(g.agentId);
-    const isUser = g.subject === i.user.id;
-    if (!isUser && !i.user.groupIds.has(g.subject)) continue;
+    const r = reasonOf(g.subject, i);
+    if (!r) continue;
     const dedup = `${g.agentId}|${g.subject}`;
     if (seen.has(dedup)) continue;
     seen.add(dedup);
-    const r: Reason = isUser ? { code: "grant_user" } : { code: "grant_group", groupId: g.subject };
     reasons.set(g.agentId, [...(reasons.get(g.agentId) ?? []), r]);
   }
   return { entitled, granted, reasons };

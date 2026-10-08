@@ -140,6 +140,13 @@ export function agentToolKeys(
     .slice(0, MCP_TOOLS_MAX);
 }
 
+/** CR-054 · tên agent + model của bước (đổi C1-R04: hiện tên hiển thị, không lộ provider/workflow). */
+const stepAgent = (task: AgentTask, model: string | null) => ({
+  key: task.agent.key,
+  name: task.agent.name[task.run.locale],
+  model,
+});
+
 export class JobAgentRunner implements AgentRunner {
   readonly #follower: JobFollower;
 
@@ -239,11 +246,8 @@ export class JobAgentRunner implements AgentRunner {
       if (typeof seq !== "number")
         return this.d.log.info("job-enqueue-skipped", { run_id: task.run.id, reason: seq });
       const label = stepLabel(type, task.run.locale);
-      await emitStep(
-        task,
-        { event: "step.started", data: { step_id: `s${seq}`, label } },
-        this.d.log,
-      );
+      const data = { step_id: `s${seq}`, label, agent: stepAgent(task, payload.model) };
+      await emitStep(task, { event: "step.started", data }, this.d.log);
       yield* this.#follower.follow(
         { task, jobId, stepId, seq, providerKey: payload.provider_key },
         queue,

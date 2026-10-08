@@ -4,12 +4,13 @@ import {
   AGENT_GRANTS_PER_AGENT_MAX,
   type AgentGrantListItem,
   type AgentGrantRow,
-  type GrantSubject,
+  type AgentGrantSubject,
 } from "@ai/contracts/hub-admin";
 import { RUNNABLE_RUNTIMES } from "../agents/agent-access.rules";
 import type { ListAgentRow, ListGrantRow, SubjectRow } from "./agent-grants.repo";
 
-export function subjectRef(s: SubjectRow): GrantSubject {
+export function subjectRef(s: SubjectRow): AgentGrantSubject {
+  if (s.type === "tenant") return { type: "tenant" };
   if (s.type === "group") {
     const group = { id: s.id, key: s.key, name: s.name, is_beta: s.key === BETA_GROUP_KEY };
     return { type: "group", group };
@@ -18,24 +19,27 @@ export function subjectRef(s: SubjectRow): GrantSubject {
 }
 
 /** `subject_key` của audit/`entity_name`: key group hoặc username. */
-export const subjectKey = (s: SubjectRow): string => (s.type === "group" ? s.key : s.username);
+export const subjectKey = (s: SubjectRow): string =>
+  s.type === "group" ? s.key : s.type === "user" ? s.username : "*";
 
 /** Hàng LIST_GRANTS (đã bỏ mồ côi bằng join) → `AgentGrantRow`. */
 function grantRowOf(r: ListGrantRow): AgentGrantRow {
   const subject: SubjectRow =
-    r.subject_type === "group"
-      ? {
-          type: "group",
-          id: r.subject_id,
-          key: r.group_key ?? "",
-          name: r.group_name ?? { vi: "" },
-        }
-      : {
-          type: "user",
-          id: r.subject_id,
-          username: r.username ?? "",
-          displayName: r.display_name ?? "",
-        };
+    r.subject_type === "tenant"
+      ? { type: "tenant", id: r.subject_id }
+      : r.subject_type === "group"
+        ? {
+            type: "group",
+            id: r.subject_id,
+            key: r.group_key ?? "",
+            name: r.group_name ?? { vi: "" },
+          }
+        : {
+            type: "user",
+            id: r.subject_id,
+            username: r.username ?? "",
+            displayName: r.display_name ?? "",
+          };
   return {
     id: r.id,
     subject: subjectRef(subject),

@@ -25,7 +25,7 @@ import type { ConversationService } from "../conversations/conversations.service
 import type { MentionPlan, MentionRouted } from "../mention/mention.service";
 import { routeMessage } from "../mention/mention-parse.rules";
 import { parseLastEventId } from "./runs.rules";
-import type { CommandRunStart, RunService, StartedRun } from "./runs.service";
+import { type CommandRunStart, type RunService, type StartedRun, UNTAGGED } from "./runs.service";
 
 /** Header chống đệm cho SSE (nginx `X-Accel-Buffering`). */
 const SSE_HEADERS = {
@@ -66,7 +66,8 @@ export function sendMessageRoutes(
     const files = body.attachment_ids ? await runs.checkSendable(u, body.attachment_ids) : [];
     const msg = routeMessage(body.content);
     let s: StartedRun;
-    if (msg.kind === "text") s = await runs.start(u, id, { ...body, content: msg.content });
+    if (msg.kind === "text")
+      s = await runs.start(u, id, { ...body, content: msg.content }, UNTAGGED);
     else if (msg.kind === "command") {
       const req = { name: msg.name, rest: msg.rest, ctx: body.context ?? {}, attachments: files };
       s = await runs.start(u, id, body, await prepareCommand(u, req));

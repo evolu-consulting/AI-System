@@ -1,5 +1,5 @@
 // HUB-FR-10/11 · lỗi E12 trước stream hiện TRONG composer (plan-frontend §0 D5, §1.4): chọn câu + gợi ý từ `ApiError`.
-// F2 đã thêm `AGENT_NOT_FOUND`, `TOO_MANY_RUNS`; F3 thêm `ATTACHMENT_NOT_FOUND`.
+// F2 đã thêm `AGENT_NOT_FOUND`, `TOO_MANY_RUNS`; F3 thêm `ATTACHMENT_NOT_FOUND`; CR-054 thêm `DEFAULT_AGENT_FORBIDDEN`.
 import { CMD_SUGGESTIONS_MAX } from "@ai/contracts/chat";
 import { leadingTag } from "~/features/agents/lib/mention";
 import { leadingCommand } from "~/features/commands/lib/slash";
@@ -11,6 +11,7 @@ const COMPOSER_CODES: ReadonlySet<string> = new Set([
   "AGENT_NOT_FOUND",
   "TOO_MANY_RUNS",
   "ATTACHMENT_NOT_FOUND",
+  "DEFAULT_AGENT_FORBIDDEN",
 ]);
 
 export const isComposerError = (err: ApiError): boolean => COMPOSER_CODES.has(err.code);
@@ -86,6 +87,9 @@ export function sendErrorView(
   }
   if (err.code === "ATTACHMENT_NOT_FOUND") {
     return { lines: [{ key: "sendError.attachmentNotFound", params: {} }], suggestions: [] };
+  }
+  if (err.code === "DEFAULT_AGENT_FORBIDDEN") {
+    return { lines: [{ key: "sendError.defaultAgentForbidden", params: {} }], suggestions: [] };
   }
   if (err.code === "CMD_MISSING_ARG") return missingArgView(d, text);
   return null;

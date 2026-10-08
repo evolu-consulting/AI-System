@@ -11,6 +11,7 @@ import {
   ChatRunErrorCodeSchema,
   ResponderSchema,
   STEP_STATUSES,
+  StepAgentSchema,
 } from "./entities";
 
 export const CHAT_DELTA_MAX = 4000;
@@ -42,6 +43,8 @@ export const RunStartedDataSchema = z.strictObject({
 export const StepStartedDataSchema = z.strictObject({
   step_id: StepIdSchema,
   label: z.string().min(1).max(CHAT_TITLE_MAX),
+  /** CR-054 · agent làm bước (vắng ở bước lệnh/workflow). */
+  agent: StepAgentSchema.optional(),
 });
 export const StepFinishedDataSchema = z.strictObject({
   step_id: StepIdSchema,

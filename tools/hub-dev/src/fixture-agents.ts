@@ -20,14 +20,16 @@ const AGENTS = [
   {
     key: "consultant",
     name: "Evolu Consultant",
-    description: "Tư vấn chung cho nhân viên Evolu (agent mặc định).",
+    description: "Tư vấn chung cho nhân viên Evolu (agent dự phòng khi Orchestrator không khớp).",
     system_prompt: CONSULTANT_PROMPT,
+    model: "sonnet",
   },
   {
     key: "invoices",
     name: "Invoices",
     description: "Kiểm tra hoá đơn điện tử FPT, MISA trên trang tra cứu chính chủ.",
     system_prompt: INVOICES_PROMPT,
+    model: "sonnet",
   },
 ];
 const KEYS = AGENTS.map((a) => a.key);
@@ -35,6 +37,24 @@ const KEYS = AGENTS.map((a) => a.key);
 export const AGENT_GRANTS: Record<string, string[]> = Object.fromEntries(
   KEYS.map((k) => [k, DEMO_USERS.map((u) => u.username)]),
 );
+
+/**
+ * CR-054 · evolu: bật Orchestrator cho công ty (cả công ty dùng được) + agent mặc định = Orchestrator, không khớp → giao
+ * Evolu Consultant. Chỉ tạo khi chưa có (không ghi đè lựa chọn ở Evolu Control). Trả true khi có ghi.
+ */
+async function ensureDefaults(tx: postgres.TransactionSql, tid: string): Promise<boolean> {
+  const [orch] = await tx<{ id: string }[]>`select agent_id as id from hub.orchestrator_settings
+    where tenant_id is null`;
+  const [fb] = await tx<{ id: string }[]>`select id from hub.agents where key = 'consultant'`;
+  if (!orch || !fb) return false;
+  const ent =
+    await tx`insert into hub.agent_entitlements (agent_id, tenant_id) values (${orch.id}, ${tid})
+    on conflict do nothing returning 1`;
+  const def =
+    await tx`insert into hub.tenant_agent_defaults (tenant_id, default_agent_id, fallback_agent_id, on_no_match)
+    values (${tid}, ${orch.id}, ${fb.id}, 'fallback') on conflict do nothing returning 1`;
+  return ent.length + def.length > 0;
+}
 
 /** Trả false nếu chưa có tenant `evolu` hoặc chưa có profile (chưa `hub:seed`). */
 export async function ensureRoomAgents(ownerUrl: string): Promise<boolean> {
@@ -56,8 +76,13 @@ export async function ensureRoomAgents(ownerUrl: string): Promise<boolean> {
           runtime: "agentic-cli",
           profile_id: base.profile_id,
           system_prompt: a.system_prompt,
+          model: a.model,
         })),
       )} on conflict (key) do nothing`;
+      // CR-054 · model theo agent (alias CLI): chỉ đặt khi còn trống — không ghi đè lựa chọn ở Agent Forge.
+      for (const a of AGENTS)
+        await tx`update hub.agents set model = ${a.model} where key = ${a.key} and model is null`;
+      await tx`update hub.agents set model = 'haiku' where key = 'orchestrator' and model is null`;
       const ag = await tx<{ id: string; key: string }[]>`
         select id, key from hub.agents where key in ${tx(KEYS)}`;
       await tx`insert into hub.agent_entitlements ${tx(ag.map((a) => ({ agent_id: a.id, tenant_id: tid })))}
@@ -72,7 +97,8 @@ export async function ensureRoomAgents(ownerUrl: string): Promise<boolean> {
       );
       const ins =
         await tx`insert into hub.agent_grants ${tx(grants)} on conflict do nothing returning 1`;
-      if (ins.length > 0)
+      const def = await ensureDefaults(tx, tid);
+      if (ins.length > 0 || def)
         await tx`update hub.config_meta set hub_config_version = hub_config_version + 1 where id = 1`;
       return true;
     });

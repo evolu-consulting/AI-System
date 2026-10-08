@@ -5,6 +5,7 @@ import type {
   AgentRuntime,
   AgentTypeListSchema,
   AgentWriteResponse,
+  ModelCatalogList,
   ModelProfileListSchema,
   WorkflowListSchema,
 } from "@ai/contracts/studio";
@@ -49,6 +50,12 @@ export const agentQuery = (id: string) =>
 export const modelProfilesQuery = queryOptions({
   queryKey: ["studio", "model-profiles"] as const,
   queryFn: ({ signal }) => api<ModelProfileList>("/studio/api/model-profiles", { signal }),
+});
+
+/** CR-054 · danh mục model thật Runtime đọc từ Claude CLI (alias + bản ghim). */
+export const modelCatalogQuery = queryOptions({
+  queryKey: ["studio", "models"] as const,
+  queryFn: ({ signal }) => api<ModelCatalogList>("/studio/api/models", { signal }),
 });
 
 export const workflowsQuery = queryOptions({

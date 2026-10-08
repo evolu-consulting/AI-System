@@ -29,6 +29,8 @@ export type AgentDraft = {
   description: string;
   runtime: AgentRuntime;
   profileId: string;
+  /** CR-054 · model ghi đè profile (chỉ agentic-cli); "" = theo profile (`null` khi gửi). */
+  model: string;
   cli: string;
   tools: string[];
   mcp: boolean;
@@ -54,6 +56,7 @@ export const emptyDraft = (): AgentDraft => ({
   description: "",
   runtime: "llm",
   profileId: "",
+  model: "",
   cli: "claude",
   tools: ["Read", "Grep"],
   mcp: false,
@@ -94,6 +97,7 @@ export function fromAgent(a: Agent): AgentDraft {
     description: a.description,
     runtime: a.runtime,
     profileId: a.profile_id ?? "",
+    model: a.model ?? "",
     cli: o.cli ?? base.cli,
     tools: o.allowed_tools ?? base.tools,
     mcp: o.mcp ?? false,
@@ -127,7 +131,12 @@ function runtimeFields(d: AgentDraft): Record<string, unknown> {
     case "agentic-cli": {
       const opts: CliOpts = { cli: d.cli, allowed_tools: d.tools, mcp: d.mcp, cwd_mode: d.cwdMode };
       if (d.maxTurns.trim() !== "") opts.max_turns = Number(d.maxTurns);
-      return { profile_id: d.profileId, runtime_options: opts, workflow_ids: wf };
+      return {
+        profile_id: d.profileId,
+        model: d.model || null,
+        runtime_options: opts,
+        workflow_ids: wf,
+      };
     }
     case "llm":
       return { profile_id: d.profileId, runtime_options: {}, workflow_ids: wf };

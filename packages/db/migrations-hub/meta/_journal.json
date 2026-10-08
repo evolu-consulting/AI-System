@@ -127,6 +127,13 @@
       "when": 1792540800000,
       "tag": "0017_cr050_room_flow_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792627200000,
+      "tag": "0018_cr054_agent_defaults",
+      "breakpoints": true
     }
   ]
 }

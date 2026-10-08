@@ -2,6 +2,7 @@
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeftRight,
+  Bot,
   Building2,
   Coins,
   History,
@@ -22,6 +23,7 @@ import { type NavId, navGroups } from "../lib/nav";
 
 const ICONS: Record<NavId, LucideIcon> = {
   overview: LayoutDashboard,
+  agents: Bot,
   tenants: Building2,
   users: Users,
   groups: UsersRound,

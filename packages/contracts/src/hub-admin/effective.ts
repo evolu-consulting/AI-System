@@ -20,6 +20,8 @@ export type AgentMissing = z.infer<typeof AgentMissingSchema>;
 /** `grant_user` trước, rồi `grant_group` theo `group.key`. */
 export const AgentAccessReasonSchema = z.discriminatedUnion("code", [
   z.strictObject({ code: z.literal("grant_user") }),
+  // CR-054: cấp cho cả công ty.
+  z.strictObject({ code: z.literal("grant_tenant") }),
   z.strictObject({ code: z.literal("grant_group"), group: GroupRefSchema }),
 ]);
 export type AgentAccessReason = z.infer<typeof AgentAccessReasonSchema>;

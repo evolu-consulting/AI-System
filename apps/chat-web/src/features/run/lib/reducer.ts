@@ -8,6 +8,7 @@ import {
   type Responder,
   type RunError,
   type RunStartedData,
+  type StepAgent,
 } from "@ai/contracts/chat";
 import { applyDelta } from "./delta.rules";
 import type { BuildSendInput } from "./send-request.rules";
@@ -28,6 +29,8 @@ export type RunStep = {
   label: string;
   status: "running" | "ok" | "failed";
   ms: number | null;
+  /** CR-054 · agent làm bước (vắng ở bước không gắn agent). */
+  agent?: StepAgent;
 };
 /** Đầu vào E12 (dựng body bằng `buildSendRequest`); `context`/`attachmentIds` do extension / đính kèm điền. */
 export type RunRequest = {
@@ -139,7 +142,14 @@ export function createAttachedState(
 function onStep(s: RunState, e: ChatEvent): RunState {
   if (e.event === "step.started") {
     if (s.steps.some((x) => x.id === e.data.step_id)) return s;
-    const step: RunStep = { id: e.data.step_id, label: e.data.label, status: "running", ms: null };
+    const { step_id, label, agent } = e.data;
+    const step: RunStep = {
+      id: step_id,
+      label,
+      status: "running",
+      ms: null,
+      ...(agent ? { agent } : {}),
+    };
     return { ...s, steps: [...s.steps, step] };
   }
   if (e.event !== "step.finished") return s;

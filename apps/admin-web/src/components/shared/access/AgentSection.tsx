@@ -27,11 +27,11 @@ const MISSING_KEY: Record<AgentMissing, string> = {
 function useLines(a: EffectiveAgent, lang: string): string[] {
   const tr = useTr();
   if (!a.visible) return a.missing.map((m) => tr(MISSING_KEY[m]));
-  return a.reasons.map((r) =>
-    r.code === "grant_user"
-      ? tr("hub.effective.grantUser")
-      : tr("hub.effective.grantGroup", { group: pickLocalized(r.group.name, lang) }),
-  );
+  return a.reasons.map((r) => {
+    if (r.code === "grant_user") return tr("hub.effective.grantUser");
+    if (r.code === "grant_tenant") return tr("hub.effective.grantTenant");
+    return tr("hub.effective.grantGroup", { group: pickLocalized(r.group.name, lang) });
+  });
 }
 
 function AgentLine({ agent, lang }: { agent: EffectiveAgent; lang: string }) {

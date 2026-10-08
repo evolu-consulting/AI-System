@@ -96,6 +96,8 @@ export type StepRow = {
   status: string;
   startedAt: Date;
   finishedAt: Date | null;
+  /** CR-054 · agent của bước (join `hub.agents`; vắng ở bước lệnh/workflow hoặc agent đã xoá). */
+  agent?: { key: string; name: { vi: string; en: string }; model: string | null } | null;
 };
 export type RunRow = {
   id: string;
@@ -123,6 +125,9 @@ export function toStepSummaries(steps: readonly StepRow[], locale: Locale): Step
       label: stepLabel(s.type, locale),
       status: s.status as StepSummary["status"],
       ms: msBetween(s.startedAt, s.finishedAt),
+      ...(s.agent && {
+        agent: { key: s.agent.key, name: s.agent.name[locale], model: s.agent.model },
+      }),
     }));
 }
 

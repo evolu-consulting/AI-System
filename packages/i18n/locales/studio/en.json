@@ -248,7 +248,19 @@
       "enabled": "Enable agent",
       "agentType": "Agent type",
       "maxTurns": "Max turns (2–100, empty = default)",
-      "agentConfig": "Agent configuration"
+      "agentConfig": "Agent configuration",
+      "model": "Model"
+    },
+    "model": {
+      "byProfile": "Use profile",
+      "byProfileNote": "Use the model of the selected model profile",
+      "latest": "Always latest",
+      "pinned": "Pinned versions",
+      "empty": "No catalog yet — Agent Runtime will read it from Claude CLI on its next check.",
+      "fetchedAt": "Updated at {at}",
+      "notInCatalog": "In use — no longer in the catalog",
+      "hintTitle": "Tip",
+      "hint": "Orchestrator only routes → Haiku; agents that write answers → Sonnet; hard/long tasks → Opus."
     },
     "descHint": "Say clearly when to use it and when not to. The Orchestrator picks agents almost only from this text.",
     "counter": "{n} / 400",

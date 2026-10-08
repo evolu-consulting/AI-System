@@ -106,6 +106,15 @@ export async function lockUserRuns(tx: Tx, o: Owner): Promise<void> {
 }
 
 /** H2b R18 · flow có run `running` (kiểm tường minh để `FLOW_BUSY` thắng 429; unique index vẫn là chốt chặn). */
+/** CR-054 · flow của người gửi đang chờ họ trả lời câu hỏi của agent. */
+export async function flowPendingAsk(tx: Tx, o: Owner, flowId: string): Promise<boolean> {
+  const [r] = await tx
+    .select({ p: flows.pendingAsk })
+    .from(flows)
+    .where(and(ownedBy(flows, o), eq(flows.id, flowId)));
+  return r?.p ?? false;
+}
+
 export async function flowRunning(tx: Tx, flowId: string): Promise<boolean> {
   const [row] = await tx
     .select({ id: runs.id })

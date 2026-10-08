@@ -1,5 +1,8 @@
-// HUB-FR-60 · H4a-R03 · bước ② Runtime & model: runtime (chỉ chọn khi tạo — QB5), profile, tuỳ chọn theo runtime, timeout, token.
+// HUB-FR-60 · H4a-R03 · CR-054 · bước ② Runtime & model: runtime (chỉ chọn khi tạo — QB5), profile, model (agentic-cli),
+// tuỳ chọn theo runtime, timeout, token.
 // Trường không áp dụng cho runtime thì ẩn nhưng giữ giá trị trong nháp; khi gửi `toPayload` lọc theo runtime.
+
+import type { ModelCatalogItem } from "@ai/contracts/studio";
 import { AGENT_RUNTIMES } from "@ai/contracts/studio";
 import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "#/components/ui/alert";
@@ -19,12 +22,14 @@ import { runtimeMissing } from "../../lib/runtime-notice";
 import { Field, type SectionProps } from "../editor/AgentField";
 import { CatalogAlert } from "../editor/CatalogAlert";
 import { CliOptions } from "./CliOptions";
+import { ModelPicker } from "./ModelPicker";
 import { SchemaForm } from "./SchemaForm";
 
 type Props = SectionProps & {
   hadBash: boolean;
   profiles: Catalog<ModelProfileItem>;
   agentTypes: Catalog<AgentTypeItem>;
+  models: Catalog<ModelCatalogItem>;
 };
 
 function CatalogSelect(p: {
@@ -116,6 +121,7 @@ function RuntimeSpecific(p: Props) {
           />
         </>
       ) : null}
+      {draft.runtime === "agentic-cli" ? <ModelPicker {...p} /> : null}
       {draft.runtime === "python" ? <PythonOptions {...p} /> : null}
       {draft.runtime === "agentic-cli" ? <CliOptions {...p} /> : null}
     </>

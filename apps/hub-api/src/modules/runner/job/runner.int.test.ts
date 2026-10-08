@@ -167,7 +167,9 @@ describe("B7 · JobAgentRunner [HUB-FR-89 · HUB-FR-24]", () => {
         "run.finished",
       ]);
       for (const x of s.events) expect(ChatEventSchema.safeParse(x).success).toBe(true);
-      expect(s.events[1]?.data).toEqual({ step_id: "s1", label: "Đang xử lý…" });
+      const { agent, ...step } = s.events[1]?.data ?? {};
+      expect(step).toEqual({ step_id: "s1", label: "Đang xử lý…" });
+      expect([agent?.key, agent?.name, agent?.model]).toEqual(["assistant", "assistant", null]);
       const [st] = await sql`select id, seq, type, status, job_id, agent_id, provider_key
         from hub.run_steps where run_id = ${runId}`;
       expect(st).toMatchObject({

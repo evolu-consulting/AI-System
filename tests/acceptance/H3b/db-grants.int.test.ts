@@ -83,7 +83,7 @@ describe("A120–A122 · quyền hub_rw [HUB-FR-78 · H3b-R22 · PL2 · K9]", ()
     });
   });
 
-  it("HUB-FR-78 · A122 · danh sách trắng quyền (G11): agent_grants {S,I,D}; config_meta {S} + UPDATE chỉ hub_config_version; audit_log {S,I}; agent_entitlements không ghi; sau H4a D1: agents/agent_workflows {S,I,U,D}, orchestrator_settings {I,U,D} + USAGE sequence; admin_rw/agent_runtime không quyền audit_log; admin_rw chỉ SELECT agent_grants [H3b-R22 · PL2]", async () => {
+  it("HUB-FR-78 · A122 · danh sách trắng quyền (G11): agent_grants {S,I,D}; config_meta {S} + UPDATE chỉ hub_config_version; audit_log {S,I}; agent_entitlements {I} + UPDATE chỉ revoked_at/granted_by/granted_at (CR-054); sau H4a D1: agents/agent_workflows {S,I,U,D}, orchestrator_settings {I,U,D} + USAGE sequence; admin_rw/agent_runtime không quyền audit_log; admin_rw chỉ SELECT agent_grants [H3b-R22 · PL2]", async () => {
     const PRIVS = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"];
     const has = async (role: string, table: string) => {
       const out: string[] = [];
@@ -108,7 +108,18 @@ describe("A120–A122 · quyền hub_rw [HUB-FR-78 · H3b-R22 · PL2 · K9]", ()
       metaVersion: await col("hub_config_version"),
       metaId: await col("id"),
       audit: await has("hub_rw", "hub.audit_log"),
+      // CR-054: platform_admin bật/tắt agent cho công ty qua hub_rw — thêm/khôi phục/thu hồi, không đổi agent/tenant.
       ent: writes(await has("hub_rw", "hub.agent_entitlements")),
+      entCols: await Promise.all(
+        ["revoked_at", "granted_by", "granted_at", "agent_id", "tenant_id"].map(
+          async (c) =>
+            (
+              await owner<
+                { ok: boolean }[]
+              >`select has_column_privilege('hub_rw', 'hub.agent_entitlements', ${c}, 'UPDATE') as ok`
+            )[0]?.ok,
+        ),
+      ),
       // H4a D1 (0010, Gate H4a §2; spec H4a §10 B1): Studio ghi agents/agent_workflows/orchestrator_settings qua hub_rw.
       agents: await has("hub_rw", "hub.agents"),
       workflows: await has("hub_rw", "hub.agent_workflows"),
@@ -127,7 +138,8 @@ describe("A120–A122 · quyền hub_rw [HUB-FR-78 · H3b-R22 · PL2 · K9]", ()
       metaVersion: true,
       metaId: false,
       audit: ["SELECT", "INSERT"],
-      ent: [],
+      ent: ["INSERT"],
+      entCols: [true, true, true, false, false],
       agents: ["SELECT", "INSERT", "UPDATE", "DELETE"],
       workflows: ["SELECT", "INSERT", "UPDATE", "DELETE"],
       orch: ["INSERT", "UPDATE", "DELETE"],

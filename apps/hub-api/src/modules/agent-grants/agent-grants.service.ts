@@ -152,7 +152,7 @@ export class AgentGrantsService {
   list(
     actor: AuthUser,
     tenantId: string,
-    subject: { type: "group" | "user"; id: string } | null,
+    subject: { type: "group" | "user" | "tenant"; id: string } | null,
   ): Promise<AgentGrantListResponse> {
     return withHubScope(
       this.d.db,

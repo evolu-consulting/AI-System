@@ -4,6 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { ChatEventSchema, MessageSchema } from "@ai/contracts/chat";
 import type { Redis } from "../../../apps/hub-api/src/lib/redis";
+import { stripStepAgent } from "../CR-054/_step-agent";
 import {
   call,
   counts,
@@ -244,7 +245,7 @@ describe("A13, A15 · nhãn step theo locale, cắt delta [C1-R04 · H1-R09]", (
       s.close();
       const labels = s.events.filter((e) => e.event === "step.started").map((e) => e.data?.label);
       expect(labels).toEqual([...LABELS[who]]);
-      const frames = JSON.stringify(s.events);
+      const frames = JSON.stringify(stripStepAgent(s.events));
       for (const leak of ["orchestrator", "assistant", "fake-cli", "claude-sub", "fake-1"])
         expect(frames).not.toContain(leak);
     });

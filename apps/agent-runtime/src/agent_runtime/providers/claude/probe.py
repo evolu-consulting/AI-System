@@ -22,6 +22,7 @@ from agent_runtime.providers.base import Emit, ProbeRequest, ProviderEvent, Rate
 from agent_runtime.providers.claude.mapping import (
     error_events,
     final_event,
+    models_event,
     rate_limit_event,
     result_signal,
     usage_event,
@@ -85,6 +86,10 @@ async def claude_probe(req: ProbeRequest, emit: Emit) -> None:
     try:
         # `ClaudeSDKClient` tra theo tên module lúc gọi ⇒ test monkeypatch được (SDK giả).
         async with ClaudeSDKClient(options=probe_options(req)) as client:
+            # CR-054 · danh mục model thật của CLI (lúc initialize, không tốn token) → cha ghi DB.
+            models = models_event(await client.get_server_info())
+            if models is not None:
+                await emit(models)
             await client.query(PROBE_PROMPT)
             async for msg in client.receive_response():
                 await probe.handle(msg)

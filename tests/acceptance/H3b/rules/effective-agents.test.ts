@@ -16,7 +16,12 @@ import { AID, agent, deepFreeze, ent, GR, grant, idN, input, snap, TEN, USR } fr
 const keys = (r: EffectiveAgentCalc[]) => r.map((a) => a.key);
 const byKey = (r: EffectiveAgentCalc[], k: string) => r.find((a) => a.key === k);
 const reasonSet = (a: EffectiveAgentCalc | undefined) =>
-  new Set((a?.reasons ?? []).map((x) => (x.code === "grant_user" ? "user" : `group:${x.groupId}`)));
+  new Set(
+    (a?.reasons ?? []).map((x) =>
+      // CR-054: thêm reason `grant_tenant` (chỉ đổi kiểu).
+      x.code === "grant_group" ? `group:${x.groupId}` : x.code === "grant_user" ? "user" : "tenant",
+    ),
+  );
 
 describe("effectiveAgents — phạm vi, sắp, reasons [HUB-FR-79 · H3b-R12, R13]", () => {
   it("HUB-FR-79 · R20 · phạm vi: có hoadon (ent.), cu (ent. thu hồi + grant group); không khodu (chỉ beta), Orchestrator mặc định + tenant, chua [H3b-R13]", () => {

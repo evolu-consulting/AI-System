@@ -8,6 +8,7 @@ describe("ADM-FR-60 · menu theo role", () => {
   test("platform_admin thấy Tenants, Users và 4 mục M2 theo nhóm", () => {
     expect(ids("platform_admin")).toEqual([
       "overview",
+      "agents",
       "features",
       "commands",
       "workflows",
@@ -32,6 +33,7 @@ describe("ADM-FR-60 · menu theo role", () => {
   test("tenant_admin không thấy Tenants và các mục M2", () => {
     expect(ids("tenant_admin")).toEqual([
       "overview",
+      "agents",
       "users",
       "groups",
       "access",
@@ -56,6 +58,10 @@ describe("ADM-FR-60 · menu theo role", () => {
     expect(crumbsFor("/")).toEqual([{ labelKey: "nav.overview" }]);
     expect(crumbsFor("/tenants/new")).toHaveLength(2);
     expect(crumbsFor("/unknown")).toEqual([]);
+  });
+
+  test("CR-054 · breadcrumb Agents", () => {
+    expect(crumbsFor("/agents")).toEqual([{ labelKey: "nav.agents" }]);
   });
 
   test("breadcrumb M4", () => {

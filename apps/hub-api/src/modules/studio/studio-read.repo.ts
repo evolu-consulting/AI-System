@@ -6,6 +6,7 @@ import {
   agentTypes,
   hubConfigMeta,
   modelProfiles,
+  providerModels,
   providerState,
   providers,
 } from "@ai/db/schema/hub";
@@ -50,6 +51,21 @@ export function readModelProfiles(tx: Tx) {
     .select({ id: modelProfiles.id, key: modelProfiles.key, steps: modelProfiles.steps })
     .from(modelProfiles)
     .orderBy(asc(modelProfiles.key));
+}
+
+/** CR-054 · danh mục model thật (Runtime ghi từ CLI), theo provider + thứ tự CLI. */
+export function readModelCatalog(tx: Tx) {
+  return tx
+    .select({
+      providerKey: providerModels.providerKey,
+      value: providerModels.value,
+      resolvedModel: providerModels.resolvedModel,
+      displayName: providerModels.displayName,
+      description: providerModels.description,
+      fetchedAt: providerModels.fetchedAt,
+    })
+    .from(providerModels)
+    .orderBy(asc(providerModels.providerKey), asc(providerModels.position));
 }
 
 export function readProviders(tx: Tx) {

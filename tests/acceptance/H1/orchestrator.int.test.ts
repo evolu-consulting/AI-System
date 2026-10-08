@@ -6,6 +6,7 @@ import type { ChatRunErrorCode } from "@ai/contracts/chat";
 import type { HubJobErrorCode } from "@ai/contracts/hub";
 import type { Redis } from "../../../apps/hub-api/src/lib/redis";
 import { runErrorText } from "../../../apps/hub-api/src/modules/runs/run-errors";
+import { stripStepAgent } from "../CR-054/_step-agent";
 import {
   call,
   insertFixture,
@@ -192,11 +193,11 @@ describe("A14, A16–A19 · payload job và đường đi quyết định [HUB-F
     await rt.agent(await rt.next(x.runId), { status: "need_input", ...ask });
     await finish(x);
     expect(x.s.events.find((e) => e.event === "ask")?.data).toEqual(ask);
-    for (const e of x.s.events) {
+    for (const e of stripStepAgent(x.s.events)) {
       expect(Object.keys(e.data ?? {})).not.toContain("agent");
       expect(Object.keys(e.data ?? {})).not.toContain("provider");
     }
-    expect(JSON.stringify(x.s.events)).not.toContain("assistant");
+    expect(JSON.stringify(stripStepAgent(x.s.events))).not.toContain("assistant");
     const msgs = await messagesOf(x.conv, x.flowId);
     expect(msgs.find((m) => m.role === "assistant")?.ask).toEqual(ask);
     const [f] = await sql`select agent_id, pending_ask from hub.flows where id = ${x.flowId}`;

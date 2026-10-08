@@ -18,6 +18,7 @@ from agent_runtime.log import get_logger
 from agent_runtime.providers.base import (
     Fatal,
     Final,
+    Models,
     ProbeRequest,
     ProviderEvent,
     RateLimit,
@@ -41,6 +42,7 @@ class ProbeSeen:
     final: Final | None = None
     fatal: Fatal | None = None
     usage: UsageEv | None = None
+    models: Models | None = None  # CR-054
 
     def add(self, ev: ProviderEvent) -> bool:
         """True = ngừng đọc (fatal). `rate_limit` giữ tín hiệu nặng nhất (hỏng > cảnh báo > ok)."""
@@ -52,6 +54,8 @@ class ProbeSeen:
             self.final = ev
         elif isinstance(ev, UsageEv):
             self.usage = ev
+        elif isinstance(ev, Models):
+            self.models = ev
         elif isinstance(ev, Fatal):
             self.fatal = ev
             return True

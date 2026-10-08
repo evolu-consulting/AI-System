@@ -15,6 +15,7 @@ import {
   type HubAgentRef,
   type VisibleAgentsInput,
 } from "../agents/agent-access.rules";
+import type { NoMatchPolicy } from "../agents/default-agent.rules";
 import type { FileBrief } from "../attachments/run-files.rules";
 import type { AgentConfig } from "../config/config.rules";
 import type { AgentRole } from "../runner/runner.rules";
@@ -67,6 +68,8 @@ export type LoopIo = {
 };
 
 export type LoopInput = {
+  /** CR-054 · chính sách "không khớp" (tin không tag → Orchestrator mặc định); vắng = `answer`. */
+  noMatch?: NoMatchPolicy;
   orchestrator: AgentConfig;
   agents: readonly AgentConfig[];
   settings: { maxSteps: number; tokenBudget: number };
@@ -197,7 +200,7 @@ async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
   const base = {
     agent: c.orchestrator,
     role: "orchestrator" as const,
-    systemPrompt: orchestratorSystemPrompt(c.orchestrator.systemPrompt),
+    systemPrompt: orchestratorSystemPrompt(c.orchestrator.systemPrompt, c.noMatch),
     history: [],
     stepId: crypto.randomUUID(),
     ...(c.stepDetail ? { detail: c.stepDetail } : {}),

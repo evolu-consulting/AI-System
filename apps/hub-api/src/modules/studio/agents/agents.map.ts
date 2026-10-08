@@ -49,6 +49,7 @@ export function toAgent(p: AgentParts): Agent {
     runtime,
     agent_type_key: r.agentTypeKey,
     profile_id: r.profileId,
+    model: r.model,
     system_prompt: r.systemPrompt,
     runtime_options: r.runtimeOptions,
     workflow_ids: [...p.workflowIds],

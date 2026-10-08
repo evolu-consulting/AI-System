@@ -8,6 +8,7 @@ import {
   modelProfiles,
   orchestratorSettings,
   providers,
+  tenantAgentDefaults,
 } from "@ai/db/schema/hub";
 import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -59,6 +60,7 @@ const toAgent = (a: AgentRow): ConfigSnapshot["agents"][number] => ({
   tokenBudget: a.tokenBudget,
   enabled: a.enabled,
   version: a.version,
+  model: a.model,
 });
 
 type OrchestratorConfig = NonNullable<ConfigSnapshot["orchestrator"]>;
@@ -101,6 +103,7 @@ async function readHubRows(tx: Tx) {
     orch,
     ent: await tx.select().from(agentEntitlements),
     gr: await tx.select().from(agentGrants),
+    td: await tx.select().from(tenantAgentDefaults),
     aw: await tx
       .select({ agentId: agentWorkflows.agentId, workflowId: agentWorkflows.workflowId })
       .from(agentWorkflows),
@@ -148,6 +151,16 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
           subject: g.subjectId,
         })),
         agentWorkflows: groupAgentWorkflows(r.aw),
+        tenantDefaults: new Map(
+          r.td.map((d) => [
+            d.tenantId,
+            {
+              defaultAgentId: d.defaultAgentId,
+              fallbackAgentId: d.fallbackAgentId,
+              onNoMatch: d.onNoMatch,
+            },
+          ]),
+        ),
       });
     },
     { isolationLevel: "repeatable read", accessMode: "read only" },

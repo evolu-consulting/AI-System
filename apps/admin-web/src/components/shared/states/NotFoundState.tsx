@@ -13,7 +13,8 @@ type Props = {
     | "/workflows"
     | "/commands"
     | "/features"
-    | "/groups";
+    | "/groups"
+    | "/agents";
 };
 
 export function NotFoundState({ backTo }: Props) {

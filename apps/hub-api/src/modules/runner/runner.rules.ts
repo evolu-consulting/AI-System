@@ -87,6 +87,8 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
   if (!step || i.agent.runtime !== "agentic-cli") return null;
   const opts = i.agent.runtimeOptions;
   const isAgent = i.role === "agent";
+  // CR-054: model của agent (alias CLI `haiku`/`sonnet`/`opus` hoặc id) ghi đè model bước profile.
+  const model = i.agent.model ?? step.model;
   const parsed = AgentCliJobSchema.safeParse({
     v: HUB_CONTRACT_VERSION,
     type: "agent.cli",
@@ -103,12 +105,10 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
     mcp: i.mcp ?? null,
     agent: { id: i.agent.id, key: i.agent.key, role: i.role },
     provider_key: step.provider_key,
-    model: step.model,
+    model,
     step_index: 0,
     max_turns: maxTurns(opts, i.role),
-    profile_steps: [
-      { provider_key: step.provider_key, model: step.model, on: step.on.filter(isTrigger) },
-    ],
+    profile_steps: [{ provider_key: step.provider_key, model, on: step.on.filter(isTrigger) }],
     system_prompt: i.systemPrompt,
     prompt: i.prompt,
     history: [...i.history],

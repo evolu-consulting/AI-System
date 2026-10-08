@@ -3,8 +3,14 @@
 /** `description` tuỳ chọn để nhận cả `AgentConfig` của ảnh cấu hình lẫn hàng tối giản. */
 export type AgentRow = { id: string; key: string; enabled: boolean; description?: string };
 export type EntitlementRow = { agentId: string; tenantId: string; revokedAt: Date | null };
-/** `subject` = uuid user hoặc group (uuid không trùng nên không cần `subject_type`). */
+/** `subject` = uuid user, group, hoặc tenant (CR-054 "cả công ty"); uuid không trùng nên không cần `subject_type`. */
 export type GrantRow = { agentId: string; tenantId: string; subject: string };
+
+/** Grant áp cho người này: chính user, một group của user, hoặc cả tenant (CR-054). */
+export const grantedTo = (
+  subject: string,
+  who: { userId: string; tenantId: string; groupIds: ReadonlySet<string> },
+): boolean => subject === who.userId || subject === who.tenantId || who.groupIds.has(subject);
 
 /** Mục trong `<agents>` của prompt Orchestrator (plan §6.2): key + mô tả; giữ `id` cho step/flow. */
 export type HubAgentRef = { id: string; key: string; description: string };
@@ -86,7 +92,8 @@ export function visibleAgents(i: VisibleAgentsInput): HubAgentRef[] {
   }
   const granted = new Set<string>();
   for (const g of i.grants) {
-    if (g.tenantId === i.tenantId && (g.subject === i.userId || i.groupIds.has(g.subject))) {
+    // CR-054: grant `tenant` có `subject` = tenant id ⇒ cả công ty.
+    if (g.tenantId === i.tenantId && grantedTo(g.subject, i)) {
       granted.add(g.agentId);
     }
   }

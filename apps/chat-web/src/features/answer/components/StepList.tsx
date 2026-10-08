@@ -1,14 +1,18 @@
-// CHAT-AC-08, CHAT-AC-09 · danh sách bước: đang chạy (spinner, aria-busy) → Collapsible "✓ n bước · s".
+// CHAT-AC-08, CHAT-AC-09, CR-054 · danh sách bước: đang chạy (spinner, aria-busy) → Collapsible "✓ n bước · s".
+// Bước có agent: "Orchestrator · Haiku — <nhãn>".
+import type { StepAgent } from "@ai/contracts/chat";
 import { Check, ChevronDown, LoaderCircle, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
+import { stepAgentPrefix } from "../lib/step-label";
 
 export type StepItem = {
   id: string;
   label: string;
   status: "running" | "ok" | "failed";
   ms: number | null;
+  agent?: StepAgent;
 };
 
 /** 2100 → "2,1" (vi) / "2.1" (en). */
@@ -30,13 +34,17 @@ function StepIcon({ status }: { status: StepItem["status"] }) {
 
 function StepRow({ step, locale }: { step: StepItem; locale: string }) {
   const running = step.status === "running";
+  const prefix = stepAgentPrefix(step.agent);
   return (
     <li
       aria-busy={running ? "true" : undefined}
       className="flex items-center gap-2 text-caption text-muted-foreground"
     >
       <StepIcon status={step.status} />
-      <span>{step.label}</span>
+      <span>
+        {prefix ? <span className="font-medium text-foreground">{prefix} — </span> : null}
+        {step.label}
+      </span>
       {step.ms !== null && !running && <span>{formatSeconds(step.ms, locale)}s</span>}
     </li>
   );

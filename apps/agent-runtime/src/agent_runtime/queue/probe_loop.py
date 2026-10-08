@@ -18,7 +18,7 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Protocol
 
-from agent_runtime.db import probe_sql
+from agent_runtime.db import probe_sql, provider_models_sql
 from agent_runtime.db.pool import DB_ERRORS, Conn, Pool
 from agent_runtime.db.probe_sql import Applied
 from agent_runtime.events.job_events import Failure, Tokens
@@ -59,7 +59,8 @@ async def run_probe(cfg: ProbeLoopCfg, key: str) -> ProbeResult:
         seen, timed_out = await probe_turn(cfg.host, key, read_fake(cfg.host))
     now = datetime.now(UTC)
     got = probe_result(auth, seen, timed_out=timed_out, now=now, default_s=cfg.cooldown_default_s)
-    return replace(got, ms=int((time.monotonic() - started) * 1000))
+    models = seen.models.models if seen is not None and seen.models is not None else ()
+    return replace(got, ms=int((time.monotonic() - started) * 1000), models=models)
 
 
 Prober = Callable[[ProbeLoopCfg, str], Awaitable[ProbeResult]]
@@ -123,6 +124,10 @@ class ProbeLoop:
                 log.debug("probe.skipped", provider=key, reason="recent")
                 return None
             result = await self.prober(self.cfg, key)
+            if result.models:
+                # CR-054 · lỗi ghi danh mục không làm hỏng lượt probe (quota/trạng thái vẫn áp).
+                with suppress(*DB_ERRORS):
+                    await provider_models_sql.replace(conn, key, result.models)
             return result, await probe_sql.apply_probe(conn, key, snap, result)
         finally:
             await _unlock(conn, key)

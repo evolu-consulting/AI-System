@@ -72,7 +72,14 @@ const agentOf = (p: EffectiveAgentsResponse | undefined, key: string): Effective
 const brief = (a: EffectiveAgent | undefined) =>
   a && {
     visible: a.visible,
-    reasons: a.reasons.map((r) => (r.code === "grant_user" ? "user" : `group:${r.group.key}`)),
+    // CR-054: thêm reason `grant_tenant` (chỉ đổi kiểu, giá trị cũ giữ nguyên).
+    reasons: a.reasons.map((r) =>
+      r.code === "grant_group"
+        ? `group:${r.group.key}`
+        : r.code === "grant_user"
+          ? "user"
+          : "tenant",
+    ),
     missing: a.missing,
   };
 

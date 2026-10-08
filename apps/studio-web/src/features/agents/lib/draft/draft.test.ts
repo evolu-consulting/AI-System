@@ -119,6 +119,15 @@ describe("toPayload", () => {
     expect(toPayload(cli)).toMatchObject({ bash_ack: true });
     expect(toPayload({ ...cli, tools: ["Read"] })).not.toHaveProperty("bash_ack");
   });
+
+  test("CR-054 · model: agentic-cli gửi alias hoặc null (= theo profile); runtime khác không gửi", () => {
+    const cli = valid({ runtime: "agentic-cli", model: "haiku" });
+    expect(toPayload(cli)).toMatchObject({ model: "haiku" });
+    expect(toPayload({ ...cli, model: "" })).toMatchObject({ model: null });
+    expect(toPayload({ ...cli, runtime: "llm" })).not.toHaveProperty("model");
+    expect(fromAgent(agent({ model: "sonnet" })).model).toBe("sonnet");
+    expect(fromAgent(agent()).model).toBe("");
+  });
 });
 
 describe("issues → trường", () => {

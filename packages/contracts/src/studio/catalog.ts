@@ -1,6 +1,6 @@
 // HUB-FR-72 · H4a-R13 · plan §2.5 — đọc catalog (không secret).
 import { z } from "zod";
-import { UuidSchema } from "../common";
+import { IsoDateTime, UuidSchema } from "../common";
 import { LocalizedNameSchema, listMetaSchema } from "./common";
 
 export const CatalogQuerySchema = z.strictObject({
@@ -62,6 +62,19 @@ export const TenantItemSchema = z.strictObject({
 
 export const AgentTypeListSchema = listMetaSchema(AgentTypeItemSchema);
 export const ModelProfileListSchema = listMetaSchema(ModelProfileItemSchema);
+
+/** CR-054 · danh mục model thật Runtime đọc từ CLI (`hub.provider_models`), sắp theo provider + thứ tự CLI. */
+export const ModelCatalogItemSchema = z.strictObject({
+  provider_key: z.string(),
+  value: z.string(),
+  resolved_model: z.string().nullable(),
+  display_name: z.string(),
+  description: z.string(),
+  fetched_at: IsoDateTime,
+});
+export type ModelCatalogItem = z.infer<typeof ModelCatalogItemSchema>;
+export const ModelCatalogListSchema = z.strictObject({ items: z.array(ModelCatalogItemSchema) });
+export type ModelCatalogList = z.infer<typeof ModelCatalogListSchema>;
 export const ProviderListSchema = listMetaSchema(ProviderItemSchema);
 export const WorkflowListSchema = listMetaSchema(WorkflowItemSchema);
 export const TenantListSchema = listMetaSchema(TenantItemSchema);
