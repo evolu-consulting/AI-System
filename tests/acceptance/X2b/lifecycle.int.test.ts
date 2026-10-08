@@ -170,7 +170,14 @@ describe("X2b-AC14 · Q2 · D15 · thu hồi quyền agent giữa chừng", () =
       expect(r.res.status).toBe(201);
       const confirmRun = r.runId ?? "<không có X-Run-Id>";
       expect(await settled(confirmRun)).toBe("cancelled");
-      const after = await waitAgentMsg(c, "hoa", room, confirmRun);
+      const after = await waitAgentMsg(
+        c,
+        "hoa",
+        room,
+        confirmRun,
+        8_000,
+        m?.flow_id as string | undefined,
+      );
       const [tc] = await c.sql<
         { status: string }[]
       >`select status from hub.tool_confirmations where run_id = ${s.runId}`;

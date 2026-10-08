@@ -201,10 +201,19 @@ export async function timeline(c: CtxB, who: Who, roomId: string, q = ""): Promi
   return r.json.items as Json[];
 }
 export const agentMsgs = (items: Json[]) => items.filter((m) => m.sender_type === "agent");
-/** Chờ tin agent của `runId` xuất hiện trong timeline người xem; không có trong `ms` ⇒ undefined. */
-export async function waitAgentMsg(c: CtxB, who: Who, roomId: string, runId: string, ms = 8_000) {
+/** Chờ tin agent của `runId` xuất hiện trong timeline người xem (hoặc thread `flowId`, spec §3:
+ * vắng `flow_id` ⇒ chỉ `placement=main`; tin trả lời trong thread là `flow`, D12); không có trong `ms` ⇒ undefined. */
+export async function waitAgentMsg(
+  c: CtxB,
+  who: Who,
+  roomId: string,
+  runId: string,
+  ms = 8_000,
+  flowId?: string,
+) {
+  const q = flowId ? `?flow_id=${flowId}` : "";
   const items = await waitFor(
-    () => timeline(c, who, roomId),
+    () => timeline(c, who, roomId, q),
     (xs) => xs.some((m) => m.sender_type === "agent" && m.run_id === runId),
     ms,
   );

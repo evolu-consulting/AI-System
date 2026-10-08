@@ -84,7 +84,7 @@ describe("X2b-AC17 · thread chung [R13 lần 2]", () => {
     expect(JSON.stringify(job.payload)).not.toContain("PHONG-KHAC-C-19");
     await runtimeUsage(c, job);
     await c.rt.agent(job, { status: "done", text: "Đã xem tiếp." });
-    expect(await waitAgentMsg(c, "lan", room, r.runId as string, 8_000)).toBeDefined();
+    expect(await waitAgentMsg(c, "lan", room, r.runId as string, 8_000, T)).toBeDefined();
     expect(await roomUsage(c.sql, room, P.cuc.id)).toBeGreaterThan(0);
   });
 
@@ -101,7 +101,7 @@ describe("X2b-AC17 · thread chung [R13 lần 2]", () => {
       values (${P.cuc.tid}, ${P.cuc.id}, ${run?.flow_id ?? runC}, ${runC}, ${AGB.hoadon},
         'a2bb0000-0000-4000-8000-000000008002', 'pending')`;
     await c.rt.agent(job, { status: "done", text: "Xác nhận tạo thẻ PARAM-C-88?" });
-    expect(await waitAgentMsg(c, "lan", room, runC)).toBeDefined();
+    expect(await waitAgentMsg(c, "lan", room, runC, 8_000, T)).toBeDefined();
     const a = await post(c, "lan", room, { content: "Đồng ý", flow_id: T, answer_run_id: runC });
     expect(codeOf(a.res)).toEqual({ status: 403, code: "NOT_RUN_CALLER" });
     const ok = await post(c, "cuc", room, { content: "Đồng ý", flow_id: T, answer_run_id: runC });
