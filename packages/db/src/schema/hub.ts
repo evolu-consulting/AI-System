@@ -154,6 +154,8 @@ export const conversations = hub.table("conversations", {
   createdAt: createdAt(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
   deletedAt: ts("deleted_at"),
+  // 0014 (X2b D1): hội thoại nền ẩn của (phòng, user) — không lộ qua C1 (D2).
+  roomId: uuid("room_id"),
 });
 
 export const flows = hub.table("flows", {
@@ -165,6 +167,8 @@ export const flows = hub.table("flows", {
   messageCount: integer("message_count").notNull().default(0),
   createdAt: createdAt(),
   lastActiveAt: ts("last_active_at").notNull().defaultNow(),
+  // 0014 (X2b D12): thread phòng (người mở: = id; người tag sau: = thread). Unique (room_flow_id, user_id).
+  roomFlowId: uuid("room_flow_id"),
 });
 
 export const messages = hub.table("messages", {
@@ -208,6 +212,9 @@ export const runs = hub.table("runs", {
     .default("vi"),
   startedAt: ts("started_at").notNull().defaultNow(),
   finishedAt: ts("finished_at"),
+  // 0014 (X2b D1, D4): run của phòng + mốc đã đăng tin agent (idempotent, chỉ qua `hub.room_post_agent_message`).
+  roomId: uuid("room_id"),
+  roomPostedAt: ts("room_posted_at"),
 });
 
 export const runSteps = hub.table("run_steps", {

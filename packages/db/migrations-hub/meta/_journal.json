@@ -99,6 +99,13 @@
       "when": 1792195200000,
       "tag": "0013_x2a_rooms_seq_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792281600000,
+      "tag": "0014_x2b_room_agents",
+      "breakpoints": true
     }
   ]
 }
