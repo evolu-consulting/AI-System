@@ -16,8 +16,8 @@ Phòng: nhóm "Evolu team" (cả 5 người) và DM Julian–Thomas.
 ## 2. Kịch bản
 | # | Làm gì | Kỳ vọng |
 |---|---|---|
-| 1 | A mở "Evolu team", gõ `@` | Menu liệt kê `orchestrator`, `hoadon`, `trello` (tên + `@key` + mô tả); không panel/chip agent |
-| 2 | B gõ `@` trong cùng nhóm | Chỉ thấy `orchestrator`, `trello` (không `hoadon`) |
+| 1 | A mở "Evolu team", gõ `@` | Menu liệt kê `hoadon`, `trello` (tên + `@key` + mô tả); không panel/chip agent |
+| 2 | B gõ `@` trong cùng nhóm | Chỉ thấy `trello` (không `hoadon`); `@orchestrator` gõ tay vẫn dùng được, không nằm trong menu (R14) |
 | 3 | A gửi `@hoadon tổng hợp hoá đơn tháng này` | Mọi người thấy tin của A và khối agent "đang xử lý"; B, C xem được cả khối kết quả |
 | 4 | Khi chạy, A bấm "Dừng" | Khối thành "Đã huỷ" cho mọi người |
 | 5 | B gõ tay `@hoadon …` (không có quyền) | Bị từ chối kiểu "không tìm thấy agent"; nội dung giữ trong ô soạn, không tạo run |
