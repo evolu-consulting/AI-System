@@ -12,10 +12,11 @@ import { messagePreview } from "~/features/rooms/lib/message-preview";
 import {
   activeRunOf,
   addActiveRun,
+  applyAgentMessage,
   bumpFlowOf,
+  finishActiveRun,
   isMainPlacement,
   patchActiveRun,
-  removeActiveRun,
 } from "~/features/rooms/lib/room-agent";
 import {
   insertMessage,
@@ -85,10 +86,7 @@ function onMessage(c: Ctx, { room_id, message }: Of<"room.message">): void {
   c.client.setQueryData<RoomMessagesData>(roomKeys.messages(room_id), (d) =>
     isMainPlacement(message) ? insertMessage(d, message) : bumpFlowOf(d, message),
   );
-  if (message.sender_type === "agent" && message.run_id) {
-    const runId = message.run_id;
-    c.patchDetail(room_id, (d) => removeActiveRun(d, runId));
-  }
+  if (message.sender_type === "agent") c.patchDetail(room_id, (d) => applyAgentMessage(d, message));
   if (!findInList(c.client.getQueryData<RoomListData>(roomKeys.list), room_id)) {
     void c.client.invalidateQueries({ queryKey: roomKeys.list });
     return;
@@ -174,7 +172,9 @@ export function createEventRouter(deps: EventRouterDeps): (e: RoutedEvent) => vo
           patchActiveRun(d, e.data.run_id, { status: "waiting", wait_kind: e.data.kind }),
         );
       case "room.run_finished":
-        return c.patchDetail(e.data.room_id, (d) => removeActiveRun(d, e.data.run_id));
+        return c.patchDetail(e.data.room_id, (d) =>
+          finishActiveRun(d, e.data.run_id, e.data.status),
+        );
       case "stream.reset":
         // Giữ UI (không xoá cache trước): refetch list + detail/messages đang mở.
         void c.client.invalidateQueries({ queryKey: roomKeys.all });

@@ -5,12 +5,15 @@ import {
   activeRunOf,
   addActiveRun,
   agentName,
+  applyAgentMessage,
   bumpFlowOf,
+  finishActiveRun,
   isMainPlacement,
   isOwnTurn,
   patchActiveRun,
   pendingRuns,
   removeActiveRun,
+  waitingRunIds,
 } from "./room-agent";
 import type { RoomMessagesData } from "./room-cache";
 
@@ -105,4 +108,38 @@ test("bumpFlowOf: tăng đếm + last_active_at của khối gốc cùng flow_id
   const next = bumpFlowOf(data, { flow_id: uid(200), created_at: later });
   expect(next?.pages[0]?.items[0]?.flow).toEqual({ message_count: 3, last_active_at: later });
   expect(bumpFlowOf(data, { flow_id: uid(201), created_at: later })).toBe(data);
+});
+
+// F3 · lượt chờ (`need_input`/`side_effect`) sống qua `run_finished` tới khi có run mới cùng người + flow (BE `room_run_states`).
+test("lượt chờ: tin agent có ask → waiting (thêm nếu chưa có), run_finished giữ, run mới cùng người+flow thay", () => {
+  const a = run(1);
+  const ask = msg({
+    sender_type: "agent",
+    run_id: a.run_id,
+    flow_id: a.flow_id,
+    caller: { id: LAN, display_name: "Lan" },
+    run_status: "finished",
+    ask: { kind: "need_input", question: "Số?", choices: ["1"] },
+  });
+  let d = applyAgentMessage(detail([a]), ask);
+  expect(d?.active_runs?.[0]).toMatchObject({ status: "waiting", wait_kind: "need_input" });
+  expect(applyAgentMessage(detail(), ask)?.active_runs?.[0]).toMatchObject({
+    run_id: a.run_id,
+    status: "waiting",
+  });
+  expect(applyAgentMessage(detail([a]), { ...ask, ask: undefined })?.active_runs).toEqual([]);
+  expect(finishActiveRun(d, a.run_id, "finished")).toBe(d);
+  expect(finishActiveRun(d, a.run_id, "cancelled")?.active_runs).toEqual([]);
+  expect(finishActiveRun(detail([a]), a.run_id, "finished")?.active_runs).toEqual([]);
+  expect([...waitingRunIds(d?.active_runs)]).toEqual([a.run_id]);
+  expect(pendingRuns(d?.active_runs, [])).toEqual([]);
+  // Run khác người cùng flow không xoá lượt chờ; run mới của chính Lan trong flow đó thì xoá.
+  const other = { ...run(2, AT, ME), flow_id: a.flow_id };
+  d = addActiveRun(d, other);
+  expect(d?.active_runs).toHaveLength(2);
+  const next = { ...run(3), flow_id: a.flow_id };
+  expect(addActiveRun(d, next)?.active_runs?.map((r) => r.run_id)).toEqual([
+    other.run_id,
+    next.run_id,
+  ]);
 });

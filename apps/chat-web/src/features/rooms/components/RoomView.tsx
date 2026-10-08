@@ -1,18 +1,20 @@
 // HUB-FR-96, HUB-FR-100 · ghép màn phòng: header + dòng thời gian + composer; 404 → RoomNotFound.
+import type { RoomMessage } from "@ai/contracts/chat";
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useSession } from "~/lib/auth/use-session";
+import { useRoomTurnActions } from "../hooks/use-answer-run";
 import { useMarkRead } from "../hooks/use-mark-read";
 import { useRoom, useRoomMessages } from "../hooks/use-room";
 import { useRoomExit } from "../hooks/use-room-actions";
 import { useRoomLost } from "../hooks/use-room-lost";
 import { useRoomRuns } from "../hooks/use-room-runs";
 import { useRoomScroll } from "../hooks/use-room-scroll";
-import { lastIsOwnTurn, newFromOthers } from "../lib/room-agent";
+import { lastIsOwnTurn, newFromOthers, waitingRunIds } from "../lib/room-agent";
 import { isRoomNotFound } from "../lib/room-errors";
 import { lastSeqOf, roomTitle, seenBy } from "../lib/room-logic";
 import { roomToast } from "../lib/room-toast";
@@ -56,6 +58,20 @@ export function RoomView({ roomId }: { roomId: string }) {
   const openFlow = useCallback(
     (flow: string) => void navigate({ to: "/rooms/$id", params: { id: roomId }, search: { flow } }),
     [navigate, roomId],
+  );
+  const activeRuns = room.data?.active_runs;
+  const waiting = useMemo(() => waitingRunIds(activeRuns), [activeRuns]);
+  const turn = useRoomTurnActions(roomId, openFlow);
+  const { rerun } = turn;
+  // Ref: giữ `onRerun` ổn định (AgentBlock memo) dù danh sách tin đổi.
+  const msgRef = useRef(messages);
+  msgRef.current = messages;
+  const onRerun = useCallback(
+    (m: RoomMessage) => {
+      const trigger = msgRef.current.find((x) => x.id === m.trigger_message_id);
+      if (trigger) void rerun(m, trigger.content);
+    },
+    [rerun],
   );
   const loading = room.isPending || msgs.isPending;
   const failed = !loading && (room.isError || msgs.isError);
@@ -117,6 +133,9 @@ export function RoomView({ roomId }: { roomId: string }) {
                 onScroll={scroll.onScroll}
                 pending={pending}
                 onReply={openFlow}
+                waiting={waiting}
+                onAnswer={turn.answer}
+                onRerun={onRerun}
               />
               {newCount > 0 && <NewMessagesPill count={newCount} onClick={scroll.scrollToBottom} />}
             </div>

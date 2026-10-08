@@ -259,18 +259,26 @@
     },
     "hint": "Agents reply only when @-mentioned — they run with the asker's permissions and quota.",
     "block": "Reply from agent {{name}}",
+    "blockWaiting": "Agent {{name}} is waiting for confirmation",
     "askedBy": "Asked by {{name}}",
     "askedByMe": "You asked",
     "runsAs": "Runs with {{name}}'s permissions",
     "runsAsMe": "Runs with your permissions",
     "working": "{{agent}} is working…",
     "onlyCallerStop": "Only {{name}} can stop this",
+    "waitConfirm": "Waiting for {{name}} to confirm — only the asker can respond.",
+    "waitInput": "Waiting for {{name}} to answer the agent.",
+    "askTitle": "{{agent}} needs more information",
+    "confirmTitle": "{{agent}} needs your confirmation before acting",
+    "confirmYes": "Agree",
+    "confirmNo": "Cancel",
     "failed": "The agent couldn't respond. Try asking again later.",
     "cancelledOther": "Cancelled",
     "steps": "{{count}} steps · {{seconds}}s",
     "orchestratorName": "Orchestrator",
     "toast": {
-      "stopFailed": "Couldn't stop. Try again later."
+      "stopFailed": "Couldn't stop. Try again later.",
+      "notCaller": "Only the sender of this turn can respond."
     }
   },
   "rooms": {

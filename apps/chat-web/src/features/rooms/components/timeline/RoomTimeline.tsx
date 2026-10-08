@@ -24,6 +24,10 @@ type Props = {
   /** Run đang chạy/chờ chưa có tin agent (D7). */
   pending?: readonly RoomActiveRun[];
   onReply?: (flowId: string) => void;
+  /** `run_id` đang chờ trả lời/xác nhận (F3). */
+  waiting?: ReadonlySet<string>;
+  onAnswer?: (message: RoomMessage, choice: string) => Promise<boolean>;
+  onRerun?: (message: RoomMessage) => void;
 };
 
 export function RoomTimeline(p: Props) {
@@ -54,7 +58,14 @@ export function RoomTimeline(p: Props) {
             {g.items.map((m) => (
               <div key={m.id}>
                 {m.sender_type === "agent" ? (
-                  <AgentBlock message={m} myId={p.myId} onReply={p.onReply} />
+                  <AgentBlock
+                    message={m}
+                    myId={p.myId}
+                    onReply={p.onReply}
+                    waiting={m.run_id !== undefined && (p.waiting?.has(m.run_id) ?? false)}
+                    onAnswer={p.onAnswer}
+                    onRerun={p.onRerun}
+                  />
                 ) : (
                   <MessageItem message={m} mine={m.sender.id === p.myId} group={p.group} />
                 )}

@@ -55,16 +55,25 @@ export function activeRunOf(
   };
 }
 
-/** Thêm run (khử trùng `run_id`: đã có thì giữ bản cũ, chỉ bù `agent` khi bản cũ thiếu). */
+/** Run mới của cùng người trong cùng flow ⇒ lượt chờ cũ của người đó đã được trả lời (BE `room_run_states`). */
+const supersedes = (run: RoomActiveRun) => (r: RoomActiveRun) =>
+  r.status === "waiting" &&
+  r.run_id !== run.run_id &&
+  r.flow_id === run.flow_id &&
+  r.caller.id === run.caller.id;
+
+/** Thêm run (khử trùng `run_id`: đã có thì giữ bản cũ, chỉ bù `agent` khi bản cũ thiếu); bỏ lượt chờ nó thay. */
 export function addActiveRun(
   d: RoomDetail | undefined,
   run: RoomActiveRun,
 ): RoomDetail | undefined {
   if (!d) return d;
-  const runs = d.active_runs ?? [];
+  const all = d.active_runs ?? [];
+  const stale = supersedes(run);
+  const runs = all.some(stale) ? all.filter((r) => !stale(r)) : all;
   const cur = runs.find((r) => r.run_id === run.run_id);
   if (!cur) return { ...d, active_runs: [...runs, run] };
-  if (cur.agent || !run.agent) return d;
+  if (cur.agent || !run.agent) return runs === all ? d : { ...d, active_runs: runs };
   return { ...d, active_runs: runs.map((r) => (r === cur ? { ...cur, agent: run.agent } : r)) };
 }
 
@@ -85,7 +94,46 @@ export function removeActiveRun(d: RoomDetail | undefined, runId: string): RoomD
   return { ...d, active_runs: d.active_runs.filter((r) => r.run_id !== runId) };
 }
 
-/** Khối "đang xử lý" (D7): run chưa có tin agent cùng `run_id` trong timeline, theo `started_at` tăng. */
+/** `room.run_finished`: run đang chờ (`need_input`/`side_effect`) vẫn là lượt chờ tới khi được trả lời; còn lại bỏ. */
+export function finishActiveRun(
+  d: RoomDetail | undefined,
+  runId: string,
+  status: string,
+): RoomDetail | undefined {
+  const cur = d?.active_runs?.find((r) => r.run_id === runId);
+  if (cur?.status === "waiting" && status === "finished") return d;
+  return removeActiveRun(d, runId);
+}
+
+/** Tin agent tới: có `ask` ⇒ lượt chờ (thêm nếu chưa có); không ⇒ run xong, bỏ khỏi `active_runs`. */
+export function applyAgentMessage(
+  d: RoomDetail | undefined,
+  m: RoomMessage,
+): RoomDetail | undefined {
+  if (!d || !m.run_id) return d;
+  if (!m.ask || m.run_status !== "finished" || !m.flow_id || !m.caller) {
+    return removeActiveRun(d, m.run_id);
+  }
+  const patch = { status: "waiting" as const, wait_kind: m.ask.kind };
+  if (d.active_runs?.some((r) => r.run_id === m.run_id)) return patchActiveRun(d, m.run_id, patch);
+  const run: RoomActiveRun = {
+    run_id: m.run_id,
+    flow_id: m.flow_id,
+    trigger_message_id: m.trigger_message_id ?? m.id,
+    agent: m.agent ?? null,
+    caller: m.caller,
+    started_at: m.created_at,
+    ...patch,
+  };
+  return { ...d, active_runs: [...(d.active_runs ?? []), run] };
+}
+
+/** `run_id` đang chờ trả lời/xác nhận → AskCard/WaitingNote ở khối agent tương ứng. */
+export function waitingRunIds(runs: readonly RoomActiveRun[] | undefined): ReadonlySet<string> {
+  return new Set((runs ?? []).filter((r) => r.status === "waiting").map((r) => r.run_id));
+}
+
+/** Khối "đang xử lý" (D7): run đang chạy chưa có tin agent cùng `run_id` trong timeline, theo `started_at` tăng. */
 export function pendingRuns(
   runs: readonly RoomActiveRun[] | undefined,
   messages: readonly RoomMessage[],
@@ -93,7 +141,7 @@ export function pendingRuns(
   if (!runs || runs.length === 0) return [];
   const done = new Set(messages.filter((m) => m.sender_type === "agent").map((m) => m.run_id));
   return runs
-    .filter((r) => !done.has(r.run_id))
+    .filter((r) => r.status !== "waiting" && !done.has(r.run_id))
     .sort((a, b) => a.started_at.localeCompare(b.started_at));
 }
 
