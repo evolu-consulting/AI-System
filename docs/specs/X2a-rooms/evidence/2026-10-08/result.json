@@ -1,0 +1,80 @@
+[
+  {
+    "id": "01",
+    "title": "Julian & Thomas đăng nhập evolu; sidebar có nhóm Evolu team",
+    "ok": true,
+    "ms": 1521
+  },
+  {
+    "id": "02",
+    "title": "Julian tìm Thomas → mở DM → gửi tin; Thomas thấy huy hiệu chưa đọc (không reload)",
+    "ok": true,
+    "ms": 822
+  },
+  {
+    "id": "03",
+    "title": "Thomas mở DM thấy tin; Julian thấy 'Đã xem'",
+    "ok": true,
+    "ms": 293
+  },
+  {
+    "id": "04",
+    "title": "Thomas trả lời → Julian nhận realtime",
+    "ok": true,
+    "ms": 221
+  },
+  {
+    "id": "05",
+    "title": "Julian nhắn nhóm Evolu team → Thomas thấy huy hiệu, mở nhóm thấy tên người gửi",
+    "ok": true,
+    "ms": 578
+  },
+  {
+    "id": "06",
+    "title": "Julian tạo nhóm mới (Thomas + Vio) → Thomas thấy nhóm xuất hiện",
+    "ok": true,
+    "ms": 1236
+  },
+  {
+    "id": "07",
+    "title": "Julian (chủ) thêm Rowan vào nhóm; xem danh sách thành viên",
+    "ok": true,
+    "ms": 696
+  },
+  {
+    "id": "08",
+    "title": "Thomas (thành viên) không có Đổi tên/Xoá; Julian đổi tên → Thomas thấy tên mới",
+    "ok": true,
+    "ms": 1004
+  },
+  {
+    "id": "09",
+    "title": "Julian ẩn DM Thomas → Thomas nhắn → DM hiện lại ở Julian",
+    "ok": true,
+    "ms": 700
+  },
+  {
+    "id": "10",
+    "title": "Thomas mất mạng → Julian gửi → Thomas có mạng lại thì nhận bù tin",
+    "ok": true,
+    "ms": 4404
+  },
+  {
+    "id": "11",
+    "title": "Thomas mở DM với Vio qua tìm người",
+    "ok": true,
+    "ms": 659
+  },
+  {
+    "id": "12",
+    "title": "Julian xoá nhóm khi Thomas đang mở → Thomas bị đưa ra kèm thông báo",
+    "ok": true,
+    "ms": 809
+  },
+  {
+    "id": "13",
+    "title": "Giao diện điện thoại (390px) — Thomas",
+    "ok": true,
+    "ms": 1800
+  }
+]

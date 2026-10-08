@@ -12,4 +12,5 @@ Tách từ `spec.md` §10 (giữ spec ≤ 25 KB). Quy tắc: mỗi lần tự qu
 ## B. Kết quả kiểm tay I2 (người dùng)
 Hướng dẫn: [`manual-test-I2.md`](manual-test-I2.md). Ghi mỗi lỗi/ý kiến một dòng: `YYYY-MM-DD [người] bước <n> — kết quả — mức (Chặn/Cao/Thường)`.
 
-- (chưa kiểm)
+- 2026-10-08 [điều phối, thay người dùng, Playwright 2 trình duyệt] bước 01–14 — đạt 14/14; evidence [`evidence/2026-10-08/REPORT.md`](evidence/2026-10-08/REPORT.md) — lỗi seed `EMAIL_REQUIRED` (demo evolu) đã sửa — Cao
+- (người dùng tự kiểm: chưa)

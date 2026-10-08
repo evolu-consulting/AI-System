@@ -11,6 +11,7 @@ type FixtureUser = {
   locked?: boolean;
   display_name?: string;
   role?: "member" | "tenant_admin";
+  email?: string;
 };
 
 /** Khoá theo `tests/contract/chat/_env.ts` (`a`, `b`, `other_tenant`, `locked`). */
@@ -104,6 +105,7 @@ async function ensureUser(api: Api, tenantId: string, u: FixtureUser): Promise<v
       display_name: u.display_name ?? u.username,
       role: u.role ?? "member",
       locale: "vi",
+      ...(u.email ? { email: u.email } : {}),
     };
     const created = await call(api, "POST", `/admin/users?tenant_id=${tenantId}`, body);
     user = created.user as Json;
@@ -167,6 +169,7 @@ export const DEMO_USERS: FixtureUser[] = [
   username: String(username),
   display_name: String(display_name),
   role: role as FixtureUser["role"],
+  email: `${String(username)}@evolu.local`,
   password: DEMO_PASSWORD,
 }));
 
