@@ -4,6 +4,7 @@ import {
   forwardRef,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useLayoutEffect,
   useRef,
@@ -158,6 +159,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const enabled = canSend(text, locked, submitting) && !over && !sendError.cooling && !att.busy;
   const errorView = sendError.view;
   const labels = inputLabels(t, flow, inputLabel, placeholder);
+  const hintId = useId();
   return (
     <div className="w-full">
       <QuotaNotice over={quotaOver} />
@@ -187,7 +189,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         areaRef={area}
         text={text}
         labels={labels}
-        aria={aria}
+        aria={hint ? { ...aria, describedBy: hintId } : aria}
         flow={flow}
         running={running}
         enabled={enabled}
@@ -199,7 +201,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         onSend={() => void send()}
         onStop={onStop}
       />
-      {hint && <p className="mt-1 px-1 text-xs text-muted-foreground">{hint}</p>}
+      {hint && (
+        <p id={hintId} className="mt-1 px-1 text-xs text-muted-foreground">
+          {hint}
+        </p>
+      )}
       {maxChars !== undefined && <CharCount length={text.length} max={maxChars} />}
     </div>
   );

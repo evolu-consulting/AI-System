@@ -22,7 +22,7 @@ type Props = {
   areaRef: RefObject<HTMLTextAreaElement>;
   text: string;
   labels: { input: string; placeholder: string };
-  aria: { expanded?: boolean; controls?: string; activeDescendant?: string };
+  aria: { expanded?: boolean; controls?: string; activeDescendant?: string; describedBy?: string };
   flow: boolean;
   running: boolean;
   enabled: boolean;
@@ -53,6 +53,7 @@ export function ComposerRow(p: Props) {
         aria-expanded={p.aria.expanded}
         aria-controls={p.aria.controls}
         aria-activedescendant={p.aria.activeDescendant}
+        aria-describedby={p.aria.describedBy}
         onChange={(e) => p.onChange(e.target.value, e.target.selectionStart)}
         onSelect={(e) => p.onCaret(e.currentTarget.selectionStart)}
         onKeyDown={p.onKeyDown}

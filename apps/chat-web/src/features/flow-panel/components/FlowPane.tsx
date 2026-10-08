@@ -2,10 +2,11 @@
 import type { Flow } from "@ai/contracts/chat";
 import { useFlowPanel } from "../hooks/use-flow-panel";
 import { useMinWidth } from "../hooks/use-min-width";
+import { FLOW_PANEL_MIN_PX } from "./FlowFrame";
 import { FlowPanel } from "./FlowPanel";
 import { FlowSheet } from "./FlowSheet";
 
-export const FLOW_PANEL_MIN_PX = 640;
+export { FLOW_PANEL_MIN_PX };
 
 type Props = { convId: string; flow: Flow; onClose(): void };
 
