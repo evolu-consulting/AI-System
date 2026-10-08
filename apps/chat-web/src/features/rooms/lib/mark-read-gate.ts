@@ -13,18 +13,20 @@ export function createMarkReadGate(deps: MarkReadDeps): MarkReadGate {
   let lastAt = Number.NEGATIVE_INFINITY;
   let pending = 0;
   let cancel: (() => void) | null = null;
+  let disposed = false;
 
   const fire = (seq: number, isRetry = false) => {
     const prev = sentSeq;
     sentSeq = seq;
     lastAt = deps.now();
     deps.send(seq).catch(() => {
-      if (sentSeq !== seq) return;
+      if (disposed || sentSeq !== seq) return;
       sentSeq = prev; // lỗi: cho phép thử lại ở lần offer kế
       if (isRetry || cancel) return;
       // Hẹn thử lại đúng seq này một lần sau `intervalMs` (lần đọc cuối không bị kẹt chưa đọc).
       cancel = deps.setTimer(() => {
         cancel = null;
+        if (disposed) return;
         const s = Math.max(seq, pending);
         pending = 0;
         if (s > sentSeq) fire(s, true);
@@ -34,6 +36,7 @@ export function createMarkReadGate(deps: MarkReadDeps): MarkReadGate {
 
   return {
     offer(seq) {
+      if (disposed) return;
       if (seq <= sentSeq || seq <= pending) return;
       const wait = lastAt + deps.intervalMs - deps.now();
       if (wait <= 0) return fire(seq);
@@ -41,12 +44,14 @@ export function createMarkReadGate(deps: MarkReadDeps): MarkReadGate {
       if (cancel) return;
       cancel = deps.setTimer(() => {
         cancel = null;
+        if (disposed) return;
         const s = pending;
         pending = 0;
         if (s > sentSeq) fire(s);
       }, wait);
     },
     dispose() {
+      disposed = true;
       cancel?.();
       cancel = null;
       pending = 0;

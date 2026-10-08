@@ -26,9 +26,9 @@ export type MeStreamDeps = {
   hasRoomsData?(): boolean;
 };
 
-type Outcome = "fatal" | "failed" | "clean";
-/** Server đóng sạch sau ≥ ngần này ms coi là chu kỳ token (D14), không phải sự cố. */
-const CLEAN_MIN_LIFE_MS = 1000;
+type Outcome = "fatal" | "failed" | "clean" | "throttled";
+/** Phiên sống ≥ ngần này ms mới coi là khoẻ (chu kỳ token D14) và xoá bộ đếm phiên ngắn. */
+const CLEAN_MIN_LIFE_MS = 5000;
 const CLEAN_MAX_QUICK = 3;
 
 const isAbort = (err: unknown) => err instanceof DOMException && err.name === "AbortError";
@@ -38,6 +38,8 @@ export class MeStreamDriver {
   private failures = 0;
   private wake: (() => void) | null = null;
   private quickClean = 0;
+  /** Đóng sạch chưa có `lastEventId`: phát `stream.reset` khi byte đầu của kết nối kế tới (mốc `tail` an toàn). */
+  private resetOnOpen = false;
 
   constructor(
     private readonly store: RealtimeStore,
@@ -53,6 +55,8 @@ export class MeStreamDriver {
     if (this.master) return;
     this.master = new AbortController();
     this.failures = 0;
+    this.quickClean = 0;
+    this.resetOnOpen = false;
     this.store.setPhase("connecting");
     void this.loop(this.master.signal);
   }
@@ -75,6 +79,11 @@ export class MeStreamDriver {
       const outcome = await this.connectOnce(signal);
       if (outcome === "fatal" || signal.aborted) break;
       if (outcome === "clean") continue; // đóng sạch lúc hết hạn token: nối lại ngay, không banner
+      if (outcome === "throttled") {
+        // Vòng nóng (đóng sạch quá nhanh liên tiếp): giãn dần, giữ nguyên phase để banner không nháy.
+        await this.wait(backoffDelay(this.quickClean - CLEAN_MAX_QUICK), signal);
+        continue;
+      }
       this.failures += 1;
       this.store.setPhase(this.failures >= DOWN_AFTER_FAILURES ? "down" : "reconnecting");
       await this.wait(backoffDelay(this.failures), signal);
@@ -119,9 +128,8 @@ export class MeStreamDriver {
       const body = await this.deps.open(this.store.get().lastEventId, link);
       armIdle();
       await this.deps.read(body, (raw) => this.handle(raw), onBytes, link);
-      return opened && !idled && !signal.aborted && this.isCleanClose(startedAt)
-        ? "clean"
-        : "failed";
+      if (!opened || idled || signal.aborted) return "failed";
+      return this.isCleanClose(startedAt) ? "clean" : "throttled";
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return "fatal";
       if (!isAbort(err) && import.meta.env?.DEV) console.warn("[me-stream] đứt", err);
@@ -132,14 +140,12 @@ export class MeStreamDriver {
     }
   }
 
-  /** Đóng sạch liên tiếp quá nhanh (> 3 lần dưới 1 s) thì coi là sự cố để backoff, tránh vòng lặp nóng. */
+  /** Đóng sạch liên tiếp quá nhanh (> 3 phiên dưới 5 s) thì false ⇒ giãn dần, tránh vòng lặp nóng. */
   private isCleanClose(startedAt: number): boolean {
     this.quickClean = Date.now() - startedAt >= CLEAN_MIN_LIFE_MS ? 0 : this.quickClean + 1;
-    if (this.quickClean > CLEAN_MAX_QUICK) return false;
-    // Chưa có id nào để phát bù ⇒ server nối `tail`: nạp lại cache cho chắc.
-    if (this.store.get().lastEventId === null)
-      this.deps.onEvent({ event: "stream.reset", data: {} });
-    return true;
+    // Chưa có id nào để phát bù ⇒ server nối `tail`: nạp lại cache khi kết nối kế có byte đầu.
+    if (this.store.get().lastEventId === null) this.resetOnOpen = true;
+    return this.quickClean <= CLEAN_MAX_QUICK;
   }
 
   /**
@@ -148,12 +154,12 @@ export class MeStreamDriver {
    */
   private markOpen(): void {
     const { phase, lastEventId } = this.store.get();
-    if (phase === "open") return;
-    this.store.setPhase("open");
+    const pending = this.resetOnOpen;
+    this.resetOnOpen = false;
+    if (phase !== "open") this.store.setPhase("open");
     const gap = phase === "connecting" && this.deps.hasRoomsData?.() === true;
-    if (gap || ((phase === "reconnecting" || phase === "down") && lastEventId === null)) {
-      this.deps.onEvent({ event: "stream.reset", data: {} });
-    }
+    const reconnected = (phase === "reconnecting" || phase === "down") && lastEventId === null;
+    if (pending || gap || reconnected) this.deps.onEvent({ event: "stream.reset", data: {} });
   }
 
   private handle(raw: RawSseEvent): void {

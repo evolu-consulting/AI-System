@@ -3,8 +3,16 @@ import { describe, expect, test } from "bun:test";
 import { type RowAttach, rowDropProps } from "./ComposerRow";
 
 describe("rowDropProps", () => {
-  test("tắt đính kèm: không có onDrop/onDragOver", () => {
-    expect(rowDropProps(null)).toEqual({});
+  test("RV2 N7: tắt đính kèm: chặn mặc định dragover/drop, không thêm tệp", () => {
+    const p = rowDropProps(null);
+    let prevented = 0;
+    const ev = {
+      preventDefault: () => prevented++,
+      dataTransfer: { files: [new File([""], "a")] },
+    };
+    p.onDragOver(ev as never);
+    p.onDrop(ev as never);
+    expect(prevented).toBe(2);
   });
   test("bật: trả đúng dropProps, thả tệp gọi add", () => {
     const added: File[][] = [];

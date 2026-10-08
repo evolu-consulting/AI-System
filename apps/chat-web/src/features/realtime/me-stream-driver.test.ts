@@ -81,11 +81,11 @@ test("phase: connecting → open ngay khi có byte đầu (kể cả ping)", asy
 });
 
 test("stream.reset xoá lastEventId và vẫn chuyển cho router", async () => {
-  const t = setup([{ chunks: [deleted("7-0"), reset] }, { chunks: [] }]);
+  const t = setup([{ chunks: [deleted("7-0"), reset] }, { chunks: [": ping\n\n"] }]);
   t.driver.start();
   await t.done;
   expect(t.opens.slice(0, 2)).toEqual([null, null]);
-  // reset thứ 2: đóng sạch khi chưa có id ⇒ nối lại phải nạp lại cache.
+  // reset thứ 2: đóng sạch khi chưa có id ⇒ phát khi byte đầu của kết nối kế tới.
   expect(t.events.map((e) => e.event)).toEqual(["room.deleted", "stream.reset", "stream.reset"]);
   t.driver.stop();
 });
@@ -208,5 +208,33 @@ test("RV1 #7: đóng sạch quá nhanh liên tục ⇒ tính là sự cố (back
   t.driver.start();
   await t.done;
   expect(t.sleeps.length).toBeGreaterThan(0);
+  t.driver.stop();
+});
+
+test("RV2 N1: đóng sạch chưa có id ⇒ stream.reset chỉ khi byte đầu của kết nối kế tới", async () => {
+  const wait = setup([{ chunks: [": ping\n\n"] }, { chunks: [], hang: true }]);
+  wait.driver.start();
+  await Bun.sleep(15);
+  expect(wait.opens).toEqual([null, null]);
+  expect(wait.events).toEqual([]);
+  wait.driver.stop();
+
+  const t = setup([{ chunks: [": ping\n\n"] }, { chunks: [": ping\n\n"], hang: true }]);
+  t.driver.start();
+  await Bun.sleep(15);
+  expect(t.events.map((e) => e.event)).toEqual(["stream.reset"]);
+  t.driver.stop();
+});
+
+test("RV2 N2: đóng sạch quá nhanh liên tiếp ⇒ giãn dần 0,5 · 1 · 2 s và không nháy banner", async () => {
+  const quick = { chunks: [deleted("3-0")] };
+  const t = setup([quick, quick, quick, quick, quick, quick]);
+  const phases: string[] = [];
+  t.store.subscribe(() => phases.push(t.store.get().phase));
+  t.driver.start();
+  await t.done;
+  expect(t.sleeps).toEqual([500, 1000, 2000]);
+  expect(phases).not.toContain("reconnecting");
+  expect(phases).not.toContain("down");
   t.driver.stop();
 });

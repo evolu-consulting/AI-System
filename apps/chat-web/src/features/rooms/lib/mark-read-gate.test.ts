@@ -93,4 +93,16 @@ describe("createMarkReadGate · lỗi", () => {
     advance(5000);
     expect(sent).toEqual([5, 5]);
   });
+
+  test("RV2 N3: lỗi về sau dispose ⇒ không hẹn thử lại, offer bị bỏ", async () => {
+    const { gate, sent, timers, advance } = setup(true);
+    gate.offer(5);
+    gate.dispose();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(timers).toHaveLength(0);
+    advance(5000);
+    gate.offer(9);
+    expect(sent).toEqual([5]);
+  });
 });

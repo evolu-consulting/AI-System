@@ -1,4 +1,4 @@
-// CHAT-AC-05, X2a-AC · hàng nhập của Composer: [đính kèm] textarea [Gửi|Dừng]. `attach = null` ⇒ không nút đính kèm và KHÔNG gắn handler thả tệp.
+// CHAT-AC-05, X2a-AC · hàng nhập của Composer: [đính kèm] textarea [Gửi|Dừng]. `attach = null` ⇒ không nút đính kèm và thả tệp chỉ bị chặn mặc định (không upload).
 import type { TFunction } from "i18next";
 import { ArrowUp, Square } from "lucide-react";
 import type { KeyboardEventHandler, RefObject } from "react";
@@ -78,9 +78,9 @@ export function ComposerRow(p: Props) {
   );
 }
 
-/** Vùng thả tệp chỉ gắn khi cho phép đính kèm (X2a Q3/§5.3: phòng không upload). */
-export function rowDropProps(
-  attach: RowAttach | null,
-): RowAttach["dropProps"] | Record<string, never> {
-  return attach ? attach.dropProps : {};
+const swallow = (e: { preventDefault(): void }) => e.preventDefault();
+
+/** Tắt đính kèm (phòng không upload): vẫn chặn mặc định để trình duyệt không mở tệp và rời SPA, nhưng không thêm tệp. */
+export function rowDropProps(attach: RowAttach | null): RowAttach["dropProps"] {
+  return attach ? attach.dropProps : { onDragOver: swallow, onDrop: swallow };
 }
