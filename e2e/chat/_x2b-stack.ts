@@ -68,6 +68,9 @@ async function prepare(): Promise<void> {
       subject_type: "user",
       subject_id: user,
     });
+    // `hub:seed` cấp `assistant` cho nhóm beta-testers (thu là thành viên) ⇒ bỏ để menu "@" của B đúng 1 option (E-A1/E-A2).
+    await sql`delete from hub.agent_grants where tenant_id = ${TENANT_ID.acme}
+      and agent_id not in (${AGENT_ID.hoadon}, ${AGENT_ID.trello})`;
     await sql`insert into hub.agent_grants ${sql([
       g("hoadon", USER_ID.lan),
       g("trello", USER_ID.lan),

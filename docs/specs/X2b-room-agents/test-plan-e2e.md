@@ -42,3 +42,6 @@ Stack dựng được (admin-api, hub-api, chat-web, Runtime giả); mọi ca đ
 - Gửi trong khung flow dùng `Gửi trong flow` (tag/không tag cùng một composer, D13).
 - **Cần bổ sung (backend-lead B7):** seed dev có C có `hoadon` (stack e2e tự seed nên không chặn); xác nhận tên hiển thị agent và vị trí header `X-Run-Id` qua proxy chat-web (Playwright đọc `x-run-id` từ response của trình duyệt).
 - `package.json`/`tools/scripts` không thuộc qc: đề xuất script `"e2e:chat:x2b": "bunx playwright test -c e2e/chat/playwright.x2b.config.ts"` (frontend-lead/điều phối).
+
+## 5. Tranh chấp / sửa sau khoá
+- 2026-10-08 · E-A1/E-A2 đỏ sau F1 (`68bcfa4`): menu `@` của B hiện 2 option thay vì 1. Nguyên nhân là **seed e2e**, không phải lỗi app: `hub:seed` cấp agent `assistant` cho nhóm `beta-testers` (tenant acme) và `thu` (B) là thành viên nhóm này (fixture M1) ⇒ `GET /agents` trả `trello` + `assistant` đúng theo quyền. Sửa `e2e/chat/_x2b-stack.ts`: xoá mọi grant của tenant acme ngoài `hoadon`/`trello` trước khi cấp quyền A/B/C. Lock cập nhật; E-A1/E-A2 xanh. (E-A10/E-A11 đỏ do `X-Run-Id` null ở `invokeUi` — việc khác, chưa kết luận.)
