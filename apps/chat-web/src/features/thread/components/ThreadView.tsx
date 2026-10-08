@@ -20,6 +20,8 @@ const PendingItem = memo(function PendingItem({ runKey }: { runKey: string }) {
 export type ThreadViewProps = {
   convId: string;
   loading: boolean;
+  /** CR-051: đang tải trang flow cũ hơn (cuộn lên đỉnh). */
+  loadingOlder?: boolean;
   flows: Flow[];
   pendingKeys: string[];
   openFlowId?: string;
@@ -46,6 +48,9 @@ export function ThreadView(props: ThreadViewProps) {
           className="mx-auto flex w-full max-w-[800px] flex-col gap-4 p-4 sm:p-6"
         >
           {props.loading && <ThreadSkeleton />}
+          {props.loadingOlder && (
+            <p className="text-center text-caption text-muted-foreground">…</p>
+          )}
           {props.flows.map((f) => (
             <FlowItem key={f.id} convId={props.convId} flow={f} openFlowId={props.openFlowId} />
           ))}

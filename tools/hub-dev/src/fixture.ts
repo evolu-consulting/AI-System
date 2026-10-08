@@ -155,7 +155,7 @@ export async function ensureContractFixture(adminUrl: string): Promise<void> {
   }
 }
 
-/** Dữ liệu demo do người dùng yêu cầu (2026-10-07): công ty `evolu`, 4 người; mật khẩu dev 10 ký tự (PASSWORD_MIN_LEN). */
+/** Dữ liệu demo do người dùng yêu cầu (2026-10-07, CR-051 2026-10-08: Rowan Nguyen): công ty `evolu`, 5 người; mật khẩu dev 10 ký tự (PASSWORD_MIN_LEN). */
 export const DEMO_TENANT = { key: "evolu", name: "Evolu" };
 export const DEMO_PASSWORD = "1234567890";
 export const DEMO_USERS: FixtureUser[] = [
@@ -163,7 +163,7 @@ export const DEMO_USERS: FixtureUser[] = [
   ["thomas.tran", "Thomas Tran", "member"],
   ["vio.ngo", "Vio Ngo", "member"],
   ["edgar.nguyen", "Edgar Nguyen", "member"],
-  ["rowan.hoang", "Rowan Hoang", "member"],
+  ["rowan.nguyen", "Rowan Nguyen", "member"],
 ].map(([username, display_name, role]) => ({
   tenant_key: DEMO_TENANT.key,
   username: String(username),

@@ -3,7 +3,6 @@ import { Link } from "@tanstack/react-router";
 import { SearchX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { useDocumentTitle } from "@/lib/use-document-title";
 
 type Props = {
   backTo:
@@ -19,7 +18,6 @@ type Props = {
 
 export function NotFoundState({ backTo }: Props) {
   const { t } = useTranslation();
-  useDocumentTitle(t("state.notFound.title"));
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <SearchX aria-hidden className="size-8 text-primary/50" />

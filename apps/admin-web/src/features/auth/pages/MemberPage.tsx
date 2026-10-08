@@ -3,14 +3,12 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { session } from "@/lib/auth/session";
-import { useDocumentTitle } from "@/lib/use-document-title";
 
 const CHAT_APP_URL = import.meta.env.PUBLIC_CHAT_APP_URL;
 
 export function MemberPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  useDocumentTitle(t("member.title"));
 
   const signOut = async () => {
     await session.logout();

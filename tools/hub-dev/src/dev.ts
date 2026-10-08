@@ -181,9 +181,9 @@ async function adminStep(stops: Stop[], notes: string[]): Promise<boolean> {
   }
 }
 
-async function fixtureStep(notes: string[]): Promise<void> {
+async function fixtureStep(notes: string[], contract: boolean): Promise<void> {
   try {
-    await ensureContractFixture(AUTH_URL);
+    if (contract) await ensureContractFixture(AUTH_URL);
   } catch (err) {
     notes.push(`user fixture: ${(err as Error).message}`);
   }
@@ -195,18 +195,18 @@ async function fixtureStep(notes: string[]): Promise<void> {
 }
 
 /** Phòng mẫu (X2a B8) sau `db:migrate` + user fixture; ghi trực tiếp DB bằng `DATABASE_URL` (owner). */
-async function roomsStep(notes: string[]): Promise<void> {
+async function roomsStep(notes: string[], contract: boolean): Promise<void> {
   const url = process.env.DATABASE_URL;
   if (!url) return void notes.push("phòng mẫu: thiếu DATABASE_URL — bỏ qua");
   try {
-    await ensureFixtureRooms(url);
+    if (contract) await ensureFixtureRooms(url);
     if (!(await ensureDemoRooms(url))) notes.push("phòng mẫu evolu: chưa có tenant — bỏ qua");
   } catch (err) {
     notes.push(`phòng mẫu: ${(err as Error).message}`);
   }
 }
 
-/** Agent phòng X2b (`hoadon`/`trello` + quyền A/B/C, tenant evolu) — sau `hub:seed` (cần profile + `assistant`). */
+/** Agent demo evolu (CR-051: Evolu Consultant + Invoices, mọi user evolu) — sau `hub:seed` (cần profile + `assistant`). */
 async function agentsStep(notes: string[]): Promise<void> {
   const url = process.env.DATABASE_URL;
   if (!url) return void notes.push("agent phòng: thiếu DATABASE_URL — bỏ qua");
@@ -251,8 +251,16 @@ function tempAttachDir(stops: Stop[]): string {
   return dir;
 }
 
+/**
+ * CR-051 · tenant `acme`/`beta` + phòng mẫu acme chỉ cho gate/contract test (`done:*` gọi mặc định `contract: true`);
+ * `hub:dev`/`combine:dev` chỉ seed platform + evolu, trừ khi `HUB_DEV_CONTRACT_FIXTURE=1`.
+ */
+export const contractFixtureFromEnv = (env: Record<string, string | undefined> = process.env) =>
+  env.HUB_DEV_CONTRACT_FIXTURE === "1";
+
 /** Dựng toàn bộ; trả `stop` cho phần đã bật. Bước hạ tầng hỏng → ném lỗi (đã dừng phần đã bật). */
-export async function startHubDev(): Promise<HubDev> {
+export async function startHubDev(o: { contract?: boolean } = {}): Promise<HubDev> {
+  const contract = o.contract ?? true;
   const stops: Stop[] = [];
   const notes: string[] = [];
   const stop = async () => {
@@ -261,8 +269,8 @@ export async function startHubDev(): Promise<HubDev> {
   const mode = runtimeMode();
   try {
     if (bunRun(["packages/db/src/migrate.ts"]) !== 0) throw new Error("db:migrate lỗi");
-    if (await adminStep(stops, notes)) await fixtureStep(notes);
-    await roomsStep(notes);
+    if (await adminStep(stops, notes)) await fixtureStep(notes, contract);
+    await roomsStep(notes, contract);
     if (bunRun(["apps/hub-api/src/modules/seed/seed.ts"]) !== 0) throw new Error("hub:seed lỗi");
     await agentsStep(notes);
     if (!(await healthy(HUB_URL))) {
@@ -282,10 +290,11 @@ export async function startHubDev(): Promise<HubDev> {
 }
 
 if (import.meta.main) {
-  const dev = await startHubDev();
+  const contract = contractFixtureFromEnv();
+  const dev = await startHubDev({ contract });
   for (const n of dev.notes) console.warn(`[hub-dev] ${n}`);
   console.log(`[hub-dev] sẵn sàng: HUB_URL=${HUB_URL} AUTH_URL=${AUTH_URL}`);
-  console.log(`[hub-dev] CHAT_CONTRACT_USERS='${contractUsersJson()}'`);
+  if (contract) console.log(`[hub-dev] CHAT_CONTRACT_USERS='${contractUsersJson()}'`);
   const quit = async () => {
     await dev.stop();
     process.exit(0);

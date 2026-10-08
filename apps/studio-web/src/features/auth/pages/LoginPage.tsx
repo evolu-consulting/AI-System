@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from "#/components/ui/alert";
 import { safeNext } from "#/lib/auth/next";
 import { ADMIN_URL, withBase } from "#/lib/env";
 import { readLocal, writeLocal } from "#/lib/storage";
-import { useDocumentTitle } from "#/lib/use-document-title";
 import { login, verifyTotp } from "../api";
 import { LoginForm, type LoginValues } from "../components/LoginForm";
 import { TotpForm, type TotpInput } from "../components/TotpForm";
@@ -28,7 +27,6 @@ export function LoginPage() {
   const [totp, setTotp] = useState<PendingTotp | null>(null);
   const [totpBusy, setTotpBusy] = useState(false);
   const [totpError, setTotpError] = useState<string | null>(null);
-  useDocumentTitle(t(totp ? "login.totp.title" : "login.title"));
 
   const tr = (spec: MessageSpec) => t(spec.key, spec.params);
 

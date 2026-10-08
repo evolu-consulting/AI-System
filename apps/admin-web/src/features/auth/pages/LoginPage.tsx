@@ -8,7 +8,6 @@ import { session, type TotpVerifyResponse } from "@/lib/auth/session";
 import { useSession } from "@/lib/auth/use-session";
 import { describeLoginError } from "@/lib/errors";
 import { normalizeCompanyKey, normalizeUsername } from "@/lib/normalize";
-import { useDocumentTitle } from "@/lib/use-document-title";
 import { useTr } from "@/lib/use-translate";
 
 import { login } from "../api";
@@ -35,7 +34,6 @@ export function LoginPage() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUsername, setLastUsername] = useState("");
-  useDocumentTitle(t(pendingTotp ? "auth.login.totp.title" : "auth.login.title"));
 
   const finish = async (res: TotpVerifyResponse) => {
     if (res.status === "password_change_required") {

@@ -1,7 +1,7 @@
 // CHAT-AC-01, CHAT-AC-02 · màn Đăng nhập: bố cục Login của Admin bỏ cột thương hiệu (plan-frontend §5) — logo ngang,
 // tiêu đề, form 380px giữa trang. Xong → `next` (đường nội bộ) hoặc `/c/new`.
 import { getRouteApi, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandLogo } from "~/components/shared/BrandLogo";
 import { login } from "../api";
@@ -36,10 +36,6 @@ export function LoginPage() {
   const [pending, setPending] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
-
-  useEffect(() => {
-    document.title = t("login.title");
-  }, [t]);
 
   const submit = async (values: LoginValues) => {
     setPending(true);

@@ -9,7 +9,6 @@ import { session } from "@/lib/auth/session";
 import { useSession } from "@/lib/auth/use-session";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
-import { useDocumentTitle } from "@/lib/use-document-title";
 import { useTr } from "@/lib/use-translate";
 import { changePasswordForced } from "../api";
 import { ForcedPasswordForm } from "../components/ForcedPasswordForm";
@@ -23,7 +22,6 @@ export function ForcedPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [expired, setExpired] = useState(false);
   const [newError, setNewError] = useState<string>();
-  useDocumentTitle(t("password.forced.title"));
 
   const toLogin = async () => {
     session.clearPendingChange();

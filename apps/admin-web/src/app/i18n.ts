@@ -8,7 +8,7 @@ export const LOCALE_STORAGE_KEY = "ai.locale";
 type DocLike = { documentElement: { lang: string } };
 type StorageLike = Pick<Storage, "getItem">;
 
-/** Đặt `lang` của trang theo ngôn ngữ `lng` (tiêu đề tab do từng trang đặt: "<H1> · Admin"). */
+/** Đặt `lang` của trang theo ngôn ngữ `lng` (CR-051: tiêu đề tab cố định "Evolu Control" — `rsbuild.config.ts` html.title). */
 export function syncDocument(doc: DocLike, lng: string): void {
   doc.documentElement.lang = lng;
 }

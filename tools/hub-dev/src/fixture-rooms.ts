@@ -46,7 +46,7 @@ const EVOLU: RoomSpec[] = [
     id: gid(2),
     name: "Evolu team",
     owner: "julian.bui",
-    members: ["thomas.tran", "vio.ngo", "edgar.nguyen", "rowan.hoang"],
+    members: ["thomas.tran", "vio.ngo", "edgar.nguyen", "rowan.nguyen"],
     msgs: [],
   },
 ];

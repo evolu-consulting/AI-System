@@ -110,6 +110,26 @@ describe("parseSeedEnv / parseSeedArgs", () => {
   });
 });
 
+describe("CR-051 · --members + alias /dich", () => {
+  it("--members thay thành viên group (mặc định lan); username sai ⇒ lỗi", () => {
+    expect((parseSeedArgs([]) as SeedArgs).members).toEqual(["lan"]);
+    const a = parseSeedArgs([
+      "--tenant",
+      "evolu",
+      "--members",
+      "julian.bui, thomas.tran",
+    ]) as SeedArgs;
+    expect(a.members).toEqual(["julian.bui", "thomas.tran"]);
+    expect(buildSeedPlan(a, "http://x/v1").group.members).toEqual(["julian.bui", "thomas.tran"]);
+    expect("error" in parseSeedArgs(["--members", "a@b"])).toBe(true);
+    expect("error" in parseSeedArgs(["--members="])).toBe(true);
+  });
+  it("lệnh translate có alias dich", () => {
+    const p = buildSeedPlan(parseSeedArgs(["--apps", "translate"]) as SeedArgs, "http://x/v1");
+    expect(p.commands.find((c) => c.name === "translate")?.aliases).toEqual(["dich"]);
+  });
+});
+
 describe("plan / patch", () => {
   it("không chọn chatbot ⇒ không agent; chatbot có input `query` (Hub dify-agent cần input nhận tin)", () => {
     const a = parseSeedArgs(["--apps", "translate"]) as SeedArgs;

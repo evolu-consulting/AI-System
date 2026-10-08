@@ -83,10 +83,10 @@ describe("rooms api", () => {
       `POST /rooms/${U1}/hide`,
     ]);
   });
-  test("listRoomMessages: before_seq; sendRoomMessage / markRoomRead", async () => {
+  test("listRoomMessages: before_seq + limit 30 (CR-051); sendRoomMessage / markRoomRead", async () => {
     reply = { status: 200, body: { items: [message], has_more: true } };
     expect((await listRoomMessages(U1, 40)).has_more).toBe(true);
-    expect(calls[0]?.url).toBe(`/rooms/${U1}/messages?before_seq=40`);
+    expect(calls[0]?.url).toBe(`/rooms/${U1}/messages?before_seq=40&limit=30`);
     reply = { status: 201, body: message };
     const sent = await sendRoomMessage(U1, { content: "hi", client_msg_id: U2 });
     expect([sent.message.seq, sent.runId, sent.flowId]).toEqual([1, null, null]);

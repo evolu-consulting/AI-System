@@ -1,5 +1,6 @@
 // HUB-FR-96…101 · toàn bộ gọi `/rooms*` (spec §3). Gọi API chỉ ở file này (plan-frontend §1).
 import {
+  CHAT_RECENT_PAGE,
   type CreateRoomRequest,
   FLOW_ID_HEADER,
   type MarkRoomFlowReadResponse,
@@ -72,7 +73,10 @@ export async function listRoomMessages(
   signal?: AbortSignal,
 ): Promise<RoomMessagePage> {
   return RoomMessagePageSchema.parse(
-    await api<unknown>(`${base(id)}/messages`, { query: { before_seq: beforeSeq }, signal }),
+    await api<unknown>(`${base(id)}/messages`, {
+      query: { before_seq: beforeSeq, limit: CHAT_RECENT_PAGE },
+      signal,
+    }),
   );
 }
 
@@ -85,7 +89,7 @@ export async function listFlowMessages(
 ): Promise<RoomMessagePage> {
   return RoomMessagePageSchema.parse(
     await api<unknown>(`${base(id)}/messages`, {
-      query: { flow_id: flowId, before_seq: beforeSeq },
+      query: { flow_id: flowId, before_seq: beforeSeq, limit: CHAT_RECENT_PAGE },
       signal,
     }),
   );

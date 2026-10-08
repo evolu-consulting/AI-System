@@ -1,12 +1,10 @@
-// ADM-FR-60 · H1 + mô tả + vùng nút phải; H1 nhận focus khi vào trang (a11y) và đặt document.title.
+// ADM-FR-60 · H1 + mô tả + vùng nút phải; H1 nhận focus khi vào trang (a11y).
 import { type ReactNode, useEffect, useRef } from "react";
-import { useDocumentTitle } from "@/lib/use-document-title";
 
 type Props = { title: string; description?: string; actions?: ReactNode };
 
 export function PageHeader({ title, description, actions }: Props) {
   const ref = useRef<HTMLHeadingElement>(null);
-  useDocumentTitle(title);
   useEffect(() => {
     ref.current?.focus({ preventScroll: true });
   }, []);

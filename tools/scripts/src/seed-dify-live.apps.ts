@@ -51,6 +51,8 @@ export type WorkflowSpec = {
 };
 export type CommandSpec = {
   name: string;
+  /** CR-051: alias (vd `/dich` cho `/translate`); chỉ đặt lúc tạo — seed không sửa alias đã có. */
+  aliases?: string[];
   description: Localized;
   args: ArgSpec[];
   input_map: Record<string, MapEntry>;
@@ -114,6 +116,7 @@ export const APPS: Record<SeedApp, AppSpec> = {
     },
     command: {
       name: "translate",
+      aliases: ["dich"],
       description: { vi: "Dịch văn bản qua Dify", en: "Translate text via Dify" },
       args: [arg("lang", "Ngôn ngữ đích", "Target language", { default: "vi" }), textArg],
       input_map: {

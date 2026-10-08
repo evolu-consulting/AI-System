@@ -12,6 +12,8 @@ export const SeedEnvSchema = z.object({
   APP_ENV: AppEnvSchema,
   SEED_ADMIN_USERNAME: z.string().regex(USERNAME_RE),
   SEED_ADMIN_PASSWORD: z.string().min(PASSWORD_MIN_LEN).max(PASSWORD_MAX_LEN),
+  // CR-051: email tuỳ chọn của platform_admin đầu tiên (dev: admin@evolu.com).
+  SEED_ADMIN_EMAIL: z.email().max(254).optional(),
 });
 export type SeedEnv = z.infer<typeof SeedEnvSchema>;
 
@@ -33,6 +35,7 @@ export async function runSeed(opts: {
   url: string;
   adminUsername: string;
   adminPassword: string;
+  adminEmail?: string;
 }): Promise<SeedResult> {
   const sql = postgres(opts.url, { max: 1, onnotice: () => {} });
   try {
@@ -50,7 +53,7 @@ export async function runSeed(opts: {
       const f = await tx`insert into admin.features (id, key, name, status)
         values (${Bun.randomUUIDv7()}, ${CORE_FEATURE.key}, ${tx.json(CORE_FEATURE.name)}, 'on')
         on conflict (key) do nothing returning id`;
-      const admin = await seedAdmin(tx, row.id, opts.adminUsername, opts.adminPassword);
+      const admin = await seedAdmin(tx, row.id, opts);
       return { tenant, feature: f.length ? "created" : "exists", admin };
     });
   } finally {
@@ -61,17 +64,17 @@ export async function runSeed(opts: {
 async function seedAdmin(
   tx: postgres.TransactionSql,
   tenantId: string,
-  username: string,
-  password: string,
+  a: { adminUsername: string; adminPassword: string; adminEmail?: string },
 ): Promise<Outcome> {
+  const { adminUsername: username, adminPassword: password } = a;
   const found =
     await tx`select 1 from admin.users where tenant_id = ${tenantId} and username = ${username}`;
   if (found.length) return "exists";
   // Chỉ băm khi cần tạo (argon2 ~22 ms) — lần chạy lại không tốn và không đổi hash.
   const hash = await hashPassword(password);
   const ins = await tx`insert into admin.users
-    (id, tenant_id, username, password_hash, display_name, role, locale, must_change_password)
-    values (${Bun.randomUUIDv7()}, ${tenantId}, ${username}, ${hash}, 'Platform Admin',
+    (id, tenant_id, username, password_hash, display_name, email, role, locale, must_change_password)
+    values (${Bun.randomUUIDv7()}, ${tenantId}, ${username}, ${hash}, 'Platform Admin', ${a.adminEmail ?? null},
             'platform_admin', 'vi', false)
     on conflict (tenant_id, username) do nothing returning id`;
   return ins.length ? "created" : "exists";
@@ -84,6 +87,7 @@ if (import.meta.main) {
       url: env.DATABASE_URL,
       adminUsername: env.SEED_ADMIN_USERNAME,
       adminPassword: env.SEED_ADMIN_PASSWORD,
+      adminEmail: env.SEED_ADMIN_EMAIL,
     });
     console.log(`db:seed OK: tenant ${r.tenant}, feature ${r.feature}, admin ${r.admin}`);
   } catch (err) {

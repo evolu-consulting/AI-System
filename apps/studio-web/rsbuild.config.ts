@@ -13,7 +13,7 @@ export default defineConfig({
   source: { entry: { index: "./src/main.tsx" } },
   html: {
     template: "./index.html",
-    title: "Agent Studio",
+    title: "Agent Forge",
     favicon: "./public/brand/evoluconsulting-icon.svg",
   },
   // Lazy compilation + autoCodeSplitting của router → chunk route thiếu module ("reading 'call'") ở dev.

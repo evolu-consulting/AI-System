@@ -3,12 +3,10 @@ import { Link } from "@tanstack/react-router";
 import { SearchX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "#/components/ui/button";
-import { useDocumentTitle } from "#/lib/use-document-title";
 import { AppShell } from "../components/AppShell";
 
 export function NotFoundPage() {
   const { t } = useTranslation();
-  useDocumentTitle(t("notFound.title"));
   return (
     <AppShell>
       <div className="flex flex-col items-center gap-3 py-16 text-center">

@@ -1,5 +1,6 @@
 // ADM-FR-21 · HUB-FR-89 · X1-R01..R05, R14 · luật thuần `seed:dify` (plan X1 §5.2): danh sách trắng env, cờ CLI, kế hoạch
 // (không bao giờ chứa key), patch chỉ trường khác (idempotent), bản in dry-run.
+import { USERNAME_RE } from "@ai/contracts";
 import {
   API_URL_VAR,
   APPS,
@@ -22,6 +23,8 @@ export type SeedArgs = {
   apps: SeedApp[];
   tenant: string;
   group: string;
+  /** CR-051: thành viên group (username); mặc định `GROUP_MEMBERS`. */
+  members: string[];
   rotateSecrets: boolean;
 };
 export type SeedEnv =
@@ -99,19 +102,21 @@ function splitFlag(argv: string[]): { flag: string; value?: string }[] {
     const a = argv[i] as string;
     const eq = a.indexOf("=");
     if (eq > 0) out.push({ flag: a.slice(0, eq), value: a.slice(eq + 1) });
-    else if (["--apps", "--tenant", "--group"].includes(a)) out.push({ flag: a, value: argv[++i] });
+    else if (["--apps", "--tenant", "--group", "--members"].includes(a))
+      out.push({ flag: a, value: argv[++i] });
     else out.push({ flag: a });
   }
   return out;
 }
 
-/** `--apply` (mặc định dry-run), `--apps a,b`, `--tenant`, `--group`, `--rotate-secrets`. Cờ lạ ⇒ lỗi. */
+/** `--apply` (mặc định dry-run), `--apps a,b`, `--tenant`, `--group`, `--members u1,u2` (CR-051), `--rotate-secrets`. Cờ lạ ⇒ lỗi. */
 export function parseSeedArgs(argv: string[]): SeedArgs | { error: string } {
   const r: SeedArgs = {
     apply: false,
     apps: [...SEED_APPS],
     tenant: "acme",
     group: "dify-demo",
+    members: [...GROUP_MEMBERS],
     rotateSecrets: false,
   };
   for (const f of splitFlag(argv)) {
@@ -146,6 +151,16 @@ function applyFlag(r: SeedArgs, { flag, value }: { flag: string; value?: string 
     r.apps = apps;
     return null;
   }
+  if (flag === "--members") {
+    const names = (value ?? "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    if (names.length === 0 || !names.every((n) => USERNAME_RE.test(n)))
+      return "--members cần danh sách username hợp lệ, cách nhau dấu phẩy";
+    r.members = names;
+    return null;
+  }
   if (flag !== "--tenant" && flag !== "--group") return `cờ không hỗ trợ: ${flag}`;
   if (!value || !KEY_RE.test(value)) return `${flag} cần key hợp lệ (a-z, 0-9, -)`;
   r[flag === "--tenant" ? "tenant" : "group"] = value;
@@ -170,7 +185,7 @@ export function buildSeedPlan(a: SeedArgs, apiUrl: string): SeedPlan {
       key: a.group,
       name: { vi: "Dify demo", en: "Dify demo" },
       description: "Nhóm dùng thử app Dify thật (seed:dify X1)",
-      members: [...GROUP_MEMBERS],
+      members: [...a.members],
     },
     feature: { key: FEATURE.key, name: { ...FEATURE.name } },
     rotate_secrets: a.rotateSecrets,

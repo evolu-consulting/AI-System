@@ -3,13 +3,11 @@ import { ShieldX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "#/components/ui/button";
 import { CHAT_URL } from "#/lib/env";
-import { useDocumentTitle } from "#/lib/use-document-title";
 import { useLogout } from "../hooks/use-logout";
 
 export function ForbiddenPage() {
   const { t } = useTranslation();
   const { logout, busy } = useLogout();
-  useDocumentTitle(t("forbidden.title"));
   return (
     <main id="main" className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 text-center">

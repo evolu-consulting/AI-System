@@ -133,11 +133,16 @@ async function conversationPage(
   return { items: page.items.map(toConversation), next_cursor: page.next };
 }
 
-/** E10 · flow `created_at` tăng, `next_cursor` = trang sau. */
+/** E10 · flow `created_at` tăng (CR-051 `order=desc`: giảm), `next_cursor` = trang sau. */
 async function flowPage(tx: Tx, o: Owner, id: string, q: FlowListQuery): Promise<ChatPage<Flow>> {
   await requireLive(tx, o, id);
   const after = cursorOf(q.cursor);
-  const rows = await threads.listFlows(tx, o, { conversationId: id, after, limit: q.limit });
+  const rows = await threads.listFlows(tx, o, {
+    conversationId: id,
+    after,
+    limit: q.limit,
+    desc: q.order === "desc",
+  });
   const page = takePage(rows, q.limit);
   return { items: await toFlows(tx, o, page.items), next_cursor: page.next };
 }

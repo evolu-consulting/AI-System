@@ -36,7 +36,7 @@ export default defineConfig({
   source: { entry: { index: "./src/main.tsx" } },
   html: {
     template: "./index.html",
-    title: "AI Chat",
+    title: "Evolu Copilot",
     favicon: "./public/brand/evoluconsulting-icon.svg",
   },
   // Lazy compilation + autoCodeSplitting của router → chunk route thiếu module ("reading 'call'") ở dev.

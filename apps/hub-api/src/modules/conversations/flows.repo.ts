@@ -28,15 +28,18 @@ const ownedBy = (t: { tenantId: AnyPgColumn; userId: AnyPgColumn }, o: Owner): S
 const activeRun = sql<string | null>`(select r.id from hub.runs r
   where r.flow_id = "flows"."id" and r.status = 'running' limit 1)`;
 
-/** E10 · flow của hội thoại, `created_at` tăng (index `flows_conversation_idx`); đọc `limit + 1`. */
+/** E10 · flow của hội thoại, `created_at` tăng (CR-051: `desc` ⇒ giảm, cursor = trang cũ hơn); index `flows_conversation_idx`; đọc `limit + 1`. */
 export async function listFlows(
   tx: Tx,
   o: Owner,
-  p: { conversationId: string; after?: PageKey; limit: number },
+  p: { conversationId: string; after?: PageKey; limit: number; desc?: boolean },
 ): Promise<FlowRow[]> {
   const conds: SQL[] = [ownedBy(f, o), eq(f.conversationId, p.conversationId)];
   if (p.after) {
-    conds.push(sql`(${f.createdAt}, ${f.id}) > (${p.after[0]}::timestamptz, ${p.after[1]}::uuid)`);
+    const cmp = p.desc ? sql`<` : sql`>`;
+    conds.push(
+      sql`(${f.createdAt}, ${f.id}) ${cmp} (${p.after[0]}::timestamptz, ${p.after[1]}::uuid)`,
+    );
   }
   const rows = await tx
     .select({
@@ -51,7 +54,7 @@ export async function listFlows(
     })
     .from(f)
     .where(and(...conds))
-    .orderBy(asc(f.createdAt), asc(f.id))
+    .orderBy(...(p.desc ? [desc(f.createdAt), desc(f.id)] : [asc(f.createdAt), asc(f.id)]))
     .limit(p.limit + 1);
   return rows.map(({ at, ...r }) => ({ ...r, key: [at, r.id] as const }));
 }

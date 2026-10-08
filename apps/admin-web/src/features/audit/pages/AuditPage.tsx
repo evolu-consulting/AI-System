@@ -3,7 +3,6 @@ import { getRouteApi, Outlet } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { loadError } from "@/lib/load-error";
-import { useDocumentTitle } from "@/lib/use-document-title";
 import { AuditFilters } from "../components/AuditFilters";
 import { AuditTimeline } from "../components/AuditTimeline";
 import { useAuditView } from "../hooks/use-audit-view";
@@ -12,7 +11,6 @@ const route = getRouteApi("/_authed/audit");
 
 export function AuditPage() {
   const { t } = useTranslation();
-  useDocumentTitle(t("audit.title"));
   const v = useAuditView(route.useSearch());
   const { query } = v;
   const error = query.isError

@@ -177,8 +177,14 @@ export const ConversationListQuerySchema = z.strictObject({
 });
 export type ConversationListQuery = z.infer<typeof ConversationListQuerySchema>;
 
-/** E10 */
-export const FlowListQuerySchema = z.strictObject(PageQueryShape);
+/** CR-051 · cỡ trang tin/flow ở Chat: lần đầu 30 mục mới nhất, cuộn lên mới tải tiếp (Hỏi AI, phòng, thread, khung flow). */
+export const CHAT_RECENT_PAGE = 30;
+
+/** E10 · CR-051 (chỉ thêm): `order=desc` ⇒ mới nhất trước, `next_cursor` = trang cũ hơn; vắng = `asc` như cũ. */
+export const FlowListQuerySchema = z.strictObject({
+  ...PageQueryShape,
+  order: z.enum(["asc", "desc"]).default("asc"),
+});
 export type FlowListQuery = z.infer<typeof FlowListQuerySchema>;
 
 /** E11 · không `flow_id` = mọi flow của hội thoại. */

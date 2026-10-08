@@ -53,11 +53,14 @@ function ConversationView({ convId }: { convId: string }) {
   const { t } = useTranslation();
   const { flow: openFlowId } = routeApi.useSearch();
   const conv = useConversation(convId);
-  const flows = useFlows(convId);
+  const flows = useFlows(convId, openFlowId);
   const flowIds = useMemo(() => new Set(flows.flows.map((f) => f.id)), [flows.flows]);
   const pending = useRuns((runs) => pendingRunKeys(runs, convId, flowIds));
   const pendingKeys = useMemo(() => (pending ? pending.split(",") : []), [pending]);
-  const autoscroll = useAutoscroll(useActiveRun(convId) !== undefined);
+  const autoscroll = useAutoscroll(useActiveRun(convId) !== undefined, {
+    has: flows.hasNextPage,
+    load: flows.loadOlder,
+  });
   const composer = useMainComposer(convId, autoscroll.scrollToBottom);
   const open = useOpenFlow(convId, openFlowId, flows);
   const mainDraftKey = useDraftKey(convId, null);
@@ -79,6 +82,7 @@ function ConversationView({ convId }: { convId: string }) {
         <ThreadView
           convId={convId}
           loading={flows.isPending}
+          loadingOlder={flows.isFetchingNextPage}
           flows={flows.flows}
           pendingKeys={pendingKeys}
           openFlowId={openFlowId}

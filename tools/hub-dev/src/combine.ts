@@ -17,7 +17,7 @@ import {
   webEnv,
   wslRuntimeScript,
 } from "../../scripts/src/combine.rules";
-import { healthy, REPO, startHubDev } from "./dev";
+import { contractFixtureFromEnv, healthy, REPO, startHubDev } from "./dev";
 import { startDifyMock } from "./dify-mock";
 import { contractUsersJson, DEV_PASSWORD } from "./fixture";
 
@@ -145,7 +145,7 @@ async function startProcs(
     );
   Object.assign(process.env, env["admin-api"], env["hub-api"]);
   process.env.HUB_SEED_PROFILE ||= "claude-sub-1"; // Runtime thật (WSL claude-sub), không phải fake-1 của hub:dev
-  const dev = await startHubDev();
+  const dev = await startHubDev({ contract: contractFixtureFromEnv() });
   track(t, "admin-api"); // dừng cùng `dev.stop` (no-op riêng)
   track(t, "hub-api", dev.stop);
   t.notes.push(...dev.notes);

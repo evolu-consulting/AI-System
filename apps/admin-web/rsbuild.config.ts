@@ -12,7 +12,7 @@ export default defineConfig({
   html: {
     // Rsbuild không có option `lang` → template riêng đặt `<html lang="vi">`.
     template: "./index.html",
-    title: "Admin Console",
+    title: "Evolu Control",
     favicon: "./public/brand/evoluconsulting-icon.svg",
   },
   // Lazy compilation + autoCodeSplitting của router → chunk route thiếu module ("reading 'call'") ở dev.

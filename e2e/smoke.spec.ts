@@ -18,7 +18,7 @@ test("ADM-NFR-06 · M0-AC18 · mở / thấy trang Đăng nhập", async ({ page
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByRole("main")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "Đăng nhập" })).toBeVisible();
-  await expect(page).toHaveTitle("Đăng nhập · Admin");
+  await expect(page).toHaveTitle("Evolu Control"); // CR-051: tên app cố định, không theo route
   await expect(page.locator("html")).toHaveAttribute("lang", "vi");
   expect(problems).toEqual([]);
 });
