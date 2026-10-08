@@ -79,5 +79,6 @@ test("CHAT-AC-35 · theme T2b: localStorage ném lỗi — trang đăng nhập v
     Storage.prototype.setItem = boom;
   });
   await page.goto("/login");
-  await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
+  // [CR-052] localStorage bị chặn → không đọc được lựa chọn VI → mặc định EN ("Sign in").
+  await expect(page.getByRole("button", { name: /^(Sign in|Đăng nhập)$/ })).toBeVisible();
 });
