@@ -2,6 +2,8 @@
 
 Dành cho người dùng kiểm tay toàn luồng Chat + Admin + Studio (Hub). Nguồn: `docs/specs/X1-combine/spec.md` §6–§7. Mọi lệnh chạy ở gốc repo `D:\AI\ai-system`.
 
+Kiểm tay chat DM/nhóm giữa 2 user (X2a I2): xem [`docs/specs/X2a-rooms/manual-test-I2.md`](../specs/X2a-rooms/manual-test-I2.md).
+
 ## 1. Chuẩn bị
 1. Docker Desktop đang chạy (script tự dựng Postgres, Redis, Mailpit).
 2. Có `.env.local`: chép từ `.env.example` rồi điền `SEED_ADMIN_PASSWORD` (mật khẩu `platform_admin` dev). Không commit file này.
