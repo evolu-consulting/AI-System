@@ -1,7 +1,13 @@
 // HUB-FR-99, HUB-FR-100, X2a-AC08, X2a-AC12 · client `/me/stream`: một kết nối/tab, `Last-Event-ID` (chuỗi mờ, chỉ bộ nhớ),
 // backoff không bỏ cuộc, phát hiện ping-timeout, `stream.reset` xoá id + báo router. Không phụ thuộc React/DOM:
 // mọi I/O qua `MeStreamDeps` để unit test dựng stream/đồng hồ giả.
-import { type MeStreamEvent, parseMeStreamEvent, type RawSseEvent } from "@ai/contracts/chat";
+import {
+  type MeStreamEvent,
+  type MeStreamRunEvent,
+  parseMeStreamEvent,
+  parseMeStreamRunEvent,
+  type RawSseEvent,
+} from "@ai/contracts/chat";
 import { ApiError } from "~/lib/http";
 import { backoffDelay, DOWN_AFTER_FAILURES, IDLE_TIMEOUT_MS } from "./lib/backoff";
 import type { RealtimeStore } from "./realtime-store";
@@ -20,8 +26,8 @@ export type MeStreamDeps = {
   sleep(ms: number, signal: AbortSignal): Promise<void>;
   /** Hẹn `cb` sau `ms`; trả hàm huỷ. */
   setTimer(cb: () => void, ms: number): () => void;
-  /** Sự kiện đã kiểm schema (kể cả `stream.reset`). */
-  onEvent(e: MeStreamEvent): void;
+  /** Sự kiện đã kiểm schema (kể cả `stream.reset` và `room.run_*` của X2b). */
+  onEvent(e: MeStreamEvent | MeStreamRunEvent): void;
   /** Cache phòng đã có dữ liệu (lần nối đầu có thể hụt khe giữa fetch và `tail` ⇒ cần nạp lại). */
   hasRoomsData?(): boolean;
 };
@@ -163,7 +169,9 @@ export class MeStreamDriver {
   }
 
   private handle(raw: RawSseEvent): void {
-    const event = parseMeStreamEvent(raw.event, raw.data);
+    // X2b: `room.run_*` nằm ngoài `ME_STREAM_EVENTS` ⇒ thử parser run khi parser X2a trả null (vẫn ghi `lastEventId`).
+    const event =
+      parseMeStreamEvent(raw.event, raw.data) ?? parseMeStreamRunEvent(raw.event, raw.data);
     if (!event) {
       if (import.meta.env?.DEV) console.warn("[me-stream] bỏ khung không hợp lệ", raw.event);
       return;

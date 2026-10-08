@@ -257,7 +257,21 @@
       "group": "Nhắn cho nhóm… gõ @ để hỏi agent",
       "dm": "Nhắn cho {{name}}… gõ @ để hỏi agent"
     },
-    "hint": "Agent chỉ trả lời khi được @ — chạy bằng quyền và quota của người hỏi."
+    "hint": "Agent chỉ trả lời khi được @ — chạy bằng quyền và quota của người hỏi.",
+    "block": "Trả lời của agent {{name}}",
+    "askedBy": "{{name}} hỏi",
+    "askedByMe": "Bạn hỏi",
+    "runsAs": "Chạy bằng quyền của {{name}}",
+    "runsAsMe": "Chạy bằng quyền của bạn",
+    "working": "{{agent}} đang xử lý…",
+    "onlyCallerStop": "Chỉ {{name}} dừng được",
+    "failed": "Agent không trả lời được. Thử hỏi lại sau.",
+    "cancelledOther": "Đã huỷ",
+    "steps": "{{count}} bước · {{seconds}}s",
+    "orchestratorName": "Orchestrator",
+    "toast": {
+      "stopFailed": "Không dừng được. Thử lại sau."
+    }
   },
   "rooms": {
     "section": "Tin nhắn & Nhóm",

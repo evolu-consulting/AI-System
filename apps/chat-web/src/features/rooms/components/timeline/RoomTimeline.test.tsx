@@ -1,4 +1,4 @@
-// HUB-FR-96, HUB-FR-100 · RoomTimeline (render tĩnh): log, tin mình/người khác, tên chỉ ở nhóm, "Đã xem", @ nguyên chữ, agent bị bỏ.
+// HUB-FR-96, HUB-FR-100 · RoomTimeline (render tĩnh): log, tin mình/người khác, tên chỉ ở nhóm, "Đã xem", @ nguyên chữ, tin agent (X2b).
 import { beforeAll, describe, expect, test } from "bun:test";
 import type { RoomMember, RoomMessage } from "@ai/contracts/chat";
 import { loadChatLocale } from "@ai/i18n/chat-locales";
@@ -95,8 +95,64 @@ describe("RoomTimeline", () => {
     expect(render()).toContain("Đầu cuộc trò chuyện");
     expect(render({ hasOlder: true })).not.toContain("Đầu cuộc trò chuyện");
   });
-  test("tin của agent không dựng ở X2a", () => {
-    const html = render({ messages: [msg(3, THU, "bot says", "agent")] });
-    expect(html).not.toContain("bot says");
-  });
+});
+
+test("X2b · tin agent → AgentBlock theo caller của lượt; run đang chạy → khối chờ cuối timeline", () => {
+  const agent = { key: "hoadon", name: { vi: "Hoá đơn", en: "Invoices" } };
+  const flow = "00000000-0000-4000-8000-000000000301";
+  const m: RoomMessage = {
+    ...msg(3, THU, "HD-12 hợp lệ.", "agent"),
+    agent,
+    caller: { id: THU, display_name: "Thu Hà" },
+    run_id: flow,
+    flow_id: flow,
+    steps: { count: 2, ms: 1500 },
+  };
+  const run = {
+    run_id: "00000000-0000-4000-8000-000000000302",
+    flow_id: flow,
+    trigger_message_id: flow,
+    agent,
+    caller: { id: THU, display_name: "Thu Hà" },
+    status: "running" as const,
+    started_at: "2026-10-01T09:16:00.000Z",
+  };
+  const html = render({ messages: [m], pending: [run] });
+  expect(html).toContain('aria-label="Trả lời của agent Hoá đơn"');
+  expect(html).toContain("HD-12 hợp lệ.");
+  expect(html).toContain("Thu Hà hỏi");
+  expect(html).toContain("Chạy bằng quyền của Thu Hà");
+  expect(html).toContain("2 bước · 1.5s");
+  expect(html).toContain("Trả lời tiếp");
+  expect(html).toContain("Hoá đơn đang xử lý…");
+  expect(html).toContain("Chỉ Thu Hà dừng được");
+  expect(html).not.toContain(">Dừng<");
+  expect(html.indexOf("HD-12")).toBeLessThan(html.indexOf("đang xử lý"));
+});
+
+test('X2b · lượt của mình: "Bạn hỏi", nút Dừng; run lỗi/huỷ → câu chung', () => {
+  const base = {
+    ...msg(4, THU, "lỗi nội bộ quota", "agent"),
+    caller: { id: ME, display_name: "Lan Trần" },
+  };
+  const failed = render({ messages: [{ ...base, run_status: "failed" }] });
+  expect(failed).toContain("Bạn hỏi");
+  expect(failed).toContain("Chạy bằng quyền của bạn");
+  expect(failed).toContain("Orchestrator");
+  expect(failed).toContain("Agent không trả lời được. Thử hỏi lại sau.");
+  expect(failed).not.toContain("quota");
+  const cancelled = render({ messages: [{ ...base, run_status: "cancelled" }] });
+  expect(cancelled).toContain("Đã huỷ");
+  const run = {
+    run_id: "00000000-0000-4000-8000-000000000303",
+    flow_id: "00000000-0000-4000-8000-000000000304",
+    trigger_message_id: "00000000-0000-4000-8000-000000000305",
+    agent: null,
+    caller: { id: ME, display_name: "Lan Trần" },
+    status: "running" as const,
+    started_at: "2026-10-01T09:16:00.000Z",
+  };
+  const mine = render({ messages: [], pending: [run] });
+  expect(mine).toContain(">Dừng<");
+  expect(mine).not.toContain("dừng được");
 });

@@ -1,6 +1,6 @@
 // HUB-FR-96, HUB-FR-100 · ghép màn phòng: header + dòng thời gian + composer; 404 → RoomNotFound.
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
@@ -10,7 +10,9 @@ import { useMarkRead } from "../hooks/use-mark-read";
 import { useRoom, useRoomMessages } from "../hooks/use-room";
 import { useRoomExit } from "../hooks/use-room-actions";
 import { useRoomLost } from "../hooks/use-room-lost";
+import { useRoomRuns } from "../hooks/use-room-runs";
 import { useRoomScroll } from "../hooks/use-room-scroll";
+import { lastIsOwnTurn, newFromOthers } from "../lib/room-agent";
 import { isRoomNotFound } from "../lib/room-errors";
 import { lastSeqOf, roomTitle, seenBy } from "../lib/room-logic";
 import { roomToast } from "../lib/room-toast";
@@ -47,7 +49,14 @@ export function RoomView({ roomId }: { roomId: string }) {
   const msgs = useRoomMessages(roomId);
   const { messages } = msgs;
   const lastSeq = lastSeqOf(messages);
-  const lastIsMine = messages[messages.length - 1]?.sender.id === myId;
+  // R19: tin agent của lượt mình gửi cũng là "của mình" (không pill, đánh dấu đã đọc).
+  const lastIsMine = lastIsOwnTurn(messages, myId);
+  const pending = useRoomRuns(roomId, room.data?.active_runs, messages, myId);
+  const navigate = useNavigate();
+  const openFlow = useCallback(
+    (flow: string) => void navigate({ to: "/rooms/$id", params: { id: roomId }, search: { flow } }),
+    [navigate, roomId],
+  );
   const loading = room.isPending || msgs.isPending;
   const failed = !loading && (room.isError || msgs.isError);
   const scroll = useRoomScroll({
@@ -65,9 +74,7 @@ export function RoomView({ roomId }: { roomId: string }) {
 
   if (isRoomNotFound(room.error) || isRoomNotFound(msgs.error)) return <RoomNotFound />;
   const group = room.data?.kind === "group";
-  const newCount = scroll.atBottom
-    ? 0
-    : messages.filter((m) => m.seq > scroll.seenSeq && m.sender.id !== myId).length;
+  const newCount = scroll.atBottom ? 0 : newFromOthers(messages, scroll.seenSeq, myId);
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1">
@@ -108,6 +115,8 @@ export function RoomView({ roomId }: { roomId: string }) {
                 scrollRef={scroll.scrollRef}
                 contentRef={scroll.contentRef}
                 onScroll={scroll.onScroll}
+                pending={pending}
+                onReply={openFlow}
               />
               {newCount > 0 && <NewMessagesPill count={newCount} onClick={scroll.scrollToBottom} />}
             </div>

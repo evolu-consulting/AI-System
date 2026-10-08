@@ -7,7 +7,7 @@ import {
   type RoomMessagesData,
   roomKeys,
 } from "~/features/rooms/lib/room-cache";
-import { createEventRouter, type RoomLostReason } from "./event-router";
+import { createEventRouter, type RoomLostReason, type RoutedEvent } from "./event-router";
 
 const AT = "2026-10-07T00:00:00.000Z";
 const LATER = "2026-10-07T01:00:00.000Z";
@@ -50,7 +50,7 @@ const msg = (n: number, seq: number, content = "xin chào"): RoomMessage => ({
 
 let client: QueryClient;
 let lost: [string, RoomLostReason][];
-let route: (e: MeStreamEvent) => void;
+let route: (e: RoutedEvent) => void;
 
 const seedList = (...rs: RoomSummary[]) =>
   client.setQueryData<RoomListData>(roomKeys.list, {
@@ -166,4 +166,79 @@ test("stream.reset invalidate toàn bộ ['rooms'] mà không xoá cache", () =>
   expect(items()).toHaveLength(1);
   expect(client.getQueryState(roomKeys.list)?.isInvalidated).toBe(true);
   expect(client.getQueryState(roomKeys.detail(uid(1)))?.isInvalidated).toBe(true);
+});
+
+// X2b · room.run_* + tin agent
+const AGENT = { key: "hoadon", name: { vi: "hoadon", en: "hoadon" } };
+const started = (n: number): RoutedEvent => ({
+  event: "room.run_started",
+  data: {
+    room_id: uid(1),
+    run_id: uid(700 + n),
+    flow_id: uid(800 + n),
+    trigger_message_id: uid(100 + n),
+    agent: AGENT,
+    caller: { id: OTHER, display_name: "O" },
+  },
+});
+const runs = () => client.getQueryData<RoomDetail>(roomKeys.detail(uid(1)))?.active_runs ?? [];
+
+test("X2b · started → thêm (khử trùng), waiting → cập nhật, finished → bỏ", () => {
+  client.setQueryData(roomKeys.detail(uid(1)), detail(1));
+  route(started(1));
+  route(started(1));
+  route(started(2));
+  expect(runs().map((r) => r.run_id)).toEqual([uid(701), uid(702)]);
+  route({
+    event: "room.run_waiting",
+    data: {
+      room_id: uid(1),
+      run_id: uid(701),
+      flow_id: uid(801),
+      caller_id: OTHER,
+      kind: "side_effect",
+    },
+  });
+  expect(runs()[0]).toMatchObject({ status: "waiting", wait_kind: "side_effect" });
+  route({
+    event: "room.run_finished",
+    data: {
+      room_id: uid(1),
+      run_id: uid(701),
+      flow_id: uid(801),
+      status: "cancelled",
+      message_id: null,
+    },
+  });
+  expect(runs().map((r) => r.run_id)).toEqual([uid(702)]);
+});
+
+test("X2b · tin agent cùng run_id bỏ run chờ; tin placement=flow không vào timeline, tăng đếm khối gốc", () => {
+  seedList(room(1));
+  client.setQueryData(roomKeys.detail(uid(1)), detail(1));
+  route(started(2));
+  const agentMsg: RoomMessage = {
+    ...msg(1, 2, "HD-12"),
+    sender_type: "agent",
+    run_id: uid(702),
+    flow_id: uid(802),
+    caller: { id: OTHER, display_name: "O" },
+    flow: { message_count: 2, last_active_at: AT },
+  };
+  client.setQueryData<RoomMessagesData>(roomKeys.messages(uid(1)), {
+    pages: [{ items: [msg(1, 1)], has_more: false }],
+    pageParams: [undefined],
+  });
+  route({ event: "room.message", data: { room_id: uid(1), message: agentMsg } });
+  expect(runs()).toEqual([]);
+  route({
+    event: "room.message",
+    data: {
+      room_id: uid(1),
+      message: { ...msg(1, 3, "tiếp"), flow_id: uid(802), placement: "flow" },
+    },
+  });
+  const items = client.getQueryData<RoomMessagesData>(roomKeys.messages(uid(1)))?.pages[0]?.items;
+  expect(items?.map((x) => x.seq)).toEqual([1, 2]);
+  expect(items?.[1]?.flow).toEqual({ message_count: 3, last_active_at: LATER });
 });

@@ -257,7 +257,21 @@
       "group": "Message the group… type @ to ask an agent",
       "dm": "Message {{name}}… type @ to ask an agent"
     },
-    "hint": "Agents reply only when @-mentioned — they run with the asker's permissions and quota."
+    "hint": "Agents reply only when @-mentioned — they run with the asker's permissions and quota.",
+    "block": "Reply from agent {{name}}",
+    "askedBy": "Asked by {{name}}",
+    "askedByMe": "You asked",
+    "runsAs": "Runs with {{name}}'s permissions",
+    "runsAsMe": "Runs with your permissions",
+    "working": "{{agent}} is working…",
+    "onlyCallerStop": "Only {{name}} can stop this",
+    "failed": "The agent couldn't respond. Try asking again later.",
+    "cancelledOther": "Cancelled",
+    "steps": "{{count}} steps · {{seconds}}s",
+    "orchestratorName": "Orchestrator",
+    "toast": {
+      "stopFailed": "Couldn't stop. Try again later."
+    }
   },
   "rooms": {
     "section": "Messages & Groups",

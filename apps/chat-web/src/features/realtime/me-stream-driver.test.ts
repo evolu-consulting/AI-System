@@ -1,6 +1,6 @@
 // HUB-FR-99, HUB-FR-100, X2a-AC08, X2a-AC12 · driver /me/stream với stream/đồng hồ giả.
 import { expect, test } from "bun:test";
-import type { MeStreamEvent } from "@ai/contracts/chat";
+import type { MeStreamEvent, MeStreamRunEvent } from "@ai/contracts/chat";
 import { ApiError } from "~/lib/http";
 import { readRawSse } from "./lib/read-raw-sse";
 import { type MeStreamDeps, MeStreamDriver } from "./me-stream-driver";
@@ -25,7 +25,7 @@ function bodyOf(chunks: string[], hang: boolean, signal: AbortSignal) {
 
 function setup(steps: Step[], hasRoomsData?: () => boolean) {
   const store = createRealtimeStore();
-  const events: MeStreamEvent[] = [];
+  const events: (MeStreamEvent | MeStreamRunEvent)[] = [];
   const opens: (string | null)[] = [];
   const sleeps: number[] = [];
   const timers: (() => void)[] = [];
@@ -58,6 +58,34 @@ function setup(steps: Step[], hasRoomsData?: () => boolean) {
   };
   return { store, driver: new MeStreamDriver(store, deps), events, opens, sleeps, timers, done };
 }
+
+test("X2b · room.run_finished (ngoài ME_STREAM_EVENTS) vẫn tới router và ghi lastEventId", async () => {
+  const run = "00000000-0000-4000-8000-000000000002";
+  const data = JSON.stringify({
+    room_id: ROOM,
+    run_id: run,
+    flow_id: run,
+    status: "cancelled",
+    message_id: null,
+  });
+  const t = setup([
+    {
+      chunks: [
+        `id: 7-0
+event: room.run_finished
+data: ${data}
+
+`,
+      ],
+    },
+    { chunks: [] },
+  ]);
+  t.driver.start();
+  await t.done;
+  expect(t.events.map((e) => e.event)).toEqual(["room.run_finished"]);
+  expect(t.opens).toEqual([null, "7-0", "7-0"]);
+  t.driver.stop();
+});
 
 test("mở với Last-Event-ID rỗng, ping đầu tiên → open, nối lại gửi id cuối", async () => {
   const t = setup([{ chunks: [": ping\n\n", deleted("5-0")] }, { chunks: [] }]);

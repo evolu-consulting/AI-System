@@ -1,5 +1,5 @@
 // HUB-FR-96 · một tin: người khác = avatar chữ cái + tên + giờ (tên chỉ ở nhóm); tin mình = "Bạn · giờ", lệch phải.
-// Chuỗi `@xxx` giữ nguyên chữ (R16); `@key` đầu tin được tô. Tin của agent: X2b cắm FlowBlock; X2a không dựng gì.
+// Chuỗi `@xxx` giữ nguyên chữ (R16); `@key` đầu tin được tô. Tin của agent: `RoomTimeline` dựng `AgentBlock` (X2b D6).
 import type { RoomMessage } from "@ai/contracts/chat";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,7 +24,7 @@ type Props = { message: RoomMessage; mine: boolean; group: boolean };
 
 function MessageItemImpl({ message, mine, group }: Props) {
   const { t } = useTranslation();
-  if (message.sender_type !== "user") return null; // AgentMessageSlot (X2b)
+  if (message.sender_type !== "user") return null; // agent → AgentBlock
   const time = timeOf(message.created_at);
   const name = mine ? t("rooms.you") : message.sender.display_name;
   return (

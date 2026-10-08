@@ -1,8 +1,22 @@
 // HUB-FR-99, HUB-FR-100, CHAT-AC-37…40, X2a-AC08 · sự kiện `/me/stream` → cập nhật cache TanStack Query (plan-frontend §3).
 // Component chỉ đọc query; không có store riêng cho dữ liệu phòng. Vá cache dùng hàm thuần của `rooms/lib/room-cache`.
-import type { MeStreamEvent, RoomDetail, RoomMessage, RoomSummary } from "@ai/contracts/chat";
+import type {
+  MeStreamEvent,
+  MeStreamRunEvent,
+  RoomDetail,
+  RoomMessage,
+  RoomSummary,
+} from "@ai/contracts/chat";
 import type { QueryClient } from "@tanstack/react-query";
 import { messagePreview } from "~/features/rooms/lib/message-preview";
+import {
+  activeRunOf,
+  addActiveRun,
+  bumpFlowOf,
+  isMainPlacement,
+  patchActiveRun,
+  removeActiveRun,
+} from "~/features/rooms/lib/room-agent";
 import {
   insertMessage,
   moveRoomToTop,
@@ -24,7 +38,9 @@ export type EventRouterDeps = {
   onRoomLost(roomId: string, reason: RoomLostReason): void;
 };
 
-type Of<N extends MeStreamEvent["event"]> = Extract<MeStreamEvent, { event: N }>["data"];
+/** Sự kiện `/me/stream` đã kiểm schema: X2a + sự kiện run X2b (`room.run_*`). */
+export type RoutedEvent = MeStreamEvent | MeStreamRunEvent;
+type Of<N extends RoutedEvent["event"]> = Extract<RoutedEvent, { event: N }>["data"];
 
 function lastMessageOf(m: RoomMessage) {
   return {
@@ -65,9 +81,14 @@ const findInList = (d: RoomListData | undefined, id: string) =>
   d?.pages.flatMap((p) => p.items).find((r) => r.id === id);
 
 function onMessage(c: Ctx, { room_id, message }: Of<"room.message">): void {
+  // Tin thread (`placement=flow`) không vào timeline chính: chỉ tăng đếm của khối gốc (X2b §3).
   c.client.setQueryData<RoomMessagesData>(roomKeys.messages(room_id), (d) =>
-    insertMessage(d, message),
+    isMainPlacement(message) ? insertMessage(d, message) : bumpFlowOf(d, message),
   );
+  if (message.sender_type === "agent" && message.run_id) {
+    const runId = message.run_id;
+    c.patchDetail(room_id, (d) => removeActiveRun(d, runId));
+  }
   if (!findInList(c.client.getQueryData<RoomListData>(roomKeys.list), room_id)) {
     void c.client.invalidateQueries({ queryKey: roomKeys.list });
     return;
@@ -124,7 +145,11 @@ function onUpdated(c: Ctx, { room_id, name, owner_id }: Of<"room.updated">): voi
   );
 }
 
-export function createEventRouter(deps: EventRouterDeps): (e: MeStreamEvent) => void {
+function onRunStarted(c: Ctx, { room_id, ...run }: Of<"room.run_started">): void {
+  c.patchDetail(room_id, (d) => addActiveRun(d, activeRunOf(run, new Date().toISOString())));
+}
+
+export function createEventRouter(deps: EventRouterDeps): (e: RoutedEvent) => void {
   const c = makeCtx(deps);
   return (e) => {
     switch (e.event) {
@@ -142,6 +167,14 @@ export function createEventRouter(deps: EventRouterDeps): (e: MeStreamEvent) => 
         return onUpdated(c, e.data);
       case "room.deleted":
         return c.dropRoom(e.data.room_id, "deleted");
+      case "room.run_started":
+        return onRunStarted(c, e.data);
+      case "room.run_waiting":
+        return c.patchDetail(e.data.room_id, (d) =>
+          patchActiveRun(d, e.data.run_id, { status: "waiting", wait_kind: e.data.kind }),
+        );
+      case "room.run_finished":
+        return c.patchDetail(e.data.room_id, (d) => removeActiveRun(d, e.data.run_id));
       case "stream.reset":
         // Giữ UI (không xoá cache trước): refetch list + detail/messages đang mở.
         void c.client.invalidateQueries({ queryKey: roomKeys.all });
