@@ -1,6 +1,6 @@
 // X2b-AC · HUB-FR-101, HUB-FR-103 · `bun run done:x2b`: Lệnh xong mốc X2b-room-agents — đúng `docs/specs/X2b-room-agents/test-plan.md` §8.
 // Dừng ở bước đỏ đầu. Bước dùng DB/cổng chạy tuần tự (int + e2e dùng DB test: không chạy song song với bộ khác). Cơ chế `runDone`.
-// `check:fn` chỉ quét file thuộc phạm vi X2b (`--all` đỏ vì nợ cũ ngoài mốc, xem done-x2a).
+// `check:fn` chỉ quét file .ts/.tsx X2b đổi từ commit Gate (`--all` đỏ vì nợ cũ ngoài mốc, xem done-x2a).
 // Dùng: `bun run done:x2b [--from=<số bước>] [--skip=int,e2e]` (`--skip` bỏ nhóm bước tốn DB/cổng; kết quả KHÔNG phải done đủ).
 
 import { AUTH_URL, HUB_URL } from "../../hub-dev/src/dev";
@@ -17,25 +17,19 @@ const bunStep = (title: string, args: string[], extra: Partial<Step> = {}): Step
   ...extra,
 });
 
-/** Thư mục/file chứa code + test X2b (check:fn chỉ quét các file git theo dõi dưới đây). */
-export const X2B_FN_SCOPE = [
-  "apps/hub-api/src/modules/rooms",
-  "apps/hub-api/src/lib",
-  "apps/chat-web/src/features",
-  "packages/contracts/src/chat",
-  "tools/hub-dev/src",
-  "tests/acceptance/X2b",
-  "e2e/chat",
-  "tools/scripts/src/done-x2b.ts",
-];
+/** Commit Gate X2b: `check:fn` chỉ quét file .ts/.tsx X2b đổi từ đây (kể cả chưa commit), không quét feature cũ. */
+export const X2B_BASE = "8947b4c";
 
-function scopedFiles(): string[] {
-  const p = Bun.spawnSync(["git", "ls-files", "--", ...X2B_FN_SCOPE], { stdout: "pipe" });
+/** File .ts/.tsx X2b thêm/sửa (`git diff --name-only <base>`, bỏ file đã xoá). */
+export function scopedFiles(base = X2B_BASE): string[] {
+  const p = Bun.spawnSync(["git", "diff", "--name-only", "--diff-filter=d", base], {
+    stdout: "pipe",
+  });
   return p.stdout
     .toString()
     .split("\n")
     .map((l) => l.trim())
-    .filter(Boolean);
+    .filter((l) => /\.tsx?$/.test(l));
 }
 
 export type Skip = ReadonlySet<"int" | "e2e">;
