@@ -476,6 +476,7 @@ fd8b13010b1313fc620af1f62552928232029ac123f9fba77614c90e21a32b33  tests/acceptan
 c8449304fcc5354b047735d35c85e6a8a9e09c94049c92a5258d99a9cd55aa67  tests/acceptance/X2b/realtime.int.test.ts
 d8c4a12022f92da2606c3940827de9f58293a259d991795bf6db1f3ede16f9a5  tests/acceptance/X2b/rules/contracts-x2b.test.ts
 99f19c4de82d4e1892a7a3baaa7e134a06030ccb27142ea35091f46cfa58ebb1  tests/acceptance/X2b/rules/room-agent-rules.test.ts
+60bdc569fff248a43a092cf14a1ab2918fc4f45d8cc9bda680293087a2a3f167  tests/acceptance/X2b/security-rv1.int.test.ts
 dd7b2f011ebf3f6d76578e310b49cbf994b24b58a83d00d6ff65231b84202b3d  tests/acceptance/X2b/thread.int.test.ts
 1b6b3de18a7f9df452f5cfb845c40e1857b697a7c5c1cee097aeb1b0b18475e6  tests/acceptance/X2b/wait.int.test.ts
 f558c327ff0842aaf575a5530631b86a141ece7263f3c3aeb4335abea5612b75  tests/contract/chat/_client.ts
