@@ -70,3 +70,71 @@ Trần kích thước (`wc -c`, 1 KB = 1024 B): spec 23 975 ≤ 25 600 · plan 2
 - Nội dung artboard `canvas-x2/*.dc.html` (chỉ kiểm tồn tại; plan-frontend đã ghi chỗ spec thắng canvas).
 - `docs/CODEMAP.md`/README module — kiểm thẳng symbol trong code thay vì CODEMAP.
 - Thân file test `tests/acceptance/X2b/**`, `e2e/chat/x2b-*` — chỉ đọc I27/I28 (`context.int.test.ts:136–152`).
+
+---
+
+## Lần 2 · 2026-10-08 (diff `d4a3bd0..f057943`: `287a85d` spec/plan/tasks, `50e3102` plan FE, `f057943` test)
+
+## Kết luận: READY
+Phạm vi đã kiểm: `git diff d4a3bd0..HEAD -- docs/specs/X2b-room-agents tests/acceptance/X2b e2e/chat` (9 file) + lỗ hổng mở lần 1 #1–#15 + code trỏ tới (`lib/user-stream.ts`, `conversations.repo.ts`, `mention.service.ts`, `done-x2a.ts`, `bunfig.int.toml`, `playwright.x2b.config.ts`, `_x2b-stack.ts`, `_x2b.ts`) · mã yêu cầu: như lần 1
+
+Không còn Chặn/Cao. **Không có câu hỏi mới cho người dùng.** Còn Thấp (liệt kê dưới) — sửa trong lúc BUILD, không chặn Gate.
+
+## Lỗ hổng lần 1 — trạng thái
+| # | Mức | Trạng thái | Bằng chứng |
+|---|-----|-----------|-----------|
+| 1 | Chặn | Đóng | spec §3/§4/§5 không còn marker (diff spec.md:60/75/87) |
+| 2 | Cao | Đóng | spec §8 + plan §16 "Mốc: `bun run done:x2b`"; tasks B7 có `tools/scripts/src/done-x2b.ts` + `package.json` (`done:x2b`, `e2e:chat:x2b`), Lệnh xong thêm `tools/scripts`; mẫu `done-x2a.ts`, `bunfig.int.toml`, `e2e/chat/playwright.x2b.config.ts` tồn tại; RV2 = `bun run done:x2b` |
+| 3 | Cao | Đóng | AC02 viết lại (suggestions ≤ 3, có thể rỗng, `@trelo` ⇒ `["trello"]`); I05b + `invoke.int.test.ts` (B = `hoa` chỉ `trello`, `_x2b.ts:6`); `mention.service.ts:36,45` trả `details.suggestions`; E-A10 bỏ "Ý bạn là"; nhãn e2e "chỉ khi suggestions ≠ rỗng" |
+| 4 | Cao | Đóng | plan §7 `publishUserEvents`/`UserEvent` (`user-stream.ts:14,26`); plan §15 `findConversation` (`conversations.repo.ts:51`); B4 thêm `lib/user-stream.ts`; F2 (tasks + plan-frontend §9) thêm `me-stream-driver.ts` |
+| 5 | Cao | Đóng | i18n bỏ `cancelledNoPerm`, `cancelledOther` dùng chung; plan-frontend §4 hàng Huỷ; spec §10 (c) |
+| 6 | Cao | Đóng | i18n §2 VI sạch, chú thích sang cột "Ghi chú" + câu dưới bảng |
+| 7 | Thấp | Đóng | AC16, E-A3 = "+2"; test-plan-e2e §4 cập nhật |
+| 8 | Thấp | Đóng | spec §10 (d) |
+| 9 | Thấp | Gần đóng | plan §4.2 thêm cột `reason` (`already`, `skipped`) + luật phát `run_finished`; còn thiếu tên giá trị khi đăng thành công → L1 |
+| 10 | Thấp | Gần đóng | plan.md:3 AC17, Q11, D11/Q9/§10, `canReply`, tasks cuối đã sửa; còn "(+F5 nếu giữ)" → L2 |
+| 11 | Thấp | Đóng | P2 `Đọc`; RV1 file + Lệnh xong; RV2 `Đọc`; D15 chuyển B4 |
+| 12 | Thấp | Mở | test-plan.md:79 "Redis DB 14" ↔ test-plan-e2e §1 + `_x2b-stack.ts:117` = 13 → L3 |
+| 13 | Thấp | Đóng | i18n `threadContextHint` có "20 tin trước đó" |
+| 14 | Thấp | Đóng | plan D16 "payload job không có khoá `attachments`" |
+| 15 | Thấp | Gần đóng | plan §5 hàng "Đăng tin agent" (plan.md:97) đọc `tool_confirmations` pending → `AgentOutcome.pendingConfirm` (§8); chưa ghi biểu thức chính xác → L4 |
+
+## Lỗ hổng còn lại
+| # | Mức | Mục | Vị trí | Vấn đề | Mặc định đề xuất |
+|---|-----|-----|--------|--------|------------------|
+| L1 | Thấp | B | plan.md:83 | `reason` chỉ nêu `already`/`skipped`; giá trị khi đăng chưa có tên. Hàm definer + poster cùng B1/B5 một người làm, không test nào đọc `reason` ⇒ không đổi hành vi quan sát | B1 ghi `reason='posted'`; B5 ghi vào README `rooms/agents` |
+| L2 | Thấp | I | plan-frontend.md:127 (F6), tasks.md F6 | "(+F5 nếu giữ)" — F5 đã chốt sang X2b-2 | Bỏ cụm; F6 phụ thuộc F1–F4, B7 |
+| L3 | Thấp | I | test-plan.md:79 | Redis DB 14 ↔ e2e thật 13 (`_x2b-stack.ts:117`, test-plan-e2e §1). Code là nguồn đúng ⇒ không đổi hành vi | Sửa test-plan.md:79 thành 13 |
+| L4 | Thấp | D | plan.md:97 | `pendingConfirm` chưa thành biểu thức; nguồn (`tool_confirmations` pending của run) đã ghi, test I34–I37/I56 dựng đúng nguồn đó | B5 dùng `EXISTS(tool_confirmations WHERE run_id=$run AND status='pending')` |
+| L5 | Thấp | J | tests/acceptance/X2b/_modules.ts:9 | Chú thích còn `replyAccess`, `canReply` (plan §8 đã đổi `answerAccess`, `placementOf`; test rules dùng tên mới) — chỉ chú thích | qc sửa chú thích khi chạm file |
+| L6 | Thấp | H | tasks.md B5 | Thừa dấu phẩy "`room.run_waiting/finished`, [HUB-…" | Xoá |
+
+**Đánh giá 3 điểm backend-lead để lại (Thấp?)**: đúng là Thấp. #15/L4 — nguồn dữ liệu đã có trong plan §5 + kiểu `pendingConfirm: boolean` ở §8, test đã dựng theo nguồn đó; chỉ thiếu cách viết SQL. #12/L3 — lệch chỉ ở chữ test-plan, stack e2e thật cố định DB 13 (đổi được bằng `X2B_REDIS_URL`). #9/L1 — luật hành vi (phát `run_finished` khi khác `already`) đã ở plan §4.2; tasks.md không cần chép lại vì B5 trỏ `§4.2 room_post_agent_message`; chỉ thiếu tên giá trị thành công.
+
+## Mâu thuẫn giữa tài liệu
+- test-plan.md:79 Redis DB 14 ↔ test-plan-e2e §1 / `_x2b-stack.ts` DB 13 → giữ 13 (L3).
+- (5 mâu thuẫn lần 1 đã đóng.)
+
+## Câu hỏi cho người dùng
+(không — không có câu hỏi mới)
+
+## Checklist (chỉ mục đổi so với lần 1)
+| Mục | Kết quả | Bằng chứng |
+|-----|---------|-----------|
+| B Hợp đồng | Đạt | #4 đóng (plan §7 + `user-stream.ts:14,26`); `reason` plan.md:83 (L1 Thấp) |
+| D Nghiệp vụ | Đạt | #3 (AC02, `mention.service.ts:36`), #5 (spec §10 c) |
+| E UI | Đạt | i18n §2, plan-frontend §4 hàng Huỷ |
+| F Kiểm chứng | Đạt | spec §8/plan §16 `done:x2b`; tasks B7/RV2; I05b `invoke.int.test.ts` |
+| H2 Vai trò | Đạt | spec §3–§5 không marker |
+| H Task | Đạt | tasks P2/RV1/RV2/B4/B7 (diff) |
+| I Nhất quán | Đạt (Thấp L2, L3) | mục Mâu thuẫn |
+| J Độ chính xác | Đạt | symbol đã Grep: `publishUserEvents`, `UserEvent`, `findConversation`, `suggestAgents`, `parseMeStreamEvent`; L5 chú thích |
+| A, C, G | Đạt | không đổi từ lần 1 |
+
+Trần kích thước (`wc -c`): spec 24 517 ≤ 25 600 · plan 30 069 ≤ 30 720 (còn 651 B — sửa L1/L4 nên ghi vào README/plan-questions, không thêm vào plan) · plan-frontend 23 489 ≤ 25 600 · test-plan 14 057 ≤ 30 720 · tasks 8 950 — Đạt.
+
+## Quét từ mơ hồ (phần đổi)
+3 kết quả · "có thể rỗng" (AC02, kèm tiêu chí Levenshtein + dữ liệu) — vô hại; "(+F5 nếu giữ)" — L2; "(nếu cần)" RV2 — có tiêu chí (review ≤ 2 vòng), vô hại.
+
+## Chưa kiểm
+- Như lần 1 (nội dung artboard, CODEMAP); phần spec/plan không đổi trong diff không đọc lại.
