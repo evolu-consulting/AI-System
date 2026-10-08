@@ -140,7 +140,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-100 | MUST | docs/specs/X2a-rooms/spec.md | 19 file | 9 file | có test |
 | HUB-FR-101 | MUST | docs/specs/X2b-room-agents/spec.md | 33 file | 7 file | có test |
 | HUB-FR-102 | MUST | docs/specs/X2a-rooms/spec.md | 12 file | 4 file | có test |
-| HUB-FR-103 | MUST | docs/specs/X2b-room-agents/spec.md | 8 file |  | có code |
+| HUB-FR-103 | MUST | docs/specs/X2b-room-agents/spec.md | 8 file | 1 file | có test |
 | HUB-BR-01 | — | docs/specs/H2a-dify-command/spec.md | 2 file | 1 file | có test |
 | HUB-BR-02 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H3b-agent-grants/spec.md |  |  | có spec |
 | HUB-BR-03 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H2b-routing/spec.md | 3 file | 6 file | có test |

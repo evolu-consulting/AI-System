@@ -29,7 +29,7 @@ import {
 
 test.afterEach(() => settleRuns());
 
-test('X2b-AC13 · E-A1 · gõ "@" ⇒ listbox "Agent" đúng quyền (A 2, B 1); chọn ⇒ "@hoadon "; không panel/chip agent', async ({
+test('HUB-FR-103 · X2b-AC13 · E-A1 · gõ "@" ⇒ listbox "Agent" đúng quyền (A 2, B 1); chọn ⇒ "@hoadon "; không panel/chip agent', async ({
   browser,
 }) => {
   const room = await mkRoom("EA1");
@@ -58,7 +58,7 @@ test('X2b-AC13 · E-A1 · gõ "@" ⇒ listbox "Agent" đúng quyền (A 2, B 1);
   }
 });
 
-test('X2b-AC13 · E-A2 · thu hồi "trello" của B ⇒ B mở lại phòng, gõ "@" ⇒ không còn option', async ({
+test('HUB-FR-103 · X2b-AC13 · E-A2 · thu hồi "trello" của B ⇒ B mở lại phòng, gõ "@" ⇒ không còn option', async ({
   browser,
 }) => {
   const room = await mkRoom("EA2");
