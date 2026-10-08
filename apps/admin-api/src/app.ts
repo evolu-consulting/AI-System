@@ -54,7 +54,7 @@ export type AppDeps = {
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
-const ALLOW_HEADERS = ["Content-Type", "Authorization", "X-Client", REQUEST_ID_HEADER];
+const ALLOW_HEADERS = ["Content-Type", "Authorization", "X-Client", "X-App", REQUEST_ID_HEADER];
 
 function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   const ctx = {

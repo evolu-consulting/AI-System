@@ -9,7 +9,10 @@ import {
   REFRESH_COOKIE,
   RefreshRequestSchema,
   RefreshResponseSchema,
+  refreshCookieName,
   TokenGrantSchema,
+  WEB_APPS,
+  X_APP_HEADER,
   X_CLIENT_EXTENSION,
   X_CLIENT_HEADER,
 } from "./index";
@@ -78,6 +81,16 @@ describe("ADM-FR-02 · refresh / logout", () => {
     expect(LogoutRequestSchema.safeParse({}).success).toBe(true);
     expect(LogoutRequestSchema.safeParse({ refresh_token: "r" }).success).toBe(true);
     expect(LogoutRequestSchema.safeParse({ token: "r" }).success).toBe(false);
+  });
+
+  test("CR-053 · cookie theo app: ai_rt_<app>; vắng app ⇒ ai_rt", () => {
+    expect(X_APP_HEADER).toBe("X-App");
+    expect(WEB_APPS.map((a) => refreshCookieName(a))).toEqual([
+      "ai_rt_admin",
+      "ai_rt_chat",
+      "ai_rt_studio",
+    ]);
+    expect(refreshCookieName()).toBe("ai_rt");
   });
 
   test("hằng header/cookie", () => {

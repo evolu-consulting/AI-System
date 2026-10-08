@@ -1,6 +1,14 @@
 // ADM-FR-01 · parse request ở biên bằng zod (spec M1 §3 "Quy ước chung"): VALIDATION_ERROR có `details.issues`,
 // `:id` không phải uuid → NOT_FOUND giống hệt id không tồn tại. Tự viết thay @hono/zod-validator (spec §9).
-import { SECRET_NAME_RE, UuidSchema, X_CLIENT_EXTENSION, X_CLIENT_HEADER } from "@ai/contracts";
+import {
+  SECRET_NAME_RE,
+  UuidSchema,
+  WEB_APPS,
+  type WebApp,
+  X_APP_HEADER,
+  X_CLIENT_EXTENSION,
+  X_CLIENT_HEADER,
+} from "@ai/contracts";
 import type { Context } from "hono";
 import type { z } from "zod";
 import { appError } from "./errors";
@@ -55,6 +63,12 @@ export function parseNameParam(c: Context, name = "name"): string {
   const v = c.req.param(name);
   if (typeof v !== "string" || !SECRET_NAME_RE.test(v)) throw appError("NOT_FOUND");
   return v;
+}
+
+/** CR-053 · app web từ `X-App` (đúng một giá trị trong `WEB_APPS`, phân biệt hoa thường); khác/vắng ⇒ undefined. */
+export function webApp(c: Context): WebApp | undefined {
+  const v = c.req.header(X_APP_HEADER);
+  return WEB_APPS.find((a) => a === v);
 }
 
 /** Chỉ đúng chuỗi `extension` (phân biệt hoa thường, không trim) mới là extension (plan §10 G10). */

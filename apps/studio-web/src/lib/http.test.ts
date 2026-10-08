@@ -122,3 +122,12 @@ describe("HUB-FR-72 · lib/http · lỗi", () => {
     );
   });
 });
+
+describe("CR-053 · X-App", () => {
+  test("`/auth/*` gửi X-App: studio; API Studio thì không", async () => {
+    await sendPublic("/auth/refresh", { method: "POST" });
+    await api("/studio/api/agents");
+    expect(calls[0]?.headers["X-App"]).toBe("studio");
+    expect(calls[1]?.headers["X-App"]).toBeUndefined();
+  });
+});

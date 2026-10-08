@@ -1,5 +1,6 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-06 · /auth/login, /refresh, /logout, /change-password (spec M1 §3).
-// Web: refresh token chỉ ở cookie `ai_rt`; extension (`X-Client: extension`): chỉ ở body.
+// Web: refresh token chỉ ở cookie `ai_rt` (CR-053: `ai_rt_<app>` theo `X-App` — mỗi app một phiên); extension
+// (`X-Client: extension`): chỉ ở body.
 import {
   ChangePasswordRequestSchema,
   LoginRequestSchema,
@@ -11,7 +12,7 @@ import {
 import { type Context, Hono } from "hono";
 import { clearRefreshCookie, readRefreshCookie, setRefreshCookie } from "../../lib/cookie";
 import { appError, isAppError, toErrorBody } from "../../lib/errors";
-import { type ClientKind, clientKind, parseJson, readJson } from "../../lib/http";
+import { type ClientKind, clientKind, parseJson, readJson, webApp } from "../../lib/http";
 import {
   type ClientMeta,
   changePasswordForced,
@@ -45,7 +46,7 @@ function loginBody(c: Context, res: LoginResult, client: ClientKind, secure: boo
 
 function sessionBody(c: Context, s: Session, client: ClientKind, secure: boolean): TokenGrant {
   if (client === "extension") return { ...s.grant, refresh_token: s.refreshToken };
-  setRefreshCookie(c, s.refreshToken, secure);
+  setRefreshCookie(c, s.refreshToken, secure, webApp(c));
   return s.grant;
 }
 
@@ -55,7 +56,7 @@ async function tokenFrom(
   client: ClientKind,
   logoutForm = false,
 ): Promise<string | undefined> {
-  if (client === "web") return readRefreshCookie(c);
+  if (client === "web") return readRefreshCookie(c, webApp(c));
   const body = await readJson(c).catch(() => undefined);
   const r = (logoutForm ? LogoutRequestSchema : RefreshRequestSchema).safeParse(body);
   return r.success ? r.data.refresh_token : undefined;
@@ -85,7 +86,7 @@ export function authRoutes(d: AuthRouteDeps): Hono {
     } catch (err) {
       // Chỉ INVALID_REFRESH_TOKEN xoá cookie; REFRESH_SUPERSEDED không Set-Cookie (tab thắng vừa đặt cookie mới).
       if (!isAppError(err, "INVALID_REFRESH_TOKEN") || m.client !== "web") throw err;
-      clearRefreshCookie(c, d.secureCookie);
+      clearRefreshCookie(c, d.secureCookie, webApp(c));
       return c.json(toErrorBody(err.code, err.message), err.status);
     }
   });
@@ -93,7 +94,7 @@ export function authRoutes(d: AuthRouteDeps): Hono {
   r.post("/logout", async (c) => {
     const client = clientKind(c);
     await logout(d, await tokenFrom(c, client, true));
-    if (client === "web") clearRefreshCookie(c, d.secureCookie);
+    if (client === "web") clearRefreshCookie(c, d.secureCookie, webApp(c));
     return c.body(null, 204);
   });
 

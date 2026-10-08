@@ -40,3 +40,19 @@ describe("ADM-FR-02 · cookie", () => {
     expect(await (await read("ai_rt=")).text()).toBe("none");
   });
 });
+
+describe("CR-053 · cookie theo app", () => {
+  const per = new Hono();
+  per.get("/set", (c) => {
+    setRefreshCookie(c, "tok", false, "chat");
+    return c.body(null, 204);
+  });
+  per.get("/read", (c) => c.text(readRefreshCookie(c, "studio") ?? "none"));
+  test("app chat ⇒ ai_rt_chat; đọc theo app chỉ lấy cookie của app đó", async () => {
+    const set = (await per.request("/set")).headers.get("set-cookie") ?? "";
+    expect(set).toMatch(/^ai_rt_chat=tok;/);
+    const read = (cookie: string) => per.request("/read", { headers: { cookie } });
+    expect(await (await read("ai_rt=a; ai_rt_chat=b")).text()).toBe("none");
+    expect(await (await read("ai_rt_chat=b; ai_rt_studio=c")).text()).toBe("c");
+  });
+});

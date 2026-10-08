@@ -16,8 +16,15 @@ import { BACKUP_CODE_COUNT, TotpRequiredSchema } from "./totp";
 /** Header chọn kiểu client; chỉ đúng chuỗi `extension` mới nhận/trả refresh token trong body. */
 export const X_CLIENT_HEADER = "X-Client";
 export const X_CLIENT_EXTENSION = "extension";
-/** Cookie refresh token của web (`HttpOnly; SameSite=Strict; Path=/auth`). */
+/** Cookie refresh token của web (`HttpOnly; SameSite=Strict; Path=/auth`). Request web không báo app ⇒ cookie này. */
 export const REFRESH_COOKIE = "ai_rt";
+/** CR-053 · mỗi app web gửi `X-App` khi gọi `/auth/*` ⇒ phiên riêng từng app (cookie `ai_rt_<app>`). */
+export const X_APP_HEADER = "X-App";
+export const WEB_APPS = ["admin", "chat", "studio"] as const;
+export type WebApp = (typeof WEB_APPS)[number];
+/** Tên cookie refresh của một app; vắng app ⇒ `ai_rt` (client cũ, test, công cụ). */
+export const refreshCookieName = (app?: WebApp): string =>
+  app ? `${REFRESH_COOKIE}_${app}` : REFRESH_COOKIE;
 export const ACCESS_TOKEN_EXPIRES_IN = 900;
 export const CHANGE_TOKEN_EXPIRES_IN = 300;
 

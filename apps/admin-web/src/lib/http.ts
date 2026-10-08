@@ -1,6 +1,12 @@
 // ADM-FR-01 · fetch wrapper: JSON, ApiError, gắn Bearer, 401 UNAUTHORIZED → refresh rồi thử lại đúng 1 lần.
 import type { ErrorCode } from "@ai/contracts";
 
+/** CR-053 · = `X_APP_HEADER` (`@ai/contracts` auth): app báo mình khi gọi `/auth/*` (không kéo contract vào bundle). */
+const X_APP_HEADER = "X-App";
+
+/** `/auth` và `/auth/*`. */
+const isAuthPath = (p: string): boolean => p === "/auth" || p.startsWith("/auth/");
+
 export type ApiErrorCode = ErrorCode | "NETWORK_ERROR" | "HTTP_ERROR";
 
 export class ApiError extends Error {
@@ -68,6 +74,8 @@ async function execRaw(
   token: string | null,
 ): Promise<Response> {
   const headers: Record<string, string> = { Accept: "application/json", ...opts.headers };
+  // CR-053: `/auth/*` báo app ⇒ admin-api dùng cookie phiên riêng `ai_rt_admin`.
+  if (isAuthPath(path)) headers[X_APP_HEADER] = "admin";
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
   let res: Response;

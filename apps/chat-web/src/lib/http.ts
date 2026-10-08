@@ -11,6 +11,9 @@ import {
   TOO_MANY_RUNS_RETRY_AFTER_S,
 } from "@ai/contracts/chat";
 
+/** CR-053 · = `X_APP_HEADER` (`@ai/contracts` auth): app báo mình khi gọi `/auth/*` (không kéo contract vào bundle). */
+const X_APP_HEADER = "X-App";
+
 /** Mã lỗi `/auth/*` (giữ mã Admin, plan Q-401). */
 export type AuthErrorCode =
   | "INVALID_CREDENTIALS"
@@ -133,6 +136,8 @@ async function execRaw(
   if (opts.rawBody === undefined && opts.body !== undefined)
     headers["Content-Type"] = "application/json";
   Object.assign(headers, opts.headers);
+  // CR-053: `/auth/*` báo app ⇒ admin-api dùng cookie phiên riêng `ai_rt_chat`.
+  if (isAuthPath(path)) headers[X_APP_HEADER] = "chat";
   if (token) headers.Authorization = `Bearer ${token}`;
   let res: Response;
   try {

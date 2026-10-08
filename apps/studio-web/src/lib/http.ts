@@ -2,6 +2,9 @@
 // Accept-Language; 401 ngoài `/auth/*` → refresh đúng 1 lần rồi gửi lại (plan-frontend D5). `/auth/*` đi qua AUTH_BASE (D4).
 import { AUTH_BASE } from "./env";
 
+/** CR-053 · = `X_APP_HEADER` (`@ai/contracts` auth): app báo mình khi gọi `/auth/*` (không kéo contract vào bundle). */
+const X_APP_HEADER = "X-App";
+
 export type ApiErrorCode = string;
 
 export class ApiError extends Error {
@@ -83,6 +86,8 @@ async function exec(path: string, opts: RequestOptions, token: string | null): P
   if (language) headers["Accept-Language"] = language;
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   Object.assign(headers, opts.headers);
+  // CR-053: `/auth/*` báo app ⇒ admin-api dùng cookie phiên riêng `ai_rt_studio`.
+  if (isAuthPath(path)) headers[X_APP_HEADER] = "studio";
   if (token) headers.Authorization = `Bearer ${token}`;
   let res: Response;
   try {

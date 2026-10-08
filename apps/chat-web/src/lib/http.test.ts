@@ -175,3 +175,16 @@ describe("isAuthPath", () => {
     expect(isAuthPath("/conversations")).toBe(false);
   });
 });
+
+describe("CR-053 · X-App", () => {
+  test("`/auth/*` gửi X-App: chat; endpoint Hub thì không", async () => {
+    replies = [
+      { status: 200, body: {} },
+      { status: 200, body: {} },
+    ];
+    await sendPublic("/auth/refresh", { method: "POST" });
+    await api("/conversations");
+    expect(calls[0]?.headers["X-App"]).toBe("chat");
+    expect(calls[1]?.headers["X-App"]).toBeUndefined();
+  });
+});

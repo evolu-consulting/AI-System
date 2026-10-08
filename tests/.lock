@@ -146,6 +146,7 @@ b623b14308a36191f54e6b390e80b01e9eea67d9b200e9b934d1ca4b76f20697  tests/acceptan
 0dd63c84537c831d789675dd785db2a348edd9c947db9c58ad83f0e3caf50cdc  tests/acceptance/C1/rules.test.ts
 cd6e259e02e4d31e734422168b67d0c3538e10146bb07e7800c457e66658c052  tests/acceptance/CR-050/flow-read.int.test.ts
 d32d5e7806b90ce16cb08ccb15df8d897cef438ca16f03cd87f84a28fb87d241  tests/acceptance/CR-051/flows-desc.int.test.ts
+5360151c6bea610bac774880f185a8aa6c6f4ce2f95ba81f9571f8ae3c6e1cdf  tests/acceptance/CR-053/per-app-session.int.test.ts
 8cebebb73e4c07124b6053171fe3573e302494ec45e4476b39ee486d2eeb5a5d  tests/acceptance/H1/_fixtures.ts
 d21b78e405967c9ecf05f4bcd81248925c836a508b390d0c12a4c8a9093cfe73  tests/acceptance/H1/_hub.ts
 2e25d91921864ce6e7060f1caf8424d987164af2d6a526bdfd15f6555edb5e17  tests/acceptance/H1/_runtime.ts
