@@ -1,8 +1,8 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
 import { parseMeStreamRunEvent, type RoomMessage } from "@ai/contracts/chat";
 import { USER_STREAM_FIELD } from "../../../lib/user-stream";
 import { parseFields } from "../../me-stream/user-stream-reader";
-import { runStartedEvents } from "./room-run-events";
+import { agentMessageEvents, runClosedEvents, runStartedEvents } from "./room-run-events";
 
 const U = (n: number) => `a2bb0000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const trigger: RoomMessage = {
@@ -45,5 +45,35 @@ describe("runStartedEvents (X2b plan §7)", () => {
     expect(parseFields([USER_STREAM_FIELD, body])?.event).toBe("room.run_started");
     const bad = JSON.stringify({ event: "room.run_exploded", data: ev?.data });
     expect(parseFields([USER_STREAM_FIELD, bad])).toBeNull();
+  });
+});
+
+describe("runClosedEvents / agentMessageEvents (B5)", () => {
+  const base = { roomId: "r", runId: "u", flowId: "f", callerId: "a", status: "finished" as const };
+  it("chờ ⇒ run_waiting rồi run_finished cho mỗi thành viên một lần", () => {
+    const ev = runClosedEvents({ ...base, waitKind: "need_input", messageId: "m" }, [
+      "a",
+      "b",
+      "a",
+    ]);
+    expect(ev.map((e) => [e.event, e.userIds])).toEqual([
+      ["room.run_waiting", ["a", "b"]],
+      ["room.run_finished", ["a", "b"]],
+    ]);
+  });
+  it("không người nhận ⇒ rỗng; caller nhận bản riêng", () => {
+    expect(runClosedEvents({ ...base, waitKind: null, messageId: null }, [])).toEqual([]);
+    const pub = { id: "p" } as RoomMessage;
+    const mine = { id: "c" } as RoomMessage;
+    const fan = [
+      { user_id: "a", unread: 0, total: 0 },
+      { user_id: "b", unread: 2, total: 2 },
+    ];
+    const ev = agentMessageEvents("r", { public: pub, caller: mine, callerId: "a" }, fan);
+    const msgs = ev.filter((e) => e.event === "room.message");
+    expect(msgs.map((e) => [e.userIds, (e.data as { message: RoomMessage }).message.id])).toEqual([
+      [["b"], "p"],
+      [["a"], "c"],
+    ]);
   });
 });

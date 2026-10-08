@@ -20,7 +20,7 @@ import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp } from "./app.mcp";
 import { runDrivers, startRunLoops } from "./app.runner";
-import { mountRoomAgents, mountX2a, X2A_PROTECTED_PREFIXES } from "./app.x2a";
+import { mountRoomAgents, mountX2a, roomPoster, X2A_PROTECTED_PREFIXES } from "./app.x2a";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
@@ -164,9 +164,10 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     app.route("/conversations", conversationRoutes(deps.db));
     return;
   }
+  const { onClosed } = roomPoster({ db: deps.db, redis: deps.redis, log: logger, signal });
   const base = { ...deps, db: deps.db, redis: deps.redis, owner: instanceOwner(deps), log: logger };
   const { owner } = base;
-  const runs = new RunService({ ...base, config, ...runDrivers({ ...base, config }) });
+  const runs = new RunService({ ...base, config, onClosed, ...runDrivers({ ...base, config }) });
   const conversations = conversationService(deps.db);
   const cancel = new CancelService({
     db: deps.db,
@@ -175,6 +176,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     registry: runs.registry,
     conversations,
     log: logger,
+    onClosed,
   });
   mountRoomAgents(x2a, { runs, prepareMention: h2b.prepareMention, config, cancel });
   app.route(

@@ -1,6 +1,8 @@
 // HUB-FR-96 · HUB-FR-97 · map hàng DB (repo) → kiểu contract `@ai/contracts/chat` (X2a plan §2.3, D2, D5). Thuần.
 // `sender` join `admin.users` (left join): thiếu tên ⇒ fallback `username` rồi id (không bao giờ rỗng).
 import type {
+  RoomAgentRef,
+  RoomAsk,
   RoomDetail,
   RoomLastMessage,
   RoomMember,
@@ -24,6 +26,19 @@ export type RoomMessageRow = {
   /** X2b D12 · thread (vắng = tin timeline X2a). */
   flowId?: string;
   placement?: "main" | "flow";
+  /** X2b · tin agent: phần đã chọn theo người xem (D3 — `content`/`ask` riêng chỉ cho người gọi). */
+  agent?: AgentPartRow;
+};
+
+export type AgentPartRow = {
+  runId: string;
+  triggerMessageId: string;
+  runStatus: "finished" | "failed" | "cancelled";
+  ask?: RoomAsk;
+  steps?: { count: number; ms: number };
+  /** null = Orchestrator. */
+  ref: RoomAgentRef | null;
+  caller: UserRefRow;
 };
 
 export type LastMessageRow = {
@@ -69,6 +84,19 @@ export function toRoomMessage(r: RoomMessageRow): RoomMessage {
     client_msg_id: r.clientMsgId,
     created_at: r.createdAt.toISOString(),
     ...(r.flowId && { flow_id: r.flowId, placement: r.placement ?? "main" }),
+    ...(r.agent && agentFields(r.agent)),
+  };
+}
+
+function agentFields(a: AgentPartRow): Partial<RoomMessage> {
+  return {
+    run_id: a.runId,
+    trigger_message_id: a.triggerMessageId,
+    run_status: a.runStatus,
+    caller: senderOf(a.caller),
+    ...(a.ref && { agent: a.ref }),
+    ...(a.ask && { ask: a.ask }),
+    ...(a.steps && { steps: a.steps }),
   };
 }
 

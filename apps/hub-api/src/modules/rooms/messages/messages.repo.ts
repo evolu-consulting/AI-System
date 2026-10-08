@@ -3,6 +3,8 @@
 // `lockFor` (khoá hàng `rooms` trước `room_members`/`room_messages`). Đánh dấu đọc cũng sau `lockFor` (RV1 #5), chỉ chạm hàng mình.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { AGENT_COLS, AGENT_JOINS, type AgentSqlCols, agentDataOf } from "../agents/agent-msg.sql";
+import { rowFor } from "../agents/room-post.view";
 import type { Me } from "../manage/rooms.repo";
 import type { FanoutRow } from "../room-events";
 import type { RoomMessageRow } from "../rooms.map";
@@ -51,13 +53,14 @@ export async function pageDesc(
   q: { beforeSeq?: number; limit: number },
 ): Promise<RoomMessageRow[]> {
   const before = q.beforeSeq === undefined ? sql`` : sql`and m.seq < ${q.beforeSeq}`;
-  const rows = await tx.execute<MessageSqlRow>(sql`
-    select ${COLS}
+  const rows = await tx.execute<MessageSqlRow & AgentSqlCols>(sql`
+    select ${COLS}, ${AGENT_COLS}
     from hub.room_messages m
-    left join admin.users u on u.id = m.sender_id and u.tenant_id = m.tenant_id
+    left join admin.users u on u.id = m.sender_id and u.tenant_id = m.tenant_id ${AGENT_JOINS}
     where m.room_id = ${roomId} and m.tenant_id = ${me.tenantId} ${before}
     order by m.seq desc limit ${q.limit + 1}`);
-  return rows.map(toRow);
+  // X2b D3 · tin agent theo người xem (bản riêng `side_effect` chỉ có khi RLS `runs` trả hàng = người gọi).
+  return rows.map((r) => rowFor(toRow(r), agentDataOf(r), me.userId));
 }
 
 /** Tin đã gửi với cùng `client_msg_id` của chính mình (gửi lại ⇒ 200, X2a-AC07). */

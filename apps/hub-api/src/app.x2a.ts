@@ -11,6 +11,7 @@ import { DirectoryService } from "./modules/directory/directory.service";
 import { meStreamRoutes } from "./modules/me-stream/me-stream.routes";
 import { MeStreamConns } from "./modules/me-stream/me-stream.session";
 import { UserStreamReader } from "./modules/me-stream/user-stream-reader";
+import { type RoomPosterDeps, RoomRunPoster } from "./modules/rooms/agents/room-post";
 import { type RoomRunDeps, RoomRunService } from "./modules/rooms/agents/room-run.service";
 import { RoomsService } from "./modules/rooms/manage/rooms.service";
 import { MessagesService } from "./modules/rooms/messages/messages.service";
@@ -35,6 +36,13 @@ export type X2aMounted = { rooms: RoomsService; messages: MessagesService };
 /** X2b B4 · nối đường gọi agent vào `POST /rooms/:id/messages` (sau khi có `RunService`/`CancelService`). */
 export function mountRoomAgents(m: X2aMounted, d: Omit<RoomRunDeps, "rooms">): void {
   m.messages.useAgents(new RoomRunService({ ...d, rooms: m.rooms }));
+}
+
+/** X2b B5 · `RoomRunPoster` (tx2 đăng tin agent) + vòng reconcile 5 s; `onClosed` nối vào `RunService` + `CancelService`. */
+export function roomPoster(d: RoomPosterDeps & { signal?: AbortSignal }): RoomRunPoster {
+  const poster = new RoomRunPoster(d);
+  poster.start(d.signal);
+  return poster;
 }
 
 /** Mount route X2a (gọi sau khi đã gắn `requireAuth`). */
