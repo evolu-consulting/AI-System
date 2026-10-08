@@ -70,12 +70,17 @@ const toOutcome = (r: OutcomeSql): RunOutcomeRow => ({
   runMs: Math.max(0, Number(r.run_ms)),
 });
 
-/** Kết quả run phòng (tin trả lời ở hội thoại nền, xác nhận pending, số bước). null = không phải run phòng. */
+/**
+ * Kết quả run phòng (tin trả lời ở hội thoại nền, xác nhận pending, số bước). null = không phải run phòng. Không tin cột
+ * `runs` đơn lẻ (security-1 #1): `threadId` chỉ có khi flow nền thuộc hội thoại nền của (phòng, người gọi); `content`/`ask`
+ * chỉ từ tin assistant của chính run. Definer kiểm lại các điều đó **và** tin gọi (`room_messages` không đọc được ở scope
+ * system) ⇒ `threadId` null ⇒ definer chắc chắn `skipped`.
+ */
 export async function runOutcome(tx: Tx, runId: string): Promise<RunOutcomeRow | null> {
   const [row] = await tx.execute<OutcomeSql>(sql`
-    select r.id, r.room_id, f.room_flow_id as thread_id, r.user_id, u.display_name as caller_name,
-      u.username as caller_username, r.status, r.locale, r.answer_message_id, r.user_message_id,
-      coalesce(r.agent_id, f.agent_id, r.orchestrator_tenant_id, r.tenant_id) as sender_id,
+    select r.id, r.room_id, case when c.id is not null then f.room_flow_id end as thread_id, r.user_id,
+      u.display_name as caller_name, u.username as caller_username, r.status, r.locale, r.answer_message_id,
+      r.user_message_id, coalesce(r.agent_id, f.agent_id, r.orchestrator_tenant_id, r.tenant_id) as sender_id,
       a.key as agent_key, a.name as agent_name, pm.content, pm.ask,
       exists (select 1 from hub.tool_confirmations t
               where t.run_id = r.id and t.tenant_id = r.tenant_id and t.status = 'pending') as pending_confirm,
@@ -83,8 +88,11 @@ export async function runOutcome(tx: Tx, runId: string): Promise<RunOutcomeRow |
       floor(extract(epoch from (coalesce(r.finished_at, now()) - r.started_at)) * 1000) as run_ms
     from hub.runs r
     join hub.flows f on f.id = r.flow_id and f.tenant_id = r.tenant_id
+    left join hub.conversations c on c.id = f.conversation_id and c.tenant_id = r.tenant_id
+      and c.room_id = r.room_id and c.user_id = r.user_id and f.user_id = r.user_id
     left join hub.agents a on a.id = coalesce(r.agent_id, f.agent_id)
-    left join hub.messages pm on pm.id = r.answer_message_id and pm.tenant_id = r.tenant_id
+    left join hub.messages pm on pm.id = r.answer_message_id and pm.tenant_id = r.tenant_id and pm.run_id = r.id
+      and pm.user_id = r.user_id and pm.flow_id = r.flow_id and pm.role = 'assistant'
     left join admin.users u on u.id = r.user_id and u.tenant_id = r.tenant_id
     where r.id = ${runId} and r.room_id is not null`);
   return row ? toOutcome(row) : null;
@@ -107,10 +115,13 @@ export type PostResult = {
   placement: "main" | "flow" | null;
 };
 
-/** Definer idempotent (`runs.room_posted_at`): `already` = đã đăng / run còn `running`; `skipped` = R17. */
+/**
+ * Definer idempotent (`runs.room_posted_at`): `already` = đã đăng / run còn `running`; `skipped` = R17 hoặc hàng `runs`
+ * không khớp phòng/thread/tin (đánh dấu đã xử lý). Sender suy trong definer (security-1 #6, `p_sender` bỏ qua).
+ */
 export async function postAgentMessage(
   tx: Tx,
-  p: { runId: string; senderId: string; content: string; meta: PostMeta },
+  p: { runId: string; content: string; meta: PostMeta },
 ): Promise<PostResult> {
   const [row] = await tx.execute<{
     posted: boolean;
@@ -119,7 +130,7 @@ export async function postAgentMessage(
     created_at: Ts | null;
     placement: "main" | "flow" | null;
   }>(sql`
-    select * from hub.room_post_agent_message(${p.runId}::uuid, ${p.senderId}::uuid, ${p.content},
+    select * from hub.room_post_agent_message(${p.runId}::uuid, null::uuid, ${p.content},
       ${JSON.stringify(p.meta)}::jsonb)`);
   if (!row) throw new Error("room_post_agent_message returned no row");
   return {
@@ -142,11 +153,16 @@ export async function fanoutSys(tx: Tx, roomId: string): Promise<FanoutRow[]> {
   }));
 }
 
-/** Reconcile · run phòng đã dừng mà chưa đăng (`runs_room_unposted_idx`), cũ trước. */
-export async function unpostedRuns(tx: Tx, limit = 20): Promise<string[]> {
+/** Reconcile · run phòng đã dừng mà chưa đăng (`runs_room_unposted_idx`), cũ trước; bỏ `skip` (đang lùi). */
+export async function unpostedRuns(
+  tx: Tx,
+  limit = 20,
+  skip: readonly string[] = [],
+): Promise<string[]> {
   const rows = await tx.execute<{ id: string }>(sql`
     select r.id from hub.runs r
     where r.room_id is not null and r.room_posted_at is null and r.status <> 'running'
+      and r.id <> all(${`{${skip.join(",")}}`}::uuid[])
     order by r.finished_at limit ${limit}`);
   return rows.map((r) => r.id);
 }

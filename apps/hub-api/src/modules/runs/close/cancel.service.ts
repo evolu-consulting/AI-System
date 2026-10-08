@@ -23,6 +23,7 @@ import {
   type CancelTarget,
   type CancelWrite,
   cancelRun,
+  declineRoomConfirms,
   type RoomRunsScope,
   runningRoomRuns,
   runningRunsOf,
@@ -118,6 +119,7 @@ export class CancelService {
       await this.#announce(done);
       n++;
     }
+    await withHubScope(this.d.db, { kind: "system" }, (tx) => declineRoomConfirms(tx, p));
     return n;
   }
 
@@ -149,7 +151,7 @@ export class CancelService {
 
   async #announce(c: Cancelled): Promise<void> {
     await announceClosed(this.d, c);
-    notifyClosed(this.d, c.target.runId);
+    if (c.target.roomId !== null) notifyClosed(this.d, c.target.runId);
   }
 }
 

@@ -18,6 +18,8 @@ export type CancelTarget = {
   conversationId: string;
   flowId: string;
   answerMessageId: string;
+  /** X2b: `null` = run C1 (bỏ hook đăng tin phòng); vắng = chưa đọc ⇒ vẫn gọi hook. */
+  roomId?: string | null;
 };
 export type CloseError = { code: "CANCELLED" | "INTERNAL_ERROR"; message: string; hint: string };
 export type CancelWrite = {
@@ -37,6 +39,7 @@ const targetCols = {
   flowId: runs.flowId,
   answerMessageId: runs.answerMessageId,
   locale: runs.locale,
+  roomId: runs.roomId,
 };
 
 /** Run `running` của hội thoại (E9), theo `flow_id` để mọi E9 khoá flows cùng thứ tự. */
@@ -81,6 +84,21 @@ export async function runningRoomRuns(
     )
     .orderBy(runs.flowId)
     .limit(limit);
+}
+
+/**
+ * X2b R17 · Q8 (security-1 #3) · xác nhận `pending` trên flow nền của phòng (của `userId` nếu có) ⇒ `declined`; scope
+ * `system`, sau khi huỷ run. Hội thoại nền `(room_id, user_id)` → flow nền → `tool_confirmations_open_uq (flow_id, …)`.
+ */
+export async function declineRoomConfirms(tx: Tx, p: RoomRunsScope): Promise<number> {
+  const rows = await tx.execute<{ id: string }>(sql`
+    update hub.tool_confirmations t set status = 'declined', decided_at = now()
+    from hub.flows f join hub.conversations c on c.id = f.conversation_id
+    where c.room_id = ${p.roomId} and c.tenant_id = ${p.tenantId}
+      ${p.userId === undefined ? sql`` : sql`and c.user_id = ${p.userId}`}
+      and f.tenant_id = c.tenant_id and t.flow_id = f.id and t.tenant_id = c.tenant_id and t.status = 'pending'
+    returning t.id`);
+  return rows.length;
 }
 
 /** §5.8 ứng viên sweeper, **không khoá** (`runs_lease_idx`); `locale` đọc cùng dòng (plan-errors §Ghi). */

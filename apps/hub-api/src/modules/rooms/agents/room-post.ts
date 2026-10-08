@@ -19,6 +19,8 @@ import { agentMessageEvents, runClosedEvents } from "./room-run-events";
 
 export const ROOM_RECONCILE_MS = 5_000;
 const SYSTEM = { kind: "system" } as const;
+const BACKOFF_MAX_MS = 10 * 60_000;
+const BACKOFF_CAP = 1_000;
 /** Agent trả rỗng: `room_messages.content` cần 1–16000 ký tự. */
 const EMPTY_CONTENT = "…";
 
@@ -60,14 +62,20 @@ function messagesOf(o: repo.RunOutcomeRow, v: View, content: string, res: repo.P
 /** tx2: đọc kết quả → definer → fanout (người nhận dưới khoá `rooms` của definer, cùng tx). */
 async function postTx(tx: Tx, runId: string): Promise<Posted | null> {
   const o = await repo.runOutcome(tx, runId);
-  if (!o?.threadId || o.status === "running") return null;
+  if (!o || o.status === "running") return null;
+  // Hàng `runs` không khớp phòng/thread/tin (security-1 #1): definer từ chối ⇒ `skipped`, không phát sự kiện.
+  if (!o.threadId) {
+    const meta = { run_status: "cancelled", step_count: 0, run_ms: 0 } as const;
+    const res = await repo.postAgentMessage(tx, { runId, content: EMPTY_CONTENT, meta });
+    return { reason: res.reason, events: [] };
+  }
   const v = agentMessageView({
     ...{ status: o.status, content: o.content, ask: o.ask },
     ...{ pendingConfirm: o.pendingConfirm, locale: o.locale },
   });
   const content = (v.content || EMPTY_CONTENT).slice(0, CHAT_CONTENT_MAX);
   const res = await repo.postAgentMessage(tx, {
-    ...{ runId, senderId: o.senderId, content, meta: metaOf(o, v) },
+    ...{ runId, content, meta: metaOf(o, v) },
   });
   if (res.reason === "already") return { reason: res.reason, events: [] };
   const fan = await repo.fanoutSys(tx, o.roomId);
@@ -85,6 +93,8 @@ async function postTx(tx: Tx, runId: string): Promise<Posted | null> {
 }
 
 export class RoomRunPoster {
+  /** Run lỗi ở vòng bù: số lần + mốc thử lại (Map giữ thứ tự chèn ⇒ bỏ cũ nhất khi vượt `BACKOFF_CAP`). */
+  readonly #backoff = new Map<string, { n: number; until: number }>();
   constructor(private readonly d: RoomPosterDeps) {}
 
   /** Hook `onClosed` (B3): đồng bộ, không ném; việc async tự `.catch` (lỗi chỉ log, reconcile bù). */
@@ -103,19 +113,41 @@ export class RoomRunPoster {
     return r.reason;
   }
 
-  /** Một lượt bù: ≤ 20 run phòng đã dừng chưa đăng; lỗi một run chỉ log. Trả số run vừa đăng/bỏ qua. */
+  /**
+   * Một lượt bù: ≤ 20 run phòng đã dừng chưa đăng; lỗi một run chỉ log. Trả số run vừa đăng/bỏ qua. Run lỗi lặp
+   * (review-1 #5) bị lùi theo cấp số nhân (bộ nhớ, ≤ `BACKOFF_MAX_MS`) và loại khỏi lượt sau ⇒ không chặn vòng bù.
+   */
   async reconcile(): Promise<number> {
-    const ids = await withHubScope(this.d.db, SYSTEM, (tx) => repo.unpostedRuns(tx));
+    const now = Date.now();
+    const skip = [...this.#backoff].filter(([, b]) => b.until > now).map(([id]) => id);
+    const ids = await withHubScope(this.d.db, SYSTEM, (tx) => repo.unpostedRuns(tx, 20, skip));
     let n = 0;
     for (const id of ids) {
       try {
         const reason = await this.post(id);
+        if (reason === null) throw new Error("room run outcome unavailable");
+        this.#backoff.delete(id);
         if (reason === "posted" || reason === "skipped") n++;
       } catch (err) {
-        this.d.log.warn("room-post-reconcile-run-failed", { run_id: id, ...safeErrorFields(err) });
+        const b = this.#fail(id);
+        this.d.log.warn("room-post-reconcile-run-failed", {
+          ...{ run_id: id, attempts: b.n, ...safeErrorFields(err) },
+        });
       }
     }
     return n;
+  }
+
+  #fail(id: string): { n: number; until: number } {
+    const n = (this.#backoff.get(id)?.n ?? 0) + 1;
+    const b = { n, until: Date.now() + Math.min(ROOM_RECONCILE_MS * 2 ** n, BACKOFF_MAX_MS) };
+    this.#backoff.delete(id);
+    this.#backoff.set(id, b);
+    if (this.#backoff.size > BACKOFF_CAP) {
+      const oldest = this.#backoff.keys().next().value;
+      if (oldest) this.#backoff.delete(oldest);
+    }
+    return b;
   }
 
   start(signal?: AbortSignal): void {
