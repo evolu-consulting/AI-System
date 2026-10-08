@@ -86,6 +86,12 @@ function onMessage(c: Ctx, { room_id, message }: Of<"room.message">): void {
   c.client.setQueryData<RoomMessagesData>(roomKeys.messages(room_id), (d) =>
     isMainPlacement(message) ? insertMessage(d, message) : bumpFlowOf(d, message),
   );
+  // Thread đang mở (cache `flow` đã có): mọi tin cùng `flow_id` (cả tin gốc ở timeline) vào khung (X2b D10).
+  if (message.flow_id) {
+    c.client.setQueryData<RoomMessagesData>(roomKeys.flow(room_id, message.flow_id), (d) =>
+      insertMessage(d, message),
+    );
+  }
   if (message.sender_type === "agent") c.patchDetail(room_id, (d) => applyAgentMessage(d, message));
   if (!findInList(c.client.getQueryData<RoomListData>(roomKeys.list), room_id)) {
     void c.client.invalidateQueries({ queryKey: roomKeys.list });

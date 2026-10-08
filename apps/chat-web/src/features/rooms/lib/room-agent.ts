@@ -169,3 +169,25 @@ export function bumpFlowOf(
   }));
   return hit ? { ...data, pages } : data;
 }
+
+/** Lượt của mình đang chờ trong thread (`need_input`/`side_effect`) → `answer_run_id` cho tin trả lời tự do (D13). */
+export function ownWaitingRunId(
+  runs: readonly RoomActiveRun[] | undefined,
+  flowId: string,
+  myId: string,
+): string | undefined {
+  return (runs ?? []).find(
+    (r) => r.status === "waiting" && r.flow_id === flowId && r.caller.id === myId,
+  )?.run_id;
+}
+
+/** Tách run đang chạy theo nơi hiện (D7, D10): thread đang mở → trong khung; còn lại → cuối timeline. */
+export function splitPendingByFlow(
+  pending: readonly RoomActiveRun[],
+  openFlowId: string | undefined,
+): { main: RoomActiveRun[]; flow: RoomActiveRun[] } {
+  const main: RoomActiveRun[] = [];
+  const flow: RoomActiveRun[] = [];
+  for (const r of pending) (openFlowId && r.flow_id === openFlowId ? flow : main).push(r);
+  return { main, flow };
+}

@@ -23,6 +23,8 @@ type Props = {
   onAnswer?: (message: RoomMessage, choice: string) => Promise<boolean>;
   /** "Chạy lại" của người gửi lượt; vắng → không có nút. */
   onRerun?: (message: RoomMessage) => void;
+  /** Trong khung thread (D10): không có chân "Trả lời tiếp"/đếm flow. */
+  inThread?: boolean;
 };
 
 function Body({ message, onRerun }: { message: RoomMessage; onRerun?: () => void }) {
@@ -62,8 +64,34 @@ function useTurnLabels(message: RoomMessage, myId: string) {
   };
 }
 
-function AgentBlockImpl({ message, myId, onReply, waiting = false, onAnswer, onRerun }: Props) {
-  const { t, i18n } = useTranslation();
+/** Chân khối ở timeline: Copy · "+n tin trong flow · thời gian" · "Trả lời tiếp" (luôn bật, D9). */
+function BlockFooter({
+  message,
+  copyValue,
+  onReply,
+}: {
+  message: RoomMessage;
+  copyValue: string;
+  onReply?: (flowId: string) => void;
+}) {
+  const { i18n } = useTranslation();
+  const flowId = message.flow_id;
+  const flow = message.flow;
+  return (
+    <FlowFooter
+      copyValue={copyValue}
+      messageCount={flow?.message_count ?? 0}
+      timeLabel={flow ? relativeTime(flow.last_active_at, Date.now(), i18n.language) : null}
+      openHere={false}
+      busy={false}
+      onReply={flowId && onReply ? () => onReply(flowId) : undefined}
+    />
+  );
+}
+
+function AgentBlockImpl(props: Props) {
+  const { message, myId, onReply, waiting = false, onAnswer, onRerun, inThread = false } = props;
+  const { t } = useTranslation();
   const { name, caller, mine, askedBy, runsAs } = useTurnLabels(message, myId);
   const flowId = message.flow_id;
   const ok = message.run_status === undefined || message.run_status === "finished";
@@ -97,16 +125,13 @@ function AgentBlockImpl({ message, myId, onReply, waiting = false, onAnswer, onR
         )}
         {caller && <span>{runsAs}</span>}
       </p>
-      <FlowFooter
-        copyValue={ok && !hideBody ? message.content : ""}
-        messageCount={message.flow?.message_count ?? 0}
-        timeLabel={
-          message.flow ? relativeTime(message.flow.last_active_at, Date.now(), i18n.language) : null
-        }
-        openHere={false}
-        busy={false}
-        onReply={flowId && onReply ? () => onReply(flowId) : undefined}
-      />
+      {!inThread && (
+        <BlockFooter
+          message={message}
+          copyValue={ok && !hideBody ? message.content : ""}
+          onReply={onReply}
+        />
+      )}
     </article>
   );
 }

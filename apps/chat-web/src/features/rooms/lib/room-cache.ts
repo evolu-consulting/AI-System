@@ -14,6 +14,8 @@ export const roomKeys = {
   list: ["rooms", "list"] as const,
   detail: (id: string) => ["rooms", "detail", id] as const,
   messages: (id: string) => ["rooms", "messages", id] as const,
+  /** Tin của một thread (X2b D10): cùng tiền tố `messages(id)` ⇒ invalidate/remove phòng kéo theo thread. */
+  flow: (id: string, flowId: string) => ["rooms", "messages", id, "flow", flowId] as const,
 };
 
 export type RoomListData = InfiniteData<RoomListResponse, string | undefined>;

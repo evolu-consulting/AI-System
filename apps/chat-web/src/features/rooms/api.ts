@@ -74,6 +74,21 @@ export async function listRoomMessages(
   );
 }
 
+/** Tin của một thread (`flow_id`, gồm tin gốc ở timeline), lùi theo `before_seq`; flow lạ/khác phòng → 404 `NOT_FOUND`. */
+export async function listFlowMessages(
+  id: string,
+  flowId: string,
+  beforeSeq?: number,
+  signal?: AbortSignal,
+): Promise<RoomMessagePage> {
+  return RoomMessagePageSchema.parse(
+    await api<unknown>(`${base(id)}/messages`, {
+      query: { flow_id: flowId, before_seq: beforeSeq },
+      signal,
+    }),
+  );
+}
+
 /** Tin đã gửi + run do tin gọi agent bật (header `X-Run-Id`/`X-Flow-Id`, X2b D5); tin thường: cả hai `null`. */
 export type SentRoomMessage = { message: RoomMessage; runId: string | null; flowId: string | null };
 

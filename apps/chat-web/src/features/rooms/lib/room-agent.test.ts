@@ -10,9 +10,11 @@ import {
   finishActiveRun,
   isMainPlacement,
   isOwnTurn,
+  ownWaitingRunId,
   patchActiveRun,
   pendingRuns,
   removeActiveRun,
+  splitPendingByFlow,
   waitingRunIds,
 } from "./room-agent";
 import type { RoomMessagesData } from "./room-cache";
@@ -142,4 +144,21 @@ test("lượt chờ: tin agent có ask → waiting (thêm nếu chưa có), run_
     other.run_id,
     next.run_id,
   ]);
+});
+
+test("ownWaitingRunId: chỉ lượt chờ của mình trong đúng thread (D13)", () => {
+  const mine = { ...run(1, AT, ME), status: "waiting" as const };
+  const other = { ...run(2, AT, LAN), flow_id: mine.flow_id, status: "waiting" as const };
+  const running = { ...run(3, AT, ME), flow_id: mine.flow_id };
+  expect(ownWaitingRunId([other, running, mine], mine.flow_id, ME)).toBe(mine.run_id);
+  expect(ownWaitingRunId([other, running], mine.flow_id, ME)).toBeUndefined();
+  expect(ownWaitingRunId([mine], uid(999), ME)).toBeUndefined();
+  expect(ownWaitingRunId(undefined, mine.flow_id, ME)).toBeUndefined();
+});
+
+test("splitPendingByFlow: run của thread đang mở vào khung, còn lại cuối timeline", () => {
+  const a = run(1);
+  const b = run(2);
+  expect(splitPendingByFlow([a, b], b.flow_id)).toEqual({ main: [a], flow: [b] });
+  expect(splitPendingByFlow([a, b], undefined)).toEqual({ main: [a, b], flow: [] });
 });

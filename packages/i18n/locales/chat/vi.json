@@ -276,6 +276,10 @@
     "cancelledOther": "Đã huỷ",
     "steps": "{{count}} bước · {{seconds}}s",
     "orchestratorName": "Orchestrator",
+    "threadContextHint": "Agent đọc được cả thread này (tối đa 50 tin gần nhất) và 20 tin trước đó của phòng.",
+    "flowBusy": "Lượt trước của bạn trong flow này vẫn đang chạy. Đợi xong hoặc bấm Dừng.",
+    "flowLoadError": "Không tải được flow",
+    "flowRetry": "Thử lại",
     "toast": {
       "stopFailed": "Không dừng được. Thử lại sau.",
       "notCaller": "Chỉ người gửi lượt này mới trả lời được."

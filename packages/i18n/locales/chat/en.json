@@ -276,6 +276,10 @@
     "cancelledOther": "Cancelled",
     "steps": "{{count}} steps · {{seconds}}s",
     "orchestratorName": "Orchestrator",
+    "threadContextHint": "Agents can read this whole thread (up to the 50 latest messages) and the 20 messages before it in the room.",
+    "flowBusy": "Your previous turn in this flow is still running. Wait or press Stop.",
+    "flowLoadError": "Couldn't load this flow",
+    "flowRetry": "Retry",
     "toast": {
       "stopFailed": "Couldn't stop. Try again later.",
       "notCaller": "Only the sender of this turn can respond."

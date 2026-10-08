@@ -3,7 +3,7 @@
 // 404 `NOT_FOUND` (run hết chờ / thread lạ) → toast + làm tươi. "Chạy lại" (lỗi/huỷ) gửi lại nguyên văn tin gọi.
 import type { RoomDetail, RoomMessage, SendRoomMessageRequest } from "@ai/contracts/chat";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ApiError } from "~/lib/http";
@@ -83,4 +83,20 @@ export function useRoomTurnActions(roomId: string, onOpenFlow?: (flowId: string)
   );
 
   return { answer, rerun } satisfies RoomTurnActions;
+}
+
+/** "Chạy lại" từ khối agent: tìm tin gọi (`trigger_message_id`) trong danh sách đang hiện; ref giữ callback ổn định (memo). */
+export function useRerunFromList(
+  messages: readonly RoomMessage[],
+  rerun: RoomTurnActions["rerun"],
+): (message: RoomMessage) => void {
+  const ref = useRef(messages);
+  ref.current = messages;
+  return useCallback(
+    (m: RoomMessage) => {
+      const trigger = ref.current.find((x) => x.id === m.trigger_message_id);
+      if (trigger) void rerun(m, trigger.content);
+    },
+    [rerun],
+  );
 }
