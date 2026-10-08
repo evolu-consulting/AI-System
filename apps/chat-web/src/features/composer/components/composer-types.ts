@@ -21,12 +21,18 @@ export type ComposerProps = {
   /** `run.started.quota.state = over`. */
   quotaOver?: boolean;
   autoFocus?: boolean;
-  /** Menu `/` và `@` (mặc định bật). Tắt: không gọi `GET /commands`/`/agents`, `@x`/`/x` gửi nguyên văn (phòng X2a). */
-  menus?: boolean;
+  /** Menu `/` và `@` (mặc định bật). `"agents"`: chỉ `@` (phòng X2b, `/x` gửi nguyên văn). Tắt: không gọi `GET /commands`/`/agents`. */
+  menus?: boolean | "agents";
   /** Nút/hàng đính kèm + vùng thả tệp (mặc định bật). Tắt: kéo-thả không upload (X2a Q3/§5.3). */
   attachments?: boolean;
   /** `room`: nhãn textbox, cũng là placeholder (vd "Tin nhắn cho nhóm"). */
   inputLabel?: string;
+  /** Placeholder riêng (tách khỏi nhãn `inputLabel`, X2b D4). */
+  placeholder?: string;
+  /** Tiêu đề nhìn thấy của menu `@` (vd "Agent bạn dùng được"). */
+  menuTitle?: string;
+  /** Dòng gợi ý dưới ô nhập. */
+  hint?: string;
   /** Quá giới hạn ký tự → Gửi disabled; hiện bộ đếm từ 90 %. */
   maxChars?: number;
   onSubmit(text: string, attachmentIds?: string[]): Promise<SubmitResult>;

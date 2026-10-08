@@ -1,11 +1,24 @@
 // HUB-FR-96 · một tin: người khác = avatar chữ cái + tên + giờ (tên chỉ ở nhóm); tin mình = "Bạn · giờ", lệch phải.
-// Chuỗi `@xxx` hiện nguyên chữ (R16). Tin của agent: X2b cắm FlowBlock; X2a không dựng gì.
+// Chuỗi `@xxx` giữ nguyên chữ (R16); `@key` đầu tin được tô. Tin của agent: X2b cắm FlowBlock; X2a không dựng gì.
 import type { RoomMessage } from "@ai/contracts/chat";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { leadingTag } from "~/features/agents/lib/mention";
 import { cn } from "~/lib/utils";
 import { initialsOf } from "../../../shell/lib/conversation-path";
 import { timeOf } from "../../lib/room-logic";
+
+/** Tô `@key` ở đầu tin (chữ giữ nguyên, R16); không tag → chữ thường. */
+function Content({ text }: { text: string }) {
+  const tag = leadingTag(text);
+  if (tag === null) return <>{text}</>;
+  return (
+    <>
+      <span className="font-semibold underline decoration-dotted underline-offset-2">{`@${tag}`}</span>
+      {text.slice(tag.length + 1)}
+    </>
+  );
+}
 
 type Props = { message: RoomMessage; mine: boolean; group: boolean };
 
@@ -38,7 +51,7 @@ function MessageItemImpl({ message, mine, group }: Props) {
             mine ? "bg-primary text-primary-foreground" : "border border-border bg-card",
           )}
         >
-          {message.content}
+          <Content text={message.content} />
         </p>
       </div>
     </article>

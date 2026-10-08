@@ -72,4 +72,15 @@ describe("Composer variant room (X2a)", () => {
   test("menus=false: textbox không báo menu mở", () => {
     expect(render({ ...room, menus: false })).toContain('aria-expanded="false"');
   });
+  test('X2b: placeholder tách khỏi nhãn; menus="agents" giữ nhãn X2a + hiện dòng gợi ý', () => {
+    const html = render({
+      ...room,
+      menus: "agents",
+      placeholder: "Nhắn cho nhóm… gõ @ để hỏi agent",
+      hint: "Agent chỉ trả lời khi được @",
+    });
+    expect(html).toContain('aria-label="Tin nhắn cho nhóm"');
+    expect(html).toContain('placeholder="Nhắn cho nhóm… gõ @ để hỏi agent"');
+    expect(html).toContain("Agent chỉ trả lời khi được @");
+  });
 });

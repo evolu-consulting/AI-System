@@ -1,5 +1,5 @@
 // HUB-FR-96…101 · mutation phòng. Vá cache bằng `room-cache`; lỗi giữ nguyên `ApiError` để UI dịch qua `roomErrorKeyOf`.
-import type { CreateRoomRequest, RoomDetail, RoomMessage } from "@ai/contracts/chat";
+import type { CreateRoomRequest, RoomDetail } from "@ai/contracts/chat";
 import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   addRoomMembers,
@@ -10,6 +10,7 @@ import {
   markRoomRead,
   removeRoomMember,
   renameRoom,
+  type SentRoomMessage,
   sendRoomMessage,
   transferRoom,
 } from "../api";
@@ -93,7 +94,7 @@ export function useSendRoomMessage(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: { content: string; client_msg_id: string }) => sendRoomMessage(id, v),
-    onSuccess: (msg: RoomMessage) => {
+    onSuccess: ({ message: msg }: SentRoomMessage) => {
       qc.setQueryData<RoomMessagesData>(roomKeys.messages(id), (d) => insertMessage(d, msg));
       qc.setQueryData<RoomListData>(roomKeys.list, (d) => applySentMessage(d, id, msg));
       if (!findRoomInList(qc.getQueryData<RoomListData>(roomKeys.list), id)) void refreshList(qc);

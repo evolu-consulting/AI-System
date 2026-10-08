@@ -12,6 +12,8 @@ export type SuggestMenuProps = {
   onPick(index: number): void;
   /** Có `notice` (đang tải / rỗng / lỗi / không khớp) thì hiện thay danh sách. */
   notice?: ReactNode;
+  /** Tiêu đề nhìn thấy phía trên (menu `@` của phòng). */
+  title?: string;
 };
 
 export const optionId = (menuId: string, i: number) => `${menuId}-opt-${i}`;
@@ -23,12 +25,16 @@ export const SuggestMenu = memo(function SuggestMenu({
   active,
   onPick,
   notice,
+  title,
 }: SuggestMenuProps) {
   useEffect(() => {
     document.getElementById(optionId(id, active))?.scrollIntoView?.({ block: "nearest" });
   }, [id, active]);
   return (
     <div className="mb-1 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md">
+      {title ? (
+        <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{title}</p>
+      ) : null}
       {notice !== undefined ? (
         <div className="px-3 py-2 text-sm text-muted-foreground">{notice}</div>
       ) : null}

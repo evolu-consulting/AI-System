@@ -51,8 +51,9 @@ export function inputLabels(
   t: (key: string) => string,
   flow: boolean,
   override?: string,
+  placeholder?: string,
 ): { input: string; placeholder: string } {
-  if (override) return { input: override, placeholder: override };
+  if (override) return { input: override, placeholder: placeholder ?? override };
   return flow
     ? { input: t("composer.flowInput"), placeholder: t("composer.flowPlaceholder") }
     : { input: t("composer.input"), placeholder: t("composer.placeholder") };

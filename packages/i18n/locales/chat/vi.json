@@ -149,6 +149,7 @@
     "agentsEmpty": "Bạn chưa được cấp agent nào",
     "agentsNoMatch": "Không có agent khớp “@{{q}}”",
     "agentsError": "Không tải được danh sách agent",
+    "agentsYours": "Agent bạn dùng được",
     "retry": "Thử lại",
     "alias": "(alias /{{alias}})"
   },
@@ -250,6 +251,13 @@
     "messageTo": "Nhắn tin với {{name}}",
     "noMatch": "Không có ai khớp \"{{q}}\"",
     "error": "Không tìm được người. Thử lại"
+  },
+  "roomAgent": {
+    "placeholder": {
+      "group": "Nhắn cho nhóm… gõ @ để hỏi agent",
+      "dm": "Nhắn cho {{name}}… gõ @ để hỏi agent"
+    },
+    "hint": "Agent chỉ trả lời khi được @ — chạy bằng quyền và quota của người hỏi."
   },
   "rooms": {
     "section": "Tin nhắn & Nhóm",

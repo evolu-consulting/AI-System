@@ -149,6 +149,7 @@
     "agentsEmpty": "No agents have been granted to you",
     "agentsNoMatch": "No agent matches “@{{q}}”",
     "agentsError": "Could not load the agent list",
+    "agentsYours": "Agents you can use",
     "retry": "Retry",
     "alias": "(alias /{{alias}})"
   },
@@ -250,6 +251,13 @@
     "messageTo": "Message {{name}}",
     "noMatch": "No one matches \"{{q}}\"",
     "error": "Couldn't search people. Retry"
+  },
+  "roomAgent": {
+    "placeholder": {
+      "group": "Message the group… type @ to ask an agent",
+      "dm": "Message {{name}}… type @ to ask an agent"
+    },
+    "hint": "Agents reply only when @-mentioned — they run with the asker's permissions and quota."
   },
   "rooms": {
     "section": "Messages & Groups",

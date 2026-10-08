@@ -1,6 +1,6 @@
 // CHAT-AC-05, CHAT-AC-10 · luật thuần của composer.
 import { describe, expect, test } from "bun:test";
-import { canSend, clampHeight, draftKey, keyAction } from "./composer-logic";
+import { canSend, clampHeight, draftKey, inputLabels, keyAction } from "./composer-logic";
 
 describe("keyAction", () => {
   test("Enter gửi, Shift+Enter xuống dòng", () => {
@@ -35,5 +35,16 @@ describe("clampHeight / draftKey", () => {
     expect(draftKey("u1", "c1", "f1")).toBe("chat:draft:u1:c1:f1");
     expect(draftKey("u2", null, null)).not.toBe(draftKey("u1", null, null));
     expect(draftKey(null, null, null)).toBe("chat:draft:anon:new:main");
+  });
+});
+
+describe("inputLabels placeholder (X2b D4)", () => {
+  test("override + placeholder: nhãn giữ, placeholder riêng", () => {
+    const t = (k: string) => k;
+    expect(inputLabels(t, false, "Tin nhắn cho nhóm", "Nhắn… gõ @")).toEqual({
+      input: "Tin nhắn cho nhóm",
+      placeholder: "Nhắn… gõ @",
+    });
+    expect(inputLabels(t, false, "Tin nhắn cho nhóm").placeholder).toBe("Tin nhắn cho nhóm");
   });
 });

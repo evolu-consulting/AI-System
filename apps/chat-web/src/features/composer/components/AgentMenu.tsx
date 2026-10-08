@@ -9,9 +9,11 @@ import { SuggestMenu } from "./SuggestMenu";
 export function AgentMenu({
   suggest,
   onPick,
+  title,
 }: {
   suggest: AgentSuggest;
   onPick(index: number): void;
+  title?: string;
 }) {
   const { t, i18n } = useTranslation();
   const { status, matches, q, active, retry } = suggest;
@@ -47,6 +49,7 @@ export function AgentMenu({
       active={active}
       onPick={onPick}
       notice={notice}
+      title={title}
     />
   );
 }

@@ -48,6 +48,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     menus = true,
     attachments = true,
     inputLabel,
+    placeholder,
+    menuTitle,
+    hint,
     maxChars,
     onSubmit,
     onStop,
@@ -154,7 +157,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
 
   const enabled = canSend(text, locked, submitting) && !over && !sendError.cooling && !att.busy;
   const errorView = sendError.view;
-  const labels = inputLabels(t, flow, inputLabel);
+  const labels = inputLabels(t, flow, inputLabel, placeholder);
   return (
     <div className="w-full">
       <QuotaNotice over={quotaOver} />
@@ -169,7 +172,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         />
       )}
       {cmdSuggest.open && <CommandMenu suggest={cmdSuggest} onPick={pickCommand} />}
-      {agentSuggest.open && <AgentMenu suggest={agentSuggest} onPick={pickCommand} />}
+      {agentSuggest.open && (
+        <AgentMenu suggest={agentSuggest} onPick={pickCommand} title={menuTitle} />
+      )}
       {variant === "main" && (
         <p className="mb-1 text-xs text-muted-foreground">
           <span className="font-semibold text-foreground">{t("composer.newLabel")}</span>
@@ -194,6 +199,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         onSend={() => void send()}
         onStop={onStop}
       />
+      {hint && <p className="mt-1 px-1 text-xs text-muted-foreground">{hint}</p>}
       {maxChars !== undefined && <CharCount length={text.length} max={maxChars} />}
     </div>
   );

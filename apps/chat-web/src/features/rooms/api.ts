@@ -1,6 +1,7 @@
 // HUB-FR-96…101 · toàn bộ gọi `/rooms*` (spec §3). Gọi API chỉ ở file này (plan-frontend §1).
 import {
   type CreateRoomRequest,
+  FLOW_ID_HEADER,
   type MarkRoomReadResponse,
   MarkRoomReadResponseSchema,
   type RoomDetail,
@@ -11,9 +12,10 @@ import {
   type RoomMessagePage,
   RoomMessagePageSchema,
   RoomMessageSchema,
+  RUN_ID_HEADER,
   type SendRoomMessageRequest,
 } from "@ai/contracts/chat";
-import { api } from "~/lib/http";
+import { api, apiResponse } from "~/lib/http";
 
 const base = (id: string) => `/rooms/${encodeURIComponent(id)}`;
 
@@ -72,14 +74,20 @@ export async function listRoomMessages(
   );
 }
 
+/** Tin đã gửi + run do tin gọi agent bật (header `X-Run-Id`/`X-Flow-Id`, X2b D5); tin thường: cả hai `null`. */
+export type SentRoomMessage = { message: RoomMessage; runId: string | null; flowId: string | null };
+
 /** 201 mới / 200 trùng `client_msg_id`: cùng một thân `RoomMessage`. */
 export async function sendRoomMessage(
   id: string,
   body: SendRoomMessageRequest,
-): Promise<RoomMessage> {
-  return RoomMessageSchema.parse(
-    await api<unknown>(`${base(id)}/messages`, { method: "POST", body }),
-  );
+): Promise<SentRoomMessage> {
+  const res = await apiResponse(`${base(id)}/messages`, { method: "POST", body });
+  return {
+    message: RoomMessageSchema.parse(await res.json()),
+    runId: res.headers.get(RUN_ID_HEADER),
+    flowId: res.headers.get(FLOW_ID_HEADER),
+  };
 }
 
 export async function markRoomRead(id: string, seq: number): Promise<MarkRoomReadResponse> {
