@@ -5,7 +5,7 @@ Dành cho người dùng kiểm tay toàn luồng Chat + Admin + Studio (Hub). N
 Kiểm tay chat DM/nhóm giữa 2 user (X2a I2): xem [`docs/specs/X2a-rooms/manual-test-I2.md`](../specs/X2a-rooms/manual-test-I2.md).
 
 ## 1. Chuẩn bị
-1. Docker Desktop đang chạy (script tự dựng Postgres, Redis, Mailpit).
+1. Docker Desktop đang chạy (script tự dựng Postgres, Redis).
 2. Có `.env.local`: chép từ `.env.example` rồi điền `SEED_ADMIN_PASSWORD` (mật khẩu `platform_admin` dev). Không commit file này.
 3. `bun install` (lần đầu), rồi `bun run db:migrate`.
 

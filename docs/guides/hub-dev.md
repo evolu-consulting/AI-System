@@ -2,7 +2,7 @@
 
 | Việc | Lệnh | Ghi chú |
 |---|---|---|
-| Hạ tầng | `docker compose up -d --wait` | Postgres, Redis, Mailpit |
+| Hạ tầng | `docker compose up -d --wait` | Postgres, Redis |
 | Env | `.env.local` có khối Hub (`HUB_*`, `HUB_TEST_DATABASE_URL`, `AGENT_RT_TEST_DATABASE_URL`) | chép từ `.env.example` nếu thiếu |
 | Dev Hub | `bun run hub:dev` | migrate DB `ai_system` → admin-api `:3001` (dùng lại nếu đang chạy) → user fixture `lan/hoa/an/khoa` (mật khẩu `dev-password-1`, `khoa` bị khoá) qua platform_admin → `hub:seed` → hub-api `:4000` → agent-runtime `fake-cli` (Windows: container `ai-hub-dev-runtime`; Linux/WSL2: `uv` thẳng). Ctrl+C dừng phần script đã bật. In ra `CHAT_CONTRACT_USERS` |
 | Mock Dify (H2a) | `bun run hub:dify-mock` | mock Dify streaming (`tools/hub-dev/src/dify-mock.ts`, cổng `PORT`, mặc định 5001); kịch bản chọn theo app-key (`mk-ok`, `mk-401`, `mk-503x<n>`, `mk-slow-<ms>`, `mk-agent`…); `GET /__mock/requests` xem lời gọi |

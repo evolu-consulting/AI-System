@@ -1,5 +1,5 @@
 // ADM-FR-08, ADM-FR-54 · hạ tầng test int khối C + D (test-plan-cd §0): bọc env M3 (DB test, app thật, clock giả),
-// bật 2FA qua API, bước TOTP khi đăng nhập, đọc DB bằng owner, bắt log, checksum bảng, Mailpit, gọi import/export.
+// bật 2FA qua API, bước TOTP khi đăng nhập, đọc DB bằng owner, bắt log, checksum bảng, gọi import/export.
 // Không chứa `it(...)`. Truy vấn bảng M4 (audit_log, user_totp…) chịu được bảng chưa có để ca đỏ ở route/expect,
 // không đỏ ở dựng dữ liệu (CONVENTIONS §2 Test "Bẫy đã gặp").
 import { expect } from "bun:test";
@@ -36,7 +36,6 @@ export function expectErr(res: Res, code: string): void {
   expect(res.json?.error?.code).toBe(code);
   expect(res.headers.get("x-request-id")).toBeTruthy();
 }
-export const MAILPIT = "http://127.0.0.1:8025";
 export const ACME_LABEL = "acme · binh";
 
 /** Giây unix của clock giả. */
@@ -201,25 +200,3 @@ export const importReq = async (
     token: token ?? (await env.admin()),
     body,
   });
-
-// ---------- Mailpit ----------
-type MailSummary = { ID: string; Subject: string };
-
-/** Xoá thư test của qc (tiền tố `[M4-qc]`) — Mailpit dùng chung, không xoá thư người khác. */
-export async function mailpitClear(): Promise<void> {
-  const q = encodeURIComponent(`subject:"${PREFIX}"`);
-  await fetch(`${MAILPIT}/api/v1/search?query=${q}`, { method: "DELETE" });
-}
-
-/** Tìm thư theo tiêu đề đúng nguyên văn (lọc lại phía client cho chắc). */
-export async function mailpitFind(subject: string): Promise<MailSummary[]> {
-  const q = encodeURIComponent(`subject:"${subject}"`);
-  const r = await fetch(`${MAILPIT}/api/v1/search?query=${q}`);
-  const j = (await r.json()) as { messages?: MailSummary[] };
-  return (j.messages ?? []).filter((m) => m.Subject === subject);
-}
-
-// biome-ignore lint/suspicious/noExplicitAny: JSON Mailpit
-export async function mailpitMessage(id: string): Promise<any> {
-  return (await fetch(`${MAILPIT}/api/v1/message/${id}`)).json();
-}

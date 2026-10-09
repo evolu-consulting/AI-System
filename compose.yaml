@@ -34,20 +34,6 @@ services:
     volumes:
       - redisdata:/data
 
-  mailpit:
-    image: axllent/mailpit:v1.31.3
-    ports:
-      - "127.0.0.1:1025:1025"
-      - "127.0.0.1:8025:8025"
-    environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: "1"
-      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
-    healthcheck:
-      test: ["CMD", "/mailpit", "readyz"]
-      interval: 5s
-      timeout: 3s
-      retries: 12
-
 volumes:
   pgdata:
   redisdata:
