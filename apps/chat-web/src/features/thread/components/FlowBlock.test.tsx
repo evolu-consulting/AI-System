@@ -70,6 +70,26 @@ test("đang stream: con trỏ aria-hidden + data-run-id", () => {
   expect(html).toContain('<div class="leading-relaxed" aria-hidden="true" aria-busy="true">');
 });
 
+const count = (html: string) => html.split("animate-pulse").length - 1;
+const step = { id: "s1", label: "Đang phân tích", status: "running" as const, ms: null };
+
+test("đang stream có chữ: đúng một con trỏ (của Markdown)", () => {
+  expect(count(render({ answer: answer({ streaming: true }) }))).toBe(1);
+});
+
+test("chờ chữ đầu, chưa có bước: con trỏ báo đã nhận tin", () => {
+  const html = render({ answer: answer({ streaming: true, waiting: true, text: "" }) });
+  expect(count(html)).toBe(1);
+});
+
+test("chờ chữ đầu, đã có bước: không con trỏ (danh sách bước báo tiến độ)", () => {
+  const html = render({
+    answer: answer({ streaming: true, waiting: true, text: "", steps: [step] }),
+  });
+  expect(count(html)).toBe(0);
+  expect(html).toContain("Đang phân tích");
+});
+
 test("xong run: thân câu trả lời không còn aria-hidden (trình đọc màn hình đọc bản đầy đủ)", () => {
   const html = render();
   expect(html).toContain('<div class="leading-relaxed">');

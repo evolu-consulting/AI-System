@@ -33,10 +33,15 @@ function StreamingCursor() {
   );
 }
 
-/** Thân câu trả lời (chờ / cold / stream + con trỏ) — dùng chung cho khối flow và khung flow (F10). */
+/**
+ * Thân câu trả lời (chờ / cold / stream) — dùng chung cho khối flow và khung flow (F10).
+ * Chờ chữ đầu: con trỏ chỉ khi chưa có bước nào (danh sách bước đã báo tiến độ — CR-054). Đang stream: con trỏ
+ * cuối dòng do `Markdown` vẽ (không thêm cái thứ hai ở đây).
+ */
 export function Answer({ answer }: { answer: AnswerView }) {
   if (answer.waiting) {
-    return answer.cold ? <ColdResumeNote /> : <StreamingCursor />;
+    if (answer.cold) return <ColdResumeNote />;
+    return answer.steps?.length ? null : <StreamingCursor />;
   }
   // a11y (plan-frontend §9): chữ đang stream ẩn khỏi trình đọc màn hình; xong run thì gắn node mới
   // (đổi `key`) để vùng `role=log` (aria-relevant=additions) đọc bản đầy đủ một lần.
@@ -48,7 +53,6 @@ export function Answer({ answer }: { answer: AnswerView }) {
       aria-busy={answer.streaming || undefined}
     >
       {answer.text !== "" && <AnswerBody content={answer.text} streaming={answer.streaming} />}
-      {answer.streaming && <StreamingCursor />}
       <AttachmentList items={answer.attachments} />
     </div>
   );
