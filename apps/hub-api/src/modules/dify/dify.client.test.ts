@@ -4,6 +4,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { type DifyMock, startDifyMock } from "../../../../../tools/hub-dev/src/dify-mock";
 import { DifyClient, type DifyRunRequest } from "./dify.client";
+import { networkErrorDetail } from "./dify.rules";
 
 let mk: DifyMock;
 const client = new DifyClient();
@@ -102,6 +103,8 @@ describe("HUB-BR-04 · bảng lỗi plan-errors §2 [HUB-H2a-AC-03 · H2a-R11]",
   it("HUB-BR-04 · lỗi mạng / stream đứt trước kết thúc → UPSTREAM_ERROR upstream", async () => {
     const dead = await run(req("mk-ok", { baseUrl: "http://127.0.0.1:1/v1" }));
     expect(dead.out).toMatchObject({ kind: "failed", code: "UPSTREAM_ERROR", reason: "upstream" });
+    // UAT X2b 2026-10-09: lỗi mạng phải để lại lý do (không còn `detail: null`) để log/trace phân biệt Dify sập.
+    expect(dead.out.kind === "failed" && dead.out.detail).toStartWith("network:");
     const cut = new DifyClient({
       fetch: (async () =>
         new Response('event: message\ndata: {"event":"text_chunk","data":{"text":"a"}}\n\n', {
@@ -159,5 +162,20 @@ describe("HUB-FR-43 · huỷ gọi stop [H2a-R10]", () => {
     const out = await client.runStreaming(req("mk-ok"), ac.signal, () => {});
     expect(out).toMatchObject({ kind: "aborted", taskId: null });
     expect(mk.calls().filter((c) => c.path.endsWith("/stop"))).toEqual([]);
+  });
+});
+
+describe("networkErrorDetail", () => {
+  it("HUB-BR-04 · tên + mã + thông điệp, che app-key, ≤ 300", () => {
+    const err = Object.assign(new Error("connect to http://x failed, key app-SECRET123"), {
+      code: "ETIMEDOUT",
+    });
+    const d = networkErrorDetail(err, "app-SECRET123");
+    expect(d).toStartWith("network: Error ETIMEDOUT connect to http://x failed");
+    expect(d).not.toContain("app-SECRET123");
+    expect(networkErrorDetail("boom", "app-SECRET123")).toBe("network: string");
+    expect(
+      networkErrorDetail(new Error("x".repeat(500)), "app-SECRET123").length,
+    ).toBeLessThanOrEqual(300);
   });
 });

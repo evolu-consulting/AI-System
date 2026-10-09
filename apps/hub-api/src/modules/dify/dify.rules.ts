@@ -177,6 +177,22 @@ function secretForms(secret: string): string[] {
   return [...new Set(forms)].sort((x, y) => y.length - x.length);
 }
 
+/**
+ * Lỗi mạng/stream (fetch ném, không có HTTP status) → chuỗi ngắn cho `run_steps.detail.upstream` + log, đã che secret:
+ * `network: <tên> <mã> <thông điệp>` (vd. `network: Error ETIMEDOUT …`). Không có thì không biết Dify sập hay app sai.
+ */
+export function networkErrorDetail(err: unknown, secret: string): string {
+  const e = err instanceof Error ? err : null;
+  const code = (e as { code?: unknown } | null)?.code;
+  const parts = [
+    "network:",
+    e?.name ?? typeof err,
+    typeof code === "string" ? code : "",
+    e?.message ?? "",
+  ];
+  return maskSecret(parts.filter(Boolean).join(" "), secret);
+}
+
 /** Che `secret` (thô/base64/hex) → `***` **trước**, rồi cắt ≤ `max` (như `mask` Python, plan-runtime §3.1). */
 export function maskSecret(text: string, secret: string, max = DIFY_UPSTREAM_DETAIL_MAX): string {
   let out = text;

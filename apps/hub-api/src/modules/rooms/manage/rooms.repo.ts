@@ -1,8 +1,10 @@
 // HUB-FR-96 · HUB-FR-97 · HUB-FR-98 · truy vấn phòng (X2a plan-db §5 hàng Tạo/Đổi tên/Xoá/GET /rooms, §6). Chạy trong
 // `withHubScope({kind:"user"})`: RLS (`is_room_member`) là lưới, mọi câu vẫn lọc `tenant_id` + người gọi tường minh.
 // Khoá: `lockRoom` (FOR UPDATE OF r) LUÔN trước mọi ghi `room_members` (plan-db §6). Tạo phòng chỉ qua `hub.create_room` (D3).
+import type { RoomAgentRef } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
+import { agentDisplayName } from "../agents/room-post.view";
 import type { RoomMemberRow, RoomSummaryRow, UserRefRow } from "../rooms.map";
 import type { RoomKind, RoomRole } from "../rooms.rules";
 
@@ -100,6 +102,8 @@ type SummarySqlRow = {
   lm_at: Ts | null;
   lm_name: string | null;
   lm_username: string | null;
+  lm_agent_key: string | null;
+  lm_agent_name: RoomAgentRef["name"] | null;
 };
 
 const ref = (id: string, displayName: string | null, username: string | null): UserRefRow => ({
@@ -108,6 +112,15 @@ const ref = (id: string, displayName: string | null, username: string | null): U
   username,
 });
 
+/** Tin cuối của agent đứng tên agent (Orchestrator khi không có agent) như timeline, không phải id. */
+function lastSender(r: SummarySqlRow): UserRefRow {
+  const id = r.lm_sender ?? r.id;
+  if (r.lm_type !== "agent") return ref(id, r.lm_name, r.lm_username);
+  const agent =
+    r.lm_agent_key && r.lm_agent_name ? { key: r.lm_agent_key, name: r.lm_agent_name } : null;
+  return ref(id, agentDisplayName(agent), null);
+}
+
 function toSummaryRow(r: SummarySqlRow): SummaryWithCreated {
   const last =
     r.lm_seq === null || r.lm_type === null || r.lm_content === null || r.lm_at === null
@@ -115,7 +128,7 @@ function toSummaryRow(r: SummarySqlRow): SummaryWithCreated {
       : {
           seq: Number(r.lm_seq),
           senderType: r.lm_type,
-          sender: ref(r.lm_sender ?? r.id, r.lm_name, r.lm_username),
+          sender: lastSender(r),
           content: r.lm_content,
           createdAt: toDate(r.lm_at),
         };
@@ -141,7 +154,8 @@ async function summaries(tx: Tx, me: Me, filter: SQL, tail: SQL): Promise<Summar
       (select count(*) from hub.room_members c where c.room_id = r.id and c.left_at is null) as member_count,
       pm.user_id as peer_id, pu.display_name as peer_name, pu.username as peer_username,
       lm.seq as lm_seq, lm.sender_type as lm_type, lm.sender_id as lm_sender, lm.content as lm_content,
-      lm.created_at as lm_at, su.display_name as lm_name, su.username as lm_username
+      lm.created_at as lm_at, su.display_name as lm_name, su.username as lm_username,
+      la.key as lm_agent_key, la.name as lm_agent_name
     from hub.room_members m
     join hub.rooms r on r.id = m.room_id and r.tenant_id = m.tenant_id and r.deleted_at is null
     left join lateral (select p.user_id from hub.room_members p
@@ -149,6 +163,7 @@ async function summaries(tx: Tx, me: Me, filter: SQL, tail: SQL): Promise<Summar
     left join admin.users pu on pu.id = pm.user_id and pu.tenant_id = m.tenant_id
     left join hub.room_messages lm on lm.room_id = r.id and lm.seq = r.last_seq
     left join admin.users su on su.id = lm.sender_id and su.tenant_id = m.tenant_id
+    left join hub.agents la on lm.sender_type = 'agent' and la.id = lm.sender_id
     where m.user_id = ${me.userId} and m.tenant_id = ${me.tenantId} and m.left_at is null ${filter}
     ${tail}`);
   return rows.map(toSummaryRow);

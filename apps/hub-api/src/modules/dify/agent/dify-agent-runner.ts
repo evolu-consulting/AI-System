@@ -221,6 +221,7 @@ export class DifyAgentRunner implements AgentRunner {
         agent_id: task.agent.id,
         code: end.code,
         reason: end.reason,
+        ...(end.upstream && { upstream: end.upstream }),
       };
       this.d.log.warn("dify-agent-failed", f);
     }

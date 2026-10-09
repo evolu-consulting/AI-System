@@ -17,6 +17,7 @@ import {
   interpretDifyEvent,
   mapDifyHttpError,
   maskSecret,
+  networkErrorDetail,
 } from "./dify.rules";
 
 export type DifyRunRequest = {
@@ -165,8 +166,9 @@ export class DifyClient {
       const res = await this.post(req, signal);
       if (!res.ok) return await this.httpFailed(req, res, meta);
       await this.consume(res, st, signal, onDelta);
-    } catch {
-      if (!signal.aborted) return this.failed("upstream", null, meta());
+    } catch (err) {
+      if (!signal.aborted)
+        return this.failed("upstream", networkErrorDetail(err, req.apiKey), meta());
     }
     // Huỷ đúng lúc Dify vừa kết thúc → giữ kết quả; chưa xong → stop rồi `aborted`.
     if (signal.aborted && !st.end && st.error === undefined) {

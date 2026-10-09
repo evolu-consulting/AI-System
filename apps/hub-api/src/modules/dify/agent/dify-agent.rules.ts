@@ -65,7 +65,7 @@ export type DifyAgentEnd =
       code: HubJobErrorCode;
       reason: JobFailReason | null;
       status: "failed" | "timed_out";
-      /** Thân lỗi upstream đã che (chỉ cho `run_steps.detail`). */
+      /** Thân lỗi upstream / lỗi mạng đã che (`run_steps.detail` + log `dify-agent-failed`; không cho người dùng). */
       upstream: string | null;
     }
   | { kind: "cancelled" };
