@@ -24,6 +24,7 @@ Agent Studio  (/studio · role=platform_admin)
 ├─ CẤU HÌNH AGENT
 │  ├─ Agents                          /studio/agents        · /new · /:id
 │  ├─ Orchestrator                     /studio/orchestrator   (một trang, singleton)
+│  ├─ Nhóm agent                      /studio/teams         · /new · /:id  (CR-057, §15)
 │  ├─ Tools                           /studio/tools         · /:workflow_id  (catalog workflow của Admin, chỉ đọc)
 │  ├─ Models                          /studio/models?tab=providers|profiles|prices
 │  └─ Secrets                         /studio/secrets       (drawer)
@@ -240,6 +241,7 @@ Trạng thái đang tải, rỗng, lỗi, xung đột và mất kết nối dùn
 | 10 Playground | HUB-FR-70 |
 | 11 Secrets / Nhật ký / Import-Export | HUB-FR-68, 69, 71 |
 | Khung, đăng nhập | HUB-FR-72 |
+| 15 Nhóm agent | HUB-FR-114, 116, 117 (CR-057) |
 
 ### Đã chốt
 
@@ -254,3 +256,12 @@ Trạng thái đang tải, rỗng, lỗi, xung đột và mất kết nối dùn
 1. `platform_admin` có cần cấp grant (group/user) thay `tenant_admin` ngay trong Studio không? Tạm: không, Studio chỉ xem grant.
 2. Tab Đơn giá đặt ở Models (tạm chọn) hay ở Vận hành › Chi phí?
 3. Workflow dùng làm tool không có sync/async và timeout riêng. Tạm: gọi đồng bộ, timeout theo agent (xem câu hỏi mở 7 của BA Agent Hub).
+
+## 15. Nhóm agent (CR-057)
+
+Mockup đã duyệt: https://claude.ai/artifact/JHGS9iTLVyytdYwXJJ6eLW — board ③ (Nhóm agent), ⑧ (usage). Chỉ `platform_admin`. Nghiệp vụ: BA-H §6.10 HUB-FR-114–117; spec `specs/P-process-engine/`.
+
+- **Danh sách** `/studio/teams`: tên · key · chế độ · số thành viên · số công ty đã bật · trạng thái.
+- **Editor** `/studio/teams/:id`, tab **Thông tin** (key, tên, mô tả, chế độ — mặc định "Trưởng nhóm lập kế hoạch", chế độ khác sau spike) · **Thành viên** (chọn agent đang bật; một trưởng nhóm; thứ tự) · **Giới hạn** (mặc định ≤ 10 lần gọi, ≤ 200k token, ≤ 10 phút chạy mỗi team-run; dừng sớm khi 2 lần gọi liền không đổi) · **Bật cho công ty** (ma trận như Quyền agent §9; chỉ `platform_admin`, đối xứng CR-054) · **Usage** (token theo kỳ: tổng, theo quy trình, theo stage, trung bình/run; chỉ token — tiền chờ H3c).
+- Ghi qua `withConfigWrite` (`version`, audit, `hub_config_version`); xoá nhóm đang được quy trình dùng → chặn, liệt kê quy trình.
+

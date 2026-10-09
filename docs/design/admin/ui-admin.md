@@ -49,7 +49,8 @@ Admin
 ├─ CHỨC NĂNG
 │  ├─ Features *                     /features          · /features/new · /features/:id
 │  ├─ Commands *                     /commands          · /commands/new · /commands/:id
-│  └─ Workflows *                    /workflows         · /workflows/new· /workflows/:id  (dùng bởi command, agent; lọc Chưa gắn)
+│  ├─ Workflows *                    /workflows         · /workflows/new· /workflows/:id  (dùng bởi command, agent; lọc Chưa gắn)
+│  └─ Quy trình                      /processes         · /processes/new · /processes/:id · /processes/:id/runs/:run_id  (CR-056; cả tenant_admin)
 ├─ TRUY CẬP
 │  ├─ Tenants *                      /tenants           · /tenants/:id (entitlement, quota, slot subscription)
 │  ├─ Users                          /users             (drawer + tab Quyền hiệu lực)
@@ -324,6 +325,13 @@ Nội dung khác nhau theo role:
 - `platform_admin` có bảng xếp hạng tenant theo số thu và mức dùng quota. Quy tắc biểu đồ theo [UI Vận hành](../agent-hub/ui-operations.md) mục 7.
 - Vượt quota không chặn: dòng có badge `Vượt quota` và phần vượt được tô vân chéo trong biểu đồ.
 
+### 7.17 Quy trình (CR-056, ADM-FR-65–67)
+
+Mockup đã duyệt: https://claude.ai/artifact/JHGS9iTLVyytdYwXJJ6eLW — board ① (danh sách), ② (editor), ⑧ (token). Nav "Quy trình" dưới CHỨC NĂNG, **hiện cho cả `tenant_admin`** (khác các mục `*` khác của CHỨC NĂNG); `tenant_admin` chỉ thấy quy trình công ty mình.
+- **Danh sách** (①): bảng tên · `!key` · số stage · Group được chạy · trạng thái · run gần nhất; tab "Mẫu" (2 quy trình mẫu của `platform_admin`) với nút "Chép mẫu"; nút "Chạy" trên dòng.
+- **Editor** (②, trang riêng): dải stage theo thứ tự (kéo để sắp); mỗi stage: người làm (chọn agent hoặc nhóm agent **đã bật cho công ty**), output + template, sau stage (Duyệt bởi Group / Tự chạy tiếp / Luật tự duyệt — SHOULD), cờ "Hành động thật" (khoá nếu không có gate đạt trước đó), người trả lời mặc định, tự quay lại (SHOULD). Lưu theo `version`, xung đột → ConflictDialog như mọi editor.
+- **Run** (`/processes/:id/runs/:run_id`): tiến độ stage, lịch sử duyệt/hỏi, "Cần người quyết", bảng token theo run/stage/team-run/lần gọi (⑧). Không xem nội dung tin phòng.
+
 =======================================================
 
 ## 8. Luồng thao tác chính
@@ -504,6 +512,7 @@ Hub đếm mức dùng → đạt 80%: email + banner vàng cho tenant_admin
 | 7.14 Groups | ADM-FR-62, 32, 37 |
 | 7.15 Phân quyền | ADM-FR-35, 36 · ADM-BR-11 |
 | 7.16 Chi phí & quota | ADM-FR-40, 41, 42 |
+| 7.17 Quy trình | ADM-FR-65, 66, 67 · HUB-FR-104, 105, 117 (CR-056) |
 
 > ✅ **Đã chốt và cập nhật vào BA Admin:** (1) chạy thử bằng *bản chưa lưu* (ADM-FR-23); (2) phát hiện xung đột khi hai admin cùng sửa bằng trường `version` (ADM-FR-55, AC-A07).
 

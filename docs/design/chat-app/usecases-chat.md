@@ -21,6 +21,7 @@ C1 chạy với **mock Hub** (chưa có Hub/Claude CLI thật). Actor chung: **M
 | UC-09 | Nhắn riêng 1-1 (DM) — X2a | CHAT-AC-37…40 | `canvas-x2/` DM |
 | UC-10 | Nhóm chat — X2a | CHAT-AC-41…45 | `canvas-x2/` Main, NewGroup, Mobile |
 | UC-11 | Agent trong phòng — X2b | CHAT-AC-46…50 | `canvas-x2/` Main (menu `@`, khối flow) |
+| UC-12 | Quy trình: chạy, duyệt, hỏi lại trong phòng + DM — Process Engine | CHAT-AC-51…58 | mockup https://claude.ai/artifact/JHGS9iTLVyytdYwXJJ6eLW board ④–⑧ |
 
 ---
 
@@ -182,9 +183,25 @@ Nguồn: CR-048, HUB-FR-101, 103, HUB-BR-21.
 |---|---|
 | CHAT-AC-46 | Given mở một phòng (DM hoặc nhóm), When gõ `@` ở composer, Then menu `@` liệt kê **chỉ agent chính user này được dùng** (tên + `@key` + mô tả); chọn một agent thì chèn `@key`; placeholder gợi ý gõ `@`. Không có panel/hàng chip agent (người dùng 2026-10-07, đỡ tốn diện tích; CR-048) |
 | CHAT-AC-47 | Given A gửi "@hoadon …" trong nhóm, Then cả phòng thấy tin của A, trạng thái "hoadon đang xử lý" và kết quả như tin của agent; tin không tag thì agent không trả lời |
-| CHAT-AC-48 | Given agent hỏi lại / cần xác nhận `side_effect`, Then nút "Đồng ý / Huỷ" chỉ hiện và dùng được với **người gọi**; thành viên khác thấy "Đang chờ A xác nhận" |
+| CHAT-AC-48 | Given agent hỏi lại / cần xác nhận `side_effect`, Then nút "Đồng ý / Huỷ" chỉ hiện và dùng được với **người gọi**; thành viên khác thấy "Đang chờ A xác nhận". **[Mở rộng CR-058, 2026-10-09]** Chỉ áp cho run `@agent`; run quy trình có người duyệt/trả lời riêng — UC-12 |
 | CHAT-AC-49 | Given B không được dùng agent X, When B gõ "@X …", Then thông báo không tìm thấy agent (kèm gợi ý agent B dùng được), không có run |
 | CHAT-AC-50 | Given A gọi agent, Then lượt dùng và chi phí tính cho A (không phải phòng); thành viên khác xem kết quả không cần quyền agent |
+
+
+## UC-12 Quy trình trong phòng + DM — Process Engine
+
+Nguồn: CR-056, CR-058, HUB-FR-105, 107, 109–113, 117; HUB-BR-24, 25, 28. Spec `specs/P-process-engine/`. Actor: **Người bắt đầu** (member gõ `!`), **Người duyệt** (thành viên Group duyệt, có thể không ở trong phòng), **Người trả lời** (mặc định người bắt đầu; người được nhờ). Phòng chỉ là nơi bắt đầu/đăng tiến độ; run có trang riêng `/runs/:id`.
+
+| AC | Given / When / Then |
+|---|---|
+| CHAT-AC-51 | Given ở composer phòng (DM/nhóm) hoặc Hỏi AI, When gõ `!` hoặc bấm "▶ Quy trình", Then menu `!` liệt kê **chỉ quy trình user được chạy** (tên + `!key` + mô tả); chọn thì chèn `!key`. `@` vẫn là agent; `/` vẫn không có trong phòng (X2b Q10) (board ⑥) |
+| CHAT-AC-52 | Given A gửi "!hoa-don …", Then phòng có thẻ run (tên quy trình, stage hiện tại, link `/runs/:id`); thread hiện từng stage cho mọi thành viên phòng; `!sai-key` ⇒ báo không tìm thấy quy trình, không run (board ④) |
+| CHAT-AC-53 | Given người duyệt là thành viên phòng, When mở flow pane của run, Then thấy output stage + nút **Đạt** / **Chưa đạt**; Chưa đạt bắt buộc nhập góp ý; không sửa output tại chỗ; người không thuộc Group duyệt không thấy nút (board ④) |
+| CHAT-AC-54 | Given user có review/câu hỏi đang chờ, Then sidebar có mục **"Chờ tôi kiểm"** kèm số đếm; mở mục đi tới đúng task; task đã có người khác quyết thì biến mất (board ⑤) |
+| CHAT-AC-55 | Given người duyệt **không** ở trong phòng, Then nhận **DM từ tài khoản hệ thống "Quy trình"** có thẻ duyệt (Đạt / Chưa đạt + góp ý) ngay trong DM; DM không có ô gõ chữ (chỉ báo) (board ⑤) |
+| CHAT-AC-56 | Given người duyệt/người được nhờ ngoài phòng mở `/runs/:id`, Then chỉ thấy output (hoặc câu hỏi) của task mình + tiến độ run; không thấy tin khác của phòng; link phòng ⇒ "Không tìm thấy" (board ⑤) |
+| CHAT-AC-57 | Given agent hỏi lại, Then người trả lời thấy AskCard (stage "Chờ trả lời"); nút **"Nhờ người khác trả lời"** mở chọn user cùng công ty + ghi chú; người được nhờ chỉ thấy câu hỏi + ghi chú + trích đoạn; ai trả lời trước thì khoá; gõ "@Thomas trả lời giúp" trong chat **không** chuyển câu hỏi. Duyệt chỉ chuyển được cho người cùng Group duyệt (board ⑦) |
+| CHAT-AC-58 | Given mở `/runs/:id` (người bắt đầu, người duyệt, thành viên phòng), Then có bảng token theo run, stage, team-run, lần gọi thành viên (in/out, model, thời gian, số làm lại/hỏi); run "Cần người quyết" hiện 3 lựa chọn cho người có quyền quyết (board ⑧) |
 
 ---
 

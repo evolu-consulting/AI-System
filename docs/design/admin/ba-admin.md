@@ -146,6 +146,16 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 | ADM-FR-54 | Export và import yaml cho workflow, command, feature, tenant, group và grant. Secret chỉ export tên, không export giá trị. Import có bước xem trước khác biệt (diff) trước khi áp dụng | **SHOULD** |
 | ADM-FR-55 | **Chống ghi đè**: mỗi command, workflow, feature, group và user có trường `version`. Khi lưu phải gửi version đang sửa. Nếu lệch với DB thì trả 409 kèm bản mới nhất, và UI cho chọn Xem khác biệt / Ghi đè / Tải bản mới | **MUST** |
 
+### 5.8 Quy trình — Process Engine (CR-056, CR-057)
+
+Dữ liệu ở schema `hub` (Hub sở hữu, BA-H §6.10 HUB-FR-104…117); admin-web gọi thẳng Hub như `/agent-grants` (CR-043). `ADM-FR-64` đã được nhắc như ý tưởng ở CR-047 (bật/tắt chat theo tenant, không làm) nên mã mới bắt đầu từ 65.
+
+| ID | Yêu cầu | Ưu tiên |
+|---|---|---|
+| ADM-FR-65 | **Trang Quy trình** (nav "Quy trình" dưới CHỨC NĂNG, **cả `tenant_admin`**): danh sách quy trình của công ty (tên, `!key`, số stage, Group được chạy, bật/tắt, run gần nhất); `platform_admin` có 2 quy trình mẫu (SDLC, hoá đơn) — `tenant_admin` bấm "Chép mẫu" để có bản của công ty mình. Export/Import JSON qua Import/Export sẵn có | **MUST** (P-a) |
+| ADM-FR-66 | **Editor quy trình**: thêm/sắp stage; mỗi stage chọn **agent hoặc nhóm agent đã bật cho công ty** (CR-054/057), output + template bắt buộc, sau stage: gate duyệt (chọn Group) / Tự chạy tiếp / luật tự duyệt (SHOULD), cờ "Hành động thật" (chỉ cho phép sau một gate), người trả lời mặc định, tự quay lại (SHOULD). Lưu có `version` + audit; sửa không ảnh hưởng run đang chạy | **MUST** (P-a tối thiểu, P-b đủ) |
+| ADM-FR-67 | **Run của quy trình**: nút "Chạy" (nhập input), danh sách + chi tiết run (trạng thái, stage, người duyệt, "Cần người quyết"), **token theo run/stage/team-run/lần gọi** (HUB-FR-117; tiền chờ H3c) | **MUST** |
+
 ## 6. Luật nghiệp vụ
 
 | ID | Luật |
@@ -231,6 +241,7 @@ Mọi `PATCH` gửi kèm `version`; lệch thì trả `409 Conflict`. Endpoint `
 | Chi phí & quota | KPI, thanh quota, biểu đồ theo ngày, top feature, export CSV |
 | Secrets | Bảng tên, last4, ngày cập nhật. Nút "Thay giá trị" |
 | Audit | Dòng thời gian thay đổi, xem diff trước/sau, nút Khôi phục |
+| Quy trình (CR-056) | Danh sách quy trình công ty + mẫu, editor stage, nút Chạy, danh sách/chi tiết run kèm token (ADM-FR-65–67) |
 
 ## 10. Yêu cầu phi chức năng
 

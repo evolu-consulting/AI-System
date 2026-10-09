@@ -165,7 +165,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | HUB-FR-91 | **Gọi agent trực tiếp bằng `@agent`** (CR-033; mốc H2, cùng menu `/`). Tin bắt đầu bằng `@<agent_key>` kèm nội dung phía sau: Hub kiểm quyền HUB-FR-77 rồi chạy **thẳng agent đó** như một delegate (runtime theo HUB-FR-24), bỏ qua Orchestrator; `canDelegate` vẫn áp. Agent không tồn tại, không được dùng, đang tắt hoặc là Orchestrator → `AGENT_NOT_FOUND` kèm ≤ 3 gợi ý gần giống trong số agent user được dùng, **không** rơi xuống Orchestrator (HUB-BR-18). Nhiều tag liên tiếp (`@a @b …`) → chạy Orchestrator, nhưng danh sách agent đưa cho nó chỉ gồm các agent được tag (user được dùng). Tin kế tiếp không tag → qua Orchestrator như CR-025, gợi ý "agent gần nhất" = agent vừa được tag (`flows.agent_id`). `@@` ở đầu tin = gõ chữ `@` thật. Thiếu nội dung sau tag → `CMD_MISSING_ARG`. Kết quả `need_input` xử lý như HUB-FR-28. Hiển thị: user tự tag thì câu trả lời hiện **tên hiển thị của agent**; Orchestrator tự chọn thì vẫn hiện "Consultant" (sửa một phần CR-022, phiên Chat áp dụng) | **MUST** |
 | HUB-FR-92 | `GET /agents` (CR-033): các agent **user được dùng** (HUB-FR-77, không gồm Orchestrator): `key`, tên hiển thị vi/en, mô tả ngắn. Cho menu `@` của client. Không trả system prompt, workflow, cấu hình | **MUST** |
 | HUB-FR-94 | **Giới hạn run đồng thời mỗi user** (CR-034; mốc H2): `max_concurrent_runs` mặc định 2 (cấu hình Hub). User đã đủ số run `running` thì tin mới nhận `429 TOO_MANY_RUNS` (kèm `Retry-After`), run không được tạo. Đếm từ `runs` trong Postgres. Thứ tự kiểm (CR-037): **sau** Router (lỗi `CMD_*`, `AGENT_NOT_FOUND` trả trước, không mở transaction) và **sau** `FLOW_BUSY` (409 thắng 429) | **MUST** |
-| HUB-FR-95 | **Xác nhận trước hành động có tác dụng phụ** (CR-034; mốc H2): workflow đánh dấu `side_effect = true` ở catalog Admin. Agent phải hỏi xác nhận trước khi gọi tool đó, bằng `need_input{question, choices:[Đồng ý, Huỷ]}` (HUB-FR-28). Hub (MCP) từ chối lời gọi tool `side_effect` nếu flow chưa có xác nhận của user cho tool đó (lỗi nội bộ `CONFIRMATION_REQUIRED`, agent phải chuyển thành `need_input`); user trả lời "Đồng ý" thì lượt resume được gọi tool đúng một lần. Ghi trace | **MUST** |
+| HUB-FR-95 | **Xác nhận trước hành động có tác dụng phụ** (CR-034; mốc H2): workflow đánh dấu `side_effect = true` ở catalog Admin. Agent phải hỏi xác nhận trước khi gọi tool đó, bằng `need_input{question, choices:[Đồng ý, Huỷ]}` (HUB-FR-28). Hub (MCP) từ chối lời gọi tool `side_effect` nếu flow chưa có xác nhận của user cho tool đó (lỗi nội bộ `CONFIRMATION_REQUIRED`, agent phải chuyển thành `need_input`); user trả lời "Đồng ý" thì lượt resume được gọi tool đúng một lần. **[Mở rộng CR-058, 2026-10-09]** Trong run quy trình, stage "Hành động thật" chỉ chạy sau gate duyệt **đạt**; gate đạt thay xác nhận của người bắt đầu, audit ghi người duyệt (HUB-FR-109). Ghi trace | **MUST** |
 
 ### 6.4 Model Gateway
 
@@ -251,13 +251,48 @@ Hội thoại 1-1 user↔agent hiện có (HUB-FR-40…45) **giữ nguyên** tra
 | HUB-FR-98 | **Quản lý nhóm.** Mọi user active tạo được nhóm (tên bắt buộc, ≤ 80 ký tự); người tạo = **chủ phòng**. Chỉ chủ thêm/bớt thành viên, đổi tên, **xoá phòng** (xoá cho mọi người); mọi thành viên tự **rời** được (chủ rời phải chuyển chủ trước hoặc xoá phòng). Tối đa **50 thành viên**. Thêm user ngoài tenant hoặc không active → bị từ chối như không tồn tại | **MUST** |
 | HUB-FR-99 | **Realtime theo user/phòng.** Mỗi user có một luồng SSE riêng (`room.message`, `room.unread`, `room.member_added`/`removed`, `room.updated`/`deleted`), **tách khỏi stream run** (`sse:<run_id>`). Redis Streams theo user (và/hoặc phòng), nối lại bằng `Last-Event-ID`; chạy đúng khi có nhiều instance Hub. Chỉ phát cho thành viên | **MUST** |
 | HUB-FR-100 | **Chưa đọc / đã đọc.** Mỗi (user, phòng) có mốc đã đọc; Hub trả số tin chưa đọc mỗi phòng và tổng; client đánh dấu đã đọc khi mở/xem tới cuối phòng. Tin của chính mình không tính chưa đọc. Presence, "đang gõ", email/push: **COULD**, ngoài v1 | **MUST** |
-| HUB-FR-101 | **`@agent` trong phòng** (X2b). Trong phòng, tin có `@<agent_key>` (hoặc `@orchestrator`) gọi agent như HUB-FR-91 (cùng Router, `@@`, `AGENT_NOT_FOUND`, kiểm quyền HUB-FR-77); **agent không là thành viên cố định, chỉ trả lời khi được tag**, không tự lên tiếng. **Mỗi tin tối đa 1 run** (nhiều tag → Orchestrator thu hẹp như HUB-FR-91). Ngữ cảnh agent = **20 tin gần nhất của phòng + tin gọi**; file đính kèm chỉ dùng được nếu đã gửi vào phòng. Kết quả hiện cho **cả phòng** như tin của agent. `need_input` / xác nhận `side_effect` (HUB-FR-28/95): **chỉ người gọi** bấm trả lời; người khác thấy trạng thái chờ. Agent↔agent: Hoãn (CR-023) | **MUST** |
+| HUB-FR-101 | **`@agent` trong phòng** (X2b). Trong phòng, tin có `@<agent_key>` (hoặc `@orchestrator`) gọi agent như HUB-FR-91 (cùng Router, `@@`, `AGENT_NOT_FOUND`, kiểm quyền HUB-FR-77); **agent không là thành viên cố định, chỉ trả lời khi được tag**, không tự lên tiếng. **Mỗi tin tối đa 1 run** (nhiều tag → Orchestrator thu hẹp như HUB-FR-91). Ngữ cảnh agent = **20 tin gần nhất của phòng + tin gọi**; file đính kèm chỉ dùng được nếu đã gửi vào phòng. Kết quả hiện cho **cả phòng** như tin của agent. `need_input` / xác nhận `side_effect` (HUB-FR-28/95): **chỉ người gọi** bấm trả lời; người khác thấy trạng thái chờ. Agent↔agent: Hoãn (CR-023). **[Mở rộng CR-058, 2026-10-09]** Luật "chỉ người gọi" giữ cho run `@agent`; run **quy trình** có người duyệt/người trả lời riêng (có thể ngoài phòng) — HUB-FR-107, 110–112 | **MUST** |
 | HUB-FR-102 | **Danh bạ cùng tenant.** `GET /directory`: user `active` cùng tenant (id, tên hiển thị, username, trạng thái), có tìm theo tên. Không lộ email, role, group, user tenant khác. Hub đọc `admin.users` qua quyền `SELECT` giới hạn cột (id, tên hiển thị, username, trạng thái) cấp bằng migration nhỏ ở `packages/db` | **MUST** |
 | HUB-FR-103 | **Danh sách agent dùng được trong phòng** (X2b; yêu cầu người dùng). Trong phòng (DM và nhóm), gõ `@` ở composer mở **menu `@`** (như hội thoại AI hiện có): mỗi agent có tên + `@key` + mô tả, **lọc theo quyền của chính user đang xem** (cùng nguồn `GET /agents`, HUB-FR-92/77), chọn để chèn `@key`; placeholder composer gợi ý gõ `@`. **Không** có panel/thanh agent hay hàng chip (người dùng 2026-10-07: "không nên show cái sidebar… @ agent luôn… để đỡ tốn diện tích page") | **MUST** |
 
 > **HUB-BR-21 · Agent trong phòng dùng quyền + quota của người gọi.** `runs.user_id` = người gọi (không phải phòng, không phải chủ phòng); quyền agent (HUB-FR-77), `max_concurrent_runs` (HUB-FR-94), quota/usage tính cho người gọi. Thành viên khác không cần quyền dùng agent đó để **thấy** kết quả; agent không được đọc dữ liệu/file mà người gọi không có. Kết quả hiện cho cả phòng nên người gọi chịu trách nhiệm việc chia sẻ.
 >
 > **HUB-BR-22 · Cách ly phòng (hard stop bảo mật).** Bảng phòng / thành viên / tin phòng / mốc đọc **mới**, RLS theo **thành viên** (không phải thành viên → 404, không 403) và vẫn khoá `tenant_id`. Hội thoại riêng user↔agent giữ nguyên policy cũ và AC-H07. Cần security review riêng khi review X2a.
+
+### 6.10 Process Engine — Quy trình động (CR-056, CR-057, CR-058)
+
+Chốt 2026-10-09. Spec: [`specs/P-process-engine/`](../../specs/P-process-engine/spec.md) (quyết định Q1–Q13, giới hạn, mốc spike/P-a/P-b/P-c). Mockup: https://claude.ai/artifact/JHGS9iTLVyytdYwXJJ6eLW (board ①–⑧). **Process run** là đối tượng riêng (không phải tin phòng); phòng/Hỏi AI chỉ là nơi bắt đầu và đăng tiến độ.
+
+| ID | Yêu cầu | Ưu tiên |
+|---|---|---|
+| HUB-FR-104 | **Định nghĩa quy trình** (`process_defs`, theo tenant, có `version`, ghi qua `withConfigWrite` như H4a): key (`^[a-z0-9-]{2,32}$`), tên, mô tả, Group được chạy (mặc định cả công ty), các **stage có thứ tự**. Mỗi stage: người làm = **một agent hoặc một nhóm agent** (chỉ agent/nhóm đã bật cho tenant), output khai báo (file + **template bắt buộc** Hub kiểm, có thể kèm trường có cấu trúc), sau stage = **gate duyệt** (Group người duyệt) hoặc **"Tự chạy tiếp"**, cờ **"Hành động thật"**, người trả lời mặc định (người bắt đầu hoặc Group/user cấu hình), timeout job. `tenant_admin` CRUD quy trình công ty mình; `platform_admin` cung cấp **2 quy trình mẫu** (SDLC, hoá đơn) để chép. Export/Import JSON qua Import/Export sẵn có | **MUST** (P-a editor tối thiểu, P-b đủ) |
+| HUB-FR-105 | **Bắt đầu chạy.** Tin bắt đầu bằng `!<key>` trong phòng (DM/nhóm) hoặc Hỏi AI, nút "▶ Quy trình" ở composer, nút "Chạy" ở Evolu Control. Hub kiểm: quy trình bật, user thuộc Group được chạy, ≤ ~5 run đồng thời/tenant; **chốt phiên bản quy trình** vào run. Lịch / API / webhook: **COULD** | **MUST** |
+| HUB-FR-106 | **Chạy stage.** Hub tạo job cho agent (hoặc team-run cho nhóm), đưa input (input lúc bắt đầu + output các stage trước + góp ý nếu làm lại), kiểm output theo template; **kiểm lại quyền + trạng thái user mỗi stage** (bị thu hồi/khoá ⇒ "Cần người quyết"). Agent **không** nhắn người, không gọi agent | **MUST** |
+| HUB-FR-107 | **Gate duyệt.** Hub tạo `review_task` cho Group người duyệt (người đầu tiên quyết thì khoá). **Đạt** → stage kế tự chạy; **Chưa đạt** → **bắt buộc góp ý** → stage làm lại kèm góp ý (≤ 3 lần/stage, quá thì người duyệt chọn +1 lượt / dùng bản hiện có / huỷ). Người duyệt không sửa output trực tiếp; chỉ chuyển việc duyệt cho thành viên **cùng Group**. Nhắc sau 1 ngày; **không bao giờ tự duyệt khi quá hạn** | **MUST** |
+| HUB-FR-108 | **Tự duyệt theo luật khai báo** trên một trường của output có cấu trúc (vd `tong_tien ≤ 20000000`) — không bao giờ do LLM quyết; không khớp luật ⇒ về gate người | **SHOULD** (P-b) |
+| HUB-FR-109 | **Stage "Hành động thật"** chỉ chạy sau một gate **đạt**; gate đạt **thay** xác nhận `side_effect` của người bắt đầu (mở rộng HUB-FR-95); audit ghi người duyệt | **MUST** |
+| HUB-FR-110 | **Agent hỏi lại giữa stage** (dùng lại `need_input`/AskCard): stage "Chờ trả lời", **job kết thúc khi chờ** (không giữ slot/token), có câu trả lời thì chạy tiếp. Người trả lời mặc định = người bắt đầu (cấu hình được theo stage, vd PO). Trong nhóm, Hub gộp câu hỏi các thành viên thành một lần hỏi. ≤ 3 lần hỏi/stage, không tính là làm lại | **MUST** |
+| HUB-FR-111 | **"Nhờ người khác trả lời"** (nút, không phải gõ chữ): người đang được hỏi chuyển câu hỏi cho **bất kỳ user nào cùng công ty** kèm ghi chú; người nhận chỉ thấy câu hỏi + ghi chú + trích đoạn ngữ cảnh agent đính kèm; chuỗi chuyển ≤ 3; **câu trả lời đầu tiên thắng và khoá**; run vẫn chạy bằng quyền/quota người bắt đầu; audit ghi ai trả lời | **MUST** |
+| HUB-FR-112 | **Báo việc + truy cập người ngoài phòng.** Mỗi review/ask: (1) danh sách **"Chờ tôi kiểm"** (API + sidebar Copilot), (2) **DM từ tài khoản hệ thống "Quy trình"** kèm thẻ duyệt/trả lời (DM chỉ báo, không nhận tin chữ), (3) email/Zalo/Slack **COULD**, chỉ link, không duyệt qua email. Người không là thành viên phòng xem đúng phần của task qua **grant gắn `review_task`** (audit) | **MUST** |
+| HUB-FR-113 | **Xem run** (`/runs/:id` ở Copilot): tiến độ stage, output, lịch sử duyệt/hỏi, "Cần người quyết". Thấy toàn bộ: người bắt đầu, thành viên phòng nguồn (trong thread), `tenant_admin` (Evolu Control); người duyệt/trả lời ngoài phòng: chỉ phần của task + tiến độ (HUB-BR-25) | **MUST** |
+| HUB-FR-114 | **Nhóm agent** (`agent_teams`, CR-057): `platform_admin` định nghĩa ở Agent Forge (thành viên, chế độ — mặc định "Trưởng nhóm lập kế hoạch": trưởng nhóm **chỉ trả kế hoạch**, Hub gọi từng thành viên); **bật nhóm cho tenant chỉ `platform_admin`** (đối xứng CR-054). File output chung do Hub giữ (đính kèm có phiên bản), mỗi job thành viên nhận bản mới nhất vào `work/<job_id>/` riêng (WRK-BR-07); trưởng nhóm đọc tóm tắt ≤ 200 token. Chế độ khác + MCP lai: sau spike | **MUST** (P-a dùng nhóm seed; editor P-b) |
+| HUB-FR-115 | **Giới hạn + "Cần người quyết".** Team-run: ≤ 10 lần gọi agent, ≤ 200k token, ≤ 10 phút chạy (không tính chờ người), dừng sớm khi 2 lần gọi liền không đổi; mỗi lần làm lại = team-run mới. Job 10 phút (tối đa 60). Run sống ~7 ngày. Chạm bất kỳ giới hạn nào ⇒ run "Cần người quyết" (thêm lượt / dùng bản hiện có / huỷ), **không bao giờ âm thầm chạy tiếp** | **MUST** |
+| HUB-FR-116 | **Ngân sách token** theo team-run, stage, run: Hub đếm (nguồn `usage_logs`) và dừng ở "Cần người quyết" khi vượt. Tiền/quota tháng: chờ H3c | **MUST** |
+| HUB-FR-117 | **Hiển thị token:** theo run, stage, team-run, lần gọi thành viên (token in/out, model, thời gian, số lần làm lại/hỏi) và **tổng theo nhóm agent theo kỳ** (tổng, theo quy trình, theo stage, trung bình/run). Hiện ở `/runs/:id` (người bắt đầu, người duyệt, thành viên phòng), Evolu Control (danh sách/chi tiết run), Agent Forge (tab Usage của nhóm). Nguồn `usage_logs`/`run_steps`; chỉ token (tiền chờ H3c) | **MUST** |
+| HUB-FR-118 | **Tự quay lại** stage trước theo luật khai báo (vd Review+Test không đạt → Lập trình), ≤ 3 vòng rồi hỏi người được cấu hình (vd Tech lead) | **SHOULD** (P-b) |
+| HUB-FR-119 | **Workspace code chung + PR** cho quy trình SDLC (stage Dev mở PR thật) — cần Secrets H4b | **COULD** (P-c) |
+
+> **HUB-BR-23 · Hub điều phối tất cả.** Agent không nhắn người, không gọi agent trực tiếp (CR-023 vẫn Hoãn). Mọi lần gọi agent trong quy trình đi qua Hub: kiểm agent/nhóm đã bật cho tenant, `agent_grants` của **người bắt đầu**, `onlyKeys`, RLS, quota người bắt đầu (HUB-BR-21); ghi audit.
+>
+> **HUB-BR-24 · Quyền người bắt đầu.** Run quy trình luôn chạy bằng quyền + quota + usage của người bắt đầu, kể cả khi người khác duyệt/trả lời. Người duyệt/trả lời **không** cần quyền agent.
+>
+> **HUB-BR-25 · Cách ly người ngoài phòng (hard stop bảo mật).** Người duyệt/trả lời không là thành viên phòng chỉ thấy output stage đang kiểm (hoặc câu hỏi + ghi chú + trích đoạn) + tiến độ run, qua grant gắn `review_task` (audit); **không bao giờ** thấy tin khác của phòng; tenant khác → 404. Cần security review riêng (như X2a).
+>
+> **HUB-BR-26 · Không tự quyết thay người.** Chạm giới hạn ⇒ "Cần người quyết"; quá hạn chỉ nhắc, không tự duyệt; tự duyệt chỉ bằng luật khai báo (HUB-FR-108), không do LLM.
+>
+> **HUB-BR-27 · Phiên bản chốt, quyền kiểm lại.** Phiên bản quy trình chốt lúc bắt đầu (sửa quy trình không ảnh hưởng run đang chạy, như HUB-BR-06); quyền + trạng thái user kiểm lại **mỗi stage**.
+>
+> **HUB-BR-28 · Tiền tố `!`.** Tin bắt đầu bằng `!<key>` **luôn** là chạy quy trình (như `/` HUB-BR-01, `@` HUB-BR-18): sai key/không được chạy ⇒ `PROCESS_NOT_FOUND`, không rơi xuống Orchestrator; `!!` để gửi chữ bắt đầu bằng "!" (mặc định đề xuất, chốt ở spec). Namespace riêng với command; `/` trong phòng vẫn không có (X2b Q10).
 
 ## 7. Luật nghiệp vụ
 
@@ -282,7 +317,8 @@ Hội thoại 1-1 user↔agent hiện có (HUB-FR-40…45) **giữ nguyên** tra
 | HUB-BR-17 | `tenant_admin` chỉ cấp được agent đã có entitlement cho tenant mình, và chỉ cho group/user trong tenant mình |
 | HUB-BR-18 | Message bắt đầu bằng `@<agent_key>` **luôn** được hiểu là gọi agent, giống `/` với command (HUB-BR-01): sai tag thì `AGENT_NOT_FOUND`, không bao giờ rơi xuống Orchestrator. Muốn gửi chữ bắt đầu bằng "@" thì gõ `@@` (CR-033) |
 | HUB-BR-19 | **Quyền command (feature) và quyền agent (agent grant) độc lập** (CR-034). Workflow dùng làm tool của agent **không cần** user có quyền feature của command trỏ tới cùng workflow, và ngược lại |
-| HUB-BR-20 | Tool `side_effect` không bao giờ được gọi khi user chưa xác nhận trong flow đó, kể cả khi user tự gọi agent bằng `@agent` (HUB-FR-95) |
+| HUB-BR-20 | Tool `side_effect` không bao giờ được gọi khi user chưa xác nhận trong flow đó, kể cả khi user tự gọi agent bằng `@agent` (HUB-FR-95). **[Mở rộng CR-058]** Trong run quy trình, xác nhận = gate duyệt đạt trước stage "Hành động thật" (HUB-FR-109) |
+| HUB-BR-23…28 | Process Engine — xem §6.10 (CR-056…058) |
 
 ## 8. Mô hình dữ liệu (schema `hub`)
 
@@ -314,6 +350,11 @@ Hội thoại 1-1 user↔agent hiện có (HUB-FR-40…45) **giữ nguyên** tra
 | `routing_tests` | id, tenant_id (null = bộ chung, CR-032), prompt, has_attachment, expected_agents (text[] theo thứ tự), note, enabled, created_by |
 | `routing_test_runs` | id, orchestrator_scope (tenant_id hoặc null), trigger (save/manual), config_draft_hash, passed, total, pass_rate, results (jsonb, 3 lần/câu), accepted (bool), override_reason, by, at |
 | `attachments` | id, tenant_id, user_id, origin (upload/output), job_id, conversation_id, flow_id, message_id, filename, safe_name, mime, size, sha256, storage_key, created_at, bound_at, purged_at (CR-039; file gắn tin qua `message_id`, `runs.attachment_ids` = file của lượt chạy) |
+| `process_defs` | id, tenant_id, key, name, description, run_group_ids, stages (jsonb: executor agent\|team, output template + trường, gate review(group)\|auto\|rule, `real_action`, answerer, timeout_s, loop_back), enabled, source_template_id, version, timestamps. Ghi qua `withConfigWrite` (audit, `version`); mẫu `platform_admin` = hàng `tenant_id` null (CR-056, HUB-FR-104) |
+| `process_runs` | id, tenant_id, process_def_id, def_version + snapshot (jsonb), started_by, origin (room_id\|conversation_id\|admin), status (máy trạng thái: running / waiting_review / waiting_answer / needs_decision / done / cancelled / failed), current_stage, token_used, expires_at (~7 ngày), timestamps |
+| `stage_runs` | id, process_run_id, tenant_id, stage_idx, attempt (làm lại ≤ 3), loop_count, status, output_attachment_id (đính kèm có phiên bản), feedback, asks_count, token_used, started_at, finished_at. `runs` thêm `process_run_id`, `stage_run_id` (run agent/team-run của stage) |
+| `review_tasks` | id, tenant_id, process_run_id, stage_run_id, kind (review\|ask), assignee_group_id, assignee_user_id, forward_chain (jsonb ≤ 3: từ, tới, ghi chú, lúc), question/excerpt, deadline, reminded_at, result (pass\|fail\|answer), feedback, decided_by, decided_at. Là nguồn của "Chờ tôi kiểm" + grant xem cho người ngoài phòng (HUB-BR-25) |
+| `agent_teams` · `agent_team_members` · `agent_team_entitlements` | Nhóm agent (key, name, mode, lead_agent_id, limits jsonb, enabled, version) · thành viên (team_id, agent_id, role, order) · bật theo tenant (như `agent_entitlements`, chỉ `platform_admin`) (CR-057) |
 
 Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `features`, `feature_commands`, `feature_entitlements`, `feature_grants`, `tenant_quotas`, `commands`, `workflows` và secret của workflow. Hub **ghi** schema `hub` (cấu hình agent, quyền agent, bảng giá, dữ liệu runtime); Agent Runtime (Python, SQL thuần) ghi `jobs`, `usage_logs`, `cli_sessions`, `provider_state`, `agent_types`. Drizzle vẫn quản migration. Admin chỉ **đọc** (không ghi) 3 bảng `hub.agent_workflows`, `hub.agent_grants`, `hub.usage_logs`. `user_id`, `tenant_id`, `role` lấy từ JWT, không cần join sang bảng users mỗi request. Phần Admin cần thêm (phiên Admin áp dụng): `admin.tenant_quotas.hard_block` (HUB-FR-93), `admin.workflows.side_effect` (HUB-FR-95), CR-034.
 
@@ -343,6 +384,11 @@ Hub chỉ **đọc** schema `admin`: `tenants`, `groups`, `group_members`, `feat
 | `POST /studio/api/orchestrator/dry-run` · `POST /studio/api/workflows/:id/test` · `POST /studio/api/playground` (SSE) | Thử định tuyến, thử workflow, Playground |
 | `/studio/api/routing-tests` (CRUD) · `POST /studio/api/routing-tests/run` | Bộ câu kiểm thử định tuyến. Khi lưu cấu hình ảnh hưởng tới định tuyến, server tự chạy và có thể trả `422 ROUTING_REGRESSION`. Bộ câu theo Orchestrator (`?tenant_id=`, bỏ trống = chung) |
 | `POST /internal/test-run` | Admin gọi để test (service token) |
+| `GET /processes` · `POST /process-runs` | Menu `!`: quy trình user được chạy · bắt đầu run (`process_key`, input, nguồn phòng/hội thoại) (HUB-FR-105). Tên endpoint mức BA, chốt ở spec P-a |
+| `GET /process-runs/:id` · `GET /process-runs/:id/usage` · `POST /process-runs/:id/{cancel,decide}` | Xem run theo quyền xem (HUB-FR-113, BR-25) · token theo run/stage/team-run/lần gọi (HUB-FR-117) · huỷ / "Cần người quyết" (thêm lượt / dùng bản hiện có / huỷ) |
+| `GET /me/review-tasks` · `POST /review-tasks/:id/{decision,answer,forward}` | "Chờ tôi kiểm"; Đạt/Chưa đạt + góp ý; trả lời câu hỏi; chuyển người (HUB-FR-107, 110–112) |
+| `/process-defs` (CRUD, `tenant_admin` tenant mình / `platform_admin` mẫu) · `POST /process-defs/:id/run` · `GET /process-runs?…` | Evolu Control trang Quy trình (ADM-FR-65–67); gọi thẳng Hub như `/agent-grants` |
+| `/studio/api/agent-teams` (CRUD) · `/studio/api/agent-teams/:id/{entitlements,usage}` | Agent Forge "Nhóm agent" (HUB-FR-114, 117; chỉ `platform_admin`) |
 
 ### 9.2 Sự kiện SSE
 
@@ -364,6 +410,8 @@ event: room.message        data: {room_id, message}            # tin user hoặc
 event: room.unread         data: {room_id, unread, total}
 event: room.member_added   data: {room_id, user_id}   |  room.member_removed  data: {room_id, user_id}
 event: room.updated        data: {room_id, name?}     |  room.deleted         data: {room_id}
+event: process.updated     data: {process_run_id, status, stage_idx}   # CR-056; chỉ người được xem run
+event: review_task.created data: {task_id, kind, process_run_id}  |  review_task.closed  data: {task_id}
 ```
 
 ### 9.3 Mã lỗi
@@ -391,6 +439,8 @@ event: room.updated        data: {room_id, name?}     |  room.deleted         da
 | `AGENT_IN_USE_AS_ORCHESTRATOR` | Tắt/xoá agent đang là Orchestrator (409) | Đổi Orchestrator trước |
 | `AGENT_HAS_HISTORY` · `AGENT_HAS_ACCESS` | Xoá agent đã có run, hoặc còn entitlement/grant (409) | Tắt agent thay vì xoá / gỡ quyền trước |
 | `AGENT_NOT_ORCHESTRATABLE` | Agent tắt hoặc runtime chưa làm Orchestrator được (chỉ `agentic-cli`, CR-045) (409) | Chọn agent khác |
+| `PROCESS_NOT_FOUND` · `TOO_MANY_PROCESS_RUNS` | `!key` sai/không được chạy (404, HUB-BR-28) · quá ~5 run đồng thời/tenant (429) — mã chốt ở spec P-a | Gợi ý quy trình được chạy / chờ run khác xong |
+| `FEEDBACK_REQUIRED` · `REVIEW_TASK_CLOSED` · `FORWARD_LIMIT` · `FORWARD_OUT_OF_GROUP` | Chưa đạt thiếu góp ý (422) · task đã có người quyết (409) · chuyển quá 3 lần (409) · chuyển duyệt ra ngoài Group (403) (HUB-FR-107, 111) | — |
 | `ORCHESTRATOR_EXISTS` · `ORCHESTRATOR_DEFAULT_PROTECTED` · `TENANT_INACTIVE` | Tenant đã có Orchestrator · xoá bản mặc định · tenant bị khoá (409) | Sửa bản hiện có / không xoá được / mở khoá tenant |
 
 Vượt quota tenant mặc định **không** phải lỗi (trừ khi tenant bật `hard_block` → `QUOTA_BLOCKED`): run vẫn chạy, `run.started` mang `quota.state = "over"` để client hiện dòng nhắc nhẹ.
@@ -487,6 +537,30 @@ Vượt quota tenant mặc định **không** phải lỗi (trừ khi tenant b�
 
 > **AC-H27 · Danh sách agent trong phòng (X2b)**
 > Given A được dùng `hoadon`, `trello` còn B chỉ `trello`, When mở phòng, Then menu `@` trong composer của A có 2 agent (tên + `@key` + mô tả), của B có 1; chọn một agent chèn `@key` vào composer; agent bị thu hồi quyền biến mất sau khi tải lại danh sách.
+
+> **AC-H28 · Stage + gate duyệt (P-a)**
+> Given quy trình `hoa-don` 2 stage, stage 1 gate Group "Kế toán", When A gửi "!hoa-don …", Then 1 process run, stage 1 chạy, output đúng template, `review_task` cho Group; When B (Kế toán) bấm Chưa đạt không góp ý ⇒ 422 `FEEDBACK_REQUIRED`; có góp ý ⇒ stage 1 làm lại kèm góp ý (attempt 2); Đạt ⇒ stage 2 tự chạy. Lần làm lại thứ 4 ⇒ "Cần người quyết".
+
+> **AC-H29 · Người duyệt ngoài phòng chỉ thấy phần của mình**
+> Given B không là thành viên phòng R nơi A bắt đầu run, When B mở task từ "Chờ tôi kiểm"/DM "Quy trình", Then thấy output stage đang kiểm + tiến độ; `GET /rooms/R`, tin khác của R, output stage khác ⇒ 404; user tenant khác ⇒ 404; audit có lượt xem.
+
+> **AC-H30 · Hỏi lại + nhờ người khác trả lời**
+> Given agent stage 1 `need_input`, Then stage "Chờ trả lời", job đã kết thúc; A bấm "Nhờ người khác trả lời" chọn C + ghi chú ⇒ C thấy câu hỏi + ghi chú + trích đoạn (không thấy phòng); C trả lời ⇒ khoá, A trả lời sau ⇒ 409; stage chạy tiếp bằng quyền/quota A; chuyển lần 4 ⇒ `FORWARD_LIMIT`; lần hỏi thứ 4 trong stage ⇒ "Cần người quyết".
+
+> **AC-H31 · Hành động thật sau gate**
+> Given stage 2 "Hành động thật" gọi tool `side_effect`, When gate stage 1 đạt bởi B, Then tool chạy đúng một lần không hỏi A xác nhận, audit ghi B; khi chưa có gate đạt ⇒ Hub từ chối (`CONFIRMATION_REQUIRED`).
+
+> **AC-H32 · Giới hạn ⇒ Cần người quyết**
+> Given team-run vượt 10 lần gọi (hoặc 200k token, hoặc 10 phút chạy), Then dừng, run "Cần người quyết" với 3 lựa chọn; review quá 1 ngày ⇒ nhắc, sau 7 ngày run hết hạn, không bao giờ tự duyệt.
+
+> **AC-H33 · Kiểm lại quyền mỗi stage**
+> Given run đang ở gate stage 1, When `tenant_admin` thu hồi agent của stage 2 khỏi A (hoặc khoá A), Then khi gate đạt stage 2 không chạy, run "Cần người quyết". Sửa quy trình giữa chừng không đổi run đang chạy.
+
+> **AC-H34 · Hiển thị token**
+> Given run xong 2 stage (stage 1 làm lại 1 lần, có nhóm 3 thành viên), Then `/process-runs/:id/usage` trả token in/out, model, thời gian theo run, stage, team-run, lần gọi thành viên + số làm lại/hỏi, khớp tổng `usage_logs`; tab Usage nhóm cho tổng tháng theo quy trình/stage/trung bình run.
+
+> **AC-H35 · Nhóm agent**
+> Given nhóm `ba-team` chưa bật cho `evolu`, Then editor quy trình của `evolu` không chọn được; `platform_admin` bật ⇒ chọn được; `tenant_admin` gọi bật ⇒ 403. Khi chạy, trưởng nhóm chỉ trả kế hoạch, mỗi thành viên là job riêng nhận bản file chung mới nhất trong `work/<job_id>/`.
 
 ## 12. Ngoài phạm vi & câu hỏi mở
 
