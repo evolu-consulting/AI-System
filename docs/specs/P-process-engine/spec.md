@@ -82,7 +82,7 @@ Thứ tự ROADMAP (Q8): X2b-2 → **spike P** → **P-a** → H4b → **P-b** �
 <!-- backend-lead --> Chốt ở [`plan.md`](plan.md) §2 (migration `0019_pa_process_engine.sql`: `process_defs`, `process_runs`, `stage_runs`, `team_runs`, `process_outputs`, `review_tasks`, `review_task_assignees` = grant, `process_notices`, `agent_teams` + `_members` + `_entitlements`; thêm cột null trên `runs`, `conversations`, `room_messages`; CHECK audit), §3 máy trạng thái, §5 quyền xem, §6 token, §10 thứ tự khoá. Tài khoản "Quy trình" = danh tính ảo + hộp thư `process_notices` (plan D12).
 
 ## 5. UI (frontend-lead)
-<!-- frontend-lead --> Board §0. chat-web: menu `!` + nút "▶ Quy trình" (⑥), thẻ run + flow pane duyệt (④), "Chờ tôi kiểm" + DM "Quy trình" + `/runs/:id` (⑤), AskCard + "Nhờ người khác trả lời" (⑦), bảng token (⑧). admin-web: ui-admin §7.17. studio-web: ui-agent-studio §15 (P-b).
+<!-- frontend-lead --> Chốt P-a ở [`plan-frontend.md`](plan-frontend.md) (+ `-admin`, `-i18n`, `-e2e`). Board §0. chat-web: menu `!` + nút "▶ Quy trình" (⑥), thẻ run + flow pane duyệt (④), "Chờ tôi kiểm" + DM "Quy trình" + `/runs/:id` (⑤), AskCard + "Nhờ người khác trả lời" (⑦), bảng token (⑧). admin-web: ui-admin §7.17. studio-web: ui-agent-studio §15 (P-b).
 
 ## 6. Hiệu năng
 Theo `CONVENTIONS.md` §6; không chặn mốc (người dùng 2026-10-03, `test:perf`).
@@ -153,9 +153,10 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 - P1 · Spike (spike.md) → nhóm mặc định `sequential`; `lead_plan` = kế hoạch JSON 1 lần ≤ 5 bước, Hub chạy, không kiểm cuối bằng LLM, Hub kiểm template bằng mã; thành viên chỉ trả mục của mình, Hub ghép file có phiên bản; tóm tắt cắt cứng 200 token; làm lại chọn lọc mặc định; `parallel_merge` có nhưng không mặc định (Hub ghép theo mục, không lần gộp LLM); MCP lai không ở P-a; giới hạn §2.1 giữ; token = in+out+cache; không thiết kế quanh cache (plan D7–D9).
 - P1 · Stage = `hub.runs` `direct` của người bắt đầu trên hội thoại nền ẩn, không qua Orchestrator ⇒ không sửa Orchestrator (plan D1–D3); Hành động thật = Hub chèn sẵn `tool_confirmations` `confirmed` cho run stage (plan D4).
 - P1 · Hỏi AI `!key` ⇒ 202 JSON, không lưu tin; phòng: thẻ run trên tin gọi, không thread, không tin hệ thống trong phòng (plan D13, D14).
+- P2 · FE: cờ dò lúc chạy (`GET /me/process-inbox` / `GET /process-defs` 404 ⇒ ẩn UI), không cờ build (plan-frontend FD2). Hỏi AI `!key` ⇒ FE gọi `POST /process-runs` (FD4). Phòng: thẻ run + pane `?run=`, không thread (FD5 — AC-52 "thread" đọc là "thẻ run"). DM "Quy trình" = route `/process-inbox` (FD6). Khởi chạy chưa nhận tệp đính kèm (F1). Admin KPI/chuỗi giai đoạn ① hoãn P-b (F3).
 - P1 · Cờ `HUB_PROCESS_ENGINE` (mặc định off; off ⇒ `!` là chữ thường như cũ) (plan D15).
 
-### Câu hỏi PLAN (chưa có mặc định được chấp nhận — điều phối hỏi một lượt; không trả lời ⇒ dùng mặc định)
+### Câu hỏi PLAN (C1–C5: **người dùng chấp nhận mặc định 2026-10-10** — "Ok"; F1–F4: chờ hỏi một lượt ở readiness, không trả lời ⇒ dùng mặc định)
 | # | Câu hỏi | Mặc định đề xuất |
 |---|---|---|
 | C1 | Ngân sách token theo stage/run (Q7) khi quy trình không khai báo? | Không giới hạn (null); chỉ team-run 200k cứng; editor cho nhập `token_budget` stage/quy trình tuỳ chọn |
@@ -163,6 +164,10 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 | C3 | DM "Quy trình" là hộp thư riêng (FE hiển thị như DM ghim) thay vì phòng DM thật? | Có (plan D12) |
 | C4 | Trích đoạn ngữ cảnh cho người được nhờ trả lời: agent hiện chỉ trả `question/choices` | Hub lấy ≤ 1 000 ký tự đầu của input run + tên stage; agent tự đính kèm trích đoạn để P-b |
 | C5 | Người duyệt/trả lời ngoài phòng xem token? | Chỉ tổng run + từng stage (không chi tiết lần gọi) |
+| F1 | Khởi chạy `!` có đính kèm tệp? (mockup ⑥ 📎; contract chỉ `input`) | Không ở P-a; Hỏi AI chặn khi có tệp |
+| F2 | "Chờ tôi kiểm" luôn hiện kể cả 0 việc? | Luôn hiện khi engine bật |
+| F3 | KPI + chuỗi giai đoạn ở danh sách admin ① | P-b |
+| F4 | Sửa UC-12 CHAT-AC-52 "thread" → "thẻ run + pane" (plan D13) | Có (docs-architect) |
 
 ## 10. Rủi ro mở
 | # | Rủi ro | Hướng xử |
