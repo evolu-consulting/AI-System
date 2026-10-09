@@ -1,0 +1,10 @@
+import { chromium, ADMIN, PW, platformCreds, login } from "./lib.mjs";
+const b = await chromium.launch();
+const c = await b.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } });
+const p = await c.newPage();
+const pc = platformCreds();
+await login(p, ADMIN, "platform", pc.user, pc.pass, (u) => !u.pathname.startsWith("/login"));
+await p.goto(`${ADMIN}/agents`); await p.waitForTimeout(3000);
+console.log(await p.evaluate(() => [localStorage.length, Object.keys(localStorage).join(","), document.documentElement.lang]));
+console.log(await p.getByRole("button").evaluateAll(els => els.map(e => e.getAttribute("aria-label") || e.innerText).slice(0, 20)));
+await b.close();

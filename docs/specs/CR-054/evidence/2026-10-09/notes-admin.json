@@ -1,0 +1,25 @@
+{
+  "julianRows": [
+    "EC Evolu Consultant @consultant · Tư vấn chung cho nhân viên Evolu (agent mặc định). Sonnet Claude CLI Đang bật Edgar Nguyen Julian Bui Rowan Nguyen Thomas Tran Vio Ngo Đặt mặc định Cấp quyền",
+    "C( Chatbot (Dify) @dify-chatbot · Trò chuyện với chatbot Dify thật (app agent dify-chatbot) cho bản demo X1. Mặc định CLI Dify Đang bật Dify demo Đặt mặc định Cấp quyền",
+    "IN Invoices @invoices · Kiểm tra hoá đơn điện tử FPT, MISA trên trang tra cứu chính chủ. Sonnet Claude CLI Đang bật Edgar Nguyen Julian Bui Rowan Nguyen Thomas Tran Vio Ngo Đặt mặc định Cấp quyền",
+    "ĐP Điều phối ★ Mặc định Điều phối @orchestrator · Điều phối yêu cầu của người dùng tới agent phù hợp, hỏi lại khi mơ hồ. Không khớp agent nào → Tự trả lời Haiku Claude CLI Đang bật Cả công ty"
+  ],
+  "julianOrchestratorRows": 1,
+  "platformRows": [
+    "TL Trợ lý @assistant · Trợ lý chung — trả lời câu hỏi, soạn thảo và tóm tắt văn bản theo yêu cầu. Mặc định CLI Claude CLI Đang tắt Chưa bật cho công ty Cấp quyền",
+    "EC Evolu Consultant @consultant · Tư vấn chung cho nhân viên Evolu (agent mặc định). Sonnet Claude CLI Đang bật Edgar Nguyen Julian Bui Rowan Nguyen Thomas Tran Vio Ngo Đặt mặc định Cấp quyền",
+    "C( Chatbot (Dify) @dify-chatbot · Trò chuyện với chatbot Dify thật (app agent dify-chatbot) cho bản demo X1. Mặc định CLI Dify Đang bật Dify demo Đặt mặc định Cấp quyền",
+    "IN Invoices @invoices · Kiểm tra hoá đơn điện tử FPT, MISA trên trang tra cứu chính chủ. Sonnet Claude CLI Đang bật Edgar Nguyen Julian Bui Rowan Nguyen Thomas Tran Vio Ngo Đặt mặc định Cấp quyền",
+    "ĐP Điều phối ★ Mặc định Điều phối @orchestrator · Điều phối yêu cầu của người dùng tới agent phù hợp, hỏi lại khi mơ hồ. Không khớp agent nào → Tự trả lời Haiku Claude CLI Đang bật Cả công ty"
+  ],
+  "defaultSwitchDisabled": false,
+  "nomatchAfterStep06": "Tự trả lời",
+  "noMatchOptions": [
+    "Evolu Consultant",
+    "Chatbot (Dify)",
+    "Invoices",
+    "Tự trả lời",
+    "Hỏi lại người dùng"
+  ]
+}

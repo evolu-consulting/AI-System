@@ -3,6 +3,7 @@ import type { AttachmentRef } from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
 import { Skeleton } from "~/components/ui/skeleton";
+import { answererName } from "~/features/answer/lib/step-label";
 import { AttachmentList } from "~/features/attachments/components/AttachmentList";
 import { AnswerExtras } from "~/features/thread/components/AnswerExtras";
 import { Answer } from "~/features/thread/components/FlowBlock";
@@ -25,7 +26,7 @@ function Question({ text, attachments }: { text: string; attachments?: Attachmen
 function Reply({ answer }: { answer: AnswerView }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <ConsultantAvatar name={answer.responder?.name} />
+      <ConsultantAvatar name={answererName(answer)} />
       <Answer answer={answer} />
       <AnswerExtras answer={answer} />
     </div>

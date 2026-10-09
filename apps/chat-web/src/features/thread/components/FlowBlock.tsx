@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
 import { AnswerBody } from "~/features/answer/components/AnswerBody";
 import { ColdResumeNote } from "~/features/answer/components/ColdResumeNote";
+import { answererName } from "~/features/answer/lib/step-label";
 import { AttachmentList } from "~/features/attachments/components/AttachmentList";
 import { cn } from "~/lib/utils";
 import type { AnswerView } from "../lib/thread-logic";
@@ -80,7 +81,7 @@ export function FlowBlock({
       <AttachmentList items={questionAttachments} />
       {answer && (
         <>
-          <ConsultantAvatar name={answer.responder?.name} />
+          <ConsultantAvatar name={answererName(answer)} />
           <Answer answer={answer} />
           <AnswerExtras answer={answer} />
         </>

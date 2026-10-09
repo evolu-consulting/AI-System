@@ -1,6 +1,6 @@
 // CR-054 · tiền tố agent của bước.
 import { describe, expect, test } from "bun:test";
-import { modelLabel, stepAgentPrefix } from "./step-label";
+import { answererName, modelLabel, stepAgentPrefix } from "./step-label";
 
 describe("modelLabel", () => {
   test("alias viết hoa chữ đầu; default/null không hiện; id giữ nguyên", () => {
@@ -18,5 +18,19 @@ describe("stepAgentPrefix", () => {
     expect(stepAgentPrefix({ name: "Orchestrator", model: "haiku" })).toBe("Orchestrator · Haiku");
     expect(stepAgentPrefix({ name: "Invoices", model: null })).toBe("Invoices");
     expect(stepAgentPrefix(undefined)).toBeNull();
+  });
+});
+
+describe("answererName", () => {
+  const step = (name?: string) => ({ agent: name ? { name } : undefined });
+  test("responder thắng; không có → agent của bước cuối có agent; không bước agent → undefined", () => {
+    expect(answererName({ responder: { name: "Invoices" }, steps: [step("Điều phối")] })).toBe(
+      "Invoices",
+    );
+    expect(answererName({ steps: [step("Điều phối"), step("Evolu Consultant"), step()] })).toBe(
+      "Evolu Consultant",
+    );
+    expect(answererName({ steps: [step()] })).toBeUndefined();
+    expect(answererName({})).toBeUndefined();
   });
 });

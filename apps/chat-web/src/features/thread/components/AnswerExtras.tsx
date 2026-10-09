@@ -1,10 +1,12 @@
 // CHAT-AC-08..13, CHAT-AC-24..27 · phần dưới câu trả lời: bước, hỏi lại, lỗi, đã dừng. Props `{ answer: AnswerView }` ổn định.
 // Gửi lại dùng `answer.context` (convId/flowId/nội dung gốc); thiếu → không có nút gửi.
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { AskCard } from "~/features/answer/components/AskCard";
 import { CancelledNote } from "~/features/answer/components/CancelledNote";
 import { ErrorCard } from "~/features/answer/components/ErrorCard";
 import { StepList } from "~/features/answer/components/StepList";
+import { answererName } from "~/features/answer/lib/step-label";
 import { useSend } from "~/features/run/hooks/use-send";
 import type { AnswerContext, AnswerView } from "../lib/thread-logic";
 
@@ -36,6 +38,8 @@ function useResend(ctx: AnswerContext | null | undefined) {
 export function AnswerExtras({ answer }: { answer: AnswerView }) {
   const { ask, error, cancelled, steps, context, askAnswered, streaming } = answer;
   const { rerun, pick } = useResend(context);
+  const { t } = useTranslation();
+  const name = answererName(answer);
   const stopped = cancelled || error?.code === "CANCELLED";
   return (
     <>
@@ -46,6 +50,7 @@ export function AnswerExtras({ answer }: { answer: AnswerView }) {
           choices={ask.choices}
           answered={askAnswered ?? false}
           onPick={pick}
+          title={name ? t("roomAgent.askTitle", { agent: name }) : undefined}
         />
       )}
       {error && !stopped && <ErrorCard code={error.code} runId={error.runId} onRetry={rerun} />}

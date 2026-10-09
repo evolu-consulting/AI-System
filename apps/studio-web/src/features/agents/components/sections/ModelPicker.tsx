@@ -4,7 +4,12 @@ import type { ModelCatalogItem } from "@ai/contracts/studio";
 import { useTranslation } from "react-i18next";
 import { cn } from "#/lib/utils";
 import type { Catalog } from "../../hooks/use-editor-catalogs";
-import { formatFetchedAt, groupModels, latestFetchedAt } from "../../lib/model-catalog";
+import {
+  formatFetchedAt,
+  groupModels,
+  latestFetchedAt,
+  modelValueLabel,
+} from "../../lib/model-catalog";
 import type { SectionProps } from "../editor/AgentField";
 import { CatalogAlert } from "../editor/CatalogAlert";
 
@@ -50,7 +55,7 @@ function ModelGroup(p: {
             key={m.value}
             title={m.display_name}
             note={m.description}
-            value={m.value}
+            value={modelValueLabel(m)}
             selected={p.current === m.value}
             onPick={() => p.onPick(m.value)}
           />

@@ -1,0 +1,98 @@
+{
+  "run": 2,
+  "stack": "230836ba",
+  "chat_messages_sent": 2,
+  "evolu_state_restored": true,
+  "steps": [
+    {
+      "id": "01",
+      "title": "julian.bui (tenant_admin) mở trang Agents: chỉ agent của evolu, đúng 1 mặc định, model thật, công tắc khoá",
+      "ok": true,
+      "ms": 1149
+    },
+    {
+      "id": "02",
+      "title": "julian bấm công tắc bật/tắt: không đổi được",
+      "ok": true,
+      "ms": 1279
+    },
+    {
+      "id": "03",
+      "title": "platform_admin đăng nhập, mở Agents, chọn tenant evolu",
+      "ok": true,
+      "ms": 1547
+    },
+    {
+      "id": "04",
+      "title": "Tắt rồi bật lại entitlement của invoices",
+      "ok": true,
+      "ms": 446
+    },
+    {
+      "id": "05",
+      "title": "Tắt entitlement agent mặc định (Orchestrator): bị chặn (409)",
+      "ok": true,
+      "ms": 167
+    },
+    {
+      "id": "06",
+      "title": "Đặt consultant làm mặc định rồi trả Orchestrator",
+      "ok": true,
+      "ms": 909
+    },
+    {
+      "id": "07",
+      "title": "Chọn fallback / on_no_match (Hỏi lại, Tự trả lời), rồi khôi phục dự phòng = Evolu Consultant",
+      "ok": true,
+      "ms": 1667
+    },
+    {
+      "id": "08",
+      "title": "Ngăn Cấp quyền có kiểu 'Cả công ty' (chỉ xem, Huỷ)",
+      "ok": true,
+      "ms": 709
+    },
+    {
+      "id": "09",
+      "title": "Xác minh trạng thái evolu đã khôi phục sau tải lại",
+      "ok": true,
+      "ms": 363
+    },
+    {
+      "id": "10",
+      "title": "Đăng nhập Agent Forge (platform_admin), mở danh sách agent",
+      "ok": true,
+      "ms": 1119
+    },
+    {
+      "id": "11",
+      "title": "Trang sửa consultant: danh mục model là dữ liệu thật từ CLI",
+      "ok": true,
+      "ms": 880
+    },
+    {
+      "id": "12",
+      "title": "Studio: tắt Orchestrator (agent mặc định) bị chặn",
+      "ok": true,
+      "ms": 2202
+    },
+    {
+      "id": "13",
+      "title": "thomas.tran đăng nhập Hỏi AI",
+      "ok": true,
+      "ms": 896
+    },
+    {
+      "id": "14",
+      "title": "Tin không tag → agent thật trả lời; 'Quá trình' có tên agent + model, còn sau khi xong và sau reload",
+      "ok": true,
+      "ms": 65319
+    },
+    {
+      "id": "15",
+      "title": "Tin @invoices: hiện tên agent Invoices",
+      "ok": true,
+      "ms": 12591
+    }
+  ]
+}

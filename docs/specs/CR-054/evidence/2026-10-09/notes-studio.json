@@ -1,0 +1,57 @@
+{
+  "pickerText": "Model | Use profile | Use the model of the selected model profile | Always latest | Default (recommended) | Opus 5.5 · Best for everyday, complex tasks | default | Opus | Opus 5.5 · Best for everyday, complex tasks | opus | Sonnet | Sonnet 5.5 · Efficient for routine tasks | sonnet | Haiku | Haiku 4.5 · Fastest for quick answers | haiku | Pinned versions | Fable | Fable 5.1 · Most capable for your hardest and longest-running tasks | claude-fable-5-1[1m] | Updated at 07:45 09/10/2026 | Tip Orchestrator only routes → Haiku; agents that write answers → Sonnet; hard/long tasks → Opus.",
+  "selected": [
+    "Sonnet\nSonnet 5.5 · Efficient for routine tasks\nsonnet"
+  ],
+  "api": {
+    "items": [
+      {
+        "provider_key": "claude-sub",
+        "value": "default",
+        "resolved_model": "claude-opus-5-5",
+        "display_name": "Default (recommended)",
+        "description": "Opus 5.5 · Best for everyday, complex tasks",
+        "fetched_at": "2026-10-09T00:45:57.241Z"
+      },
+      {
+        "provider_key": "claude-sub",
+        "value": "opus",
+        "resolved_model": "claude-opus-5-5",
+        "display_name": "Opus",
+        "description": "Opus 5.5 · Best for everyday, complex tasks",
+        "fetched_at": "2026-10-09T00:45:57.241Z"
+      },
+      {
+        "provider_key": "claude-sub",
+        "value": "claude-fable-5-1[1m]",
+        "resolved_model": "claude-fable-5-1",
+        "display_name": "Fable",
+        "description": "Fable 5.1 · Most capable for your hardest and longest-running tasks",
+        "fetched_at": "2026-10-09T00:45:57.241Z"
+      },
+      {
+        "provider_key": "claude-sub",
+        "value": "sonnet",
+        "resolved_model": "claude-sonnet-5-5",
+        "display_name": "Sonnet",
+        "description": "Sonnet 5.5 · Efficient for routine tasks",
+        "fetched_at": "2026-10-09T00:45:57.241Z"
+      },
+      {
+        "provider_key": "claude-sub",
+        "value": "haiku",
+        "resolved_model": "claude-haiku-4-5-20251001",
+        "display_name": "Haiku",
+        "description": "Haiku 4.5 · Fastest for quick answers",
+        "fetched_at": "2026-10-09T00:45:57.241Z"
+      }
+    ]
+  },
+  "switches": [],
+  "orchDisabled": true,
+  "orchCheckedBefore": "true",
+  "orchCheckedAfter": "true",
+  "apiCalls": [
+    200
+  ]
+}

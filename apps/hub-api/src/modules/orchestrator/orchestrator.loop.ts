@@ -247,8 +247,17 @@ async function delegate(
   const r = o.output.kind === "agent_result" ? o.output.result : null;
   if (streamedOf(o)) return streamEnd(o, r?.status === "done" ? r.text : "", d.agent.id);
   if (!r) return { kind: "failed", code: "UPSTREAM_ERROR" };
+  if (r.status === "partial" && isFallback(c, d.agent))
+    return { kind: "text", text: r.text, agentId: d.agent.id };
   return afterAgent(s, d.agent, r);
 }
+
+/**
+ * CR-054 · agent dự phòng (không agent chuyên môn khớp) là điểm cuối: `partial` của nó kết thúc run với phần đã làm,
+ * không quay lại Orchestrator (nó chỉ giao lại đúng agent đó — chạy đôi, tốn gấp đôi).
+ */
+const isFallback = (c: LoopInput, agent: AgentConfig): boolean =>
+  c.noMatch?.kind === "fallback" && c.noMatch.agent.id === agent.id;
 
 function afterAgent(s: State, agent: AgentConfig, r: AgentResult): LoopEnd | null {
   if (canPassThrough(s, r) && r.status === "done")

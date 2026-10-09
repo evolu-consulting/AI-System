@@ -19,6 +19,13 @@ export function groupModels(items: readonly ModelCatalogItem[]): ModelGroups {
   return { latest, pinned };
 }
 
+/** Dòng mã của thẻ: alias kèm id thật CLI đang trỏ tới (`sonnet → claude-sonnet-5-5`); id cố định giữ nguyên. */
+export function modelValueLabel(m: Pick<ModelCatalogItem, "value" | "resolved_model">): string {
+  return m.resolved_model && m.resolved_model !== m.value
+    ? `${m.value} → ${m.resolved_model}`
+    : m.value;
+}
+
 /** `fetched_at` mới nhất của danh mục (null khi rỗng). */
 export function latestFetchedAt(items: readonly ModelCatalogItem[]): string | null {
   let best: string | null = null;

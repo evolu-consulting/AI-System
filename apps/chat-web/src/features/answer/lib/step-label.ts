@@ -19,3 +19,14 @@ export function stepAgentPrefix(
   const model = modelLabel(agent.model);
   return model ? `${agent.name} · ${model}` : agent.name;
 }
+
+type Answerer = {
+  responder?: { name: string };
+  steps?: readonly { agent?: Pick<StepAgent, "name"> }[];
+};
+
+/** Người trả lời: `responder` (run direct) ∨ agent của bước cuối có agent (run qua Orchestrator); vắng → nhãn mặc định. */
+export function answererName(a: Answerer): string | undefined {
+  if (a.responder) return a.responder.name;
+  return a.steps?.findLast((s) => s.agent)?.agent?.name;
+}
