@@ -187,10 +187,11 @@ describe("ADM-FR-54 · planImport", () => {
     );
   });
 
-  it("ADM-FR-54 · C-R12 · command mới không thuộc feature nào → COMMAND_NEEDS_FEATURE; thêm vào bao-cao.commands → hết lỗi", async () => {
+  it("CR-055 · C-R12 · command mới không thuộc feature nào → hợp lệ (không lỗi, op add); thêm vào bao-cao.commands → vẫn không lỗi", async () => {
     const cmd = { ...BAO_CAO_MOI, workflow: "report-tax" };
     const p1 = await plan(only({ commands: [cmd] }));
-    expect(codes(p1)).toContain("COMMAND_NEEDS_FEATURE");
+    expect(p1.errors).toEqual([]);
+    expect(codes(p1)).not.toContain("COMMAND_NEEDS_FEATURE");
     const feat = { ...featureEl("bao-cao"), commands: ["bao-cao-moi", "xuat-bao-cao"] };
     const p2 = await plan(only({ commands: [cmd], features: [feat] }));
     expect(p2.errors).toEqual([]);

@@ -47,7 +47,6 @@ import {
   type CommandState,
   changedCommandFields,
   checkCommandEnable,
-  checkCommandFeatures,
   checkInputMap,
   commandNames,
   defaultTimeout,
@@ -149,14 +148,14 @@ export function getCommand(c: Call, id: string): Promise<Command> {
   return withScope(c.ctx.db, c.scope, (tx) => detail(tx, id));
 }
 
-/** Thứ tự spec §3: COMMAND_NEEDS_FEATURE → INVALID_REFERENCE (workflow, features) → COMMAND_NAME_TAKEN → INPUT_MAP_INVALID → WORKFLOW_DISABLED. */
+/** Thứ tự spec §3: INVALID_REFERENCE (workflow, features) → COMMAND_NAME_TAKEN → INPUT_MAP_INVALID → WORKFLOW_DISABLED.
+ * `featureIds` rỗng hợp lệ (CR-055 bỏ BR-10): command "chưa gắn feature", không ai dùng được. */
 async function checkState(
   tx: Tx,
   s: CommandState,
   wf: WorkflowRefLocked | null,
   selfId: string | null,
 ): Promise<WorkflowInput[]> {
-  fail(checkCommandFeatures(s.featureIds));
   if (!wf) throw appError("INVALID_REFERENCE", { field: "workflow_id", ids: [s.workflowId] });
   const missing = await missingFeatureIds(tx, s.featureIds);
   if (missing.length > 0)

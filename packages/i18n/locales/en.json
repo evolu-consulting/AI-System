@@ -1034,7 +1034,8 @@
     "feature": {
       "remove": {
         "aria": "Remove feature {name}"
-      }
+      },
+      "noneHint": "No feature yet — nobody can use this command. Add a feature so companies with that feature can use it."
     },
     "render": {
       "markdown": "Markdown",
@@ -1108,7 +1109,6 @@
       "aliasDup": "Duplicate alias",
       "aliasMax": "At most 5 aliases",
       "descRequired": "Enter a description (at most 200 characters)",
-      "featureRequired": "A command must belong to at least one feature",
       "workflowRequired": "Choose a workflow",
       "workflowDisabled": "The workflow is disabled. Enable it first.",
       "argName": "Lowercase letters, digits and _ only, starting with a letter",
@@ -1169,11 +1169,13 @@
         "edit": "Edit",
         "duplicate": "Duplicate",
         "delete": "Delete"
-      }
+      },
+      "noFeature": "No feature"
     },
     "delete": {
       "title": "Delete /{name}?",
-      "body": "Users of {features} will no longer be able to run /{name}. This can't be undone.",
+      "body": "Commands are a system-wide catalog: deleting /{name} removes it for EVERY company (users of {features} can no longer type it). To remove it from one company only, remove the feature from the command or revoke that company's feature. This can't be undone.",
+      "bodyNoFeature": "Commands are a system-wide catalog: deleting /{name} removes it for EVERY company. This can't be undone.",
       "typeToConfirm": "Type {name} to confirm",
       "submit": "Delete command"
     },
@@ -1276,7 +1278,7 @@
       },
       "orphan": "/{name} will belong to no feature and disappear from the menu",
       "empty": "No commands yet. Add commands so people granted this feature can use them.",
-      "orphanBadge": "Orphan"
+      "orphanBadge": "No feature"
     },
     "icon": {
       "package": "Package",
@@ -1342,10 +1344,10 @@
       "submit": "Revoke feature"
     },
     "delete": {
-      "blocked": "Can't delete {feature}: these commands belong only to it. Move them to another feature first.",
       "title": "Delete {feature}?",
       "typeToConfirm": "Type {key} to confirm",
-      "submit": "Delete feature"
+      "submit": "Delete feature",
+      "orphanWarn": "These commands belong only to this feature and will have no feature (nobody can use them): {commands}."
     },
     "empty": "No features besides core. Features bundle commands to grant to tenants and groups.",
     "editor": {

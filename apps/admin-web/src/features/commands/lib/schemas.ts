@@ -101,7 +101,7 @@ export const commandSchema = z
     aliases: z.array(key),
     description: localized,
     workflow_id: z.string().min(1, "commands.error.workflowRequired"),
-    feature_ids: z.array(z.string()).min(1, "commands.error.featureRequired"),
+    feature_ids: z.array(z.string()), // CR-055: rỗng hợp lệ (command chưa gắn feature)
     args: z.array(arg).max(ARGS_MAX),
     input_map: z.record(z.string(), mapEntry),
     output_field: z

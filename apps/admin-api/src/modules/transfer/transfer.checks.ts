@@ -1,4 +1,5 @@
-// ADM-FR-54 · M4-R14 · Q11 · ADM-BR-10 · kiểm tham chiếu + luật module cho `planImport` (plan-cd §3.3, §8.3). Thuần.
+// ADM-FR-54 · M4-R14 · Q11 · kiểm tham chiếu + luật module cho `planImport` (plan-cd §3.3, §8.3). Thuần.
+// CR-055: command không thuộc feature nào được phép (bỏ kiểm BR-10 khi import).
 // Luật module gọi qua rules thuần của module đó (commands, workflows), không qua repo. Chỉ mục đổi mới bị kiểm luật;
 // mục không đổi chỉ kiểm tham chiếu. Đường dẫn lỗi theo chỉ số trong file (`raw`).
 import { CORE_FEATURE_KEY } from "@ai/contracts";
@@ -146,37 +147,6 @@ function checkFeatures(c: PlanCtx): void {
   }
 }
 
-const needFeature = (n: string) => `Command "${n}" phải thuộc ít nhất một feature`;
-
-/** Command bị bỏ khỏi feature (trong file) mà không còn feature nào → lỗi ở `features[i].commands`. */
-function checkOrphans(c: PlanCtx, count: Map<string, number>): void {
-  for (const x of c.diffed.features) {
-    const before = c.base.features.get(x.key);
-    if (x.op === "unchanged" || !before) continue;
-    const orphans = before.commands.filter(
-      (n) => !x.after.commands.includes(n) && c.m.commands.has(n) && !count.get(n),
-    );
-    for (const n of orphans)
-      c.err.add(`features[${x.i}].commands`, "COMMAND_NEEDS_FEATURE", needFeature(n), {
-        command: n,
-      });
-  }
-}
-
-/** BR-10: mỗi command thuộc ≥ 1 feature sau import. Command mới → lỗi ở command; bị bỏ khỏi feature → lỗi ở feature. */
-function checkMembership(c: PlanCtx): void {
-  const count = new Map<string, number>();
-  for (const f of c.m.features.values())
-    for (const n of f.commands) count.set(n, (count.get(n) ?? 0) + 1);
-  for (const x of c.diffed.commands) {
-    if (!c.base.commands.has(x.key) && !count.get(x.key))
-      c.err.add(`commands[${x.i}].name`, "COMMAND_NEEDS_FEATURE", needFeature(x.key), {
-        command: x.key,
-      });
-  }
-  checkOrphans(c, count);
-}
-
 /** Grant mới: group + feature phải có; tenant phải có entitlement (DB hoặc cùng file) → NOT_ENTITLED. */
 function checkGrants(c: PlanCtx): void {
   for (const { i, raw, key } of c.file.grants) {
@@ -206,6 +176,5 @@ export function runChecks(c: PlanCtx): void {
   checkWorkflows(c);
   checkCommands(c);
   checkFeatures(c);
-  checkMembership(c);
   checkGrants(c);
 }

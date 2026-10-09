@@ -249,8 +249,8 @@ describe("X1-AC11 · bước 1–6 (trước khi gọi Hub)", () => {
     expect(testRunCalls()).toHaveLength(0);
   });
 
-  it("X1-AC11 · QF · API_ERRORS vẫn 48 mã (mã mới ở COMMAND_TEST_ERRORS)", () => {
-    expect(Object.keys(API_ERRORS)).toHaveLength(48);
+  it("X1-AC11 · QF · API_ERRORS vẫn 46 mã (48 − 2 theo CR-055; mã mới ở COMMAND_TEST_ERRORS)", () => {
+    expect(Object.keys(API_ERRORS)).toHaveLength(46);
   });
 });
 

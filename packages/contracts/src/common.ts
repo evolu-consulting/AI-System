@@ -205,7 +205,7 @@ export function pageResponseSchema<T extends z.ZodType>(item: T) {
 }
 export type PageResponse<T> = { items: T[]; total: number };
 
-/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3 + M3 §3 + M4 A/B + C + D: 23 + 11 + 2 + 3 + 3 + 6 = 48 mã). */
+/** Nguồn duy nhất mã lỗi → HTTP status cho BE/FE/QC (spec M1 §3 + M2 §3 + M3 §3 + M4 A/B + C + D: 23 + 11 + 2 + 3 + 3 + 6 = 48 mã; CR-055 gỡ COMMAND_NEEDS_FEATURE, FEATURE_HAS_EXCLUSIVE_COMMANDS → 46). */
 export const API_ERRORS = {
   VALIDATION_ERROR: 400,
   TENANT_REQUIRED: 400,
@@ -215,7 +215,6 @@ export const API_ERRORS = {
   INVALID_CURRENT_PASSWORD: 400,
   INVALID_REFERENCE: 400,
   INPUT_MAP_INVALID: 400,
-  COMMAND_NEEDS_FEATURE: 400,
   INVALID_CURRENT_CODE: 400,
   IMPORT_INVALID: 400,
   SECRETS_REQUIRED: 400,
@@ -243,7 +242,6 @@ export const API_ERRORS = {
   WORKFLOW_DISABLED: 409,
   COMMAND_NAME_TAKEN: 409,
   CORE_FEATURE_PROTECTED: 409,
-  FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
   BETA_GROUP_PROTECTED: 409,
   NOT_ENTITLED: 409,
   NAME_TAKEN: 409,
@@ -354,19 +352,6 @@ export const InputMapInvalidDetailsSchema = z.strictObject({
   unknown_args: z.array(z.string()),
 });
 export type InputMapInvalidDetails = z.infer<typeof InputMapInvalidDetailsSchema>;
-
-/** Chỉ có khi từ `PATCH /admin/features/:id` (command mồ côi); từ `/admin/commands*` không có details. */
-export const CommandNeedsFeatureDetailsSchema = z.strictObject({
-  commands: z.array(CommandRefSchema).min(1),
-});
-export type CommandNeedsFeatureDetails = z.infer<typeof CommandNeedsFeatureDetailsSchema>;
-
-export const FeatureHasExclusiveCommandsDetailsSchema = z.strictObject({
-  commands: z.array(CommandRefSchema).min(1),
-});
-export type FeatureHasExclusiveCommandsDetails = z.infer<
-  typeof FeatureHasExclusiveCommandsDetailsSchema
->;
 
 /** M3-R07: feature không có entitlement chưa thu hồi ở tenant (≥ 1, sắp tăng, không trùng). */
 export const NotEntitledDetailsSchema = z.strictObject({

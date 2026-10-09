@@ -1,6 +1,6 @@
 // ADM-FR-52 · M4-R13 · khôi phục feature từ snapshot audit (plan M4 §4.4): cập nhật như PATCH (version = bản được
 // khôi phục) hoặc chèn lại cùng id như POST — không kèm entitlement/grant/quota; command_ids đã mất bị bỏ; key trùng
-// → NAME_TAKEN. Luật module (CORE_FEATURE_PROTECTED, COMMAND_NEEDS_FEATURE…) chạy lại trong lõi.
+// → NAME_TAKEN. Luật module (CORE_FEATURE_PROTECTED…) chạy lại trong lõi.
 import { FeatureCreateRequestSchema, FeatureUpdateRequestSchema } from "@ai/contracts";
 import type { ConfigSink, Tx } from "@ai/db";
 import {

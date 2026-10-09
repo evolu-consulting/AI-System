@@ -1034,7 +1034,8 @@
     "feature": {
       "remove": {
         "aria": "Bỏ feature {name}"
-      }
+      },
+      "noneHint": "Chưa gắn feature — không ai dùng được command này. Thêm feature để công ty có feature đó dùng được."
     },
     "render": {
       "markdown": "Markdown",
@@ -1108,7 +1109,6 @@
       "aliasDup": "Alias bị trùng",
       "aliasMax": "Tối đa 5 alias",
       "descRequired": "Nhập mô tả (tối đa 200 ký tự)",
-      "featureRequired": "Command phải thuộc ít nhất một feature",
       "workflowRequired": "Chọn một workflow",
       "workflowDisabled": "Workflow đang tắt. Bật workflow trước.",
       "argName": "Tên chỉ gồm chữ thường, số, _ và bắt đầu bằng chữ",
@@ -1169,11 +1169,13 @@
         "edit": "Sửa",
         "duplicate": "Nhân bản",
         "delete": "Xoá"
-      }
+      },
+      "noFeature": "Chưa gắn feature"
     },
     "delete": {
       "title": "Xoá /{name}?",
-      "body": "Người dùng các feature {features} sẽ không gõ được /{name} nữa. Thao tác này không hoàn tác được.",
+      "body": "Command là danh mục chung của cả hệ thống: xoá /{name} sẽ gỡ nó ở MỌI công ty (người dùng các feature {features} không gõ được nữa). Muốn bỏ khỏi một công ty: bỏ feature khỏi command, hoặc thu hồi feature của công ty đó. Thao tác này không hoàn tác được.",
+      "bodyNoFeature": "Command là danh mục chung của cả hệ thống: xoá /{name} sẽ gỡ nó ở MỌI công ty. Thao tác này không hoàn tác được.",
       "typeToConfirm": "Gõ {name} để xác nhận",
       "submit": "Xoá command"
     },
@@ -1276,7 +1278,7 @@
       },
       "orphan": "/{name} sẽ không thuộc feature nào và biến khỏi menu",
       "empty": "Feature chưa có command nào. Thêm command để người được cấp feature này dùng được.",
-      "orphanBadge": "Mồ côi"
+      "orphanBadge": "Chưa gắn feature"
     },
     "icon": {
       "package": "Gói",
@@ -1342,10 +1344,10 @@
       "submit": "Thu hồi feature"
     },
     "delete": {
-      "blocked": "Không xoá được {feature}: các command sau chỉ thuộc feature này. Chuyển chúng sang feature khác trước.",
       "title": "Xoá {feature}?",
       "typeToConfirm": "Gõ {key} để xác nhận",
-      "submit": "Xoá feature"
+      "submit": "Xoá feature",
+      "orphanWarn": "Các command sau chỉ thuộc feature này và sẽ thành \"Chưa gắn feature\" (không ai dùng được): {commands}."
     },
     "empty": "Chưa có feature nào ngoài core. Feature gom các command để cấp cho tenant và group.",
     "editor": {

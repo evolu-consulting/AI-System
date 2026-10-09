@@ -5,7 +5,6 @@ import { loadFeaturesRules } from "../_modules";
 
 const CORE = { key: "core" };
 const KT = { key: "ke-toan" };
-const CMD = (id: string, name: string) => ({ id, name });
 
 describe("ADM-FR-30 · core (M2-R20)", () => {
   it("ADM-BR-10 · M2-R20 · CORE_FEATURE_KEY = core; isCore", async () => {
@@ -30,22 +29,10 @@ describe("ADM-FR-30 · core (M2-R20)", () => {
     }
   });
 
-  it("ADM-BR-10 · M2-R21 · checkFeatureDelete: core luôn bị chặn, ưu tiên trước command độc quyền", async () => {
+  it("CR-055 · M2-R21 · checkFeatureDelete: core → CORE_FEATURE_PROTECTED; feature thường → null (kể cả có command độc quyền)", async () => {
     const r = await loadFeaturesRules();
-    expect(r.checkFeatureDelete(CORE, [])).toMatchObject({ code: "CORE_FEATURE_PROTECTED" });
-    expect(r.checkFeatureDelete(CORE, [CMD("c1", "dich")])).toMatchObject({
-      code: "CORE_FEATURE_PROTECTED",
-    });
-  });
-
-  it("ADM-FR-30 · M2-R21 · checkFeatureDelete: command độc quyền → FEATURE_HAS_EXCLUSIVE_COMMANDS; không có → null", async () => {
-    const r = await loadFeaturesRules();
-    const ex = [CMD("c1", "tr-nhanh")];
-    expect(r.checkFeatureDelete(KT, ex)).toEqual({
-      code: "FEATURE_HAS_EXCLUSIVE_COMMANDS",
-      details: { commands: ex },
-    });
-    expect(r.checkFeatureDelete(KT, [])).toBeNull();
+    expect(r.checkFeatureDelete(CORE)).toMatchObject({ code: "CORE_FEATURE_PROTECTED" });
+    expect(r.checkFeatureDelete(KT)).toBeNull();
   });
 });
 
@@ -57,25 +44,11 @@ describe("ADM-FR-31 · entitlement (M2-R22)", () => {
   });
 });
 
-describe("ADM-BR-10 · command không mồ côi (M2-R19)", () => {
-  it("ADM-BR-10 · M2-R19 · orphanedByRemoval: featureCount ≤ 1 → mồ côi; ≥ 2 → không; giữ thứ tự", async () => {
+describe("CR-055 · bỏ luật command không mồ côi (M2-R19)", () => {
+  it("CR-055 · M2-R19 · không còn luật mồ côi: orphanedByRemoval / membershipError không còn export", async () => {
     const r = await loadFeaturesRules();
-    const removed = [
-      { id: "c1", name: "dich", featureCount: 2 },
-      { id: "c2", name: "tr-nhanh", featureCount: 1 },
-      { id: "c3", name: "zz", featureCount: 0 },
-    ];
-    expect(r.orphanedByRemoval(removed)).toEqual([CMD("c2", "tr-nhanh"), CMD("c3", "zz")]);
-    expect(r.orphanedByRemoval([])).toEqual([]);
-  });
-
-  it("ADM-BR-10 · M2-R19 · membershipError: rỗng → null; có → COMMAND_NEEDS_FEATURE {commands}", async () => {
-    const r = await loadFeaturesRules();
-    expect(r.membershipError([])).toBeNull();
-    expect(r.membershipError([CMD("c1", "dich")])).toEqual({
-      code: "COMMAND_NEEDS_FEATURE",
-      details: { commands: [CMD("c1", "dich")] },
-    });
+    expect(r.orphanedByRemoval).toBeUndefined();
+    expect(r.membershipError).toBeUndefined();
   });
 });
 

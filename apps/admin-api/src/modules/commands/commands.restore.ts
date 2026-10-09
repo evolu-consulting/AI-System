@@ -1,6 +1,6 @@
 // ADM-FR-52 · M4-R13 · khôi phục command từ snapshot audit (plan M4 §4.4): cập nhật như PATCH (version = bản được
 // khôi phục) hoặc chèn lại cùng id như POST; workflow mất → RESTORE_REF_MISSING; feature_ids mất bị bỏ (rỗng →
-// COMMAND_NEEDS_FEATURE của module); trùng tên/alias → NAME_TAKEN. Khoá: đúng chuỗi PATCH/POST (M3 §6.2).
+// command "chưa gắn feature", CR-055); trùng tên/alias → NAME_TAKEN. Khoá: đúng chuỗi PATCH/POST (M3 §6.2).
 import { CommandCreateRequestSchema, CommandUpdateRequestSchema } from "@ai/contracts";
 import type { ConfigSink, Tx } from "@ai/db";
 import {

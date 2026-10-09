@@ -74,7 +74,7 @@ const inp = (over: Record<string, unknown> = {}) => ({
 });
 
 describe("ADM-FR-10 · bảng mã lỗi", () => {
-  it("ADM-FR-10 · spec §3 · API_ERRORS = 23 mã M1 + 11 mã M2 giữ nguyên + 2 mã M3 giữ nguyên sau M4 (toMatchObject)", () => {
+  it("ADM-FR-10 · spec §3 · API_ERRORS = 23 mã M1 + 9 mã M2 (CR-055 gỡ COMMAND_NEEDS_FEATURE, FEATURE_HAS_EXCLUSIVE_COMMANDS) + 2 mã M3 giữ nguyên sau M4 (toMatchObject)", () => {
     expect(API_ERRORS).toMatchObject({
       VALIDATION_ERROR: 400,
       TENANT_REQUIRED: 400,
@@ -84,7 +84,6 @@ describe("ADM-FR-10 · bảng mã lỗi", () => {
       INVALID_CURRENT_PASSWORD: 400,
       INVALID_REFERENCE: 400,
       INPUT_MAP_INVALID: 400,
-      COMMAND_NEEDS_FEATURE: 400,
       UNAUTHORIZED: 401,
       INVALID_CREDENTIALS: 401,
       INVALID_REFRESH_TOKEN: 401,
@@ -107,13 +106,14 @@ describe("ADM-FR-10 · bảng mã lỗi", () => {
       WORKFLOW_DISABLED: 409,
       COMMAND_NAME_TAKEN: 409,
       CORE_FEATURE_PROTECTED: 409,
-      FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
       BETA_GROUP_PROTECTED: 409,
       NOT_ENTITLED: 409,
       TEMP_LOCKED: 423,
       INTERNAL_ERROR: 500,
     });
-    // M4 (Q2a, test-plan §5 K5): không đếm — tổng 48 mã kiểm ở M4/rules/contracts-cd.test.ts (D-K04).
+    expect(API_ERRORS).not.toHaveProperty("COMMAND_NEEDS_FEATURE");
+    expect(API_ERRORS).not.toHaveProperty("FEATURE_HAS_EXCLUSIVE_COMMANDS");
+    // M4 (Q2a, test-plan §5 K5): không đếm — tổng 46 mã (48 − 2 theo CR-055) kiểm ở M4/rules/contracts-cd.test.ts (D-K04).
   });
 
   it("ADM-FR-10 · spec §3 · hằng/regex/enum M2", () => {

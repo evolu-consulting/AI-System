@@ -147,7 +147,7 @@ const aliasesIssue = { message: "alias must differ from name", path: ["aliases"]
 
 /**
  * `timeout_s` vắng → theo `mode` (sync 30, async 120). `feature_ids` vắng → `[id của core]`;
- * `[]` hợp lệ ở biên để service trả 400 `COMMAND_NEEDS_FEATURE` (không phải `VALIDATION_ERROR`).
+ * `[]` hợp lệ: command "chưa gắn feature", không ai dùng được (CR-055 bỏ BR-10).
  */
 export const CommandCreateRequestSchema = z
   .strictObject({

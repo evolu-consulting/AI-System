@@ -73,7 +73,7 @@ describe("ADM-FR-54 · ConfigFileSchema", () => {
     expect(ok(S.safeParse({ ...base, base_config_version: -1 }))).toBe(false);
   });
 
-  it("ADM-FR-54 · C-K03 · ImportPreviewSchema / ImportResultSchema: mẫu qua; op 'delete' fail; errors[].code ngoài 10 mã fail", async () => {
+  it("ADM-FR-54 · C-K03 · ImportPreviewSchema / ImportResultSchema: mẫu qua; op 'delete' fail; errors[].code ngoài 9 mã fail (CR-055 gỡ COMMAND_NEEDS_FEATURE)", async () => {
     const { ImportPreviewSchema: P, ImportResultSchema: R } = await loadTransferContract();
     const codes = [
       "YAML_SYNTAX",
@@ -82,7 +82,6 @@ describe("ADM-FR-54 · ConfigFileSchema", () => {
       "REF_NOT_FOUND",
       "TENANT_NOT_FOUND",
       "PLATFORM_TENANT",
-      "COMMAND_NEEDS_FEATURE",
       "NOT_ENTITLED",
       "RULE",
       "TOO_MANY_ERRORS",
@@ -122,6 +121,8 @@ describe("ADM-FR-54 · ConfigFileSchema", () => {
       errors: [{ path: "x", code: "OTHER", message: "x" }],
     };
     expect(ok(P.safeParse(other))).toBe(false);
+    const gone = { ...other, errors: [{ path: "x", code: "COMMAND_NEEDS_FEATURE", message: "x" }] };
+    expect(ok(P.safeParse(gone))).toBe(false);
     const result = {
       config_version: 9,
       summary: { added: 1, updated: 2, unchanged: 0 },
@@ -133,8 +134,8 @@ describe("ADM-FR-54 · ConfigFileSchema", () => {
 });
 
 describe("ADM-FR-08 · ADM-FR-54 · API_ERRORS M4", () => {
-  it("ADM-FR-54 · D-K04 · API_ERRORS có đúng 48 mã; gồm 9 mã khối C + D với HTTP đúng", () => {
-    expect(Object.keys(API_ERRORS).length).toBe(48);
+  it("ADM-FR-54 · D-K04 · API_ERRORS có đúng 46 mã (48 − 2 theo CR-055); gồm 9 mã khối C + D với HTTP đúng", () => {
+    expect(Object.keys(API_ERRORS).length).toBe(46);
     expect(API_ERRORS).toMatchObject({
       PAYLOAD_TOO_LARGE: 413,
       IMPORT_INVALID: 400,

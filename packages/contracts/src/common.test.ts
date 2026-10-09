@@ -7,7 +7,6 @@ import {
   CatalogKeySchema,
   COMPANY_KEY_RE,
   CommandNameTakenDetailsSchema,
-  CommandNeedsFeatureDetailsSchema,
   DISPLAY_NAME_MAX,
   EMAIL_MAX,
   EmailSchema,
@@ -15,7 +14,6 @@ import {
   ErrorResponseSchema,
   FEATURE_ICON_RE,
   FEATURE_STATUSES,
-  FeatureHasExclusiveCommandsDetailsSchema,
   INPUT_NAME_RE,
   InputMapInvalidDetailsSchema,
   InvalidReferenceDetailsSchema,
@@ -148,7 +146,6 @@ const EXPECTED_ERRORS = {
   INVALID_CURRENT_PASSWORD: 400,
   INVALID_REFERENCE: 400,
   INPUT_MAP_INVALID: 400,
-  COMMAND_NEEDS_FEATURE: 400,
   INVALID_CURRENT_CODE: 400,
   IMPORT_INVALID: 400,
   SECRETS_REQUIRED: 400,
@@ -176,7 +173,6 @@ const EXPECTED_ERRORS = {
   WORKFLOW_DISABLED: 409,
   COMMAND_NAME_TAKEN: 409,
   CORE_FEATURE_PROTECTED: 409,
-  FEATURE_HAS_EXCLUSIVE_COMMANDS: 409,
   BETA_GROUP_PROTECTED: 409,
   NOT_ENTITLED: 409,
   NAME_TAKEN: 409,
@@ -191,9 +187,9 @@ const EXPECTED_ERRORS = {
 } as const;
 
 describe("ADM-FR-01 · API_ERRORS", () => {
-  test("đủ 48 mã (23 M1 + 11 M2 + 2 M3 + 3 M4 A/B + 3 M4 C + 6 M4 D), đúng HTTP theo spec M1 §3 + M2 §3 + M3 §3", () => {
+  test("đủ 46 mã (23 M1 + 9 M2 sau CR-055 + 2 M3 + 3 M4 A/B + 3 M4 C + 6 M4 D), đúng HTTP theo spec M1 §3 + M2 §3 + M3 §3", () => {
     expect(API_ERRORS).toEqual(EXPECTED_ERRORS);
-    expect(ERROR_CODES).toHaveLength(48);
+    expect(ERROR_CODES).toHaveLength(46);
   });
 
   test("mọi mã hợp lệ theo ErrorResponseSchema M0", () => {
@@ -324,8 +320,6 @@ describe("ADM-FR-10 · details của mã lỗi M2", () => {
       { missing: ["target_lang"], unknown: [], unknown_args: [] },
       { missing: ["target_lang"] },
     ],
-    [CommandNeedsFeatureDetailsSchema, { commands: [{ id: ID, name: "dich" }] }, { commands: [] }],
-    [FeatureHasExclusiveCommandsDetailsSchema, { commands: [{ id: ID, name: "dich" }] }, {}],
   ] as const)("%# nhận dạng đúng, từ chối dạng sai / thừa trường", (schema, good, bad) => {
     expect(schema.parse(good)).toEqual(good as never);
     expect(schema.safeParse(bad).success).toBe(false);

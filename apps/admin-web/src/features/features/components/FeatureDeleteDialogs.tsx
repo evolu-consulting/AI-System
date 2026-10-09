@@ -1,57 +1,39 @@
-// ADM-FR-30 · M2-R21 · hộp thoại xoá feature: chặn (liệt kê command độc quyền) hoặc xác nhận nặng (gõ key).
+// ADM-FR-30 · M2-R21 (CR-055) · hộp thoại xoá feature: xác nhận nặng (gõ key); có command chỉ thuộc feature này →
+// cảnh báo liệt kê chúng (sẽ thành "chưa gắn feature"), không chặn.
 import type { FeatureListItem } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
-import { BlockedDialog } from "@/components/shared/BlockedDialog";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { DependencyList } from "@/components/shared/DependencyList";
 import type { CommandRef } from "../lib/exclusive";
 
-export type PendingBlock = { feature: FeatureListItem; commands: CommandRef[] };
+export type PendingDelete = { feature: FeatureListItem; commands: CommandRef[] };
 
 type Props = {
-  blocked: PendingBlock | null;
-  toDelete: FeatureListItem | null;
+  pending: PendingDelete | null;
   nameOf: (f: FeatureListItem) => string;
-  onCloseBlocked: () => void;
-  onCloseDelete: () => void;
+  onClose: () => void;
   onConfirm: () => Promise<void>;
 };
 
-export function FeatureDeleteDialogs(p: Props) {
+export function FeatureDeleteDialogs({ pending, nameOf, onClose, onConfirm }: Props) {
   const { t } = useTranslation();
-  const { blocked, toDelete, nameOf } = p;
+  const f = pending?.feature;
+  const lonely = pending?.commands ?? [];
+  const warn =
+    lonely.length > 0
+      ? t("features.delete.orphanWarn", { commands: lonely.map((c) => `/${c.name}`).join(", ") })
+      : undefined;
   return (
-    <>
-      <BlockedDialog
-        open={!!blocked}
-        onClose={p.onCloseBlocked}
-        title={t("features.delete.blocked", { feature: blocked ? nameOf(blocked.feature) : "" })}
-      >
-        <DependencyList
-          sections={[
-            {
-              title: t("common.dependency.command"),
-              items: (blocked?.commands ?? []).map((c) => ({
-                id: c.id,
-                label: `/${c.name}`,
-                mono: true,
-                href: `/commands/${c.id}`,
-              })),
-            },
-          ]}
-        />
-      </BlockedDialog>
-      <ConfirmDialog
-        open={!!toDelete}
-        onOpenChange={(open) => !open && p.onCloseDelete()}
-        title={t("features.delete.title", { feature: toDelete ? nameOf(toDelete) : "" })}
-        confirmLabel={t("features.delete.submit")}
-        destructive
-        level="heavy"
-        confirmText={toDelete?.key}
-        typePrompt={t("features.delete.typeToConfirm", { key: toDelete?.key ?? "" })}
-        onConfirm={p.onConfirm}
-      />
-    </>
+    <ConfirmDialog
+      open={!!pending}
+      onOpenChange={(open) => !open && onClose()}
+      title={t("features.delete.title", { feature: f ? nameOf(f) : "" })}
+      description={warn}
+      confirmLabel={t("features.delete.submit")}
+      destructive
+      level="heavy"
+      confirmText={f?.key}
+      typePrompt={t("features.delete.typeToConfirm", { key: f?.key ?? "" })}
+      onConfirm={onConfirm}
+    />
   );
 }

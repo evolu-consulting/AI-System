@@ -127,7 +127,7 @@ test("ADM-BR-10 · M2-R20 · editor core: trạng thái khoá + gợi ý 'Featur
   expect((await patched).status()).toBe(200);
 });
 
-test("ADM-BR-10 · M2-AC04 · tab Commands: thêm /tom-tat lưu được; bỏ /kiemtra-hoadon (chỉ thuộc feature này) → cảnh báo mồ côi + 'Command phải thuộc ít nhất một feature', KHÔNG gửi PATCH", async ({
+test("CR-055 · M2-AC04 · tab Commands: thêm /tom-tat lưu được; bỏ /kiemtra-hoadon (chỉ thuộc feature này) → cảnh báo 'Chưa gắn feature' nhưng VẪN lưu được (PATCH 200); thêm lại → lưu", async ({
   page,
 }) => {
   await loginAdmin(page);
@@ -139,30 +139,39 @@ test("ADM-BR-10 · M2-AC04 · tab Commands: thêm /tom-tat lưu được; bỏ /
   );
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   expect((await saved).status()).toBe(200);
-  const patches: string[] = [];
-  page.on("request", (r) => {
-    if (r.method() === "PATCH" && r.url().includes("/admin/features/")) patches.push(r.url());
-  });
   await page.getByRole("button", { name: "Bỏ /kiemtra-hoadon khỏi feature" }).click();
   await expect(
     page.getByText("/kiemtra-hoadon sẽ không thuộc feature nào và biến khỏi menu"),
   ).toBeVisible();
+  await expect(page.getByText("Chưa gắn feature", { exact: true })).toBeVisible();
+  const orphaned = page.waitForResponse(
+    (r) => r.url().includes("/admin/features/") && r.request().method() === "PATCH",
+  );
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
-  await expect(page.getByText("Command phải thuộc ít nhất một feature")).toBeVisible();
-  expect(patches).toEqual([]);
+  expect((await orphaned).status()).toBe(200);
+  // Trả lại trạng thái cho các ca sau (serial, fixture dựng một lần).
+  await page.getByRole("combobox", { name: "Thêm command" }).click();
+  await page.getByRole("option", { name: /kiemtra-hoadon/ }).click();
+  const restored = page.waitForResponse(
+    (r) => r.url().includes("/admin/features/") && r.request().method() === "PATCH",
+  );
+  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  expect((await restored).status()).toBe(200);
 });
 
-test("ADM-FR-30 · M2-R21 · xoá: dich-thuat (/tr-nhanh độc quyền) → dialog 'Không xoá được Dịch thuật' liệt kê /tr-nhanh; thu-nghiem (rỗng) → gõ key → xoá", async ({
+test("CR-055 · M2-R21 · xoá: dich-thuat (/tr-nhanh độc quyền) → hộp xác nhận 'Xoá Dịch thuật?' CẢNH BÁO /tr-nhanh sẽ thành 'Chưa gắn feature' (không chặn), Huỷ; thu-nghiem (rỗng) → gõ key → xoá", async ({
   page,
 }) => {
   await loginAdmin(page);
   await openPage(page, "/features", "Features");
   await rowMenu(page, "dich-thuat", "Xoá");
-  const blocked = page.getByRole("alertdialog", { name: /Không xoá được Dịch thuật/ });
-  await expect(blocked).toBeVisible();
-  await expect(blocked).toContainText("/tr-nhanh");
-  await blocked.getByRole("button", { name: "Đóng" }).click();
-  await expect(blocked).toHaveCount(0);
+  const warn = page.getByRole("alertdialog", { name: "Xoá Dịch thuật?" });
+  await expect(warn).toBeVisible();
+  await expect(warn).toContainText("/tr-nhanh");
+  await expect(warn).toContainText("Chưa gắn feature");
+  await expect(warn.getByRole("textbox", { name: /Gõ dich-thuat/ })).toBeVisible();
+  await warn.getByRole("button", { name: "Huỷ" }).click();
+  await expect(warn).toHaveCount(0);
   await rowMenu(page, "thu-nghiem", "Xoá");
   const confirm = page.getByRole("alertdialog");
   await confirm.getByRole("textbox", { name: /Gõ thu-nghiem/ }).fill("thu-nghiem");

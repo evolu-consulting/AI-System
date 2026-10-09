@@ -105,7 +105,7 @@ export function toUpdateBody(
 
 export type OrphanCandidate = { id: string; name: string; feature_count: number };
 
-/** Command bị bỏ khỏi nháp mà chỉ thuộc feature này → sẽ mồ côi (chặn Lưu, M2-R19). */
+/** Command bị bỏ khỏi nháp mà chỉ thuộc feature này → sẽ "chưa gắn feature" (chỉ cảnh báo, CR-055). */
 export function removedOrphans(
   initial: readonly OrphanCandidate[],
   draftIds: readonly string[],

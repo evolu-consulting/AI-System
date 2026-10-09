@@ -87,35 +87,35 @@ describe("ADM-BR-01 · tên command song song (M2-AC03, M2-R13)", () => {
   });
 });
 
-describe("ADM-BR-10 · command không mồ côi dưới đồng thời (M2-R19, plan §5.1)", () => {
-  it("ADM-BR-10 · M2-R19 · PATCH command bỏ feature DT (feature_ids:[KT]) ∥ PATCH feature KT bỏ command (command_ids:[]) ×10 → đúng 1 thành công; command còn ≥ 1 feature; kẻ thua ∈ {409 VERSION_CONFLICT, 400 COMMAND_NEEDS_FEATURE}", async () => {
+describe("ADM-BR-10 · feature của command dưới đồng thời (M2-R19, plan §5.1; CR-055 cho phép chưa gắn feature)", () => {
+  it("CR-055 · M2-R19 · PATCH command bỏ feature DT (feature_ids:[KT]) ∥ PATCH feature KT bỏ command (command_ids:[]) ×10 → ≥ 1 thành công; kẻ thua chỉ 409 VERSION_CONFLICT; số feature còn lại khớp bên thắng (cả hai 200 → 0)", async () => {
     await rounds(ROUNDS, twoFeatures, async () => {
       const [a, b] = await Promise.all([
         as("PATCH", `/admin/commands/${C.kiemtraHoadon}`, { version: 1, feature_ids: [KT] }),
         as("PATCH", `/admin/features/${KT}`, { version: 1, command_ids: [] }),
       ]);
       noServerError(a, b);
-      expect(statuses(a, b).filter((s) => s === 200)).toHaveLength(1);
-      const lose = a.status === 200 ? b : a;
-      expect(["VERSION_CONFLICT", "COMMAND_NEEDS_FEATURE"]).toContain(lose.json.error.code);
-      expect(await featuresOf(C.kiemtraHoadon)).toBeGreaterThanOrEqual(1);
+      const ok = statuses(a, b).filter((s) => s === 200);
+      expect(ok.length).toBeGreaterThanOrEqual(1);
+      for (const r of [a, b])
+        if (r.status !== 200) expect(r.json.error.code).toBe("VERSION_CONFLICT");
+      expect(await featuresOf(C.kiemtraHoadon)).toBe(ok.length === 2 ? 0 : 1);
     });
   });
 
-  it("ADM-BR-10 · M2-R21 · DELETE feature KT ∥ PATCH command feature_ids:[KT] ×10 → command còn ≥ 1 feature; kết quả ∈ {(204, 400 INVALID_REFERENCE), (409 FEATURE_HAS_EXCLUSIVE_COMMANDS, 200)}", async () => {
+  it("CR-055 · M2-R21 · DELETE feature KT ∥ PATCH command feature_ids:[KT] ×10 → DELETE luôn 204; kết quả ∈ {(204, 400 INVALID_REFERENCE) command còn DT, (204, 200) command chưa gắn feature}", async () => {
     await rounds(ROUNDS, twoFeatures, async () => {
       const [del, p] = await Promise.all([
         as("DELETE", `/admin/features/${KT}`),
         as("PATCH", `/admin/commands/${C.kiemtraHoadon}`, { version: 1, feature_ids: [KT] }),
       ]);
       noServerError(del, p);
+      expect(del.status).toBe(204);
       const code = (r: Res) => r.json?.error?.code;
-      const deletedFirst =
-        del.status === 204 && p.status === 400 && code(p) === "INVALID_REFERENCE";
-      const patchedFirst =
-        del.status === 409 && code(del) === "FEATURE_HAS_EXCLUSIVE_COMMANDS" && p.status === 200;
+      const deletedFirst = p.status === 400 && code(p) === "INVALID_REFERENCE";
+      const patchedFirst = p.status === 200;
       expect(deletedFirst || patchedFirst).toBe(true);
-      expect(await featuresOf(C.kiemtraHoadon)).toBeGreaterThanOrEqual(1);
+      expect(await featuresOf(C.kiemtraHoadon)).toBe(deletedFirst ? 1 : 0);
     });
   });
 });

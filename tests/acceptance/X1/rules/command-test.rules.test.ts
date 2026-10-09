@@ -179,7 +179,7 @@ describe("X1-AC11 · mapHubTestRun (plan §2.2 bảng 8a–8f)", () => {
 });
 
 describe("X1-AC11 · contract command-test.ts (plan §2.2, K4)", () => {
-  it("X1-AC11 · COMMAND_TEST_ERRORS đúng 5 mã; API_ERRORS vẫn 48 và không chứa mã riêng của Test", async () => {
+  it("X1-AC11 · COMMAND_TEST_ERRORS đúng 5 mã; API_ERRORS 46 (CR-055) và không chứa mã riêng của Test", async () => {
     const c = await loadCommandTestContract();
     expect(c.COMMAND_TEST_ERRORS).toEqual({
       CMD_MISSING_ARG: 422,
@@ -188,7 +188,7 @@ describe("X1-AC11 · contract command-test.ts (plan §2.2, K4)", () => {
       HUB_UNAVAILABLE: 502,
       HUB_NOT_CONFIGURED: 503,
     });
-    expect(Object.keys(API_ERRORS)).toHaveLength(48);
+    expect(Object.keys(API_ERRORS)).toHaveLength(46); // CR-055 gỡ 2 mã (48 → 46)
     for (const k of ["SIDE_EFFECT_CONFIRM_REQUIRED", "HUB_UNAVAILABLE", "HUB_NOT_CONFIGURED"])
       expect(Object.keys(API_ERRORS)).not.toContain(k);
   });

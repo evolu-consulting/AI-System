@@ -290,17 +290,19 @@ describe("ADM-BR-02 · workflow của command (M2-R14, M2-AC06)", () => {
   });
 });
 
-describe("ADM-BR-10 · command thuộc ≥ 1 feature (M2-AC04, M2-R19)", () => {
-  it("ADM-BR-10 · M2-AC04 · feature_ids [] → 400 COMMAND_NEEDS_FEATURE KHÔNG có details; không tạo; PATCH [] → 400 và DB không đổi", async () => {
+describe("ADM-BR-10 · feature của command (M2-R19; CR-055 bỏ luật ≥ 1 feature)", () => {
+  it("CR-055 · ADM-BR-10 · feature_ids [] → 201 command chưa gắn feature (feature_ids [], features []); PATCH [] → 200 và DB không còn hàng feature_commands", async () => {
     const res = await create({ feature_ids: [] });
-    expectErr(res, "COMMAND_NEEDS_FEATURE");
-    expect(res.json.error.details).toBeUndefined();
-    expect(await count("commands")).toBe(5);
+    expect(res.status).toBe(201);
+    expect(res.json.feature_ids).toEqual([]);
+    expect(res.json.features).toEqual([]);
+    expect(await count("commands")).toBe(6);
     const p = await patch(ID.command.dich, 1, { feature_ids: [] });
-    expectErr(p, "COMMAND_NEEDS_FEATURE");
+    expect(p.status).toBe(200);
+    expect(p.json.feature_ids).toEqual([]);
     const rows =
       await env.owner`select count(*)::int as n from admin.feature_commands where command_id = ${ID.command.dich}`;
-    expect(rows[0]?.n).toBe(1);
+    expect(rows[0]?.n).toBe(0);
   });
 
   it("ADM-BR-10 · M2-R19 · feature_ids có uuid lạ → 400 INVALID_REFERENCE {field:'feature_ids'}; trùng → VALIDATION_ERROR", async () => {
@@ -327,8 +329,10 @@ describe("ADM-BR-10 · command thuộc ≥ 1 feature (M2-AC04, M2-R19)", () => {
 });
 
 describe("ADM-FR-20 · thứ tự kiểm (spec §3)", () => {
-  it("ADM-FR-20 · spec §3 · POST nhiều lỗi cùng lúc: COMMAND_NEEDS_FEATURE → INVALID_REFERENCE (workflow rồi feature) → COMMAND_NAME_TAKEN → INPUT_MAP_INVALID → WORKFLOW_DISABLED", async () => {
-    expectErr(await create({ feature_ids: [], workflow_id: ID.unknown }), "COMMAND_NEEDS_FEATURE");
+  it("ADM-FR-20 · spec §3 · POST nhiều lỗi cùng lúc: INVALID_REFERENCE (workflow rồi feature) → COMMAND_NAME_TAKEN → INPUT_MAP_INVALID → WORKFLOW_DISABLED (CR-055: feature_ids [] không còn là lỗi)", async () => {
+    const empty = await create({ feature_ids: [], workflow_id: ID.unknown });
+    expectErr(empty, "INVALID_REFERENCE");
+    expect(empty.json.error.details.field).toBe("workflow_id");
     const wf = await create({ name: "dich", workflow_id: ID.unknown, feature_ids: [ID.unknown] });
     expectErr(wf, "INVALID_REFERENCE");
     expect(wf.json.error.details.field).toBe("workflow_id");

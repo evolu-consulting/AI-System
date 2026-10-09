@@ -11,7 +11,7 @@ export const likeArg = (q: string): string => `%${q.replace(/[\\%_]/g, (m) => `\
  * (không join) của Drizzle in cột KHÔNG kèm tên bảng, nên `${secrets.id}` trong subquery `from workflows` thành `"id"`
  * và bị hiểu là `workflows.id` (lỗi `used_by: []` ở T6).
  * Giới hạn: không dùng cho tự tương quan cùng bảng (subquery `from` chính bảng của câu ngoài) — tên đầy đủ khi đó trỏ
- * vào bảng gần nhất (bảng trong subquery); trường hợp đó phải viết SQL có alias (như `features.repo` exclusiveCommands).
+ * vào bảng gần nhất (bảng trong subquery); trường hợp đó phải viết SQL có alias (vd subquery `exists` có alias riêng).
  */
 export function outer(col: AnyColumn): SQL {
   const table = col.table as PgTable;

@@ -35,8 +35,6 @@ import {
   diffIds,
   type FeatureState,
   isCore,
-  membershipError,
-  orphanedByRemoval,
   type RuleError,
 } from "./features.rules";
 
@@ -196,21 +194,13 @@ function mergeState(cur: FeatureState, input: FeatureUpdateRequest): FeatureStat
 async function applyMembership(c: Call, tx: Tx, l: Locked, next: string[]): Promise<void> {
   const { added, removed } = diffIds(l.curIds, next);
   invalidCommands(missingIds(added, l.lockedCmds));
-  const counts = await m.featureCounts(tx, removed);
-  const names = new Map(l.lockedCmds.map((x) => [x.id, x.name]));
-  const removedInfo = removed.map((id) => ({
-    id,
-    name: names.get(id) ?? "",
-    featureCount: counts.get(id) ?? 0,
-  }));
-  const orphans = orphanedByRemoval(removedInfo).sort((a, b) => a.name.localeCompare(b.name));
-  fail(membershipError(orphans));
+  // CR-055: bỏ command khỏi feature được phép kể cả khi nó thành "chưa gắn feature" (bỏ BR-10).
   await m.removePairs(tx, pairs(l.row.id, removed));
   await m.addPairs(tx, pairs(l.row.id, added));
   await m.bumpCommands(tx, [...added, ...removed], c.actor.userId);
 }
 
-/** Thứ tự (spec §3): 404 → version → không đổi gì → CORE_FEATURE_PROTECTED → INVALID_REFERENCE → COMMAND_NEEDS_FEATURE. */
+/** Thứ tự (spec §3): 404 → version → không đổi gì → CORE_FEATURE_PROTECTED → INVALID_REFERENCE. */
 export function updateFeature(
   c: Call,
   id: string,
@@ -251,15 +241,16 @@ export async function updateFeatureIn(
   return after;
 }
 
-/** 404 → CORE_FEATURE_PROTECTED → FEATURE_HAS_EXCLUSIVE_COMMANDS → xoá (cascade feature_commands, entitlement). */
+/** 404 → CORE_FEATURE_PROTECTED → xoá (cascade feature_commands, entitlement); command chỉ thuộc feature này thành
+ * "chưa gắn feature" (CR-055). */
 export function deleteFeature(c: Call, id: string): Promise<void> {
   return configWrite(c, "feature.delete", async (tx, ch) => {
-    // Khoá command của feature trước (thứ tự commands → features) để luật "không mồ côi" không bị đua.
+    // Khoá command của feature trước (giữ thứ tự khoá commands → features như PATCH).
     await m.lockCommands(tx, await m.commandIdsOfFeature(tx, id));
     const f = await repo.lockFeature(tx, id, "no key update");
     if (!f) throw appError("NOT_FOUND");
     await afterLock(c.ctx.hooks, "feature.delete");
-    fail(checkFeatureDelete(f, await repo.exclusiveCommands(tx, id)));
+    fail(checkFeatureDelete(f));
     const before = await featureDetail(tx, id);
     await repo.deleteFeature(tx, id);
     ch.changed({ entity: "feature", tenantId: null });

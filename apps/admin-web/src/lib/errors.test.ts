@@ -60,12 +60,8 @@ describe("ADM-FR-10 · M2-R28 · mã lỗi M2 → câu hiển thị", () => {
   test("mã tĩnh", () => {
     expect(describeError(err("SECRET_NAME_TAKEN")).key).toBe("secrets.error.nameTaken");
     expect(describeError(err("WORKFLOW_DISABLED")).key).toBe("commands.error.workflowDisabled");
-    expect(describeError(err("COMMAND_NEEDS_FEATURE")).key).toBe("commands.error.featureRequired");
     expect(describeError(err("CORE_FEATURE_PROTECTED")).key).toBe("features.error.coreProtected");
     expect(describeError(err("SCHEMA_BREAKS_COMMANDS")).key).toBe("workflows.schemaBreaks");
-    expect(describeError(err("FEATURE_HAS_EXCLUSIVE_COMMANDS")).key).toBe(
-      "features.delete.blocked",
-    );
     expect(describeError(err("INVALID_REFERENCE")).key).toBe("errors.invalidReference");
   });
 

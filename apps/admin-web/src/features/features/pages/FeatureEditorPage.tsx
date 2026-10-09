@@ -20,7 +20,6 @@ import { FeatureCommandsTab } from "../components/FeatureCommandsTab";
 import { FeatureInfoTab } from "../components/FeatureInfoTab";
 import { FeatureTenantsTab } from "../components/FeatureTenantsTab";
 import { useFeatureForm } from "../hooks/use-feature-form";
-import { removedOrphans } from "../lib/schemas";
 
 export type FeatureTab = "info" | "commands" | "tenants";
 type Props = { featureId?: string; tab: FeatureTab; onTab: (tab: FeatureTab) => void };
@@ -47,8 +46,6 @@ function EditorBody({ feature, tab, onTab, onReload }: BodyProps) {
   const { t } = useTranslation();
   const ed = useFeatureForm(feature, onReload);
   const isDirty = ed.form.formState.isDirty;
-  const ids = ed.form.watch("command_ids");
-  const blocked = ed.needsFeature && (!feature || removedOrphans(feature.commands, ids).length > 0);
 
   return (
     <FormProvider {...ed.form}>
@@ -74,11 +71,7 @@ function EditorBody({ feature, tab, onTab, onReload }: BodyProps) {
             )}
           </TabsContent>
         </Tabs>
-        <EditorSaveBar dirty={isDirty} pending={ed.pending} cancelTo="/features">
-          {blocked ? (
-            <span className="block text-destructive">{t("commands.error.featureRequired")}</span>
-          ) : null}
-        </EditorSaveBar>
+        <EditorSaveBar dirty={isDirty} pending={ed.pending} cancelTo="/features" />
       </form>
       <UnsavedGuard dirty={isDirty} />
       <LazyConflictDialog props={ed.conflict} />

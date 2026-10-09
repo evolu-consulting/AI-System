@@ -109,9 +109,9 @@ export function FeatureCommandsTab({ feature }: { feature: FeatureDetail | undef
           {orphans.map((c) => (
             <li
               key={c.id}
-              className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-body text-destructive"
+              className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-body"
             >
-              <StatusBadge tone="err">{t("features.commands.orphanBadge")}</StatusBadge>
+              <StatusBadge tone="warn">{t("features.commands.orphanBadge")}</StatusBadge>
               {t("features.commands.orphan", { name: c.name })}
             </li>
           ))}

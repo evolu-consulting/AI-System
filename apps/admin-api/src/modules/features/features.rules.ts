@@ -3,7 +3,6 @@ import { CORE_FEATURE_KEY as CORE, type ErrorCode, type FeatureStatus } from "@a
 import { sameIdSet, sameJson } from "../../lib/json";
 
 export type RuleError = { code: ErrorCode; details?: unknown };
-export type CommandRef = { id: string; name: string };
 
 export const CORE_FEATURE_KEY = CORE;
 
@@ -19,33 +18,14 @@ export function checkFeatureStatus(
     : null;
 }
 
-/** `core` luôn chặn (ưu tiên); còn command chỉ thuộc feature này → FEATURE_HAS_EXCLUSIVE_COMMANDS (M2-R21). */
-export function checkFeatureDelete(
-  f: { key: string },
-  exclusive: readonly CommandRef[],
-): RuleError | null {
-  if (isCore(f)) return { code: "CORE_FEATURE_PROTECTED" };
-  return exclusive.length > 0
-    ? { code: "FEATURE_HAS_EXCLUSIVE_COMMANDS", details: { commands: [...exclusive] } }
-    : null;
+/** `core` không xoá được. Command chỉ thuộc feature này được phép → thành "chưa gắn feature" (CR-055 bỏ M2-R21). */
+export function checkFeatureDelete(f: { key: string }): RuleError | null {
+  return isCore(f) ? { code: "CORE_FEATURE_PROTECTED" } : null;
 }
 
 /** `core` tự hiệu lực mọi tenant, không có hàng entitlement (RD#7). */
 export function checkEntitlementTarget(f: { key: string }): RuleError | null {
   return isCore(f) ? { code: "CORE_FEATURE_PROTECTED" } : null;
-}
-
-/** featureCount = số feature hiện có của command (gồm feature đang sửa); ≤ 1 mà bị bỏ → mồ côi (BR-10). */
-export function orphanedByRemoval(
-  removed: readonly { id: string; name: string; featureCount: number }[],
-): CommandRef[] {
-  return removed.filter((c) => c.featureCount <= 1).map(({ id, name }) => ({ id, name }));
-}
-
-export function membershipError(orphans: readonly CommandRef[]): RuleError | null {
-  return orphans.length > 0
-    ? { code: "COMMAND_NEEDS_FEATURE", details: { commands: [...orphans] } }
-    : null;
 }
 
 /** Hiệu lực cho người dùng (M2-R23): `on` | `beta` (lọc beta-testers là M3). */

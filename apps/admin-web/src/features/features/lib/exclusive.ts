@@ -1,4 +1,4 @@
-// ADM-FR-30 · M2-R21 · command mồ côi khi xoá feature: chỉ thuộc đúng feature này (`feature_count = 1`).
+// ADM-FR-30 · M2-R21 (CR-055) · command chỉ thuộc đúng feature này (`feature_count = 1`) — sẽ "chưa gắn feature" khi xoá feature.
 import type { FeatureDetail } from "@ai/contracts";
 
 export type CommandRef = { id: string; name: string };

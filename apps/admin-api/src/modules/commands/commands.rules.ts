@@ -82,11 +82,6 @@ export function inputMapWarnings(
   return out;
 }
 
-/** BR-10: rỗng → COMMAND_NEEDS_FEATURE (không details). */
-export function checkCommandFeatures(featureIds: readonly string[]): RuleError | null {
-  return featureIds.length === 0 ? { code: "COMMAND_NEEDS_FEATURE" } : null;
-}
-
 /** M2-R14: command bật mà workflow tắt → WORKFLOW_DISABLED. */
 export function checkCommandEnable(
   enabled: boolean,

@@ -222,7 +222,7 @@ describe("ADM-BR-10 · M2 plan §5.1 · khoá hàng catalog xen kẽ tất đị
       values (${FEAT_F}, ${CMD}), (${FEAT_G}, ${CMD})`;
   });
 
-  test("ADM-BR-10 · (a) command PATCH bỏ G (dừng sau khoá) ∥ feature G PATCH bỏ cùng command (phải chờ) → đúng một thành công, command còn ≥ 1 feature", async () => {
+  test("ADM-BR-10 · (a) command PATCH bỏ G (dừng sau khoá) ∥ feature G PATCH bỏ cùng command (phải chờ) → đúng một thành công (kẻ thua VERSION_CONFLICT), không deadlock", async () => {
     const b = barrier("command.save");
     const r = await m2Interleave(
       () => updateCommand(m2(b.hooks), CMD, { version: 1, feature_ids: [FEAT_F] }),
@@ -230,7 +230,7 @@ describe("ADM-BR-10 · M2 plan §5.1 · khoá hàng catalog xen kẽ tất đị
       b,
     );
     expect([r.ra.ok, r.rb.ok]).toEqual([true, false]);
-    expect(["VERSION_CONFLICT", "COMMAND_NEEDS_FEATURE"]).toContain(codeOf(r.rb) ?? "");
+    expect(codeOf(r.rb)).toBe("VERSION_CONFLICT");
     expect(await featureCount()).toBe(1);
     expect(r.deadlocks).toBe(0);
     expect(r.ms).toBeLessThan(900);

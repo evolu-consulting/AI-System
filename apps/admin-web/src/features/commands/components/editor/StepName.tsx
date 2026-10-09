@@ -13,7 +13,7 @@ import { AliasField } from "./AliasField";
 import { FeatureField } from "./FeatureField";
 import { StepSection } from "./StepSection";
 
-export type StepNameErrors = { name?: string; alias?: string; feature?: string };
+export type StepNameErrors = { name?: string; alias?: string };
 
 type Props = { excludeId?: string; serverErrors: StepNameErrors };
 
@@ -77,7 +77,7 @@ export function StepName({ excludeId, serverErrors }: Props) {
           />
         )}
       />
-      <FeatureField serverError={serverErrors.feature} />
+      <FeatureField />
     </StepSection>
   );
 }

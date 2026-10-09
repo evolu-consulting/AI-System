@@ -21,7 +21,6 @@ export type MapIssues = { missing: string[]; unknown: string[]; unknownArgs: str
 export type ServerState = {
   name?: string;
   alias?: string;
-  feature?: string;
   workflowDisabled?: boolean;
   map?: MapIssues;
 };
@@ -50,8 +49,6 @@ export function serverPatch(
       const text = tr("commands.error.nameTaken", { name: taken });
       return taken === name ? { name: text } : { alias: text };
     }
-    case "COMMAND_NEEDS_FEATURE":
-      return { feature: tr("commands.error.featureRequired") };
     case "WORKFLOW_DISABLED":
       return { workflowDisabled: true };
     case "INPUT_MAP_INVALID":

@@ -195,13 +195,10 @@ describe("ADM-FR-22 · inputMapWarnings (M2-R17: map sai kiểu chỉ cảnh bá
   });
 });
 
-describe("ADM-BR-10 · checkCommandFeatures / checkCommandEnable (M2-R14, M2-R19)", () => {
-  it("ADM-BR-10 · M2-R19 · checkCommandFeatures: [] → COMMAND_NEEDS_FEATURE không details; có phần tử → null", async () => {
+describe("ADM-BR-02 · checkCommandEnable (M2-R14; CR-055 bỏ checkCommandFeatures)", () => {
+  it("CR-055 · M2-R19 · không còn luật command ≥ 1 feature: checkCommandFeatures không còn export", async () => {
     const r = await loadCommandsRules();
-    const err = r.checkCommandFeatures([]);
-    expect(err).toMatchObject({ code: "COMMAND_NEEDS_FEATURE" });
-    expect(err.details).toBeUndefined();
-    expect(r.checkCommandFeatures(["f1"])).toBeNull();
+    expect(r.checkCommandFeatures).toBeUndefined();
   });
 
   it("ADM-BR-02 · M2-R14 · checkCommandEnable: bật + workflow tắt → WORKFLOW_DISABLED {workflow:{id,key}}; còn lại null", async () => {

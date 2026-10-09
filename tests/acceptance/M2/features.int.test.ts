@@ -266,16 +266,15 @@ describe("ADM-BR-10 · command_ids thay cả tập (M2-R19)", () => {
     expect(await featVersion(KT)).toBe(vf + 1);
   });
 
-  it("ADM-BR-10 · M2-AC04 · bỏ command CHỈ thuộc feature này → 400 COMMAND_NEEDS_FEATURE {commands:[{id,name}]}; DB không đổi", async () => {
+  it("CR-055 · ADM-BR-10 · bỏ command CHỈ thuộc feature này → 200; command thành chưa gắn feature (feature_ids []), version command +1", async () => {
     const [vk, vf] = [await cmdVersion(CMD.kiemtraHoadon), await featVersion(KT)];
     const res = await patch(KT, vf, { command_ids: [CMD.tomTat] });
-    expectErr(res, "COMMAND_NEEDS_FEATURE");
-    expect(res.json.error.details).toEqual({
-      commands: [{ id: CMD.kiemtraHoadon, name: "kiemtra-hoadon" }],
-    });
-    expect(await featCommands(KT)).toEqual([CMD.kiemtraHoadon]);
-    expect(await cmdVersion(CMD.kiemtraHoadon)).toBe(vk);
-    expect(await featVersion(KT)).toBe(vf);
+    expect(res.status).toBe(200);
+    expect(await featCommands(KT)).toEqual([CMD.tomTat]);
+    expect(await cmdVersion(CMD.kiemtraHoadon)).toBe(vk + 1);
+    expect(await featVersion(KT)).toBe(vf + 1);
+    const cmd = await as("GET", `/admin/commands/${CMD.kiemtraHoadon}`);
+    expect(cmd.json.feature_ids).toEqual([]);
   });
 
   it("ADM-BR-10 · M2-R19 · bỏ command còn feature khác → được; version command bị bỏ +1", async () => {
@@ -289,15 +288,14 @@ describe("ADM-BR-10 · command_ids thay cả tập (M2-R19)", () => {
     expect(await cmdVersion(CMD.tomTat)).toBe(vt + 1);
   });
 
-  it("ADM-BR-10 · M2-R19 · G5 · core áp luật mồ côi như feature khác: bỏ command CHỈ thuộc core (tom-tat) → 400 COMMAND_NEEDS_FEATURE {commands:[{id,name}]}; DB không đổi", async () => {
+  it("CR-055 · M2-R19 · G5 · core như feature khác: bỏ command CHỈ thuộc core (tom-tat) → 200; tom-tat chưa gắn feature, version +1", async () => {
     const core = await env.coreId();
     const vt = await cmdVersion(CMD.tomTat);
     const res = await patch(core, 1, { command_ids: [CMD.dich] });
-    expectErr(res, "COMMAND_NEEDS_FEATURE");
-    expect(res.json.error.details).toEqual({ commands: [{ id: CMD.tomTat, name: "tom-tat" }] });
-    expect(await featCommands(core)).toEqual([CMD.dich, CMD.tomTat].sort());
-    expect(await cmdVersion(CMD.tomTat)).toBe(vt);
-    expect(await featVersion(core)).toBe(1);
+    expect(res.status).toBe(200);
+    expect(await featCommands(core)).toEqual([CMD.dich]);
+    expect(await cmdVersion(CMD.tomTat)).toBe(vt + 1);
+    expect(await featVersion(core)).toBe(2);
   });
 
   it("ADM-BR-10 · M2-R19 · thứ tự kiểm: id lạ + command mồ côi cùng lúc → INVALID_REFERENCE; cùng tập (khác thứ tự) → không tăng version", async () => {
@@ -312,16 +310,19 @@ describe("ADM-BR-10 · command_ids thay cả tập (M2-R19)", () => {
 });
 
 describe("ADM-FR-30 · xoá feature (M2-R21)", () => {
-  it("ADM-FR-30 · M2-AC04 · feature có command độc quyền → 409 FEATURE_HAS_EXCLUSIVE_COMMANDS {commands}; DB giữ nguyên", async () => {
+  it("CR-055 · M2-R21 · feature có command độc quyền → 204; feature_commands xoá theo; command còn nguyên với feature_ids []", async () => {
+    const vk = await cmdVersion(CMD.kiemtraHoadon);
     const a = await as("DELETE", `/admin/features/${KT}`);
-    expectErr(a, "FEATURE_HAS_EXCLUSIVE_COMMANDS");
-    expect(a.json.error.details).toEqual({
-      commands: [{ id: CMD.kiemtraHoadon, name: "kiemtra-hoadon" }],
-    });
+    expect(a.status).toBe(204);
+    expect((await env.owner`select 1 from admin.features where id = ${KT}`).length).toBe(0);
+    const k = await as("GET", `/admin/commands/${CMD.kiemtraHoadon}`);
+    expect(k.status).toBe(200);
+    expect(k.json.feature_ids).toEqual([]);
+    expect(await cmdVersion(CMD.kiemtraHoadon)).toBe(vk);
     const b = await as("DELETE", `/admin/features/${ID.feature.dichThuat}`);
-    expectErr(b, "FEATURE_HAS_EXCLUSIVE_COMMANDS");
-    expect(b.json.error.details.commands[0].name).toBe("tr-nhanh");
-    expect((await env.owner`select 1 from admin.features where id = ${KT}`).length).toBe(1);
+    expect(b.status).toBe(204);
+    const t = await as("GET", `/admin/commands/${CMD.trNhanh}`);
+    expect(t.json.feature_ids).toEqual([]);
   });
 
   it("ADM-FR-30 · M2-R21 · feature rỗng có entitlement → 204; feature_entitlements và feature_commands của nó bị xoá theo; command còn nguyên", async () => {

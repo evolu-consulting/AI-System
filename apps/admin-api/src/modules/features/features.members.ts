@@ -89,20 +89,6 @@ export async function featureIdsOfCommand(tx: Tx, commandId: string): Promise<st
   return rows.map((r) => r.id);
 }
 
-/** Số feature hiện có của mỗi command (trên hàng command đã khoá). */
-export async function featureCounts(
-  tx: Tx,
-  commandIds: readonly string[],
-): Promise<Map<string, number>> {
-  if (commandIds.length === 0) return new Map();
-  const rows = await tx
-    .select({ id: featureCommands.commandId, n: sql<number>`count(*)`.mapWith(Number) })
-    .from(featureCommands)
-    .where(inArray(featureCommands.commandId, [...commandIds]))
-    .groupBy(featureCommands.commandId);
-  return new Map(rows.map((r) => [r.id, r.n]));
-}
-
 export async function addPairs(tx: Tx, pairs: { featureId: string; commandId: string }[]) {
   if (pairs.length > 0) await tx.insert(featureCommands).values(pairs).onConflictDoNothing();
 }

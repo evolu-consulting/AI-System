@@ -3,7 +3,6 @@ import type { WorkflowInput } from "@ai/contracts";
 import {
   changedCommandFields,
   checkCommandEnable,
-  checkCommandFeatures,
   checkInputMap,
   commandNames,
   defaultTimeout,
@@ -42,8 +41,7 @@ describe("ADM-FR-22 · commands.rules", () => {
     expect(inputMapWarnings(s, { n: { source: "arg", value: "a" } })).toEqual([]);
   });
 
-  test("ADM-BR-10 · ADM-BR-02 · feature + enable", () => {
-    expect(checkCommandFeatures([])?.code).toBe("COMMAND_NEEDS_FEATURE");
+  test("ADM-BR-02 · enable", () => {
     expect(checkCommandEnable(true, { id: "w", key: "k", enabled: false })?.code).toBe(
       "WORKFLOW_DISABLED",
     );

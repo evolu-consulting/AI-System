@@ -1,14 +1,13 @@
-// ADM-FR-10, ADM-FR-20, ADM-FR-30, ADM-FR-50 · 11 mã lỗi M2 ↔ API_ERRORS (test-plan E).
+// ADM-FR-10, ADM-FR-20, ADM-FR-30, ADM-FR-50 · 9 mã lỗi M2 ↔ API_ERRORS (test-plan E; CR-055 gỡ COMMAND_NEEDS_FEATURE,
+// FEATURE_HAS_EXCLUSIVE_COMMANDS).
 // 22 mã M1 do tests/acceptance/M1/error-codes.int.test.ts phụ trách.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import {
   API_ERRORS,
   CommandNameTakenDetailsSchema,
-  CommandNeedsFeatureDetailsSchema,
   CommandSchema,
   ErrorResponseSchema,
   FeatureDetailSchema,
-  FeatureHasExclusiveCommandsDetailsSchema,
   InputMapInvalidDetailsSchema,
   InvalidReferenceDetailsSchema,
   SchemaBreaksCommandsDetailsSchema,
@@ -78,7 +77,7 @@ const M1_CODES = [
 ];
 // M3 (Q2): 2 mã mới của M3 do tests/acceptance/M3/error-codes.int.test.ts phụ trách.
 const M3_CODES = ["BETA_GROUP_PROTECTED", "NOT_ENTITLED"];
-// M4 (Q2a, test-plan §5 K7): 12 mã M4 (A+B: plan-contract §2.5; C+D: plan-cd §4.3) do test M4 phụ trách → giữ 11 mã M2.
+// M4 (Q2a, test-plan §5 K7): 12 mã M4 (A+B: plan-contract §2.5; C+D: plan-cd §4.3) do test M4 phụ trách → giữ 9 mã M2 (CR-055 gỡ 2).
 const M4_CODES = [
   "NAME_TAKEN",
   "NOT_RESTORABLE",
@@ -153,16 +152,8 @@ const SCENARIOS: Record<string, { run: Scenario; details?: (d: unknown) => unkno
       return v;
     },
   },
-  COMMAND_NEEDS_FEATURE: {
-    run: () => as("POST", "/admin/commands", cmdBody({ feature_ids: [] })),
-    details: (d) => expect(d).toBeUndefined(),
-  },
   CORE_FEATURE_PROTECTED: {
     run: async () => as("DELETE", `/admin/features/${await env.coreId()}`),
-  },
-  FEATURE_HAS_EXCLUSIVE_COMMANDS: {
-    run: () => as("DELETE", `/admin/features/${ID.feature.keToan}`),
-    details: (d) => FeatureHasExclusiveCommandsDetailsSchema.parse(d),
   },
 };
 
@@ -194,15 +185,6 @@ describe("ADM-FR-10 · mã lỗi M2 ↔ API_ERRORS", () => {
       scenario.details?.(err.details);
     });
   }
-
-  it("ADM-FR-20 · M2-R19 · COMMAND_NEEDS_FEATURE từ PATCH /admin/features/:id có details {commands:[{id,name}]}", async () => {
-    const res = await as("PATCH", `/admin/features/${ID.feature.keToan}`, {
-      version: 1,
-      command_ids: [ID.command.tomTat],
-    });
-    expectErr(res, "COMMAND_NEEDS_FEATURE");
-    CommandNeedsFeatureDetailsSchema.parse(res.json.error.details);
-  });
 
   it("ADM-FR-10 · message cố định theo mã: COMMAND_NAME_TAKEN, SECRET_IN_USE, INVALID_REFERENCE cho dữ liệu khác nhau cho CÙNG message", async () => {
     const a = await as("POST", "/admin/commands", cmdBody({ name: "dich" }));
@@ -251,8 +233,8 @@ describe("ADM-FR-10 · mã lỗi M2 ↔ API_ERRORS", () => {
     }
   });
 
-  it("ADM-FR-10 · spec M2 §3 · tập mã M2 đã chạy kịch bản == mọi mã của API_ERRORS ngoài 23 mã M1 và 2 mã M3 (11 mã)", () => {
-    expect(M2_CODES).toHaveLength(11);
+  it("ADM-FR-10 · spec M2 §3 · tập mã M2 đã chạy kịch bản == mọi mã của API_ERRORS ngoài 23 mã M1 và 2 mã M3 (9 mã sau CR-055)", () => {
+    expect(M2_CODES).toHaveLength(9);
     expect([...covered].sort()).toEqual(M2_CODES);
   });
 });

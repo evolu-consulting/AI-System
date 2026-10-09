@@ -228,11 +228,13 @@ const TABLE: Row[] = [
     "Dropped mappings for: {names} (the new workflow has no such inputs).",
   ],
   ["commands.error.mapMissing", "thiếu input bắt buộc: {names}", "missing required input: {names}"],
+  // CR-055: bỏ "commands.error.featureRequired" (command được phép chưa gắn feature) → gợi ý không chặn.
   [
-    "commands.error.featureRequired",
-    "Command phải thuộc ít nhất một feature",
-    "A command must belong to at least one feature",
+    "commands.feature.noneHint",
+    "Chưa gắn feature — không ai dùng được command này. Thêm feature để công ty có feature đó dùng được.",
+    "No feature yet — nobody can use this command. Add a feature so companies with that feature can use it.",
   ],
+  ["commands.list.noFeature", "Chưa gắn feature", "No feature"],
   [
     "commands.error.workflowDisabled",
     "Workflow đang tắt. Bật workflow trước.",
@@ -305,10 +307,11 @@ const TABLE: Row[] = [
   ],
   ["features.disable.title", "Tắt {feature}?", "Disable {feature}?"],
   ["features.disable.submit", "Tắt feature", "Disable feature"],
+  // CR-055: bỏ "features.delete.blocked" (xoá feature có command độc quyền được phép) → cảnh báo trong hộp xác nhận.
   [
-    "features.delete.blocked",
-    "Không xoá được {feature}: các command sau chỉ thuộc feature này. Chuyển chúng sang feature khác trước.",
-    "Can't delete {feature}: these commands belong only to it. Move them to another feature first.",
+    "features.delete.orphanWarn",
+    'Các command sau chỉ thuộc feature này và sẽ thành "Chưa gắn feature" (không ai dùng được): {commands}.',
+    "These commands belong only to this feature and will have no feature (nobody can use them): {commands}.",
   ],
   [
     "features.error.coreProtected",

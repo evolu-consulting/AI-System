@@ -1,4 +1,5 @@
-// ADM-BR-10 · M2-R19 · ô "Thêm feature": chip feature đã chọn (`Bỏ feature {key}`) + RefPicker; ≥ 1 feature, mặc định `core`.
+// ADM-BR-10 · M2-R19 · ô "Thêm feature": chip feature đã chọn (`Bỏ feature {key}`) + RefPicker; mặc định `core`.
+// CR-055: không chọn feature nào vẫn lưu được — chỉ hiện gợi ý "chưa gắn feature" (không chặn).
 import { X } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -9,7 +10,7 @@ import { useTr } from "@/lib/use-translate";
 import { useFeatureOptions } from "../../hooks/use-command-queries";
 import type { CommandFormValues } from "../../lib/schemas";
 
-export function FeatureField({ serverError }: { serverError?: string }) {
+export function FeatureField() {
   const { t, i18n } = useTranslation();
   const tr = useTr();
   const { control, setValue, trigger, formState } = useFormContext<CommandFormValues>();
@@ -28,7 +29,8 @@ export function FeatureField({ serverError }: { serverError?: string }) {
     <FormField
       id="cmd-features"
       label={t("commands.field.features")}
-      error={message ? tr(message) : serverError}
+      description={ids.length === 0 ? t("commands.feature.noneHint") : undefined}
+      error={message ? tr(message) : undefined}
     >
       {() => (
         <div className="space-y-2">

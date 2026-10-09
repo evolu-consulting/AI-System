@@ -1,4 +1,5 @@
-// ADM-FR-30, ADM-BR-10 · form editor Feature: lưu (POST/PATCH kèm version), chặn lưu khi bỏ command làm mồ côi, ánh xạ lỗi server.
+// ADM-FR-30 · form editor Feature: lưu (POST/PATCH kèm version), ánh xạ lỗi server. CR-055: bỏ command làm nó
+// "chưa gắn feature" chỉ cảnh báo ở tab Commands, không chặn lưu.
 import type { FeatureDetail } from "@ai/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "@tanstack/react-router";
@@ -15,7 +16,6 @@ import {
   emptyFeatureForm,
   type FeatureFormValues,
   featureSchema,
-  removedOrphans,
   toCreateBody,
   toFormValues,
 } from "../lib/schemas";
@@ -37,8 +37,8 @@ function useCreatedRedirect(createdId: string | null, isDirty: boolean) {
   }, [createdId, isDirty, router]);
 }
 
-/** Lỗi lưu: `KEY_TAKEN` → ô Key, `COMMAND_NEEDS_FEATURE` → câu chặn ở thanh lưu, còn lại toast bền (409 version: ConflictDialog). */
-function useSaveFail(form: Form, markNeedsFeature: () => void) {
+/** Lỗi lưu: `KEY_TAKEN` → ô Key, còn lại toast bền (409 version: ConflictDialog). */
+function useSaveFail(form: Form) {
   const tr = useTr();
   return (err: unknown) => {
     const code = err instanceof ApiError ? err.code : null;
@@ -46,7 +46,6 @@ function useSaveFail(form: Form, markNeedsFeature: () => void) {
     if (code === "KEY_TAKEN") {
       return form.setError("key", { message: "features.error.keyTaken" }, { shouldFocus: true });
     }
-    if (code === "COMMAND_NEEDS_FEATURE") return markNeedsFeature();
     const spec = describeError(err);
     notifyError(tr(spec.key, spec.params));
   };
@@ -61,19 +60,14 @@ export function useFeatureForm(feature: FeatureDetail | undefined, onReload: () 
     mode: "onTouched",
     defaultValues: feature ? toFormValues(feature) : emptyFeatureForm(),
   });
-  /** Đã bấm Lưu khi còn command mồ côi (hiện câu chặn ở thanh lưu). */
-  const [needsFeature, setNeedsFeature] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
   useCreatedRedirect(createdId, form.formState.isDirty);
-  const fail = useSaveFail(form, () => setNeedsFeature(true));
+  const fail = useSaveFail(form);
   const fc = useFeatureConflict(feature, form, fail, onReload);
   const saved = (name: FeatureDetail["name"]) =>
     notifySuccess(t("features.toast.saved", { name: pickLocalized(name, i18n.language) }));
 
   const save = async (values: FeatureFormValues) => {
-    const orphaned = !!feature && removedOrphans(feature.commands, values.command_ids).length > 0;
-    setNeedsFeature(orphaned);
-    if (orphaned) return;
     try {
       if (feature) return void (await fc.save(values));
       const res = await create.mutateAsync(toCreateBody(values));
@@ -85,5 +79,5 @@ export function useFeatureForm(feature: FeatureDetail | undefined, onReload: () 
     }
   };
 
-  return { form, save, needsFeature, pending: create.isPending || fc.pending, conflict: fc.props };
+  return { form, save, pending: create.isPending || fc.pending, conflict: fc.props };
 }

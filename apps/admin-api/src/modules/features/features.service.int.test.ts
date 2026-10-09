@@ -105,15 +105,15 @@ describe("ADM-FR-30 · features.service", () => {
     expect(await version("commands", C2 as string)).toBe(2);
   });
 
-  test("ADM-BR-10 · bỏ command chỉ thuộc core → COMMAND_NEEDS_FEATURE {commands}", async () => {
-    expect(
-      await caught(
-        updateFeature(call, CORE as string, { version: 1, command_ids: [C1 as string] }),
-      ),
-    ).toMatchObject({
-      code: "COMMAND_NEEDS_FEATURE",
-      details: { commands: [{ id: C2, name: "c-two" }] },
+  test("CR-055 · bỏ command chỉ thuộc core → được phép, command thành chưa gắn feature", async () => {
+    const u = await updateFeature(call, CORE as string, {
+      version: 1,
+      command_ids: [C1 as string],
     });
+    expect(u.commands.map((c) => c.name)).toEqual(["c-one"]);
+    const left =
+      await owner`select count(*)::int as n from admin.feature_commands where command_id = ${C2 as string}`;
+    expect(left[0]?.n).toBe(0);
   });
 
   test("ADM-FR-31 · thu hồi rồi cấp lại → cùng hàng; core → CORE_FEATURE_PROTECTED", async () => {

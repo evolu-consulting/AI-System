@@ -36,12 +36,12 @@ describe("ADM-BR-01 · commandSchema", () => {
     expect(first(valid({ aliases: ["dich-moi"] }))).toBe("commands.error.aliasDup");
   });
 
-  test("mô tả VI bắt buộc ≤ 200; feature ≥ 1; workflow bắt buộc", () => {
+  test("mô tả VI bắt buộc ≤ 200; feature rỗng hợp lệ (CR-055); workflow bắt buộc", () => {
     expect(first(valid({ description: { vi: "  ", en: "" } }))).toBe("commands.error.descRequired");
     expect(first(valid({ description: { vi: "x".repeat(201), en: "" } }))).toBe(
       "commands.error.descRequired",
     );
-    expect(first(valid({ feature_ids: [] }))).toBe("commands.error.featureRequired");
+    expect(first(valid({ feature_ids: [] }))).toBeNull();
     expect(first(valid({ workflow_id: "" }))).toBe("commands.error.workflowRequired");
   });
 

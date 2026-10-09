@@ -113,7 +113,7 @@ describe("ADM-FR-20 · M2-R13 · create/update", () => {
     });
   });
 
-  test("feature_ids [] hợp lệ ở biên (service trả COMMAND_NEEDS_FEATURE)", () => {
+  test("CR-055 · feature_ids [] hợp lệ (command chưa gắn feature)", () => {
     expect(CommandCreateRequestSchema.safeParse({ ...create, feature_ids: [] }).success).toBe(true);
   });
 

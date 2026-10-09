@@ -99,7 +99,7 @@ function EditorBody({ command, copyOf, presetWorkflow, tab, onTab }: BodyProps) 
   const tr = useTr();
   const access = useCommandAccess(command?.id, 0);
   const summary = access.data ? accessSummary(tr, access.data.total, access.data.items) : "";
-  const serverNames = { name: ed.server.name, alias: ed.server.alias, feature: ed.server.feature };
+  const serverNames = { name: ed.server.name, alias: ed.server.alias };
   const wide = useWide();
   // Tab "Chạy thử" chỉ có khi hẹp, không vào URL (route chỉ nhận config|access).
   const [testTab, setTestTab] = useState(false);

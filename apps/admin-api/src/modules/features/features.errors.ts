@@ -11,9 +11,7 @@ export const FEATURES_ERROR_CODES = [
   "VERSION_CONFLICT",
   "KEY_TAKEN",
   "INVALID_REFERENCE",
-  "COMMAND_NEEDS_FEATURE",
   "CORE_FEATURE_PROTECTED",
-  "FEATURE_HAS_EXCLUSIVE_COMMANDS",
 ] as const satisfies readonly ErrorCode[];
 
 export function mapFeatureConflict(err: unknown): never {

@@ -1,4 +1,4 @@
-// ADM-FR-20 · cột của bảng Commands: `/tên` + alias, mô tả (+ "EN thiếu"), workflow (+ badge Tắt), feature (chip link), chế độ, công tắc, cập nhật, `⋯`.
+// ADM-FR-20 · cột của bảng Commands: `/tên` + alias, mô tả (+ "EN thiếu"), workflow (+ badge Tắt), feature (chip link; rỗng → badge "Chưa gắn feature", CR-055), chế độ, công tắc, cập nhật, `⋯`.
 import type { CommandListItem } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import type { Column } from "@/components/shared/DataTable";
@@ -66,6 +66,9 @@ const featureColumn = ({ t, lang }: ColumnCtx): Col => ({
   header: t("commands.list.col.feature"),
   cell: (c) => (
     <span className="flex flex-wrap gap-1">
+      {c.features.length === 0 ? (
+        <StatusBadge tone="warn">{t("commands.list.noFeature")}</StatusBadge>
+      ) : null}
       {c.features.map((f) => (
         <Link key={f.id} to="/features/$featureId" params={{ featureId: f.id }}>
           <StatusBadge tone="info">{pickLocalized(f.name, lang)}</StatusBadge>

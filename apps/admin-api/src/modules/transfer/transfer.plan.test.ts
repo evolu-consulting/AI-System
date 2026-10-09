@@ -119,10 +119,8 @@ describe("ADM-FR-54 · transfer.plan luật", () => {
     ]);
   });
 
-  test("bỏ command khỏi feature duy nhất → COMMAND_NEEDS_FEATURE ở features[i].commands", () => {
-    expect(codes({ features: [feat("f-a", ["c-a"])] })).toEqual([
-      "features[0].commands:COMMAND_NEEDS_FEATURE",
-    ]);
+  test("CR-055 · bỏ command khỏi feature duy nhất → không lỗi (command thành chưa gắn feature)", () => {
+    expect(codes({ features: [feat("f-a", ["c-a"])] })).toEqual([]);
   });
 
   test("tắt workflow còn command bật (ngoài file) → WORKFLOW_IN_USE", () => {

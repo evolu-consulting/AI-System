@@ -113,7 +113,7 @@ test("ADM-FR-23 · X1 F4 · editor command có nút 'Chạy thử'; ADM-FR-20 ·
   await expect(page.getByRole("menuitem", { name: "Xoá" })).toBeVisible();
 });
 
-test("ADM-BR-01 · ADM-BR-10 · bước 1: tên '/Dịch' → 'dich'; alias thêm/bỏ; feature mặc định core, bỏ hết → lỗi; tên trùng dich → lỗi trước khi lưu", async ({
+test("ADM-BR-01 · CR-055 · bước 1: tên '/Dịch' → 'dich'; alias thêm/bỏ; feature mặc định core, bỏ hết → gợi ý 'Chưa gắn feature' (không chặn); tên trùng dich → lỗi trước khi lưu", async ({
   page,
 }) => {
   await loginAdmin(page);
@@ -133,7 +133,7 @@ test("ADM-BR-01 · ADM-BR-10 · bước 1: tên '/Dịch' → 'dich'; alias thê
   await page.getByRole("button", { name: "Bỏ alias tr2" }).click();
   await expect(page.getByRole("button", { name: "Bỏ alias tr2" })).toHaveCount(0);
   await page.getByRole("button", { name: "Bỏ feature core" }).click();
-  await expect(page.getByText("Command phải thuộc ít nhất một feature")).toBeVisible();
+  await expect(page.getByText(/^Chưa gắn feature — không ai dùng được command này/)).toBeVisible();
   await page.getByRole("combobox", { name: "Thêm feature" }).click();
   await page
     .getByRole("option", { name: /core|Cơ bản/ })
@@ -255,6 +255,25 @@ test("ADM-FR-20 · ui-admin 7.4 · nhân bản /dich → /commands/new?from=<id>
     (sql) => sql`select enabled, aliases from admin.commands where name = 'dich-copy'`,
   );
   expect(c).toMatchObject({ enabled: false, aliases: [] });
+});
+
+test("CR-055 · hộp xoá /dich nói rõ command là danh mục chung (mất ở MỌI công ty) + cách bỏ khỏi một công ty; /tr-nhanh bỏ hết feature → badge 'Chưa gắn feature' ở danh sách", async ({
+  page,
+}) => {
+  await loginAdmin(page);
+  await openPage(page, "/commands", "Commands");
+  await rowMenu(page, "dich", "Xoá");
+  const dialog = page.getByRole("alertdialog", { name: "Xoá /dich?" });
+  await expect(dialog).toContainText("MỌI công ty");
+  await expect(dialog).toContainText("thu hồi feature của công ty đó");
+  await dialog.getByRole("button", { name: "Huỷ" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(row(page, "tr-nhanh")).not.toContainText("Chưa gắn feature");
+  await withOwner(
+    (sql) => sql`delete from admin.feature_commands where command_id = ${ID.command.trNhanh}`,
+  );
+  await page.reload();
+  await expect(row(page, "tr-nhanh")).toContainText("Chưa gắn feature");
 });
 
 test("ADM-FR-20 · M2-R26 · xoá /tr-nhanh: alertdialog 'Xoá /tr-nhanh?' gõ tên → nút 'Xoá command' → toast 'Đã xoá /tr-nhanh'", async ({

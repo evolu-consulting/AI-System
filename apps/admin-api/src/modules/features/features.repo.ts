@@ -195,19 +195,6 @@ export async function featureCommandItems(tx: Tx, featureId: string) {
   }[];
 }
 
-/** Command chỉ thuộc feature này (chặn xoá, M2-R21), sắp `name`. */
-export async function exclusiveCommands(
-  tx: Tx,
-  featureId: string,
-): Promise<{ id: string; name: string }[]> {
-  const rows = await tx.execute(sql`select c.id, c.name from admin.feature_commands fc
-    join admin.commands c on c.id = fc.command_id
-    where fc.feature_id = ${featureId} and not exists (select 1 from admin.feature_commands fc2
-      where fc2.command_id = fc.command_id and fc2.feature_id <> ${featureId})
-    order by c.name`);
-  return rows as unknown as { id: string; name: string }[];
-}
-
 // ---- entitlement (M2-R22) ----
 
 export type EntitlementRow = {
