@@ -76,10 +76,10 @@ Thứ tự ROADMAP (Q8): X2b-2 → **spike P** → **P-a** → H4b → **P-b** �
 | Nhắc duyệt/trả lời | sau 1 ngày | Chỉ nhắc |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead --> Điểm vào ở mức BA: BA-H §9.1 (`/processes`, `/process-runs*`, `/me/review-tasks`, `/review-tasks/:id/*`, `/process-defs*`, `/studio/api/agent-teams*`), §9.2 (`process.updated`, `review_task.created/closed` trên `/me/stream`), §9.3 mã lỗi. Contract chat **chỉ thêm**.
+<!-- backend-lead --> Chốt P-a ở [`plan-contract.md`](plan-contract.md): §1 hằng/trạng thái · §2 thực thể (`ProcessRunView` full/task) · §3 endpoint chat (`/processes`, `/process-runs*`, `/review-tasks/:id/{decision,answer,forward}`, `/me/review-tasks`, `/me/process-inbox*`; `!key` ở `POST /rooms/:id/messages` → 201 + `X-Process-Run-Id`, ở `POST /conversations/:id/messages` → 202) · §4 mã lỗi (`CHAT_PROCESS_ERRORS`, `HUB_ADMIN_PROCESS_ERRORS`) · §5 sự kiện (`ME_STREAM_PROCESS_EVENTS`: `process.updated`, `review_task.created/closed`, `process.notice`) · §6 hub-admin (`/process-defs*`, `/agent-teams`) · §7 chữ ký luật thuần. Contract chat **chỉ thêm**. `/studio/api/agent-teams*` là P-b.
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead --> Bảng đề xuất: BA-H §8 (`process_defs` có `version` + `withConfigWrite`, `process_runs` máy trạng thái, `stage_runs`, `review_tasks`, `agent_teams` + thành viên + bật theo tenant); dùng lại `runs`/`run_steps`/`jobs`/`attachments`/`audit_log`/`usage_logs`. RLS theo tenant + grant `review_task` (HUB-BR-25). Tài khoản hệ thống "Quy trình": cách mô hình hoá (sender `system` trong `room_messages` hay user hệ thống) — chốt ở PLAN.
+<!-- backend-lead --> Chốt ở [`plan.md`](plan.md) §2 (migration `0019_pa_process_engine.sql`: `process_defs`, `process_runs`, `stage_runs`, `team_runs`, `process_outputs`, `review_tasks`, `review_task_assignees` = grant, `process_notices`, `agent_teams` + `_members` + `_entitlements`; thêm cột null trên `runs`, `conversations`, `room_messages`; CHECK audit), §3 máy trạng thái, §5 quyền xem, §6 token, §10 thứ tự khoá. Tài khoản "Quy trình" = danh tính ảo + hộp thư `process_notices` (plan D12).
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead --> Board §0. chat-web: menu `!` + nút "▶ Quy trình" (⑥), thẻ run + flow pane duyệt (④), "Chờ tôi kiểm" + DM "Quy trình" + `/runs/:id` (⑤), AskCard + "Nhờ người khác trả lời" (⑦), bảng token (⑧). admin-web: ui-admin §7.17. studio-web: ui-agent-studio §15 (P-b).
@@ -144,7 +144,25 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 | M6 | Tài khoản hệ thống "Quy trình" | Một danh tính hệ thống mỗi tenant, không đăng nhập được, không thêm vào nhóm |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- P1 · M1 → Group được chạy = `run_group_ids` trên quy trình, rỗng = cả công ty; `tenant_admin` chạy được mọi quy trình bật của công ty từ Evolu Control (spec/BA HUB-FR-104, `canRun`).
+- P1 · M2 → `!!` = chữ bắt đầu "!" (BA HUB-BR-28 mặc định; giống `@@` trong `routeMessage`).
+- P1 · M3 → Output sai template = một lượt làm lại tự động, lỗi kiểm làm góp ý, tính vào giới hạn làm lại; hết lượt ⇒ "Cần người quyết" `template_invalid` (mặc định spec).
+- P1 · M4 → Grant người ngoài phòng = hàng `review_task_assignees`; run chưa kết thúc: phần task + tiến độ; run kết thúc: chỉ phần task, không hết hạn; audit `view` lần đầu mỗi task + mỗi lần đọc output (mặc định spec).
+- P1 · M5 → Người quyết = người bắt đầu + `tenant_admin` (+ thành viên Group duyệt khi lý do `redo_limit`) (mặc định spec).
+- P1 · M6 → "Quy trình" = danh tính ảo (không hàng `admin.users`, không đăng nhập, không thêm nhóm) + hộp thư `process_notices`; không thêm kiểu phòng/sender X2a (giữ test khoá) — plan D12, xác nhận ở Câu hỏi C3.
+- P1 · Spike (spike.md) → nhóm mặc định `sequential`; `lead_plan` = kế hoạch JSON 1 lần ≤ 5 bước, Hub chạy, không kiểm cuối bằng LLM, Hub kiểm template bằng mã; thành viên chỉ trả mục của mình, Hub ghép file có phiên bản; tóm tắt cắt cứng 200 token; làm lại chọn lọc mặc định; `parallel_merge` có nhưng không mặc định (Hub ghép theo mục, không lần gộp LLM); MCP lai không ở P-a; giới hạn §2.1 giữ; token = in+out+cache; không thiết kế quanh cache (plan D7–D9).
+- P1 · Stage = `hub.runs` `direct` của người bắt đầu trên hội thoại nền ẩn, không qua Orchestrator ⇒ không sửa Orchestrator (plan D1–D3); Hành động thật = Hub chèn sẵn `tool_confirmations` `confirmed` cho run stage (plan D4).
+- P1 · Hỏi AI `!key` ⇒ 202 JSON, không lưu tin; phòng: thẻ run trên tin gọi, không thread, không tin hệ thống trong phòng (plan D13, D14).
+- P1 · Cờ `HUB_PROCESS_ENGINE` (mặc định off; off ⇒ `!` là chữ thường như cũ) (plan D15).
+
+### Câu hỏi PLAN (chưa có mặc định được chấp nhận — điều phối hỏi một lượt; không trả lời ⇒ dùng mặc định)
+| # | Câu hỏi | Mặc định đề xuất |
+|---|---|---|
+| C1 | Ngân sách token theo stage/run (Q7) khi quy trình không khai báo? | Không giới hạn (null); chỉ team-run 200k cứng; editor cho nhập `token_budget` stage/quy trình tuỳ chọn |
+| C2 | Stage dùng **nhóm**: có kiểm `agent_grants` của người bắt đầu cho từng agent thành viên không? (bảo mật) | Không — kiểm nhóm đã bật cho tenant (chỉ `platform_admin`) + thành viên đang bật; stage dùng agent đơn vẫn kiểm grant (HUB-BR-23) |
+| C3 | DM "Quy trình" là hộp thư riêng (FE hiển thị như DM ghim) thay vì phòng DM thật? | Có (plan D12) |
+| C4 | Trích đoạn ngữ cảnh cho người được nhờ trả lời: agent hiện chỉ trả `question/choices` | Hub lấy ≤ 1 000 ký tự đầu của input run + tên stage; agent tự đính kèm trích đoạn để P-b |
+| C5 | Người duyệt/trả lời ngoài phòng xem token? | Chỉ tổng run + từng stage (không chi tiết lần gọi) |
 
 ## 10. Rủi ro mở
 | # | Rủi ro | Hướng xử |
