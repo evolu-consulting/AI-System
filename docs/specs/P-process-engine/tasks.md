@@ -11,7 +11,7 @@ Mỗi task: một commit `[FR]`, diff ≈ ≤ 400 dòng. Tick khi lệnh "xong" 
 
 Làm theo `docs/WORKFLOW.md` "Làm song song nhiều session" (CR-059): **Bước 0** tuần tự trên `main` → **PF1–PF4** song song, mỗi feature một worktree + nhánh → merge lần lượt → **Đóng** trên `main`. Mã task cũ (B…, F…) giữ để truy vết; F1–F6 là task frontend, PF1–PF4 là feature.
 
-### Bước 0 — khung chung (session chính, tuần tự, merge `main` trước khi chia)
+### Bước 0 — khung chung (một session; nhánh `feat/pa-step0` hoặc thẳng `main`; merge vào `main` trước khi tạo nhánh PF; B2 = 0a, B1/B0/B3 = 0b)
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
 | P1 | PLAN BE: contract (chat chỉ thêm + `hub-admin` quy trình), migration bảng §4, máy trạng thái run/stage, review_tasks + grant người ngoài phòng, tài khoản hệ thống "Quy trình", giới hạn §2.1, token (M1–M6 chốt hoặc hỏi). **Ghi rõ ranh giới file của PF1–PF4** | backend-lead | cao | spec §1–4, §9, §10; BA-H §6.10, §8, §9; X2b plan §1–§8 | `plan.md` | S1 | plan ≤ 30 KB | [ ] |
