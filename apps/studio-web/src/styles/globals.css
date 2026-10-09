@@ -77,20 +77,26 @@
 
 /* Dark: Đề xuất, canvas chưa có artboard dark; chưa có nút bật. */
 .dark {
-  --background: #0f1020;
-  --foreground: #e8eaf6;
-  --card: #171833;
-  --card-foreground: #e8eaf6;
-  --popover: #171833;
-  --popover-foreground: #e8eaf6;
-  --muted: #1f2142;
-  --muted-foreground: #a9aed0;
-  --primary: #818cf8;
-  --primary-foreground: #0f1020;
-  --border: #2a2d52;
-  --input: #6670a8;
-  --ring: #818cf8;
+  --background: #0e131b;
+  --foreground: #e6ecf3;
+  --card: #161e2a;
+  --card-foreground: #e6ecf3;
+  --popover: #161e2a;
+  --popover-foreground: #e6ecf3;
+  --muted: #1f2937;
+  --muted-foreground: #9eabbb;
+  --primary: #5b5bd6;
+  --primary-foreground: #ffffff;
+  --border: #283344;
+  --input: #5b6b82;
+  --ring: #8b93f8;
   --destructive: #f97066;
+}
+
+/* Dark Midnight (2026-10-09): `--primary` là màu nền nút (#5b5bd6, chữ trắng 5,4:1) — làm màu CHỮ trên nền tối
+   chỉ ~3,4:1 nên chữ/biểu tượng `text-primary` dùng indigo sáng (AA). */
+.dark .text-primary {
+  color: #a5b4fc;
 }
 
 @theme inline {

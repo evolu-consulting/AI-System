@@ -88,57 +88,57 @@
   --shadow-color-drawer: rgb(30 27 75 / 0.18);
 }
 
-/* Tối (CR-027, plan-frontend-theme §1): cùng tông tím, đạt AA; đổi qua class `dark` trên <html>. */
+/* Tối (CR-027; đổi sang "Midnight" 2026-10-09 — xanh than dịu, lớp tách rõ, nút primary chữ trắng): đổi qua class `dark` trên <html>. */
 .dark {
-  --background: #0f1020;
-  --foreground: #e8eaf6;
-  --card: #171833;
-  --card-foreground: #e8eaf6;
-  --popover: #171833;
-  --popover-foreground: #e8eaf6;
-  --muted: #1f2142;
-  --muted-foreground: #a9aed0;
-  --muted-strong-foreground: #c7cbe6;
-  --subtle-foreground: #9ca1c7;
-  --placeholder: #6e7299;
+  --background: #0e131b;
+  --foreground: #e6ecf3;
+  --card: #161e2a;
+  --card-foreground: #e6ecf3;
+  --popover: #161e2a;
+  --popover-foreground: #e6ecf3;
+  --muted: #1f2937;
+  --muted-foreground: #9eabbb;
+  --muted-strong-foreground: #c3ccd8;
+  --subtle-foreground: #8a98aa;
+  --placeholder: #708096;
 
-  --primary: #818cf8;
-  --primary-foreground: #0f1020;
+  --primary: #5b5bd6;
+  --primary-foreground: #ffffff;
   --primary-strong: #a5b4fc;
-  --secondary: #1f2142;
-  --secondary-foreground: #d2d5ec;
-  --accent: #1e1b4b;
-  --accent-foreground: #c7d2fe;
-  --ink-strong: #312e81;
+  --secondary: #1f2937;
+  --secondary-foreground: #d0d8e4;
+  --accent: #1b2542;
+  --accent-foreground: #c3cffd;
+  --ink-strong: #dbe3ff;
   --on-ink: #e0e7ff;
   --on-ink-link: #a5b4fc;
 
-  --border: #2a2d52;
-  --input: #6670a8;
-  --row-divider: #1f2142;
-  --ring: #818cf8;
+  --border: #283344;
+  --input: #5b6b82;
+  --row-divider: #1f2937;
+  --ring: #8b93f8;
   --error-border: #f97066;
 
   --destructive: #b42318;
   --destructive-foreground: #ffffff;
   --success: #6ee7b7;
-  --success-bg: #0f2e22;
-  --warning: #fbbf6a;
-  --warning-bg: #33220c;
+  --success-bg: #0f2a22;
+  --warning: #f5c06b;
+  --warning-bg: #2c2310;
   --warning-solid: #f59e0b;
   --danger: #fca5a5;
   --danger-bg: #3a1518;
   --overage-hatch-from: #c2410c;
   --overage-hatch-to: #f59e0b;
 
-  --sidebar: #171833;
-  --sidebar-foreground: #d2d5ec;
-  --sidebar-primary: #818cf8;
-  --sidebar-primary-foreground: #0f1020;
-  --sidebar-accent: #1e1b4b;
-  --sidebar-accent-foreground: #c7d2fe;
-  --sidebar-border: #2a2d52;
-  --sidebar-ring: #818cf8;
+  --sidebar: #121924;
+  --sidebar-foreground: #d0d8e4;
+  --sidebar-primary: #5b5bd6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1b2542;
+  --sidebar-accent-foreground: #c3cffd;
+  --sidebar-border: #283344;
+  --sidebar-ring: #8b93f8;
 
   --chart-1: #818cf8;
   --chart-2: #6366f1;
@@ -146,17 +146,23 @@
   --chart-4: #c7d2fe;
   --chart-5: #e08bb4;
 
-  --code-bg: #0b0c18;
-  --code-fg: #e6e8f5;
+  --code-bg: #0a0f16;
+  --code-fg: #e6ecf3;
   --code-keyword: #d7a6f0;
   --code-string: #8fd9a8;
   --code-number: #f2b872;
   --code-title: #9db8f5;
-  --code-comment: #9a9fc2;
+  --code-comment: #8a98aa;
 
   --shadow-color-toast: rgb(0 0 0 / 0.5);
   --shadow-color-dialog: rgb(0 0 0 / 0.5);
   --shadow-color-drawer: rgb(0 0 0 / 0.5);
+}
+
+/* Dark Midnight (2026-10-09): `--primary` là màu nền nút (#5b5bd6, chữ trắng 5,4:1) — làm màu CHỮ trên nền tối
+   chỉ ~3,4:1 nên chữ/biểu tượng `text-primary` dùng indigo sáng (AA). */
+.dark .text-primary {
+  color: #a5b4fc;
 }
 
 @theme inline {
