@@ -157,7 +157,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 | ADM-BR-06 | Thực thể bị tắt thì vẫn lưu trong DB, nhưng Hub coi như không tồn tại: không hiện trong menu command, agent không gọi được |
 | ADM-BR-08 | Admin không được tự khoá chính mình hoặc tự hạ role của mình. Luôn phải còn ít nhất một `platform_admin` active và mỗi tenant (kể cả tenant đang khoá) còn ít nhất một `tenant_admin` active ([CR-007](../../CHANGE-REQUESTS.md)) |
 | ADM-BR-09 | Mọi truy vấn của `tenant_admin` bị giới hạn theo `tenant_id` của họ. Truy cập thực thể của tenant khác trả 404 |
-| ADM-BR-10 | Mỗi command phải thuộc ít nhất một feature. Feature `core` luôn tồn tại, được entitlement cho mọi tenant, không xoá được |
+| ADM-BR-10 | ~~Mỗi command phải thuộc ít nhất một feature.~~ **[Đổi theo CR-055, 2026-10-09]** Command **được phép chưa gắn feature** (khi đó không ai dùng được). Feature `core` luôn tồn tại, được entitlement cho mọi tenant, không xoá được |
 | ADM-BR-11 | User dùng được `/cmd` ⇔ cmd thuộc feature F ∧ F đang bật (hoặc `beta` và user thuộc `beta-testers`) ∧ F được entitlement cho tenant của user ∧ F được cấp cho user hoặc cho một group user thuộc về |
 | ADM-BR-12 | Thu hồi entitlement của tenant thì các grant bên trong mất hiệu lực nhưng vẫn giữ lại, cấp lại entitlement thì grant có hiệu lực trở lại |
 | ADM-BR-13 | Workflow không có quyền riêng. Quyền nằm ở nơi dùng nó: command (qua feature) hoặc agent (qua agent grant ở Hub) |

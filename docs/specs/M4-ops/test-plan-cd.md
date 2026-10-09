@@ -65,7 +65,7 @@ Snapshot dựng từ M2/M3 `_data.ts` (workflow `translate`, `invoice-check`, `s
 | C-R09 · Q11 | `planImport` | `tenants: [{key: newco…}]` | lỗi `TENANT_NOT_FOUND` tại `tenants[0].key`; không item `add` cho tenant |
 | C-R10 | `planImport` | `tenants: [{key: platform…}]` | `PLATFORM_TENANT` |
 | C-R11 | `planImport` | 2 workflow cùng key `translate` | `DUPLICATE_KEY` tại `workflows[1].key` |
-| C-R12 | `planImport` | command mới không nằm trong `features[].commands` nào; rồi thêm vào `bao-cao.commands` | `COMMAND_NEEDS_FEATURE`; ca 2 không lỗi |
+| C-R12 | `planImport` | command mới không nằm trong `features[].commands` nào; rồi thêm vào `bao-cao.commands` | ~~`COMMAND_NEEDS_FEATURE`~~ **[Đổi theo CR-055, 2026-10-09]** cả hai ca không lỗi |
 | C-R13 | `planImport` | grant `acme/<group>/thu-nghiem` chưa entitlement; ca 2: cùng file thêm vào `tenants[acme].entitlements` | `NOT_ENTITLED`; ca 2 không lỗi |
 | C-R14 | `planImport` | command `input_map` trỏ field không có | `RULE`, `params.code = INPUT_MAP_INVALID` |
 | C-R15 | `planImport` | feature `ke-toan.commands` đổi tập | 1 item `feature/ke-toan update`, `after.commands` = tập mới |

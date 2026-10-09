@@ -191,7 +191,7 @@ Header: breadcrumb "Features › Kế toán" · tên + badge trạng thái · n�
 
 **Tab "Commands"** (lưu ngay khi thêm/bỏ — Đề xuất, giống GrantMatrix lưu 1 lần thì phức tạp hơn; mặc định: danh sách nháp + thanh lưu chung với tab Thông tin):
 - `RefPicker` "Thêm command" → bảng: Tên (mono) · Mô tả · Feature khác · nút `✕` (aria "Bỏ /dich khỏi feature").
-- Bỏ command mà command không còn feature nào → cảnh báo inline dưới hàng: "/tr-nhanh sẽ không thuộc feature nào và biến khỏi menu" và **chặn lưu** với lỗi "Command phải thuộc ít nhất một feature" (BR-10).
+- Bỏ command mà command không còn feature nào → cảnh báo inline dưới hàng: "/tr-nhanh sẽ không thuộc feature nào và biến khỏi menu" và **chặn lưu** với lỗi "Command phải thuộc ít nhất một feature" (BR-10). **[Đổi theo CR-055, 2026-10-09]** chỉ cảnh báo (badge "Chưa gắn feature"), **không chặn lưu**; xoá feature có command độc quyền → hộp xác nhận liệt kê các command sẽ "chưa gắn feature" (không còn hộp chặn `FEATURE_HAS_EXCLUSIVE_COMMANDS`).
 
 **Tab "Tenant"** (entitlement, mỗi thao tác lưu ngay):
 - Nút `+ Cấp cho tenant` → `Popover` + `Command` chọn tenant chưa có.
