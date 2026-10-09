@@ -1,0 +1,23 @@
+{
+  "stamp": "jq9z",
+  "agentCalls": 0,
+  "callLog": [],
+  "notes": {
+    "menuB": "Evolu Consultant@consultant ¦ Tư vấn chung cho nhân viên Evolu (agent dự phòng khi Orchestrator không khớp). ¦ Chatbot (Dify)@dify-chatbot ¦ Trò chuyện với chatbot Dify thật (app agent dify-chatbot) cho bản demo X1.",
+    "s11": "side_effect cần workflow ghi có xác nhận; không ép được với agent thật — bỏ qua"
+  },
+  "log": [
+    {
+      "id": "00",
+      "title": "Đăng nhập A/B/C (evolu)",
+      "ok": true,
+      "ms": 3393
+    },
+    {
+      "id": "02",
+      "title": "B gõ @ => không có invoices; @orchestrator không nằm trong menu",
+      "ok": true,
+      "ms": 781
+    }
+  ]
+}

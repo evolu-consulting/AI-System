@@ -1,0 +1,47 @@
+{
+  "stamp": "ig49",
+  "agentCalls": 2,
+  "callLog": [
+    "@consultant đếm từ 1 đến 300, mỗi số một dòng, phân tích từng số thật chi tiết.",
+    "@dify-chatbot xin chào, trả lời ngắn một câu."
+  ],
+  "notes": {
+    "menuA": "Evolu Consultant@consultant ¦ Tư vấn chung cho nhân viên Evolu (agent dự phòng khi Orchestrator không khớp). ¦ Chatbot (Dify)@dify-chatbot ¦ Trò chuyện với chatbot Dify thật (app agent dify-chatbot) cho bản demo X1. ¦ Invoices@invoices ¦ Kiểm tra hoá đơn điện tử FPT, MISA trên trang tra cứu chính chủ.",
+    "menuB": "Evolu Consultant@consultant ¦ Tư vấn chung cho nhân viên Evolu (agent dự phòng khi Orchestrator không khớp). ¦ Chatbot (Dify)@dify-chatbot ¦ Trò chuyện với chatbot Dify thật (app agent dify-chatbot) cho bản demo X1.",
+    "s11": "side_effect cần workflow ghi có xác nhận; không ép được với agent thật — bỏ qua",
+    "s17b": "Đầu cuộc trò chuyện ¦  ¦ Hôm nay ¦  ¦ Bạn · 12:44 ¦  ¦ @dify-chatbot xin chào, trả lời ngắn một câu. ¦  ¦ Đã xem bởi 2 ¦ Chatbot (Dify) ¦ @dify-chatbot ¦ · ¦ Bạn hỏi ¦ · ¦ 12:44 ¦  ¦ Agent không trả lời được. Thử hỏi lại sau. ¦ Chạy lại ¦  ¦ 1 bước · 21.4s ¦ Chạy bằng quyền của bạn ¦  ¦ Copy ¦ Trả lời tiếp",
+    "sidebar": "Tin nhắn & Nhóm ¦ Nhóm ¦ UI ¦ UAT X2b dify ig49 ¦ Chatbot (Dify): The agent could not complete the request. ¦ UB ¦ UAT X2b tải lại bp8v ¦ 42301940-2855-41b0-9025-39173747c454: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 ¦ UB ¦ UAT X2b xoá nhóm bp8v ¦ 42301940-2855-41b0-9025-39173747c454: 1: số tự nhiên dương nhỏ nhất, không phải số nguyên tố cũng không phải hợp số. 2: số nguyên tố chẵn duy nhất. 3: số nguy ¦ UB ¦ UAT X2b rời nhóm bp8v ¦ Thomas Tran: @consultant đếm từ 1 đến 80, mỗi số một dòng, giải thích từng số. ¦ UB ¦ UAT X2b chính bp8v ¦ 01a11c1d-ca4e-7000-b4eb-212defbb548f: 1+1 bằng 2. ¦ UB ¦ UAT X2b hỏi lại bp8v ¦ 01a11c1d-ca4e-7000-b4eb-212defbb548f: Bạn cần trợ giúp về điều gì? ¦ ET ¦ Evolu team ¦ Users ¦ TT ¦ Thomas Tran ¦ EN ¦ Edgar Nguyen ¦ @edgar.nguyen ¦ RN ¦ Rowan Nguyen ¦ @rowan.nguyen ¦ VN ¦ Vio Ngo ¦ @vio.ngo"
+  },
+  "log": [
+    {
+      "id": "00",
+      "title": "Đăng nhập A/B/C (evolu)",
+      "ok": true,
+      "ms": 3225
+    },
+    {
+      "id": "01",
+      "title": "A mở Evolu team, gõ @ => consultant, dify-chatbot, invoices; không panel/chip",
+      "ok": true,
+      "ms": 559
+    },
+    {
+      "id": "02",
+      "title": "B gõ @ => không có invoices; @orchestrator không nằm trong menu",
+      "ok": false,
+      "err": "expect(locator).toHaveCount(expected) failed"
+    },
+    {
+      "id": "14b",
+      "title": "Chủ xoá nhóm khi C đang chạy => run bị huỷ, phòng biến mất",
+      "ok": true,
+      "ms": 7308
+    },
+    {
+      "id": "17b",
+      "title": "Phòng: @dify-chatbot (Dify thật) trả lời; xem xem trước phòng ở sidebar",
+      "ok": true,
+      "ms": 24832
+    }
+  ]
+}

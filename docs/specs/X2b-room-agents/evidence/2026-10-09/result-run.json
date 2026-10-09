@@ -1,0 +1,110 @@
+[
+  {
+    "id": "00",
+    "title": "Đăng nhập A/B/C (evolu)",
+    "ok": true,
+    "ms": 2097
+  },
+  {
+    "id": "01",
+    "title": "A mở Evolu team, gõ @ => consultant, dify-chatbot, invoices; không panel/chip",
+    "ok": false,
+    "err": "locator.click: Timeout 30000ms exceeded."
+  },
+  {
+    "id": "02",
+    "title": "B gõ @ => không có invoices; @orchestrator không nằm trong menu",
+    "ok": false,
+    "err": "expect(locator).toHaveCount(expected) failed"
+  },
+  {
+    "id": "03",
+    "title": "A @invoices => B/C thấy 'đang xử lý…', B không có Dừng; xong: khối 'Julian Bui hỏi' cho cả 3",
+    "ok": true,
+    "ms": 17457
+  },
+  {
+    "id": "04",
+    "title": "A bấm Dừng khi chạy => 'Đã huỷ' cho mọi người",
+    "ok": true,
+    "ms": 947
+  },
+  {
+    "id": "05",
+    "title": "B @invoices (không quyền) => alert 'Không tìm thấy agent @invoices.', ô giữ chữ, không run",
+    "ok": true,
+    "ms": 319
+  },
+  {
+    "id": "06",
+    "title": "C @invoices => 'Chạy bằng quyền của Vio Ngo'",
+    "ok": true,
+    "ms": 15272
+  },
+  {
+    "id": "07",
+    "title": "A và C gọi gần nhau => 2 khối song song, không lẫn",
+    "ok": true,
+    "ms": 13410
+  },
+  {
+    "id": "08",
+    "title": "A mở thread => B, C cũng có composer; B nhắn thường: không run",
+    "ok": true,
+    "ms": 1991
+  },
+  {
+    "id": "09",
+    "title": "Trong thread B @consultant => run của B, A xem được; B @invoices => từ chối giữ chữ",
+    "ok": true,
+    "ms": 14131
+  },
+  {
+    "id": "10",
+    "title": "need_input: thử ép bằng @orchestrator mơ hồ; nếu hiện thì A có nút, B chỉ 'Đang chờ…'",
+    "ok": true,
+    "ms": 18122
+  },
+  {
+    "id": "12",
+    "title": "A @orchestrator => chạy, nhãn 'Orchestrator'",
+    "ok": true,
+    "ms": 17091
+  },
+  {
+    "id": "13",
+    "title": "Không có nút đính kèm trong composer phòng",
+    "ok": true,
+    "ms": 114
+  },
+  {
+    "id": "14a",
+    "title": "B rời nhóm khi run đang chạy => run của B bị huỷ",
+    "ok": true,
+    "ms": 24252
+  },
+  {
+    "id": "14b",
+    "title": "Chủ xoá nhóm khi C đang chạy => run bị huỷ, phòng biến mất",
+    "ok": false,
+    "err": "locator.click: Timeout 30000ms exceeded."
+  },
+  {
+    "id": "15",
+    "title": "Thu hồi invoices của C (UI Admin) => C gọi lại bị từ chối ngay",
+    "ok": true,
+    "ms": 15252
+  },
+  {
+    "id": "16",
+    "title": "F5 khi run đang chạy => khối 'đang xử lý' còn; kết quả hiện khi xong; không mất/lặp",
+    "ok": true,
+    "ms": 15722
+  },
+  {
+    "id": "17",
+    "title": "Hỏi AI: C1 như cũ; tin phòng không lẫn; @dify-chatbot (Dify thật) trả lời",
+    "ok": true,
+    "ms": 40708
+  }
+]
