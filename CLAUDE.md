@@ -57,4 +57,4 @@ Mỗi lần tự quyết: một dòng trong mục "Quyết định trong lúc l�
 ## Luật 5 — Truy vết
 - Mã yêu cầu (`ADM-FR-xx`, `HUB-FR-xx`, `WRK-FR-xx`, AC) có trong: frontmatter spec, comment đầu module, tên test, commit `[ADM-FR-xx]`.
 - Xong task: tick `tasks.md`, cập nhật `docs/STATE.md`. Đổi cấu trúc → `docs-architect` cập nhật CODEMAP/TRACE.
-- Làm và commit trực tiếp trên `main` (người dùng yêu cầu 2026-10-01). Không push trừ khi được yêu cầu.
+- Một session: làm và commit trực tiếp trên `main` (người dùng yêu cầu 2026-10-01). Nhiều session cùng một mốc: Bước 0 trên `main`, rồi mỗi session một worktree + nhánh `feat/<mốc>-<feature>`, merge lần lượt qua cổng merge (`docs/WORKFLOW.md` "Làm song song nhiều session", CR-059). Không push trừ khi được yêu cầu.

@@ -74,6 +74,7 @@ Mọi yêu cầu/thay đổi mới (đầu phiên hay giữa phiên) đi qua **I
 6. qc               ghi tests/.lock (checksum test đã duyệt)
 7. song song, mỗi agent một git worktree:
    backend-lead ∥ frontend-lead   code theo tasks.md tới khi test của QC xanh + unit test của mình
+   (mốc lớn / nhiều session: Bước 0 + nhánh theo feature, xem "Làm song song nhiều session")
 8. qc               chạy toàn bộ, báo độ phủ theo FR; test sai → mục Tranh chấp
 9. reviewer         review; Blocker/Major → trả agent code sửa (tối đa 2 vòng/task)
 10. docs-architect  cập nhật CODEMAP, TRACE, STATE, README module → báo cáo cuối cho người dùng
@@ -82,6 +83,41 @@ Mọi yêu cầu/thay đổi mới (đầu phiên hay giữa phiên) đi qua **I
 Bước 4 lần 2 trở đi: spec-readiness chỉ kiểm **phần đã đổi** (`git diff` thư mục spec từ lần trước) + lỗ hổng còn mở trong `readiness.md`, không đọc lại toàn bộ.
 Bước 9 sửa review: commit sửa phải chạy lại `lock-order`/`concurrency` int test (nếu chạm khoá/transaction), `check:fn` và `depcruise --all` cho file đổi; reviewer vòng 2 chỉ đọc diff của các commit sửa + mục lỗi vòng 1.
 Bước 7–9: mỗi task một lần gọi agent, model theo cột `Rủi ro` (mục "Chính sách model").
+
+## Làm song song nhiều session (CR-059)
+
+Một session làm một mốc → giữ cách cũ: commit thẳng `main` (Luật 5). Mốc lớn chia cho **nhiều session** (vd P-a) → làm theo mục này. Mục tiêu: `main` luôn xanh, mỗi session sửa phần riêng, merge đúng mà không cần nhớ lịch sử chat.
+
+**Vai:** session chính = **điều phối + tích hợp** (giữ bảng task, merge, sửa `STATE.md`/`CHANGE-REQUESTS.md`); tối đa **3 session làm việc**. Nhiều hơn tốn token phối hợp hơn thời gian tiết kiệm.
+
+### 1. Chia việc
+- **Bước 0 — khung chung (một session, tuần tự, merge `main` trước khi chia):** contract (zod) + mã lỗi + mock/fixture · bảng DB + migration + RLS · khung module theo feature (file/thư mục riêng cho từng feature) · mục nav, route rỗng · file i18n riêng theo feature (`<feature>` namespace, không dồn vào file chung) · cờ bật/tắt feature · sửa sẵn các **điểm nóng dùng chung** (vd hàm lõi nhiều feature cùng gọi). Sau Bước 0: đổi contract/DB chỉ qua backend-lead (như cũ), báo session chính.
+- **Feature = lát dọc** (vd PF1 "chạy + cổng kiểm"), có nhóm AC + test riêng. Một session làm trọn một feature qua các app, **chỉ sửa file của feature mình** (cột `File` trong `tasks.md`). Task cần sửa file của feature khác / file Bước 0 → dừng, báo session chính (chưa tách đủ).
+- `tasks.md` có cột **Feature/nhánh**; session ghi tiến độ vào `tasks.md` của feature, không sửa `STATE.md`.
+
+### 2. Nhánh và worktree
+- Mỗi session **một git worktree + một nhánh** `feat/<mốc>-<feature>` (vd `feat/pa-pf2-ask`), tạo từ `main` sau Bước 0: `git worktree add ../ai-system-pf2 -b feat/pa-pf2-ask`. Không dùng chung thư mục, không đổi nhánh qua lại trong một thư mục.
+- **Nhánh sống ngắn** (một feature, vài ngày). Mỗi lần `main` có merge mới → các nhánh đang mở **rebase ngay**.
+- Feature chưa xong vẫn được merge sớm nếu nằm sau **cờ bật/tắt** (mặc định tắt).
+- Bật cho mọi worktree: `git config merge.conflictStyle zdiff3` và `git config rerere.enabled true`.
+
+### 3. Cổng merge vào `main` (session chính, lần lượt từng nhánh)
+1. Chủ nhánh **rebase lên `main` mới nhất** và tự gỡ conflict.
+2. Chạy **toàn bộ** (không chỉ test của feature): `bun run check` · `typecheck` · `bun test` · `test:lock:verify` · int + e2e của mốc. Kết quả phải là của **bản đã ghép** (`main` + nhánh).
+3. `reviewer` đọc diff của nhánh, đối chiếu spec.
+4. Xanh → merge (`--no-ff`, commit merge ghi feature + mã yêu cầu) → báo các session khác rebase. Một lần chỉ merge một nhánh.
+5. Lỡ làm `main` đỏ → **revert ngay commit merge** đó, nhánh sửa rồi xin merge lại. Không để `main` đỏ chờ sửa.
+- Đủ nhánh của một feature → qc / qc-uat chạy e2e feature trên `main` (tích hợp theo feature), ghi kết quả vào `tasks.md`.
+
+### 4. Gỡ conflict
+- **Ai viết nhánh thì người đó gỡ** (biết ý đồ). Người tích hợp không đoán; gặp conflict lớn → trả lại chủ nhánh.
+- Hiểu ý bên kia qua: commit có mã `[FR]` → spec · `tasks.md` + ghi chú bàn giao của nhánh đã merge · khối `zdiff3` (bản gốc / main / mình). Vẫn không chắc → hỏi session viết nhánh kia (SendMessage).
+- Theo loại file: file sinh tự động (`routeTree.gen.ts`…) → không gỡ tay, sinh lại · lockfile → lấy bản `main` rồi `bun install` · migration trùng số → đánh lại số nhánh mình / sinh lại · i18n, danh sách đăng ký (nav, route, export) → giữ cả hai · **logic thật** → ghép giữ ý cả hai, rồi test cả hai feature phải xanh.
+- **Conflict ngữ nghĩa** (git không báo, ghép xong test feature trước đỏ): nhánh đến sau sửa. Code sai → sửa code. Hai spec loại trừ nhau / test quá chặt → **Tranh chấp test** (không tự sửa test của feature khác), qc + người dùng quyết, sửa spec (có thể CR) trước.
+- Không format/đổi tên hàng loạt trong nhánh feature — làm nhánh riêng, merge riêng.
+
+### 5. Ghi chú bàn giao khi xin merge (cuối `tasks.md` của feature)
+Nhánh · task đã xong · file đã sửa ngoài cột `File` (nếu có, kèm lý do) · giả định về contract · "Quyết định trong lúc làm" · việc còn lại · lệnh test đã chạy + kết quả.
 
 ## Luật khoá test
 
