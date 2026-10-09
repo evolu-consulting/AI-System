@@ -2,6 +2,7 @@
 import type { AttachmentRef } from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
+import { MessageText } from "~/components/shared/MessageText";
 import { AnswerBody } from "~/features/answer/components/AnswerBody";
 import { ColdResumeNote } from "~/features/answer/components/ColdResumeNote";
 import { answererName } from "~/features/answer/lib/step-label";
@@ -80,7 +81,7 @@ export function FlowBlock({
       )}
     >
       <div className="max-w-[80%] self-end whitespace-pre-wrap break-words rounded-xl bg-row-divider px-3.5 py-2.5 leading-normal">
-        {question}
+        <MessageText text={question} />
       </div>
       <AttachmentList items={questionAttachments} />
       {answer && (

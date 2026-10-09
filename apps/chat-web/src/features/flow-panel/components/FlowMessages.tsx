@@ -2,6 +2,7 @@
 import type { AttachmentRef } from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
+import { MessageText } from "~/components/shared/MessageText";
 import { Skeleton } from "~/components/ui/skeleton";
 import { answererName } from "~/features/answer/lib/step-label";
 import { AttachmentList } from "~/features/attachments/components/AttachmentList";
@@ -16,7 +17,7 @@ function Question({ text, attachments }: { text: string; attachments?: Attachmen
   return (
     <>
       <div className="max-w-[85%] self-end whitespace-pre-wrap break-words rounded-[10px] bg-row-divider px-3 py-2">
-        {text}
+        <MessageText text={text} />
       </div>
       <AttachmentList items={attachments} />
     </>
