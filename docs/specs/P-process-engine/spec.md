@@ -123,7 +123,7 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 | Q5 | Gate đạt thay xác nhận `side_effect` của người bắt đầu (HUB-FR-95) cho stage "Hành động thật"; audit ghi người duyệt |
 | Q6 | File chung của nhóm do Hub giữ (đính kèm có phiên bản); mỗi job thành viên nhận bản mới nhất vào `work/<job_id>/` (WRK-BR-07 giữ); trưởng nhóm đọc tóm tắt ≤ 200 token |
 | Q7 | Ngân sách token theo team-run, stage, run: đếm + chặn ở "Cần người quyết"; tiền/quota tháng chờ H3c |
-| Q8 | Thứ tự: X2b-2 → spike P → P-a → H4b → P-b → P-c |
+| Q8 | Thứ tự: spike P → P-a → X2b-2 → H4b → P-b → P-c (đổi 2026-10-10: người dùng cho Process Engine làm trước X2b-2) |
 | Q9 (điều chỉnh) | Người duyệt **không cần** là thành viên phòng; run là đối tượng riêng (`/runs/:id`). Báo: "Chờ tôi kiểm", DM hệ thống "Quy trình" (duyệt trong DM, không trả lời chữ), email/Zalo/Slack sau (chỉ link). Người ngoài phòng chỉ thấy output đang kiểm + tiến độ qua grant gắn task (audit) |
 | Q10 | Phiên bản chốt lúc bắt đầu; quyền + trạng thái user kiểm lại mỗi stage (thu hồi ⇒ "Cần người quyết") |
 | Q11 | Tự duyệt = luật khai báo trên trường output có cấu trúc (vd `tong_tien ≤ 20000000`), không do LLM |

@@ -5,7 +5,7 @@ Mỗi task: một commit `[FR]`, diff ≈ ≤ 400 dòng. Tick khi lệnh "xong" 
 ## Spike P (trước P-a)
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
-| S1 | Nhóm agent BA thật trên `claude-sub`: so 3 chế độ (trưởng nhóm lập kế hoạch / tuần tự / MCP lai), đo token, thời gian, số lần gọi, chất lượng output theo template; đề xuất chế độ mặc định + giới hạn | backend-lead | thường | spec §1, §2.1, §9 Q4/Q6/Q7; BA-H §6.10 FR-114–116 | `docs/specs/P-process-engine/spike.md` | X2b-2 xong | báo cáo ≤ 1 trang bảng số | [ ] |
+| S1 | Nhóm agent BA thật trên `claude-sub`: so 3 chế độ (trưởng nhóm lập kế hoạch / tuần tự / MCP lai), đo token, thời gian, số lần gọi, chất lượng output theo template; đề xuất chế độ mặc định + giới hạn | backend-lead | thường | spec §1, §2.1, §9 Q4/Q6/Q7; BA-H §6.10 FR-114–116 | `docs/specs/P-process-engine/spike.md` | — (người dùng 2026-10-10: làm trước X2b-2) | báo cáo ≤ 1 trang bảng số | [ ] |
 
 ## P-a
 
