@@ -62,7 +62,7 @@ describe("P4-07 ⇢PF1 · token run thật [AC-H34]", () => {
         values (${T.acme}, ${hr?.id}, ${p.step_id ?? null}, ${hr?.user_id}, ${p.agent_id ?? null}, 'fake-cli', 'claude-sonnet',
           'subscription', ${1000 + stage}, ${200 + stage}, ${stage ? 50 : null}, null, 900, ${job.id}, now())
         on conflict (job_id) where job_id is not null do nothing`;
-      await c.rt.text(job, DOC);
+      await c.rt.agent(job, { status: "done", text: DOC });
     }
     const st = await waitFor(
       async () =>
