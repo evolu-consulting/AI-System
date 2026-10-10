@@ -1,0 +1,53 @@
+[
+ {
+  "id": "01",
+  "title": "lan / hoa / minh đăng nhập chat-web (3 context, vi-VN)",
+  "ok": true
+ },
+ {
+  "id": "02",
+  "title": "S1a · lan gõ !hoa-don trong phòng ⇒ khối quy trình hiện ở cả lan và hoa",
+  "ok": true
+ },
+ {
+  "id": "03",
+  "title": "S1b · nút Quy trình: chọn mẫu ⇒ chèn !hoa-don, gửi ⇒ khối thứ 2",
+  "ok": true
+ },
+ {
+  "id": "04",
+  "title": "S1c · Hỏi AI (/c/new): !hoa-don khởi chạy từ hội thoại AI",
+  "ok": true
+ },
+ {
+  "id": "05",
+  "title": "Giai đoạn chạy bằng fake-cli ⇒ dừng Cần người quyết (template_invalid): khối + thẻ",
+  "ok": false,
+  "err": "expect(locator).toContainText(expected) failed |  | Locator: getByRole('log', { name: 'Tin nhắn của phòng' }).getByRole('article', { name: 'Quy trình Xử lý hoá đơn' }).first()"
+ },
+ {
+  "id": "06",
+  "title": "Quyết định: Thêm 1 lần làm lại; Huỷ lượt chạy",
+  "ok": true
+ },
+ {
+  "id": "07",
+  "title": "S4 · lan: DM Quy trình (hộp thư) có thẻ quyết định",
+  "ok": true
+ },
+ {
+  "id": "08",
+  "title": "S4 · minh (ngoài phòng, không phải người khởi chạy): hộp thư + mở /runs/:id của lan",
+  "ok": true
+ },
+ {
+  "id": "09",
+  "title": "S4 U5 · lan rời phòng R2 (đã khởi chạy run ở R2) ⇒ xem /runs/:id",
+  "ok": true
+ },
+ {
+  "id": "10",
+  "title": "S5 · tab Token trên /runs/:id khớp Σ usage_logs",
+  "ok": true
+ }
+]

@@ -1,0 +1,39 @@
+[
+ {
+  "id": "A1",
+  "title": "tenant_admin: nav Quy trình + danh sách (Của công ty / Mẫu)",
+  "ok": true
+ },
+ {
+  "id": "A2",
+  "title": "tenant_admin: Chép mẫu SDLC ⇒ bản của công ty (tắt, cần chọn Group)",
+  "ok": true
+ },
+ {
+  "id": "A3",
+  "title": "tenant_admin: editor — Lưu bản trống bị chặn bằng thông báo tiếng Việt (/processes/new)",
+  "ok": false,
+  "err": "breadcrumb không được lộ khoá i18n |  | expect(received).not.toMatch(expected)"
+ },
+ {
+  "id": "A4",
+  "title": "tenant_admin: Chạy hoá đơn từ danh sách ⇒ trang lượt chạy + tab Token",
+  "ok": true
+ },
+ {
+  "id": "A5",
+  "title": "tenant_admin: tab Lượt chạy của quy trình liệt kê lượt vừa chạy",
+  "ok": true
+ },
+ {
+  "id": "A6",
+  "title": "platform_admin: nav Quy trình, chọn công ty, danh sách + Mẫu",
+  "ok": true
+ },
+ {
+  "id": "A7",
+  "title": "platform_admin: chọn tenant acme ⇒ danh sách công ty; nút Chạy ẩn; mở lượt chạy + Token",
+  "ok": false,
+  "err": "locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('link', { name: /^#/ }).first()\u001b[22m"
+ }
+]
