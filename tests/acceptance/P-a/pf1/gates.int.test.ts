@@ -34,7 +34,8 @@ import {
 
 let c: CtxPf1;
 beforeAll(async () => {
-  c = await startPf1();
+  // Fixture run cố ý để active (needs_decision/waiting_review) tích luỹ > 5 → nâng giới hạn run/tenant (file này không test giới hạn).
+  c = await startPf1({ processRunsPerTenant: 200 });
   if (!c.ready) return;
 }, 60_000);
 afterAll(async () => {
