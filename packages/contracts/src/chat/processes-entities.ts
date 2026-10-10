@@ -240,7 +240,8 @@ export const TokenTotalsSchema = z.strictObject({
 export type TokenTotals = z.infer<typeof TokenTotalsSchema>;
 
 export const UsageCallSchema = z.strictObject({
-  step_id: UuidSchema,
+  // E-P14 · dòng `usage_logs` không gắn step (cột nullable) ⇒ `null`; FE không parse được `""` (phải là uuid | null).
+  step_id: UuidSchema.nullable(),
   role: StepRoleSchema,
   member_key: z.string().min(1).nullable(),
   agent: StepAgentRefSchema,

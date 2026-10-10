@@ -72,7 +72,7 @@ function callOf(r: UsageRow): UsageCall {
   const cacheRead = n(r.cacheRead);
   const cacheWrite = n(r.cacheWrite);
   return {
-    step_id: r.stepId ?? "",
+    step_id: r.stepId,
     role: r.role,
     member_key: r.memberKey,
     agent: { key: r.agentKey, name: r.agentName ?? r.agentKey },

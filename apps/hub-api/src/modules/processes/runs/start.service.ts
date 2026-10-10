@@ -330,12 +330,12 @@ export class StartService {
     }
     const token = bang.kind === "process" ? bang.key : bang.token;
     const rows = await repo.catalogDefs(tx, u.tenantId);
+    const { groupIds } = us;
     const keys = rows
-      .filter(
-        (r) => r.run_group_ids.length === 0 || r.run_group_ids.some((g) => us.groupIds.has(g)),
-      )
+      .filter((r) => r.run_group_ids.length === 0 || r.run_group_ids.some((g) => groupIds.has(g)))
       .map((r) => r.key);
-    throw processError("PROCESS_NOT_FOUND", { suggestions: repo.suggestProcesses(token, keys) });
+    const near = repo.suggestProcesses(token, keys); // E-P2 · key sai hẳn ⇒ dự phòng top-3 catalog
+    throw processError("PROCESS_NOT_FOUND", { suggestions: near.length ? near : keys.slice(0, 3) });
   }
 
   async #insert(
