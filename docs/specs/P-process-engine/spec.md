@@ -190,6 +190,7 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 | U5 | Starter rời phòng ⇒ run chạy tiếp và vẫn đăng vào thread, nhưng starter mất quyền đọc thread phòng; giữ xem ngoài phòng (`/runs/:id` + inbox: tiến độ, output, task của mình; có audit). Khác X2b-R17 (huỷ) có chủ đích; R17 vẫn áp cho run `@agent`. Phòng bị xoá ⇒ bỏ qua sự kiện thread, run chạy tiếp | người dùng 2026-10-10 |
 | Q-F5 | Task chỉ gắn vào composer thread sau khi bấm rõ ràng nút ở thẻ (không tự động) | người dùng 2026-10-10 |
 | Mặc định áp dụng | QC Q1, Q3–Q7 (Q2 nằm trong U4), N1, N6, N7; yêu cầu FE: `process_key` (lọc client), `open_count` ("50+"), `StageView.sections` (P-b) | mặc định áp dụng (Luật 2) |
+| F1 | Menu `!` lọc theo `key` hoặc tên (bỏ dấu, chứa); nút "Quy trình" bật/tắt qua store mức module `bang-state` (Composer chỉ cho `onInsert`); `!key` Hỏi AI: `intercept(text, attachmentIds?)` (thêm tham số vắng mặc định); tiêu đề menu nằm trong `listbox` (e2e đọc cả tiêu đề) ⇒ `ProcessMenu` tự vẽ thay `SuggestMenu` | Luật 2: plan-frontend §2 + plan-frontend-e2e §1 |
 
 ## 10. Rủi ro mở
 | # | Rủi ro | Hướng xử |
@@ -204,5 +205,6 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 
 ## 11. Tranh chấp test
 - **B4 (2026-10-10, backend-lead PF1):** `tests/acceptance/P-a/pf1/_local.ts` `insertAgents` (dòng ~166) chèn agent `description = \`Agent thử ${key}.\`` = 18 ký tự, vi phạm `agents_description_check` (0000: `char_length BETWEEN 20 AND 400`) ⇒ `beforeAll` của **mọi** file `pf1/*.int.test.ts` ném 23514, không chạy được ca nào (baseline QC1b1 "trước B1" bỏ qua vì schema chưa sẵn ⇒ lỗi tiềm ẩn). Không sửa file khoá. Đề xuất qc: đổi description ≥ 20 ký tự, ví dụ `\`Agent thử cho bộ test P-a: ${key}.\``. Đã xác minh logic B4 bằng harness tạm (seed hợp lệ, `_support/pa.ts`) — 10/10 ca (catalog, POST none/room/conversation 201+404, gợi ý, 429+Retry-After, list mine/tenant 403/cursor, 202 Hỏi AI, tin gọi `!key`+block+trigger, trùng `client_msg_id`, key sai ⇒ ROLLBACK) xanh.
+- **F1 (2026-10-10, frontend-lead PF1):** (1) `e2e/P-a/pf1/composer.pa.ts` E-P1 `!hoa` ⇒ `toHaveCount(1)`: acme có thêm quy trình seed `hoa-don` "Xử lý hoá đơn" (A thấy) ⇒ lọc theo `key`/tên bỏ dấu cho 2 dòng; chỉ đúng 1 nếu lọc theo tiền tố tên và bỏ `key`, hoặc seed `hoa-don` không hiện cho acme. (2) E-P2 dòng `getByText("Ý bạn là:")` sau `!sai-key abc`: Hub `suggestProcesses` trả `[]` (khoảng cách quá xa) ⇒ không có gợi ý ⇒ FE không vẽ "Ý bạn là:"; cần qc bỏ dòng hoặc backend-lead đổi (vd. rơi về ≤ 3 quy trình đầu).
 
 Readiness: [`readiness.md`](readiness.md) READY lần 5 (2026-10-10). Gate: [`P-a-gate.md`](../P-a-gate.md) tự duyệt (Luật 2b). Trạng thái `approved`.
