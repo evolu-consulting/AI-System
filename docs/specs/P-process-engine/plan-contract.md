@@ -23,6 +23,8 @@ DECISION_OPTIONS = ["add_attempt","use_current","cancel"];
 NOTICE_KINDS = ["review_requested","ask_requested","decision_requested","reminder","task_closed","run_finished"];
 ORIGIN_KINDS = ["room","conversation","admin"]; PROCESS_RUN_ID_HEADER = "X-Process-Run-Id";
 PROCESS_SYSTEM_SENDER = { key: "process", name: { vi: "Quy trình", en: "Processes" } } as const;
+OPEN_TASKS_COUNT_MAX = 100; // open_count = min(số task mở, 100); FE hiện "99+" khi = 100
+// chat/room-process.ts (U1, plan-thread): ROOM_PROCESS_KINDS = ["block","output","ask","decision","task_result","forward","run_end"]; ROOM_PROCESS_CONTENT_MAX = 500;
 ```
 
 ## 2. Thực thể dùng chung
@@ -34,8 +36,9 @@ PROCESS_SYSTEM_SENDER = { key: "process", name: { vi: "Quy trình", en: "Process
 | `OutputRef` | `{id, version: int≥1, attempt: int≥1, template_ok: bool, template_missing: string[]≤20, created_at}` |
 | `StageView` | `idx, key, name, executor: ExecutorRef, after: "review"\|"auto", real_action: bool, status: STAGE_STATUS, attempt, attempt_limit, asks_count, ask_limit, outputs: OutputRef[]≤20, current_output_id: Uuid\|null, passed_by: UserRef\|null, passed_at: Iso\|null` |
 | `HistoryItem` | `{at, kind: "review"\|"ask"\|"decision"\|"forward"\|"cancel"\|"expire", task_id: Uuid\|null, stage_idx, actor: UserRef\|null, result?: TASK_RESULT, feedback?: ≤FEEDBACK_MAX, question?, answer?, note?, to?: UserRef}` |
-| `TaskDetail` | `id, kind: TASK_KIND, status: TASK_STATUS, stage_idx, stage_name, output?: OutputRef (review), question?: ≤2000, choices?: string[]≤6, excerpt?: ≤1000, reason?: DECISION_REASON, forwards: {from: UserRef, to: UserRef, note: string\|null, at}[]≤3, result?: TASK_RESULT, can_act: bool, created_at` |
-| `ProcessRunView` | `discriminatedUnion("access")`: **full** = `ProcessRunSummary & {access:"full", input: ≤8000, stages: StageView[], history: HistoryItem[]≤200, decision: {reason, stage_idx, options: DECISION_OPTION[], can_decide: bool}\|null, my_tasks: TaskDetail[]≤20, can_cancel: bool}` · **task** = `{access:"task", id, process: {key,name}, status, stages: {idx, name, status}[] (rỗng khi run đã kết thúc — M4), my_tasks: TaskDetail[]≥1}` |
+| `TaskDetail` | `id, kind: TASK_KIND, status: TASK_STATUS, stage_idx, stage_name, output?: OutputRef (review), question?: ≤2000, choices?: string[]≤6, excerpt?: ≤1000, reason?: DECISION_REASON, options?: DECISION_OPTION[] (decision; = `decision.options`), has_output?: bool (decision; stage có output ⇒ `use_current` dùng được), forwards: {from: UserRef, to: UserRef, note: string\|null, at}[]≤3, result?: TASK_RESULT, can_act: bool, created_at` |
+| `ProcessRunView` | `discriminatedUnion("access")`: **full** = `ProcessRunSummary & {access:"full", input: ≤8000, stages: StageView[], history: HistoryItem[]≤200, decision: {reason, stage_idx, options: DECISION_OPTION[], can_decide: bool}\|null, my_tasks: TaskDetail[]≤20, open_tasks: {id, kind: TASK_KIND, stage_idx, assignees: UserRef[]≤20, group: {id, name}\|null}[]≤10 (WaitingNote), thread: {room_id, flow_id}\|null (U1; null khi không bắt đầu từ phòng hoặc phòng đã xoá), can_cancel: bool}` · **task** = `{access:"task", id, process: {key,name}, status, stages: {idx, name, status}[] (rỗng khi run đã kết thúc — M4), my_tasks: TaskDetail[]≥1}` |
+| `RoomProcessPart` (`chat/room-process.ts`; `RoomMessage.process?`, U1) | `discriminatedUnion("kind")`, mọi nhánh có `process_run_id`: **block** `{process: {key,name}, stage_count}` · **output** `{stage_idx, stage_name, executor: ExecutorRef, output: OutputRef, after: "review"\|"auto", review_task_id: Uuid\|null, steps: {role: "agent"\|"plan"\|"member", member_key: string\|null, agent: {key,name}, model: string\|null, ms: int\|null, tokens: int}[]≤10}` · **ask** `{stage_idx, stage_name, executor, task_id, question ≤2000, choices ≤6, asks_count, ask_limit}` · **decision** `{stage_idx, task_id, reason, options}` · **task_result** `{stage_idx, task_id, task_kind, result: TASK_RESULT, actor: UserRef, outside: bool, feedback?, answer?, choice?, sections?}` · **forward** `{stage_idx, task_id, from: UserRef, to: UserRef, depth: 1..3}` (không `note`) · **run_end** `{status: "done"\|"cancelled"\|"failed"\|"expired", actor: UserRef\|null}`. `RoomMessage` + `process_run_id?: Uuid` (tin gọi + tin `process`), `process?: RoomProcessPart`; `ROOM_SENDER_TYPES` += `"process"`; `RoomFlowRecent` + `process?: {kind}` |
 | `ProcessOutput` | `{id, stage_idx, version, attempt, content: string ≤ PROCESS_OUTPUT_MAX, fields: Record<string, string\|number>\|null, template_ok, template_missing, created_at}` |
 | `TokenTotals` | `{input, output, cache_read, cache_write, total, calls}` (int ≥ 0; total = 4 khoản đầu) |
 | `UsageCall` | `{step_id: Uuid, role: "agent"\|"plan"\|"member", member_key: string\|null, agent: {key, name}, model: string\|null, tokens: TokenTotals (calls=1), latency_ms: int\|null, at}` |
@@ -47,15 +50,15 @@ Thứ tự kiểm chung: JWT 401 → **quyền xem** (404 nếu không thấy) �
 |---|---|---|---|---|
 | `GET /processes` | — | 200 `{items: {key, name, description, input_hint, stage_count}[]≤200}` (bật + user ∈ run group, rỗng = cả công ty; sort name) | — | PF1 |
 | `POST /process-runs` | `{process_key: KEY, input: string 0..8000 (trim), origin: {kind:"room", room_id} \| {kind:"conversation", conversation_id} \| {kind:"none"}}` — nút "▶ Quy trình" | 201 `ProcessRunSummary` + header | 404 `PROCESS_NOT_FOUND{suggestions}` (không có/tắt/không được chạy — không phân biệt) · 404 `NOT_FOUND` (room không là thành viên / conversation không của mình) · 429 `TOO_MANY_PROCESS_RUNS` + `Retry-After` | PF1 |
-| `POST /rooms/:id/messages` (sửa, chỉ thêm) | như X2b; nội dung `!key …` (không `answer_run_id`) | 201 `RoomMessage{process_run_id}` + `X-Process-Run-Id`; `!!…` ⇒ tin thường bỏ một `!` | thứ tự X2b §3 tới bước 3 (trùng `client_msg_id` ⇒ 200) → `PROCESS_NOT_FOUND` / 429 (ROLLBACK, không lưu tin) | PF1 (hook B0) |
+| `POST /rooms/:id/messages` (sửa, chỉ thêm) | như X2b; nội dung `!key …` (không `answer_run_id`) | 201 `RoomMessage{process_run_id, flow_id}` + `X-Process-Run-Id` + `X-Flow-Id` (thread, U1); tin có `flow_id` của thread quy trình: tag đầu tin ⇒ 422 `PROCESS_THREAD_NO_AGENT`, `!…` ⇒ chữ thường; `!!…` ⇒ tin thường bỏ một `!` | thứ tự X2b §3 tới bước 3 (trùng `client_msg_id` ⇒ 200) → `PROCESS_NOT_FOUND` / 429 (ROLLBACK, không lưu tin) | PF1 (hook B0) |
 | `POST /conversations/:id/messages` (sửa, chỉ thêm) | `!key …` | **202** `{process_run: ProcessRunSummary}` + `X-Process-Run-Id` | 404 / 429 như trên | PF1 (hook B0) |
-| `GET /process-runs` | query `scope: "mine"(mặc định)\|"tenant"`, `room_id?`, `conversation_id?`, `status?: RUN_STATUS`, `limit 1..200 (50)`, `cursor?` (mờ: `started_at,id`) | 200 `{items: ProcessRunSummary[], next_cursor: string\|null}` | `scope=tenant` không phải admin ⇒ 403 `FORBIDDEN`; `room_id` không là thành viên ⇒ 404 | PF1 |
+| `GET /process-runs` | query `scope: "mine"(mặc định)\|"tenant"`, `process_key?: KEY` (lọc server; key lạ ⇒ rỗng), `room_id?`, `conversation_id?`, `status?: RUN_STATUS`, `limit 1..200 (50)`, `cursor?` (mờ: `started_at,id`) | 200 `{items: ProcessRunSummary[], next_cursor: string\|null}` | `scope=tenant` không phải admin ⇒ 403 `FORBIDDEN`; `room_id` không là thành viên ⇒ 404 | PF1 |
 | `GET /process-runs/:id` | `tenant_id?` (platform_admin) | 200 `ProcessRunView` | 404 | PF1 |
 | `GET /process-runs/:id/outputs/:output_id` | — | 200 `ProcessOutput` (task: chỉ `output_id` của task mình) | 404 | PF1 |
 | `GET /process-runs/:id/usage` | — | 200 `ProcessRunUsage` | 404 | PF4 |
 | `POST /process-runs/:id/cancel` | `{}` | 200 `ProcessRunSummary` | 404 · 403 `NOT_PROCESS_DECIDER` (xem được nhưng không phải người bắt đầu/admin) · 409 `PROCESS_RUN_STATE` | PF1 |
 | `POST /process-runs/:id/decide` | `{option: DECISION_OPTION, note?: ≤500}` | 200 `ProcessRunView` | 404 · 403 `NOT_PROCESS_DECIDER` · 409 `PROCESS_RUN_STATE` (không ở needs_decision) · 409 `NO_OUTPUT` (use_current chưa có output) | PF1 |
-| `GET /me/review-tasks` | `status: "open"(mặc định)\|"closed"`, `limit`, `cursor` | 200 `{items: {task: TaskDetail, process_run: {id, process:{key,name}, status, started_by: UserRef}}[], next_cursor}` | — | PF3 |
+| `GET /me/review-tasks` | `status: "open"(mặc định)\|"closed"`, `limit`, `cursor` | 200 `{items: {task: TaskDetail, process_run: {id, process:{key,name}, status, started_by: UserRef}}[], open_count: 0..OPEN_TASKS_COUNT_MAX (mọi task mở của tôi, không phụ thuộc `status`), next_cursor}` | — | PF3 |
 | `POST /review-tasks/:id/decision` | `{result: "pass"\|"fail", feedback?: 1..4000 (trim), sections?: string[]≤20}` | 200 `TaskDetail` | 404 (không là assignee) · 422 `FEEDBACK_REQUIRED` (fail thiếu/rỗng) · 409 `TASK_KIND_MISMATCH` · 409 `REVIEW_TASK_CLOSED` | PF1 |
 | `POST /review-tasks/:id/answer` | `{answer: 1..4000, choice?: string}` | 200 `TaskDetail` | 404 · 409 `TASK_KIND_MISMATCH` · 409 `REVIEW_TASK_CLOSED` | PF2 |
 | `POST /review-tasks/:id/forward` | `{to_user_id: Uuid, note?: 0..500}` | 200 `TaskDetail` | 404 · 409 `TASK_KIND_MISMATCH` (decision) · 409 `REVIEW_TASK_CLOSED` · 409 `FORWARD_LIMIT` · 403 `FORWARD_OUT_OF_GROUP` (review) · 422 `FORWARD_TARGET_INVALID` (ask: không active/khác tenant/chính mình/đã là assignee) | PF2 |
@@ -64,7 +67,7 @@ Thứ tự kiểm chung: JWT 401 → **quyền xem** (404 nếu không thấy) �
 `ProcessNotice = {id, kind: NOTICE_KIND, process_run_id, task_id: Uuid\|null, process_name, stage_name: string\|null, result?: TASK_RESULT, created_at, read: bool}` (không chứa nội dung output/câu hỏi — xem qua task).
 
 ## 4. Mã lỗi
-`chat/processes-errors.ts` — `CHAT_PROCESS_ERRORS = { PROCESS_NOT_FOUND: 404, TOO_MANY_PROCESS_RUNS: 429, FEEDBACK_REQUIRED: 422, FORWARD_TARGET_INVALID: 422, REVIEW_TASK_CLOSED: 409, TASK_KIND_MISMATCH: 409, PROCESS_RUN_STATE: 409, NO_OUTPUT: 409, FORWARD_LIMIT: 409, FORWARD_OUT_OF_GROUP: 403, NOT_PROCESS_DECIDER: 403 }` + `ProcessNotFoundDetailsSchema {suggestions: string[]≤3}`. Không thêm vào `CHAT_API_ERRORS`/`CHAT_ROUTING_ERRORS`/`CHAT_ROOM_*` (test khoá).
+`chat/processes-errors.ts` — `CHAT_PROCESS_ERRORS = { PROCESS_NOT_FOUND: 404, PROCESS_THREAD_NO_AGENT: 422, TOO_MANY_PROCESS_RUNS: 429, FEEDBACK_REQUIRED: 422, FORWARD_TARGET_INVALID: 422, REVIEW_TASK_CLOSED: 409, TASK_KIND_MISMATCH: 409, PROCESS_RUN_STATE: 409, NO_OUTPUT: 409, FORWARD_LIMIT: 409, FORWARD_OUT_OF_GROUP: 403, NOT_PROCESS_DECIDER: 403 }` + `ProcessNotFoundDetailsSchema {suggestions: string[]≤3}`. Không thêm vào `CHAT_API_ERRORS`/`CHAT_ROUTING_ERRORS`/`CHAT_ROOM_*` (test khoá).
 `hub-admin/processes.ts` — `HUB_ADMIN_PROCESS_ERRORS = { PROCESS_KEY_TAKEN: 409, PROCESS_DEF_INVALID: 422, PROCESS_DEF_INCOMPLETE: 422, PROCESS_REF_INVALID: 422, TEMPLATE_READ_ONLY: 403 }`; details: `{paths: string[]≤20}` (INVALID/INCOMPLETE) · `{path, ref: "agent"\|"team"\|"group"\|"user"}` (REF_INVALID). Dùng kèm `VERSION_CONFLICT` (409, `version-conflict.ts`), `FORBIDDEN`, `TENANT_REQUIRED`, `NOT_FOUND`.
 
 ## 5. Sự kiện `/me/stream` (`chat/me-stream-process.ts`)
@@ -118,6 +121,28 @@ export function canRun(u: { active: boolean; groupIds: ReadonlySet<string> }, d:
 export function teamLimitHit(s: { calls: number; tokens: number; activeMs: number }, l: TeamLimits): "calls" | "tokens" | "time" | null;
 export function budgetHit(used: number, budget: number | null): boolean;
 export function totalTokens(u: { input: number; output: number; cacheRead: number | null; cacheWrite: number | null }): number;
+// core/task.rules.ts (B0) — readiness #1–#3; test ở step0/rules
+export type TaskFacts = { kind: TaskKind; status: TaskStatus; reason: DecisionReason | null;
+  userIds: ReadonlySet<string>; groupId: string | null; reviewGroupId: string | null };
+export function canAct(v: Viewer & { groupIds: ReadonlySet<string> }, t: TaskFacts, r: RunFacts & { status: RunStatus }): boolean;
+//   tenant khác (trừ platform_admin) ∨ t.status≠open ∨ isTerminal(r.status) ⇒ false; decision ⇒ canDecide(v, {...r, reason, reviewGroupMember: groupIds∋reviewGroupId});
+//   review/ask ⇒ userIds∋v.userId ∨ (groupId≠null ∧ groupIds∋groupId) (người đã chuyển vẫn trong userIds)
+export function decisionAssignees(reason: DecisionReason, startedBy: string, reviewGroupId: string | null): { userIds: string[]; groupId: string | null }; // group chỉ khi redo_limit
+export function askExcerpt(input: string, max?: number): string; // ≤ 1 000 ký tự đầu của input run (C4), cắt ở ranh giới ký tự
+// core/task-view.ts (B0) — mọi PF trả TaskDetail qua đây
+export function toTaskDetail(row: TaskRow, x: { forwards: ForwardRow[]; users: ReadonlyMap<string, UserRef>; output: OutputRef | null;
+  hasOutput: boolean; stageName: string; canAct: boolean }): TaskDetail;       // options = DECISION_OPTIONS lọc theo hasOutput (decision)
+export function loadTaskDetails(tx: Tx, v: ViewerCtx, taskIds: readonly string[]): Promise<TaskDetail[]>; // 1 truy vấn task + assignees + forwards
+// core/thread.rules.ts + core/thread.ts (B0) — U1, plan-thread
+export type ThreadEvent = { runId: string; roomId: string } & RoomProcessPart;
+export function threadContent(e: RoomProcessPart, locale: "vi" | "en", names: { process: string; stage?: string }): string; // ≤ 500
+export function enqueueThread(tx: Tx, e: ThreadEvent): Promise<string>;         // origin không phải room ⇒ no-op, trả ""
+// defs/def.rules.ts (B3) — N1; thứ tự: INVALID → REF_INVALID (stage đầu tiên lỗi) → INCOMPLETE; path dạng "stages.<i>.<trường>"
+export type DefRefs = { agentIds: ReadonlySet<string>; teamIds: ReadonlySet<string>; groupIds: ReadonlySet<string>; userIds: ReadonlySet<string> };
+export type DefCheck = { ok: true } | { ok: false; code: "PROCESS_DEF_INVALID" | "PROCESS_DEF_INCOMPLETE"; paths: string[] }
+  | { ok: false; code: "PROCESS_REF_INVALID"; path: string; ref: "agent" | "team" | "group" | "user" };
+export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck; // INVALID: key stage trùng, real_action ở stage 0 / stage trước auto
+export function copyFromTemplate(t: ProcessDefInput, o: { key?: string; name?: string }): ProcessDefInput; // group review = null, enabled=false
 // runs/template.rules.ts (PF1) — P-R03, M3
 export function checkTemplate(t: { requiredSections: readonly string[]; fields: readonly FieldDef[] }, md: string):
   { ok: boolean; missing: string[]; fields: Record<string, string | number> | null; fieldErrors: string[] };  // mục = heading "## <tên>" (so không phân biệt hoa thường, trim), thân không rỗng; trường = khối ```fields {json}```
@@ -138,7 +163,6 @@ export function suggestProcesses(typed: string, keys: readonly string[]): string
 export function forwardCheck(t: { kind: TaskKind; status: TaskStatus; forwards: number; groupId: string | null; assigneeIds: ReadonlySet<string> },
   to: { id: string; active: boolean; sameTenant: boolean; groupIds: ReadonlySet<string> }, by: string):
   "ok" | "TASK_KIND_MISMATCH" | "REVIEW_TASK_CLOSED" | "FORWARD_LIMIT" | "FORWARD_OUT_OF_GROUP" | "FORWARD_TARGET_INVALID";
-export function askExcerpt(input: string, max?: number): string; // ≤ 1 000 ký tự đầu của input run (Câu hỏi C4)
 // notify/notify.rules.ts (PF3)
 export function noticeRecipients(t: { userIds: readonly string[]; groupMemberIds: readonly string[] }, exclude?: string): string[];
 export function dueReminder(t: { status: TaskStatus; remindAt: Date; remindedAt: Date | null }, now: Date): boolean;
@@ -149,8 +173,25 @@ export type UsageRow = { runId: string; stageRunId: string; stageIdx: number; te
 export function buildUsage(rows: readonly UsageRow[], stages: readonly StageMeta[], detail: "full" | "summary"): ProcessRunUsage;
 ```
 
+### 7.1 Seam test (N3, N4 — B0 tạo chữ ký + stub, PF điền thân)
+```ts
+// app.ts AppDeps (chỉ thêm; vắng ⇒ hành vi hiện tại)
+processEngine?: boolean;                 // = HUB_PROCESS_ENGINE==="on"; vắng ⇒ false (không mount, `!` là chữ)
+processRunsPerTenant?: number;           // vắng ⇒ PROCESS_RUNS_PER_TENANT
+stageLauncher?: StageLauncher;           // { kick(runId: string): Promise<void> }; vắng ⇒ PF1 launcher (B0: no-op)
+now?: () => Date;                        // đồng hồ mọi mốc quy trình: expires_at, remind_at, 60 s đối chiếu — SQL so với tham số, không `now()`
+processLoops?: boolean;                  // false ⇒ không chạy vòng 5 s/30 s/60 s/5 phút (test gọi *Once); vắng ⇒ true
+onProcessHandles?: (h: ProcessHandles) => void;
+// core/handles.ts
+export type ProcessHandles = { sweepOnce(): Promise<{ queued: number; interrupted: number; expired: number }>;  // runs/sweeps.ts (PF1)
+  remindOnce(): Promise<number>;          // notify/reminder.ts (PF3)
+  postThreadOnce(): Promise<number>;      // core/thread-poster.ts (B0)
+  kick(runId: string): Promise<void> };   // = stageLauncher.kick
+```
+N4 (B0 chữ ký, PF1 làm): mỗi lần gọi agent của stage = 1 `hub.jobs` trong `hub.runs` của lần thử (stage agent: 1 run/lần thử; stage nhóm: 1 run/lần thử, `runs.team_run_id` = team_run, mọi thành viên là job trong run đó). **Trước** khi đẩy job, Hub `insertStep` (`lib/run-steps.ts`): `type="delegate"`, `agent_id` = agent được gọi, `label_key` ∈ `process.agent`/`process.plan`/`process.member`, `detail = {process_run_id, stage_run_id, team_run_id: Uuid|null, member_key: string|null, role: "agent"|"plan"|"member"}`. Payload `agent.cli` **không thêm khoá** (`AgentCliJobSchema` strict + pydantic): `run_id` = run stage (→ cột `runs.process_run_id/stage_run_id/team_run_id`), `step_id` = bước trên (runtime ghi `usage_logs.step_id`), `timeout_s` = `stage.timeout_s`, `attachments[]` = output đã chốt + bản nháp (`id` = `process_outputs.attachment_id`, `name` = `s<idx>-v<version>-<filename>`).
+
 ## 8. Security review riêng (RV1, HUB-BR-25)
-Ma trận: {người bắt đầu, thành viên phòng, rời phòng, assignee user, thành viên group, người được chuyển, user khác cùng tenant, tenant khác, tenant_admin, platform_admin} × {GET run, output đang kiểm, output stage khác, usage, decision, answer, forward, decide, cancel, `GET /rooms/R`, tin phòng R, `/conversations` nền, `/runs/:id` stage}. Kỳ vọng: §5; tenant khác luôn 404; audit `view` có hàng.
+Ma trận (+ cột U1: tin thread `process` của phòng R, chèn `sender_type=process` bằng user ⇒ 42501, `process_thread_events` scope user SELECT ⇒ 0 hàng): {người bắt đầu, thành viên phòng, rời phòng, assignee user, thành viên group, người được chuyển, user khác cùng tenant, tenant khác, tenant_admin, platform_admin} × {GET run, output đang kiểm, output stage khác, usage, decision, answer, forward, decide, cancel, `GET /rooms/R`, tin phòng R, `/conversations` nền, `/runs/:id` stage}. Kỳ vọng: §5; tenant khác luôn 404; audit `view` có hàng.
 
 ## 9. Lệnh xong `done:pa`
 `tools/scripts/src/done-pa.ts` (mẫu `done-x2b.ts`): check · typecheck · bun test · `test:int` P-a (pf1–pf4) · `bunx playwright test P-a` · `test:lock:verify` · `trace --check`. qc định danh sách test; backend-lead thêm int `lock-order` + migration 0019 idempotent (chạy 2 lần).

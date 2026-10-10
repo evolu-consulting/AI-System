@@ -1,6 +1,6 @@
 # Plan · P-process-engine — Backend P-a (Hub TS)
 
-Phụ lục: [`plan-contract.md`](plan-contract.md) (zod từng endpoint/sự kiện/mã lỗi, chữ ký luật thuần). Nghiệp vụ: spec §2, BA-H §6.10. Mọi số giới hạn: spec §2.1 (không đổi sau spike).
+Phụ lục: [`plan-contract.md`](plan-contract.md) (zod, mã lỗi, chữ ký luật) · [`plan-thread.md`](plan-thread.md) (U1) · [`plan-step0.md`](plan-step0.md) (chủ sở hữu, Bước 0 bổ sung, mock, U2/U3). Nghiệp vụ: spec §2, BA-H §6.10. Mọi số giới hạn: spec §2.1 (không đổi sau spike).
 
 ## 1. Quyết định chính
 | # | Quyết định | Lý do / nguồn |
@@ -16,8 +16,8 @@ Phụ lục: [`plan-contract.md`](plan-contract.md) (zod từng endpoint/sự ki
 | D9 | MCP lai không có ở P-a (CR-023 Hoãn); không thiết kế quanh prompt cache; giới hạn team-run giữ 10 lần gọi / 200k token / 10 phút chạy; token = in + out + cache_read + cache_write (cùng công thức spike) | spike Khuyến nghị 3, 5, 6 |
 | D10 | Chuyển trạng thái do **người** (duyệt/trả lời/quyết/huỷ) ghi trong tx scope `user` của người đó (RLS bảng quy trình = theo tenant) rồi **sau COMMIT** `StageLauncher.kick(runId)`: tx scope `user` của **người bắt đầu** khoá run → kiểm lại quyền (P-R10) → `createRunTx` → `launch`. Instance chết giữa chừng ⇒ vòng quét 30 s nhặt `stage_runs.status='queued'` | Tách tx như X2b D4; `createRunTx` cần scope người bắt đầu |
 | D11 | Kết quả job ⇒ tx quy trình (người bắt đầu) **trước**, `writer.finish` run stage **sau**; idempotent theo `stage_runs.current_run_id`. Vòng đối chiếu: stage `running` mà run đã kết thúc > 60 s không có kết quả ⇒ `needs_decision{interrupted}`. Huỷ run stage bằng `/runs/:id/cancel` ⇒ cũng `interrupted` | K4; một đường ghi |
-| D12 | **Tài khoản hệ thống "Quy trình" (M6):** danh tính **ảo** — hằng `PROCESS_SYSTEM_SENDER` (không hàng `admin.users`, không đăng nhập, không vào nhóm, không có trong danh bạ), tên theo locale. "DM" = hộp thư `process_notices` riêng từng user (`GET /me/process-inbox`, sự kiện `process.notice`), FE hiển thị như một DM ghim; không có composer (không nhận tin chữ). **Không** thêm kiểu phòng/sender vào X2a | Không đổi enum khoá X2a (`ROOM_KINDS`, `ROOM_SENDER_TYPES`), không đụng admin; Câu hỏi C3 |
-| D13 | Run trong phòng: tin gọi `!key` là tin user có `room_messages.process_run_id` (thẻ run); tiến độ = `process.updated` + `GET /process-runs/:id`; **không** mở thread, không đăng tin hệ thống vào phòng ở P-a | P-R01 "thấy cả run" qua quyền xem (§5); ít đụng X2a/X2b |
+| D12 | **Tài khoản hệ thống "Quy trình" (M6):** danh tính **ảo** — hằng `PROCESS_SYSTEM_SENDER` (không hàng `admin.users`, không đăng nhập, không vào nhóm, không có trong danh bạ), tên theo locale. "DM" = hộp thư `process_notices` riêng từng user (`GET /me/process-inbox`, sự kiện `process.notice`), FE hiển thị như một DM ghim; không có composer (không nhận tin chữ). Không thêm kiểu phòng; sender `process` chỉ cho tin thread (plan-thread T3) | Không đổi enum khoá X2a (`ROOM_KINDS`, `ROOM_SENDER_TYPES`), không đụng admin; Câu hỏi C3 |
+| D13 | **[U1 2026-10-10, thay]** Run trong phòng = **thread X2b**; Hub đăng tin `sender_type=process` qua outbox — [`plan-thread.md`](plan-thread.md) | Mockup ④ |
 | D14 | Hỏi AI: `!key` trên `POST /conversations/:id/messages` ⇒ **202** JSON `{process_run}` + `X-Process-Run-Id` (không SSE, không lưu tin vào hội thoại); thẻ dựng lại từ `GET /process-runs?conversation_id=` | Chỉ thêm; C1 SSE giữ nguyên |
 | D15 | Cờ `HUB_PROCESS_ENGINE=on|off` (mặc định `off`): `off` ⇒ không mount route quy trình (404), `!` là chữ thường như hiện nay (test khoá H2b/X2b không đổi). Dev bật ở F6 | CR-059 cờ feature |
 | D16 | Mã lỗi ở khối **mới** `CHAT_PROCESS_ERRORS` / `HUB_ADMIN_PROCESS_ERRORS`; sự kiện ở hằng mới `ME_STREAM_PROCESS_EVENTS` (hằng X2a/X2b giữ số lượng — test khoá R24/R31/K7/K8) | X2b D9, D10 |
@@ -46,9 +46,9 @@ Không FK sang `admin.*` (P3). `ts` = `timestamptz`. RLS mặc định: `FOR ALL
 |---|---|---|
 | `runs` | process_run_id, stage_run_id, team_run_id uuid null · CHECK (process_run_id IS NULL) = (stage_run_id IS NULL) · idx `runs_process_run_idx` (process_run_id) WHERE NOT NULL | PF1 ghi, PF4 đọc usage |
 | `conversations` | process_run_id uuid null (đánh dấu hội thoại nền, không FK) · uq WHERE NOT NULL | Bước 0 lọc C1 |
-| `room_messages` | process_run_id uuid null FK process_runs SET NULL · idx WHERE NOT NULL · `ALTER POLICY room_messages_insert` thêm `AND (process_run_id IS NULL OR hub.is_process_trigger(room_id, process_run_id))` (definer: run cùng tenant, `origin_room_id = room_id`, `started_by = app.user_id`) | PF1 ghi, FE đọc |
+| `room_messages` | process_run_id uuid null FK process_runs SET NULL · idx WHERE NOT NULL · `ALTER POLICY room_messages_insert` thêm `AND (process_run_id IS NULL OR hub.is_process_trigger(room_id, process_run_id, flow_id))` (definer: run cùng tenant, `origin_room_id = room_id`, `started_by = app.user_id`) | PF1 ghi, FE đọc |
 | `audit_log` CHECK | action += start, cancel, decide, review, answer, forward, view, copy, authorize_real_action · entity += process_def, process_run, review_task, agent_team | mọi PF |
-GRANT: hub_rw SELECT/INSERT/UPDATE bảng mới (không DELETE, trừ process_defs qua system), agent_runtime không quyền. Hàm definer: `hub.is_process_trigger(uuid,uuid)`, `hub.process_run_viewer(p_run uuid) RETURNS text` ('full'/'task'/NULL — dùng trong repo xem, §5), search_path cố định như 0011.
+GRANT: hub_rw SELECT/INSERT/UPDATE bảng mới (không DELETE, trừ process_defs qua system), agent_runtime không quyền. Hàm definer: `hub.is_process_trigger(uuid,uuid,uuid)`, `hub.process_run_viewer(p_run uuid) RETURNS text` ('full'/'task'/NULL — dùng trong repo xem, §5), search_path cố định như 0011.
 
 ## 3. Máy trạng thái (hàm thuần `core/process-state.rules.ts`, Bước 0)
 ### 3.1 process_run — `running | waiting_review | waiting_answer | needs_decision | done | cancelled | failed | expired`
@@ -88,14 +88,14 @@ Trước **mỗi** lần gọi: `teamLimitHit` (calls ≥ max_calls ⇒ calls; t
 ## 4. Giới hạn — điểm thực thi
 | Giới hạn | Ở đâu (file) | Hành vi |
 |---|---|---|
-| ~5 run đồng thời/tenant | start (`runs/start.service.ts`), dưới `pg_advisory_xact_lock(hashtext('process:'‖tenant))`, đếm `process_runs_active_idx` | 429 `TOO_MANY_PROCESS_RUNS` + `Retry-After: 30` |
+| 5 run đồng thời/tenant (`PROCESS_RUNS_PER_TENANT`) | start (`runs/start.service.ts`), dưới `pg_advisory_xact_lock(hashtext('process:'‖tenant))`, đếm `process_runs_active_idx` | 429 `TOO_MANY_PROCESS_RUNS` + `Retry-After: 30` |
 | Làm lại ≤ 3/stage | gate fail (`gates/gates.service.ts`) | needs_decision{redo_limit} |
 | Hỏi lại ≤ 3/stage | kết quả need_input (`runs/stage-driver.ts`) | needs_decision{ask_limit} (không tính làm lại) |
 | Chuyển ≤ 3 | forward (`asks/asks.service.ts`) | 409 `FORWARD_LIMIT` |
 | Team-run 10 lần gọi / 200k token / 10 phút chạy / 2 lần không đổi | `runs/team-runner.ts` trước/sau mỗi job | team_run limit ⇒ needs_decision |
 | Job 10 phút (≤ 60) | `stage.timeout_s` (60..3600) ⇒ `AgentTask.agent.timeoutS` | TIMEOUT ⇒ needs_decision{job_timeout} |
 | Ngân sách token stage/run | sau mỗi job: Σ usage stage ≥ `stage.token_budget` / Σ run ≥ `def.token_budget` (null = không) | needs_decision{stage_tokens|run_tokens} |
-| Sống ~7 ngày | vòng quét 60 s (`runs/sweeps.ts`) | expired |
+| Sống 7 ngày (`PROCESS_RUN_TTL_DAYS`) | vòng quét 60 s (`runs/sweeps.ts`) | expired |
 | Nhắc sau 1 ngày | vòng quét 5 phút (`notify/reminder.ts`) `remind_at ≤ now AND reminded_at IS NULL` | notice `reminder` + reminded_at; chỉ nhắc 1 lần |
 
 ## 5. Quyền xem / thao tác (`core/run-access.rules.ts`, Bước 0) — HUB-BR-25 (hard stop)
@@ -114,18 +114,18 @@ Nguồn duy nhất `hub.usage_logs` (Runtime ghi, `job_id` unique, `run_id`, `st
 ## 7. Cú pháp `!` (`core/bang.rules.ts`, Bước 0; HUB-BR-28, M2)
 Bỏ khoảng trắng ASCII đầu (như `routeMessage`). `!!…` ⇒ chữ, bỏ một `!` · `!<tok>` với `tok` (tới khoảng trắng) khớp `^[a-z0-9-]{2,32}$` (so sánh chữ thường) ⇒ `{process, key, input = phần còn lại trim}` · `!` trơn / tok sai dạng ⇒ `{invalid}` ⇒ 404 `PROCESS_NOT_FOUND{suggestions ≤ 3}` · khác ⇒ `none` (đường cũ). Phòng: kiểm **trước** `routeRoomMessage`, bỏ qua khi có `answer_run_id`; Hỏi AI: trước `routeMessage`. Namespace riêng: `/` (command) và `@` không bị ảnh hưởng; `/` trong phòng vẫn là chữ (X2b Q10).
 
-## 8. Bước 0 — ranh giới (CR-059; dữ liệu/điểm nóng ≥ 2 PF ⇒ Bước 0)
+## 8. Bước 0 — ranh giới (CR-059; ≥ 2 PF ⇒ Bước 0; **bổ sung: plan-step0 §2**)
 | Phần | Nội dung chính xác | File |
 |---|---|---|
 | **0a** contract (B2) | Toàn bộ `plan-contract.md` §1–§5 (zod + mã lỗi + sự kiện + hằng trạng thái), export subpath; fixture + mock cho cả 4 PF | `packages/contracts/src/chat/processes.ts`, `chat/processes-errors.ts`, `chat/me-stream-process.ts`, `chat/index.ts` (+export), `chat/rooms.ts` (+`process_run_id?` ở `RoomMessage`), `hub-admin/processes.ts`, `hub-admin/index.ts`; `tools/mocks/src/chat/processes/{fixtures,runs,gates,asks,inbox,usage}.ts` + đăng ký route mock |
 | **0b** DB (B1) | §2 đủ (mọi bảng/cột/RLS/definer/GRANT/CHECK audit) | `packages/db/migrations-hub/0019_pa_process_engine.sql`, `meta/_journal.json`, `src/schema/hub-processes.ts`, `src/schema/hub.ts` (+3 cột `runs`, 1 cột `conversations`, enum audit), `hub-rooms.ts` (+cột) , `packages/db/README.md` |
 | **0b** khung (B0) | Module + stub rỗng đúng chữ ký (§9), luật thuần dùng chung **có thân** (`process-state`, `run-access`, `bang`, `limits`), ports, `events.ts` (dựng `UserEvent` quy trình), repo lõi (`lockRun`, `loadRunHead`, `insertTask`+assignees, `closeTask`) | `apps/hub-api/src/modules/processes/{README.md, processes.mount.ts, core/*}` + file stub mỗi PF (§9) |
 | **0b** điểm nóng | (1) `app.ts`: `PROTECTED_PREFIXES` += `/processes`, `/process-runs`, `/review-tasks`, `/process-defs`, `/agent-teams`; gọi `mountProcesses` khi cờ bật · (2) `config/env.ts`: `HUB_PROCESS_ENGINE` · (3) `runs/create-run.ts` + `runs.repo.ts`: `CreateRunInput.process?: {processRunId, stageRunId, teamRunId, files, preconfirm?: {workflowIds, decidedBy}}` (ghi 3 cột, bỏ giới hạn user, chèn `tool_confirmations` D4 sau bước tool_confirmations) · (4) `runs/runs.service.ts`: `prepareProcess` (D3) · (5) `conversations/conversations.repo.ts:34` + `runs/runs.repo.ts:41`: thêm `isNull(c.processRunId)` cho C1 · (6) `runs/runs.routes.ts` sendMessage: tham số `processStart?: ProcessStartPort` — `classifyBang` trước `routeMessage` ⇒ 202 · (7) `rooms/messages/messages.service.ts`: `useProcesses(RoomProcessSender)` + nhánh bang trước `routeRoomMessage`; `SendResult.processRunId?`; `room-messages.routes.ts` header `X-Process-Run-Id` · (8) `me-stream/user-stream-reader.ts` `parseFields` += `parseMeStreamProcessEvent`; `lib/user-stream.ts` `UserEvent` += `MeStreamProcessEvent`, `roomIdOf` an toàn khi không có `room_id` · (9) audit: `lib/hub-audit.ts` không đổi (enum lấy từ schema) | như cột trái |
-| **0c** defs + seed (B3) | `process_defs` CRUD + chép mẫu + run từ admin (stub → PF1 `StartPort`), `GET /agent-teams`; seed `processes.yaml`: 2 mẫu (SDLC 8 stage theo WORKFLOW — **xem `plan-seed.md` D18**, hoá đơn 2 stage + "Hành động thật"), nhóm `ba-team` + `plan-team`/`dev-team`/`test-team`, agent vai (`fake-cli` dev), bật nhóm cho tenant dev, chép `hoa-don` vào tenant dev gán Group "Kế toán" | `modules/processes/defs/**`, `modules/seed/seed.processes.ts` (+đăng ký trong `seed.ts`, `seed.schema.ts`), `apps/hub-api/seed/processes.yaml`, `agents.yaml` (+4 agent) |
+| **0c** defs + seed (B3) | `process_defs` CRUD + chép mẫu + run từ admin (stub → PF1 `StartPort`), `GET /agent-teams`; seed `processes.yaml`: 2 mẫu (SDLC 8 stage theo WORKFLOW — **xem `plan-seed.md` D18**, hoá đơn 2 stage + "Hành động thật"), nhóm `ba-team` + `plan-team`/`dev-team`/`test-team`, agent vai (`fake-cli` dev), bật nhóm cho tenant dev, chép `hoa-don` vào tenant dev gán Group "Kế toán" | `modules/processes/defs/**`, `modules/seed/seed.processes.ts` (+đăng ký trong `seed.ts`, `seed.schema.ts`), `apps/hub-api/seed/processes.yaml`, `agents.yaml` (+8 agent vai, D18) |
 | FE (frontend-lead, B0) | Thư mục feature + route/nav rỗng + i18n namespace `process` + đọc cờ (plan-frontend): chat-web `features/processes/{composer,run-block,run-page,inbox,ask,usage}/`, route `/runs/$id`; admin-web `features/processes/`, nav "Quy trình" | `apps/chat-web/**`, `apps/admin-web/**` (chỉ khung) |
 Sau Bước 0: đổi contract/DB chỉ qua backend-lead, báo session chính. Bảng/cột **chỉ một** PF dùng mà chưa có ở §2 ⇒ PF tự thêm migration `0020+` chỉ-thêm (đánh lại số khi rebase).
 
-## 9. File theo PF (chỉ sửa file của mình; ngoài cột ⇒ dừng, báo session chính)
+## 9. File theo PF (ngoài cột ⇒ dừng, báo session chính; mở task ask/decision = PF1 — plan-step0 §1)
 | PF | Thư mục/file BE (`apps/hub-api/src/modules/processes/…`) | Endpoint/sự kiện sở hữu |
 |---|---|---|
 | Bước 0 | `processes.mount.ts`, `core/{process-state.rules,run-access.rules,bang.rules,limits.rules,ports,events,core.repo,core.types}.ts`, `README.md` | — |
