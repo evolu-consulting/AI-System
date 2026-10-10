@@ -12,10 +12,18 @@ Thuộc [`test-plan.md`](test-plan.md) (persona §2, bố cục §1). Hub thật
 | S0-05 | §2.2 | ″ | `room_messages.process_run_id` = run của người khác / run phòng khác / run tenant khác (scope user B) | lỗi policy `room_messages_insert`; run của chính A ở R ⇒ được |
 | S0-06 | BR-25 | ″ | `hub.process_run_viewer(run)` dưới scope user A, X, T(assignee), H, L, D | 'full','full','task',NULL,NULL,NULL |
 | S0-07 | §2 GRANT | ″ | role `agent_runtime` | SELECT bảng mới ⇒ permission denied |
+| S0-08 | T4, plan-contract §8 | `rls` | scope user A (thành viên R): INSERT `room_messages` `sender_type='process'` (đủ cột process, `flow_id` thread run của A); gọi `hub.room_post_process_message(ev)` | **42501** cả hai; 0 tin mới; `last_seq` R không đổi |
+| S0-09 | plan-thread §3 | ″ | scope user A: INSERT `process_thread_events` acme / beta; SELECT, UPDATE `process_thread_events` | INSERT acme được, beta lỗi RLS; SELECT = 0 hàng, UPDATE = 0 hàng (chỉ `system`); CHECK `kind` ∉ 7 / `content` 501 ký tự ⇒ lỗi; `room_messages_process_ck` (process thiếu `process_meta`, có `run_id`) ⇒ lỗi; uq 2 `block` cùng run ⇒ lỗi |
 | S0-10 | D15 | `flag` | cờ **off**: `GET /processes`, `POST /process-runs`, `GET /process-runs/x`, `/review-tasks/x/decision`, `/me/review-tasks`, `/me/process-inbox`, `/process-defs`, `/agent-teams` | 404 tất cả; A gửi `"!hoa-don x"` ở R ⇒ 201 tin thường, không header, 0 `process_runs`; Hỏi AI ⇒ đường SSE cũ (xanh trước code) |
 | S0-11 | M2, BR-28 | ″ | cờ on: phòng `"!!abc"`; Hỏi AI `"!!abc"` | 201 tin nội dung `"!abc"`, 0 run; Hỏi AI gửi `"!abc"` qua đường cũ |
 | S0-12 | C1, BR-25 | ″ | hội thoại có `process_run_id` (SQL) của A | không có trong `GET /conversations` của A; `GET/POST /conversations/:id` ⇒ 404; `/runs` liệt kê không lộ |
 | S0-13 | D16 | ″ | `/me/stream` nhận `process.updated` XADD tay | client parse được; sự kiện X2a/X2b cũ vẫn đến |
+| S0-14 | T7, CHAT-AC-52 | `thread-route` | fixture SQL: run A origin R, `flow_id` F, khối `block` đã đăng; B `POST /rooms/R/messages {flow_id:F}`: "Đã gửi file"; "@hd-read xem lại"; "!hoa-don-t x"; "!!x"; kèm `answer_run_id` của run X2b; `flow_id` F ở phòng khác | 201, 0 `hub.runs`, tin `user` trong thread (`GET ?flow_id=F`); **422 `PROCESS_THREAD_NO_AGENT`**, không lưu tin, 0 run; 201 chữ thường, 0 `process_runs`; 201 nội dung "!x"; 404 `NOT_FOUND`; 404 |
+| S0-15 | T5 | `thread-poster` | 3 sự kiện chưa đăng của run (SQL, `created_at` t1<t2<t3, kind block/output/ask); `postThreadOnce` ×2; thêm 1 sự kiện ⇒ `ThreadPoster.post(run)` ∥ `postThreadOnce` | 3 tin `sender_type='process'`, `id = event.id`, `seq` tăng theo t1→t3, `placement` main/flow/flow, `sender_id` = `process_def_id`, `process_kind` + `process_meta` đúng; lần 2 = 0 tin; song song ⇒ đúng 1 tin; mọi sự kiện `posted_at` + `outcome=posted` |
+| S0-16 | T10 | ″ | phòng R xoá mềm (X2a) trước khi đăng; run origin không phải room (`enqueueThread` origin conversation/none) | sự kiện `outcome=skipped`, 0 tin, run không đổi trạng thái; `enqueueThread` trả `""`, 0 hàng sự kiện |
+| S0-17 | §10, plan-thread §3 | ″ | ×20 vòng: `postThreadOnce` ∥ tx giả lập start (`rooms` FOR UPDATE → INSERT `process_runs`) ∥ tx giả lập cổng (`process_runs` FOR UPDATE → INSERT sự kiện) cùng phòng | không `40P01`/timeout; mọi sự kiện đăng đúng 1 lần |
+| S0-18 | T1, plan-thread §4 | `thread-read` | fixture: khối `block` + 2 tin flow `output`/`task_result`; `process_meta` hỏng ở 1 tin | `GET /rooms/R/messages` (main): khối có `sender.display_name` = tên quy trình snapshot, `process.kind=block`, `flow{message_count:2, recent[].process.kind}`; `?flow_id=F` trả 2 tin + tin gọi, `process` parse `RoomProcessPart`; tin hỏng: không có `process`, giữ `content`; danh sách phòng: preview tin cuối có tên quy trình; tin `agent` X2b cùng phòng không đổi dạng |
+| S0-19 | T9 | `thread-unread` | B, X là thành viên, đang không mở R; đăng 1 khối + 1 tin flow; X mở flow (`room_flow_reads`) | B, X nhận `room.message` + `room.unread` (đếm như tin agent trong thread X2b, theo `last_seq` + `room_flow_reads`); X đọc flow ⇒ chưa đọc thread về 0; T (ngoài R) không nhận sự kiện nào; không loại sự kiện `/me/stream` mới; mốc đọc của ai cũng không bị poster đổi |
 | S0-20 | ADM-FR-65 | `defs` | tadmin `GET /process-defs` | có mẫu `sdlc`, `hoa-don` (`is_template`) + quy trình acme; không có của beta; member ⇒ 403 |
 | S0-21 | ″ | ″ | tadmin `POST /process-defs/:sdlc/copy` | 201 `enabled=false`, mọi `after.group_id=null`, `source_template_id`; lần 2 cùng key ⇒ 409 `PROCESS_KEY_TAKEN`; `{key:"sdlc-2"}` ⇒ 201 |
 | S0-22 | ″ | ″ | P `POST /process-defs` không `tenant_id` | 201 mẫu `tenant_id=null`; tadmin `PUT` mẫu ⇒ 403 `TEMPLATE_READ_ONLY` |
@@ -34,13 +42,13 @@ Thuộc [`test-plan.md`](test-plan.md) (persona §2, bố cục §1). Hub thật
 ## 2. PF1 — `tests/acceptance/P-a/pf1/`
 | Mã | Yêu cầu | File | Dữ liệu | Kỳ vọng |
 |---|---|---|---|---|
-| P1-01 | AC-H28, FR-105, D13 | `start` | A `"!hoa-don-t HD-12"` ở R | 201 `RoomMessage{process_run_id}` + `X-Process-Run-Id`; 1 `process_runs` (origin room, `started_by`=A, `def_version`, `snapshot` = def); 1 `hub.runs` `direct` user A có `process_run_id`/`stage_run_id`; hội thoại nền; số tin phòng +1 (không tin hệ thống, không thread) |
+| P1-01 | AC-H28, FR-105, D13 | `start` | A `"!hoa-don-t HD-12"` ở R | 201 `RoomMessage{process_run_id, flow_id}` + `X-Process-Run-Id` + `X-Flow-Id` (= `process_runs.flow_id`); 1 `process_runs` (origin room, `started_by`=A, `def_version`, `snapshot` = def); 1 `hub.runs` `direct` user A có `process_run_id`/`stage_run_id`; hội thoại nền; sau `postThreadOnce`: đúng 1 tin `process` kind `block` (main, cùng `flow_id`, `seq` sau tin gọi) — tổng tin main +2; `trigger_message_id` = tin gọi |
 | P1-02 | BR-28 | ″ | `"!hoa-dn x"`; `"!"` | 404 `PROCESS_NOT_FOUND{suggestions:["hoa-don-t"]}`; tin không lưu; 0 run; 0 job Orchestrator |
 | P1-03 | M1 | ″ | `run_group_ids=[Kế toán]`, X gửi; quy trình tắt; đã xoá; mẫu | 404 cùng dạng P1-02 (không phân biệt) |
 | P1-04 | §7 | ″ | tin có `answer_run_id` + nội dung `"!hoa-don-t"` | đi đường trả lời X2b, không tạo run |
-| P1-05 | CHAT-AC-52, D14 | ″ | `POST /conversations/:id/messages "!hoa-don-t x"` | **202** `{process_run}` + header; không tin mới trong hội thoại; origin conversation; `GET /process-runs?conversation_id=` có run |
+| P1-05 | CHAT-AC-52, D14 | ″ | `POST /conversations/:id/messages "!hoa-don-t x"` | **202** `{process_run}` + header; không tin mới trong hội thoại; origin conversation; `GET /process-runs?conversation_id=` có run; 0 `process_thread_events` (D14: không thread); `GET` view `thread=null` |
 | P1-06 | §3 | ″ | `POST /process-runs` origin none / room không là thành viên / conversation của B | 201 / 404 `NOT_FOUND` / 404 |
-| P1-07 | FR-105, §2.1 | ″ | 5 run active acme (SQL) | lần 6 ⇒ 429 `TOO_MANY_PROCESS_RUNS` + `Retry-After: 30`, tin phòng không lưu (ROLLBACK); beta vẫn 201; 1 run → done ⇒ 201 |
+| P1-07 | FR-105, §2.1 | ″ | 5 run active acme (SQL) | lần 6 ⇒ 429 `TOO_MANY_PROCESS_RUNS` + `Retry-After: 30`, tin phòng không lưu (ROLLBACK), 0 `process_thread_events` (outbox cùng tx); beta vẫn 201; 1 run → done ⇒ 201 |
 | P1-08 | ″ | ″ | 4 active, 6 yêu cầu song song | đúng 1 × 201, 5 × 429 (advisory lock) |
 | P1-09 | X2b | ″ | trùng `client_msg_id` | 200 tin cũ, vẫn 1 run |
 | P1-10 | CHAT-AC-51 | ″ | `GET /processes` A / X | chỉ quy trình bật + group cho phép, sort tên, không mẫu, không beta; X không thấy `hoa-don-t` |
@@ -64,6 +72,10 @@ Thuộc [`test-plan.md`](test-plan.md) (persona §2, bố cục §1). Hub thật
 | P1-33 | §2.1 | ″ | Chưa đạt sau P1-30 | `team_runs` mới attempt 2, `calls=0` |
 | P1-34 | D8 | ″ | Chưa đạt `sections:["Phần B"]`; góp ý nhắc "phần c"; không khớp | chỉ job m2; m3; cả nhóm |
 | P1-35 | AC-H32 | ″ | nhóm need_input lúc `active_ms`=300 000, chờ 20 phút (SQL lùi `segment_started_at`) rồi trả lời | `active_ms` không tính thời gian chờ |
+| P1-36 | **C2**, HUB-BR-23 ngoại lệ | `team` | (a) `p-team`: A **không** có `agent_grants` cho `m1`–`m3`, `qc-team` bật cho acme, 3 thành viên bật; (b) như (a), `platform_admin` thu entitlement `qc-team` của acme trước `kick`; (c) tắt agent `m2` trước `kick`; (d) stage agent đơn `hd-read`, A không có grant | (a) stage chạy, 3 job, output ghép; (b) 0 job, needs_decision `permission_lost`, options 3; (c) như (b) (`team_runs` không tạo hoặc `stop_reason` ghi rõ — không chạy thành viên còn lại); (d) needs_decision `permission_lost` (grant vẫn kiểm cho stage agent) |
+| P1-37 (cũ P2-01) | AC-H30, FR-110 | `ask-open` | runtime `need_input{"Định dạng ngày?", ["dd/mm","ISO"]}`; input run 1 500 ký tự | stage `waiting_answer`; job kết thúc (không giữ slot); task ask open: question, choices, `excerpt` = 1 000 ký tự đầu (C4), assignee theo `stage.answerer` (mặc định A); `asks_count=1`, `attempt` giữ; sự kiện thread `ask` (`asks_count`, `ask_limit`) (notice `ask_requested` kiểm ở PF3, không ở đây) |
+| P1-38 (cũ P2-10) | AC-H30 | ″ | need_input lần 4 cùng stage (SQL `asks_count=3`) | needs_decision `ask_limit`; `attempt` không đổi; A `decide add_attempt` ⇒ `ask_limit=4`, stage queued |
+| P1-39 (cũ P2-11 nửa đầu) | FR-110, D7 | ″ | nhóm `parallel_merge`, 2 thành viên need_input | đúng 1 task ask (câu gộp `mergeQuestions`, có vai), team `waiting_answer`, 1 sự kiện thread `ask` |
 | P1-40 | AC-H28 | `gates` | B `decision fail` không / `"   "` feedback | 422 `FEEDBACK_REQUIRED`; task vẫn open |
 | P1-41 | AC-H28 | ″ | B fail "Thiếu MST" | 200 `TaskDetail result=fail`; stage attempt 2, job mới prompt chứa "Thiếu MST"; history `review` |
 | P1-42 | AC-H28 | ″ | B pass | stage 2 chạy (1 `hub.runs` mới); `passed_by`=B |
@@ -75,6 +87,8 @@ Thuộc [`test-plan.md`](test-plan.md) (persona §2, bố cục §1). Hub thật
 | P1-48 | §10 | `lock-order` | decision ∥ cancel ∥ expire (`sweepOnce`) cùng run ×20 | không `40P01`/timeout; trạng thái cuối nhất quán, đúng 1 hàng kết thúc |
 | P1-49 | §3.4 | ″ | `decision` trên task ask | 409 `TASK_KIND_MISMATCH` |
 | P1-50 | §3 | ″ | task đã đóng; X (không assignee); D | 409 `REVIEW_TASK_CLOSED`; 404; 404 |
+| P1-51 | readiness #2, M5 | `gates` | needs_decision `redo_limit` (Group duyệt Kế toán); needs_decision `team_calls` | task `decision` assignee: hàng user A + hàng group Kế toán; `team_calls` ⇒ chỉ A; **không** hàng tenant_admin; sự kiện thread `decision {reason, options}` |
+| P1-52 | readiness #2 | `view` | P1-51 `redo_limit`, có output / chưa output: T (ngoài R) `GET` run; B; Adm; X | T `access=task`, `my_tasks[0]` kind decision `options` 3 / 2 (không `use_current`), `has_output` true/false, `can_act=true`; B full `my_tasks` có decision `can_act=true`; Adm full `decision.can_decide=true`, `my_tasks` **không** có decision; X `can_decide=false`, `my_tasks=[]` |
 | P1-60 | AC-H31, FR-109 | `real-action` | `hoa-don-t`, B pass stage 1; stage 2 gọi `ghi-so` | `tool_confirmations` confirmed `decided_run_id`= run stage 2; mock Dify 1 lần; A không nhận ask xác nhận; audit `authorize_real_action` actor B |
 | P1-61 | AC-H31 | ″ | job stage 2 gọi `ghi-so` lần 2 | `CONFIRMATION_REQUIRED`, Dify vẫn 1 lần |
 | P1-62 | AC-H31 | ″ | def SQL lách luật: stage 2 `real_action` sau stage auto | không preconfirm; tool ⇒ `CONFIRMATION_REQUIRED`; run needs_decision, không gọi Dify |
@@ -84,12 +98,27 @@ Thuộc [`test-plan.md`](test-plan.md) (persona §2, bố cục §1). Hub thật
 | P1-72 | ″ | ″ | A `GET /outputs/:oid` v1, v2 | 200 cả hai |
 | P1-73 | AC-H32, BR-26 | ″ | `expires_at` quá khứ + `sweepOnce` | `expired`, task `expired`, không stage pass; mọi lệnh ⇒ 409 |
 | P1-74 | §5 sự kiện | ″ | B pass | `process.updated` tới A, X, T sau COMMIT (đọc `/me/stream`); không tới H, D |
-| P1-75 | P-R10 | ″ | starter rời phòng giữa run | vẫn full (starter) |
+| P1-75 | P-R10, T10 | ″ | starter rời phòng giữa run | vẫn full (starter); run chạy tiếp, tin thread vẫn đăng (P1-85) |
+| P1-76 | T8 | ″ | run `waiting_review` (task group Kế toán): X `GET` | full, `my_tasks=[]`, `open_tasks[0]` `{kind:review, group:{name:"Kế toán"}, assignees}`, `thread={room_id:R, flow_id:F}` |
+| P1-77 | T8 | ″ | X `POST /review-tasks/:id/decision pass` | 404 (không assignee); task vẫn open; 0 tin `task_result` |
 
-## 3. PF2 — `tests/acceptance/P-a/pf2/` (fixture SQL run `waiting_answer` + `kick` giả trừ khi ⇢PF1)
+### PF1 · tin thread phòng (U1) — `pf1/thread.int.test.ts` (`processLoops:false`; đăng bằng `postThreadOnce` hoặc chờ `post` sau COMMIT)
+| Mã | Yêu cầu | Dữ liệu | Kỳ vọng |
+|---|---|---|---|
+| P1-80 | T1, plan-thread §2 | `hoa-don-t` ở R: output v1 → B Chưa đạt "Thiếu MST" → v2 → B Đạt → stage 2 xong | `GET /rooms/R/messages?flow_id=F` theo `seq`: tin gọi (user), `output` v1 (`review_task_id`), `task_result {result:fail, feedback:"Thiếu MST", actor:B, outside:false}`, `output` v2, `task_result pass`, `output` stage 2 (`after:auto`, `review_task_id:null`), `run_end {status:done, actor:null}`; khối `block` main; tổng tin process = 7 (T11: không tin mỗi lần gọi) |
+| P1-81 | T5 outbox | (a) B Đạt; (b) tx cổng ROLLBACK (B ∥ T Đạt — người thua 409); (c) mô phỏng sập sau COMMIT: sự kiện `output` chèn SQL `posted_at` null, app **bật** vòng (`processLoops` vắng) | (a) tin `task_result` có sau khi 200 trả (chờ điều kiện ≤ 2 s), sự kiện `task_result` cùng tx với đóng task (không có sự kiện nếu task chưa đóng); (b) đúng 1 sự kiện `task_result`; (c) tin xuất hiện trong ≤ 5 s + biên (`waitFor` 8 s), `outcome=posted` |
+| P1-82 | §10 | ×20: B Đạt ∥ A `!hoa-don-t` mới ở R ∥ `postThreadOnce` ∥ `sweepOnce` | không `40P01`/timeout; mọi sự kiện đăng đúng 1 lần |
+| P1-83 | T6, T8 | run `waiting_review`; B Đạt qua API (không POST tin phòng) | 0 tin `user` mới; 1 tin `task_result` actor B; T (đồng assignee qua group) `can_act=false` sau đó |
+| P1-84 | T10 | phòng R xoá (X2a) khi run `running` | run chạy tới `done`; sự kiện sau xoá `outcome=skipped`; A `GET` run full, `thread=null` |
+| P1-85 | T10 | A rời R khi run `waiting_review`; B Đạt | run chạy tiếp; `task_result` + `output` stage 2 vẫn đăng vào thread; A `GET /rooms/R/messages` ⇒ 404 (X2a), `GET` run vẫn full |
+| P1-86 | T9, §5 | B Đạt; theo dõi `/me/stream` của A, X, T, H | X (không mở R) nhận `room.message` + `room.unread` +1 cho tin `task_result`; `process.updated` tới A, X, T; T, H **không** nhận `room.*` của R |
+| P1-87 | T11, N4 | `p-team` 3 thành viên xong | 1 tin `output`, `process.steps` 3 hàng (`role:member`, `member_key`, `tokens`); `lead-team` ⇒ 1 `plan` + n `member` |
+| P1-88 | plan-thread §2 | output thiếu mục (M3); needs_decision `redo_limit`; A huỷ; `sweepOnce` hết hạn | `output.template_ok=false` + `template_missing`; tin `decision {reason, options}`; `run_end {cancelled, actor:A}`; `run_end {expired, actor:null}`; đóng task do hệ thống không sinh `task_result` |
+| P1-89 | T1 | `POST /process-runs` origin room R (nút "▶ Quy trình") | 0 tin gọi, 1 khối `block` (`trigger_message_id` null); origin `none`/`admin` ⇒ 0 sự kiện |
+
+## 3. PF2 — `tests/acceptance/P-a/pf2/` (fixture SQL run `waiting_answer` origin R + `stageLauncher` giả ghi runId, trừ khi ⇢PF1; mở task ask là PF1 — P1-37…39)
 | Mã | Yêu cầu | File | Dữ liệu | Kỳ vọng |
 |---|---|---|---|---|
-| P2-01 ⇢PF1 | AC-H30, FR-110 | `ask` | runtime `need_input{"Định dạng ngày?", ["dd/mm","ISO"]}` | stage `waiting_answer`; job đã kết thúc (không job đang chạy, không giữ slot); task ask: question, choices, `excerpt` = 1 000 ký tự đầu input (C4); `asks_count=1`; `attempt` giữ |
 | P2-02 | FR-110 | ″ | A `answer` | 200 `result=answer`; task closed; stage `queued`; `kick(runId)` ghi 1 lần |
 | P2-03 | AC-H30, FR-111 | `forward` | A `forward` → H, note "Hỏi kế toán giúp" | 200, `forwards[0]`; assignee `via=forward depth=1`; H `GET` run ⇒ `access=task`, `my_tasks` ask có question + note + excerpt, không output |
 | P2-04 | AC-H30, BR-24 | ″ | H trả lời rồi A trả lời | H 200; A 409 `REVIEW_TASK_CLOSED`; audit `answer` actor H; ⇢PF1: job tiếp `user_id`=A, usage A |
@@ -98,12 +127,12 @@ Thuộc [`test-plan.md`](test-plan.md) (persona §2, bố cục §1). Hub thật
 | P2-07 | FR-111 | ″ | đích K (khoá), D (beta), chính mình, đã là assignee, uuid lạ | 422 `FORWARD_TARGET_INVALID` |
 | P2-08 | FR-107 | ″ | B chuyển review → T (cùng Kế toán) / → H | 200 (T thành assignee) / 403 `FORWARD_OUT_OF_GROUP` |
 | P2-09 | §3.4 | ″ | `forward` task decision; `answer` task review | 409 `TASK_KIND_MISMATCH` |
-| P2-10 ⇢PF1 | AC-H30 | `ask` | need_input lần 4 cùng stage | needs_decision `ask_limit`; `attempt` không đổi; `add_attempt` ⇒ `ask_limit=4` |
-| P2-11 ⇢PF1 | FR-110 | ″ | nhóm `parallel_merge`, 2 thành viên need_input | 1 task ask (câu gộp), team `waiting_answer`; trả lời ⇒ chạy tiếp tại `cursor` |
+| P2-11 ⇢PF1 | FR-110 | `ask` | sau P1-39 (task ask gộp của nhóm) A trả lời | team chạy tiếp tại `cursor` (không chạy lại thành viên đã xong) |
 | P2-12 | CHAT-AC-57 | `forward` | A gửi tin phòng "@Thomas trả lời giúp" | 0 assignee mới, task không đổi |
 | P2-13 | §3 | ″ | `answer` bởi X; D; stage `answerer=group` | 404; 404; mọi thành viên group là assignee (Q7) |
 | P2-14 | §10 | `lock-order` | answer ∥ forward cùng task ×20 | không deadlock; nếu answer thắng thì forward ⇒ 409 |
 | P2-15 | contract | `forward` | answer `""`, 4 001 ký tự; note 501 | 400 `VALIDATION_ERROR` |
+| P2-16 | T6, T8, plan-thread §2 | `thread` | fixture run origin R (thread F) `waiting_answer`; A chuyển → H note "NOTE-SECRET-P2"; H (ngoài R) trả lời "dd/mm"; sau `postThreadOnce` | thread F có `forward {from:A, to:H, depth:1}` (không `note`; chuỗi "NOTE-SECRET-P2" không có trong `content`/`process_meta` mọi tin R) rồi `task_result {task_kind:ask, actor:H, outside:true, answer:"dd/mm"}`; H `GET /rooms/R/messages?flow_id=F` ⇒ 404; X (thành viên R) đọc được cả hai |
 
 ## 4. PF3 — `tests/acceptance/P-a/pf3/` (fixture SQL `review_tasks` + assignees)
 | Mã | Yêu cầu | File | Dữ liệu | Kỳ vọng |
@@ -117,6 +146,9 @@ Thuộc [`test-plan.md`](test-plan.md) (persona §2, bố cục §1). Hub thật
 | P3-07 ⇢PF1 | CHAT-AC-54 | ″ | B pass task chung với T | T nhận `review_task.closed{result:pass}`; `/me/review-tasks` T rỗng; notice `task_closed` |
 | P3-08 ⇢PF1 | AC-H29 | `outside` | T mở task | xem ma trận §6 (cột T) + audit `view` |
 | P3-09 | BR-25 | `inbox` | B bị gỡ khỏi Group; D | B không còn thấy task; D thấy 0 |
+| P3-10 ⇢PF1 | T8, AC-H29 | `outside` | run ở R `waiting_review` (Group Kế toán có T); T Đạt từ `/me/process-inbox` / `/runs/:id?task=` (API `decision`) | B, X thấy trong thread F tin `task_result {actor:T, outside:true, result:pass}`; T `GET /rooms/R/messages?flow_id=F` và `GET /rooms/R` ⇒ 404; `/me/review-tasks` của T trả `TaskDetail` qua `loadTaskDetails` (`can_act` false sau khi đóng) |
+| P3-11 | T8, T9 | `outside` | fixture: 3 tin `process` được đăng vào R (SQL + `postThreadOnce`) | T không nhận `room.message`/`room.unread` của R; `process_notices` chỉ cho assignee (T có `review_requested` khi task mở), không notice cho X |
+| P3-12 ⇢PF1 | readiness #2 | `inbox` | P1-51 `redo_limit` | notice `decision_requested` cho A + thành viên Group Kế toán (B, T); không cho Adm/X; `/me/review-tasks` T có task decision `can_act=true`; `team_calls` ⇒ chỉ A |
 
 ## 5. PF4 — `tests/acceptance/P-a/pf4/` (fixture SQL: run 2 stage, stage 0 làm lại 1 lần, stage 1 nhóm 3 + 1 plan; `usage_logs` + `run_steps`)
 | Mã | Yêu cầu | File | Dữ liệu | Kỳ vọng |
@@ -144,9 +176,16 @@ Run R1 (`hoa-don-t`) do A bắt đầu ở R, đang `waiting_review` stage 0 (ta
 | Adm tenant_admin | full | Đ | Đ | full | 4 | 4 | 4 | 409 state | Đ | theo X2a | 4 | 4 |
 | P platform_admin `?tenant_id` | full | Đ | Đ | full | 4 | 4 | 4 | 409 state | Đ | theo X2a | 4 | 4 |
 ¹ A chỉ forward task mình là assignee (ở R1 không có ⇒ 4); ô riêng dùng R2 có ask open. ² decide khi `needs_decision redo_limit` ⇒ Đ (Q2). Thêm: `M-audit` T `GET` run 2 lần ⇒ đúng 1 audit `view` (entity review_task); mỗi `GET output` ⇒ +1 · `M-M4` sau run `done`: T `GET` run ⇒ `access=task`, `stages=[]`, output task mình Đ, output khác 4 · `M-body` body T/H không chứa `input`, `history`, tên phòng, nội dung tin R (so chuỗi cắm sẵn `ROOM-SECRET-P1`) · `M-404-same` 404 của run không tồn tại và run không được thấy giống hệt body.
+Cột "tin R" gồm cả thread quy trình F (`GET /rooms/R/messages?flow_id=F`): T, H, L, q06, D ⇒ 404 dù việc của họ có `task_result` trong F.
+| Dòng thêm (plan-contract §8) | Ca | Kỳ vọng |
+|---|---|---|
+| `M-thread-insert` (cột U1) | mọi vai có quyền ghi R (A, B, X) chèn `sender_type='process'` bằng scope user; gọi `room_post_process_message` | 42501 (= S0-08, chạy lại trong ma trận pf1) |
+| `M-thread-events` (cột U1) | mọi vai scope user SELECT `process_thread_events` của R1 | 0 hàng |
+| `M-thread-agent` | B gửi `@hd-read …` trong F | 422 `PROCESS_THREAD_NO_AGENT`, 0 `hub.runs` (không run X2b chen vào thread, không dùng quota/grant ai) |
+| **`M-C2`** (C2, bảo mật) | stage nhóm `qc-team` của run do A bắt đầu: A không có grant thành viên ⇒ chạy (job `user_id`=A); nhóm bị thu entitlement acme / thành viên bị tắt lúc `kick` ⇒ `permission_lost`, 0 job; nhóm **chưa bật** cho beta: def beta tham chiếu `qc-team` ⇒ 422 `PROCESS_REF_INVALID{ref:"team"}`; stage agent đơn không grant ⇒ `permission_lost` | RV1 đối chiếu với P1-36; không vai nào khác A trở thành chủ job/usage |
 
-## 7. Kịch bản seed — `tests/acceptance/P-a/scenario/` (chỉ `main`, Q1)
+## 7. Kịch bản seed — `tests/acceptance/P-a/scenario/` (chỉ cổng merge PF4 + `done:pa`, Q1 — cần PF1–PF4 vì kiểm usage)
 | Mã | Mẫu | Bước | Kỳ vọng chính |
 |---|---|---|---|
-| SC-1 | `sdlc` (chép, Group "PO"={B}, "Tech lead"={B,T}, bật) | A `"!sdlc Thêm xuất CSV"` ở R → Intake `need_input` → A nhờ H (note) → H trả lời → Intake output → B Đạt (cổng 1) → 2–4 tự chạy (3 = `plan-team` 2 job) → 5 Sẵn sàng → T (ngoài phòng, qua `/me/process-inbox`) Chưa đạt "Thiếu ma trận luật" → 5 làm lại (attempt 2) → T Đạt (cổng 2) → 6–7 nhóm tự chạy → 8 Review → B Đạt (cổng 3) | run `done`; 8 stage `done`; 3 review pass + 1 fail; stage 5 `attempt=2`, các stage khác 1; 1 ask, 1 forward; 13 job đều `user_id`=A; T, H 0 tin phòng đọc được (M-*); notice `run_finished` cho A; usage totals = Σ |
-| SC-2 | `hoa-don` (tenant dev copy, Kế toán={T}) | A `"!hoa-don HD-12 12.000.000"` ở R → stage 1 output có `fields.tong_tien` → T (Thomas, ngoài phòng) Đạt từ DM → stage 2 `ghi-so` | Dify 1 lần, audit `authorize_real_action` actor T; A không được hỏi xác nhận; T sau `done` chỉ thấy task mình (M4) |
+| SC-1 | `sdlc` (chép, Group "PO"={B}, "Tech lead"={B,T}, bật) | A `"!sdlc Thêm xuất CSV"` ở R → Intake `need_input` → A nhờ H (note) → H trả lời → Intake output → B Đạt (cổng 1) → 2–4 tự chạy (3 = `plan-team` 2 job) → 5 Sẵn sàng → T (ngoài phòng, qua `/me/process-inbox`) Chưa đạt "Thiếu ma trận luật" → 5 làm lại (attempt 2) → T Đạt (cổng 2) → 6–7 nhóm tự chạy → 8 Review → B Đạt (cổng 3) | run `done`; 8 stage `done`; 3 review pass + 1 fail; stage 5 `attempt=2`, các stage khác 1; 1 ask, 1 forward; 13 job đều `user_id`=A; T, H 0 tin phòng đọc được (M-*); notice `run_finished` cho A; usage totals = Σ; thread F có 18 tin `process` (1 block · 9 output · 1 ask · 1 forward · 5 task_result (H answer, B, T fail, T, B) · 1 run_end), task_result của T/H `outside:true` |
+| SC-2 | `hoa-don` (tenant dev copy, Kế toán={T}) | A `"!hoa-don HD-12 12.000.000"` ở R → stage 1 output có `fields.tong_tien` → T (Thomas, ngoài phòng) Đạt từ DM → stage 2 `ghi-so` | Dify 1 lần, audit `authorize_real_action` actor T; A không được hỏi xác nhận; T sau `done` chỉ thấy task mình (M4); thread R: block · output s1 · task_result T (`outside:true`) · output s2 · run_end done (5 tin) |
