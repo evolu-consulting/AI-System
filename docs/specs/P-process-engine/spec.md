@@ -160,6 +160,7 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 - B2 · Mock: id `PA_FIX` dạng `00000000-0000-4000-8000-0000000a0NNN` (plan ghi `pa<NNN>` không phải hex); persona thêm `tam`/`cuc` "Thomas"/`q01`/`q02`/`tadmin` vào `MOCK_USERS`; `lan-left` = `POST /__mock/process {action:"leave"}` (thêm ngoài 5 action plan); phòng R chỉ qua `GET /rooms/:id(/messages)` — danh sách `/rooms` stub X2a giữ rỗng, mock chưa nhận `POST /rooms/:id/messages`; usage + route nằm ở `runs.ts`/`seed.ts` (không file `usage.ts`). Dify N6: khoá đếm = header `X-Mock-Workflow` → `inputs.workflow_key` → `_`.
 
 - B0 · `!!` bỏ một `!` cả trong thread; tin thread tóm tắt `vi` (tenant chưa có locale); cắt UTF-16 không tách surrogate; `core/` 15 file theo plan §9; route mọi PF mount sẵn (stub); `prepareProcess` nhóm: PF1 `team-runner` kiểm nhóm (C2); poster lỗi ⇒ chặn sự kiện sau cùng run tới lượt sau.
+- B0 · `messages.service.ts` `page`/`sendOnce`/`markFlowRead` nhận thread hợp lệ = thread phòng (`threadRoot`, `placement=main`) HOẶC thread quy trình (`repo.isProcessThread`, is_room_thread nhánh iii) — khớp policy `room_messages_insert` ở 0019; gửi/đọc/đánh dấu đọc trong thread quy trình chưa có khối `main` không còn 404 trước DB. Gate thành viên (`guard findAccess`/`lockFor`) + RLS `rooms.read`/`commit` giữ nguyên ⇒ người ngoài phòng vẫn 404. `room-run.service.ts:82` dùng `root.seq` nên giữ `threadRoot` [HUB-FR-105].
 ### Câu hỏi PLAN (C1–C5: người dùng chấp nhận mặc định 2026-10-10 — "Ok")
 | # | Câu hỏi | Mặc định đã chấp nhận |
 |---|---|---|

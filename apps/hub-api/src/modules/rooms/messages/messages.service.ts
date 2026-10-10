@@ -68,7 +68,13 @@ export class MessagesService {
     return this.rooms.read(u, async (tx, me) => {
       guard(await rooms.findAccess(tx, me, roomId), "view");
       const flowId = q.flow_id;
-      if (flowId && !(await threadRoot(tx, me, roomId, flowId))) throw appError("NOT_FOUND");
+      // P-a Bước 0 · thread hợp lệ = thread phòng (`main`) HOẶC thread quy trình (is_room_thread iii); non-member đã 404 ở `access view`.
+      if (
+        flowId &&
+        !(await threadRoot(tx, me, roomId, flowId)) &&
+        !(await repo.isProcessThread(tx, me, roomId, flowId))
+      )
+        throw appError("NOT_FOUND");
       const rows = await repo.pageDesc(tx, me, roomId, {
         beforeSeq: q.before_seq,
         limit: q.limit,
@@ -144,7 +150,13 @@ export class MessagesService {
       const dup = await repo.findByClientId(tx, me, roomId, body.client_msg_id);
       if (dup) return { out: { message: toRoomMessage(dup), created: false }, events: [] };
       const flowId = body.flow_id;
-      if (flowId && !(await threadRoot(tx, me, roomId, flowId))) throw appError("NOT_FOUND");
+      // P-a Bước 0 · thread phòng HOẶC thread quy trình (is_room_thread iii); thành viên vẫn do `lockFor` giữ (404 nếu bị bớt).
+      if (
+        flowId &&
+        !(await threadRoot(tx, me, roomId, flowId)) &&
+        !(await repo.isProcessThread(tx, me, roomId, flowId))
+      )
+        throw appError("NOT_FOUND");
       const { seq, at } = await repo.bumpSeq(tx, me, roomId);
       await repo.advanceRead(tx, me, roomId, seq);
       const row = await repo.insertMessage(tx, me, {
@@ -175,7 +187,12 @@ export class MessagesService {
   ): Promise<MarkRoomFlowReadResponse> {
     return this.rooms.commit(u, async (tx, me) => {
       await lockFor(tx, me, roomId, "read");
-      if (!(await threadRoot(tx, me, roomId, flowId))) throw appError("NOT_FOUND");
+      // P-a Bước 0 · thread phòng HOẶC thread quy trình (is_room_thread iii); thành viên do `lockFor` giữ.
+      if (
+        !(await threadRoot(tx, me, roomId, flowId)) &&
+        !(await repo.isProcessThread(tx, me, roomId, flowId))
+      )
+        throw appError("NOT_FOUND");
       const unread = await repo.advanceFlowRead(tx, me, { roomId, flowId, seq });
       return { out: { unread }, events: [] };
     });
