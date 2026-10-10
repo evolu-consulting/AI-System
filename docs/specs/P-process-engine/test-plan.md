@@ -190,6 +190,17 @@ Agent fixture (fake-cli, bật cho acme): `hd-read` (stage 1 hoá đơn), `hd-po
 | e2e | `expect(locator).toBeVisible()` (nút "Quy trình", thẻ run…) | stack không lên — `_pa-stack` chạy migrate tới 0018 khi 0019 vắng; cờ bật vô hại |
 Kết quả ghi bảng "File · Tổng · Đỏ đúng lý do · Xanh trước code (chủ ý) · Chỗ đỏ" vào mục này trước `test:lock:write`. Ca xanh trước code chủ ý: R-K03, S0-10 (cờ off = hành vi cũ), S0-12b (`/conversations` hiện tại không lộ), M-room (404 phòng cho T — hồi quy X2a), E-P16 phần "test khoá cũ".
 
+**QC1a — Bước 0 (2026-10-10, `ai_system_pa_qc_test` / `.env.test-pa_qc.local`, Redis 10, trước B1):**
+| File `P-a/step0/` | Tổng | Đỏ đúng | Xanh chủ ý | Chỗ đỏ |
+|---|---|---|---|---|
+| `rules/*` (7 file luật) | 49 | 49 | 0 | `fn()` ⇒ expect hàm |
+| `rules/contracts-pa` (R-K03 tách 2 `it`) | 11 | 10 | 1 R-K03 | export vắng / parse |
+| `migration` · `rls` · `flag` | 1 · 8 · 4 | 12 | 1 S0-10 | file 0019 / `needSchema` |
+| `thread-route` · `thread-poster` · `thread-read` (+S0-19) | 4 · 3 · 3 | 10 | 0 | `needSchema` |
+| `defs` · `seed` | 12 · 2 | 14 | 0 | `needSchema` |
+| **Tổng** | **97** | **95** | **2** | 0 lỗi fixture |
+Helper ở `P-a/_support/` (thay `_pa.ts`…). S0-15 "post ∥ postThreadOnce" = 2 `postThreadOnce` song song. Phần Hỏi AI của S0-10/11 do H1/X2b phủ.
+
 ## 6. `done:pa` (`tools/scripts/src/done-pa.ts`, mẫu `done-x2b.ts`; `--skip=int,e2e`)
 | # | Lệnh | Chặn |
 |---|---|---|
@@ -204,6 +215,7 @@ Kết quả ghi bảng "File · Tổng · Đỏ đúng lý do · Xanh trước c
 | 9 | `test:perf` P-a (plan §11) | **không** (ưu tiên thấp) |
 
 ## 7. Cần bổ sung / yêu cầu (Luật 2: mặc định qc, không chặn Gate)
+- backend-lead (B2): tên schema — body `POST /process-runs` ∈ {`CreateProcessRunRequestSchema`, `StartProcessRunRequestSchema`, `ProcessRunCreateRequestSchema`}; decision ∈ {`ReviewDecisionRequestSchema`, `ReviewTaskDecisionRequestSchema`}; forward ∈ {`ForwardReviewTaskRequestSchema`, `ReviewTaskForwardRequestSchema`, `ForwardTaskRequestSchema`}; `/me/review-tasks` ∈ {`ReviewTaskListResponseSchema`, `MeReviewTasksResponseSchema`, `ReviewTasksResponseSchema`}; `ProcessRunViewSchema`, `ProcessNoticeSchema`, `TaskDetailSchema`, `RoomProcessPartSchema`, `ProcessDefInputSchema` (hub-admin). Đặt tên khác ⇒ báo qc (QC1a).
 Đã đóng ở vòng 2: N1 (`validateProcessDef`/`copyFromTemplate` ⇒ R-DF*), N2 (PF1 mở ask, plan-step0 §1 ⇒ P1-37…39), N3 (§7.1 seam: `processEngine`, `processRunsPerTenant`, `stageLauncher`, `now`, `processLoops:false`, `onProcessHandles` ⇒ test gọi `sweepOnce`/`remindOnce`/`postThreadOnce`/`kick`, mốc thời gian bằng `now` giả, không lùi SQL trừ ca ghi rõ), N4 (§7.1: 1 `hub.runs`/lần thử, `run_steps` mỗi lần gọi, payload không thêm khoá ⇒ runtime giả ghi `usage_logs.step_id`), N5/N6 (plan-step0 §3: `PA_FIX`, `POST /__mock/process`, `GET /__mock/calls`), N10 (R2-7: giữ `Promise<number>`, qc đếm `process_thread_events.outcome` bằng SQL).
 | # | Gửi | Việc | Mặc định qc |
 |---|---|---|---|
