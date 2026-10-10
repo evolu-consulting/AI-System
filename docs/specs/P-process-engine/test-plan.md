@@ -199,6 +199,7 @@ Kết quả ghi bảng "File · Tổng · Đỏ đúng lý do · Xanh trước c
 | `thread-route` · `thread-poster` · `thread-read` (+S0-19) | 4 · 3 · 3 | 10 | 0 | `needSchema` |
 | `defs` · `seed` | 12 · 2 | 14 | 0 | `needSchema` |
 | **Tổng** | **97** | **95** | **2** | 0 lỗi fixture |
+PF1: test-plan-int §8.
 Helper ở `P-a/_support/` (thay `_pa.ts`…). S0-15 "post ∥ postThreadOnce" = 2 `postThreadOnce` song song. Phần Hỏi AI của S0-10/11 do H1/X2b phủ.
 
 ## 6. `done:pa` (`tools/scripts/src/done-pa.ts`, mẫu `done-x2b.ts`; `--skip=int,e2e`)

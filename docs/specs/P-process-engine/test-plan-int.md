@@ -190,3 +190,32 @@ Cột "tin R" gồm cả thread quy trình F (`GET /rooms/R/messages?flow_id=F`)
 |---|---|---|---|
 | SC-1 | `sdlc` (chép, Group "PO"={B}, "Tech lead"={B,T}, bật) | A `"!sdlc Thêm xuất CSV"` ở R → Intake `need_input` → A nhờ H (note) → H trả lời → Intake output → B Đạt (cổng 1) → 2–4 tự chạy (3 = `plan-team` 2 job) → 5 Sẵn sàng → T (ngoài phòng, qua `/me/process-inbox`) Chưa đạt "Thiếu ma trận luật" → 5 làm lại (attempt 2) → T Đạt (cổng 2) → 6–7 nhóm tự chạy → 8 Review → B Đạt (cổng 3) | run `done`; 8 stage `done`; 3 review pass + 1 fail; stage 5 `attempt=2`, các stage khác 1; 1 ask, 1 forward; 13 job đều `user_id`=A; T, H 0 tin phòng đọc được (M-*); notice `run_finished` cho A; usage totals = Σ; thread F có 18 tin `process` (1 block · 9 output · 1 ask · 1 forward · 5 task_result (H answer, B, T fail, T, B) · 1 run_end), task_result của T/H `outside:true` |
 | SC-2 | `hoa-don` (tenant dev copy, Kế toán={T}) | A `"!hoa-don HD-12 12.000.000"` ở R → stage 1 output có `fields.tong_tien` → T (Thomas, ngoài phòng) Đạt từ DM → stage 2 `ghi-so` | Dify 1 lần, audit `authorize_real_action` actor T; A không được hỏi xác nhận; T sau `done` chỉ thấy task mình (M4); thread R: block · output s1 · task_result T (`outside:true`) · output s2 · run_end done (5 tin) |
+
+## 8. Kết quả đỏ đúng lý do — PF1 (QC1b1, 2026-10-10, `ai_system_pa_pf1_test` / `.env.test-pa_pf1.local`, Redis 11, trước B1)
+| File `P-a/pf1/` | Tổng | Đỏ đúng | Xanh chủ ý | Chỗ đỏ |
+|---|---|---|---|---|
+| `rules/{template,team,gate}` | 6 · 6 · 4 | 16 | 0 | `fn()` ⇒ expect hàm |
+| `start` · `view` | 14 · 10 | 24 | 0 | `needSchema` |
+| `stage` · `team` · `ask-open` | 14 · 16 · 3 | 33 | 0 | `needSchema` |
+| `gates` · `lock-order` · `real-action` | 13 · 3 · 4 | 20 | 0 | `needSchema` |
+| `thread` · `thread-loops` (P1-81c, vòng nền) | 11 · 1 | 12 | 0 | `needSchema` |
+| `isolation` (99 ô PF1 + 2 ô ², 9 cột × 11 vai) · `isolation-extra` (9 ca phụ) | 101 · 9 | 110 | 0 | `needSchema` |
+| **Tổng** | **215** | **215** | **0** | 0 lỗi fixture |
+Helper riêng `pf1/_local.ts` (launcher thật, `seedPf1`: agent `hd-read`/`hd-post`/`m1–m3`/`lead1`, nhóm `qc-team`/`lead-team`/`pm-team`, Group "Người chạy"). Cột ma trận PF1 = GET run, output ×2, decision, decide, cancel, phòng R (+`?flow_id`), hội thoại nền, `/runs/:id` (H1: GET thay `/events`, cùng kiểm quyền). Giả định cần backend xác nhận: kế hoạch `lead_plan` = mảng JSON `{member, sections, instruction}`; task đóng do hệ thống = `closed` + `result` `expired`/`cancelled`; ô Adm/P "theo X2a" = như q06.
+
+## 9. Kết quả đỏ đúng lý do — PF2/PF3/PF4 (QC1b2, 2026-10-10, `ai_system_pa_pf234_test` / `.env.test-pa_pf234.local`, Redis 12, trước B1)
+| File | Tổng | Đỏ đúng | Xanh chủ ý | Chỗ đỏ |
+|---|---|---|---|---|
+| `pf2/rules/ask` (R-AK01…03) | 3 | 3 | 0 | `fn()` ⇒ expect hàm |
+| `pf2/{ask,forward,lock-order,thread}` (P2-02, P2-13 ×2 · P2-03 ×2, P2-04…09, P2-12, P2-15 · P2-14 · P2-16) | 3 · 10 · 1 · 1 | 15 | 0 | `needSchema` |
+| `pf2/resume` ⇢PF1 (P2-04 phần job, P2-11) | 2 | 2 | 0 | `needSchema` |
+| `pf2/isolation` (cột answer + forward × 11 vai + 2 ô ¹) | 24 | 24 | 0 | `needSchema` |
+| **PF2** | **44** | **44** | **0** | |
+| `pf3/rules/notify` (R-N01, R-N02) | 2 | 2 | 0 | `fn()` |
+| `pf3/{inbox,reminder,events,system-sender,outside}` (P3-01 ×2, P3-02, P3-03, P3-09, P3-12⇢ · P3-04 · P3-06, P3-07⇢ · P3-05 · P3-08⇢, P3-10⇢, P3-11) | 6 · 1 · 2 · 1 · 3 | 13 | 0 | `needSchema` |
+| **PF3** | **15** | **15** | **0** | |
+| `pf4/rules/usage` (R-U01…04) | 4 | 4 | 0 | `fn()` |
+| `pf4/usage` (P4-01…06) · `pf4/usage-real` ⇢PF1 (P4-07) | 6 · 1 | 7 | 0 | `needSchema` |
+| `pf4/isolation` (cột usage × 11 vai) | 11 | 11 | 0 | `needSchema` |
+| **PF4** | **22** | **22** | **0** | 0 lỗi fixture (PF2–PF4: 81/81) |
+Helper riêng `pf2/_local.ts` (`askRun`/`reviewRun`/`decisionRun`, `startPaReal` = launcher PF1 thật cho ⇢PF1), `pf3/_local.ts` (`reviewRun`, `insertNotice`), `pf4/_local.ts` (`usageRun`: 2 `hub.runs` stage 0 + 1 team_run plan+m1–m3, `run_steps` N4 + `usage_logs`; `usageSum`; `startPaReal`). Lệch so với §3–§6: P2-13 ở `ask.int` (không `forward`); ca ⇢PF1 cần launcher thật tách file `pf2/resume`, `pf4/usage-real` (hai ngữ cảnh `setupPa` không chạy chung file); P2-03 tách phần H `GET` run thành ca ⇢PF1 (route PF1); P2-04 ⇢PF1 kiểm `jobs/runs.user_id`=A (runtime giả không ghi `usage_logs` ⇒ vế "usage A" để SC-1); P3-12 ⇢PF1 chỉ vế `redo_limit` (vế `team_calls` ⇒ chỉ A đã phủ ở R-TK05). Ma trận: PF2 giữ cột answer/forward, PF4 cột usage; cột phòng/hội thoại nền/`/runs` + `M-A'-out` đã ở `pf1/isolation*` ⇒ PF3 **không** có `isolation.int` (phần ngoài phòng T/H ở `pf3/outside`). Cần bổ sung (backend-lead): `StageMeta` của `buildUsage` chưa khai ở plan-contract §7 — qc giả định `{stageIdx, name, attempts, asksCount, teamRuns[{id, attempt, mode, status, stopReason, activeMs}]}`; payload `process_notices` giả định `{process_name, stage_name}`.

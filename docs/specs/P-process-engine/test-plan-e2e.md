@@ -43,3 +43,26 @@ Thuộc [`test-plan.md`](test-plan.md). Nhãn nguyên văn [`plan-frontend-e2e.m
 | E-S2 | SC-1 | scenario (cổng merge PF4) · `sdlc.pa.ts` | A, B, T, H | như E-P4, E-P9, E-P12 | 3 cổng qua UI (B, T, B), 1 nhờ trả lời (A→H), 1 Chưa đạt ở Sẵn sàng (T) ⇒ v2; khối "Xong"; thread có tin kết quả task của B, T, H; tab Token 8 hàng | — |
 
 Tổng e2e (vòng 2): step0 1 · pf1 10 (E-P1–E-P7, E-P17, E-P19, E-P20) · pf2 3 · pf3 4 (E-P11–E-P13, E-P18) · pf4 5 (E-P14, E-P14b, E-P15a–c) · scenario 2 = **25**. Không có ca Import/Export (U2 ⇒ P-b).
+
+## Kết quả đỏ đúng lý do (QC1 phần b3, 2026-10-10 — trước B1, chưa có 0019/route/UI quy trình)
+Chạy thật: `bun run db:test:create pa_e2e` (⇒ `ai_system_pa_e2e_test`, `.env.test-pa_e2e.local`), `PA_E2E_PORT_BASE=4500` (admin-api 4501 · hub 4502 · rt 4503 · chat-web 4504 · admin-web 4505), Redis DB 8, `HUB_PROCESS_ENGINE=on`. Stack (`_pa-stack.ts`) lên đủ: reset + fixture M1–M3 + migrate tới 0018 + `hub:seed` + persona; bảng 0019 vắng ⇒ bỏ chèn quy trình fixture, `seedRun`/`copyTemplate` trả id giả (`ready:false`), Runtime giả bỏ qua. `actionTimeout` 15 s ⇒ thao tác trên phần tử chưa có đỏ ở locator, không hết giờ cả ca.
+
+| Thư mục · file (`e2e/P-a/…`, đuôi `.pa.ts`) | Ca (`test`) | Đỏ đúng | Chỗ đỏ |
+|---|---|---|---|
+| `pf1/` composer (E-P1, E-P2) · run-thread (E-P3, E-P17) · gate (E-P4, E-P5) · ask-ai (E-P6) · decide (E-P7 ×2) · run-unread (E-P19) · run-leave (E-P20) | 11 | 11 | `listbox "Quy trình"` / `button "Quy trình"` vắng; `startUi` ⇒ header `X-Process-Run-Id` null (E-P3/4/5/17/19); `region "Cần người quyết"`, alert 429, `article "Kết quả … v1"` vắng; E-P6 `toHaveURL /runs/` |
+| `pf2/` ask (E-P8) · forward (E-P9, E-P10) | 3 | 3 | `region "… cần thêm thông tin · lần hỏi n/3"` vắng (expect / `locator.click` 15 s) |
+| `pf3/` inbox (E-P11) · dm (E-P12) · outside (E-P13) · outside-thread (E-P18) | 4 | 4 | `button "Chờ tôi kiểm"`, `link "Quy trình"`, `heading "Hoá đơn T"` (/runs), `complementary "Flow đang mở"` vắng |
+| `pf4/` token (E-P14, E-P14b) · admin-processes (E-P15a) · admin-editor (E-P15b) · admin-runs (E-P15c) | 5 | 5 | `table "Token theo giai đoạn"` vắng; admin-web nav `link "Quy trình"` vắng (đăng nhập Adm OK) |
+| `scenario/` hoa-don (E-S1) · sdlc (E-S2) | 2 | 2 | `startUi` ⇒ `X-Process-Run-Id` null |
+| `step0/` flag-off (E-P16; off + on) | 1 | 1 | off: "Không tìm thấy" ở `/runs/<id>`/`/process-inbox` vắng (vế ẩn xanh chủ ý); on: `GET /processes` 404 |
+| **Tổng e2e** | **26** | **26** | 0 lỗi dựng stack/fixture (`PostgresError`/`TypeError`) |
+
+Int kịch bản (`tests/acceptance/P-a/scenario/`, `bun --env-file=.env.test-pa_qc.local --config=bunfig.int.toml test --timeout 60000 tests/acceptance/P-a/scenario`): `sdlc.int.test.ts` 4 ca (SC-1: chạy trọn API · stage/attempt/tasks/13 job user A · cách ly + notice + usage Σ · thread 18 tin) + `hoa-don.int.test.ts` 3 ca (SC-2: hành động thật đúng 1 lần sau cổng T ngoài phòng · confirmation/audit `authorize_real_action` actor T · T chỉ thấy việc mình + thread 5 tin) = **7/7 đỏ ở `needSchema`** (`beforeAll` xanh). Helper riêng `scenario/_local.ts` (hub thật không seam, Runtime giả tự động theo `runs.process_run_id`, `seedReal` = `hub:seed` thật + bật agent/nhóm cho acme, `copyTemplate`).
+
+Ghi chú khi viết (qc tự quyết theo Luật 2, không chặn):
+- **Đuôi `.pa.ts`** theo §1 (không `.spec.ts`: config gốc `e2e/` nhặt mọi `*.spec.ts`). Project = thư mục.
+- **E-P16** `step0/flag-off.pa.ts` (1 ca, rẽ theo `HUB_PROCESS_ENGINE` của stack): **off** (`HUB_PROCESS_ENGINE=off … --project=step0`) — Hub `GET /processes` 404, không nút/menu `!`, không "Chờ tôi kiểm"/`link "Quy trình"`, `!hoa-don-t` gửi như chữ (201, không `X-Process-Run-Id`), X2b `@hd-read` 201, nav admin không có ⇒ các vế này **xanh chủ ý** trước code (như S0-10); ca vẫn **đỏ đúng lý do** ở vế route: `/runs/<uuid>` · `/process-inbox` chưa hiện "Không tìm thấy". **on** (lần chạy thường, đối chứng) — đỏ ở `GET /processes` 404 ≠ 200 (rồi nút/menu/sidebar/DM/nav/`X-Process-Run-Id` phải CÓ) ⇒ khác biệt on/off là vế kiểm được, không xanh hiển nhiên. Tổng e2e P-a = **26** ca.
+- **Persona e2e** (user đăng nhập được, mật khẩu `PW`): A `lan` "Lan Tran" · B `hoa` "Hoa" · X `tam` "Tam" · T `cuc` "Thomas" · H `q01` "QC Người 01" · S `q06` (người lạ E-P13) · Adm `binh` "Binh Le" (`_pa-data.ts`). Group kiểm hoá đơn = key `pa-ke-toan` "Kế toán P-a" (fixture M3 đã có `ke-toan`); "Chạy hoá đơn" = {A, B} ⇒ X không thấy `hoa-don-t` (E-P1).
+- `hoa-don-t` e2e: stage 2 "Ghi sổ" **không** `real_action` (stack e2e không dựng Dify); hành động thật phủ ở SC-2/E-S1 (mẫu seed `hoa-don`) + int P1-60…62.
+- E-P8 phần "câu gộp nhóm ⇒ chip chèn vào ô" và E-P14 "stage nhóm 4 lượt (plan + 3)" chưa có fixture e2e (cần `team_runs`/ask nhiều câu do PF1 ghi) ⇒ phủ ở int + E-S2; ghi lại khi PF1 có để bổ sung.
+- Nhãn chưa có trong plan-frontend-e2e (đoán tối thiểu, cần frontend-lead xác nhận — N7/N9): nút chuyển việc **review** trong `ReviewTaskCard` (E-P10 dùng `/Chuyển|Nhờ người khác/`), ConflictDialog admin (E-P15b dùng `alertdialog|dialog` chứa "thay đổi|xung đột"), dòng "Lượt chạy hoàn tất" (E-S1).
