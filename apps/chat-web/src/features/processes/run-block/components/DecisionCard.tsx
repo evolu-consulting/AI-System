@@ -48,6 +48,8 @@ export function DecisionCard({ runId, task }: TaskCardProps) {
     [decide, note, t],
   );
 
+  // E-P7: `my_tasks` của assignee giữ cả task đã đóng (sau add_attempt) ⇒ ẩn thẻ khi quyết định xong (như Review/Ask).
+  if (task.status === "closed") return null;
   const useCurrentDisabled = task.has_output === false || decide.isPending;
   return (
     <section

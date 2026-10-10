@@ -7,11 +7,14 @@ import { useTranslation } from "react-i18next";
 import { OutputView } from "../../shared/components/OutputView";
 import { StageStrip } from "../../shared/components/StageStrip";
 import { TaskPanel } from "../../shared/components/TaskPanel";
+import { pendingDecisionTask } from "../../shared/lib/thread-task";
 import { StageOutputs } from "./StageOutputs";
 import { TaskAccessBanner } from "./TaskAccessBanner";
 
 export function ProgressTab({ view }: { view: ProcessRunView }) {
   if (view.access === "full") {
+    // E-P7: admin quyết được nhưng không là assignee ⇒ my_tasks rỗng; dựng thẻ "Cần người quyết" từ view.decision.
+    const decision = pendingDecisionTask(view);
     return (
       <div className="flex flex-col gap-4 p-4">
         <StageStrip
@@ -25,6 +28,7 @@ export function ProgressTab({ view }: { view: ProcessRunView }) {
         {view.my_tasks.map((task) => (
           <TaskPanel key={task.id} runId={view.id} task={task} view={view} />
         ))}
+        {decision && <TaskPanel key={decision.id} runId={view.id} task={decision} view={view} />}
       </div>
     );
   }

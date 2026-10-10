@@ -27,6 +27,19 @@ export function taskSlot(view: ProcessRunView | undefined, taskId: string): Task
   return { state: "none" };
 }
 
+/**
+ * E-P7 `/runs/:id` (ProgressTab, access full): admin quyết được nhưng không là assignee ⇒ không có task trong `my_tasks`.
+ * Dựng task `decision` từ `open_tasks` + `view.decision`. `null` khi không quyết được, không có open-task decision, hoặc đã ở `my_tasks`.
+ */
+export function pendingDecisionTask(
+  view: Extract<ProcessRunView, { access: "full" }>,
+): TaskDetail | null {
+  if (!view.decision?.can_decide) return null;
+  const open = view.open_tasks.find((t) => t.kind === "decision");
+  if (!open || view.my_tasks.some((t) => t.id === open.id)) return null;
+  return decisionTaskOf(view, open);
+}
+
 /** Admin quyết được nhưng không có `TaskDetail` riêng: dựng tối thiểu từ `view.decision`. */
 function decisionTaskOf(
   view: Extract<ProcessRunView, { access: "full" }>,

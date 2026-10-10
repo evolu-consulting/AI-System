@@ -6,6 +6,8 @@ import {
   type ProcessRunListResponse,
   ProcessRunListResponseSchema,
   type ProcessRunSummary,
+  type ProcessRunView,
+  ProcessRunViewSchema,
   type ReviewDecisionRequest,
   ReviewDecisionRequestSchema,
   ReviewTaskResponseSchema,
@@ -42,12 +44,12 @@ export async function postReviewDecision(
   );
 }
 
-/** `POST /process-runs/:id/decide` (Cần người quyết). 200/201 ⇒ tóm tắt run. */
+/** `POST /process-runs/:id/decide` (Cần người quyết). 200 ⇒ VIEW đầy đủ của run (như `GET /process-runs/:id`), không phải tóm tắt. */
 export async function postDecide(
   runId: string,
   body: DecideProcessRunRequest,
-): Promise<ProcessRunSummary> {
-  return CreateProcessRunResponseSchema.parse(
+): Promise<ProcessRunView> {
+  return ProcessRunViewSchema.parse(
     await api<unknown>(`${runPath(runId)}/decide`, {
       method: "POST",
       body: DecideProcessRunRequestSchema.parse(body),
