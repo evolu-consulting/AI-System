@@ -41,7 +41,7 @@ beforeAll(async () => {
   await c.sql`insert into hub.conversations ${c.sql([conv(CONV_A, PA.A.id), conv(CONV_B, PA.B.id)])}`;
   const v = (id: number, key: string) => ({
     ...DEFS.hd,
-    id: `a5a10000-0000-4000-8000-0000000002${id}`,
+    id: `a5a10000-0000-4000-8000-00000000040${id}`,
     key,
   });
   await insertDefPf1(c.sql, v(1, "hd-kt"), { runGroupIds: [PA_FIX.gKeToan] });

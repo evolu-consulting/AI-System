@@ -165,7 +165,7 @@ async function insertAgents(sql: Sql): Promise<void> {
     id,
     key,
     name: sql.json({ vi, en: vi }),
-    description: `Agent thử ${key}.`,
+    description: `Agent thử cho bộ test P-a: ${key}.`,
     runtime: "agentic-cli",
     profile_id: p?.profile_id,
     system_prompt: "",

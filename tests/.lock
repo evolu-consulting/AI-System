@@ -466,7 +466,7 @@ bf0d1071cde92e5bdef2dc69beed3da9f1be82c763b5d81ebec01d44840fed28  tests/acceptan
 4f538961e8540a2c6ff07614203b25a9ae00a22f95e46075e8b5e7eb536a7a4c  tests/acceptance/P-a/_support/parts.ts
 056ef88d8894561cf5793240b430a4e0af5ca8d4af1d71a9ccb01f0e54b88de5  tests/acceptance/P-a/_support/process-fixtures.ts
 304f8a40b48aaf9c1c60f23ba4b66a4a49d30b8828fff1d72b4a612c4e11b1c6  tests/acceptance/P-a/_support/schema.ts
-6c89a779304f206d50a18009651a38a23e7364b41056f7b30a9c3231ede73051  tests/acceptance/P-a/pf1/_local.ts
+ae5550f06fd23316446d6673cded3871822cb4cafa9826ac0ea56c63431cfe0e  tests/acceptance/P-a/pf1/_local.ts
 b60dc49fee1e492a4b6d023b5260796247ed96abdb99c95130a9710571713d91  tests/acceptance/P-a/pf1/ask-open.int.test.ts
 93b33a396360a8a80735813f2fd45be30b951521ecb8a9c343a4d033c819ecea  tests/acceptance/P-a/pf1/gates.int.test.ts
 b5a36d2f216e42ffd607759ebcc8662380f985e5c2bb39f2e5f49ec8360cd594  tests/acceptance/P-a/pf1/isolation-extra.int.test.ts
@@ -477,7 +477,7 @@ f0bfa0f6b5ff13d0ea394867df8f60b7f6b9a406c7d4f3c59edbe183e9698c59  tests/acceptan
 48a0ae85b53c619e3ac902006192624bdc0ab51d673f9e61e9c110515a5aca5a  tests/acceptance/P-a/pf1/rules/team.test.ts
 91f8d50b49386cae091ad589b248d2ee125a96cab361ce701979ea8ba2d0c329  tests/acceptance/P-a/pf1/rules/template.test.ts
 2aaf8edefbb4dafc710af66e7c940e48aef7ca001e4e1d205ca5c631449c9823  tests/acceptance/P-a/pf1/stage.int.test.ts
-d7b14b3d8f147ae231f918df5a46516671426c5d7a66de9c60816f61d741cee1  tests/acceptance/P-a/pf1/start.int.test.ts
+906fb821d23c3f71436aa6b68057448f4e42d4b1a5116a9d136213531f465c04  tests/acceptance/P-a/pf1/start.int.test.ts
 2b22d3f8ae43fe591a149a0d611b979411b0da35e1ae415ebcf4fa8c9986b1c6  tests/acceptance/P-a/pf1/team.int.test.ts
 543740016ee7215ef4dfb3e9365065cd17cc1c68647ddc0f0edc770079b670e5  tests/acceptance/P-a/pf1/thread-loops.int.test.ts
 bfd159ae2518aed3c959840d89b81897cccc0b77f9c73abd803403aa69085034  tests/acceptance/P-a/pf1/thread.int.test.ts
