@@ -322,13 +322,15 @@ export class ViewService {
     return base;
   }
 
-  /** Assignee: audit `view` (review_task) lần đầu mỗi (task, user) qua `first_viewed_at`. */
+  // HUB-BR-25 · U5 · audit `view` (review_task) lần đầu mỗi (task, user); khử trùng bằng `audit_log` (không RLS) nên người kiểm theo group ngoài phòng (không có hàng assignee user) cũng được ghi. `first_viewed_at` chỉ đánh dấu assignee user trực tiếp.
   async #auditFirst({ tx, u, r, snap }: ViewCtx, taskId: string): Promise<void> {
-    const rows = await tx.execute<{ id: string }>(sql`
-      update hub.review_task_assignees set first_viewed_at = now()
+    await tx.execute(sql`update hub.review_task_assignees set first_viewed_at = now()
       where task_id = ${taskId} and tenant_id = ${r.tenant_id} and user_id = ${u.userId}
-        and first_viewed_at is null returning id`);
-    if (rows.length > 0)
+        and first_viewed_at is null`);
+    const [seen] = await tx.execute<{ n: number }>(sql`select 1 as n from hub.audit_log
+      where tenant_id = ${r.tenant_id} and actor_id = ${u.userId} and action = 'view'
+        and entity = 'review_task' and entity_id = ${taskId} limit 1`);
+    if (seen === undefined)
       await auditView(tx, u, {
         entity: "review_task",
         tenantId: r.tenant_id,
