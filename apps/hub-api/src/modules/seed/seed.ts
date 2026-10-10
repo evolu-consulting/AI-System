@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import postgres from "postgres";
 import { z } from "zod";
 import { logger } from "../../lib/logger";
+import { buildProcessPlan, writeProcesses } from "./seed.processes";
 import {
   bumpHubConfigVersion,
   insertAgentWorkflows,
@@ -75,7 +76,9 @@ async function planTenants(tx: Tx, plan: SeedPlan) {
 }
 
 export async function runHubSeed(o: RunHubSeedOptions): Promise<{ version: number }> {
-  const plan = buildSeedPlan(readSeedDir(o.dir), { appEnv: o.appEnv, profile: o.profile });
+  const sources = readSeedDir(o.dir);
+  const plan = buildSeedPlan(sources, { appEnv: o.appEnv, profile: o.profile });
+  const processes = buildProcessPlan(sources, new Set(plan.agents.map((a) => a.key)));
   const sql = postgres(o.url, { max: 1, onnotice: () => {} });
   try {
     const { version, warnings } = await sql.begin(async (tx) => {
@@ -91,8 +94,9 @@ export async function runHubSeed(o: RunHubSeedOptions): Promise<{ version: numbe
       await insertAgentWorkflows(tx, wf.agentWorkflows);
       await upsertSideEffectFlags(tx, wf.sideEffectIds);
       const w = await writeAccess(tx, plan);
+      const pw = await writeProcesses(tx, processes);
       await notifyHubConfigChanged(tx, v);
-      return { version: v, warnings: [...wf.warnings, ...tenants.warnings, ...w] };
+      return { version: v, warnings: [...wf.warnings, ...tenants.warnings, ...w, ...pw] };
     });
     for (const w of warnings) logger.warn(w, { module: "seed" });
     return { version };

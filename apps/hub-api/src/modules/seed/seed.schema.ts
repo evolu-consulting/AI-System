@@ -113,6 +113,68 @@ export const SeedGrantSchema = z.strictObject({
     ),
 });
 
+// ── P-a D18 (`seed.processes.ts`): nhóm agent, mẫu quy trình, bản chép cho tenant ──
+const SeedKeySchema = z.string().regex(/^[a-z0-9-]{2,32}$/);
+const SeedTextSchema = z.string().min(1).max(80);
+
+export const SeedTeamSchema = z.strictObject({
+  key: SeedKeySchema,
+  name: LocalizedNameSchema,
+  description: z.string().max(500).default(""),
+  mode: z.enum(["sequential", "lead_plan", "parallel_merge"]).default("sequential"),
+  members: z
+    .array(
+      z.strictObject({
+        agent: AgentKeySchema,
+        role: z.string().min(1).max(40),
+        sections: z.array(SeedTextSchema).max(20).default([]),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
+
+/** Bật nhóm cho tenant: thêm nếu chưa có, không bỏ `revoked_at` đã đặt. */
+export const SeedTeamEntitlementSchema = z.strictObject({
+  team: SeedKeySchema,
+  tenant_key: TenantKeySchema,
+});
+
+/** Giai đoạn mẫu: executor theo key (đổi sang id lúc seed); Group kiểm của mẫu luôn null (tenant tự gán). */
+export const SeedStageSchema = z.strictObject({
+  key: z.string().regex(/^[a-z0-9-]{1,32}$/),
+  name: SeedTextSchema,
+  executor: z.union([
+    z.strictObject({ agent: AgentKeySchema }),
+    z.strictObject({ team: SeedKeySchema }),
+  ]),
+  instruction: z.string().max(4000).default(""),
+  output: z.strictObject({
+    filename: z.string().regex(/^[a-z0-9._-]{1,76}\.md$/),
+    template: z.string().min(1).max(20_000),
+    required_sections: z.array(SeedTextSchema).min(1).max(20),
+  }),
+  after: z.enum(["review", "auto"]),
+  real_action: z.boolean().default(false),
+  timeout_s: z.number().int().min(60).max(3600).default(600),
+});
+
+export const SeedProcessTemplateSchema = z.strictObject({
+  key: SeedKeySchema,
+  name: SeedTextSchema,
+  description: z.string().max(500).default(""),
+  input_hint: z.string().max(200).default(""),
+  stages: z.array(SeedStageSchema).min(1).max(10),
+});
+
+/** Chép mẫu vào tenant (chỉ khi tenant chưa có key đó): Group kiểm theo key Group của tenant. */
+export const SeedTenantProcessSchema = z.strictObject({
+  tenant_key: TenantKeySchema,
+  template: SeedKeySchema,
+  review_group: z.string().min(1).max(64).nullable().default(null),
+  enabled: z.boolean().default(false),
+});
+
 /** Một file yaml: mọi mục tuỳ chọn; các file trong thư mục được gộp (plan §3.6). */
 export const SeedFileSchema = z.strictObject({
   providers: z.array(SeedProviderSchema).default([]),
@@ -125,6 +187,11 @@ export const SeedFileSchema = z.strictObject({
   workflow_flags: SeedWorkflowFlagsSchema.optional(),
   /** H2b-R13: bản Orchestrator riêng theo tenant (vắng = giữ nguyên hàng tenant trong DB). */
   orchestrator_tenants: z.array(SeedOrchestratorTenantSchema).max(1000).default([]),
+  /** P-a D18 (seed.processes.ts): nhóm agent, bật nhóm cho tenant, mẫu quy trình, bản chép cho tenant. */
+  agent_teams: z.array(SeedTeamSchema).max(100).default([]),
+  team_entitlements: z.array(SeedTeamEntitlementSchema).max(1000).default([]),
+  process_templates: z.array(SeedProcessTemplateSchema).max(100).default([]),
+  tenant_processes: z.array(SeedTenantProcessSchema).max(1000).default([]),
 });
 
 export type SeedProvider = z.infer<typeof SeedProviderSchema>;
@@ -135,4 +202,8 @@ export type SeedOrchestratorTenant = z.infer<typeof SeedOrchestratorTenantSchema
 export type SeedEntitlement = z.infer<typeof SeedEntitlementSchema>;
 export type SeedGrant = z.infer<typeof SeedGrantSchema>;
 export type SeedAgentWorkflow = z.infer<typeof SeedAgentWorkflowSchema>;
+export type SeedTeam = z.infer<typeof SeedTeamSchema>;
+export type SeedTeamEntitlement = z.infer<typeof SeedTeamEntitlementSchema>;
+export type SeedProcessTemplate = z.infer<typeof SeedProcessTemplateSchema>;
+export type SeedTenantProcess = z.infer<typeof SeedTenantProcessSchema>;
 export type SeedFile = z.infer<typeof SeedFileSchema>;

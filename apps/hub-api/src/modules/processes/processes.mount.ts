@@ -41,7 +41,7 @@ export type ProcessSeams = {
 };
 export type ProcessMountDeps = Omit<
   ProcessDeps,
-  "now" | "runsPerTenant" | "launcher" | "notifier" | "postThread"
+  "now" | "runsPerTenant" | "launcher" | "notifier" | "postThread" | "start"
 > &
   ProcessSeams;
 /** Điểm nối vào route có sẵn: `!` ở phòng (X2a/X2b) + Hỏi AI (C1). */
@@ -49,7 +49,7 @@ export type ProcessMounted = { roomSender: RoomProcessSender; conversationStart:
 
 export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps): ProcessMounted {
   const poster = new ThreadPoster(m);
-  const d: ProcessDeps = {
+  const core: Omit<ProcessDeps, "start"> = {
     ...m,
     now: clockOf(m.now),
     runsPerTenant: m.processRunsPerTenant ?? PROCESS_RUNS_PER_TENANT,
@@ -57,6 +57,7 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     notifier: createNotifier(),
     postThread: (runId) => poster.post(runId),
   };
+  const d: ProcessDeps = { ...core, start: conversationStart(core) };
   for (const r of [
     processRunsRoutes,
     gatesRoutes,
@@ -73,5 +74,5 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     kick: (runId) => d.launcher.kick(runId),
   });
   if (m.processLoops !== false) poster.start(m.signal);
-  return { roomSender: roomStart(d), conversationStart: conversationStart(d) };
+  return { roomSender: roomStart(d), conversationStart: d.start };
 }

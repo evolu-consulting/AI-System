@@ -1,0 +1,243 @@
+# HUB-FR-104 · HUB-FR-114 · P-a D18 (docs/specs/P-process-engine/plan-seed.md) · nhóm agent + mẫu quy trình + bản chép tenant dev.
+# Mẫu (`tenant_id` null) luôn tắt, Group kiểm để trống — tenant chép rồi gán Group của mình mới bật được (ADM-FR-66).
+
+# Agent của quy trình khai ngay trong file này (không ở agents.yaml) để thư mục seed thay agents.yaml vẫn hợp lệ.
+# Agent vai mang đúng tên `.claude/agents/`; dev/test chạy `fake-cli` qua `$HUB_SEED_PROFILE` (fake-1); prompt thật lấy từ
+# `.claude/agents/<vai>.md` khi chạy agent thật — ngoài P-a. 4 agent `ba-*` của `ba-team` (spike S1).
+agents:
+  - key: hoa-don-doc
+    name: { vi: Đọc hoá đơn, en: Invoice reader }
+    description: Đọc hoá đơn, tóm tắt bảng ý và số tiền; ghi bút toán khi đã được duyệt.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: Bạn đọc hoá đơn và viết output theo đúng các mục được yêu cầu.
+  - key: intake-analyst
+    name: { vi: Phân tích yêu cầu, en: Intake analyst }
+    description: Đọc yêu cầu thô, viết bảng ý, ảnh hưởng, CR đề xuất và câu hỏi còn mở (Intake).
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: Bạn là intake-analyst. Viết intake.md theo đúng các mục được yêu cầu.
+  - key: docs-architect
+    name: { vi: Kiến trúc tài liệu, en: Docs architect }
+    description: Viết spec.md theo template spec — phạm vi, luật nghiệp vụ, tiêu chí chấp nhận.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: Bạn là docs-architect. Viết spec.md theo đúng các mục được yêu cầu.
+  - key: backend-lead
+    name: { vi: Trưởng backend, en: Backend lead }
+    description: Phụ trách contract API, DB, RLS và code backend trong lập kế hoạch và hiện thực.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: Bạn là backend-lead. Viết phần backend theo đúng các mục được yêu cầu.
+  - key: frontend-lead
+    name: { vi: Trưởng frontend, en: Frontend lead }
+    description: Phụ trách màn hình, trạng thái, i18n và code frontend trong lập kế hoạch và hiện thực.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: Bạn là frontend-lead. Viết phần frontend theo đúng các mục được yêu cầu.
+  - key: qc
+    name: { vi: Kiểm thử, en: QC }
+    description: Viết test-plan theo tiêu chí chấp nhận và ma trận luật, chạy test và báo kết quả.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: Bạn là qc. Viết test-plan hoặc báo cáo test theo đúng các mục được yêu cầu.
+  - key: qc-uat
+    name: { vi: Kiểm thử UAT, en: QC UAT }
+    description: Kiểm thử chấp nhận trên trình duyệt theo kịch bản người dùng, ghi evidence.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: Bạn là qc-uat. Báo cáo UAT theo đúng các mục được yêu cầu.
+  - key: spec-readiness
+    name: { vi: Kiểm sẵn sàng, en: Spec readiness }
+    description: Rà gói spec, plan, test-plan trước Gate và kết luận READY hoặc NOT READY.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: Bạn là spec-readiness. Viết readiness.md theo đúng các mục được yêu cầu.
+  - key: reviewer
+    name: { vi: Người review, en: Reviewer }
+    description: Review thay đổi, phân loại Blocker/Major/Minor và kết luận APPROVED hoặc CHANGES.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+    system_prompt: Bạn là reviewer. Viết review.md theo đúng các mục được yêu cầu.
+  - key: ba-analyst
+    name: { vi: BA phân tích, en: BA analyst }
+    description: Thành viên nhóm BA — phân tích yêu cầu thành luồng nghiệp vụ và tiêu chí chấp nhận.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+  - key: ba-domain-expert
+    name: { vi: Chuyên gia nghiệp vụ, en: Domain expert }
+    description: Thành viên nhóm BA — bổ sung luật nghiệp vụ, rủi ro và ngoại lệ theo lĩnh vực.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+  - key: ba-ux-writer
+    name: { vi: Viết UX, en: UX writer }
+    description: Thành viên nhóm BA — viết nhãn, thông báo và câu chữ giao diện rõ ràng.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+  - key: ba-lead
+    name: { vi: Trưởng nhóm BA, en: BA lead }
+    description: Trưởng nhóm BA — gộp phần của các thành viên thành tài liệu yêu cầu thống nhất.
+    runtime: agentic-cli
+    profile: $HUB_SEED_PROFILE
+
+# Tenant dev được dùng agent vai (bản chép `sdlc` hợp lệ khi bật). Không bỏ thu hồi đã đặt.
+entitlements:
+  - { agent: hoa-don-doc, tenant_key: acme }
+  - { agent: intake-analyst, tenant_key: acme }
+  - { agent: docs-architect, tenant_key: acme }
+  - { agent: backend-lead, tenant_key: acme }
+  - { agent: frontend-lead, tenant_key: acme }
+  - { agent: qc, tenant_key: acme }
+  - { agent: qc-uat, tenant_key: acme }
+  - { agent: spec-readiness, tenant_key: acme }
+  - { agent: reviewer, tenant_key: acme }
+  - { agent: ba-analyst, tenant_key: acme }
+  - { agent: ba-domain-expert, tenant_key: acme }
+  - { agent: ba-ux-writer, tenant_key: acme }
+  - { agent: ba-lead, tenant_key: acme }
+
+agent_teams:
+  # Spike S1: nhóm BA 4 vai, chế độ mặc định tuần tự. Không thuộc mẫu `sdlc` (ví dụ/spike).
+  - key: ba-team
+    name: { vi: Nhóm BA, en: BA team }
+    description: Phân tích yêu cầu nhiều góc nhìn rồi trưởng nhóm gộp lại.
+    mode: sequential
+    members:
+      - { agent: ba-analyst, role: Phân tích, sections: [Luồng nghiệp vụ, Tiêu chí chấp nhận] }
+      - { agent: ba-domain-expert, role: Nghiệp vụ, sections: [Luật nghiệp vụ, Rủi ro] }
+      - { agent: ba-ux-writer, role: Câu chữ, sections: [Câu chữ giao diện] }
+      - { agent: ba-lead, role: Trưởng nhóm, sections: [] }
+  - key: plan-team
+    name: { vi: Nhóm lập kế hoạch, en: Planning team }
+    description: Backend rồi frontend lập plan (contract, DB, frontend, tasks).
+    mode: sequential
+    members:
+      - { agent: backend-lead, role: Backend, sections: [Contract, DB, Tasks] }
+      - { agent: frontend-lead, role: Frontend, sections: [Frontend] }
+  - key: dev-team
+    name: { vi: Nhóm hiện thực, en: Development team }
+    description: Backend rồi frontend hiện thực theo tasks.
+    mode: sequential
+    members:
+      - { agent: backend-lead, role: Backend, sections: [Task đã xong] }
+      - { agent: frontend-lead, role: Frontend, sections: [Task đã xong] }
+  - key: test-team
+    name: { vi: Nhóm kiểm thử, en: Test team }
+    description: QC chạy test rồi QC-UAT kiểm trên trình duyệt.
+    mode: sequential
+    members:
+      - { agent: qc, role: QC, sections: [Độ phủ theo AC] }
+      - { agent: qc-uat, role: UAT, sections: [Evidence] }
+
+team_entitlements:
+  - { team: ba-team, tenant_key: acme }
+  - { team: plan-team, tenant_key: acme }
+  - { team: dev-team, tenant_key: acme }
+  - { team: test-team, tenant_key: acme }
+
+process_templates:
+  - key: sdlc
+    name: Phát triển tính năng (AI-SDLC)
+    description: Từ yêu cầu tới spec, plan, test-plan, Gate, hiện thực, kiểm thử và review — theo WORKFLOW của repo.
+    input_hint: Mô tả yêu cầu tính năng
+    stages:
+      - key: intake
+        name: Intake
+        executor: { agent: intake-analyst }
+        instruction: Đọc yêu cầu, viết bảng ý, ảnh hưởng, CR đề xuất và câu hỏi còn mở.
+        output:
+          filename: intake.md
+          template: "## Bảng ý\n\n## Ảnh hưởng\n\n## CR đề xuất\n\n## Câu hỏi\n"
+          required_sections: [Bảng ý, Ảnh hưởng, CR đề xuất, Câu hỏi]
+        after: review
+      - key: spec
+        name: Spec
+        executor: { agent: docs-architect }
+        instruction: Viết spec theo template — frontmatter mã yêu cầu, phạm vi, luật, tiêu chí chấp nhận.
+        output:
+          filename: spec.md
+          template: "## Phạm vi\n\n## Luật\n\n## Tiêu chí chấp nhận\n"
+          required_sections: [Phạm vi, Luật, Tiêu chí chấp nhận]
+        after: auto
+      - key: plan
+        name: PLAN
+        executor: { team: plan-team }
+        instruction: Lập plan — contract, DB, frontend, tasks.
+        output:
+          filename: plan.md
+          template: "## Contract\n\n## DB\n\n## Frontend\n\n## Tasks\n"
+          required_sections: [Contract, DB, Frontend, Tasks]
+        after: auto
+      - key: test-plan
+        name: Test-plan
+        executor: { agent: qc }
+        instruction: Viết ca test theo từng tiêu chí chấp nhận và ma trận luật.
+        output:
+          filename: test-plan.md
+          template: "## Ca theo AC\n\n## Ma trận luật\n"
+          required_sections: [Ca theo AC, Ma trận luật]
+        after: auto
+      - key: readiness
+        name: Sẵn sàng
+        executor: { agent: spec-readiness }
+        instruction: "Rà gói spec, plan, test-plan; ghi verdict: READY hoặc NOT READY và lỗ hổng."
+        output:
+          filename: readiness.md
+          template: "## Verdict\n\n## Lỗ hổng\n"
+          required_sections: [Verdict, Lỗ hổng]
+        after: review
+      - key: implement
+        name: Implement
+        executor: { team: dev-team }
+        instruction: Hiện thực theo tasks; ghi nhánh/PR, task đã xong, lệnh test và kết quả.
+        output:
+          filename: implement.md
+          template: "## Nhánh\n\n## Task đã xong\n\n## Lệnh test\n"
+          required_sections: [Nhánh, Task đã xong, Lệnh test]
+        after: auto
+      - key: test
+        name: Test
+        executor: { team: test-team }
+        instruction: "Chạy test và UAT; ghi verdict: PASS hoặc FAIL, độ phủ theo AC, evidence."
+        output:
+          filename: test-report.md
+          template: "## Verdict\n\n## Độ phủ theo AC\n\n## Evidence\n"
+          required_sections: [Verdict, Độ phủ theo AC, Evidence]
+        after: auto
+      - key: review
+        name: Review
+        executor: { agent: reviewer }
+        instruction: "Review thay đổi; ghi verdict: APPROVED hoặc CHANGES và Blocker/Major/Minor."
+        output:
+          filename: review.md
+          template: "## Verdict\n\n## Blocker\n\n## Major\n\n## Minor\n"
+          required_sections: [Verdict, Blocker, Major, Minor]
+        after: review
+  - key: hoa-don
+    name: Xử lý hoá đơn
+    description: Đọc hoá đơn, người kiểm duyệt rồi ghi sổ (hành động thật).
+    input_hint: Số hoá đơn hoặc nội dung hoá đơn
+    stages:
+      - key: doc
+        name: Đọc hoá đơn
+        executor: { agent: hoa-don-doc }
+        instruction: Đọc hoá đơn và tóm tắt bảng ý, số tiền.
+        output:
+          filename: hoa-don.md
+          template: "## Bảng ý\n\n## Số tiền\n"
+          required_sections: [Bảng ý, Số tiền]
+        after: review
+      - key: ghi-so
+        name: Ghi sổ
+        executor: { agent: hoa-don-doc }
+        instruction: Ghi bút toán theo hoá đơn đã duyệt.
+        output:
+          filename: ghi-so.md
+          template: "## Bút toán\n"
+          required_sections: [Bút toán]
+        after: auto
+        real_action: true
+
+# Tenant dev: chép `hoa-don`, gán Group "Kế toán" (`ke-toan`) và bật. Group vắng ⇒ chép tắt + cảnh báo.
+tenant_processes:
+  - { tenant_key: acme, template: hoa-don, review_group: ke-toan, enabled: true }

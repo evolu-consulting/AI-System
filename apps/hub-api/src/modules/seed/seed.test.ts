@@ -42,12 +42,15 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
   it("HUB-FR-60 · development: có fake-cli + dify, mọi agent dùng fake-1", () => {
     const p = buildSeedPlan(defaults(), { appEnv: "development" });
     expect(p.providers.map((x) => x.key).sort()).toEqual(["claude-sub", "dify", "fake-cli"]);
-    expect(p.agents.map((a) => [a.key, a.profile])).toEqual([
-      ["orchestrator", "fake-1"],
-      ["assistant", "fake-1"],
-      ["dify-tom", "fake-1"],
-      ["dify-tro-ly", "fake-1"],
+    expect(p.agents.slice(0, 4).map((a) => a.key)).toEqual([
+      "orchestrator",
+      "assistant",
+      "dify-tom",
+      "dify-tro-ly",
     ]);
+    // P-a D18 (processes.yaml): + hoa-don-doc + 8 agent vai + 4 agent nhóm BA — mọi agent đều fake-1 ở development.
+    expect(p.agents).toHaveLength(17);
+    expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
     expect(p.orchestrator).toMatchObject({ agent: "orchestrator", token_budget: 200_000 });
     expect(p.grants.map((g) => g.subject)).toContain("group:beta-testers");
   });

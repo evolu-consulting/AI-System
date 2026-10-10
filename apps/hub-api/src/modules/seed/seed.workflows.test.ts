@@ -46,7 +46,9 @@ describe("HUB-FR-23 · đối chiếu admin.workflows", () => {
     expect(workflowKeysOf(p).sort()).toEqual(["tom", "tro-ly", "x-wf", "y-wf"]);
     const r = resolveWorkflows(p, []);
     expect(r.issues).toEqual([]);
-    expect(r.agents.map((a) => a.key)).toEqual(["orchestrator", "assistant"]);
+    expect(r.agents.map((a) => a.key)).not.toContain("dify-tom");
+    expect(r.agents.map((a) => a.key)).not.toContain("dify-tro-ly");
+    expect(r.agents.map((a) => a.key).slice(0, 2)).toEqual(["orchestrator", "assistant"]);
     expect([r.agentWorkflows, r.sideEffectIds]).toEqual([[], []]);
     for (const k of ["dify-tom", "dify-tro-ly", "x-wf", "y-wf"])
       expect(r.warnings.join("\n")).toContain(k);

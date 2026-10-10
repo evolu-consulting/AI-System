@@ -26,6 +26,11 @@ export type ProcessStartPort = {
     conversationId: string,
     bang: StartBang,
   ): Promise<ProcessRunSummary>;
+  /**
+   * ADM-FR-67 · nút "Chạy" ở admin (B3 `POST /process-defs/:id/run`): route đã kiểm role + quy trình bật của tenant
+   * admin; PF1 tạo run `origin.kind="admin"` (201) hoặc ném 404/429 như trên. Bước 0: stub 404.
+   */
+  fromAdmin(u: AuthUser, defId: string, input: string): Promise<ProcessRunSummary>;
 };
 
 /** PF1 (D10) · sau COMMIT: tx người bắt đầu khoá run → kiểm lại quyền → `createRunTx` → `launch`. PF2 gọi sau trả lời. */
@@ -65,5 +70,7 @@ export type ProcessDeps = {
   notifier: ProcessNotifier;
   /** Sau COMMIT tx quy trình: đăng tin thread của run (`ThreadPoster.post`). */
   postThread(runId: string): Promise<number>;
+  /** Cổng bắt đầu run (PF1) — B3 dùng cho "Chạy" từ admin; mount dựng từ `conversationStart`. */
+  start: ProcessStartPort;
   signal?: AbortSignal;
 };
