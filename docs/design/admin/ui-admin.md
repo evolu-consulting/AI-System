@@ -331,6 +331,8 @@ Mockup đã duyệt: https://claude.ai/artifact/JHGS9iTLVyytdYwXJJ6eLW — board
 - **Danh sách** (①): bảng tên · `!key` · số stage · Group được chạy · trạng thái · run gần nhất; tab "Mẫu" (2 quy trình mẫu của `platform_admin`) với nút "Chép mẫu"; nút "Chạy" trên dòng.
 - **Editor** (②, trang riêng): dải stage theo thứ tự (kéo để sắp); mỗi stage: người làm (chọn agent hoặc nhóm agent **đã bật cho công ty**), output + template, sau stage (Duyệt bởi Group / Tự chạy tiếp / Luật tự duyệt — SHOULD), cờ "Hành động thật" (khoá nếu không có gate đạt trước đó), người trả lời mặc định, tự quay lại (SHOULD). Lưu theo `version`, xung đột → ConflictDialog như mọi editor.
 - **Run** (`/processes/:id/runs/:run_id`): tiến độ stage, lịch sử duyệt/hỏi, "Cần người quyết", bảng token theo run/stage/team-run/lần gọi (⑧). Không xem nội dung tin phòng.
+- **Nguồn tham chiếu (CR-060, P-b, ADM-FR-68/69):** nav "Nguồn" dưới CHỨC NĂNG (`/sources`, `tenant_admin` + `platform_admin`). Bảng: key · loại (`git_remote`/`library`/`local_path`) · đích (URL+branch / tên bộ tài liệu) · secret (last4) · dùng bởi (số quy trình) · trạng thái kiểm tra. Drawer khai báo theo loại; `local_path` chỉ hiện với `platform_admin`, kèm cảnh báo "đường dẫn trên máy Runtime, không phải máy của bạn". Nút "Kiểm tra kết nối" hiện branch → SHA.
+- **Editor ② — khối mới** (P-b): (a) "Nguồn của quy trình" (thêm nguồn đã khai báo); (b) mỗi stage: chọn tập con nguồn (≤ 5, quá thì chặn) + ô allowlist đường dẫn (glob) + nhãn ngân sách mặc định 200k token; (c) "Thông tin đầu vào" (trường chữ/chọn/file/nguồn+branch — xem trước form `!key`); (d) mỗi stage "Điều phải biết trước khi làm" (checklist). Stage có nguồn tự thêm mục output bắt buộc `## Nguồn tham chiếu`.
 
 =======================================================
 
@@ -512,7 +514,7 @@ Hub đếm mức dùng → đạt 80%: email + banner vàng cho tenant_admin
 | 7.14 Groups | ADM-FR-62, 32, 37 |
 | 7.15 Phân quyền | ADM-FR-35, 36 · ADM-BR-11 |
 | 7.16 Chi phí & quota | ADM-FR-40, 41, 42 |
-| 7.17 Quy trình | ADM-FR-65, 66, 67 · HUB-FR-104, 105, 117 (CR-056) |
+| 7.17 Quy trình | ADM-FR-65, 66, 67 · HUB-FR-104, 105, 117 (CR-056) · ADM-FR-68, 69 · HUB-FR-120…125 (CR-060, P-b) |
 
 > ✅ **Đã chốt và cập nhật vào BA Admin:** (1) chạy thử bằng *bản chưa lưu* (ADM-FR-23); (2) phát hiện xung đột khi hai admin cùng sửa bằng trường `version` (ADM-FR-55, AC-A07).
 

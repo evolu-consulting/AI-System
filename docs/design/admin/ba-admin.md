@@ -155,6 +155,8 @@ Dữ liệu ở schema `hub` (Hub sở hữu, BA-H §6.10 HUB-FR-104…117); adm
 | ADM-FR-65 | **Trang Quy trình** (nav "Quy trình" dưới CHỨC NĂNG, **cả `tenant_admin`**): danh sách quy trình của công ty (tên, `!key`, số stage, Group được chạy, bật/tắt, run gần nhất — **P-b**); `platform_admin` có 2 quy trình mẫu (SDLC, hoá đơn) — `tenant_admin` bấm "Chép mẫu" để có bản của công ty mình. Export/Import JSON qua Import/Export sẵn có — **P-b** (dời từ P-a, người dùng 2026-10-10); KPI + chuỗi stage ở danh sách cũng P-b | **MUST** (P-a tối thiểu; P-b đủ) |
 | ADM-FR-66 | **Editor quy trình**: thêm/sắp stage; mỗi stage chọn **agent hoặc nhóm agent đã bật cho công ty** (CR-054/057), output + template bắt buộc, sau stage: gate duyệt (chọn Group) / Tự chạy tiếp / luật tự duyệt (SHOULD), cờ "Hành động thật" (chỉ cho phép sau một gate), người trả lời mặc định, tự quay lại (SHOULD). Lưu có `version` + audit; sửa không ảnh hưởng run đang chạy | **MUST** (P-a tối thiểu, P-b đủ) |
 | ADM-FR-67 | **Run của quy trình**: nút "Chạy" (nhập input), danh sách + chi tiết run (trạng thái, stage, người duyệt, "Cần người quyết"), **token theo run/stage/team-run/lần gọi** (HUB-FR-117; tiền chờ H3c) | **MUST** |
+| ADM-FR-68 | **Trang Nguồn tham chiếu** (CR-060; nav "Nguồn" dưới CHỨC NĂNG, `tenant_admin` cho công ty mình; HUB-FR-120): danh sách + khai báo nguồn `git_remote` (URL, branch, secret `source_credential` hoặc repo công khai), `library` (tải tài liệu, phiên bản), `local_path` (chỉ `platform_admin`); nút "Kiểm tra kết nối" (resolve branch → SHA, không tải nội dung); xem quy trình/stage đang dùng nguồn. Secret chỉ ghi (HUB-FR-68) | **MUST** (P-b) |
+| ADM-FR-69 | **Editor quy trình — khối nguồn / đầu vào / câu hỏi bắt buộc** (CR-060, HUB-FR-121/124/125): khai báo nguồn của quy trình, mỗi stage chọn tập con + allowlist (≤ 5 nguồn), trường đầu vào của quy trình (chữ/chọn/file/nguồn+branch), checklist "điều phải biết trước khi làm" theo stage | **MUST** (P-b) |
 
 ## 6. Luật nghiệp vụ
 
@@ -242,6 +244,7 @@ Mọi `PATCH` gửi kèm `version`; lệch thì trả `409 Conflict`. Endpoint `
 | Secrets | Bảng tên, last4, ngày cập nhật. Nút "Thay giá trị" |
 | Audit | Dòng thời gian thay đổi, xem diff trước/sau, nút Khôi phục |
 | Quy trình (CR-056) | Danh sách quy trình công ty + mẫu, editor stage, nút Chạy, danh sách/chi tiết run kèm token (ADM-FR-65–67) |
+| Nguồn (CR-060) | Danh sách + khai báo nguồn tham chiếu (git/library/local_path), kiểm tra kết nối, nơi đang dùng (ADM-FR-68, 69) |
 
 ## 10. Yêu cầu phi chức năng
 
