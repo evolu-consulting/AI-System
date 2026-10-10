@@ -216,6 +216,11 @@ async function teamRunFor(
   p: { u: AuthUser; def: SnapStage; stageId: string; attempt: number; runId: string },
 ): Promise<{ ok: true; teamRunId: string | null } | { ok: false }> {
   if (p.def.executor.kind !== "team") return { ok: true, teamRunId: null };
+  // HUB-FR-110 · resume: team_run của (stage, attempt) đã có (đang chạy / chờ trả lời) ⇒ nhóm đã được kiểm sẵn sàng lúc
+  // tạo và run đã chụp cấu hình (HUB-BR-06) ⇒ tiếp tục, KHÔNG kiểm `teamReady` lại (tránh fail giả khi snapshot chưa kịp
+  // thấy cấu hình nhóm). Fresh (chưa có team_run) ⇒ kiểm C2 như thường (P1-36 permission_lost trước kick).
+  const resuming = await existingTeamRun(tx, p.stageId, Number(p.attempt));
+  if (resuming) return { ok: true, teamRunId: resuming };
   const ready = await teamReady(tx, await d.config.snapshot(), {
     teamId: p.def.executor.team_id,
     tenantId: p.u.tenantId,
@@ -230,6 +235,14 @@ async function teamRunFor(
     mode: ready.team.mode,
   });
   return { ok: true, teamRunId };
+}
+
+/** team_run còn hiệu lực của (stage, attempt) — có ⇒ đang resume (createTeamRun cũng dùng lại chính nó). */
+async function existingTeamRun(tx: Tx, stageId: string, attempt: number): Promise<string | null> {
+  const [r] = await tx.execute<{ id: string }>(sql`select id from hub.team_runs
+    where stage_run_id = ${stageId} and attempt = ${attempt}
+      and status in ('running', 'waiting_answer') order by started_at desc limit 1`);
+  return r?.id ?? null;
 }
 
 type RealPre = { preconfirm: NonNullable<ProcessRunInput["preconfirm"]>; passedBy: string };
