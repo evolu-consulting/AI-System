@@ -119,14 +119,14 @@ agent_teams:
     description: Backend rồi frontend hiện thực theo tasks.
     mode: sequential
     members:
-      - { agent: backend-lead, role: Backend, sections: [Task đã xong] }
-      - { agent: frontend-lead, role: Frontend, sections: [Task đã xong] }
+      - { agent: backend-lead, role: Backend, sections: [Nhánh, Task đã xong] }
+      - { agent: frontend-lead, role: Frontend, sections: [Task đã xong, Lệnh test] }
   - key: test-team
     name: { vi: Nhóm kiểm thử, en: Test team }
     description: QC chạy test rồi QC-UAT kiểm trên trình duyệt.
     mode: sequential
     members:
-      - { agent: qc, role: QC, sections: [Độ phủ theo AC] }
+      - { agent: qc, role: QC, sections: [Verdict, Độ phủ theo AC] }
       - { agent: qc-uat, role: UAT, sections: [Evidence] }
 
 team_entitlements:

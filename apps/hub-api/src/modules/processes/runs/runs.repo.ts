@@ -16,7 +16,7 @@ import { levenshtein } from "../../commands/suggest.rules";
 type Json = Record<string, unknown>;
 const iso = (c: SQL) => sql`to_char(${c} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 
-/** Định nghĩa trong tenant để bắt đầu (kể cả tắt/đã xoá ⇒ `canRun` quyết; mẫu `tenant_id IS NULL` không thấy). */
+/** Định nghĩa trong tenant để bắt đầu (kể cả tắt ⇒ `canRun` quyết; đã xoá mềm/mẫu `tenant_id IS NULL` không thấy). */
 export type StartDefRow = {
   id: string;
   key: string;
@@ -37,8 +37,8 @@ export async function findDefByKey(
   tenantId: string,
   key: string,
 ): Promise<StartDefRow | null> {
-  const [r] = await tx.execute<StartDefRow>(sql`select ${DEF_COLS}
-    from hub.process_defs d where d.tenant_id = ${tenantId} and d.key = ${key} limit 1`);
+  const [r] = await tx.execute<StartDefRow>(sql`select ${DEF_COLS} from hub.process_defs d
+    where d.tenant_id = ${tenantId} and d.key = ${key} and d.deleted_at is null order by d.created_at desc, d.id desc limit 1`);
   return r ?? null;
 }
 

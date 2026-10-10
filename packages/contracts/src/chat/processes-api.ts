@@ -24,6 +24,7 @@ import {
   ProcessNoticeSchema,
   ProcessRefSchema,
   ProcessRunSummarySchema,
+  ProcessRunViewSchema,
   TaskDetailSchema,
   UserRefSchema,
 } from "./processes-entities";
@@ -66,6 +67,9 @@ export const CreateProcessRunRequestSchema = z.strictObject({
 export type CreateProcessRunRequest = z.infer<typeof CreateProcessRunRequestSchema>;
 /** 201 `POST /process-runs`, `POST /process-runs/:id/cancel`, `POST /process-defs/:id/run`. */
 export const CreateProcessRunResponseSchema = ProcessRunSummarySchema;
+/** 200 `POST /process-runs/:id/decide` — VIEW đầy đủ (như `GET /process-runs/:id`): admin ngoài phòng refetch từ /decide
+ * (plan-contract §3). Tóm tắt không đủ ⇒ trả `ProcessRunView`. */
+export const DecideProcessRunResponseSchema = ProcessRunViewSchema;
 /** 202 `POST /conversations/:id/messages` khi nội dung là `!key …`. */
 export const ConversationProcessStartResponseSchema = z.strictObject({
   process_run: ProcessRunSummarySchema,
