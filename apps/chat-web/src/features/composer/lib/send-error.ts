@@ -12,10 +12,11 @@ const COMPOSER_CODES: ReadonlySet<string> = new Set([
   "TOO_MANY_RUNS",
   "ATTACHMENT_NOT_FOUND",
   "DEFAULT_AGENT_FORBIDDEN",
-  // P-a (CR-056): `!key` ở composer + `@agent` trong thread quy trình.
+  // P-a (CR-056): `!key` ở composer + `@agent` trong thread quy trình + tệp đính kèm ở Hỏi AI (client-side).
   "PROCESS_NOT_FOUND",
   "TOO_MANY_PROCESS_RUNS",
   "PROCESS_THREAD_NO_AGENT",
+  "PROCESS_ATTACH_UNSUPPORTED",
 ]);
 
 /** Mã 429 có đếm ngược `Retry-After` (agent hoặc quy trình). */
@@ -96,6 +97,10 @@ function processErrorView(
   }
   if (err.code === "PROCESS_THREAD_NO_AGENT") {
     return { lines: [{ key: "process.thread.err.noAgent", params: {} }], suggestions: [] };
+  }
+  // Mã client-side (không thuộc `ApiErrorCode` của Hub) ⇒ so sánh dạng chuỗi.
+  if ((err.code as string) === "PROCESS_ATTACH_UNSUPPORTED") {
+    return { lines: [{ key: "process.composer.error.noAttach", params: {} }], suggestions: [] };
   }
   return null;
 }
