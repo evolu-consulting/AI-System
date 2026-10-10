@@ -7,7 +7,9 @@ import { Button } from "~/components/ui/button";
 import type { FlowFrameSlot } from "~/features/flow-panel/components/FlowFrame";
 import { FlowHeader } from "~/features/flow-panel/components/FlowHeader";
 import type { RoomFlowProps } from "~/features/rooms/components/flow/RoomFlowContent";
+import { useMarkFlowRead } from "~/features/rooms/hooks/use-mark-flow-read";
 import { useFlowMessages } from "~/features/rooms/hooks/use-room-flow";
+import { lastSeqOf } from "~/features/rooms/lib/room-logic";
 import { RunStatusBadge } from "../../shared/components/RunStatusBadge";
 import { StageStrip } from "../../shared/components/StageStrip";
 import { useProcessRun } from "../../shared/hooks/use-process-run";
@@ -66,6 +68,8 @@ export function ProcessFlowContent(p: ProcessFlowContentProps) {
   const { t } = useTranslation();
   const msgs = useFlowMessages(p.roomId, p.flowId, p.onUnknown);
   const { messages } = msgs;
+  // Mở thread = đã xem (bỏ highlight "Chưa xem" trên khối gốc), như RoomFlowContent (X2b CR-050).
+  useMarkFlowRead(p.roomId, p.flowId, msgs.isPending ? 0 : lastSeqOf([...messages]));
   const root = messages.find((m) => m.process?.kind === "block");
   const runId = root?.process_run_id;
   const title = root ? threadTitle(root) : t("flow.panel");

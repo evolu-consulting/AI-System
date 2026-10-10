@@ -108,6 +108,8 @@ export function ProcessThreadFooter(p: ProcessThreadFooterProps) {
       autoFocus={!p.mobile}
       menus={false}
       attachments={false}
+      // Thread quy trình: nút gửi là "Gửi" (plan-frontend-e2e §1), không phải "Gửi trong flow" mặc định của variant flow.
+      sendLabel={t("composer.send")}
       maxChars={CHAT_CONTENT_MAX}
       hint={t("process.thread.hint")}
       onSubmit={plainSend}
