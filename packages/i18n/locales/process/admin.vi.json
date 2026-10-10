@@ -32,13 +32,18 @@
     "template": "Mẫu",
     "delete": {
       "title": "Xoá quy trình?",
-      "body": "Gõ tên “{{name}}” để xoá. Lượt đang chạy vẫn giữ bản cũ."
+      "body": "Gõ tên “{{name}}” để xoá. Lượt đang chạy vẫn giữ bản cũ.",
+      "prompt": "Gõ lại tên quy trình để xác nhận"
     },
     "toast": {
       "copied": "Đã chép mẫu",
       "deleted": "Đã xoá quy trình",
       "started": "Đã bắt đầu lượt chạy"
-    }
+    },
+    "edit": "Sửa",
+    "deleteButton": "Xoá",
+    "emptyTemplates": "Chưa có mẫu quy trình.",
+    "more": "Tải thêm"
   },
   "editor": {
     "title": {
@@ -86,7 +91,20 @@
       "group": "Group",
       "user": "Người dùng",
       "timeout": "Hạn giai đoạn (giây)",
-      "budget": "Ngân sách token giai đoạn"
+      "budget": "Ngân sách token giai đoạn",
+      "unnamed": "Giai đoạn mới",
+      "removeSection": "Bỏ mục {{name}}",
+      "addSection": "Thêm mục",
+      "fieldKey": "Mã trường",
+      "fieldType": "Kiểu",
+      "fieldRequired": "Bắt buộc",
+      "removeField": "Xoá trường {{n}}",
+      "addField": "Thêm trường",
+      "type": {
+        "number": "Số",
+        "string": "Chuỗi",
+        "date": "Ngày"
+      }
     },
     "limits": "Giới hạn của một lượt chạy",
     "limitsText": "Tối đa 7 ngày · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.",
@@ -100,13 +118,58 @@
         "stage": "Giai đoạn",
         "started": "Bắt đầu"
       }
-    }
+    },
+    "choose": "Chọn…",
+    "gone": "(đã tắt hoặc không còn)",
+    "removeGroup": "Bỏ Group {{name}}"
   },
   "run": {
     "title": "Lượt chạy · {{name}}",
     "viewOutput": "Xem kết quả",
     "outputTitle": "Kết quả giai đoạn {{stage}} · v{{n}}",
-    "noContent": "Không xem nội dung tin nhắn phòng ở đây."
+    "noContent": "Không xem nội dung tin nhắn phòng ở đây.",
+    "back": "Về danh sách",
+    "tab": {
+      "progress": "Tiến độ",
+      "usage": "Token",
+      "log": "Nhật ký"
+    },
+    "col": {
+      "stage": "Giai đoạn",
+      "executor": "Làm bởi",
+      "status": "Trạng thái",
+      "attempt": "Lần chạy",
+      "outputs": "Kết quả"
+    },
+    "decision": {
+      "region": "Cần người quyết",
+      "title": "Quy trình dừng ở giai đoạn {{stage}}",
+      "note": "Ghi chú (tuỳ chọn)",
+      "waiting": "Đang chờ người có quyền quyết định",
+      "done": "Đã ghi quyết định"
+    },
+    "cancel": {
+      "title": "Huỷ lượt chạy này?",
+      "body": "Lượt chạy dừng hẳn, kết quả đã có vẫn xem được.",
+      "confirm": "Xác nhận huỷ",
+      "done": "Đã huỷ lượt chạy"
+    },
+    "log": {
+      "at": "Thời gian",
+      "stage": "Giai đoạn",
+      "kind": "Loại",
+      "actor": "Người",
+      "detail": "Chi tiết",
+      "empty": "Chưa có hoạt động nào",
+      "kinds": {
+        "review": "Kiểm",
+        "ask": "Hỏi lại",
+        "decision": "Quyết định",
+        "forward": "Chuyển việc",
+        "cancel": "Huỷ",
+        "expire": "Hết hạn"
+      }
+    }
   },
   "apiError": {
     "PROCESS_NOT_FOUND": "Không tìm thấy quy trình hoặc bạn không được chạy.",
@@ -114,7 +177,11 @@
     "PROCESS_KEY_TAKEN": "Ký hiệu này đã được dùng.",
     "PROCESS_DEF_INCOMPLETE": "Chọn Group kiểm cho mọi giai đoạn có người kiểm trước khi bật.",
     "PROCESS_REF_INVALID": "Agent/nhóm/Group này đã bị tắt hoặc không còn.",
-    "TEMPLATE_READ_ONLY": "Mẫu chỉ do quản trị nền tảng sửa. Hãy chép mẫu."
+    "TEMPLATE_READ_ONLY": "Mẫu chỉ do quản trị nền tảng sửa. Hãy chép mẫu.",
+    "PROCESS_DEF_INVALID": "Quy trình chưa hợp lệ. Kiểm tra các ô báo lỗi.",
+    "NOT_PROCESS_DECIDER": "Bạn không có quyền quyết định lượt chạy này.",
+    "PROCESS_RUN_STATE": "Lượt chạy đã đổi trạng thái. Đã tải lại.",
+    "NO_OUTPUT": "Chưa có bản kết quả nào để dùng."
   },
   "validate": {
     "nameRequired": "Nhập tên quy trình.",
@@ -127,6 +194,12 @@
     "realAction": "Hành động thật cần giai đoạn ngay trước có người kiểm.",
     "timeout": "Từ 60 đến 3600 giây.",
     "budget": "Từ 1.000 đến 5.000.000 hoặc để trống.",
-    "stageCount": "Cần 1–10 giai đoạn."
+    "stageCount": "Cần 1–10 giai đoạn.",
+    "tooLong": "Nội dung quá dài.",
+    "tooLongN": "Tối đa {{max}} ký tự.",
+    "tooMany": "Quá số lượng cho phép.",
+    "stageKey": "Mã giai đoạn 1–32 ký tự: chữ thường, số, dấu gạch ngang.",
+    "executor": "Chọn agent hoặc nhóm agent.",
+    "answerer": "Chọn người trả lời."
   }
 }

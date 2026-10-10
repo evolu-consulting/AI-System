@@ -32,13 +32,18 @@
     "template": "Template",
     "delete": {
       "title": "Delete process?",
-      "body": "Type “{{name}}” to delete. Running runs keep their snapshot."
+      "body": "Type “{{name}}” to delete. Running runs keep their snapshot.",
+      "prompt": "Type the process name to confirm"
     },
     "toast": {
       "copied": "Template copied",
       "deleted": "Process deleted",
       "started": "Run started"
-    }
+    },
+    "edit": "Edit",
+    "deleteButton": "Delete",
+    "emptyTemplates": "No process templates yet.",
+    "more": "Load more"
   },
   "editor": {
     "title": {
@@ -86,7 +91,20 @@
       "group": "Group",
       "user": "User",
       "timeout": "Stage time limit (seconds)",
-      "budget": "Stage token budget"
+      "budget": "Stage token budget",
+      "unnamed": "New stage",
+      "removeSection": "Remove section {{name}}",
+      "addSection": "Add section",
+      "fieldKey": "Field key",
+      "fieldType": "Type",
+      "fieldRequired": "Required",
+      "removeField": "Remove field {{n}}",
+      "addField": "Add field",
+      "type": {
+        "number": "Number",
+        "string": "String",
+        "date": "Date"
+      }
     },
     "limits": "Run limits",
     "limitsText": "Up to 7 days · 5 runs at once · at most 3 reworks per stage · reviewer reminder after 1 day. Hitting a limit → “Needs a decision”.",
@@ -100,13 +118,58 @@
         "stage": "Stage",
         "started": "Started"
       }
-    }
+    },
+    "choose": "Choose…",
+    "gone": "(disabled or gone)",
+    "removeGroup": "Remove group {{name}}"
   },
   "run": {
     "title": "Run · {{name}}",
     "viewOutput": "View output",
     "outputTitle": "Stage {{stage}} output · v{{n}}",
-    "noContent": "Room messages aren't shown here."
+    "noContent": "Room messages aren't shown here.",
+    "back": "Back to list",
+    "tab": {
+      "progress": "Progress",
+      "usage": "Token",
+      "log": "Log"
+    },
+    "col": {
+      "stage": "Stage",
+      "executor": "Done by",
+      "status": "Status",
+      "attempt": "Attempt",
+      "outputs": "Output"
+    },
+    "decision": {
+      "region": "Needs a decision",
+      "title": "The process stopped at stage {{stage}}",
+      "note": "Note (optional)",
+      "waiting": "Waiting for someone allowed to decide",
+      "done": "Decision recorded"
+    },
+    "cancel": {
+      "title": "Cancel this run?",
+      "body": "The run stops for good; existing outputs stay viewable.",
+      "confirm": "Confirm cancel",
+      "done": "Run cancelled"
+    },
+    "log": {
+      "at": "Time",
+      "stage": "Stage",
+      "kind": "Type",
+      "actor": "Person",
+      "detail": "Details",
+      "empty": "No activity yet",
+      "kinds": {
+        "review": "Review",
+        "ask": "Follow-up",
+        "decision": "Decision",
+        "forward": "Forwarded",
+        "cancel": "Cancelled",
+        "expire": "Expired"
+      }
+    }
   },
   "apiError": {
     "PROCESS_NOT_FOUND": "Process not found or you can't run it.",
@@ -114,7 +177,11 @@
     "PROCESS_KEY_TAKEN": "This key is already used.",
     "PROCESS_DEF_INCOMPLETE": "Pick a reviewing group for every reviewed stage before enabling.",
     "PROCESS_REF_INVALID": "This agent/team/group is disabled or gone.",
-    "TEMPLATE_READ_ONLY": "Only platform admins edit templates. Copy the template instead."
+    "TEMPLATE_READ_ONLY": "Only platform admins edit templates. Copy the template instead.",
+    "PROCESS_DEF_INVALID": "The process isn't valid. Check the fields marked with errors.",
+    "NOT_PROCESS_DECIDER": "You aren't allowed to decide this run.",
+    "PROCESS_RUN_STATE": "The run's state changed. Reloaded.",
+    "NO_OUTPUT": "There is no output version to use yet."
   },
   "validate": {
     "nameRequired": "Enter a process name.",
@@ -127,6 +194,12 @@
     "realAction": "A real action needs the previous stage to have a reviewer.",
     "timeout": "Between 60 and 3600 seconds.",
     "budget": "Between 1,000 and 5,000,000, or leave empty.",
-    "stageCount": "1–10 stages are required."
+    "stageCount": "1–10 stages are required.",
+    "tooLong": "Text is too long.",
+    "tooLongN": "At most {{max}} characters.",
+    "tooMany": "Too many items.",
+    "stageKey": "Stage key: 1–32 characters, lowercase letters, digits, hyphens.",
+    "executor": "Pick an agent or an agent team.",
+    "answerer": "Pick who answers."
   }
 }

@@ -14,7 +14,8 @@
     "role": "Role",
     "agent": "Agent",
     "model": "Model",
-    "time": "Time"
+    "time": "Time",
+    "total": "Total"
   },
   "expand": "Show calls of stage {{name}}",
   "calls": "Calls of stage {{name}}",
