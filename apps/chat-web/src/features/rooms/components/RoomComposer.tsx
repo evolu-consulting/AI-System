@@ -5,6 +5,7 @@ import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Composer } from "~/features/composer/components/Composer";
 import { useDraftKey } from "~/features/composer/hooks/use-draft";
+import { useBangSubmit } from "~/features/processes/composer/hooks/use-bang-submit";
 import { useProcessEngineOn } from "~/features/processes/shared/engine";
 import { attachRoomRun } from "../hooks/use-room-runs";
 import { type RoomRun, useSendRoomText } from "../hooks/use-send-room-text";
@@ -19,6 +20,12 @@ export function RoomComposer({ roomId, target, group, onSent }: Props) {
   // D8: người gửi lượt mở stream ngay khi POST trả `X-Run-Id`.
   const onRun = useCallback((run: RoomRun) => attachRoomRun(roomId, run), [roomId]);
   const send = useSendRoomText(roomId, onSent, onRun);
+  // E-P3 (T1): nút "▶ Quy trình" ⇒ `POST /process-runs` (origin phòng, không tin gọi); `!key` gõ tay ⇒ `send` thường.
+  const bang = useBangSubmit({ kind: "room", roomId }, processMenu);
+  const onSubmit = useCallback(
+    (text: string, attachmentIds?: string[]) => bang.intercept(text, attachmentIds) ?? send(text),
+    [bang, send],
+  );
   // Mở phòng: làm tươi menu `@` một lần (agent bị thu hồi biến mất, AC13).
   // biome-ignore lint/correctness/useExhaustiveDependencies: chạy lại theo roomId
   useEffect(() => {
@@ -39,7 +46,7 @@ export function RoomComposer({ roomId, target, group, onSent }: Props) {
         })}
         menuTitle={t("menu.agentsYours")}
         hint={t("roomAgent.hint")}
-        onSubmit={send}
+        onSubmit={onSubmit}
       />
     </div>
   );

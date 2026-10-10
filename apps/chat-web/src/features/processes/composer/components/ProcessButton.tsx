@@ -3,7 +3,7 @@ import { Workflow } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { PROCESS_MENU_ID } from "~/features/composer/lib/menu-ids";
-import { useBangState } from "../lib/bang-state";
+import { armProcessStart, useBangState } from "../lib/bang-state";
 
 export type ProcessButtonProps = {
   /** Điền `text` vào ô nhập (Composer `change`). */
@@ -29,6 +29,8 @@ export function ProcessButton({ onInsert, disabled }: ProcessButtonProps) {
       onMouseDown={(e) => e.preventDefault()} // giữ focus ở ô nhập (như chọn dòng menu)
       onClick={(e) => {
         const area = e.currentTarget.parentElement?.querySelector("textarea");
+        // Mở menu bằng nút ⇒ arm: dòng chọn sau đó + Gửi đi `POST /process-runs` (origin phòng, E-P3/T1).
+        if (!bang.open) armProcessStart();
         bang.toggle(onInsert);
         area?.focus();
       }}

@@ -19,3 +19,14 @@ const subscribe = (fn: () => void) => {
 };
 
 export const useBangState = (): BangState => useSyncExternalStore(subscribe, () => state);
+
+// E-P3 (plan-thread T1): phân biệt "▶ Quy trình" (nút) với `!key` gõ tay ở phòng. Nút arm ⇒ lần Gửi kế đi
+// `POST /process-runs` (origin phòng, không tin gọi); gõ tay ⇒ đường gửi thường (Hub đăng tin gọi). Gõ phím ⇒ disarm.
+let armed = false;
+export const armProcessStart = (): void => {
+  armed = true;
+};
+export const disarmProcessStart = (): void => {
+  armed = false;
+};
+export const isProcessStartArmed = (): boolean => armed;

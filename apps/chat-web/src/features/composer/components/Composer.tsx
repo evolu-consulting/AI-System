@@ -15,6 +15,7 @@ import { AttachBar } from "~/features/attachments/components/AttachmentChip";
 import { useAttachments } from "~/features/attachments/hooks/use-attachments";
 import { ProcessButton } from "~/features/processes/composer/components/ProcessButton";
 import { useBangSuggest } from "~/features/processes/composer/hooks/use-bang-suggest";
+import { disarmProcessStart } from "~/features/processes/composer/lib/bang-state";
 import { composerKeyHandler } from "../hooks/use-composer-keys";
 import { readDraft, useDraftSaver } from "../hooks/use-draft";
 import { useSendError } from "../hooks/use-send-error";
@@ -102,6 +103,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       draft.save(value);
     },
     [draft, clearSendError],
+  );
+  // Gõ phím tay ⇒ huỷ arm của nút "▶ Quy trình" (chỉ lần chọn-từ-nút mới đi `POST /process-runs`, E-P3).
+  const typeChange = useCallback(
+    (value: string, nextCaret?: number) => {
+      disarmProcessStart();
+      change(value, nextCaret);
+    },
+    [change],
   );
 
   useImperativeHandle(
@@ -205,7 +214,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         attach={attachments ? { add: att.add, dropProps: att.dropProps } : null}
         extra={processMenu ? <ProcessButton onInsert={(v) => change(v)} /> : undefined}
         sendLabel={sendLabel}
-        onChange={change}
+        onChange={typeChange}
         onCaret={setCaret}
         onKeyDown={onKeyDown}
         onSend={() => void send()}
