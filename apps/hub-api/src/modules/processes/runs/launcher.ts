@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
+import type { RunFile } from "../../attachments/run-files.rules";
 import type { ProcessStage, StageExecutor } from "../../runs/run-process";
 import * as core from "../core/core.repo";
 import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/ports";
@@ -22,6 +23,7 @@ type SnapStage = {
   instruction: string;
   executor: { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
+  output: { filename: string };
   real_action: boolean;
   timeout_s: number;
 };
@@ -119,9 +121,10 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
     lostPermission(d, tx, { runId, tenantId: u.tenantId, idx, stageRunId: stage.id, reason });
   const active = (await d.config.user(u.userId))?.active ?? false;
   if (!active) return await lost("user_inactive");
+  const priorOut = await priorFiles(tx, runId, idx, head.snapshot.stages);
   const p: ProcessStage = {
     executor: execOf(def),
-    process: { processRunId: runId, stageRunId: stage.id, teamRunId: null, files: [] },
+    process: { processRunId: runId, stageRunId: stage.id, teamRunId: null, files: priorOut },
   };
   const req: SendMessageRequest = { content: promptOf(def, head, stage.feedback) };
   let prepared: Prepared;
@@ -140,6 +143,41 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
   await tx.execute(sql`update hub.stage_runs set status = 'running', current_run_id = ${prepared.run.id},
       started_at = coalesce(started_at, now()), updated_at = now() where id = ${stage.id}`);
   return { kind: "launch", prepared, files };
+}
+
+type PriorRow = {
+  stage_idx: number;
+  version: number;
+  attachment_id: string;
+  size: string | number;
+  sha256: string;
+};
+
+/** D6 · output đã chốt các stage trước (`stage_runs.current_output_id`) → `RunContext.files` (`s<idx>-v<ver>-<filename>`). */
+async function priorFiles(
+  tx: Tx,
+  runId: string,
+  idx: number,
+  stages: readonly SnapStage[],
+): Promise<RunFile[]> {
+  if (idx === 0) return [];
+  const rows = await tx.execute<PriorRow>(sql`select o.stage_idx, o.version, o.attachment_id,
+      a.size, a.sha256
+    from hub.stage_runs s
+    join hub.process_outputs o on o.id = s.current_output_id
+    join hub.attachments a on a.id = o.attachment_id
+    where s.process_run_id = ${runId} and s.stage_idx < ${idx} and o.attachment_id is not null
+    order by o.stage_idx`);
+  return [...rows].map((r) => {
+    const filename = stages[Number(r.stage_idx)]?.output.filename ?? "output.md";
+    return {
+      id: r.attachment_id,
+      name: `s${Number(r.stage_idx)}-v${Number(r.version)}-${filename}`,
+      mime: "text/markdown" as const,
+      size: Number(r.size),
+      sha256: r.sha256,
+    };
+  });
 }
 
 /** P-R10 · kiểm lại quyền hỏng ⇒ needs_decision{permission_lost|user_inactive}; mở task decision (team-runner). */

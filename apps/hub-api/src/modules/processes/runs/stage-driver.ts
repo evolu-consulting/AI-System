@@ -59,17 +59,22 @@ async function drive(d: Deps, launcher: StageLauncher, ctx: RunContext): Promise
   try {
     const link = await linkOf(d, ctx.writer.run.id);
     if (!link?.process_run_id || !link.stage_run_id) return void ctx.writer.abort();
-    const { result, usage } = ctx.direct
+    const { result, usage, jobId } = ctx.direct
       ? await runAgent(d, ctx, link)
       : await runTeamStage(d, ctx, link);
+    // D11/P1-37 · `need_input` ⇒ đóng `hub.runs` TRƯỚC khi commit `waiting_answer` (người đọc không thấy cửa sổ
+    // `running`); output/failed giữ thứ tự D11 (tx quy trình trước, `finish` sau) rồi `kick` stage kế.
+    const needInput = result.kind === "need_input";
+    if (needInput) await finish(ctx, result);
     const kick = await apply(d, {
       runId: link.process_run_id,
       stageRunId: link.stage_run_id,
       hubRunId: ctx.writer.run.id,
+      jobId,
       result,
       tokens: usage,
     });
-    await finish(ctx, result);
+    if (!needInput) await finish(ctx, result);
     if (kick) await launcher.kick(link.process_run_id);
   } catch (err) {
     log.error("process-stage-failed", safeErrorFields(err));
@@ -101,8 +106,9 @@ async function runAgent(
   d: Deps,
   ctx: RunContext,
   link: Link,
-): Promise<{ result: StageResult; usage: number }> {
-  if (!ctx.direct) return { result: { kind: "failed", reason: "agent_failed" }, usage: 0 };
+): Promise<{ result: StageResult; usage: number; jobId: string | null }> {
+  if (!ctx.direct)
+    return { result: { kind: "failed", reason: "agent_failed" }, usage: 0, jobId: null };
   const timeoutS = await stageTimeout(d, link.process_run_id);
   const o = await runJob(
     d.runner,
@@ -125,7 +131,11 @@ async function runAgent(
     ctx.writer.signal,
     ctx.log,
   );
-  return { result: resultOf(o), usage: o.kind === "aborted" ? 0 : tokensOf(o.usage) };
+  return {
+    result: resultOf(o),
+    usage: o.kind === "aborted" ? 0 : tokensOf(o.usage),
+    jobId: o.kind === "aborted" ? null : o.jobId || null,
+  };
 }
 
 /** D11 · tx quy trình (scope system, RLS T): máy trạng thái + hiệu ứng. Trả `true` nếu cần `kick`. */
