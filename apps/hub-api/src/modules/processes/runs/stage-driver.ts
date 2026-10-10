@@ -40,7 +40,8 @@ export const tokensOf = (u: TokenUsage): number =>
   });
 
 function resultOf(o: JobOutcome): StageResult {
-  if (o.kind === "aborted") return { kind: "failed", reason: "agent_failed" };
+  // D11 · `aborted` = AbortSignal (huỷ run stage `/runs/:id/cancel` hoặc tắt instance), không phải lỗi agent ⇒ interrupted.
+  if (o.kind === "aborted") return { kind: "limit", reason: "interrupted" };
   if (o.kind === "failed")
     return { kind: "failed", reason: o.code === "TIMEOUT" ? "job_timeout" : "agent_failed" };
   const r = o.output.kind === "agent_result" ? (o.output.result as AgentResult) : null;
@@ -205,6 +206,7 @@ function buildState(head: RunHead, stage: StageRow, def: SnapStage, idx: number)
       askLimit: Number(stage.ask_limit),
       after: def.after.kind,
       hasOutput: stage.current_output_id !== null,
+      realAction: def.real_action === true,
     },
     decisionReason: null,
   };

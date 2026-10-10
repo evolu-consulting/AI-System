@@ -39,6 +39,8 @@ export type SnapStage = {
     fields: { key: string; type: string; required: boolean }[];
   };
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
+  /** D4 · HUB-FR-109 · stage "Hành động thật" (chèn sẵn tool_confirmations; need_input ⇒ needs_decision). */
+  real_action?: boolean;
   answerer:
     | { kind: "starter" }
     | { kind: "group"; group_id: string }
