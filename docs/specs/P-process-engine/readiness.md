@@ -4,11 +4,55 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-10 (lần 5, `85042330`) | READY | 0 | 0 | 0 | R4-1, R4-2, R4-3 đóng hết. Không lỗ hổng mới. Trần kích thước đạt. Không câu hỏi người dùng |
 | 2026-10-10 (lần 4, `daa86207`) | NOT READY | 0 | 2 | 1 | R3-1…R3-7 đóng hết. Mới: 2 Cao đội tự sửa — E-P13 bị đổi sai sang banner `left` (T có việc), khối "Kết quả" chưa có role/khoá i18n/nhãn dòng cho e2e. Không câu hỏi người dùng |
 | 2026-10-10 (lần 3, `8c2b12d9`) | NOT READY | 0 | 3 | 4 | R2-1…R2-9, #22–#24 đóng hết. Mới: 3 Cao đội tự sửa, đều quanh view ngoài phòng của người bắt đầu đã rời (U5): quyền `GET output`, FE không hiện `outputs`/`can_cancel` ở `access:task`, thiếu test luật. Không còn câu hỏi người dùng |
 | 2026-10-10 (lần 2, `1ee41c60`) | NOT READY | 0 | 5 | 7 | 24 lỗ hổng lần 1: 21 đóng, 3 Thấp mang sang. Mới: 1 câu hỏi người dùng (T10 lệch X2b-R17), 4 Cao đội tự sửa (nhãn e2e thread, ràng composer, ai gửi trả lời ở composer thread, `forward.task_kind`) |
 | 2026-10-10 (lần 1, `db3e7021`) | NOT READY | 1 | 7 | 9 | + 7 Trung bình. Chặn = ai mở task hỏi lại (PF1 hay PF2). 4 mục cần người dùng quyết (U1–U4), còn lại đội tự sửa theo Luật 2 |
 | (chưa chạy) | — | — | — | — | Spec draft 2026-10-09 (CR-056…058) |
+
+---
+
+## Lần 5 · 2026-10-10 · commit `85042330` (diff `daa86207..HEAD`)
+
+## Kết luận: READY
+Phạm vi đã kiểm: `git diff daa86207..HEAD -- docs/specs/P-process-engine` (5 file đổi, trừ readiness.md) + mục được trỏ: plan-frontend-i18n.md:175, :264; plan-frontend-e2e.md:64 · mã yêu cầu: U5, CHAT-AC-52/56, AC-H29
+
+Lỗ hổng lần 4: **đóng** R4-1 (test-plan-e2e.md:31 E-P13 trả về `inbox.run.banner` "Bạn không ở phòng này. Bạn chỉ xem được phần cần xử lý…" khớp plan-frontend-i18n.md:175 + plan-frontend-thread.md:63 (c); test-plan-e2e.md:34 E-P20 cột nhãn = banner `left`, cùng cột kịch bản) · R4-2 (plan-frontend-thread.md:63 (a) `<section aria-labelledby>` ⇒ `region "Kết quả"`, tiêu đề `run.outputs.title`, dòng = `run.outputTitle` + `button "Xem kết quả"` (`run.viewOutput`); plan-frontend-i18n-thread.md:66–71 §3b VI/EN, hai khoá có sẵn khớp plan-frontend-i18n.md:264; plan-frontend-e2e.md:71 + test-plan-e2e.md:34 `region "Kết quả"` chứa ≥1 `button "Xem kết quả"`) · R4-3 (test-plan.md:128 R-A06 đầu vào/kỳ vọng 1-1 theo `;`: 4 nhóm ↔ `true; true; true / false; false`).
+
+## Lỗ hổng
+| # | Mức | Mục | Vị trí (file:dòng hoặc mã) | Vấn đề | Mặc định đề xuất |
+|---|-----|-----|----------------------------|--------|------------------|
+| — | — | — | — | Không có | — |
+
+## Mâu thuẫn giữa tài liệu
+Không có (hai mâu thuẫn lần 4 đã gỡ: E-P13 ↔ plan-frontend-thread (c); E-P20 cột nhãn ↔ cột kịch bản).
+
+## Câu hỏi cho người dùng (chỉ những gì KHÔNG có mặc định an toàn)
+Không có.
+
+## Checklist
+| Mục | Kết quả | Bằng chứng (file:dòng / mã) |
+|-----|---------|-----------------------------|
+| A Phạm vi | Đạt | không đổi; spec.md:178 U5 |
+| B Hợp đồng | Đạt | không đổi; plan-contract.md:40, :57 |
+| C Dữ liệu | Đạt | không đổi |
+| D Nghiệp vụ | Đạt | không đổi; plan-contract.md:116–119 |
+| E UI | Đạt | plan-frontend-thread.md:63 (a)–(d) có role, khoá, nhãn dòng, nhãn nút |
+| F Kiểm chứng | Đạt | test-plan-e2e.md:31, :34; plan-frontend-e2e.md:71; test-plan.md:128 |
+| G Phụ thuộc & môi trường | Đạt | không đổi; plan-step0.md:28 |
+| H Task | Đạt | không đổi |
+| H2 Vai trò | Đạt | không đổi; test-plan.md:127–131 |
+| I Nhất quán | Đạt | R4-1 đã gỡ; khoá `run.outputTitle`/`run.viewOutput` cùng chữ ở plan-frontend-i18n.md:264 ↔ i18n-thread.md:70–71 |
+| J Độ chính xác | Đạt | plan-frontend-i18n-thread.md:66–71 (VI/EN nguyên văn) |
+
+**Trần kích thước** (`wc -c`, 1 KB = 1024 B): spec.md 23 200 / 25 600 · plan.md 30 572 / 30 720 · plan-frontend.md 25 464 / 25 600 · test-plan.md 28 966 / 30 720 — **đều dưới trần** (plan-frontend.md không đổi lần này).
+
+## Quét từ mơ hồ
+Chỉ quét phần đổi: "…" trong `inbox.run.banner` "…phần cần xử lý…", "Kết quả giai đoạn … · v<n>", "Đang chờ …" là trích rút gọn chuỗi có bản đầy đủ (plan-frontend-i18n.md:175, :264) — vô hại. Không có "có thể/nên/tuỳ/TBD" mới.
+
+## Chưa kiểm
+- Không đọc lại phần không đổi. Symbol chat-web ở plan-frontend-thread.md vẫn chưa Grep xác minh (như lần 2–4).
 
 ---
 

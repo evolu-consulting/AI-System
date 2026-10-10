@@ -2,7 +2,7 @@
 id: P-process-engine
 title: Process Engine (Quy trình động) — stage + gate duyệt + hỏi lại + nhóm agent + hiển thị token
 milestone: P (spike → P-a → P-b → P-c)
-status: draft            # draft → ready → approved → in-progress → done
+status: approved            # draft → ready → approved → in-progress → done
 requirements: [HUB-FR-104..119, HUB-BR-23..28, AC-H28..H35, CHAT-AC-51..58, ADM-FR-65..67]
 design:
   - docs/CHANGE-REQUESTS.md#CR-056 (lõi + token) · #CR-057 (Nhóm agent) · #CR-058 (phòng/chat, `!`, người duyệt ≠ người gọi)
@@ -192,4 +192,4 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 ## 11. Tranh chấp test
 - (không)
 
-Readiness: [`readiness.md`](readiness.md) lần 1–3 NOT READY (2026-10-10, lần 3: 0 Chặn, 3 Cao đang sửa); U1–U5, Q-F5 đã ghi. Trạng thái giữ `draft` tới Gate.
+Readiness: [`readiness.md`](readiness.md) READY lần 5 (2026-10-10). Gate: [`P-a-gate.md`](../P-a-gate.md) tự duyệt (Luật 2b). Trạng thái `approved`.
