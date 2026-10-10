@@ -90,13 +90,8 @@ type RawTeamRun = {
   activeMs: number;
 };
 
-/** Siêu dữ liệu stage + team_run của run (một stage ⇒ một `StageMeta`, team_run gắn theo `stage_idx`). */
-export async function loadStageMetas(
-  tx: Tx,
-  tenantId: string,
-  runId: string,
-): Promise<StageMeta[]> {
-  const stageRows = await tx.execute<RawStage>(sql`
+async function queryStageRows(tx: Tx, tenantId: string, runId: string) {
+  return await tx.execute<RawStage>(sql`
     select
       sr.stage_idx as "stageIdx",
       coalesce(pr.snapshot->'stages'->(sr.stage_idx::int)->>'name', 'Stage ' || sr.stage_idx) as name,
@@ -106,7 +101,10 @@ export async function loadStageMetas(
     join hub.process_runs pr on pr.id = sr.process_run_id and pr.tenant_id = sr.tenant_id
     where sr.process_run_id = ${runId}::uuid and sr.tenant_id = ${tenantId}::uuid
     order by sr.stage_idx`);
-  const teamRows = await tx.execute<RawTeamRun>(sql`
+}
+
+async function queryTeamRows(tx: Tx, tenantId: string, runId: string) {
+  return await tx.execute<RawTeamRun>(sql`
     select
       tr.id as id,
       sr.stage_idx as "stageIdx",
@@ -119,6 +117,9 @@ export async function loadStageMetas(
     join hub.stage_runs sr on sr.id = tr.stage_run_id and sr.tenant_id = tr.tenant_id
     where tr.process_run_id = ${runId}::uuid and tr.tenant_id = ${tenantId}::uuid
     order by sr.stage_idx, tr.attempt`);
+}
+
+function groupTeamRunsByStage(teamRows: Iterable<RawTeamRun>) {
   const byStage = new Map<number, StageMeta["teamRuns"][number][]>();
   for (const t of teamRows) {
     const idx = Number(t.stageIdx);
@@ -133,6 +134,17 @@ export async function loadStageMetas(
     });
     byStage.set(idx, list);
   }
+  return byStage;
+}
+
+/** Siêu dữ liệu stage + team_run của run (một stage ⇒ một `StageMeta`, team_run gắn theo `stage_idx`). */
+export async function loadStageMetas(
+  tx: Tx,
+  tenantId: string,
+  runId: string,
+): Promise<StageMeta[]> {
+  const stageRows = await queryStageRows(tx, tenantId, runId);
+  const byStage = groupTeamRunsByStage(await queryTeamRows(tx, tenantId, runId));
   return stageRows.map((s) => {
     const idx = Number(s.stageIdx);
     return {
