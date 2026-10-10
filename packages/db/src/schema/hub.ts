@@ -1,5 +1,5 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql`, `0010_h4a_studio.sql`, `0018_cr054_agent_defaults.sql` (viết tay), KHÔNG nằm trong drizzle.config.ts.
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql`, `0010_h4a_studio.sql`, `0018_cr054_agent_defaults.sql`, `0019_pa_process_engine.sql` (viết tay; bảng quy trình ở `hub-processes.ts`), KHÔNG nằm trong drizzle.config.ts.
 // Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts`
 // (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
 import { sql } from "drizzle-orm";
@@ -16,6 +16,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { PA_AUDIT_ACTIONS, PA_AUDIT_ENTITIES, processRunCols } from "./hub-processes";
 import { hub } from "./hub-readonly";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true });
@@ -61,6 +62,7 @@ export const HUB_AUDIT_ACTION_VALUES = [
   "delete",
   "enable",
   "disable",
+  ...PA_AUDIT_ACTIONS,
 ] as const;
 export const HUB_AUDIT_ENTITY_VALUES = [
   "agent_grant",
@@ -70,6 +72,7 @@ export const HUB_AUDIT_ENTITY_VALUES = [
   // CR-054 (0018)
   "agent_entitlement",
   "agent_default",
+  ...PA_AUDIT_ENTITIES,
 ] as const;
 export const HUB_AUDIT_ACTOR_ROLE_VALUES = ["platform_admin", "tenant_admin", "member"] as const;
 
@@ -193,6 +196,7 @@ export const conversations = hub.table("conversations", {
   deletedAt: ts("deleted_at"),
   // 0014 (X2b D1): hội thoại nền ẩn của (phòng, user) — không lộ qua C1 (D2).
   roomId: uuid("room_id"),
+  processRunId: uuid("process_run_id"), // 0019 (P-a D1): hội thoại nền ẩn của run
 });
 
 export const flows = hub.table("flows", {
@@ -252,6 +256,7 @@ export const runs = hub.table("runs", {
   // 0014 (X2b D1, D4): run của phòng + mốc đã đăng tin agent (idempotent, chỉ qua `hub.room_post_agent_message`).
   roomId: uuid("room_id"),
   roomPostedAt: ts("room_posted_at"),
+  ...processRunCols(), // 0019 (P-a D1): run stage quy trình
 });
 
 export const runSteps = hub.table("run_steps", {

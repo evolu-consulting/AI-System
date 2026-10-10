@@ -191,6 +191,7 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 | K4 | Run nhiều ngày cần trạng thái bền | Máy trạng thái trong Postgres, job kết thúc khi chờ người, khôi phục sau khởi động lại |
 | K5 | Hành động thật cần secret ngoài | P-c sau H4b Secrets |
 | K6 | Chi phí token khó đoán với nhóm | Spike đo; ngân sách token cứng (Q7) |
+- B1 · 0019: FK con → `process_runs (id, tenant_id)` (kép tenant, như rooms) cho stage/team/outputs/tasks/notices/outbox; `assignees` → `review_tasks (id, tenant_id)`. CHECK origin chỉ cấm cột của kind khác (FK SET NULL phòng/hội thoại vẫn thoả). `process_runs.flow_id` unique (T2). Outbox CHECK `block` ⇔ `main`. `process_run_viewer` = `runAccess` (admin ∨ thành viên phòng chưa xoá ∨ người bắt đầu khi không phòng/phòng xoá ⇒ full; người bắt đầu đã rời / assignee bất kỳ task kể cả đã đóng (M4) ⇒ task). FK `process_outputs.attachment_id` thêm ngoài CREATE TABLE (test idempotent 0007 gỡ attachments CASCADE).
 
 ## 11. Tranh chấp test
 - (không)

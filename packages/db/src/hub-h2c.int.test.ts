@@ -342,7 +342,7 @@ describe("HUB-FR-44 · 0007_h2c_attachments D1 — idempotent (int)", () => {
 
   test("DB đã có 0006 (gỡ 0007 + dòng journal) → áp 0007 (+ migration sau nó); run cũ nhận attachment_ids {}", async () => {
     const before = await snap();
-    await owner`drop table hub.attachments`;
+    await owner`drop table hub.attachments cascade`; // + FK 0019 (process_outputs), áp lại tạo lại
     await owner`drop index hub.conversations_deleted_idx`;
     await owner`update hub.jobs set error_reason = 'upstream' where error_reason = 'attachment'`;
     await owner`alter table hub.runs drop column attachment_ids`;

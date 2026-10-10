@@ -139,6 +139,14 @@ const X2A_POLICY_TABLES = [
   ...Array(2).fill("room_messages"),
   ...Array(3).fill("room_flow_reads"),
 ];
+/** P-a (0019): 6 bảng run 1 policy T; process_defs 4 (đọc + ghi system); notices 3; outbox 3. */
+const PA_POLICY_TABLES = [
+  ...["process_runs", "stage_runs", "team_runs", "process_outputs", "review_tasks"],
+  "review_task_assignees",
+  ...Array(4).fill("process_defs"),
+  ...Array(3).fill("process_notices"),
+  ...Array(3).fill("process_thread_events"),
+];
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
   test("HUB-FR-75 · withHubScope chạy lại khi 40001, không chạy lại lỗi khác", async () => {
@@ -171,7 +179,7 @@ describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", ()
       left join pg_policy p on p.polrelid = c.oid
       where n.nspname = 'hub' and c.relrowsecurity order by 1`;
     expect([...rows]).toEqual(
-      [...TABLES, "tool_confirmations", "attachments", ...X2A_POLICY_TABLES]
+      [...TABLES, "tool_confirmations", "attachments", ...X2A_POLICY_TABLES, ...PA_POLICY_TABLES]
         .sort()
         .map((t) => ({ t, roles: "hub_rw" })),
     );

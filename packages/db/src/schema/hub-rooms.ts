@@ -1,6 +1,7 @@
 // HUB-FR-96 · HUB-BR-22 · kiểu Drizzle cho phòng chat X2a (plan-db X2a §4.1). CHỈ để truy vấn có kiểu: DDL thật, CHECK,
-// FK kép tenant, EXCLUDE 1 owner, RLS và hàm SECURITY DEFINER ở `migrations-hub/0011_x2a_rooms.sql` + siết ở `0012_x2a_rooms_rls_tighten.sql`, `0013_x2a_rooms_seq_integrity.sql`, X2b `0014_x2b_room_agents.sql` (viết tay).
+// FK kép tenant, EXCLUDE 1 owner, RLS và hàm SECURITY DEFINER ở `migrations-hub/0011_x2a_rooms.sql` + siết ở `0012_x2a_rooms_rls_tighten.sql`, `0013_x2a_rooms_seq_integrity.sql`, X2b `0014_x2b_room_agents.sql`, P-a `0019_pa_process_engine.sql` (viết tay).
 // Tạo phòng KHÔNG insert trực tiếp `rooms` (không GRANT/policy INSERT): gọi `hub.create_room` (D3).
+import { ROOM_PROCESS_KINDS } from "@ai/contracts/chat";
 import { bigint, integer, jsonb, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { hub } from "./hub-readonly";
 
@@ -8,7 +9,8 @@ const ts = (name: string) => timestamp(name, { withTimezone: true });
 
 export const ROOM_KIND_VALUES = ["dm", "group"] as const;
 export const ROOM_MEMBER_ROLE_VALUES = ["owner", "member"] as const;
-export const ROOM_SENDER_TYPE_VALUES = ["user", "agent"] as const;
+// 0019 (P-a T3): `process` = tin Hub đăng cho thread quy trình (chỉ qua `hub.room_post_process_message`, scope system).
+export const ROOM_SENDER_TYPE_VALUES = ["user", "agent", "process"] as const;
 export const ROOM_PLACEMENT_VALUES = ["main", "flow"] as const;
 export const ROOM_MESSAGE_RUN_STATUS_VALUES = ["finished", "failed", "cancelled"] as const;
 export const ROOM_WAIT_KIND_VALUES = ["need_input", "side_effect"] as const;
@@ -62,4 +64,9 @@ export const roomMessages = hub.table("room_messages", {
   ask: jsonb("ask").$type<{ question: string; choices?: string[] }>(),
   stepCount: integer("step_count"),
   runMs: integer("run_ms"),
+  // 0019 (P-a plan-thread §3): tin gọi `!key` (user) mang `processRunId`; tin `process` mang đủ 3 cột
+  // (CHECK `room_messages_process_ck`). `processMeta` = `RoomProcessPart` (zod parse ở biên đọc).
+  processRunId: uuid("process_run_id"),
+  processKind: text("process_kind", { enum: ROOM_PROCESS_KINDS }),
+  processMeta: jsonb("process_meta").$type<Record<string, unknown>>(),
 });
