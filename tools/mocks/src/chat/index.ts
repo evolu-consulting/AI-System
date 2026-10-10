@@ -6,6 +6,7 @@ import { type ChatVars, createAuthRoutes, requireAccess } from "./auth";
 import { createControlRoutes } from "./control";
 import { createConversationRoutes } from "./conversations.routes";
 import { createMessageRoutes } from "./messages.routes";
+import { createProcessMock } from "./processes/index";
 import { createRoomStubRoutes } from "./rooms.routes";
 import { RunEngine } from "./runs";
 import { isScenarioName, type ScenarioName } from "./scenarios";
@@ -21,12 +22,15 @@ export function createChatMock(opts: ChatMockOptions): Hono<ChatVars> {
   const engine = new RunEngine({ store, fast: opts.fast, retentionS: opts.eventsRetentionS });
   let fallback: ScenarioName | null = null;
   seedChat(store);
+  // P-a (CR-056): mock quy trình — fixture `PA_FIX`, `/__mock/process`.
+  const processes = createProcessMock();
   const app = new Hono<ChatVars>();
   app.route("/", createAuthRoutes(sessions));
   const onReset = () => {
     engine.reset();
     store.reset();
     seedChat(store);
+    processes.reset();
     fallback = null;
   };
   const setScenario = (name: string | null) => {
@@ -35,6 +39,7 @@ export function createChatMock(opts: ChatMockOptions): Hono<ChatVars> {
     return true;
   };
   app.route("/", createControlRoutes({ sessions, onReset, setScenario }));
+  app.route("/", processes.control);
 
   // Mọi endpoint Hub của kênh chat (E5–E15) đi qua Bearer JWT của mock (`/x/*` của Hono khớp cả `/x`).
   const bearer = requireAccess(sessions);
@@ -42,6 +47,9 @@ export function createChatMock(opts: ChatMockOptions): Hono<ChatVars> {
   app.use("/runs/*", bearer);
   // X2a (stub, spec Q7): phòng/danh bạ/luồng người dùng rỗng để chat-web C1 không lỗi.
   for (const p of ["/rooms/*", "/directory/*", "/me/*"]) app.use(p, bearer);
+  for (const p of ["/processes", "/process-runs/*", "/review-tasks/*"]) app.use(p, bearer);
+  // Trước stub X2a: `/me/stream` có sự kiện quy trình, `/rooms/:id` cho phòng R.
+  app.route("/", processes.routes);
   app.route("/", createRoomStubRoutes());
   const onDeleted = (runIds: string[]) => {
     for (const id of runIds) engine.cancel(id);

@@ -9,6 +9,7 @@ import {
   CHAT_CONTENT_MAX,
   ChatCursorSchema,
 } from "./entities";
+import { ROOM_PROCESS_KINDS, RoomProcessPartSchema } from "./room-process";
 
 export const ROOM_NAME_MAX = 80;
 /** Gồm chủ phòng. */
@@ -18,7 +19,8 @@ export const ROOM_IDS_MAX = 200;
 export const ROOM_PREVIEW_MAX = 120;
 export const ROOM_KINDS = ["dm", "group"] as const;
 export const ROOM_ROLES = ["owner", "member"] as const;
-export const ROOM_SENDER_TYPES = ["user", "agent"] as const;
+// P-a T3 (CR-056): chỉ nối thêm `process` — tin Hub đăng cho thread quy trình.
+export const ROOM_SENDER_TYPES = ["user", "agent", "process"] as const;
 export const ROOM_MESSAGES_LIMIT_DEFAULT = 50;
 // HUB-FR-101, 103 · X2b plan §2.2: agent trong phòng (chỉ thêm).
 export const ROOM_ORCHESTRATOR_TAG = "orchestrator";
@@ -129,6 +131,8 @@ export const RoomFlowRecentSchema = z.strictObject({
   preview: z.string().max(ROOM_PREVIEW_MAX),
   created_at: IsoDateTime,
   unread: z.boolean(),
+  /** P-a U1: tin `process` trong thread — FE chọn biểu tượng theo `kind`. */
+  process: z.strictObject({ kind: z.enum(ROOM_PROCESS_KINDS) }).optional(),
 });
 export type RoomFlowRecent = z.infer<typeof RoomFlowRecentSchema>;
 
@@ -161,6 +165,9 @@ export const RoomMessageSchema = z.strictObject({
       unread: CountSchema.optional(),
     })
     .optional(),
+  // P-a U1 (chỉ thêm): tin gọi `!key` + tin `process` mang run; tin `process` mang phần hiển thị.
+  process_run_id: UuidSchema.optional(),
+  process: RoomProcessPartSchema.optional(),
 });
 export type RoomMessage = z.infer<typeof RoomMessageSchema>;
 

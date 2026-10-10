@@ -21,8 +21,22 @@ export function firstInvalid(body: Record<string, unknown>, withQuery: boolean):
   return null;
 }
 
+/** N6 (P-a, CR-056): khoá đếm của một lời gọi workflow — header `X-Mock-Workflow`, `inputs.workflow_key`, hoặc `_`. */
+export function workflowKey(header: string | undefined, inputs: unknown): string {
+  if (header) return header;
+  const k = isPlainObject(inputs) ? inputs.workflow_key : undefined;
+  return typeof k === "string" && k !== "" ? k : "_";
+}
+
 export function createDifyMock(opts: { timeoutMs: number }): Hono {
   const app = new Hono();
+  // N6: đếm `POST /v1/workflows/run` theo workflow (vd `ghi-so`) — đứng trước kịch bản, không cần token.
+  const calls = new Map<string, number>();
+  app.get("/__mock/calls", (c) => c.json({ workflows: Object.fromEntries(calls) }));
+  app.post("/__mock/reset", (c) => {
+    calls.clear();
+    return c.body(null, 204);
+  });
   app.use(
     scenarioMiddleware({
       tokens: DIFY_TOKENS,
@@ -35,6 +49,8 @@ export function createDifyMock(opts: { timeoutMs: number }): Hono {
     const body = await readJsonObject(c);
     const bad = firstInvalid(body, false);
     if (bad) return c.json(difyInvalidParam(bad), 400);
+    const key = workflowKey(c.req.header("X-Mock-Workflow"), body.inputs);
+    calls.set(key, (calls.get(key) ?? 0) + 1);
     return c.json(DIFY_WORKFLOW_RUN_OK(body.inputs));
   });
 

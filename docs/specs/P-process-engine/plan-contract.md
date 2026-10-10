@@ -64,6 +64,7 @@ Thứ tự kiểm chung: JWT 401 → **quyền xem** (404 nếu không thấy) �
 | `POST /review-tasks/:id/forward` | `{to_user_id: Uuid, note?: 0..500}` | 200 `TaskDetail` | 404 · 409 `TASK_KIND_MISMATCH` (decision) · 409 `REVIEW_TASK_CLOSED` · 409 `FORWARD_LIMIT` · 403 `FORWARD_OUT_OF_GROUP` (review) · 422 `FORWARD_TARGET_INVALID` (ask: không active/khác tenant/chính mình/đã là assignee) | PF2 |
 | `GET /me/process-inbox` | `limit`, `cursor` | 200 `{sender: PROCESS_SYSTEM_SENDER, items: ProcessNotice[], unread: Count, next_cursor}` | — | PF3 |
 | `POST /me/process-inbox/read` | `{up_to_id: Uuid}` | 200 `{unread: Count}` | 404 | PF3 |
+Tên schema (B2 chốt): `ProcessListResponseSchema` · `CreateProcessRunRequestSchema` · `ConversationProcessStartResponseSchema` · `ProcessRunListQuerySchema`/`…ResponseSchema` · `DecideProcessRunRequestSchema` · `ReviewTaskListQuerySchema`/`ReviewTaskListResponseSchema` · `ReviewDecisionRequestSchema` · `ReviewAnswerRequestSchema` · `ForwardReviewTaskRequestSchema` · `ProcessInboxResponseSchema` · `MarkProcessInboxReadRequestSchema`/`…ResponseSchema`; hub-admin: `ProcessDefInputSchema` (+`Base`), `ProcessDefSchema`, `UpdateProcessDefRequestSchema`, `CopyProcessDefRequestSchema`, `RunProcessDefRequestSchema`, `ProcessDefList{Query,Response}Schema`, `AgentTeamListResponseSchema`.
 `ProcessNotice = {id, kind: NOTICE_KIND, process_run_id, task_id: Uuid\|null, process_name, stage_name: string\|null, result?: TASK_RESULT, created_at, read: bool}` (không chứa nội dung output/câu hỏi — xem qua task).
 
 ## 4. Mã lỗi

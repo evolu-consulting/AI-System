@@ -10,6 +10,8 @@ export type MockUser = {
   username: string;
   display_name: string;
   locked: boolean;
+  /** Vắng = member (P-a: `tadmin` là tenant_admin). */
+  role?: Me["role"];
 };
 
 const id = (n: string) => `00000000-0000-4000-8000-0000000c1${n}`;
@@ -25,6 +27,12 @@ const user = (n: string, tenant: MockTenant, display: string, locked = false) =>
     display_name: display,
     locked,
   }) satisfies MockUser;
+/** P-a persona (plan-step0 §3): username khác tên hiển thị. */
+const persona = (n: string, username: string, display: string, role?: Me["role"]): MockUser => ({
+  ...user(n, ACME, display),
+  username,
+  ...(role ? { role } : {}),
+});
 
 /** `minh` có seed (B3); `lan`/`hoa` cùng tenant, rỗng; `an` khác tenant; `khoa` bị khoá. */
 export const MOCK_USERS: readonly MockUser[] = [
@@ -33,6 +41,12 @@ export const MOCK_USERS: readonly MockUser[] = [
   user("a03", ACME, "Hoa"),
   user("a04", ACME, "Khoa", true),
   user("b01", BETA, "An"),
+  // P-a (CR-056): X tam · T cuc "Thomas" (ngoài phòng R) · H q01 · H2 q02 · Adm tadmin.
+  persona("a05", "tam", "Tam"),
+  persona("a06", "cuc", "Thomas"),
+  persona("a07", "q01", "QC Người 01"),
+  persona("a08", "q02", "QC Người 02"),
+  persona("a09", "tadmin", "Tenant Admin", "tenant_admin"),
 ];
 
 /** Tìm theo `tenant_key` + `username` (đã chuẩn hoá chữ thường bởi `LoginRequestSchema`). */
@@ -52,7 +66,7 @@ export function toMe(u: MockUser): Me {
     username: u.username,
     display_name: u.display_name,
     email: null,
-    role: "member",
+    role: u.role ?? "member",
     locale: "vi",
     must_change_password: false,
     totp_enabled: false,

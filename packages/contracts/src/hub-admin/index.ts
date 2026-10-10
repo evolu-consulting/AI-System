@@ -7,4 +7,5 @@ export * from "./agent-grants";
 export * from "./agent-settings";
 export * from "./effective";
 export * from "./errors";
+export * from "./processes";
 export * from "./trace";

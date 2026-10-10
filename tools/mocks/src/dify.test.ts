@@ -63,3 +63,27 @@ describe("ADM-NFR-06 · mock Dify HTTP", () => {
     expect(await res.json()).toEqual({ error: { code: "NOT_FOUND", message: "Not found" } });
   });
 });
+
+describe("N6 · mock Dify đếm lời gọi workflow (P-a)", () => {
+  test("đếm theo X-Mock-Workflow / inputs.workflow_key; reset về 0", async () => {
+    const run = (headers: Record<string, string>, inputs: unknown) =>
+      app.request("/v1/workflows/run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer app-mock-ok",
+          ...headers,
+        },
+        body: JSON.stringify({ ...WF, inputs }),
+      });
+    await app.request("/__mock/reset", { method: "POST" });
+    await run({ "X-Mock-Workflow": "ghi-so" }, { title: "a" });
+    await run({}, { workflow_key: "ghi-so" });
+    await run({}, { text: "x" });
+    expect(await (await app.request("/__mock/calls")).json()).toEqual({
+      workflows: { "ghi-so": 2, _: 1 },
+    });
+    await app.request("/__mock/reset", { method: "POST" });
+    expect(await (await app.request("/__mock/calls")).json()).toEqual({ workflows: {} });
+  });
+});
