@@ -103,8 +103,15 @@ test('CHAT-AC-57 · E-P10 · đã chuyển 3 lần ⇒ nút khoá aria-disabled;
     await u.A.goto(`/rooms/${room.id}`);
     await roomBox(u.A).fill("@QC Người 01 trả lời giúp");
     await u.A.keyboard.press("Escape");
+    const sent = u.A.waitForResponse(
+      (x) =>
+        x.request().method() === "POST" &&
+        /\/rooms\/[^/]+\/messages$/.test(new URL(x.url()).pathname),
+    );
     await u.A.getByRole("button", { name: "Gửi", exact: true }).click();
+    expect((await sent).status()).toBeLessThan(300);
     await u.A.goto(`/rooms/${room.id}?flow=${r.flowId}`);
+    await expect(flowPane(u.A)).toBeVisible();
     await expect(flowPane(u.A).getByText(/đã nhờ .* trả lời \(chuyển/)).toHaveCount(0);
 
     // đích bị khoá (giả lập: tìm "khoa" — user bị khoá không chọn được hoặc alert)

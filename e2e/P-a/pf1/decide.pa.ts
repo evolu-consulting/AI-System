@@ -48,7 +48,9 @@ test('HUB-BR-26 · CHAT-AC-58 · E-P7 · needs_decision: A (thread) và Adm (/ru
 
     await reg.getByRole("button", { name: "Thêm 1 lần làm lại" }).click();
     await expect(reg).toBeHidden();
-    await expect(block(u.A).first()).toContainText("Đang chạy");
+    await expect(block(u.A).and(u.A.locator(`[data-run-id="${r1.runId}"]`))).toContainText(
+      "Đang chạy",
+    );
 
     await regAdm.getByRole("button", { name: "Huỷ lượt chạy" }).click();
     const dlg = u.Adm.getByRole("alertdialog", { name: "Huỷ lượt chạy này?" });
