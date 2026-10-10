@@ -12,10 +12,11 @@ import { FlowFooter } from "~/features/thread/components/FlowFooter";
 import { relativeTime } from "~/features/thread/lib/thread-logic";
 import { RunStatusBadge } from "../../shared/components/RunStatusBadge";
 import { StageStrip } from "../../shared/components/StageStrip";
+import { TaskWaitingNote } from "../../shared/components/TaskWaitingNote";
 import { useInView } from "../../shared/hooks/use-in-view";
 import { useThreadRun } from "../../shared/hooks/use-thread-run";
 import type { ThreadMessageProps } from "../../shared/types";
-import { type BlockAction, myActions, stageItems } from "../lib/block-view";
+import { type BlockAction, myActions, stageItems, waitingOpenTasks } from "../lib/block-view";
 import { StatusLine } from "./StatusLine";
 
 export type ProcessBlockProps = ThreadMessageProps<"block"> & {
@@ -66,9 +67,11 @@ type BodyProps = {
   refetch: () => void;
   openThread?: () => void;
   actions: BlockAction[];
+  /** Khối timeline (không `inThread`): hiện `TaskWaitingNote` cho việc của người khác. */
+  showWaiting: boolean;
 };
 
-function BlockBody({ view, isError, refetch, openThread, actions }: BodyProps) {
+function BlockBody({ view, isError, refetch, openThread, actions, showWaiting }: BodyProps) {
   const { t } = useTranslation();
   if (isError) {
     return (
@@ -81,6 +84,7 @@ function BlockBody({ view, isError, refetch, openThread, actions }: BodyProps) {
     );
   }
   if (!view) return <Skeleton aria-busy="true" className="h-5 w-2/3" />;
+  const waiting = showWaiting ? waitingOpenTasks(view) : [];
   return (
     <>
       <StatusLine view={view} />
@@ -94,6 +98,9 @@ function BlockBody({ view, isError, refetch, openThread, actions }: BodyProps) {
           ))}
         </div>
       )}
+      {waiting.map((o) => (
+        <TaskWaitingNote key={o.id} open={o} />
+      ))}
       <p className="text-caption text-muted-foreground">
         {t("process.run.runsAs", { name: view.started_by.display_name })}
       </p>
@@ -105,18 +112,19 @@ function BlockFooter({
   flow,
   openThread,
 }: {
-  flow: NonNullable<ProcessBlockProps["message"]["flow"]>;
+  flow: ProcessBlockProps["message"]["flow"];
   openThread?: () => void;
 }) {
   const { i18n } = useTranslation();
+  // Như AgentBlock: "Trả lời tiếp" luôn hiện (bật khi có `flow_id`); FlowRecent chỉ khi flow có tin gần nhất.
   return (
     <>
-      <FlowRecent flow={flow} onOpen={openThread} />
+      {flow && <FlowRecent flow={flow} onOpen={openThread} />}
       <FlowFooter
         copyValue=""
         hideCopy
-        messageCount={flow.message_count}
-        timeLabel={relativeTime(flow.last_active_at, Date.now(), i18n.language)}
+        messageCount={flow?.message_count ?? 0}
+        timeLabel={flow ? relativeTime(flow.last_active_at, Date.now(), i18n.language) : null}
         openHere={false}
         busy={false}
         onReply={openThread}
@@ -160,8 +168,9 @@ function ProcessBlockImpl({ message, part, myId, inThread = false, onReply }: Pr
         refetch={() => void q.refetch()}
         openThread={inThread ? undefined : openThread}
         actions={actions}
+        showWaiting={!inThread}
       />
-      {!inThread && flow && <BlockFooter flow={flow} openThread={openThread} />}
+      {!inThread && <BlockFooter flow={flow} openThread={openThread} />}
     </article>
   );
 }

@@ -1,5 +1,5 @@
 // CHAT-AC-52/53 · plan-frontend-thread §4 + plan-frontend §6: dẫn xuất thuần từ `ProcessRunFullView` cho khối/thanh trạng thái.
-import type { ProcessRunFullView } from "@ai/contracts/chat";
+import type { OpenTask, ProcessRunFullView } from "@ai/contracts/chat";
 import type { StageStripItem } from "../../shared/components/StageStrip";
 
 export type BlockAction = "review" | "answer" | "decide";
@@ -25,4 +25,12 @@ export function myActions(view: ProcessRunFullView): BlockAction[] {
 /** Giai đoạn hiện tại (để dựng dòng "Đang chạy · Giai đoạn n/t · tên" và chip Làm lại/Hỏi lại). */
 export function currentStage(view: ProcessRunFullView) {
   return view.stages.find((s) => s.idx === view.current_stage_idx);
+}
+
+/** Việc đang mở KHÔNG phải của tôi (khối timeline hiện `TaskWaitingNote` "Đang chờ … " một dòng cho người khác). */
+export function waitingOpenTasks(view: ProcessRunFullView): OpenTask[] {
+  const mine = new Set(view.my_tasks.map((t) => t.id));
+  return view.open_tasks.filter(
+    (o) => !mine.has(o.id) && !(o.kind === "decision" && view.decision?.can_decide),
+  );
 }
