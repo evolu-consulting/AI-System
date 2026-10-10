@@ -24,6 +24,21 @@ export async function lockRun(tx: Tx, tenantId: string, runId: string): Promise<
   return row ?? null;
 }
 
+/**
+ * HUB-FR-112 · HUB-FR-113 · người nhận `process.updated` (plan-contract §5): người bắt đầu + thành viên đang hoạt động
+ * của phòng nguồn + assignee (user + thành viên group) các task **open**. Gọi TRƯỚC khi đóng task (để assignee task vừa
+ * đóng vẫn nhận). Qua definer `hub.process_run_recipients` (0020): nhánh `room_members` cần bỏ RLS vì người gọi có thể
+ * không là thành viên phòng nguồn (gates review/decide/cancel bởi reviewer ngoài phòng; `lostPermission` khi người bắt
+ * đầu đã rời) — policy `room_members_select` (0011) khoá theo caller-là-thành-viên nên đọc thẳng sẽ rơi mất họ. Definer
+ * cách ly chặt theo tenant của run (scope 'user' khớp GUC tenant; 'system' tin cậy), trả tập đã khử trùng.
+ */
+export async function runRecipients(tx: Tx, runId: string, tenantId: string): Promise<string[]> {
+  const rows = await tx.execute<{ uid: string | null }>(
+    sql`select uid from hub.process_run_recipients(${runId}::uuid, ${tenantId}::uuid)`,
+  );
+  return rows.map((r) => r.uid).filter((x): x is string => x !== null);
+}
+
 /** Đọc đầu run không khoá. */
 export async function loadRunHead(
   tx: Tx,

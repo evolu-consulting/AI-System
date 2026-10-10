@@ -131,7 +131,8 @@ export type ReviewTaskListResponse = z.infer<typeof ReviewTaskListResponseSchema
 /** `fail` thiếu/rỗng `feedback` ⇒ 422 FEEDBACK_REQUIRED ở luật (`reviewDecisionCheck`), không phải zod 400. */
 export const ReviewDecisionRequestSchema = z.strictObject({
   result: z.enum(["pass", "fail"]),
-  feedback: z.string().trim().min(1).max(FEEDBACK_MAX).optional(),
+  // `fail` góp ý rỗng/khoảng trắng ⇒ 422 FEEDBACK_REQUIRED ở luật (`reviewDecisionCheck`), KHÔNG zod 400 ⇒ không `.min(1)`.
+  feedback: z.string().trim().max(FEEDBACK_MAX).optional(),
   sections: z
     .array(z.string().trim().min(1).max(PROCESS_NAME_MAX))
     .max(PROCESS_SECTIONS_MAX)

@@ -49,14 +49,16 @@ export type ProcessMounted = { roomSender: RoomProcessSender; conversationStart:
 
 export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps): ProcessMounted {
   const poster = new ThreadPoster(m);
-  const core: Omit<ProcessDeps, "start"> = {
+  const base: Omit<ProcessDeps, "start" | "launcher"> = {
     ...m,
     now: clockOf(m.now),
     runsPerTenant: m.processRunsPerTenant ?? PROCESS_RUNS_PER_TENANT,
-    launcher: m.stageLauncher ?? createStageLauncher(),
     notifier: createNotifier(),
     postThread: (runId) => poster.post(runId),
   };
+  // Launcher thật nhận `ProcessDeps` (RunService/runner) để tạo `hub.runs` stage; test có thể thay `stageLauncher` giả.
+  const launcher = m.stageLauncher ?? createStageLauncher(base);
+  const core: Omit<ProcessDeps, "start"> = { ...base, launcher };
   const d: ProcessDeps = { ...core, start: conversationStart(core) };
   for (const r of [
     processRunsRoutes,

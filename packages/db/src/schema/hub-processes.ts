@@ -1,6 +1,7 @@
 // HUB-FR-104 · HUB-FR-106 · HUB-FR-113 · HUB-BR-25 · kiểu Drizzle cho bảng quy trình P-a (plan §2.1, plan-thread §3).
 // CHỈ để truy vấn có kiểu: DDL thật, CHECK, FK kép tenant, RLS, GRANT và hàm SECURITY DEFINER (`is_process_trigger`,
 // `process_run_viewer`, `room_post_process_message`) ở `migrations-hub/0019_pa_process_engine.sql` (viết tay).
+// Người nhận `process.updated`: hàm SECURITY DEFINER `process_run_recipients` ở `0020_pa_process_recipients.sql`.
 // Enum lấy từ `@ai/contracts/chat` (một nguồn); đổi giá trị ⇒ cần migration mới sửa CHECK tương ứng.
 import {
   DECISION_REASONS,

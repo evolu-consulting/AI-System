@@ -1,11 +1,12 @@
-// HUB-FR-105 · D14 · PF1 · `!key` ở Hỏi AI ⇒ 202 `{process_run}` (plan-contract §3). Bước 0: chưa có quy trình nào chạy
-// được ⇒ 404 `PROCESS_NOT_FOUND` (cờ bật mới tới đây; cờ tắt `!` là chữ thường). `fromAdmin` (B3 "Chạy") cũng stub tới PF1.
-import { processError } from "../core/errors";
+// HUB-FR-105 · D14 · ADM-FR-67 · PF1 · `ProcessStartPort`: Hỏi AI `!key` ⇒ 202 `{process_run}` (origin conversation, không
+// thread, không lưu tin); nút "Chạy" admin ⇒ origin admin (def đã kiểm ở `DefsService.run`). Thân ở `StartService`.
 import type { ProcessDeps, ProcessStartPort } from "../core/ports";
+import { StartService } from "./start.service";
 
-export function conversationStart(_d: Omit<ProcessDeps, "start">): ProcessStartPort {
-  const notFound = async (): Promise<never> => {
-    throw processError("PROCESS_NOT_FOUND", { suggestions: [] });
+export function conversationStart(d: Omit<ProcessDeps, "start">): ProcessStartPort {
+  const svc = new StartService(d);
+  return {
+    fromConversation: (u, conversationId, bang) => svc.fromConversation(u, conversationId, bang),
+    fromAdmin: (u, defId, input) => svc.fromAdmin(u, defId, input),
   };
-  return { fromConversation: notFound, fromAdmin: notFound };
 }

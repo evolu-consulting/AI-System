@@ -19,7 +19,15 @@ export type ProcessStage = { executor: StageExecutor; process: ProcessRunInput }
 export type ProcessPrep = { conversationId: string; req: SendMessageRequest; stage: ProcessStage };
 export type PrepareProcessDeps = { config: ConfigCache; owner: string; log: Logger };
 
-export async function prepareProcessRun(d: PrepareProcessDeps, u: AuthUser, x: ProcessPrep) {
+/** C2 · `skipGrant` = thành viên nhóm: agent lấy từ ảnh theo id, KHÔNG kiểm grant người bắt đầu (plan D7, HUB-BR-23). */
+export type ProcessPrepOpts = { skipGrant?: boolean };
+
+export async function prepareProcessRun(
+  d: PrepareProcessDeps,
+  u: AuthUser,
+  x: ProcessPrep,
+  opts: ProcessPrepOpts = {},
+) {
   const snapshot = await d.config.snapshot();
   const user = await d.config.user(u.userId);
   const locale = user?.locale ?? "vi";
@@ -42,7 +50,7 @@ export async function prepareProcessRun(d: PrepareProcessDeps, u: AuthUser, x: P
       ...{ kind: "direct", agent, responder: responderOf(agent, locale), content: x.req.content },
     };
     const who = { ...o, groupIds: user?.groupIds ?? new Set<string>() };
-    direct = directOnSnapshot(start, snapshot, who, locale);
+    direct = opts.skipGrant ? start : directOnSnapshot(start, snapshot, who, locale);
   }
   const input: CreateRunInput = {
     run,

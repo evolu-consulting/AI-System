@@ -11,11 +11,14 @@ const noop = () => {};
 export function useFlowKind(roomId: string, flowId: string): FlowKind {
   const qc = useQueryClient();
   const timeline = qc.getQueryData<RoomMessagesData>(roomKeys.messages(roomId));
-  const root = timeline?.pages
+  // Thread quy trình có CẢ tin gọi `!key` (user) lẫn khối (`process`) ở main cùng `flow_id`; tin gọi đứng trước ⇒
+  // phải ưu tiên khối `process` (F2: nếu `find` lấy tin user trước thì pane rẽ nhầm sang RoomFlowContent). RV1 soát.
+  const roots = timeline?.pages
     .flatMap((p) => p.items)
-    .find((m) => m.flow_id === flowId && (m.placement ?? "main") === "main");
+    .filter((m) => m.flow_id === flowId && (m.placement ?? "main") === "main");
+  const root = roots?.find((m) => m.sender_type === "process") ?? roots?.[0];
   const flow = useFlowMessages(roomId, flowId, noop, root === undefined);
-  const first = root ?? flow.messages[0];
+  const first = root ?? flow.messages.find((m) => m.sender_type === "process") ?? flow.messages[0];
   if (!first) return flow.isError ? "agent" : "loading";
   return first.sender_type === "process" ? "process" : "agent";
 }

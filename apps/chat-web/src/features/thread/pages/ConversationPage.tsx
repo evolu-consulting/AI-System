@@ -9,7 +9,8 @@ import { useDraftKey } from "~/features/composer/hooks/use-draft";
 import { FlowPane } from "~/features/flow-panel/components/FlowPane";
 import { useOpenFlow } from "~/features/flow-panel/hooks/use-open-flow";
 import { useBangSubmit } from "~/features/processes/composer/hooks/use-bang-submit";
-import { useProcessEngineOn } from "~/features/processes/shared/engine";
+import { ConversationRunCards } from "~/features/processes/run-block/components/ConversationRunCards";
+import { ProcessEngineGate, useProcessEngineOn } from "~/features/processes/shared/engine";
 import { useActiveRun } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
 import { useRuns } from "~/features/run/run-store";
@@ -39,7 +40,7 @@ function useMainComposer(convId: string, onSent: () => void) {
   const bang = useBangSubmit({ kind: "conversation", conversationId: convId }, engineOn);
   const onSubmit = useCallback(
     async (text: string, attachmentIds?: string[]) => {
-      const hit = bang.intercept(text);
+      const hit = bang.intercept(text, attachmentIds);
       if (hit) return hit;
       const out = await send.sendMain(convId, text, attachmentIds);
       if (out.ok) onSent();
@@ -97,6 +98,9 @@ function ConversationView({ convId }: { convId: string }) {
           autoscroll={autoscroll}
         />
         <div className="mx-auto w-full max-w-[800px] px-4 pb-5 sm:px-6">
+          <ProcessEngineGate>
+            <ConversationRunCards conversationId={convId} />
+          </ProcessEngineGate>
           <Composer variant="main" draftKey={mainDraftKey} autoFocus={!open.flow} {...composer} />
         </div>
       </div>

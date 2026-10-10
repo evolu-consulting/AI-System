@@ -28,6 +28,9 @@ export type StageState = {
   askLimit: number;
   after: "review" | "auto";
   hasOutput: boolean;
+  /** D4 · HUB-FR-109 · stage "Hành động thật": `need_input` ⇒ needs_decision (người bắt đầu không được tự xác nhận hành
+   * động thật — phải qua người quyết; chống def "lách luật" real_action sau stage auto, P1-62). */
+  realAction?: boolean;
 };
 export type RunState = {
   status: ProcessRunStatus;
@@ -125,6 +128,8 @@ function onOutput(s: RunState, templateOk: boolean): Transition {
 }
 
 function onNeedInput(s: RunState): Transition {
+  // D4 · stage "Hành động thật" không được hỏi người bắt đầu (sẽ lách cổng duyệt) ⇒ cần người quyết.
+  if (s.stage.realAction === true) return needsDecision(s, "permission_lost");
   if (s.stage.asksCount >= s.stage.askLimit) return needsDecision(s, "ask_limit");
   const stage = { status: "waiting_answer" as const, asksCount: s.stage.asksCount + 1 };
   return ok(withStage(s, stage, { status: "waiting_answer" }), ["open_ask"]);

@@ -3,10 +3,13 @@ import { ProcessOutputSchema, type ProcessRunView, ProcessRunViewSchema } from "
 import { ApiError, api } from "~/lib/http";
 import type { EngineState } from "./types";
 
-/** FD2: `GET /me/process-inbox?limit=1` — 200 ⇒ on; 404/403 ⇒ off; lỗi khác ném (hook coi là `unknown`, thử lại sau). */
+/**
+ * FD2: dò engine bằng route PF1 `GET /processes` (không phụ thuộc `/me/process-inbox` của PF3 — rỗng tới khi PF3 merge).
+ * 200 ⇒ on; 404/403 (cờ tắt ⇒ route không mount) ⇒ off; lỗi khác ném (hook coi là `unknown`, thử lại sau).
+ */
 export async function probeEngine(signal?: AbortSignal): Promise<EngineState> {
   try {
-    await api<unknown>("/me/process-inbox", { query: { limit: 1 }, signal });
+    await api<unknown>("/processes", { signal });
     return "on";
   } catch (err) {
     if (err instanceof ApiError && (err.status === 404 || err.status === 403)) return "off";

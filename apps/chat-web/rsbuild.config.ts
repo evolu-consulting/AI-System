@@ -21,7 +21,11 @@ const spaNavigation = {
 const proxy = {
   "/auth": AUTH_URL,
   "/conversations": HUB_URL,
-  "/runs": HUB_URL,
+  // P-a (CR-056): `/runs/:id` cũng là route SPA (trang lượt chạy PF3) → vào thẳng URL phải nhận index.html.
+  "/runs": spaNavigation,
+  "/processes": HUB_URL,
+  "/process-runs": HUB_URL,
+  "/review-tasks": HUB_URL,
   "/agents": HUB_URL,
   "/commands": HUB_URL,
   "/attachments": HUB_URL,

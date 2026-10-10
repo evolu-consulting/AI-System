@@ -35,7 +35,7 @@ export function WelcomePage() {
 
   const submit = useCallback(
     async (content: string, attachmentIds?: string[]): Promise<SubmitResult> => {
-      const hit = bang.intercept(content);
+      const hit = bang.intercept(content, attachmentIds);
       if (hit) return hit;
       try {
         pendingConv.current ??= (await create.mutateAsync(deriveTitle(content))).id;

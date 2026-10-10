@@ -35,4 +35,25 @@ describe("useFlowKind", () => {
   test("chưa có gì trong cache ⇒ loading", () => {
     expect(kindOf(null)).toBe("loading");
   });
+  test("tin gọi (user) đứng trước + khối process cùng flow ⇒ process (F2)", () => {
+    const client = new QueryClient();
+    client.setQueryData(roomKeys.messages(ROOM), {
+      pages: [
+        {
+          items: [
+            { id: "call", seq: 1, flow_id: FLOW, sender_type: "user" },
+            { id: "block", seq: 2, flow_id: FLOW, sender_type: "process" },
+          ],
+        },
+      ],
+      pageParams: [undefined],
+    });
+    let out = "loading" as FlowKind;
+    function Probe() {
+      out = useFlowKind(ROOM, FLOW);
+      return null;
+    }
+    renderToString(createElement(QueryClientProvider, { client }, createElement(Probe)));
+    expect(out).toBe("process");
+  });
 });

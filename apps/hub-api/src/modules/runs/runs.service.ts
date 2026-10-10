@@ -32,7 +32,7 @@ import {
 import { setFinalSeq } from "./close/cancel.repo";
 import { type Created, type CreateRunInput, createRunTx as insertRun } from "./create-run";
 import { planOf, type Untagged } from "./run-plan";
-import { type ProcessPrep, prepareProcessRun } from "./run-process";
+import { type ProcessPrep, type ProcessPrepOpts, prepareProcessRun } from "./run-process";
 import { lastEventIdOf, terminalFromDb, terminalSeqOf, toRun } from "./run-view";
 import * as repo from "./runs.repo";
 import { eventsExpired } from "./runs.rules";
@@ -248,7 +248,8 @@ export class RunService {
   }
 
   /** P-a D3 · run stage (chưa ghi DB); ghi `createRunTx`, chạy `launch(p, files, {driver})`. */
-  readonly prepareProcess = (u: AuthUser, x: ProcessPrep) => prepareProcessRun(this.d, u, x);
+  readonly prepareProcess = (u: AuthUser, x: ProcessPrep, opts?: ProcessPrepOpts) =>
+    prepareProcessRun(this.d, u, x, opts);
 
   /**
    * X2b D6 bước 2 · ghi run trong tx **của người gọi** (scope `user` của chủ run), cùng thứ tự khoá `create-run.ts`.
