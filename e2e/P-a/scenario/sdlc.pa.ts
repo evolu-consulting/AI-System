@@ -39,6 +39,12 @@ test('SC-1 · E-S2 · sdlc: 3 cổng (B, T, B), nhờ trả lời A→H ở Inta
   await rtScript("sdlc", 0, [
     { kind: "ask", question: "Định dạng CSV dùng dấu phân cách nào?", choices: [] },
   ]);
+  // Giai đoạn 6 "Implement" là nhóm 2 thành viên cùng mục: runtime giả trả md giống nhau ⇒ engine dừng `team_no_change`.
+  // Mỗi thành viên trả nội dung khác nhau (tag) để bản ghép thay đổi sau mỗi lượt.
+  await rtScript("sdlc", 5, [
+    { kind: "done", tag: "BE" },
+    { kind: "done", tag: "FE" },
+  ]);
   const room = await mkRoom("ES2");
   const u = await users(browser, "A", "B", "T", "H");
   try {

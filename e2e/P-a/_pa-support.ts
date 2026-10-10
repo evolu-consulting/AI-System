@@ -97,6 +97,13 @@ export async function settle(): Promise<void> {
     if (r?.t)
       await sql`update hub.process_runs set status = 'cancelled', finished_at = now()
         where status not in ('done', 'cancelled', 'failed', 'expired')`;
+    // Việc kiểm mở của case trước không được dồn sang case sau (huy hiệu "Chờ tôi kiểm" E-P11 = 1).
+    const [t] = await sql<
+      { t: string | null }[]
+    >`select to_regclass('hub.review_tasks')::text as t`;
+    if (t?.t)
+      await sql`update hub.review_tasks set status = 'closed', result = 'cancelled', decided_at = now()
+        where status = 'open'`;
   });
 }
 
@@ -218,6 +225,8 @@ export async function seedRun(
           content, template_ok)
         values (${outputId}, ${ACME}, ${runId}, ${s0}, 0, 1, 1, ${fullMd(["Bảng ý", "Số tiền"], opts.secret ?? "HD-12")},
           true)`;
+      // Bất biến plan §3: có output ⇒ current_output_id trỏ bản mới nhất (use_current chỉ hiện khi has_output).
+      await sql`update hub.stage_runs set current_output_id = ${outputId} where id = ${s0}`;
     }
     if (opts.usage)
       for (let i = 0; i < 2; i++) {
@@ -449,11 +458,16 @@ export async function copyTemplate(key: string, groups: string[]): Promise<boole
         ? { ...s, after: { ...s.after, group_id: groups[i++] ?? null } }
         : s,
     );
-    await sql`update hub.process_defs set deleted_at = now() where tenant_id = ${ACME} and key = ${key} and deleted_at is null`;
-    await sql`insert into hub.process_defs (id, tenant_id, key, name, description, input_hint, run_group_ids, stages,
-        token_budget, enabled, source_template_id, version)
-      values (${randomUUID()}, ${ACME}, ${key}, ${t.name}, ${t.description}, ${t.input_hint}, '{}'::uuid[],
-        ${sql.json(stages)}, null, true, ${t.id}, 1)`;
+    // Cập nhật tại chỗ nếu acme đã có bản (seed production chép sẵn `hoa-don`) — không xoá mềm + chèn lại (khoá key trùng).
+    const upd =
+      await sql`update hub.process_defs set stages = ${sql.json(stages)}, run_group_ids = '{}'::uuid[],
+        enabled = true, source_template_id = ${t.id}, updated_at = now()
+      where tenant_id = ${ACME} and key = ${key} and deleted_at is null returning id`;
+    if (upd.length === 0)
+      await sql`insert into hub.process_defs (id, tenant_id, key, name, description, input_hint, run_group_ids, stages,
+          token_budget, enabled, source_template_id, version)
+        values (${randomUUID()}, ${ACME}, ${key}, ${t.name}, ${t.description}, ${t.input_hint}, '{}'::uuid[],
+          ${sql.json(stages)}, null, true, ${t.id}, 1)`;
     await sql`update hub.config_meta set hub_config_version = hub_config_version + 1 where id = 1`;
     return true;
   });

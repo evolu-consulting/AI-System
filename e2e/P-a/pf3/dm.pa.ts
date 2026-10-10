@@ -13,13 +13,13 @@ test('CHAT-AC-55 · E-P12 · T: link "Quy trình" có huy hiệu; /process-inbox
   const room = await mkRoom("EP12");
   const r = await seedRun(room.id, "waiting_review");
   if (r.ready)
-    // thông báo `review_assigned` cho T (PF1 ghi khi mở task; fixture ghi trực tiếp cho PF3)
+    // thông báo `review_requested` cho T (PF1 ghi khi mở task; fixture ghi trực tiếp cho PF3)
     await withSql(
       (
         sql,
       ) => sql`insert into hub.process_notices (tenant_id, user_id, kind, process_run_id, task_id, payload)
-        select pr.tenant_id, u.id, 'review_assigned', pr.id, ${r.taskId}, ${sql.json({
-          process: { key: "hoa-don-t", name: "Hoá đơn T" },
+        select pr.tenant_id, u.id, 'review_requested', pr.id, ${r.taskId}, ${sql.json({
+          process_name: "Hoá đơn T",
           stage_name: "Đọc hoá đơn",
         })}
         from hub.process_runs pr, admin.users u where pr.id = ${r.runId} and u.username = 'cuc' and u.tenant_id = pr.tenant_id`,

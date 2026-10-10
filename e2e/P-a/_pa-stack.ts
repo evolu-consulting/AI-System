@@ -104,6 +104,10 @@ async function prepare(): Promise<void> {
       select a.id, ${ACME}::uuid from hub.agents a on conflict do nothing`;
     await sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
       select a.id, ${ACME}::uuid, 'user', ${A.id}::uuid from hub.agents a on conflict do nothing`;
+    // E-P15c: Adm "Chạy" từ admin-web ⇒ stage chạy bằng quyền người bắt đầu (binh) ⇒ cũng cần grant agent stage.
+    await sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
+      select a.id, ${ACME}::uuid, 'user', ${PERSONA.Adm.id}::uuid from hub.agents a
+      where a.id in (${PA_E2E.agentRead}, ${PA_E2E.agentPost}) on conflict do nothing`;
     if (await hasPaSchema(sql)) await insertDefs(sql);
     else console.warn("[pa] bảng 0019 chưa có — bỏ chèn quy trình fixture (test đỏ ở UI/expect)");
     await sql`update hub.config_meta set hub_config_version = hub_config_version + 1 where id = 1`;

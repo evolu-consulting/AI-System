@@ -84,10 +84,13 @@ test('CHAT-AC-53 · E-P5 · B (thread) và T (ngoài phòng /runs/:id?task=) b�
     await expect(tCard).toBeVisible();
 
     await Promise.all([passBtn(card).click(), passBtn(tCard).click()]);
-    const late = u.B.getByText("Đã có người khác quyết").or(
-      u.T.getByText("Đã có người khác quyết"),
-    );
-    await expect(late).toBeVisible();
+    await expect
+      .poll(async () => {
+        const nb = await u.B.getByText("Đã có người khác quyết").count();
+        const nt = await u.T.getByText("Đã có người khác quyết").count();
+        return nb + nt;
+      })
+      .toBeGreaterThan(0);
     await expect(passBtn(card)).toHaveCount(0);
     await expect(passBtn(tCard)).toHaveCount(0);
     await expect(flowPane(u.B).getByRole("article", { name: / · Đạt · /i })).toHaveCount(1);

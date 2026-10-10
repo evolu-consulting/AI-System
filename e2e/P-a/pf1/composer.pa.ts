@@ -30,7 +30,7 @@ test('CHAT-AC-51 · E-P1 · gõ "!" ⇒ listbox "Quy trình" chỉ quy trình A 
     await expect(menu).toContainText("Quy trình bạn được chạy · gõ tiếp để lọc");
     const opt = menu.getByRole("option").filter({ hasText: "!hoa-don-t" });
     await expect(opt).toContainText("2 giai đoạn");
-    await roomBox(u.A).fill("!hoa");
+    await roomBox(u.A).fill("!hoa-don-t"); // "!hoa" còn khớp mẫu seed `hoa-don` của acme
     await expect(menu.getByRole("option")).toHaveCount(1);
     await roomBox(u.A).press("Enter");
     await expect(roomBox(u.A)).toHaveValue("!hoa-don-t ");

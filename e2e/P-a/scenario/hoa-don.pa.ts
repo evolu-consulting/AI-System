@@ -27,7 +27,7 @@ test('SC-2 · AC-H31 · E-S1 · "!hoa-don HD-12 12.000.000" ⇒ T Đạt trong D
   try {
     await u.A.goto(`/rooms/${room.id}`);
     const { runId } = await startUi(u.A, "!hoa-don HD-12 12.000.000");
-    const blk = block(u.A, "Hoá đơn");
+    const blk = block(u.A, "Xử lý hoá đơn");
     await expect(blk).toBeVisible();
 
     await u.T.getByRole("link", { name: "Quy trình", exact: true }).click();
