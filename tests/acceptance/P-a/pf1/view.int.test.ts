@@ -194,6 +194,22 @@ describe("PF1 · xem run (view)", () => {
     expect(a.json?.thread).toEqual({ room_id: PA_FIX.room, flow_id: redo.flowId });
   }, 30_000);
 
+  it("HUB-FR-113 · D5 · stages[].executor.name.vi là tên thật của agent (≠ id)", async () => {
+    needSchema(c.ready);
+    const a = await view("A", redo.runId);
+    expect(a.status).toBe(200);
+    const st = (a.json?.stages ?? []) as Json[];
+    expect(st.length).toBe(2);
+    const ex0 = st[0]?.executor as Json;
+    expect(ex0.name?.vi).toBe("Đọc hoá đơn");
+    for (const s of st) {
+      const ex = s.executor as Json;
+      expect(typeof ex.name?.vi).toBe("string");
+      expect(ex.name.vi).not.toBe(ex.agent_id ?? ex.id);
+      expect(ex.name.vi).not.toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-/);
+    }
+  }, 30_000);
+
   it("HUB-FR-113 · P1-71 · X (thành viên R) ⇒ full, can_cancel=false, can_decide=false", async () => {
     needSchema(c.ready);
     const x = await view("X", redo.runId);

@@ -335,4 +335,34 @@ describe("Dòng thêm ma trận PF1 [HUB-BR-25, plan-contract §8]", () => {
     expect(r.json?.error?.code).toBe("PROCESS_REF_INVALID");
     expect(r.json?.error?.details?.ref).toBe("team");
   }, 90_000);
+
+  it(
+    "ADM-FR-67 · D4 · platform_admin GET /process-runs?scope=tenant&process_key&tenant_id=<tenant khác> ⇒ run của tenant đó; tadmin/member chỉ tenant mình",
+    async () => {
+      needSchema(c.ready);
+      const q = (extra: string) =>
+        `/process-runs?scope=tenant&process_key=hoa-don-t&limit=200${extra}`;
+      const p = await c.call("P", "GET", q(`&tenant_id=${T.acme}`));
+      expect(p.status).toBe(200);
+      const items = (p.json?.items ?? []) as Json[];
+      expect(items.length).toBeGreaterThanOrEqual(1);
+      expect(items.some((i) => i.id === R1.runId)).toBe(true);
+      // tadmin beta + ?tenant_id=acme ⇒ bỏ qua tham số, chỉ tenant beta (không có run hoa-don-t của acme)
+      const b = await c.call("Db", "GET", q(`&tenant_id=${T.acme}`));
+      expect(b.status).toBe(200);
+      expect(((b.json?.items ?? []) as Json[]).some((i) => i.id === R1.runId)).toBe(false);
+      // tadmin acme + ?tenant_id=beta ⇒ vẫn thấy tenant mình
+      const a = await c.call("Adm", "GET", q(`&tenant_id=${T.beta}`));
+      expect(a.status).toBe(200);
+      expect(((a.json?.items ?? []) as Json[]).some((i) => i.id === R1.runId)).toBe(true);
+      // member scope=tenant ⇒ 403
+      const m = await c.call("X", "GET", q(`&tenant_id=${T.beta}`));
+      expect(m.status).toBe(403);
+      // member mine + ?tenant_id=beta ⇒ chỉ run của mình ở acme
+      const mine = await c.call("A", "GET", `/process-runs?tenant_id=${T.beta}`);
+      expect(mine.status).toBe(200);
+      expect(((mine.json?.items ?? []) as Json[]).some((i) => i.id === R1.runId)).toBe(true);
+    },
+    TO,
+  );
 });
