@@ -5,6 +5,7 @@ import type { DecisionReason, TaskKind, TaskResult, TaskStatus } from "@ai/contr
 import { JOB_CANCEL_CHANNEL, type JobCancelPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { runErrorText } from "../../runs/run-errors";
 import type { RunState } from "../core/process-state.rules";
 
 export type GateTask = {
@@ -174,8 +175,14 @@ export async function cancelStages(tx: Tx, runId: string, tenantId: string): Pro
  * cancelled, running ⇒ `cancel_requested_at` + `pg_notify(job_cancel)` (Runtime dừng, nhả slot). Lọc `tenant_id` (Q7).
  */
 export async function cancelStageRuns(tx: Tx, runId: string, tenantId: string): Promise<void> {
+  // CHECK `runs_error_cols_ck`: error_code/message/hint cùng null hoặc cùng có ⇒ set đủ cả ba (theo locale run).
+  const vi = runErrorText("CANCELLED", "vi");
+  const en = runErrorText("CANCELLED", "en");
   const runs = await tx.execute<{ id: string }>(sql`update hub.runs
-    set status = 'cancelled', error_code = 'CANCELLED', finished_at = now(), owner = null, lease_until = null
+    set status = 'cancelled', error_code = 'CANCELLED',
+      error_message = case when locale = 'en' then ${en.message} else ${vi.message} end,
+      error_hint = case when locale = 'en' then ${en.hint} else ${vi.hint} end,
+      finished_at = now(), owner = null, lease_until = null
     where process_run_id = ${runId} and tenant_id = ${tenantId} and status = 'running' returning id`);
   if (runs.length === 0) return;
   const ids = sql.join(
