@@ -45,6 +45,7 @@ export function useBangSubmit(origin: BangOrigin, enabled: boolean): BangSubmit 
         void queryClient.invalidateQueries({ queryKey: ["process", "runs"] });
         if (convId) {
           toast.success(t("process.composer.toast.started", { name: created.process.name }), {
+            position: "top-right",
             action: { label: t("process.composer.toast.open"), onClick: open },
           });
         } else open();

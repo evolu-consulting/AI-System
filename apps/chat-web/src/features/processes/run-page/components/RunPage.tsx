@@ -16,12 +16,12 @@ const UsageTab = lazy(() =>
   import("../../usage/components/UsageTab").then((m) => ({ default: m.UsageTab })),
 );
 
-export type RunPageProps = { runId: string; taskId?: string };
+export type RunPageProps = { runId: string; taskId?: string; tab?: "progress" | "token" | "log" };
 
-export function RunPage({ runId }: RunPageProps) {
+export function RunPage({ runId, tab: initialTab }: RunPageProps) {
   const { t } = useTranslation();
   const q = useProcessRun(runId);
-  const [tab, setTab] = useState("progress");
+  const [tab, setTab] = useState<string>(initialTab ?? "progress");
 
   if (q.isPending) {
     return (

@@ -30,7 +30,7 @@ export function AskTaskCard({ runId, task, view }: TaskCardProps) {
   if (task.status === "closed") return <AskClosed task={task} view={view} />;
 
   const title = stage
-    ? t("process.ask.title", { agent, n: stage.asks_count, max: stage.ask_limit })
+    ? t("process.ask.title", { agent, n: Math.max(stage.asks_count, 1), max: stage.ask_limit })
     : t("process.ask.titleShort", { agent });
   const toMe = forwardedToMe(task.forwards, myId);
   const byMe = lastForwardByMe(task.forwards, myId);

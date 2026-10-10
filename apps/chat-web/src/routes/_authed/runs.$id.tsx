@@ -7,22 +7,26 @@ const RunPage = lazy(() =>
   import("~/features/processes/run-page/components/RunPage").then((m) => ({ default: m.RunPage })),
 );
 
-export type RunSearch = { task?: string };
+export type RunSearch = { task?: string; tab?: "progress" | "token" | "log" };
 
 function RunRoute() {
   const { id } = Route.useParams();
-  const { task } = Route.useSearch();
+  const { task, tab } = Route.useSearch();
   return (
     <ProcessRouteGate>
       <Suspense fallback={null}>
-        <RunPage runId={id} taskId={task} />
+        <RunPage runId={id} taskId={task} tab={tab} />
       </Suspense>
     </ProcessRouteGate>
   );
 }
 
 export const Route = createFileRoute("/_authed/runs/$id")({
-  validateSearch: (search: Record<string, unknown>): RunSearch =>
-    typeof search.task === "string" && search.task !== "" ? { task: search.task } : {},
+  validateSearch: (search: Record<string, unknown>): RunSearch => ({
+    ...(typeof search.task === "string" && search.task !== "" ? { task: search.task } : {}),
+    ...(search.tab === "progress" || search.tab === "token" || search.tab === "log"
+      ? { tab: search.tab }
+      : {}),
+  }),
   component: RunRoute,
 });
