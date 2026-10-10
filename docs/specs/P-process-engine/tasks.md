@@ -9,7 +9,7 @@ Mỗi task: một commit `[FR]`, diff ≈ ≤ 400 dòng. Tick khi lệnh "xong" 
 
 ## P-a
 
-Làm theo `docs/WORKFLOW.md` "Làm song song nhiều session" (CR-059): **Bước 0** tuần tự trên `main` → **PF1–PF4** song song, mỗi feature một worktree + nhánh → merge lần lượt → **Đóng** trên `main`. Mã task cũ (B…, F…) giữ để truy vết; F1–F6 là task frontend, PF1–PF4 là feature. **Ranh giới file + điểm nóng Bước 0: [`plan.md`](plan.md) §8–§9** (backend-lead P1). Task cần sửa file ngoài cột `File` ⇒ dừng, báo session chính.
+Làm theo `docs/WORKFLOW.md` "Làm song song nhiều session" (CR-059): **Bước 0** tuần tự trên `main` → **PF1–PF4** song song, mỗi feature một worktree + nhánh → merge lần lượt → **Đóng** trên `main`. Mã task cũ (B…, F…) giữ để truy vết; F1–F6 là task frontend, PF1–PF4 là feature. **Ranh giới file + điểm nóng Bước 0: [`plan.md`](plan.md) §8–§9** (backend-lead P1). Task cần sửa file ngoài cột `File` ⇒ dừng, báo session chính. Cột "Feature/nhánh" (CR-059) = tiêu đề mục (PF1–PF4 ghi tên nhánh) — readiness #23.
 
 ### Bước 0 — khung chung (một session; nhánh `feat/pa-step0` hoặc thẳng `main`; merge vào `main` trước khi tạo nhánh PF; B2 = 0a, B1/B0/B3 = 0b)
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
@@ -59,7 +59,7 @@ Làm theo `docs/WORKFLOW.md` "Làm song song nhiều session" (CR-059): **Bướ
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
 | F6 | Đóng FE: README, TECH-DEBT (token tab nhân đôi chat/admin), a11y, `check:bundle` (chunk ≤ 50 KB gz, bundle chính +≤ 8 KB), bật cờ `HUB_PROCESS_ENGINE` cho dev, e2e P-a đủ (E-P16 cờ off) | frontend-lead | thường | plan-frontend §8; plan-frontend-e2e §3 | README features (`processes/README.md` mỗi app), `docs/TECH-DEBT.md` | PF1–PF4 merge | `bunx playwright test P-a` | [ ] |
-| RV1 | Review vòng 1 + **security review** (cách ly người ngoài phòng, grant task, quota người bắt đầu) | reviewer + security | cao | spec §10 K1; plan §5, §10; plan-contract §8 | `review-1.md`, `review-security-1.md` | F6 | APPROVED + security đạt | [ ] |
+| RV1 | Review vòng 1 + **security review** (cách ly người ngoài phòng, grant task, quota người bắt đầu, starter đã rời phòng U5; **readiness #22**: không route nào cho user tự chèn `process_notices` cho người khác — RLS chỉ lọc theo tenant) | reviewer + security | cao | spec §10 K1; plan §5, §10; plan-contract §8 | `review-1.md`, `review-security-1.md` | F6 | APPROVED + security đạt | [ ] |
 | RV2 | Review vòng 2 (nếu cần), `done:pa`, UAT `qc-uat` | reviewer + qc + qc-uat | cao | review-1 | evidence | RV1 | `bun run done:pa` | [ ] |
 
 ### Ghi chú bàn giao các nhánh

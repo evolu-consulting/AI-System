@@ -4,8 +4,69 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-10 (lần 2, `1ee41c60`) | NOT READY | 0 | 5 | 7 | 24 lỗ hổng lần 1: 21 đóng, 3 Thấp mang sang. Mới: 1 câu hỏi người dùng (T10 lệch X2b-R17), 4 Cao đội tự sửa (nhãn e2e thread, ràng composer, ai gửi trả lời ở composer thread, `forward.task_kind`) |
 | 2026-10-10 (lần 1, `db3e7021`) | NOT READY | 1 | 7 | 9 | + 7 Trung bình. Chặn = ai mở task hỏi lại (PF1 hay PF2). 4 mục cần người dùng quyết (U1–U4), còn lại đội tự sửa theo Luật 2 |
 | (chưa chạy) | — | — | — | — | Spec draft 2026-10-09 (CR-056…058) |
+
+---
+
+## Lần 2 · 2026-10-10 · commit `1ee41c60` (diff `db3e7021..HEAD`)
+
+## Kết luận: NOT READY
+Phạm vi đã kiểm: `git diff db3e7021..HEAD -- docs/specs/P-process-engine docs/design` (19 file) · đọc hết file mới: plan-thread, plan-step0, plan-frontend-thread, plan-frontend-i18n-thread, plan-frontend-usage; diff của spec, plan, plan-contract, tasks; plan-frontend §9–§11; test-plan-e2e §2; plan-frontend-e2e §1, §3; Grep test-plan/-int theo T6/T10/N9/N10/`postThreadOnce`/`answer_run_id`; BA: HUB-BR-23, HUB-FR-104/113/114, AC-H35, CHAT-AC-52/58, ADM-FR-65; X2b spec R17 · mã yêu cầu: như lần 1 + T1–T11 (plan-thread)
+
+Trần kích thước (1 KB = 1024 B): spec 22 669 / 25 600 · plan 30 572 / 30 720 (còn 148 B) · plan-frontend 25 399 / 25 600 · test-plan 28 257 / 30 720 → **đạt**. Phụ lục (plan-contract 27 558, test-plan-int 32 850, plan-frontend-i18n 27 112) không có trần.
+
+Lỗ hổng lần 1: **đóng** #1–#19, #21 (plan-step0 §1–§4, plan-contract §2/§7/§7.1, tasks B0–B8, test-plan:18 cổng merge, E-P14b, P1-36/M-C2, BA HUB-BR-23 C2, spec §9 U1–U4); #20 đóng ở plan-frontend-admin.md:51 (BA chưa gắn nhãn → #R2-9). Còn: #22, #23, #24 (Thấp).
+
+## Lỗ hổng
+| # | Mức | Mục | Vị trí (file:dòng hoặc mã) | Vấn đề | Mặc định đề xuất |
+|---|-----|-----|----------------------------|--------|------------------|
+| R2-1 | Cao | D, I (bảo mật) — **người dùng** | plan-thread.md:17 (T10), test-plan-int.md:101 (P1-75 "vẫn full"), :113 (P1-85) ↔ X2b spec.md:54 (X2b-R17, hard-stop bảo mật X2b §154: người gọi rời/phòng xoá ⇒ huỷ run, không ghi tin) | Người bắt đầu rời phòng: run chạy tiếp, tin vẫn đăng, A vẫn xem `full` (gồm góp ý/trả lời thành viên phòng viết **sau** khi A rời). Lệch một quyết định người dùng (Q8 X2b), chưa hỏi | Hỏi U5. Mặc định: giữ T10 (run là đối tượng riêng P-R01, chạy bằng quyền A, góp ý là việc của chính run); phòng xoá ⇒ `skipped` như T10. Sau khi người dùng trả lời: docs-architect ghi spec §9; reviewer đưa vào RV1 |
+| R2-2 | Cao | F, I | test-plan-e2e.md:29 (E-P18 = pf3 T ngoài phòng Đạt ⇒ B thấy `task_result`) ↔ plan-frontend-e2e.md:69 (E-P18 = PF1 X không-assignee, rời phòng ⇒ thread 404 bỏ `?flow`, < 640 px `dialog`), :70 (E-P19 chưa đọc/FlowRecent "Chưa xem"/preview sidebar — không có trong test-plan-e2e) | Cùng mã, khác ca (N9 chưa đóng); hành vi "rời phòng ⇒ bỏ `?flow`", "< 640 px dialog", "Chưa xem" không có test khoá | qc giữ E-P18 hiện tại; thêm **E-P19** (pf1: X không-assignee + rời phòng 404 + < 640 dialog) và **E-P20** (pf1: chưa đọc FlowRecent + preview "<tên quy trình>: …"); frontend-lead đổi số ở plan-frontend-e2e §3 cho khớp. Cùng lượt: plan-frontend-e2e:64 E-P13 trỏ E-P14b (bỏ "tab Token bản summary"), :67 E-P16 `/processes` → `/process-inbox`, E-P8 persona không-assignee = X (như test-plan-e2e:26) |
+| R2-3 | Cao | D, I | plan-thread.md:13 (T6 "composer flow khi người xem có task mở `can_act` — ask ⇒ `POST …/answer`") ↔ plan-frontend.md:22 (FD13), :126 (Q-F5 "chủ động"), plan-frontend-thread.md:13, :57 | Hai cách hiểu: mọi chữ của assignee tự thành câu trả lời, hay chỉ sau khi bấm `Trả lời bằng văn bản`/`Chưa đạt`. test-plan-e2e E-P8/E-P4 theo FE | Giữ **chủ động** (FE + QC đã khớp; UX, không cần người dùng). backend-lead sửa T6: "composer chỉ ràng task sau khi assignee bấm `Chưa đạt` / `Trả lời bằng văn bản`; còn lại = tin người↔người"; docs-architect ghi Q-F5 vào spec §9 (Luật 2) |
+| R2-4 | Cao | H (CR-059) | plan-frontend-thread.md:20 (`ThreadBinding.begin({kind, taskId, agent})` — không có hàm gửi), :28 (`ProcessThreadFooter` PF1), :57 (chế độ Trả lời gọi `POST /review-tasks/:id/answer`), plan-frontend.md:118 (`use-ask-actions.ts` PF2; không có trong stub §9 #1) | Footer PF1 phải gọi API trả lời của PF2 ⇒ hoặc PF1 viết lại logic answer (lệch xử lý `REVIEW_TASK_CLOSED`/toast `ask.toast.answered`), hoặc import hook PF2 chưa có stub | Bước 0 thêm `submit: (text) => Promise<void>` vào `begin(...)`: thẻ gọi `begin` (AskTaskCard PF2 / ReviewTaskCard PF1) truyền hàm gửi của mình; footer chỉ gọi `binding.submit`. Sửa: frontend-lead (plan-frontend-thread §2, §5) |
+| R2-5 | Cao | B, E | plan-contract.md:43 (`forward {stage_idx, task_id, from, to, depth}` không `task_kind`) ↔ plan-frontend-i18n-thread.md:44 (`thread.forward.line` "đã chuyển việc cho") và :63 (`ask.fwd.line` "đã nhờ … trả lời") ↔ plan-frontend-e2e.md:60 (E-P9 "↪ A đã nhờ H trả lời (chuyển 1/3)") ↔ plan-frontend-thread.md:40, :86 (#3 dùng câu trung tính) | Hai khoá, hai câu cho cùng tin; e2e FE dùng câu không dựng được từ contract | backend-lead thêm `task_kind: "review"\|"ask"` vào nhánh `forward` (B2, chỉ thêm); FE: ask ⇒ `ask.fwd.line`, review ⇒ `thread.forward.line`; qc E-P9 kiểm chữ "đã nhờ QC Người 01 trả lời (chuyển 1/3)" |
+| R2-6 | Thấp | G | plan-step0.md:74 (tin thread mỗi run: "khối + output + ask/decision + task_result + forward") ↔ plan-frontend-thread.md:84 (#1 đủ 7 loại) | `run_end` không ghi trong fixture (run `done`, `cancelled`) | backend-lead thêm "`run_end` cho run `done`/`cancelled` (actor A)" vào plan-step0 §3; `open_tasks` + `thread` theo persona (A/B assignee, X không) |
+| R2-7 | Thấp | F | test-plan.md:210 (N10 `postThreadOnce` chỉ trả số) | Có mặc định (đếm `outcome` bằng SQL) | Giữ mặc định; backend-lead không đổi chữ ký |
+| R2-8 | Thấp | I | plan-frontend-i18n-thread.md:41 (`result.answered` "đã trả lời") ↔ test-plan-e2e.md:26 (`article "Bạn · Đã trả lời · …"`) | Hoa/thường lệch (Playwright `name` mặc định không phân biệt — vô hại nếu không `exact`) | qc không dùng `exact` cho tên `task_result`, hoặc frontend-lead viết hoa đầu `result.*` |
+| R2-9 | Thấp | I | ba-agent-hub HUB-FR-105 ("≤ ~5 run"), HUB-FR-115 ("~7 ngày"); ba-admin ADM-FR-65 ("run gần nhất" chưa gắn P-b; plan-frontend-admin.md:51 đã ghi P-b) | BA còn số mơ hồ / thiếu nhãn P-b | docs-architect: "5 (`PROCESS_RUNS_PER_TENANT`)", "7 ngày", "run gần nhất — P-b" |
+| #22 | Thấp | C | plan.md:39 | (mang sang) | như lần 1 |
+| #23 | Thấp | H | tasks.md | (mang sang) | như lần 1 |
+| #24 | Thấp | I | plan.md 30 572 B (còn 148 B) | (mang sang) | mọi bổ sung vào phụ lục (plan-thread/plan-step0) |
+
+## Mâu thuẫn giữa tài liệu
+- plan-thread T10 (rời phòng ⇒ run tiếp, vẫn đăng, starter xem full) ↔ X2b-R17 (huỷ run, không ghi tin; hard-stop bảo mật) → người dùng quyết (U5); mặc định giữ T10.
+- plan-thread T6 (tự ràng khi `can_act`) ↔ plan-frontend FD13/Q-F5 (chủ động) → giữ chủ động (R2-3).
+- test-plan-e2e E-P18 ↔ plan-frontend-e2e E-P18/E-P19 → giữ số của qc, thêm E-P19/E-P20 (R2-2).
+- i18n-thread `forward.line` ↔ `ask.fwd.line` ↔ contract `forward` thiếu `task_kind` → thêm `task_kind` (R2-5).
+
+## Câu hỏi cho người dùng (chỉ những gì KHÔNG có mặc định an toàn)
+1. **U5 · Người bắt đầu rời phòng giữa run** (plan-thread T10, khác X2b-R17 bạn đã chốt cho agent trong phòng: huỷ run). Mặc định: **run chạy tiếp**, tin vẫn đăng vào thread cho thành viên còn lại, người bắt đầu vẫn xem trang `/runs/:id` đầy đủ (gồm góp ý thành viên viết sau khi họ rời) nhưng không đọc được thread phòng. Lựa chọn khác: huỷ run như X2b-R17. Phòng bị xoá ⇒ run chạy tiếp, chỉ xem ở `/runs/:id` (không cần hỏi).
+
+Đội tự đóng (Luật 2): R2-2…R2-9 như cột "Mặc định đề xuất". Yêu cầu FE đã đáp ứng: mock 7 loại tin + persona + `POST /__mock/process` phát `room.message` (plan-step0 §3, thiếu `run_end` → R2-6), `open_tasks.assignees/group` (plan-contract:42), `X-Flow-Id` (P1-01), `answer_run_id` trong thread ⇒ 404 (S0-14), `?flow_id=` theo `seq` (S0-15, S0-18, P1-80), test khoá X2b cờ off (test-plan:18, :200). Giữ mặc định FE: `OutputRef` không tên tệp, `last_run` → P-b. Không còn ca test nào dùng `?run=`/`RunPane` (Grep test-plan*: 0).
+
+## Checklist
+| Mục | Kết quả | Bằng chứng (file:dòng / mã) |
+|-----|---------|-----------------------------|
+| A Phạm vi | Đạt | spec.md:38–42 (U2 Import/Export → P-b), ba-admin ADM-FR-65, plan-step0.md:82 |
+| B Hợp đồng | Thiếu | plan-contract §2 `RoomProcessPart`, `open_tasks`, `thread`, `TaskDetail.options/has_output`, §3 `X-Flow-Id`/422, §4 mã mới; thiếu `forward.task_kind` (R2-5) |
+| C Dữ liệu | Đạt | plan-thread.md:35–40 (cột, CHECK, uq, `process_thread_events` RLS system, 3 definer, thứ tự khoá); plan.md:49, :51 |
+| D Nghiệp vụ | Mâu thuẫn | T10 ↔ X2b-R17 (R2-1); T6 ↔ FD13 (R2-3); số mơ hồ spec/plan đã sửa (spec.md:74–75) |
+| E UI | Thiếu | plan-frontend-thread §1–§7 (7 loại tin, trạng thái tải/lỗi/404, composer 3 chế độ), i18n-thread VI/EN; câu `forward` hai nghĩa (R2-5) |
+| F Kiểm chứng | Thiếu | test-plan-int S0-14…19, P1-80…85, P2-16, P3-10/11, M-C2; e2e E-P3/4/8/17/18; lệch số E-P18/19 (R2-2) |
+| G Phụ thuộc & môi trường | Đạt | plan-step0.md:71–79 (mock B2, `PA_FIX`, `/__mock/process`, Dify đếm `ghi-so`); `run_end` Thấp (R2-6) |
+| H2 Vai trò | Đạt | plan-contract §7 (`canAct`, `decisionAssignees`, `toTaskDetail`, `threadContent`, `validateProcessDef`), §7.1 seam; test-plan §3 |
+| H Task | Thiếu | tasks.md B0–B8, F1–F5 có file/phụ thuộc/Rủi ro (B2 `cao`); ranh giới PF1↔PF2 ở composer thread FE (R2-4) |
+| I Nhất quán | Mâu thuẫn | xem "Mâu thuẫn giữa tài liệu" |
+| J Độ chính xác | Đạt | điểm `sender_type` chat-web có file:dòng (plan-frontend-thread.md:63–75); nhãn nguyên văn i18n-thread; seam N3/N4 plan-contract §7.1 |
+
+## Quét từ mơ hồ
+Chỉ quét phần đổi: "~" còn ở plan-thread.md:18 ("≤ ~2 + 2×lần làm lại tin/stage" — mô tả lý do, vô hại), BA HUB-FR-105/115 (R2-9); "…" trong nhãn e2e/i18n là chuỗi rút gọn có bản đầy đủ ở i18n — vô hại; "(tuỳ chọn)" là nhãn trường — vô hại.
+
+## Chưa kiểm
+- Không đọc lại phần không đổi (theo WORKFLOW Bước 4 lần 2). plan-frontend-i18n.md, test-plan-int.md chỉ Grep theo mã liên quan; không đối chiếu từng khoá vi/en của i18n-thread.
+- Symbol chat-web ở plan-frontend-thread.md:63–75 (file:dòng) chưa Grep xác minh dòng.
 
 ---
 

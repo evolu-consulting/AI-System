@@ -98,7 +98,7 @@ Thuộc [`test-plan.md`](test-plan.md) (persona §2, bố cục §1). Hub thật
 | P1-72 | ″ | ″ | A `GET /outputs/:oid` v1, v2 | 200 cả hai |
 | P1-73 | AC-H32, BR-26 | ″ | `expires_at` quá khứ + `sweepOnce` | `expired`, task `expired`, không stage pass; mọi lệnh ⇒ 409 |
 | P1-74 | §5 sự kiện | ″ | B pass | `process.updated` tới A, X, T sau COMMIT (đọc `/me/stream`); không tới H, D |
-| P1-75 | P-R10, T10 | ″ | starter rời phòng giữa run | vẫn full (starter); run chạy tiếp, tin thread vẫn đăng (P1-85) |
+| P1-75 | P-R10, T10, U5 | ″ | starter A rời R giữa run (`waiting_review`); sau đó X gửi góp ý "FB-AFTER-LEAVE" trong F | run chạy tiếp, tin thread vẫn đăng (P1-85); A `GET` run ⇒ 200 **dạng ngoài phòng** (không `full`: `thread=null`, không `history`/tên phòng/tin R, body không chứa "FB-AFTER-LEAVE"; có tiến độ stages, output, `my_tasks` của A); A `GET /me/process-inbox` vẫn thấy task của mình; mỗi lần xem ⇒ audit `view` |
 | P1-76 | T8 | ″ | run `waiting_review` (task group Kế toán): X `GET` | full, `my_tasks=[]`, `open_tasks[0]` `{kind:review, group:{name:"Kế toán"}, assignees}`, `thread={room_id:R, flow_id:F}` |
 | P1-77 | T8 | ″ | X `POST /review-tasks/:id/decision pass` | 404 (không assignee); task vẫn open; 0 tin `task_result` |
 
@@ -110,7 +110,7 @@ Thuộc [`test-plan.md`](test-plan.md) (persona §2, bố cục §1). Hub thật
 | P1-82 | §10 | ×20: B Đạt ∥ A `!hoa-don-t` mới ở R ∥ `postThreadOnce` ∥ `sweepOnce` | không `40P01`/timeout; mọi sự kiện đăng đúng 1 lần |
 | P1-83 | T6, T8 | run `waiting_review`; B Đạt qua API (không POST tin phòng) | 0 tin `user` mới; 1 tin `task_result` actor B; T (đồng assignee qua group) `can_act=false` sau đó |
 | P1-84 | T10 | phòng R xoá (X2a) khi run `running` | run chạy tới `done`; sự kiện sau xoá `outcome=skipped`; A `GET` run full, `thread=null` |
-| P1-85 | T10 | A rời R khi run `waiting_review`; B Đạt | run chạy tiếp; `task_result` + `output` stage 2 vẫn đăng vào thread; A `GET /rooms/R/messages` ⇒ 404 (X2a), `GET` run vẫn full |
+| P1-85 | T10, U5 | A rời R khi run `waiting_review`; B Đạt | run chạy tiếp; `task_result` + `output` stage 2 vẫn đăng vào thread F (`outcome=posted`, không `skipped`); A `GET /rooms/R/messages` và `?flow_id=F` ⇒ 404 như mọi người ngoài phòng (body = `M-404-same`); A `/me/stream` không nhận `room.message`/`room.unread` của R; `GET` run = dạng ngoài phòng (P1-75), không `full` |
 | P1-86 | T9, §5 | B Đạt; theo dõi `/me/stream` của A, X, T, H | X (không mở R) nhận `room.message` + `room.unread` +1 cho tin `task_result`; `process.updated` tới A, X, T; T, H **không** nhận `room.*` của R |
 | P1-87 | T11, N4 | `p-team` 3 thành viên xong | 1 tin `output`, `process.steps` 3 hàng (`role:member`, `member_key`, `tokens`); `lead-team` ⇒ 1 `plan` + n `member` |
 | P1-88 | plan-thread §2 | output thiếu mục (M3); needs_decision `redo_limit`; A huỷ; `sweepOnce` hết hạn | `output.template_ok=false` + `template_missing`; tin `decision {reason, options}`; `run_end {cancelled, actor:A}`; `run_end {expired, actor:null}`; đóng task do hệ thống không sinh `task_result` |
@@ -167,6 +167,7 @@ Run R1 (`hoa-don-t`) do A bắt đầu ở R, đang `waiting_review` stage 0 (ta
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | A starter | full | Đ | Đ | full | 4 (không assignee) | 409 closed | Đ¹ | 409 state | Đ | Đ | 4 | Đ |
 | X thành viên R | full | Đ | Đ | full | 4 | 4 | 4 | 3 | 3 | Đ | 4 | 4 |
+| A' starter đã rời R (U5) | ngoài³ | Đ | Đ | s | 4 | 409 closed | Đ¹ | 409 state | Đ | **4** | 4 | Đ |
 | L rời R | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 |
 | B Group trong R | full | Đ | Đ | full | Đ | 4 | Đ (trong Group) | 3² | 3 | Đ | 4 | 4 |
 | T Group ngoài R | task | Đ | **4** | s | Đ | 4 | Đ (trong Group) | 3² | 3 | **4** | 4 | 4 |
@@ -175,8 +176,8 @@ Run R1 (`hoa-don-t`) do A bắt đầu ở R, đang `waiting_review` stage 0 (ta
 | D tenant khác (+`?tenant_id=acme`) | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 |
 | Adm tenant_admin | full | Đ | Đ | full | 4 | 4 | 4 | 409 state | Đ | theo X2a | 4 | 4 |
 | P platform_admin `?tenant_id` | full | Đ | Đ | full | 4 | 4 | 4 | 409 state | Đ | theo X2a | 4 | 4 |
-¹ A chỉ forward task mình là assignee (ở R1 không có ⇒ 4); ô riêng dùng R2 có ask open. ² decide khi `needs_decision redo_limit` ⇒ Đ (Q2). Thêm: `M-audit` T `GET` run 2 lần ⇒ đúng 1 audit `view` (entity review_task); mỗi `GET output` ⇒ +1 · `M-M4` sau run `done`: T `GET` run ⇒ `access=task`, `stages=[]`, output task mình Đ, output khác 4 · `M-body` body T/H không chứa `input`, `history`, tên phòng, nội dung tin R (so chuỗi cắm sẵn `ROOM-SECRET-P1`) · `M-404-same` 404 của run không tồn tại và run không được thấy giống hệt body.
-Cột "tin R" gồm cả thread quy trình F (`GET /rooms/R/messages?flow_id=F`): T, H, L, q06, D ⇒ 404 dù việc của họ có `task_result` trong F.
+¹ A chỉ forward task mình là assignee (ở R1 không có ⇒ 4); ô riêng dùng R2 có ask open. ² decide khi `needs_decision redo_limit` ⇒ Đ (Q2). ³ U5: 200 dạng ngoài phòng (như P1-75: tiến độ, output, task của mình, audit `view`; không `history`/tin R); giá trị `access` theo plan-contract bản U5 — lệch ⇒ qc theo contract ở QC1 (A' cancel/decide/H1 = mặc định qc giữ quyền người bắt đầu). Thêm: `M-audit` T `GET` run 2 lần ⇒ đúng 1 audit `view` (entity review_task); mỗi `GET output` ⇒ +1 · `M-M4` sau run `done`: T `GET` run ⇒ `access=task`, `stages=[]`, output task mình Đ, output khác 4 · `M-body` body T/H/A' không chứa `input`, `history`, tên phòng, nội dung tin R (so chuỗi cắm sẵn `ROOM-SECRET-P1`) · `M-404-same` 404 của run không tồn tại và run không được thấy giống hệt body.
+Cột "tin R" gồm cả thread quy trình F (`GET /rooms/R/messages?flow_id=F`): A', T, H, L, q06, D ⇒ 404 dù việc của họ có `task_result` trong F.
 | Dòng thêm (plan-contract §8) | Ca | Kỳ vọng |
 |---|---|---|
 | `M-thread-insert` (cột U1) | mọi vai có quyền ghi R (A, B, X) chèn `sender_type='process'` bằng scope user; gọi `room_post_process_message` | 42501 (= S0-08, chạy lại trong ma trận pf1) |

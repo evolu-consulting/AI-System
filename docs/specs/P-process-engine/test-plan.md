@@ -1,6 +1,6 @@
 # Test plan · P-process-engine · P-a (qc, chế độ WRITE/PLAN — chưa viết test, chưa LOCK)
 
-**Vòng sửa 2 (2026-10-10, sau readiness lần 1):** U1 run phòng = thread (plan-thread) · U2 Import/Export ⇒ P-b (**không** có ca ở P-a) · U3 `sequential` · U4 M4/M5 · readiness #1 (ask do PF1 mở), #2/#3 (`canAct`, `decisionAssignees`, `TaskDetail` decision), #5 (cổng merge theo bước), #6 (seam §7.1), #7 (C2 = P1-36 + `M-C2`), #16.
+**Vòng sửa 2 (2026-10-10, sau readiness lần 1):** U1 run phòng = thread (plan-thread) · U2 Import/Export ⇒ P-b (**không** có ca ở P-a) · U3 `sequential` · U4 M4/M5 · readiness #1 (ask do PF1 mở), #2/#3 (`canAct`, `decisionAssignees`, `TaskDetail` decision), #5 (cổng merge theo bước), #6 (seam §7.1), #7 (C2 = P1-36 + `M-C2`), #16. **Vòng 2b** (readiness lần 2): U5 starter rời phòng (P1-75, P1-85, hàng ma trận A', R-A08, E-P20) · R2-2 (E-P19, E-P20) · R2-5 (E-P9 `task_kind`) · R2-7 (N10 đóng) · R2-8.
 
 Nguồn: spec §2, §2.1, §8, §9 (M1–M6, C1–C5, U1–U4) · plan §3–§5, §8–§10 · plan-thread · plan-step0 · plan-contract §1–§9 (§7.1 seam) · plan-seed D18 · plan-frontend-e2e §1–§3 · BA-H §6.10 (HUB-FR-104…117, HUB-BR-23…28), §11 AC-H28…H34 · usecases-chat CHAT-AC-51…58 · ba-admin ADM-FR-65…67. Phụ lục: [`test-plan-int.md`](test-plan-int.md) (ca int từng PF + ma trận cách ly + kịch bản seed) · [`test-plan-e2e.md`](test-plan-e2e.md) (e2e chat-web + admin-web). Test viết ở **QC1** (sau Gate); runtime = runtime giả claim `hub.jobs` (mẫu `H1/_runtime.ts`, `X2b/_x2b.ts runtimeUsage`), provider `fake-cli`, không Dify thật / `claude-sub`.
 
@@ -63,7 +63,7 @@ Agent fixture (fake-cli, bật cho acme): `hd-read` (stage 1 hoá đơn), `hd-po
 | HUB-FR-117 (vế run) | PF4 | `pf4/usage.int`, `pf4/rules/usage` | P4-01…P4-07, R-U* |
 | HUB-BR-23 (+ ngoại lệ C2 stage nhóm) | PF1 | `pf1/stage.int`, `pf1/team.int` | P1-24, P1-13, P1-36, M-C2 |
 | HUB-BR-24 / BR-21 | PF1, PF2 | `pf1/start.int`, `pf2/forward.int` ⇢PF1 | P1-13, P2-04 |
-| HUB-BR-25 | PF1–PF4 | `pf{1..4}/isolation.int`, `step0/rls.int`, `step0/rules/run-access` | M-* (int §6), S0-02…S0-06, R-A* |
+| HUB-BR-25 | PF1–PF4 | `pf{1..4}/isolation.int`, `step0/rls.int`, `step0/rules/run-access` | M-* (int §6), S0-02…S0-06, R-A*; E-P20 |
 | HUB-BR-26 | PF1, PF3 | `pf1/gates.int`, `pf1/view.int`, `pf3/inbox.int` | P1-43, P1-51, P1-52, P1-73, P3-04, P3-12, R-S19, R-TK01…R-TK03 |
 | HUB-BR-27 | PF1 | `pf1/stage.int` | P1-23, P1-24 |
 | HUB-BR-28 | 0, PF1 | `step0/rules/bang`, `step0/flag.int`, `pf1/start.int` | R-B*, S0-10…S0-12, P1-02, P1-03 |
@@ -76,7 +76,7 @@ Agent fixture (fake-cli, bật cho acme): `hd-read` (stage 1 hoá đơn), `hd-po
 | AC-H34 (vế run) | PF4 | `pf4/usage.int`; e2e `pf4/token` | P4-01…P4-03; E-P14, E-P14b |
 | AC-H35 | — | P-b (P-a chỉ phần chạy nhóm: P1-30/31) | — |
 | CHAT-AC-51 | PF1 | e2e `pf1/composer` | E-P1, E-P2 |
-| CHAT-AC-52 (thread, U1·F4) | 0, PF1 | e2e `pf1/composer`, `pf1/run-thread`; int P1-01, P1-05, P1-80…P1-89, S0-14…S0-19 | E-P2, E-P3, E-P6, E-P17 |
+| CHAT-AC-52 (thread, U1·F4) | 0, PF1 | e2e `pf1/composer`, `pf1/run-thread`; int P1-01, P1-05, P1-80…P1-89, S0-14…S0-19 | E-P2, E-P3, E-P6, E-P17, E-P19, E-P20 |
 | CHAT-AC-53 | PF1 | e2e `pf1/gate` (trong thread) | E-P4, E-P5, E-P7 |
 | CHAT-AC-54 | PF3 | e2e `pf3/inbox` | E-P11 |
 | CHAT-AC-55 | PF3 | e2e `pf3/dm` ⇢PF1 | E-P12 |
@@ -120,13 +120,14 @@ Agent fixture (fake-cli, bật cho acme): `hd-read` (stage 1 hoá đơn), `hd-po
 | R-S18 | ″ | ″ | `permission_lost`, `user_inactive`, `interrupted` | needs_decision cùng tên |
 | R-S19 | ″ | ″ | mọi sự kiện × {done,cancelled,failed,expired}; `review` khi running; `answer` khi waiting_review; `decide` khi ≠ needs_decision | `PROCESS_RUN_STATE` |
 | R-S20 | `isTerminal` | ″ | 8 trạng thái | true đúng 4 trạng thái kết thúc |
-| R-A01 | `runAccess` | step0/`run-access` | starter; thành viên phòng active; tenant_admin cùng tenant; platform_admin | `full` |
+| R-A01 | `runAccess` | step0/`run-access` | starter còn ở R (hoặc run không phòng); thành viên phòng active; tenant_admin cùng tenant; platform_admin | `full` |
 | R-A02 | ″ | ″ | assignee không ở phòng | `task`; assignee + thành viên ⇒ `full` |
 | R-A03 | ″ | ″ | user khác cùng tenant; rời phòng (active=false, không assignee); `r=null` | `null` |
 | R-A04 | ″ | ″ | tenant_admin / starter-id tenant khác (tenantId lệch) | `null` |
 | R-A05 | `canCancel` | ″ | starter, tenant_admin, platform_admin / thành viên phòng, assignee, admin tenant khác | true / false |
 | R-A06 | `canDecide` | ″ | starter, tenant_admin × mọi lý do; reviewGroupMember × `redo_limit` / × lý do khác; thành viên phòng | true; true / false; false (M5) |
 | R-A07 | `canRun` | ″ | inactive; enabled false; deleted; runGroupIds rỗng; user ∈ / ∉ group | false; false; false; true; true / false (M1) |
+| R-A08 | `runAccess` | ″ | starter đã rời R (U5), không assignee | dạng ngoài phòng (không `full`, không `null`; giá trị theo plan-contract U5) |
 | R-L01 | `teamLimitHit` | step0/`limits` | calls 9/10; tokens 199 999/200 000; activeMs 599 999/600 000 (`TEAM_LIMITS_DEFAULT`) | null / `calls`; null / `tokens`; null / `time` |
 | R-L02 | ″ | ″ | vượt cả 3 | `calls` (thứ tự calls → tokens → time — Câu hỏi Q6) |
 | R-L03 | `budgetHit` | ″ | (5e6, null); (999, 1000); (1000, 1000) | false; false; true (C1) |
@@ -202,12 +203,11 @@ Kết quả ghi bảng "File · Tổng · Đỏ đúng lý do · Xanh trước c
 | 9 | `test:perf` P-a (plan §11) | **không** (ưu tiên thấp) |
 
 ## 7. Cần bổ sung / yêu cầu (Luật 2: mặc định qc, không chặn Gate)
-Đã đóng ở vòng 2: N1 (`validateProcessDef`/`copyFromTemplate` ⇒ R-DF*), N2 (PF1 mở ask, plan-step0 §1 ⇒ P1-37…39), N3 (§7.1 seam: `processEngine`, `processRunsPerTenant`, `stageLauncher`, `now`, `processLoops:false`, `onProcessHandles` ⇒ test gọi `sweepOnce`/`remindOnce`/`postThreadOnce`/`kick`, mốc thời gian bằng `now` giả, không lùi SQL trừ ca ghi rõ), N4 (§7.1: 1 `hub.runs`/lần thử, `run_steps` mỗi lần gọi, payload không thêm khoá ⇒ runtime giả ghi `usage_logs.step_id`), N5/N6 (plan-step0 §3: `PA_FIX`, `POST /__mock/process`, `GET /__mock/calls`).
+Đã đóng ở vòng 2: N1 (`validateProcessDef`/`copyFromTemplate` ⇒ R-DF*), N2 (PF1 mở ask, plan-step0 §1 ⇒ P1-37…39), N3 (§7.1 seam: `processEngine`, `processRunsPerTenant`, `stageLauncher`, `now`, `processLoops:false`, `onProcessHandles` ⇒ test gọi `sweepOnce`/`remindOnce`/`postThreadOnce`/`kick`, mốc thời gian bằng `now` giả, không lùi SQL trừ ca ghi rõ), N4 (§7.1: 1 `hub.runs`/lần thử, `run_steps` mỗi lần gọi, payload không thêm khoá ⇒ runtime giả ghi `usage_logs.step_id`), N5/N6 (plan-step0 §3: `PA_FIX`, `POST /__mock/process`, `GET /__mock/calls`), N10 (R2-7: giữ `Promise<number>`, qc đếm `process_thread_events.outcome` bằng SQL).
 | # | Gửi | Việc | Mặc định qc |
 |---|---|---|---|
 | N7 | frontend-lead | Nhãn plan-frontend-e2e §1–§2; `data-testid="process-total-tokens"` (KPI Tổng token); `data-run-id` ở khối quy trình; cổng e2e từ `PA_E2E_PORT_BASE` | role + text |
 | N9 | frontend-lead | Đưa nhãn thread (plan-frontend-thread §1–§5, i18n-thread) vào bảng plan-frontend-e2e §1 + sửa E-P3/E-P4 §3 (còn ghi "không thread", pane `?run=`) | test-plan-e2e dùng nhãn plan-frontend-thread/i18n-thread (đã ghi) |
-| N10 | backend-lead | Fixture: `postThreadOnce` trả số tin đã đăng **và** `skipped`? (contract chỉ `Promise<number>`) | đếm qua `process_thread_events.outcome` bằng SQL |
 | N11 | docs-architect | C2 ngoại lệ HUB-BR-23 đã ghi BA (spec C2) — qc trỏ P1-36 | — |
 
 ## 8. Câu hỏi qc — đã chốt (spec §9 "Mặc định áp dụng" 2026-10-10)
@@ -224,10 +224,10 @@ Kết quả ghi bảng "File · Tổng · Đỏ đúng lý do · Xanh trước c
 ## 9. Số ca (vòng 2; mỗi mã = ≥ 1 `it`)
 | Nhóm | rules | int | e2e | Tổng | Ghi chú |
 |---|---|---|---|---|---|
-| Bước 0 | 57 (B 6 · S 20 · A 7 · L 4 · K 10 · TK 6 · DF 4) | 33 (S0-01…S0-33, gồm thread S0-08/09, S0-14…19) | 1 | 91 | luôn chạy |
-| PF1 | 16 (TM 6 · T 6 · G 4) | 69 (P1-01…P1-89; thread P1-80…89; C2 P1-36; ask P1-37…39) | 8 | 93 | |
+| Bước 0 | 58 (B 6 · S 20 · A 8 · L 4 · K 10 · TK 6 · DF 4) | 33 (S0-01…S0-33, gồm thread S0-08/09, S0-14…19) | 1 | 92 | luôn chạy |
+| PF1 | 16 (TM 6 · T 6 · G 4) | 69 (P1-01…P1-89; thread P1-80…89; C2 P1-36; ask P1-37…39) | 10 (+E-P19, E-P20) | 95 | |
 | PF2 | 3 (AK) | 14 (P2-02…P2-16; ⇢PF1: P2-04 phần job, P2-11) | 3 | 20 | P2-01/P2-10 ⇒ P1-37/P1-38 |
 | PF3 | 2 (N) | 12 (P3-01…P3-12; ⇢PF1: P3-07, P3-08, P3-10, P3-12) | 4 (⇢PF1: E-P12, E-P18) | 18 | |
 | PF4 | 4 (U) | 7 (⇢PF1: P4-07) | 5 (⇢PF1: E-P15c) | 16 | E-P14b nhận phần Token từ E-P13 |
-| Ma trận `M-*` | — | 120 ô + 8 ca phụ (`M-audit`, `M-M4`, `M-body`, `M-404-same`, `M-thread-insert`, `M-thread-events`, `M-thread-agent`, `M-C2`) | — | 128 | chia pf theo cột (int §6) |
+| Ma trận `M-*` | — | 132 ô (11 vai, + A' U5) + 8 ca phụ (`M-audit`, `M-M4`, `M-body`, `M-404-same`, `M-thread-insert`, `M-thread-events`, `M-thread-agent`, `M-C2`) | — | 140 | chia pf theo cột (int §6) |
 | Kịch bản | — | 2 | 2 | 4 | chỉ cổng merge PF4 + `done:pa` |

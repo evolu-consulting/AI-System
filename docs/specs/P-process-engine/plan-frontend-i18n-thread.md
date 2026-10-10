@@ -38,10 +38,10 @@ Bổ sung [`plan-frontend-i18n.md`](plan-frontend-i18n.md) (quy ước §1 áp d
 | result.aria | {{actor}} · {{result}} · {{time}} | {{actor}} · {{result}} · {{time}} |
 | result.outside | ngoài phòng | outside the room |
 | result.feedback | Góp ý | Feedback |
-| result.answered | đã trả lời | answered |
+| result.answered | Đã trả lời | Answered |
 | result.decided | đã chọn: {{option}} | chose: {{option}} |
 | result.sections | Mục làm lại: {{list}} | Sections to rework: {{list}} |
-| forward.line | ↪ {{from}} đã chuyển việc cho {{to}} (lần {{depth}}/{{max}}) | ↪ {{from}} passed it to {{to}} (pass {{depth}}/{{max}}) |
+| forward.line (`task_kind` review\|decision) | ↪ {{from}} đã chuyển việc cho {{to}} (lần {{depth}}/{{max}}) | ↪ {{from}} passed it to {{to}} (pass {{depth}}/{{max}}) |
 | end.done | Lượt chạy hoàn tất | Run completed |
 | end.cancelledBy | {{actor}} đã huỷ lượt chạy | {{actor}} cancelled the run |
 | end.cancelled | Lượt chạy đã bị huỷ | The run was cancelled |
@@ -54,13 +54,14 @@ Bổ sung [`plan-frontend-i18n.md`](plan-frontend-i18n.md) (quy ước §1 áp d
 | mode.answer | Trả lời {{agent}} | Answer {{agent}} |
 | mode.cancel | Huỷ | Cancel |
 | stale | Không tải được trạng thái quy trình | Couldn't load the process status |
+| left | Bạn không còn ở phòng này. Xem lượt chạy ở trang riêng. | You are no longer in this room. View the run on its own page. |
 Nhãn nút/textbox chế độ Góp ý và Trả lời **dùng khoá có sẵn**: `run.review.feedback` (textbox), `run.review.submit` (nút), `ask.answer` (textbox), `ask.send` (nút). Tên quy trình/giai đoạn/agent giữ nguyên từ Hub.
 
 ## 3. `ask` bổ sung (PF2)
 | Khoá | VI | EN |
 |---|---|---|
 | ask.typed | Trả lời bằng văn bản | Answer in writing |
-| ask.fwd.line | ↪ {{from}} đã nhờ {{to}} trả lời (chuyển {{depth}}/{{max}}) | ↪ {{from}} asked {{to}} to answer (forward {{depth}}/{{max}}) |
+| ask.fwd.line (`task_kind=ask`) | ↪ {{from}} đã nhờ {{to}} trả lời (chuyển {{depth}}/{{max}}) | ↪ {{from}} asked {{to}} to answer (forward {{depth}}/{{max}}) |
 
 ## 4. Quy tắc dùng chữ
 - "Bạn" thay tên khi `actor`/`from`/`starter` là người xem (`rooms.you` có sẵn). `{{names}}` ≤ 3 tên (`wait.more` cho phần còn lại; `group` ⇒ `wait.group`).

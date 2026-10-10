@@ -175,6 +175,8 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 | U2 | Export/Import JSON quy trình (ADM-FR-65, HUB-FR-104) dời P-a → P-b | người dùng 2026-10-10 |
 | U3 | Nhóm mặc định `sequential`; `lead_plan` chọn được (thay Q4 cũ) | người dùng 2026-10-10 |
 | U4 | Xác nhận M4 (người duyệt ngoài phòng giữ xem phần task của mình sau khi run kết thúc, có audit, không hết hạn) và M5 (người quyết "Cần người quyết": người bắt đầu + `tenant_admin`, + thành viên Group duyệt kể cả ngoài phòng khi lý do `redo_limit`; chạy bằng quota người bắt đầu) | người dùng 2026-10-10 |
+| U5 | Starter rời phòng ⇒ run chạy tiếp và vẫn đăng vào thread, nhưng starter mất quyền đọc thread phòng; giữ xem ngoài phòng (`/runs/:id` + inbox: tiến độ, output, task của mình; có audit). Khác X2b-R17 (huỷ) có chủ đích; R17 vẫn áp cho run `@agent`. Phòng bị xoá ⇒ bỏ qua sự kiện thread, run chạy tiếp | người dùng 2026-10-10 |
+| Q-F5 | Task chỉ gắn vào composer thread sau khi bấm rõ ràng nút ở thẻ (không tự động) | người dùng 2026-10-10 |
 | Mặc định áp dụng | QC Q1, Q3–Q7 (Q2 nằm trong U4), N1, N6, N7; yêu cầu FE: `process_key` (lọc client), `open_count` ("50+"), `StageView.sections` (P-b) | mặc định áp dụng (Luật 2) |
 
 ## 10. Rủi ro mở
@@ -190,4 +192,4 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 ## 11. Tranh chấp test
 - (không)
 
-Readiness: [`readiness.md`](readiness.md) lần 1 NOT READY (2026-10-10); U1–U4 và lỗi tài liệu đã xử lý ở đây, chờ chạy lại lần 2. Trạng thái giữ `draft`.
+Readiness: [`readiness.md`](readiness.md) lần 1 NOT READY (2026-10-10); U1–U5, Q-F5 và lỗi tài liệu đã xử lý ở đây, chờ chạy lại lần 2. Trạng thái giữ `draft`.

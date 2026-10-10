@@ -190,7 +190,7 @@ Nguồn: CR-048, HUB-FR-101, 103, HUB-BR-21.
 
 ## UC-12 Quy trình trong phòng + DM — Process Engine
 
-Nguồn: CR-056, CR-058, HUB-FR-105, 107, 109–113, 117; HUB-BR-24, 25, 28. Spec `specs/P-process-engine/`. Actor: **Người bắt đầu** (member gõ `!`), **Người duyệt** (thành viên Group duyệt, có thể không ở trong phòng), **Người trả lời** (mặc định người bắt đầu; người được nhờ). Phòng chỉ là nơi bắt đầu/đăng tiến độ; run có trang riêng `/runs/:id`.
+Nguồn: CR-056, CR-058, HUB-FR-105, 107, 109–113, 117; HUB-BR-24, 25, 28. Spec `specs/P-process-engine/`. Actor: **Người bắt đầu** (member gõ `!`), **Người duyệt** (thành viên Group duyệt, có thể không ở trong phòng), **Người trả lời** (mặc định người bắt đầu; người được nhờ). Phòng chỉ là nơi bắt đầu/đăng tiến độ; run có trang riêng `/runs/:id`. **[U5]** Người bắt đầu rời phòng ⇒ run chạy tiếp, họ mất đọc thread phòng nhưng vẫn xem `/runs/:id` + "Chờ tôi kiểm" (audit); phòng bị xoá ⇒ run chạy tiếp.
 
 | AC | Given / When / Then |
 |---|---|

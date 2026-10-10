@@ -152,7 +152,7 @@ Dữ liệu ở schema `hub` (Hub sở hữu, BA-H §6.10 HUB-FR-104…117); adm
 
 | ID | Yêu cầu | Ưu tiên |
 |---|---|---|
-| ADM-FR-65 | **Trang Quy trình** (nav "Quy trình" dưới CHỨC NĂNG, **cả `tenant_admin`**): danh sách quy trình của công ty (tên, `!key`, số stage, Group được chạy, bật/tắt, run gần nhất); `platform_admin` có 2 quy trình mẫu (SDLC, hoá đơn) — `tenant_admin` bấm "Chép mẫu" để có bản của công ty mình. Export/Import JSON qua Import/Export sẵn có — **P-b** (dời từ P-a, người dùng 2026-10-10); KPI + chuỗi stage ở danh sách cũng P-b | **MUST** (P-a tối thiểu; P-b đủ) |
+| ADM-FR-65 | **Trang Quy trình** (nav "Quy trình" dưới CHỨC NĂNG, **cả `tenant_admin`**): danh sách quy trình của công ty (tên, `!key`, số stage, Group được chạy, bật/tắt, run gần nhất — **P-b**); `platform_admin` có 2 quy trình mẫu (SDLC, hoá đơn) — `tenant_admin` bấm "Chép mẫu" để có bản của công ty mình. Export/Import JSON qua Import/Export sẵn có — **P-b** (dời từ P-a, người dùng 2026-10-10); KPI + chuỗi stage ở danh sách cũng P-b | **MUST** (P-a tối thiểu; P-b đủ) |
 | ADM-FR-66 | **Editor quy trình**: thêm/sắp stage; mỗi stage chọn **agent hoặc nhóm agent đã bật cho công ty** (CR-054/057), output + template bắt buộc, sau stage: gate duyệt (chọn Group) / Tự chạy tiếp / luật tự duyệt (SHOULD), cờ "Hành động thật" (chỉ cho phép sau một gate), người trả lời mặc định, tự quay lại (SHOULD). Lưu có `version` + audit; sửa không ảnh hưởng run đang chạy | **MUST** (P-a tối thiểu, P-b đủ) |
 | ADM-FR-67 | **Run của quy trình**: nút "Chạy" (nhập input), danh sách + chi tiết run (trạng thái, stage, người duyệt, "Cần người quyết"), **token theo run/stage/team-run/lần gọi** (HUB-FR-117; tiền chờ H3c) | **MUST** |
 
