@@ -1,0 +1,41 @@
+// ADM-FR-65 · ADM-FR-66 · CR-056 · P-a F5: mã lỗi Hub của quy trình → câu hiển thị (plan-frontend-i18n §7) và `paths` lỗi ô.
+import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/hub-admin";
+import { describeError, type MessageSpec } from "@/lib/errors";
+import { ApiError } from "@/lib/http";
+
+const KNOWN = new Set([
+  "PROCESS_NOT_FOUND",
+  "PROCESS_KEY_TAKEN",
+  "PROCESS_DEF_INCOMPLETE",
+  "PROCESS_DEF_INVALID",
+  "PROCESS_REF_INVALID",
+  "TEMPLATE_READ_ONLY",
+  "NOT_PROCESS_DECIDER",
+  "PROCESS_RUN_STATE",
+  "NO_OUTPUT",
+]);
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+
+export const errorCode = (err: unknown): string | null =>
+  err instanceof ApiError ? String(err.code) : null;
+
+export function processErrorSpec(err: unknown): MessageSpec {
+  const code = errorCode(err);
+  if (code === "TOO_MANY_PROCESS_RUNS") {
+    return {
+      key: "process.admin.apiError.TOO_MANY_PROCESS_RUNS",
+      params: { max: PROCESS_RUNS_PER_TENANT },
+    };
+  }
+  if (code && KNOWN.has(code)) return { key: `process.admin.apiError.${code}` };
+  if (err instanceof ApiError && err.status === 403) return { key: "state.forbiddenAction" };
+  return describeError(err);
+}
+
+/** `details.paths` (hoặc `details.path`) của `PROCESS_DEF_INVALID/INCOMPLETE/REF_INVALID`. */
+export function serverPaths(err: unknown): string[] {
+  if (!(err instanceof ApiError) || !isObj(err.details)) return [];
+  const d = err.details;
+  if (Array.isArray(d.paths)) return d.paths.filter((p): p is string => typeof p === "string");
+  return typeof d.path === "string" ? [d.path] : [];
+}
