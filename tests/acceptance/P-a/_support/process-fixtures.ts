@@ -158,6 +158,8 @@ export async function insertOutput(
       content, template_ok)
     values (${id}, ${o.tid}, ${o.runId}, ${o.stageRunId}, ${o.stageIdx}, ${o.version ?? 1}, 1,
       ${o.content ?? "## Bảng ý\nHoá đơn HD-12.\n## Số tiền\n12 000 000"}, true)`;
+  // Bất biến plan §3: có output ⇒ stage_runs.current_output_id trỏ bản mới nhất (has_output = current_output_id not null).
+  await sql`update hub.stage_runs set current_output_id = ${id} where id = ${o.stageRunId}`;
   return id;
 }
 
