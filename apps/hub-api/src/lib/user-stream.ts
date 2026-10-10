@@ -1,7 +1,12 @@
 // HUB-FR-99 · HUB-BR-22 · khoá + phát luồng sự kiện theo người dùng `ustream:<user_id>` (X2a plan §7, D11; plan-db §5).
 // Dùng chung: `rooms` ghi (SAU commit, mẫu outbox — retry 40P01 không phát đôi), `me-stream` đọc. Lỗi Redis chỉ log
 // (không nội dung tin, R24), không ném: tin đã ghi DB, client tự đồng bộ lại bằng `GET /rooms`.
-import { type MeStreamEvent, type MeStreamRunEvent, USER_STREAM_MAXLEN } from "@ai/contracts/chat";
+import {
+  type MeStreamEvent,
+  type MeStreamProcessEvent,
+  type MeStreamRunEvent,
+  USER_STREAM_MAXLEN,
+} from "@ai/contracts/chat";
 import type { Logger } from "./logger";
 import type { Redis } from "./redis";
 
@@ -12,11 +17,12 @@ export const USER_STREAM_TTL_S = 604_800;
 
 /**
  * Sự kiện cần phát + người nhận (`stream.reset` chỉ do phiên đọc tự sinh, không đi qua Redis). X2b D10: thêm sự kiện run
- * phòng (`MeStreamRunEvent`, hằng riêng — `ME_STREAM_EVENTS` giữ nguyên).
+ * phòng (`MeStreamRunEvent`, hằng riêng — `ME_STREAM_EVENTS` giữ nguyên). P-a D16: + `MeStreamProcessEvent`.
  */
 export type UserEvent = { userIds: string[] } & (
   | Exclude<MeStreamEvent, { event: "stream.reset" }>
   | MeStreamRunEvent
+  | MeStreamProcessEvent
 );
 
 export const userStreamKey = (userId: string): string => `ustream:${userId}`;
@@ -26,7 +32,9 @@ export function publishCommandCount(events: readonly UserEvent[]): number {
   return events.reduce((n, e) => n + e.userIds.length * 2, 0);
 }
 
-const roomIdOf = (e: UserEvent): string => e.data.room_id;
+/** Sự kiện quy trình không có `room_id` (P-a) ⇒ undefined, không ném. */
+const roomIdOf = (e: UserEvent): string | undefined =>
+  "room_id" in e.data ? e.data.room_id : undefined;
 
 /** Một `pipeline()` cho cả lô; không có người nhận ⇒ không gọi Redis. */
 export async function publishUserEvents(

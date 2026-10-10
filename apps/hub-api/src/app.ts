@@ -7,6 +7,7 @@ import {
   FLOW_ID_HEADER,
   HealthResponseSchema,
   MESSAGE_ID_HEADER,
+  PROCESS_RUN_ID_HEADER,
   RETRY_AFTER_HEADER,
   RUN_ID_HEADER,
 } from "@ai/contracts/chat";
@@ -20,7 +21,13 @@ import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp } from "./app.mcp";
 import { runDrivers, startRunLoops } from "./app.runner";
-import { mountRoomAgents, mountX2a, roomPoster, X2A_PROTECTED_PREFIXES } from "./app.x2a";
+import {
+  mountRoomAgents,
+  mountX2a,
+  roomPoster,
+  X2A_PROTECTED_PREFIXES,
+  type X2aMounted,
+} from "./app.x2a";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
@@ -33,6 +40,13 @@ import type { AttachmentDeps } from "./modules/attachments/storage";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
+import type { ProcessStartPort } from "./modules/processes/core/ports";
+import {
+  mountProcesses,
+  PROCESS_PROTECTED_PREFIXES,
+  type ProcessMountDeps,
+  type ProcessSeams,
+} from "./modules/processes/processes.mount";
 import { cancelRoutes } from "./modules/runs/close/cancel.routes";
 import { CancelService } from "./modules/runs/close/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
@@ -83,7 +97,9 @@ export type AppDeps = {
   /** X2a · nhịp `: ping` của `/me/stream` (ms). Vắng ⇒ 15000; test truyền 500. */
   pingMs?: number;
   studioDist?: string; // H4a · = `HUB_STUDIO_DIST` (dist Studio; vắng ⇒ `/studio` 404, P12).
-};
+  /** P-a D15 · = `HUB_PROCESS_ENGINE==="on"`; vắng ⇒ false (không mount route quy trình, `!` là chữ thường). */
+  processEngine?: boolean;
+} & ProcessSeams;
 
 const DEFAULT_CONFIG_POLL_S = 60;
 /** Gốc các route cần JWT (E5–E15). Chặn ở gốc ⇒ 401 trước 404, kể cả route chưa mount; `/health` mở. */
@@ -97,6 +113,7 @@ const PROTECTED_PREFIXES = [
   "/agent-settings",
   "/studio/api",
   ...X2A_PROTECTED_PREFIXES,
+  ...PROCESS_PROTECTED_PREFIXES,
 ];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -125,6 +142,15 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
   return r;
 }
 
+/** Seam N3 (plan-contract §7.1) chuyển nguyên cho module quy trình. */
+const seamsOf = (d: AppDeps): ProcessSeams => ({
+  processRunsPerTenant: d.processRunsPerTenant,
+  stageLauncher: d.stageLauncher,
+  now: d.now,
+  processLoops: d.processLoops,
+  onProcessHandles: d.onProcessHandles,
+});
+
 /** `runs.owner` của instance (= `HUB_INSTANCE_ID`; test khung vắng → host:pid). */
 const instanceOwner = (deps: AppDeps): string => deps.instanceId ?? `${hostname()}:${process.pid}`;
 
@@ -137,6 +163,17 @@ function commandDrivers(deps: AppDeps, db: Db) {
     storage: deps.attachments?.storage,
     jobs: workflowJobs({ ...deps, db, owner: instanceOwner(deps), log: logger }),
   });
+}
+
+/** P-a D15 · cờ bật: module quy trình + nối `!` vào phòng (T1/T7); trả cổng `!` của Hỏi AI (D14). */
+function processHooks(
+  app: Hono<AppVars>,
+  deps: AppDeps,
+  m: Omit<ProcessMountDeps, keyof ProcessSeams> & { messages: X2aMounted["messages"] },
+): ProcessStartPort {
+  const proc = mountProcesses(app, { ...m, signal: deps.signal, ...seamsOf(deps) });
+  m.messages.useProcesses(proc.roomSender);
+  return proc.conversationStart;
 }
 
 /**
@@ -184,10 +221,11 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     "/conversations",
     conversationRoutes(deps.db, (u, id) => cancel.removeConversation(u, id)),
   );
-  app.route(
-    "/conversations",
-    sendMessageRoutes(conversations, runs, h2a.prepareCommand, h2b.prepareMention),
-  );
+  const processStart = deps.processEngine
+    ? processHooks(app, deps, { ...base, config, runs, messages: x2a.messages })
+    : undefined;
+  const prepare = { command: h2a.prepareCommand, mention: h2b.prepareMention, processStart };
+  app.route("/conversations", sendMessageRoutes(conversations, runs, prepare));
   app.route("/runs", runRoutes(runs));
   app.route("/runs", cancelRoutes(cancel));
   startRunLoops({ ...base, registry: runs.registry });
@@ -237,6 +275,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
         FLOW_ID_HEADER,
         MESSAGE_ID_HEADER,
         RETRY_AFTER_HEADER,
+        PROCESS_RUN_ID_HEADER,
         "Content-Disposition",
       ],
     }),

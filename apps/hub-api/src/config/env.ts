@@ -53,6 +53,8 @@ export const EnvSchema = z.object({
     .string()
     .refine((p) => isAbsolute(p))
     .optional(),
+  // P-a D15 · cờ Process Engine: `off` (mặc định) ⇒ không mount route quy trình, `!` là chữ thường. Dev bật ở F6.
+  HUB_PROCESS_ENGINE: z.enum(["on", "off"]).default("off"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

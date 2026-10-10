@@ -3,8 +3,10 @@
 // Entry sai contract ⇒ bỏ + `warn user-event-invalid` (không log nội dung, R24). Không pub/sub bộ nhớ ⇒ đúng nhiều instance.
 import {
   type MeStreamEvent,
+  type MeStreamProcessEvent,
   type MeStreamRunEvent,
   parseMeStreamEvent,
+  parseMeStreamProcessEvent,
   parseMeStreamRunEvent,
 } from "@ai/contracts/chat";
 import { safeErrorFields } from "../../lib/errors";
@@ -16,8 +18,8 @@ import { xreadPairs } from "../runs/sse/sse-reader";
 import type { StreamInfo } from "./me-stream.rules";
 
 /** Một sự kiện đã đánh id Redis Stream (`stream.reset` không bao giờ đến từ Redis). */
-/** X2b D10: kèm sự kiện run phòng (`MeStreamRunEvent`). */
-export type UserEntry = { id: string; ev: MeStreamEvent | MeStreamRunEvent };
+/** X2b D10: kèm sự kiện run phòng (`MeStreamRunEvent`); P-a D16: + sự kiện quy trình. */
+export type UserEntry = { id: string; ev: MeStreamEvent | MeStreamRunEvent | MeStreamProcessEvent };
 type StreamEntry = [id: string, fields: string[]];
 type Sub = { key: string; last: string; push: (e: UserEntry[]) => void };
 
@@ -144,7 +146,7 @@ export class UserStreamReader {
 }
 
 /** Field `e` = JSON `{event, data}` → sự kiện đúng contract (trừ `stream.reset`), sai ⇒ null. */
-export function parseFields(fields: string[]): MeStreamEvent | MeStreamRunEvent | null {
+export function parseFields(fields: string[]): UserEntry["ev"] | null {
   const i = fields.indexOf(USER_STREAM_FIELD);
   const raw = i >= 0 ? fields[i + 1] : undefined;
   if (raw === undefined) return null;
@@ -156,7 +158,11 @@ export function parseFields(fields: string[]): MeStreamEvent | MeStreamRunEvent 
   }
   if (typeof body?.event !== "string" || body.event === "stream.reset") return null;
   const data = JSON.stringify(body.data ?? null);
-  return parseMeStreamEvent(body.event, data) ?? parseMeStreamRunEvent(body.event, data);
+  return (
+    parseMeStreamEvent(body.event, data) ??
+    parseMeStreamRunEvent(body.event, data) ??
+    parseMeStreamProcessEvent(body.event, data)
+  );
 }
 
 function toMap(res: unknown): Map<unknown, unknown> {

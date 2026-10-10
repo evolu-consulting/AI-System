@@ -9,8 +9,10 @@ import type {
   RoomLastMessage,
   RoomMember,
   RoomMessage,
+  RoomProcessKind,
   RoomSummary,
 } from "@ai/contracts/chat";
+import { RoomProcessPartSchema } from "@ai/contracts/chat";
 import { previewOf, type RoomKind, type RoomRole, unreadOf } from "./rooms.rules";
 
 type SenderType = RoomMessage["sender_type"];
@@ -32,6 +34,9 @@ export type RoomMessageRow = {
   agent?: AgentPartRow;
   /** X2b · tóm tắt thread trên tin agent `main` gốc (chỉ khi đọc danh sách). CR-050: + chưa xem, ≤ 3 tin mới nhất. */
   flow?: { messageCount: number; lastActiveAt: Date; unread?: number; recent?: FlowRecentRow[] };
+  /** P-a U1 · tin gọi `!key` + tin `process` mang run; tin `process` mang meta thô (`process_meta`, parse khi map). */
+  processRunId?: string;
+  processMeta?: unknown;
 };
 
 /** CR-050 · một tin `flow` gần nhất của thread (theo người xem). */
@@ -45,6 +50,8 @@ export type FlowRecentRow = {
   content: string;
   createdAt: Date;
   unread: boolean;
+  /** P-a U1 · tin `process`: loại tin (FE chọn biểu tượng). */
+  processKind?: RoomProcessKind | null;
 };
 
 export type AgentPartRow = {
@@ -115,6 +122,7 @@ export function toRoomMessage(r: RoomMessageRow): RoomMessage {
     created_at: r.createdAt.toISOString(),
     ...(r.flowId && { flow_id: r.flowId, placement: r.placement ?? "main" }),
     ...(r.agent && agentFields(r.agent)),
+    ...processFields(r),
     ...(r.flow && {
       flow: {
         message_count: r.flow.messageCount,
@@ -136,7 +144,16 @@ function toFlowRecent(r: FlowRecentRow): RoomFlowRecent {
     preview: previewOf(r.content),
     created_at: r.createdAt.toISOString(),
     unread: r.unread,
+    ...(r.senderType === "process" && r.processKind && { process: { kind: r.processKind } }),
   };
+}
+
+/** P-a plan-thread §4 · meta hỏng (zod) ⇒ bỏ `process`, giữ `content` (dự phòng hiển thị). */
+function processFields(r: RoomMessageRow): Partial<RoomMessage> {
+  if (!r.processRunId) return {};
+  if (r.senderType !== "process") return { process_run_id: r.processRunId };
+  const part = RoomProcessPartSchema.safeParse(r.processMeta);
+  return { process_run_id: r.processRunId, ...(part.success && { process: part.data }) };
 }
 
 function agentFields(a: AgentPartRow): Partial<RoomMessage> {

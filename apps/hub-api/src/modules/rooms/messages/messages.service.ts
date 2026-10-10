@@ -11,6 +11,8 @@ import type {
 } from "@ai/contracts/chat";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
+import { type Bang, classifyBang } from "../../processes/core/bang.rules";
+import { processError } from "../../processes/core/errors";
 import { type RoomRoute, routeRoomMessage } from "../agents/room-agent.rules";
 import { threadRoot } from "../agents/room-context.repo";
 import * as rooms from "../manage/rooms.repo";
@@ -20,11 +22,21 @@ import { toRoomMessage } from "../rooms.map";
 import { clampReadSeq, type RoomAction, unreadOf } from "../rooms.rules";
 import * as repo from "./messages.repo";
 
-/** `run` có ⇔ tin đã gọi agent (header `X-Run-Id`/`X-Flow-Id`, X2b D11). */
+/** `run` có ⇔ tin đã gọi agent (header `X-Run-Id`/`X-Flow-Id`, X2b D11); `process` ⇔ tin gọi `!key` (P-a T1). */
 export type SendResult = {
   message: RoomMessage;
   created: boolean;
   run?: { runId: string; flowId: string };
+  process?: { runId: string; flowId: string };
+};
+/** P-a T1 · `!key`/`!` sai ở timeline ⇒ PF1 (`processes/runs/room-start.ts`); lỗi ⇒ ROLLBACK, không lưu tin. */
+export type RoomProcessSender = {
+  start(
+    u: AuthUser,
+    roomId: string,
+    body: SendRoomMessageRequest,
+    bang: Extract<Bang, { kind: "process" | "invalid" }>,
+  ): Promise<SendResult>;
 };
 /** X2b · `RoomRunService.send` (tách để module tin không phụ thuộc runtime). */
 export type RoomAgentSender = {
@@ -39,6 +51,7 @@ const PLAIN: RoomRoute = { kind: "plain" };
 
 export class MessagesService {
   #agents?: RoomAgentSender;
+  #processes?: RoomProcessSender;
 
   constructor(private readonly rooms: RoomsService) {}
 
@@ -72,7 +85,11 @@ export class MessagesService {
    * 201 mới / 200 trùng `client_msg_id` (không sự kiện). Gửi trùng song song tuần tự hoá ở khoá `rooms` nên bên sau thấy
    * tin của bên trước; 23505 (`room_messages_client_uq`) là lưới cuối ⇒ chạy lại một lần, rơi vào nhánh trùng.
    */
-  async send(u: AuthUser, roomId: string, body: SendRoomMessageRequest): Promise<SendResult> {
+  async send(u: AuthUser, roomId: string, req: SendRoomMessageRequest): Promise<SendResult> {
+    const p = this.#processes;
+    const pre = p ? await this.#processRoute(p, u, roomId, req) : { body: req };
+    if ("result" in pre) return pre.result;
+    const { body } = pre;
     const route = this.#agents
       ? routeRoomMessage(body.content, { answerRunId: body.answer_run_id })
       : PLAIN;
@@ -88,6 +105,36 @@ export class MessagesService {
   /** X2b · gắn đường gọi agent (cần RunService ⇒ nối sau khi `app.ts` dựng runtime); vắng = mọi tin là tin thường. */
   useAgents(agents: RoomAgentSender): void {
     this.#agents = agents;
+  }
+
+  /** P-a D15 · cờ `HUB_PROCESS_ENGINE` bật ⇒ nối `!` + luật thread quy trình (T7); vắng = `!` là chữ thường. */
+  useProcesses(processes: RoomProcessSender): void {
+    this.#processes = processes;
+  }
+
+  /**
+   * P-a plan §7 + T7 (trước `routeRoomMessage`, bỏ qua khi có `answer_run_id`): `!!` ⇒ bỏ một `!`; timeline `!…` ⇒ PF1.
+   * Có `flow_id`: `!…` là chữ; thread quy trình + tag `@` đầu tin ⇒ 422 `PROCESS_THREAD_NO_AGENT` (không lưu, 0 run).
+   */
+  async #processRoute(
+    p: RoomProcessSender,
+    u: AuthUser,
+    roomId: string,
+    body: SendRoomMessageRequest,
+  ): Promise<{ body: SendRoomMessageRequest } | { result: SendResult }> {
+    if (body.answer_run_id !== undefined) return { body };
+    const bang = classifyBang(body.content);
+    const flowId = body.flow_id;
+    if (flowId !== undefined) {
+      const inProcess = await this.rooms.read(u, (tx, me) =>
+        repo.isProcessThread(tx, me, roomId, flowId),
+      );
+      if (inProcess && routeRoomMessage(body.content, {}).kind !== "plain")
+        throw processError("PROCESS_THREAD_NO_AGENT");
+    } else if (bang.kind === "process" || bang.kind === "invalid") {
+      return { result: await p.start(u, roomId, body, bang) };
+    }
+    return { body: bang.kind === "escaped" ? { ...body, content: bang.content } : body };
   }
 
   /** Tin người↔người (X2a; X2b D13a: trong thread `flow_id` ⇒ kiểm thread của phòng, `placement=flow`, 0 run). */

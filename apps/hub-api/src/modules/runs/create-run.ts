@@ -17,12 +17,24 @@ import { bindRunFiles, type RunKind } from "../attachments/run-files";
 import type { RunFile } from "../attachments/run-files.rules";
 import { isAgreeReply } from "../mcp/confirm.rules";
 import type { MentionPlan } from "../mention/mention.service";
-import { type ConfirmTag, decideConfirmations } from "./confirm.repo";
+import { type ConfirmTag, decideConfirmations, preconfirm } from "./confirm.repo";
 import { overLimit } from "./run-limit.rules";
 import * as repo from "./runs.repo";
 import type { RunInfo } from "./sse/sse-writer";
 
 export type Created = RunInfo & { userMessageId: string };
+
+/**
+ * P-a D1, D3, D4 · run stage: bỏ giới hạn run đồng thời của user (D3 — giới hạn bằng run/tenant); `files` = output đã chốt +
+ * bản nháp (D6, thay `attachment_ids` của tin); `preconfirm` = workflow `side_effect` đã được duyệt cho "Hành động thật".
+ */
+export type ProcessRunInput = {
+  processRunId: string;
+  stageRunId: string;
+  teamRunId: string | null;
+  files: RunFile[];
+  preconfirm?: { agentId: string; workflowIds: readonly string[] };
+};
 
 export type CreateRunInput = {
   run: Created;
@@ -43,6 +55,8 @@ export type CreateRunInput = {
   declineConfirm?: boolean;
   /** X2b D2 · run phòng (hội thoại nền); vắng ⇒ run C1 (hội thoại `room_id IS NULL`). */
   room?: boolean;
+  /** P-a D1 · run stage quy trình (hội thoại nền quy trình, `runs.process_run_id/stage_run_id/team_run_id`). */
+  process?: ProcessRunInput;
   log: Pick<Logger, "info">;
 };
 
@@ -90,12 +104,15 @@ async function prepareFlow(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<vo
 /** R16/R17 · dưới khoá user nên số đếm ổn định; 429 log `info run-limit` (không nội dung tin, plan-errors §3). */
 async function assertUnderLimit(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<void> {
   const limit = p.maxConcurrentRuns;
-  if (limit === undefined) return;
+  if (limit === undefined || p.process) return;
   const running = await repo.countRunning(tx, o);
   if (!overLimit(running, limit)) return;
   p.log.info("run-limit", { tenant_id: o.tenantId, user_id: o.userId, running, limit });
   throw tooManyRuns();
 }
+
+const processCols = (x?: ProcessRunInput): Partial<repo.RunInsert> =>
+  x ? { processRunId: x.processRunId, stageRunId: x.stageRunId, teamRunId: x.teamRunId } : {};
 
 const runKind = (p: CreateRunInput): RunKind =>
   p.command ? "command" : p.direct ? "direct" : "orchestrated";
@@ -103,6 +120,11 @@ const runKind = (p: CreateRunInput): RunKind =>
 /** H2c P7 · sau INSERT tin user: gắn file (R11, 404 ⇒ rollback) → tập file run (R14) → `runs.attachment_ids` khi ≠ ∅. */
 async function attachFiles(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<RunFile[]> {
   const r = p.run;
+  if (p.process) {
+    const ids = p.process.files.map((f) => f.id);
+    if (ids.length > 0) await repo.setRunFiles(tx, r.id, ids);
+    return p.process.files;
+  }
   const files = await bindRunFiles(tx, o, {
     ids: p.req.attachment_ids,
     newFlow: !p.req.flow_id,
@@ -127,7 +149,8 @@ async function attachFiles(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<Ru
 export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<RunFile[]> {
   const r = p.run;
   await repo.lockUserRuns(tx, o);
-  if (!(await repo.touchConversation(tx, o, r.conversationId, p.room))) throw appError("NOT_FOUND");
+  const bg = p.room ? "room" : p.process ? "process" : undefined;
+  if (!(await repo.touchConversation(tx, o, r.conversationId, bg))) throw appError("NOT_FOUND");
   await prepareFlow(tx, o, p);
   await assertUnderLimit(tx, o, p);
   await repo.insertRun(tx, o, {
@@ -140,6 +163,7 @@ export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Pro
     owner: p.owner,
     locale: r.locale,
     ...kindCols(p),
+    ...processCols(p.process),
   });
   await repo.insertMessage(tx, o, {
     id: r.userMessageId,
@@ -153,5 +177,7 @@ export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Pro
   if (p.req.flow_id) {
     await decideConfirmations(tx, o, { flowId: r.flowId, runId: r.id, ...confirmReply(p) });
   }
+  const pre = p.process?.preconfirm;
+  if (pre) await preconfirm(tx, o, { flowId: r.flowId, runId: r.id, ...pre });
   return files;
 }

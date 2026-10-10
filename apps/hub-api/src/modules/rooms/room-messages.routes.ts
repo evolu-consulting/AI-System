@@ -8,6 +8,7 @@ import {
   FLOW_ID_HEADER,
   MarkRoomFlowReadRequestSchema,
   MarkRoomReadRequestSchema,
+  PROCESS_RUN_ID_HEADER,
   RoomMessageListQuerySchema,
   RUN_ID_HEADER,
   SendRoomMessageRequestSchema,
@@ -32,11 +33,16 @@ export function roomMessagesRoutes(svc: MessagesService): Hono<AuthVars> {
     const id = roomIdParam(c);
     await svc.access(c.var.user, id, "send");
     const body = await parseJson(c, SendRoomMessageRequestSchema);
-    const { message, created, run } = await svc.send(c.var.user, id, body);
+    const { message, created, run, process } = await svc.send(c.var.user, id, body);
     // X2b D11 · body giữ `RoomMessage`; run trả qua header như E12.
     if (run) {
       c.header(RUN_ID_HEADER, run.runId);
       c.header(FLOW_ID_HEADER, run.flowId);
+    }
+    // P-a T1 · tin gọi `!key`: run quy trình + thread (`X-Flow-Id`) qua header, body vẫn `RoomMessage`.
+    if (process) {
+      c.header(PROCESS_RUN_ID_HEADER, process.runId);
+      c.header(FLOW_ID_HEADER, process.flowId);
     }
     return c.json(message, created ? 201 : 200);
   });

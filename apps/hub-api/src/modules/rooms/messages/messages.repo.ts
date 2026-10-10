@@ -1,7 +1,7 @@
 // HUB-FR-96 · HUB-FR-100 · truy vấn tin phòng: lịch sử, gửi, đã đọc (X2a plan-db §5 hàng Gửi/Đọc/Lịch sử, §6). Chạy trong
 // `withHubScope({kind:"user"})`; mọi câu lọc `tenant_id` tường minh, RLS (`is_room_member`) là lưới. Gửi: chỉ gọi SAU
 // `lockFor` (khoá hàng `rooms` trước `room_members`/`room_messages`). Đánh dấu đọc cũng sau `lockFor` (RV1 #5), chỉ chạm hàng mình.
-import { ROOM_FLOW_RECENT_MAX, type RoomAgentRef } from "@ai/contracts/chat";
+import { ROOM_FLOW_RECENT_MAX, type RoomAgentRef, type RoomProcessKind } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { AGENT_COLS, AGENT_JOINS, type AgentSqlCols, agentDataOf } from "../agents/agent-msg.sql";
@@ -18,7 +18,7 @@ type MessageSqlRow = {
   id: string;
   room_id: string;
   seq: Num;
-  sender_type: "user" | "agent";
+  sender_type: "user" | "agent" | "process";
   sender_id: string | null;
   content: string;
   client_msg_id: string | null;
@@ -27,24 +27,36 @@ type MessageSqlRow = {
   username: string | null;
   flow_id: string | null;
   placement: "main" | "flow";
+  /** P-a U1 · tin gọi `!key` + tin `process`; `process_name` = tên quy trình (snapshot) cho người gửi `process`. */
+  process_run_id: string | null;
+  process_meta: unknown;
+  process_name: string | null;
 };
 
 function toRow(r: MessageSqlRow): RoomMessageRow {
+  const name = r.sender_type === "process" ? r.process_name : r.display_name;
   return {
     id: r.id,
     roomId: r.room_id,
     seq: Number(r.seq),
     senderType: r.sender_type,
-    sender: { id: r.sender_id ?? r.id, displayName: r.display_name, username: r.username },
+    sender: { id: r.sender_id ?? r.id, displayName: name, username: r.username },
     content: r.content,
     clientMsgId: r.client_msg_id,
     createdAt: toDate(r.created_at),
     ...(r.flow_id && { flowId: r.flow_id, placement: r.placement }),
+    ...(r.process_run_id && { processRunId: r.process_run_id, processMeta: r.process_meta }),
   };
 }
 
+/** P-a plan-thread §4 · tên người gửi `process` = `process_runs.snapshot->>'name'` (cùng tenant; alias tin = `x`). */
+const processName = (x: string) =>
+  sql.raw(`(select pr.snapshot->>'name' from hub.process_runs pr where ${x}.sender_type = 'process'
+    and pr.id = ${x}.process_run_id and pr.tenant_id = ${x}.tenant_id)`);
+
 const COLS = sql`m.id, m.room_id, m.seq, m.sender_type, m.sender_id, m.content, m.client_msg_id, m.created_at,
-  u.display_name, u.username, m.flow_id, m.placement`;
+  u.display_name, u.username, m.flow_id, m.placement, m.process_run_id, m.process_meta,
+  ${processName("m")} as process_name`;
 
 /** X2b · tóm tắt thread gắn trên tin agent `main` gốc (vắng ở tin khác: aggregate 0 / null). CR-050: + chưa xem, ≤ 3 tin mới. */
 type FlowSqlCols = {
@@ -58,7 +70,7 @@ type FlowSqlCols = {
 type FlowRecentSql = {
   id: string;
   seq: Num;
-  sender_type: "user" | "agent";
+  sender_type: "user" | "agent" | "process";
   sender_id: string | null;
   display_name: string | null;
   username: string | null;
@@ -67,10 +79,11 @@ type FlowRecentSql = {
   content: string;
   created_at: Ts;
   unread: boolean;
+  process_kind: RoomProcessKind | null;
 };
 
-/** Chỉ tính cho tin agent `main` gốc của thread (filter một lần theo hàng ngoài `m`). */
-const ROOT = sql`m.sender_type = 'agent' and m.placement = 'main' and m.flow_id is not null`;
+/** Tin gốc thread: agent (X2b) hoặc khối quy trình `process` (P-a T1). */
+const ROOT = sql`m.sender_type in ('agent', 'process') and m.placement = 'main' and m.flow_id is not null`;
 
 /**
  * CR-050 · "của mình" trong thread: tin người do mình gửi, hoặc tin agent của lượt mình gọi (`tt` = tin gọi, như R19) —
@@ -114,7 +127,8 @@ const flowLateral = (me: Me) => sql`
   left join lateral (
     select json_agg(x order by x.seq) as flow_recent
     from (
-      select t.id, t.seq, t.sender_type, t.sender_id, su.display_name, su.username, ra.key as agent_key,
+      select t.id, t.seq, t.sender_type, t.sender_id, coalesce(su.display_name, ${processName("t")}) as display_name,
+        su.username, t.process_kind, ra.key as agent_key,
         ra.name as agent_name, t.content, t.created_at, ${unseen(me, sql`fc.cur`, sql`fc.joined`)} as unread
       from hub.room_messages t
       left join hub.room_messages tt on t.sender_type = 'agent' and tt.id = t.trigger_message_id
@@ -137,6 +151,7 @@ const toRecent = (r: FlowRecentSql): FlowRecentRow => ({
   content: r.content,
   createdAt: toDate(r.created_at),
   unread: r.unread,
+  processKind: r.process_kind,
 });
 
 const withFlow = (row: RoomMessageRow, f: FlowSqlCols): RoomMessageRow =>
@@ -300,4 +315,17 @@ export async function advanceFlowRead(
     where t.room_id = ${roomId} and t.tenant_id = ${me.tenantId} and t.flow_id = ${flowId} and t.placement = 'flow'
       and ${unseen(me, cur, joinedAt(me, room))}`);
   return Number(row?.unread ?? 0);
+}
+
+/** P-a T7 · `flow_id` là thread quy trình bắt đầu từ phòng này (`process_runs_flow_uq`; RLS T). */
+export async function isProcessThread(
+  tx: Tx,
+  me: Me,
+  roomId: string,
+  flowId: string,
+): Promise<boolean> {
+  const [row] = await tx.execute<{ one: number }>(sql`
+    select 1 as one from hub.process_runs pr
+    where pr.flow_id = ${flowId} and pr.origin_room_id = ${roomId} and pr.tenant_id = ${me.tenantId}`);
+  return row !== undefined;
 }

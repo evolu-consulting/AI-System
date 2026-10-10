@@ -12,7 +12,9 @@ import {
   LAST_EVENT_ID_QUERY,
   MESSAGE_ID_HEADER,
   type MessageContext,
+  PROCESS_RUN_ID_HEADER,
   RUN_ID_HEADER,
+  type SendMessageRequest,
   SendMessageRequestSchema,
   SSE_CONTENT_TYPE,
 } from "@ai/contracts/chat";
@@ -24,8 +26,12 @@ import type { RunFile } from "../attachments/run-files.rules";
 import type { ConversationService } from "../conversations/conversations.service";
 import type { MentionPlan, MentionRouted } from "../mention/mention.service";
 import { routeMessage } from "../mention/mention-parse.rules";
+import { type Bang, classifyBang } from "../processes/core/bang.rules";
+import type { ProcessStartPort } from "../processes/core/ports";
 import { parseLastEventId } from "./runs.rules";
 import { type CommandRunStart, type RunService, type StartedRun, UNTAGGED } from "./runs.service";
+
+const NO_BANG: Bang = { kind: "none" };
 
 /** Header chống đệm cho SSE (nginx `X-Accel-Buffering`). */
 const SSE_HEADERS = {
@@ -46,36 +52,54 @@ export type PrepareCommand = (
 /** H2b · tin có tag `@` → kế hoạch run (ném `AGENT_NOT_FOUND`/`CMD_MISSING_ARG`, không ghi gì). */
 export type PrepareMention = (u: AuthUser, routed: MentionRouted) => Promise<MentionPlan>;
 
+/** Chuẩn bị run E12 theo loại tin: lệnh `/` (H2a), tag `@` (H2b), quy trình `!` (P-a D14, vắng = cờ tắt). */
+export type SendPrepare = {
+  command: PrepareCommand;
+  mention: PrepareMention;
+  processStart?: ProcessStartPort;
+};
+
+/** Lỗi tag/lệnh trả trước khi tạo run (không ghi gì). 1 tag → `direct`; ≥ 2 tag → Orchestrator thu hẹp (R04). */
+async function startFor(
+  runs: RunService,
+  p: SendPrepare,
+  c: { u: AuthUser; id: string; body: SendMessageRequest; files: RunFile[] },
+): Promise<StartedRun> {
+  const { u, id, body } = c;
+  const msg = routeMessage(body.content);
+  if (msg.kind === "text") return runs.start(u, id, { ...body, content: msg.content }, UNTAGGED);
+  if (msg.kind === "command") {
+    const req = { name: msg.name, rest: msg.rest, ctx: body.context ?? {}, attachments: c.files };
+    return runs.start(u, id, body, await p.command(u, req));
+  }
+  return runs.start(u, id, body, await p.mention(u, msg));
+}
+
 /** E12 · mount dưới `/conversations` (cạnh route E5–E11). Kiểm sở hữu hội thoại trước khi parse body (404 trước 400). */
 export function sendMessageRoutes(
   conversations: ConversationService,
   runs: RunService,
-  prepareCommand: PrepareCommand,
-  prepareMention: PrepareMention,
+  p: SendPrepare,
 ) {
   const r = new Hono<AuthVars>();
   r.post("/:id/messages", async (c) => {
     const id = parseIdParam(c);
     await conversations.get(c.var.user, id);
     const parsed = await parseJson(c, SendMessageRequestSchema);
-    // RV-7: id file chữ thường trước R09/R11 (`[U1,u1]` = trùng ⇒ 400).
-    const body = parsed.attachment_ids
-      ? { ...parsed, attachment_ids: normalizeAttachmentIds(parsed.attachment_ids) }
-      : parsed;
     const u = c.var.user;
-    const files = body.attachment_ids ? await runs.checkSendable(u, body.attachment_ids) : [];
-    const msg = routeMessage(body.content);
-    let s: StartedRun;
-    if (msg.kind === "text")
-      s = await runs.start(u, id, { ...body, content: msg.content }, UNTAGGED);
-    else if (msg.kind === "command") {
-      const req = { name: msg.name, rest: msg.rest, ctx: body.context ?? {}, attachments: files };
-      s = await runs.start(u, id, body, await prepareCommand(u, req));
-    } else {
-      // Lỗi tag trả trước khi tạo run (không ghi gì). 1 tag → run `direct` (agent kiểm lại trên ảnh của run); ≥ 2 tag →
-      // Orchestrator thu hẹp `onlyKeys`; nội dung = phần sau tag (R04).
-      s = await runs.start(u, id, body, await prepareMention(u, msg));
+    // P-a D14 · `!key`/`!` sai ⇒ 202 `{process_run}` (không SSE, không lưu tin); `!!` ⇒ tin thường bỏ một `!`.
+    const bang = p.processStart ? classifyBang(parsed.content) : NO_BANG;
+    if (p.processStart && (bang.kind === "process" || bang.kind === "invalid")) {
+      const run = await p.processStart.fromConversation(u, id, bang);
+      c.header(PROCESS_RUN_ID_HEADER, run.id);
+      return c.json({ process_run: run }, 202);
     }
+    const content = bang.kind === "escaped" ? bang.content : parsed.content;
+    // RV-7: id file chữ thường trước R09/R11 (`[U1,u1]` = trùng ⇒ 400).
+    const ids = parsed.attachment_ids && normalizeAttachmentIds(parsed.attachment_ids);
+    const body = { ...parsed, content, ...(ids && { attachment_ids: ids }) };
+    const files = ids ? await runs.checkSendable(u, ids) : [];
+    const s = await startFor(runs, p, { u, id, body, files });
     return new Response(s.stream, {
       status: 200,
       headers: {

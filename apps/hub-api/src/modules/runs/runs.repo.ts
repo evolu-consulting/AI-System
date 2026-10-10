@@ -21,13 +21,14 @@ const ownedBy = (t: { tenantId: AnyPgColumn; userId: AnyPgColumn }, o: Owner): S
 
 /**
  * §5.1 bước 1 · khoá hội thoại đầu tiên (§3.5); không thấy/đã xoá → false. `updated_at` không lùi. X2b D2 (security-1
- * #5): run C1 chỉ trên hội thoại thường (`room_id IS NULL`), run phòng chỉ trên hội thoại nền (`room = true`).
+ * #5): run C1 chỉ trên hội thoại thường (`room_id`, `process_run_id` IS NULL — P-a C1), run phòng chỉ trên hội thoại
+ * nền phòng (`bg = "room"`), run stage chỉ trên hội thoại nền quy trình (`bg = "process"`, D1).
  */
 export async function touchConversation(
   tx: Tx,
   o: Owner,
   id: string,
-  room = false,
+  bg?: "room" | "process",
 ): Promise<boolean> {
   const c = conversations;
   const rows = await tx
@@ -38,7 +39,8 @@ export async function touchConversation(
         ownedBy(c, o),
         eq(c.id, id),
         isNull(c.deletedAt),
-        room ? isNotNull(c.roomId) : isNull(c.roomId),
+        bg === "room" ? isNotNull(c.roomId) : isNull(c.roomId),
+        bg === "process" ? isNotNull(c.processRunId) : isNull(c.processRunId),
       ),
     )
     .returning({ id: c.id });
@@ -93,6 +95,10 @@ export type RunInsert = {
   agentId?: string | null;
   responderKey?: string | null;
   responderName?: string | null;
+  /** P-a D1 · run stage quy trình (`runs_process_ck`: cả hai cùng có/cùng vắng). */
+  processRunId?: string | null;
+  stageRunId?: string | null;
+  teamRunId?: string | null;
 };
 
 /**

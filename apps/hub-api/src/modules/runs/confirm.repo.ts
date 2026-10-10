@@ -49,3 +49,20 @@ export async function decideConfirmations(
     });
   }
 }
+
+/**
+ * P-a D4 · run stage có "Hành động thật": người duyệt stage trước đã cho phép ⇒ chèn sẵn `confirmed` (`decided_run_id` = run
+ * stage) cho mọi workflow `side_effect` của agent ⇒ MCP `consumeConfirmation` chạy đúng 1 lần, không hỏi lại người bắt đầu.
+ */
+export async function preconfirm(
+  tx: Tx,
+  o: Owner,
+  p: { flowId: string; runId: string; agentId: string; workflowIds: readonly string[] },
+): Promise<void> {
+  for (const workflowId of new Set(p.workflowIds))
+    await tx.execute(sql`
+      INSERT INTO hub.tool_confirmations (tenant_id, user_id, flow_id, run_id, agent_id, workflow_id, status,
+        decided_run_id, decided_at)
+      VALUES (${o.tenantId}, ${o.userId}, ${p.flowId}, ${p.runId}, ${p.agentId}, ${workflowId}, 'confirmed',
+        ${p.runId}, now())`);
+}
