@@ -89,6 +89,16 @@ Làm theo `docs/WORKFLOW.md` "Làm song song nhiều session" (CR-059): **Bướ
   - Làm lại/ghép nhóm: `stage_runs.redo_sections` + `feedback` là nguồn cho `redoMembers`; B6a ghi chúng khi fail review. `team-exec.runTeamStage` cần đọc `redo_sections` (hiện bỏ qua) + gọi `redoMembers(members, {sections, feedback})` thay cho `st.members` khi attempt>1.
   - **Câu hỏi spec (P1-31 lead_plan)**: kế hoạch bỏ mục (vd chỉ m1,m3, thiếu Phần B) ⇒ `checkTemplate` "thân không rỗng" ⇒ template_invalid ⇒ redo loop. Cần chốt: lead_plan có được bỏ mục? Mặc định đề xuất ở B5 note trên.
 
+- **PF1 · RV1 vòng 1 sửa (2026-10-10, `feat/pa-pf1-run-gate`, in-boundary runs/gates/core):**
+  - **G1 (bảo mật U5/BR-25):** `view.service` quyết `access` qua definer `hub.process_run_viewer` (plan §5) thay `runAccess(origin_room)` — dưới scope `user`, RLS giấu phòng của người đã rời ⇒ truy vấn thường không phân biệt được **đã rời** (`outside`⇒task) với **phòng xoá** (`deleted`⇒full cho người bắt đầu); definer (SECURITY DEFINER) phân biệt đúng. `#output.starterLeft = userId===started_by` (access=task + là starter ⇒ đã rời). Pass: isolation M-A'-run, isolation-extra M-A'-out/M-body, view P1-75 (phần view), thread P1-85; **không hồi quy** P1-84 (phòng xoá ⇒ full).
+  - **G2 (`process.updated`):** `core.runRecipients` (người bắt đầu + thành viên phòng + assignee user/group task **open**, gọi TRƯỚC khi đóng task) + `core/events.processUpdated`, phát SAU COMMIT ở gates (review/decide/cancel), stage-driver `apply`, launcher `lostPermission`. Pass: view P1-74, thread P1-86.
+  - **G3a (platform_admin `?tenant_id`):** `parseQuery` bỏ khoá phạm vi (H1-R03) ⇒ `tenant_idQuery(c)` đọc thô ở route; `view.get/output` + `GateService.scopeOf` dùng tenant đích CHỈ khi `platform_admin`. Pass: isolation M-P-*.
+  - **G3b (team steps):** `team-load.outputSteps` (run_steps có `member_key` của team-run + token/latency/model từ usage_logs) đổ vào `threadOutput.steps` (= `RoomProcessStep`). Pass: thread P1-87.
+  - **Major #1 (stage-driver `apply`):** khoá `core.lockRun` FOR UPDATE + đọc lại head/stage trong khoá, re-check `status='running'` ∧ `stage.current_run_id=hubRunId` trước mọi ghi (§10/D11) ⇒ job tự hoàn tất không ghi đè huỷ/hết hạn đã commit.
+  - **Minor dọn:** `gates.repo` comment scope `user`; bỏ TODO `team-runner`.
+  - **Minor hoãn (cleanup/P-b):** #4 lý do `permission_lost`→`real_action` ở decision reason; #5 dùng `parseIdParam` (uuid) cho `:id`/`:oid` thay string thô. Không chặn PF1.
+  - **Còn red (ngoài biên PF1, không sửa):** view P1-75 dòng `/me/process-inbox` 200 = route PF3 `notify/inbox.routes` (khung rỗng trên `main`, PF3 chưa merge); team P1-35 = route `/answer` PF2. Cả hai qua khi PF2/PF3 merge.
+
 ## P-b (khung — sau H4b)
 | # | Task | Agent | Rủi ro | Phụ thuộc | Trạng thái |
 |---|---|---|---|---|---|

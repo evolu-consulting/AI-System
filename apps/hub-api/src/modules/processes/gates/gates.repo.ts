@@ -1,6 +1,6 @@
 // HUB-FR-107 · §3.4 · §10 · PF1 · repo cổng kiểm: đọc/khoá task + run, đóng task (first-wins ở `core.closeTask`), đóng
 // các task còn mở, ghi `passed_by`/`feedback`/`redo_sections`, persist máy trạng thái, huỷ `hub.runs` stage đang chạy.
-// Chạy trong tx `withHubScope(system)` của service; mọi câu lọc `tenant_id` tường minh (RLS T là lưới). Không log nội dung.
+// Chạy trong tx `withHubScope(user)` người thao tác của GateService; mọi câu lọc `tenant_id` tường minh (RLS T là lưới). Không log nội dung.
 import type { DecisionReason, TaskKind, TaskResult, TaskStatus } from "@ai/contracts/chat";
 import { JOB_CANCEL_CHANNEL, type JobCancelPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";

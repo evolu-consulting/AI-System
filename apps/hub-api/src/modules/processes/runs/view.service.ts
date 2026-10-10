@@ -1,5 +1,6 @@
 // HUB-FR-113 · HUB-BR-25/26 · T8 · U5 · PF1 · `GET /process-runs/:id` (full/task theo người xem) + `/outputs/:oid`
-// (plan §5, plan-contract §2–§3). Đọc scope `system` + lọc `tenant_id`; quyền = `runAccess`/`canAct` thuần (HUB-BR-25).
+// (plan §5, plan-contract §2–§3). Đọc scope `user` người xem; quyền xem = definer `hub.process_run_viewer` (phân biệt
+// phòng xoá/đã rời xuyên RLS, U5), quyền thao tác = `canCancel`/`canDecide`/`canReadThread` thuần (HUB-BR-25).
 // Audit `view`: assignee lần đầu mỗi (task, user); người bắt đầu đã rời phòng (U5) + mỗi lần đọc output.
 import type {
   DecisionOption,
@@ -25,8 +26,8 @@ import {
   canCancel,
   canDecide,
   canReadThread,
+  type RunAccess,
   type RunFacts,
-  runAccess,
   type Viewer,
 } from "../core/run-access.rules";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
@@ -211,6 +212,15 @@ type ViewCtx = {
 
 const notFound = () => processError("PROCESS_NOT_FOUND", { suggestions: [] });
 
+/** HUB-BR-25 · U5 · quyền xem qua definer `hub.process_run_viewer` (plan §5): phân biệt phòng đã xoá (người bắt đầu ⇒
+ * full) với đã rời phòng (⇒ task) — điều mà truy vấn scope `user` không làm được vì RLS giấu phòng của người đã rời. */
+async function runViewer(tx: Tx, runId: string): Promise<RunAccess | null> {
+  const [row] = await tx.execute<{ access: RunAccess | null }>(
+    sql`select hub.process_run_viewer(${runId}::uuid) as access`,
+  );
+  return row?.access ?? null;
+}
+
 export class ViewService {
   constructor(private readonly d: ViewDeps) {}
 
@@ -222,7 +232,7 @@ export class ViewService {
       if (!r) throw notFound();
       if (tenantIdQ && v.role === "platform_admin" && r.tenant_id !== tenantIdQ) throw notFound();
       const myIds = await myTaskIds(tx, r, v);
-      const access = runAccess(v, { ...factsOf(r), taskAssignee: myIds.length > 0 });
+      const access = await runViewer(tx, runId);
       if (!access) throw notFound();
       const snap = r.snapshot as unknown as Snap;
       const vc: ViewCtx = { tx, u, v, r, snap, myIds };
@@ -328,13 +338,18 @@ export class ViewService {
   }
 
   /** `GET /process-runs/:id/outputs/:oid`. Full ⇒ mọi output; task ⇒ của task mình (U5 starter ⇒ mọi output). */
-  async output(u: AuthUser, runId: string, outputId: string): Promise<ProcessOutput> {
+  async output(
+    u: AuthUser,
+    runId: string,
+    outputId: string,
+    tenantIdQ?: string,
+  ): Promise<ProcessOutput> {
     const v = await viewerCtx(this.d, u);
-    return withHubScope(this.d.db, scopeOf(v), async (tx) => {
+    return withHubScope(this.d.db, scopeOf(v, tenantIdQ), async (tx) => {
       const r = await runRow(tx, runId, u.userId);
       if (!r) throw notFound();
       const myIds = await myTaskIds(tx, r, v);
-      const access = runAccess(v, { ...factsOf(r), taskAssignee: myIds.length > 0 });
+      const access = await runViewer(tx, runId);
       if (!access) throw notFound();
       const [o] = await tx.execute<
         OutputRow & { content: string; fields: Record<string, string | number> | null }
@@ -343,7 +358,8 @@ export class ViewService {
           ${iso("created_at")} as created_at
         from hub.process_outputs where id = ${outputId} and process_run_id = ${runId} and tenant_id = ${r.tenant_id}`);
       if (!o) throw notFound();
-      const starterLeft = v.userId === r.started_by && r.origin_room === "outside";
+      // access `task` + là người bắt đầu ⇒ người bắt đầu đã rời phòng (U5): xem mọi output; phòng xoá/gốc admin ⇒ full.
+      const starterLeft = v.userId === r.started_by;
       if (access === "task" && !starterLeft && !(await inMyTask(tx, r.tenant_id, myIds, outputId)))
         throw notFound();
       const snap = r.snapshot as unknown as Snap;

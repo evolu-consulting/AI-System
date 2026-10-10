@@ -17,6 +17,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
+import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
 import { transition } from "../core/process-state.rules";
 import {
@@ -49,10 +50,11 @@ import * as g from "./gates.repo";
 type Req = { v: Viewer; groupIds: ReadonlySet<string> };
 type Outcome<T> = { body: T; events: UserEvent[]; kick: boolean; runId: string };
 
-const scopeOf = (u: AuthUser) => ({
+/** Scope `user` của người thao tác; platform_admin + `?tenant_id` ⇒ tenant đích (plan §5, như ViewService). */
+const scopeOf = (u: AuthUser, tenantIdQ?: string) => ({
   kind: "user" as const,
   userId: u.userId,
-  tenantId: u.tenantId,
+  tenantId: u.role === "platform_admin" && tenantIdQ ? tenantIdQ : u.tenantId,
 });
 const vrole = (r: AuthUser["role"]): Viewer["role"] =>
   r === "platform_admin" || r === "tenant_admin" ? r : "member";
@@ -69,9 +71,16 @@ export class GateService {
   }
 
   // ── POST /review-tasks/:id/decision ──
-  async reviewDecision(u: AuthUser, taskId: string, b: ReviewDecisionRequest): Promise<TaskDetail> {
+  async reviewDecision(
+    u: AuthUser,
+    taskId: string,
+    b: ReviewDecisionRequest,
+    tenantIdQ?: string,
+  ): Promise<TaskDetail> {
     const req = await this.#req(u);
-    const out = await withHubScope(this.d.db, scopeOf(u), (tx) => this.#review(tx, req, taskId, b));
+    const out = await withHubScope(this.d.db, scopeOf(u, tenantIdQ), (tx) =>
+      this.#review(tx, req, taskId, b),
+    );
     await this.#post(out);
     return out.body;
   }
@@ -93,6 +102,7 @@ export class GateService {
     if (reviewDecisionCheck(b) !== "ok") throw processError("FEEDBACK_REQUIRED");
     const run = await core.lockRun(tx, task.tenant_id, task.process_run_id);
     if (!run) throw notFound();
+    const recipients = await core.runRecipients(tx, run.id, run.tenantId);
     const idx = task.stage_idx;
     const s = await stageRowOf(tx, run.id, idx);
     const t = transition(buildState({ run, s, def: snapOf(run).stages[idx], idx, reason: null }), {
@@ -111,17 +121,31 @@ export class GateService {
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
     const events = await reviewEffects({ d: this.d, tx }, e, task, b);
+    events.push(
+      ...processUpdated(recipients, {
+        id: run.id,
+        status: t.next.status,
+        stageIdx: t.next.stageIdx,
+      }),
+    );
     const detail = (await loadTaskDetails(tx, { ...v, groupIds }, [taskId]))[0];
     if (!detail) throw notFound();
     return { body: detail, events, kick: needsKick(t.effects), runId: run.id };
   }
 
   // ── POST /process-runs/:id/decide ──
-  async decide(u: AuthUser, runId: string, b: DecideProcessRunRequest): Promise<ProcessRunView> {
+  async decide(
+    u: AuthUser,
+    runId: string,
+    b: DecideProcessRunRequest,
+    tenantIdQ?: string,
+  ): Promise<ProcessRunView> {
     const req = await this.#req(u);
-    const out = await withHubScope(this.d.db, scopeOf(u), (tx) => this.#decide(tx, req, runId, b));
+    const out = await withHubScope(this.d.db, scopeOf(u, tenantIdQ), (tx) =>
+      this.#decide(tx, req, runId, b),
+    );
     await this.#post(out);
-    return this.view.get(u, out.runId);
+    return this.view.get(u, out.runId, tenantIdQ);
   }
 
   async #decide(
@@ -132,6 +156,7 @@ export class GateService {
   ): Promise<Outcome<null>> {
     const { v, groupIds } = req;
     const run = await this.#lockVisible(tx, v, runId);
+    const recipients = await core.runRecipients(tx, run.id, run.tenantId);
     const idx = Number(run.currentStageIdx);
     const def = snapOf(run).stages[idx];
     const reason = ((run.decision as { reason?: DecisionReason } | null)?.reason ??
@@ -151,13 +176,22 @@ export class GateService {
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
     const events = await decideEffects({ d: this.d, tx }, e, b.option, dtask);
+    events.push(
+      ...processUpdated(recipients, {
+        id: run.id,
+        status: t.next.status,
+        stageIdx: t.next.stageIdx,
+      }),
+    );
     return { body: null, events, kick: needsKick(t.effects), runId: run.id };
   }
 
   // ── POST /process-runs/:id/cancel ──
-  async cancel(u: AuthUser, runId: string): Promise<ProcessRunSummary> {
+  async cancel(u: AuthUser, runId: string, tenantIdQ?: string): Promise<ProcessRunSummary> {
     const req = await this.#req(u);
-    const out = await withHubScope(this.d.db, scopeOf(u), (tx) => this.#cancel(tx, req, runId));
+    const out = await withHubScope(this.d.db, scopeOf(u, tenantIdQ), (tx) =>
+      this.#cancel(tx, req, runId),
+    );
     await this.#post(out);
     return out.body;
   }
@@ -165,6 +199,7 @@ export class GateService {
   async #cancel(tx: Tx, req: Req, runId: string): Promise<Outcome<ProcessRunSummary>> {
     const { v, groupIds } = req;
     const run = await this.#lockVisible(tx, v, runId);
+    const recipients = await core.runRecipients(tx, run.id, run.tenantId);
     const facts = await this.#facts(tx, run, groupIds, v.userId);
     if (!canCancel(v, facts))
       throw runAccess(v, facts) ? processError("NOT_PROCESS_DECIDER") : notFound();
@@ -180,6 +215,13 @@ export class GateService {
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const gx: Gx = { d: this.d, tx };
     const events = await cancelEnd(gx, { run, idx, ref }, null);
+    events.push(
+      ...processUpdated(recipients, {
+        id: run.id,
+        status: t.next.status,
+        stageIdx: t.next.stageIdx,
+      }),
+    );
     const row = await repo.loadSummary(tx, run.tenantId, run.id);
     if (!row) throw notFound();
     return { body: repo.toSummary(row), events, kick: false, runId: run.id };

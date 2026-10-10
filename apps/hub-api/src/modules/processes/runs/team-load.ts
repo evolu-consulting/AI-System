@@ -1,5 +1,6 @@
 // HUB-FR-114 · HUB-BR-23 · D7 · C2 · PF1 · nạp nhóm + thành viên cho stage nhóm và kiểm sẵn sàng (entitlement nhóm +
 // agent thành viên bật, KHÔNG kiểm grant người bắt đầu). Thuần SQL (scope `system`, RLS T); không log nội dung.
+import type { StepRole } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { RUNNABLE_RUNTIMES } from "../../agents/agent-access.rules";
@@ -62,6 +63,55 @@ export async function loadMembers(tx: Tx, teamId: string): Promise<TeamMemberRow
   const rows = await tx.execute<TeamMemberRow>(sql`select agent_id, role, sections, position
     from hub.agent_team_members where team_id = ${teamId} order by position, agent_id`);
   return [...rows].map((m) => ({ ...m, position: Number(m.position), sections: m.sections ?? [] }));
+}
+
+export type OutputStep = {
+  role: StepRole;
+  member_key: string | null;
+  agent: { key: string; name: string };
+  model: string | null;
+  ms: number | null;
+  tokens: number;
+};
+/**
+ * HUB-FR-114 · HUB-FR-116 · các bước thành viên của output nhóm (tin thread `output`.steps = `RoomProcessStep`, P1-87):
+ * mỗi `run_steps` có `member_key` của team-run stage này (plan §6); token/latency/model = Σ `usage_logs` theo `step_id`.
+ * Stage agent đơn (không team-run) ⇒ rỗng. Tên agent dùng id như view (`execRef`); FE dựng tên hiển thị theo locale.
+ */
+export async function outputSteps(
+  tx: Tx,
+  p: { stageRunId: string; tenantId: string; attempt: number },
+): Promise<OutputStep[]> {
+  const rows = await tx.execute<{
+    agent_key: string;
+    role: StepRole;
+    member_key: string | null;
+    model: string | null;
+    ms: number | null;
+    tokens: number;
+  }>(sql`
+    select coalesce(rs.agent_id::text, rs.detail->>'member_key') as agent_key,
+      rs.detail->>'role' as role, rs.detail->>'member_key' as member_key,
+      max(ul.model) as model, sum(ul.latency_ms)::int as ms,
+      coalesce(sum(ul.input_tokens + ul.output_tokens + coalesce(ul.cache_read_tokens, 0)
+        + coalesce(ul.cache_write_tokens, 0)), 0)::int as tokens
+    from hub.runs r
+    join hub.run_steps rs on rs.run_id = r.id and rs.tenant_id = r.tenant_id
+    left join hub.usage_logs ul on ul.step_id = rs.id and ul.tenant_id = r.tenant_id
+    where r.tenant_id = ${p.tenantId} and r.team_run_id in (
+      select id from hub.team_runs where stage_run_id = ${p.stageRunId}
+        and tenant_id = ${p.tenantId} and attempt = ${p.attempt})
+      and rs.detail->>'member_key' is not null
+    group by rs.id, rs.agent_id, rs.detail->>'role', rs.detail->>'member_key'
+    order by min(rs.started_at)`);
+  return [...rows].map((x) => ({
+    role: x.role,
+    member_key: x.member_key,
+    agent: { key: x.agent_key, name: x.agent_key },
+    model: x.model,
+    ms: x.ms === null ? null : Number(x.ms),
+    tokens: Number(x.tokens),
+  }));
 }
 
 /** Entitlement nhóm của tenant chưa thu hồi. */

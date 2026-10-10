@@ -11,6 +11,8 @@ import { publishUserEvents } from "../../../lib/user-stream";
 import { type JobOutcome, runJob } from "../../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../../runs/runs.service";
 import type { RunOutcome } from "../../runs/sse/sse-writer";
+import * as core from "../core/core.repo";
+import { processUpdated } from "../core/events";
 import { budgetHit, totalTokens } from "../core/limits.rules";
 import type { ProcessDeps, StageLauncher } from "../core/ports";
 import { type RunEvent, type RunState, transition } from "../core/process-state.rules";
@@ -142,6 +144,12 @@ async function runAgent(
 /** D11 · tx quy trình (scope system, RLS T): máy trạng thái + hiệu ứng. Trả `true` nếu cần `kick`. */
 async function apply(d: Deps, x: ApplyInput): Promise<boolean> {
   const out = await withHubScope(d.db, { kind: "system" }, async (tx) => {
+    // §10/D11 · khoá `process_runs` FOR UPDATE TRƯỚC mọi đọc/ghi: job hoàn tất tự nhiên đua với huỷ (gates) hoặc hết
+    // hạn (sweep) phải chờ tx kia commit rồi đọc lại — không ghi đè trạng thái kết thúc đã commit (hồi sinh run).
+    const head0 = await headOf(tx, x.runId);
+    if (!head0) return null;
+    const locked = await core.lockRun(tx, head0.tenant_id, x.runId);
+    if (!locked) return null;
     const head = await headOf(tx, x.runId);
     if (head?.status !== "running") return null;
     const idx = Number(head.current_stage_idx);
@@ -154,7 +162,25 @@ async function apply(d: Deps, x: ApplyInput): Promise<boolean> {
     const ev = await eventFor(tx, x, head, def);
     const t = transition(buildState(head, stage, def, idx), ev);
     if (!t.ok) return null;
-    return effects(d, tx, { x, head, stage, def, idx, ev, next: t.next, list: t.effects });
+    const res = await effects(d, tx, {
+      x,
+      head,
+      stage,
+      def,
+      idx,
+      ev,
+      next: t.next,
+      list: t.effects,
+    });
+    const recipients = await core.runRecipients(tx, x.runId, head.tenant_id);
+    res.events.push(
+      ...processUpdated(recipients, {
+        id: x.runId,
+        status: t.next.status,
+        stageIdx: t.next.stageIdx,
+      }),
+    );
+    return res;
   });
   if (!out) return false;
   await publishUserEvents(d.redis, out.events, d.log);

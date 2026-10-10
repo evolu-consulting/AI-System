@@ -1,6 +1,6 @@
 // HUB-FR-106 · HUB-FR-114 · D5 · D7 · D8 · PF1 · (1) hiệu ứng máy trạng thái stage (ghi `process_outputs`/task/thread +
 // `notifier`, persist trạng thái) dùng chung cho agent đơn + nhóm; (2) chạy stage nhóm. Tách khỏi `stage-driver.ts` cho
-// giới hạn 400 dòng (một chiều `stage-driver` → `team-runner`, không ngược). TODO(slice kế): team-runner thật (3 chế độ).
+// giới hạn 400 dòng (một chiều `stage-driver` → `team-runner`, không ngược).
 
 import { createHash } from "node:crypto";
 import { DECISION_OPTIONS, type DecisionOption, type DecisionReason } from "@ai/contracts/chat";
@@ -12,6 +12,7 @@ import type { ProcessDeps } from "../core/ports";
 import type { Effect, RunEvent, RunState } from "../core/process-state.rules";
 import { askExcerpt, decisionAssignees } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
+import { outputSteps } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
 type Deps = Omit<ProcessDeps, "launcher" | "start">;
@@ -317,7 +318,11 @@ async function threadOutput(
     },
     after: c.def.after.kind,
     review_task_id: reviewTaskId,
-    steps: [],
+    steps: await outputSteps(tx, {
+      stageRunId: c.x.stageRunId,
+      tenantId: c.head.tenant_id,
+      attempt: Number(c.stage.attempt),
+    }),
   });
 }
 

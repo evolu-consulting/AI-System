@@ -14,6 +14,7 @@ import { agentWorkflowIds } from "../../config/config.rules";
 import type { ProcessRunInput } from "../../runs/create-run";
 import type { ProcessStage, StageExecutor } from "../../runs/run-process";
 import * as core from "../core/core.repo";
+import { processUpdated } from "../core/events";
 import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/ports";
 import { realActionAllowed } from "../gates/gate.rules";
 import { stageDriver } from "./stage-driver";
@@ -330,5 +331,10 @@ async function lostPermission(
   tx: Tx,
   p: { runId: string; tenantId: string; idx: number; stageRunId: string; reason: DecisionReason },
 ): Promise<KickResult> {
-  return { kind: "events", events: await toDecision(d, tx, p) };
+  const events = await toDecision(d, tx, p);
+  const recipients = await core.runRecipients(tx, p.runId, p.tenantId);
+  events.push(
+    ...processUpdated(recipients, { id: p.runId, status: "needs_decision", stageIdx: p.idx }),
+  );
+  return { kind: "events", events };
 }

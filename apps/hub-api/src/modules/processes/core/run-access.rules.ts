@@ -20,7 +20,9 @@ const isAdmin = (v: Viewer, r: RunFacts): boolean =>
   v.role === "platform_admin" || (v.role === "tenant_admin" && sameTenant(v, r));
 const isStarter = (v: Viewer, r: RunFacts): boolean => sameTenant(v, r) && v.userId === r.startedBy;
 
-/** null ⇒ 404 (không lộ tồn tại). Người bắt đầu đã rời phòng ⇒ `task` (U5, audit `view`). */
+/** null ⇒ 404 (không lộ tồn tại). Người bắt đầu đã rời phòng (`outside`) ⇒ `task` (U5); phòng xoá/gốc admin
+ * (`deleted`/`none`) ⇒ `full` (không còn phòng để cổng). View dùng definer `hub.process_run_viewer` (phân biệt
+ * `outside` vs `deleted` xuyên RLS); rule thuần này giữ cho test đơn vị + nhánh 404/403 của gates. */
 export function runAccess(v: Viewer, r: RunFacts | null): RunAccess | null {
   if (!r) return null;
   if (isAdmin(v, r)) return "full";
