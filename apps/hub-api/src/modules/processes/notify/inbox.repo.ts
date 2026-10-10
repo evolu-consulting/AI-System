@@ -117,16 +117,13 @@ export async function noticeOwned(
  */
 export async function markNoticesRead(
   tx: Tx,
-  userId: string,
-  tenantId: string,
-  upToId: string,
-  now: Date,
+  o: { userId: string; tenantId: string; upToId: string; now: Date },
 ): Promise<void> {
   await tx.execute(sql`
-    update hub.process_notices set read_at = ${now.toISOString()}::timestamptz
-    where user_id = ${userId} and tenant_id = ${tenantId} and read_at is null
+    update hub.process_notices set read_at = ${o.now.toISOString()}::timestamptz
+    where user_id = ${o.userId} and tenant_id = ${o.tenantId} and read_at is null
       and created_at <= (select created_at from hub.process_notices
-        where id = ${upToId} and user_id = ${userId} and tenant_id = ${tenantId})`);
+        where id = ${o.upToId} and user_id = ${o.userId} and tenant_id = ${o.tenantId})`);
 }
 
 // ── Dùng cho ProcessNotifier / remindOnce ──

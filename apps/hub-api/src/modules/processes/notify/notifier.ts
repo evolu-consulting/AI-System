@@ -50,18 +50,18 @@ export function buildNotice(n: InsertedNotice, kind: NoticeKind, m: NoticeMeta):
 /** Sự kiện `process.notice` cho từng notice vừa chèn (unread riêng mỗi người). */
 async function noticeEvents(
   tx: Tx,
-  tenantId: string,
-  inserted: readonly InsertedNotice[],
-  kind: NoticeKind,
-  m: NoticeMeta,
+  a: { tenantId: string; inserted: readonly InsertedNotice[]; kind: NoticeKind; meta: NoticeMeta },
 ): Promise<UserEvent[]> {
   const unread = await unreadByUser(
     tx,
-    tenantId,
-    inserted.map((n) => n.userId),
+    a.tenantId,
+    a.inserted.map((n) => n.userId),
   );
-  return inserted.flatMap((n) =>
-    processNotice(n.userId, { notice: buildNotice(n, kind, m), unread: unread.get(n.userId) ?? 1 }),
+  return a.inserted.flatMap((n) =>
+    processNotice(n.userId, {
+      notice: buildNotice(n, a.kind, a.meta),
+      unread: unread.get(n.userId) ?? 1,
+    }),
   );
 }
 
@@ -102,7 +102,7 @@ async function onTaskOpened(tx: Tx, taskId: string): Promise<UserEvent[]> {
       kind: t.kind,
       process_run_id: t.processRunId,
     }),
-    ...(await noticeEvents(tx, t.tenantId, inserted, kind, meta)),
+    ...(await noticeEvents(tx, { tenantId: t.tenantId, inserted, kind, meta })),
   ];
 }
 
@@ -131,7 +131,14 @@ async function onTaskClosed(tx: Tx, taskId: string): Promise<UserEvent[]> {
       payload: { process_name: t.processName, stage_name: t.stageName, result },
       userIds: noticed,
     });
-    events.push(...(await noticeEvents(tx, t.tenantId, inserted, "task_closed", meta)));
+    events.push(
+      ...(await noticeEvents(tx, {
+        tenantId: t.tenantId,
+        inserted,
+        kind: "task_closed",
+        meta,
+      })),
+    );
   }
   return events;
 }
@@ -153,7 +160,7 @@ async function onRunFinished(tx: Tx, runId: string): Promise<UserEvent[]> {
     payload: { process_name: r.processName, stage_name: null },
     userIds: [r.startedBy],
   });
-  return noticeEvents(tx, r.tenantId, inserted, "run_finished", meta);
+  return noticeEvents(tx, { tenantId: r.tenantId, inserted, kind: "run_finished", meta });
 }
 
 export function createNotifier(): ProcessNotifier {

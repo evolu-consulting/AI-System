@@ -169,7 +169,12 @@ export function markInboxRead(
 ): Promise<{ unread: number }> {
   return withHubScope(d.db, scopeOf(u), async (tx: Tx) => {
     if (!(await noticeOwned(tx, u.userId, u.tenantId, upToId))) throw appError("NOT_FOUND");
-    await markNoticesRead(tx, u.userId, u.tenantId, upToId, d.now());
+    await markNoticesRead(tx, {
+      userId: u.userId,
+      tenantId: u.tenantId,
+      upToId,
+      now: d.now(),
+    });
     return { unread: await unreadNoticeCount(tx, u.userId, u.tenantId) };
   });
 }
