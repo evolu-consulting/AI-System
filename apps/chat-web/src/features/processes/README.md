@@ -23,3 +23,15 @@ Plan: `docs/specs/P-process-engine/plan-frontend*.md` (§9 Bước 0 · §10 s�
 - Chuỗi: `locales/process/<phần>.{vi,en}.json` = **cây con của `process.<phần>`** (khoá đầy đủ `t("process.<phần>.<tên>")`). Bước 0 đã nạp đủ khoá từ phụ lục i18n — PF chỉ sửa/bổ sung phần của mình, chạy `bun run i18n:check`.
 - Mọi lối vào bọc `ProcessEngineGate`/`useProcessEngineOn()`; không `on` ⇒ không vẽ gì.
 - `ProcessDmRow` phải trả về một `<li>`.
+
+## Thư mục PF (đã hoàn thành, P-a)
+| Thư mục | Nội dung |
+|---|---|
+| `composer/` | `ProcessMenu` (menu `!`), `ProcessButton` (nút ▶ "Quy trình") |
+| `run-block/` | khối quy trình trong dòng thời gian/thread: `ProcessBlock`, `RunCard`, `DecisionCard`, `ReviewTaskCard`, `OutputMessage`, `CancelRunButton`… |
+| `run-page/` | `/runs/$id`: `RunPage` + tab Tiến độ (`ProgressTab`), Nhật ký (`LogTab`), Token (slot → `usage/UsageTab`) |
+| `inbox/` | "Chờ tôi kiểm" (`TodoGroup`), DM "Quy trình" (`ProcessDmRow`), `/process-inbox` |
+| `ask/` | hỏi lại / nhờ người khác: `AskCards`, `AskAnswerBox`, `ForwardDialog` |
+| `usage/` | tab Token (`UsageTab`, KPI, bảng giai đoạn, bảng lượt gọi) — nhân đôi với admin-web (TECH-DEBT) |
+
+Cờ engine: Hub `HUB_PROCESS_ENGINE=on|off` (mặc định `off`; dev bật trong `.env.example`). FE dò bằng `shared/api.ts` `probeEngine`; off ⇒ không vẽ gì, route ⇒ "Không tìm thấy".
