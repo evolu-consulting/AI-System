@@ -4,10 +4,59 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-10 (lần 4, `daa86207`) | NOT READY | 0 | 2 | 1 | R3-1…R3-7 đóng hết. Mới: 2 Cao đội tự sửa — E-P13 bị đổi sai sang banner `left` (T có việc), khối "Kết quả" chưa có role/khoá i18n/nhãn dòng cho e2e. Không câu hỏi người dùng |
 | 2026-10-10 (lần 3, `8c2b12d9`) | NOT READY | 0 | 3 | 4 | R2-1…R2-9, #22–#24 đóng hết. Mới: 3 Cao đội tự sửa, đều quanh view ngoài phòng của người bắt đầu đã rời (U5): quyền `GET output`, FE không hiện `outputs`/`can_cancel` ở `access:task`, thiếu test luật. Không còn câu hỏi người dùng |
 | 2026-10-10 (lần 2, `1ee41c60`) | NOT READY | 0 | 5 | 7 | 24 lỗ hổng lần 1: 21 đóng, 3 Thấp mang sang. Mới: 1 câu hỏi người dùng (T10 lệch X2b-R17), 4 Cao đội tự sửa (nhãn e2e thread, ràng composer, ai gửi trả lời ở composer thread, `forward.task_kind`) |
 | 2026-10-10 (lần 1, `db3e7021`) | NOT READY | 1 | 7 | 9 | + 7 Trung bình. Chặn = ai mở task hỏi lại (PF1 hay PF2). 4 mục cần người dùng quyết (U1–U4), còn lại đội tự sửa theo Luật 2 |
 | (chưa chạy) | — | — | — | — | Spec draft 2026-10-09 (CR-056…058) |
+
+---
+
+## Lần 4 · 2026-10-10 · commit `daa86207` (diff `8c2b12d9..HEAD`)
+
+## Kết luận: NOT READY
+Phạm vi đã kiểm: `git diff 8c2b12d9..HEAD -- docs/specs/P-process-engine docs/design` (9 file đổi, trừ readiness.md; docs/design không đổi) + mục được trỏ: plan-contract.md:40, :57, :116–119; plan-frontend.md:73; plan-frontend-thread.md:63; plan-frontend-e2e.md:64, :71; plan-frontend-i18n.md:90, :105, :175, :264; plan-frontend-i18n-thread.md:24, :57; plan-step0.md:28; test-plan.md:123–131; test-plan-int.md:168–180; test-plan-e2e.md:31, :34 · mã yêu cầu: U5, CHAT-AC-52/56, HUB-BR-25, AC-H29
+
+Lỗ hổng lần 3: **đóng** R3-1 (plan-contract.md:57 ngoại lệ U5: mọi output = `outputs`, audit `view` mỗi lần, `outputs` vẫn trả sau khi run kết thúc; plan-step0.md:28 `lan-left` `my_tasks=[]`, `outputs` ≥1, `can_cancel:true`, không thread) · R3-2 (plan-frontend-thread.md:63 (a)–(d), trỏ từ plan-frontend.md:73; E-P20 ở plan-frontend-e2e.md:71 + test-plan-e2e.md:34 — xem R4-1, R4-2) · R3-3 (test-plan.md:128 R-A05/R-A06 `outside`, :130 R-A08 `task`, :131 R-A09 `canReadThread`; test-plan-int.md:170 ô A' + chú thích + `M-A'-out`) · R3-4 (plan-contract.md:41 `\|`) · R3-5 (spec.md:195) · R3-6 (chú thích ³ bỏ) · R3-7 (bổ sung nằm ở phụ lục plan-frontend-thread §5, plan-frontend.md chỉ trỏ).
+
+**Nhãn "Kết quả" (QC hỏi):** chữ "Kết quả" khớp giữa plan-frontend-thread.md:63 (a) ↔ plan-frontend-e2e.md:71 ↔ test-plan-e2e.md:34, nhưng chỉ là chữ trần "khối"/"danh sách" — không role ARIA, không khoá i18n (plan-frontend-i18n*.md không có khoá tiêu đề "Kết quả"), không nhãn từng dòng ⇒ R4-2.
+
+## Lỗ hổng
+| # | Mức | Mục | Vị trí (file:dòng hoặc mã) | Vấn đề | Mặc định đề xuất |
+|---|-----|-----|----------------------------|--------|------------------|
+| R4-1 | Cao | E, F, I — qc | test-plan-e2e.md:31 (E-P13) ↔ plan-frontend-thread.md:63 (c); test-plan-e2e.md:34 (E-P20, cột nhãn) | Lần sửa này đổi banner E-P13 (T, có việc ⇒ `my_tasks`≠[]) sang `left` "Bạn không còn ở phòng này…", trái (c) "khi `my_tasks`≠[] vẫn dùng banner cũ" ⇒ test đỏ với code đúng. E-P20 cột nhãn vẫn ghi `/runs/<id>`: banner "Bạn không ở phòng này…" trong khi cột kịch bản ghi banner `left` cho A — hai kỳ vọng trong một hàng | qc: E-P13 trả lại banner `inbox.run.banner` "Bạn không ở phòng này. Bạn chỉ xem được phần cần xử lý…" (plan-frontend-i18n.md:175); E-P20 cột nhãn đổi thành banner `left` "Bạn không còn ở phòng này. Xem lượt chạy ở trang riêng." |
+| R4-2 | Cao | E, J — frontend-lead (+ qc) | plan-frontend-thread.md:63 (a); plan-frontend-e2e.md:71; test-plan-e2e.md:34 | Khối "Kết quả" của A' không có role/locator e2e, không khoá i18n (VI/EN) cho tiêu đề, không ghi chữ nguyên văn của mỗi dòng `OutputRef` (có hai mẫu sẵn: `run.outputTitle` "Kết quả giai đoạn {{stage}} · v{{n}}" và thread `output.aria` "Kết quả {{stage}} v{{version}}") ⇒ FE và QC chọn khác nhau | frontend-lead ghi vào plan-frontend-thread §5 + i18n-thread: `region "Kết quả"` (khoá mới `run.outputs.title` = Kết quả / Results), mỗi dòng = `run.outputTitle` + `button "Xem kết quả"` (`run.viewOutput`) → Dialog `<pre>`; plan-frontend-e2e.md:71 + E-P20: `region "Kết quả"` chứa ≥1 `button "Xem kết quả"` |
+| R4-3 | Thấp | F — qc | test-plan.md:128 (R-A06) | Cột đầu vào có "starter `outside` × mọi lý do" ở vị trí 2 nhưng cột kỳ vọng không xếp tương ứng (ghi lại ở cuối "starter đã rời R × mọi lý do ⇒ true") — đọc theo vị trí dễ lệch | qc xếp đầu vào/kỳ vọng 1-1 theo dấu `;` |
+
+## Mâu thuẫn giữa tài liệu
+- test-plan-e2e.md:31 E-P13 (T thấy banner `left`) ↔ plan-frontend-thread.md:63 (c) (`my_tasks`≠[] ⇒ banner cũ) → giữ plan-frontend-thread (R4-1).
+- test-plan-e2e.md:34 E-P20 cột nhãn (banner cũ) ↔ cùng hàng cột kịch bản + plan-frontend-e2e.md:71 (banner `left`) → giữ `left` (R4-1).
+
+## Câu hỏi cho người dùng (chỉ những gì KHÔNG có mặc định an toàn)
+Không có. Đội tự đóng (Luật 2): R4-1 qc · R4-2 frontend-lead (+ qc E-P20) · R4-3 qc.
+
+## Checklist
+| Mục | Kết quả | Bằng chứng (file:dòng / mã) |
+|-----|---------|-----------------------------|
+| A Phạm vi | Đạt | không đổi; spec.md:178 U5 |
+| B Hợp đồng | Đạt | plan-contract.md:40 (`task` + `outputs?`, `can_cancel?`), :41 (R3-4), :57 (ngoại lệ U5 + audit) |
+| C Dữ liệu | Đạt | không đổi; `RunFacts.originRoom` plan-contract.md:115 |
+| D Nghiệp vụ | Đạt | plan-contract.md:116–119 (`runAccess`/`canReadThread`/`canCancel`/`canDecide` U5) |
+| E UI | Thiếu | plan-frontend-thread.md:63 có hành vi A' nhưng khối "Kết quả" thiếu role/khoá/nhãn dòng (R4-2) |
+| F Kiểm chứng | Mâu thuẫn | test-plan.md:127–131, test-plan-int.md:170 + `M-A'-out` Đạt; E-P13/E-P20 lệch plan (R4-1) |
+| G Phụ thuộc & môi trường | Đạt | plan-step0.md:28 `lan-left` đủ `outputs`/`can_cancel` |
+| H Task | Đạt | không đổi |
+| H2 Vai trò | Đạt | R-A09 `canReadThread` (test-plan.md:131) phủ plan-contract.md:117 |
+| I Nhất quán | Mâu thuẫn | R4-1 |
+| J Độ chính xác | Thiếu | R4-2 (chữ/khoá khối "Kết quả") |
+
+**Trần kích thước** (`wc -c`, 1 KB = 1024 B): spec.md 23 200 / 25 600 · plan.md 30 572 / 30 720 · plan-frontend.md 25 464 / 25 600 (còn 136 B) · test-plan.md 28 985 / 30 720 — **đều dưới trần**. Sửa R4-2 ghi vào phụ lục (plan-frontend-thread / i18n-thread), không vào plan-frontend.md.
+
+## Quét từ mơ hồ
+Chỉ quét phần đổi: "…" trong "chỉ xem được phần cần xử lý…" / "Bạn không ở phòng này…" là trích rút gọn chuỗi có bản đầy đủ (plan-frontend-i18n.md:175) — vô hại; "Đang chờ …" nhãn rút gọn có sẵn — vô hại. Không có "có thể/nên/tuỳ/TBD" mới.
+
+## Chưa kiểm
+- Không đọc lại phần không đổi. Symbol chat-web ở plan-frontend-thread.md vẫn chưa Grep xác minh (như lần 2–3).
 
 ---
 

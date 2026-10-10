@@ -63,6 +63,13 @@ Nhãn nút/textbox chế độ Góp ý và Trả lời **dùng khoá có sẵn**
 | ask.typed | Trả lời bằng văn bản | Answer in writing |
 | ask.fwd.line (`task_kind=ask`) | ↪ {{from}} đã nhờ {{to}} trả lời (chuyển {{depth}}/{{max}}) | ↪ {{from}} asked {{to}} to answer (forward {{depth}}/{{max}}) |
 
+## 3b. Khối "Kết quả" của `RunPage` `access:task` + `my_tasks=[]` (U5, R4-2)
+| Khoá | VI | EN |
+|---|---|---|
+| run.outputs.title (mới) | Kết quả | Outputs |
+| run.outputTitle (có sẵn, plan-frontend-i18n §run) | Kết quả giai đoạn {{stage}} · v{{n}} | Stage {{stage}} output · v{{n}} |
+| run.viewOutput (có sẵn; nhãn nút) | Xem kết quả | View output |
+
 ## 4. Quy tắc dùng chữ
 - "Bạn" thay tên khi `actor`/`from`/`starter` là người xem (`rooms.you` có sẵn). `{{names}}` ≤ 3 tên (`wait.more` cho phần còn lại; `group` ⇒ `wait.group`).
 - Giây theo i18n §1 (`12,0s`); `{{tokens}}` bằng `Intl.NumberFormat`. Văn bản tin `content` của server (≤ 500 ký tự, locale mặc định tenant) **chỉ** dùng làm preview/fallback, không hiển thị khi `process` hợp lệ.
