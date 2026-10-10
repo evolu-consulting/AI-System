@@ -32,5 +32,12 @@
   "typed": "Trả lời bằng văn bản",
   "fwd": {
     "line": "↪ {{from}} đã nhờ {{to}} trả lời (chuyển {{depth}}/{{max}})"
-  }
+  },
+  "titleShort": "{{agent}} cần thêm thông tin",
+  "onlyThisNoName": "Bạn chỉ thấy câu hỏi này. Lượt chạy dùng quyền và quota của người bắt đầu.",
+  "forwardTitleReview": "Chuyển cho ai kiểm?",
+  "forwardHelpReview": "Chỉ chuyển được cho người cùng nhóm kiểm.",
+  "submitReview": "Chuyển kiểm",
+  "you": "Bạn",
+  "asked": "{{agent}} hỏi lại"
 }

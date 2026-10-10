@@ -19,6 +19,7 @@ import {
 } from "./team.rules";
 import {
   addCall,
+  ensureTeamRun,
   hashSame,
   initialDraft,
   limitReason,
@@ -66,10 +67,11 @@ export async function runTeamStage(d: Deps, ctx: RunContext, link: Link): Promis
   if (!ld) return fail("agent_failed");
   const { head, stage, def, team, members } = ld;
   const u: AuthUser = { userId: head.started_by, tenantId: head.tenant_id, role: "member" };
-  const teamRunId = await ensureTeamRun(d, {
+  const tr = await ensureTeamRun(d, {
+    tenantId: head.tenant_id,
     procRunId: runId,
-    head,
-    stage,
+    stageId: stage.id,
+    attempt: stage.attempt,
     teamId: team.id,
     mode: team.mode,
   });
@@ -82,7 +84,7 @@ export async function runTeamStage(d: Deps, ctx: RunContext, link: Link): Promis
     stage,
     team,
     members,
-    teamRunId,
+    teamRunId: tr.id,
     keyOf: ld.keys,
     priorFiles: ctx.files,
     signal: ctx.writer.signal,
@@ -91,10 +93,11 @@ export async function runTeamStage(d: Deps, ctx: RunContext, link: Link): Promis
     usage: 0,
     lastJobId: null,
   };
+  // HUB-FR-110 · resume: team_run `waiting_answer` ⇒ sequential chạy tiếp từ `cursor` (bỏ thành viên đã xong). Chỉ sequential.
   if (team.mode === "lead_plan") return runLeadPlan(st);
   const toRun = redoSubset(st, members); // D8 · làm lại chọn lọc (attempt>1)
   if (team.mode === "parallel_merge") return runParallel(st, toRun);
-  return runSequential(st, toRun, false);
+  return runSequential(st, toRun, false, tr.resume ? tr.cursor : 0);
 }
 
 type Ctx = {
@@ -149,40 +152,20 @@ async function load(d: Deps, runId: string) {
   });
 }
 
-/** team_run đang chạy/chờ của (stage, attempt) ⇒ dùng lại; không có ⇒ tạo mới (bộ đếm 0). */
-async function ensureTeamRun(
-  d: Deps,
-  p: { procRunId: string; head: Head; stage: StageRow; teamId: string; mode: string },
-): Promise<string> {
-  return withHubScope(d.db, { kind: "system" }, async (tx) => {
-    const [cur] = await tx.execute<{ id: string; status: string }>(sql`select id, status
-      from hub.team_runs where stage_run_id = ${p.stage.id} and attempt = ${p.stage.attempt}
-      order by started_at desc limit 1`);
-    if (cur && (cur.status === "running" || cur.status === "waiting_answer")) {
-      if (cur.status === "waiting_answer")
-        await tx.execute(sql`update hub.team_runs set status = 'running', segment_started_at = now()
-          where id = ${cur.id}`);
-      return cur.id;
-    }
-    const id = crypto.randomUUID();
-    await tx.execute(sql`insert into hub.team_runs (id, tenant_id, stage_run_id, process_run_id, attempt,
-        team_id, mode, status, segment_started_at)
-      values (${id}, ${p.head.tenant_id}, ${p.stage.id}, ${p.procRunId},
-        ${p.stage.attempt}, ${p.teamId}, ${p.mode}, 'running', now())`);
-    return id;
-  });
-}
-
 async function runSequential(
   st: Ctx,
   members: TeamMemberRow[],
   fallback: boolean,
+  startAt = 0,
 ): Promise<TeamOut> {
-  for (const m of members) {
+  // `startAt` · resume: bỏ qua thành viên đã xong (index < cursor), chạy tiếp từ thành viên đã hỏi (lần thử 1 ⇒ startAt 0).
+  for (let i = Math.max(0, startAt); i < members.length; i++) {
+    const m = members[i];
+    if (!m) continue;
     const hit = await checkLimit(st);
     if (hit) return await stopLimit(st, hit);
     const res = await callOne(st, seqStep(st, m, fallback));
-    const done = await applyMember(st, m, res);
+    const done = await applyMember(st, m, res, i);
     if (done) return done;
   }
   return await finishOutput(st);
@@ -202,7 +185,7 @@ async function runLeadPlan(st: Ctx): Promise<TeamOut> {
   const lead = await callOne(st, leadStep);
   if (lead.outcome.kind === "failed") return await stopFail(st, lead);
   if (lead.outcome.kind === "need_input")
-    return await pauseAsk(st, [{ role: "Trưởng nhóm", q: lead.outcome.question }]);
+    return await pauseAsk(st, [{ role: "Trưởng nhóm", q: lead.outcome.question }], st.callIdx);
   const asTeam: TeamMember[] = st.members.map((m) => ({
     key: st.keyOf.get(m.agent_id) ?? m.agent_id,
     sections: m.sections,
@@ -251,6 +234,7 @@ async function runParallel(st: Ctx, members: TeamMemberRow[]): Promise<TeamOut> 
         role: x.m.role,
         q: x.r?.outcome.kind === "need_input" ? x.r.outcome.question : "",
       })),
+      st.callIdx,
     );
   members.forEach((m, i) => {
     const r = calls[i];
@@ -294,10 +278,15 @@ function mkCall(st: Ctx, step: Step, files: RunFile[]): MemberCall {
 }
 
 /** output ⇒ ghép + kiểm no_change (có thể trả limit); need_input/failed ⇒ dừng. null ⇒ tiếp. */
-async function applyMember(st: Ctx, m: TeamMemberRow, res: MemberResult): Promise<TeamOut | null> {
+async function applyMember(
+  st: Ctx,
+  m: TeamMemberRow,
+  res: MemberResult,
+  cursor: number,
+): Promise<TeamOut | null> {
   if (res.outcome.kind === "failed") return await stopFail(st, res);
   if (res.outcome.kind === "need_input")
-    return await pauseAsk(st, [{ role: m.role, q: res.outcome.question }]);
+    return await pauseAsk(st, [{ role: m.role, q: res.outcome.question }], cursor);
   mergeInto(st, m, res.outcome.text);
   const same = await hashStep(st);
   if (same >= 2) return await stopLimit(st, "team_no_change");
@@ -364,9 +353,14 @@ async function stopFail(st: Ctx, res: MemberResult): Promise<TeamOut> {
   return { result: { kind: "failed", reason }, usage: st.usage, jobId: st.lastJobId };
 }
 
-async function pauseAsk(st: Ctx, qs: { role: string; q: string }[]): Promise<TeamOut> {
+/** `cursor` = index thành viên đã hỏi ⇒ resume chạy tiếp đúng từ đó (sequential). */
+async function pauseAsk(
+  st: Ctx,
+  qs: { role: string; q: string }[],
+  cursor: number,
+): Promise<TeamOut> {
   const merged = mergeQuestions(qs.map((x) => ({ member: "", role: x.role, question: x.q })));
-  await markWaiting(st.d, st.teamRunId, st.callIdx);
+  await markWaiting(st.d, st.teamRunId, cursor);
   return {
     result: { kind: "need_input", question: merged.question, choices: merged.choices },
     usage: st.usage,
