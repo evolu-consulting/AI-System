@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
@@ -94,7 +94,13 @@ export function RoomView({ roomId, openFlowId }: { roomId: string; openFlowId?: 
   const { hide, hiding } = useHide(roomId);
   const [dialog, setDialog] = useState<RoomDialogKind | null>(null);
 
-  if (isRoomNotFound(room.error) || isRoomNotFound(msgs.error)) return <RoomNotFound />;
+  // E-P20 (U5): rời phòng ⇒ phòng 404; bỏ `?flow=` khỏi URL (thread pane không mount để tự bỏ) rồi hiện "không tìm thấy".
+  const roomGone = isRoomNotFound(room.error) || isRoomNotFound(msgs.error);
+  const drop = flowNav.drop;
+  useEffect(() => {
+    if (roomGone && openFlowId) drop();
+  }, [roomGone, openFlowId, drop]);
+  if (roomGone) return <RoomNotFound />;
   const group = room.data?.kind === "group";
   const newCount = scroll.atBottom ? 0 : newFromOthers(messages, scroll.seenSeq, myId);
 
