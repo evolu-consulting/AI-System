@@ -40,6 +40,10 @@
     },
     "banner": "Bạn không ở phòng này. Bạn chỉ xem được phần cần xử lý (kết quả hoặc câu hỏi của việc này), không đọc được tin nhắn khác. Quyền xem gắn với việc này và được ghi nhật ký.",
     "meta": "{{starter}} khởi chạy · {{time}} · giai đoạn {{n}}/{{total}}",
+    "openFlow": "Mở luồng trong phòng",
+    "outputs": "Kết quả",
+    "outputTitle": "Kết quả giai đoạn {{stage}} · v{{n}}",
+    "viewOutput": "Xem kết quả",
     "log": {
       "empty": "Chưa có hoạt động",
       "review": "{{actor}} kiểm: {{result}}",

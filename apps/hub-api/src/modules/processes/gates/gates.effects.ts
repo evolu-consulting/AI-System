@@ -62,8 +62,11 @@ export function buildState(p: StateIn): RunState {
   };
 }
 
+// T8 · `outside` theo NGƯỜI thao tác (= người scope tx). `g.isOutside` đọc `room_members` dưới RLS: người ngoài phòng
+// không thấy hàng ⇒ outside (đúng). KHÔNG dùng `originRoomOf` ở đây — nó đọc `hub.rooms` mà RLS giấu với người ngoài
+// phòng nên trả "deleted" (⇒ outside=false sai). roomId null / origin ≠ room ⇒ false.
 const isOutside = (gx: Gx, run: Locked, userId: string) =>
-  g.originRoomOf(gx.tx, run.originKind, run.originRoomId, userId).then((r) => r === "outside");
+  g.isOutside(gx.tx, run.originRoomId, userId);
 
 type ResultMeta = {
   run: Locked;

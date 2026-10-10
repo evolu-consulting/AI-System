@@ -40,6 +40,10 @@
     },
     "banner": "You aren't in this room. You can only see the part you need to handle (this item's output or question), not other messages. Your access is tied to this item and is logged.",
     "meta": "Started by {{starter}} · {{time}} · stage {{n}}/{{total}}",
+    "openFlow": "Open flow in room",
+    "outputs": "Outputs",
+    "outputTitle": "Stage output {{stage}} · v{{n}}",
+    "viewOutput": "View output",
     "log": {
       "empty": "No activity yet",
       "review": "{{actor}} reviewed: {{result}}",
