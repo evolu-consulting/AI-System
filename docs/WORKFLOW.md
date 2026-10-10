@@ -100,7 +100,7 @@ Một session làm một mốc → giữ cách cũ: commit thẳng `main` (Luậ
 - Mỗi session **một git worktree + một nhánh** `feat/<mốc>-<feature>` (vd `feat/pa-pf2-ask`), tạo từ `main` sau Bước 0: `git worktree add ../ai-system-pf2 -b feat/pa-pf2-ask`. Không dùng chung thư mục, không đổi nhánh qua lại trong một thư mục.
 - **Nhánh sống ngắn** (một feature, vài ngày). Mỗi lần `main` có merge mới → các nhánh đang mở **rebase ngay**.
 - Feature chưa xong vẫn được merge sớm nếu nằm sau **cờ bật/tắt** (mặc định tắt).
-- Bật cho mọi worktree: `git config merge.conflictStyle zdiff3` và `git config rerere.enabled true`.
+- Bật cho mọi worktree: `git config merge.conflictStyle zdiff3` (git ≥ 2.35; máy này git 2.34 → `diff3`) và `git config rerere.enabled true`.
 
 ### 3. Cổng merge vào `main` (session chính, lần lượt từng nhánh)
 1. Chủ nhánh **rebase lên `main` mới nhất** và tự gỡ conflict.
@@ -112,7 +112,7 @@ Một session làm một mốc → giữ cách cũ: commit thẳng `main` (Luậ
 
 ### 4. Gỡ conflict
 - **Ai viết nhánh thì người đó gỡ** (biết ý đồ). Người tích hợp không đoán; gặp conflict lớn → trả lại chủ nhánh.
-- Hiểu ý bên kia qua: commit có mã `[FR]` → spec · `tasks.md` + ghi chú bàn giao của nhánh đã merge · khối `zdiff3` (bản gốc / main / mình). Vẫn không chắc → hỏi session viết nhánh kia (SendMessage).
+- Hiểu ý bên kia qua: commit có mã `[FR]` → spec · `tasks.md` + ghi chú bàn giao của nhánh đã merge · khối `zdiff3`/`diff3` (bản gốc / main / mình). Vẫn không chắc → hỏi session viết nhánh kia (SendMessage).
 - Theo loại file: file sinh tự động (`routeTree.gen.ts`…) → không gỡ tay, sinh lại · lockfile → lấy bản `main` rồi `bun install` · migration trùng số → đánh lại số nhánh mình / sinh lại · i18n, danh sách đăng ký (nav, route, export) → giữ cả hai · **logic thật** → ghép giữ ý cả hai, rồi test cả hai feature phải xanh.
 - **Conflict ngữ nghĩa** (git không báo, ghép xong test feature trước đỏ): nhánh đến sau sửa. Code sai → sửa code. Hai spec loại trừ nhau / test quá chặt → **Tranh chấp test** (không tự sửa test của feature khác), qc + người dùng quyết, sửa spec (có thể CR) trước.
 - Không format/đổi tên hàng loạt trong nhánh feature — làm nhánh riêng, merge riêng.
