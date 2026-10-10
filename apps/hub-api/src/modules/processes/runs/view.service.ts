@@ -1,0 +1,382 @@
+// HUB-FR-113 · HUB-BR-25/26 · T8 · U5 · PF1 · `GET /process-runs/:id` (full/task theo người xem) + `/outputs/:oid`
+// (plan §5, plan-contract §2–§3). Đọc scope `system` + lọc `tenant_id`; quyền = `runAccess`/`canAct` thuần (HUB-BR-25).
+// Audit `view`: assignee lần đầu mỗi (task, user); người bắt đầu đã rời phòng (U5) + mỗi lần đọc output.
+import type {
+  DecisionOption,
+  DecisionReason,
+  ExecutorRef,
+  OutputRef,
+  ProcessOutput,
+  ProcessRunStatus,
+  ProcessRunView,
+  StageRunStatus,
+  StageView,
+} from "@ai/contracts/chat";
+import type { Tx } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
+import { sql } from "drizzle-orm";
+import type { AuthUser } from "../../../lib/auth.middleware";
+import type { Db } from "../../../lib/db";
+import { clipEntityName, dbHubAudit } from "../../../lib/hub-audit";
+import type { ConfigCache } from "../../config/config.service";
+import { processError } from "../core/errors";
+import { isTerminal } from "../core/process-state.rules";
+import {
+  canCancel,
+  canDecide,
+  canReadThread,
+  type RunFacts,
+  runAccess,
+  type Viewer,
+} from "../core/run-access.rules";
+import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
+import * as repo from "./runs.repo";
+
+export type ViewDeps = { db: Db; config: Pick<ConfigCache, "user"> };
+
+type Snap = { key: string; name: string; stages: SnapStage[] };
+type SnapStage = {
+  key: string;
+  name: string;
+  executor: { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
+  after: { kind: "review"; group_id: string | null } | { kind: "auto" };
+  real_action: boolean;
+};
+type RunRow = repo.RunSummaryRow & {
+  tenant_id: string;
+  input: string;
+  flow_id: string;
+  origin_room: RunFacts["originRoom"];
+};
+type OutputRow = {
+  id: string;
+  stage_idx: number;
+  version: number;
+  attempt: number;
+  template_ok: boolean;
+  template_missing: string[] | null;
+  created_at: string;
+};
+
+const iso = (c: string) =>
+  sql.raw(`to_char(${c} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`);
+const idsArr = (ids: readonly string[]) => sql.raw(`'{${ids.join(",")}}'::uuid[]`);
+const toOutputRef = (o: OutputRow): OutputRef => ({
+  id: o.id,
+  version: Number(o.version),
+  attempt: Number(o.attempt),
+  template_ok: o.template_ok,
+  template_missing: o.template_missing ?? [],
+  created_at: o.created_at,
+});
+const vrole = (role: AuthUser["role"]): Viewer["role"] =>
+  role === "platform_admin" || role === "tenant_admin" ? role : "member";
+const viewerOf = (u: AuthUser): Viewer => ({
+  userId: u.userId,
+  tenantId: u.tenantId,
+  role: vrole(u.role),
+});
+const factsOf = (r: RunRow): RunFacts => ({
+  tenantId: r.tenant_id,
+  startedBy: r.started_by,
+  originRoom: r.origin_room,
+  taskAssignee: false,
+});
+
+async function viewerCtx(d: ViewDeps, u: AuthUser): Promise<ViewerCtx> {
+  const state = await d.config.user(u.userId);
+  return { ...viewerOf(u), groupIds: state?.groupIds ?? new Set<string>() };
+}
+
+/** Đọc dưới scope `user` của người xem (plan §5, RLS T). platform_admin + `?tenant_id` ⇒ đọc scope tenant đích. */
+const scopeOf = (v: ViewerCtx, tenantIdQ?: string) => ({
+  kind: "user" as const,
+  userId: v.userId,
+  tenantId: v.role === "platform_admin" && tenantIdQ ? tenantIdQ : v.tenantId,
+});
+
+/** Run + facts phòng cho người xem (scope system; lọc id). */
+async function runRow(tx: Tx, runId: string, viewerId: string): Promise<RunRow | null> {
+  const [r] = await tx.execute<RunRow>(sql`
+    select r.id, r.tenant_id, r.snapshot, r.def_version, r.status, r.current_stage_idx, r.origin_kind,
+      r.origin_room_id, r.origin_conversation_id, r.started_by, u.display_name as started_by_name, r.decision,
+      r.input, r.flow_id, ${iso("r.started_at")} as started_at, ${iso("r.updated_at")} as updated_at,
+      ${iso("r.finished_at")} as finished_at,
+      case when r.origin_kind <> 'room' then 'none'
+        when rm.id is null or rm.deleted_at is not null then 'deleted'
+        when exists (select 1 from hub.room_members m where m.room_id = rm.id and m.user_id = ${viewerId}
+          and m.left_at is null) then 'member'
+        else 'outside' end as origin_room
+    from hub.process_runs r
+    left join admin.users u on u.id = r.started_by and u.tenant_id = r.tenant_id
+    left join hub.rooms rm on rm.id = r.origin_room_id
+    where r.id = ${runId}`);
+  return r ?? null;
+}
+
+/** ExecutorRef của stage từ snapshot. Tên agent/team hiển thị ở FE dựng từ thread/usage (`process.steps`); view
+ * dùng id làm key + name (tên định danh giữ ở thread events, không truy vấn `agents` ở mỗi lần xem). */
+const execRef = (s: SnapStage): ExecutorRef => {
+  const id = s.executor.kind === "agent" ? s.executor.agent_id : s.executor.team_id;
+  return { kind: s.executor.kind, key: id, name: { vi: id, en: id } };
+};
+
+type StageRunRow = {
+  stage_idx: number;
+  status: StageRunStatus;
+  attempt: number;
+  attempt_limit: number;
+  asks_count: number;
+  ask_limit: number;
+  current_output_id: string | null;
+  passed_by: string | null;
+  passed_by_name: string | null;
+  passed_at: string | null;
+};
+
+async function stageViews(tx: Tx, r: RunRow, snap: Snap): Promise<StageView[]> {
+  const srs = await tx.execute<StageRunRow>(sql`
+    select s.stage_idx, s.status, s.attempt, s.attempt_limit, s.asks_count, s.ask_limit, s.current_output_id,
+      s.passed_by, pu.display_name as passed_by_name, ${iso("s.passed_at")} as passed_at
+    from hub.stage_runs s left join admin.users pu on pu.id = s.passed_by and pu.tenant_id = s.tenant_id
+    where s.process_run_id = ${r.id} and s.tenant_id = ${r.tenant_id} order by s.stage_idx`);
+  const outs = await tx.execute<OutputRow>(sql`
+    select id, stage_idx, version, attempt, template_ok, template_missing, ${iso("created_at")} as created_at
+    from hub.process_outputs where process_run_id = ${r.id} and tenant_id = ${r.tenant_id} order by stage_idx, version`);
+  return srs.map((sr): StageView => {
+    const i = Number(sr.stage_idx);
+    const def = snap.stages[i];
+    return {
+      idx: i,
+      key: def?.key ?? `#${i + 1}`,
+      name: def?.name ?? `#${i + 1}`,
+      executor: def ? execRef(def) : { kind: "agent", key: "?", name: { vi: "?", en: "?" } },
+      after: def?.after.kind ?? "auto",
+      real_action: def?.real_action ?? false,
+      status: sr.status,
+      attempt: Number(sr.attempt),
+      attempt_limit: Number(sr.attempt_limit),
+      asks_count: Number(sr.asks_count),
+      ask_limit: Number(sr.ask_limit),
+      outputs: outs
+        .filter((o) => Number(o.stage_idx) === i)
+        .map(toOutputRef)
+        .slice(0, 20),
+      current_output_id: sr.current_output_id,
+      passed_by: sr.passed_by
+        ? { id: sr.passed_by, display_name: sr.passed_by_name ?? sr.passed_by }
+        : null,
+      passed_at: sr.passed_at,
+    };
+  });
+}
+
+const myTaskIds = (tx: Tx, r: RunRow, v: ViewerCtx): Promise<string[]> =>
+  repo.assigneeTaskIds(tx, {
+    runId: r.id,
+    tenantId: r.tenant_id,
+    userId: v.userId,
+    groupIds: [...v.groupIds],
+  });
+
+async function auditView(
+  tx: Tx,
+  u: AuthUser,
+  o: { entity: "process_run" | "review_task"; tenantId: string; entityId: string; name: string },
+): Promise<void> {
+  await dbHubAudit.insert(tx, {
+    tenantId: o.tenantId,
+    actorId: u.userId,
+    actorUsername: null,
+    actorRole: viewerOf(u).role,
+    action: "view",
+    entity: o.entity,
+    entityId: o.entityId,
+    entityName: clipEntityName(o.name),
+    hubConfigVersion: null,
+    before: null,
+    after: null,
+    summary: {},
+  });
+}
+
+type ViewCtx = {
+  tx: Tx;
+  u: AuthUser;
+  v: ViewerCtx;
+  r: RunRow;
+  snap: Snap;
+  myIds: string[];
+};
+
+const notFound = () => processError("PROCESS_NOT_FOUND", { suggestions: [] });
+
+export class ViewService {
+  constructor(private readonly d: ViewDeps) {}
+
+  /** `GET /process-runs/:id` (`tenant_id?` cho platform_admin). 404 nếu không thấy / không quyền. */
+  async get(u: AuthUser, runId: string, tenantIdQ?: string): Promise<ProcessRunView> {
+    const v = await viewerCtx(this.d, u);
+    return withHubScope(this.d.db, scopeOf(v, tenantIdQ), async (tx) => {
+      const r = await runRow(tx, runId, u.userId);
+      if (!r) throw notFound();
+      if (tenantIdQ && v.role === "platform_admin" && r.tenant_id !== tenantIdQ) throw notFound();
+      const myIds = await myTaskIds(tx, r, v);
+      const access = runAccess(v, { ...factsOf(r), taskAssignee: myIds.length > 0 });
+      if (!access) throw notFound();
+      const snap = r.snapshot as unknown as Snap;
+      const vc: ViewCtx = { tx, u, v, r, snap, myIds };
+      return access === "task" ? this.#task(vc) : this.#full(vc);
+    });
+  }
+
+  async #full({ tx, v, r, snap, myIds }: ViewCtx): Promise<ProcessRunView> {
+    const [stages, open, my, hist] = await Promise.all([
+      stageViews(tx, r, snap),
+      repo.openTaskViews(tx, r.id, r.tenant_id),
+      loadTaskDetails(tx, v, myIds),
+      repo.loadHistory(tx, r.id, r.tenant_id),
+    ]);
+    const facts = factsOf(r);
+    return {
+      ...repo.toSummary(r),
+      access: "full",
+      input: r.input,
+      stages,
+      history: hist,
+      decision: this.#decision(v, r),
+      my_tasks: my,
+      open_tasks: open,
+      thread: canReadThread(v, facts)
+        ? { room_id: r.origin_room_id as string, flow_id: r.flow_id }
+        : null,
+      can_cancel: canCancel(v, facts),
+    };
+  }
+
+  #decision(v: ViewerCtx, r: RunRow) {
+    if (r.status !== "needs_decision" || !r.decision) return null;
+    const dec = r.decision as {
+      reason: DecisionReason;
+      stage_idx: number;
+      options: DecisionOption[];
+    };
+    const snap = r.snapshot as unknown as Snap;
+    const after = snap.stages[Number(r.current_stage_idx)]?.after;
+    const gid = after?.kind === "review" ? after.group_id : null;
+    const reviewGroupMember = gid !== null && gid !== undefined && v.groupIds.has(gid);
+    return {
+      reason: dec.reason,
+      stage_idx: Number(dec.stage_idx),
+      options: dec.options,
+      can_decide: canDecide(v, { ...factsOf(r), reason: dec.reason, reviewGroupMember }),
+    };
+  }
+
+  /** Task view (assignee / người bắt đầu đã rời — U5). Audit `view`. */
+  async #task({ tx, u, v, r, snap, myIds }: ViewCtx): Promise<ProcessRunView> {
+    const starterLeft = v.userId === r.started_by && myIds.length === 0;
+    const my = await loadTaskDetails(tx, v, myIds);
+    const srs = await tx.execute<{ stage_idx: number; status: StageRunStatus }>(sql`
+      select stage_idx, status from hub.stage_runs where process_run_id = ${r.id} and tenant_id = ${r.tenant_id}
+      order by stage_idx`);
+    const stages = isTerminal(r.status as ProcessRunStatus)
+      ? []
+      : srs.map((s) => ({
+          idx: Number(s.stage_idx),
+          name: snap.stages[Number(s.stage_idx)]?.name ?? `#${Number(s.stage_idx) + 1}`,
+          status: s.status,
+        }));
+    const base = {
+      access: "task" as const,
+      id: r.id,
+      process: { key: snap.key, name: snap.name },
+      status: r.status as ProcessRunStatus,
+      stages,
+      my_tasks: my,
+    };
+    if (starterLeft) {
+      const outs = await tx.execute<OutputRow>(sql`
+        select id, stage_idx, version, attempt, template_ok, template_missing, ${iso("created_at")} as created_at
+        from hub.process_outputs where process_run_id = ${r.id} and tenant_id = ${r.tenant_id}
+        order by stage_idx, version limit ${50}`);
+      await auditView(tx, u, {
+        entity: "process_run",
+        tenantId: r.tenant_id,
+        entityId: r.id,
+        name: snap.name,
+      });
+      return { ...base, outputs: outs.map(toOutputRef), can_cancel: canCancel(v, factsOf(r)) };
+    }
+    for (const id of myIds) await this.#auditFirst({ tx, u, r, snap, v, myIds }, id);
+    return base;
+  }
+
+  /** Assignee: audit `view` (review_task) lần đầu mỗi (task, user) qua `first_viewed_at`. */
+  async #auditFirst({ tx, u, r, snap }: ViewCtx, taskId: string): Promise<void> {
+    const rows = await tx.execute<{ id: string }>(sql`
+      update hub.review_task_assignees set first_viewed_at = now()
+      where task_id = ${taskId} and tenant_id = ${r.tenant_id} and user_id = ${u.userId}
+        and first_viewed_at is null returning id`);
+    if (rows.length > 0)
+      await auditView(tx, u, {
+        entity: "review_task",
+        tenantId: r.tenant_id,
+        entityId: taskId,
+        name: snap.name,
+      });
+  }
+
+  /** `GET /process-runs/:id/outputs/:oid`. Full ⇒ mọi output; task ⇒ của task mình (U5 starter ⇒ mọi output). */
+  async output(u: AuthUser, runId: string, outputId: string): Promise<ProcessOutput> {
+    const v = await viewerCtx(this.d, u);
+    return withHubScope(this.d.db, scopeOf(v), async (tx) => {
+      const r = await runRow(tx, runId, u.userId);
+      if (!r) throw notFound();
+      const myIds = await myTaskIds(tx, r, v);
+      const access = runAccess(v, { ...factsOf(r), taskAssignee: myIds.length > 0 });
+      if (!access) throw notFound();
+      const [o] = await tx.execute<
+        OutputRow & { content: string; fields: Record<string, string | number> | null }
+      >(sql`
+        select id, stage_idx, version, attempt, template_ok, template_missing, fields, content,
+          ${iso("created_at")} as created_at
+        from hub.process_outputs where id = ${outputId} and process_run_id = ${runId} and tenant_id = ${r.tenant_id}`);
+      if (!o) throw notFound();
+      const starterLeft = v.userId === r.started_by && r.origin_room === "outside";
+      if (access === "task" && !starterLeft && !(await inMyTask(tx, r.tenant_id, myIds, outputId)))
+        throw notFound();
+      const snap = r.snapshot as unknown as Snap;
+      await auditView(tx, u, {
+        entity: "process_run",
+        tenantId: r.tenant_id,
+        entityId: runId,
+        name: snap.name,
+      });
+      return {
+        id: o.id,
+        stage_idx: Number(o.stage_idx),
+        version: Number(o.version),
+        attempt: Number(o.attempt),
+        content: o.content,
+        fields: o.fields ?? null,
+        template_ok: o.template_ok,
+        template_missing: o.template_missing ?? [],
+        created_at: o.created_at,
+      };
+    });
+  }
+}
+
+async function inMyTask(
+  tx: Tx,
+  tenantId: string,
+  myIds: string[],
+  outputId: string,
+): Promise<boolean> {
+  if (myIds.length === 0) return false;
+  const [row] = await tx.execute<{ n: number }>(sql`
+    select 1 as n from hub.review_tasks where output_id = ${outputId} and tenant_id = ${tenantId}
+      and id = any(${idsArr(myIds)}) limit 1`);
+  return row !== undefined;
+}

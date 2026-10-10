@@ -15,8 +15,13 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
 import { lockFor } from "../../rooms/manage/rooms.service";
-import { advanceRead, bumpSeq, fanout, findByClientId } from "../../rooms/messages/messages.repo";
-import type { SendResult } from "../../rooms/messages/messages.service";
+import {
+  advanceRead,
+  bumpSeq,
+  fanout,
+  findByClientId,
+  type SendResult,
+} from "../../rooms/messages/messages.service";
 import { messageEvents } from "../../rooms/room-events";
 import { toRoomMessage } from "../../rooms/rooms.map";
 import type { Bang } from "../core/bang.rules";
@@ -60,73 +65,92 @@ export class StartService {
   ): Promise<SendResult> {
     const me = meOf(u);
     const userState = await this.d.config.user(u.userId);
-    const { out, events, runId } = await withHubScope(
-      this.d.db,
-      { kind: "user", ...me },
-      async (tx) => {
-        await lockFor(tx, me, roomId, "send");
-        const dup = await findByClientId(tx, me, roomId, body.client_msg_id);
-        if (dup)
-          return {
-            out: {
-              message: toRoomMessage(dup),
-              created: false,
-              ...(dup.processRunId && {
-                process: { runId: dup.processRunId, flowId: dup.flowId as string },
-              }),
-            } as SendResult,
-            events: [],
-            runId: null as string | null,
-          };
-        const def = await this.#resolve(tx, u, userState, bang);
-        const r = await this.#insert(tx, u, def, bang.kind === "process" ? bang.input : "", {
-          originKind: "room",
-          originRoomId: roomId,
-          originConversationId: null,
-        });
-        const { seq, at } = await bumpSeq(tx, me, roomId);
-        await advanceRead(tx, me, roomId, seq);
-        const msg = await repo.insertCallMessage(tx, {
-          tenantId: u.tenantId,
-          userId: u.userId,
-          roomId,
-          seq,
-          at,
-          content: body.content,
-          clientMsgId: body.client_msg_id,
-          flowId: r.flowId,
-          runId: r.runId,
-        });
-        await repo.setTrigger(tx, r.runId, msg.id);
-        await this.#enqueueBlock(tx, r.runId, def);
-        const message = toRoomMessage({
-          id: msg.id,
-          roomId: msg.room_id,
-          seq: Number(msg.seq),
-          senderType: "user",
-          sender: { id: u.userId, displayName: msg.display_name, username: msg.username },
-          content: msg.content,
-          clientMsgId: msg.client_msg_id,
-          createdAt: new Date(msg.created_at),
-          flowId: msg.flow_id,
-          placement: "main",
-          processRunId: msg.process_run_id,
-        });
-        const fan = await fanout(tx, roomId);
-        return {
-          out: {
-            message,
-            created: true,
-            process: { runId: r.runId, flowId: r.flowId },
-          } as SendResult,
-          events: messageEvents(roomId, message, fan),
-          runId: r.runId,
-        };
-      },
+    const { out, events, runId } = await withHubScope(this.d.db, { kind: "user", ...me }, (tx) =>
+      this.#roomStartTx(tx, { me, u, roomId, body, bang, userState }),
     );
     await publishUserEvents(this.d.redis, events, this.d.log);
     if (runId) await this.#afterCommit(runId, true);
     return out;
+  }
+
+  /** Tx scope user người gửi (§10): trùng `client_msg_id` ⇒ tin cũ; else tạo run + tin gọi + khối thread. */
+  async #roomStartTx(
+    tx: Tx,
+    c: {
+      me: Me;
+      u: AuthUser;
+      roomId: string;
+      body: SendRoomMessageRequest;
+      bang: StartBang;
+      userState: Awaited<ReturnType<ProcessDepsCore["config"]["user"]>>;
+    },
+  ): Promise<{ out: SendResult; events: ReturnType<typeof messageEvents>; runId: string | null }> {
+    const { me, u, roomId, body, bang, userState } = c;
+    await lockFor(tx, me, roomId, "send");
+    const dup = await findByClientId(tx, me, roomId, body.client_msg_id);
+    if (dup)
+      return {
+        out: {
+          message: toRoomMessage(dup),
+          created: false,
+          ...(dup.processRunId && {
+            process: { runId: dup.processRunId, flowId: dup.flowId as string },
+          }),
+        },
+        events: [],
+        runId: null,
+      };
+    const def = await this.#resolve(tx, u, userState, bang);
+    const r = await this.#insert(tx, u, {
+      def,
+      input: bang.kind === "process" ? bang.input : "",
+      origin: { originKind: "room", originRoomId: roomId, originConversationId: null },
+    });
+    return this.#writeCall(tx, { me, u, roomId, body }, def, r);
+  }
+
+  /** Tin gọi `!key` (user, `main`) + khối thread `block` + sự kiện phòng. */
+  async #writeCall(
+    tx: Tx,
+    c: { me: Me; u: AuthUser; roomId: string; body: SendRoomMessageRequest },
+    def: repo.StartDefRow,
+    r: { runId: string; flowId: string },
+  ): Promise<{ out: SendResult; events: ReturnType<typeof messageEvents>; runId: string }> {
+    const { me, u, roomId, body } = c;
+    const { seq, at } = await bumpSeq(tx, me, roomId);
+    await advanceRead(tx, me, roomId, seq);
+    const msg = await repo.insertCallMessage(tx, {
+      tenantId: u.tenantId,
+      userId: u.userId,
+      roomId,
+      seq,
+      at,
+      content: body.content,
+      clientMsgId: body.client_msg_id,
+      flowId: r.flowId,
+      runId: r.runId,
+    });
+    await repo.setTrigger(tx, r.runId, msg.id);
+    await this.#enqueueBlock(tx, r.runId, def);
+    const message = toRoomMessage({
+      id: msg.id,
+      roomId: msg.room_id,
+      seq: Number(msg.seq),
+      senderType: "user",
+      sender: { id: u.userId, displayName: msg.display_name, username: msg.username },
+      content: msg.content,
+      clientMsgId: msg.client_msg_id,
+      createdAt: new Date(msg.created_at),
+      flowId: msg.flow_id,
+      placement: "main",
+      processRunId: msg.process_run_id,
+    });
+    const fan = await fanout(tx, roomId);
+    return {
+      out: { message, created: true, process: { runId: r.runId, flowId: r.flowId } },
+      events: messageEvents(roomId, message, fan),
+      runId: r.runId,
+    };
   }
 
   /** `POST /process-runs` (nút ▶ / origin none / conversation). */
@@ -154,7 +178,7 @@ export class StartService {
           key: req.process_key,
           input: req.input,
         });
-        const r = await this.#insert(tx, u, def, req.input, origin);
+        const r = await this.#insert(tx, u, { def, input: req.input, origin });
         if (origin.originKind === "room") await this.#enqueueBlock(tx, r.runId, def);
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);
         return {
@@ -181,10 +205,14 @@ export class StartService {
       { kind: "user", ...me },
       async (tx) => {
         const def = await this.#resolve(tx, u, userState, bang);
-        const r = await this.#insert(tx, u, def, bang.kind === "process" ? bang.input : "", {
-          originKind: "conversation",
-          originRoomId: null,
-          originConversationId: conversationId,
+        const r = await this.#insert(tx, u, {
+          def,
+          input: bang.kind === "process" ? bang.input : "",
+          origin: {
+            originKind: "conversation",
+            originRoomId: null,
+            originConversationId: conversationId,
+          },
         });
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);
         return { summary: repo.toSummary(row as repo.RunSummaryRow), runId: r.runId };
@@ -203,10 +231,10 @@ export class StartService {
       async (tx) => {
         const def = await repo.findDefById(tx, u.tenantId, defId);
         if (!def) throw processError("PROCESS_NOT_FOUND", { suggestions: [] });
-        const r = await this.#insert(tx, u, def, input, {
-          originKind: "admin",
-          originRoomId: null,
-          originConversationId: null,
+        const r = await this.#insert(tx, u, {
+          def,
+          input,
+          origin: { originKind: "admin", originRoomId: null, originConversationId: null },
         });
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);
         return { summary: repo.toSummary(row as repo.RunSummaryRow), runId: r.runId };
@@ -313,12 +341,14 @@ export class StartService {
   async #insert(
     tx: Tx,
     u: AuthUser,
-    def: repo.StartDefRow,
-    input: string,
-    origin: {
-      originKind: "room" | "conversation" | "admin";
-      originRoomId: string | null;
-      originConversationId: string | null;
+    p: {
+      def: repo.StartDefRow;
+      input: string;
+      origin: {
+        originKind: "room" | "conversation" | "admin";
+        originRoomId: string | null;
+        originConversationId: string | null;
+      };
     },
   ): Promise<{ runId: string; flowId: string }> {
     await repo.lockTenant(tx, u.tenantId);
@@ -333,11 +363,11 @@ export class StartService {
       tenantId: u.tenantId,
       convId: crypto.randomUUID(),
       flowId,
-      def,
+      def: p.def,
       startedBy: u.userId,
-      input,
+      input: p.input,
       expiresAt: new Date(this.d.now().getTime() + PROCESS_RUN_TTL_DAYS * DAY_MS),
-      ...origin,
+      ...p.origin,
     });
     return { runId, flowId };
   }

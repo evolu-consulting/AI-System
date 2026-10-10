@@ -22,6 +22,9 @@ import { toRoomMessage } from "../rooms.map";
 import { clampReadSeq, type RoomAction, unreadOf } from "../rooms.rules";
 import * as repo from "./messages.repo";
 
+/** Seam dùng chung (CR-059 depcruise): PF1 `start.service` ghi tin gọi `!key` qua service, không import repo phòng. */
+export { advanceRead, bumpSeq, fanout, findByClientId } from "./messages.repo";
+
 /** `run` có ⇔ tin đã gọi agent (header `X-Run-Id`/`X-Flow-Id`, X2b D11); `process` ⇔ tin gọi `!key` (P-a T1). */
 export type SendResult = {
   message: RoomMessage;

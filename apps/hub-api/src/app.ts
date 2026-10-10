@@ -13,14 +13,14 @@ import {
 } from "@ai/contracts/chat";
 import { Hono, type MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
-import { mountDifyCredential, workflowJobs } from "./app.async";
+import { DEFAULT_JOB_MAX_WAIT_S, mountDifyCredential, workflowJobs } from "./app.async";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountH2b } from "./app.h2b";
 import { mountH2c } from "./app.h2c";
 import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp } from "./app.mcp";
-import { runDrivers, startRunLoops } from "./app.runner";
+import { agentRunner, runDrivers, startRunLoops } from "./app.runner";
 import {
   mountRoomAgents,
   mountX2a,
@@ -47,6 +47,7 @@ import {
   type ProcessMountDeps,
   type ProcessSeams,
 } from "./modules/processes/processes.mount";
+import { RunStreamReader } from "./modules/runner/run-stream-reader";
 import { cancelRoutes } from "./modules/runs/close/cancel.routes";
 import { CancelService } from "./modules/runs/close/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
@@ -165,13 +166,32 @@ function commandDrivers(deps: AppDeps, db: Db) {
   });
 }
 
-/** P-a D15 · cờ bật: module quy trình + nối `!` vào phòng (T1/T7); trả cổng `!` của Hỏi AI (D14). */
+/** P-a N4 · `AgentRunner` cho job stage quy trình (dùng `RunStreamReader` riêng, cùng cấu hình runner chính). */
+function processRunner(deps: AppDeps, base: { db: Db; redis: Redis }, config: ConfigCache) {
+  return agentRunner({
+    db: base.db,
+    owner: instanceOwner(deps),
+    reader: new RunStreamReader(base.redis, logger, deps.signal),
+    maxWaitS: deps.jobMaxWaitS ?? DEFAULT_JOB_MAX_WAIT_S,
+    config,
+    log: logger,
+    publicInternalUrl: deps.publicInternalUrl,
+    secretMasterKey: deps.secretMasterKey,
+  });
+}
+
+/** P-a D15 · cờ bật: module quy trình + runner stage (N4) + nối `!` vào phòng (T1/T7); trả cổng `!` Hỏi AI (D14). */
 function processHooks(
   app: Hono<AppVars>,
   deps: AppDeps,
-  m: Omit<ProcessMountDeps, keyof ProcessSeams> & { messages: X2aMounted["messages"] },
-): ProcessStartPort {
-  const proc = mountProcesses(app, { ...m, signal: deps.signal, ...seamsOf(deps) });
+  m: Omit<ProcessMountDeps, keyof ProcessSeams | "runner"> & {
+    config: ConfigCache;
+    messages: X2aMounted["messages"];
+  },
+): ProcessStartPort | undefined {
+  if (!deps.processEngine) return undefined;
+  const runner = processRunner(deps, m, m.config);
+  const proc = mountProcesses(app, { ...m, runner, signal: deps.signal, ...seamsOf(deps) });
   m.messages.useProcesses(proc.roomSender);
   return proc.conversationStart;
 }
@@ -221,9 +241,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     "/conversations",
     conversationRoutes(deps.db, (u, id) => cancel.removeConversation(u, id)),
   );
-  const processStart = deps.processEngine
-    ? processHooks(app, deps, { ...base, config, runs, messages: x2a.messages })
-    : undefined;
+  const processStart = processHooks(app, deps, { ...base, config, runs, messages: x2a.messages });
   const prepare = { command: h2a.prepareCommand, mention: h2b.prepareMention, processStart };
   app.route("/conversations", sendMessageRoutes(conversations, runs, prepare));
   app.route("/runs", runRoutes(runs));

@@ -8,6 +8,7 @@ import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
 import type { UserEvent } from "../../../lib/user-stream";
 import type { ConfigCache } from "../../config/config.service";
+import type { AgentRunner } from "../../runner/job/job-agent-runner";
 import type { RunService } from "../../runs/runs.service";
 import type { Bang } from "./bang.rules";
 import type { Clock } from "./clock";
@@ -63,6 +64,8 @@ export type ProcessDeps = {
   redis: Redis;
   config: ConfigCache;
   runs: RunService;
+  /** PF1 · chạy job stage (agent đơn / từng thành viên nhóm) — `AgentRunner` dùng chung của instance (N4). */
+  runner: AgentRunner;
   log: Logger;
   now: Clock;
   runsPerTenant: number;

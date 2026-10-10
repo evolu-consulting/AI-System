@@ -1,7 +1,12 @@
 // HUB-FR-105 · HUB-FR-113 · PF1 · SQL bắt đầu + liệt kê run (plan §2.1, §4, §10; plan-contract §3). Chạy trong
 // `withHubScope({kind:"user"})` của người bắt đầu/người xem; mọi câu lọc `tenant_id` tường minh, RLS T là lưới.
 // Khoá bắt đầu (§10): rooms (tin gọi) → advisory `process:<tenant>` → process_runs. Không log nội dung.
-import type { ProcessRunStatus, ProcessRunSummary } from "@ai/contracts/chat";
+import type {
+  HistoryItem,
+  OpenTask,
+  ProcessRunStatus,
+  ProcessRunSummary,
+} from "@ai/contracts/chat";
 import { PROCESS_RUN_ACTIVE } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
@@ -298,6 +303,85 @@ export function decodeCursor(raw: string): [string, string] {
     // rơi xuống lỗi dưới
   }
   throw appError("VALIDATION_ERROR");
+}
+
+// ── view (GET /process-runs/:id) — plan-contract §2 ──
+type HistoryRow = {
+  task_id: string;
+  kind: HistoryItem["kind"];
+  stage_idx: number;
+  result: HistoryItem["result"] | null;
+  feedback: string | null;
+  decided_by: string | null;
+  actor_name: string | null;
+  decided_at: string | null;
+};
+
+/** `history` full view: task review/decision đã đóng, theo thời gian (≤ 200); `ask`/`forward` ở thread (plan-thread §2). */
+export async function loadHistory(tx: Tx, runId: string, tenantId: string): Promise<HistoryItem[]> {
+  const rows = await tx.execute<HistoryRow>(sql`
+    select t.id as task_id, t.kind, s.stage_idx, t.result, t.feedback, t.decided_by,
+      u.display_name as actor_name, ${iso(sql`t.decided_at`)} as decided_at
+    from hub.review_tasks t
+    join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
+    left join admin.users u on u.id = t.decided_by and u.tenant_id = t.tenant_id
+    where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.status = 'closed'
+      and t.kind in ('review', 'decision')
+    order by t.decided_at nulls last, t.created_at limit 200`);
+  return rows.map((h) => ({
+    at: h.decided_at ?? new Date(0).toISOString(),
+    kind: h.kind,
+    task_id: h.task_id,
+    stage_idx: Number(h.stage_idx),
+    actor: h.decided_by ? { id: h.decided_by, display_name: h.actor_name ?? h.decided_by } : null,
+    ...(h.result && { result: h.result, ...(h.feedback && { feedback: h.feedback }) }),
+  }));
+}
+
+type OpenTaskRow = {
+  id: string;
+  kind: OpenTask["kind"];
+  stage_idx: number;
+  group_id: string | null;
+  group_name: string | null;
+  assignees: { id: string; display_name: string }[];
+};
+
+/** WaitingNote (`open_tasks`): task mở của run + assignee user + group (≤ 10, một truy vấn gộp). */
+export async function openTaskViews(tx: Tx, runId: string, tenantId: string): Promise<OpenTask[]> {
+  const rows = await tx.execute<OpenTaskRow>(sql`
+    select t.id, t.kind, s.stage_idx, t.assignee_group_id as group_id, g.name->>'vi' as group_name,
+      coalesce((select jsonb_agg(jsonb_build_object('id', u.id, 'display_name',
+          coalesce(u.display_name, u.username)) order by a.created_at)
+        from hub.review_task_assignees a join admin.users u on u.id = a.user_id and u.tenant_id = a.tenant_id
+        where a.task_id = t.id and a.tenant_id = t.tenant_id), '[]'::jsonb) as assignees
+    from hub.review_tasks t
+    join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
+    left join admin.groups g on g.id = t.assignee_group_id and g.tenant_id = t.tenant_id
+    where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.status = 'open'
+    order by t.created_at limit 10`);
+  return rows.map((t) => ({
+    id: t.id,
+    kind: t.kind,
+    stage_idx: Number(t.stage_idx),
+    assignees: (t.assignees ?? []).slice(0, 20),
+    group: t.group_id ? { id: t.group_id, name: t.group_name ?? t.group_id } : null,
+  }));
+}
+
+/** Id task mà người xem là assignee (user hoặc thành viên group), theo thứ tự tạo (≤ 20). */
+export async function assigneeTaskIds(
+  tx: Tx,
+  q: { runId: string; tenantId: string; userId: string; groupIds: readonly string[] },
+): Promise<string[]> {
+  const rows = await tx.execute<{ id: string }>(sql`
+    select distinct t.id, t.created_at from hub.review_tasks t
+    join hub.review_task_assignees a on a.task_id = t.id and a.tenant_id = t.tenant_id
+    where t.process_run_id = ${q.runId} and t.tenant_id = ${q.tenantId}
+      and (a.user_id = ${q.userId}
+        or (a.group_id is not null and a.group_id = any(${`{${q.groupIds.join(",")}}`}::uuid[])))
+    order by t.created_at limit 20`);
+  return rows.map((x) => x.id);
 }
 
 const SUGGEST_MAX = 3;
