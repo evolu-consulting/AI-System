@@ -32,5 +32,12 @@
   "typed": "Answer in writing",
   "fwd": {
     "line": "↪ {{from}} asked {{to}} to answer (forward {{depth}}/{{max}})"
-  }
+  },
+  "titleShort": "{{agent}} needs more information",
+  "onlyThisNoName": "You only see this question. The run uses the starter's permissions and quota.",
+  "forwardTitleReview": "Who should review?",
+  "forwardHelpReview": "You can only pass it to someone in the reviewing group.",
+  "submitReview": "Pass review",
+  "you": "You",
+  "asked": "{{agent}} asked a question"
 }
