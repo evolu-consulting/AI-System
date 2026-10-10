@@ -43,15 +43,17 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
     });
     expect(put.status).toBe(200);
     await p.getByRole("button", { name: "Lưu" }).click();
-    await expect(
-      p
-        .getByRole("alertdialog")
-        .or(p.getByRole("dialog"))
-        .filter({ hasText: /thay đổi|xung đột/i }),
-    ).toBeVisible();
+    const conflict = p.getByRole("alertdialog", { name: /Có người vừa lưu/ });
+    await expect(conflict).toBeVisible();
+    // ConflictDialog là modal (Escape/click nền không đóng) ⇒ đóng bằng "Tải bản mới" trước khi điều hướng
+    await conflict.getByRole("button", { name: "Tải bản mới" }).click();
+    await expect(conflict).toHaveCount(0);
 
-    // mẫu: chỉ xem
-    await p.getByRole("link", { name: "Quy trình", exact: true }).click();
+    // mẫu: chỉ xem (breadcrumb cũng có link "Quy trình" ⇒ thu hẹp vào sidebar)
+    await p
+      .getByRole("navigation", { name: "Điều hướng chính" })
+      .getByRole("link", { name: "Quy trình", exact: true })
+      .click();
     await p.getByRole("tab", { name: "Mẫu" }).click();
     await p
       .getByRole("table", { name: "Quy trình" })
