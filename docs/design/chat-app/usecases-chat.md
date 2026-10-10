@@ -195,13 +195,13 @@ Nguồn: CR-056, CR-058, HUB-FR-105, 107, 109–113, 117; HUB-BR-24, 25, 28. Spe
 | AC | Given / When / Then |
 |---|---|
 | CHAT-AC-51 | Given ở composer phòng (DM/nhóm) hoặc Hỏi AI, When gõ `!` hoặc bấm "▶ Quy trình", Then menu `!` liệt kê **chỉ quy trình user được chạy** (tên + `!key` + mô tả); chọn thì chèn `!key`. `@` vẫn là agent; `/` vẫn không có trong phòng (X2b Q10) (board ⑥) |
-| CHAT-AC-52 | Given A gửi "!hoa-don …", Then phòng có thẻ run (tên quy trình, stage hiện tại, link `/runs/:id`); thread hiện từng stage cho mọi thành viên phòng; `!sai-key` ⇒ báo không tìm thấy quy trình, không run (board ④) |
+| CHAT-AC-52 | Given A gửi "!hoa-don …", Then phòng có thẻ run (tên quy trình, stage hiện tại, link `/runs/:id`); khối run nằm trong timeline phòng và mở flow thread `?flow=` hiện kết quả từng stage, thẻ duyệt, câu hỏi cho mọi thành viên phòng (góp ý/trả lời gõ ở composer flow; người dùng 2026-10-10); `!sai-key` ⇒ báo không tìm thấy quy trình, không run (board ④) |
 | CHAT-AC-53 | Given người duyệt là thành viên phòng, When mở flow pane của run, Then thấy output stage + nút **Đạt** / **Chưa đạt**; Chưa đạt bắt buộc nhập góp ý; không sửa output tại chỗ; người không thuộc Group duyệt không thấy nút (board ④) |
 | CHAT-AC-54 | Given user có review/câu hỏi đang chờ, Then sidebar có mục **"Chờ tôi kiểm"** kèm số đếm; mở mục đi tới đúng task; task đã có người khác quyết thì biến mất (board ⑤) |
 | CHAT-AC-55 | Given người duyệt **không** ở trong phòng, Then nhận **DM từ tài khoản hệ thống "Quy trình"** có thẻ duyệt (Đạt / Chưa đạt + góp ý) ngay trong DM; DM không có ô gõ chữ (chỉ báo) (board ⑤) |
 | CHAT-AC-56 | Given người duyệt/người được nhờ ngoài phòng mở `/runs/:id`, Then chỉ thấy output (hoặc câu hỏi) của task mình + tiến độ run; không thấy tin khác của phòng; link phòng ⇒ "Không tìm thấy" (board ⑤) |
 | CHAT-AC-57 | Given agent hỏi lại, Then người trả lời thấy AskCard (stage "Chờ trả lời"); nút **"Nhờ người khác trả lời"** mở chọn user cùng công ty + ghi chú; người được nhờ chỉ thấy câu hỏi + ghi chú + trích đoạn; ai trả lời trước thì khoá; gõ "@Thomas trả lời giúp" trong chat **không** chuyển câu hỏi. Duyệt chỉ chuyển được cho người cùng Group duyệt (board ⑦) |
-| CHAT-AC-58 | Given mở `/runs/:id` (người bắt đầu, người duyệt, thành viên phòng), Then có bảng token theo run, stage, team-run, lần gọi thành viên (in/out, model, thời gian, số làm lại/hỏi); run "Cần người quyết" hiện 3 lựa chọn cho người có quyền quyết (board ⑧) |
+| CHAT-AC-58 | Given mở `/runs/:id` (người bắt đầu, người duyệt, thành viên phòng), Then có bảng token theo run, stage, team-run, lần gọi thành viên (in/out, model, thời gian, số làm lại/hỏi); người xem ngoài phòng (duyệt/trả lời) chỉ thấy tổng token run + từng stage, không chi tiết lần gọi (C5, người dùng 2026-10-10); run "Cần người quyết" hiện 3 lựa chọn cho người có quyền quyết (board ⑧) |
 
 ---
 

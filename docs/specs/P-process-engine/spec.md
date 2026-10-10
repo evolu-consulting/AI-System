@@ -36,18 +36,18 @@ Intake Đầy đủ xong, người dùng **chốt toàn bộ** 2026-10-09 (mặc
 | Mốc | Nội dung | Mã | Điều kiện xong |
 |---|---|---|---|
 | **Spike P** | Nhóm agent BA thật: so 3 chế độ (trưởng nhóm lập kế hoạch / tuần tự / MCP lai), đo token + thời gian + chất lượng; chốt chế độ mặc định và giới hạn | HUB-FR-114 (đầu vào), 116 | Báo cáo `spike.md` (≤ 1 trang bảng số) + đề xuất; không code sản phẩm |
-| **P-a** | Stage runner + máy trạng thái run (Postgres) · gate duyệt · hỏi lại + "Nhờ người khác trả lời" · "Chờ tôi kiểm" · DM hệ thống "Quy trình" · menu `!` + nút "▶ Quy trình" · `/runs/:id` có chi tiết token · 2 quy trình mẫu (SDLC, hoá đơn) · editor tối thiểu (Evolu Control) · nhóm agent dùng bản seed (không editor) · giới hạn + "Cần người quyết" · Hành động thật sau gate | HUB-FR-104 (tối thiểu), 105–107, 109–113, 115, 116, 117 (vế run); HUB-BR-23…28; AC-H28…H34; CHAT-AC-51…58; ADM-FR-65, 66 (tối thiểu), 67 | `done:pa` xanh; **security review riêng** (HUB-BR-25) đạt; UAT `qc-uat` |
-| **P-b** | Editor đầy đủ ①②③, Nhóm agent ở Agent Forge (+ bật theo công ty, tab Usage), tự quay lại, luật tự duyệt | HUB-FR-104 (đủ), 108, 114 (editor), 117 (vế nhóm), 118; AC-H35; ADM-FR-66 (đủ) | `done:pb` xanh |
+| **P-a** | Stage runner + máy trạng thái run (Postgres) · gate duyệt · hỏi lại + "Nhờ người khác trả lời" · "Chờ tôi kiểm" · DM hệ thống "Quy trình" · menu `!` + nút "▶ Quy trình" · `/runs/:id` có chi tiết token · 2 quy trình mẫu (SDLC, hoá đơn) · editor tối thiểu (Evolu Control) · nhóm agent dùng bản seed (không editor) · giới hạn + "Cần người quyết" · Hành động thật sau gate | HUB-FR-104 (tối thiểu), 105–107, 109–113, 115, 116, 117 (vế run); HUB-BR-23…28; AC-H28…H34; CHAT-AC-51…58; ADM-FR-65 (không Import/Export JSON), 66 (tối thiểu), 67 | `done:pa` xanh; **security review riêng** (HUB-BR-25) đạt; UAT `qc-uat` |
+| **P-b** | Editor đầy đủ ①②③, Nhóm agent ở Agent Forge (+ bật theo công ty, tab Usage), tự quay lại, luật tự duyệt | HUB-FR-104 (đủ + Import/Export JSON, U2), 108, 114 (editor), 117 (vế nhóm), 118; AC-H35; ADM-FR-66 (đủ), ADM-FR-65 (KPI + chuỗi stage + Import/Export, U1·F3/U2) | `done:pb` xanh |
 | **P-c** | Workspace code chung + PR thật (SDLC) | HUB-FR-119 | Cần H4b Secrets |
 
-Thứ tự ROADMAP (Q8): X2b-2 → **spike P** → **P-a** → H4b → **P-b** → **P-c**.
+Thứ tự (Q8, đổi 2026-10-10): **spike P** → **P-a** → X2b-2 → H4b → **P-b** → **P-c**.
 
 **Không làm (mọi mốc P):** agent↔agent trực tiếp (CR-023 Hoãn) · `/` trong phòng (X2b Q10 giữ) · duyệt qua email · tự duyệt khi quá hạn · người duyệt sửa output tại chỗ · tiền/quota tháng (H3c tạm dừng) · lịch/API/webhook bắt đầu run (COULD, sau) · email/Zalo/Slack (COULD, chỉ link).
 
 ## 2. Nghiệp vụ cụ thể hoá (P-R)
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
-| P-R01 | Process run là đối tượng riêng (`process_runs`); phòng/Hỏi AI/admin chỉ là `origin`. Thành viên phòng nguồn thấy cả run trong thread | Q9, HUB-FR-113 |
+| P-R01 | Process run là đối tượng riêng (`process_runs`); phòng/Hỏi AI/admin chỉ là `origin`. Thành viên phòng nguồn thấy cả run (khối run trong timeline phòng + flow thread `?flow=`) | Q9, HUB-FR-113 |
 | P-R02 | Mỗi stage do **đúng một** agent hoặc **một** nhóm agent làm; chỉ chọn được agent/nhóm đã bật cho tenant (agent: CR-054; nhóm: chỉ `platform_admin` bật) | HUB-FR-104, 114 |
 | P-R03 | Output stage = file theo template bắt buộc (Hub kiểm mục bắt buộc), lưu đính kèm có phiên bản | HUB-FR-104, 106 |
 | P-R04 | Gate: `review_task` gán Group; người đầu tiên quyết thì khoá; Chưa đạt bắt buộc góp ý; làm lại ≤ 3/stage rồi người duyệt chọn +1 / dùng bản hiện có / huỷ | HUB-FR-107 |
@@ -71,8 +71,8 @@ Thứ tự ROADMAP (Q8): X2b-2 → **spike P** → **P-a** → H4b → **P-b** �
 | Hỏi lại mỗi stage | ≤ 3 | Cần người quyết |
 | Chuỗi nhờ trả lời | ≤ 3 | `FORWARD_LIMIT` |
 | Job | 10 phút (tối đa 60, cấu hình theo stage) | Cần người quyết |
-| Thời gian sống run | ~7 ngày | Hết hạn (không tự duyệt) |
-| Run đồng thời / tenant | ~5 | `TOO_MANY_PROCESS_RUNS` (429) |
+| Thời gian sống run | 7 ngày (`PROCESS_RUN_TTL_DAYS`) | Hết hạn (không tự duyệt) |
+| Run đồng thời / tenant | 5 (`PROCESS_RUNS_PER_TENANT`) | `TOO_MANY_PROCESS_RUNS` (429) |
 | Nhắc duyệt/trả lời | sau 1 ngày | Chỉ nhắc |
 
 ## 3. Contract (backend-lead)
@@ -119,7 +119,7 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 | Q1 | `tenant_admin` soạn quy trình công ty mình ở Evolu Control (nav "Quy trình" dưới CHỨC NĂNG); `platform_admin` có 2 mẫu (SDLC, hoá đơn) để chép |
 | Q2 | Nhóm agent định nghĩa ở Agent Forge (nav "Nhóm agent", `platform_admin`); bật cho công ty chỉ `platform_admin` (đối xứng CR-054); `tenant_admin` chỉ chọn nhóm đã bật |
 | Q3 (điều chỉnh) | Bắt đầu bằng **`!`** (vd `!hoa-don`), không phải `/`; X2b Q10 giữ. Composer: `@` agent, `!` quy trình, nút "▶ Quy trình"; menu `!` = quy trình user được chạy; namespace riêng với command. Còn: Hỏi AI, nút "Chạy" admin; lịch/API/webhook COULD |
-| Q4 | Chế độ "Trưởng nhóm lập kế hoạch": trưởng nhóm chỉ trả kế hoạch, Hub gọi thành viên. CR-023 vẫn Hoãn; MCP lai sau spike |
+| Q4 (đổi U3) | Mặc định nhóm = `sequential` (spike); `lead_plan` chọn được (trưởng nhóm chỉ trả 1 kế hoạch ≤ 5 bước, Hub gọi thành viên, không kiểm cuối bằng LLM). CR-023 vẫn Hoãn; MCP lai sau |
 | Q5 | Gate đạt thay xác nhận `side_effect` của người bắt đầu (HUB-FR-95) cho stage "Hành động thật"; audit ghi người duyệt |
 | Q6 | File chung của nhóm do Hub giữ (đính kèm có phiên bản); mỗi job thành viên nhận bản mới nhất vào `work/<job_id>/` (WRK-BR-07 giữ); trưởng nhóm đọc tóm tắt ≤ 200 token |
 | Q7 | Ngân sách token theo team-run, stage, run: đếm + chặn ở "Cần người quyết"; tiền/quota tháng chờ H3c |
@@ -131,9 +131,9 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 | Q13 (mới) | Agent hỏi lại giữa stage (need_input/AskCard), "Chờ trả lời", job kết thúc khi chờ; người trả lời mặc định = người bắt đầu (cấu hình theo stage); báo như review; nhóm gộp câu hỏi; ≤ 3 hỏi/stage, không tính làm lại; "Nhờ người khác trả lời" (bất kỳ user cùng công ty, ghi chú, chuỗi ≤ 3, trả lời đầu khoá, quyền/quota người bắt đầu, audit); gõ "@Thomas trả lời giúp" không phải uỷ quyền; duyệt chỉ chuyển trong cùng Group |
 | Token (mới) | Hiển thị token theo run/stage/team-run/lần gọi (in/out, model, thời gian, số làm lại/hỏi) + tổng theo nhóm theo kỳ; ở `/runs/:id`, Evolu Control, Agent Forge; nguồn `usage_logs`/`run_steps` |
 | Giới hạn | §2.1 |
-| Lưu trạng thái | Postgres; bảng mới §4; xuất/nhập JSON qua Import/Export |
+| Lưu trạng thái | Postgres; bảng mới §4; xuất/nhập JSON qua Import/Export (P-b, U2) |
 
-### Mặc định đề xuất chưa hỏi riêng (spec-readiness xác nhận hoặc hỏi một lượt)
+### Mặc định M1–M6 (M4, M5 người dùng xác nhận 2026-10-10 — U4; còn lại áp dụng mặc định)
 | # | Điểm | Mặc định |
 |---|---|---|
 | M1 | Ai được chạy một quy trình | Group được chạy cấu hình trên quy trình, mặc định cả công ty |
@@ -152,32 +152,42 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 - P1 · M6 → "Quy trình" = danh tính ảo (không hàng `admin.users`, không đăng nhập, không thêm nhóm) + hộp thư `process_notices`; không thêm kiểu phòng/sender X2a (giữ test khoá) — plan D12, xác nhận ở Câu hỏi C3.
 - P1 · Spike (spike.md) → nhóm mặc định `sequential`; `lead_plan` = kế hoạch JSON 1 lần ≤ 5 bước, Hub chạy, không kiểm cuối bằng LLM, Hub kiểm template bằng mã; thành viên chỉ trả mục của mình, Hub ghép file có phiên bản; tóm tắt cắt cứng 200 token; làm lại chọn lọc mặc định; `parallel_merge` có nhưng không mặc định (Hub ghép theo mục, không lần gộp LLM); MCP lai không ở P-a; giới hạn §2.1 giữ; token = in+out+cache; không thiết kế quanh cache (plan D7–D9).
 - P1 · Stage = `hub.runs` `direct` của người bắt đầu trên hội thoại nền ẩn, không qua Orchestrator ⇒ không sửa Orchestrator (plan D1–D3); Hành động thật = Hub chèn sẵn `tool_confirmations` `confirmed` cho run stage (plan D4).
-- P1 · Hỏi AI `!key` ⇒ 202 JSON, không lưu tin; phòng: thẻ run trên tin gọi, không thread, không tin hệ thống trong phòng (plan D13, D14).
-- P2 · FE: cờ dò lúc chạy (`GET /me/process-inbox` / `GET /process-defs` 404 ⇒ ẩn UI), không cờ build (plan-frontend FD2). Hỏi AI `!key` ⇒ FE gọi `POST /process-runs` (FD4). Phòng: thẻ run + pane `?run=`, không thread (FD5 — AC-52 "thread" đọc là "thẻ run"). DM "Quy trình" = route `/process-inbox` (FD6). Khởi chạy chưa nhận tệp đính kèm (F1). Admin KPI/chuỗi giai đoạn ① hoãn P-b (F3).
+- P1 · Hỏi AI `!key` ⇒ 202 JSON, không lưu tin; phòng: khối run trong timeline + flow thread `?flow=` (mô hình thread, U1·F4), không tin hệ thống trong phòng (plan D13, D14).
+- P2 · FE: cờ dò lúc chạy (`GET /me/process-inbox` / `GET /process-defs` 404 ⇒ ẩn UI), không cờ build (plan-frontend FD2). Hỏi AI `!key` ⇒ FE gọi `POST /process-runs` (FD4). Phòng: khối run + flow thread `?flow=` (U1·F4 giữ thread mockup ④; FD5 cũ "thẻ + pane" do plan cập nhật). DM "Quy trình" = route `/process-inbox` (FD6). Khởi chạy chưa nhận tệp (F1). Admin KPI/chuỗi stage ① hoãn P-b (F3).
 - P1 · Cờ `HUB_PROCESS_ENGINE` (mặc định off; off ⇒ `!` là chữ thường như cũ) (plan D15).
 
-### Câu hỏi PLAN (C1–C5: **người dùng chấp nhận mặc định 2026-10-10** — "Ok"; F1–F4: chờ hỏi một lượt ở readiness, không trả lời ⇒ dùng mặc định)
-| # | Câu hỏi | Mặc định đề xuất |
+### Câu hỏi PLAN (C1–C5: người dùng chấp nhận mặc định 2026-10-10 — "Ok")
+| # | Câu hỏi | Mặc định đã chấp nhận |
 |---|---|---|
-| C1 | Ngân sách token theo stage/run (Q7) khi quy trình không khai báo? | Không giới hạn (null); chỉ team-run 200k cứng; editor cho nhập `token_budget` stage/quy trình tuỳ chọn |
-| C2 | Stage dùng **nhóm**: có kiểm `agent_grants` của người bắt đầu cho từng agent thành viên không? (bảo mật) | Không — kiểm nhóm đã bật cho tenant (chỉ `platform_admin`) + thành viên đang bật; stage dùng agent đơn vẫn kiểm grant (HUB-BR-23) |
-| C3 | DM "Quy trình" là hộp thư riêng (FE hiển thị như DM ghim) thay vì phòng DM thật? | Có (plan D12) |
-| C4 | Trích đoạn ngữ cảnh cho người được nhờ trả lời: agent hiện chỉ trả `question/choices` | Hub lấy ≤ 1 000 ký tự đầu của input run + tên stage; agent tự đính kèm trích đoạn để P-b |
+| C1 | Ngân sách token stage/run khi không khai báo? | Không giới hạn (null); chỉ team-run 200k cứng; editor cho nhập `token_budget` tuỳ chọn |
+| C2 | Stage dùng **nhóm**: kiểm `agent_grants` của người bắt đầu từng thành viên? | Không — chỉ kiểm nhóm đã bật cho tenant (`platform_admin`) + thành viên đang bật; mất entitlement/tắt thành viên lúc `kick` ⇒ `permission_lost`; stage agent đơn vẫn kiểm grant (HUB-BR-23). Ngoại lệ đã ghi vào BA |
+| C3 | DM "Quy trình" = hộp thư riêng (hiển thị như DM ghim)? | Có (plan D12) |
+| C4 | Trích đoạn ngữ cảnh cho người được nhờ | Hub lấy ≤ 1 000 ký tự đầu input run + tên stage; agent tự đính kèm để P-b |
 | C5 | Người duyệt/trả lời ngoài phòng xem token? | Chỉ tổng run + từng stage (không chi tiết lần gọi) |
-| F1 | Khởi chạy `!` có đính kèm tệp? (mockup ⑥ 📎; contract chỉ `input`) | Không ở P-a; Hỏi AI chặn khi có tệp |
-| F2 | "Chờ tôi kiểm" luôn hiện kể cả 0 việc? | Luôn hiện khi engine bật |
-| F3 | KPI + chuỗi giai đoạn ở danh sách admin ① | P-b |
-| F4 | Sửa UC-12 CHAT-AC-52 "thread" → "thẻ run + pane" (plan D13) | Có (docs-architect) |
+
+### Quyết định người dùng 2026-10-10 (sau spec-readiness lần 1)
+| # | Quyết định | Nguồn |
+|---|---|---|
+| U1·F1 | Không đính kèm tệp khi `!` ở P-a; Hỏi AI chặn gửi khi có tệp | người dùng 2026-10-10 |
+| U1·F2 | "Chờ tôi kiểm" luôn hiện khi engine bật (kể cả 0 việc) | người dùng 2026-10-10 |
+| U1·F3 | KPI + chuỗi stage ở danh sách admin ① dời P-b | người dùng 2026-10-10 |
+| U1·F4 | **Từ chối** bỏ thread: run trong phòng giữ **mô hình thread** mockup ④ — khối run trong timeline phòng + flow thread `?flow=` (kết quả stage, thẻ duyệt, câu hỏi); góp ý của người duyệt và câu trả lời gõ ở composer flow. CHAT-AC-52, HUB-FR-113 giữ chữ "thread" | người dùng 2026-10-10 |
+| U2 | Export/Import JSON quy trình (ADM-FR-65, HUB-FR-104) dời P-a → P-b | người dùng 2026-10-10 |
+| U3 | Nhóm mặc định `sequential`; `lead_plan` chọn được (thay Q4 cũ) | người dùng 2026-10-10 |
+| U4 | Xác nhận M4 (người duyệt ngoài phòng giữ xem phần task của mình sau khi run kết thúc, có audit, không hết hạn) và M5 (người quyết "Cần người quyết": người bắt đầu + `tenant_admin`, + thành viên Group duyệt kể cả ngoài phòng khi lý do `redo_limit`; chạy bằng quota người bắt đầu) | người dùng 2026-10-10 |
+| Mặc định áp dụng | QC Q1, Q3–Q7 (Q2 nằm trong U4), N1, N6, N7; yêu cầu FE: `process_key` (lọc client), `open_count` ("50+"), `StageView.sections` (P-b) | mặc định áp dụng (Luật 2) |
 
 ## 10. Rủi ro mở
 | # | Rủi ro | Hướng xử |
 |---|---|---|
 | K1 | Cách ly tenant / grant cho người duyệt ngoài phòng (hard stop bảo mật) | Ma trận cách ly + security review riêng như X2a (HUB-BR-25) |
 | K2 | Subscription chỉ dev/test (CR-019), H2d API key hoãn (CR-041) ⇒ **chưa chạy production** | Ghi chặn production; mở khi có API key/gói phù hợp |
-| K3 | Tranh chấp slot subscription theo tenant (nhóm gọi nhiều agent) | Đo ở spike; giới hạn team-run; ~5 run/tenant |
+| K3 | Tranh chấp slot subscription theo tenant (nhóm gọi nhiều agent) | Đo ở spike; giới hạn team-run; 5 run/tenant |
 | K4 | Run nhiều ngày cần trạng thái bền | Máy trạng thái trong Postgres, job kết thúc khi chờ người, khôi phục sau khởi động lại |
 | K5 | Hành động thật cần secret ngoài | P-c sau H4b Secrets |
 | K6 | Chi phí token khó đoán với nhóm | Spike đo; ngân sách token cứng (Q7) |
 
 ## 11. Tranh chấp test
 - (không)
+
+Readiness: [`readiness.md`](readiness.md) lần 1 NOT READY (2026-10-10); U1–U4 và lỗi tài liệu đã xử lý ở đây, chờ chạy lại lần 2. Trạng thái giữ `draft`.
