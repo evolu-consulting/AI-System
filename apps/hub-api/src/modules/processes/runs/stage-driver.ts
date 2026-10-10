@@ -14,13 +14,13 @@ import type { RunOutcome } from "../../runs/sse/sse-writer";
 import { budgetHit, totalTokens } from "../core/limits.rules";
 import type { ProcessDeps, StageLauncher } from "../core/ports";
 import { type RunEvent, type RunState, transition } from "../core/process-state.rules";
+import { runTeamStage } from "./team-exec";
 import {
   type ApplyInput,
   effects,
   headOf,
   type Link,
   type RunHead,
-  runTeamStage,
   type SnapStage,
   type StageResult,
   type StageRow,
@@ -163,6 +163,7 @@ async function apply(d: Deps, x: ApplyInput): Promise<boolean> {
 
 async function eventFor(tx: Tx, x: ApplyInput, head: RunHead, def: SnapStage): Promise<RunEvent> {
   if (x.result.kind === "failed") return { kind: "limit", reason: x.result.reason };
+  if (x.result.kind === "limit") return { kind: "limit", reason: x.result.reason };
   const over = await budgetReason(tx, x, head, def);
   if (over) return { kind: "limit", reason: over };
   if (x.result.kind === "need_input") return { kind: "need_input" };
@@ -212,9 +213,13 @@ function buildState(head: RunHead, stage: StageRow, def: SnapStage, idx: number)
 /** D11 · đóng `hub.runs` stage SAU tx quy trình. */
 async function finish(ctx: RunContext, result: StageResult): Promise<void> {
   if (ctx.writer.done) return;
-  const outcome: RunOutcome =
-    result.kind === "failed"
-      ? { kind: "failed", code: result.reason === "job_timeout" ? "TIMEOUT" : "INTERNAL_ERROR" }
-      : { kind: "finished", content: result.kind === "output" ? result.text : result.question };
-  await ctx.writer.finish(outcome);
+  await ctx.writer.finishOrAbort(outcomeOf(result));
+}
+
+function outcomeOf(result: StageResult): RunOutcome {
+  if (result.kind === "failed")
+    return { kind: "failed", code: result.reason === "job_timeout" ? "TIMEOUT" : "INTERNAL_ERROR" };
+  if (result.kind === "output") return { kind: "finished", content: result.text };
+  if (result.kind === "need_input") return { kind: "finished", content: result.question };
+  return { kind: "finished", content: "" };
 }

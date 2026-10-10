@@ -7,8 +7,6 @@ import { DECISION_OPTIONS, type DecisionOption, type DecisionReason } from "@ai/
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { UserEvent } from "../../../lib/user-stream";
-import { insertAttachment } from "../../attachments/attachments.repo";
-import type { RunContext } from "../../runs/runs.service";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
 import type { Effect, RunEvent, RunState } from "../core/process-state.rules";
@@ -21,8 +19,14 @@ export type Link = { process_run_id: string | null; stage_run_id: string | null 
 
 /** Kết quả thực thi stage (agent đơn / nhóm) chuẩn hoá cho máy trạng thái. */
 export type StageResult =
-  | { kind: "output"; text: string }
+  | {
+      kind: "output";
+      text: string;
+      sections?: Record<string, string>;
+      summaries?: Record<string, string>;
+    }
   | { kind: "need_input"; question: string; choices: string[] }
+  | { kind: "limit"; reason: DecisionReason }
   | { kind: "failed"; reason: "agent_failed" | "job_timeout" };
 
 export type SnapStage = {
@@ -149,20 +153,12 @@ async function outputAttachment(tx: Tx, c: Ctx, text: string): Promise<string | 
   if (!jobId) return null;
   const id = crypto.randomUUID();
   const filename = c.def.output.filename || `${c.def.name || "output"}.md`;
-  await insertAttachment(tx, {
-    id,
-    tenantId: c.head.tenant_id,
-    userId: c.head.started_by,
-    origin: "output",
-    jobId,
-    conversationId: null,
-    flowId: null,
-    filename,
-    safeName: safeName(`s${c.idx}-v-${filename}`),
-    mime: "text/markdown",
-    size,
-    sha256: createHash("sha256").update(text, "utf8").digest("hex"),
-  });
+  const sha = createHash("sha256").update(text, "utf8").digest("hex");
+  await tx.execute(sql`insert into hub.attachments (id, tenant_id, user_id, origin, job_id, filename,
+      safe_name, mime, size, sha256, storage_key)
+    values (${id}, ${c.head.tenant_id}, ${c.head.started_by}, 'output', ${jobId}, ${filename},
+      ${safeName(`s${c.idx}-v-${filename}`)}, 'text/markdown', ${size}, ${sha},
+      ${c.head.tenant_id}::text || '/' || ${id}::text)`);
   return id;
 }
 
@@ -236,7 +232,7 @@ async function openDecision(d: Deps, tx: Tx, c: Ctx): Promise<UserEvent[]> {
   const reason = c.next.decisionReason as DecisionReason;
   const groupId = c.def.after.kind === "review" ? c.def.after.group_id : null;
   const asg = decisionAssignees(reason, c.head.started_by, groupId);
-  const options = optionsFor(c.next.stage.hasOutput);
+  const options = optionsFor(c.next.stage.hasOutput, reason);
   await tx.execute(sql`update hub.process_runs set decision = ${decisionJson(d, reason, c.idx, options)}::jsonb
     where id = ${c.x.runId}`);
   const taskId = await core.insertTask(tx, {
@@ -262,8 +258,17 @@ async function openDecision(d: Deps, tx: Tx, c: Ctx): Promise<UserEvent[]> {
   return d.notifier.taskOpened(tx, taskId);
 }
 
-const optionsFor = (hasOutput: boolean): DecisionOption[] =>
-  DECISION_OPTIONS.filter((o) => o !== "use_current" || hasOutput);
+/** `use_current` cần output; lý do nhóm + mất quyền/khoá luôn cho (dùng bản nháp ghép / bỏ qua stage). */
+const FORCE_USE_CURRENT: ReadonlySet<DecisionReason> = new Set([
+  "team_calls",
+  "team_tokens",
+  "team_time",
+  "team_no_change",
+  "permission_lost",
+  "user_inactive",
+]);
+const optionsFor = (hasOutput: boolean, reason: DecisionReason): DecisionOption[] =>
+  DECISION_OPTIONS.filter((o) => o !== "use_current" || hasOutput || FORCE_USE_CURRENT.has(reason));
 const decisionJson = (d: Deps, reason: DecisionReason, idx: number, options: DecisionOption[]) =>
   JSON.stringify({ reason, stage_idx: idx, options, at: d.now().toISOString() });
 
@@ -348,7 +353,7 @@ export async function toDecision(
   if (!head || !stage) return [];
   const def = head.snapshot.stages[p.idx];
   const groupId = def?.after.kind === "review" ? def.after.group_id : null;
-  const options = optionsFor(stage.current_output_id !== null);
+  const options = optionsFor(stage.current_output_id !== null, p.reason);
   await tx.execute(sql`update hub.process_runs set status = 'needs_decision',
     decision = ${decisionJson(d, p.reason, p.idx, options)}::jsonb, updated_at = now() where id = ${p.runId}`);
   await tx.execute(sql`update hub.stage_runs set status = 'needs_decision', updated_at = now()
@@ -375,17 +380,4 @@ export async function toDecision(
     options,
   });
   return d.notifier.taskOpened(tx, taskId);
-}
-
-/** Chạy stage nhóm — khung (TODO slice kế: sequential/lead_plan/parallel_merge, `team.rules`). */
-export async function runTeamStage(
-  d: Deps,
-  ctx: RunContext,
-  link: Link,
-): Promise<{ result: StageResult; usage: number; jobId: string | null }> {
-  d.log.warn("process-team-stage-unimplemented", {
-    run_id: ctx.writer.run.id,
-    process_run_id: link.process_run_id,
-  });
-  return { result: { kind: "failed", reason: "agent_failed" }, usage: 0, jobId: null };
 }

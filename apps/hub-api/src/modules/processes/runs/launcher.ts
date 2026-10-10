@@ -13,6 +13,8 @@ import type { ProcessStage, StageExecutor } from "../../runs/run-process";
 import * as core from "../core/core.repo";
 import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/ports";
 import { stageDriver } from "./stage-driver";
+import { createTeamRun } from "./team-counters";
+import { teamReady } from "./team-load";
 import { toDecision } from "./team-runner";
 
 export type LauncherDeps = Omit<ProcessDeps, "launcher" | "start">;
@@ -121,10 +123,23 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
     lostPermission(d, tx, { runId, tenantId: u.tenantId, idx, stageRunId: stage.id, reason });
   const active = (await d.config.user(u.userId))?.active ?? false;
   if (!active) return await lost("user_inactive");
+  const team = await teamRunFor(d, tx, {
+    u,
+    def,
+    stageId: stage.id,
+    attempt: stage.attempt,
+    runId,
+  });
+  if (!team.ok) return await lost("permission_lost");
   const priorOut = await priorFiles(tx, runId, idx, head.snapshot.stages);
   const p: ProcessStage = {
     executor: execOf(def),
-    process: { processRunId: runId, stageRunId: stage.id, teamRunId: null, files: priorOut },
+    process: {
+      processRunId: runId,
+      stageRunId: stage.id,
+      teamRunId: team.teamRunId,
+      files: priorOut,
+    },
   };
   const req: SendMessageRequest = { content: promptOf(def, head, stage.feedback) };
   let prepared: Prepared;
@@ -143,6 +158,29 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
   await tx.execute(sql`update hub.stage_runs set status = 'running', current_run_id = ${prepared.run.id},
       started_at = coalesce(started_at, now()), updated_at = now() where id = ${stage.id}`);
   return { kind: "launch", prepared, files };
+}
+
+/** C2 · nhóm: kiểm entitlement + thành viên bật (`teamReady`) ⇒ tạo `team_run` (gán `runs.team_run_id` lúc INSERT). */
+async function teamRunFor(
+  d: LauncherDeps,
+  tx: Tx,
+  p: { u: AuthUser; def: SnapStage; stageId: string; attempt: number; runId: string },
+): Promise<{ ok: true; teamRunId: string | null } | { ok: false }> {
+  if (p.def.executor.kind !== "team") return { ok: true, teamRunId: null };
+  const ready = await teamReady(tx, await d.config.snapshot(), {
+    teamId: p.def.executor.team_id,
+    tenantId: p.u.tenantId,
+  });
+  if (!ready.ok) return { ok: false };
+  const teamRunId = await createTeamRun(tx, {
+    tenantId: p.u.tenantId,
+    procRunId: p.runId,
+    stageRunId: p.stageId,
+    attempt: Number(p.attempt),
+    teamId: p.def.executor.team_id,
+    mode: ready.team.mode,
+  });
+  return { ok: true, teamRunId };
 }
 
 type PriorRow = {
