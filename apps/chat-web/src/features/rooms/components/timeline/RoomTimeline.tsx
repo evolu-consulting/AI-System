@@ -3,6 +3,7 @@
 import type { RoomActiveRun, RoomMember, RoomMessage } from "@ai/contracts/chat";
 import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
+import { ProcessTimelineItem } from "~/features/processes/shared/thread/ProcessTimelineItem";
 import { groupByDay } from "../../lib/room-logic";
 import { AgentBlock } from "../agent/AgentBlock";
 import { PendingRunItem } from "../agent/PendingRunItem";
@@ -66,6 +67,8 @@ export function RoomTimeline(p: Props) {
                     onAnswer={p.onAnswer}
                     onRerun={p.onRerun}
                   />
+                ) : m.sender_type === "process" ? (
+                  <ProcessTimelineItem message={m} myId={p.myId} onReply={p.onReply} />
                 ) : (
                   <MessageItem message={m} mine={m.sender.id === p.myId} group={p.group} />
                 )}

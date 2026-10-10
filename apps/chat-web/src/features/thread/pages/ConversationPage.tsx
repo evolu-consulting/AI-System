@@ -8,6 +8,8 @@ import { Composer } from "~/features/composer/components/Composer";
 import { useDraftKey } from "~/features/composer/hooks/use-draft";
 import { FlowPane } from "~/features/flow-panel/components/FlowPane";
 import { useOpenFlow } from "~/features/flow-panel/hooks/use-open-flow";
+import { useBangSubmit } from "~/features/processes/composer/hooks/use-bang-submit";
+import { useProcessEngineOn } from "~/features/processes/shared/engine";
 import { useActiveRun } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
 import { useRuns } from "~/features/run/run-store";
@@ -32,16 +34,22 @@ function useMainComposer(convId: string, onSent: () => void) {
     runs.findLast((r) => r.convId === convId && r.origin === "main"),
   );
   const running = active?.origin === "main";
+  // P-a FD4: `!key …` ở Hỏi AI đi `POST /process-runs` (PF1), không qua đường gửi run thường; cờ off ⇒ không chặn gì.
+  const engineOn = useProcessEngineOn();
+  const bang = useBangSubmit({ kind: "conversation", conversationId: convId }, engineOn);
   const onSubmit = useCallback(
     async (text: string, attachmentIds?: string[]) => {
+      const hit = bang.intercept(text);
+      if (hit) return hit;
       const out = await send.sendMain(convId, text, attachmentIds);
       if (out.ok) onSent();
       return out;
     },
-    [send, convId, onSent],
+    [send, convId, onSent, bang],
   );
   return {
     running,
+    processMenu: engineOn,
     locked: active !== undefined && !running,
     quotaOver: lastMain?.quota?.state === "over",
     onSubmit,

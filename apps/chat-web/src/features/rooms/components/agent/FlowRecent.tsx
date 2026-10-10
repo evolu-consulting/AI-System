@@ -1,7 +1,8 @@
+// P-a thread §6 #4: tin `process` ⇒ tên = tên quy trình (`sender.display_name`), avatar = biểu tượng quy trình, preview = `preview` của server.
 // CR-050 · trên khối agent ở timeline: ≤ 3 comment mới nhất của thread (avatar, tên, một dòng, giờ). Chưa xem → nền accent,
 // tên đậm, chấm + "Chưa xem" cho trình đọc màn hình. Bấm một dòng = mở thread (`?flow=`), mở thread mới bỏ highlight.
 import type { RoomFlowRecent, RoomMessage } from "@ai/contracts/chat";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Workflow } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
 import { initialsOf } from "../../../shell/lib/conversation-path";
@@ -36,7 +37,7 @@ function Row({ item, onOpen }: { item: RoomFlowRecent; onOpen?: () => void }) {
           aria-hidden
           className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-accent-foreground"
         >
-          {initialsOf(name)}
+          {item.sender_type === "process" ? <Workflow className="size-3.5" /> : initialsOf(name)}
         </span>
         <span className="min-w-0 flex-1 truncate text-sm">
           <span

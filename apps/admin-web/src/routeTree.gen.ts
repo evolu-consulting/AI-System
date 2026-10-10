@@ -33,12 +33,16 @@ import { Route as AuthedFeaturesNewRouteImport } from './routes/_authed/features
 import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
 import { Route as AuthedGroupsGroupIdRouteImport } from './routes/_authed/groups/$groupId'
 import { Route as AuthedGroupsNewRouteImport } from './routes/_authed/groups/new'
+import { Route as AuthedProcessesIndexRouteImport } from './routes/_authed/processes/index'
+import { Route as AuthedProcessesProcessIdRouteImport } from './routes/_authed/processes/$processId'
+import { Route as AuthedProcessesNewRouteImport } from './routes/_authed/processes/new'
 import { Route as AuthedTenantsIndexRouteImport } from './routes/_authed/tenants/index'
 import { Route as AuthedTenantsTenantIdRouteImport } from './routes/_authed/tenants/$tenantId'
 import { Route as AuthedTenantsNewRouteImport } from './routes/_authed/tenants/new'
 import { Route as AuthedWorkflowsIndexRouteImport } from './routes/_authed/workflows/index'
 import { Route as AuthedWorkflowsWorkflowIdRouteImport } from './routes/_authed/workflows/$workflowId'
 import { Route as AuthedWorkflowsNewRouteImport } from './routes/_authed/workflows/new'
+import { Route as AuthedProcessesProcessIdRunsRunIdRouteImport } from './routes/_authed/processes/$processId_.runs.$runId'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -159,6 +163,22 @@ const AuthedGroupsNewRoute = AuthedGroupsNewRouteImport.update({
   path: '/groups/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedProcessesIndexRoute = AuthedProcessesIndexRouteImport.update({
+  id: '/processes/',
+  path: '/processes/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedProcessesProcessIdRoute =
+  AuthedProcessesProcessIdRouteImport.update({
+    id: '/processes/$processId',
+    path: '/processes/$processId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProcessesNewRoute = AuthedProcessesNewRouteImport.update({
+  id: '/processes/new',
+  path: '/processes/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedTenantsIndexRoute = AuthedTenantsIndexRouteImport.update({
   id: '/tenants/',
   path: '/tenants/',
@@ -190,6 +210,12 @@ const AuthedWorkflowsNewRoute = AuthedWorkflowsNewRouteImport.update({
   path: '/workflows/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedProcessesProcessIdRunsRunIdRoute =
+  AuthedProcessesProcessIdRunsRunIdRouteImport.update({
+    id: '/processes/$processId_/runs/$runId',
+    path: '/processes/$processId/runs/$runId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
@@ -212,6 +238,8 @@ export interface FileRoutesByFullPath {
   '/features/new': typeof AuthedFeaturesNewRoute
   '/groups/$groupId': typeof AuthedGroupsGroupIdRoute
   '/groups/new': typeof AuthedGroupsNewRoute
+  '/processes/$processId': typeof AuthedProcessesProcessIdRoute
+  '/processes/new': typeof AuthedProcessesNewRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
   '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
@@ -219,8 +247,10 @@ export interface FileRoutesByFullPath {
   '/commands/': typeof AuthedCommandsIndexRoute
   '/features/': typeof AuthedFeaturesIndexRoute
   '/groups/': typeof AuthedGroupsIndexRoute
+  '/processes/': typeof AuthedProcessesIndexRoute
   '/tenants/': typeof AuthedTenantsIndexRoute
   '/workflows/': typeof AuthedWorkflowsIndexRoute
+  '/processes/$processId/runs/$runId': typeof AuthedProcessesProcessIdRunsRunIdRoute
 }
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
@@ -243,6 +273,8 @@ export interface FileRoutesByTo {
   '/features/new': typeof AuthedFeaturesNewRoute
   '/groups/$groupId': typeof AuthedGroupsGroupIdRoute
   '/groups/new': typeof AuthedGroupsNewRoute
+  '/processes/$processId': typeof AuthedProcessesProcessIdRoute
+  '/processes/new': typeof AuthedProcessesNewRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
   '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
@@ -250,8 +282,10 @@ export interface FileRoutesByTo {
   '/commands': typeof AuthedCommandsIndexRoute
   '/features': typeof AuthedFeaturesIndexRoute
   '/groups': typeof AuthedGroupsIndexRoute
+  '/processes': typeof AuthedProcessesIndexRoute
   '/tenants': typeof AuthedTenantsIndexRoute
   '/workflows': typeof AuthedWorkflowsIndexRoute
+  '/processes/$processId/runs/$runId': typeof AuthedProcessesProcessIdRunsRunIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -276,6 +310,8 @@ export interface FileRoutesById {
   '/_authed/features/new': typeof AuthedFeaturesNewRoute
   '/_authed/groups/$groupId': typeof AuthedGroupsGroupIdRoute
   '/_authed/groups/new': typeof AuthedGroupsNewRoute
+  '/_authed/processes/$processId': typeof AuthedProcessesProcessIdRoute
+  '/_authed/processes/new': typeof AuthedProcessesNewRoute
   '/_authed/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/_authed/tenants/new': typeof AuthedTenantsNewRoute
   '/_authed/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
@@ -283,8 +319,10 @@ export interface FileRoutesById {
   '/_authed/commands/': typeof AuthedCommandsIndexRoute
   '/_authed/features/': typeof AuthedFeaturesIndexRoute
   '/_authed/groups/': typeof AuthedGroupsIndexRoute
+  '/_authed/processes/': typeof AuthedProcessesIndexRoute
   '/_authed/tenants/': typeof AuthedTenantsIndexRoute
   '/_authed/workflows/': typeof AuthedWorkflowsIndexRoute
+  '/_authed/processes/$processId_/runs/$runId': typeof AuthedProcessesProcessIdRunsRunIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -309,6 +347,8 @@ export interface FileRouteTypes {
     | '/features/new'
     | '/groups/$groupId'
     | '/groups/new'
+    | '/processes/$processId'
+    | '/processes/new'
     | '/tenants/$tenantId'
     | '/tenants/new'
     | '/workflows/$workflowId'
@@ -316,8 +356,10 @@ export interface FileRouteTypes {
     | '/commands/'
     | '/features/'
     | '/groups/'
+    | '/processes/'
     | '/tenants/'
     | '/workflows/'
+    | '/processes/$processId/runs/$runId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/change-password'
@@ -340,6 +382,8 @@ export interface FileRouteTypes {
     | '/features/new'
     | '/groups/$groupId'
     | '/groups/new'
+    | '/processes/$processId'
+    | '/processes/new'
     | '/tenants/$tenantId'
     | '/tenants/new'
     | '/workflows/$workflowId'
@@ -347,8 +391,10 @@ export interface FileRouteTypes {
     | '/commands'
     | '/features'
     | '/groups'
+    | '/processes'
     | '/tenants'
     | '/workflows'
+    | '/processes/$processId/runs/$runId'
   id:
     | '__root__'
     | '/_authed'
@@ -372,6 +418,8 @@ export interface FileRouteTypes {
     | '/_authed/features/new'
     | '/_authed/groups/$groupId'
     | '/_authed/groups/new'
+    | '/_authed/processes/$processId'
+    | '/_authed/processes/new'
     | '/_authed/tenants/$tenantId'
     | '/_authed/tenants/new'
     | '/_authed/workflows/$workflowId'
@@ -379,8 +427,10 @@ export interface FileRouteTypes {
     | '/_authed/commands/'
     | '/_authed/features/'
     | '/_authed/groups/'
+    | '/_authed/processes/'
     | '/_authed/tenants/'
     | '/_authed/workflows/'
+    | '/_authed/processes/$processId_/runs/$runId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -559,6 +609,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/processes/': {
+      id: '/_authed/processes/'
+      path: '/processes'
+      fullPath: '/processes/'
+      preLoaderRoute: typeof AuthedProcessesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/processes/$processId': {
+      id: '/_authed/processes/$processId'
+      path: '/processes/$processId'
+      fullPath: '/processes/$processId'
+      preLoaderRoute: typeof AuthedProcessesProcessIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/processes/new': {
+      id: '/_authed/processes/new'
+      path: '/processes/new'
+      fullPath: '/processes/new'
+      preLoaderRoute: typeof AuthedProcessesNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/tenants/': {
       id: '/_authed/tenants/'
       path: '/tenants'
@@ -601,6 +672,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedWorkflowsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/processes/$processId_/runs/$runId': {
+      id: '/_authed/processes/$processId_/runs/$runId'
+      path: '/processes/$processId/runs/$runId'
+      fullPath: '/processes/$processId/runs/$runId'
+      preLoaderRoute: typeof AuthedProcessesProcessIdRunsRunIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
@@ -633,6 +711,8 @@ interface AuthedRouteChildren {
   AuthedFeaturesNewRoute: typeof AuthedFeaturesNewRoute
   AuthedGroupsGroupIdRoute: typeof AuthedGroupsGroupIdRoute
   AuthedGroupsNewRoute: typeof AuthedGroupsNewRoute
+  AuthedProcessesProcessIdRoute: typeof AuthedProcessesProcessIdRoute
+  AuthedProcessesNewRoute: typeof AuthedProcessesNewRoute
   AuthedTenantsTenantIdRoute: typeof AuthedTenantsTenantIdRoute
   AuthedTenantsNewRoute: typeof AuthedTenantsNewRoute
   AuthedWorkflowsWorkflowIdRoute: typeof AuthedWorkflowsWorkflowIdRoute
@@ -640,8 +720,10 @@ interface AuthedRouteChildren {
   AuthedCommandsIndexRoute: typeof AuthedCommandsIndexRoute
   AuthedFeaturesIndexRoute: typeof AuthedFeaturesIndexRoute
   AuthedGroupsIndexRoute: typeof AuthedGroupsIndexRoute
+  AuthedProcessesIndexRoute: typeof AuthedProcessesIndexRoute
   AuthedTenantsIndexRoute: typeof AuthedTenantsIndexRoute
   AuthedWorkflowsIndexRoute: typeof AuthedWorkflowsIndexRoute
+  AuthedProcessesProcessIdRunsRunIdRoute: typeof AuthedProcessesProcessIdRunsRunIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -662,6 +744,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFeaturesNewRoute: AuthedFeaturesNewRoute,
   AuthedGroupsGroupIdRoute: AuthedGroupsGroupIdRoute,
   AuthedGroupsNewRoute: AuthedGroupsNewRoute,
+  AuthedProcessesProcessIdRoute: AuthedProcessesProcessIdRoute,
+  AuthedProcessesNewRoute: AuthedProcessesNewRoute,
   AuthedTenantsTenantIdRoute: AuthedTenantsTenantIdRoute,
   AuthedTenantsNewRoute: AuthedTenantsNewRoute,
   AuthedWorkflowsWorkflowIdRoute: AuthedWorkflowsWorkflowIdRoute,
@@ -669,8 +753,11 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCommandsIndexRoute: AuthedCommandsIndexRoute,
   AuthedFeaturesIndexRoute: AuthedFeaturesIndexRoute,
   AuthedGroupsIndexRoute: AuthedGroupsIndexRoute,
+  AuthedProcessesIndexRoute: AuthedProcessesIndexRoute,
   AuthedTenantsIndexRoute: AuthedTenantsIndexRoute,
   AuthedWorkflowsIndexRoute: AuthedWorkflowsIndexRoute,
+  AuthedProcessesProcessIdRunsRunIdRoute:
+    AuthedProcessesProcessIdRunsRunIdRoute,
 }
 
 const AuthedRouteWithChildren =

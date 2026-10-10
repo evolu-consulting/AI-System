@@ -5,6 +5,7 @@ import {
   type ChatCommandErrorCode,
   type ChatDefaultAgentErrorCode,
   type ChatErrorCode,
+  type ChatProcessErrorCode,
   type ChatRoomAgentErrorCode,
   type ChatRoomErrorCode,
   type ChatRoutingErrorCode,
@@ -31,6 +32,7 @@ export type ApiErrorCode =
   | ChatRoomErrorCode
   | ChatRoomAgentErrorCode
   | ChatDefaultAgentErrorCode
+  | ChatProcessErrorCode
   | AuthErrorCode
   | "NETWORK_ERROR"
   | "HTTP_ERROR";

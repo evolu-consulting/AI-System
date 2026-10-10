@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthedProcessInboxRouteImport } from './routes/_authed/process-inbox'
 import { Route as AuthedCIdRouteImport } from './routes/_authed/c.$id'
 import { Route as AuthedCNewRouteImport } from './routes/_authed/c.new'
 import { Route as AuthedRoomsIdRouteImport } from './routes/_authed/rooms.$id'
+import { Route as AuthedRunsIdRouteImport } from './routes/_authed/runs.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,6 +31,11 @@ const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedProcessInboxRoute = AuthedProcessInboxRouteImport.update({
+  id: '/process-inbox',
+  path: '/process-inbox',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedCIdRoute = AuthedCIdRouteImport.update({
   id: '/c/$id',
@@ -45,43 +52,70 @@ const AuthedRoomsIdRoute = AuthedRoomsIdRouteImport.update({
   path: '/rooms/$id',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedRunsIdRoute = AuthedRunsIdRouteImport.update({
+  id: '/runs/$id',
+  path: '/runs/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/process-inbox': typeof AuthedProcessInboxRoute
   '/c/$id': typeof AuthedCIdRoute
   '/c/new': typeof AuthedCNewRoute
   '/rooms/$id': typeof AuthedRoomsIdRoute
+  '/runs/$id': typeof AuthedRunsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/process-inbox': typeof AuthedProcessInboxRoute
   '/c/$id': typeof AuthedCIdRoute
   '/c/new': typeof AuthedCNewRoute
   '/rooms/$id': typeof AuthedRoomsIdRoute
+  '/runs/$id': typeof AuthedRunsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authed/process-inbox': typeof AuthedProcessInboxRoute
   '/_authed/c/$id': typeof AuthedCIdRoute
   '/_authed/c/new': typeof AuthedCNewRoute
   '/_authed/rooms/$id': typeof AuthedRoomsIdRoute
+  '/_authed/runs/$id': typeof AuthedRunsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/c/$id' | '/c/new' | '/rooms/$id'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/process-inbox'
+    | '/c/$id'
+    | '/c/new'
+    | '/rooms/$id'
+    | '/runs/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/c/$id' | '/c/new' | '/rooms/$id'
+  to:
+    | '/'
+    | '/login'
+    | '/process-inbox'
+    | '/c/$id'
+    | '/c/new'
+    | '/rooms/$id'
+    | '/runs/$id'
   id:
     | '__root__'
     | '/'
     | '/_authed'
     | '/login'
+    | '/_authed/process-inbox'
     | '/_authed/c/$id'
     | '/_authed/c/new'
     | '/_authed/rooms/$id'
+    | '/_authed/runs/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -113,6 +147,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/process-inbox': {
+      id: '/_authed/process-inbox'
+      path: '/process-inbox'
+      fullPath: '/process-inbox'
+      preLoaderRoute: typeof AuthedProcessInboxRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/c/$id': {
       id: '/_authed/c/$id'
       path: '/c/$id'
@@ -134,19 +175,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRoomsIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/runs/$id': {
+      id: '/_authed/runs/$id'
+      path: '/runs/$id'
+      fullPath: '/runs/$id'
+      preLoaderRoute: typeof AuthedRunsIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
+  AuthedProcessInboxRoute: typeof AuthedProcessInboxRoute
   AuthedCIdRoute: typeof AuthedCIdRoute
   AuthedCNewRoute: typeof AuthedCNewRoute
   AuthedRoomsIdRoute: typeof AuthedRoomsIdRoute
+  AuthedRunsIdRoute: typeof AuthedRunsIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedProcessInboxRoute: AuthedProcessInboxRoute,
   AuthedCIdRoute: AuthedCIdRoute,
   AuthedCNewRoute: AuthedCNewRoute,
   AuthedRoomsIdRoute: AuthedRoomsIdRoute,
+  AuthedRunsIdRoute: AuthedRunsIdRoute,
 }
 
 const AuthedRouteWithChildren =

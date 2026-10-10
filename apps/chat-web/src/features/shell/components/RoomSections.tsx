@@ -26,6 +26,8 @@ type Props = {
   onNavigate?: () => void;
   /** Mở hộp thoại "Tạo nhóm"; vắng thì nút `+` bị vô hiệu. */
   onNewGroup?: () => void;
+  /** P-a FD6: hàng ghim đầu mục Users (DM "Quy trình"); là một `<li>`. */
+  usersPinned?: ReactNode;
 };
 
 const SKELETON_ROWS = ["a", "b", "c"];
@@ -113,7 +115,7 @@ function PeopleBody(p: {
   );
 }
 
-export function RoomSections({ q, activeRoomId, onNavigate, onNewGroup }: Props) {
+export function RoomSections({ q, activeRoomId, onNavigate, onNewGroup, usersPinned }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const myId = useSession((s) => s.me?.id ?? "");
@@ -192,6 +194,7 @@ export function RoomSections({ q, activeRoomId, onNavigate, onNewGroup }: Props)
         unread={unreadOf(dms)}
         badgeTestId="unread-dms"
       >
+        {usersPinned && <ul className="flex flex-col gap-0.5">{usersPinned}</ul>}
         <PeopleBody pending={list.isPending} dir={dir} term={term}>
           {people.map((row) =>
             row.kind === "dm" ? (

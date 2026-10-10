@@ -2,12 +2,18 @@
 // Component chỉ đọc query; không có store riêng cho dữ liệu phòng. Vá cache dùng hàm thuần của `rooms/lib/room-cache`.
 import type {
   MeStreamEvent,
+  MeStreamProcessEvent,
   MeStreamRunEvent,
   RoomDetail,
   RoomMessage,
   RoomSummary,
 } from "@ai/contracts/chat";
 import type { QueryClient } from "@tanstack/react-query";
+import {
+  onProcessRoomMessage,
+  resetProcessCache,
+  routeProcessEvent,
+} from "~/features/processes/realtime/process-events";
 import { messagePreview } from "~/features/rooms/lib/message-preview";
 import {
   activeRunOf,
@@ -39,8 +45,8 @@ export type EventRouterDeps = {
   onRoomLost(roomId: string, reason: RoomLostReason): void;
 };
 
-/** Sự kiện `/me/stream` đã kiểm schema: X2a + sự kiện run X2b (`room.run_*`). */
-export type RoutedEvent = MeStreamEvent | MeStreamRunEvent;
+/** Sự kiện `/me/stream` đã kiểm schema: X2a + sự kiện run X2b (`room.run_*`) + sự kiện quy trình P-a. */
+export type RoutedEvent = MeStreamEvent | MeStreamRunEvent | MeStreamProcessEvent;
 type Of<N extends RoutedEvent["event"]> = Extract<RoutedEvent, { event: N }>["data"];
 
 function lastMessageOf(m: RoomMessage) {
@@ -95,6 +101,8 @@ function onMessage(c: Ctx, { room_id, message }: Of<"room.message">): void {
     );
   }
   if (message.sender_type === "agent") c.patchDetail(room_id, (d) => applyAgentMessage(d, message));
+  // P-a (thread §6 #1): tin quy trình làm tươi view của run; KHÔNG đụng `active_runs` (đó là run agent X2b).
+  else if (message.sender_type === "process") onProcessRoomMessage(c.client, message);
   if (!findInList(c.client.getQueryData<RoomListData>(roomKeys.list), room_id)) {
     void c.client.invalidateQueries({ queryKey: roomKeys.list });
     return;
@@ -186,7 +194,13 @@ export function createEventRouter(deps: EventRouterDeps): (e: RoutedEvent) => vo
       case "stream.reset":
         // Giữ UI (không xoá cache trước): refetch list + detail/messages đang mở.
         void c.client.invalidateQueries({ queryKey: roomKeys.all });
+        resetProcessCache(c.client);
         return;
+      case "process.updated":
+      case "review_task.created":
+      case "review_task.closed":
+      case "process.notice":
+        return routeProcessEvent(c.client, e);
     }
   };
 }

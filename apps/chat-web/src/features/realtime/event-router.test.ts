@@ -242,3 +242,41 @@ test("X2b · tin agent cùng run_id bỏ run chờ; tin placement=flow không v�
   expect(items?.map((x) => x.seq)).toEqual([1, 2]);
   expect(items?.[1]?.flow).toEqual({ message_count: 3, last_active_at: LATER });
 });
+
+describe("P-a · tin sender_type=process (thread §6 #1)", () => {
+  const RUN = uid(700);
+  const processMsg = (kind: "block" | "output"): RoomMessage => ({
+    ...msg(1, 5, "Quy trình …"),
+    sender_type: "process",
+    sender: { id: uid(950), display_name: "Quy trình" },
+    process_run_id: RUN,
+    process: { kind } as RoomMessage["process"],
+  });
+
+  test("tin process (không phải block) invalidate view run, không đụng active_runs", () => {
+    seedList(room(1));
+    const key = ["process", "run", RUN] as const;
+    client.setQueryData(key, { id: RUN });
+    client.setQueryData<RoomDetail>(roomKeys.detail(uid(1)), { ...detail(1), active_runs: [] });
+    route({ event: "room.message", data: { room_id: uid(1), message: processMsg("output") } });
+    expect(client.getQueryState(key)?.isInvalidated).toBe(true);
+    expect(client.getQueryData<RoomDetail>(roomKeys.detail(uid(1)))?.active_runs).toEqual([]);
+  });
+
+  test("tin block không invalidate; sender process vào list như tin thường", () => {
+    seedList(room(1));
+    const key = ["process", "run", RUN] as const;
+    client.setQueryData(key, { id: RUN });
+    route({ event: "room.message", data: { room_id: uid(1), message: processMsg("block") } });
+    expect(client.getQueryState(key)?.isInvalidated).toBe(false);
+    expect(items()[0]?.last_message?.sender_type).toBe("process");
+  });
+
+  test("stream.reset làm tươi cả cache quy trình, giữ cờ engine", () => {
+    client.setQueryData(["process", "engine"], "on");
+    client.setQueryData(["process", "run", RUN], { id: RUN });
+    route({ event: "stream.reset", data: {} });
+    expect(client.getQueryState(["process", "run", RUN])?.isInvalidated).toBe(true);
+    expect(client.getQueryState(["process", "engine"])?.isInvalidated).toBe(false);
+  });
+});

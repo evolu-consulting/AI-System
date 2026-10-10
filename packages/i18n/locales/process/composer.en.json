@@ -1,0 +1,31 @@
+{
+  "menu": {
+    "label": "Processes",
+    "title": "Processes you can run · keep typing to filter",
+    "loading": "Loading processes…",
+    "empty": "You can't run any process yet",
+    "noMatch": "No process matches “!{{q}}”",
+    "error": "Couldn't load the process list",
+    "stages": "{{count}} stage(s)",
+    "escape": "To send text that starts with “!”, type “!!”."
+  },
+  "button": "Processes",
+  "hint": {
+    "default": "Type @ to ask an agent, ! to run a process",
+    "room": "Press Enter to start · progress shows in this room",
+    "ai": "Press Enter to start · progress shows on the card above the box"
+  },
+  "placeholder": {
+    "group": "Message the group… type @ to ask an agent, ! to run a process",
+    "dm": "Message {{name}}… type @ to ask an agent, ! to run a process"
+  },
+  "error": {
+    "notFound": "Process “!{{key}}” not found.",
+    "tooMany": "Your company is already running {{max}} processes. Try again in {{n}} seconds.",
+    "noAttach": "Processes don't accept attachments yet. Remove the files or drop the “!” and send again."
+  },
+  "toast": {
+    "started": "Started process {{name}}",
+    "open": "Open"
+  }
+}

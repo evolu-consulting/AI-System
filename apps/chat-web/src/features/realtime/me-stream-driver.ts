@@ -3,8 +3,10 @@
 // mọi I/O qua `MeStreamDeps` để unit test dựng stream/đồng hồ giả.
 import {
   type MeStreamEvent,
+  type MeStreamProcessEvent,
   type MeStreamRunEvent,
   parseMeStreamEvent,
+  parseMeStreamProcessEvent,
   parseMeStreamRunEvent,
   type RawSseEvent,
 } from "@ai/contracts/chat";
@@ -27,7 +29,7 @@ export type MeStreamDeps = {
   /** Hẹn `cb` sau `ms`; trả hàm huỷ. */
   setTimer(cb: () => void, ms: number): () => void;
   /** Sự kiện đã kiểm schema (kể cả `stream.reset` và `room.run_*` của X2b). */
-  onEvent(e: MeStreamEvent | MeStreamRunEvent): void;
+  onEvent(e: MeStreamEvent | MeStreamRunEvent | MeStreamProcessEvent): void;
   /** Cache phòng đã có dữ liệu (lần nối đầu có thể hụt khe giữa fetch và `tail` ⇒ cần nạp lại). */
   hasRoomsData?(): boolean;
 };
@@ -170,8 +172,11 @@ export class MeStreamDriver {
 
   private handle(raw: RawSseEvent): void {
     // X2b: `room.run_*` nằm ngoài `ME_STREAM_EVENTS` ⇒ thử parser run khi parser X2a trả null (vẫn ghi `lastEventId`).
+    // P-a: sự kiện quy trình (`process.updated`, `review_task.*`, `process.notice`) là khối riêng, thử sau cùng.
     const event =
-      parseMeStreamEvent(raw.event, raw.data) ?? parseMeStreamRunEvent(raw.event, raw.data);
+      parseMeStreamEvent(raw.event, raw.data) ??
+      parseMeStreamRunEvent(raw.event, raw.data) ??
+      parseMeStreamProcessEvent(raw.event, raw.data);
     if (!event) {
       if (import.meta.env?.DEV) console.warn("[me-stream] bỏ khung không hợp lệ", raw.event);
       return;

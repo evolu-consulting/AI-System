@@ -1,11 +1,12 @@
 // ADM-NFR-06 · `bun run i18n:check`: hai locale vi/en (Admin, chat/ và studio/) phải cùng tập key phẳng (spec M0 T-I18N-1).
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repoRoot } from "./lib/git";
 
 const LOCALES_DIR = "packages/i18n/locales";
 const CHAT_DIR = "packages/i18n/locales/chat";
 const STUDIO_DIR = "packages/i18n/locales/studio";
+const PROCESS_DIR = "packages/i18n/locales/process";
 const LANGS = ["vi", "en"] as const;
 type Lang = (typeof LANGS)[number];
 
@@ -74,12 +75,56 @@ function checkPair(root: string, dir: string): number {
   return 0;
 }
 
+/** P-a (CR-056): `locales/process/<phần>.{vi,en}.json` — so khoá vi/en từng phần, báo lỗi với tiền tố `process:<phần>.`. */
+function checkProcess(root: string): number {
+  const dir = join(root, PROCESS_DIR);
+  if (!existsSync(dir)) {
+    console.log("i18n:check: chưa có locale process, bỏ qua");
+    return 0;
+  }
+  const parts = [
+    ...new Set(
+      readdirSync(dir)
+        .map((f) => /^(.+)\.(vi|en)\.json$/.exec(f)?.[1])
+        .filter((p): p is string => p !== undefined),
+    ),
+  ].sort();
+  let bad = 0;
+  let total = 0;
+  for (const part of parts) {
+    const trees = LANGS.map((l) => {
+      const path = `${PROCESS_DIR}/${part}.${l}.json`;
+      if (!existsSync(join(root, path))) {
+        console.error(`i18n:check: thiếu ${path}`);
+        bad = 1;
+        return null;
+      }
+      try {
+        return JSON.parse(readFileSync(join(root, path), "utf8")) as unknown;
+      } catch (err) {
+        console.error(`i18n:check: ${path} không phải JSON hợp lệ (${(err as Error).message})`);
+        bad = 1;
+        return null;
+      }
+    });
+    const [vi, en] = trees;
+    if (vi === null || vi === undefined || en === null || en === undefined) continue;
+    const { missingVi, missingEn } = diffKeys(vi, en);
+    for (const k of missingVi) console.error(`MISSING_vi process:${part}.${k}`);
+    for (const k of missingEn) console.error(`MISSING_en process:${part}.${k}`);
+    if (missingVi.length || missingEn.length) bad = 1;
+    total += flattenKeys(vi).length;
+  }
+  if (!bad) console.log(`i18n:check OK ${PROCESS_DIR} (${parts.length} phần, ${total} key)`);
+  return bad;
+}
+
 function main(): number {
   const root = repoRoot();
   // Gộp để mọi cặp đều được báo, không dừng ở cặp đầu.
-  return [LOCALES_DIR, CHAT_DIR, STUDIO_DIR].map((d) => checkPair(root, d)).some((c) => c !== 0)
-    ? 1
-    : 0;
+  const codes = [LOCALES_DIR, CHAT_DIR, STUDIO_DIR].map((d) => checkPair(root, d));
+  codes.push(checkProcess(root));
+  return codes.some((c) => c !== 0) ? 1 : 0;
 }
 
 if (import.meta.main) process.exit(main());

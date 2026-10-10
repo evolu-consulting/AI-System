@@ -1,0 +1,36 @@
+{
+  "title": "{{agent}} needs more information · question {{n}}/{{max}}",
+  "hintMulti": "Click a chip to fill the answer box, then click Send answer.",
+  "answer": "Answer",
+  "send": "Send answer",
+  "forward": "Ask someone else to answer",
+  "forwardReview": "Pass the review to someone else",
+  "forwardTitle": "Who should answer?",
+  "forwardHelp": "Anyone in your company, they don't need to be in this room.",
+  "search": "Find a person",
+  "note": "Message (optional)",
+  "submit": "Ask",
+  "cancel": "Cancel",
+  "forwarded": "Asked {{to}} (forward {{k}}/{{max}}) · you can still answer; the first answer locks the question",
+  "fromYou": "{{from}} asked you to answer",
+  "context": "Context",
+  "onlyThis": "You only see this question. The run uses {{starter}}'s permissions and quota.",
+  "locked": "Already forwarded {{max}} times",
+  "answered": "{{who}} answered · {{time}}",
+  "waitingOn": "Waiting for {{name}} to answer",
+  "waitingAny": "Waiting for someone to answer",
+  "toast": {
+    "forwarded": "Asked {{to}} to answer",
+    "answered": "Answer sent"
+  },
+  "err": {
+    "target": "This person can't receive it (inactive, other company, you, or already asked).",
+    "limit": "Already forwarded the maximum of {{max}} times.",
+    "group": "You can only pass it to someone in the reviewing group.",
+    "closed": "Someone has already answered."
+  },
+  "typed": "Answer in writing",
+  "fwd": {
+    "line": "↪ {{from}} asked {{to}} to answer (forward {{depth}}/{{max}})"
+  }
+}

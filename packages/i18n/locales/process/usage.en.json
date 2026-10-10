@@ -1,0 +1,43 @@
+{
+  "title": "Tokens by stage",
+  "kpi": {
+    "total": "Total tokens",
+    "in": "Input",
+    "out": "Output",
+    "cache": "Cache",
+    "calls": "Calls"
+  },
+  "col": {
+    "stage": "Stage",
+    "attempts": "Runs",
+    "asks": "Follow-ups",
+    "role": "Role",
+    "agent": "Agent",
+    "model": "Model",
+    "time": "Time"
+  },
+  "expand": "Show calls of stage {{name}}",
+  "calls": "Calls of stage {{name}}",
+  "team": "Team: {{mode}} · {{status}} · {{seconds}} s",
+  "mode": {
+    "sequential": "Fixed order",
+    "lead_plan": "Lead plans",
+    "parallel_merge": "Parallel + merge"
+  },
+  "teamStatus": {
+    "running": "Running",
+    "waiting_answer": "Waiting for an answer",
+    "done": "Done",
+    "limit": "Limit reached",
+    "failed": "Failed",
+    "cancelled": "Cancelled"
+  },
+  "role": {
+    "plan": "Plan",
+    "member": "Member",
+    "agent": "Agent"
+  },
+  "empty": "No calls yet",
+  "summary": "You only see totals per stage.",
+  "footnote": "Tokens only (from the usage log). Cost conversion comes with quota (H3c)."
+}

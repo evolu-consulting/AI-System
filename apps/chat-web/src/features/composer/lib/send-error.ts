@@ -1,6 +1,6 @@
 // HUB-FR-10/11 · lỗi E12 trước stream hiện TRONG composer (plan-frontend §0 D5, §1.4): chọn câu + gợi ý từ `ApiError`.
 // F2 đã thêm `AGENT_NOT_FOUND`, `TOO_MANY_RUNS`; F3 thêm `ATTACHMENT_NOT_FOUND`; CR-054 thêm `DEFAULT_AGENT_FORBIDDEN`.
-import { CMD_SUGGESTIONS_MAX } from "@ai/contracts/chat";
+import { CMD_SUGGESTIONS_MAX, PROCESS_RUNS_PER_TENANT } from "@ai/contracts/chat";
 import { leadingTag } from "~/features/agents/lib/mention";
 import { leadingCommand } from "~/features/commands/lib/slash";
 import type { ApiError } from "~/lib/http";
@@ -12,7 +12,15 @@ const COMPOSER_CODES: ReadonlySet<string> = new Set([
   "TOO_MANY_RUNS",
   "ATTACHMENT_NOT_FOUND",
   "DEFAULT_AGENT_FORBIDDEN",
+  // P-a (CR-056): `!key` ở composer + `@agent` trong thread quy trình.
+  "PROCESS_NOT_FOUND",
+  "TOO_MANY_PROCESS_RUNS",
+  "PROCESS_THREAD_NO_AGENT",
 ]);
+
+/** Mã 429 có đếm ngược `Retry-After` (agent hoặc quy trình). */
+export const isCooldownCode = (code: string): boolean =>
+  code === "TOO_MANY_RUNS" || code === "TOO_MANY_PROCESS_RUNS";
 
 export const isComposerError = (err: ApiError): boolean => COMPOSER_CODES.has(err.code);
 
@@ -21,10 +29,14 @@ export type SendErrorView = {
   lines: SendErrorLine[];
   suggestions: string[];
   /** Tiền tố nút gợi ý (mặc định `/`; agent → `@`). */
-  suggestionPrefix?: "@";
+  suggestionPrefix?: "@" | "!";
   /** Tag không tìm thấy (để thay bằng gợi ý). */
   tag?: string;
 };
+
+/** `!key` đầu tin (không phải `!!`): để dựng câu "Không tìm thấy quy trình". */
+const leadingBangKey = (text: string): string | null =>
+  /^!([a-z0-9-]+)/.exec(text.trimStart())?.[1] ?? null;
 
 /** Giây chờ mặc định khi 429 không kèm `Retry-After` hợp lệ (đã chuẩn hoá ở `lib/http`). */
 export const retrySecondsOf = (err: ApiError): number => err.retryAfter ?? 5;
@@ -58,6 +70,36 @@ function missingArgView(d: Record<string, unknown>, text: string): SendErrorView
   return { lines, suggestions: [] };
 }
 
+/** Lỗi của quy trình (P-a): `!key` không có, 429 quy trình, `@agent` trong thread quy trình. */
+function processErrorView(
+  err: ApiError,
+  text: string,
+  d: Record<string, unknown>,
+  retryLeft?: number,
+): SendErrorView | null {
+  if (err.code === "PROCESS_NOT_FOUND") {
+    const key = typeof d.key === "string" ? d.key : (leadingBangKey(text) ?? "");
+    return {
+      lines: [{ key: "process.composer.error.notFound", params: { key } }],
+      suggestions: strings(d.suggestions, CMD_SUGGESTIONS_MAX),
+      suggestionPrefix: "!",
+      tag: key,
+    };
+  }
+  if (err.code === "TOO_MANY_PROCESS_RUNS") {
+    const n = String(Math.max(retryLeft ?? retrySecondsOf(err), 0));
+    const max = String(PROCESS_RUNS_PER_TENANT);
+    return {
+      lines: [{ key: "process.composer.error.tooMany", params: { n, max } }],
+      suggestions: [],
+    };
+  }
+  if (err.code === "PROCESS_THREAD_NO_AGENT") {
+    return { lines: [{ key: "process.thread.err.noAgent", params: {} }], suggestions: [] };
+  }
+  return null;
+}
+
 /** `null` khi mã không thuộc composer. `text` = chữ đã gửi (nguồn của `{name}`/`{tag}`). */
 export function sendErrorView(
   err: ApiError,
@@ -85,6 +127,8 @@ export function sendErrorView(
     const n = String(Math.max(retryLeft ?? retrySecondsOf(err), 0));
     return { lines: [{ key: "sendError.tooManyRuns", params: { n } }], suggestions: [] };
   }
+  const proc = processErrorView(err, text, d, retryLeft);
+  if (proc) return proc;
   if (err.code === "ATTACHMENT_NOT_FOUND") {
     return { lines: [{ key: "sendError.attachmentNotFound", params: {} }], suggestions: [] };
   }

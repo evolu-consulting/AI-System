@@ -1,0 +1,81 @@
+{
+  "card": {
+    "aria": "Process {{name}}",
+    "title": "Process · {{name}}"
+  },
+  "line": {
+    "running": "Running · Stage {{n}}/{{total}} · {{stage}}",
+    "queued": "Queued · Stage {{n}}/{{total}}",
+    "reviewMe": "Waiting for your review",
+    "reviewOther": "Waiting for a reviewer",
+    "askMe": "Needs your answer",
+    "askOther": "Waiting for {{name}} to answer",
+    "decideMe": "Needs your decision",
+    "decideOther": "Needs a decision · {{reason}}",
+    "redo": "rework {{n}}/{{max}}",
+    "next": "Stage {{n}} is running"
+  },
+  "action": {
+    "view": "View progress",
+    "review": "Review now",
+    "answer": "Answer",
+    "decide": "Decide",
+    "result": "View result",
+    "detail": "View details"
+  },
+  "runsAs": "Runs with {{name}}'s permissions",
+  "conversation": {
+    "title": "Processes in this conversation"
+  },
+  "loadError": "Couldn't load the process",
+  "gone": "You can no longer view this run",
+  "pane": {
+    "label": "Open process",
+    "close": "Close",
+    "executor": "Done by {{name}}",
+    "attempt": "Attempt {{a}} · {{n}} reworks left",
+    "versions": "Versions",
+    "missing": "Missing required sections: {{list}}",
+    "noOutput": "No output yet",
+    "lock": "Has a reviewer",
+    "realAction": "Real action",
+    "history": "History ({{n}})",
+    "openPage": "Open run page"
+  },
+  "cancel": {
+    "button": "Cancel run",
+    "title": "Cancel this run?",
+    "body": "The run stops for good; existing results stay viewable.",
+    "confirm": "Yes, cancel",
+    "keep": "Keep running",
+    "done": "Run cancelled"
+  },
+  "review": {
+    "region": "Review {{stage}}",
+    "title": "{{agent}} needs your review before continuing",
+    "pass": "Pass",
+    "passHint": "Continue to the next stage",
+    "fail": "Needs rework",
+    "failHint": "Write feedback for a rework",
+    "feedback": "Feedback for {{agent}} (required)",
+    "help": "{{agent}} will rework it using your feedback ({{n}} left).",
+    "submit": "Send feedback · rework",
+    "cancel": "Cancel",
+    "waiting": "Waiting for a reviewer",
+    "taken": "Someone else already decided",
+    "passed": "Stage {{stage}} approved",
+    "sent": "Feedback sent. {{agent}} will rework it ({{n}} left)",
+    "closed": "{{name}} · {{result}} · {{time}}"
+  },
+  "decision": {
+    "region": "Needs a decision",
+    "title": "The process stopped at stage {{stage}}",
+    "note": "Note (optional)",
+    "waiting": "Waiting for {{name}} or an administrator to decide",
+    "noOutput": "There is no version to use yet",
+    "done": "Decision recorded"
+  },
+  "outputs": {
+    "title": "Outputs"
+  }
+}

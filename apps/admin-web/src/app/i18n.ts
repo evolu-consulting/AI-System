@@ -1,5 +1,6 @@
 // ADM-NFR-06, ADM-FR-01 · khởi tạo i18next; CR-052: `ai.locale` đã lưu, không có thì en (không dò trình duyệt), `<html lang>` đi theo ngôn ngữ đang dùng.
 import { DEFAULT_LOCALE, type Locale, loadLocale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
+import { loadProcessLocale, toSingleBrace } from "@ai/i18n/process-locales";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 
@@ -59,3 +60,22 @@ export const initI18n = (): Promise<unknown> =>
     });
 
 export const i18n = i18next;
+
+const processLoaded = new Map<string, Promise<void>>();
+
+/**
+ * P-a FD3: nạp chuỗi `process.*` (chỉ phần `common` + `admin`) của `lng` vào bundle đang dùng — chỉ gọi khi engine `on`
+ * (`useProcessEngine`). Admin dùng `{x}` thay `{{x}}` nên đổi cú pháp tham số khi nạp.
+ */
+export function ensureProcessLocale(lng: string): Promise<void> {
+  if (!isSupported(lng)) return Promise.resolve();
+  let p = processLoaded.get(lng);
+  if (!p) {
+    p = loadProcessLocale(lng, ["common", "admin"]).then((bundle) => {
+      i18next.addResourceBundle(lng, "translation", toSingleBrace(bundle), true, true);
+    });
+    p.catch(() => processLoaded.delete(lng));
+    processLoaded.set(lng, p);
+  }
+  return p;
+}

@@ -1,0 +1,43 @@
+{
+  "title": "Token theo giai đoạn",
+  "kpi": {
+    "total": "Tổng token",
+    "in": "Vào",
+    "out": "Ra",
+    "cache": "Cache",
+    "calls": "Lượt gọi"
+  },
+  "col": {
+    "stage": "Giai đoạn",
+    "attempts": "Lần chạy",
+    "asks": "Hỏi lại",
+    "role": "Vai",
+    "agent": "Agent",
+    "model": "Model",
+    "time": "Thời gian"
+  },
+  "expand": "Xem lượt gọi giai đoạn {{name}}",
+  "calls": "Lượt gọi giai đoạn {{name}}",
+  "team": "Nhóm: {{mode}} · {{status}} · {{seconds}} s",
+  "mode": {
+    "sequential": "Kịch bản cố định",
+    "lead_plan": "Trưởng nhóm lập kế hoạch",
+    "parallel_merge": "Song song + gộp"
+  },
+  "teamStatus": {
+    "running": "Đang chạy",
+    "waiting_answer": "Chờ trả lời",
+    "done": "Xong",
+    "limit": "Chạm giới hạn",
+    "failed": "Lỗi",
+    "cancelled": "Đã huỷ"
+  },
+  "role": {
+    "plan": "Kế hoạch",
+    "member": "Thành viên",
+    "agent": "Agent"
+  },
+  "empty": "Chưa có lượt gọi nào",
+  "summary": "Bạn chỉ xem tổng theo giai đoạn.",
+  "footnote": "Chỉ đếm token (từ nhật ký sử dụng). Quy ra tiền khi có quota (H3c)."
+}

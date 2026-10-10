@@ -13,9 +13,11 @@ export type AskCardProps = {
   onPick?: (choice: string) => unknown;
   /** Tiêu đề + tên vùng; vắng → `ask.title` (C1). */
   title?: string;
+  /** Dòng gợi ý dưới thẻ: vắng ⇒ `ask.hint` (C1); `null` ⇒ ẩn (P-a: thẻ trong thread có composer riêng). */
+  hint?: string | null;
 };
 
-export function AskCard({ question, choices, answered, onPick, title }: AskCardProps) {
+export function AskCard({ question, choices, answered, onPick, title, hint }: AskCardProps) {
   const { t } = useTranslation();
   const [picked, setPicked] = useState(false);
   const disabled = answered || picked || !onPick;
@@ -47,7 +49,9 @@ export function AskCard({ question, choices, answered, onPick, title }: AskCardP
           ))}
         </div>
       )}
-      <p className="text-caption text-muted-foreground">{t("ask.hint")}</p>
+      {hint !== null && (
+        <p className="text-caption text-muted-foreground">{hint ?? t("ask.hint")}</p>
+      )}
     </section>
   );
 }

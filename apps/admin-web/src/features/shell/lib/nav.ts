@@ -11,6 +11,7 @@ export type NavId =
   | "features"
   | "commands"
   | "workflows"
+  | "processes"
   | "groups"
   | "access"
   | "secrets"
@@ -27,6 +28,7 @@ type NavTo =
   | "/features"
   | "/commands"
   | "/workflows"
+  | "/processes"
   | "/secrets"
   | "/usage"
   | "/audit"
@@ -42,6 +44,7 @@ export type NavItem = {
     | "nav.features"
     | "nav.commands"
     | "nav.workflows"
+    | "nav.processes"
     | "nav.groups"
     | "nav.access"
     | "nav.secrets"
@@ -67,6 +70,7 @@ const AGENTS = item("agents", "/agents");
 const FEATURES = item("features", "/features");
 const COMMANDS = item("commands", "/commands");
 const WORKFLOWS = item("workflows", "/workflows");
+const PROCESSES = item("processes", "/processes");
 const GROUPS = item("groups", "/groups");
 const ACCESS = item("access", "/access");
 const SECRETS = item("secrets", "/secrets");
@@ -74,12 +78,16 @@ const USAGE = item("usage", "/usage");
 const AUDIT = item("audit", "/audit");
 const TRANSFER = item("transfer", "/transfer");
 
-/** Menu theo role. `member` không dùng khung quản trị nên không có mục nào. */
-export function navGroups(role: Role | undefined): NavGroup[] {
+/** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn. */
+export type NavOptions = { processes?: boolean };
+
+/** Menu theo role. `member` không dùng khung quản trị nên không có mục nào. Mục "Quy trình" (CHỨC NĂNG, cả hai role) chỉ khi `opts.processes`. */
+export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGroup[] {
+  const proc = opts.processes ? [PROCESSES] : [];
   if (role === "platform_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },
-      { labelKey: "nav.group.features", items: [AGENTS, FEATURES, COMMANDS, WORKFLOWS] },
+      { labelKey: "nav.group.features", items: [AGENTS, FEATURES, COMMANDS, WORKFLOWS, ...proc] },
       { labelKey: "nav.group.access", items: [TENANTS, USERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
       { labelKey: "nav.group.system", items: [USAGE, AUDIT, TRANSFER] },
@@ -88,7 +96,7 @@ export function navGroups(role: Role | undefined): NavGroup[] {
   if (role === "tenant_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },
-      { labelKey: "nav.group.features", items: [AGENTS] },
+      { labelKey: "nav.group.features", items: [AGENTS, ...proc] },
       { labelKey: "nav.group.access", items: [USERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.system", items: [USAGE, AUDIT] },
     ];
@@ -105,7 +113,8 @@ export type Crumb = {
     | "workflows.editor.titleNew"
     | "commands.editor.titleNew"
     | "groups.editor.titleNew"
-    | "features.editor.titleNew";
+    | "features.editor.titleNew"
+    | "process.admin.editor.title.new";
   to?: string;
 };
 
@@ -114,6 +123,7 @@ const CATALOG: Record<string, { labelKey: NavItem["labelKey"]; newKey: Crumb["la
   commands: { labelKey: "nav.commands", newKey: "commands.editor.titleNew" },
   features: { labelKey: "nav.features", newKey: "features.editor.titleNew" },
   groups: { labelKey: "nav.groups", newKey: "groups.editor.titleNew" },
+  processes: { labelKey: "nav.processes", newKey: "process.admin.editor.title.new" },
 };
 
 /** Breadcrumb của danh sách và editor M2 (`/workflows`, `/commands/new`, `/features/<id>`). */

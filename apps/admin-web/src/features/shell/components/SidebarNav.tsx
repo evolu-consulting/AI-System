@@ -5,6 +5,7 @@ import {
   Bot,
   Building2,
   Coins,
+  GitBranch,
   History,
   KeyRound,
   LayoutDashboard,
@@ -17,6 +18,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useProcessEngineOn } from "@/features/processes/engine";
 import { useSession } from "@/lib/auth/use-session";
 import { cn } from "@/lib/utils";
 import { type NavId, navGroups } from "../lib/nav";
@@ -31,6 +33,7 @@ const ICONS: Record<NavId, LucideIcon> = {
   features: Package,
   commands: Terminal,
   workflows: Workflow,
+  processes: GitBranch,
   secrets: KeyRound,
   usage: Coins,
   audit: History,
@@ -42,9 +45,10 @@ type Props = { collapsed?: boolean; onNavigate?: () => void };
 export function SidebarNav({ collapsed = false, onNavigate }: Props) {
   const { t } = useTranslation();
   const role = useSession((s) => s.me?.role);
+  const processes = useProcessEngineOn(); // P-a FD2: mục "Quy trình" chỉ khi engine on
   return (
     <nav aria-label={t("nav.main")} className="flex-1 space-y-4 overflow-y-auto p-3">
-      {navGroups(role).map((group) => (
+      {navGroups(role, { processes }).map((group) => (
         <div key={group.labelKey ?? "root"} className="space-y-1">
           {group.labelKey && !collapsed ? (
             <p className="px-3 pb-1 text-micro font-semibold tracking-wide text-subtle-foreground">

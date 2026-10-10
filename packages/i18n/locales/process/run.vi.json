@@ -1,0 +1,81 @@
+{
+  "card": {
+    "aria": "Quy trình {{name}}",
+    "title": "Quy trình · {{name}}"
+  },
+  "line": {
+    "running": "Đang chạy · Giai đoạn {{n}}/{{total}} · {{stage}}",
+    "queued": "Đang xếp hàng · Giai đoạn {{n}}/{{total}}",
+    "reviewMe": "Chờ bạn kiểm",
+    "reviewOther": "Chờ người kiểm",
+    "askMe": "Cần bạn trả lời",
+    "askOther": "Chờ {{name}} trả lời",
+    "decideMe": "Cần bạn quyết định",
+    "decideOther": "Cần người quyết · {{reason}}",
+    "redo": "làm lại {{n}}/{{max}}",
+    "next": "Giai đoạn {{n}} đang chạy"
+  },
+  "action": {
+    "view": "Xem tiến độ",
+    "review": "Kiểm ngay",
+    "answer": "Trả lời",
+    "decide": "Quyết định",
+    "result": "Xem kết quả",
+    "detail": "Xem chi tiết"
+  },
+  "runsAs": "Chạy bằng quyền của {{name}}",
+  "conversation": {
+    "title": "Quy trình trong hội thoại này"
+  },
+  "loadError": "Không tải được quy trình",
+  "gone": "Bạn không còn xem được lượt chạy này",
+  "pane": {
+    "label": "Quy trình đang mở",
+    "close": "Đóng",
+    "executor": "Làm bởi {{name}}",
+    "attempt": "Lần {{a}} · còn {{n}} lần làm lại",
+    "versions": "Phiên bản",
+    "missing": "Thiếu mục bắt buộc: {{list}}",
+    "noOutput": "Chưa có kết quả",
+    "lock": "Có người kiểm",
+    "realAction": "Hành động thật",
+    "history": "Lịch sử ({{n}})",
+    "openPage": "Mở trang lượt chạy"
+  },
+  "cancel": {
+    "button": "Huỷ lượt chạy",
+    "title": "Huỷ lượt chạy này?",
+    "body": "Lượt chạy dừng hẳn, kết quả đã có vẫn xem được.",
+    "confirm": "Xác nhận huỷ",
+    "keep": "Giữ lại",
+    "done": "Đã huỷ lượt chạy"
+  },
+  "review": {
+    "region": "Kiểm {{stage}}",
+    "title": "{{agent}} cần bạn kiểm trước khi chạy tiếp",
+    "pass": "Đạt",
+    "passHint": "Chạy tiếp giai đoạn kế",
+    "fail": "Chưa đạt",
+    "failHint": "Ghi góp ý để làm lại",
+    "feedback": "Góp ý cho {{agent}} (bắt buộc)",
+    "help": "{{agent}} sẽ làm lại theo góp ý (còn {{n}} lần).",
+    "submit": "Gửi góp ý · làm lại",
+    "cancel": "Huỷ",
+    "waiting": "Đang chờ người kiểm",
+    "taken": "Đã có người khác quyết",
+    "passed": "Đã duyệt giai đoạn {{stage}}",
+    "sent": "Đã gửi góp ý. {{agent}} sẽ làm lại ({{n}} lần còn lại)",
+    "closed": "{{name}} · {{result}} · {{time}}"
+  },
+  "decision": {
+    "region": "Cần người quyết",
+    "title": "Quy trình dừng ở giai đoạn {{stage}}",
+    "note": "Ghi chú (tuỳ chọn)",
+    "waiting": "Đang chờ {{name}} hoặc quản trị viên quyết định",
+    "noOutput": "Chưa có bản nào để dùng",
+    "done": "Đã ghi quyết định"
+  },
+  "outputs": {
+    "title": "Kết quả"
+  }
+}

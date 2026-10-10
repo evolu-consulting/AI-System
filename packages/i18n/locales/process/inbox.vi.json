@@ -1,0 +1,53 @@
+{
+  "todo": {
+    "title": "Chờ tôi kiểm",
+    "empty": "Không có việc nào chờ bạn",
+    "more": "Xem thêm",
+    "error": "Không tải được việc cần làm.",
+    "badge": "{{count}} việc đang chờ"
+  },
+  "kind": {
+    "review": "Kiểm",
+    "ask": "Trả lời",
+    "decision": "Quyết định"
+  },
+  "dm": {
+    "subtitle": "Tài khoản hệ thống · Hub gửi việc cần bạn xử lý, kể cả khi bạn không ở phòng đó",
+    "log": "Thông báo quy trình",
+    "footer": "Đây là kênh thông báo của quy trình, không nhắn trả lời được. Xử lý việc bằng các nút trong thẻ.",
+    "empty": "Chưa có thông báo nào",
+    "unread": "{{count}} chưa đọc"
+  },
+  "notice": {
+    "review_requested": "Cần bạn kiểm: {{process}} · {{stage}}",
+    "ask_requested": "Cần bạn trả lời: {{process}} · {{stage}}",
+    "decision_requested": "Cần bạn quyết định: {{process}}",
+    "reminder": "Nhắc: việc ở {{process}} vẫn đang chờ bạn",
+    "task_closed": "Việc ở {{process}} · {{stage}} đã được xử lý",
+    "run_finished": "Quy trình {{process}} đã kết thúc",
+    "expand": "Xem & xử lý",
+    "openRun": "Mở trang lượt chạy"
+  },
+  "run": {
+    "tab": {
+      "progress": "Tiến độ",
+      "token": "Token",
+      "log": "Nhật ký"
+    },
+    "back": {
+      "room": "Quay lại {{name}}",
+      "ai": "Quay lại Hỏi AI"
+    },
+    "banner": "Bạn không ở phòng này. Bạn chỉ xem được phần cần xử lý (kết quả hoặc câu hỏi của việc này), không đọc được tin nhắn khác. Quyền xem gắn với việc này và được ghi nhật ký.",
+    "meta": "{{starter}} khởi chạy · {{time}} · giai đoạn {{n}}/{{total}}",
+    "log": {
+      "empty": "Chưa có hoạt động",
+      "review": "{{actor}} kiểm: {{result}}",
+      "ask": "{{actor}} trả lời",
+      "decision": "{{actor}} quyết định: {{result}}",
+      "forward": "{{actor}} nhờ {{to}}",
+      "cancel": "{{actor}} huỷ lượt chạy",
+      "expire": "Lượt chạy hết hạn"
+    }
+  }
+}

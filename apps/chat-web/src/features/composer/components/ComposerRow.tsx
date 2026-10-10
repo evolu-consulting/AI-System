@@ -1,7 +1,7 @@
 // CHAT-AC-05, X2a-AC · hàng nhập của Composer: [đính kèm] textarea [Gửi|Dừng]. `attach = null` ⇒ không nút đính kèm và thả tệp chỉ bị chặn mặc định (không upload).
 import type { TFunction } from "i18next";
 import { ArrowUp, Square } from "lucide-react";
-import type { KeyboardEventHandler, RefObject } from "react";
+import type { KeyboardEventHandler, ReactNode, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { AttachButton } from "~/features/attachments/components/AttachButton";
@@ -28,6 +28,10 @@ type Props = {
   enabled: boolean;
   sendTitle: string | undefined;
   attach: RowAttach | null;
+  /** Slot cạnh nút Gửi (P-a: nút "Quy trình"). */
+  extra?: ReactNode;
+  /** Nhãn nút Gửi thay mặc định (P-a thread §5). */
+  sendLabel?: string;
   onChange(value: string, caret: number): void;
   onCaret(caret: number): void;
   onKeyDown: KeyboardEventHandler<HTMLTextAreaElement>;
@@ -59,6 +63,7 @@ export function ComposerRow(p: Props) {
         onKeyDown={p.onKeyDown}
         className="max-h-none min-h-6 flex-1 resize-none bg-transparent px-2 py-1 text-sm leading-6 outline-none placeholder:text-placeholder"
       />
+      {p.extra}
       {p.running ? (
         <Button type="button" size="icon" aria-label={t("composer.stop")} onClick={p.onStop}>
           <Square className="size-4 fill-current" aria-hidden="true" />
@@ -67,7 +72,7 @@ export function ComposerRow(p: Props) {
         <Button
           type="button"
           size="icon"
-          aria-label={t(p.flow ? "composer.sendInFlow" : "composer.send")}
+          aria-label={p.sendLabel ?? t(p.flow ? "composer.sendInFlow" : "composer.send")}
           title={p.sendTitle}
           disabled={!p.enabled}
           onClick={p.onSend}

@@ -1,0 +1,69 @@
+{
+  "title": "{{name}} · !{{key}}",
+  "block": {
+    "startedBy": "Started by {{name}}",
+    "startedByMe": "You started it",
+    "openThread": "Open thread"
+  },
+  "chip": {
+    "rework": "Rework {{a}}/{{max}}",
+    "asks": "Questions {{n}}/{{max}}"
+  },
+  "output": {
+    "title": "Stage {{n}} · {{stage}}",
+    "aria": "Result {{stage}} v{{version}}",
+    "by": "Done by {{name}}",
+    "byTeam": "Done by team {{name}}",
+    "summary": "✓ {{count}} steps · {{seconds}} · {{tokens}} tokens",
+    "steps": "Details of {{count}} steps",
+    "step": "{{agent}} · {{model}} · {{seconds}} · {{tokens}} tokens",
+    "show": "Show content",
+    "hide": "Collapse",
+    "auto": "Continues to the next stage automatically"
+  },
+  "role": {
+    "agent": "Agent",
+    "plan": "Planner",
+    "member": "Member"
+  },
+  "wait": {
+    "review": "Waiting for {{names}} to review — only reviewers can act.",
+    "ask": "Waiting for {{names}} to answer",
+    "decide": "Waiting for {{names}} or an administrator to decide",
+    "more": "{{first}} and {{count}} others",
+    "group": "group {{group}}"
+  },
+  "decision": {
+    "stopped": "The process stopped at stage {{stage}}"
+  },
+  "result": {
+    "aria": "{{actor}} · {{result}} · {{time}}",
+    "outside": "outside the room",
+    "feedback": "Feedback",
+    "answered": "Answered",
+    "decided": "chose: {{option}}",
+    "sections": "Sections to rework: {{list}}"
+  },
+  "forward": {
+    "line": "↪ {{from}} passed it to {{to}} (pass {{depth}}/{{max}})"
+  },
+  "end": {
+    "done": "Run completed",
+    "cancelledBy": "{{actor}} cancelled the run",
+    "cancelled": "The run was cancelled",
+    "failed": "The run failed",
+    "expired": "The run expired (7 days without action)",
+    "open": "Open run page"
+  },
+  "hint": "This is a person-to-person thread; the process agents don't read it. To ask an agent, write in the room's main chat.",
+  "err": {
+    "noAgent": "You can't call agents with @ in a process thread. Do it in the room's main chat."
+  },
+  "mode": {
+    "feedback": "Needs rework · feedback for {{agent}}",
+    "answer": "Answer {{agent}}",
+    "cancel": "Cancel"
+  },
+  "stale": "Couldn't load the process status",
+  "left": "You are no longer in this room. View the run on its own page."
+}

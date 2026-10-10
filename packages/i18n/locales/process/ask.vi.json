@@ -1,0 +1,36 @@
+{
+  "title": "{{agent}} cần thêm thông tin · lần hỏi {{n}}/{{max}}",
+  "hintMulti": "Bấm chip để điền vào ô trả lời, rồi bấm Gửi trả lời.",
+  "answer": "Câu trả lời",
+  "send": "Gửi trả lời",
+  "forward": "Nhờ người khác trả lời",
+  "forwardReview": "Chuyển người khác kiểm",
+  "forwardTitle": "Nhờ ai trả lời?",
+  "forwardHelp": "Ai trong công ty cũng được, không cần ở phòng này.",
+  "search": "Tìm người",
+  "note": "Lời nhắn (tuỳ chọn)",
+  "submit": "Nhờ trả lời",
+  "cancel": "Huỷ",
+  "forwarded": "Đã nhờ {{to}} (chuyển {{k}}/{{max}}) · bạn vẫn trả lời được, ai trả lời trước thì khoá câu hỏi",
+  "fromYou": "{{from}} nhờ bạn trả lời",
+  "context": "Ngữ cảnh kèm theo",
+  "onlyThis": "Bạn chỉ thấy câu hỏi này. Lượt chạy dùng quyền và quota của {{starter}}.",
+  "locked": "Đã nhờ tối đa {{max}} lần",
+  "answered": "{{who}} đã trả lời · {{time}}",
+  "waitingOn": "Đang chờ {{name}} trả lời",
+  "waitingAny": "Đang chờ người trả lời",
+  "toast": {
+    "forwarded": "Đã nhờ {{to}} trả lời",
+    "answered": "Đã gửi câu trả lời"
+  },
+  "err": {
+    "target": "Người này không thể nhận (không hoạt động, khác công ty, là bạn hoặc đã được nhờ).",
+    "limit": "Đã nhờ tối đa {{max}} lần.",
+    "group": "Chỉ chuyển được cho người cùng nhóm kiểm.",
+    "closed": "Đã có người trả lời."
+  },
+  "typed": "Trả lời bằng văn bản",
+  "fwd": {
+    "line": "↪ {{from}} đã nhờ {{to}} trả lời (chuyển {{depth}}/{{max}})"
+  }
+}

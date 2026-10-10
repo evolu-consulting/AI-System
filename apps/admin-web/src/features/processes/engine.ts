@@ -1,0 +1,51 @@
+// ADM-FR-65 · CR-056 · P-a FD2: cờ engine dò lúc chạy — `on` mới hiện nav "Quy trình" và nạp chuỗi `process.*` (phần `common` + `admin`).
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { ensureProcessLocale } from "@/app/i18n";
+import { useSession } from "@/lib/auth/use-session";
+import { type EngineState, probeEngine } from "./api";
+
+export const PROCESS_ENGINE_KEY = ["process", "engine"] as const;
+const STALE_MS = 5 * 60_000;
+const RETRY_MS = 30_000;
+
+/** `on` chỉ khi Hub báo bật VÀ chuỗi `process.*` của ngôn ngữ hiện tại đã nạp. Lỗi mạng/5xx ⇒ `unknown` (ẩn), thử lại 1 lần sau 30 s. */
+export function useProcessEngine(): EngineState {
+  const { i18n } = useTranslation();
+  const lng = i18n.language;
+  // `member` không vào khung quản trị ⇒ không dò.
+  const role = useSession((s) => s.me?.role);
+  const allowed = role === "platform_admin" || role === "tenant_admin";
+  const probe = useQuery({
+    queryKey: PROCESS_ENGINE_KEY,
+    queryFn: probeEngine,
+    enabled: allowed,
+    staleTime: STALE_MS,
+    retry: 1,
+    retryDelay: RETRY_MS,
+  });
+  const on = probe.data === "on";
+  const locale = useQuery({
+    queryKey: ["process", "locale", lng],
+    queryFn: async () => {
+      await ensureProcessLocale(lng);
+      return true;
+    },
+    enabled: on,
+    staleTime: Number.POSITIVE_INFINITY,
+    placeholderData: (prev) => prev,
+  });
+  if (probe.data === "off") return "off";
+  return on && locale.data === true ? "on" : "unknown";
+}
+
+export const useProcessEngineOn = (): boolean => useProcessEngine() === "on";
+
+/** Route quy trình: `on` vẽ trang; `off` (hoặc dò lỗi) ⇒ NotFound; còn đang dò ⇒ `pending`. */
+export function useEngineRoute(): "pending" | "on" | "off" {
+  const state = useProcessEngine();
+  const probe = useQuery<EngineState>({ queryKey: PROCESS_ENGINE_KEY, enabled: false });
+  if (state === "on") return "on";
+  if (state === "off" || probe.isError) return "off";
+  return "pending";
+}

@@ -1,0 +1,67 @@
+{
+  "status": {
+    "running": "Đang chạy",
+    "waiting_review": "Chờ kiểm",
+    "waiting_answer": "Chờ trả lời",
+    "needs_decision": "Cần người quyết",
+    "done": "Hoàn tất",
+    "cancelled": "Đã huỷ",
+    "failed": "Lỗi",
+    "expired": "Hết hạn"
+  },
+  "stage": {
+    "pending": "Chưa tới",
+    "queued": "Đang xếp hàng"
+  },
+  "result": {
+    "pass": "Đạt",
+    "fail": "Chưa đạt",
+    "answer": "Đã trả lời",
+    "add_attempt": "Thêm 1 lần làm lại",
+    "use_current": "Dùng bản hiện có",
+    "cancel": "Huỷ lượt chạy",
+    "cancelled": "Đã huỷ",
+    "expired": "Hết hạn",
+    "superseded": "Đã có người khác xử lý"
+  },
+  "option": {
+    "add_attempt": "Thêm 1 lần làm lại",
+    "use_current": "Dùng bản hiện có",
+    "cancel": "Huỷ lượt chạy"
+  },
+  "sender": {
+    "name": "Quy trình"
+  },
+  "error": {
+    "load": "Không tải được.",
+    "retry": "Thử lại",
+    "notFound": "Không tìm thấy",
+    "network": "Mất kết nối. Thử lại."
+  },
+  "redo_limit": "Đã làm lại tối đa {{max}} lần mà chưa đạt.",
+  "ask_limit": "Agent đã hỏi lại tối đa {{max}} lần ở giai đoạn này.",
+  "template_invalid": "Kết quả chưa đúng mẫu bắt buộc.",
+  "team_calls": "Nhóm agent đã dùng hết số lượt gọi cho phép.",
+  "team_tokens": "Nhóm agent đã dùng hết ngân sách token.",
+  "team_time": "Nhóm agent chạy quá thời gian cho phép.",
+  "team_no_change": "Nhóm agent không còn cải thiện kết quả sau 2 lần gọi liên tiếp.",
+  "job_timeout": "Giai đoạn chạy quá thời gian cho phép.",
+  "stage_tokens": "Giai đoạn đã vượt ngân sách token.",
+  "run_tokens": "Lượt chạy đã vượt ngân sách token.",
+  "agent_failed": "Agent báo lỗi khi chạy giai đoạn này.",
+  "permission_lost": "Người bắt đầu không còn quyền dùng agent hoặc quy trình này.",
+  "user_inactive": "Tài khoản người bắt đầu đã bị khoá hoặc ngừng hoạt động.",
+  "interrupted": "Giai đoạn bị gián đoạn (lượt chạy bị dừng hoặc hệ thống khởi động lại).",
+  "validate": {
+    "feedbackRequired": "Nhập góp ý trước khi gửi.",
+    "tooLong": "Tối đa {{max}} ký tự.",
+    "answerRequired": "Nhập câu trả lời."
+  },
+  "apiError": {
+    "REVIEW_TASK_CLOSED": "Đã có người khác xử lý việc này.",
+    "TASK_KIND_MISMATCH": "Thao tác này không áp dụng cho việc này. Tải lại trang.",
+    "PROCESS_RUN_STATE": "Lượt chạy đã đổi trạng thái. Đã tải lại.",
+    "NO_OUTPUT": "Chưa có bản kết quả nào để dùng.",
+    "NOT_PROCESS_DECIDER": "Bạn không có quyền quyết định lượt chạy này."
+  }
+}

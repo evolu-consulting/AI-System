@@ -93,3 +93,26 @@ describe("ADM-FR-60 · menu theo role", () => {
     expect(crumbsFor("/features/abc")).toEqual([{ labelKey: "nav.features", to: "/features" }]);
   });
 });
+
+describe("P-a · mục Quy trình theo cờ engine", () => {
+  test("mặc định ẩn ở cả hai role", () => {
+    expect(ids("platform_admin")).not.toContain("processes");
+    expect(ids("tenant_admin")).not.toContain("processes");
+  });
+  test("engine on: có ở CHỨC NĂNG của platform_admin và tenant_admin", () => {
+    for (const role of ["platform_admin", "tenant_admin"] as const) {
+      const g = navGroups(role, { processes: true }).find(
+        (x) => x.labelKey === "nav.group.features",
+      );
+      expect(g?.items.map((i) => i.id)).toContain("processes");
+    }
+  });
+  test("member không có mục nào dù cờ on; crumbs /processes*", () => {
+    expect(navGroups("member", { processes: true })).toEqual([]);
+    expect(crumbsFor("/processes")).toEqual([{ labelKey: "nav.processes" }]);
+    expect(crumbsFor("/processes/new")).toEqual([
+      { labelKey: "nav.processes", to: "/processes" },
+      { labelKey: "process.admin.editor.title.new" },
+    ]);
+  });
+});

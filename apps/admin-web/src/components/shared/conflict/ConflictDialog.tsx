@@ -18,7 +18,14 @@ import { Button } from "@/components/ui/button";
 import type { DiffRow } from "@/lib/diff-fields";
 import { formatClock } from "@/lib/format";
 
-export type ConflictEntity = "user" | "tenant" | "workflow" | "command" | "feature" | "group";
+export type ConflictEntity =
+  | "user"
+  | "tenant"
+  | "workflow"
+  | "command"
+  | "feature"
+  | "group"
+  | "process_def";
 
 export type ConflictDialogProps = {
   entity: ConflictEntity;

@@ -68,3 +68,31 @@ describe("F2 · agent + 429", () => {
     });
   });
 });
+
+describe("P-a · lỗi quy trình trong composer", () => {
+  test("PROCESS_NOT_FOUND: câu + gợi ý !key (tối đa 3)", () => {
+    const e = new ApiError(404, "PROCESS_NOT_FOUND", "x", {
+      details: { suggestions: ["hoa-don", "sdlc"] },
+    });
+    expect(isComposerError(e)).toBe(true);
+    const v = sendErrorView(e, "!hoadon HD-1");
+    expect(v?.lines).toEqual([
+      { key: "process.composer.error.notFound", params: { key: "hoadon" } },
+    ]);
+    expect(v?.suggestions).toEqual(["hoa-don", "sdlc"]);
+    expect(v?.suggestionPrefix).toBe("!");
+  });
+  test("TOO_MANY_PROCESS_RUNS: đếm ngược + trần 5", () => {
+    const e = new ApiError(429, "TOO_MANY_PROCESS_RUNS", "x", { retryAfter: 30 });
+    expect(sendErrorView(e, "!sdlc x", 12)?.lines).toEqual([
+      { key: "process.composer.error.tooMany", params: { n: "12", max: "5" } },
+    ]);
+  });
+  test("PROCESS_THREAD_NO_AGENT: câu riêng của thread, không gợi ý", () => {
+    const e = new ApiError(422, "PROCESS_THREAD_NO_AGENT", "x");
+    expect(sendErrorView(e, "@hd-read x")).toEqual({
+      lines: [{ key: "process.thread.err.noAgent", params: {} }],
+      suggestions: [],
+    });
+  });
+});

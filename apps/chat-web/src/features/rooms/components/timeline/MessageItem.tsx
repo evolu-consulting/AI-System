@@ -12,7 +12,7 @@ type Props = { message: RoomMessage; mine: boolean; group: boolean };
 
 function MessageItemImpl({ message, mine, group }: Props) {
   const { t } = useTranslation();
-  if (message.sender_type !== "user") return null; // agent → AgentBlock
+  if (message.sender_type !== "user") return null; // agent → AgentBlock; process → ProcessBlock (P-a, `RoomTimeline`)
   const time = timeOf(message.created_at);
   const name = mine ? t("rooms.you") : message.sender.display_name;
   return (

@@ -13,6 +13,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { AttachBar } from "~/features/attachments/components/AttachmentChip";
 import { useAttachments } from "~/features/attachments/hooks/use-attachments";
+import { ProcessButton } from "~/features/processes/composer/components/ProcessButton";
+import { useBangSuggest } from "~/features/processes/composer/hooks/use-bang-suggest";
 import { composerKeyHandler } from "../hooks/use-composer-keys";
 import { readDraft, useDraftSaver } from "../hooks/use-draft";
 import { useSendError } from "../hooks/use-send-error";
@@ -25,9 +27,8 @@ import {
   overLimit,
   submitOutcome,
 } from "../lib/composer-logic";
-import { AgentMenu } from "./AgentMenu";
 import { CharCount } from "./CharCount";
-import { CommandMenu } from "./CommandMenu";
+import { ComposerMenus } from "./ComposerMenus";
 import { ComposerRow, sendTitle } from "./ComposerRow";
 import type { ComposerHandle, ComposerProps } from "./composer-types";
 import { QuotaNotice } from "./QuotaNotice";
@@ -47,6 +48,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     quotaOver = false,
     autoFocus,
     menus = true,
+    processMenu = false,
+    sendLabel,
     attachments = true,
     inputLabel,
     placeholder,
@@ -79,12 +82,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     el.style.overflowY = el.scrollHeight > line * COMPOSER_MAX_ROWS ? "auto" : "hidden";
   }, [text]);
 
+  // P-a: menu `!` (PF1) — tắt ⇒ chuỗi rỗng, không gọi `GET /processes`.
+  const bang = useBangSuggest(processMenu ? text : "", processMenu ? caret : 0, processMenu);
   const {
     command: cmdSuggest,
     agent: agentSuggest,
     current: suggest,
     aria,
-  } = useComposerSuggest(text, caret, menus);
+  } = useComposerSuggest(text, caret, menus, bang);
   const sendError = useSendError(text);
   const att = useAttachments();
   const over = overLimit(text, maxChars);
@@ -173,10 +178,13 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           }}
         />
       )}
-      {cmdSuggest.open && <CommandMenu suggest={cmdSuggest} onPick={pickCommand} />}
-      {agentSuggest.open && (
-        <AgentMenu suggest={agentSuggest} onPick={pickCommand} title={menuTitle} />
-      )}
+      <ComposerMenus
+        command={cmdSuggest}
+        agent={agentSuggest}
+        bang={bang}
+        agentTitle={menuTitle}
+        onPick={pickCommand}
+      />
       {variant === "main" && (
         <p className="mb-1 text-xs text-muted-foreground">
           <span className="font-semibold text-foreground">{t("composer.newLabel")}</span>
@@ -195,6 +203,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         enabled={enabled}
         sendTitle={sendTitle(t, locked, att.busy)}
         attach={attachments ? { add: att.add, dropProps: att.dropProps } : null}
+        extra={processMenu ? <ProcessButton onInsert={(v) => change(v)} /> : undefined}
+        sendLabel={sendLabel}
         onChange={change}
         onCaret={setCaret}
         onKeyDown={onKeyDown}

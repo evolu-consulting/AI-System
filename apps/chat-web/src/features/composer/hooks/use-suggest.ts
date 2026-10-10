@@ -16,7 +16,7 @@ import {
   slashQuery,
 } from "~/features/commands/lib/slash";
 import { optionId } from "../components/SuggestMenu";
-import { AGENT_MENU_ID, COMMAND_MENU_ID } from "../lib/menu-ids";
+import { AGENT_MENU_ID, COMMAND_MENU_ID, PROCESS_MENU_ID } from "../lib/menu-ids";
 
 export type SuggestStatus = "loading" | "error" | "empty" | "nomatch" | "ready";
 
@@ -142,17 +142,25 @@ export function useAgentSuggest(text: string, caret: number): AgentSuggest {
   return exact ? { ...core, open: false } : core;
 }
 
-/** Hai menu loại trừ nhau (`/…` hoặc `@…`): `current` là menu đang mở (ưu tiên `@`), `aria` cho textarea. */
-export function useComposerSuggest(text: string, caret: number, menus: boolean | "agents" = true) {
+/**
+ * Ba menu loại trừ nhau (`/…`, `@…`, `!…`): `current` là menu đang mở (ưu tiên `@`, rồi `!`), `aria` cho textarea.
+ * `bang` (P-a): trạng thái menu `!` do `useBangSuggest` (PF1) dựng; `undefined` = không có menu `!`.
+ */
+export function useComposerSuggest(
+  text: string,
+  caret: number,
+  menus: boolean | "agents" = true,
+  bang?: Suggest<unknown>,
+) {
   // Tắt (phòng X2a): coi như không có `/`/`@` nào ⇒ không mở menu, không gọi `/commands`, `/agents`. "agents": chỉ `@` (X2b).
   const cmdOn = menus === true;
   const agentOn = menus !== false;
   const command = useCommandSuggest(cmdOn ? text : "", cmdOn ? caret : 0);
   const agent = useAgentSuggest(agentOn ? text : "", agentOn ? caret : 0);
-  const agentMode = agent.open;
+  const bangMode = !agent.open && bang?.open === true;
   const current: Pick<Suggest<unknown>, "open" | "matches" | "active" | "move" | "dismiss"> &
-    Pick<CommandSuggest, "pick"> = agentMode ? agent : command;
-  const menuId = agentMode ? AGENT_MENU_ID : COMMAND_MENU_ID;
+    Pick<CommandSuggest, "pick"> = agent.open ? agent : bangMode && bang ? bang : command;
+  const menuId = agent.open ? AGENT_MENU_ID : bangMode ? PROCESS_MENU_ID : COMMAND_MENU_ID;
   const aria = {
     expanded: current.open,
     controls: current.open ? menuId : undefined,

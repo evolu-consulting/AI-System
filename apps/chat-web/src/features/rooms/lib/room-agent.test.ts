@@ -227,3 +227,32 @@ test("splitPendingByFlow: run của thread đang mở vào khung, còn lại cu�
   expect(splitPendingByFlow([a, b], b.flow_id)).toEqual({ main: [a], flow: [b] });
   expect(splitPendingByFlow([a, b], undefined)).toEqual({ main: [a, b], flow: [] });
 });
+
+// P-a (CR-056) thread §6 #2–#3: tin `process` do Hub đăng — không bao giờ "của mình"; `recent` mang `process.kind`.
+test("isOwnTurn: sender_type=process luôn false (kể cả khi sender.id trùng)", () => {
+  expect(
+    isOwnTurn({ sender_type: "process", sender: { id: ME, display_name: "Quy trình" } }, ME),
+  ).toBe(false);
+});
+
+test("bumpFlowOf: tin process vào recent với process.kind và unread=true", () => {
+  const root = msg({
+    sender_type: "process",
+    flow_id: uid(200),
+    flow: { message_count: 1, last_active_at: AT, recent: [], unread: 0 },
+  });
+  const data: RoomMessagesData = {
+    pages: [{ items: [root], has_more: false }],
+    pageParams: [undefined],
+  };
+  const part = {
+    ...msg({ sender_type: "process", flow_id: uid(200), placement: "flow" }),
+    id: uid(777),
+    sender: { id: ME, display_name: "Quy trình" },
+    process: { kind: "output" },
+  } as RoomMessage;
+  const next = bumpFlowOf(data, part, ME);
+  const recent = next?.pages[0]?.items[0]?.flow?.recent?.[0];
+  expect(recent?.process).toEqual({ kind: "output" });
+  expect(recent?.unread).toBe(true);
+});

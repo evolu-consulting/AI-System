@@ -10,6 +10,8 @@ import {
 } from "~/features/composer/components/Composer";
 import { useDraftKey } from "~/features/composer/hooks/use-draft";
 import { useCreateConversation } from "~/features/conversations/hooks/use-conversations";
+import { useBangSubmit } from "~/features/processes/composer/hooks/use-bang-submit";
+import { useProcessEngineOn } from "~/features/processes/shared/engine";
 import { useRunByKey } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
 import { useSession } from "~/lib/auth/use-session";
@@ -27,9 +29,14 @@ export function WelcomePage() {
   const pendingConv = useRef<string | null>(null);
   const [runKey, setRunKey] = useState<string | null>(null);
   const run = useRunByKey(runKey);
+  // P-a FD4: `!key …` ở /c/new đi `POST /process-runs` (origin none, PF1); cờ off ⇒ không chặn gì.
+  const engineOn = useProcessEngineOn();
+  const bang = useBangSubmit({ kind: "none" }, engineOn);
 
   const submit = useCallback(
     async (content: string, attachmentIds?: string[]): Promise<SubmitResult> => {
+      const hit = bang.intercept(content);
+      if (hit) return hit;
       try {
         pendingConv.current ??= (await create.mutateAsync(deriveTitle(content))).id;
       } catch {
@@ -43,7 +50,7 @@ export function WelcomePage() {
       void router.navigate({ to: "/c/$id", params: { id: convId }, replace: true });
       return out;
     },
-    [create, send, router],
+    [create, send, router, bang],
   );
 
   return (
@@ -67,6 +74,7 @@ export function WelcomePage() {
           variant="main"
           draftKey={newDraftKey}
           autoFocus
+          processMenu={engineOn}
           quotaOver={run?.quota?.state === "over"}
           onSubmit={submit}
         />

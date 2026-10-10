@@ -458,5 +458,8 @@
   },
   "app": {
     "name": "Evolu Copilot"
+  },
+  "processRoute": {
+    "notFound": "Không tìm thấy"
   }
 }

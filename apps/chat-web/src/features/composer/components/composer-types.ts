@@ -33,6 +33,10 @@ export type ComposerProps = {
   menuTitle?: string;
   /** Dòng gợi ý dưới ô nhập. */
   hint?: string;
+  /** P-a (CR-056): bật menu `!` + nút "Quy trình" (engine `on`; chỉ ô chính của phòng/Hỏi AI). Tắt: không gọi `GET /processes`. */
+  processMenu?: boolean;
+  /** P-a thread §5: nhãn nút Gửi (aria-label) thay `composer.send`/`composer.sendInFlow` — vd "Gửi góp ý · làm lại". */
+  sendLabel?: string;
   /** Quá giới hạn ký tự → Gửi disabled; hiện bộ đếm từ 90 %. */
   maxChars?: number;
   onSubmit(text: string, attachmentIds?: string[]): Promise<SubmitResult>;

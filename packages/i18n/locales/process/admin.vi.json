@@ -1,0 +1,132 @@
+{
+  "list": {
+    "title": "Quy trình",
+    "subtitle": "Chuỗi giai đoạn do agent hoặc nhóm agent làm. Người kiểm bấm Đạt thì quy trình tự chạy tiếp, Chưa đạt thì agent làm lại theo góp ý.",
+    "tab": {
+      "own": "Của công ty",
+      "templates": "Mẫu"
+    },
+    "create": "Tạo quy trình",
+    "copy": "Chép mẫu",
+    "run": {
+      "button": "Chạy",
+      "title": "Chạy quy trình {{name}}",
+      "input": "Nội dung đầu vào",
+      "submit": "Chạy",
+      "platform": "Quản trị nền tảng không chạy được quy trình công ty."
+    },
+    "col": {
+      "name": "Quy trình",
+      "key": "Ký hiệu",
+      "stages": "Giai đoạn",
+      "running": "Lượt đang chạy",
+      "updated": "Cập nhật",
+      "enabled": "Bật"
+    },
+    "filter": {
+      "all": "Tất cả",
+      "on": "Đang bật",
+      "off": "Đang tắt"
+    },
+    "empty": "Chưa có quy trình. Chép từ tab Mẫu hoặc tạo mới.",
+    "template": "Mẫu",
+    "delete": {
+      "title": "Xoá quy trình?",
+      "body": "Gõ tên “{{name}}” để xoá. Lượt đang chạy vẫn giữ bản cũ."
+    },
+    "toast": {
+      "copied": "Đã chép mẫu",
+      "deleted": "Đã xoá quy trình",
+      "started": "Đã bắt đầu lượt chạy"
+    }
+  },
+  "editor": {
+    "title": {
+      "new": "Quy trình mới"
+    },
+    "tab": {
+      "config": "Cấu hình",
+      "runs": "Lượt chạy"
+    },
+    "info": "Thông tin",
+    "name": "Tên quy trình",
+    "key": "Ký hiệu chạy",
+    "desc": "Mô tả",
+    "hint": "Gợi ý nhập",
+    "groups": "Group được chạy (để trống = cả công ty)",
+    "budget": "Ngân sách token cả lượt (tuỳ chọn)",
+    "enabled": "Bật",
+    "stages": "Giai đoạn",
+    "add": "Thêm giai đoạn",
+    "remove": "Xoá giai đoạn",
+    "up": "Lên",
+    "down": "Xuống",
+    "stage": {
+      "aria": "Giai đoạn {{n}}: {{name}}",
+      "name": "Tên giai đoạn",
+      "key": "Mã giai đoạn",
+      "executor": "Làm bởi",
+      "kind": {
+        "agent": "Agent",
+        "team": "Nhóm agent"
+      },
+      "instruction": "Hướng dẫn",
+      "filename": "Tên tệp kết quả",
+      "template": "Mẫu kết quả",
+      "sections": "Mục bắt buộc",
+      "fields": "Trường có cấu trúc",
+      "after": "Sau giai đoạn",
+      "review": "Duyệt bởi Group",
+      "auto": "Tự chạy tiếp",
+      "reviewGroup": "Nhóm kiểm",
+      "real": "Hành động thật",
+      "realLocked": "Cần giai đoạn trước có người kiểm",
+      "answerer": "Người trả lời",
+      "starter": "Người bắt đầu",
+      "group": "Group",
+      "user": "Người dùng",
+      "timeout": "Hạn giai đoạn (giây)",
+      "budget": "Ngân sách token giai đoạn"
+    },
+    "limits": "Giới hạn của một lượt chạy",
+    "limitsText": "Tối đa 7 ngày · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.",
+    "readonly": "Đây là quy trình mẫu, chỉ xem. Chép mẫu để chỉnh sửa.",
+    "runs": {
+      "empty": "Chưa có lượt chạy nào",
+      "col": {
+        "run": "Lượt",
+        "starter": "Người bắt đầu",
+        "status": "Trạng thái",
+        "stage": "Giai đoạn",
+        "started": "Bắt đầu"
+      }
+    }
+  },
+  "run": {
+    "title": "Lượt chạy · {{name}}",
+    "viewOutput": "Xem kết quả",
+    "outputTitle": "Kết quả giai đoạn {{stage}} · v{{n}}",
+    "noContent": "Không xem nội dung tin nhắn phòng ở đây."
+  },
+  "apiError": {
+    "PROCESS_NOT_FOUND": "Không tìm thấy quy trình hoặc bạn không được chạy.",
+    "TOO_MANY_PROCESS_RUNS": "Công ty đang chạy tối đa {{max}} quy trình. Thử lại sau.",
+    "PROCESS_KEY_TAKEN": "Ký hiệu này đã được dùng.",
+    "PROCESS_DEF_INCOMPLETE": "Chọn Group kiểm cho mọi giai đoạn có người kiểm trước khi bật.",
+    "PROCESS_REF_INVALID": "Agent/nhóm/Group này đã bị tắt hoặc không còn.",
+    "TEMPLATE_READ_ONLY": "Mẫu chỉ do quản trị nền tảng sửa. Hãy chép mẫu."
+  },
+  "validate": {
+    "nameRequired": "Nhập tên quy trình.",
+    "keyFormat": "Ký hiệu 2–32 ký tự: chữ thường, số, dấu gạch ngang.",
+    "stageKeyDup": "Mã giai đoạn bị trùng.",
+    "fileName": "Tên tệp dạng ten-tep.md (chữ thường, số, . _ -).",
+    "templateRequired": "Nhập mẫu kết quả.",
+    "sectionRequired": "Cần ít nhất một mục bắt buộc.",
+    "fieldKey": "Mã trường: chữ thường, số, gạch dưới, bắt đầu bằng chữ.",
+    "realAction": "Hành động thật cần giai đoạn ngay trước có người kiểm.",
+    "timeout": "Từ 60 đến 3600 giây.",
+    "budget": "Từ 1.000 đến 5.000.000 hoặc để trống.",
+    "stageCount": "Cần 1–10 giai đoạn."
+  }
+}

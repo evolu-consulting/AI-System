@@ -17,7 +17,12 @@ import { ownWaitingRunId, removeActiveRun } from "../lib/room-agent";
 import { insertMessage, type RoomMessagesData, roomKeys } from "../lib/room-cache";
 import { attachRoomRun } from "./use-room-runs";
 
-export function useFlowMessages(roomId: string, flowId: string, onUnknown: () => void) {
+export function useFlowMessages(
+  roomId: string,
+  flowId: string,
+  onUnknown: () => void,
+  enabled = true,
+) {
   const query = useInfiniteQuery({
     queryKey: roomKeys.flow(roomId, flowId),
     queryFn: ({ pageParam, signal }) => listFlowMessages(roomId, flowId, pageParam, signal),
@@ -27,6 +32,7 @@ export function useFlowMessages(roomId: string, flowId: string, onUnknown: () =>
       return first.has_more && seq !== undefined ? seq : undefined;
     },
     retry: false,
+    enabled,
   });
   const unknown = query.error instanceof ApiError && query.error.status === 404;
   useEffect(() => {

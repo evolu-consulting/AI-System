@@ -5,6 +5,7 @@ import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Composer } from "~/features/composer/components/Composer";
 import { useDraftKey } from "~/features/composer/hooks/use-draft";
+import { useProcessEngineOn } from "~/features/processes/shared/engine";
 import { attachRoomRun } from "../hooks/use-room-runs";
 import { type RoomRun, useSendRoomText } from "../hooks/use-send-room-text";
 
@@ -14,6 +15,7 @@ export function RoomComposer({ roomId, target, group, onSent }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const draftKey = useDraftKey(roomId, null);
+  const processMenu = useProcessEngineOn(); // P-a: menu `!` + nút "Quy trình" khi engine on
   // D8: người gửi lượt mở stream ngay khi POST trả `X-Run-Id`.
   const onRun = useCallback((run: RoomRun) => attachRoomRun(roomId, run), [roomId]);
   const send = useSendRoomText(roomId, onSent, onRun);
@@ -28,6 +30,7 @@ export function RoomComposer({ roomId, target, group, onSent }: Props) {
         variant="room"
         draftKey={draftKey}
         menus="agents"
+        processMenu={processMenu}
         attachments={false}
         maxChars={CHAT_CONTENT_MAX}
         inputLabel={t(group ? "rooms.composer.group" : "rooms.composer.dm", { name: target })}

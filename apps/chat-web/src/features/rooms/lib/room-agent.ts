@@ -22,8 +22,9 @@ export function agentName(
   return lang.startsWith("en") ? agent.name.en : agent.name.vi;
 }
 
-/** Tin gọi do mình gửi, hoặc tin agent của lượt mình gửi (R19: không tính chưa đọc/pill cho mình). */
+/** Tin gọi do mình gửi, hoặc tin agent của lượt mình gửi (R19: không tính chưa đọc/pill cho mình). Tin `process` (Hub đăng) không bao giờ là của mình. */
 export function isOwnTurn(m: Pick<RoomMessage, "sender_type" | "sender" | "caller">, myId: string) {
+  if (m.sender_type === "process") return false;
   if (m.sender_type === "agent") return m.caller?.id === myId;
   return m.sender.id === myId;
 }
@@ -179,13 +180,19 @@ function withRecent(
   const base = { ...f, message_count: f.message_count + 1, last_active_at: at };
   if (f.recent === undefined || !part.id || f.recent.some((r) => r.id === part.id)) return base;
   const m = part as RoomMessage;
-  const mine = m.sender_type === "user" ? m.sender.id === myId : m.caller?.id === myId;
+  const mine =
+    m.sender_type === "process"
+      ? false
+      : m.sender_type === "user"
+        ? m.sender.id === myId
+        : m.caller?.id === myId;
   const item: RoomFlowRecent = {
     id: m.id,
     seq: m.seq,
     sender_type: m.sender_type,
     sender: m.sender,
     ...(m.agent && { agent: m.agent }),
+    ...(m.process && { process: { kind: m.process.kind } }),
     preview: m.content.replace(/\s+/g, " ").trim().slice(0, ROOM_PREVIEW_MAX),
     created_at: m.created_at,
     unread: !mine,

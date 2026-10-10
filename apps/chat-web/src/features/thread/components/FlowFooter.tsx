@@ -18,6 +18,8 @@ export type FlowFooterProps = {
   busy: boolean;
   /** `undefined` → nút Trả lời tiếp disabled (flow chưa có trong E10). */
   onReply?: () => void;
+  /** Khối quy trình (P-a): không có nút Copy (không có văn bản để chép). */
+  hideCopy?: boolean;
 };
 
 function FooterMeta({
@@ -45,24 +47,26 @@ function FooterMeta({
   );
 }
 
-export function FlowFooter({ copyValue, onReply, ...meta }: FlowFooterProps) {
+export function FlowFooter({ copyValue, onReply, hideCopy = false, ...meta }: FlowFooterProps) {
   const { t } = useTranslation();
   const onCopy = async () => {
     if (await copyText(copyValue)) toast.success(t("answer.copied"));
   };
   return (
     <div className="mt-0.5 flex flex-wrap items-center gap-1.5 border-t border-row-divider pt-2.5">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-[30px] gap-1.5 px-2.5 text-caption text-muted-foreground"
-        disabled={copyValue === ""}
-        onClick={() => void onCopy()}
-      >
-        <Copy className="size-3.5" aria-hidden />
-        {t("answer.copy")}
-      </Button>
+      {!hideCopy && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-[30px] gap-1.5 px-2.5 text-caption text-muted-foreground"
+          disabled={copyValue === ""}
+          onClick={() => void onCopy()}
+        >
+          <Copy className="size-3.5" aria-hidden />
+          {t("answer.copy")}
+        </Button>
+      )}
       <span className="grow" />
       <FooterMeta {...meta} />
       <Button

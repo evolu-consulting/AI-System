@@ -1,0 +1,132 @@
+{
+  "list": {
+    "title": "Processes",
+    "subtitle": "A chain of stages done by agents or agent teams. When a reviewer passes a stage the process continues; if it needs rework the agent redoes it using the feedback.",
+    "tab": {
+      "own": "Company",
+      "templates": "Templates"
+    },
+    "create": "Create process",
+    "copy": "Copy template",
+    "run": {
+      "button": "Run",
+      "title": "Run {{name}}",
+      "input": "Input",
+      "submit": "Run",
+      "platform": "Platform admins can't run a company's process."
+    },
+    "col": {
+      "name": "Process",
+      "key": "Key",
+      "stages": "Stages",
+      "running": "Running",
+      "updated": "Updated",
+      "enabled": "On"
+    },
+    "filter": {
+      "all": "All",
+      "on": "On",
+      "off": "Off"
+    },
+    "empty": "No processes yet. Copy one from Templates or create a new one.",
+    "template": "Template",
+    "delete": {
+      "title": "Delete process?",
+      "body": "Type “{{name}}” to delete. Running runs keep their snapshot."
+    },
+    "toast": {
+      "copied": "Template copied",
+      "deleted": "Process deleted",
+      "started": "Run started"
+    }
+  },
+  "editor": {
+    "title": {
+      "new": "New process"
+    },
+    "tab": {
+      "config": "Configuration",
+      "runs": "Runs"
+    },
+    "info": "Details",
+    "name": "Process name",
+    "key": "Run key",
+    "desc": "Description",
+    "hint": "Input hint",
+    "groups": "Groups that can run (empty = whole company)",
+    "budget": "Token budget for the whole run (optional)",
+    "enabled": "Enabled",
+    "stages": "Stages",
+    "add": "Add stage",
+    "remove": "Remove stage",
+    "up": "Move up",
+    "down": "Move down",
+    "stage": {
+      "aria": "Stage {{n}}: {{name}}",
+      "name": "Stage name",
+      "key": "Stage key",
+      "executor": "Done by",
+      "kind": {
+        "agent": "Agent",
+        "team": "Agent team"
+      },
+      "instruction": "Instructions",
+      "filename": "Output file name",
+      "template": "Output template",
+      "sections": "Required sections",
+      "fields": "Structured fields",
+      "after": "After the stage",
+      "review": "Reviewed by a group",
+      "auto": "Continue automatically",
+      "reviewGroup": "Reviewing group",
+      "real": "Real action",
+      "realLocked": "Needs the previous stage to have a reviewer",
+      "answerer": "Answerer",
+      "starter": "The starter",
+      "group": "Group",
+      "user": "User",
+      "timeout": "Stage time limit (seconds)",
+      "budget": "Stage token budget"
+    },
+    "limits": "Run limits",
+    "limitsText": "Up to 7 days · 5 runs at once · at most 3 reworks per stage · reviewer reminder after 1 day. Hitting a limit → “Needs a decision”.",
+    "readonly": "This is a template (read-only). Copy it to edit.",
+    "runs": {
+      "empty": "No runs yet",
+      "col": {
+        "run": "Run",
+        "starter": "Started by",
+        "status": "Status",
+        "stage": "Stage",
+        "started": "Started"
+      }
+    }
+  },
+  "run": {
+    "title": "Run · {{name}}",
+    "viewOutput": "View output",
+    "outputTitle": "Stage {{stage}} output · v{{n}}",
+    "noContent": "Room messages aren't shown here."
+  },
+  "apiError": {
+    "PROCESS_NOT_FOUND": "Process not found or you can't run it.",
+    "TOO_MANY_PROCESS_RUNS": "Your company is running the maximum of {{max}} processes. Try again later.",
+    "PROCESS_KEY_TAKEN": "This key is already used.",
+    "PROCESS_DEF_INCOMPLETE": "Pick a reviewing group for every reviewed stage before enabling.",
+    "PROCESS_REF_INVALID": "This agent/team/group is disabled or gone.",
+    "TEMPLATE_READ_ONLY": "Only platform admins edit templates. Copy the template instead."
+  },
+  "validate": {
+    "nameRequired": "Enter a process name.",
+    "keyFormat": "2–32 characters: lowercase letters, digits, hyphens.",
+    "stageKeyDup": "Duplicate stage key.",
+    "fileName": "File name like file-name.md (lowercase, digits, . _ -).",
+    "templateRequired": "Enter an output template.",
+    "sectionRequired": "At least one required section is needed.",
+    "fieldKey": "Field key: lowercase, digits, underscores, starting with a letter.",
+    "realAction": "A real action needs the previous stage to have a reviewer.",
+    "timeout": "Between 60 and 3600 seconds.",
+    "budget": "Between 1,000 and 5,000,000, or leave empty.",
+    "stageCount": "1–10 stages are required."
+  }
+}

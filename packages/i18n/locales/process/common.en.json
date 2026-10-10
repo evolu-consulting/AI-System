@@ -1,0 +1,67 @@
+{
+  "status": {
+    "running": "Running",
+    "waiting_review": "Waiting for review",
+    "waiting_answer": "Waiting for an answer",
+    "needs_decision": "Needs a decision",
+    "done": "Done",
+    "cancelled": "Cancelled",
+    "failed": "Failed",
+    "expired": "Expired"
+  },
+  "stage": {
+    "pending": "Not started",
+    "queued": "Queued"
+  },
+  "result": {
+    "pass": "Passed",
+    "fail": "Needs rework",
+    "answer": "Answered",
+    "add_attempt": "Allowed 1 more rework",
+    "use_current": "Used current version",
+    "cancel": "Cancelled the run",
+    "cancelled": "Cancelled",
+    "expired": "Expired",
+    "superseded": "Handled by someone else"
+  },
+  "option": {
+    "add_attempt": "Allow 1 more rework",
+    "use_current": "Use current version",
+    "cancel": "Cancel run"
+  },
+  "sender": {
+    "name": "Processes"
+  },
+  "error": {
+    "load": "Couldn't load.",
+    "retry": "Try again",
+    "notFound": "Not found",
+    "network": "Connection lost. Try again."
+  },
+  "redo_limit": "Reached the maximum of {{max}} reworks without approval.",
+  "ask_limit": "The agent asked follow-up questions the maximum of {{max}} times in this stage.",
+  "template_invalid": "The output doesn't match the required template.",
+  "team_calls": "The agent team used all its allowed calls.",
+  "team_tokens": "The agent team used its whole token budget.",
+  "team_time": "The agent team ran longer than allowed.",
+  "team_no_change": "The agent team stopped improving the result after 2 consecutive calls.",
+  "job_timeout": "The stage ran longer than allowed.",
+  "stage_tokens": "The stage exceeded its token budget.",
+  "run_tokens": "The run exceeded its token budget.",
+  "agent_failed": "The agent failed while running this stage.",
+  "permission_lost": "The person who started the run no longer has access to this agent or process.",
+  "user_inactive": "The starter's account is locked or inactive.",
+  "interrupted": "The stage was interrupted (the run was stopped or the system restarted).",
+  "validate": {
+    "feedbackRequired": "Enter feedback before sending.",
+    "tooLong": "At most {{max}} characters.",
+    "answerRequired": "Enter an answer."
+  },
+  "apiError": {
+    "REVIEW_TASK_CLOSED": "Someone else already handled this item.",
+    "TASK_KIND_MISMATCH": "This action doesn't apply to this item. Reload the page.",
+    "PROCESS_RUN_STATE": "The run's state changed. Reloaded.",
+    "NO_OUTPUT": "There is no output version to use yet.",
+    "NOT_PROCESS_DECIDER": "You aren't allowed to decide this run."
+  }
+}

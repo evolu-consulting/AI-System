@@ -6,6 +6,9 @@ import type { Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandLogo } from "~/components/shared/BrandLogo";
 import { Input } from "~/components/ui/input";
+import { ProcessDmRow } from "~/features/processes/inbox/components/ProcessDmRow";
+import { TodoGroup } from "~/features/processes/inbox/components/TodoGroup";
+import { useProcessEngineOn } from "~/features/processes/shared/engine";
 import { ConversationList } from "./ConversationList";
 import { RoomSections } from "./RoomSections";
 import { SidebarGroup } from "./SidebarGroup";
@@ -30,6 +33,7 @@ type Props = {
 
 export function Sidebar(p: Props) {
   const { t } = useTranslation();
+  const processOn = useProcessEngineOn(); // P-a FD8: "Chờ tôi kiểm" + DM "Quy trình" chỉ khi engine on
   return (
     <nav
       aria-label={t("shell.nav")}
@@ -62,7 +66,9 @@ export function Sidebar(p: Props) {
         className="h-9 bg-muted"
       />
       <div className="relative -mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+        {processOn && <TodoGroup />}
         <RoomSections
+          usersPinned={processOn ? <ProcessDmRow /> : undefined}
           q={p.debouncedQuery}
           activeRoomId={p.activeRoomId}
           onNavigate={p.onNavigate}

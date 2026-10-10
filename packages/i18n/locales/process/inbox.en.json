@@ -1,0 +1,53 @@
+{
+  "todo": {
+    "title": "Waiting for me",
+    "empty": "Nothing is waiting for you",
+    "more": "Show more",
+    "error": "Couldn't load your to-do list.",
+    "badge": "{{count}} items waiting"
+  },
+  "kind": {
+    "review": "Review",
+    "ask": "Answer",
+    "decision": "Decide"
+  },
+  "dm": {
+    "subtitle": "System account · Hub sends you work to handle, even if you aren't in that room",
+    "log": "Process notifications",
+    "footer": "This is the process notification channel; you can't reply here. Use the buttons on the cards.",
+    "empty": "No notifications yet",
+    "unread": "{{count}} unread"
+  },
+  "notice": {
+    "review_requested": "Needs your review: {{process}} · {{stage}}",
+    "ask_requested": "Needs your answer: {{process}} · {{stage}}",
+    "decision_requested": "Needs your decision: {{process}}",
+    "reminder": "Reminder: your item in {{process}} is still waiting",
+    "task_closed": "The item in {{process}} · {{stage}} was handled",
+    "run_finished": "Process {{process}} has finished",
+    "expand": "View & handle",
+    "openRun": "Open run page"
+  },
+  "run": {
+    "tab": {
+      "progress": "Progress",
+      "token": "Token",
+      "log": "Log"
+    },
+    "back": {
+      "room": "Back to {{name}}",
+      "ai": "Back to Ask AI"
+    },
+    "banner": "You aren't in this room. You can only see the part you need to handle (this item's output or question), not other messages. Your access is tied to this item and is logged.",
+    "meta": "Started by {{starter}} · {{time}} · stage {{n}}/{{total}}",
+    "log": {
+      "empty": "No activity yet",
+      "review": "{{actor}} reviewed: {{result}}",
+      "ask": "{{actor}} answered",
+      "decision": "{{actor}} decided: {{result}}",
+      "forward": "{{actor}} asked {{to}}",
+      "cancel": "{{actor}} cancelled the run",
+      "expire": "The run expired"
+    }
+  }
+}

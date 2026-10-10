@@ -1,0 +1,69 @@
+{
+  "title": "{{name}} · !{{key}}",
+  "block": {
+    "startedBy": "{{name}} khởi chạy",
+    "startedByMe": "Bạn khởi chạy",
+    "openThread": "Mở luồng"
+  },
+  "chip": {
+    "rework": "Làm lại {{a}}/{{max}}",
+    "asks": "Hỏi lại {{n}}/{{max}}"
+  },
+  "output": {
+    "title": "Giai đoạn {{n}} · {{stage}}",
+    "aria": "Kết quả {{stage}} v{{version}}",
+    "by": "Làm bởi {{name}}",
+    "byTeam": "Làm bởi nhóm {{name}}",
+    "summary": "✓ {{count}} bước · {{seconds}} · {{tokens}} token",
+    "steps": "Chi tiết {{count}} bước",
+    "step": "{{agent}} · {{model}} · {{seconds}} · {{tokens}} token",
+    "show": "Xem nội dung",
+    "hide": "Thu gọn",
+    "auto": "Tự chạy tiếp giai đoạn kế"
+  },
+  "role": {
+    "agent": "Agent",
+    "plan": "Lập kế hoạch",
+    "member": "Thành viên"
+  },
+  "wait": {
+    "review": "Đang chờ {{names}} kiểm — chỉ người kiểm mới bấm được.",
+    "ask": "Đang chờ {{names}} trả lời",
+    "decide": "Đang chờ {{names}} hoặc quản trị viên quyết định",
+    "more": "{{first}} và {{count}} người khác",
+    "group": "nhóm {{group}}"
+  },
+  "decision": {
+    "stopped": "Quy trình dừng ở giai đoạn {{stage}}"
+  },
+  "result": {
+    "aria": "{{actor}} · {{result}} · {{time}}",
+    "outside": "ngoài phòng",
+    "feedback": "Góp ý",
+    "answered": "Đã trả lời",
+    "decided": "đã chọn: {{option}}",
+    "sections": "Mục làm lại: {{list}}"
+  },
+  "forward": {
+    "line": "↪ {{from}} đã chuyển việc cho {{to}} (lần {{depth}}/{{max}})"
+  },
+  "end": {
+    "done": "Lượt chạy hoàn tất",
+    "cancelledBy": "{{actor}} đã huỷ lượt chạy",
+    "cancelled": "Lượt chạy đã bị huỷ",
+    "failed": "Lượt chạy gặp lỗi",
+    "expired": "Lượt chạy hết hạn (7 ngày không ai xử lý)",
+    "open": "Mở trang lượt chạy"
+  },
+  "hint": "Đây là trao đổi giữa người với người; agent của quy trình không đọc. Muốn hỏi agent, nhắn ở khung chat chính của phòng.",
+  "err": {
+    "noAgent": "Trong luồng quy trình không gọi được agent bằng @. Hãy gọi ở khung chat chính của phòng."
+  },
+  "mode": {
+    "feedback": "Chưa đạt · góp ý cho {{agent}}",
+    "answer": "Trả lời {{agent}}",
+    "cancel": "Huỷ"
+  },
+  "stale": "Không tải được trạng thái quy trình",
+  "left": "Bạn không còn ở phòng này. Xem lượt chạy ở trang riêng."
+}

@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./locales": "./src/locales.ts",
     "./chat-locales": "./src/chat-locales.ts",
-    "./studio-locales": "./src/studio-locales.ts"
+    "./studio-locales": "./src/studio-locales.ts",
+    "./process-locales": "./src/process-locales.ts"
   },
   "scripts": {
     "test": "bun test",
