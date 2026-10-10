@@ -31,6 +31,7 @@ import {
   type Viewer,
 } from "../core/run-access.rules";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
+import { idOf, resolveExecutors } from "./executor-ref";
 import * as repo from "./runs.repo";
 
 export type ViewDeps = { db: Db; config: Pick<ConfigCache, "user"> };
@@ -115,12 +116,7 @@ async function runRow(tx: Tx, runId: string, viewerId: string): Promise<RunRow |
   return r ?? null;
 }
 
-/** ExecutorRef của stage từ snapshot. Tên agent/team hiển thị ở FE dựng từ thread/usage (`process.steps`); view
- * dùng id làm key + name (tên định danh giữ ở thread events, không truy vấn `agents` ở mỗi lần xem). */
-const execRef = (s: SnapStage): ExecutorRef => {
-  const id = s.executor.kind === "agent" ? s.executor.agent_id : s.executor.team_id;
-  return { kind: s.executor.kind, key: id, name: { vi: id, en: id } };
-};
+const UNKNOWN_EXEC: ExecutorRef = { kind: "agent", key: "?", name: { vi: "?", en: "?" } }; // D5 fallback
 
 type StageRunRow = {
   stage_idx: number;
@@ -144,6 +140,10 @@ async function stageViews(tx: Tx, r: RunRow, snap: Snap): Promise<StageView[]> {
   const outs = await tx.execute<OutputRow>(sql`
     select id, stage_idx, version, attempt, template_ok, template_missing, ${iso("created_at")} as created_at
     from hub.process_outputs where process_run_id = ${r.id} and tenant_id = ${r.tenant_id} order by stage_idx, version`);
+  const execMap = await resolveExecutors(
+    tx,
+    snap.stages.map((s) => s.executor),
+  );
   return srs.map((sr): StageView => {
     const i = Number(sr.stage_idx);
     const def = snap.stages[i];
@@ -151,7 +151,7 @@ async function stageViews(tx: Tx, r: RunRow, snap: Snap): Promise<StageView[]> {
       idx: i,
       key: def?.key ?? `#${i + 1}`,
       name: def?.name ?? `#${i + 1}`,
-      executor: def ? execRef(def) : { kind: "agent", key: "?", name: { vi: "?", en: "?" } },
+      executor: (def ? execMap.get(idOf(def.executor)) : undefined) ?? UNKNOWN_EXEC,
       after: def?.after.kind ?? "auto",
       real_action: def?.real_action ?? false,
       status: sr.status,

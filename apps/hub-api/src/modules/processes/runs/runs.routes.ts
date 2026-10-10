@@ -37,7 +37,7 @@ export function processRunsRoutes(d: ProcessDeps): Hono<AuthVars> {
 
   r.get("/process-runs", async (c) => {
     const q = parseQuery(c, ProcessRunListQuerySchema);
-    return c.json(await svc.list(c.var.user, q));
+    return c.json(await svc.list(c.var.user, q, tenantIdQuery(c)));
   });
 
   r.get("/process-runs/:id", async (c) =>

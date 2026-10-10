@@ -12,6 +12,7 @@ import type { ProcessDeps } from "../core/ports";
 import type { Effect, RunEvent, RunState } from "../core/process-state.rules";
 import { askExcerpt, decisionAssignees } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
+import { executorRefOf } from "./executor-ref";
 import { outputSteps } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
@@ -86,10 +87,6 @@ export type Ctx = {
   list: readonly Effect[];
 };
 
-const executorRef = (def: SnapStage) => {
-  const id = def.executor.kind === "agent" ? def.executor.agent_id : def.executor.team_id;
-  return { kind: def.executor.kind, key: id, name: { vi: id, en: id } };
-};
 const missingArray = (missing: readonly string[]) =>
   missing.length === 0
     ? sql`'{}'::text[]`
@@ -221,7 +218,7 @@ async function openAsk(d: Deps, tx: Tx, c: Ctx): Promise<UserEvent[]> {
     process_run_id: c.x.runId,
     stage_idx: c.idx,
     stage_name: c.def.name,
-    executor: executorRef(c.def),
+    executor: await executorRefOf(tx, c.def.executor),
     task_id: taskId,
     question: ask.question,
     choices: ask.choices,
@@ -307,7 +304,7 @@ async function threadOutput(
     process_run_id: c.x.runId,
     stage_idx: c.idx,
     stage_name: c.def.name,
-    executor: executorRef(c.def),
+    executor: await executorRefOf(tx, c.def.executor),
     output: {
       id: out.id,
       version: out.version,

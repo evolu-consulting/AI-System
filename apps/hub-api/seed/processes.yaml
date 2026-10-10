@@ -4,6 +4,9 @@
 # Agent của quy trình khai ngay trong file này (không ở agents.yaml) để thư mục seed thay agents.yaml vẫn hợp lệ.
 # Agent vai mang đúng tên `.claude/agents/`; dev/test chạy `fake-cli` qua `$HUB_SEED_PROFILE` (fake-1); prompt thật lấy từ
 # `.claude/agents/<vai>.md` khi chạy agent thật — ngoài P-a. 4 agent `ba-*` của `ba-team` (spike S1).
+# P-a B1 · chỉ thị `#fake:` cuối instruction (CHỈ dev/test, fake-cli bỏ qua ở agent thật): `#fake:sections=A|B|C` ⇒ output có
+# mục `## A`… (qua checkTemplate, không kẹt `template_invalid`); `#fake:ask=<câu hỏi>` ⇒ stage hỏi ⇒ waiting_answer (demo
+# đường hỏi — stage `spec`). Stage nhóm nhận mục qua `Mục của bạn:` (team-exec) nên không cần chỉ thị để phát mục.
 agents:
   - key: hoa-don-doc
     name: { vi: Đọc hoá đơn, en: Invoice reader }
@@ -144,7 +147,7 @@ process_templates:
       - key: intake
         name: Intake
         executor: { agent: intake-analyst }
-        instruction: Đọc yêu cầu, viết bảng ý, ảnh hưởng, CR đề xuất và câu hỏi còn mở.
+        instruction: "Đọc yêu cầu, viết bảng ý, ảnh hưởng, CR đề xuất và câu hỏi còn mở. #fake:sections=Bảng ý|Ảnh hưởng|CR đề xuất|Câu hỏi"
         output:
           filename: intake.md
           template: "## Bảng ý\n\n## Ảnh hưởng\n\n## CR đề xuất\n\n## Câu hỏi\n"
@@ -153,7 +156,7 @@ process_templates:
       - key: spec
         name: Spec
         executor: { agent: docs-architect }
-        instruction: Viết spec theo template — frontmatter mã yêu cầu, phạm vi, luật, tiêu chí chấp nhận.
+        instruction: "Viết spec theo template — frontmatter mã yêu cầu, phạm vi, luật, tiêu chí chấp nhận. #fake:sections=Phạm vi|Luật|Tiêu chí chấp nhận #fake:ask=Bạn muốn ưu tiên phạm vi nào trước?"
         output:
           filename: spec.md
           template: "## Phạm vi\n\n## Luật\n\n## Tiêu chí chấp nhận\n"
@@ -162,7 +165,7 @@ process_templates:
       - key: plan
         name: PLAN
         executor: { team: plan-team }
-        instruction: Lập plan — contract, DB, frontend, tasks.
+        instruction: "Lập plan — contract, DB, frontend, tasks. #fake:sections=Contract|DB|Frontend|Tasks"
         output:
           filename: plan.md
           template: "## Contract\n\n## DB\n\n## Frontend\n\n## Tasks\n"
@@ -171,7 +174,7 @@ process_templates:
       - key: test-plan
         name: Test-plan
         executor: { agent: qc }
-        instruction: Viết ca test theo từng tiêu chí chấp nhận và ma trận luật.
+        instruction: "Viết ca test theo từng tiêu chí chấp nhận và ma trận luật. #fake:sections=Ca theo AC|Ma trận luật"
         output:
           filename: test-plan.md
           template: "## Ca theo AC\n\n## Ma trận luật\n"
@@ -180,7 +183,7 @@ process_templates:
       - key: readiness
         name: Sẵn sàng
         executor: { agent: spec-readiness }
-        instruction: "Rà gói spec, plan, test-plan; ghi verdict: READY hoặc NOT READY và lỗ hổng."
+        instruction: "Rà gói spec, plan, test-plan; ghi verdict: READY hoặc NOT READY và lỗ hổng. #fake:sections=Verdict|Lỗ hổng"
         output:
           filename: readiness.md
           template: "## Verdict\n\n## Lỗ hổng\n"
@@ -189,7 +192,7 @@ process_templates:
       - key: implement
         name: Implement
         executor: { team: dev-team }
-        instruction: Hiện thực theo tasks; ghi nhánh/PR, task đã xong, lệnh test và kết quả.
+        instruction: "Hiện thực theo tasks; ghi nhánh/PR, task đã xong, lệnh test và kết quả. #fake:sections=Nhánh|Task đã xong|Lệnh test"
         output:
           filename: implement.md
           template: "## Nhánh\n\n## Task đã xong\n\n## Lệnh test\n"
@@ -198,7 +201,7 @@ process_templates:
       - key: test
         name: Test
         executor: { team: test-team }
-        instruction: "Chạy test và UAT; ghi verdict: PASS hoặc FAIL, độ phủ theo AC, evidence."
+        instruction: "Chạy test và UAT; ghi verdict: PASS hoặc FAIL, độ phủ theo AC, evidence. #fake:sections=Verdict|Độ phủ theo AC|Evidence"
         output:
           filename: test-report.md
           template: "## Verdict\n\n## Độ phủ theo AC\n\n## Evidence\n"
@@ -207,7 +210,7 @@ process_templates:
       - key: review
         name: Review
         executor: { agent: reviewer }
-        instruction: "Review thay đổi; ghi verdict: APPROVED hoặc CHANGES và Blocker/Major/Minor."
+        instruction: "Review thay đổi; ghi verdict: APPROVED hoặc CHANGES và Blocker/Major/Minor. #fake:sections=Verdict|Blocker|Major|Minor"
         output:
           filename: review.md
           template: "## Verdict\n\n## Blocker\n\n## Major\n\n## Minor\n"
@@ -221,7 +224,7 @@ process_templates:
       - key: doc
         name: Đọc hoá đơn
         executor: { agent: hoa-don-doc }
-        instruction: Đọc hoá đơn và tóm tắt bảng ý, số tiền.
+        instruction: "Đọc hoá đơn và tóm tắt bảng ý, số tiền. #fake:sections=Bảng ý|Số tiền"
         output:
           filename: hoa-don.md
           template: "## Bảng ý\n\n## Số tiền\n"
@@ -230,7 +233,7 @@ process_templates:
       - key: ghi-so
         name: Ghi sổ
         executor: { agent: hoa-don-doc }
-        instruction: Ghi bút toán theo hoá đơn đã duyệt.
+        instruction: "Ghi bút toán theo hoá đơn đã duyệt. #fake:sections=Bút toán"
         output:
           filename: ghi-so.md
           template: "## Bút toán\n"

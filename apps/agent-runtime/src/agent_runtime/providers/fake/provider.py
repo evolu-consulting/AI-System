@@ -41,6 +41,7 @@ from agent_runtime.providers.base import (
 from agent_runtime.providers.claude.mcp import job_mcp_tools, read_bearer, tool_name
 from agent_runtime.providers.fake.directives import (
     agreed_message,
+    ask_question,
     clean,
     directives,
     message_of,
@@ -48,6 +49,7 @@ from agent_runtime.providers.fake.directives import (
     ratewarn_args,
     redelegate_message,
     seconds,
+    sections_of,
     task_without_delegate,
     tool_args,
     turns,
@@ -166,6 +168,12 @@ async def _write(job: ProviderJob, raw: str) -> str:
     return "written"
 
 
+def _sections_doc(secs: list[str]) -> str:
+    """Thân output có mục `## <tên>` (thân không rỗng) để qua `checkTemplate` — stage dev chạy tới
+    review/auto thay vì `needs_decision{template_invalid}` (P-a B1)."""
+    return "\n\n".join(f"## {s}\nNội dung mẫu cho mục {s} (fake-cli)." for s in secs)
+
+
 async def _body(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -> str:
     if "files" in found:
         return files_text(job.work_dir)
@@ -180,6 +188,9 @@ async def _body(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -
         return f"denied:{denied}" if denied else "allowed"
     if "env" in found:
         return "env: " + ",".join(sorted(os.environ))
+    # B1: `#fake:sections` (agent đơn) / `Mục của bạn:` (thành viên nhóm) ⇒ output có mục.
+    if secs := sections_of(msg):
+        return _sections_doc(secs)
     return f"echo: {clean(msg)} {FAKE_TAIL}".replace("echo:  ", "echo: ")
 
 
@@ -194,11 +205,11 @@ def _orchestrator(msg: str, found: dict[str, str], body: str) -> Final:
     return Final(kind="text", text=text)
 
 
-def _agent(found: dict[str, str], body: str) -> Final:
+def _agent(found: dict[str, str], body: str, msg: str) -> Final:
     if "partial" in found:
         res = {"status": "partial", "text": body, "missing": "thiếu dữ liệu"}
-    elif "need_input" in found or "ask" in found:
-        res = {"status": "need_input", "question": "Bạn chọn gì?", "choices": ["A", "B"]}
+    elif "need_input" in found or "ask" in found:  # `#fake:ask=<q>` (B1); vắng ⇒ câu mặc định
+        res = {"status": "need_input", "question": ask_question(msg), "choices": ["A", "B"]}
     else:
         res = {"status": "done", "text": body}
     return Final(kind="agent_result", structured=agent_doc(res, found))
@@ -352,6 +363,6 @@ class FakeProvider:
         if "recall" in found:
             body = f"recall: {memory.get('word', '')}"
         body = sized(body, found, FAKE_TAIL)
-        final = _orchestrator(msg, found, body) if text_out else _agent(found, body)
+        final = _orchestrator(msg, found, body) if text_out else _agent(found, body, msg)
         final = await stream_final(job, found, final, emit)
         await _finish(emit, final, reported="usage" in found)

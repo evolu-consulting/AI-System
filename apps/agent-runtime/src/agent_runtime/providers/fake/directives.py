@@ -43,6 +43,43 @@ def directives(msg: str) -> dict[str, str]:
     return {m.group(1): m.group(2) or "" for m in _DIRECTIVE.finditer(msg)}
 
 
+_SECTIONS = "#fake:sections="
+_ASK = "#fake:ask="
+_MEMBER = "Mục của bạn:"  # = `memberPrompt` của team-exec.ts (nhóm): mục giao cho thành viên
+
+
+def _value_after(msg: str, marker: str, *, stop_directive: bool = True) -> str | None:
+    """Giá trị sau `marker` tới hết dòng (cho phép dấu cách trong tên mục / câu hỏi); cắt ở chỉ thị
+    `#fake:` kế tiếp trên cùng dòng (các chỉ thị nối nhau). Vắng → None."""
+    at = msg.find(marker)
+    if at < 0:
+        return None
+    rest = msg[at + len(marker) :]
+    nl = rest.find("\n")
+    if nl >= 0:
+        rest = rest[:nl]
+    if stop_directive and (nxt := rest.find("#fake:")) >= 0:
+        rest = rest[:nxt]
+    return rest.strip()
+
+
+def sections_of(msg: str) -> list[str]:
+    """Mục cần phát: `#fake:sections=A|B|C` (stage agent đơn) hoặc dòng `Mục của bạn: A, B.` (thành
+    viên nhóm — team-exec.ts không truyền instruction nên không có chỉ thị). Vắng → []."""
+    raw = _value_after(msg, _SECTIONS)
+    if raw is not None:
+        return [s.strip() for s in raw.split("|") if s.strip()]
+    raw = _value_after(msg, _MEMBER, stop_directive=False)
+    if raw is not None:
+        return [s.strip().rstrip(".") for s in raw.split(",") if s.strip().rstrip(".")]
+    return []
+
+
+def ask_question(msg: str) -> str:
+    """`#fake:ask=<câu hỏi>` tới hết dòng; vắng / rỗng → câu mặc định."""
+    return _value_after(msg, _ASK) or "Bạn chọn gì?"
+
+
 def clean(msg: str) -> str:
     return " ".join(_DIRECTIVE.sub(" ", msg).split())
 

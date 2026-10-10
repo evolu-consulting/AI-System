@@ -74,9 +74,10 @@ export type OutputStep = {
   tokens: number;
 };
 /**
- * HUB-FR-114 · HUB-FR-116 · các bước thành viên của output nhóm (tin thread `output`.steps = `RoomProcessStep`, P1-87):
- * mỗi `run_steps` có `member_key` của team-run stage này (plan §6); token/latency/model = Σ `usage_logs` theo `step_id`.
- * Stage agent đơn (không team-run) ⇒ rỗng. Tên agent dùng id như view (`execRef`); FE dựng tên hiển thị theo locale.
+ * HUB-FR-114 · HUB-FR-116 · P-a D5 · các bước thành viên của output nhóm (tin thread `output`.steps =
+ * `RoomProcessStep`, P1-87): mỗi `run_steps` có `member_key` của team-run stage này (plan §6); token/latency/model =
+ * Σ `usage_logs` theo `step_id`. Stage agent đơn (không team-run) ⇒ rỗng. Tên agent nạp từ `hub.agents.name` (vi,
+ * catalog không RLS) fallback member_key → id (UAT thấy UUID trước đây).
  */
 export async function outputSteps(
   tx: Tx,
@@ -84,6 +85,7 @@ export async function outputSteps(
 ): Promise<OutputStep[]> {
   const rows = await tx.execute<{
     agent_key: string;
+    agent_name: string | null;
     role: StepRole;
     member_key: string | null;
     model: string | null;
@@ -91,6 +93,7 @@ export async function outputSteps(
     tokens: number;
   }>(sql`
     select coalesce(rs.agent_id::text, rs.detail->>'member_key') as agent_key,
+      coalesce(ag.name->>'vi', rs.detail->>'member_key', rs.agent_id::text) as agent_name,
       rs.detail->>'role' as role, rs.detail->>'member_key' as member_key,
       max(ul.model) as model, sum(ul.latency_ms)::int as ms,
       coalesce(sum(ul.input_tokens + ul.output_tokens + coalesce(ul.cache_read_tokens, 0)
@@ -98,16 +101,17 @@ export async function outputSteps(
     from hub.runs r
     join hub.run_steps rs on rs.run_id = r.id and rs.tenant_id = r.tenant_id
     left join hub.usage_logs ul on ul.step_id = rs.id and ul.tenant_id = r.tenant_id
+    left join hub.agents ag on ag.id = rs.agent_id
     where r.tenant_id = ${p.tenantId} and r.team_run_id in (
       select id from hub.team_runs where stage_run_id = ${p.stageRunId}
         and tenant_id = ${p.tenantId} and attempt = ${p.attempt})
       and rs.detail->>'member_key' is not null
-    group by rs.id, rs.agent_id, rs.detail->>'role', rs.detail->>'member_key'
+    group by rs.id, rs.agent_id, ag.name, rs.detail->>'role', rs.detail->>'member_key'
     order by min(rs.started_at)`);
   return [...rows].map((x) => ({
     role: x.role,
     member_key: x.member_key,
-    agent: { key: x.agent_key, name: x.agent_key },
+    agent: { key: x.agent_key, name: (x.agent_name ?? x.agent_key).slice(0, 100) },
     model: x.model,
     ms: x.ms === null ? null : Number(x.ms),
     tokens: Number(x.tokens),

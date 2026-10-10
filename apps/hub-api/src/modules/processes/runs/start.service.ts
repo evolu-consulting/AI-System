@@ -4,7 +4,6 @@
 import type {
   ProcessCatalogItem,
   ProcessRunListQuery,
-  ProcessRunListResponse,
   ProcessRunSummary,
   SendRoomMessageRequest,
 } from "@ai/contracts/chat";
@@ -244,12 +243,13 @@ export class StartService {
     return summary;
   }
 
-  /** ADM-FR-67 · `GET /process-runs` (mine / tenant, lọc key/room/conversation/status, cursor mờ). */
-  async list(u: AuthUser, q: ProcessRunListQuery): Promise<ProcessRunListResponse> {
-    const tenantId = this.#listTenant(u, q);
-    const me = meOf(u);
-    const rows = await withHubScope(this.d.db, { kind: "user", ...me }, async (tx) => {
-      if (q.room_id && !(await repo.isRoomMember(tx, u.tenantId, q.room_id, u.userId)))
+  /** ADM-FR-67 · `GET /process-runs`. platform_admin + `?tenant_id` ⇒ scope `user` của tenant đích (như detail;
+   * RLS process_runs chỉ gác `tenant_id`), không phải tenant admin (D4). */
+  async list(u: AuthUser, q: ProcessRunListQuery, tenantIdQ?: string) {
+    const tenantId = this.#listTenant(u, q, tenantIdQ);
+    const scope = { kind: "user" as const, userId: u.userId, tenantId };
+    const rows = await withHubScope(this.d.db, scope, async (tx) => {
+      if (q.room_id && !(await repo.isRoomMember(tx, tenantId, q.room_id, u.userId)))
         throw appError("NOT_FOUND");
       return repo.listRuns(tx, {
         tenantId,
@@ -275,10 +275,10 @@ export class StartService {
     return withHubScope(this.d.db, { kind: "user", ...meOf(u) }, fn);
   }
 
-  #listTenant(u: AuthUser, q: ProcessRunListQuery): string {
+  #listTenant(u: AuthUser, q: ProcessRunListQuery, tenantIdQ?: string): string {
     if (q.scope !== "tenant") return u.tenantId;
     if (u.role !== "tenant_admin" && u.role !== "platform_admin") throw appError("FORBIDDEN");
-    return u.role === "platform_admin" && q.tenant_id ? q.tenant_id : u.tenantId;
+    return u.role === "platform_admin" && tenantIdQ ? tenantIdQ : u.tenantId;
   }
 
   async #origin(
