@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { ApiError } from "~/lib/http";
+import { ForwardAction } from "../../ask/components/ForwardAction";
 import { useThreadBinding } from "../../shared/thread/thread-binding";
 import type { TaskCardProps } from "../../shared/types";
 import { useReviewDecision } from "../hooks/use-review-actions";
@@ -112,6 +113,12 @@ export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps)
           <Button type="button" size="sm" variant="outline" onClick={startFail}>
             {t("process.common.result.fail")}
           </Button>
+          <ForwardAction
+            taskId={task.id}
+            kind="review"
+            forwardCount={task.forwards.length}
+            excludeIds={new Set(task.forwards.map((f) => f.to.id))}
+          />
         </div>
       ) : (
         <div className="flex flex-col gap-2">
