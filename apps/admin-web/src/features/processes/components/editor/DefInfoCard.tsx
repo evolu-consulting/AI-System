@@ -86,7 +86,7 @@ export function DefInfoCard({ draft, errors, readOnly, refs, patch }: Props) {
         </ul>
         {readOnly ? null : (
           <RefPicker
-            label={t("process.admin.editor.groups")}
+            label={t("process.admin.editor.addGroup")}
             options={refs.groups.map((g) => ({ id: g.value, label: g.label }))}
             selectedIds={draft.groupIds}
             isLoading={refs.loading}

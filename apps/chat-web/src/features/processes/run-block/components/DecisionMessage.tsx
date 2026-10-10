@@ -25,7 +25,9 @@ export function DecisionMessage({ part }: DecisionMessageProps) {
       <p className="text-caption text-secondary-foreground">
         {t(reasonKey(part.reason), reasonParams(part.reason))}
       </p>
-      {slot.state === "mine" && <DecisionCard runId={runId} task={slot.task} view={view} />}
+      {slot.state === "mine" && (
+        <DecisionCard runId={runId} task={slot.task} view={view} embedded />
+      )}
       {slot.state === "waiting" && <TaskWaitingNote open={slot.open} />}
     </article>
   );

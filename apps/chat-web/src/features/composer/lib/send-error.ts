@@ -19,9 +19,11 @@ const COMPOSER_CODES: ReadonlySet<string> = new Set([
   "PROCESS_ATTACH_UNSUPPORTED",
 ]);
 
-/** Mã 429 có đếm ngược `Retry-After` (agent hoặc quy trình). */
-export const isCooldownCode = (code: string): boolean =>
-  code === "TOO_MANY_RUNS" || code === "TOO_MANY_PROCESS_RUNS";
+/**
+ * Mã 429 có đếm ngược `Retry-After`. D7 (UAT 2026-10-11): `TOO_MANY_PROCESS_RUNS` KHÔNG đếm ngược —
+ * lượt `needs_decision` giữ chỗ tới khi quyết/huỷ (không theo thời gian), nên không khoá Gửi theo giây.
+ */
+export const isCooldownCode = (code: string): boolean => code === "TOO_MANY_RUNS";
 
 export const isComposerError = (err: ApiError): boolean => COMPOSER_CODES.has(err.code);
 
@@ -76,7 +78,6 @@ function processErrorView(
   err: ApiError,
   text: string,
   d: Record<string, unknown>,
-  retryLeft?: number,
 ): SendErrorView | null {
   if (err.code === "PROCESS_NOT_FOUND") {
     const key = typeof d.key === "string" ? d.key : (leadingBangKey(text) ?? "");
@@ -88,10 +89,11 @@ function processErrorView(
     };
   }
   if (err.code === "TOO_MANY_PROCESS_RUNS") {
-    const n = String(Math.max(retryLeft ?? retrySecondsOf(err), 0));
-    const max = String(PROCESS_RUNS_PER_TENANT);
+    // D7: không hứa đếm ngược — mời người dùng quyết/huỷ một lượt đang chờ.
     return {
-      lines: [{ key: "process.composer.error.tooMany", params: { n, max } }],
+      lines: [
+        { key: "process.composer.error.tooMany", params: { max: String(PROCESS_RUNS_PER_TENANT) } },
+      ],
       suggestions: [],
     };
   }
@@ -132,7 +134,7 @@ export function sendErrorView(
     const n = String(Math.max(retryLeft ?? retrySecondsOf(err), 0));
     return { lines: [{ key: "sendError.tooManyRuns", params: { n } }], suggestions: [] };
   }
-  const proc = processErrorView(err, text, d, retryLeft);
+  const proc = processErrorView(err, text, d);
   if (proc) return proc;
   if (err.code === "ATTACHMENT_NOT_FOUND") {
     return { lines: [{ key: "sendError.attachmentNotFound", params: {} }], suggestions: [] };

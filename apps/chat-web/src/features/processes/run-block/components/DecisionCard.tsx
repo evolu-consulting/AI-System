@@ -21,7 +21,9 @@ import { reasonKey, reasonParams } from "../../shared/lib/decision-reason";
 import type { TaskCardProps } from "../../shared/types";
 import { useDecide } from "../hooks/use-decide";
 
-export function DecisionCard({ runId, task }: TaskCardProps) {
+// D6c (UAT 2026-10-11): trong thread, `DecisionMessage` đã in tiêu đề "Quy trình dừng ở giai đoạn…" + lý do ở trên,
+// nên thẻ nhúng ẩn hai dòng đó để không lặp; trang lượt chạy (TaskPanel) không nhúng ⇒ vẫn in đủ.
+export function DecisionCard({ runId, task, embedded }: TaskCardProps & { embedded?: boolean }) {
   const { t } = useTranslation();
   const decide = useDecide(runId);
   const [note, setNote] = useState("");
@@ -56,10 +58,12 @@ export function DecisionCard({ runId, task }: TaskCardProps) {
       aria-label={t("process.run.decision.region")}
       className="flex flex-col gap-2 rounded-xl border border-destructive/30 bg-card p-3"
     >
-      <p className="text-sm font-medium">
-        {t("process.run.decision.title", { stage: task.stage_name })}
-      </p>
-      {task.reason && (
+      {!embedded && (
+        <p className="text-sm font-medium">
+          {t("process.run.decision.title", { stage: task.stage_name })}
+        </p>
+      )}
+      {!embedded && task.reason && (
         <p className="text-caption text-secondary-foreground">
           {t(reasonKey(task.reason), reasonParams(task.reason))}
         </p>

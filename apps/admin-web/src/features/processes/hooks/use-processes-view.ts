@@ -51,13 +51,14 @@ function useRowActions(
   tenantId: string | undefined,
   onRun: (r: Row) => void,
   onDelete: (r: Row) => void,
+  onCopied: () => void,
 ) {
   const { t } = useTranslation();
   const fail = useFail();
   const invalidate = useInvalidateDefs();
   const toggler = useToggleEnabled(tenantId);
-  const latest = useRef({ toggle: toggler.toggle, tenantId, t, invalidate, fail });
-  latest.current = { toggle: toggler.toggle, tenantId, t, invalidate, fail };
+  const latest = useRef({ toggle: toggler.toggle, tenantId, t, invalidate, fail, onCopied });
+  latest.current = { toggle: toggler.toggle, tenantId, t, invalidate, fail, onCopied };
   const actions = useMemo(
     () => ({
       onToggle: (r: Row, v: boolean) => void latest.current.toggle(r, v),
@@ -68,6 +69,8 @@ function useRowActions(
         void copyDef(r.id, c.tenantId).then(() => {
           notifySuccess(c.t("process.admin.list.toast.copied"));
           void c.invalidate();
+          // D8a (UAT 2026-10-11): sang tab "Của công ty" để thấy bản vừa chép (không kẹt ở tab Mẫu).
+          c.onCopied();
         }, c.fail);
       },
     }),
@@ -86,7 +89,8 @@ export function useProcessesView() {
   const del = useDeleteFlow(tenant.tenantId);
   const needsTenant = tenant.isPlatform && !tenant.tenantId && !templates;
   const q = useProcessDefs(tenant.tenantId, templates, tenant.ready && !needsTenant);
-  const { actions, conflictProps } = useRowActions(tenant.tenantId, setRunRow, del.open);
+  const goOwn = () => void navigate({ to: "/processes", search: { tab: "own" }, replace: true });
+  const { actions, conflictProps } = useRowActions(tenant.tenantId, setRunRow, del.open, goOwn);
   const rows = useMemo(() => {
     if (!q.data) return undefined;
     const all = q.data.pages.flatMap((p) => p.items).filter((r) => r.is_template === templates);

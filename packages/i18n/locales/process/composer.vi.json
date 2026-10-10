@@ -21,7 +21,7 @@
   },
   "error": {
     "notFound": "Không tìm thấy quy trình “!{{key}}”.",
-    "tooMany": "Công ty đang chạy tối đa {{max}} quy trình cùng lúc. Thử lại sau {{n}} giây.",
+    "tooMany": "Công ty đang chạy tối đa {{max}} quy trình cùng lúc. Hãy quyết định hoặc huỷ một lượt đang chờ rồi thử lại.",
     "noAttach": "Quy trình chưa nhận tệp đính kèm. Gỡ tệp hoặc bỏ “!” rồi gửi lại."
   },
   "toast": {

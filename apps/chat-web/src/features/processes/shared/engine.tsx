@@ -1,5 +1,5 @@
 // FD2 · cờ engine dò lúc chạy (không cờ build): `on` ⇒ hiện mọi lối vào quy trình, ngược lại ẩn và không nạp chuỗi `process.*`.
-import { useQuery } from "@tanstack/react-query";
+import { type QueryClient, useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ensureProcessLocale } from "~/app/i18n";
@@ -40,6 +40,27 @@ export function useProcessEngine(): EngineState {
 }
 
 export const useProcessEngineOn = (): boolean => useProcessEngine() === "on";
+
+/**
+ * D2 (UAT 2026-10-11): giải quyết cờ engine theo yêu cầu (dùng chung query với `useProcessEngine` nên chờ đúng lần dò
+ * đang bay). Dành cho composer Hỏi AI khi người dùng gửi `!key` trong lúc cờ còn `unknown` (vừa mở trang): chờ dò xong
+ * rồi mới quyết chặn hay gửi thường — tránh đua khiến phím Enter đi nhầm đường `POST /conversations`.
+ */
+export async function resolveEngineOn(queryClient: QueryClient, lng: string): Promise<boolean> {
+  let state: EngineState;
+  try {
+    state = await queryClient.fetchQuery({
+      queryKey: processKeys.engine,
+      queryFn: ({ signal }) => probeEngine(signal),
+      staleTime: STALE_MS,
+    });
+  } catch {
+    return false;
+  }
+  if (state !== "on") return false;
+  await ensureProcessLocale(lng);
+  return true;
+}
 
 /** Mọi lối vào quy trình bọc trong cổng này: không `on` ⇒ `fallback` (mặc định không vẽ gì). */
 export function ProcessEngineGate({

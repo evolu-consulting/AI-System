@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import type { SubmitResult } from "~/features/composer/hooks/use-send-error";
 import { isComposerError } from "~/features/composer/lib/send-error";
 import { ApiError, type ApiErrorCode } from "~/lib/http";
+import { resolveEngineOn } from "../../shared/engine";
+import type { EngineState } from "../../shared/types";
 import { startProcess } from "../api";
 import { classifyBang } from "../lib/bang";
 import { disarmProcessStart, isProcessStartArmed } from "../lib/bang-state";
@@ -16,15 +18,21 @@ export type BangOrigin =
   | { kind: "conversation"; conversationId: string }
   | { kind: "none" };
 
+/** `"pass"` = không chặn ⇒ để đường gửi thường xử lý (tin thường, `!!`/`!` trơn, hoặc engine off). */
+export type BangResult = SubmitResult | "pass";
+
 export type BangSubmit = {
-  /** `null` = không phải `!key` ⇒ để đường gửi thường xử lý. `attachmentIds` không rỗng ⇒ chặn (quy trình chưa nhận tệp). */
-  intercept(text: string, attachmentIds?: readonly string[]): Promise<SubmitResult> | null;
+  /**
+   * Luôn trả Promise (D2 fix): tin thường ⇒ `"pass"` ngay; `!key` khi cờ còn `unknown` ⇒ chờ dò engine rồi quyết.
+   * `attachmentIds` không rỗng ⇒ chặn (quy trình chưa nhận tệp).
+   */
+  intercept(text: string, attachmentIds?: readonly string[]): Promise<BangResult>;
 };
 
 /** Mã lỗi phía client (không phải của Hub): có tệp đính kèm; `send-error.ts` đổi thành câu `process.composer.error.noAttach`. */
 export const PROCESS_NO_ATTACH_CODE = "PROCESS_ATTACH_UNSUPPORTED";
 
-const PASS: BangSubmit = { intercept: () => null };
+const PASS: BangSubmit = { intercept: () => Promise.resolve("pass") };
 
 /** `POST /process-runs` cho một origin; phòng (▶)/Hỏi AI ⇒ toast có nút Mở, không origin ⇒ mở ngay. */
 function useRunStarter(roomId: string | null, convId: string | null) {
@@ -59,30 +67,41 @@ function useRunStarter(roomId: string | null, convId: string | null) {
   );
 }
 
+/** Quy trình chưa nhận tệp ⇒ lỗi client-side (`send-error.ts` đổi thành câu). */
+const attachErr = (): SubmitResult => ({
+  ok: false,
+  error: new ApiError(400, PROCESS_NO_ATTACH_CODE as ApiErrorCode, "attachments"),
+});
+
+/** Phòng: chỉ chặn `!key` khi nút "▶ Quy trình" đã arm (gõ tay ⇒ gửi thường, Hub đăng tin gọi, T1); khác ⇒ luôn chặn. */
+function armedForOrigin(kind: BangOrigin["kind"]): boolean {
+  if (kind !== "room") return true;
+  if (!isProcessStartArmed()) return false;
+  disarmProcessStart();
+  return true;
+}
+
 /** `!key` ở composer: Hỏi AI (origin conversation/none) chặn luôn; phòng chỉ chặn khi do nút "▶ Quy trình" (đã arm, T1). */
-export function useBangSubmit(origin: BangOrigin, enabled: boolean): BangSubmit {
+export function useBangSubmit(origin: BangOrigin, state: EngineState): BangSubmit {
   const kind = origin.kind;
   const convId = origin.kind === "conversation" ? origin.conversationId : null;
   const roomId = origin.kind === "room" ? origin.roomId : null;
   const run = useRunStarter(roomId, convId);
+  const queryClient = useQueryClient();
+  const { i18n } = useTranslation();
+  const lng = i18n.language;
 
   return useMemo<BangSubmit>(() => {
-    if (!enabled) return PASS;
+    if (state === "off") return PASS;
     return {
-      intercept(text, attachmentIds) {
+      async intercept(text, attachmentIds) {
         const c = classifyBang(text);
-        if (c.kind !== "run") return null;
-        // Phòng: chỉ chặn khi do nút "▶ Quy trình" (đã arm); `!key` gõ tay ⇒ đường gửi thường ⇒ Hub đăng tin gọi (T1).
-        if (kind === "room") {
-          if (!isProcessStartArmed()) return null;
-          disarmProcessStart();
-        }
-        if (attachmentIds && attachmentIds.length > 0) {
-          const err = new ApiError(400, PROCESS_NO_ATTACH_CODE as ApiErrorCode, "attachments");
-          return Promise.resolve({ ok: false, error: err });
-        }
+        if (c.kind !== "run" || !armedForOrigin(kind)) return "pass";
+        // Cờ còn `unknown` (vừa mở trang): chờ dò xong trước khi quyết — engine off ⇒ gửi thường (D2).
+        if (state !== "on" && !(await resolveEngineOn(queryClient, lng))) return "pass";
+        if (attachmentIds && attachmentIds.length > 0) return attachErr();
         return run(c.key, c.input);
       },
     };
-  }, [enabled, kind, run]);
+  }, [state, kind, run, queryClient, lng]);
 }

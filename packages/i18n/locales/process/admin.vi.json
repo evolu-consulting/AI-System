@@ -121,7 +121,8 @@
     },
     "choose": "Chọn…",
     "gone": "(đã tắt hoặc không còn)",
-    "removeGroup": "Bỏ Group {{name}}"
+    "removeGroup": "Bỏ Group {{name}}",
+    "addGroup": "Thêm Group"
   },
   "run": {
     "title": "Lượt chạy · {{name}}",

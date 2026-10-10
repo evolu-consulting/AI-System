@@ -112,7 +112,7 @@ describe("P-a · mục Quy trình theo cờ engine", () => {
     expect(crumbsFor("/processes")).toEqual([{ labelKey: "nav.processes" }]);
     expect(crumbsFor("/processes/new")).toEqual([
       { labelKey: "nav.processes", to: "/processes" },
-      { labelKey: "process.admin.editor.title.new" },
+      { labelKey: "nav.processesNew" },
     ]);
   });
 });

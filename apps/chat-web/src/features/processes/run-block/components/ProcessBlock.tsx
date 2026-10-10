@@ -1,5 +1,7 @@
 // CHAT-AC-52 · plan-frontend-thread §1/§4: khối quy trình ở timeline (dáng AgentBlock + StageStrip) và đầu thread (`inThread`).
-// Dữ liệu run nạp lười khi khối vào màn hình (`useInView`); lỗi view ⇒ thanh trạng thái báo "stale" + Thử lại (tin vẫn đọc được).
+// D1 (UAT 2026-10-11): nạp view của run ngay khi khối gắn vào DOM — không chờ `useInView`/mở thread (IntersectionObserver trong khung cuộn
+// không bắn đáng tin khi timeline tự cuộn xuống đáy lúc mới mở phòng) ⇒ trạng thái/giai đoạn/huy hiệu hiện từ lần vẽ đầu.
+// Lỗi view ⇒ thanh trạng thái báo "stale" + Thử lại (tin vẫn đọc được).
 
 import type { ProcessRunFullView } from "@ai/contracts/chat";
 import { Workflow } from "lucide-react";
@@ -13,7 +15,6 @@ import { relativeTime } from "~/features/thread/lib/thread-logic";
 import { RunStatusBadge } from "../../shared/components/RunStatusBadge";
 import { StageStrip } from "../../shared/components/StageStrip";
 import { TaskWaitingNote } from "../../shared/components/TaskWaitingNote";
-import { useInView } from "../../shared/hooks/use-in-view";
 import { useThreadRun } from "../../shared/hooks/use-thread-run";
 import type { ThreadMessageProps } from "../../shared/types";
 import { type BlockAction, myActions, stageItems, waitingOpenTasks } from "../lib/block-view";
@@ -135,9 +136,8 @@ function BlockFooter({
 
 function ProcessBlockImpl({ message, part, myId, inThread = false, onReply }: ProcessBlockProps) {
   const { t } = useTranslation();
-  const { ref, inView } = useInView<HTMLElement>();
   const runId = part.process_run_id;
-  const q = useThreadRun(runId, null, inView);
+  const q = useThreadRun(runId, null, true);
   const view = q.view?.access === "full" ? (q.view as ProcessRunFullView) : undefined;
   const name = part.process.name;
   const startedBy = view
@@ -151,7 +151,6 @@ function ProcessBlockImpl({ message, part, myId, inThread = false, onReply }: Pr
   const flow = message.flow;
   return (
     <article
-      ref={ref}
       aria-label={t("process.run.card.aria", { name })}
       data-seq={message.seq}
       data-flow-id={flowId}

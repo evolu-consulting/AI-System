@@ -114,7 +114,7 @@ export type Crumb = {
     | "commands.editor.titleNew"
     | "groups.editor.titleNew"
     | "features.editor.titleNew"
-    | "process.admin.editor.title.new";
+    | "nav.processesNew";
   to?: string;
 };
 
@@ -123,7 +123,8 @@ const CATALOG: Record<string, { labelKey: NavItem["labelKey"]; newKey: Crumb["la
   commands: { labelKey: "nav.commands", newKey: "commands.editor.titleNew" },
   features: { labelKey: "nav.features", newKey: "features.editor.titleNew" },
   groups: { labelKey: "nav.groups", newKey: "groups.editor.titleNew" },
-  processes: { labelKey: "nav.processes", newKey: "process.admin.editor.title.new" },
+  // D3 (UAT 2026-10-11): dùng khoá base (luôn nạp) cho breadcrumb — `process.admin.*` nạp lười nên shell lộ khoá thô.
+  processes: { labelKey: "nav.processes", newKey: "nav.processesNew" },
 };
 
 /** Breadcrumb của danh sách và editor M2 (`/workflows`, `/commands/new`, `/features/<id>`). */

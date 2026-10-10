@@ -82,10 +82,10 @@ describe("P-a · lỗi quy trình trong composer", () => {
     expect(v?.suggestions).toEqual(["hoa-don", "sdlc"]);
     expect(v?.suggestionPrefix).toBe("!");
   });
-  test("TOO_MANY_PROCESS_RUNS: đếm ngược + trần 5", () => {
+  test("TOO_MANY_PROCESS_RUNS: không đếm ngược (D7), chỉ trần 5", () => {
     const e = new ApiError(429, "TOO_MANY_PROCESS_RUNS", "x", { retryAfter: 30 });
     expect(sendErrorView(e, "!sdlc x", 12)?.lines).toEqual([
-      { key: "process.composer.error.tooMany", params: { n: "12", max: "5" } },
+      { key: "process.composer.error.tooMany", params: { max: "5" } },
     ]);
   });
   test("PROCESS_THREAD_NO_AGENT: câu riêng của thread, không gợi ý", () => {

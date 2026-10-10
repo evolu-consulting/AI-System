@@ -24,10 +24,12 @@ function TodoItem({ item, now }: { item: ReviewTaskListItem; now: number }) {
         className="flex flex-col gap-0.5 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span className="truncate font-medium">
-          {task.stage_name} · {process_run.process.name}
+          {process_run.process.name} · {task.stage_name}
         </span>
+        {/* D6d (UAT 2026-10-11): thêm người bắt đầu để phân biệt nhiều lượt cùng quy trình/giai đoạn. */}
         <span className="truncate text-caption text-muted-foreground">
-          {t(todoKindKey(task.kind))} · {relativeTime(task.created_at, now, i18n.language)}
+          {t(todoKindKey(task.kind))} · {process_run.started_by.display_name} ·{" "}
+          {relativeTime(task.created_at, now, i18n.language)}
         </span>
       </Link>
     </li>

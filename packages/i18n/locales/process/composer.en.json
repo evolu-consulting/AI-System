@@ -21,7 +21,7 @@
   },
   "error": {
     "notFound": "Process “!{{key}}” not found.",
-    "tooMany": "Your company is already running {{max}} processes. Try again in {{n}} seconds.",
+    "tooMany": "Your company is already running {{max}} processes. Decide or cancel a pending run, then try again.",
     "noAttach": "Processes don't accept attachments yet. Remove the files or drop the “!” and send again."
   },
   "toast": {

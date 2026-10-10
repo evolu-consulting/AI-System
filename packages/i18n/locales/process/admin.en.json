@@ -121,7 +121,8 @@
     },
     "choose": "Choose…",
     "gone": "(disabled or gone)",
-    "removeGroup": "Remove group {{name}}"
+    "removeGroup": "Remove group {{name}}",
+    "addGroup": "Add group"
   },
   "run": {
     "title": "Run · {{name}}",
