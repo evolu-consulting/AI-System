@@ -14,7 +14,8 @@
     "role": "Vai",
     "agent": "Agent",
     "model": "Model",
-    "time": "Thời gian"
+    "time": "Thời gian",
+    "total": "Tổng"
   },
   "expand": "Xem lượt gọi giai đoạn {{name}}",
   "calls": "Lượt gọi giai đoạn {{name}}",
