@@ -124,10 +124,11 @@ Agent fixture (fake-cli, bật cho acme): `hd-read` (stage 1 hoá đơn), `hd-po
 | R-A02 | ″ | ″ | assignee không ở phòng | `task`; assignee + thành viên ⇒ `full` |
 | R-A03 | ″ | ″ | user khác cùng tenant; rời phòng (active=false, không assignee); `r=null` | `null` |
 | R-A04 | ″ | ″ | tenant_admin / starter-id tenant khác (tenantId lệch) | `null` |
-| R-A05 | `canCancel` | ″ | starter, tenant_admin, platform_admin / thành viên phòng, assignee, admin tenant khác | true / false |
-| R-A06 | `canDecide` | ″ | starter, tenant_admin × mọi lý do; reviewGroupMember × `redo_limit` / × lý do khác; thành viên phòng | true; true / false; false (M5) |
+| R-A05 | `canCancel` | ″ | starter, tenant_admin, platform_admin; starter đã rời R (`originRoom:"outside"`, U5) / thành viên phòng, assignee, admin tenant khác | true; true / false |
+| R-A06 | `canDecide` | ″ | starter, tenant_admin × mọi lý do; starter `outside` × mọi lý do; reviewGroupMember × `redo_limit` / × lý do khác; thành viên phòng | true; true / false; false (M5); starter đã rời R × mọi lý do ⇒ true (M5, U5) |
 | R-A07 | `canRun` | ″ | inactive; enabled false; deleted; runGroupIds rỗng; user ∈ / ∉ group | false; false; false; true; true / false (M1) |
-| R-A08 | `runAccess` | ″ | starter đã rời R (U5), không assignee | dạng ngoài phòng (không `full`, không `null`; giá trị theo plan-contract U5) |
+| R-A08 | `runAccess` | ″ | starter đã rời R (U5), không assignee | `task` (không `full`, không `null`; plan-contract:116 U5) |
+| R-A09 | `canReadThread` | ″ | thành viên phòng (`originRoom:"member"`); starter đã rời R (`outside`); assignee ngoài phòng; tenant_admin / platform_admin không là thành viên | true; false; false; false (RLS phòng, chỉ `member` ⇒ true) |
 | R-L01 | `teamLimitHit` | step0/`limits` | calls 9/10; tokens 199 999/200 000; activeMs 599 999/600 000 (`TEAM_LIMITS_DEFAULT`) | null / `calls`; null / `tokens`; null / `time` |
 | R-L02 | ″ | ″ | vượt cả 3 | `calls` (thứ tự calls → tokens → time — Câu hỏi Q6) |
 | R-L03 | `budgetHit` | ″ | (5e6, null); (999, 1000); (1000, 1000) | false; false; true (C1) |

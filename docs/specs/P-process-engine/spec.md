@@ -192,4 +192,4 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 ## 11. Tranh chấp test
 - (không)
 
-Readiness: [`readiness.md`](readiness.md) lần 1 NOT READY (2026-10-10); U1–U5, Q-F5 và lỗi tài liệu đã xử lý ở đây, chờ chạy lại lần 2. Trạng thái giữ `draft`.
+Readiness: [`readiness.md`](readiness.md) lần 1–3 NOT READY (2026-10-10, lần 3: 0 Chặn, 3 Cao đang sửa); U1–U5, Q-F5 đã ghi. Trạng thái giữ `draft` tới Gate.

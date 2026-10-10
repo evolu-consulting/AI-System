@@ -4,9 +4,74 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-10 (lần 3, `8c2b12d9`) | NOT READY | 0 | 3 | 4 | R2-1…R2-9, #22–#24 đóng hết. Mới: 3 Cao đội tự sửa, đều quanh view ngoài phòng của người bắt đầu đã rời (U5): quyền `GET output`, FE không hiện `outputs`/`can_cancel` ở `access:task`, thiếu test luật. Không còn câu hỏi người dùng |
 | 2026-10-10 (lần 2, `1ee41c60`) | NOT READY | 0 | 5 | 7 | 24 lỗ hổng lần 1: 21 đóng, 3 Thấp mang sang. Mới: 1 câu hỏi người dùng (T10 lệch X2b-R17), 4 Cao đội tự sửa (nhãn e2e thread, ràng composer, ai gửi trả lời ở composer thread, `forward.task_kind`) |
 | 2026-10-10 (lần 1, `db3e7021`) | NOT READY | 1 | 7 | 9 | + 7 Trung bình. Chặn = ai mở task hỏi lại (PF1 hay PF2). 4 mục cần người dùng quyết (U1–U4), còn lại đội tự sửa theo Luật 2 |
 | (chưa chạy) | — | — | — | — | Spec draft 2026-10-09 (CR-056…058) |
+
+---
+
+## Lần 3 · 2026-10-10 · commit `8c2b12d9` (diff `1ee41c60..HEAD`)
+
+## Kết luận: NOT READY
+Phạm vi đã kiểm: `git diff 1ee41c60..HEAD -- docs/specs/P-process-engine docs/design` (14 file đổi, trừ readiness.md) + mục được trỏ: plan-contract.md:40–45, :57, :115–131; plan.md:8–18, :68; plan-frontend.md:16–21, :73–74; test-plan.md:123–130; test-plan-int.md:166–177 · mã yêu cầu: U5, Q-F5, T6, T10, P-R10, HUB-FR-105/113/115, HUB-BR-25, ADM-FR-65, CHAT-AC-52/57, AC-H29
+
+Lỗ hổng lần 2: **đóng** R2-1 (U5 ở spec.md:178, plan-thread.md:17 T10, BA HUB-FR-113, usecases-chat:193, P1-75/P1-85, E-P20) · R2-2 (E-P18 thống nhất số qc; E-P19/E-P20 có ở cả test-plan-e2e.md:33–34 và plan-frontend-e2e.md:69–71; E-P8/E-P13/E-P16 sửa) · R2-3 (T6 plan-thread.md:13 + spec.md:179 Q-F5) · R2-4 (plan-frontend-thread §2 `begin({…, submit})`, footer gọi `binding.submit`) · R2-5 (plan-contract.md:41 `forward.task_kind`, i18n-thread chọn khoá theo loại, E-P9) · R2-6 (plan-step0.md:28 `run_end` + persona `lan-left`) · R2-7 (N10 đóng, test-plan.md) · R2-8 (test-plan-e2e.md:3 không `exact` cho `article`, i18n "Đã trả lời") · R2-9 (BA HUB-FR-105 "5 (`PROCESS_RUNS_PER_TENANT`)", HUB-FR-115 "7 ngày (`PROCESS_RUN_TTL_DAYS`)", ADM-FR-65 "run gần nhất — P-b"). #22 ⇒ việc kiểm trong RV1 (tasks.md:62) — đóng ở mức spec. #23 ⇒ tasks.md:12 (tiêu đề mục = cột Feature/nhánh) — đóng. #24 ⇒ thành luật (phụ lục) — đóng; trần xem dưới.
+
+**Đối chiếu `access` của A' (người bắt đầu đã rời, U5) — ma trận test-plan-int.md:170 ↔ plan-contract:**
+
+| Ô A' | QC ghi | Contract | Kết luận |
+|---|---|---|---|
+| GET run | "ngoài³" (không giá trị cụ thể); R-A08 "giá trị theo plan-contract U5" | :116 `runAccess` ⇒ `task`; :40 `task` + `my_tasks` rỗng được + `outputs?` + `can_cancel?`, không `thread` | Khớp nghĩa, chưa ghim giá trị ⇒ R3-3 |
+| output đang kiểm / stage khác | Đ / Đ | :57 `GET …/outputs/:oid` "task: chỉ `output_id` của task mình" (chưa có ngoại lệ U5) ⇒ A' không task ⇒ 404 | **Mâu thuẫn** ⇒ R3-1 |
+| usage | s | :45 `summary` cho người xem `task` | Khớp |
+| decision / answer / forward | 4 / 409 closed / Đ¹ | theo assignee, không đổi do U5 | Khớp |
+| decide | 409 state (R1 không `needs_decision`) | :119 `canDecide` người bắt đầu đã rời vẫn quyết; :131 `decisionAssignees` gồm `startedBy` ⇒ việc quyết vào `my_tasks` | Khớp |
+| cancel | Đ | :118 `canCancel` kể cả đã rời; :40 `can_cancel?` | Khớp |
+| tin R / hội thoại nền | 4 / 4 | :117 `canReadThread` false | Khớp |
+| `/runs/:stage` events (H1) | Đ | plan.md:8 D1 run stage là `hub.runs` của người bắt đầu (`user_id = started_by`) | Khớp |
+
+## Lỗ hổng
+| # | Mức | Mục | Vị trí (file:dòng hoặc mã) | Vấn đề | Mặc định đề xuất |
+|---|-----|-----|----------------------------|--------|------------------|
+| R3-1 | Cao | B, I (bảo mật) — đội | plan-contract.md:57 ↔ :40 (`outputs?` chỉ cho người bắt đầu đã rời) ↔ test-plan-int.md:170 (A' output Đ/Đ) ↔ spec.md:178 (U5 "output") | `GET /process-runs/:id/outputs/:oid` cho `access:task` chỉ mở output của task mình ⇒ A' (không task) bị 404 với mọi output, trái ma trận + U5. Hai cách code | backend-lead sửa :57: "task: output của task mình; người bắt đầu đã rời (U5): mọi output của run (= `outputs`), audit `view` mỗi lần". Ghi rõ `outputs` vẫn trả khi run đã kết thúc (M4 chỉ làm rỗng `stages`). `lan-left` (plan-step0.md:28) trả `outputs` ≥1 + `can_cancel:true` |
+| R3-2 | Cao | E — đội | plan-frontend.md:73 (`access:task`: chỉ `TaskAccessBanner` + `StageStrip`; `CancelRunButton`, output chỉ ở `full`) ↔ plan-frontend-thread.md:62 ("nút `Huỷ lượt chạy` theo `can_cancel`") ↔ plan-contract.md:40 (`outputs?`, `can_cancel?`) | `RunPage` dạng `task` không có chỗ hiện `outputs` của A' và không có `CancelRunButton`; câu banner "Bạn chỉ xem được phần cần xử lý…" sai nghĩa với A' (không có việc). E-P20 không kiểm nút Huỷ / output | frontend-lead sửa plan-frontend.md:73 (ghi vào phụ lục nếu chạm trần): `access:task` + `outputs` ⇒ danh sách "Kết quả" (`OutputView` theo `OutputRef`); `can_cancel` ⇒ `CancelRunButton`; banner riêng khi `my_tasks=[]` dùng i18n-thread `left` ("Bạn không còn ở phòng này. Xem lượt chạy ở trang riêng."). qc thêm vào E-P20: A' thấy `button "Huỷ lượt chạy"` + ≥1 output |
+| R3-3 | Cao | F, H2 — đội | test-plan.md:123–130; test-plan-int.md:170, chú thích ³ | Luật mới `canReadThread` (plan-contract.md:117) không có ca R-A*; R-A08 và ô A' GET run không ghi giá trị (FR MUST cần kỳ vọng đo được); R-A05/R-A06 chưa có ca "người bắt đầu đã rời" | qc: R-A08 kỳ vọng `task`; thêm R-A09 `canReadThread` (thành viên ⇒ true; người bắt đầu `outside` ⇒ false; assignee ngoài phòng ⇒ false; admin ⇒ theo RLS phòng = false nếu không là thành viên); R-A05/06 thêm `originRoom:"outside"` ⇒ true. Ô A' GET run = `task` (`my_tasks=[]`, `outputs` ≥1, `can_cancel=true`, không `thread`) |
+| R3-4 | Thấp | I | plan-contract.md:41 (`task_kind` với ba giá trị nối bằng dấu gạch đứng trần) | `|` không thoát trong ô bảng ⇒ vỡ bảng khi render (các chỗ khác dùng `\|`) | backend-lead thay bằng `\|` |
+| R3-5 | Thấp | I | spec.md:195 | Còn "chờ chạy lại lần 2" | docs-architect: "lần 3 NOT READY (R3-1…3), chờ lần 4" |
+| R3-6 | Thấp | I | test-plan-int.md:170 chú thích ³ "lệch ⇒ qc theo contract ở QC1" | Câu dự phòng thành thừa sau R3-3 | qc xoá khi ghi giá trị |
+| R3-7 | Thấp | I (trần, #24) | plan.md 30 572 B (còn 148 B tới 30 KB); plan-frontend.md 25 399 B (còn 201 B tới 25 KB) | Sửa R3-2 có thể vượt trần plan-frontend.md | Mọi bổ sung vào phụ lục (`plan-frontend-thread.md` §5 hoặc `plan-frontend-usage.md`), plan-frontend.md chỉ trỏ |
+
+## Mâu thuẫn giữa tài liệu
+- plan-contract.md:57 (output cho `task` chỉ của task mình) ↔ plan-contract.md:40 `outputs?` + test-plan-int.md:170 A' Đ/Đ + spec.md:178 U5 → giữ U5: người bắt đầu đã rời đọc mọi output (R3-1).
+- plan-frontend.md:73 (`task` không có Huỷ/output) ↔ plan-frontend-thread.md:62 (Huỷ theo `can_cancel`) → giữ plan-frontend-thread + contract (R3-2).
+
+## Câu hỏi cho người dùng (chỉ những gì KHÔNG có mặc định an toàn)
+Không có. U5 đã trả lời và đủ để chọn mặc định cho R3-1…R3-3 (spec.md:178 "tiến độ, output, task của mình"). Đội tự đóng (Luật 2): R3-1 backend-lead · R3-2 frontend-lead (+ qc E-P20) · R3-3 qc · R3-4 backend-lead · R3-5 docs-architect · R3-6 qc · R3-7 frontend-lead.
+
+## Checklist
+| Mục | Kết quả | Bằng chứng (file:dòng / mã) |
+|-----|---------|-----------------------------|
+| A Phạm vi | Đạt | spec.md:178–179 U5/Q-F5; ADM-FR-65 "run gần nhất — P-b" |
+| B Hợp đồng | Mâu thuẫn | plan-contract.md:40–41, :115–119 có U5; :57 chưa (R3-1) |
+| C Dữ liệu | Đạt | không đổi từ lần 2; `RunFacts.originRoom` (:115) |
+| D Nghiệp vụ | Đạt | plan-thread.md:13 (T6), :17 (T10 U5); P-R10 không xung đột (U5 ghi rõ chạy tiếp) |
+| E UI | Thiếu | plan-frontend-thread.md:20, :36–62; plan-frontend.md:73 thiếu view A' (R3-2) |
+| F Kiểm chứng | Thiếu | P1-75, P1-85, E-P19, E-P20, E-P9; thiếu `canReadThread`, giá trị A' (R3-3) |
+| G Phụ thuộc & môi trường | Đạt | plan-step0.md:28 (`run_end`, `lan-left`); `lan-left` cần `outputs`/`can_cancel` (trong R3-1) |
+| H Task | Đạt | tasks.md:12 (#23), :62 RV1 (#22, U5) |
+| H2 Vai trò | Thiếu | `canReadThread` khai báo plan-contract.md:117 nhưng chưa có test (R3-3) |
+| I Nhất quán | Thiếu | R3-4, R3-5 |
+| J Độ chính xác | Đạt | i18n-thread `left`, `forward.line`/`ask.fwd.line`, `result.answered` nguyên văn VI/EN |
+
+**Trần kích thước** (`wc -c`, WORKFLOW Kỷ luật token #5, 1 KB = 1024 B): spec.md 23 212 / 25 600 · plan.md 30 572 / 30 720 · plan-frontend.md 25 399 / 25 600 · test-plan.md 28 604 / 30 720 — **đều dưới trần**; plan.md, plan-frontend.md sát trần (R3-7). Phụ lục không có trần.
+
+## Quét từ mơ hồ
+Chỉ quét phần đổi: "(tuỳ chọn)" (nhãn trường E-P9) — vô hại; "…" trong nhãn e2e/i18n là chuỗi rút gọn có bản đầy đủ — vô hại; "`outputs?`"/"`can_cancel?`" (plan-contract.md:40) là trường tuỳ chọn của schema, điều kiện có ghi ("chỉ người bắt đầu đã rời") — vô hại. Không còn "~" ở BA đã sửa.
+
+## Chưa kiểm
+- Không đọc lại phần không đổi. Không đối chiếu từng khoá vi/en ngoài các khoá đổi (`left`, `forward.line`, `ask.fwd.line`, `result.answered`).
+- Symbol chat-web ở plan-frontend-thread.md:63–75 vẫn chưa Grep xác minh (như lần 2).
 
 ---
 

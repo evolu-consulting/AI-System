@@ -167,7 +167,7 @@ Run R1 (`hoa-don-t`) do A bắt đầu ở R, đang `waiting_review` stage 0 (ta
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | A starter | full | Đ | Đ | full | 4 (không assignee) | 409 closed | Đ¹ | 409 state | Đ | Đ | 4 | Đ |
 | X thành viên R | full | Đ | Đ | full | 4 | 4 | 4 | 3 | 3 | Đ | 4 | 4 |
-| A' starter đã rời R (U5) | ngoài³ | Đ | Đ | s | 4 | 409 closed | Đ¹ | 409 state | Đ | **4** | 4 | Đ |
+| A' starter đã rời R (U5) | `task` (`my_tasks=[]`, `outputs` ≥1, `can_cancel=true`, không `thread`) | Đ | Đ | s | 4 | 409 closed | Đ¹ | 409 state | Đ | **4** | 4 | Đ |
 | L rời R | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 |
 | B Group trong R | full | Đ | Đ | full | Đ | 4 | Đ (trong Group) | 3² | 3 | Đ | 4 | 4 |
 | T Group ngoài R | task | Đ | **4** | s | Đ | 4 | Đ (trong Group) | 3² | 3 | **4** | 4 | 4 |
@@ -176,7 +176,7 @@ Run R1 (`hoa-don-t`) do A bắt đầu ở R, đang `waiting_review` stage 0 (ta
 | D tenant khác (+`?tenant_id=acme`) | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 |
 | Adm tenant_admin | full | Đ | Đ | full | 4 | 4 | 4 | 409 state | Đ | theo X2a | 4 | 4 |
 | P platform_admin `?tenant_id` | full | Đ | Đ | full | 4 | 4 | 4 | 409 state | Đ | theo X2a | 4 | 4 |
-¹ A chỉ forward task mình là assignee (ở R1 không có ⇒ 4); ô riêng dùng R2 có ask open. ² decide khi `needs_decision redo_limit` ⇒ Đ (Q2). ³ U5: 200 dạng ngoài phòng (như P1-75: tiến độ, output, task của mình, audit `view`; không `history`/tin R); giá trị `access` theo plan-contract bản U5 — lệch ⇒ qc theo contract ở QC1 (A' cancel/decide/H1 = mặc định qc giữ quyền người bắt đầu). Thêm: `M-audit` T `GET` run 2 lần ⇒ đúng 1 audit `view` (entity review_task); mỗi `GET output` ⇒ +1 · `M-M4` sau run `done`: T `GET` run ⇒ `access=task`, `stages=[]`, output task mình Đ, output khác 4 · `M-body` body T/H/A' không chứa `input`, `history`, tên phòng, nội dung tin R (so chuỗi cắm sẵn `ROOM-SECRET-P1`) · `M-404-same` 404 của run không tồn tại và run không được thấy giống hệt body.
+¹ A chỉ forward task mình là assignee (ở R1 không có ⇒ 4); ô riêng dùng R2 có ask open. ² decide khi `needs_decision redo_limit` ⇒ Đ (Q2).  A' (U5): GET run = `access:task`, đọc được mọi output của run ở mọi phiên bản/stage (= `outputs`, audit `view` mỗi lần), kể cả sau khi run kết thúc; không `history`/tin R (P1-75); cancel/decide/H1 giữ quyền người bắt đầu (`canCancel`, `canDecide` M5). Thêm: `M-audit` T `GET` run 2 lần ⇒ đúng 1 audit `view` (entity review_task); mỗi `GET output` ⇒ +1 · `M-A'-out` A' `GET output` mọi phiên bản/stage Đ + audit `view`, cả sau run `done` (`outputs` vẫn trả) · `M-M4` sau run `done`: T `GET` run ⇒ `access=task`, `stages=[]`, output task mình Đ, output khác 4 · `M-body` body T/H/A' không chứa `input`, `history`, tên phòng, nội dung tin R (so chuỗi cắm sẵn `ROOM-SECRET-P1`) · `M-404-same` 404 của run không tồn tại và run không được thấy giống hệt body.
 Cột "tin R" gồm cả thread quy trình F (`GET /rooms/R/messages?flow_id=F`): A', T, H, L, q06, D ⇒ 404 dù việc của họ có `task_result` trong F.
 | Dòng thêm (plan-contract §8) | Ca | Kỳ vọng |
 |---|---|---|
