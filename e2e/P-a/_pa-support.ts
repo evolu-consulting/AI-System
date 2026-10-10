@@ -222,9 +222,16 @@ export async function seedRun(
     if (opts.usage)
       for (let i = 0; i < 2; i++) {
         const r = randomUUID();
+        const mu = randomUUID();
+        const ma = randomUUID();
+        // hub.runs.user_message_id / answer_message_id NOT NULL → dựng cặp tin user/assistant cho lượt gọi giả lập
+        await sql`insert into hub.messages (id, tenant_id, user_id, conversation_id, flow_id, role, content) values
+          (${mu}, ${ACME}, ${A.id}, ${convId}, ${flowId}, 'user', 'Giai đoạn'),
+          (${ma}, ${ACME}, ${A.id}, ${convId}, ${flowId}, 'assistant', 'Kết quả')`;
         await sql`insert into hub.runs (id, tenant_id, user_id, conversation_id, flow_id, status, config_version,
-            process_run_id, stage_run_id, finished_at)
-          values (${r}, ${ACME}, ${A.id}, ${convId}, ${flowId}, 'finished', 1, ${runId}, ${stageRunIds[i] as string}, now())`;
+            user_message_id, answer_message_id, process_run_id, stage_run_id, finished_at)
+          values (${r}, ${ACME}, ${A.id}, ${convId}, ${flowId}, 'finished', 1, ${mu}, ${ma}, ${runId},
+            ${stageRunIds[i] as string}, now())`;
         await sql`insert into hub.usage_logs (tenant_id, run_id, user_id, agent_id, provider_key, model, billing,
             input_tokens, output_tokens, cost_usd, overage, latency_ms)
           values (${ACME}, ${r}, ${A.id}, ${i ? PA_E2E.agentPost : PA_E2E.agentRead}, 'fake-cli', 'fake-1',
