@@ -33,7 +33,7 @@ function errorMessage(err: unknown, t: ReturnType<typeof useTranslation>["t"]): 
   return t("process.common.error.network");
 }
 
-export function ReviewTaskCard({ runId, task, view }: TaskCardProps) {
+export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps) {
   const { t, i18n } = useTranslation();
   const binding = useThreadBinding();
   const mut = useReviewDecision(runId);
@@ -50,17 +50,19 @@ export function ReviewTaskCard({ runId, task, view }: TaskCardProps) {
   const pass = useCallback(async () => {
     try {
       await mut.mutateAsync({ taskId: task.id, result: "pass" });
+      onResolved?.("pass");
       toast.success(t("process.run.review.passed", { stage: task.stage_name }));
     } catch (err) {
       if (err instanceof ApiError && err.code === "REVIEW_TASK_CLOSED") onClosed();
       else toast.error(errorMessage(err, t) ?? "");
     }
-  }, [mut, task.id, task.stage_name, t, onClosed]);
+  }, [mut, task.id, task.stage_name, t, onClosed, onResolved]);
 
   const sendFail = useCallback(
     async (text: string) => {
       try {
         await mut.mutateAsync({ taskId: task.id, result: "fail", feedback: text });
+        onResolved?.("fail");
         toast.success(t("process.run.review.sent", { agent, n: left }));
       } catch (err) {
         const msg = errorMessage(err, t);
@@ -71,7 +73,7 @@ export function ReviewTaskCard({ runId, task, view }: TaskCardProps) {
         throw new Error(msg);
       }
     },
-    [mut, task.id, t, agent, left, onClosed],
+    [mut, task.id, t, agent, left, onClosed, onResolved],
   );
 
   const submitInline = useCallback(async () => {

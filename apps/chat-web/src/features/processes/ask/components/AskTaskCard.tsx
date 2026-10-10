@@ -12,7 +12,7 @@ import { AskBody, AskRegion } from "./AskBody";
 import { ForwardedByYou, ForwardedToYou } from "./AskForwardInfo";
 import { ForwardAction } from "./ForwardAction";
 
-export function AskTaskCard({ runId, task, view }: TaskCardProps) {
+export function AskTaskCard({ runId, task, view, onResolved }: TaskCardProps) {
   const { t, i18n } = useTranslation();
   const myId = useSession((s) => s.me?.id ?? "");
   const [text, setText] = useState("");
@@ -44,6 +44,7 @@ export function AskTaskCard({ runId, task, view }: TaskCardProps) {
     run(async () => {
       await card.send(text);
       setText("");
+      onResolved?.("answer");
     });
 
   return (
@@ -58,7 +59,13 @@ export function AskTaskCard({ runId, task, view }: TaskCardProps) {
       <AskBody
         question={question}
         choices={task.choices ?? []}
-        onPick={(c) => void run(() => card.pick(c))}
+        onPick={(c) =>
+          void run(async () => {
+            await card.pick(c);
+            // Chip đơn câu gửi ngay ⇒ coi như đã trả lời (gộp nhiều câu chỉ điền vào ô, không gửi).
+            if (askMode(question) === "single") onResolved?.("answer");
+          })
+        }
         disabled={card.pending}
       />
       {byMe && <ForwardedByYou {...byMe} />}

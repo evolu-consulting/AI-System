@@ -1,6 +1,6 @@
 // CHAT-AC-55 · PF3: một thẻ thông báo trong DM "Quy trình". Tiêu đề theo `kind`; task còn mở ⇒ `TaskPanel` (tự mở
 // 3 thẻ mới nhất, còn lại nút "Xem & xử lý"); đã đóng ⇒ dòng kết quả. Link "Mở trang lượt chạy ›".
-import type { ProcessNotice } from "@ai/contracts/chat";
+import type { ProcessNotice, TaskResult } from "@ai/contracts/chat";
 import { Link } from "@tanstack/react-router";
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,6 +24,8 @@ export const NoticeCard = memo(function NoticeCard({ notice, autoExpand }: Props
       : undefined;
 
   const [open, setOpen] = useState(autoExpand);
+  // E-P12: người xem tự xử lý xong ⇒ task rời danh sách mở; nhớ kết quả để hiện "Bạn · <kết quả>" (khác superseded khi người khác xử lý).
+  const [done, setDone] = useState<TaskResult | null>(null);
 
   return (
     <article
@@ -33,7 +35,7 @@ export const NoticeCard = memo(function NoticeCard({ notice, autoExpand }: Props
       <h3 className="text-sm font-semibold">{title}</h3>
       {openTask ? (
         open ? (
-          <TaskPanel runId={openTask.process_run.id} task={openTask.task} />
+          <TaskPanel runId={openTask.process_run.id} task={openTask.task} onResolved={setDone} />
         ) : (
           <button
             type="button"
@@ -43,6 +45,12 @@ export const NoticeCard = memo(function NoticeCard({ notice, autoExpand }: Props
             {t("process.inbox.notice.expand")}
           </button>
         )
+      ) : done ? (
+        <p className="text-caption text-secondary-foreground">
+          {t("process.inbox.notice.resolvedByYou", {
+            result: t(`process.common.result.${done}`),
+          })}
+        </p>
       ) : (
         noticeHasTask(notice) && (
           <p className="text-caption text-muted-foreground">

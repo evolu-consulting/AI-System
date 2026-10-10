@@ -26,7 +26,8 @@
     "task_closed": "The item in {{process}} · {{stage}} was handled",
     "run_finished": "Process {{process}} has finished",
     "expand": "View & handle",
-    "openRun": "Open run page"
+    "openRun": "Open run page",
+    "resolvedByYou": "You · {{result}}"
   },
   "run": {
     "tab": {

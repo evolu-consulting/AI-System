@@ -26,7 +26,8 @@
     "task_closed": "Việc ở {{process}} · {{stage}} đã được xử lý",
     "run_finished": "Quy trình {{process}} đã kết thúc",
     "expand": "Xem & xử lý",
-    "openRun": "Mở trang lượt chạy"
+    "openRun": "Mở trang lượt chạy",
+    "resolvedByYou": "Bạn · {{result}}"
   },
   "run": {
     "tab": {

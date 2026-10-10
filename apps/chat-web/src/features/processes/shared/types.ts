@@ -5,6 +5,7 @@ import type {
   RoomProcessKind,
   RoomProcessPart,
   TaskDetail,
+  TaskResult,
 } from "@ai/contracts/chat";
 
 export type {
@@ -27,6 +28,8 @@ export type TaskCardProps = {
   runId: string;
   task: TaskDetail;
   view?: ProcessRunFullView;
+  /** DM inline (NoticeCard, PF3): người xem tự xử lý xong ⇒ thẻ hiện "Bạn · <kết quả>" (E-P12). */
+  onResolved?: (result: TaskResult) => void;
 };
 
 /** Props của mỗi loại tin trong thread (`ProcessThreadMessage` truyền xuống; PF hiện thực thân component). */

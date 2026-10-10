@@ -6,11 +6,14 @@ import type { ThreadMessageProps } from "../../shared/types";
 
 export type TaskResultMessageProps = ThreadMessageProps<"task_result">;
 
-export function TaskResultMessage({ message, part }: TaskResultMessageProps) {
+export function TaskResultMessage({ message, part, myId }: TaskResultMessageProps) {
   const { t } = useTranslation();
-  // plan-frontend-e2e §1: dòng kết quả ghi TÊN người (`<người> · Đạt/Chưa đạt · giờ`), không rút gọn "Bạn" — đây là bản ghi
-  // công việc (preview server cũng dùng tên). (Khác block.startedBy/forward dùng "Bạn" cho người xem.)
-  const actor = part.actor.display_name;
+  // E-P8/E-S1 (qc): kết quả `answer` ⇒ "Bạn" khi người xem là người làm, còn lại tên; `review` luôn ghi TÊN người
+  // (bản ghi công việc, preview server cũng dùng tên; E-P4/E-P5/E-P12-thread thấy tên của người khác).
+  const actor =
+    part.result === "answer" && part.actor.id === myId
+      ? t("process.ask.you")
+      : part.actor.display_name;
   const time = timeOf(message.created_at);
   const resultLabel = t(`process.common.result.${part.result}`);
   return (
