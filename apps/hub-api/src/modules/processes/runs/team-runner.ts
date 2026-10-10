@@ -13,7 +13,7 @@ import type { Effect, RunEvent, RunState } from "../core/process-state.rules";
 import { askExcerpt, decisionAssignees } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
 import { executorRefOf } from "./executor-ref";
-import { outputSteps } from "./team-load";
+import { outputSteps, outputStepsSingle } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
 type Deps = Omit<ProcessDeps, "launcher" | "start">;
@@ -315,11 +315,18 @@ async function threadOutput(
     },
     after: c.def.after.kind,
     review_task_id: reviewTaskId,
-    steps: await outputSteps(tx, {
-      stageRunId: c.x.stageRunId,
-      tenantId: c.head.tenant_id,
-      attempt: Number(c.stage.attempt),
-    }),
+    // D6a · nhóm ⇒ bước thành viên theo team-run; agent đơn ⇒ run_steps của chính lần chạy stage.
+    steps:
+      c.def.executor.kind === "team"
+        ? await outputSteps(tx, {
+            stageRunId: c.x.stageRunId,
+            tenantId: c.head.tenant_id,
+            attempt: Number(c.stage.attempt),
+          })
+        : await outputStepsSingle(tx, {
+            hubRunId: c.x.hubRunId,
+            tenantId: c.head.tenant_id,
+          }),
   });
 }
 

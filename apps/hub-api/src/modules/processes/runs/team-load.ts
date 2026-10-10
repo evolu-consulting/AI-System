@@ -73,31 +73,44 @@ export type OutputStep = {
   ms: number | null;
   tokens: number;
 };
+type StepRow = {
+  agent_key: string;
+  agent_name: string | null;
+  role: StepRole;
+  member_key: string | null;
+  model: string | null;
+  ms: number | null;
+  tokens: number;
+};
+const STEP_COLS = sql`coalesce(rs.agent_id::text, rs.detail->>'member_key') as agent_key,
+  coalesce(ag.name->>'vi', rs.detail->>'member_key', rs.agent_id::text) as agent_name,
+  coalesce(rs.detail->>'role', 'agent') as role, rs.detail->>'member_key' as member_key,
+  max(ul.model) as model, sum(ul.latency_ms)::int as ms,
+  coalesce(sum(ul.input_tokens + ul.output_tokens + coalesce(ul.cache_read_tokens, 0)
+    + coalesce(ul.cache_write_tokens, 0)), 0)::int as tokens`;
+const STEP_GROUP = sql`group by rs.id, rs.agent_id, ag.name, rs.detail->>'role', rs.detail->>'member_key'
+  order by min(rs.started_at) limit 10`;
+const mapStep = (x: StepRow): OutputStep => ({
+  role: x.role,
+  member_key: x.member_key,
+  agent: { key: x.agent_key, name: (x.agent_name ?? x.agent_key).slice(0, 100) },
+  model: x.model,
+  ms: x.ms === null ? null : Number(x.ms),
+  tokens: Number(x.tokens),
+});
+
 /**
  * HUB-FR-114 · HUB-FR-116 · P-a D5 · các bước thành viên của output nhóm (tin thread `output`.steps =
  * `RoomProcessStep`, P1-87): mỗi `run_steps` có `member_key` của team-run stage này (plan §6); token/latency/model =
- * Σ `usage_logs` theo `step_id`. Stage agent đơn (không team-run) ⇒ rỗng. Tên agent nạp từ `hub.agents.name` (vi,
+ * Σ `usage_logs` theo `step_id`. Stage agent đơn ⇒ `outputStepsSingle`. Tên agent nạp từ `hub.agents.name` (vi,
  * catalog không RLS) fallback member_key → id (UAT thấy UUID trước đây).
  */
 export async function outputSteps(
   tx: Tx,
   p: { stageRunId: string; tenantId: string; attempt: number },
 ): Promise<OutputStep[]> {
-  const rows = await tx.execute<{
-    agent_key: string;
-    agent_name: string | null;
-    role: StepRole;
-    member_key: string | null;
-    model: string | null;
-    ms: number | null;
-    tokens: number;
-  }>(sql`
-    select coalesce(rs.agent_id::text, rs.detail->>'member_key') as agent_key,
-      coalesce(ag.name->>'vi', rs.detail->>'member_key', rs.agent_id::text) as agent_name,
-      rs.detail->>'role' as role, rs.detail->>'member_key' as member_key,
-      max(ul.model) as model, sum(ul.latency_ms)::int as ms,
-      coalesce(sum(ul.input_tokens + ul.output_tokens + coalesce(ul.cache_read_tokens, 0)
-        + coalesce(ul.cache_write_tokens, 0)), 0)::int as tokens
+  const rows = await tx.execute<StepRow>(sql`
+    select ${STEP_COLS}
     from hub.runs r
     join hub.run_steps rs on rs.run_id = r.id and rs.tenant_id = r.tenant_id
     left join hub.usage_logs ul on ul.step_id = rs.id and ul.tenant_id = r.tenant_id
@@ -106,16 +119,27 @@ export async function outputSteps(
       select id from hub.team_runs where stage_run_id = ${p.stageRunId}
         and tenant_id = ${p.tenantId} and attempt = ${p.attempt})
       and rs.detail->>'member_key' is not null
-    group by rs.id, rs.agent_id, ag.name, rs.detail->>'role', rs.detail->>'member_key'
-    order by min(rs.started_at)`);
-  return [...rows].map((x) => ({
-    role: x.role,
-    member_key: x.member_key,
-    agent: { key: x.agent_key, name: (x.agent_name ?? x.agent_key).slice(0, 100) },
-    model: x.model,
-    ms: x.ms === null ? null : Number(x.ms),
-    tokens: Number(x.tokens),
-  }));
+    ${STEP_GROUP}`);
+  return [...rows].map(mapStep);
+}
+
+/**
+ * HUB-FR-113 · HUB-FR-116 · P-a D6a · các bước của output stage agent đơn (tin thread `output`.steps): `run_steps`
+ * của chính `hub.runs` lần chạy stage này (`hubRunId`) — không qua team-run. Token/latency/model = Σ `usage_logs`
+ * theo `step_id`. Trước đây path agent đơn phát steps rỗng ⇒ thẻ thread hiện "0 bước · 0 token".
+ */
+export async function outputStepsSingle(
+  tx: Tx,
+  p: { hubRunId: string; tenantId: string },
+): Promise<OutputStep[]> {
+  const rows = await tx.execute<StepRow>(sql`
+    select ${STEP_COLS}
+    from hub.run_steps rs
+    left join hub.usage_logs ul on ul.step_id = rs.id and ul.tenant_id = rs.tenant_id
+    left join hub.agents ag on ag.id = rs.agent_id
+    where rs.run_id = ${p.hubRunId} and rs.tenant_id = ${p.tenantId}
+    ${STEP_GROUP}`);
+  return [...rows].map(mapStep);
 }
 
 /** Entitlement nhóm của tenant chưa thu hồi. */

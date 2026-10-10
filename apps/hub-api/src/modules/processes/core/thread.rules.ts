@@ -1,6 +1,10 @@
 // HUB-FR-113 · U1 · câu tóm tắt tin thread `process` (plan-thread §2): preview danh sách phòng + dự phòng khi FE không dựng
 // được `process`. Thuần. 1..500 ký tự; `forward` KHÔNG chép ghi chú (chỉ người nhận đọc qua task).
-import { ROOM_PROCESS_CONTENT_MAX, type RoomProcessPart } from "@ai/contracts/chat";
+import {
+  type DecisionReason,
+  ROOM_PROCESS_CONTENT_MAX,
+  type RoomProcessPart,
+} from "@ai/contracts/chat";
 
 export type ThreadLocale = "vi" | "en";
 type Names = { process: string; stage?: string };
@@ -19,6 +23,24 @@ const END: Record<Part<"run_end">["status"], { vi: string; en: string }> = {
   cancelled: { vi: "đã huỷ", en: "cancelled" },
   failed: { vi: "lỗi", en: "failed" },
   expired: { vi: "hết hạn", en: "expired" },
+};
+// D6b · lý do quyết định hiển thị bằng câu thân thiện (khớp `process.common.<reason>` của FE), không lộ mã thô
+// như `template_invalid`. Ngắn gọn cho preview flow/timeline; phủ mọi `DECISION_REASONS`.
+const REASON: Record<DecisionReason, { vi: string; en: string }> = {
+  redo_limit: { vi: "đã làm lại quá số lần", en: "redo limit reached" },
+  ask_limit: { vi: "đã hỏi quá số lần", en: "ask limit reached" },
+  template_invalid: { vi: "kết quả chưa đủ mục theo mẫu", en: "output missing required sections" },
+  team_calls: { vi: "nhóm hết lượt gọi", en: "team call limit reached" },
+  team_tokens: { vi: "nhóm hết ngân sách token", en: "team token budget reached" },
+  team_time: { vi: "nhóm chạy quá thời gian", en: "team time limit reached" },
+  team_no_change: { vi: "nhóm không cải thiện thêm", en: "team made no further progress" },
+  job_timeout: { vi: "giai đoạn chạy quá thời gian", en: "stage timed out" },
+  stage_tokens: { vi: "giai đoạn vượt ngân sách token", en: "stage token budget reached" },
+  run_tokens: { vi: "lượt chạy vượt ngân sách token", en: "run token budget reached" },
+  agent_failed: { vi: "agent báo lỗi", en: "agent failed" },
+  permission_lost: { vi: "người bắt đầu mất quyền", en: "starter lost permission" },
+  user_inactive: { vi: "người bắt đầu bị khoá", en: "starter account inactive" },
+  interrupted: { vi: "giai đoạn bị gián đoạn", en: "stage interrupted" },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);
@@ -51,12 +73,14 @@ function line(e: RoomProcessPart, l: ThreadLocale, n: Names): string {
         `${e.stage_name}: cần trả lời — ${e.question}`,
         `${e.stage_name}: needs an answer — ${e.question}`,
       );
-    case "decision":
+    case "decision": {
+      const r = REASON[e.reason] ?? { vi: e.reason, en: e.reason };
       return t(
         l,
-        `${n.process}: cần quyết định (${e.reason})`,
-        `${n.process}: decision needed (${e.reason})`,
+        `${n.process}: cần quyết định — ${r.vi}`,
+        `${n.process}: decision needed — ${r.en}`,
       );
+    }
     case "task_result":
       return resultLine(e, l);
     case "forward":
