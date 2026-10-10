@@ -10,6 +10,7 @@ import {
   DEFS,
   insertDefPf1,
   jobDone,
+  MD_AUTO,
   MD_MISSING,
   MD_OK,
   nextStageJob,
@@ -168,14 +169,21 @@ describe("P1-20…P1-29 · stage [HUB-FR-106]", () => {
     const r2 = await runRow(c.sql, s2.runId);
     expect(r2.snapshot.stages[1].executor.agent_id).toBe(P1.agM1);
     expect(r2.snapshot.name).toBe("Hoá đơn thử (sửa)");
-    const del = await c.call(
-      "Adm",
-      "DELETE",
-      `/process-defs/${PA_FIX.defHoaDon}?version=${put.json?.version}`,
-    );
-    expect(del.status).toBe(204);
-    await jobDone(c, j, "## Kết quả\nĐã ghi sổ.");
-    await waitStatus(c.sql, g.runId, "done");
+    try {
+      const del = await c.call(
+        "Adm",
+        "DELETE",
+        `/process-defs/${PA_FIX.defHoaDon}?version=${put.json?.version}`,
+      );
+      expect(del.status).toBe(204);
+      await jobDone(c, j, "## Kết quả\nĐã ghi sổ.");
+      await waitStatus(c.sql, g.runId, "done");
+    } finally {
+      // Ca này sửa + xoá def dùng chung `hoa-don-t`: khôi phục nguyên trạng seed để P1-24… không phụ thuộc thứ tự.
+      await c.sql`update hub.process_defs set deleted_at = null, name = ${DEFS.hd.name},
+        stages = ${c.sql.json(DEFS.hd.stages as Json[])}, enabled = true, version = 1
+        where id = ${PA_FIX.defHoaDon}`;
+    }
   }, 60_000);
 
   describe("P1-24 · BR-23 mất quyền ở gate", () => {
@@ -242,7 +250,7 @@ describe("P1-20…P1-29 · stage [HUB-FR-106]", () => {
     it("HUB-FR-116 · P1-27 · token_budget stage 1 000, usage 1 500 ⇒ needs_decision stage_tokens", async () => {
       needSchema(c.ready);
       const s = await startInRoom(c, { key: DEF_BUDGET_S.key });
-      await jobDone(c, await nextStageJob(c, s.runId), MD_OK, { input: 1200, output: 300 });
+      await jobDone(c, await nextStageJob(c, s.runId), MD_AUTO, { input: 1200, output: 300 });
       await waitStatus(c.sql, s.runId, "needs_decision");
       expect((await decisionOf(s.runId))?.reason).toBe("stage_tokens");
       expect(await noStageJob(c, s.runId)).toBe(true);
@@ -251,8 +259,8 @@ describe("P1-20…P1-29 · stage [HUB-FR-106]", () => {
     it("HUB-FR-116 · P1-27 · token_budget run 2 000, mỗi stage 1 500 ⇒ needs_decision run_tokens", async () => {
       needSchema(c.ready);
       const s = await startInRoom(c, { key: DEF_BUDGET_R.key });
-      await jobDone(c, await nextStageJob(c, s.runId), MD_OK, { input: 1200, output: 300 });
-      await jobDone(c, await nextStageJob(c, s.runId), MD_OK, { input: 1200, output: 300 });
+      await jobDone(c, await nextStageJob(c, s.runId), MD_AUTO, { input: 1200, output: 300 });
+      await jobDone(c, await nextStageJob(c, s.runId), MD_AUTO, { input: 1200, output: 300 });
       await waitStatus(c.sql, s.runId, "needs_decision");
       expect((await decisionOf(s.runId))?.reason).toBe("run_tokens");
     }, 30_000);
@@ -260,10 +268,10 @@ describe("P1-20…P1-29 · stage [HUB-FR-106]", () => {
     it("HUB-FR-116 · P1-27 · token_budget null, usage 1 500 ⇒ chạy tiếp stage kế", async () => {
       needSchema(c.ready);
       const s = await startInRoom(c, { key: DEFS.auto.key });
-      await jobDone(c, await nextStageJob(c, s.runId), MD_OK, { input: 1200, output: 300 });
+      await jobDone(c, await nextStageJob(c, s.runId), MD_AUTO, { input: 1200, output: 300 });
       const j2 = await nextStageJob(c, s.runId);
       expect((await stageRow(c.sql, s.runId, 1)).status).toBe("running");
-      await jobDone(c, j2);
+      await jobDone(c, j2, MD_AUTO);
       await waitStatus(c.sql, s.runId, "done");
     }, 30_000);
   });

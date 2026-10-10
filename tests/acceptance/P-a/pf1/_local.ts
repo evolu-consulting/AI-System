@@ -53,6 +53,8 @@ export const P1 = {
 // ---------- template + nội dung runtime ----------
 export const HD_TEMPLATE = "## Bảng ý\n\n## Tổng tiền\n";
 export const MD_OK = "## Bảng ý\nHoá đơn HD-12 tháng 9.\n\n## Tổng tiền\n12 000 000";
+/** Hợp lệ với `stageDef()` mặc định (def p-auto, p-budget-*): mục "Bảng ý" + "Số tiền". */
+export const MD_AUTO = "## Bảng ý\nHoá đơn HD-12 tháng 9.\n\n## Số tiền\n12 000 000";
 export const MD_MISSING = "## Bảng ý\nHoá đơn HD-12 tháng 9."; // thiếu `## Tổng tiền` (M3)
 export const TEAM_TEMPLATE = "## Phần A\n\n## Phần B\n\n## Phần C\n";
 

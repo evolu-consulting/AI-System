@@ -12,6 +12,7 @@ import {
   handles,
   type Job,
   jobDone,
+  MD_AUTO,
   MD_MISSING,
   MD_OK,
   openMeStream,
@@ -306,8 +307,8 @@ describe("P1-80…P1-89 · tin thread phòng [U1, plan-thread]", () => {
       const del = await c.call("A", "DELETE", `/rooms/${ROOM_DEL}`);
       expect([200, 204]).toContain(del.status);
       const at = new Date();
-      await jobDone(c, j1 as Job, MD_OK);
-      await serveUntil(s.runId, "done", (j) => jobDone(c, j, MD_OK));
+      await jobDone(c, j1 as Job, MD_AUTO);
+      await serveUntil(s.runId, "done", (j) => jobDone(c, j, MD_AUTO));
       await postThread(c);
       const after = (await events(s.runId)).filter((e) => new Date(e.created_at) >= at);
       expect(after.length).toBeGreaterThan(0);
