@@ -205,7 +205,13 @@ export async function groupMemberIds(tx: Tx, tenantId: string, groupId: string):
 
 export type InsertedNotice = { userId: string; id: string; createdAt: Date };
 
-/** Một hàng `process_notices` cho mỗi người nhận (INSERT theo tenant — người quyết ghi thông báo cho người khác). */
+/**
+ * Một hàng `process_notices` cho mỗi người nhận (INSERT theo tenant — người quyết ghi thông báo cho người khác).
+ * KHÔNG dùng `.returning()`: với nhiều người nhận, RETURNING kích policy SELECT `process_notices_select` (v_own = chỉ hàng
+ * của chính mình, 0019) trên hàng của người khác ⇒ RLS chặn ⇒ tx abort (500). `id` tự sinh app-side; `createdAt` cũng sinh
+ * app-side — một `now` nhất quán cho cả lô (như `now()` cũ cho mọi hàng cùng câu INSERT), giữ nguyên thứ tự
+ * `created_at desc, id desc` mà `markNoticesRead`/`listNotices` dựa vào. Trả về từ giá trị app-side, không đọc hàng lại.
+ */
 export async function insertNotices(
   tx: Tx,
   o: {
@@ -218,6 +224,7 @@ export async function insertNotices(
   },
 ): Promise<InsertedNotice[]> {
   if (o.userIds.length === 0) return [];
+  const createdAt = new Date();
   const rows = o.userIds.map((userId) => ({
     id: crypto.randomUUID(),
     tenantId: o.tenantId,
@@ -226,13 +233,10 @@ export async function insertNotices(
     processRunId: o.processRunId,
     taskId: o.taskId,
     payload: o.payload,
+    createdAt,
   }));
-  const res = await tx.insert(processNotices).values(rows).returning({
-    userId: processNotices.userId,
-    id: processNotices.id,
-    createdAt: processNotices.createdAt,
-  });
-  return res.map((r) => ({ userId: r.userId, id: r.id, createdAt: r.createdAt }));
+  await tx.insert(processNotices).values(rows);
+  return rows.map((r) => ({ userId: r.userId, id: r.id, createdAt }));
 }
 
 /** Tổng chưa đọc từng người (để `process.notice.unread`). */
