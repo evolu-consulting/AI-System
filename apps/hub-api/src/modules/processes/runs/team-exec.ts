@@ -1,6 +1,6 @@
-// HUB-FR-114 · HUB-FR-110 · D7 · D8 · D9 · §3.3 · PF1 · chạy stage nhóm: sequential (mặc định) / lead_plan /
-// parallel_merge. Mỗi thành viên = 1 `runJob` (team-member) với `team_run_id` (N4); ghép mục (team.rules), tóm tắt cắt
-// cứng, giới hạn nhóm (team_runs calls/tokens/active_ms + no_change) ⇒ `limit`. need_input ⇒ waiting_answer. Không log nội dung.
+// HUB-FR-114 · HUB-FR-110 · D7 · D8 · D9 · §3.3 · PF1 · chạy stage nhóm: sequential/lead_plan/parallel_merge. Mỗi thành
+// viên = 1 `runJob` (team-member, `team_run_id` N4); ghép mục (team.rules); giới hạn nhóm ⇒ `limit`; need_input ⇒
+// waiting_answer. D8 làm lại chọn lọc (attempt>1 ⇒ `redoSubset`). Không log nội dung.
 import { createHash } from "node:crypto";
 import type { DecisionReason } from "@ai/contracts/chat";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -13,6 +13,7 @@ import {
   clipSummary,
   mergeQuestions,
   parseLeadPlan,
+  redoMembers,
   renderDoc,
   type TeamMember,
 } from "./team.rules";
@@ -55,6 +56,7 @@ type StageRow = {
   id: string;
   attempt: number;
   feedback: string | null;
+  redo_sections: string[] | null; // D8 · gate fail ghi; nguồn `redoMembers` khi làm lại (attempt>1)
   current_output_id: string | null;
 };
 /** Khung một stage nhóm (một `drive()`): nạp, ghép, trả StageResult cho máy trạng thái. */
@@ -90,18 +92,11 @@ export async function runTeamStage(d: Deps, ctx: RunContext, link: Link): Promis
     lastJobId: null,
   };
   if (team.mode === "lead_plan") return runLeadPlan(st);
-  if (team.mode === "parallel_merge") return runParallel(st);
-  return runSequential(st, members, false);
+  const toRun = redoSubset(st, members); // D8 · làm lại chọn lọc (attempt>1)
+  if (team.mode === "parallel_merge") return runParallel(st, toRun);
+  return runSequential(st, toRun, false);
 }
 
-type Loaded = {
-  head: Head;
-  stage: StageRow;
-  def: SnapStage;
-  team: TeamHead;
-  members: TeamMemberRow[];
-  keys: Map<string, string>;
-};
 type Ctx = {
   d: Deps;
   u: AuthUser;
@@ -132,7 +127,7 @@ const limitOut = (st: Ctx, reason: DecisionReason): TeamOut => ({
   jobId: st.lastJobId,
 });
 
-async function load(d: Deps, runId: string): Promise<Loaded | null> {
+async function load(d: Deps, runId: string) {
   const snap = await d.config.snapshot();
   return withHubScope(d.db, { kind: "system" }, async (tx) => {
     const [head] = await tx.execute<Head>(sql`select tenant_id, started_by, conversation_id, input,
@@ -220,18 +215,33 @@ async function runLeadPlan(st: Ctx): Promise<TeamOut> {
   return runSequential(st, seq, false);
 }
 
-async function runParallel(st: Ctx): Promise<TeamOut> {
+/** D8 · thành viên chạy lượt này: attempt 1 ⇒ cả nhóm; attempt>1 ⇒ lọc theo `redo_sections`/`feedback` (`redoMembers`). */
+function redoSubset(st: Ctx, members: TeamMemberRow[]): TeamMemberRow[] {
+  if (st.stage.attempt <= 1) return members;
+  const key = (m: TeamMemberRow) => st.keyOf.get(m.agent_id) ?? m.agent_id;
+  const q = { sections: st.stage.redo_sections ?? undefined, feedback: st.stage.feedback ?? "" };
+  const keys = new Set(
+    redoMembers(
+      members.map((m) => ({ key: key(m), sections: m.sections })),
+      q,
+    ),
+  );
+  const sub = members.filter((m) => keys.has(key(m)));
+  return sub.length > 0 ? sub : members;
+}
+
+async function runParallel(st: Ctx, members: TeamMemberRow[]): Promise<TeamOut> {
   const hit = await checkLimit(st);
   if (hit) return await stopLimit(st, hit);
   const files = draftFiles(st, 1);
   const calls = await Promise.all(
-    st.members.map((m) => runMember(st.d, mkCall(st, seqStep(st, m, false), files))),
+    members.map((m) => runMember(st.d, mkCall(st, seqStep(st, m, false), files))),
   );
   st.callIdx += calls.length;
   for (const r of calls) await bump(st, r);
   const fails = calls.find((r) => r.outcome.kind === "failed");
   if (fails?.outcome.kind === "failed") return await stopFail(st, fails);
-  const asks = st.members
+  const asks = members
     .map((m, i) => ({ m, r: calls[i] }))
     .filter((x) => x.r?.outcome.kind === "need_input");
   if (asks.length > 0)
@@ -242,7 +252,7 @@ async function runParallel(st: Ctx): Promise<TeamOut> {
         q: x.r?.outcome.kind === "need_input" ? x.r.outcome.question : "",
       })),
     );
-  st.members.forEach((m, i) => {
+  members.forEach((m, i) => {
     const r = calls[i];
     if (r?.outcome.kind === "output") mergeInto(st, m, r.outcome.text);
   });
@@ -365,6 +375,10 @@ async function pauseAsk(st: Ctx, qs: { role: string; q: string }[]): Promise<Tea
 }
 
 async function finishOutput(st: Ctx): Promise<TeamOut> {
+  // D7/P1-31 · lead_plan: mục `required_sections` kế hoạch KHÔNG giao ⇒ không thiếu (lấp "—" để output đủ mục).
+  if (st.team.mode === "lead_plan")
+    for (const s of st.def.output.required_sections)
+      if ((st.draft.get(s) ?? "").trim() === "") st.draft.set(s, "—");
   const text = renderDoc(st.def.output.template, st.draft);
   const sections: Record<string, string> = {};
   const summaries: Record<string, string> = {};
