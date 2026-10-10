@@ -40,8 +40,8 @@ e690de485115d555f63a6844ee32f4fc0f98b00aede5080736412bb5862eb385  apps/agent-run
 aac308a156684fef9ca086a76da25c516130c9b66a9bb2a600cbeffe8bc7cdbe  apps/agent-runtime/tests/support/test_mcp_mock.py
 0b2d5f3c0a82d8633992f089d1a15db10967d4e09be26df974098c0929cfbd39  e2e/P-a/_pa-data.ts
 ace323079e642527c45c86da7d7388b21836ca06695783db981ef0e70cdee95a  e2e/P-a/_pa-runtime.ts
-83ee8f70d0989aa9eef600718dc9497968d911bab8e44874cb3c6dada78f693a  e2e/P-a/_pa-stack.ts
-dd0ca27bceff3ec9972b24242b50db4fd3378de315360e2710ac0a6c59d31a26  e2e/P-a/_pa-support.ts
+e0837d8686b7104d1770bdf80a23a50b7e0188b83d56aeb45a43e81877b0397e  e2e/P-a/_pa-stack.ts
+5da445965ca78d1a6f13d9e8d7b62ff1cab00dd3324409a59008ea10eaf45f56  e2e/P-a/_pa-support.ts
 3b77b3f70b3a8b0320cbe305e70052dd793df49b9f3d57107f97b38f82d7c8ae  e2e/P-a/pf1/ask-ai.pa.ts
 fc05c48f9cbf2931403f9075f094863f44783b256a23ef1bbbd3284dd892b33e  e2e/P-a/pf1/composer.pa.ts
 6f1368bfe8ee27bbf936c61b7df0175105b6841d6f86e31e7adcad6162399932  e2e/P-a/pf1/decide.pa.ts
@@ -49,8 +49,8 @@ fc05c48f9cbf2931403f9075f094863f44783b256a23ef1bbbd3284dd892b33e  e2e/P-a/pf1/co
 9ce8efe825d37151231400f5aba1fc7c7158a1f3e885ac31ae7c7c1c99383a6b  e2e/P-a/pf1/run-leave.pa.ts
 e4d99b04d4b8273c08ce526f24ac49b09606efa1c67eba3b4507a06f0b073952  e2e/P-a/pf1/run-thread.pa.ts
 60b3d3bf3ae77fe7796eefdf47f8fb446272dccb608613af86575feea37d8bce  e2e/P-a/pf1/run-unread.pa.ts
-cc8c6f8cb516cd7046bf5d1eb00581e4397e973595bbdbee1aa0cbc1020ca758  e2e/P-a/pf2/ask.pa.ts
-e97d2bed6b18f97bfd2028e69b5b343c8af2fc4a2097afb4d76825b1e3667d4f  e2e/P-a/pf2/forward.pa.ts
+be1a62ffeac76dcd9a5d62b3b5c8a217e7db62663c81ced6b9aa5a8841f1afc7  e2e/P-a/pf2/ask.pa.ts
+48b9a609cfe8d94fabb683d9f4456d03efa205d25e2f3280a8f5ec04b9031b70  e2e/P-a/pf2/forward.pa.ts
 3a3105275e8b99bab07797d7baa9f933c5a2d76c22c07a48046a9fc6624fc3fd  e2e/P-a/pf3/dm.pa.ts
 27a1f483a85f078835ffaa7a3a0d15d125cd7ca9644d199b8e67d5720174b546  e2e/P-a/pf3/inbox.pa.ts
 c4b26bb5304322bcbd16ccd8b092d2e7fb761055ab42f6b688512f3a69ad96b0  e2e/P-a/pf3/outside-thread.pa.ts
@@ -60,8 +60,8 @@ fbe6d41da332c6a5e211a5b4caffa6ee39435be61d27bdaf76cf17d2dbb01b45  e2e/P-a/pf4/ad
 884cb7120f51bb4b5adec3398dda5ce55fba0e8b9e7a54ee6ebb2e3bbac0497b  e2e/P-a/pf4/admin-runs.pa.ts
 72603518958efdf91c519864563ad874c5fb85941fa208165b52742df5210f8d  e2e/P-a/pf4/token.pa.ts
 aa4a57b7b7f35b91a29f8b318e4a28f2c54f036bc7b4351fe56a15b428caef21  e2e/P-a/playwright.pa.config.ts
-8ca389c92e8beae13ee6006d891f5ddece611450397716761805e8937a7384ca  e2e/P-a/scenario/hoa-don.pa.ts
-08c21d6c6754b3fd243050cae6f7bed70bd0f141b9c9ea9fdc69f9467d9e57e1  e2e/P-a/scenario/sdlc.pa.ts
+e786529d67cd6715b72320a9159b64a39529b5a86b49b04b16ee7807f8cad8cd  e2e/P-a/scenario/hoa-don.pa.ts
+7d93565cd2cd47918cc13ef720d7d84f355fdc024219d834a33b9768a7bc932f  e2e/P-a/scenario/sdlc.pa.ts
 63cf15f3086a9dee551de7f0a7bc2d25b6b96e5d32c6fdb498e20e12806d4641  e2e/P-a/step0/flag-off.pa.ts
 8c572e905a5a971e740b014496380e823b898946b00421604fd6f63c16ba0780  e2e/access-check.spec.ts
 d2c81bd8128f68801f72cca23c5d001a99b89e6ec9bb84eb7d6d50c2f77d3332  e2e/access-command.spec.ts

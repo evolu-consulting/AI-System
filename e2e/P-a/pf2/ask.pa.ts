@@ -7,6 +7,7 @@ import {
   block,
   flowPane,
   mkRoom,
+  rtScript,
   seedRun,
   settle,
   taskResult,
@@ -25,6 +26,8 @@ test('CHAT-AC-57 · AC-H30 · E-P8 · A trả lời bằng chip ⇒ "Bạn · Đ
   const room = await mkRoom("EP8");
   const r = await seedRun(room.id, "waiting_answer");
   const r2 = await seedRun(room.id, "waiting_answer");
+  // stage tiếp sau khi trả lời giữ `running` (hold) để quan sát khối "Đang chạy" trước khi auto-review
+  await rtScript(r.runId, 0, [{ kind: "hold" }]);
   const u = await users(browser, "A", "X");
   try {
     await u.X.goto(`/rooms/${room.id}?flow=${r.flowId}`);

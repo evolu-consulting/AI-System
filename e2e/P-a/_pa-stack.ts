@@ -5,6 +5,7 @@
 // (`HUB_PROCESS_ENGINE`, mặc định `on`; Redis DB `PA_REDIS_DB`) → cổng "sẵn sàng" phục vụ `/rt/*` (`_pa-runtime.ts`).
 // Không Dify, không `claude-sub`. Dừng: SIGTERM/SIGINT.
 import { execFileSync } from "node:child_process";
+import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { runHubMigrations } from "@ai/db/migrate-hub";
 import postgres from "postgres";
@@ -158,6 +159,8 @@ if (import.meta.main) {
     ADMIN_API_DATABASE_URL: env("TEST_ADMIN_API_DATABASE_URL"),
     ADMIN_HUB_URL: hubUrl,
   });
+  const attachDir = resolve(REPO, "test-results", "pa-attach");
+  mkdirSync(attachDir, { recursive: true });
   const hub = spawn("apps/hub-api/src/server.ts", {
     APP_ENV: "test",
     HUB_PORT: String(PORTS.hub),
@@ -168,6 +171,8 @@ if (import.meta.main) {
     HUB_CONFIG_POLL_S: "2",
     HUB_MAX_CONCURRENT_RUNS: "4",
     HUB_PROCESS_ENGINE: env("HUB_PROCESS_ENGINE"),
+    HUB_ATTACH_DRIVER: "local",
+    HUB_ATTACH_DIR: attachDir,
   });
   const stop = (): void => {
     hub.kill();

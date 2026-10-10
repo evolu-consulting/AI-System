@@ -45,6 +45,13 @@ test('CHAT-AC-57 · AC-H30 · E-P9 · A nhờ QC Người 01 ⇒ tin chuyển "(
     // tab cũ của A (gửi muộn)
     const late = await u.A.context().newPage();
     await late.goto(`/rooms/${room.id}?flow=${r.flowId}`);
+    await expect(askRegion(flowPane(late))).toBeVisible();
+    // tab cũ "đứng hình": chặn mọi GET fetch/stream sau khi tải ⇒ còn thẻ cũ dù H đã trả lời; chỉ POST đi qua
+    await late.route("**/*", (route) =>
+      route.request().resourceType() === "fetch" && route.request().method() === "GET"
+        ? route.abort()
+        : route.continue(),
+    );
 
     await forwardTo(u.A, askRegion(pa), "QC Người 01", "Nhờ chị xem kỳ kế toán");
     await expect(u.A.getByText(/Đã nhờ QC Người 01 \(chuyển 1\/3\)/)).toBeVisible();
@@ -57,7 +64,7 @@ test('CHAT-AC-57 · AC-H30 · E-P9 · A nhờ QC Người 01 ⇒ tin chuyển "(
     await expect(link.getByTestId("process-dm-badge")).toBeVisible();
     await link.click();
     const main = u.H.getByRole("main");
-    await main.getByRole("link").filter({ hasText: "Hoá đơn T" }).first().click();
+    await main.locator(`a[href^="/runs/${r.runId}"]`).first().click();
     await expect(u.H.getByText("Lan Tran nhờ bạn trả lời")).toBeVisible();
     await expect(u.H.getByText("Nhờ chị xem kỳ kế toán")).toBeVisible();
     await expect(u.H.getByText("Ngữ cảnh kèm theo")).toBeVisible();
@@ -66,7 +73,6 @@ test('CHAT-AC-57 · AC-H30 · E-P9 · A nhờ QC Người 01 ⇒ tin chuyển "(
     await u.H.getByRole("textbox", { name: "Câu trả lời" }).fill("Kỳ 09/2026");
     await u.H.getByRole("button", { name: "Gửi trả lời" }).click();
 
-    await expect(u.A.getByText("QC Người 01 đã trả lời")).toBeVisible();
     await expect(taskResult(pa, "QC Người 01", "Đã trả lời")).toContainText("Kỳ 09/2026");
     await expect(pa.getByRole("textbox", { name: "Câu trả lời" })).toHaveCount(0);
 

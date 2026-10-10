@@ -267,6 +267,7 @@ export async function seedRun(
         output_id: kind === "review" ? outputId : null,
         question: kind === "ask" ? "Kỳ kế toán nào?" : null,
         choices: kind === "ask" ? sql.json(["09/2026", "10/2026"]) : null,
+        excerpt: kind === "ask" ? "Hoá đơn HD-12 · kỳ kế toán chưa rõ" : null,
         reason: kind === "decision" ? "team_calls" : null,
         assignee_group_id: kind === "review" && !opts.reviewers ? PA_E2E.gKeToan : null,
         remind_at: new Date(now.getTime() + 86_400_000),
@@ -294,6 +295,7 @@ export async function seedRun(
           tenant_id: ACME,
           task_id: taskId,
           user_id: PERSONA[chain[d - 1] as Who].id,
+          from_user_id: d === 1 ? PERSONA.A.id : PERSONA[chain[d - 2] as Who].id,
           via: "forward",
           depth: d,
         });

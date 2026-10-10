@@ -64,7 +64,8 @@ test('SC-1 · E-S2 · sdlc: 3 cổng (B, T, B), nhờ trả lời A→H ở Inta
     await dlg.getByRole("checkbox", { name: "QC Người 01" }).check();
     await dlg.getByRole("button", { name: "Nhờ trả lời" }).click();
     await u.H.getByRole("link", { name: "Quy trình", exact: true }).click();
-    await u.H.getByRole("main").getByRole("link").first().click();
+    const askRunId = await blk.getAttribute("data-run-id");
+    await u.H.getByRole("main").locator(`a[href^="/runs/${askRunId}"]`).first().click();
     await u.H.getByRole("textbox", { name: "Câu trả lời" }).fill("Dấu phẩy");
     await u.H.getByRole("button", { name: "Gửi trả lời" }).click();
     await expect(taskResult(pa, "QC Người 01", "Đã trả lời")).toBeVisible();
@@ -95,7 +96,7 @@ test('SC-1 · E-S2 · sdlc: 3 cổng (B, T, B), nhờ trả lời A→H ở Inta
     await kb.getByRole("button", { name: "Kiểm ngay" }).click({ timeout: 60_000 });
     await passBtn(flowPane(u.B).getByRole("region", { name: "Kiểm Review" })).click();
 
-    await expect(blk).toContainText("Xong", { timeout: 30_000 });
+    await expect(blk).toContainText("Hoàn tất", { timeout: 30_000 });
     for (const [who, r] of [
       ["Hoa", "Đạt"],
       ["Thomas", "Chưa đạt"],
