@@ -127,7 +127,19 @@ describe("P3-09 · gỡ khỏi Group + tenant khác [HUB-BR-25]", () => {
       (await c.call("B", "POST", `/review-tasks/${f.taskId}/forward`, { to_user_id: PA.T.id }))
         .status,
     ).toBe(404);
-    await c.sql`insert into admin.group_members (tenant_id, group_id, user_id) values (${T.acme}, ${PA_FIX.gKeToan}, ${PA.B.id})`;
+    // Thêm lại qua adminChange (bump config_version + NOTIFY) để cache cấu hình nạp lại groupIds của B trước P3-12.
+    await adminChange(
+      c.sql,
+      "user",
+      T.acme,
+      (tx) =>
+        tx`insert into admin.group_members (tenant_id, group_id, user_id) values (${T.acme}, ${PA_FIX.gKeToan}, ${PA.B.id})`,
+    );
+    await waitFor(
+      () => myTaskIds(c, "B"),
+      (v) => v.includes(f.taskId),
+      5_000,
+    );
   });
 });
 
