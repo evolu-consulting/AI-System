@@ -49,7 +49,7 @@ Làm theo `docs/WORKFLOW.md` "Làm song song nhiều session" (CR-059): **Bướ
 ### PF4 — Token + Evolu Control · nhánh `feat/pa-pf4-usage-admin`
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
-| B8 | Token: `GET /process-runs/:id/usage` (run/stage/team-run/lần gọi; `summary` cho người xem task). Không seed usage (fixture SQL của qc; FE dùng mock) [HUB-FR-116, 117] | backend-lead | cao | plan §6, §11; plan-contract §2 (`ProcessRunUsage`), §7 (`buildUsage`), §7.1 (N4 `run_steps`) | `processes/usage/**` | B0 (fixture usage) | int B8 (khớp Σ usage_logs) | [ ] |
+| B8 | Token: `GET /process-runs/:id/usage` (run/stage/team-run/lần gọi; `summary` cho người xem task). Không seed usage (fixture SQL của qc; FE dùng mock) [HUB-FR-116, 117] | backend-lead | cao | plan §6, §11; plan-contract §2 (`ProcessRunUsage`), §7 (`buildUsage`), §7.1 (N4 `run_steps`) | `processes/usage/**` | B0 (fixture usage) | int B8 (khớp Σ usage_logs) | [x] |
 | F4b | chat-web: tab Token trang `/runs/:id` (⑧) [CHAT-AC-58] | frontend-lead | thường | plan-frontend §7 → plan-frontend-usage; plan-frontend-i18n §6 (`usage.*`); plan-frontend-e2e §1 (Token), E-P14; plan-contract §2 `ProcessRunUsage` | `chat-web/src/features/processes/usage/**` (+ i18n `usage.*`) | B0 (+ B2 mock) | `bun test` + e2e pf4 | [ ] |
 | F5 | admin-web: nav "Quy trình" (cả tenant_admin), danh sách + mẫu (①), editor tối thiểu (②), run + token [ADM-FR-65–67] | frontend-lead | thường | plan-frontend §0 FD2, §7; plan-frontend-admin §1–§3 (không Import/Export, U2; bảng lệch ①②); plan-frontend-i18n §7–§8; plan-frontend-e2e §2, E-P15; plan-contract §6, §3 (`scope=tenant`, usage) | `admin-web/src/features/processes/**` (+ i18n `admin.*`; nav/route Bước 0) | B3 (+ B0 khung) | `bun test` + e2e admin pf4 | [ ] |
 
@@ -99,6 +99,7 @@ Làm theo `docs/WORKFLOW.md` "Làm song song nhiều session" (CR-059): **Bướ
   - **Minor hoãn (cleanup/P-b):** #4 lý do `permission_lost`→`real_action` ở decision reason; #5 dùng `parseIdParam` (uuid) cho `:id`/`:oid` thay string thô. Không chặn PF1.
   - **Còn red (ngoài biên PF1, không sửa):** view P1-75 dòng `/me/process-inbox` 200 = route PF3 `notify/inbox.routes` (khung rỗng trên `main`, PF3 chưa merge); team P1-35 = route `/answer` PF2. Cả hai qua khi PF2/PF3 merge.
 
+- **PF4 `feat/pa-pf4-usage-admin` (B8)** — `GET /process-runs/:id/usage` xong: `usage/{usage.rules,usage.repo,usage.service,usage.routes}.ts`. Quyền qua `hub.process_run_viewer` (scope user) → full/task→summary/null→404; đọc usage scope system. PF4 tests xanh: rules 4/4, usage 6/6, isolation 11/11. P4-07 (`usage-real`) đỏ đúng lý do ⇢PF1 (`POST /process-runs` chưa có trên nhánh này) — xanh khi PF1 vào main. Không sửa file ngoài cột PF4.
 ## P-b (khung — sau H4b)
 | # | Task | Agent | Rủi ro | Phụ thuộc | Trạng thái |
 |---|---|---|---|---|---|
