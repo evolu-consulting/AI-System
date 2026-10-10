@@ -25,29 +25,17 @@ export async function lockRun(tx: Tx, tenantId: string, runId: string): Promise<
 }
 
 /**
- * HUB-FR-112 · người nhận `process.updated` (plan-contract §5): người bắt đầu + thành viên đang hoạt động của phòng
- * nguồn + assignee (user + thành viên group) các task **open**. Gọi TRƯỚC khi đóng task (để assignee task vừa đóng vẫn
- * nhận). Lọc `tenant_id` tường minh (policy `admin.group_members` hub_ro = USING true, không khoá tenant).
+ * HUB-FR-112 · HUB-FR-113 · người nhận `process.updated` (plan-contract §5): người bắt đầu + thành viên đang hoạt động
+ * của phòng nguồn + assignee (user + thành viên group) các task **open**. Gọi TRƯỚC khi đóng task (để assignee task vừa
+ * đóng vẫn nhận). Qua definer `hub.process_run_recipients` (0020): nhánh `room_members` cần bỏ RLS vì người gọi có thể
+ * không là thành viên phòng nguồn (gates review/decide/cancel bởi reviewer ngoài phòng; `lostPermission` khi người bắt
+ * đầu đã rời) — policy `room_members_select` (0011) khoá theo caller-là-thành-viên nên đọc thẳng sẽ rơi mất họ. Definer
+ * cách ly chặt theo tenant của run (scope 'user' khớp GUC tenant; 'system' tin cậy), trả tập đã khử trùng.
  */
 export async function runRecipients(tx: Tx, runId: string, tenantId: string): Promise<string[]> {
-  const rows = await tx.execute<{ uid: string | null }>(sql`
-    select r.started_by as uid from hub.process_runs r
-      where r.id = ${runId} and r.tenant_id = ${tenantId}
-    union
-    select m.user_id as uid from hub.room_members m
-      join hub.process_runs r on r.id = ${runId} and r.tenant_id = ${tenantId}
-      where r.origin_kind = 'room' and m.room_id = r.origin_room_id and m.tenant_id = ${tenantId}
-        and m.left_at is null
-    union
-    select a.user_id as uid from hub.review_task_assignees a
-      join hub.review_tasks t on t.id = a.task_id and t.tenant_id = a.tenant_id
-      where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.status = 'open'
-        and a.user_id is not null
-    union
-    select gm.user_id as uid from hub.review_tasks t
-      join admin.group_members gm on gm.group_id = t.assignee_group_id and gm.tenant_id = ${tenantId}
-      where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.status = 'open'
-        and t.assignee_group_id is not null`);
+  const rows = await tx.execute<{ uid: string | null }>(
+    sql`select uid from hub.process_run_recipients(${runId}::uuid, ${tenantId}::uuid)`,
+  );
   return rows.map((r) => r.uid).filter((x): x is string => x !== null);
 }
 
