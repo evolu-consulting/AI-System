@@ -146,6 +146,17 @@ export async function startScenario(): Promise<Scenario> {
 /** `hub:seed` thật (mẫu `sdlc`, `hoa-don`, agent/nhóm vai) + bật mọi agent/nhóm cho acme + grant agent cho A. */
 export async function seedReal(c: Scenario): Promise<void> {
   const m = await loadSeed();
+  // Admin tạo workflow `ghi-so` (side_effect) TRƯỚC seed Hub — seed chỉ ĐỌC admin.workflows (HUB-FR-109 · SC-2).
+  const [sec] = await c.sql<
+    { id: string }[]
+  >`insert into admin.secrets (name, ciphertext, iv, key_version, last4)
+    values ('QW_SC_GHI_SO', ${Buffer.alloc(32, 7)}, ${Buffer.alloc(12, 3)}, 1, 'abcd')
+    on conflict (name) do update set last4 = excluded.last4 returning id`;
+  await c.sql`insert into admin.workflows (key, name, description, app_type, base_url, secret_id, input_schema,
+      output_field, enabled, side_effect)
+    values ('ghi-so', 'WFNAME-ghi-so-qc', 'Ghi sổ kế toán (thử P-a).', 'workflow', 'http://127.0.0.1:9', ${sec?.id ?? ""},
+      ${c.sql.json([{ name: "title", type: "text", required: true, description: "Biến title" }])}, null, true, true)
+    on conflict (key) do update set side_effect = true`;
   await fn(m, "runHubSeed")({ url: OWNER_URL, dir: m.DEFAULT_SEED_DIR, appEnv: "development" });
   await c.sql`insert into hub.agent_entitlements (agent_id, tenant_id)
     select id, ${T.acme}::uuid from hub.agents on conflict do nothing`;

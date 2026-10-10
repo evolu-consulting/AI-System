@@ -160,7 +160,7 @@ describe("SC-1 · sdlc 3 cổng + hỏi lại + nhờ trả lời + Chưa đạt
     const u = await c.call("A", "GET", `/process-runs/${runId}/usage`);
     expect(u.status).toBe(200);
     const t = u.json?.totals ?? {};
-    expect((t.input_tokens ?? 0) + (t.output_tokens ?? 0)).toBe(s?.s);
+    expect((t.input ?? 0) + (t.output ?? 0)).toBe(s?.s);
   });
 
   it("HUB-FR-113 · U1 · SC-1 · thread F có 18 tin process (1 block · 9 output · 1 ask · 1 forward · 5 task_result · 1 run_end); task_result của T/H outside:true", async () => {
