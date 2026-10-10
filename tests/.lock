@@ -471,7 +471,7 @@ b60dc49fee1e492a4b6d023b5260796247ed96abdb99c95130a9710571713d91  tests/acceptan
 16ee3c55659fcf73f72dcc44e2d2865733ea68a2cfc2d806f266924d8a956c90  tests/acceptance/P-a/pf1/gates.int.test.ts
 b5a36d2f216e42ffd607759ebcc8662380f985e5c2bb39f2e5f49ec8360cd594  tests/acceptance/P-a/pf1/isolation-extra.int.test.ts
 e9e0e6db2ef2633083a79b2e331c1b0656275742f6feb2ebf30d76fdf46e212c  tests/acceptance/P-a/pf1/isolation.int.test.ts
-f0bfa0f6b5ff13d0ea394867df8f60b7f6b9a406c7d4f3c59edbe183e9698c59  tests/acceptance/P-a/pf1/lock-order.int.test.ts
+52ae5d576aa5b5773d3187f08d6cf868ae183cb4d8438c52e43e423587682615  tests/acceptance/P-a/pf1/lock-order.int.test.ts
 7e2497e229a30df8a8e2cc8097d54437af6e698357b280bf1e03e2386a152504  tests/acceptance/P-a/pf1/real-action.int.test.ts
 1167e725aa531c27fa3008a8013995a67b2140512e234fcbf028194548e191d8  tests/acceptance/P-a/pf1/rules/gate.test.ts
 48a0ae85b53c619e3ac902006192624bdc0ab51d673f9e61e9c110515a5aca5a  tests/acceptance/P-a/pf1/rules/team.test.ts

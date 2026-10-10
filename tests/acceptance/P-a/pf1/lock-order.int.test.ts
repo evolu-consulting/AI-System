@@ -13,7 +13,17 @@ import {
   type Sql,
 } from "../_support/pa";
 import { needSchema } from "../_support/schema";
-import { type CtxPf1, DEFS, review, runRow, startPf1, sweep } from "./_local";
+import {
+  type CtxPf1,
+  DEFS,
+  jobDone,
+  nextStageJob,
+  review,
+  runRow,
+  startInRoom,
+  startPf1,
+  sweep,
+} from "./_local";
 
 let c: CtxPf1;
 beforeAll(async () => {
@@ -120,6 +130,89 @@ describe("P1-48 · decision ∥ cancel ∥ expire [§10]", () => {
       await endHubRuns(c.sql, g.runId);
     }
   }, 180_000);
+});
+
+/** Vòng đua: stage đang chạy (job đã claim), `finish` (apply) ∥ `rival` (huỷ / sweep); thứ tự phát xen kẽ theo i. */
+async function raceApply(i: number, rival: (runId: string) => Promise<unknown>, expired: boolean) {
+  const s = await startInRoom(c);
+  const job = await nextStageJob(c, s.runId);
+  if (expired) {
+    await c.sql`update hub.process_runs set expires_at = now() - interval '1 hour' where id = ${s.runId}`;
+  }
+  const finish = () => jobDone(c, job);
+  const t0 = Date.now();
+  const order = i % 2 === 0 ? [finish, rival] : [rival, finish];
+  const started = order.map(async (fn, k) => {
+    // xen kẽ: 0..2 lượt nhường event loop theo i để quét các điểm cắt khác nhau
+    for (let y = 0; y < (Math.floor(i / 2) + k) % 3; y++) await Promise.resolve();
+    return fn(s.runId);
+  });
+  const res = await Promise.allSettled(started);
+  expect(Date.now() - t0).toBeLessThan(15_000);
+  const txt = res.map((r) =>
+    r.status === "fulfilled" ? JSON.stringify(r.value ?? "") : String(r.reason),
+  );
+  expect({ round: i, deadlock: txt.join("").includes("40P01") }).toEqual({
+    round: i,
+    deadlock: false,
+  });
+  return { runId: s.runId, res };
+}
+
+/** Run đã kết thúc không bị hồi sinh: 0 task open, đúng 1 `run_end`, stage không treo `running`/`waiting_review`. */
+async function checkNotRevived(i: number, runId: string, want: string): Promise<void> {
+  const run = await runRow(c.sql, runId);
+  expect({ round: i, status: run.status }).toEqual({ round: i, status: want });
+  expect(run.finished_at).not.toBeNull();
+  const [open] = await c.sql<{ n: number }[]>`select count(*)::int as n from hub.review_tasks
+    where process_run_id = ${runId} and status = 'open'`;
+  expect({ round: i, open: open?.n }).toEqual({ round: i, open: 0 });
+  const [ends] = await c.sql<
+    { n: number }[]
+  >`select count(*)::int as n from hub.process_thread_events
+    where process_run_id = ${runId} and kind = 'run_end'`;
+  expect({ round: i, runEnd: ends?.n }).toEqual({ round: i, runEnd: 1 });
+  const [live] = await c.sql<{ n: number }[]>`select count(*)::int as n from hub.stage_runs
+    where process_run_id = ${runId} and status in ('running','waiting_review')`;
+  expect({ round: i, liveStage: live?.n }).toEqual({ round: i, liveStage: 0 });
+  await endHubRuns(c.sql, runId);
+}
+
+describe("P1-48d…P1-48e · apply (stage-driver) ∥ cancel / expire [§10 · Major #1]", () => {
+  it("HUB-FR-106 · HUB-FR-107 · P1-48d · ×20: job stage xong (apply) ∥ A huỷ ⇒ cancelled không bị hồi sinh; không task/sự kiện mồ côi; không 40P01", async () => {
+    needSchema(c.ready);
+    for (let i = 0; i < 20; i++) {
+      let cancelRes: Res | null = null;
+      const r = await raceApply(
+        i,
+        async (runId) => {
+          cancelRes = await c.call("A", "POST", `/process-runs/${runId}/cancel`, {});
+          return cancelRes;
+        },
+        false,
+      );
+      const cx = cancelRes as Res | null;
+      expect({ round: i, cancel: !!cx && [200, 409].includes(cx.status) }).toEqual({
+        round: i,
+        cancel: true,
+      });
+      if (cx?.status === 409) expect(code(cx)).toBe("PROCESS_RUN_STATE");
+      // huỷ 200 đã commit ⇒ apply thua phải no-op: cuối cùng vẫn cancelled (sweep không đổi được)
+      await sweep(c);
+      if (cx?.status === 200) await checkNotRevived(i, r.runId, "cancelled");
+      else expect(TERMINAL).toContain((await runRow(c.sql, r.runId)).status);
+    }
+  }, 240_000);
+
+  it("HUB-FR-106 · HUB-FR-107 · P1-48e · ×20: job stage xong (apply) ∥ sweepOnce (hết hạn) ⇒ cuối cùng expired, không hồi sinh; không 40P01", async () => {
+    needSchema(c.ready);
+    for (let i = 0; i < 20; i++) {
+      const r = await raceApply(i, () => sweep(c), true);
+      // apply thắng trước ⇒ run chờ duyệt với expires_at đã qua ⇒ sweep kế hết hạn; sweep thắng ⇒ giữ expired
+      await sweep(c);
+      await checkNotRevived(i, r.runId, "expired");
+    }
+  }, 240_000);
 });
 
 describe("P1-49…P1-50 · task sai loại / đã đóng / không assignee [§3.4 · §3]", () => {
