@@ -1,6 +1,7 @@
 # P-b-sources · plan frontend (admin-web + chat-web) — Nguồn tham chiếu
 
 Spec: [`spec.md`](spec.md) §1, §2 (PB-R01–R22), §5 · gate [`../P-b-sources-gate.md`](../P-b-sources-gate.md) · contract (chỉ **tiêu thụ**): [`plan.md`](plan.md) §3 · câu chữ VI/EN nguyên văn: [`plan-frontend-i18n.md`](plan-frontend-i18n.md) · task: [`tasks-frontend.md`](tasks-frontend.md) · nền FE: [`../P-process-engine/plan-frontend.md`](../P-process-engine/plan-frontend.md) (FD2 cờ engine, FD3 i18n riêng, FD10 không thư viện mới).
+**Điều kiện mở BUILD:** không còn điểm chặn backend — mọi điểm §9 đã CHỐT (spec §9 C1–C23); FS7/FS9-form dùng `inputs` của catalog, picker library dùng endpoint riêng.
 Artboard: chưa có; mẫu bảng + drawer của Secrets (`features/secrets/`) và Quy trình (`features/processes/`). **Không ADR** (không thêm thư viện).
 
 ## 0. Quyết định (Luật 2; "FS" = frontend decision)
@@ -13,7 +14,7 @@ Artboard: chưa có; mẫu bảng + drawer của Secrets (`features/secrets/`) v
 | FS5 | **Rò `config.path`**: trên client, kiểu cấu hình tách hai nhánh (`SourceConfig` hoặc `SourceConfigPublic`); `SourceRow` chỉ in `path` khi `config.kind==="local_path" && "path" in config`. Không đưa `path` vào URL, query key, log, `title`, toast, `aria-label` của dòng tenant_admin | PB-R21, D6 |
 | FS6 | Nút **Kiểm tra kết nối** dùng `POST /:key/check` ⇒ chỉ bật với nguồn **đã lưu** và form **không dirty** ("Lưu trước rồi kiểm tra", vì check dùng cấu hình đã lưu). Chờ đồng bộ tới `timeout_s` của Hub: spinner + nút khoá, `AbortController` bỏ khi đóng drawer, mốc chờ phía client 130 s | Plan §4(6) |
 | FS7 | Form `!key`: **nhẹ tay (lenient)** — thiếu trường `required` vẫn bắt đầu (PB-R13, agent hỏi bằng AskCard); chỉ chặn `source_ref` đã chọn nguồn mà thiếu/sai branch. Có `inputs` ⇒ cả **phòng** và Hỏi AI đi `POST /process-runs` kèm `inputs` (phòng với `origin:{kind:"room"}` như nút ▶); không `inputs` ⇒ đường cũ không đổi | Contract `RunProcessDefRequest.inputs`; tin gọi trong phòng đi `useSendRoomText` không mang `inputs` |
-| FS8 | AskCard chip nguồn: **không đổi contract**. Hub điền `choices` = ký hiệu nguồn (xem §9 điểm 4); FE ghép mô tả từ `GET /process-runs/sources` (khớp `choice === chip.key`) làm `title` + mô tả phụ. Chip không khớp ⇒ hiện như chip thường | PB-R13 ("chip = nguồn đã đăng ký") |
+| FS8 | AskCard chip nguồn: **không đổi contract**. Chip nguồn lấy từ `GET /process-runs/sources` (KHÔNG từ `ask.choices`; §9 điểm 4, C20): với ask-task thiếu trường `source_ref`, FE vẽ chip `git_remote` từ danh sách này (`key` = giá trị trả lời, mô tả làm `title` + mô tả phụ). `choices` có sẵn (nếu có) vẫn hiện như chip thường | PB-R13 ("chip = nguồn đã đăng ký") |
 | FS9 | Giới hạn kích thước: component ≤ 200 dòng. `StageForm.tsx` hiện 235 dòng (nợ cũ) ⇒ **chỉ chèn 2 dòng gắn** `<StageSourcesField/>` + `<StageMustKnow/>`; logic ở file mới; ghi `docs/TECH-DEBT.md`. `def-form.ts` (305) chỉ thêm gọi sang `lib/sources-form.ts` mới | Luật 4 |
 | FS10 | Hiệu năng: route `/sources` là chunk riêng (autoCodeSplitting, ≤ 50 KB gz); `InputsForm` (chat) là chunk lười (≤ 8 KB gz) nạp khi `!key` của quy trình có `inputs`; danh sách nguồn cursor "Tải thêm" (≤ 100/trang, không virtualize); chip `staleTime` 60 s | CONVENTIONS §6; perf không chặn mốc |
 
@@ -49,7 +50,7 @@ Menu dòng `⋯`: `Sửa` (hoặc `Xem` nếu `tenant_admin` + `local_path`), `K
    | Loại | Trường |
    |---|---|
    | git_remote | `Địa chỉ kho Git (https)` + `Nhánh (branch)` + `alert` thông tin "Chỉ kho công khai. Kho riêng chưa được hỗ trợ." (D2). **Không** ô mật khẩu/token. |
-   | library | `Tài liệu thư viện` (combobox tìm theo tên, nạp qua endpoint danh sách tài liệu — §9 điểm 1); sau khi chọn hiện "Phiên bản hiện tại: {{version}}" (chỉ thông tin; ghim thật do Runtime lúc chạy) |
+   | library | `Tài liệu thư viện` (combobox tìm theo tên, nạp qua `GET /admin/sources/library-documents?q&limit&cursor` — §9 điểm 1, C3; debounce `q`, "Tải thêm" theo `next_cursor`); sau khi chọn hiện "Phiên bản hiện tại: {{version}}" (chỉ thông tin; ghim thật do Runtime lúc chạy) |
    | local_path | `Đường dẫn trên máy Runtime` + `alert` **cảnh báo bắt buộc** (variant warning, luôn hiện, `role="alert"` tĩnh): "Đường dẫn này nằm trên máy chạy Runtime, không phải máy của bạn. Phải nằm trong thư mục gốc đã được cấu hình." + `Công ty` (`TenantPicker`, bắt buộc khi `new` — gửi `tenant_id`) |
 4. `Mô tả` (textarea ≤ 500, đếm ký tự; agent đọc mô tả này trong MANIFEST nên có gợi ý "Mô tả ngắn để agent biết nguồn này dùng cho việc gì").
 5. Khối **Kiểm tra kết nối** (chỉ nguồn đã lưu): nút `Kiểm tra kết nối` + vùng kết quả `role="status"`:
@@ -75,7 +76,7 @@ Menu dòng `⋯`: `Sửa` (hoặc `Xem` nếu `tenant_admin` + `local_path`), `K
 | `config.url` | trim; bắt buộc; ≤ 2048; `new URL`; scheme `https:`; không `username`/`password`; không có `@` trước host | `url.required` · `url.https` · `url.credential` · `url.tooLong` |
 | `config.branch` | trim; 1..255; không mở đầu `-` | `branch.required` · `branch.dash` · `branch.tooLong` |
 | `config.path` | trim; 1..1024 | `path.required` · `path.tooLong` |
-| `config.document_id` | bắt buộc (UUID chọn từ danh sách) | `document.required` |
+| `config.document_id` | bắt buộc (chọn từ picker library, không gõ UUID) | `document.required` |
 | `tenant_id` (local_path, platform_admin) | bắt buộc khi `new` | `tenant.required` |
 | `description` | ≤ 500 | `desc.tooLong` |
 | Editor — `def.sources` | ≤ 20; nguồn đã chọn phải còn trong danh sách (nguồn xoá ⇒ gắn cờ "không còn") | `defSources.max` |
@@ -109,7 +110,7 @@ Thư mục `apps/chat-web/src/features/processes/inputs/` (PF mới; `api.ts` ri
 | `lib/inputs-rules.ts` | thuần: `needsForm(item)` (`inputs.length>0`), `emptyValues(defs)`, `toRequestInputs(defs, values)` (bỏ giá trị rỗng, ghép `type`), `validateSourceRef`, `gitChips(chips)` (lọc `kind==='git_remote'`) |
 | `components/InputsForm.tsx` | `Dialog` "Thông tin cho quy trình {{name}}", lưới trường; footer `Bắt đầu quy trình` / `Huỷ`; ≤ 200 dòng |
 | `components/InputField.tsx` | rẽ theo `type`: text `Textarea`; select `Select`; file nút chọn tệp (1 tệp, hiện tên + `Bỏ`); source_ref ⇒ `SourceRefField` |
-| `components/SourceRefField.tsx` | `Select` nguồn (chip `git_remote`, mỗi mục `key — mô tả`) + `Input` nhánh (placeholder "main"; điền sẵn `default_branch` nếu contract có — §9 điểm 3) |
+| `components/SourceRefField.tsx` | `Select` nguồn (chip `git_remote`, mỗi mục `key — mô tả`) + `Input` nhánh (placeholder "main"; điền sẵn `chip.default_branch` khi chọn nguồn, người dùng sửa được; không có ⇒ trống — §9 điểm 3, C4) |
 | `hooks/use-inputs-form.ts` | state form + `submit` gọi `startProcess({process_key,input,origin,inputs})` (tái dùng `useRunStarter` của `composer/hooks/use-bang-submit.ts` — **xuất** hàm, không viết lại) |
 
 **Luồng:** gõ `!key nội dung` + Enter ⇒ `intercept` (đã có) tra catalog: quy trình **có `inputs`** ⇒ mở `InputsForm` (nội dung gõ giữ làm `input`; cả phòng lẫn Hỏi AI, FS7) thay vì gửi ngay; quy trình không `inputs` ⇒ đường cũ. Đóng form (`Huỷ`/Esc) ⇒ trả lại chữ cho composer (không mất). Thành công ⇒ toast cũ "Đã bắt đầu quy trình …" (nút Mở) hoặc mở run.
@@ -155,13 +156,14 @@ Trạng thái form: tải chip (skeleton trong ô nguồn) · chip rỗng (selec
 | Form `!key` + chip AskCard + nhãn lý do | Form đầu vào ở nút "Chạy" của admin (RunDialog giữ ô "Nội dung đầu vào") |
 | — | "Nguồn đã ghim" + bảng file đã đọc ở trang run / Token (cần contract `RunView`) |
 
-## 9. Cần backend-lead / qc xác nhận
-| # | Điều cần | Mặc định FE nếu chưa trả lời |
-|---|---|---|
-| 1 | **Endpoint liệt kê tài liệu library** cho picker (chưa có trong contract): đề xuất `GET /admin/sources/library-documents?q&limit&cursor` → `{items:[{id,name,version,updated_at}],next_cursor}` (tenant_admin, theo tenant) | Picker thay bằng `textbox "Mã tài liệu (UUID)"` — khó dùng; library vẫn khai báo được nhưng UX kém |
-| 2 | `ProcessCatalogItem` (chat `GET /processes`) cần thêm `inputs: ProcessInputDef[]` (default `[]`) để `!key` biết có form hay không và vẽ trường | Không có ⇒ không mở được form: **chặn P-b1 chat**; FE chưa làm FS7 tới khi có |
-| 3 | `ProcessSourceChip` thêm `default_branch?: string` cho `git_remote` (không phải bí mật) | Ô nhánh để trống, placeholder "main" |
-| 4 | Ask-task `choices` do Hub điền = ký hiệu nguồn khi trường `source_ref` thiếu (PB-R13)? | FE ghép mô tả theo khớp `key` (FS8); nếu Hub không điền `choices`, không có chip nguồn |
-| 5 | Mã lỗi `POST /process-runs` khi `source_ref` sai (nguồn không tồn tại/không phải git/branch lỗi): `VALIDATION_ERROR` hay mã riêng? Và khi Runtime ngoại tuyến/không claim trong `timeout_s` cho `POST /:key/check` và start | FE coi `422 SOURCE_UNRESOLVABLE`; còn lại câu chung "Không thực hiện được. Thử lại sau." |
-| 6 | Run bắt đầu từ phòng qua `POST /process-runs` `origin:room` có sinh tin gọi/khối timeline giống gõ `!key` trong phòng không? (FS7) | Giả định có (nút ▶ đang dùng cùng đường); QC xác nhận bằng E-PB7 |
-| 7 | Mock cho `bun run mocks`: `/admin/sources*`, `/process-runs/sources`, thêm `inputs` ở catalog — ai dựng (backend B2-style hay FE)? | FE dựng mock trong `apps/admin-web`/`chat-web` mock hiện có theo contract, backend-lead soát |
+## 9. Backend-lead / qc đã chốt (spec §9 "Chốt PLAN-reconcile" C1–C23) — không còn điểm chặn FE
+| # | Điều | Trạng thái | FE làm |
+|---|---|---|---|
+| 1 | Picker library (C3) | CHỐT: `GET /admin/sources/library-documents?q&limit&cursor` → `{items:[{id,name,version,updated_at}],next_cursor}` (tenant_admin, theo tenant) | `combobox "Tài liệu thư viện"` thay ô UUID; hook trong `features/sources/api.ts` |
+| 2 | Catalog `inputs` (C2) | CHỐT: `ProcessCatalogItem.inputs: ProcessInputDef[]` (default `[]`) | `needsForm(item)` = `inputs.length>0`; **gỡ chặn FS7/P-b1 chat** |
+| 3 | `default_branch` (C4) | CHỐT: `ProcessSourceChip.default_branch?: string` cho `git_remote` | `SourceRefField` điền sẵn ô nhánh; thiếu ⇒ trống, placeholder "main" |
+| 4 | Chip nguồn ở AskCard (C20) | CHỐT: lấy từ `GET /process-runs/sources`, KHÔNG từ `ask.choices` | FS8 đã chỉnh; không phụ thuộc Hub điền `choices` |
+| 5 | Mã lỗi (C23) | CHỐT: `source_ref` sai lúc start ⇒ 422 `VALIDATION_ERROR`; resolve bất đồng bộ lỗi ⇒ run `needs_decision` (lý do `source_unresolvable`); "Kiểm tra kết nối" lỗi ⇒ 422 `SOURCE_UNRESOLVABLE` | Start: `VALIDATION_ERROR` map `details.issues` về trường `source_ref`/nhánh; check: câu tĩnh `SOURCE_UNRESOLVABLE`; run `needs_decision` do UI run hiện có xử lý; mã khác ⇒ câu chung "Không thực hiện được. Thử lại sau." |
+| 6 | `origin:room` sinh tin gọi? | Giữ giả định có (nút ▶ cùng đường); không chặn | QC xác nhận bằng E-PB7 |
+| 7 | Mock `bun run mocks` | FE dựng mock theo contract (`/admin/sources*` gồm `library-documents`, `/process-runs/sources` có `default_branch`, catalog có `inputs`); backend-lead soát; không chặn | Làm trong task mock của tasks-frontend |
+| — | Rò `path` (C1) | CHỐT: `last_pin` và `SourceCheckResult.pin` server đã strip `path` cho non-platform_admin (`LocalPinPublic`) | FS5 giữ phòng hờ `"path" in config` khi render; không còn rủi ro rò từ pin |

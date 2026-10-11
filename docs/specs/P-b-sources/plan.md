@@ -31,6 +31,8 @@ Ranh giới:
 - Khoá snapshot = `tenant_id` + `source_id` + SHA/version + `hash(allowlist_union)`. Cache hit ⇒ không clone lại.
 - Mirror theo repo (bare), khoá file theo mirror; clone/fetch timeout 120 s. Snapshot = thư mục copy `chmod -R a-w`, dựng ở temp rồi `rename` nguyên tử. LRU `RUNTIME_SOURCE_CACHE_MAX_MB`=2048 (D9); snapshot của run đang mở KHÔNG bị LRU xoá; mất ⇒ dựng lại từ pin, không được ⇒ run `needs_decision`.
 - Lọc PB-R07: basename không phân biệt hoa, mọi độ sâu (`.env*`,`.git`,`.ssh`,`.aws`,`*.pem/key/pfx/p12/keystore`,`id_rsa*`,`secrets*`,`credentials*`,`.npmrc`,`.netrc`); THẮNG allowlist; bỏ hardlink/submodule/symlink. Glob = `picomatch`. Trần tính SAU allowlist+lọc; vượt ⇒ `SOURCE_TOO_LARGE`.
+- **C8 khớp lọc:** mục có `*` = prefix/suffix-glob (`.env*`,`id_rsa*`,`secrets*`,`credentials*`,`*.pem`…); mục KHÔNG `*` = khớp basename **đúng** (case-insensitive). `.git` chỉ khớp đúng `.git` (thư mục/file) — GIỮ `.gitignore`,`.gitattributes`,`.github` (SN-05). `.ssh`/`.aws` tương tự (khớp đúng).
+- **C6 fixture git (test, PB-R19 vs `file://`):** URL trong DB luôn `https://github.com/pb-test/<repo>.git`; Runtime vẫn kiểm https/allowlist/port trên URL **logic**. Khi `RUNTIME_ENV!=production`, Runtime truyền `GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_n`/`GIT_CONFIG_VALUE_n` xuống `git` (`url./fixtures/.insteadOf=https://github.com/pb-test/`, `protocol.file.allow=always`) ⇒ git (sau kiểm) đọc từ đĩa. `RUNTIME_SOURCE_TEST_MODE=1` ⇒ bỏ kiểm DNS-trả-IP-nội-bộ (nếu không, offline hỏng). Production KHÔNG đặt hai env này.
 
 ## 3. Contract — bảng trường đầy đủ (nối spec §3)
 
@@ -55,24 +57,35 @@ GitPin     = strictObject{kind:lit git_remote, url:GitUrl, sha:z.string().regex(
 LocalPin   = strictObject{kind:lit local_path, path:z.string().max(1024), snapshot_id:Uuid}
 LibraryPin = strictObject{kind:lit library, document_id:Uuid, version:Uuid}
 SourcePinSchema = discriminatedUnion(kind,[GitPin,LocalPin,LibraryPin])
+LocalPinPublic = strictObject{kind:lit local_path, snapshot_id:Uuid}   // C1: bỏ path (GitPin.url/LibraryPin không bí mật)
+SourcePinPublicSchema = discriminatedUnion(kind,[GitPin,LocalPinPublic,LibraryPin])
 
 SourceViewSchema = strictObject{id:Uuid, tenant_id:Uuid, key:SourceKey, kind:SourceKind,
   config: z.union([SourceConfigSchema, SourceConfigPublicSchema]), description:z.string().max(500),
-  version:z.number().int().min(1), used_by:z.array(ProcessKeySchema), last_pin:SourcePin.nullable(),
+  version:z.number().int().min(1), used_by:z.array(ProcessKeySchema),
+  last_pin: z.union([SourcePinSchema, SourcePinPublicSchema]).nullable(),  // C1: server strip path cho non-platform
   created_at:IsoDateTime, updated_at:IsoDateTime, updated_by:UpdatedBySchema}
 SourceCreateRequest = strictObject{key, kind, config:SourceConfigSchema, description:z.string().max(500), tenant_id:Uuid.optional()}
 SourceUpdateRequest = strictObject{config:SourceConfigSchema, description, version:z.number().int().min(1)}
 SourceListQuery  = strictObject{tenant_id:Uuid.optional(), kind:SourceKind.optional(), limit:coerce 1..100 =20, cursor:string.optional()}
 SourceDeleteQuery= strictObject{tenant_id:Uuid.optional(), version:coerce int ≥1}
-SourceCheckResult= strictObject{pin:SourcePin, files:int≥0, bytes:int≥0}
+SourceCheckResult= strictObject{pin: z.union([SourcePinSchema,SourcePinPublicSchema]), files:int≥0, bytes:int≥0}  // C1 theo quyền
 SourceInUseDetails = strictObject{refs: z.array(strictObject{process_key, stage_key}).max(100)}
+LibraryDocItem   = strictObject{id:Uuid, name:z.string(), version:Uuid, updated_at:IsoDateTime}       // C3
+LibraryDocListQuery = strictObject{q:z.string().max(200).optional(), limit:coerce 1..100 =20, cursor:string.optional()}
+LibraryDocListResponse = strictObject{items:z.array(LibraryDocItem).max(100), next_cursor:string.nullable()}
 ```
+**C1 strip:** repo/service build `SourceView.last_pin`/`SourceCheckResult.pin` = `SourcePin` khi caller `platform_admin`, ngược lại map local_path → bỏ `path` (`SourcePinPublic`). Cùng chỗ strip `config` (xem §3.2 GET). Không bao giờ để `path` lọt ra non-platform (A-06/K-05).
+**C3 library-documents:** `GET /admin/sources/library-documents` (route trong module `sources`, guard `tenant_admin`) đọc kho H2c `attachments` origin='library' của tenant (RLS), trả `LibraryDocListResponse`; cursor như `processes.ts`. Dùng cho picker drawer `library`.
 Routes trong `apps/hub-api/src/modules/sources/` (module mới), mount dưới `/admin/sources` cùng guard `tenant_admin`; ghi `local_path` guard `platform_admin` (403 `SOURCE_FORBIDDEN_KIND` nếu tenant_admin). GET trả `config` theo quyền: platform_admin → `SourceConfig`; tenant_admin/member → `SourceConfigPublic`.
 
 ### 3.2 Chip + def/run (nối spec §3.3–§3.5)
 ```
-ProcessSourceChipSchema = strictObject{key:SourceKey, kind:SourceKind, description:z.string().max(500)}
+ProcessSourceChipSchema = strictObject{key:SourceKey, kind:SourceKind, description:z.string().max(500),
+  default_branch:BranchSchema.optional()}  // C4: chỉ set cho git_remote (từ config.branch); undefined cho local_path/library
 GET /process-runs/sources → strictObject{items: z.array(ProcessSourceChip).max(200)}
+// C2: ProcessCatalogItemSchema (chat/processes-api.ts) += inputs:z.array(ProcessInputDefSchema).max(10).default([])
+//     ⇒ import ProcessInputDefSchema từ hub-admin/processes (re-export qua chat nếu cần tránh vòng lặp)
 
 ProcessInputDefSchema = strictObject{key:SourceKey, label:z.string().trim().min(1).max(80),
   type:z.enum(["text","select","file","source_ref"]), required:z.boolean(),
@@ -87,8 +100,11 @@ ProcessInputValueSchema = discriminatedUnion(type,[
   strictObject{type:lit select, key:SourceKey, value:z.string().max(200)},
   strictObject{type:lit file, key:SourceKey, attachment_id:Uuid},
   strictObject{type:lit source_ref, key:SourceKey, source_key:SourceKey, branch:BranchSchema}])
-// RunProcessDefRequestSchema += inputs:z.array(ProcessInputValueSchema).max(10).optional()
+// C19: += inputs:z.array(ProcessInputValueSchema).max(10).optional() cho CẢ:
+//   CreateProcessRunRequestSchema (chat/processes-api.ts — đường !key P-b1) VÀ RunProcessDefRequestSchema (hub-admin — admin "Chạy", P-b2)
 ```
+**C19 validate lúc start** (service, không ở zod contract vì cần def): với mỗi `inputs[i]`: `key∈def.inputs` (lạ ⇒ 422 `VALIDATION_ERROR` path `inputs.<i>.key`); `type` khớp `def.inputs[key].type`; `select` ⇒ `value∈def.inputs[key].options`; `source_ref` ⇒ `source_key` là nguồn `git_remote` cùng tenant (lệch/không git/không tồn tại ⇒ 422 `VALIDATION_ERROR`, không rò tồn tại). Thiếu `required` KHÔNG chặn (agent hỏi, AC-H37).
+**C20 AskCard chip:** Hub KHÔNG điền `ask.choices` bằng key nguồn; FE lấy chip từ `GET /process-runs/sources` (lọc `kind='git_remote'`), khớp `key` để hiện mô tả. (IN-03/E-PB11)
 
 ### 3.3 Job + kênh (`hub/job.ts`, `hub-internal/sources.ts`)
 ```
@@ -102,7 +118,35 @@ ResolveResultSchema = discriminatedUnion(status,[
   strictObject{status:lit ok, source_id:Uuid, pin:SourcePinSchema, files:int≥0, bytes:int≥0},
   strictObject{status:lit error, source_id:Uuid, code:z.enum(["SOURCE_UNRESOLVABLE","SOURCE_TOO_LARGE","SOURCE_HOST_NOT_ALLOWED","SOURCE_FORBIDDEN_KIND"]), message:z.string().max(500).optional()}])
 SourcesResolvedRequestSchema = strictObject{results:z.array(ResolveResultSchema).min(1).max(20)}
+
+// C18 files_read channel (hub/events.ts): JobResultEventSchema += source_reads:z.array(JobSourceReadSchema).max(5).optional()
+JobSourceReadSchema = strictObject{source_key:SourceKey, files_read:z.array(z.string().max(1024)).max(2000).nullable(), bytes_read:z.number().int().min(0).nullable()}
+// files_read = path tương đối gốc nguồn (đã bỏ tiền tố "sources/<key>/"); D8 parse hỏng ⇒ null + cảnh báo.
+// Hub nhận job.result → map source_key→source_id (theo payload.sources của job) → INSERT hub.source_job_reads (append-only).
 ```
+**C12 `sources-resolved`:** job-token hợp lệ nhưng `results[i].source_id ∉ job.items` ⇒ từ chối CẢ báo cáo, **422 `VALIDATION_ERROR`**, KHÔNG pin (run chờ tiếp → timeout → `needs_decision`). RS-03…06 (token/run/tenant sai) vẫn **401** (PB-R18). Mọi `source_id` phải khớp `items` của chính job.
+
+### 3.4 Hàm thuần `sources.rules.ts` (C5 — chốt chữ ký, qc viết test trước)
+File: `apps/hub-api/src/modules/processes/runs/sources.rules.ts` (dùng chung cho launcher/stage-driver/output; không I/O, dễ test). Mọi kiểu lấy từ `@ai/contracts`.
+```
+import type { StageSource, SourcePin, ProcessSourceChip, ProcessDef } from "@ai/contracts";
+type RunErrorCode = "ALL_PROVIDERS_EXHAUSTED"|"TIMEOUT"|"UPSTREAM_ERROR"|"CANCELLED"|"BUDGET_EXCEEDED"|"NOT_CONFIGURED"|"INTERNAL_ERROR";
+type RefCheck = { ok: true } | { ok: false; reason: "missing"|"empty"|"unknown_key"|"version_mismatch"|"path_absent" };
+
+// RF-01…05 · hợp nhất allowlist các stage dùng cùng sourceKey → sắp xếp + khử trùng; >40 ⇒ throw RangeError
+allowlistUnion(stages: readonly { sources?: readonly StageSource[] }[], sourceKey: string): string[]
+// RF-06…10 · stage có nguồn ⇒ ["Read","Grep","Glob"] (bỏ qua agentTools); không nguồn ⇒ agentTools nguyên
+forceSourceTools(stageHasSources: boolean, agentTools: readonly string[]): string[]
+// RF-11…14 · stage.token_budget ?? 200000 khi stageHasSources; không nguồn ⇒ stage.token_budget (giữ P-a); ≤0 ⇒ throw
+defaultSourceBudget(stage: { token_budget: number|null }, stageHasSources: boolean): number|null
+// RF-15…19 · MANIFEST.md: mỗi nguồn 1 mục {key, mô tả, phiên bản/sha, đường dẫn mount}; thứ tự theo stage.sources; không chứa url-credential
+buildManifest(items: readonly { key: string; description: string; pin: SourcePin }[]): string
+// RF-20…27 · parse "## Nguồn tham chiếu" trong md; key∈stageSourceKeys, @version khớp pin; path tồn tại đối chiếu filesRead (null⇒bỏ kiểm path, C16); heading trong ```code``` bỏ qua; sai hoa ⇒ missing
+checkSourceRefs(md: string, stageSourceKeys: readonly string[], pins: Readonly<Record<string, SourcePin>>, filesRead?: ReadonlyArray<string>|null): RefCheck
+// RF-28…33 · map reason lỗi team → 1 trong 7 mã runs_error_code_ck (PB-R17); không bao giờ null
+mapTeamError(reason: string|null|undefined): RunErrorCode
+```
+Hàm liên quan CRUD (host allowlist, cú pháp local_path) nằm trong module `sources` (service), không trong file này.
 
 ## 4. Kênh Hub→Runtime resolve — luồng, timeout, thất bại (PB-R05/D4)
 
@@ -114,6 +158,21 @@ SourcesResolvedRequestSchema = strictObject{results:z.array(ResolveResultSchema)
 6. **Kiểm tra kết nối** (`POST /admin/sources/:key/check`): enqueue `source.resolve` 1 item `process_run_id=null`, Hub chờ đồng bộ (JobFollower, tới `timeout_s` mặc định 60) → ok→200 `SourceCheckResult`; error→422 mã; quá hạn→422 `SOURCE_UNRESOLVABLE`.
 
 **Lưu ý (PB-R18/#133):** endpoint `sources-resolved` + job-token: id/job phải khớp token; `process_run_id` của job phải khớp token-job's run (hoặc null cho check). Không nhận resolved cho run khác.
+
+### 4.1 Nơi phát mã lỗi (C7/C9/C10/C11) — ai kiểm cái gì
+- **C7 `local_path` ngoài gốc:** Hub chỉ validate **cú pháp** ở POST/PUT (`path` 1..1024, không NUL — zod). Kiểm `HUB_SOURCE_LOCAL_ROOTS` + `realpath` (chống thoát symlink) là của **Runtime** lúc resolve (check hoặc start), Hub không biết roots. Vi phạm gốc ⇒ ResolveResult `error SOURCE_UNRESOLVABLE` ⇒ check: 422 `SOURCE_UNRESOLVABLE`; start: `needs_decision source_unresolvable`. `SOURCE_FORBIDDEN_KIND` CHỈ cho vi phạm quyền (tenant_admin ghi `local_path`, PB-R21) — kiểm ở Hub trước khi enqueue.
+- **C9 `SOURCE_TOO_LARGE` lúc start:** Runtime dựng snapshot phát hiện >50MB/>2000 file (sau allowlist+lọc) ⇒ ResolveResult `error SOURCE_TOO_LARGE` ⇒ run `needs_decision source_unresolvable`, message mang mã `SOURCE_TOO_LARGE`. KHÔNG đi đường job `failed`→`NOT_CONFIGURED` ở bước start. (`NOT_CONFIGURED`/PB-R17 chỉ nếu stage `agent.cli` tự vượt trần lúc mount — hiếm, snapshot đã kiểm ở resolve.)
+- **C10 library `document_id`:** Hub kiểm kho H2c **cùng tenant** (RLS) ngay ở POST/PUT create/update nguồn `library`. Không tồn tại HOẶC khác tenant (không phân biệt, không rò) ⇒ 422 `SOURCE_UNRESOLVABLE`.
+- **C11 platform_admin `tenant_id`:** POST `local_path` (chỉ platform_admin, PB-R21) BẮT BUỘC `tenant_id` trong body (platform_admin thao tác thay tenant). Thiếu ⇒ 422 `VALIDATION_ERROR` (issue path `tenant_id`). `tenant_admin` tạo git_remote/library: `tenant_id` lấy từ phiên (gửi khác phiên ⇒ bỏ qua/403 theo mẫu hub). Khớp spec §3.2 `tenant_id?(platform_admin+local_path)`.
+- **C13 seam test:** `createApp({sourceCheckTimeoutMs?:number})` — mặc định 60000 ms; test tiêm nhỏ để K-04 không chờ lâu. (Cùng chỗ nhận option như các seam `createApp` hiện có.)
+
+### 4.2 Resolve library — token & layout mount (C15)
+- Job `source.resolve` có item `library` ⇒ job-token (type `source.resolve`) cấp đọc đúng các `document_id` library trong `items` của job qua internal H2c (`GET /internal/jobs/:job_id/attachments/:attId` hoặc endpoint library tương ứng), scope tenant của job. Runtime KHÔNG đọc tài liệu ngoài `items`.
+- Snapshot stage `agent.cli` KHÔNG cần token cho nguồn (snapshot đã trên đĩa, chỉ-đọc). Job-token stage giữ như H2c (cho `attachments` thường).
+- **Layout mount library:** `work/<job_id>/sources/<key>/<tên-tài-liệu-đã-chuẩn-hoá>` — 1 tài liệu / nguồn library, tên = tên hiển thị tài liệu đã sanitize (bỏ ký tự đường dẫn); bản ghim = `version` (id bản tài liệu). (LB-01/04)
+
+### 4.3 Kiểm `## Nguồn tham chiếu` tồn tại (C16)
+`checkSourceRefs` (§3.4) kiểm `key∈stage` + `@version` khớp pin ở Hub. Phần "path tồn tại trong snapshot" (PB-R07 cuối): Hub không có snapshot ⇒ đối chiếu với `files_read` Runtime báo (C18 `job.result.source_reads`); nếu `files_read=null` (D8 parse hỏng) ⇒ BỎ kiểm tồn tại (chỉ key+version), ghi cảnh báo. OC-07.
 
 ## 5. DDL migration `0021_pb_sources.sql` (viết tay, idempotent như 0019)
 Khối: (1) `hub.sources`; (2) `hub.source_job_reads`; (3) ALTER ADD cột nullable `process_defs`/`process_runs`; (4) DROP+ADD `hub.jobs jobs_type_ck` gồm `source.resolve`; (5) RLS + GRANT. Mẫu CHECK/RLS theo `0000`/`0019`.
@@ -191,3 +250,6 @@ Cao: RLS `hub.sources`/audit, kênh resolve (job-token, cross-run 401), SSRF/inj
 - frontend: `SourceConfigPublic` (ẩn path) cho tenant_admin; form `!key` + chip (`GET /process-runs/sources`); cảnh báo "đường dẫn trên máy Runtime".
 - `source_unresolvable` là `DecisionReason` mới ⇒ cập nhật `DECISION_REASONS` (contracts) + `review_tasks_reason_ck` (migration 0021 DROP+ADD, §5(4)) + state-rule/`optionsFor` (add_attempt=retry/cancel). ĐÃ ghim ở S1-3/S1-4.
 - Reconcile 422 vs async: spec PB-R05 ghi "422 SOURCE_UNRESOLVABLE" — áp cho đường **đồng bộ** "Kiểm tra kết nối" (§4.6) + validate tĩnh lúc start; resolve **bất đồng bộ** thất bại ⇒ run `needs_decision` (Gate chốt "thất bại → needs_decision"). Không đổi contract đã duyệt (mã lỗi vẫn như §3.6).
+
+### 9.1 Chốt PLAN-reconcile (2026-10-11)
+Mọi điểm mở backend (test-plan §6; plan-frontend §9; plan §9) chốt ở **spec.md §9 bảng C1–C23** (cột "Ảnh hưởng" trỏ ai cập nhật + test ID); shape/chữ ký ở plan §2/§3.1–§3.4/§4.1–§4.3. Routing: frontend-lead → C2,C3,C4,C20,C23,C1; qc → C5–C19,C21,C22.
