@@ -55,12 +55,12 @@ Làm theo `docs/WORKFLOW.md` "Làm song song nhiều session" (CR-059): **Bướ
 
 **Chia session (gợi ý):** S-A làm PF1 · S-B làm PF3 rồi PF2 · S-C làm PF4. PF2–PF4 bắt đầu ngay sau Bước 0, dựa trên fixture/mock của B2; dữ liệu thật đến khi PF1 vào `main`. **Thứ tự merge:** PF1 → PF3 → PF2 → PF4 (sau mỗi lần merge các nhánh còn lại rebase). Đủ nhánh → qc chạy e2e feature trên `main`.
 
-### Đóng (trên `main`, sau khi đủ PF1–PF4)
+### Đóng (trên `main`, sau khi đủ PF1–PF4) — **XONG 2026-10-11** (`done:pa` xanh `c6b0af90`, security PASS, UAT `evidence/2026-10-11/REPORT.md`, D1–D8 + B1 đã sửa)
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
-| F6 | Đóng FE: README, TECH-DEBT (token tab nhân đôi chat/admin), a11y, `check:bundle` (chunk ≤ 50 KB gz, bundle chính +≤ 8 KB), bật cờ `HUB_PROCESS_ENGINE` cho dev, e2e P-a đủ (E-P16 cờ off) | frontend-lead | thường | plan-frontend §8; plan-frontend-e2e §3 | README features (`processes/README.md` mỗi app), `docs/TECH-DEBT.md` | PF1–PF4 merge | `bunx playwright test P-a` | [ ] |
-| RV1 | Review vòng 1 + **security review** (cách ly người ngoài phòng, grant task, quota người bắt đầu, starter đã rời phòng U5; **readiness #22**: không route nào cho user tự chèn `process_notices` cho người khác — RLS chỉ lọc theo tenant) | reviewer + security | cao | spec §10 K1; plan §5, §10; plan-contract §8 | `review-1.md`, `review-security-1.md` | F6 | APPROVED + security đạt | [ ] |
-| RV2 | Review vòng 2 (nếu cần), `done:pa`, UAT `qc-uat` | reviewer + qc + qc-uat | cao | review-1 | evidence | RV1 | `bun run done:pa` | [ ] |
+| F6 | Đóng FE: README, TECH-DEBT (token tab nhân đôi chat/admin), a11y, `check:bundle` (chunk ≤ 50 KB gz, bundle chính +≤ 8 KB), bật cờ `HUB_PROCESS_ENGINE` cho dev, e2e P-a đủ (E-P16 cờ off) | frontend-lead | thường | plan-frontend §8; plan-frontend-e2e §3 | README features (`processes/README.md` mỗi app), `docs/TECH-DEBT.md` | PF1–PF4 merge | `bunx playwright test P-a` | [x] |
+| RV1 | Review vòng 1 + **security review** (cách ly người ngoài phòng, grant task, quota người bắt đầu, starter đã rời phòng U5; **readiness #22**: không route nào cho user tự chèn `process_notices` cho người khác — RLS chỉ lọc theo tenant) | reviewer + security | cao | spec §10 K1; plan §5, §10; plan-contract §8 | `review-1.md`, `review-security-1.md` | F6 | APPROVED + security đạt | [x] |
+| RV2 | Review vòng 2 (nếu cần), `done:pa`, UAT `qc-uat` | reviewer + qc + qc-uat | cao | review-1 | evidence | RV1 | `bun run done:pa` | [x] |
 
 ### Ghi chú bàn giao các nhánh
 (Mỗi nhánh thêm một mục khi xin merge — mẫu ở `docs/WORKFLOW.md` "Làm song song nhiều session" §5.)

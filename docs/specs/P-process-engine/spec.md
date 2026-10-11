@@ -2,8 +2,8 @@
 id: P-process-engine
 title: Process Engine (Quy trình động) — stage + gate duyệt + hỏi lại + nhóm agent + hiển thị token
 milestone: P (spike → P-a → P-b → P-c)
-status: approved            # draft → ready → approved → in-progress → done
-requirements: [HUB-FR-104..119, HUB-BR-23..28, AC-H28..H35, CHAT-AC-51..58, ADM-FR-65..67]
+status: done                # (P-a xong 2026-10-11; P-b/P-c theo ROADMAP — tách spec riêng khi tới) draft → ready → approved → in-progress → done
+requirements: [HUB-FR-104, HUB-FR-105, HUB-FR-106, HUB-FR-107, HUB-FR-108, HUB-FR-109, HUB-FR-110, HUB-FR-111, HUB-FR-112, HUB-FR-113, HUB-FR-114, HUB-FR-115, HUB-FR-116, HUB-FR-117, HUB-FR-118, HUB-FR-119, HUB-BR-23, HUB-BR-24, HUB-BR-25, HUB-BR-26, HUB-BR-27, HUB-BR-28, AC-H28, AC-H29, AC-H30, AC-H31, AC-H32, AC-H33, AC-H34, AC-H35, CHAT-AC-51, CHAT-AC-52, CHAT-AC-53, CHAT-AC-54, CHAT-AC-55, CHAT-AC-56, CHAT-AC-57, CHAT-AC-58, ADM-FR-65, ADM-FR-66, ADM-FR-67]
 design:
   - docs/CHANGE-REQUESTS.md#CR-056 (lõi + token) · #CR-057 (Nhóm agent) · #CR-058 (phòng/chat, `!`, người duyệt ≠ người gọi)
   - docs/design/agent-hub/ba-agent-hub.md (§6.10 HUB-FR-104…119, HUB-BR-23…28; §8 `process_defs`, `process_runs`, `stage_runs`, `review_tasks`, `agent_teams*`; §9.1 endpoint quy trình; §9.2 `process.updated`, `review_task.*`; §9.3 mã lỗi; §11 AC-H28…H35; ghi chú mở rộng FR-95, FR-101, BR-20)
@@ -83,6 +83,8 @@ Thứ tự (Q8, đổi 2026-10-10): **spike P** → **P-a** → X2b-2 → H4b �
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead --> Chốt P-a ở [`plan-frontend.md`](plan-frontend.md) (+ `-admin`, `-i18n`, `-e2e`). Board §0. chat-web: menu `!` + nút "▶ Quy trình" (⑥), thẻ run + flow pane duyệt (④), "Chờ tôi kiểm" + DM "Quy trình" + `/runs/:id` (⑤), AskCard + "Nhờ người khác trả lời" (⑦), bảng token (⑧). admin-web: ui-admin §7.17. studio-web: ui-agent-studio §15 (P-b).
+
+**Copy khi chạm trần (UAT D7, 2026-10-11):** `TOO_MANY_PROCESS_RUNS` hiện thông báo VI rõ, **bỏ đếm ngược** "Thử lại sau N giây" (run `needs_decision` giữ chỗ tới khi quyết định/huỷ nên đếm giờ gây hiểu nhầm) — test E-P7 đã cập nhật (`c6b0af90`).
 
 ## 6. Hiệu năng
 Theo `CONVENTIONS.md` §6; không chặn mốc (người dùng 2026-10-03, `test:perf`).
