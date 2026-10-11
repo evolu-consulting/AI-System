@@ -40,6 +40,7 @@ export function StagesCard({ d, readOnly, refs }: Props) {
                 stage={s}
                 index={i}
                 all={stages}
+                defSources={d.draft.sources}
                 errors={d.errors}
                 readOnly={readOnly}
                 refs={refs}

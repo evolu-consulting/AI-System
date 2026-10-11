@@ -39,3 +39,12 @@ export function serverPaths(err: unknown): string[] {
   if (Array.isArray(d.paths)) return d.paths.filter((p): p is string => typeof p === "string");
   return typeof d.path === "string" ? [d.path] : [];
 }
+
+const STAGE_SOURCE_PATH = /^stages\.\d+\.sources\.\d+\.source_key$/;
+
+/** Khoá câu lỗi cho một path của `PROCESS_*_INVALID`: nguồn giai đoạn ngoài danh sách (P-b) có câu riêng, còn lại theo mã. */
+export function pathErrorKey(code: string, path: string): string {
+  if (code === "PROCESS_REF_INVALID" && STAGE_SOURCE_PATH.test(path))
+    return "process.admin.editor.stageSources.notInDef";
+  return `process.admin.apiError.${code}`;
+}

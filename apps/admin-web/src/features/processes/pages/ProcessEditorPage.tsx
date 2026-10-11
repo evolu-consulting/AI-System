@@ -20,7 +20,9 @@ import { hubConfigured } from "@/lib/hub";
 import { copyDef, useProcessDef } from "../api";
 import { DefInfoCard } from "../components/editor/DefInfoCard";
 import { EditorRunsTab } from "../components/editor/EditorRunsTab";
+import { InputsCard } from "../components/editor/InputsCard";
 import { ProcessSaveBar } from "../components/editor/ProcessSaveBar";
+import { SourcesCard } from "../components/editor/SourcesCard";
 import { LimitsCard, StagesCard } from "../components/editor/StagesCard";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
 import { useDefSave } from "../hooks/use-def-save";
@@ -112,6 +114,15 @@ function Editor({ processId }: ProcessEditorPageProps) {
         refs={refs}
         patch={d.patch}
       />
+      <SourcesCard
+        draft={d.draft}
+        errors={d.errors}
+        readOnly={readOnly}
+        tenantId={tenant.tenantId}
+        ready={tenant.ready}
+        patch={d.patch}
+      />
+      <InputsCard draft={d.draft} errors={d.errors} readOnly={readOnly} patch={d.patch} />
       <StagesCard d={d} readOnly={readOnly} refs={refs} />
       <LimitsCard />
       {readOnly ? null : (

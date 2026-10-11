@@ -8,12 +8,16 @@ import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { withCurrent } from "../../hooks/use-editor-refs";
 import { canRealAction, type DraftErrors, type StageDraft } from "../../lib/def-form";
 import { SelectField, TextField } from "./Fields";
+import { StageMustKnow } from "./StageMustKnow";
 import { StageOutput } from "./StageOutput";
+import { StageSourcesField } from "./StageSourcesField";
 
 export type StageFormProps = {
   stage: StageDraft;
   index: number;
   all: StageDraft[];
+  /** Nguồn khai báo ở quy trình (P-b). */
+  defSources: readonly string[];
   errors: DraftErrors;
   readOnly: boolean;
   refs: EditorRefs;
@@ -174,6 +178,7 @@ export function StageForm(p: StageFormProps) {
         readOnly={readOnly}
         onChange={onChange}
       />
+      <StageSourcesField {...p} stage={stage} />
       <AfterFields {...p} />
       <AnswererFields {...p} />
       <div className="grid gap-3 sm:grid-cols-2">
@@ -196,6 +201,7 @@ export function StageForm(p: StageFormProps) {
           onChange={(v) => onChange({ budget: v })}
         />
       </div>
+      <StageMustKnow {...p} />
       {readOnly ? null : (
         <div className="flex flex-wrap gap-2 border-t border-border pt-3">
           <Button

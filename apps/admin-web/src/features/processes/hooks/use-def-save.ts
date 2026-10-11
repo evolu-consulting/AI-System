@@ -8,7 +8,7 @@ import { useConflictSave } from "@/components/shared/conflict/use-conflict-save"
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { createDef, updateDef, useInvalidateDefs } from "../api";
 import { toDraft, toInput, validateDraft } from "../lib/def-form";
-import { errorCode, processErrorSpec, serverPaths } from "../lib/errors";
+import { errorCode, pathErrorKey, processErrorSpec, serverPaths } from "../lib/errors";
 import type { DraftState } from "./use-draft";
 
 type Args = {
@@ -30,7 +30,7 @@ function useSaveFailure(d: DraftState) {
     const key = `process.admin.apiError.${code}`;
     if (code === "PROCESS_KEY_TAKEN") return d.showErrors({ key });
     if (code && PATHED.has(code) && paths.length)
-      return d.showErrors(Object.fromEntries(paths.map((p) => [p, key])));
+      return d.showErrors(Object.fromEntries(paths.map((p) => [p, pathErrorKey(code, p)])));
     const spec = processErrorSpec(err);
     notifyError(t(spec.key, spec.params));
   };

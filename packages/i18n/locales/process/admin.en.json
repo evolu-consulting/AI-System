@@ -122,7 +122,67 @@
     "choose": "Choose…",
     "gone": "(disabled or gone)",
     "removeGroup": "Remove group {{name}}",
-    "addGroup": "Add group"
+    "addGroup": "Add group",
+    "sources": {
+      "title": "Process sources",
+      "add": "Add source",
+      "remove": "Remove source {{key}}",
+      "empty": "This process uses no sources yet.",
+      "declare": "Declare a source",
+      "max": "A process can have at most 20 sources.",
+      "gone": "This source no longer exists. Remove it before saving.",
+      "inUse": "Source {{key}} is used by stage {{n}}. Remove it from the stage first."
+    },
+    "stageSources": {
+      "title": "Stage sources",
+      "allowlist": "Allowed paths — {{key}}",
+      "allowlistHint": "One pattern per line (e.g. docs/**/*.md). Empty = the whole source; the 50 MB / 2,000 file limit still applies.",
+      "max": "At most 5 sources per stage.",
+      "none": "Add sources to the process in the “Process sources” card first.",
+      "notInDef": "Stage {{n}} uses a source that is not in the process source list.",
+      "autoOutput": "This stage will require a “## Nguồn tham chiếu” section in its output (added automatically).",
+      "budget": "Default budget is 200,000 tokens if the stage sets none."
+    },
+    "inputs": {
+      "title": "Process inputs",
+      "note": "If a required field is missing, the agent will ask the person running the process.",
+      "add": "Add field",
+      "remove": "Remove field {{key}}",
+      "removeBlank": "Remove field {{n}}",
+      "key": "Field key",
+      "label": "Display label",
+      "typeLabel": "Field type",
+      "types": {
+        "text": "Text",
+        "select": "Choice",
+        "file": "File",
+        "source_ref": "Source + branch"
+      },
+      "required": "Required",
+      "options": "Options (one per line)",
+      "empty": "No input fields yet."
+    },
+    "mustKnow": {
+      "label": "Must know before starting",
+      "hint": "One item per line. The agent asks about what it does not know yet (at most 3 questions per stage)."
+    },
+    "err": {
+      "glob": {
+        "invalid": "Invalid path pattern: no “..”, no leading “/”, at most 256 characters.",
+        "max": "At most 20 patterns per source."
+      },
+      "input": {
+        "key": "The field key must be 2–32 characters: lowercase letters, digits or hyphens.",
+        "keyDup": "This field key is already used.",
+        "label": "Enter a display label (at most 80 characters).",
+        "options": "A Choice field needs 1–20 options, each at most 200 characters, with no duplicates.",
+        "max": "At most 10 input fields."
+      },
+      "mustKnow": {
+        "max": "At most 10 items.",
+        "tooLong": "Each item can be at most 200 characters."
+      }
+    }
   },
   "run": {
     "title": "Run · {{name}}",

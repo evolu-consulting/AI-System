@@ -19,6 +19,17 @@ import {
   STAGE_TIMEOUT_S,
   STAGE_TOKEN_BUDGET,
 } from "@ai/contracts/hub-admin";
+import {
+  type InputDraft,
+  inputsToDef,
+  inputsToDraft,
+  mustKnowToDef,
+  mustKnowToDraft,
+  type StageSourceDraft,
+  stageSourcesToDef,
+  stageSourcesToDraft,
+  validateSourcesPart,
+} from "./sources-form";
 
 export type FieldDraft = { key: string; type: "number" | "string" | "date"; required: boolean };
 export type StageDraft = {
@@ -42,6 +53,10 @@ export type StageDraft = {
   answererId: string;
   timeout: string;
   budget: string;
+  /** Nguồn dùng + allowlist (textarea) — `sources-form`. */
+  sources: StageSourceDraft[];
+  /** `must_know`, mỗi dòng một mục. */
+  mustKnow: string;
 };
 export type DefDraft = {
   key: string;
@@ -52,6 +67,9 @@ export type DefDraft = {
   budget: string;
   enabled: boolean;
   stages: StageDraft[];
+  /** Khoá nguồn của quy trình (≤ 20). */
+  sources: string[];
+  inputs: InputDraft[];
 };
 /** path (`stages.0.output.filename`) → khoá i18n của câu lỗi. */
 export type DraftErrors = Record<string, string>;
@@ -78,6 +96,8 @@ export function emptyStage(): StageDraft {
     answererId: "",
     timeout: String(STAGE_TIMEOUT_S.default),
     budget: "",
+    sources: [],
+    mustKnow: "",
   };
 }
 
@@ -90,6 +110,8 @@ export const emptyDraft = (): DefDraft => ({
   budget: "",
   enabled: false,
   stages: [emptyStage()],
+  sources: [],
+  inputs: [],
 });
 
 const num = (v: number | null): string => (v === null ? "" : String(v));
@@ -115,6 +137,8 @@ function stageToDraft(s: ProcessStageDef): StageDraft {
     answererId: a.kind === "group" ? a.group_id : a.kind === "user" ? a.user_id : "",
     timeout: String(s.timeout_s),
     budget: num(s.token_budget),
+    sources: stageSourcesToDraft(s.sources),
+    mustKnow: mustKnowToDraft(s.must_know),
   };
 }
 
@@ -128,6 +152,8 @@ export function toDraft(d: ProcessDefInput | ProcessDef): DefDraft {
     budget: num(d.token_budget),
     enabled: d.enabled,
     stages: d.stages.map(stageToDraft),
+    sources: [...d.sources],
+    inputs: inputsToDraft(d.inputs),
   };
 }
 
@@ -157,8 +183,8 @@ function stageToInput(s: StageDraft): ProcessStageDef {
           : { kind: "starter" },
     timeout_s: Number(s.timeout),
     token_budget: intOrNull(s.budget),
-    sources: [],
-    must_know: [],
+    sources: stageSourcesToDef(s.sources),
+    must_know: mustKnowToDef(s.mustKnow),
   };
 }
 
@@ -173,8 +199,8 @@ export function toInput(d: DefDraft): ProcessDefInput {
     stages: d.stages.map(stageToInput),
     token_budget: intOrNull(d.budget),
     enabled: d.enabled,
-    sources: [],
-    inputs: [],
+    sources: d.sources,
+    inputs: inputsToDef(d.inputs),
   };
 }
 
@@ -259,6 +285,7 @@ export function validateDraft(d: DefDraft, forEnable = d.enabled): DraftErrors {
     if (forEnable && s.after === "review" && s.groupId === "")
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";
   });
+  validateSourcesPart(d, e);
   return e;
 }
 
@@ -295,7 +322,11 @@ export function defToInput(d: ProcessDef): ProcessDefInput {
 
 /** Chuỗi so sánh "đã sửa chưa" (bỏ `uid` cục bộ). */
 export const snapshot = (d: DefDraft): string =>
-  JSON.stringify({ ...d, stages: d.stages.map(({ uid: _uid, ...s }) => s) });
+  JSON.stringify({
+    ...d,
+    stages: d.stages.map(({ uid: _uid, ...s }) => s),
+    inputs: d.inputs.map(({ uid: _uid, ...i }) => i),
+  });
 
 /** Sửa giai đoạn `i`; còn `keyAuto` mà đổi tên ⇒ mã giai đoạn sinh lại (không trùng mã khác). */
 export function patchStage(stages: StageDraft[], i: number, p: Partial<StageDraft>): StageDraft[] {

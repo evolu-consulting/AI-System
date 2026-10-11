@@ -122,7 +122,67 @@
     "choose": "Chọn…",
     "gone": "(đã tắt hoặc không còn)",
     "removeGroup": "Bỏ Group {{name}}",
-    "addGroup": "Thêm Group"
+    "addGroup": "Thêm Group",
+    "sources": {
+      "title": "Nguồn của quy trình",
+      "add": "Thêm nguồn",
+      "remove": "Bỏ nguồn {{key}}",
+      "empty": "Quy trình chưa dùng nguồn nào.",
+      "declare": "Khai báo nguồn",
+      "max": "Tối đa 20 nguồn cho một quy trình.",
+      "gone": "Nguồn không còn tồn tại. Bỏ nguồn này trước khi lưu.",
+      "inUse": "Nguồn {{key}} đang được giai đoạn {{n}} dùng. Bỏ khỏi giai đoạn trước."
+    },
+    "stageSources": {
+      "title": "Nguồn của giai đoạn",
+      "allowlist": "Đường dẫn cho phép — {{key}}",
+      "allowlistHint": "Mỗi dòng một mẫu (vd. docs/**/*.md). Để trống = cả nguồn, vẫn tính trần 50 MB / 2.000 tệp.",
+      "max": "Tối đa 5 nguồn mỗi giai đoạn.",
+      "none": "Hãy thêm nguồn cho quy trình ở thẻ “Nguồn của quy trình” trước.",
+      "notInDef": "Giai đoạn {{n}} dùng nguồn chưa nằm trong danh sách nguồn của quy trình.",
+      "autoOutput": "Giai đoạn này sẽ bắt buộc có mục “## Nguồn tham chiếu” trong kết quả (tự thêm).",
+      "budget": "Ngân sách mặc định 200.000 token nếu giai đoạn không đặt."
+    },
+    "inputs": {
+      "title": "Thông tin đầu vào",
+      "note": "Thiếu trường bắt buộc, agent sẽ hỏi lại người chạy.",
+      "add": "Thêm trường",
+      "remove": "Xoá trường {{key}}",
+      "removeBlank": "Xoá trường {{n}}",
+      "key": "Ký hiệu trường",
+      "label": "Nhãn hiển thị",
+      "typeLabel": "Kiểu trường",
+      "types": {
+        "text": "Chữ",
+        "select": "Chọn",
+        "file": "Tệp",
+        "source_ref": "Nguồn + nhánh"
+      },
+      "required": "Bắt buộc",
+      "options": "Lựa chọn (mỗi dòng một giá trị)",
+      "empty": "Chưa có trường đầu vào."
+    },
+    "mustKnow": {
+      "label": "Điều phải biết trước khi làm",
+      "hint": "Mỗi dòng một mục. Agent sẽ hỏi những điều chưa biết (tối đa 3 lần hỏi mỗi giai đoạn)."
+    },
+    "err": {
+      "glob": {
+        "invalid": "Mẫu đường dẫn không hợp lệ: không dùng “..”, không bắt đầu bằng “/”, tối đa 256 ký tự.",
+        "max": "Tối đa 20 mẫu cho mỗi nguồn."
+      },
+      "input": {
+        "key": "Ký hiệu trường gồm 2–32 ký tự: chữ thường, số hoặc dấu gạch ngang.",
+        "keyDup": "Ký hiệu trường bị trùng.",
+        "label": "Nhập nhãn hiển thị (tối đa 80 ký tự).",
+        "options": "Kiểu Chọn cần 1–20 lựa chọn, mỗi lựa chọn tối đa 200 ký tự, không trùng.",
+        "max": "Tối đa 10 trường đầu vào."
+      },
+      "mustKnow": {
+        "max": "Tối đa 10 mục.",
+        "tooLong": "Mỗi mục tối đa 200 ký tự."
+      }
+    }
   },
   "run": {
     "title": "Lượt chạy · {{name}}",
