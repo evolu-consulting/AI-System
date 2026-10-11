@@ -21,7 +21,7 @@ Mỗi task 1 commit `feat(<module>): … [HUB-FR-xx]` (fix: `fix(processes): …
 | S2-4 | Mirror cache + snapshot: khoá `(tenant,source,sha,hash(allowlist))`, lọc PB-R07 (picomatch tương đương), trần 50MB/2000 file, copy chmod ro + rename nguyên tử, LRU, không-xoá-run-mở | `.../sources/snapshot.py`, `cache.py` | PY | cao | plan §2, spec PB-R07/R16 |
 | S2-5 | Mount `work/<job_id>/sources/<key>/` chỉ-đọc; hook PreToolUse deny Write/Edit dưới `sources/`; ép `allowedTools=Read,Grep,Glob` | `.../runtimes/cli/files/*`, `providers/claude/options.py` + `test_options.py` | PY | cao | spec PB-R10, `providers/claude/options.py` |
 | S2-6 | `files_read` parse stream-json tool_use (D8; thiếu⇒null) để Hub ghi audit | `.../runtimes/cli/*` | PY | thường | spec PB-R11/D8 |
-| S2-7 | `fake-cli` directive `#fake:read sources/<key>/<path>` (giả đọc nguồn + ghi audit) cho test | `.../fake-cli` (hoặc nơi B1 P-a) | PY | thường | spec §7, P-a B1 |
+| S2-7 | `fake-cli` 4 directive `#fake:read=<p>` / `#fake:tree=<dir>` / `#fake:scan=<needle>` / `#fake:obey=<path>` (cú pháp `=`, khớp regex; giả đọc nguồn + ghi audit) cho test | `.../fake-cli` (hoặc nơi B1 P-a) | PY | thường | spec §7, P-a B1 |
 
 ## PF-S3 · Hub giao nguồn vào job
 | # | Task | File | Nền | Rủi ro | Đọc |
@@ -44,6 +44,8 @@ Mỗi task 1 commit `feat(<module>): … [HUB-FR-xx]` (fix: `fix(processes): …
 | # | Task | File | Nền | Rủi ro | Đọc |
 |---|---|---|---|---|---|
 | S5-1 | Smoke claude-sub đọc nguồn thật, agent trần ≤50k token, ép R/G/G + hook; KHÔNG vào CI "Lệnh xong" | UAT script (qc-uat phối hợp) | PY/TS | thường | spec PB-R22/D7 |
+
+**Seed dev/UAT (người dùng 2026-10-11):** seed nguồn test (`local_path` tới repo ai-system, + 1 git_remote, + 1 library) trên **CẢ hai** tenant `acme` VÀ `evolu` — để UAT/kiểm tay chạy cách ly chéo thật (tenant acme KHÔNG thấy/đọc được nguồn của evolu và ngược lại; AC-H36(d), AC-PB-04). qc-uat dựng seed trên cả hai tenant; test int cross-tenant (A-09, P-03/05, C-07, ID-07, IN-02) vẫn dùng factory DB riêng.
 
 ## Tranh chấp test
 <!-- để trống -->

@@ -144,6 +144,7 @@ buildManifest(items: readonly { key: string; description: string; pin: SourcePin
 // RF-20…27 · parse "## Nguồn tham chiếu" trong md; key∈stageSourceKeys, @version khớp pin; path tồn tại đối chiếu filesRead (null⇒bỏ kiểm path, C16); heading trong ```code``` bỏ qua; sai hoa ⇒ missing
 checkSourceRefs(md: string, stageSourceKeys: readonly string[], pins: Readonly<Record<string, SourcePin>>, filesRead?: ReadonlyArray<string>|null): RefCheck
 // RF-28…33 · map reason lỗi team → 1 trong 7 mã runs_error_code_ck (PB-R17); không bao giờ null
+// reason: "job_timeout"⇒TIMEOUT · "not_configured"⇒NOT_CONFIGURED · "agent_failed"/khác⇒UPSTREAM_ERROR · null/undefined⇒INTERNAL_ERROR (khớp MemberOutcome §6.1 + TM-08)
 mapTeamError(reason: string|null|undefined): RunErrorCode
 ```
 Hàm liên quan CRUD (host allowlist, cú pháp local_path) nằm trong module `sources` (service), không trong file này.
@@ -219,7 +220,8 @@ Idempotent: `IF NOT EXISTS`/`ADD COLUMN IF NOT EXISTS`/kiểm `pg_constraint`,`p
 ### 6.1 #134 — team fail ghi error_code sai ⇒ run kẹt (PB-R17, AC-PB-03)
 **Tái hiện:** quy trình stage `executor:team`, 1 member fail (agent_failed hoặc job_timeout) ⇒ `team-member.ts:93 closeMemberRun(d, runId, failed=true)` chạy `UPDATE hub.runs SET status='failed', owner=null, lease_until=null WHERE id=.. AND status='running'` — KHÔNG set `error_code` ⇒ `runs_error_code_ck` (`0000:297` `(error_code≠null)=(status∈{failed,cancelled})`) vi phạm ⇒ `UPDATE` ném ⇒ bong qua `runMember`→`team-exec`→`stage-driver.ts:83` catch ⇒ chỉ `ctx.writer.abort()`; `hub.process_runs` không chuyển trạng thái ⇒ kẹt `running`.
 **Sửa:**
-- `team-member.ts closeMemberRun(d, runId, outcome: MemberOutcome)`: khi `outcome.kind==='failed'` set `error_code` = `reason==='job_timeout' ? 'TIMEOUT' : 'UPSTREAM_ERROR'`, kèm `error_message` + `error_hint` (cùng non-null, `runs_error_cols_ck`). Gọi: `closeMemberRun(d, prepared.run.id, outcome)`.
+- **`MemberOutcome` thêm reason `not_configured`** (hiện chỉ `agent_failed|job_timeout`). `outcomeOf` (`team-member.ts:44-49`) map mã job `NOT_CONFIGURED`→reason `not_configured`; đường "agent chưa cấu hình" (`!prepared.direct`, `team-member.ts:78`) ⇒ `not_configured` (thay vì gộp về `agent_failed`). (Gỡ mâu thuẫn readiness #1 với TM-08.)
+- `team-member.ts closeMemberRun(d, runId, outcome: MemberOutcome)`: khi `outcome.kind==='failed'` set `error_code = mapTeamError(outcome.reason)` (§3.4 — KHÔNG ternary nội tuyến; `job_timeout`⇒TIMEOUT, `not_configured`⇒NOT_CONFIGURED, `agent_failed`/khác⇒UPSTREAM_ERROR, thiếu⇒INTERNAL_ERROR), kèm `error_message` + `error_hint` (cùng non-null, `runs_error_cols_ck`). Gọi: `closeMemberRun(d, prepared.run.id, outcome)`.
 - `stage-driver.ts drive` catch (dòng 83): thay `if(!ctx.writer.done) ctx.writer.abort()` bằng: `abort()` + chuyển `process_runs → needs_decision` qua `toDecision(reason)` (reason map PB-R17) trong tx scope system; không để kẹt `running`. (Tách helper `failStuckRun(d, hubRunId, reason)` tra `link` → `toDecision`.)
 - `apply`/`runApplyTx`/`finish`: bọc try/catch quanh ghi; lỗi ghi ⇒ vẫn đặt stage `failed` + run `needs_decision`, không ném tiếp.
 - Unit: `team-member.test.ts` (closeMemberRun ghi mã hợp lệ), `stage-driver` catch → needs_decision. int: job team fail → `hub.runs.error_code ∈ 7`, run `needs_decision`, không crash.

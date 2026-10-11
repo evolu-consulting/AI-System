@@ -68,7 +68,7 @@ FAKE-EXEC write out/ok.md
 Tài liệu `quy-dinh.md` (origin `library`, acme): v1 = "Quy định v1", v2 = "Quy định v2" (tải lên sau). Tài liệu của `beta` `beta-secret.md`. Dùng helper `H2c/_h2c.ts` (không tự viết lại kho).
 
 ## 2. `fake-cli` — directive cần thêm (backend-lead/agent-runtime, task S2-7)
-Cú pháp theo quy ước hiện có `#fake:<tên>=<giá trị>` (`providers/fake/directives.py` regex `#fake:([a-z_-]+)(?:=(\S+))?`). **Spec §7 ghi `#fake:read sources/…` (dấu cách) — đề nghị sửa thành `#fake:read=sources/…`** để khớp regex.
+Cú pháp theo quy ước hiện có `#fake:<tên>=<giá trị>` (`providers/fake/directives.py` regex `#fake:([a-z_-]+)(?:=(\S+))?`). Spec §7 + tasks S2-7 đã dùng `#fake:read=…` (dấu `=`, khớp regex) — C21.
 
 | Directive | Hành vi (kỳ vọng của qc) |
 |---|---|
