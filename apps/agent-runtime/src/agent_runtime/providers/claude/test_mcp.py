@@ -10,9 +10,9 @@ from typing import Any
 
 import pytest
 from claude_agent_sdk import AssistantMessage, SystemMessage, ToolUseBlock
-from claude_agent_sdk.types import HookContext
+from claude_agent_sdk.types import ContentBlock, HookContext
 
-from agent_runtime.providers.base import ProviderJob
+from agent_runtime.providers.base import ProviderJob, ToolUse
 from agent_runtime.providers.claude import mcp
 from agent_runtime.providers.claude.mapping import mcp_statuses, tool_events
 from agent_runtime.providers.claude.options import (
@@ -115,12 +115,46 @@ async def test_wrk_fr_13_options_hook_allows_only_job_mcp_tools(tmp_path: Path) 
 def test_wrk_fr_13_mcp_progress_label_static() -> None:
     """§4.4: `ToolUseBlock` `mcp__hub__<k>` → `tool_use` + nhãn tĩnh "Đang gọi công cụ"."""
     block = ToolUseBlock(id="t1", name=NAMES[1], input={"title": "bí mật"})
-    evs = list(tool_events(AssistantMessage(content=[block], model="m")))
+    evs = list(tool_events(AssistantMessage(content=[block], model="m"), "/work/j1"))
     dumped = [e.model_dump() for e in evs]
     assert dumped == [
-        {"type": "tool_use", "name": NAMES[1]},
+        {"type": "tool_use", "name": NAMES[1], "path": None},  # tool MCP: không đường dẫn
         {"type": "progress", "label": "Đang gọi công cụ"},
     ]
+
+
+def _tool_paths(blocks: list[ContentBlock], work_dir: str) -> list[str | None]:
+    evs = list(tool_events(AssistantMessage(content=blocks, model="m"), work_dir))
+    return [e.path for e in evs if isinstance(e, ToolUse)]
+
+
+def test_pf_s2_b1_read_grep_glob_path_relative_to_work_dir() -> None:
+    """P-b B1: Read `file_path` tuyệt đối (CLI đổi), Grep/Glob `path` tương đối ⇒ `ToolUse.path`
+    POSIX tương đối `work_dir` (cha gom `source_reads` dưới sources/, hết `path_absent`)."""
+    wd = "/work/j1"
+    blocks: list[ContentBlock] = [
+        ToolUseBlock(id="a", name="Read", input={"file_path": "/work/j1/sources/app/src/index.ts"}),
+        ToolUseBlock(id="b", name="Grep", input={"pattern": "foo", "path": "sources/app/src"}),
+        ToolUseBlock(id="c", name="Glob", input={"pattern": "**/*.ts", "path": "sources/app"}),
+    ]
+    assert _tool_paths(blocks, wd) == [
+        "sources/app/src/index.ts",
+        "sources/app/src",
+        "sources/app",
+    ]
+
+
+def test_pf_s2_b1_path_outside_work_dir_or_no_path_is_none() -> None:
+    """Đường dẫn ngoài `work_dir` (thoát `..`/tuyệt đối khác) ⇒ None (audit bỏ, không fail-open);
+    tool không có khoá đường dẫn ⇒ None."""
+    wd = "/work/j1"
+    blocks: list[ContentBlock] = [
+        ToolUseBlock(id="a", name="Read", input={"file_path": "/etc/passwd"}),
+        ToolUseBlock(id="b", name="Read", input={"file_path": "../../secret"}),
+        ToolUseBlock(id="c", name="Read", input={}),
+        ToolUseBlock(id="d", name="Write", input={"file_path": "/work/j1/out/report.md"}),
+    ]
+    assert _tool_paths(blocks, wd) == [None, None, None, "out/report.md"]
 
 
 def test_wrk_fr_13_init_mcp_status_only() -> None:

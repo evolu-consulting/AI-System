@@ -1,0 +1,11 @@
+import {login,hub} from "./lib.mjs";
+const p=await login("platform","admin"), j=await login("evolu","julian.bui");
+const EV="01a11c1d-ca4e-7000-b4eb-212defbb548f";
+const list=await hub(p,"GET","/admin/sources?tenant_id="+EV); const id="ai-system-repo";
+const c=await hub(p,"POST",`/admin/sources/${id}/check?tenant_id=${EV}`); console.log("platform check",c.status,JSON.stringify(c.json));
+const g=await hub(p,"GET",`/admin/sources/${id}?tenant_id=${EV}`); console.log("platform GET last_pin",JSON.stringify(g.json.last_pin),JSON.stringify(g.json.config));
+const g2=await hub(j,"GET",`/admin/sources/${id}`); console.log("tenant_admin GET",g2.status,JSON.stringify(g2.json));
+const c2=await hub(j,"POST",`/admin/sources/${id}/check`); console.log("tenant_admin check",c2.status,JSON.stringify(c2.json));
+const l2=await hub(j,"GET","/admin/sources"); console.log("tenant_admin list",JSON.stringify(l2.json));
+const w=await hub(j,"PUT",`/admin/sources/${id}`,{version:1,description:"hack hack hack hack hack",config:{kind:"local_path",path:"/etc"}}); console.log("tenant_admin PUT",w.status,JSON.stringify(w.json));
+const d=await hub(j,"DELETE",`/admin/sources/${id}?version=1`); console.log("tenant_admin DELETE",d.status);

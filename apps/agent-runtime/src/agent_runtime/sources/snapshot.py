@@ -100,12 +100,10 @@ def build_git(  # noqa: PLR0913
 
 
 def build_local(cfg: SourceConfig, dest: Path, root: Path, allowlist: list[str]) -> tuple[int, int]:
-    patterns = compile_allowlist(allowlist)
+    # B3: `walk_files` cắt nhánh + áp allowlist/secret NGAY lúc duyệt ⇒ không quét cả cây repo lớn.
     ceiling = Ceiling()
     try:
-        for rel, full, size in local_driver.walk_files(root):
-            if is_secret(rel) or not _allowed(rel, patterns):
-                continue
+        for rel, full, size in local_driver.walk_files(root, allowlist):
             ceiling.add(size)
             _write_file(dest, rel, full.read_bytes())
     except TooLarge as err:
@@ -125,7 +123,11 @@ def build_single(cfg: SourceConfig, dest: Path, name: str, data: bytes) -> tuple
 
 
 # ── chốt chỉ-đọc + nguyên tử ──────────────────────────────────────────────────────────────────
-def finalize_ro(root: Path) -> None:
+def finalize_ro(root: Path, *, lock_root: bool = True) -> None:
+    """chmod toàn cây về chỉ-đọc (lá trước, `topdown=False`). `lock_root=False` GIỮ thư mục gốc
+    còn ghi được: đổi tên một thư mục sang thư mục cha khác (`os.replace` ở `commit`) cần quyền ghi
+    trên CHÍNH thư mục bị di chuyển (cập nhật `..`), nên khi KHÔNG phải root phải rename trước rồi
+    mới `os.chmod(root, _DIR_MODE)` (xem `ensure`). B2: tránh EACCES âm thầm khi non-root."""
     for dirpath, dirnames, filenames in os.walk(root, topdown=False):
         for name in filenames:
             with suppress(OSError):
@@ -133,20 +135,27 @@ def finalize_ro(root: Path) -> None:
         for name in dirnames:
             with suppress(OSError):
                 os.chmod(Path(dirpath, name), _DIR_MODE)
-    with suppress(OSError):
-        os.chmod(root, _DIR_MODE)
+    if lock_root:
+        with suppress(OSError):
+            os.chmod(root, _DIR_MODE)
 
 
 def commit(tmp: Path, final: Path) -> Path:
-    """Đổi tên nguyên tử; thua đua (final đã có) ⇒ bỏ tmp, dùng final."""
+    """Đổi tên nguyên tử; thua đua (final đã có) ⇒ bỏ tmp, dùng final. Lỗi THẬT (không phải đua)
+    ⇒ dọn tmp + ném `SourceError` — KHÔNG nuốt lặng (B2): để run ra `source_unresolvable` rõ ràng,
+    không để `mount` ném `FileNotFoundError` mơ hồ vì `final` không bao giờ xuất hiện."""
     final.parent.mkdir(parents=True, exist_ok=True)
     if final.exists():
         rmtree_ro(tmp)
         return final
     try:
         os.replace(tmp, final)
-    except OSError:
+    except OSError as err:
+        if final.exists():  # thua đua xuất hiện giữa chừng ⇒ dùng final
+            rmtree_ro(tmp)
+            return final
         rmtree_ro(tmp)
+        raise SourceError("SOURCE_UNRESOLVABLE", f"commit snapshot thất bại: {err}") from err
     return final
 
 
@@ -292,9 +301,12 @@ def ensure(cfg: SourceConfig, final: Path, build: Callable[[Path], object]) -> P
     tmp = _new_tmp(cfg)
     try:
         build(tmp)
-        finalize_ro(tmp)
+        finalize_ro(tmp, lock_root=False)  # lá + thư mục con chỉ-đọc; GỐC còn ghi để rename
     except BaseException:
         if tmp.exists():
             rmtree_ro(tmp)
         raise
-    return commit(tmp, final)
+    result = commit(tmp, final)
+    with suppress(OSError):
+        os.chmod(result, _DIR_MODE)  # B2: chốt GỐC chỉ-đọc SAU rename nguyên tử (non-root ok)
+    return result

@@ -99,7 +99,7 @@ class _Turn:
         self.mcp_ids.update(mcp_tool_ids(msg))
         if msg.parent_tool_use_id is None:  # REVIEW 2 RV2-2: bỏ stop_reason của subagent
             self.stop_reason = msg.stop_reason or self.stop_reason
-        for ev in tool_events(msg):
+        for ev in tool_events(msg, self.job.work_dir):
             await self.emit(ev)
 
     async def handle(self, msg: Message) -> None:

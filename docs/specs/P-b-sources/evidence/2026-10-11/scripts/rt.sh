@@ -1,0 +1,3 @@
+mkdir -p ~/smoke/work ~/smoke/logs ~/smoke/srccache && cd /mnt/d/AI/ai-system/apps/agent-runtime
+export UV_PROJECT_ENVIRONMENT=$HOME/.venvs/agent-runtime APP_ENV=development AGENT_RT_PROVIDERS=claude-sub,fake-cli AGENT_RT_DATABASE_URL=postgres://agent_runtime:agent_runtime_dev_pw@localhost:5432/ai_system REDIS_URL=redis://localhost:6379 AGENT_RT_WORKER_ID=uat-pb AGENT_RT_WORK_DIR=$HOME/smoke/work AGENT_RT_LOG_DIR=$HOME/smoke/logs AGENT_RT_HUB_URL=http://172.26.0.1:4000 RUNTIME_SOURCE_CACHE_DIR=$HOME/smoke/srccache HUB_SOURCE_LOCAL_ROOTS=/mnt/d/AI/ai-system RUNTIME_ENV=development
+exec uv run --frozen python -m agent_runtime

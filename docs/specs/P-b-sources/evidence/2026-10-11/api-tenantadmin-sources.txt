@@ -1,0 +1,8 @@
+GET http://localhost:4000/admin/sources?limit=100 200
+{"items":[{"id":"c1e6f210-05e4-43e6-9262-525fd36f019f","tenant_id":"01a11c1d-ca4e-7000-b4eb-212defbb548f","key":"ai-system-repo","kind":"local_path","config":{"kind":"local_path"},"description":"Mã nguồn + tài liệu dự án AI System (local_path trên máy Runtime) - nguồn demo P-b.","version":1,"used_by":["doc-nguon-claude","doc-nguon-fake"],"last_pin":null,"created_at":"2026-10-11T14:49:24.222592Z","updated_at":"2026-10-11T14:49:24.222592Z","updated_by":"01a11c1d-0e2b-7000-bc94-2919d453392b"}],"next_cursor":null}
+
+GET http://localhost:4000/admin/sources/ai-system-repo 200
+{"id":"c1e6f210-05e4-43e6-9262-525fd36f019f","tenant_id":"01a11c1d-ca4e-7000-b4eb-212defbb548f","key":"ai-system-repo","kind":"local_path","config":{"kind":"local_path"},"description":"Mã nguồn + tài liệu dự án AI System (local_path trên máy Runtime) - nguồn demo P-b.","version":1,"used_by":["doc-nguon-claude","doc-nguon-fake"],"last_pin":null,"created_at":"2026-10-11T14:49:24.222592Z","updated_at":"2026-10-11T14:49:24.222592Z","updated_by":"01a11c1d-0e2b-7000-bc94-2919d453392b"}
+
+GET http://localhost:4000/admin/sources/library-documents?limit=20 200
+{"items":[],"next_cursor":null}

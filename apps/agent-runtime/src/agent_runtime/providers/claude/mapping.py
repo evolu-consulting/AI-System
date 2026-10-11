@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
 from collections.abc import Iterator, Mapping
 from typing import Any, cast
@@ -92,10 +93,42 @@ def main_model(model_usage: dict[str, Any] | None) -> str | None:
     return max(model_usage, key=lambda k: _cost(model_usage[k]))
 
 
-def tool_events(msg: AssistantMessage) -> Iterator[ProviderEvent]:
+# P-b PF-S2 · B1 · khoá đầu vào mang đường dẫn tệp của tool Claude thật (spike PY-02 #1,#3): Read
+# `file_path` (CLI đổi tuyệt đối), Grep/Glob `path` (thư mục gốc tìm, giữ tương đối), Write
+# `file_path`. Trích để cha gom `source_reads` audit (D8); bảo mật do hook (`sandbox/hook.py`) lo.
+_PATH_INPUT_KEYS = {"Read": "file_path", "Grep": "path", "Glob": "path", "Write": "file_path"}
+
+
+def _tool_path(name: str, inp: Mapping[str, Any], work_dir: str) -> str | None:
+    """Đường dẫn (tương đối `work_dir`, POSIX) của một lần gọi tool có tệp; None nếu tool không có
+    đường dẫn, khoá vắng/kiểu lạ, hoặc đường dẫn nằm NGOÀI `work_dir` (audit bỏ qua — không fail-
+    open: hook mới là hàng rào bảo mật)."""
+    key = _PATH_INPUT_KEYS.get(name)
+    if key is None:
+        return None
+    raw = inp.get(key)
+    if not isinstance(raw, str) or not raw:
+        return None
+    return _relativize(raw, work_dir)
+
+
+def _relativize(raw: str, work_dir: str) -> str | None:
+    joined = raw if os.path.isabs(raw) else os.path.join(work_dir, raw)
+    try:
+        rel = os.path.relpath(os.path.normpath(joined), os.path.normpath(work_dir))
+    except ValueError:  # ổ đĩa khác (Windows) ⇒ ngoài work_dir
+        return None
+    rel = rel.replace(os.sep, "/")
+    if rel in (".", "..") or rel.startswith("../") or rel.startswith("/"):
+        return None
+    return rel[:1024]
+
+
+def tool_events(msg: AssistantMessage, work_dir: str) -> Iterator[ProviderEvent]:
     for block in msg.content:
         if isinstance(block, ToolUseBlock):
-            yield ToolUse(name=block.name[:200] or "?")
+            path = _tool_path(block.name, block.input, work_dir)
+            yield ToolUse(name=block.name[:200] or "?", path=path)
             yield Progress(label=tool_label(block.name))
 
 

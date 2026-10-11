@@ -1,0 +1,23 @@
+[
+ {
+  "id": "VB1b-login",
+  "title": "Đăng nhập chat-web evolu/thomas.tran, mở phòng Evolu team",
+  "ok": true
+ },
+ {
+  "id": "VB1b-pick",
+  "title": "Chọn quy trình !doc-nguon-claude từ nút Quy trình",
+  "ok": true
+ },
+ {
+  "id": "VB1b-form",
+  "title": "Form thông tin (inputs) hiện; điền và Bắt đầu",
+  "ok": true
+ },
+ {
+  "id": "VB1b-run",
+  "title": "Run được tạo và chạy tới trạng thái cuối",
+  "ok": false,
+  "err": "Error: run cuối: bc789012-949b-41dd-b02a-8d6a1cb18dfd|needs_decision"
+ }
+]

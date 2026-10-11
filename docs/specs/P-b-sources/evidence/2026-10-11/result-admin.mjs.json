@@ -1,0 +1,27 @@
+[
+ {
+  "id": "S1a",
+  "title": "platform_admin đăng nhập, mở trang Nguồn thấy ai-system-repo",
+  "ok": true
+ },
+ {
+  "id": "S1b",
+  "title": "platform_admin mở nguồn: thấy path /mnt/d/AI/ai-system",
+  "ok": true
+ },
+ {
+  "id": "S2a",
+  "title": "tenant_admin evolu: trang Nguồn thấy dòng nhưng KHÔNG thấy path",
+  "ok": true
+ },
+ {
+  "id": "S2b",
+  "title": "tenant_admin evolu: mở nguồn/menu — không có Sửa/Xoá, không lộ path",
+  "ok": true
+ },
+ {
+  "id": "S2c",
+  "title": "API GET /admin/sources cho tenant_admin không chứa path",
+  "ok": true
+ }
+]
