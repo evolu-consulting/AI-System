@@ -1,0 +1,14 @@
+import { chromium } from "file:///D:/AI/ai-system/node_modules/@playwright/test/index.mjs";
+const b=await chromium.launch(); const c=await b.newContext({locale:"vi-VN",viewport:{width:1366,height:800}}); const p=await c.newPage();
+const bad=[]; p.on("console",m=>{if(m.type()==="error")bad.push(m.text().slice(0,160))}); p.on("requestfailed",r=>bad.push("REQFAIL "+r.url()));
+await p.goto("http://localhost:3200/studio/login");
+await p.waitForTimeout(3000); await p.screenshot({path:"../studio/00-login.png"}); console.log(p.url(), (await p.locator("body").innerText()).slice(0,300));
+await p.getByRole("textbox",{name:"Company code"}).fill("platform");
+await p.getByRole("textbox",{name:"Username"}).fill("admin");
+await p.getByRole("textbox",{name:"Password"}).fill("1234567890");
+await p.getByRole("button",{name:"Sign in"}).click();
+await p.waitForTimeout(3000);
+console.log("url",p.url()); await p.screenshot({path:"../studio/01-after-login.png"});
+await p.goto("http://localhost:3200/studio/agents"); await p.waitForTimeout(3000);
+const t=await p.locator("body").innerText(); console.log("fixbug-engineer",t.includes("fixbug-engineer"),"fixbug-reviewer",t.includes("fixbug-reviewer"));
+await p.screenshot({path:"../studio/02-agents.png"}); console.log(bad.join("\n")); await b.close();
