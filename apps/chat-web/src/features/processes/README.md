@@ -35,3 +35,11 @@ Plan: `docs/specs/P-process-engine/plan-frontend*.md` (§9 Bước 0 · §10 s�
 | `usage/` | tab Token (`UsageTab`, KPI, bảng giai đoạn, bảng lượt gọi) — nhân đôi với admin-web (TECH-DEBT) |
 
 Cờ engine: Hub `HUB_PROCESS_ENGINE=on|off` (mặc định `off`; dev bật trong `.env.example`). FE dò bằng `shared/api.ts` `probeEngine`; off ⇒ không vẽ gì, route ⇒ "Không tìm thấy".
+
+## P-b · `inputs/` (form `!key`, HUB-FR-124, AC-H37)
+| File | Việc |
+|---|---|
+| `inputs/api.ts` | `useSourceChips` (`GET /process-runs/sources`, 60 s), `uploadInputFile` (H2c) |
+| `inputs/lib/{inputs-rules,inputs-store}.ts` | luật thuần (`needsForm`, `toRequestInputs`, `validateSourceRef`, `submitErrorKey`) · store mở form (promise) |
+| `inputs/components/{InputsForm,InputField,SourceRefField,InputsFormHost}.tsx` | hộp thoại + trường; host lười mount ở `AppShell` |
+| `composer/hooks/use-bang-submit.ts` | quy trình có `inputs` ⇒ mở form thay vì gửi ngay; xuất `useRunStarter(room, conv)(key, input, inputs?)` |

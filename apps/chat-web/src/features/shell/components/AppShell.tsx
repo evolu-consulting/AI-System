@@ -7,6 +7,7 @@ import { ConnectionBanner } from "~/components/shared/ConnectionBanner";
 import { Button } from "~/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "~/components/ui/sheet";
 import { useSessionRedirect } from "~/features/auth/hooks/use-session-redirect";
+import { useInputsRequest } from "~/features/processes/inputs/lib/inputs-store";
 import { useMeStream } from "~/features/realtime/hooks/use-me-stream";
 import { useSession } from "~/lib/auth/use-session";
 import { useConnection } from "../hooks/use-connection";
@@ -24,10 +25,18 @@ const NewGroupDialog = lazy(() =>
   })),
 );
 
+// P-b (AC-H37): form `!key` của quy trình có `inputs`; chunk chỉ nạp khi `intercept` mở form.
+const InputsFormHost = lazy(() =>
+  import("~/features/processes/inputs/components/InputsFormHost").then((m) => ({
+    default: m.InputsFormHost,
+  })),
+);
+
 const SEARCH_DEBOUNCE_MS = 250;
 
 export function AppShell() {
   const { t } = useTranslation();
+  const inputsOpen = useInputsRequest() !== null;
   const navigate = useNavigate();
   const desktop = useIsDesktop();
   const settings = useSettings();
@@ -123,6 +132,11 @@ export function AppShell() {
       {groupOpen && (
         <Suspense fallback={null}>
           <NewGroupDialog open={groupOpen} onOpenChange={setGroupOpen} />
+        </Suspense>
+      )}
+      {inputsOpen && (
+        <Suspense fallback={null}>
+          <InputsFormHost />
         </Suspense>
       )}
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} {...settings} />

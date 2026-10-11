@@ -6,6 +6,8 @@ export const processKeys = {
   /** Chuỗi `process.*` đã nạp cho ngôn ngữ `lng`. */
   locale: (lng: string) => ["process", "locale", lng] as const,
   catalog: ["process", "catalog"] as const,
+  /** P-b · chip nguồn (`GET /process-runs/sources`). */
+  sourceChips: ["process", "sourceChips"] as const,
   run: (id: string) => ["process", "run", id] as const,
   runs: (filter: string) => ["process", "runs", filter] as const,
   output: (outputId: string) => ["process", "output", outputId] as const,

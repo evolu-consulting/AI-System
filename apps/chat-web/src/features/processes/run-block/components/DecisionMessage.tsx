@@ -1,6 +1,7 @@
 // CHAT-AC-53 · plan-frontend-thread §3: tin `decision` — "Quy trình dừng ở giai đoạn …" + lý do; assignee/admin ⇒ DecisionCard, khác ⇒ TaskWaitingNote.
 import type { ProcessRunFullView } from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
+import { ReasonHint } from "../../shared/components/ReasonHint";
 import { TaskWaitingNote } from "../../shared/components/TaskWaitingNote";
 import { useThreadRun } from "../../shared/hooks/use-thread-run";
 import { reasonKey, reasonParams } from "../../shared/lib/decision-reason";
@@ -25,6 +26,7 @@ export function DecisionMessage({ part }: DecisionMessageProps) {
       <p className="text-caption text-secondary-foreground">
         {t(reasonKey(part.reason), reasonParams(part.reason))}
       </p>
+      <ReasonHint reason={part.reason} />
       {slot.state === "mine" && (
         <DecisionCard runId={runId} task={slot.task} view={view} embedded />
       )}

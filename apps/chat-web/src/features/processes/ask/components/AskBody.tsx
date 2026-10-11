@@ -19,9 +19,11 @@ type BodyProps = {
   /** Vắng ⇒ chip không bấm được (người chỉ xem). */
   onPick?: (choice: string) => void;
   disabled?: boolean;
+  /** P-b: mô tả nguồn theo key (`title` của chip). */
+  titles?: Readonly<Record<string, string>>;
 };
 
-export function AskBody({ question, choices, onPick, disabled }: BodyProps) {
+export function AskBody({ question, choices, onPick, disabled, titles }: BodyProps) {
   return (
     <>
       {question && <p className="whitespace-pre-wrap">{question}</p>}
@@ -30,6 +32,7 @@ export function AskBody({ question, choices, onPick, disabled }: BodyProps) {
           {choices.map((c) => (
             <button
               key={c}
+              title={titles?.[c]}
               type="button"
               disabled={disabled || !onPick}
               onClick={() => onPick?.(c)}

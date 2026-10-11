@@ -52,6 +52,8 @@
   "permission_lost": "The person who started the run no longer has access to this agent or process.",
   "user_inactive": "The starter's account is locked or inactive.",
   "interrupted": "The stage was interrupted (the run was stopped or the system restarted).",
+  "source_unresolvable": "Reference source could not be read",
+  "source_unresolvable_hint": "A source (Git repository, path or document) could not be read at start. Ask an administrator to check it, then choose how to proceed.",
   "validate": {
     "feedbackRequired": "Enter feedback before sending.",
     "tooLong": "At most {{max}} characters.",

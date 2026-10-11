@@ -7,6 +7,9 @@ import {
   type TaskForward,
 } from "@ai/contracts/chat";
 
+import type { ProcessSourceChip } from "@ai/contracts/hub-admin";
+import { SOURCE_KEY_RE } from "@ai/contracts/hub-admin";
+
 export { ANSWER_MAX, FORWARD_CHAIN_MAX, FORWARD_NOTE_MAX };
 
 /** Hub gộp nhiều câu thành "1. … 2. …" (≥ 2 dòng bắt đầu bằng số) ⇒ `multi`: chip chèn vào ô, không gửi ngay. */
@@ -77,4 +80,20 @@ export function hhmm(iso: string): string {
   const d = new Date(iso);
   const p = (n: number) => String(n).padStart(2, "0");
   return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/** P-b (C20): có lựa chọn nào mang dạng ký hiệu nguồn ⇒ mới đáng gọi `GET /process-runs/sources` (lười; "09/2026" thì không). */
+export const hasSourceKeyLike = (choices: readonly string[]): boolean =>
+  choices.some((c) => SOURCE_KEY_RE.test(c));
+
+/** Lựa chọn khớp `chip.key` ⇒ mô tả (làm `title` của chip); không khớp ⇒ vắng. Không lấy từ `ask.choices` của Hub. */
+export function chipDescriptions(
+  choices: readonly string[],
+  chips: readonly ProcessSourceChip[] | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const chip of chips ?? []) {
+    if (chip.description && choices.includes(chip.key)) out[chip.key] = chip.description;
+  }
+  return out;
 }

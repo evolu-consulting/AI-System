@@ -6,8 +6,10 @@ import {
   askErrorKey,
   askMode,
   canForward,
+  chipDescriptions,
   forwardedToMe,
   forwardsLeft,
+  hasSourceKeyLike,
   hhmm,
   lastForwardByMe,
   validateAnswer,
@@ -85,4 +87,20 @@ test("askErrorKey: mã -> khoá i18n; lạ => rtErr.unknown", () => {
 
 test("hhmm: HH:mm hai chữ số", () => {
   expect(hhmm(new Date(2026, 9, 10, 7, 5).toISOString())).toBe("07:05");
+});
+
+describe("chip nguồn (P-b · C20)", () => {
+  test("hasSourceKeyLike: chỉ khi có lựa chọn dạng ký hiệu", () => {
+    expect(hasSourceKeyLike(["09/2026", "10/2026"])).toBe(false);
+    expect(hasSourceKeyLike(["09/2026", "web-app"])).toBe(true);
+    expect(hasSourceKeyLike([])).toBe(false);
+  });
+  test("chipDescriptions: ghép mô tả theo key", () => {
+    const chips = [
+      { key: "web-app", kind: "git_remote" as const, description: "Kho web" },
+      { key: "docs", kind: "library" as const, description: "" },
+    ];
+    expect(chipDescriptions(["web-app", "docs", "khac"], chips)).toEqual({ "web-app": "Kho web" });
+    expect(chipDescriptions(["web-app"], undefined)).toEqual({});
+  });
 });

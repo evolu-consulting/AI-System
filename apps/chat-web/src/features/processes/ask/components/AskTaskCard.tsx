@@ -59,6 +59,7 @@ export function AskTaskCard({ runId, task, view, onResolved }: TaskCardProps) {
       <AskBody
         question={question}
         choices={task.choices ?? []}
+        titles={card.descriptions}
         onPick={(c) =>
           void run(async () => {
             await card.pick(c);

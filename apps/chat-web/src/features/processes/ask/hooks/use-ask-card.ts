@@ -1,9 +1,16 @@
 // CHAT-AC-57 · HUB-FR-110 · plan-frontend §4 + thread §5: logic của thẻ hỏi lại — gửi câu trả lời, chip, đưa composer thread sang chế độ Trả lời.
 import type { TaskDetail } from "@ai/contracts/chat";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useSourceChips } from "../../inputs/api";
 import { type ThreadBinding, useThreadBinding } from "../../shared/thread/thread-binding";
-import { askErrorKey, askMode, validateAnswer } from "../lib/ask-rules";
+import {
+  askErrorKey,
+  askMode,
+  chipDescriptions,
+  hasSourceKeyLike,
+  validateAnswer,
+} from "../lib/ask-rules";
 import { askToast } from "../lib/ask-toast";
 import { codeOf, isClosedError, useAnswerTask } from "./use-ask-actions";
 
@@ -33,6 +40,10 @@ export function useAskCard({ runId, task, agent, onInsert }: Opts) {
   const binding = useThreadBinding();
   const answer = useAnswerTask(runId, task.id);
   useUnbindOnClose(binding, task.id);
+  // P-b (FS-10): mô tả chip nguồn — chỉ gọi khi có lựa chọn dạng ký hiệu nguồn và thẻ còn mở.
+  const choices = task.choices ?? [];
+  const chips = useSourceChips(task.status === "open" && hasSourceKeyLike(choices));
+  const descriptions = useMemo(() => chipDescriptions(choices, chips.data), [choices, chips.data]);
 
   /** Gửi câu trả lời; reject (có thông điệp đã dịch) ⇒ nơi gọi hiện lỗi và giữ chữ. */
   const send = useCallback(
@@ -71,5 +82,5 @@ export function useAskCard({ runId, task, agent, onInsert }: Opts) {
     [binding, begin, onInsert, send, task.question],
   );
 
-  return { binding, send, begin, pick, pending: answer.isPending };
+  return { binding, send, begin, pick, descriptions, pending: answer.isPending };
 }

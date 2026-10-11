@@ -1,5 +1,7 @@
 // CHAT-AC-52 · chặn `!key …` ở composer Hỏi AI (FD4): `POST /process-runs` thay vì đường gửi run thường. Phòng đi đường gửi cũ (Hub xử lý).
-import { useQueryClient } from "@tanstack/react-query";
+
+import type { ProcessInputValue } from "@ai/contracts/hub-admin";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,9 +9,12 @@ import { toast } from "sonner";
 import type { SubmitResult } from "~/features/composer/hooks/use-send-error";
 import { isComposerError } from "~/features/composer/lib/send-error";
 import { ApiError, type ApiErrorCode } from "~/lib/http";
+import { needsForm } from "../../inputs/lib/inputs-rules";
+import { openInputsForm } from "../../inputs/lib/inputs-store";
 import { resolveEngineOn } from "../../shared/engine";
+import { processKeys } from "../../shared/keys";
 import type { EngineState } from "../../shared/types";
-import { startProcess } from "../api";
+import { type CatalogItem, fetchCatalog, startProcess } from "../api";
 import { classifyBang } from "../lib/bang";
 import { disarmProcessStart, isProcessStartArmed } from "../lib/bang-state";
 
@@ -34,20 +39,28 @@ export const PROCESS_NO_ATTACH_CODE = "PROCESS_ATTACH_UNSUPPORTED";
 
 const PASS: BangSubmit = { intercept: () => Promise.resolve("pass") };
 
-/** `POST /process-runs` cho một origin; phòng (▶)/Hỏi AI ⇒ toast có nút Mở, không origin ⇒ mở ngay. */
-function useRunStarter(roomId: string | null, convId: string | null) {
+/**
+ * `POST /process-runs` cho một origin; phòng (▶)/Hỏi AI ⇒ toast có nút Mở, không origin ⇒ mở ngay.
+ * P-b: có `inputs` (form `!key`) ⇒ mọi `ApiError` trả về cho form hiện trong hộp thoại (không toast).
+ */
+export function useRunStarter(roomId: string | null, convId: string | null) {
   const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   return useCallback(
-    async (key: string, input: string): Promise<SubmitResult> => {
+    async (key: string, input: string, inputs?: ProcessInputValue[]): Promise<SubmitResult> => {
       const origin = roomId
         ? ({ kind: "room", room_id: roomId } as const)
         : convId
           ? ({ kind: "conversation", conversation_id: convId } as const)
           : ({ kind: "none" } as const);
       try {
-        const created = await startProcess({ process_key: key, input, origin });
+        const created = await startProcess({
+          process_key: key,
+          input,
+          origin,
+          ...(inputs && inputs.length > 0 && { inputs }),
+        });
         const open = () => void router.navigate({ to: "/runs/$id", params: { id: created.id } });
         void queryClient.invalidateQueries({ queryKey: ["process", "runs"] });
         if (roomId || convId)
@@ -58,13 +71,28 @@ function useRunStarter(roomId: string | null, convId: string | null) {
         else open();
         return true;
       } catch (err) {
-        if (err instanceof ApiError && isComposerError(err)) return { ok: false, error: err };
+        if (err instanceof ApiError && (inputs || isComposerError(err)))
+          return { ok: false, error: err };
         toast.error(t("toast.sendFailed"));
         return false;
       }
     },
     [convId, roomId, queryClient, router, t],
   );
+}
+
+/** Tra catalog (dùng lại cache menu `!`); lỗi ⇒ `undefined` ⇒ đường gửi cũ (Hub báo `PROCESS_NOT_FOUND` nếu sai). */
+async function findCatalogItem(qc: QueryClient, key: string): Promise<CatalogItem | undefined> {
+  try {
+    const list = await qc.ensureQueryData({
+      queryKey: processKeys.catalog,
+      queryFn: ({ signal }) => fetchCatalog(signal),
+      staleTime: 60_000,
+    });
+    return (list.items as CatalogItem[]).find((i) => i.key === key);
+  } catch {
+    return undefined;
+  }
 }
 
 /** Quy trình chưa nhận tệp ⇒ lỗi client-side (`send-error.ts` đổi thành câu). */
@@ -99,9 +127,13 @@ export function useBangSubmit(origin: BangOrigin, state: EngineState): BangSubmi
         if (c.kind !== "run" || !armedForOrigin(kind)) return "pass";
         // Cờ còn `unknown` (vừa mở trang): chờ dò xong trước khi quyết — engine off ⇒ gửi thường (D2).
         if (state !== "on" && !(await resolveEngineOn(queryClient, lng))) return "pass";
-        if (attachmentIds && attachmentIds.length > 0) return attachErr();
-        return run(c.key, c.input);
+        if (attachmentIds?.length) return attachErr();
+        // P-b (AC-H37): quy trình có `inputs` ⇒ mở form (chờ kết quả: `true` composer xoá chữ, `false` giữ chữ).
+        const item = await findCatalogItem(queryClient, c.key);
+        return item && needsForm(item)
+          ? openInputsForm({ item, text: c.input, roomId, convId })
+          : run(c.key, c.input);
       },
     };
-  }, [state, kind, run, queryClient, lng]);
+  }, [state, kind, run, queryClient, lng, roomId, convId]);
 }

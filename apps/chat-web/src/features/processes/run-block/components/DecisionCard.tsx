@@ -17,6 +17,7 @@ import {
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { ApiError } from "~/lib/http";
+import { ReasonHint } from "../../shared/components/ReasonHint";
 import { reasonKey, reasonParams } from "../../shared/lib/decision-reason";
 import type { TaskCardProps } from "../../shared/types";
 import { useDecide } from "../hooks/use-decide";
@@ -68,6 +69,7 @@ export function DecisionCard({ runId, task, embedded }: TaskCardProps & { embedd
           {t(reasonKey(task.reason), reasonParams(task.reason))}
         </p>
       )}
+      {!embedded && task.reason && <ReasonHint reason={task.reason} />}
       <Textarea
         aria-label={t("process.run.decision.note")}
         value={note}

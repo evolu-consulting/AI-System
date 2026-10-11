@@ -54,6 +54,11 @@ export function RunActions({ run, tenantId }: Props) {
             })}
           </h2>
           <p className="text-body text-muted-foreground">{reasonText(t, run)}</p>
+          {d?.reason === "source_unresolvable" && (
+            <p className="text-caption text-muted-foreground">
+              {t("process.common.source_unresolvable_hint")}
+            </p>
+          )}
           {deciding ? (
             <>
               <div className="space-y-1.5">

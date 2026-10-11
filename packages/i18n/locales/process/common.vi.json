@@ -52,6 +52,8 @@
   "permission_lost": "Người bắt đầu không còn quyền dùng agent hoặc quy trình này.",
   "user_inactive": "Tài khoản người bắt đầu đã bị khoá hoặc ngừng hoạt động.",
   "interrupted": "Giai đoạn bị gián đoạn (lượt chạy bị dừng hoặc hệ thống khởi động lại).",
+  "source_unresolvable": "Không đọc được nguồn tham chiếu",
+  "source_unresolvable_hint": "Một nguồn (kho Git, đường dẫn hoặc tài liệu) không đọc được lúc bắt đầu. Nhờ quản trị viên kiểm tra nguồn, rồi chọn cách xử lý.",
   "validate": {
     "feedbackRequired": "Nhập góp ý trước khi gửi.",
     "tooLong": "Tối đa {{max}} ký tự.",
