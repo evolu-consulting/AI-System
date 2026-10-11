@@ -9,4 +9,4 @@ Nguồn tham chiếu của quy trình [ADM-FR-68, HUB-FR-120] (P-b1): kho Git c�
 - `hooks/`: `use-sources-view`/`use-sources-nav` (trang), `use-source-save` (POST/PUT + 409 → ConflictDialog), `use-source-check` (abort, 130 s), `use-source-delete` (BlockedDialog / ConfirmDialog), `use-library-doc-picker`.
 - `lib/`: `schemas` (validate, key i18n), `errors` (mã → câu tĩnh, không dùng `message` server), `source-view` (Đích/Trạng thái/dung lượng), có test cạnh file.
 - Chuỗi: `packages/i18n/locales/process/sources.{vi,en}.json` (`process.sources.*`), nạp cùng engine.
-- Chờ: route `GET /admin/sources/library-documents` (backend S3).
+- Route `GET /admin/sources/library-documents` đã có (backend S3) — `LibraryDocPicker` dùng `useLibraryDocs`.

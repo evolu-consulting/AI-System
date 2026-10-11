@@ -14,3 +14,13 @@ Quy trình trong Evolu Control: danh sách + editor + trang lượt chạy (ADM-
 | `components/` | `ProcessesTable`, `RunDialog`, `editor/`, `run/`, `usage/` (tab Token, nhân đôi với chat-web — TECH-DEBT) |
 | `hooks/`, `lib/` | state/logic (`use-def-save`, `use-run-data`…), `def-form`, `usage-view`, `errors` |
 | `api.ts`, `engine.ts` | gọi Hub duy nhất ở `api.ts`; cờ `HUB_PROCESS_ENGINE` dò bằng `probeEngine` (off ⇒ nav ẩn, route "Không tìm thấy") |
+
+## P-b · editor Nguồn / Đầu vào (ADM-FR-69, HUB-FR-124/125, CR-060)
+| File | Nội dung |
+|---|---|
+| `components/editor/SourcesCard`, `InputsCard`, `InputRow` | thẻ "Nguồn của quy trình" + "Thông tin đầu vào" (≤ `DEF_INPUTS_MAX`) |
+| `components/editor/StageSourcesField`, `StageMustKnow` | nguồn/allowlist (≤5) + "Điều phải biết" trong giai đoạn |
+| `lib/sources-form.ts` | map def⇄form cho `sources`/`inputs`/`stage.sources`/`must_know`; nối vào `def-form`/`use-draft`/`use-def-save` |
+| Schema | `ProcessInputDefSchema`… import từ barrel `@ai/contracts/hub-admin` (định nghĩa ở `sources.ts`) |
+| Chuỗi | `locales/process/admin.*`, `inputs.*` |
+

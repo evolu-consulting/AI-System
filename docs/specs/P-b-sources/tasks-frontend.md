@@ -5,6 +5,8 @@ Mỗi task một commit `feat(sources-web|processes-web): … [ADM-FR-68]` (mã 
 **Điều kiện mở BUILD:** backend-lead trả lời `plan-frontend.md` §9 điểm 1, 2 (chặn: thiếu `inputs` ở catalog ⇒ FS-8; thiếu endpoint tài liệu ⇒ FS-4 dùng ô UUID). Điểm 3–9 có mặc định, không chặn.
 
 ## P-b1 · Admin — trang Nguồn
+**Trạng thái (2026-10-11): FS-1…FS-11 [x] xong** — build admin/chat sạch, check:bundle OK, typecheck, i18n:check, `trace --check` OK.
+
 | # | Task | File | FR | Rủi ro | Đọc | e2e nhãn | Phụ thuộc |
 |---|---|---|---|---|---|---|---|
 | FS-1 | Nền: nav `sources` (cả 2 role, gắn cờ engine), route lười `/sources`, thêm phần i18n `sources`+`inputs` vào `PROCESS_LOCALE_PARTS` + loader + test, file `sources.{vi,en}.json` (§1–§3 i18n), `nav.sources`, README feature | `apps/admin-web/src/features/shell/lib/nav.ts` (+`nav.test.ts`), `apps/admin-web/src/routes/_authed/sources.tsx`, `packages/i18n/src/process-locales.ts` (+`.test.ts`), `packages/i18n/locales/process/sources.{vi,en}.json`, `inputs.{vi,en}.json`, `packages/i18n/src/locales.ts`, `apps/admin-web/src/features/sources/README.md` | ADM-FR-68 | thường | plan-fe FS1–FS2, §6 Nav; mẫu `secrets.tsx`, `nav.ts` | `link "Nguồn"` | — |
