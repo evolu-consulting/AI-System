@@ -487,7 +487,7 @@ e9e0e6db2ef2633083a79b2e331c1b0656275742f6feb2ebf30d76fdf46e212c  tests/acceptan
 91f8d50b49386cae091ad589b248d2ee125a96cab361ce701979ea8ba2d0c329  tests/acceptance/P-a/pf1/rules/template.test.ts
 73377bdefa1f748f8faa0a0f2938d2c8ea496f9590a410125d161a39f70345c5  tests/acceptance/P-a/pf1/stage.int.test.ts
 906fb821d23c3f71436aa6b68057448f4e42d4b1a5116a9d136213531f465c04  tests/acceptance/P-a/pf1/start.int.test.ts
-2b22d3f8ae43fe591a149a0d611b979411b0da35e1ae415ebcf4fa8c9986b1c6  tests/acceptance/P-a/pf1/team.int.test.ts
+e26605908e9db131a415d71918f45f451f2a6a9b4931fd031465ecd2e0e4610f  tests/acceptance/P-a/pf1/team.int.test.ts
 543740016ee7215ef4dfb3e9365065cd17cc1c68647ddc0f0edc770079b670e5  tests/acceptance/P-a/pf1/thread-loops.int.test.ts
 84eacfdd4391254515601eeab28483efd6fc86f1377a1c29d6767562b5b085fa  tests/acceptance/P-a/pf1/thread.int.test.ts
 7a7da17e405c094b7774b5eb11ee78c1dffd4fa4306990dbc348b3a5a15a2b2a  tests/acceptance/P-a/pf1/view.int.test.ts
@@ -519,7 +519,7 @@ eeff8e81411ac9890271ac70760a1c2dd6f8b3a0fbefa9aee87d558626e07692  tests/acceptan
 26144e8f1e1add0c98dfeaa94b62876d57de783360962bb034775c4933bb6fbb  tests/acceptance/P-a/step0/migration.int.test.ts
 4e02e5fe2717a92a204c4fbc7efd65d7e1428533e8ee71747f6c6e9c036b3ef5  tests/acceptance/P-a/step0/rls.int.test.ts
 233db66ef8c4d6b4441c96b6541252cc2aa80cc57a965e86a412e3a82ee2c7dc  tests/acceptance/P-a/step0/rules/bang.test.ts
-d2ef7247916665d434fb4f3ca21b587cf28f7e6a237dd04df543f7c8bdd2e8b2  tests/acceptance/P-a/step0/rules/contracts-pa.test.ts
+242f9f18fd1d12e693c05304143a088dec561cb88ae860d7225ecf571ec7b149  tests/acceptance/P-a/step0/rules/contracts-pa.test.ts
 e56e2605f3003a8e2a1610d7af47d099263b4d38a803b2abe756113d320ff814  tests/acceptance/P-a/step0/rules/def.test.ts
 b1623f719e3d4b946756cc9280a8a1b3f1f17e1a736b55d8df376acc36c9e8c7  tests/acceptance/P-a/step0/rules/limits.test.ts
 85ebe73a662bd6cad967c90e2b02561dc0f1de959be635656b343a45007090dc  tests/acceptance/P-a/step0/rules/process-state.test.ts

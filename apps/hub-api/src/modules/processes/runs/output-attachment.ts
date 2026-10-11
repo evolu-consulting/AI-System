@@ -10,7 +10,16 @@ import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
 import type { RunFile } from "../../attachments/run-files.rules";
 import { type Staged, storageKey } from "../../attachments/storage";
-import type { Ctx, Deps } from "./team-runner";
+import type { ProcessDeps } from "../core/ports";
+
+// Cục bộ (không import team-runner ⇒ tránh vòng no-circular): cùng dạng `Deps` của team-runner.
+type Deps = Omit<ProcessDeps, "launcher" | "start">;
+type Ctx = {
+  x: { jobId?: string | null; runId: string };
+  head: { tenant_id: string; started_by: string };
+  def: { name?: string; output: { filename: string } };
+  idx: number;
+};
 
 /** Blob output chờ ghi SAU COMMIT tx (store chỉ chạm một lần, ngoài vùng retry). */
 export type PendingBlob = { key: string; text: string };
@@ -87,35 +96,43 @@ export type DraftInput = {
 };
 
 /**
- * #133 · PB-R18 · ghi bản nháp ghép của nhóm thành `hub.attachments` THẬT (origin=output ⇒ `job_id` BẮT BUỘC —
+ * #133 · #135 · PB-R18 · ghi bản nháp ghép của nhóm thành `hub.attachments` THẬT (origin=output ⇒ `job_id` BẮT BUỘC —
  * `attachments_output_job_ck`; gắn job gần nhất của chính run ⇒ join `job_id→runs.process_run_id` khớp run này) + blob
  * trên kho, rồi trả `RunFile` id thật để thành viên kế tải được (200, sha khớp). Scope system (RLS T). `sha256`/`size` tính
- * thẳng từ `text` nên hàng khớp blob.
+ * thẳng từ `text` nên hàng khớp blob. Chưa có job (stage nhóm ở stage 0): trả `null` ⇒ KHÔNG có file nháp (tránh id nháp
+ * mồ côi ⇒ runtime thật tải 401/404 — #135); nháp v1 là template rỗng nên member đầu không cần đọc.
  */
-export async function persistDraft(d: Deps, p: DraftInput): Promise<RunFile> {
+export async function persistDraft(d: Deps, p: DraftInput): Promise<RunFile | null> {
   const size = Math.max(1, Buffer.byteLength(p.text, "utf8"));
   const id = crypto.randomUUID();
   const key = storageKey(p.tenantId, id);
   const sha = createHash("sha256").update(p.text, "utf8").digest("hex");
-  await withHubScope(d.db, { kind: "system" }, async (tx) => {
+  const saved = await withHubScope(d.db, { kind: "system" }, async (tx) => {
     const jobId = await lastJobOf(tx, p.runId);
-    if (!jobId) throw new Error("persistDraft: no job for process run");
+    // Chưa có job nào của run (nháp v1 của stage nhóm đầu tiên): `origin=output` cần `job_id` ⇒ không ghi hàng/blob.
+    if (!jobId) return false;
     await tx.execute(sql`insert into hub.attachments (id, tenant_id, user_id, origin, job_id, filename,
         safe_name, mime, size, sha256, storage_key)
       values (${id}, ${p.tenantId}, ${p.startedBy}, 'output', ${jobId}, ${p.name},
         ${safeName(p.name)}, 'text/markdown', ${size}, ${sha}, ${key})`);
+    return true;
   });
+  if (!saved) return null; // #135 · không có job ⇒ không có file (tránh id mồ côi)
   await commitOutputBlob(d, { key, text: p.text });
   return { id, name: p.name, mime: "text/markdown", size, sha256: sha };
 }
 
-/** #133 · persist nháp ghép rồi nối vào `priorFiles` (đã lọc run/tenant ở launcher) — dùng bởi `team-exec.draftFiles`. */
+/**
+ * #133 · #135 · persist nháp ghép rồi nối vào `priorFiles` (đã lọc run/tenant ở launcher) — dùng bởi `team-exec.draftFiles`.
+ * `persistDraft` trả `null` (chưa có job ⇒ id nháp sẽ mồ côi) ⇒ BỎ hẳn draft, chỉ trả `priorFiles` (không file nào gắn id
+ * dangling cho member đầu ⇒ runtime thật không gặp 401 — #135).
+ */
 export async function teamDraftFiles(
   d: Deps,
   p: DraftInput & { priorFiles: readonly RunFile[] },
 ): Promise<RunFile[]> {
   const draft = await persistDraft(d, p);
-  return [...p.priorFiles, draft];
+  return draft ? [...p.priorFiles, draft] : [...p.priorFiles];
 }
 
 /**

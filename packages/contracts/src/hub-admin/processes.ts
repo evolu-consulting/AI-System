@@ -177,12 +177,12 @@ export function processDefStagePaths(stages: readonly ProcessStageDef[]): string
 /** PB-R06 · stage.sources[].source_key phải ∈ def.sources — path `stages.<i>.sources.<j>.source_key` (R-C15/P-02). */
 export function processDefSourcePaths(d: {
   sources: readonly string[];
-  stages: readonly { sources: readonly StageSource[] }[];
+  stages: readonly { sources?: readonly StageSource[] }[];
 }): string[] {
   const declared = new Set(d.sources);
   const paths: string[] = [];
   d.stages.forEach((s, i) => {
-    s.sources.forEach((src, j) => {
+    (s.sources ?? []).forEach((src, j) => {
       if (!declared.has(src.source_key)) paths.push(`stages.${i}.sources.${j}.source_key`);
     });
   });

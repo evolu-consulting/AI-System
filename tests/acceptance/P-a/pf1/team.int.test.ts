@@ -126,7 +126,10 @@ describe("P1-30…P1-36 · stage nhóm [HUB-FR-114]", () => {
     for (const r of hubRuns) expect(r.team_run_id).toBe(tr?.id);
     for (const [k, j] of jobs.entries()) {
       const names = ((j.payload.attachments ?? []) as Json[]).map((a) => String(a.name));
-      expect(names.some((n) => n.includes(`-v${k + 1}-`))).toBe(true);
+      // Edge #135: stage nhóm đầu ở stage 0 chưa có job ⇒ member đầu không nhận nháp v1 (khởi tạo từ prompt);
+      // member k≥1 nhận nháp version k của member trước.
+      if (k === 0) expect(names).toEqual([]);
+      else expect(names.some((n) => n.includes(`-v${k + 1}-`))).toBe(true);
     }
     const out = (await outputs(c.sql, s.runId)).at(-1);
     expect(out?.template_ok).toBe(true);

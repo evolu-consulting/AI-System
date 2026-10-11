@@ -37,6 +37,7 @@
     "done:h3b": "bun --env-file=.env.local tools/scripts/src/done-h3b.ts",
     "done:h4a": "bun --env-file=.env.local tools/scripts/src/done-h4a.ts",
     "done:pa": "bun --env-file=.env.local tools/scripts/src/done-pa.ts",
+    "done:pb": "bun --env-file=.env.local tools/scripts/src/done-pb.ts",
     "done:x2a": "bun --env-file=.env.local tools/scripts/src/done-x2a.ts",
     "done:x2b": "bun --env-file=.env.local tools/scripts/src/done-x2b.ts",
     "done:x1": "bun --env-file=.env.local tools/scripts/src/done-x1.ts",

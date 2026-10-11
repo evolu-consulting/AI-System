@@ -38,7 +38,8 @@ export function inputOf(r: DefRow): ProcessDefInput {
     description: r.description,
     input_hint: r.input_hint,
     run_group_ids: r.run_group_ids,
-    stages: r.stages,
+    // Hàng P-a (JSONB trước CR-060) chưa có `stage.sources` ⇒ chuẩn hoá `[]` (contract default).
+    stages: r.stages.map((s) => ({ ...s, sources: s.sources ?? [], must_know: s.must_know ?? [] })),
     token_budget: r.token_budget,
     enabled: r.enabled,
     sources: r.sources,

@@ -159,7 +159,7 @@ describe("R-K01–K03 · hằng + mã lỗi [plan-contract §1, §4]", () => {
       "needs_decision",
     ]);
     expect([...(c.TEAM_MODES ?? [])]).toEqual(["sequential", "lead_plan", "parallel_merge"]);
-    expect([...(c.DECISION_REASONS ?? [])]).toHaveLength(14);
+    expect([...(c.DECISION_REASONS ?? [])]).toHaveLength(15);
     expect([...(c.DECISION_OPTIONS ?? [])]).toEqual(["add_attempt", "use_current", "cancel"]);
     expect([...(c.ROOM_PROCESS_KINDS ?? [])]).toEqual([
       "block",
