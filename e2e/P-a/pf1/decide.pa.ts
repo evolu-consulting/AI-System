@@ -61,7 +61,7 @@ test('HUB-BR-26 · CHAT-AC-58 · E-P7 · needs_decision: A (thread) và Adm (/ru
   }
 });
 
-test('CHAT-AC-58 · E-P7 · 6 run đang chạy (giới hạn 5/công ty) ⇒ alert "Công ty đang chạy tối đa 5 quy trình cùng lúc…" và nút Gửi khoá', async ({
+test('CHAT-AC-58 · E-P7 · 6 run đang chạy (giới hạn 5/công ty) ⇒ alert "Công ty đang chạy tối đa 5 quy trình cùng lúc… Hãy quyết định hoặc huỷ…" (Gửi không khoá)', async ({
   browser,
 }) => {
   const room = await mkRoom("EP7b");
@@ -72,10 +72,10 @@ test('CHAT-AC-58 · E-P7 · 6 run đang chạy (giới hạn 5/công ty) ⇒ ale
     await sendRoom(u.A, "!hoa-don-t HD-6");
     await expect(
       u.A.getByRole("alert").filter({
-        hasText: /Công ty đang chạy tối đa 5 quy trình cùng lúc\. Thử lại sau \d+ giây\./,
+        hasText:
+          "Công ty đang chạy tối đa 5 quy trình cùng lúc. Hãy quyết định hoặc huỷ một lượt đang chờ rồi thử lại.",
       }),
     ).toBeVisible();
-    await expect(u.A.getByRole("button", { name: "Gửi", exact: true })).toBeDisabled();
     await expect(roomBox(u.A)).toHaveValue("!hoa-don-t HD-6");
   } finally {
     await u.close();
