@@ -361,4 +361,11 @@ Mỗi lát: viết → "đỏ đúng lý do" (DB `qc`) → ghi vào mục "Kết
 ### Kết quả đỏ (điền ở BUILD)
 | Lát | File | Ca | Đỏ đúng lý do? |
 |---|---|---|---|
-| — | — | — | chưa viết code test |
+| **S4** | `pfs4/team-fix.int.test.ts` | TM-01, TM-02, TM-03, TM-04, TM-05 (#133) | ✓ ĐỎ đúng lý do: member tải nháp ghép `s1-v<k>-tai-lieu.md` = **401** (nháp `crypto.randomUUID()` không có hàng `hub.attachments`); thêm: payload member KHÔNG chứa O0 (`s0-v1-…`) nên TM-03 `ids ∌ O0` |
+| **S4** | `pfs4/team-fix.int.test.ts` | TM-06, TM-07, TM-08, TM-09, TM-10, TM-11, TM-12, TM-13, TM-14 (#134) | ✓ ĐỎ đúng lý do: log Hub `process-stage-failed PostgresError new row for relation "runs" violates check constraint "runs_error_code_ck"` ⇒ hub.runs stage + member kẹt `running` (stuckRunning=2, pm=3), process run không sang `needs_decision` (TM-13/14 kẹt ở chờ `needs_decision`) |
+| **S4** | `pfs4/team-fix.int.test.ts` | TM-15 | xanh trước code (hồi quy: stage agent đơn fail vẫn `needs_decision agent_failed` + mã hợp lệ) — giữ làm lưới an toàn khi sửa |
+| **S4** | `pfs4/ids.int.test.ts` | ID-05 (đối chứng output stage trước → process run khác cùng tenant, SQL tamper `process_outputs.attachment_id`) | ✓ ĐỎ đúng lý do: `payload.attachments` của job stage 1 vẫn chứa id của run khác (launcher.priorFiles không guard run) |
+| **S4** | `pfs4/ids.int.test.ts` | ID-01, ID-02, ID-03, ID-04, ID-06, ID-05 (tamper tenant beta; đối chứng không tamper) | xanh trước code — hồi quy khoá 401 một thân hiện có + RLS loại id tenant khác khỏi `files`; không phải ca đỏ-do-bug |
+| — | — | ID-07 (library acme → document beta) | KHÔNG ở S4: cần `hub.sources` (0021) ⇒ chuyển `pfs1`. RS-05 (ID-04 bản resolve) cũng ở `pfs1`. Log cảnh báo của ID-05 chỉ kiểm bằng unit guard (backend), không ở int |
+
+Chạy: `bun run db:test:create pb_pfs4` rồi `bun --env-file=.env.test-pb_pfs4.local --config=bunfig.int.toml test --timeout 60000 tests/acceptance/P-b/pfs4` ⇒ 8 pass / 15 fail (TM-01…14 + ID-05b đỏ; TM-15 + ID-01…04,05a,05c,06 xanh). Khoá `tests/.lock` sau S4: `pfs4/_local.ts`, `team-fix.int.test.ts`, `ids.int.test.ts`.

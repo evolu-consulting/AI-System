@@ -522,6 +522,9 @@ e564ac5b68a2675b8b5383cc008818799f547e29ff11d2e6febbe04723fe60f4  tests/acceptan
 4b4db708d297f033384b1d9a7f3623146967ae4e27a2774b45d461052d8ee83f  tests/acceptance/P-a/step0/thread-poster.int.test.ts
 b55fa55271aa881b6579e02b4b26635c07b34be141a476f398549a4997840c3c  tests/acceptance/P-a/step0/thread-read.int.test.ts
 70a5e4d358e2d49d336c181e0ad7238325d18c689e41e8af05236e0a5c043036  tests/acceptance/P-a/step0/thread-route.int.test.ts
+66444b01903698639ee933706b816a777ddca78ce37ad550b4afc489f1c27c56  tests/acceptance/P-b/pfs4/_local.ts
+0ab45d3ed3133cee7f704faa11ad0fbda447a027bd44db4e39540951a55c447c  tests/acceptance/P-b/pfs4/ids.int.test.ts
+53329d958e32158c4cff4c4b6c9730c9b40cab6f4656f444d68199ff25ad4e92  tests/acceptance/P-b/pfs4/team-fix.int.test.ts
 880673bcfa598d77984d040c64d405e8acf30ae6793e18fef4f35a8a5f6b50b1  tests/acceptance/X1/_modules.ts
 a3c8834cd8d0f154ff5eccb812ec7435fff0849a9d997ac2b8aea469ac177706  tests/acceptance/X1/_x1.ts
 034f5a531f2f8f47f362556105db1077bad03d4c0062cea0fffa66ae54ed2c87  tests/acceptance/X1/bundle-secret.test.ts
