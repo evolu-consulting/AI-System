@@ -540,6 +540,13 @@ efd3d53d23b3c4f7af1d12480d9a83014862147a5aabe9dcdd207f4e221ca3e0  tests/acceptan
 4ef9c2d730fe939092b0da5d08370ff4dd67bbe067c4eb0604093a70f9b36f46  tests/acceptance/P-b/pfs2/local.stack.test.ts
 57e72a2baf3b297348da68de8d600b2fd1b5f2980643464b8de3a28f7d31fef4  tests/acceptance/P-b/pfs2/snapshot.stack.test.ts
 ded64a300db2e9e3efd50980870deef3a1b1a50754fed15bb711c17c071ddc63  tests/acceptance/P-b/pfs2/ssrf.stack.test.ts
+aa898918e14322a5f7b810319d1df49148b8ff239357f63d538b182c6bfa4571  tests/acceptance/P-b/pfs3/_local.ts
+164acc55bdaac6126a29b7fa6ea9e5914c6617a4961237d7ab85b0cd4f782c6f  tests/acceptance/P-b/pfs3/catalog-library.int.test.ts
+75492e2027d3f7af9dd88c85592b7b6aabc82f4e42489e3a6825733dd3652619  tests/acceptance/P-b/pfs3/inputs.int.test.ts
+a65bb33c80c2ac5153983d4f2ddaa9087a71a137efedc5683fdc65881cceaf9e  tests/acceptance/P-b/pfs3/manifest-output.int.test.ts
+1e39210c352014bfcfeb0188a1d61a16bcf56a6f19a6db8a94ca7cf22ac14a7c  tests/acceptance/P-b/pfs3/rules/sources.rules.test.ts
+19803a9928b1769b689202989ebcc3136ead1ca504f49547e5b6d09c95ab510b  tests/acceptance/P-b/pfs3/sources-resolved.int.test.ts
+b6f3d419e1a8f7d7d5c8287f56e3deb1a643d9b73b0cccfb9e22a386856cf44e  tests/acceptance/P-b/pfs3/start-resolve.int.test.ts
 66444b01903698639ee933706b816a777ddca78ce37ad550b4afc489f1c27c56  tests/acceptance/P-b/pfs4/_local.ts
 0ab45d3ed3133cee7f704faa11ad0fbda447a027bd44db4e39540951a55c447c  tests/acceptance/P-b/pfs4/ids.int.test.ts
 53329d958e32158c4cff4c4b6c9730c9b40cab6f4656f444d68199ff25ad4e92  tests/acceptance/P-b/pfs4/team-fix.int.test.ts
