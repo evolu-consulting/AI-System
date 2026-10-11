@@ -59,6 +59,47 @@ class HistoryItem(BaseModel):
     content: Annotated[str, Field(max_length=64000)]
 
 
+class Pin(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["git_remote"]
+    url: Annotated[str, Field(max_length=2048)]
+    sha: Annotated[str, Field(pattern="^[0-9a-f]{40}$")]
+
+
+class Pin1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["local_path"]
+    path: Annotated[str, Field(max_length=1024)]
+    snapshot_id: UUID
+
+
+class Pin2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["library"]
+    document_id: UUID
+    version: UUID
+
+
+class AllowlistItem(RootModel[str]):
+    root: Annotated[str, Field(max_length=256, min_length=1)]
+
+
+class Source(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    key: Annotated[str, Field(pattern="^[a-z0-9-]{2,32}$")]
+    kind: Literal["git_remote", "local_path", "library"]
+    pin: Pin | Pin1 | Pin2
+    allowlist: Annotated[list[AllowlistItem], Field(max_length=20)]
+
+
 class RunEvent1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -370,6 +411,59 @@ class JobAttachment(BaseModel):
     sha256: Annotated[str, Field(pattern="^[0-9a-f]{64}$")]
 
 
+class Config(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["git_remote"]
+    url: Annotated[str, Field(max_length=2048)]
+    branch: Annotated[str, Field(max_length=255, min_length=1, pattern="^[^-]")]
+
+
+class Config1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["local_path"]
+    path: Annotated[str, Field(max_length=1024, min_length=1)]
+
+
+class Config2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["library"]
+    document_id: UUID
+
+
+class AllowlistUnionItem(RootModel[str]):
+    root: Annotated[str, Field(max_length=256, min_length=1)]
+
+
+class Item(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    source_id: UUID
+    key: Annotated[str, Field(pattern="^[a-z0-9-]{2,32}$")]
+    kind: Literal["git_remote", "local_path", "library"]
+    config: Config | Config1 | Config2
+    allowlist_union: Annotated[list[AllowlistUnionItem], Field(max_length=40)]
+
+
+class SourceResolveJob(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    v: Literal[1]
+    type: Literal["source.resolve"]
+    job_id: UUID
+    tenant_id: UUID
+    process_run_id: UUID | None
+    items: Annotated[list[Item], Field(max_length=20, min_length=1)]
+    timeout_s: Annotated[int, Field(ge=10, le=300)]
+
+
 class JobPayload1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -402,10 +496,11 @@ class JobPayload1(BaseModel):
     timeout_s: Annotated[int, Field(ge=10, le=3600)]
     stream: bool | None = None
     attachments: Annotated[list[JobAttachment] | None, Field(max_length=10)] = None
+    sources: Annotated[list[Source] | None, Field(max_length=5)] = None
 
 
-class JobPayload(RootModel[JobPayload1 | JobPayloadWorkflowAsync]):
-    root: JobPayload1 | JobPayloadWorkflowAsync
+class JobPayload(RootModel[JobPayload1 | JobPayloadWorkflowAsync | SourceResolveJob]):
+    root: JobPayload1 | JobPayloadWorkflowAsync | SourceResolveJob
 
 
 class Output(BaseModel):

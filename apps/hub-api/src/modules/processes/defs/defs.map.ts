@@ -41,6 +41,8 @@ export function inputOf(r: DefRow): ProcessDefInput {
     stages: r.stages,
     token_budget: r.token_budget,
     enabled: r.enabled,
+    sources: r.sources,
+    inputs: r.inputs,
   };
 }
 

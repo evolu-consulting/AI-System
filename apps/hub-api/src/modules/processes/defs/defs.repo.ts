@@ -1,6 +1,6 @@
 // HUB-FR-104 · ADM-FR-65 · HUB-BR-25 · SQL `hub.process_defs` (plan §2.1, D17). Cách ly tenant ở repo: mọi câu lọc
 // `tenant_id = T` hoặc `tenant_id IS NULL` (mẫu) — gọi trong tx scope `system` (`withConfigWrite`/đọc system).
-import type { ProcessDefInput } from "@ai/contracts/hub-admin";
+import type { ProcessDefInput, ProcessInputDef } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { DefScope, PageKey } from "./def.rules";
@@ -18,6 +18,8 @@ export type DefRow = {
   stages: ProcessDefInput["stages"];
   token_budget: number | null;
   enabled: boolean;
+  sources: string[];
+  inputs: ProcessInputDef[];
   source_template_id: string | null;
   version: number;
   created_at: string;
@@ -33,8 +35,9 @@ export type DefListRow = Pick<
 
 const iso = (col: SQL) => sql`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 const COLS = sql`d.id, d.tenant_id, d.key, d.name, d.description, d.input_hint, d.run_group_ids, d.stages,
-  d.token_budget, d.enabled, d.source_template_id, d.version, ${iso(sql`d.created_at`)} as created_at,
-  ${iso(sql`d.updated_at`)} as updated_at`;
+  d.token_budget, d.enabled, coalesce(d.sources, '[]'::jsonb) as sources,
+  coalesce(d.inputs, '[]'::jsonb) as inputs, d.source_template_id, d.version,
+  ${iso(sql`d.created_at`)} as created_at, ${iso(sql`d.updated_at`)} as updated_at`;
 
 const visible = (s: DefScope) =>
   s.tenantId === null
@@ -85,6 +88,18 @@ export async function keyTaken(
   return (r?.n ?? 0) > 0;
 }
 
+/** PB-R06 · key nguồn còn sống trong tenant (để báo SOURCE_NOT_FOUND khi def tham chiếu key lạ). */
+export async function liveSourceKeys(
+  tx: Tx,
+  tenantId: string | null,
+  keys: readonly string[],
+): Promise<Set<string>> {
+  if (tenantId === null || keys.length === 0) return new Set();
+  const rows = await tx.execute<{ key: string }>(sql`select key from hub.sources
+    where tenant_id = ${tenantId} and deleted_at is null and key = any(${`{${keys.join(",")}}`}::text[])`);
+  return new Set(rows.map((r) => r.key));
+}
+
 export type DefWrite = {
   tenantId: string | null;
   input: ProcessDefInput;
@@ -96,10 +111,11 @@ export async function insertDef(tx: Tx, w: DefWrite): Promise<DefRow> {
   const d = w.input;
   const [r] =
     await tx.execute<DefRow>(sql`with ins as (insert into hub.process_defs as d (tenant_id, key, name,
-      description, input_hint, run_group_ids, stages, token_budget, enabled, source_template_id, created_by, updated_by)
+      description, input_hint, run_group_ids, stages, token_budget, enabled, sources, inputs, source_template_id,
+      created_by, updated_by)
     values (${w.tenantId}, ${d.key}, ${d.name}, ${d.description}, ${d.input_hint}, ${pgUuids(d.run_group_ids)},
-      ${JSON.stringify(d.stages)}::jsonb, ${d.token_budget}, ${d.enabled}, ${w.sourceTemplateId}, ${w.actorId},
-      ${w.actorId})
+      ${JSON.stringify(d.stages)}::jsonb, ${d.token_budget}, ${d.enabled}, ${JSON.stringify(d.sources)}::jsonb,
+      ${JSON.stringify(d.inputs)}::jsonb, ${w.sourceTemplateId}, ${w.actorId}, ${w.actorId})
     returning *) select ${COLS} from ins d`);
   if (!r) throw new Error("insert process_defs không trả hàng");
   return r;
@@ -116,6 +132,7 @@ export async function updateDef(
     await tx.execute<DefRow>(sql`with up as (update hub.process_defs set key = ${d.key}, name = ${d.name},
       description = ${d.description}, input_hint = ${d.input_hint}, run_group_ids = ${pgUuids(d.run_group_ids)},
       stages = ${JSON.stringify(d.stages)}::jsonb, token_budget = ${d.token_budget}, enabled = ${d.enabled},
+      sources = ${JSON.stringify(d.sources)}::jsonb, inputs = ${JSON.stringify(d.inputs)}::jsonb,
       version = version + 1, updated_by = ${actorId}, updated_at = now()
     where id = ${id} returning *) select ${COLS} from up d`);
   if (!r) throw new Error("update process_defs không trả hàng");

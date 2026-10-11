@@ -2,6 +2,17 @@
 import { z } from "zod";
 import { ATTACH_MAX_BYTES, AttachMimeSchema } from "../common";
 import {
+  GlobSchema,
+  RESOLVE_ALLOWLIST_MAX,
+  RESOLVE_ITEMS_MAX,
+  SourceConfigSchema,
+  SourceKeySchema,
+  SourceKindSchema,
+  SourcePinSchema,
+  STAGE_ALLOWLIST_MAX,
+  STAGE_SOURCES_MAX,
+} from "../hub-admin/sources";
+import {
   AgentKeySchema,
   ALLOWED_TOOLS,
   AllowedToolSchema,
@@ -39,6 +50,15 @@ export type JobAttachment = z.infer<typeof JobAttachmentSchema>;
 
 /** null = mặc định của CLI. */
 const ModelSchema = z.string().min(1).max(100).nullable();
+
+/** P-b · nguồn chỉ-đọc gắn vào job stage `agent.cli` (PB-R10). */
+export const JobSourceSchema = z.strictObject({
+  key: SourceKeySchema,
+  kind: SourceKindSchema,
+  pin: SourcePinSchema,
+  allowlist: z.array(GlobSchema).max(STAGE_ALLOWLIST_MAX),
+});
+export type JobSource = z.infer<typeof JobSourceSchema>;
 
 export const ProfileStepSchema = z.strictObject({
   provider_key: AgentKeySchema,
@@ -96,11 +116,35 @@ export const AgentCliJobSchema = z.strictObject({
   stream: z.boolean().optional(),
   /** H2c F1: chỉ khi run có file (vắng = không file; Hub không ghi mảng rỗng). */
   attachments: z.array(JobAttachmentSchema).max(JOB_ATTACHMENTS_MAX).optional(),
+  /** P-b · nguồn tham chiếu chỉ-đọc (PB-R10): mount `work/<job_id>/sources/<key>/`; có nguồn ⇒ Hub ép R/G/G. */
+  sources: z.array(JobSourceSchema).max(STAGE_SOURCES_MAX).optional(),
 });
 export type AgentCliJob = z.infer<typeof AgentCliJobSchema>;
+
+// ── P-b · kênh resolve nguồn (D4): job `source.resolve`, Runtime dựng snapshot → `/sources-resolved` ──────────────────
+export const ResolveItemSchema = z.strictObject({
+  source_id: HubUuidSchema,
+  key: SourceKeySchema,
+  kind: SourceKindSchema,
+  config: SourceConfigSchema,
+  allowlist_union: z.array(GlobSchema).max(RESOLVE_ALLOWLIST_MAX),
+});
+export type ResolveItem = z.infer<typeof ResolveItemSchema>;
+
+export const SourceResolveJobSchema = z.strictObject({
+  v: VersionSchema,
+  type: z.literal("source.resolve"),
+  job_id: HubUuidSchema,
+  tenant_id: HubUuidSchema,
+  process_run_id: HubUuidSchema.nullable(),
+  items: z.array(ResolveItemSchema).min(1).max(RESOLVE_ITEMS_MAX),
+  timeout_s: z.number().int().min(10).max(300),
+});
+export type SourceResolveJob = z.infer<typeof SourceResolveJobSchema>;
 
 export const JobPayloadSchema = z.discriminatedUnion("type", [
   AgentCliJobSchema,
   WorkflowAsyncJobSchema,
+  SourceResolveJobSchema,
 ]);
 export type JobPayload = z.infer<typeof JobPayloadSchema>;

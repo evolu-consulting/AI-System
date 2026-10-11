@@ -4,4 +4,5 @@ export * from "./attachments";
 export * from "./credential";
 export * from "./errors";
 export * from "./mcp";
+export * from "./sources";
 export * from "./test-run";

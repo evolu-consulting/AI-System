@@ -157,6 +157,8 @@ function stageToInput(s: StageDraft): ProcessStageDef {
           : { kind: "starter" },
     timeout_s: Number(s.timeout),
     token_budget: intOrNull(s.budget),
+    sources: [],
+    must_know: [],
   };
 }
 
@@ -171,6 +173,8 @@ export function toInput(d: DefDraft): ProcessDefInput {
     stages: d.stages.map(stageToInput),
     token_budget: intOrNull(d.budget),
     enabled: d.enabled,
+    sources: [],
+    inputs: [],
   };
 }
 
@@ -284,6 +288,8 @@ export function defToInput(d: ProcessDef): ProcessDefInput {
     stages: d.stages,
     token_budget: d.token_budget,
     enabled: d.enabled,
+    sources: d.sources,
+    inputs: d.inputs,
   };
 }
 

@@ -522,7 +522,7 @@ e564ac5b68a2675b8b5383cc008818799f547e29ff11d2e6febbe04723fe60f4  tests/acceptan
 4b4db708d297f033384b1d9a7f3623146967ae4e27a2774b45d461052d8ee83f  tests/acceptance/P-a/step0/thread-poster.int.test.ts
 b55fa55271aa881b6579e02b4b26635c07b34be141a476f398549a4997840c3c  tests/acceptance/P-a/step0/thread-read.int.test.ts
 70a5e4d358e2d49d336c181e0ad7238325d18c689e41e8af05236e0a5c043036  tests/acceptance/P-a/step0/thread-route.int.test.ts
-4d6aa6fef8e7e147c3b9a08d9111a008a811a29724dc2b2f74ad27902dc2873e  tests/acceptance/P-b/pfs1/_local.ts
+0a37acb294fbf75f9f9556f752f8a2eb42ad7a5fb18e68722fcd78a849ced401  tests/acceptance/P-b/pfs1/_local.ts
 978124a5d6e9f87169e180b1113da1e8ec04448a178a0b68072b898badf4d9f4  tests/acceptance/P-b/pfs1/check.int.test.ts
 f929c8dae17e56a81dfb5cfba86177623449e13a8944c98ab70875e38a9b34bd  tests/acceptance/P-b/pfs1/process-def.int.test.ts
 445e68c880b9f0e9c06de8e82db52a262e1febb0256fd9b9542857100b935e04  tests/acceptance/P-b/pfs1/rules/contracts.test.ts

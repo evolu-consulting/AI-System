@@ -103,6 +103,7 @@ export const DECISION_REASONS = [
   "permission_lost",
   "user_inactive",
   "interrupted",
+  "source_unresolvable",
 ] as const;
 export const DECISION_OPTIONS = ["add_attempt", "use_current", "cancel"] as const;
 export const NOTICE_KINDS = [

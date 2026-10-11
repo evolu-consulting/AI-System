@@ -54,6 +54,7 @@ import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
 import { type RunDriver, RunService } from "./modules/runs/runs.service";
 import { traceRoutes } from "./modules/runs/trace/trace.routes";
 import { TraceService } from "./modules/runs/trace/trace.service";
+import { mountSources, SOURCE_PROTECTED_PREFIXES } from "./modules/sources/sources.mount";
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
 export type AppVars = {
@@ -100,6 +101,8 @@ export type AppDeps = {
   studioDist?: string; // H4a · = `HUB_STUDIO_DIST` (dist Studio; vắng ⇒ `/studio` 404, P12).
   /** P-a D15 · = `HUB_PROCESS_ENGINE==="on"`; vắng ⇒ false (không mount route quy trình, `!` là chữ thường). */
   processEngine?: boolean;
+  /** P-b C13 · = `HUB_SOURCE_CHECK_TIMEOUT_MS`; "Kiểm tra kết nối" chờ Runtime resolve (mặc định 60000). */
+  sourceCheckTimeoutMs?: number;
 } & ProcessSeams;
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -115,6 +118,7 @@ const PROTECTED_PREFIXES = [
   "/studio/api",
   ...X2A_PROTECTED_PREFIXES,
   ...PROCESS_PROTECTED_PREFIXES,
+  ...SOURCE_PROTECTED_PREFIXES,
 ];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -218,6 +222,8 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     "/runs",
     traceRoutes(new TraceService({ db: deps.db, audit: deps.hubAudit ?? dbHubAudit })),
   );
+  // P-b · nguồn: mount TRƯỚC module quy trình để `/process-runs/sources` không bị `/process-runs/:id` nuốt.
+  mountSources(app, { db: deps.db, sourceCheckTimeoutMs: deps.sourceCheckTimeoutMs });
   if (!deps.redis || !config || !h2a || !h2b) {
     app.route("/conversations", conversationRoutes(deps.db));
     return;

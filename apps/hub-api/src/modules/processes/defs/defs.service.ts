@@ -16,6 +16,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { validationError } from "../../../lib/http";
 import { dbHubAudit } from "../../../lib/hub-audit";
+import { sourceError } from "../../sources/sources.errors";
 import { type StudioAudit, withConfigWrite } from "../../studio/studio-write";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
@@ -100,9 +101,17 @@ export class DefsService {
     });
   }
 
-  /** Kiểm định nghĩa theo tham chiếu của tenant đích (mẫu: agent/nhóm đang bật, không Group/user). */
+  /** Kiểm định nghĩa theo tham chiếu của tenant đích (mẫu: agent/nhóm đang bật, không Group/user) + nguồn còn sống. */
   async #check(tx: Tx, tenantId: string | null, input: ProcessDefInput): Promise<void> {
     throwIfInvalid(validateProcessDef(input, await loadDefRefs(tx, tenantId)));
+    await this.#checkSources(tx, tenantId, input.sources);
+  }
+
+  /** PB-R06 · mọi key trong `def.sources` phải là nguồn còn sống của tenant; lạ/khác tenant ⇒ 404 SOURCE_NOT_FOUND. */
+  async #checkSources(tx: Tx, tenantId: string | null, keys: readonly string[]): Promise<void> {
+    if (keys.length === 0) return;
+    const live = await repo.liveSourceKeys(tx, tenantId, keys);
+    if (keys.some((k) => !live.has(k))) throw sourceError("SOURCE_NOT_FOUND");
   }
 
   async #keyFree(tx: Tx, tenantId: string | null, key: string, exceptId?: string): Promise<void> {
@@ -185,6 +194,7 @@ export class DefsService {
       const tpl = await repo.readDef(tx, s, id);
       if (!tpl || tpl.tenant_id !== null) throw appError("NOT_FOUND");
       const input = copyFromTemplate(inputOf(tpl), b);
+      await this.#checkSources(tx, tenantId, input.sources);
       await this.#keyFree(tx, tenantId, input.key);
       const row = await repo.insertDef(tx, {
         tenantId,

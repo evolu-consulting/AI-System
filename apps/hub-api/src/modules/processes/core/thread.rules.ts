@@ -41,6 +41,10 @@ const REASON: Record<DecisionReason, { vi: string; en: string }> = {
   permission_lost: { vi: "người bắt đầu mất quyền", en: "starter lost permission" },
   user_inactive: { vi: "người bắt đầu bị khoá", en: "starter account inactive" },
   interrupted: { vi: "giai đoạn bị gián đoạn", en: "stage interrupted" },
+  source_unresolvable: {
+    vi: "không lấy được nguồn tham chiếu",
+    en: "source could not be resolved",
+  },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);

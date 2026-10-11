@@ -1,6 +1,10 @@
 // ADM-FR-65 · ADM-FR-66 · HUB-FR-104 · HUB-FR-109 · N1 · R-DF01…R-DF04 · luật thuần định nghĩa quy trình (plan-contract §6–§7).
 // Thứ tự lỗi: INVALID (luật chéo stage) → REF_INVALID (stage lỗi đầu tiên) → INCOMPLETE (bật mà review thiếu Group).
-import { type ProcessDefInput, processDefStagePaths } from "@ai/contracts/hub-admin";
+import {
+  type ProcessDefInput,
+  processDefSourcePaths,
+  processDefStagePaths,
+} from "@ai/contracts/hub-admin";
 
 export type DefRefs = {
   agentIds: ReadonlySet<string>;
@@ -8,7 +12,7 @@ export type DefRefs = {
   groupIds: ReadonlySet<string>;
   userIds: ReadonlySet<string>;
 };
-export type RefKind = "agent" | "team" | "group" | "user";
+export type RefKind = "agent" | "team" | "group" | "user" | "source";
 export type DefCheck =
   | { ok: true }
   | { ok: false; code: "PROCESS_DEF_INVALID" | "PROCESS_DEF_INCOMPLETE"; paths: string[] }
@@ -51,6 +55,9 @@ export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck 
     const miss = stageRefMiss(s, i, refs);
     if (miss) return { ok: false, code: "PROCESS_REF_INVALID", ...miss };
   }
+  // PB-R06 · stage.sources[].source_key phải ∈ def.sources (path stages.<i>.sources.<j>.source_key).
+  const [srcPath] = processDefSourcePaths(d);
+  if (srcPath) return { ok: false, code: "PROCESS_REF_INVALID", path: srcPath, ref: "source" };
   const rg = runGroupMiss(d, refs);
   if (rg) return { ok: false, code: "PROCESS_REF_INVALID", ...rg };
   if (!d.enabled) return { ok: true };

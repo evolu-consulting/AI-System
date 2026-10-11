@@ -13,6 +13,15 @@ import {
   TeamModeSchema,
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
+import {
+  BranchSchema,
+  DEF_SOURCES_MAX,
+  GlobSchema,
+  SourceKeySchema,
+  SourceKindSchema,
+  STAGE_ALLOWLIST_MAX,
+  STAGE_SOURCES_MAX,
+} from "./sources";
 
 export * from "../chat/processes";
 export {
@@ -29,6 +38,7 @@ export {
   type ProcessRunView,
   ProcessRunViewSchema,
 } from "../chat/processes-entities";
+export * from "./sources";
 
 export const HUB_ADMIN_PROCESS_ERRORS = {
   PROCESS_KEY_TAKEN: 409,
@@ -39,7 +49,7 @@ export const HUB_ADMIN_PROCESS_ERRORS = {
 } as const;
 export type HubAdminProcessErrorCode = keyof typeof HUB_ADMIN_PROCESS_ERRORS;
 export const PROCESS_DEF_PATHS_MAX = 20;
-export const PROCESS_REF_KINDS = ["agent", "team", "group", "user"] as const;
+export const PROCESS_REF_KINDS = ["agent", "team", "group", "user", "source"] as const;
 /** `PROCESS_DEF_INVALID` / `PROCESS_DEF_INCOMPLETE`; path dạng `stages.<i>.<trường>`. */
 export const ProcessDefPathsDetailsSchema = z.strictObject({
   paths: z.array(z.string().min(1)).max(PROCESS_DEF_PATHS_MAX),
@@ -60,6 +70,71 @@ export const FIELD_KEY_RE = /^[a-z][a-z0-9_]{0,31}$/;
 export const STAGE_KEY_RE = /^[a-z0-9-]{1,32}$/;
 
 const NameSchema = z.string().trim().min(1).max(PROCESS_NAME_MAX);
+
+// ── Nguồn tham chiếu + đầu vào (P-b · HUB-FR-121/124 · PB-R06/R13) ──────────────────────────────────────────────────
+export const DEF_INPUTS_MAX = 10;
+export const MUST_KNOW_MAX = 10;
+export const MUST_KNOW_LEN = 200;
+export const INPUT_LABEL_MAX = 80;
+export const INPUT_OPTIONS_MAX = 20;
+export const INPUT_OPTION_LEN = 200;
+export const INPUT_TYPES = ["text", "select", "file", "source_ref"] as const;
+
+/** HUB-FR-124 · khai báo đầu vào quy trình; `options` chỉ cho `select`. */
+export const ProcessInputDefSchema = z
+  .strictObject({
+    key: SourceKeySchema,
+    label: z.string().trim().min(1).max(INPUT_LABEL_MAX),
+    type: z.enum(INPUT_TYPES),
+    required: z.boolean(),
+    options: z.array(z.string().min(1).max(INPUT_OPTION_LEN)).max(INPUT_OPTIONS_MAX).optional(),
+  })
+  .superRefine((d, ctx) => {
+    if (d.options !== undefined && d.type !== "select")
+      ctx.addIssue({ code: "custom", path: ["options"], message: "options only for select" });
+  });
+export type ProcessInputDef = z.infer<typeof ProcessInputDefSchema>;
+
+/** PB-R06 · stage chọn tập con nguồn + allowlist glob. */
+export const StageSourceSchema = z.strictObject({
+  source_key: SourceKeySchema,
+  allowlist: z.array(GlobSchema).max(STAGE_ALLOWLIST_MAX).default([]),
+});
+export type StageSource = z.infer<typeof StageSourceSchema>;
+
+/** PB-R13 · giá trị đầu vào lúc start (disc theo `type`). */
+export const ProcessInputValueSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("text"),
+    key: SourceKeySchema,
+    text: z.string().max(PROCESS_INPUT_MAX),
+  }),
+  z.strictObject({
+    type: z.literal("select"),
+    key: SourceKeySchema,
+    value: z.string().max(INPUT_OPTION_LEN),
+  }),
+  z.strictObject({ type: z.literal("file"), key: SourceKeySchema, attachment_id: UuidSchema }),
+  z.strictObject({
+    type: z.literal("source_ref"),
+    key: SourceKeySchema,
+    source_key: SourceKeySchema,
+    branch: BranchSchema,
+  }),
+]);
+export type ProcessInputValue = z.infer<typeof ProcessInputValueSchema>;
+
+/** C4 · chip nguồn cho user thường (`GET /process-runs/sources`); KHÔNG config/url/path. */
+export const ProcessSourceChipSchema = z.strictObject({
+  key: SourceKeySchema,
+  kind: SourceKindSchema,
+  description: z.string().max(PROCESS_DESC_MAX),
+  default_branch: BranchSchema.optional(),
+});
+export type ProcessSourceChip = z.infer<typeof ProcessSourceChipSchema>;
+export const ProcessSourceChipListResponseSchema = z.strictObject({
+  items: z.array(ProcessSourceChipSchema).max(200),
+});
 
 export const ProcessStageDefSchema = z.strictObject({
   key: z.string().regex(STAGE_KEY_RE),
@@ -103,6 +178,8 @@ export const ProcessStageDefSchema = z.strictObject({
     .max(STAGE_TIMEOUT_S.max)
     .default(STAGE_TIMEOUT_S.default),
   token_budget: z.number().int().min(STAGE_TOKEN_BUDGET.min).max(STAGE_TOKEN_BUDGET.max).nullable(),
+  sources: z.array(StageSourceSchema).max(STAGE_SOURCES_MAX).default([]),
+  must_know: z.array(z.string().trim().min(1).max(MUST_KNOW_LEN)).max(MUST_KNOW_MAX).default([]),
 });
 export type ProcessStageDef = z.infer<typeof ProcessStageDefSchema>;
 
@@ -116,6 +193,8 @@ export const ProcessDefInputBaseSchema = z.strictObject({
   stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_MAX),
   token_budget: z.number().int().min(STAGE_TOKEN_BUDGET.min).nullable(),
   enabled: z.boolean(),
+  sources: z.array(SourceKeySchema).max(DEF_SOURCES_MAX).default([]),
+  inputs: z.array(ProcessInputDefSchema).max(DEF_INPUTS_MAX).default([]),
 });
 
 /** Đường dẫn vi phạm luật chéo stage (key trùng; `real_action` ở stage 0 / sau stage `auto`) — dùng chung với def.rules. */
@@ -132,10 +211,28 @@ export function processDefStagePaths(stages: readonly ProcessStageDef[]): string
   return paths;
 }
 
-/** Hình dạng + luật chéo stage (R-K08). */
+/** PB-R06 · stage.sources[].source_key phải ∈ def.sources — path `stages.<i>.sources.<j>.source_key` (R-C15/P-02). */
+export function processDefSourcePaths(d: {
+  sources: readonly string[];
+  stages: readonly { sources: readonly StageSource[] }[];
+}): string[] {
+  const declared = new Set(d.sources);
+  const paths: string[] = [];
+  d.stages.forEach((s, i) => {
+    s.sources.forEach((src, j) => {
+      if (!declared.has(src.source_key)) paths.push(`stages.${i}.sources.${j}.source_key`);
+    });
+  });
+  return paths;
+}
+
+/** Hình dạng + luật chéo stage (R-K08) + tham chiếu nguồn (R-C15). */
 export const ProcessDefInputSchema = ProcessDefInputBaseSchema.superRefine((d, ctx) => {
   for (const p of processDefStagePaths(d.stages)) {
     ctx.addIssue({ code: "custom", path: p.split("."), message: "invalid stage" });
+  }
+  for (const p of processDefSourcePaths(d)) {
+    ctx.addIssue({ code: "custom", path: p.split("."), message: "unknown source_key" });
   }
 });
 export type ProcessDefInput = z.infer<typeof ProcessDefInputBaseSchema>;
@@ -164,6 +261,7 @@ export type CopyProcessDefRequest = z.infer<typeof CopyProcessDefRequestSchema>;
 
 export const RunProcessDefRequestSchema = z.strictObject({
   input: z.string().trim().max(PROCESS_INPUT_MAX),
+  inputs: z.array(ProcessInputValueSchema).max(DEF_INPUTS_MAX).optional(),
 });
 export type RunProcessDefRequest = z.infer<typeof RunProcessDefRequestSchema>;
 

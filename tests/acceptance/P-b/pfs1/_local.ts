@@ -304,7 +304,7 @@ export async function postResolved(
 export async function resetPfs1(sql: Sql): Promise<void> {
   for (const h of [...active]) await h.stop(); // stub còn sót vì ca đỏ giữa chừng
   await sql`delete from hub.jobs where payload->>'type' = 'source.resolve'`;
-  await sql`delete from hub.process_defs where key like 'pbx-%'`;
+  await sql`delete from hub.process_defs where key like 'pbx-%' or key = 'p-src'`;
   const t = await sql`select to_regclass('hub.sources') as r`;
   if (t[0]?.r) await sql`delete from hub.sources`;
 }
