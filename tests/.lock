@@ -466,6 +466,7 @@ bf0d1071cde92e5bdef2dc69beed3da9f1be82c763b5d81ebec01d44840fed28  tests/acceptan
 4f538961e8540a2c6ff07614203b25a9ae00a22f95e46075e8b5e7eb536a7a4c  tests/acceptance/P-a/_support/parts.ts
 8ad80a2a648762b9c14cabc3a5935ecdccb2ef7b8fcb67b120919557ea6acd9e  tests/acceptance/P-a/_support/process-fixtures.ts
 304f8a40b48aaf9c1c60f23ba4b66a4a49d30b8828fff1d72b4a612c4e11b1c6  tests/acceptance/P-a/_support/schema.ts
+683eb9d1cf366bea84b27a0a711710a33762847254092cd2d397963b65b96c93  tests/acceptance/P-a/outblob/output-blob.int.test.ts
 9b9e750ba28cf87f289cd2805edbd9df9e0fd1f63cf94e35649a72627a1c9d54  tests/acceptance/P-a/pf1/_local.ts
 b60dc49fee1e492a4b6d023b5260796247ed96abdb99c95130a9710571713d91  tests/acceptance/P-a/pf1/ask-open.int.test.ts
 16ee3c55659fcf73f72dcc44e2d2865733ea68a2cfc2d806f266924d8a956c90  tests/acceptance/P-a/pf1/gates.int.test.ts
