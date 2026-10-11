@@ -50,6 +50,7 @@ class ResultMeta:
 
     session_resumed: bool = False  # WRK-FR-14
     outputs: tuple[str, ...] = ()  # H2c R25: id file `out/` Hub đã nhận
+    source_reads: tuple[dict[str, Any], ...] = ()  # P-b PF-S3 C18: audit nguồn (top-level)
 
 
 ORPHANED = Failure("failed", "INTERNAL_ERROR", "orphaned", "job orphaned (worker stopped)")
@@ -123,6 +124,8 @@ class RunEvents:
         }
         if m.outputs:
             body["outputs"] = list(m.outputs)
+        if m.source_reads:  # PF-S3 C18: top-level (không lồng `output`) — khớp `RunEvent3`
+            body["source_reads"] = list(m.source_reads)
         await self._publish(job.run_id, self._next(job.id), body)
         self._seq.pop(job.id, None)
 

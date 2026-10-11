@@ -119,6 +119,9 @@ class Verdict:
     session_resumed: bool = False  # `job.result.session_resumed` (WRK-FR-14)
     outputs: tuple[str, ...] = ()  # H2c R25: id file `out/` Hub đã nhận (≤ 5, lần claim hiện hành)
     warning: QuotaWarning | None = None  # H3a R03: `NOTE_WARNING` trong "Kết thúc"
+    # P-b PF-S3 · C18: audit nguồn — mang tới `job.result` TOP-LEVEL (không lồng trong `output`;
+    # `output` phải khớp `JobOutput`/pydantic `Output` dùng `extra="forbid"`).
+    source_reads: tuple[dict[str, Any], ...] = ()
 
     def finish(self) -> Finish:
         f = self.failure

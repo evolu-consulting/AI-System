@@ -539,7 +539,7 @@ f929c8dae17e56a81dfb5cfba86177623449e13a8944c98ab70875e38a9b34bd  tests/acceptan
 aa20381f7557f64286e97e3a51dbca9318f16d7f6a79e49128c9d9e1616424e6  tests/acceptance/P-b/pfs1/sources-authz.int.test.ts
 8f330454c3ec2d055b9c7118ad65cba7c85647cf5976e34d5adfe3a68b546b89  tests/acceptance/P-b/pfs1/sources-crud.int.test.ts
 a73502344106421f0f358ee1543b7f8f4a03f5a8b506708fd22053732728f6ee  tests/acceptance/P-b/pfs1/sources-db.int.test.ts
-c28a98edd9a5f098463aaffb00ed4e72c60334d2f8e2771aec3c40510df25715  tests/acceptance/P-b/pfs2/audit.stack.test.ts
+9e38c5167101b997a17a3bf4f0d459908a03b06286e3d484be67b629900307d2  tests/acceptance/P-b/pfs2/audit.stack.test.ts
 0c6b492325bc13542fa290f8086342965f6b8251c65492c109d908e977816162  tests/acceptance/P-b/pfs2/cache-lru.stack.test.ts
 1f78b30acf8efd94be0395ac534c40d956b62c8f2ce1ea714ce28f3819a17400  tests/acceptance/P-b/pfs2/cache.stack.test.ts
 34d826638d08863c24f78a3ce901241e7d468201d282d9ce04a910306b931eab  tests/acceptance/P-b/pfs2/inject.stack.test.ts

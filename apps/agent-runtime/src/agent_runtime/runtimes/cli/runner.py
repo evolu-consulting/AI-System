@@ -137,7 +137,7 @@ class CliJobHost:
             self.events.forget(job.id)
             return
         if f is None:
-            meta = ResultMeta(v.session_resumed, v.outputs)
+            meta = ResultMeta(v.session_resumed, v.outputs, v.source_reads)
             await self.events.result(job, v.output or {}, tokens, meta)
         else:
             await self.events.failed(job.id, job.run_id, f, tokens)

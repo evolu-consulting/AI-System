@@ -285,7 +285,10 @@ class JobRun:
         else:
             v = decide_exit(self.payload, self.seen, self.cfg.cooldown_default_s)
             if v.failure is None and v.output is not None and self.payload.sources:
-                v.output["source_reads"] = source_reads(self.payload.sources, self.seen.read_paths)
+                # PF-S3 fix: KHÔNG lồng vào `v.output` (pydantic `Output` `extra="forbid"` → event
+                # job.result rớt validate, không XADD). Mang qua `Verdict` → `job.result` top-level.
+                reads = source_reads(self.payload.sources, self.seen.read_paths)
+                v = replace(v, source_reads=tuple(reads))
             self._log_is_error()
             if v.failure is None and confirmation_forced(
                 self.payload, self.seen.final, self.seen.confirm

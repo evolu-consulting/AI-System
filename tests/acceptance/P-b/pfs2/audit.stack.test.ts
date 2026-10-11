@@ -32,7 +32,8 @@ beforeEach(() => resetPb(st));
 type Read = { source_key: string; files_read: string[] | null; bytes_read: number | null };
 function readsOf(out: StageOut): Read[] | null {
   const ev = out.events.find((e) => e?.type === "job.result");
-  return (ev?.source_reads ?? out.result?.source_reads ?? null) as Read[] | null;
+  // Chỉ đọc từ EVENT job.result (top-level) — không fallback row hub.jobs.result.
+  return (ev?.source_reads ?? null) as Read[] | null;
 }
 const byKey = (rs: Read[] | null, k: string) => rs?.find((r) => r.source_key === k);
 
