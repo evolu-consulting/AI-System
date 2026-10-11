@@ -27,18 +27,10 @@ type StageLike = { sources?: readonly { source_key: string; allowlist?: readonly
  * (allowlist rỗng) ⇒ [] (không giới hạn), bất kể stage khác. Stage không dùng key ⇒ bỏ qua. Hợp > 40 ⇒ RangeError.
  */
 export function allowlistUnion(stages: readonly StageLike[], sourceKey: string): string[] {
-  const set = new Set<string>();
-  let used = false;
-  for (const st of stages)
-    for (const s of st.sources ?? []) {
-      if (s.source_key !== sourceKey) continue;
-      used = true;
-      const al = s.allowlist ?? [];
-      if (al.length === 0) return []; // cả nguồn
-      for (const g of al) set.add(g);
-    }
-  if (!used) return [];
-  const out = [...set].sort();
+  const uses = stages.flatMap((st) => (st.sources ?? []).filter((s) => s.source_key === sourceKey));
+  if (uses.length === 0) return [];
+  if (uses.some((s) => (s.allowlist ?? []).length === 0)) return []; // cả nguồn
+  const out = [...new Set(uses.flatMap((s) => s.allowlist ?? []))].sort();
   if (out.length > RESOLVE_ALLOWLIST_MAX)
     throw new RangeError(`allowlist union ${out.length} > ${RESOLVE_ALLOWLIST_MAX}`);
   return out;
@@ -109,7 +101,10 @@ function sectionBody(md: string): string | null {
 }
 
 type Ref = { key: string; path: string; version: string };
-function parseRef(line: string): Ref | null {
+/** Tiền tố danh sách LLM hay thêm: `-`, `*`, `•`, `N.`, `N)` + khoảng trắng. */
+const LIST_PREFIX = /^(?:[-*•]|\d+[.)])[ \t]+/;
+export function parseRef(raw: string): Ref | null {
+  const line = raw.trim().replace(LIST_PREFIX, "").trim();
   const colon = line.indexOf(":");
   const at = line.lastIndexOf("@");
   if (colon <= 0 || at <= colon + 1 || at >= line.length - 1) return null;
@@ -140,15 +135,23 @@ export function checkSourceRefs(
     .map(parseRef)
     .filter((r): r is Ref => r !== null);
   if (refs.length === 0) return { ok: false, reason: "empty" };
-  const keys = new Set(stageSourceKeys);
-  for (const r of refs) if (!keys.has(r.key)) return { ok: false, reason: "unknown_key" };
+  return verifyRefs(refs, new Set(stageSourceKeys), pins, filesRead);
+}
+
+function verifyRefs(
+  refs: readonly Ref[],
+  keys: ReadonlySet<string>,
+  pins: Readonly<Record<string, SourcePin>>,
+  filesRead?: ReadonlyArray<string> | null,
+): RefCheck {
+  if (refs.some((r) => !keys.has(r.key))) return { ok: false, reason: "unknown_key" };
   for (const r of refs) {
     const pin = pins[r.key];
     if (!pin || r.version !== pinVersion(pin)) return { ok: false, reason: "version_mismatch" };
   }
   if (filesRead != null) {
     const set = new Set(filesRead);
-    for (const r of refs) if (!set.has(r.path)) return { ok: false, reason: "path_absent" };
+    if (refs.some((r) => !set.has(r.path))) return { ok: false, reason: "path_absent" };
   }
   return { ok: true };
 }
