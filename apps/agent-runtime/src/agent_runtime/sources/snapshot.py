@@ -41,8 +41,11 @@ def git_dir(cfg: SourceConfig, tenant: str, url: str, sha: str, allowlist: list[
 
 
 def local_dir(cfg: SourceConfig, tenant: str, realpath: Path, allowlist: list[str]) -> Path:
+    # Khoá theo NỘI DUNG (chữ ký mtime/size của tập allowlist) ⇒ repo sửa thì dựng snapshot mới.
+    # Gộp vào đoạn cuối để giữ độ sâu lá = 4 (`_is_leaf`). git/library giữ nguyên (pin bất biến).
     key = sha256(str(realpath).encode()).hexdigest()[:16]
-    return cfg.snapshots_dir / "local" / tenant / key / allow_hash(allowlist)
+    leaf = f"{allow_hash(allowlist)}-{local_driver.content_signature(realpath, allowlist)}"
+    return cfg.snapshots_dir / "local" / tenant / key / leaf
 
 
 def library_dir(  # noqa: PLR0913

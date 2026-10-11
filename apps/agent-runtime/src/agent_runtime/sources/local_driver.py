@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from fnmatch import fnmatchcase
+from hashlib import sha256
 from pathlib import Path
 
 from agent_runtime.sources.config import SourceConfig
@@ -51,7 +52,7 @@ def walk_files(root: Path, allowlist: list[str] | None = None) -> Iterator[tuple
         dirnames[:] = [d for d in dirnames if _descend(dirpath, reldir, d, seg_lists)]
         for name in filenames:
             full = Path(dirpath, name)
-            rel = (f"{reldir}/{name}" if reldir else name)
+            rel = f"{reldir}/{name}" if reldir else name
             if is_secret(rel) or not allowed(rel, patterns):
                 continue
             try:
@@ -61,6 +62,19 @@ def walk_files(root: Path, allowlist: list[str] | None = None) -> Iterator[tuple
             if os.path.islink(full) or not _is_regular(st.st_mode) or st.st_nlink > 1:
                 continue
             yield rel, full, st.st_size
+
+
+def content_signature(root: Path, allowlist: list[str] | None = None) -> str:
+    """Chữ ký RẺ của tập file allowlist: sha256 ngắn của `(path, mtime_ns, size)` đã sắp xếp — KHÔNG
+    đọc nội dung. Nội dung/tập file đổi ⇒ chữ ký đổi ⇒ khoá cache local đổi (snapshot dựng mới)."""
+    rows: list[str] = []
+    for rel, full, size in walk_files(root, allowlist):
+        try:
+            mt = full.lstat().st_mtime_ns
+        except OSError:
+            continue
+        rows.append(f"{rel}|{mt}|{size}")
+    return sha256("\n".join(sorted(rows)).encode()).hexdigest()[:12]
 
 
 def _descend(dirpath: str, reldir: str, name: str, seg_lists: list[list[str]]) -> bool:

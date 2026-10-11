@@ -85,3 +85,6 @@ Tách khỏi `spec.md` §9 để spec gọn dưới trần 25KB (log này tăng 
 - **FS-10 · nhãn lý do ở `common.*.json`** · bản đồ lý do chat + admin dùng chung `process.common.<reason>` (không phải `run.json`) ⇒ thêm `source_unresolvable` + `source_unresolvable_hint` ở `common`; một dòng hint hiện ở `DecisionMessage`, `DecisionCard` (không nhúng) và admin `RunActions`.
 
 - 2026-10-12 · `parseRef` (sources.rules.ts) bỏ tiền tố danh sách (`-`,`*`,`•`,`N.`,`N)`) trước khi tách `key:path@version`; LLM hay viết dạng list ⇒ trước đây mọi attempt `template_invalid`. Additive; vẫn chặn unknown_key/version_mismatch/path_absent. [HUB-FR-122][CR-060]
+
+- [CR-060] `path_absent` actionable: `explainSourceRefs`/`stageRefsExplain` (sources.rules/stage-sources) trả `RefCheck` kèm `offenders`; `checkSourceRefs` giữ hình dạng cũ (ca khoá toEqual). Feedback lượt sau do `refsFeedback` (stage-sources) dựng theo reason qua `refCheckMessage` — nơi ghi `stage_runs.feedback` thật là team-runner.writeOutput (stage-driver chỉ tính templateOk).
+- [CR-060] Khoá cache local_path theo nội dung: `local_driver.content_signature` = sha256[:12] của `(path|mtime_ns|size)` đã sắp xếp (từ `walk_files`, không đọc nội dung); lá = `<allow_hash>-<sig>` (giữ độ sâu 4). git/library không đổi.

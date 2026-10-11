@@ -1,0 +1,11 @@
+import {login,hub} from "./lib.mjs";
+const j=await login("evolu","julian.bui");
+const g=await hub(j,"GET","/process-defs/15fa7c55-2005-4e11-b7d7-5dce04b7b86b"); const def=g.json;
+const A=["apps/chat-web/src/**","apps/chat-web/*.css","apps/chat-web/rsbuild.config.ts","apps/chat-web/postcss.config.mjs","apps/chat-web/index.html","docs/CONVENTIONS.md"];
+const P=["apps/chat-web/src/features/shell/**","apps/chat-web/src/features/rooms/**","apps/chat-web/src/features/conversations/**","apps/chat-web/src/styles/**","apps/chat-web/src/components/**"];
+const R=[...P,"e2e/**/*chat*","e2e/chat-web/**"];
+const al=[A,A,P,R];
+def.stages.forEach((s,i)=>{s.sources[0].allowlist=al[i]; if(s.token_budget<200000)s.token_budget=200000;});
+const body={key:def.key,name:def.name,description:def.description,input_hint:def.input_hint,run_group_ids:def.run_group_ids,stages:def.stages,token_budget:def.token_budget,enabled:def.enabled,sources:def.sources,inputs:def.inputs,version:def.version};
+const r=await hub(j,"PUT","/process-defs/"+def.id,body); console.log(r.status,JSON.stringify(r.json).slice(0,300));
+console.log(def.stages.map(s=>s.token_budget+" "+s.sources[0].allowlist.length));

@@ -1,0 +1,34 @@
+// usage: node fixbug-run.mjs <processKey>   — thomas.tran bắt đầu quy trình bằng !key + mô tả bug, chờ tới trạng thái cuối.
+import { chromium } from "file:///D:/AI/ai-system/node_modules/@playwright/test/index.mjs";
+import { spawnSync } from "node:child_process";
+const OUT="D:/AI/ai-system/docs/specs/P-b-sources/evidence/2026-10-11/fixbug-sidebar";
+const key=process.argv[2]||"fixbug-evolu-verify";
+const BUG="Sidebar bị scroll ngang ở chat app: trong apps/chat-web, thanh bên (danh sách phòng / điều hướng) có thanh cuộn NGANG không mong muốn vì nội dung tràn chiều ngang. Mở chat-web, sidebar danh sách phòng xuất hiện cuộn ngang; mong muốn: không tràn ngang, nội dung co/ellipsis gọn. Tìm nguyên nhân layout và đề xuất sửa.";
+const q=(s)=>spawnSync("docker",["exec","ai-system-postgres-1","psql","-U","ai","-d","ai_system","-tA","-F|","-c",s]).stdout.toString().trim();
+const b=await chromium.launch({headless:true});
+const c=await b.newContext({locale:"vi-VN",viewport:{width:1360,height:860},baseURL:"http://localhost:3100"});
+await c.addInitScript(()=>{try{localStorage.setItem("ai.locale","vi")}catch{}});
+const p=await c.newPage(); const shot=(n)=>p.screenshot({path:`${OUT}/${n}.png`});
+await p.goto("/login");
+await p.getByRole("textbox",{name:"Mã công ty"}).fill("evolu");
+await p.getByRole("textbox",{name:"Tên đăng nhập"}).fill("thomas.tran");
+await p.getByLabel("Mật khẩu").fill("1234567890");
+await p.getByRole("button",{name:"Đăng nhập"}).click();
+await p.waitForURL(/\/c\/new$/);
+await p.goto("/rooms/d2a00000-0000-4000-8000-000000000002");
+const box=p.getByRole("textbox",{name:/Tin nhắn cho/}); await box.waitFor();
+const before=q("select count(*) from hub.process_runs");
+await p.getByRole("button",{name:"Quy trình",exact:true}).click();
+await shot("01-quy-trinh-list");
+await p.getByRole("listbox",{name:"Quy trình"}).getByRole("option").filter({hasText:`!${key}`}).first().click();
+await box.press("End"); await box.pressSequentially(" "+BUG.slice(0,0)); 
+await box.fill(`!${key} ${BUG}`);
+await shot("02-form-bat-dau");
+await p.getByRole("button",{name:"Gửi",exact:true}).click();
+await p.waitForTimeout(4000); await shot("03-vua-gui");
+let row="";
+for(let i=0;i<240;i++){ row=q("select id,status from hub.process_runs order by started_at desc limit 1");
+  if(q("select count(*) from hub.process_runs")!==before && /\|(completed|done|succeeded|failed|needs_decision|cancelled)/.test(row)) break;
+  if(i%20==10) await shot("03-run-state-"+i);
+  await p.waitForTimeout(5000);}
+console.log("RUN",row); await p.waitForTimeout(2000); await shot("04-run-final"); await b.close();

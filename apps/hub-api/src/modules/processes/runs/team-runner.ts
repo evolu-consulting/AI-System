@@ -15,7 +15,7 @@ import { askExcerpt, decisionAssignees } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
 import { executorRefOf } from "./executor-ref";
 import { outputAttachment, type PendingBlob } from "./output-attachment";
-import { type StageSourceCtx, stageRefsCheck } from "./stage-sources";
+import { refsFeedback, type StageSourceCtx, stageRefsCheck } from "./stage-sources";
 import { outputSteps, outputStepsSingle } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
@@ -174,7 +174,7 @@ async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
       ${r.summaries ? JSON.stringify(r.summaries) : null}::jsonb,
       ${ok}, ${missingArray(missing)}, ${att?.id ?? null})`);
   if (missing.length > 0)
-    await tx.execute(sql`update hub.stage_runs set feedback = ${`Thiếu mục: ${missing.join(", ")}`}
+    await tx.execute(sql`update hub.stage_runs set feedback = ${refsFeedback(missing, refs.ok, c.srcCtx, text, reads)}
       where id = ${c.x.stageRunId}`);
   return { out: { id, version, ok, missing }, pending: att?.pending ?? null };
 }

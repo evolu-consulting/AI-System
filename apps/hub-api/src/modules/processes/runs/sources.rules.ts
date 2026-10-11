@@ -18,6 +18,8 @@ export type RefCheck =
   | {
       ok: false;
       reason: "missing" | "empty" | "unknown_key" | "version_mismatch" | "path_absent";
+      /** Ref/file vi phạm (unknown_key: key · version_mismatch: key · path_absent: path) — để báo agent sửa đúng chỗ. */
+      offenders?: string[];
     };
 
 type StageLike = { sources?: readonly { source_key: string; allowlist?: readonly string[] }[] };
@@ -125,6 +127,17 @@ export function checkSourceRefs(
   pins: Readonly<Record<string, SourcePin>>,
   filesRead?: ReadonlyArray<string> | null,
 ): RefCheck {
+  const r = explainSourceRefs(md, stageSourceKeys, pins, filesRead);
+  return r.ok ? r : { ok: false, reason: r.reason };
+}
+
+/** Như `checkSourceRefs` nhưng kèm `offenders` (ref/file vi phạm) — chỉ để dựng feedback cho agent. */
+export function explainSourceRefs(
+  md: string,
+  stageSourceKeys: readonly string[],
+  pins: Readonly<Record<string, SourcePin>>,
+  filesRead?: ReadonlyArray<string> | null,
+): RefCheck {
   if (stageSourceKeys.length === 0) return { ok: true };
   const body = sectionBody(md);
   if (body === null) return { ok: false, reason: "missing" };
@@ -144,16 +157,46 @@ function verifyRefs(
   pins: Readonly<Record<string, SourcePin>>,
   filesRead?: ReadonlyArray<string> | null,
 ): RefCheck {
-  if (refs.some((r) => !keys.has(r.key))) return { ok: false, reason: "unknown_key" };
-  for (const r of refs) {
-    const pin = pins[r.key];
-    if (!pin || r.version !== pinVersion(pin)) return { ok: false, reason: "version_mismatch" };
-  }
+  const unknown = uniq(refs.filter((r) => !keys.has(r.key)).map((r) => r.key));
+  if (unknown.length > 0) return { ok: false, reason: "unknown_key", offenders: unknown };
+  const badVer = uniq(
+    refs
+      .filter((r) => !pins[r.key] || r.version !== pinVersion(pins[r.key] as SourcePin))
+      .map((r) => r.key),
+  );
+  if (badVer.length > 0) return { ok: false, reason: "version_mismatch", offenders: badVer };
   if (filesRead != null) {
     const set = new Set(filesRead);
-    if (refs.some((r) => !set.has(r.path))) return { ok: false, reason: "path_absent" };
+    const absent = uniq(refs.filter((r) => !set.has(r.path)).map((r) => r.path));
+    if (absent.length > 0) return { ok: false, reason: "path_absent", offenders: absent };
   }
   return { ok: true };
+}
+
+const uniq = (a: string[]): string[] => [...new Set(a)];
+
+/** Thông điệp actionable THEO reason cho agent (feedback lượt sau). `pins` để chỉ đúng @version. */
+export function refCheckMessage(
+  chk: Extract<RefCheck, { ok: false }>,
+  pins: Readonly<Record<string, SourcePin>>,
+): string {
+  const list = (chk.offenders ?? []).join(", ");
+  switch (chk.reason) {
+    case "path_absent":
+      return `Mục ## Nguồn tham chiếu có dòng trỏ file CHƯA đọc ở bước này: ${list}. Chỉ trích file bạn đã Read/Grep/Glob trong chính bước này.`;
+    case "unknown_key":
+      return `Mục ## Nguồn tham chiếu: key ${list} không thuộc nguồn của bước này.`;
+    case "version_mismatch": {
+      const pinsTxt = (chk.offenders ?? [])
+        .map((k) => (pins[k] ? `${k}@${pinVersion(pins[k] as SourcePin)}` : k))
+        .join(", ");
+      return `Mục ## Nguồn tham chiếu: sai @version (${list}); dùng đúng pin: ${pinsTxt}.`;
+    }
+    default:
+      return chk.reason === "empty"
+        ? "Để trống mục ## Nguồn tham chiếu (mỗi dòng dạng key:đường/dẫn@version)."
+        : "Thiếu mục ## Nguồn tham chiếu.";
+  }
 }
 
 /**

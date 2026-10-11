@@ -6,7 +6,13 @@ import type { JobSource, JobSourceRead } from "@ai/contracts/hub";
 import type { SourceConfig, SourceKind, SourcePin, StageSource } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { checkSourceRefs, type ManifestItem, type RefCheck } from "./sources.rules";
+import {
+  checkSourceRefs,
+  explainSourceRefs,
+  type ManifestItem,
+  type RefCheck,
+  refCheckMessage,
+} from "./sources.rules";
 
 /** Mục nguồn def-level trong `snapshot.sources` (chốt lúc start; `allowlist_union` gộp các stage). */
 export type ResolveSource = {
@@ -105,6 +111,35 @@ export function stageRefsCheck(
   const anyNull = reads.some((r) => r.files_read === null);
   const filesRead = anyNull ? null : reads.flatMap((r) => r.files_read ?? []);
   return checkSourceRefs(text, keys, ctx.pins, filesRead);
+}
+
+/** Như `stageRefsCheck` + `offenders` (feedback). */
+export function stageRefsExplain(
+  ctx: StageSourceCtx,
+  text: string,
+  sourceReads: readonly JobSourceRead[] | undefined,
+): RefCheck {
+  const keys = ctx.stageSources.map((s) => s.source_key);
+  if (keys.length === 0) return { ok: true };
+  const reads = sourceReads ?? [];
+  const anyNull = reads.some((r) => r.files_read === null);
+  const filesRead = anyNull ? null : reads.flatMap((r) => r.files_read ?? []);
+  return explainSourceRefs(text, keys, ctx.pins, filesRead);
+}
+
+/** Feedback lượt sau: mục thiếu + (lỗi nguồn) thông điệp actionable theo reason (offenders). */
+export function refsFeedback(
+  missing: string[],
+  refsOk: boolean,
+  ctx: StageSourceCtx | undefined,
+  text: string,
+  reads: readonly JobSourceRead[] | undefined,
+): string {
+  if (refsOk || !ctx) return `Thiếu mục: ${missing.join(", ")}`;
+  const chk = stageRefsExplain(ctx, text, reads);
+  const others = missing.filter((m) => m !== "## Nguồn tham chiếu");
+  const head = others.length > 0 ? `Thiếu mục: ${others.join(", ")}. ` : "";
+  return chk.ok ? head : head + refCheckMessage(chk, ctx.pins);
 }
 
 const filesCol = (files: readonly string[] | null) =>
