@@ -119,8 +119,17 @@ Job agent.cli (`job.ts`) thêm `sources: JobSource[] ≤5 optional` (`{key,kind,
 **4.5 #134 / 4.6 #133** — KHÔNG migration, chỉ sửa đường code; phân tích tái hiện + đường ghi sai (file:dòng) + cách sửa đầy đủ ở **plan.md §6**. Tóm: #134 = `team-member.ts closeMemberRun` ghi `status='failed'` thiếu `error_code` ⇒ vi phạm `runs_error_code_ck` (`0000:297`) ⇒ `stage-driver.ts:83` chỉ `abort()` ⇒ run kẹt `running` (PB-R17, AC-PB-03). #133 = `team-exec.ts draftFiles` cấp nháp member `uuid` tạm không persist ⇒ member sau tải 404; PB-R18 đòi id thuộc chính run+tenant (AC-PB-03/04).
 
 ## 5. UI (frontend-lead)
-<!-- frontend-lead -->
-Artboard: **chưa có**. Màn mới: trang `/sources` (nav "Nguồn" dưới CHỨC NĂNG, mô tả ui-admin §7.17), drawer khai báo theo loại, khối nguồn/đầu vào/must_know trong editor quy trình (ADM-FR-69), form nhỏ `!key` trong chat-web (AC-H37), chip trong AskCard. Theo mẫu bảng + drawer của Secrets / Quy trình; `local_path`: `tenant_admin` chỉ thấy key + mô tả (không `config.path`, PB-R21), chỉ `platform_admin` tạo/sửa; không cột/trường secret; kèm cảnh báo "đường dẫn trên máy Runtime, không phải máy của bạn".
+<!-- frontend-lead · chi tiết: plan-frontend.md (màn, trạng thái, validate, role/nhãn e2e) · plan-frontend-i18n.md (câu chữ VI/EN nguyên văn) · tasks-frontend.md -->
+Artboard: **chưa có** — màn mới theo mẫu bảng + drawer của Secrets / Quy trình (không vẽ lại; không cần artboard mới để duyệt). Không có trường/cột secret (D2).
+
+| Màn | Nơi | Lát |
+|---|---|---|
+| Trang **Nguồn** `/sources`: bảng (ký hiệu · loại · mô tả · đích · dùng bởi · trạng thái) + `Thêm nguồn`; drawer theo loại (`git_remote` url+branch · `local_path` path [chỉ `platform_admin`] · `library` chọn tài liệu); **Kiểm tra kết nối** (kết quả 200/422 tại chỗ); xoá có xác nhận, 409 `SOURCE_IN_USE` ⇒ danh sách quy trình/giai đoạn | admin-web `features/sources/` | **P-b1** |
+| Editor quy trình (tối thiểu): thẻ "Nguồn của quy trình" (≤ 20), mỗi giai đoạn chọn tập con ≤ 5 + allowlist glob, "Điều phải biết trước khi làm" (≤ 10), thẻ "Thông tin đầu vào" (≤ 10) | admin-web `features/processes/components/editor/` (thêm file mới, không viết lại editor) | **P-b1** |
+| Form đầu vào `!key` (chữ/chọn/file/nguồn+branch) khi quy trình có `inputs`; chip nguồn đã đăng ký ở AskCard; nhãn lý do `source_unresolvable` | chat-web `features/processes/inputs/` + `ask/` | **P-b1** |
+| Kéo sắp xếp/xem trước form `!key` trong editor, ô nhập ngân sách token, form đầu vào ở nút "Chạy" của admin, "Nguồn đã ghim" ở trang run, Nhóm agent | admin-web | **P-b2** (hoãn, D1) |
+
+**Quyền (PB-R21):** `platform_admin` thấy/ghi mọi loại, thấy `config.path`. `tenant_admin` ghi `git_remote`/`library`; dòng `local_path` chỉ **xem** (ký hiệu + mô tả; không đường dẫn, không Sửa/Xoá; không có lựa chọn "Đường dẫn cục bộ" khi tạo). User thường không có trang; chỉ thấy chip (ký hiệu + mô tả). `local_path` luôn kèm cảnh báo "đường dẫn trên máy Runtime, không phải máy của bạn". Server là nơi chặn; UI chỉ ẩn/khoá.
 
 ## 6. Hiệu năng
 Không ngân sách riêng (perf không chặn mốc). Chỉ ghi: snapshot dùng chung theo (nguồn, SHA, allowlist-hash) — cache hit không clone lại.
@@ -139,12 +148,14 @@ AC-H36, AC-H37 lấy nguyên văn từ BA §11 (không chép lại ở đây). B
 
 | AC | Given / When / Then | Test |
 |---|---|---|
-| AC-H36 | Theo BA, chia nhỏ: (a) ghim SHA + MANIFEST đúng SHA + không `.env`/`.git`; (b) output thiếu `## Nguồn tham chiếu` bị từ chối; (c) branch đổi sau start, "làm lại" vẫn dùng SHA cũ; (d) tenant B → nguồn tenant A ⇒ 404; (e) `local_path` bởi `tenant_admin` ⇒ 403, ngoài thư mục gốc ⇒ từ chối; (f) > 50 MB / > 2.000 file ⇒ lỗi cấu hình; (g) audit có nguồn+phiên bản+file đọc; không token git trong thư mục job | <!-- qc --> |
-| AC-H37 | Theo BA: form `!key` có chọn nguồn+branch; thiếu trường ⇒ AskCard chip; checklist ⇒ hỏi, ≤ 3 lần/stage | <!-- qc --> |
-| AC-PB-01 | Given file `.env` trong repo và allowlist `**/*`, When snapshot, Then `.env` vắng (lọc thắng allowlist); symlink trỏ ra ngoài bị bỏ | <!-- qc --> |
-| AC-PB-02 | Given agent cố ghi/Bash vào `sources/` (prompt injection trong file nguồn), Then hook chặn, job không đổi nguồn, hành động thật vẫn cần gate | <!-- qc --> |
-| AC-PB-04 | Given run A, When `payload.sources`/attachment chứa id của run/tenant khác, Then 401 (PB-R18) | <!-- qc --> |
-| AC-PB-03 | **#133/#134.** Given quy trình có stage `executor: team` ≥ 2 member nhận output stage trước, When chạy, Then member 2+ fetch attachment 200 (không 401) và run đến `finished`/`awaiting_review`. Given job team fail (UPSTREAM_ERROR/TIMEOUT), Then run sang `needs_decision`/`failed`, `hub.runs.error_code` ∈ 7 mã, handler không crash, run không kẹt `running` | <!-- qc --> |
+| AC-H36 | Theo BA, chia nhỏ: (a) ghim SHA + MANIFEST đúng SHA + không `.env`/`.git`; (b) output thiếu `## Nguồn tham chiếu` bị từ chối; (c) branch đổi sau start, "làm lại" vẫn dùng SHA cũ; (d) tenant B → nguồn tenant A ⇒ 404; (e) `local_path` bởi `tenant_admin` ⇒ 403, ngoài thư mục gốc ⇒ từ chối; (f) > 50 MB / > 2.000 file ⇒ lỗi cấu hình; (g) audit có nguồn+phiên bản+file đọc; không token git trong thư mục job | `pfs2/snapshot.stack` SN-01/02/10/16 · `pfs3/start-resolve.int` ST-05/11 · `pfs3/manifest-output.int` OC-01…05 · `pfs1/sources-authz.int` A-09, A-03/04 · `pfs2/local.stack` LP-03/04 · `pfs2/limits.stack` LM-01…05 · `pfs2/audit.stack` AU-01…04 · `scenario/pb.stack` SC-PB1/2 (đường dẫn `tests/acceptance/P-b/…`, chi tiết `test-plan.md` §3–§4) |
+| AC-H37 | Theo BA: form `!key` có chọn nguồn+branch; thiếu trường ⇒ AskCard chip; checklist ⇒ hỏi, ≤ 3 lần/stage | `pfs3/inputs.int` IN-01…07, MK-01…04 · `e2e/P-b/pfs3` E-PB10/11 (`test-plan.md` §4.3, §4.6) |
+| AC-PB-01 | Given file `.env` trong repo và allowlist `**/*`, When snapshot, Then `.env` vắng (lọc thắng allowlist); symlink trỏ ra ngoài bị bỏ | `pfs2/snapshot.stack` SN-03…07 · `pfs2/local.stack` LP-02/05 (`.env` + `**/*` ⇒ vắng; symlink/hardlink/submodule bỏ; fixture `app-repo` C1 `test-plan.md` §1.1) |
+| AC-PB-02 | Given agent cố ghi/Bash vào `sources/` (prompt injection trong file nguồn), Then hook chặn, job không đổi nguồn, hành động thật vẫn cần gate | `pfs2/inject.stack` IJ-01…05 (fixture `docs/inject.md` + `#fake:obey`; `test-plan.md` §1.4) |
+| AC-PB-04 | Given run A, When `payload.sources`/attachment chứa id của run/tenant khác, Then 401 (PB-R18) | `pfs4/ids.int` ID-01…07 · `pfs3/sources-resolved.int` RS-03…06 |
+| AC-PB-03 | **#133/#134.** Given quy trình có stage `executor: team` ≥ 2 member nhận output stage trước, When chạy, Then member 2+ fetch attachment 200 (không 401) và run đến `finished`/`awaiting_review`. Given job team fail (UPSTREAM_ERROR/TIMEOUT), Then run sang `needs_decision`/`failed`, `hub.runs.error_code` ∈ 7 mã, handler không crash, run không kẹt `running` | `pfs4/team-fix.int` TM-01…15 · `scenario/pb.stack` SC-PB1 (#133 fetch 200; #134 mã ∈ 7, `needs_decision`) |
+
+Test-plan đầy đủ (254 ca, fixture, directive `fake-cli`, điểm cần xác nhận): [`test-plan.md`](test-plan.md). Playwright dùng `-c e2e/P-b/playwright.pb.config.ts` (xem test-plan §0).
 
 Lệnh xong: `bun run done:pa && bun run typecheck && bun test && bun run test:int && bunx playwright test P-b-sources && bun run test:lock:verify && bun run trace --check` (+ `done:pb` thêm vào sau khi có test; security review riêng: cách ly nguồn theo tenant, secret/token không vào job dir, prompt injection — ROADMAP `done:pb`).
 
