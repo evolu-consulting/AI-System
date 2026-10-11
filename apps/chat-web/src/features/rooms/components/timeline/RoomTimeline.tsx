@@ -40,7 +40,7 @@ export function RoomTimeline(p: Props) {
       role="log"
       aria-label={t("rooms.log")}
       aria-live="polite"
-      className="min-h-0 flex-1 overflow-y-auto"
+      className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain"
     >
       <div
         ref={p.contentRef}

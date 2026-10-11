@@ -106,7 +106,7 @@ export function AppShell() {
           </header>
         )}
         {conn.kind && <ConnectionBanner kind={conn.kind} onRetry={conn.retry} />}
-        <main id="main" className="flex min-h-0 flex-1 flex-col">
+        <main id="main" className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <Outlet />
         </main>
       </div>

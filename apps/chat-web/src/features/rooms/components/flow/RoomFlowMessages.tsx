@@ -37,7 +37,7 @@ export function RoomFlowMessages(p: RoomFlowMessagesProps) {
       aria-live="polite"
       aria-relevant="additions"
       aria-label={t("flow.log")}
-      className="min-h-0 flex-1 overflow-y-auto"
+      className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain"
     >
       <div ref={contentRef} className="flex flex-col gap-1 p-4">
         {p.loading &&
