@@ -27,6 +27,7 @@
     "test:h2b:stack": "HUB_MAX_CONCURRENT_RUNS=2 bun --env-file=.env.local --config=bunfig.stack.toml test --timeout 120000 tests/acceptance/H2b/stack",
     "test:h2c:stack": "HUB_MAX_CONCURRENT_RUNS=2 HUB_ATTACH_DRIVER=local bun --env-file=.env.local --config=bunfig.stack.toml test --timeout 120000 tests/acceptance/H2c/stack",
     "test:h3a:stack": "HUB_MAX_CONCURRENT_RUNS=2 HUB_ATTACH_DRIVER=local bun --env-file=.env.local --config=bunfig.stack.toml test --timeout 120000 tests/acceptance/H3a/stack",
+    "test:pb:stack": "bun --env-file=.env.local --config=bunfig.stack.toml test --timeout 300000 tests/acceptance/P-b/pfs2",
     "test:smoke:live": "bun tools/scripts/src/smoke-live.ts",
     "hub:dify-mock": "bun tools/hub-dev/src/dify-mock.ts",
     "done:h2a": "bun --env-file=.env.local tools/scripts/src/done-h2a.ts",
