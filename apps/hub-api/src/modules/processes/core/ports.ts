@@ -7,6 +7,7 @@ import type { Db } from "../../../lib/db";
 import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
 import type { UserEvent } from "../../../lib/user-stream";
+import type { AttachmentStorage } from "../../attachments/storage";
 import type { ConfigCache } from "../../config/config.service";
 import type { AgentRunner } from "../../runner/job/job-agent-runner";
 import type { RunService } from "../../runs/runs.service";
@@ -75,5 +76,10 @@ export type ProcessDeps = {
   postThread(runId: string): Promise<number>;
   /** Cổng bắt đầu run (PF1) — B3 dùng cho "Chạy" từ admin; mount dựng từ `conversationStart`. */
   start: ProcessStartPort;
+  /**
+   * CR-056 · HUB-FR-115 · kho nội dung file (nối từ `AppDeps.attachments.storage`): `writeOutput` ghi blob output stage
+   * vào đây (H2c-R05, `.part` → commit sau COMMIT tx) để stage kế tải được. Vắng ⇒ KHÔNG tạo hàng attachment output.
+   */
+  storage?: AttachmentStorage;
   signal?: AbortSignal;
 };

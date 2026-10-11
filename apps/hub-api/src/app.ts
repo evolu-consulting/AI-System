@@ -241,7 +241,14 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     "/conversations",
     conversationRoutes(deps.db, (u, id) => cancel.removeConversation(u, id)),
   );
-  const processStart = processHooks(app, deps, { ...base, config, runs, messages: x2a.messages });
+  const processStart = processHooks(app, deps, {
+    ...base,
+    config,
+    runs,
+    messages: x2a.messages,
+    // CR-056 · HUB-FR-115 · kho file cho engine ghi blob output stage (vắng ⇒ không tạo hàng attachment output).
+    storage: deps.attachments?.storage,
+  });
   const prepare = { command: h2a.prepareCommand, mention: h2b.prepareMention, processStart };
   app.route("/conversations", sendMessageRoutes(conversations, runs, prepare));
   app.route("/runs", runRoutes(runs));

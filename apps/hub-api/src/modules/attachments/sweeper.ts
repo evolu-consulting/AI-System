@@ -40,14 +40,19 @@ async function tryRemove(c: Ctx, id: string, key: string): Promise<boolean> {
   }
 }
 
-/** (a) R27 · plan-db §4.1: chưa gắn quá 24 h (hoặc đã đánh dấu dở) → xoá nội dung → DELETE hàng xoá được. */
+/**
+ * (a) R27 · plan-db §4.1: chưa gắn quá 24 h (hoặc đã đánh dấu dở) → xoá nội dung → DELETE hàng xoá được.
+ * CR-056 · HUB-FR-115: trừ blob output quy trình (`message_id IS NULL` nhưng được `hub.process_outputs` trỏ tới) — handoff
+ * qua đêm (chờ duyệt) không được purge, nếu không stage kế mất file.
+ */
 async function sweepUnbound(tx: Tx, c: Ctx): Promise<number> {
   const now = c.now.toISOString();
   const cutoff = new Date(c.now.getTime() - UNBOUND_TTL_MS).toISOString();
   const rows = await tx.execute<Claimed>(sql`WITH c AS (
-      SELECT id FROM hub.attachments
-      WHERE message_id IS NULL AND (purged_at IS NOT NULL OR created_at < ${cutoff}::timestamptz)
-      ORDER BY created_at LIMIT ${SWEEP_BATCH} FOR UPDATE SKIP LOCKED
+      SELECT a0.id FROM hub.attachments a0
+      WHERE a0.message_id IS NULL AND (a0.purged_at IS NOT NULL OR a0.created_at < ${cutoff}::timestamptz)
+        AND NOT EXISTS (SELECT 1 FROM hub.process_outputs o WHERE o.attachment_id = a0.id)
+      ORDER BY a0.created_at LIMIT ${SWEEP_BATCH} FOR UPDATE SKIP LOCKED
     )
     UPDATE hub.attachments a SET purged_at = coalesce(a.purged_at, ${now}::timestamptz) FROM c
     WHERE a.id = c.id RETURNING a.id, a.storage_key`);

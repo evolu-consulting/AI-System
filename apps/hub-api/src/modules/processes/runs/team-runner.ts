@@ -2,21 +2,22 @@
 // `notifier`, persist trạng thái) dùng chung cho agent đơn + nhóm; (2) chạy stage nhóm. Tách khỏi `stage-driver.ts` cho
 // giới hạn 400 dòng (một chiều `stage-driver` → `team-runner`, không ngược).
 
-import { createHash } from "node:crypto";
 import { DECISION_OPTIONS, type DecisionOption, type DecisionReason } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { UserEvent } from "../../../lib/user-stream";
+import type { Staged } from "../../attachments/storage";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
 import type { Effect, RunEvent, RunState } from "../core/process-state.rules";
 import { askExcerpt, decisionAssignees } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
 import { executorRefOf } from "./executor-ref";
+import { outputAttachment } from "./output-attachment";
 import { outputSteps, outputStepsSingle } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
-type Deps = Omit<ProcessDeps, "launcher" | "start">;
+export type Deps = Omit<ProcessDeps, "launcher" | "start">;
 export type Link = { process_run_id: string | null; stage_run_id: string | null };
 
 /** Kết quả thực thi stage (agent đơn / nhóm) chuẩn hoá cho máy trạng thái. */
@@ -95,14 +96,38 @@ const missingArray = (missing: readonly string[]) =>
         sql`, `,
       )}]::text[]`;
 
-/** Hiệu ứng máy trạng thái trong tx quy trình; trả sự kiện phát sau COMMIT + có cần `kick` không. */
+/**
+ * Hiệu ứng máy trạng thái trong tx quy trình; trả sự kiện phát sau COMMIT + có cần `kick` không + blob output đã `stage`
+ * (`.part`) để người gọi `commit()` SAU COMMIT tx — PHẢI trước khi phát thread/SSE (CR-056, H2c-R05). Rollback/null ⇒ gọi
+ * `discard()` ngoài này.
+ */
 export async function effects(
   d: Deps,
   tx: Tx,
   c: Ctx,
-): Promise<{ events: UserEvent[]; kick: boolean }> {
+): Promise<{ events: UserEvent[]; kick: boolean; commits: Staged[] }> {
   const events: UserEvent[] = [];
-  const out = c.ev.kind === "stage_output" ? await writeOutput(tx, c) : null;
+  const w = c.ev.kind === "stage_output" ? await writeOutput(d, tx, c) : null;
+  const out = w?.out ?? null;
+  const reviewTaskId = await dispatchEffects(d, tx, c, out, events);
+  await persistState(tx, c, out?.id ?? null);
+  if (out) await threadOutput(tx, c, out, reviewTaskId);
+  if (c.list.includes("finish_run")) await threadRunEnd(tx, c);
+  return {
+    events,
+    kick: c.list.includes("queue_next_stage") || c.list.includes("queue_stage"),
+    commits: w?.staged ? [w.staged] : [],
+  };
+}
+
+/** Chạy danh sách hiệu ứng (`c.list`): mở review/ask/decision, kết thúc run; gom `UserEvent` vào `events`, trả `reviewTaskId`. */
+async function dispatchEffects(
+  d: Deps,
+  tx: Tx,
+  c: Ctx,
+  out: OutRow | null,
+  events: UserEvent[],
+): Promise<string | null> {
   let reviewTaskId: string | null = null;
   for (const eff of c.list) {
     if (eff === "open_review") {
@@ -113,14 +138,12 @@ export async function effects(
     else if (eff === "open_decision") events.push(...(await openDecision(d, tx, c)));
     else if (eff === "finish_run") events.push(...(await d.notifier.runFinished(tx, c.x.runId)));
   }
-  await persistState(tx, c, out?.id ?? null);
-  if (out) await threadOutput(tx, c, out, reviewTaskId);
-  if (c.list.includes("finish_run")) await threadRunEnd(tx, c);
-  return { events, kick: c.list.includes("queue_next_stage") || c.list.includes("queue_stage") };
+  return reviewTaskId;
 }
 
 type OutRow = { id: string; version: number; ok: boolean; missing: string[] };
-async function writeOutput(tx: Tx, c: Ctx): Promise<OutRow> {
+type WriteOutput = { out: OutRow; staged: Staged | null };
+async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
   const r = c.x.result as { text: string; sections?: Record<string, string>; summaries?: unknown };
   const text = r.text;
   const chk = checkTemplate(
@@ -131,48 +154,18 @@ async function writeOutput(tx: Tx, c: Ctx): Promise<OutRow> {
     from hub.process_outputs where stage_run_id = ${c.x.stageRunId}`);
   const version = Number(v?.v ?? 1);
   const id = crypto.randomUUID();
-  const attId = await outputAttachment(tx, c, text);
+  const att = await outputAttachment(d, tx, c, text);
   await tx.execute(sql`insert into hub.process_outputs (id, tenant_id, process_run_id, stage_run_id, stage_idx,
       version, attempt, content, sections, fields, summaries, template_ok, template_missing, attachment_id)
     values (${id}, ${c.head.tenant_id}, ${c.x.runId}, ${c.x.stageRunId}, ${c.idx}, ${version},
       ${Number(c.stage.attempt)}, ${text}, ${r.sections ? JSON.stringify(r.sections) : null}::jsonb,
       ${chk.fields ? JSON.stringify(chk.fields) : null}::jsonb,
       ${r.summaries ? JSON.stringify(r.summaries) : null}::jsonb,
-      ${chk.ok}, ${missingArray(chk.missing)}, ${attId})`);
+      ${chk.ok}, ${missingArray(chk.missing)}, ${att?.id ?? null})`);
   if (chk.missing.length > 0)
     await tx.execute(sql`update hub.stage_runs set feedback = ${`Thiếu mục: ${chk.missing.join(", ")}`}
       where id = ${c.x.stageRunId}`);
-  return { id, version, ok: chk.ok, missing: chk.missing };
-}
-
-/** D5 · attachment `origin=output` (text/markdown, của người bắt đầu, `job_id` = job cuối). Rỗng ⇒ không tạo. */
-async function outputAttachment(tx: Tx, c: Ctx, text: string): Promise<string | null> {
-  const size = Buffer.byteLength(text, "utf8");
-  if (size === 0) return null;
-  const jobId = c.x.jobId ?? (await lastJobOf(tx, c.x.runId));
-  if (!jobId) return null;
-  const id = crypto.randomUUID();
-  const filename = c.def.output.filename || `${c.def.name || "output"}.md`;
-  const sha = createHash("sha256").update(text, "utf8").digest("hex");
-  await tx.execute(sql`insert into hub.attachments (id, tenant_id, user_id, origin, job_id, filename,
-      safe_name, mime, size, sha256, storage_key)
-    values (${id}, ${c.head.tenant_id}, ${c.head.started_by}, 'output', ${jobId}, ${filename},
-      ${safeName(`s${c.idx}-v-${filename}`)}, 'text/markdown', ${size}, ${sha},
-      ${c.head.tenant_id}::text || '/' || ${id}::text)`);
-  return id;
-}
-
-/** ≤ 120 byte UTF-8, ký tự an toàn (khớp CHECK `attachments_safe_name_check`). */
-const safeName = (s: string): string =>
-  Buffer.from(s.replace(/[^\w.-]+/g, "-"), "utf8")
-    .subarray(0, 120)
-    .toString("utf8");
-
-async function lastJobOf(tx: Tx, runId: string): Promise<string | null> {
-  const [r] = await tx.execute<{ id: string }>(sql`select j.id from hub.jobs j
-    join hub.runs rr on rr.id = j.run_id where rr.process_run_id = ${runId}
-    order by j.created_at desc limit 1`);
-  return r?.id ?? null;
+  return { out: { id, version, ok: chk.ok, missing: chk.missing }, staged: att?.staged ?? null };
 }
 
 async function openReview(
