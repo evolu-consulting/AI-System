@@ -19,3 +19,18 @@ Tách khỏi `spec.md` §9 để spec gọn dưới trần 25KB (log này tăng 
 ## Tranh chấp test
 - **C-17 (`sources-crud.int`)** · `resetPfs1` (`_local.ts`, khoá) chỉ `delete process_defs where key like 'pbx-%'`, nhưng C-16 tạo def key **`p-src`** và không dọn ⇒ C-17 `POST /process-defs p-src` gặp def cũ ⇒ 409 PROCESS_KEY_TAKEN (test đòi 201). C-17 **XANH khi chạy cô lập** (`-t "used_by = "`) ⇒ backend đúng; lỗi do khoá dọn thiếu `p-src`. KHÔNG sửa test. Đề xuất qc: `delete ... where key like 'pbx-%' or key in ('p-src','p-auto')` hoặc C-16/C-17 dùng key `pbx-*`.
 - **C-17 · ĐÃ XỬ (qc)** · kết luận: test (helper) sai, code đúng. `resetPfs1` nay dọn `key like 'pbx-%' or key = 'p-src'`; kỳ vọng C-17 (201 + used_by) không đổi. pfs1 85/85 xanh, rules 25/25; lock cập nhật.
+
+## Quyết định trong lúc làm — frontend admin (FS-1…FS-5)
+- **FS · validate không dùng zod** · `lib/schemas.ts` là hàm thuần `validateSourceForm` + resolver RHF tự viết (luật phụ thuộc `kind` + vai; câu lỗi là key i18n); hằng số lấy từ contract (`SOURCE_KEY_RE`…).
+- **FS · platform_admin luôn kèm `tenant_id`** · server `readTenant/writeTenant` đòi `tenant_id` cho platform (vắng ⇒ 404/422) ⇒ trang yêu cầu chọn công ty (`?tenant=`) trước khi gọi API; "Thêm nguồn" khoá tới lúc chọn; drawer `new` của platform hiện `combobox "Công ty"` cho MỌI loại (plan chỉ nêu local_path), mặc định = công ty đang xem.
+- **FS · ô tìm `q` lọc phía client** · `SourceListQuerySchema` không có `q` ⇒ lọc theo ký hiệu trên các trang đã tải (trang 100 dòng) + "Tải thêm".
+- **FS · nhãn i18n** · khoá lồng nên đổi `field.key.hint`→`field.keyHint`, `field.document.version`→`field.documentVersion`; thêm `needTenant`, `field.document{Placeholder,Search,Empty,Error}`, `field.tenantPlaceholder`, `field.descCount`, `apiError.{TIMEOUT,GENERIC,SOURCE_IN_USE}`, `usedBy.none`/`count_one|other`, `delete.ref`. `inputs` giữ `field.sourcePlaceholder`/`branchPlaceholder`, `ask.chipTitle`; phần `run.reason.*` thuộc FS-10.
+- **FS · `ensureProcessLocale` nạp thêm `sources`** (admin: common+admin+sources); `inputs` chỉ chat-web nạp (loadProcessLocale mặc định tất cả phần).
+- **FS · menu dòng local_path của tenant_admin chỉ có `Xem`** (E-PB3); câu `row.checkForbidden` hiện trong drawer Xem thay cho tooltip. Drawer `Xem` không nhận prop đường dẫn nào.
+- **FS · menu "Kiểm tra kết nối" mở drawer `edit` và tự chạy kiểm tra** (nút trong drawer vẫn có); kết quả `status`/`alert` hiện trong drawer.
+- **FS · cảnh báo "chỉ kho công khai" dùng `role="note"`** (không phải `alert`) để `getByRole("alert")` của e2e chỉ khớp cảnh báo local_path / lỗi.
+- **FS · link xoá-bị-chặn trỏ `/processes`** · `SourceInUseRef` chỉ có `process_key`, còn route sửa dùng id ⇒ không tạo được `/processes/<id>`; hiển thị `{process_key} · giai đoạn {stage_key}` là link về danh sách quy trình.
+- **FS · xoá nguồn có `used_by`** · lấy bản mới (`GET :key`) rồi `DELETE` để Hub trả `details.refs` (plan chỉ có `used_by` = process_key, thiếu stage).
+- **FS · ConflictDialog** · thêm `ConflictEntity "source"` + `conflict.entity.source`; Hub `VERSION_CONFLICT` của nguồn chưa kèm `details.current` ⇒ FE tự `GET` bản mới để dựng hộp xung đột (đề xuất backend-lead bổ sung `details`).
+- **FS · `TenantPicker` thêm prop `label`/`allLabel`** (additive) để nhãn `combobox "Công ty"` và mục "Chọn công ty".
+- **FS · TODO library-documents** · `useLibraryDocs` gọi `GET /admin/sources/library-documents` theo contract; route backend HOÃN (S3) ⇒ picker hiện câu lỗi `documentError` tới lúc đó.

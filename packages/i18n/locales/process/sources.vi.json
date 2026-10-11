@@ -1,0 +1,142 @@
+{
+  "title": "Nguồn tham chiếu",
+  "subtitle": "Kho Git công khai, đường dẫn trên máy Runtime hoặc tài liệu thư viện mà agent được đọc (chỉ đọc) khi chạy quy trình.",
+  "add": "Thêm nguồn",
+  "col": {
+    "key": "Ký hiệu",
+    "kind": "Loại",
+    "desc": "Mô tả",
+    "target": "Đích",
+    "usedBy": "Dùng bởi",
+    "status": "Trạng thái"
+  },
+  "table": "Nguồn",
+  "filter": {
+    "tenant": "Công ty",
+    "kind": "Loại nguồn",
+    "kindAll": "Tất cả loại",
+    "search": "Tìm theo ký hiệu"
+  },
+  "kind": {
+    "git_remote": "Git công khai",
+    "local_path": "Đường dẫn cục bộ",
+    "library": "Tài liệu thư viện"
+  },
+  "target": {
+    "hidden": "Ẩn (chỉ quản trị nền tảng)",
+    "library": "Tài liệu thư viện"
+  },
+  "usedBy": {
+    "none": "—",
+    "count_one": "{{count}} quy trình",
+    "count_other": "{{count}} quy trình"
+  },
+  "status": {
+    "unchecked": "Chưa kiểm tra",
+    "pinned": "Đã kiểm tra · {{pin}}",
+    "snapshot": "snapshot"
+  },
+  "row": {
+    "actions": "Thao tác {{key}}",
+    "edit": "Sửa",
+    "view": "Xem",
+    "check": "Kiểm tra kết nối",
+    "delete": "Xoá",
+    "checkForbidden": "Chỉ quản trị nền tảng kiểm tra được nguồn này."
+  },
+  "loading": "Đang tải nguồn…",
+  "empty": "Chưa có nguồn nào.",
+  "loadError": "Không tải được danh sách nguồn.",
+  "retry": "Thử lại",
+  "more": "Tải thêm",
+  "forbidden": "Bạn không có quyền xem trang này.",
+  "needTenant": "Chọn một công ty để xem nguồn.",
+  "drawer": {
+    "new": "Thêm nguồn",
+    "edit": "Sửa nguồn {{key}}",
+    "view": "Xem nguồn {{key}}"
+  },
+  "field": {
+    "key": "Ký hiệu nguồn",
+    "keyHint": "2–32 ký tự: chữ thường, số, dấu gạch ngang. Không đổi được sau khi tạo.",
+    "kind": "Loại nguồn",
+    "url": "Địa chỉ kho Git (https)",
+    "branch": "Nhánh (branch)",
+    "path": "Đường dẫn trên máy Runtime",
+    "document": "Tài liệu thư viện",
+    "documentVersion": "Phiên bản hiện tại: {{version}}",
+    "documentPlaceholder": "Chọn tài liệu",
+    "documentSearch": "Tìm tài liệu…",
+    "documentEmpty": "Không có tài liệu nào.",
+    "documentError": "Không tải được danh sách tài liệu.",
+    "tenant": "Công ty",
+    "tenantPlaceholder": "Chọn công ty",
+    "desc": "Mô tả",
+    "descHint": "Mô tả ngắn để agent biết nguồn này dùng cho việc gì.",
+    "descCount": "{{n}}/{{max}}"
+  },
+  "git": {
+    "publicOnly": "Chỉ hỗ trợ kho công khai. Kho riêng chưa được hỗ trợ."
+  },
+  "local": {
+    "warning": "Đường dẫn này nằm trên máy chạy Runtime, không phải máy của bạn. Phải nằm trong thư mục gốc đã được cấu hình."
+  },
+  "view": {
+    "localNote": "Nguồn đường dẫn cục bộ chỉ quản trị nền tảng được xem đường dẫn và chỉnh sửa."
+  },
+  "save": "Lưu",
+  "cancel": "Huỷ",
+  "check": {
+    "saveFirst": "Lưu nguồn trước, rồi kiểm tra kết nối.",
+    "dirty": "Có thay đổi chưa lưu. Lưu trước khi kiểm tra.",
+    "running": "Đang kiểm tra…",
+    "okGit": "Kết nối được: {{branch}} → {{sha}} · {{files}} tệp · {{size}}",
+    "okLibrary": "Tài liệu đọc được · phiên bản {{version}} · {{size}}",
+    "okLocal": "Đường dẫn hợp lệ · {{files}} tệp · {{size}}"
+  },
+  "err": {
+    "key": { "invalid": "Ký hiệu gồm 2–32 ký tự: chữ thường, số hoặc dấu gạch ngang." },
+    "url": {
+      "required": "Nhập địa chỉ kho Git.",
+      "https": "Địa chỉ phải bắt đầu bằng https://.",
+      "credential": "Không đưa tên người dùng hoặc mật khẩu vào địa chỉ. Chỉ dùng kho công khai.",
+      "tooLong": "Địa chỉ tối đa 2048 ký tự."
+    },
+    "branch": {
+      "required": "Nhập tên nhánh.",
+      "dash": "Tên nhánh không được bắt đầu bằng dấu “-”.",
+      "tooLong": "Tên nhánh tối đa 255 ký tự."
+    },
+    "path": {
+      "required": "Nhập đường dẫn.",
+      "tooLong": "Đường dẫn tối đa 1024 ký tự."
+    },
+    "document": { "required": "Chọn một tài liệu." },
+    "tenant": { "required": "Chọn công ty." },
+    "desc": { "tooLong": "Mô tả tối đa 500 ký tự." }
+  },
+  "apiError": {
+    "SOURCE_KEY_TAKEN": "Ký hiệu “{{key}}” đã có trong công ty này.",
+    "SOURCE_HOST_NOT_ALLOWED": "Máy chủ này chưa được cho phép. Hiện chỉ hỗ trợ kho Git công khai trên các máy chủ quản trị viên đã cho phép.",
+    "SOURCE_FORBIDDEN_KIND": "Chỉ quản trị nền tảng mới được khai báo, sửa, xoá hoặc kiểm tra nguồn đường dẫn cục bộ.",
+    "SOURCE_UNRESOLVABLE": "Không đọc được nguồn này. Kiểm tra địa chỉ, nhánh hoặc đường dẫn rồi thử lại.",
+    "SOURCE_TOO_LARGE": "Nguồn quá lớn: tối đa 50 MB và 2.000 tệp sau khi lọc. Thu hẹp nguồn hoặc đường dẫn cho phép.",
+    "SOURCE_NOT_FOUND": "Nguồn không còn tồn tại.",
+    "SOURCE_IN_USE": "Không thể đổi loại nguồn đang được quy trình dùng.",
+    "TIMEOUT": "Không nhận được phản hồi từ Runtime. Thử lại sau.",
+    "GENERIC": "Không thực hiện được. Thử lại sau."
+  },
+  "toast": {
+    "created": "Đã tạo nguồn {{key}}",
+    "saved": "Đã lưu nguồn {{key}}",
+    "deleted": "Đã xoá nguồn {{key}}"
+  },
+  "delete": {
+    "title": "Xoá nguồn {{key}}?",
+    "body": "Quy trình không còn dùng nguồn này. Các lượt chạy đang dùng bản ghim vẫn giữ nguyên.",
+    "submit": "Xoá",
+    "blockedTitle": "Không thể xoá nguồn {{key}}",
+    "blockedBody": "Nguồn đang được các quy trình sau dùng. Gỡ nguồn khỏi các giai đoạn này trước khi xoá.",
+    "ref": "{{process}} · giai đoạn {{stage}}"
+  }
+}

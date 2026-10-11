@@ -64,14 +64,14 @@ export const i18n = i18next;
 const processLoaded = new Map<string, Promise<void>>();
 
 /**
- * P-a FD3: nạp chuỗi `process.*` (chỉ phần `common` + `admin`) của `lng` vào bundle đang dùng — chỉ gọi khi engine `on`
+ * P-a FD3: nạp chuỗi `process.*` (phần `common` + `admin` + `sources`) của `lng` vào bundle đang dùng — chỉ gọi khi engine `on`
  * (`useProcessEngine`). Admin dùng `{x}` thay `{{x}}` nên đổi cú pháp tham số khi nạp.
  */
 export function ensureProcessLocale(lng: string): Promise<void> {
   if (!isSupported(lng)) return Promise.resolve();
   let p = processLoaded.get(lng);
   if (!p) {
-    p = loadProcessLocale(lng, ["common", "admin"]).then((bundle) => {
+    p = loadProcessLocale(lng, ["common", "admin", "sources"]).then((bundle) => {
       i18next.addResourceBundle(lng, "translation", toSingleBrace(bundle), true, true);
     });
     p.catch(() => processLoaded.delete(lng));

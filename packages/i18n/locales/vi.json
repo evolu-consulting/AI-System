@@ -203,6 +203,7 @@
     "workflows": "Workflows",
     "processes": "Quy trình",
     "processesNew": "Quy trình mới",
+    "sources": "Nguồn",
     "features": "Features",
     "secrets": "Secrets",
     "groups": "Groups",
@@ -1373,7 +1374,8 @@
       "command": "command",
       "feature": "feature",
       "group": "group",
-      "process_def": "quy trình"
+      "process_def": "quy trình",
+      "source": "nguồn"
     },
     "action": {
       "diff": "Xem khác biệt",

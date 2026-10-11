@@ -203,6 +203,7 @@
     "workflows": "Workflows",
     "processes": "Processes",
     "processesNew": "New process",
+    "sources": "Sources",
     "features": "Features",
     "secrets": "Secrets",
     "groups": "Groups",
@@ -1373,7 +1374,8 @@
       "command": "command",
       "feature": "feature",
       "group": "group",
-      "process_def": "process"
+      "process_def": "process",
+      "source": "source"
     },
     "action": {
       "diff": "View differences",

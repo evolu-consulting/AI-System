@@ -25,7 +25,8 @@ export type ConflictEntity =
   | "command"
   | "feature"
   | "group"
-  | "process_def";
+  | "process_def"
+  | "source";
 
 export type ConflictDialogProps = {
   entity: ConflictEntity;

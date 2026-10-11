@@ -1,0 +1,142 @@
+{
+  "title": "Reference sources",
+  "subtitle": "Public Git repositories, paths on the Runtime machine or library documents that agents may read (read-only) while running a process.",
+  "add": "Add source",
+  "col": {
+    "key": "Key",
+    "kind": "Type",
+    "desc": "Description",
+    "target": "Target",
+    "usedBy": "Used by",
+    "status": "Status"
+  },
+  "table": "Sources",
+  "filter": {
+    "tenant": "Company",
+    "kind": "Source type",
+    "kindAll": "All types",
+    "search": "Search by key"
+  },
+  "kind": {
+    "git_remote": "Public Git",
+    "local_path": "Local path",
+    "library": "Library document"
+  },
+  "target": {
+    "hidden": "Hidden (platform admin only)",
+    "library": "Library document"
+  },
+  "usedBy": {
+    "none": "—",
+    "count_one": "{{count}} process",
+    "count_other": "{{count}} processes"
+  },
+  "status": {
+    "unchecked": "Not checked",
+    "pinned": "Checked · {{pin}}",
+    "snapshot": "snapshot"
+  },
+  "row": {
+    "actions": "Actions for {{key}}",
+    "edit": "Edit",
+    "view": "View",
+    "check": "Test connection",
+    "delete": "Delete",
+    "checkForbidden": "Only platform administrators can test this source."
+  },
+  "loading": "Loading sources…",
+  "empty": "No sources yet.",
+  "loadError": "Could not load sources.",
+  "retry": "Retry",
+  "more": "Load more",
+  "forbidden": "You do not have permission to view this page.",
+  "needTenant": "Select a company to view its sources.",
+  "drawer": {
+    "new": "Add source",
+    "edit": "Edit source {{key}}",
+    "view": "View source {{key}}"
+  },
+  "field": {
+    "key": "Source key",
+    "keyHint": "2–32 characters: lowercase letters, digits, hyphens. Cannot be changed after creation.",
+    "kind": "Source type",
+    "url": "Git repository URL (https)",
+    "branch": "Branch",
+    "path": "Path on the Runtime machine",
+    "document": "Library document",
+    "documentVersion": "Current version: {{version}}",
+    "documentPlaceholder": "Select a document",
+    "documentSearch": "Search documents…",
+    "documentEmpty": "No documents found.",
+    "documentError": "Could not load documents.",
+    "tenant": "Company",
+    "tenantPlaceholder": "Select a company",
+    "desc": "Description",
+    "descHint": "A short note so the agent knows what this source is for.",
+    "descCount": "{{n}}/{{max}}"
+  },
+  "git": {
+    "publicOnly": "Public repositories only. Private repositories are not supported yet."
+  },
+  "local": {
+    "warning": "This path is on the machine that runs the Runtime, not on your computer. It must be inside a configured root directory."
+  },
+  "view": {
+    "localNote": "Only platform administrators can see and edit the path of a local-path source."
+  },
+  "save": "Save",
+  "cancel": "Cancel",
+  "check": {
+    "saveFirst": "Save the source first, then test the connection.",
+    "dirty": "You have unsaved changes. Save before testing.",
+    "running": "Testing…",
+    "okGit": "Connected: {{branch}} → {{sha}} · {{files}} files · {{size}}",
+    "okLibrary": "Document is readable · version {{version}} · {{size}}",
+    "okLocal": "Path is valid · {{files}} files · {{size}}"
+  },
+  "err": {
+    "key": { "invalid": "The key must be 2–32 characters: lowercase letters, digits or hyphens." },
+    "url": {
+      "required": "Enter the Git repository URL.",
+      "https": "The URL must start with https://.",
+      "credential": "Do not put a username or password in the URL. Use a public repository only.",
+      "tooLong": "The URL can be at most 2048 characters."
+    },
+    "branch": {
+      "required": "Enter a branch name.",
+      "dash": "A branch name cannot start with “-”.",
+      "tooLong": "A branch name can be at most 255 characters."
+    },
+    "path": {
+      "required": "Enter a path.",
+      "tooLong": "The path can be at most 1024 characters."
+    },
+    "document": { "required": "Select a document." },
+    "tenant": { "required": "Select a company." },
+    "desc": { "tooLong": "The description can be at most 500 characters." }
+  },
+  "apiError": {
+    "SOURCE_KEY_TAKEN": "The key “{{key}}” is already used in this company.",
+    "SOURCE_HOST_NOT_ALLOWED": "This host is not allowed. Only public Git repositories on hosts your administrators have allowed are supported.",
+    "SOURCE_FORBIDDEN_KIND": "Only platform administrators can create, edit, delete or test local-path sources.",
+    "SOURCE_UNRESOLVABLE": "Could not read this source. Check the URL, branch or path and try again.",
+    "SOURCE_TOO_LARGE": "The source is too large: at most 50 MB and 2,000 files after filtering. Narrow the source or the allowed paths.",
+    "SOURCE_NOT_FOUND": "This source no longer exists.",
+    "SOURCE_IN_USE": "You cannot change the type of a source that processes use.",
+    "TIMEOUT": "No response from the Runtime. Try again later.",
+    "GENERIC": "The action could not be completed. Try again later."
+  },
+  "toast": {
+    "created": "Source {{key}} created",
+    "saved": "Source {{key}} saved",
+    "deleted": "Source {{key}} deleted"
+  },
+  "delete": {
+    "title": "Delete source {{key}}?",
+    "body": "Processes no longer use this source. Runs already using a pinned version are not affected.",
+    "submit": "Delete",
+    "blockedTitle": "Cannot delete source {{key}}",
+    "blockedBody": "This source is used by the processes below. Remove it from these stages before deleting.",
+    "ref": "{{process}} · stage {{stage}}"
+  }
+}

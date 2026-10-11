@@ -32,10 +32,18 @@ describe("process-locales", () => {
     expect(vi["process.thread.err.noAgent"]).toContain("@");
     expect(vi["process.common.status.needs_decision"]).toBe("Cần người quyết");
   });
+  test("khoá nguyên văn e2e của Nguồn (VI)", async () => {
+    const vi = flat((await loadProcessLocale("vi", ["sources", "inputs"])) as Tree);
+    expect(vi["process.sources.title"]).toBe("Nguồn tham chiếu");
+    expect(vi["process.sources.add"]).toBe("Thêm nguồn");
+    expect(vi["process.sources.field.path"]).toBe("Đường dẫn trên máy Runtime");
+    expect(vi["process.sources.delete.title"]).toBe("Xoá nguồn {{key}}?");
+    expect(vi["process.inputs.form.start"]).toBe("Bắt đầu quy trình");
+  });
   test("chọn phần: chỉ common + admin", async () => {
     const t = (await loadProcessLocale("en", ["common", "admin"])) as { process: Tree };
     expect(Object.keys(t.process)).toEqual(["common", "admin"]);
-    expect(PROCESS_LOCALE_PARTS).toHaveLength(8);
+    expect(PROCESS_LOCALE_PARTS).toHaveLength(10);
   });
   test("toSingleBrace: {{x}} → {x} đệ quy", () => {
     expect(toSingleBrace({ a: { b: "Chào {{name}}, {{n}}/{{max}}" }, c: 1 })).toEqual({

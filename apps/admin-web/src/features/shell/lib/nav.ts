@@ -1,4 +1,5 @@
 // ADM-FR-60, ADM-FR-04, ADM-FR-10 · mục menu theo role: Tổng quan; TRUY CẬP: Tenants (chỉ platform_admin), Users; HỆ THỐNG (cuối, M4): Chi phí & quota, Nhật ký (cả hai role), Import / Export (chỉ platform_admin).
+// CR-060 (P-b FS1): CHỨC NĂNG có thêm Nguồn (`/sources`, cả hai role, cùng cờ engine với Quy trình).
 // CR-054: CHỨC NĂNG có Agents (cả hai role; tenant_admin chỉ thấy Agents trong nhóm này).
 // TRUY CẬP gồm cả Groups và Phân quyền (M3, tenant_admin cũng thấy); CHỨC NĂNG (trên TRUY CẬP, plan-frontend D3): Features, Commands, Workflows; BẢO MẬT (dưới cùng): Secrets (M2, chỉ platform_admin).
 import type { Role } from "@ai/contracts";
@@ -12,6 +13,7 @@ export type NavId =
   | "commands"
   | "workflows"
   | "processes"
+  | "sources"
   | "groups"
   | "access"
   | "secrets"
@@ -29,6 +31,7 @@ type NavTo =
   | "/commands"
   | "/workflows"
   | "/processes"
+  | "/sources"
   | "/secrets"
   | "/usage"
   | "/audit"
@@ -45,6 +48,7 @@ export type NavItem = {
     | "nav.commands"
     | "nav.workflows"
     | "nav.processes"
+    | "nav.sources"
     | "nav.groups"
     | "nav.access"
     | "nav.secrets"
@@ -71,6 +75,7 @@ const FEATURES = item("features", "/features");
 const COMMANDS = item("commands", "/commands");
 const WORKFLOWS = item("workflows", "/workflows");
 const PROCESSES = item("processes", "/processes");
+const SOURCES = item("sources", "/sources");
 const GROUPS = item("groups", "/groups");
 const ACCESS = item("access", "/access");
 const SECRETS = item("secrets", "/secrets");
@@ -78,12 +83,12 @@ const USAGE = item("usage", "/usage");
 const AUDIT = item("audit", "/audit");
 const TRANSFER = item("transfer", "/transfer");
 
-/** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn. */
+/** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn; kéo theo mục "Nguồn" (P-b FS1). */
 export type NavOptions = { processes?: boolean };
 
 /** Menu theo role. `member` không dùng khung quản trị nên không có mục nào. Mục "Quy trình" (CHỨC NĂNG, cả hai role) chỉ khi `opts.processes`. */
 export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGroup[] {
-  const proc = opts.processes ? [PROCESSES] : [];
+  const proc = opts.processes ? [PROCESSES, SOURCES] : [];
   if (role === "platform_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },
@@ -143,6 +148,7 @@ export function crumbsFor(pathname: string): Crumb[] {
   if (pathname === "/users") return [{ labelKey: "nav.users" }];
   if (pathname === "/agents") return [{ labelKey: "nav.agents" }];
   if (pathname === "/access") return [{ labelKey: "nav.access" }];
+  if (pathname === "/sources") return [{ labelKey: "nav.sources" }];
   if (pathname === "/secrets") return [{ labelKey: "nav.secrets" }];
   if (pathname === "/account/password") return [{ labelKey: "account.changePassword" }];
   if (pathname === "/account/2fa") return [{ labelKey: "account.twofa" }];

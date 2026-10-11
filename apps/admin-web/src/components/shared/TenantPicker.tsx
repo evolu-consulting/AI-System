@@ -17,20 +17,24 @@ type Props = {
   /** Mã công ty đang chọn, hoặc `null` = tất cả. */
   value: string | null;
   onChange: (key: string | null) => void;
+  /** Nhãn truy cập (mặc định "Tenant"); Nguồn dùng "Công ty" (P-b FS3). */
+  label?: string;
+  /** Chữ của mục "không chọn" (mặc định "Tất cả tenant"). */
+  allLabel?: string;
 };
 
-export function TenantPicker({ tenants, value, onChange }: Props) {
+export function TenantPicker({ tenants, value, onChange, label, allLabel }: Props) {
   const { t } = useTranslation();
   return (
     <Select
       value={value ?? ALL_TENANTS}
       onValueChange={(v) => onChange(v === ALL_TENANTS ? null : v)}
     >
-      <SelectTrigger aria-label={t("common.tenantPicker.label")} className="w-48">
+      <SelectTrigger aria-label={label ?? t("common.tenantPicker.label")} className="w-48">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ALL_TENANTS}>{t("common.tenantPicker.all")}</SelectItem>
+        <SelectItem value={ALL_TENANTS}>{allLabel ?? t("common.tenantPicker.all")}</SelectItem>
         {tenants.map((tn) => (
           <SelectItem key={tn.id} value={tn.key} className="font-mono">
             {tn.key}

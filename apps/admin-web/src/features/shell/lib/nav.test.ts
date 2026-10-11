@@ -98,6 +98,8 @@ describe("P-a · mục Quy trình theo cờ engine", () => {
   test("mặc định ẩn ở cả hai role", () => {
     expect(ids("platform_admin")).not.toContain("processes");
     expect(ids("tenant_admin")).not.toContain("processes");
+    expect(ids("platform_admin")).not.toContain("sources");
+    expect(ids("tenant_admin")).not.toContain("sources");
   });
   test("engine on: có ở CHỨC NĂNG của platform_admin và tenant_admin", () => {
     for (const role of ["platform_admin", "tenant_admin"] as const) {
@@ -105,11 +107,13 @@ describe("P-a · mục Quy trình theo cờ engine", () => {
         (x) => x.labelKey === "nav.group.features",
       );
       expect(g?.items.map((i) => i.id)).toContain("processes");
+      expect(g?.items.map((i) => i.id)).toContain("sources");
     }
   });
   test("member không có mục nào dù cờ on; crumbs /processes*", () => {
     expect(navGroups("member", { processes: true })).toEqual([]);
     expect(crumbsFor("/processes")).toEqual([{ labelKey: "nav.processes" }]);
+    expect(crumbsFor("/sources")).toEqual([{ labelKey: "nav.sources" }]);
     expect(crumbsFor("/processes/new")).toEqual([
       { labelKey: "nav.processes", to: "/processes" },
       { labelKey: "nav.processesNew" },

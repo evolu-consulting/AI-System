@@ -11,6 +11,8 @@ export const PROCESS_LOCALE_PARTS = [
   "inbox",
   "usage",
   "admin",
+  "sources",
+  "inputs",
 ] as const;
 export type ProcessLocalePart = (typeof PROCESS_LOCALE_PARTS)[number];
 type Tree = Record<string, unknown>;
@@ -25,6 +27,8 @@ const LOADERS: Record<Locale, Record<ProcessLocalePart, () => Promise<{ default:
     inbox: () => import("../locales/process/inbox.vi.json"),
     usage: () => import("../locales/process/usage.vi.json"),
     admin: () => import("../locales/process/admin.vi.json"),
+    sources: () => import("../locales/process/sources.vi.json"),
+    inputs: () => import("../locales/process/inputs.vi.json"),
   },
   en: {
     common: () => import("../locales/process/common.en.json"),
@@ -35,6 +39,8 @@ const LOADERS: Record<Locale, Record<ProcessLocalePart, () => Promise<{ default:
     inbox: () => import("../locales/process/inbox.en.json"),
     usage: () => import("../locales/process/usage.en.json"),
     admin: () => import("../locales/process/admin.en.json"),
+    sources: () => import("../locales/process/sources.en.json"),
+    inputs: () => import("../locales/process/inputs.en.json"),
   },
 };
 

@@ -1,0 +1,39 @@
+{
+  "form": {
+    "title": "Thông tin cho quy trình {{name}}",
+    "hint": "Điền những gì bạn đã biết. Thiếu gì, agent sẽ hỏi lại.",
+    "start": "Bắt đầu quy trình",
+    "cancel": "Huỷ",
+    "required": "Nên điền"
+  },
+  "field": {
+    "file": {
+      "pick": "Chọn tệp — {{label}}",
+      "remove": "Bỏ tệp",
+      "uploading": "Đang tải tệp…",
+      "error": "Không tải được tệp. Thử lại hoặc chọn tệp khác."
+    },
+    "source": "{{label}} · Nguồn",
+    "sourcePlaceholder": "Chọn nguồn",
+    "branch": "{{label}} · Nhánh (branch)",
+    "branchPlaceholder": "main",
+    "select": { "placeholder": "Chọn một giá trị" }
+  },
+  "sources": {
+    "loading": "Đang tải nguồn…",
+    "empty": "Công ty chưa khai báo nguồn Git nào.",
+    "error": "Không tải được danh sách nguồn."
+  },
+  "err": {
+    "text": { "tooLong": "Nội dung quá dài." },
+    "branch": {
+      "required": "Nhập tên nhánh cho nguồn đã chọn.",
+      "dash": "Tên nhánh không được bắt đầu bằng dấu “-”.",
+      "tooLong": "Tên nhánh tối đa 255 ký tự."
+    },
+    "sourceUnresolvable": "Không bắt đầu được: không đọc được một nguồn của quy trình. Báo quản trị viên công ty kiểm tra nguồn.",
+    "sourceInvalid": "Nguồn hoặc nhánh đã chọn không hợp lệ.",
+    "generic": "Không bắt đầu được quy trình. Thử lại sau."
+  },
+  "ask": { "chipTitle": "{{key}} — {{description}}" }
+}

@@ -18,6 +18,7 @@ import { Route as AuthedAgentsRouteImport } from './routes/_authed/agents'
 import { Route as AuthedAuditRouteRouteImport } from './routes/_authed/audit/route'
 import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
+import { Route as AuthedSourcesRouteImport } from './routes/_authed/sources'
 import { Route as AuthedTransferRouteImport } from './routes/_authed/transfer'
 import { Route as AuthedUsageRouteImport } from './routes/_authed/usage'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
@@ -86,6 +87,11 @@ const AuthedMemberRoute = AuthedMemberRouteImport.update({
 const AuthedSecretsRoute = AuthedSecretsRouteImport.update({
   id: '/secrets',
   path: '/secrets',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSourcesRoute = AuthedSourcesRouteImport.update({
+  id: '/sources',
+  path: '/sources',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedTransferRoute = AuthedTransferRouteImport.update({
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/agents': typeof AuthedAgentsRoute
   '/member': typeof AuthedMemberRoute
   '/secrets': typeof AuthedSecretsRoute
+  '/sources': typeof AuthedSourcesRoute
   '/transfer': typeof AuthedTransferRoute
   '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByTo {
   '/agents': typeof AuthedAgentsRoute
   '/member': typeof AuthedMemberRoute
   '/secrets': typeof AuthedSecretsRoute
+  '/sources': typeof AuthedSourcesRoute
   '/transfer': typeof AuthedTransferRoute
   '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
@@ -297,6 +305,7 @@ export interface FileRoutesById {
   '/_authed/agents': typeof AuthedAgentsRoute
   '/_authed/member': typeof AuthedMemberRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
+  '/_authed/sources': typeof AuthedSourcesRoute
   '/_authed/transfer': typeof AuthedTransferRoute
   '/_authed/usage': typeof AuthedUsageRoute
   '/_authed/users': typeof AuthedUsersRoute
@@ -335,6 +344,7 @@ export interface FileRouteTypes {
     | '/agents'
     | '/member'
     | '/secrets'
+    | '/sources'
     | '/transfer'
     | '/usage'
     | '/users'
@@ -369,6 +379,7 @@ export interface FileRouteTypes {
     | '/agents'
     | '/member'
     | '/secrets'
+    | '/sources'
     | '/transfer'
     | '/usage'
     | '/users'
@@ -405,6 +416,7 @@ export interface FileRouteTypes {
     | '/_authed/agents'
     | '/_authed/member'
     | '/_authed/secrets'
+    | '/_authed/sources'
     | '/_authed/transfer'
     | '/_authed/usage'
     | '/_authed/users'
@@ -502,6 +514,13 @@ declare module '@tanstack/react-router' {
       path: '/secrets'
       fullPath: '/secrets'
       preLoaderRoute: typeof AuthedSecretsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/sources': {
+      id: '/_authed/sources'
+      path: '/sources'
+      fullPath: '/sources'
+      preLoaderRoute: typeof AuthedSourcesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/transfer': {
@@ -699,6 +718,7 @@ interface AuthedRouteChildren {
   AuthedAgentsRoute: typeof AuthedAgentsRoute
   AuthedMemberRoute: typeof AuthedMemberRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
+  AuthedSourcesRoute: typeof AuthedSourcesRoute
   AuthedTransferRoute: typeof AuthedTransferRoute
   AuthedUsageRoute: typeof AuthedUsageRoute
   AuthedUsersRoute: typeof AuthedUsersRoute
@@ -732,6 +752,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAgentsRoute: AuthedAgentsRoute,
   AuthedMemberRoute: AuthedMemberRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,
+  AuthedSourcesRoute: AuthedSourcesRoute,
   AuthedTransferRoute: AuthedTransferRoute,
   AuthedUsageRoute: AuthedUsageRoute,
   AuthedUsersRoute: AuthedUsersRoute,
