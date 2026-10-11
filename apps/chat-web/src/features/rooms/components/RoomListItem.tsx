@@ -54,7 +54,7 @@ export function RoomListItem({ room, myId, active, onOpen, menu }: Props) {
           >
             {title}
           </span>
-          <span id={`${uid}-d`} className="truncate text-xs text-muted-foreground">
+          <span id={`${uid}-d`} className="relative truncate text-xs text-muted-foreground">
             {preview}
             <span className="sr-only">{unreadText}</span>
           </span>

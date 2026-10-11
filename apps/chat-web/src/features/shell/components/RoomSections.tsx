@@ -43,7 +43,7 @@ function Loading() {
 }
 
 function Empty({ children }: { children: string }) {
-  return <p className="px-2.5 py-2 text-sm text-muted-foreground">{children}</p>;
+  return <p className="px-2.5 py-2 text-sm break-words text-muted-foreground">{children}</p>;
 }
 
 function PersonItem({

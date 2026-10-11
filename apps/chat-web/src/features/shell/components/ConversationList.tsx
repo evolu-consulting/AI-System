@@ -70,7 +70,7 @@ export function ConversationList({ q, activeId, onNavigate }: Props) {
   }
   if (list.items.length === 0) {
     return (
-      <p className="px-2.5 py-3 text-sm text-muted-foreground">
+      <p className="px-2.5 py-3 text-sm break-words text-muted-foreground">
         {q ? t("sidebar.noMatch", { q }) : t("sidebar.empty")}
       </p>
     );

@@ -65,7 +65,7 @@ export function Sidebar(p: Props) {
         onChange={(e) => p.onQueryChange(e.target.value)}
         className="h-9 bg-muted"
       />
-      <div className="relative -mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+      <div className="relative -mx-1 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-1">
         {processOn && <TodoGroup />}
         <RoomSections
           usersPinned={processOn ? <ProcessDmRow /> : undefined}
