@@ -78,12 +78,45 @@ BA là nguồn sự thật (link ở frontmatter); chỉ ghi phần BA chưa nó
 | PB-R22 | **Smoke thật (D7):** Claude thật (claude-sub) chạy bằng agent CÓ TRẦN TOKEN, mặc định smoke ≤ **50k** token; ép `allowedTools=Read,Grep,Glob` + hook PB-R10. Smoke thuộc UAT, KHÔNG vào "Lệnh xong" CI (CI dùng `fake-cli`) | WRK-BR-07a |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead -->
-File gợi ý: `packages/contracts/src/hub-admin.ts` (CRUD nguồn, check kết nối), mở rộng `process_defs` (nguồn/đầu vào/`must_know`), `payload.sources` của job (`packages/contracts` Hub↔Runtime), mã lỗi mới. Cần định nghĩa thêm: **kênh Hub→Runtime** xin resolve ghim + nhận `snapshot_id`/SHA (PB-R05), endpoint danh sách chip cho user thường (PB-R21). Ghi trước khi code: `SOURCE_HOST_NOT_ALLOWED`, `SOURCE_UNRESOLVABLE`, `SOURCE_IN_USE`, `SOURCE_FORBIDDEN_KIND` (tenant_admin tạo `local_path`), `SOURCE_TOO_LARGE`.
+<!-- backend-lead · HUB-FR-120…124, ADM-FR-68/69, WRK-FR-27, PB-R01–R22. Bảng trường ĐẦY ĐỦ + luồng ở plan.md §3–§4. z.strictObject khắp. -->
+**Files:** `contracts/src/hub-admin/sources.ts` (kiểu + CRUD + check) · mở rộng `hub-admin/processes.ts` (def `sources`/`inputs`; stage `sources`/`must_know`) · `hub/job.ts` (`AgentCliJob.sources`, `SourceResolveJob`) · `hub-internal/sources.ts` (kênh resolve) · `chat/processes.ts` (`RunProcessDefRequest.inputs`, `DecisionReason += "source_unresolvable"`, `ProcessSourceChip`) · `hub-admin/errors.ts` (`SOURCE_*`). Pydantic `hub.py` tự sinh (`contracts:gen`) ⇒ khai `payload.sources` ở zod là đủ; kiểm `JobPayload1.sources` có sau gen.
+
+**3.1 Kiểu** (`sources.ts`): `SourceKey` `^[a-z0-9-]{2,32}$` · `SourceKind` enum(3 loại) · `SourceConfig` disc("kind"): git_remote `{url https ≤2048, từ chối user:pass@; branch 1..255 không mở đầu "-"}` / local_path `{path 1..1024}` (realpath/gốc kiểm ở Runtime) / library `{document_id uuid}` · `SourceConfigPublic` = như trên nhưng local_path ẩn `path` (PB-R21) · `SourcePin` disc("kind"): git_remote `{url,sha ^[0-9a-f]{40}$}` / local_path `{path,snapshot_id uuid}` / library `{document_id,version uuid}` · `GlobSchema` ≤256, cấm `..`/tuyệt đối (PB-R06).
+
+**3.2 CRUD** base `/admin/sources` (tenant_admin; ghi `local_path` chỉ platform_admin, PB-R21). `SourceView = {id,tenant_id,key,kind,config(theo quyền),description,version,used_by:string[],last_pin:SourcePin|null,created_at,updated_at,updated_by}`.
+| Method·Path | Req | 2xx | Lỗi |
+|---|---|---|---|
+| GET `/admin/sources` | q`{tenant_id?,kind?,limit≤100=20,cursor?}` | 200 `{items,next_cursor}` | — |
+| POST | `{key,kind,config,description,tenant_id?(platform_admin+local_path)}` | 201 View | 409 `SOURCE_KEY_TAKEN`·422 `SOURCE_HOST_NOT_ALLOWED`·403 `SOURCE_FORBIDDEN_KIND` |
+| GET `/:key` | q`{tenant_id?}` | 200 View | 404 `SOURCE_NOT_FOUND` |
+| PUT `/:key` | `{config,description,version}` | 200 View | 409 `VERSION_CONFLICT`/`SOURCE_IN_USE`(đổi kind)·403 |
+| DELETE `/:key` | q`{tenant_id?,version}` | 204 | 409 `SOURCE_IN_USE`(details `{process_key,stage_key}[]`)·403 |
+| POST `/:key/check` | q`{tenant_id?}` | 200 `{pin:SourcePin,files,bytes}` | 422 `SOURCE_UNRESOLVABLE`/`_HOST_NOT_ALLOWED`/`_TOO_LARGE` |
+
+Phân trang cursor như `processes.ts`. "Kiểm tra kết nối" = enqueue `source.resolve` 1 nguồn, chờ đồng bộ (§3.5).
+
+**3.3 Chip user thường** (PB-R21): `GET /process-runs/sources` (chat, member) → `{items: ProcessSourceChip[]}`, `ProcessSourceChip={key,kind,description}` (KHÔNG config). Cho AskCard + form `!key` `source_ref` (client lọc `kind='git_remote'`).
+
+**3.4 `process_defs` mở rộng** (`processes.ts`): def `sources: SourceKey[] ≤20` + `inputs: ProcessInputDef[] ≤10` (`{key:SourceKey,label ≤80,type enum(text,select,file,source_ref),required,options?≤20 chỉ select}`); stage `sources: StageSource[] ≤5` (`{source_key:SourceKey,allowlist:Glob[] ≤20}`) + `must_know: string[] ≤10 mỗi ≤200`. superRefine def: `stage.sources[].source_key ∈ def.sources` else 422 `PROCESS_REF_INVALID`.
+
+**3.5 Bắt đầu run + kênh resolve (PB-R05/D4 — cốt lõi).** `RunProcessDefRequest` thêm `inputs: ProcessInputValue[] ≤10 optional` (discriminatedUnion type: text`{key,text}`/select`{key,value≤200}`/file`{key,attachment_id}`/source_ref`{key,source_key,branch≤255}`); thiếu `required` vẫn bắt đầu (agent hỏi, AC-H37); `source_ref` gửi thì `source_key` phải thuộc tenant + git_remote else 422 (PB-R13). `pinned_sources` KHÔNG trong request.
+Job agent.cli (`job.ts`) thêm `sources: JobSource[] ≤5 optional` (`{key,kind,pin:SourcePin,allowlist:Glob[]≤20}`; Runtime mount `work/<job_id>/sources/<key>/`); job có nguồn ⇒ Hub ép `allowed_tools=["Read","Grep","Glob"]` (PB-R10).
+**Kênh** (tái dùng `hub.jobs`, Hub KHÔNG egress): job type mới `source.resolve` (payload `SourceResolveJob`, items `ResolveItem` gồm `config` ĐẦY ĐỦ + `allowlist_union`). Runtime báo về `POST /internal/jobs/:job_id/sources-resolved` (Bearer job-token như `/outputs`; mọi sai→401, PB-R18), body `{results: ResolveResult[]}` disc("status") ok/error (error.code = 4 mã `SOURCE_*`). Shape trường + luồng/timeout/thất bại (→`needs_decision` reason `source_unresolvable`): **plan.md §4**.
+
+**3.6 Mã lỗi** (`hub-admin/errors.ts`): `SOURCE_KEY_TAKEN`409 · `SOURCE_HOST_NOT_ALLOWED`422 · `SOURCE_UNRESOLVABLE`422 · `SOURCE_IN_USE`409 · `SOURCE_FORBIDDEN_KIND`403 · `SOURCE_TOO_LARGE`422 · `SOURCE_NOT_FOUND`404. Cross-tenant⇒`SOURCE_NOT_FOUND` (HUB-BR-14). 409 version = `VERSION_CONFLICT` sẵn có.
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead -->
-Gợi ý (BA §8): bảng `hub.sources` (`tenant_id` + RLS, `key`, `kind`, `config`, `created_by`); `process_defs.sources/inputs`, stage `sources[]/allowlist/must_know[]`; `process_runs.snapshot` thêm `pinned_sources[]`; bảng/cột audit nguồn theo job. Migration `0021` (PB-R20); #134 sửa bằng map mã, KHÔNG migration (PB-R17).
+<!-- backend-lead · migration 0021 viết tay idempotent như 0019 (PB-R20); #133/#134 KHÔNG migration. DDL đầy đủ ở plan.md §5. -->
+
+**4.1 `hub.sources`** (mới, RLS "T"): `id uuid PK` · `tenant_id uuid NOT NULL`(không FK admin, P3) · `key text`(CHECK `~'^[a-z0-9-]{2,32}$'`) · `kind text`(CHECK 3 loại) · `config jsonb`(CHECK object; `local_path.path` KHÔNG secret, D2) · `description text DEFAULT ''`(≤500) · `version int DEFAULT 1`(≥1) · `created_by/updated_by uuid NULL` · `created_at/updated_at` · `deleted_at timestamptz NULL`(xoá mềm, guard `SOURCE_IN_USE` trước). Unique `(tenant_id,key) WHERE deleted_at IS NULL`. RLS policy `_hub_rw` theo `v_t`(system OR user∧`tenant_id`=GUC) như 0019; quyền local_path/platform_admin kiểm ở app. GRANT `hub_rw` (gồm UPDATE cho xoá mềm); `agent_runtime` KHÔNG quyền.
+
+**4.2 `hub.source_job_reads`** (audit mới, RLS "T", PB-R11): `{id,tenant_id,process_run_id,stage_run_id,job_id,source_id,source_key,pin jsonb,files_read text[] NULL(D8),bytes_read bigint NULL,created_at}`. FK `(process_run_id,tenant_id)→process_runs(id,tenant_id) ON DELETE CASCADE`. Index `(process_run_id)`,`(source_id)`. KHÔNG token/URL-credential (ghi ở app). Append-only (chỉ INSERT+SELECT qua `hub_rw`).
+
+**4.3 Cột nullable thêm** (chỉ ADD, PB-R20): `process_defs.sources jsonb NULL`(`[{source_id,key}]`,CHECK array) · `process_defs.inputs jsonb NULL`(CHECK array) · `process_runs.pinned_sources jsonb NULL`(**NULL=chưa resolve** = cổng launcher; `[]`=không nguồn; CHECK array khi NOT NULL) · `process_runs.sources_pinned_at timestamptz NULL` · `process_runs.inputs jsonb NULL`. Stage `sources`/`allowlist`/`must_know` nằm trong `process_defs.stages` jsonb; `snapshot.sources` (khai) trong `process_runs.snapshot` jsonb — KHÔNG DDL.
+
+**4.4 `hub.jobs.type` CHECK**: 0021 DROP+ADD `jobs_type_ck` (idempotent, kiểm `pg_constraint`) gồm `source.resolve`. `agent_runtime` claim như `agent.cli` (SKIP LOCKED).
+
+**4.5 #134 / 4.6 #133** — KHÔNG migration, chỉ sửa đường code; phân tích tái hiện + đường ghi sai (file:dòng) + cách sửa đầy đủ ở **plan.md §6**. Tóm: #134 = `team-member.ts closeMemberRun` ghi `status='failed'` thiếu `error_code` ⇒ vi phạm `runs_error_code_ck` (`0000:297`) ⇒ `stage-driver.ts:83` chỉ `abort()` ⇒ run kẹt `running` (PB-R17, AC-PB-03). #133 = `team-exec.ts draftFiles` cấp nháp member `uuid` tạm không persist ⇒ member sau tải 404; PB-R18 đòi id thuộc chính run+tenant (AC-PB-03/04).
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
