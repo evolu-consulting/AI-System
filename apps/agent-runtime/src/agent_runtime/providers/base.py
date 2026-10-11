@@ -35,6 +35,9 @@ class Progress(_Ev):
 class ToolUse(_Ev):
     type: Literal["tool_use"] = "tool_use"
     name: Annotated[str, Field(min_length=1, max_length=200)]
+    # P-b PF-S2 · D8: đường dẫn `Read` đã truy cập (tương đối `work/<job_id>`), để cha dựng
+    # `source_reads` audit; None cho tool khác / không có đường dẫn.
+    path: Annotated[str, Field(max_length=1024)] | None = None
 
 
 class Session(_Ev):

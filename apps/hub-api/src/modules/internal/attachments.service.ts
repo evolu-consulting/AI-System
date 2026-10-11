@@ -4,7 +4,7 @@
 // `purged_at` / file mất trên kho → `not_found`. Output (R25): ∧ `payload.agent.role='agent'` → `AttachmentService.ingestOutput`
 // (≤ 5/lần claim, luồng tải lên). Mọi sai xác thực → cùng `unauthorized` (không lộ tồn tại). Không log token/Authorization.
 import type { Attachment } from "@ai/contracts/chat";
-import { type AgentCliJob, AgentCliJobSchema } from "@ai/contracts/hub";
+import { type AgentCliJob, AgentCliJobSchema, SourceResolveJobSchema } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
@@ -21,7 +21,7 @@ import * as repo from "./credential.repo";
 import { bearerJobToken } from "./credential.service";
 
 export type JobDownloadResult =
-  | { kind: "ok"; blob: Blob; sha256: string }
+  | { kind: "ok"; blob: Blob; sha256: string; filename: string }
   | { kind: "unauthorized" }
   | { kind: "not_found" };
 
@@ -53,10 +53,32 @@ async function agentJob(tx: Tx, token: string, jobId: string): Promise<AgentJob 
 /** Token → job → payload → hàng file (một transaction `system`); null = mọi sai (401). */
 async function findJobFile(tx: Tx, token: string, jobId: string, attId: string): Promise<Found> {
   const found = await agentJob(tx, token, jobId);
-  if (!found) return null;
-  // So nguyên văn (uuid chữ thường của payload) ⇒ id sai dạng / chữ hoa không tới DB (A89).
-  if (!(found.payload.attachments ?? []).some((a) => a.id === attId)) return null;
-  const row = await repo.jobAttachment(tx, attId, found.job.tenantId);
+  if (found) {
+    // So nguyên văn (uuid chữ thường của payload) ⇒ id sai dạng / chữ hoa không tới DB (A89).
+    if (!(found.payload.attachments ?? []).some((a) => a.id === attId)) return null;
+    const row = await repo.jobAttachment(tx, attId, found.job.tenantId);
+    return row ? { row } : null;
+  }
+  return findResolveLibrary(tx, token, jobId, attId);
+}
+
+/** P-b PF-S2 · C15 · job `source.resolve`: `attId` phải là `document_id` của item library trong job;
+ * tài liệu phải cùng tenant + `origin='library'` (cross-tenant ⇒ null ⇒ 404/401). */
+async function findResolveLibrary(
+  tx: Tx,
+  token: string,
+  jobId: string,
+  attId: string,
+): Promise<Found> {
+  const job = await repo.jobByTokenHash(tx, hashJobToken(token));
+  if (!job || job.id !== jobId || job.type !== "source.resolve") return null;
+  const parsed = SourceResolveJobSchema.safeParse(job.payload);
+  if (!parsed.success) return null;
+  const isLibDoc = parsed.data.items.some(
+    (i) => i.kind === "library" && i.config.kind === "library" && i.config.document_id === attId,
+  );
+  if (!isLibDoc) return null;
+  const row = await repo.libraryAttachment(tx, attId, job.tenantId);
   return row ? { row } : null;
 }
 
@@ -97,7 +119,7 @@ export class InternalAttachmentService {
       return NOT_FOUND;
     }
     this.d.log.info("attachment-served", { attachment_id: row.id, job_id: jobId });
-    return { kind: "ok", blob: file, sha256: row.sha256 };
+    return { kind: "ok", blob: file, sha256: row.sha256, filename: row.safe_name };
   }
 
   /**

@@ -36,6 +36,8 @@ from agent_runtime.queue.supervisor import Supervisor
 from agent_runtime.queue.sweeper import SweepConfig, orphan_own_jobs, run_sweeper
 from agent_runtime.runtimes.cli.probe import ProbeHostCfg
 from agent_runtime.runtimes.cli.quota_rules import ProbeCfg
+from agent_runtime.runtimes.resolve import ResolveHost
+from agent_runtime.sources import config as source_config
 
 Service = Callable[[], Coroutine[Any, Any, None]]
 HostFactory = Callable[[Pool, RunEvents], JobHost]
@@ -73,6 +75,7 @@ class QueueRuntime:
     supervisor: Supervisor
     claimer: Claimer
     probe: ProbeLoop | None = None
+    resolve: ResolveHost | None = None
 
     @property
     def sweep(self) -> SweepConfig:
@@ -93,6 +96,8 @@ class QueueRuntime:
         ]
         if self.probe is not None:
             services.append(self.probe.run)
+        if self.resolve is not None:
+            services.append(lambda: self.resolve.run_loop(s.poll_s))  # type: ignore[union-attr]
         return services
 
     async def shutdown(self) -> None:
@@ -147,4 +152,12 @@ async def start(
     sup = Supervisor(make_host(pool, events))
     claimer = Claimer(pool, sup, events, providers)
     probe = ProbeLoop(pool, events, probe_cfg) if probe_cfg is not None else None
-    return QueueRuntime(settings, pool, listen, redis, events, sup, claimer, probe)
+    src_cfg = source_config.load()
+    resolve = (
+        ResolveHost(pool, src_cfg, settings.hub_url, settings.worker_id)
+        if src_cfg is not None
+        else None
+    )
+    if resolve is not None and src_cfg is not None:
+        log.info("resolve.enabled", cache_dir=str(src_cfg.cache_dir))
+    return QueueRuntime(settings, pool, listen, redis, events, sup, claimer, probe, resolve)

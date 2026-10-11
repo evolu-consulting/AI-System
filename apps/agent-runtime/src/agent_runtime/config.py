@@ -11,7 +11,7 @@ from typing import Annotated, Literal, Self
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-from agent_runtime.log import redact_url
+from agent_runtime.log import mask_url, redact_url
 
 AppEnv = Literal["development", "test", "production"]
 LogLevel = Literal["debug", "info", "warning", "error"]
@@ -162,8 +162,8 @@ class Settings(BaseSettings):
             "app_env": self.app_env,
             "worker_id": self.worker_id,
             "providers": list(self.providers),
-            "database_url": redact_url(self.database_url.get_secret_value()),
-            "redis_url": redact_url(self.redis_url.get_secret_value()),
+            "database_url": mask_url(self.database_url.get_secret_value()),
+            "redis_url": mask_url(self.redis_url.get_secret_value()),
             "work_dir": str(self.work_dir),
             "log_dir": str(self.log_dir),
             "home": str(self.home),

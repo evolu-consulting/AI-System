@@ -39,6 +39,7 @@ from agent_runtime.providers.base import (
     UsageEv,
 )
 from agent_runtime.providers.claude.mcp import job_mcp_tools, read_bearer, tool_name
+from agent_runtime.providers.fake import sources_cli
 from agent_runtime.providers.fake.directives import (
     agreed_message,
     ask_question,
@@ -110,11 +111,11 @@ async def _guarded(job: ProviderJob, tool: str, tool_input: dict[str, object]) -
     return None
 
 
-def _read_len(job: ProviderJob, raw: str) -> int:
-    try:
-        return len(Path(job.work_dir, raw).read_text(errors="replace"))
-    except OSError:
-        return 0
+def _guard_fn(job: ProviderJob):  # noqa: ANN202 — closure (tool, input) -> reason|None
+    async def guard(tool: str, tool_input: dict[str, object]) -> str | None:
+        return await _guarded(job, tool, tool_input)
+
+    return guard
 
 
 def _mcp_target(job: ProviderJob, found: dict[str, str]) -> tuple[str, str, str] | None:
@@ -179,9 +180,15 @@ async def _body(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -
         return files_text(job.work_dir)
     if "write" in found:
         return await _write(job, found["write"])
+    if "tree" in found:  # P-b PF-S2
+        return sources_cli.tree(job.work_dir, found["tree"])
+    if "scan" in found:
+        return sources_cli.scan(job.work_dir, found["scan"])
+    if "obey" in found:
+        guard = _guard_fn(job)
+        return await sources_cli.obey(job.work_dir, found["obey"], guard, emit)
     if "read" in found:
-        denied = await _guarded(job, "Read", {"file_path": found["read"]})
-        return "denied" if denied else f"read: {_read_len(job, found['read'])} chars"
+        return await sources_cli.reads(job.work_dir, found["read"], _guard_fn(job), emit)
     if "tool" in found:
         await emit(ToolUse(name=found["tool"]))
         denied = await _guarded(job, found["tool"], {})

@@ -17,8 +17,12 @@ export function sourcesResolvedRoutes(svc: SourcesResolvedService): Hono {
   // C15/PB-R18: job-token `source.resolve` KHÔNG được tải attachment qua H2c ⇒ 401 (cross-tenant/chưa phục vụ byte S1).
   // Token khác (agent.cli) ⇒ nhường handler H2c. Đăng ký trước mount H2c ⇒ chạy trước, `next()` để fall-through.
   r.get("/jobs/:job_id/attachments/:attachment_id", async (c, next) => {
-    if (await svc.delegateToH2c(c.req.header("authorization"), c.req.param("job_id")))
-      return next();
+    const ok = await svc.delegateToH2c(
+      c.req.header("authorization"),
+      c.req.param("job_id"),
+      c.req.param("attachment_id"),
+    );
+    if (ok) return next();
     return unauthorized(c);
   });
   r.post("/jobs/:job_id/sources-resolved", async (c) => {

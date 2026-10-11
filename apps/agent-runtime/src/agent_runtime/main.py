@@ -28,6 +28,7 @@ from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
 from agent_runtime.runtimes.dify.host import DifyConfig, DifyJobHost
 from agent_runtime.runtimes.dispatch import JobRouter, TypedHost
 from agent_runtime.sandbox.process import disable_dumpable, enable_subreaper
+from agent_runtime.sources import config as source_config
 
 Service = Callable[[], Coroutine[Any, Any, None]]
 
@@ -85,6 +86,7 @@ def host_config(settings: Settings, stopping: asyncio.Event) -> HostConfig:
         delta_flush_chars=s.delta_flush_chars,
         hub_url=s.hub_url,
         cooldown_default_s=s.cooldown_default_s,
+        source_cfg=source_config.load(),
     )
 
 

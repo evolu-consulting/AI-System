@@ -94,6 +94,8 @@ class Seen:
     # HUB-FR-95 §5 #3: Hub từ chối tool `side_effect` (giữ cái đầu; không reset khi thử lại)
     confirm: Confirm | None = None
     streamed: bool = False  # H2b R21: đã phát `job.delta` → không thử lại (giữ qua `next_attempt`)
+    # P-b PF-S2 · D8: đường dẫn `Read` dưới `sources/` đã truy cập (dựng `source_reads` audit).
+    read_paths: list[str] = field(default_factory=list[str])
 
     def total(self) -> UsageSum:
         return self.carried if self.usage is None else self.carried.plus(self.usage)

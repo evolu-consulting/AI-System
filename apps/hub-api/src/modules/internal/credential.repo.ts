@@ -44,6 +44,7 @@ export type JobAttachmentRow = {
   storage_key: string;
   size: number;
   sha256: string;
+  safe_name: string;
   purged_at: Date | string | null;
 };
 
@@ -53,8 +54,21 @@ export async function jobAttachment(
   tenantId: string,
 ): Promise<JobAttachmentRow | undefined> {
   const rows = await tx.execute<JobAttachmentRow>(
-    sql`SELECT id, storage_key, size::int AS size, sha256, purged_at FROM hub.attachments
+    sql`SELECT id, storage_key, size::int AS size, sha256, safe_name, purged_at FROM hub.attachments
       WHERE id = ${attId} AND tenant_id = ${tenantId}`,
+  );
+  return rows[0];
+}
+
+/** P-b PF-S2 · C15 · Tài liệu library của tenant (job `source.resolve` tải qua token) — lọc `origin='library'`. */
+export async function libraryAttachment(
+  tx: Tx,
+  docId: string,
+  tenantId: string,
+): Promise<JobAttachmentRow | undefined> {
+  const rows = await tx.execute<JobAttachmentRow>(
+    sql`SELECT id, storage_key, size::int AS size, sha256, safe_name, purged_at FROM hub.attachments
+      WHERE id = ${docId} AND tenant_id = ${tenantId} AND origin = 'library'`,
   );
   return rows[0];
 }

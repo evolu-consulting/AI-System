@@ -16,7 +16,7 @@ from contextlib import suppress
 from dataclasses import replace
 from typing import TYPE_CHECKING, Protocol
 
-from agent_runtime.contracts.hub import JobPayload1
+from agent_runtime.contracts.hub import JobAttachment, JobPayload1, Source
 from agent_runtime.db import sessions_sql
 from agent_runtime.db.finish_sql import FinishTx
 from agent_runtime.db.jobs_sql import ClaimedJob
@@ -61,6 +61,10 @@ from agent_runtime.runtimes.cli.result import (
 )
 from agent_runtime.runtimes.cli.session import resume_failed, session_key
 from agent_runtime.runtimes.hub_http import make_hub_client
+from agent_runtime.sources.config import SourceConfig
+from agent_runtime.sources.errors import SourceError
+from agent_runtime.sources.mount import mount_all as mount_sources
+from agent_runtime.sources.snapshot import all_ref_run_ids, enforce_lru
 
 if TYPE_CHECKING:
     from agent_runtime.runtimes.cli.runner import CliJobHost
@@ -69,6 +73,29 @@ if TYPE_CHECKING:
 def attachment_failure(why: FetchWhy) -> Failure:
     """H2c F5: tải file lỗi ⇒ `failed INTERNAL_ERROR attachment` (Hub: `run.failed` câu H1)."""
     return Failure("failed", "INTERNAL_ERROR", "attachment", f"attachment fetch failed: {why}")
+
+
+# P-b PF-S2 · C9: mount nguồn thất bại (quá cỡ / không dựng được) ⇒ job `failed`. `error_code` phải
+# thuộc `jobs_error_code_check` (5 mã) nên dùng INTERNAL_ERROR; mã nguồn gốc nằm trong message.
+SOURCE_MOUNT_FAILURE = Failure("failed", "INTERNAL_ERROR", "sandbox", "source config missing")
+
+
+def source_failure(err: SourceError) -> Failure:
+    return Failure("failed", "INTERNAL_ERROR", "sandbox", f"source: {err.code}")
+
+
+def source_reads(sources: list[Source], read_paths: list[str]) -> list[dict[str, object]]:
+    """C18: 1 mục/nguồn trong `payload.sources`; `files_read` = path tương đối gốc nguồn (bỏ tiền
+    tố `sources/<key>/`), nguồn không đọc ⇒ `[]`; `bytes_read` = None (D8)."""
+    by_key: dict[str, set[str]] = {}
+    for p in read_paths:
+        parts = p.split("/", 2)
+        if len(parts) >= 3 and parts[0] == "sources":
+            by_key.setdefault(parts[1], set()).add(parts[2])
+    return [
+        {"source_key": s.key, "files_read": sorted(by_key.get(s.key, set())), "bytes_read": None}
+        for s in sources
+    ]
 
 
 class StopControl(Protocol):
@@ -129,11 +156,12 @@ class JobRun:
         await self._apply(outcome)
 
     async def _prepare_files(self) -> bool:
-        """H2c §3.1/§3.3: làm mới `attachments/` (có file) và `out/` (role `agent`), tải file
-        trước khi chạy provider. Một lần mỗi claim (thử lại trong claim không tải lại)."""
+        """H2c §3.1/§3.3: làm mới `attachments/` (có file) và `out/` (role `agent`), tải file; P-b
+        PF-S2: mount nguồn (`payload.sources`) vào `sources/<key>/` chỉ-đọc. Một lần mỗi claim."""
         items = self.payload.attachments or []
         out = self.payload.agent.role == "agent"
-        if not items and not out:
+        sources = self.payload.sources or []
+        if not items and not out and not sources:
             return True
         try:
             self.out_id = prepare_job_dirs(self.work, attachments=bool(items), out=out)
@@ -141,8 +169,11 @@ class JobRun:
             get_logger().warning("job.attachment_failed", why="path", error=type(err).__name__)
             await self.host.finish_failed(self.job, attachment_failure("path"))
             return False
-        if not items:
-            return True
+        if items and not await self._fetch_files(items):
+            return False
+        return await self._mount_sources(sources) if sources else True
+
+    async def _fetch_files(self, items: list[JobAttachment]) -> bool:
         async with make_hub_client(self.cfg.hub_transport) as client:
             call = FilesCall(
                 client, self.cfg.hub_url, self.job, self.deadline, self.control.stopped
@@ -157,6 +188,36 @@ class JobRun:
         else:  # FetchStopped / lỗi khi cha đang dừng (H1, review H2c v1 #4): cancel ⇒ `cancelled`;
             await self._apply("stopped")  # shutdown/lost ⇒ không ghi
         return False
+
+    async def _mount_sources(self, sources: list[Source]) -> bool:
+        cfg = self.cfg.source_cfg
+        if cfg is None:
+            get_logger().error("job.sources_no_config")
+            await self.host.finish_failed(self.job, SOURCE_MOUNT_FAILURE)
+            return False
+        try:
+            mount_sources(
+                cfg, self.work, str(self.payload.tenant_id), str(self.payload.run_id), sources
+            )
+        except SourceError as err:
+            get_logger().warning("job.source_mount_failed", code=err.code)
+            await self.host.finish_failed(self.job, source_failure(err))
+            return False
+        with suppress(Exception):  # LRU best-effort, không chặn job
+            enforce_lru(cfg, await self._active_runs(cfg))
+        return True
+
+    async def _active_runs(self, cfg: SourceConfig) -> set[str]:
+        run_ids = all_ref_run_ids(cfg)
+        if not run_ids:
+            return set()
+        async with self.host.pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT id::text AS id FROM hub.runs "
+                "WHERE id = ANY($1::uuid[]) AND status = 'running'",
+                list(run_ids),
+            )
+        return {str(r["id"]) for r in rows}
 
     def _retryable(self, outcome: Outcome) -> bool:
         """HUB-FR-95 §5 #5: đã có `Confirm` → không resume/thử lại (lượt sau là run mới). H2b R21:
@@ -223,6 +284,8 @@ class JobRun:
             self.host.events.forget(self.job.id)
         else:
             v = decide_exit(self.payload, self.seen, self.cfg.cooldown_default_s)
+            if v.failure is None and v.output is not None and self.payload.sources:
+                v.output["source_reads"] = source_reads(self.payload.sources, self.seen.read_paths)
             self._log_is_error()
             if v.failure is None and confirmation_forced(
                 self.payload, self.seen.final, self.seen.confirm

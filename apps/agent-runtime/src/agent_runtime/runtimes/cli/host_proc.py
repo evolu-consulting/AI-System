@@ -276,7 +276,7 @@ class HostProcess:
         elif isinstance(ev, Session):
             self.run.seen.session_id = ev.session_id
         elif isinstance(ev, ToolUse):
-            self.run.seen.tool_used = True
+            self._tool_use(ev)
         elif isinstance(ev, Confirm):
             self.run.seen.confirm = self.run.seen.confirm or ev  # §5 #3: giữ cái đầu
         elif isinstance(ev, Final):
@@ -291,6 +291,11 @@ class HostProcess:
             self.run.seen.fatal, self.run.seen.parent_fault = ev, ev is INVALID_EVENT
             return True
         return False
+
+    def _tool_use(self, ev: ToolUse) -> None:
+        self.run.seen.tool_used = True
+        if ev.path is not None:  # P-b PF-S2: Read dưới sources/ → audit source_reads
+            self.run.seen.read_paths.append(ev.path)
 
     async def _delta(self, ev: Delta) -> None:
         """H2b §3.5: chỉ job `stream`, không phải lần thử lại định dạng."""

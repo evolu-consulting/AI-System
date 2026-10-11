@@ -100,8 +100,9 @@ def test_wrk_br_02_secrets_masked_in_repr_and_summary() -> None:
     s = load_settings()
     assert "agent_runtime_dev_pw" not in repr(s)
     summary = s.safe_summary()
-    assert summary["database_url"] == "postgres://agent_runtime:***@localhost:5432/ai_system"
-    assert summary["redis_url"] == "redis://:***@localhost:6379/0"
+    # P-b PB-R11/AU-03: che TOÀN BỘ userinfo (không để lộ cấu trúc `user:***@`) trong log khởi động.
+    assert summary["database_url"] == "postgres://localhost:5432/ai_system"
+    assert summary["redis_url"] == "redis://localhost:6379/0"
     assert "redis_pw" not in str(summary)
 
 

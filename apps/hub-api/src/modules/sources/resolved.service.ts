@@ -12,6 +12,18 @@ import * as repo from "./sources.repo";
 
 export type ResolvedResult = { kind: "ok" } | { kind: "unauthorized" } | { kind: "invalid" };
 
+/** C12 · source_id của items đọc THÔ từ payload jsonb (config có thể "độc", không safeParse). */
+function resolveItemIds(payload: unknown): Set<string> {
+  const items = (payload as { items?: unknown })?.items;
+  const ids = new Set<string>();
+  if (Array.isArray(items))
+    for (const it of items) {
+      const sid = (it as { source_id?: unknown })?.source_id;
+      if (typeof sid === "string") ids.add(sid);
+    }
+  return ids;
+}
+
 function toOutcome(body: SourcesResolvedRequest): ResolveOutcome {
   const err = body.results.find((r) => r.status === "error");
   if (err && err.status === "error") return { kind: "error", code: err.code };
@@ -38,9 +50,9 @@ export class SourcesResolvedService {
       const job = await repo.resolveJobByTokenHash(tx, hashJobToken(token));
       if (!job || job.id !== jobId || job.type !== "source.resolve")
         return { kind: "unauthorized" } as const;
-      const parsed = SourceResolveJobSchema.safeParse(job.payload);
-      if (!parsed.success) return { kind: "unauthorized" } as const;
-      const itemIds = new Set(parsed.data.items.map((i) => i.source_id));
+      // Lấy source_id của items THÔ (KHÔNG safeParse: config "độc" SQL-chèn làm fail GitUrl/Branch
+      // ⇒ không được từ chối report của chính job — PB-R18 đã khoá bằng token). C12.
+      const itemIds = resolveItemIds(job.payload);
       if (body.results.some((r) => !itemIds.has(r.source_id))) return { kind: "invalid" } as const;
       // Check: ghi last_pin cho mọi kết quả ok (pin đầy đủ; strip theo quyền lúc đọc).
       for (const r of body.results)
@@ -55,15 +67,30 @@ export class SourcesResolvedService {
   }
 
   /**
-   * C15/PB-R18 · `/internal/jobs/:id/attachments/:id` chỉ phục vụ job `agent.cli` đang chạy (H2c). Trả true ⇒ nhường H2c;
-   * false ⇒ route trả 401 (token resolve / job đã kết thúc / không có — resolve KHÔNG tải được attachment, cross-tenant 401).
+   * C15/PB-R18 · `/internal/jobs/:id/attachments/:id`: nhường H2c (true) khi (a) job `agent.cli` đang chạy, hoặc (b) job
+   * `source.resolve` và `attId` là `document_id` của item library trong job (tải tài liệu library qua token). Cross-tenant
+   * để H2c tự trả 404/401 (lọc tenant+origin). Khác ⇒ false ⇒ route trả 401.
    */
-  async delegateToH2c(authorization: string | undefined, jobId: string): Promise<boolean> {
+  async delegateToH2c(
+    authorization: string | undefined,
+    jobId: string,
+    attId: string,
+  ): Promise<boolean> {
     const token = bearerJobToken(authorization);
     if (!token) return false;
     const job = await withHubScope(this.db, { kind: "system" }, (tx) =>
       repo.resolveJobByTokenHash(tx, hashJobToken(token)),
     );
-    return !!job && job.id === jobId && job.type === "agent.cli";
+    if (!job || job.id !== jobId) return false;
+    if (job.type === "agent.cli") return true;
+    if (job.type !== "source.resolve") return false;
+    const parsed = SourceResolveJobSchema.safeParse(job.payload);
+    return (
+      parsed.success &&
+      parsed.data.items.some(
+        (i) =>
+          i.kind === "library" && i.config.kind === "library" && i.config.document_id === attId,
+      )
+    );
   }
 }

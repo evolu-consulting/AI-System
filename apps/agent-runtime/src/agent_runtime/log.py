@@ -53,6 +53,15 @@ def redact_url(url: str) -> str:
     return _URL_PASSWORD.sub(r"\1:***@", url)
 
 
+_URL_USERINFO = re.compile(r"(://)[^/@\s]*@")
+
+
+def mask_url(url: str) -> str:
+    """P-b PB-R11: che TOÀN BỘ userinfo (`scheme://user:pass@host` → `scheme://host`) — không lộ
+    cả cấu trúc `user:***@` trong log (AC-H36(g)/AU-03). Dùng cho URL hạ tầng lúc khởi động."""
+    return _URL_USERINFO.sub(r"\1", url)
+
+
 def redact_text(text: str) -> str:
     for pattern, repl in _STRING_RULES:
         text = pattern.sub(repl, text)

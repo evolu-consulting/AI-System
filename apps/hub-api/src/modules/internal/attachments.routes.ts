@@ -48,6 +48,7 @@ export function internalAttachmentRoutes(svc: InternalAttachmentService, log: Lo
         "Content-Type": OCTET,
         "Content-Length": String(res.blob.size),
         [CONTENT_SHA256_HEADER]: res.sha256,
+        [FILENAME_HEADER]: res.filename, // P-b PF-S2: tên tài liệu library cho Runtime snapshot
       });
     if (res.kind === "not_found")
       return c.json(NOT_FOUND_BODY, HUB_INTERNAL_ERRORS.NOT_FOUND, NO_STORE);

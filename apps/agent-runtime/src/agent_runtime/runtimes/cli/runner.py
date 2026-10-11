@@ -43,6 +43,7 @@ from agent_runtime.runtimes.cli.outcome import (
     queued_failure,
 )
 from agent_runtime.runtimes.cli.result import build_output
+from agent_runtime.sources.config import SourceConfig
 
 FINISH_BACKOFF_S = (0.5, 1.0, 2.0)  # ghi "Kết thúc" lỗi DB → thử lại (review H1 #1)
 
@@ -64,6 +65,7 @@ class HostConfig:
     hub_url: str | None = None  # H2c §2 `AGENT_RT_HUB_URL` (tải file/đẩy `out/`)
     cooldown_default_s: int = DEFAULT_COOLDOWN_S  # H3a-R02 `AGENT_RT_COOLDOWN_DEFAULT_S`
     hub_transport: httpx2.AsyncBaseTransport | None = field(default=None, compare=False)
+    source_cfg: SourceConfig | None = None  # P-b PF-S2: mount nguồn (None ⇒ tính năng tắt)
 
 
 _Seen = Seen  # tên cũ (test đơn vị PY-10)
