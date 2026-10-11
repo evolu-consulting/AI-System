@@ -1,6 +1,7 @@
 // HUB-FR-106 · HUB-FR-115 · D5 · CR-056 · ghi hàng `hub.attachments` (origin=output) + blob output stage vào kho cho `team-
-// runner.writeOutput` (tách khỏi `team-runner.ts` cho giới hạn 400 dòng). Blob `.part` được `stage` trong tx quy trình, trả
-// `Staged` ra ngoài để `stage-driver.apply` `commit()` SAU COMMIT (H2c-R05) — PHẢI trước khi báo output (thread/SSE).
+// runner.writeOutput` (tách khỏi `team-runner.ts` cho giới hạn 400 dòng). `outputAttachment` chỉ INSERT trong tx quy trình
+// (callback `withHubScope` có thể CHẠY LẠI khi 40001/40P01 ⇒ KHÔNG chạm kho ở đây). Blob ghi SAU COMMIT bằng
+// `commitOutputBlob` (RV2 #1): một lần duy nhất, không `.part` mồ côi do retry; vẫn TRƯỚC thread/SSE (H2c-R05).
 import { createHash } from "node:crypto";
 import { ATTACH_MAX_BYTES } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
@@ -9,48 +10,56 @@ import { safeErrorFields } from "../../../lib/errors";
 import { type Staged, storageKey } from "../../attachments/storage";
 import type { Ctx, Deps } from "./team-runner";
 
+/** Blob output chờ ghi SAU COMMIT tx (store chỉ chạm một lần, ngoài vùng retry). */
+export type PendingBlob = { key: string; text: string };
+
 /**
- * D5 · CR-056 · HUB-FR-115 · attachment `origin=output` (text/markdown, của người bắt đầu, `job_id` = job cuối) + ghi blob
- * vào kho (`.part`, commit SAU COMMIT tx) để stage kế tải được. Rỗng / không có job ⇒ không tạo hàng. Hàng attachment LUÔN
- * được tạo (giữ `attachment_id` cho test runtime giả không gắn kho); blob chỉ ghi khi có kho (`d.storage`). Lỗi `stage()` /
- * vắng kho ⇒ blob null (hàng còn, nội dung vẫn ở `process_outputs.content`; reconcile mở needs_decision, không chạy lại job).
- * Khoá luôn `tenant_id + '/' + attId` (cách ly tenant).
+ * D5 · CR-056 · HUB-FR-115 · attachment `origin=output` (text/markdown, của người bắt đầu, `job_id` = job cuối). Rỗng /
+ * không có job ⇒ không tạo hàng. Hàng attachment LUÔN được tạo (giữ `attachment_id` cho test runtime giả không gắn kho);
+ * `pending` (ghi blob sau COMMIT) chỉ trả khi có kho (`d.storage`). `sha256`/`size` tính thẳng từ `content` nên hàng khớp
+ * blob ghi sau. Khoá luôn `tenant_id + '/' + attId` (cách ly tenant). CHỈ làm việc DB (callback tx có thể chạy lại).
  */
 export async function outputAttachment(
   d: Deps,
   tx: Tx,
   c: Ctx,
   text: string,
-): Promise<{ id: string; staged: Staged | null } | null> {
+): Promise<{ id: string; pending: PendingBlob | null } | null> {
   const size = Buffer.byteLength(text, "utf8");
   if (size === 0) return null;
   const jobId = c.x.jobId ?? (await lastJobOf(tx, c.x.runId));
   if (!jobId) return null;
   const id = crypto.randomUUID();
   const key = storageKey(c.head.tenant_id, id);
-  const staged = await stageOutputBlob(d, c, key, text);
-  const sha = staged?.sha256 ?? createHash("sha256").update(text, "utf8").digest("hex");
+  const sha = createHash("sha256").update(text, "utf8").digest("hex");
   const filename = c.def.output.filename || `${c.def.name || "output"}.md`;
   await tx.execute(sql`insert into hub.attachments (id, tenant_id, user_id, origin, job_id, filename,
       safe_name, mime, size, sha256, storage_key)
     values (${id}, ${c.head.tenant_id}, ${c.head.started_by}, 'output', ${jobId}, ${filename},
-      ${safeName(`s${c.idx}-v-${filename}`)}, 'text/markdown', ${staged?.size ?? size}, ${sha}, ${key})`);
-  return { id, staged };
+      ${safeName(`s${c.idx}-v-${filename}`)}, 'text/markdown', ${size}, ${sha}, ${key})`);
+  return { id, pending: d.storage ? { key, text } : null };
 }
 
-/** Ghi blob output vào kho (`.part`); vắng kho ⇒ null (test runtime giả). Lỗi kho ⇒ log `error` + null (hàng vẫn tạo). */
-async function stageOutputBlob(d: Deps, c: Ctx, key: string, text: string): Promise<Staged | null> {
-  if (!d.storage) return null;
+/**
+ * CR-056 · ghi blob output vào kho SAU COMMIT tx (RV2 #1 — store chỉ chạm một lần, ngoài vùng retry của `withHubScope`),
+ * TRƯỚC thread/SSE. Lỗi `stage`/`commit` ⇒ log `error` + `discard` (hàng còn, nội dung vẫn ở `process_outputs.content`;
+ * reconcile mở needs_decision, không chạy lại job — D-OUTBLOB-A/B). Vắng kho ⇒ no-op.
+ */
+export async function commitOutputBlob(d: Deps, p: PendingBlob): Promise<void> {
+  if (!d.storage) return;
+  let staged: Staged;
   try {
-    const body = new Blob([text], { type: "text/markdown" }).stream();
-    return await d.storage.stage(key, body, { maxBytes: ATTACH_MAX_BYTES });
+    const body = new Blob([p.text], { type: "text/markdown" }).stream();
+    staged = await d.storage.stage(p.key, body, { maxBytes: ATTACH_MAX_BYTES });
   } catch (e) {
-    d.log.error("process-output-stage-failed", {
-      run_id: c.x.runId,
-      stage_idx: c.idx,
-      ...safeErrorFields(e),
-    });
-    return null;
+    d.log.error("process-output-stage-failed", safeErrorFields(e));
+    return;
+  }
+  try {
+    await staged.commit();
+  } catch (e) {
+    d.log.error("process-output-commit-failed", safeErrorFields(e));
+    await staged.discard().catch(() => {});
   }
 }
 

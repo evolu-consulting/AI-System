@@ -6,14 +6,13 @@ import { DECISION_OPTIONS, type DecisionOption, type DecisionReason } from "@ai/
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { UserEvent } from "../../../lib/user-stream";
-import type { Staged } from "../../attachments/storage";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
 import type { Effect, RunEvent, RunState } from "../core/process-state.rules";
 import { askExcerpt, decisionAssignees } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
 import { executorRefOf } from "./executor-ref";
-import { outputAttachment } from "./output-attachment";
+import { outputAttachment, type PendingBlob } from "./output-attachment";
 import { outputSteps, outputStepsSingle } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
@@ -97,15 +96,15 @@ const missingArray = (missing: readonly string[]) =>
       )}]::text[]`;
 
 /**
- * Hiệu ứng máy trạng thái trong tx quy trình; trả sự kiện phát sau COMMIT + có cần `kick` không + blob output đã `stage`
- * (`.part`) để người gọi `commit()` SAU COMMIT tx — PHẢI trước khi phát thread/SSE (CR-056, H2c-R05). Rollback/null ⇒ gọi
- * `discard()` ngoài này.
+ * Hiệu ứng máy trạng thái trong tx quy trình; trả sự kiện phát sau COMMIT + có cần `kick` không + blob output chờ ghi
+ * (`pending`) để người gọi `commitOutputBlob` SAU COMMIT tx — PHẢI trước khi phát thread/SSE (CR-056, H2c-R05). CHỈ làm việc
+ * DB (callback `withHubScope` có thể chạy lại); không chạm kho ở đây.
  */
 export async function effects(
   d: Deps,
   tx: Tx,
   c: Ctx,
-): Promise<{ events: UserEvent[]; kick: boolean; commits: Staged[] }> {
+): Promise<{ events: UserEvent[]; kick: boolean; pending: PendingBlob[] }> {
   const events: UserEvent[] = [];
   const w = c.ev.kind === "stage_output" ? await writeOutput(d, tx, c) : null;
   const out = w?.out ?? null;
@@ -116,7 +115,7 @@ export async function effects(
   return {
     events,
     kick: c.list.includes("queue_next_stage") || c.list.includes("queue_stage"),
-    commits: w?.staged ? [w.staged] : [],
+    pending: w?.pending ? [w.pending] : [],
   };
 }
 
@@ -142,7 +141,7 @@ async function dispatchEffects(
 }
 
 type OutRow = { id: string; version: number; ok: boolean; missing: string[] };
-type WriteOutput = { out: OutRow; staged: Staged | null };
+type WriteOutput = { out: OutRow; pending: PendingBlob | null };
 async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
   const r = c.x.result as { text: string; sections?: Record<string, string>; summaries?: unknown };
   const text = r.text;
@@ -165,7 +164,7 @@ async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
   if (chk.missing.length > 0)
     await tx.execute(sql`update hub.stage_runs set feedback = ${`Thiếu mục: ${chk.missing.join(", ")}`}
       where id = ${c.x.stageRunId}`);
-  return { out: { id, version, ok: chk.ok, missing: chk.missing }, staged: att?.staged ?? null };
+  return { out: { id, version, ok: chk.ok, missing: chk.missing }, pending: att?.pending ?? null };
 }
 
 async function openReview(

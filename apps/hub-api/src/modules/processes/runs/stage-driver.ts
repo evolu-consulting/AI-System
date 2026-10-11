@@ -8,7 +8,6 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
-import type { Staged } from "../../attachments/storage";
 import { type JobOutcome, runJob } from "../../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../../runs/runs.service";
 import type { RunOutcome } from "../../runs/sse/sse-writer";
@@ -17,6 +16,7 @@ import { processUpdated } from "../core/events";
 import { budgetHit, totalTokens } from "../core/limits.rules";
 import type { ProcessDeps, StageLauncher } from "../core/ports";
 import { type RunEvent, type RunState, transition } from "../core/process-state.rules";
+import { commitOutputBlob } from "./output-attachment";
 import { runTeamStage } from "./team-exec";
 import {
   type ApplyInput,
@@ -142,80 +142,61 @@ async function runAgent(
   };
 }
 
-/** D11 · tx quy trình (scope system, RLS T): máy trạng thái + hiệu ứng. Trả `true` nếu cần `kick`. */
+/** D11 · tx quy trình → ghi blob SAU COMMIT → phát sự kiện/thread. Trả `true` nếu cần `kick`. */
 async function apply(d: Deps, x: ApplyInput): Promise<boolean> {
-  // CR-056 · blob output đã `stage` (`.part`) trong tx — commit SAU COMMIT, discard khi rollback/null (H2c-R05).
-  const staged: Staged[] = [];
-  let out: Awaited<ReturnType<typeof effects>> | null;
-  try {
-    out = await withHubScope(d.db, { kind: "system" }, async (tx) => {
-      // §10/D11 · khoá `process_runs` FOR UPDATE TRƯỚC mọi đọc/ghi: job hoàn tất tự nhiên đua với huỷ (gates) hoặc hết
-      // hạn (sweep) phải chờ tx kia commit rồi đọc lại — không ghi đè trạng thái kết thúc đã commit (hồi sinh run).
-      const head0 = await headOf(tx, x.runId);
-      if (!head0) return null;
-      const locked = await core.lockRun(tx, head0.tenant_id, x.runId);
-      if (!locked) return null;
-      const head = await headOf(tx, x.runId);
-      if (head?.status !== "running") return null;
-      const idx = Number(head.current_stage_idx);
-      const stage = await stageRowOf(tx, x.runId, idx);
-      if (!stage || stage.current_run_id !== x.hubRunId) return null;
-      const def = head.snapshot.stages[idx];
-      if (!def) return null;
-      await tx.execute(sql`update hub.process_runs set tokens_total = tokens_total + ${x.tokens}
-        where id = ${x.runId}`);
-      const ev = await eventFor(tx, x, head, def);
-      const t = transition(buildState(head, stage, def, idx), ev);
-      if (!t.ok) return null;
-      const res = await effects(d, tx, {
-        x,
-        head,
-        stage,
-        def,
-        idx,
-        ev,
-        next: t.next,
-        list: t.effects,
-      });
-      staged.push(...res.commits);
-      const recipients = await core.runRecipients(tx, x.runId, head.tenant_id);
-      res.events.push(
-        ...processUpdated(recipients, {
-          id: x.runId,
-          status: t.next.status,
-          stageIdx: t.next.stageIdx,
-        }),
-      );
-      return res;
-    });
-  } catch (e) {
-    await discardStaged(staged);
-    throw e;
-  }
-  if (!out) {
-    await discardStaged(staged);
-    return false;
-  }
-  // CR-056 · blob phải sẵn trên kho TRƯỚC khi báo output (thread/SSE) ⇒ commit `.part` sau COMMIT tx thành công.
-  for (const s of out.commits) await commitStaged(d, s);
+  const out = await runApplyTx(d, x);
+  if (!out) return false;
+  // CR-056/RV2 #1 · blob ghi NGOÀI tx (callback `withHubScope` có thể chạy lại khi 40001/40P01) + phải sẵn trên kho TRƯỚC
+  // khi báo output (thread/SSE) ⇒ `commitOutputBlob` sau COMMIT, trước publish.
+  for (const p of out.pending) await commitOutputBlob(d, p);
   await publishUserEvents(d.redis, out.events, d.log);
   await d.postThread(x.runId).catch(() => {});
   return out.kick;
 }
 
-/** Rollback/null tx ⇒ xoá mọi `.part` đã ghi (không ném). */
-async function discardStaged(staged: readonly Staged[]): Promise<void> {
-  for (const s of staged) await s.discard().catch(() => {});
-}
-
-/** Rename `.part` → file cuối (R05); lỗi ⇒ log `error` + xoá `.part` (hàng attachment còn, blob thiếu — stage kế 404). */
-async function commitStaged(d: Deps, s: Staged): Promise<void> {
-  try {
-    await s.commit();
-  } catch (e) {
-    d.log.error("process-output-commit-failed", safeErrorFields(e));
-    await s.discard().catch(() => {});
-  }
+/** D11 · tx quy trình (scope system, RLS T): khoá run, máy trạng thái + hiệu ứng (chỉ DB). Null ⇒ bỏ (đua/kết thúc đã commit). */
+async function runApplyTx(
+  d: Deps,
+  x: ApplyInput,
+): Promise<Awaited<ReturnType<typeof effects>> | null> {
+  return withHubScope(d.db, { kind: "system" }, async (tx) => {
+    // §10/D11 · khoá `process_runs` FOR UPDATE TRƯỚC mọi đọc/ghi: job hoàn tất tự nhiên đua với huỷ (gates) hoặc hết
+    // hạn (sweep) phải chờ tx kia commit rồi đọc lại — không ghi đè trạng thái kết thúc đã commit (hồi sinh run).
+    const head0 = await headOf(tx, x.runId);
+    if (!head0) return null;
+    if (!(await core.lockRun(tx, head0.tenant_id, x.runId))) return null;
+    const head = await headOf(tx, x.runId);
+    if (head?.status !== "running") return null;
+    const idx = Number(head.current_stage_idx);
+    const stage = await stageRowOf(tx, x.runId, idx);
+    if (!stage || stage.current_run_id !== x.hubRunId) return null;
+    const def = head.snapshot.stages[idx];
+    if (!def) return null;
+    await tx.execute(sql`update hub.process_runs set tokens_total = tokens_total + ${x.tokens}
+      where id = ${x.runId}`);
+    const ev = await eventFor(tx, x, head, def);
+    const t = transition(buildState(head, stage, def, idx), ev);
+    if (!t.ok) return null;
+    const res = await effects(d, tx, {
+      x,
+      head,
+      stage,
+      def,
+      idx,
+      ev,
+      next: t.next,
+      list: t.effects,
+    });
+    const recipients = await core.runRecipients(tx, x.runId, head.tenant_id);
+    res.events.push(
+      ...processUpdated(recipients, {
+        id: x.runId,
+        status: t.next.status,
+        stageIdx: t.next.stageIdx,
+      }),
+    );
+    return res;
+  });
 }
 
 async function eventFor(tx: Tx, x: ApplyInput, head: RunHead, def: SnapStage): Promise<RunEvent> {
