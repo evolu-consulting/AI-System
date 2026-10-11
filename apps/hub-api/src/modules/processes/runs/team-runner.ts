@@ -276,7 +276,9 @@ async function persistState(tx: Tx, c: Ctx, outputId: string | null): Promise<vo
         current_output_id = ${keepOut ?? sql`current_output_id`},
         finished_at = ${finished ? sql`now()` : sql`finished_at`}, updated_at = now() where id = ${c.x.stageRunId}`);
   else {
-    await tx.execute(sql`update hub.stage_runs set status = 'done', current_output_id = ${keepOut ?? sql`current_output_id`},
+    // #133 · advance tự động: `n.stage` là stage KẾ (hasOutput=false) ⇒ dùng `outputId` của stage VỪA XONG để ghim
+    // `current_output_id`, nếu không output stage này mất (D6 priorFiles rỗng ⇒ thành viên stage sau không có O trước).
+    await tx.execute(sql`update hub.stage_runs set status = 'done', current_output_id = ${outputId ?? sql`current_output_id`},
       finished_at = now(), updated_at = now() where id = ${c.x.stageRunId}`);
     await tx.execute(sql`update hub.stage_runs set status = 'queued', updated_at = now()
       where process_run_id = ${c.x.runId} and stage_idx = ${n.stageIdx}`);

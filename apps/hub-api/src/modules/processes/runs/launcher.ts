@@ -17,6 +17,7 @@ import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/ports";
 import { realActionAllowed } from "../gates/gate.rules";
+import { runScopedFileIds } from "./output-attachment";
 import { stageDriver } from "./stage-driver";
 import { createTeamRun } from "./team-counters";
 import { teamReady } from "./team-load";
@@ -161,7 +162,7 @@ async function launchStage(
   u: AuthUser,
   c: LaunchCtx,
 ): Promise<KickResult> {
-  const priorOut = await priorFiles(tx, c.runId, c.idx, c.head.snapshot.stages);
+  const priorOut = await priorFiles(tx, u.tenantId, c.runId, c.idx, c.head.snapshot.stages);
   const real = await realActionPre(d, tx, { ...c, stages: c.head.snapshot.stages });
   const p: ProcessStage = {
     executor: execOf(c.def),
@@ -311,9 +312,14 @@ type PriorRow = {
   sha256: string;
 };
 
-/** D6 · output đã chốt các stage trước (`stage_runs.current_output_id`) → `RunContext.files` (`s<idx>-v<ver>-<filename>`). */
+/**
+ * D6 · output đã chốt các stage trước (`stage_runs.current_output_id`) → `RunContext.files` (`s<idx>-v<ver>-<filename>`).
+ * PB-R18/#133 · lọc qua `runScopedFileIds`: chỉ attachment thuộc chính run + tenant (chống `process_outputs.attachment_id`
+ * trỏ run/tenant khác — ID-05); id lạ bị loại, job stage vẫn tạo.
+ */
 async function priorFiles(
   tx: Tx,
+  tenantId: string,
   runId: string,
   idx: number,
   stages: readonly SnapStage[],
@@ -326,16 +332,24 @@ async function priorFiles(
     join hub.attachments a on a.id = o.attachment_id
     where s.process_run_id = ${runId} and s.stage_idx < ${idx} and o.attachment_id is not null
     order by o.stage_idx`);
-  return [...rows].map((r) => {
-    const filename = stages[Number(r.stage_idx)]?.output.filename ?? "output.md";
-    return {
-      id: r.attachment_id,
-      name: `s${Number(r.stage_idx)}-v${Number(r.version)}-${filename}`,
-      mime: "text/markdown" as const,
-      size: Number(r.size),
-      sha256: r.sha256,
-    };
-  });
+  const scoped = await runScopedFileIds(
+    tx,
+    runId,
+    tenantId,
+    [...rows].map((r) => r.attachment_id),
+  );
+  return [...rows]
+    .filter((r) => scoped.has(r.attachment_id))
+    .map((r) => {
+      const filename = stages[Number(r.stage_idx)]?.output.filename ?? "output.md";
+      return {
+        id: r.attachment_id,
+        name: `s${Number(r.stage_idx)}-v${Number(r.version)}-${filename}`,
+        mime: "text/markdown" as const,
+        size: Number(r.size),
+        sha256: r.sha256,
+      };
+    });
 }
 
 /** P-R10 · kiểm lại quyền hỏng ⇒ needs_decision{permission_lost|user_inactive}; mở task decision (team-runner). */

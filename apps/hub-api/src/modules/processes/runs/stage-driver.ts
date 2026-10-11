@@ -28,6 +28,7 @@ import {
   type StageResult,
   type StageRow,
   stageRowOf,
+  toDecision,
 } from "./team-runner";
 import { checkTemplate } from "./template.rules";
 
@@ -83,7 +84,33 @@ async function drive(d: Deps, launcher: StageLauncher, ctx: RunContext): Promise
   } catch (err) {
     log.error("process-stage-failed", safeErrorFields(err));
     if (!ctx.writer.done) ctx.writer.abort();
+    // #134 · mạng an toàn: lỗi bất ngờ trong drive (sau khi đã sửa closeMemberRun) KHÔNG được để `process_runs` kẹt
+    // `running` ⇒ chuyển `needs_decision(agent_failed)`. Không ném tiếp (tránh unhandledRejection — TM-11).
+    await failStuckRun(d, ctx.writer.run.id).catch((e) =>
+      log.error("process-stuck-decision-failed", safeErrorFields(e)),
+    );
   }
+}
+
+/** #134 · nếu run quy trình còn `running` (stage-driver ném trước khi apply) ⇒ `toDecision(agent_failed)` (không kẹt). */
+async function failStuckRun(d: Deps, hubRunId: string): Promise<void> {
+  const link = await linkOf(d, hubRunId);
+  if (!link?.process_run_id || !link.stage_run_id) return;
+  const runId = link.process_run_id;
+  const stageRunId = link.stage_run_id;
+  const events = await withHubScope(d.db, { kind: "system" }, async (tx) => {
+    const head = await headOf(tx, runId);
+    if (head?.status !== "running") return [];
+    return toDecision(d, tx, {
+      runId,
+      tenantId: head.tenant_id,
+      idx: Number(head.current_stage_idx),
+      stageRunId,
+      reason: "agent_failed",
+    });
+  });
+  if (events.length > 0) await publishUserEvents(d.redis, events, d.log);
+  await d.postThread(runId).catch(() => {});
 }
 
 /** §4 · `stage.timeout_s` (60..3600) ⇒ `AgentTask.agent.timeoutS` cho job (P1-25). */

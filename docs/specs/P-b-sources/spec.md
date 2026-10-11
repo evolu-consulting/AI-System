@@ -179,8 +179,5 @@ ROADMAP P-b (D2,D4) · P-process-engine §1 (dòng P-b trỏ spec này) · ui-ad
 | C22 | CA-04 `RUNTIME_SOURCE_CACHE_MAX_MB=4`: override env container riêng; không cô lập được ⇒ chuyển test Py dev |
 | C23 | `POST /process-runs` source_ref sai = `VALIDATION_ERROR`; Runtime offline/không claim trong `timeout_s`: check ⇒ 422 `SOURCE_UNRESOLVABLE`; start ⇒ `needs_decision` |
 
-### Trong lúc làm (agent tự quyết theo Luật 2)
-<!-- một dòng mỗi quyết định -->
-
-### Tranh chấp test
-<!-- để trống -->
+### Trong lúc làm + Tranh chấp test
+→ [`spec-decisions.md`](spec-decisions.md) (tách để spec gọn; log tăng dần mỗi lát).

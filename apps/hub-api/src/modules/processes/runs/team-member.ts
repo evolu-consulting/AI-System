@@ -6,7 +6,9 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { RunFile } from "../../attachments/run-files.rules";
 import { type JobOutcome, runJob } from "../../runner/job/job-agent-runner";
+import { runErrorText } from "../../runs/run-errors";
 import { totalTokens } from "../core/limits.rules";
+import { mapTeamError } from "./sources.rules";
 import type { TeamDeps as Deps } from "./team-load";
 
 type Usage = { cache_read_tokens?: number; cache_write_tokens?: number } & TokenUsage;
@@ -18,11 +20,14 @@ const tokensOf = (u: TokenUsage): number =>
     cacheWrite: (u as Usage).cache_write_tokens ?? null,
   });
 
+/** Lý do thành viên lỗi (PB-R17); `not_configured` tách khỏi `agent_failed` (TM-08, gỡ mâu thuẫn readiness #1). */
+export type MemberFailReason = "agent_failed" | "job_timeout" | "not_configured";
+
 /** Kết quả chuẩn hoá một lần gọi thành viên. */
 export type MemberOutcome =
   | { kind: "output"; text: string }
   | { kind: "need_input"; question: string; choices: string[] }
-  | { kind: "failed"; reason: "agent_failed" | "job_timeout" };
+  | { kind: "failed"; reason: MemberFailReason };
 
 export type MemberCall = {
   u: AuthUser;
@@ -41,10 +46,16 @@ export type MemberCall = {
 
 export type MemberResult = { outcome: MemberOutcome; usage: number; jobId: string | null };
 
+/** Mã job lỗi → reason thành viên (PB-R17): TIMEOUT⇒job_timeout, NOT_CONFIGURED⇒not_configured, còn lại⇒agent_failed. */
+function reasonOfCode(code: string): MemberFailReason {
+  if (code === "TIMEOUT") return "job_timeout";
+  if (code === "NOT_CONFIGURED") return "not_configured";
+  return "agent_failed";
+}
+
 function outcomeOf(o: JobOutcome): MemberOutcome {
   if (o.kind === "aborted") return { kind: "failed", reason: "agent_failed" };
-  if (o.kind === "failed")
-    return { kind: "failed", reason: o.code === "TIMEOUT" ? "job_timeout" : "agent_failed" };
+  if (o.kind === "failed") return { kind: "failed", reason: reasonOfCode(o.code) };
   const r = o.output.kind === "agent_result" ? (o.output.result as AgentResult) : null;
   if (!r) return { kind: "failed", reason: "agent_failed" };
   if (r.status === "need_input")
@@ -74,9 +85,16 @@ export async function runMember(d: Deps, m: MemberCall): Promise<MemberResult> {
     req: { content: m.prompt },
     stage: { executor: { kind: "agent" as const, agentId: m.agentId }, process: process(m) },
   };
-  const prepared = await d.runs.prepareProcess(m.u, prep, { skipGrant: true });
+  // #134 · agent không cấu hình được (mất khỏi ảnh ⇒ AGENT_NOT_FOUND, hoặc `!direct`) ⇒ `not_configured`, KHÔNG ném
+  // (ném sẽ bong qua stage-driver ⇒ run kẹt `running`). Không có `hub.runs` để đóng (chưa tạo) ⇒ trả thẳng.
+  let prepared: Awaited<ReturnType<Deps["runs"]["prepareProcess"]>>;
+  try {
+    prepared = await d.runs.prepareProcess(m.u, prep, { skipGrant: true });
+  } catch {
+    return { outcome: { kind: "failed", reason: "not_configured" }, usage: 0, jobId: null };
+  }
   if (!prepared.direct)
-    return { outcome: { kind: "failed", reason: "agent_failed" }, usage: 0, jobId: null };
+    return { outcome: { kind: "failed", reason: "not_configured" }, usage: 0, jobId: null };
   await withHubScope(d.db, { kind: "user", ...m.u }, (tx) => d.runs.createRunTx(tx, prepared));
   const task = {
     run: prepared.run,
@@ -90,7 +108,7 @@ export async function runMember(d: Deps, m: MemberCall): Promise<MemberResult> {
   };
   const o = await runJob(d.runner, task, m.signal, d.log);
   const outcome = outcomeOf(o);
-  await closeMemberRun(d, prepared.run.id, outcome.kind === "failed");
+  await closeMemberRun(d, prepared.run.id, outcome);
   return {
     outcome,
     usage: o.kind === "aborted" ? 0 : tokensOf(o.usage),
@@ -98,10 +116,24 @@ export async function runMember(d: Deps, m: MemberCall): Promise<MemberResult> {
   };
 }
 
-/** Đóng `hub.runs` nền của thành viên (không SSE); scope system. */
-async function closeMemberRun(d: Deps, runId: string, failed: boolean): Promise<void> {
+/**
+ * #134 · PB-R17 · đóng `hub.runs` nền của thành viên (không SSE); scope system. Lỗi ⇒ set `error_code` (mapTeamError) +
+ * `error_message`/`error_hint` (non-null, `runs_error_cols_ck`) để KHÔNG vi phạm `runs_error_code_ck` (trước đây set
+ * `status='failed'` mà thiếu `error_code` ⇒ UPDATE ném ⇒ run kẹt `running`). Thành công ⇒ `finished` (error_code NULL).
+ */
+async function closeMemberRun(d: Deps, runId: string, outcome: MemberOutcome): Promise<void> {
+  if (outcome.kind !== "failed") {
+    await withHubScope(d.db, { kind: "system" }, (tx) =>
+      tx.execute(sql`update hub.runs set status = 'finished', finished_at = now(),
+        owner = null, lease_until = null where id = ${runId} and status = 'running'`),
+    );
+    return;
+  }
+  const code = mapTeamError(outcome.reason);
+  const t = runErrorText(code, "vi");
   await withHubScope(d.db, { kind: "system" }, (tx) =>
-    tx.execute(sql`update hub.runs set status = ${failed ? "failed" : "finished"},
-      finished_at = now(), owner = null, lease_until = null where id = ${runId} and status = 'running'`),
+    tx.execute(sql`update hub.runs set status = 'failed', error_code = ${code},
+      error_message = ${t.message}, error_hint = ${t.hint}, finished_at = now(),
+      owner = null, lease_until = null where id = ${runId} and status = 'running'`),
   );
 }

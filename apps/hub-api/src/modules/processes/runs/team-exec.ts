@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { RunFile } from "../../attachments/run-files.rules";
 import type { RunContext } from "../../runs/runs.service";
+import { teamDraftFiles } from "./output-attachment";
 import {
   assembleSections,
   clipSummary,
@@ -216,7 +217,7 @@ function redoSubset(st: Ctx, members: TeamMemberRow[]): TeamMemberRow[] {
 async function runParallel(st: Ctx, members: TeamMemberRow[]): Promise<TeamOut> {
   const hit = await checkLimit(st);
   if (hit) return await stopLimit(st, hit);
-  const files = draftFiles(st, 1);
+  const files = await draftFiles(st, 1);
   const calls = await Promise.all(
     members.map((m) => runMember(st.d, mkCall(st, seqStep(st, m, false), files))),
   );
@@ -246,7 +247,7 @@ async function runParallel(st: Ctx, members: TeamMemberRow[]): Promise<TeamOut> 
 type Step = { m: TeamMemberRow; role: "member" | "plan"; prompt: string; fallback: boolean };
 
 async function callOne(st: Ctx, step: Step): Promise<MemberResult> {
-  const files = draftFiles(st, st.callIdx + 1);
+  const files = await draftFiles(st, st.callIdx + 1);
   const res = await runMember(st.d, mkCall(st, step, files));
   st.callIdx += 1;
   await bump(st, res);
@@ -297,17 +298,16 @@ function mergeInto(st: Ctx, m: TeamMemberRow, text: string): void {
   st.draft = assembleSections(st.draft, text, m.sections).next;
 }
 
-function draftFiles(st: Ctx, version: number): RunFile[] {
-  const text = renderDoc(st.def.output.template, st.draft);
-  const file: RunFile = {
-    id: crypto.randomUUID(),
+/** #133 · PB-R18 · render + persist nháp ghép (origin=output + blob) rồi nối `priorFiles` (`teamDraftFiles`). */
+const draftFiles = (st: Ctx, version: number): Promise<RunFile[]> =>
+  teamDraftFiles(st.d, {
+    tenantId: st.head.tenant_id,
+    startedBy: st.head.started_by,
+    runId: st.procRunId,
     name: `s${Number(st.head.current_stage_idx)}-v${version}-${st.def.output.filename}`,
-    mime: "text/markdown",
-    size: Math.max(1, Buffer.byteLength(text, "utf8")),
-    sha256: createHash("sha256").update(text, "utf8").digest("hex"),
-  };
-  return [...st.priorFiles, file];
-}
+    text: renderDoc(st.def.output.template, st.draft),
+    priorFiles: st.priorFiles,
+  });
 
 const memberPrompt = (st: Ctx, m: TeamMemberRow): string =>
   [st.head.input.trim(), `Mục của bạn: ${m.sections.join(", ")}.`, feedbackLine(st)]
@@ -348,7 +348,12 @@ async function stopLimit(st: Ctx, reason: DecisionReason): Promise<TeamOut> {
 }
 
 async function stopFail(st: Ctx, res: MemberResult): Promise<TeamOut> {
-  const reason = res.outcome.kind === "failed" ? res.outcome.reason : "agent_failed";
+  // StageResult.reason là `DecisionReason` ⇒ chỉ `agent_failed`/`job_timeout` (hub.runs thành viên giữ mã thật qua
+  // closeMemberRun). `not_configured` của member ⇒ decision `agent_failed` (TM-06/08).
+  const reason =
+    res.outcome.kind === "failed" && res.outcome.reason === "job_timeout"
+      ? "job_timeout"
+      : "agent_failed";
   await markFailed(st.d, st.teamRunId);
   return { result: { kind: "failed", reason }, usage: st.usage, jobId: st.lastJobId };
 }

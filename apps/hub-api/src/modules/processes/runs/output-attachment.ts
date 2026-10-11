@@ -5,8 +5,10 @@
 import { createHash } from "node:crypto";
 import { ATTACH_MAX_BYTES } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
+import type { RunFile } from "../../attachments/run-files.rules";
 import { type Staged, storageKey } from "../../attachments/storage";
 import type { Ctx, Deps } from "./team-runner";
 
@@ -74,4 +76,66 @@ async function lastJobOf(tx: Tx, runId: string): Promise<string | null> {
     join hub.runs rr on rr.id = j.run_id where rr.process_run_id = ${runId}
     order by j.created_at desc limit 1`);
   return r?.id ?? null;
+}
+
+export type DraftInput = {
+  tenantId: string;
+  startedBy: string;
+  runId: string;
+  name: string;
+  text: string;
+};
+
+/**
+ * #133 · PB-R18 · ghi bản nháp ghép của nhóm thành `hub.attachments` THẬT (origin=output ⇒ `job_id` BẮT BUỘC —
+ * `attachments_output_job_ck`; gắn job gần nhất của chính run ⇒ join `job_id→runs.process_run_id` khớp run này) + blob
+ * trên kho, rồi trả `RunFile` id thật để thành viên kế tải được (200, sha khớp). Scope system (RLS T). `sha256`/`size` tính
+ * thẳng từ `text` nên hàng khớp blob.
+ */
+export async function persistDraft(d: Deps, p: DraftInput): Promise<RunFile> {
+  const size = Math.max(1, Buffer.byteLength(p.text, "utf8"));
+  const id = crypto.randomUUID();
+  const key = storageKey(p.tenantId, id);
+  const sha = createHash("sha256").update(p.text, "utf8").digest("hex");
+  await withHubScope(d.db, { kind: "system" }, async (tx) => {
+    const jobId = await lastJobOf(tx, p.runId);
+    if (!jobId) throw new Error("persistDraft: no job for process run");
+    await tx.execute(sql`insert into hub.attachments (id, tenant_id, user_id, origin, job_id, filename,
+        safe_name, mime, size, sha256, storage_key)
+      values (${id}, ${p.tenantId}, ${p.startedBy}, 'output', ${jobId}, ${p.name},
+        ${safeName(p.name)}, 'text/markdown', ${size}, ${sha}, ${key})`);
+  });
+  await commitOutputBlob(d, { key, text: p.text });
+  return { id, name: p.name, mime: "text/markdown", size, sha256: sha };
+}
+
+/** #133 · persist nháp ghép rồi nối vào `priorFiles` (đã lọc run/tenant ở launcher) — dùng bởi `team-exec.draftFiles`. */
+export async function teamDraftFiles(
+  d: Deps,
+  p: DraftInput & { priorFiles: readonly RunFile[] },
+): Promise<RunFile[]> {
+  const draft = await persistDraft(d, p);
+  return [...p.priorFiles, draft];
+}
+
+/**
+ * PB-R18 · lọc tập `ids` chỉ giữ attachment thuộc CHÍNH run + tenant: `attachments.job_id → jobs.run_id →
+ * runs.process_run_id = runId`. Id của run/tenant khác (dù nằm trong `process_outputs`) bị loại (#133/ID-05).
+ */
+export async function runScopedFileIds(
+  tx: Tx,
+  runId: string,
+  tenantId: string,
+  ids: readonly string[],
+): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const rows = await tx.execute<{ id: string }>(sql`select a.id from hub.attachments a
+    join hub.jobs j on j.id = a.job_id
+    join hub.runs r on r.id = j.run_id
+    where a.tenant_id = ${tenantId} and r.process_run_id = ${runId}
+      and a.id in (${sql.join(
+        ids.map((i) => sql`${i}`),
+        sql`, `,
+      )})`);
+  return new Set([...rows].map((r) => r.id));
 }
