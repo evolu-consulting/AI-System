@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "source.resolve",
+  "job_id": "b3b30000-0000-4000-8000-000000000004",
+  "tenant_id": "a1000000-0000-4000-8000-000000000001",
+  "process_run_id": null,
+  "items": [],
+  "timeout_s": 60
+}

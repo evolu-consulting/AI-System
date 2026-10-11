@@ -1,6 +1,7 @@
 // HUB-FR-120 · ADM-FR-68 · PB-R01/R02/R08/R10/R21 · C1/C7/C10/C11 · nghiệp vụ CRUD `/admin/sources`. Mọi ghi trong tx
 // `system` (repo lọc tenant); quyền local_path = platform_admin; ẩn path cho non-platform; library kiểm kho H2c cùng tenant.
 import type {
+  LibraryDocListResponse,
   ProcessSourceChip,
   SourceConfig,
   SourceCreateRequest,
@@ -25,6 +26,22 @@ import {
 } from "./source.rules";
 import { sourceError } from "./sources.errors";
 import * as repo from "./sources.repo";
+
+/** Cursor picker library: base64url của `[name, id]`. */
+function encodeDocCursor(key: [string, string]): string {
+  return Buffer.from(JSON.stringify(key), "utf8").toString("base64url");
+}
+function decodeDocCursor(raw: string | undefined): [string, string] | undefined {
+  if (!raw) return undefined;
+  try {
+    const v = JSON.parse(Buffer.from(raw, "base64url").toString("utf8"));
+    if (Array.isArray(v) && typeof v[0] === "string" && typeof v[1] === "string")
+      return [v[0], v[1]];
+  } catch {
+    // cursor hỏng ⇒ bỏ (trang đầu)
+  }
+  return undefined;
+}
 
 const toView = (r: repo.SourceRow, usedBy: string[], platform: boolean): SourceView => ({
   id: r.id,
@@ -161,6 +178,35 @@ export class SourcesService {
       const refs = await repo.inUseRefs(tx, tenantId, key);
       if (refs.length) throw sourceError("SOURCE_IN_USE", { refs });
       await repo.softDeleteSource(tx, row.id, u.userId);
+    });
+  }
+
+  /** ADM-FR-68/C3 · picker tài liệu library của tenant (`GET /admin/sources/library-documents`). */
+  async libraryDocs(
+    u: AuthUser,
+    q: { tenant_id?: string; q?: string; limit: number; cursor?: string },
+  ): Promise<LibraryDocListResponse> {
+    const tenantId = readTenant(u, q.tenant_id);
+    const after = decodeDocCursor(q.cursor);
+    return this.#system(async (tx) => {
+      const rows = await repo.listLibraryDocs(tx, {
+        tenantId,
+        q: q.q,
+        afterName: after?.[0],
+        afterId: after?.[1],
+        limit: q.limit,
+      });
+      const page = rows.slice(0, q.limit);
+      const last = page.at(-1);
+      return {
+        items: page.map((r) => ({
+          id: r.id,
+          name: r.name,
+          version: r.id,
+          updated_at: r.created_at,
+        })),
+        next_cursor: rows.length > q.limit && last ? encodeDocCursor([last.name, last.id]) : null,
+      };
     });
   }
 

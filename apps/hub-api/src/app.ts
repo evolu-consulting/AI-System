@@ -54,6 +54,7 @@ import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
 import { type RunDriver, RunService } from "./modules/runs/runs.service";
 import { traceRoutes } from "./modules/runs/trace/trace.routes";
 import { TraceService } from "./modules/runs/trace/trace.service";
+import type { ResolveBridge } from "./modules/sources/resolve.bridge";
 import { mountSources, SOURCE_PROTECTED_PREFIXES } from "./modules/sources/sources.mount";
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
@@ -191,11 +192,18 @@ function processHooks(
   m: Omit<ProcessMountDeps, keyof ProcessSeams | "runner"> & {
     config: ConfigCache;
     messages: X2aMounted["messages"];
+    resolveBridge?: ResolveBridge;
   },
 ): ProcessStartPort | undefined {
   if (!deps.processEngine) return undefined;
   const runner = processRunner(deps, m, m.config);
-  const proc = mountProcesses(app, { ...m, runner, signal: deps.signal, ...seamsOf(deps) });
+  const proc = mountProcesses(app, {
+    ...m,
+    runner,
+    signal: deps.signal,
+    ...seamsOf(deps),
+    resolveBridge: m.resolveBridge,
+  });
   m.messages.useProcesses(proc.roomSender);
   return proc.conversationStart;
 }
@@ -223,7 +231,14 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     traceRoutes(new TraceService({ db: deps.db, audit: deps.hubAudit ?? dbHubAudit })),
   );
   // P-b · nguồn: mount TRƯỚC module quy trình để `/process-runs/sources` không bị `/process-runs/:id` nuốt.
-  mountSources(app, { db: deps.db, sourceCheckTimeoutMs: deps.sourceCheckTimeoutMs });
+  // Bridge chung: module nguồn nhận `/sources-resolved`, engine quy trình (mount sau) gắn `onReport`.
+  const resolveBridge: ResolveBridge = {};
+  mountSources(app, {
+    db: deps.db,
+    sourceCheckTimeoutMs: deps.sourceCheckTimeoutMs,
+    resolveBridge,
+    now: deps.now,
+  });
   if (!deps.redis || !config || !h2a || !h2b) {
     app.route("/conversations", conversationRoutes(deps.db));
     return;
@@ -254,6 +269,7 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     messages: x2a.messages,
     // CR-056 · HUB-FR-115 · kho file cho engine ghi blob output stage (vắng ⇒ không tạo hàng attachment output).
     storage: deps.attachments?.storage,
+    resolveBridge,
   });
   const prepare = { command: h2a.prepareCommand, mention: h2b.prepareMention, processStart };
   app.route("/conversations", sendMessageRoutes(conversations, runs, prepare));

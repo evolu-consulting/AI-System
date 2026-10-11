@@ -8,6 +8,7 @@ import type {
   ProcessRunSummary,
 } from "@ai/contracts/chat";
 import { PROCESS_RUN_ACTIVE } from "@ai/contracts/chat";
+import type { ProcessInputDef } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { appError } from "../../../lib/errors";
@@ -27,10 +28,13 @@ export type StartDefRow = {
   run_group_ids: string[];
   stages: unknown[];
   token_budget: number | null;
+  sources: string[];
+  inputs: ProcessInputDef[];
 };
 
 const DEF_COLS = sql`d.id, d.key, d.name, d.version, d.enabled, (d.deleted_at is not null) as deleted,
-  d.run_group_ids, d.stages, d.token_budget`;
+  d.run_group_ids, d.stages, d.token_budget, coalesce(d.sources, '[]'::jsonb) as sources,
+  coalesce(d.inputs, '[]'::jsonb) as inputs`;
 
 export async function findDefByKey(
   tx: Tx,
@@ -61,11 +65,13 @@ export type CatalogRow = {
   input_hint: string;
   stage_count: number;
   run_group_ids: string[];
+  inputs: ProcessInputDef[];
 };
 
 export async function catalogDefs(tx: Tx, tenantId: string): Promise<CatalogRow[]> {
   return tx.execute<CatalogRow>(sql`select d.key, d.name, d.description, d.input_hint,
-      jsonb_array_length(d.stages)::int as stage_count, d.run_group_ids
+      jsonb_array_length(d.stages)::int as stage_count, d.run_group_ids,
+      coalesce(d.inputs, '[]'::jsonb) as inputs
     from hub.process_defs d
     where d.tenant_id = ${tenantId} and d.enabled = true and d.deleted_at is null
     order by d.name asc, d.key asc limit 200`);
@@ -87,52 +93,6 @@ const activeList = () =>
 /** §10 · khoá tuần tự hoá start theo tenant (xact-local). */
 export async function lockTenant(tx: Tx, tenantId: string): Promise<void> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext('process:' || ${tenantId}::text))`);
-}
-
-export type NewRun = {
-  id: string;
-  tenantId: string;
-  convId: string;
-  flowId: string;
-  def: StartDefRow;
-  startedBy: string;
-  originKind: "room" | "conversation" | "admin";
-  originRoomId: string | null;
-  originConversationId: string | null;
-  input: string;
-  expiresAt: Date;
-};
-
-/** Tạo hội thoại nền + flow (= thread) + `process_runs` + `stage_runs` (stage 0 queued, còn lại pending ≤ 10). */
-export async function insertRun(tx: Tx, n: NewRun): Promise<void> {
-  const name = n.def.name;
-  await tx.execute(sql`insert into hub.conversations (id, tenant_id, user_id, title, title_norm, process_run_id)
-    values (${n.convId}, ${n.tenantId}, ${n.startedBy}, ${name}, ${name.toLowerCase()}, ${n.id})`);
-  await tx.execute(sql`insert into hub.flows (id, tenant_id, user_id, conversation_id, title)
-    values (${n.flowId}, ${n.tenantId}, ${n.startedBy}, ${n.convId}, ${name})`);
-  const snapshot = {
-    key: n.def.key,
-    name: n.def.name,
-    stages: n.def.stages,
-    token_budget: n.def.token_budget,
-    run_group_ids: n.def.run_group_ids,
-  };
-  await tx.execute(sql`insert into hub.process_runs (id, tenant_id, process_def_id, def_version, snapshot, started_by,
-      origin_kind, origin_room_id, origin_conversation_id, input, conversation_id, flow_id, expires_at)
-    values (${n.id}, ${n.tenantId}, ${n.def.id}, ${n.def.version}, ${JSON.stringify(snapshot)}::jsonb, ${n.startedBy},
-      ${n.originKind}, ${n.originRoomId}, ${n.originConversationId}, ${n.input}, ${n.convId}, ${n.flowId},
-      ${n.expiresAt.toISOString()}::timestamptz)`);
-  const stages = n.def.stages.length;
-  const rows = sql.join(
-    Array.from(
-      { length: stages },
-      (_, i) => sql`(${n.tenantId}, ${n.id}, ${i}, ${i === 0 ? "queued" : "pending"})`,
-    ),
-    sql`, `,
-  );
-  await tx.execute(
-    sql`insert into hub.stage_runs (tenant_id, process_run_id, stage_idx, status) values ${rows}`,
-  );
 }
 
 export async function setTrigger(tx: Tx, runId: string, messageId: string): Promise<void> {

@@ -4,6 +4,7 @@
 import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/chat";
 import type { Env, Hono } from "hono";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
+import type { ResolveBridge } from "../sources/resolve.bridge";
 import { asksRoutes } from "./asks/asks.routes";
 import { type Clock, clockOf } from "./core/clock";
 import type { ProcessHandles } from "./core/handles";
@@ -16,6 +17,7 @@ import { createNotifier } from "./notify/notifier";
 import { remindOnce } from "./notify/reminder";
 import { conversationStart } from "./runs/conversation-start";
 import { createStageLauncher } from "./runs/launcher";
+import { applyResolveReport } from "./runs/resolve-apply";
 import { roomStart } from "./runs/room-start";
 import { processRunsRoutes } from "./runs/runs.routes";
 import { sweepOnce } from "./runs/sweeps";
@@ -38,6 +40,8 @@ export type ProcessSeams = {
   /** false ⇒ không chạy vòng nền (test gọi `*Once` qua handles). */
   processLoops?: boolean;
   onProcessHandles?: (h: ProcessHandles) => void;
+  /** PB-R05 · cầu nối từ `/sources-resolved`; engine gắn `onReport` để ghim/kick/needs_decision. */
+  resolveBridge?: ResolveBridge;
 };
 export type ProcessMountDeps = Omit<
   ProcessDeps,
@@ -60,6 +64,8 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   const launcher = m.stageLauncher ?? createStageLauncher(base);
   const core: Omit<ProcessDeps, "start"> = { ...base, launcher };
   const d: ProcessDeps = { ...core, start: conversationStart(core) };
+  // PB-R05 · nhận report resolve từ module nguồn (đã mount trước): ghim `pinned_sources`/`needs_decision` + kick.
+  if (m.resolveBridge) m.resolveBridge.onReport = (r) => applyResolveReport(d, r);
   for (const r of [
     processRunsRoutes,
     gatesRoutes,

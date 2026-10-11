@@ -132,6 +132,25 @@ export async function inUseRefs(
   return refs;
 }
 
+export type LibraryDocRow = { id: string; name: string; created_at: string };
+
+/** ADM-FR-68/C3 · tài liệu library còn sống của tenant (picker nguồn); trang theo (filename, id). `q` lọc tên. */
+export async function listLibraryDocs(
+  tx: Tx,
+  o: { tenantId: string; q?: string; afterName?: string; afterId?: string; limit: number },
+): Promise<LibraryDocRow[]> {
+  const qF = o.q ? sql`and lower(s.filename) like ${`%${o.q.toLowerCase()}%`}` : sql``;
+  const afterF =
+    o.afterName !== undefined && o.afterId !== undefined
+      ? sql`and (s.filename, s.id) > (${o.afterName}, ${o.afterId}::uuid)`
+      : sql``;
+  return tx.execute<LibraryDocRow>(sql`select s.id, s.filename as name,
+      ${iso(sql`s.created_at`)} as created_at
+    from hub.attachments s
+    where s.tenant_id = ${o.tenantId} and s.origin = 'library' and s.purged_at is null ${qF} ${afterF}
+    order by s.filename asc, s.id asc limit ${o.limit + 1}`);
+}
+
 /** PB-R04/C10 · tài liệu library còn sống của tenant (kho H2c). */
 export async function libraryDocExists(
   tx: Tx,
@@ -152,15 +171,33 @@ export async function chipRows(
   );
 }
 
-/** Token job → job `source.resolve` đang chạy (scope system; kiểm id/type ở người gọi). */
+/** Token job → job `source.resolve` đang chạy (scope system; kiểm id/type/lease ở người gọi). */
 export async function resolveJobByTokenHash(
   tx: Tx,
   hash: Buffer,
-): Promise<{ id: string; tenantId: string; type: string; payload: unknown } | undefined> {
-  const [r] = await tx.execute<{ id: string; tenant_id: string; type: string; payload: unknown }>(
-    sql`select id, tenant_id, type, payload from hub.jobs where token_hash = ${hash} and status = 'running'`,
+): Promise<
+  | { id: string; tenantId: string; type: string; payload: unknown; heartbeatAt: Date | null }
+  | undefined
+> {
+  const [r] = await tx.execute<{
+    id: string;
+    tenant_id: string;
+    type: string;
+    payload: unknown;
+    heartbeat_at: Date | string | null;
+  }>(
+    sql`select id, tenant_id, type, payload, heartbeat_at from hub.jobs
+      where token_hash = ${hash} and status = 'running'`,
   );
-  return r && { id: r.id, tenantId: r.tenant_id, type: r.type, payload: r.payload };
+  return (
+    r && {
+      id: r.id,
+      tenantId: r.tenant_id,
+      type: r.type,
+      payload: r.payload,
+      heartbeatAt: r.heartbeat_at === null ? null : new Date(r.heartbeat_at),
+    }
+  );
 }
 
 /** Enqueue job `source.resolve` (không run/agent/provider — cột nullable sau 0021). */

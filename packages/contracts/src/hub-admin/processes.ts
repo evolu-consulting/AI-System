@@ -15,8 +15,11 @@ import {
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
 import {
   BranchSchema,
+  DEF_INPUTS_MAX,
   DEF_SOURCES_MAX,
   GlobSchema,
+  ProcessInputDefSchema,
+  ProcessInputValueSchema,
   SourceKeySchema,
   SourceKindSchema,
   STAGE_ALLOWLIST_MAX,
@@ -72,28 +75,10 @@ export const STAGE_KEY_RE = /^[a-z0-9-]{1,32}$/;
 const NameSchema = z.string().trim().min(1).max(PROCESS_NAME_MAX);
 
 // ── Nguồn tham chiếu + đầu vào (P-b · HUB-FR-121/124 · PB-R06/R13) ──────────────────────────────────────────────────
-export const DEF_INPUTS_MAX = 10;
+// `ProcessInputDefSchema`/`ProcessInputValueSchema`/`DEF_INPUTS_MAX` + hằng `INPUT_*` nay ở `./sources` (tránh vòng import
+// với `chat/processes-api`); re-export qua `export * from "./sources"` ở cuối file.
 export const MUST_KNOW_MAX = 10;
 export const MUST_KNOW_LEN = 200;
-export const INPUT_LABEL_MAX = 80;
-export const INPUT_OPTIONS_MAX = 20;
-export const INPUT_OPTION_LEN = 200;
-export const INPUT_TYPES = ["text", "select", "file", "source_ref"] as const;
-
-/** HUB-FR-124 · khai báo đầu vào quy trình; `options` chỉ cho `select`. */
-export const ProcessInputDefSchema = z
-  .strictObject({
-    key: SourceKeySchema,
-    label: z.string().trim().min(1).max(INPUT_LABEL_MAX),
-    type: z.enum(INPUT_TYPES),
-    required: z.boolean(),
-    options: z.array(z.string().min(1).max(INPUT_OPTION_LEN)).max(INPUT_OPTIONS_MAX).optional(),
-  })
-  .superRefine((d, ctx) => {
-    if (d.options !== undefined && d.type !== "select")
-      ctx.addIssue({ code: "custom", path: ["options"], message: "options only for select" });
-  });
-export type ProcessInputDef = z.infer<typeof ProcessInputDefSchema>;
 
 /** PB-R06 · stage chọn tập con nguồn + allowlist glob. */
 export const StageSourceSchema = z.strictObject({
@@ -101,28 +86,6 @@ export const StageSourceSchema = z.strictObject({
   allowlist: z.array(GlobSchema).max(STAGE_ALLOWLIST_MAX).default([]),
 });
 export type StageSource = z.infer<typeof StageSourceSchema>;
-
-/** PB-R13 · giá trị đầu vào lúc start (disc theo `type`). */
-export const ProcessInputValueSchema = z.discriminatedUnion("type", [
-  z.strictObject({
-    type: z.literal("text"),
-    key: SourceKeySchema,
-    text: z.string().max(PROCESS_INPUT_MAX),
-  }),
-  z.strictObject({
-    type: z.literal("select"),
-    key: SourceKeySchema,
-    value: z.string().max(INPUT_OPTION_LEN),
-  }),
-  z.strictObject({ type: z.literal("file"), key: SourceKeySchema, attachment_id: UuidSchema }),
-  z.strictObject({
-    type: z.literal("source_ref"),
-    key: SourceKeySchema,
-    source_key: SourceKeySchema,
-    branch: BranchSchema,
-  }),
-]);
-export type ProcessInputValue = z.infer<typeof ProcessInputValueSchema>;
 
 /** C4 · chip nguồn cho user thường (`GET /process-runs/sources`); KHÔNG config/url/path. */
 export const ProcessSourceChipSchema = z.strictObject({

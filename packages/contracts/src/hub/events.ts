@@ -1,6 +1,7 @@
 // HUB-FR-89 · sự kiện Runtime XADD vào `run:<run_id>`, field `e` = JSON (plan H1 §2.3).
 // Mỗi job đúng một `job.result` hoặc `job.failed`; `job.failed.message` chỉ vào log/`run_steps.detail` (P11).
 import { z } from "zod";
+import { SOURCE_PATH_MAX, SourceKeySchema, STAGE_SOURCES_MAX } from "../hub-admin/sources";
 import {
   AgentKeySchema,
   HubDateTimeSchema,
@@ -11,6 +12,15 @@ import {
 import { HubJobErrorCodeSchema, JobFailReasonSchema } from "./errors";
 import { JOB_OUTPUTS_MAX } from "./job";
 import { AGENT_TEXT_MAX, AgentResultSchema } from "./result";
+
+// P-b · C18 · PB-R11 · file nguồn Runtime đã đọc, báo kèm `job.result` (path tương đối gốc nguồn; D8 parse hỏng ⇒ null).
+export const SOURCE_READS_FILES_MAX = 2000;
+export const JobSourceReadSchema = z.strictObject({
+  source_key: SourceKeySchema,
+  files_read: z.array(z.string().max(SOURCE_PATH_MAX)).max(SOURCE_READS_FILES_MAX).nullable(),
+  bytes_read: z.number().int().min(0).nullable(),
+});
+export type JobSourceRead = z.infer<typeof JobSourceReadSchema>;
 
 const base = {
   v: VersionSchema,
@@ -48,6 +58,8 @@ export const JobResultEventSchema = z.strictObject({
   session_resumed: z.boolean(),
   /** H2c F10: id file `out/` đã đẩy lên Hub (chỉ để trace; vắng = không có). */
   outputs: z.array(HubUuidSchema).min(1).max(JOB_OUTPUTS_MAX).optional(),
+  /** P-b C18: file nguồn đã đọc (stage có nguồn); Hub ghi `source_job_reads` + kiểm `## Nguồn tham chiếu`. */
+  source_reads: z.array(JobSourceReadSchema).max(STAGE_SOURCES_MAX).optional(),
 });
 
 export const JOB_FAILED_STATUSES = ["failed", "cancelled", "timed_out"] as const;

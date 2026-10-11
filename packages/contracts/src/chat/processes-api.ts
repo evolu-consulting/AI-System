@@ -2,6 +2,11 @@
 // Tên schema chốt ở plan-contract §3 (bảng "Tên schema", B2).
 import { z } from "zod";
 import { CountSchema, UuidSchema } from "../common";
+import {
+  DEF_INPUTS_MAX,
+  ProcessInputDefSchema,
+  ProcessInputValueSchema,
+} from "../hub-admin/sources";
 import { CHAT_ASK_CHOICE_MAX } from "./entities";
 import {
   ANSWER_MAX,
@@ -46,6 +51,9 @@ export const ProcessCatalogItemSchema = z.strictObject({
   description: z.string().max(PROCESS_DESC_MAX),
   input_hint: z.string().max(PROCESS_DESC_MAX),
   stage_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
+  /** HUB-FR-124 · C2 · khai báo đầu vào quy trình (`!key` form); server luôn gửi mảng (def không khai ⇒ []).
+   * `optional` để tương thích FE/fixtures cũ (bổ sung không phá) — FS-9. */
+  inputs: z.array(ProcessInputDefSchema).max(DEF_INPUTS_MAX).optional(),
 });
 export type ProcessCatalogItem = z.infer<typeof ProcessCatalogItemSchema>;
 export const ProcessListResponseSchema = z.strictObject({
@@ -63,6 +71,8 @@ export const CreateProcessRunRequestSchema = z.strictObject({
   process_key: ProcessKeySchema,
   input: z.string().trim().max(PROCESS_INPUT_MAX),
   origin: ProcessRunOriginInputSchema,
+  /** HUB-FR-124 · C19 · giá trị đầu vào (`!key` form); vắng = tương thích P-a. `pinned_sources` KHÔNG nhận từ client. */
+  inputs: z.array(ProcessInputValueSchema).max(DEF_INPUTS_MAX).optional(),
 });
 export type CreateProcessRunRequest = z.infer<typeof CreateProcessRunRequestSchema>;
 /** 201 `POST /process-runs`, `POST /process-runs/:id/cancel`, `POST /process-defs/:id/run`. */

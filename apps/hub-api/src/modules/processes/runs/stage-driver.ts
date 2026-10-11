@@ -17,6 +17,14 @@ import { budgetHit, totalTokens } from "../core/limits.rules";
 import type { ProcessDeps, StageLauncher } from "../core/ports";
 import { type RunEvent, type RunState, transition } from "../core/process-state.rules";
 import { commitOutputBlob } from "./output-attachment";
+import { defaultSourceBudget } from "./sources.rules";
+import {
+  auditSourceReads,
+  loadStageSourceCtx,
+  type StageSourceCtx,
+  stageJobSources,
+  stageRefsCheck,
+} from "./stage-sources";
 import { runTeamStage } from "./team-exec";
 import {
   type ApplyInput,
@@ -52,7 +60,11 @@ function resultOf(o: JobOutcome): StageResult {
   if (!r) return { kind: "failed", reason: "agent_failed" };
   if (r.status === "need_input")
     return { kind: "need_input", question: r.question, choices: r.choices ?? [] };
-  return { kind: "output", text: r.text };
+  return {
+    kind: "output",
+    text: r.text,
+    ...(o.kind === "result" && o.sourceReads ? { sourceReads: o.sourceReads } : {}),
+  };
 }
 
 export function stageDriver(d: Deps, launcher: StageLauncher): RunDriver {
@@ -141,6 +153,11 @@ async function runAgent(
   if (!ctx.direct)
     return { result: { kind: "failed", reason: "agent_failed" }, usage: 0, jobId: null };
   const timeoutS = await stageTimeout(d, link.process_run_id);
+  // PB-R10 · nguồn đã ghim của stage → payload.sources (ép Read/Grep/Glob ở runner.rules); vắng ⇒ như P-a.
+  const srcCtx = await withHubScope(d.db, { kind: "system" }, (tx) =>
+    loadStageSourceCtx(tx, link.process_run_id as string),
+  );
+  const jobSources = stageJobSources(srcCtx);
   const o = await runJob(
     d.runner,
     {
@@ -151,6 +168,7 @@ async function runAgent(
       prompt: ctx.content,
       history: [],
       files: ctx.files,
+      ...(jobSources.length ? { sources: jobSources } : {}),
       detail: {
         process_run_id: link.process_run_id,
         stage_run_id: link.stage_run_id,
@@ -199,11 +217,20 @@ async function runApplyTx(
     if (!stage || stage.current_run_id !== x.hubRunId) return null;
     const def = head.snapshot.stages[idx];
     if (!def) return null;
+    const srcCtx = await loadStageSourceCtx(tx, x.runId);
     await tx.execute(sql`update hub.process_runs set tokens_total = tokens_total + ${x.tokens}
       where id = ${x.runId}`);
-    const ev = await eventFor(tx, x, head, def);
+    const ev = await eventFor(tx, x, head, def, srcCtx);
     const t = transition(buildState(head, stage, def, idx), ev);
     if (!t.ok) return null;
+    // PB-R11 · audit nguồn đã đọc (append-only) khi stage ra output — độc lập template_ok.
+    if (x.result.kind === "output" && x.result.sourceReads?.length)
+      await auditSourceReads(
+        tx,
+        { runId: x.runId, stageRunId: x.stageRunId, jobId: x.jobId, tenantId: head.tenant_id },
+        x.result.sourceReads,
+        srcCtx,
+      );
     const res = await effects(d, tx, {
       x,
       head,
@@ -213,6 +240,7 @@ async function runApplyTx(
       ev,
       next: t.next,
       list: t.effects,
+      srcCtx,
     });
     const recipients = await core.runRecipients(tx, x.runId, head.tenant_id);
     res.events.push(
@@ -226,17 +254,29 @@ async function runApplyTx(
   });
 }
 
-async function eventFor(tx: Tx, x: ApplyInput, head: RunHead, def: SnapStage): Promise<RunEvent> {
+async function eventFor(
+  tx: Tx,
+  x: ApplyInput,
+  head: RunHead,
+  def: SnapStage,
+  srcCtx: StageSourceCtx,
+): Promise<RunEvent> {
   if (x.result.kind === "failed") return { kind: "limit", reason: x.result.reason };
   if (x.result.kind === "limit") return { kind: "limit", reason: x.result.reason };
-  const over = await budgetReason(tx, x, head, def);
+  const over = await budgetReason(tx, x, head, def, srcCtx);
   if (over) return { kind: "limit", reason: over };
   if (x.result.kind === "need_input") return { kind: "need_input" };
   const ok = checkTemplate(
     { requiredSections: def.output.required_sections, fields: def.output.fields as never },
     x.result.text,
   );
-  return { kind: "stage_output", templateOk: ok.ok };
+  return { kind: "stage_output", templateOk: ok.ok && refsOk(x, srcCtx) };
+}
+
+/** PB-R09/C16 · stage có nguồn ⇒ output phải có `## Nguồn tham chiếu` (key∈stage, @version khớp pin, path∈files_read). */
+function refsOk(x: ApplyInput, srcCtx: StageSourceCtx): boolean {
+  if (x.result.kind !== "output") return true;
+  return stageRefsCheck(srcCtx, x.result.text, x.result.sourceReads).ok;
 }
 
 async function budgetReason(
@@ -244,6 +284,7 @@ async function budgetReason(
   x: ApplyInput,
   head: RunHead,
   def: SnapStage,
+  srcCtx: StageSourceCtx,
 ): Promise<DecisionReason | null> {
   const [row] = await tx.execute<{ stage_sum: number; run_sum: number }>(sql`
     select coalesce(sum(case when r.stage_run_id = ${x.stageRunId} then ul.input_tokens + ul.output_tokens
@@ -252,7 +293,12 @@ async function budgetReason(
         + coalesce(ul.cache_read_tokens, 0) + coalesce(ul.cache_write_tokens, 0)), 0)::int as run_sum
     from hub.usage_logs ul join hub.runs r on r.id = ul.run_id and r.tenant_id = ul.tenant_id
     where r.process_run_id = ${x.runId}`);
-  if (budgetHit(Number(row?.stage_sum ?? 0), def.token_budget)) return "stage_tokens";
+  // PB-R12/C17 · stage có nguồn không đặt budget ⇒ trần 200000; không nguồn ⇒ giữ P-a.
+  const stageBudget = defaultSourceBudget(
+    { token_budget: def.token_budget },
+    srcCtx.stageSources.length > 0,
+  );
+  if (budgetHit(Number(row?.stage_sum ?? 0), stageBudget)) return "stage_tokens";
   if (budgetHit(Number(row?.run_sum ?? 0), head.snapshot.token_budget)) return "run_tokens";
   return null;
 }

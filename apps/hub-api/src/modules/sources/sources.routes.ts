@@ -1,6 +1,7 @@
 // HUB-FR-120 · ADM-FR-68 · PB-R21 · `/admin/sources*` (tenant_admin; local_path chỉ platform_admin) + `/process-runs/sources`
 // (chip user thường). Không logic: role → parse query/body → service. Mọi phản hồi theo contract.
 import {
+  LibraryDocListQuerySchema,
   SourceCreateRequestSchema,
   SourceDeleteQuerySchema,
   SourceListQuerySchema,
@@ -17,7 +18,8 @@ import type { SourcesService } from "./sources.service";
 export function sourcesRoutes(svc: SourcesService, check: SourceCheckService): Hono<AuthVars> {
   const r = new Hono<AuthVars>();
   // Chip cho user thường (member) — KHÔNG requireAdminRole; auth gắn ở prefix `/process-runs` (app.ts).
-  r.get("/process-runs/sources", async (c) => c.json(await svc.chips(c.var.user)));
+  // C4 · contract ProcessSourceChipListResponseSchema = { items }: trả bao `{items}`, không mảng trần.
+  r.get("/process-runs/sources", async (c) => c.json({ items: await svc.chips(c.var.user) }));
 
   r.use("/admin/sources", requireAdminRole());
   r.use("/admin/sources/*", requireAdminRole());
@@ -28,6 +30,11 @@ export function sourcesRoutes(svc: SourcesService, check: SourceCheckService): H
   r.post("/admin/sources", async (c) => {
     const b = await parseJson(c, SourceCreateRequestSchema);
     return c.json(await svc.create(c.var.user, b), 201);
+  });
+  // C3 · ĐĂNG KÝ TRƯỚC `/:key` (nếu không `:key` nuốt "library-documents").
+  r.get("/admin/sources/library-documents", async (c) => {
+    const q = parseAdminQuery(c, LibraryDocListQuerySchema);
+    return c.json(await svc.libraryDocs(c.var.user, q));
   });
   r.get("/admin/sources/:key", async (c) => {
     const q = parseAdminQuery(c, SourceTenantQuerySchema);

@@ -7,6 +7,8 @@ import {
   type HistoryItem,
   type JobFailReason,
   type JobOutput,
+  type JobSource,
+  type JobSourceRead,
   MCP_TOOLS_MAX,
   type McpConfig,
   type RunEvent,
@@ -65,6 +67,8 @@ export type AgentTask = {
   detail?: Readonly<Record<string, unknown>>;
   /** H2c P9 · tập file của run (`RunContext.files`); chỉ job vai `agent` dùng (P10); vắng/rỗng = như H2b. */
   files?: readonly RunFile[];
+  /** P-b PB-R10 · nguồn chỉ-đọc của stage (git/library/local đã ghim); có ⇒ payload.sources + Read/Grep/Glob. */
+  sources?: readonly JobSource[];
   /** Phát `step.started`/`step.finished` (vd `writer.emit`); vắng → không phát. */
   emit?: (ev: SseEventBody) => Promise<unknown>;
 };
@@ -78,7 +82,14 @@ export interface AgentRunner {
 export type JobStreamed = { streamed: string; gap: DeltaGap | null; stepId: string };
 
 export type JobOutcome =
-  | ({ kind: "result"; jobId: string; output: JobOutput; usage: TokenUsage } & JobStreamed)
+  | ({
+      kind: "result";
+      jobId: string;
+      output: JobOutput;
+      usage: TokenUsage;
+      /** P-b C18 · file nguồn Runtime đã đọc (từ `job.result.source_reads`); Hub ghi audit + kiểm `## Nguồn tham chiếu`. */
+      sourceReads?: readonly JobSourceRead[];
+    } & JobStreamed)
   | ({
       kind: "failed";
       jobId: string;
@@ -195,6 +206,7 @@ export class JobAgentRunner implements AgentRunner {
       history: task.history,
       stream: task.stream !== undefined,
       attachments,
+      ...(task.role === "agent" && task.sources?.length ? { sources: task.sources } : {}),
     });
     return payload && this.#outHint(task, payload);
   }
@@ -291,7 +303,14 @@ export async function runJob(
     for await (const ev of runner.run(t, signal)) {
       if (ev.type === "job.result") {
         const { output, usage } = ev;
-        return { kind: "result", jobId: ev.job_id, output, usage, ...streamed() };
+        return {
+          kind: "result",
+          jobId: ev.job_id,
+          output,
+          usage,
+          ...(ev.source_reads ? { sourceReads: ev.source_reads } : {}),
+          ...streamed(),
+        };
       }
       if (ev.type === "job.failed") {
         const f = { code: runErrorCodeOf(ev.code), reason: ev.reason, usage: ev.usage };

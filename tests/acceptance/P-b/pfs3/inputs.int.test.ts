@@ -139,12 +139,12 @@ describe("IN-03 · thiếu required ⇒ vẫn bắt đầu, AskCard chip [PB-R13
     expect(t?.choices).toEqual([]); // Hub KHÔNG nhét key nguồn vào choices (C20)
     const chips = await c.call("A", "GET", "/process-runs/sources");
     expect(chips.status).toBe(200);
-    const git = (chips.json as Json[])
+    const git = (chips.json.items as Json[])
       .filter((x) => x.kind === "git_remote")
       .map((x) => x.key)
       .sort();
     expect(git).toEqual(["app-repo", "other-repo"]); // không nguồn beta
-    expect((chips.json as Json[]).find((x) => x.key === "app-repo")).toMatchObject({
+    expect((chips.json.items as Json[]).find((x) => x.key === "app-repo")).toMatchObject({
       description: "Mã nguồn ứng dụng kế toán",
       default_branch: "main",
     });

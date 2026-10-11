@@ -17,6 +17,10 @@ import type { SweepResult } from "../core/handles";
 import type { ProcessDeps } from "../core/ports";
 import { decisionAssignees } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
+import { toDecision as trToDecision } from "./team-runner";
+
+/** PB-R05 · job resolve mồ côi/quá hạn (lease + chờ queued) — khớp seam now. */
+const RESOLVE_STALE_MS = 240_000;
 
 const SYSTEM = { kind: "system" } as const;
 const BATCH = 100;
@@ -33,8 +37,56 @@ type SnapStage = { after: { kind: "review"; group_id: string | null } | { kind: 
 export async function sweepOnce(d: ProcessDeps): Promise<SweepResult> {
   const expired = await expireRuns(d);
   const interrupted = await reconcileRuns(d);
+  await resolveTimeouts(d);
   const queued = await requeueOrphans(d);
   return { queued, interrupted, expired };
+}
+
+/** PB-R05 · run chờ resolve mà không còn job resolve còn sống (failed/timeout/orphan) ⇒ needs_decision source_unresolvable. */
+async function resolveTimeouts(d: ProcessDeps): Promise<number> {
+  const cutoff = new Date(d.now().getTime() - RESOLVE_STALE_MS).toISOString();
+  const rows = await withHubScope(d.db, SYSTEM, (tx) =>
+    tx.execute<{ id: string }>(sql`select r.id from hub.process_runs r
+      where r.status = 'running' and r.pinned_sources is null
+        and coalesce(jsonb_array_length(r.snapshot->'sources'), 0) > 0
+        and not exists (select 1 from hub.jobs j
+          where j.type = 'source.resolve' and j.payload->>'process_run_id' = r.id::text
+            and ((j.status = 'queued' and j.created_at > ${cutoff}::timestamptz)
+              or (j.status = 'running'
+                and coalesce(j.heartbeat_at, j.started_at, j.created_at) > ${cutoff}::timestamptz)))
+      order by r.updated_at limit ${BATCH}`),
+  );
+  let n = 0;
+  for (const { id } of rows) if (await markUnresolvable(d, id)) n++;
+  return n;
+}
+
+/** needs_decision source_unresolvable cho run (khoá run; đã ghim / không còn running ⇒ bỏ). */
+async function markUnresolvable(d: ProcessDeps, runId: string): Promise<boolean> {
+  const events = await withHubScope(d.db, SYSTEM, async (tx): Promise<UserEvent[] | null> => {
+    const h = await head(tx, runId);
+    if (!h) return null;
+    const run = await core.lockRun(tx, h.tenant_id, runId);
+    if (run?.status !== "running") return null;
+    const [cur] = await tx.execute<{ pinned: unknown }>(
+      sql`select pinned_sources as pinned from hub.process_runs where id = ${runId}`,
+    );
+    if (Array.isArray(cur?.pinned)) return null;
+    const idx = Number(run.currentStageIdx);
+    const stage = await stageRow(tx, runId, idx);
+    if (!stage) return null;
+    return trToDecision(d, tx, {
+      runId,
+      tenantId: h.tenant_id,
+      idx,
+      stageRunId: stage.id,
+      reason: "source_unresolvable",
+    });
+  });
+  if (events === null) return false;
+  await publishUserEvents(d.redis, events, d.log);
+  await d.postThread(runId).catch(() => {});
+  return true;
 }
 
 /** BR-26 · run hết hạn (`expires_at ≤ now`): đóng task `expired`, `run_end`, không tự duyệt. */

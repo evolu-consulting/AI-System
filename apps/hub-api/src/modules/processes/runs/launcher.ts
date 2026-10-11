@@ -17,6 +17,7 @@ import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/ports";
 import { realActionAllowed } from "../gates/gate.rules";
+import { gateResolve, type Head, promptOf, type SnapStage } from "./launcher-prompt";
 import { runScopedFileIds } from "./output-attachment";
 import { stageDriver } from "./stage-driver";
 import { createTeamRun } from "./team-counters";
@@ -25,25 +26,6 @@ import { toDecision } from "./team-runner";
 
 export type LauncherDeps = Omit<ProcessDeps, "launcher" | "start">;
 
-type SnapStage = {
-  key: string;
-  name: string;
-  instruction: string;
-  executor: { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
-  after: { kind: "review"; group_id: string | null } | { kind: "auto" };
-  output: { filename: string };
-  real_action: boolean;
-  timeout_s: number;
-};
-type Head = {
-  tenant_id: string;
-  started_by: string;
-  status: string;
-  current_stage_idx: number;
-  conversation_id: string;
-  input: string;
-  snapshot: { stages: SnapStage[]; token_budget: number | null };
-};
 type StageRow = {
   id: string;
   status: string;
@@ -64,16 +46,9 @@ const execOf = (s: SnapStage): StageExecutor =>
     ? { kind: "agent", agentId: s.executor.agent_id }
     : { kind: "team", teamId: s.executor.team_id };
 
-/** Prompt stage (D6 rút gọn): instruction + input run + góp ý (làm lại). Output stage trước đi qua `files`. */
-const promptOf = (stage: SnapStage, head: Head, feedback: string | null): string => {
-  const parts = [stage.instruction.trim(), head.input.trim()].filter((p) => p.length > 0);
-  if (feedback && feedback.trim().length > 0) parts.push(`Góp ý cần sửa:\n${feedback.trim()}`);
-  return parts.join("\n\n") || stage.name;
-};
-
 async function headOf(tx: Tx, runId: string): Promise<Head | null> {
   const [r] = await tx.execute<Head>(sql`select tenant_id, started_by, status, current_stage_idx,
-    conversation_id, input, snapshot from hub.process_runs where id = ${runId}`);
+    conversation_id, input, snapshot, pinned_sources, inputs from hub.process_runs where id = ${runId}`);
   return r ?? null;
 }
 
@@ -128,6 +103,9 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
     return { kind: "skip" };
   const def = head.snapshot.stages[idx];
   if (!def) return { kind: "skip" };
+  // PB-R05 · cổng nguồn: def có nguồn ∧ chưa ghim ⇒ enqueue `source.resolve` (idempotent: run đã khoá FOR UPDATE),
+  // KHÔNG launch stage. Runtime báo `/sources-resolved` ⇒ ghim + kick lại.
+  if (await gateResolve(tx, runId, head)) return { kind: "skip" };
   const lost = (reason: "permission_lost" | "user_inactive") =>
     lostPermission(d, tx, { runId, tenantId: u.tenantId, idx, stageRunId: stage.id, reason });
   // P-R10 · người bắt đầu phải còn dùng được (active, không bị tenant khoá, tenant bật) — đọc TƯƠI trong tx (khoá

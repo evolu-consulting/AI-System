@@ -7,7 +7,7 @@ import type {
   ProcessRunSummary,
   SendRoomMessageRequest,
 } from "@ai/contracts/chat";
-import { PROCESS_RUN_TTL_DAYS, TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S } from "@ai/contracts/chat";
+import type { ProcessInputValue } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
@@ -29,11 +29,11 @@ import type { ProcessDeps } from "../core/ports";
 import { canRun } from "../core/run-access.rules";
 import { enqueueThread } from "../core/thread";
 import * as repo from "./runs.repo";
+import { createRun, type RunOrigin } from "./start-inputs";
 
 type StartBang = Extract<Bang, { kind: "process" | "invalid" }>;
 type Me = { tenantId: string; userId: string };
 const meOf = (u: AuthUser): Me => ({ tenantId: u.tenantId, userId: u.userId });
-const DAY_MS = 86_400_000;
 
 export type ProcessDepsCore = Omit<ProcessDeps, "start">;
 
@@ -52,6 +52,7 @@ export class StartService {
         description: r.description,
         input_hint: r.input_hint,
         stage_count: r.stage_count,
+        inputs: r.inputs ?? [],
       }));
   }
 
@@ -163,6 +164,7 @@ export class StartService {
         room_id?: string;
         conversation_id?: string;
       };
+      inputs?: ProcessInputValue[];
     },
   ): Promise<ProcessRunSummary> {
     const me = meOf(u);
@@ -177,7 +179,7 @@ export class StartService {
           key: req.process_key,
           input: req.input,
         });
-        const r = await this.#insert(tx, u, { def, input: req.input, origin });
+        const r = await this.#insert(tx, u, { def, input: req.input, origin, inputs: req.inputs });
         if (origin.originKind === "room") await this.#enqueueBlock(tx, r.runId, def);
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);
         return {
@@ -338,38 +340,12 @@ export class StartService {
     throw processError("PROCESS_NOT_FOUND", { suggestions: near.length ? near : keys.slice(0, 3) });
   }
 
-  async #insert(
+  #insert(
     tx: Tx,
     u: AuthUser,
-    p: {
-      def: repo.StartDefRow;
-      input: string;
-      origin: {
-        originKind: "room" | "conversation" | "admin";
-        originRoomId: string | null;
-        originConversationId: string | null;
-      };
-    },
+    p: { def: repo.StartDefRow; input: string; origin: RunOrigin; inputs?: ProcessInputValue[] },
   ): Promise<{ runId: string; flowId: string }> {
-    await repo.lockTenant(tx, u.tenantId);
-    if ((await repo.countActive(tx, u.tenantId)) >= this.d.runsPerTenant)
-      throw processError("TOO_MANY_PROCESS_RUNS", undefined, {
-        "Retry-After": String(TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S),
-      });
-    const runId = crypto.randomUUID();
-    const flowId = crypto.randomUUID();
-    await repo.insertRun(tx, {
-      id: runId,
-      tenantId: u.tenantId,
-      convId: crypto.randomUUID(),
-      flowId,
-      def: p.def,
-      startedBy: u.userId,
-      input: p.input,
-      expiresAt: new Date(this.d.now().getTime() + PROCESS_RUN_TTL_DAYS * DAY_MS),
-      ...p.origin,
-    });
-    return { runId, flowId };
+    return createRun(tx, u, p, { runsPerTenant: this.d.runsPerTenant, now: this.d.now });
   }
 
   async #enqueueBlock(tx: Tx, runId: string, def: repo.StartDefRow): Promise<void> {

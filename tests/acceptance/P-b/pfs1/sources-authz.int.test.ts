@@ -203,7 +203,7 @@ describe("A-11…A-12 · chip nguồn cho user thường [PB-R21]", () => {
     });
     const r = await c.call("A", "GET", "/process-runs/sources");
     expect(r.status).toBe(200);
-    const items = r.json as Json[];
+    const items = r.json.items as Json[];
     expect(items.map((s) => s.key).sort()).toEqual(["app-repo", "pb-docs"]);
     for (const it of items) {
       expect(
@@ -215,7 +215,7 @@ describe("A-11…A-12 · chip nguồn cho user thường [PB-R21]", () => {
     expect(r.text).not.toContain("github.com");
     expect(r.text).not.toContain(LOCAL_PATH);
     const beta = await c.call("D", "GET", "/process-runs/sources");
-    expect((beta.json as Json[]).map((s) => s.key)).toEqual(["beta-repo"]);
+    expect((beta.json.items as Json[]).map((s) => s.key)).toEqual(["beta-repo"]);
   });
 
   it("PB-R21 · A-12 · chip không token ⇒ 401", async () => {

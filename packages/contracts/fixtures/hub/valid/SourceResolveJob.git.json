@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "type": "source.resolve",
+  "job_id": "b3b30000-0000-4000-8000-000000000001",
+  "tenant_id": "a1000000-0000-4000-8000-000000000001",
+  "process_run_id": "b3b30000-0000-4000-8000-000000000010",
+  "items": [
+    {
+      "source_id": "b3b30000-0000-4000-8000-000000000101",
+      "key": "app-repo",
+      "kind": "git_remote",
+      "config": { "kind": "git_remote", "url": "https://github.com/acme/app.git", "branch": "main" },
+      "allowlist_union": ["docs/**", "src/**"]
+    }
+  ],
+  "timeout_s": 120
+}

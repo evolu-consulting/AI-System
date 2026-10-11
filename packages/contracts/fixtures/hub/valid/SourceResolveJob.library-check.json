@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "type": "source.resolve",
+  "job_id": "b3b30000-0000-4000-8000-000000000002",
+  "tenant_id": "a1000000-0000-4000-8000-000000000001",
+  "process_run_id": null,
+  "items": [
+    {
+      "source_id": "b3b30000-0000-4000-8000-000000000102",
+      "key": "docs-lib",
+      "kind": "library",
+      "config": { "kind": "library", "document_id": "b3b30000-0000-4000-8000-000000000701" },
+      "allowlist_union": []
+    }
+  ],
+  "timeout_s": 30
+}

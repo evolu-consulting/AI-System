@@ -172,6 +172,11 @@ describe("ST-07…10 · lỗi resolve ⇒ needs_decision source_unresolvable [PB
     const s = await startRun(c, "pbx-src");
     const run = await expectUnresolvable(s.runId);
     expect(run.decision?.options).toEqual(expect.arrayContaining(["add_attempt", "cancel"]));
+    await waitFor(
+      async () => rs.posts.length,
+      (v) => v >= 1, // posts ghi sau khi POST resolved trả về ⇒ chờ theo điều kiện
+      4_000,
+    );
     expect(rs.posts.length).toBeGreaterThanOrEqual(1);
     expect(await noStageJob(c, s.runId)).toBe(true);
   }, 30_000);
@@ -240,7 +245,7 @@ describe("ST-07…10 · lỗi resolve ⇒ needs_decision source_unresolvable [PB
     const s = await startRun(c, "pbx-src");
     await expectUnresolvable(s.runId);
     await bad.stop();
-    resolver(c); // Runtime hồi phục
+    const good = resolver(c); // Runtime hồi phục
     const d = await c.call("A", "POST", `/process-runs/${s.runId}/decide`, {
       option: "add_attempt",
     });
@@ -251,6 +256,7 @@ describe("ST-07…10 · lỗi resolve ⇒ needs_decision source_unresolvable [PB
       { kind: "git_remote", url: URL_APP, sha: C1 },
     ]);
 
+    await good.stop(); // hết đua với bad2 cho job resolve của s2
     const bad2 = resolver(c, () => ({ status: "error", code: "SOURCE_UNRESOLVABLE" }));
     const s2 = await startRun(c, "pbx-src");
     await expectUnresolvable(s2.runId);

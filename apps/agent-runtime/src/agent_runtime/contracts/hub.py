@@ -146,6 +146,27 @@ class Usage(BaseModel):
     output_tokens: Annotated[int, Field(ge=0, le=9007199254740991)]
 
 
+class FilesReadItem(RootModel[str]):
+    root: Annotated[str, Field(max_length=1024)]
+
+
+class FilesRead(RootModel[list[FilesReadItem]]):
+    root: Annotated[list[FilesReadItem], Field(max_length=2000)]
+
+
+class BytesRead(RootModel[int]):
+    root: Annotated[int, Field(ge=0, le=9007199254740991)]
+
+
+class SourceRead(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    source_key: Annotated[str, Field(pattern="^[a-z0-9-]{2,32}$")]
+    files_read: FilesRead | None
+    bytes_read: BytesRead | None
+
+
 class RunEvent4(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -524,6 +545,7 @@ class RunEvent3(BaseModel):
     usage: Usage
     session_resumed: bool
     outputs: Annotated[list[UUID] | None, Field(max_length=5, min_length=1)] = None
+    source_reads: Annotated[list[SourceRead] | None, Field(max_length=5)] = None
 
 
 class RunEvent(RootModel[RunEvent1 | RunEvent2 | RunEvent3 | RunEvent4 | RunEvent5]):

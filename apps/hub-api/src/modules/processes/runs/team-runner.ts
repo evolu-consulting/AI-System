@@ -3,6 +3,8 @@
 // giới hạn 400 dòng (một chiều `stage-driver` → `team-runner`, không ngược).
 
 import { DECISION_OPTIONS, type DecisionOption, type DecisionReason } from "@ai/contracts/chat";
+import type { JobSourceRead } from "@ai/contracts/hub";
+import type { StageSource } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { UserEvent } from "../../../lib/user-stream";
@@ -13,6 +15,7 @@ import { askExcerpt, decisionAssignees } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
 import { executorRefOf } from "./executor-ref";
 import { outputAttachment, type PendingBlob } from "./output-attachment";
+import { type StageSourceCtx, stageRefsCheck } from "./stage-sources";
 import { outputSteps, outputStepsSingle } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
@@ -26,6 +29,7 @@ export type StageResult =
       text: string;
       sections?: Record<string, string>;
       summaries?: Record<string, string>;
+      sourceReads?: readonly JobSourceRead[]; // P-b C18 · từ `job.result.source_reads`
     }
   | { kind: "need_input"; question: string; choices: string[] }
   | { kind: "limit"; reason: DecisionReason }
@@ -48,6 +52,8 @@ export type SnapStage = {
     | { kind: "group"; group_id: string }
     | { kind: "user"; user_id: string };
   token_budget: number | null;
+  sources?: StageSource[]; // P-b · nguồn + checklist stage (vắng ⇒ P-a)
+  must_know?: string[];
 };
 export type RunHead = {
   tenant_id: string;
@@ -85,6 +91,7 @@ export type Ctx = {
   ev: RunEvent;
   next: RunState;
   list: readonly Effect[];
+  srcCtx?: StageSourceCtx; // P-b · kiểm `## Nguồn tham chiếu` cho `template_ok`
 };
 
 const missingArray = (missing: readonly string[]) =>
@@ -149,6 +156,11 @@ async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
     { requiredSections: c.def.output.required_sections, fields: c.def.output.fields as never },
     text,
   );
+  // PB-R09 · stage có nguồn: output phải có `## Nguồn tham chiếu` hợp lệ ⇒ gộp vào `template_ok`/`missing`.
+  const reads = c.x.result.kind === "output" ? c.x.result.sourceReads : undefined;
+  const refs = c.srcCtx ? stageRefsCheck(c.srcCtx, text, reads) : { ok: true as const };
+  const ok = chk.ok && refs.ok;
+  const missing = refs.ok ? chk.missing : [...chk.missing, "## Nguồn tham chiếu"];
   const [v] = await tx.execute<{ v: number }>(sql`select coalesce(max(version), 0) + 1 as v
     from hub.process_outputs where stage_run_id = ${c.x.stageRunId}`);
   const version = Number(v?.v ?? 1);
@@ -160,11 +172,11 @@ async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
       ${Number(c.stage.attempt)}, ${text}, ${r.sections ? JSON.stringify(r.sections) : null}::jsonb,
       ${chk.fields ? JSON.stringify(chk.fields) : null}::jsonb,
       ${r.summaries ? JSON.stringify(r.summaries) : null}::jsonb,
-      ${chk.ok}, ${missingArray(chk.missing)}, ${att?.id ?? null})`);
-  if (chk.missing.length > 0)
-    await tx.execute(sql`update hub.stage_runs set feedback = ${`Thiếu mục: ${chk.missing.join(", ")}`}
+      ${ok}, ${missingArray(missing)}, ${att?.id ?? null})`);
+  if (missing.length > 0)
+    await tx.execute(sql`update hub.stage_runs set feedback = ${`Thiếu mục: ${missing.join(", ")}`}
       where id = ${c.x.stageRunId}`);
-  return { out: { id, version, ok: chk.ok, missing: chk.missing }, pending: att?.pending ?? null };
+  return { out: { id, version, ok, missing }, pending: att?.pending ?? null };
 }
 
 async function openReview(

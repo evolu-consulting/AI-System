@@ -15,6 +15,7 @@ import {
   type JobAttachment,
   type JobFailReason,
   JobOutputSchema,
+  type JobSource,
   type McpConfig,
   type RunEvent,
   type TokenUsage,
@@ -55,6 +56,8 @@ export type PayloadInput = {
   attachments?: readonly JobAttachment[];
   /** H2b P10 · `payload.stream` (vắng/false → khoá vắng, fixture H1/H2a giữ nguyên hình). */
   stream?: boolean;
+  /** P-b PB-R10 · nguồn chỉ-đọc gắn vào job stage; có ⇒ ép `allowed_tools` = Read/Grep/Glob + khoá `sources`. */
+  sources?: readonly JobSource[];
 };
 
 /** Agent kẹp ≥ 2: structured output tốn một lượt (Runtime đã tự ép, Hub khớp). */
@@ -89,6 +92,9 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
   const isAgent = i.role === "agent";
   // CR-054: model của agent (alias CLI `haiku`/`sonnet`/`opus` hoặc id) ghi đè model bước profile.
   const model = i.agent.model ?? step.model;
+  // PB-R10 · stage có nguồn ⇒ chỉ Read/Grep/Glob (bỏ công cụ rộng của agent), kèm `sources` chỉ-đọc.
+  const hasSources = (i.sources?.length ?? 0) > 0;
+  const tools = hasSources ? ["Read", "Grep", "Glob"] : allowedTools(opts, i.role);
   const parsed = AgentCliJobSchema.safeParse({
     v: HUB_CONTRACT_VERSION,
     type: "agent.cli",
@@ -113,11 +119,12 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
     prompt: i.prompt,
     history: [...i.history],
     use_session: isAgent,
-    allowed_tools: allowedTools(opts, i.role),
+    allowed_tools: tools,
     output: isAgent ? "agent_result" : "text",
     timeout_s: i.agent.timeoutS,
     ...(i.stream ? { stream: true } : {}),
     ...(i.attachments?.length ? { attachments: [...i.attachments] } : {}),
+    ...(hasSources ? { sources: [...(i.sources ?? [])] } : {}),
   });
   return parsed.success ? parsed.data : null;
 }

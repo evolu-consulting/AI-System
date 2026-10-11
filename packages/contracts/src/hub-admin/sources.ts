@@ -1,7 +1,7 @@
 // HUB-FR-120 · ADM-FR-68 · PB-R01/02/05/06/19/21 · CR-060 · contract nguồn tham chiếu (plan §3.1). Mọi object strict.
 // `*Public` ẩn `config.path`/`pin.path` cho non-platform_admin (C1); server strip khi dựng `SourceView`/`SourceCheckResult`.
 import { z } from "zod";
-import { ProcessKeySchema } from "../chat/processes";
+import { PROCESS_INPUT_MAX, ProcessKeySchema } from "../chat/processes";
 import { IsoDateTime, UpdatedBySchema, UuidSchema } from "../common";
 
 export const SOURCE_KEY_RE = /^[a-z0-9-]{2,32}$/;
@@ -53,6 +53,50 @@ export const GitUrlSchema = z
 
 /** Branch không mở đầu `-` (chống inject đối số git, PB-R19). */
 export const BranchSchema = z.string().min(1).max(SOURCE_BRANCH_MAX).regex(/^[^-]/);
+
+// ── Đầu vào quy trình (P-b · HUB-FR-124 · PB-R13) — đặt ở sources để chat/processes-api dùng không tạo vòng import ──
+export const DEF_INPUTS_MAX = 10;
+export const INPUT_LABEL_MAX = 80;
+export const INPUT_OPTIONS_MAX = 20;
+export const INPUT_OPTION_LEN = 200;
+export const INPUT_TYPES = ["text", "select", "file", "source_ref"] as const;
+
+/** HUB-FR-124 · khai báo đầu vào quy trình; `options` chỉ cho `select`. */
+export const ProcessInputDefSchema = z
+  .strictObject({
+    key: SourceKeySchema,
+    label: z.string().trim().min(1).max(INPUT_LABEL_MAX),
+    type: z.enum(INPUT_TYPES),
+    required: z.boolean(),
+    options: z.array(z.string().min(1).max(INPUT_OPTION_LEN)).max(INPUT_OPTIONS_MAX).optional(),
+  })
+  .superRefine((d, ctx) => {
+    if (d.options !== undefined && d.type !== "select")
+      ctx.addIssue({ code: "custom", path: ["options"], message: "options only for select" });
+  });
+export type ProcessInputDef = z.infer<typeof ProcessInputDefSchema>;
+
+/** PB-R13 · giá trị đầu vào lúc start (disc theo `type`). */
+export const ProcessInputValueSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("text"),
+    key: SourceKeySchema,
+    text: z.string().max(PROCESS_INPUT_MAX),
+  }),
+  z.strictObject({
+    type: z.literal("select"),
+    key: SourceKeySchema,
+    value: z.string().max(INPUT_OPTION_LEN),
+  }),
+  z.strictObject({ type: z.literal("file"), key: SourceKeySchema, attachment_id: UuidSchema }),
+  z.strictObject({
+    type: z.literal("source_ref"),
+    key: SourceKeySchema,
+    source_key: SourceKeySchema,
+    branch: BranchSchema,
+  }),
+]);
+export type ProcessInputValue = z.infer<typeof ProcessInputValueSchema>;
 
 export const PathSchema = z
   .string()
@@ -163,6 +207,8 @@ export type SourceUpdateRequest = z.infer<typeof SourceUpdateRequestSchema>;
 export const SourceListQuerySchema = z.strictObject({
   tenant_id: UuidSchema.optional(),
   kind: SourceKindSchema.optional(),
+  /** FE refinement · lọc theo ký hiệu/mô tả (không phân biệt hoa-thường). */
+  q: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   cursor: z.string().min(1).max(512).optional(),
 });
