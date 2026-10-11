@@ -522,6 +522,8 @@ e564ac5b68a2675b8b5383cc008818799f547e29ff11d2e6febbe04723fe60f4  tests/acceptan
 4b4db708d297f033384b1d9a7f3623146967ae4e27a2774b45d461052d8ee83f  tests/acceptance/P-a/step0/thread-poster.int.test.ts
 b55fa55271aa881b6579e02b4b26635c07b34be141a476f398549a4997840c3c  tests/acceptance/P-a/step0/thread-read.int.test.ts
 70a5e4d358e2d49d336c181e0ad7238325d18c689e41e8af05236e0a5c043036  tests/acceptance/P-a/step0/thread-route.int.test.ts
+52749572fb10f7fcf86d1fec9b833b21b6feff4cb6ad11ede51ec3753fb7235a  tests/acceptance/P-b/_support/pb-fixtures.ts
+da40689988232f59697c3529d87f391049742886aaf2851e3fe4175343caa96f  tests/acceptance/P-b/_support/pb-stack.ts
 0a37acb294fbf75f9f9556f752f8a2eb42ad7a5fb18e68722fcd78a849ced401  tests/acceptance/P-b/pfs1/_local.ts
 978124a5d6e9f87169e180b1113da1e8ec04448a178a0b68072b898badf4d9f4  tests/acceptance/P-b/pfs1/check.int.test.ts
 f929c8dae17e56a81dfb5cfba86177623449e13a8944c98ab70875e38a9b34bd  tests/acceptance/P-b/pfs1/process-def.int.test.ts
@@ -529,6 +531,15 @@ f929c8dae17e56a81dfb5cfba86177623449e13a8944c98ab70875e38a9b34bd  tests/acceptan
 08fc009488597bc2c6de799b0b2613a278ddd611341eb0245561872e79ac0f08  tests/acceptance/P-b/pfs1/sources-authz.int.test.ts
 8f330454c3ec2d055b9c7118ad65cba7c85647cf5976e34d5adfe3a68b546b89  tests/acceptance/P-b/pfs1/sources-crud.int.test.ts
 a73502344106421f0f358ee1543b7f8f4a03f5a8b506708fd22053732728f6ee  tests/acceptance/P-b/pfs1/sources-db.int.test.ts
+c28a98edd9a5f098463aaffb00ed4e72c60334d2f8e2771aec3c40510df25715  tests/acceptance/P-b/pfs2/audit.stack.test.ts
+0c6b492325bc13542fa290f8086342965f6b8251c65492c109d908e977816162  tests/acceptance/P-b/pfs2/cache-lru.stack.test.ts
+1f78b30acf8efd94be0395ac534c40d956b62c8f2ce1ea714ce28f3819a17400  tests/acceptance/P-b/pfs2/cache.stack.test.ts
+34d826638d08863c24f78a3ce901241e7d468201d282d9ce04a910306b931eab  tests/acceptance/P-b/pfs2/inject.stack.test.ts
+c511e87e3afd80ac227478f09c358cc8f576b92be2c1b131bcaaf8a0d53c67d9  tests/acceptance/P-b/pfs2/library.stack.test.ts
+efd3d53d23b3c4f7af1d12480d9a83014862147a5aabe9dcdd207f4e221ca3e0  tests/acceptance/P-b/pfs2/limits.stack.test.ts
+4ef9c2d730fe939092b0da5d08370ff4dd67bbe067c4eb0604093a70f9b36f46  tests/acceptance/P-b/pfs2/local.stack.test.ts
+57e72a2baf3b297348da68de8d600b2fd1b5f2980643464b8de3a28f7d31fef4  tests/acceptance/P-b/pfs2/snapshot.stack.test.ts
+ded64a300db2e9e3efd50980870deef3a1b1a50754fed15bb711c17c071ddc63  tests/acceptance/P-b/pfs2/ssrf.stack.test.ts
 66444b01903698639ee933706b816a777ddca78ce37ad550b4afc489f1c27c56  tests/acceptance/P-b/pfs4/_local.ts
 0ab45d3ed3133cee7f704faa11ad0fbda447a027bd44db4e39540951a55c447c  tests/acceptance/P-b/pfs4/ids.int.test.ts
 53329d958e32158c4cff4c4b6c9730c9b40cab6f4656f444d68199ff25ad4e92  tests/acceptance/P-b/pfs4/team-fix.int.test.ts
