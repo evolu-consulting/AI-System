@@ -76,8 +76,17 @@ Gợi ý ranh giới (PLAN chốt): `@ai/contracts/chat` **chỉ thêm** — `at
 Gợi ý (PLAN chốt): migration `0023_x2b2_room_attachments.sql` — `attachments.room_id`, `room_message_id` (FK `room_messages` ON DELETE SET NULL), CHECK gắn hoặc `message_id` hoặc `room_message_id` (không cả hai), policy `SELECT` bổ sung theo `hub.is_room_member(room_id)` (ghi vẫn chỉ chủ file), index sweeper phòng. Không sửa migration cũ.
 
 ## 5. UI (frontend-lead)
-<!-- frontend-lead -->
-Artboard: không mới — `<Composer attachments>` bật lại cho `RoomComposer` (+ dòng gợi ý chia sẻ R10), chip tệp trong `MessageItem` phòng (timeline + thread) dùng thành phần `features/attachments` C1; trạng thái "tệp không còn" (`available=false`). Câu chữ VI/EN do frontend-lead chốt trong PLAN.
+Chi tiết: [`plan-frontend.md`](plan-frontend.md). **Không artboard mới** — tái dùng composer + chip tệp C1 (`Composer attachments`, `AttachBar`, `AttachmentList`). Contract tiêu thụ (backend-lead thêm, "Cần từ backend" trong plan-frontend §6): `SendRoomMessageRequest.attachment_ids?`, `RoomMessage.attachments?: AttachmentRef[]`.
+
+| Màn / vùng | Hành vi |
+|---|---|
+| Composer phòng (DM, nhóm) + composer thread | Bật `attachments`: nút `button "Đính kèm tệp"`, kéo-thả, chip tiến trình/lỗi/Thử lại/Xoá (C1 nguyên văn: ≤ 10 tệp, 20 MB, loại tệp, hết dung lượng). Gửi cần có chữ (Q3): chip có mà ô trống ⇒ Gửi `disabled` + dòng gợi ý "Nhập nội dung…" |
+| Dòng gợi ý chia sẻ (Q8) | Hiện dưới ô nhập **chỉ khi có chip**, `role="note"`, không hộp xác nhận: nhóm "Mọi thành viên của nhóm đều xem và tải được tệp này…"; DM "<Tên> sẽ xem và tải được…"; thread "Mọi thành viên của phòng…". Ghi rõ agent được `@` cũng đọc được (BR-21) |
+| Tin phòng/thread có tệp | `MessageItem` thêm `AttachmentList` dưới bong bóng (mình: lệch phải); tin agent có `out/` (R11): `AgentBlock` thêm `AttachmentList` dưới thân. Bấm chip = tải (fetch + Authorization), không preview (Q15) |
+| Trạng thái | Đang tải lên: chip "Đang tải lên…", Gửi `disabled` tooltip "Chờ tải tệp xong". `available=false`: chip xám, `aria-disabled`, tooltip "Tệp đã bị xoá". Lỗi tải: toast "Không tải được tệp." (gồm 404 khi vừa bị bớt khỏi nhóm). Lỗi gửi `ATTACHMENT_NOT_FOUND`: chip có id trong `details.ids` → lỗi "Tệp không còn…", chữ giữ nguyên, chip khác giữ. Lỗi khác giữ chip + chữ (rollback ⇒ file còn chưa gắn, gửi lại được). Xung đột 409 `FLOW_BUSY`/429: như X2b |
+| Realtime | `room.message` tới người khác mang `attachments[]` ⇒ chip hiện cùng tin (cache vá có sẵn, `insertMessage` khử trùng); nối lại SSE không lặp tin. Không phát nội dung tệp |
+
+Chốt câu hỏi FE: **Q3** giữ (chữ bắt buộc, composer tự chặn) · **Q8** giữ (dòng gợi ý, không hộp xác nhận) · **Q13** giữ (thread có đính kèm) · **Q15** giữ (không preview).
 
 ## 6. Hiệu năng
 Không siết hơn CONVENTIONS §6 (perf không chặn mốc). Mốc đo gợi ý: `POST /rooms/:id/messages` có file p95 ≤ ngân sách H2c PF2 (≤ 40 ms trên 2 file).
