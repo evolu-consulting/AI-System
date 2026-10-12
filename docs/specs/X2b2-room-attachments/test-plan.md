@@ -1,6 +1,6 @@
-# Test plan · X2b2-room-attachments (qc, chế độ PLAN — chưa WRITE, chưa LOCK)
+# Test plan · X2b2-room-attachments (qc, WRITE + LOCK 2026-10-12, task Q1)
 
-Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225ab5d3` (§3 thứ tự kiểm, §4 DB, §5 "chưa gắn", §8 chữ ký luật, §11 S1–S7, §12 test khoá), plan-frontend `7f9365ce` (§5 nhãn e2e). Không Dify thật, không `claude-sub`; **int không dùng directive `#fake:*`** (chỉ có ở Runtime Python): helper `_x2b2.ts` giả lập Runtime bằng token job (`GET /internal/jobs/:id/attachments/:att`, `POST /internal/jobs/:id/outputs`); sandbox theo job đã có H2c `files.stack.test.ts`. `tests/.lock` **chưa ghi** (khoá sau Gate, task Q1). Mọi tên test bắt đầu bằng mã (`HUB-FR-44 · X2b2-AC02 · …`).
+Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225ab5d3` (§3 thứ tự kiểm, §4 DB, §5 "chưa gắn", §8 chữ ký luật, §11 S1–S7, §12 test khoá), plan-frontend `7f9365ce` (§5 nhãn e2e). Không Dify thật, không `claude-sub`; **int không dùng directive `#fake:*`** (chỉ có ở Runtime Python): helper `_x2b2.ts` giả lập Runtime bằng token job (`GET /internal/jobs/:id/attachments/:att`, `POST /internal/jobs/:id/outputs`); sandbox theo job đã có H2c `files.stack.test.ts`. `tests/.lock` ghi ở Q1 (sau Gate). Quyết định khi WRITE: `spec-decisions.md` W1–W7. Mọi tên test bắt đầu bằng mã (`HUB-FR-44 · X2b2-AC02 · …`).
 
 ## 1. Hạ tầng
 | Thứ | Nội dung |
@@ -148,8 +148,26 @@ Chờ theo `waitForResponse`/locator, không `waitForTimeout`.
 | "X2b-AC11 · run phòng không mang file" | — | **giữ** (đối chứng I41) | |
 Cách làm (chỉ qc): (1) sửa 2 file trong **cùng commit** với khoá X2b2 (`test(x2b-2): khoá test + thay X2b-AC11 [HUB-FR-44]`); (2) ghi dòng vào spec X2b2 §12: `- 2026-10-xx · qc · X2b-AC11 (context.int) + K5 (contracts-x2b) thay có chủ đích — đối chiếu BA FR-101 + Q9 X2b: test cũ đúng ở X2b, sai sau X2b-2; không phải code sửa test.`; (3) chạy lại `tests/.lock` cho cả hai file, `bun run test:lock:verify`. Trước khi B2/B3 xong 2 dòng mới đỏ đúng lý do (contract chưa thêm); dòng cũ không còn.
 
-## 8. Đỏ đúng lý do (chưa chạy — điền ở WRITE, DB `ai_system_qc_test` tag `qc`)
-Kỳ vọng trước B1: rules U01–U10 đỏ ở `expect(typeof …).toBe("function")`; K1/K3/K4 đỏ ở `expect(ok…)`; K5 xanh. Int I01…I54 (không I32) đỏ ở `expect(status)` (400 strict X2a) hoặc `expect(hasColumn)`; xanh trước code (bảo toàn): I02 (404), I14, I19, I22, I49, I51. E2E đỏ ở locator `button "Đính kèm tệp"` trong phòng.
+## 8. Đỏ đúng lý do (WRITE 2026-10-12, DB `ai_system_qc_test` tag `qc`, HEAD `3b14f1f5` + test Q1)
+Lệnh: `bun test tests/acceptance/X2b2/rules tests/acceptance/X2b/rules` · `bun --env-file=.env.test-qc.local --config=bunfig.int.toml test --timeout 40000 tests/acceptance/X2b2/<file>` · `X2B2_ENV_FILE=.env.test-qc.local bunx playwright test -c e2e/chat/playwright.x2b2.config.ts -g "E01|E07"` và `-g E05`. `bun run typecheck` xanh; biome sạch trên file đổi.
+| File | Ca | Đỏ | Xanh (bảo toàn/hồi quy) | Đỏ ở đâu (đúng lý do) |
+|---|---|---|---|---|
+| `rules/room-files-rules.test.ts` | U01–U08 (12 it) | 12 | 0 | `expect(typeof fn).toBe("function")` — module `room-files.rules.ts` chưa có |
+| `rules/rooms-rules.test.ts` | U09 | 1 | 0 | `typeof roomFilesAllowed` |
+| `rules/room-agent-rules.test.ts` | U10 | 1 | 0 | `typeof shouldBindRoomOutputs` (module X2b có, export vắng) |
+| `rules/contracts-x2b2.test.ts` | K1–K5 | 4 (K1–K4) | K5 | K1/K2/K3 `ok(...)` strict từ chối trường mới; K4 `parseMeStreamEvent` ⇒ null |
+| `X2b/rules/contracts-x2b.test.ts` (thay §7) | K5 | 1 | còn lại | `attachment_ids: [U(11)]` ⇒ false (contract chưa thêm) |
+| `access.int` | I01–I10 | 10 | 0 | I01–I06, I08–I10 `sendFiles` 201←400 (strict X2a); I07 `/content` của B 200←404 (out/ đang gắn hội thoại nền) |
+| `send.int` | I11–I20, I22 | 8 | I14, I19, I22 | `sendFiles`/`expectAttachNotFound` 404←400; I13 `[201,404]`←`[400,400]`; I16 429←400; I17 ở đối chứng 201; I18 201←400 |
+| `isolation.int` | I23–I29b | 8 | 0 | I23–I25, I29 `sendFiles`; I26–I28 `hasColumn('room_id')` false; I29b `pgCode` "42501"←"42883" (hàm chưa có) |
+| `run-files.int` | I30, I31, I33–I41 | 10 | I41 | `sendFiles` 201←400; I40 tin agent thiếu `attachments` (output `@hoadon.txt` 201 ở endpoint) |
+| `outputs.int` | I42–I46 | 5 | 0 | `attachments` tin agent vắng; I43 output gắn `hub.messages` (1←0); I44 đối chứng `room_id`; I45 (thứ 6 409 đã xanh) danh sách tệp; I46 sự kiện tới, `attachments` vắng |
+| `lifecycle.int` | I47–I50 | 3 | I49 | `sendFiles` 201←400 |
+| `regress.int` | I21, I51–I54 | 4 | I51 | `sendFiles` 201←400 (I21 ở đối chứng sau 400) |
+| hồi quy `X2b/context.int` (sau xoá ca §7) | 8 | 0 | 8 | — |
+| `tests/contract/chat/x2b2-additive` | C01 (chỉ Hub thật), C02 | chưa chạy (hub-dev, bước 9 `done:x2b2`) | | |
+| e2e `x2b2-attach.x2b2.ts` | E01–E08 | E01, E07, E05 đã chạy: đỏ | — | E01/E07 `getByRole('button', {name:'Đính kèm tệp'})` không thấy (snapshot có `textbox "Tin nhắn cho Thu Ha"`/`"…nhóm"` ⇒ stack + trang phòng chạy); E05 `/rt/output` 200 + trả lời agent hiện, đỏ ở `button "Tải report.md"`. E02–E04, E06, E08 đi qua cùng `attach()` ⇒ cùng điểm đỏ (không chạy riêng vì build chat-web nặng) |
+Không ca nào đỏ ở `PostgresError`/`TypeError` trong fixture/`beforeAll`. Fixture chỉ chạy sau code (privateFile `msgU1`, phòng beta, `POST /process-runs` đối chứng 201) đã dò riêng bằng test tạm (đã xoá): đều chạy.
 
 ## 9. Lỗ hổng spec phát hiện (gửi Gate, đều có mặc định qc dùng)
 | # | Chỗ | Vấn đề | Mặc định qc |

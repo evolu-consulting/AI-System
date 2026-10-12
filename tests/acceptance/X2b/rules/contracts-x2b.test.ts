@@ -77,14 +77,20 @@ describe("K3–K6 · rooms.ts [plan §2.2]", () => {
     expect(ok(c.RoomAgentRefSchema, { ...agent, id: U(9) })).toBe(false);
   });
 
-  it("HUB-FR-101 · K5 · SendRoomMessageRequest: + flow_id?, answer_run_id? (cần flow_id); attachment_ids ⇒ fail [X2b-AC11, D16]", async () => {
+  it("HUB-FR-101 · K5 · SendRoomMessageRequest: + flow_id?, answer_run_id? (cần flow_id); attachment_ids 1 id ⇒ pass, 11 id / trùng ⇒ fail [X2b2-C-1, thay X2b-AC11]", async () => {
     const c = await loadChat();
     const base = { content: "@hoadon kiểm tra", client_msg_id: U(10) };
     expect(ok(c.SendRoomMessageRequestSchema, base)).toBe(true);
     expect(
       ok(c.SendRoomMessageRequestSchema, { ...base, flow_id: U(8), answer_run_id: U(7) }),
     ).toBe(true);
-    expect(ok(c.SendRoomMessageRequestSchema, { ...base, attachment_ids: [U(11)] })).toBe(false);
+    // X2b-2 (spec X2b2 §12, Tranh chấp test): đính kèm tin phòng hợp lệ ⇒ true; 11 id / trùng ⇒ false
+    expect(ok(c.SendRoomMessageRequestSchema, { ...base, attachment_ids: [U(11)] })).toBe(true);
+    const eleven = Array.from({ length: 11 }, (_, i) => U(40 + i));
+    expect(ok(c.SendRoomMessageRequestSchema, { ...base, attachment_ids: eleven })).toBe(false);
+    expect(ok(c.SendRoomMessageRequestSchema, { ...base, attachment_ids: [U(11), U(11)] })).toBe(
+      false,
+    );
     expect(ok(c.SendRoomMessageRequestSchema, { ...base, answer_run_id: U(7) })).toBe(false);
     expect(ok(c.RoomMessageListQuerySchema, { flow_id: U(8) })).toBe(true);
   });

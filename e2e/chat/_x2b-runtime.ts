@@ -1,6 +1,10 @@
 // HUB-FR-101 · HUB-FR-103 · e2e X2b · Runtime GIẢ chạy trong tiến trình stack (bun): claim `hub.jobs` bằng SQL owner rồi XADD
 // `run:<id>` (Redis) theo `@ai/contracts/hub` — giống `tests/acceptance/H1/_runtime.ts` nhưng không phụ thuộc `bun:test`.
 // Test (Playwright, node) điều khiển qua HTTP `POST /rt/<op>` ở cổng "sẵn sàng" của stack. KHÔNG Dify, KHÔNG `claude-sub`.
+// X2b-2 (HUB-FR-44, test-plan X2b2 §5 E05): op `output {run_id, name, bytes}` — đặt `token_hash` cho job như Runtime (mẫu
+// `tests/acceptance/H2c/_h2c2.ts` `reclaim`), `POST /internal/jobs/:id/outputs` lên Hub (`hubUrl`), id output đi kèm
+// `job.result.outputs` ở `answer` kế tiếp (contract C2).
+import { createHash, randomBytes } from "node:crypto";
 import {
   type AgentResult,
   RUN_STREAM_FIELD,
@@ -18,13 +22,21 @@ type Payload = {
   agent: { id: string };
   provider_key?: string;
 };
-type Claimed = { id: string; provider: string; seq: number; payload: Payload };
+type Claimed = {
+  id: string;
+  provider: string;
+  seq: number;
+  payload: Payload;
+  token?: string;
+  outputs?: string[];
+};
 
 export class FakeRuntime {
   private readonly claimed = new Map<string, Claimed>();
   constructor(
     private readonly sql: postgres.Sql,
     private readonly redis: Redis,
+    private readonly hubUrl = "",
   ) {}
 
   private async emit(runId: string, c: Claimed, body: Record<string, unknown>): Promise<void> {
@@ -82,6 +94,30 @@ export class FakeRuntime {
     }
   }
 
+  /** Agent ghi `out/<name>` (X2b-2): token job + `POST /internal/jobs/:id/outputs`; id giữ tới `answer`. */
+  async output(runId: string, name: string, bytes: string): Promise<string> {
+    const c = await this.claim(runId);
+    if (!c.token) {
+      c.token = randomBytes(32).toString("base64url");
+      const hash = createHash("sha256").update(c.token, "ascii").digest();
+      await this.sql`update hub.jobs set token_hash = ${hash} where id = ${c.id}`;
+    }
+    const res = await fetch(`${this.hubUrl}/internal/jobs/${c.id}/outputs`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${c.token}`,
+        "content-type": "application/octet-stream",
+        "X-Filename": encodeURIComponent(name),
+      },
+      body: new TextEncoder().encode(bytes),
+    });
+    const text = await res.text();
+    if (res.status !== 201) throw new Error(`outputs ${res.status}: ${text.slice(0, 200)}`);
+    const id = (JSON.parse(text) as { id: string }).id;
+    c.outputs = [...(c.outputs ?? []), id];
+    return id;
+  }
+
   /** Kết thúc job bằng `agent_result` (done / need_input / ...). */
   async answer(runId: string, result: AgentResult): Promise<void> {
     const c = await this.claim(runId);
@@ -101,18 +137,26 @@ export class FakeRuntime {
       output,
       usage: { input_tokens: 100, output_tokens: 20 },
       session_resumed: false,
+      ...(c.outputs?.length ? { outputs: c.outputs } : {}),
     });
     this.claimed.delete(runId);
   }
 }
 
-/** Handler HTTP `/rt/<op>`: body JSON `{run_id, result?}`. */
+/** Handler HTTP `/rt/<op>`: body JSON `{run_id, result?}`; op `output`: `{run_id, name, bytes}` (bytes = chữ UTF-8). */
 export async function handleRt(rt: FakeRuntime, req: Request): Promise<Response> {
   const op = new URL(req.url).pathname.replace(/^\/rt\//, "");
-  const b = (await req.json()) as { run_id: string; result?: AgentResult };
+  const b = (await req.json()) as {
+    run_id: string;
+    result?: AgentResult;
+    name?: string;
+    bytes?: string;
+  };
   try {
     if (op === "claim") await rt.claim(b.run_id);
     else if (op === "answer" && b.result) await rt.answer(b.run_id, b.result);
+    else if (op === "output" && b.name && b.bytes !== undefined)
+      return Response.json({ ok: true, id: await rt.output(b.run_id, b.name, b.bytes) });
     else return new Response("bad op", { status: 400 });
     return Response.json({ ok: true });
   } catch (e) {

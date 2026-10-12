@@ -149,6 +149,7 @@ await redis.connect();
 const rt = new FakeRuntime(
   postgres(env("TEST_DATABASE_URL"), { max: 2, onnotice: () => {} }),
   redis,
+  hubUrl,
 );
 Bun.serve({
   port: PORTS.ready,

@@ -180,4 +180,4 @@ Lệnh xong: `bun run typecheck && bun test && bun --env-file=.env.test-qc.local
 | Phình mốc (BE ≈ 450 dòng TS + 120 SQL, FE ≈ 300) | PLAN tách task: B1 migration+RLS (cao), B2 gắn+đọc (cao), B3 file-set+`out/` (cao), B4 sweeper, F1 composer+chip |
 
 ## 12. Tranh chấp test
-- Dự kiến (PLAN, thay có chủ đích — chỉ qc sửa): `tests/acceptance/X2b/context.int.test.ts` "X2b-AC11 · attachment_ids vào tin phòng → 400" và `tests/acceptance/X2b/rules/contracts-x2b.test.ts` K5 dòng `attachment_ids ⇒ false` (plan §12). Test "run phòng không mang file" giữ.
+- 2026-10-12 · qc · X2b-AC11 (context.int) + K5 (contracts-x2b) thay có chủ đích — đối chiếu BA FR-101 + Q9 X2b: test cũ đúng ở X2b, sai sau X2b-2; không phải code sửa test. Chi tiết: spec-decisions "Tranh chấp test".

@@ -1,9 +1,9 @@
 // HUB-FR-101 · HUB-BR-21 · X2b-R06–R09, R20 · test-plan X2b §4 I20–I28 (hard-stop bảo mật, spec §9): ngữ cảnh run phòng =
 // ≤ 20 tin gần nhất của timeline + tin gọi; không lấy phòng khác / hội thoại riêng; non-member không gọi/không thấy run;
-// `GET/… /runs/:id*` chỉ người gọi (RLS runs); hội thoại nền ẩn khỏi `/conversations*` (D2); `attachment_ids` → 400 (AC11).
+// `GET/… /runs/:id*` chỉ người gọi (RLS runs); hội thoại nền ẩn khỏi `/conversations*` (D2); run phòng không file (AC11).
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
 import { R } from "../H1/_fixtures";
-import { api, codeOf, e400, e404, mkGroup, say } from "../X2a/_x2a";
+import { api, codeOf, e404, mkGroup, say } from "../X2a/_x2a";
 import {
   answer,
   type CtxB,
@@ -133,15 +133,8 @@ describe("X2b-AC10 · rò ngữ cảnh / cách ly [BR-21, hard-stop]", () => {
 });
 
 describe("X2b-AC11 · đính kèm tách X2b-2 [Q9, D16]", () => {
-  it("HUB-FR-101 · X2b-AC11 · attachment_ids vào tin phòng → 400 VALIDATION_ERROR, 0 run (xanh trước code: strict X2a)", async () => {
-    const room = await group([P.hoa.id], "Phòng file");
-    const s = await post(c, "lan", room, {
-      content: "@hoadon đọc file",
-      attachment_ids: ["a2bb0000-0000-4000-8000-000000009001"],
-    });
-    expect(codeOf(s.res)).toEqual(e400);
-    expect(await runCount(c.sql, room)).toBe(0);
-  });
+  // thay bởi X2b2 I11/I17 (X2b2-AC03/AC05): ca cũ "attachment_ids vào tin phòng → 400" bỏ có chủ đích
+  // (X2b-2 cho phép đính kèm tin phòng — spec X2b2 §12, Tranh chấp test).
 
   it("HUB-FR-101 · X2b-AC11 · run phòng không mang file (payload không có đính kèm)", async () => {
     const room = await group([P.hoa.id], "Phòng không file");
