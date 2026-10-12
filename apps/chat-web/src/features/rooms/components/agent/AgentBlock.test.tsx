@@ -119,3 +119,22 @@ test("side_effect thiếu choices (bản riêng không có ask): người gửi 
   expect(h).toContain(">Đồng ý<");
   expect(h).toContain(">Huỷ<");
 });
+
+const outFile: NonNullable<RoomMessage["attachments"]>[number] = {
+  id: uid(70),
+  filename: "ket-qua.xlsx",
+  mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  size: 4096,
+  available: true,
+};
+
+test("X2b-2 D5: tệp out/ của agent hiện chip tải; ẩn khi đang chờ side_effect với người khác", () => {
+  expect(html({ ...base, attachments: [outFile] }, LAN, false)).toContain("ket-qua.xlsx");
+  expect(html({ ...base }, LAN, false)).not.toContain("<ul");
+  const side = {
+    ...base,
+    attachments: [outFile],
+    ask: { kind: "side_effect" as const, question: "Xoá?", choices: ["Đồng ý"] },
+  };
+  expect(html(side, THU, true)).not.toContain("ket-qua.xlsx");
+});

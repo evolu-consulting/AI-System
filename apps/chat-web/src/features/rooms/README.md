@@ -14,4 +14,9 @@ UI (F3–F6): `pages/RoomPage` → `components/RoomView` (header + `timeline/` +
   - `applyAgentMessage` (tin agent tới): có `ask` ⇒ thêm/vá lượt chờ; không ⇒ gọi `removeActiveRun`. `removeActiveRun(d, runId)` chỉ xoá lượt khỏi `active_runs`; gửi trả lời gọi nó ngay (lạc quan) rồi `room.run_finished` → `finishActiveRun` KHÔNG xoá lượt đang `waiting` khi status `finished`. Đừng gộp hai đường.
   - `AGENT_NOT_FOUND` giữ nguyên nội dung trong ô; `@orchestrator` bị che trong phòng (D8).
   - Khối agent trong thread (`inThread`) không có footer Copy/Trả lời tiếp; Dừng nằm trên khối run, thread composer không có nút Dừng (TECH-DEBT #110).
-  - Đính kèm trong phòng (F5) đã chuyển X2b-2 — không làm ở đây.
+
+## X2b-2 — tệp đính kèm trong phòng/thread (HUB-FR-44 · `docs/specs/X2b2-room-attachments/`)
+- **Gửi**: `RoomComposer` và composer thread bật `attachments`; `use-send-room-text`/`use-room-flow` (`useFlowSend`) thêm `attachment_ids` chỉ khi có id; khoá idempotent `lib/send-key` = chữ + id (cùng chữ khác tệp ⇒ tin mới). Nhánh `!quy-trình` + tệp không đổi (noAttach).
+- **Hiển thị**: `MessageItem` (tin người) và `AgentBlock` (tệp `out/` của agent, ẩn khi `hideBody`) dùng chung `features/attachments/components/AttachmentList`; timeline và thread dùng chung nên không code riêng thread. Tải qua `/attachments/:id/content` (server quyết quyền; 404 ⇒ toast `attach.downloadFailed`), không preview.
+- **Realtime**: `room.message` mang `attachments` (tệp bất biến sau gắn) ⇒ `insertMessage`/`applyAgentMessage` giữ nguyên, khử trùng theo `id`; schema contract là strictObject nên thiếu `attachments?` sẽ làm hỏng parse.
+- **Bẫy**: `preview` danh sách phòng/`FlowRecent` do server trả (không biểu tượng tệp); số tệp không tính `unread`.

@@ -1,6 +1,13 @@
 // HUB-FR-100, CHAT-AC-37…40, X2a-AC08 · mỗi sự kiện /me/stream → cache TanStack Query (plan-frontend §3).
 import { beforeEach, describe, expect, test } from "bun:test";
-import type { MeStreamEvent, RoomDetail, RoomMessage, RoomSummary } from "@ai/contracts/chat";
+import type {
+  AttachmentRef,
+  MeStreamEvent,
+  RoomDetail,
+  RoomMessage,
+  RoomSummary,
+} from "@ai/contracts/chat";
+import { parseMeStreamEvent } from "@ai/contracts/chat";
 import { QueryClient } from "@tanstack/react-query";
 import {
   type RoomListData,
@@ -96,6 +103,31 @@ describe("room.message", () => {
     expect(client.getQueryData(roomKeys.messages(uid(7)))).toBeUndefined();
     expect(client.getQueryState(roomKeys.list)?.isInvalidated).toBe(true);
   });
+});
+
+test("X2b-2: tin có attachments qua parseMeStreamEvent, vào cache nguyên tệp, khử trùng", () => {
+  const file: AttachmentRef = {
+    id: uid(70),
+    filename: "a.pdf",
+    mime: "application/pdf",
+    size: 9,
+    available: true,
+  };
+  const message = { ...msg(2, 3), attachments: [file] };
+  const parsed = parseMeStreamEvent("room.message", JSON.stringify({ room_id: uid(2), message }));
+  expect(parsed).not.toBeNull();
+  client.setQueryData<RoomMessagesData>(roomKeys.messages(uid(2)), {
+    pages: [{ items: [msg(2, 1)], has_more: false }],
+    pageParams: [undefined],
+  });
+  seedList(room(2));
+  if (parsed) {
+    route(parsed);
+    route(parsed);
+  }
+  const got = client.getQueryData<RoomMessagesData>(roomKeys.messages(uid(2)))?.pages[0]?.items;
+  expect(got?.map((x) => x.seq)).toEqual([1, 3]);
+  expect(got?.[1]?.attachments).toEqual([file]);
 });
 
 test("room.unread vá unread phòng + unread_total", () => {

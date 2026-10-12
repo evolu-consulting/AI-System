@@ -6,6 +6,7 @@ import type { RoomMessage } from "@ai/contracts/chat";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { AnswerBody } from "~/features/answer/components/AnswerBody";
+import { AttachmentList } from "~/features/attachments/components/AttachmentList";
 import { FlowFooter } from "~/features/thread/components/FlowFooter";
 import { relativeTime } from "~/features/thread/lib/thread-logic";
 import { agentName } from "../../lib/room-agent";
@@ -121,6 +122,7 @@ function AgentBlockImpl(props: Props) {
       {!hideBody && !dupQuestion && (
         <Body message={message} onRerun={mine && onRerun ? () => onRerun(message) : undefined} />
       )}
+      {!hideBody && <AttachmentList items={message.attachments} />}
       <AgentWait message={message} name={name} mine={mine} waiting={waiting} onAnswer={onAnswer} />
       <p className="flex flex-wrap gap-x-2 text-caption text-muted-foreground">
         {message.steps && (

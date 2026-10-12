@@ -4,6 +4,7 @@ import type { RoomMessage } from "@ai/contracts/chat";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { MessageText } from "~/components/shared/MessageText";
+import { AttachmentList } from "~/features/attachments/components/AttachmentList";
 import { cn } from "~/lib/utils";
 import { initialsOf } from "../../../shell/lib/conversation-path";
 import { timeOf } from "../../lib/room-logic";
@@ -41,6 +42,11 @@ function MessageItemImpl({ message, mine, group }: Props) {
         >
           <MessageText text={message.content} />
         </p>
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="mt-1.5">
+            <AttachmentList items={message.attachments} />
+          </div>
+        )}
       </div>
     </article>
   );
