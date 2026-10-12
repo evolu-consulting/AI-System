@@ -324,5 +324,11 @@ export async function jobOutput(c: CtxX, job: Job, name: string, bytes: Uint8Arr
 /** Kết thúc job `done` kèm `outputs` (contract C2) + usage như Runtime thật. */
 export async function finishWith(c: CtxX, job: Job, textOut: string, outputs: string[]) {
   await runtimeUsage(c, job);
-  await agentWithOutputs(c.rt, c.sql, job, { status: "done", text: textOut }, outputs);
+  await agentWithOutputs(
+    c.rt,
+    c.sql,
+    job,
+    { status: "done", text: textOut },
+    outputs.length ? outputs : undefined,
+  );
 }
