@@ -8,11 +8,14 @@ import {
   PROCESS_NAME_MAX,
   PROCESS_RUN_GROUPS_MAX,
   PROCESS_STAGES_MAX,
+  PROCESS_STEP_MAX,
   ProcessKeySchema,
+  ProcessStepSchema,
   STAGE_TIMEOUT_S,
   TeamModeSchema,
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
+import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
 import {
   BranchSchema,
   DEF_INPUTS_MAX,
@@ -41,6 +44,7 @@ export {
   type ProcessRunView,
   ProcessRunViewSchema,
 } from "../chat/processes-entities";
+export * from "./process-steps";
 export * from "./sources";
 
 export const HUB_ADMIN_PROCESS_ERRORS = {
@@ -53,9 +57,10 @@ export const HUB_ADMIN_PROCESS_ERRORS = {
 export type HubAdminProcessErrorCode = keyof typeof HUB_ADMIN_PROCESS_ERRORS;
 export const PROCESS_DEF_PATHS_MAX = 20;
 export const PROCESS_REF_KINDS = ["agent", "team", "group", "user", "source"] as const;
-/** `PROCESS_DEF_INVALID` / `PROCESS_DEF_INCOMPLETE`; path dạng `stages.<i>.<trường>`. */
+/** `PROCESS_DEF_INVALID` / `PROCESS_DEF_INCOMPLETE`; path dạng `stages.<i>.<trường>`; `rules` (P-b2) cùng chỉ số `paths`. */
 export const ProcessDefPathsDetailsSchema = z.strictObject({
   paths: z.array(z.string().min(1)).max(PROCESS_DEF_PATHS_MAX),
+  rules: z.array(z.enum(PROCESS_DEF_RULES)).max(PROCESS_DEF_PATHS_MAX).optional(),
 });
 export const ProcessRefInvalidDetailsSchema = z.strictObject({
   path: z.string().min(1),
@@ -102,6 +107,8 @@ export const ProcessSourceChipListResponseSchema = z.strictObject({
 export const ProcessStageDefSchema = z.strictObject({
   key: z.string().regex(STAGE_KEY_RE),
   name: NameSchema,
+  /** P-b2 · bước 0-based; vắng ở MỌI stage ⇒ bước = chỉ số stage (def cũ). */
+  step: ProcessStepSchema.optional(),
   executor: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("agent"), agent_id: UuidSchema }),
     z.strictObject({ kind: z.literal("team"), team_id: UuidSchema }),
@@ -125,7 +132,12 @@ export const ProcessStageDefSchema = z.strictObject({
       .max(STAGE_FIELDS_MAX),
   }),
   after: z.discriminatedUnion("kind", [
-    z.strictObject({ kind: z.literal("review"), group_id: UuidSchema.nullable() }),
+    z.strictObject({
+      kind: z.literal("review"),
+      group_id: UuidSchema.nullable(),
+      /** P-b2 · bước được phép quay lại khi Chưa đạt (< bước của stage, không trùng — luật `BACK_TARGET_INVALID`). */
+      back_to_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX).default([]),
+    }),
     z.strictObject({ kind: z.literal("auto") }),
   ]),
   real_action: z.boolean(),
@@ -144,7 +156,20 @@ export const ProcessStageDefSchema = z.strictObject({
   sources: z.array(StageSourceSchema).max(STAGE_SOURCES_MAX).default([]),
   must_know: z.array(z.string().trim().min(1).max(MUST_KNOW_LEN)).max(MUST_KNOW_MAX).default([]),
 });
-export type ProcessStageDef = z.infer<typeof ProcessStageDefSchema>;
+type StageDefParsed = z.infer<typeof ProcessStageDefSchema>;
+type StageAfterParsed = StageDefParsed["after"];
+/** Kiểu stage def: `after.back_to_steps` OPTIONAL — snapshot def cũ (trước P-b2) và bản nháp FE không có; đọc dùng `?? []`. */
+export type ProcessStageDef = Omit<StageDefParsed, "after"> & {
+  after:
+    | (Omit<Extract<StageAfterParsed, { kind: "review" }>, "back_to_steps"> & {
+        back_to_steps?: number[];
+      })
+    | Extract<StageAfterParsed, { kind: "auto" }>;
+};
+/** Thay `stages` của kiểu suy từ zod bằng `ProcessStageDef` (back_to_steps optional). */
+type WithStageDefs<T extends { stages: unknown }> = Omit<T, "stages"> & {
+  stages: ProcessStageDef[];
+};
 
 /** Hình dạng thôi (không luật chéo stage) — route dùng cái này + `validateProcessDef` để trả 422 có `paths`. */
 export const ProcessDefInputBaseSchema = z.strictObject({
@@ -159,20 +184,6 @@ export const ProcessDefInputBaseSchema = z.strictObject({
   sources: z.array(SourceKeySchema).max(DEF_SOURCES_MAX).default([]),
   inputs: z.array(ProcessInputDefSchema).max(DEF_INPUTS_MAX).default([]),
 });
-
-/** Đường dẫn vi phạm luật chéo stage (key trùng; `real_action` ở stage 0 / sau stage `auto`) — dùng chung với def.rules. */
-export function processDefStagePaths(stages: readonly ProcessStageDef[]): string[] {
-  const paths: string[] = [];
-  const seen = new Set<string>();
-  stages.forEach((s, i) => {
-    if (seen.has(s.key)) paths.push(`stages.${i}.key`);
-    seen.add(s.key);
-    if (s.real_action && (i === 0 || stages[i - 1]?.after.kind !== "review")) {
-      paths.push(`stages.${i}.real_action`);
-    }
-  });
-  return paths;
-}
 
 /** PB-R06 · stage.sources[].source_key phải ∈ def.sources — path `stages.<i>.sources.<j>.source_key` (R-C15/P-02). */
 export function processDefSourcePaths(d: {
@@ -191,14 +202,14 @@ export function processDefSourcePaths(d: {
 
 /** Hình dạng + luật chéo stage (R-K08) + tham chiếu nguồn (R-C15). */
 export const ProcessDefInputSchema = ProcessDefInputBaseSchema.superRefine((d, ctx) => {
-  for (const p of processDefStagePaths(d.stages)) {
-    ctx.addIssue({ code: "custom", path: p.split("."), message: "invalid stage" });
+  for (const it of processDefStageIssues(d.stages)) {
+    ctx.addIssue({ code: "custom", path: it.path.split("."), message: it.rule });
   }
   for (const p of processDefSourcePaths(d)) {
     ctx.addIssue({ code: "custom", path: p.split("."), message: "unknown source_key" });
   }
 });
-export type ProcessDefInput = z.infer<typeof ProcessDefInputBaseSchema>;
+export type ProcessDefInput = WithStageDefs<z.infer<typeof ProcessDefInputBaseSchema>>;
 
 export const ProcessDefSchema = ProcessDefInputBaseSchema.extend({
   id: UuidSchema,
@@ -209,12 +220,12 @@ export const ProcessDefSchema = ProcessDefInputBaseSchema.extend({
   created_at: IsoDateTime,
   updated_at: IsoDateTime,
 });
-export type ProcessDef = z.infer<typeof ProcessDefSchema>;
+export type ProcessDef = WithStageDefs<z.infer<typeof ProcessDefSchema>>;
 
 export const UpdateProcessDefRequestSchema = ProcessDefInputBaseSchema.extend({
   version: z.number().int().min(1),
 });
-export type UpdateProcessDefRequest = z.infer<typeof UpdateProcessDefRequestSchema>;
+export type UpdateProcessDefRequest = WithStageDefs<z.infer<typeof UpdateProcessDefRequestSchema>>;
 
 export const CopyProcessDefRequestSchema = z.strictObject({
   key: ProcessKeySchema.optional(),

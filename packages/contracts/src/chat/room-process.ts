@@ -10,6 +10,7 @@ import {
   FORWARD_CHAIN_MAX,
   PROCESS_NAME_MAX,
   PROCESS_STAGES_MAX,
+  ProcessStepSchema,
   StageAfterSchema,
   StageIdxSchema,
   StepRoleSchema,
@@ -105,6 +106,8 @@ export const RoomProcessPartSchema = z.discriminatedUnion("kind", [
     answer: z.string().max(FEEDBACK_MAX).optional(),
     choice: z.string().min(1).max(CHAT_ASK_CHOICE_MAX).optional(),
     sections: z.array(z.string().min(1)).max(PROCESS_SECTIONS_MAX).optional(),
+    /** P-b2 · review `fail` có quay lại bước. */
+    to_step: ProcessStepSchema.optional(),
   }),
   z.strictObject({
     kind: z.literal("forward"),

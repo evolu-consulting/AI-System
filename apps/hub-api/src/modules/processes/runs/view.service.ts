@@ -5,13 +5,9 @@
 import type {
   DecisionOption,
   DecisionReason,
-  ExecutorRef,
-  OutputRef,
   ProcessOutput,
   ProcessRunStatus,
   ProcessRunView,
-  StageRunStatus,
-  StageView,
 } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -31,46 +27,28 @@ import {
   type Viewer,
 } from "../core/run-access.rules";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
-import { idOf, resolveExecutors } from "./executor-ref";
 import * as repo from "./runs.repo";
+import {
+  backFields,
+  iso,
+  type OutputRow,
+  type Snap,
+  stageViews,
+  taskStages,
+  toOutputRef,
+} from "./view-steps";
 
 export type ViewDeps = { db: Db; config: Pick<ConfigCache, "user"> };
 
-type Snap = { key: string; name: string; stages: SnapStage[] };
-type SnapStage = {
-  key: string;
-  name: string;
-  executor: { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
-  after: { kind: "review"; group_id: string | null } | { kind: "auto" };
-  real_action: boolean;
-};
 type RunRow = repo.RunSummaryRow & {
   tenant_id: string;
   input: string;
   flow_id: string;
   origin_room: RunFacts["originRoom"];
+  back_rounds: number;
+  back_limit: number;
 };
-type OutputRow = {
-  id: string;
-  stage_idx: number;
-  version: number;
-  attempt: number;
-  template_ok: boolean;
-  template_missing: string[] | null;
-  created_at: string;
-};
-
-const iso = (c: string) =>
-  sql.raw(`to_char(${c} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`);
 const idsArr = (ids: readonly string[]) => sql.raw(`'{${ids.join(",")}}'::uuid[]`);
-const toOutputRef = (o: OutputRow): OutputRef => ({
-  id: o.id,
-  version: Number(o.version),
-  attempt: Number(o.attempt),
-  template_ok: o.template_ok,
-  template_missing: o.template_missing ?? [],
-  created_at: o.created_at,
-});
 const vrole = (role: AuthUser["role"]): Viewer["role"] =>
   role === "platform_admin" || role === "tenant_admin" ? role : "member";
 const viewerOf = (u: AuthUser): Viewer => ({
@@ -100,9 +78,9 @@ const scopeOf = (v: ViewerCtx, tenantIdQ?: string) => ({
 /** Run + facts phòng cho người xem (scope system; lọc id). */
 async function runRow(tx: Tx, runId: string, viewerId: string): Promise<RunRow | null> {
   const [r] = await tx.execute<RunRow>(sql`
-    select r.id, r.tenant_id, r.snapshot, r.def_version, r.status, r.current_stage_idx, r.origin_kind,
+    select r.id, r.tenant_id, r.snapshot, r.def_version, r.status, r.current_stage_idx, r.current_step, r.origin_kind,
       r.origin_room_id, r.origin_conversation_id, r.started_by, u.display_name as started_by_name, r.decision,
-      r.input, r.flow_id, ${iso("r.started_at")} as started_at, ${iso("r.updated_at")} as updated_at,
+      r.input, r.flow_id, r.back_rounds, r.back_limit, ${iso("r.started_at")} as started_at, ${iso("r.updated_at")} as updated_at,
       ${iso("r.finished_at")} as finished_at,
       case when r.origin_kind <> 'room' then 'none'
         when rm.id is null or rm.deleted_at is not null then 'deleted'
@@ -114,62 +92,6 @@ async function runRow(tx: Tx, runId: string, viewerId: string): Promise<RunRow |
     left join hub.rooms rm on rm.id = r.origin_room_id
     where r.id = ${runId}`);
   return r ?? null;
-}
-
-const UNKNOWN_EXEC: ExecutorRef = { kind: "agent", key: "?", name: { vi: "?", en: "?" } }; // D5 fallback
-
-type StageRunRow = {
-  stage_idx: number;
-  status: StageRunStatus;
-  attempt: number;
-  attempt_limit: number;
-  asks_count: number;
-  ask_limit: number;
-  current_output_id: string | null;
-  passed_by: string | null;
-  passed_by_name: string | null;
-  passed_at: string | null;
-};
-
-async function stageViews(tx: Tx, r: RunRow, snap: Snap): Promise<StageView[]> {
-  const srs = await tx.execute<StageRunRow>(sql`
-    select s.stage_idx, s.status, s.attempt, s.attempt_limit, s.asks_count, s.ask_limit, s.current_output_id,
-      s.passed_by, pu.display_name as passed_by_name, ${iso("s.passed_at")} as passed_at
-    from hub.stage_runs s left join admin.users pu on pu.id = s.passed_by and pu.tenant_id = s.tenant_id
-    where s.process_run_id = ${r.id} and s.tenant_id = ${r.tenant_id} order by s.stage_idx`);
-  const outs = await tx.execute<OutputRow>(sql`
-    select id, stage_idx, version, attempt, template_ok, template_missing, ${iso("created_at")} as created_at
-    from hub.process_outputs where process_run_id = ${r.id} and tenant_id = ${r.tenant_id} order by stage_idx, version`);
-  const execMap = await resolveExecutors(
-    tx,
-    snap.stages.map((s) => s.executor),
-  );
-  return srs.map((sr): StageView => {
-    const i = Number(sr.stage_idx);
-    const def = snap.stages[i];
-    return {
-      idx: i,
-      key: def?.key ?? `#${i + 1}`,
-      name: def?.name ?? `#${i + 1}`,
-      executor: (def ? execMap.get(idOf(def.executor)) : undefined) ?? UNKNOWN_EXEC,
-      after: def?.after.kind ?? "auto",
-      real_action: def?.real_action ?? false,
-      status: sr.status,
-      attempt: Number(sr.attempt),
-      attempt_limit: Number(sr.attempt_limit),
-      asks_count: Number(sr.asks_count),
-      ask_limit: Number(sr.ask_limit),
-      outputs: outs
-        .filter((o) => Number(o.stage_idx) === i)
-        .map(toOutputRef)
-        .slice(0, 20),
-      current_output_id: sr.current_output_id,
-      passed_by: sr.passed_by
-        ? { id: sr.passed_by, display_name: sr.passed_by_name ?? sr.passed_by }
-        : null,
-      passed_at: sr.passed_at,
-    };
-  });
 }
 
 const myTaskIds = (tx: Tx, r: RunRow, v: ViewerCtx): Promise<string[]> =>
@@ -241,11 +163,12 @@ export class ViewService {
   }
 
   async #full({ tx, v, r, snap, myIds }: ViewCtx): Promise<ProcessRunView> {
-    const [stages, open, my, hist] = await Promise.all([
+    const [stages, open, my, hist, back] = await Promise.all([
       stageViews(tx, r, snap),
       repo.openTaskViews(tx, r.id, r.tenant_id),
       loadTaskDetails(tx, v, myIds),
       repo.loadHistory(tx, r.id, r.tenant_id),
+      backFields(tx, r),
     ]);
     const facts = factsOf(r);
     return {
@@ -261,6 +184,7 @@ export class ViewService {
         ? { room_id: r.origin_room_id as string, flow_id: r.flow_id }
         : null,
       can_cancel: canCancel(v, facts),
+      ...back,
     };
   }
 
@@ -287,16 +211,7 @@ export class ViewService {
   async #task({ tx, u, v, r, snap, myIds }: ViewCtx): Promise<ProcessRunView> {
     const starterLeft = v.userId === r.started_by && myIds.length === 0;
     const my = await loadTaskDetails(tx, v, myIds);
-    const srs = await tx.execute<{ stage_idx: number; status: StageRunStatus }>(sql`
-      select stage_idx, status from hub.stage_runs where process_run_id = ${r.id} and tenant_id = ${r.tenant_id}
-      order by stage_idx`);
-    const stages = isTerminal(r.status as ProcessRunStatus)
-      ? []
-      : srs.map((s) => ({
-          idx: Number(s.stage_idx),
-          name: snap.stages[Number(s.stage_idx)]?.name ?? `#${Number(s.stage_idx) + 1}`,
-          status: s.status,
-        }));
+    const stages = isTerminal(r.status as ProcessRunStatus) ? [] : await taskStages(tx, r, snap);
     const base = {
       access: "task" as const,
       id: r.id,

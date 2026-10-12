@@ -17,6 +17,7 @@ const MESSAGES: Record<ChatProcessErrorCode, string> = {
   FORWARD_LIMIT: "Forward limit reached",
   FORWARD_OUT_OF_GROUP: "Recipient is not in the review group",
   NOT_PROCESS_DECIDER: "Only the starter or an admin can do this",
+  BACK_TARGET_INVALID: "Invalid step to go back to",
 };
 
 export function processError(

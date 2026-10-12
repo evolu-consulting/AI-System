@@ -3,6 +3,7 @@ import { z } from "zod";
 import { DISPLAY_NAME_MAX, IsoDateTime, UuidSchema } from "../common";
 import { CHAT_ASK_CHOICE_MAX, CHAT_ASK_CHOICES_MAX, CHAT_ASK_QUESTION_MAX } from "./entities";
 import {
+  BACK_EVENTS_MAX,
   DecisionOptionSchema,
   DecisionReasonSchema,
   EXECUTOR_KINDS,
@@ -16,8 +17,10 @@ import {
   PROCESS_NAME_MAX,
   PROCESS_OUTPUT_MAX,
   PROCESS_STAGES_MAX,
+  PROCESS_STEP_MAX,
   ProcessKeySchema,
   ProcessRunStatusSchema,
+  ProcessStepSchema,
   StageAfterSchema,
   StageIdxSchema,
   StageRunStatusSchema,
@@ -76,6 +79,10 @@ export const OutputRefSchema = z.strictObject({
   template_ok: z.boolean(),
   template_missing: z.array(z.string().min(1)).max(TEMPLATE_MISSING_MAX),
   created_at: IsoDateTime,
+  /** P-b2 · vòng (sau quay lại); vắng ở meta thread cũ ⇒ 1. */
+  round: Int1.optional(),
+  /** P-b2 · Bàn giao > 200 token đã bị cắt khi chuyển cho bước sau (cờ thôi). */
+  handoff_truncated: z.boolean().optional(),
 });
 export type OutputRef = z.infer<typeof OutputRefSchema>;
 
@@ -97,6 +104,9 @@ export const ProcessRunSummarySchema = z.strictObject({
   updated_at: IsoDateTime,
   finished_at: IsoDateTime.nullable(),
   decision_reason: DecisionReasonSchema.optional(),
+  /** P-b2 · bước hiện tại (nguồn thật; `current_stage_idx` = stage nhỏ nhất của bước). */
+  current_step: ProcessStepSchema,
+  step_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
 });
 export type ProcessRunSummary = z.infer<typeof ProcessRunSummarySchema>;
 
@@ -116,6 +126,10 @@ export const StageViewSchema = z.strictObject({
   current_output_id: UuidSchema.nullable(),
   passed_by: UserRefSchema.nullable(),
   passed_at: IsoDateTime.nullable(),
+  step: ProcessStepSchema,
+  round: Int1,
+  /** Bước được phép quay lại khi Chưa đạt (`[]` khi auto / không cấu hình). */
+  back_to_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX),
 });
 export type StageView = z.infer<typeof StageViewSchema>;
 
@@ -131,6 +145,8 @@ export const HistoryItemSchema = z.strictObject({
   answer: z.string().max(FEEDBACK_MAX).optional(),
   note: z.string().max(FORWARD_NOTE_MAX).optional(),
   to: UserRefSchema.optional(),
+  /** P-b2 · review `fail` có quay lại. */
+  to_step: ProcessStepSchema.optional(),
 });
 export type HistoryItem = z.infer<typeof HistoryItemSchema>;
 
@@ -160,6 +176,9 @@ export const TaskDetailSchema = z.strictObject({
   result: TaskResultSchema.optional(),
   can_act: z.boolean(),
   created_at: IsoDateTime,
+  /** P-b2 · chỉ review MỞ của stage có `back_to_steps` ≠ []. */
+  back_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX).optional(),
+  back_rounds_left: Int0.optional(),
 });
 export type TaskDetail = z.infer<typeof TaskDetailSchema>;
 
@@ -178,7 +197,22 @@ export const RunDecisionSchema = z.strictObject({
   stage_idx: StageIdxSchema,
   options: z.array(DecisionOptionSchema).max(3),
   can_decide: z.boolean(),
+  /** P-b2 · chỉ khi `reason = back_limit`: đích quay lại đang chờ. */
+  back_to_step: ProcessStepSchema.optional(),
 });
+
+/** P-b2 · một lần quay lại (`hub.process_back_events`). */
+export const BackEventSchema = z.strictObject({
+  at: IsoDateTime,
+  task_id: UuidSchema.nullable(),
+  from_stage_idx: StageIdxSchema,
+  from_step: ProcessStepSchema,
+  to_step: ProcessStepSchema,
+  round: z.number().int().min(2),
+  feedback: z.string().min(1).max(FEEDBACK_MAX),
+  by: UserRefSchema,
+});
+export type BackEvent = z.infer<typeof BackEventSchema>;
 
 export const ProcessRunFullViewSchema = ProcessRunSummarySchema.extend({
   access: z.literal("full"),
@@ -191,6 +225,9 @@ export const ProcessRunFullViewSchema = ProcessRunSummarySchema.extend({
   /** U1: null khi không bắt đầu từ phòng hoặc phòng đã xoá. */
   thread: z.strictObject({ room_id: UuidSchema, flow_id: UuidSchema }).nullable(),
   can_cancel: z.boolean(),
+  back_rounds: Int0,
+  back_limit: Int0,
+  back_events: z.array(BackEventSchema).max(BACK_EVENTS_MAX),
 });
 
 /** Người xem ngoài phòng (assignee / người bắt đầu đã rời — U5): không input/history/decision/thread. */
@@ -200,7 +237,15 @@ export const ProcessRunTaskViewSchema = z.strictObject({
   process: ProcessRefSchema,
   status: ProcessRunStatusSchema,
   stages: z
-    .array(z.strictObject({ idx: StageIdxSchema, name: NameSchema, status: StageRunStatusSchema }))
+    .array(
+      z.strictObject({
+        idx: StageIdxSchema,
+        name: NameSchema,
+        status: StageRunStatusSchema,
+        step: ProcessStepSchema,
+        round: Int1,
+      }),
+    )
     .max(PROCESS_STAGES_MAX),
   my_tasks: z.array(TaskDetailSchema).max(MY_TASKS_MAX),
   outputs: z.array(OutputRefSchema).max(TASK_VIEW_OUTPUTS_MAX).optional(),

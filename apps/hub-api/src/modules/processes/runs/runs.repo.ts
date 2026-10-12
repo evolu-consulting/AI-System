@@ -8,7 +8,7 @@ import type {
   ProcessRunSummary,
 } from "@ai/contracts/chat";
 import { PROCESS_RUN_ACTIVE } from "@ai/contracts/chat";
-import type { ProcessInputDef } from "@ai/contracts/hub-admin";
+import { type ProcessInputDef, stepGroups } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { appError } from "../../../lib/errors";
@@ -173,6 +173,7 @@ export type RunSummaryRow = {
   def_version: number;
   status: ProcessRunStatus;
   current_stage_idx: number;
+  current_step: number;
   origin_kind: "room" | "conversation" | "admin";
   origin_room_id: string | null;
   origin_conversation_id: string | null;
@@ -195,7 +196,7 @@ export type ListFilter = {
   after?: [string, string];
 };
 
-const RUN_COLS = sql`r.id, r.snapshot, r.def_version, r.status, r.current_stage_idx, r.origin_kind, r.origin_room_id,
+const RUN_COLS = sql`r.id, r.snapshot, r.def_version, r.status, r.current_stage_idx, r.current_step, r.origin_kind, r.origin_room_id,
   r.origin_conversation_id, r.started_by, u.display_name as started_by_name, r.decision,
   ${iso(sql`r.started_at`)} as started_at, ${iso(sql`r.updated_at`)} as updated_at,
   ${iso(sql`r.finished_at`)} as finished_at`;
@@ -229,7 +230,7 @@ export async function loadSummary(
 
 // ── ánh xạ + cursor + gợi ý (thuần) ──
 export function toSummary(r: RunSummaryRow): ProcessRunSummary {
-  const snap = r.snapshot as { key: string; name: string; stages: unknown[] };
+  const snap = r.snapshot as { key: string; name: string; stages: { step?: number }[] };
   const reason =
     r.status === "needs_decision" ? (r.decision?.reason as string | undefined) : undefined;
   return {
@@ -238,6 +239,8 @@ export function toSummary(r: RunSummaryRow): ProcessRunSummary {
     status: r.status,
     current_stage_idx: r.current_stage_idx,
     stage_count: snap.stages.length,
+    current_step: r.current_step,
+    step_count: stepGroups(snap.stages).length,
     started_by: { id: r.started_by, display_name: r.started_by_name ?? r.started_by },
     origin: {
       kind: r.origin_kind,

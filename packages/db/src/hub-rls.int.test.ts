@@ -146,6 +146,8 @@ const PA_POLICY_TABLES = [
   ...Array(4).fill("process_defs"),
   ...Array(3).fill("process_notices"),
   ...Array(3).fill("process_thread_events"),
+  // P-b2 (0024): nhật ký quay lại append-only — 1 policy T.
+  "process_back_events",
 ];
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {

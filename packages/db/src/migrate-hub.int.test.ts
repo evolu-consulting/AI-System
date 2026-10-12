@@ -54,6 +54,7 @@ const HUB_TABLES = [
   "messages",
   "model_profiles",
   "orchestrator_settings",
+  "process_back_events",
   "process_defs",
   "process_notices",
   "process_outputs",

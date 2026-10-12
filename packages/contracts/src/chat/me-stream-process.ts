@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CountSchema, UuidSchema } from "../common";
 import {
   ProcessRunStatusSchema,
+  ProcessStepSchema,
   StageIdxSchema,
   TaskKindSchema,
   TaskResultSchema,
@@ -21,6 +22,8 @@ export const ProcessUpdatedEventDataSchema = z.strictObject({
   process_run_id: UuidSchema,
   status: ProcessRunStatusSchema,
   stage_idx: StageIdxSchema,
+  /** P-b2 · bước hiện tại của run. */
+  step: ProcessStepSchema.optional(),
 });
 export const ReviewTaskCreatedEventDataSchema = z.strictObject({
   task_id: UuidSchema,

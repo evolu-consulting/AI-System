@@ -45,6 +45,7 @@ const REASON: Record<DecisionReason, { vi: string; en: string }> = {
     vi: "không lấy được nguồn tham chiếu",
     en: "source could not be resolved",
   },
+  back_limit: { vi: "đã quay lại quá số vòng", en: "go-back limit reached" },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);

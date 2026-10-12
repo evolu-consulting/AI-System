@@ -1,6 +1,6 @@
 // HUB-FR-104 · HUB-FR-106 · HUB-FR-113 · HUB-BR-25 · kiểu Drizzle cho bảng quy trình P-a (plan §2.1, plan-thread §3).
 // CHỈ để truy vấn có kiểu: DDL thật, CHECK, FK kép tenant, RLS, GRANT và hàm SECURITY DEFINER (`is_process_trigger`,
-// `process_run_viewer`, `room_post_process_message`) ở `migrations-hub/0019_pa_process_engine.sql` (viết tay).
+// `process_run_viewer`, `room_post_process_message`) ở `migrations-hub/0019_pa_process_engine.sql` (viết tay); P-b2 ở `0024`.
 // Người nhận `process.updated`: hàm SECURITY DEFINER `process_run_recipients` ở `0020_pa_process_recipients.sql`.
 // Enum lấy từ `@ai/contracts/chat` (một nguồn); đổi giá trị ⇒ cần migration mới sửa CHECK tương ứng.
 import {
@@ -152,6 +152,10 @@ export const processRuns = hub.table("process_runs", {
   flowId: uuid("flow_id").notNull(),
   status: text("status", { enum: PROCESS_RUN_STATUSES }).notNull().default("running"),
   currentStageIdx: smallint("current_stage_idx").notNull().default(0),
+  /** P-b2 (0024) · bước hiện tại — nguồn thật; `current_stage_idx` = stage nhỏ nhất của bước. */
+  currentStep: smallint("current_step").notNull().default(0),
+  backRounds: smallint("back_rounds").notNull().default(0),
+  backLimit: smallint("back_limit").notNull().default(3),
   decision: jsonb("decision").$type<Record<string, unknown>>(),
   tokensTotal: integer("tokens_total").notNull().default(0),
   expiresAt: ts("expires_at").notNull(),
@@ -181,6 +185,10 @@ export const stageRuns = hub.table("stage_runs", {
   startedAt: ts("started_at"),
   finishedAt: ts("finished_at"),
   updatedAt: ts("updated_at").notNull().defaultNow(),
+  /** P-b2 (0024) · vòng (+1 khi bị quay lại và đã từng chạy). */
+  round: smallint("round").notNull().default(1),
+  /** P-b2 · đích quay lại đang chờ quyết (`needs_decision(back_limit)`). */
+  backToStep: smallint("back_to_step"),
 });
 
 export const teamRuns = hub.table("team_runs", {
@@ -221,6 +229,8 @@ export const processOutputs = hub.table("process_outputs", {
   templateMissing: text("template_missing").array().notNull().default(sql`'{}'`),
   attachmentId: uuid("attachment_id"),
   createdAt: createdAt(),
+  /** P-b2 (0024) · = `stage_runs.round` lúc ghi. */
+  round: smallint("round").notNull().default(1),
 });
 
 export const reviewTasks = hub.table("review_tasks", {
@@ -290,4 +300,20 @@ export const processThreadEvents = hub.table("process_thread_events", {
   createdAt: createdAt(),
   postedAt: ts("posted_at"),
   outcome: text("outcome", { enum: THREAD_EVENT_OUTCOME_VALUES }),
+});
+
+/** P-b2 (0024) · nhật ký quay lại — append-only (hub_rw chỉ SELECT/INSERT), RLS tenant; FK run CASCADE, task SET NULL. */
+export const processBackEvents = hub.table("process_back_events", {
+  id: id(),
+  tenantId: tenantId(),
+  processRunId: uuid("process_run_id").notNull(),
+  taskId: uuid("task_id"),
+  fromStageIdx: smallint("from_stage_idx").notNull(),
+  fromStep: smallint("from_step").notNull(),
+  toStep: smallint("to_step").notNull(),
+  /** Vòng của bước đích sau khi quay lại (≥ 2). */
+  roundAfter: smallint("round_after").notNull(),
+  feedback: text("feedback").notNull(),
+  decidedBy: uuid("decided_by").notNull(),
+  createdAt: createdAt(),
 });

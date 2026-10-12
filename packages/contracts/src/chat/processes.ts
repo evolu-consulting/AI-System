@@ -104,6 +104,7 @@ export const DECISION_REASONS = [
   "user_inactive",
   "interrupted",
   "source_unresolvable",
+  "back_limit",
 ] as const;
 export const DECISION_OPTIONS = ["add_attempt", "use_current", "cancel"] as const;
 export const NOTICE_KINDS = [
@@ -152,3 +153,16 @@ export const StageIdxSchema = z
   .int()
   .min(0)
   .max(PROCESS_STAGES_MAX - 1);
+
+// ── P-b2 · bước song song + quay lại + Bàn giao [HUB-FR-104][HUB-FR-118][HUB-FR-136] (plan P-b2 §1.1) ─────────────
+/** Bước 0-based (UI đếm từ 1 — G-4). */
+export const PROCESS_STEP_MAX = PROCESS_STAGES_MAX - 1;
+export const PROCESS_STEP_STAGES_MAX = 3;
+/** Trần quay lại mặc định của run (`process_runs.back_limit`). */
+export const PROCESS_BACK_ROUNDS_MAX = 3;
+export const BACK_EVENTS_MAX = 20;
+export const HANDOFF_SECTION = "Bàn giao";
+export const HANDOFF_TOKENS_MAX = 200;
+export const HANDOFF_CHARS_PER_TOKEN = 4;
+export const ProcessStepSchema = z.number().int().min(0).max(PROCESS_STEP_MAX);
+export type ProcessStep = z.infer<typeof ProcessStepSchema>;

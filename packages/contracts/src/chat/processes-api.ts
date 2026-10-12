@@ -22,6 +22,8 @@ import {
   PROCESS_SYSTEM_SENDER,
   ProcessKeySchema,
   ProcessRunStatusSchema,
+  ProcessStepSchema,
+  StageIdxSchema,
   TaskStatusSchema,
 } from "./processes";
 import {
@@ -113,6 +115,8 @@ export const CancelProcessRunRequestSchema = z.strictObject({});
 export const DecideProcessRunRequestSchema = z.strictObject({
   option: DecisionOptionSchema,
   note: z.string().trim().max(FORWARD_NOTE_MAX).optional(),
+  /** P-b2 · nhiều decision mở (bước song song): chọn stage; vắng ⇒ decision mở cũ nhất (D9). */
+  stage_idx: StageIdxSchema.optional(),
 });
 export type DecideProcessRunRequest = z.infer<typeof DecideProcessRunRequestSchema>;
 
@@ -151,6 +155,8 @@ export const ReviewDecisionRequestSchema = z.strictObject({
     .array(z.string().trim().min(1).max(PROCESS_NAME_MAX))
     .max(PROCESS_SECTIONS_MAX)
     .optional(),
+  /** P-b2 · `fail` + quay lại bước (∈ `after.back_to_steps`, sai ⇒ 422 BACK_TARGET_INVALID ở luật). */
+  back_to_step: ProcessStepSchema.optional(),
 });
 export type ReviewDecisionRequest = z.infer<typeof ReviewDecisionRequestSchema>;
 export const ReviewAnswerRequestSchema = z.strictObject({

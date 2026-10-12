@@ -7,7 +7,7 @@ import type {
   StageView,
   TaskDetail,
 } from "@ai/contracts/chat";
-import { DECISION_OPTIONS } from "@ai/contracts/chat";
+import { DECISION_OPTIONS, PROCESS_BACK_ROUNDS_MAX } from "@ai/contracts/chat";
 import { findUserById } from "../users";
 import { GROUPS, PA_FIX } from "./fixtures";
 import {
@@ -86,6 +86,9 @@ export function summary(r: MockRun): ProcessRunSummary {
     updated_at: r.updatedAt,
     finished_at: r.finishedAt,
     ...(r.decisionReason ? { decision_reason: r.decisionReason } : {}),
+    // P-b2 · mock: mỗi stage một bước (def mock không có `step`).
+    current_step: r.stageIdx,
+    step_count: r.def.stages.length,
   };
 }
 
@@ -118,6 +121,9 @@ function stageViews(r: MockRun): StageView[] {
       current_output_id: outputs.at(-1)?.id ?? null,
       passed_by: st?.passed_by ? userRef(st.passed_by) : null,
       passed_at: st?.passed_at ?? null,
+      step: idx,
+      round: 1,
+      back_to_steps: [],
     };
   });
 }
@@ -157,6 +163,9 @@ function fullView(s: ProcessState, v: Viewer, r: MockRun): ProcessRunView {
         ? { room_id: r.roomId, flow_id: r.flowId }
         : null,
     can_cancel: canCancel(v, r),
+    back_rounds: 0,
+    back_limit: PROCESS_BACK_ROUNDS_MAX,
+    back_events: [],
   };
 }
 
@@ -175,6 +184,8 @@ function taskView(s: ProcessState, v: Viewer, r: MockRun): ProcessRunView {
           idx,
           name: m.name,
           status: r.stages[idx]?.status ?? "pending",
+          step: idx,
+          round: 1,
         }))
       : [],
     my_tasks: mine.map((t) => taskDetail(s, v, t)),

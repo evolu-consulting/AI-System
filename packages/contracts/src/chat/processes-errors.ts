@@ -16,6 +16,8 @@ export const CHAT_PROCESS_ERRORS = {
   FORWARD_LIMIT: 409,
   FORWARD_OUT_OF_GROUP: 403,
   NOT_PROCESS_DECIDER: 403,
+  /** P-b2 · `back_to_step` ∉ `after.back_to_steps` của stage (HUB-FR-118). */
+  BACK_TARGET_INVALID: 422,
 } as const;
 export type ChatProcessErrorCode = keyof typeof CHAT_PROCESS_ERRORS;
 export const CHAT_PROCESS_ERROR_CODES = Object.keys(CHAT_PROCESS_ERRORS) as ChatProcessErrorCode[];
