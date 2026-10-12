@@ -97,6 +97,6 @@
   {
     "file": "packages/db/src/hub-x2b2.int.test.ts",
     "name": "describe(\"HUB-FR-44 · 0023 D5 — RLS ma trận đọc/gh\")",
-    "reason": "Nợ cũ X2b-2 B1: callback describe ma trận RLS 85 dòng; lộ ra khi RV1 #1 chạm file — tách khi chạm lại"
+    "reason": "TECH-DEBT #153: callback describe ma trận RLS 85 dòng (X2b-2 B1), tách khi chạm lại"
   }
 ]

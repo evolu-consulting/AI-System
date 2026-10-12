@@ -299,12 +299,17 @@ const visibleTo = (u: string, id: string) =>
     return rows.length === 1;
   });
 
-describe("HUB-FR-101 · 0026 RV1 #1 — out/ của tin agent chờ side_effect chỉ người gọi (int)", () => {
-  const s = { run: "", file: "" };
-  const confirm = (status: string) =>
-    owner`update hub.tool_confirmations set status = ${status}, decided_run_id = ${s.run} where run_id = ${s.run}`;
-  const visible = (u: string) => visibleTo(u, s.file);
+const s = { run: "", file: "", msg: "" }; // tin agent chờ side_effect ở G1 + file của nó (0026/0027)
+const confirm = (status: string) =>
+  owner`update hub.tool_confirmations set status = ${status}, decided_run_id = ${s.run} where run_id = ${s.run}`;
+const visible = (u: string) => visibleTo(u, s.file);
+const withheld = (u: string, tenant = T1) =>
+  withHubScope(db, user(u, tenant), async (tx) => {
+    const [r] = await tx.execute<{ w: boolean }>(dsql`select hub.room_msg_withheld(${s.msg}) as w`);
+    return r?.w;
+  });
 
+describe("HUB-FR-101 · 0026 RV1 #1 — out/ của tin agent chờ side_effect chỉ người gọi (int)", () => {
   beforeAll(async () => {
     const [r] = await owner<
       { id: string }[]
@@ -321,7 +326,8 @@ describe("HUB-FR-101 · 0026 RV1 #1 — out/ của tin agent chờ side_effect c
        'finished', 'side_effect') returning id`;
     await owner`insert into hub.tool_confirmations (tenant_id, user_id, flow_id, run_id, agent_id, workflow_id, status)
       values (${T1}, ${A}, ${g.flow}, ${s.run}, ${crypto.randomUUID()}, ${crypto.randomUUID()}, 'pending')`;
-    s.file = await insert(inRoom(g.g1, m?.id ?? null, 4)); // origin upload: luật không phụ thuộc origin
+    s.msg = m?.id ?? "";
+    s.file = await insert(inRoom(g.g1, s.msg, 4)); // origin upload: luật không phụ thuộc origin
   });
 
   test("pending ⇒ A (người gọi, chủ file) thấy, B (thành viên) không; definer đúng mẫu", async () => {
@@ -342,6 +348,44 @@ describe("HUB-FR-101 · 0026 RV1 #1 — out/ của tin agent chờ side_effect c
     expect(await visible(B)).toBe(false);
     await confirm("declined");
     expect(await visible(B)).toBe(true);
+    await confirm("pending");
+  });
+});
+
+describe("HUB-FR-101 · 0027 RV2 #4 — definer room_msg_withheld chỉ cho thành viên (int)", () => {
+  test("RV2 #4 · 0027: definer chỉ trả trạng thái cho thành viên cùng tenant — C (ngoài phòng), T2 ⇒ false", async () => {
+    expect(await withheld(B)).toBe(true);
+    expect(await withheld(A)).toBe(true);
+    expect(await withheld(C)).toBe(false);
+    expect(await visible(C)).toBe(false);
+    expect(await withheld(A, T2)).toBe(false);
+    expect(await withheld(C, T2)).toBe(false);
+    expect(await visible(A)).toBe(true);
+    expect(await visible(B)).toBe(false);
+  });
+
+  test("0026 + 0027 chạy lại hai lần → không lỗi, hàm/policy/quyền không đổi", async () => {
+    const stmts = ["0026_x2b2_rv1_side_effect_files", "0027_x2b2_rv2_withheld_member"].flatMap(
+      (n) =>
+        readFileSync(new URL(`../migrations-hub/${n}.sql`, import.meta.url), "utf8")
+          .split("--> statement-breakpoint")
+          .map((x) => x.trim())
+          .filter((x) => x.length > 0),
+    );
+    const snap = () => owner<
+      { n: string }[]
+    >`select 'fn:' || p.prosecdef || ':' || pg_get_functiondef(p.oid) || ':'
+        || coalesce(array_to_string(p.proacl, ','), '') as n
+      from pg_proc p where p.pronamespace = 'hub'::regnamespace and p.proname = 'room_msg_withheld'
+      union all select policyname || ':' || coalesce(qual, '') from pg_policies
+        where schemaname = 'hub' and policyname = 'attachments_room_member_select'
+      order by 1`;
+    const before = await snap();
+    for (let i = 0; i < 2; i++) for (const x of stmts) await owner.unsafe(x);
+    expect(await snap()).toEqual(before);
+    expect(before.some((r) => r.n.includes("is_room_member(m.room_id)"))).toBe(true);
+    expect(await withheld(C)).toBe(false);
+    expect(await visible(B)).toBe(false);
   });
 });
 
