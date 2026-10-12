@@ -12,7 +12,9 @@ type Props = { view: ProcessRunView; onCancelled: () => void };
 export function RunHeader({ view, onCancelled }: Props) {
   const { t } = useTranslation();
   const full = view.access === "full" ? view : null;
-  const canCancel = full ? full.can_cancel : view.can_cancel;
+  // Cần người quyết mà người xem quyết được ⇒ "Huỷ lượt chạy" đã là một lựa chọn của thẻ quyết (tránh hai nút trùng tên).
+  const decides = full?.status === "needs_decision" && full.decision?.can_decide === true;
+  const canCancel = (full ? full.can_cancel : view.can_cancel) && !decides;
 
   return (
     <header className="flex flex-col gap-2 border-b border-border px-4 py-3">

@@ -100,5 +100,16 @@
     "attempt": "Attempt {{n}}",
     "backLine": "↩ Went back to step {{step}} (time {{n}})",
     "backMax": "Reached the maximum of {{max}} go-backs"
+  },
+  "back": {
+    "title": "Go-back history",
+    "item": "Round {{round}} · {{by}} marked “{{stage}}” Not passed → back to step {{step}} · {{time}}",
+    "more": "Show all"
+  },
+  "version": {
+    "tab": "Version {{n}}",
+    "latest": "latest",
+    "old": "before going back",
+    "label": "Result versions"
   }
 }

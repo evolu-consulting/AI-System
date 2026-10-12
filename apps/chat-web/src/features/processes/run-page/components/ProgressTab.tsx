@@ -1,38 +1,81 @@
-// CHAT-AC-54…56 · HUB-BR-25 · PF3: tab "Tiến độ". `full` ⇒ StageStrip + kết quả từng giai đoạn + TaskPanel (my_tasks).
+// CHAT-AC-54…56 · HUB-BR-25 · PF3 + P-b2 (A5): tab "Tiến độ". `full` ⇒ StageStrip + (nhóm "Bước n" khi có bước song song/đã quay lại
+// | kết quả từng giai đoạn) + Lịch sử quay lại + TaskPanel.
 // `task` ⇒ banner ngoài phòng + StageStrip (chỉ tên/trạng thái) + TaskPanel; U5 (`outputs`) ⇒ khối "Kết quả".
 // Render NGHIÊM theo trường có trong view: `task` KHÔNG có `history`/`outputs` ⇒ không lộ (readiness lần 3).
-import type { OutputRef, ProcessRunTaskView, ProcessRunView } from "@ai/contracts/chat";
+import type {
+  OutputRef,
+  ProcessRunFullView,
+  ProcessRunTaskView,
+  ProcessRunView,
+} from "@ai/contracts/chat";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { backTrail, stageItems } from "../../run-block/lib/block-view";
 import { OutputView } from "../../shared/components/OutputView";
 import { StageStrip } from "../../shared/components/StageStrip";
 import { TaskPanel } from "../../shared/components/TaskPanel";
-import { groupTasksByStep } from "../../shared/lib/steps";
+import {
+  groupBySteps,
+  groupRound,
+  groupTasksByStep,
+  showSteps,
+  stepOfStages,
+} from "../../shared/lib/steps";
 import { pendingDecisionTask } from "../../shared/lib/thread-task";
+import { BackTimeline } from "./BackTimeline";
 import { StageOutputs } from "./StageOutputs";
+import { StageRow } from "./StageRow";
 import { StepSection } from "./StepSection";
 import { TaskAccessBanner } from "./TaskAccessBanner";
 
 export function ProgressTab({ view }: { view: ProcessRunView }) {
-  if (view.access === "full") {
-    // E-P7: admin quyết được nhưng không là assignee ⇒ my_tasks rỗng; dựng thẻ "Cần người quyết" từ view.decision.
-    const decision = pendingDecisionTask(view);
-    return (
-      <div className="flex flex-col gap-4 p-4">
-        <StageStrip
-          stages={view.stages.map((s) => ({ idx: s.idx, name: s.name, status: s.status }))}
-        />
-        {view.stages
-          .filter((s) => s.outputs.length > 0)
-          .map((s) => (
-            <StageOutputs key={s.idx} runId={view.id} stage={s} />
+  return view.access === "full" ? <FullProgress view={view} /> : <TaskProgress view={view} />;
+}
+
+function FullProgress({ view }: { view: ProcessRunFullView }) {
+  // E-P7: admin quyết được nhưng không là assignee ⇒ my_tasks rỗng; dựng thẻ "Cần người quyết" từ view.decision.
+  const decision = pendingDecisionTask(view);
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      <StageStrip stages={stageItems(view)} back={backTrail(view)} />
+      {showSteps(view.stages) ? (
+        <StepSections view={view} />
+      ) : (
+        <>
+          {view.stages
+            .filter((s) => s.outputs.length > 0)
+            .map((s) => (
+              <StageOutputs key={s.idx} runId={view.id} stage={s} />
+            ))}
+          {view.my_tasks.map((task) => (
+            <TaskPanel key={task.id} runId={view.id} task={task} view={view} />
           ))}
-        <StepTasks view={view} />
-        {decision && <TaskPanel key={decision.id} runId={view.id} task={decision} view={view} />}
-      </div>
-    );
-  }
-  return <TaskProgress view={view} />;
+        </>
+      )}
+      <BackTimeline events={view.back_events ?? []} stages={view.stages} />
+      {decision && <TaskPanel key={decision.id} runId={view.id} task={decision} view={view} />}
+    </div>
+  );
+}
+
+/** Có bước song song / đã quay lại: mỗi bước một `group` "Bước n" (+ ×lần) gồm dòng giai đoạn, kết quả, thẻ việc của bước. */
+function StepSections({ view }: { view: ProcessRunFullView }) {
+  const stepOf = stepOfStages(view.stages);
+  return groupBySteps(view.stages).map((g) => (
+    <StepSection key={g.step} step={g.step} round={groupRound(g)}>
+      {g.items.map((s) => (
+        <div key={s.idx} className="flex flex-col gap-2">
+          <StageRow stage={s} />
+          {s.outputs.length > 0 && <StageOutputs runId={view.id} stage={s} />}
+        </div>
+      ))}
+      {view.my_tasks
+        .filter((x) => stepOf.get(x.stage_idx) === g.step)
+        .map((task) => (
+          <TaskPanel key={task.id} runId={view.id} task={task} view={view} />
+        ))}
+    </StepSection>
+  ));
 }
 
 /** Q7: việc mở của ≥ 2 giai đoạn cùng bước ⇒ gom dưới `group` "Bước n"; còn lại hiện trần như cũ. */

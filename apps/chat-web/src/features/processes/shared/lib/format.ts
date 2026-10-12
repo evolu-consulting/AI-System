@@ -10,3 +10,10 @@ export function formatSeconds(ms: number | null, lang: string): string {
   const f = new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   return `${f.format(ms / 1000)}s`;
 }
+
+/** Ngày giờ ngắn theo `lang` (lịch sử quay lại, người duyệt). ISO hỏng ⇒ chuỗi gốc. */
+export function formatDateTime(iso: string, lang: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat(lang, { dateStyle: "short", timeStyle: "short" }).format(d);
+}

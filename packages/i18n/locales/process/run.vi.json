@@ -100,5 +100,16 @@
     "attempt": "Lần làm {{n}}",
     "backLine": "↩ Quay lại bước {{step}} (lần {{n}})",
     "backMax": "Đã quay lại tối đa {{max}} lần"
+  },
+  "back": {
+    "title": "Lịch sử quay lại",
+    "item": "Vòng {{round}} · {{by}} chấm Chưa đạt ở “{{stage}}” → quay lại bước {{step}} · {{time}}",
+    "more": "Xem đầy đủ"
+  },
+  "version": {
+    "tab": "Bản {{n}}",
+    "latest": "mới nhất",
+    "old": "trước khi quay lại",
+    "label": "Phiên bản kết quả"
   }
 }
