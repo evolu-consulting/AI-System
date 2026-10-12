@@ -3,11 +3,10 @@
 // phòng xoá/đã rời xuyên RLS, U5), quyền thao tác = `canCancel`/`canDecide`/`canReadThread` thuần (HUB-BR-25).
 // Audit `view`: assignee lần đầu mỗi (task, user); người bắt đầu đã rời phòng (U5) + mỗi lần đọc output.
 import type {
-  DecisionOption,
-  DecisionReason,
   ProcessOutput,
   ProcessRunStatus,
   ProcessRunView,
+  StageView,
 } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -36,6 +35,7 @@ import {
   stageViews,
   taskStages,
   toOutputRef,
+  viewDecision,
 } from "./view-steps";
 
 export type ViewDeps = { db: Db; config: Pick<ConfigCache, "user"> };
@@ -177,7 +177,7 @@ export class ViewService {
       input: r.input,
       stages,
       history: hist,
-      decision: this.#decision(v, r),
+      decision: await this.#decision(tx, v, r, stages),
       my_tasks: my,
       open_tasks: open,
       thread: canReadThread(v, facts)
@@ -188,21 +188,16 @@ export class ViewService {
     };
   }
 
-  #decision(v: ViewerCtx, r: RunRow) {
-    if (r.status !== "needs_decision" || !r.decision) return null;
-    const dec = r.decision as {
-      reason: DecisionReason;
-      stage_idx: number;
-      options: DecisionOption[];
-    };
+  /** D9 · decision mở cũ nhất (`viewDecision`); `can_decide` theo Group duyệt của CHÍNH stage cần quyết. */
+  async #decision(tx: Tx, v: ViewerCtx, r: RunRow, stages: readonly StageView[]) {
+    const dec = await viewDecision(tx, r, stages);
+    if (!dec) return null;
     const snap = r.snapshot as unknown as Snap;
-    const after = snap.stages[Number(r.current_stage_idx)]?.after;
+    const after = snap.stages[dec.stage_idx]?.after;
     const gid = after?.kind === "review" ? after.group_id : null;
     const reviewGroupMember = gid !== null && gid !== undefined && v.groupIds.has(gid);
     return {
-      reason: dec.reason,
-      stage_idx: Number(dec.stage_idx),
-      options: dec.options,
+      ...dec,
       can_decide: canDecide(v, { ...factsOf(r), reason: dec.reason, reviewGroupMember }),
     };
   }

@@ -1,25 +1,28 @@
 // HUB-FR-105 · HUB-FR-106 · D1 · D3 · D10 · BR-23/24 · PF1 · `StageLauncher.kick`: tx scope `user` người bắt đầu khoá run →
 // kiểm lại quyền (grant agent / nhóm bật) → tạo `hub.runs` stage (RunService) → sau COMMIT `launch` driver stage. Idempotent
 // theo `stage_runs.current_run_id` (P1-29/63). Mất quyền ⇒ needs_decision{permission_lost|user_inactive}. Thứ tự khoá §10.
-import type { DecisionReason, SendMessageRequest, StageRunStatus } from "@ai/contracts/chat";
+import {
+  type DecisionReason,
+  PROCESS_STEP_STAGES_MAX,
+  type ProcessRunStatus,
+  type SendMessageRequest,
+} from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
-import { clipEntityName, dbHubAudit } from "../../../lib/hub-audit";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
-import type { RunFile } from "../../attachments/run-files.rules";
-import { agentWorkflowIds } from "../../config/config.rules";
-import type { ProcessRunInput } from "../../runs/create-run";
 import type { ProcessStage, StageExecutor } from "../../runs/run-process";
 import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/ports";
-import { realActionAllowed } from "../gates/gate.rules";
+import { isTerminal } from "../core/process-state.rules";
+import { stageIdxsOfStep } from "../core/step.rules";
 import { gateResolve, type Head, promptOf, type SnapStage } from "./launcher-prompt";
-import { runScopedFileIds } from "./output-attachment";
+import { auditRealAction, priorFiles, realActionPre } from "./launcher-step";
 import { stageDriver } from "./stage-driver";
+import { stepsOfSnap } from "./step-persist";
 import { createTeamRun } from "./team-counters";
 import { teamReady } from "./team-load";
 import { toDecision } from "./team-runner";
@@ -52,12 +55,6 @@ async function headOf(tx: Tx, runId: string): Promise<Head | null> {
   return r ?? null;
 }
 
-async function stageOf(tx: Tx, runId: string, idx: number): Promise<StageRow | null> {
-  const [s] = await tx.execute<StageRow>(sql`select id, status, attempt, current_run_id, feedback
-    from hub.stage_runs where process_run_id = ${runId} and stage_idx = ${idx}`);
-  return s ?? null;
-}
-
 /** `current_run_id` đang có `hub.runs` chạy ⇒ đã kick (idempotent P1-29/63). */
 async function alreadyRunning(tx: Tx, stage: StageRow): Promise<boolean> {
   if (!stage.current_run_id) return false;
@@ -67,15 +64,24 @@ async function alreadyRunning(tx: Tx, stage: StageRow): Promise<boolean> {
 }
 
 type Prepared = Awaited<ReturnType<ProcessDeps["runs"]["prepareProcess"]>>;
-type KickResult =
+type KickResult = (
   | { kind: "skip" }
   | { kind: "launch"; prepared: Prepared; files: unknown[] }
-  | { kind: "events"; events: UserEvent[] };
+  | { kind: "events"; events: UserEvent[] }
+) & {
+  /** D5 · còn stage `queued` khác của bước ⇒ kick lặp thêm (vắng ⇒ dừng; tránh tx thừa ở def tuần tự). */
+  more?: boolean;
+};
 
-/** D10 · một lượt kick của run (idempotent, khoá `process_runs` FOR UPDATE trước). */
+/** D5 · kick = khởi động LẦN LƯỢT mọi stage `queued` của bước hiện tại (mỗi stage một tx), dừng khi `skip`. */
 async function kick(d: LauncherDeps, self: StageLauncher, runId: string): Promise<void> {
+  for (let i = 0; i <= PROCESS_STEP_STAGES_MAX; i++) if (!(await kickOnce(d, self, runId))) return;
+}
+
+/** D10 · một lượt kick của run (idempotent, khoá `process_runs` FOR UPDATE trước). `false` ⇒ không còn gì để làm. */
+async function kickOnce(d: LauncherDeps, self: StageLauncher, runId: string): Promise<boolean> {
   const sysHead = await withHubScope(d.db, { kind: "system" }, (tx) => headOf(tx, runId));
-  if (sysHead?.status !== "running") return;
+  if (!sysHead || isTerminal(sysHead.status as ProcessRunStatus)) return false;
   // P-R10 · kiểm lại quyền mỗi stage trên cấu hình MỚI NHẤT đã COMMIT (không chờ timer poll nền): thu hồi grant bump
   // `hub_config_version` ⇒ `poll` nạp lại ⇒ `prepareProcess` thấy mất grant (P1-24). Lỗi poll không chặn kick.
   await d.config.poll().catch(() => {});
@@ -84,33 +90,57 @@ async function kick(d: LauncherDeps, self: StageLauncher, runId: string): Promis
   if (result.kind === "events") {
     await publishUserEvents(d.redis, result.events, d.log);
     await d.postThread(runId).catch(() => {});
-    return;
+    return result.more === true;
   }
-  if (result.kind !== "launch") return;
+  if (result.kind !== "launch") return false;
   await d.runs.launch(result.prepared, result.files as never, {
     driver: stageDriver(d, self),
   });
+  return result.more === true;
 }
 
-/** Trong tx scope user người bắt đầu: khoá run, kiểm stage queued, kiểm quyền, tạo `hub.runs`. */
+/** D3/D5 · stage `queued` nhỏ nhất của bước hiện tại chưa có `hub.runs` chạy (run đã khoá); `more` = còn stage queued sau nó. */
+async function nextQueued(
+  tx: Tx,
+  runId: string,
+  head: Head,
+  step: number,
+): Promise<{ idx: number; stage: StageRow; more: boolean } | null> {
+  const idxs = stageIdxsOfStep(stepsOfSnap(head.snapshot), step);
+  if (idxs.length === 0) return null;
+  const rows = await tx.execute<
+    StageRow & { stage_idx: number }
+  >(sql`select id, stage_idx, status, attempt,
+      current_run_id, feedback from hub.stage_runs where process_run_id = ${runId}
+      and stage_idx in (${sql.join(
+        idxs.map((i) => sql`${i}`),
+        sql`, `,
+      )}) and status = 'queued' order by stage_idx`);
+  for (const [k, stage] of rows.entries())
+    if (!(await alreadyRunning(tx, stage)))
+      return { idx: Number(stage.stage_idx), stage, more: k < rows.length - 1 };
+  return null;
+}
+
+/** Trong tx scope user người bắt đầu: khoá run, chọn stage queued của bước, kiểm quyền, tạo `hub.runs`. */
 async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promise<KickResult> {
   const run = await core.lockRun(tx, u.tenantId, runId);
-  if (run?.status !== "running") return { kind: "skip" };
-  const idx = Number(run.currentStageIdx);
+  if (!run || isTerminal(run.status as ProcessRunStatus)) return { kind: "skip" };
   const head = await headOf(tx, runId);
-  const stage = await stageOf(tx, runId, idx);
-  if (!head || !stage || stage.status !== "queued" || (await alreadyRunning(tx, stage)))
-    return { kind: "skip" };
+  if (!head) return { kind: "skip" };
+  const next = await nextQueued(tx, runId, head, Number(run.currentStep));
+  if (!next) return { kind: "skip" };
+  const { idx, stage, more } = next;
   const def = head.snapshot.stages[idx];
   if (!def) return { kind: "skip" };
   // PB-R05 · cổng nguồn: def có nguồn ∧ chưa ghim ⇒ enqueue `source.resolve` (idempotent: run đã khoá FOR UPDATE),
-  // KHÔNG launch stage. Runtime báo `/sources-resolved` ⇒ ghim + kick lại.
+  // KHÔNG launch stage nào của run. Runtime báo `/sources-resolved` ⇒ ghim + kick lại.
   if (await gateResolve(tx, runId, head)) return { kind: "skip" };
   const lost = (reason: "permission_lost" | "user_inactive") =>
     lostPermission(d, tx, { runId, tenantId: u.tenantId, idx, stageRunId: stage.id, reason });
   // P-R10 · người bắt đầu phải còn dùng được (active, không bị tenant khoá, tenant bật) — đọc TƯƠI trong tx (khoá
   // `locked_by_tenant` KHÔNG bump config version ⇒ cache có thể cũ; P1-24 user_inactive).
-  if (!(await starterUsable(tx, u))) return await lost("user_inactive");
+  if (!(await starterUsable(tx, u))) return { ...(await lost("user_inactive")), more };
   const team = await teamRunFor(d, tx, {
     u,
     def,
@@ -118,8 +148,9 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
     attempt: stage.attempt,
     runId,
   });
-  if (!team.ok) return await lost("permission_lost");
-  return launchStage(d, tx, u, { runId, idx, head, stage, def, teamRunId: team.teamRunId, lost });
+  if (!team.ok) return { ...(await lost("permission_lost")), more };
+  const ctx = { runId, idx, head, stage, def, teamRunId: team.teamRunId, lost };
+  return { ...(await launchStage(d, tx, u, ctx)), more };
 }
 
 type Lost = (reason: "permission_lost" | "user_inactive") => Promise<KickResult>;
@@ -140,7 +171,12 @@ async function launchStage(
   u: AuthUser,
   c: LaunchCtx,
 ): Promise<KickResult> {
-  const priorOut = await priorFiles(tx, u.tenantId, c.runId, c.idx, c.head.snapshot.stages);
+  const priorOut = await priorFiles(tx, {
+    tenantId: u.tenantId,
+    runId: c.runId,
+    idx: c.idx,
+    stages: c.head.snapshot.stages,
+  });
   const real = await realActionPre(d, tx, { ...c, stages: c.head.snapshot.stages });
   const p: ProcessStage = {
     executor: execOf(c.def),
@@ -168,13 +204,14 @@ async function launchStage(
   const files = await d.runs.createRunTx(tx, prepared);
   await tx.execute(sql`update hub.stage_runs set status = 'running', current_run_id = ${prepared.run.id},
       started_at = coalesce(started_at, now()), updated_at = now() where id = ${c.stage.id}`);
-  if (real)
+  if (real && c.def.executor.kind === "agent")
     await auditRealAction(tx, {
       tenantId: u.tenantId,
       runId: c.runId,
       actorId: real.passedBy,
       name: c.def.name,
-      preconfirm: real.preconfirm,
+      agentId: c.def.executor.agent_id,
+      pre: real,
     });
   return { kind: "launch", prepared, files };
 }
@@ -222,112 +259,6 @@ async function existingTeamRun(tx: Tx, stageId: string, attempt: number): Promis
     where stage_run_id = ${stageId} and attempt = ${attempt}
       and status in ('running', 'waiting_answer') order by started_at desc limit 1`);
   return r?.id ?? null;
-}
-
-type RealPre = { preconfirm: NonNullable<ProcessRunInput["preconfirm"]>; passedBy: string };
-
-/**
- * D4 · HUB-FR-109 · stage "Hành động thật" NGAY SAU cổng kiểm đã Đạt (`realActionAllowed(prev)`): Hub chèn sẵn xác nhận cho
- * mọi workflow `side_effect` của agent stage này (người Đạt stage trước = người cho phép). Stage trước `auto`/chưa `done`
- * hoặc không có workflow side_effect ⇒ null (tool sẽ hỏi lại ⇒ CONFIRMATION_REQUIRED).
- */
-async function realActionPre(
-  d: LauncherDeps,
-  tx: Tx,
-  p: { runId: string; idx: number; def: SnapStage; stages: readonly SnapStage[] },
-): Promise<RealPre | null> {
-  if (!p.def.real_action || p.def.executor.kind !== "agent" || p.idx === 0) return null;
-  const prevDef = p.stages[p.idx - 1];
-  if (!prevDef) return null;
-  const [prev] = await tx.execute<{ status: StageRunStatus; passed_by: string | null }>(
-    sql`select status, passed_by from hub.stage_runs where process_run_id = ${p.runId}
-      and stage_idx = ${p.idx - 1}`,
-  );
-  const after = prevDef.after.kind === "review" ? "review" : "auto";
-  if (!prev || !realActionAllowed({ after, status: prev.status }) || !prev.passed_by) return null;
-  const agentId = p.def.executor.agent_id;
-  const snap = await d.config.snapshot();
-  const catalog = await d.config.catalog();
-  const workflowIds = [...agentWorkflowIds(snap, agentId)].filter(
-    (id) => catalog.workflows.get(id)?.sideEffect === true,
-  );
-  if (workflowIds.length === 0) return null;
-  return { preconfirm: { agentId, workflowIds }, passedBy: prev.passed_by };
-}
-
-/** D4 · audit `authorize_real_action` (append-only trong tx): actor = người Đạt cổng trước (entity `process_run`). */
-async function auditRealAction(
-  tx: Tx,
-  p: {
-    tenantId: string;
-    runId: string;
-    actorId: string;
-    name: string;
-    preconfirm: NonNullable<ProcessRunInput["preconfirm"]>;
-  },
-): Promise<void> {
-  await dbHubAudit.insert(tx, {
-    tenantId: p.tenantId,
-    actorId: p.actorId,
-    actorUsername: null,
-    actorRole: "member",
-    action: "authorize_real_action",
-    entity: "process_run",
-    entityId: p.runId,
-    entityName: clipEntityName(p.name),
-    hubConfigVersion: null,
-    before: null,
-    after: null,
-    summary: { agent_id: p.preconfirm.agentId, workflow_ids: [...p.preconfirm.workflowIds] },
-  });
-}
-
-type PriorRow = {
-  stage_idx: number;
-  version: number;
-  attachment_id: string;
-  size: string | number;
-  sha256: string;
-};
-
-/**
- * D6 · output đã chốt các stage trước (`stage_runs.current_output_id`) → `RunContext.files` (`s<idx>-v<ver>-<filename>`).
- * PB-R18/#133 · lọc qua `runScopedFileIds`: chỉ attachment thuộc chính run + tenant (chống `process_outputs.attachment_id`
- * trỏ run/tenant khác — ID-05); id lạ bị loại, job stage vẫn tạo.
- */
-async function priorFiles(
-  tx: Tx,
-  tenantId: string,
-  runId: string,
-  idx: number,
-  stages: readonly SnapStage[],
-): Promise<RunFile[]> {
-  if (idx === 0) return [];
-  const rows = await tx.execute<PriorRow>(sql`select o.stage_idx, o.version, o.attachment_id,
-      a.size, a.sha256
-    from hub.stage_runs s
-    join hub.process_outputs o on o.id = s.current_output_id
-    join hub.attachments a on a.id = o.attachment_id
-    where s.process_run_id = ${runId} and s.stage_idx < ${idx} and o.attachment_id is not null
-    order by o.stage_idx`);
-  const scoped = await runScopedFileIds(
-    tx,
-    runId,
-    tenantId,
-    [...rows].map((r) => r.attachment_id),
-  );
-  return [...rows]
-    .filter((r) => scoped.has(r.attachment_id))
-    .map((r) => {
-      const filename = stages[Number(r.stage_idx)]?.output.filename ?? "output.md";
-      return {
-        id: r.attachment_id,
-        name: `s${Number(r.stage_idx)}-v${Number(r.version)}-${filename}`,
-        mime: "text/markdown" as const,
-        size: Number(r.size),
-        sha256: r.sha256,
-      };
-    });
 }
 
 /** P-R10 · kiểm lại quyền hỏng ⇒ needs_decision{permission_lost|user_inactive}; mở task decision (team-runner). */

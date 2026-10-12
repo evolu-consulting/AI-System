@@ -9,6 +9,7 @@ import type {
   SourceKind,
   SourcePin,
 } from "@ai/contracts/hub-admin";
+import { resolveSteps } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
@@ -93,7 +94,8 @@ export type NewRun = {
   pinnedSources: SourcePin[] | null;
 };
 
-/** Tạo hội thoại nền + flow (= thread) + `process_runs` + `stage_runs` (stage 0 queued, còn lại pending ≤ 10). */
+/** Tạo hội thoại nền + flow (= thread) + `process_runs` + `stage_runs` (P-b2 §3.1: stage BƯỚC 0 queued ≤ 3, còn lại
+ * pending ≤ 10; `current_step` = 0 mặc định cột). */
 export async function insertRun(tx: Tx, n: NewRun): Promise<void> {
   const name = n.def.name;
   await tx.execute(sql`insert into hub.conversations (id, tenant_id, user_id, title, title_norm, process_run_id)
@@ -117,12 +119,9 @@ export async function insertRun(tx: Tx, n: NewRun): Promise<void> {
       ${n.originKind}, ${n.originRoomId}, ${n.originConversationId}, ${n.input}, ${n.convId}, ${n.flowId},
       ${n.expiresAt.toISOString()}::timestamptz, ${pinned},
       ${n.pinnedSources === null ? sql`null` : sql`now()`}, ${JSON.stringify(n.inputs)}::jsonb)`);
-  const stages = n.def.stages.length;
+  const steps = resolveSteps(n.def.stages as readonly { step?: number }[]);
   const rows = sql.join(
-    Array.from(
-      { length: stages },
-      (_, i) => sql`(${n.tenantId}, ${n.id}, ${i}, ${i === 0 ? "queued" : "pending"})`,
-    ),
+    steps.map((st, i) => sql`(${n.tenantId}, ${n.id}, ${i}, ${st === 0 ? "queued" : "pending"})`),
     sql`, `,
   );
   await tx.execute(

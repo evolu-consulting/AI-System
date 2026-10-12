@@ -1,7 +1,13 @@
 // HUB-FR-107 · HUB-FR-110 · HUB-FR-111 · HUB-FR-115 · M5 · C4 · luật task dùng chung mọi PF (plan-step0 §1, plan-contract §7).
 // Thuần. `canAct` là nguồn duy nhất của `TaskDetail.can_act` (PF1 view, PF2 answer/forward, PF3 inbox).
-import type { DecisionReason, ProcessRunStatus, TaskKind, TaskStatus } from "@ai/contracts/chat";
-import { TASK_EXCERPT_MAX } from "@ai/contracts/chat";
+import type {
+  DecisionOption,
+  DecisionReason,
+  ProcessRunStatus,
+  TaskKind,
+  TaskStatus,
+} from "@ai/contracts/chat";
+import { DECISION_OPTIONS, TASK_EXCERPT_MAX } from "@ai/contracts/chat";
 import { isTerminal } from "./process-state.rules";
 import { canDecide, type RunFacts, type Viewer } from "./run-access.rules";
 
@@ -39,6 +45,20 @@ export function decisionAssignees(
 ): { userIds: string[]; groupId: string | null } {
   return { userIds: [startedBy], groupId: reason === "redo_limit" ? reviewGroupId : null };
 }
+
+/** `use_current` cần output; lý do nhóm + mất quyền/khoá luôn cho (dùng bản nháp ghép / bỏ qua stage). */
+const FORCE_USE_CURRENT: ReadonlySet<DecisionReason> = new Set([
+  "team_calls",
+  "team_tokens",
+  "team_time",
+  "team_no_change",
+  "permission_lost",
+  "user_inactive",
+]);
+
+/** Lựa chọn của task `decision` (team-runner, sweeps, view D9 dùng chung). */
+export const decisionOptionsFor = (hasOutput: boolean, reason: DecisionReason): DecisionOption[] =>
+  DECISION_OPTIONS.filter((o) => o !== "use_current" || hasOutput || FORCE_USE_CURRENT.has(reason));
 
 const HIGH_SURROGATE = /[\uD800-\uDBFF]$/;
 

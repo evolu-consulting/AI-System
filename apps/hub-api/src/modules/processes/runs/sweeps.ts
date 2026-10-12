@@ -1,12 +1,7 @@
 // HUB-FR-106 · D10 · D11 · AC-H32 · BR-26 · PF1 · vòng quét (plan §3.1, §4, §10): stage `queued` mồ côi (kick lại),
 // đối chiếu `interrupted` (stage running mà `hub.runs` kết thúc > 60 s), hết hạn 7 ngày (`expired`). Scope `system`
 // (không một người xem); lọc `tenant_id` tường minh. Sự kiện + tin thread phát/đăng SAU COMMIT.
-import {
-  DECISION_OPTIONS,
-  type DecisionOption,
-  PROCESS_RUN_ACTIVE,
-  type ProcessRunStatus,
-} from "@ai/contracts/chat";
+import { PROCESS_RUN_ACTIVE, type ProcessRunStatus } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -15,8 +10,10 @@ import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import type { SweepResult } from "../core/handles";
 import type { ProcessDeps } from "../core/ports";
-import { decisionAssignees } from "../core/task.rules";
+import { firstIdxOfStep } from "../core/step.rules";
+import { decisionAssignees, decisionOptionsFor } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
+import { stepsOfSnap } from "./step-persist";
 import { toDecision as trToDecision } from "./team-runner";
 
 /** PB-R05 · job resolve mồ côi/quá hạn (lease + chờ queued) — khớp seam now. */
@@ -31,7 +28,10 @@ const activeList = sql`(${sql.join(
   sql`, `,
 )})`;
 
-type SnapStage = { after: { kind: "review"; group_id: string | null } | { kind: "auto" } };
+type SnapStage = {
+  step?: number;
+  after: { kind: "review"; group_id: string | null } | { kind: "auto" };
+};
 
 /** Mọi vòng của một lượt (plan-contract §7.1 `sweepOnce`). */
 export async function sweepOnce(d: ProcessDeps): Promise<SweepResult> {
@@ -72,7 +72,8 @@ async function markUnresolvable(d: ProcessDeps, runId: string): Promise<boolean>
       sql`select pinned_sources as pinned from hub.process_runs where id = ${runId}`,
     );
     if (Array.isArray(cur?.pinned)) return null;
-    const idx = Number(run.currentStageIdx);
+    // P-b2 §3.8 · gắn vào stage nhỏ nhất của bước hiện tại (D4).
+    const idx = Math.max(0, firstIdxOfStep(stepsOfSnap(h.snapshot), Number(run.currentStep)));
     const stage = await stageRow(tx, runId, idx);
     if (!stage) return null;
     return trToDecision(d, tx, {
@@ -134,39 +135,44 @@ async function endRun(
   return true;
 }
 
-/** D11 · stage `running` mà `hub.runs` kết thúc > 60 s không có kết quả ⇒ needs_decision{interrupted}. */
+/**
+ * D11 · P-b2 §3.8 · MỌI stage `running` (bước song song: nhiều stage) mà `hub.runs` kết thúc > 60 s không có kết quả ⇒
+ * needs_decision{interrupted} — mỗi stage một decision.
+ */
 async function reconcileRuns(d: ProcessDeps): Promise<number> {
   const now = d.now();
   const cutoff = new Date(now.getTime() - INTERRUPT_GRACE_MS);
   const rows = await withHubScope(d.db, SYSTEM, (tx) =>
-    tx.execute<{ process_run_id: string }>(sql`
-      select s.process_run_id from hub.stage_runs s
+    tx.execute<{ process_run_id: string; stage_run_id: string }>(sql`
+      select s.process_run_id, s.id as stage_run_id from hub.stage_runs s
       join hub.runs r on r.id = s.current_run_id
       where s.status = 'running' and r.status <> 'running' and r.finished_at < ${cutoff.toISOString()}::timestamptz
       order by s.updated_at limit ${BATCH}`),
   );
   let n = 0;
-  for (const { process_run_id } of rows)
-    if (await toDecision(d, process_run_id, "interrupted", now)) n++;
+  for (const r of rows)
+    if (await toDecision(d, { runId: r.process_run_id, stageRunId: r.stage_run_id }, now)) n++;
   return n;
 }
 
 /** needs_decision với lý do; mở task `decision` (người bắt đầu; group chỉ khi `redo_limit`). */
 async function toDecision(
   d: ProcessDeps,
-  runId: string,
-  reason: "interrupted",
+  p: { runId: string; stageRunId: string },
   now: Date,
 ): Promise<boolean> {
+  const { runId } = p;
+  const reason = "interrupted" as const;
   const out = await withHubScope(d.db, SYSTEM, async (tx): Promise<UserEvent[] | null> => {
     const h = await head(tx, runId);
     if (!h) return null;
     const run = await core.lockRun(tx, h.tenant_id, runId);
-    if (run?.status !== "running") return null;
-    const idx = Number(run.currentStageIdx);
-    const stage = await stageRow(tx, runId, idx);
+    if (!run || !isActive(run.status as ProcessRunStatus)) return null;
+    // D3 · idx từ chính hàng stage (không từ `current_stage_idx`); đọc lại SAU khoá (đua với job xong / huỷ).
+    const stage = await stageById(tx, runId, p.stageRunId);
     if (stage?.status !== "running") return null;
-    const options = decisionOptions(stage.current_output_id !== null);
+    const idx = Number(stage.stage_idx);
+    const options = decisionOptionsFor(stage.current_output_id !== null, reason);
     await tx.execute(sql`update hub.process_runs set status = 'needs_decision',
         decision = ${JSON.stringify({ reason, stage_idx: idx, options, at: now.toISOString() })}::jsonb,
         updated_at = ${now.toISOString()}::timestamptz where id = ${runId}`);
@@ -246,6 +252,26 @@ async function stageRow(
   return s ?? null;
 }
 
+async function stageById(
+  tx: Tx,
+  runId: string,
+  id: string,
+): Promise<{
+  id: string;
+  stage_idx: number;
+  status: string;
+  current_output_id: string | null;
+} | null> {
+  const [s] = await tx.execute<{
+    id: string;
+    stage_idx: number;
+    status: string;
+    current_output_id: string | null;
+  }>(sql`select id, stage_idx, status, current_output_id from hub.stage_runs
+    where id = ${id} and process_run_id = ${runId}`);
+  return s ?? null;
+}
+
 const reviewGroupOf = (h: Head, idx: number): string | null => {
   const after = h.snapshot.stages[idx]?.after;
   return after?.kind === "review" ? after.group_id : null;
@@ -253,6 +279,3 @@ const reviewGroupOf = (h: Head, idx: number): string | null => {
 
 const isActive = (s: ProcessRunStatus): boolean =>
   (PROCESS_RUN_ACTIVE as readonly string[]).includes(s);
-
-const decisionOptions = (hasOutput: boolean): DecisionOption[] =>
-  DECISION_OPTIONS.filter((o) => o !== "use_current" || hasOutput);

@@ -2,7 +2,7 @@
 // `notifier`, persist trạng thái) dùng chung cho agent đơn + nhóm; (2) chạy stage nhóm. Tách khỏi `stage-driver.ts` cho
 // giới hạn 400 dòng (một chiều `stage-driver` → `team-runner`, không ngược).
 
-import { DECISION_OPTIONS, type DecisionOption, type DecisionReason } from "@ai/contracts/chat";
+import type { DecisionOption, DecisionReason } from "@ai/contracts/chat";
 import type { JobSourceRead } from "@ai/contracts/hub";
 import type { StageSource } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
@@ -11,7 +11,7 @@ import type { UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
 import type { Effect, RunEvent, RunState } from "../core/process-state.rules";
-import { askExcerpt, decisionAssignees } from "../core/task.rules";
+import { askExcerpt, decisionAssignees, decisionOptionsFor } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
 import { executorRefOf } from "./executor-ref";
 import { outputAttachment, type PendingBlob } from "./output-attachment";
@@ -122,7 +122,7 @@ export async function effects(
   const events: UserEvent[] = [];
   const w = c.ev.kind === "stage_output" ? await writeOutput(d, tx, c) : null;
   const out = w?.out ?? null;
-  const reviewTaskId = await dispatchEffects(d, tx, c, out, events);
+  const reviewTaskId = await dispatchEffects(d, tx, c, { out, events });
   // P-b2 §3.3 · stage xong ⇒ done + join bước (step-persist); `finish_run` chỉ khi CẢ bước cuối xong.
   const done = stageDoneOf(c.list);
   const step = await persistStage(tx, {
@@ -150,8 +150,7 @@ async function dispatchEffects(
   d: Deps,
   tx: Tx,
   c: Ctx,
-  out: OutRow | null,
-  events: UserEvent[],
+  { out, events }: { out: OutRow | null; events: UserEvent[] },
 ): Promise<string | null> {
   let reviewTaskId: string | null = null;
   for (const eff of c.list) {
@@ -255,7 +254,7 @@ async function openDecision(d: Deps, tx: Tx, c: Ctx): Promise<UserEvent[]> {
   const reason = c.next.decisionReason as DecisionReason;
   const groupId = c.def.after.kind === "review" ? c.def.after.group_id : null;
   const asg = decisionAssignees(reason, c.head.started_by, groupId);
-  const options = optionsFor(c.next.stage.hasOutput, reason);
+  const options = decisionOptionsFor(c.next.stage.hasOutput, reason);
   await tx.execute(sql`update hub.process_runs set decision = ${decisionJson(d, reason, c.idx, options)}::jsonb
     where id = ${c.x.runId}`);
   const taskId = await core.insertTask(tx, {
@@ -281,17 +280,6 @@ async function openDecision(d: Deps, tx: Tx, c: Ctx): Promise<UserEvent[]> {
   return d.notifier.taskOpened(tx, taskId);
 }
 
-/** `use_current` cần output; lý do nhóm + mất quyền/khoá luôn cho (dùng bản nháp ghép / bỏ qua stage). */
-const FORCE_USE_CURRENT: ReadonlySet<DecisionReason> = new Set([
-  "team_calls",
-  "team_tokens",
-  "team_time",
-  "team_no_change",
-  "permission_lost",
-  "user_inactive",
-]);
-const optionsFor = (hasOutput: boolean, reason: DecisionReason): DecisionOption[] =>
-  DECISION_OPTIONS.filter((o) => o !== "use_current" || hasOutput || FORCE_USE_CURRENT.has(reason));
 const decisionJson = (d: Deps, reason: DecisionReason, idx: number, options: DecisionOption[]) =>
   JSON.stringify({ reason, stage_idx: idx, options, at: d.now().toISOString() });
 
@@ -368,7 +356,7 @@ export async function toDecision(
   if (!head || !stage) return [];
   const def = head.snapshot.stages[p.idx];
   const groupId = def?.after.kind === "review" ? def.after.group_id : null;
-  const options = optionsFor(stage.current_output_id !== null, p.reason);
+  const options = decisionOptionsFor(stage.current_output_id !== null, p.reason);
   await tx.execute(sql`update hub.process_runs set status = 'needs_decision',
     decision = ${decisionJson(d, p.reason, p.idx, options)}::jsonb, updated_at = now() where id = ${p.runId}`);
   await tx.execute(sql`update hub.stage_runs set status = 'needs_decision', updated_at = now()

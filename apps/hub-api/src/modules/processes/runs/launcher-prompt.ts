@@ -14,6 +14,8 @@ export type SnapStage = {
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
   output: { filename: string };
   real_action: boolean;
+  /** P-b2 · bước (vắng ⇒ mỗi stage một bước — `resolveSteps`). */
+  step?: number;
   timeout_s: number;
   /** P-b · nguồn + checklist của stage (vắng ⇒ P-a). */
   sources?: StageSource[];

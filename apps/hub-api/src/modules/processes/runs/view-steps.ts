@@ -3,6 +3,8 @@
 // Đọc trong tx scope `user` của người xem (RLS T); mọi truy vấn lọc `process_run_id` + `tenant_id`.
 import type {
   BackEvent,
+  DecisionOption,
+  DecisionReason,
   ExecutorRef,
   OutputRef,
   StageRunStatus,
@@ -12,6 +14,9 @@ import { BACK_EVENTS_MAX, STAGE_OUTPUTS_MAX } from "@ai/contracts/chat";
 import { resolveSteps } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { pickDecisionStage } from "../core/step.rules";
+import { decisionOptionsFor } from "../core/task.rules";
+import { openDecisions } from "../gates/gates.repo";
 import { idOf, resolveExecutors } from "./executor-ref";
 
 export type SnapStage = {
@@ -165,4 +170,32 @@ export async function backFields(
     }),
   );
   return { back_rounds: Number(r.back_rounds), back_limit: Number(r.back_limit), back_events };
+}
+
+export type DecisionPick = { reason: DecisionReason; stage_idx: number; options: DecisionOption[] };
+type DecisionJson = { reason: DecisionReason; stage_idx: number; options: DecisionOption[] } | null;
+
+/**
+ * D9 · `view.decision` = task `decision` mở CŨ nhất (song song có thể nhiều; `pickDecisionStage`). `process_runs.decision`
+ * jsonb chỉ dùng khi khớp (stage, lý do) — lấy đúng `options` đã chụp — hoặc khi không có task mở (run cũ / dữ liệu tay).
+ */
+export async function viewDecision(
+  tx: Tx,
+  r: RunKey & { status: string; decision: unknown },
+  stages: readonly StageView[],
+): Promise<DecisionPick | null> {
+  if (r.status !== "needs_decision") return null;
+  const dec = r.decision as DecisionJson;
+  const fromJson = (d: NonNullable<DecisionJson>): DecisionPick => ({
+    reason: d.reason,
+    stage_idx: Number(d.stage_idx),
+    options: d.options,
+  });
+  const open = await openDecisions(tx, r.id, r.tenant_id);
+  const idx = pickDecisionStage(open);
+  if (idx === null) return dec ? fromJson(dec) : null;
+  const reason = open.find((o) => o.stageIdx === idx)?.reason ?? dec?.reason ?? "interrupted";
+  if (dec && Number(dec.stage_idx) === idx && dec.reason === reason) return fromJson(dec);
+  const hasOutput = stages.some((s) => s.idx === idx && s.current_output_id !== null);
+  return { reason, stage_idx: idx, options: decisionOptionsFor(hasOutput, reason) };
 }
