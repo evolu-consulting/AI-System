@@ -2,22 +2,19 @@
 id: P-b-sources
 title: P-b · Nguồn tham chiếu (chỉ đọc) + đầu vào quy trình + sửa lỗi team-stage P-a
 milestone: P-b (phần CR-060; phần Editor/Nhóm agent của P-b xem D1)
-status: approved         # Gate duyệt 2026-10-11; PLAN đã điền, chạy lại spec-readiness
+status: done             # Gate 2026-10-11; đóng mốc 2026-10-12 (xem "Kết luận P-b")
 requirements: [HUB-FR-120, HUB-FR-121, HUB-FR-122, HUB-FR-123, HUB-FR-124, HUB-FR-125, WRK-FR-27, ADM-FR-68, ADM-FR-69, HUB-BR-29, HUB-BR-30, HUB-BR-31, WRK-BR-07a, AC-H36, AC-H37, AC-PB-01, AC-PB-02, AC-PB-03]
 design:
   - docs/CHANGE-REQUESTS.md#CR-060 (Intake Đầy đủ chốt 2026-10-10; gộp & đóng CR-024)
   - docs/design/agent-hub/ba-agent-hub.md §6.10 (HUB-FR-120…125), §6 HUB-BR-29…31, §11 AC-H36/H37
   - docs/design/worker/ba-worker.md (WRK-FR-27, WRK-BR-07, WRK-BR-07a)
   - docs/design/admin/ba-admin.md §5.8 (ADM-FR-68/69) · docs/design/admin/ui-admin.md §7.17 (khối "Nguồn tham chiếu")
-  - docs/ROADMAP.md (P-b, H4b) · docs/TECH-DEBT.md #133, #134
-  - nền: docs/specs/P-process-engine/spec.md (P-a done; §9 quyết định) · docs/specs/H2c-attachments/ (kho file, `origin`, job token) · H3a (Runtime/claude-sub) · H4b (secret `source_credential`)
-  - canvas: chưa có artboard trang Nguồn (§5)
+  - docs/ROADMAP.md (P-b) · docs/TECH-DEBT.md #133, #134
+  - nền: P-process-engine (P-a done) · H2c-attachments (kho file, job token) · H3a (claude-sub)
 owner: backend-lead + frontend-lead + qc
 ---
 
 # P-b · Nguồn tham chiếu + đầu vào quy trình
-
-**Cấu trúc:** spec riêng (không nối `P-process-engine/spec.md`: `done`, 41 KB > trần); CR-060 độc lập về dữ liệu, Runtime, UI.
 
 ## 1. Phạm vi
 
@@ -39,15 +36,13 @@ owner: backend-lead + frontend-lead + qc
 | `git_remote` **repo riêng** (secret `source_credential`) | **Gate chốt D2:** hoãn sang mốc nhỏ sau H4b. Không đụng bảng secrets; UI Nguồn KHÔNG có trường/cột secret (ui-admin §7.17 cần sửa, xem §9) |
 | `run_outputs`, `workflow`, `url` | COULD sau (HUB-FR-120); `url` sau P-c |
 | Hub MCP repo tools (phương án B) | Không chọn (cần ngoại lệ HUB-BR-12) |
-| Container riêng mỗi job | WRK-NFR-02/CR-034; bắt buộc trước production, P-b chỉ dùng hook WRK-BR-07 |
+| Container riêng mỗi job | WRK-NFR-02/CR-034; bắt buộc trước production (P-b chỉ dùng hook WRK-BR-07) |
 | Editor đầy đủ ①②, Nhóm agent ③, tab Usage, tự quay lại, luật tự duyệt (HUB-FR-104 đủ, 108, 114, 117 vế nhóm, 118, AC-H35, ADM-FR-65/66 đủ) | P-b2 (D1), chưa có spec |
 | Sửa/xoá nguồn đang dùng | PB-R08 |
 
-### 1.3 Sửa lỗi P-a tồn đọng (BLOCKER)
-| # | Lỗi (nguồn: TECH-DEBT) | Hướng sửa | File gợi ý |
-|---|---|---|---|
-| #133 | Stage `executor: team`: member 2+ gọi `GET /internal/jobs/:id/attachments/:attId` (output stage trước / nháp member trước) → **401** vì attachment không trong `payload.attachments` | Đưa chúng vào `payload.attachments` của **từng** member | `processes/runs/team-member.ts`, `launcher.ts` (`RunFile`) |
-| #134 | Job team fail → `error_code` ngoài 7 giá trị `runs_error_code_ck` (hoặc ghi khi status ∉ {failed, cancelled}) → `process-stage-failed` crash → run kẹt `running` | Map mã team về 7 mã hợp lệ (PB-R17); `finish`/`apply` không ném, vẫn đặt stage `failed` / run `needs_decision`; catch ở `stage-driver.ts` đưa run về trạng thái cuối, không chỉ `abort()` | `stage-driver.ts`, `migrations-hub/0000_hub_core.sql:297` |
+### 1.3 Sửa lỗi P-a tồn đọng (BLOCKER, đã sửa `c515aa39`)
+- **#133** stage `team`: member 2+ fetch attachment → 401. Sửa: nháp/output stage trước persist thành `hub.attachments` thật, id chỉ thuộc run+tenant (PB-R18). File: `processes/runs/team-member.ts`, `team-exec.ts`, `launcher.ts`.
+- **#134** job team fail → `error_code` ngoài `runs_error_code_ck` → run kẹt `running`. Sửa: map mã (PB-R17), handler không ném, catch ở `stage-driver.ts` đưa run về `needs_decision`. Chi tiết: plan.md §6.
 
 ## 2. Nghiệp vụ cụ thể hoá (PB-R)
 BA là nguồn sự thật; chỉ ghi phần BA chưa nói.
@@ -57,7 +52,7 @@ BA là nguồn sự thật; chỉ ghi phần BA chưa nói.
 | PB-R01 | `sources.key` `^[a-z0-9-]{2,32}$`, duy nhất trong tenant. Loại ∈ {`git_remote`,`local_path`,`library`}; `config` jsonb theo loại (zod discriminated union) | HUB-FR-120 |
 | PB-R02 | `git_remote` công khai: URL `https://` host thuộc allowlist domain (env, mặc định `github.com,gitlab.com`; D5); không credential trong URL (từ chối `user:pass@`). Ngoài allowlist ⇒ 422 `SOURCE_HOST_NOT_ALLOWED` | HUB-FR-120, HUB-BR-30 |
 | PB-R03 | `local_path`: chỉ `platform_admin` (tenant_admin ⇒ 403); dưới `HUB_SOURCE_LOCAL_ROOTS` (config Runtime); `realpath` chống thoát symlink; kiểm lúc khai báo VÀ lúc dựng snapshot | HUB-BR-30, AC-H36 |
-| PB-R04 | `library`: dùng lại kho H2c (`attachments.origin='library'`), mỗi tài liệu có phiên bản; chữ trích docx/xlsx/pdf do Hub (H2c). Ghim = id bản tài liệu. **[Sửa đổi sau Gate theo CR-062, 2026-10-12 — chưa code, `status` giữ `approved`]** Hub KHÔNG trích chữ PDF/DOCX nữa: nguồn `library` đưa file gốc vào snapshot (Read của Claude đọc được PDF); parse cho RAG giao KnowledgeHub (HUB-FR-135). Điều chỉnh các phần liên quan của spec ở bước docs đóng mốc P-b; xlsx chưa quyết | HUB-FR-120, H2c |
+| PB-R04 | `library`: dùng lại kho H2c (`attachments.origin='library'`), mỗi tài liệu có phiên bản; chữ trích docx/xlsx/pdf do Hub (H2c). Ghim = id bản tài liệu. **[CR-062/065, 2026-10-12]** Hub KHÔNG trích chữ PDF/DOCX: `library` đưa file gốc vào snapshot (Read đọc được PDF); parse cho RAG thuộc KnowledgeHub (HUB-FR-135, K1). P-b đã code theo bản gốc, chuyển hướng làm ở K1; xlsx chưa quyết | HUB-FR-120, H2c |
 | PB-R05 | **Ghim (D4, lật mặc định cũ):** Hub KHÔNG ra internet/`git ls-remote`. Lúc `start`, Hub xin Runtime resolve từng nguồn (kênh §3), nhận SHA 40 ký tự / library version / `snapshot_id`; lưu `pinned_sources[]` (HUB-BR-27). Lỗi resolve ⇒ run không bắt đầu, 422 `SOURCE_UNRESOLVABLE` | HUB-FR-122, HUB-BR-27 |
 | PB-R06 | Stage ≤ 5 nguồn; allowlist = glob tương đối gốc nguồn, không `..`, không tuyệt đối; rỗng = cả nguồn (vẫn tính trần). Chỉ tham chiếu nguồn cùng tenant; khác ⇒ 404 | HUB-FR-121, HUB-BR-29 |
 | PB-R07 | **Lọc** basename, không phân biệt hoa-thường, MỌI độ sâu: `.env*`, `.git`, `.ssh`, `.aws`, `*.pem`, `*.key`, `*.pfx`, `*.p12`, `*.keystore`, `id_rsa*`, `secrets*`, `credentials*`, `.npmrc`, `.netrc`. **Lọc THẮNG allowlist.** Bỏ hardlink, submodule, symlink. Trần 50 MB / 2.000 file tính **SAU** allowlist + lọc; vượt ⇒ `SOURCE_TOO_LARGE` (C9), không cắt âm thầm. Glob `picomatch`. Path trong allowlist/`MANIFEST`/output phải tồn tại trong snapshot | HUB-FR-122, HUB-BR-30 |
@@ -103,7 +98,7 @@ BA là nguồn sự thật; chỉ ghi phần BA chưa nói.
 
 ## 5. UI (frontend-lead)
 <!-- chi tiết: plan-frontend.md · plan-frontend-i18n.md (câu chữ VI/EN) · tasks-frontend.md -->
-Artboard: **chưa có** — theo mẫu bảng + drawer của Secrets / Quy trình. Không trường/cột secret (D2).
+Artboard: không có — theo mẫu bảng + drawer Secrets/Quy trình. Không trường secret (D2).
 
 | Màn | Nơi | Lát |
 |---|---|---|
@@ -115,7 +110,7 @@ Artboard: **chưa có** — theo mẫu bảng + drawer của Secrets / Quy trìn
 **Quyền (PB-R21):** `platform_admin` thấy/ghi mọi loại. `tenant_admin` ghi `git_remote`/`library`; dòng `local_path` chỉ **xem** (ký hiệu + mô tả; không đường dẫn, Sửa/Xoá; không có lựa chọn "Đường dẫn cục bộ"). User thường không có trang, chỉ thấy chip. `local_path` luôn kèm cảnh báo "đường dẫn trên máy Runtime, không phải máy của bạn". Server chặn; UI chỉ ẩn.
 
 ## 6. Hiệu năng
-Không ngân sách riêng; cache hit (nguồn, SHA, allowlist-hash) không clone lại.
+Không ngân sách riêng; cache hit không clone lại.
 
 ## 7. Phụ thuộc & giả lập
 - Git remote công khai: repo git cục bộ trong test + fixture `file://` (C6, chỉ `NODE_ENV!=production`); không gọi mạng thật. Runtime dùng `git` CLI (D3).
@@ -144,15 +139,12 @@ Lệnh xong: `bun run done:pa && bun run typecheck && bun test && bun run test:i
 - **D4 / PB-R05:** Runtime resolve SHA + dựng snapshot; Hub KHÔNG ra internet (lật mặc định cũ `git ls-remote`); cần kênh Hub→Runtime (§3).
 - **D7:** smoke Claude thật bằng agent trần token ≤ 50k; ép Read/Grep/Glob + hook deny ghi `sources/` (PB-R10, PB-R22; thuộc UAT).
 
-### Mặc định Cao đã chốt (#7–#20 spec-readiness) — đã nằm trong PB-R07/R16–R22, AC-PB-04, §8.
+Mặc định Cao #7–#20 (spec-readiness) đã nằm trong PB-R07/R16–R22, AC-PB-04, §8.
 
 ### Mặc định còn lại (chấp nhận cùng Gate)
 D1: tách P-b1 (spec này) / P-b2 (Editor + Nhóm agent, spec riêng); `done:pb` = cả hai · D3: `git` CLI Runtime ≥ 2.30, không ADR · D5: host allowlist env `HUB_SOURCE_GIT_HOSTS` (`github.com,gitlab.com`), Runtime áp (PB-R19) · D8: `files_read` parse stream-json tool_use, thiếu ⇒ `null` + cảnh báo · D9: LRU `RUNTIME_SOURCE_CACHE_MAX_MB` (2048), ràng buộc PB-R16 · D10: chỉ thêm nullable; chạy lại `done:pa`.
 
-### Cần sửa ở file ngoài khi đóng mốc 
-ROADMAP P-b (D2,D4) · P-process-engine §1 (dòng P-b trỏ spec này) · ui-admin §7.17 (bỏ "secret last4" D2; Hub resolve SHA D4) · ba-worker WRK-FR-27 (Runtime dựng snapshot mọi loại, PB-R15) · CR-060 (ghi Gate).
-
-### Chốt PLAN-reconcile (2026-10-11, backend-lead; shape/chữ ký: plan.md §3–§4)
+### Chốt PLAN-reconcile (2026-10-11, backend-lead; shape/chữ ký: plan.md §3–§4). C13/C14/C21/C22 (seam test, mẫu copy, fake-cli, cache test) → `spec-decisions.md`
 | # | Chốt |
 |---|---|
 | C1 | **Rò path (PB-R21):** `LocalPinPublic` (bỏ `path`) + `SourcePinPublic`. `SourceView.last_pin` / `SourceCheckResult.pin` trả `SourcePinPublic` cho non-platform_admin (server strip `path`); chỉ platform_admin nhận `SourcePin` đủ. Pin git/library không bí mật |
@@ -165,19 +157,23 @@ ROADMAP P-b (D2,D4) · P-process-engine §1 (dòng P-b trỏ spec này) · ui-ad
 | C8 | Lọc PB-R07: mục có `*` = prefix-glob, không `*` = khớp basename đúng ⇒ `.git` chỉ khớp `.git`, giữ `.gitignore`/`.gitattributes` |
 | C9 | `SOURCE_TOO_LARGE` lúc start: ResolveResult `error SOURCE_TOO_LARGE` ⇒ run `needs_decision source_unresolvable` (message mang mã), KHÔNG job failed. Vượt lúc mount ở stage `agent.cli` ⇒ `failed` `NOT_CONFIGURED` (PB-R17) |
 | C10 | library `document_id` không tồn tại / khác tenant: Hub kiểm kho H2c cùng tenant ở POST/PUT ⇒ 422 `SOURCE_UNRESOLVABLE` (không rò tồn tại) |
-| C11 | POST `local_path` (platform_admin-only) cần `tenant_id` trong body, thiếu ⇒ 422 `VALIDATION_ERROR` (path `tenant_id`); tenant_admin lấy tenant từ phiên |
-| C12 | `source_id` ∉ `items` ở `sources-resolved` (token hợp lệ): 422 `VALIDATION_ERROR`, không pin (sai token/run/tenant = 401) |
-| C13 | Seam: `createApp({sourceCheckTimeoutMs=60000})` tiêm được trong test |
-| C14 | Chép mẫu dùng `POST /process-defs/:id/copy` sẵn có (`:id`, `defs.routes.ts:47`); def chép sang tenant khác tham chiếu key không tồn tại ⇒ fail validate/run (PB-R06) |
+| C11 | POST `local_path` (platform_admin-only) cần `tenant_id` trong body, thiếu ⇒ 400 `VALIDATION_ERROR` (path `tenant_id`); tenant_admin lấy tenant từ phiên |
+| C12 | `source_id` ∉ `items` ở `sources-resolved` (token hợp lệ): 400 `VALIDATION_ERROR`, không pin (sai token/run/tenant = 401) |
 | C15 | job-token `source.resolve` đọc các `document_id` library trong `items` (internal H2c, cùng tenant); snapshot `agent.cli` KHÔNG cần token. Mount library: `sources/<key>/<tên-chuẩn-hoá>` (1 tài liệu/nguồn) |
 | C16 | `checkSourceRefs` (Hub): `key∈stage` + `version` khớp pin; tồn-tại-file theo `files_read`; `files_read=null` (D8) ⇒ bỏ kiểm tồn tại |
 | C17 | Ngân sách: dùng `ProcessStageDef.token_budget` sẵn có; `defaultSourceBudget(stage)=stage.token_budget ?? 200000` khi có nguồn; KHÔNG thêm trường payload job |
 | C18 | `files_read` qua `job.result.source_reads[]` (`hub/events.ts`): `{source_key, files_read:string[]\|null, bytes_read:int\|null}`, path tương đối gốc nguồn. Hub map `source_key→source_id` ghi `source_job_reads` |
-| C19 | Validate `inputs` (superRefine): `key∈def.inputs`, type khớp def, select `value∈options`, `source_ref.source_key` git_remote cùng tenant — lệch ⇒ 422 `VALIDATION_ERROR`. `inputs` thêm vào `CreateProcessRunRequest` (chat `/process-runs`, P-b1) **và** `RunProcessDefRequest` (admin, P-b2) |
+| C19 | Validate `inputs` (superRefine): `key∈def.inputs`, type khớp def, select `value∈options`, `source_ref.source_key` git_remote cùng tenant — lệch ⇒ 400 `VALIDATION_ERROR`. `inputs` thêm vào `CreateProcessRunRequest` (chat `/process-runs`, P-b1) **và** `RunProcessDefRequest` (admin, P-b2) |
 | C20 | Chip AskCard KHÔNG lấy từ `ask.choices`; FE lấy từ `GET /process-runs/sources` (lọc git_remote), khớp `key`. Hub không điền `choices` bằng key nguồn |
-| C21 | fake-cli: 4 directive `read`/`tree`/`scan`/`obey` dùng cú pháp `=` (khớp `_DIRECTIVE`); §7 dùng `#fake:read=` |
-| C22 | CA-04 `RUNTIME_SOURCE_CACHE_MAX_MB=4`: override env container riêng; không cô lập được ⇒ chuyển test Py dev |
-| C23 | `POST /process-runs` source_ref sai = `VALIDATION_ERROR`; Runtime offline/không claim trong `timeout_s`: check ⇒ 422 `SOURCE_UNRESOLVABLE`; start ⇒ `needs_decision` |
+| C23 | `POST /process-runs` source_ref sai = 400 `VALIDATION_ERROR`; Runtime offline/không claim trong `timeout_s`: check ⇒ 422 `SOURCE_UNRESOLVABLE`; start ⇒ `needs_decision` |
 
 ### Trong lúc làm + Tranh chấp test
 → [`spec-decisions.md`](spec-decisions.md) (tách để spec gọn; log tăng dần mỗi lát).
+
+## Kết luận P-b (2026-10-12)
+- **Đạt:** `done:pb` 16/16 và `done:pa` 13/13 (hồi quy engine) xanh tại HEAD; review APPROVED vòng 2 (`a295a6f`), soát lại sau UAT RV3 CHANGES REQUESTED → qc khoá test `35d96d21` → sửa `ef787532` → RV3b APPROVED.
+- **Lát:** S4 `c515aa39` · S1 `685c9cd0` · S2 `c5328094` · S3 `b7e481d8` · sửa review `11840627` · e2e khoá `993de759` · FS-11 `ce34116a` · B1–B4 sau UAT `c356681f` (migration `0022`).
+- **Smoke Claude thật + UAT evolu:** [`evidence/2026-10-11/REPORT.md`](evidence/2026-10-11/REPORT.md); run `fixbug-evolu-verify` tới `done`.
+- **Nợ:** TECH-DEBT #133/#134 đã sửa; #137 (DNS-rebinding), #139–#146 (Minor sau RV3).
+- **Điểm mở (không chặn):** N1 đúng spec (#144); N2 API đúng spec, UI chặt hơn (#143); U1 `source_ref` chỉ `git_remote` **đúng PB-R13/C19** — mở rộng cần CR mới.
+- **Hoãn:** P-b2 (Editor/Nhóm agent/canvas, CR-063), repo git riêng sau H4b, PB-R04 → K1.

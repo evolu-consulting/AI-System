@@ -2,7 +2,7 @@
 id: P-process-engine
 title: Process Engine (Quy trình động) — stage + gate duyệt + hỏi lại + nhóm agent + hiển thị token
 milestone: P (spike → P-a → P-b → P-c)
-status: done                # (P-a xong 2026-10-11; P-b/P-c theo ROADMAP — tách spec riêng khi tới) draft → ready → approved → in-progress → done
+status: done                # (P-a xong 2026-10-11; P-b Nguồn xong → specs/P-b-sources; P-b2/P-c tách spec riêng khi tới) draft → ready → approved → in-progress → done
 requirements: [HUB-FR-104, HUB-FR-105, HUB-FR-106, HUB-FR-107, HUB-FR-108, HUB-FR-109, HUB-FR-110, HUB-FR-111, HUB-FR-112, HUB-FR-113, HUB-FR-114, HUB-FR-115, HUB-FR-116, HUB-FR-117, HUB-FR-118, HUB-FR-119, HUB-BR-23, HUB-BR-24, HUB-BR-25, HUB-BR-26, HUB-BR-27, HUB-BR-28, AC-H28, AC-H29, AC-H30, AC-H31, AC-H32, AC-H33, AC-H34, AC-H35, CHAT-AC-51, CHAT-AC-52, CHAT-AC-53, CHAT-AC-54, CHAT-AC-55, CHAT-AC-56, CHAT-AC-57, CHAT-AC-58, ADM-FR-65, ADM-FR-66, ADM-FR-67]
 design:
   - docs/CHANGE-REQUESTS.md#CR-056 (lõi + token) · #CR-057 (Nhóm agent) · #CR-058 (phòng/chat, `!`, người duyệt ≠ người gọi)
@@ -37,10 +37,10 @@ Intake Đầy đủ xong, người dùng **chốt toàn bộ** 2026-10-09 (mặc
 |---|---|---|---|
 | **Spike P** | Nhóm agent BA thật: so 3 chế độ (trưởng nhóm lập kế hoạch / tuần tự / MCP lai), đo token + thời gian + chất lượng; chốt chế độ mặc định và giới hạn | HUB-FR-114 (đầu vào), 116 | Báo cáo `spike.md` (≤ 1 trang bảng số) + đề xuất; không code sản phẩm |
 | **P-a** | Stage runner + máy trạng thái run (Postgres) · gate duyệt · hỏi lại + "Nhờ người khác trả lời" · "Chờ tôi kiểm" · DM hệ thống "Quy trình" · menu `!` + nút "▶ Quy trình" · `/runs/:id` có chi tiết token · 2 quy trình mẫu (SDLC, hoá đơn) · editor tối thiểu (Evolu Control) · nhóm agent dùng bản seed (không editor) · giới hạn + "Cần người quyết" · Hành động thật sau gate | HUB-FR-104 (tối thiểu), 105–107, 109–113, 115, 116, 117 (vế run); HUB-BR-23…28; AC-H28…H34; CHAT-AC-51…58; ADM-FR-65 (không Import/Export JSON), 66 (tối thiểu), 67 | `done:pa` xanh; **security review riêng** (HUB-BR-25) đạt; UAT `qc-uat` |
-| **P-b** | Editor đầy đủ ①②③, Nhóm agent ở Agent Forge (+ bật theo công ty, tab Usage), tự quay lại, luật tự duyệt | HUB-FR-104 (đủ + Import/Export JSON, U2), 108, 114 (editor), 117 (vế nhóm), 118; AC-H35; ADM-FR-66 (đủ), ADM-FR-65 (KPI + chuỗi stage + Import/Export, U1·F3/U2) | `done:pb` xanh |
+| **P-b** | **Đã tách:** lát Nguồn tham chiếu (CR-060) = [`P-b-sources`](../P-b-sources/spec.md) `done` (2026-10-12); phần còn lại → P-b2 (CR-063, chưa có spec): Editor đầy đủ ①②③, Nhóm agent ở Agent Forge (+ bật theo công ty, tab Usage), tự quay lại, luật tự duyệt | HUB-FR-104 (đủ + Import/Export JSON, U2), 108, 114 (editor), 117 (vế nhóm), 118; AC-H35; ADM-FR-66 (đủ), ADM-FR-65 (KPI + chuỗi stage + Import/Export, U1·F3/U2) | `done:pb` xanh |
 | **P-c** | Workspace code chung + PR thật (SDLC) | HUB-FR-119 | Cần H4b Secrets |
 
-Thứ tự (Q8, đổi 2026-10-10): **spike P** → **P-a** → X2b-2 → H4b → **P-b** → **P-c**.
+Thứ tự (Q8, đổi 2026-10-10): **spike P** → **P-a** → X2b-2 → H4b → **P-b** (Nguồn: xong 2026-10-12) → P-b2 → **P-c**.
 
 **Không làm (mọi mốc P):** agent↔agent trực tiếp (CR-023 Hoãn) · `/` trong phòng (X2b Q10 giữ) · duyệt qua email · tự duyệt khi quá hạn · người duyệt sửa output tại chỗ · tiền/quota tháng (H3c tạm dừng) · lịch/API/webhook bắt đầu run (COULD, sau) · email/Zalo/Slack (COULD, chỉ link).
 

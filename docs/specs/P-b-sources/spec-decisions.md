@@ -88,3 +88,11 @@ Tách khỏi `spec.md` §9 để spec gọn dưới trần 25KB (log này tăng 
 
 - [CR-060] `path_absent` actionable: `explainSourceRefs`/`stageRefsExplain` (sources.rules/stage-sources) trả `RefCheck` kèm `offenders`; `checkSourceRefs` giữ hình dạng cũ (ca khoá toEqual). Feedback lượt sau do `refsFeedback` (stage-sources) dựng theo reason qua `refCheckMessage` — nơi ghi `stage_runs.feedback` thật là team-runner.writeOutput (stage-driver chỉ tính templateOk).
 - [CR-060] Khoá cache local_path theo nội dung: `local_driver.content_signature` = sha256[:12] của `(path|mtime_ns|size)` đã sắp xếp (từ `walk_files`, không đọc nội dung); lá = `<allow_hash>-<sig>` (giữ độ sâu 4). git/library không đổi.
+
+## Chốt PLAN-reconcile chuyển từ spec.md (đóng mốc 2026-10-12)
+| # | Chốt |
+|---|---|
+| C13 | Seam: `createApp({sourceCheckTimeoutMs=60000})` tiêm được trong test |
+| C21 | fake-cli: 4 directive `read`/`tree`/`scan`/`obey` dùng cú pháp `=` (khớp `_DIRECTIVE`); §7 dùng `#fake:read=` |
+| C22 | CA-04 `RUNTIME_SOURCE_CACHE_MAX_MB=4`: override env container riêng; không cô lập được ⇒ chuyển test Py dev |
+| C14 | Chép mẫu dùng `POST /process-defs/:id/copy` sẵn có (`:id`, `defs.routes.ts:47`); def chép sang tenant khác tham chiếu key không tồn tại ⇒ fail validate/run (PB-R06) |
