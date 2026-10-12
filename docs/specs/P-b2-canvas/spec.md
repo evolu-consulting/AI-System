@@ -94,6 +94,8 @@ Migration `hub` kế tiếp (sau `0023_x2b2_room_attachments`; số chốt khi P
 Seed: không đổi. Mẫu SDLC `platform_admin` giữ nguyên (mỗi stage một bước); ví dụ song song nằm trong fixture test, không seed (**Q4**).
 
 ## 5. UI (frontend-lead)
+Chi tiết PLAN FE: [`plan-frontend.md`](plan-frontend.md) · [`plan-frontend-i18n.md`](plan-frontend-i18n.md) · [`tasks-frontend.md`](tasks-frontend.md). Role/nhãn e2e đầy đủ: plan-frontend §7 (bảng dưới là tóm tắt).
+
 **Artboard:** CHƯA có artboard Pencil. Nguồn tạm = mockup Part B (B1, B2) đã người dùng xem. Cần vẽ trước BUILD FE (hoặc người dùng chấp nhận mockup làm nguồn — **Q5**):
 
 | # | Artboard cần | Nội dung bắt buộc | Mockup nguồn |
@@ -152,14 +154,14 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 | Q1 | Phần Editor còn lại (Nhóm agent ở Forge, tab Usage, luật tự duyệt, Import/Export, KPI) thuộc P-b2? | Không; mốc riêng P-b3 (§1.2) |
 | Q2 | "≤ 3 vòng" đếm theo gì; ai quyết khi quá trần? | Tổng mỗi run; dùng "Cần người quyết" sẵn có (người bắt đầu/`tenant_admin`), không thêm trường "người quyết" vào def |
 | Q3 | `## Bàn giao` bắt buộc cho def cũ? 200 token đo thế nào? | Chỉ tự thêm khi lưu def; thiếu mục = `template_invalid`; ước lượng ký tự ÷ 4, cắt không từ chối |
-| Q4 | Seed mẫu có bước song song? | Không; fixture test + mockup `fixbug-evolu` do tenant tự sửa |
-| Q5 | Chờ artboard Pencil hay dùng mockup Part B? | Dùng mockup làm nguồn; frontend-lead dựng, người dùng xem UAT; nếu muốn artboard thì vẽ trước PLAN-FE |
+| Q4 | Seed mẫu có bước song song? | Không; fixture test + mockup `fixbug-evolu` do tenant tự sửa. **FE chốt:** UI không có mẫu/seed song song |
+| Q5 | Chờ artboard Pencil hay dùng mockup Part B? | **FE chốt:** dùng mockup làm nguồn, A1–A6 vẽ sau (plan-fe §8) không chặn BUILD;  frontend-lead dựng, người dùng xem UAT; nếu muốn artboard thì vẽ trước PLAN-FE |
 | Q6 | Quay lại có cho `back_to_steps` trỏ tới bước **song song cùng bước**? | Không (đích phải < bước hiện tại) |
-| Q7 | Run view chat: thẻ duyệt của stage song song hiện thế nào? | Mỗi stage một thẻ, nhóm dưới tiêu đề bước |
-| Q8 | `Alt+mũi tên` có xung đột trình duyệt/OS? | Dùng; kiểm trong UAT, đổi phím nếu vướng |
+| Q7 | Run view chat: thẻ duyệt của stage song song hiện thế nào? | Mỗi stage một thẻ, nhóm dưới tiêu đề bước. **FE chốt** (plan-fe §4) |
+| Q8 | `Alt+mũi tên` có xung đột trình duyệt/OS? | Dùng; kiểm trong UAT, đổi phím nếu vướng. **FE chốt:** dùng + `preventDefault` + nút thay thế bắt buộc ở panel/StepList (plan-fe FB8) |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (trống)
+- FE PLAN (2026-10-12): FB1–FB11 ở `plan-frontend.md` §0 — `@xyflow/react` 12.11.6, chunk `canvas` ngân sách 80 KB gz, StepList làm fallback + đường a11y, chọn sẵn stage 1 (giữ E-P15b/E-PB08/E-PB09). Đề xuất backend: plan-fe §9 (B1–B6).
 
 ## 10. Tranh chấp test
 - (không)

@@ -5,7 +5,7 @@ Khung — PLAN (backend-lead ∥ frontend-lead) điền chi tiết sau; chưa ch
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
 | T0 | PLAN BE (`plan.md`: máy trạng thái bước, khoá, migration) | backend-lead | cao | `spec §2,§3,§4` | `docs/specs/P-b2-canvas/plan.md` | — | — | [ ] |
-| T1 | PLAN FE (`plan-frontend.md`: canvas, StageStrip, i18n) | frontend-lead | thường | `spec §2 R16–R17,§5`, ADR-0013 | `docs/specs/P-b2-canvas/plan-frontend.md` | — | — | [ ] |
+| T1 | PLAN FE (`plan-frontend.md`: canvas, StageStrip, i18n) | frontend-lead | thường | `spec §2 R16–R17,§5`, ADR-0013 | `docs/specs/P-b2-canvas/plan-frontend.md` (+ `plan-frontend-i18n.md`, `tasks-frontend.md` — T8–T10 chia thành FB-1…FB-8) | — | — | [x] |
 | T2 | qc: test-plan + test khoá (cập nhật E-P15b/E-PB08/E-PB09, thêm AC-PB2-01…12) | qc | cao | `spec §8` | `tests/acceptance/P-b2/**`, `e2e/P-b2/**` | T0, T1 | `bun run test:lock:verify` | [ ] |
 | T3 | spec-readiness + Gate (trình ADR-0013; Luật 2b) | spec-readiness | — | spec, readiness.md | `readiness.md` | T2 | — | [ ] |
 | T4 | Contract + DDL (`step`, `back_to_steps`, cột run/stage, `process_back_events`) | backend-lead | cao | `spec §3,§4` | `packages/contracts`, `packages/db` | T3 | `bun test packages/contracts` | [ ] |
