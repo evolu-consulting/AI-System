@@ -83,7 +83,10 @@ export function RoomFlowContent(p: RoomFlowProps & FlowFrameSlot) {
           draftKey={draftKey}
           autoFocus={!p.mobile}
           menus="agents"
-          attachments={false}
+          attachNote={{
+            share: t("rooms.attach.shareThread"),
+            needText: t("rooms.attach.needText"),
+          }}
           maxChars={CHAT_CONTENT_MAX}
           menuTitle={t("menu.agentsYours")}
           hint={t("roomAgent.threadContextHint")}

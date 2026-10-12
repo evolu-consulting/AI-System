@@ -1,4 +1,4 @@
-// HUB-FR-96, HUB-FR-103 · composer phòng: `Composer` variant "room" với menu `@` (không `/`, Q10), không đính kèm (F5/X2b-2), nháp theo phòng.
+// HUB-FR-96, HUB-FR-103 · composer phòng: `Composer` variant "room" với menu `@` (không `/`, Q10), đính kèm (X2b-2), nháp theo phòng.
 import { CHAT_CONTENT_MAX } from "@ai/contracts/chat";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
@@ -26,7 +26,7 @@ export function RoomComposer({ roomId, target, group, onSent }: Props) {
   const onSubmit = useCallback(
     async (text: string, attachmentIds?: string[]) => {
       const hit = await bang.intercept(text, attachmentIds);
-      return hit !== "pass" ? hit : send(text);
+      return hit !== "pass" ? hit : send(text, attachmentIds);
     },
     [bang, send],
   );
@@ -42,7 +42,10 @@ export function RoomComposer({ roomId, target, group, onSent }: Props) {
         draftKey={draftKey}
         menus="agents"
         processMenu={processMenu}
-        attachments={false}
+        attachNote={{
+          share: t(group ? "rooms.attach.shareGroup" : "rooms.attach.shareDm", { name: target }),
+          needText: t("rooms.attach.needText"),
+        }}
         maxChars={CHAT_CONTENT_MAX}
         inputLabel={t(group ? "rooms.composer.group" : "rooms.composer.dm", { name: target })}
         placeholder={t(group ? "roomAgent.placeholder.group" : "roomAgent.placeholder.dm", {

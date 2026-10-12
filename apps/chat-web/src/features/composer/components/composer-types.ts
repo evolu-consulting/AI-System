@@ -37,6 +37,8 @@ export type ComposerProps = {
   processMenu?: boolean;
   /** P-a thread §5: nhãn nút Gửi (aria-label) thay `composer.send`/`composer.sendInFlow` — vd "Gửi góp ý · làm lại". */
   sendLabel?: string;
+  /** X2b-2 D6: ghi chú chia sẻ tệp (phòng/thread); hiện khi có ≥ 1 tệp, trước `hint`. */
+  attachNote?: { share: string; needText: string };
   /** Quá giới hạn ký tự → Gửi disabled; hiện bộ đếm từ 90 %. */
   maxChars?: number;
   onSubmit(text: string, attachmentIds?: string[]): Promise<SubmitResult>;

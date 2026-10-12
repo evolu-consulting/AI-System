@@ -327,6 +327,12 @@
   },
   "rooms": {
     "section": "Tin nhắn & Nhóm",
+    "attach": {
+      "shareGroup": "Mọi thành viên của nhóm đều xem và tải được tệp này. Agent được @ trong nhóm cũng đọc được.",
+      "shareDm": "{{name}} sẽ xem và tải được tệp này. Agent được @ ở đây cũng đọc được.",
+      "shareThread": "Mọi thành viên của phòng đều xem và tải được tệp này. Agent được @ trong thread cũng đọc được.",
+      "needText": "Nhập nội dung tin để gửi kèm tệp."
+    },
     "sectionAi": "Hỏi AI",
     "unreadBadge": "{{count}} tin chưa đọc",
     "preview": {

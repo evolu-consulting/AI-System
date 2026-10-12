@@ -93,7 +93,8 @@ export function useRoomExit(id: string, kind: "delete" | "leave" | "hide") {
 export function useSendRoomMessage(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { content: string; client_msg_id: string }) => sendRoomMessage(id, v),
+    mutationFn: (v: { content: string; client_msg_id: string; attachment_ids?: string[] }) =>
+      sendRoomMessage(id, v),
     onSuccess: ({ message: msg }: SentRoomMessage) => {
       qc.setQueryData<RoomMessagesData>(roomKeys.messages(id), (d) => insertMessage(d, msg));
       qc.setQueryData<RoomListData>(roomKeys.list, (d) => applySentMessage(d, id, msg));

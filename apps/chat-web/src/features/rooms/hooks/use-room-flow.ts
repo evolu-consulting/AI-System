@@ -15,6 +15,7 @@ import { ApiError } from "~/lib/http";
 import { listFlowMessages, type SentRoomMessage, sendRoomMessage } from "../api";
 import { ownWaitingRunId, removeActiveRun } from "../lib/room-agent";
 import { insertMessage, type RoomMessagesData, roomKeys } from "../lib/room-cache";
+import { sendKey } from "../lib/send-key";
 import { attachRoomRun } from "./use-room-runs";
 
 export function useFlowMessages(
@@ -75,10 +76,10 @@ export function useFlowSend({ roomId, flowId, myId, activeRuns }: SendArgs) {
   runsRef.current = activeRuns;
 
   const fail = useCallback(
-    (err: unknown): SubmitResult => {
+    (err: unknown, text: string): SubmitResult => {
       const code = err instanceof ApiError ? err.code : undefined;
       if (code === "AGENT_NOT_FOUND") void qc.invalidateQueries({ queryKey: ["agents", "menu"] });
-      if (err instanceof ApiError && isComposerError(err)) return { ok: false, error: err };
+      if (err instanceof ApiError && isComposerError(err, text)) return { ok: false, error: err };
       if (code === "NOT_FOUND" || code === "NOT_RUN_CALLER") {
         void qc.invalidateQueries({ queryKey: roomKeys.detail(roomId) });
       }
@@ -95,21 +96,23 @@ export function useFlowSend({ roomId, flowId, myId, activeRuns }: SendArgs) {
   );
 
   return useCallback(
-    async (text: string): Promise<SubmitResult> => {
+    async (text: string, ids?: string[]): Promise<SubmitResult> => {
+      const key = sendKey(text, ids);
       const cur = pending.current;
-      const id = cur && cur.text === text ? cur.id : crypto.randomUUID();
-      pending.current = { text, id };
+      const id = cur && cur.text === key ? cur.id : crypto.randomUUID();
+      pending.current = { text: key, id };
       const answerRunId =
         leadingTag(text) === null ? ownWaitingRunId(runsRef.current, flowId, myId) : undefined;
       const body: SendRoomMessageRequest = { content: text, client_msg_id: id, flow_id: flowId };
       if (answerRunId) body.answer_run_id = answerRunId;
+      if (ids && ids.length > 0) body.attachment_ids = ids;
       try {
         const r = await sendRoomMessage(roomId, body);
         pending.current = null;
         applyFlowSent(qc, { roomId, flowId }, r, answerRunId);
         return true;
       } catch (err) {
-        return fail(err);
+        return fail(err, text);
       }
     },
     [qc, roomId, flowId, myId, fail],

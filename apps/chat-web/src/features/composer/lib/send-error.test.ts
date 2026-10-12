@@ -96,3 +96,20 @@ describe("P-a · lỗi quy trình trong composer", () => {
     });
   });
 });
+
+describe("X2b-2 · `!key` + tệp ở phòng", () => {
+  const bad = new ApiError(400, "VALIDATION_ERROR", "x", {
+    details: { issues: [{ path: ["attachment_ids"], code: "custom", message: "unsupported" }] },
+  });
+  test("400 path attachment_ids + chữ `!key` ⇒ câu noAttach", () => {
+    expect(sendErrorView(bad, "!bao-cao tuần")?.lines).toEqual([
+      { key: "process.composer.error.noAttach", params: {} },
+    ]);
+    expect(isComposerError(bad, "!bao-cao")).toBe(true);
+  });
+  test("chữ thường ⇒ không (toast)", () => {
+    expect(sendErrorView(bad, "xin chào")).toBeNull();
+    expect(isComposerError(bad, "xin chào")).toBe(false);
+    expect(isComposerError(bad)).toBe(false);
+  });
+});

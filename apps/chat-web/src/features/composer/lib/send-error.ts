@@ -25,7 +25,19 @@ const COMPOSER_CODES: ReadonlySet<string> = new Set([
  */
 export const isCooldownCode = (code: string): boolean => code === "TOO_MANY_RUNS";
 
-export const isComposerError = (err: ApiError): boolean => COMPOSER_CODES.has(err.code);
+/** X2b-2 D8: `!key` kèm tệp ở phòng ⇒ 400 `VALIDATION_ERROR` path `attachment_ids`. */
+const isBangAttachError = (err: ApiError, text: string): boolean => {
+  if (err.code !== "VALIDATION_ERROR" || leadingBangKey(text) === null) return false;
+  const issues = detailsOf(err).issues;
+  return (
+    Array.isArray(issues) &&
+    issues.some((i) => Array.isArray(i?.path) && (i.path as unknown[])[0] === "attachment_ids")
+  );
+};
+
+/** `text` (chữ đã gửi) chỉ cần cho ca `!key` + tệp ở phòng. */
+export const isComposerError = (err: ApiError, text?: string): boolean =>
+  COMPOSER_CODES.has(err.code) || (text !== undefined && isBangAttachError(err, text));
 
 export type SendErrorLine = { key: string; params: Record<string, string> };
 export type SendErrorView = {
@@ -133,6 +145,9 @@ export function sendErrorView(
   if (err.code === "TOO_MANY_RUNS") {
     const n = String(Math.max(retryLeft ?? retrySecondsOf(err), 0));
     return { lines: [{ key: "sendError.tooManyRuns", params: { n } }], suggestions: [] };
+  }
+  if (isBangAttachError(err, text)) {
+    return { lines: [{ key: "process.composer.error.noAttach", params: {} }], suggestions: [] };
   }
   const proc = processErrorView(err, text, d);
   if (proc) return proc;

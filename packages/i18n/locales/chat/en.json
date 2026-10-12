@@ -327,6 +327,12 @@
   },
   "rooms": {
     "section": "Messages & Groups",
+    "attach": {
+      "shareGroup": "Everyone in this group can view and download these files. Agents tagged with @ here can read them too.",
+      "shareDm": "{{name}} can view and download these files. Agents tagged with @ here can read them too.",
+      "shareThread": "Everyone in the room can view and download these files. Agents tagged with @ in this thread can read them too.",
+      "needText": "Write a message to send the files with."
+    },
     "sectionAi": "Ask AI",
     "unreadBadge": "{{count}} unread",
     "preview": {

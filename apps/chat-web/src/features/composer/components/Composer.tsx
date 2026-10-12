@@ -28,6 +28,7 @@ import {
   overLimit,
   submitOutcome,
 } from "../lib/composer-logic";
+import { AttachNote, attachNoteOf, joinDescribedBy } from "./AttachNote";
 import { CharCount } from "./CharCount";
 import { ComposerMenus } from "./ComposerMenus";
 import { ComposerRow, sendTitle } from "./ComposerRow";
@@ -56,6 +57,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     placeholder,
     menuTitle,
     hint,
+    attachNote,
     maxChars,
     onSubmit,
     onStop,
@@ -174,6 +176,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const errorView = sendError.view;
   const labels = inputLabels(t, flow, inputLabel, placeholder);
   const hintId = useId();
+  const noteId = useId();
+  const note = attachments ? attachNoteOf(attachNote, att.chips.length, text) : null;
   return (
     <div className="w-full">
       <QuotaNotice over={quotaOver} />
@@ -206,7 +210,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         areaRef={area}
         text={text}
         labels={labels}
-        aria={hint ? { ...aria, describedBy: hintId } : aria}
+        aria={{ ...aria, describedBy: joinDescribedBy(note !== null && noteId, hint && hintId) }}
         flow={flow}
         running={running}
         enabled={enabled}
@@ -220,6 +224,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         onSend={() => void send()}
         onStop={onStop}
       />
+      <AttachNote id={noteId} text={note} />
       {hint && (
         <p id={hintId} className="mt-1 px-1 text-xs text-muted-foreground">
           {hint}
