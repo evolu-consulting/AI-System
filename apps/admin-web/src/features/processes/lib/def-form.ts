@@ -276,13 +276,17 @@ function validateStage(s: StageDraft, i: number, all: readonly StageDraft[], e: 
   if (!budgetOk(s.budget)) e[at("token_budget")] = `${P}budget`;
 }
 
-const STEP_ERR: Record<string, string> = {
+export const STEP_ERR: Record<string, string> = {
   STEP_TOO_WIDE: "process.admin.canvas.err.stepFull",
   STEP_ORDER: "process.admin.canvas.err.step",
   STEP_INCOMPLETE: "process.admin.canvas.err.step",
   REAL_ACTION: "process.admin.canvas.err.realStep",
   BACK_TARGET_INVALID: "process.admin.canvas.err.backTarget",
 };
+
+/** `stages.N.after.back_to_steps.K` → ô `stages.N.after.back_to_steps` (một dòng lỗi cho cả nhóm checkbox). */
+export const backPathToField = (path: string): string =>
+  path.replace(/\.after\.back_to_steps\.\d+$/, ".after.back_to_steps");
 
 /** Luật chéo stage về bước (dùng chung với server: `processDefStageIssues`) → lỗi theo ô. */
 export function validateSteps(stages: readonly StageDraft[], e: DraftErrors): void {
@@ -294,7 +298,7 @@ export function validateSteps(stages: readonly StageDraft[], e: DraftErrors): vo
   }));
   for (const issue of processDefStageIssues(shape)) {
     const key = STEP_ERR[issue.rule];
-    if (key) e[issue.path.replace(/\.after\.back_to_steps\.\d+$/, ".after.back_to_steps")] = key;
+    if (key) e[backPathToField(issue.path)] = key;
   }
 }
 

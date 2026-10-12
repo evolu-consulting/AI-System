@@ -36,7 +36,7 @@ function Round({ n }: { n: number }) {
   return (
     <span className="rounded-sm bg-muted px-1 text-caption font-medium text-secondary-foreground">
       <span aria-hidden>{t("process.run.step.round", { n })}</span>
-      <span className="sr-only"> {t("process.run.step.roundSr", { n })}</span>
+      <span className="sr-only"> {t("process.run.step.roundSr", { count: n - 1 })}</span>
     </span>
   );
 }

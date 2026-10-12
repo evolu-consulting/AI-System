@@ -49,3 +49,12 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (FB1…FB11, §1–§10) · c
 - Tách hàm ≤50 dòng: `useFlowGraph` ⇒ `toNode`/`toEdge`/`NODE_SIZE`; `useDraft` ⇒ `useStepMutations`; `useStageOps` ⇒ `useReport` + `addVia`; `def-form.test.ts` tách describe "P-b2 · bước · validate", `withStep` đưa lên cấp file.
 - `DecisionCard` gửi `stage_idx = task.stage_idx` (stage của chính thẻ; review vòng 2: `view.decision` là decision mở cũ nhất nên dùng nó sẽ quyết nhầm stage khi có ≥2 decision mở); 409 xử lý như lỗi API hiện có (toast).
 - a11y: `BackTimeline` nút "Xem đầy đủ" có `aria-expanded`/`aria-controls` (`useId`); `StageStrip` `Round`: ×n hiển thị `aria-hidden`, giữ sr-only, bỏ `title`.
+
+## Quyết định trong lúc làm — sửa theo UAT 2026-10-13 (L2–L6)
+| # | Quyết định | Lý do |
+|---|---|---|
+| U1 (L2) | 422 `PROCESS_DEF_INVALID` có `details.rules[]` song song `paths[]` ⇒ `serverErrors()` (`lib/errors.ts`) ánh xạ mã luật → câu `process.admin.canvas.err.*` (BACK_TARGET_INVALID/STEP_TOO_WIDE/STEP_ORDER…), path `back_to_steps.K` gộp về ô `back_to_steps`; dòng lỗi "Nếu bị trượt" và "Chạy ở bước" có `role="alert"` (FormField thêm prop `alert`, tắt khi đã có `stepNotice` để không trùng alert); checkbox quay lại `aria-invalid`. Không thêm key i18n (dùng key sẵn có) | Plan-frontend lỗi 422 theo stage; câu VI/EN đã có |
+| U2 (L3) | `fitView` `minZoom 0.65`, `padding 0.1`; khi bị chặn ở minZoom thì neo mép trái (người dùng kéo ngang); `minZoom` tay 0.3. Cạnh quay lại: từ đỉnh stage tới CẠNH DƯỚI header bước đích (handle `back-in` của header đặt `Bottom`) ⇒ mũi tên không đè chữ tiêu đề | Chữ ≥ ~9 px; ADR-0013 #3 |
+| U3 (L4) | Giữ quyết định FB-3 (panel xếp dưới, không Sheet). < 1024 px chọn stage bằng chuột ⇒ `scrollIntoView` panel + focus `aside#stage-panel` (`tabIndex=-1`); bằng bàn phím vẫn focus ô "Tên giai đoạn" | Sửa tối thiểu |
+| U4 (L5) | `run.step.roundSr` thành plural `_one/_other` với `count = round − 1` (EN "Redone 4 times after going back"; VI "Đã làm lại 4 lần do quay lại bước"); chip "×5" giữ nghĩa "lần chạy thứ 5" | round 5 = làm lại 4 lần |
+| U5 (L6) | **KHÔNG đổi**: Alt+← vẫn chèn vào ĐẦU cột đích. **Tranh chấp test**: `e2e/P-b2/admin/canvas.pb2.ts` E-PB2-09 (khoá) cần stage chuyển sang cột vừa nhận ở đầu (nút "Lên" bật ở "Test hồi quy" sau khi "Rà soát code" vào bước 2); chèn cuối làm test đỏ. Đề xuất qc: sửa E-PB2-09 nếu muốn chèn cuối; code đã thử, hoàn tác | Luật 2b: không sửa test khoá |

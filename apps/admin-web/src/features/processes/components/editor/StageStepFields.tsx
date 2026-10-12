@@ -27,8 +27,18 @@ function BackFields({ stage, all, readOnly, errors, index, onChange }: StageForm
         (a, b) => a - b,
       ),
     });
+  const alertP = err ? (
+    <p role="alert" className="text-caption text-destructive">
+      {t(err)}
+    </p>
+  ) : null;
   if (stage.after !== "review" || stage.step === 0)
-    return <p className="text-caption text-muted-foreground">{t(`${P}backNone`)}</p>;
+    return (
+      <>
+        <p className="text-caption text-muted-foreground">{t(`${P}backNone`)}</p>
+        {alertP}
+      </>
+    );
   return (
     <>
       <p className="text-caption text-muted-foreground">{t(`${P}backHint`)}</p>
@@ -41,6 +51,7 @@ function BackFields({ stage, all, readOnly, errors, index, onChange }: StageForm
               checked={stage.backTo.includes(s)}
               disabled={readOnly}
               aria-describedby={`${id}-hint`}
+              aria-invalid={err ? true : undefined}
               onCheckedChange={(v) => toggle(s, v === true)}
             />
             <div className="space-y-0.5">
@@ -54,7 +65,7 @@ function BackFields({ stage, all, readOnly, errors, index, onChange }: StageForm
           </div>
         );
       })}
-      {err ? <p className="text-caption text-destructive">{t(err)}</p> : null}
+      {alertP}
     </>
   );
 }
@@ -75,6 +86,7 @@ export function StageStepFields(p: StageFormProps) {
         max={PROCESS_STAGES_MAX}
         value={String(stepLabel(stage.step))}
         error={msg}
+        alert={!p.stepNotice}
         readOnly={p.readOnly}
         onChange={(v) => {
           const n = Math.round(Number(v));

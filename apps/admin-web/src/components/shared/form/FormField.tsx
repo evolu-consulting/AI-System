@@ -15,10 +15,12 @@ type Props = {
   description?: string;
   /** Câu lỗi đã dịch (không phải key). */
   error?: string;
+  /** Lỗi đẩy từ Hub sau khi lưu: thông báo ngay cho trình đọc màn hình (`role=alert`). */
+  alert?: boolean;
   children: (props: FieldControlProps) => ReactNode;
 };
 
-export function FormField({ id, label, description, error, children }: Props) {
+export function FormField({ id, label, description, error, alert, children }: Props) {
   const descId = description ? `${id}-desc` : undefined;
   const errId = error ? `${id}-err` : undefined;
   const describedBy = [errId, descId].filter(Boolean).join(" ") || undefined;
@@ -32,7 +34,11 @@ export function FormField({ id, label, description, error, children }: Props) {
         </p>
       ) : null}
       {error ? (
-        <p id={errId} className="flex items-center gap-1 text-caption text-destructive">
+        <p
+          id={errId}
+          role={alert ? "alert" : undefined}
+          className="flex items-center gap-1 text-caption text-destructive"
+        >
           <CircleAlert aria-hidden className="size-3.5 shrink-0" />
           {error}
         </p>

@@ -34,7 +34,9 @@ import type { StageView } from "./stage-view";
 
 const nodeTypes = { stage: StageNode, stepHeader: StepHeaderNode, join: JoinNode };
 const edgeTypes = { back: BackEdge };
-const FIT = { padding: 0.15, maxZoom: 1 } as const;
+// UAT L3: không thu dưới 0.65 (chữ ≥ ~9 px); nhiều bước thì neo về mép trái và để người dùng kéo ngang (pan).
+const FIT_MIN_ZOOM = 0.65;
+const FIT = { padding: 0.1, maxZoom: 1, minZoom: FIT_MIN_ZOOM } as const;
 const reduceMotion = (): boolean => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export type ProcessCanvasProps = CanvasHandlers & {
@@ -136,7 +138,11 @@ function Flow(p: ProcessCanvasProps) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: stepsKey chủ ý
   useEffect(() => {
     const id = window.setTimeout(
-      () => void rf.fitView({ ...FIT, duration: reduceMotion() ? 0 : 200 }),
+      () =>
+        void rf.fitView({ ...FIT, duration: reduceMotion() ? 0 : 200 }).then(() => {
+          const v = rf.getViewport();
+          if (v.zoom <= FIT_MIN_ZOOM + 0.001) void rf.setViewport({ ...v, x: 16 });
+        }),
       60,
     );
     return () => window.clearTimeout(id);
@@ -181,7 +187,7 @@ function Flow(p: ProcessCanvasProps) {
           }}
           fitView
           fitViewOptions={FIT}
-          minZoom={0.1}
+          minZoom={0.3}
           maxZoom={1.5}
           nodesDraggable={!p.readOnly}
           nodesConnectable={false}

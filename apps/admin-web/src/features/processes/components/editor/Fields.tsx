@@ -12,7 +12,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 type Err = string | undefined;
-type Common = { id: string; label: string; error?: Err; readOnly?: boolean; description?: string };
+type Common = {
+  id: string;
+  label: string;
+  error?: Err;
+  alert?: boolean;
+  readOnly?: boolean;
+  description?: string;
+};
 
 export function TextField(
   p: Common & {
@@ -29,7 +36,13 @@ export function TextField(
   },
 ) {
   return (
-    <FormField id={p.id} label={p.label} error={p.error} description={p.description}>
+    <FormField
+      id={p.id}
+      label={p.label}
+      error={p.error}
+      alert={p.alert}
+      description={p.description}
+    >
       {(c) => {
         if (p.multiline) {
           return (
@@ -86,7 +99,13 @@ export function SelectField(
 ) {
   const { t } = useTranslation();
   return (
-    <FormField id={p.id} label={p.label} error={p.error} description={p.description}>
+    <FormField
+      id={p.id}
+      label={p.label}
+      error={p.error}
+      alert={p.alert}
+      description={p.description}
+    >
       {(c) => (
         <Select value={p.value} onValueChange={p.onChange} disabled={p.disabled || p.readOnly}>
           <SelectTrigger {...c} aria-label={p.label} className="w-full">

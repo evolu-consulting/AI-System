@@ -96,7 +96,8 @@
     "parallelAria": "Bước {{n}} — chạy song song",
     "round": "×{{n}}",
     "roundLong": "×{{n}} lần",
-    "roundSr": "Đã làm lại lần {{n}} do quay lại bước",
+    "roundSr_one": "Đã làm lại {{count}} lần do quay lại bước",
+    "roundSr_other": "Đã làm lại {{count}} lần do quay lại bước",
     "attempt": "Lần làm {{n}}",
     "backLine": "↩ Quay lại bước {{step}} (lần {{n}})",
     "backMax": "Đã quay lại tối đa {{max}} lần"

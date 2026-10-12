@@ -1,4 +1,4 @@
-// ADM-FR-71 · P-b2 (plan-frontend FB4): cạnh quay lại — đường cong phía trên hàng, nét đứt màu warning + nhãn chữ "Quay lại"
+// ADM-FR-71 · P-b2 (plan-frontend FB4): cạnh quay lại — từ đỉnh stage tới CẠNH DƯỚI tiêu đề bước đích (mũi tên không đè chữ tiêu đề, UAT L3), nét đứt màu warning + nhãn chữ "Quay lại"
 // (không chỉ màu).
 import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getBezierPath } from "@xyflow/react";
 import { memo } from "react";
@@ -13,7 +13,7 @@ function BackEdgeImpl(p: EdgeProps) {
     targetX: p.targetX,
     targetY: p.targetY,
     targetPosition: p.targetPosition,
-    curvature: 0.6,
+    curvature: 0.5,
   });
   return (
     <>

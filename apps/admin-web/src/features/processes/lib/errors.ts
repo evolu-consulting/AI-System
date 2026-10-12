@@ -2,6 +2,7 @@
 import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/hub-admin";
 import { describeError, type MessageSpec } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
+import { backPathToField, STEP_ERR } from "./def-form";
 
 const KNOWN = new Set([
   "PROCESS_NOT_FOUND",
@@ -40,6 +41,13 @@ export function serverPaths(err: unknown): string[] {
   return typeof d.path === "string" ? [d.path] : [];
 }
 
+/** `details.rules` (song song với `paths`) của `PROCESS_DEF_INVALID`: mã luật chéo stage (P-b2, UAT L2). */
+export function serverRules(err: unknown): string[] {
+  if (!(err instanceof ApiError) || !isObj(err.details) || !Array.isArray(err.details.rules))
+    return [];
+  return err.details.rules.map((r) => (typeof r === "string" ? r : ""));
+}
+
 const STAGE_SOURCE_PATH = /^stages\.\d+\.sources\.\d+\.source_key$/;
 
 /** Khoá câu lỗi cho một path của `PROCESS_*_INVALID`: nguồn giai đoạn ngoài danh sách (P-b) có câu riêng, còn lại theo mã. */
@@ -47,4 +55,19 @@ export function pathErrorKey(code: string, path: string): string {
   if (code === "PROCESS_REF_INVALID" && STAGE_SOURCE_PATH.test(path))
     return "process.admin.editor.stageSources.notInDef";
   return `process.admin.apiError.${code}`;
+}
+
+/** `paths` + `rules` song song ⇒ lỗi theo ô; luật bước/quay lại có câu riêng theo mã luật (UAT L2). */
+export function serverErrors(
+  code: string,
+  paths: string[],
+  rules: string[],
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  paths.forEach((p, i) => {
+    const byRule = code === "PROCESS_DEF_INVALID" ? STEP_ERR[rules[i] ?? ""] : undefined;
+    if (byRule) out[backPathToField(p)] = byRule;
+    else out[p] ??= pathErrorKey(code, p);
+  });
+  return out;
 }

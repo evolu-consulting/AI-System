@@ -96,7 +96,8 @@
     "parallelAria": "Step {{n}} — runs in parallel",
     "round": "×{{n}}",
     "roundLong": "×{{n}} times",
-    "roundSr": "Redone {{n}} time(s) after going back",
+    "roundSr_one": "Redone {{count}} time after going back",
+    "roundSr_other": "Redone {{count}} times after going back",
     "attempt": "Attempt {{n}}",
     "backLine": "↩ Went back to step {{step}} (time {{n}})",
     "backMax": "Reached the maximum of {{max}} go-backs"

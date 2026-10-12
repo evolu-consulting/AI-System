@@ -23,7 +23,7 @@ function StepHeaderImpl({ data }: NodeProps<StepHeaderType>) {
         blocked ? "border-destructive bg-card" : "border-transparent bg-muted"
       }`}
     >
-      <HiddenHandle id="back-in" type="target" position={Position.Top} />
+      <HiddenHandle id="back-in" type="target" position={Position.Bottom} />
       <HiddenHandle type="target" position={Position.Left} />
       <h3 className="flex items-center gap-1 text-label font-medium">
         {blocked ? <Lock aria-hidden className="size-3.5 text-destructive" /> : null}

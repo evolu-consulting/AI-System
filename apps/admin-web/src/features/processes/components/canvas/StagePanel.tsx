@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { StageForm } from "../editor/StageForm";
-import type { Workbench } from "./use-workbench";
+import { PANEL_ID, type Workbench } from "./use-workbench";
 
 type Props = { d: DraftState; w: Workbench; readOnly: boolean; refs: EditorRefs };
 
@@ -12,8 +12,10 @@ export function StagePanel({ d, w, readOnly, refs }: Props) {
   const { sel, index, ops } = w;
   return (
     <aside
+      id={PANEL_ID}
+      tabIndex={-1}
       aria-label={t("process.admin.canvas.region")}
-      className="w-full shrink-0 lg:max-h-[640px] lg:w-[420px] lg:overflow-y-auto"
+      className="w-full shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring lg:max-h-[640px] lg:w-[420px] lg:overflow-y-auto"
     >
       {sel ? (
         <StageForm
