@@ -16,7 +16,9 @@ from collections.abc import Callable
 from contextlib import suppress
 from hashlib import sha256
 from pathlib import Path
+from uuid import UUID
 
+from agent_runtime.log import get_logger
 from agent_runtime.sources import git_driver, local_driver
 from agent_runtime.sources.config import SourceConfig
 from agent_runtime.sources.errors import SourceError
@@ -40,12 +42,15 @@ def git_dir(cfg: SourceConfig, tenant: str, url: str, sha: str, allowlist: list[
     return cfg.snapshots_dir / "git" / tenant / _url_key(url) / sha / allow_hash(allowlist)
 
 
-def local_dir(cfg: SourceConfig, tenant: str, realpath: Path, allowlist: list[str]) -> Path:
-    # Khoá theo NỘI DUNG (chữ ký mtime/size của tập allowlist) ⇒ repo sửa thì dựng snapshot mới.
-    # Gộp vào đoạn cuối để giữ độ sâu lá = 4 (`_is_leaf`). git/library giữ nguyên (pin bất biến).
+def local_dir(  # noqa: PLR0913
+    cfg: SourceConfig, tenant: str, realpath: Path, allowlist: list[str], snapshot_id: str
+) -> Path:
+    # PB-R05/HUB-BR-27 (AC-H36): khoá theo `pin.snapshot_id` (sinh lúc resolve) ⇒ mọi job cùng pin
+    # (stage sau / "làm lại") mount ĐÚNG nội dung lúc ghim; resolve MỚI = snapshot_id mới = nội dung
+    # mới. Mất cache ⇒ `ensure` dựng lại từ realpath (PB-R16). Gộp vào đoạn cuối: độ sâu lá = 4.
     key = sha256(str(realpath).encode()).hexdigest()[:16]
-    leaf = f"{allow_hash(allowlist)}-{local_driver.content_signature(realpath, allowlist)}"
-    return cfg.snapshots_dir / "local" / tenant / key / leaf
+    sid = str(UUID(str(snapshot_id)))  # chuẩn hoá + chặn ký tự đường dẫn lạ
+    return cfg.snapshots_dir / "local" / tenant / key / f"{allow_hash(allowlist)}-{sid}"
 
 
 def library_dir(  # noqa: PLR0913
@@ -158,7 +163,9 @@ def commit(tmp: Path, final: Path) -> Path:
             rmtree_ro(tmp)
             return final
         rmtree_ro(tmp)
-        raise SourceError("SOURCE_UNRESOLVABLE", f"commit snapshot thất bại: {err}") from err
+        # Minor #5: chi tiết (errno, đường dẫn cache) chỉ log Runtime; thông điệp gửi Hub chung.
+        get_logger().warning("source.snapshot_commit_failed", error=str(err))
+        raise SourceError("SOURCE_UNRESOLVABLE", "không lưu được snapshot nguồn") from err
     return final
 
 

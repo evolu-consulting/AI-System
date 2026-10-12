@@ -39,6 +39,21 @@ describe("ADM-NFR-06 · DB test riêng mỗi agent (TECH-DEBT #17)", () => {
     ]);
   });
 
+  test("testEnvFile đổi luôn HUB_TEST_/AGENT_RT_TEST_DATABASE_URL sang DB tag (không reset nhầm DB chung)", () => {
+    const env = [
+      "TEST_DATABASE_URL=postgres://ai:x@h:5432/ai_system_test",
+      "TEST_ADMIN_API_DATABASE_URL=postgres://admin_api:y@h:5432/ai_system_test",
+      "HUB_TEST_DATABASE_URL=postgres://ai:x@h:5432/ai_system_h1_test",
+      "AGENT_RT_TEST_DATABASE_URL=postgres://agent_runtime:z@h:5432/ai_system_h1_test",
+    ].join("\n");
+    const out = testEnvFile(env, "ai_system_qc_test");
+    expect(out).not.toContain("ai_system_h1_test");
+    expect(out.split("\n").slice(2)).toEqual([
+      "HUB_TEST_DATABASE_URL=postgres://ai:x@h:5432/ai_system_qc_test",
+      "AGENT_RT_TEST_DATABASE_URL=postgres://agent_runtime:z@h:5432/ai_system_qc_test",
+    ]);
+  });
+
   test("testEnvFile thiếu biến → ném", () => {
     expect(() => testEnvFile("TEST_DATABASE_URL=postgres://a@h/x_test", "y_test")).toThrow();
   });

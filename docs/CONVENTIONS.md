@@ -81,6 +81,7 @@ E2E chọn phần tử theo **role + nhãn nguyên văn** trong spec (`getByRole
 - Listener/NOTIFY: tìm thông điệp từ mốc `from` của ca hiện tại, không tìm trên cả mảng (giá trị `v` có thể lặp sau khi reset).
 - E2E sau thao tác lưu: chờ phản hồi mạng (`page.waitForResponse`) hoặc trạng thái UI do lưu xong gây ra, không chờ "dialog không có" (đúng ngay từ đầu).
 - Dữ liệu test phải hợp contract ở mọi trường khác trường đang kiểm (vd không lặp cặp trong batch khi đang kiểm `NOT_ENTITLED`).
+- Int test trên DB tag riêng: dùng `.env.test-<tag>.local` sinh **sau** P-b RV3 (đổi cả `HUB_TEST_`/`AGENT_RT_TEST_DATABASE_URL` sang DB tag); file cũ còn trỏ `ai_system_h1_test` chung ⇒ chạy lại `bun run db:test:create <tag>` trước.
 
 Tên test: `"<mã> · mô tả"` (mã FR/NFR/AC) để `trace` nối test với yêu cầu (T-TRACE-2).
 

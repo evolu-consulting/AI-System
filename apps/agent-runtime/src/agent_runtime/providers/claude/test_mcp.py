@@ -146,7 +146,7 @@ def test_pf_s2_b1_read_grep_glob_path_relative_to_work_dir() -> None:
 
 def test_pf_s2_b1_path_outside_work_dir_or_no_path_is_none() -> None:
     """Đường dẫn ngoài `work_dir` (thoát `..`/tuyệt đối khác) ⇒ None (audit bỏ, không fail-open);
-    tool không có khoá đường dẫn ⇒ None."""
+    tool không có khoá đường dẫn ⇒ None; Write không tính là đọc (RV3 Minor #4) ⇒ None."""
     wd = "/work/j1"
     blocks: list[ContentBlock] = [
         ToolUseBlock(id="a", name="Read", input={"file_path": "/etc/passwd"}),
@@ -154,7 +154,7 @@ def test_pf_s2_b1_path_outside_work_dir_or_no_path_is_none() -> None:
         ToolUseBlock(id="c", name="Read", input={}),
         ToolUseBlock(id="d", name="Write", input={"file_path": "/work/j1/out/report.md"}),
     ]
-    assert _tool_paths(blocks, wd) == [None, None, None, "out/report.md"]
+    assert _tool_paths(blocks, wd) == [None, None, None, None]
 
 
 def test_wrk_fr_13_init_mcp_status_only() -> None:

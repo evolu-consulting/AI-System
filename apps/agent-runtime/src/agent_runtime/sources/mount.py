@@ -46,7 +46,7 @@ def _snapshot_for(cfg: SourceConfig, tenant: str, src: Source) -> Path:
         )
     if pin.kind == "local_path":
         root = resolve_root(cfg, pin.path)
-        final = snapshot.local_dir(cfg, tenant, root, allow)
+        final = snapshot.local_dir(cfg, tenant, root, allow, str(pin.snapshot_id))
         return snapshot.ensure(cfg, final, lambda tmp: snapshot.build_local(cfg, tmp, root, allow))
     # library: chỉ dùng cache (resolve đã dựng qua token)
     final = snapshot.library_dir(cfg, tenant, str(pin.document_id), str(pin.version), allow)

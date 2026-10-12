@@ -94,9 +94,9 @@ def main_model(model_usage: dict[str, Any] | None) -> str | None:
 
 
 # P-b PF-S2 · B1 · khoá đầu vào mang đường dẫn tệp của tool Claude thật (spike PY-02 #1,#3): Read
-# `file_path` (CLI đổi tuyệt đối), Grep/Glob `path` (thư mục gốc tìm, giữ tương đối), Write
-# `file_path`. Trích để cha gom `source_reads` audit (D8); bảo mật do hook (`sandbox/hook.py`) lo.
-_PATH_INPUT_KEYS = {"Read": "file_path", "Grep": "path", "Glob": "path", "Write": "file_path"}
+# `file_path` (CLI đổi tuyệt đối), Grep/Glob `path` (thư mục gốc tìm, giữ tương đối). KHÔNG gồm
+# Write (ghi ≠ đọc — RV3 Minor #4). Trích để cha gom `source_reads` audit (D8); bảo mật do hook lo.
+_PATH_INPUT_KEYS = {"Read": "file_path", "Grep": "path", "Glob": "path"}
 
 
 def _tool_path(name: str, inp: Mapping[str, Any], work_dir: str) -> str | None:

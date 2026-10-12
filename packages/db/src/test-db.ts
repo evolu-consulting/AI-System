@@ -32,13 +32,18 @@ export function withDatabase(url: string, name: string): string {
   return u.toString();
 }
 
-/** Bản sao nội dung `.env` với `TEST_DATABASE_URL`, `TEST_ADMIN_API_DATABASE_URL` trỏ DB `name` (thêm dòng nếu thiếu). */
+/** Biến DB Hub/Runtime (mặc định trỏ DB chung `ai_system_h1_test`) — có thì đổi sang DB của tag, để int test
+ * trên tag riêng không reset nhầm DB chung (P-b RV3). Vắng thì bỏ qua (không bắt buộc như hai biến TEST_*). */
+const OPTIONAL_TEST_DB_KEYS = ["HUB_TEST_DATABASE_URL", "AGENT_RT_TEST_DATABASE_URL"];
+
+/** Bản sao nội dung `.env` với `TEST_DATABASE_URL`, `TEST_ADMIN_API_DATABASE_URL` (bắt buộc) và
+ * `HUB_TEST_DATABASE_URL`, `AGENT_RT_TEST_DATABASE_URL` (nếu có) trỏ DB `name`. */
 export function testEnvFile(envText: string, name: string): string {
   const keys = ["TEST_DATABASE_URL", "TEST_ADMIN_API_DATABASE_URL"];
   const seen = new Set<string>();
   const lines = envText.split(/\r?\n/).map((line) => {
     const m = /^([A-Z_]+)=(.*)$/.exec(line);
-    if (!m?.[1] || !keys.includes(m[1])) return line;
+    if (!m?.[1] || !(keys.includes(m[1]) || OPTIONAL_TEST_DB_KEYS.includes(m[1]))) return line;
     seen.add(m[1]);
     return `${m[1]}=${withDatabase(m[2] ?? "", name)}`;
   });

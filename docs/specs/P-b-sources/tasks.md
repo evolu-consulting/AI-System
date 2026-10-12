@@ -52,3 +52,7 @@ Mỗi task 1 commit `feat(<module>): … [HUB-FR-xx]` (fix: `fix(processes): …
 
 ## Quyết định trong lúc làm
 <!-- một dòng mỗi quyết định (BUILD) -->
+- RV3 #1 (PB-R05/AC-H36): lá cache `local_path` = `<allow_hash>-<snapshot_id>` (UUID chuẩn hoá); `resolve_local` sinh `snapshot_id` TRƯỚC rồi dựng; `mount` tra theo `pin.snapshot_id`, mất cache ⇒ dựng lại từ realpath (PB-R16, nội dung lúc dựng lại — chấp nhận như spec). Bỏ khử trùng theo `content_signature` (mỗi resolve = 1 bản chép; LRU lo dung lượng) — đơn giản nhất, không đổi contract. `content_signature` giữ lại (test CS khoá dùng). LRU: không đổi (`.refs` theo `hub.runs` id của stage; giữa 2 stage vẫn có thể bị dọn ⇒ dựng lại, không lỗi) — TECH-DEBT #142.
+- RV3 #4: bỏ `Write` khỏi `_PATH_INPUT_KEYS`; sửa unit `providers/claude/test_mcp.py` (Write ⇒ None).
+- RV3 #5: `commit` lỗi thật ⇒ `SourceError("SOURCE_UNRESOLVABLE", "không lưu được snapshot nguồn")`; chi tiết OSError chỉ log Runtime (`source.snapshot_commit_failed`).
+- RV3 tooling: `testEnvFile` (`packages/db/src/test-db.ts`) đổi thêm `HUB_TEST_DATABASE_URL`/`AGENT_RT_TEST_DATABASE_URL` (nếu có) sang DB tag; file `.env.test-<tag>.local` cũ phải sinh lại bằng `db:test:create <tag>` (ghi CONVENTIONS §2 Bẫy, README db).

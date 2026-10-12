@@ -29,8 +29,10 @@ def resolve_git(  # noqa: PLR0913
 def resolve_local(
     cfg: SourceConfig, tenant: str, path: str, allowlist: list[str]
 ) -> tuple[Pin, int, int]:
+    # PB-R05: snapshot_id sinh TRƯỚC và là khoá cache ⇒ nội dung ghim = lúc resolve (AC-H36).
     root = resolve_root(cfg, path)
-    final = snapshot.local_dir(cfg, tenant, root, allowlist)
+    snapshot_id = str(uuid.uuid4())
+    final = snapshot.local_dir(cfg, tenant, root, allowlist, snapshot_id)
     snapshot.ensure(cfg, final, lambda tmp: snapshot.build_local(cfg, tmp, root, allowlist))
     files, size = snapshot.count_snapshot(final)
-    return {"kind": "local_path", "path": path, "snapshot_id": str(uuid.uuid4())}, files, size
+    return {"kind": "local_path", "path": path, "snapshot_id": snapshot_id}, files, size
