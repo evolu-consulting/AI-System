@@ -117,6 +117,15 @@ Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225
 | I53 | S8 | file phòng (G1) làm input `file` của `POST /process-runs` (`ownsUpload` thêm `and room_id is null`) | 400 `VALIDATION_ERROR` path `inputs`; 0 process-run |
 | I54 | S3b | DELETE G1 khi run đang chạy → `jobFetch` bằng token job | 401 (endpoint nội bộ không kiểm phòng xoá — chấp nhận) |
 
+### 3.8 `out/` khi chờ `side_effect` — `withheld.int.test.ts` (R11 bổ sung 2026-10-13, RV1 #1; rủi ro cao)
+Dựng như X2b `wait.int`: G {A=lan, B=hoa}; A "@hoadon tạo thẻ thanh toán"; `tool_confirmations` pending (SQL owner) cho run; `jobOutput(run,"report.md")`; `finishWith` kèm outputs.
+| Mã | AC/R | Dữ liệu | Kỳ vọng |
+|---|---|---|---|
+| I55 | AC10, R11 | A, B cùng nghe `/me/stream`; rồi trang tin | `room.message` tin agent: A `attachments=[report.md]`, B không có; trang tin A có ref đầy đủ, B tin agent không `attachments`, id file không xuất hiện |
+| I56 | R11, R05 | chờ còn pending | B `GET /attachments/:id` và `/content` ⇒ 404 `NOT_FOUND`; A ⇒ 200 |
+| I57 | R11, R09 | B "@trello xem" trong thread (`flow_id` của run chờ) | `runs.attachment_ids` của B không chứa file; đối chứng: xong run B, A "Đồng ý" (run kế, xong), B tag lại ⇒ chứa file |
+| I58 | R11 | A trả lời "Đồng ý" (`confirmed`) / "Huỷ" (`declined`) với `answer_run_id` | trước: B `/content` 404; sau: B tải lại trang thấy ref `[report.md]`, `/attachments/:id` + `/content` 200 |
+
 ## 4. Contract (Hub thật qua hub-dev — `tests/contract/chat/x2b2-additive.contract.test.ts`)
 | Mã | AC | Kỳ vọng |
 |---|---|---|
@@ -167,6 +176,7 @@ Lệnh: `bun test tests/acceptance/X2b2/rules tests/acceptance/X2b/rules` · `bu
 | hồi quy `X2b/context.int` (sau xoá ca §7) | 8 | 0 | 8 | — |
 | `tests/contract/chat/x2b2-additive` | C01 (chỉ Hub thật), C02 | chưa chạy (hub-dev, bước 9 `done:x2b2`) | | |
 | e2e `x2b2-attach.x2b2.ts` | E01–E08 | E01, E07, E05 đã chạy: đỏ | — | E01/E07 `getByRole('button', {name:'Đính kèm tệp'})` không thấy (snapshot có `textbox "Tin nhắn cho Thu Ha"`/`"…nhóm"` ⇒ stack + trang phòng chạy); E05 `/rt/output` 200 + trả lời agent hiện, đỏ ở `button "Tải report.md"`. E02–E04, E06, E08 đi qua cùng `attach()` ⇒ cùng điểm đỏ (không chạy riêng vì build chat-web nặng) |
+| `withheld.int` (thêm 2026-10-13 sau fix `0e16022b`, DB `x2b2_qc3`) | I55–I58 (5 it) | — | 5 | viết sau code (RV1 Minor #1): xanh trên HEAD `0e16022b`; khẳng định chính (B không ref / 404 / không vào file-set) trái hành vi trước fix (`0e16022b` mới lọc) ⇒ có giá trị hồi quy. Toàn `X2b2/` 78/78 xanh. `beforeAll` có lúc đỏ `PostgresError: tuple concurrently updated` (XX000) khi agent khác chạy migration song song cùng cluster — chạy lại là qua, không do test |
 Không ca nào đỏ ở `PostgresError`/`TypeError` trong fixture/`beforeAll`. Fixture chỉ chạy sau code (privateFile `msgU1`, phòng beta, `POST /process-runs` đối chứng 201) đã dò riêng bằng test tạm (đã xoá): đều chạy.
 
 ## 9. Lỗ hổng spec phát hiện (gửi Gate, đều có mặc định qc dùng)
