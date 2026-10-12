@@ -15,7 +15,7 @@ import {
   uniq,
 } from "./_x2a-support";
 
-test('X2a-AC15 · E01 · sidebar có region "Tin nhắn & Nhóm" + "Hỏi AI"; không panel agent; composer phòng không mở listbox khi gõ @ hay /, không nút Đính kèm [CHAT-AC-40]', async ({
+test('X2a-AC15 · E01 · sidebar có region "Tin nhắn & Nhóm" + "Hỏi AI"; không panel agent; composer phòng không mở listbox khi gõ @ hay /, có nút "Đính kèm tệp" từ X2b-2 [CHAT-AC-40]', async ({
   page,
 }) => {
   const a = await token("lan");
@@ -32,7 +32,8 @@ test('X2a-AC15 · E01 · sidebar có region "Tin nhắn & Nhóm" + "Hỏi AI"; k
   await expect(page.getByRole("listbox")).toHaveCount(0);
   await box.fill("/");
   await expect(page.getByRole("listbox")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Đính kèm" })).toHaveCount(0);
+  // X2b-2 (spec R01/§5, Tranh chấp có chủ đích): composer phòng nay có đính kèm; X2a cũ khẳng định 0 nút.
+  await expect(page.getByRole("button", { name: "Đính kèm tệp" })).toHaveCount(1);
 });
 
 test('X2a-AC15 · E10 · A cuộn lên, B gửi tin ⇒ A thấy button "1 tin mới"; bấm ⇒ xuống đáy thấy tin mới [CHAT-AC-39]', async ({
