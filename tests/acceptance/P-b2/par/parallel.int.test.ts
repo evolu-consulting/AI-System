@@ -164,7 +164,7 @@ describe("PI · trượt/Đạt độc lập trong bước [AC-PB2-03]", () => {
     needPb2(c.pb2);
     const { runId } = await parToStep1(c, { both: true });
     const t1 = await taskOf(c.sql, runId, 1);
-    const t2 = await taskOf(c.sql, runId, 2);
+    const t2 = await taskOf(c.sql, runId, 2, "review", null);
     expect((await review(c, "B", t1?.id, { result: "pass" })).status).toBe(200);
     const [a] = await c.sql<
       Json[]
@@ -205,6 +205,38 @@ describe("PI · trượt/Đạt độc lập trong bước [AC-PB2-03]", () => {
       Json[]
     >`select id from hub.review_tasks where process_run_id = ${runId} and status = 'open'`;
     expect(open).toHaveLength(0);
+  }, 40_000);
+  it("HUB-FR-111 · PI-11b · huỷ run khi Rà soát code đã Đạt (done), Test hồi quy còn running ⇒ 200 cancelled; hub.runs stage 2 cancelled", async () => {
+    needPb2(c.pb2);
+    const { runId } = await parToStep1(c);
+    await jobOfStage(c, runId, 2);
+    await finishStages(c, runId, [1]);
+    await passStage(c, runId, 1, "B");
+    await waitStage(c.sql, runId, 1, "done");
+    expect((await stageRow(c.sql, runId, 2)).status).toBe("running");
+    expect((await c.call("A", "POST", `/process-runs/${runId}/cancel`, {})).status).toBe(200);
+    await waitStatus(c.sql, runId, "cancelled");
+    const live = await waitFor(
+      async () => hubRunsOf(c.sql, runId, 2),
+      (rs) => rs.length > 0 && rs.every((r) => r.status === "cancelled"),
+      8_000,
+    );
+    expect((live ?? []).map((r) => r.status)).toEqual(["cancelled"]);
+  }, 40_000);
+  it("HUB-FR-111 · PI-11c · huỷ run khi Rà soát code đã Đạt (done), Test hồi quy waiting_review ⇒ 200 cancelled; task review stage 2 không còn open", async () => {
+    needPb2(c.pb2);
+    const { runId } = await parToStep1(c, { both: true });
+    await passStage(c, runId, 1, "B");
+    await waitStage(c.sql, runId, 1, "done");
+    expect((await stageRow(c.sql, runId, 2)).status).toBe("waiting_review");
+    expect((await c.call("A", "POST", `/process-runs/${runId}/cancel`, {})).status).toBe(200);
+    await waitStatus(c.sql, runId, "cancelled");
+    const open = await c.sql<
+      Json[]
+    >`select id from hub.review_tasks where process_run_id = ${runId} and status = 'open'`;
+    expect(open).toHaveLength(0);
+    const t2 = await taskOf(c.sql, runId, 2, "review", null);
+    expect(t2?.status).toBe("cancelled");
   }, 40_000);
   it("AC-PB2-05 · PI-12 · pb2-real: R0a Đạt bởi B, R0b Đạt bởi T (sau) ⇒ Ghi sổ chạy; audit authorize_real_action actor = T", async () => {
     needPb2(c.pb2);
