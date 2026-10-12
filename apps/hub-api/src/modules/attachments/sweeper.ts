@@ -1,7 +1,8 @@
 // HUB-FR-75 · H2c-R27–R29 · PL2, PL11, PL13 · dọn file (plan §5.8, plan-db §4, plan-rules §4): **một** transaction `system`
 // mỗi lượt giữ `pg_try_advisory_xact_lock(hashtext('hub.attach.sweep'))` (bận ⇒ `skipped`, 0 việc) → (a) R27 claim ≤ 500
 // hàng chưa gắn quá 24 h (kể cả hàng đã đánh dấu dở) + đánh dấu `purged_at` → xoá nội dung → DELETE hàng đã xoá được →
-// (b) R28 hội thoại đã xoá: claim + `purged_at = now` → xoá nội dung (hàng còn) → (c) mồ côi trên kho (lô `list` xoay vòng,
+// (b) R28 hội thoại đã xoá + (b2) X2b2 phòng đã xoá (definer, cộng vào `purged`): claim + `purged_at = now` → xoá nội dung
+// (hàng còn) → (c) mồ côi trên kho (lô `list` xoay vòng,
 // con trỏ trong bộ nhớ theo storage): `.part`/file > 1 h không hàng sống ⇒ xoá; `.part` có hàng sống ⇒ `promote` (PL13).
 // Đồng hồ tiêm (`now`) — không `now()` trong câu (AC-13). Xoá lỗi ⇒ `warn attachment-remove-failed`, lượt sau làm lại.
 // (c) chạy trong savepoint + bắt lỗi (`warn attachment-sweep-orphans-failed {code}`): lỗi `list` (EACCES/EPERM…) không
@@ -80,6 +81,19 @@ async function sweepDeletedConversations(tx: Tx, c: Ctx): Promise<number> {
   return rows.length;
 }
 
+/**
+ * (b2) X2b2 R13, R14, D6: file của phòng đã xoá → `purged_at = now` → xoá nội dung (hàng giữ, giống (b)). RLS `rooms` không có
+ * nhánh system ⇒ claim qua definer `hub.attach_claim_deleted_rooms` (kiểm `app.scope = system`, ≤ 500, SKIP LOCKED).
+ */
+async function sweepDeletedRooms(tx: Tx, c: Ctx): Promise<number> {
+  const rows = await tx.execute<Claimed>(
+    sql`SELECT id, storage_key FROM hub.attach_claim_deleted_rooms(${c.now.toISOString()}::timestamptz, ${SWEEP_BATCH})`,
+  );
+  // Xoá lỗi ⇒ hàng đã purged ⇒ bước mồ côi dọn nội dung sau (như (b)).
+  for (const r of rows) await tryRemove(c, r.id, r.storage_key);
+  return rows.length;
+}
+
 /** (c) R29 · plan-db §4.3: một lô `list` xoay vòng; khoá có hàng sống (`purged_at IS NULL`) theo PK. */
 async function sweepOrphans(tx: Tx, c: Ctx): Promise<number> {
   const entries = await c.storage.list({
@@ -137,7 +151,7 @@ export async function sweepOnce(d: SweepDeps): Promise<SweepResult> {
     );
     if (!lock?.ok) return SKIPPED;
     const expired = await sweepUnbound(tx, c);
-    const purged = await sweepDeletedConversations(tx, c);
+    const purged = (await sweepDeletedConversations(tx, c)) + (await sweepDeletedRooms(tx, c));
     const orphans = await sweepOrphansSafe(tx, c);
     return { expired, purged, orphans, skipped: false };
   });
