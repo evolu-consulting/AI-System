@@ -60,6 +60,7 @@ test("ADM-FR-71 · E-PB2-04 · kéo Tổng hợp (chuột) sang cột bước 2 
   await openCanvas(p);
   const src = node(p, "Tổng hợp");
   const dst = node(p, "Test hồi quy");
+  await src.scrollIntoViewIfNeeded();
   const a = await src.boundingBox();
   const b = await dst.boundingBox();
   expect(a && b, "toạ độ node").toBeTruthy();
