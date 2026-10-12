@@ -85,7 +85,7 @@
       "auto": "Tự chạy tiếp",
       "reviewGroup": "Nhóm kiểm",
       "real": "Hành động thật",
-      "realLocked": "Cần giai đoạn trước có người kiểm",
+      "realLocked": "Cần mọi giai đoạn ở bước trước có người kiểm",
       "answerer": "Người trả lời",
       "starter": "Người bắt đầu",
       "group": "Group",
@@ -104,7 +104,17 @@
         "number": "Số",
         "string": "Chuỗi",
         "date": "Ngày"
-      }
+      },
+      "step": "Chạy ở bước",
+      "stepHint": "Cùng bước = chạy song song (tối đa 3).",
+      "prevStep": "Chuyển sang bước trước",
+      "nextStep": "Chuyển sang bước sau",
+      "splitStep": "Tách sang bước riêng",
+      "back": "Nếu bị trượt",
+      "backHint": "Người duyệt có thể chọn quay lại khi chấm Chưa đạt. Tối đa 3 lần quay lại cho mỗi lần chạy.",
+      "backOption": "Quay lại bước {{step}}",
+      "backOptionHint": "{{names}}",
+      "backNone": "Bước đầu không có bước nào phía trước."
     },
     "limits": "Giới hạn của một lượt chạy",
     "limitsText": "Tối đa 7 ngày · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.",
@@ -262,5 +272,59 @@
     "stageKey": "Mã giai đoạn 1–32 ký tự: chữ thường, số, dấu gạch ngang.",
     "executor": "Chọn agent hoặc nhóm agent.",
     "answerer": "Chọn người trả lời."
+  },
+  "canvas": {
+    "title": "Canvas quy trình",
+    "region": "Chi tiết giai đoạn",
+    "view": {
+      "label": "Chế độ xem",
+      "canvas": "Canvas",
+      "list": "Danh sách"
+    },
+    "toolbar": {
+      "addStage": "Thêm giai đoạn",
+      "addStep": "Thêm bước"
+    },
+    "step": {
+      "title": "Bước {{n}}",
+      "parallel": "Bước {{n}} — chạy song song",
+      "addTo": "Thêm giai đoạn vào bước {{n}}"
+    },
+    "join": "Chờ đủ {{n}}/{{n}}",
+    "node": {
+      "back": "↩ bước {{step}}",
+      "real": "Hành động thật",
+      "gateReview": "Có người kiểm",
+      "gateAuto": "Tự động"
+    },
+    "edge": {
+      "back": "Quay lại"
+    },
+    "empty": "Chưa có giai đoạn. Thêm giai đoạn đầu tiên.",
+    "loading": "Đang tải canvas…",
+    "loadFailed": "Không tải được canvas. Đang dùng dạng danh sách.",
+    "retry": "Thử lại",
+    "readOnly": "Quy trình mẫu: chỉ xem, không kéo thả được.",
+    "confirmRemove": {
+      "title": "Xoá giai đoạn “{{name}}”?",
+      "body": "Các lựa chọn “quay lại” trỏ tới bước này sẽ bị bỏ."
+    },
+    "shortcuts": {
+      "title": "Phím tắt",
+      "move": "Alt + ←/→: chuyển sang bước trước/sau · Alt + ↑/↓: đổi thứ tự trong bước",
+      "open": "Enter: mở chi tiết · Delete: xoá giai đoạn"
+    },
+    "live": {
+      "moved": "Giai đoạn {{n}} chuyển sang bước {{step}}",
+      "reordered": "Giai đoạn {{n}} đổi thứ tự trong bước {{step}}",
+      "rejected": "Không chuyển được: bước {{step}} đã đủ 3 giai đoạn"
+    },
+    "err": {
+      "stepFull": "Bước {{step}} đã đủ 3 giai đoạn song song.",
+      "stagesMax": "Tối đa 10 giai đoạn.",
+      "step": "Số bước không hợp lệ. Hãy kéo giai đoạn vào đúng cột.",
+      "realStep": "Hành động thật chỉ dùng được khi mọi giai đoạn của bước trước đều có người kiểm.",
+      "backTarget": "Chỉ quay lại được các bước đứng trước giai đoạn này."
+    }
   }
 }

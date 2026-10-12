@@ -85,7 +85,7 @@
       "auto": "Continue automatically",
       "reviewGroup": "Reviewing group",
       "real": "Real action",
-      "realLocked": "Needs the previous stage to have a reviewer",
+      "realLocked": "Every stage in the previous step needs a reviewer",
       "answerer": "Answerer",
       "starter": "The starter",
       "group": "Group",
@@ -104,7 +104,17 @@
         "number": "Number",
         "string": "String",
         "date": "Date"
-      }
+      },
+      "step": "Runs at step",
+      "stepHint": "Same step = runs in parallel (up to 3).",
+      "prevStep": "Move to previous step",
+      "nextStep": "Move to next step",
+      "splitStep": "Move to its own step",
+      "back": "If it fails",
+      "backHint": "The reviewer can choose to go back when marking Not passed. Up to 3 go-backs per run.",
+      "backOption": "Go back to step {{step}}",
+      "backOptionHint": "{{names}}",
+      "backNone": "The first step has nothing before it."
     },
     "limits": "Run limits",
     "limitsText": "Up to 7 days · 5 runs at once · at most 3 reworks per stage · reviewer reminder after 1 day. Hitting a limit → “Needs a decision”.",
@@ -262,5 +272,59 @@
     "stageKey": "Stage key: 1–32 characters, lowercase letters, digits, hyphens.",
     "executor": "Pick an agent or an agent team.",
     "answerer": "Pick who answers."
+  },
+  "canvas": {
+    "title": "Process canvas",
+    "region": "Stage details",
+    "view": {
+      "label": "View mode",
+      "canvas": "Canvas",
+      "list": "List"
+    },
+    "toolbar": {
+      "addStage": "Add stage",
+      "addStep": "Add step"
+    },
+    "step": {
+      "title": "Step {{n}}",
+      "parallel": "Step {{n}} — runs in parallel",
+      "addTo": "Add a stage to step {{n}}"
+    },
+    "join": "Waits for all {{n}}",
+    "node": {
+      "back": "↩ step {{step}}",
+      "real": "Real action",
+      "gateReview": "Reviewed by a person",
+      "gateAuto": "Automatic"
+    },
+    "edge": {
+      "back": "Go back"
+    },
+    "empty": "No stages yet. Add the first stage.",
+    "loading": "Loading canvas…",
+    "loadFailed": "Couldn't load the canvas. Showing the list view instead.",
+    "retry": "Try again",
+    "readOnly": "Sample process: view only, drag and drop is off.",
+    "confirmRemove": {
+      "title": "Remove stage “{{name}}”?",
+      "body": "Any “go back” choices pointing to this step will be dropped."
+    },
+    "shortcuts": {
+      "title": "Keyboard shortcuts",
+      "move": "Alt + ←/→: move to previous/next step · Alt + ↑/↓: reorder within the step",
+      "open": "Enter: open details · Delete: remove stage"
+    },
+    "live": {
+      "moved": "Stage {{n}} moved to step {{step}}",
+      "reordered": "Stage {{n}} reordered within step {{step}}",
+      "rejected": "Couldn't move: step {{step}} already has 3 stages"
+    },
+    "err": {
+      "stepFull": "Step {{step}} already has 3 parallel stages.",
+      "stagesMax": "Up to 10 stages.",
+      "step": "Invalid step numbers. Drag the stage into a valid column.",
+      "realStep": "Real action needs every stage in the previous step to have a reviewer.",
+      "backTarget": "You can only go back to steps before this stage."
+    }
   }
 }

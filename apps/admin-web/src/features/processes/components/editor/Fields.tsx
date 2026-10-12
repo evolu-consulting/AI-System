@@ -24,6 +24,8 @@ export function TextField(
     prefix?: string;
     mono?: boolean;
     maxLength?: number;
+    min?: number;
+    max?: number;
   },
 ) {
   return (
@@ -49,6 +51,8 @@ export function TextField(
             value={p.value}
             readOnly={p.readOnly}
             maxLength={p.maxLength}
+            min={p.min}
+            max={p.max}
             className={p.mono ? "font-mono" : undefined}
             onChange={(e) => p.onChange(e.target.value)}
           />

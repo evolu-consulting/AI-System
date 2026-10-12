@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
+import { useStageOps } from "../../hooks/use-stage-ops";
 import { StageForm } from "./StageForm";
 
 type Props = { d: DraftState; readOnly: boolean; refs: EditorRefs };
@@ -19,6 +20,7 @@ type Props = { d: DraftState; readOnly: boolean; refs: EditorRefs };
 export function StagesCard({ d, readOnly, refs }: Props) {
   const { t } = useTranslation();
   const stages = d.draft.stages;
+  const ops = useStageOps(d);
   const err = d.errors.stages;
   return (
     <Panel title={t("process.admin.editor.stages")}>
@@ -27,6 +29,14 @@ export function StagesCard({ d, readOnly, refs }: Props) {
           {t(err)}
         </p>
       ) : null}
+      {ops.notice ? (
+        <p role="alert" className="text-label text-destructive">
+          {ops.notice.error}
+        </p>
+      ) : null}
+      <div role="status" aria-live="polite" className="sr-only">
+        {ops.live}
+      </div>
       <Accordion type="multiple" value={d.open} onValueChange={d.setOpen}>
         {stages.map((s, i) => (
           <AccordionItem key={s.uid} value={s.uid}>
@@ -45,7 +55,10 @@ export function StagesCard({ d, readOnly, refs }: Props) {
                 readOnly={readOnly}
                 refs={refs}
                 onChange={(p) => d.patchStage(i, p)}
-                onMove={(dir) => d.moveInColumn(i, dir)}
+                stepNotice={ops.notice?.uid === s.uid ? ops.notice.error : undefined}
+                onMove={(dir) => ops.moveColumn(i, dir)}
+                onStep={(step) => ops.setStep(i, step)}
+                onSplit={() => ops.split(i)}
                 onRemove={() => d.removeStage(i)}
               />
             </AccordionContent>
@@ -53,7 +66,7 @@ export function StagesCard({ d, readOnly, refs }: Props) {
         ))}
       </Accordion>
       {readOnly || stages.length >= PROCESS_STAGES_MAX ? null : (
-        <Button type="button" variant="outline" onClick={() => d.addStage()}>
+        <Button type="button" variant="outline" onClick={() => ops.add()}>
           <Plus aria-hidden className="size-4" />
           {t("process.admin.editor.add")}
         </Button>
