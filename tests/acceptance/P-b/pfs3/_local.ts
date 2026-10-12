@@ -34,7 +34,7 @@ import {
 import {
   jobAsk,
   jobDone,
-  MD_AUTO,
+  MD_AUTO as MD_AUTO_PA,
   nextStageJob,
   noStageJob,
   openTask,
@@ -54,7 +54,6 @@ export {
   type Json,
   jobAsk,
   jobDone,
-  MD_AUTO,
   newJobToken,
   nextStageJob,
   noStageJob,
@@ -75,6 +74,13 @@ export {
   waitFor,
   waitStatus,
 };
+
+/**
+ * md hợp lệ cho `stageDef()` mặc định của def lưu qua `POST /process-defs` (`mkDef`): `## Bảng ý` + `## Số tiền` + `## Bàn giao`.
+ * P-b2 (R10, Q3, CR-064): lưu def tự thêm mục bắt buộc "Bàn giao" (`ensureHandoff`) ⇒ output thiếu mục = template_invalid.
+ * Def chèn SQL (seedPf1) không bị ảnh hưởng (mục thừa không làm hỏng template).
+ */
+export const MD_AUTO = `${MD_AUTO_PA}\n\n## Bàn giao\nĐã đọc HD-12, số tiền 12 000 000.`;
 
 export const X = (n: number) => `b3b30000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 export const C1 = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678";
