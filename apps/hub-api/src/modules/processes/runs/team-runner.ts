@@ -16,6 +16,7 @@ import { enqueueThread } from "../core/thread";
 import { executorRefOf } from "./executor-ref";
 import { outputAttachment, type PendingBlob } from "./output-attachment";
 import { refsFeedback, type StageSourceCtx, stageRefsCheck } from "./stage-sources";
+import { persistStage, type StepOutcome, stageDoneOf } from "./step-persist";
 import { outputSteps, outputStepsSingle } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
@@ -37,6 +38,7 @@ export type StageResult =
 
 export type SnapStage = {
   name: string;
+  step?: number; // P-b2 · vắng (def cũ) ⇒ mỗi stage một bước
   executor: { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
   output: {
     filename: string;
@@ -111,18 +113,35 @@ export async function effects(
   d: Deps,
   tx: Tx,
   c: Ctx,
-): Promise<{ events: UserEvent[]; kick: boolean; pending: PendingBlob[] }> {
+): Promise<{
+  events: UserEvent[];
+  kick: boolean;
+  pending: PendingBlob[];
+  step: StepOutcome | null;
+}> {
   const events: UserEvent[] = [];
   const w = c.ev.kind === "stage_output" ? await writeOutput(d, tx, c) : null;
   const out = w?.out ?? null;
   const reviewTaskId = await dispatchEffects(d, tx, c, out, events);
-  await persistState(tx, c, out?.id ?? null);
+  // P-b2 §3.3 · stage xong ⇒ done + join bước (step-persist); `finish_run` chỉ khi CẢ bước cuối xong.
+  const done = stageDoneOf(c.list);
+  const step = await persistStage(tx, {
+    runId: c.x.runId,
+    stageRunId: c.x.stageRunId,
+    next: c.next,
+    done,
+    outputId: out?.id ?? null,
+  });
   if (out) await threadOutput(tx, c, out, reviewTaskId);
-  if (c.list.includes("finish_run")) await threadRunEnd(tx, c);
+  if (step?.kind === "finish") {
+    events.push(...(await d.notifier.runFinished(tx, c.x.runId)));
+    await threadRunEnd(tx, c);
+  }
   return {
     events,
-    kick: c.list.includes("queue_next_stage") || c.list.includes("queue_stage"),
+    kick: c.list.includes("queue_stage") || step?.kind === "next_step",
     pending: w?.pending ? [w.pending] : [],
+    step,
   };
 }
 
@@ -142,7 +161,6 @@ async function dispatchEffects(
       events.push(...r.events);
     } else if (eff === "open_ask") events.push(...(await openAsk(d, tx, c)));
     else if (eff === "open_decision") events.push(...(await openDecision(d, tx, c)));
-    else if (eff === "finish_run") events.push(...(await d.notifier.runFinished(tx, c.x.runId)));
   }
   return reviewTaskId;
 }
@@ -167,12 +185,13 @@ async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
   const id = crypto.randomUUID();
   const att = await outputAttachment(d, tx, c, text);
   await tx.execute(sql`insert into hub.process_outputs (id, tenant_id, process_run_id, stage_run_id, stage_idx,
-      version, attempt, content, sections, fields, summaries, template_ok, template_missing, attachment_id)
+      version, attempt, content, sections, fields, summaries, template_ok, template_missing, attachment_id, round)
     values (${id}, ${c.head.tenant_id}, ${c.x.runId}, ${c.x.stageRunId}, ${c.idx}, ${version},
       ${Number(c.stage.attempt)}, ${text}, ${r.sections ? JSON.stringify(r.sections) : null}::jsonb,
       ${chk.fields ? JSON.stringify(chk.fields) : null}::jsonb,
       ${r.summaries ? JSON.stringify(r.summaries) : null}::jsonb,
-      ${ok}, ${missingArray(missing)}, ${att?.id ?? null})`);
+      ${ok}, ${missingArray(missing)}, ${att?.id ?? null},
+      (select round from hub.stage_runs where id = ${c.x.stageRunId}))`);
   if (missing.length > 0)
     await tx.execute(sql`update hub.stage_runs set feedback = ${refsFeedback(missing, refs.ok, c.srcCtx, text, reads)}
       where id = ${c.x.stageRunId}`);
@@ -275,27 +294,6 @@ const optionsFor = (hasOutput: boolean, reason: DecisionReason): DecisionOption[
   DECISION_OPTIONS.filter((o) => o !== "use_current" || hasOutput || FORCE_USE_CURRENT.has(reason));
 const decisionJson = (d: Deps, reason: DecisionReason, idx: number, options: DecisionOption[]) =>
   JSON.stringify({ reason, stage_idx: idx, options, at: d.now().toISOString() });
-
-async function persistState(tx: Tx, c: Ctx, outputId: string | null): Promise<void> {
-  const n = c.next;
-  const finished = n.status === "done";
-  await tx.execute(sql`update hub.process_runs set status = ${n.status}, current_stage_idx = ${n.stageIdx},
-      updated_at = now(), finished_at = ${finished ? sql`now()` : sql`finished_at`} where id = ${c.x.runId}`);
-  const keepOut = outputId && n.stage.hasOutput ? outputId : null;
-  if (n.stageIdx === c.idx)
-    await tx.execute(sql`update hub.stage_runs set status = ${n.stage.status}, attempt = ${n.stage.attempt},
-        attempt_limit = ${n.stage.attemptLimit}, asks_count = ${n.stage.asksCount}, ask_limit = ${n.stage.askLimit},
-        current_output_id = ${keepOut ?? sql`current_output_id`},
-        finished_at = ${finished ? sql`now()` : sql`finished_at`}, updated_at = now() where id = ${c.x.stageRunId}`);
-  else {
-    // #133 · advance tự động: `n.stage` là stage KẾ (hasOutput=false) ⇒ dùng `outputId` của stage VỪA XONG để ghim
-    // `current_output_id`, nếu không output stage này mất (D6 priorFiles rỗng ⇒ thành viên stage sau không có O trước).
-    await tx.execute(sql`update hub.stage_runs set status = 'done', current_output_id = ${outputId ?? sql`current_output_id`},
-      finished_at = now(), updated_at = now() where id = ${c.x.stageRunId}`);
-    await tx.execute(sql`update hub.stage_runs set status = 'queued', updated_at = now()
-      where process_run_id = ${c.x.runId} and stage_idx = ${n.stageIdx}`);
-  }
-}
 
 async function threadOutput(
   tx: Tx,

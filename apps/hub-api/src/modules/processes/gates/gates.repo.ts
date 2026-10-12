@@ -1,12 +1,11 @@
 // HUB-FR-107 · §3.4 · §10 · PF1 · repo cổng kiểm: đọc/khoá task + run, đóng task (first-wins ở `core.closeTask`), đóng
-// các task còn mở, ghi `passed_by`/`feedback`/`redo_sections`, persist máy trạng thái, huỷ `hub.runs` stage đang chạy.
+// các task còn mở, ghi `passed_by`/`feedback`/`redo_sections`, huỷ `hub.runs` stage đang chạy (persist: `runs/step-persist`).
 // Chạy trong tx `withHubScope(user)` người thao tác của GateService; mọi câu lọc `tenant_id` tường minh (RLS T là lưới). Không log nội dung.
 import type { DecisionReason, TaskKind, TaskResult, TaskStatus } from "@ai/contracts/chat";
 import { JOB_CANCEL_CHANNEL, type JobCancelPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { runErrorText } from "../../runs/run-errors";
-import type { RunState } from "../core/process-state.rules";
 
 export type GateTask = {
   id: string;
@@ -31,20 +30,44 @@ export async function loadTask(tx: Tx, taskId: string): Promise<GateTask | null>
   return r ?? null;
 }
 
-/** Task `decision` đang mở của run (mở gần nhất). */
+/** Task `decision` đang mở của run: `stageIdx` có ⇒ của stage đó (P-b2 D9); vắng ⇒ mở gần nhất. */
 export async function openDecisionTask(
   tx: Tx,
   runId: string,
   tenantId: string,
+  stageIdx?: number,
 ): Promise<GateTask | null> {
+  const byStage = stageIdx === undefined ? sql`` : sql` and s.stage_idx = ${stageIdx}`;
   const [r] = await tx.execute<GateTask>(sql`
     select t.id, t.tenant_id, t.process_run_id, t.stage_run_id, s.stage_idx, t.kind, t.status,
       t.assignee_group_id, t.reason
     from hub.review_tasks t
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.kind = 'decision'
-      and t.status = 'open' order by t.created_at desc limit 1`);
+      and t.status = 'open'${byStage} order by t.created_at desc limit 1`);
   return r ?? null;
+}
+
+/** P-b2 D9 · decision mở của run (mỗi stage một) cho `pickDecisionStage`; ≤ 10 hàng (≤ 10 stage). */
+export async function openDecisions(
+  tx: Tx,
+  runId: string,
+  tenantId: string,
+): Promise<{ stageIdx: number; createdAt: string; reason: DecisionReason | null }[]> {
+  const rows = await tx.execute<{
+    stage_idx: number;
+    created_at: string | Date;
+    reason: DecisionReason | null;
+  }>(sql`
+    select s.stage_idx, t.created_at, t.reason from hub.review_tasks t
+    join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
+    where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.kind = 'decision'
+      and t.status = 'open' order by t.created_at asc limit 20`);
+  return rows.map((r) => ({
+    stageIdx: Number(r.stage_idx),
+    createdAt: new Date(r.created_at).toISOString(),
+    reason: r.reason,
+  }));
 }
 
 /** User id assignee của task (loại group). */
@@ -91,15 +114,26 @@ export async function isOutside(tx: Tx, roomId: string | null, userId: string): 
   return r === undefined;
 }
 
-/** Đóng mọi task còn mở của run (trừ `exceptId`) với `result` (stage bị thay / huỷ / hết hạn). */
+/**
+ * Đóng task còn mở của run (trừ `exceptId`) với `result` (stage bị thay / huỷ / hết hạn). P-b2 D6 · `stageRunId` có ⇒
+ * chỉ task của stage đó (Đạt / `use_current` không `superseded` thẻ của stage song song).
+ */
 export async function closeOpenTasks(
   tx: Tx,
-  p: { runId: string; tenantId: string; result: TaskResult; exceptId: string | null; now: Date },
+  p: {
+    runId: string;
+    tenantId: string;
+    result: TaskResult;
+    exceptId: string | null;
+    now: Date;
+    stageRunId?: string;
+  },
 ): Promise<void> {
+  const byStage = p.stageRunId ? sql` and stage_run_id = ${p.stageRunId}` : sql``;
   await tx.execute(sql`update hub.review_tasks set status = 'closed', result = ${p.result},
       decided_at = ${p.now.toISOString()}::timestamptz
     where process_run_id = ${p.runId} and tenant_id = ${p.tenantId} and status = 'open'
-      and (${p.exceptId}::uuid is null or id <> ${p.exceptId}::uuid)`);
+      and (${p.exceptId}::uuid is null or id <> ${p.exceptId}::uuid)${byStage}`);
 }
 
 /** Đạt: ghi người duyệt + thời điểm trên stage (view `passed_by`, D4 real_action đọc). */
@@ -129,27 +163,6 @@ export async function writeRedo(
       : sql`null`;
   await tx.execute(sql`update hub.stage_runs set feedback = ${feedback ?? null}, redo_sections = ${arr},
     updated_at = now() where id = ${stageRunId}`);
-}
-
-/** Máy trạng thái: process_runs + stage_runs theo `next` (như team-runner.persistState, không output). */
-export async function persist(
-  tx: Tx,
-  c: { runId: string; stageRunId: string; idx: number; next: RunState },
-): Promise<void> {
-  const n = c.next;
-  const finished = n.status === "done" || n.status === "cancelled" || n.status === "expired";
-  await tx.execute(sql`update hub.process_runs set status = ${n.status}, current_stage_idx = ${n.stageIdx},
-      updated_at = now(), finished_at = ${finished ? sql`now()` : sql`finished_at`} where id = ${c.runId}`);
-  if (n.stageIdx === c.idx)
-    await tx.execute(sql`update hub.stage_runs set status = ${n.stage.status}, attempt = ${n.stage.attempt},
-        attempt_limit = ${n.stage.attemptLimit}, asks_count = ${n.stage.asksCount}, ask_limit = ${n.stage.askLimit},
-        finished_at = ${finished ? sql`now()` : sql`finished_at`}, updated_at = now() where id = ${c.stageRunId}`);
-  else {
-    await tx.execute(sql`update hub.stage_runs set status = 'done', finished_at = now(), updated_at = now()
-      where id = ${c.stageRunId}`);
-    await tx.execute(sql`update hub.stage_runs set status = 'queued', updated_at = now()
-      where process_run_id = ${c.runId} and stage_idx = ${n.stageIdx}`);
-  }
 }
 
 /** Đặt trạng thái kết thúc cho run (huỷ): status + finished_at. */

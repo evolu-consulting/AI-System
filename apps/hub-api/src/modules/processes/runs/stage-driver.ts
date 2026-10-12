@@ -1,7 +1,7 @@
 // HUB-FR-106 · D5 · D11 · M3 · PF1 · driver stage: chạy job agent (một job vai `agent`) → kiểm template/ngân sách → máy
 // trạng thái (plan §3.2) → hiệu ứng (`team-runner.effects`) trong tx quy trình TRƯỚC, `writer.finish` SAU (D11), rồi `kick`
 // stage kế. Idempotent theo `stage_runs.current_run_id`. Nhóm ⇒ `team-runner.runTeamStage`.
-import type { DecisionReason } from "@ai/contracts/chat";
+import type { DecisionReason, ProcessRunStatus } from "@ai/contracts/chat";
 import type { AgentResult, TokenUsage } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -15,7 +15,8 @@ import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import { budgetHit, totalTokens } from "../core/limits.rules";
 import type { ProcessDeps, StageLauncher } from "../core/ports";
-import { type RunEvent, type RunState, transition } from "../core/process-state.rules";
+import { isTerminal, type RunEvent, type RunState, transition } from "../core/process-state.rules";
+import { stageGateStatus, stepCountOf } from "../core/step.rules";
 import { commitOutputBlob } from "./output-attachment";
 import { defaultSourceBudget } from "./sources.rules";
 import {
@@ -25,6 +26,7 @@ import {
   stageJobSources,
   stageRefsCheck,
 } from "./stage-sources";
+import { type StageRowIdx, stageRowById, stepsOfSnap } from "./step-persist";
 import { runTeamStage } from "./team-exec";
 import {
   type ApplyInput,
@@ -34,8 +36,6 @@ import {
   type RunHead,
   type SnapStage,
   type StageResult,
-  type StageRow,
-  stageRowOf,
   toDecision,
 } from "./team-runner";
 import { checkTemplate } from "./template.rules";
@@ -112,11 +112,14 @@ async function failStuckRun(d: Deps, hubRunId: string): Promise<void> {
   const stageRunId = link.stage_run_id;
   const events = await withHubScope(d.db, { kind: "system" }, async (tx) => {
     const head = await headOf(tx, runId);
-    if (head?.status !== "running") return [];
+    if (!head || isTerminal(head.status as ProcessRunStatus)) return [];
+    // P-b2 D3 · guard theo STAGE của job (bước song song: run có thể waiting_review vì stage khác).
+    const stage = await stageRowById(tx, runId, stageRunId);
+    if (stage?.status !== "running") return [];
     return toDecision(d, tx, {
       runId,
       tenantId: head.tenant_id,
-      idx: Number(head.current_stage_idx),
+      idx: stage.stage_idx,
       stageRunId,
       reason: "agent_failed",
     });
@@ -125,14 +128,15 @@ async function failStuckRun(d: Deps, hubRunId: string): Promise<void> {
   await d.postThread(runId).catch(() => {});
 }
 
-/** §4 · `stage.timeout_s` (60..3600) ⇒ `AgentTask.agent.timeoutS` cho job (P1-25). */
-async function stageTimeout(d: Deps, runId: string | null): Promise<number | null> {
-  if (!runId) return null;
+/** §4 · `stage.timeout_s` (60..3600) ⇒ `AgentTask.agent.timeoutS` cho job (P1-25). P-b2 D3 · stage theo `stage_run_id`. */
+async function stageTimeout(d: Deps, link: Link): Promise<number | null> {
+  if (!link.process_run_id || !link.stage_run_id) return null;
   const [r] = await withHubScope(d.db, { kind: "system" }, (tx) =>
     tx.execute<{
       t: number | null;
-    }>(sql`select (snapshot->'stages'->(current_stage_idx::int)->>'timeout_s')::int
-      as t from hub.process_runs where id = ${runId}`),
+    }>(sql`select (r.snapshot->'stages'->(s.stage_idx::int)->>'timeout_s')::int as t
+      from hub.stage_runs s join hub.process_runs r on r.id = s.process_run_id
+      where s.id = ${link.stage_run_id} and r.id = ${link.process_run_id}`),
   );
   return r?.t ? Number(r.t) : null;
 }
@@ -152,11 +156,12 @@ async function runAgent(
 ): Promise<{ result: StageResult; usage: number; jobId: string | null }> {
   if (!ctx.direct)
     return { result: { kind: "failed", reason: "agent_failed" }, usage: 0, jobId: null };
-  const timeoutS = await stageTimeout(d, link.process_run_id);
+  const timeoutS = await stageTimeout(d, link);
   // PB-R10 · nguồn đã ghim của stage → payload.sources (ép Read/Grep/Glob ở runner.rules); vắng ⇒ như P-a.
-  const srcCtx = await withHubScope(d.db, { kind: "system" }, (tx) =>
-    loadStageSourceCtx(tx, link.process_run_id as string),
-  );
+  const srcCtx = await withHubScope(d.db, { kind: "system" }, async (tx) => {
+    const st = await stageRowById(tx, link.process_run_id as string, link.stage_run_id as string);
+    return loadStageSourceCtx(tx, link.process_run_id as string, st?.stage_idx ?? 0);
+  });
   const jobSources = stageJobSources(srcCtx);
   const o = await runJob(
     d.runner,
@@ -199,29 +204,20 @@ async function apply(d: Deps, x: ApplyInput): Promise<boolean> {
   return out.kick;
 }
 
+type Applied = Awaited<ReturnType<typeof effects>>;
+type Loaded = { head: RunHead; stage: StageRowIdx; def: SnapStage; srcCtx: StageSourceCtx };
+
 /** D11 · tx quy trình (scope system, RLS T): khoá run, máy trạng thái + hiệu ứng (chỉ DB). Null ⇒ bỏ (đua/kết thúc đã commit). */
-async function runApplyTx(
-  d: Deps,
-  x: ApplyInput,
-): Promise<Awaited<ReturnType<typeof effects>> | null> {
+async function runApplyTx(d: Deps, x: ApplyInput): Promise<Applied | null> {
   return withHubScope(d.db, { kind: "system" }, async (tx) => {
-    // §10/D11 · khoá `process_runs` FOR UPDATE TRƯỚC mọi đọc/ghi: job hoàn tất tự nhiên đua với huỷ (gates) hoặc hết
-    // hạn (sweep) phải chờ tx kia commit rồi đọc lại — không ghi đè trạng thái kết thúc đã commit (hồi sinh run).
-    const head0 = await headOf(tx, x.runId);
-    if (!head0) return null;
-    if (!(await core.lockRun(tx, head0.tenant_id, x.runId))) return null;
-    const head = await headOf(tx, x.runId);
-    if (head?.status !== "running") return null;
-    const idx = Number(head.current_stage_idx);
-    const stage = await stageRowOf(tx, x.runId, idx);
-    if (!stage || stage.current_run_id !== x.hubRunId) return null;
-    const def = head.snapshot.stages[idx];
-    if (!def) return null;
-    const srcCtx = await loadStageSourceCtx(tx, x.runId);
+    const l = await lockAndLoad(tx, x);
+    if (!l) return null;
+    const { head, stage, def, srcCtx } = l;
+    const idx = stage.stage_idx;
     await tx.execute(sql`update hub.process_runs set tokens_total = tokens_total + ${x.tokens}
       where id = ${x.runId}`);
     const ev = await eventFor(tx, x, head, def, srcCtx);
-    const t = transition(buildState(head, stage, def, idx), ev);
+    const t = transition(buildState(head, stage, def), ev);
     if (!t.ok) return null;
     // PB-R11 · audit nguồn đã đọc (append-only) khi stage ra output — độc lập template_ok.
     if (x.result.kind === "output" && x.result.sourceReads?.length)
@@ -231,27 +227,38 @@ async function runApplyTx(
         x.result.sourceReads,
         srcCtx,
       );
-    const res = await effects(d, tx, {
-      x,
-      head,
-      stage,
-      def,
-      idx,
-      ev,
-      next: t.next,
-      list: t.effects,
-      srcCtx,
-    });
+    const ctx = { x, head, stage, def, idx, ev, next: t.next, list: t.effects, srcCtx };
+    const res = await effects(d, tx, ctx);
     const recipients = await core.runRecipients(tx, x.runId, head.tenant_id);
-    res.events.push(
-      ...processUpdated(recipients, {
-        id: x.runId,
-        status: t.next.status,
-        stageIdx: t.next.stageIdx,
-      }),
-    );
+    const st = res.step;
+    if (st)
+      res.events.push(
+        ...processUpdated(recipients, {
+          id: x.runId,
+          status: st.status,
+          stageIdx: st.stageIdx,
+          step: st.step,
+        }),
+      );
     return res;
   });
+}
+
+/**
+ * §10/D11 · khoá `process_runs` FOR UPDATE TRƯỚC mọi đọc/ghi: job hoàn tất tự nhiên đua với huỷ (gates) hoặc hết hạn
+ * (sweep) phải chờ tx kia commit rồi đọc lại — không hồi sinh run. P-b2 D3 · `idx` theo `x.stageRunId`; run không kết
+ * thúc ∧ `current_run_id` = run này (đua với quay lại/huỷ ⇒ bỏ).
+ */
+async function lockAndLoad(tx: Tx, x: ApplyInput): Promise<Loaded | null> {
+  const head0 = await headOf(tx, x.runId);
+  if (!head0 || !(await core.lockRun(tx, head0.tenant_id, x.runId))) return null;
+  const head = await headOf(tx, x.runId);
+  if (!head || isTerminal(head.status as ProcessRunStatus)) return null;
+  const stage = await stageRowById(tx, x.runId, x.stageRunId);
+  if (!stage || stage.current_run_id !== x.hubRunId) return null;
+  const def = head.snapshot.stages[stage.stage_idx];
+  if (!def) return null;
+  return { head, stage, def, srcCtx: await loadStageSourceCtx(tx, x.runId, stage.stage_idx) };
 }
 
 async function eventFor(
@@ -303,13 +310,15 @@ async function budgetReason(
   return null;
 }
 
-function buildState(head: RunHead, stage: StageRow, def: SnapStage, idx: number): RunState {
+/** D1 · `transition` một stage: trạng thái "run" dựng từ trạng thái stage; stageIdx/stageCount = bước/tổng bước. */
+function buildState(head: RunHead, stage: StageRowIdx, def: SnapStage): RunState {
+  const steps = stepsOfSnap(head.snapshot);
   return {
-    status: "running",
-    stageIdx: idx,
-    stageCount: head.snapshot.stages.length,
+    status: stageGateStatus(head.status as ProcessRunStatus, stage.status),
+    stageIdx: steps[stage.stage_idx] ?? stage.stage_idx,
+    stageCount: stepCountOf(steps),
     stage: {
-      status: "running",
+      status: stage.status,
       attempt: Number(stage.attempt),
       attemptLimit: Number(stage.attempt_limit),
       asksCount: Number(stage.asks_count),

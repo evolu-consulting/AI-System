@@ -47,22 +47,25 @@ function pinByKey(
   return map;
 }
 
-export async function loadStageSourceCtx(tx: Tx, runId: string): Promise<StageSourceCtx> {
+/** P-b2 D3 · `idx` = stage của job (từ `stage_run_id`), không đọc `current_stage_idx` (bước song song). */
+export async function loadStageSourceCtx(
+  tx: Tx,
+  runId: string,
+  idx: number,
+): Promise<StageSourceCtx> {
   const [r] = await tx.execute<{
-    idx: number;
     def_sources: unknown;
     stage_sources: unknown;
     pinned: unknown;
-  }>(sql`select current_stage_idx as idx,
-      coalesce(snapshot->'sources', '[]'::jsonb) as def_sources,
-      coalesce(snapshot->'stages'->(current_stage_idx::int)->'sources', '[]'::jsonb) as stage_sources,
+  }>(sql`select coalesce(snapshot->'sources', '[]'::jsonb) as def_sources,
+      coalesce(snapshot->'stages'->(${idx}::int)->'sources', '[]'::jsonb) as stage_sources,
       pinned_sources as pinned
     from hub.process_runs where id = ${runId}`);
   const defSources = Array.isArray(r?.def_sources) ? (r.def_sources as ResolveSource[]) : [];
   const stageSources = Array.isArray(r?.stage_sources) ? (r.stage_sources as StageSource[]) : [];
   const pinned = Array.isArray(r?.pinned) ? (r.pinned as SourcePin[]) : null;
   return {
-    idx: Number(r?.idx ?? 0),
+    idx,
     stageSources,
     defSources,
     pinned,

@@ -8,6 +8,8 @@ import { publishUserEvents } from "../../../lib/user-stream";
 import type { ResolveReport } from "../../sources/resolve.bridge";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
+import { firstIdxOfStep } from "../core/step.rules";
+import { stepsOfSnap } from "./step-persist";
 import { headOf, stageRowOf, toDecision } from "./team-runner";
 
 const SYSTEM = { kind: "system" } as const;
@@ -21,12 +23,14 @@ export async function applyResolveReport(d: ProcessDeps, r: ResolveReport): Prom
     const head = await headOf(tx, r.runId);
     if (!head) return null;
     const locked = await core.lockRun(tx, head.tenant_id, r.runId);
+    // Trước ghim không stage nào chạy ⇒ run chỉ `running`; `needs_decision` (đã báo lỗi nguồn) ⇒ bỏ (không mở trùng).
     if (locked?.status !== "running") return null;
     const [cur] = await tx.execute<{ pinned: unknown }>(
       sql`select pinned_sources as pinned from hub.process_runs where id = ${r.runId}`,
     );
     if (Array.isArray(cur?.pinned)) return null; // đã ghim (idempotent / gửi trùng)
-    const idx = Number(head.current_stage_idx);
+    // P-b2 §3.8 · source_unresolvable gắn vào stage đầu của bước hiện tại (D3/D4).
+    const idx = firstIdxOfStep(stepsOfSnap(head.snapshot), Number(locked.currentStep));
     if (hasError) {
       const stage = await stageRowOf(tx, r.runId, idx);
       if (!stage) return null;

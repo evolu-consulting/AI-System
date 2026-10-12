@@ -21,9 +21,11 @@ import type { UserEvent } from "../../../lib/user-stream";
 import { closeTask, lockRun, type RunHead } from "../core/core.repo";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
+import { isTerminal } from "../core/process-state.rules";
 import type { Viewer } from "../core/run-access.rules";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
 import { enqueueThread } from "../core/thread";
+import { settleStep, stageRowById } from "../runs/step-persist";
 import { type ForwardTarget, type ForwardTask, forwardCheck } from "./ask.rules";
 import * as repo from "./asks.repo";
 
@@ -175,12 +177,17 @@ export class AsksService {
           answer: body.answer,
         });
         if (!won) throw processError("REVIEW_TASK_CLOSED");
+        // P-b2 §3.7 · guard theo STAGE (bước song song: run có thể `running` vì stage khác).
+        const stage = await stageRowById(tx, head.runId, head.stageRunId);
+        if (isTerminal(run.status) || stage?.status !== "waiting_answer")
+          throw processError("PROCESS_RUN_STATE");
         await repo.resumeStage(tx, {
           tenantId: user.tenantId,
           runId: head.runId,
           stageRunId: head.stageRunId,
           at,
         });
+        await settleStep(tx, head.runId);
         const refs = await repo.userRefs(tx, user.tenantId, [user.userId]);
         const me = refs.get(user.userId);
         const part: Extract<RoomProcessPart, { kind: "task_result" }> = {

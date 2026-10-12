@@ -13,13 +13,18 @@ import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import type { RunState } from "../core/process-state.rules";
+import { stageGateStatus, stepCountOf } from "../core/step.rules";
 import { enqueueThread } from "../core/thread";
+import { persistStage, type StepOutcome, stageDoneOf, stepsOfSnap } from "../runs/step-persist";
 import { stageRowOf, toDecision } from "../runs/team-runner";
 import * as g from "./gates.repo";
 
 export type Locked = core.RunHead;
 export type Stage = Awaited<ReturnType<typeof stageRowOf>>;
-export type SnapStage = { after: { kind: "review"; group_id: string | null } | { kind: "auto" } };
+export type SnapStage = {
+  step?: number; // P-b2 · vắng (def cũ) ⇒ mỗi stage một bước
+  after: { kind: "review"; group_id: string | null } | { kind: "auto" };
+};
 /** Ngữ cảnh hiệu ứng sau khi đã khoá + chuyển trạng thái. */
 export type Eff = {
   run: Locked;
@@ -33,8 +38,11 @@ export type Gx = { d: ProcessDeps; tx: Tx };
 
 export const snapOf = (run: Locked) => run.snapshot as unknown as { stages: SnapStage[] };
 export const notFound = () => processError("PROCESS_NOT_FOUND", { suggestions: [] });
-export const needsKick = (e: readonly string[]): boolean =>
-  e.includes("queue_stage") || e.includes("queue_next_stage");
+/** Cần `kick` sau COMMIT: stage chạy lại, hoặc join sang bước kế (P-b2 §3.3). */
+export const needsKick = (e: readonly string[], step: StepOutcome | null): boolean =>
+  e.includes("queue_stage") || step?.kind === "next_step";
+/** Kết quả hiệu ứng: sự kiện phát sau COMMIT + trạng thái bước sau ghi (null ⇒ không qua `persistStage`). */
+export type EffOut = { events: UserEvent[]; step: StepOutcome | null };
 
 export type StateIn = {
   run: Locked;
@@ -43,14 +51,17 @@ export type StateIn = {
   idx: number;
   reason: DecisionReason | null;
 };
+/** P-b2 D1 · `transition` một stage: "run" dựng từ trạng thái stage; stageIdx/stageCount = bước/tổng bước. */
 export function buildState(p: StateIn): RunState {
   const { run, s, def, idx } = p;
+  const steps = stepsOfSnap(snapOf(run));
+  const stageStatus = (s?.status ?? "running") as RunState["stage"]["status"];
   return {
-    status: run.status,
-    stageIdx: idx,
-    stageCount: snapOf(run).stages.length,
+    status: stageGateStatus(run.status, stageStatus),
+    stageIdx: steps[idx] ?? idx,
+    stageCount: stepCountOf(steps),
     stage: {
-      status: (s?.status ?? "running") as RunState["stage"]["status"],
+      status: stageStatus,
       attempt: Number(s?.attempt ?? 1),
       attemptLimit: Number(s?.attempt_limit ?? 4),
       asksCount: Number(s?.asks_count ?? 0),
@@ -96,13 +107,13 @@ async function threadResult(gx: Gx, m: ResultMeta): Promise<void> {
   });
 }
 
-/** Đạt → advance (passed_by + đóng task khác + persist); Chưa đạt → redo (feedback/redo_sections) hoặc redo_limit→decide. */
+/** Đạt → stage done (passed_by + đóng task KHÁC của stage — D6) + join bước; Chưa đạt → redo hoặc redo_limit→decide. */
 export async function reviewEffects(
   gx: Gx,
   e: Eff,
   task: g.GateTask,
   b: ReviewDecisionRequest,
-): Promise<UserEvent[]> {
+): Promise<EffOut> {
   const { d, tx } = gx;
   const { run, idx, next, effects, ref } = e;
   await threadResult(gx, {
@@ -116,20 +127,22 @@ export async function reviewEffects(
     sections: b.sections,
   });
   const events = [...(await d.notifier.taskClosed(tx, task.id))];
-  const p = { runId: run.id, stageRunId: task.stage_run_id, idx, next };
+  const p = { runId: run.id, stageRunId: task.stage_run_id, next, done: stageDoneOf(effects) };
   if (b.result === "pass") {
     await g.setStagePassed(tx, task.stage_run_id, ref.id, d.now());
-    const o = {
+    await g.closeOpenTasks(tx, {
       runId: run.id,
       tenantId: run.tenantId,
-      result: "superseded" as const,
+      result: "superseded",
       exceptId: task.id,
       now: d.now(),
-    };
-    await g.closeOpenTasks(tx, o);
-    await g.persist(tx, p);
-    if (effects.includes("finish_run")) events.push(...(await finish(gx, run, ref, "done")));
-  } else if (next.status === "needs_decision") {
+      stageRunId: task.stage_run_id,
+    });
+    const step = await persistStage(tx, p);
+    if (step?.kind === "finish") events.push(...(await finish(gx, run, ref, "done")));
+    return { events, step };
+  }
+  if (next.status === "needs_decision") {
     const dec = {
       runId: run.id,
       tenantId: run.tenantId,
@@ -138,11 +151,32 @@ export async function reviewEffects(
       reason: "redo_limit" as const,
     };
     events.push(...(await toDecision(d, tx, dec)));
-  } else {
-    await g.writeRedo(tx, task.stage_run_id, b.feedback ?? null, b.sections ?? null);
-    await g.persist(tx, p);
+    return { events, step: null };
   }
-  return events;
+  await g.writeRedo(tx, task.stage_run_id, b.feedback ?? null, b.sections ?? null);
+  return { events, step: await persistStage(tx, p) };
+}
+
+/** Đóng task decision + tin `task_result` + notifier (nếu có task mở). */
+async function closeDecision(
+  gx: Gx,
+  e: Eff,
+  option: DecideProcessRunRequest["option"],
+  dtask: g.GateTask | null,
+): Promise<UserEvent[]> {
+  if (!dtask) return [];
+  const { d, tx } = gx;
+  const result = option as TaskResult;
+  await core.closeTask(tx, dtask.id, { result, at: d.now(), decidedBy: e.ref.id });
+  await threadResult(gx, {
+    run: e.run,
+    idx: e.idx,
+    taskId: dtask.id,
+    kind: "decision",
+    result,
+    ref: e.ref,
+  });
+  return d.notifier.taskClosed(tx, dtask.id);
 }
 
 /** add_attempt/use_current/cancel: đóng task decision + task_result, rồi redo/advance/openReview/finish hoặc huỷ. */
@@ -151,29 +185,15 @@ export async function decideEffects(
   e: Eff,
   option: DecideProcessRunRequest["option"],
   dtask: g.GateTask | null,
-): Promise<UserEvent[]> {
+): Promise<EffOut> {
   const { d, tx } = gx;
   const { run, idx, next, effects, ref } = e;
   const sid = dtask?.stage_run_id ?? "";
-  const events: UserEvent[] = [];
-  if (dtask) {
-    await core.closeTask(tx, dtask.id, {
-      result: option as TaskResult,
-      at: d.now(),
-      decidedBy: ref.id,
-    });
-    await threadResult(gx, {
-      run,
-      idx,
-      taskId: dtask.id,
-      kind: "decision",
-      result: option as TaskResult,
-      ref,
-    });
-    events.push(...(await d.notifier.taskClosed(tx, dtask.id)));
+  const events: UserEvent[] = await closeDecision(gx, e, option, dtask);
+  if (option === "cancel" || next.status === "cancelled") {
+    events.push(...(await cancelEnd(gx, { run, idx, ref }, dtask?.id ?? null)));
+    return { events, step: null };
   }
-  if (option === "cancel" || next.status === "cancelled")
-    return [...events, ...(await cancelEnd(gx, { run, idx, ref }, dtask?.id ?? null))];
   if (effects.includes("close_open_tasks")) {
     await g.setStagePassed(tx, sid, ref.id, d.now());
     await g.closeOpenTasks(tx, {
@@ -182,12 +202,18 @@ export async function decideEffects(
       result: "superseded",
       exceptId: dtask?.id ?? null,
       now: d.now(),
+      stageRunId: sid, // D6 · chỉ task của stage được quyết
     });
   }
-  await g.persist(tx, { runId: run.id, stageRunId: sid, idx, next });
+  const step = await persistStage(tx, {
+    runId: run.id,
+    stageRunId: sid,
+    next,
+    done: stageDoneOf(effects),
+  });
   if (effects.includes("open_review")) events.push(...(await openReview(gx, run, sid, idx)));
-  if (effects.includes("finish_run")) events.push(...(await finish(gx, run, ref, "done")));
-  return events;
+  if (step?.kind === "finish") events.push(...(await finish(gx, run, ref, "done")));
+  return { events, step };
 }
 
 /** `end` (huỷ): huỷ `hub.runs` stage, đóng mọi stage + task còn mở, run `cancelled`, run_end + notifier. */

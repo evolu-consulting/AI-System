@@ -1,9 +1,10 @@
-// ADM-FR-65 · ADM-FR-66 · HUB-FR-104 · HUB-FR-109 · N1 · R-DF01…R-DF04 · luật thuần định nghĩa quy trình (plan-contract §6–§7).
+// ADM-FR-65 · ADM-FR-66 · HUB-FR-104 · HUB-FR-109 · HUB-FR-106 (P-b2 bước) · N1 · R-DF01…R-DF04 · luật thuần định nghĩa quy trình (plan-contract §6–§7).
 // Thứ tự lỗi: INVALID (luật chéo stage) → REF_INVALID (stage lỗi đầu tiên) → INCOMPLETE (bật mà review thiếu Group).
 import {
   type ProcessDefInput,
+  type ProcessDefRule,
   processDefSourcePaths,
-  processDefStagePaths,
+  processDefStageIssues,
 } from "@ai/contracts/hub-admin";
 
 export type DefRefs = {
@@ -15,7 +16,8 @@ export type DefRefs = {
 export type RefKind = "agent" | "team" | "group" | "user" | "source";
 export type DefCheck =
   | { ok: true }
-  | { ok: false; code: "PROCESS_DEF_INVALID" | "PROCESS_DEF_INCOMPLETE"; paths: string[] }
+  | { ok: false; code: "PROCESS_DEF_INVALID"; paths: string[]; rules: ProcessDefRule[] }
+  | { ok: false; code: "PROCESS_DEF_INCOMPLETE"; paths: string[] }
   | { ok: false; code: "PROCESS_REF_INVALID"; path: string; ref: RefKind };
 
 type Stage = ProcessDefInput["stages"][number];
@@ -48,9 +50,15 @@ function runGroupMiss(d: ProcessDefInput, refs: DefRefs): RefMiss | null {
 }
 
 export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck {
-  const invalid = processDefStagePaths(d.stages);
+  // P-b2 D10 · `paths` + `rules` cùng chỉ số (đã cắt ≤ 20 ở contract).
+  const invalid = processDefStageIssues(d.stages);
   if (invalid.length)
-    return { ok: false, code: "PROCESS_DEF_INVALID", paths: invalid.slice(0, 20) };
+    return {
+      ok: false,
+      code: "PROCESS_DEF_INVALID",
+      paths: invalid.map((i) => i.path),
+      rules: invalid.map((i) => i.rule),
+    };
   for (const [i, s] of d.stages.entries()) {
     const miss = stageRefMiss(s, i, refs);
     if (miss) return { ok: false, code: "PROCESS_REF_INVALID", ...miss };

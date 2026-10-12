@@ -13,11 +13,17 @@ const uniq = (ids: readonly string[]): string[] => [...new Set(ids)];
 /** Người bắt đầu + thành viên phòng nguồn + assignee task open (khối gốc/`/runs/:id` cập nhật trạng thái sống). */
 export function processUpdated(
   userIds: readonly string[],
-  run: { id: string; status: ProcessRunStatus; stageIdx: number },
+  run: { id: string; status: ProcessRunStatus; stageIdx: number; step?: number },
 ): UserEvent[] {
   const ids = uniq(userIds);
   if (ids.length === 0) return [];
-  const data = { process_run_id: run.id, status: run.status, stage_idx: run.stageIdx };
+  // P-b2 · `step` = bước hiện tại (vắng ⇒ client giữ giá trị cũ).
+  const data = {
+    process_run_id: run.id,
+    status: run.status,
+    stage_idx: run.stageIdx,
+    ...(run.step !== undefined && { step: run.step }),
+  };
   return [{ userIds: ids, event: "process.updated", data }];
 }
 

@@ -46,7 +46,7 @@ type Head = {
   started_by: string;
   conversation_id: string;
   input: string;
-  current_stage_idx: number;
+  stage_idx: number; // P-b2 D3 · stage của job (theo `stage_run_id`), không phải `current_stage_idx`
   snapshot: { stages: SnapStage[] };
 };
 type SnapStage = {
@@ -56,6 +56,7 @@ type SnapStage = {
 };
 type StageRow = {
   id: string;
+  stage_idx: number;
   attempt: number;
   feedback: string | null;
   redo_sections: string[] | null; // D8 · gate fail ghi; nguồn `redoMembers` khi làm lại (attempt>1)
@@ -64,7 +65,7 @@ type StageRow = {
 /** Khung một stage nhóm (một `drive()`): nạp, ghép, trả StageResult cho máy trạng thái. */
 export async function runTeamStage(d: Deps, ctx: RunContext, link: Link): Promise<TeamOut> {
   const runId = link.process_run_id ?? "";
-  const ld = await load(d, runId);
+  const ld = await load(d, runId, link.stage_run_id ?? "");
   if (!ld) return fail("agent_failed");
   const { head, stage, def, team, members } = ld;
   const u: AuthUser = { userId: head.started_by, tenantId: head.tenant_id, role: "member" };
@@ -131,18 +132,18 @@ const limitOut = (st: Ctx, reason: DecisionReason): TeamOut => ({
   jobId: st.lastJobId,
 });
 
-async function load(d: Deps, runId: string) {
+async function load(d: Deps, runId: string, stageRunId: string) {
   const snap = await d.config.snapshot();
   return withHubScope(d.db, { kind: "system" }, async (tx) => {
-    const [head] = await tx.execute<Head>(sql`select tenant_id, started_by, conversation_id, input,
-      current_stage_idx, snapshot from hub.process_runs where id = ${runId}`);
-    if (!head) return null;
-    const idx = Number(head.current_stage_idx);
-    const def = head.snapshot.stages[idx];
-    if (def?.executor.kind !== "team") return null;
-    const [stage] = await tx.execute<StageRow>(sql`select id, attempt, feedback, redo_sections,
-      current_output_id from hub.stage_runs where process_run_id = ${runId} and stage_idx = ${idx}`);
+    const [stage] = await tx.execute<StageRow>(sql`select id, stage_idx, attempt, feedback,
+      redo_sections, current_output_id from hub.stage_runs where id = ${stageRunId} and process_run_id = ${runId}`);
     if (!stage) return null;
+    const idx = Number(stage.stage_idx);
+    const [row] = await tx.execute<Omit<Head, "stage_idx">>(sql`select tenant_id, started_by,
+      conversation_id, input, snapshot from hub.process_runs where id = ${runId}`);
+    const head: Head | null = row ? { ...row, stage_idx: idx } : null;
+    const def = head?.snapshot.stages[idx];
+    if (!head || def?.executor.kind !== "team") return null;
     const team = await loadTeam(tx, def.executor.team_id);
     if (!team) return null;
     const members = await loadMembers(tx, def.executor.team_id);
@@ -304,7 +305,7 @@ const draftFiles = (st: Ctx, version: number): Promise<RunFile[]> =>
     tenantId: st.head.tenant_id,
     startedBy: st.head.started_by,
     runId: st.procRunId,
-    name: `s${Number(st.head.current_stage_idx)}-v${version}-${st.def.output.filename}`,
+    name: `s${st.head.stage_idx}-v${version}-${st.def.output.filename}`,
     text: renderDoc(st.def.output.template, st.draft),
     priorFiles: st.priorFiles,
   });

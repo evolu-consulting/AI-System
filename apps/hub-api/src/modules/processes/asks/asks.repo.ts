@@ -2,12 +2,7 @@
 // `user` của người làm (RLS T lưới; câu lọc `tenant_id` tường minh). Không log nội dung trả lời/ghi chú.
 import type { UserRef } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
-import {
-  processRuns,
-  reviewTaskAssignees,
-  reviewTasks,
-  stageRuns,
-} from "@ai/db/schema/hub-processes";
+import { reviewTaskAssignees, reviewTasks, stageRuns } from "@ai/db/schema/hub-processes";
 import { and, eq, sql } from "drizzle-orm";
 
 /** Đầu task (bất biến trong vòng đời): để biết run cần khoá + loại + stage. null ⇒ 404. */
@@ -72,14 +67,11 @@ export async function resumeStage(
   tx: Tx,
   o: { tenantId: string; runId: string; stageRunId: string; at: Date },
 ): Promise<void> {
+  // P-b2 D2 · chỉ stage được trả lời ⇒ queued; trạng thái run tổng hợp do `settleStep` (người gọi) ghi.
   await tx
     .update(stageRuns)
     .set({ status: "queued", updatedAt: o.at })
     .where(and(eq(stageRuns.id, o.stageRunId), eq(stageRuns.tenantId, o.tenantId)));
-  await tx
-    .update(processRuns)
-    .set({ status: "running", updatedAt: o.at })
-    .where(and(eq(processRuns.id, o.runId), eq(processRuns.tenantId, o.tenantId)));
 }
 
 /** Thêm một assignee `via=forward` (plan §3.4). `note` riêng tư (không vào tin thread). */

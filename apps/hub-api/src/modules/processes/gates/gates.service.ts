@@ -5,6 +5,7 @@
 import type {
   DecideProcessRunRequest,
   DecisionReason,
+  ProcessRunStatus,
   ProcessRunSummary,
   ProcessRunView,
   ReviewDecisionRequest,
@@ -27,8 +28,10 @@ import {
   runAccess,
   type Viewer,
 } from "../core/run-access.rules";
+import { pickDecisionStage } from "../core/step.rules";
 import { loadTaskDetails } from "../core/task-view";
 import * as repo from "../runs/runs.repo";
+import type { StepOutcome } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";
 import { ViewService } from "../runs/view.service";
 import { reviewDecisionCheck } from "./gate.rules";
@@ -56,6 +59,11 @@ const scopeOf = (u: AuthUser, tenantIdQ?: string) => ({
   userId: u.userId,
   tenantId: u.role === "platform_admin" && tenantIdQ ? tenantIdQ : u.tenantId,
 });
+/** `process.updated` sau ghi: theo `step-persist` (bước/trạng thái tổng hợp); null ⇒ trạng thái máy + stage hiện tại. */
+const updatedOf = (run: Locked, status: ProcessRunStatus, step: StepOutcome | null) =>
+  step
+    ? { id: run.id, status: step.status, stageIdx: step.stageIdx, step: step.step }
+    : { id: run.id, status, stageIdx: Number(run.currentStageIdx), step: Number(run.currentStep) };
 const vrole = (r: AuthUser["role"]): Viewer["role"] =>
   r === "platform_admin" || r === "tenant_admin" ? r : "member";
 
@@ -120,17 +128,11 @@ export class GateService {
     if (!t.ok) throw processError(t.code);
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
-    const events = await reviewEffects({ d: this.d, tx }, e, task, b);
-    events.push(
-      ...processUpdated(recipients, {
-        id: run.id,
-        status: t.next.status,
-        stageIdx: t.next.stageIdx,
-      }),
-    );
+    const { events, step } = await reviewEffects({ d: this.d, tx }, e, task, b);
+    events.push(...processUpdated(recipients, updatedOf(run, t.next.status, step)));
     const detail = (await loadTaskDetails(tx, { ...v, groupIds }, [taskId]))[0];
     if (!detail) throw notFound();
-    return { body: detail, events, kick: needsKick(t.effects), runId: run.id };
+    return { body: detail, events, kick: needsKick(t.effects, step), runId: run.id };
   }
 
   // ── POST /process-runs/:id/decide ──
@@ -157,9 +159,16 @@ export class GateService {
     const { v, groupIds } = req;
     const run = await this.#lockVisible(tx, v, runId);
     const recipients = await core.runRecipients(tx, run.id, run.tenantId);
-    const idx = Number(run.currentStageIdx);
+    // P-b2 D9 · stage cần quyết = `b.stage_idx` hoặc decision mở cũ nhất; không có decision mở ⇒ stage hiện tại (409 ở
+    // `transition` như P-a). `b.stage_idx` không có decision mở ⇒ 409.
+    const open = await g.openDecisions(tx, run.id, run.tenantId);
+    const picked = pickDecisionStage(open, b.stage_idx);
+    if (picked === null && (b.stage_idx !== undefined || open.length > 0))
+      throw processError("PROCESS_RUN_STATE");
+    const idx = picked ?? Number(run.currentStageIdx);
     const def = snapOf(run).stages[idx];
-    const reason = ((run.decision as { reason?: DecisionReason } | null)?.reason ??
+    const reason = (open.find((o) => o.stageIdx === idx)?.reason ??
+      (run.decision as { reason?: DecisionReason } | null)?.reason ??
       "interrupted") as DecisionReason;
     const reviewGroup = def?.after.kind === "review" ? def.after.group_id : null;
     const facts = await this.#facts(tx, run, groupIds, v.userId);
@@ -172,18 +181,12 @@ export class GateService {
       option: b.option,
     });
     if (!t.ok) throw processError(t.code);
-    const dtask = await g.openDecisionTask(tx, run.id, run.tenantId);
+    const dtask = await g.openDecisionTask(tx, run.id, run.tenantId, picked ?? undefined);
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
-    const events = await decideEffects({ d: this.d, tx }, e, b.option, dtask);
-    events.push(
-      ...processUpdated(recipients, {
-        id: run.id,
-        status: t.next.status,
-        stageIdx: t.next.stageIdx,
-      }),
-    );
-    return { body: null, events, kick: needsKick(t.effects), runId: run.id };
+    const { events, step } = await decideEffects({ d: this.d, tx }, e, b.option, dtask);
+    events.push(...processUpdated(recipients, updatedOf(run, t.next.status, step)));
+    return { body: null, events, kick: needsKick(t.effects, step), runId: run.id };
   }
 
   // ── POST /process-runs/:id/cancel ──
@@ -215,13 +218,7 @@ export class GateService {
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const gx: Gx = { d: this.d, tx };
     const events = await cancelEnd(gx, { run, idx, ref }, null);
-    events.push(
-      ...processUpdated(recipients, {
-        id: run.id,
-        status: t.next.status,
-        stageIdx: t.next.stageIdx,
-      }),
-    );
+    events.push(...processUpdated(recipients, updatedOf(run, t.next.status, null)));
     const row = await repo.loadSummary(tx, run.tenantId, run.id);
     if (!row) throw notFound();
     return { body: repo.toSummary(row), events, kick: false, runId: run.id };

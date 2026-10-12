@@ -28,6 +28,7 @@ export function defError(code: HubAdminProcessErrorCode, details?: unknown): App
 export function throwIfInvalid(c: DefCheck): void {
   if (c.ok) return;
   if (c.code === "PROCESS_REF_INVALID") throw defError(c.code, { path: c.path, ref: c.ref });
+  if (c.code === "PROCESS_DEF_INVALID") throw defError(c.code, { paths: c.paths, rules: c.rules });
   throw defError(c.code, { paths: c.paths });
 }
 
