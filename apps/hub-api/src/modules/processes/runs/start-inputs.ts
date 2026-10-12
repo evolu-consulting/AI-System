@@ -161,7 +161,10 @@ async function sourceByKey(
   return r ?? null;
 }
 
-/** PB-R18 · attachment `upload` thuộc đúng người bắt đầu + tenant (file input hợp lệ). */
+/**
+ * PB-R18 · attachment `upload` thuộc đúng người bắt đầu + tenant (file input hợp lệ). X2b2 S8 · file đã gắn tin phòng
+ * (`room_id` ≠ NULL) KHÔNG làm input quy trình (R06: file phòng chỉ ở phòng).
+ */
 async function ownsUpload(
   tx: Tx,
   tenantId: string,
@@ -169,7 +172,8 @@ async function ownsUpload(
   attId: string,
 ): Promise<boolean> {
   const [r] = await tx.execute<{ n: number }>(sql`select 1 as n from hub.attachments
-    where id = ${attId} and tenant_id = ${tenantId} and user_id = ${userId} and purged_at is null limit 1`);
+    where id = ${attId} and tenant_id = ${tenantId} and user_id = ${userId} and purged_at is null
+      and room_id is null limit 1`);
   return r !== undefined;
 }
 

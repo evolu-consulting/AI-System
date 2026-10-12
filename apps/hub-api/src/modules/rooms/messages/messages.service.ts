@@ -20,6 +20,7 @@ import { guard, lockFor, pgCode, type RoomsService } from "../manage/rooms.servi
 import { messageEvents, readEvents } from "../room-events";
 import { toRoomMessage } from "../rooms.map";
 import { clampReadSeq, type RoomAction, unreadOf } from "../rooms.rules";
+import { bindMessageFiles, filesBody, preSendFiles, withRefs, withRefsOne } from "./message-files";
 import * as repo from "./messages.repo";
 
 /** Seam dùng chung (CR-059 depcruise): PF1 `start.service` ghi tin gọi `!key` qua service, không import repo phòng. */
@@ -83,8 +84,9 @@ export class MessagesService {
         limit: q.limit,
         ...(flowId && { flowId }),
       });
+      const items = await withRefs(tx, me, roomId, rows.slice(0, q.limit).reverse());
       return {
-        items: rows.slice(0, q.limit).reverse().map(toRoomMessage),
+        items: items.map(toRoomMessage),
         has_more: rows.length > q.limit,
       };
     });
@@ -93,9 +95,15 @@ export class MessagesService {
   /**
    * 201 mới / 200 trùng `client_msg_id` (không sự kiện). Gửi trùng song song tuần tự hoá ở khoá `rooms` nên bên sau thấy
    * tin của bên trước; 23505 (`room_messages_client_uq`) là lưới cuối ⇒ chạy lại một lần, rơi vào nhánh trùng.
+   * X2b2 (plan §3, D7, D8): `attachment_ids` ⇒ D8 400 → trùng ⇒ 200 tin cũ → 404 `ATTACHMENT_NOT_FOUND` → đường X2b/P-a.
    */
-  async send(u: AuthUser, roomId: string, req: SendRoomMessageRequest): Promise<SendResult> {
+  async send(u: AuthUser, roomId: string, raw: SendRoomMessageRequest): Promise<SendResult> {
     const p = this.#processes;
+    const req = filesBody(raw, p !== undefined);
+    if (req.attachment_ids) {
+      const dup = await this.rooms.read(u, (tx, me) => preSendFiles(tx, me, roomId, req));
+      if (dup) return { message: toRoomMessage(dup), created: false };
+    }
     const pre = p ? await this.#processRoute(p, u, roomId, req) : { body: req };
     if ("result" in pre) return pre.result;
     const { body } = pre;
@@ -151,7 +159,10 @@ export class MessagesService {
     return this.rooms.commit<SendResult>(u, async (tx, me) => {
       await lockFor(tx, me, roomId, "send");
       const dup = await repo.findByClientId(tx, me, roomId, body.client_msg_id);
-      if (dup) return { out: { message: toRoomMessage(dup), created: false }, events: [] };
+      if (dup) {
+        const message = toRoomMessage(await withRefsOne(tx, me, dup));
+        return { out: { message, created: false }, events: [] };
+      }
       const flowId = body.flow_id;
       // P-a Bước 0 · thread phòng HOẶC thread quy trình (is_room_thread iii); thành viên vẫn do `lockFor` giữ (404 nếu bị bớt).
       if (
@@ -162,7 +173,7 @@ export class MessagesService {
         throw appError("NOT_FOUND");
       const { seq, at } = await repo.bumpSeq(tx, me, roomId);
       await repo.advanceRead(tx, me, roomId, seq);
-      const row = await repo.insertMessage(tx, me, {
+      const inserted = await repo.insertMessage(tx, me, {
         roomId,
         seq,
         content: body.content,
@@ -170,6 +181,7 @@ export class MessagesService {
         at,
         ...(flowId && { flowId, placement: "flow" as const }),
       });
+      const row = await bindMessageFiles(tx, me, inserted, body.attachment_ids);
       // CR-050: người gửi đã thấy thread tới tin của chính mình.
       if (flowId) await repo.advanceFlowRead(tx, me, { roomId, flowId, seq });
       const message = toRoomMessage(row);

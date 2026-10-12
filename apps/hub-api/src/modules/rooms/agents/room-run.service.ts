@@ -23,6 +23,7 @@ import type { PreparedRun, RunDriver, RunService } from "../../runs/runs.service
 import type { SseWriter } from "../../runs/sse/sse-writer";
 import type { Me } from "../manage/rooms.repo";
 import { lockFor, pgCode, type RoomsService } from "../manage/rooms.service";
+import { bindMessageFiles, withRefsOne } from "../messages/message-files";
 import * as msgs from "../messages/messages.repo";
 import { messageEvents } from "../room-events";
 import { toRoomMessage } from "../rooms.map";
@@ -142,9 +143,11 @@ async function writeTrigger(tx: Tx, me: Me, w: Write & { threadId: string }): Pr
   const placement = placementOf({ senderType: "user", flowId: threadId, opensThread });
   const { content, client_msg_id: clientMsgId } = body;
   const id = p.run.userMessageId;
-  const row = await msgs.insertMessage(tx, me, {
+  const inserted = await msgs.insertMessage(tx, me, {
     ...{ id, roomId, seq, content, clientMsgId, at, flowId: threadId, placement },
   });
+  // X2b2-R01 · gắn file vào tin gọi (cùng tx; thiếu ⇒ 404, ROLLBACK cả run).
+  const row = await bindMessageFiles(tx, me, inserted, body.attachment_ids);
   // CR-050: người gửi đã thấy thread tới tin của chính mình.
   if (placement === "flow") await msgs.advanceFlowRead(tx, me, { roomId, flowId: threadId, seq });
   const message = toRoomMessage(row);
@@ -204,7 +207,8 @@ export class RoomRunService {
     const { roomId, body, route } = call;
     const pre = await this.d.rooms.read(u, async (tx, me) => {
       const dup = await msgs.findByClientId(tx, me, roomId, body.client_msg_id);
-      return dup ? { dup: toRoomMessage(dup) } : { target: await resolveTarget(tx, me, call) };
+      if (dup) return { dup: toRoomMessage(await withRefsOne(tx, me, dup)) };
+      return { target: await resolveTarget(tx, me, call) };
     });
     if (pre.dup) return { message: pre.dup, created: false };
     await this.d.config.poll();
@@ -260,7 +264,10 @@ export class RoomRunService {
   async #commit(tx: Tx, me: Me, call: Call, p: PreparedRun): Promise<Tracked> {
     await lockFor(tx, me, call.roomId, "send");
     const dup = await msgs.findByClientId(tx, me, call.roomId, call.body.client_msg_id);
-    if (dup) return { out: { message: toRoomMessage(dup), created: false }, events: [] };
+    if (dup) {
+      const message = toRoomMessage(await withRefsOne(tx, me, dup));
+      return { out: { message, created: false }, events: [] };
+    }
     const target = await resolveTarget(tx, me, call);
     const flowId = await writeRun(tx, me, { call, target, p, runs: this.d.runs });
     const threadId = target.thread?.flowId ?? flowId;

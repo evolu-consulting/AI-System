@@ -1,6 +1,7 @@
 // HUB-FR-96 · HUB-FR-97 · map hàng DB (repo) → kiểu contract `@ai/contracts/chat` (X2a plan §2.3, D2, D5). Thuần.
 // `sender` join `admin.users` (left join): thiếu tên ⇒ fallback `username` rồi id (không bao giờ rỗng).
 import type {
+  AttachmentRef,
   RoomActiveRun,
   RoomAgentRef,
   RoomAsk,
@@ -37,6 +38,8 @@ export type RoomMessageRow = {
   /** P-a U1 · tin gọi `!key` + tin `process` mang run; tin `process` mang meta thô (`process_meta`, parse khi map). */
   processRunId?: string;
   processMeta?: unknown;
+  /** X2b2-R14 · file đã gắn tin (thứ tự `position`); vắng/rỗng ⇒ khoá `attachments` vắng. */
+  attachments?: AttachmentRef[];
 };
 
 /** CR-050 · một tin `flow` gần nhất của thread (theo người xem). */
@@ -123,6 +126,7 @@ export function toRoomMessage(r: RoomMessageRow): RoomMessage {
     ...(r.flowId && { flow_id: r.flowId, placement: r.placement ?? "main" }),
     ...(r.agent && agentFields(r.agent)),
     ...processFields(r),
+    ...(r.attachments && r.attachments.length > 0 && { attachments: r.attachments }),
     ...(r.flow && {
       flow: {
         message_count: r.flow.messageCount,

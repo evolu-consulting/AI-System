@@ -1,5 +1,6 @@
 // HUB-FR-96 · HUB-FR-97 · HUB-FR-98 · HUB-FR-100 · luật thuần phòng chat (X2a plan §8; spec X2a-R04…R18). Không I/O.
 import { ROOM_MEMBERS_MAX, ROOM_PREVIEW_MAX } from "@ai/contracts/chat";
+import { classifyBang } from "../processes/core/bang.rules";
 
 export type RoomKind = "dm" | "group";
 export type RoomRole = "owner" | "member";
@@ -71,6 +72,21 @@ export function leaveOutcome(
 ): "leave" | "delete" | "OWNER_MUST_TRANSFER" {
   if (myRole !== "owner") return "leave";
   return activeCount <= 1 ? "delete" : "OWNER_MUST_TRANSFER";
+}
+
+/**
+ * X2b2 D8 · tin phòng được kèm `attachment_ids`? false ⇔ engine P-a bật ∧ không `answerRunId` ∧ không `flowId` ∧
+ * `classifyBang(content).kind ∈ {process, invalid}` (P-a nhận file qua input quy trình, không qua tin).
+ */
+export function roomFilesAllowed(p: {
+  content: string;
+  flowId?: string;
+  answerRunId?: string;
+  processEngine: boolean;
+}): boolean {
+  if (!p.processEngine || p.answerRunId !== undefined || p.flowId !== undefined) return true;
+  const kind = classifyBang(p.content).kind;
+  return kind !== "process" && kind !== "invalid";
 }
 
 /** R18 · mốc đọc chỉ tăng, không vượt `lastSeq`; null = không đổi (không sự kiện). */
