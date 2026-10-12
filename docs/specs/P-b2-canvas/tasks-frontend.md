@@ -30,3 +30,16 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (FB1…FB11, §1–§10) · c
 | D10 | Thêm key i18n ngoài bảng: `canvas.node.error` ("Có lỗi"/"Has errors"), `canvas.controls.{title,zoomIn,zoomOut,fit}` (nhãn nhóm zoom của xyflow) | Mọi chuỗi qua key |
 | D11 | `StageBody` chỉ dùng phần tử inline/inline-block cách nhau một dấu cách ⇒ `innerText` của nút một dòng | E-PB2-12 so `innerText` với `toHaveText` (chuỗi kỳ vọng không chuẩn hoá khoảng trắng) |
 
+
+## Quyết định trong lúc làm (T10 · FB-5…FB-7 chat-web · frontend-lead, Luật 2)
+| # | Quyết định | Lý do |
+|---|---|---|
+| D12 | `groupBySteps` tự cài trong `shared/lib/steps.ts` (cùng luật `resolveSteps`), không import `@ai/contracts/hub-admin` | Tránh kéo cả schema admin vào bundle chat-web |
+| D13 | Nhãn "Bước n" + ×lần chỉ hiện khi `showSteps` (có bước ≥ 2 giai đoạn hoặc `round > 1`); trang Run dùng cùng điều kiện để chọn bố cục nhóm hay bố cục cũ | AC-PB2-01 (run tuần tự giữ giao diện cũ) |
+| D14 | `StageStrip` thêm `aria-label` "Tiến độ quy trình" (key `run.step.listAria`, ngoài bảng i18n), bọc `<div>`; prop `back?` cho vệt quay lại. `backTrail` (block-view) = sự kiện mới nhất + `max` khi `back_rounds ≥ back_limit > 0` (kể cả không có sự kiện, seed d) | E-PB2-20/28; plan §3 |
+| D15 | Key textbox panel = `review.panelFeedback` ("Góp ý"), không dùng `review.feedback` | `review.feedback` đã có nghĩa khác ("Góp ý cho {{agent}} (bắt buộc)", ô inline cũ) — không đổi để P-a không vỡ |
+| D16 | Thêm key `review.sentDecider` ("Đã gửi góp ý. Lượt chạy chuyển cho người quyết.") cho trường hợp gửi quay lại khi hết lượt (toast `wentBack` sẽ sai) | Plan chưa có câu cho nhánh này |
+| D17 | `useReviewDecision` làm tươi view khi lỗi "cũ" (409 `REVIEW_TASK_CLOSED`, 422 `BACK_TARGET_INVALID`, `PROCESS_RUN_STATE`); `errorMessage` tách ra `run-block/lib/review-error.ts` | Thẻ tự đóng / đổi tuỳ chọn sau 409/422 (PB2-R09) |
+| D18 | `RunHeader` ẩn "Huỷ lượt chạy" khi `needs_decision` và người xem `can_decide` (thẻ quyết đã có nút cùng tên, như `ProcessFlowContent` đã làm) | E-PB2-26 đòi đúng một nút "Huỷ lượt chạy"; `decide.pa.ts` định vị theo region nên không ảnh hưởng |
+| D19 | Trang Run: bố cục nhóm = mỗi bước một `fieldset` "Bước n" (+ `×{{n}} lần`) chứa dòng giai đoạn, kết quả, thẻ việc của bước; view `task` (ngoài phòng) chỉ gom thẻ khi ≥ 2 việc mở cùng bước (Q7); không có `BackTimeline` ở view `task` | Plan §5; AC-PB2-11 |
+| D20 | `StageOutputs`: Tabs shadcn "Bản n · mới nhất / · trước khi quay lại (round < round mới nhất)"; chọn mặc định theo bản mới nhất (theo dõi bản mới về sau) thay vì `current_output_id` | Plan §5 ("bản mới nhất mặc định") |
