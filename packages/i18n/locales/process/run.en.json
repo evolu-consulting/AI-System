@@ -77,5 +77,16 @@
   },
   "outputs": {
     "title": "Outputs"
+  },
+  "step": {
+    "listAria": "Process progress",
+    "title": "Step {{n}}",
+    "parallelAria": "Step {{n}} — runs in parallel",
+    "round": "×{{n}}",
+    "roundLong": "×{{n}} times",
+    "roundSr": "Redone {{n}} time(s) after going back",
+    "attempt": "Attempt {{n}}",
+    "backLine": "↩ Went back to step {{step}} (time {{n}})",
+    "backMax": "Reached the maximum of {{max}} go-backs"
   }
 }

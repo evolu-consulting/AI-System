@@ -17,7 +17,13 @@ import { StageStrip } from "../../shared/components/StageStrip";
 import { TaskWaitingNote } from "../../shared/components/TaskWaitingNote";
 import { useThreadRun } from "../../shared/hooks/use-thread-run";
 import type { ThreadMessageProps } from "../../shared/types";
-import { type BlockAction, myActions, stageItems, waitingOpenTasks } from "../lib/block-view";
+import {
+  type BlockAction,
+  backTrail,
+  myActions,
+  stageItems,
+  waitingOpenTasks,
+} from "../lib/block-view";
 import { StatusLine } from "./StatusLine";
 
 export type ProcessBlockProps = ThreadMessageProps<"block"> & {
@@ -89,7 +95,7 @@ function BlockBody({ view, isError, refetch, openThread, actions, showWaiting }:
   return (
     <>
       <StatusLine view={view} />
-      <StageStrip stages={stageItems(view)} />
+      <StageStrip stages={stageItems(view)} back={backTrail(view)} />
       {actions.length > 0 && openThread && (
         <div className="flex flex-wrap gap-2">
           {actions.map((a) => (

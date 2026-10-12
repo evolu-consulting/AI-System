@@ -14,7 +14,7 @@ import { RunStatusBadge } from "../../shared/components/RunStatusBadge";
 import { StageStrip } from "../../shared/components/StageStrip";
 import { useProcessRun } from "../../shared/hooks/use-process-run";
 import { threadTitle } from "../../shared/lib/thread-task";
-import { currentStage, stageItems } from "../lib/block-view";
+import { backTrail, currentStage, stageItems } from "../lib/block-view";
 import { CancelRunButton } from "./CancelRunButton";
 import { ProcessFlowMessages } from "./ProcessFlowMessages";
 import { ProcessThreadFooter } from "./ProcessThreadFooter";
@@ -53,7 +53,7 @@ function StatusBar({
         )}
       </div>
       <StatusLine view={view} className="text-caption text-secondary-foreground" />
-      <StageStrip stages={stageItems(view)} />
+      <StageStrip stages={stageItems(view)} back={backTrail(view)} />
       <div className="flex flex-wrap items-center justify-between gap-2 text-caption text-muted-foreground">
         <span>{t("process.run.runsAs", { name: view.started_by.display_name })}</span>
         <Link to="/runs/$id" params={{ id: runId }} className="text-primary-strong hover:underline">
