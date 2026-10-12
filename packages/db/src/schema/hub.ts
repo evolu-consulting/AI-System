@@ -1,7 +1,6 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql`, `0010_h4a_studio.sql`, `0018_cr054_agent_defaults.sql`, `0019_pa_process_engine.sql` (viết tay; bảng quy trình ở `hub-processes.ts`), KHÔNG nằm trong drizzle.config.ts.
-// Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts`
-// (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql`, `0010_h4a_studio.sql`, `0018_cr054_agent_defaults.sql`, `0019_pa_process_engine.sql`, `0023_x2b2_room_attachments.sql` (viết tay; bảng quy trình ở `hub-processes.ts`), KHÔNG nằm trong drizzle.config.ts.
+// Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts` (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
 import { sql } from "drizzle-orm";
 import {
   bigint,
@@ -362,8 +361,9 @@ export const attachments = hub.table("attachments", {
   conversationId: uuid("conversation_id"),
   flowId: uuid("flow_id"),
   messageId: uuid("message_id"),
-  /** Thứ tự trong tin (0–9), đặt khi gắn (R12). */
-  position: smallint("position"),
+  roomId: uuid("room_id"), // 0023 X2b-2: NOT NULL ⇔ gắn tin phòng (message/conversation/flow NULL)
+  roomMessageId: uuid("room_message_id"), // 0023: FK (room_message_id, room_id), SET NULL khi tin bị xoá
+  position: smallint("position"), // thứ tự trong tin (0–9), đặt khi gắn (R12)
   filename: text("filename").notNull(),
   safeName: text("safe_name").notNull(),
   mime: text("mime").notNull(),
