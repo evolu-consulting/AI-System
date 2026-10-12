@@ -35,11 +35,11 @@ import {
   claimHeld,
   countJobOutputs,
   deleteAttachment,
-  findOwnedAttachment,
+  findReadableAttachment,
   insertAttachment,
   lockTenantQuota,
-  type OwnedAttachment,
   quotaUsed,
+  type ReadableAttachment,
   supersedeJobOutput,
 } from "./attachments.repo";
 import { countedBody } from "./counted-body";
@@ -332,19 +332,20 @@ export class AttachmentService {
     }
   }
 
-  async #owned(u: AuthUser, id: string): Promise<OwnedAttachment> {
+  /** X2b2-R05/R06 · file của chủ (chưa gắn phòng) hoặc file phòng mà người xem đang là thành viên; khác ⇒ 404. */
+  async #readable(u: AuthUser, id: string): Promise<ReadableAttachment> {
     const row = await withHubScope(
       this.d.db,
       { kind: "user", tenantId: u.tenantId, userId: u.userId },
-      (tx) => findOwnedAttachment(tx, { tenantId: u.tenantId, userId: u.userId, id }),
+      (tx) => findReadableAttachment(tx, { tenantId: u.tenantId, userId: u.userId, id }),
     );
     if (!row) throw appError("NOT_FOUND");
     return row;
   }
 
-  /** `GET /attachments/:id` (R13): khác chủ / hội thoại đã xoá / không có ⇒ 404. */
+  /** `GET /attachments/:id` (R13, X2b2-R05): không đọc được (khác chủ / không thành viên / đã xoá) ⇒ 404. */
   async get(u: AuthUser, id: string): Promise<AttachmentDetail> {
-    const r = await this.#owned(u, id);
+    const r = await this.#readable(u, id);
     return {
       id: r.id,
       filename: r.filename,
@@ -357,7 +358,7 @@ export class AttachmentService {
 
   /** `GET /attachments/:id/content` (R13): `available=false` / file mất ⇒ 404 (+ log `attachment-content-missing`). */
   async content(u: AuthUser, id: string, log: Logger): Promise<ContentResult> {
-    const r = await this.#owned(u, id);
+    const r = await this.#readable(u, id);
     if (r.purgedAt !== null) throw appError("NOT_FOUND");
     let file: Blob | null;
     try {

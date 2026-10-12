@@ -44,13 +44,14 @@ async function tryRemove(c: Ctx, id: string, key: string): Promise<boolean> {
  * (a) R27 · plan-db §4.1: chưa gắn quá 24 h (hoặc đã đánh dấu dở) → xoá nội dung → DELETE hàng xoá được.
  * CR-056 · HUB-FR-115: trừ blob output quy trình (`message_id IS NULL` nhưng được `hub.process_outputs` trỏ tới) — handoff
  * qua đêm (chờ duyệt) không được purge, nếu không stage kế mất file.
+ * X2b2 D3: "chưa gắn" = `message_id IS NULL AND room_id IS NULL` (file phòng không bị xoá sau 24 giờ).
  */
 async function sweepUnbound(tx: Tx, c: Ctx): Promise<number> {
   const now = c.now.toISOString();
   const cutoff = new Date(c.now.getTime() - UNBOUND_TTL_MS).toISOString();
   const rows = await tx.execute<Claimed>(sql`WITH c AS (
       SELECT a0.id FROM hub.attachments a0
-      WHERE a0.message_id IS NULL AND (a0.purged_at IS NOT NULL OR a0.created_at < ${cutoff}::timestamptz)
+      WHERE a0.message_id IS NULL AND a0.room_id IS NULL AND (a0.purged_at IS NOT NULL OR a0.created_at < ${cutoff}::timestamptz)
         AND NOT EXISTS (SELECT 1 FROM hub.process_outputs o WHERE o.attachment_id = a0.id)
       ORDER BY a0.created_at LIMIT ${SWEEP_BATCH} FOR UPDATE SKIP LOCKED
     )
@@ -60,7 +61,8 @@ async function sweepUnbound(tx: Tx, c: Ctx): Promise<number> {
   for (const r of rows) if (await tryRemove(c, r.id, r.storage_key)) removed.push(r.id);
   if (removed.length === 0) return 0;
   const del = await tx.execute<{ id: string }>(sql`DELETE FROM hub.attachments
-    WHERE id = ANY(${uuidArray(removed)}::uuid[]) AND message_id IS NULL RETURNING id`);
+    WHERE id = ANY(${uuidArray(removed)}::uuid[]) AND message_id IS NULL AND room_id IS NULL
+    RETURNING id`);
   return del.length;
 }
 

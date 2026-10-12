@@ -48,11 +48,11 @@ export async function insertAttachment(tx: Tx, a: NewAttachment): Promise<Date> 
 /** Xoá hàng vừa INSERT khi `commit` storage lỗi (R05; scope `system`). */
 export async function deleteAttachment(tx: Tx, id: string, tenantId: string): Promise<void> {
   await tx.execute(
-    sql`delete from hub.attachments where id = ${id} and tenant_id = ${tenantId} and message_id is null`,
+    sql`delete from hub.attachments where id = ${id} and tenant_id = ${tenantId} and message_id is null and room_id is null`,
   );
 }
 
-export type OwnedAttachment = {
+export type ReadableAttachment = {
   id: string;
   filename: string;
   mime: string;
@@ -62,11 +62,15 @@ export type OwnedAttachment = {
   storageKey: string;
 };
 
-/** File của chủ, hội thoại (nếu có) chưa xoá (plan-db §2.6, P22); không có → null. Scope `user`. */
-export async function findOwnedAttachment(
+/**
+ * X2b2-R05/R06 (plan X2b2 §6.4; gương `canReadAttachment`) · file đọc được của người xem; không có → null. Scope `user`:
+ * chưa gắn phòng ⇒ chủ + hội thoại (nếu có) chưa xoá (H2c P22); gắn phòng ⇒ thành viên hiện tại (`hub.is_room_member`,
+ * phòng xoá ⇒ mọi `left_at` đặt ⇒ false). RLS 0023 lọc thêm lớp 2.
+ */
+export async function findReadableAttachment(
   tx: Tx,
   o: { tenantId: string; userId: string; id: string },
-): Promise<OwnedAttachment | null> {
+): Promise<ReadableAttachment | null> {
   const [r] = await tx.execute<{
     id: string;
     filename: string;
@@ -77,7 +81,9 @@ export async function findOwnedAttachment(
     storage_key: string;
   }>(sql`select a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key
     from hub.attachments a left join hub.conversations c on c.id = a.conversation_id
-    where a.id = ${o.id} and a.tenant_id = ${o.tenantId} and a.user_id = ${o.userId} and c.deleted_at is null`);
+    where a.id = ${o.id} and a.tenant_id = ${o.tenantId}
+      and ((a.room_id is null and a.user_id = ${o.userId} and c.deleted_at is null)
+        or (a.room_id is not null and hub.is_room_member(a.room_id)))`);
   if (!r) return null;
   return {
     id: r.id,
@@ -120,7 +126,7 @@ export async function sendableFiles(
 ): Promise<SendRow[]> {
   return tx.execute<SendRow>(sql`select id, safe_name, mime, size, sha256 from hub.attachments
     where id = any(${uuidArray(ids)}::uuid[]) and tenant_id = ${o.tenantId} and user_id = ${o.userId}
-      and message_id is null and purged_at is null and created_at > now() - interval '24 hours'`);
+      and message_id is null and room_id is null and purged_at is null and created_at > now() - interval '24 hours'`);
 }
 
 /** R11 (plan-db §2.2) · gắn vào tin user trong `createRunTx` (sau INSERT messages — P8); trả id gắn được. */
@@ -134,7 +140,8 @@ export async function bindAttachments(
     set message_id = ${p.messageId}, conversation_id = ${p.conversationId}, flow_id = ${p.flowId}, bound_at = now(),
       position = array_position(${ids}::uuid[], a.id) - 1
     where a.id = any(${ids}::uuid[]) and a.tenant_id = ${o.tenantId} and a.user_id = ${o.userId}
-      and a.message_id is null and a.purged_at is null and a.created_at > now() - interval '24 hours'
+      and a.message_id is null and a.room_id is null and a.purged_at is null
+      and a.created_at > now() - interval '24 hours'
     returning a.id`);
   return rows.map((r) => r.id);
 }
@@ -184,7 +191,7 @@ export async function supersedeJobOutput(tx: Tx, jobId: string, safeName: string
   await tx.execute(sql`update hub.attachments a set purged_at = now()
     from hub.jobs j
     where j.id = a.job_id and a.job_id = ${jobId} and a.origin = 'output' and a.safe_name = ${safeName}
-      and a.message_id is null and a.purged_at is null and a.created_at >= j.started_at`);
+      and a.message_id is null and a.room_id is null and a.purged_at is null and a.created_at >= j.started_at`);
 }
 
 /**
@@ -209,8 +216,8 @@ export async function bindOutputs(
   const rows = await tx.execute<{ id: string }>(sql`with latest as (
       select distinct on (a.job_id, a.safe_name) a.id, a.job_id, a.safe_name, j.created_at as job_created_at
       from hub.jobs j join hub.attachments a on a.job_id = j.id
-      where j.run_id = ${p.runId} and a.origin = 'output' and a.message_id is null and a.purged_at is null
-        and a.created_at >= j.started_at
+      where j.run_id = ${p.runId} and a.origin = 'output' and a.message_id is null and a.room_id is null
+        and a.purged_at is null and a.created_at >= j.started_at
       order by a.job_id, a.safe_name, a.created_at desc
     ), picked as (
       select id, (row_number() over (order by job_created_at, job_id, safe_name) - 1)::smallint as pos

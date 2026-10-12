@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { CountSchema, DISPLAY_NAME_MAX, IsoDateTime, UuidSchema } from "../common";
 import { ChatAgentKeySchema } from "./agents";
+import { ATTACH_PER_MESSAGE_MAX, AttachmentRefSchema } from "./attachments";
 import {
   CHAT_ASK_CHOICE_MAX,
   CHAT_ASK_CHOICES_MAX,
@@ -168,6 +169,8 @@ export const RoomMessageSchema = z.strictObject({
   // P-a U1 (chỉ thêm): tin gọi `!key` + tin `process` mang run; tin `process` mang phần hiển thị.
   process_run_id: UuidSchema.optional(),
   process: RoomProcessPartSchema.optional(),
+  // X2b-2 (chỉ thêm): file gắn tin (position tăng); vắng khi không file.
+  attachments: z.array(AttachmentRefSchema).min(1).max(ATTACH_PER_MESSAGE_MAX).optional(),
 });
 export type RoomMessage = z.infer<typeof RoomMessageSchema>;
 
@@ -226,6 +229,13 @@ export const SendRoomMessageRequestSchema = z
     client_msg_id: UuidSchema,
     flow_id: UuidSchema.optional(),
     answer_run_id: UuidSchema.optional(),
+    /** X2b-2: id file đã upload (1–10, không trùng — y hệt E12); vắng khi không file. */
+    attachment_ids: z
+      .array(UuidSchema)
+      .min(1)
+      .max(ATTACH_PER_MESSAGE_MAX)
+      .refine((ids) => new Set(ids).size === ids.length, "duplicate")
+      .optional(),
   })
   .superRefine((v, ctx) => {
     if (v.answer_run_id !== undefined && v.flow_id === undefined) {
