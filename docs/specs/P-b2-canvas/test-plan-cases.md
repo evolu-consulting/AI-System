@@ -142,7 +142,9 @@ Quy ước, fixture (§1), DB tag, bẫy: xem test-plan.md §0–§1. Gate/mặc
 | PI-10 | stage 1 output M3 thiếu mục 4 lần ⇒ `needs_decision template_invalid` | run `needs_decision`; stage 2 vẫn chạy nốt tới `waiting_review`; bước 2 không khởi động; `view.decision.stage_idx = 1` |
 | PI-11 | huỷ run khi bước 1 có 2 job | cả 2 `hub.runs` `cancelled`, mọi task mở `cancelled` (huỷ = cả run) |
 | PI-11b | **HUB-FR-111** huỷ run khi stage 1 `done` (Đạt), stage 2 `running` | 200; run `cancelled`; `hub.runs` stage 2 `cancelled` (không 409 `PROCESS_RUN_STATE`) |
-| PI-11c | **HUB-FR-111** huỷ run khi stage 1 `done` (Đạt), stage 2 `waiting_review` | 200; run `cancelled`; task review stage 2 `cancelled`, không còn task `open` |
+| PI-11c | **HUB-FR-111** huỷ run khi stage 1 `done` (Đạt), stage 2 `waiting_review` | 200; run `cancelled`; task review stage 2 `status=closed, result=cancelled`, không còn task `open` |
+| PI-11d | **HUB-FR-111** TECH-DEBT #147 · tenant_admin (không phải chủ run) huỷ run khi bước 1 có 2 stage `running` | 200; run `cancelled`; cả 2 `hub.runs` `cancelled` (RLS `runs_hub_rw` không chặn UPDATE) |
+| PI-11e | **HUB-FR-111** TECH-DEBT #147 · stage 1 `needs_decision`, stage 2 `running`, tenant_admin huỷ | 200; run `cancelled`; `hub.runs` stage 2 `cancelled` |
 | PI-12 | `pb2-real`: R0a Đạt bởi B (10:00), R0b Đạt bởi T (sau) | `Ghi sổ` chạy; audit actor = T (người Đạt muộn nhất); nếu đổi R0b thành auto (def khác) ⇒ không tạo được def (DF-05) |
 | PI-13 | quota R15: `runsPerTenant=1`, run `pb2-auto3` đang ở bước 1 (3 job) | A start run 2 ⇒ 429 `TOO_MANY_PROCESS_RUNS` (đếm run, không đếm stage); 3 job bước 1 đều `user_id = A` |
 | PI-14 | sweeps `interrupted`: bước 1 có 2 `hub.runs` bị đánh `failed` (Runtime chết) | `sweepOnce` ⇒ **2** decision `interrupted` (mỗi stage một task); `view.decision` = cái cũ nhất |

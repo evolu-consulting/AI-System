@@ -183,3 +183,4 @@ G-1…G-7 + mặc định readiness lần 1: [spec-decisions.md](spec-decisions.
 
 ## 10. Tranh chấp test
 - [RV1·backend-lead] `tests/acceptance/P-b2/par/parallel.int.test.ts` PI-11c dòng 239 `expect(t2?.status).toBe("cancelled")`: `review_tasks.status` chỉ `open|closed` (CHECK `review_tasks_status_ck`, 0019); huỷ đóng task với `status=closed, result=cancelled` (như P-a `cancelEnd`). Đề xuất qc sửa thành `expect(t2?.result).toBe("cancelled")` (hoặc `status` `closed`). Các assert còn lại của PI-11c (200, run `cancelled`, 0 task open) xanh.
+  - **Đã xử lý (qc, 2026-10-13) — test sai, đã sửa:** `review_tasks.status` chỉ `open|closed`; P-a (`gates.int.test.ts:331`) kiểm `{status:closed,result:cancelled}`. PI-11c nay kiểm đúng vậy. Thêm PI-11d/PI-11e (tenant_admin huỷ ⇒ `hub.runs` stage running thành `cancelled`) đóng TECH-DEBT #147. `par/` 26/26 xanh (DB pb2_par). Relock.

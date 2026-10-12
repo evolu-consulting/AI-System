@@ -236,8 +236,41 @@ describe("PI · trượt/Đạt độc lập trong bước [AC-PB2-03]", () => {
     >`select id from hub.review_tasks where process_run_id = ${runId} and status = 'open'`;
     expect(open).toHaveLength(0);
     const t2 = await taskOf(c.sql, runId, 2, "review", null);
-    expect(t2?.status).toBe("cancelled");
+    expect({ status: t2?.status, result: t2?.result }).toEqual({
+      status: "closed",
+      result: "cancelled",
+    });
   }, 40_000);
+  it("HUB-FR-111 · PI-11d · TECH-DEBT #147 · tenant_admin (không phải chủ run) huỷ run khi bước 1 có 2 stage running ⇒ 200; cả 2 hub.runs cancelled", async () => {
+    needPb2(c.pb2);
+    const { runId } = await parToStep1(c);
+    await jobOfStage(c, runId, 1);
+    await jobOfStage(c, runId, 2);
+    expect((await c.call("Adm", "POST", `/process-runs/${runId}/cancel`, {})).status).toBe(200);
+    await waitStatus(c.sql, runId, "cancelled");
+    const live = await waitFor(
+      async () => [...(await hubRunsOf(c.sql, runId, 1)), ...(await hubRunsOf(c.sql, runId, 2))],
+      (rs) => rs.length === 2 && rs.every((r) => r.status === "cancelled"),
+      8_000,
+    );
+    expect((live ?? []).map((r) => r.status)).toEqual(["cancelled", "cancelled"]);
+  }, 40_000);
+  it("HUB-FR-111 · PI-11e · TECH-DEBT #147 · stage 1 needs_decision, stage 2 còn running, tenant_admin huỷ ⇒ 200; hub.runs stage 2 cancelled", async () => {
+    needPb2(c.pb2);
+    const { runId } = await parToStep1(c);
+    await jobOfStage(c, runId, 2);
+    for (let i = 0; i < 4; i++) await jobDone(c, await jobOfStage(c, runId, 1), MD_MISSING);
+    await waitStatus(c.sql, runId, "needs_decision");
+    expect((await stageRow(c.sql, runId, 2)).status).toBe("running");
+    expect((await c.call("Adm", "POST", `/process-runs/${runId}/cancel`, {})).status).toBe(200);
+    await waitStatus(c.sql, runId, "cancelled");
+    const live = await waitFor(
+      async () => hubRunsOf(c.sql, runId, 2),
+      (rs) => rs.length > 0 && rs.every((r) => r.status === "cancelled"),
+      8_000,
+    );
+    expect((live ?? []).map((r) => r.status)).toEqual(["cancelled"]);
+  }, 60_000);
   it("AC-PB2-05 · PI-12 · pb2-real: R0a Đạt bởi B, R0b Đạt bởi T (sau) ⇒ Ghi sổ chạy; audit authorize_real_action actor = T", async () => {
     needPb2(c.pb2);
     const s = await startInRoom(c, { key: DEFS2.real.key });
