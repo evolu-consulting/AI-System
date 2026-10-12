@@ -1,4 +1,4 @@
-# Test plan · P-b2-canvas (qc, chế độ PLAN — CHƯA viết code test, CHƯA LOCK; khoá sau readiness lần 2 / T3)
+# Test plan · P-b2-canvas (qc · T2 WRITE + LOCK xong 2026-10-12 — 182 ca: rules 73 · int 86 · e2e 23; kết quả §8)
 
 Gate người dùng 2026-10-12 + mặc định readiness: [spec-decisions.md](spec-decisions.md). Ca rules/int chi tiết (§3): [test-plan-cases.md](test-plan-cases.md).
 
@@ -142,7 +142,7 @@ Mỗi sửa: commit riêng `test(p-b2): cập nhật test khoá <file> [HUB-FR-1
 | G6 | `pickDecisionStage` hoà `createdAt` | không test hoà | — |
 | G7 | `runStatusOf([])` / có `cancelled` trong bước | không test | — |
 | G8 | `done:pb2` (`tools/scripts/src/done-pb2.ts` + script `package.json`) ngoài quyền qc | §7 đặc tả bước; **T11 tạo** (tasks.md) | backend-lead |
-| G9 | Fake runtime e2e cần chạy 2–3 job cùng bước + kịch bản theo `stage_idx` (đã có `rtScript(target, stageIdx, …)`) — kiểm khả năng claim song song | dùng `rtScript` mỗi stage | qc kiểm ở WRITE; thiếu ⇒ backend-lead |
+| G9 | ~~Fake runtime e2e chạy 2–3 job cùng bước~~ **Đã kiểm (WRITE):** `PaRuntime.tick` claim mọi job `queued` của stage (≤ 10/nhịp 150 ms), kịch bản khoá `(run|key):stage_idx` ⇒ đủ cho bước song song; không cần sửa runtime | `rtScript` mỗi stage | xong |
 
 ## 7. Cổng `done:pb2` (đề xuất; mẫu `done-pb.ts`, dừng ở bước đỏ đầu, `--from`, `--skip=int,e2e`)
 1. Tĩnh: `bun run check` (biome) · `bun run typecheck` · `bun run i18n:check` · `bun run check:size`.
@@ -156,11 +156,30 @@ Mỗi sửa: commit riêng `test(p-b2): cập nhật test khoá <file> [HUB-FR-1
 T11 tạo `done-pb2.ts` (backend-lead) và vẫn chạy **đủ** `done:pa` và `done:pb` một lần (spec §8).
 
 ## 8. Kết quả (điền ở WRITE/VERIFY)
-### Đỏ đúng lý do (bắt buộc trước LOCK)
+### Đỏ đúng lý do (bắt buộc trước LOCK) — WRITE 2026-10-12 (main, trước T3/T4; 0023 có, 0024 chưa)
 | Lát | DB tag | Số ca | Đỏ ở | Ghi chú |
 |---|---|---|---|---|
-| rules | — | — | — | chưa viết |
-| s0 / par / back / tok / compat | `pb2_*` | — | — | chưa viết |
-| e2e admin / chat | `pb2_e2e` | — | — | chưa viết |
-### Sửa test khoá (§5)
-- (chưa)
+| rules (`process-steps` 21 · `contracts-pb2` 12 · `step-rules` 12 · `back-rules` 11 · `handoff-session` 17) | — | 73 | 73/73 đỏ ở `fn(...)` (`{fn:"undefined"}≠"function"`) hoặc `expect` schema (`safeParse` sai / export vắng) | 0 TypeError/import lỗi; ca "không step ⇒ ok"/"OutputRef cũ ok" trong cùng `it` xanh trước code (đúng chủ ý) |
+| `s0` (migration 8 · defs 9) | `pb2_s0` | 17 | 17/17 đỏ ở `needPb2` (`migration0024:false`) / M-01 `has0024:false` | `beforeAll` (setupPa + insertRun + seedPb2) chạy sạch, 0 PostgresError |
+| `par` (parallel 16 · race 3 · team0 2 · quota 1) | `pb2_par` | 22 | 22/22 đỏ ở `needPb2` | seed Group "Kiểm thử" + grant + 10 def SQL chạy sạch trước 0024 |
+| `back` (back 9 · limit 7 · race 3 · view 5) | `pb2_back` | 24 | 24/24 đỏ ở `needPb2` | — |
+| `tok` (handoff 7 · resume 11, gồm RR-11) | `pb2_tok` | 18 | 18/18 đỏ ở `needPb2` | — |
+| `compat` | `pb2_compat` | 5 | 5/5 đỏ ở `needPb2` | compat cần cột 0024 (`current_step`) ⇒ chưa thể xanh trước T3 |
+| e2e admin (12) / chat (11) | `pb2_e2e` | 23 | **đại diện** (stack nặng: build 2 web + stack P-a): E-PB2-01 đỏ ở `application "Canvas quy trình"` not found · E-PB2-06 đỏ ở `button /^Giai đoạn \d+: Tổng hợp/` · E-PB2-20 đỏ ở `list "Tiến độ quy trình"` (seed `ready:false` vì 0024 vắng) · E-PB2-22 đỏ ở `region "Kiểm Test hồi quy"` · **E-PB2-20b xanh** (hồi quy AC-PB2-01, đúng chủ ý) | stack lên sạch (login admin/chat, mở def `pb2-canvas` qua bảng OK); còn lại chưa chạy — cùng cơ chế seed/locator |
+
+Lệnh: `bun test tests/acceptance/P-b2/rules` · `bun --env-file=.env.test-pb2_<tag>.local --config=bunfig.int.toml test --timeout 60000 tests/acceptance/P-b2/<dir>` (đã kiểm `.env.test-pb2_*.local` trỏ `ai_system_pb2_<tag>_test` cho cả HUB_TEST_ và AGENT_RT_TEST_) · `bunx playwright test -c e2e/P-b2/playwright.pb2.config.ts`.
+
+**Lệch có chủ đích so với §1/§4 (qc tự quyết, Luật 2):**
+- UUID dải `b2b2…` (int) / `b2e2…` (e2e) thay `idGenPa(0x2b2)` — tránh trùng dải `a5a0…` của P-a.
+- Group thứ hai = "Kiểm thử" chỉ có T (persona `T`=cuc); `T-group` ở §1 = Group này. Grant A thêm agent m1–m3 (stage agent cần quyền người bắt đầu).
+- `pb2-back` stage B1 dùng agent `agM1` (riêng) — để RZ-07 có `lastWriterIsSelf` (B0/B2 cùng `hd-read`). RZ-03 đổi snapshot sang `agM3` (không `agM2` — tránh `sameAgentInStep` với Test hồi quy).
+- PI-13 tách file `par/quota.int.test.ts` (ctx quota 1); ctx còn lại quota 50 (không phụ thuộc thứ tự).
+- Admin e2e dùng def `pb2-canvas` "Canvas thử" (Test hồi quy = tự chạy, không `back_to_steps`) thay `pb2-par` — E-PB2-06 tự đặt "Quay lại bước 2", E-PB2-07/08 cần stage tự chạy. Chat dùng `pb2-par` (seed a/b/c/d) với cả hai stage bước 1 do Kế toán P-a kiểm (B thấy 2 thẻ, Q7); (a') `pb2-par2` P1b do "Kiểm thử P-b2" (T).
+- Seed (b): 2 event (Tổng hợp → bước 2 vòng 2; Test hồi quy → bước 1 vòng 3) ⇒ E-PB2-25 kiểm "×3 lần" (không "×2 lần"), E-PB2-28 "↩ Quay lại bước 1 (lần 2)".
+- E-PB2-21…24 dùng trang Run `/runs/:id` (thẻ `region "Kiểm <giai đoạn>"` — nhãn cũ `process.run.review.region`); T ngoài phòng dùng `?task=`.
+- Stack e2e `_pb2-stack.ts` = spawn `e2e/P-a/_pa-stack.ts` + seed SQL P-b2 + cổng "đã seed" (không sửa stack P-a).
+
+### Sửa test khoá (§5) — WRITE 2026-10-12 (cũng ghi ở spec-decisions "Tranh chấp test")
+- `P-a/step0/rules/contracts-pa.test.ts` R-K01: `DECISION_REASONS` 15 ⇒ **16** + phần tử cuối `back_limit`; R-K02: "12 mã" ⇒ **13 mã**, thêm `BACK_TARGET_INVALID: 422` (plan §1.1). Nay đỏ (2/11) tới khi T3 sửa contract.
+- `P-b/pfs3/_local.ts`: `MD_AUTO` (output def lưu qua `POST /process-defs` — `mkDef`) thêm `## Bàn giao` (R10/Q3: `ensureHandoff` ⇒ thiếu mục = `template_invalid`); `mdWithRefs` dùng bản mới. Def SQL (`seedPf1`) không ảnh hưởng.
+- Kiểm, **không đổi**: e2e P-a/P-b không ca nào dùng bước `missing` của runtime giả (Grep `"missing"`) · e2e P-b `createDef` + `PaRuntime` sinh md theo `required_sections` snapshot (tự có "Bàn giao") · `P-a/pf1/gates.int` P1-42/45/47 (D6 tuần tự — chạy lại ở VERIFY) · `P-a/pf2/resume.int` (chỉ kiểm team tiếp sau trả lời, không kiểm `use_session`) · `P-a/step0/migration|rls.int` (chỉ bảng 0019) · `X2b2/regress.int` (không kiểm template/output) · `P-a/pf1/stage.int` P1-23 (PUT def rồi khôi phục, run dùng snapshot) · E-P15b, E-PB08/09 (chỉ chạm Giai đoạn 1 — chọn sẵn FB7; `switch "Hành động thật"` vẫn trong `region`) · mock `ProcessRunView`: không có trong e2e (chỉ unit dev `apps/chat-web/**.test.ts` — thuộc frontend-lead).

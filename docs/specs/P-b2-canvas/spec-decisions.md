@@ -64,3 +64,11 @@ Nguồn: spec-readiness lần 1 (NOT READY: 4 Chặn, 15 Cao, 14 Thấp) → ng�
 | 15 | Bỏ key `backNeedsReview` | i18n |
 | 16 | Bỏ "thêm directive trễ" | spec §6 |
 | 17 | HUB-FR-114 phần Bàn giao cho trưởng nhóm ngoài P-b2 | spec §1.2 |
+
+## Tranh chấp test (spec §10 trỏ về đây — spec.md đã ở trần kích thước)
+Định dạng: `- [T#·agent] <file> · "<tên test>" · kỳ vọng test ≠ <nguồn> · đề xuất` → qc VERIFY ghi "đã xử lý — …".
+
+**Sửa test khoá cũ có chủ đích (T2·qc, trước relock — test-plan §5, §8):**
+- [T2·qc] `tests/acceptance/P-a/step0/rules/contracts-pa.test.ts` · R-K01 `DECISION_REASONS` 15 ⇒ 16 (+ cuối `back_limit`); R-K02 `CHAT_PROCESS_ERRORS` 12 ⇒ 13 mã (+ `BACK_TARGET_INVALID: 422`) · nguồn plan §1.1, §8 · đã xử lý — test sửa, relock T2.
+- [T2·qc] `tests/acceptance/P-b/pfs3/_local.ts` · `MD_AUTO` (output của def tạo qua `POST /process-defs`) thêm `## Bàn giao` · nguồn PB2-R10, Q3, plan §4.1/§8 (`ensureHandoff` ⇒ thiếu mục = `template_invalid`) · đã xử lý — test sửa, relock T2.
+- Các test khoá còn lại ở test-plan §5 đã kiểm: không cần sửa (chi tiết test-plan §8).
