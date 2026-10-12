@@ -8,9 +8,9 @@ describe("attachNoteOf", () => {
     expect(attachNoteOf(note, 0, "hi")).toBeNull();
     expect(attachNoteOf(undefined, 2, "hi")).toBeNull();
   });
-  test("có tệp: thiếu chữ ⇒ needText, có chữ ⇒ share", () => {
-    expect(attachNoteOf(note, 1, "  ")).toBe("N");
-    expect(attachNoteOf(note, 1, "hi")).toBe("S");
+  test("có tệp: thiếu chữ ⇒ needText + share, có chữ ⇒ share", () => {
+    expect(attachNoteOf(note, 1, "  ")).toEqual(["N", "S"]);
+    expect(attachNoteOf(note, 1, "hi")).toEqual(["S"]);
   });
   test("joinDescribedBy bỏ phần vắng", () => {
     expect(joinDescribedBy(false, undefined)).toBeUndefined();
