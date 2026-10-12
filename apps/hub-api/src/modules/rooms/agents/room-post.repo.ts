@@ -11,6 +11,7 @@ type Ts = Date | string;
 
 export type RunOutcomeRow = {
   runId: string;
+  tenantId: string;
   roomId: string;
   /** Thread (`flows.room_flow_id`). */
   threadId: string | null;
@@ -32,6 +33,7 @@ export type RunOutcomeRow = {
 
 type OutcomeSql = {
   id: string;
+  tenant_id: string;
   room_id: string;
   thread_id: string | null;
   user_id: string;
@@ -53,6 +55,7 @@ type OutcomeSql = {
 
 const toOutcome = (r: OutcomeSql): RunOutcomeRow => ({
   runId: r.id,
+  tenantId: r.tenant_id,
   roomId: r.room_id,
   threadId: r.thread_id,
   callerId: r.user_id,
@@ -78,7 +81,7 @@ const toOutcome = (r: OutcomeSql): RunOutcomeRow => ({
  */
 export async function runOutcome(tx: Tx, runId: string): Promise<RunOutcomeRow | null> {
   const [row] = await tx.execute<OutcomeSql>(sql`
-    select r.id, r.room_id, case when c.id is not null then f.room_flow_id end as thread_id, r.user_id,
+    select r.id, r.tenant_id, r.room_id, case when c.id is not null then f.room_flow_id end as thread_id, r.user_id,
       u.display_name as caller_name, u.username as caller_username, r.status, r.locale, r.answer_message_id,
       r.user_message_id, coalesce(r.agent_id, f.agent_id, r.orchestrator_tenant_id, r.tenant_id) as sender_id,
       a.key as agent_key, a.name as agent_name, pm.content, pm.ask,

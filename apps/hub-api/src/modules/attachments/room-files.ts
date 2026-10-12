@@ -6,6 +6,7 @@ import type { Tx } from "@ai/db";
 import { appError } from "../../lib/errors";
 import {
   bindRoomFiles,
+  bindRoomOutputs as bindRoomOutputRows,
   type RoomRefRow,
   type RoomRunFileSqlRow,
   roomFileRefRows,
@@ -84,6 +85,17 @@ export async function roomFileRefs(
     if (refs) out.set(id, refs);
   }
   return out;
+}
+
+/**
+ * R11/D11 · scope system (tx2 `RoomRunPoster`, chỉ khi `shouldBindRoomOutputs`): `out/` của run → tin agent phòng.
+ * Trả ref (thứ tự `position`) cho cả hai bản `room.message`; không file ⇒ undefined.
+ */
+export async function bindRoomOutputs(
+  tx: Tx,
+  p: { runId: string; tenantId: string; roomId: string; roomMessageId: string },
+): Promise<AttachmentRef[] | undefined> {
+  return refsOf(await bindRoomOutputRows(tx, p));
 }
 
 const toRoomFileRow = (r: RoomRunFileSqlRow): RoomFileRow => ({

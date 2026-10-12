@@ -3,8 +3,8 @@ import { describe, expect, it } from "bun:test";
 import type { Tx } from "@ai/db";
 import type { SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { roomRunFiles } from "./room-files";
-import type { RoomRunFileSqlRow } from "./room-files.repo";
+import { bindRoomOutputs, roomRunFiles } from "./room-files";
+import type { RoomRefRow, RoomRunFileSqlRow } from "./room-files.repo";
 
 const dialect = new PgDialect();
 const O = { tenantId: "t1", userId: "u1" };
@@ -58,5 +58,44 @@ describe("roomRunFiles [X2b2-D9/D10]", () => {
     const f = fakeTx([row("big", TRIGGER, 9, 101 * 1024 * 1024)]);
     expect(await roomRunFiles(f.tx, O, P)).toEqual([]);
     expect(f.updates).toEqual([]);
+  });
+});
+
+describe("bindRoomOutputs [X2b2-R11/D11]", () => {
+  const B = { runId: "run1", tenantId: "t1", roomId: "r1", roomMessageId: "m1" };
+  const ref = (id: string, position: number): RoomRefRow => ({
+    ...{ room_message_id: "m1", id, filename: `${id}.md`, mime: "text/markdown" },
+    ...{ size: "5", purged_at: null, position },
+  });
+  function capture(rows: RoomRefRow[]): { tx: Tx; q: { sql: string; params: unknown[] }[] } {
+    const q: { sql: string; params: unknown[] }[] = [];
+    const execute = async (s: SQL) => {
+      q.push(dialect.sqlToQuery(s));
+      return rows;
+    };
+    const tx = { execute };
+    return { tx: tx as unknown as Tx, q };
+  }
+
+  it("HUB-FR-101 · X2b2-R11 · không output ⇒ undefined (khoá attachments vắng)", async () => {
+    expect(await bindRoomOutputs(capture([]).tx, B)).toBeUndefined();
+  });
+
+  it("HUB-FR-101 · X2b2-R11 · ref theo position; câu lọc tenant, đặt room/tin, bỏ liên kết hội thoại", async () => {
+    const c = capture([ref("b", 1), ref("a", 0)]);
+    const got = await bindRoomOutputs(c.tx, B);
+    expect(got?.map((r) => r.id)).toEqual(["a", "b"]);
+    expect(got?.[0]).toEqual({
+      id: "a",
+      filename: "a.md",
+      mime: "text/markdown",
+      size: 5,
+      available: true,
+    });
+    const { sql, params } = c.q[0] as { sql: string; params: unknown[] };
+    expect(sql).toContain("j.tenant_id = $2");
+    expect(sql).toContain("a.room_id is null");
+    expect(sql).toContain("conversation_id = null, flow_id = null");
+    expect(params).toEqual(["run1", "t1", "r1", "m1", "t1"]);
   });
 });

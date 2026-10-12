@@ -2,7 +2,7 @@
 // Đăng/Reconcile, §7). tx2 scope `system` SAU khi run dừng (tx1 C1 đã COMMIT): hook `onClosed` (SseWriter/CancelService)
 // + vòng `reconcile` 5 s (bù instance chết giữa hai tx, sweeper/lease không gọi hook). Run còn `running` ⇒ `already`.
 // Idempotent ở definer (`runs.room_posted_at`) ⇒ kết quả trễ sau huỷ bị bỏ. Sự kiện chỉ phát khi reason ≠ `already`.
-import { CHAT_CONTENT_MAX } from "@ai/contracts/chat";
+import { type AttachmentRef, CHAT_CONTENT_MAX } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
@@ -11,8 +11,9 @@ import type { Logger } from "../../../lib/logger";
 import { startLoop } from "../../../lib/loop";
 import type { Redis } from "../../../lib/redis";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
+import { bindRoomOutputs } from "../../attachments/room-files";
 import { type RoomMessageRow, toRoomMessage } from "../rooms.map";
-import { agentMessageView } from "./room-agent.rules";
+import { agentMessageView, shouldBindRoomOutputs } from "./room-agent.rules";
 import * as repo from "./room-post.repo";
 import { type AgentData, rowFor } from "./room-post.view";
 import { agentMessageEvents, runClosedEvents } from "./room-run-events";
@@ -38,13 +39,19 @@ function metaOf(o: repo.RunOutcomeRow, v: View): repo.PostMeta {
   };
 }
 
-/** D3 · bản công khai (mọi thành viên) và bản của người gọi (nội dung + `ask` riêng của `side_effect`). */
-function messagesOf(o: repo.RunOutcomeRow, v: View, content: string, res: repo.PostResult) {
+/** D3 · bản công khai (mọi thành viên) và bản của người gọi (nội dung + `ask` riêng của `side_effect`); D11 ref `out/` ở cả hai. */
+function messagesOf(
+  o: repo.RunOutcomeRow,
+  v: View,
+  p: { content: string; res: repo.PostResult; files?: AttachmentRef[] },
+) {
+  const { content, res } = p;
   const row: RoomMessageRow = {
     ...{ id: o.answerMessageId, roomId: o.roomId, seq: res.seq ?? 0, senderType: "agent" },
     sender: { id: o.senderId, displayName: null, username: null },
     ...{ content, clientMsgId: null, createdAt: res.createdAt ?? new Date() },
     ...{ flowId: o.threadId ?? undefined, placement: res.placement ?? "main" },
+    ...(p.files && { attachments: p.files }),
   };
   const data: AgentData = {
     ...{ runId: o.runId, triggerMessageId: o.triggerMessageId, runStatus: v.runStatus },
@@ -78,6 +85,12 @@ async function postTx(tx: Tx, runId: string): Promise<Posted | null> {
     ...{ runId, content, meta: metaOf(o, v) },
   });
   if (res.reason === "already") return { reason: res.reason, events: [] };
+  // X2b2 D11 · `out/` vào tin agent (id = answer_message_id) cùng tx2; lỗi/huỷ/skipped ⇒ không gắn (R27 dọn sau 24 giờ).
+  const files = shouldBindRoomOutputs({ status: o.status, reason: res.reason })
+    ? await bindRoomOutputs(tx, {
+        ...{ runId, tenantId: o.tenantId, roomId: o.roomId, roomMessageId: o.answerMessageId },
+      })
+    : undefined;
   const fan = await repo.fanoutSys(tx, o.roomId);
   const posted = res.reason === "posted";
   const closed = runClosedEvents(
@@ -88,7 +101,9 @@ async function postTx(tx: Tx, runId: string): Promise<Posted | null> {
     },
     fan.map((f) => f.user_id),
   );
-  const msg = posted ? agentMessageEvents(o.roomId, messagesOf(o, v, content, res), fan) : [];
+  const msg = posted
+    ? agentMessageEvents(o.roomId, messagesOf(o, v, { content, res, files }), fan)
+    : [];
   return { reason: res.reason, events: [...msg, ...closed] };
 }
 

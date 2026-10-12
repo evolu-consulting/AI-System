@@ -90,7 +90,32 @@ export async function roomRunFileRows(
     limit 11`);
 }
 
-/** D10 · tập file run phòng → `runs.attachment_ids` (hàng run của chính người gọi, đã khoá trong tx gọi). */
+/**
+ * R11/D11 · scope system, trong tx2 đăng tin agent: `out/` của lần claim hiện hành (bản mới nhất mỗi `(job, safe_name)`,
+ * ≤ 10 — như H2c `bindOutputs`) → tin agent phòng (`room_message_id = runs.answer_message_id`). Lọc `tenant_id` tường minh.
+ */
+export async function bindRoomOutputs(
+  tx: Tx,
+  p: { runId: string; tenantId: string; roomId: string; roomMessageId: string },
+): Promise<RoomRefRow[]> {
+  return tx.execute<RoomRefRow>(sql`with latest as (
+      select distinct on (a.job_id, a.safe_name) a.id, a.job_id, a.safe_name, j.created_at as job_created_at
+      from hub.jobs j join hub.attachments a on a.job_id = j.id and a.tenant_id = j.tenant_id
+      where j.run_id = ${p.runId} and j.tenant_id = ${p.tenantId} and a.origin = 'output'
+        and a.message_id is null and a.room_id is null and a.purged_at is null and a.created_at >= j.started_at
+      order by a.job_id, a.safe_name, a.created_at desc
+    ), picked as (
+      select id, (row_number() over (order by job_created_at, job_id, safe_name) - 1)::smallint as pos
+      from latest order by job_created_at, job_id, safe_name limit 10
+    )
+    update hub.attachments a
+    set room_id = ${p.roomId}, room_message_id = ${p.roomMessageId}, conversation_id = null, flow_id = null,
+      bound_at = now(), position = p.pos
+    from picked p where a.id = p.id and a.tenant_id = ${p.tenantId}
+    returning a.room_message_id, a.id, a.filename, a.mime, a.size, a.purged_at, a.position`);
+}
+
+/** D10 · tập file run phòng →`runs.attachment_ids` (hàng run của chính người gọi, đã khoá trong tx gọi). */
 export async function setRunAttachmentIds(
   tx: Tx,
   o: Owner,

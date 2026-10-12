@@ -189,7 +189,8 @@ export class SseWriter {
         error,
       });
       if (!t) return null;
-      await this.#insertAnswer(tx, { content, ask, finished: status === "finished" });
+      // X2b2 D11: run phòng ⇒ `out/` gắn tin agent phòng ở tx2 (`RoomRunPoster`), không vào tin hội thoại nền.
+      await this.#insertAnswer(tx, { content, ask, finished: status === "finished" && !t.roomId });
       // Chỉ `ask` của agent (need_input, có `agentId`) mới chờ trả lời: Orchestrator tự hỏi thì tin kế phải qua
       // Orchestrator, không route về `flows.agent_id` cũ (plan §6.1, AC-H15).
       await repo.updateFlowAfterRun(tx, {

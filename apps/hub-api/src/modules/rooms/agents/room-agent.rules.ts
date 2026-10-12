@@ -192,6 +192,14 @@ export function shouldPost(p: {
   return !p.running && !p.posted && !p.roomDeleted && p.callerActive;
 }
 
+/** X2b2-R11 · D11 · gắn `out/` vào tin agent phòng ⇔ run `finished` ∧ definer vừa đăng (`posted`). */
+export function shouldBindRoomOutputs(p: {
+  status: "running" | "finished" | "failed" | "cancelled";
+  reason: "posted" | "skipped" | "already";
+}): boolean {
+  return p.status === "finished" && p.reason === "posted";
+}
+
 /** D15 [Q2] · agent đang chờ xác nhận còn trong AU (ảnh hiện hành) của người xác nhận. */
 export function confirmStillAllowed(agentId: string, au: ReadonlySet<string>): boolean {
   return au.has(agentId);
