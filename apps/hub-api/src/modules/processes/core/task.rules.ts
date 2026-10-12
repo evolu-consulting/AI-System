@@ -9,7 +9,7 @@ import type {
 } from "@ai/contracts/chat";
 import { DECISION_OPTIONS, TASK_EXCERPT_MAX } from "@ai/contracts/chat";
 import { isTerminal } from "./process-state.rules";
-import { canDecide, type RunFacts, type Viewer } from "./run-access.rules";
+import { canDecide, REVIEW_GROUP_REASONS, type RunFacts, type Viewer } from "./run-access.rules";
 
 export type TaskFacts = {
   kind: TaskKind;
@@ -37,13 +37,13 @@ export function canAct(
   return t.userIds.has(v.userId) || (t.groupId !== null && v.groupIds.has(t.groupId));
 }
 
-/** Assignee task `decision`: người bắt đầu; Group duyệt chỉ khi `redo_limit`. Admin quyết qua `canDecide`, không là assignee. */
+/** Assignee task `decision`: người bắt đầu; Group duyệt chỉ khi `redo_limit` / `back_limit` (P-b2 D8). Admin quyết qua `canDecide`, không là assignee. */
 export function decisionAssignees(
   reason: DecisionReason,
   startedBy: string,
   reviewGroupId: string | null,
 ): { userIds: string[]; groupId: string | null } {
-  return { userIds: [startedBy], groupId: reason === "redo_limit" ? reviewGroupId : null };
+  return { userIds: [startedBy], groupId: REVIEW_GROUP_REASONS.has(reason) ? reviewGroupId : null };
 }
 
 /** `use_current` cần output; lý do nhóm + mất quyền/khoá luôn cho (dùng bản nháp ghép / bỏ qua stage). */

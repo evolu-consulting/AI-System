@@ -15,6 +15,7 @@ import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
+import { safeErrorFields } from "../../../lib/errors";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
@@ -29,11 +30,19 @@ import {
   type Viewer,
 } from "../core/run-access.rules";
 import { pickDecisionStage } from "../core/step.rules";
+import { decisionOptionsFor } from "../core/task.rules";
 import { loadTaskDetails } from "../core/task-view";
 import * as repo from "../runs/runs.repo";
 import type { StepOutcome } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";
 import { ViewService } from "../runs/view.service";
+import {
+  assertBackDecision,
+  type BackOut,
+  backFromDecision,
+  backFromReview,
+  type CancelIds,
+} from "./back.effects";
 import { reviewDecisionCheck } from "./gate.rules";
 import {
   buildState,
@@ -49,9 +58,65 @@ import {
 } from "./gates.effects";
 import * as g from "./gates.repo";
 
+/** P-b2 · Chưa đạt có `back_to_step` ⇒ `back.effects` (quay lại / `back_limit`); còn lại như P-a (`reviewEffects`). */
+async function reviewOut(
+  gx: Gx,
+  e: Eff,
+  task: g.GateTask,
+  b: ReviewDecisionRequest,
+): Promise<BackOut & { status: ProcessRunStatus; kick: boolean }> {
+  if (b.result !== "fail" || b.back_to_step === undefined) {
+    const o = await reviewEffects(gx, e, task, b);
+    return { ...o, status: e.next.status, kick: needsKick(e.effects, o.step) };
+  }
+  const { run, idx, ref } = e;
+  const fb = b.feedback ?? "";
+  const o = await backFromReview(gx, { run, idx, ref, task, feedback: fb, target: b.back_to_step });
+  return { ...o, status: "needs_decision", kick: o.step?.kind === "next_step" };
+}
+
+/** P-b2 D8 · decision `back_limit` + `add_attempt` ⇒ `back.effects` (nâng trần rồi quay lại); còn lại như P-a. */
+async function decideOut(
+  gx: Gx,
+  e: Eff,
+  q: {
+    reason: DecisionReason;
+    option: DecideProcessRunRequest["option"];
+    dtask: g.GateTask | null;
+  },
+): Promise<BackOut & { kick: boolean }> {
+  const { reason, option, dtask } = q;
+  if (reason !== "back_limit" || option !== "add_attempt") {
+    const o = await decideEffects(gx, e, option, dtask);
+    return { ...o, kick: needsKick(e.effects, o.step) };
+  }
+  if (!dtask) throw processError("PROCESS_RUN_STATE");
+  const o = await backFromDecision(gx, { run: e.run, idx: e.idx, ref: e.ref, dtask });
+  return { ...o, kick: o.step?.kind === "next_step" };
+}
+
+/** D9 · còn decision mở sau khi quyết ⇒ `process_runs.decision` jsonb = decision mở CŨ nhất (tương thích). */
+async function refreshDecision(gx: Gx, run: Locked): Promise<void> {
+  const open = await g.openDecisions(gx.tx, run.id, run.tenantId);
+  const idx = pickDecisionStage(open);
+  if (idx === null) return;
+  const reason = open.find((o) => o.stageIdx === idx)?.reason ?? "interrupted";
+  const stage = await stageRowOf(gx.tx, run.id, idx);
+  const options = decisionOptionsFor((stage?.current_output_id ?? null) !== null, reason);
+  const at = gx.d.now().toISOString();
+  await g.setDecisionJson(gx.tx, run.id, JSON.stringify({ reason, stage_idx: idx, options, at }));
+}
+
 /** Người thao tác + nhóm (gộp để ≤ 4 tham số, CONVENTIONS §2). */
 type Req = { v: Viewer; groupIds: ReadonlySet<string> };
-type Outcome<T> = { body: T; events: UserEvent[]; kick: boolean; runId: string };
+type Outcome<T> = {
+  body: T;
+  events: UserEvent[];
+  kick: boolean;
+  runId: string;
+  /** P-b2 · `hub.runs` của stage bị quay lại — huỷ SAU COMMIT ở scope system, TRƯỚC `kick`. */
+  cancel?: CancelIds;
+};
 
 /** Scope `user` của người thao tác; platform_admin + `?tenant_id` ⇒ tenant đích (plan §5, như ViewService). */
 const scopeOf = (u: AuthUser, tenantIdQ?: string) => ({
@@ -112,6 +177,7 @@ export class GateService {
     if (!run) throw notFound();
     const recipients = await core.runRecipients(tx, run.id, run.tenantId);
     const idx = task.stage_idx;
+    assertBackDecision(run, idx, b); // P-b2 · 422 BACK_TARGET_INVALID trước khi đóng task
     const s = await stageRowOf(tx, run.id, idx);
     const t = transition(buildState({ run, s, def: snapOf(run).stages[idx], idx, reason: null }), {
       kind: "review",
@@ -128,11 +194,11 @@ export class GateService {
     if (!t.ok) throw processError(t.code);
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
-    const { events, step } = await reviewEffects({ d: this.d, tx }, e, task, b);
-    events.push(...processUpdated(recipients, updatedOf(run, t.next.status, step)));
+    const { events, step, status, kick, cancel } = await reviewOut({ d: this.d, tx }, e, task, b);
+    events.push(...processUpdated(recipients, updatedOf(run, status, step)));
     const detail = (await loadTaskDetails(tx, { ...v, groupIds }, [taskId]))[0];
     if (!detail) throw notFound();
-    return { body: detail, events, kick: needsKick(t.effects, step), runId: run.id };
+    return { body: detail, events, kick, runId: run.id, cancel };
   }
 
   // ── POST /process-runs/:id/decide ──
@@ -184,9 +250,15 @@ export class GateService {
     const dtask = await g.openDecisionTask(tx, run.id, run.tenantId, picked ?? undefined);
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
-    const { events, step } = await decideEffects({ d: this.d, tx }, e, b.option, dtask);
+    const gx: Gx = { d: this.d, tx };
+    const { events, step, cancel, kick } = await decideOut(gx, e, {
+      reason,
+      option: b.option,
+      dtask,
+    });
+    await refreshDecision(gx, run);
     events.push(...processUpdated(recipients, updatedOf(run, t.next.status, step)));
-    return { body: null, events, kick: needsKick(t.effects, step), runId: run.id };
+    return { body: null, events, kick, runId: run.id, cancel };
   }
 
   // ── POST /process-runs/:id/cancel ──
@@ -257,6 +329,17 @@ export class GateService {
   }
 
   async #post(out: Outcome<unknown>): Promise<void> {
+    const c = out.cancel;
+    if (c)
+      await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+        g.cancelRunsByIds(tx, c.tenantId, c),
+      ).catch((err) =>
+        // Đã COMMIT: job muộn bị driver bỏ (`current_run_id` NULL); sweeps dọn `hub.runs` treo.
+        this.d.log.warn("process-back-cancel-failed", {
+          run_id: out.runId,
+          ...safeErrorFields(err),
+        }),
+      );
     await publishUserEvents(this.d.redis, out.events, this.d.log);
     await this.d.postThread(out.runId).catch(() => {});
     if (out.kick) await this.d.launcher.kick(out.runId);

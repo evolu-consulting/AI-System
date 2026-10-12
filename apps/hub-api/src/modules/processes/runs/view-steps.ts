@@ -6,6 +6,7 @@ import type {
   DecisionOption,
   DecisionReason,
   ExecutorRef,
+  HistoryItem,
   OutputRef,
   StageRunStatus,
   StageView,
@@ -205,4 +206,37 @@ export async function viewDecision(
   if (dec && Number(dec.stage_idx) === idx && dec.reason === reason) return fromJson(dec);
   const hasOutput = stages.some((s) => s.idx === idx && s.current_output_id !== null);
   return { reason, stage_idx: idx, options: decisionOptionsFor(hasOutput, reason) };
+}
+
+/**
+ * P-b2 · `HistoryItem.to_step` (HUB-FR-118): task đã đóng gây ra một lần quay lại (`process_back_events.task_id` — review
+ * Chưa đạt, hoặc decision `back_limit` + `add_attempt`). ≤ 1 hàng mỗi task; index `process_back_events_run_idx`.
+ */
+export async function withToSteps(
+  tx: Tx,
+  r: RunKey,
+  hist: readonly HistoryItem[],
+): Promise<HistoryItem[]> {
+  const rows = await tx.execute<{ task_id: string; to_step: number }>(sql`
+    select task_id, to_step from hub.process_back_events
+    where process_run_id = ${r.id} and tenant_id = ${r.tenant_id} and task_id is not null
+    order by created_at limit 200`);
+  const to = new Map(rows.map((x) => [x.task_id, Number(x.to_step)] as const));
+  return hist.map((h) => {
+    const s = h.task_id ? to.get(h.task_id) : undefined;
+    return s === undefined ? h : { ...h, to_step: s };
+  });
+}
+
+/** D8 · decision `back_limit`: đích quay lại đang chờ trên stage nguồn (`stage_runs.back_to_step`); khác ⇒ null. */
+export async function decisionBackStep(
+  tx: Tx,
+  r: RunKey,
+  dec: { reason: DecisionReason; stage_idx: number },
+): Promise<number | null> {
+  if (dec.reason !== "back_limit") return null;
+  const [s] = await tx.execute<{ back_to_step: number | null }>(sql`
+    select back_to_step from hub.stage_runs
+    where process_run_id = ${r.id} and tenant_id = ${r.tenant_id} and stage_idx = ${dec.stage_idx}`);
+  return s?.back_to_step === null || s?.back_to_step === undefined ? null : Number(s.back_to_step);
 }

@@ -44,6 +44,8 @@ export function toTaskDetail(
     hasOutput: boolean;
     stageName: string;
     canAct: boolean;
+    /** P-b2 · review MỞ của stage có `back_to_steps` ≠ [] (HUB-FR-118). */
+    back?: { steps: number[]; roundsLeft: number };
   },
 ): TaskDetail {
   const decision = row.kind === "decision";
@@ -71,6 +73,7 @@ export function toTaskDetail(
     ...(row.result !== null && { result: row.result }),
     can_act: x.canAct,
     created_at: row.createdAt.toISOString(),
+    ...(x.back && { back_steps: x.back.steps, back_rounds_left: x.back.roundsLeft }),
   };
 }
 
@@ -102,6 +105,9 @@ type TaskSql = {
   o_ok: boolean | null;
   o_missing: string[] | null;
   o_at: Ts | null;
+  back_steps: number[] | null;
+  back_rounds: number;
+  back_limit: number;
 };
 type GrantSql = {
   task_id: string;
@@ -118,7 +124,8 @@ async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<T
       t.assignee_group_id as group_id, s.current_output_id is not null as has_output,
       pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name,
       pr.snapshot->'stages'->(s.stage_idx::int)->'after'->>'group_id' as review_group_id,
-      pr.tenant_id, pr.started_by, pr.status as run_status,
+      pr.tenant_id, pr.started_by, pr.status as run_status, pr.back_rounds, pr.back_limit,
+      pr.snapshot->'stages'->(s.stage_idx::int)->'after'->'back_to_steps' as back_steps,
       case when pr.origin_kind <> 'room' then 'none'
         when rm.id is null or rm.deleted_at is not null then 'deleted'
         when exists (select 1 from hub.room_members m where m.room_id = rm.id and m.user_id = ${v.userId}
@@ -152,6 +159,13 @@ async function grantRows(tx: Tx, v: ViewerCtx, ids: readonly string[]) {
   );
   return { grants, names };
 }
+
+/** P-b2 · `back_steps/back_rounds_left` chỉ cho review MỞ của stage có `back_to_steps` ≠ [] (= `backRoundsLeft`). */
+const backOf = (r: TaskSql): { steps: number[]; roundsLeft: number } | undefined => {
+  const steps = (r.back_steps ?? []).map(Number);
+  if (r.kind !== "review" || r.status !== "open" || steps.length === 0) return undefined;
+  return { steps, roundsLeft: Math.max(0, Number(r.back_limit) - Number(r.back_rounds)) };
+};
 
 const outputOf = (r: TaskSql): OutputRef | null =>
   r.o_id === null || r.o_at === null
@@ -187,6 +201,7 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
     hasOutput: r.has_output,
     stageName: r.stage_name ?? `#${Number(r.stage_idx) + 1}`,
     canAct: canAct(v, task, { ...run, taskAssignee: assignee, status: r.run_status }),
+    back: backOf(r),
   });
 }
 

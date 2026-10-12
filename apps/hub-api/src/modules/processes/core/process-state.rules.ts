@@ -156,7 +156,8 @@ function onDecide(s: RunState, option: DecisionOption): Transition {
     });
   }
   if (!s.stage.hasOutput) return { ok: false, code: "NO_OUTPUT" };
-  if (reason === "redo_limit") return advance(s, ["close_open_tasks"]);
+  // P-b2 D8 · `back_limit` + `use_current` ⇒ stage nguồn coi Đạt như `redo_limit` (`add_attempt` do gates/back.effects).
+  if (reason === "redo_limit" || reason === "back_limit") return advance(s, ["close_open_tasks"]);
   if (s.stage.after === "auto") return advance(s);
   return ok(withStage(s, { status: "waiting_review" }, { status: "waiting_review" }), [
     "open_review",

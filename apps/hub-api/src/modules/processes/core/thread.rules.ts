@@ -53,7 +53,12 @@ const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi 
 function resultLine(e: Part<"task_result">, l: ThreadLocale): string {
   const label = RESULT[e.result]?.[l] ?? e.result;
   const text = e.feedback ?? e.answer ?? e.choice;
-  return `${e.actor.display_name}: ${label}${text ? ` — ${text}` : ""}`;
+  // P-b2 · quay lại bước (HUB-FR-118): bước hiển thị 1-based như StageStrip.
+  const back =
+    e.to_step === undefined
+      ? ""
+      : t(l, ` · quay lại bước ${e.to_step + 1}`, ` · back to step ${e.to_step + 1}`);
+  return `${e.actor.display_name}: ${label}${back}${text ? ` — ${text}` : ""}`;
 }
 
 function line(e: RoomProcessPart, l: ThreadLocale, n: Names): string {

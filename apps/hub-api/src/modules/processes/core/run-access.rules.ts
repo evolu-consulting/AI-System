@@ -42,13 +42,19 @@ export function canCancel(v: Viewer, r: RunFacts): boolean {
   return isStarter(v, r) || isAdmin(v, r);
 }
 
-/** M5 · như `canCancel`; thêm thành viên Group duyệt khi lý do `redo_limit`. */
+/** M5 · như `canCancel`; thêm thành viên Group duyệt khi lý do `redo_limit` / `back_limit` (P-b2 D8). */
+/** Lý do mà Group duyệt của stage cũng được quyết (người quyết như `redo_limit` — P-b2 D8). */
+export const REVIEW_GROUP_REASONS: ReadonlySet<DecisionReason> = new Set([
+  "redo_limit",
+  "back_limit",
+]);
+
 export function canDecide(
   v: Viewer,
   r: RunFacts & { reason: DecisionReason; reviewGroupMember: boolean },
 ): boolean {
   if (canCancel(v, r)) return true;
-  return r.reason === "redo_limit" && r.reviewGroupMember && sameTenant(v, r);
+  return REVIEW_GROUP_REASONS.has(r.reason) && r.reviewGroupMember && sameTenant(v, r);
 }
 
 /** M1 · user active, quy trình bật + chưa xoá, run group rỗng (cả công ty) hoặc user thuộc ≥ 1 group. */

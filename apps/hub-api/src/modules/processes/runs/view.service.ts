@@ -29,6 +29,7 @@ import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
 import * as repo from "./runs.repo";
 import {
   backFields,
+  decisionBackStep,
   iso,
   type OutputRow,
   type Snap,
@@ -36,6 +37,7 @@ import {
   taskStages,
   toOutputRef,
   viewDecision,
+  withToSteps,
 } from "./view-steps";
 
 export type ViewDeps = { db: Db; config: Pick<ConfigCache, "user"> };
@@ -176,7 +178,7 @@ export class ViewService {
       access: "full",
       input: r.input,
       stages,
-      history: hist,
+      history: await withToSteps(tx, r, hist),
       decision: await this.#decision(tx, v, r, stages),
       my_tasks: my,
       open_tasks: open,
@@ -192,6 +194,7 @@ export class ViewService {
   async #decision(tx: Tx, v: ViewerCtx, r: RunRow, stages: readonly StageView[]) {
     const dec = await viewDecision(tx, r, stages);
     if (!dec) return null;
+    const backTo = await decisionBackStep(tx, r, dec);
     const snap = r.snapshot as unknown as Snap;
     const after = snap.stages[dec.stage_idx]?.after;
     const gid = after?.kind === "review" ? after.group_id : null;
@@ -199,6 +202,7 @@ export class ViewService {
     return {
       ...dec,
       can_decide: canDecide(v, { ...factsOf(r), reason: dec.reason, reviewGroupMember }),
+      ...(backTo !== null && { back_to_step: backTo }),
     };
   }
 

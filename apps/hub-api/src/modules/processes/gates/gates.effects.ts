@@ -88,9 +88,11 @@ type ResultMeta = {
   ref: g.ActorRef;
   feedback?: string;
   sections?: string[];
+  /** P-b2 · Chưa đạt có quay lại bước (HUB-FR-118). */
+  toStep?: number;
 };
 /** Tin thread `task_result` (Đạt/Chưa đạt/quyết định) — T8 `outside` theo người thao tác. */
-async function threadResult(gx: Gx, m: ResultMeta): Promise<void> {
+export async function threadResult(gx: Gx, m: ResultMeta): Promise<void> {
   await enqueueThread(gx.tx, {
     runId: m.run.id,
     roomId: "",
@@ -104,6 +106,7 @@ async function threadResult(gx: Gx, m: ResultMeta): Promise<void> {
     outside: await isOutside(gx, m.run, m.ref.id),
     ...(m.feedback && { feedback: m.feedback }),
     ...(m.sections && { sections: m.sections }),
+    ...(m.toStep !== undefined && { to_step: m.toStep }),
   });
 }
 
