@@ -17,4 +17,20 @@ Trạng thái: PLAN BE (`plan.md`) + FE (`plan-frontend.md`) xong 2026-10-12; ch
 | F2 | Hiển thị: `AttachmentList` trong `MessageItem` + `AgentBlock` (`out/`), realtime test, README | frontend-lead | thường | `plan-frontend §0 D4 D5 D8 D10`, `§2` | `apps/chat-web/src/features/rooms/components`, `event-router.test.ts` | F1 | `bun run typecheck && bun test` | [ ] |
 | F3 | Chạy e2e AC15 của qc, sửa lỗi UI (không sửa test) | frontend-lead | thường | `plan-frontend §5`, `spec §8 AC15` | `apps/chat-web/**` | F2, Q1 | `bunx playwright test X2b2` | [ ] |
 | Q1 | qc: test-plan + khoá test (thay X2b-AC11 có chủ đích) | qc | cao | `spec §8`, `plan §8` (chữ ký luật), `§11`, `§12` (test khoá thay) | `tests/acceptance/X2b2/**`, `e2e/**` | PLAN | đỏ đúng lý do | [ ] |
+| Q0 | qc: test-plan (`test-plan.md`, 53 int + 10 rules + 5 contract-rules + 2 contract + 8 e2e) | qc | cao | `spec §2 §8`, `plan §8 §11 §12`, `plan-frontend §5` | `docs/specs/X2b2-room-attachments/test-plan.md` | PLAN | — | [x] |
 | R1 | Review ≤ 2 vòng + security review riêng + `done:x2b2` + I2 | reviewer / qc | cao | `spec §2 §8 §11` | — | tất cả | `done:x2b2` | [ ] |
+
+## Lệnh mốc `done:x2b2` (đề xuất qc — `tools/scripts/src/done-x2b2.ts`, mẫu `done-x2b.ts`; người viết script: backend-lead ở R1, qc duyệt)
+Dừng ở bước đỏ đầu; bước DB/cổng chạy **tuần tự**; DB test tag riêng (`bun run db:test:create <tag>` rồi `--env-file=.env.test-<tag>.local`). `--skip=int,e2e` cho phép như `done:x2b` (không tính là done đủ).
+| # | Chặng | Lệnh |
+|---|---|---|
+| 1 | Tĩnh | `bun run typecheck` · `bunx biome ci --changed --no-errors-on-unmatched` |
+| 2 | Unit + rules | `bun test apps/hub-api apps/chat-web packages/contracts packages/db tests/acceptance/X2b2/rules tests/acceptance/X2b/rules` |
+| 3 | DB (BE) | `bun --config=bunfig.int.toml test packages/db/src/hub-x2b2.int.test.ts` (+ `bun run db:migrate` hai lần — idempotent 0023) |
+| 4 | Int X2b2 | `bun --config=bunfig.int.toml test --timeout 40000 tests/acceptance/X2b2/` |
+| 5 | Hồi quy int | `… test tests/acceptance/H2c/ tests/acceptance/X2b/ tests/acceptance/X2a/ tests/acceptance/P-a/ tests/acceptance/H1/ tests/acceptance/C1/` (tuần tự sau bước 4; sweeper H2c không chạy song song với X2b2) |
+| 6 | E2E | `bunx playwright test -c e2e/chat/playwright.x2b2.config.ts` (script mới `e2e:chat:x2b2`) · `bun run e2e:chat:x2b` · `bun run e2e:chat:x2a` · `bunx playwright test -c e2e/chat/playwright.config.ts x1-attachments` |
+| 7 | Cấu trúc | `bunx depcruise apps/hub-api apps/chat-web/src packages/contracts/src` · `bun run check:fn --files <phạm vi X2b2 từ commit Gate>` · `bun run check:size --all` |
+| 8 | Khoá + i18n + trace | `bun run test:lock:verify` · `bun run i18n:check` · `bun run trace --check` |
+| 9 | Contract chat (hub-dev, cuối) | `bun run test:contract:chat` (gồm `x2b2-additive.contract.test.ts`) |
+| 10 | Hồi quy mốc | `bun run done:h2c` · `bun run done:pa` (ngoài script, ghi kết quả ở review R1) |
