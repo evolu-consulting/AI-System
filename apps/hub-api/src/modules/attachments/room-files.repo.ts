@@ -46,7 +46,10 @@ export async function bindRoomFiles(
     returning a.room_message_id, a.id, a.filename, a.mime, a.size, a.purged_at, a.position`);
 }
 
-/** R14 · ref file của các tin (một câu / trang; ≤ 100 tin × 10), thứ tự (tin, position). */
+/**
+ * R14 · ref file của các tin (một câu / trang; ≤ 100 tin × 10), thứ tự (tin, position). R11 RV1 #1: file của tin agent
+ * đang chờ `side_effect` chỉ chủ (người gọi) thấy (`hub.room_msg_withheld`, gương `roomOutputsVisible`).
+ */
 export async function roomFileRefRows(
   tx: Tx,
   o: Owner,
@@ -55,7 +58,7 @@ export async function roomFileRefRows(
   return tx.execute<RoomRefRow>(sql`select room_message_id, id, filename, mime, size, purged_at, position
     from hub.attachments
     where room_message_id = any(${uuidArray(p.messageIds)}::uuid[]) and room_id = ${p.roomId}
-      and tenant_id = ${o.tenantId}
+      and tenant_id = ${o.tenantId} and (user_id = ${o.userId} or not hub.room_msg_withheld(room_message_id))
     order by room_message_id, position`);
 }
 
@@ -86,6 +89,7 @@ export async function roomRunFileRows(
     join hub.attachments a on a.room_message_id = m.id and a.room_id = m.room_id
     where m.room_id = ${p.roomId} and m.tenant_id = ${o.tenantId} and a.tenant_id = ${o.tenantId}
       and m.id = any(${uuidArray(p.windowIds)}::uuid[]) and a.purged_at is null
+      and (a.user_id = ${o.userId} or not hub.room_msg_withheld(m.id))
     order by (m.id = ${p.triggerId}::uuid) desc, m.seq desc, a.position
     limit 11`);
 }

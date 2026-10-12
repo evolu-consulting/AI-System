@@ -51,7 +51,11 @@ export function roomFileWindow(p: {
   return [...new Set(all)];
 }
 
-/** R05/R06 · gương của câu đọc (plan §6.4). room ≠ null ⇒ roomMember ∧ ¬roomDeleted; room = null ⇒ owner ∧ ¬conversationDeleted. */
+/**
+ * R05/R06 · gương SQL của câu đọc `findReadableAttachment` (plan §6.4) — chỉ test dùng, code chạy không gọi. room ≠ null ⇒
+ * roomMember ∧ ¬roomDeleted; room = null ⇒ owner ∧ ¬conversationDeleted. (RV1 #1: tin agent chờ `side_effect` ⇒ thêm
+ * `roomOutputsVisible` ở `rooms/agents/room-agent.rules.ts`.)
+ */
 export function canReadAttachment(
   a: { roomId: string | null; ownerId: string; conversationDeleted: boolean },
   v: { userId: string; roomMember: boolean; roomDeleted: boolean },

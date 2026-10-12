@@ -2,8 +2,8 @@
 // mỗi lượt giữ `pg_try_advisory_xact_lock(hashtext('hub.attach.sweep'))` (bận ⇒ `skipped`, 0 việc) → (a) R27 claim ≤ 500
 // hàng chưa gắn quá 24 h (kể cả hàng đã đánh dấu dở) + đánh dấu `purged_at` → xoá nội dung → DELETE hàng đã xoá được →
 // (b) R28 hội thoại đã xoá + (b2) X2b2 phòng đã xoá (definer, cộng vào `purged`): claim + `purged_at = now` → xoá nội dung
-// (hàng còn) → (c) mồ côi trên kho (lô `list` xoay vòng,
-// con trỏ trong bộ nhớ theo storage): `.part`/file > 1 h không hàng sống ⇒ xoá; `.part` có hàng sống ⇒ `promote` (PL13).
+// (hàng còn) → (c) mồ côi trên kho (lô `list` xoay vòng, con trỏ trong bộ nhớ theo storage): `.part`/file > 1 h không
+// hàng sống ⇒ xoá; `.part` có hàng sống ⇒ `promote` (PL13).
 // Đồng hồ tiêm (`now`) — không `now()` trong câu (AC-13). Xoá lỗi ⇒ `warn attachment-remove-failed`, lượt sau làm lại.
 // (c) chạy trong savepoint + bắt lỗi (`warn attachment-sweep-orphans-failed {code}`): lỗi `list` (EACCES/EPERM…) không
 // rollback (a)/(b) — file đã xoá thì hàng phải được commit (spec-decisions "REVIEW 1 — Hub" RV-3).

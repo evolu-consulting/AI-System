@@ -200,6 +200,18 @@ export function shouldBindRoomOutputs(p: {
   return p.status === "finished" && p.reason === "posted";
 }
 
+/**
+ * X2b2-R11 bổ sung (review RV1 #1) · `out/` của tin agent đang chờ xác nhận `side_effect` chỉ người gọi xem/tải tới khi
+ * chờ được giải quyết (hết `pending`). Gương SQL `hub.room_msg_withheld` (0026) ở ref / `/content` / cửa sổ file run.
+ */
+export function roomOutputsVisible(p: {
+  isCaller: boolean;
+  waitKind: "need_input" | "side_effect" | null;
+  pendingConfirm: boolean;
+}): boolean {
+  return p.isCaller || p.waitKind !== "side_effect" || !p.pendingConfirm;
+}
+
 /** D15 [Q2] · agent đang chờ xác nhận còn trong AU (ảnh hiện hành) của người xác nhận. */
 export function confirmStillAllowed(agentId: string, au: ReadonlySet<string>): boolean {
   return au.has(agentId);

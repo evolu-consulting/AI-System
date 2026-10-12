@@ -93,5 +93,10 @@
     "file": "tools/scripts/src/trace.test.ts",
     "name": "describe(\"ADM-NFR-06 · trace parse (T-TRACE-1, T-T\")",
     "reason": "TECH-DEBT #23: callback describe của test 65 dòng (trước M3), tách khi chạm lại"
+  },
+  {
+    "file": "packages/db/src/hub-x2b2.int.test.ts",
+    "name": "describe(\"HUB-FR-44 · 0023 D5 — RLS ma trận đọc/gh\")",
+    "reason": "Nợ cũ X2b-2 B1: callback describe ma trận RLS 85 dòng; lộ ra khi RV1 #1 chạm file — tách khi chạm lại"
   }
 ]

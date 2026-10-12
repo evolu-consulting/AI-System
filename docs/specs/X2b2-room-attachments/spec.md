@@ -169,6 +169,8 @@ Lệnh xong: `bun run typecheck && bun test && bun --env-file=.env.test-qc.local
 - 2026-10-12 PLAN BE: D1–D13 ở `plan.md` §1 (migration 0023, "chưa gắn" = 2 cột NULL, FK kép, siết RLS chủ, definer sweeper, `!…`+file 400, Q16 đổi).
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - 2026-10-12 readiness lần 1 (NOT READY, 7 Cao), mặc định đã chấp nhận: [`spec-decisions.md`](spec-decisions.md).
+- 2026-10-13 R11 bổ sung (review RV1 #1, điều phối chốt hướng a): `out/` của tin agent đang chờ `side_effect` chỉ người gọi xem/tải tới khi chờ được giải quyết (`tool_confirmations` của run hết `pending`); người khác không ref (trang tin + `room.message` công khai), `/content` 404, không vào cửa sổ file run của họ. Hiện thực: definer `hub.room_msg_withheld` + siết policy `attachments_room_member_select` (migration 0026, không đổi bảng/contract), lọc tường minh ở `findReadableAttachment`/`roomFileRefRows`/`roomRunFileRows`, luật thuần `roomOutputsVisible`. Người gọi rời phòng khi còn chờ ⇒ giữ mãi (an toàn).
+- 2026-10-13 S8 một chiều (review RV1 Minor #2): `ownsUpload` (`processes/runs/start-inputs.ts`) chặn file đã gắn phòng làm input quy trình, nhưng file input quy trình vẫn gửi được vào phòng — chấp nhận: chính chủ tự chia sẻ file của mình, không rò sang người khác.
 
 ## 11. Rủi ro
 | Rủi ro | Giảm |

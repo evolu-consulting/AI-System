@@ -290,6 +290,61 @@ describe("HUB-FR-44 · 0023 D6 — hub.attach_claim_deleted_rooms (int)", () => 
   });
 });
 
+/** Người dùng `u` (scope user) đọc được hàng attachment `id` không (RLS lớp 2). */
+const visibleTo = (u: string, id: string) =>
+  withHubScope(db, user(u), async (tx) => {
+    const rows = await tx.execute<{ id: string }>(
+      dsql`select id from hub.attachments where id = ${id}`,
+    );
+    return rows.length === 1;
+  });
+
+describe("HUB-FR-101 · 0026 RV1 #1 — out/ của tin agent chờ side_effect chỉ người gọi (int)", () => {
+  const s = { run: "", file: "" };
+  const confirm = (status: string) =>
+    owner`update hub.tool_confirmations set status = ${status}, decided_run_id = ${s.run} where run_id = ${s.run}`;
+  const visible = (u: string) => visibleTo(u, s.file);
+
+  beforeAll(async () => {
+    const [r] = await owner<
+      { id: string }[]
+    >`insert into hub.runs (tenant_id, user_id, conversation_id,
+      flow_id, status, config_version, user_message_id, answer_message_id, finished_at)
+      values (${T1}, ${A}, ${g.conv}, ${g.flow}, 'finished', 1, ${crypto.randomUUID()}, ${crypto.randomUUID()}, now())
+      returning id`;
+    s.run = r?.id ?? "";
+    seq += 1;
+    const [m] = await owner<{ id: string }[]>`insert into hub.room_messages
+      (room_id, tenant_id, seq, sender_type, sender_id, content, created_at, run_id, flow_id, trigger_message_id,
+       run_status, wait_kind)
+      values (${g.g1}, ${T1}, ${seq}, 'agent', ${crypto.randomUUID()}, 'chung', now(), ${s.run}, ${g.flow}, ${g.m1},
+       'finished', 'side_effect') returning id`;
+    await owner`insert into hub.tool_confirmations (tenant_id, user_id, flow_id, run_id, agent_id, workflow_id, status)
+      values (${T1}, ${A}, ${g.flow}, ${s.run}, ${crypto.randomUUID()}, ${crypto.randomUUID()}, 'pending')`;
+    s.file = await insert(inRoom(g.g1, m?.id ?? null, 4)); // origin upload: luật không phụ thuộc origin
+  });
+
+  test("pending ⇒ A (người gọi, chủ file) thấy, B (thành viên) không; definer đúng mẫu", async () => {
+    expect(await visible(A)).toBe(true);
+    expect(await visible(B)).toBe(false);
+    const [f] = await owner<
+      { def: boolean; pub: boolean; rw: boolean }[]
+    >`select p.prosecdef as def,
+        has_function_privilege('public', p.oid, 'EXECUTE') as pub, has_function_privilege('hub_rw', p.oid, 'EXECUTE') as rw
+      from pg_proc p where p.pronamespace = 'hub'::regnamespace and p.proname = 'room_msg_withheld'`;
+    expect(f).toEqual({ def: true, pub: false, rw: true });
+  });
+
+  test("hết pending (confirmed/declined) ⇒ B thấy (R11 bình thường)", async () => {
+    await confirm("confirmed");
+    expect(await visible(B)).toBe(true);
+    await confirm("pending");
+    expect(await visible(B)).toBe(false);
+    await confirm("declined");
+    expect(await visible(B)).toBe(true);
+  });
+});
+
 describe("HUB-FR-44 · 0023 — idempotent (int)", () => {
   const file = new URL("../migrations-hub/0023_x2b2_room_attachments.sql", import.meta.url);
   const stmts = readFileSync(file, "utf8")

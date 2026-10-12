@@ -65,7 +65,8 @@ export type ReadableAttachment = {
 /**
  * X2b2-R05/R06 (plan X2b2 §6.4; gương `canReadAttachment`) · file đọc được của người xem; không có → null. Scope `user`:
  * chưa gắn phòng ⇒ chủ + hội thoại (nếu có) chưa xoá (H2c P22); gắn phòng ⇒ thành viên hiện tại (`hub.is_room_member`,
- * phòng xoá ⇒ mọi `left_at` đặt ⇒ false). RLS 0023 lọc thêm lớp 2.
+ * phòng xoá ⇒ mọi `left_at` đặt ⇒ false) ∧ (chủ file ∨ tin không bị giữ — R11 RV1 #1, `hub.room_msg_withheld`, gương
+ * `roomOutputsVisible`). RLS 0023/0026 lọc thêm lớp 2.
  */
 export async function findReadableAttachment(
   tx: Tx,
@@ -83,7 +84,8 @@ export async function findReadableAttachment(
     from hub.attachments a left join hub.conversations c on c.id = a.conversation_id
     where a.id = ${o.id} and a.tenant_id = ${o.tenantId}
       and ((a.room_id is null and a.user_id = ${o.userId} and c.deleted_at is null)
-        or (a.room_id is not null and hub.is_room_member(a.room_id)))`);
+        or (a.room_id is not null and hub.is_room_member(a.room_id)
+          and (a.user_id = ${o.userId} or a.room_message_id is null or not hub.room_msg_withheld(a.room_message_id))))`);
   if (!r) return null;
   return {
     id: r.id,

@@ -13,7 +13,7 @@ import type { Redis } from "../../../lib/redis";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import { bindRoomOutputs } from "../../attachments/room-files";
 import { type RoomMessageRow, toRoomMessage } from "../rooms.map";
-import { agentMessageView, shouldBindRoomOutputs } from "./room-agent.rules";
+import { agentMessageView, roomOutputsVisible, shouldBindRoomOutputs } from "./room-agent.rules";
 import * as repo from "./room-post.repo";
 import { type AgentData, rowFor } from "./room-post.view";
 import { agentMessageEvents, runClosedEvents } from "./room-run-events";
@@ -39,20 +39,25 @@ function metaOf(o: repo.RunOutcomeRow, v: View): repo.PostMeta {
   };
 }
 
-/** D3 · bản công khai (mọi thành viên) và bản của người gọi (nội dung + `ask` riêng của `side_effect`); D11 ref `out/` ở cả hai. */
+/**
+ * D3 · bản công khai (mọi thành viên) và bản của người gọi (nội dung + `ask` riêng của `side_effect`); D11 ref `out/` ở
+ * bản người gọi, bản công khai chỉ khi `roomOutputsVisible` (RV1 #1: chờ `side_effect` ⇒ không ref).
+ */
 function messagesOf(
   o: repo.RunOutcomeRow,
   v: View,
   p: { content: string; res: repo.PostResult; files?: AttachmentRef[] },
 ) {
   const { content, res } = p;
-  const row: RoomMessageRow = {
+  const base: RoomMessageRow = {
     ...{ id: o.answerMessageId, roomId: o.roomId, seq: res.seq ?? 0, senderType: "agent" },
     sender: { id: o.senderId, displayName: null, username: null },
     ...{ content, clientMsgId: null, createdAt: res.createdAt ?? new Date() },
     ...{ flowId: o.threadId ?? undefined, placement: res.placement ?? "main" },
-    ...(p.files && { attachments: p.files }),
   };
+  const row: RoomMessageRow = { ...base, ...(p.files && { attachments: p.files }) };
+  const shared = { isCaller: false, waitKind: v.waitKind, pendingConfirm: o.pendingConfirm };
+  const pub = roomOutputsVisible(shared) ? row : base;
   const data: AgentData = {
     ...{ runId: o.runId, triggerMessageId: o.triggerMessageId, runStatus: v.runStatus },
     ...{ waitKind: v.waitKind, ask: v.ask, stepCount: o.stepCount, runMs: o.runMs },
@@ -60,7 +65,7 @@ function messagesOf(
     ...{ privateContent: o.content || null, privateAsk: o.ask },
   };
   return {
-    public: toRoomMessage(rowFor(row, data, "")),
+    public: toRoomMessage(rowFor(pub, data, "")),
     caller: toRoomMessage(rowFor(row, data, o.callerId)),
     callerId: o.callerId,
   };
