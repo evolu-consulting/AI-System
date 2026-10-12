@@ -28,6 +28,7 @@ Spec: [`spec.md`](spec.md) §2 (R01–R05, R10–R11, R16), §5, §8 AC15 · n�
 | `features/rooms/components/agent/AgentBlock.tsx` | `AttachmentList` cho `out/` (D5) |
 | `features/composer/components/{Composer,composer-types}.tsx` + `AttachNote.tsx` (mới) | prop `attachNote`, D6 |
 | `features/rooms/README.md`, `features/composer/README.md`, `features/attachments/README.md` | cập nhật (bỏ "attachments={false}" của phòng) |
+| `features/composer/lib/send-error.ts` | 400 `VALIDATION_ERROR` có path `attachment_ids` khi chữ bắt đầu `!key` (D8 plan BE) ⇒ dùng câu `PROCESS_ATTACH_UNSUPPORTED` ("PROCESS_NO_ATTACH") sẵn có; không thêm key; thêm 1 ca vào unit `send-error` |
 | `packages/i18n/locales/chat/{vi,en}.json` | key mới §3 |
 | Test mới | `use-send-room-text.test.ts`, `AttachNote`/`Composer.test.tsx` (ca note), `MessageItem.test.tsx`, `AgentBlock.test.tsx` (ca có tệp), mở rộng `event-router.test.ts` (tin có `attachments`) |
 

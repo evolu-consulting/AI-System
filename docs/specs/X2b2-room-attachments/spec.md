@@ -46,7 +46,7 @@ H2c-R01…R29 (loại/cỡ/tên/sniff/hạn mức/vòng đời) áp **nguyên v�
 |---|---|---|
 | X2b2-R01 | Upload giữ nguyên `POST /attachments` (file chưa gắn, thuộc người upload, 24 giờ). Chỉ **thành viên hiện tại** gắn được vào tin phòng; file phải của chính người gửi, chưa gắn (H2c-R09) | FR-44, Q1 |
 | X2b2-R02 | Gắn trong **cùng transaction** ghi tin phòng; gắn thành công ⇔ tin có `room_message_id`. 404 `ATTACHMENT_NOT_FOUND{ids}` khi sai bất kỳ id (tenant khác, user khác, đã gắn, hết hạn, nội dung mất), 0 tin, 0 run. 2 POST song song cùng id ⇒ đúng 1 thành công | H2c-R09/R11 |
-| X2b2-R03 | Thứ tự kiểm `POST /rooms/:id/messages` (mở rộng X2b): auth 401 → phòng 404 `ROOM_NOT_FOUND` (không phải thành viên) → body 400 → **đính kèm 404** → router/`AGENT_NOT_FOUND` → thread/`FLOW_BUSY`/`TOO_MANY_RUNS` → tạo tin + run. Lỗi ở bước sau ⇒ rollback, file vẫn chưa gắn (gửi lại được) | H2c-R10, X2b |
+| X2b2-R03 | Thứ tự kiểm `POST /rooms/:id/messages`: **§3 là nguồn duy nhất**. Lỗi ở bước sau ⇒ rollback, file vẫn chưa gắn (gửi lại được) | H2c-R10, X2b |
 | X2b2-R04 | Tin phòng có file: `content` vẫn bắt buộc 1…16000 ký tự (Q3); ≤ 10 file/tin, id trùng/11 id ⇒ 400 `VALIDATION_ERROR`; `client_msg_id` trùng ⇒ 200 trả lại tin cũ, **không gắn lại** | R04 X2b |
 | X2b2-R05 | Đọc nội dung/metadata chỉ khi người gọi là **thành viên hiện tại** của `room_id` của file và cùng tenant; không phải thành viên (kể cả `tenant_admin`, kể cả người từng là thành viên đã rời/bị bớt) ⇒ 404 `NOT_FOUND`, không 403. Thêm thành viên mới ⇒ xem được file cũ (lịch sử, X2a) | BR-22, FR-96 |
 | X2b2-R06 | File gắn vào phòng **không** đọc được qua `/conversations*`; file của hội thoại riêng **không** gắn được vào tin phòng (đã gắn ⇒ 404). Một file gắn đúng một tin, một nơi (phòng **hoặc** hội thoại) | H2c-R06, BR-22 |
@@ -54,7 +54,7 @@ H2c-R01…R29 (loại/cỡ/tên/sniff/hạn mức/vòng đời) áp **nguyên v�
 | X2b2-R08 | **Agent chỉ thấy file của phòng này:** mọi truy vấn file-set có `room_id = runs.room_id`; không lấy file của phòng khác, hội thoại riêng, file chưa gắn của người tag, hay file người tag tự có nhưng không gắn vào tin phòng. Endpoint nội bộ Runtime chỉ phục vụ id nằm trong payload job (H2c-R15) | BR-21, BR-22 |
 | X2b2-R09 | Người tag **không cần là người gửi file** (X2b-R09); nhưng agent không được thấy file mà người tag không xem được — người tag đang là thành viên (đã bảo đảm bởi R05). Người tag rời phòng giữa chừng ⇒ huỷ run (X2b-R17), file giữ nguyên trong phòng | BR-21 |
 | X2b2-R10 | Quyền/quota/usage vẫn của người tag (BR-21). File đính kèm **không** tăng usage run; dung lượng tính vào hạn mức **tenant** như H2c-R16 (người upload). Người gửi file chịu trách nhiệm chia sẻ với cả phòng (câu chữ gợi ý ở composer, Q8) | BR-21 |
-| X2b2-R11 | `out/` của run phòng (agent bật `Write`): gắn vào **tin agent** của phòng (`room_message_id`), `user_id` = người tag, `origin=output`; mọi thành viên xem/tải (R05); trần H2c (5 file, 32 MiB) giữ. Run lỗi/huỷ ⇒ không gắn | Q14 X2b, H2c-R26 |
+| X2b2-R11 | `out/` của run phòng (agent bật `Write`): gắn vào **tin agent** của phòng (`room_message_id`), `user_id` = người tag, `origin=output`; mọi thành viên xem/tải (R05); trần 5 file/job, 10 file/tin, 32 MiB (H2c). Run lỗi/huỷ ⇒ không gắn | Q14 X2b, H2c-R26 |
 | X2b2-R12 | Thành viên khác **không cần quyền agent** để tải file trong phòng (kể cả `out/`); quota/usage của họ không đổi | CHAT-AC-50 |
 | X2b2-R13 | Rời nhóm / bị bớt: mất quyền xem file ngay (R05); file giữ trong phòng. Xoá phòng ⇒ tin + file: nội dung xoá ≤ 10 phút (sweeper, H2c-R28 mở rộng), `/content` 404 ngay sau xoá | FR-44, FR-98 |
 | X2b2-R14 | File chưa gắn hết 24 giờ (H2c-R27) xoá như cũ. Người upload không còn là thành viên khi chưa gắn: gắn bị từ chối (R01) | FR-44 |
@@ -63,7 +63,7 @@ H2c-R01…R29 (loại/cỡ/tên/sniff/hạn mức/vòng đời) áp **nguyên v�
 | X2b2-R17 | Header tải (`/content`): giữ H2c-R13 (`Content-Type` theo `mime` server, `nosniff`, `Content-Disposition: attachment`, `Cache-Control: private, no-store`) | H2c-R13 |
 | X2b2-R18 | Hội thoại riêng user↔agent: toàn bộ hành vi H2c giữ nguyên, test khoá H2c + AC-H07 xanh | BR-22, X2b-R20 |
 | X2b2-R19 | Phòng/DM bị ẩn phía một bên: file vẫn truy cập qua phòng khi còn là thành viên | FR-97 |
-| X2b2-R20 | Tin có `!quy-trình` + file trong phòng: giữ hành vi P-a hiện có (file theo đường process-runs), **không đổi** ở X2b-2; chỉ kiểm hồi quy | CR-058 |
+| X2b2-R20 | `!quy-trình` ở timeline kèm file ⇒ 400 (D8); file cho quy trình chỉ qua form input P-b. `!…` không file: giữ P-a, hồi quy | CR-058 |
 | X2b2-R21 | Kiểm sniff/virus: như H2c (chữ ký nội dung, không quét virus) | H2c-R03 |
 | X2b2-R22 | Audit/log: không ghi tên file hay nội dung vào log; chỉ `attachment_id`, `room_id`, `tenant_id` | CONVENTIONS |
 
@@ -100,7 +100,7 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md). **Không artboard mới** �
 | Composer phòng (DM, nhóm) + composer thread | Bật `attachments`: nút `button "Đính kèm tệp"`, kéo-thả, chip tiến trình/lỗi/Thử lại/Xoá (C1 nguyên văn: ≤ 10 tệp, 20 MB, loại tệp, hết dung lượng). Gửi cần có chữ (Q3): chip có mà ô trống ⇒ Gửi `disabled` + dòng gợi ý "Nhập nội dung…" |
 | Dòng gợi ý chia sẻ (Q8) | Hiện dưới ô nhập **chỉ khi có chip**, `role="note"`, không hộp xác nhận: nhóm "Mọi thành viên của nhóm đều xem và tải được tệp này…"; DM "<Tên> sẽ xem và tải được…"; thread "Mọi thành viên của phòng…". Ghi rõ agent được `@` cũng đọc được (BR-21) |
 | Tin phòng/thread có tệp | `MessageItem` thêm `AttachmentList` dưới bong bóng (mình: lệch phải); tin agent có `out/` (R11): `AgentBlock` thêm `AttachmentList` dưới thân. Bấm chip = tải (fetch + Authorization), không preview (Q15) |
-| Trạng thái | Đang tải lên: chip "Đang tải lên…", Gửi `disabled` tooltip "Chờ tải tệp xong". `available=false`: chip xám, `aria-disabled`, tooltip "Tệp đã bị xoá". Lỗi tải: toast "Không tải được tệp." (gồm 404 khi vừa bị bớt khỏi nhóm). Lỗi gửi `ATTACHMENT_NOT_FOUND`: chip có id trong `details.ids` → lỗi "Tệp không còn…", chữ giữ nguyên, chip khác giữ. Lỗi khác giữ chip + chữ (rollback ⇒ file còn chưa gắn, gửi lại được). Xung đột 409 `FLOW_BUSY`/429: như X2b |
+| Trạng thái | Đang tải lên: chip "Đang tải lên…", Gửi `disabled` tooltip "Chờ tải tệp xong". `available=false`: chip xám, `aria-disabled`, tooltip "Tệp đã bị xoá". Lỗi tải: toast "Không tải được tệp." (gồm 404 khi vừa bị bớt khỏi nhóm). Lỗi gửi `ATTACHMENT_NOT_FOUND`: chip có id trong `details.ids` → lỗi `attach.err.missing` (chữ: plan-frontend §3), chữ giữ nguyên, chip khác giữ. Lỗi khác giữ chip + chữ (rollback ⇒ file còn chưa gắn, gửi lại được). Xung đột 409 `FLOW_BUSY`/429: như X2b |
 | Realtime | `room.message` tới người khác mang `attachments[]` ⇒ chip hiện cùng tin (cache vá có sẵn, `insertMessage` khử trùng); nối lại SSE không lặp tin. Không phát nội dung tệp |
 
 Chốt câu hỏi FE: **Q3** giữ (chữ bắt buộc, composer tự chặn) · **Q8** giữ (dòng gợi ý, không hộp xác nhận) · **Q13** giữ (thread có đính kèm) · **Q15** giữ (không preview).
@@ -138,7 +138,7 @@ Env mới: không dự kiến.
 | X2b2-AC15 | (UI, CHAT-AC-47/50 mở rộng) 2 trình duyệt: A bấm đính kèm trong DM, chọn file, thấy chip tiến trình + dòng gợi ý chia sẻ, gửi; B thấy chip, tải được; A gõ `@hoadon` ⇒ trạng thái "đang xử lý", kết quả cả phòng; file lỗi 415/413 báo đúng câu như C1 | e2e |
 | X2b2-AC16 | (R20, R22) `!hoa-don` + file trong phòng giữ hành vi P-a (hồi quy `done:pa`); log không chứa tên file | int |
 
-Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwright test X2b2`. Lệnh mốc: `done:x2b2` (qc, mẫu `done:x2b`) + hồi quy `done:h2c`, `done:x2b`.
+Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwright test -c e2e/chat/playwright.x2b2.config.ts` (= `bun run e2e:chat:x2b2`). Lệnh mốc: `done:x2b2` (qc, mẫu `done:x2b`) + hồi quy `done:h2c`, `done:x2b`.
 
 ## 9. Câu hỏi mở (đều có mặc định; không trả lời = chấp nhận mặc định — Luật 2b)
 | Q | Câu hỏi | Mặc định đề xuất | Mức |
@@ -158,9 +158,9 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 | Q13 | Thread (flow) có đính kèm? | **Có**, cùng luật; tin thread có `flow_id` + file; file-set theo R07 | Thường |
 | Q14 | Mã CHAT-AC riêng cho đính kèm phòng? | Đề xuất `CHAT-AC-61` (đính kèm trong phòng, mở rộng CHAT-AC-47/50) và `AC-H38`; **docs-architect bổ sung vào BA/usecases khi Gate** (design chỉ sửa khi được giao); spec dùng X2b2-AC tới lúc đó | Thấp |
 | Q15 | Xem trước (preview) ảnh/PDF trong phòng? | Không — tải/mở như C1 | Thấp |
-| Q16 | Dify agent (`dify-*`) qua `@` có nhận file phòng? | **Có**, dùng chung đường file-set H2c (R22 H2c upload lên Dify); PLAN xác nhận hai đường chạy cùng `runs.attachment_ids` | Thường |
+| Q16 | Dify agent (`dify-*`) qua `@` có nhận file phòng? | **Không** (D12): runner Dify không dùng file như H2c T11; `runs.attachment_ids` vẫn ghi | Thường |
 
-**PLAN BE (2026-10-12, plan §13):** giữ mặc định Q1, Q2, Q4 (+ siết policy chủ), Q5 (cửa sổ gồm tin agent), Q6, Q7, Q9–Q11, Q13; Q12 cụ thể: tin timeline `!…` kèm file ⇒ 400 như hôm nay; **Q16 đổi**: runner `dify-agent`/`dify-workflow` không dùng file (code hiện tại, H2c T11) — file-set vẫn ghi `runs.attachment_ids`, công cụ MCP Dify trong job CLI vẫn nhận file.
+**PLAN BE (2026-10-12, plan §13):** giữ mặc định Q1, Q2, Q4 (+ siết policy chủ), Q5 (cửa sổ gồm tin agent), Q6, Q7, Q9–Q11, Q13; Q12 cụ thể: tin timeline `!…` kèm file ⇒ 400 như hôm nay. Q16 theo D12.
 
 ## 10. Quyết định
 ### Trước Gate (đã chốt với người dùng)
@@ -168,7 +168,7 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 - 2026-10-10: thứ tự `P-a → X2b-2 → H4b → P-b → P-c`; 2026-10-12 (CR-062…066): `X2b-2 → H4b → P-b2 → K1 → P-c → K2`.
 - 2026-10-12 PLAN BE: D1–D13 ở `plan.md` §1 (migration 0023, "chưa gắn" = 2 cột NULL, FK kép, siết RLS chủ, definer sweeper, `!…`+file 400, Q16 đổi).
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- 2026-10-12 readiness lần 1 (NOT READY, 7 Cao), mặc định đã chấp nhận: [`spec-decisions.md`](spec-decisions.md).
 
 ## 11. Rủi ro
 | Rủi ro | Giảm |

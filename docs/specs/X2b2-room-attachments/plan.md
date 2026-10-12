@@ -69,7 +69,7 @@ Ma trận đọc sau 0023 (scope user, cùng tenant): chủ + `room_id NULL` ⇒
 | `attachments.repo.ts` `deleteAttachment`, `supersedeJobOutput`, `bindOutputs` | `message_id is null` | `+ and room_id is null` |
 | `attachments.repo.ts` `findOwnedAttachment` | chủ + hội thoại chưa xoá | thay bằng `findReadableAttachment` (§6.4) |
 | `sweeper.ts` `sweepUnbound` (claim + DELETE) | `message_id IS NULL` | `message_id IS NULL AND room_id IS NULL` |
-| `processes/runs/start-inputs.ts` `ownsUpload` | chủ + chưa xoá | **không sửa**: RLS D5 lo phần "đã rời phòng"; ghi TECH-DEBT nếu reviewer muốn chặn file phòng làm input quy trình |
+| `processes/runs/start-inputs.ts` `ownsUpload` | chủ + chưa xoá | **thêm `and room_id is null`** (S8, B3): RLS D5 lo "đã rời phòng", nhưng file phòng còn của thành viên không được làm input quy trình |
 
 ## 6. Luồng
 ### 6.1 Tin thường / tin thread có file (`MessagesService`)
@@ -171,6 +171,8 @@ Gửi có file: + 1 SELECT (kiểm trước) + 1 UPDATE (gắn) + 1 SELECT (refs
 | S5 | Definer `attach_claim_deleted_rooms` từ chối scope ≠ system (42501); `search_path` cố định | int DB |
 | S6 | `out/` chỉ gắn khi definer `posted`; không lên phòng khi `skipped` | AC10 |
 | S7 | Log không có `filename` (R22) | AC16 |
+| S8 | `processes/runs/start-inputs.ts` `ownsUpload` thêm `and room_id is null`: file phòng KHÔNG làm input quy trình (task B3; int I53 ⇒ 400 `VALIDATION_ERROR` path `inputs`) | I53 |
+| S3b | Endpoint nội bộ không kiểm phòng xoá — chấp nhận; ca I54: DELETE phòng khi run chạy ⇒ GET nội bộ token job ⇒ 401 | I54 |
 
 ## 12. Test khoá cần `qc` thay (Tranh chấp có chủ đích, spec §12)
 | Test khoá | Hiện | Thay bằng |

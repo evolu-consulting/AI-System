@@ -1,12 +1,12 @@
 # Test plan · X2b2-room-attachments (qc, chế độ PLAN — chưa WRITE, chưa LOCK)
 
-Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225ab5d3` (§3 thứ tự kiểm, §4 DB, §5 "chưa gắn", §8 chữ ký luật, §11 S1–S7, §12 test khoá), plan-frontend `7f9365ce` (§5 nhãn e2e). Không Dify thật, không `claude-sub`: Runtime = `ScriptRuntime` H1 (`fake-cli`, directive `#fake:files`, `#fake:out=…`, `#fake:read=`). `tests/.lock` **chưa ghi** (khoá sau Gate, task Q1). Mọi tên test bắt đầu bằng mã (`HUB-FR-44 · X2b2-AC02 · …`).
+Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225ab5d3` (§3 thứ tự kiểm, §4 DB, §5 "chưa gắn", §8 chữ ký luật, §11 S1–S7, §12 test khoá), plan-frontend `7f9365ce` (§5 nhãn e2e). Không Dify thật, không `claude-sub`; **int không dùng directive `#fake:*`** (chỉ có ở Runtime Python): helper `_x2b2.ts` giả lập Runtime bằng token job (`GET /internal/jobs/:id/attachments/:att`, `POST /internal/jobs/:id/outputs`); sandbox theo job đã có H2c `files.stack.test.ts`. `tests/.lock` **chưa ghi** (khoá sau Gate, task Q1). Mọi tên test bắt đầu bằng mã (`HUB-FR-44 · X2b2-AC02 · …`).
 
 ## 1. Hạ tầng
 | Thứ | Nội dung |
 |---|---|
 | DB | **Tag riêng**: `bun run db:test:create qc` (sinh lại `.env.test-qc.local` — file sau P-b RV3 đã ghi đè cả `HUB_TEST_DATABASE_URL` và `AGENT_RT_TEST_DATABASE_URL`; file cũ trỏ `ai_system_h1_test` chung ⇒ tạo lại trước khi chạy). Chạy `bun --env-file=.env.test-qc.local --config=bunfig.int.toml test tests/acceptance/X2b2` |
-| `tests/acceptance/X2b2/_x2b2.ts` | `startX2b` (X2b) + kho H2c (`HUB_ATTACH_DRIVER=local`, `HUB_ATTACH_DIR` = `tempDir("x2b2")`, `sweepOnce` tiêm đồng hồ) + `upload(who, name, bytes)` (POST `/attachments` multipart) + `sendRoom(who, room, {content, attachment_ids?, flow_id?, client_msg_id?})` + `roomFiles(sql, roomId)` đọc bằng `to_jsonb(a)->>'room_id'` (trước B1 cột chưa có ⇒ trả rỗng ⇒ đỏ ở `expect`, không `PostgresError 42703`) |
+| `tests/acceptance/X2b2/_x2b2.ts` | `startX2b` (X2b) + kho H2c (`HUB_ATTACH_DRIVER=local`, `HUB_ATTACH_DIR` = `tempDir("x2b2")`, `sweepOnce` tiêm đồng hồ) + `jobFetch(run, attId)` / `jobOutput(run, name, bytes)` (gọi endpoint nội bộ bằng token job của run) + `upload(who, name, bytes)` (POST `/attachments` multipart) + `sendRoom(who, room, {content, attachment_ids?, flow_id?, client_msg_id?})` + `roomFiles(sql, roomId)` đọc bằng `to_jsonb(a)->>'room_id'` (trước B1 cột chưa có ⇒ trả rỗng ⇒ đỏ ở `expect`, không `PostgresError 42703`) |
 | `tests/acceptance/X2b2/_modules.ts` | nạp động `room-files.rules.ts`, `rooms.rules.ts`, `room-agent.rules.ts`, `@ai/contracts/chat` (vắng hàm ⇒ `{}` ⇒ đỏ `expect(typeof f).toBe("function")`, không `TypeError` khi import) |
 | Người (fixture X2a/H1) | A = `lan` (quyền `hoadon`) · B = `hoa` (bỏ grant `hoadon`, như X2b) · C = `cuc` (acme, ngoài phòng) · TA = `tadmin` (`tenant_admin` acme, ngoài phòng) · Z = `zed` (tenant `zeta`) |
 | Phòng | G1 nhóm {A, B} "Phòng hoá đơn" · G2 nhóm {A, C} "Phòng khác" · DM A↔B · mỗi ca tạo phòng mới (tên có số ca) — không dùng chung trạng thái giữa ca |
@@ -79,26 +79,25 @@ Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225
 ### 3.4 File cho agent — `run-files.int.test.ts` (rủi ro cao; S3)
 | Mã | AC/R | Dữ liệu | Kỳ vọng |
 |---|---|---|---|
-| I30 | AC06, R07 | A gửi `hoadon.pdf` vào G1, rồi "@hoadon kiểm tra file #fake:files" | `runs.attachment_ids=[hoadon]`; job `payload.attachments` 1 phần tử; tin agent liệt kê `hoadon.pdf:<sha256>`; B thấy tin agent |
-| I31 | AC07, R08 | A có `rieng.pdf` (hội thoại riêng, đã gắn), `phongkhac.pdf` (G2, A gửi), `chuagan.pdf` (A upload, chưa gắn); A gọi `@hoadon #fake:files` trong G1 | file-set **chỉ** file G1; không 3 file kia |
-| I32 | AC07, R08 | `#fake:read=<đường dẫn job khác>/phongkhac.pdf` | deny (Runtime báo lỗi đọc, tin agent không chứa nội dung) |
-| I33 | AC07 | endpoint nội bộ tải file: token job của run G2 xin id file G1; token rác | 404 (id không trong payload, H2c-R15) / 401 |
+| I30 | AC06, R07 | A gửi `hoadon.pdf` vào G1, rồi "@hoadon kiểm tra file" | `runs.attachment_ids=[hoadon]`; job `payload.attachments` 1 phần tử; `jobFetch` đúng byte (sha256 khớp); B thấy tin agent |
+| I31 | AC07, R08 | A có `rieng.pdf` (hội thoại riêng, đã gắn), `phongkhac.pdf` (G2, A gửi), `chuagan.pdf` (A upload, chưa gắn); A gọi `@hoadon xem` trong G1 | file-set **chỉ** file G1; không 3 file kia |
+| I33 | AC07 | `jobFetch` bằng token job của run G2 xin id file G1; token rác | 401 cả hai (H2c: mọi sai xác thực ⇒ unauthorized; `attachments.service.ts:112`) |
 | I34 | AC08, R07 | G1 30 tin thường, file ở tin thứ 3; gọi `@hoadon` | file tin 3 **không** trong `attachment_ids` |
 | I35 | AC08, R07 | thread T: file ở tin thread #5 (trong 50), file ở tin timeline ngay trước tin gốc (trong 20) | cả hai vào file-set |
 | I36 | AC08 | 12 tin có file trong cửa sổ | 10 file mới nhất, file tin gọi đầu |
 | I37 | AC08 | tin có file gửi **sau** tin gọi (trong lúc run chờ) | không trong `runs.attachment_ids` (chốt lúc tạo run) |
-| I38 | AC09, R09, R10 | A gửi file; **B** gọi `@trello #fake:files` (B có `trello`) | file-set có file A; `runs.user_id`=B; usage B tăng, A không; usage không phụ thuộc số file (so với run cùng prompt không file: chênh 0) |
+| I38 | AC09, R09, R10 | A gửi file; **B** gọi `@trello xem` (B có `trello`) | file-set có file A; `runs.user_id`=B; usage B tăng, A không; usage không phụ thuộc số file (so với run cùng prompt không file: chênh 0) |
 | I39 | AC09, R09 | B gọi, B rời G1 khi run đang chạy | run `cancelled`, không tin agent; file còn trong phòng, A tải 200 |
-| I40 | AC12, R15 | tin agent có `attachments` tên `@hoadon.txt` (từ `#fake:out=@hoadon.txt`) và nội dung "@hoadon" | 0 run mới ngoài run gốc |
+| I40 | AC12, R15 | tin agent có `attachments` tên `@hoadon.txt` (qua `jobOutput`) và nội dung "@hoadon" | 0 run mới ngoài run gốc |
 | I41 | D10 | run phòng không file (đối chứng X2b-AC11 giữ) | `payload.attachments` vắng; `runs.attachment_ids={}` |
 
 ### 3.5 `out/` — `outputs.int.test.ts`
 | Mã | AC/R | Dữ liệu | Kỳ vọng |
 |---|---|---|---|
-| I42 | AC10, R11 | A "@hoadon #fake:out=report.md" trong G1 | tin agent `attachments=[report.md]`; hàng `room_id`=G1, `room_message_id`=`runs.answer_message_id`, `user_id`=A, `origin=output`, `message_id`/`conversation_id`/`flow_id` NULL; B tải 200; C 404 |
+| I42 | AC10, R11 | A "@hoadon xem" trong G1 + `jobOutput(run,"report.md")` | tin agent `attachments=[report.md]`; hàng `room_id`=G1, `room_message_id`=`runs.answer_message_id`, `user_id`=A, `origin=output`, `message_id`/`conversation_id`/`flow_id` NULL; B tải 200; C 404 |
 | I43 | AC10, D11 | cùng run: hội thoại nền | file **không** gắn vào `hub.messages` (không thấy qua `/conversations*`) |
-| I44 | AC10, S6 | run `failed` (`#fake:out` + lỗi) / A huỷ | không gắn; hàng `room_id` NULL (R27 dọn) |
-| I45 | R11, H2c-R26 | `#fake:out` 6 file | 5 file gắn |
+| I44 | AC10, S6 | run `failed` (`jobOutput` rồi báo lỗi) / A huỷ | không gắn; hàng `room_id` NULL (R27 dọn) |
+| I45 | R11, H2c-R26 | `jobOutput` 6 file | 5 file gắn |
 | I46 | R16 | B nghe `/me/stream` | `room.message` tin agent có `attachments` |
 
 ### 3.6 Vòng đời — `lifecycle.int.test.ts`
@@ -115,6 +114,8 @@ Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225
 |---|---|---|---|
 | I51 | AC16, R20 | `!hoa-don` không file trong G1 (engine bật) | hành vi P-a như `done:pa` (process-run tạo) |
 | I52 | AC16, R22, S7 | bắt log (sink H2c, như A127) qua I01, I11, I30, I47 | không dòng log nào chứa `hoadon.pdf`/`phongkhac.pdf`; có `attachment_id` khi log lỗi |
+| I53 | S8 | file phòng (G1) làm input `file` của `POST /process-runs` (`ownsUpload` thêm `and room_id is null`) | 400 `VALIDATION_ERROR` path `inputs`; 0 process-run |
+| I54 | S3b | DELETE G1 khi run đang chạy → `jobFetch` bằng token job | 401 (endpoint nội bộ không kiểm phòng xoá — chấp nhận) |
 
 ## 4. Contract (Hub thật qua hub-dev — `tests/contract/chat/x2b2-additive.contract.test.ts`)
 | Mã | AC | Kỳ vọng |
@@ -123,17 +124,17 @@ Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225
 | C02 | AC13 | snapshot export C1/X2a không đổi (`x2a-additive` xanh) |
 
 ## 5. E2E (`e2e/chat/x2b2-attach.x2b2.ts`, 2 trình duyệt, nhãn nguyên văn plan-frontend §5)
-Stack: config mới `e2e/chat/playwright.x2b2.config.ts` = `playwright.x2b.config.ts` + `HUB_ATTACH_DRIVER=local`, `HUB_ATTACH_DIR` tạm (stack X2b hiện **không** bật kho ⇒ cần). A = `lan` (hoadon), B = `thu` (không hoadon), như `x2b-room.x2b.ts`.
+Chạy: `bunx playwright test -c e2e/chat/playwright.x2b2.config.ts` (= `bun run e2e:chat:x2b2`, script B7). Stack: config mới (qc tạo ở Q1) `e2e/chat/playwright.x2b2.config.ts` = `playwright.x2b.config.ts` + `HUB_ATTACH_DRIVER=local`, `HUB_ATTACH_DIR` tạm (stack X2b hiện **không** bật kho ⇒ cần). A = `lan` (hoadon), B = `thu` (không hoadon), như `x2b-room.x2b.ts`.
 | Mã | AC | Bước | Kỳ vọng |
 |---|---|---|---|
 | E01 | AC15 | A mở DM "Tin nhắn cho <B>", `button "Đính kèm tệp"` → `setInputFiles(hoadon.pdf)` | `list "Tệp đính kèm"` 1 `listitem`; chip "Đang tải lên…" rồi hết; `note` chứa "<B> sẽ xem và tải được tệp này" |
 | E02 | AC15, Q3 | ô trống có chip | `button "Gửi"` disabled; `note` "Nhập nội dung tin để gửi kèm tệp." |
 | E03 | AC15, AC01 | A gõ "đây là hoá đơn", Gửi | A: `list "Tệp trong tin"` có `button "Tải hoadon.pdf"`; B (trình duyệt 2, không tải lại): chip xuất hiện; B bấm tải ⇒ `page.waitForEvent("download")` tên `hoadon.pdf` |
 | E04 | AC15, AC06 | A gõ "@hoadon kiểm tra file" | trạng thái "đang xử lý" như X2b; B thấy `article "Trả lời của agent …"` |
-| E05 | AC15, AC10 | A "@hoadon #fake:out=report.md" | `article "Trả lời của agent …"` chứa `list "Tệp trong tin"` `button "Tải report.md"`; B tải được |
+| E05 | AC15, AC10 | A "@hoadon #fake:out=report.md" (e2e: stack có `fake-cli`) | `article "Trả lời của agent …"` chứa `list "Tệp trong tin"` `button "Tải report.md"`; B tải được |
 | E06 | AC15 | nhóm: chip ⇒ `note` "Mọi thành viên của nhóm đều xem và tải được tệp này" | |
 | E07 | AC15 | `.exe` / 20 MiB + 1 B | câu lỗi `attach.err.type` / `attach.err.tooLarge` nguyên văn C1 (như `x1-attachments.chat.ts`) |
-| E08 | AC02, D10 | A bớt B khỏi nhóm; B bấm tải chip cũ | toast "Không tải được tệp." (hoặc luồng `useRoomLost`) |
+| E08 | AC02, D10 | A bớt B khỏi nhóm; B bấm tải chip cũ | luồng `useRoomLost` (X2a) khi mất phòng; toast `attach.downloadFailed` kiểm ở unit FE |
 Chờ theo `waitForResponse`/locator, không `waitForTimeout`.
 
 ## 6. Hồi quy (không sửa, phải xanh)
@@ -148,7 +149,7 @@ Chờ theo `waitForResponse`/locator, không `waitForTimeout`.
 Cách làm (chỉ qc): (1) sửa 2 file trong **cùng commit** với khoá X2b2 (`test(x2b-2): khoá test + thay X2b-AC11 [HUB-FR-44]`); (2) ghi dòng vào spec X2b2 §12: `- 2026-10-xx · qc · X2b-AC11 (context.int) + K5 (contracts-x2b) thay có chủ đích — đối chiếu BA FR-101 + Q9 X2b: test cũ đúng ở X2b, sai sau X2b-2; không phải code sửa test.`; (3) chạy lại `tests/.lock` cho cả hai file, `bun run test:lock:verify`. Trước khi B2/B3 xong 2 dòng mới đỏ đúng lý do (contract chưa thêm); dòng cũ không còn.
 
 ## 8. Đỏ đúng lý do (chưa chạy — điền ở WRITE, DB `ai_system_qc_test` tag `qc`)
-Kỳ vọng trước B1: rules U01–U10 đỏ ở `expect(typeof …).toBe("function")`; K1/K3/K4 đỏ ở `expect(ok…)`; K5 xanh. Int I01…I52 đỏ ở `expect(status)` (400 strict X2a) hoặc `expect(hasColumn)`; xanh trước code (bảo toàn): I02 (404), I14, I19, I22, I49, I51. E2E đỏ ở locator `button "Đính kèm tệp"` trong phòng.
+Kỳ vọng trước B1: rules U01–U10 đỏ ở `expect(typeof …).toBe("function")`; K1/K3/K4 đỏ ở `expect(ok…)`; K5 xanh. Int I01…I54 (không I32) đỏ ở `expect(status)` (400 strict X2a) hoặc `expect(hasColumn)`; xanh trước code (bảo toàn): I02 (404), I14, I19, I22, I49, I51. E2E đỏ ở locator `button "Đính kèm tệp"` trong phòng.
 
 ## 9. Lỗ hổng spec phát hiện (gửi Gate, đều có mặc định qc dùng)
 | # | Chỗ | Vấn đề | Mặc định qc |
@@ -157,7 +158,7 @@ Kỳ vọng trước B1: rules U01–U10 đỏ ở `expect(typeof …).toBe("fun
 | G2 | R11 vs plan §13 C-2 | R11 "trần 5 file" (mỗi job) vs tin agent ≤ 10 (nhiều job Orchestrator) | test 1 job ⇒ 5 (I45); không test > 5 |
 | G3 | R20 vs D8 | R20 "file theo đường process-runs" — D8 chốt `!…` + file ở timeline ⇒ 400 | theo D8 (I21) |
 | G4 | Q13 | File trong **thread quy trình** (`flow_id` của process thread): gắn được (D8 cho qua) nhưng chưa rõ process engine có dùng | chỉ kiểm 201 + gắn, không kiểm input quy trình |
-| G5 | AC07 "token phòng khác ⇒ 401" | Endpoint nội bộ xác thực theo **job**, không theo phòng | I33: token job khác ⇒ 404 id ngoài payload; token rác ⇒ 401 |
+| G5 | AC07 "token phòng khác ⇒ 401" | Endpoint nội bộ xác thực theo **job**, không theo phòng | I33: token job khác hoặc id ngoài payload ⇒ 401; token rác ⇒ 401 (đã chấp nhận) |
 | G6 | R05 | `platform_admin` không nhắc | coi như người ngoài ⇒ 404 (thêm `padmin` vào I02 nếu có scope user) |
 | G7 | K2 | id trùng khác hoa thường: zod không bắt, server chuẩn hoá ⇒ 400 | test ở int (I17 thêm biến thể), không ở contract |
 | G8 | E2E | Stack `_x2b-stack.ts` không bật kho đính kèm; chưa có script `e2e:chat:x2b2` trong `package.json` | Cần bổ sung (frontend-lead/backend-lead): script + env kho trong stack mới |
