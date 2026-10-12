@@ -1,7 +1,7 @@
 // HUB-FR-113 · plan-frontend §5 (A5): "Lịch sử quay lại" — mỗi lần quay lại một dòng theo thời gian; góp ý cắt 2 dòng, mở bằng
 // "Xem đầy đủ". Chỉ view `full` có `back_events`; rỗng ⇒ không vẽ (người ngoài phòng không có khối này — AC-PB2-11).
 import type { BackEvent, StageView } from "@ai/contracts/chat";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
 import { formatDateTime } from "../../shared/lib/format";
@@ -10,6 +10,7 @@ import { stepNo } from "../../shared/lib/steps";
 function Item({ e, stage, lng }: { e: BackEvent; stage: string; lng: string }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const textId = useId();
   const long = e.feedback.length > 120 || e.feedback.includes("\n");
   return (
     <li className="flex flex-col gap-1 rounded-lg border border-border bg-card p-3 text-caption">
@@ -22,12 +23,14 @@ function Item({ e, stage, lng }: { e: BackEvent; stage: string; lng: string }) {
           time: formatDateTime(e.at, lng),
         })}
       </span>
-      <q className={cn("whitespace-pre-wrap text-foreground", !open && "line-clamp-2")}>
+      <q id={textId} className={cn("whitespace-pre-wrap text-foreground", !open && "line-clamp-2")}>
         {e.feedback}
       </q>
       {long && !open && (
         <button
           type="button"
+          aria-expanded={open}
+          aria-controls={textId}
           onClick={() => setOpen(true)}
           className="self-start text-primary-strong hover:underline"
         >

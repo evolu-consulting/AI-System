@@ -16,8 +16,8 @@ function useRunInvalidate(runId: string) {
 export function useDecide(runId: string) {
   const invalidate = useRunInvalidate(runId);
   return useMutation({
-    mutationFn: (v: { option: DecisionOption; note?: string }) =>
-      postDecide(runId, { option: v.option, note: v.note }),
+    mutationFn: (v: { option: DecisionOption; note?: string; stage_idx?: number }) =>
+      postDecide(runId, { option: v.option, note: v.note, stage_idx: v.stage_idx }),
     onSuccess: invalidate,
   });
 }

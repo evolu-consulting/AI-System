@@ -34,11 +34,8 @@ function Round({ n }: { n: number }) {
   const { t } = useTranslation();
   if (n <= 1) return null;
   return (
-    <span
-      title={t("process.run.step.roundSr", { n })}
-      className="rounded-sm bg-muted px-1 text-caption font-medium text-secondary-foreground"
-    >
-      {t("process.run.step.round", { n })}
+    <span className="rounded-sm bg-muted px-1 text-caption font-medium text-secondary-foreground">
+      <span aria-hidden>{t("process.run.step.round", { n })}</span>
       <span className="sr-only"> {t("process.run.step.roundSr", { n })}</span>
     </span>
   );

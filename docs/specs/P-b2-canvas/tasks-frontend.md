@@ -44,3 +44,8 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (FB1…FB11, §1–§10) · c
 | D19 | Trang Run: bố cục nhóm = mỗi bước một `fieldset` "Bước n" (+ `×{{n}} lần`) chứa dòng giai đoạn, kết quả, thẻ việc của bước; view `task` (ngoài phòng) chỉ gom thẻ khi ≥ 2 việc mở cùng bước (Q7); không có `BackTimeline` ở view `task` | Plan §5; AC-PB2-11 |
 | D20 | `StageOutputs`: Tabs shadcn "Bản n · mới nhất / · trước khi quay lại (round < round mới nhất)"; chọn mặc định theo bản mới nhất (theo dõi bản mới về sau) thay vì `current_output_id` | Plan §5 ("bản mới nhất mặc định") |
 - [FB-8·backend-lead tự rà 2026-10-13] typecheck, check:size, check:fn, i18n:check, check:bundle admin-web + chat-web (trong done:pb2), test:lock:verify, trace --check đều xanh; e2e P-b2 (admin + chat) xanh trong `done:pb2` bước 25; e2e P-a/P-b xanh trong done:pa/done:pb. Chi tiết T11: tasks.md.
+
+## Quyết định trong lúc làm — review vòng 1
+- Tách hàm ≤50 dòng: `useFlowGraph` ⇒ `toNode`/`toEdge`/`NODE_SIZE`; `useDraft` ⇒ `useStepMutations`; `useStageOps` ⇒ `useReport` + `addVia`; `def-form.test.ts` tách describe "P-b2 · bước · validate", `withStep` đưa lên cấp file.
+- `DecisionCard` gửi `stage_idx = view?.decision?.stage_idx ?? task.stage_idx` (view vắng ở chế độ inline); 409 xử lý như lỗi API hiện có (toast).
+- a11y: `BackTimeline` nút "Xem đầy đủ" có `aria-expanded`/`aria-controls` (`useId`); `StageStrip` `Round`: ×n hiển thị `aria-hidden`, giữ sr-only, bỏ `title`.

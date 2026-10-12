@@ -42,6 +42,57 @@ export type ProcessCanvasProps = CanvasHandlers & {
   selected: string | undefined;
 };
 
+type Lay = ReturnType<typeof layoutSteps>;
+
+const NODE_SIZE = {
+  stage: { width: NODE_W, height: NODE_H },
+  join: { width: JOIN_W, height: JOIN_H },
+  stepHeader: { width: NODE_W, height: HEADER_NODE_H },
+} as const;
+
+function toNode(
+  n: Lay["nodes"][number],
+  byUid: Map<string, StageView>,
+  selected: string | undefined,
+  readOnly: boolean | undefined,
+): Node {
+  // `measured` đặt sẵn (kích thước đã biết) ⇒ xyflow không ẩn node chờ đo mỗi lần bố cục đổi.
+  const base = {
+    id: n.id,
+    position: { x: n.x, y: n.y },
+    type: n.kind,
+    measured: NODE_SIZE[n.kind],
+    selectable: false,
+    focusable: false,
+  };
+  if (n.kind === "stage")
+    return {
+      ...base,
+      data: { v: byUid.get(n.id), selected: n.id === selected, readOnly },
+      draggable: !readOnly,
+    };
+  const data =
+    n.kind === "stepHeader" ? { step: n.step, full: n.full, readOnly } : { count: n.count };
+  return { ...base, data, draggable: false };
+}
+
+function toEdge(e: Lay["edges"][number]): Edge {
+  const ends = { id: e.id, source: e.source, target: e.target, focusable: false };
+  if (e.kind === "back")
+    return {
+      ...ends,
+      type: "back",
+      sourceHandle: "back",
+      targetHandle: "back-in",
+      markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-warning)" },
+    };
+  return {
+    ...ends,
+    markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-muted-foreground)" },
+    style: { stroke: "var(--color-muted-foreground)" },
+  };
+}
+
 function useFlowGraph(p: ProcessCanvasProps, resetTick: number) {
   const { views, selected, readOnly } = p;
   // `resetTick` ép tạo lại mảng nodes ⇒ node bị từ chối trượt về vị trí gốc.
@@ -49,49 +100,8 @@ function useFlowGraph(p: ProcessCanvasProps, resetTick: number) {
   return useMemo(() => {
     const lay = layoutSteps(views);
     const byUid = new Map(views.map((v) => [v.uid, v]));
-    const nodes: Node[] = lay.nodes.map((n) => {
-      // `measured` đặt sẵn (kích thước đã biết) ⇒ xyflow không ẩn node chờ đo mỗi lần bố cục đổi.
-      const size =
-        n.kind === "stage"
-          ? { width: NODE_W, height: NODE_H }
-          : n.kind === "join"
-            ? { width: JOIN_W, height: JOIN_H }
-            : { width: NODE_W, height: HEADER_NODE_H };
-      const base = { id: n.id, position: { x: n.x, y: n.y }, type: n.kind, measured: size };
-      if (n.kind === "stage")
-        return {
-          ...base,
-          data: { v: byUid.get(n.id), selected: n.id === selected, readOnly },
-          draggable: !readOnly,
-          selectable: false,
-          focusable: false,
-        };
-      const data =
-        n.kind === "stepHeader" ? { step: n.step, full: n.full, readOnly } : { count: n.count };
-      return { ...base, data, draggable: false, selectable: false, focusable: false };
-    });
-    const edges: Edge[] = lay.edges.map((e) =>
-      e.kind === "back"
-        ? {
-            id: e.id,
-            source: e.source,
-            target: e.target,
-            type: "back",
-            sourceHandle: "back",
-            targetHandle: "back-in",
-            focusable: false,
-            markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-warning)" },
-          }
-        : {
-            id: e.id,
-            source: e.source,
-            target: e.target,
-            focusable: false,
-            markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-muted-foreground)" },
-            style: { stroke: "var(--color-muted-foreground)" },
-          },
-    );
-    return { nodes, edges, steps: lay.steps };
+    const nodes = lay.nodes.map((n) => toNode(n, byUid, selected, readOnly));
+    return { nodes, edges: lay.edges.map(toEdge), steps: lay.steps };
   }, [views, selected, readOnly, resetTick]);
 }
 

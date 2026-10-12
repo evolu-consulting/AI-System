@@ -43,3 +43,13 @@ Cờ engine: Hub `HUB_PROCESS_ENGINE=on|off` (mặc định `off`; dev bật tro
 | `inputs/lib/{inputs-rules,inputs-store}.ts` | luật thuần (`needsForm`, `toRequestInputs`, `validateSourceRef`, `submitErrorKey`) · store mở form (promise) |
 | `inputs/components/{InputsForm,InputField,SourceRefField,InputsFormHost}.tsx` | hộp thoại + trường; host lười mount ở `AppShell` |
 | `composer/hooks/use-bang-submit.ts` | quy trình có `inputs` ⇒ mở form thay vì gửi ngay; xuất `useRunStarter(room, conv)(key, input, inputs?)` |
+
+## P-b2 · bước song song / quay lại (HUB-FR-104, HUB-FR-113, CHAT-AC-59..60)
+| File | Việc |
+|---|---|
+| `run-block/components/ReviewFailPanel.tsx` | panel "Không đạt": chọn bước quay lại + góp ý (`back_steps`, `back_rounds_left`) |
+| `run-page/components/BackTimeline.tsx` | "Lịch sử quay lại" (`back_events`), góp ý cắt 2 dòng + "Xem đầy đủ" (`aria-expanded`/`aria-controls`) |
+| `run-page/components/StepSection.tsx` | một bước ở tab Tiến độ; bước nhiều giai đoạn ⇒ "chạy song song" |
+| `run-page/components/StageRow.tsx` | một dòng giai đoạn trong `StepSection` |
+| `shared/lib/steps.ts` | `groupBySteps`, `showSteps`, `stepNo` (thuần) — dùng cho `StageStrip`, `StepSection` |
+| `run-block/hooks/use-decide.ts` | gửi `stage_idx` của decision đang hiển thị (409 nếu không còn mở) |

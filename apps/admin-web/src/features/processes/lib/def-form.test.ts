@@ -128,18 +128,19 @@ describe("tiện ích giai đoạn", () => {
   });
 });
 
+const withStep = (step: number, extra: Partial<ReturnType<typeof emptyStage>> = {}) => ({
+  ...validDraft().stages[0],
+  ...emptyStage(step),
+  key: `k${step}${extra.uid ?? ""}`,
+  name: "N",
+  executor: `agent:${A}`,
+  filename: "a.md",
+  template: "# T",
+  sections: ["S"],
+  ...extra,
+});
+
 describe("P-b2 · bước", () => {
-  const withStep = (step: number, extra: Partial<ReturnType<typeof emptyStage>> = {}) => ({
-    ...validDraft().stages[0],
-    ...emptyStage(step),
-    key: `k${step}${extra.uid ?? ""}`,
-    name: "N",
-    executor: `agent:${A}`,
-    filename: "a.md",
-    template: "# T",
-    sections: ["S"],
-    ...extra,
-  });
   test("toDraft/toInput: step luôn xuất, back_to_steps chỉ khi review; def cũ ⇒ bước = chỉ số", () => {
     const d = validDraft();
     const input = toInput({
@@ -159,6 +160,9 @@ describe("P-b2 · bước", () => {
     expect(canRealAction([r(0), emptyStage(0), emptyStage(1)], 2)).toBe(false);
     expect(canRealAction([r(0), emptyStage(0)], 0)).toBe(false);
   });
+});
+
+describe("P-b2 · bước · validate", () => {
   test("validateDraft: bước đầy / sai thứ tự / đích quay lại / hành động thật", () => {
     const d = validDraft();
     const mk = (s: ReturnType<typeof withStep>[]) =>

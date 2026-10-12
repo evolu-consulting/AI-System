@@ -35,6 +35,39 @@ function draftOps(update: Update) {
   };
 }
 
+type Ref = { current: DefDraft };
+
+/** Các phép đổi bước (trả `StepOpResult`); thêm mới ⇒ chọn giai đoạn vừa tạo. */
+function useStepMutations(ref: Ref, update: Update, select: (uid: string) => void) {
+  /** Áp một phép đổi bước; lỗi ⇒ trả nguyên `error` (không đổi bản nháp). */
+  const applySteps = (
+    op: (stages: StageDraft[]) => StepOpResult<StageDraft>,
+  ): StepOpResult<StageDraft> => {
+    const r = op(ref.current.stages);
+    if ("stages" in r) update((d) => ({ ...d, stages: r.stages }));
+    return r;
+  };
+  const addWith = (
+    op: (st: StageDraft[], fresh: StageDraft) => StepOpResult<StageDraft>,
+  ): StepOpResult<StageDraft> => {
+    const s = emptyStage();
+    const r = applySteps((st) => op(st, s));
+    if ("stages" in r) select(s.uid);
+    return r;
+  };
+  return {
+    /** Thêm giai đoạn: vào cột `step` (0-based) hoặc, bỏ trống, thành bước mới cuối. */
+    addStage: (step?: number) =>
+      addWith((st, s) =>
+        step === undefined ? addStageAsNewStep(st, s) : addStageToStep(st, step, s),
+      ),
+    /** Chèn bước mới (một giai đoạn trống) ngay sau bước `step`. */
+    addStepAfter: (step: number) => addWith((st, s) => insertStepAfter(st, step, s)),
+    moveToStep: (i: number, step: number) => applySteps((st) => moveToStep(st, i, step)),
+    splitToNewStep: (i: number) => applySteps((st) => splitToNewStep(st, i)),
+  };
+}
+
 export function useDraft() {
   const [draft, setDraft] = useState<DefDraft>(emptyDraft);
   const [base, setBase] = useState(() => snapshot(draft));
@@ -55,8 +88,6 @@ export function useDraft() {
     setErrors({});
     setSelected(d.stages[0]?.uid ?? null);
   };
-  /** Đánh dấu bản nháp hiện tại là đã lưu. */
-  const markSaved = () => setBase(snapshot(ref.current));
   /** Gắn lỗi theo ô và chọn giai đoạn đầu tiên có lỗi. */
   const showErrors = (e: DraftErrors) => {
     setErrors(e);
@@ -64,29 +95,7 @@ export function useDraft() {
     const uid = first === undefined ? undefined : ref.current.stages[first]?.uid;
     if (uid) setSelected(uid);
   };
-  /** Áp một phép đổi bước; lỗi ⇒ trả nguyên `error` (không đổi bản nháp). */
-  const applySteps = (
-    op: (stages: StageDraft[]) => StepOpResult<StageDraft>,
-  ): StepOpResult<StageDraft> => {
-    const r = op(ref.current.stages);
-    if ("stages" in r) update((d) => ({ ...d, stages: r.stages }));
-    return r;
-  };
-  const addWith = (
-    op: (st: StageDraft[], fresh: StageDraft) => StepOpResult<StageDraft>,
-  ): StepOpResult<StageDraft> => {
-    const s = emptyStage();
-    const r = applySteps((st) => op(st, s));
-    if ("stages" in r) setSelected(s.uid);
-    return r;
-  };
-  /** Thêm giai đoạn: vào cột `step` (0-based) hoặc, bỏ trống, thành bước mới cuối. */
-  const addStage = (step?: number) =>
-    addWith((st, s) =>
-      step === undefined ? addStageAsNewStep(st, s) : addStageToStep(st, step, s),
-    );
-  /** Chèn bước mới (một giai đoạn trống) ngay sau bước `step`. */
-  const addStepAfter = (step: number) => addWith((st, s) => insertStepAfter(st, step, s));
+  const steps = useStepMutations(ref, update, setSelected);
   return {
     draft,
     draftRef: ref,
@@ -95,12 +104,9 @@ export function useDraft() {
     selected,
     select: setSelected,
     load,
-    markSaved,
+    markSaved: () => setBase(snapshot(ref.current)),
     showErrors,
-    addStage,
-    addStepAfter,
-    moveToStep: (i: number, step: number) => applySteps((st) => moveToStep(st, i, step)),
-    splitToNewStep: (i: number) => applySteps((st) => splitToNewStep(st, i)),
+    ...steps,
     ...draftOps(update),
   };
 }
