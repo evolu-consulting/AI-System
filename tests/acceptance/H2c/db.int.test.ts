@@ -79,6 +79,8 @@ describe("A130–A134 · migration 0007 [spec §4 · plan-db §1]", () => {
         "origin",
         "position",
         "purged_at",
+        "room_id", // X2b-2 (0023, plan X2b2 §1 D2)
+        "room_message_id", // X2b-2 (0023, plan X2b2 §1 D2)
         "safe_name",
         "sha256",
         "size",

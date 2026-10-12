@@ -292,7 +292,7 @@ f6413b1c364c9ea6d626d3f52d47d828b7dd8b3a720759eb21909534ab19b146  tests/acceptan
 9516d503799e270d75f1c8ef199095d95cb785ab74f07a2ee226b4baaa597119  tests/acceptance/H2c/command-file.int.test.ts
 fbe92abc8278fbb5ddd7d3c1ee2613ad3d0e09722a61ff353337ac9b10ef2456  tests/acceptance/H2c/compat.int.test.ts
 cec4a18f88de8475b749ecb95e68563e00c792572514c7d754bd90dc7f4c8170  tests/acceptance/H2c/content.int.test.ts
-8656fb10f3cb69dc53b0644ad3360a5d18b68a97f35323ac7895dc78d994277d  tests/acceptance/H2c/db.int.test.ts
+c260b580ac2d4210519f9b1e62f1098c361516c3e6cad4fee5533e51aff7a904  tests/acceptance/H2c/db.int.test.ts
 20fafcc37cf76a0a15e6a4bbc7018119f74b1b74d08c0d4f652f74a6db5a5574  tests/acceptance/H2c/hubdev/attach.hubdev.test.ts
 107da20d5e06980c39f568b2b67ac7fa8eef36bdaa6ac951ad49f521259f8c79  tests/acceptance/H2c/internal-download.int.test.ts
 80bd7e8c4687943dbffd8a5e2ca0649618064c30ea24481854dc44b6a527d7c9  tests/acceptance/H2c/mcp-file.int.test.ts

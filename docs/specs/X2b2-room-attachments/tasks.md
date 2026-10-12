@@ -41,4 +41,5 @@ Dừng ở bước đỏ đầu; bước DB/cổng chạy **tuần tự**; DB te
 
 ## Tranh chấp test
 - B1 · `tests/acceptance/H2c/db.int.test.ts` A130 so khớp **đúng** danh sách cột `hub.attachments` ⇒ đỏ vì thêm `room_id`, `room_message_id` (plan §1 D2, đã duyệt Gate). Đề xuất qc thêm 2 cột vào danh sách kỳ vọng (plan §12 chưa liệt kê A130).
+- qc: test sai — đã sửa (commit ghi ở git log: `test(h2c): A130 thêm cột room_id/room_message_id`); đối chiếu migration 0023 + plan §1 D2: chỉ thêm đúng 2 cột; A130 xanh, lock verify OK.
 - Ghi nhận (không do B1, đỏ cả trên `bb73a5ca`): H2c A141 (2 ca, hook timeout 5s) và H2c `contracts-h2c` R49 (fixture `SourceResolveJob.git.json` không có schema trong bảng của test).
