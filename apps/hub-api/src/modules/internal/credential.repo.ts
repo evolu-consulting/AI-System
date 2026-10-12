@@ -10,6 +10,8 @@ export type CredentialJob = {
   tenantId: string;
   userId: string;
   runId: string;
+  /** X2b2-S3b · run đã huỷ (E15 / rời / xoá phòng) mà Runtime chưa dừng job: `cancel_requested_at` đặt. */
+  cancelRequested: boolean;
 };
 
 /** plan-db §2 (nguyên văn): job có `token_hash` khớp và `status='running'`; người gọi kiểm `id`/`type`. */
@@ -21,8 +23,9 @@ export async function jobByTokenHash(tx: Tx, hash: Buffer): Promise<CredentialJo
     run_id: string;
     type: string;
     payload: unknown;
+    cancel_requested_at: Date | string | null;
   }>(
-    sql`SELECT id, tenant_id, user_id, run_id, step_id, agent_id, type, payload FROM hub.jobs
+    sql`SELECT id, tenant_id, user_id, run_id, step_id, agent_id, type, payload, cancel_requested_at FROM hub.jobs
       WHERE token_hash = ${hash} AND status = 'running'`,
   );
   const r = rows[0];
@@ -34,6 +37,7 @@ export async function jobByTokenHash(tx: Tx, hash: Buffer): Promise<CredentialJo
       tenantId: r.tenant_id,
       userId: r.user_id,
       runId: r.run_id,
+      cancelRequested: r.cancel_requested_at !== null,
     }
   );
 }

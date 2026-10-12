@@ -59,6 +59,7 @@ export async function pendingConfirmAgents(tx: Tx, me: Me, flowId: string): Prom
 }
 
 type CtxSqlRow = {
+  id: string;
   room_id: string;
   flow_id: string | null;
   seq: Num;
@@ -69,6 +70,7 @@ type CtxSqlRow = {
 };
 
 const toCtx = (r: CtxSqlRow): RoomCtxRow => ({
+  id: r.id,
   roomId: r.room_id,
   flowId: r.flow_id,
   seq: Number(r.seq),
@@ -78,7 +80,7 @@ const toCtx = (r: CtxSqlRow): RoomCtxRow => ({
   placement: r.placement,
 });
 
-const CTX_COLS = sql`m.room_id, m.flow_id, m.seq, m.sender_type, m.content, m.placement,
+const CTX_COLS = sql`m.id, m.room_id, m.flow_id, m.seq, m.sender_type, m.content, m.placement,
   coalesce(nullif(u.display_name, ''), nullif(u.username, ''), m.sender_id::text) as sender_name`;
 
 /**

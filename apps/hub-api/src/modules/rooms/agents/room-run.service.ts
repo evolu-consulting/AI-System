@@ -2,7 +2,7 @@
 // trùng `client_msg_id` → 200 · thread / `answer_run_id` (404 `NOT_FOUND`, 403 `NOT_RUN_CALLER`) → tag ∉ AU người tag (404
 // `AGENT_NOT_FOUND`, không ghi) → MỘT tx `user` của người gọi: khoá `rooms` → kiểm lại → hội thoại nền → flow nền →
 // `createRunTx` (409/429 ⇒ ROLLBACK, tin không vào phòng) → `runs.room_id` → `seq` → tin gọi → ngữ cảnh (§6). Sau COMMIT:
-// `room.message`, `room.unread`, `room.run_started` rồi `launch`. Quyền/quota luôn theo NGƯỜI GỬI tin (BR-21).
+// `room.message`, `room.unread`, `room.run_started` rồi `launch(p, files)` (X2b2-D9/D10: file cửa sổ, `runs.attachment_ids`). Quyền/quota luôn theo NGƯỜI GỬI tin (BR-21).
 import {
   deriveTitle,
   type RoomAgentRef,
@@ -17,6 +17,9 @@ import { appError, safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import type { UserEvent } from "../../../lib/user-stream";
 import { accessInput, visibleAgents } from "../../agents/agent-access.rules";
+import { roomRunFiles } from "../../attachments/room-files";
+import { roomFileWindow } from "../../attachments/room-files.rules";
+import type { RunFile } from "../../attachments/run-files.rules";
 import type { ConfigCache } from "../../config/config.service";
 import type { MentionPlan, MentionRouted } from "../../mention/mention.service";
 import type { PreparedRun, RunDriver, RunService } from "../../runs/runs.service";
@@ -61,7 +64,7 @@ type Thread = { flowId: string; rootSeq: number };
 /** `answer`: flow nền của run chờ (`runs.flow_id`) + agent các xác nhận `pending` của nó. */
 type Target = { thread: Thread | null; answerFlow?: string; pendingAgents: string[] };
 type Call = { roomId: string; body: SendRoomMessageRequest; route: AgentRoute };
-type Committed = RoomSent & { history?: HistoryItem[] };
+type Committed = RoomSent & { history?: HistoryItem[]; files?: RunFile[] };
 type Tracked = { out: Committed; events: UserEvent[] };
 
 /** D15 · driver không chạy gì (giữ writer cục bộ): run được huỷ ngay sau `launch` qua E15. */
@@ -98,18 +101,27 @@ async function resolveTarget(tx: Tx, me: Me, c: Call): Promise<Target> {
   return { thread, answerFlow, pendingAgents: await ctx.pendingConfirmAgents(tx, me, answerFlow) };
 }
 
-/** §6 · ngữ cảnh chụp trong tx gọi (2 truy vấn lọc `room_id`, không đọc `hub.messages`). */
-async function loadHistory(
+type Context = { history: HistoryItem[]; windowIds: string[] };
+
+/**
+ * §6 · ngữ cảnh chụp trong tx gọi (2 truy vấn lọc `room_id`, không đọc `hub.messages`) + X2b2-D9 id tin cửa sổ file
+ * (tin gọi + timeline ≤ 20 + thread ≤ 50, gồm tin agent).
+ */
+async function loadContext(
   tx: Tx,
   me: Me,
-  q: { roomId: string; triggerSeq: number; thread: Thread | null },
-): Promise<HistoryItem[]> {
-  const { roomId, triggerSeq, thread } = q;
+  q: { roomId: string; triggerId: string; triggerSeq: number; thread: Thread | null },
+): Promise<Context> {
+  const { roomId, triggerId, triggerSeq, thread } = q;
   const main = await ctx.contextRows(tx, me, { roomId, before: thread?.rootSeq ?? triggerSeq });
-  if (!thread) return roomContext({ roomId, triggerSeq, main });
+  if (!thread) {
+    const history = roomContext({ roomId, triggerSeq, main });
+    return { history, windowIds: roomFileWindow({ triggerId, main }) };
+  }
   const flowId = thread.flowId;
   const rows = await ctx.contextRows(tx, me, { roomId, before: triggerSeq, flowId });
-  return roomContext({ roomId, triggerSeq, main, thread: { ...thread, rows } });
+  const history = roomContext({ roomId, triggerSeq, main, thread: { ...thread, rows } });
+  return { history, windowIds: roomFileWindow({ triggerId, main, thread: rows }) };
 }
 
 type Write = { call: Call; target: Target; p: PreparedRun };
@@ -151,14 +163,17 @@ async function writeTrigger(tx: Tx, me: Me, w: Write & { threadId: string }): Pr
   // CR-050: người gửi đã thấy thread tới tin của chính mình.
   if (placement === "flow") await msgs.advanceFlowRead(tx, me, { roomId, flowId: threadId, seq });
   const message = toRoomMessage(row);
-  const history = await loadHistory(tx, me, { roomId, triggerSeq: seq, thread: target.thread });
+  const cq = { roomId, triggerId: id, triggerSeq: seq, thread: target.thread };
+  const { history, windowIds } = await loadContext(tx, me, cq);
+  // X2b2-D9/D10 · file-set run phòng → `runs.attachment_ids` (cùng tx gọi; sau gắn file tin gọi).
+  const files = await roomRunFiles(tx, me, { roomId, runId: p.run.id, triggerId: id, windowIds });
   const fan = await msgs.fanout(tx, roomId);
   const agent = agentRef(p);
   const started = { roomId, runId: p.run.id, flowId: threadId, trigger: message, agent };
   const memberIds = fan.map((f) => f.user_id);
   const events = [...messageEvents(roomId, message, fan), ...runStartedEvents(started, memberIds)];
   const run = { runId: p.run.id, flowId: threadId };
-  return { out: { message, created: true, run, history }, events };
+  return { out: { message, created: true, run, history, files }, events };
 }
 
 /**
@@ -222,8 +237,8 @@ export class RoomRunService {
     const out = await this.d.rooms.commit(u, (tx, me) => this.#commit(tx, me, call, p));
     if (!out.created || !out.run) return out;
     const idle = decline ? idleDriver() : undefined;
-    // D16 · run phòng không mang file (`files = []`).
-    await this.d.runs.launch(p, [], {
+    // X2b2-D10 · file của cửa sổ phòng (đã ghi `runs.attachment_ids`), không phải ứng viên H2c.
+    await this.d.runs.launch(p, out.files ?? [], {
       roomHistory: out.history,
       ...(idle && { driver: idle.driver }),
     });

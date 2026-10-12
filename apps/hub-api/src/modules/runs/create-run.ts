@@ -117,9 +117,13 @@ const processCols = (x?: ProcessRunInput): Partial<repo.RunInsert> =>
 const runKind = (p: CreateRunInput): RunKind =>
   p.command ? "command" : p.direct ? "direct" : "orchestrated";
 
-/** H2c P7 · sau INSERT tin user: gắn file (R11, 404 ⇒ rollback) → tập file run (R14) → `runs.attachment_ids` khi ≠ ∅. */
+/**
+ * H2c P7 · sau INSERT tin user: gắn file (R11, 404 ⇒ rollback) → tập file run (R14) → `runs.attachment_ids` khi ≠ ∅.
+ * X2b2-D10 · run phòng ⇒ `[]` (không ứng viên H2c của flow nền): `RoomRunService` chọn file cửa sổ phòng sau tin gọi.
+ */
 async function attachFiles(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<RunFile[]> {
   const r = p.run;
+  if (p.room) return [];
   if (p.process) {
     const ids = p.process.files.map((f) => f.id);
     if (ids.length > 0) await repo.setRunFiles(tx, r.id, ids);

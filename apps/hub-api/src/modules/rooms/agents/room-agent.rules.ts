@@ -56,6 +56,8 @@ export function placementOf(m: {
 }
 
 export type RoomCtxRow = {
+  /** X2b2-D9 · id tin (cửa sổ file run phòng, `roomFileWindow`). */
+  id: string;
   roomId: string;
   flowId: string | null;
   seq: number;

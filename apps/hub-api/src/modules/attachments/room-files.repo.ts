@@ -58,3 +58,45 @@ export async function roomFileRefRows(
       and tenant_id = ${o.tenantId}
     order by room_message_id, position`);
 }
+
+/** Hàng file của cửa sổ run phòng (`roomRunFileRows`). */
+export type RoomRunFileSqlRow = {
+  id: string;
+  room_message_id: string;
+  seq: string | number;
+  position: number;
+  safe_name: string;
+  mime: string;
+  size: string | number;
+  sha256: string;
+};
+
+/**
+ * R07/D9 · file chưa purge gắn các tin trong cửa sổ (`windowIds`) của phòng; tin gọi trước, rồi `seq` giảm, `position`
+ * tăng; ≤ 11 hàng (đủ để `pickRoomRunFiles` thấy file thứ 11).
+ */
+export async function roomRunFileRows(
+  tx: Tx,
+  o: Owner,
+  p: { roomId: string; triggerId: string; windowIds: readonly string[] },
+): Promise<RoomRunFileSqlRow[]> {
+  return tx.execute<RoomRunFileSqlRow>(sql`select a.id, a.room_message_id, m.seq, a.position,
+      a.safe_name, a.mime, a.size, a.sha256
+    from hub.room_messages m
+    join hub.attachments a on a.room_message_id = m.id and a.room_id = m.room_id
+    where m.room_id = ${p.roomId} and m.tenant_id = ${o.tenantId} and a.tenant_id = ${o.tenantId}
+      and m.id = any(${uuidArray(p.windowIds)}::uuid[]) and a.purged_at is null
+    order by (m.id = ${p.triggerId}::uuid) desc, m.seq desc, a.position
+    limit 11`);
+}
+
+/** D10 · tập file run phòng → `runs.attachment_ids` (hàng run của chính người gọi, đã khoá trong tx gọi). */
+export async function setRunAttachmentIds(
+  tx: Tx,
+  o: Owner,
+  runId: string,
+  ids: readonly string[],
+): Promise<void> {
+  await tx.execute(sql`update hub.runs set attachment_ids = ${uuidArray(ids)}::uuid[]
+    where id = ${runId} and tenant_id = ${o.tenantId} and user_id = ${o.userId}`);
+}

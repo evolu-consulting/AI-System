@@ -54,6 +54,8 @@ async function agentJob(tx: Tx, token: string, jobId: string): Promise<AgentJob 
 async function findJobFile(tx: Tx, token: string, jobId: string, attId: string): Promise<Found> {
   const found = await agentJob(tx, token, jobId);
   if (found) {
+    // X2b2-S3b (I54) · run đã huỷ (vd. xoá phòng) ⇒ token không còn tải file, dù Runtime chưa dừng job.
+    if (found.job.cancelRequested) return null;
     // So nguyên văn (uuid chữ thường của payload) ⇒ id sai dạng / chữ hoa không tới DB (A89).
     if (!(found.payload.attachments ?? []).some((a) => a.id === attId)) return null;
     const row = await repo.jobAttachment(tx, attId, found.job.tenantId);

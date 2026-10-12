@@ -7,10 +7,14 @@ import { appError } from "../../lib/errors";
 import {
   bindRoomFiles,
   type RoomRefRow,
+  type RoomRunFileSqlRow,
   roomFileRefRows,
+  roomRunFileRows,
   roomSendableFiles,
+  setRunAttachmentIds,
 } from "./room-files.repo";
-import { attachmentRefs } from "./room-files.rules";
+import { attachmentRefs, pickRoomRunFiles, type RoomFileRow } from "./room-files.rules";
+import { type RunFile, toRunFile } from "./run-files.rules";
 
 export { normalizeAttachmentIds } from "./run-files";
 
@@ -80,4 +84,37 @@ export async function roomFileRefs(
     if (refs) out.set(id, refs);
   }
   return out;
+}
+
+const toRoomFileRow = (r: RoomRunFileSqlRow): RoomFileRow => ({
+  id: r.id,
+  roomMessageId: r.room_message_id,
+  seq: Number(r.seq),
+  position: Number(r.position),
+  safeName: r.safe_name,
+  mime: r.mime as AttachMime,
+  size: Number(r.size),
+  sha256: r.sha256,
+});
+
+/**
+ * R07/D9/D10 · tập file run phòng: file gắn các tin cửa sổ (tin gọi + ngữ cảnh) → `pickRoomRunFiles` (≤ 10, ≤ 100 MiB)
+ * → `runs.attachment_ids` khi ≠ ∅ (cùng tx gọi). Trả `RunFile[]` cho `launch` (`[]` khi không file).
+ */
+export async function roomRunFiles(
+  tx: Tx,
+  o: Owner,
+  p: { roomId: string; runId: string; triggerId: string; windowIds: readonly string[] },
+): Promise<RunFile[]> {
+  const rows = await roomRunFileRows(tx, o, p);
+  if (rows.length === 0) return [];
+  const picked = pickRoomRunFiles(rows.map(toRoomFileRow), { triggerMessageId: p.triggerId });
+  if (picked.length === 0) return [];
+  await setRunAttachmentIds(
+    tx,
+    o,
+    p.runId,
+    picked.map((f) => f.id),
+  );
+  return picked.map(toRunFile);
 }
