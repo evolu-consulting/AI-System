@@ -6,6 +6,7 @@ coverage/
 .env.*.local
 *.log
 test-results/
+test-results-pb2/
 playwright-report/
 blob-report/
 .DS_Store
