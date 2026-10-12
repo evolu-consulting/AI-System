@@ -480,3 +480,34 @@ Chạy (tuần tự, từ gốc repo): `bun run db:test:create pb_e2e` rồi `bu
 3. **docs-architect:** `plan-frontend.md` §6 ghi `dialog "Không thể xoá nguồn …"` nhưng `BlockedDialog` dùng chung là **`alertdialog`**; link `DependencyList` đi `/processes` (không `/processes/<key>`: route theo id). Test dùng `alertdialog`, không kiểm href.
 4. **frontend-lead (quan sát, không chặn):** drawer "Thêm nguồn" của platform_admin — bấm radio "Đường dẫn cục bộ" ngay khi drawer mở đôi khi không ăn (form dựng lại khi danh sách công ty nạp) ⇒ test dùng `toPass` thử lại. Và `GET /admin/sources/library-documents` trả **400** khi chọn "Tài liệu thư viện" (platform_admin, thiếu tenant?) — chưa có ca e2e (không thuộc E-PB01…13), `catalog-library.int LD-*` đã phủ phía Hub.
 5. **Không thuộc e2e:** E-PB10 dựa vào đường "nút Quy trình" ở phòng (gõ tay `!key` là tin thường — T1). Nếu BA muốn gõ tay cũng mở form thì FE đổi + qc đổi `pickAndSend`.
+
+### Vòng soát sau-UAT (reviewer CHANGES REQUESTED, CR-060) — qc, 2026-10-12
+Ca mới (một dòng/ca). Python ở `apps/agent-runtime/tests/acceptance/` (thuộc phạm vi khoá `tests/.lock`); TS ở `tests/acceptance/P-b/`.
+
+| Ca | File | Nội dung · kỳ vọng | Kết quả trước sửa |
+|---|---|---|---|
+| PN-01 | `test_pb_local_pin.py` | AC-H36/PB-R05: resolve local → pin; mount job1 = V1; sửa repo; mount job2 CÙNG pin ⇒ V1 | ĐỎ đúng lý do (mount ra V2: khoá cache theo chữ ký nội dung hiện tại — Major #1) |
+| PN-02 | `test_pb_local_pin.py` | sửa repo, resolve MỚI ⇒ `snapshot_id` khác + mount pin mới = V2; pin cũ mount lại = V1 | ĐỎ đúng lý do (pin cũ ra V2) |
+| PN-03 | `test_pb_local_pin.py` | sửa giữa resolve (start) và job đầu ⇒ job đầu vẫn V1 (ghim lúc resolve) | ĐỎ đúng lý do |
+| PN-04 | `test_pb_local_pin.py` | PB-R16: xoá cả `snapshots/` ⇒ mount pin dựng lại được, file chỉ-đọc | xanh (hồi quy) |
+| PN-05 | `test_pb_local_pin.py` | B2: `os.replace` ném PermissionError ⇒ `SourceError SOURCE_UNRESOLVABLE`, tmp dọn, không có final | xanh (hồi quy) |
+| PN-06 | `test_pb_local_pin.py` | Minor #5: thông điệp SourceError không chứa đường dẫn tmp/cache, không `/snapshots`, không `.bld-` | ĐỎ đúng lý do (message nhúng `{err}` có path) |
+| PN-07 | `test_pb_local_pin.py` | B2 non-root: tiến trình con hạ quyền uid/gid 65534 (test chạy root trong container uv) ⇒ resolve OK, gốc+file chỉ-đọc, ghi ⇒ PermissionError, không sót `.bld-*` | xanh (hồi quy) |
+| WK-01 | `test_pb_local_walk.py` | PB-R07: bí mật lồng sâu (`a/b/.env`, `.ENV.local`, `x/.git/**`, `*.pem`, `*.KEY`, `id_rsa*`, `Secrets*`, `credentials*`, `.ssh`, `.aws`, `.npmrc`) bị lọc với allowlist None/[]/`**`/theo thư mục; giữ `.gitignore`/`.gitattributes` (C8) | xanh ×4 |
+| WK-02 | `test_pb_local_walk.py` | allowlist trỏ đích danh bí mật ⇒ vẫn rỗng (lọc THẮNG allowlist) | xanh |
+| WK-03 | `test_pb_local_walk.py` | B3: không duyệt vào `.git`/`.ssh`/`node_modules`/`.venv` lồng sâu (gián điệp `os.walk`) | xanh |
+| WK-04 | `test_pb_local_walk.py` | `apps/**/docs/*.md`: `**` khớp 0+ đoạn; nhánh `other/` không bị duyệt | xanh |
+| WK-05 | `test_pb_local_walk.py` | `docs/*.md`: `docs/sub`, `src` không duyệt, không lấy | xanh |
+| WK-06 | `test_pb_local_walk.py` | symlink file/thư mục + hardlink bị bỏ | xanh |
+| WK-07 | `test_pb_local_walk.py` | > 2 000 file trong `node_modules`/`.git` không tính trần ⇒ resolve OK (1 file, 1 byte) | xanh |
+| CS-01…03 | `test_pb_local_walk.py` | `content_signature`: ổn định; đổi khi sửa/thêm/xoá file allowlist; KHÔNG đổi khi chỉ đổi file ngoài allowlist/bí mật/thư mục cắt; khác theo allowlist | xanh |
+| TP-01 | `test_pb_tool_paths.py` | Minor #4: `Write` (out/, sources/, tương đối) ⇒ `ToolUse.path=None` (không vào read_paths) | ĐỎ đúng lý do ×3 (path được tính) |
+| TP-02 | `test_pb_tool_paths.py` | đối chứng Read/Grep/Glob giữ path tương đối `work/<job_id>` | xanh ×3 |
+| TP-03 | `test_pb_tool_paths.py` | `Edit` không mang path | xanh |
+| RFB-01…05 | `pfs3/rules/refs-feedback.rules.test.ts` | `explainSourceRefs` offenders: unknown_key (khử trùng), version_mismatch (git/library/local), path_absent, tiền tố danh sách; `checkSourceRefs` không mang offenders | xanh |
+| RFB-06…09 | `pfs3/rules/refs-feedback.rules.test.ts` | `refCheckMessage`: path_absent nêu path; unknown_key nêu key; version_mismatch `key@pin`, KHÔNG lộ `path` local/URL (PB-R21); missing≠empty | xanh |
+| RFB-10…12 | `pfs3/rules/refs-feedback.rules.test.ts` | `stageRefsExplain` gộp files_read nhiều nguồn, có null ⇒ bỏ kiểm path; `refsFeedback` refsOk ⇒ "Thiếu mục"; lỗi nguồn ⇒ mục khác + thông điệp, không lặp heading nguồn | xanh |
+| RG-01…05 | `pfs1/runs-grant.int.test.ts` | 0022: truy vấn LRU của Runtime chạy được; RLS chỉ `running` (cả tenant khác, chỉ id/status); `tenant_id`/`user_id`/`*`/`error_message` ⇒ 42501; INSERT/UPDATE/DELETE ⇒ 42501; áp lại 0022 idempotent (1 policy) | xanh (B4 đã có code) |
+
+Chạy: Python `cd apps/agent-runtime && bun scripts/run.ts "uv run pytest -q tests/acceptance/test_pb_local_pin.py tests/acceptance/test_pb_local_walk.py tests/acceptance/test_pb_tool_paths.py"` ⇒ **7 fail / 20 pass** (đỏ: PN-01/02/03/06, TP-01×3). TS rules `bun test tests/acceptance/P-b/pfs3/rules/refs-feedback.rules.test.ts` ⇒ 12/12. Int (DB riêng): `bun run db:test:create pb_rv3`, rồi **đặt tường minh** `HUB_TEST_DATABASE_URL`/`AGENT_RT_TEST_DATABASE_URL` sang `ai_system_pb_rv3_test` (file `.env.test-<tag>.local` GIỮ hai biến này trỏ `ai_system_h1_test` dùng chung — bẫy!) + `bun --env-file=.env.test-pb_rv3.local --config=bunfig.int.toml test --timeout 60000 tests/acceptance/P-b/pfs1/runs-grant.int.test.ts` ⇒ 5/5.
+Lưu ý backend-lead: sau sửa Major #1, PN-04 vẫn phải xanh (mất cache ⇒ dựng lại từ realpath hiện tại là chấp nhận theo PB-R16); nếu bỏ hàm `content_signature` thì báo "Tranh chấp test" cho CS-01…03.

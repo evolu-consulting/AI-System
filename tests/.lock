@@ -28,6 +28,9 @@ e387ddd1b855c623e2ffab3212cdaf0668bb24e08904b057d6772c08d14fea5e  apps/agent-run
 c4b5841c104fe8410d3fdf8c2219856895e145aff05064260b5085aa9d442851  apps/agent-runtime/tests/acceptance/test_contracts_hub.py
 0a52349ac207a28ee69372627ad0afbf8997d80a955679a311c0582e76691ebf  apps/agent-runtime/tests/acceptance/test_dify_rules.py
 e4582e7c1a78a24dfd88b87b1b3f926e736d6b2d867d016ebde1b85cb81e7d2b  apps/agent-runtime/tests/acceptance/test_files_rules.py
+f70e31a2346fc7687caad48490716098046198be3734353f977b3f6180eaa7ff  apps/agent-runtime/tests/acceptance/test_pb_local_pin.py
+ea73b52457a0f1d2e1a0f3834681c0f24cc902a9c52dd4e82f6c7bf63ef8d3b8  apps/agent-runtime/tests/acceptance/test_pb_local_walk.py
+3e72474e293f7385ba5b49650bb5de590ff8af01d9d702835168414722ab9913  apps/agent-runtime/tests/acceptance/test_pb_tool_paths.py
 c35c19753022eb18631a0623444ffc5a70c862468284d6fd0d02a2c09efcd9e8  apps/agent-runtime/tests/acceptance/test_quota_rules.py
 aff00182be8db5d636b2b572eb9e7af5798833dc0b1272e5328c0d0bee338038  apps/agent-runtime/tests/acceptance/test_session_int_test.py
 3d246b58d5690337c3c9dfa560089fc582a4c436952b2ac8981ba7a4a83bfc39  apps/agent-runtime/tests/acceptance/test_stream_rules.py
@@ -536,6 +539,7 @@ da40689988232f59697c3529d87f391049742886aaf2851e3fe4175343caa96f  tests/acceptan
 978124a5d6e9f87169e180b1113da1e8ec04448a178a0b68072b898badf4d9f4  tests/acceptance/P-b/pfs1/check.int.test.ts
 f929c8dae17e56a81dfb5cfba86177623449e13a8944c98ab70875e38a9b34bd  tests/acceptance/P-b/pfs1/process-def.int.test.ts
 445e68c880b9f0e9c06de8e82db52a262e1febb0256fd9b9542857100b935e04  tests/acceptance/P-b/pfs1/rules/contracts.test.ts
+488fa0214249545149711139f0a1693ad8e9d9b82cd103f4597c1d61835b3572  tests/acceptance/P-b/pfs1/runs-grant.int.test.ts
 aa20381f7557f64286e97e3a51dbca9318f16d7f6a79e49128c9d9e1616424e6  tests/acceptance/P-b/pfs1/sources-authz.int.test.ts
 8f330454c3ec2d055b9c7118ad65cba7c85647cf5976e34d5adfe3a68b546b89  tests/acceptance/P-b/pfs1/sources-crud.int.test.ts
 a73502344106421f0f358ee1543b7f8f4a03f5a8b506708fd22053732728f6ee  tests/acceptance/P-b/pfs1/sources-db.int.test.ts
@@ -552,6 +556,7 @@ aa898918e14322a5f7b810319d1df49148b8ff239357f63d538b182c6bfa4571  tests/acceptan
 164acc55bdaac6126a29b7fa6ea9e5914c6617a4961237d7ab85b0cd4f782c6f  tests/acceptance/P-b/pfs3/catalog-library.int.test.ts
 8353ffa7954ae8a3e14a680e20077a8414bd857f83c8f8962e0b6806863d62dd  tests/acceptance/P-b/pfs3/inputs.int.test.ts
 a65bb33c80c2ac5153983d4f2ddaa9087a71a137efedc5683fdc65881cceaf9e  tests/acceptance/P-b/pfs3/manifest-output.int.test.ts
+6e1a51db5894c6d000e40355cdb7d0abbabc97f63a25de483692fa036fc37c1b  tests/acceptance/P-b/pfs3/rules/refs-feedback.rules.test.ts
 1e39210c352014bfcfeb0188a1d61a16bcf56a6f19a6db8a94ca7cf22ac14a7c  tests/acceptance/P-b/pfs3/rules/sources.rules.test.ts
 19803a9928b1769b689202989ebcc3136ead1ca504f49547e5b6d09c95ab510b  tests/acceptance/P-b/pfs3/sources-resolved.int.test.ts
 43c5891956748c92f5e57c21456363cf35417f970381551bcaf644065f10aa28  tests/acceptance/P-b/pfs3/start-resolve.int.test.ts
