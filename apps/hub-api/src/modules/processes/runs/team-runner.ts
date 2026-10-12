@@ -21,7 +21,11 @@ import { outputSteps, outputStepsSingle } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
 export type Deps = Omit<ProcessDeps, "launcher" | "start">;
-export type Link = { process_run_id: string | null; stage_run_id: string | null };
+export type Link = {
+  process_run_id: string | null;
+  stage_run_id: string | null;
+  tenant_id: string;
+};
 
 /** Kết quả thực thi stage (agent đơn / nhóm) chuẩn hoá cho máy trạng thái. */
 export type StageResult =
@@ -127,6 +131,7 @@ export async function effects(
   const done = stageDoneOf(c.list);
   const step = await persistStage(tx, {
     runId: c.x.runId,
+    tenantId: c.head.tenant_id,
     stageRunId: c.x.stageRunId,
     next: c.next,
     done,

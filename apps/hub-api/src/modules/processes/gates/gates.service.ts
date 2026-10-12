@@ -21,7 +21,7 @@ import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
 import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
-import { transition } from "../core/process-state.rules";
+import { isTerminal, transition } from "../core/process-state.rules";
 import {
   canCancel,
   canDecide,
@@ -88,6 +88,9 @@ async function decideOut(
   const { reason, option, dtask } = q;
   if (reason !== "back_limit" || option !== "add_attempt") {
     const o = await decideEffects(gx, e, option, dtask);
+    // D8 · `use_current` cho `back_limit` ⇒ stage coi như Đạt: bỏ đích + góp ý quay lại đã lưu (bị từ chối).
+    if (reason === "back_limit" && option === "use_current" && dtask)
+      await g.clearBackPending(gx.tx, { stageRunId: dtask.stage_run_id, tenantId: e.run.tenantId });
     return { ...o, kick: needsKick(e.effects, o.step) };
   }
   if (!dtask) throw processError("PROCESS_RUN_STATE");
@@ -104,7 +107,11 @@ async function refreshDecision(gx: Gx, run: Locked): Promise<void> {
   const stage = await stageRowOf(gx.tx, run.id, idx);
   const options = decisionOptionsFor((stage?.current_output_id ?? null) !== null, reason);
   const at = gx.d.now().toISOString();
-  await g.setDecisionJson(gx.tx, run.id, JSON.stringify({ reason, stage_idx: idx, options, at }));
+  await g.setDecisionJson(
+    gx.tx,
+    { id: run.id, tenantId: run.tenantId },
+    JSON.stringify({ reason, stage_idx: idx, options, at }),
+  );
 }
 
 /** Người thao tác + nhóm (gộp để ≤ 4 tham số, CONVENTIONS §2). */
@@ -116,6 +123,8 @@ type Outcome<T> = {
   runId: string;
   /** P-b2 · `hub.runs` của stage bị quay lại — huỷ SAU COMMIT ở scope system, TRƯỚC `kick`. */
   cancel?: CancelIds;
+  /** HUB-FR-111 · run quy trình đã huỷ ⇒ huỷ mọi `hub.runs` còn chạy của nó SAU COMMIT ở scope system (TECH-DEBT #147). */
+  cancelRun?: { tenantId: string };
 };
 
 /** Scope `user` của người thao tác; platform_admin + `?tenant_id` ⇒ tenant đích (plan §5, như ViewService). */
@@ -194,7 +203,9 @@ export class GateService {
     if (!t.ok) throw processError(t.code);
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
-    const { events, step, status, kick, cancel } = await reviewOut({ d: this.d, tx }, e, task, b);
+    const gx: Gx = { d: this.d, tx };
+    const { events, step, status, kick, cancel } = await reviewOut(gx, e, task, b);
+    await refreshDecision(gx, run); // D9 · decision mở cũ nhất (Chưa đạt chạm `back_limit` vừa ghi decision mới nhất)
     events.push(...processUpdated(recipients, updatedOf(run, status, step)));
     const detail = (await loadTaskDetails(tx, { ...v, groupIds }, [taskId]))[0];
     if (!detail) throw notFound();
@@ -258,7 +269,8 @@ export class GateService {
     });
     await refreshDecision(gx, run);
     events.push(...processUpdated(recipients, updatedOf(run, t.next.status, step)));
-    return { body: null, events, kick, runId: run.id, cancel };
+    const cancelRun = t.next.status === "cancelled" ? { tenantId: run.tenantId } : undefined;
+    return { body: null, events, kick, runId: run.id, cancel, cancelRun };
   }
 
   // ── POST /process-runs/:id/cancel ──
@@ -278,22 +290,17 @@ export class GateService {
     const facts = await this.#facts(tx, run, groupIds, v.userId);
     if (!canCancel(v, facts))
       throw runAccess(v, facts) ? processError("NOT_PROCESS_DECIDER") : notFound();
+    // HUB-FR-111 · huỷ là việc cấp RUN: chỉ 409 khi run đã kết thúc. Không dựng trạng thái từ một stage — bước song song
+    // có stage nhỏ nhất `done` trong khi stage khác còn chạy/chờ duyệt (review vòng 1 P-b2).
+    if (isTerminal(run.status as ProcessRunStatus)) throw processError("PROCESS_RUN_STATE");
     const idx = Number(run.currentStageIdx);
-    const stage = await stageRowOf(tx, run.id, idx);
-    const t = transition(
-      buildState({ run, s: stage, def: snapOf(run).stages[idx], idx, reason: null }),
-      {
-        kind: "cancel",
-      },
-    );
-    if (!t.ok) throw processError(t.code);
     const ref = await g.actorRef(tx, v.userId, run.tenantId);
-    const gx: Gx = { d: this.d, tx };
-    const events = await cancelEnd(gx, { run, idx, ref }, null);
-    events.push(...processUpdated(recipients, updatedOf(run, t.next.status, null)));
+    const events = await cancelEnd({ d: this.d, tx }, { run, idx, ref }, null);
+    events.push(...processUpdated(recipients, updatedOf(run, "cancelled", null)));
     const row = await repo.loadSummary(tx, run.tenantId, run.id);
     if (!row) throw notFound();
-    return { body: repo.toSummary(row), events, kick: false, runId: run.id };
+    const body = repo.toSummary(row);
+    return { body, events, kick: false, runId: run.id, cancelRun: { tenantId: run.tenantId } };
   }
 
   async #lockVisible(tx: Tx, v: Viewer, runId: string): Promise<Locked> {
@@ -330,10 +337,12 @@ export class GateService {
 
   async #post(out: Outcome<unknown>): Promise<void> {
     const c = out.cancel;
-    if (c)
-      await withHubScope(this.d.db, { kind: "system" }, (tx) =>
-        g.cancelRunsByIds(tx, c.tenantId, c),
-      ).catch((err) =>
+    const cr = out.cancelRun;
+    if (c || cr)
+      await withHubScope(this.d.db, { kind: "system" }, async (tx) => {
+        if (c) await g.cancelRunsByIds(tx, c.tenantId, c);
+        if (cr) await g.cancelStageRuns(tx, out.runId, cr.tenantId);
+      }).catch((err) =>
         // Đã COMMIT: job muộn bị driver bỏ (`current_run_id` NULL); sweeps dọn `hub.runs` treo.
         this.d.log.warn("process-back-cancel-failed", {
           run_id: out.runId,

@@ -272,14 +272,14 @@ export async function stagesForBack(
 export async function resetStage(
   tx: Tx,
   stageRunId: string,
-  r: { status: "queued" | "pending"; round: number; feedback: string | null },
+  r: { status: "queued" | "pending"; round: number; feedback: string | null; tenantId: string },
 ): Promise<void> {
   await tx.execute(sql`update hub.stage_runs set status = ${r.status}, round = ${r.round},
       attempt = 1, attempt_limit = 4, asks_count = 0, ask_limit = 3, template_failures = 0,
       current_run_id = null, current_output_id = null, passed_by = null, passed_at = null,
       back_to_step = null, redo_sections = null, feedback = ${r.feedback}, finished_at = null,
       updated_at = now()
-    where id = ${stageRunId}`);
+    where id = ${stageRunId} and tenant_id = ${r.tenantId}`);
 }
 
 /** `team_runs` đang chạy / chờ trả lời của các stage bị reset ⇒ `cancelled` (BK-09). */
@@ -299,10 +299,15 @@ export async function cancelTeamRuns(
 }
 
 /** `stage_runs.current_run_id` (≠ null) của các stage — `hub.runs` cần huỷ sau COMMIT. */
-export async function currentRunIds(tx: Tx, stageRunIds: readonly string[]): Promise<string[]> {
+export async function currentRunIds(
+  tx: Tx,
+  tenantId: string,
+  stageRunIds: readonly string[],
+): Promise<string[]> {
   if (stageRunIds.length === 0) return [];
   const rows = await tx.execute<{ id: string }>(sql`select current_run_id as id from hub.stage_runs
-    where id = any(${`{${stageRunIds.join(",")}}`}::uuid[]) and current_run_id is not null`);
+    where id = any(${`{${stageRunIds.join(",")}}`}::uuid[]) and tenant_id = ${tenantId}
+      and current_run_id is not null`);
   return rows.map((r) => r.id);
 }
 
@@ -310,13 +315,13 @@ export async function currentRunIds(tx: Tx, stageRunIds: readonly string[]): Pro
 export async function setRunBack(
   tx: Tx,
   runId: string,
-  p: { step: number; firstIdx: number; raiseLimit: boolean },
+  p: { tenantId: string; step: number; firstIdx: number; raiseLimit: boolean },
 ): Promise<void> {
   const lim = p.raiseLimit ? sql`back_limit + 1` : sql`back_limit`;
   await tx.execute(sql`update hub.process_runs set current_step = ${p.step},
       current_stage_idx = ${p.firstIdx}, back_limit = ${lim}, back_rounds = back_rounds + 1,
       status = 'running', decision = null, updated_at = now()
-    where id = ${runId}`);
+    where id = ${runId} and tenant_id = ${p.tenantId}`);
 }
 
 export type BackEventRow = {
@@ -342,27 +347,41 @@ export async function insertBackEvent(tx: Tx, e: BackEventRow): Promise<void> {
 /** D8 · quá trần: lưu đích + góp ý trên stage nguồn (dùng lại khi `add_attempt`). */
 export async function setBackPending(
   tx: Tx,
-  stageRunId: string,
+  s: { stageRunId: string; tenantId: string },
   toStep: number,
   feedback: string,
 ): Promise<void> {
   await tx.execute(sql`update hub.stage_runs set back_to_step = ${toStep}, feedback = ${feedback},
-    updated_at = now() where id = ${stageRunId}`);
+    updated_at = now() where id = ${s.stageRunId} and tenant_id = ${s.tenantId}`);
+}
+
+/** D8 · decision `back_limit` chọn `use_current` (stage coi như Đạt) ⇒ bỏ đích + góp ý quay lại đã lưu. */
+export async function clearBackPending(
+  tx: Tx,
+  s: { stageRunId: string; tenantId: string },
+): Promise<void> {
+  await tx.execute(sql`update hub.stage_runs set back_to_step = null, feedback = null,
+    updated_at = now() where id = ${s.stageRunId} and tenant_id = ${s.tenantId}`);
 }
 
 /** Đích + góp ý đã lưu của stage nguồn (decision `back_limit`). */
 export async function backPendingOf(
   tx: Tx,
-  stageRunId: string,
+  s: { stageRunId: string; tenantId: string },
 ): Promise<{ toStep: number; feedback: string } | null> {
   const [r] = await tx.execute<{ back_to_step: number | null; feedback: string | null }>(sql`
-    select back_to_step, feedback from hub.stage_runs where id = ${stageRunId}`);
+    select back_to_step, feedback from hub.stage_runs where id = ${s.stageRunId}
+      and tenant_id = ${s.tenantId}`);
   if (!r || r.back_to_step === null) return null;
   return { toStep: Number(r.back_to_step), feedback: r.feedback ?? "" };
 }
 
 /** Đặt `decision` jsonb = decision mở cũ nhất còn lại (D9, tương thích); không còn ⇒ giữ nguyên. */
-export async function setDecisionJson(tx: Tx, runId: string, json: string): Promise<void> {
+export async function setDecisionJson(
+  tx: Tx,
+  run: { id: string; tenantId: string },
+  json: string,
+): Promise<void> {
   await tx.execute(sql`update hub.process_runs set decision = ${json}::jsonb, updated_at = now()
-    where id = ${runId}`);
+    where id = ${run.id} and tenant_id = ${run.tenantId}`);
 }

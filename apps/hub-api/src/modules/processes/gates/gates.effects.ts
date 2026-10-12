@@ -15,7 +15,13 @@ import type { ProcessDeps } from "../core/ports";
 import type { RunState } from "../core/process-state.rules";
 import { stageGateStatus, stepCountOf } from "../core/step.rules";
 import { enqueueThread } from "../core/thread";
-import { persistStage, type StepOutcome, stageDoneOf, stepsOfSnap } from "../runs/step-persist";
+import {
+  persistStage,
+  type StageWrite,
+  type StepOutcome,
+  stageDoneOf,
+  stepsOfSnap,
+} from "../runs/step-persist";
 import { stageRowOf, toDecision } from "../runs/team-runner";
 import * as g from "./gates.repo";
 
@@ -130,18 +136,9 @@ export async function reviewEffects(
     sections: b.sections,
   });
   const events = [...(await d.notifier.taskClosed(tx, task.id))];
-  const p = { runId: run.id, stageRunId: task.stage_run_id, next, done: stageDoneOf(effects) };
+  const p = { runId: run.id, tenantId: run.tenantId, stageRunId: task.stage_run_id, next };
   if (b.result === "pass") {
-    await g.setStagePassed(tx, task.stage_run_id, ref.id, d.now());
-    await g.closeOpenTasks(tx, {
-      runId: run.id,
-      tenantId: run.tenantId,
-      result: "superseded",
-      exceptId: task.id,
-      now: d.now(),
-      stageRunId: task.stage_run_id,
-    });
-    const step = await persistStage(tx, p);
+    const step = await passStage(gx, e, task, { ...p, done: stageDoneOf(effects) });
     if (step?.kind === "finish") events.push(...(await finish(gx, run, ref, "done")));
     return { events, step };
   }
@@ -157,7 +154,27 @@ export async function reviewEffects(
     return { events, step: null };
   }
   await g.writeRedo(tx, task.stage_run_id, b.feedback ?? null, b.sections ?? null);
-  return { events, step: await persistStage(tx, p) };
+  return { events, step: await persistStage(tx, { ...p, done: stageDoneOf(effects) }) };
+}
+
+/** Đạt: ghi người duyệt + đóng task KHÁC của stage (D6, `superseded`) rồi stage done + join bước. */
+async function passStage(
+  gx: Gx,
+  e: Eff,
+  task: g.GateTask,
+  w: StageWrite,
+): Promise<StepOutcome | null> {
+  const { d, tx } = gx;
+  await g.setStagePassed(tx, task.stage_run_id, e.ref.id, d.now());
+  await g.closeOpenTasks(tx, {
+    runId: e.run.id,
+    tenantId: e.run.tenantId,
+    result: "superseded",
+    exceptId: task.id,
+    now: d.now(),
+    stageRunId: task.stage_run_id,
+  });
+  return persistStage(tx, w);
 }
 
 /** Đóng task decision + tin `task_result` + notifier (nếu có task mở). */
@@ -210,6 +227,7 @@ export async function decideEffects(
   }
   const step = await persistStage(tx, {
     runId: run.id,
+    tenantId: run.tenantId,
     stageRunId: sid,
     next,
     done: stageDoneOf(effects),

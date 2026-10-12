@@ -10,7 +10,7 @@ import { firstIdxOfStep } from "../core/step.rules";
 import type { StepOutcome } from "../runs/step-persist";
 import { stepsOfSnap } from "../runs/step-persist";
 import { toDecision } from "../runs/team-runner";
-import { backAllowed, backDecisionCheck, backResetPlan } from "./back.rules";
+import { backAllowed, backDecisionCheck, backResetPlan, canRaiseBackLimit } from "./back.rules";
 import { type EffOut, type Gx, type Locked, snapOf, threadResult } from "./gates.effects";
 import * as g from "./gates.repo";
 
@@ -62,17 +62,22 @@ export async function applyBack(
   const plan = backResetPlan({ steps, target: p.target, feedback: p.feedback, stages });
   const idOf = new Map(stages.map((s) => [s.idx, s.id] as const));
   const ids = plan.flatMap((r) => idOf.get(r.idx) ?? []);
-  const runIds = await g.currentRunIds(tx, ids);
+  const runIds = await g.currentRunIds(tx, run.tenantId, ids);
   const teamRunIds = await g.cancelTeamRuns(tx, run.id, run.tenantId, ids);
   const now = d.now();
   const close = { runId: run.id, tenantId: run.tenantId, now, exceptId: p.taskId };
   await g.closeOpenTasks(tx, { ...close, result: "superseded" });
   for (const r of plan) {
     const id = idOf.get(r.idx);
-    if (id) await g.resetStage(tx, id, r);
+    if (id) await g.resetStage(tx, id, { ...r, tenantId: run.tenantId });
   }
   const first = firstIdxOfStep(steps, p.target);
-  await g.setRunBack(tx, run.id, { step: p.target, firstIdx: first, raiseLimit: p.raiseLimit });
+  await g.setRunBack(tx, run.id, {
+    tenantId: run.tenantId,
+    step: p.target,
+    firstIdx: first,
+    raiseLimit: p.raiseLimit,
+  });
   const rounds = plan.filter((r) => r.status === "queued").map((r) => r.round);
   await g.insertBackEvent(tx, {
     tenantId: run.tenantId,
@@ -118,7 +123,12 @@ export async function backFromReview(gx: Gx, e: FromReview): Promise<BackOut> {
     toStep: target,
   });
   if (!backAllowed({ backRounds: Number(run.backRounds), backLimit: Number(run.backLimit) })) {
-    await g.setBackPending(tx, task.stage_run_id, target, feedback);
+    await g.setBackPending(
+      tx,
+      { stageRunId: task.stage_run_id, tenantId: run.tenantId },
+      target,
+      feedback,
+    );
     const events: UserEvent[] = [...(await d.notifier.taskClosed(tx, task.id))];
     const dec = { runId: run.id, tenantId: run.tenantId, idx, stageRunId: task.stage_run_id };
     events.push(...(await toDecision(d, tx, { ...dec, reason: "back_limit" })));
@@ -143,8 +153,12 @@ export async function backFromDecision(
 ): Promise<BackOut> {
   const { d, tx } = gx;
   const { run, idx, ref, dtask } = e;
-  const pend = await g.backPendingOf(tx, dtask.stage_run_id);
-  if (!pend) throw processError("PROCESS_RUN_STATE");
+  const pend = await g.backPendingOf(tx, {
+    stageRunId: dtask.stage_run_id,
+    tenantId: run.tenantId,
+  });
+  // D8 · không có đích đã lưu, hoặc `back_limit` đã ở trần cứng 100 (CHECK) ⇒ 409, không nâng (tránh 500).
+  if (!pend || !canRaiseBackLimit(Number(run.backLimit))) throw processError("PROCESS_RUN_STATE");
   const closed = await core.closeTask(tx, dtask.id, {
     result: "add_attempt",
     at: d.now(),

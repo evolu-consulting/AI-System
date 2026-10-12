@@ -22,6 +22,13 @@ export function backAllowed(run: { backRounds: number; backLimit: number }): boo
   return run.backRounds < run.backLimit;
 }
 
+/** Trần cứng `back_limit` (CHECK `process_runs_back_ck`, 0024). */
+export const BACK_LIMIT_MAX = 100;
+/** D8 · `add_attempt` nâng `back_limit + 1` chỉ khi chưa chạm trần cứng (tránh vi phạm CHECK ⇒ 500). */
+export function canRaiseBackLimit(backLimit: number): boolean {
+  return backLimit < BACK_LIMIT_MAX;
+}
+
 /** Số vòng quay lại còn lại: `max(0, backLimit − backRounds)`. */
 export function backRoundsLeft(run: { backRounds: number; backLimit: number }): number {
   return Math.max(0, run.backLimit - run.backRounds);

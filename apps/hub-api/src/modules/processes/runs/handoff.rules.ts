@@ -2,7 +2,7 @@
 // trước có mục `## Bàn giao` ⇒ `### <tên stage> (<file>)` + nội dung đã cắt (`clipHandoff`, 200 token ≈ 800 ký tự + "…").
 
 import { clipHandoff, HANDOFF_SECTION } from "@ai/contracts/hub-admin";
-import { sectionMap } from "./template.rules";
+import { normSection, sectionMap } from "./template.rules";
 
 export type HandoffItem = { name: string; file: string; handoff: string | null };
 
@@ -19,7 +19,7 @@ export function handoffBlock(items: readonly HandoffItem[]): string | null {
 
 /** Thân mục `## Bàn giao` của output (đọc từ `process_outputs.content`, KHÔNG cột `sections` — HO-07); vắng/rỗng ⇒ null. */
 export function handoffOf(content: string): string | null {
-  const h = sectionMap(content).get(HANDOFF_SECTION.toLowerCase());
+  const h = sectionMap(content).get(normSection(HANDOFF_SECTION));
   return h && h.length > 0 ? h : null;
 }
 

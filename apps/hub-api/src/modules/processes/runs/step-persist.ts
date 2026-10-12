@@ -33,11 +33,12 @@ export async function stageRowById(
   tx: Tx,
   runId: string,
   stageRunId: string,
+  tenantId: string,
 ): Promise<StageRowIdx | null> {
   const [s] =
     await tx.execute<StageRowIdx>(sql`select id, stage_idx, status, attempt, attempt_limit,
     asks_count, ask_limit, current_output_id, current_run_id from hub.stage_runs
-    where id = ${stageRunId} and process_run_id = ${runId}`);
+    where id = ${stageRunId} and process_run_id = ${runId} and tenant_id = ${tenantId}`);
   return s ? { ...s, stage_idx: Number(s.stage_idx) } : null;
 }
 
@@ -51,6 +52,7 @@ export const stageDoneOf = (effects: readonly string[]): boolean =>
 
 export type StageWrite = {
   runId: string;
+  tenantId: string;
   stageRunId: string;
   next: RunState;
   done: boolean;
@@ -63,15 +65,16 @@ export async function persistStage(tx: Tx, w: StageWrite): Promise<StepOutcome |
   if (w.done) {
     await tx.execute(sql`update hub.stage_runs set status = 'done',
         current_output_id = ${w.outputId ?? sql`current_output_id`}, finished_at = now(), updated_at = now()
-      where id = ${w.stageRunId}`);
+      where id = ${w.stageRunId} and tenant_id = ${w.tenantId}`);
   } else {
     const n = w.next.stage;
     const keep = w.outputId && n.hasOutput ? w.outputId : null;
     await tx.execute(sql`update hub.stage_runs set status = ${n.status}, attempt = ${n.attempt},
         attempt_limit = ${n.attemptLimit}, asks_count = ${n.asksCount}, ask_limit = ${n.askLimit},
-        current_output_id = ${keep ?? sql`current_output_id`}, updated_at = now() where id = ${w.stageRunId}`);
+        current_output_id = ${keep ?? sql`current_output_id`}, updated_at = now()
+      where id = ${w.stageRunId} and tenant_id = ${w.tenantId}`);
   }
-  return settleStep(tx, w.runId);
+  return settleStep(tx, w.runId, w.tenantId);
 }
 
 type StepHead = { current_step: number; snapshot: { stages?: { step?: number }[] } | null };
@@ -80,44 +83,49 @@ type StepHead = { current_step: number; snapshot: { stages?: { step?: number }[]
  * Join bước hiện tại trên trạng thái SAU ghi (D2/D4): mọi stage done ⇒ bước kế `queued` (hoặc run `done`); còn lại ⇒
  * `process_runs.status = runStatusOf(bước)`. `current_stage_idx` luôn = stage nhỏ nhất của bước hiện tại.
  */
-export async function settleStep(tx: Tx, runId: string): Promise<StepOutcome | null> {
+export async function settleStep(
+  tx: Tx,
+  runId: string,
+  tenantId: string,
+): Promise<StepOutcome | null> {
   const [h] = await tx.execute<StepHead>(sql`select current_step, snapshot from hub.process_runs
-    where id = ${runId}`);
+    where id = ${runId} and tenant_id = ${tenantId}`);
   if (!h) return null;
   const steps = stepsOfSnap(h.snapshot);
   const step = Number(h.current_step);
   const rows = await tx.execute<{ stage_idx: number; status: StageRunStatus }>(sql`select stage_idx,
-    status from hub.stage_runs where process_run_id = ${runId}`);
+    status from hub.stage_runs where process_run_id = ${runId} and tenant_id = ${tenantId}`);
   const statuses = new Map(rows.map((r) => [Number(r.stage_idx), r.status] as const));
   const j = stepJoin({ steps, step, statuses });
-  if (j.kind === "next_step") return nextStep(tx, runId, steps, j);
+  if (j.kind === "next_step") return nextStep(tx, { runId, tenantId }, steps, j);
   const first = firstIdxOfStep(steps, step);
   if (j.kind === "finish") {
     await tx.execute(sql`update hub.process_runs set status = 'done', current_stage_idx = ${first},
-      finished_at = now(), updated_at = now() where id = ${runId}`);
+      finished_at = now(), updated_at = now() where id = ${runId} and tenant_id = ${tenantId}`);
     return { kind: "finish", status: "done", step, stageIdx: first };
   }
   const agg = runStatusOf(stageIdxsOfStep(steps, step).map((i) => statuses.get(i) ?? "pending"));
   const status: ProcessRunStatus = agg === "step_done" ? "running" : agg;
   await tx.execute(sql`update hub.process_runs set status = ${status}, current_stage_idx = ${first},
-    updated_at = now() where id = ${runId}`);
+    updated_at = now() where id = ${runId} and tenant_id = ${tenantId}`);
   return { kind: "wait", status, step, stageIdx: first };
 }
 
 async function nextStep(
   tx: Tx,
-  runId: string,
+  r: { runId: string; tenantId: string },
   steps: readonly number[],
   j: { step: number; queue: number[] },
 ): Promise<StepOutcome> {
+  const { runId, tenantId } = r;
   const first = firstIdxOfStep(steps, j.step);
   const ids = sql.join(
     j.queue.map((i) => sql`${i}`),
     sql`, `,
   );
   await tx.execute(sql`update hub.stage_runs set status = 'queued', updated_at = now()
-    where process_run_id = ${runId} and stage_idx in (${ids})`);
+    where process_run_id = ${runId} and tenant_id = ${tenantId} and stage_idx in (${ids})`);
   await tx.execute(sql`update hub.process_runs set status = 'running', current_step = ${j.step},
-    current_stage_idx = ${first}, updated_at = now() where id = ${runId}`);
+    current_stage_idx = ${first}, updated_at = now() where id = ${runId} and tenant_id = ${tenantId}`);
   return { kind: "next_step", status: "running", step: j.step, stageIdx: first };
 }

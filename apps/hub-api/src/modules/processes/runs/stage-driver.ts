@@ -122,7 +122,7 @@ async function failStuckRun(d: Deps, hubRunId: string): Promise<void> {
     const head = await headOf(tx, runId);
     if (!head || isTerminal(head.status as ProcessRunStatus)) return [];
     // P-b2 D3 · guard theo STAGE của job (bước song song: run có thể waiting_review vì stage khác).
-    const stage = await stageRowById(tx, runId, stageRunId);
+    const stage = await stageRowById(tx, runId, stageRunId, head.tenant_id);
     if (stage?.status !== "running") return [];
     return toDecision(d, tx, {
       runId,
@@ -151,7 +151,9 @@ async function stageTimeout(d: Deps, link: Link): Promise<number | null> {
 
 async function linkOf(d: Deps, hubRunId: string): Promise<Link | null> {
   const [r] = await withHubScope(d.db, { kind: "system" }, (tx) =>
-    tx.execute<Link>(sql`select process_run_id, stage_run_id from hub.runs where id = ${hubRunId}`),
+    tx.execute<Link>(
+      sql`select process_run_id, stage_run_id, tenant_id from hub.runs where id = ${hubRunId}`,
+    ),
   );
   return r ?? null;
 }
@@ -168,8 +170,9 @@ async function runAgent(
   const timeoutS = await stageTimeout(d, link);
   // PB-R10 · nguồn đã ghim của stage → payload.sources (ép Read/Grep/Glob ở runner.rules); vắng ⇒ như P-a.
   const srcCtx = await withHubScope(d.db, { kind: "system" }, async (tx) => {
-    const st = await stageRowById(tx, link.process_run_id as string, link.stage_run_id as string);
-    return loadStageSourceCtx(tx, link.process_run_id as string, st?.stage_idx ?? 0);
+    const pr = link.process_run_id as string;
+    const st = await stageRowById(tx, pr, link.stage_run_id as string, link.tenant_id);
+    return loadStageSourceCtx(tx, pr, st?.stage_idx ?? 0);
   });
   const jobSources = stageJobSources(srcCtx);
   const o = await runJob(
@@ -264,7 +267,7 @@ async function lockAndLoad(tx: Tx, x: ApplyInput): Promise<Loaded | null> {
   if (!head0 || !(await core.lockRun(tx, head0.tenant_id, x.runId))) return null;
   const head = await headOf(tx, x.runId);
   if (!head || isTerminal(head.status as ProcessRunStatus)) return null;
-  const stage = await stageRowById(tx, x.runId, x.stageRunId);
+  const stage = await stageRowById(tx, x.runId, x.stageRunId, head.tenant_id);
   if (!stage || stage.current_run_id !== x.hubRunId) return null;
   const def = head.snapshot.stages[stage.stage_idx];
   if (!def) return null;

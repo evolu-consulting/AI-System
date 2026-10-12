@@ -16,7 +16,9 @@ export type TemplateCheck = {
 const HEADING = /^##(?!#)\s*(.+?)\s*$/;
 const FIELDS_FENCE = /```fields\s*\r?\n([\s\S]*?)\r?\n```/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}/;
-const norm = (s: string): string => s.trim().toLowerCase();
+/** Chuẩn hoá tên mục: NFC (tiếng Việt dựng sẵn ≡ tổ hợp) + trim + lowercase — dùng chung handoff/def.rules. */
+export const normSection = (s: string): string => s.normalize("NFC").trim().toLowerCase();
+const norm = normSection;
 
 /** Các mục `## <tên>` theo thứ tự xuất hiện, thân đã trim (bỏ khối ```fields```). */
 function sections(md: string): { name: string; body: string }[] {

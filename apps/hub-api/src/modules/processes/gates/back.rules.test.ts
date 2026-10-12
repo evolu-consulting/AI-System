@@ -1,6 +1,6 @@
 // HUB-FR-118 · unit cạnh file cho `back.rules.ts` (ca biên ngoài RB-* của QC).
 import { describe, expect, it } from "bun:test";
-import { backDecisionCheck, backResetPlan } from "./back.rules";
+import { backDecisionCheck, backResetPlan, canRaiseBackLimit } from "./back.rules";
 
 describe("back.rules [HUB-FR-118]", () => {
   it("không back_to_step ⇒ ok kể cả pass", () => {
@@ -28,5 +28,10 @@ describe("back.rules [HUB-FR-118]", () => {
       { idx: 0, status: "queued", round: 1, feedback: "f" },
       { idx: 1, status: "pending", round: 2, feedback: null },
     ]);
+  });
+  it("add_attempt chỉ nâng back_limit khi < 100 (CHECK process_runs_back_ck)", () => {
+    expect(canRaiseBackLimit(3)).toBe(true);
+    expect(canRaiseBackLimit(99)).toBe(true);
+    expect(canRaiseBackLimit(100)).toBe(false);
   });
 });

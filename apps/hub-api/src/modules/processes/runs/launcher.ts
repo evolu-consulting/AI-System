@@ -195,7 +195,11 @@ async function launchStage(
     idx: c.idx,
     stages: c.head.snapshot.stages,
   });
-  const real = await realActionPre(d, tx, { ...c, stages: c.head.snapshot.stages });
+  const real = await realActionPre(d, tx, {
+    ...c,
+    tenantId: u.tenantId,
+    stages: c.head.snapshot.stages,
+  });
   const p = processStageOf(c, priorOut, real?.preconfirm);
   const sp = await stagePrompt(
     tx,

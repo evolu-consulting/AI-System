@@ -34,7 +34,13 @@ const idList = (xs: readonly number[]) =>
 export async function realActionPre(
   d: Deps,
   tx: Tx,
-  p: { runId: string; idx: number; def: SnapStage; stages: readonly SnapStage[] },
+  p: {
+    runId: string;
+    tenantId: string;
+    idx: number;
+    def: SnapStage;
+    stages: readonly SnapStage[];
+  },
 ): Promise<RealPre | null> {
   if (!p.def.real_action || p.def.executor.kind !== "agent") return null;
   const steps = stepsOfSnap({ stages: p.stages });
@@ -49,7 +55,8 @@ export async function realActionPre(
     passed_at: string | null;
   }>(sql`select stage_idx, status, passed_by,
       to_char(passed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as passed_at
-    from hub.stage_runs where process_run_id = ${p.runId} and stage_idx in (${idList(prevIdxs)})`);
+    from hub.stage_runs where process_run_id = ${p.runId} and tenant_id = ${p.tenantId}
+      and stage_idx in (${idList(prevIdxs)})`);
   const byIdx = new Map(rows.map((r) => [Number(r.stage_idx), r] as const));
   const prev = prevIdxs.map((i) => {
     const r = byIdx.get(i);

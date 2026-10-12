@@ -158,6 +158,19 @@ export class AsksService {
     return { head, run, grants };
   }
 
+  /** P-b2 §3.7 · guard theo STAGE (bước song song: run có thể `running` vì stage khác) ⇒ stage `queued` + join bước. */
+  async #resume(
+    tx: Tx,
+    p: { tenantId: string; head: repo.TaskHead; run: RunHead; at: Date },
+  ): Promise<void> {
+    const { tenantId, head, run, at } = p;
+    const stage = await stageRowById(tx, head.runId, head.stageRunId, tenantId);
+    if (isTerminal(run.status) || stage?.status !== "waiting_answer")
+      throw processError("PROCESS_RUN_STATE");
+    await repo.resumeStage(tx, { tenantId, runId: head.runId, stageRunId: head.stageRunId, at });
+    await settleStep(tx, head.runId, tenantId);
+  }
+
   // ── POST /review-tasks/:id/answer (HUB-FR-110) ──
   async answer(user: AuthUser, taskId: string, raw: unknown): Promise<AskResult> {
     const viewer = await this.#viewer(user);
@@ -177,17 +190,7 @@ export class AsksService {
           answer: body.answer,
         });
         if (!won) throw processError("REVIEW_TASK_CLOSED");
-        // P-b2 §3.7 · guard theo STAGE (bước song song: run có thể `running` vì stage khác).
-        const stage = await stageRowById(tx, head.runId, head.stageRunId);
-        if (isTerminal(run.status) || stage?.status !== "waiting_answer")
-          throw processError("PROCESS_RUN_STATE");
-        await repo.resumeStage(tx, {
-          tenantId: user.tenantId,
-          runId: head.runId,
-          stageRunId: head.stageRunId,
-          at,
-        });
-        await settleStep(tx, head.runId);
+        await this.#resume(tx, { tenantId: user.tenantId, head, run, at });
         const refs = await repo.userRefs(tx, user.tenantId, [user.userId]);
         const me = refs.get(user.userId);
         const part: Extract<RoomProcessPart, { kind: "task_result" }> = {

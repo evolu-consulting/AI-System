@@ -9,6 +9,7 @@ import {
   STAGE_SECTIONS_MAX,
   STAGE_TEMPLATE_MAX,
 } from "@ai/contracts/hub-admin";
+import { normSection, sectionMap } from "../runs/template.rules";
 
 export type DefRefs = {
   agentIds: ReadonlySet<string>;
@@ -103,13 +104,10 @@ type HandoffShape = {
   executor: { kind: string };
   output: { required_sections: string[]; template: string };
 };
-const HANDOFF_NORM = HANDOFF_SECTION.toLowerCase();
+const HANDOFF_NORM = normSection(HANDOFF_SECTION);
 const HANDOFF_TPL = `\n\n## ${HANDOFF_SECTION}\n`;
-/** Heading cấp 2 `## Bàn giao` (không phân biệt hoa thường, trim) — khớp `template.rules`. */
-const hasHandoffHeading = (tpl: string): boolean =>
-  tpl
-    .split(/\r?\n/)
-    .some((l) => /^##(?!#)/.test(l) && l.slice(2).trim().toLowerCase() === HANDOFF_NORM);
+/** Heading cấp 2 `## Bàn giao` (NFC + trim + lowercase) — cùng `sectionMap` của `template.rules`. */
+const hasHandoffHeading = (tpl: string): boolean => sectionMap(tpl).has(HANDOFF_NORM);
 
 /**
  * HUB-FR-136 · R10 · G-5 · plan §4.1: stage `agent` thiếu mục "Bàn giao" ⇒ thêm CUỐI `required_sections` + `## Bàn giao`
@@ -119,7 +117,7 @@ const hasHandoffHeading = (tpl: string): boolean =>
 export function ensureHandoff<S extends HandoffShape>(s: S): S {
   if (s.executor.kind === "team") return s;
   const o = s.output;
-  const hasReq = o.required_sections.some((x) => x.trim().toLowerCase() === HANDOFF_NORM);
+  const hasReq = o.required_sections.some((x) => normSection(x) === HANDOFF_NORM);
   const addTpl =
     !hasHandoffHeading(o.template) && o.template.length + HANDOFF_TPL.length <= STAGE_TEMPLATE_MAX;
   const tplOk = addTpl || hasHandoffHeading(o.template);

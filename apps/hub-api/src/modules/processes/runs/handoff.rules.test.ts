@@ -26,4 +26,8 @@ describe("HUB-FR-136 · handoff.rules", () => {
       "Câu hỏi trước:\nQ1\nTrả lời:\nA1",
     );
   });
+  it("handoffOf khớp heading Unicode tổ hợp (NFD) ≡ dựng sẵn (NFC)", () => {
+    const nfd = "## Bàn giao".normalize("NFD");
+    expect(handoffOf(`${nfd}\nHO`)).toBe("HO");
+  });
 });
