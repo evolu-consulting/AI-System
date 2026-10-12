@@ -582,7 +582,7 @@ f52e18d1cc75132f0e179eeb327d06d17ae1daa8697c81b096476f0bd1b4e6bc  tests/acceptan
 0e8d4589cad25177290d4a97b9eed9cc83e3b08bd332149eab3726b02eee3fbc  tests/acceptance/P-b2/compat/compat.int.test.ts
 a58d60b34ef2b0e1f3c3cd5d9f4aaebec1180a33d9f0c5fd4916e6a037b8d1d1  tests/acceptance/P-b2/par/parallel.int.test.ts
 eccbcd0f1b9d7fd89db752b04d69b83d0deac50ce3dd0a9bd5bdd22aa1482cb0  tests/acceptance/P-b2/par/quota.int.test.ts
-12462e434e6d4244c6982e5e0a8212989a455cc16c514d09010917e9e284ee67  tests/acceptance/P-b2/par/race.int.test.ts
+5ed482de4a7fa36b82beab403c149629bb3894d233b8ac59ddd7dd1ebab109f7  tests/acceptance/P-b2/par/race.int.test.ts
 40fe20346d2ca44957b7320991786a20e7f4067002ff575684abdb5f24b68367  tests/acceptance/P-b2/par/team0.int.test.ts
 0d476cd5a6ac53a6d755426da0f5f1d1828a7b042b7bca5c075a54232b98eb2c  tests/acceptance/P-b2/rules/back-rules.test.ts
 75a7192469d341a25d493c43c5ef00d2e5c6a88176adfde3ac5d5991bf2dd7e0  tests/acceptance/P-b2/rules/contracts-pb2.test.ts

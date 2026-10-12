@@ -158,6 +158,7 @@ Quy ước, fixture (§1), DB tag, bẫy: xem test-plan.md §0–§1. Gate/mặc
 | RA-01 | Y1, Y2, Y3 `jobDone` đồng thời (`Promise.all`) | đúng **một** `next_step` (`current_step=2` một lần); Z đúng 1 `hub.runs` |
 | RA-02 | B Đạt stage 1 ∥ job stage 2 trả output | task stage 2 không `superseded`; join đúng 1 lần |
 | RA-03 | `back_limit` stage 3 ∥ decide `stage_idx=1` (redo_limit stage 1) | mỗi decision đóng đúng task của stage mình |
+| RA-04 | 2 decision mở (redo_limit stage 1 và 2); decide `stage_idx=2` | chỉ stage 2 đổi, decision stage 1 còn mở; decide lại `stage_idx=2` ⇒ 409 `PROCESS_RUN_STATE` (bắt lỗi FE gửi stage_idx của decision cũ nhất) |
 
 **`par/team0.int.test.ts`** (#135, R18)
 | Ca | Kỳ vọng |

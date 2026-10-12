@@ -122,4 +122,44 @@ describe("RA · đua trong bước song song [HUB-FR-106][plan §7]", () => {
       await settleRuns(c.sql);
     }
   }, 300_000);
+  it("HUB-FR-118 · RA-04 · 2 decision mở (redo_limit stage 1 và 2) ⇒ decide stage_idx=2 chỉ đổi stage 2; stage 1 còn mở; decide lại stage 2 ⇒ 409 PROCESS_RUN_STATE", async () => {
+    needPb2(c.pb2);
+    const s = await startInRoom(c, { key: DEFS2.par2.key, input: "RA-04" });
+    await finishStages(c, s.runId, [0]);
+    await passStage(c, s.runId, 0, "B");
+    await finishStages(c, s.runId, [1, 2]);
+    await waitStage(c.sql, s.runId, 1, "waiting_review");
+    await waitStage(c.sql, s.runId, 2, "waiting_review");
+    await c.sql`update hub.stage_runs set attempt = attempt_limit where process_run_id = ${s.runId} and stage_idx in (1, 2)`;
+    const ta = await taskOf(c.sql, s.runId, 1);
+    expect((await review(c, "B", ta?.id, { result: "fail", feedback: "Hết lượt A" })).status).toBe(
+      200,
+    );
+    const tb = await taskOf(c.sql, s.runId, 2);
+    expect((await review(c, "T", tb?.id, { result: "fail", feedback: "Hết lượt B" })).status).toBe(
+      200,
+    );
+    await waitStage(c.sql, s.runId, 1, "needs_decision");
+    await waitStage(c.sql, s.runId, 2, "needs_decision");
+    const dec = await c.call("A", "POST", `/process-runs/${s.runId}/decide`, {
+      option: "add_attempt",
+      stage_idx: 2,
+    });
+    expect(dec.status).toBe(200);
+    expect((await stageRow(c.sql, s.runId, 2)).status).not.toBe("needs_decision");
+    expect((await stageRow(c.sql, s.runId, 1)).status).toBe("needs_decision");
+    const open = await c.sql<Json[]>`select t.reason, sr.stage_idx from hub.review_tasks t
+      join hub.stage_runs sr on sr.id = t.stage_run_id
+      where t.process_run_id = ${s.runId} and t.kind = 'decision' and t.status = 'open'`;
+    expect([...open]).toEqual([{ reason: "redo_limit", stage_idx: 1 }]);
+    const again = await c.call("A", "POST", `/process-runs/${s.runId}/decide`, {
+      option: "add_attempt",
+      stage_idx: 2,
+    });
+    expect({ status: again.status, code: (again.json as Json)?.error?.code }).toEqual({
+      status: 409,
+      code: "PROCESS_RUN_STATE",
+    });
+    await settleRuns(c.sql);
+  }, 90_000);
 });
