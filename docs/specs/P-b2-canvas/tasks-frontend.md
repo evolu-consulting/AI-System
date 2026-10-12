@@ -47,5 +47,5 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (FB1…FB11, §1–§10) · c
 
 ## Quyết định trong lúc làm — review vòng 1
 - Tách hàm ≤50 dòng: `useFlowGraph` ⇒ `toNode`/`toEdge`/`NODE_SIZE`; `useDraft` ⇒ `useStepMutations`; `useStageOps` ⇒ `useReport` + `addVia`; `def-form.test.ts` tách describe "P-b2 · bước · validate", `withStep` đưa lên cấp file.
-- `DecisionCard` gửi `stage_idx = view?.decision?.stage_idx ?? task.stage_idx` (view vắng ở chế độ inline); 409 xử lý như lỗi API hiện có (toast).
+- `DecisionCard` gửi `stage_idx = task.stage_idx` (stage của chính thẻ; review vòng 2: `view.decision` là decision mở cũ nhất nên dùng nó sẽ quyết nhầm stage khi có ≥2 decision mở); 409 xử lý như lỗi API hiện có (toast).
 - a11y: `BackTimeline` nút "Xem đầy đủ" có `aria-expanded`/`aria-controls` (`useId`); `StageStrip` `Round`: ×n hiển thị `aria-hidden`, giữ sr-only, bỏ `title`.

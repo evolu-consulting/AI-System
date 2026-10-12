@@ -24,12 +24,7 @@ import { useDecide } from "../hooks/use-decide";
 
 // D6c (UAT 2026-10-11): trong thread, `DecisionMessage` đã in tiêu đề "Quy trình dừng ở giai đoạn…" + lý do ở trên,
 // nên thẻ nhúng ẩn hai dòng đó để không lặp; trang lượt chạy (TaskPanel) không nhúng ⇒ vẫn in đủ.
-export function DecisionCard({
-  runId,
-  task,
-  view,
-  embedded,
-}: TaskCardProps & { embedded?: boolean }) {
+export function DecisionCard({ runId, task, embedded }: TaskCardProps & { embedded?: boolean }) {
   const { t } = useTranslation();
   const decide = useDecide(runId);
   const [note, setNote] = useState("");
@@ -41,9 +36,12 @@ export function DecisionCard({
     async (option: DecisionOption) => {
       setNoOutput(false);
       try {
-        // P-b2: nhiều decision mở ⇒ gửi đúng stage đang hiển thị (server 409 nếu không còn mở).
-        const stage_idx = view?.decision?.stage_idx ?? task.stage_idx;
-        await decide.mutateAsync({ option, note: note.trim() || undefined, stage_idx });
+        // P-b2: nhiều decision mở ⇒ gửi stage của chính thẻ này (server 409 nếu không còn mở).
+        await decide.mutateAsync({
+          option,
+          note: note.trim() || undefined,
+          stage_idx: task.stage_idx,
+        });
         toast.success(t("process.run.decision.done"));
       } catch (err) {
         if (err instanceof ApiError && err.code === "NO_OUTPUT") {
@@ -55,7 +53,7 @@ export function DecisionCard({
         toast.error(msg && msg !== key ? msg : t("process.common.error.network"));
       }
     },
-    [decide, note, t, view?.decision?.stage_idx, task.stage_idx],
+    [decide, note, t, task.stage_idx],
   );
 
   // E-P7: `my_tasks` của assignee giữ cả task đã đóng (sau add_attempt) ⇒ ẩn thẻ khi quyết định xong (như Review/Ask).
