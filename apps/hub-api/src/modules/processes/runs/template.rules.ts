@@ -39,7 +39,7 @@ function sections(md: string): { name: string; body: string }[] {
 }
 
 /** Map mục chuẩn hoá → thân (mục cuối thắng nếu trùng). */
-function sectionMap(md: string): Map<string, string> {
+export function sectionMap(md: string): Map<string, string> {
   const map = new Map<string, string>();
   for (const s of sections(md)) map.set(norm(s.name), s.body);
   return map;

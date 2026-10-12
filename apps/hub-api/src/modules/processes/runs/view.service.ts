@@ -217,7 +217,7 @@ export class ViewService {
     };
     if (starterLeft) {
       const outs = await tx.execute<OutputRow>(sql`
-        select id, stage_idx, version, attempt, template_ok, template_missing, ${iso("created_at")} as created_at
+        select id, stage_idx, version, attempt, template_ok, template_missing, round, ${iso("created_at")} as created_at
         from hub.process_outputs where process_run_id = ${r.id} and tenant_id = ${r.tenant_id}
         order by stage_idx, version limit ${50}`);
       await auditView(tx, u, {
@@ -266,7 +266,7 @@ export class ViewService {
       const [o] = await tx.execute<
         OutputRow & { content: string; fields: Record<string, string | number> | null }
       >(sql`
-        select id, stage_idx, version, attempt, template_ok, template_missing, fields, content,
+        select id, stage_idx, version, attempt, template_ok, template_missing, round, fields, content,
           ${iso("created_at")} as created_at
         from hub.process_outputs where id = ${outputId} and process_run_id = ${runId} and tenant_id = ${r.tenant_id}`);
       if (!o) throw notFound();

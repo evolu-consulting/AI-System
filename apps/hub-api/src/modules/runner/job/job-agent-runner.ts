@@ -69,6 +69,8 @@ export type AgentTask = {
   files?: readonly RunFile[];
   /** P-b PB-R10 · nguồn chỉ-đọc của stage (git/library/local đã ghim); có ⇒ payload.sources + Read/Grep/Glob. */
   sources?: readonly JobSource[];
+  /** P-b2 R12 · job stage quy trình: `false` ⇒ `payload.use_session=false` (Hub tự quyết resume); vắng ⇒ như cũ. */
+  useSession?: boolean;
   /** Phát `step.started`/`step.finished` (vd `writer.emit`); vắng → không phát. */
   emit?: (ev: SseEventBody) => Promise<unknown>;
 };
@@ -207,6 +209,7 @@ export class JobAgentRunner implements AgentRunner {
       stream: task.stream !== undefined,
       attachments,
       ...(task.role === "agent" && task.sources?.length ? { sources: task.sources } : {}),
+      ...(task.useSession === false ? { useSession: false } : {}),
     });
     return payload && this.#outHint(task, payload);
   }

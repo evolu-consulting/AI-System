@@ -18,6 +18,7 @@ import { pickDecisionStage } from "../core/step.rules";
 import { decisionOptionsFor } from "../core/task.rules";
 import { openDecisions } from "../gates/gates.repo";
 import { idOf, resolveExecutors } from "./executor-ref";
+import { handoffTruncated } from "./handoff.rules";
 
 export type SnapStage = {
   key: string;
@@ -36,6 +37,10 @@ export type OutputRow = {
   template_ok: boolean;
   template_missing: string[] | null;
   created_at: string;
+  /** P-b2 · có ⇒ `OutputRef.round`. */
+  round?: number | null;
+  /** P-b2 · có ⇒ tính `OutputRef.handoff_truncated` (mục `## Bàn giao` > 800 ký tự). */
+  content?: string | null;
 };
 /** Khoá run tối thiểu để đọc phần bước. */
 type RunKey = { id: string; tenant_id: string };
@@ -49,6 +54,8 @@ export const toOutputRef = (o: OutputRow): OutputRef => ({
   template_ok: o.template_ok,
   template_missing: o.template_missing ?? [],
   created_at: o.created_at,
+  ...(o.round != null ? { round: Number(o.round) } : {}),
+  ...(typeof o.content === "string" ? { handoff_truncated: handoffTruncated(o.content) } : {}),
 });
 
 const UNKNOWN_EXEC: ExecutorRef = { kind: "agent", key: "?", name: { vi: "?", en: "?" } }; // D5 fallback
@@ -78,7 +85,7 @@ export async function stageViews(tx: Tx, r: RunKey, snap: Snap): Promise<StageVi
     from hub.stage_runs s left join admin.users pu on pu.id = s.passed_by and pu.tenant_id = s.tenant_id
     where s.process_run_id = ${r.id} and s.tenant_id = ${r.tenant_id} order by s.stage_idx`);
   const outs = await tx.execute<OutputRow>(sql`
-    select id, stage_idx, version, attempt, template_ok, template_missing, ${iso("created_at")} as created_at
+    select id, stage_idx, version, attempt, template_ok, template_missing, round, content, ${iso("created_at")} as created_at
     from hub.process_outputs where process_run_id = ${r.id} and tenant_id = ${r.tenant_id} order by stage_idx, version`);
   const execMap = await resolveExecutors(
     tx,

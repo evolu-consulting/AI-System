@@ -25,6 +25,7 @@ import {
   decodeDefCursor,
   encodeDefCursor,
   validateProcessDef,
+  withHandoff,
 } from "./def.rules";
 import {
   auditSnapshot,
@@ -140,7 +141,7 @@ export class DefsService {
       await this.#keyFree(tx, s.tenantId, input.key);
       const row = await repo.insertDef(tx, {
         tenantId: s.tenantId,
-        input,
+        input: withHandoff(input),
         sourceTemplateId: null,
         actorId: u.userId,
       });
@@ -163,7 +164,7 @@ export class DefsService {
       const cur = await this.#lock(tx, u, { s, id, version });
       await this.#check(tx, cur.tenant_id, input);
       await this.#keyFree(tx, cur.tenant_id, input.key, id);
-      const row = await repo.updateDef(tx, id, input, u.userId);
+      const row = await repo.updateDef(tx, id, withHandoff(input), u.userId);
       const a = {
         action: "update" as const,
         row,
@@ -193,7 +194,7 @@ export class DefsService {
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const tpl = await repo.readDef(tx, s, id);
       if (!tpl || tpl.tenant_id !== null) throw appError("NOT_FOUND");
-      const input = copyFromTemplate(inputOf(tpl), b);
+      const input = withHandoff(copyFromTemplate(inputOf(tpl), b));
       await this.#checkSources(tx, tenantId, input.sources);
       await this.#keyFree(tx, tenantId, input.key);
       const row = await repo.insertDef(tx, {

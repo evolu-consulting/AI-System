@@ -1,10 +1,13 @@
 // ADM-FR-65 · ADM-FR-66 · HUB-FR-104 · HUB-FR-109 · HUB-FR-106 (P-b2 bước) · N1 · R-DF01…R-DF04 · luật thuần định nghĩa quy trình (plan-contract §6–§7).
 // Thứ tự lỗi: INVALID (luật chéo stage) → REF_INVALID (stage lỗi đầu tiên) → INCOMPLETE (bật mà review thiếu Group).
 import {
+  HANDOFF_SECTION,
   type ProcessDefInput,
   type ProcessDefRule,
   processDefSourcePaths,
   processDefStageIssues,
+  STAGE_SECTIONS_MAX,
+  STAGE_TEMPLATE_MAX,
 } from "@ai/contracts/hub-admin";
 
 export type DefRefs = {
@@ -95,6 +98,49 @@ export function copyFromTemplate(
     })),
   };
 }
+
+type HandoffShape = {
+  executor: { kind: string };
+  output: { required_sections: string[]; template: string };
+};
+const HANDOFF_NORM = HANDOFF_SECTION.toLowerCase();
+const HANDOFF_TPL = `\n\n## ${HANDOFF_SECTION}\n`;
+/** Heading cấp 2 `## Bàn giao` (không phân biệt hoa thường, trim) — khớp `template.rules`. */
+const hasHandoffHeading = (tpl: string): boolean =>
+  tpl
+    .split(/\r?\n/)
+    .some((l) => /^##(?!#)/.test(l) && l.slice(2).trim().toLowerCase() === HANDOFF_NORM);
+
+/**
+ * HUB-FR-136 · R10 · G-5 · plan §4.1: stage `agent` thiếu mục "Bàn giao" ⇒ thêm CUỐI `required_sections` + `## Bàn giao`
+ * cuối template. Bỏ qua `team`; đã có (trim + lowercase) ⇒ không đổi; vượt trần schema (20 mục / 20 000 ký tự) ⇒ không
+ * thêm phần đó. Thuần, idempotent.
+ */
+export function ensureHandoff<S extends HandoffShape>(s: S): S {
+  if (s.executor.kind === "team") return s;
+  const o = s.output;
+  const hasReq = o.required_sections.some((x) => x.trim().toLowerCase() === HANDOFF_NORM);
+  const addTpl =
+    !hasHandoffHeading(o.template) && o.template.length + HANDOFF_TPL.length <= STAGE_TEMPLATE_MAX;
+  const tplOk = addTpl || hasHandoffHeading(o.template);
+  // Thiếu mục: chỉ thêm khi thêm được CẢ mục lẫn heading (RH-08 giữ nguyên khi sát trần).
+  if (!hasReq && (o.required_sections.length >= STAGE_SECTIONS_MAX || !tplOk)) return s;
+  if (hasReq && !addTpl) return s;
+  return {
+    ...s,
+    output: {
+      ...o,
+      required_sections: hasReq ? o.required_sections : [...o.required_sections, HANDOFF_SECTION],
+      template: addTpl ? `${o.template}${HANDOFF_TPL}` : o.template,
+    },
+  };
+}
+
+/** `ensureHandoff` cho mọi stage của def (gọi ở `defs.service` create/update/copy SAU validate). */
+export const withHandoff = (d: ProcessDefInput): ProcessDefInput => ({
+  ...d,
+  stages: d.stages.map((s) => ensureHandoff(s)),
+});
 
 /** Trang danh sách: khoá `(updated_at, id)` của phần tử cuối trang trước. */
 export type PageKey = readonly [at: string, id: string];

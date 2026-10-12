@@ -103,6 +103,13 @@ describe("HUB-FR-89 · buildJobPayload (plan §2.2)", () => {
   });
 });
 
+describe("HUB-FR-136 · buildJobPayload use_session (P-b2)", () => {
+  it("HUB-FR-136 · P-b2 R12 · useSession false ⇒ use_session false (agent); vắng ⇒ true", () => {
+    expect(buildJobPayload(input({ useSession: false }))?.use_session).toBe(false);
+    expect(buildJobPayload(input({ useSession: true }))?.use_session).toBe(true);
+  });
+});
+
 describe("H1-R18 · providerBlocked", () => {
   const now = new Date("2026-10-04T00:00:00Z");
   it("H1-R18 · cooldown chưa hết / không giờ hết / logged_out / error → chặn", () => {

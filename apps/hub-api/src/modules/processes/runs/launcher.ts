@@ -19,7 +19,8 @@ import { processUpdated } from "../core/events";
 import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/ports";
 import { isTerminal } from "../core/process-state.rules";
 import { stageIdxsOfStep } from "../core/step.rules";
-import { gateResolve, type Head, promptOf, type SnapStage } from "./launcher-prompt";
+import { gateResolve, type Head, type SnapStage } from "./launcher-prompt";
+import { stagePrompt } from "./launcher-session";
 import { auditRealAction, priorFiles, realActionPre } from "./launcher-step";
 import { stageDriver } from "./stage-driver";
 import { stepsOfSnap } from "./step-persist";
@@ -35,6 +36,8 @@ type StageRow = {
   attempt: number;
   current_run_id: string | null;
   feedback: string | null;
+  round: number;
+  redo_sections: string[] | null;
 };
 
 /** B0: no-op; P-a mount dựng bản thật. */
@@ -66,7 +69,7 @@ async function alreadyRunning(tx: Tx, stage: StageRow): Promise<boolean> {
 type Prepared = Awaited<ReturnType<ProcessDeps["runs"]["prepareProcess"]>>;
 type KickResult = (
   | { kind: "skip" }
-  | { kind: "launch"; prepared: Prepared; files: unknown[] }
+  | { kind: "launch"; prepared: Prepared; files: unknown[]; useSession: boolean }
   | { kind: "events"; events: UserEvent[] }
 ) & {
   /** D5 · còn stage `queued` khác của bước ⇒ kick lặp thêm (vắng ⇒ dừng; tránh tx thừa ở def tuần tự). */
@@ -94,7 +97,7 @@ async function kickOnce(d: LauncherDeps, self: StageLauncher, runId: string): Pr
   }
   if (result.kind !== "launch") return false;
   await d.runs.launch(result.prepared, result.files as never, {
-    driver: stageDriver(d, self),
+    driver: stageDriver(d, self, { useSession: result.useSession }),
   });
   return result.more === true;
 }
@@ -110,8 +113,8 @@ async function nextQueued(
   if (idxs.length === 0) return null;
   const rows = await tx.execute<
     StageRow & { stage_idx: number }
-  >(sql`select id, stage_idx, status, attempt,
-      current_run_id, feedback from hub.stage_runs where process_run_id = ${runId}
+  >(sql`select id, stage_idx, status, attempt, round,
+      redo_sections, current_run_id, feedback from hub.stage_runs where process_run_id = ${runId}
       and stage_idx in (${sql.join(
         idxs.map((i) => sql`${i}`),
         sql`, `,
@@ -164,6 +167,21 @@ type LaunchCtx = {
   lost: Lost;
 };
 
+const processStageOf = (
+  c: LaunchCtx,
+  files: ProcessStage["process"]["files"],
+  preconfirm: ProcessStage["process"]["preconfirm"],
+): ProcessStage => ({
+  executor: execOf(c.def),
+  process: {
+    processRunId: c.runId,
+    stageRunId: c.stage.id,
+    teamRunId: c.teamRunId,
+    files,
+    preconfirm,
+  },
+});
+
 /** Dựng run `direct` stage (kèm preconfirm D4) → `createRunTx` → đánh dấu stage running + audit `authorize_real_action`. */
 async function launchStage(
   d: LauncherDeps,
@@ -178,17 +196,13 @@ async function launchStage(
     stages: c.head.snapshot.stages,
   });
   const real = await realActionPre(d, tx, { ...c, stages: c.head.snapshot.stages });
-  const p: ProcessStage = {
-    executor: execOf(c.def),
-    process: {
-      processRunId: c.runId,
-      stageRunId: c.stage.id,
-      teamRunId: c.teamRunId,
-      files: priorOut,
-      preconfirm: real?.preconfirm,
-    },
-  };
-  const req: SendMessageRequest = { content: promptOf(c.def, c.head, c.stage.feedback) };
+  const p = processStageOf(c, priorOut, real?.preconfirm);
+  const sp = await stagePrompt(
+    tx,
+    { tenantId: u.tenantId, runId: c.runId, idx: c.idx, head: c.head, stage: c.stage, def: c.def },
+    await d.config.snapshot().catch(() => null),
+  );
+  const req: SendMessageRequest = { content: sp.content };
   let prepared: Prepared;
   try {
     prepared = await d.runs.prepareProcess(u, {
@@ -213,7 +227,7 @@ async function launchStage(
       agentId: c.def.executor.agent_id,
       pre: real,
     });
-  return { kind: "launch", prepared, files };
+  return { kind: "launch", prepared, files, useSession: sp.useSession };
 }
 
 /** P-R10 · người bắt đầu còn dùng được: `admin.users.active` ∧ ¬`locked_by_tenant` ∧ `admin.tenants.active` (đọc tươi). */

@@ -1,6 +1,12 @@
 // P-b · PF-S3 · HUB-FR-122/123 · PB-R05/R10/R13/R14 · prompt stage (MANIFEST + đầu vào + checklist) + cổng resolve nguồn.
 // Tách khỏi `launcher.ts` cho giới hạn 400 dòng; chỉ hàm thuần/DB, không phát sự kiện. [HUB-FR-122]
-import type { ProcessInputValue, SourcePin, StageSource } from "@ai/contracts/hub-admin";
+import {
+  HANDOFF_SECTION,
+  HANDOFF_TOKENS_MAX,
+  type ProcessInputValue,
+  type SourcePin,
+  type StageSource,
+} from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { buildManifest, type ManifestItem } from "./sources.rules";
@@ -12,7 +18,7 @@ export type SnapStage = {
   instruction: string;
   executor: { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
-  output: { filename: string };
+  output: { filename: string; required_sections?: string[] };
   real_action: boolean;
   /** P-b2 · bước (vắng ⇒ mỗi stage một bước — `resolveSteps`). */
   step?: number;
@@ -84,11 +90,34 @@ function extraPromptParts(head: Head, stage: SnapStage): string[] {
   return parts;
 }
 
-/** Prompt stage (D6 rút gọn): instruction + input run + MANIFEST/đầu vào/checklist + góp ý (làm lại). */
-export function promptOf(stage: SnapStage, head: Head, feedback: string | null): string {
+/** R10 · stage có mục "Bàn giao" bắt buộc ⇒ nhắc độ dài (đếm ước chars/4, cắt khi chuyển bước sau). */
+function handoffHint(stage: SnapStage): string | null {
+  const want = HANDOFF_SECTION.toLowerCase();
+  const has = (stage.output.required_sections ?? []).some((x) => x.trim().toLowerCase() === want);
+  return has
+    ? `Mục "## ${HANDOFF_SECTION}": tóm tắt cho bước sau, tối đa ${HANDOFF_TOKENS_MAX} token.`
+    : null;
+}
+
+/** P-b2 · phần thêm của prompt: `extra` (khối Bàn giao, sau "Đầu vào") và `tail` (hỏi–đáp trước, nối cuối). */
+export type PromptExtra = { extra?: readonly string[]; tail?: string | null };
+
+/**
+ * Prompt stage (D6 rút gọn): instruction + input run + MANIFEST/đầu vào/checklist + Bàn giao bước trước + nhắc Bàn giao +
+ * góp ý (làm lại) + hỏi–đáp trước (tiếp sau trả lời).
+ */
+export function promptOf(
+  stage: SnapStage,
+  head: Head,
+  feedback: string | null,
+  x: PromptExtra = {},
+): string {
   const parts = [stage.instruction.trim(), head.input.trim()].filter((p) => p.length > 0);
-  parts.push(...extraPromptParts(head, stage));
+  parts.push(...extraPromptParts(head, stage), ...(x.extra ?? []));
+  const hint = handoffHint(stage);
+  if (hint) parts.push(hint);
   if (feedback && feedback.trim().length > 0) parts.push(`Góp ý cần sửa:\n${feedback.trim()}`);
+  if (x.tail) parts.push(x.tail);
   return parts.join("\n\n") || stage.name;
 }
 

@@ -67,17 +67,25 @@ function resultOf(o: JobOutcome): StageResult {
   };
 }
 
-export function stageDriver(d: Deps, launcher: StageLauncher): RunDriver {
-  return { start: (ctx) => void drive(d, launcher, ctx) };
+/** P-b2 R12 · tuỳ chọn job stage: `useSession=false` ⇒ `payload.use_session=false` (vắng ⇒ true như cũ). */
+export type StageDriverOpts = { useSession?: boolean };
+
+export function stageDriver(d: Deps, launcher: StageLauncher, o: StageDriverOpts = {}): RunDriver {
+  return { start: (ctx) => void drive(d, launcher, ctx, o) };
 }
 
-async function drive(d: Deps, launcher: StageLauncher, ctx: RunContext): Promise<void> {
+async function drive(
+  d: Deps,
+  launcher: StageLauncher,
+  ctx: RunContext,
+  o: StageDriverOpts,
+): Promise<void> {
   const log = ctx.log.child({ run_id: ctx.writer.run.id });
   try {
     const link = await linkOf(d, ctx.writer.run.id);
     if (!link?.process_run_id || !link.stage_run_id) return void ctx.writer.abort();
     const { result, usage, jobId } = ctx.direct
-      ? await runAgent(d, ctx, link)
+      ? await runAgent(d, ctx, link, o)
       : await runTeamStage(d, ctx, link);
     // D11/P1-37 · `need_input` ⇒ đóng `hub.runs` TRƯỚC khi commit `waiting_answer` (người đọc không thấy cửa sổ
     // `running`); output/failed giữ thứ tự D11 (tx quy trình trước, `finish` sau) rồi `kick` stage kế.
@@ -153,6 +161,7 @@ async function runAgent(
   d: Deps,
   ctx: RunContext,
   link: Link,
+  opts: StageDriverOpts,
 ): Promise<{ result: StageResult; usage: number; jobId: string | null }> {
   if (!ctx.direct)
     return { result: { kind: "failed", reason: "agent_failed" }, usage: 0, jobId: null };
@@ -173,6 +182,7 @@ async function runAgent(
       prompt: ctx.content,
       history: [],
       files: ctx.files,
+      ...(opts.useSession === false ? { useSession: false } : {}),
       ...(jobSources.length ? { sources: jobSources } : {}),
       detail: {
         process_run_id: link.process_run_id,
@@ -216,7 +226,7 @@ async function runApplyTx(d: Deps, x: ApplyInput): Promise<Applied | null> {
     const idx = stage.stage_idx;
     await tx.execute(sql`update hub.process_runs set tokens_total = tokens_total + ${x.tokens}
       where id = ${x.runId}`);
-    const ev = await eventFor(tx, x, head, def, srcCtx);
+    const ev = await eventFor(tx, x, { head, def, srcCtx });
     const t = transition(buildState(head, stage, def), ev);
     if (!t.ok) return null;
     // PB-R11 · audit nguồn đã đọc (append-only) khi stage ra output — độc lập template_ok.
@@ -261,16 +271,14 @@ async function lockAndLoad(tx: Tx, x: ApplyInput): Promise<Loaded | null> {
   return { head, stage, def, srcCtx: await loadStageSourceCtx(tx, x.runId, stage.stage_idx) };
 }
 
-async function eventFor(
-  tx: Tx,
-  x: ApplyInput,
-  head: RunHead,
-  def: SnapStage,
-  srcCtx: StageSourceCtx,
-): Promise<RunEvent> {
+/** Ngữ cảnh stage đã nạp cho đánh giá kết quả job. */
+type EvalCtx = Pick<Loaded, "head" | "def" | "srcCtx">;
+
+async function eventFor(tx: Tx, x: ApplyInput, c: EvalCtx): Promise<RunEvent> {
+  const { def, srcCtx } = c;
   if (x.result.kind === "failed") return { kind: "limit", reason: x.result.reason };
   if (x.result.kind === "limit") return { kind: "limit", reason: x.result.reason };
-  const over = await budgetReason(tx, x, head, def, srcCtx);
+  const over = await budgetReason(tx, x, c);
   if (over) return { kind: "limit", reason: over };
   if (x.result.kind === "need_input") return { kind: "need_input" };
   const ok = checkTemplate(
@@ -289,9 +297,7 @@ function refsOk(x: ApplyInput, srcCtx: StageSourceCtx): boolean {
 async function budgetReason(
   tx: Tx,
   x: ApplyInput,
-  head: RunHead,
-  def: SnapStage,
-  srcCtx: StageSourceCtx,
+  { head, def, srcCtx }: EvalCtx,
 ): Promise<DecisionReason | null> {
   const [row] = await tx.execute<{ stage_sum: number; run_sum: number }>(sql`
     select coalesce(sum(case when r.stage_run_id = ${x.stageRunId} then ul.input_tokens + ul.output_tokens

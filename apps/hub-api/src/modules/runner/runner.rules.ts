@@ -58,6 +58,8 @@ export type PayloadInput = {
   stream?: boolean;
   /** P-b PB-R10 · nguồn chỉ-đọc gắn vào job stage; có ⇒ ép `allowed_tools` = Read/Grep/Glob + khoá `sources`. */
   sources?: readonly JobSource[];
+  /** P-b2 R12 · `false` ⇒ `use_session=false` cho agent (job stage quy trình); vắng ⇒ agent dùng session như cũ. */
+  useSession?: boolean;
 };
 
 /** Agent kẹp ≥ 2: structured output tốn một lượt (Runtime đã tự ép, Hub khớp). */
@@ -118,7 +120,7 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
     system_prompt: i.systemPrompt,
     prompt: i.prompt,
     history: [...i.history],
-    use_session: isAgent,
+    use_session: isAgent && i.useSession !== false,
     allowed_tools: tools,
     output: isAgent ? "agent_result" : "text",
     timeout_s: i.agent.timeoutS,
