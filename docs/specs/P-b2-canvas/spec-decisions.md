@@ -43,3 +43,24 @@ Nguồn: spec-readiness lần 1 (NOT READY: 4 Chặn, 15 Cao, 14 Thấp) → ng�
 | 33 | Giữ nguyên | — |
 
 **Docs-architect tự chọn (ghi để rà):** thứ tự ưu tiên `sessionPlan` = team → `sameAgentInStep` → `continuing` → rerun (cùng bước cùng agent không có session nên không thể resume).
+
+## Mặc định readiness lần 2 (2026-10-12; điều phối chấp nhận mọi mặc định)
+| # | Quyết định | Nơi áp |
+|---|---|---|
+| 1 | `sectionMap` **export**; đọc `.get(HANDOFF_SECTION.trim().toLowerCase())`; `template.rules.ts` vào File T7 | plan §3.9, tasks T7 |
+| 2 | `continuing` = ask `answer` của stage_run với `decided_at` > `started_at` của `hub.runs` mới nhất | plan §4.2, RR-11 |
+| 3 | `continuing ∧ ¬sessionExists` ⇒ `{true,false,true}`, prompt cũ không delta | plan §4.2, RR-10, RZ-10 |
+| 4 | `continuing ∧ ¬resume` ⇒ nối `Câu hỏi trước:/Trả lời:` (≤3) | plan §4.2, RZ-10 |
+| 5 | Lỗi hình dạng def ⇒ 400 `VALIDATION_ERROR`; 422 chỉ 6 luật | spec §3/R02/AC-04, plan D10, DF-02, i18n |
+| 6 | Đường `useSession`: `ProcessRunInput→RunContext→AgentTask→PayloadInput`; File T7 thêm `runs.service`, `stage-driver`, `launcher`, `launcher-step` | plan §4.2, tasks T7 |
+| 7 | `sameAgentInStep` tĩnh theo snapshot | plan §4.2 |
+| 8 | G3 chốt theo RB-11/D7 | test-plan §G3 |
+| 9 | `group "Nếu bị trượt"` luôn hiện; gate auto chỉ có `backNone` | plan-fe, E-PB2-07 |
+| 10 | `step.backLine`: event mới nhất, `step`=`to_step+1`, `n`=`back_events.length` | i18n |
+| 11 | FB8 dùng `live.moved` | plan-fe FB8 |
+| 12 | PI-09 `status='closed', result='pass'` | test-plan-cases |
+| 13 | DF-01: stage 0 ở step 0 + 4 stage ở step 1 | test-plan-cases |
+| 14 | T12 bỏ "ADR-0013 → Accepted" | tasks |
+| 15 | Bỏ key `backNeedsReview` | i18n |
+| 16 | Bỏ "thêm directive trễ" | spec §6 |
+| 17 | HUB-FR-114 phần Bàn giao cho trưởng nhóm ngoài P-b2 | spec §1.2 |

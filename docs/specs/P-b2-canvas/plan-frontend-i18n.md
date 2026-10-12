@@ -50,10 +50,9 @@ Quy ước: chuỗi mới vào các phần có sẵn (`PROCESS_LOCALE_PARTS`: `a
 | `editor.stage.backOption` | Quay lại bước {{step}} | Go back to step {{step}} |
 | `editor.stage.backOptionHint` | {{names}} | {{names}} |
 | `editor.stage.backNone` | Bước đầu không có bước nào phía trước. | The first step has nothing before it. |
-| `editor.stage.backNeedsReview` | Chỉ dùng được khi giai đoạn có người kiểm. | Only available when the stage has a reviewer. |
 | `editor.up` / `editor.down` (key cũ, giữ) | Lên / Xuống (nay = thứ tự trong bước) | Up / Down (now = order within the step) |
 
-### Lỗi inline (`process.admin.canvas.err.*`; server 422 map cùng câu)
+### Lỗi inline (`process.admin.canvas.err.*`; server 422 map cùng câu; 400 `VALIDATION_ERROR` hình dạng → câu `step`/`stagesMax`)
 | Key | Mã server | VI | EN |
 |---|---|---|---|
 | `stepFull` | `STEP_TOO_WIDE` | Bước {{step}} đã đủ 3 giai đoạn song song. | Step {{step}} already has 3 parallel stages. |
@@ -73,7 +72,7 @@ Nhãn ARIA nút/section stage dùng lại `editor.stage.aria` ("Giai đoạn {{n
 | `step.roundLong` | ×{{n}} lần | ×{{n}} times |
 | `step.roundSr` | Đã làm lại lần {{n}} do quay lại bước | Redone {{n}} time(s) after going back |
 | `step.attempt` | Lần làm {{n}} | Attempt {{n}} |
-| `step.backLine` | ↩ Quay lại bước {{step}} (lần {{n}}) | ↩ Went back to step {{step}} (time {{n}}) |
+| `step.backLine` (sự kiện mới nhất; `step`=`to_step`+1; `n`=`back_events.length`) | ↩ Quay lại bước {{step}} (lần {{n}}) | ↩ Went back to step {{step}} (time {{n}}) |
 | `step.backMax` | Đã quay lại tối đa {{max}} lần | Reached the maximum of {{max}} go-backs |
 | `review.failAs` | Chưa đạt thì… | If not passed… |
 | `review.redoThis` | Làm lại giai đoạn này | Redo this stage |

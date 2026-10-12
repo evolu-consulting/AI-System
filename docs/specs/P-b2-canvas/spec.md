@@ -40,6 +40,7 @@ owner: backend-lead + frontend-lead + qc
 | Lưu toạ độ nút, dagre/elk, canvas ở chat-web/studio-web, chỉnh canvas trong trang Run | ADR-0013 #3, #5 |
 | Stage lồng/rẽ nhánh theo điều kiện, vòng lặp tự do ngoài "quay lại bước" | ngoài CR-063 |
 | Editor ①②③ còn lại: Nhóm agent ở Forge, tab Usage, luật tự duyệt HUB-FR-108, Import/Export JSON, KPI danh sách | **Q1**: CR-063 không liệt kê ⇒ KHÔNG làm; mốc riêng (P-b3) |
+| HUB-FR-114 (Bàn giao cho trưởng nhóm) | Ngoài P-b2 |
 | Admin Run view (trang xem run phía admin) | **Không đổi ở P-b2**; chỉ chat-web Run page đổi |
 | Hub trích chữ/PDF | K1 |
 
@@ -49,7 +50,7 @@ BA là nguồn sự thật (HUB-BR-38, HUB-FR-118/136); chỉ ghi phần BA chư
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
 | PB2-R01 | **Bước** = số nguyên `step` (0…9) gắn mỗi stage; `step` tuỳ chọn. Thiếu ở mọi stage ⇒ `step = chỉ số stage` (cũ). Có ở một stage thì phải có ở mọi stage (422 `STEP_INCOMPLETE`). Mảng `stages[]` phải **không giảm theo `step`** và các bước **liên tục** 0,1,2… (422 `STEP_ORDER`). Layout canvas suy ra từ `step` + thứ tự mảng, **không lưu toạ độ**. **Hiển thị:** UI đếm từ 1 ("Bước 1" = `step` 0; số bước ở AC là số UI trừ khi có chữ `step`) | HUB-FR-104, UI §7.17 |
-| PB2-R02 | ≤ 3 stage/bước, tổng ≤ 10 stage (hằng `PROCESS_STAGES_MAX` đã có = 10); > 3 stage/bước ⇒ 422 `STEP_TOO_WIDE`; > 10 stage ⇒ lỗi schema cũ (max 10), không `STEP_TOO_WIDE` | HUB-BR-38(c) |
+| PB2-R02 | ≤ 3 stage/bước, tổng ≤ 10 stage (hằng `PROCESS_STAGES_MAX` đã có = 10); > 3 stage/bước ⇒ 422 `STEP_TOO_WIDE`; > 10 stage / sai hình dạng ⇒ 400 `VALIDATION_ERROR` | HUB-BR-38(c) |
 | PB2-R03 | `real_action` hợp lệ khi **mọi** stage của bước liền trước có `after.kind='review'`; bước 0 ⇒ không hợp lệ. Thay luật cũ "stage i-1 là review" (`processDefStagePaths`); với quy trình cũ (mỗi stage một bước) kết quả y hệt | HUB-BR-38(b), HUB-BR-20 |
 | PB2-R04 | **Chạy bước:** vào bước k ⇒ tạo `stage_runs` + job cho mọi stage của bước (≤ 3 job đồng thời). Mỗi stage đi máy trạng thái hiện có độc lập (template, hỏi lại, gate, attempt ≤ 4). Stage Đạt/`auto` xong **chờ** các stage còn lại; bước k+1 khởi động khi **mọi** stage bước k `done`. Run `done` khi bước cuối xong. Một stage `needs_decision` ⇒ run `needs_decision` (stage kia chạy nốt, không khởi động bước mới) | HUB-BR-38(a), HUB-BR-26 |
 | PB2-R05 | Stage cùng bước **không thấy output nhau** (không phụ thuộc). Stage bước k nhận output (bản mới nhất) của **mọi stage bước < k** — `priorFiles` tính **theo bước**, không theo chỉ số | CR-063 |
@@ -74,8 +75,8 @@ Chỉ **thêm**; trường mới trong meta thread/jsonb cũ (`OutputRef`, part 
 
 | Chỗ | Thay đổi | Lỗi |
 |---|---|---|
-| `ProcessStageDefSchema.step` | `ProcessStepSchema.optional()` (R01/R02) | 422 `PROCESS_DEF_INVALID` |
-| `after` biến thể `review` | + `back_to_steps: ProcessStep[] ≤9, default []` — duy nhất, < bước của stage, là bước có thật (R06, Q6) | 422 `PROCESS_DEF_INVALID` |
+| `ProcessStageDefSchema.step` | `ProcessStepSchema.optional()` (R01/R02) | 400 `VALIDATION_ERROR` |
+| `after` biến thể `review` | + `back_to_steps: ProcessStep[] ≤9, default []` — duy nhất, < bước của stage, là bước có thật (R06, Q6) | 400 `VALIDATION_ERROR` (hình dạng); luật ⇒ 422 |
 | `ProcessDefPathsDetailsSchema` | + `rules?: ProcessDefRule[]` ≤20, **cùng chỉ số** với `paths`. `PROCESS_DEF_RULES` = `KEY_DUP`·`REAL_ACTION`·`STEP_INCOMPLETE`·`STEP_ORDER`·`STEP_TOO_WIDE`·`BACK_TARGET_INVALID`; path `stages.<i>.{key\|step\|real_action}` / `stages.<i>.after.back_to_steps.<j>` (luật path: plan §1.2) | mã HTTP không đổi |
 | Lưu def (create/update/copy) | `ensureHandoff` (R10): thiếu `"Bàn giao"` ⇒ thêm cuối `required_sections` + `\n\n## Bàn giao\n` cuối `template` (khi < 20 mục và ≤ 20 000 ký tự; **bỏ qua stage `team`**); response trả bản đã thêm | — |
 | `POST /review-tasks/:id/decision` | + `back_to_step?: ProcessStep`. Kiểm theo thứ tự: `FEEDBACK_REQUIRED` → `BACK_TARGET_INVALID` (kèm `pass`, hoặc ∉ `back_to_steps`) → khoá run → task đóng ⇒ 409 `REVIEW_TASK_CLOSED` → stage ≠ `waiting_review` ⇒ 409 `PROCESS_RUN_STATE` | 422 · 409 |
@@ -135,7 +136,7 @@ Lazy chunk `canvas*` ≤ 80 KB gz trong `check:bundle` admin-web (ADR-0013 #2); 
 | Phụ thuộc | Cách giả lập |
 |---|---|
 | `@xyflow/react` 12.11.6 (MIT; ADR-0013 Accepted) | chỉ admin-web, lazy; test đơn vị layout thuần (không DOM) |
-| Runtime song song | `fake-cli` (directive `#fake:`) chạy 3 job cùng bước; thêm directive trễ nếu cần để kiểm "chờ mọi stage" |
+| Runtime song song | `fake-cli` (directive `#fake:`) chạy 3 job cùng bước |
 | Session resume (WRK-FR-14) | `fake-cli` giả `session_id`; Claude thật chỉ ở UAT |
 | Env mới | không (hằng 3 vòng / 3 stage / 10 stage / 200 token là code, không phải env) |
 
@@ -145,7 +146,7 @@ Lazy chunk `canvas*` ≤ 80 KB gz trong `check:bundle` admin-web (ADR-0013 #2); 
 | AC-PB2-01 | Given def cũ không có `step` (sdlc 8 stage) / When chạy / Then chạy tuần tự như P-a, `current_step = current_stage_idx`, StageStrip như cũ (CHAT-AC-59 vế cuối) | `done:pa` chạy lại + int |
 | AC-PB2-02 | Given bước 1 gồm A, B (`fake-cli`) / When start / Then cả hai `queued` cùng lúc; A Đạt, B chưa ⇒ bước 2 chưa chạy; B Đạt ⇒ bước 2 chạy | int engine |
 | AC-PB2-03 | Given A gate trượt, B Đạt / Then chỉ A làm lại (attempt 2), B giữ nguyên, bước sau chờ | int |
-| AC-PB2-04 | Lưu def: 4 stage cùng bước ⇒ 422 `STEP_TOO_WIDE`; 11 stage ⇒ lỗi cũ; `step` thiếu ở 1 stage ⇒ `STEP_INCOMPLETE`; bước không liên tục ⇒ `STEP_ORDER` | contract/rules |
+| AC-PB2-04 | Lưu def: 4 stage cùng bước ⇒ 422 `STEP_TOO_WIDE`; 11 stage ⇒ 400 `VALIDATION_ERROR`; `step` thiếu ở 1 stage ⇒ `STEP_INCOMPLETE`; bước không liên tục ⇒ `STEP_ORDER` | contract/rules |
 | AC-PB2-05 | `real_action` ở stage bước 2 mà một stage bước 1 là `auto` ⇒ 422; cả hai là review ⇒ lưu được | rules |
 | AC-PB2-06 | Given stage review có `back_to_steps=[1]` ở bước 3 / When người duyệt chọn quay lại bước 1 + góp ý / Then (D7) stage `step`=1 `queued`, `step` 2–3 `pending`, `round=2` ở cả ba, `back_rounds=1`, event ghi, góp ý có trong prompt bước đích; thiếu góp ý ⇒ 422 (UI: "bước 2") | int |
 | AC-PB2-07 | Given đã quay lại 3 lần / When lần 4 / Then run `needs_decision` `back_limit`, không chạy lại; "thêm lượt" nới +1 | int |

@@ -94,6 +94,8 @@ Quy ước, fixture (§1), DB tag, bẫy: xem test-plan.md §0–§1. Gate/mặc
 | RR-06 | `deltaPrompt("Thiếu MST", null)` bắt đầu `"Góp ý cần sửa:\n"` chứa `"Thiếu MST"`, **không** chứa `"Mục cần sửa"`; `("x", ["Tổng tiền"])` chứa `"Mục cần sửa: Tổng tiền"` |
 | RR-07 | `deltaPrompt` không chứa nội dung "Đầu vào"/Bàn giao (chỉ delta) |
 | RR-08 | `continuing:true` (vừa `waiting_answer` cùng attempt; `rerun:false`, `lastWriterIsSelf:false`) ⇒ `{true,true,false}` (resume, prompt cũ — không delta) |
+| RR-10 | `continuing:true`, `sessionExists:false` ⇒ `{true,false,true}` (prompt cũ, không delta) |
+| RR-11 | `continuing` = ask `answer` có `decided_at` > `started_at` run mới nhất: ask cũ hơn ⇒ false (kiểm SQL, int) |
 | RR-09 | `continuing:true` + `sameAgentInStep:true` ⇒ `{false,false,false}`; `continuing:true` + `executor:"team"` ⇒ `{true,false,false}` (thứ tự ưu tiên: team → sameAgentInStep → continuing) |
 
 ### 3.2 Int · s0 (DB `pb2_s0`) — migration, RLS, lưu def
@@ -113,8 +115,8 @@ Quy ước, fixture (§1), DB tag, bẫy: xem test-plan.md §0–§1. Gate/mặc
 **`s0/defs.int.test.ts`** (AC-PB2-04/05/09, ADM-FR-71 phía server)
 | Ca | Kỳ vọng |
 |---|---|
-| DF-01 | `POST /process-defs` 4 stage cùng `step:1` ⇒ 422 `PROCESS_DEF_INVALID`, `details.paths` có `stages.4.step`, `details.rules` cùng chỉ số = `STEP_TOO_WIDE` |
-| DF-02 | 11 stage ⇒ 422 lỗi **cũ** (schema max 10, không `STEP_TOO_WIDE`) |
+| DF-01 | `POST /process-defs` 4 stage cùng `step:1` ⇒ 422 `PROCESS_DEF_INVALID`, stage 0 ở step 0 + 4 stage ở step 1; `details.paths` có `stages.4.step`, `details.rules` cùng chỉ số = `STEP_TOO_WIDE` |
+| DF-02 | 11 stage, `step:10`, `back_to_steps` > 9 phần tử ⇒ **400 `VALIDATION_ERROR`** + `issues[].path` (không `STEP_TOO_WIDE`) |
 | DF-03 | thiếu `step` ở 1 stage ⇒ `STEP_INCOMPLETE`; `step [0,2]` ⇒ `STEP_ORDER` (cả `PUT` và `POST …/copy` không áp vì copy từ mẫu hợp lệ — chỉ kiểm POST/PUT) |
 | DF-04 | `back_to_steps:[2]` ở stage bước 2 ⇒ `BACK_TARGET_INVALID` path `stages.<i>.after.back_to_steps.0` |
 | DF-05 | `real_action` bước 2, bước 1 {review, auto} ⇒ 422 `REAL_ACTION`; {review, review} ⇒ 201 |
@@ -136,7 +138,7 @@ Quy ước, fixture (§1), DB tag, bẫy: xem test-plan.md §0–§1. Gate/mặc
 | PI-06 | `pb2-par` bước 1: `Rà soát code` `waiting_review`, `Test hồi quy` `running` | `process_runs.status = running` (D2); task review `Rà soát code` mở |
 | PI-07 | job hỏi lại ở stage 1 (`waiting_answer`), stage 2 `running` | run `running`; A trả lời ⇒ stage 1 chạy tiếp, stage 2 không ảnh hưởng |
 | PI-08 | **AC-PB2-03** bước 1: `Rà soát code` Chưa đạt (góp ý "Thiếu test"), `Test hồi quy` Đạt | chỉ stage 1 `attempt=2` + job mới prompt chứa "Thiếu test"; stage 2 `done`, `attempt=1`, không job mới; stage 3 `pending` |
-| PI-09 | **D6** B Đạt stage 1 khi stage 2 còn task review mở | task stage 2 vẫn `open` (không `superseded`); task stage 1 `done` |
+| PI-09 | **D6** B Đạt stage 1 khi stage 2 còn task review mở | task stage 2 vẫn `open` (không `superseded`); task stage 1 `status='closed', result='pass'` |
 | PI-10 | stage 1 output M3 thiếu mục 4 lần ⇒ `needs_decision template_invalid` | run `needs_decision`; stage 2 vẫn chạy nốt tới `waiting_review`; bước 2 không khởi động; `view.decision.stage_idx = 1` |
 | PI-11 | huỷ run khi bước 1 có 2 job | cả 2 `hub.runs` `cancelled`, mọi task mở `cancelled` (huỷ = cả run) |
 | PI-12 | `pb2-real`: R0a Đạt bởi B (10:00), R0b Đạt bởi T (sau) | `Ghi sổ` chạy; audit actor = T (người Đạt muộn nhất); nếu đổi R0b thành auto (def khác) ⇒ không tạo được def (DF-05) |
@@ -225,6 +227,7 @@ Quy ước, fixture (§1), DB tag, bẫy: xem test-plan.md §0–§1. Gate/mặc
 | RZ-06 | stage `team` làm lại | `use_session=true`, không xoá session, không delta (giữ cũ) |
 | RZ-07 | quay lại bước X (round 2), cùng agent, session còn | stage bước X resume + delta chứa góp ý quay lại |
 | RZ-08 | **continuing**: stage hỏi lại (`waiting_answer`), người trả lời ⇒ job tiếp | `use_session=true`, prompt = prompt đầy đủ cũ (không "Góp ý cần sửa:"), `cli_sessions` còn |
+| RZ-10 | `continuing` + session hết hạn ⇒ prompt cũ, hàng bị DELETE; `pb2-same` hỏi lại ⇒ prompt có khối `Câu hỏi trước:`/`Trả lời:` |
 | RZ-09 | **G-7** redo cùng stage/agent, `cli_sessions.updated_at = now() − 86401 s` ⇒ chạy mới (prompt đầy đủ, hàng bị DELETE); biên `86399 s` ⇒ resume + delta |
 
 ### 3.6 Int · compat (DB `pb2_compat`) — tương thích ngược (AC-PB2-01, R14)

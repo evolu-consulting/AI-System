@@ -88,7 +88,7 @@ Fixture e2e (`e2e/P-b2/_pb2-data.ts`, SQL như `_pa-data.ts`): def `pb2-par` + `
 | E-PB2-04 | kéo node `Tổng hợp` (mouse) sang cột của bước 2 | bước đổi; giờ cột đó có 3 stage |
 | E-PB2-05 | `pb2-full`: `Alt+ArrowRight` stage bước 0 sang bước 1 (đã 3) | `alert` chứa "Bước n đã đủ 3 giai đoạn song song." + status "Không chuyển được: bước n đã đủ 3 giai đoạn"; bước không đổi; `button "Thêm giai đoạn vào bước n"` `aria-disabled=true` |
 | E-PB2-06 | panel `Tổng hợp`: `group "Nếu bị trượt"` → `checkbox "Quay lại bước n"` (assert `toHaveAccessibleDescription` chứa tên stage của bước đó) → `Lưu` (chờ PUT 200) → reload | checkbox vẫn checked; node có chữ "↩ bước n"; GET def `back_to_steps` đúng, `required_sections` có `"Bàn giao"` |
-| E-PB2-07 | stage bước đầu | khối "Nếu bị trượt" có câu "Bước đầu không có bước nào phía trước."; stage gate tự động ⇒ không có `group "Nếu bị trượt"` |
+| E-PB2-07 | stage bước đầu | khối "Nếu bị trượt" có câu "Bước đầu không có bước nào phía trước."; stage gate tự động ⇒ `group "Nếu bị trượt"` chỉ có câu `backNone`, không checkbox |
 | E-PB2-08 | `real_action`: stage bước sau khi bước trước có stage auto | `switch "Hành động thật"` disabled (câu `realLocked` mới); đổi stage đó sang duyệt ⇒ enabled |
 | E-PB2-09 | panel nút `Chuyển sang bước sau` / `Tách sang bước riêng` / `Lên` / `Xuống` (không dùng phím) | bước/thứ tự đổi giống E-PB2-03 (đường a11y thay thế, FB8) |
 | E-PB2-10 | `tablist "Chế độ xem"` → `tab "Danh sách"` | danh sách theo bước với `button "Giai đoạn n: …"`; panel vẫn hoạt động. Biến thể: `page.route("**/canvas*.js", abort)` ⇒ `alert` "Không tải được canvas. Đang dùng dạng danh sách." + `button "Thử lại"`; viewport 700 px ⇒ mặc định Danh sách |
@@ -136,7 +136,7 @@ Mỗi sửa: commit riêng `test(p-b2): cập nhật test khoá <file> [HUB-FR-1
 |---|---|---|---|
 | G1 | ~~Số bước hiển thị~~ **Đã chốt (G-4):** UI = `step+1`, `spinbutton` 1…10; e2e viết theo đó | — | xong |
 | G2 | ~~AC-PB2-06 ≠ D7~~ **Đã sửa AC** (spec §8) theo D7; BK-03 khớp | — | xong |
-| G3 | `backResetPlan` có trả stage bước < X? | không trả (RB-11) | backend-lead xác nhận |
+| G3 | `backResetPlan` có trả stage bước < X? | không trả (RB-11, D7) | chốt |
 | G4 | ~~Nhãn `add_attempt`~~ **Đã chốt (plan-fe §5/§9 B5):** giữ nhãn cũ | — | xong |
 | G5 | ~~Cảnh báo cắt Bàn giao~~ **Đã chốt:** chỉ cờ `handoff_truncated`, không UI; chỉ kiểm API (HO-02) | — | xong |
 | G6 | `pickDecisionStage` hoà `createdAt` | không test hoà | — |

@@ -14,7 +14,7 @@ Nối spec §2 (PB2-R), §3, §4 · quyết định Gate/mặc định: [spec-de
 | D7 | Làm rõ PB2-R07: bước X ⇒ `queued`; bước > X ⇒ `pending`; `round+1` chỉ cho stage **đã từng chạy** (status ≠ `pending`); reset `attempt=1`, `attempt_limit=4`, `asks_count=0`, `ask_limit=3`, `template_failures=0`, `current_run_id=NULL`, `current_output_id=NULL`, `passed_by/at=NULL`, `back_to_step=NULL`, `redo_sections=NULL`; `feedback` = góp ý (bước X) / NULL (bước > X) | Bước > X không được launch trước khi X xong; ×lần chỉ đúng khi stage đã chạy |
 | D8 | Quá trần quay lại: stage nguồn `needs_decision(back_limit)`, lưu đích ở `stage_runs.back_to_step` + góp ý ở `stage_runs.feedback`; `add_attempt` ⇒ `back_limit+1` rồi thực hiện quay lại; `use_current` ⇒ stage Đạt; `cancel` ⇒ huỷ. Người quyết/assignee như `redo_limit` | Q2; khớp mẫu `redo_limit` sẵn có, không option mới (test khoá `DECISION_OPTIONS`) |
 | D9 | Nhiều decision mở cùng lúc (song song): `view.decision` = decision mở **cũ nhất**; `decide` nhận `stage_idx?`; `process_runs.decision` jsonb = bản mới nhất (chỉ để tương thích) | Hiện chỉ một `decision` jsonb/run |
-| D10 | Lỗi def dùng lại `PROCESS_DEF_INVALID` + `details.paths` và thêm `details.rules` cùng chỉ số (không thêm mã HTTP top-level) | FE đang map lỗi inline theo `paths`; nhiều vi phạm một lần |
+| D10 | Lỗi luật def (6 `PROCESS_DEF_RULES`) dùng lại `PROCESS_DEF_INVALID` 422; lỗi hình dạng (11 stage, `step`/`back_to_steps` ngoài 0…9, > 9 phần tử) = 400 `VALIDATION_ERROR` + `issues[].path` (`parseJson`). Chi tiết: + `details.paths` và thêm `details.rules` cùng chỉ số (không thêm mã HTTP top-level) | FE đang map lỗi inline theo `paths`; nhiều vi phạm một lần |
 | D11 | Resume (R12) **chỉ ở Hub**, không đổi Runtime (người dùng chấp nhận cho cả quy trình cũ — G-2): khoá session Runtime = `(conversation_id, agent_id, provider_key)` và mọi stage chung một hội thoại nền ⇒ Hub điều khiển bằng `use_session` + xoá `cli_sessions` trước job "chạy mới" (§4.2) | Không có quyền sửa `apps/agent-runtime`; `conversations_process_run_uq` cấm hội thoại riêng mỗi stage |
 | D12 | TECH-DEBT #135: code đã sửa ở P-b (`persistDraft` trả `null`); P-b2 chỉ thêm int test "team ở bước 0 (đơn và song song)" rồi đóng nợ | `output-attachment.ts:105–136` |
 
@@ -137,7 +137,7 @@ Guard theo stage `waiting_answer`; status run = `runStatusOf`. Không đổi API
 ### 3.8 Sweeps (`sweeps.ts`)
 `interrupted`: duyệt **mọi** stage `running` của bước hiện tại có `hub.runs` chết (mỗi stage một decision). `source_unresolvable`: gắn vào `firstIdxOfStep(current_step)`. Hết hạn/huỷ: như cũ (cả run).
 ### 3.9 View (`view.service.ts` 400 dòng ⇒ tách `runs/view-steps.ts`)
-`step/round/back_to_steps` từ snapshot + `stage_runs`; `current_step`, `step_count`; `back_events` (`ORDER BY created_at DESC LIMIT 20` rồi đảo); `history.to_step` join `process_back_events.task_id`; `decision` theo D9; `TaskDetail.back_steps/back_rounds_left` (`core/task-view.ts`); `OutputRef.handoff_truncated = handoffTokens(sectionMap(process_outputs.content)["Bàn giao"]) > 200` (`sectionMap` của `runs/template.rules.ts`; không dùng cột `sections`).
+`step/round/back_to_steps` từ snapshot + `stage_runs`; `current_step`, `step_count`; `back_events` (`ORDER BY created_at DESC LIMIT 20` rồi đảo); `history.to_step` join `process_back_events.task_id`; `decision` theo D9; `TaskDetail.back_steps/back_rounds_left` (`core/task-view.ts`); `OutputRef.handoff_truncated = handoffTokens(sectionMap(process_outputs.content).get(HANDOFF_SECTION.trim().toLowerCase())) > 200` (`sectionMap` **export** từ `runs/template.rules.ts`, `Map` khoá `trim().toLowerCase()`; không dùng cột `sections`).
 
 ## 4. Bàn giao + resume (R10–R12, T7)
 ### 4.1 Bàn giao
@@ -149,17 +149,21 @@ Guard theo stage `waiting_answer`; status run = `runStatusOf`. Không đổi API
 ```ts
 // runs/session.rules.ts
 export type SessionCtx = { executor: "agent" | "team"; rerun: boolean /* attempt>1 ∨ round>1 */;
-  continuing: boolean /* vừa waiting_answer cùng attempt */;
+  continuing: boolean /* §dưới */;
   sameAgentInStep: boolean; lastWriterIsSelf: boolean; sessionExists: boolean /* có hàng ∧ updated_at ≤ SESSION_RESUME_MAX_AGE_S */ };
 export type SessionPlan = { useSession: boolean; resume: boolean; clearSession: boolean };
 export function sessionPlan(c: SessionCtx): SessionPlan;
 //  thứ tự: team ⇒ {true,false,false} (giữ cũ) · sameAgentInStep ⇒ {false,false,false}
-//  continuing ⇒ {true,true,false} (prompt cũ, KHÔNG delta) · rerun ∧ lastWriterIsSelf ∧ sessionExists ⇒ {true,true,false} (delta)
+//  continuing ∧ sessionExists ⇒ {true,true,false} (prompt cũ, KHÔNG delta) · continuing ∧ ¬sessionExists ⇒ {true,false,true} · rerun ∧ lastWriterIsSelf ∧ sessionExists ⇒ {true,true,false} (delta)
 //  còn lại ⇒ {true,false,true}
 export function deltaPrompt(feedback: string, sections: readonly string[] | null): string;  // "Góp ý cần sửa:\n…" (+ "Mục cần sửa: …")
 ```
+- `continuing` = tồn tại `review_tasks` `kind='ask'`, `result='answer'` của stage_run này với `decided_at` > `started_at` của `hub.runs` mới nhất của stage_run đó. `continuing ∧ ¬resume` (hết hạn/không session, hoặc cùng agent cùng bước) ⇒ prompt cũ (không delta) + nối cuối `Câu hỏi trước:
+<q>
+Trả lời:
+<answer>` (task ask đã đóng của attempt hiện tại, ≤3). `sameAgentInStep` = ∃ stage khác cùng `step` trong snapshot cùng `executor.agent_id` (tĩnh).
 - `lastWriterIsSelf`: `select stage_run_id from hub.runs where process_run_id=$run and tenant_id=$t and stage_run_id = any($stageRunIds cùng agent_id trong snapshot) and team_run_id is null and status='succeeded' order by finished_at desc limit 1` = stage này. `sessionExists`: PK `cli_sessions(conversation_id, agent_id, provider_key)` với provider bước đầu profile agent + `tenant_id`, và `updated_at ≥ now() − SESSION_RESUME_MAX_AGE_S` (hằng `runs/session.rules.ts` = **86400**, G-7; cũ hơn ⇒ false + `clearSession`). Tra cứu lỗi ⇒ `sessionExists=false` (⇒ `resume=false`). `continuing` ⇒ prompt cũ (không `deltaPrompt`).
-- `clearSession` ⇒ `DELETE FROM hub.cli_sessions WHERE conversation_id=$conv AND agent_id=$agent AND tenant_id=$t` trong tx launch (GRANT DELETE có từ 0005). `useSession=false` ⇒ plumb `ProcessRunInput.useSession` → `AgentTask` → `buildJobPayload` (`use_session: isAgent && (useSession ?? true)`; chat không đổi).
+- `clearSession` ⇒ `DELETE FROM hub.cli_sessions WHERE conversation_id=$conv AND agent_id=$agent AND tenant_id=$t` trong tx launch (GRANT DELETE có từ 0005). `useSession=false` ⇒ plumb `useSession?: boolean` qua `ProcessRunInput` → `RunContext` → `AgentTask` → `PayloadInput` → `buildJobPayload` (`use_session: isAgent && (useSession ?? true)`; chat không đổi).
 - `resume` ∧ ¬`continuing` ⇒ `SendMessageRequest.content = deltaPrompt(...)`; ngược lại prompt đầy đủ (§4.1). Quay lại (§3.5) ⇒ stage bước X là `rerun` (round>1).
 - Hệ quả đổi hành vi P-a: stage **sau** dùng cùng agent không còn resume session stage trước (trước đây ngầm resume) — đúng ý R12 "chạy mới đủ input".
 
