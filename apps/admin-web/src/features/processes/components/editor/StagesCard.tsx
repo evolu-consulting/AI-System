@@ -45,7 +45,7 @@ export function StagesCard({ d, readOnly, refs }: Props) {
                 readOnly={readOnly}
                 refs={refs}
                 onChange={(p) => d.patchStage(i, p)}
-                onMove={(dir) => d.moveStage(i, dir)}
+                onMove={(dir) => d.moveInColumn(i, dir)}
                 onRemove={() => d.removeStage(i)}
               />
             </AccordionContent>
@@ -53,7 +53,7 @@ export function StagesCard({ d, readOnly, refs }: Props) {
         ))}
       </Accordion>
       {readOnly || stages.length >= PROCESS_STAGES_MAX ? null : (
-        <Button type="button" variant="outline" onClick={d.addStage}>
+        <Button type="button" variant="outline" onClick={() => d.addStage()}>
           <Plus aria-hidden className="size-4" />
           {t("process.admin.editor.add")}
         </Button>

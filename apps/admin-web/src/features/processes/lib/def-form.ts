@@ -11,6 +11,8 @@ import {
   type ProcessDef,
   type ProcessDefInput,
   type ProcessStageDef,
+  processDefStageIssues,
+  resolveSteps,
   STAGE_FIELDS_MAX,
   STAGE_INSTRUCTION_MAX,
   STAGE_KEY_RE,
@@ -47,6 +49,10 @@ export type StageDraft = {
   sections: string[];
   fields: FieldDraft[];
   after: "review" | "auto";
+  /** P-b2 · bước 0-based (UI hiển thị `step+1`); mảng stage luôn không giảm theo `step`, liên tục từ 0. */
+  step: number;
+  /** P-b2 · bước được phép quay lại khi Chưa đạt (< `step`); chỉ có nghĩa khi `after = review`. */
+  backTo: number[];
   groupId: string;
   real: boolean;
   answerer: "starter" | "group" | "user";
@@ -77,7 +83,7 @@ export type DraftErrors = Record<string, string>;
 let seq = 0;
 const nextUid = (): string => `s${++seq}`;
 
-export function emptyStage(): StageDraft {
+export function emptyStage(step = 0): StageDraft {
   return {
     uid: nextUid(),
     keyAuto: true,
@@ -90,6 +96,8 @@ export function emptyStage(): StageDraft {
     sections: [],
     fields: [],
     after: "auto",
+    step,
+    backTo: [],
     groupId: "",
     real: false,
     answerer: "starter",
@@ -116,7 +124,7 @@ export const emptyDraft = (): DefDraft => ({
 
 const num = (v: number | null): string => (v === null ? "" : String(v));
 
-function stageToDraft(s: ProcessStageDef): StageDraft {
+function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
   const a = s.answerer;
   return {
     uid: nextUid(),
@@ -131,6 +139,8 @@ function stageToDraft(s: ProcessStageDef): StageDraft {
     sections: [...s.output.required_sections],
     fields: s.output.fields.map((f) => ({ ...f })),
     after: s.after.kind,
+    step,
+    backTo: s.after.kind === "review" ? [...(s.after.back_to_steps ?? [])] : [],
     groupId: s.after.kind === "review" ? (s.after.group_id ?? "") : "",
     real: s.real_action,
     answerer: a.kind,
@@ -143,6 +153,7 @@ function stageToDraft(s: ProcessStageDef): StageDraft {
 }
 
 export function toDraft(d: ProcessDefInput | ProcessDef): DefDraft {
+  const steps = resolveSteps(d.stages);
   return {
     key: d.key,
     name: d.name,
@@ -151,7 +162,7 @@ export function toDraft(d: ProcessDefInput | ProcessDef): DefDraft {
     groupIds: [...d.run_group_ids],
     budget: num(d.token_budget),
     enabled: d.enabled,
-    stages: d.stages.map(stageToDraft),
+    stages: d.stages.map((s, i) => stageToDraft(s, steps[i] as number)),
     sources: [...d.sources],
     inputs: inputsToDraft(d.inputs),
   };
@@ -164,6 +175,7 @@ function stageToInput(s: StageDraft): ProcessStageDef {
   return {
     key: s.key,
     name: s.name.trim(),
+    step: s.step,
     executor: kind === "team" ? { kind: "team", team_id: id } : { kind: "agent", agent_id: id },
     instruction: s.instruction,
     output: {
@@ -173,7 +185,9 @@ function stageToInput(s: StageDraft): ProcessStageDef {
       fields: s.fields,
     },
     after:
-      s.after === "review" ? { kind: "review", group_id: s.groupId || null } : { kind: "auto" },
+      s.after === "review"
+        ? { kind: "review", group_id: s.groupId || null, back_to_steps: s.backTo }
+        : { kind: "auto" },
     real_action: s.real,
     answerer:
       s.answerer === "group"
@@ -220,18 +234,11 @@ export function slugKey(name: string, taken: readonly string[]): string {
   return key;
 }
 
-/** Giai đoạn `i` có được bật "Hành động thật"? Cần giai đoạn ngay trước có người kiểm. */
-export const canRealAction = (stages: readonly StageDraft[], i: number): boolean =>
-  i > 0 && stages[i - 1]?.after === "review";
-
-export function moveStage<T>(list: readonly T[], i: number, dir: -1 | 1): T[] {
-  const j = i + dir;
-  if (j < 0 || j >= list.length) return [...list];
-  const out = [...list];
-  const a = out[i] as T;
-  out[i] = out[j] as T;
-  out[j] = a;
-  return out;
+/** Giai đoạn `i` có được bật "Hành động thật"? Bước ≥ 1 và MỌI giai đoạn của bước liền trước có người kiểm (PB2-R03). */
+export function canRealAction(stages: readonly StageDraft[], i: number): boolean {
+  const step = stages[i]?.step ?? 0;
+  if (step < 1) return false;
+  return stages.filter((s) => s.step === step - 1).every((s) => s.after === "review");
 }
 
 const P = "process.admin.validate.";
@@ -263,11 +270,32 @@ function validateStage(s: StageDraft, i: number, all: readonly StageDraft[], e: 
   if (s.executor === "") e[at("executor")] = `${P}executor`;
   if (s.instruction.length > STAGE_INSTRUCTION_MAX) e[at("instruction")] = `${P}tooLong`;
   validateOutput(s, at, e);
-  if (s.real && !canRealAction(all, i)) e[at("real_action")] = `${P}realAction`;
   if (s.answerer !== "starter" && s.answererId === "") e[at("answerer")] = `${P}answerer`;
   if (!inRange(s.timeout, STAGE_TIMEOUT_S.min, STAGE_TIMEOUT_S.max))
     e[at("timeout_s")] = `${P}timeout`;
   if (!budgetOk(s.budget)) e[at("token_budget")] = `${P}budget`;
+}
+
+const STEP_ERR: Record<string, string> = {
+  STEP_TOO_WIDE: "process.admin.canvas.err.stepFull",
+  STEP_ORDER: "process.admin.canvas.err.step",
+  STEP_INCOMPLETE: "process.admin.canvas.err.step",
+  REAL_ACTION: "process.admin.canvas.err.realStep",
+  BACK_TARGET_INVALID: "process.admin.canvas.err.backTarget",
+};
+
+/** Luật chéo stage về bước (dùng chung với server: `processDefStageIssues`) → lỗi theo ô. */
+export function validateSteps(stages: readonly StageDraft[], e: DraftErrors): void {
+  const shape = stages.map((s) => ({
+    key: s.key,
+    step: s.step,
+    real_action: s.real,
+    after: { kind: s.after, back_to_steps: s.after === "review" ? s.backTo : [] },
+  }));
+  for (const issue of processDefStageIssues(shape)) {
+    const key = STEP_ERR[issue.rule];
+    if (key) e[issue.path.replace(/\.after\.back_to_steps\.\d+$/, ".after.back_to_steps")] = key;
+  }
 }
 
 /** Validate toàn bản nháp. `forEnable` ⇒ thêm luật "bật": mọi giai đoạn có người kiểm phải có Group. */
@@ -285,6 +313,7 @@ export function validateDraft(d: DefDraft, forEnable = d.enabled): DraftErrors {
     if (forEnable && s.after === "review" && s.groupId === "")
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";
   });
+  validateSteps(d.stages, e);
   validateSourcesPart(d, e);
   return e;
 }
@@ -333,6 +362,7 @@ export function patchStage(stages: StageDraft[], i: number, p: Partial<StageDraf
   return stages.map((s, j) => {
     if (j !== i) return s;
     const next = { ...s, ...p };
+    if (next.after === "auto") next.backTo = [];
     if (next.keyAuto && p.name !== undefined) {
       const others = stages.filter((_, k) => k !== i).map((o) => o.key);
       next.key = slugKey(p.name, others);

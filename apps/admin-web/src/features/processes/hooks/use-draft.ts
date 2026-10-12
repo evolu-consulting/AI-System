@@ -1,17 +1,24 @@
 // ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, accordion mở.
-import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
 import { useRef, useState } from "react";
 import {
   type DefDraft,
   type DraftErrors,
   emptyDraft,
   emptyStage,
-  moveStage,
   patchStage,
   type StageDraft,
   snapshot,
   stageIndexesOf,
 } from "../lib/def-form";
+import {
+  addStageAsNewStep,
+  addStageToStep,
+  moveInColumn,
+  moveToStep,
+  removeStage,
+  type StepOpResult,
+  splitToNewStep,
+} from "../lib/step-ops";
 
 type Update = (fn: (d: DefDraft) => DefDraft) => void;
 
@@ -21,10 +28,9 @@ function draftOps(update: Update) {
     patch: (p: Partial<DefDraft>) => update((d) => ({ ...d, ...p })),
     patchStage: (i: number, p: Partial<StageDraft>) =>
       update((d) => ({ ...d, stages: patchStage(d.stages, i, p) })),
-    moveStage: (i: number, dir: -1 | 1) =>
-      update((d) => ({ ...d, stages: moveStage(d.stages, i, dir) })),
-    removeStage: (i: number) =>
-      update((d) => ({ ...d, stages: d.stages.filter((_, j) => j !== i) })),
+    moveInColumn: (i: number, dir: -1 | 1) =>
+      update((d) => ({ ...d, stages: moveInColumn(d.stages, i, dir) })),
+    removeStage: (i: number) => update((d) => ({ ...d, stages: removeStage(d.stages, i) })),
   };
 }
 
@@ -56,11 +62,22 @@ export function useDraft() {
     const uids = stageIndexesOf(Object.keys(e)).flatMap((i) => ref.current.stages[i]?.uid ?? []);
     if (uids.length) setOpen((o) => [...new Set([...o, ...uids])]);
   };
-  const addStage = () => {
-    if (ref.current.stages.length >= PROCESS_STAGES_MAX) return;
+  /** Áp một phép đổi bước; lỗi ⇒ trả nguyên `error` (không đổi bản nháp). */
+  const applySteps = (
+    op: (stages: StageDraft[]) => StepOpResult<StageDraft>,
+  ): StepOpResult<StageDraft> => {
+    const r = op(ref.current.stages);
+    if ("stages" in r) update((d) => ({ ...d, stages: r.stages }));
+    return r;
+  };
+  /** Thêm giai đoạn: vào cột `step` (0-based) hoặc, bỏ trống, thành bước mới cuối. */
+  const addStage = (step?: number): StepOpResult<StageDraft> => {
     const s = emptyStage();
-    update((d) => ({ ...d, stages: [...d.stages, s] }));
-    setOpen((o) => [...o, s.uid]);
+    const r = applySteps((st) =>
+      step === undefined ? addStageAsNewStep(st, s) : addStageToStep(st, step, s),
+    );
+    if ("stages" in r) setOpen((o) => [...o, s.uid]);
+    return r;
   };
   return {
     draft,
@@ -73,6 +90,8 @@ export function useDraft() {
     markSaved,
     showErrors,
     addStage,
+    moveToStep: (i: number, step: number) => applySteps((st) => moveToStep(st, i, step)),
+    splitToNewStep: (i: number) => applySteps((st) => splitToNewStep(st, i)),
     ...draftOps(update),
   };
 }

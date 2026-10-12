@@ -5,7 +5,6 @@ import {
   type DefDraft,
   emptyDraft,
   emptyStage,
-  moveStage,
   patchStage,
   slugKey,
   snapshot,
@@ -66,7 +65,7 @@ describe("validateDraft", () => {
     s.real = true;
     const e = validateDraft({ ...d, stages: [s] });
     expect(e["stages.0.output.fields.0.key"]).toBe("process.admin.validate.fieldKey");
-    expect(e["stages.0.real_action"]).toBe("process.admin.validate.realAction");
+    expect(e["stages.0.real_action"]).toBe("process.admin.canvas.err.realStep");
   });
   test("bật khi giai đoạn kiểm chưa có Group ⇒ PROCESS_DEF_INCOMPLETE", () => {
     const d = validDraft();
@@ -93,7 +92,11 @@ describe("chuyển đổi nháp ↔ input", () => {
     });
     expect(toInput(toDraft(input))).toEqual(input);
     expect(input.stages[0]?.executor).toEqual({ kind: "agent", agent_id: A });
-    expect(input.stages[0]?.after).toEqual({ kind: "review", group_id: G });
+    expect(input.stages[0]?.after).toEqual({
+      kind: "review",
+      group_id: G,
+      back_to_steps: [],
+    });
     expect(input.token_budget).toBeNull();
   });
   test("snapshot bỏ uid cục bộ", () => {
@@ -114,15 +117,66 @@ describe("tiện ích giai đoạn", () => {
     const manual = patchStage(out, 0, { key: "mine", keyAuto: false });
     expect(patchStage(manual, 0, { name: "Khác" })[0]?.key).toBe("mine");
   });
-  test("moveStage + canRealAction + stageIndexesOf", () => {
-    expect(moveStage([1, 2, 3], 0, 1)).toEqual([2, 1, 3]);
-    expect(moveStage([1, 2, 3], 0, -1)).toEqual([1, 2, 3]);
+  test("canRealAction + stageIndexesOf", () => {
     const s0 = { ...emptyStage(), after: "review" as const };
-    const s1 = emptyStage();
+    const s1 = emptyStage(1);
     expect(canRealAction([s0, s1], 0)).toBe(false);
     expect(canRealAction([s0, s1], 1)).toBe(true);
     expect(stageIndexesOf(["name", "stages.2.key", "stages.0.output.template", "stages"])).toEqual([
       0, 2,
     ]);
+  });
+});
+
+describe("P-b2 · bước", () => {
+  const withStep = (step: number, extra: Partial<ReturnType<typeof emptyStage>> = {}) => ({
+    ...validDraft().stages[0],
+    ...emptyStage(step),
+    key: `k${step}${extra.uid ?? ""}`,
+    name: "N",
+    executor: `agent:${A}`,
+    filename: "a.md",
+    template: "# T",
+    sections: ["S"],
+    ...extra,
+  });
+  test("toDraft/toInput: step luôn xuất, back_to_steps chỉ khi review; def cũ ⇒ bước = chỉ số", () => {
+    const d = validDraft();
+    const input = toInput({
+      ...d,
+      stages: [withStep(0), withStep(1, { after: "review", backTo: [0], groupId: G })],
+    });
+    expect(input.stages.map((s) => s.step)).toEqual([0, 1]);
+    expect(input.stages[0]?.after).toEqual({ kind: "auto" });
+    expect(input.stages[1]?.after).toEqual({ kind: "review", group_id: G, back_to_steps: [0] });
+    const old = { ...input, stages: input.stages.map(({ step: _s, ...x }) => x) };
+    expect(toDraft(old).stages.map((s) => s.step)).toEqual([0, 1]);
+    expect(toDraft(input).stages[1]?.backTo).toEqual([0]);
+  });
+  test("canRealAction: mọi giai đoạn ở bước trước phải có người kiểm; bước 0 ⇒ không", () => {
+    const r = (step: number) => withStep(step, { after: "review" });
+    expect(canRealAction([r(0), r(0), emptyStage(1)], 2)).toBe(true);
+    expect(canRealAction([r(0), emptyStage(0), emptyStage(1)], 2)).toBe(false);
+    expect(canRealAction([r(0), emptyStage(0)], 0)).toBe(false);
+  });
+  test("validateDraft: bước đầy / sai thứ tự / đích quay lại / hành động thật", () => {
+    const d = validDraft();
+    const mk = (s: ReturnType<typeof withStep>[]) =>
+      validateDraft({ ...d, stages: s.map((x, i) => ({ ...x, uid: `u${i}`, key: `k${i}` })) });
+    expect(mk([withStep(0), withStep(0), withStep(0), withStep(0)])["stages.3.step"]).toBe(
+      "process.admin.canvas.err.stepFull",
+    );
+    expect(mk([withStep(0), withStep(2)])["stages.1.step"]).toBe("process.admin.canvas.err.step");
+    expect(mk([withStep(0), withStep(1, { after: "review", backTo: [1] })])).toMatchObject({
+      "stages.1.after.back_to_steps": "process.admin.canvas.err.backTarget",
+    });
+    expect(mk([withStep(0), withStep(1, { real: true })])["stages.1.real_action"]).toBe(
+      "process.admin.canvas.err.realStep",
+    );
+    expect(mk([withStep(0, { after: "review" }), withStep(1, { real: true })])).toEqual({});
+  });
+  test("patchStage: đổi sang auto ⇒ xoá backTo", () => {
+    const s = withStep(1, { after: "review", backTo: [0] });
+    expect(patchStage([s], 0, { after: "auto" })[0]?.backTo).toEqual([]);
   });
 });
