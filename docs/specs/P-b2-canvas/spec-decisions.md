@@ -91,3 +91,15 @@ Nguồn: spec-readiness lần 1 (NOT READY: 4 Chặn, 15 Cao, 14 Thấp) → ng�
 
 ## Kết quả UAT (qc-uat, 2026-10-13)
 - [UAT·qc-uat] Trình duyệt thật + Claude thật: admin canvas 11/11, chat 8/8, resume Claude (G-7) 5/5 ca đạt (G1 redo cùng agent resume + prompt delta, G2 hỏi lại/trả lời, G3 stage sau xoá phiên, G4 song song cùng agent `use_session=false`, G7 phiên quá hạn chạy mới). Lỗi: L1 Thường (có sẵn P-a: `STAGE_KEY_RE` {1,32} vs `PROCESS_KEY_RE` {2,32} ⇒ stage key 1 ký tự làm trang Run chat-web "Không tải được"), L2–L4 Thường (422 không giải thích trong panel; canvas fitView chữ quá nhỏ; < 1024 px panel không phải Sheet), L5–L6 Thấp. Chi tiết + ảnh: `evidence/2026-10-13/` (REPORT do điều phối ghi lại từ kết quả qc-uat).
+
+### Câu hỏi mở — mặc định (người dùng chấp nhận khi duyệt Gate 2026-10-12)
+| # | Câu hỏi | Mặc định |
+|---|---|---|
+| Q1 | Phần Editor còn lại (Nhóm agent ở Forge, tab Usage, luật tự duyệt, Import/Export, KPI) thuộc P-b2? | Không; mốc riêng P-b3 (§1.2). **BE chốt** |
+| Q2 | "≤ 3 vòng" đếm theo gì; ai quyết khi quá trần? | Tổng mỗi run; "Cần người quyết" sẵn có, không thêm trường vào def. **Chốt (G-3):** người quyết như `redo_limit` (người bắt đầu + Group kiểm); `back_limit` cột run, `add_attempt` +1 (plan §3.6) |
+| Q3 | `## Bàn giao` bắt buộc cho def cũ? 200 token đo thế nào? | Chỉ tự thêm khi lưu def; thiếu mục = `template_invalid`; ước lượng ký tự ÷ 4, cắt không từ chối. **BE chốt** + thêm heading vào `template` (plan §4) |
+| Q4 | Seed mẫu có bước song song? | Không; fixture test + mockup `fixbug-evolu` do tenant tự sửa. **FE chốt:** UI không mẫu/seed song song |
+| Q5 | Chờ artboard Pencil hay dùng mockup Part B? | **Chốt (G-6):** `plan-frontend.md` là nguồn duy nhất khi BUILD; mockup chỉ đối chiếu UAT; A1–A6 vẽ sau (plan-fe §8) |
+| Q6 | Quay lại có cho `back_to_steps` trỏ tới bước **song song cùng bước**? | Không (đích phải < bước hiện tại). **BE chốt** |
+| Q7 | Run view chat: thẻ duyệt của stage song song hiện thế nào? | Mỗi stage một thẻ, nhóm dưới tiêu đề bước. **FE chốt** (plan-fe §4); **BE:** task review riêng mỗi stage_run (sẵn có) |
+| Q8 | `Alt+mũi tên` có xung đột trình duyệt/OS? | Dùng; kiểm trong UAT, đổi phím nếu vướng. **FE chốt:** dùng + `preventDefault` + nút thay thế bắt buộc (plan-fe FB8) |

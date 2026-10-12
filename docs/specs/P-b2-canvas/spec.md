@@ -2,7 +2,7 @@
 id: P-b2-canvas
 title: P-b2 · Canvas quy trình + bước song song + quay lại bước + tối ưu token giữa stage
 milestone: P-b2 (CR-063, CR-064)
-status: approved         # Gate người dùng 2026-10-12 (spec-decisions.md); readiness lần 1 NOT READY → đã áp mặc định, chạy lại lần 2 trước T4
+status: done             # Gate 2026-10-12; đóng mốc 2026-10-13 (xem "Kết luận P-b2")
 requirements: [HUB-FR-104, HUB-FR-106, HUB-FR-113, HUB-FR-118, HUB-FR-136, HUB-BR-38, ADM-FR-71, CHAT-AC-59, CHAT-AC-60, AC-PB2-01, AC-PB2-02, AC-PB2-03, AC-PB2-04, AC-PB2-05, AC-PB2-06, AC-PB2-07, AC-PB2-08, AC-PB2-09, AC-PB2-10, AC-PB2-11, AC-PB2-12]
 design:
   - docs/CHANGE-REQUESTS.md#CR-063 · #CR-064 (Intake Đầy đủ chốt 2026-10-12; quyết định 15, 16, 17, 19)
@@ -162,25 +162,22 @@ Lệnh xong: `bun run done:pb2` (các bước: [test-plan.md](test-plan.md) §7)
 ### Trước Gate (đã chốt với người dùng — CR-063/064, 2026-10-12)
 - (15) gate theo stage, ≤ 3 stage/bước, tổng ≤ 10, mặc định mỗi stage một bước · (16) quay lại ≤ 3 vòng, chạy lại bước đích + sau, quá trần ⇒ Cần người quyết · (17) giữ nhãn ARIA "Giai đoạn n: …" · (19) `## Bàn giao` + resume (SHOULD) · `@xyflow/react` chỉ admin-web, lazy, `check:bundle`, StageStrip CSS thuần.
 
-### Câu hỏi mở — mặc định (người dùng chấp nhận khi duyệt Gate 2026-10-12)
-| # | Câu hỏi | Mặc định |
-|---|---|---|
-| Q1 | Phần Editor còn lại (Nhóm agent ở Forge, tab Usage, luật tự duyệt, Import/Export, KPI) thuộc P-b2? | Không; mốc riêng P-b3 (§1.2). **BE chốt** |
-| Q2 | "≤ 3 vòng" đếm theo gì; ai quyết khi quá trần? | Tổng mỗi run; "Cần người quyết" sẵn có, không thêm trường vào def. **Chốt (G-3):** người quyết như `redo_limit` (người bắt đầu + Group kiểm); `back_limit` cột run, `add_attempt` +1 (plan §3.6) |
-| Q3 | `## Bàn giao` bắt buộc cho def cũ? 200 token đo thế nào? | Chỉ tự thêm khi lưu def; thiếu mục = `template_invalid`; ước lượng ký tự ÷ 4, cắt không từ chối. **BE chốt** + thêm heading vào `template` (plan §4) |
-| Q4 | Seed mẫu có bước song song? | Không; fixture test + mockup `fixbug-evolu` do tenant tự sửa. **FE chốt:** UI không mẫu/seed song song |
-| Q5 | Chờ artboard Pencil hay dùng mockup Part B? | **Chốt (G-6):** `plan-frontend.md` là nguồn duy nhất khi BUILD; mockup chỉ đối chiếu UAT; A1–A6 vẽ sau (plan-fe §8) |
-| Q6 | Quay lại có cho `back_to_steps` trỏ tới bước **song song cùng bước**? | Không (đích phải < bước hiện tại). **BE chốt** |
-| Q7 | Run view chat: thẻ duyệt của stage song song hiện thế nào? | Mỗi stage một thẻ, nhóm dưới tiêu đề bước. **FE chốt** (plan-fe §4); **BE:** task review riêng mỗi stage_run (sẵn có) |
-| Q8 | `Alt+mũi tên` có xung đột trình duyệt/OS? | Dùng; kiểm trong UAT, đổi phím nếu vướng. **FE chốt:** dùng + `preventDefault` + nút thay thế bắt buộc (plan-fe FB8) |
+### Câu hỏi mở Q1–Q8
+Mặc định đã được chấp nhận (Gate 2026-10-12): [spec-decisions.md](spec-decisions.md) "Câu hỏi mở — mặc định".
 
 ### Gate người dùng 2026-10-12
 G-1…G-7 + mặc định readiness lần 1: [spec-decisions.md](spec-decisions.md). **G-2** vào spec: D11 (resume chỉ ở Hub, không đổi Runtime) chấp nhận cho **cả quy trình cũ** — stage sau cùng agent chạy mới (nhận Bàn giao + file); resume chỉ khi redo cùng stage hoặc chạy tiếp sau trả lời (amend CR-063/064).
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- FE PLAN (2026-10-12): FB1–FB12 ở `plan-frontend.md` §0 (chunk `canvas` 80 KB gz, StepList fallback + đường a11y, chọn sẵn stage 1). B1–B6 đã được plan BE §1.4 trả lời.
-- BE PLAN (2026-10-12): D1–D12 ở `plan.md` §0 (gồm làm rõ PB2-R07: bước X `queued`, bước > X `pending`, `round+1` chỉ stage đã chạy).
+- FE PLAN: FB1–FB12 ở `plan-frontend.md` §0 · BE PLAN: D1–D12 ở `plan.md` §0 (gồm làm rõ PB2-R07: bước X `queued`, bước > X `pending`, `round+1` chỉ stage đã chạy).
 
 ## 10. Tranh chấp test
 - [RV1·backend-lead] `tests/acceptance/P-b2/par/parallel.int.test.ts` PI-11c dòng 239 `expect(t2?.status).toBe("cancelled")`: `review_tasks.status` chỉ `open|closed` (CHECK `review_tasks_status_ck`, 0019); huỷ đóng task với `status=closed, result=cancelled` (như P-a `cancelEnd`). Đề xuất qc sửa thành `expect(t2?.result).toBe("cancelled")` (hoặc `status` `closed`). Các assert còn lại của PI-11c (200, run `cancelled`, 0 task open) xanh.
   - **Đã xử lý (qc, 2026-10-13) — test sai, đã sửa:** `review_tasks.status` chỉ `open|closed`; P-a (`gates.int.test.ts:331`) kiểm `{status:closed,result:cancelled}`. PI-11c nay kiểm đúng vậy. Thêm PI-11d/PI-11e (tenant_admin huỷ ⇒ `hub.runs` stage running thành `cancelled`) đóng TECH-DEBT #147. `par/` 26/26 xanh (DB pb2_par). Relock.
+
+## Kết luận P-b2 (2026-10-13)
+- **Đạt:** `done:pb2` xanh 27/27; `done:pb` 16/16; `done:pa` xanh trừ 1 ca K5 `tests/acceptance/X2b/rules/contracts-x2b.test.ts` (test khoá X2b-2 chờ B2; 648/649). Security review SAFE; review 2 vòng.
+- **Commit:** T4 `95442da5` (0024) · T5a `9e29acec` · T5b `d6793381` · T6 `12d8b5f4` · T7 `d3e7087d`/`4562e8fc` · FB `14ffabd0`…`85d8de71`, `cbd7b479` `309b3e5a` `fb6d9484` · T11 `47b58dc3` · review `917bad62` (0025) `4470f498` `4a398170` · UAT fix `b33af766`. Test qc: `6fd1bda9` `72f42141` `97546c42` `76620d26` `41d77ccf` `1fb1f315`.
+- **UAT 2026-10-13:** Đạt toàn bộ + G-7 resume Claude thật 7/7 — [`evidence/2026-10-13/REPORT.md`](evidence/2026-10-13/REPORT.md). L2–L5 đã sửa `b33af766`.
+- **Điểm mở:** L1 stage key 1 ký tự → TECH-DEBT #150, đổi contract = hard stop chờ người dùng; L6 giữ. Nợ #148–#150 (#147 đã đóng); Minor import chéo `defs/`→`runs/template.rules` → TECH-DEBT #151.
+- **Giới hạn UAT:** mockup Part B, chưa artboard
