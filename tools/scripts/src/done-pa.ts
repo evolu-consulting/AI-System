@@ -28,7 +28,8 @@ const INT_BASE = [
 const PA_DIRS = ["step0", "pf1", "pf2", "pf3", "pf4", "scenario"].map(
   (d) => `tests/acceptance/P-a/${d}`,
 );
-const OLD_INT = ["H1", "H2b", "C1", "X2a", "X2b"].map((d) => `tests/acceptance/${d}`);
+// Dấu `/` cuối: bun test lọc theo chuỗi con của đường dẫn ⇒ `X2b` kéo cả `X2b2` (đã thử trên Windows, bun 1.3.14).
+const OLD_INT = ["H1", "H2b", "C1", "X2a", "X2b"].map((d) => `tests/acceptance/${d}/`);
 
 /** Bước 3–5 (lock-order P1-48/P2-14 và migration 0019 nằm trong pf1/step0 nên bước 3 đã phủ). */
 const intSteps = (): Step[] => [
