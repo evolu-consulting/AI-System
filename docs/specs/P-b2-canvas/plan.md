@@ -1,6 +1,6 @@
 # P-b2-canvas · plan (backend) — bước song song + quay lại + Bàn giao/resume [HUB-FR-104][HUB-FR-106][HUB-FR-118][HUB-FR-136]
 
-Nối spec §2 (PB2-R), §3, §4. Đối chiếu code `apps/hub-api/src/modules/processes/**` tại `b1cb2c86`. FE: `plan-frontend.md`.
+Nối spec §2 (PB2-R), §3, §4 · quyết định Gate/mặc định: [spec-decisions.md](spec-decisions.md). Đối chiếu code `apps/hub-api/src/modules/processes/**` tại `b1cb2c86`. FE: `plan-frontend.md`.
 
 ## 0. Quyết định backend (D1–D12)
 | # | Quyết định | Lý do (code) |
@@ -15,7 +15,7 @@ Nối spec §2 (PB2-R), §3, §4. Đối chiếu code `apps/hub-api/src/modules/
 | D8 | Quá trần quay lại: stage nguồn `needs_decision(back_limit)`, lưu đích ở `stage_runs.back_to_step` + góp ý ở `stage_runs.feedback`; `add_attempt` ⇒ `back_limit+1` rồi thực hiện quay lại; `use_current` ⇒ stage Đạt; `cancel` ⇒ huỷ. Người quyết/assignee như `redo_limit` | Q2; khớp mẫu `redo_limit` sẵn có, không option mới (test khoá `DECISION_OPTIONS`) |
 | D9 | Nhiều decision mở cùng lúc (song song): `view.decision` = decision mở **cũ nhất**; `decide` nhận `stage_idx?`; `process_runs.decision` jsonb = bản mới nhất (chỉ để tương thích) | Hiện chỉ một `decision` jsonb/run |
 | D10 | Lỗi def dùng lại `PROCESS_DEF_INVALID` + `details.paths` và thêm `details.rules` cùng chỉ số (không thêm mã HTTP top-level) | FE đang map lỗi inline theo `paths`; nhiều vi phạm một lần |
-| D11 | Resume (R12) **chỉ ở Hub**, không đổi Runtime: khoá session Runtime = `(conversation_id, agent_id, provider_key)` và mọi stage chung một hội thoại nền ⇒ Hub điều khiển bằng `use_session` + xoá `cli_sessions` trước job "chạy mới" (§4.2) | Không có quyền sửa `apps/agent-runtime`; `conversations_process_run_uq` cấm hội thoại riêng mỗi stage |
+| D11 | Resume (R12) **chỉ ở Hub**, không đổi Runtime (người dùng chấp nhận cho cả quy trình cũ — G-2): khoá session Runtime = `(conversation_id, agent_id, provider_key)` và mọi stage chung một hội thoại nền ⇒ Hub điều khiển bằng `use_session` + xoá `cli_sessions` trước job "chạy mới" (§4.2) | Không có quyền sửa `apps/agent-runtime`; `conversations_process_run_uq` cấm hội thoại riêng mỗi stage |
 | D12 | TECH-DEBT #135: code đã sửa ở P-b (`persistDraft` trả `null`); P-b2 chỉ thêm int test "team ở bước 0 (đơn và song song)" rồi đóng nợ | `output-attachment.ts:105–136` |
 
 ## 1. Contract — trường đầy đủ
@@ -30,7 +30,7 @@ export const HANDOFF_TOKENS_MAX = 200;
 export const HANDOFF_CHARS_PER_TOKEN = 4;
 export const ProcessStepSchema = z.number().int().min(0).max(PROCESS_STEP_MAX);
 export type ProcessStep = z.infer<typeof ProcessStepSchema>;
-// DECISION_REASONS: thêm "back_limit" CUỐI mảng (16). CHAT_PROCESS_ERRORS: thêm BACK_TARGET_INVALID: 422 (13).
+// DECISION_REASONS: thêm "back_limit" CUỐI mảng (16). CHAT_PROCESS_ERRORS (file chat/processes-errors.ts): thêm BACK_TARGET_INVALID: 422 (13).
 ```
 ### 1.2 `hub-admin/processes.ts` + file mới `hub-admin/process-steps.ts` (thuần, FE dùng chung)
 - `ProcessStageDefSchema`: + `step: ProcessStepSchema.optional()`; biến thể `after` review: `{kind:"review", group_id, back_to_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX).default([])}`.
@@ -69,7 +69,7 @@ export function handoffTokens(text: string): number;                            
 | `BackEventSchema` (mới) | `at` IsoDateTime · `task_id` uuid\|null · `from_stage_idx` StageIdx · `from_step`/`to_step` ProcessStep · `round` int ≥2 · `feedback` string 1…4000 · `by` UserRef | strict |
 | `TaskDetailSchema` | `back_steps`, `back_rounds_left` | optional; chỉ review **mở** của stage có `back_to_steps` ≠ [] |
 | `HistoryItemSchema` | `to_step` | optional (review `fail` có quay lại) |
-| `OutputRefSchema` | `round`, `handoff_truncated` | optional (meta thread cũ) |
+| `OutputRefSchema` | `round`, `handoff_truncated` | optional (meta thread cũ); cờ thôi — không sửa content, không UI (P-b2) |
 | part `task_result` | `to_step` | optional |
 | `ProcessUpdatedEventDataSchema` | `step` | optional |
 
@@ -122,7 +122,7 @@ export function backResetPlan(p: { steps: readonly number[]; target: number; fee
 2. `transition(buildState(stageGateStatus(...)), ev)`; ghi stage như cũ.
 3. Nếu `effects` có `queue_next_stage|finish_run` (stage xong): stage ⇒ `done` (+`current_output_id`), rồi `stepJoin` trên trạng thái **sau ghi**: `wait` ⇒ chỉ cập nhật `process_runs.status = runStatusOf(bước)`; `next_step` ⇒ `current_step+1`, `current_stage_idx=firstIdxOfStep`, stage bước mới `queued`, status `running`, kick; `finish` ⇒ `done`.
 4. Không phải xong (review/ask/redo/decision) ⇒ `process_runs.status = runStatusOf(bước)` (vd A `waiting_review` + B `running` ⇒ `running`).
-`stageTimeout`, `loadStageSourceCtx`, `team-exec` headOf: nhận `idx` tham số (bỏ `current_stage_idx`). `team-runner.ts` (400 dòng) và `team-exec.ts` (399) phải tách: `persistState` + join ⇒ `runs/step-persist.ts`.
+`stageTimeout`, `loadStageSourceCtx`, `team-exec` headOf: nhận `idx` tham số (bỏ `current_stage_idx`). `team-runner.ts` (400 dòng) và `team-exec.ts` (399) phải tách: `persistState` + join ⇒ `runs/step-persist.ts`. **`persist` nhận idx stage thật** (từ `stageRunId`), cập nhật hàng `stage_runs` theo `stageRunId`, ghi `process_runs.current_stage_idx = firstIdxOfStep(current_step)` (không ghi idx stage vừa xong). **Mọi chuyển bước** (`next_step`, quay lại, `finish`) đi qua `runs/step-persist.ts`.
 ### 3.4 Duyệt Đạt / Chưa đạt (`gates.service.#review`)
 Guard theo stage (`waiting_review`). Đạt ⇒ `setStagePassed` + `closeOpenTasks({stageRunId})` (D6) + §3.3 bước 3. Chưa đạt **không** `back_to_step` ⇒ như cũ (redo/`redo_limit`), stage-level. Có `back_to_step` ⇒ §3.5.
 ### 3.5 Quay lại (`gates/back.effects.ts`, tx của review)
@@ -137,28 +137,30 @@ Guard theo stage `waiting_answer`; status run = `runStatusOf`. Không đổi API
 ### 3.8 Sweeps (`sweeps.ts`)
 `interrupted`: duyệt **mọi** stage `running` của bước hiện tại có `hub.runs` chết (mỗi stage một decision). `source_unresolvable`: gắn vào `firstIdxOfStep(current_step)`. Hết hạn/huỷ: như cũ (cả run).
 ### 3.9 View (`view.service.ts` 400 dòng ⇒ tách `runs/view-steps.ts`)
-`step/round/back_to_steps` từ snapshot + `stage_runs`; `current_step`, `step_count`; `back_events` (`ORDER BY created_at DESC LIMIT 20` rồi đảo); `history.to_step` join `process_back_events.task_id`; `decision` theo D9; `TaskDetail.back_steps/back_rounds_left` (`core/task-view.ts`); `OutputRef.handoff_truncated = handoffTokens(sections["Bàn giao"]) > 200`.
+`step/round/back_to_steps` từ snapshot + `stage_runs`; `current_step`, `step_count`; `back_events` (`ORDER BY created_at DESC LIMIT 20` rồi đảo); `history.to_step` join `process_back_events.task_id`; `decision` theo D9; `TaskDetail.back_steps/back_rounds_left` (`core/task-view.ts`); `OutputRef.handoff_truncated = handoffTokens(sectionMap(process_outputs.content)["Bàn giao"]) > 200` (`sectionMap` của `runs/template.rules.ts`; không dùng cột `sections`).
 
 ## 4. Bàn giao + resume (R10–R12, T7)
 ### 4.1 Bàn giao
-- `defs/def.rules.ts`: `ensureHandoff<S extends {output:{required_sections:string[]; template:string}}>(s: S): S` (thuần; so khớp `trim().toLowerCase()`); gọi ở `defs.service` create/update/copy **sau** validate. Seed/migration không qua ⇒ mẫu platform không đổi.
+- `defs/def.rules.ts`: `ensureHandoff<S extends {executor:{kind:string}; output:{required_sections:string[]; template:string}}>(s: S): S` (thuần; so khớp `trim().toLowerCase()`; **bỏ qua `executor.kind='team'`** — G-5); gọi ở `defs.service` create/update/copy **sau** validate. Seed/migration không qua ⇒ mẫu platform không đổi.
 - Prompt stage (`launcher-prompt.ts`): thêm khối sau "Đầu vào":
-  `Bàn giao từ bước trước:` + mỗi stage `priorStageIdxs` có `process_outputs.sections["Bàn giao"]`: `### <tên stage> (s<idx>-v<ver>-<file>)\n<clipHandoff(text).text>`. Stage trước không có mục ⇒ chỉ file đính kèm (như cũ). File vẫn đính kèm (`priorFiles` + `agentFilesBlock` liệt kê đường dẫn; không nhúng nội dung).
+  `Bàn giao từ bước trước:` + mỗi stage `priorStageIdxs` có mục `Bàn giao` trong `sectionMap(process_outputs.content)`: `### <tên stage> (s<idx>-v<ver>-<file>)\n<clipHandoff(text).text>`. Stage trước không có mục ⇒ chỉ file đính kèm (như cũ). File vẫn đính kèm (`priorFiles` + `agentFilesBlock` liệt kê đường dẫn; không nhúng nội dung). Thêm dòng nhắc "Bàn giao ≤ 200 token" (≤ 200 token tổng) vào hướng dẫn output.
 - Hàm thuần `handoffBlock(items: readonly {name: string; file: string; handoff: string | null}[]): string | null` (`runs/handoff.rules.ts`).
 ### 4.2 Resume (SHOULD)
 ```ts
 // runs/session.rules.ts
 export type SessionCtx = { executor: "agent" | "team"; rerun: boolean /* attempt>1 ∨ round>1 */;
-  sameAgentInStep: boolean; lastWriterIsSelf: boolean; sessionExists: boolean };
+  continuing: boolean /* vừa waiting_answer cùng attempt */;
+  sameAgentInStep: boolean; lastWriterIsSelf: boolean; sessionExists: boolean /* có hàng ∧ updated_at ≤ SESSION_RESUME_MAX_AGE_S */ };
 export type SessionPlan = { useSession: boolean; resume: boolean; clearSession: boolean };
 export function sessionPlan(c: SessionCtx): SessionPlan;
-//  team ⇒ {true,false,false} (giữ cũ) · sameAgentInStep ⇒ {false,false,false}
-//  rerun ∧ lastWriterIsSelf ∧ sessionExists ⇒ {true,true,false} · còn lại ⇒ {true,false,true}
+//  thứ tự: team ⇒ {true,false,false} (giữ cũ) · sameAgentInStep ⇒ {false,false,false}
+//  continuing ⇒ {true,true,false} (prompt cũ, KHÔNG delta) · rerun ∧ lastWriterIsSelf ∧ sessionExists ⇒ {true,true,false} (delta)
+//  còn lại ⇒ {true,false,true}
 export function deltaPrompt(feedback: string, sections: readonly string[] | null): string;  // "Góp ý cần sửa:\n…" (+ "Mục cần sửa: …")
 ```
-- `lastWriterIsSelf`: `select stage_run_id from hub.runs where process_run_id=$run and tenant_id=$t and stage_run_id = any($stageRunIds cùng agent_id trong snapshot) and team_run_id is null and status='succeeded' order by finished_at desc limit 1` = stage này. `sessionExists`: PK `cli_sessions(conversation_id, agent_id, provider_key)` với provider bước đầu profile agent + `tenant_id`.
+- `lastWriterIsSelf`: `select stage_run_id from hub.runs where process_run_id=$run and tenant_id=$t and stage_run_id = any($stageRunIds cùng agent_id trong snapshot) and team_run_id is null and status='succeeded' order by finished_at desc limit 1` = stage này. `sessionExists`: PK `cli_sessions(conversation_id, agent_id, provider_key)` với provider bước đầu profile agent + `tenant_id`, và `updated_at ≥ now() − SESSION_RESUME_MAX_AGE_S` (hằng `runs/session.rules.ts` = **86400**, G-7; cũ hơn ⇒ false + `clearSession`). Tra cứu lỗi ⇒ `sessionExists=false` (⇒ `resume=false`). `continuing` ⇒ prompt cũ (không `deltaPrompt`).
 - `clearSession` ⇒ `DELETE FROM hub.cli_sessions WHERE conversation_id=$conv AND agent_id=$agent AND tenant_id=$t` trong tx launch (GRANT DELETE có từ 0005). `useSession=false` ⇒ plumb `ProcessRunInput.useSession` → `AgentTask` → `buildJobPayload` (`use_session: isAgent && (useSession ?? true)`; chat không đổi).
-- `resume` ⇒ `SendMessageRequest.content = deltaPrompt(...)`; ngược lại prompt đầy đủ (§4.1). Quay lại (§3.5) ⇒ stage bước X là `rerun` (round>1).
+- `resume` ∧ ¬`continuing` ⇒ `SendMessageRequest.content = deltaPrompt(...)`; ngược lại prompt đầy đủ (§4.1). Quay lại (§3.5) ⇒ stage bước X là `rerun` (round>1).
 - Hệ quả đổi hành vi P-a: stage **sau** dùng cùng agent không còn resume session stage trước (trước đây ngầm resume) — đúng ý R12 "chạy mới đủ input".
 
 ## 5. DDL `0024_pb2_steps.sql` (viết tay, idempotent)
@@ -234,7 +236,7 @@ Test mới gợi ý: AC-PB2-01…11 + bảng §7 + #135 (team bước 0) + `sess
 ## 9. Rủi ro
 | Rủi ro | Xử lý |
 |---|---|
-| Runtime thật lỗi khi resume session hết hạn ⇒ `agent_failed` | chỉ resume khi `sessionExists`; UAT với Claude thật; SHOULD — tắt bằng cách trả `resume=false` |
+| Runtime thật lỗi khi resume session hết hạn ⇒ `agent_failed` | chỉ resume khi `sessionExists` (≤ 86400 s); **UAT bắt buộc 1 ca Claude thật** (G-7); SHOULD — tắt bằng `resume=false` |
 | Sửa guard `running` sót một chỗ ⇒ stage song song kẹt | T5a liệt kê đủ (D3) + int test song song cho từng luồng §3 |
 | File chạm 400 dòng (`team-runner`, `team-exec`, `view.service`, `launcher` 345) | tách như §3.2/§3.3/§3.9 trong cùng task |
 | `ensureHandoff` đổi def người dùng khi lưu | đã chấp nhận (Q3); qc cập nhật fixture (§8) |

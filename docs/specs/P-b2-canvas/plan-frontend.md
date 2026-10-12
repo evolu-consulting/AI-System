@@ -1,8 +1,8 @@
 # P-b2 · plan frontend (admin-web canvas + chat-web) — Canvas quy trình, bước song song, quay lại
 
-Spec: [`spec.md`](spec.md) §2 (PB2-R01…R18), §5 · ADR: [`../../adr/0013-xyflow-process-canvas.md`](../../adr/0013-xyflow-process-canvas.md) · contract (chỉ **tiêu thụ**, backend-lead sở hữu): `plan.md` §3 · câu chữ VI/EN nguyên văn: [`plan-frontend-i18n.md`](plan-frontend-i18n.md) · task: [`tasks-frontend.md`](tasks-frontend.md) · nền: `../P-b-sources/plan-frontend.md` (FS-x), `../P-process-engine/plan-frontend.md` (FD2 cờ engine, FD3 i18n riêng).
-**Nguồn UI:** mockup Part B (B1 canvas admin, B2 run chat) + design system (indigo `#4F46E5`, token Tailwind sẵn có). *Ghi chú trung thực:* phiên PLAN này không đọc được Artifact (không có công cụ) — bố cục dưới đây theo mô tả spec §5/UI §7.17; người dùng đối chiếu mockup ở UAT (Q5). Không hard-code hex.
-**Điều kiện mở BUILD FE:** T4 (contract) xong; xem §9 "Cần từ backend".
+Spec: [`spec.md`](spec.md) §2 (PB2-R01…R18), §5 · ADR: [`../../adr/0013-xyflow-process-canvas.md`](../../adr/0013-xyflow-process-canvas.md) · contract (chỉ **tiêu thụ**, backend-lead sở hữu): `plan.md` §3 · câu chữ VI/EN nguyên văn: [`plan-frontend-i18n.md`](plan-frontend-i18n.md) (**lệch với plan này ⇒ i18n thắng**) · quyết định Gate: [`spec-decisions.md`](spec-decisions.md) · task: [`tasks-frontend.md`](tasks-frontend.md) · nền: `../P-b-sources/plan-frontend.md` (FS-x), `../P-process-engine/plan-frontend.md` (FD2 cờ engine, FD3 i18n riêng).
+**Nguồn UI (G-6):** file này là nguồn **duy nhất** khi BUILD (+ design system indigo `#4F46E5`, token Tailwind; không hard-code hex). Mockup Part B (B1, B2) chỉ để đối chiếu ở UAT (Q5); bố cục theo spec §5/UI §7.17.
+**Điều kiện mở BUILD FE:** T4 (contract) xong; contract tiêu thụ: §9 (đã được plan BE §1.4 trả lời).
 
 ## 0. Quyết định (FB = frontend decision; Luật 2)
 | # | Quyết định | Lý do |
@@ -16,11 +16,12 @@ Spec: [`spec.md`](spec.md) §2 (PB2-R01…R18), §5 · ADR: [`../../adr/0013-xyf
 | FB7 | **Chọn mặc định stage 1** khi mở (panel hiện ngay `Giai đoạn 1: …`) ⇒ test khoá E-P15b/E-PB08/E-PB09 ít phải sửa (chúng mở `region "Giai đoạn 1: …"` ngay sau khi vào trang). Accordion bị thay: panel chỉ hiện **một** stage được chọn; chọn qua click/Enter nút node hoặc dòng StepList. Đổi bước ⇒ `n` trong nhãn ARIA = chỉ số mảng + 1 (mảng luôn sắp theo bước) | CR-063 (17) |
 | FB8 | **Q8 chốt = dùng `Alt+←/→/↑/↓`** trên node/dòng đang focus (`preventDefault`), nhưng **không là đường duy nhất**: panel có nút "Chuyển sang bước trước" / "Chuyển sang bước sau" / "Tách sang bước riêng" / "Lên" / "Xuống". Lý do xung đột đã biết: `Alt+←` = Back của Chrome/Edge/Firefox trên Windows (chặn được bằng `preventDefault` khi focus trong node), screen reader có thể chiếm tổ hợp Alt ⇒ nút thay thế là bắt buộc. Kiểm UAT; vướng ⇒ đổi sang `Shift+Alt` (đổi hằng ở một chỗ `lib/canvas-keys.ts`). Thông báo kết quả qua `aria-live="polite"`: "Đã chuyển … sang bước n" | Spec Q8 |
 | FB9 | Kéo thả: `onNodeDragStop` ⇒ cột gần nhất theo `x` tâm node (khoảng cách < nửa cột) ⇒ `moveToStep`; thả ngoài cùng bên phải (> cột cuối + nửa cột) ⇒ bước mới. Cột đầy (3) ⇒ **không** đổi, node trượt về chỗ cũ (`aria-disabled` + lỗi inline cạnh node và `role="alert"` ở thanh trên). Trong lúc kéo: cột đầy hiện viền `destructive` + biểu tượng khoá (không chỉ màu). `nodesConnectable=false` (không nối tay), `edgesFocusable=false`, `elementsSelectable` bật; `nodesDraggable = !readOnly` | PB2-R16 |
-| FB10 | **Q4 chốt:** UI không seed/mẫu song song; muốn song song thì kéo thả/nút. **Q5 chốt:** dùng mockup làm nguồn, đề xuất artboard A1–A6 để vẽ **sau** (không chặn). **Q7 chốt:** mỗi stage song song một thẻ duyệt, nhóm dưới tiêu đề "Bước n" (`group`) | Spec §9 |
+| FB10 | **Q4 chốt:** UI không seed/mẫu song song; muốn song song thì kéo thả/nút. **Q5 chốt (G-6):** plan này là nguồn BUILD, mockup chỉ UAT; artboard A1–A6 vẽ **sau** (không chặn). **Q7 chốt:** mỗi stage song song một thẻ duyệt, nhóm dưới tiêu đề "Bước n" (`group`) | Spec §9 |
 | FB11 | Không thêm thư viện nào ngoài `@xyflow/react` (admin) — chat-web: StageStrip/Timeline CSS thuần (ADR-0013 #5). Icon dùng `lucide-react` sẵn có | FD10 |
+| FB12 | **Đếm bước từ 1 (G-4):** contract/`StageDraft.step` 0-based; mọi chuỗi hiển thị và nhãn ARIA dùng `step+1` ("Bước 1" = step 0, `Quay lại bước {{step}}`, live-region, `spinbutton "Chạy ở bước"` 1…10). Chuyển đổi ở một chỗ `lib/step-label.ts` (`stepLabel(step)=step+1`) | Spec R01/R17 |
 
 ## 1. Admin — Canvas `/processes/:id` (A1/A2 · ADM-FR-71)
-**Bố cục (≥ 1024 px):** `PageHeader` (tên, badge trạng thái, `Lưu`, ConflictDialog sẵn có) → thẻ "Thông tin"/"Đầu vào"/"Nguồn" như cũ (không đổi) → thẻ **Giai đoạn** gồm: thanh công cụ (nút `Thêm giai đoạn`, `Thêm bước`, nhóm zoom `＋ － Vừa khung` của xyflow `Controls`, nút chuyển `Canvas | Danh sách`) → vùng canvas (cao 520 px, `application` "Canvas quy trình") + **panel bên phải 420 px** (`complementary` "Chi tiết giai đoạn", cuộn riêng) chứa `StageForm`. Dưới 1024 px: panel là `Sheet` (shadcn) trượt từ phải; dưới 768 px mặc định Danh sách. Thẻ "Giới hạn" giữ.
+**Bố cục (≥ 1024 px):** `PageHeader` (tên, badge trạng thái, `Lưu`, ConflictDialog sẵn có) → thẻ "Thông tin"/"Đầu vào"/"Nguồn" như cũ (không đổi) → thẻ **Giai đoạn** gồm: thanh công cụ (nút `Thêm giai đoạn`, `Thêm bước`, nhóm zoom `＋ － Vừa khung` của xyflow `Controls`, tablist `Canvas | Danh sách` — `tab`) → vùng canvas (cao 520 px, `application` "Canvas quy trình") + **panel bên phải 420 px** (`complementary` "Chi tiết giai đoạn", cuộn riêng) chứa `StageForm`. Dưới 1024 px: panel là `Sheet` (shadcn) trượt từ phải; dưới 768 px mặc định Danh sách. Thẻ "Giới hạn" giữ.
 
 **Thành phần (≤ 200 dòng/file):**
 | File (`features/processes/components/…`) | Việc |
@@ -36,8 +37,8 @@ Spec: [`spec.md`](spec.md) §2 (PB2-R01…R18), §5 · ADR: [`../../adr/0013-xyf
 | `editor/StagesCard.tsx` | Thay Accordion bằng `StageWorkbench` (canvas/StepList + panel); giữ `LimitsCard`. Bỏ `d.open/setOpen`, thêm `d.selected` (uid) vào `use-draft` |
 
 **Panel — hai phần mới (A1):**
-- **Chạy ở bước** (`spinbutton`, 0…9, nhãn "Chạy ở bước"): nhập số ⇒ `moveToStep`; kèm chữ phụ "Cùng bước = chạy song song (tối đa 3)". Số ngoài dải/ khoảng trống ⇒ nén tự động; bước đầy ⇒ lỗi inline, giá trị trả về cũ.
-- **Nếu bị trượt** (chỉ hiện khi `after = review`): nhóm `checkbox` "Cho phép quay lại bước" × mỗi bước **nhỏ hơn** bước của stage (Q6: không song song cùng bước), mỗi hộp nhãn `Bước n — <tên các giai đoạn>`; mặc định không chọn (= chỉ làm lại stage này); chữ phụ "Người duyệt chọn quay lại khi chấm Chưa đạt. Tối đa 3 lần quay lại cho mỗi lần chạy." Bước 0 ⇒ khối ẩn kèm câu "Bước đầu không có bước nào phía trước". Đổi `after` sang `auto` ⇒ xoá `backTo` (kèm toast thông tin? không: im lặng, mô tả nằm trong chữ phụ).
+- **Chạy ở bước** (`spinbutton`, **1…10** theo FB12, nhãn "Chạy ở bước"): nhập số ⇒ `moveToStep`; chữ phụ "Cùng bước = chạy song song (tối đa 3)". Nhập > bước cuối + 1 ⇒ thành **bước mới cuối** (nén liên tục); ngoài 1…10 ⇒ kẹp về dải; bước đầy ⇒ lỗi inline, trả giá trị cũ.
+- **Nếu bị trượt** (chỉ hiện khi `after = review`): nhóm `checkbox` × mỗi bước **nhỏ hơn** bước của stage (Q6: không song song cùng bước), nhãn hộp `Quay lại bước {{step}}` (i18n `backOption`, FB12), **tên các giai đoạn của bước đó** nằm ở `aria-describedby` (`backOptionHint`); mặc định không chọn (= chỉ làm lại stage này); chữ phụ "Người duyệt chọn quay lại khi chấm Chưa đạt. Tối đa 3 lần quay lại cho mỗi lần chạy." Bước 0 ⇒ khối ẩn kèm câu "Bước đầu không có bước nào phía trước". Đổi `after` sang `auto` ⇒ xoá `backTo` (kèm toast thông tin? không: im lặng, mô tả nằm trong chữ phụ).
 - **Hành động thật** khóa/mở theo `canRealAction` mới: **mọi** stage bước liền trước có `after=review` và bước ≥ 1 (PB2-R03). Sửa `lib/def-form.ts` `canRealAction(all,index)` theo bước + validate đích quay lại.
 
 **Trạng thái:**
@@ -58,7 +59,7 @@ Spec: [`spec.md`](spec.md) §2 (PB2-R01…R18), §5 · ADR: [`../../adr/0013-xyf
 | `step` | số nguyên 0…9, liên tục (tự nén), mảng không giảm | `process.admin.canvas.err.step` |
 | Bước đầy | ≤ 3 stage/bước | `…err.stepFull` |
 | Tổng stage | ≤ `PROCESS_STAGES_MAX` (10) (nút Thêm bị khoá + câu chữ) | `…err.stagesMax` |
-| `real_action` | mọi stage bước trước = review; bước 0 ⇒ không | `…err.realStep` (thay `stage.realLocked`) |
+| `real_action` | mọi stage bước trước = review; bước 0 ⇒ không | `…err.realStep` = **lỗi** (lưu/422 `REAL_ACTION`); `editor.stage.realLocked` (giữ key) = **chú thích** khi switch bị khoá |
 | `backTo` | mỗi đích < bước stage và là bước tồn tại; chỉ khi `after=review` | `…err.backTarget` |
 | Cũ | name/key/executor/… như P-a/P-b, không đổi | key cũ |
 
@@ -83,8 +84,8 @@ Spec: [`spec.md`](spec.md) §2 (PB2-R01…R18), §5 · ADR: [`../../adr/0013-xyf
 
 ## 4. Chat-web — thẻ duyệt "Quay lại bước X" (A4 · CHAT-AC-60)
 `run-block/components/ReviewTaskCard.tsx` (nay ~110+ dòng): tách `ReviewFailPanel.tsx` mới.
-- Không có tuỳ chọn quay lại (stage `backTo=[]`, hoặc `back_rounds ≥ 3`) ⇒ **hành vi cũ nguyên vẹn** (thread: composer Góp ý; ngoài thread: ô inline).
-- Có tuỳ chọn ⇒ bấm `Chưa đạt` luôn mở `ReviewFailPanel` inline (kể cả trong thread; composer giữ nguyên): `radiogroup` "Chưa đạt thì…" gồm `radio` "Làm lại giai đoạn này" (mặc định) và mỗi đích `radio` "Quay lại bước X" (mô tả `aria-describedby`: "Chạy lại: <tên các giai đoạn bước X…>"), ô `textbox` "Góp ý" **bắt buộc** (HUB-FR-107; câu lỗi cũ `process.run.review.feedbackRequired`), dòng cảnh báo khi chọn quay lại: "Còn {{n}} lần quay lại. Các bước từ {{x}} trở đi sẽ chạy lại; kết quả cũ vẫn xem được." (`role="note"`); nút `Gửi chưa đạt` (loading), `Huỷ`.
+- Stage không có tuỳ chọn quay lại (`back_steps` vắng) ⇒ **hành vi cũ nguyên vẹn** (thread: composer Góp ý; ngoài thread: ô inline).
+- Có tuỳ chọn (kể cả `back_rounds_left=0`) ⇒ bấm `Chưa đạt` luôn mở `ReviewFailPanel` inline (kể cả trong thread; composer giữ nguyên): `radiogroup` "Chưa đạt thì…" gồm `radio` "Làm lại giai đoạn này" (mặc định) và mỗi đích `radio` "Quay lại bước X" (mô tả `aria-describedby`: "Chạy lại: <tên các giai đoạn bước X…>"), ô `textbox` "Góp ý" **bắt buộc** (HUB-FR-107; câu lỗi cũ `process.run.review.feedbackRequired`), dòng cảnh báo khi chọn quay lại: "Còn {{n}} lần quay lại. Các bước từ {{x}} trở đi sẽ chạy lại; kết quả cũ vẫn xem được." (`role="note"`); khi `back_rounds_left=0` radio **vẫn hiện**, note đổi thành `run.review.backLimitNote` ("Đã hết 3 lần quay lại. Gửi sẽ chuyển cho người quyết."); nút `Gửi chưa đạt` (loading), `Huỷ`.
 - Gửi: `POST /review-tasks/:id/decision {result:"fail", feedback, back_to_step?}`. Lỗi: 422 `BACK_TARGET_INVALID` ⇒ câu tĩnh + làm tươi view; **409 `REVIEW_TASK_CLOSED`** (PB2-R09, người khác quay lại trước) ⇒ toast thông tin "Giai đoạn này vừa được xử lý ở bước khác. Đã cập nhật." + invalidate (đóng thẻ); 409 khác như cũ.
 - Thành công quay lại ⇒ toast "Đã quay lại bước {{step}}. Các giai đoạn sẽ chạy lại với góp ý của bạn." + invalidate view / "Chờ tôi kiểm" như `use-review-actions`.
 - **Q7:** nhiều stage song song cùng chờ duyệt ⇒ `TaskPanel`/danh sách thẻ nhóm dưới tiêu đề `group` "Bước n" (chỉ khi ≥ 2 thẻ cùng bước); mỗi thẻ độc lập.
@@ -97,7 +98,7 @@ Spec: [`spec.md`](spec.md) §2 (PB2-R01…R18), §5 · ADR: [`../../adr/0013-xyf
 | **Timeline quay lại** (`BackTimeline.tsx`, mới; ẩn khi `back_events` rỗng) | danh sách `ol` theo thời gian: "Vòng {{round}} · {{by}} chấm Chưa đạt ở giai đoạn {{stage}} → quay lại bước {{to}} · {{time}}" + trích góp ý (cắt 2 dòng, mở rộng `Xem đầy đủ`). Người xem ngoài phòng (access `task`) ⇒ khối không có (AC-PB2-11) |
 | **Kết quả nhiều phiên bản** (`StageOutputs`) | mỗi stage có > 1 phiên bản ⇒ `Tabs` nhỏ "Bản {{n}}" (bản mới nhất mặc định, nhãn "mới nhất"; bản cũ "trước khi quay lại"); 1 phiên bản ⇒ như cũ |
 | Header | `RunStatusBadge`; lý do `back_limit` qua `ReasonHint` |
-| **Thẻ `back_limit` (A6)** | dùng lại thẻ "Cần người quyết" + 3 lựa chọn sẵn (`extend` thêm lượt = +1 vòng · `use_current` dùng bản hiện có · `cancel`); chỉ thêm câu `process.common.back_limit` ("Đã quay lại tối đa {{max}} lần mà chưa đạt.") và ánh xạ ở `decision-reason.ts` (`params: {max: 3}` từ hằng contract) |
+| **Thẻ `back_limit` (A6)** | dùng lại thẻ "Cần người quyết" + 3 lựa chọn sẵn (`add_attempt` **giữ nhãn cũ** · `use_current` · `cancel`); chỉ thêm câu `process.common.back_limit` ("Đã quay lại tối đa {{max}} lần mà chưa đạt.") và ánh xạ ở `decision-reason.ts` (`params: {max: 3}` từ hằng contract) |
 
 ## 6. Hiệu năng
 | Mục | Biện pháp |
@@ -110,8 +111,8 @@ Spec: [`spec.md`](spec.md) §2 (PB2-R01…R18), §5 · ADR: [`../../adr/0013-xyf
 ## 7. Role + nhãn e2e (qc dùng; BUILD phải giữ đúng)
 | Màn | Role · tên |
 |---|---|
-| Canvas | `application` "Canvas quy trình"; nút stage `button` "Giai đoạn n: <tên>" (nội dung bên trong có thêm executor/gate — QC dùng `name` regex hoặc `{name:/^Giai đoạn 2: /}`); tiêu đề cột `heading`/nút `button` "Thêm giai đoạn vào bước n"; thanh công cụ `button` "Thêm giai đoạn", "Thêm bước", `radio`/`tab` "Canvas"/"Danh sách" (`tablist` "Chế độ xem") |
-| Panel | `complementary` "Chi tiết giai đoạn" chứa `region` "Giai đoạn n: <tên>" (**nhãn cũ**); trong đó `spinbutton` "Chạy ở bước"; `group` "Nếu bị trượt" với `checkbox` "Quay lại bước n" ; nút "Chuyển sang bước trước", "Chuyển sang bước sau", "Tách sang bước riêng", "Lên", "Xuống", "Xoá giai đoạn" |
+| Canvas | `application` "Canvas quy trình"; nút stage `button` "Giai đoạn n: <tên>" (nội dung bên trong có thêm executor/gate — QC dùng `name` regex hoặc `{name:/^Giai đoạn 2: /}`); tiêu đề cột `heading`/nút `button` "Thêm giai đoạn vào bước n"; thanh công cụ `button` "Thêm giai đoạn", "Thêm bước"; `tablist` "Chế độ xem" chứa `tab` "Canvas"/"Danh sách" |
+| Panel | `complementary` "Chi tiết giai đoạn" chứa `region` "Giai đoạn n: <tên>" (**nhãn cũ**); trong đó `spinbutton` "Chạy ở bước" (1…10); `group` "Nếu bị trượt" với `checkbox` "Quay lại bước n" (n = số UI; tên stage ở `aria-describedby`); nút "Chuyển sang bước trước", "Chuyển sang bước sau", "Tách sang bước riêng", "Lên", "Xuống", "Xoá giai đoạn" |
 | Lỗi | `alert` chứa "Bước n đã đủ 3 giai đoạn song song." |
 | Bàn phím | focus nút stage + `Alt+ArrowRight` ⇒ bước đổi; `status` (live) "Giai đoạn n chuyển sang bước m" |
 | Chat strip | `list` "Tiến độ quy trình" → `listitem` mỗi bước; con `list` "Bước n — chạy song song"; chữ `×2` |
@@ -122,17 +123,18 @@ Spec: [`spec.md`](spec.md) §2 (PB2-R01…R18), §5 · ADR: [`../../adr/0013-xyf
 **Test khoá cần qc cập nhật (T2):** **E-P15b** (`e2e/P-a/pf4/admin-editor.pa.ts`): `region "Giai đoạn 1: …"` nay nằm trong `complementary` và stage 1 được chọn sẵn (FB7) — hầu như giữ nguyên; thêm bước vào fixture không bắt buộc (mặc định mỗi stage một bước). **E-PB08/E-PB09** (`e2e/P-b/admin/editor.pb.ts`): `stage1(p,name)` vẫn đúng; nếu test chọn stage khác stage 1 thì phải bấm nút node `button "Giai đoạn n: …"` trước (accordion không còn). Thêm ca mới (e2e/P-b2/admin): kéo/`Alt+→` đổi bước, bước đầy báo lỗi, đặt "Nếu bị trượt", Lưu ⇒ tải lại còn nguyên, chế độ Danh sách, chỉ xem (mẫu); e2e/P-b2/chat: strip theo bước, `×2`, thẻ duyệt radio, timeline.
 
 ## 8. Đề xuất artboard (điều phối vẽ sau — **không chặn BUILD**, Q5)
-Nguồn: mockup Part B (B1, B2) + token design system. A1 canvas (cột bước + header "＋", node stage 240×88 [tên/executor/gate/huy hiệu], join "Chờ đủ n/n", cạnh quay lại đứt màu `warning`, panel 420 px 3 phần, toolbar); A2 (skeleton/rỗng/lỗi/chỉ xem, Danh sách); A3 StageStrip theo bước (nhóm dọc, ×2, vệt quay lại); A4 thẻ duyệt radio + cảnh báo "còn n lần"; A5 Run (nhóm bước, timeline, Tabs phiên bản); A6 thẻ `back_limit`. Lệch giữa mockup và plan này thì **mockup thắng về hình dáng**, plan thắng về nhãn/ARIA.
+Nguồn: mockup Part B (B1, B2) + token design system. A1 canvas (cột bước + header "＋", node stage 240×88 [tên/executor/gate/huy hiệu], join "Chờ đủ n/n", cạnh quay lại đứt màu `warning`, panel 420 px 3 phần, toolbar); A2 (skeleton/rỗng/lỗi/chỉ xem, Danh sách); A3 StageStrip theo bước (nhóm dọc, ×2, vệt quay lại); A4 thẻ duyệt radio + cảnh báo "còn n lần"; A5 Run (nhóm bước, timeline, Tabs phiên bản); A6 thẻ `back_limit`. Lệch giữa mockup và plan này ⇒ **plan này thắng** (G-6); ghi lệch vào UAT để quyết có vẽ artboard hay không.
 
-## 9. Cần từ backend (đề xuất; không tự đổi contract)
-| # | Cần | Lý do |
+## 9. Contract tiêu thụ (backend-lead đã trả lời — plan BE §1.4; FE không tự đổi)
+| # | Nhận | Ghi chú FE |
 |---|---|---|
-| B1 | Export hằng ở `@ai/contracts/hub-admin`: `PROCESS_STEP_MAX=9` (số bước tối đa − 1), `PROCESS_STEP_STAGES_MAX=3`, `PROCESS_BACK_ROUNDS_MAX=3` | FE dùng chung với validate, tránh trùng số |
-| B2 | `ProcessRunFullView.stages[]` thêm `back_to_steps: int[]` (bản trong snapshot) và `process_run` thêm `back_rounds`, `current_step`; ProcessRunTaskView.stages thêm `step`,`round` | Thẻ duyệt biết đích quay lại; strip theo bước (PB2-R13); người ngoài phòng vẫn vẽ được strip |
-| B3 | `StageView` thêm `outputs: { version, round, output: OutputRefSchema }[]` (cũ → mới; `output` hiện có = bản mới nhất) | Tab "Bản n" (PB2-R07 "giữ làm phiên bản") |
-| B4 | `HistoryItem.kind` thêm `"back"` (hoặc `back_events` như spec §3) với `to_step`, `round`, `feedback`, `actor`, `stage_idx` | Timeline quay lại |
-| B5 | `DecisionOptionSchema`/`reason` có `back_limit`; option `extend` (+1 vòng) rõ nghĩa cho `back_limit` | Thẻ A6 |
-| B6 | Lỗi 422 mang `details.issues[].path` dạng `stages.<i>.step` / `stages.<i>.after.back_to_steps` để map inline | FS4 |
+| B1 | Hằng `PROCESS_STEP_MAX`, `PROCESS_STEP_STAGES_MAX`, `PROCESS_BACK_ROUNDS_MAX` + `resolveSteps`/`stepGroups`/`processDefStageIssues` từ `@ai/contracts/hub-admin` | dùng chung validate |
+| B2 | `StageView.step`/`round`/`back_to_steps`; summary `current_step`; full view `back_rounds`/`back_limit`; task view `step`/`round` | strip + thẻ duyệt |
+| B3 | `StageView.outputs[]` (cũ→mới) + `OutputRef.round` | Tab "Bản n" |
+| B4 | `back_events[]` (full view) + `HistoryItem.to_step`; không có `kind:"back"` | Timeline quay lại |
+| B5 | `reason=back_limit`; option `add_attempt` (không `extend`), nhãn nút giữ cũ | Thẻ A6 |
+| B6 | 422 `details.paths[]` + `details.rules[]` cùng chỉ số (không `issues[]`); path `stages.<i>.step` / `.after.back_to_steps.<j>` | map inline theo `rule` |
+| — | `OutputRef.handoff_truncated`: **không hiển thị** ở P-b2 | G5 |
 
 ## 10. Rủi ro / bẫy
 | # | Rủi ro | Cách xử |

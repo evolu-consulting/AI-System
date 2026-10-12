@@ -1,5 +1,7 @@
 # P-b2 · câu chữ VI/EN nguyên văn (frontend)
 
+**Số bước hiển thị = `step+1`** (FB12): mọi `{{n}}`/`{{step}}` bên dưới nhận số UI. Câu chữ ở file này **thắng** plan-frontend khi lệch.
+
 Quy ước: chuỗi mới vào các phần có sẵn (`PROCESS_LOCALE_PARTS`: `admin`, `run`, `common`) — **không thêm phần mới**, không sửa `process-locales.ts`. Key = đường dẫn dưới `process.<phần>`. Nội suy `{{x}}`. Chạy `bun run i18n:check`. Đổi key cũ: ghi cột "Ghi chú".
 
 ## 1. Admin — `process.admin.canvas.*` (file `admin.{vi,en}.json`, cây con `canvas`)
@@ -57,10 +59,10 @@ Quy ước: chuỗi mới vào các phần có sẵn (`PROCESS_LOCALE_PARTS`: `a
 | `stepFull` | `STEP_TOO_WIDE` | Bước {{step}} đã đủ 3 giai đoạn song song. | Step {{step}} already has 3 parallel stages. |
 | `stagesMax` | (`STAGES_MAX` cũ) | Tối đa 10 giai đoạn. | Up to 10 stages. |
 | `step` | `STEP_ORDER`/`STEP_INCOMPLETE` | Số bước không hợp lệ. Hãy kéo giai đoạn vào đúng cột. | Invalid step numbers. Drag the stage into a valid column. |
-| `realStep` | `REAL_ACTION_*` cũ | Hành động thật chỉ dùng được khi mọi giai đoạn của bước trước đều có người kiểm. | Real action needs every stage in the previous step to have a reviewer. |
+| `realStep` | `REAL_ACTION` | Hành động thật chỉ dùng được khi mọi giai đoạn của bước trước đều có người kiểm. | Real action needs every stage in the previous step to have a reviewer. |
 | `backTarget` | `BACK_TARGET_INVALID` | Chỉ quay lại được các bước đứng trước giai đoạn này. | You can only go back to steps before this stage. |
 
-Nhãn ARIA nút/section stage dùng lại `editor.stage.aria` ("Giai đoạn {{n}}: {{name}}"), không thêm key. Ghi chú: `editor.stage.realLocked` (cũ) đổi câu thành "Cần mọi giai đoạn ở bước trước có người kiểm" / "Every stage in the previous step needs a reviewer" (giữ key để E-P15b không vỡ; test chỉ kiểm `disabled`). Toast lưu/xung đột: dùng key cũ.
+Nhãn ARIA nút/section stage dùng lại `editor.stage.aria` ("Giai đoạn {{n}}: {{name}}"), không thêm key. Ghi chú: `editor.stage.realLocked` (cũ) = **chú thích** switch bị khoá (còn `err.realStep` = lỗi); đổi câu thành "Cần mọi giai đoạn ở bước trước có người kiểm" / "Every stage in the previous step needs a reviewer" (giữ key để E-P15b không vỡ; test chỉ kiểm `disabled`). Toast lưu/xung đột: dùng key cũ.
 
 ## 2. Chat — `process.run.*` (file `run.{vi,en}.json`)
 | Key | VI | EN |
@@ -83,6 +85,7 @@ Nhãn ARIA nút/section stage dùng lại `editor.stage.aria` ("Giai đoạn {{n
 | `review.cancel` | Huỷ | Cancel |
 | `review.wentBack` | Đã quay lại bước {{step}}. Các giai đoạn sẽ chạy lại với góp ý của bạn. | Went back to step {{step}}. The stages will rerun with your feedback. |
 | `review.superseded` | Giai đoạn này vừa được xử lý ở bước khác. Đã cập nhật. | This stage was just handled elsewhere. Refreshed. |
+| `review.backLimitNote` | Đã hết {{max}} lần quay lại. Gửi sẽ chuyển cho người quyết. | No go-backs left (max {{max}}). Submitting sends this to the decider. |
 | `review.backInvalid` | Không quay lại được bước này nữa. Đã cập nhật. | You can't go back to that step anymore. Refreshed. |
 | `back.title` | Lịch sử quay lại | Go-back history |
 | `back.item` | Vòng {{round}} · {{by}} chấm Chưa đạt ở “{{stage}}” → quay lại bước {{step}} · {{time}} | Round {{round}} · {{by}} marked “{{stage}}” Not passed → back to step {{step}} · {{time}} |
