@@ -1,4 +1,4 @@
-// ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, accordion mở.
+// ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, giai đoạn đang chọn.
 import { useRef, useState } from "react";
 import {
   type DefDraft,
@@ -13,6 +13,7 @@ import {
 import {
   addStageAsNewStep,
   addStageToStep,
+  insertStepAfter,
   moveInColumn,
   moveToStep,
   removeStage,
@@ -38,7 +39,7 @@ export function useDraft() {
   const [draft, setDraft] = useState<DefDraft>(emptyDraft);
   const [base, setBase] = useState(() => snapshot(draft));
   const [errors, setErrors] = useState<DraftErrors>({});
-  const [open, setOpen] = useState<string[]>(() => draft.stages.map((s) => s.uid));
+  const [selected, setSelected] = useState<string | null>(() => draft.stages[0]?.uid ?? null);
   const ref = useRef(draft);
   ref.current = draft;
   const update = (fn: (d: DefDraft) => DefDraft) => {
@@ -46,21 +47,22 @@ export function useDraft() {
     ref.current = next;
     setDraft(next);
   };
-  /** Nạp bản mới (lần đầu mở / tải lại sau xung đột): coi là đã lưu, mở hết giai đoạn. */
+  /** Nạp bản mới (lần đầu mở / tải lại sau xung đột): coi là đã lưu, chọn giai đoạn đầu. */
   const load = (d: DefDraft) => {
     ref.current = d;
     setDraft(d);
     setBase(snapshot(d));
     setErrors({});
-    setOpen(d.stages.map((s) => s.uid));
+    setSelected(d.stages[0]?.uid ?? null);
   };
   /** Đánh dấu bản nháp hiện tại là đã lưu. */
   const markSaved = () => setBase(snapshot(ref.current));
-  /** Gắn lỗi theo ô và mở các giai đoạn có lỗi. */
+  /** Gắn lỗi theo ô và chọn giai đoạn đầu tiên có lỗi. */
   const showErrors = (e: DraftErrors) => {
     setErrors(e);
-    const uids = stageIndexesOf(Object.keys(e)).flatMap((i) => ref.current.stages[i]?.uid ?? []);
-    if (uids.length) setOpen((o) => [...new Set([...o, ...uids])]);
+    const first = stageIndexesOf(Object.keys(e))[0];
+    const uid = first === undefined ? undefined : ref.current.stages[first]?.uid;
+    if (uid) setSelected(uid);
   };
   /** Áp một phép đổi bước; lỗi ⇒ trả nguyên `error` (không đổi bản nháp). */
   const applySteps = (
@@ -70,26 +72,33 @@ export function useDraft() {
     if ("stages" in r) update((d) => ({ ...d, stages: r.stages }));
     return r;
   };
-  /** Thêm giai đoạn: vào cột `step` (0-based) hoặc, bỏ trống, thành bước mới cuối. */
-  const addStage = (step?: number): StepOpResult<StageDraft> => {
+  const addWith = (
+    op: (st: StageDraft[], fresh: StageDraft) => StepOpResult<StageDraft>,
+  ): StepOpResult<StageDraft> => {
     const s = emptyStage();
-    const r = applySteps((st) =>
-      step === undefined ? addStageAsNewStep(st, s) : addStageToStep(st, step, s),
-    );
-    if ("stages" in r) setOpen((o) => [...o, s.uid]);
+    const r = applySteps((st) => op(st, s));
+    if ("stages" in r) setSelected(s.uid);
     return r;
   };
+  /** Thêm giai đoạn: vào cột `step` (0-based) hoặc, bỏ trống, thành bước mới cuối. */
+  const addStage = (step?: number) =>
+    addWith((st, s) =>
+      step === undefined ? addStageAsNewStep(st, s) : addStageToStep(st, step, s),
+    );
+  /** Chèn bước mới (một giai đoạn trống) ngay sau bước `step`. */
+  const addStepAfter = (step: number) => addWith((st, s) => insertStepAfter(st, step, s));
   return {
     draft,
     draftRef: ref,
     dirty: snapshot(draft) !== base,
     errors,
-    open,
-    setOpen,
+    selected,
+    select: setSelected,
     load,
     markSaved,
     showErrors,
     addStage,
+    addStepAfter,
     moveToStep: (i: number, step: number) => applySteps((st) => moveToStep(st, i, step)),
     splitToNewStep: (i: number) => applySteps((st) => splitToNewStep(st, i)),
     ...draftOps(update),

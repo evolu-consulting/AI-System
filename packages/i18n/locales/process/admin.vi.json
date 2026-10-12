@@ -295,7 +295,8 @@
       "back": "↩ bước {{step}}",
       "real": "Hành động thật",
       "gateReview": "Có người kiểm",
-      "gateAuto": "Tự động"
+      "gateAuto": "Tự động",
+      "error": "Có lỗi"
     },
     "edge": {
       "back": "Quay lại"

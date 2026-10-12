@@ -2,6 +2,7 @@
 // (câu lỗi inline đã dịch, vùng `aria-live`). Canvas, StepList và panel cùng dùng một bộ.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { StageDraft } from "../lib/def-form";
 import { stepLabel } from "../lib/step-label";
 import { columnNeighbor, type StepOpResult } from "../lib/step-ops";
 import type { DraftState } from "./use-draft";
@@ -47,12 +48,30 @@ export function useStageOps(d: DraftState) {
     setNotice(null);
     setLive(t(`${LIVE}reordered`, { n: find(s.uid) + 1, step: stepLabel(s.step) }));
   };
-  const add = (step?: number) => {
-    const before = new Set(d.draftRef.current.stages.map((s) => s.uid));
-    const r = d.addStage(step);
+  const added = (r: StepOpResult<StageDraft>, before: Set<string>) => {
     report(undefined, r);
     return "stages" in r ? (r.stages.find((s) => !before.has(s.uid))?.uid ?? null) : null;
   };
-  return { notice, live, setStep, split, moveColumn, add, clearNotice: () => setNotice(null) };
+  const uids = () => new Set(d.draftRef.current.stages.map((s) => s.uid));
+  /** Thêm giai đoạn vào bước `step` (0-based), bỏ trống ⇒ thành bước mới cuối. Trả `uid` mới hoặc `null`. */
+  const add = (step?: number) => {
+    const before = uids();
+    return added(d.addStage(step), before);
+  };
+  /** Chèn bước mới ngay sau bước `step`. */
+  const addStep = (step: number) => {
+    const before = uids();
+    return added(d.addStepAfter(step), before);
+  };
+  return {
+    notice,
+    live,
+    setStep,
+    split,
+    moveColumn,
+    add,
+    addStep,
+    clearNotice: () => setNotice(null),
+  };
 }
 export type StageOps = ReturnType<typeof useStageOps>;

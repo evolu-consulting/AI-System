@@ -295,7 +295,8 @@
       "back": "↩ step {{step}}",
       "real": "Real action",
       "gateReview": "Reviewed by a person",
-      "gateAuto": "Automatic"
+      "gateAuto": "Automatic",
+      "error": "Has errors"
     },
     "edge": {
       "back": "Go back"

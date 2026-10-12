@@ -4,6 +4,7 @@ import {
   addStageAsNewStep,
   addStageToStep,
   columnNeighbor,
+  insertStepAfter,
   moveInColumn,
   moveToStep,
   normalizeSteps,
@@ -98,6 +99,12 @@ describe("addStageToStep / addStageAsNewStep / removeStage", () => {
       "D@2",
       "N@3",
     ]);
+  });
+  test("chèn bước mới sau bước k; backTo trỏ bước sau được remap", () => {
+    const out = ok(insertStepAfter(base(), 0, mk("N", 0)));
+    expect(view(out)).toEqual(["A@0", "N@1", "B@2", "C@2", "D@3"]);
+    expect(out[4]?.backTo).toEqual([0, 2]);
+    expect(view(ok(insertStepAfter([], -1, mk("N", 0))))).toEqual(["N@0"]);
   });
   test("tối đa 10 giai đoạn", () => {
     const ten = Array.from({ length: 10 }, (_, i) => mk(`s${i}`, i));

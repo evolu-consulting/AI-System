@@ -109,6 +109,19 @@ export function addStageToStep<T extends Stepped>(
   return { stages: normalizeSteps(out) };
 }
 
+/** Chèn một bước mới (một giai đoạn) ngay SAU bước `step` (-1 ⇒ đầu danh sách). */
+export function insertStepAfter<T extends Stepped>(
+  stages: readonly T[],
+  step: number,
+  fresh: T,
+): StepOpResult<T> {
+  if (stages.length >= PROCESS_STAGES_MAX) return { error: ERR_STAGES_MAX };
+  const at = stages.reduce((m, o, j) => (o.step <= step ? j + 1 : m), 0);
+  const out = [...stages];
+  out.splice(at, 0, { ...fresh, step: step + 0.5, backTo: [] });
+  return { stages: normalizeSteps(out) };
+}
+
 /** Thêm stage thành bước mới ở cuối. */
 export const addStageAsNewStep = <T extends Stepped>(
   stages: readonly T[],
