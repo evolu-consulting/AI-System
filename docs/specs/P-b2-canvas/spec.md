@@ -67,31 +67,46 @@ BA là nguồn sự thật (HUB-BR-38, HUB-FR-118/136); chỉ ghi phần BA chư
 | PB2-R18 | **Bước 0 với `team`** (TECH-DEBT #135): stage `team` ở bước đầu phải chạy được (`persistDraft` khi chưa có job ⇒ trả danh sách rỗng, không ném) | #135 |
 
 ## 3. Contract (backend-lead)
-File: `packages/contracts/src/hub-admin/processes.ts` (+ `chat/processes-entities.ts` cho run view). Chỉ **thêm** trường tuỳ chọn; `strictObject` cũ không vỡ.
+Chỉ **thêm**; trường mới trong meta thread/jsonb cũ (`OutputRef`, part `task_result`, `process.updated`) là **optional**. Zod từng trường + hàm thuần dùng chung FE/BE: [plan.md](plan.md) §1–§2.
 
-| Thay đổi | Chi tiết | Lỗi (HTTP · code) |
+**Hằng** (`chat/processes.ts`, re-export ở `hub-admin`): `ProcessStepSchema` int 0…`PROCESS_STEP_MAX`(9) · `PROCESS_STEP_STAGES_MAX=3` · `PROCESS_BACK_ROUNDS_MAX=3` · `BACK_EVENTS_MAX=20` · `HANDOFF_SECTION="Bàn giao"` · `HANDOFF_TOKENS_MAX=200` · `HANDOFF_CHARS_PER_TOKEN=4` · `DECISION_REASONS`+`back_limit` (16) · `CHAT_PROCESS_ERRORS`+`BACK_TARGET_INVALID: 422` (13).
+
+| Chỗ | Thay đổi | Lỗi |
 |---|---|---|
-| `ProcessStageDef.step?` | int 0…9 (PB2-R01) | 422 `STEP_INCOMPLETE` · `STEP_ORDER` · `STEP_TOO_WIDE` |
-| `after.review.back_to_steps?` | int[] mặc định `[]` (PB2-R06) | 422 `BACK_TARGET_INVALID` (đích ≥ bước stage, hoặc không tồn tại) |
-| `POST /review-tasks/:id/decision` (hiện có) | request thêm `back_to_step?: int` khi `result='fail'`; thiếu `feedback` ⇒ như cũ | 422 `BACK_TARGET_INVALID` · 409 `REVIEW_TASK_CLOSED` (PB2-R09) |
-| `GET /process-runs/:id` | stage thêm `step`, `round`; run thêm `current_step`, `back_rounds`, `back_events[]` (`from_stage`, `to_step`, `round`, `feedback`, `by`, `at`) | — |
-| `GET /process-defs/*` | trả `step`/`back_to_steps`; `stage_count` giữ | — |
-| Trạng thái run | `decision.reason` thêm `back_limit` (PB2-R08) | — |
+| `ProcessStageDefSchema.step` | `ProcessStepSchema.optional()` (R01/R02) | 422 `PROCESS_DEF_INVALID` |
+| `after` biến thể `review` | + `back_to_steps: ProcessStep[] ≤9, default []` — duy nhất, < bước của stage, là bước có thật (R06, Q6) | 422 `PROCESS_DEF_INVALID` |
+| `ProcessDefPathsDetailsSchema` | + `rules?: ProcessDefRule[]` ≤20, **cùng chỉ số** với `paths`. `PROCESS_DEF_RULES` = `KEY_DUP`·`REAL_ACTION`·`STEP_INCOMPLETE`·`STEP_ORDER`·`STEP_TOO_WIDE`·`BACK_TARGET_INVALID`; path `stages.<i>.{key\|step\|real_action}` / `stages.<i>.after.back_to_steps.<j>` (luật path: plan §1.2) | mã HTTP không đổi |
+| Lưu def (create/update/copy) | `ensureHandoff` (R10): thiếu `"Bàn giao"` ⇒ thêm cuối `required_sections` + `
 
-Sự kiện: tái dùng `process.updated`; thêm field `step`/`round` trong payload stage (không event mới). NOTIFY không đổi.
+## Bàn giao
+` cuối `template` (khi < 20 mục và ≤ 20 000 ký tự); response trả bản đã thêm | — |
+| `POST /review-tasks/:id/decision` | + `back_to_step?: ProcessStep`. Kiểm theo thứ tự: `FEEDBACK_REQUIRED` → `BACK_TARGET_INVALID` (kèm `pass`, hoặc ∉ `back_to_steps`) → khoá run → task đóng ⇒ 409 `REVIEW_TASK_CLOSED` → stage ≠ `waiting_review` ⇒ 409 `PROCESS_RUN_STATE` | 422 · 409 |
+| `POST /process-runs/:id/decide` | + `stage_idx?` (vắng ⇒ decision mở cũ nhất; stage không có decision mở ⇒ 409 `PROCESS_RUN_STATE`). `back_limit`: `add_attempt` = thực hiện quay lại đang chờ (`back_limit+1`), `use_current` = coi Đạt, `cancel` = huỷ (không thêm option) | 409 |
+| `ProcessRunSummary` | + `current_step` · `step_count` (1…10) | — |
+| `StageView` | + `step` · `round` (≥1) · `back_to_steps` (snapshot; `[]` khi `auto`). Lịch sử bản: `outputs[]` sẵn có + `OutputRef.round` | — |
+| Stage của task view | + `step` · `round` | — |
+| `ProcessRunFullView` | + `back_rounds` · `back_limit` · `back_events: BackEvent[] ≤20` (cũ→mới); `decision` = decision mở cũ nhất, + `back_to_step?` khi `back_limit`. Task view **không** có (HUB-BR-25) | — |
+| `BackEventSchema` (mới) | strict `{at, task_id: uuid\|null, from_stage_idx, from_step, to_step, round: ≥2, feedback 1…4000, by: UserRef}` | — |
+| `TaskDetail` (review mở, stage có `back_to_steps`) | + `back_steps?` · `back_rounds_left?` | — |
+| `HistoryItem` · part `task_result` | + `to_step?` | — |
+| `OutputRef` | + `round?` · `handoff_truncated?` (tính lúc đọc từ `process_outputs.sections`) | — |
+
+Sự kiện: `process.updated` + `step?` (bước hiện tại); không event mới. NOTIFY: chỉ `job_cancel` sẵn có (quay lại huỷ job bước ≥ X). Trả lời đề xuất FE B1–B6: plan §1.4.
 
 ## 4. Dữ liệu (backend-lead)
-Migration `hub` kế tiếp (sau `0023_x2b2_room_attachments`; số chốt khi PLAN): chỉ thêm cột, an toàn chạy lại.
+Migration **`0024_pb2_steps.sql`** (viết tay, idempotent như 0021). Drizzle: chỉ `schema/hub-processes.ts`. DDL: [plan.md](plan.md) §5.
 
-| Bảng | Cột | Kiểu | Null | Default | Ràng buộc / index | RLS |
-|---|---|---|---|---|---|---|
-| `process_defs.stages` (jsonb) | `step`, `after.back_to_steps` | trong jsonb | — | — | validate ở biên (zod), không đổi DDL | như cũ |
-| `process_runs` | `current_step` | smallint | NOT NULL | 0 | — | T (cũ) |
-| `process_runs` | `back_rounds` | smallint | NOT NULL | 0 | CHECK 0…4 | T |
-| `stage_runs` | `round` | smallint | NOT NULL | 1 | giữ `UNIQUE(process_run_id, stage_idx)` (một hàng/stage; lịch sử ở `process_back_events`) | T |
-| `process_back_events` (mới) | id, tenant_id, process_run_id, from_stage_idx, to_step, round_after, feedback, decided_by, created_at | — | — | — | index `(process_run_id, created_at)`; không UPDATE/DELETE | T (RLS như `stage_runs`) |
+| Bảng | Cột · kiểu | Ràng buộc |
+|---|---|---|
+| `process_defs.stages` (jsonb) | `step`, `after.back_to_steps` | zod ở biên; không DDL |
+| `process_runs` | `current_step` smallint NN 0 (backfill `= current_stage_idx` chỉ khi vừa thêm cột) | CHECK 0…9 |
+| `process_runs` | `back_rounds` smallint NN 0 · `back_limit` smallint NN 3 | CHECK `0 ≤ back_rounds ≤ back_limit ≤ 100` |
+| `stage_runs` | `round` smallint NN 1 · `back_to_step` smallint NULL (quay lại chờ quyết `back_limit`) | CHECK `round ≥ 1`, `back_to_step` 0…9; giữ `UNIQUE(process_run_id, stage_idx)` |
+| `process_outputs` | `round` smallint NN 1 | — |
+| `review_tasks` | dựng lại `review_tasks_reason_ck` + `back_limit` | — |
+| `process_back_events` (mới) | `id` · `tenant_id` · `process_run_id` · `task_id` NULL · `from_stage_idx` · `from_step` · `to_step` · `round_after` · `feedback` NN · `decided_by` NN · `created_at` | CHECK `to_step < from_step`, `round_after ≥ 2`, feedback 1…4000; FK run CASCADE, `task_id` SET NULL; index `(process_run_id, created_at)` |
 
-Seed: không đổi. Mẫu SDLC `platform_admin` giữ nguyên (mỗi stage một bước); ví dụ song song nằm trong fixture test, không seed (**Q4**).
+RLS `process_back_events`: policy T `process_back_events_hub_rw` như `stage_runs`; GRANT **SELECT, INSERT** `hub_rw` (append-only). Seed: không đổi (**Q4**).
 
 ## 5. UI (frontend-lead)
 Chi tiết PLAN FE: [`plan-frontend.md`](plan-frontend.md) · [`plan-frontend-i18n.md`](plan-frontend-i18n.md) · [`tasks-frontend.md`](tasks-frontend.md). Role/nhãn e2e đầy đủ: plan-frontend §7 (bảng dưới là tóm tắt).
@@ -116,7 +131,7 @@ Chi tiết PLAN FE: [`plan-frontend.md`](plan-frontend.md) · [`plan-frontend-i1
 Validate: lỗi inline tại stage (VI/EN nguyên văn chốt ở PLAN-FE): bước đầy (≤ 3 stage), vượt 10 stage, `real_action` sai bước, đích quay lại không hợp lệ. Cắt/ẩn đường kéo ở bước đầy bằng `aria-disabled`, không chỉ màu.
 
 ## 6. Hiệu năng
-Ngân sách riêng: lazy chunk canvas thêm vào `check:bundle` admin-web (số cụ thể chốt khi cài, ADR-0013 #2); bundle chat-web **không tăng thư viện** (StageStrip CSS thuần). Canvas 10 nút kéo thả ≥ 50 fps — chỉ đo, không chặn (memory "Perf later").
+Ngân sách riêng: lazy chunk canvas thêm vào `check:bundle` admin-web (số cụ thể chốt khi cài, ADR-0013 #2); bundle chat-web **không tăng thư viện** (StageStrip CSS thuần). Canvas 10 nút kéo thả ≥ 50 fps — chỉ đo, không chặn (memory "Perf later"). Backend: query mới dùng index sẵn có + `process_back_events (process_run_id, created_at)` (plan §6).
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập |
@@ -151,17 +166,18 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 ### Câu hỏi mở — mặc định đề xuất (người dùng chấp nhận khi duyệt Gate; không chặn PLAN)
 | # | Câu hỏi | Mặc định |
 |---|---|---|
-| Q1 | Phần Editor còn lại (Nhóm agent ở Forge, tab Usage, luật tự duyệt, Import/Export, KPI) thuộc P-b2? | Không; mốc riêng P-b3 (§1.2) |
-| Q2 | "≤ 3 vòng" đếm theo gì; ai quyết khi quá trần? | Tổng mỗi run; dùng "Cần người quyết" sẵn có (người bắt đầu/`tenant_admin`), không thêm trường "người quyết" vào def |
-| Q3 | `## Bàn giao` bắt buộc cho def cũ? 200 token đo thế nào? | Chỉ tự thêm khi lưu def; thiếu mục = `template_invalid`; ước lượng ký tự ÷ 4, cắt không từ chối |
+| Q1 | Phần Editor còn lại (Nhóm agent ở Forge, tab Usage, luật tự duyệt, Import/Export, KPI) thuộc P-b2? | Không; mốc riêng P-b3 (§1.2). **BE chốt** |
+| Q2 | "≤ 3 vòng" đếm theo gì; ai quyết khi quá trần? | Tổng mỗi run; dùng "Cần người quyết" sẵn có (người bắt đầu/`tenant_admin`), không thêm trường "người quyết" vào def. **BE chốt:** người quyết như `redo_limit`; `back_limit` cột run, `add_attempt` +1 (plan §3.6) |
+| Q3 | `## Bàn giao` bắt buộc cho def cũ? 200 token đo thế nào? | Chỉ tự thêm khi lưu def; thiếu mục = `template_invalid`; ước lượng ký tự ÷ 4, cắt không từ chối. **BE chốt** + thêm heading vào `template` (plan §4) |
 | Q4 | Seed mẫu có bước song song? | Không; fixture test + mockup `fixbug-evolu` do tenant tự sửa. **FE chốt:** UI không có mẫu/seed song song |
 | Q5 | Chờ artboard Pencil hay dùng mockup Part B? | **FE chốt:** dùng mockup làm nguồn, A1–A6 vẽ sau (plan-fe §8) không chặn BUILD;  frontend-lead dựng, người dùng xem UAT; nếu muốn artboard thì vẽ trước PLAN-FE |
-| Q6 | Quay lại có cho `back_to_steps` trỏ tới bước **song song cùng bước**? | Không (đích phải < bước hiện tại) |
-| Q7 | Run view chat: thẻ duyệt của stage song song hiện thế nào? | Mỗi stage một thẻ, nhóm dưới tiêu đề bước. **FE chốt** (plan-fe §4) |
+| Q6 | Quay lại có cho `back_to_steps` trỏ tới bước **song song cùng bước**? | Không (đích phải < bước hiện tại). **BE chốt** |
+| Q7 | Run view chat: thẻ duyệt của stage song song hiện thế nào? | Mỗi stage một thẻ, nhóm dưới tiêu đề bước. **FE chốt** (plan-fe §4); **BE:** task review riêng mỗi stage_run (sẵn có) |
 | Q8 | `Alt+mũi tên` có xung đột trình duyệt/OS? | Dùng; kiểm trong UAT, đổi phím nếu vướng. **FE chốt:** dùng + `preventDefault` + nút thay thế bắt buộc ở panel/StepList (plan-fe FB8) |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - FE PLAN (2026-10-12): FB1–FB11 ở `plan-frontend.md` §0 — `@xyflow/react` 12.11.6, chunk `canvas` ngân sách 80 KB gz, StepList làm fallback + đường a11y, chọn sẵn stage 1 (giữ E-P15b/E-PB08/E-PB09). Đề xuất backend: plan-fe §9 (B1–B6).
+- BE PLAN (2026-10-12): D1–D12 ở `plan.md` §0 (gồm làm rõ PB2-R07: bước X `queued`, bước > X `pending`, `round+1` chỉ stage đã chạy).
 
 ## 10. Tranh chấp test
 - (không)

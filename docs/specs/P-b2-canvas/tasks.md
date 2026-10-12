@@ -1,19 +1,20 @@
 # Tasks · P-b2-canvas
 
-Khung — PLAN (backend-lead ∥ frontend-lead) điền chi tiết sau; chưa chạy spec-readiness. Mỗi task: một commit `[FR]`, diff ≈ ≤ 400 dòng. Cột `Đọc`: đúng các mục cần. `Rủi ro`: xem `docs/WORKFLOW.md` "Chính sách model".
+PLAN BE xong (T0, `plan.md`); PLAN FE xong (T1). Chưa chạy spec-readiness. Mỗi task: một commit `[FR]`, diff ≈ ≤ 400 dòng. Cột `Đọc`: đúng các mục cần. `Rủi ro`: xem `docs/WORKFLOW.md` "Chính sách model".
 
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
-| T0 | PLAN BE (`plan.md`: máy trạng thái bước, khoá, migration) | backend-lead | cao | `spec §2,§3,§4` | `docs/specs/P-b2-canvas/plan.md` | — | — | [ ] |
+| T0 | PLAN BE (`plan.md`: D1–D12, lớp bước, quay lại, Bàn giao/resume, DDL 0024, khoá) | backend-lead | cao | `spec §2,§3,§4` | `docs/specs/P-b2-canvas/plan.md`, spec §3–4/§6/§9 | — | — | [x] |
 | T1 | PLAN FE (`plan-frontend.md`: canvas, StageStrip, i18n) | frontend-lead | thường | `spec §2 R16–R17,§5`, ADR-0013 | `docs/specs/P-b2-canvas/plan-frontend.md` (+ `plan-frontend-i18n.md`, `tasks-frontend.md` — T8–T10 chia thành FB-1…FB-8) | — | — | [x] |
 | T2 | qc: test-plan + test khoá (cập nhật E-P15b/E-PB08/E-PB09, thêm AC-PB2-01…12) | qc | cao | `spec §8` | `tests/acceptance/P-b2/**`, `e2e/P-b2/**` | T0, T1 | `bun run test:lock:verify` | [ ] |
 | T3 | spec-readiness + Gate (trình ADR-0013; Luật 2b) | spec-readiness | — | spec, readiness.md | `readiness.md` | T2 | — | [ ] |
-| T4 | Contract + DDL (`step`, `back_to_steps`, cột run/stage, `process_back_events`) | backend-lead | cao | `spec §3,§4` | `packages/contracts`, `packages/db` | T3 | `bun test packages/contracts` | [ ] |
-| T5 | Engine: bước song song + chờ mọi stage + `real_action` + #135 | backend-lead | cao | `spec §2 R01–R05,R14,R18` | `apps/hub-api/src/modules/processes/{core,runs,defs}` | T4 | `bun run test:int` | [ ] |
-| T6 | Engine: quay lại bước + trần + đồng thời | backend-lead | cao | `spec §2 R06–R09` | `.../gates`, `.../core` | T5 | `bun run test:int` | [ ] |
-| T7 | `## Bàn giao` + priorFiles theo bước + resume/delta | backend-lead | thường | `spec §2 R10–R12` | `.../runs/launcher*.ts` | T5 | `bun run test:int` | [ ] |
+| T4 | Contract (`chat/processes*`, `room-process`, `me-stream-process`, `hub-admin/processes` + `process-steps.ts` thuần) + DDL `0024_pb2_steps.sql` + `schema/hub-processes.ts` + journal | backend-lead | cao | plan §1, §5 | `packages/contracts/src/{chat,hub-admin}/**`, `packages/db/{migrations-hub,src/schema/hub-processes.ts}` | T3 | `bun test packages/contracts && bun run db:migrate && bun run test:int` | [ ] |
+| T5a | Lớp bước: `core/step.rules.ts` + `processDefStageIssues` ở `defs` + persist/join (`runs/step-persist.ts`, tách `team-runner`/`team-exec`) + guard theo stage (D1–D4, D6) ở `stage-driver`, `gates`, `asks`, `stage-sources`, `resolve-apply` | backend-lead | cao | plan §0, §2, §3.3–3.4, §3.7, §7 | `apps/hub-api/src/modules/processes/{core,runs,gates,asks,defs}` | T4 | `bun run typecheck && bun test apps/hub-api && bun run test:int` | [ ] |
+| T5b | Launcher nhiều stage/bước (D5, `launcher-step.ts`) + `priorFiles` theo bước + `real_action` theo bước + sweeps (§3.8) + view `step/round/current_step/step_count/back_to_steps` (tách `view-steps.ts`) + int #135 (team bước 0, đơn + song song) rồi đóng TECH-DEBT #135 | backend-lead | cao | plan §3.1–3.2, §3.8–3.9, §0 D12 | `.../processes/runs/{launcher*,sweeps,view*,start-inputs}.ts`, `docs/TECH-DEBT.md` | T5a | `bun run test:int` + `done:pa` | [ ] |
+| T6 | Quay lại bước: `gates/back.rules.ts` + `back.effects.ts` + trần `back_limit` (D7–D9) + `decide stage_idx` + `process_back_events` + view `back_events`/`history.to_step`/`TaskDetail.back_*` + thread `to_step` | backend-lead | cao | plan §2 (back.rules), §3.5–3.6, §3.9, §7 | `.../processes/{gates,core/task-view.ts,runs/view-steps.ts}` | T5b | `bun run test:int` | [ ] |
+| T7 | `ensureHandoff` khi lưu def + khối Bàn giao trong prompt (`handoff.rules.ts`) + `OutputRef.handoff_truncated/round` + resume (`session.rules.ts`, plumb `useSession` qua `runs/create-run` → `runner.rules`) | backend-lead | thường | plan §4 | `.../processes/{defs,runs/launcher-prompt.ts,runs/handoff.rules.ts,runs/session.rules.ts}`, `apps/hub-api/src/modules/{runs/create-run.ts,runner/**}` | T5b | `bun run test:int` | [ ] |
 | T8 | admin-web: tách StageForm (#136) + cột "Chạy ở bước"/"Nếu bị trượt" | frontend-lead | thường | `spec §2 R17` | `apps/admin-web/src/features/processes/components/editor` | T4 | `bun test` + typecheck | [ ] |
 | T9 | admin-web: canvas xyflow (lazy) + bàn phím + `check:bundle` | frontend-lead | thường | `spec §2 R16`, ADR-0013 | `apps/admin-web/src/features/processes/components/canvas` | T8 | `bunx playwright test e2e/P-b2/admin` | [ ] |
 | T10 | chat-web: StageStrip theo bước + ×lần + thẻ duyệt quay lại + trang Run | frontend-lead | thường | `spec §2 R13`, §5 A3–A5 | `apps/chat-web/src/features/processes` | T6 | `bunx playwright test e2e/P-b2/chat` | [ ] |
-| T11 | Review + chạy lại `done:pa`, `done:pb`, `done:pb2`; UAT | reviewer, qc-uat | — | spec §8 | — | T5–T10 | `bun run done:pb2` | [ ] |
+| T11 | Review + chạy lại `done:pa`, `done:pb`, `done:pb2`; UAT | reviewer, qc-uat | — | spec §8 | — | T5a–T10 | `bun run done:pb2` | [ ] |
 | T12 | Đồng bộ docs (CODEMAP, TRACE, STATE, ADR-0013 → Accepted) | docs-architect | thường | — | `docs/**` | T11 | `bun run trace --check` | [ ] |
