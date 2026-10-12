@@ -42,6 +42,8 @@ const summary = {
   started_at: AT,
   updated_at: AT,
   finished_at: null,
+  current_step: 0,
+  step_count: 2,
 };
 const stageView = {
   idx: 0,
@@ -59,6 +61,9 @@ const stageView = {
   current_output_id: U(11),
   passed_by: null,
   passed_at: null,
+  step: 0,
+  round: 1,
+  back_to_steps: [],
 };
 const fullView = {
   ...summary,
@@ -71,13 +76,16 @@ const fullView = {
   open_tasks: [{ id: U(10), kind: "review", stage_idx: 0, assignees: [user], group: null }],
   thread: null,
   can_cancel: true,
+  back_rounds: 0,
+  back_limit: 3,
+  back_events: [],
 };
 const taskView = {
   access: "task",
   id: U(20),
   process: { key: "hoa-don", name: "Hoá đơn" },
   status: "waiting_review",
-  stages: [{ idx: 0, name: "Đọc hoá đơn", status: "waiting_review" }],
+  stages: [{ idx: 0, name: "Đọc hoá đơn", status: "waiting_review", step: 0, round: 1 }],
   my_tasks: [taskDetail()],
 };
 const notice = {

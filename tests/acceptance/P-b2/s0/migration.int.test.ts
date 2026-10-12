@@ -194,7 +194,8 @@ describe("M · process_back_events RLS + quyền + FK [AC-PB2-11][HUB-BR-25]", (
       tid: T.acme,
       runId: r.runId,
       stageRunId: r.stageRunIds[1] as string,
-      kind: "review",
+      kind: "decision",
+      reason: "back_limit",
     });
     const [e] = await sql<
       Json[]
