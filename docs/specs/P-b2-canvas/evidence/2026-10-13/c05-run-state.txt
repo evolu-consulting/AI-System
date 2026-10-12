@@ -1,0 +1,1 @@
+back_rounds=1 back_limit=3 events=1; Phân tích:waiting_review:r2 | Test hồi quy:pending:r2 | Rà soát code:pending:r2 | Tổng hợp:pending:r1

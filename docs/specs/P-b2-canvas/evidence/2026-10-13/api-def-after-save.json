@@ -1,0 +1,45 @@
+[
+ {
+  "k": "phan-tich",
+  "step": 0,
+  "back": [],
+  "req": [
+   "Kết quả",
+   "Bàn giao"
+  ]
+ },
+ {
+  "k": "test",
+  "step": 1,
+  "back": [
+   0
+  ],
+  "req": [
+   "Kết quả",
+   "Bàn giao"
+  ]
+ },
+ {
+  "k": "ra-soat",
+  "step": 1,
+  "back": [
+   0
+  ],
+  "req": [
+   "Kết quả",
+   "Bàn giao"
+  ]
+ },
+ {
+  "k": "tong-hop",
+  "step": 2,
+  "back": [
+   0,
+   1
+  ],
+  "req": [
+   "Kết quả",
+   "Bàn giao"
+  ]
+ }
+]

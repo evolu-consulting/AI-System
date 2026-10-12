@@ -1,0 +1,2 @@
+width 390: danh-sách-mặc-định=true dialog=0 complementary-visible=true region-visible=true
+width 800: danh-sách-mặc-định=false dialog=0 complementary-visible=true region-visible=true

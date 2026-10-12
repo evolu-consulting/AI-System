@@ -1,0 +1,57 @@
+[
+ {
+  "id": "A01",
+  "title": "mở editor: canvas, 4 nút Giai đoạn, panel chọn sẵn giai đoạn 1",
+  "ok": true
+ },
+ {
+  "id": "A02",
+  "title": "tab Danh sách ⇄ Canvas",
+  "ok": true
+ },
+ {
+  "id": "A03",
+  "title": "kéo 'Test hồi quy' (chuột) sang cột bước 2 => bước đổi thành 2",
+  "ok": true
+ },
+ {
+  "id": "A04",
+  "title": "Alt+← trên 'Tổng hợp' => vào bước 2 (đủ 3 giai đoạn song song); status live",
+  "ok": true
+ },
+ {
+  "id": "A05",
+  "title": "bước 2 đầy: Alt+→ trên 'Phân tích' => alert 'Bước 2 đã đủ 3…'; bước không đổi; nút '+ vào bước 2' aria-disabled",
+  "ok": true
+ },
+ {
+  "id": "A06",
+  "title": "Alt+→ trên 'Tổng hợp' trả về bước 3; Alt+↑ đổi thứ tự trong cột; focus ở lại",
+  "ok": true
+ },
+ {
+  "id": "A07",
+  "title": "'Nếu bị trượt': Rà soát + Test => bước 1; Tổng hợp => bước 1 và 2; bước đầu có câu 'Bước đầu không có…'",
+  "ok": true
+ },
+ {
+  "id": "A08",
+  "title": "Lưu => 200; tải lại còn nguyên (step, back_to_steps); Hub tự thêm mục Bàn giao (R10)",
+  "ok": true
+ },
+ {
+  "id": "A09",
+  "title": "422 theo stage: ép PUT body 4 stage cùng bước 0 (route chặn, MÔ PHỎNG; Hub trả 422 thật) => UI báo lỗi theo stage",
+  "ok": true
+ },
+ {
+  "id": "A10",
+  "title": "chế độ chỉ xem: mẫu sdlc — thông báo, không nút Thêm, Alt+→ vô tác dụng",
+  "ok": true
+ },
+ {
+  "id": "A11",
+  "title": "mobile 390 px: mặc định Danh sách; panel Sheet",
+  "ok": true
+ }
+]

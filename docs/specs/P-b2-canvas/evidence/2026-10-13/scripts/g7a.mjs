@@ -1,0 +1,20 @@
+// G-7 ca 1+3: Claude thật. redo cùng agent => resume + delta; Đạt => stage sau (cùng agent) xoá phiên, chạy mới.
+import {q,start,waitRun,openTask,hub,tk,jobs,sessions,sleep} from "./lib2.mjs";
+import {writeFileSync} from "node:fs";
+const out={};const L=(...a)=>console.log(...a);
+const id=await start("thomas.tran","pb2-uat-claude1","chào mừng khách hàng mới của Evolu");L("run",id);
+let v=await waitRun(id,v=>v.status==="waiting_review"||v.status==="needs_decision");L("status",v.status);
+out.s1=sessions(id);L("sessions sau stage0:\n"+out.s1);
+const j1=jobs(id);out.jobs1=j1;L("jobs:",j1.length,j1.map(j=>[j.status,j.use_session,j.provider_key]));
+const t=openTask(v)[0];L("task",t?.id);
+let r=await hub(await tk("vio.ngo"),"POST",`/review-tasks/${t.id}/decision`,{result:"fail",feedback:"Thêm vào câu Nội dung từ khoá 'Evolu-2026'."});L("fail",r.status,JSON.stringify(r.json).slice(0,200));
+await sleep(3000);
+v=await waitRun(id,v=>v.status==="waiting_review"&&openTask(v).length>0&&jobs(id).filter(j=>j.status==="succeeded"||j.status==="done").length>=2||v.status==="needs_decision");
+out.s2=sessions(id);L("sessions sau redo:\n"+out.s2);
+const j2=jobs(id);out.jobs2=j2;L(JSON.stringify(j2.map(j=>({st:j.status,us:j.use_session,pk:j.provider_key,plen:j.prompt?.length})))); L("PROMPT redo:\n"+j2[j2.length-1]?.prompt);
+const t2=openTask(v)[0];
+r=await hub(await tk("vio.ngo"),"POST",`/review-tasks/${t2.id}/decision`,{result:"pass"});L("pass",r.status);
+v=await waitRun(id,v=>v.status==="done"||v.status==="needs_decision");L("final",v.status);
+out.s3=sessions(id);L("sessions sau stage1:\n"+out.s3);
+const j3=jobs(id);out.jobs3=j3;L(JSON.stringify(j3.map(j=>({st:j.status,us:j.use_session,pk:j.provider_key,plen:j.prompt?.length}))));L("PROMPT stage1:\n"+j3[j3.length-1]?.prompt);
+out.id=id;writeFileSync("g7a.json",JSON.stringify(out,null,1));

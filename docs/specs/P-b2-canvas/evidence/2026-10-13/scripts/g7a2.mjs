@@ -1,0 +1,10 @@
+import {q,waitRun,openTask,view,hub,tk,jobs,sessions} from "./lib2.mjs";
+import {writeFileSync} from "node:fs";
+const id="4c05eb01-1b1c-4f2d-b6d0-999e022dcdda";const L=console.log;
+let v=await view("vio.ngo",id);L(v.status,JSON.stringify(openTask(v).map(t=>[t.id,t.status,t.stage_idx])));
+const ts=openTask(v).filter(t=>t.status==="open");
+const r=await hub(await tk("vio.ngo"),"POST",`/review-tasks/${ts[ts.length-1].id}/decision`,{result:"pass"});L("pass",r.status,JSON.stringify(r.json).slice(0,200));
+v=await waitRun(id,v=>v.status==="done"||v.status==="needs_decision");L("final",v.status);
+const out={id,s3:sessions(id),jobs:jobs(id)};L("sessions:\n"+out.s3);
+L(JSON.stringify(out.jobs.map(j=>({st:j.status,us:j.use_session,pk:j.provider_key,plen:j.prompt?.length}))));L("PROMPT stage1:\n"+out.jobs.at(-1)?.prompt);
+writeFileSync("g7a-part2.json",JSON.stringify(out,null,1));

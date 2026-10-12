@@ -1,0 +1,13 @@
+Vòng 2 · Edgar Nguyen chấm Chưa đạt ở “Test hồi quy” → quay lại bước 1 · 03:09 13/10/26
+Thiếu ca hồi quy cho luồng đăng nhập
+---
+Bước 2
+×2 lần
+Test hồi quy
+Chưa tới
+Làm bởi Rà nguồn (fake-cli)
+Kết quả giai đoạn Test hồi quy · v1
+Rà soát code
+Chưa tới
+Làm bởi Rà nguồn (fake-cli)
+Kết quả giai đoạn Rà soát code · v1

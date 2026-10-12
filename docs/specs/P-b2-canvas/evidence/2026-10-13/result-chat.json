@@ -1,0 +1,42 @@
+[
+ {
+  "id": "C01",
+  "title": "thomas bắt đầu pb2-uat-edit trong phòng; StageStrip theo bước (bước 2 song song)",
+  "ok": true
+ },
+ {
+  "id": "C02",
+  "title": "stage 1 không có 'quay lại' (back_to rỗng): 'Chưa đạt' hành vi cũ, rồi Đạt => bước 2 chạy song song",
+  "ok": true
+ },
+ {
+  "id": "C03",
+  "title": "bước 2 cả hai chờ duyệt (nhóm 'Bước 2'); Đạt Rà soát chỉ đóng task stage đó, bước 3 chưa chạy",
+  "ok": true
+ },
+ {
+  "id": "C04",
+  "title": "edgar chấm Chưa đạt 'Test hồi quy': panel 'Quay lại bước 1', góp ý bắt buộc, cảnh báo còn 3 lần",
+  "ok": true
+ },
+ {
+  "id": "C05",
+  "title": "sau quay lại: DB (round 2, back_rounds=1, event), StageStrip ×2 + vệt 'Quay lại bước 1'",
+  "ok": true
+ },
+ {
+  "id": "C06",
+  "title": "trang Run: nhóm bước ×lần, Lịch sử quay lại (BackTimeline), tab phiên bản đầu ra",
+  "ok": true
+ },
+ {
+  "id": "C07",
+  "title": "quay lại thêm 2 lần (vòng 2, 3); lần 4 => needs_decision back_limit; 'Thêm 1 lần làm lại' chạy tiếp",
+  "ok": true
+ },
+ {
+  "id": "C08",
+  "title": "huỷ run khi một stage đã Đạt, stage kia (Claude thật) còn chạy => huỷ được",
+  "ok": true
+ }
+]

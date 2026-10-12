@@ -1,0 +1,5 @@
+{"status":422,"text":"{\"error\":{\"code\":\"PROCESS_DEF_INVALID\",\"message\":\"Invalid process definition\",\"details\":{\"paths\":[\"stages.1.after.back_to_steps.0\",\"stages.2.after.back_to_steps.0\",\"stages.3.step\",\"stages.3.after.back_to_steps.0\",\"stages.3.after.back_to_steps.1\"],\"rules\":[\"BACK_TARGET_INVALID\",\"BACK_TARGET_INVALID\",\"STEP_TOO_WIDE\",\"BACK_TARGET_INVALID\",\"BACK_TARGET_INVALID\"]}}}"}
+Phân tích: node="Giai đoạn 1: Phân tích Rà nguồn (fake-cli) Có người kiểm" | thông báo trong panel: []
+Rà soát code: node="Giai đoạn 3: Rà soát code Rà nguồn (fake-cli) Có người kiểm ↩ bước 1  / Có lỗi" | thông báo trong panel: []
+Test hồi quy: node="Giai đoạn 2: Test hồi quy Rà nguồn (fake-cli) Có người kiểm ↩ bước 1  / Có lỗi" | thông báo trong panel: []
+Tổng hợp: node="Giai đoạn 4: Tổng hợp Rà nguồn (fake-cli) Có người kiểm ↩ bước 1 ↩ bước 2  / Có lỗi" | thông báo trong panel: ["Quy trình chưa hợp lệ. Kiểm tra các ô báo lỗi."]

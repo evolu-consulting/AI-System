@@ -1,0 +1,3 @@
+run=cancelled; stages=Nhánh nhanh (fake):done | Nhánh chậm (Claude):cancelled | Chốt (fake):cancelled; jobs sau huỷ:
+cancelled|1
+succeeded|1
