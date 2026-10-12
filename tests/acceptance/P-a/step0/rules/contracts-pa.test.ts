@@ -159,7 +159,9 @@ describe("R-K01–K03 · hằng + mã lỗi [plan-contract §1, §4]", () => {
       "needs_decision",
     ]);
     expect([...(c.TEAM_MODES ?? [])]).toEqual(["sequential", "lead_plan", "parallel_merge"]);
-    expect([...(c.DECISION_REASONS ?? [])]).toHaveLength(15);
+    // P-b2 (plan §1.1, CR-064): +`back_limit` ở CUỐI mảng ⇒ 16.
+    expect([...(c.DECISION_REASONS ?? [])]).toHaveLength(16);
+    expect([...(c.DECISION_REASONS ?? [])].at(-1)).toBe("back_limit");
     expect([...(c.DECISION_OPTIONS ?? [])]).toEqual(["add_attempt", "use_current", "cancel"]);
     expect([...(c.ROOM_PROCESS_KINDS ?? [])]).toEqual([
       "block",
@@ -175,7 +177,7 @@ describe("R-K01–K03 · hằng + mã lỗi [plan-contract §1, §4]", () => {
       name: { vi: "Quy trình", en: "Processes" },
     });
   });
-  it("HUB-FR-105 · R-K02 · CHAT_PROCESS_ERRORS đúng 12 mã (gồm PROCESS_THREAD_NO_AGENT 422); HUB_ADMIN_PROCESS_ERRORS 5 mã", async () => {
+  it("HUB-FR-105 · R-K02 · CHAT_PROCESS_ERRORS đúng 13 mã (gồm PROCESS_THREAD_NO_AGENT 422; P-b2 thêm BACK_TARGET_INVALID 422); HUB_ADMIN_PROCESS_ERRORS 5 mã", async () => {
     const c = await loadChat();
     expect(c.CHAT_PROCESS_ERRORS).toEqual({
       PROCESS_NOT_FOUND: 404,
@@ -190,6 +192,7 @@ describe("R-K01–K03 · hằng + mã lỗi [plan-contract §1, §4]", () => {
       FORWARD_LIMIT: 409,
       FORWARD_OUT_OF_GROUP: 403,
       NOT_PROCESS_DECIDER: 403,
+      BACK_TARGET_INVALID: 422,
     });
     const h = await loadHubAdmin();
     expect(h.HUB_ADMIN_PROCESS_ERRORS).toEqual({
