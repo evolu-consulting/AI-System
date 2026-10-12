@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { asyncChunkSizes, checkBundle, initialAssets } from "./check-bundle";
+import { asyncChunkSizes, checkBundle, chunkBudget, initialAssets } from "./check-bundle";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -103,5 +103,17 @@ describe("ADM-NFR-06 · M2 · ngân sách chunk route", () => {
     expect(asyncChunkSizes(withChunks({}))).toEqual([]);
     const dir = withChunks({ "static/js/async/a.js.LICENSE.txt": noise(80) });
     expect(asyncChunkSizes(dir)).toEqual([]);
+  });
+
+  test("P-b2 · chunk canvas* có trần riêng 80 KB; chunk khác vẫn 50 KB", () => {
+    expect(chunkBudget("canvas.1a2b3c.js")).toBe(80 * 1024);
+    expect(chunkBudget("canvasx.js")).toBe(50 * 1024);
+    expect(chunkBudget("route.js")).toBe(50 * 1024);
+    const ok = withChunks({ "static/js/async/canvas.abc.js": noise(70) });
+    expect(checkBundle(ok).errors).toEqual([]);
+    const over = withChunks({ "static/js/async/canvas.abc.js": noise(90) });
+    expect(checkBundle(over).errors).toEqual([expect.stringContaining("> 80 KB")]);
+    const other = withChunks({ "static/js/async/other.js": noise(70) });
+    expect(checkBundle(other).errors).toEqual([expect.stringContaining("> 50 KB")]);
   });
 });

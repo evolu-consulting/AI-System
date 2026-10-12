@@ -1,99 +1,104 @@
-// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §1, FB3/FB7): bàn làm việc giai đoạn — thanh công cụ + danh sách/canvas theo bước
-// + panel bên (`complementary` "Chi tiết giai đoạn") chứa form của MỘT giai đoạn đang chọn (mặc định giai đoạn 1).
-import { useState } from "react";
+// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §1, FB3/FB7): bàn làm việc giai đoạn — thanh công cụ + tab Canvas/Danh sách
+// + panel bên chứa form của MỘT giai đoạn đang chọn (mặc định giai đoạn 1).
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
-import { useStageOps } from "../../hooks/use-stage-ops";
-import { StageForm } from "../editor/StageForm";
 import { CanvasToolbar } from "./CanvasToolbar";
+import { CanvasView } from "./CanvasView";
+import { ShortcutsHint } from "./ShortcutsHint";
+import { StagePanel } from "./StagePanel";
 import { StepList } from "./StepList";
-import { stageViews } from "./stage-view";
+import { type Mode, useWorkbench } from "./use-workbench";
 
 type Props = { d: DraftState; readOnly: boolean; refs: EditorRefs };
 
+function Empty({ onAdd, readOnly }: { onAdd: () => void; readOnly: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-start gap-2 rounded-md border border-dashed border-border p-4">
+      <p className="text-body text-muted-foreground">{t("process.admin.canvas.empty")}</p>
+      {readOnly ? null : (
+        <Button type="button" variant="outline" size="sm" autoFocus onClick={onAdd}>
+          {t("process.admin.canvas.toolbar.addStage")}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function StageWorkbench({ d, readOnly, refs }: Props) {
   const { t } = useTranslation();
-  const ops = useStageOps(d);
-  const [removing, setRemoving] = useState<string | null>(null);
-  const stages = d.draft.stages;
-  const sel = stages.find((s) => s.uid === d.selected) ?? stages[0];
-  const index = sel ? stages.indexOf(sel) : -1;
-  const views = stageViews(stages, d.errors, refs);
-  const target = stages.find((s) => s.uid === removing);
-
-  const select = (uid: string, byKeyboard: boolean) => {
-    d.select(uid);
-    if (byKeyboard) requestAnimationFrame(() => document.getElementById(`${uid}-name`)?.focus());
-  };
-  const remove = (i: number) => {
-    const next = stages[i + 1] ?? stages[i - 1];
-    if (next) d.select(next.uid);
-    d.removeStage(i);
-  };
-  const askRemove = (uid: string) => stages.length > 1 && setRemoving(uid);
+  const w = useWorkbench(d, refs);
+  const { ops, views } = w;
   const addStage = () => ops.add();
-  const addStep = () => ops.addStep(sel?.step ?? -1);
-
+  const viewProps = {
+    views,
+    selected: w.sel?.uid,
+    readOnly,
+    ops,
+    onSelect: w.select,
+    onRemove: w.askRemove,
+  };
   return (
     <div className="space-y-3">
-      {readOnly ? (
-        <p className="text-caption text-muted-foreground">{t("process.admin.canvas.readOnly")}</p>
-      ) : (
-        <CanvasToolbar count={stages.length} onAddStage={addStage} onAddStep={addStep} />
-      )}
-      {ops.notice ? (
-        <p role="alert" className="text-label text-destructive">
-          {ops.notice.error}
-        </p>
-      ) : null}
-      <div role="status" aria-live="polite" className="sr-only">
-        {ops.live}
-      </div>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1">
-          <StepList
-            views={views}
-            selected={sel?.uid}
-            readOnly={readOnly}
-            ops={ops}
-            onSelect={select}
-            onRemove={askRemove}
-          />
-        </div>
-        <aside
-          aria-label={t("process.admin.canvas.region")}
-          className="w-full shrink-0 lg:max-h-[640px] lg:w-[420px] lg:overflow-y-auto"
-        >
-          {sel ? (
-            <StageForm
-              key={sel.uid}
-              stage={sel}
-              index={index}
-              all={stages}
-              defSources={d.draft.sources}
-              errors={d.errors}
-              readOnly={readOnly}
-              refs={refs}
-              stepNotice={ops.notice?.uid === sel.uid ? ops.notice.error : undefined}
-              onChange={(p) => d.patchStage(index, p)}
-              onMove={(dir) => ops.moveColumn(index, dir)}
-              onStep={(step) => ops.setStep(index, step)}
-              onSplit={() => ops.split(index)}
-              onRemove={() => remove(index)}
+      <Tabs value={w.mode} onValueChange={(v) => w.setMode(v as Mode)}>
+        <div className="flex flex-wrap items-center gap-2">
+          {readOnly ? (
+            <p className="text-caption text-muted-foreground">
+              {t("process.admin.canvas.readOnly")}
+            </p>
+          ) : (
+            <CanvasToolbar
+              count={w.stages.length}
+              onAddStage={addStage}
+              onAddStep={() => ops.addStep(w.sel?.step ?? -1)}
             />
-          ) : null}
-        </aside>
-      </div>
+          )}
+          <div className="ml-auto flex items-center gap-1">
+            <TabsList aria-label={t("process.admin.canvas.view.label")}>
+              <TabsTrigger value="canvas">{t("process.admin.canvas.view.canvas")}</TabsTrigger>
+              <TabsTrigger value="list">{t("process.admin.canvas.view.list")}</TabsTrigger>
+            </TabsList>
+            <ShortcutsHint />
+          </div>
+        </div>
+        {ops.notice ? (
+          <p role="alert" className="mt-2 text-label text-destructive">
+            {ops.notice.error}
+          </p>
+        ) : null}
+        <div role="status" aria-live="polite" className="sr-only">
+          {ops.live}
+        </div>
+        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="min-w-0 flex-1">
+            {w.stages.length === 0 ? (
+              <Empty onAdd={addStage} readOnly={readOnly} />
+            ) : (
+              <>
+                <TabsContent value="canvas">
+                  <CanvasView {...viewProps} />
+                </TabsContent>
+                <TabsContent value="list">
+                  <StepList {...viewProps} />
+                </TabsContent>
+              </>
+            )}
+          </div>
+          <StagePanel d={d} w={w} readOnly={readOnly} refs={refs} />
+        </div>
+      </Tabs>
       <ConfirmDialog
-        open={target !== undefined}
-        onOpenChange={(o) => !o && setRemoving(null)}
-        title={t("process.admin.canvas.confirmRemove.title", { name: target?.name ?? "" })}
+        open={w.removing !== undefined}
+        onOpenChange={(o) => !o && w.closeRemove()}
+        title={t("process.admin.canvas.confirmRemove.title", { name: w.removing?.name ?? "" })}
         description={t("process.admin.canvas.confirmRemove.body")}
         confirmLabel={t("process.admin.editor.remove")}
         destructive
-        onConfirm={() => remove(stages.indexOf(target as NonNullable<typeof target>))}
+        onConfirm={() => w.remove(w.stages.findIndex((s) => s.uid === w.removing?.uid))}
       />
     </div>
   );

@@ -8,6 +8,8 @@ export const ROW_H = 120;
 export const NODE_W = 240;
 export const NODE_H = 88;
 export const HEADER_H = 56;
+/** Chiều cao node tiêu đề cột (cố định để xyflow biết kích thước ngay, không ẩn node chờ đo). */
+export const HEADER_NODE_H = 40;
 export const JOIN_W = 96;
 export const JOIN_H = 28;
 

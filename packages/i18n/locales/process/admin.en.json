@@ -326,6 +326,12 @@
       "step": "Invalid step numbers. Drag the stage into a valid column.",
       "realStep": "Real action needs every stage in the previous step to have a reviewer.",
       "backTarget": "You can only go back to steps before this stage."
+    },
+    "controls": {
+      "title": "Canvas controls",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "fit": "Fit view"
     }
   }
 }

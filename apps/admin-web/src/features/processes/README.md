@@ -24,3 +24,13 @@ Quy trình trong Evolu Control: danh sách + editor + trang lượt chạy (ADM-
 | Schema | `ProcessInputDefSchema`… import từ barrel `@ai/contracts/hub-admin` (định nghĩa ở `sources.ts`) |
 | Chuỗi | `locales/process/admin.*`, `inputs.*` |
 
+## P-b2 · Canvas theo bước (ADM-FR-71, HUB-FR-104/118, CR-063, ADR-0013)
+| File | Nội dung |
+|---|---|
+| `lib/step-ops.ts` · `canvas-layout.ts` · `canvas-keys.ts` · `step-label.ts` | thuần + test: đổi bước/thứ tự/tách/thêm/xoá (nén bước, remap `backTo`), bố cục cột (không lưu toạ độ), phím `Alt+mũi tên`, đếm bước từ 1 |
+| `lib/def-form.ts` | `StageDraft.step/backTo`, `canRealAction` theo bước, `validateSteps` (dùng `processDefStageIssues` của contract) |
+| `hooks/use-draft.ts` · `use-stage-ops.ts` | `selected` (uid), thao tác bước + thông báo (`aria-live`, lỗi inline) |
+| `components/editor/Stage*.tsx` | form giai đoạn tách nhỏ (#136); "Chạy ở bước", "Nếu bị trượt" ở `StageStepFields` |
+| `components/canvas/StageWorkbench` + `StepList` + `StagePanel` | thẻ Giai đoạn: toolbar, tab Canvas/Danh sách, panel `complementary` |
+| `components/canvas/CanvasView` → `ProcessCanvas` (lazy, chunk `canvas` + `canvas-vendor`) | xyflow 12.11.6: `StageNode`, `StepHeaderNode`, `JoinNode`, `BackEdge`; ngân sách chunk `canvas*` 80 KB ở `scripts/check-bundle.ts`; cacheGroup `canvasVendor` ở `rsbuild.config.ts` |
+

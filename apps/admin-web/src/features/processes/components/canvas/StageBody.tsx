@@ -8,34 +8,46 @@ import type { StageView } from "./stage-view";
 export function StageBody({ v }: { v: StageView }) {
   const { t } = useTranslation();
   const name = v.name || t("process.admin.editor.stage.unnamed");
+  // Chỉ dùng phần tử inline / inline-block cách nhau đúng một dấu cách ⇒ `innerText` là MỘT dòng (e2e so sánh chuỗi).
   return (
-    <span className="flex min-w-0 flex-col gap-1 text-left">
-      <span className="truncate text-label font-medium" title={name}>
+    <span className="block min-w-0 text-left">
+      <span className="inline-block w-full truncate text-label font-medium" title={name}>
         {t("process.admin.editor.stage.aria", { n: v.index + 1, name })}
-      </span>
+      </span>{" "}
       {v.executor ? (
-        <span className="truncate text-caption text-muted-foreground">{v.executor}</span>
+        <>
+          <span className="inline-block w-full truncate text-caption text-muted-foreground">
+            {v.executor}
+          </span>{" "}
+        </>
       ) : null}
-      <span className="flex flex-wrap items-center gap-1 text-caption text-muted-foreground">
+      <span className="inline-block w-full text-caption text-muted-foreground">
         {v.after === "review" ? (
-          <ShieldCheck aria-hidden className="size-3.5" />
+          <ShieldCheck aria-hidden className="mr-1 inline size-3.5 align-text-bottom" />
         ) : (
-          <Zap aria-hidden className="size-3.5" />
+          <Zap aria-hidden className="mr-1 inline size-3.5 align-text-bottom" />
         )}
-        <span>
-          {t(`process.admin.canvas.node.${v.after === "review" ? "gateReview" : "gateAuto"}`)}
-        </span>
-        {v.real ? <Badge variant="info">{t("process.admin.canvas.node.real")}</Badge> : null}
+        {t(`process.admin.canvas.node.${v.after === "review" ? "gateReview" : "gateAuto"}`)}
+        {v.real ? (
+          <>
+            {" "}
+            <Badge variant="info">{t("process.admin.canvas.node.real")}</Badge>
+          </>
+        ) : null}
         {v.backTo.map((s) => (
-          <Badge key={s} variant="warn">
-            {t("process.admin.canvas.node.back", { step: s + 1 })}
-          </Badge>
+          <span key={s}>
+            {" "}
+            <Badge variant="warn">{t("process.admin.canvas.node.back", { step: s + 1 })}</Badge>
+          </span>
         ))}
         {v.hasError ? (
-          <Badge variant="err">
-            <CircleAlert aria-hidden />
-            {t("process.admin.canvas.node.error")}
-          </Badge>
+          <>
+            {" "}
+            <Badge variant="err">
+              <CircleAlert aria-hidden />
+              {t("process.admin.canvas.node.error")}
+            </Badge>
+          </>
         ) : null}
       </span>
     </span>

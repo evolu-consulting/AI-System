@@ -1,0 +1,204 @@
+// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend FB1/FB2/FB4/FB9, ADR-0013): canvas xyflow — lazy chunk `canvas`.
+// nodes/edges là DẪN XUẤT từ bản nháp (không giữ state riêng); kéo thả `onNodeDragStop` ⇒ `ops.setStep`; cột đầy ⇒ trượt về chỗ cũ.
+import "@xyflow/react/dist/base.css";
+import {
+  Background,
+  Controls,
+  type Edge,
+  MarkerType,
+  type Node,
+  type NodeChange,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+  type XYPosition,
+} from "@xyflow/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  HEADER_NODE_H,
+  JOIN_H,
+  JOIN_W,
+  layoutSteps,
+  NODE_H,
+  NODE_W,
+  stepFromDropX,
+} from "../../lib/canvas-layout";
+import { countAtStep } from "../../lib/step-ops";
+import { BackEdge } from "./BackEdge";
+import { BlockedStepCtx, type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
+import { JoinNode } from "./JoinNode";
+import { StageNode } from "./StageNode";
+import { StepHeaderNode } from "./StepHeaderNode";
+import type { StageView } from "./stage-view";
+
+const nodeTypes = { stage: StageNode, stepHeader: StepHeaderNode, join: JoinNode };
+const edgeTypes = { back: BackEdge };
+const FIT = { padding: 0.15, maxZoom: 1 } as const;
+const reduceMotion = (): boolean => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+export type ProcessCanvasProps = CanvasHandlers & {
+  views: readonly StageView[];
+  selected: string | undefined;
+};
+
+function useFlowGraph(p: ProcessCanvasProps, resetTick: number) {
+  const { views, selected, readOnly } = p;
+  // `resetTick` ép tạo lại mảng nodes ⇒ node bị từ chối trượt về vị trí gốc.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: resetTick chủ ý
+  return useMemo(() => {
+    const lay = layoutSteps(views);
+    const byUid = new Map(views.map((v) => [v.uid, v]));
+    const nodes: Node[] = lay.nodes.map((n) => {
+      // `measured` đặt sẵn (kích thước đã biết) ⇒ xyflow không ẩn node chờ đo mỗi lần bố cục đổi.
+      const size =
+        n.kind === "stage"
+          ? { width: NODE_W, height: NODE_H }
+          : n.kind === "join"
+            ? { width: JOIN_W, height: JOIN_H }
+            : { width: NODE_W, height: HEADER_NODE_H };
+      const base = { id: n.id, position: { x: n.x, y: n.y }, type: n.kind, measured: size };
+      if (n.kind === "stage")
+        return {
+          ...base,
+          data: { v: byUid.get(n.id), selected: n.id === selected, readOnly },
+          draggable: !readOnly,
+          selectable: false,
+          focusable: false,
+        };
+      const data =
+        n.kind === "stepHeader" ? { step: n.step, full: n.full, readOnly } : { count: n.count };
+      return { ...base, data, draggable: false, selectable: false, focusable: false };
+    });
+    const edges: Edge[] = lay.edges.map((e) =>
+      e.kind === "back"
+        ? {
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            type: "back",
+            sourceHandle: "back",
+            targetHandle: "back-in",
+            focusable: false,
+            markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-warning)" },
+          }
+        : {
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            focusable: false,
+            markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-muted-foreground)" },
+            style: { stroke: "var(--color-muted-foreground)" },
+          },
+    );
+    return { nodes, edges, steps: lay.steps };
+  }, [views, selected, readOnly, resetTick]);
+}
+
+function Flow(p: ProcessCanvasProps) {
+  const { t } = useTranslation();
+  const rf = useReactFlow();
+  const [tick, setTick] = useState(0);
+  const [blocked, setBlocked] = useState<number | null>(null);
+  const handlers = useRef<CanvasHandlers>(p);
+  handlers.current = p;
+  const g = useFlowGraph(p, tick);
+  // Kéo: xyflow ở chế độ điều khiển chỉ phát `position`; ta ghi vị trí tạm để node đi theo chuột, thả xong thì xoá.
+  const [drag, setDrag] = useState<Record<string, XYPosition>>({});
+  const lastPos = useRef<Record<string, XYPosition>>({});
+  const onNodesChange = useCallback((cs: NodeChange[]) => {
+    const moved: Record<string, XYPosition> = {};
+    for (const c of cs)
+      if (c.type === "position" && c.dragging && c.position) moved[c.id] = c.position;
+    if (Object.keys(moved).length === 0) return;
+    Object.assign(lastPos.current, moved);
+    setDrag((d) => ({ ...d, ...moved }));
+  }, []);
+  const nodes = useMemo(
+    () =>
+      Object.keys(drag).length
+        ? g.nodes.map((n) => (drag[n.id] ? { ...n, position: drag[n.id] as XYPosition } : n))
+        : g.nodes,
+    [g.nodes, drag],
+  );
+  const stepsKey = `${g.steps}:${p.views.length}`;
+  // chỉ khi số bước / số giai đoạn đổi (`rf` ổn định)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: stepsKey chủ ý
+  useEffect(() => {
+    const id = window.setTimeout(
+      () => void rf.fitView({ ...FIT, duration: reduceMotion() ? 0 : 200 }),
+      60,
+    );
+    return () => window.clearTimeout(id);
+  }, [stepsKey]);
+
+  const target = (node: Node): { v: StageView; step: number } | null => {
+    const v = p.views.find((x) => x.uid === node.id);
+    const x = (lastPos.current[node.id] ?? node.position).x;
+    return v ? { v, step: stepFromDropX(x, g.steps) } : null;
+  };
+  const onDrag = (_: unknown, node: Node) => {
+    const t0 = target(node);
+    const full =
+      t0 && t0.step !== t0.v.step && countAtStep(p.views, t0.step, t0.v.uid) >= 3 ? t0.step : null;
+    setBlocked((prev) => (prev === full ? prev : full));
+  };
+  const onDragStop = (_: unknown, node: Node) => {
+    setBlocked(null);
+    const t0 = target(node);
+    lastPos.current = {};
+    setDrag({});
+    if (!t0) return;
+    if (t0.step !== t0.v.step) p.ops.setStep(t0.v.index, t0.step);
+    setTick((n) => n + 1);
+  };
+
+  return (
+    <HandlersCtx.Provider value={handlers}>
+      <BlockedStepCtx.Provider value={blocked}>
+        <ReactFlow
+          nodes={nodes}
+          onNodesChange={onNodesChange}
+          edges={g.edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          aria-label={t("process.admin.canvas.title")}
+          ariaLabelConfig={{
+            "controls.ariaLabel": t("process.admin.canvas.controls.title"),
+            "controls.zoomIn.ariaLabel": t("process.admin.canvas.controls.zoomIn"),
+            "controls.zoomOut.ariaLabel": t("process.admin.canvas.controls.zoomOut"),
+            "controls.fitView.ariaLabel": t("process.admin.canvas.controls.fit"),
+          }}
+          fitView
+          fitViewOptions={FIT}
+          minZoom={0.1}
+          maxZoom={1.5}
+          nodesDraggable={!p.readOnly}
+          nodesConnectable={false}
+          nodesFocusable={false}
+          edgesFocusable={false}
+          elementsSelectable={false}
+          deleteKeyCode={null}
+          disableKeyboardA11y
+          zoomOnScroll={false}
+          preventScrolling={false}
+          onNodeDrag={onDrag}
+          onNodeDragStop={onDragStop}
+        >
+          <Background gap={20} />
+          <Controls showInteractive={false} />
+        </ReactFlow>
+      </BlockedStepCtx.Provider>
+    </HandlersCtx.Provider>
+  );
+}
+
+export default function ProcessCanvas(p: ProcessCanvasProps) {
+  return (
+    <div className="h-[520px] overflow-hidden rounded-md border border-border bg-background">
+      <ReactFlowProvider>
+        <Flow {...p} />
+      </ReactFlowProvider>
+    </div>
+  );
+}

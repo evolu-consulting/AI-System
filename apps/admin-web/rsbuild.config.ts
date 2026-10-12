@@ -24,6 +24,21 @@ export default defineConfig({
   },
   tools: {
     rspack: {
+      optimization: {
+        splitChunks: {
+          cacheGroups: {
+            // ADR-0013 #2: xyflow + phụ thuộc gom vào chunk async tên `canvas-vendor` (chỉ nạp cùng chunk `canvas`),
+            // ngân sách riêng 80 KB ở scripts/check-bundle.ts; không lọt vào bundle tải ban đầu.
+            canvasVendor: {
+              test: /node_modules[\\/](?:\.bun[\\/][^\\/]+[\\/]node_modules[\\/])?(?:@xyflow|classcat|zustand)[\\/]/,
+              name: "canvas-vendor",
+              chunks: "async",
+              priority: 40,
+              enforce: true,
+            },
+          },
+        },
+      },
       plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true })],
       module: {
         rules: [

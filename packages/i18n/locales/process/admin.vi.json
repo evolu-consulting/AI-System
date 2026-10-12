@@ -326,6 +326,12 @@
       "step": "Số bước không hợp lệ. Hãy kéo giai đoạn vào đúng cột.",
       "realStep": "Hành động thật chỉ dùng được khi mọi giai đoạn của bước trước đều có người kiểm.",
       "backTarget": "Chỉ quay lại được các bước đứng trước giai đoạn này."
+    },
+    "controls": {
+      "title": "Điều khiển canvas",
+      "zoomIn": "Phóng to",
+      "zoomOut": "Thu nhỏ",
+      "fit": "Vừa khung"
     }
   }
 }
