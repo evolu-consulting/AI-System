@@ -7,8 +7,10 @@ import { useTranslation } from "react-i18next";
 import { OutputView } from "../../shared/components/OutputView";
 import { StageStrip } from "../../shared/components/StageStrip";
 import { TaskPanel } from "../../shared/components/TaskPanel";
+import { groupTasksByStep } from "../../shared/lib/steps";
 import { pendingDecisionTask } from "../../shared/lib/thread-task";
 import { StageOutputs } from "./StageOutputs";
+import { StepSection } from "./StepSection";
 import { TaskAccessBanner } from "./TaskAccessBanner";
 
 export function ProgressTab({ view }: { view: ProcessRunView }) {
@@ -25,9 +27,7 @@ export function ProgressTab({ view }: { view: ProcessRunView }) {
           .map((s) => (
             <StageOutputs key={s.idx} runId={view.id} stage={s} />
           ))}
-        {view.my_tasks.map((task) => (
-          <TaskPanel key={task.id} runId={view.id} task={task} view={view} />
-        ))}
+        <StepTasks view={view} />
         {decision && <TaskPanel key={decision.id} runId={view.id} task={decision} view={view} />}
       </div>
     );
@@ -35,14 +35,35 @@ export function ProgressTab({ view }: { view: ProcessRunView }) {
   return <TaskProgress view={view} />;
 }
 
+/** Q7: việc mở của ≥ 2 giai đoạn cùng bước ⇒ gom dưới `group` "Bước n"; còn lại hiện trần như cũ. */
+function StepTasks({ view }: { view: ProcessRunView }) {
+  const groups = groupTasksByStep(view.my_tasks, view.stages);
+  return groups.map((g) => {
+    const cards = g.tasks.map((task) => (
+      <TaskPanel
+        key={task.id}
+        runId={view.id}
+        task={task}
+        view={view.access === "full" ? view : undefined}
+      />
+    ));
+    const open = g.tasks.filter((x) => x.status === "open").length;
+    return open >= 2 ? (
+      <StepSection key={g.step} step={g.step}>
+        {cards}
+      </StepSection>
+    ) : (
+      cards
+    );
+  });
+}
+
 function TaskProgress({ view }: { view: ProcessRunTaskView }) {
   return (
     <div className="flex flex-col gap-4 p-4">
       <TaskAccessBanner hasTasks={view.my_tasks.length > 0} />
       <StageStrip stages={view.stages} />
-      {view.my_tasks.map((task) => (
-        <TaskPanel key={task.id} runId={view.id} task={task} />
-      ))}
+      <StepTasks view={view} />
       {view.outputs && view.outputs.length > 0 && (
         <TaskOutputs runId={view.id} outputs={view.outputs} view={view} />
       )}

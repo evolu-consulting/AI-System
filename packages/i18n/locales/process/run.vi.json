@@ -65,7 +65,19 @@
     "taken": "Đã có người khác quyết",
     "passed": "Đã duyệt giai đoạn {{stage}}",
     "sent": "Đã gửi góp ý. {{agent}} sẽ làm lại ({{n}} lần còn lại)",
-    "closed": "{{name}} · {{result}} · {{time}}"
+    "closed": "{{name}} · {{result}} · {{time}}",
+    "failAs": "Chưa đạt thì…",
+    "redoThis": "Làm lại giai đoạn này",
+    "backTo": "Quay lại bước {{step}}",
+    "backToHint": "Chạy lại: {{names}}",
+    "backWarn": "Còn {{n}} lần quay lại. Các bước từ {{step}} trở đi sẽ chạy lại; kết quả cũ vẫn xem được.",
+    "panelFeedback": "Góp ý",
+    "sendFail": "Gửi chưa đạt",
+    "wentBack": "Đã quay lại bước {{step}}. Các giai đoạn sẽ chạy lại với góp ý của bạn.",
+    "sentDecider": "Đã gửi góp ý. Lượt chạy chuyển cho người quyết.",
+    "superseded": "Giai đoạn này vừa được xử lý ở bước khác. Đã cập nhật.",
+    "backLimitNote": "Đã hết {{max}} lần quay lại. Gửi sẽ chuyển cho người quyết.",
+    "backInvalid": "Không quay lại được bước này nữa. Đã cập nhật."
   },
   "decision": {
     "region": "Cần người quyết",

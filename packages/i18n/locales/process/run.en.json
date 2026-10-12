@@ -65,7 +65,19 @@
     "taken": "Someone else already decided",
     "passed": "Stage {{stage}} approved",
     "sent": "Feedback sent. {{agent}} will rework it ({{n}} left)",
-    "closed": "{{name}} · {{result}} · {{time}}"
+    "closed": "{{name}} · {{result}} · {{time}}",
+    "failAs": "If not passed…",
+    "redoThis": "Redo this stage",
+    "backTo": "Go back to step {{step}}",
+    "backToHint": "Reruns: {{names}}",
+    "backWarn": "{{n}} go-back(s) left. Steps from {{step}} onward will rerun; earlier results stay viewable.",
+    "panelFeedback": "Feedback",
+    "sendFail": "Submit not passed",
+    "wentBack": "Went back to step {{step}}. The stages will rerun with your feedback.",
+    "sentDecider": "Feedback sent. The run was handed to the decider.",
+    "superseded": "This stage was just handled elsewhere. Refreshed.",
+    "backLimitNote": "No go-backs left (max {{max}}). Submitting sends this to the decider.",
+    "backInvalid": "You can't go back to that step anymore. Refreshed."
   },
   "decision": {
     "region": "Needs a decision",

@@ -1,6 +1,6 @@
 // CHAT-AC-59 · AC-PB2-01 · luật thuần gom bước.
 import { describe, expect, test } from "bun:test";
-import { groupBySteps, groupRound, showSteps, stepNo } from "./steps";
+import { groupBySteps, groupRound, groupTasksByStep, showSteps, stepNo } from "./steps";
 
 const s = (idx: number, step?: number, round?: number) => ({ idx, step, round });
 
@@ -39,5 +39,27 @@ describe("showSteps / groupRound / stepNo", () => {
     const g = groupBySteps([s(0, 0, 3), s(1, 0, 1)])[0];
     expect(g && groupRound(g)).toBe(3);
     expect(stepNo(0)).toBe(1);
+  });
+});
+
+describe("groupTasksByStep (Q7)", () => {
+  const stages = [s(0, 0), s(1, 1), s(2, 1), s(3, 2)];
+  test("việc cùng bước vào cùng nhóm, bước tăng dần", () => {
+    const g = groupTasksByStep(
+      [
+        { stage_idx: 2, id: "b" },
+        { stage_idx: 0, id: "a" },
+        { stage_idx: 1, id: "c" },
+      ],
+      stages,
+    );
+    expect(g.map((x) => [x.step, x.tasks.map((t) => t.id)])).toEqual([
+      [0, ["a"]],
+      [1, ["b", "c"]],
+    ]);
+  });
+  test("stage không step ⇒ nhóm theo idx", () => {
+    const g = groupTasksByStep([{ stage_idx: 1 }], [s(0), s(1)]);
+    expect(g.map((x) => x.step)).toEqual([1]);
   });
 });

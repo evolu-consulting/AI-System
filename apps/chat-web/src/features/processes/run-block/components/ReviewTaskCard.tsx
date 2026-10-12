@@ -11,6 +11,8 @@ import { ForwardAction } from "../../ask/components/ForwardAction";
 import { useThreadBinding } from "../../shared/thread/thread-binding";
 import type { TaskCardProps } from "../../shared/types";
 import { useReviewDecision } from "../hooks/use-review-actions";
+import { reviewErrorMessage as errorMessage } from "../lib/review-error";
+import { ReviewFailPanel } from "./ReviewFailPanel";
 
 function agentOf(view: TaskCardProps["view"], stageIdx: number, lng: string): string {
   if (view?.access !== "full") return "";
@@ -23,15 +25,14 @@ function reworksLeft(view: TaskCardProps["view"], stageIdx: number): number {
   return s ? Math.max(s.attempt_limit - s.attempt, 0) : 0;
 }
 
-/** `null` ⇒ việc đã đóng, thoát êm (toast "taken"); ngược lại ⇒ thông điệp lỗi để composer/ô inline hiện. */
-function errorMessage(err: unknown, t: ReturnType<typeof useTranslation>["t"]): string | null {
-  if (err instanceof ApiError) {
-    if (err.code === "REVIEW_TASK_CLOSED") return null;
-    const key = `process.common.apiError.${err.code}`;
-    const msg = t(key);
-    if (msg !== key) return msg;
-  }
-  return t("process.common.error.network");
+/** P-b2 · tên các giai đoạn của bước `step` (0-based) trong view đầy đủ, để gợi ý "Chạy lại: …". */
+function namesOfStep(view: TaskCardProps["view"]): ((step: number) => string) | undefined {
+  if (view?.access !== "full") return undefined;
+  return (step) =>
+    view.stages
+      .filter((s) => (s.step ?? s.idx) === step)
+      .map((s) => s.name)
+      .join(", ");
 }
 
 export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps) {
@@ -43,6 +44,7 @@ export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps)
   const [feedback, setFeedback] = useState("");
   const agent = agentOf(view, task.stage_idx, i18n.language);
   const left = reworksLeft(view, task.stage_idx);
+  const hasBack = (task.back_steps?.length ?? 0) > 0;
 
   const onClosed = useCallback(() => {
     toast.message(t("process.run.review.taken"));
@@ -89,12 +91,12 @@ export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps)
   }, [sendFail, feedback]);
 
   const startFail = useCallback(() => {
-    if (binding) {
+    if (binding && !hasBack) {
       binding.begin({ kind: "feedback", taskId: task.id, agent, submit: sendFail });
     } else {
       setInlineFail(true);
     }
-  }, [binding, task.id, agent, sendFail]);
+  }, [binding, hasBack, task.id, agent, sendFail]);
 
   if (!task.can_act) return null;
   const over = feedback.length > FEEDBACK_MAX;
@@ -120,6 +122,20 @@ export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps)
             excludeIds={new Set(task.forwards.map((f) => f.to.id))}
           />
         </div>
+      ) : hasBack ? (
+        <ReviewFailPanel
+          runId={runId}
+          task={task}
+          stageNames={namesOfStep(view)}
+          backMax={view?.access === "full" ? view.back_limit : undefined}
+          agent={agent}
+          left={left}
+          onSent={() => {
+            onResolved?.("fail");
+            setInlineFail(false);
+          }}
+          onCancel={() => setInlineFail(false)}
+        />
       ) : (
         <div className="flex flex-col gap-2">
           <Textarea

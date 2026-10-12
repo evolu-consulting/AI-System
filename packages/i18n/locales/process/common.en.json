@@ -65,5 +65,6 @@
     "PROCESS_RUN_STATE": "The run's state changed. Reloaded.",
     "NO_OUTPUT": "There is no output version to use yet.",
     "NOT_PROCESS_DECIDER": "You aren't allowed to decide this run."
-  }
+  },
+  "back_limit": "Reached the maximum of {{max}} go-backs without approval."
 }

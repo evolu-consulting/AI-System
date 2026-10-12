@@ -65,5 +65,6 @@
     "PROCESS_RUN_STATE": "Lượt chạy đã đổi trạng thái. Đã tải lại.",
     "NO_OUTPUT": "Chưa có bản kết quả nào để dùng.",
     "NOT_PROCESS_DECIDER": "Bạn không có quyền quyết định lượt chạy này."
-  }
+  },
+  "back_limit": "Đã quay lại tối đa {{max}} lần mà chưa đạt."
 }

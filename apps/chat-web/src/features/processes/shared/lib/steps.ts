@@ -35,3 +35,26 @@ export const groupRound = (g: StepGroup<StepItem & { round?: number }>): number 
 
 /** Số bước của run ở dạng UI: `step + 1`. */
 export const stepNo = (step: number): number => step + 1;
+
+/** Bước (0-based) của mỗi giai đoạn: idx → step (cùng luật `groupBySteps`). */
+export function stepOfStages(stages: readonly StepItem[]): Map<number, number> {
+  const m = new Map<number, number>();
+  for (const g of groupBySteps(stages)) for (const s of g.items) m.set(s.idx, g.step);
+  return m;
+}
+
+/** Q7 · xếp việc theo bước của giai đoạn (bước tăng dần, giữ thứ tự gốc trong bước). */
+export function groupTasksByStep<T extends { stage_idx: number }>(
+  tasks: readonly T[],
+  stages: readonly StepItem[],
+): { step: number; tasks: T[] }[] {
+  const of = stepOfStages(stages);
+  const by = new Map<number, T[]>();
+  for (const t of tasks) {
+    const k = of.get(t.stage_idx) ?? t.stage_idx;
+    const g = by.get(k);
+    if (g) g.push(t);
+    else by.set(k, [t]);
+  }
+  return [...by.keys()].sort((a, b) => a - b).map((k) => ({ step: k, tasks: by.get(k) as T[] }));
+}
