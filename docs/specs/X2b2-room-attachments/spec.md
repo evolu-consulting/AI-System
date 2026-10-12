@@ -68,12 +68,29 @@ H2c-R01…R29 (loại/cỡ/tên/sniff/hạn mức/vòng đời) áp **nguyên v�
 | X2b2-R22 | Audit/log: không ghi tên file hay nội dung vào log; chỉ `attachment_id`, `room_id`, `tenant_id` | CONVENTIONS |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead -->
-Gợi ý ranh giới (PLAN chốt): `@ai/contracts/chat` **chỉ thêm** — `attachment_ids?` vào body tin phòng, `RoomMessage.attachments?`; không đổi `CHAT_ATTACHMENT_ERRORS`, `CHAT_ROOM_ERRORS` (test khoá). `GET /attachments/:id[/content]` đổi chủ thể đọc (chủ file **hoặc** thành viên phòng).
+<!-- backend-lead · chi tiết: plan.md §2–§3 -->
+`@ai/contracts/chat/rooms.ts` **chỉ thêm** (export C1 không đổi):
+| Schema | Trường | Ràng buộc |
+|---|---|---|
+| `SendRoomMessageRequest` | `attachment_ids?: uuid[]` | 1…10, không trùng (`"duplicate"`), y hệt E12; server chuẩn hoá chữ thường |
+| `RoomMessage` (kéo theo `room.message`, trang tin) | `attachments?: AttachmentRef[]` | 1…10, thứ tự `position`; vắng khi không file; `available = purged_at IS NULL` |
+
+Thứ tự kiểm `POST /rooms/:id/messages`: 401 → 404 `ROOM_NOT_FOUND` → 400 zod → 400 tin timeline `!…` kèm file (D8) → trùng `client_msg_id` ⇒ 200 tin cũ → 404 `ATTACHMENT_NOT_FOUND{ids}` → đường X2b/P-a cũ → tx gắn (thiếu ⇒ 404, ROLLBACK) → 201. `GET /attachments/:id[/content]`: đọc được ⇔ (`room_id` NULL ∧ chủ ∧ hội thoại chưa xoá) ∨ (`room_id` ≠ NULL ∧ thành viên hiện tại); khác ⇒ 404 `NOT_FOUND`. Không mã lỗi mới; `CHAT_ATTACHMENT_ERRORS`/`CHAT_ROOM_ERRORS` giữ.
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead -->
-Gợi ý (PLAN chốt): migration `0023_x2b2_room_attachments.sql` — `attachments.room_id`, `room_message_id` (FK `room_messages` ON DELETE SET NULL), CHECK gắn hoặc `message_id` hoặc `room_message_id` (không cả hai), policy `SELECT` bổ sung theo `hub.is_room_member(room_id)` (ghi vẫn chỉ chủ file), index sweeper phòng. Không sửa migration cũ.
+<!-- backend-lead · chi tiết: plan.md §4–§7 -->
+Migration `0023_x2b2_room_attachments.sql` (idx 23, idempotent; không sửa migration cũ):
+| Đối tượng | Chốt |
+|---|---|
+| Cột | `attachments.room_id uuid NULL`, `room_message_id uuid NULL` |
+| FK | `(room_id, tenant_id) → rooms(id, tenant_id)`; `(room_message_id, room_id) → room_messages(id, room_id) ON DELETE SET NULL (room_message_id)` + UNIQUE `room_messages(id, room_id)` |
+| CHECK | `attachments_room_bound_ck`: `room_id` ≠ NULL ⇒ `message_id`, `conversation_id`, `flow_id` NULL ∧ `bound_at`, `position` 0…9; `attachments_room_msg_ck`: `room_message_id` ⇒ `room_id` |
+| "Chưa gắn" | `message_id IS NULL AND room_id IS NULL` — sửa E12/sweeper R27/output (plan §5) |
+| RLS | siết `attachments_hub_rw` (chủ chỉ thấy file phòng khi còn là thành viên) + `attachments_room_member_select` (SELECT, thành viên hiện tại, cùng tenant); ghi chỉ chủ |
+| Definer | `hub.attach_claim_deleted_rooms(now, limit)` chỉ scope `system` (RLS `rooms` không có nhánh system) |
+| Index | `attachments_room_message_idx (room_message_id, position)`, `attachments_room_live_idx (room_id) WHERE purged_at IS NULL`, `rooms_deleted_idx` |
+
+Run phòng: file-set = file của tin gọi + cửa sổ ngữ cảnh (gồm tin agent), chốt `runs.attachment_ids` trong tx gọi; `createRunTx` bỏ chọn file H2c cho run phòng. `out/`: `SseWriter` không gắn khi run phòng; poster tx2 gắn vào tin agent khi `finished` ∧ `posted`. Sweeper: (b2) phòng xoá ⇒ `purged_at` + xoá nội dung (chu kỳ 600 s). Quota: không đổi (tenant, H2c-R16).
 
 ## 5. UI (frontend-lead)
 Chi tiết: [`plan-frontend.md`](plan-frontend.md). **Không artboard mới** — tái dùng composer + chip tệp C1 (`Composer attachments`, `AttachBar`, `AttachmentList`). Contract tiêu thụ (backend-lead thêm, "Cần từ backend" trong plan-frontend §6): `SendRoomMessageRequest.attachment_ids?`, `RoomMessage.attachments?: AttachmentRef[]`.
@@ -143,10 +160,13 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 | Q15 | Xem trước (preview) ảnh/PDF trong phòng? | Không — tải/mở như C1 | Thấp |
 | Q16 | Dify agent (`dify-*`) qua `@` có nhận file phòng? | **Có**, dùng chung đường file-set H2c (R22 H2c upload lên Dify); PLAN xác nhận hai đường chạy cùng `runs.attachment_ids` | Thường |
 
+**PLAN BE (2026-10-12, plan §13):** giữ mặc định Q1, Q2, Q4 (+ siết policy chủ), Q5 (cửa sổ gồm tin agent), Q6, Q7, Q9–Q11, Q13; Q12 cụ thể: tin timeline `!…` kèm file ⇒ 400 như hôm nay; **Q16 đổi**: runner `dify-agent`/`dify-workflow` không dùng file (code hiện tại, H2c T11) — file-set vẫn ghi `runs.attachment_ids`, công cụ MCP Dify trong job CLI vẫn nhận file.
+
 ## 10. Quyết định
 ### Trước Gate (đã chốt với người dùng)
 - 2026-10-08: tách đính kèm khỏi X2b thành X2b-2; X2b trả 400 khi có `attachment_ids` (spec-decisions X2b Q9).
 - 2026-10-10: thứ tự `P-a → X2b-2 → H4b → P-b → P-c`; 2026-10-12 (CR-062…066): `X2b-2 → H4b → P-b2 → K1 → P-c → K2`.
+- 2026-10-12 PLAN BE: D1–D13 ở `plan.md` §1 (migration 0023, "chưa gắn" = 2 cột NULL, FK kép, siết RLS chủ, definer sweeper, `!…`+file 400, Q16 đổi).
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - (chưa có)
 
@@ -160,4 +180,4 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 | Phình mốc (BE ≈ 450 dòng TS + 120 SQL, FE ≈ 300) | PLAN tách task: B1 migration+RLS (cao), B2 gắn+đọc (cao), B3 file-set+`out/` (cao), B4 sweeper, F1 composer+chip |
 
 ## 12. Tranh chấp test
-- (không)
+- Dự kiến (PLAN, thay có chủ đích — chỉ qc sửa): `tests/acceptance/X2b/context.int.test.ts` "X2b-AC11 · attachment_ids vào tin phòng → 400" và `tests/acceptance/X2b/rules/contracts-x2b.test.ts` K5 dòng `attachment_ids ⇒ false` (plan §12). Test "run phòng không mang file" giữ.
