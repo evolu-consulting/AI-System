@@ -113,7 +113,7 @@ Không siết hơn CONVENTIONS §6 (perf không chặn mốc). Mốc đo gợi �
 |---|---|
 | H2c Storage `local` + sweeper | `HUB_ATTACH_DRIVER=local`, `HUB_ATTACH_DIR` tuyệt đối, đồng hồ sweeper tiêm (`sweepOnce`) |
 | X2a/X2b phòng, `/me/stream`, room-run | `done:x2a`, `done:x2b`; 3 user cùng tenant + 1 user tenant khác |
-| Agent đọc file / ghi `out/` | `fake-cli` directive `#fake:files`, `#fake:out=…`; Runtime dev (Docker) |
+| Agent đọc file / ghi `out/` | int: `jobFetch`/`jobOutput` (`_x2b2.ts`, token job); e2e: `FakeRuntime` TS op `/rt/output` |
 | Dify | Không dùng (không có `/` trong phòng); không chạm Dify thật |
 
 Env mới: không dự kiến.
@@ -126,19 +126,19 @@ Env mới: không dự kiến.
 | X2b2-AC03 | (R02) Id của người khác / đã gắn / hết hạn / của hội thoại riêng / phòng khác (đã gắn) → 404 `ATTACHMENT_NOT_FOUND{ids}` đúng thứ tự gửi, 0 tin, 0 run; 2 POST song song cùng id ⇒ 1 × 201, 1 × 404, file gắn 1 tin | int |
 | X2b2-AC04 | (R03) Thứ tự lỗi: không phải thành viên + id sai ⇒ 404 `ROOM_NOT_FOUND`; id sai + `@x` không quyền ⇒ 404 `ATTACHMENT_NOT_FOUND` trước `AGENT_NOT_FOUND`; `TOO_MANY_RUNS` 429 ⇒ rollback, file còn chưa gắn, gửi lại được | int |
 | X2b2-AC05 | (R04) 11 id / id trùng / `content` rỗng với file ⇒ 400 `VALIDATION_ERROR`; `client_msg_id` trùng ⇒ 200 tin cũ, file không gắn lại; loại/cỡ/hạn mức tenant lỗi ở upload (415/413/409) như H2c | int |
-| X2b2-AC06 | (R07, FR-101) A gửi `hoadon.pdf` rồi "@hoadon kiểm tra file": `runs.attachment_ids=[hoadon.pdf]`, `#fake:files` thấy đúng `name:sha256`; B (không có quyền `hoadon`) vẫn xem kết quả | int + acceptance |
-| X2b2-AC07 | (R08, BR-21) A có file riêng `rieng.pdf` ở hội thoại riêng và file `phongkhac.pdf` ở phòng P2; gọi `@hoadon` trong P1 ⇒ file-set không chứa hai file đó; `#fake:read=` đường dẫn job khác ⇒ deny; token job/phòng khác ⇒ 401 | acceptance |
+| X2b2-AC06 | (R07, FR-101) A gửi `hoadon.pdf` rồi "@hoadon kiểm tra file": `runs.attachment_ids=[hoadon.pdf]`, `jobFetch` (`_x2b2.ts`) thấy đúng `name:sha256`; B (không có quyền `hoadon`) vẫn xem kết quả | int + acceptance |
+| X2b2-AC07 | (R08, BR-21) A có file riêng `rieng.pdf` ở hội thoại riêng và file `phongkhac.pdf` ở phòng P2; gọi `@hoadon` trong P1 ⇒ file-set không chứa hai file đó; deny sandbox: H2c `files.stack.test.ts` (trong `done:h2c`); token job khác ⇒ 401 | acceptance |
 | X2b2-AC08 | (R07) Phòng 30 tin, file ở tin thứ 3 (ngoài 20 tin gần nhất) ⇒ không vào file-set; trong thread: file ở tin thread trong 50 ⇒ vào, ở timeline trước tin gốc trong 20 ⇒ vào; >10 file ⇒ 10 mới nhất; tin sau tin gọi không tính | int |
 | X2b2-AC09 | (R09) B gọi `@hoadon` dùng file A đã gửi vào phòng ⇒ file-set có file A; usage/quota/`runs.user_id` của B; nếu B rời phòng giữa chừng ⇒ run huỷ, không ghi tin | int |
-| X2b2-AC10 | (R11, R12) `#fake:out=report.md` trong run phòng của A ⇒ tin agent có `attachments=[report.md]`, B (không quyền agent) tải được; run lỗi/huỷ ⇒ không gắn; C không phải thành viên ⇒ 404 | int + acceptance |
+| X2b2-AC10 | (R11, R12) `jobOutput(run,"report.md")` trong run phòng của A ⇒ tin agent có `attachments=[report.md]`, B (không quyền agent) tải được; run lỗi/huỷ ⇒ không gắn; C không phải thành viên ⇒ 404 | int + acceptance |
 | X2b2-AC11 | (R13, R14) Xoá nhóm ⇒ `/content` 404 ngay, nội dung mất sau 1 chu kỳ sweeper (`sweepOnce`), `purged_at` đặt; file chưa gắn quá 24 h + 1 s xoá; A rời nhóm ⇒ A 404 khi tải, B vẫn tải được | int |
 | X2b2-AC12 | (R15) Tin agent chứa `attachments` tên `@hoadon.txt` hoặc nội dung "@hoadon" ⇒ 0 run | int |
 | X2b2-AC13 | (R06, R18, AC-H07) `/conversations*` không trả file phòng (404); file hội thoại riêng không gắn được vào phòng; test khoá H2c + AC-H07 + X2b xanh nguyên văn; X2b-AC11 cũ (400 khi có `attachment_ids`) được **thay** có chủ đích bằng AC03/AC05 (qc ghi Tranh chấp test khoá) | contract + acceptance |
 | X2b2-AC14 | (R16) Mất kết nối `/me/stream` rồi nối lại ⇒ không mất/lặp tin có file; payload không chứa byte | int |
 | X2b2-AC15 | (UI, CHAT-AC-47/50 mở rộng) 2 trình duyệt: A bấm đính kèm trong DM, chọn file, thấy chip tiến trình + dòng gợi ý chia sẻ, gửi; B thấy chip, tải được; A gõ `@hoadon` ⇒ trạng thái "đang xử lý", kết quả cả phòng; file lỗi 415/413 báo đúng câu như C1 | e2e |
-| X2b2-AC16 | (R20, R22) `!hoa-don` + file trong phòng giữ hành vi P-a (hồi quy `done:pa`); log không chứa tên file | int |
+| X2b2-AC16 | (R20, R22) `!hoa-don` + file ⇒ 400 `VALIDATION_ERROR` path `attachment_ids` (I21); `!hoa-don` không file ⇒ P-a (I51); log không chứa tên file | int |
 
-Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwright test -c e2e/chat/playwright.x2b2.config.ts` (= `bun run e2e:chat:x2b2`). Lệnh mốc: `done:x2b2` (qc, mẫu `done:x2b`) + hồi quy `done:h2c`, `done:x2b`.
+Lệnh xong: `bun run typecheck && bun test && bun --env-file=.env.test-qc.local run test:int && bunx playwright test -c e2e/chat/playwright.x2b2.config.ts` (= `bun run e2e:chat:x2b2`). Lệnh mốc: `done:x2b2` (qc, mẫu `done:x2b`) + hồi quy `done:h2c`, `done:x2b`.
 
 ## 9. Câu hỏi mở (đều có mặc định; không trả lời = chấp nhận mặc định — Luật 2b)
 | Q | Câu hỏi | Mặc định đề xuất | Mức |

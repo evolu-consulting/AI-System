@@ -28,7 +28,7 @@ Spec: [`spec.md`](spec.md) §2 (R01–R05, R10–R11, R16), §5, §8 AC15 · n�
 | `features/rooms/components/agent/AgentBlock.tsx` | `AttachmentList` cho `out/` (D5) |
 | `features/composer/components/{Composer,composer-types}.tsx` + `AttachNote.tsx` (mới) | prop `attachNote`, D6 |
 | `features/rooms/README.md`, `features/composer/README.md`, `features/attachments/README.md` | cập nhật (bỏ "attachments={false}" của phòng) |
-| `features/composer/lib/send-error.ts` | 400 `VALIDATION_ERROR` có path `attachment_ids` khi chữ bắt đầu `!key` (D8 plan BE) ⇒ dùng câu `PROCESS_ATTACH_UNSUPPORTED` ("PROCESS_NO_ATTACH") sẵn có; không thêm key; thêm 1 ca vào unit `send-error` |
+| `features/composer/lib/send-error.ts` | 400 `VALIDATION_ERROR` có path `attachment_ids` khi chữ bắt đầu `!key` (D8 plan BE) ⇒ dùng câu sẵn có (key `process.composer.error.noAttach`, hằng `PROCESS_NO_ATTACH_CODE` = `"PROCESS_ATTACH_UNSUPPORTED"` ở `use-bang-submit.ts`); không thêm key; thêm 1 ca vào unit `send-error` |
 | `packages/i18n/locales/chat/{vi,en}.json` | key mới §3 |
 | Test mới | `use-send-room-text.test.ts`, `AttachNote`/`Composer.test.tsx` (ca note), `MessageItem.test.tsx`, `AgentBlock.test.tsx` (ca có tệp), mở rộng `event-router.test.ts` (tin có `attachments`) |
 
@@ -88,4 +88,4 @@ Key mới:
 `AttachmentList` chỉ render khi có tệp; `MessageItem`/`AgentBlock` đã `memo`. Không thêm chunk (code đính kèm đã nằm trong chunk composer); `check:bundle` không đổi ngân sách. Danh sách tin phòng chưa virtualize (không thuộc mốc).
 
 ## 8. Tests FE
-Unit (`bun test`): `use-send-room-text` (body có/không `attachment_ids`; khoá idempotent đổi khi đổi tệp; giữ khi gửi lại), `AttachNote` (ẩn khi không chip; `needText` khi ô trống; `share` khi có chữ; DM/nhóm/thread), `MessageItem` (chip + mine lệch phải), `AgentBlock` (tệp `out/`, `available=false`), `event-router` (room.message có `attachments` → vào cache, không lặp). E2E: do `qc` (AC15) theo §5.
+Unit (`bun test`): `AttachmentList`/hàm tải: 404 ⇒ toast `attach.downloadFailed`; `use-send-room-text` (body có/không `attachment_ids`; khoá idempotent đổi khi đổi tệp; giữ khi gửi lại), `AttachNote` (ẩn khi không chip; `needText` khi ô trống; `share` khi có chữ; DM/nhóm/thread), `MessageItem` (chip + mine lệch phải), `AgentBlock` (tệp `out/`, `available=false`), `event-router` (room.message có `attachments` → vào cache, không lặp). E2E: do `qc` (AC15) theo §5.

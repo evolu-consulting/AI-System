@@ -56,7 +56,7 @@ Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225
 | I14 | AC04, R03 | C (ngoài G1) gửi G1 + id sai | 404 `ROOM_NOT_FOUND` (không lộ file) |
 | I15 | AC04, R03 | A "@khongco xem" + id sai | 404 `ATTACHMENT_NOT_FOUND` (trước `AGENT_NOT_FOUND`) |
 | I16 | AC04, R03 | A đã 2 run chạy (`maxConcurrentRuns: 2`) gửi "@hoadon xem" + id đúng | 429 `TOO_MANY_RUNS`; file `room_id` NULL; gửi lại sau khi run xong ⇒ 201, gắn |
-| I17 | AC05, R04 | 11 id · id trùng · `content: ""` + id · `attachment_ids: []` | 400 `VALIDATION_ERROR` ×4, 0 tin |
+| I17 | AC05, R04 | 11 id · id trùng · id trùng khác hoa/thường · `content: ""` + id · `attachment_ids: []` | 400 `VALIDATION_ERROR` ×4 (+ biến thể id trùng khác hoa/thường ⇒ ×5), 0 tin |
 | I18 | AC05, R04 | gửi lại cùng `client_msg_id` + cùng id | 200, cùng `id` tin, `attachments` như cũ; `bound_at` không đổi; số hàng gắn = 1 |
 | I19 | AC05 | upload `.exe` giả / 20 MiB + 1 B / vượt hạn mức tenant (`tenantMaxBytes` nhỏ) | 415 / 413 / 409 như H2c (hồi quy) |
 | I20 | R04, Q13 | tin thread (`flow_id` của thread trong G1) + file | 201; `GET ?flow_id=` có `attachments`; timeline không có tin |
@@ -124,17 +124,17 @@ Nguồn: spec (`595ef3ae`; X2b2-R01…R22, AC01…AC16, §9, §12), plan BE `225
 | C02 | AC13 | snapshot export C1/X2a không đổi (`x2a-additive` xanh) |
 
 ## 5. E2E (`e2e/chat/x2b2-attach.x2b2.ts`, 2 trình duyệt, nhãn nguyên văn plan-frontend §5)
-Chạy: `bunx playwright test -c e2e/chat/playwright.x2b2.config.ts` (= `bun run e2e:chat:x2b2`, script B7). Stack: config mới (qc tạo ở Q1) `e2e/chat/playwright.x2b2.config.ts` = `playwright.x2b.config.ts` + `HUB_ATTACH_DRIVER=local`, `HUB_ATTACH_DIR` tạm (stack X2b hiện **không** bật kho ⇒ cần). A = `lan` (hoadon), B = `thu` (không hoadon), như `x2b-room.x2b.ts`.
+Chạy: `bunx playwright test -c e2e/chat/playwright.x2b2.config.ts` (= `bun run e2e:chat:x2b2`, script B7). Stack: config mới (qc tạo ở Q1) `e2e/chat/playwright.x2b2.config.ts` = `playwright.x2b.config.ts` + `e2e/chat/_x2b2-stack.ts` mới (hoặc sửa `_x2b-stack.ts` rồi khoá lại) với `HUB_ATTACH_DRIVER=local`, `HUB_ATTACH_DIR` tạm (stack X2b hiện **không** bật kho ⇒ cần); `FakeRuntime` TS (`_x2b-runtime.ts`) thêm op `/rt/output {run_id, name, bytes}`: đặt `token_hash` cho job (như `tests/acceptance/H2c/_h2c2.ts:205`), `POST /internal/jobs/:id/outputs`, rồi `/rt/answer`. A = `lan` (hoadon), B = `thu` (không hoadon), như `x2b-room.x2b.ts`.
 | Mã | AC | Bước | Kỳ vọng |
 |---|---|---|---|
 | E01 | AC15 | A mở DM "Tin nhắn cho <B>", `button "Đính kèm tệp"` → `setInputFiles(hoadon.pdf)` | `list "Tệp đính kèm"` 1 `listitem`; chip "Đang tải lên…" rồi hết; `note` chứa "<B> sẽ xem và tải được tệp này" |
 | E02 | AC15, Q3 | ô trống có chip | `button "Gửi"` disabled; `note` "Nhập nội dung tin để gửi kèm tệp." |
 | E03 | AC15, AC01 | A gõ "đây là hoá đơn", Gửi | A: `list "Tệp trong tin"` có `button "Tải hoadon.pdf"`; B (trình duyệt 2, không tải lại): chip xuất hiện; B bấm tải ⇒ `page.waitForEvent("download")` tên `hoadon.pdf` |
 | E04 | AC15, AC06 | A gõ "@hoadon kiểm tra file" | trạng thái "đang xử lý" như X2b; B thấy `article "Trả lời của agent …"` |
-| E05 | AC15, AC10 | A "@hoadon #fake:out=report.md" (e2e: stack có `fake-cli`) | `article "Trả lời của agent …"` chứa `list "Tệp trong tin"` `button "Tải report.md"`; B tải được |
+| E05 | AC15, AC10 | A "@hoadon xem" + `/rt/output` `report.md` rồi `/rt/answer` (FakeRuntime TS) | `article "Trả lời của agent …"` chứa `list "Tệp trong tin"` `button "Tải report.md"`; B tải được |
 | E06 | AC15 | nhóm: chip ⇒ `note` "Mọi thành viên của nhóm đều xem và tải được tệp này" | |
 | E07 | AC15 | `.exe` / 20 MiB + 1 B | câu lỗi `attach.err.type` / `attach.err.tooLarge` nguyên văn C1 (như `x1-attachments.chat.ts`) |
-| E08 | AC02, D10 | A bớt B khỏi nhóm; B bấm tải chip cũ | luồng `useRoomLost` (X2a) khi mất phòng; toast `attach.downloadFailed` kiểm ở unit FE |
+| E08 | AC02, D10 | A bớt B khỏi nhóm (không bấm chip) | B thấy toast `rooms.toast.kicked` và URL `/c/new` (luồng `useRoomLost` X2a); toast `attach.downloadFailed` khi tải 404 kiểm ở unit FE (plan-frontend §8) |
 Chờ theo `waitForResponse`/locator, không `waitForTimeout`.
 
 ## 6. Hồi quy (không sửa, phải xanh)
@@ -159,6 +159,6 @@ Kỳ vọng trước B1: rules U01–U10 đỏ ở `expect(typeof …).toBe("fun
 | G3 | R20 vs D8 | R20 "file theo đường process-runs" — D8 chốt `!…` + file ở timeline ⇒ 400 | theo D8 (I21) |
 | G4 | Q13 | File trong **thread quy trình** (`flow_id` của process thread): gắn được (D8 cho qua) nhưng chưa rõ process engine có dùng | chỉ kiểm 201 + gắn, không kiểm input quy trình |
 | G5 | AC07 "token phòng khác ⇒ 401" | Endpoint nội bộ xác thực theo **job**, không theo phòng | I33: token job khác hoặc id ngoài payload ⇒ 401; token rác ⇒ 401 (đã chấp nhận) |
-| G6 | R05 | `platform_admin` không nhắc | coi như người ngoài ⇒ 404 (thêm `padmin` vào I02 nếu có scope user) |
+| G6 | R05 | `platform_admin` không nhắc | coi như người ngoài ⇒ 404 (I02 có `padmin` nếu fixture có user platform_admin; không có thì ghi "không kiểm") |
 | G7 | K2 | id trùng khác hoa thường: zod không bắt, server chuẩn hoá ⇒ 400 | test ở int (I17 thêm biến thể), không ở contract |
 | G8 | E2E | Stack `_x2b-stack.ts` không bật kho đính kèm; chưa có script `e2e:chat:x2b2` trong `package.json` | Cần bổ sung (frontend-lead/backend-lead): script + env kho trong stack mới |
