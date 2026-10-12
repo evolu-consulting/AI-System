@@ -13,4 +13,7 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0008 | Thư viện Python cho Agent Runtime (asyncpg, redis-py, claude-agent-sdk, structlog, pydantic-settings, pytest-asyncio, import-linter) | Accepted (Gate H1, 2026-10-04) |
 | 0009 | Hub: Redis client ioredis + toolchain contract (z.toJSONSchema, datamodel-code-generator) | Accepted (Gate H1, 2026-10-04) |
 | 0010 | Agent Runtime: HTTP client httpx2 (Dify SSE, endpoint nội bộ Hub, MCP cho fake-cli) | Accepted (Gate H2a, 2026-10-05) |
-| 0011 | Sandbox ghi + thực thi + container cô lập cho job tự-sửa (P-c, CR-061) | Proposed (chưa chốt, quyết lúc BUILD P-c) |
+| 0011 | Sandbox ghi + thực thi + container cô lập cho job tự-sửa (P-c, CR-061) | Proposed (chưa chốt, quyết lúc BUILD P-c; có phần "Bổ sung (CR-065)") |
+| 0012 | KnowledgeHub làm RAG ngoài — Hub làm proxy (CR-062) | Proposed (trình Gate K1) |
+| 0013 | Canvas quy trình admin-web: `@xyflow/react` (CR-063) | Proposed (trình Gate P-b2) |
+| 0014 | Công cụ code-graph (graphify/gitnexus) chạy như chương trình trên Runtime (CR-066) | Proposed (trình Gate K2) |

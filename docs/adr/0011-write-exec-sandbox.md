@@ -20,3 +20,12 @@ Chưa chốt.
 
 ## Hệ quả (dự kiến)
 Không có container ⇒ stage tự-sửa bị chặn (hard stop bảo mật); phần diff-only cũng cần container (vì chạy test). Cập nhật WRK-NFR-02/WRK-BR-08 khi chốt.
+
+## Bổ sung (CR-065, 2026-10-12)
+Không đổi quyết định hạ tầng; chỉ thêm ràng buộc cho Runtime, không ADR mới.
+- **Clone riêng + nhánh:** mỗi job một clone riêng (CR-061 D2); nhánh `ai/<run>/<step>`; trượt duyệt ⇒ commit thêm vào cùng nhánh.
+- **Kiểm diff bằng chương trình (WRK-FR-29):** chạy lại test trong container, quét bí mật, allowlist đường dẫn trước khi trả diff; không dùng LLM.
+- **Rebase do Runtime:** `main` đổi ⇒ rebase + chạy lại test trong container; xung đột ⇒ "Cần người quyết".
+- **Chế độ áp (HUB-BR-34):** `pr` / `auto_merge` (qua auto-merge của provider, chỉ sau gate người Đạt + test Runtime xanh) / `branch_only` (duy nhất cho `local_path`, người tự merge). Token provider chỉ ở Hub/Runtime-chương-trình, không vào container.
+- **Giữ:** container mỗi job (HUB-BR-33), cấm ghi `local_path` (HUB-BR-32), Edit/Write + chạy test chỉ trong container.
+- Câu hỏi #4 (dữ liệu vào/ra) giờ gồm cả rebase/diff-check; vẫn trình Gate P-c.

@@ -36,6 +36,7 @@ Agent Studio  (/studio · role=platform_admin)
 │  ├─ Runs · Chi phí & usage · Jobs & Worker
 └─ HỆ THỐNG
    ├─ Nhật ký thay đổi                /studio/audit
+   ├─ Cài đặt → KnowledgeHub          /studio/settings  (CR-062, K1; đường dẫn đề xuất, chờ artboard)
    └─ Import / Export                 /studio/transfer
 ```
 
@@ -84,6 +85,8 @@ Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở *Tools*
 | Chạy thử | Gọi thẳng agent (bỏ qua Orchestrator) bằng bản nháp. Mặc định mở tab Trace. Đổi được profile cho lượt thử mà không lưu |
 | Lưu agent mới | Lưu xong mà agent chưa cấp cho tenant nào thì toast nhắc "Chưa tenant nào dùng được agent này" kèm nút [Cấp cho tenant…] |
 | Tắt agent | Toast có Hoàn tác, kèm nhắc: "Orchestrator sẽ không còn chọn agent này. Các yêu cầu tương tự sẽ được chat tự trả lời" |
+| Tri thức (CR-062, K1; chờ artboard) | Mục "Tri thức" trong editor agent: công tắc "Được dùng tri thức (KnowledgeHub)" + chọn loại project. Chỉ hiện khi KnowledgeHub đã kết nối ở Cài đặt. `tenant_admin` chọn project của công ty cho quy trình/stage ở Evolu Control (không ở Studio) |
+| Cài đặt → KnowledgeHub (CR-062, K1; chờ artboard) | Form: URL (phải trong allowlist, TLS), khoá (chỉ ghi, hiện last4), nút "Kiểm tra kết nối" + trạng thái/phiên bản API; tính năng tắt mặc định, `tenant_admin` bật theo công ty. |
 
 ## 6. Orchestrator
 

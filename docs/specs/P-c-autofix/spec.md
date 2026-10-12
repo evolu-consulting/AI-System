@@ -3,9 +3,9 @@ id: P-c-autofix
 title: P-c · Luồng tự-sửa (autonomous fix) — workspace ghi-được + exec trong container + PR sau duyệt
 milestone: P-c (sau H4b)
 status: draft            # KHUNG — chưa tới lúc BUILD; chưa chạy spec-readiness
-requirements: [HUB-FR-119, HUB-FR-126, HUB-FR-127, HUB-FR-128, HUB-FR-129, HUB-FR-130, WRK-FR-28, HUB-BR-32, HUB-BR-33, HUB-BR-34, WRK-BR-08]
+requirements: [HUB-FR-119, HUB-FR-126, HUB-FR-127, HUB-FR-128, HUB-FR-129, HUB-FR-130, WRK-FR-28, WRK-FR-29, HUB-BR-32, HUB-BR-33, HUB-BR-34, WRK-BR-08]
 design:
-  - docs/CHANGE-REQUESTS.md#CR-061 (Intake Đầy đủ chốt 2026-10-12)
+  - docs/CHANGE-REQUESTS.md#CR-061 (Intake Đầy đủ chốt 2026-10-12), #CR-065 (sửa đổi: nhánh, kiểm diff, apply_mode)
   - docs/design/agent-hub/ba-agent-hub.md §6.10 (HUB-FR-119, 126…130), §7 HUB-BR-32…34
   - docs/design/worker/ba-worker.md (WRK-FR-28, WRK-BR-08, WRK-NFR-02)
   - docs/adr/0011-write-exec-sandbox.md (Proposed)
@@ -52,23 +52,35 @@ H4b (secret `source_credential`, HUB-FR-68) · ADR-0011 chốt + container mỗi
 | D1 | CR-061 + spec P-c riêng; P-b (nguồn chỉ-đọc, CR-060) giữ nguyên |
 | D2 | Ghi vào clone riêng `work/<job_id>/workspace/<repo>/`; nguồn chỉ-đọc mount riêng; CẤM ghi `local_path`/repo thật/host/`sources/` |
 | D3 | Bash/ghi chỉ trong container mỗi job + cắt egress (trừ git allowlist) + trần CPU/RAM/thời gian/token; chưa có container ⇒ P-c chặn |
-| D4 | Áp = nhánh + diff → PR qua API provider bằng secret H4b, luôn sau gate (HUB-FR-109); không push thẳng |
+| D4 | Áp = nhánh + diff → PR qua API provider bằng secret H4b, luôn sau gate (HUB-FR-109); không push thẳng (chế độ áp theo nguồn: xem E5, CR-065) |
 | D5 | Chỉ clone `git_remote` của chính tenant; cấm `local_path`; chỉ quy trình do tenant_admin bật |
 | D6 | Lệnh test/bash tự do nhưng chỉ trong container không-egress, không secret trong workspace |
 | D7 | Mốc P-c sau H4b; ADR-0011 trước BUILD; không đụng P-b |
 | D8 | `fixbug-evolu` giữ làm chế độ an toàn; `fixbug-apply` là biến thể mới; người dùng chọn chế độ |
+### Sửa đổi theo CR-065 (Intake Đầy đủ chốt 2026-10-12)
+| # | Quyết định |
+|---|---|
+| E1 | Nhánh đặt tên `ai/<run>/<step>` trong clone riêng của Runtime |
+| E2 | **Runtime kiểm diff bằng chương trình** (WRK-FR-29): chạy lại test, quét bí mật, allowlist đường dẫn; sai ⇒ stage lỗi, không trả diff |
+| E3 | Trượt duyệt ⇒ commit thêm vào **cùng nhánh** (không nhánh mới) |
+| E4 | `main` đổi ⇒ Runtime rebase + chạy lại test; xung đột ⇒ "Cần người quyết" (agent không tự giải) |
+| E5 | `apply_mode` theo nguồn: `pr` (mặc định) · `auto_merge` (chỉ bật theo nguồn, sau gate người Đạt + test Runtime xanh, qua auto-merge của provider) · `branch_only` (duy nhất cho `local_path`, trong clone riêng của Runtime, người tự merge). HUB-BR-34 đã viết lại |
+| E6 | Giữ nguyên: clone riêng mỗi job (D2), container mỗi job (D3, ADR-0011 + phần "Bổ sung (CR-065)"), cấm ghi `local_path` (HUB-BR-32), Edit/Write + test chỉ trong container |
+| E7 | Sửa code KHÔNG đụng P-b; P-c nhận qua CR-065. Readiness cần chạy lại khi tới mốc (spec đổi sau khung) |
+
 ### Trong lúc làm
 - (chưa)
 
 ## 10. Điểm còn mở (cho spec-readiness lúc BUILD)
 1. Container runtime / mạng / trần (ADR-0011) — chưa chốt.
 2. Cài phụ thuộc của repo khi không egress (cache/mirror?).
-3. Provider PR đầu tiên (GitHub/GitLab?), quyền tối thiểu của `source_credential`, xử lý nhánh trùng tên.
+3. Provider PR đầu tiên (GitHub/GitLab?), quyền tối thiểu của `source_credential`, xử lý nhánh trùng tên; provider nào hỗ trợ auto-merge cho `apply_mode=auto_merge` (CR-065 E5); `ai/<run>/<step>` khi làm lại cùng step (commit thêm, E3).
 4. Trần mặc định (CPU/RAM/disk/thời gian/token), kích thước repo tối đa khi clone.
-5. Hình dạng diff trong output stage + chỗ duyệt trên UI (thiếu artboard).
+5. Hình dạng diff trong output stage + chỗ duyệt trên UI (thiếu artboard); chỗ chọn `apply_mode` theo nguồn trên màn Nguồn (ADM-FR-68, thiếu artboard).
 6. Ánh xạ audit (repo, commit gốc, nhánh, lệnh, kết quả test) vào audit log.
 7. Cách `fixbug-apply` chọn repo/branch (đầu vào HUB-FR-124); giới hạn một repo/job?
 8. Số AC (AC-H38…) và lệnh `done:pc`.
+9. (CR-065) Allowlist đường dẫn khai báo ở đâu (quy trình hay nguồn)? Quy tắc quét bí mật (mẫu/entropy)? Trần số lần rebase/chạy lại test?
 
 ## 11. Tranh chấp test
 - (không)

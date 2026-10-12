@@ -157,6 +157,8 @@ Dữ liệu ở schema `hub` (Hub sở hữu, BA-H §6.10 HUB-FR-104…117); adm
 | ADM-FR-67 | **Run của quy trình**: nút "Chạy" (nhập input), danh sách + chi tiết run (trạng thái, stage, người duyệt, "Cần người quyết"), **token theo run/stage/team-run/lần gọi** (HUB-FR-117; tiền chờ H3c) | **MUST** |
 | ADM-FR-68 | **Trang Nguồn tham chiếu** (CR-060; nav "Nguồn" dưới CHỨC NĂNG, `tenant_admin` cho công ty mình; HUB-FR-120): danh sách + khai báo nguồn `git_remote` (URL, branch, secret `source_credential` hoặc repo công khai), `library` (tải tài liệu, phiên bản), `local_path` (chỉ `platform_admin`); nút "Kiểm tra kết nối" (resolve branch → SHA, không tải nội dung); xem quy trình/stage đang dùng nguồn. Secret chỉ ghi (HUB-FR-68) | **MUST** (P-b) |
 | ADM-FR-69 | **Editor quy trình — khối nguồn / đầu vào / câu hỏi bắt buộc** (CR-060, HUB-FR-121/124/125): khai báo nguồn của quy trình, mỗi stage chọn tập con + allowlist (≤ 5 nguồn), trường đầu vào của quy trình (chữ/chọn/file/nguồn+branch), checklist "điều phải biết trước khi làm" theo stage | **MUST** (P-b) |
+| ADM-FR-70 | **Màn Nguồn tham chiếu — cột KnowledgeHub** (CR-066, HUB-FR-135; chờ artboard): bật/tắt "cho phép nạp vào KH", project KH + SHA đã nạp, cột trạng thái nạp + drawer lỗi theo file, nút nạp lại | **COULD** (K2) |
+| ADM-FR-71 | **Editor quy trình — canvas kéo thả theo bước** (CR-063, HUB-FR-104/118; chờ artboard): `/processes` thay accordion bằng canvas (bước song song ≤ 3 stage/bước, luật quay lại bước X), form stage trong panel bên; xem ui-admin §7.17 | **SHOULD** (P-b2) |
 
 ## 6. Luật nghiệp vụ
 

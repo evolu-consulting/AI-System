@@ -21,7 +21,7 @@ C1 chạy với **mock Hub** (chưa có Hub/Claude CLI thật). Actor chung: **M
 | UC-09 | Nhắn riêng 1-1 (DM) — X2a | CHAT-AC-37…40 | `canvas-x2/` DM |
 | UC-10 | Nhóm chat — X2a | CHAT-AC-41…45 | `canvas-x2/` Main, NewGroup, Mobile |
 | UC-11 | Agent trong phòng — X2b | CHAT-AC-46…50 | `canvas-x2/` Main (menu `@`, khối flow) |
-| UC-12 | Quy trình: chạy, duyệt, hỏi lại trong phòng + DM — Process Engine | CHAT-AC-51…58 | mockup https://claude.ai/artifact/JHGS9iTLVyytdYwXJJ6eLW board ④–⑧ |
+| UC-12 | Quy trình: chạy, duyệt, hỏi lại trong phòng + DM — Process Engine | CHAT-AC-51…60 | mockup https://claude.ai/artifact/JHGS9iTLVyytdYwXJJ6eLW board ④–⑧ |
 
 ---
 
@@ -202,6 +202,8 @@ Nguồn: CR-056, CR-058, HUB-FR-105, 107, 109–113, 117; HUB-BR-24, 25, 28. Spe
 | CHAT-AC-56 | Given người duyệt/người được nhờ ngoài phòng mở `/runs/:id`, Then chỉ thấy output (hoặc câu hỏi) của task mình + tiến độ run; không thấy tin khác của phòng; link phòng ⇒ "Không tìm thấy" (board ⑤) |
 | CHAT-AC-57 | Given agent hỏi lại, Then người trả lời thấy AskCard (stage "Chờ trả lời"); nút **"Nhờ người khác trả lời"** mở chọn user cùng công ty + ghi chú; người được nhờ chỉ thấy câu hỏi + ghi chú + trích đoạn; ai trả lời trước thì khoá; gõ "@Thomas trả lời giúp" trong chat **không** chuyển câu hỏi. Duyệt chỉ chuyển được cho người cùng Group duyệt (board ⑦) |
 | CHAT-AC-58 | Given mở `/runs/:id` (người bắt đầu, người duyệt, thành viên phòng), Then có bảng token theo run, stage, team-run, lần gọi thành viên (in/out, model, thời gian, số làm lại/hỏi); người xem ngoài phòng (duyệt/trả lời) chỉ thấy tổng token run + từng stage, không chi tiết lần gọi (C5, người dùng 2026-10-10); run "Cần người quyết" hiện 3 lựa chọn cho người có quyền quyết (board ⑧) |
+| CHAT-AC-59 | **[CR-063, P-b2; chờ artboard]** Given run có bước song song, Then StageStrip vẽ theo **bước** (stage cùng bước xếp cùng cột, mỗi stage có trạng thái riêng), bước chạy lại hiện nhãn ×lần; vẽ bằng CSS thuần (không thêm thư viện); quy trình mỗi-stage-một-bước hiện như cũ |
+| CHAT-AC-60 | **[CR-063, HUB-FR-118; chờ artboard]** Given người duyệt mở thẻ duyệt, When chọn **Chưa đạt**, Then có thêm lựa chọn "quay lại bước X" (kèm góp ý bắt buộc); sau khi quay lại, StageStrip hiện bước đích và các bước sau chạy lại (×lần); quá 3 vòng ⇒ thẻ "Cần người quyết" |
 
 ---
 
