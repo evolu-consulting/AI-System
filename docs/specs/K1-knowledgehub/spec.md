@@ -120,15 +120,17 @@ Migration `migrations-hub/0029_k1_kh.sql` (sau 0028, idempotent, chỉ THÊM, ch
 Không seed KH (dev dùng mock). Seed quy trình mẫu: plan §6.
 
 ## 5. UI (frontend-lead)
-**Chưa artboard.** Mockup: https://claude.ai/artifact/MHUei1vhi2WHKqYWi21WFQ (FE chờ người dùng OK). Chi tiết (bố cục, trạng thái, VI/EN, validate, nhãn e2e): [`plan-frontend.md`](plan-frontend.md), đã đối chiếu §3.
+**Mockup = bố cục chuẩn** (5 màn): https://claude.ai/artifact/MHUei1vhi2WHKqYWi21WFQ. Chi tiết (trạng thái, VI/EN, validate): [`plan-frontend.md`](plan-frontend.md), đã đối chiếu §3. Không trang "Tri thức", không thẻ binding quy trình, không "Loại project".
 | Màn | App | Contract |
 |---|---|---|
-| Cài đặt → KnowledgeHub: URL + bảng tenant ↔ ns, Sheet (secret, keyspace, project), Dialog kết quả kiểm | studio-web `/settings` (platform_admin) | §3.2 `/kh*` |
-| Agent → "Tri thức" (Switch `knowledge_enabled`, chỉ `agentic-cli`; không có "Loại project") | studio-web | `PUT /agents/:id/knowledge` |
-| Quy trình → thẻ "Tri thức" (project mặc định + theo stage, lưu riêng, hiện `effective`) + Dialog "Tri thức" bật theo công ty | admin-web (tenant_admin) | §3.3 |
-| Output stage: cảnh báo hạ cấp + "n/5 lần · Tóm tắt" | admin-web OutputDialog, chat-web run-block/run-page | `StageView.knowledge` |
+| Cài đặt: bảng "Kết nối KnowledgeHub" + bảng "Công ty của kết nối" + Sheet công ty + Dialog kết quả kiểm | studio-web `/settings` (platform_admin) | §3.2 `/kh/connections*` |
+| Sửa agent → section "KnowledgeHub": checkbox kết nối + [Lưu] (chỉ `agentic-cli`) | studio-web | `PUT /agents/:id/knowledge` |
+| Dialog "Tri thức" (một cờ, hiện `connections[name,status]`) | admin-web (tenant_admin) | §3.3 |
+| `KnowledgeNotice` trong output ("Tri thức: n/5 lần hỏi · Tóm tắt: …") | admin OutputDialog, chat run-block/run-page | `StageView.knowledge` |
 
-Quyết định: không thư viện/ADR mới; credentials chỉ chọn `secret_id` (tạo ở Secrets, không có "Toàn nền tảng"); một cờ `enabled` (tenant) + `status=ok`; Kiểm tra kết nối theo hàng đã lưu.
+**Nhãn e2e (role "tên")**: `table "Kết nối KnowledgeHub"` · `button "Thêm kết nối"` · `button "Công ty|Sửa|Xoá {kết nối}"` · `dialog "Thêm kết nối"` (`textbox "Tên"`, `textbox "Địa chỉ"`, `button "Lưu"`) · `table "Công ty của kết nối"` · `button "Thêm công ty"` · `button "Kiểm tra|Kết quả|Sửa|Xoá {tenant}"` · `dialog "Thêm công ty"` (`combobox "Tenant"`, `textbox "Namespace"`, `combobox "Secret KnowledgeHub"`, `link "Tạo secret"`, `textbox "Project ghi Tóm tắt"`, `textbox "Keyspace"`) · `dialog "Kết quả kiểm tra"` · `region "KnowledgeHub"` (agent; `checkbox "{kết nối}"`, `button "Lưu"`) · `button "Tri thức"` → `dialog "Tri thức"` (`switch "Dùng tri thức cho công ty"`, `list "Kết nối"`) · output `status` "Không truy cập được KnowledgeHub", "Tri thức: 2/5 lần hỏi", "Tóm tắt: đang chờ". Đầy đủ: plan-frontend §5.
+
+Quyết định: không thư viện/ADR mới; chỉ chọn `secret_id` (tạo ở Secrets); một cờ `enabled` (tenant) + `status=ok`; Kiểm tra theo hàng đã lưu.
 
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6 (không chặn mốc). Mỗi lời gọi KH ≤ `HUB_KH_TIMEOUT_MS` = 5000 ("Kiểm tra" ≤ 20 s). Tạo job: `/v1/me` song song mỗi KH, cache 300 s, lỗi/timeout ⇒ fallback `check.projects`. `kh-query`: một lời gọi KH, Hub thêm ≤ 50 ms p95 (tra theo PK, upsert `kh_stage_usage`). `tools/list` không thêm query (JOIN `kh_jobs` trong tra token). Bộ gửi worklog: 10 s, lô ≤ 20, `SKIP LOCKED` trên `kh_writes_due_idx`.
