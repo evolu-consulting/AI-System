@@ -58,7 +58,9 @@ describe("seed.processes · buildProcessPlan [HUB-FR-104]", () => {
       SeedValidationError,
     );
   });
+});
 
+describe("seed.processes · K1 T5g after/step [HUB-FR-104]", () => {
   it("K1 T5g · after { review: { back_to_steps } } + step hợp lệ ⇒ qua", () => {
     const data = {
       process_templates: [

@@ -20,7 +20,7 @@ export type KhConn = { id: string; baseUrl: string; secretId: string; version: n
 export type KhClientDeps = {
   secrets: Pick<HubSecretReader, "useSecret">;
   cfg: KhConfig;
-  /** `APP_ENV !== "production"` — cho phép http loopback. */
+  /** `APP_ENV ∈ {development, test}` (fail-closed) — cho phép http loopback. */
   dev: boolean;
   fetch?: typeof fetch;
 };

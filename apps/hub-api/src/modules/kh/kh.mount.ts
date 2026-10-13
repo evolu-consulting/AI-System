@@ -34,7 +34,8 @@ export type KhRuntimeDeps = {
 
 export function khRuntime(d: KhRuntimeDeps): KhRuntime {
   const cfg = d.kh ?? KH_CONFIG_NONE;
-  const dev = d.appEnv !== "production";
+  // RV1 #4 · fail-closed: chỉ development/test là dev (vắng `appEnv` ⇒ chế độ production).
+  const dev = d.appEnv === "development" || d.appEnv === "test";
   const secrets = new HubSecretReader({ db: d.db, key: d.key, log: d.log });
   const client = new KhClient({ secrets, cfg, dev });
   return { cfg, dev, client, projects: new KhProjectsCache(client) };

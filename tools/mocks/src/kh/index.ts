@@ -135,14 +135,7 @@ function mountControl(app: Hono, ref: { st: KhMockState }, reset: () => KhMockSt
   });
 }
 
-export function createKhMock(opts: KhMockOptions = {}): Hono {
-  const apiKey = opts.apiKey ?? KH_MOCK_DEFAULT_KEY;
-  const delayMs = opts.timeoutMs ?? 30_000;
-  const reset = () => freshKhState(opts.projects);
-  const ref = { st: reset() };
-  const app = new Hono();
-  mountControl(app, ref, reset);
-
+function mountGates(app: Hono, ref: { st: KhMockState }, apiKey: string): void {
   // Ghi nhật ký mọi lời gọi KH (không phải `/__mock/*`): có khoá không, khoá đúng không — không giá trị khoá.
   app.use("*", async (c, next) => {
     if (c.req.path.startsWith("/__mock/")) return next();
@@ -172,7 +165,9 @@ export function createKhMock(opts: KhMockOptions = {}): Hono {
     if (!ok) return c.json({ detail: "missing or invalid API key" }, 401);
     return next();
   });
+}
 
+function mountApi(app: Hono, ref: { st: KhMockState }, delayMs: number): void {
   app.get("/health", (c) => c.json({ status: "ok", model: ref.st.cfg.model }));
   app.get("/version", (c) =>
     c.json({ version: ref.st.cfg.version, source: "env", model: ref.st.cfg.model }),
@@ -187,5 +182,14 @@ export function createKhMock(opts: KhMockOptions = {}): Hono {
     return fail ?? add(ref.st, await readBody(c));
   });
   app.notFound((c) => c.json({ detail: "Not Found" }, 404));
+}
+
+export function createKhMock(opts: KhMockOptions = {}): Hono {
+  const reset = () => freshKhState(opts.projects);
+  const ref = { st: reset() };
+  const app = new Hono();
+  mountControl(app, ref, reset);
+  mountGates(app, ref, opts.apiKey ?? KH_MOCK_DEFAULT_KEY);
+  mountApi(app, ref, opts.timeoutMs ?? 30_000);
   return app;
 }

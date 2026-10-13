@@ -107,7 +107,9 @@ describe("HUB-FR-132 · mock KH kịch bản + điều khiển", () => {
     await req(app, "/vector/query", withKey({ text: "q", project: "p1" }));
     expect(Date.now() - t0).toBeGreaterThanOrEqual(15);
   });
+});
 
+describe("HUB-FR-132 · mock KH điều khiển /__mock/kh", () => {
   test("PUT version/model/projects; cấu hình sai ⇒ 400; reset ⇒ mặc định", async () => {
     const app = mk();
     await ctl(app, "/__mock/kh", {

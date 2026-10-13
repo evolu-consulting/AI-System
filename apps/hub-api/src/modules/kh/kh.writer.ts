@@ -20,6 +20,16 @@ export const KH_WRITE_EVERY_MS = 10_000;
 export const KH_WRITE_BATCH = 20;
 export const KH_WRITE_LEASE_S = 60;
 export const KH_WRITE_ATTEMPTS_MAX = 5;
+/** Biên cho đọc kết nối + lưu kết quả quanh một lần gửi (ms). */
+export const KH_WRITE_MARGIN_MS = 5000;
+
+/**
+ * RV1 #5 · còn đủ lease cho một lần gửi nữa không (gửi ≤ `timeoutMs` + biên). Hết ⇒ dừng lô; hàng đã nhận còn lại tới hạn
+ * lại sau lease ở nhịp sau (không gửi trùng song song). `HUB_KH_TIMEOUT_MS` ≤ 30 s ⇒ hàng đầu tiên luôn vừa.
+ */
+export function khLeaseRoom(elapsedMs: number, timeoutMs: number): boolean {
+  return elapsedMs + timeoutMs + KH_WRITE_MARGIN_MS <= KH_WRITE_LEASE_S * 1000;
+}
 
 export type KhWriterDeps = {
   db: Db;
@@ -52,13 +62,19 @@ export class KhWriter {
     this.#audit = d.audit ?? dbHubAudit;
   }
 
-  /** Một lô (seam G2): trả số hàng đã xử lý (done/failed/skipped/hẹn lại). */
-  async writeOnce(): Promise<number> {
+  /** Một lô (seam G2): trả số hàng đã xử lý (done/failed/skipped/hẹn lại); dừng sớm khi gần hết lease (RV1 #5). */
+  async writeOnce(now: () => number = Date.now): Promise<number> {
+    const t0 = now();
     const due = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
       claimDue(tx, KH_WRITE_BATCH, KH_WRITE_LEASE_S),
     );
-    for (const w of due) await this.#one(w);
-    return due.length;
+    let n = 0;
+    for (const w of due) {
+      if (!khLeaseRoom(now() - t0, this.d.rt.cfg.timeoutMs)) break;
+      await this.#one(w);
+      n++;
+    }
+    return n;
   }
 
   start(signal?: AbortSignal): void {
@@ -99,6 +115,7 @@ export class KhWriter {
       readConn(tx, w.connection_id),
     );
     const env = { dev: this.d.rt.dev };
+    // = `shouldWriteSummary` (kh.summary.rules, test khoá R77): hàng `kh_writes` luôn có đích ⇒ chỉ còn vế "kết nối dùng được".
     if (!conn || !khUsableNow(conn, this.d.rt.cfg.allowedOrigins, env))
       return { status: "skipped", attempts: w.attempts, code: "disabled" };
     const body = khWorklogBody({

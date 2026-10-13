@@ -96,7 +96,9 @@ describe("HUB-FR-131 · KhClient", () => {
     });
     expect(h).toBe("timeout");
   });
+});
 
+describe("HUB-FR-131 · KhClient — lỗi KH / khoá", () => {
   test("5xx ⇒ server_error {status}; 401 ⇒ unauthorized; message cố định không khoá", async () => {
     mode = "500";
     const e = await err(client().get(conn, "/version"));

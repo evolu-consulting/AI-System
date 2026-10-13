@@ -191,7 +191,4 @@ Bỏ (CR-073): Q2, Q5, Q7, Q16, Q19, Q20, Q21, Q23 (ns, people lanes, cấu hìn
 Xem [`spec-decisions.md`](spec-decisions.md).
 
 ## 10. Tranh chấp test
-- 2026-10-13 · T5c · `studio.int.test.ts` A09: kỳ vọng `errDetails(stale).current === 1` (số version), nhưng contract `KhConnectionConflictDetailsSchema` (T4) = `{current: KhConnection, updated_at}` — cùng dạng mọi `VERSION_CONFLICT` của Hub/Admin (`version-conflict.ts`, secrets, agents). BE giữ contract. Đề xuất qc: `errDetails(stale)?.current?.version` = 1. Đổi contract = hard stop. qc: test sai — đã sửa (kiểm `details.current.version`; lock đã ghi lại).
-- 2026-10-13 · T5c · `check.int.test.ts` A28: fixture `update hub.secrets set ciphertext = 'qc-K1-hong'` (10 byte) vi phạm CHECK `secrets_ciphertext_ck` (16..8208 byte, 0028 H4b-1) ⇒ đỏ ở fixture trước khi gọi Hub. Đề xuất qc: bản mã hỏng ≥ 16 byte (vd `qc-K1-hong-hong-hong`). Luồng `kh_key_invalid` đã phủ ở unit `kh.check.service.test.ts`. qc: test sai — đã sửa (ciphertext 20 byte `qc-K1-hong-hong-hong`; lock đã ghi lại).
-- 2026-10-13 · hồi quy · E-P15a: `hasText:"!sdlc"` khớp cả `!sdlc-delivery` (T5g seed, CR-070) ⇒ strict mode. qc: test sai — regex `/!sdlc(?!-)/`; lock ghi lại.
-- 2026-10-13 · hồi quy · RFB-12: `69eab471` đổi `refsFeedback` 5→4 tham số (`{text,reads}`), test khoá gọi 5 tham số (TECH-DEBT #149). Không do K1. qc: test sai — gọi theo chữ ký mới; lock ghi lại.
+Xem [`spec-decisions.md`](spec-decisions.md) mục "Tranh chấp test".

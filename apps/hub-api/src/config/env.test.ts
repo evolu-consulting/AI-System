@@ -54,7 +54,9 @@ describe("hub-api env", () => {
     expect(msg).toContain("HUB_DATABASE_URL");
     expect(msg).not.toContain("secretvalue");
   });
+});
 
+describe("hub-api env — KnowledgeHub", () => {
   test("HUB-FR-131 · K1 G1 · HUB_KH_*: mặc định dev = mock loopback, production = []; timeout 1000..30000", () => {
     expect(khConfigOf(loadEnv({ ...base, HUB_KH_ALLOWED_ORIGINS: "" }))).toEqual({
       allowedOrigins: ["http://localhost:4030", "http://127.0.0.1:4030"],

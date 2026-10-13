@@ -1,7 +1,7 @@
 // HUB-FR-134 · K1-AC06 · plan K1 §3.5 "Gửi": kết quả một lần gửi `/vector/add` lỗi (thử lại ≤ 5, 30 s × 2^(n−1)).
 import { describe, expect, it } from "bun:test";
 import { KhCallError } from "./kh.client";
-import { khWriteFailure } from "./kh.writer";
+import { khLeaseRoom, khWriteFailure } from "./kh.writer";
 
 describe("HUB-FR-134 · khWriteFailure", () => {
   it("5xx / 429 / timeout / network ⇒ hẹn lại, attempts+1, lùi theo lần", () => {
@@ -38,5 +38,17 @@ describe("HUB-FR-134 · khWriteFailure", () => {
       attempts: 2,
       code: "disabled",
     });
+  });
+});
+
+describe("HUB-FR-134 · khLeaseRoom (RV1 #5)", () => {
+  it("hàng đầu luôn vừa với timeout tối đa 30 s", () => {
+    expect(khLeaseRoom(0, 30_000)).toBe(true);
+    expect(khLeaseRoom(0, 5000)).toBe(true);
+  });
+  it("gần hết lease 60 s ⇒ dừng lô", () => {
+    expect(khLeaseRoom(50_000, 5000)).toBe(true);
+    expect(khLeaseRoom(50_001, 5000)).toBe(false);
+    expect(khLeaseRoom(25_001, 30_000)).toBe(false);
   });
 });
