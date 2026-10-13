@@ -179,6 +179,15 @@ Lệnh xong: `bun run done:h4b1` (T7 tạo; = typecheck → test → test:int �
 - BE T4 2026-10-13: `hub.secret_material` chặt hơn chữ §4 — scope phải là `system` hoặc `user` (không đặt scope ⇒ 0 hàng, như RLS); `p_tenant IS NULL` vẫn mở được ở scope `user` (D09).
 - BE T4: GRANT dùng `REVOKE ALL` (PUBLIC, hub_ro, agent_runtime, admin_rw, hub_rw) rồi GRANT cột ⇒ chạy lại không để sót quyền SELECT toàn bảng.
 - BE T4: contract thêm (spec §3 nói ngầm) `HubSecretListResponseSchema`, `HubSecretDeleteQuerySchema`, `SourceCredential{List,Create,Tenant,Delete}*Schema`, `SecretInUseDetailsSchema`, `HubSecretConflictDetailsSchema`, `HUB_SECRET_NAME_RE`, `SECRET_USED_BY_TYPES`; Drizzle `SECRET_META_COLS` + `HubSecretRow`, export `@ai/db/schema/hub-secrets`.
+- BE T5a: boot dùng hàm thuần `checkHubSecretsKey(hub, master)` (trong `secrets.crypto.ts`) trả `{ok,key}|{ok:false,reason}`; `server.ts` chỉ log `hub_secrets_key_invalid {reason}`, đóng DB, exit 1. Vị trí: ngay sau bước master key (plan §4).
+- BE T5a: `openHubSecret` không so `s.keyVersion` với `k.version` riêng — `key_version` nằm trong AAD nên lệch ⇒ GCM hỏng ⇒ cùng lỗi cố định (R39). Khi có xoay khoá, chọn khoá theo `keyVersion` ở tầng gọi.
+- BE T5a: `assertDistinctFromMaster` so byte (`timingSafeEqual`); master sai định dạng ⇒ không ném (env zod đã chặn master sai).
+- BE T5a: `keys:dev` không chép `HUB_SECRETS_KEY` vào `.env.test-*.local` nếu giá trị trùng `SECRET_MASTER_KEY` của file đó (HUB-FR-04); file đã có biến ⇒ không ghi đè.
+- BE T5a: `AppDeps.hubSecretsKey?: SecretKey | null` thêm ở T5a, `server.ts` truyền khoá đã kiểm; T5 dùng khi mount.
+- FE T6: i18n lỗi `SECRET_IN_USE`/`SECRET_NAME_TAKEN` đặt ở `errors.*` cấp trên cùng (để `describeApiError` dùng chung), còn `secrets.errors.conflictDelete` trong namespace `secrets`; thêm key `secrets.note.source_credential` (chú thích tab nguồn khi bảng không rỗng) và `secrets.err.{nameEmpty,nameFormat,valueEmpty,valueLen}`.
+- FE T6: react-query key `['studio','secrets',kind]` (tiền tố `studio` như các query khác), invalidate cùng `['studio','me']`. `ConflictDialog` ẩn [Xem khác biệt] khi `rows.length===0` áp cho mọi nơi dùng chung (Agent/Orchestrator: khi hai bản không khác trường nào thì không còn nút mở bảng 'Không có trường nào khác nhau').
+- FE T6: `?drawer=<id>` không có trong danh sách ⇒ không mở Sheet (không tự xoá tham số khỏi URL). `saved` state nằm ở `SecretSheet` ngoài (để `showCloseButton={saved===null}`), xoá khi đóng.
+- FE T6 (ghi nhận): `e2e/studio/k1-knowledgehub.studio.ts` (13 ca) đỏ vì đang chờ code K1; `test:lock:verify` báo UNLOCKED `tests/acceptance/K1/*` — ngoài phạm vi H4b-1.
 
 ## 10. Tranh chấp test
 - (không)

@@ -212,7 +212,9 @@
     "KEY_TAKEN": "Key đã được dùng bởi agent khác",
     "AGENT_NOT_ORCHESTRATABLE": "Agent này chưa làm Orchestrator được (đang tắt hoặc runtime chưa hỗ trợ).",
     "ORCHESTRATOR_DEFAULT_PROTECTED": "Không xoá được Orchestrator mặc định.",
-    "TENANT_INACTIVE": "Tenant đang bị khoá."
+    "TENANT_INACTIVE": "Tenant đang bị khoá.",
+    "SECRET_IN_USE": "Secret đang được sử dụng nên không xoá được",
+    "SECRET_NAME_TAKEN": "Tên này đã được dùng cho loại secret này"
   },
   "editor": {
     "titleNew": "Tạo agent",
@@ -423,6 +425,97 @@
       "tokenBudget": "Ngân sách token / run",
       "historyN": "Số tin lịch sử",
       "onNoMatch": "Không có agent nào phù hợp"
+    }
+  },
+  "secrets": {
+    "title": "Secrets",
+    "subtitle": "Khoá API của Hub. Giá trị chỉ ghi, không xem lại được.",
+    "tab": {
+      "provider_api_key": "Provider API key",
+      "source_credential": "Khoá nguồn (git)",
+      "kh_api_key": "Khoá KnowledgeHub"
+    },
+    "tabs": {
+      "aria": "Loại secret"
+    },
+    "create": "+ Thêm secret",
+    "table": {
+      "aria": "Danh sách secret"
+    },
+    "col": {
+      "name": "Tên",
+      "tenant": "Tenant",
+      "value": "Giá trị",
+      "usedBy": "Được dùng bởi",
+      "updated": "Cập nhật",
+      "actions": "Thao tác"
+    },
+    "value": {
+      "stored": "•••• •••• Đã lưu"
+    },
+    "usedBy": {
+      "none": "Chưa dùng",
+      "provider": "Provider · {key}",
+      "source": "Nguồn · {key}",
+      "kh": "KnowledgeHub · {key}"
+    },
+    "scope": {
+      "platform": "Toàn nền tảng"
+    },
+    "loadMore": "Tải thêm",
+    "action": {
+      "replace": "Thay giá trị",
+      "delete": "Xoá"
+    },
+    "empty": {
+      "provider_api_key": "Chưa có API key provider nào.",
+      "kh_api_key": "Chưa có khoá KnowledgeHub.",
+      "source_credential": "Chưa có khoá nguồn nào. Khoá nguồn do tenant admin tạo ở màn Nguồn."
+    },
+    "note": {
+      "source_credential": "Khoá nguồn do tenant admin tạo ở màn Nguồn."
+    },
+    "forbidden": "Bạn không có quyền xem secret",
+    "sheet": {
+      "create": "Thêm secret",
+      "replace": "Thay giá trị · {name}",
+      "save": "Lưu",
+      "saving": "Đang lưu…",
+      "close": "Đóng",
+      "cancel": "Huỷ",
+      "saved": "Đã lưu · v{n}"
+    },
+    "field": {
+      "scope": "Phạm vi",
+      "name": "Tên",
+      "value": "Giá trị",
+      "hint": "Giá trị không xem lại được sau khi lưu",
+      "show": "Hiện giá trị đang gõ",
+      "hide": "Ẩn giá trị"
+    },
+    "toast": {
+      "created": "Đã thêm {name}",
+      "replaced": "Đã thay giá trị {name}",
+      "deleted": "Đã xoá {name}"
+    },
+    "delete": {
+      "title": "Xoá {name}?",
+      "body": "Giá trị sẽ bị xoá vĩnh viễn và không khôi phục được.",
+      "confirm": "Xoá"
+    },
+    "inUse": {
+      "title": "Không xoá được {name}",
+      "body": "Secret đang được dùng bởi các mục sau. Gỡ tham chiếu trước khi xoá.",
+      "close": "Đóng"
+    },
+    "errors": {
+      "conflictDelete": "Secret vừa được thay đổi. Đã tải lại danh sách."
+    },
+    "err": {
+      "nameEmpty": "Nhập tên secret",
+      "nameFormat": "Chỉ dùng chữ, số, - và _ (2–64 ký tự)",
+      "valueEmpty": "Nhập giá trị secret",
+      "valueLen": "Giá trị dài 8–2048 ký tự"
     }
   }
 }

@@ -212,7 +212,9 @@
     "KEY_TAKEN": "This key is already used by another agent",
     "AGENT_NOT_ORCHESTRATABLE": "This agent can't be the Orchestrator yet (it is disabled or its runtime isn't supported).",
     "ORCHESTRATOR_DEFAULT_PROTECTED": "The default Orchestrator can't be deleted.",
-    "TENANT_INACTIVE": "This tenant is locked."
+    "TENANT_INACTIVE": "This tenant is locked.",
+    "SECRET_IN_USE": "The secret is in use and cannot be deleted",
+    "SECRET_NAME_TAKEN": "This name is already used for this secret type"
   },
   "editor": {
     "titleNew": "Create agent",
@@ -423,6 +425,97 @@
       "tokenBudget": "Token budget per run",
       "historyN": "History messages",
       "onNoMatch": "When no agent fits"
+    }
+  },
+  "secrets": {
+    "title": "Secrets",
+    "subtitle": "Hub API keys. Values are write-only and can never be viewed again.",
+    "tab": {
+      "provider_api_key": "Provider API keys",
+      "source_credential": "Source credentials (git)",
+      "kh_api_key": "KnowledgeHub keys"
+    },
+    "tabs": {
+      "aria": "Secret type"
+    },
+    "create": "+ Add secret",
+    "table": {
+      "aria": "Secret list"
+    },
+    "col": {
+      "name": "Name",
+      "tenant": "Tenant",
+      "value": "Value",
+      "usedBy": "Used by",
+      "updated": "Updated",
+      "actions": "Actions"
+    },
+    "value": {
+      "stored": "•••• •••• Saved"
+    },
+    "usedBy": {
+      "none": "Not used",
+      "provider": "Provider · {key}",
+      "source": "Source · {key}",
+      "kh": "KnowledgeHub · {key}"
+    },
+    "scope": {
+      "platform": "Platform-wide"
+    },
+    "loadMore": "Load more",
+    "action": {
+      "replace": "Replace value",
+      "delete": "Delete"
+    },
+    "empty": {
+      "provider_api_key": "No provider API keys yet.",
+      "kh_api_key": "No KnowledgeHub key yet.",
+      "source_credential": "No source credentials yet. Tenant admins create them on the Sources screen."
+    },
+    "note": {
+      "source_credential": "Tenant admins create source credentials on the Sources screen."
+    },
+    "forbidden": "You don't have permission to view secrets",
+    "sheet": {
+      "create": "Add secret",
+      "replace": "Replace value · {name}",
+      "save": "Save",
+      "saving": "Saving…",
+      "close": "Close",
+      "cancel": "Cancel",
+      "saved": "Saved · v{n}"
+    },
+    "field": {
+      "scope": "Scope",
+      "name": "Name",
+      "value": "Value",
+      "hint": "The value cannot be viewed after saving",
+      "show": "Show typed value",
+      "hide": "Hide value"
+    },
+    "toast": {
+      "created": "Added {name}",
+      "replaced": "Replaced value of {name}",
+      "deleted": "Deleted {name}"
+    },
+    "delete": {
+      "title": "Delete {name}?",
+      "body": "The value will be permanently deleted and cannot be restored.",
+      "confirm": "Delete"
+    },
+    "inUse": {
+      "title": "Cannot delete {name}",
+      "body": "This secret is used by the items below. Remove the references first.",
+      "close": "Close"
+    },
+    "errors": {
+      "conflictDelete": "The secret was just changed. The list has been reloaded."
+    },
+    "err": {
+      "nameEmpty": "Enter a secret name",
+      "nameFormat": "Use letters, digits, - and _ only (2–64 characters)",
+      "valueEmpty": "Enter the secret value",
+      "valueLen": "Value must be 8–2048 characters"
     }
   }
 }

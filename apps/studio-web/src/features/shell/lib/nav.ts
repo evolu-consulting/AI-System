@@ -17,7 +17,7 @@ export type NavId =
   | "transfer";
 
 export type NavItem =
-  | { id: NavId; kind: "link"; to: "/agents" | "/orchestrator" }
+  | { id: NavId; kind: "link"; to: "/agents" | "/orchestrator" | "/secrets" }
   | { id: NavId; kind: "soon"; soon: SoonKind };
 
 export type NavGroup = {
@@ -42,7 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: "orchestrator", kind: "link", to: "/orchestrator" },
       soon("tools", "soonH4b"),
       soon("models", "soonH4b"),
-      soon("secrets", "soonH4b"),
+      { id: "secrets", kind: "link", to: "/secrets" },
     ],
   },
   { labelKey: "nav.group.access", items: [soon("access", "soonH4b")] },

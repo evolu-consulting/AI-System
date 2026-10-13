@@ -69,14 +69,16 @@ export function ConflictDialog(p: ConflictDialogProps) {
           </AlertDialogFooter>
         ) : (
           <AlertDialogFooter>
-            <Button
-              variant="outline"
-              aria-expanded={expanded}
-              disabled={pending}
-              onClick={() => setExpanded(!expanded)}
-            >
-              {t("conflict.action.diff")}
-            </Button>
+            {p.rows.length > 0 ? (
+              <Button
+                variant="outline"
+                aria-expanded={expanded}
+                disabled={pending}
+                onClick={() => setExpanded(!expanded)}
+              >
+                {t("conflict.action.diff")}
+              </Button>
+            ) : null}
             <Button variant="outline" disabled={pending} onClick={() => setConfirming(true)}>
               {t("conflict.action.overwrite")}
             </Button>

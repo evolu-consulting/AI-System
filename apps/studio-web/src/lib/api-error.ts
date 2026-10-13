@@ -17,6 +17,8 @@ const KNOWN = new Set([
   "AGENT_NOT_ORCHESTRATABLE",
   "ORCHESTRATOR_DEFAULT_PROTECTED",
   "TENANT_INACTIVE",
+  "SECRET_IN_USE",
+  "SECRET_NAME_TAKEN",
 ]);
 
 export function describeApiError(err: unknown): MessageSpec {
