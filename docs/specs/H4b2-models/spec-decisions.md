@@ -17,3 +17,17 @@ Mỗi câu: bối cảnh từ code thật · mặc định đề xuất · phư�
 | Q8 | Đổi `key`/`kind`/`vendor` provider, `key` profile | `jobs.provider_key` FK theo key; `model_profiles.steps` jsonb tham chiếu key; seed upsert theo key; `cli_sessions` khoá theo key | Bất biến, chốt bằng GRANT cột (spec §4 #2–#3). Đổi = tạo mới, chuyển profile, tắt cũ | Cho đổi + cập nhật dây chuyền steps/jobs — rủi ro mất lịch sử |
 
 Quan sát ngoài phạm vi (không sửa, ghi TECH-DEBT khi BUILD): `hub.room_post_agent_message` (0016) kiểm `agent_entitlements` **không** lọc `revoked_at` ⇒ run đã chạy trước khi thu hồi vẫn đăng được tin vào phòng — khớp "run đang chạy vẫn xong" (UI §9), run mới bị chặn ở kiểm quyền HUB-FR-77.
+
+## Đối chiếu FE (chuyển từ spec §3)
+C1 — list giữ R13 (Q6): `has_secret` + `slots_in_use`, `secret`/`last_error` ở chi tiết · C2 — mã `KEY_TAKEN` (sẵn có), `details.profiles: [{id, key}]` (profile không có tên) · C3 — hình dạng `ProviderCheckResult` ở trên · C4 — nhận, thêm `active_step` (FE nên dùng thay tự tính, cùng luật giao job) · C5–C7 — nhận path; drawer gộp grants vào GET ô.
+
+
+## Index (chuyển từ spec §4)
+| Truy vấn | Index |
+|---|---|
+| Profile dùng provider `k`: `steps @> jsonb_build_array(jsonb_build_object('provider_key', k))` | quét `model_profiles` (≤ 200 hàng) |
+| Provider có lịch sử: `exists(select 1 from hub.jobs where provider_key = k)` | `jobs_provider_key_idx` |
+| `slots_in_use`: `count(*) … where status='running' group by provider_key` | partial `jobs_heartbeat_running_idx` (`WHERE status='running'`) |
+| Agent dùng profile: `agents where profile_id = p` | quét `agents` (≤ 200) |
+| Ma trận: entitlement chưa thu hồi + `count(*) group by agent_id, tenant_id, subject_type` của `agent_grants` | PK `agent_entitlements` · `agent_grants_uq (agent_id, tenant_id, …)` |
+
