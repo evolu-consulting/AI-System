@@ -31,3 +31,8 @@ Chưa kiểm: EN/mobile/dark; diff > 2.000 dòng, trần kích thước/số fil
 
 ## Dọn dữ liệu
 Đã xoá: run `fixbug-apply`, `autofix_results`, file diff/log, tin thread của run, def bản chép (soft-delete), nguồn `repo`/`uat-calc`/`uat-lib`/`uat-gh`, repo thử (`scripts/cleanup.mjs`). Còn: user `uat-outsider` (đã khoá), `hub.jobs` lịch sử, cache nguồn Runtime. Tiến trình còn chạy: admin-api `:3001`, hub-api `:4000`, container `ai-hub-dev-runtime`.
+
+## Sửa backend/dev (WRK-FR-28)
+- Major 1 — `tools/hub-dev/src/dev.ts` `runtimeEnv`: thêm `RUNTIME_ENV=development`, `RUNTIME_SOURCE_CACHE_DIR` (container `/tmp/hub-dev-srccache`; local `.data/hub-dev-srccache`), `HUB_SOURCE_LOCAL_ROOTS` (container `/work`, ghi đè `HUB_DEV_SOURCE_ROOTS`; local = repo). Guide: `docs/guides/hub-dev.md` mục "Nguồn `repo` trong hub-dev". Cần chạy lại `hub:dev` để Runtime nhận env; nguồn `local_path` trong container khai `/work/...`.
+- Major 2 — `providers/fake/provider.py` `_answer`: có `#fake:sections` thì thân = các mục `## …` rồi tóm tắt ws nối sau (vào mục cuối) ⇒ `fixbug-apply` qua checkTemplate. Test: `test_sections.py` (2 ca). Không đụng test khoá; không có tranh chấp.
+- Minor 3 — Hub đã trả đúng mã: HTTP 404, `code: SOURCE_NOT_FOUND`, message "Source not found", không có `details` (`defs.service.ts #checkSources`, PB-R06; cố ý không lộ key). FE dịch theo `code`.

@@ -29,6 +29,8 @@ export const HUB_PORT = "4000";
 export const HOST_ALIAS = "host.docker.internal";
 const RT_CONTAINER = "ai-hub-dev-runtime";
 const RT_WORK = "/tmp/hub-dev-work";
+/** Nguồn `repo` (P-b): cache mirror/snapshot + gốc `local_path`. Container: repo mount ở `/work`. */
+const RT_SRC_CACHE_CONTAINER = "/tmp/hub-dev-srccache";
 const RT_DB_DEFAULT = "postgres://agent_runtime:agent_runtime_dev_pw@localhost:5432/ai_system";
 
 type Stop = () => Promise<void> | void;
@@ -106,7 +108,10 @@ export function hubUrlForRuntime(inContainer: boolean): string {
   return inContainer ? `http://${HOST_ALIAS}:${HUB_PORT}` : `http://localhost:${HUB_PORT}`;
 }
 
-export function runtimeEnv(inContainer: boolean): Record<string, string> {
+export function runtimeEnv(
+  inContainer: boolean,
+  env: Record<string, string | undefined> = process.env,
+): Record<string, string> {
   // biome-ignore lint/suspicious/noUndeclaredEnvVars: env Runtime chỉ của script dev, không ảnh hưởng cache turbo
   const db = process.env.AGENT_RT_DATABASE_URL || RT_DB_DEFAULT;
   const redis = process.env.REDIS_URL || "redis://localhost:6379";
@@ -119,6 +124,15 @@ export function runtimeEnv(inContainer: boolean): Record<string, string> {
     AGENT_RT_PROVIDERS: "fake-cli",
     AGENT_RT_WORK_DIR: RT_WORK,
     AGENT_RT_LOG_DIR: "/tmp/hub-dev-logs",
+    // Nguồn `repo` (source.resolve): thiếu `RUNTIME_SOURCE_CACHE_DIR` ⇒ tính năng nguồn tắt, job kẹt queued.
+    RUNTIME_ENV: "development",
+    // Container: đường dẫn host trong `.env.local` vô nghĩa ⇒ chỉ `HUB_DEV_SOURCE_ROOTS` ghi đè (mặc định `/work`).
+    RUNTIME_SOURCE_CACHE_DIR: inContainer
+      ? RT_SRC_CACHE_CONTAINER
+      : env.RUNTIME_SOURCE_CACHE_DIR?.trim() || resolve(REPO, ".data/hub-dev-srccache"),
+    HUB_SOURCE_LOCAL_ROOTS: inContainer
+      ? env.HUB_DEV_SOURCE_ROOTS?.trim() || "/work"
+      : env.HUB_SOURCE_LOCAL_ROOTS?.trim() || REPO,
   };
 }
 
@@ -157,7 +171,7 @@ async function startRuntimeContainer(): Promise<Stop> {
   const sb = sandboxRuntime(true);
   const env = { ...runtimeEnv(true), ...sb.env, HOME: "/tmp/hub-dev-home" };
   const cmd = [
-    "mkdir -p /tmp/hub-dev-home /tmp/hub-dev-work /tmp/hub-dev-logs",
+    "mkdir -p /tmp/hub-dev-home /tmp/hub-dev-work /tmp/hub-dev-logs /tmp/hub-dev-srccache",
     "(uv sync --frozen 2>/dev/null || uv sync) >/dev/null 2>&1",
     "exec /opt/venv/bin/python -m agent_runtime",
   ].join("; ");

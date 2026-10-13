@@ -204,9 +204,13 @@ async def _body(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -
 
 
 async def _answer(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -> str:
-    """P-c1 `#fake:ws_*` (`ws.py`, job tự-sửa) trước các chỉ thị khác."""
+    """P-c1 `#fake:ws_*` (`ws.py`, job tự-sửa) trước các chỉ thị khác. Có `#fake:sections` thì thân
+    giữ các mục `## …` (qua checkTemplate) và tóm tắt ws nối sau (vào mục cuối)."""
     ws = await run_ws(job, found, emit)
-    return ws if ws is not None else await _body(job, msg, found, emit)
+    if ws is None:
+        return await _body(job, msg, found, emit)
+    secs = sections_of(msg)
+    return f"{_sections_doc(secs)}\n\n{ws}" if secs else ws
 
 
 def _orchestrator(msg: str, found: dict[str, str], body: str) -> Final:

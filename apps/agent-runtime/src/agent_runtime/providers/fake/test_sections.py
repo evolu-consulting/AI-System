@@ -51,6 +51,20 @@ async def test_b1_agent_ask_uses_custom_question(tmp_path: Path) -> None:
     assert agent_text(evs) == "Ưu tiên phạm vi nào?"
 
 
+async def _text(tmp_path: Path, msg: str) -> str:
+    return agent_text(await run(make_job(tmp_path, msg)))
+
+
+async def test_wrk_fr_28_ws_directive_keeps_sections_and_appends_summary(tmp_path: Path) -> None:
+    text = await _text(tmp_path, "sửa lỗi #fake:sections=Thay đổi|Test #fake:ws_exec=ls")
+    assert "## Thay đổi" in text and "## Test" in text
+    assert text.endswith("ws_unavailable")  # job không tự-sửa ⇒ tóm tắt ws nối sau thân
+
+
+async def test_wrk_fr_28_ws_directive_without_sections_is_summary_only(tmp_path: Path) -> None:
+    assert await _text(tmp_path, "x #fake:ws_exec=ls") == "ws_unavailable"
+
+
 async def test_b1_plain_echo_still_default(tmp_path: Path) -> None:
     evs = await run(make_job(tmp_path, "chỉ chào thôi"))
     assert agent_text(evs).startswith("echo: chỉ chào thôi ")
