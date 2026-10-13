@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import stat
 import subprocess
 import tarfile
 import tempfile
@@ -212,14 +213,36 @@ def commit(tmp: Path, final: Path) -> Path:
 
 
 def rmtree_ro(path: Path) -> None:
-    """Mở quyền ghi toàn cây (cây chỉ-đọc) rồi `rmtree` — không dùng `onerror` (deprecated 3.12)."""
-    for dirpath, _, filenames in os.walk(path):
+    """Mở quyền ghi các THƯ MỤC (cây chỉ-đọc) rồi `rmtree` — không dùng `onerror` (deprecated 3.12).
+
+    Không bao giờ `chmod` qua symlink (cây có thể do container tạo: symlink → `/etc/passwd`,
+    docker.sock): xoá file chỉ cần quyền ghi thư mục cha nên không đụng file; thư mục mở bằng
+    `O_NOFOLLOW` theo `dir_fd` (`fwalk`) rồi `fchmod`."""
+    if path.is_symlink():
         with suppress(OSError):
-            os.chmod(dirpath, 0o700)
-        for name in filenames:
-            with suppress(OSError):
-                os.chmod(Path(dirpath, name), 0o700)
+            path.unlink()
+        return
+    with suppress(OSError):
+        _fchmod_dir(str(path), None)
+    with suppress(OSError):
+        for _root, dirs, _files, rootfd in os.fwalk(path, follow_symlinks=False):
+            for name in dirs:
+                with suppress(OSError):
+                    _fchmod_dir(name, rootfd)
     shutil.rmtree(path, ignore_errors=True)
+
+
+def _fchmod_dir(name: str, dir_fd: int | None) -> None:
+    try:
+        fd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=dir_fd)
+    except PermissionError:  # thư mục không có quyền đọc (vd 0o300, Runtime không phải root)
+        if stat.S_ISDIR(os.stat(name, dir_fd=dir_fd, follow_symlinks=False).st_mode):
+            os.chmod(name, 0o700, dir_fd=dir_fd)
+        return
+    try:
+        os.fchmod(fd, 0o700)
+    finally:
+        os.close(fd)
 
 
 # ── mount vào work/<job>/sources/<key> ───────────────────────────────────────────────────────────

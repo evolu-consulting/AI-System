@@ -3,9 +3,10 @@
 Thứ tự, dừng ở nhóm trượt đầu: (0) mục `.git` trong workspace ⇒ `paths` (git bỏ qua chúng nên diff
 không thấy — plan-runtime §5.3) · (1) đường dẫn `rules.check_paths` · (2) kích thước
 `rules.check_size` (workspace quá trần ⇒ trượt TRƯỚC khi `git add` để không băm hàng GB) · (3)
-bí mật
-`rules.scan_secrets`. Bước (4) test chạy trong container MỚI ở host (R3). Trượt ⇒ `diff=None`
-(không lưu diff, PC-R08); `failures` ≤ 50 (contract `AutofixReport.failures`).
+bí mật `gitscan.scan_blob` trên NỘI DUNG blob mọi đường đổi (không theo diff: diff nhị phân/base85
+giấu dòng thêm), blob quá `SCAN_BLOB_MAX`/tổng `SCAN_TOTAL_MAX` ⇒ `unscannable`. Bước (4) test
+chạy trong container MỚI ở host (R3). Trượt ⇒ `diff=None` (không lưu diff, PC-R08); `failures`
+≤ 50 (contract `AutofixReport.failures`).
 """
 
 from __future__ import annotations
@@ -14,6 +15,15 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
+from agent_runtime.autofix.gitscan import (
+    REGULAR_MODES,
+    SCAN_BLOB_MAX,
+    SCAN_TOTAL_MAX,
+    RawChange,
+    check_link_modes,
+    scan_blob,
+    unscannable,
+)
 from agent_runtime.autofix.rules import (
     DiffStats,
     Failure,
@@ -21,7 +31,6 @@ from agent_runtime.autofix.rules import (
     check_paths,
     check_size,
     clip_detail,
-    scan_secrets,
 )
 from agent_runtime.autofix.workspace import GitError, Workspace
 
@@ -49,6 +58,33 @@ def _failed(failures: list[Failure], head_sha: str, stats: DiffStats | None = No
     return CheckResult(failures[:AUTOFIX_FAILURES_MAX], None, stats, head_sha)
 
 
+_NULL = "0" * 40
+
+
+def scan_changes(ws: Workspace, changes: list[RawChange]) -> list[Failure]:
+    """PC-R08(3): đọc blob mới (+ blob base để chỉ báo dòng mới) của mọi file thường đổi."""
+    files = [c for c in changes if c.status != "D" and c.new_mode in REGULAR_MODES]
+    bases = [c.old_sha for c in files if c.old_mode in REGULAR_MODES and c.old_sha != _NULL]
+    sizes = ws.blob_sizes(sorted({c.new_sha for c in files} | set(bases)))
+    out: list[Failure] = []
+    want: set[str] = set()
+    total = 0
+    for c in files:
+        size = sizes.get(c.new_sha, SCAN_BLOB_MAX + 1)
+        total += size
+        if size > SCAN_BLOB_MAX or total > SCAN_TOTAL_MAX:
+            out.append(unscannable(c.path, size))
+            continue
+        want.add(c.new_sha)
+        if c.old_sha in sizes and sizes[c.old_sha] <= SCAN_BLOB_MAX:
+            want.add(c.old_sha)
+    data = ws.blobs(sorted(want))
+    for c in files:
+        if c.new_sha in data:
+            out += scan_blob(c.path, data[c.new_sha], data.get(c.old_sha))
+    return out
+
+
 def run_checks(ws: Workspace, allowlist: list[str], lim: Limits) -> CheckResult:
     """PC-R08 (1)–(3) trên workspace sau khi agent xong (container agent đã xoá)."""
     bad = ws.git_entries()
@@ -62,16 +98,24 @@ def run_checks(ws: Workspace, allowlist: list[str], lim: Limits) -> CheckResult:
         return _failed(early, ws.base_sha)
     try:
         diff, stats, head = ws.diff(lim.max_diff_bytes)
-        changed = ws.changed_paths(head)
+        changes = ws.raw_changes(head)
     except GitError as err:
-        return _failed([Failure("paths", rule="git", detail=clip_detail(err.stderr))], ws.base_sha)
+        return _failed([_git_failure(err)], ws.base_sha)
+    changed = [c.path for c in changes]
     groups: list[Callable[[], list[Failure]]] = [
-        lambda: check_paths(changed, allowlist),
+        lambda: check_paths(changed, allowlist) + check_link_modes(changes),
         lambda: check_size(stats, ws_bytes, lim),
-        lambda: scan_secrets(diff),
+        lambda: scan_changes(ws, changes),
     ]
     for group in groups:
-        failures = group()
+        try:
+            failures = group()
+        except GitError as err:
+            failures = [_git_failure(err)]
         if failures:
             return _failed(failures, head, stats)
     return CheckResult([], diff, stats, head)
+
+
+def _git_failure(err: GitError) -> Failure:
+    return Failure("paths", rule="git", detail=clip_detail(err.stderr))

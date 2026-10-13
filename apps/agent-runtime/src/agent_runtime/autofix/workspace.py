@@ -21,7 +21,9 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from agent_runtime.autofix.gitscan import RawChange, parse_raw
 from agent_runtime.autofix.rules import (
+    GIT_INFO_ATTRIBUTES,
     GIT_PATH,
     GIT_SAFE_ARGS,
     SANDBOX_UID,
@@ -159,9 +161,9 @@ def hand_over(ws_dir: Path) -> None:
     if os.geteuid() != 0:
         return
     os.chown(ws_dir, SANDBOX_UID, SANDBOX_UID, follow_symlinks=False)
-    for dirpath, dirnames, filenames in os.walk(ws_dir, followlinks=False):
-        for name in (*dirnames, *filenames):
-            os.chown(Path(dirpath, name), SANDBOX_UID, SANDBOX_UID, follow_symlinks=False)
+    for _root, dirs, files, rootfd in os.fwalk(ws_dir, follow_symlinks=False):
+        for name in (*dirs, *files):  # theo dir_fd: không thể bị chuyển hướng qua symlink cha
+            os.chown(name, SANDBOX_UID, SANDBOX_UID, dir_fd=rootfd, follow_symlinks=False)
 
 
 def git_entries(ws_dir: Path) -> list[str]:
@@ -204,6 +206,10 @@ def _parse_numstat(raw: bytes) -> tuple[list[str], int, int]:
         ins += int(a) if a.isdigit() else 0
         dels += int(d) if d.isdigit() else 0
     return paths, ins, dels
+
+
+def _lines_in(shas: list[str]) -> bytes:
+    return "".join(f"{s}\n" for s in shas).encode()
 
 
 @dataclass(frozen=True)
@@ -254,8 +260,45 @@ class Workspace:
         with out.open("rb") as fh:
             data = fh.read(max_bytes + 1)
         out.unlink(missing_ok=True)
+        text = data.decode("utf-8", "replace")
+        size = max(size, len(text.encode()))  # giải mã `replace` có thể phình (U+FFFD = 3 byte)
         stats = DiffStats(files=len(paths), insertions=ins, deletions=dels, bytes=size)
-        return data.decode("utf-8", "replace"), stats, head
+        return text, stats, head
+
+    def raw_changes(self, head: str = "HEAD") -> list[RawChange]:
+        """`diff --raw -z` base..head: mode + SHA blob mỗi đường đổi (PC-R08 1, 3)."""
+        args = ["diff", "--raw", "-z", "--no-renames", "--no-abbrev", self.base_sha, head]
+        return parse_raw(self.git(args))
+
+    def blob_sizes(self, shas: list[str]) -> dict[str, int]:
+        """`cat-file --batch-check`: SHA → kích thước (thiếu/không phải blob ⇒ bỏ)."""
+        if not shas:
+            return {}
+        out = self.git(["cat-file", "--batch-check"], _lines_in(shas))
+        sizes: dict[str, int] = {}
+        for rec in out.decode("ascii", "replace").splitlines():
+            parts = rec.split()
+            if len(parts) == 3 and parts[1] == "blob" and parts[2].isdigit():
+                sizes[parts[0]] = int(parts[2])
+        return sizes
+
+    def blobs(self, shas: list[str]) -> dict[str, bytes]:
+        """`cat-file --batch`: nội dung các blob (gọi sau `blob_sizes` để giới hạn tổng)."""
+        if not shas:
+            return {}
+        raw = self.git(["cat-file", "--batch"], _lines_in(shas))
+        out: dict[str, bytes] = {}
+        pos = 0
+        while pos < len(raw):
+            nl = raw.index(b"\n", pos)
+            parts = raw[pos:nl].split()
+            pos = nl + 1
+            if len(parts) != 3:
+                continue  # `<sha> missing`
+            size = int(parts[2])
+            out[parts[0].decode()] = raw[pos : pos + size]
+            pos += size + 1
+        return out
 
 
 def _init_repo(job_dir: Path, ws_dir: Path, branch: str) -> Workspace:
@@ -264,6 +307,8 @@ def _init_repo(job_dir: Path, ws_dir: Path, branch: str) -> Workspace:
         shutil.rmtree(git_dir)
     git_dir.mkdir(mode=0o700, parents=True)
     run_git(git_dir, ws_dir, ["init", "-q", "--template=", f"--initial-branch={branch}"])
+    (git_dir / "info").mkdir(mode=0o700, exist_ok=True)
+    (git_dir / "info" / "attributes").write_text(GIT_INFO_ATTRIBUTES, encoding="utf-8")
     probe = Workspace(job_dir, ws_dir, git_dir, NULL_SHA, branch)
     probe.git(["add", "-A"])
     probe.git(["commit", "-q", "--allow-empty", "--no-verify", "--no-gpg-sign", "-m", "base"])

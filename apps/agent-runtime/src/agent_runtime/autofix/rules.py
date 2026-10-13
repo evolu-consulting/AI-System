@@ -1,10 +1,11 @@
 """HUB-BR-32 · HUB-BR-33 · WRK-FR-28 · WRK-FR-29 · WRK-BR-08 · P-c1 · Luật thuần Runtime tự-sửa
 (plan §4 Runtime, plan-runtime §5.2–§5.4; ADR-0011 #1–#4). Không I/O, không subprocess.
 
-- `container_args`: argv `run` cho docker/podman — `--network none` (trừ `prep`), cap-drop ALL,
-  no-new-privileges, rootfs read-only, user 1000, trần cpu/mem/pids/tmpfs, chỉ mount `/workspace`,
-  env container cố định (không kế thừa host).
-- `check_paths` → `check_size` → `scan_secrets` (PC-R08 1–3); `redact` che log (PC-R12).
+- `container_args`: argv `run` cho docker/podman — `--network none` (`prep`: mạng `aif-prep`),
+  cap-drop ALL, no-new-privileges, rootfs read-only, user 1000, trần cpu/mem/pids/tmpfs/ulimit,
+  chỉ mount `/workspace`, env container cố định (không kế thừa host).
+- `check_paths` (+ `gitscan.check_link_modes`) → `check_size` → `gitscan.scan_blob` (PC-R08 1–3;
+  `scan_secrets` theo diff giữ cho tương thích); `redact` che log (PC-R12).
 - `git_env` + `GIT_SAFE_ARGS`: git chạy ngoài container với cấu hình cứng (ADR-0011 #4).
 - `ws_rel_ok`: đường dẫn tool `ws_*` tương đối, không thoát workspace.
 """
@@ -32,6 +33,12 @@ CMD_MAX = 500
 DETAIL_MAX = 500
 GIT_AUTHOR = ("ai-autofix", "noreply@local")
 GIT_PATH = "/usr/local/bin:/usr/bin:/bin"
+PREP_NETWORK = "aif-prep"
+NOFILE = 8192
+# `$GIT_DIR/info/attributes` (ưu tiên cao nhất, git 2.39 chưa có `--attr-source`): vô hiệu
+# `.gitattributes` trong cây (`-diff`/`binary` giấu dòng thêm, `filter`/`eol`/encoding đổi blob).
+GIT_INFO_ATTRIBUTES = "* !diff !merge !text !eol !ident !filter !working-tree-encoding\n"
+
 
 GIT_SAFE_ARGS: list[str] = [
     "-c",
@@ -61,6 +68,7 @@ class SandboxSpec:
     memory_mb: int = 2048
     pids: int = 512
     tmp_mb: int = 256
+    disk_mb: int = 4096  # `RUNTIME_SANDBOX_DISK_MB` ⇒ `--ulimit fsize` (trần MỘT file)
 
 
 @dataclass(frozen=True)
@@ -97,14 +105,17 @@ def container_name(job_id: str, phase: Phase) -> str:
 def container_args(spec: SandboxSpec, *, phase: Phase) -> list[str]:
     """argv sau tên CLI (`docker`/`podman`): `run -d … <image> sleep infinity` (plan-runtime §5.2).
 
-    `prep` (pha cài `install_cmd`, Q2) giữ mọi hàng rào trừ `--network none`."""
+    `prep` (pha cài `install_cmd`, Q2) giữ mọi hàng rào trừ `--network none`: dùng mạng riêng
+    `aif-prep` (docker: `enable_icc=false` — `OciCli` tạo idempotent), không bridge mặc định."""
     argv = ["run", "-d", "--name", container_name(spec.job_id, phase)]
     argv += ["--label", LABEL_AUTOFIX, "--label", f"ai.job={spec.job_id}"]
-    if phase != "prep":
-        argv += ["--network", "none"]
+    argv += ["--network", PREP_NETWORK if phase == "prep" else "none"]
     mem = f"{spec.memory_mb}m"
     argv += ["--cpus", f"{spec.cpus:g}", "--memory", mem, "--memory-swap", mem]
     argv += ["--pids-limit", str(spec.pids), "--read-only"]
+    fsize = spec.disk_mb * 1024 * 1024  # byte (setrlimit RLIMIT_FSIZE)
+    argv += ["--ulimit", f"fsize={fsize}:{fsize}", "--ulimit", f"nofile={NOFILE}:{NOFILE}"]
+    argv += ["--ulimit", "core=0:0"]
     argv += ["--tmpfs", f"/tmp:rw,exec,size={spec.tmp_mb}m"]
     argv += ["--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--user", UID_GID]
     if spec.engine == "podman":
@@ -131,22 +142,39 @@ def _ci_explicit(path: str, allowlist: list[str]) -> bool:
     return any(p.match(path) for p in compile_allowlist(explicit))
 
 
-def _path_failure(path: str, rule: str, detail: str) -> Failure:
+def path_failure(path: str, rule: str, detail: str) -> Failure:
     return Failure(check="paths", path=path[:1024], rule=rule, detail=detail)
 
 
+_GIT_META = frozenset({".gitattributes", ".gitmodules"})
+
+
+def _is_git_meta(path: str) -> bool:
+    return path.rsplit("/", 1)[-1] in _GIT_META
+
+
+def _meta_explicit(path: str, allowlist: list[str]) -> bool:
+    """`.gitattributes`/`.gitmodules` chỉ được khi một mẫu allowlist nêu đúng tên đó."""
+    explicit = [g for g in allowlist if g.rsplit("/", 1)[-1] in _GIT_META]
+    return any(p.match(path) for p in compile_allowlist(explicit))
+
+
 def check_paths(changed: list[str], allowlist: list[str]) -> list[Failure]:
-    """PB-R07 tên cấm (mọi độ sâu) thắng allowlist; CI cần ghi rõ; allowlist rỗng = mọi đường."""
+    """PB-R07 tên cấm (mọi độ sâu) thắng allowlist; CI và `.gitattributes`/`.gitmodules` cần ghi
+    rõ; allowlist rỗng = mọi đường."""
     patterns = compile_allowlist(allowlist)
     out: list[Failure] = []
     for path in changed:
         if is_secret(path):
-            out.append(_path_failure(path, "forbidden_name", "tên file/thư mục cấm (PB-R07)"))
+            out.append(path_failure(path, "forbidden_name", "tên file/thư mục cấm (PB-R07)"))
         elif _is_ci(path):
             if not _ci_explicit(path, allowlist):
-                out.append(_path_failure(path, "ci_file", "file CI cần ghi rõ trong allowlist"))
+                out.append(path_failure(path, "ci_file", "file CI cần ghi rõ trong allowlist"))
+        elif _is_git_meta(path):
+            if not _meta_explicit(path, allowlist):
+                out.append(path_failure(path, "git_meta", "file cấu hình git cần ghi rõ"))
         elif patterns and not any(p.match(path) for p in patterns):
-            out.append(_path_failure(path, "not_allowed", "ngoài allowlist ghi"))
+            out.append(path_failure(path, "not_allowed", "ngoài allowlist ghi"))
     return out
 
 

@@ -36,7 +36,7 @@ from agent_runtime.autofix.prep import (
     sandbox_spec,
 )
 from agent_runtime.autofix.report import Command, HubTarget, ReportMeta, build_report, post_result
-from agent_runtime.autofix.rules import Failure, SandboxSpec
+from agent_runtime.autofix.rules import Failure, Phase, SandboxSpec, container_name
 from agent_runtime.autofix.workspace import (
     Workspace,
     WorkspaceError,
@@ -69,6 +69,7 @@ PATCH_SUBDIR = "autofix-in"  # `base_patch` tải về (ngoài workspace)
 META_SUBDIR = "autofix-meta"  # nhật ký lệnh `ws` (ngoài workspace)
 COMMANDS_FILE = "commands.jsonl"
 _TOOLS = frozenset({"exec", "read", "write", "edit"})
+_PHASES: tuple[Phase, ...] = ("agent", "prep", "test")
 
 
 class _Ended(Exception):  # noqa: N818 — job đã kết thúc/dừng trong pha chuẩn bị
@@ -239,14 +240,19 @@ class AutofixJobRun(JobRun):
         await super()._close(v)
 
     async def _rm_agent(self) -> None:
+        """`OciError` ⇒ container có thể còn sống: giữ tên để `cleanup` thử lại."""
         if self.agent_ctr is not None:
-            name, self.agent_ctr = self.agent_ctr, None
-            await self.oci.rm(name)
+            await self.oci.rm(self.agent_ctr)
+            self.agent_ctr = None
 
     async def _finish_round(self, v: Verdict) -> Verdict:
         """PC-R08 (1)–(4) + báo cáo TRƯỚC "Kết thúc" (plan §1 bước 6–7)."""
         assert self.ws is not None and self.sandbox is not None
-        await self._rm_agent()
+        try:
+            await self._rm_agent()
+        except OciError as err:  # không xác nhận được container đã chết ⇒ không đọc workspace
+            get_logger().warning("autofix.container_failed", reason=err.reason)
+            return Verdict(CONTAINER)
         af = self.spec_af
         allow = [a.root for a in af.write_allowlist]
         check = await asyncio.to_thread(run_checks, self.ws, allow, self.af_cfg.limits)
@@ -263,8 +269,15 @@ class AutofixJobRun(JobRun):
         return v if await self._post(body) else Verdict(UPSTREAM)
 
     async def cleanup(self) -> None:
-        """Dọn container còn lại + `work/<job_id>/` (bản sao, git, patch, nhật ký)."""
-        with suppress(Exception):
-            await self._rm_agent()
+        """Dọn MỌI container của job (agent/prep/test; `rm` xác nhận đã chết) rồi mới xoá
+        `work/<job_id>/`. Một container chưa chắc đã chết ⇒ giữ nguyên thư mục (sweeper dọn sau)."""
+        names = [container_name(self.job.id, p) for p in _PHASES]
+        try:
+            for name in names:
+                await self.oci.rm(name)
+        except Exception as err:  # noqa: BLE001 — dọn dẹp không được ném
+            get_logger().warning("autofix.cleanup_skipped", error=type(err).__name__)
+            return
+        self.agent_ctr = None
         with suppress(OSError):
             await asyncio.to_thread(rmtree_ro, self.work)

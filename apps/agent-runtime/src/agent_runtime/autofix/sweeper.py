@@ -40,7 +40,10 @@ async def sweep_once(oci: Oci, pool: Pool) -> int:
         rows = await conn.fetch(LIVE_SQL, ids)
     gone = orphans(names, {str(r["id"]) for r in rows})
     for name in gone:
-        await oci.rm(name)
+        try:
+            await oci.rm(name)
+        except OciError as err:  # một container cứng đầu không chặn phần còn lại
+            get_logger().warning("sandbox.orphan_rm_failed", container=name, reason=err.reason)
     if gone:
         get_logger().warning("sandbox.orphans_removed", count=len(gone))
     return len(gone)

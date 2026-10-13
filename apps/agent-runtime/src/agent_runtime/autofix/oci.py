@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 from agent_runtime.autofix.rules import (
+    LABEL_AUTOFIX,
+    PREP_NETWORK,
     SANDBOX_UID,
     UID_GID,
     WORKSPACE,
@@ -192,6 +194,8 @@ class OciCli:
 
     async def run(self, spec: SandboxSpec, phase: Phase) -> str:
         """Dựng container `-d` (sleep infinity); trùng tên/lỗi ⇒ `OciError("run_failed")`."""
+        if phase == "prep":
+            await self.ensure_prep_network()
         argv = container_args(replace(spec, engine=self.engine), phase=phase)
         res = await self._cli(argv, _ctl())
         if res.exit_code != 0:
@@ -209,10 +213,39 @@ class OciCli:
             await self._cli(kill, _ctl(10))
         return res
 
+    async def ensure_prep_network(self) -> None:
+        """Mạng `aif-prep` cho pha cài (idempotent). docker: bridge `enable_icc=false` (container
+        cùng mạng không nói chuyện được); podman: `isolate=true` (tách khỏi mạng bridge khác).
+        KHÔNG chặn RFC1918/169.254 — cần tường lửa host (PRODUCTION-NOTES)."""
+        if (await self._cli(["network", "inspect", PREP_NETWORK], _ctl(30))).exit_code == 0:
+            return
+        opt = (
+            "isolate=true"
+            if self.engine == "podman"
+            else "com.docker.network.bridge.enable_icc=false"
+        )
+        args = ["network", "create", "--label", LABEL_AUTOFIX, "-o", opt, PREP_NETWORK]
+        res = await self._cli(args, _ctl(30))
+        if res.exit_code != 0 and b"already exists" not in res.stderr.lower():
+            raise OciError("network_failed", _short(res.stderr))
+
     async def rm(self, name: str) -> None:
+        """`rm -f`; lỗi ⇒ xác nhận container đã chết (`inspect`). Còn chạy / không xác nhận được ⇒
+        `OciError("rm_failed")` — gọi viên KHÔNG được đụng FS workspace."""
         res = await self._cli(["rm", "-f", name], _ctl(30))
-        if res.exit_code != 0:
-            get_logger().warning("sandbox.rm_failed", container=name, error=_short(res.stderr))
+        if res.exit_code == 0:
+            return
+        get_logger().warning("sandbox.rm_failed", container=name, error=_short(res.stderr))
+        if await self._alive(name):
+            raise OciError("rm_failed", _short(res.stderr))
+
+    async def _alive(self, name: str) -> bool:
+        """False chỉ khi engine trả lời chắc chắn: không có container hoặc `Running=false`."""
+        args = ["container", "inspect", "--format", "{{.State.Running}}", name]
+        res = await self._cli(args, _ctl(30))
+        if res.exit_code == 0:
+            return res.stdout.strip() != b"false"
+        return b"no such" not in res.stderr.lower()
 
     async def ps(self) -> list[str]:
         """Tên container nhãn `ai.autofix=1` (mọi trạng thái) — cho sweeper."""

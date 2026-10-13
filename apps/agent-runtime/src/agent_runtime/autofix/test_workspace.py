@@ -178,7 +178,9 @@ def test_wrk_fr_28_hand_over_chowns_only_as_root(
     (ws / "ln").symlink_to("/etc/passwd")
     calls: list[tuple[str, int, int, bool]] = []
 
-    def fake_chown(p: object, uid: int, gid: int, *, follow_symlinks: bool = True) -> None:
+    def fake_chown(
+        p: object, uid: int, gid: int, *, dir_fd: int | None = None, follow_symlinks: bool = True
+    ) -> None:
         calls.append((Path(str(p)).name, uid, gid, follow_symlinks))
 
     monkeypatch.setattr(os, "chown", fake_chown)

@@ -72,7 +72,7 @@ def sandbox_spec(cfg: AutofixCfg, job_id: str, ws_dir: Path, work_root: Path) ->
         host_ws = str(Path(cfg.host_workdir) / ws_dir.relative_to(work_root))
     return SandboxSpec(
         job_id, cfg.image, host_ws, cpus=cfg.cpus, memory_mb=cfg.memory_mb, pids=cfg.pids,
-        tmp_mb=cfg.tmp_mb,
+        tmp_mb=cfg.tmp_mb, disk_mb=max(1, cfg.limits.max_ws_bytes // _MIB),
     )  # fmt: skip
 
 
@@ -110,7 +110,9 @@ class Box:
 
 
 async def run_in(box: Box, phase: Phase, cmd: str, timeout_s: int) -> ExecResult:
-    """Container mới cho `phase`, chạy `cmd` (hết giờ ⇒ `exit_code=None`), luôn xoá container."""
+    """Container mới cho `phase`, chạy `cmd` (hết giờ ⇒ `exit_code=None`), luôn xoá container —
+    `rm` không xác nhận được container đã chết ⇒ `OciError` (host: `failed/container`, không đụng
+    workspace)."""
     name = await box.oci.run(box.spec, phase)
     try:
         req = ExecReq(EVAL_CMD, (cmd,), None, float(timeout_s), LOG_TAIL_BYTES)
