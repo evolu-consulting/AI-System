@@ -21,8 +21,7 @@ Tách từ BA (Intake 2026-10-13); [`readiness.md`](readiness.md). Sau H4b-1.
 **Làm:**
 - Studio → Cài đặt → **Kết nối KnowledgeHub** (CR-072): **danh sách KH** (tên + URL allowlist); mỗi KH có bảng công ty: ns + secret `kh_api_key` + **Project ghi Tóm tắt** (tuỳ chọn, trống = không ghi) + "Kiểm tra" riêng (HUB-FR-131).
 - Client KH `/v1/{ns}`: đổi token client credentials, giữ trong bộ nhớ, làm mới 60–90 s, `401` ⇒ thử lại 1 lần (HUB-FR-137).
-- **CR-072 (tối giản):** sửa agent = tick KH agent được dùng (một/nhiều); `kh-query(câu hỏi, project)` dùng ns công ty đang chạy trên KH đó, hỏi được project nào KH cho ns đó thấy (HUB-FR-132). Không trang/kho/gắn theo stage; `tenant_admin` giữ một công tắc công ty. **§3–5, §9 còn mô hình kho (CR-071): backend/frontend-lead viết lại.**
-- Tool `kh_query` ở `/mcp` → `POST /v1/{ns}/context/step` (4000 ký tự/lần, ≤ 5 lần/stage).
+- **CR-072 (tối giản):** sửa agent = tick KH agent được dùng (một/nhiều); `kh-query(câu hỏi, project)` dùng ns công ty đang chạy trên KH đó, hỏi được project nào KH cho ns đó thấy (HUB-FR-132). Không trang/kho/gắn theo stage; `tenant_admin` giữ một công tắc công ty.- Tool `kh_query` ở `/mcp` → `POST /v1/{ns}/context/step` (4000 ký tự/lần, ≤ 5 lần/stage).
 - Ghi `## Tóm tắt` qua `POST /v1/{ns}/worklog` vào Project ghi Tóm tắt của công ty trên KH đầu tiên (thứ tự tick) có project ghi; không có ⇒ không ghi, không thêm `## Tóm tắt` (HUB-FR-133).
 - Hạ cấp khi KH lỗi (HUB-FR-134); mock KH.
 - Seed quy trình mẫu `sdlc-delivery` + `bug-fix` (CR-070, chỉ seed; không sửa `sdlc`).
@@ -34,7 +33,8 @@ Trỏ BA; chỉ ghi phần cụ thể hoá.
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
 | Phiên bản tối thiểu | `GET /version` ≥ v6.4; `GET /v1/capabilities`: `api_versions ∋ v1` + `retrieval` (K2 thêm `packs`) | ADR-0012 §6 |
-| Kiểm tra kết nối — lỗi | ns bật `include_people_lanes` **và** tenant có project dùng chung (`read_only`) — lanes bật ở project riêng là OK (Q2); `GET /v1/me` `kind=local`; gọi không token vẫn được (trừ localhost dev); `http://` (trừ localhost dev) | HUB-FR-131, HUB-BR-40 |
+| Kiểm tra kết nối — lỗi | `GET /v1/me` `kind=local`; gọi không token vẫn được (trừ localhost dev); `http://` (trừ localhost dev) | HUB-FR-131, HUB-BR-40 |
+| Kiểm tra kết nối — cảnh báo | ns bật `include_people_lanes` ⇒ chỉ **cảnh báo** `kh_people_lanes_on`, không chặn (Q2, CR-072) | HUB-FR-131 |
 | Cảnh báo tĩnh | Embedder đa ngữ (bge-m3) là điều kiện KH; Hub không đo | ADR-0012 §8 |
 | ns = tenant | Mỗi (kết nối KH, tenant) tối đa một cặp (ns, credentials); run chỉ dùng credentials của tenant mình; project ngoài ns ⇒ KH từ chối, tenant khác ⇒ 404 | HUB-BR-35 |
 | Project ghi Tóm tắt | Khai báo theo (KH, công ty), tuỳ chọn; trống ⇒ không ghi | HUB-FR-133 |
@@ -146,7 +146,7 @@ Env: `HUB_KH_ALLOWED_ORIGINS` (cách dấu phẩy; vắng ⇒ không lưu đư�
 Bản nháp theo BA; qc hoàn thiện ở test-plan.
 | AC | Given / When / Then | Test |
 |---|---|---|
-| K1-AC01 | KH hợp lệ ⇒ "Kiểm tra kết nối" OK; `include_people_lanes=true` + project dùng chung / `kind=local` / http ⇒ lỗi nêu nguyên nhân; lanes bật + chỉ project riêng ⇒ OK | R `kh-check-rules`, `kh-rules` · A `check` · E studio (R01–R06, R30–R43 · A30–A47 · E06–E07) |
+| K1-AC01 | KH hợp lệ ⇒ "Kiểm tra kết nối" OK; `kind=local` / http ⇒ lỗi nêu nguyên nhân; `include_people_lanes=true` ⇒ vẫn OK kèm cảnh báo `kh_people_lanes_on` | R `kh-check-rules`, `kh-rules` · A `check` · E studio (R01–R06, R30–R43 · A30–A47 · E06–E07) |
 | K1-AC02 | Công ty A chạy ⇒ chỉ ns A; project ngoài ns / công ty B không tới được; chỉ KH đã tick; nhiều KH ⇒ đúng KH | R `kh-check-rules`, `kh-summary-rules` · A `query`, `tenant` (A74–A75, A51, A56, A60 · R61, R64) |
 | K1-AC03 | Token chỉ trong bộ nhớ; 401 ⇒ làm mới và thử lại đúng 1 lần; credentials không có trong job/prompt/log/audit | R `kh-rules` · A `query`, `noleak` (R14–R16 · A77–A79, A110–A111) |
 | K1-AC04 | `kh_query` 5 lần OK, lần 6 lỗi tool; ≤ 4000 ký tự/lần | R `kh-summary-rules`, `contracts-k1` · A `query` (R65–R66, R75, R78 · A73–A75, A84) |

@@ -60,3 +60,5 @@ Ghi chú: các dòng 6, 8, 10, 11 không có chi tiết trong yêu cầu giao vi
 | R21 | FK kép `(id, tenant_id)` khi cha có UNIQUE (plan §5) |
 
 Ghi chú: bảng tóm tắt dựng lại từ nhãn trong plan; mức Chặn/Cao/Thấp từng dòng không khôi phục được.
+
+- CR-071/072: readiness cũ hết hiệu lực, chạy lại sau qc.
