@@ -41,7 +41,7 @@ export function DecisionCard({
   // Chỉ hiện lỗi của vòng hiện tại; vòng này không có báo cáo (job lỗi / hết giờ) ⇒ "không có báo cáo chi tiết".
   const autofixReason = isAutofixReason(task.reason);
   const failed = stageAutofix(view, taskView, task.stage_idx).current;
-  // Phòng thủ: Hub vẫn gửi `use_current` cho lý do autofix (E05/E08 khoá test: không hiện nút).
+  // Phòng thủ: lý do autofix không có `use_current` (không có output để dùng); Hub đã lọc, giữ lọc ở FE phòng khi lệch.
   const options = (task.options ?? []).filter((o) => !(autofixReason && o === "use_current"));
   const over = note.length > FORWARD_NOTE_MAX;
 

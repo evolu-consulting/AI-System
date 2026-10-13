@@ -53,7 +53,6 @@ export function RunActions({ run, tenantId }: Props) {
       { onSuccess: () => notifySuccess(t("process.admin.run.decision.done")), onError: fail },
     );
   const load = useAttachmentLoader(tenantId);
-  const autofixReason = d?.reason === "autofix_check_failed" || d?.reason === "sandbox_unavailable";
   // Chỉ lỗi của vòng hiện tại; vòng này không có báo cáo ⇒ AutofixFailures hiện "không có báo cáo chi tiết".
   const failed = d ? currentAutofix(run.stages, d.stage_idx) : undefined;
   const hasOutput = (run.stages[d?.stage_idx ?? 0]?.outputs.length ?? 0) > 0;
@@ -94,19 +93,16 @@ export function RunActions({ run, tenantId }: Props) {
                 />
               </div>
               <div className="flex flex-wrap gap-2">
-                {/* Phòng thủ: Hub vẫn gửi `use_current` cho lý do autofix ⇒ ẩn nút. */}
-                {d.options
-                  .filter((o) => !(autofixReason && o === "use_current"))
-                  .map((o) => (
-                    <Button
-                      key={o}
-                      variant={o === "cancel" ? "outline" : "default"}
-                      disabled={act.isPending || (o === "use_current" && !hasOutput)}
-                      onClick={() => decide(o)}
-                    >
-                      {t(`process.common.option.${o}`)}
-                    </Button>
-                  ))}
+                {d.options.map((o) => (
+                  <Button
+                    key={o}
+                    variant={o === "cancel" ? "outline" : "default"}
+                    disabled={act.isPending || (o === "use_current" && !hasOutput)}
+                    onClick={() => decide(o)}
+                  >
+                    {t(`process.common.option.${o}`)}
+                  </Button>
+                ))}
               </div>
             </>
           ) : (

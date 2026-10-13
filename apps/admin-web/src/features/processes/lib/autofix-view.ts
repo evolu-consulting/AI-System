@@ -12,7 +12,6 @@ export const FAILURE_GROUP_ORDER = [
 ] as const;
 export type FailureGroup = (typeof FAILURE_GROUP_ORDER)[number];
 
-/** 7 ký tự đầu của `pin_sha`; không phải git (`null`) ⇒ `null`. */
 /** Kết quả tự-sửa của stage `idx` nếu thuộc vòng hiện tại (`round` khớp); khác vòng ⇒ undefined. */
 export function currentAutofix(
   stages: readonly Pick<StageView, "idx" | "round" | "autofix">[],
@@ -22,6 +21,7 @@ export function currentAutofix(
   return s?.autofix && s.autofix.round === s.round ? s.autofix : undefined;
 }
 
+/** 7 ký tự đầu của `pin_sha`; không phải git (`null`) ⇒ `null`. */
 export const sha7 = (sha: string | null): string | null => (sha ? sha.slice(0, 7) : null);
 
 /** `nguồn@sha7` (không git ⇒ chỉ `nguồn`). */
