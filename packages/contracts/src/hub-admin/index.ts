@@ -8,4 +8,5 @@ export * from "./agent-settings";
 export * from "./effective";
 export * from "./errors";
 export * from "./processes";
+export * from "./secrets";
 export * from "./trace";

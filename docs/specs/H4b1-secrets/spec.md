@@ -176,6 +176,9 @@ Lệnh xong: `bun run done:h4b1` (T7 tạo; = typecheck → test → test:int �
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - FE PLAN 2026-10-13: không hiện `last4` (chỉ-ghi tuyệt đối); `name` bất biến sau tạo; tab `source_credential` không có nút tạo (Q1); `ConflictDialog` dùng chung ẩn [Xem khác biệt] khi không có diff; Sheet ở lại sau lưu hiện "Đã lưu · v{n}" (AC-H4b1-08).
+- BE T4 2026-10-13: `hub.secret_material` chặt hơn chữ §4 — scope phải là `system` hoặc `user` (không đặt scope ⇒ 0 hàng, như RLS); `p_tenant IS NULL` vẫn mở được ở scope `user` (D09).
+- BE T4: GRANT dùng `REVOKE ALL` (PUBLIC, hub_ro, agent_runtime, admin_rw, hub_rw) rồi GRANT cột ⇒ chạy lại không để sót quyền SELECT toàn bảng.
+- BE T4: contract thêm (spec §3 nói ngầm) `HubSecretListResponseSchema`, `HubSecretDeleteQuerySchema`, `SourceCredential{List,Create,Tenant,Delete}*Schema`, `SecretInUseDetailsSchema`, `HubSecretConflictDetailsSchema`, `HUB_SECRET_NAME_RE`, `SECRET_USED_BY_TYPES`; Drizzle `SECRET_META_COLS` + `HubSecretRow`, export `@ai/db/schema/hub-secrets`.
 
 ## 10. Tranh chấp test
 - (không)

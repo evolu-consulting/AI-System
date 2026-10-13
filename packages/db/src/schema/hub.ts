@@ -1,6 +1,5 @@
 // HUB-FR-75, WRK-FR-24 · kiểu Drizzle cho bảng `hub` mà hub-api dùng (plan H1 §3.1–3.3, plan-db §3.3).
-// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql`, `0010_h4a_studio.sql`, `0018_cr054_agent_defaults.sql`, `0019_pa_process_engine.sql`, `0023_x2b2_room_attachments.sql` (viết tay; bảng quy trình ở `hub-processes.ts`), KHÔNG nằm trong drizzle.config.ts.
-// Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts` (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
+// CHỈ để truy vấn có kiểu: DDL thật là `migrations-hub/0000_hub_core.sql`, `0002_h2a_dify.sql`, `0006_h2b_routing.sql`, `0007_h2c_attachments.sql`, `0008_h3a_provider_state.sql`, `0009_h3b_agent_grants.sql`, `0010_h4a_studio.sql`, `0018_cr054_agent_defaults.sql`, `0019_pa_process_engine.sql`, `0023_x2b2_room_attachments.sql` (viết tay; bảng quy trình ở `hub-processes.ts`, secrets ở `hub-secrets.ts`), KHÔNG nằm trong drizzle.config.ts. Ràng buộc (CHECK, FK, index) chỉ ở SQL. Ba bảng stub (`agent_grants`, `agent_workflows`, `usage_logs`) ở `hub-readonly.ts` (kiểu của Admin, không thêm cột mới để `select()` của Admin chạy được trên DB chưa có migration Hub).
 import { sql } from "drizzle-orm";
 import {
   bigint,
@@ -17,6 +16,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { PA_AUDIT_ACTIONS, PA_AUDIT_ENTITIES, processRunCols } from "./hub-processes";
 import { hub } from "./hub-readonly";
+import { SECRET_AUDIT_ACTIONS, SECRET_AUDIT_ENTITIES } from "./hub-secrets";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true });
 const createdAt = () => ts("created_at").notNull().defaultNow();
@@ -51,7 +51,7 @@ export const AGENT_RUNTIME_VALUES = [
   "dify-agent",
 ] as const;
 export const ATTACHMENT_ORIGIN_VALUES = ["upload", "output"] as const;
-// H4a (0010 D3, HUB-FR-69): thêm action/entity Studio — khớp CHECK `hub_audit_log_action_check`/`_entity_check`.
+// H4a (0010), CR-054 (0018), P-a (0019), H4b-1 (0028): khớp CHECK `hub_audit_log_action_check`/`_entity_check`.
 export const HUB_AUDIT_ACTION_VALUES = [
   "grant",
   "revoke",
@@ -62,16 +62,17 @@ export const HUB_AUDIT_ACTION_VALUES = [
   "enable",
   "disable",
   ...PA_AUDIT_ACTIONS,
+  ...SECRET_AUDIT_ACTIONS,
 ] as const;
 export const HUB_AUDIT_ENTITY_VALUES = [
   "agent_grant",
   "run",
   "agent",
   "orchestrator",
-  // CR-054 (0018)
   "agent_entitlement",
   "agent_default",
   ...PA_AUDIT_ENTITIES,
+  ...SECRET_AUDIT_ENTITIES,
 ] as const;
 export const HUB_AUDIT_ACTOR_ROLE_VALUES = ["platform_admin", "tenant_admin", "member"] as const;
 
@@ -376,8 +377,7 @@ export const attachments = hub.table("attachments", {
   purgedAt: ts("purged_at"),
 });
 
-// ── H3b (0009_h3b_agent_grants): audit Hub append-only (trigger chặn UPDATE/DELETE/TRUNCATE kể cả owner; CHECK ở SQL).
-// Tên `hubAuditLog` tránh trùng `auditLog` (admin.audit_log, `ops.ts`). Không RLS — cách ly tenant ở repo (PL6).
+// ── H3b (0009_h3b_agent_grants): audit Hub append-only (trigger chặn UPDATE/DELETE/TRUNCATE kể cả owner; CHECK ở SQL). Tên `hubAuditLog` tránh trùng `auditLog` (admin.audit_log, `ops.ts`). Không RLS — cách ly tenant ở repo (PL6).
 export const hubAuditLog = hub.table("audit_log", {
   id: uuid("id").primaryKey().defaultRandom(),
   /** Thứ tự ghi (identity) — sort/phân trang ổn định, `at` có thể trùng. */
