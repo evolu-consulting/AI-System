@@ -100,6 +100,18 @@ export async function liveSourceKeys(
   return new Set(rows.map((r) => r.key));
 }
 
+/** PC-R01 · loại của các nguồn còn sống (key → kind) — kiểm nguồn của stage tự-sửa. */
+export async function liveSourceKinds(
+  tx: Tx,
+  tenantId: string | null,
+  keys: readonly string[],
+): Promise<Map<string, string>> {
+  if (tenantId === null || keys.length === 0) return new Map();
+  const rows = await tx.execute<{ key: string; kind: string }>(sql`select key, kind from hub.sources
+    where tenant_id = ${tenantId} and deleted_at is null and key = any(${`{${keys.join(",")}}`}::text[])`);
+  return new Map(rows.map((r) => [r.key, r.kind]));
+}
+
 export type DefWrite = {
   tenantId: string | null;
   input: ProcessDefInput;

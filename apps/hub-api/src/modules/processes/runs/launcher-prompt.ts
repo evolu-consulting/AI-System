@@ -7,6 +7,7 @@ import {
   KH_SUMMARY_WORDS,
   type ProcessInputValue,
   type SourcePin,
+  type StageAutofix,
   type StageSource,
 } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
@@ -28,6 +29,8 @@ export type SnapStage = {
   /** P-b · nguồn + checklist của stage (vắng ⇒ P-a). */
   sources?: StageSource[];
   must_know?: string[];
+  /** P-c1 · cấu hình tự-sửa (vắng/null ⇒ stage thường). */
+  autofix?: StageAutofix | null;
 };
 
 export type Head = {

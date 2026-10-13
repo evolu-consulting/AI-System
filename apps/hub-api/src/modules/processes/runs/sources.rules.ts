@@ -2,6 +2,7 @@
 // không I/O, dễ test. Mọi kiểu lấy từ @ai/contracts. [HUB-FR-122][HUB-FR-123]
 import type { SourcePin } from "@ai/contracts/hub-admin";
 import { RESOLVE_ALLOWLIST_MAX } from "@ai/contracts/hub-admin";
+import { autofixAllowlistUnion } from "./autofix.rules";
 
 /** 7 mã `runs_error_code_ck` (0000:297). */
 export type RunErrorCode =
@@ -22,13 +23,18 @@ export type RefCheck =
       offenders?: string[];
     };
 
-type StageLike = { sources?: readonly { source_key: string; allowlist?: readonly string[] }[] };
+type StageLike = {
+  sources?: readonly { source_key: string; allowlist?: readonly string[] }[];
+  autofix?: { source_key: string } | null;
+};
 
 /**
  * RF-01…05 · hợp nhất allowlist của mọi stage dùng `sourceKey` → sắp xếp + khử trùng. Stage chọn "cả nguồn"
  * (allowlist rỗng) ⇒ [] (không giới hạn), bất kể stage khác. Stage không dùng key ⇒ bỏ qua. Hợp > 40 ⇒ RangeError.
  */
 export function allowlistUnion(stages: readonly StageLike[], sourceKey: string): string[] {
+  const af = autofixAllowlistUnion(stages, sourceKey); // P-c1 · PC-R04: nguồn tự-sửa ⇒ cả repo
+  if (af) return af;
   const uses = stages.flatMap((st) => (st.sources ?? []).filter((s) => s.source_key === sourceKey));
   if (uses.length === 0) return [];
   if (uses.some((s) => (s.allowlist ?? []).length === 0)) return []; // cả nguồn

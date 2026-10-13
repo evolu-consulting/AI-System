@@ -21,6 +21,7 @@ import { type StudioAudit, withConfigWrite } from "../../studio/studio-write";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import {
+  autofixSourceKindMiss,
   copyFromTemplate,
   decodeDefCursor,
   encodeDefCursor,
@@ -106,6 +107,20 @@ export class DefsService {
   async #check(tx: Tx, tenantId: string | null, input: ProcessDefInput): Promise<void> {
     throwIfInvalid(validateProcessDef(input, await loadDefRefs(tx, tenantId)));
     await this.#checkSources(tx, tenantId, input.sources);
+    await this.#checkAutofixKinds(tx, tenantId, input);
+  }
+
+  /** PC-R01 · nguồn của stage tự-sửa phải là git_remote/local_path; library ⇒ 422 PROCESS_REF_INVALID (path autofix.source_key). */
+  async #checkAutofixKinds(tx: Tx, tenantId: string | null, input: ProcessDefInput): Promise<void> {
+    const keys = [
+      ...new Set(input.stages.flatMap((s) => (s.autofix ? [s.autofix.source_key] : []))),
+    ];
+    if (tenantId === null || keys.length === 0) return; // mẫu: key tĩnh, kiểm khi chép
+    const path = autofixSourceKindMiss(
+      input.stages,
+      await repo.liveSourceKinds(tx, tenantId, keys),
+    );
+    if (path) throw defError("PROCESS_REF_INVALID", { path, ref: "source" });
   }
 
   /** PB-R06 · mọi key trong `def.sources` phải là nguồn còn sống của tenant; lạ/khác tenant ⇒ 404 SOURCE_NOT_FOUND. */

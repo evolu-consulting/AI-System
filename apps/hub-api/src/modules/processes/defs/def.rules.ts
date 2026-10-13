@@ -81,6 +81,25 @@ export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck 
     : { ok: true };
 }
 
+/** Loại nguồn cho phép ghi trên bản sao (PC-R01): `library` không có repo để sửa. */
+export const AUTOFIX_SOURCE_KINDS: ReadonlySet<string> = new Set(["git_remote", "local_path"]);
+
+/**
+ * PC-R01 · path `stages.<i>.autofix.source_key` của stage tự-sửa đầu tiên có nguồn loại ngoài {git_remote, local_path}
+ * (kind lạ/thiếu ⇒ coi là sai). `kinds` = key → kind của nguồn còn sống; null nếu hợp lệ.
+ */
+export function autofixSourceKindMiss(
+  stages: readonly { autofix?: { source_key: string } | null }[],
+  kinds: ReadonlyMap<string, string>,
+): string | null {
+  for (const [i, s] of stages.entries()) {
+    if (!s.autofix) continue;
+    const k = kinds.get(s.autofix.source_key);
+    if (k === undefined || !AUTOFIX_SOURCE_KINDS.has(k)) return `stages.${i}.autofix.source_key`;
+  }
+  return null;
+}
+
 /** Bản chép từ mẫu: Group kiểm của tenant khác nhau ⇒ để trống (null), tắt tới khi admin gán đủ. Không đổi `t`. */
 export function copyFromTemplate(
   t: ProcessDefInput,

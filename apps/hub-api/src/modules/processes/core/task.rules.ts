@@ -8,6 +8,7 @@ import type {
   TaskStatus,
 } from "@ai/contracts/chat";
 import { DECISION_OPTIONS, TASK_EXCERPT_MAX } from "@ai/contracts/chat";
+import { autofixDecisionOptions, isAutofixReason } from "../runs/autofix.rules";
 import { isTerminal } from "./process-state.rules";
 import { canDecide, REVIEW_GROUP_REASONS, type RunFacts, type Viewer } from "./run-access.rules";
 
@@ -58,7 +59,11 @@ const FORCE_USE_CURRENT: ReadonlySet<DecisionReason> = new Set([
 
 /** Lựa chọn của task `decision` (team-runner, sweeps, view D9 dùng chung). */
 export const decisionOptionsFor = (hasOutput: boolean, reason: DecisionReason): DecisionOption[] =>
-  DECISION_OPTIONS.filter((o) => o !== "use_current" || hasOutput || FORCE_USE_CURRENT.has(reason));
+  isAutofixReason(reason)
+    ? autofixDecisionOptions(reason) // P-c1 · PC-R10: không `use_current` kể cả có output
+    : DECISION_OPTIONS.filter(
+        (o) => o !== "use_current" || hasOutput || FORCE_USE_CURRENT.has(reason),
+      );
 
 const HIGH_SURROGATE = /[\uD800-\uDBFF]$/;
 
