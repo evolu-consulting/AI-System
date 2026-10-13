@@ -72,13 +72,13 @@ BA là nguồn sự thật (HUB-FR-126…130, HUB-BR-32…34, WRK-FR-28/29, WRK-
 | Seed | Template `fixbug-apply` (1 stage tự-sửa, review) + agent dev `fake-cli` directive `#fake:ws_*`; smoke `claude-sub` riêng |
 
 ## 5. UI (frontend-lead)
-<!-- frontend-lead: mockup trước (người dùng yêu cầu). Màn cần làm: plan.md §8. -->
-Mockup P-c1 (chờ người dùng duyệt; chưa viết plan-frontend), trong `docs/design/agent-hub/canvas/`:
-| Artboard | Nội dung |
-|---|---|
-| `Pc-Editor.dc.html` | Khối "Tự sửa mã" trong panel stage (admin-web): tắt · trống · hợp lệ · lỗi `AUTOFIX_EXECUTOR/REVIEW/MAX` · nguồn `library` · test trống · ghi chú mạng |
-| `Pc-Diff.dc.html` | Duyệt diff (chat-web "Chờ tôi kiểm" + trang run admin-web): có diff · `no_changes` · đang tải · lỗi tải |
-| `Pc-Decision.dc.html` | `autofix_check_failed` (nhóm lỗi) · `sandbox_unavailable` · dòng stage run view · thẻ thread |
+**Mockup duyệt 2026-10-13** (người dùng). Chi tiết màn, câu chữ VI/EN, map lỗi, nhãn e2e: [`plan-frontend.md`](plan-frontend.md).
+| Artboard (`docs/design/agent-hub/canvas/`) | Nội dung | Nơi |
+|---|---|---|
+| `Pc-Editor.dc.html` | Khối "Tự sửa mã" trong panel stage: tắt · trống · hợp lệ · lỗi `AUTOFIX_EXECUTOR/REVIEW/MAX` · nguồn `library` · test trống · ghi chú mạng | admin-web editor |
+| `Pc-Diff.dc.html` | Duyệt diff: có diff · `no_changes` · đang tải · lỗi tải | chat-web "Chờ tôi kiểm" + trang run (cả hai app) |
+| `Pc-Decision.dc.html` | `autofix_check_failed` (nhóm lỗi) · `sandbox_unavailable` · dòng stage run view · thẻ thread | chat-web + admin-web |
+Chốt UI: không thêm thư viện (diff = parser thuần + `<details>`); cắt hiển thị 2.000 dòng + "Tải .diff"; nhãn nhóm lỗi dịch theo `check`, `detail` nguyên văn (riêng `secrets` chỉ `path:line · quy tắc`); nút gate/decision dùng thẻ sẵn có, `options` do server (PC-R10). FE dùng `autofixStageIssues` (contract) để validate cùng luật server.
 
 ## 6. Rủi ro & hàng rào bảo mật (hard stop)
 | Rủi ro | Hàng rào |
