@@ -114,11 +114,11 @@ Int: 80 ca = 72 đỏ ở `expect` + 8 xanh trước code (E09, E11, Q01–Q03, 
 |---|---|---|---|
 | `packages/db/src/hub-h4b2.int.test.ts` | 6/6 | 6/6 | |
 | `db-h4b2` | 7/7 | 7/7 | |
-| `providers` | 24/25 | 24/25 | A08b: tranh chấp test TC-1 (spec-decisions) |
+| `providers` | 24/25 | 25/25 | A08b: TC-1 đã phân xử, test sửa (GET không body) |
 | `role` | 3/3 | 3/3 | |
 | `provider-check` | 12/14 | 14/14 | C12 (chờ đồng hồ thật 10 s > timeout client 10 s) + C14 (logger che trường `provider_key`) — sửa code |
-| `profiles` | 13/14 | 13/14 | P08: tranh chấp test TC-1 |
-| `entitlements` | 10/11 | 10/11 | E07: tranh chấp test TC-2 |
+| `profiles` | 13/14 | 14/14 | P08: TC-1 đã phân xử |
+| `entitlements` | 10/11 | 11/11 | E07: TC-2 đã phân xử (đặt mặc định acme = hoadon) |
 | `dispatch` | 9/9 | 9/9 | |
 | Hồi quy: H4a ×5, runner, seed ×4, CR-054, H4b1 ×10 | xanh | xanh | |
 
@@ -152,3 +152,7 @@ Khoá 2026-10-13 (T2, trước T3 Gate; Gate đổi spec ⇒ qc mở lại + ghi
 ## 9. Mở khoá bổ sung — e2e Xoá profile (readiness lần 3 #2, #8)
 - `h4b2-profiles.studio.ts` thêm **M27** (nút "Xoá profile" chỉ ở profile đã lưu, cạnh "Lưu profile"), **M28** (alertdialog "Xoá {key}?" ⇒ `DELETE ?version=1` ⇒ toast "Đã xoá profile {key}", biến khỏi danh sách), **M29** (409 `PROFILE_IN_USE` ⇒ alertdialog "Không xoá được {key}" + badge `agents[].key`). Cả ba thuộc AC-H4b2-03; chạy xanh với code `1cb8cf82`.
 - Đổi mã trùng: ca hằng contract `PROVIDER_KINDS` từ R70 thành **R82** (R70 chỉ còn `pickStep` ca 13). G4/G6/G8/G9 đã đóng; M38 thuộc AC-H4b2-05 (đã ghi).
+
+## 10. Phân xử TC-1/TC-2 · 2026-10-13 (qc)
+- TC-1: test sai (fixture gửi body với GET). Sửa: GET không body; PUT/PATCH/DELETE/check giờ chạy và kiểm 400 uuid. providers 25/25, profiles 14/14.
+- TC-2: test sai dữ liệu (AGT.orch ngoài catalog acme ⇒ 400 đúng thứ tự `putEntitlement`, CR-054). Ý AC-H4b2 "thu hồi agent mặc định ⇒ 409" giữ nguyên; E07 ghi `tenant_agent_defaults(acme, hoadon)` rồi DELETE hoadon × acme ⇒ 409, xoá hàng ở finally. entitlements 11/11. Không có lỗi code thật.

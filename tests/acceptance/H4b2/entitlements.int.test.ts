@@ -219,8 +219,18 @@ describe("E03–E06 · cấp / thu hồi [AC-H4b2-04 · AC-H4b2-05 · HUB-FR-77 
 });
 
 describe("E07–E11 · lỗi + quyền [HUB-BR-17 · AC-H4b2-06 · spec §2 Quyền thao tác]", () => {
-  it("HUB-FR-78 · E07 · DELETE Orchestrator mặc định × acme ⇒ 409 AGENT_IS_DEFAULT; 0 ghi", async () => {
-    await noWrite(() => pa(x, "DELETE", cell(AGT.orch, T.acme)), 409, "AGENT_IS_DEFAULT");
+  it("HUB-FR-78 · E07 · DELETE agent mặc định của acme (hoadon) ⇒ 409 AGENT_IS_DEFAULT; 0 ghi", async () => {
+    await hubConfigChange(x.sql, async (tx) => {
+      await tx`insert into hub.tenant_agent_defaults (tenant_id, default_agent_id, fallback_agent_id, on_no_match)
+        values (${T.acme}, ${AGT.hoadon}, null, 'answer')`;
+    });
+    try {
+      await noWrite(() => pa(x, "DELETE", cell(AGT.hoadon, T.acme)), 409, "AGENT_IS_DEFAULT");
+    } finally {
+      await hubConfigChange(x.sql, async (tx) => {
+        await tx`delete from hub.tenant_agent_defaults where tenant_id = ${T.acme}`;
+      });
+    }
   });
 
   it("HUB-FR-78 · E08 · agent lạ ⇒ 400 INVALID_REFERENCE{agent_id}; tenant lạ ⇒ 404; id không phải uuid ⇒ 400; 0 ghi", async () => {

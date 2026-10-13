@@ -205,7 +205,7 @@ describe("P06–P09 · lỗi bước [spec §3 B stepsProblem · Q8]", () => {
       ["PUT", "/model-profiles/abc"],
       ["DELETE", "/model-profiles/abc?version=1"],
     ] as const)
-      await noWrite(() => pa(x, m, q, {}), 400, "VALIDATION_ERROR");
+      await noWrite(() => pa(x, m, q, m === "GET" ? undefined : {}), 400, "VALIDATION_ERROR");
   });
 
   it("HUB-FR-67 · P09 · DELETE profile agent đang dùng (fake-1) ⇒ 409 PROFILE_IN_USE{agents:[{id,key}]}; profile rảnh ⇒ 204 + audit delete", async () => {

@@ -188,7 +188,7 @@ describe("A01–A08 · tạo provider [AC-H4b2-01 · spec §3 A POST · plan §3
       ["DELETE", "/providers/abc?version=1"],
       ["POST", "/providers/abc/check"],
     ] as const)
-      await noWrite(() => pa(x, m, p, {}), 400, "VALIDATION_ERROR");
+      await noWrite(() => pa(x, m, p, m === "GET" ? undefined : {}), 400, "VALIDATION_ERROR");
   });
 });
 
