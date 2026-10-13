@@ -12,6 +12,8 @@ import type { SecretKey } from "./modules/secrets/secrets.crypto";
 import { mountSecrets } from "./modules/secrets/secrets.mount";
 import { agentRoutes } from "./modules/studio/agents/agents.routes";
 import { AgentsService } from "./modules/studio/agents/agents.service";
+import { providerRoutes } from "./modules/studio/models/providers.routes";
+import { ProvidersService } from "./modules/studio/models/providers.service";
 import { orchestratorRoutes } from "./modules/studio/orchestrator/orchestrator.routes";
 import { OrchestratorService } from "./modules/studio/orchestrator/orchestrator.service";
 import { studioReadRoutes } from "./modules/studio/studio.routes";
@@ -45,6 +47,9 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): KhRuntime 
     app.route(STUDIO_API, studioReadRoutes(new StudioReadService({ db: deps.db })));
     app.route(STUDIO_API, agentRoutes(new AgentsService({ db: deps.db, audit })));
     app.route(STUDIO_API, orchestratorRoutes(new OrchestratorService({ db: deps.db, audit })));
+    // H4b-2 · Models: provider (B3). Fail-closed: vắng `appEnv` ⇒ không dev (http loopback bị chặn).
+    const env = { dev: deps.appEnv === "development" || deps.appEnv === "test" };
+    app.route(STUDIO_API, providerRoutes(new ProvidersService({ db: deps.db, audit, env })));
     // H4b-1 · Studio `/secrets*` + route tenant `/admin/source-credentials*` (cùng service).
     const key = deps.hubSecretsKey ?? null;
     mountSecrets(app, { db: deps.db, audit, key, studioBase: STUDIO_API });

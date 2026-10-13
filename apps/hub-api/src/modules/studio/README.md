@@ -20,6 +20,13 @@ API cấu hình Hub cho Agent Studio (H4a). Chỉ `platform_admin` (`requirePlat
 | `orchestrator/orchestrator.service.ts` | Qua `withConfigWrite`: khoá hàng → `VERSION_CONFLICT{current, updated_at}` → kiểm agent (`AGENT_NOT_ORCHESTRATABLE`) / tenant (`TENANT_INACTIVE`, `ORCHESTRATOR_EXISTS`) → ghi → audit tenant (null = mặc định) |
 | `orchestrator/orchestrator.repo.ts` | SQL `hub.orchestrator_settings` (+ agent, tenant) |
 | `orchestrator/orchestrator.map.ts` | Hàng DB → `Orchestrator`, `orchVersionConflict`, ảnh audit, `orchChangedFields`, `entity_name` |
+| `studio-params.ts` | H4b-2 · `parseUuidParam`/`uuidParams`: path param không uuid ⇒ 400 `VALIDATION_ERROR` (route Models/Quyền agent; H4a giữ 404) |
+| `models/providers.routes.ts` | H4b-2 · `POST /providers`, `GET/PUT/DELETE /providers/:id?version=`, `PATCH /providers/:id/enabled`; middleware `/providers/:id/*` chặn 400 cả path con |
+| `models/providers.service.ts` | Hình dạng (400) → `withConfigWrite`: khoá hàng → readonly (`dify`) 409 → `VERSION_CONFLICT{current, updated_at}` → secret ref → ghi (không đổi ⇒ không bump) → audit `provider` |
+| `models/providers.repo.ts` · `providers.map.ts` | SQL provider (chi tiết JOIN tên secret + state + slots; profile dùng = jsonb `@>`) · hàng → `ProviderDetail` (`last_error` qua `redactKey`), `editableOf` |
+| `models/models.errors.ts` | `modelError`: mã `STUDIO_MODEL_ERRORS` (không sửa `STUDIO_ERRORS`) |
+| `models/models.rules.ts` · `provider-check.rules.ts` | Luật thuần H4b-2 (plan §2.1–§2.2) |
+
 | `orchestrator/orchestrator-settings.rules.ts` | Luật thuần runtime Orchestrator (`ORCHESTRATOR_RUNTIMES` từ `@ai/contracts/studio`, cảnh báo "Chậm") |
 
 Luật:

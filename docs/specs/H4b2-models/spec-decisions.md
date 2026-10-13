@@ -36,3 +36,12 @@ C1 — list giữ R13 (Q6): `has_secret` + `slots_in_use`, `secret`/`last_error`
 
 ## Trong lúc làm — FE T5b (Kiểm tra key + Runbook)
 - 2026-10-13: UI chặn request check ở 15 s (server 10 s) ⇒ `check.timeout`; lỗi request khác 404/READONLY/NOT_CONFIGURED (mạng, 5xx) hiện trong hộp `role=alert` (`login.err.*`), không toast. "Chi tiết" = `HTTP {http_status}` + `message` + `{latency_ms} ms`, chỉ khi ok/error và có HTTP/message. `unsupported` ẩn [Kiểm tra lại]. Thêm key `models.check.{desc,runningSub,httpError,network,secretUnreadable,requested}`, `models.guide.{step3Hint,copyAria,copyFail,cmd2.*}`; lệnh hãng ở i18n. Runbook không có nút X (đã có [Đóng] ở footer). Đóng hộp bị chặn khi đang chạy (cả Esc).
+
+## Trong lúc làm — BE B3 (API provider)
+- 2026-10-13: path param không uuid ⇒ 400 qua `studio/studio-params.ts` (`parseUuidParam` + middleware `uuidParams` gắn `/providers/:id/*`) ⇒ `POST /providers/abc/check` cũng 400 trước khi B4 mount route (A08b). H4a `parseIdParam` (404) giữ nguyên.
+- 2026-10-13: lỗi riêng qua `models/models.errors.ts` (`modelError`, mẫu `secrets.errors.ts`) — không sửa `lib/errors.ts`/`HubErrorCode`.
+- 2026-10-13: thứ tự chặn PUT/PATCH/DELETE: 404 → `PROVIDER_READONLY` → `VERSION_CONFLICT` → (PUT) hình dạng theo `kind` DB → secret ref; DELETE tiếp `PROVIDER_IN_USE` → `PROVIDER_HAS_HISTORY` (23503 ⇒ cùng mã). POST: hình dạng kiểm **trước** transaction (400 không khoá config).
+- 2026-10-13: audit `before/after` = 4 trường sửa được (`base_url, secret_id, max_concurrency, enabled`), cả `create` (key ở `entity_name`); `summary.fields` = trường đổi. PATCH enabled cùng giá trị ⇒ không đổi ⇒ 200, không bump/audit (như PUT không đổi).
+- 2026-10-13: PUT kiểm secret ref mỗi lần `secret_id ≠ null` (kể cả không đổi) — FK RESTRICT nên chỉ lệch khi kind sai; đơn giản hơn so sánh.
+- 2026-10-13: `env.dev` = `appEnv ∈ {development, test}`, vắng ⇒ không dev (fail-closed như `kh.mount`).
+- 2026-10-13: `GET /providers/:id` `state.last_error` qua `redactKey(…, "")` rồi cắt 500 (Q6).
