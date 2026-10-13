@@ -10,6 +10,7 @@ import {
   MessageSchema,
   type RunFailedData,
   RunSchema,
+  StepAgentSchema,
 } from "@ai/contracts/chat";
 import {
   call,
@@ -40,8 +41,33 @@ async function getRun(token: string, runId: string) {
   return okJson(await call("GET", `/runs/${runId}`, { token }), 200, RunSchema, "GET /runs/:id");
 }
 
+/** CR-054 · CHAT-AC-33: chỉ `step.started.agent` (và `steps[].agent` của StepSummary) được có `agent` đúng hình {key,name,model}. */
+function stripAllowedAgent(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripAllowedAgent);
+  if (value === null || typeof value !== "object") return value;
+  const rec = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  const isStarted =
+    rec.event === "step.started" && typeof rec.data === "object" && rec.data !== null;
+  for (const [k, v] of Object.entries(rec)) {
+    if (k === "data" && isStarted) {
+      const { agent, ...rest } = v as Record<string, unknown>;
+      if (agent !== undefined) expect(StepAgentSchema.safeParse(agent).success).toBe(true);
+      out[k] = stripAllowedAgent(rest);
+    } else if (k === "steps" && Array.isArray(v)) {
+      out[k] = v.map((st) => {
+        if (st === null || typeof st !== "object") return st;
+        const { agent, ...rest } = st as Record<string, unknown>;
+        if (agent !== undefined) expect(StepAgentSchema.safeParse(agent).success).toBe(true);
+        return stripAllowedAgent(rest);
+      });
+    } else out[k] = stripAllowedAgent(v);
+  }
+  return out;
+}
+
 function expectNoForbiddenKeys(value: unknown): void {
-  const keys = deepKeys(value);
+  const keys = deepKeys(stripAllowedAgent(value));
   for (const k of FORBIDDEN_KEYS) expect(keys.has(k)).toBe(false);
 }
 

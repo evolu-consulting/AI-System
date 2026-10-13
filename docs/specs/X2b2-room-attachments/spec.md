@@ -183,3 +183,4 @@ Lệnh xong: `bun run typecheck && bun test && bun --env-file=.env.test-qc.local
 
 ## 12. Tranh chấp test
 - 2026-10-12 · qc · X2b-AC11 (context.int) + K5 (contracts-x2b) thay có chủ đích — đối chiếu BA FR-101 + Q9 X2b: test cũ đúng ở X2b, sai sau X2b-2; không phải code sửa test. Chi tiết: spec-decisions "Tranh chấp test".
+- 2026-10-13 · qc · K-S2 (`tests/contract/chat/stream.contract.test.ts`) sửa có chủ đích — đối chiếu CHAT-AC-33 + CR-054 (spec C1 C1-R04): `step.started.agent`/`StepSummary.agent` = `{key,name,model}` được phép; test cũ cấm mọi key `agent`/`model` nên sai sau CR-054. Nay cho `agent` đúng `StepAgentSchema` ở `step.started` và `steps[]`, mọi chỗ khác vẫn cấm; lock đã ghi lại.
