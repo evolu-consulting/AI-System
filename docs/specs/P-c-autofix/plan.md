@@ -102,7 +102,7 @@ CREATE INDEX IF NOT EXISTS autofix_results_run_idx ON hub.autofix_results (proce
 | Trường | Kiểu |
 |---|---|
 | `DECISION_REASONS` | += `autofix_check_failed`, `sandbox_unavailable` (cuối) |
-| Stage view `.autofix` | optional `AutofixStageView{source_key, branch, round, status, diff_stats \| null, diff_file: RunFile \| null, test_log_file: RunFile \| null, test: {exit_code, duration_ms} \| null, failures: AutofixFailure[], created_at}` — chỉ khi stage có cấu hình `autofix` VÀ đã có kết quả |
+| Stage view `.autofix` | optional `AutofixStageView{source_key, pin_sha: string \| null, branch, round, status, diff_stats \| null, diff_file: RunFile \| null, test_log_file: RunFile \| null, test: {exit_code, duration_ms} \| null, failures: AutofixFailure[], created_at}` — chỉ khi stage có cấu hình `autofix` VÀ đã có kết quả. `pin_sha` = `pin.sha` nếu `pin.kind=git_remote` (đủ SHA; FE cắt 7), còn lại `null` (không lộ `path`/`snapshot_id`). `test_log_file` ≠ null ⇔ `report.test ≠ null` (kể cả `check_failed`; blob = `log_tail`, tên `<stage_key>-r<round>-test.log.txt`); `my_tasks` KHÔNG mang `autofix` — FE lấy từ run view theo `run_id` + `stage_idx` |
 | Decision view | `options` theo `decisionOptionsFor` (PC-R10); FE không tự suy |
 
 ### §4 Luật thuần (chữ ký — QC viết test trước)
