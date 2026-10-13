@@ -13,6 +13,8 @@ import { mountSecrets } from "./modules/secrets/secrets.mount";
 import { HubSecretReader } from "./modules/secrets/secrets.use";
 import { agentRoutes } from "./modules/studio/agents/agents.routes";
 import { AgentsService } from "./modules/studio/agents/agents.service";
+import { profileRoutes } from "./modules/studio/models/profiles.routes";
+import { ProfilesService } from "./modules/studio/models/profiles.service";
 import { ProviderCheckService } from "./modules/studio/models/provider-check";
 import { providerRoutes } from "./modules/studio/models/providers.routes";
 import { ProvidersService } from "./modules/studio/models/providers.service";
@@ -53,7 +55,7 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): KhRuntime 
     app.route(STUDIO_API, studioReadRoutes(new StudioReadService({ db: deps.db })));
     app.route(STUDIO_API, agentRoutes(new AgentsService({ db: deps.db, audit })));
     app.route(STUDIO_API, orchestratorRoutes(new OrchestratorService({ db: deps.db, audit })));
-    // H4b-2 · Models: provider (B3). Fail-closed: vắng `appEnv` ⇒ không dev (http loopback bị chặn).
+    // H4b-2 · Models: provider (B3, B4), model profile (B5). Fail-closed: vắng `appEnv` ⇒ không dev (http loopback bị chặn).
     const env = { dev: deps.appEnv === "development" || deps.appEnv === "test" };
     const key = deps.hubSecretsKey ?? null;
     const checker = new ProviderCheckService({
@@ -68,6 +70,7 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): KhRuntime 
       STUDIO_API,
       providerRoutes(new ProvidersService({ db: deps.db, audit, env }), checker),
     );
+    app.route(STUDIO_API, profileRoutes(new ProfilesService({ db: deps.db, audit })));
     // H4b-1 · Studio `/secrets*` + route tenant `/admin/source-credentials*` (cùng service).
     mountSecrets(app, { db: deps.db, audit, key, studioBase: STUDIO_API });
     // K1 · `/kh/connections*`; `KhRuntime` (client + cache project) một instance cho cả process (T5e dùng).

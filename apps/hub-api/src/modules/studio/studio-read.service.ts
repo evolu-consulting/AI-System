@@ -6,6 +6,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import { appError } from "../../lib/errors";
+import { profileItems } from "./models/profiles.service";
 import { toList, toProviderItem, usableFor } from "./studio-read.map";
 import {
   readAgentTypes,
@@ -13,7 +14,6 @@ import {
   readHubVersion,
   readMeRow,
   readModelCatalog,
-  readModelProfiles,
   readProviders,
   readTenants,
 } from "./studio-read.repo";
@@ -64,11 +64,8 @@ export class StudioReadService {
 
   modelProfiles(q: CatalogQuery) {
     return this.#read(async (tx) => {
-      const rows = (await readModelProfiles(tx)).map((r) => ({
-        id: r.id,
-        key: r.key,
-        steps: r.steps.map((s) => ({ provider_key: s.provider_key, model: s.model, on: s.on })),
-      }));
+      // H4b-2 · item thêm `version`, `active_step`, `all_subscription`, `agent_count` (spec §3 B).
+      const rows = await profileItems(tx, new Date());
       return toList(rows, { ...q, version: await readHubVersion(tx), text: (r) => [r.key] });
     });
   }

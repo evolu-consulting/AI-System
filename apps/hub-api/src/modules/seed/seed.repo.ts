@@ -15,13 +15,14 @@ export async function bumpHubConfigVersion(tx: Tx): Promise<number> {
   return r.v;
 }
 
+/** H4b-2 spec §4 Seed: hàng đổi ⇒ `version + 1` (Studio đang mở nhận `VERSION_CONFLICT` thay vì ghi đè); lần đầu = 1. */
 export async function upsertProviders(tx: Tx, rows: SeedPlan["providers"]): Promise<void> {
   for (const p of rows) {
     await tx`insert into hub.providers (key, kind, vendor, base_url, max_concurrency, enabled, dev_only)
       values (${p.key}, ${p.kind}, ${p.vendor}, ${p.base_url}, ${p.max_concurrency}, ${p.enabled}, ${p.dev_only})
       on conflict (key) do update set kind = excluded.kind, vendor = excluded.vendor, base_url = excluded.base_url,
         max_concurrency = excluded.max_concurrency, enabled = excluded.enabled, dev_only = excluded.dev_only,
-        updated_at = now()
+        version = hub.providers.version + 1, updated_at = now()
       where (hub.providers.kind, hub.providers.vendor, hub.providers.base_url, hub.providers.max_concurrency,
              hub.providers.enabled, hub.providers.dev_only)
         is distinct from (excluded.kind, excluded.vendor, excluded.base_url, excluded.max_concurrency,
@@ -32,7 +33,8 @@ export async function upsertProviders(tx: Tx, rows: SeedPlan["providers"]): Prom
 export async function upsertProfiles(tx: Tx, rows: SeedPlan["profiles"]): Promise<void> {
   for (const p of rows) {
     await tx`insert into hub.model_profiles (key, steps) values (${p.key}, ${tx.json(p.steps)})
-      on conflict (key) do update set steps = excluded.steps, updated_at = now()
+      on conflict (key) do update set steps = excluded.steps,
+        version = hub.model_profiles.version + 1, updated_at = now()
       where hub.model_profiles.steps is distinct from excluded.steps`;
   }
 }

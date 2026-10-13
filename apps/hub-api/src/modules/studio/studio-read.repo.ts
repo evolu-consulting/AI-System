@@ -5,7 +5,6 @@ import { type Tx, tenants, users, workflows } from "@ai/db";
 import {
   agentTypes,
   hubConfigMeta,
-  modelProfiles,
   providerModels,
   providerState,
   providers,
@@ -44,13 +43,6 @@ export function readAgentTypes(tx: Tx) {
     })
     .from(agentTypes)
     .orderBy(asc(agentTypes.key));
-}
-
-export function readModelProfiles(tx: Tx) {
-  return tx
-    .select({ id: modelProfiles.id, key: modelProfiles.key, steps: modelProfiles.steps })
-    .from(modelProfiles)
-    .orderBy(asc(modelProfiles.key));
 }
 
 /** CR-054 · danh mục model thật (Runtime ghi từ CLI), theo provider + thứ tự CLI. */

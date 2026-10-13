@@ -25,6 +25,8 @@ API cấu hình Hub cho Agent Studio (H4a). Chỉ `platform_admin` (`requirePlat
 | `models/providers.service.ts` | Hình dạng (400) → `withConfigWrite`: khoá hàng → readonly (`dify`) 409 → `VERSION_CONFLICT{current, updated_at}` → secret ref → ghi (không đổi ⇒ không bump) → audit `provider` |
 | `models/providers.repo.ts` · `providers.map.ts` | SQL provider (chi tiết JOIN tên secret + state + slots; profile dùng = jsonb `@>`) · hàng → `ProviderDetail` (`last_error` qua `redactKey`), `editableOf` |
 | `models/provider-check.ts` · `provider-check.repo.ts` | H4b-2 B4 · `POST /providers/:id/check`: api ⇒ `useSecret` + `fetch` tiêm (10 s, `redirect:"error"`, `redactKey`), `fake` trong tiến trình; subscription ⇒ xoá `last_probe_at`/`last_ok_at`, chờ probe ≤ 10 s (`sleep` tiêm) ⇒ `requested`; audit `check` không bump, không `message` |
+| `models/profiles.routes.ts` · `profiles.service.ts` | H4b-2 B5 · `POST /model-profiles`, `GET/PUT/DELETE /model-profiles/:id?version=`: `withConfigWrite` khoá hàng → `VERSION_CONFLICT` → `stepsProblem` (400 `INVALID_REFERENCE` steps/`steps.<i>`) → giống hệt ⇒ không bump → audit `model_profile`; DELETE còn agent ⇒ `PROFILE_IN_USE{agents}`. `profileItems` dùng cho list |
+| `models/profiles.repo.ts` · `profiles.map.ts` | SQL profile + providers⋈state + đếm agent · hàng → item/`ModelProfile` (`active_step` = `pickStep(…, false)`, `all_subscription`, `normSteps`) |
 | `models/models.errors.ts` | `modelError`: mã `STUDIO_MODEL_ERRORS` (không sửa `STUDIO_ERRORS`) |
 | `models/models.rules.ts` · `provider-check.rules.ts` | Luật thuần H4b-2 (plan §2.1–§2.2) |
 

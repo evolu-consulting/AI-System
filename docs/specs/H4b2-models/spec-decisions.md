@@ -53,3 +53,10 @@ C1 — list giữ R13 (Q6): `has_secret` + `slots_in_use`, `secret`/`last_error`
 - 2026-10-13: 2xx ⇒ huỷ thân không đọc; lỗi ⇒ đọc ≤ 64 KB (`readLimited`), đọc thân lỗi hỏng ⇒ thân rỗng (giữ `http_status`). Request `GET`, key chỉ ở header; `fetch` lỗi ⇒ `hitOfFetchError` (không log `e`).
 - 2026-10-13: audit `check`: `after = {status, error_code, http_status}`, `summary = {kind}`, `hubConfigVersion null`, transaction riêng ngắn; `username` export từ `studio-write.ts` để dùng lại. Log `provider.check` (info) chỉ `{provider_key, status, error_code, http_status, latency_ms}`.
 - 2026-10-13: `H4aDeps.log` mở rộng `Pick<Logger,"warn"|"info">`; reader secret riêng cho check (`new HubSecretReader`, cùng khoá), không dùng lại instance của K1.
+
+## Trong lúc làm — BE B5 (API model profile)
+- 2026-10-13: thứ tự chặn — POST: `KEY_TAKEN` → bước (`stepsProblem`); PUT: 404 → `VERSION_CONFLICT` → bước → giống hệt ⇒ 200 không bump/audit; DELETE: 404 → `VERSION_CONFLICT` → `PROFILE_IN_USE{agents}`. Bước trùng ⇒ `VALIDATION_ERROR` path `["steps", i]`.
+- 2026-10-13: 23503 lúc DELETE (chốt cuối) ⇒ `PROFILE_IN_USE` **không** `details` (transaction đã hỏng, không đọc lại được agents); thực tế không xảy ra vì mọi ghi agent đều khoá `config_meta` trước.
+- 2026-10-13: list `GET /model-profiles` dùng chung `profileItems` (`profiles.service.ts`) — bỏ `readModelProfiles` của `studio-read.repo.ts`. `now` của `active_step` = giờ tiến trình Hub (như giao job); `ProfilesService` nhận `now?` để test.
+- 2026-10-13: steps lưu/trả/audit qua `normSteps` (thứ tự trường contract, jsonb đổi thứ tự khoá); "giống hệt" = so chuỗi JSON đã chuẩn hoá (đổi thứ tự `on` ⇒ khác). Audit `before/after = {steps}`, `summary = {steps: số bước}`.
+- 2026-10-13: seed `upsertProviders`/`upsertProfiles` thêm `version = version + 1` trong nhánh `do update … where is distinct from` ⇒ lần đầu INSERT giữ default 1 (D20), chạy lại không đổi ⇒ giữ nguyên. PRODUCTION-NOTES "seed vs Studio" để B8 (theo tasks).
