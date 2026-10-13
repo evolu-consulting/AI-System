@@ -2,7 +2,7 @@
 id: H4b2-models
 title: H4b-2 · Models (provider, profile, trạng thái sống) + Quyền agent (entitlement agent × tenant)
 milestone: H4b-2 (phần còn lại của H4b; mở 2026-10-13 sau CR-074 bỏ K2)
-status: approved           # Gate tự duyệt 2026-10-13 (H4b2-gate.md)
+status: done               # Gate tự duyệt 2026-10-13 (H4b2-gate.md); đóng 2026-10-13
 requirements: [HUB-FR-66, HUB-FR-67, HUB-FR-78, HUB-FR-77, HUB-BR-17, AC-H04, AC-H4b2-01, AC-H4b2-02, AC-H4b2-03, AC-H4b2-04, AC-H4b2-05, AC-H4b2-06, AC-H4b2-07]
 design:
   - docs/design/agent-hub/ba-agent-hub.md HUB-FR-66, HUB-FR-67 (dòng ~209–210) · HUB-FR-77, HUB-FR-78 (~227–228) · HUB-BR-17 (~359) · AC-H04 · bảng `providers`, `provider_state` (~378, ~388)
@@ -183,3 +183,9 @@ Câu mới của backend-lead (bằng chứng + phương án khác: `spec-decisi
 
 ## 10. Tranh chấp test
 - M02 (T5): plan-frontend ghi `{min}` làm tròn lên, nhưng seed `now+42m20s` + regex `4[12] phút` chỉ khớp khi làm tròn gần nhất (ceil ⇒ 43). FE dùng `Math.round` để xanh. **Phân xử (điều phối):** test đúng ý — "còn ~42 phút" là làm tròn gần nhất; sửa plan-frontend, không sửa test.
+
+## Kết luận H4b-2 (2026-10-13)
+- `done:h4b2` (`4f38d180`) + phân xử qc (`4c48586e`): chỉ đỏ đã biết R49, TD #148 (2 ca `hub-rls`), TD #165 (K1 A50). Reviewer vòng 2 APPROVED, security SAFE (Minor vòng 2 sửa `7ca3860f`; TD #166 `base_url` SSRF).
+- UAT tenant `evolu` Đạt ([REPORT](evidence/2026-10-13/REPORT.md), `b480b17b`); 5 Minor UAT sửa `650857ff` (e2e h4b2 34/34).
+- Migration `0030`. Code: `apps/hub-api/src/modules/studio/{models,entitlements}`, `runner/{profile-step,job/job-step}.rules.ts`, `apps/studio-web/src/features/{models,access}`.
+- Nợ: TECH-DEBT #162–#166. Provider `api` chạy thật chờ H2d (dev dùng `fake-*`). Kế: P-c.
