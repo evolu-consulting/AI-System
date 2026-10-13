@@ -26,7 +26,12 @@ export function ScopeField({ value, onChange, disabled, error }: Props) {
       ? t("secrets.scope.loadError")
       : null;
   return (
-    <FieldFrame id="secret-scope" label={t("secrets.field.scope")} error={error}>
+    <FieldFrame
+      id="secret-scope"
+      label={t("secrets.field.scope")}
+      error={error}
+      hint={status ?? undefined}
+    >
       {(p) => (
         <Select value={value} onValueChange={onChange} disabled={disabled}>
           <SelectTrigger {...p} className="w-full">
@@ -38,11 +43,6 @@ export function ScopeField({ value, onChange, disabled, error }: Props) {
                 {o.label}
               </SelectItem>
             ))}
-            {status ? (
-              <div role="status" className="px-2 py-1.5 text-label text-muted-foreground">
-                {status}
-              </div>
-            ) : null}
           </SelectContent>
         </Select>
       )}

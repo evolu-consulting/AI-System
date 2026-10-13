@@ -141,6 +141,7 @@
       "empty": "No KnowledgeHub connection yet — go to Settings to add one",
       "settings": "Settings",
       "cliOnly": "Only CLI agents can use knowledge",
+      "untickNote": "Unticking removes all connections; press Save to apply.",
       "notReady": "Not usable until the test passes",
       "save": "Save",
       "saving": "Saving…",
@@ -363,7 +364,6 @@
       "field": "Field",
       "mine": "Your version",
       "latest": "Latest (v{n})",
-      "empty": "No fields differ. The other person may have just re-saved.",
       "more": "{n} more fields",
       "none": "(empty)"
     },

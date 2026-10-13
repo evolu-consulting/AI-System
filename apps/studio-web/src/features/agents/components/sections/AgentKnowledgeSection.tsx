@@ -13,7 +13,8 @@ import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Skeleton } from "#/components/ui/skeleton";
 import { useKhConnections } from "#/features/settings/knowledgehub/hooks/use-kh-connections";
-import { KH_MAX, useAgentKnowledge } from "../../hooks/use-agent-knowledge";
+import { useAgentKnowledge } from "../../hooks/use-agent-knowledge";
+import { KH_MAX, rowDisabled, showUntickNote } from "../../lib/knowledge-selection";
 
 type Props = { agent: Agent; version: number; onSynced: (a: Agent) => void };
 const VARIANT = { unchecked: "off", ok: "ok", error: "err" } as const;
@@ -75,7 +76,7 @@ export function AgentKnowledgeSection({ agent, version, onSynced }: Props) {
             key={c.id}
             c={c}
             order={k.ids.indexOf(c.id) + 1}
-            disabled={!k.ids.includes(c.id) && (!cli || full)}
+            disabled={rowDisabled(k.ids.includes(c.id), cli, k.ids.length)}
             onChange={(on) => (cli ? k.toggle(c.id, on) : k.clear())}
           />
         ))}
@@ -99,6 +100,9 @@ export function AgentKnowledgeSection({ agent, version, onSynced }: Props) {
       {body}
       {cli && full ? (
         <p className="text-caption text-muted-foreground">{t("agents.knowledge.max")}</p>
+      ) : null}
+      {showUntickNote(cli, k.ids.length) ? (
+        <p className="text-caption text-muted-foreground">{t("agents.knowledge.untickNote")}</p>
       ) : null}
       {kh.hasNextPage ? (
         <Button type="button" variant="outline" size="sm" onClick={() => void kh.fetchNextPage()}>

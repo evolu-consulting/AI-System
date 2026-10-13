@@ -141,6 +141,7 @@
       "empty": "Chưa có kết nối KnowledgeHub — vào Cài đặt để thêm",
       "settings": "Cài đặt",
       "cliOnly": "Chỉ agent chạy bằng CLI mới dùng được tri thức",
+      "untickNote": "Bỏ chọn sẽ gỡ toàn bộ kết nối; bấm Lưu để áp dụng.",
       "notReady": "Chưa dùng được tới khi kiểm tra đạt",
       "save": "Lưu",
       "saving": "Đang lưu…",
@@ -363,7 +364,6 @@
       "field": "Trường",
       "mine": "Bản của bạn",
       "latest": "Bản mới nhất (v{n})",
-      "empty": "Không có trường nào khác nhau. Có thể người kia chỉ lưu lại bản cũ.",
       "more": "Còn {n} trường khác",
       "none": "(trống)"
     },

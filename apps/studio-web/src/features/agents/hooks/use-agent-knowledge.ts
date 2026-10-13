@@ -9,8 +9,8 @@ import { useConflict } from "#/components/shared/conflict/use-conflict";
 import { meQuery } from "#/features/shell/api";
 import { describeApiError, type MessageSpec } from "#/lib/api-error";
 import { AGENTS_KEY, agentQuery, putAgentKnowledge } from "../api";
+import { applyToggle, isDirty, KH_MAX } from "../lib/knowledge-selection";
 
-export const KH_MAX = 5;
 const SECTION_ERRORS = new Set(["KH_AGENT_RUNTIME", "KH_CONNECTION_NOT_FOUND", "VALIDATION_ERROR"]);
 
 type Opts = { agent: Agent; version: number; onSynced: (a: Agent) => void };
@@ -23,13 +23,9 @@ function useSelection(initial: string[]) {
     setIds(next);
     setSaved(next);
   };
-  const toggle = (id: string, on: boolean) =>
-    setIds((cur) => {
-      if (!on) return cur.filter((x) => x !== id);
-      return cur.includes(id) || cur.length >= KH_MAX ? cur : [...cur, id];
-    });
+  const toggle = (id: string, on: boolean) => setIds((cur) => applyToggle(cur, id, on));
   const clear = () => setIds([]);
-  const dirty = JSON.stringify(ids) !== JSON.stringify(saved);
+  const dirty = isDirty(ids, saved);
   return { ids, toggle, clear, reset, dirty };
 }
 
