@@ -96,8 +96,9 @@ export class ProviderCheckService {
     if (isReadonlyProvider(row.vendor)) throw modelError("PROVIDER_READONLY");
     const r = row.kind === "subscription" ? await this.#recheck(row.key) : await this.apiCheck(row);
     await this.#audit(actor, row, r);
+    // Tên trường không chứa "key": logger che mọi trường khớp /key/ (logger.ts SENSITIVE_KEY); giá trị là mã provider, không phải secret.
     this.d.log.info("provider.check", {
-      provider_key: row.key,
+      provider: row.key,
       status: r.status,
       error_code: r.error_code,
       http_status: r.http_status,
@@ -161,14 +162,18 @@ export class ProviderCheckService {
     return this.pollProbe(read, t0);
   }
 
-  /** Mỗi vòng `sleep(500)` rồi đọc; probe mới (≥ t0, giờ DB) ⇒ kết quả; quá 10 s theo đồng hồ ⇒ `requested`. */
+  /**
+   * Mỗi vòng `sleep(500)` rồi đọc; probe mới (≥ t0, giờ DB) ⇒ kết quả; quá 10 s theo đồng hồ **hoặc** đủ
+   * 20 vòng (= 10 s danh nghĩa; `sleep` tiêm ở test không chờ thật) ⇒ `requested`.
+   */
   async pollProbe(
     read: () => Promise<ProbeStateRow | undefined>,
     t0: Date,
   ): Promise<ProviderCheckResult> {
     const start = this.#ms();
     const at = () => new Date(t0.getTime() + Math.max(0, this.#ms() - start));
-    while (this.#ms() - start < CHECK_TIMEOUT_MS) {
+    const rounds = Math.ceil(CHECK_TIMEOUT_MS / PROBE_POLL_MS);
+    for (let i = 0; i < rounds && this.#ms() - start < CHECK_TIMEOUT_MS; i++) {
       await this.d.sleep(PROBE_POLL_MS);
       const out = subscriptionOutcome(await read(), t0, at());
       if (out) return out;

@@ -109,6 +109,19 @@ Chạy tay: `bun test tests/acceptance/H4b2/rules` · `bun --env-file=.env.local
 
 Int: 80 ca = 72 đỏ ở `expect` + 8 xanh trước code (E09, E11, Q01–Q03, D03, D05, D06); **0 ca đỏ do dựng dữ liệu** (không `PostgresError`/`TypeError` trong `beforeAll`/fixture). `tsc -p tsconfig.tests.json` sạch; `biome check` sạch.
 
+### 7.1 Kết quả chạy int sau Docker · 2026-10-13 (backend-lead, sau B1–B7; DB `ai_system_h4b2_be_test`, chạy tuần tự từng file)
+| File | Lần đầu | Sau sửa | Ghi chú |
+|---|---|---|---|
+| `packages/db/src/hub-h4b2.int.test.ts` | 6/6 | 6/6 | |
+| `db-h4b2` | 7/7 | 7/7 | |
+| `providers` | 24/25 | 24/25 | A08b: tranh chấp test TC-1 (spec-decisions) |
+| `role` | 3/3 | 3/3 | |
+| `provider-check` | 12/14 | 14/14 | C12 (chờ đồng hồ thật 10 s > timeout client 10 s) + C14 (logger che trường `provider_key`) — sửa code |
+| `profiles` | 13/14 | 13/14 | P08: tranh chấp test TC-1 |
+| `entitlements` | 10/11 | 10/11 | E07: tranh chấp test TC-2 |
+| `dispatch` | 9/9 | 9/9 | |
+| Hồi quy: H4a ×5, runner, seed ×4, CR-054, H4b1 ×10 | xanh | xanh | |
+
 ## 8. Chỗ hở spec (mặc định qc đã dùng) · Cần bổ sung
 | # | Hở | Mặc định trong test | Agent |
 |---|---|---|---|
