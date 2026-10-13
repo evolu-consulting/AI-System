@@ -182,8 +182,8 @@ def test_hub_br_33_ulimits_and_prep_network() -> None:
 # ---------- (4) rm phải xác nhận container đã chết ----------
 
 
-def _cli(tmp_path: Path, inspect: str) -> str:
-    """CLI giả: `rm` luôn lỗi; `container inspect` theo kịch bản; `network inspect` lỗi lần đầu."""
+def _cli(tmp_path: Path, inspect: str, net: str = "exit 1") -> str:
+    """CLI giả: `rm` luôn lỗi; `container inspect`/`network inspect` theo kịch bản."""
     log = tmp_path / "argv.log"
     script = tmp_path / "fakedocker"
     script.write_text(
@@ -192,7 +192,7 @@ def _cli(tmp_path: Path, inspect: str) -> str:
         'case "$1 $2" in\n'
         "  'rm -f') echo boom >&2; exit 1;;\n"
         f"  'container inspect') {inspect};;\n"
-        "  'network inspect') exit 1;;\n"
+        f"  'network inspect') {net};;\n"
         "  *) exit 0;;\n"
         "esac\n"
     )
@@ -223,8 +223,102 @@ async def test_hub_br_33_prep_network_created(tmp_path: Path) -> None:
     oci = OciCli("docker", _cli(tmp_path, "exit 0"))
     await oci.run(SandboxSpec(job_id="j", image="i", host_workspace=str(tmp_path)), "prep")
     lines = (tmp_path / "argv.log").read_text().splitlines()
-    assert lines[0] == "network inspect aif-prep"
+    assert lines[0] == "network inspect --format {{json .Options}} aif-prep"
     assert lines[1] == (
         "network create --label ai.autofix=1 -o com.docker.network.bridge.enable_icc=false aif-prep"
     )
     assert lines[2].startswith("run -d --name aif-j-prep")
+
+
+@pytest.mark.parametrize(
+    ("engine", "opts", "ok"),
+    [
+        ("docker", '{"com.docker.network.bridge.enable_icc":"false"}', True),
+        ("docker", "{}", False),
+        ("docker", '{"com.docker.network.bridge.enable_icc":"true"}', False),
+        ("podman", '{"isolate":"true"}', True),
+        ("podman", "null", False),
+    ],
+)
+async def test_hub_br_33_existing_prep_network_must_be_isolated(
+    tmp_path: Path, engine: str, opts: str, ok: bool
+) -> None:
+    oci = OciCli(
+        "podman" if engine == "podman" else "docker", _cli(tmp_path, "exit 0", f"echo '{opts}'")
+    )
+    if ok:
+        await oci.ensure_prep_network()
+    else:
+        with pytest.raises(OciError) as err:
+            await oci.ensure_prep_network()
+        assert err.value.reason == "network_failed"
+    assert "network create" not in (tmp_path / "argv.log").read_text()
+
+
+# ---------- (1b) review vòng 2: Counter + khối PEM, fail-closed cat-file, trần base ----------
+
+_PEM_SAMPLE = "-----BEGIN RSA PRIVATE KEY-----\nU0FNUExFLUtFWQ==\n-----END RSA PRIVATE KEY-----\n"
+_PEM_REAL = (
+    "-----BEGIN RSA PRIVATE KEY-----\nUkVBTC1LRVktMQ==\nUkVBTC1LRVktMg==\n"
+    "-----END RSA PRIVATE KEY-----\n"
+)
+
+
+def test_wrk_fr_29_duplicate_secret_line_counted() -> None:
+    line = f"x = '{AKIA}'\n".encode()
+    got = scan_blob("a", line + line, line)
+    assert [(f.line, f.rule) for f in got] == [(2, "aws_access_key")]
+
+
+def test_wrk_fr_29_pem_block_appended_with_same_header() -> None:
+    base = ("doc\n" + _PEM_SAMPLE).encode()
+    assert scan_blob("k.pem", base, base) == []
+    got = scan_blob("k.pem", base + _PEM_REAL.encode(), base)
+    assert [(f.line, f.rule) for f in got] == [(5, "private_key")]
+
+
+def test_wrk_fr_29_pem_body_replaced_keeping_header_footer() -> None:
+    base = _PEM_SAMPLE.encode()
+    got = scan_blob("k.pem", _PEM_REAL.encode(), base)
+    assert [(f.line, f.rule) for f in got] == [(1, "private_key")]
+    unclosed = b"-----BEGIN PRIVATE KEY-----\nTkVXLUJPRFk=\n"
+    assert [f.rule for f in scan_blob("k", unclosed, b"-----BEGIN PRIVATE KEY-----\n")] == [
+        "private_key"
+    ]
+
+
+def test_wrk_fr_29_missing_blob_from_cat_file_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ws = _ws(tmp_path)
+    (ws.ws_dir / "src" / "a.ts").write_text("a\nb\n")
+
+    def no_blobs(_self: w.Workspace, _shas: list[str]) -> dict[str, bytes]:
+        return {}  # `cat-file --batch` trả `<sha> missing`
+
+    monkeypatch.setattr(w.Workspace, "blobs", no_blobs)
+    r = c.run_checks(ws, [], Limits())
+    assert _rules(r) == [("secrets", "src/a.ts", "unscannable")]
+
+
+def test_wrk_fr_29_base_blob_counts_toward_total(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    snap = tmp_path / "snap"
+    (snap / "src").mkdir(parents=True)
+    (snap / "src" / "a.ts").write_text("x" * 100 + "\n")
+    ws = w.prepare(tmp_path / "job", snap, "app", None, branch=BRANCH)
+    (ws.ws_dir / "src" / "a.ts").write_text("y\n")
+    monkeypatch.setattr(c, "SCAN_TOTAL_MAX", 50)
+    r = c.run_checks(ws, [], Limits())
+    assert _rules(r) == [("secrets", "src/a.ts", "unscannable")]
+
+
+def test_hub_br_32_rmtree_ro_unreadable_dir(tmp_path: Path) -> None:
+    tree = tmp_path / "work"
+    (tree / "d" / "e").mkdir(parents=True)
+    (tree / "d" / "e" / "f").write_text("x")
+    os.chmod(tree / "d" / "e", 0o300)
+    os.chmod(tree / "d", 0o300)
+    rmtree_ro(tree)
+    assert not tree.exists()

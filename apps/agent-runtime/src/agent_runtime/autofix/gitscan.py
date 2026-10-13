@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import re
+from collections import Counter
 from dataclasses import dataclass
 
 from agent_runtime.autofix.rules import Failure, path_failure, secret_rule
@@ -61,26 +63,69 @@ def _variants(data: bytes) -> list[bytes]:
     return [data, data.replace(b"\0", b"")] if b"\0" in data else [data]
 
 
-def scan_blob(path: str, new: bytes, base: bytes | None = None) -> list[Failure]:
-    """PC-R08(3) theo NỘI DUNG blob (không theo diff — diff nhị phân/base85 giấu dòng): dòng của
-    `new` khớp mẫu bí mật và không có nguyên văn trong `base` ⇒ `secrets` (`line` = số dòng)."""
-    old: set[str] = set()
-    for data in _variants(base or b""):
-        old.update(_blob_lines(data))
-    out: list[Failure] = []
-    seen: set[int] = set()
-    for data in _variants(new):
-        for no, line in enumerate(_blob_lines(data), 1):
-            if no in seen or line in old:
-                continue
-            rule = secret_rule(line)
-            if rule is not None:
-                seen.add(no)
-                detail = f"khớp mẫu bí mật `{rule}`"
-                out.append(Failure("secrets", path=path[:1024], line=no, rule=rule, detail=detail))
+_PEM_BEGIN = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")
+_PEM_END = re.compile(r"-----END [A-Z ]*PRIVATE KEY-----")
+
+
+def _new_lines(lines: list[str], base: Counter[str]) -> list[bool]:
+    """Dòng thứ i là "thêm" khi số lần xuất hiện tới nó trong `new` vượt số lần trong `base`
+    (Counter, không phải set: nối khối PEM thật có header trùng khoá mẫu vẫn bị bắt)."""
+    used: Counter[str] = Counter()
+    out: list[bool] = []
+    for line in lines:
+        used[line] += 1
+        out.append(used[line] > base[line])
     return out
 
 
-def unscannable(path: str, size: int) -> Failure:
-    detail = f"blob {size} bytes vượt trần quét bí mật"
+def _pem_body_hits(lines: list[str], base: Counter[str]) -> set[int]:
+    """Chỉ số dòng nằm giữa `BEGIN … PRIVATE KEY` và `END …` có thân không có nguyên văn trong
+    `base` (thay thân khoá cũ, giữ header/footer) ⇒ cả khối báo `private_key` tại dòng BEGIN."""
+    hits: set[int] = set()
+    begin: int | None = None
+    fresh = False
+    for i, line in enumerate(lines):
+        if begin is None:
+            if _PEM_BEGIN.search(line):
+                begin, fresh = i, False
+            continue
+        if _PEM_END.search(line):
+            if fresh:
+                hits.add(begin)
+            begin = None
+        elif line.strip() and base[line] == 0:
+            fresh = True
+    if begin is not None and fresh:  # khối không đóng vẫn là thân khoá mới
+        hits.add(begin)
+    return hits
+
+
+def _scan_lines(path: str, lines: list[str], base: Counter[str]) -> dict[int, Failure]:
+    added = _new_lines(lines, base)
+    pem = _pem_body_hits(lines, base)
+    out: dict[int, Failure] = {}
+    for i, line in enumerate(lines):
+        rule = "private_key" if i in pem else (secret_rule(line) if added[i] else None)
+        if rule is not None:
+            detail = f"khớp mẫu bí mật `{rule}`"
+            out[i + 1] = Failure("secrets", path=path[:1024], line=i + 1, rule=rule, detail=detail)
+    return out
+
+
+def scan_blob(path: str, new: bytes, base: bytes | None = None) -> list[Failure]:
+    """PC-R08(3) theo NỘI DUNG blob (không theo diff — diff nhị phân/base85 giấu dòng): dòng
+    "thêm" (đếm theo Counter so với `base`) khớp mẫu bí mật, hoặc khối PEM private key có thân
+    mới ⇒ `secrets` (`line` = số dòng)."""
+    old: Counter[str] = Counter()
+    for data in _variants(base or b""):
+        old |= Counter(_blob_lines(data))
+    found: dict[int, Failure] = {}
+    for data in _variants(new):
+        for no, f in _scan_lines(path, _blob_lines(data), old).items():
+            found.setdefault(no, f)
+    return [found[no] for no in sorted(found)]
+
+
+def unscannable(path: str, size: int, detail: str | None = None) -> Failure:
+    detail = detail or f"blob {size} bytes vượt trần quét bí mật"
     return Failure("secrets", path=path[:1024], rule="unscannable", detail=detail)

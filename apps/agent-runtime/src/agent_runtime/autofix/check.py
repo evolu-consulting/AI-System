@@ -62,27 +62,35 @@ _NULL = "0" * 40
 
 
 def scan_changes(ws: Workspace, changes: list[RawChange]) -> list[Failure]:
-    """PC-R08(3): đọc blob mới (+ blob base để chỉ báo dòng mới) của mọi file thường đổi."""
+    """PC-R08(3): đọc blob mới (+ blob base để chỉ báo dòng mới) của mọi file thường đổi. Trần
+    `SCAN_BLOB_MAX` áp cho từng blob (mới và base), `SCAN_TOTAL_MAX` cho tổng cả hai; vượt hoặc
+    `cat-file` không trả blob đã xin ⇒ `unscannable` (fail-closed)."""
     files = [c for c in changes if c.status != "D" and c.new_mode in REGULAR_MODES]
-    bases = [c.old_sha for c in files if c.old_mode in REGULAR_MODES and c.old_sha != _NULL]
-    sizes = ws.blob_sizes(sorted({c.new_sha for c in files} | set(bases)))
+    bases = {c.old_sha for c in files if _has_base(c)}
+    sizes = ws.blob_sizes(sorted({c.new_sha for c in files} | bases))
     out: list[Failure] = []
-    want: set[str] = set()
+    plan: list[RawChange] = []
     total = 0
     for c in files:
         size = sizes.get(c.new_sha, SCAN_BLOB_MAX + 1)
-        total += size
-        if size > SCAN_BLOB_MAX or total > SCAN_TOTAL_MAX:
-            out.append(unscannable(c.path, size))
+        base = sizes.get(c.old_sha, SCAN_BLOB_MAX + 1) if _has_base(c) else 0
+        total += size + base
+        if max(size, base) > SCAN_BLOB_MAX or total > SCAN_TOTAL_MAX:
+            out.append(unscannable(c.path, max(size, base)))
             continue
-        want.add(c.new_sha)
-        if c.old_sha in sizes and sizes[c.old_sha] <= SCAN_BLOB_MAX:
-            want.add(c.old_sha)
+        plan.append(c)
+    want = {c.new_sha for c in plan} | {c.old_sha for c in plan if _has_base(c)}
     data = ws.blobs(sorted(want))
-    for c in files:
-        if c.new_sha in data:
-            out += scan_blob(c.path, data[c.new_sha], data.get(c.old_sha))
+    for c in plan:
+        if c.new_sha not in data or (_has_base(c) and c.old_sha not in data):
+            out.append(unscannable(c.path, 0, "git cat-file không trả blob"))
+            continue
+        out += scan_blob(c.path, data[c.new_sha], data.get(c.old_sha))
     return out
+
+
+def _has_base(c: RawChange) -> bool:
+    return c.old_mode in REGULAR_MODES and c.old_sha != _NULL
 
 
 def run_checks(ws: Workspace, allowlist: list[str], lim: Limits) -> CheckResult:

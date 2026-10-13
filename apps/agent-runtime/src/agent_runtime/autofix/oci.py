@@ -10,12 +10,13 @@ log `sandbox.unavailable`, coi như `off` (job tự-sửa lỗi `container`).
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import signal
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Literal, Protocol, cast
 
 from agent_runtime.autofix.rules import (
     LABEL_AUTOFIX,
@@ -43,6 +44,11 @@ _CLI_ENV_KEYS = (
     "XDG_RUNTIME_DIR",
     "CONTAINER_HOST",
 )
+# Option cách ly bắt buộc của mạng `aif-prep` (key, value như `network inspect` trả).
+_PREP_OPT: dict[Engine, tuple[str, str]] = {
+    "docker": ("com.docker.network.bridge.enable_icc", "false"),
+    "podman": ("isolate", "true"),
+}
 
 
 @dataclass(frozen=True)
@@ -216,18 +222,33 @@ class OciCli:
     async def ensure_prep_network(self) -> None:
         """Mạng `aif-prep` cho pha cài (idempotent). docker: bridge `enable_icc=false` (container
         cùng mạng không nói chuyện được); podman: `isolate=true` (tách khỏi mạng bridge khác).
-        KHÔNG chặn RFC1918/169.254 — cần tường lửa host (PRODUCTION-NOTES)."""
-        if (await self._cli(["network", "inspect", PREP_NETWORK], _ctl(30))).exit_code == 0:
-            return
-        opt = (
-            "isolate=true"
-            if self.engine == "podman"
-            else "com.docker.network.bridge.enable_icc=false"
-        )
-        args = ["network", "create", "--label", LABEL_AUTOFIX, "-o", opt, PREP_NETWORK]
+        KHÔNG chặn RFC1918/169.254 — cần tường lửa host (PRODUCTION-NOTES). Mạng đã có (kể cả do
+        bên khác tạo) mà thiếu option cách ly ⇒ `OciError("network_failed")`."""
+        key, val = _PREP_OPT[self.engine]
+        if await self._prep_options() is None:
+            args = ["network", "create", "--label", LABEL_AUTOFIX, "-o", f"{key}={val}"]
+            res = await self._cli([*args, PREP_NETWORK], _ctl(30))
+            if res.exit_code == 0:
+                return
+            if b"already exists" not in res.stderr.lower():
+                raise OciError("network_failed", _short(res.stderr))
+        opts = await self._prep_options()
+        if opts is None or opts.get(key) != val:
+            raise OciError("network_failed", f"{PREP_NETWORK} thiếu option {key}={val}")
+
+    async def _prep_options(self) -> dict[str, str] | None:
+        """Options của mạng `aif-prep`; None = chưa có. JSON hỏng ⇒ {} (coi như thiếu option)."""
+        args = ["network", "inspect", "--format", "{{json .Options}}", PREP_NETWORK]
         res = await self._cli(args, _ctl(30))
-        if res.exit_code != 0 and b"already exists" not in res.stderr.lower():
-            raise OciError("network_failed", _short(res.stderr))
+        if res.exit_code != 0:
+            return None
+        try:
+            raw = json.loads(res.stdout.decode("utf-8", "replace") or "null")
+        except ValueError:
+            return {}
+        if not isinstance(raw, dict):
+            return {}
+        return {str(k): str(v) for k, v in cast("dict[object, object]", raw).items()}
 
     async def rm(self, name: str) -> None:
         """`rm -f`; lỗi ⇒ xác nhận container đã chết (`inspect`). Còn chạy / không xác nhận được ⇒

@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import os
 import shutil
-import stat
 import subprocess
 import tarfile
 import tempfile
@@ -233,14 +232,16 @@ def rmtree_ro(path: Path) -> None:
 
 
 def _fchmod_dir(name: str, dir_fd: int | None) -> None:
+    """Mở `O_DIRECTORY|O_NOFOLLOW` theo `dir_fd` (symlink ⇒ lỗi, không chmod qua nó). Linux:
+    `O_PATH` (mở được cả thư mục 0o300 khi không phải root) rồi chmod `/proc/self/fd/N` — ghim
+    inode, không đua đổi-tên-thành-symlink; nơi khác `O_RDONLY` + `fchmod`."""
+    o_path: int | None = getattr(os, "O_PATH", None)
+    fd = os.open(name, (o_path or os.O_RDONLY) | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=dir_fd)
     try:
-        fd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=dir_fd)
-    except PermissionError:  # thư mục không có quyền đọc (vd 0o300, Runtime không phải root)
-        if stat.S_ISDIR(os.stat(name, dir_fd=dir_fd, follow_symlinks=False).st_mode):
-            os.chmod(name, 0o700, dir_fd=dir_fd)
-        return
-    try:
-        os.fchmod(fd, 0o700)
+        if o_path:
+            os.chmod(f"/proc/self/fd/{fd}", 0o700)
+        else:
+            os.fchmod(fd, 0o700)
     finally:
         os.close(fd)
 
