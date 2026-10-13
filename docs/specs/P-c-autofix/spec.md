@@ -73,7 +73,12 @@ BA là nguồn sự thật (HUB-FR-126…130, HUB-BR-32…34, WRK-FR-28/29, WRK-
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead: mockup trước (người dùng yêu cầu). Màn cần làm: plan.md §8. -->
-(chưa làm)
+Mockup P-c1 (chờ người dùng duyệt; chưa viết plan-frontend), trong `docs/design/agent-hub/canvas/`:
+| Artboard | Nội dung |
+|---|---|
+| `Pc-Editor.dc.html` | Khối "Tự sửa mã" trong panel stage (admin-web): tắt · trống · hợp lệ · lỗi `AUTOFIX_EXECUTOR/REVIEW/MAX` · nguồn `library` · test trống · ghi chú mạng |
+| `Pc-Diff.dc.html` | Duyệt diff (chat-web "Chờ tôi kiểm" + trang run admin-web): có diff · `no_changes` · đang tải · lỗi tải |
+| `Pc-Decision.dc.html` | `autofix_check_failed` (nhóm lỗi) · `sandbox_unavailable` · dòng stage run view · thẻ thread |
 
 ## 6. Rủi ro & hàng rào bảo mật (hard stop)
 | Rủi ro | Hàng rào |
