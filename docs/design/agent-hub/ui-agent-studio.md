@@ -36,6 +36,7 @@ Agent Studio  (/studio · role=platform_admin)
 │  ├─ Runs · Chi phí & usage · Jobs & Worker
 └─ HỆ THỐNG
    ├─ Nhật ký thay đổi                /studio/audit
+   ├─ Tri thức                        /studio/knowledge  (CR-071, K1; chờ mockup)
    ├─ Cài đặt → KnowledgeHub          /studio/settings  (CR-062, K1; đường dẫn đề xuất, chờ artboard)
    └─ Import / Export                 /studio/transfer
 ```
@@ -85,7 +86,7 @@ Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở *Tools*
 | Chạy thử | Gọi thẳng agent (bỏ qua Orchestrator) bằng bản nháp. Mặc định mở tab Trace. Đổi được profile cho lượt thử mà không lưu |
 | Lưu agent mới | Lưu xong mà agent chưa cấp cho tenant nào thì toast nhắc "Chưa tenant nào dùng được agent này" kèm nút [Cấp cho tenant…] |
 | Tắt agent | Toast có Hoàn tác, kèm nhắc: "Orchestrator sẽ không còn chọn agent này. Các yêu cầu tương tự sẽ được chat tự trả lời" |
-| Tri thức (CR-062, K1; chờ artboard) | Mục "Tri thức" trong editor agent: công tắc "Được dùng tri thức (KnowledgeHub)" + chọn loại project. Chỉ hiện khi KnowledgeHub đã kết nối ở Cài đặt. `tenant_admin` chọn project của công ty cho quy trình/stage ở Evolu Control (không ở Studio) |
+| Tri thức (CR-062, **CR-071**, K1; chờ mockup) | **Mục menu "Tri thức"** (`platform_admin`): danh sách kho tri thức (Tên · Project KH · Phạm vi: công ty X / dùng chung (chỉ đọc) · Trạng thái); [+ Thêm tri thức] (tên, project KH, phạm vi, [Kiểm tra]). **Sửa agent → "Tri thức"**: chọn nhiều kho gắn vào agent (thay công tắc). Chỉ hiện khi KH đã kết nối ở Cài đặt. `tenant_admin` chỉ có công tắc "Dùng tri thức cho công ty" (Dialog nhỏ ở trang Quy trình, Evolu Control); không còn chọn project theo quy trình/stage |
 | Cài đặt → KnowledgeHub (CR-062/067, K1; **thiếu artboard** — dựng theo mẫu màn Secrets/Cài đặt) | Khối 1: URL KH (allowlist, TLS) + nút "Kiểm tra kết nối" (phiên bản ≥ v6.4, `api_versions`, capability, `include_people_lanes`, `/v1/me`; cảnh báo tĩnh embedder đa ngữ). Khối 2: **bảng tenant ↔ namespace + credentials** (cột Tenant · Namespace · Credentials `client_id` + `•••• Đã lưu` chỉ ghi, dán JSON `{client_id, client_secret, token_url?}` · Trạng thái · [Thay] [Xoá]); `platform_admin` tự gắn ns/client phía KH rồi dán. Tính năng tắt mặc định, `tenant_admin` bật theo công ty. |
 
 ## 6. Orchestrator

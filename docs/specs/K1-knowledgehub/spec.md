@@ -2,7 +2,7 @@
 id: K1-knowledgehub
 title: K1 · KnowledgeHub làm RAG ngoài (Hub proxy) + quy trình mẫu AISDLC
 milestone: K1
-status: approved
+status: plan
 requirements: [HUB-FR-131, HUB-FR-132, HUB-FR-133, HUB-FR-134, HUB-FR-137, HUB-BR-35, HUB-BR-36, HUB-BR-37, HUB-BR-40]
 design:
   - docs/design/agent-hub/ba-agent-hub.md HUB-FR-131…134, 137 · HUB-BR-35…37, 40 (ngoại lệ HUB-BR-12)
@@ -15,15 +15,15 @@ owner: backend-lead + frontend-lead + qc
 
 # K1 · KnowledgeHub (RAG ngoài)
 
-Tách từ BA đã sửa theo Intake Đầy đủ 2026-10-13 (14 mặc định đã chốt); PLAN xong (mục 3–5), readiness: [`readiness.md`](readiness.md). Chạy sau H4b-1.
+Tách từ BA (Intake 2026-10-13, 14 mặc định); readiness: [`readiness.md`](readiness.md). Chạy sau H4b-1.
 
 ## 1. Phạm vi
 **Làm:**
 - Studio → Cài đặt → KnowledgeHub: URL + bảng tenant ↔ namespace + credentials (`kh_api_key` JSON) + "Kiểm tra kết nối" (HUB-FR-131).
 - Client KH `/v1/{ns}`: đổi token client credentials, giữ trong bộ nhớ, làm mới 60–90 s, `401` ⇒ thử lại 1 lần (HUB-FR-137).
-- Mục "Tri thức" trong agent; `tenant_admin` bật theo công ty + chọn project KH cho quy trình/stage (HUB-FR-132).
+- **CR-071:** Studio mục "Tri thức" = kho tri thức (tên, project KH, một công ty/dùng chung chỉ đọc, [Kiểm tra]); sửa agent → "Tri thức" chọn nhiều kho; `kh-query` chỉ hỏi kho gắn agent ∧ (tenant run ∨ dùng chung); bỏ gắn project theo quy trình/stage, `tenant_admin` giữ công tắc công ty (HUB-FR-132). §3–4 viết lại, Gate lại.
 - Tool `kh_query` ở `/mcp` → `POST /v1/{ns}/context/step` (4000 ký tự/lần, ≤ 5 lần/stage).
-- Ghi `## Tóm tắt` qua `POST /v1/{ns}/worklog`; tự thêm `## Tóm tắt` vào `required_sections` cho quy trình đã chọn project KH (HUB-FR-133).
+- Ghi `## Tóm tắt` qua `POST /v1/{ns}/worklog`; ghi vào kho ghi được đầu tiên của agent stage; không có ⇒ không ghi, không thêm `## Tóm tắt` vào `required_sections` (HUB-FR-133).
 - Hạ cấp khi KH lỗi (HUB-FR-134); mock KH cho dev/test.
 - Seed quy trình mẫu `sdlc-delivery` + `bug-fix` (CR-070, chỉ seed; không sửa `sdlc`).
 
@@ -172,7 +172,7 @@ Lệnh xong: `done:k1` = test-plan §6.
 | # | Câu hỏi | Mặc định đề xuất |
 |---|---|---|
 | Q1 | Tên tool `kh_query` không khớp `CATALOG_KEY_RE` (`^[a-z0-9-]{2,32}$`) của `payload.mcp.tools` (Runtime/pydantic kiểm cùng regex) | Khoá tool **`kh-query`** (agent thấy `mcp__hub__kh-query`); không đổi contract job/Runtime. "kh_query" giữ làm tên nghiệp vụ trong BA |
-| Q2 | People lanes và `## Tóm tắt` quay lại qua `context/step` (KH chỉ phục vụ tầng `log` khi `include_people_lanes`≠false — `app/caps/retrieval.py`) | **Người dùng chốt 2026-10-13:** cho phép people lanes với project **riêng** của tenant (ns = tenant ⇒ vẫn cách ly) ⇒ agent đọc `## Tóm tắt` qua `kh-query` ngay K1; chấp nhận ghi chú người viết cùng project lẫn vào kết quả (KH giới hạn ≤ 40% budget). **Project dùng chung vẫn bắt buộc tắt lanes** (chỉ đọc, Hub không ghi Tóm tắt) ⇒ "Kiểm tra kết nối" lỗi `kh_people_lanes_on_shared`. Sửa CR-067/ADR-0012 |
+| Q2 | People lanes và `## Tóm tắt` quay lại qua `context/step` (KH chỉ phục vụ tầng `log` khi `include_people_lanes`≠false — `app/caps/retrieval.py`) | **Người dùng chốt 2026-10-13:** cho phép people lanes với project **riêng** của tenant (ns = tenant ⇒ vẫn cách ly) ⇒ agent đọc `## Tóm tắt` qua `kh-query` ngay K1 (KH giới hạn ghi chú người viết ≤ 40% budget). **Project dùng chung vẫn bắt buộc tắt lanes** (chỉ đọc, Hub không ghi Tóm tắt) ⇒ "Kiểm tra kết nối" lỗi `kh_people_lanes_on_shared`. Sửa CR-067/ADR-0012 |
 | Q3 | "Cảnh báo vào output stage" khi hạ cấp | Hiện ở `StageView.knowledge.warning` (+ audit); **không** sửa nội dung file output của agent |
 | Q4 | Allowlist URL KH ở đâu | Env `HUB_KH_ALLOWED_ORIGINS` (vận hành đặt, UI chỉ đọc); URL nằm trong DB qua Studio |
 | Q5 | Khi nào tenant "hiệu lực" | Cần lần "Kiểm tra kết nối" gần nhất `ok`; mọi thay đổi ns/secret/keyspace/project/URL ⇒ `unchecked` ⇒ ngừng gọi KH tới khi kiểm lại |
@@ -182,6 +182,7 @@ Lệnh xong: `done:k1` = test-plan §6.
 | Q9 | Seed `sdlc-delivery`/`bug-fix` dùng agent nào | Dùng lại agent seed sẵn (`intake-analyst`, `docs-architect`, `backend-lead`, `reviewer`, `qc`, `qc-uat`); mở rộng seed schema nhận `after: {review: {back_to_steps}}`; không thêm agent |
 
 - 2026-10-13 · Readiness lần 1: mặc định BE (#2–#21, Luật 2b) đã áp vào §3–§4 + plan (đánh dấu `R#`).
+- 2026-10-13 · CR-071: Gate lại; §3–4 viết lại.
 ### Trong lúc làm
 Xem [`spec-decisions.md`](spec-decisions.md).
 
