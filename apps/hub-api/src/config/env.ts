@@ -34,6 +34,9 @@ export const EnvSchema = z.object({
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
   // H2a plan §8: chung với admin-api (base64 32 byte). Vắng → gọi Dify luôn NOT_CONFIGURED; sai → env lỗi (fatal).
   SECRET_MASTER_KEY: z.string().refine(isMasterKeyB64).optional(),
+  // H4b-1 plan §4, D10 · khoá secrets của Hub (base64 32 byte, KHÁC SECRET_MASTER_KEY). Bắt buộc mọi môi trường nhưng kiểm
+  // ở `server.ts` (`checkHubSecretsKey`) để log đúng `reason` (missing|invalid|same_as_master|self_test), không phải lỗi zod chung.
+  HUB_SECRETS_KEY: z.string().optional(),
   // H2a plan §8: token dịch vụ của `/internal/test-run` (≥ 32 ký tự); vắng → route đó 503 `UNAVAILABLE`.
   HUB_INTERNAL_TOKEN: z.string().min(32).optional(),
   // H2a plan §8: `mcp.url` = `<HUB_PUBLIC_INTERNAL_URL>/mcp` trong payload job agent. Mặc định chỉ ở development/test

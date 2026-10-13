@@ -1,6 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { createPrivateKey, createPublicKey, sign, verify } from "node:crypto";
-import { generateDevSecrets, isProduction, mergeEnv, quotePem, readEnvValue } from "./keys-dev";
+import {
+  fillMissingKey,
+  generateDevSecrets,
+  isProduction,
+  mergeEnv,
+  quotePem,
+  readEnvValue,
+  TEST_ENV_RE,
+} from "./keys-dev";
 
 describe("ADM-NFR-06 · keys:dev mergeEnv", () => {
   const base = "# c\nA=\nB=giu\n\nC=\n";
@@ -65,5 +73,26 @@ describe("ADM-NFR-06 · keys:dev generateDevSecrets", () => {
     const q = quotePem(s.JWT_PRIVATE_KEY);
     expect(q).not.toContain("\n");
     expect(q.slice(1, -1).replace(/\\n/g, "\n")).toBe(s.JWT_PRIVATE_KEY.trimEnd());
+  });
+});
+
+describe("HUB-FR-68 · keys:dev HUB_SECRETS_KEY (H4b-1 plan §4)", () => {
+  const K = "HUB_SECRETS_KEY";
+  test("sinh base64 32 byte, khác SECRET_MASTER_KEY", () => {
+    const s = generateDevSecrets();
+    expect(Buffer.from(s.HUB_SECRETS_KEY, "base64").length).toBe(32);
+    expect(s.HUB_SECRETS_KEY).not.toBe(s.SECRET_MASTER_KEY);
+  });
+  test("fillMissingKey: vắng ⇒ thêm cuối; rỗng ⇒ điền; đã có ⇒ null (không ghi đè)", () => {
+    expect(fillMissingKey("A=1\n", K, "k1")).toBe("A=1\nHUB_SECRETS_KEY=k1\n");
+    expect(fillMissingKey("HUB_SECRETS_KEY=\n", K, "k1")).toBe("HUB_SECRETS_KEY=k1\n");
+    expect(fillMissingKey("HUB_SECRETS_KEY=old\n", K, "k1")).toBeNull();
+  });
+  test("HUB-FR-04 · fillMissingKey: giá trị trùng SECRET_MASTER_KEY của file ⇒ null", () => {
+    expect(fillMissingKey("SECRET_MASTER_KEY=k1\n", K, "k1")).toBeNull();
+  });
+  test("TEST_ENV_RE chỉ khớp .env.test-<tag>.local", () => {
+    const names = [".env.test-h4b1_qc.local", ".env.local", ".env.test-.local", ".env.example"];
+    expect(names.map((n) => TEST_ENV_RE.test(n))).toEqual([true, false, false, false]);
   });
 });

@@ -54,6 +54,7 @@ import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
 import { type RunDriver, RunService } from "./modules/runs/runs.service";
 import { traceRoutes } from "./modules/runs/trace/trace.routes";
 import { TraceService } from "./modules/runs/trace/trace.service";
+import type { SecretKey } from "./modules/secrets/secrets.crypto";
 import type { ResolveBridge } from "./modules/sources/resolve.bridge";
 import { mountSources, SOURCE_PROTECTED_PREFIXES } from "./modules/sources/sources.mount";
 
@@ -85,6 +86,8 @@ export type AppDeps = {
   runDriver?: RunDriver;
   /** H2a · = `SECRET_MASTER_KEY` (base64 32 byte, chung Admin); nạp bằng `loadMasterKey` (dify/credential.service). */
   secretMasterKey?: string;
+  /** H4b-1 D11 · = `HUB_SECRETS_KEY` đã kiểm (server điền). Vắng ⇒ POST/PUT có `value` 409 `NOT_CONFIGURED` (test cũ). */
+  hubSecretsKey?: SecretKey | null;
   /** H2a · = `HUB_INTERNAL_TOKEN` (vắng → `/internal/test-run` 503). */
   internalToken?: string;
   /** H2a · = `HUB_PUBLIC_INTERNAL_URL` (dựng `mcp.url` = `<url>/mcp`). */

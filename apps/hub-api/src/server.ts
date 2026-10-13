@@ -1,5 +1,5 @@
 // HUB-NFR-04 · điểm khởi động hub-api: nơi duy nhất đọc env và mở cổng (plan H1 §4, §7).
-// Thứ tự: env → storage file (H2c, `HUB_ATTACH_*`) → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → cột Admin bắt buộc (X1, HUB-FR-95) → Orchestrator hợp lệ (HUB-BR-08) → master key (H2a) → Redis (connect + ping) → serve.
+// Thứ tự: env → storage file (H2c, `HUB_ATTACH_*`) → khoá JWT công khai → DB (`HUB_DATABASE_URL`, ping) → cột Admin bắt buộc (X1, HUB-FR-95) → Orchestrator hợp lệ (HUB-BR-08) → master key (H2a) → khoá secrets Hub (H4b-1) → Redis (connect + ping) → serve.
 // Lỗi bước nào → log `fatal` + exit 1.
 import { SSE_HEARTBEAT_S } from "@ai/contracts/chat";
 import pkg from "../package.json";
@@ -17,6 +17,7 @@ import { createLocalStorage } from "./modules/attachments/storage.local";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
 import { missingAdminColumns } from "./modules/config/schema-check";
 import { loadMasterKey, probeMasterKey } from "./modules/dify/credential.service";
+import { checkHubSecretsKey, type SecretKey } from "./modules/secrets/secrets.crypto";
 
 function fail(step: string, err: unknown): never {
   logger.fatal(step, safeErrorFields(err));
@@ -115,6 +116,18 @@ async function checkMasterKey(env: Env, db: Db): Promise<void> {
 }
 
 /**
+ * H4b-1 plan §4 · AC-H4b1-06: `HUB_SECRETS_KEY` thiếu/sai/trùng `SECRET_MASTER_KEY`/tự kiểm hỏng ⇒ fatal
+ * `hub_secrets_key_invalid` chỉ kèm `reason` (không bao giờ giá trị khoá), exit 1 trước khi mở cổng.
+ */
+async function checkHubKey(env: Env, db: Db): Promise<SecretKey> {
+  const r = checkHubSecretsKey(env.HUB_SECRETS_KEY, env.SECRET_MASTER_KEY);
+  if (r.ok) return r.key;
+  logger.fatal("hub_secrets_key_invalid", { reason: r.reason });
+  await db.close();
+  process.exit(1);
+}
+
+/**
  * SSE: Bun mặc định đóng kết nối im > 10 s, trước nhịp `: ping` (SSE_HEARTBEAT_S) → đặt gấp đôi nhịp ping.
  * H2c P4: thân request ≤ 32 MiB chặn ngoài (mặc định Bun 128 MiB); bộ đếm trong `AttachmentStorage.stage` là chốt.
  */
@@ -148,6 +161,7 @@ async function main(): Promise<void> {
   await assertAdminSchema(db);
   await assertOrchestrator(db);
   await checkMasterKey(env, db);
+  const hubSecretsKey = await checkHubKey(env, db);
   const redis = await openRedis(env).catch((err) => fail("redis", err));
   const stop = new AbortController();
   const app = createApp(
@@ -159,6 +173,7 @@ async function main(): Promise<void> {
       jwtPublicKey,
       ...fromEnv,
       attachments,
+      hubSecretsKey,
       signal: stop.signal,
     },
   );

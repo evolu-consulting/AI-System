@@ -1,6 +1,7 @@
-// ADM-NFR-06 · `bun run keys:dev`: sinh .env.local với khoá dev (spec M0 T-KEYS-1). Không in giá trị.
+// ADM-NFR-06 · HUB-FR-68 · `bun run keys:dev`: sinh .env.local với khoá dev (spec M0 T-KEYS-1; H4b-1 plan §4, Q6 thêm
+// `HUB_SECRETS_KEY` khác `SECRET_MASTER_KEY` và chép nó vào mọi `.env.test-*.local` còn thiếu). Không in giá trị.
 import { generateKeyPairSync, randomBytes, randomInt } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { repoRoot } from "./lib/git";
 
@@ -9,6 +10,8 @@ export type DevSecrets = {
   JWT_PUBLIC_KEY: string;
   JWT_KID: string;
   SECRET_MASTER_KEY: string;
+  /** H4b-1 · khoá secrets Hub, luôn khác `SECRET_MASTER_KEY` (HUB-FR-04). */
+  HUB_SECRETS_KEY: string;
   SEED_ADMIN_PASSWORD: string;
 };
 
@@ -29,11 +32,15 @@ export function generateDevSecrets(now: Date = new Date()): DevSecrets {
     privateKeyEncoding: { type: "pkcs8", format: "pem" },
     publicKeyEncoding: { type: "spki", format: "pem" },
   });
+  const master = randomBytes(32).toString("base64");
+  let hub = randomBytes(32).toString("base64");
+  while (hub === master) hub = randomBytes(32).toString("base64");
   return {
     JWT_PRIVATE_KEY: privateKey,
     JWT_PUBLIC_KEY: publicKey,
     JWT_KID: kidFor(now),
-    SECRET_MASTER_KEY: randomBytes(32).toString("base64"),
+    SECRET_MASTER_KEY: master,
+    HUB_SECRETS_KEY: hub,
     SEED_ADMIN_PASSWORD: Array.from({ length: 20 }, () => ALNUM[randomInt(ALNUM.length)]).join(""),
   };
 }
@@ -81,6 +88,34 @@ export function isProduction(
   return envLocalText !== undefined && readEnvValue(envLocalText, "APP_ENV") === "production";
 }
 
+/** File `.env.test-<tag>.local` (DB test riêng mỗi lát) trong thư mục gốc. */
+export const TEST_ENV_RE = /^\.env\.test-.+\.local$/;
+
+/**
+ * H4b-1 plan §4 · thêm `key=value` vào nội dung `.env.test-*.local` khi biến vắng/rỗng (không ghi đè khoá cũ: mất khoá = mất
+ * secret của DB test đó). Trả `null` khi không cần đổi, hoặc khi `value` trùng `SECRET_MASTER_KEY` của file (HUB-FR-04).
+ */
+export function fillMissingKey(text: string, key: string, value: string): string | null {
+  if ((readEnvValue(text, key) ?? "") !== "") return null;
+  if (readEnvValue(text, "SECRET_MASTER_KEY") === value) return null;
+  return mergeEnv(text, { [key]: value }, false);
+}
+
+/** Chép `HUB_SECRETS_KEY` của .env.local vào mọi `.env.test-*.local` còn thiếu; trả tên file đã sửa. */
+function propagateHubKey(root: string, localText: string): string[] {
+  const value = readEnvValue(localText, "HUB_SECRETS_KEY") ?? "";
+  if (value === "") return [];
+  const changed: string[] = [];
+  for (const name of readdirSync(root).filter((n) => TEST_ENV_RE.test(n))) {
+    const path = join(root, name);
+    const next = fillMissingKey(readFileSync(path, "utf8"), "HUB_SECRETS_KEY", value);
+    if (next === null) continue;
+    writeFileSync(path, next);
+    changed.push(name);
+  }
+  return changed;
+}
+
 function main(argv: string[]): number {
   const root = repoRoot();
   const localPath = join(root, ".env.local");
@@ -111,6 +146,8 @@ function main(argv: string[]): number {
       ? `keys:dev: đã điền ${changed.join(", ")} vào .env.local`
       : "keys:dev: .env.local đã đủ khoá, không đổi",
   );
+  const tests = propagateHubKey(root, next);
+  if (tests.length) console.log(`keys:dev: đã thêm HUB_SECRETS_KEY vào ${tests.join(", ")}`);
   return 0;
 }
 
