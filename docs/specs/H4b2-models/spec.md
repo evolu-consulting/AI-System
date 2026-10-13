@@ -2,7 +2,7 @@
 id: H4b2-models
 title: H4b-2 · Models (provider, profile, trạng thái sống) + Quyền agent (entitlement agent × tenant)
 milestone: H4b-2 (phần còn lại của H4b; mở 2026-10-13 sau CR-074 bỏ K2)
-status: ready-for-gate  # PLAN+qc xong; readiness lần 1 đã đóng lỗ hổng (chờ chạy lại)
+status: ready-for-gate
 requirements: [HUB-FR-66, HUB-FR-67, HUB-FR-78, HUB-FR-77, HUB-BR-17, AC-H04, AC-H4b2-01, AC-H4b2-02, AC-H4b2-03, AC-H4b2-04, AC-H4b2-05, AC-H4b2-06, AC-H4b2-07]
 design:
   - docs/design/agent-hub/ba-agent-hub.md HUB-FR-66, HUB-FR-67 (dòng ~209–210) · HUB-FR-77, HUB-FR-78 (~227–228) · HUB-BR-17 (~359) · AC-H04 · bảng `providers`, `provider_state` (~378, ~388)
@@ -26,7 +26,7 @@ owner: backend-lead + frontend-lead + qc
 **Không làm:** tab **Đơn giá** (`price_book`, Studio §8) — không thuộc FR của mốc, để mốc cost/quota; chạy thật provider `api` (chờ H2d; dev dùng `fake-*`); đăng nhập CLI subscription (runbook Worker, chỉ hiện hướng dẫn); cấp grant (ở Admin, HUB-FR-78 phần `tenant_admin`); nạp tri thức vào KH (K2 đã bỏ, CR-074).
 
 ## 2. Nghiệp vụ
-Nguồn chính: BA HUB-FR-66/67/77/78, HUB-BR-17; UI Studio §8, §9. Chỉ ghi phần cụ thể hoá.
+Nguồn: BA HUB-FR-66/67/77/78, HUB-BR-17; UI §8, §9.
 
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
@@ -121,7 +121,7 @@ Có sẵn, không đổi: `providers_secret_fk` RESTRICT (0028) · `provider_sta
 ## 5. UI (frontend-lead)
 Chi tiết: [`plan-frontend.md`](plan-frontend.md) (quyết định D1–D12, câu chữ VI/EN, validate, role+nhãn e2e, đối chiếu C1–C7). Hàng ma trận = agent, cột = tenant; chỉ nút Lên/Xuống (kéo-thả: TECH-DEBT #162). Tóm tắt: hai route lazy `/models` (tab Providers, Profiles; Sheet provider; hộp "Kết quả kiểm tra" đồng bộ ≤ 10 s; Sheet runbook "Hướng dẫn") và `/access` (ma trận công tắc, drawer xem grant, ConfirmDialog thu hồi "N grant"). Không thêm thư viện. Tab Đơn giá không hiện.
 
-**Artboard (đối chiếu 2026-10-13):**
+**Artboard:**
 
 | Màn | Artboard | Tình trạng |
 |---|---|---|

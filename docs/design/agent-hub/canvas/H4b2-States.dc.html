@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Trạng thái Models và Quyền agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+a{color:#6B4FA0}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px}
+.btn{font:inherit;font-size:14px;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.sub{font-size:12px;color:#635C78}
+.fld{display:flex;flex-direction:column;gap:6px}.fld label{font-weight:500}
+.inp{font:inherit;padding:9px 12px;border:1px solid #D9D5E3;border-radius:8px;background:#fff}
+.dim{background:rgba(29,23,51,.45)}
+.sheet{background:#fff;box-shadow:-8px 0 24px rgba(29,23,51,.18);display:flex;flex-direction:column;box-sizing:border-box}
+.sheet header,.dlg header{padding:18px 24px;border-bottom:1px solid #E6E3EE;display:flex;justify-content:space-between;align-items:center}
+.sheet h2,.dlg h2{margin:0;font-size:17px;font-weight:600}
+.sheet footer,.dlg footer{padding:14px 24px;border-top:1px solid #E6E3EE;display:flex;justify-content:flex-end;gap:10px}
+.dlg{background:#fff;border-radius:12px;box-shadow:0 12px 32px rgba(29,23,51,.25);display:flex;flex-direction:column}
+.cap{font-size:12px;font-weight:600;margin-bottom:6px;color:#635C78}
+.x{width:36px;height:36px;border:0;background:none;color:#635C78;font-size:18px}
+pre{margin:6px 0 0;padding:10px;background:#F7F6FA;border-radius:8px;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:12px}
+</style>
+</helmet>
+
+<div style="width:1320px;height:560px;padding:28px;box-sizing:border-box;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-content:start">
+<div><div class="cap">Providers · đang tải (aria-busy)</div><div class="card" style="padding:20px;min-height:150px;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><div style="width:100%;height:14px;background:#EFEDF3;border-radius:6px"></div><div style="width:100%;height:14px;background:#EFEDF3;border-radius:6px"></div><div style="width:70%;height:14px;background:#EFEDF3;border-radius:6px"></div><div style="width:100%;height:14px;background:#EFEDF3;border-radius:6px"></div></div></div>
+<div><div class="cap">Providers · rỗng</div><div class="card" style="padding:20px;min-height:150px;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><strong>Chưa có provider nào</strong><span class="sub">Thêm provider để agent có nơi gọi model.</span><button class="btn btn-p">+ Thêm provider</button></div></div>
+<div><div class="cap">Profiles · rỗng</div><div class="card" style="padding:20px;min-height:150px;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><strong>Chưa có profile nào</strong><span class="sub">Profile là chuỗi bước dự phòng. Cần ít nhất một provider.</span><button class="btn btn-p">+ Profile mới</button></div></div>
+<div><div class="cap">Lỗi tải (mọi màn)</div><div class="card" style="padding:20px;min-height:150px;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><strong style="color:#9B1C1C">Không tải được dữ liệu</strong><span class="sub">Kiểm tra kết nối rồi thử lại.</span><button class="btn">Thử lại</button></div></div>
+<div><div class="cap">Không có quyền (phòng thủ)</div><div class="card" style="padding:20px;min-height:150px;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><strong>Bạn không có quyền xem mục này</strong><span class="sub">Chỉ platform_admin dùng được Studio.</span></div></div>
+<div><div class="cap">Quyền agent · chưa có agent</div><div class="card" style="padding:20px;min-height:150px;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><strong>Chưa có agent để cấp</strong><span class="sub">Tạo agent ở màn Agents trước.</span></div></div>
+<div><div class="cap">Xoá provider đang được profile dùng (409 PROVIDER_IN_USE)</div><section role="alertdialog" aria-label="Không xoá được openai-api" class="dlg" style="padding:20px 24px;gap:10px"><h2 style="margin:0;font-size:17px">Không xoá được <span class="mono">openai-api</span></h2><span class="sub">Provider đang là bước của các profile sau. Gỡ bước, hoặc chỉ tắt provider.</span><div style="display:flex;gap:6px"><span class="badge b-info">smart</span><span class="badge b-info">coder</span></div><div style="display:flex;justify-content:flex-end"><button class="btn btn-p">Đóng</button></div></section></div>
+<div><div class="cap">Profile · cảnh báo toàn subscription</div><div class="card" style="padding:16px"><p role="status" style="margin:0;padding:10px 12px;border-radius:10px;background:#FDF0DF;color:#7F3C04;font-size:13px">Profile này chỉ có bước subscription. Hết slot hoặc cooldown thì chạy lỗi ALL_PROVIDERS_EXHAUSTED. Chỉ nên dùng cho dev/test.</p></div></div>
+<div><div class="cap">Quyền agent · ma trận đã đổi (409)</div><div class="card" style="padding:16px"><p style="margin:0;padding:10px 12px;border-radius:10px;background:#FDE8E8;color:#9B1C1C;font-size:13px">Quyền vừa được thay đổi. Đã tải lại ma trận.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1320,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng dẫn đăng nhập CLI</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+a{color:#6B4FA0}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px}
+.btn{font:inherit;font-size:14px;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.sub{font-size:12px;color:#635C78}
+.fld{display:flex;flex-direction:column;gap:6px}.fld label{font-weight:500}
+.inp{font:inherit;padding:9px 12px;border:1px solid #D9D5E3;border-radius:8px;background:#fff}
+.dim{background:rgba(29,23,51,.45)}
+.sheet{background:#fff;box-shadow:-8px 0 24px rgba(29,23,51,.18);display:flex;flex-direction:column;box-sizing:border-box}
+.sheet header,.dlg header{padding:18px 24px;border-bottom:1px solid #E6E3EE;display:flex;justify-content:space-between;align-items:center}
+.sheet h2,.dlg h2{margin:0;font-size:17px;font-weight:600}
+.sheet footer,.dlg footer{padding:14px 24px;border-top:1px solid #E6E3EE;display:flex;justify-content:flex-end;gap:10px}
+.dlg{background:#fff;border-radius:12px;box-shadow:0 12px 32px rgba(29,23,51,.25);display:flex;flex-direction:column}
+.cap{font-size:12px;font-weight:600;margin-bottom:6px;color:#635C78}
+.x{width:36px;height:36px;border:0;background:none;color:#635C78;font-size:18px}
+pre{margin:6px 0 0;padding:10px;background:#F7F6FA;border-radius:8px;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:12px}
+</style>
+</helmet>
+
+<div style="width:760px;height:700px;position:relative;overflow:hidden"><div aria-hidden="true" style="position:absolute;inset:0;padding:24px 28px"><div style="font-size:22px;font-weight:700">Models</div><div class="card" style="height:300px;margin-top:16px"></div></div><div aria-hidden="true" class="dim" style="position:absolute;inset:0"></div>
+<section role="dialog" aria-label="Đăng nhập CLI · codex-sub" class="sheet" style="position:absolute;top:0;right:0;bottom:0;width:520px">
+<header><h2>Đăng nhập CLI · <span class="mono" style="font-size:15px">codex-sub</span></h2><button class="x" aria-label="Đóng">✕</button></header>
+<div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+<p role="status" style="margin:0;padding:10px 12px;border-radius:8px;background:#FDE8E8;color:#9B1C1C"><span class="badge b-err">logged_out</span> Hết phiên đăng nhập. Trong lúc chờ, profile tự dự phòng sang bước kế.</p>
+<ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px">
+<li><div style="font-weight:500">1. SSH vào máy Worker</div><div style="display:flex;gap:8px;align-items:center;margin-top:6px"><code class="mono" style="flex:1;padding:9px 12px;background:#F7F6FA;border-radius:8px">ssh &lt;user&gt;@&lt;máy Agent Runtime&gt;</code><button class="btn" aria-label="Sao chép lệnh bước 1">Sao chép</button></div></li>
+<li><div style="font-weight:500">2. Chạy lệnh đăng nhập</div><div style="display:flex;gap:8px;align-items:center;margin-top:6px"><code class="mono" style="flex:1;padding:9px 12px;background:#F7F6FA;border-radius:8px">codex login</code><button class="btn" aria-label="Sao chép lệnh bước 2">Sao chép</button></div></li>
+<li><div style="font-weight:500">3. Bấm Kiểm tra lại</div><div class="sub" style="margin-top:4px">Hub kiểm tra phiên đăng nhập và cập nhật trạng thái. Kết quả hiện như hộp "Kết quả kiểm tra".</div></li>
+</ol>
+<p class="sub" style="margin:0">Hub không đăng nhập thay bạn. Nội dung lấy từ runbook Worker.</p>
+</div>
+<footer><button class="btn">Kiểm tra lại</button><button class="btn btn-p">Đóng</button></footer></section></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":760,"height":700}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
