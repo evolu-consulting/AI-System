@@ -1,11 +1,11 @@
 // HUB-FR-66 · màn Models (ui-agent-studio §8): tab Providers | Profiles. `?tab=` chọn tab, `?drawer=new|<id>` mở Sheet provider,
-// `?guide=<id>` mở Runbook (D6). CheckDialog dùng chung cho hàng và Runbook (D3). Tab Đơn giá không hiện (Q1). Profiles do T5c.
+// `?guide=<id>` mở Runbook (D6). CheckDialog dùng chung cho hàng và Runbook (D3). Tab Đơn giá không hiện (Q1).
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { EmptyState } from "#/components/shared/EmptyState";
 import { PageHeader } from "#/components/shared/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
 import { CheckDialog } from "../components/CheckDialog";
+import { ProfilesPanel } from "../components/ProfilesPanel";
 import { ProvidersPanel } from "../components/ProvidersPanel";
 import { RunbookSheet } from "../components/RunbookSheet";
 import { useCheckProvider } from "../hooks/use-check-provider";
@@ -43,7 +43,7 @@ export function ModelsPage() {
           />
         </TabsContent>
         <TabsContent value="profiles">
-          <EmptyState message={t("soon")} />
+          <ProfilesPanel />
         </TabsContent>
       </Tabs>
       <CheckDialog

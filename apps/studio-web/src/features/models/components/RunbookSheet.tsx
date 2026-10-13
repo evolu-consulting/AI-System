@@ -12,7 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "#/components/ui/sheet";
-import type { ProviderItem } from "../api";
+import type { ProviderItem } from "../hooks/use-providers";
 import { loginCommandKey } from "../lib/check-text";
 import { statusKey } from "../lib/status";
 

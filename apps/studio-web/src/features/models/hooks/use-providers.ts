@@ -2,6 +2,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { providerDetailQuery, providersQuery } from "../api";
 
+export type { ProviderItem } from "../api";
+
 export const useProviders = () => useQuery(providersQuery);
 export const useProviderDetail = (id: string | null) =>
   useQuery({ ...providerDetailQuery(id ?? ""), enabled: id !== null });

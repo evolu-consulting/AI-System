@@ -15,10 +15,12 @@ export type InUse = { key: string; refs: readonly { id: string; key: string }[] 
 
 export function InUseDialog({
   value,
+  titleKey,
   bodyKey,
   onClose,
 }: {
   value: InUse | null;
+  titleKey: string;
   bodyKey: string;
   onClose: () => void;
 }) {
@@ -27,9 +29,7 @@ export function InUseDialog({
     <AlertDialog open={value !== null} onOpenChange={(o) => !o && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {t("models.provider.inUse.title", { key: value?.key ?? "" })}
-          </AlertDialogTitle>
+          <AlertDialogTitle>{t(titleKey, { key: value?.key ?? "" })}</AlertDialogTitle>
           <AlertDialogDescription>{t(bodyKey)}</AlertDialogDescription>
         </AlertDialogHeader>
         <ul className="flex flex-wrap gap-2">

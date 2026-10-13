@@ -1,5 +1,9 @@
-// HUB-FR-66 · API Models của Studio (`/studio/api/providers*`). Đường dẫn tương đối; secret chỉ đi bằng `secret_id`.
+// HUB-FR-66 · HUB-FR-67 · API Models của Studio (`/studio/api/providers*`). Đường dẫn tương đối; secret chỉ đi bằng `secret_id`.
 import type {
+  ModelProfile,
+  ModelProfileItemSchema,
+  ModelProfileUpdate,
+  ModelProfileWrite,
   ProviderCheckResult,
   ProviderCreate,
   ProviderDetail,
@@ -54,6 +58,39 @@ export const checkProvider = (v: { id: string; signal?: AbortSignal }) =>
 
 export const deleteProvider = (v: { id: string; version: number }) =>
   api<undefined>(`/studio/api/providers/${encodeURIComponent(v.id)}`, {
+    method: "DELETE",
+    query: { version: v.version },
+  });
+
+// ── HUB-FR-67 · Model profile (`/studio/api/model-profiles*`) ────────────────────────────────────────────────────────
+export type ProfileItem = z.infer<typeof ModelProfileItemSchema>;
+export type ProfileList = {
+  items: ProfileItem[];
+  total: number;
+  truncated: boolean;
+  hub_config_version: number;
+};
+export const PROFILES_KEY = ["studio", "model-profiles"] as const;
+
+/** `active_step` do server tính theo trạng thái provider (Worker ghi) nên làm tươi 10 s. */
+export const profilesQuery = queryOptions({
+  queryKey: PROFILES_KEY,
+  queryFn: ({ signal }) => api<ProfileList>("/studio/api/model-profiles", { signal }),
+  refetchInterval: 10_000,
+  staleTime: 0,
+});
+
+export const createProfile = (body: ModelProfileWrite) =>
+  api<ModelProfile>("/studio/api/model-profiles", { method: "POST", body });
+
+export const updateProfile = (v: { id: string; body: ModelProfileUpdate }) =>
+  api<ModelProfile>(`/studio/api/model-profiles/${encodeURIComponent(v.id)}`, {
+    method: "PUT",
+    body: v.body,
+  });
+
+export const deleteProfile = (v: { id: string; version: number }) =>
+  api<undefined>(`/studio/api/model-profiles/${encodeURIComponent(v.id)}`, {
     method: "DELETE",
     query: { version: v.version },
   });

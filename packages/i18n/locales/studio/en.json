@@ -556,7 +556,9 @@
       "providerInUse": "The provider is a step in the profiles below. Remove the step, or just disable the provider.",
       "providerHasHistory": "Provider has run history; disable it instead",
       "providerReadonly": "This provider is system-managed",
-      "conflictDelete": "The provider was just changed. The list has been reloaded."
+      "conflictDelete": "The provider was just changed. The list has been reloaded.",
+      "profileInUse": "Profile is used by agents",
+      "conflictDeleteProfile": "The profile was just changed. The list has been reloaded."
     },
     "check": {
       "title": "Check result · {key}",
@@ -597,6 +599,53 @@
       "copied": "Copied",
       "copyFail": "Could not copy. Select and copy it manually.",
       "note": "The Hub does not sign in for you. Content comes from the Worker runbook."
+    },
+    "profile": {
+      "add": "+ New profile",
+      "save": "Save profile",
+      "saved": "Saved profile {key}",
+      "steps": "Steps",
+      "addStep": "+ Add step",
+      "field": {
+        "name": "Profile name",
+        "provider": "Provider",
+        "model": "Model",
+        "on": "Fall back when"
+      },
+      "on": {
+        "error": "error",
+        "quota": "quota",
+        "timeout": "timeout"
+      },
+      "live": "Currently runs on step {n} · {key}",
+      "liveNone": "No step is ready right now",
+      "subOnly": "This profile has only subscription steps. When slots run out or a provider is in cooldown, runs fail with ALL_PROVIDERS_EXHAUSTED. Use for dev/test only.",
+      "list": {
+        "aria": "Profile list"
+      },
+      "step": {
+        "up": "Up",
+        "down": "Down",
+        "remove": "Remove step"
+      },
+      "err": {
+        "steps": "At least one step is required",
+        "provider": "Choose a provider",
+        "model": "Enter a model (1–100 characters)",
+        "providerBad": "Provider is not usable"
+      },
+      "delete": {
+        "action": "Delete profile",
+        "title": "Delete {key}?",
+        "body": "The profile will be deleted.",
+        "confirm": "Delete"
+      },
+      "toast": {
+        "deleted": "Deleted profile {key}"
+      },
+      "inUse": {
+        "title": "Cannot delete {key}"
+      }
     }
   },
   "secrets": {
@@ -695,7 +744,10 @@
   "access": {
     "title": "Agent access",
     "subtitle": "Which tenants may use which agents. Grants for groups/users are set by tenant admins in Admin › Groups.",
-    "matrix": { "aria": "Agent access matrix", "corner": "Agent \\ Tenant" },
+    "matrix": {
+      "aria": "Agent access matrix",
+      "corner": "Agent \\ Tenant"
+    },
     "cell": {
       "label": "{agent} × {tenant}",
       "na": "Only for {tenant}",
@@ -705,7 +757,11 @@
     "agentOff": "Agent is off",
     "empty": "No agents to grant",
     "forbidden": "You don't have permission to view this",
-    "filter": { "agent": "Filter by agent", "tenant": "Filter by tenant", "all": "All" },
+    "filter": {
+      "agent": "Filter by agent",
+      "tenant": "Filter by tenant",
+      "all": "All"
+    },
     "drawer": {
       "title": "Details {agent} × {tenant}",
       "grantedAt": "Granted on",
@@ -713,7 +769,11 @@
       "grants": "Grants in tenant",
       "none": "No grants yet",
       "note": "Grants are set by tenant_admin in Admin › Groups.",
-      "subject": { "group": "Group", "user": "User", "tenant": "Whole tenant" }
+      "subject": {
+        "group": "Group",
+        "user": "User",
+        "tenant": "Whole tenant"
+      }
     },
     "revoke": {
       "title": "Revoke {agent} from {tenant}?",

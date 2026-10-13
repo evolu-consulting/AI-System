@@ -556,7 +556,9 @@
       "providerInUse": "Provider đang là bước của các profile sau. Gỡ bước, hoặc chỉ tắt provider.",
       "providerHasHistory": "Provider đã có lịch sử chạy, chỉ tắt được",
       "providerReadonly": "Provider này do hệ thống quản lý, không sửa được",
-      "conflictDelete": "Provider vừa được thay đổi. Đã tải lại danh sách."
+      "conflictDelete": "Provider vừa được thay đổi. Đã tải lại danh sách.",
+      "profileInUse": "Profile đang được agent dùng",
+      "conflictDeleteProfile": "Profile vừa được thay đổi. Đã tải lại danh sách."
     },
     "check": {
       "title": "Kết quả kiểm tra · {key}",
@@ -597,6 +599,53 @@
       "copied": "Đã sao chép",
       "copyFail": "Không sao chép được. Hãy chọn và sao chép thủ công.",
       "note": "Hub không đăng nhập thay bạn. Nội dung lấy từ runbook Worker."
+    },
+    "profile": {
+      "add": "+ Profile mới",
+      "save": "Lưu profile",
+      "saved": "Đã lưu profile {key}",
+      "steps": "Các bước",
+      "addStep": "+ Thêm bước",
+      "field": {
+        "name": "Tên profile",
+        "provider": "Provider",
+        "model": "Model",
+        "on": "Chuyển bước kế khi"
+      },
+      "on": {
+        "error": "lỗi",
+        "quota": "hết quota",
+        "timeout": "quá giờ"
+      },
+      "live": "Lúc này sẽ chạy bằng bước {n} · {key}",
+      "liveNone": "Hiện không bước nào sẵn sàng",
+      "subOnly": "Profile này chỉ có bước subscription. Hết slot hoặc cooldown thì chạy lỗi ALL_PROVIDERS_EXHAUSTED. Chỉ nên dùng cho dev/test.",
+      "list": {
+        "aria": "Danh sách profile"
+      },
+      "step": {
+        "up": "Lên",
+        "down": "Xuống",
+        "remove": "Xoá bước"
+      },
+      "err": {
+        "steps": "Cần ít nhất một bước",
+        "provider": "Chọn provider",
+        "model": "Nhập model (1–100 ký tự)",
+        "providerBad": "Provider không dùng được"
+      },
+      "delete": {
+        "action": "Xoá profile",
+        "title": "Xoá {key}?",
+        "body": "Profile sẽ bị xoá.",
+        "confirm": "Xoá"
+      },
+      "toast": {
+        "deleted": "Đã xoá profile {key}"
+      },
+      "inUse": {
+        "title": "Không xoá được {key}"
+      }
     }
   },
   "secrets": {
@@ -695,7 +744,10 @@
   "access": {
     "title": "Quyền agent",
     "subtitle": "Tenant nào được có agent nào. Grant cho group/user do tenant admin cấp ở Admin › Groups.",
-    "matrix": { "aria": "Ma trận quyền agent", "corner": "Agent \\ Tenant" },
+    "matrix": {
+      "aria": "Ma trận quyền agent",
+      "corner": "Agent \\ Tenant"
+    },
     "cell": {
       "label": "{agent} × {tenant}",
       "na": "Chỉ dùng cho {tenant}",
@@ -705,7 +757,11 @@
     "agentOff": "Agent đang tắt",
     "empty": "Chưa có agent để cấp",
     "forbidden": "Bạn không có quyền xem mục này",
-    "filter": { "agent": "Lọc theo agent", "tenant": "Lọc theo tenant", "all": "Tất cả" },
+    "filter": {
+      "agent": "Lọc theo agent",
+      "tenant": "Lọc theo tenant",
+      "all": "Tất cả"
+    },
     "drawer": {
       "title": "Chi tiết {agent} × {tenant}",
       "grantedAt": "Ngày cấp",
@@ -713,7 +769,11 @@
       "grants": "Grant trong tenant",
       "none": "Chưa có grant",
       "note": "Grant do tenant_admin cấp trong Admin › Groups.",
-      "subject": { "group": "Group", "user": "User", "tenant": "Cả tenant" }
+      "subject": {
+        "group": "Group",
+        "user": "User",
+        "tenant": "Cả tenant"
+      }
     },
     "revoke": {
       "title": "Thu hồi {agent} khỏi {tenant}?",

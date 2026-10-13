@@ -8,8 +8,8 @@ import { EmptyState } from "#/components/shared/EmptyState";
 import { ErrorState } from "#/components/shared/ErrorState";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
-import type { ProviderItem } from "../api";
 import { useProviderMutations } from "../hooks/use-provider-mutations";
+import type { ProviderItem } from "../hooks/use-providers";
 import { useProviders } from "../hooks/use-providers";
 import { classifySaveError } from "../lib/save-error";
 import { type InUse, InUseDialog } from "./InUseDialog";
@@ -98,6 +98,7 @@ export function ProvidersPanel({ drawer, onDrawer, onCheck, onGuide }: Props) {
       />
       <InUseDialog
         value={inUse}
+        titleKey="models.provider.inUse.title"
         bodyKey="models.provider.inUse.body"
         onClose={() => setInUse(null)}
       />

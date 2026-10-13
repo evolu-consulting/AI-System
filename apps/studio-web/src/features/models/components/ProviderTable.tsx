@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "#/components/ui/table";
-import type { ProviderItem } from "../api";
+import type { ProviderItem } from "../hooks/use-providers";
 import { cooldownMinutes, needsGuide, statusKey } from "../lib/status";
 
 type Actions = {
