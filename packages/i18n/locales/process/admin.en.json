@@ -333,5 +333,43 @@
       "zoomOut": "Zoom out",
       "fit": "Fit view"
     }
+  },
+  "autofix": {
+    "title": "Autofix",
+    "switch": {
+      "off": "Off",
+      "on": "On"
+    },
+    "hint": "The agent edits files in a copy of the source and produces a diff for a person to review. Nothing is pushed.",
+    "source": {
+      "label": "Source",
+      "ph": "Select a source…",
+      "hint": "Only git_remote or local_path sources."
+    },
+    "test": {
+      "label": "Test command",
+      "ph": "e.g. bun test"
+    },
+    "install": {
+      "label": "Install command",
+      "ph": "e.g. bun install (leave empty = no install)"
+    },
+    "allow": {
+      "label": "Editable paths",
+      "ph": "e.g. src/** (empty = any path)",
+      "hint": "Up to 20 patterns. .github/workflows is blocked unless listed explicitly."
+    },
+    "net": "The container that runs the agent and tests has no network. The install command runs first, with network, for up to 600 seconds. With no install command there is no network at all.",
+    "valid": "Valid",
+    "err": {
+      "test": "Enter a test command (up to 1000 characters).",
+      "install": "The install command can be at most 1000 characters.",
+      "source": "Select a source to autofix.",
+      "allow": "Up to 20 patterns, each a valid glob.",
+      "AUTOFIX_EXECUTOR": "An autofix stage must be run by an agent.",
+      "AUTOFIX_REVIEW": "An autofix stage always needs a person to review it. Choose \"Review\" under After stage.",
+      "AUTOFIX_MAX": "A process can have only one autofix stage. It is already set on stage \"{{stage}}\".",
+      "sourceKind": "Source \"{{key}}\" is of kind {{kind}} and cannot be edited. Choose a git_remote or local_path source."
+    }
   }
 }

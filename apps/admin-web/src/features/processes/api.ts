@@ -19,7 +19,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { ApiError, api } from "@/lib/http";
+import { ApiError, api, apiResponse } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
 
 export type EngineState = "on" | "off" | "unknown";
@@ -79,6 +79,14 @@ export function useProcessDefs(tenantId: string | undefined, templates: boolean,
 
 export const fetchDef = (id: string, tenantId?: string): Promise<ProcessDef> =>
   api<ProcessDef>(url(`/process-defs/${enc(id)}`), { query: { tenant_id: tenantId } });
+
+/** P-c1 FC4 · `GET /attachments/:id/content` kèm Bearer (diff/log tự sửa); `tenantId` chỉ khi platform_admin. */
+export async function fetchAttachmentContent(id: string, tenantId?: string): Promise<Blob> {
+  const res = await apiResponse(url(`/attachments/${enc(id)}/content`), {
+    query: { tenant_id: tenantId },
+  });
+  return res.blob();
+}
 
 export function useProcessDef(id: string | undefined, tenantId: string | undefined) {
   return useQuery({

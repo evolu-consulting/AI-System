@@ -66,5 +66,59 @@
     "NO_OUTPUT": "Chưa có bản kết quả nào để dùng.",
     "NOT_PROCESS_DECIDER": "Bạn không có quyền quyết định lượt chạy này."
   },
-  "back_limit": "Đã quay lại tối đa {{max}} lần mà chưa đạt."
+  "back_limit": "Đã quay lại tối đa {{max}} lần mà chưa đạt.",
+  "autofix": {
+    "title": "Tự sửa mã",
+    "round": "Vòng {{n}}",
+    "testOk": "Test đạt · {{sec}} giây",
+    "testFail": "Test đỏ · exit {{code}} · {{sec}} giây",
+    "diffStat": "{{n}} file",
+    "binary": "nhị phân",
+    "binaryNote": "File nhị phân, không hiển thị nội dung.",
+    "viewLog": "Xem log",
+    "downloadLog": "Tải log",
+    "downloadDiff": "Tải .diff",
+    "fullLog": "Tải log đầy đủ",
+    "big": "Diff lớn: chỉ hiển thị 2.000 dòng đầu, còn {{rest}} dòng. Tải .diff để xem đủ.",
+    "noChanges": {
+      "label": "Không có thay đổi",
+      "hint": "Agent không sửa file nào, hoặc bản sửa trùng nguồn. Chọn \"Chưa đạt\" nếu cần thêm lượt."
+    },
+    "loadErr": {
+      "label": "Không tải được diff",
+      "hint": "Kiểm tra kết nối rồi thử lại. Vẫn có thể tải file .diff."
+    },
+    "retry": "Thử lại",
+    "files": "Danh sách file",
+    "region": "Kết quả tự sửa mã",
+    "lastCheck": "Kiểm gần nhất:",
+    "viewDiff": "Xem diff",
+    "checkFailed": {
+      "label": "Kiểm không đạt",
+      "short": "Kiểm không đạt · {{group}}"
+    },
+    "decision": {
+      "check": {
+        "empty": "Không nhận được báo cáo kiểm từ máy chạy."
+      }
+    },
+    "group": {
+      "paths": "Đường dẫn",
+      "size": "Kích thước",
+      "secrets": "Bí mật (không hiện giá trị)",
+      "tests": "Test đỏ · exit {{code}} · {{sec}} giây",
+      "install": "Cài phụ thuộc",
+      "apply_patch": "Áp bản vá lượt trước"
+    },
+    "secret": {
+      "line": "{{path}}:{{line}} · quy tắc {{rule}}"
+    },
+    "download": {
+      "err": "Không tải được tệp. Thử lại sau."
+    }
+  },
+  "autofix_check_failed": "Kiểm bản sửa không đạt",
+  "autofix_check_failed_hint": "Chưa lưu diff. Chọn thêm một lượt (agent nhận tóm tắt lỗi dưới đây) hoặc huỷ quy trình.",
+  "sandbox_unavailable": "Không có môi trường chạy an toàn",
+  "sandbox_unavailable_hint": "Máy chạy chưa dựng được container cô lập nên không thể tự sửa mã. Liên hệ quản trị rồi chọn thêm lượt, hoặc huỷ."
 }

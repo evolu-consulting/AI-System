@@ -66,5 +66,59 @@
     "NO_OUTPUT": "There is no output version to use yet.",
     "NOT_PROCESS_DECIDER": "You aren't allowed to decide this run."
   },
-  "back_limit": "Reached the maximum of {{max}} go-backs without approval."
+  "back_limit": "Reached the maximum of {{max}} go-backs without approval.",
+  "autofix": {
+    "title": "Autofix",
+    "round": "Round {{n}}",
+    "testOk": "Tests passed · {{sec}} s",
+    "testFail": "Tests failed · exit {{code}} · {{sec}} s",
+    "diffStat": "{{n}} files",
+    "binary": "binary",
+    "binaryNote": "Binary file, content not shown.",
+    "viewLog": "View log",
+    "downloadLog": "Download log",
+    "downloadDiff": "Download .diff",
+    "fullLog": "Download full log",
+    "big": "Large diff: only the first 2,000 lines are shown, {{rest}} more. Download the .diff to see everything.",
+    "noChanges": {
+      "label": "No changes",
+      "hint": "The agent changed no files, or the change matches the source. Choose \"Not approved\" to add a round."
+    },
+    "loadErr": {
+      "label": "Could not load the diff",
+      "hint": "Check your connection and try again. You can still download the .diff file."
+    },
+    "retry": "Retry",
+    "files": "File list",
+    "region": "Autofix result",
+    "lastCheck": "Latest check:",
+    "viewDiff": "View diff",
+    "checkFailed": {
+      "label": "Check failed",
+      "short": "Check failed · {{group}}"
+    },
+    "decision": {
+      "check": {
+        "empty": "No check report was received from the runner."
+      }
+    },
+    "group": {
+      "paths": "Paths",
+      "size": "Size",
+      "secrets": "Secrets (values are never shown)",
+      "tests": "Tests failed · exit {{code}} · {{sec}} s",
+      "install": "Install dependencies",
+      "apply_patch": "Applying the previous round's patch"
+    },
+    "secret": {
+      "line": "{{path}}:{{line}} · rule {{rule}}"
+    },
+    "download": {
+      "err": "Could not download the file. Try again later."
+    }
+  },
+  "autofix_check_failed": "The change did not pass checks",
+  "autofix_check_failed_hint": "No diff was saved. Add another round (the agent gets the error summary below) or cancel the process.",
+  "sandbox_unavailable": "No safe runtime available",
+  "sandbox_unavailable_hint": "The runner could not start an isolated container, so autofix cannot run. Contact your administrator, then add a round or cancel."
 }

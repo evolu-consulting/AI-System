@@ -333,5 +333,43 @@
       "zoomOut": "Thu nhỏ",
       "fit": "Vừa khung"
     }
+  },
+  "autofix": {
+    "title": "Tự sửa mã",
+    "switch": {
+      "off": "Tắt",
+      "on": "Bật"
+    },
+    "hint": "Agent sửa file trong bản sao của nguồn và chỉ ra diff để người duyệt. Không push.",
+    "source": {
+      "label": "Nguồn",
+      "ph": "Chọn nguồn…",
+      "hint": "Chỉ nguồn git_remote hoặc local_path."
+    },
+    "test": {
+      "label": "Lệnh kiểm thử",
+      "ph": "vd: bun test"
+    },
+    "install": {
+      "label": "Lệnh cài phụ thuộc",
+      "ph": "vd: bun install (bỏ trống = không cài)"
+    },
+    "allow": {
+      "label": "Đường dẫn được sửa",
+      "ph": "vd: src/** (bỏ trống = mọi đường dẫn)",
+      "hint": "Tối đa 20 mẫu. Không cho sửa .github/workflows trừ khi ghi rõ."
+    },
+    "net": "Container chạy agent và test không có mạng. Lệnh cài chạy trước, có mạng, tối đa 600 giây. Không đặt lệnh cài thì không có mạng.",
+    "valid": "Hợp lệ",
+    "err": {
+      "test": "Nhập lệnh kiểm thử (tối đa 1000 ký tự).",
+      "install": "Lệnh cài tối đa 1000 ký tự.",
+      "source": "Chọn nguồn để tự sửa mã.",
+      "allow": "Tối đa 20 mẫu, mỗi mẫu là glob hợp lệ.",
+      "AUTOFIX_EXECUTOR": "Stage tự sửa mã phải do agent thực hiện.",
+      "AUTOFIX_REVIEW": "Stage tự sửa mã luôn phải qua người duyệt. Chọn \"Duyệt\" ở mục Sau stage.",
+      "AUTOFIX_MAX": "Mỗi quy trình chỉ có một stage tự sửa mã. Đã có ở stage \"{{stage}}\".",
+      "sourceKind": "Nguồn \"{{key}}\" thuộc loại {{kind}}, không sửa được. Chọn nguồn git_remote hoặc local_path."
+    }
   }
 }

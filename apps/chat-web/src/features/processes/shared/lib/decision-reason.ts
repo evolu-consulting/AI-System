@@ -8,9 +8,11 @@ import {
 
 export const reasonKey = (r: DecisionReason) => `process.common.${r}`;
 
-/** P-b: một dòng giải thích dưới lý do (chỉ `source_unresolvable`); mã khác ⇒ `null`. */
+/** Dòng giải thích dưới lý do: `source_unresolvable` (P-b), `autofix_check_failed` / `sandbox_unavailable` (P-c1); mã khác ⇒ `null`. */
 export const reasonHintKey = (r: DecisionReason): string | null =>
-  r === "source_unresolvable" ? "process.common.source_unresolvable_hint" : null;
+  r === "source_unresolvable" || r === "autofix_check_failed" || r === "sandbox_unavailable"
+    ? `process.common.${r}_hint`
+    : null;
 
 /** Tham số nội suy của câu lý do (`{{max}}` ở `redo_limit`, `ask_limit`, `back_limit` P-b2). */
 export function reasonParams(r: DecisionReason): { max?: number } {
