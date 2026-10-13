@@ -11,6 +11,7 @@ from typing import Annotated, Literal, Self
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from agent_runtime.autofix.oci import SandboxMode
 from agent_runtime.log import mask_url, redact_url
 
 AppEnv = Literal["development", "test", "production"]
@@ -69,6 +70,43 @@ class Settings(BaseSettings):
     probe_timeout_s: int = 60
     cooldown_default_s: int = 1800
     fake_probe_file: Path | None = None
+    # P-c1 spec §7 / plan-runtime §5.10: sandbox tự-sửa (tên env không tiền tố `AGENT_RT_`).
+    sandbox: SandboxMode = Field(default="off", validation_alias="RUNTIME_SANDBOX")
+    sandbox_image: str = Field(
+        default="ai-autofix-sandbox:0.1.0",
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._/:@-]{0,254}$",
+        validation_alias="RUNTIME_SANDBOX_IMAGE",
+    )
+    sandbox_host_workdir: str | None = Field(
+        default=None, max_length=1024, validation_alias="RUNTIME_SANDBOX_HOST_WORKDIR"
+    )
+    sandbox_cpus: float = Field(default=2.0, gt=0, le=64, validation_alias="RUNTIME_SANDBOX_CPUS")
+    sandbox_memory_mb: int = Field(
+        default=2048, ge=256, le=65536, validation_alias="RUNTIME_SANDBOX_MEMORY_MB"
+    )
+    sandbox_pids: int = Field(default=512, ge=64, le=32768, validation_alias="RUNTIME_SANDBOX_PIDS")
+    sandbox_tmp_mb: int = Field(
+        default=256, ge=16, le=8192, validation_alias="RUNTIME_SANDBOX_TMP_MB"
+    )
+    sandbox_exec_s: int = Field(
+        default=120, ge=1, le=600, validation_alias="RUNTIME_SANDBOX_EXEC_S"
+    )
+    sandbox_install_s: int = Field(
+        default=600, ge=1, le=3600, validation_alias="RUNTIME_SANDBOX_INSTALL_S"
+    )
+    sandbox_test_s: int = Field(
+        default=900, ge=1, le=3600, validation_alias="RUNTIME_SANDBOX_TEST_S"
+    )
+    sandbox_max: int = Field(default=1, ge=1, le=8, validation_alias="RUNTIME_SANDBOX_MAX")
+    sandbox_disk_mb: int = Field(
+        default=4096, ge=64, le=1_048_576, validation_alias="RUNTIME_SANDBOX_DISK_MB"
+    )
+    autofix_max_mb: int = Field(
+        default=200, ge=1, le=4096, validation_alias="RUNTIME_AUTOFIX_MAX_MB"
+    )
+    autofix_max_files: int = Field(
+        default=20000, ge=1, le=1_000_000, validation_alias="RUNTIME_AUTOFIX_MAX_FILES"
+    )
 
     @field_validator("providers", mode="before")
     @classmethod
@@ -135,6 +173,13 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _fake_sandbox_test_only(self) -> Self:
+        """spec §7: `RUNTIME_SANDBOX=fake` không cô lập gì — chỉ APP_ENV=test."""
+        if self.sandbox == "fake" and self.app_env != "test":
+            raise ValueError("RUNTIME_SANDBOX=fake chỉ dùng khi APP_ENV=test")
+        return self
+
+    @model_validator(mode="after")
     def _hub_url_for_dify(self) -> Self:
         if "dify" in self.providers and not self.hub_url:
             raise ValueError("AGENT_RT_HUB_URL bắt buộc khi AGENT_RT_PROVIDERS có dify")
@@ -173,6 +218,8 @@ class Settings(BaseSettings):
             "probe_logged_out_s": self.probe_logged_out_s,
             "probe_timeout_s": self.probe_timeout_s,
             "cooldown_default_s": self.cooldown_default_s,
+            "sandbox": self.sandbox,
+            "sandbox_image": self.sandbox_image,
         }
 
 

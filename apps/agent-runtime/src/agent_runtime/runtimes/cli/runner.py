@@ -24,6 +24,7 @@ from pathlib import Path
 import httpx2
 from pydantic import ValidationError
 
+from agent_runtime.autofix.oci import Oci
 from agent_runtime.contracts.hub import JobPayload1
 from agent_runtime.db import jobs_sql
 from agent_runtime.db.finish_sql import Finished, FinishTx, finish_tx
@@ -66,6 +67,8 @@ class HostConfig:
     cooldown_default_s: int = DEFAULT_COOLDOWN_S  # H3a-R02 `AGENT_RT_COOLDOWN_DEFAULT_S`
     hub_transport: httpx2.AsyncBaseTransport | None = field(default=None, compare=False)
     source_cfg: SourceConfig | None = None  # P-b PF-S2: mount nguồn (None ⇒ tính năng tắt)
+    # P-c1 plan-runtime §5.2: container tự-sửa đã qua tự kiểm (None ⇒ `off`/không dùng được).
+    sandbox: Oci | None = field(default=None, compare=False)
 
 
 _Seen = Seen  # tên cũ (test đơn vị PY-10)

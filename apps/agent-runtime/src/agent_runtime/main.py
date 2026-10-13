@@ -13,10 +13,12 @@ import signal
 import socket
 import sys
 from collections.abc import Callable, Coroutine, Sequence
+from dataclasses import replace
 from typing import Any
 
 from pydantic import ValidationError
 
+from agent_runtime.autofix.oci import SandboxCfg, open_sandbox
 from agent_runtime.config import Settings, load_settings
 from agent_runtime.db.pool import Pool
 from agent_runtime.events.job_events import RunEvents
@@ -90,6 +92,13 @@ def host_config(settings: Settings, stopping: asyncio.Event) -> HostConfig:
     )
 
 
+def sandbox_cfg(settings: Settings) -> SandboxCfg:
+    """P-c1 plan-runtime §5.2: cấu hình tự kiểm sandbox lúc khởi động."""
+    s = settings
+    fake_dir = s.work_dir / ".fake-oci"
+    return SandboxCfg(s.sandbox, s.sandbox_image, s.sandbox_memory_mb, s.app_env, fake_dir)
+
+
 def probe_host_config(settings: Settings) -> ProbeHostCfg:
     """H3a `rt §6` (PY-03e): cấu hình probe phía cha từ `Settings`."""
     s = settings
@@ -131,6 +140,7 @@ async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRunti
     enable_subreaper()
     disable_dumpable()
     cfg = host_config(settings, stopping)
+    cfg = replace(cfg, sandbox=await open_sandbox(sandbox_cfg(settings)))
     dify = dify_config(settings)
 
     def make_host(pool: Pool, events: RunEvents) -> JobRouter:
