@@ -45,6 +45,7 @@ Nguồn chính: BA HUB-FR-66/67/77/78, HUB-BR-17; UI Studio §8, §9. Chỉ ghi 
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
+Chi tiết: [`plan-frontend.md`](plan-frontend.md) (quyết định D1–D12, câu chữ VI/EN, validate, role+nhãn e2e, đề nghị contract C1–C7). Tóm tắt: hai route lazy `/models` (tab Providers, Profiles; Sheet provider; hộp "Kết quả kiểm tra" đồng bộ ≤ 10 s; Sheet runbook "Hướng dẫn") và `/access` (ma trận công tắc, drawer xem grant, ConfirmDialog thu hồi "N grant"). Không thêm thư viện. Tab Đơn giá không hiện.
 
 **Artboard (đối chiếu 2026-10-13):**
 
@@ -55,10 +56,10 @@ Nguồn chính: BA HUB-FR-66/67/77/78, HUB-BR-17; UI Studio §8, §9. Chỉ ghi 
 | Quyền agent: ma trận agent × tenant | `canvas/Access.dc.html` | Có |
 | Quyền agent: drawer ô (ngày cấp, người cấp, grant) | `canvas/Access.dc.html` | Có |
 | Quyền agent: ConfirmDialog thu hồi | `canvas/Access.dc.html` | Có (chỉ nhắc "Thu hồi"; câu chữ "N grant… mất hiệu lực" theo UI §9) |
-| Sheet sửa Provider (SecretField, `max_concurrency`) | — | **Thiếu** — theo mẫu Sheet Secrets (H4b-1) |
-| Kết quả "Kiểm tra key" / "Kiểm tra lại" (ok · lỗi · đang chạy) | — | **Thiếu** — khối "Chi tiết" (ui-admin P7) |
-| Sheet runbook "Hướng dẫn" đăng nhập CLI (F3) | — | **Thiếu** |
-| Trạng thái rỗng / lỗi / không quyền các màn trên | — | **Thiếu** — theo mẫu `docs/design/canvas/States.dc.html` |
+| Sheet sửa Provider (SecretField, `max_concurrency`) | mockup `Provider-Sheet.dc.html` | **Mới (chờ duyệt)** |
+| Kết quả "Kiểm tra key" / "Kiểm tra lại" (ok · lỗi · đang chạy · chưa hỗ trợ) | mockup `Check.dc.html` | **Mới (chờ duyệt)** |
+| Sheet runbook "Hướng dẫn" đăng nhập CLI (F3) | mockup `Runbook.dc.html` | **Mới (chờ duyệt)** |
+| Trạng thái rỗng / lỗi / không quyền / 409 | mockup `States.dc.html` | **Mới (chờ duyệt)** |
 | Tab Đơn giá | `Models.dc.html` | Có nhưng **ngoài phạm vi** mốc này |
 
 ## 6. Hiệu năng
@@ -94,7 +95,7 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 - Q2 Xoá provider đang được profile dùng → 409 (không cascade). Mặc định: 409.
 - Q3 "Kiểm tra key" gọi endpoint liệt kê model của hãng, timeout 10 s; hãng chưa hỗ trợ → "Chưa hỗ trợ kiểm tra". Mặc định: vậy.
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- 2026-10-13 (PLAN FE): "Kiểm tra" là request đồng bộ ≤ 10 s, không polling; lệnh đăng nhập CLI theo hãng nằm trong i18n (không contract); dòng "lúc này chạy bằng" tính ở client; kéo-thả luôn kèm nút Lên/Xuống. Sau Gate chép 4 mockup vào `docs/design/agent-hub/canvas/`.
 
 ## 10. Tranh chấp test
 - (không)
