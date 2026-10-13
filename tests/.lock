@@ -669,7 +669,7 @@ c0ae0e858a122223d61f8ce405ee7213065e72ef3e506ce1b78fa923185057c0  tests/acceptan
 1d65d6699f543288d9da150cc44f0635c25fc4f5ed99c7e20a6b107e268ca846  tests/acceptance/P-c/rules/autofix-issues.test.ts
 5d090d5c62f0bd21ccf343dd1033157850a9325939dc78a791b82207135780bf  tests/acceptance/P-c/rules/autofix-rules.test.ts
 983669cd8547878ad7783ba125982fa5f30e67dabd66a4042a7b7995d9ace9c8  tests/acceptance/P-c/rules/contracts-pc.test.ts
-5128add3453f228eba62fd2d2665ec84f96beb46709517f6b1b19357f8c3eac9  tests/acceptance/P-c/tenant.int.test.ts
+e6d7ae93495f557806d3e4c7abd94d6dee7f99cfc57f96b619c67aee98ab0eb4  tests/acceptance/P-c/tenant.int.test.ts
 880673bcfa598d77984d040c64d405e8acf30ae6793e18fef4f35a8a5f6b50b1  tests/acceptance/X1/_modules.ts
 a3c8834cd8d0f154ff5eccb812ec7435fff0849a9d997ac2b8aea469ac177706  tests/acceptance/X1/_x1.ts
 034f5a531f2f8f47f362556105db1077bad03d4c0062cea0fffa66ae54ed2c87  tests/acceptance/X1/bundle-secret.test.ts

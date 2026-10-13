@@ -62,11 +62,15 @@ describe("T01–T04 · cách ly tenant [PC-R14, HUB-BR-14]", () => {
       (await content(c, "B", a.diffId)).status,
     ]).toEqual([200, 200]);
   }, 30_000);
-  it("HUB-BR-14 · PB-R18 · T03 · job của run KHÁC (cùng tenant) tải diff run này qua /internal ⇒ 404", async () => {
+  it("HUB-BR-14 · PB-R18 · T03 · job của run KHÁC (cùng tenant) tải diff run này qua /internal ⇒ 401 một thân (H2c-R17)", async () => {
     needPc(c);
     const a = await okRun();
     const b = await startAf(c, "pc-t");
-    expect((await internalGet(c, b.job.id, b.token, a.diffId)).status).toBe(404);
+    const r = await internalGet(c, b.job.id, b.token, a.diffId);
+    const ghost = await internalGet(c, b.job.id, b.token, "00000000-0000-4000-8000-000000000000");
+    expect([r.status, ghost.status]).toEqual([401, 401]);
+    expect(r.text).toBe(ghost.text);
+    expect(r.text).toContain("UNAUTHORIZED");
   }, 45_000);
   it("HUB-BR-14 · PC-R14 · T04 · token job đúng nhưng job_id của run khác ⇒ 401; không ghi hàng vào run kia", async () => {
     needPc(c);
