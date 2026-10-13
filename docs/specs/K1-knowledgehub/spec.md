@@ -42,7 +42,7 @@ Trỏ BA; chỉ ghi phần cụ thể hoá.
 | Ghi worklog | subject `<quy trình>/<stage>`; cắt 4000 ký tự; `id` cố định = run/stage/phiên bản output (Q32); `after: auto` ghi khi chốt output, có gate ghi khi Đạt | HUB-FR-133 |
 | `## Tóm tắt` | ≤ 200 từ, quá thì cắt; chỉ bắt buộc ở stage mà KH đầu tiên (thứ tự tick) của agent có Project ghi Tóm tắt | HUB-FR-133 |
 | Hạ cấp | Mạng/timeout, 401/403/404/429/5xx từ KH ⇒ chạy tiếp + cảnh báo output + audit | HUB-FR-134 |
-| Seed mẫu | `sdlc-delivery` (≤ 10 stage: Scope Sign-off gate → Setup&Plan → Spec gate → Design → Implementation → Code Review → Testing → UAT gate → Release); `bug-fix` (6 stage, danh sách ở [plan §6](plan.md)). Code Review/Testing trượt ⇒ gate người + `back_to_steps`; phỏng cấu trúc `seed.py`, không chép prompt | CR-070 |
+| Seed mẫu | Seed vào tenant `evolu`; UAT K1 chạy trên evolu (2026-10-13). `sdlc-delivery` (≤ 10 stage: Scope Sign-off gate → Setup&Plan → Spec gate → Design → Implementation → Code Review → Testing → UAT gate → Release); `bug-fix` (6 stage, danh sách ở [plan §6](plan.md)). Code Review/Testing trượt ⇒ gate người + `back_to_steps`; phỏng cấu trúc `seed.py`, không chép prompt | CR-070 |
 
 ## 3. Contract (backend-lead · CR-073)
 File `packages/contracts/src/hub-admin/kh.ts` (export `@ai/contracts/hub-admin`), mọi object `strictObject`, lỗi = `ErrorResponse` M0. Hàm thuần, luồng, mã kiểm: [`plan.md`](plan.md).

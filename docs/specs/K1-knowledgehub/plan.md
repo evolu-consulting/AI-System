@@ -169,7 +169,8 @@ Không đụng `hub.agents`, `hub.secrets`. Audit CHECK: DROP + ADD giữ mọi 
 Query → index: list → `kh_connections_name_uq`; xoá kết nối → `agent_kh_conn_idx`; tạo job, start → PK `agent_kh` (tiền tố) + PK `kh_connections`; token MCP → PK `kh_jobs`; `kh-query` → PK `kh_connections`/`stage_runs`; đếm → PK `kh_stage_usage`; writer → `kh_writes_due_idx`; `used_by` → `kh_connections_secret_idx`.
 
 ## 6. Seed mẫu (CR-070, T5g) — giữ nguyên `git show dbf2a017:docs/specs/K1-knowledgehub/plan.md` §6
-`seed.schema.ts`: `after: "review" | "auto" | { review: { back_to_steps: int[] ≤ 10 } }`, stage `step?: int 0..9`; `sdlc-delivery` (9 stage) + `bug-fix` (6 stage) theo bảng bản đó; không sửa `sdlc`.
+Seed vào tenant `evolu`; UAT K1 chạy trên evolu (người dùng 2026-10-13).
+`seed.schema.ts`: `after: "review" | "auto" | { review: { back_to_steps: int[] ≤ 10 } }`, stage `step?: int 0..9`; `sdlc-delivery` (9 stage) + `bug-fix` (6 stage) theo bảng bản đó; không sửa `sdlc`. **Người dùng 2026-10-13: seed hai mẫu này vào tenant `evolu`** (cách P-a chép mẫu vào tenant), UAT K1 chạy trên evolu — không dùng beta/acme.
 
 ## 7. Mock KH (`tools/mocks/src/kh/`)
 `createKhMock(opts?)` Hono, bộ nhớ **mỗi instance** (int test dựng 2 instance; dev/e2e một mock, kết nối thứ hai dùng `http://127.0.0.1:4030`). Gate `X-KH-Key` | `Bearer` = `KH_MOCK_API_KEY` (trừ `/health`, 401 `{detail}`). Route: `/health {status, model}`, `/version {version:"v6.4"}`, `/projects`, `/vector/query` (hit theo `project`, `max_chars`), `/vector/add` (upsert theo `id`). Điều khiển `PUT /__mock/kh {scenario, auth?, version?, model?, projects?}`, `PUT /__mock/kh/projects/:id {hits}`, `GET /__mock/kh/calls` (path, header có khoá hay không, body — không giá trị khoá), `POST /__mock/kh/reset`. `scenario`: `ok · key_rejected · server_error · server_error_once · rate_limited · timeout · bad_body`; `auth:false` = tắt xác thực.
