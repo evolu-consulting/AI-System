@@ -10,4 +10,7 @@ spec-readiness đọc spec, plan, plan-frontend, tasks, test-plan, test khoá (6
 ## Lần 2 — 2026-10-13 · NOT READY
 30/32 lỗ hổng lần 1 đã đóng. 19 lỗ hổng mới/còn (1 Chặn: R68 đòi `skipped` trái kiểu `Pick`; 4 Cao: câu `access.agentOff` lệch M34, `errors.KEY_TAKEN` trùng key H4a, thiếu câu 4 mã lỗi Models, thiếu UI xoá profile; 14 Thường). Không câu hỏi mới cho người dùng; áp mọi mặc định: qc sửa R68 + test-plan; frontend-lead `models.errors.*`, xoá profile, ma trận lỗi, UI §9 hàng = agent; backend-lead spec §2/§8, tasks B1 chạy int khi Docker sống, `KeyTakenDetailsSchema` import lại.
 
+## Lần 3 — 2026-10-13 · READY
+19/19 lỗ hổng lần 2 đã đóng. Còn 11 lỗ hổng Thấp, đều có mặc định; agent BUILD áp theo Luật 2: D11/`access.agentOff` = "Agent đang tắt"; R70 trùng mã (qc đổi một ca thành R82 lần mở khoá tới); M38 thuộc AC-H4b2-05; test-plan số ca/G-x cập nhật lần mở khoá tới; câu lỗi 400 `secret_id` "Chọn API key", `steps.<i>` "Provider không dùng được", `base_url` "Địa chỉ không hợp lệ"; hàng `dify` hiện như thường + xử lý 409 READONLY; "Xoá profile" cạnh "Lưu profile", chỉ profile đã lưu; lọc ma trận phía client (≤200), lọc server → TECH-DEBT; `ProviderDetailSchema = ProviderItemSchema.extend({state: ProviderStateSchema.nullable(), …})`; ô ma trận "{n} grant".
+
 Việc tiếp (lần 1): backend-lead sửa spec/plan/tasks, frontend-lead sửa plan-frontend + chép mockup, qc sửa M05 + thêm ca `pickStep` cho agent có model riêng → chạy lại readiness.
