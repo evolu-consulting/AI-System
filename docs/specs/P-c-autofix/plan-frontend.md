@@ -11,8 +11,9 @@ Mockup đã duyệt 2026-10-13: `docs/design/agent-hub/canvas/Pc-{Editor,Diff,De
 | FC4 | Nội dung diff/log tải qua `GET /attachments/:id/content` (có Bearer) bằng `fetchAttachmentBlob` sẵn có; `diff_file.id`/`test_log_file.id` từ `AutofixStageView`. Không đưa diff vào cache dài: `staleTime` 5 phút, key `["autofix-diff", attachmentId]` (bất biến theo id) |
 | FC5 | Đuôi log test ở thẻ `autofix_check_failed`: tải `test_log_file` rồi lấy 30 dòng cuối (đã che `[REDACTED]` phía Runtime). Không có `test_log_file` ⇒ chỉ hiện exit + thời gian |
 | FC6 | Nhãn nhóm lỗi dịch theo `failure.check`; `detail` hiện nguyên văn (≤ 500, server bảo đảm không bí mật); `check:"secrets"` **không** hiện `detail`, chỉ `path:line · quy tắc <rule>` |
-| FC7 | Nút Đạt / Chưa đạt, làm lại / Thêm lượt / Huỷ quy trình dùng thẻ gate/decision sẵn có (`ReviewTaskCard`, `DecisionCard`, `RunActions`); P-c chỉ chèn khối `AutofixResult` vào thẻ có stage tự-sửa. `options` lấy từ `task.options` (server, PC-R10), FE không suy |
+| FC7 | Nút "Đạt" / "Chưa đạt" / "Thêm 1 lần làm lại" / "Huỷ lượt chạy" (nhãn sẵn có, G6) dùng thẻ gate/decision sẵn có (`ReviewTaskCard`, `DecisionCard`, `RunActions`); P-c chỉ chèn khối `AutofixResult` vào thẻ có stage tự-sửa. `options` lấy từ `task.options` (server, PC-R10), FE không suy |
 | FC8 | Công tắc "Tự sửa mã" tắt ⇒ `autofix: null`; tắt rồi bật lại giữ giá trị đã nhập trong draft (không mất khi lưu hỏng) |
+| FC10 | (2026-10-13, G6/G7 theo test-plan §6) giữ nhãn nút sẵn có; thẻ thread = `article` chứa "Tự sửa mã" + "Xem diff"; "Tải .diff"/"Tải log đầy đủ" button hoặc link (G8) |
 | FC9 | Chọn nguồn: chỉ liệt kê nguồn khai báo của quy trình có `kind ∈ {git_remote, local_path}`; nguồn `library` hiện mờ + chú thích (vẫn chọn được nếu def cũ → lỗi server hiện đúng artboard 7) |
 
 ## 1. Màn / component
@@ -85,7 +86,7 @@ Khoá: admin `process.admin.autofix.*` (locale feature admin-web, chỗ `process
 | `viewLog` / `downloadLog` / `downloadDiff` | Xem log / Tải log / Tải .diff | View log / Download log / Download .diff |
 | `fullLog` | Tải log đầy đủ | Download full log |
 | `big` | Diff lớn: chỉ hiển thị 2.000 dòng đầu, còn {{rest}} dòng. Tải .diff để xem đủ. | Large diff: only the first 2,000 lines are shown, {{rest}} more. Download the .diff to see everything. |
-| `noChanges` / `noChanges.hint` | Không có thay đổi / Agent không sửa file nào, hoặc bản sửa trùng nguồn. Chọn "Chưa đạt, làm lại" nếu cần thêm lượt. | No changes / The agent changed no files, or the change matches the source. Choose "Not approved, redo" to add a round. |
+| `noChanges` / `noChanges.hint` | Không có thay đổi / Agent không sửa file nào, hoặc bản sửa trùng nguồn. Chọn "Chưa đạt" nếu cần thêm lượt. | No changes / The agent changed no files, or the change matches the source. Choose "Not approved" to add a round. |
 | `loadErr` / `loadErr.hint` | Không tải được diff / Kiểm tra kết nối rồi thử lại. Vẫn có thể tải file .diff. | Could not load the diff / Check your connection and try again. You can still download the .diff file. |
 | `retry` | Thử lại | Retry |
 | `files` (aria) | Danh sách file | File list |
@@ -100,7 +101,7 @@ Khoá: admin `process.admin.autofix.*` (locale feature admin-web, chỗ `process
 | `decision.sandbox.hint` | Máy chạy chưa dựng được container cô lập nên không thể tự sửa mã. Liên hệ quản trị rồi chọn thêm lượt, hoặc huỷ. | The runner could not start an isolated container, so autofix cannot run. Contact your administrator, then add a round or cancel. |
 | `group.paths` / `.size` / `.secrets` / `.tests` / `.install` / `.apply_patch` | Đường dẫn / Kích thước / Bí mật (không hiện giá trị) / Test đỏ · exit {{code}} · {{sec}} giây / Cài phụ thuộc / Áp bản vá lượt trước | Paths / Size / Secrets (values are never shown) / Tests failed · exit {{code}} · {{sec}} s / Install dependencies / Applying the previous round's patch |
 | `secret.line` | {{path}}:{{line}} · quy tắc {{rule}} | {{path}}:{{line}} · rule {{rule}} |
-Nút Đạt / Chưa đạt, làm lại / Thêm lượt / Huỷ quy trình: dùng khoá gate/decision sẵn có của app (nhãn khớp artboard: "Đạt", "Chưa đạt, làm lại", "Thêm lượt", "Huỷ quy trình"); nếu khoá sẵn có khác chữ ⇒ giữ khoá sẵn có (nhãn e2e P-a/P-b2 không đổi) và ghi "Quyết định trong lúc làm".
+Nút gate/quyết: P-c **không thêm khoá**, giữ nhãn sẵn có của chat-web (G6): gate = "Đạt" / "Chưa đạt"; Cần người quyết = "Thêm 1 lần làm lại" / "Huỷ lượt chạy" (không có "Dùng bản hiện có" cho `autofix_*`). Nhãn "Thêm lượt" / "Huỷ quy trình" / "Chưa đạt, làm lại" trong artboard chỉ là mô tả, không dùng làm nhãn. Câu `noChanges.hint` nói "Chọn \"Chưa đạt\" nếu cần thêm lượt." (EN: "Choose \"Not approved\"…" theo khoá EN sẵn có của nút).
 Toast: tải thất bại `Không tải được tệp. Thử lại sau.` / `Could not download the file. Try again later.` (`download.err`). Thành công quyết định: khoá sẵn có.
 
 ## 4. Map lỗi contract → câu
@@ -118,9 +119,9 @@ Toast: tải thất bại `Không tải được tệp. Thử lại sau.` / `Cou
 |---|---|
 | Editor | `switch "Tự sửa mã"` · `combobox "Nguồn"` · `textbox "Lệnh kiểm thử"` · `textbox "Lệnh cài phụ thuộc"` · `textbox "Đường dẫn được sửa"` · `alert` chứa câu lỗi `err.*` · `button "Lưu"` (sẵn có) |
 | Khối kết quả | `region "Kết quả tự sửa mã"` · `list "Danh sách file"` · `text "Vòng 2"` · `text "Test đạt · 12,4 giây"` (vi) · `link/button "Xem log"` `"Tải log"` `"Tải .diff"` · `text "Không có thay đổi"` · `alert "Không tải được diff"` + `button "Thử lại"` |
-| Gate | `button "Đạt"` · `button "Chưa đạt, làm lại"` (sẵn có) |
-| Cần người quyết | `region "Cần người quyết"` · heading `Kiểm bản sửa không đạt` / `Không có môi trường chạy an toàn` · `button "Thêm lượt"` · `button "Huỷ quy trình"` · nhóm `Đường dẫn` `Kích thước` `Bí mật (không hiện giá trị)` `Cài phụ thuộc` `Áp bản vá lượt trước` |
-| Thread | thẻ có `text "Tự sửa mã"` + `button "Xem diff"` |
+| Gate | thẻ `region "Kiểm <tên stage>"` (sẵn có) chứa `region "Kết quả tự sửa mã"` · `button "Đạt"` · `button "Chưa đạt"` (sẵn có) |
+| Cần người quyết | `region "Cần người quyết"` · heading `Kiểm bản sửa không đạt` / `Không có môi trường chạy an toàn` · `button "Thêm 1 lần làm lại"` · `button "Huỷ lượt chạy"` (sẵn có; không có "Dùng bản hiện có") · nhóm `Đường dẫn` `Kích thước` `Bí mật (không hiện giá trị)` `Cài phụ thuộc` `Áp bản vá lượt trước` |
+| Thread (G7) | thẻ thread là `article` (role sẵn có hoặc thêm `role="article"`) chứa `text "Tự sửa mã"` + `text "Vòng k"` + `button "Xem diff"` (button hoặc link đều được) |
 Khoá `data-testid` chỉ cho vùng không có role: `autofix-diff-file-<index>`. E2E cần có (qc viết, fake-cli): (1) tạo def bật autofix → lưu OK, mở lại thấy đúng giá trị; (2) 3 lỗi `AUTOFIX_*` + nguồn library hiện đúng câu; (3) run `fixbug-apply` → gate hiện diff đúng +/−, file, Test đạt, tải .diff → Đạt → run xong; (4) Chưa đạt → vòng 2 cộng dồn ("Vòng 2"); (5) `#fake:ws_secret` → Cần người quyết nhóm Bí mật không lộ giá trị → Thêm lượt; (6) test đỏ → nhóm Test đỏ + đuôi log; (7) `no_changes`; (8) `sandbox_unavailable` (Runtime `off`) chỉ 2 nút; (9) user khác tenant không thấy run (404); (10) diff > 2.000 dòng hiện cảnh báo "Diff lớn"; (11) EN/VI chuyển ngôn ngữ.
 
 ## 6. A11y / hiệu năng
