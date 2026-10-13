@@ -20,6 +20,7 @@ import {
   type AgentListFilter,
   agentAccessCounts,
   agentHasHistory,
+  agentKhIds,
   agentWorkflowIds,
   deleteAgent,
   deleteAgentWorkflowsExcept,
@@ -125,6 +126,28 @@ export function runtimeOptionsOf(
   return dify ?? given ?? {};
 }
 
+/**
+ * P11: `workflow_ids` từ `agent_workflows`; agent dify-* seed cũ chưa có dòng ⇒ suy từ `workflow_key`.
+ * K1 · `knowledge_connection_ids` từ `agent_kh` theo `position`. Dùng lại ở `kh.agent.service` (PUT knowledge).
+ */
+export async function agentDetail(tx: Tx, row: AgentDbRow): Promise<Agent> {
+  let ids = await agentWorkflowIds(tx, row.id);
+  const wk = row.runtimeOptions.workflow_key;
+  if (ids.length === 0 && DIFY.has(row.runtime as AgentRuntime) && typeof wk === "string") {
+    const id = await workflowIdByKey(tx, wk);
+    if (id) ids = [id];
+  }
+  const others = await enabledDescriptions(tx);
+  return toAgent({
+    row,
+    workflowIds: ids,
+    workflows: await workflowsByIds(tx, ids),
+    scopes: await orchScopes(tx, row.id),
+    similar: similarAgents(row, others),
+    knowledgeIds: await agentKhIds(tx, row.id),
+  });
+}
+
 export class AgentsService {
   constructor(private readonly d: StudioWriteDeps) {}
 
@@ -135,22 +158,8 @@ export class AgentsService {
     });
   }
 
-  /** P11: `workflow_ids` từ `agent_workflows`; agent dify-* seed cũ chưa có dòng ⇒ suy từ `workflow_key`. */
-  async #detail(tx: Tx, row: AgentDbRow): Promise<Agent> {
-    let ids = await agentWorkflowIds(tx, row.id);
-    const wk = row.runtimeOptions.workflow_key;
-    if (ids.length === 0 && DIFY.has(row.runtime as AgentRuntime) && typeof wk === "string") {
-      const id = await workflowIdByKey(tx, wk);
-      if (id) ids = [id];
-    }
-    const others = await enabledDescriptions(tx);
-    return toAgent({
-      row,
-      workflowIds: ids,
-      workflows: await workflowsByIds(tx, ids),
-      scopes: await orchScopes(tx, row.id),
-      similar: similarAgents(row, others),
-    });
+  #detail(tx: Tx, row: AgentDbRow): Promise<Agent> {
+    return agentDetail(tx, row);
   }
 
   /** POST · 201 · KEY_TAKEN → tham chiếu → Bash ack (R05) → INSERT agent + agent_workflows → audit `create`. */

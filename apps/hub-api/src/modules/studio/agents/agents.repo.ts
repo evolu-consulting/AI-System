@@ -134,6 +134,13 @@ export async function agentWorkflowIds(tx: Tx, agentId: string): Promise<string[
   return rows.map((r) => r.id);
 }
 
+/** K1 · HUB-FR-132 · kết nối KH agent tick, theo `position` (PK `agent_kh`, tiền tố `agent_id`). */
+export async function agentKhIds(tx: Tx, agentId: string): Promise<string[]> {
+  const rows = await tx.execute<{ id: string }>(sql`select connection_id as id from hub.agent_kh
+    where agent_id = ${agentId}::uuid order by position`);
+  return rows.map((r) => r.id);
+}
+
 export type OrchScope = { tenantId: string | null; tenantKey: string | null };
 
 /** Phạm vi agent đang là Orchestrator (mặc định trước, rồi theo key tenant). Tenant mất ⇒ key `""` (contract `string`). */
@@ -175,6 +182,8 @@ export type AgentListDbRow = {
   entitledTenantCount: number;
   orchDefault: boolean;
   orchTenants: string[];
+  /** K1 · số kết nối KH agent tick. */
+  knowledgeCount: number;
 };
 
 const likeEscape = (s: string) => s.replace(/[\\%_]/g, (m) => `\\${m}`);
@@ -213,6 +222,7 @@ export async function listAgents(
         where o.agent_id = a.id and o.tenant_id is null) as "orchDefault",
       coalesce((select array_agg(o.tenant_id::text order by o.tenant_id) from hub.orchestrator_settings o
         where o.agent_id = a.id and o.tenant_id is not null), '{}'::text[]) as "orchTenants",
+      (select count(*) from hub.agent_kh k where k.agent_id = a.id)::int as "knowledgeCount",
       (count(*) over ())::int as total
     from hub.agents a left join hub.model_profiles p on p.id = a.profile_id
     where ${listWhere(f)}
@@ -252,6 +262,16 @@ export async function updateAgent(tx: Tx, id: string, a: AgentUpdate): Promise<A
 export async function setAgentEnabled(tx: Tx, id: string, enabled: boolean): Promise<AgentDbRow> {
   const [r] = await tx.execute<RawAgent>(sql`update hub.agents as a
     set enabled = ${enabled}::boolean, version = a.version + 1, updated_at = now()
+    where a.id = ${id}::uuid
+    returning ${AGENT_COLS}`);
+  if (!r) throw new Error("update hub.agents không trả hàng");
+  return toRow(r);
+}
+
+/** K1 · PUT knowledge: chỉ tăng `version` (+ `updated_at`) của agent. */
+export async function bumpAgentVersion(tx: Tx, id: string): Promise<AgentDbRow> {
+  const [r] = await tx.execute<RawAgent>(sql`update hub.agents as a
+    set version = a.version + 1, updated_at = now()
     where a.id = ${id}::uuid
     returning ${AGENT_COLS}`);
   if (!r) throw new Error("update hub.agents không trả hàng");

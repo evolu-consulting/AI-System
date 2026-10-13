@@ -30,6 +30,8 @@ export type AgentParts = {
   workflows: readonly WorkflowDbRow[];
   scopes: readonly OrchScope[];
   similar: readonly SimilarAgent[];
+  /** K1 · kết nối KH theo thứ tự tick. */
+  knowledgeIds: readonly string[];
 };
 
 /** `workflows` theo thứ tự `workflow_ids`; id đã mất khỏi catalog chỉ còn trong `workflow_ids` (E2). */
@@ -77,6 +79,7 @@ export function toAgent(p: AgentParts): Agent {
         : [];
     }),
     warnings,
+    knowledge_connection_ids: [...p.knowledgeIds],
   };
 }
 
@@ -103,6 +106,7 @@ export function toListItem(r: AgentListDbRow): AgentListItem {
     entitled_tenant_count: r.entitledTenantCount,
     orchestrator_of: { default: r.orchDefault, tenant_ids: r.orchTenants },
     runnable: RUNNABLE_RUNTIMES.has(runtime),
+    knowledge_count: r.knowledgeCount,
   };
 }
 

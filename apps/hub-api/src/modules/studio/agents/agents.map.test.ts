@@ -42,8 +42,17 @@ describe("agents.map", () => {
   });
 
   it("toAgent: workflow mất khỏi catalog chỉ còn trong workflow_ids; audit bỏ phần suy diễn", () => {
-    const a = toAgent({ row, workflowIds: ["x"], workflows: [], scopes: [], similar: [] });
+    const a = toAgent({
+      row,
+      workflowIds: ["x"],
+      workflows: [],
+      scopes: [],
+      similar: [],
+      knowledgeIds: ["k2", "k1"],
+    });
     expect(a).toMatchObject({ workflow_ids: ["x"], workflows: [], runnable: true, warnings: [] });
+    // K1 · thứ tự tick giữ nguyên, và có trong audit (A11).
+    expect(auditSnapshot(a).knowledge_connection_ids).toEqual(["k2", "k1"]);
     expect(Object.keys(auditSnapshot(a))).not.toContain("warnings");
     expect(Object.keys(auditSnapshot(a))).not.toContain("orchestrator_of");
   });

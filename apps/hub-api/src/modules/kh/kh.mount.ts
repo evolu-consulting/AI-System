@@ -8,6 +8,7 @@ import type { HubAuditWriter } from "../../lib/hub-audit";
 import type { Logger } from "../../lib/logger";
 import type { SecretKey } from "../secrets/secrets.crypto";
 import { HubSecretReader } from "../secrets/secrets.use";
+import { KhAgentService } from "./kh.agent.service";
 import { KhCheckService } from "./kh.check.service";
 import { KhClient, KhProjectsCache } from "./kh.client";
 import { khStudioRoutes } from "./kh.routes";
@@ -46,5 +47,6 @@ export function mountKh<E extends Env>(
   const { cfg, dev, client } = d.rt;
   const studio = new KhStudioService({ db: d.db, audit: d.audit, cfg, dev });
   const checker = new KhCheckService({ db: d.db, audit: d.audit, client, cfg, dev });
-  app.route(d.studioBase, khStudioRoutes(studio, checker));
+  const agents = new KhAgentService({ db: d.db, audit: d.audit });
+  app.route(d.studioBase, khStudioRoutes(studio, checker, agents));
 }

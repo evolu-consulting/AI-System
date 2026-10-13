@@ -129,6 +129,29 @@ export async function countAgents(tx: Tx, id: string): Promise<number> {
   return Number(r?.n ?? 0);
 }
 
+const uuidArr = (ids: readonly string[]) => sql`${`{${ids.join(",")}}`}::uuid[]`;
+
+/** HUB-FR-132 · id kết nối có thật trong `ids` (PK `kh_connections`). */
+export async function existingConnIds(tx: Tx, ids: readonly string[]): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const rows = await tx.execute<{ id: string }>(
+    sql`select id from hub.kh_connections where id = any(${uuidArr(ids)})`,
+  );
+  return new Set(rows.map((r) => r.id));
+}
+
+/** HUB-FR-132 · thay toàn bộ `agent_kh` của agent; `position` = chỉ số trong `ids` (thứ tự tick). */
+export async function replaceAgentKh(
+  tx: Tx,
+  agentId: string,
+  ids: readonly string[],
+): Promise<void> {
+  await tx.execute(sql`delete from hub.agent_kh where agent_id = ${agentId}::uuid`);
+  if (ids.length === 0) return;
+  await tx.execute(sql`insert into hub.agent_kh (agent_id, connection_id, position)
+    select ${agentId}::uuid, c, (o - 1)::smallint from unnest(${uuidArr(ids)}) with ordinality as u(c, o)`);
+}
+
 export async function deleteConn(tx: Tx, id: string): Promise<void> {
   await tx.execute(sql`delete from hub.kh_connections where id = ${id}::uuid`);
 }
