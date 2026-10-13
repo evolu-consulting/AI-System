@@ -2,7 +2,7 @@
 id: P-c-autofix
 title: P-c · Luồng tự-sửa (autonomous fix) — workspace ghi-được + exec trong container + diff (P-c1) · PR (P-c2)
 milestone: P-c (sau H4b-2)
-status: approved         # BUILD + review + security review (3 vòng) xong 2026-10-14; UAT vòng 1 Đạt có điều kiện, vòng 2 đang chạy (chưa done)
+status: done             # P-c1 xong 2026-10-14: done:pc, review + security 3 vòng, UAT evolu vòng 2 Đạt; P-c2 chưa làm
 requirements: [HUB-FR-119, HUB-FR-126, HUB-FR-127, HUB-FR-128, HUB-FR-129, HUB-FR-130, WRK-FR-28, WRK-FR-29, HUB-BR-32, HUB-BR-33, HUB-BR-34, WRK-BR-08]
 design:
   - docs/CHANGE-REQUESTS.md#CR-061 (Intake Đầy đủ chốt 2026-10-12), #CR-065 (sửa đổi: nhánh, kiểm diff, apply_mode)
@@ -171,3 +171,9 @@ Ca + kỳ vọng: [`test-plan.md`](test-plan.md) §3 (ma trận luật → ca), 
 | Q7 | Ảnh sandbox một bộ công cụ chung (git, rg, python3, node LTS, bun; ~400–600 MB, dựng từ Dockerfile trong repo)? | Có; chọn ảnh theo quy trình để sau |
 
 **Người dùng trả lời 2026-10-13:** chấp nhận mặc định Q1–Q7 (Q1 tách P-c1/P-c2; Q2 cho pha cài có mạng; Q3 `local_path` chỉ trên bản sao; Q4/Q6/Q7 duyệt sandbox ADR-0011 như đề xuất — ADR-0011 Accepted 2026-10-13; Q5 = P-c2 theo Q1). Mockup `Pc-*.dc.html` duyệt 2026-10-13.
+
+## Kết luận P-c1 (2026-10-14)
+- **Đạt, `status: done`** (diff-only). P-c2 (PR/`apply_mode`/rebase, HUB-FR-129, HUB-BR-34) chưa làm.
+- `done:pc` xanh từng chặng (chưa một lượt liền — TD #169); review code 2 vòng APPROVED; review bảo mật 3 vòng SAFE (`826ae84f`, `46d9d6fa`, `e74c15c4`).
+- UAT `qc-uat` (`evidence/2026-10-14/REPORT.md`): vòng 1 Đạt có điều kiện (`e27072da`, `942dba3d`); **vòng 2 Đạt** (`d99db5ae`, `20d2863a`): Major 1–2 hết, Minor 3, 5–8 đã sửa; Minor 4 chỉ ghi nhận (TD #173).
+- Nợ: TD #168–#175. Kế tiếp: P-c2 — cần PLAN + spec-readiness.
