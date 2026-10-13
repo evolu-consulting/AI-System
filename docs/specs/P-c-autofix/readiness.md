@@ -43,3 +43,6 @@ Kế tiếp: chạy lại spec-readiness (lần 2).
 + ADR-0011 #3: thêm `du` sau pha cài (plan §5.2).
 
 Kế tiếp: T3b (qc mở khoá có chủ đích), rồi readiness lần 3.
+
+## Lần 3 — 2026-10-14 · READY
+10/10 lỗ hổng lần 2 đã đóng; tài liệu khớp test khoá (T3b 74836ac3, 2a3172eb). Kích thước UTF-8/LF: spec 24,2 KB, plan 24,5 KB. Còn 7 lỗ hổng Thấp, áp mặc định theo Luật 2 lúc BUILD: PC-R16 viết lại "hàm `quotaUsed` giữ nguyên; dung lượng đã dùng tăng đúng diff + log"; T3b/B4 ghi ca PC-R16 = `report.int` E10 (B4, không phải B5b); bỏ câu lệch ở test-plan:149; tổng ca 152 (R 33 · A 45); tham chiếu ghi `A-E10`/`E-E10`; plan §4 "mọi chỗ gọi"; cập nhật trạng thái spec/tasks. Không câu hỏi cho người dùng.
