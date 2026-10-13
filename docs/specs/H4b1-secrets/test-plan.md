@@ -119,3 +119,4 @@ Sheet modal ẩn phần còn lại khỏi `getByRole`: mở Sheet "Thêm Orchest
 ## 9. Khoá
 Khoá 2026-10-13 (T2, theo điều phối: khoá trước T3 Gate; Gate đổi spec ⇒ qc mở lại + ghi lý do): `bun run test:lock:write` thêm 16 file (`tests/acceptance/H4b1/**` 15 + `e2e/studio/h4b1-secrets.studio.ts`); `bun run test:lock:verify` OK (690 file).
 Mở khoá lần 2 2026-10-13 (readiness lần 2: #4 đóng Sheet trước khi kiểm, #5 ghi đè 2 bước, #6 `exact:true`, D9 `toBeDisabled`): sửa `h4b1-secrets.studio.ts`, `test:lock:write` + `verify`.
+Mở khoá lần 3 2026-10-13 (readiness lần 3: #1 E07 đóng alertdialog "Không xoá được…" rồi mới kiểm dòng; #7 E09 cột Tenant = "Acme Corp"; rà các ca còn lại: không còn kiểm bảng/toast khi modal mở): sửa `h4b1-secrets.studio.ts`, `test:lock:write` + `verify`.

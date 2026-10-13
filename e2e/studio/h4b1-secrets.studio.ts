@@ -276,6 +276,9 @@ test('HUB-FR-68 · AC-H4b1-04 · E07 · server trả 409 SECRET_IN_USE {used_by}
   const dlg = page.getByRole("alertdialog", { name: "Không xoá được openai-main" });
   await expect(dlg).toBeVisible();
   await expect(dlg).toContainText("Provider · openai-api");
+  // alertdialog là modal ⇒ bảng `aria-hidden`: đóng rồi mới kiểm dòng còn nguyên.
+  await dlg.getByRole("button", { name: "Đóng" }).click();
+  await expect(dlg).toBeHidden();
   await expect(row(page, "openai-main")).toHaveCount(1);
 });
 
@@ -323,7 +326,7 @@ test('HUB-FR-68 · CR-060 · Q1 · E09 · tab "Khoá nguồn (git)": ?kind=sourc
     .click();
   await expect(page).toHaveURL(/kind=source_credential/);
   await expect(table(page).getByRole("columnheader", { name: "Tenant" })).toBeVisible();
-  await expect(row(page, "git-acme")).toContainText("acme");
+  await expect(row(page, "git-acme")).toContainText("Acme Corp");
   await expect(row(page, "anth-main")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "+ Thêm secret" })).toHaveCount(0);
   await expect(
