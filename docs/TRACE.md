@@ -116,8 +116,8 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-63 | MUST |  |  |  | chưa spec |
 | HUB-FR-64 | MUST | docs/specs/H4a-studio-shell-agents/spec.md | 8 file | 5 file | có test |
 | HUB-FR-65 | MUST |  |  |  | chưa spec |
-| HUB-FR-66 | MUST |  |  |  | chưa spec |
-| HUB-FR-67 | MUST |  |  |  | chưa spec |
+| HUB-FR-66 | MUST |  |  |  | spec `H4b2-models` |
+| HUB-FR-67 | MUST |  |  |  | spec `H4b2-models` |
 | HUB-FR-68 | MUST | docs/specs/H4b1-secrets/spec.md |  | 2 file | có test |
 | HUB-FR-69 | MUST | docs/specs/H4a-studio-shell-agents/spec.md<br>docs/specs/H4b1-secrets/spec.md | 15 file | 5 file | có test |
 | HUB-FR-70 | MUST |  |  |  | chưa spec |

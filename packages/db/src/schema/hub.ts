@@ -118,7 +118,7 @@ export const agents = hub.table("agents", {
   timeoutS: integer("timeout_s").notNull().default(600),
   tokenBudget: integer("token_budget"),
   enabled: boolean("enabled").notNull().default(true),
-  version: integer("version").notNull().default(1), // 0030: khoá lạc quan, CHECK ≥ 1
+  version: integer("version").notNull().default(1),
   createdAt: createdAt(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
   /** CR-054 (0018): model ghi đè bước profile (alias `haiku`/`sonnet`/`opus` hoặc id); NULL = theo profile. */
@@ -163,7 +163,7 @@ export const orchestratorSettings = hub.table("orchestrator_settings", {
   onNoMatch: text("on_no_match", { enum: ["answer", "ask"] })
     .notNull()
     .default("answer"),
-  version: integer("version").notNull().default(1), // 0030: khoá lạc quan, CHECK ≥ 1
+  version: integer("version").notNull().default(1),
   updatedBy: uuid("updated_by"),
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });

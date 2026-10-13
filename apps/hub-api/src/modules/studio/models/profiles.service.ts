@@ -150,9 +150,18 @@ export class ProfilesService {
       const row = await this.#lock(tx, id, version);
       const used = await agentsUsing(tx, id);
       if (used.length > 0) throw modelError("PROFILE_IN_USE", { agents: used });
-      await deleteProfile(tx, id).catch((err: unknown) => {
-        throw pgCode(err) === "23503" ? modelError("PROFILE_IN_USE") : err;
-      });
+      // Savepoint: lỗi FK không làm hỏng transaction ngoài ⇒ còn đọc lại được agent đang dùng.
+      try {
+        await tx.transaction((sp) => deleteProfile(sp, id));
+      } catch (err) {
+        if (pgCode(err) !== "23503") throw err;
+        const now = await agentsUsing(tx, id);
+        if (now.length > 0) throw modelError("PROFILE_IN_USE", { agents: now });
+        throw appError("VERSION_CONFLICT", {
+          current: await profileDetail(tx, id, this.#now()),
+          updated_at: new Date(row.updatedAt).toISOString(),
+        });
+      }
       return { result: null, audit: audit(row, "delete", row.steps, null) };
     });
   }
