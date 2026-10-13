@@ -2,7 +2,7 @@
 spec: H4b2-models
 part: frontend
 owner: frontend-lead
-status: draft (lỗ hổng readiness lần 1 đã đóng 2026-10-13)
+status: draft (lỗ hổng readiness lần 1 + 2 đã đóng 2026-10-13)
 requirements: [HUB-FR-66, HUB-FR-67, HUB-FR-78, HUB-BR-17, AC-H04, AC-H4b2-01, AC-H4b2-02, AC-H4b2-03, AC-H4b2-04, AC-H4b2-05]
 ---
 
@@ -15,16 +15,16 @@ Nguồn: spec §1/§2/§5 · ui-agent-studio §8, §9, F3, F5 · artboard `Model
 |---|---|---|
 | D1 | Không thêm thư viện, không ADR. StepsEditor **chỉ có nút Lên/Xuống**, không kéo-thả (ghi `docs/TECH-DEBT.md` #162) | tối giản |
 | D2 | Hai route lazy: `/models` (`?tab=providers\|profiles`, `?drawer=`, `?guide=`) và `/access`. Tab Đơn giá **không hiện** (ngoài phạm vi, Q1) | spec §1 |
-| D3 | **Kiểm tra key / Kiểm tra lại = một request đồng bộ** `POST /providers/:id/check` (≤ 10 s, Q3), hiện trong `dialog "Kết quả kiểm tra · {key}"`: đang chạy → đạt / lỗi / chưa hỗ trợ / đã yêu cầu. Không polling. `ok = status==='ok'`, `supported = status!=='unsupported'`. Ánh xạ kết quả → câu chữ: bảng "check.* theo kết quả" ở §3. 409 `PROVIDER_READONLY` hoặc 404 khi gọi check → đóng hộp, toast `errors.PROVIDER_READONLY`/`errors.NOT_FOUND`, refetch danh sách; 409 `NOT_CONFIGURED` → toast "Hub chưa cấu hình HUB_SECRETS_KEY" (không mở hộp). Lỗi nguyên văn của hãng nằm trong `<details open> "Chi tiết"` dạng `pre`; FE không bao giờ hiện hay giữ giá trị key | AC-H4b2-02 |
+| D3 | **Kiểm tra key / Kiểm tra lại = một request đồng bộ** `POST /providers/:id/check` (≤ 10 s, Q3), hiện trong `dialog "Kết quả kiểm tra · {key}"`: đang chạy → đạt / lỗi / chưa hỗ trợ / đã yêu cầu. Không polling. `ok = status==='ok'`, `supported = status!=='unsupported'`. Ánh xạ kết quả → câu chữ: bảng "check.* theo kết quả" ở §3. 409 `PROVIDER_READONLY` hoặc 404 khi gọi check → đóng hộp, toast `errors.PROVIDER_READONLY`/`errors.NOT_FOUND`, refetch danh sách; 409 `NOT_CONFIGURED` → đóng hộp rồi toast `errors.NOT_CONFIGURED` (như 404/READONLY). Lỗi nguyên văn của hãng nằm trong `<details open> "Chi tiết"` dạng `pre`; FE không bao giờ hiện hay giữ giá trị key | AC-H4b2-02 |
 | D4 | SecretField = `select` secret `provider_api_key` (đã lưu ở Secrets); Sheet **Sửa** gọi `GET /providers/:id` lấy `secret`, `version`, `state.last_error` (chỉ có ở chi tiết, không ở list) + link "Tạo secret" → `/secrets?kind=provider_api_key&drawer=new`; theo mẫu K1 Sheet. Không có ô nhập giá trị nên không áp D4 H4b-1 | HUB-FR-66 |
 | D5 | `Loại` chỉ chọn lúc tạo, sau đó chỉ đọc. Sheet theo loại: `api` → Hãng, Base URL, API key, Bật; `subscription-cli` → Hãng, Số slot tối đa, Bật, link "Hướng dẫn đăng nhập" | UI §8 |
-| D6 | Runbook (F3) là Sheet tĩnh: 3 bước + nút Sao chép (`navigator.clipboard`), lệnh theo hãng nằm trong i18n (`anthropic: claude login`, `openai: codex login`, `google: gemini`); hãng khác → bước 2 ghi "Xem runbook Worker". Không cần contract | UI F3 |
+| D6 | Runbook (F3) là Sheet tĩnh: 3 bước + nút Sao chép (`navigator.clipboard`), lệnh theo hãng nằm trong i18n (`anthropic: claude login`, `openai: codex login`, `google: gemini`); hãng khác → bước 2 ghi `guide.cmd2.other`. [Kiểm tra lại] trong Runbook: đóng Runbook rồi mở CheckDialog dùng chung. Không cần contract | UI F3 |
 | D7 | Dòng "Lúc này sẽ chạy bằng…" của Profile lấy `active_step` **của server** (`GET /model-profiles`), không tự suy (cùng luật `pickStep`); `null` → `profile.liveNone`. Agent có model riêng thì **không dự phòng** (người dùng chốt 2026-10-13): server chỉ xét bước 0, FE chỉ hiện `active_step`. Cảnh báo vàng khi `all_subscription` (HUB-FR-67). Slot hiển thị = `slots_in_use/max_concurrency` | spec §2, §3.B |
-| D8 | Xoá provider: **luôn** mở `alertdialog "Xoá {key}?"` rồi gọi `DELETE ?version=N`; `409 PROVIDER_IN_USE` → `alertdialog "Không xoá được {key}"` kèm badge `details.profiles[].key` (mẫu InUseDialog); `PROVIDER_HAS_HISTORY`/`PROVIDER_READONLY` → toast theo key `errors.*`. Sheet đóng sau khi lưu thành công. Tắt provider = công tắc `Bật` trong Sheet | Q2 |
-| D9 | Ma trận Quyền agent: ô là `switch` (bật = cấp entitlement; tắt = mở ConfirmDialog thu hồi nêu "N grant", N lấy từ ô). **Hàng = agent, cột = tenant** (theo `Access.dc.html`). Click phần số/tên ô mở drawer xem (chỉ đọc). Cấp (bật) không cần xác nhận; cập nhật lạc quan, lỗi thì hoàn về và toast. Ô có `agent.only_tenant_id` khác tenant của cột: **không có switch**, hiện "—" (`title` "Chỉ dùng cho {tenant}"). 409 `AGENT_IS_DEFAULT` → toast `access.errors.isDefault`, switch hoàn về, **không refetch**. `truncated` → dòng "Chỉ hiện 200 đầu tiên. Dùng bộ lọc." | UI §9 |
+| D8 | Xoá provider: **luôn** mở `alertdialog "Xoá {key}?"` rồi gọi `DELETE ?version=N`; `409 PROVIDER_IN_USE` → `alertdialog "Không xoá được {key}"` kèm badge `details.profiles[].key` (mẫu InUseDialog); `PROVIDER_HAS_HISTORY`/`PROVIDER_READONLY` → toast `models.errors.providerHasHistory`/`providerReadonly`; `KEY_TAKEN` → `models.errors.keyTaken`. Profile: `button "Xoá profile"` → `alertdialog "Xoá {key}?"` → `DELETE ?version=N`; toast "Đã xoá profile {key}"; 409 `PROFILE_IN_USE` → `alertdialog "Không xoá được {key}"` kèm badge `agents[].key` (`models.errors.profileInUse`). Sửa profile có sẵn: ô Tên profile chỉ đọc + `provider.field.kindLocked`. Sheet đóng sau khi lưu thành công. Tắt provider = công tắc `Bật` trong Sheet | Q2 |
+| D9 | Ma trận Quyền agent: ô là `switch` (bật = cấp entitlement; tắt = mở ConfirmDialog thu hồi nêu "N grant", N lấy từ ô). **Hàng = agent, cột = tenant** (theo `Access.dc.html`). Click phần số/tên ô mở drawer xem (chỉ đọc). Cấp (bật) không cần xác nhận; cập nhật lạc quan, lỗi thì hoàn về và toast. Mọi lỗi ghi khác `AGENT_IS_DEFAULT` (VERSION_CONFLICT, 404, 5xx…) → toast `access.errors.conflict`, hoàn switch, refetch. Ô có `agent.only_tenant_id` khác tenant của cột: **không có switch**, hiện "—" (`title` "Chỉ dùng cho {tenant}"). 409 `AGENT_IS_DEFAULT` → toast `access.errors.isDefault`, switch hoàn về, **không refetch**. `truncated` → dòng "Chỉ hiện 200 đầu tiên. Dùng bộ lọc." | UI §9 |
 | D10 | Mọi ghi: invalidate `["me"]` để ConfigBadge đổi vN (như H4b-1 D9). 409 phiên bản (provider/profile) → `ConflictDialog` dùng chung có "Xem khác biệt" ẩn (như H4b-1 D8). Ma trận 409 `VERSION_CONFLICT` → toast + refetch (riêng `AGENT_IS_DEFAULT` xem D9) | H4a |
-| D11 | Hàng agent đang tắt: tiêu đề mờ + chú thích "Hàng agent đang tắt"; tenant `active=false`: cột mờ, switch vẫn dùng được | UI §9 |
-| D12 | Mất mạng: `OfflineBanner` của khung. Trạng thái rỗng/lỗi/không quyền theo mockup `States.dc.html` | CONVENTIONS |
+| D11 | Hàng agent đang tắt: tiêu đề mờ + chú thích "Hàng agent đang tắt"; tenant `active=false`: cột mờ, switch vẫn dùng được; agent tắt: switch vẫn dùng được | UI §9 |
+| D12 | Mất mạng: `OfflineBanner` của khung. Trạng thái rỗng/lỗi/không quyền theo mockup `H4b2-States.dc.html` | CONVENTIONS |
 
 ## 1. Cấu trúc
 ```
@@ -43,7 +43,7 @@ Mỗi component ≤ 200 dòng; `StepsEditor` tách `StepRow`. Bước cũ có `m
 | Màn | Bố cục | Đang tải | Rỗng | Lỗi | Không quyền / 409 |
 |---|---|---|---|---|---|
 | Providers | Artboard `Models.dc.html`: `table "Danh sách provider"` cột Provider · Loại · Hãng · Trạng thái · Slot · Ghi chú · Thao tác. Thao tác: `api` [Kiểm tra key] [Sửa]; subscription [Kiểm tra lại] [Hướng dẫn] (khi `logged_out`/`error`) [Sửa]; [Xoá] | Skeleton 4 dòng `aria-busy` | EmptyState + [+ Thêm provider] | `ErrorState` + [Thử lại] | 403 → EmptyState quyền; xoá 409 → D8; lưu 409 → D10 |
-| Provider Sheet | `Provider-Sheet.dc.html`; footer [Huỷ] [Lưu] | "Đang lưu…" disabled | — | lỗi trường dưới ô; lỗi khác toast | `KEY_TAKEN` → dưới `Khoá provider` |
+| Provider Sheet | `Provider-Sheet.dc.html`; footer [Huỷ] [Lưu] | "Đang lưu…" disabled | — | lỗi trường dưới ô; lỗi khác toast | `KEY_TAKEN` → `models.errors.keyTaken` dưới `Khoá provider` |
 | Kiểm tra | `Check.dc.html`; nút [Kiểm tra lại] trong hộp chạy lại cùng request | `status` "Đang kiểm tra key…" (subscription: "Đang kiểm tra phiên đăng nhập…") `aria-busy`, [Đóng] disabled | — | theo bảng "check.* theo kết quả" §3 | `unsupported` → "Chưa hỗ trợ kiểm tra cho hãng này" |
 | Runbook | `Runbook.dc.html` | — | — | — | — |
 | Profiles | Artboard `Models.dc.html`: danh sách trái + StepsEditor phải; [Lưu profile] ở đầu StepsEditor, bật khi có thay đổi | skeleton | EmptyState + [+ Profile mới] | ErrorState | lưu 409 → D10; bước chỉ-subscription → cảnh báo vàng |
@@ -60,7 +60,7 @@ Mỗi component ≤ 200 dòng; `StepsEditor` tách `StepRow`. Bước cũ có `m
 | provider.status.ok/busy/cooldown/error/logged_out/none | "ok" "bận" "cooldown" "lỗi" "hết phiên" "Chưa có Worker kiểm" | "ok" "busy" "cooldown" "error" "logged out" "Not checked by a Worker yet" |
 | provider.vendor.anthropic/openai/google/fake | "Anthropic" "OpenAI" "Google" "Fake (dev)" | same |
 | provider.note.dev | "dev" (cột Ghi chú khi `dev_only`; cooldown dùng `provider.cooldownUntil`) | "dev" |
-| provider.cooldownUntil | "Mở lại sau {min} phút ({time})" (`{time}` = HH:mm:ss theo locale) | "Reopens in {min} min ({time})" |
+| provider.cooldownUntil | "Mở lại sau {min} phút ({time})" (`{time}` = HH:mm:ss theo locale; `{min}` = làm tròn lên) | "Reopens in {min} min ({time})" |
 | provider.action.check / recheck / guide / edit / delete | "Kiểm tra key" / "Kiểm tra lại" / "Hướng dẫn" / "Sửa" / "Xoá" | "Check key" / "Check again" / "Guide" / "Edit" / "Delete" |
 | provider.sheet.create / edit | "Thêm provider" / "Sửa provider · {key}" | "Add provider" / "Edit provider · {key}" |
 | provider.field.key / kind / vendor / baseUrl / secret / slots / enabled | "Khoá provider" "Loại" "Hãng" "Base URL (tuỳ chọn)" "API key" "Số slot tối đa" "Bật provider" | "Provider key" "Type" "Vendor" "Base URL (optional)" "API key" "Max slots" "Enable provider" |
@@ -79,6 +79,7 @@ Mỗi component ≤ 200 dòng; `StepsEditor` tách `StepRow`. Bước cũ có `m
 | guide.title / lead | "Đăng nhập CLI · {key}" / "Hết phiên đăng nhập. Trong lúc chờ, profile tự dự phòng sang bước kế." | "CLI login · {key}" / "The login session expired. Meanwhile profiles fall back to the next step." |
 | guide.cmd1 | `ssh <user>@<worker-host>` (lệnh bước 1, có nút Sao chép) | same |
 | guide.step1 / step2 / step3 | "SSH vào máy Worker" / "Chạy lệnh đăng nhập" / "Bấm Kiểm tra lại" | "SSH into the Worker machine" / "Run the login command" / "Click Check again" |
+| guide.cmd2.other | "Xem runbook Worker" | "See the Worker runbook" |
 | guide.copy / copied / note | "Sao chép" / "Đã sao chép" / "Hub không đăng nhập thay bạn. Nội dung lấy từ runbook Worker." | "Copy" / "Copied" / "The Hub does not sign in for you. Content comes from the Worker runbook." |
 | profile.add / save / saved / steps / addStep | "+ Profile mới" / "Lưu profile" / "Đã lưu profile {key}" / "Các bước" / "+ Thêm bước" | "+ New profile" / "Save profile" / "Saved profile {key}" / "Steps" / "+ Add step" |
 | profile.field.name / provider / model / on | "Tên profile" "Provider" "Model" "Chuyển bước kế khi" | "Profile name" "Provider" "Model" "Fall back when" |
@@ -90,15 +91,23 @@ Mỗi component ≤ 200 dòng; `StepsEditor` tách `StepRow`. Bước cũ có `m
 | state.error / retry / forbidden | "Không tải được dữ liệu" / "Thử lại" / "Bạn không có quyền xem mục này" | "Could not load data" / "Retry" / "You don't have permission to view this" |
 | access.title / subtitle | "Quyền agent" / "Tenant nào được có agent nào. Grant cho group/user do tenant admin cấp ở Admin › Groups." | "Agent access" / "Which tenants may use which agents. Grants for groups/users are set by tenant admins in Admin › Groups." |
 | access.matrix.aria / cell.label / cell.na / truncated | "Ma trận quyền agent" / "{agent} × {tenant}" (`agent.key` × `tenant.key`; nhãn accessible của switch; **không** có `cell.on/off`) / "Chỉ dùng cho {tenant}" (title của "—") / "Chỉ hiện 200 đầu tiên. Dùng bộ lọc." | "Agent access matrix" / "{agent} × {tenant}" / "Only for {tenant}" / "Showing the first 200 only. Use the filters." |
-| access.cell.count | "{n} grant" | "{n} grants" |
-| access.agentOff | "Hàng agent đang tắt" | "Agent row is off" |
+| access.cell.count | "{n} grant" (ô 0 grant hiện "0 grant") | "{n} grants" ("0 grants") |
+| access.agentOff | "Agent đang tắt" | "Agent is off" |
 | access.filter.agent / tenant / all | "Lọc theo agent" / "Lọc theo tenant" / "Tất cả" | "Filter by agent" / "Filter by tenant" / "All" |
 | access.drawer.title / grantedAt / grantedBy / grants / note | "Chi tiết {agent} × {tenant}" / "Ngày cấp" / "Người cấp" / "Grant trong tenant" / "Grant do tenant_admin cấp trong Admin › Groups." | "Details {agent} × {tenant}" / "Granted on" / "Granted by" / "Grants in tenant" / "Grants are set by tenant_admin in Admin › Groups." |
 | access.revoke.title / body / confirm | "Thu hồi {agent} khỏi {tenant}?" / "{n} grant trong tenant {tenant} sẽ mất hiệu lực. Grant được giữ lại và tự có hiệu lực khi cấp lại. Run đang chạy vẫn xong." / "Thu hồi" | "Revoke {agent} from {tenant}?" / "{n} grants in tenant {tenant} will stop working. Grants are kept and work again when re-granted. Running runs finish." / "Revoke" |
 | access.toast.granted / revoked | "Đã cấp {agent} cho {tenant}" / "Đã thu hồi {agent} khỏi {tenant}" | "Granted {agent} to {tenant}" / "Revoked {agent} from {tenant}" |
 | access.errors.isDefault | "Agent đang là mặc định của tenant này. Đổi mặc định ở Admin trước khi thu hồi." | "This agent is the tenant default. Change the default in Admin before revoking." |
 | access.errors.conflict | "Quyền vừa được thay đổi. Đã tải lại ma trận." | "Access was just changed. The matrix has been reloaded." |
-Lỗi API: `errors.PROVIDER_IN_USE`, `errors.PROVIDER_HAS_HISTORY`, `errors.PROVIDER_READONLY`, `errors.PROFILE_IN_USE`, `errors.KEY_TAKEN` ("Khoá này đã được dùng" / "This key is already used"), dùng lại `errors.FORBIDDEN`, `conflict.*`.
+Lỗi API (không đụng `errors.KEY_TAKEN` cũ của Agent; dùng lại `errors.FORBIDDEN`, `conflict.*`):
+| Key | VI | EN |
+|---|---|---|
+| models.errors.keyTaken | "Khoá này đã được dùng" (Provider, Profile) | "This key is already used" |
+| models.errors.providerInUse | câu `provider.inUse.body` | như `provider.inUse.body` |
+| models.errors.providerHasHistory | "Provider đã có lịch sử chạy, chỉ tắt được" | "Provider has run history; disable it instead" |
+| models.errors.providerReadonly | "Provider này do hệ thống quản lý, không sửa được" | "This provider is system-managed" |
+| models.errors.profileInUse | "Profile đang được agent dùng" | "Profile is used by agents" |
+| profile.delete.title / profile.toast.deleted | "Xoá {key}?" / "Đã xoá profile {key}" | "Delete {key}?" / "Deleted profile {key}" |
 
 ## 4. Validate client (zod; khớp contract khi chốt)
 | Trường | Luật | VI | EN |
@@ -121,7 +130,7 @@ Lỗi API: `errors.PROVIDER_IN_USE`, `errors.PROVIDER_HAS_HISTORY`, `errors.PROV
 | Kiểm tra | `dialog "Kết quả kiểm tra · {key}"` · `status` ("Đang kiểm tra key…" / "Key hợp lệ" / "Key không hợp lệ" / "Chưa hỗ trợ kiểm tra cho hãng này") · `group "Chi tiết"` (details) · `button "Kiểm tra lại"` `button "Đóng"` |
 | Runbook | `dialog "Đăng nhập CLI · {key}"` · `button "Sao chép lệnh bước 1"`, `"Sao chép lệnh bước 2"` · `button "Kiểm tra lại"` `button "Đóng"` |
 | Xoá | `alertdialog "Xoá {key}?"` (`button "Huỷ"`, `button "Xoá"`) · đang dùng: `alertdialog "Không xoá được {key}"` + badge tên profile + `button "Đóng"` |
-| Profiles | `list "Danh sách profile"` (mỗi `link` = tên) · `button "+ Profile mới"` · `textbox "Tên profile"` · `list "Các bước"`, mỗi `listitem` có `combobox "Provider"`, `textbox "Model"`, `group "Chuyển bước kế khi"` (3 `checkbox` lỗi/hết quota/quá giờ), `button "Lên"`, `button "Xuống"`, `button "Xoá bước"` · `button "+ Thêm bước"` · `button "Lưu profile"` · `status` "Lúc này sẽ chạy bằng…" |
+| Profiles | `list "Danh sách profile"` (mỗi `link` = tên) · `button "+ Profile mới"` · `textbox "Tên profile"` · `list "Các bước"`, mỗi `listitem` có `combobox "Provider"`, `textbox "Model"`, `group "Chuyển bước kế khi"` (3 `checkbox` lỗi/hết quota/quá giờ), `button "Lên"`, `button "Xuống"`, `button "Xoá bước"` · `button "+ Thêm bước"` · `button "Lưu profile"` · `button "Xoá profile"` → `alertdialog "Xoá {key}?"` / `"Không xoá được {key}"` (badge agent) · `status` "Lúc này sẽ chạy bằng…" |
 | Quyền agent | `heading "Quyền agent"` · `table "Ma trận quyền agent"`; hàng = agent, cột = tenant; mỗi ô `switch "{agent.key} × {tenant.key}"` (aria-checked; ô `only_tenant_id` không có switch, chỉ "—") · `combobox "Lọc theo agent"`, `combobox "Lọc theo tenant"` · `button "Chi tiết {agent.key} × {tenant.key}"` mở drawer · `dialog "Chi tiết {agent} × {tenant}"` (+ `button "Đóng"`) · `alertdialog "Thu hồi {agent} khỏi {tenant}?"` (`button "Huỷ"`, `button "Thu hồi"`) |
 | Không có | không element hiện giá trị key; DOM không chứa key sau "Kiểm tra key" |
 
@@ -135,7 +144,7 @@ Hai chunk lazy, ước ≤ 14 KB gzip tổng (không chặn mốc). Ma trận: s
 | # | Đề nghị | Dùng cho |
 |---|---|---|
 | C1 | **Đã chốt khác**: list có `version`, `slots_in_use`, `has_secret`, state; `secret`, `state.last_error`, `used_by_profiles` chỉ ở `GET /providers/:id` (Sheet Sửa gọi) | Bảng, Sheet |
-| C2 | `POST/PUT/DELETE /providers`, tối giản; `PUT` có `version` (409 `VERSION_CONFLICT`); `DELETE` 409 `PROVIDER_IN_USE` với `details.profiles:[{id,name}]`; 409 `KEY_TAKEN` | Sheet, D8 |
+| C2 | `POST/PUT/DELETE /providers`, tối giản; `PUT` có `version` (409 `VERSION_CONFLICT`); `DELETE` 409 `PROVIDER_IN_USE` với `details.profiles:[{id,key}]`; 409 `KEY_TAKEN` | Sheet, D8 |
 | C3 | **Đã chốt**: `{status: ok\|error\|unsupported\|requested, error_code, http_status, message, latency_ms, checked_at}`; FE suy `supported`/`ok` (D3) | CheckDialog |
 | C4 | `GET/POST/PUT/DELETE /model-profiles` `steps` theo `ProfileStepSchema`, kèm `version`, `agent_count`, `active_step`, `all_subscription` | Profiles |
 | C5 | `GET /agent-entitlements` → `{agents:[{id,name,enabled}],tenants:[{id,name}],cells:[{agent_id,tenant_id,granted_at,granted_by,grant_count}]}` (chỉ ô đã cấp; chưa cấp không có trong `cells`) | Ma trận |

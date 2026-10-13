@@ -137,7 +137,7 @@ Agent có hai tầng quyền, giống feature. Studio làm tầng đầu: **enti
 - **Click một ô** thì mở drawer: ngày cấp, người cấp, và danh sách grant trong tenant đó (group/user, do ai cấp). Drawer chỉ xem grant, có dòng nhắc "Grant do tenant_admin cấp trong Admin › Groups".
 - **Thu hồi entitlement:** ConfirmDialog ghi rõ "N grant trong tenant `acme` sẽ mất hiệu lực. Grant được giữ lại và tự có hiệu lực khi cấp lại". Hiệu lực ≤ 5 giây, run đang chạy vẫn xong.
 - Mọi thay đổi ghi audit và tăng `hub config vN`. Không chạy bộ câu kiểm thử định tuyến (bộ câu luôn dùng toàn bộ agent).
-- Cột agent đang tắt hiện mờ: entitlement vẫn giữ nhưng không ai dùng được cho tới khi bật lại.
+- Hàng agent đang tắt (hàng = agent, cột = tenant) hiện mờ, switch vẫn dùng được: entitlement vẫn giữ nhưng không ai dùng được cho tới khi bật lại.
 
 ## 10. Playground
 

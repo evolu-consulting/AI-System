@@ -30,12 +30,12 @@ Nguồn: BA HUB-FR-66/67/77/78, HUB-BR-17; UI §8, §9.
 
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
-| Vendor tạo ở Studio | `fake` chọn được cho tạo, luôn `dev_only = true` (không có ở production); `dify` không chọn được | Q3 |
+| Vendor tạo ở Studio | `fake` chọn được cho tạo, luôn `dev_only = true` (không có ở production); `dify` không chọn được. Production: chỉ snapshot bỏ hàng `dev_only` (như hiện có); API và FE không chặn | Q3 |
 | Quyền thao tác | Chỉ `platform_admin` (tenant `platform`) CRUD provider/profile và đổi entitlement; role khác → 403 | HUB-FR-78 |
 | Provider `api` | Bắt buộc `secret_id` trỏ secret `provider_api_key` còn tồn tại; loại `subscription-cli` không có secret, có `max_concurrency` ≥ 1 | HUB-FR-66, H4b-1 |
 | Xoá provider | Chặn nếu còn profile dùng (409 kèm danh sách profile); chỉ tắt (`enabled=false`) thì profile tự dự phòng bước kế | HUB-FR-67 (đề xuất, Q2) |
 | Profile | ≥ 1 bước; mỗi bước (provider, model, điều kiện chuyển); thứ tự = thứ tự thử; dòng tóm tắt "lúc này chạy bằng" tính từ `provider_state` | UI §8 |
-| Thu hồi entitlement | Grant giữ nguyên (khôi phục khi cấp lại) nhưng không còn hiệu lực; run đang chạy xong; agent tắt: entitlement vẫn giữ, cột mờ | HUB-FR-78, UI §9 |
+| Thu hồi entitlement | Grant giữ nguyên (khôi phục khi cấp lại) nhưng không còn hiệu lực; run đang chạy xong; agent tắt: entitlement vẫn giữ, hàng mờ | HUB-FR-78, UI §9 |
 | Nhật ký | Mọi ghi → audit (không có giá trị secret) + `hub_config_version` +1 | HUB-FR-69, HUB-FR-78 |
 
 ## 3. Contract (backend-lead)
@@ -119,7 +119,7 @@ Có sẵn, không đổi: `providers_secret_fk` RESTRICT (0028) · `provider_sta
 **Seed** (`hub:seed`, `seed.repo.ts`): upsert provider/profile có đổi ⇒ thêm `version = version + 1` (để Studio đang mở nhận `VERSION_CONFLICT` thay vì ghi đè). Không thêm hàng seed (provider `api` cho test do qc tạo kèm secret `fake-ok-…`).
 
 ## 5. UI (frontend-lead)
-Chi tiết: [`plan-frontend.md`](plan-frontend.md) (quyết định D1–D12, câu chữ VI/EN, validate, role+nhãn e2e, đối chiếu C1–C7). Hàng ma trận = agent, cột = tenant; chỉ nút Lên/Xuống (kéo-thả: TECH-DEBT #162). Tóm tắt: hai route lazy `/models` (tab Providers, Profiles; Sheet provider; hộp "Kết quả kiểm tra" đồng bộ ≤ 10 s; Sheet runbook "Hướng dẫn") và `/access` (ma trận công tắc, drawer xem grant, ConfirmDialog thu hồi "N grant"). Không thêm thư viện. Tab Đơn giá không hiện.
+Chi tiết: [`plan-frontend.md`](plan-frontend.md) (quyết định D1–D12, câu chữ VI/EN, validate, role+nhãn e2e, đối chiếu C1–C7). Hàng ma trận = agent, cột = tenant; chỉ nút Lên/Xuống (kéo-thả: TECH-DEBT #162). Tóm tắt: hai route lazy `/models` (tab Providers, Profiles; Sheet provider; hộp "Kết quả kiểm tra" đồng bộ ≤ 10 s; Sheet runbook "Hướng dẫn") và `/access` (ma trận công tắc, drawer xem grant, ConfirmDialog thu hồi "N grant"). Không thêm thư viện. Tab Đơn giá không hiện. Xoá profile: `alertdialog` + 409 `PROFILE_IN_USE` kèm badge agent. Lỗi ghi ma trận ngoài `AGENT_IS_DEFAULT` → toast conflict + hoàn switch + refetch.
 
 **Artboard:**
 
@@ -152,13 +152,13 @@ Từ BA/UI; qc bổ sung dữ liệu cụ thể khi viết test (trước code).
 | AC | Given / When / Then | Test |
 |---|---|---|
 | AC-H04 | **Dời H2d (Q4).** Theo BA AC-H04: 429 giữa chừng → chuyển bước kế. Thay trong mốc này bằng AC-H4b2-07 | — |
-| AC-H4b2-07 | Dự phòng **lúc giao job** (`pickStep`, plan §2.3): bước có provider tắt bị bỏ; provider đang chặn bị bỏ khi `on` của bước có trigger tương ứng; log `job.fallback` + provider đích | `rules/profile-step` R50–R65, `dispatch.int` D01–D07 |
-| AC-H4b2-01 | `platform_admin` tạo provider `api` gắn secret H4b-1 → có trong danh sách; chi tiết có `secret {id,name}`, không lộ giá trị (list không có `secret_id`, R13); role khác → 403 | `providers.int` A01–A08, A22, A24 · `role.int` Q01–Q03 · `rules/contracts` R73–R76 · e2e M03 |
+| AC-H4b2-07 | Dự phòng **lúc giao job** (`pickStep`, plan §2.3): bước có provider tắt bị bỏ; provider đang chặn bị bỏ khi `on` của bước có trigger tương ứng; log `job.fallback` + provider đích; agent có model riêng ⇒ không dự phòng (chỉ bước 0) | `rules/profile-step` R50–R70, `dispatch.int` D01–D09 |
+| AC-H4b2-01 | `platform_admin` tạo provider `api` gắn secret H4b-1 → có trong danh sách; chi tiết có `secret {id,name}`, không lộ giá trị (list không có `secret_id`, R13); role khác → 403 | `providers.int` A01–A08, A08b, A22, A24 · `role.int` Q01–Q03 · `rules/contracts` R73–R76 · e2e M03 |
 | AC-H4b2-02 | "Kiểm tra key" key sai/đúng (mock) → khối Chi tiết hiện lỗi nguyên văn / ok; log + audit không chứa key | `provider-check.int` C01–C14 · `rules/provider-check-rules` R30–R47 · e2e M07–M10 |
-| AC-H4b2-03 | Profile 2 bước, thứ tự (Lên/Xuống) lưu đúng; xoá provider đang được profile dùng → 409 kèm tên profile | `profiles.int` P01–P02 · `providers.int` A17, A21 · e2e M12, M24 |
+| AC-H4b2-03 | Profile 2 bước, thứ tự (Lên/Xuống) lưu đúng; xoá provider đang được profile dùng → 409 kèm tên profile | `profiles.int` P01–P02 · `providers.int` A17, A21 · e2e M12, M24, M25b |
 | AC-H4b2-04 | Cấp entitlement agent A cho `acme` ở ma trận → ≤ 5 s user `acme` được cấp grant dùng được A; audit + `hub_config_version` +1 (HUB-FR-77/78) | `entitlements.int` E03–E04 · e2e M31 |
 | AC-H4b2-05 | Thu hồi entitlement có 2 grant → ConfirmDialog nêu "2 grant"; sau xác nhận agent biến khỏi danh sách user; cấp lại → grant tự có hiệu lực; run đang chạy vẫn xong | `entitlements.int` E05–E06 · e2e M32 |
-| AC-H4b2-06 | `tenant_admin` `acme` cấp agent chưa có entitlement → từ chối (HUB-BR-17); không thấy entitlement tenant khác | `entitlements.int` E09–E10 · e2e M37 |
+| AC-H4b2-06 | `tenant_admin` `acme` cấp agent chưa có entitlement → từ chối (HUB-BR-17); không thấy entitlement tenant khác | `entitlements.int` E09–E10 · e2e M37, M38 |
 
 Lệnh xong: `bun run done:h4b2` (alias `done:h4b`; `tools/scripts/src/done-h4b2.ts`) = `bun run typecheck && bun test && bun run test:int && bunx playwright test -c e2e/studio/playwright.config.ts h4b2 && bun run trace --check && bun run test:lock:verify`. Chi tiết: `test-plan.md` §6.
 
