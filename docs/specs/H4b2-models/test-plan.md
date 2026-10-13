@@ -32,7 +32,7 @@ Như H4b-1 §1 (tên test có mã, chờ theo điều kiện, cấm `skip/only/t
 | AC-H4b2-04 | PUT ô (chua × acme) ⇒ `{hub_config_version v+1, affected_grants 0}`, audit `agent_entitlement`/`enable`; tadmin grant được (trước đó NOT_ENTITLED); ≤ 5 s menu lan có agent; UI bật switch không xác nhận | A `entitlements` · E | E03–E04 · M31 |
 | AC-H4b2-05 | DELETE ô có 2 grant ⇒ `affected_grants 2`, grant giữ nguyên, ≤ 5 s biến khỏi menu (effective `no_entitlement`); PUT lại ⇒ grant tự có hiệu lực ≤ 5 s; run đang chạy vẫn `run.finished`; UI alertdialog "Thu hồi … ?" nêu "2 grant … sẽ mất hiệu lực" | A `entitlements` · E | E05–E06 · M32 |
 | AC-H4b2-06 | tadmin acme: mọi `/studio/api/agent-entitlements*` ⇒ 403 (không thấy entitlement tenant khác); sau khi padmin thu hồi qua Studio, tadmin cấp grant ⇒ 409 `NOT_ENTITLED{agent_ids}` | A `entitlements` · E | E09–E10 · M37 |
-| AC-H4b2-07 (thay AC-H04, Q4) | `pickStep` 8 ca plan §2.3 + biên; giao job thật: cooldown+on[quota] / logged_out+on[error] / tắt ⇒ bước kế; on[] hoặc mọi bước chặn ⇒ `ALL_PROVIDERS_EXHAUSTED`, không job; payload `profile_steps` = [bước chọn]; log `job.fallback`; `active_step` Studio khớp; UI dòng "Lúc này sẽ chạy bằng bước n · key" lấy từ `active_step` server (null ⇒ "Hiện không bước nào sẵn sàng") | R `profile-step` · A `dispatch`, `profiles` · E | R50–R65 · D01–D07 · P12–P13 · M21–M22 |
+| AC-H4b2-07 (thay AC-H04, Q4) | `pickStep` 8 ca plan §2.3 + biên; giao job thật: cooldown+on[quota] / logged_out+on[error] / tắt ⇒ bước kế; on[] hoặc mọi bước chặn ⇒ `ALL_PROVIDERS_EXHAUSTED`, không job; payload `profile_steps` = [bước chọn]; log `job.fallback`; `active_step` Studio khớp; agent có model riêng (vế model, D08–D09); UI dòng "Lúc này sẽ chạy bằng bước n · key" lấy từ `active_step` server (null ⇒ "Hiện không bước nào sẵn sàng") | R `profile-step` · A `dispatch`, `profiles` · E | R50–R70 (kể R66–R70) · D01–D09 (kể D08–D09) · A08b · P12–P13 · M21–M22 · M25b · M38 |
 | AC-H04 (vế cảnh báo) | Profile toàn subscription ⇒ `all_subscription` true + cảnh báo "Profile này chỉ có bước subscription." | R · A · E | R20–R21 · P10–P11 · M23 |
 
 ### 3.1 Luật / quyết định → ca
@@ -47,7 +47,7 @@ Như H4b-1 §1 (tên test có mã, chờ theo điều kiện, cấm `skip/only/t
 | Q7 không nhận key thô | R74, A06, M03 |
 | Q8 key/kind/vendor + key profile bất biến (contract + GRANT cột) | R75, R79, A12, P04, D22–D23 |
 | D5/D6 version + VERSION_CONFLICT + không đổi ⇒ không bump | A10–A13, A15, A20, P03–P04, M14, M26 |
-| D9 "Kiểm tra lại" chỉ xoá `last_probe_at` (không `updated_at`) | C10, D24 |
+| D9 "Kiểm tra lại" chỉ xoá `last_probe_at` và `last_ok_at` (không `updated_at`) | C10, D24 |
 | D13 redactKey + audit không message | R36–R41, C03–C04, C14 |
 | §4 cột version, GRANT cột, audit CHECK, migration chạy lại | D20–D26 |
 | §3 B stepsProblem / 1..5 bước / KEY_TAKEN / PROFILE_IN_USE | R14–R19, R78, P06–P09 |
@@ -59,20 +59,20 @@ Như H4b-1 §1 (tên test có mã, chờ theo điều kiện, cấm `skip/only/t
 |---|---|---|
 | R | `rules/models-rules.test.ts` | R01–R24 (24) |
 | R | `rules/provider-check-rules.test.ts` | R30–R47 (18) |
-| R | `rules/profile-step.test.ts` | R50–R65 (16) |
+| R | `rules/profile-step.test.ts` | R50–R70 (21) |
 | R | `rules/contracts-h4b2.test.ts` | R70–R81 (12) |
-| A | `providers.int.test.ts` | A01–A24 (24) |
+| A | `providers.int.test.ts` | A01–A24 + A08b (25) |
 | A | `provider-check.int.test.ts` | C01–C14 (14) |
 | A | `profiles.int.test.ts` | P01–P14 (14) |
-| A | `dispatch.int.test.ts` | D01–D07 (7) |
+| A | `dispatch.int.test.ts` | D01–D09 (9) |
 | A | `entitlements.int.test.ts` | E01–E11 (11) |
 | A | `role.int.test.ts` | Q01–Q03 (3) |
 | D | `db-h4b2.int.test.ts` | D20–D26 (7) |
 | E | `e2e/studio/h4b2-models.studio.ts` | M01–M14 (14) |
-| E | `e2e/studio/h4b2-profiles.studio.ts` | M20–M26 (7) |
-| E | `e2e/studio/h4b2-access.studio.ts` | M30–M37 (8) |
+| E | `e2e/studio/h4b2-profiles.studio.ts` | M20–M26 + M25b (8) |
+| E | `e2e/studio/h4b2-access.studio.ts` | M30–M38 (9) |
 
-Tổng **179**: R 70 · A/D 80 · E 29.
+Tổng **189**: R 75 · A/D 83 · E 31.
 
 ## 5. Rủi ro chập chờn
 | Rủi ro | Giảm |
@@ -112,21 +112,20 @@ Int: 80 ca = 72 đỏ ở `expect` + 8 xanh trước code (E09, E11, Q01–Q03, 
 ## 8. Chỗ hở spec (mặc định qc đã dùng) · Cần bổ sung
 | # | Hở | Mặc định trong test | Agent |
 |---|---|---|---|
-| G1 | AC-H04 nguyên văn dời H2d (Q4); AC-H4b2-07 do qc đặt chưa có ở frontmatter/§8 spec | test dùng `AC-H4b2-07` (định nghĩa ở đầu file này) | docs-architect: thêm AC-H4b2-07 vào spec frontmatter + §8 |
-| G2 | plan-frontend §3 `errors.PROVIDER_KEY_TAKEN` / C2 `PROVIDER_KEY_TAKEN` vs contract `KEY_TAKEN` | mock trả `KEY_TAKEN`; kiểm câu "Khoá này đã được dùng" (M06) | frontend-lead: map `errors.KEY_TAKEN` |
-| G3 | plan-frontend §4 regex khoá `^[a-z0-9][a-z0-9-]{1,63}$` vs contract `^[a-z][a-z0-9-]{1,47}$` | dữ liệu e2e hợp cả hai; M05 dùng "A" (sai cả hai) | frontend-lead: dùng `ProviderKeySchema` |
+| G1 | AC-H04 nguyên văn dời H2d (Q4); AC-H4b2-07 do qc đặt chưa có ở frontmatter/§8 spec | test dùng `AC-H4b2-07` (định nghĩa ở đầu file này) | docs-architect: thêm AC-H4b2-07 vào spec frontmatter + §8 | **đã đóng** (readiness lần 2) |
+| G2 | plan-frontend §3 `errors.PROVIDER_KEY_TAKEN` / C2 `PROVIDER_KEY_TAKEN` vs contract `KEY_TAKEN` | mock trả `KEY_TAKEN`; kiểm câu "Khoá này đã được dùng" (M06) | frontend-lead: map `errors.KEY_TAKEN` | **đã đóng** (readiness lần 2) |
+| G3 | plan-frontend §4 regex khoá `^[a-z0-9][a-z0-9-]{1,63}$` vs contract `^[a-z][a-z0-9-]{1,47}$` | dữ liệu e2e hợp cả hai; M05 dùng "A" (sai cả hai) | frontend-lead: dùng `ProviderKeySchema` | **đã đóng** (readiness lần 2) |
 | G4 | "Tên profile" (plan-frontend) nhưng profile chỉ có `key` | `textbox "Tên profile"` ⇒ gửi `key` (M25) | frontend-lead |
 | G5 | Nhãn option Hãng/Loại không có trong bảng §3 | Loại "API"/"Subscription" (provider.kind.*); Hãng "Anthropic"/"OpenAI" (artboard) | frontend-lead giữ đúng nhãn |
 | G6 | Câu chữ cho `status: "requested"` chỉ có ở spec §3 A ("Worker chưa kiểm xong") | M10 kiểm chuỗi con "Worker chưa kiểm xong"; "Kiểm tra lại" ok kiểm "phiên đăng nhập hợp lệ" | frontend-lead: thêm key i18n |
-| G7 | plan-frontend D7 (tính ở client) đã thay bằng `active_step` server (spec §9) | M22: `active_step` null ⇒ "Hiện không bước nào sẵn sàng" dù bước 2 trông sẵn sàng | frontend-lead: sửa D7 |
+| G7 | plan-frontend D7 (tính ở client) đã thay bằng `active_step` server (spec §9) | M22: `active_step` null ⇒ "Hiện không bước nào sẵn sàng" dù bước 2 trông sẵn sàng | frontend-lead: sửa D7 | **đã đóng** (readiness lần 2) |
 | G8 | `subscriptionOutcome(state, t0, now)` chưa nêu kiểu `state` | không có ca R; phủ bằng int C10–C13 | backend-lead |
 | G9 | Phân biệt timeout/network từ lỗi `fetch` | C07: `DOMException("TimeoutError")` ⇒ timeout; `TypeError` ⇒ network | backend-lead |
 | G10 | Định dạng log `job.fallback` | D02: có dòng chứa `job.fallback` và `fake-cli` | backend-lead giữ tên sự kiện |
 | G11 | D8 "biết trước từ danh sách thì không gọi API" (list không có `used_by_profiles`) | M12 chấp nhận cả hai luồng (xác nhận rồi 409, hoặc hộp chặn ngay) | — |
-| G12 | Sheet provider sau Lưu đóng hay ở lại (khác H4b-1) | M03 đóng bằng [Huỷ] nếu còn mở, rồi kiểm dòng | — |
-| G13 | spec §8 lệnh e2e `bunx playwright test h4b2` thiếu config studio | `-c e2e/studio/playwright.config.ts h4b2` (§6) | docs-architect: sửa spec §8 |
-| G14 | D24: `hub_api` chỉ UPDATE `last_probe_at` của `provider_state` (spec §4 #4) | `status`/`updated_at` ⇒ 42501 | — |
-
+| G12 | Sheet provider sau Lưu đóng hay ở lại (khác H4b-1) | M03 đóng bằng [Huỷ] nếu còn mở, rồi kiểm dòng | — | **đã đóng** (readiness lần 2) |
+| G13 | spec §8 lệnh e2e `bunx playwright test h4b2` thiếu config studio | `-c e2e/studio/playwright.config.ts h4b2` (§6) | docs-architect: sửa spec §8 | **đã đóng** (readiness lần 2) |
+| G14 | D24: `hub_api` chỉ UPDATE `last_probe_at` của `provider_state` (spec §4 #4) | `status`/`updated_at` ⇒ 42501 | — | **đã đóng** (readiness lần 2) |
 ## 9. Khoá
 Khoá 2026-10-13 (T2, trước T3 Gate; Gate đổi spec ⇒ qc mở lại + ghi lý do): `bun run test:lock:write` thêm 17 file (`tests/acceptance/H4b2/**` 13 + `e2e/studio/_h4b2.ts` + 3 `h4b2-*.studio.ts`); `bun run test:lock:verify` OK (728 file); `bun run trace --check` OK (244 mã).
 

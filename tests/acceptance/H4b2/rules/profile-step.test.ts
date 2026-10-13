@@ -149,11 +149,10 @@ describe("R66–R70 · pickStep — agent có model riêng ⇒ không dự phòn
       reason: "provider_unavailable",
     });
   });
-  it("HUB-FR-67 · AC-H4b2-07 · R68 · ca 11: bước 0 cooldown + on [quota], bước 1 ok ⇒ {ok:false, quota, skipped []}", () => {
-    expect(pick([st("a", ["quota"]), st("b")], { a: cool, b: ok }, true)).toMatchObject({
+  it("HUB-FR-67 · AC-H4b2-07 · R68 · ca 11: bước 0 cooldown + on [quota], bước 1 ok ⇒ {ok:false, quota}", () => {
+    expect(pick([st("a", ["quota"]), st("b")], { a: cool, b: ok }, true)).toEqual({
       ok: false,
       reason: "quota",
-      skipped: [],
     });
   });
   it("HUB-FR-67 · AC-H4b2-07 · R69 · ca 12: bước 0 logged_out + on [error], bước 1 ok ⇒ {ok:false, provider_unavailable}", () => {
