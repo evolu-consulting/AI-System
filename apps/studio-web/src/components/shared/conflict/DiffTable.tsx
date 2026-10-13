@@ -24,8 +24,7 @@ function Cell({ value, empty, tone }: { value: string; empty: boolean; tone: str
 
 export function DiffTable({ rows, more, latestVersion }: Props) {
   const { t } = useTranslation();
-  if (rows.length === 0)
-    return <p className="text-body text-muted-foreground">{t("conflict.diff.empty")}</p>;
+  // rows=[] không tới đây: ConflictDialog ẩn [Xem khác biệt] (H4b-1 RV1 #8).
   return (
     <div className="max-h-72 overflow-auto rounded-md border border-border">
       <Table>

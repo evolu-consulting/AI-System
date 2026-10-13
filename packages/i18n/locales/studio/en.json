@@ -460,7 +460,9 @@
       "kh": "KnowledgeHub · {key}"
     },
     "scope": {
-      "platform": "Platform-wide"
+      "platform": "Platform-wide",
+      "loading": "Loading tenants…",
+      "loadError": "Couldn't load tenants."
     },
     "loadMore": "Load more",
     "action": {

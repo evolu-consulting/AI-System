@@ -4,7 +4,10 @@ import { MutationObserver, QueryClient } from "@tanstack/react-query";
 import { runGuarded, secretMutationOptions } from "./use-secret-mutations";
 
 const SECRET = "sk-unit-Zx9Pq7Lm-secret";
-const tick = () => new Promise((r) => setTimeout(r, 20));
+// Thăm dò tới khi điều kiện đúng (tối đa 1s) — không chờ cố định; hết hạn thì để assertion báo lỗi.
+async function waitFor(cond: () => boolean) {
+  for (let i = 0; i < 100 && !cond(); i++) await new Promise((r) => setTimeout(r, 10));
+}
 
 async function run(fail: boolean) {
   const qc = new QueryClient();
@@ -21,18 +24,20 @@ async function run(fail: boolean) {
   );
   if (fail) await expect(res).rejects.toThrow("boom");
   else await res;
-  await tick();
-  return JSON.stringify(
-    qc
-      .getMutationCache()
-      .getAll()
-      .map((m) => m.state.variables ?? null),
-  );
+  const snap = () =>
+    JSON.stringify(
+      qc
+        .getMutationCache()
+        .getAll()
+        .map((m) => m.state.variables ?? null),
+    );
+  await waitFor(() => !snap().includes(SECRET));
+  return snap();
 }
 
-test("thành công: cache mutation không còn giá trị", async () => {
+test("HUB-BR-30 · thành công: cache mutation không còn giá trị", async () => {
   expect(await run(false)).not.toContain(SECRET);
 });
-test("lỗi: cache mutation không còn giá trị", async () => {
+test("HUB-BR-30 · lỗi: cache mutation không còn giá trị", async () => {
   expect(await run(true)).not.toContain(SECRET);
 });

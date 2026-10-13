@@ -35,7 +35,9 @@ function Row({
   const { t } = useTranslation();
   return (
     <TableRow>
-      <TableCell className="font-mono">{s.name}</TableCell>
+      <TableCell id={`secret-name-${s.id}`} className="font-mono">
+        {s.name}
+      </TableCell>
       {showTenant ? <TableCell>{s.tenant?.name ?? t("secrets.scope.platform")}</TableCell> : null}
       <TableCell>
         <span title={`v${s.version}`} className="text-muted-foreground">
@@ -47,10 +49,20 @@ function Row({
       </TableCell>
       <TableCell>{fmt(s.updated_at, locale)}</TableCell>
       <TableCell className="space-x-2 whitespace-nowrap">
-        <Button variant="outline" size="sm" onClick={() => onReplace(s)}>
+        <Button
+          variant="outline"
+          size="sm"
+          aria-describedby={`secret-name-${s.id}`}
+          onClick={() => onReplace(s)}
+        >
           {t("secrets.action.replace")}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => onDelete(s)}>
+        <Button
+          variant="outline"
+          size="sm"
+          aria-describedby={`secret-name-${s.id}`}
+          onClick={() => onDelete(s)}
+        >
           {t("secrets.action.delete")}
         </Button>
       </TableCell>

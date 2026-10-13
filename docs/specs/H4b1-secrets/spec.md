@@ -191,6 +191,7 @@ Lệnh xong: `bun run done:h4b1` (T7 tạo; = typecheck → test → test:int �
 - BE T5: `usedByMany` là `UNION ALL` các nhánh trong `USED_BY_BRANCHES` (`secrets.repo.ts`) — K1 thêm nhánh `knowledge_hub` vào mảng này. List: `q` = `name ILIKE %q%` (escape `\ % _`); cursor `lower(name)` tính ở JS (tên chỉ ASCII theo regex).
 - FE T6: i18n lỗi `SECRET_IN_USE`/`SECRET_NAME_TAKEN` đặt ở `errors.*` cấp trên cùng (để `describeApiError` dùng chung), còn `secrets.errors.conflictDelete` trong namespace `secrets`; thêm key `secrets.note.source_credential` (chú thích tab nguồn khi bảng không rỗng) và `secrets.err.{nameEmpty,nameFormat,valueEmpty,valueLen}`.
 - FE T6: react-query key `['studio','secrets',kind]` (tiền tố `studio` như các query khác), invalidate cùng `['studio','me']`. `ConflictDialog` ẩn [Xem khác biệt] khi `rows.length===0` áp cho mọi nơi dùng chung (Agent/Orchestrator: khi hai bản không khác trường nào thì không còn nút mở bảng 'Không có trường nào khác nhau').
+- FE RV1 #8: vì `ConflictDialog` ẩn [Xem khác biệt] khi `rows=[]` (đổi hành vi Agent/Orchestrator H4a), đã bỏ nhánh chết `conflict.diff.empty` trong `DiffTable` của Studio (key i18n giữ nguyên cho test khoá M3/Admin).
 - FE T6: `?drawer=<id>` không có trong danh sách ⇒ không mở Sheet (không tự xoá tham số khỏi URL). `saved` state nằm ở `SecretSheet` ngoài (để `showCloseButton={saved===null}`), xoá khi đóng.
 - FE T6 (ghi nhận): `e2e/studio/k1-knowledgehub.studio.ts` (13 ca) đỏ vì đang chờ code K1; `test:lock:verify` báo UNLOCKED `tests/acceptance/K1/*` — ngoài phạm vi H4b-1.
 

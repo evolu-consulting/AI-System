@@ -4,5 +4,6 @@ import { tenantsQuery } from "#/features/orchestrator/api";
 
 export function useScopeTenants() {
   const q = useQuery(tenantsQuery);
-  return (q.data ?? []).filter((x) => x.active).map((x) => ({ id: x.id, name: x.name }));
+  const tenants = (q.data ?? []).filter((x) => x.active).map((x) => ({ id: x.id, name: x.name }));
+  return { tenants, loading: q.isPending, error: q.isError };
 }

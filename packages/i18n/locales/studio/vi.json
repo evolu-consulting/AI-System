@@ -460,7 +460,9 @@
       "kh": "KnowledgeHub · {key}"
     },
     "scope": {
-      "platform": "Toàn nền tảng"
+      "platform": "Toàn nền tảng",
+      "loading": "Đang tải danh sách tenant…",
+      "loadError": "Không tải được danh sách tenant."
     },
     "loadMore": "Tải thêm",
     "action": {

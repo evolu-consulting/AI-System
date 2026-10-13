@@ -15,11 +15,16 @@ type Props = { value: string; onChange: (v: string) => void; disabled?: boolean;
 
 export function ScopeField({ value, onChange, disabled, error }: Props) {
   const { t } = useTranslation();
-  const tenants = useScopeTenants();
+  const { tenants, loading, error: loadError } = useScopeTenants();
   const options = [
     { id: PLATFORM, label: t("secrets.scope.platform") },
     ...tenants.map((x) => ({ id: x.id, label: x.name })),
   ];
+  const status = loading
+    ? t("secrets.scope.loading")
+    : loadError
+      ? t("secrets.scope.loadError")
+      : null;
   return (
     <FieldFrame id="secret-scope" label={t("secrets.field.scope")} error={error}>
       {(p) => (
@@ -33,6 +38,11 @@ export function ScopeField({ value, onChange, disabled, error }: Props) {
                 {o.label}
               </SelectItem>
             ))}
+            {status ? (
+              <div role="status" className="px-2 py-1.5 text-label text-muted-foreground">
+                {status}
+              </div>
+            ) : null}
           </SelectContent>
         </Select>
       )}
