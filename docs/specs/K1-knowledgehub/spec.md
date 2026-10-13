@@ -2,7 +2,7 @@
 id: K1-knowledgehub
 title: K1 · KnowledgeHub làm RAG ngoài (Hub proxy) + quy trình mẫu AISDLC
 milestone: K1
-status: draft            # khung — chưa PLAN, chưa readiness, chưa Gate
+status: plan
 requirements: [HUB-FR-131, HUB-FR-132, HUB-FR-133, HUB-FR-134, HUB-FR-137, HUB-BR-35, HUB-BR-36, HUB-BR-37, HUB-BR-40]
 design:
   - docs/design/agent-hub/ba-agent-hub.md HUB-FR-131…134, 137 · HUB-BR-35…37, 40 (ngoại lệ HUB-BR-12)
@@ -15,7 +15,7 @@ owner: backend-lead + frontend-lead + qc
 
 # K1 · KnowledgeHub (RAG ngoài)
 
-Khung tách từ BA đã sửa theo Intake Đầy đủ 2026-10-13 (14 mặc định đã chốt). **Chỉ khung**: mục 3–5 do backend-lead/frontend-lead; chưa readiness/Gate. Chạy sau H4b-1.
+Tách từ BA đã sửa theo Intake Đầy đủ 2026-10-13 (14 mặc định đã chốt); PLAN xong (mục 3–5), readiness: [`readiness.md`](readiness.md). Chạy sau H4b-1.
 
 ## 1. Phạm vi
 **Làm:**
@@ -43,10 +43,9 @@ Trỏ BA; chỉ ghi phần cụ thể hoá.
 | Ghi worklog | subject `<quy trình>/<stage>`; cắt 4000 ký tự; `Idempotency-Key` = run/stage/phiên bản output; `after: auto` ghi khi chốt output, có gate ghi khi Đạt | HUB-FR-133 |
 | `## Tóm tắt` | ≤ 200 từ, quá thì cắt; chỉ bắt buộc với quy trình đã chọn project KH | HUB-FR-133 |
 | Hạ cấp | Mạng/timeout, `404 ns_not_active`, `423 ns_suspended`, `503 embedder_unavailable` ⇒ chạy tiếp + cảnh báo output + audit | HUB-FR-134 |
-| Seed mẫu | `sdlc-delivery` (≤ 10 stage: Scope Sign-off gate → Setup&Plan → Spec gate → Design → Implementation → Code Review → Testing → UAT gate → Release); `bug-fix` (Bug Intake gate → Code Reading → Bug Fix …). Code Review/Testing trượt ⇒ gate người + `back_to_steps`; phỏng cấu trúc `seed.py`, không chép prompt | CR-070 |
+| Seed mẫu | `sdlc-delivery` (≤ 10 stage: Scope Sign-off gate → Setup&Plan → Spec gate → Design → Implementation → Code Review → Testing → UAT gate → Release); `bug-fix` (6 stage, danh sách ở [plan §6](plan.md)). Code Review/Testing trượt ⇒ gate người + `back_to_steps`; phỏng cấu trúc `seed.py`, không chép prompt | CR-070 |
 
 ## 3. Contract (backend-lead)
-<!-- backend-lead -->
 File: `packages/contracts/src/hub-admin/kh.ts` (export qua `@ai/contracts/hub-admin`), mọi object `strictObject`. Quyết định, hàm thuần, luồng: [`plan.md`](plan.md). Body lỗi = `ErrorResponse` M0.
 
 **3.1 Kiểu chung**
@@ -104,7 +103,6 @@ File: `packages/contracts/src/hub-admin/kh.ts` (export qua `@ai/contracts/hub-ad
 **3.6 Audit**: entity `kh_settings` · `kh_tenant` · `kh_binding` · `kh_query` · `kh_worklog` (+ `agent`); action thêm `check` · `degrade` · `write_fail`. Before/after không bao giờ có giá trị secret/token. Ghi Studio qua `withConfigWrite` (bump + NOTIFY); `check`/hạ cấp/ghi worklog không bump. Bảng đầy đủ: plan §4.
 
 ## 4. Dữ liệu (backend-lead)
-<!-- backend-lead -->
 Migration `packages/db/migrations-hub/0029_k1_kh.sql` (sau `0028_h4b1_secrets`; idempotent như 0021: `IF NOT EXISTS`, `DO $$` kiểm `pg_constraint`/`pg_policies`; chỉ THÊM). Drizzle: file mới `packages/db/src/schema/hub-kh.ts`. RLS mẫu `v_t` của 0021 (`app.scope='system'` OR (`'user'` AND `tenant_id = app.tenant_id`)), policy `FOR ALL TO hub_rw`; `agent_runtime`/`hub_ro` không GRANT.
 
 Cột/kiểu/CHECK đầy đủ: plan §5. Tóm tắt:
@@ -127,7 +125,7 @@ Cột/kiểu/CHECK đầy đủ: plan §5. Tóm tắt:
 Không xoá dữ liệu cũ; không seed KH (cấu hình qua Studio; dev dùng mock). Seed quy trình mẫu: plan §6.
 
 ## 5. UI (frontend-lead)
-<!-- frontend-lead --> **Chưa có artboard — bố cục đề xuất, trình Gate người dùng.** Chi tiết (bố cục, trạng thái, VI/EN, validate, nhãn e2e): [`plan-frontend.md`](plan-frontend.md), đã đối chiếu §3.
+**Chưa có artboard — bố cục đề xuất, trình Gate người dùng.** Chi tiết (bố cục, trạng thái, VI/EN, validate, nhãn e2e): [`plan-frontend.md`](plan-frontend.md), đã đối chiếu §3.
 | Màn | App | Contract |
 |---|---|---|
 | Cài đặt → KnowledgeHub: URL + bảng tenant ↔ ns, Sheet (secret, keyspace, project), Dialog kết quả kiểm | studio-web `/settings` (platform_admin) | §3.2 `/kh*` |
@@ -155,15 +153,15 @@ Bản nháp theo BA; qc hoàn thiện ở test-plan.
 
 | AC | Given / When / Then | Test |
 |---|---|---|
-| K1-AC01 | KH hợp lệ ⇒ "Kiểm tra kết nối" OK; `include_people_lanes=true` + project dùng chung / `kind=local` / http ⇒ lỗi nêu nguyên nhân; lanes bật + chỉ project riêng ⇒ OK | <!-- qc --> |
-| K1-AC02 | Tenant A chạy run ⇒ chỉ credentials ns A; project tenant B ⇒ 404 | <!-- qc --> |
-| K1-AC03 | Token chỉ trong bộ nhớ; 401 ⇒ làm mới và thử lại đúng 1 lần; credentials không có trong job/prompt/log/audit | <!-- qc --> |
-| K1-AC04 | `kh_query` 5 lần OK, lần 6 lỗi tool; ≤ 4000 ký tự/lần | <!-- qc --> |
-| K1-AC05 | Stage có gate: Đạt ⇒ ghi worklog đúng subject + khoá idempotent; trượt ⇒ không ghi; project chỉ đọc ⇒ không ghi | <!-- qc --> |
-| K1-AC06 | KH sập / 404 / 423 / 503 ⇒ run tiếp tục, cảnh báo + audit | <!-- qc --> |
-| K1-AC07 | Quy trình đã chọn project KH ⇒ `## Tóm tắt` bắt buộc; quy trình khác không đổi | <!-- qc --> |
-| K1-AC08 | Seed `sdlc-delivery`, `bug-fix` hợp lệ (≤ 10 stage); 12 file test khoá của `sdlc` không đổi | <!-- qc --> |
-| K1-AC09 (chuyển từ H4b-1) | (a) Xoá `kh_api_key` đang được KH trỏ tới ⇒ 409 `SECRET_IN_USE` có `used_by[type=knowledge_hub]`; (b) job giả dùng `useSecret` ⇒ giá trị không xuất hiện trong `work/<job_id>/` (AC-H4b1-07, Q12) | <!-- qc --> |
+| K1-AC01 | KH hợp lệ ⇒ "Kiểm tra kết nối" OK; `include_people_lanes=true` + project dùng chung / `kind=local` / http ⇒ lỗi nêu nguyên nhân; lanes bật + chỉ project riêng ⇒ OK | R `kh-check-rules`, `kh-rules` · A `check` · E studio (R01–R06, R30–R43 · A30–A47 · E06–E07) |
+| K1-AC02 | Tenant A chạy run ⇒ chỉ credentials ns A; project tenant B ⇒ 404 | A `query`, `tenant` · R `kh-summary-rules` (A74–A75, A51, A56, A60 · R61, R64) |
+| K1-AC03 | Token chỉ trong bộ nhớ; 401 ⇒ làm mới và thử lại đúng 1 lần; credentials không có trong job/prompt/log/audit | R `kh-rules` · A `query`, `noleak` (R14–R16 · A77–A79, A110–A111) |
+| K1-AC04 | `kh_query` 5 lần OK, lần 6 lỗi tool; ≤ 4000 ký tự/lần | R `kh-summary-rules`, `contracts-k1` · A `query` (R65–R66, R75, R78 · A73–A75, A84) |
+| K1-AC05 | Stage có gate: Đạt ⇒ ghi worklog đúng subject + khoá idempotent; trượt ⇒ không ghi; project chỉ đọc ⇒ không ghi | R `kh-summary-rules` · A `worklog` (R50–R53, R63 · A93–A97) |
+| K1-AC06 | KH sập / 404 / 423 / 503 ⇒ run tiếp tục, cảnh báo + audit | R `kh-rules` · A `query`, `worklog` · E chat (R16–R17 · A80–A83, A98–A101 · E30) |
+| K1-AC07 | Quy trình đã chọn project KH ⇒ `## Tóm tắt` bắt buộc; quy trình khác không đổi | R `kh-summary-rules` · A `worklog` · E admin (R55–R62 · A90–A92 · E20, E22) |
+| K1-AC08 | Seed `sdlc-delivery`, `bug-fix` hợp lệ (≤ 10 stage); 12 file test khoá của `sdlc` không đổi | A `seed` (A120–A122) |
+| K1-AC09 (chuyển từ H4b-1) | (a) Xoá `kh_api_key` đang được KH trỏ tới ⇒ 409 `SECRET_IN_USE` có `used_by[type=knowledge_hub]`; (b) job giả dùng `useSecret` ⇒ giá trị không xuất hiện trong `work/<job_id>/` (AC-H4b1-07, Q12) | A `studio` A23 (a) · A `noleak` A112 (b) |
 
 Lệnh xong: `done:k1` (backend-lead định nghĩa ở PLAN).
 
