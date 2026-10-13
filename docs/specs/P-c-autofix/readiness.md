@@ -26,3 +26,20 @@
 Test khoá: #1 (T01/T02 dùng `/attachments/:id/content`, A + người duyệt 200, beta 404), #4 (C15/C16 `diff_file: null`, F04 dùng `.id/.name`), #11 (F06 kiểm `≥ 400` + giữ `needs_decision`) **khớp sẵn — không cần qc sửa**. V08 đòi template `fixbug-evolu` đã seed ⇒ thêm vào B6 (không đổi test).
 
 Kế tiếp: chạy lại spec-readiness (lần 2).
+
+## Lần 2 · 2026-10-14 · NOT READY (10 lỗ hổng, không Chặn) — đã áp
+| # | Lỗ hổng | Mặc định áp | Nơi sửa |
+|---|---|---|---|
+| 1 | `decisionOptionsFor` trùng tên hàm core `task.rules.ts:60` | Hàm riêng `autofixDecisionOptions(reason)`; core trả sớm khi `autofix_*`, giữ chỗ gọi | plan §4, §6.5; tasks B5, T3b (H06 đổi tên) |
+| 2 | PC-R16 mơ hồ | Không gọi kiểm hạn mức; `quotaUsed` không đổi; qc thêm 1 ca | spec PC-R16; plan §6.2; tasks T3b |
+| 3 | Kích thước spec/plan sát trần | Giữ dưới trần | spec, plan |
+| 4 | `canCancel` vs `canDecide` | Thống nhất `canDecide` | spec PC-R10 |
+| 5 | plan §6.4 lặp prompt | Trỏ §6.1 | plan §6.4 |
+| 6 | Thiếu chữ ký `basePatchOf` | Thêm; `apply_patch` gần nhất ⇒ `null` | plan §4 |
+| 7 | Nhãn FE lệch | "Thêm 1 lần làm lại / Huỷ lượt chạy" | plan-frontend §1.3 |
+| 8 | Câu điều kiện Q5 sót | Xoá | spec §1, §7 |
+| 9 | Quyền đọc attachment gộp B5 | Tách B5b (cao, Opus) | tasks B5, B5b |
+| 10 | Thứ tự PC-R15/PC-R16 | Đổi | spec §2 |
++ ADR-0011 #3: thêm `du` sau pha cài (plan §5.2).
+
+Kế tiếp: T3b (qc mở khoá có chủ đích), rồi readiness lần 3.

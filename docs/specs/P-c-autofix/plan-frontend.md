@@ -42,7 +42,7 @@ Vào: `stage.autofix: AutofixStageView`. `features/processes/.../autofix/` mỗi
 Tải về: blob từ `fetchAttachmentContent` (FC4) → `URL.createObjectURL` → `<a download="<name>">` (tên = `diff_file.name`); không `<a href>` trần (cần Bearer). Cắt 2.000 dòng (FC3). Ngôn ngữ số: `Intl.NumberFormat(lang)` (12,4 / 12.4).
 
 ### 1.3 Cần người quyết (Pc-Decision; chat-web `DecisionCard`, admin-web `RunActions`)
-- `autofix_check_failed`: tiêu đề "Kiểm bản sửa không đạt" + badge Vòng k + câu "Chưa lưu diff…"; component `AutofixFailures.tsx` nhóm `failures[]` theo `check` theo thứ tự: `paths` · `size` · `secrets` · `tests` (exit + thời gian + đuôi log + "Tải log đầy đủ") · `install` · `apply_patch`; chỉ nhóm có lỗi. Nút theo `options` (= Thêm lượt / Huỷ quy trình); ghi chú lượt thêm dùng ô note sẵn có.
+- `autofix_check_failed`: tiêu đề "Kiểm bản sửa không đạt" + badge Vòng k + câu "Chưa lưu diff…"; component `AutofixFailures.tsx` nhóm `failures[]` theo `check` theo thứ tự: `paths` · `size` · `secrets` · `tests` (exit + thời gian + đuôi log + "Tải log đầy đủ") · `install` · `apply_patch`; chỉ nhóm có lỗi. Nút theo `options` (= Thêm 1 lần làm lại / Huỷ lượt chạy); ghi chú lượt thêm dùng ô note sẵn có.
 - `failures = []` (Runtime chết, không báo cáo): hiện câu "Không nhận được báo cáo kiểm từ máy chạy." thay danh sách.
 - `sandbox_unavailable`: tiêu đề + câu như artboard; không nhóm lỗi.
 - `reasonKey`/`reasonHintKey` (`decision-reason.ts`) thêm 2 mã; `ReasonHint` hiện câu hướng dẫn.
