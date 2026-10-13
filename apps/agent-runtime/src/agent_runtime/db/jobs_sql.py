@@ -37,6 +37,14 @@ ORDER BY j.priority, j.created_at, j.id
 LIMIT 1
 FOR UPDATE OF j SKIP LOCKED;"""  # noqa: E501 — nguyên văn plan-db §5.4
 
+# P-c1 plan-runtime §5.1 (`RUNTIME_SANDBOX_MAX`): job tự-sửa (`payload.autofix` là object) chỉ
+# claim khi số job tự-sửa `running` của worker này < $3 ($2 = worker_id); job thường không đổi.
+SANDBOX_SLOT = """  AND (jsonb_typeof(j.payload->'autofix') IS DISTINCT FROM 'object'
+       OR (SELECT count(*) FROM hub.jobs a WHERE a.status = 'running' AND a.worker_id = $2
+           AND jsonb_typeof(a.payload->'autofix') = 'object') < $3)
+"""
+CLAIM_SELECT_SANDBOX = CLAIM_SELECT.replace("ORDER BY", SANDBOX_SLOT + "ORDER BY", 1)
+
 # H2a RT1: thêm `token_hash = $3` (sha256 của token claim, mọi job — `plan-runtime` §3.3 bước 0).
 CLAIM_UPDATE = """UPDATE hub.jobs SET status = 'running', worker_id = $2, started_at = now(), heartbeat_at = now(), attempts = attempts + 1, token_hash = $3
 WHERE id = $1 AND status = 'queued';"""  # noqa: E501 — nguyên văn plan-db §5.4 ($3 → $1) + RT1
@@ -141,13 +149,18 @@ def _orphan(row: Row) -> OrphanRow:
     )
 
 
-async def claim_one(conn: Conn, providers: list[str], worker_id: str) -> ClaimedJob | None:
+async def claim_one(
+    conn: Conn, providers: list[str], worker_id: str, sandbox_max: int | None = None
+) -> ClaimedJob | None:
     """Một transaction READ COMMITTED: `K_CLAIM` → SELECT … SKIP LOCKED → `running` + `token_hash`
-    (RT1, mọi job; claim lại sau requeue → token mới)."""
+    (RT1, mọi job; claim lại sau requeue → token mới). `sandbox_max` (P-c1) ⇒ slot tự-sửa."""
     token, digest = new_token()
     async with conn.transaction():
         await conn.execute(K_CLAIM)
-        row = await conn.fetchrow(CLAIM_SELECT, providers)
+        if sandbox_max is None:
+            row = await conn.fetchrow(CLAIM_SELECT, providers)
+        else:
+            row = await conn.fetchrow(CLAIM_SELECT_SANDBOX, providers, worker_id, sandbox_max)
         if row is None:
             return None
         status = await conn.execute(CLAIM_UPDATE, row["id"], worker_id, digest)

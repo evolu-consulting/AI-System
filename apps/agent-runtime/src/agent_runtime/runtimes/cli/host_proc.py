@@ -57,6 +57,7 @@ from agent_runtime.sandbox import process as pg
 from agent_runtime.sandbox.env import TMP_SUBDIR, forbidden_roots, job_host_env, mcp_env
 
 if TYPE_CHECKING:
+    from agent_runtime.autofix.ws_tools import WsTarget
     from agent_runtime.runtimes.cli.job_run import StopControl
     from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
 
@@ -83,6 +84,7 @@ class RunState(Protocol):
     retry: str | None
     resume_id: str | None
     out_id: DirId | None  # danh tính `out/` (review H2c v1 #6) → `ChildRequest.out_dir_id`
+    ws_target: WsTarget | None  # P-c1: job tự-sửa (`AutofixJobRun`) → `ChildRequest.ws`
 
     def stopping(self) -> bool: ...
 
@@ -180,6 +182,7 @@ class HostProcess:
             retry_prompt=self.run.retry,
             mcp_config_path=str(self.mcp_path) if self.mcp_path is not None else None,
             out_dir_id=self.run.out_id.pair() if self.run.out_id is not None else None,
+            ws=self.run.ws_target,
         )
         return req.model_dump_json().encode() + b"\n"
 

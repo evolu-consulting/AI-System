@@ -67,6 +67,7 @@ from agent_runtime.sources.mount import mount_all as mount_sources
 from agent_runtime.sources.snapshot import all_ref_run_ids, enforce_lru
 
 if TYPE_CHECKING:
+    from agent_runtime.autofix.ws_tools import WsTarget
     from agent_runtime.runtimes.cli.runner import CliJobHost
 
 
@@ -127,6 +128,7 @@ class JobRun:
         self.proc_host = HostProcess(self)
         self.pump = DeltaPump(host.events, job, self.cfg)  # H2b §3.5: một bộ gom cho cả job
         self.out_id: DirId | None = None  # danh tính `out/` lúc tạo (review H2c v1 #6)
+        self.ws_target: WsTarget | None = None  # P-c1: `AutofixJobRun` điền trước lần chạy
 
     def stopping(self) -> bool:
         """Process cha đang dừng (SIGTERM) — không thử lại, không ghi lỗi."""

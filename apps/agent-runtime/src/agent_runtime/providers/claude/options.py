@@ -18,8 +18,10 @@ from typing import Any, cast
 from claude_agent_sdk import ClaudeAgentOptions, HookMatcher
 from claude_agent_sdk.types import HookCallback, HookContext, HookInput, HookJSONOutput
 
-from agent_runtime.providers.base import ProviderJob
+from agent_runtime.autofix.ws_tools import WS_SERVER
+from agent_runtime.providers.base import ProviderJob, job_ws_tools
 from agent_runtime.providers.claude.mcp import MCP_BLOCK, job_mcp_tools
+from agent_runtime.providers.claude.ws import WS_BLOCK, ws_server
 from agent_runtime.providers.context import neutralize_mentions
 from agent_runtime.sandbox.hook import PathGuard, SandboxPolicy, make_path_guard
 
@@ -120,9 +122,19 @@ def policy_of(job: ProviderJob, tools: list[str]) -> SandboxPolicy:
         forbidden_roots=tuple(Path(r) for r in job.forbidden_roots),
         tools=frozenset(tools),
         structured_output=job.payload.output == "agent_result",  # có `output_format` (S2)
-        mcp_tools=frozenset(job_mcp_tools(job)),
+        mcp_tools=frozenset([*job_mcp_tools(job), *job_ws_tools(job)]),
         out_id=job.out_dir_id,
     )
+
+
+def mcp_wiring(job: ProviderJob) -> tuple[Any, dict[str, str | None]]:
+    """(`mcp_servers`, `extra_args`). P-c1: job tự-sửa ⇒ dict `{"ws": <SDK server>}` (không token
+    trên argv); MCP Hub (KH `kh_query`…) vẫn qua FILE bằng `--mcp-config <path>` thứ hai
+    (`extra_args`; CLI gộp nhiều `--mcp-config`). Không tự-sửa ⇒ như H2a (đường dẫn file)."""
+    hub = job.mcp_config_path if job_mcp_tools(job) and job.mcp_config_path else None
+    if job.ws is None or not job_ws_tools(job):
+        return (hub or {}), {}
+    return {WS_SERVER: ws_server(job.ws)}, ({"mcp-config": hub} if hub else {})
 
 
 def _stderr_line(line: str) -> None:
@@ -133,7 +145,8 @@ def _stderr_line(line: str) -> None:
 def _system_prompt(job: ProviderJob, *, agent: bool, mcp: bool) -> str:
     p = job.payload
     text = p.system_prompt + FORMAT_BLOCK if agent else p.system_prompt
-    return neutralize_mentions(text + MCP_BLOCK if mcp else text)
+    text = text + MCP_BLOCK if mcp else text
+    return neutralize_mentions(text + WS_BLOCK if job_ws_tools(job) else text)
 
 
 def build_options(job: ProviderJob) -> ClaudeAgentOptions:
@@ -145,11 +158,13 @@ def build_options(job: ProviderJob) -> ClaudeAgentOptions:
     agent = p.output == "agent_result"
     mcp = job_mcp_tools(job)
     guard = make_path_guard(policy_of(job, tools))
+    servers, extra = mcp_wiring(job)
     return ClaudeAgentOptions(
         cwd=job.work_dir,
         tools=tools,
-        allowed_tools=[*tools, *mcp],
-        mcp_servers=job.mcp_config_path if mcp and job.mcp_config_path else {},
+        allowed_tools=[*tools, *mcp, *job_ws_tools(job)],
+        mcp_servers=servers,
+        extra_args=extra,
         disallowed_tools=disallowed(tools, structured=agent),
         permission_mode=PERMISSION_MODE,
         hooks={

@@ -2,5 +2,7 @@
 
 `rules` (thuần: argv container, kiểm đường dẫn/kích thước/bí mật, che log, git cứng), `oci`
 (`OciCli` gọi docker/podman bằng mảng đối số + tự kiểm lúc khởi động), `fake_oci` (chỉ test).
-Các phần workspace/check/report/host/sweeper thêm ở R2–R3.
+`workspace` (bản sao + git cứng), `check` (PC-R08), `report` (POST Hub) — R2; `ws_tools` (tool
+`ws` trong job host), `prep` (pha trước agent), `host` (`AutofixHost`), `sweeper` (container mồ
+côi) — R3.
 """

@@ -45,3 +45,14 @@ async def test_wrk_fr_06_router_dify_disabled_falls_back() -> None:
     router = JobRouter({"agent.cli": cli}, default=cli)
     await router.run(ClaimedJob(id="j", payload={"type": "workflow.async"}), _Control())
     assert cli.ran == ["j"]
+
+
+async def test_wrk_fr_28_router_autofix_payload() -> None:
+    """P-c1 plan-runtime §5.1: `agent.cli` có `payload.autofix` → `AutofixHost`; vắng → CLI."""
+    cli, fix = _Host(), _Host()
+    router = JobRouter({"agent.cli": cli}, default=cli, autofix=fix)
+    await router.run(
+        ClaimedJob(id="a", payload={"type": "agent.cli", "autofix": {"x": 1}}), _Control()
+    )
+    await router.run(ClaimedJob(id="b", payload={"type": "agent.cli", "autofix": None}), _Control())
+    assert (fix.ran, cli.ran) == (["a"], ["b"])

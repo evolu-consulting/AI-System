@@ -16,6 +16,7 @@ H2c (PY-04, `plan-runtime` §6, `files.py`): `#fake:files` (dòng `<tên>:<sha>`
 thật `Write`, PL9 — sau `sleep`: P51 đặt symlink trong lúc ngủ).
 H3a (PY-02, `plan-runtime` §5): `#fake:ratelimit=<ts>[,<type>]` (`rejected` kèm loại cửa sổ),
 `#fake:ratewarn=<util>[,<ts>]` (`allowed_warning` rồi chạy tiếp như `ok`).
+P-c1 (plan-runtime §5.6, `ws.py`): `#fake:ws_write|ws_edit|ws_exec|ws_secret` ⇒ tool `ws` thật.
 """
 
 from __future__ import annotations
@@ -68,6 +69,7 @@ from agent_runtime.providers.fake.stream import (
     sized,
     stream_final,
 )
+from agent_runtime.providers.fake.ws import run_ws
 from agent_runtime.sandbox.hook import SandboxPolicy, make_path_guard
 
 KEY = "fake-cli"
@@ -199,6 +201,12 @@ async def _body(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -
     if secs := sections_of(msg):
         return _sections_doc(secs)
     return f"echo: {clean(msg)} {FAKE_TAIL}".replace("echo:  ", "echo: ")
+
+
+async def _answer(job: ProviderJob, msg: str, found: dict[str, str], emit: Emit) -> str:
+    """P-c1 `#fake:ws_*` (`ws.py`, job tự-sửa) trước các chỉ thị khác."""
+    ws = await run_ws(job, found, emit)
+    return ws if ws is not None else await _body(job, msg, found, emit)
 
 
 def _orchestrator(msg: str, found: dict[str, str], body: str) -> Final:
@@ -366,7 +374,7 @@ class FakeProvider:
         await _side_effects(job, found, emit)
         if await _early_end(job, found, kind, emit):
             return
-        body = mcp_body if mcp_body is not None else await _body(job, msg, found, emit)
+        body = mcp_body if mcp_body is not None else await _answer(job, msg, found, emit)
         if "recall" in found:
             body = f"recall: {memory.get('word', '')}"
         body = sized(body, found, FAKE_TAIL)

@@ -29,6 +29,11 @@ class FakeOci:
         self._boxes[name] = ws
         return name
 
+    def attach(self, name: str, ws: Path) -> None:
+        """Job host (R3 `ws_tools`): gắn container cha đã dựng (trạng thái `_boxes` không qua
+        ranh giới process)."""
+        self._boxes[name] = ws
+
     def _prepare(self, ws: Path) -> None:
         if not ws.is_dir():
             raise OciError("run_failed", "workspace missing")

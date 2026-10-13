@@ -23,6 +23,11 @@ phải là thư mục thật (`S_ISDIR(lstat)`, không symlink) và — khi cha 
 lúc đó không gì trong job được đổi `out/<tên>` thành symlink chỉ vì **không agent nào có tool tạo
 symlink/đổi tên** (`Bash` luôn bị chặn; `Edit`/`NotebookEdit` không mở; `Write` chỉ tạo file
 thường). Mở thêm tool có thể tạo symlink/đổi tên (hoặc chạy lệnh) phải xem lại luật này.
+P-c1 §5.7 (job tự-sửa, có `work/<job>/workspace` hoặc `git/`): tool gốc có đường dẫn/mẫu mà
+`realpath` nằm trong hai vùng đó (kể cả symlink trong `out/` trỏ vào) ⇒ deny nhãn `workspace`;
+Grep từ thư mục cha của vùng cấm (gồm không `path` ⇒ cwd `work/<job>`) và Glob có đoạn wildcard
+ngay dưới thư mục cha đó (`**/*.ts`, `*/x`) cũng deny — đọc `sources/` phải ghi rõ. Workspace
+chỉ qua `mcp__ws__*` (`autofix/ws_tools.py`).
 Deny trả lý do cố định, không lặp lại đường dẫn; log chỉ `tool_name`, nhãn, `job_id`.
 Lỗi bất ngờ → deny (fail-closed).
 """
@@ -80,6 +85,10 @@ def _tool_denied(policy: SandboxPolicy, tool_name: str) -> bool:
     return tool_name not in policy.tools
 
 
+PROTECTED_SUBDIRS = ("workspace", "git")  # P-c1 §5.7: chỉ `mcp__ws__*` chạm được
+_SEARCH_TOOLS = frozenset({"Grep"})  # duyệt đệ quy từ `path`/cwd; Glob xét theo mẫu
+_WILDCARDS = ("*", "?", "[", "{")
+_WORKSPACE = HookDecision(allowed=False, reason="path_not_allowed", label="workspace")
 _INVALID = HookDecision(allowed=False, reason="path_not_allowed", label="invalid")
 _UNSAFE_PATTERN = HookDecision(allowed=False, reason="path_not_allowed", label="pattern")
 _WRITE_SCOPE = HookDecision(allowed=False, reason="path_not_allowed", label="write_scope")
@@ -155,6 +164,67 @@ def in_out_dir(raw: str, work_dir: Path, out_id: tuple[int, int] | None = None) 
     return os.path.dirname(target) == os.path.realpath(out)
 
 
+def _protected_roots(work_dir: Path) -> list[str]:
+    """P-c1 §5.7: `work/<job>/workspace` + `git` (chỉ khi tồn tại — job tự-sửa)."""
+    dirs = (os.path.join(work_dir, d) for d in PROTECTED_SUBDIRS)
+    return [os.path.realpath(d) for d in dirs if os.path.lexists(d)]
+
+
+def _under(path: str, root: str) -> bool:
+    return path == root or path.startswith(root.rstrip("/") + "/")
+
+
+def _touches(path: str, roots: list[str]) -> bool:
+    """`realpath(path)` nằm trong vùng cấm, hoặc là thư mục cha của vùng cấm (duyệt đệ quy)."""
+    real = os.path.realpath(path)
+    return any(_under(real, r) or _under(r, real) for r in roots)
+
+
+def _pattern_touches(pattern: str, base: str, roots: list[str]) -> bool:
+    """Glob: phần chữ trước đoạn wildcard đầu tiên (nối `base`) chạm vùng cấm ⇒ True."""
+    full = pattern if os.path.isabs(pattern) else os.path.join(base, pattern)
+    parts = full.split("/")
+    for i, seg in enumerate(parts):
+        if any(c in seg for c in _WILDCARDS):
+            return _touches("/".join(parts[:i]) or "/", roots)
+    return any(_under(os.path.realpath(full), r) for r in roots)
+
+
+def _base_of(tool_input: Mapping[str, object], work_dir: Path) -> str:
+    for key, value in tool_input.items():
+        if "path" in key.lower() and isinstance(value, str) and value:
+            return value if os.path.isabs(value) else os.path.join(work_dir, value)
+    return str(work_dir)  # không `path` ⇒ cwd của CLI = work/<job>
+
+
+def workspace_denied(
+    policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, object]
+) -> bool:
+    """HUB-BR-33 · PC-R07: tool GỐC chạm `workspace/`/`git/` (so `realpath` — symlink trong `out/`
+    trỏ vào cũng bị bắt); Grep từ thư mục cha vùng cấm (kể cả không `path`) / Glob wildcard ⇒ deny.
+    Agent chỉ làm việc với workspace qua `mcp__ws__*` (đã cho ở `mcp_tools`, không tới đây)."""
+    roots = _protected_roots(policy.work_dir)
+    if not roots:
+        return False
+    base = _base_of(tool_input, policy.work_dir)
+    if tool_name in _SEARCH_TOOLS and _touches(base, roots):
+        return True
+    for key, value in tool_input.items():
+        low = key.lower()
+        for item in _strings(value):
+            if item is None:
+                continue
+            if "path" in low:
+                joined = item if os.path.isabs(item) else os.path.join(policy.work_dir, item)
+                if any(_under(os.path.realpath(joined), r) for r in roots):
+                    return True
+            elif (
+                "glob" in low or ("pattern" in low and tool_name not in _PATTERN_FREE_TOOLS)
+            ) and (_pattern_touches(item, base, roots)):
+                return True
+    return False
+
+
 def decide(policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, object]) -> HookDecision:
     """Quyết định thuần cho một lần gọi tool."""
     if tool_name == STRUCTURED_OUTPUT_TOOL and policy.structured_output:
@@ -163,6 +233,15 @@ def decide(policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, objec
         return _ALLOW  # đối số đi tới Hub/Dify, không chạm FS Worker — không kiểm path (§4.3)
     if _tool_denied(policy, tool_name):
         return HookDecision(allowed=False, reason="tool_not_allowed", label="tool")
+    got = _decide_paths(policy, tool_name, tool_input)
+    if got.allowed and workspace_denied(policy, tool_name, tool_input):
+        return _WORKSPACE
+    return got
+
+
+def _decide_paths(
+    policy: SandboxPolicy, tool_name: str, tool_input: Mapping[str, object]
+) -> HookDecision:
     write = tool_name == WRITE_TOOL
     seen = False
     for raw in _candidates(tool_name, tool_input):

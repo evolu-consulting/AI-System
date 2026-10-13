@@ -167,12 +167,21 @@ def _short(raw: bytes) -> str:
 class OciCli:
     """`docker`/`podman` qua CLI. `cli` = đường dẫn nhị phân (mặc định tên engine trên PATH)."""
 
-    def __init__(self, engine: Engine, cli: str | None = None) -> None:
+    def __init__(
+        self, engine: Engine, cli: str | None = None, env: dict[str, str] | None = None
+    ) -> None:
         self.engine: Engine = engine
         self._bin = cli or engine
+        self._env_override = env  # job host (R3 `ws_tools`): env cha chuyển qua `WsTarget`
 
     def _env(self) -> dict[str, str]:
+        if self._env_override is not None:
+            return {k: v for k in _CLI_ENV_KEYS if (v := self._env_override.get(k))}
         return {k: v for k in _CLI_ENV_KEYS if (v := os.environ.get(k))}
+
+    def cli_env(self) -> dict[str, str]:
+        """Env tới engine (chỉ khoá `_CLI_ENV_KEYS`, không secret) — chuyển cho job host."""
+        return self._env()
 
     async def _cli(self, args: list[str], req: ExecReq) -> ExecResult:
         try:

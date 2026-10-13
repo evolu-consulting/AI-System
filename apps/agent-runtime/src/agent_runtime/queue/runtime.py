@@ -20,6 +20,8 @@ from typing import Any
 from redis.asyncio import Redis
 
 from agent_runtime.agents.manifest import manifests
+from agent_runtime.autofix.oci import Oci
+from agent_runtime.autofix.sweeper import run_container_sweeper
 from agent_runtime.config import Settings
 from agent_runtime.db import agent_types_sql, jobs_sql
 from agent_runtime.db.pool import ListenConn, Pool, connect_listen, create_pool
@@ -76,6 +78,7 @@ class QueueRuntime:
     claimer: Claimer
     probe: ProbeLoop | None = None
     resolve: ResolveHost | None = None
+    sandbox: Oci | None = None  # P-c1: dọn container `aif-*` mồ côi (`autofix/sweeper.py`)
 
     @property
     def sweep(self) -> SweepConfig:
@@ -98,6 +101,9 @@ class QueueRuntime:
             services.append(self.probe.run)
         if self.resolve is not None:
             services.append(lambda: self.resolve.run_loop(s.poll_s))  # type: ignore[union-attr]
+        if self.sandbox is not None:
+            oci = self.sandbox
+            services.append(lambda: run_container_sweeper(oci, self.pool))
         return services
 
     async def shutdown(self) -> None:
@@ -131,7 +137,10 @@ def probe_loop_cfg(
 
 
 async def start(
-    settings: Settings, make_host: HostFactory, probe_host: ProbeHostCfg | None = None
+    settings: Settings,
+    make_host: HostFactory,
+    probe_host: ProbeHostCfg | None = None,
+    sandbox: Oci | None = None,
 ) -> QueueRuntime:
     log = get_logger()
     dsn = settings.database_url.get_secret_value()
@@ -150,7 +159,7 @@ async def start(
             await jobs_sql.reset_providers(conn, [k for k in providers if k not in HTTP_PROVIDERS])
     log.info("runtime.ready", providers=providers, orphaned=n)
     sup = Supervisor(make_host(pool, events))
-    claimer = Claimer(pool, sup, events, providers)
+    claimer = Claimer(pool, sup, events, providers, settings.sandbox_max)
     probe = ProbeLoop(pool, events, probe_cfg) if probe_cfg is not None else None
     src_cfg = source_config.load()
     resolve = (
@@ -160,4 +169,6 @@ async def start(
     )
     if resolve is not None and src_cfg is not None:
         log.info("resolve.enabled", cache_dir=str(src_cfg.cache_dir))
-    return QueueRuntime(settings, pool, listen, redis, events, sup, claimer, probe, resolve)
+    rt = QueueRuntime(settings, pool, listen, redis, events, sup, claimer, probe, resolve)
+    rt.sandbox = sandbox
+    return rt

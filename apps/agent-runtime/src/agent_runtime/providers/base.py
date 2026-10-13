@@ -17,6 +17,7 @@ from typing import Annotated, Any, Literal, Protocol, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from agent_runtime.autofix.ws_tools import WsTarget, ws_tool_names
 from agent_runtime.contracts.hub import JobPayload1
 
 CONFIRMATION_REQUIRED = "CONFIRMATION_REQUIRED"
@@ -221,6 +222,15 @@ class ProviderJob(BaseModel):
     # Review H2c v1 #6: (`st_dev`, `st_ino`) của `out/` lúc cha `prepare_job_dirs` (job agent);
     # hook `Write` so lại (`SandboxPolicy.out_id`). None = không `out/` / không so.
     out_dir_id: tuple[int, int] | None = None
+    # P-c1 (plan-runtime §5.5): job tự-sửa — container + workspace cho tool `ws` (cha điền).
+    ws: WsTarget | None = None
+
+
+def job_ws_tools(job: ProviderJob) -> list[str]:
+    """Tên `mcp__ws__*` khi job tự-sửa (agent, không phải lần thử lại định dạng — WRK-BR-04)."""
+    if job.ws is None or job.payload.output != "agent_result" or job.retry_prompt is not None:
+        return []
+    return ws_tool_names()
 
 
 class ProbeRequest(BaseModel):

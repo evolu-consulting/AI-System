@@ -18,7 +18,11 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from agent_runtime.autofix.host import AutofixHost
 from agent_runtime.autofix.oci import SandboxCfg, open_sandbox
+from agent_runtime.autofix.prep import AutofixCfg
+from agent_runtime.autofix.rules import Limits
+from agent_runtime.autofix.workspace import CopyCaps
 from agent_runtime.config import Settings, load_settings
 from agent_runtime.db.pool import Pool
 from agent_runtime.events.job_events import RunEvents
@@ -99,6 +103,25 @@ def sandbox_cfg(settings: Settings) -> SandboxCfg:
     return SandboxCfg(s.sandbox, s.sandbox_image, s.sandbox_memory_mb, s.app_env, fake_dir)
 
 
+def autofix_cfg(settings: Settings) -> AutofixCfg:
+    """P-c1 spec §7: env sandbox → `AutofixHost` (trần PC-R04, DISK_MB, thời hạn lệnh)."""
+    s, mib = settings, 1024 * 1024
+    return AutofixCfg(
+        image=s.sandbox_image,
+        host_workdir=s.sandbox_host_workdir,
+        cpus=s.sandbox_cpus,
+        memory_mb=s.sandbox_memory_mb,
+        pids=s.sandbox_pids,
+        tmp_mb=s.sandbox_tmp_mb,
+        exec_s=s.sandbox_exec_s,
+        install_s=s.sandbox_install_s,
+        test_s=s.sandbox_test_s,
+        limits=Limits(max_ws_bytes=s.sandbox_disk_mb * mib),
+        caps=CopyCaps(max_files=s.autofix_max_files, max_bytes=s.autofix_max_mb * mib),
+        fake_dir=s.work_dir / ".fake-oci",
+    )
+
+
 def probe_host_config(settings: Settings) -> ProbeHostCfg:
     """H3a `rt §6` (PY-03e): cấu hình probe phía cha từ `Settings`."""
     s = settings
@@ -124,14 +147,19 @@ def dify_config(settings: Settings) -> DifyConfig | None:
     )
 
 
-def make_router(
-    pool: Pool, events: RunEvents, cfg: HostConfig, dify: DifyConfig | None
+def make_router(  # noqa: PLR0913
+    pool: Pool,
+    events: RunEvents,
+    cfg: HostConfig,
+    dify: DifyConfig | None,
+    autofix: AutofixCfg | None = None,
 ) -> JobRouter:
     cli = CliJobHost(pool, events, cfg)
     hosts: dict[str, TypedHost] = {"agent.cli": cli}
     if dify is not None:
         hosts["workflow.async"] = DifyJobHost(pool, events, dify)
-    return JobRouter(hosts, default=cli)
+    fix = AutofixHost(cli, cfg.sandbox, autofix or AutofixCfg())  # P-c1: luôn có (off ⇒ container)
+    return JobRouter(hosts, default=cli, autofix=fix)
 
 
 async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRuntime:
@@ -144,9 +172,10 @@ async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRunti
     dify = dify_config(settings)
 
     def make_host(pool: Pool, events: RunEvents) -> JobRouter:
-        return make_router(pool, events, cfg, dify)
+        return make_router(pool, events, cfg, dify, autofix_cfg(settings))
 
-    return await queue_runtime.start(settings, make_host, probe_host_config(settings))
+    probe = probe_host_config(settings)
+    return await queue_runtime.start(settings, make_host, probe, cfg.sandbox)
 
 
 async def _start_unless_stopped(settings: Settings, stop: asyncio.Event) -> QueueRuntime | None:

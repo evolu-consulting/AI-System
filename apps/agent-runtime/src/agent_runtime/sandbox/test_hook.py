@@ -224,3 +224,30 @@ def test_wrk_br_07_write_out_must_be_real_same_dir(policy: SandboxPolicy) -> Non
     assert decide(same, "Write", {"file_path": "out/a.md"}).allowed is True
     other = replace(policy, out_id=(st.st_dev, st.st_ino + 1))
     assert decide(other, "Write", {"file_path": "out/a.md"}).label == "write_scope"
+
+
+@pytest.mark.parametrize(
+    ("tool", "data", "denied"),
+    [
+        ("Grep", {"pattern": "x"}, True),  # cwd = work/<job> ⇒ duyệt cả workspace
+        ("Glob", {"pattern": "**/*.ts"}, True),
+        ("Glob", {"pattern": "*/app/**"}, True),
+        ("Read", {"file_path": "git/HEAD"}, True),
+        ("Grep", {"pattern": "x", "path": "sources"}, False),
+        ("Glob", {"pattern": "sources/**"}, False),
+    ],
+)
+def test_hub_br_33_pc_workspace_label(
+    policy: SandboxPolicy, tool: str, data: dict[str, object], denied: bool
+) -> None:
+    """P-c1 §5.7: job tự-sửa (có `workspace/`, `git/`) ⇒ tool gốc chạm vùng cấm bị `workspace`."""
+    for d in ("workspace/app", "git", "sources"):
+        (policy.work_dir / d).mkdir(parents=True)
+    got = decide(policy, tool, data)
+    assert (got.allowed, got.label) == ((False, "workspace") if denied else (True, None))
+
+
+def test_pb_r11_no_workspace_dirs_glob_unchanged(policy: SandboxPolicy) -> None:
+    """Job thường (không `workspace/`): Grep/Glob không `path` vẫn như cũ."""
+    assert decide(policy, "Glob", {"pattern": "**/*.md"}).allowed
+    assert decide(policy, "Grep", {"pattern": "x"}).allowed

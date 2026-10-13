@@ -18,11 +18,17 @@ from agent_runtime.queue.supervisor import Supervisor
 
 
 class Claimer:
-    def __init__(
-        self, pool: Pool, supervisor: Supervisor, events: JobEvents, providers: list[str]
+    def __init__(  # noqa: PLR0913
+        self,
+        pool: Pool,
+        supervisor: Supervisor,
+        events: JobEvents,
+        providers: list[str],
+        sandbox_max: int | None = None,
     ) -> None:
         self._pool, self._sup, self._events = pool, supervisor, events
         self._providers = providers
+        self._sandbox_max = sandbox_max  # P-c1 `RUNTIME_SANDBOX_MAX`: slot job tự-sửa / worker
         self.wake = asyncio.Event()
 
     async def claim_ready(self, worker_id: str) -> int:
@@ -30,7 +36,8 @@ class Claimer:
         n = 0
         while True:
             async with self._pool.acquire() as conn:
-                job = await jobs_sql.claim_one(conn, self._providers, worker_id)
+                slot = () if self._sandbox_max is None else (self._sandbox_max,)
+                job = await jobs_sql.claim_one(conn, self._providers, worker_id, *slot)
             if job is None:
                 return n
             n += 1
