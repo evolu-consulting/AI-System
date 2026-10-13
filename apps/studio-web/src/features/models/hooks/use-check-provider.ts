@@ -17,6 +17,23 @@ export type CheckState =
   | (Base & { phase: "error"; msg: Msg });
 const codeOf = (e: unknown) => String((e as { code?: unknown } | null)?.code ?? "");
 
+type Outcome = { ok: true; result: ProviderCheckResult } | { ok: false; code: string };
+
+async function runCheck(id: string, ac: AbortController): Promise<Outcome> {
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    ac.abort();
+  }, CHECK_UI_TIMEOUT_MS);
+  try {
+    return { ok: true, result: await checkProvider({ id, signal: ac.signal }) };
+  } catch (err) {
+    return { ok: false, code: timedOut ? "TIMEOUT" : codeOf(err) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function useCheckProvider() {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -42,22 +59,12 @@ export function useCheckProvider() {
       ctl.current?.abort();
       const mine = new AbortController();
       ctl.current = mine;
-      let timedOut = false;
-      const timer = setTimeout(() => {
-        timedOut = true;
-        mine.abort();
-      }, CHECK_UI_TIMEOUT_MS);
       const base: Base = { target: { id: p.id, key: p.key, kind: p.kind }, sub: p.kind !== "api" };
-      const live = () => ctl.current === mine;
       setState({ ...base, phase: "running" });
-      try {
-        const result = await checkProvider({ id: p.id, signal: mine.signal });
-        if (live()) setState({ ...base, phase: "done", result });
-      } catch (err) {
-        if (live()) fail(base, timedOut ? "TIMEOUT" : codeOf(err));
-      } finally {
-        clearTimeout(timer);
-      }
+      const out = await runCheck(p.id, mine);
+      if (ctl.current !== mine) return;
+      if (out.ok) setState({ ...base, phase: "done", result: out.result });
+      else fail(base, out.code);
     },
     [fail],
   );
