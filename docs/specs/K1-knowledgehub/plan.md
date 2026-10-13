@@ -21,7 +21,7 @@ Contract: spec §3. Dữ liệu tóm tắt: spec §4 (đầy đủ: §5 dưới)
 | D6 | Ghi worklog qua **hàng chờ** `kh_writes` (INSERT trong transaction `persistStage(done)`), gửi sau COMMIT bằng vòng nền | Không gọi mạng trong transaction; thử lại có trần; mẫu outbox `process_thread_events` |
 | D7 | Một điểm nối ghi: `persistStage` nhánh `done` (auto, gate Đạt, người quyết, team-runner đều qua đây) | Gate trượt không bao giờ `done` ⇒ không ghi |
 | D8 | Tenant hiệu lực cần `check_status='ok'` (Q5); mọi đổi cấu hình ⇒ `unchecked` | TLS/auth/(lanes × project dùng chung) đã kiểm mới egress (HUB-BR-37/40) |
-| D9 | Allowlist ở env `HUB_KH_ALLOWED_ORIGINS` (Q4); kiểm URL khi lưu và trước mỗi lời gọi (env có thể đổi) | Egress do vận hành quyết |
+| D9 | Allowlist ở env `HUB_KH_ALLOWED_ORIGINS` (Q4); kiểm URL khi lưu và trước mỗi lời gọi. Seam (G1): `AppDeps.kh?: {allowedOrigins: string[]; timeoutMs: number}`, vắng ⇒ env `HUB_KH_*`; `GET /kh/settings` phản ánh giá trị hiệu lực | Egress do vận hành quyết; test không đổi env |
 | D10 | Token cache trong bộ nhớ, khoá `(tenant, secret_id, secret.version, token_url)`; single-flight; không bao giờ log | HUB-FR-137, HUB-BR-30 |
 | D11 | Credentials parse **trong** callback `useSecret`; chỉ trả `{clientId, clientSecret, tokenUrl}` cho hàm mint token rồi bỏ; lỗi parse ⇒ mã `kh_credentials_invalid` (không kèm giá trị) | H4b-1 D12 |
 | D12 | Đếm `kh-query` bằng upsert nguyên tử `kh_stage_usage` (`… DO UPDATE … WHERE queries < 5 RETURNING`) — không hàng ⇒ `KH_LIMIT` | Không race giữa thành viên nhóm |
@@ -74,7 +74,7 @@ export type KhCredentials = { clientId: string; clientSecret: string; tokenUrl: 
 export function parseKhCredentials(raw: string): KhCredentials | null;
 export function tokenUrlOf(baseUrl: string, c: KhCredentials): string;   // c.tokenUrl ?? `${baseUrl}/v1/token`
 /** Như KH `_settings`: top-level `include_people_lanes`, bị `retrieval.include_people_lanes` ghi đè; bật trừ khi === false. Bật KHÔNG tự là lỗi (Q2): chỉ lỗi khi tenant có project `read_only`. */
-export function peopleLanesOn(manifest: unknown): boolean;
+export function peopleLanesOn(manifest: unknown): boolean;   // G4: tài liệu `manifest` (trường `manifest` của GET), không phải cả response
 export type KhTenantCfg = { baseUrl: string | null; secretId: string | null; enabled: boolean; status: "unchecked" | "ok" | "error" };
 export function khEffective(c: KhTenantCfg | null): boolean;
 export function khStepKey(dims: readonly string[], c: { agentKey: string; stageKey: string; processKey: string }): Record<string, string>;
@@ -106,6 +106,7 @@ export type KhProbe = {
   me: { status: number; body: unknown } | null;
   manifest: { status: number; body: unknown } | null;
   ns: string; keyspace: string; declaredProjects: readonly string[];
+  sharedProjects: readonly string[];                // G3: project `read_only` của tenant (Q2)
 };
 /** Thuần: probe ⇒ KhCheckResult (status, items theo thứ tự bước, keyspace_dims, kh_version). Luôn kèm kh_embedder_multilingual. */
 export function evaluateKhCheck(p: KhProbe, checkedAt: string): KhCheckResult;
@@ -151,7 +152,7 @@ Ngoài transaction: đọc settings + hàng tenant (scope system) → chạy bư
 | 8 | `GET /v1/{ns}/manifest` | `manifest_rev=0` `kh_manifest_missing` · `peopleLanesOn` **và** tenant có project `read_only` ⇒ `kh_people_lanes_on_shared {project_id}` (lanes bật mà chỉ có project riêng = OK, Q2) · keyspace vắng `kh_keyspace_missing {keyspace}` · 423 cảnh báo `kh_ns_suspended` |
 | 9 | (từ bước 7) `me.projects` | ≠[] và project ∉ ⇒ `kh_project_not_attached {project_id}` · [] ⇒ cảnh báo `kh_projects_unverified` |
 | 10 | — | cảnh báo `kh_embedder_multilingual` (luôn) |
-Tổng ≤ 20 s (`AbortSignal.timeout` riêng mỗi lời gọi + hạn tổng). `check_result` lưu `{kh_version, keyspace_dims, items}` — không token, không body thô.
+G5 (đối chiếu mã KH): `/version` ⇒ `{version, source, model}` (Hub chỉ đọc `version`; công khai trừ khi KH bật `KH_API_KEY` ⇒ ≠200 = `kh_version_too_old`); `me.projects` = mảng chuỗi (sorted); `/v1/token` nhận JSON ⇒ `{access_token, expires_in}`; GET manifest ⇒ `{ns, manifest_rev, manifest}`. Tổng ≤ 20 s (`AbortSignal.timeout` riêng mỗi lời gọi + hạn tổng). `check_result` lưu `{kh_version, keyspace_dims, items}` — không token, không body thô.
 
 ### 3.2 Client + token (`kh.client.ts`, `kh.token.ts`)
 ```ts
@@ -186,7 +187,7 @@ export class KhClient {
 Tenant không hiệu lực / project bị gỡ ⇒ `disabled` (query: `KH_UNAVAILABLE`, không tính lần; ghi: `skipped` + audit `write_fail`).
 
 ### 3.4 `kh-query` (`kh.query.service.ts`, nối từ `McpService.#call`)
-1. `ctx.tools ∌ "kh-query"` ⇒ `-32602 Unknown tool` (như H2a). Args: `{query}` trim 1..4000 ⇒ sai `INVALID_ARGS`.
+1. `ctx.tools ∌ "kh-query"` ⇒ `-32602 Unknown tool` (như H2a). Args: `{query}` trim 1..4000 ⇒ sai `INVALID_ARGS`, text = "Invalid arguments for this tool." (G7, như H2a).
 2. Một query (scope `user` tenant của job): `hub.runs r JOIN stage_runs s ON s.id = r.stage_run_id JOIN process_runs p ON p.id = r.process_run_id` lấy `s.stage_idx, attempt, round, p.snapshot->'kh', p.snapshot->>'key', stage key`, + `kh_tenants`/`kh_projects`/`kh_settings`/`secrets.version` (PK). Không khớp ⇒ `NOT_CONFIGURED`.
 3. Không hiệu lực / project gỡ ⇒ `last_warning='disabled'`, audit `degrade`, `KH_UNAVAILABLE`.
 4. Upsert đếm (D12) ⇒ không hàng ⇒ `KH_LIMIT`.
@@ -197,7 +198,7 @@ Tạo job (`job-agent-runner #mcp`): `kh.toolAllowed(run)` (1 query PK: snapshot
 
 ### 3.5 Ghi worklog
 - **Enqueue** (`enqueueKhSummary(tx, w)` cuối nhánh `done` của `persistStage`): đọc `snapshot.kh.stages[idx]`, `current_output_id` + `content`, `version`; `shouldWriteSummary` + `summaryForWorklog` ⇒ `INSERT kh_writes … ON CONFLICT (output_id) DO NOTHING`. Không gọi mạng; lỗi đọc ⇒ log warn, **không** ném (không chặn gate).
-- **Gửi** (`KhWriter`, mount cùng vòng nền processes, mỗi 10 s): tx ngắn scope system `SELECT … WHERE status='pending' AND next_at <= now() ORDER BY next_at LIMIT 20 FOR UPDATE SKIP LOCKED` ⇒ `next_at = now()+60s` (thuê) ⇒ COMMIT ⇒ mỗi hàng: hiệu lực + project còn + không chỉ đọc (đọc lại) ⇒ `worklog` ⇒ tx ngắn: `done` + `kh_id` | `attempts+1`, `next_at = now()+writeBackoffMs` | `failed`/`skipped` + audit `write_fail`.
+- **Gửi** (`KhWriter`, mount cùng vòng nền processes, mỗi 10 s): tx ngắn scope system `SELECT … WHERE status='pending' AND next_at <= now() ORDER BY next_at LIMIT 20 FOR UPDATE SKIP LOCKED` ⇒ `next_at = now()+60s` (thuê) ⇒ COMMIT ⇒ mỗi hàng: hiệu lực + project còn + không chỉ đọc (đọc lại) ⇒ `worklog` ⇒ tx ngắn: `done` + `kh_id` | `attempts+1`, `next_at = now()+writeBackoffMs` | `failed`/`skipped` + audit `write_fail`. Seam (G2): `ProcessHandles.khWriteOnce(): Promise<number>` = một lô (số hàng xử lý), như `sweepOnce`.
 - `StageView.knowledge` (`view-steps.ts`): `snapshot.kh.stages[idx]` + `kh_stage_usage` (attempt/round hiện tại) + `kh_writes` theo `current_output_id` (`none` khi không có hàng).
 
 ### 3.6 Start (`insertRun`)
@@ -265,4 +266,4 @@ Validate bằng `validateProcessDef` (luật `BACK_TARGET_INVALID`) trong test s
 | Audit CHECK phụ thuộc 0028 chưa merge | T4 chờ H4b-1 T4 vào `main`; DROP+ADD liệt kê đủ giá trị |
 
 ## 10. Thứ tự task BE
-T4 (contract + DDL + int DB) → T5a (rules + env) → T5b (client/token + mock) → T5c (Studio + check + agent + used_by) → T5d (tenant + binding + start snapshot) → T5e (`kh-query`) → T5f (writer + view) → T5g (seed, song song sau T4) → T7 (`done:k1`, review + security review). FE chỉ cần T4.
+T4 (contract + DDL + int DB) → T5a (rules + env) → T5b (client/token + mock) → T5c (Studio + check + agent + used_by) → T5d (tenant + binding + start snapshot) → T5e (`kh-query`) → T5f (writer + view) → T5g (seed, song song sau T4) → T7 (`done:k1`, review + security review). FE chỉ cần T4. G12: K1 BUILD sau H4b-1 T5 trên `main` (`hub.secrets`, `useSecret`, `hubSecretsKey`, `SECRET_IN_USE`); K1 int chỉ xanh từ đó.

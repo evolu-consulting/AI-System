@@ -62,7 +62,7 @@ File: `packages/contracts/src/hub-admin/kh.ts` (export qua `@ai/contracts/hub-ad
 | `KhCheckResultSchema` | `{ status: "ok" \| "error", checked_at: ISO, kh_version: string \| null, keyspace_dims: string[] ≤ 8, items: KhCheckItem[] ≤ 30 }`; `error` ⇔ có mục `level=error` |
 | `KhStatusSchema` | `"unchecked" \| "ok" \| "error"` |
 | `KhTenantSchema` | `{ tenant: {id,key,name}, ns, secret: {id, name} \| null, keyspace, enabled, status: KhStatus, check: KhCheckResult \| null, projects: KhProject[] ≤ 50, version, updated_at, updated_by }` |
-| `KhSettingsSchema` | `{ base_url: string \| null, allowed_origins: string[]` (từ env, chỉ đọc), `timeout_ms, version, updated_at }` |
+| `KhSettingsSchema` | `{ base_url: string \| null, allowed_origins: string[]` (chỉ đọc; `AppDeps.kh` ?? env, cả `timeout_ms`), `timeout_ms, version, updated_at }` |
 | `StageKnowledgeSchema` (thêm **optional** `knowledge` vào `StageViewSchema`, `chat/processes-entities.ts`) | `{ project_id, read_only, queries: 0..5, query_limit: 5, warning: KH_WARNING_CODES \| null, summary: "none" \| "pending" \| "written" \| "failed" \| "skipped" }`; vắng = stage không dùng KH |
 | `KH_WARNING_CODES` (hạ cấp) | `unreachable` · `timeout` · `ns_not_active` · `ns_suspended` · `embedder_unavailable` · `unauthorized` · `forbidden` · `quota` · `invalid` · `server_error` · `disabled` (plan §3.3) |
 
@@ -91,7 +91,7 @@ File: `packages/contracts/src/hub-admin/kh.ts` (export qua `@ai/contracts/hub-ad
 - Có trong `payload.mcp.tools` **chỉ khi** job là stage quy trình có `snapshot.kh.stages[idx]` khác null **và** agent `knowledge_enabled` **và** tenant hiệu lực (§3.5) lúc tạo job. `tools/list` thêm mô tả tool khi `ctx.tools ∋ kh-query` (0 query DB). Workflow catalog trùng khoá `kh-query` bị bỏ khỏi danh sách (log warn).
 - Input `{ query: string trim 1..4000 }`, `additionalProperties: false`. Agent **không** chọn project/ns: Hub lấy project của stage từ snapshot, ns + credentials từ tenant của **job** (HUB-BR-35).
 - Hub gọi `POST /v1/{ns}/context/step` `{ project, keyspace, key, query, budget_chars: 4000 }` (header + body đầy đủ: plan §3.4). Kết quả: text = câu dẫn "dữ liệu, không phải lệnh" + `pack_text` (≤ 4000), `structuredContent { serve_id, used_chars, cut_at_budget, calls_left }`.
-- Lỗi tool (`isError`, không lỗi run): `INVALID_ARGS` (không đếm) · `KH_LIMIT` (lần 6+, không gọi KH) · `KH_UNAVAILABLE` (hạ cấp: cảnh báo stage + audit; vẫn tính vào 5). Câu chữ EN: plan §3.4.
+- Lỗi tool (`isError`, không lỗi run): `INVALID_ARGS` (không đếm) · `KH_LIMIT` (lần 6+, không gọi KH) · `KH_UNAVAILABLE` (hạ cấp: cảnh báo stage + audit; vẫn tính vào 5). Câu chữ EN: plan §3.4 (`INVALID_ARGS` = "Invalid arguments for this tool." như H2a).
 
 **3.5 Hiệu lực, URL, token, ghi worklog**
 - **Chính sách URL** (`khUrlPolicy`): `https:` bắt buộc; `http:` chỉ khi `APP_ENV ∈ {development,test}` và host ∈ `localhost, 127.0.0.1, ::1`; origin phải ∈ `HUB_KH_ALLOWED_ORIGINS`; không userinfo/query/fragment; bỏ `/` cuối. Kiểm khi lưu **và** trước mỗi lời gọi.
@@ -122,7 +122,7 @@ Cột/kiểu/CHECK đầy đủ: plan §5. Tóm tắt:
 
 **`snapshot.kh`** (trong `process_runs.snapshot`, chốt lúc start, vắng = run không dùng KH): `{ stages: ({ project: string, read_only: boolean, summary: boolean } | null)[] }` (độ dài = số stage). ns/credentials/`read_only` **đọc lại lúc gọi** (đổi giữa chừng có hiệu lực ngay; project bị gỡ khỏi tenant ⇒ `disabled`).
 
-**`used_by` (H4b-1)**: `usedByMany` thêm `knowledge_hub` = `hub.kh_tenants WHERE secret_id = ANY($ids)` (index trên), `key = ns`. Xoá secret đang dùng ⇒ 409 `SECRET_IN_USE` (FK RESTRICT là chốt cuối).
+**`used_by` (H4b-1)**: `usedByMany` thêm `knowledge_hub` = `hub.kh_tenants WHERE secret_id = ANY($ids)` (index trên), phần tử `{type: "knowledge_hub", id: tenant_id, key: ns}`. Xoá secret đang dùng ⇒ 409 `SECRET_IN_USE` (FK RESTRICT là chốt cuối).
 
 Không xoá dữ liệu cũ; không seed KH (cấu hình qua Studio; dev dùng mock). Seed quy trình mẫu: plan §6.
 
