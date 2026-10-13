@@ -10,6 +10,7 @@ import { fetchAttachmentContent } from "~/features/attachments/api";
 import { ApiError } from "~/lib/http";
 import { ForwardAction } from "../../ask/components/ForwardAction";
 import { AutofixResult } from "../../shared/autofix/AutofixResult";
+import { stageAutofix } from "../../shared/lib/autofix-view";
 import { useThreadBinding } from "../../shared/thread/thread-binding";
 import type { TaskCardProps } from "../../shared/types";
 import { useReviewDecision } from "../hooks/use-review-actions";
@@ -37,7 +38,7 @@ function namesOfStep(view: TaskCardProps["view"]): ((step: number) => string) | 
       .join(", ");
 }
 
-export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps) {
+export function ReviewTaskCard({ runId, task, view, taskView, onResolved }: TaskCardProps) {
   const { t, i18n } = useTranslation();
   const binding = useThreadBinding();
   const mut = useReviewDecision(runId);
@@ -46,7 +47,7 @@ export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps)
   const [feedback, setFeedback] = useState("");
   const agent = agentOf(view, task.stage_idx, i18n.language);
   const left = reworksLeft(view, task.stage_idx);
-  const autofix = view?.access === "full" ? view.stages[task.stage_idx]?.autofix : undefined;
+  const { autofix } = stageAutofix(view, taskView, task.stage_idx);
   const hasBack = (task.back_steps?.length ?? 0) > 0;
 
   const onClosed = useCallback(() => {

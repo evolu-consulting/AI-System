@@ -99,6 +99,7 @@ function StepTasks({ view }: { view: ProcessRunView }) {
         runId={view.id}
         task={task}
         view={view.access === "full" ? view : undefined}
+        taskView={view.access === "task" ? view : undefined}
       />
     ));
     const open = g.tasks.filter((x) => x.status === "open").length;

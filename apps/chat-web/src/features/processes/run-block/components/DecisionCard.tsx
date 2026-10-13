@@ -20,6 +20,7 @@ import { fetchAttachmentContent } from "~/features/attachments/api";
 import { ApiError } from "~/lib/http";
 import { AutofixFailures } from "../../shared/autofix/AutofixFailures";
 import { ReasonLines } from "../../shared/components/ReasonLines";
+import { stageAutofix } from "../../shared/lib/autofix-view";
 import { isAutofixReason } from "../../shared/lib/decision-reason";
 import type { TaskCardProps } from "../../shared/types";
 import { useDecide } from "../hooks/use-decide";
@@ -30,17 +31,17 @@ export function DecisionCard({
   runId,
   task,
   view,
+  taskView,
   embedded,
 }: TaskCardProps & { embedded?: boolean }) {
   const { t } = useTranslation();
   const decide = useDecide(runId);
   const [note, setNote] = useState("");
   const [noOutput, setNoOutput] = useState(false);
+  // Chỉ hiện lỗi của vòng hiện tại; vòng này không có báo cáo (job lỗi / hết giờ) ⇒ "không có báo cáo chi tiết".
   const autofixReason = isAutofixReason(task.reason);
-  const failed =
-    task.reason === "autofix_check_failed" && view?.access === "full"
-      ? view.stages[task.stage_idx]?.autofix
-      : undefined;
+  const failed = stageAutofix(view, taskView, task.stage_idx).current;
+  // Phòng thủ: Hub vẫn gửi `use_current` cho lý do autofix (E05/E08 khoá test: không hiện nút).
   const options = (task.options ?? []).filter((o) => !(autofixReason && o === "use_current"));
   const over = note.length > FORWARD_NOTE_MAX;
 

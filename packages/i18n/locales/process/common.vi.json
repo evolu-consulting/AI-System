@@ -80,6 +80,7 @@
     "downloadDiff": "Tải .diff",
     "fullLog": "Tải log đầy đủ",
     "big": "Diff lớn: chỉ hiển thị 2.000 dòng đầu, còn {{rest}} dòng. Tải .diff để xem đủ.",
+    "diffGone": "Diff không còn trên kho (đã bị dọn). Kết quả kiểm vẫn hợp lệ.",
     "noChanges": {
       "label": "Không có thay đổi",
       "hint": "Agent không sửa file nào, hoặc bản sửa trùng nguồn. Chọn \"Chưa đạt\" nếu cần thêm lượt."

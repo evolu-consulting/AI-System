@@ -1,6 +1,7 @@
 // CR-056 · P-a: kiểu dùng chung của quy trình ở chat-web (tái xuất từ contract để PF không import chéo).
 import type {
   ProcessRunFullView,
+  ProcessRunTaskView,
   RoomMessage,
   RoomProcessKind,
   RoomProcessPart,
@@ -28,6 +29,8 @@ export type TaskCardProps = {
   runId: string;
   task: TaskDetail;
   view?: ProcessRunFullView;
+  /** Người xem ngoài phòng (view `task`): chỉ để lấy `stages[].autofix` của stage có task duyệt (PC-R14). */
+  taskView?: ProcessRunTaskView;
   /** DM inline (NoticeCard, PF3): người xem tự xử lý xong ⇒ thẻ hiện "Bạn · <kết quả>" (E-P12). */
   onResolved?: (result: TaskResult) => void;
 };

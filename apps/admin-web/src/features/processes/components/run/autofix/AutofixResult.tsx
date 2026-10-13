@@ -66,6 +66,9 @@ function AutofixResultImpl({ view, load }: Props) {
     >
       <AutofixHead view={view} load={load} />
       {view.status === "ok" && view.diff_file && <DiffBody view={view} load={load} />}
+      {view.status === "ok" && !view.diff_file && (
+        <p className="text-caption text-muted-foreground">{t(`${K}diffGone`)}</p>
+      )}
       {view.status === "no_changes" && (
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-medium">{t(`${K}noChanges.label`)}</span>

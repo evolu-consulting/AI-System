@@ -1,5 +1,16 @@
 // HUB-FR-119 · P-c1 · nhãn/số liệu thuần của khối kết quả tự sửa. Bản chép: admin-web `features/processes/lib/autofix-view.ts` (TECH-DEBT).
-import type { AutofixStageView } from "@ai/contracts/chat";
+import type { AutofixStageView, ProcessRunFullView, ProcessRunTaskView } from "@ai/contracts/chat";
+
+/** Kết quả tự-sửa của stage `idx` (tìm theo idx) từ view đầy đủ hoặc view `task`; `current` = thuộc vòng hiện tại của stage. */
+export function stageAutofix(
+  view: ProcessRunFullView | undefined,
+  taskView: ProcessRunTaskView | undefined,
+  idx: number,
+): { autofix: AutofixStageView | undefined; current: AutofixStageView | undefined } {
+  const stage = (view ?? taskView)?.stages.find((s) => s.idx === idx);
+  const autofix = stage?.autofix;
+  return { autofix, current: autofix && autofix.round === stage?.round ? autofix : undefined };
+}
 
 /** Thứ tự nhóm lỗi hiển thị (plan-frontend §1.3). */
 export const FAILURE_GROUP_ORDER = [

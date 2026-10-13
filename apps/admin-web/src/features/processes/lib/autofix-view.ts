@@ -1,5 +1,5 @@
 // HUB-FR-119 · P-c1 · nhãn/số liệu thuần của khối kết quả tự sửa. Bản chép: chat-web `shared/lib/autofix-view.ts` (TECH-DEBT).
-import type { AutofixStageView } from "@ai/contracts/chat";
+import type { AutofixStageView, StageView } from "@ai/contracts/chat";
 
 /** Thứ tự nhóm lỗi hiển thị (plan-frontend §1.3). */
 export const FAILURE_GROUP_ORDER = [
@@ -13,6 +13,15 @@ export const FAILURE_GROUP_ORDER = [
 export type FailureGroup = (typeof FAILURE_GROUP_ORDER)[number];
 
 /** 7 ký tự đầu của `pin_sha`; không phải git (`null`) ⇒ `null`. */
+/** Kết quả tự-sửa của stage `idx` nếu thuộc vòng hiện tại (`round` khớp); khác vòng ⇒ undefined. */
+export function currentAutofix(
+  stages: readonly Pick<StageView, "idx" | "round" | "autofix">[],
+  idx: number,
+): AutofixStageView | undefined {
+  const s = stages.find((x) => x.idx === idx);
+  return s?.autofix && s.autofix.round === s.round ? s.autofix : undefined;
+}
+
 export const sha7 = (sha: string | null): string | null => (sha ? sha.slice(0, 7) : null);
 
 /** `nguồn@sha7` (không git ⇒ chỉ `nguồn`). */

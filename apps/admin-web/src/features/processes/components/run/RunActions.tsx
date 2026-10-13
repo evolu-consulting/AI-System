@@ -1,15 +1,16 @@
 // ADM-FR-67 · CR-056 · P-a F5: "Cần người quyết" (3 lựa chọn + ghi chú, `can_decide`) và "Huỷ lượt chạy" (`can_cancel`).
 import type { ProcessRunFullView } from "@ai/contracts/chat";
 import { DECISION_REASONS } from "@ai/contracts/hub-admin";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { fetchAttachmentContent } from "../../api";
+import { useAttachmentLoader } from "../../hooks/use-attachment-loader";
 import { useRunAction } from "../../hooks/use-run-data";
+import { currentAutofix } from "../../lib/autofix-view";
 import { processErrorSpec } from "../../lib/errors";
 import { AutofixFailures } from "./autofix/AutofixFailures";
 
@@ -51,9 +52,10 @@ export function RunActions({ run, tenantId }: Props) {
       { option, note },
       { onSuccess: () => notifySuccess(t("process.admin.run.decision.done")), onError: fail },
     );
-  const load = useCallback((id: string) => fetchAttachmentContent(id, tenantId), [tenantId]);
+  const load = useAttachmentLoader(tenantId);
   const autofixReason = d?.reason === "autofix_check_failed" || d?.reason === "sandbox_unavailable";
-  const failed = d ? run.stages[d.stage_idx]?.autofix : undefined;
+  // Chỉ lỗi của vòng hiện tại; vòng này không có báo cáo ⇒ AutofixFailures hiện "không có báo cáo chi tiết".
+  const failed = d ? currentAutofix(run.stages, d.stage_idx) : undefined;
   const hasOutput = (run.stages[d?.stage_idx ?? 0]?.outputs.length ?? 0) > 0;
   return (
     <div className="space-y-3">
@@ -92,6 +94,7 @@ export function RunActions({ run, tenantId }: Props) {
                 />
               </div>
               <div className="flex flex-wrap gap-2">
+                {/* Phòng thủ: Hub vẫn gửi `use_current` cho lý do autofix ⇒ ẩn nút. */}
                 {d.options
                   .filter((o) => !(autofixReason && o === "use_current"))
                   .map((o) => (

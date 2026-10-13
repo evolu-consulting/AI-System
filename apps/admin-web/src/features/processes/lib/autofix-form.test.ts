@@ -46,6 +46,9 @@ describe("autofix-form", () => {
     expect(autofixToDef(autofixToDraft(def))).toEqual(def);
     expect(autofixToDraft(null).on).toBe(false);
   });
+});
+
+describe("autofix-form · validate", () => {
   test("validate ô: nguồn, test, install, allow", () => {
     expect(autofixFieldErrors(on(), 0)).toEqual({});
     expect(autofixFieldErrors(emptyAutofix(), 0)).toEqual({});

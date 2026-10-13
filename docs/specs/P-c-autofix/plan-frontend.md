@@ -18,6 +18,7 @@ Mockup đã duyệt 2026-10-13: `docs/design/agent-hub/canvas/Pc-{Editor,Diff,De
 | FC11 | (F1) Khoá nhãn ô có hậu tố `.label` (`source.label`, `test.label`…) vì `source`/`test`… còn là nhánh cha của `.ph/.hint`; bảng §3 viết `source` = `source.label` |
 | FC12 | (F1) Cụm `decision.*` gộp vào 4 khoá lý do dùng chung; `common.autofix.*` dùng chung chat-web/admin-web run page, `err.*` nhận `{{stage}}`, `{{key}}`, `{{kind}}` |
 | FC13 | (F2) Lỗi `AUTOFIX_*` + ô hiện **live** (`role=alert`) ngay trong khối, cùng luật server (`autofixStageIssues`); `AUTOFIX_EXECUTOR` chỉ hiện ở khối khi ô "Người thực hiện" chưa có lỗi (tránh trùng). Kiểu nguồn (`library`) KHÔNG chặn ở client — chỉ lỗi server 422 `PROCESS_REF_INVALID` ⇒ `err.sourceKind` ở ô Nguồn. `allow` tách theo dòng (không theo dấu phẩy, để không vỡ glob `{a,b}`); `kind` nhãn nguồn lấy từ `EditorRefs.sources` (`useSourceOptions`) |
+| FC14 | (2026-10-14, review P-c1) Autofix lấy theo `stages.find(idx)` kể cả view `task` (prop `taskView`); `failures` chỉ khi `autofix.round === stage.round`, else "không có báo cáo chi tiết"; ẩn `use_current` giữ (Hub vẫn gửi, E05/E08 khoá); `status=ok` mà `diff_file=null` ⇒ khoá `diffGone` |
 
 ## 1. Màn / component
 

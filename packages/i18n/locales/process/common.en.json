@@ -80,6 +80,7 @@
     "downloadDiff": "Download .diff",
     "fullLog": "Download full log",
     "big": "Large diff: only the first 2,000 lines are shown, {{rest}} more. Download the .diff to see everything.",
+    "diffGone": "The diff is no longer in storage (it was cleaned up). The check result is still valid.",
     "noChanges": {
       "label": "No changes",
       "hint": "The agent changed no files, or the change matches the source. Choose \"Not approved\" to add a round."
