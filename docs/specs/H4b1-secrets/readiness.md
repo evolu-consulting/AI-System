@@ -42,3 +42,6 @@ Không có câu hỏi mới; mặc định đã chấp nhận (Luật 2b) và đ
 ## Lần 3 — 2026-10-13 · NOT READY (0 Chặn, 4 Cao, 3 Thấp) · không câu hỏi mới
 - Mặc định đã áp (điều phối): D4 `form.reset()` chỉ `onSuccess`/đóng Sheet, mutation `gcTime: 0` + `mutation.reset()` + unit test MutationCache không còn `value` (#2, #3); bỏ `bun test tests/acceptance/H4b1` khỏi Lệnh xong T5a (#4); Xoá 204 → đóng ConfirmDialog + toast + invalidate (#5); [Ghi đè] thành công áp D9 (#6).
 - qc: E07 bấm "Đóng" trong `alertdialog` rồi mới kiểm dòng (#1); E09 `toContainText("Acme Corp")` (#7).
+
+## Lần 4 — 2026-10-13 · **READY** (0 Chặn, 0 Cao, 4 Thấp) · không câu hỏi mới
+- Thấp đã áp: mọi phản hồi DELETE đóng ConfirmDialog trước (#1); `mutation.reset()` trong `onSettled` (#2); `saved` là state cục bộ (#3); đường dẫn unit test MutationCache + `bun test apps/studio-web/src/features/secrets` vào Lệnh xong T6 (#4).
