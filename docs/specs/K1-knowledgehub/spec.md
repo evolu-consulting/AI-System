@@ -63,7 +63,7 @@ File `packages/contracts/src/hub-admin/kh.ts` (export `@ai/contracts/hub-admin`)
 | `KhConnectionNameSchema` | trim 1..80, không chứa `/` |
 | `KhCheckItemSchema` · `KH_CHECK_CODES` | `{ code, level: "error" \| "warning", params?: Record<string, string \| number> }` · 7 lỗi + 5 cảnh báo (plan §3.1) |
 | `KhCheckResultSchema` | `{ status: "ok" \| "error", checked_at, kh_version: string \| null, embedder: string \| null, projects: KhProjectId[] ≤ 50, items ≤ 20 }`; `error` ⇔ có mục lỗi |
-| `KhConnectionSchema` | `{ id, name, base_url, secret: {id, name}, summary_project: KhProjectId \| null, status: "unchecked" \| "ok" \| "error", check: KhCheckResult \| null, agents_count, version, updated_at, updated_by }` |
+| `KhConnectionSchema` | `{ id, name, base_url, secret: {id, name}, summary_project: KhProjectId \| null, status: "unchecked" \| "ok" \| "error", check: KhCheckResult \| null, agents_count, version, updated_at, updated_by: UpdatedBySchema }` |
 | `KhConnectionWriteSchema` | `{ name, base_url: string ≤ 512, secret_id: uuid, summary_project: KhProjectId \| null = null }` (+ `version: int ≥ 1` khi PUT) |
 | `StageKnowledgeSchema` (optional `StageViewSchema.knowledge`) | `{ write_to: { connection: string, project } \| null, queries: 0..5, query_limit: 5, warning: KH_WARNING_CODES \| null, summary: "none" \| "pending" \| "written" \| "failed" \| "skipped" }` |
 | `KH_WARNING_CODES` | `unreachable · timeout · unauthorized · forbidden · not_found · invalid · rate_limited · server_error · disabled` |
@@ -110,7 +110,7 @@ Migration `migrations-hub/0029_k1_kh.sql` (sau 0028, idempotent, chỉ THÊM, ch
 
 **Audit CHECK**: giữ mọi giá trị tới 0028 + action `check, degrade, write_fail` / entity `kh_connection, kh_query, kh_worklog`.
 **`snapshot.kh`** (chốt lúc start; vắng = không đích): `{ stages: ({ connection_id, name, project } | null)[] }`.
-**`used_by` (H4b-1)**: `knowledge_hub` = `kh_connections WHERE secret_id = ANY($ids)` ⇒ `{type, id: connection.id, key: connection.name}`; secret đang dùng ⇒ 409 `SECRET_IN_USE`. Secret phải `kind = kh_api_key` ∧ `tenant_id IS NULL`.
+**`used_by` (H4b-1)**: `knowledge_hub` = `kh_connections WHERE secret_id = ANY($ids)` ⇒ `{type, id: connection.id, key: left(name, 64)}`; secret đang dùng ⇒ 409 `SECRET_IN_USE`. Secret phải `kind = kh_api_key` ∧ `tenant_id IS NULL`.
 
 Không seed KH (dev dùng mock). Seed quy trình mẫu: plan §6.
 
@@ -138,7 +138,7 @@ Mặc định `CONVENTIONS.md` §6 (không chặn mốc). Mỗi lời gọi KH �
 | H4b-1 `useSecret` (`kh_api_key`, `tenant_id` null) | Secret thật trong DB test |
 
 **Từ H4b-1** (Q12 của H4b-1): (a) `usedByMany` thêm `knowledge_hub` (§4); (b) kiểm `work/<job_id>/` (AC-H4b1-07) bằng job giả dùng `useSecret`.
-Env: `HUB_KH_ALLOWED_ORIGINS` (cách dấu phẩy; vắng ⇒ không lưu được kết nối; dev/test vắng ⇒ `http://localhost:4030,http://127.0.0.1:4030`) · `HUB_KH_TIMEOUT_MS` (1000..30000, 5000). Mock: khoá `KH_MOCK_API_KEY` (mặc định `mock-kh-key`); không vào docker-compose.
+Env: `HUB_KH_ALLOWED_ORIGINS` (cách dấu phẩy; vắng ⇒ không lưu được kết nối; dev/test vắng ⇒ `http://localhost:4030,http://127.0.0.1:4030`) · `HUB_KH_TIMEOUT_MS` (1000..30000, 5000; ngoài khoảng ⇒ zod env lỗi, dừng khởi động). Mock: khoá `KH_MOCK_API_KEY` (mặc định `mock-kh-key`); không vào docker-compose.
 
 ## 8. Tiêu chí nghiệm thu (qc)
 Theo CR-073; chi tiết + mã ca: test-plan §3 (nguồn chuẩn).
@@ -186,6 +186,7 @@ Lệnh xong: `done:k1` = test-plan §6.
 Bỏ (CR-073): Q2, Q5, Q7, Q16, Q19, Q20, Q21, Q23 (ns, people lanes, cấu hình/công tắc theo tenant, `/v1/me`). Bỏ trước đó: Q12–Q14, Q17, Q18.
 - 2026-10-13 · Readiness lần 1 (`R#` trong plan cũ); CR-071, CR-072 Gate lại; **CR-073**: §3–4, §6–7, §9, plan viết lại siêu tối giản (Q26–Q34); Gate lại.
 - 2026-10-13 · backend-lead chốt khoảng trống qc G1–G12 theo test khoá `457bbf34` ⇒ plan §11 (không đổi contract §3.1–3.2; G6: dừng sau `kh_auth_disabled`; G12: evolu `review_group: beta-testers`, bật); dọn §8 theo CR-073 (G11).
+- 2026-10-13 · Áp mặc định readiness (BE, Luật 2b): `used_by.key` = `left(name,64)`; `AgentTask.stageRunId?` + `#mcp` gộp `kh-query` trước `mcpConfigFor`; Kiểm tra: timeout ⇒ `kh_timeout`, bước 5 ≠ 2xx ⇒ `kh_unreachable`, hạn 20 s; stage nhóm chung 5 lần; `updated_by: UpdatedBySchema`; env timeout sai ⇒ dừng khởi động (plan §3.1, §3.3–3.4, §6, §11).
 ### Trong lúc làm
 Xem [`spec-decisions.md`](spec-decisions.md).
 
