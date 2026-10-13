@@ -2,7 +2,7 @@
 id: H4b1-secrets
 title: H4b-1 · Secrets của Hub (chỉ ghi, AES-256-GCM) — provider key, source_credential, khoá KnowledgeHub
 milestone: H4b-1 (tách từ H4b, người dùng 2026-10-13: ưu tiên ai-sdlc)
-status: approved         # Gate tự duyệt 2026-10-13 (Luật 2b), readiness lần 4 READY — xem ../H4b1-gate.md
+status: done             # xong 2026-10-13 · Gate tự duyệt (Luật 2b), readiness lần 4 READY — ../H4b1-gate.md
 requirements: [HUB-FR-68, HUB-FR-69, HUB-BR-30, HUB-BR-15, AC-H4b1-01, AC-H4b1-02, AC-H4b1-03, AC-H4b1-04, AC-H4b1-05, AC-H4b1-06, AC-H4b1-07, AC-H4b1-08]
 design:
   - docs/design/agent-hub/ba-agent-hub.md#HUB-FR-68 (dòng ~211) · HUB-FR-04 (dòng ~137, key riêng, không log) · HUB-FR-69 (audit)
@@ -200,3 +200,8 @@ Lệnh xong: `bun run done:h4b1` (T7 tạo; = typecheck → test → test:int �
 
 ## 10. Tranh chấp test
 - (không)
+
+## Kết luận H4b-1 (2026-10-13)
+- `done:h4b1` (`23402c86`): mọi chặng xanh khi chạy riêng; reviewer APPROVED, security review SAFE; UAT tenant `evolu` Đạt ([REPORT](evidence/2026-10-13/REPORT.md); sửa UAT `1f6e37f8`).
+- Migration `0028`. Code: `apps/hub-api/src/modules/secrets`, `apps/studio-web/src/features/secrets`.
+- Nợ: TECH-DEBT #155 (`pg_temp` trong 0028, thư mục `secrets/` 12 file). Kế: H4b-2 gắn `providers.secret_id`.

@@ -2,7 +2,7 @@
 id: K1-knowledgehub
 title: K1 · KnowledgeHub làm RAG ngoài (Hub proxy) + quy trình mẫu AISDLC
 milestone: K1
-status: approved  # Gate 2026-10-13 (CR-073, mockup OK) — ../K1-gate.md
+status: done  # xong 2026-10-13 · Gate 2026-10-13 (CR-073, mockup OK) — ../K1-gate.md
 requirements: [HUB-FR-131, HUB-FR-132, HUB-FR-133, HUB-FR-134, HUB-BR-37, HUB-BR-40]
 design:
   - docs/design/agent-hub/ba-agent-hub.md HUB-FR-131…134 · HUB-BR-37, 40 (ngoại lệ HUB-BR-12)
@@ -192,3 +192,9 @@ Xem [`spec-decisions.md`](spec-decisions.md).
 
 ## 10. Tranh chấp test
 Xem [`spec-decisions.md`](spec-decisions.md) mục "Tranh chấp test".
+
+## Kết luận K1 (2026-10-13)
+- `done:k1` (`2ffb72b5`): chỉ đỏ R49 (fixture đã chấp nhận) + 2 ca `hub-rls` (TECH-DEBT #148, có từ trước). Reviewer APPROVED, security SAFE. e2e studio 48/48, K1 5/5.
+- UAT `evolu`: vòng 1 có lỗi, sửa `1f6e37f8`/`c47ce6aa`/`2f85995f`; vòng 2 Đạt ([REPORT](evidence/2026-10-13/REPORT.md)).
+- Code: `apps/hub-api/src/modules/kh`, `apps/studio-web/src/features/settings/knowledgehub`, `tools/mocks/src/kh`. Nợ: TECH-DEBT #154, #156–#161.
+- Kế: K2 (CR-069) — lên kế hoạch lại theo CR-073 (KH nền tảng, không ns theo tenant).
