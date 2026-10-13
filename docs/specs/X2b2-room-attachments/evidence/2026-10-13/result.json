@@ -1,0 +1,82 @@
+{
+  "log": [
+    {
+      "id": "K1a",
+      "title": "DM: A đính kèm file, chip + note chia sẻ; không chữ => Gửi disabled + note cần chữ",
+      "ok": true,
+      "ms": 1542
+    },
+    {
+      "id": "K1b",
+      "title": "DM: A nhập chữ, gửi; B (không reload) thấy chip, tải đúng file",
+      "ok": true,
+      "ms": 582
+    },
+    {
+      "id": "K1c",
+      "title": "DM: loại file .exe và >20MB báo câu C1",
+      "ok": true,
+      "ms": 2882
+    },
+    {
+      "id": "K2a",
+      "title": "Nhóm {A,B}: A gửi file; B thấy chip + tải; note nhóm",
+      "ok": true,
+      "ms": 1689
+    },
+    {
+      "id": "K2b",
+      "title": "Nhóm: C (vio, ngoài nhóm) GET /attachments/:id[/content] => 404; B => 200 (API)",
+      "ok": true,
+      "ms": 77
+    },
+    {
+      "id": "K4a",
+      "title": "Nhóm: A '@pb-doc-fake … #fake:files #fake:out=…' kèm file => agent đọc file, tin agent có chip; B tải được",
+      "ok": true,
+      "ms": 3787
+    },
+    {
+      "id": "K3",
+      "title": "Thread: mở thread từ khối agent, gửi file trong thread; hiển thị đúng; B thấy",
+      "ok": true,
+      "ms": 1549
+    },
+    {
+      "id": "K6",
+      "title": "Timeline: '!hoa-don …' kèm file => câu lỗi noAttach",
+      "ok": true,
+      "ms": 696
+    },
+    {
+      "id": "K7",
+      "title": "Rời phòng: B rời nhóm qua UI => tải file 404; A vẫn tải được",
+      "ok": true,
+      "ms": 1852
+    }
+  ],
+  "state": {
+    "dm": "ebef9db7-4b62-4a1f-8504-3aad253f9f6e",
+    "grp": "75b81380-c560-4b04-8d3b-a79603397c5d",
+    "grp2": "1ba50177-8388-4489-b99f-57194fe9c843",
+    "k2b": {
+      "c_meta": 404,
+      "c_content": 404,
+      "b_content": 200,
+      "hdr": {
+        "content-type": "application/pdf",
+        "content-disposition": "attachment; filename=\"x2b2-uat-nhom.pdf\"; filename*=UTF-8''x2b2-uat-nhom.pdf",
+        "x-content-type-options": "nosniff",
+        "cache-control": "private, no-store"
+      }
+    },
+    "agentReply": "Rà nguồn (fake-cli)\n@pb-doc-fake\n·\nBạn hỏi\n·\n08:09\n\nx2b2-uat-agent.pdf:44b2d2646ba5eff3bb4209b636a95028b336c666e89a5acbb2f4217bf9e4a5ed x2b2-uat-nhom.pdf:2128d358c2796c37458751d285d4a712957d766ebd401a077c42f2db269d3d1e\n\nx2b2-uat-report.md\n31 B\n\n1 bước · 2.2s\nChạy bằng quyền của bạn\n\nCopy\nTrả lời tiếp",
+    "outContent": "fake output x2b2-uat-report.md\n",
+    "k7": {
+      "after": 404,
+      "afterMeta": 404,
+      "a": 200
+    }
+  },
+  "stamp": "gxdf"
+}
