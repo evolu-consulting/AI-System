@@ -35,11 +35,11 @@ Trỏ BA, chỉ ghi phần cụ thể hoá.
 |---|---|---|
 | Chỉ ghi | Không API/log/audit/export nào trả giá trị; chỉ trả metadata (`id`, `kind`, `name`, `version`, `updated_at`, `used_by[]`) | HUB-FR-68, HUB-FR-04 |
 | Mã hoá | AES-256-GCM, IV 12 byte ngẫu nhiên mỗi lần ghi, AAD = `id‖kind‖tenant_id`; `HUB_SECRETS_KEY` 32 byte, thiếu/sai độ dài ⇒ Hub không khởi động | HUB-FR-68, Q2 |
-| Phạm vi | `provider_api_key`, `kh_api_key`: toàn nền tảng, chỉ `platform_admin`. `source_credential`: gắn `tenant_id` (RLS); ghi bởi `tenant_admin` của tenant đó hoặc `platform_admin` | HUB-BR-15, CR-060, Q1 |
+| Phạm vi | `provider_api_key`: toàn nền tảng, chỉ `platform_admin`. `kh_api_key`: toàn nền tảng **hoặc** theo tenant (Q7), chỉ `platform_admin` ghi. `source_credential`: gắn `tenant_id` (RLS); ghi bởi `tenant_admin` của tenant đó hoặc `platform_admin` | HUB-BR-15, CR-060, Q1 |
 | Không vào job | Giải mã chỉ trong tiến trình Hub (và Runtime-chương-trình cho `source_credential` ở mốc sau); không bao giờ vào `work/<job_id>/`, prompt, trace, audit | HUB-BR-30, ADR-0012 §1 |
 | Thay giá trị | Ghi đè = giá trị mới, `version + 1`, audit `secret.rotate` (không giá trị); chống ghi đè đồng thời bằng `version` | HUB-FR-69 |
 | Xoá | Chặn `409` khi còn được dùng (provider/source/KH trỏ tới); trả danh sách "Được dùng bởi" | ui-agent-studio §ràng buộc xoá |
-| Tên | `name` duy nhất theo (kind, tenant); `^[A-Za-z0-9_-]{2,64}$` (khớp quy ước secrets Admin) | Q4 |
+| Tên | `name` duy nhất theo (kind, tenant); `^[A-Za-z0-9_-]{2,64}$`, duy nhất không phân biệt hoa-thường (khác Admin `^[A-Z0-9_]{2,64}$` — Q4) | Q4 |
 
 ## 3. Contract (backend-lead)
 <!-- backend-lead -->
