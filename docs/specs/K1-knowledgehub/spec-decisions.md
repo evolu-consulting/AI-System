@@ -9,3 +9,9 @@ Agent tự quyết theo Luật 2 (spec → BA → ADR → CONVENTIONS → code �
 - 2026-10-13 · T4 · 0029 thêm index `kh_writes_run_idx (process_run_id)` ngoài plan §5 · FK CASCADE từ `process_runs` + đọc theo run.
 - 2026-10-13 · T4 · `hub.ts` (400 dòng) nhận audit qua `EXT_AUDIT_*` của `hub-kh.ts` (= secret + K1) thay vì import `hub-secrets` · giữ trần 400 dòng.
 - 2026-10-13 · T4 · `migrate-hub.int.test.ts` `HUB_TABLES` thêm `secrets`, `sources`, `source_job_reads` (đỏ sẵn từ P-b/H4b-1) + 5 bảng K1.
+- 2026-10-13 · T5a · `khUrlPolicy`: scheme khác http(s) và chuỗi có `?`/`#`/khoảng trắng (kể cả `?` rỗng) ⇒ `invalid`; allowlist so theo `URL.origin` (mục rác bị bỏ); loopback = `localhost`, `127.0.0.1`, `[::1]` · spec §3.4 chỉ nêu https/userinfo/query/fragment; chặt nhất, đơn giản.
+- 2026-10-13 · T5a · `evaluateKhCheck`: bước có giá trị `null` = chưa chạy ⇒ dừng gom; lỗi ở bước 6 (`/projects`) giữ `kh_version` đã đọc (chỉ "dừng sớm" trước bước 5 mới `null`); `kh_unreachable` do network không có `params.status`; `/projects` body sai ⇒ `{status}` = mã HTTP nhận được · plan §3.1/G7.
+- 2026-10-13 · T5a · `kh_version` = chuỗi gốc KH (≤ 64) kể cả khi quá cũ; không phải chuỗi ⇒ `null` · G5 chỉ chốt `found`.
+- 2026-10-13 · T5a · `khToolDescription` không có mặc định ⇒ bỏ đoạn "Default: …"; cắt nhãn ⇒ "…, …." (giữ Default) · plan §2.3 chỉ nói ca có mặc định.
+- 2026-10-13 · T5a · `summaryForWorklog` dùng lại `sectionMap`/`normSection` (`processes/runs/template.rules.ts`: heading cấp 2, NFC + hoa thường); `clipWords` giữ xuống dòng giữa các từ · bắt chước kiểm template; `ensureSummary` so chuẩn hoá.
+- 2026-10-13 · T5a · env `HUB_KH_ALLOWED_ORIGINS` (url http/https) optional + `khConfigOf(env)` (mặc định dev/test mock loopback, production `[]`, chuẩn hoá origin) trong `config/env.ts`; nối `AppDeps.kh` + `server.ts` để T5c (cùng route `GET C`) · G1 chia T5a/T5c.

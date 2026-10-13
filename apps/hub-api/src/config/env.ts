@@ -58,6 +58,20 @@ export const EnvSchema = z.object({
     .optional(),
   // P-a D15 · cờ Process Engine: `off` (mặc định) ⇒ không mount route quy trình, `!` là chữ thường. Dev bật ở F6.
   HUB_PROCESS_ENGINE: z.enum(["on", "off"]).default("off"),
+  // K1 spec §7, plan §11 G1 · origin KnowledgeHub được phép (cách dấu phẩy). Vắng: production ⇒ [] (không lưu được kết nối);
+  // development/test ⇒ mock KH loopback (`khConfigOf`).
+  HUB_KH_ALLOWED_ORIGINS: z
+    .string()
+    .transform((s) =>
+      s
+        .split(",")
+        .map((o) => o.trim())
+        .filter((o) => o.length > 0),
+    )
+    .pipe(z.array(z.url({ protocol: /^https?$/ })))
+    .optional(),
+  // Hạn mỗi lời gọi KH (ms); ngoài 1000..30000 ⇒ env lỗi, dừng khởi động.
+  HUB_KH_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30_000).default(5000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -75,6 +89,23 @@ function dropEmpty(source: Record<string, string | undefined>): Record<string, s
 function withDevDefaults(env: Env): Env {
   if (env.HUB_PUBLIC_INTERNAL_URL !== undefined || env.APP_ENV === "production") return env;
   return { ...env, HUB_PUBLIC_INTERNAL_URL: DEV_PUBLIC_INTERNAL_URL };
+}
+
+/** Mock KH dev/test (`KH_MOCK_PORT` = 4030) khi `HUB_KH_ALLOWED_ORIGINS` vắng ngoài production (spec K1 §7). */
+export const DEV_KH_ALLOWED_ORIGINS = ["http://localhost:4030", "http://127.0.0.1:4030"] as const;
+
+/** Cấu hình KH (plan K1 §11 G1 — `AppDeps.kh`): origin chuẩn hoá (`URL.origin`), hạn mỗi lời gọi. */
+export type KhConfig = { allowedOrigins: string[]; timeoutMs: number };
+
+export function khConfigOf(
+  env: Pick<Env, "APP_ENV" | "HUB_KH_ALLOWED_ORIGINS" | "HUB_KH_TIMEOUT_MS">,
+): KhConfig {
+  const raw =
+    env.HUB_KH_ALLOWED_ORIGINS ?? (env.APP_ENV === "production" ? [] : [...DEV_KH_ALLOWED_ORIGINS]);
+  return {
+    allowedOrigins: [...new Set(raw.map((o) => new URL(o).origin))],
+    timeoutMs: env.HUB_KH_TIMEOUT_MS,
+  };
 }
 
 /** Ném Error liệt kê tên biến sai; không bao giờ in giá trị (có thể là secret). */

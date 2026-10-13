@@ -1,7 +1,7 @@
 // HUB-NFR-04 · env hub-api (plan H1 §7): mặc định, chuỗi rỗng = vắng, lỗi chỉ nêu tên biến.
 import { describe, expect, test } from "bun:test";
 import { hostname } from "node:os";
-import { loadEnv } from "./env";
+import { khConfigOf, loadEnv } from "./env";
 
 const PEM = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAsecretvalue\n-----END PUBLIC KEY-----";
 const base = {
@@ -53,5 +53,24 @@ describe("hub-api env", () => {
     expect(msg).toContain("REDIS_URL");
     expect(msg).toContain("HUB_DATABASE_URL");
     expect(msg).not.toContain("secretvalue");
+  });
+
+  test("HUB-FR-131 · K1 G1 · HUB_KH_*: mặc định dev = mock loopback, production = []; timeout 1000..30000", () => {
+    expect(khConfigOf(loadEnv({ ...base, HUB_KH_ALLOWED_ORIGINS: "" }))).toEqual({
+      allowedOrigins: ["http://localhost:4030", "http://127.0.0.1:4030"],
+      timeoutMs: 5000,
+    });
+    const prod = loadEnv({ ...base, APP_ENV: "production", HUB_KH_TIMEOUT_MS: "30000" });
+    expect(khConfigOf(prod)).toEqual({ allowedOrigins: [], timeoutMs: 30_000 });
+    const set = loadEnv({
+      ...base,
+      HUB_KH_ALLOWED_ORIGINS: "https://KH.example.com/, https://kh.example.com",
+    });
+    expect(khConfigOf(set).allowedOrigins).toEqual(["https://kh.example.com"]);
+    for (const v of ["999", "30001", "abc"])
+      expect(() => loadEnv({ ...base, HUB_KH_TIMEOUT_MS: v })).toThrow("HUB_KH_TIMEOUT_MS");
+    expect(() => loadEnv({ ...base, HUB_KH_ALLOWED_ORIGINS: "ftp://x" })).toThrow(
+      "HUB_KH_ALLOWED_ORIGINS",
+    );
   });
 });
