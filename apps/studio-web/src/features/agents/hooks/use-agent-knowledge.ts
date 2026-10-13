@@ -15,27 +15,44 @@ const SECTION_ERRORS = new Set(["KH_AGENT_RUNTIME", "KH_CONNECTION_NOT_FOUND", "
 
 type Opts = { agent: Agent; version: number; onSynced: (a: Agent) => void };
 
-export function useAgentKnowledge({ agent, version, onSynced }: Opts) {
+/** Chọn có thứ tự: `saved` = bản đã lưu (để tính dirty). */
+function useSelection(initial: string[]) {
+  const [ids, setIds] = useState<string[]>(initial);
+  const [saved, setSaved] = useState<string[]>(initial);
+  const reset = (next: string[]) => {
+    setIds(next);
+    setSaved(next);
+  };
+  const toggle = (id: string, on: boolean) =>
+    setIds((cur) => {
+      if (!on) return cur.filter((x) => x !== id);
+      return cur.includes(id) || cur.length >= KH_MAX ? cur : [...cur, id];
+    });
+  const clear = () => setIds([]);
+  const dirty = JSON.stringify(ids) !== JSON.stringify(saved);
+  return { ids, toggle, clear, reset, dirty };
+}
+
+type Sel = ReturnType<typeof useSelection>;
+
+/** Ghi PUT + 409 + lỗi; sau lưu cache agent nhận version mới và báo form chính. */
+function usePersist({ agent, version, onSynced }: Opts, sel: Sel) {
   const qc = useQueryClient();
   const { t } = useTranslation();
-  const [ids, setIds] = useState<string[]>(agent.knowledge_connection_ids ?? []);
-  const [saved, setSaved] = useState<string[]>(agent.knowledge_connection_ids ?? []);
   const [error, setError] = useState<MessageSpec | null>(null);
   const mutation = useMutation({
     mutationFn: (v: { ids: string[]; version: number }) =>
       putAgentKnowledge(agent.id, { connection_ids: v.ids, version: v.version }),
   });
   const adopt = (a: Agent) => {
-    const next = a.knowledge_connection_ids ?? [];
-    setIds(next);
-    setSaved(next);
+    sel.reset(a.knowledge_connection_ids ?? []);
     setError(null);
     qc.setQueryData(agentQuery(a.id).queryKey, a);
     void qc.invalidateQueries({ queryKey: [...AGENTS_KEY], refetchType: "none" });
     onSynced(a);
   };
   const send = async (v: number) => {
-    const res = await mutation.mutateAsync({ ids, version: v });
+    const res = await mutation.mutateAsync({ ids: sel.ids, version: v });
     adopt(res.agent);
     void qc.invalidateQueries({ queryKey: meQuery.queryKey });
     toast.success(t("agents.knowledge.saved"));
@@ -53,11 +70,6 @@ export function useAgentKnowledge({ agent, version, onSynced }: Opts) {
     onReload: adopt,
     onError: fail,
   });
-  const toggle = (id: string, on: boolean) =>
-    setIds((cur) => {
-      if (!on) return cur.filter((x) => x !== id);
-      return cur.includes(id) || cur.length >= KH_MAX ? cur : [...cur, id];
-    });
   const save = async () => {
     setError(null);
     try {
@@ -66,14 +78,17 @@ export function useAgentKnowledge({ agent, version, onSynced }: Opts) {
       if (!conflict.capture(err, version)) fail(err);
     }
   };
-  const dirty = JSON.stringify(ids) !== JSON.stringify(saved);
+  return { save, saving: mutation.isPending, error, conflictProps: conflict.props };
+}
+
+export function useAgentKnowledge(opts: Opts) {
+  const sel = useSelection(opts.agent.knowledge_connection_ids ?? []);
+  const persist = usePersist(opts, sel);
   return {
-    ids,
-    toggle,
-    save,
-    dirty,
-    saving: mutation.isPending,
-    error,
-    conflictProps: conflict.props,
+    ids: sel.ids,
+    toggle: sel.toggle,
+    clear: sel.clear,
+    dirty: sel.dirty,
+    ...persist,
   };
 }

@@ -1,5 +1,5 @@
 // HUB-FR-132 · section "KnowledgeHub" trong Sửa agent: checkbox kết nối (≤ 5, số thứ tự = ưu tiên), [Lưu] riêng.
-// Chỉ `agentic-cli` dùng được; agent khác ⇒ disabled + câu giải thích.
+// Chỉ `agentic-cli` dùng được; agent khác ⇒ chỉ được gỡ (bỏ tick = gỡ hết, server nhận []) + câu giải thích.
 import type { KhConnection } from "@ai/contracts/hub-admin";
 import type { Agent } from "@ai/contracts/studio";
 import type { ReactNode } from "react";
@@ -75,8 +75,8 @@ export function AgentKnowledgeSection({ agent, version, onSynced }: Props) {
             key={c.id}
             c={c}
             order={k.ids.indexOf(c.id) + 1}
-            disabled={!cli || (full && !k.ids.includes(c.id))}
-            onChange={(on) => k.toggle(c.id, on)}
+            disabled={!k.ids.includes(c.id) && (!cli || full)}
+            onChange={(on) => (cli ? k.toggle(c.id, on) : k.clear())}
           />
         ))}
       </ul>
@@ -105,7 +105,7 @@ export function AgentKnowledgeSection({ agent, version, onSynced }: Props) {
           {t("knowledgehub.loadMore")}
         </Button>
       ) : null}
-      {cli && k.dirty ? (
+      {k.dirty ? (
         <div className="flex justify-end">
           <Button type="button" disabled={k.saving} onClick={() => void k.save()}>
             {k.saving ? t("agents.knowledge.saving") : t("agents.knowledge.save")}

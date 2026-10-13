@@ -58,7 +58,7 @@ export function RunProgress({ stages, onView }: Props) {
                           id: o.id,
                           stage: s.name,
                           version: o.version,
-                          knowledge: s.knowledge,
+                          stageIdx: s.idx,
                         })
                       }
                     >

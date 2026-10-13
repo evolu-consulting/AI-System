@@ -78,6 +78,7 @@ function RunBody({ runId }: { runId: string }) {
         runId={runId}
         tenantId={tenant.tenantId}
         target={target}
+        stages={run.stages}
         onClose={() => setTarget(null)}
       />
     </>

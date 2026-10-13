@@ -17,16 +17,18 @@ export type OutputTarget = {
   id: string;
   stage: string;
   version: number;
-  knowledge?: StageView["knowledge"];
+  /** Chỉ số giai đoạn: `knowledge` đọc sống từ `stages` (tóm tắt tự chuyển "đã ghi"). */
+  stageIdx: number;
 };
 type Props = {
   runId: string;
   tenantId: string | undefined;
   target: OutputTarget | null;
+  stages: readonly StageView[];
   onClose: () => void;
 };
 
-export function OutputDialog({ runId, tenantId, target, onClose }: Props) {
+export function OutputDialog({ runId, tenantId, target, stages, onClose }: Props) {
   // Chuỗi `process.*` nạp lười (ngoài kiểu `resources`) ⇒ t không ràng buộc khoá.
   const t = useTranslation().t as (key: string, opt?: Record<string, unknown>) => string;
   const q = useRunOutput(runId, target?.id ?? null, tenantId);
@@ -50,7 +52,12 @@ export function OutputDialog({ runId, tenantId, target, onClose }: Props) {
             </Button>
           </div>
         ) : null}
-        {q.data ? <OutputBody content={q.data.content} knowledge={target?.knowledge} /> : null}
+        {q.data ? (
+          <OutputBody
+            content={q.data.content}
+            knowledge={stages.find((s) => s.idx === target?.stageIdx)?.knowledge}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );

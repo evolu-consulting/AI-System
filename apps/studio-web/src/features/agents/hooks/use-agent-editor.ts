@@ -55,17 +55,14 @@ function useDraftState({ initial, agent }: Opts) {
   return { draft, base, setBase, errors, invalid, ref, load, set, setFailure, fail };
 }
 
-export function useAgentEditor(opts: Opts) {
+/** POST/PUT nháp hiện tại; sau lưu nạp lại bản gốc (sửa) hoặc ghi nhận id vừa tạo (mới). */
+function useSend(opts: Opts, st: ReturnType<typeof useDraftState>) {
   const { agent } = opts;
-  const { t } = useTranslation();
-  const mode = agent ? "edit" : "new";
-  const st = useDraftState(opts);
-  const [createdId, setCreatedId] = useState<string | null>(null);
   const mutation = useSaveAgent();
-
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const send = async (version?: number) => {
     const { draft: d, base: b } = st.ref.current;
-    const payload = toPayload(d, mode === "edit" ? (version ?? b.version) : undefined);
+    const payload = toPayload(d, agent ? (version ?? b.version) : undefined);
     const res = await mutation.mutateAsync({ id: agent?.id, payload });
     st.setFailure({}, false);
     if (agent) st.load(res.agent);
@@ -75,6 +72,15 @@ export function useAgentEditor(opts: Opts) {
     }
     return res;
   };
+  return { send, createdId, saving: mutation.isPending };
+}
+
+export function useAgentEditor(opts: Opts) {
+  const { agent } = opts;
+  const { t } = useTranslation();
+  const mode = agent ? "edit" : "new";
+  const st = useDraftState(opts);
+  const { send, createdId, saving } = useSend(opts, st);
   const conflict = useConflict<Agent>({
     buildRows: (cur) => diffDrafts(st.ref.current.draft, fromAgent(cur), (k) => t(k)),
     submit: (v) => send(v),
@@ -101,7 +107,7 @@ export function useAgentEditor(opts: Opts) {
     mode,
     save,
     syncVersion,
-    saving: mutation.isPending,
+    saving,
     createdId,
     hadBash,
     dirty,
