@@ -45,84 +45,84 @@ Trỏ BA; chỉ ghi phần cụ thể hoá.
 | Hạ cấp | Mạng/timeout, `404 ns_not_active`, `423 ns_suspended`, `503 embedder_unavailable` ⇒ chạy tiếp + cảnh báo output + audit | HUB-FR-134 |
 | Seed mẫu | `sdlc-delivery` (≤ 10 stage: Scope Sign-off gate → Setup&Plan → Spec gate → Design → Implementation → Code Review → Testing → UAT gate → Release); `bug-fix` (6 stage, danh sách ở [plan §6](plan.md)). Code Review/Testing trượt ⇒ gate người + `back_to_steps`; phỏng cấu trúc `seed.py`, không chép prompt | CR-070 |
 
-## 3. Contract (backend-lead)
-File: `packages/contracts/src/hub-admin/kh.ts` (export qua `@ai/contracts/hub-admin`), mọi object `strictObject`. Quyết định, hàm thuần, luồng: [`plan.md`](plan.md). Body lỗi = `ErrorResponse` M0.
+## 3. Contract (backend-lead · viết lại theo CR-071)
+File `packages/contracts/src/hub-admin/kh.ts` (export `@ai/contracts/hub-admin`), mọi object `strictObject`, lỗi = `ErrorResponse` M0. Quyết định, hàm thuần, luồng, mã kiểm: [`plan.md`](plan.md).
 
 **3.1 Kiểu chung**
 | Tên | Định nghĩa |
 |---|---|
-| `KhNsSchema` | `^[a-z][a-z0-9_]{2,31}$`, không bắt đầu `kh`, ∉ `admin, me, capabilities, token, redaction, openapi, health, version` (luật KH `auth-and-tenancy` §1) |
-| `KhProjectIdSchema` | `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$` |
-| `KhKeyspaceSchema` | `^[a-z][a-z0-9_.-]{0,63}$`, mặc định `step` |
-| `KhProjectSchema` | `{ project_id, label: string trim ≤ 80 = "", read_only: boolean = false }` |
-| `KhCredentials` (giá trị secret `kh_api_key`, **không** có trong API — Hub parse khi dùng) | JSON `{ client_id: 1..128, client_secret: 1..512, token_url?: URL }`; sai ⇒ mục kiểm `kh_credentials_invalid` |
-| `KhCheckItemSchema` | `{ code: KH_CHECK_CODES, level: "error" \| "warning", params?: Record<string, string \| number> }` |
-| `KH_CHECK_CODES` | 17 mã lỗi + 4 mã cảnh báo (`kh_embedder_multilingual` luôn có) — danh sách + bước sinh: plan §3.1 |
-| `KhCheckResultSchema` | `{ status: "ok" \| "error", checked_at: ISO, kh_version: string \| null, keyspace_dims: string[] ≤ 8, items: KhCheckItem[] ≤ 30 }`; `error` ⇔ có mục `level=error` |
-| `KhStatusSchema` | `"unchecked" \| "ok" \| "error"` |
-| `KhTenantSchema` | `{ tenant: {id,key,name}, ns, secret: {id, name} \| null, keyspace, enabled, status: KhStatus, check: KhCheckResult \| null, projects: KhProject[] ≤ 50, version, updated_at, updated_by }` |
-| `KhSettingsSchema` | `{ base_url: string \| null, allowed_origins: string[]` (chỉ đọc; `AppDeps.kh` ?? env, cả `timeout_ms`), `timeout_ms, version, updated_at }` |
-| `StageKnowledgeSchema` (thêm **optional** `knowledge` vào `StageViewSchema`, `chat/processes-entities.ts`) | `{ project_id, read_only, queries: 0..5, query_limit: 5, warning: KH_WARNING_CODES \| null, summary: "none" \| "pending" \| "written" \| "failed" \| "skipped" }`; vắng = stage không dùng KH |
-| `KH_WARNING_CODES` (hạ cấp) | `unreachable` · `timeout` · `ns_not_active` · `ns_suspended` · `embedder_unavailable` · `unauthorized` · `forbidden` · `quota` · `invalid` · `server_error` (gồm 409 `in_progress`) · `disabled` (plan §3.3) |
+| `KhNsSchema` | `^[a-z][a-z0-9_]{2,31}$`, không bắt đầu `kh`, ∉ `admin, me, capabilities, token, redaction, openapi, health, version` |
+| `KhProjectIdSchema` · `KhKeyspaceSchema` | `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$` · `^[a-z][a-z0-9_.-]{0,63}$` (mặc định `step`) |
+| `KhCredentials` (giá trị secret `kh_api_key`, không có trong API) | JSON `{ client_id: 1..128, client_secret: 1..512, token_url?: URL }`; sai ⇒ `kh_credentials_invalid` |
+| `KhCheckItemSchema` · `KH_CHECK_CODES` | `{ code, level: "error" \| "warning", params?: Record<string, string \| number> }` · 17 lỗi + 4 cảnh báo (plan §3.1) |
+| `KhCheckResultSchema` | `{ status: "ok" \| "error", checked_at, kh_version: string \| null, keyspace_dims: string[] ≤ 8, items ≤ 30 }`; `error` ⇔ có mục `level=error` |
+| `KhTenantSchema` | `{ tenant: {id,key,name}, ns, secret: {id,name} \| null, keyspace, enabled, status: "unchecked" \| "ok" \| "error", check: KhCheckResult \| null, version, updated_at, updated_by }` (**không** còn `projects`) |
+| `KhSettingsSchema` | `{ base_url: string \| null, allowed_origins: string[], timeout_ms, version, updated_at }` (origins/timeout chỉ đọc, `AppDeps.kh` ?? env) |
+| `KhKnowledgeSchema` (kho tri thức) | `{ id, name: trim 1..80, project_id, tenant: {id,key,name} \| null` (null = **dùng chung**), `read_only, agents_count: int, version, updated_at, updated_by }`; dùng chung ⇒ `read_only = true` |
+| `KhKnowledgeCheckSchema` | `{ status: "ok" \| "warning" \| "error", checked_at, truncated: boolean, items: [{ tenant: {id,key,name}, ns: string \| null, result: "attached" \| "not_attached" \| "unverified" \| "not_configured" \| "failed", code: KH_WARNING_CODES \| null }] ≤ 100 }` |
+| `StageKnowledgeSchema` (optional `knowledge` trong `StageViewSchema`) | `{ write_to: { knowledge_id, name } \| null, queries: 0..5, query_limit: 5, warning: KH_WARNING_CODES \| null, summary: "none" \| "pending" \| "written" \| "failed" \| "skipped" }`; vắng = stage không dùng KH |
+| `KH_WARNING_CODES` | `unreachable · timeout · ns_not_active · ns_suspended · embedder_unavailable · unauthorized · forbidden · quota · invalid · server_error · disabled` |
 
-**3.2 Studio — `/studio/api/kh*`** (chỉ `platform_admin`, 403 trước parse — sẵn ở `mountH4a`)
+**3.2 Studio** (chỉ `platform_admin`, 403 trước parse — `mountH4a`). Cột "Lỗi" luôn gồm 400 (body/query sai).
 | Method · path | Request | 2xx | Lỗi |
 |---|---|---|---|
-| `GET /kh/settings` | — | 200 `KhSettings` | — |
-| `PUT /kh/settings` | `{ base_url: string ≤ 512 \| null, version }` | 200 `KhSettings`; đổi URL ⇒ mọi tenant `status = unchecked` | 400 · 409 `VERSION_CONFLICT` · 422 `KH_URL_NOT_ALLOWED {reason: invalid \| not_https \| not_in_allowlist}` |
-| `GET /kh/tenants` | `{ q? ≤ 64, limit 1..100 = 50, cursor? ≤ 512 }` | 200 `{ items: KhTenant[], next_cursor }` sắp `(lower(tenant.key), tenant_id)` | 400 |
-| `PUT /kh/tenants/:tenant_id` | `{ ns, secret_id: uuid \| null, keyspace = "step", projects: KhProject[] ≤ 50 (project_id duy nhất), version?: int }` — vắng `version` = tạo | 201 tạo / 200 sửa `KhTenant`; đổi `ns`/`secret_id`/`keyspace`/tập `project_id`/`read_only` ⇒ `status = unchecked`, `check = null` (chỉ đổi `label` ⇒ giữ) | 400 (tenant không tồn tại ⇒ path `tenant_id`) · 404 (sửa mà chưa có) · 409 `KH_TENANT_EXISTS` · 409 `KH_NS_TAKEN {tenant}` · 409 `VERSION_CONFLICT {current, updated_at}` · 422 `KH_SECRET_INVALID {reason: not_found \| wrong_kind \| wrong_tenant}` (secret phải `kh_api_key` **của chính tenant**) · 409 `KH_PROJECT_IN_USE {project_id, process_defs: [{id,key,name}]}` (bỏ project còn được gắn) |
-| `DELETE /kh/tenants/:tenant_id?version=N` | — | 204; xoá luôn project + gắn quy trình của tenant (CASCADE, audit `summary.bindings_removed`) | 404 · 409 `VERSION_CONFLICT` |
-| `POST /kh/tenants/:tenant_id/check` | — | 200 `KhCheckResult` (KH lỗi vẫn 200, `status=error`); lưu vào hàng (không tăng `version`; hàng/URL đổi trong lúc kiểm ⇒ không lưu, plan §3.1) | 404 · 409 `KH_NOT_CONFIGURED` (thiếu `base_url` hoặc `secret_id`) |
-| `PUT /agents/:id/knowledge` | `{ knowledge_enabled: boolean, version }` | 200 `AgentWriteResponse` (H4a); `AgentSchema` thêm `knowledge_enabled: boolean` | 404 · 409 `VERSION_CONFLICT` · 422 `KH_AGENT_RUNTIME` (chỉ `agentic-cli`) |
+| `GET /kh/settings` · `PUT /kh/settings` | PUT `{ base_url: ≤ 512 \| null, version }` | 200 `KhSettings`; đổi URL ⇒ mọi tenant `unchecked` | 409 `VERSION_CONFLICT` · 422 `KH_URL_NOT_ALLOWED {reason: invalid \| not_https \| not_in_allowlist}` |
+| `GET /kh/tenants` | `q? ≤ 64, limit 1..100 = 50, cursor?` | 200 `{ items: KhTenant[], next_cursor }` theo `(lower(key), tenant_id)` | — |
+| `PUT /kh/tenants/:tenant_id` | `{ ns, secret_id: uuid \| null, keyspace = "step", version?: int }` (vắng = tạo) | 201/200 `KhTenant`; đổi ns/secret/keyspace ⇒ `unchecked`, `check = null` | 400 path `tenant_id` (không tồn tại) · 404 · 409 `KH_TENANT_EXISTS` · `KH_NS_TAKEN {tenant}` · `VERSION_CONFLICT {current, updated_at}` · 422 `KH_SECRET_INVALID {reason: not_found \| wrong_kind \| wrong_tenant}` |
+| `DELETE /kh/tenants/:tenant_id?version=N` | — | 204 (kho của tenant **giữ**, tenant không hiệu lực) | 404 · 409 `VERSION_CONFLICT` |
+| `POST /kh/tenants/:tenant_id/check` | — | 200 `KhCheckResult` (KH lỗi vẫn 200); lưu vào hàng, không tăng `version` | 404 · 409 `KH_NOT_CONFIGURED` |
+| `GET /kh/knowledge` | `q? ≤ 64, scope?: "shared" \| uuid tenant, limit 1..100 = 50, cursor?` | 200 `{ items: KhKnowledge[], next_cursor }` theo `(lower(name), id)` | — |
+| `POST /kh/knowledge` | `{ name, project_id, tenant_id: uuid \| null, read_only = false }`; `tenant_id null` ∧ `read_only false` ⇒ 400 path `read_only` | 201 `KhKnowledge` | 400 path `tenant_id` · 409 `KH_KNOWLEDGE_EXISTS {id}` (trùng `(phạm vi, project_id)`) |
+| `PUT /kh/knowledge/:id` | `{ name, project_id, read_only, version }` (phạm vi **không** đổi được) | 200 | 404 · 409 `KH_KNOWLEDGE_EXISTS` · `VERSION_CONFLICT` · 400 (dùng chung mà `read_only false`) |
+| `DELETE /kh/knowledge/:id?version=N` | — | 204 | 404 · 409 `VERSION_CONFLICT` · 409 `KH_KNOWLEDGE_IN_USE {agents: [{id,key,name}] ≤ 20}` |
+| `POST /kh/knowledge/:id/check` | — | 200 `KhKnowledgeCheck` (không lưu, audit `check`) | 404 · 409 `KH_NOT_CONFIGURED` (thiếu `base_url`) |
+| `PUT /agents/:id/knowledge` | `{ knowledge_ids: uuid[] ≤ 10 duy nhất (thứ tự = thứ tự gắn), version }` (thay `knowledge_enabled`) | 200 `AgentWriteResponse`; `AgentSchema.knowledge_ids: uuid[]`, `AgentListItemSchema.knowledge_count` | 404 · 409 `VERSION_CONFLICT` · 422 `KH_AGENT_RUNTIME` (≠ `agentic-cli` mà list ≠ []) · 422 `KH_KNOWLEDGE_NOT_FOUND {ids}` |
 
-**"Kiểm tra kết nối"**: 10 bước `/health` → `/version` (≥ 6.4) → `/v1/me` không token (phải 401) → token → `/v1/capabilities` (`v1`, `retrieval`) → `/v1/me` (`kind=client`, đúng ns) → `/v1/{ns}/manifest` (có manifest, có keyspace; people lanes bật chỉ lỗi nếu tenant có project dùng chung) → project → cảnh báo embedder; mã từng bước: plan §3.1.
+**Kiểm tra kết nối (tenant)**: 10 bước plan §3.1 giữ; bước 8 lỗi `kh_people_lanes_on_shared` khi lanes bật ∧ có kho dùng chung có project gắn vào ns (`me.projects` rỗng ⇒ mọi kho dùng chung); bước 9 so `me.projects` với kho **của tenant**. **Kiểm tra kho**: kho tenant ⇒ một mục, `not_attached`/`not_configured`/`failed` ⇒ `error`; kho dùng chung ⇒ mỗi tenant đã có hàng KH (≤ 100 theo key) một mục, chưa gắn ⇒ chỉ `warning`. Không ảnh hưởng hiệu lực.
 
-**3.3 Tenant — `/admin/kh*`, `/process-defs/:id/knowledge`** (`tenant_admin` = tenant phiên; `platform_admin` kèm `?tenant_id` — ngữ nghĩa `readTenant`/`writeTenant` của nguồn; `member` ⇒ 403; thêm `/admin/kh` vào `PROTECTED_PREFIXES`)
+**3.3 Tenant — `/admin/kh*`** (`tenant_admin` = tenant phiên; `platform_admin` + `?tenant_id`; `member` ⇒ 403; `/admin/kh` vào `PROTECTED_PREFIXES`)
 | Method · path | Request | 2xx | Lỗi |
 |---|---|---|---|
-| `GET /admin/kh` | `?tenant_id` | 200 `{ available: boolean, reason: null \| "not_configured" \| "unchecked" \| "check_failed", enabled, projects: KhProject[], version: int \| null }` | 404 |
-| `PUT /admin/kh/enabled` | `{ enabled, version }` | 200 như GET | 409 `KH_NOT_CONFIGURED` (chưa có hàng) · 409 `VERSION_CONFLICT` |
-| `GET /process-defs/:id/knowledge` | `?tenant_id` | 200 `KhBinding` = `{ process_def_id, project_id: \| null, stage_projects: Record<stage_key, project_id \| null>, version: int \| null, effective: [{ stage_key, project_id \| null, read_only, summary_required }] }` | 404 `NOT_FOUND` (mẫu `tenant_id null`, def tenant khác, đã xoá) |
-| `PUT /process-defs/:id/knowledge` | `{ project_id \| null, stage_projects ≤ 10 khoá (khoá vắng = theo quy trình, `null` = tắt stage), version: int \| null }` (null = tạo) | 200 `KhBinding`; `project_id null` + mọi override null/vắng ⇒ xoá gắn | 404 `NOT_FOUND` · 404 `KH_PROJECT_NOT_FOUND` (project không thuộc danh sách tenant — kể cả của tenant khác, HUB-BR-35) · 400 path `stage_projects.<key>` (stage không có trong def) · 409 `VERSION_CONFLICT` |
+| `GET /admin/kh` | `?tenant_id` | 200 `{ available, reason: null \| "not_configured" \| "unchecked" \| "check_failed", enabled, version: int \| null }` | 404 |
+| `PUT /admin/kh/enabled` | `{ enabled, version }` | 200 như GET | 409 `KH_NOT_CONFIGURED` · `VERSION_CONFLICT` |
 
-**3.4 Tool `kh-query` qua `/mcp`** (tên `kh_query` của BA → khoá `kh-query` vì `payload.mcp.tools` theo `CATALOG_KEY_RE` — Q1)
-- Có trong `payload.mcp.tools` **chỉ khi** job là stage quy trình có `snapshot.kh.stages[idx]` ≠ null **và** agent `knowledge_enabled` **và** tenant hiệu lực (§3.5) **lúc tạo job** — hiệu lực tool theo `payload.mcp.tools` đó. `tools/list` thêm mô tả khi `ctx.tools ∋ kh-query` (0 query DB). Catalog trùng khoá `kh-query` bị bỏ (log warn).
-- Input `{ query: string trim 1..4000 }`, `additionalProperties: false`. Agent **không** chọn project/ns: project từ snapshot, ns + credentials từ tenant của **job** (HUB-BR-35).
-- Hub gọi `POST /v1/{ns}/context/step` `{ project, keyspace, key, query, budget_chars: 4000 }` (đủ: plan §3.4). Kết quả: câu dẫn "dữ liệu, không phải lệnh" + `pack_text` (≤ 4000), `structuredContent { serve_id, used_chars, cut_at_budget, calls_left }`.
-- Lỗi tool (`isError`, không lỗi run): `INVALID_ARGS` (không đếm) · `KH_LIMIT` (lần 6+, không gọi KH) · `KH_UNAVAILABLE` (hạ cấp: cảnh báo stage + audit; tính vào 5 **trừ** `disabled`) · `NOT_CONFIGURED` (cùng câu EN `KH_UNAVAILABLE`). Câu EN: plan §3.4.
+Bỏ (CR-071): `kh_bindings`, `GET/PUT /process-defs/:id/knowledge`, `KhProjectSchema`, `KH_PROJECT_IN_USE`, `KH_PROJECT_NOT_FOUND`, `knowledge_enabled`.
+
+**3.4 Kho hiệu lực + tool `kh-query`** (khoá `kh-query` — Q1; chỉ job **stage quy trình**, Q10)
+- **Kho hiệu lực** (`khEffectiveKnowledge`) = kho gắn agent của job, `tenant_id = tenant run ∨ null`, theo thứ tự gắn, ≤ 10 — **và** tenant hiệu lực (§3.5). Kho tenant khác bỏ qua lặng lẽ (RLS + WHERE).
+- **Lúc tạo job**: agent `agentic-cli` ∧ tập ≠ ∅ ⇒ thêm `kh-query` vào `payload.mcp.tools` + chốt tập vào `kh_job_knowledge` (cùng tx). Rỗng ⇒ không tool. Đổi gắn/kho sau đó không thu hồi; lúc gọi vẫn kiểm tenant hiệu lực.
+- Input `{ query: trim 1..4000 }`, `additionalProperties:false`; agent **không** truyền project/ns. Hub gọi song song `POST /v1/{ns}/context/step` cho **mỗi** project đã chốt, `budget_chars = max(200, ⌊4000/n⌋)`; ghép `### <tên kho>` + `pack_text`, tổng ≤ 4000; `structuredContent { serve_ids, used_chars, cut_at_budget, failed: int, calls_left }`. Một lần gọi tool = 1 lần đếm (≤ 5/stage, đếm chung nhóm).
+- Lỗi tool (`isError`, không lỗi run): `INVALID_ARGS` (không đếm) · `KH_LIMIT` (lần 6+, không gọi KH) · `KH_UNAVAILABLE` (mọi project lỗi, hoặc `disabled` — `disabled` không đếm) · `NOT_CONFIGURED`. Một phần lỗi ⇒ trả phần OK + `warning` + audit `degrade`. Câu EN: plan §3.4.
 
 **3.5 Hiệu lực, URL, token, ghi worklog**
-- **Chính sách URL** (`khUrlPolicy`): `https:` bắt buộc; `http:` chỉ khi `APP_ENV ∈ {development,test}` và host ∈ `localhost, 127.0.0.1, ::1`; origin ∈ `HUB_KH_ALLOWED_ORIGINS`; không userinfo/query/fragment; bỏ `/` cuối. Kiểm khi lưu **và** mỗi lời gọi; mọi lời gọi (kể cả token) `redirect: "error"` ⇒ `unreachable`.
-- **`available`** (`GET /admin/kh`) = `base_url` có ∧ hàng tenant có ∧ `secret_id` có ∧ `status = ok` (không tính `enabled`); `reason` ưu tiên `not_configured` > `unchecked` > `check_failed`. **Hiệu lực** (`khEffective`) = `available ∧ enabled`. Không hiệu lực ⇒ không `kh-query`, không ghi (hàng chờ ⇒ `skipped`).
-- **Token** (HUB-FR-137): client credentials, cache **trong bộ nhớ** theo `(tenant, secret_id, secret.version, token_url)`, làm mới khi còn 60–90 s; `401` ⇒ token mới + thử lại **1 lần**. Không vào DB/log/audit/job/prompt/lỗi. Plan §3.2.
-- **Ghi `## Tóm tắt`**: stage `done` (auto chốt output / gate Đạt / người quyết cho qua) + project **không chỉ đọc** + output có `## Tóm tắt` không rỗng ⇒ hàng chờ `kh_writes` cùng transaction; bộ gửi nền `POST /v1/{ns}/worklog { project, subject: "<process.key>/<stage.key>", text }` (cắt 200 từ rồi 4000 ký tự), `Idempotency-Key: kw-<process_run_id>-<stage_run_id>-v<output.version>`. Gate trượt ⇒ không có hàng.
-- **Lỗi KH**: query ⇒ hạ cấp ngay; ghi ⇒ thử lại ≤ 5 lần (lùi 30 s × 2ⁿ), `403/422/413` không thử lại; hết lần ⇒ `failed` + audit. Không đổi trạng thái run/gate. Bảng phân loại: plan §3.3.
-- **`## Tóm tắt` bắt buộc**: lúc **start** run, stage có project **không chỉ đọc** và executor `agent` ⇒ snapshot thêm `Tóm tắt` vào `required_sections` + `## Tóm tắt` vào template (như `ensureHandoff`; def gốc không đổi). Quy trình không gắn / tenant không hiệu lực lúc start ⇒ snapshot như cũ.
+- **URL** (`khUrlPolicy`): `https:`; `http:` chỉ `APP_ENV ∈ {development,test}` + host loopback; origin ∈ `HUB_KH_ALLOWED_ORIGINS`; không userinfo/query/fragment. Kiểm khi lưu **và** mỗi lời gọi (kể cả token), `redirect:"error"`.
+- **`available`** = `base_url` ∧ hàng tenant ∧ `secret_id` ∧ `status=ok`; `reason` ưu tiên `not_configured` > `unchecked` > `check_failed`. **Tenant hiệu lực** = `available ∧ enabled`.
+- **Token** (HUB-FR-137): client credentials, cache bộ nhớ theo `(tenant, secret_id, secret.version, token_url)`, làm mới khi còn 60–90 s, `401` ⇒ token mới + thử lại **1 lần**; không vào DB/log/audit/job/prompt.
+- **Đích `## Tóm tắt`** (chốt lúc **start** run, stage executor `agent` đơn): kho **ghi được đầu tiên** trong kho hiệu lực của agent stage (`read_only=false`, `tenant_id = tenant run`) ⇒ `snapshot.kh.stages[idx]` + `ensureSummary` (thêm `Tóm tắt` vào `required_sections` + template, def gốc không đổi). Không có / tenant không hiệu lực / stage nhóm ⇒ `null`, snapshot như cũ.
+- **Ghi**: stage `done` (auto chốt / gate Đạt / người cho qua) ∧ đích ≠ null ∧ output có `## Tóm tắt` ⇒ hàng chờ `kh_writes` cùng tx; bộ gửi nền `POST /v1/{ns}/worklog {project, subject: "<process.key>/<stage.key>", text}` (200 từ rồi 4000 ký tự), `Idempotency-Key: kw-<process_run_id>-<stage_run_id>-v<output.version>`; trước khi gửi kiểm lại tenant hiệu lực + kho còn ∧ không chỉ đọc, sai ⇒ `skipped`. Gate trượt ⇒ không có hàng.
+- **Lỗi KH**: query ⇒ hạ cấp ngay; ghi ⇒ thử lại ≤ 5 (30 s × 2ⁿ), `403/422/413` không thử lại; hết ⇒ `failed` + audit. Không đổi trạng thái run/gate (plan §3.3).
 
-**3.6 Audit**: entity `kh_settings` · `kh_tenant` · `kh_binding` · `kh_query` · `kh_worklog` (+ `agent`); action thêm `check` · `degrade` · `write_fail`. Before/after không bao giờ có giá trị secret/token. Ghi Studio qua `withConfigWrite` (bump + NOTIFY); `check`/hạ cấp/ghi worklog không bump. Bảng đầy đủ: plan §4.
+**3.6 Audit**: entity `kh_settings · kh_tenant · kh_knowledge · kh_query · kh_worklog` (+ `agent`); action thêm `check · degrade · write_fail`. Không giá trị secret/token. Studio ghi qua `withConfigWrite`; check/hạ cấp/ghi không bump. Bảng: plan §4.
 
 ## 4. Dữ liệu (backend-lead)
-Migration `migrations-hub/0029_k1_kh.sql` (sau 0028; idempotent như 0021, chỉ THÊM). Drizzle: `schema/hub-kh.ts`. RLS mẫu `v_t` của 0021, policy `FOR ALL TO hub_rw`; `agent_runtime`/`hub_ro` không GRANT. FK kép `(id, tenant_id)` khi bảng cha có UNIQUE đó (chỉ `process_runs`), còn lại FK đơn + RLS.
-
-Cột/kiểu/CHECK đầy đủ: plan §5. Tóm tắt:
-| Bảng | Vai trò | Khoá · FK (luật xoá) | RLS |
+Migration `migrations-hub/0029_k1_kh.sql` (sau 0028, idempotent, chỉ THÊM; chưa áp lên DB nào ⇒ viết lại tự do). Drizzle `schema/hub-kh.ts`. RLS mẫu `v_t` (0028), `FOR ALL TO hub_rw`; `agent_runtime`/`hub_ro` không GRANT. Cột/CHECK đủ: plan §5.
+| Bảng | Vai trò | Khoá · FK (xoá) | RLS |
 |---|---|---|---|
-| `kh_settings` | một hàng `id=1`: `base_url`, `version` | PK `id` | không (nền tảng; hub_rw S/U) |
-| `kh_tenants` | tenant ↔ `ns` ↔ `secret_id`, `keyspace`, `enabled`, `check_status/checked_at/check_result`, `version` | PK `tenant_id` · UNIQUE `ns` · `secret_id → secrets` RESTRICT | có |
-| `kh_projects` | project của tenant + `label`, `read_only` | PK `(tenant_id, project_id)` · `→ kh_tenants` CASCADE | có |
-| `kh_bindings` | gắn quy trình: `project_id` mặc định + `stage_projects` jsonb, `version` | PK `process_def_id` · `→ process_defs` CASCADE · `(tenant_id, project_id) → kh_projects` RESTRICT · `→ kh_tenants` CASCADE | có |
-| `kh_stage_usage` | đếm `queries` 0..5 + `last_warning` | PK `(stage_run_id, attempt, round)` · `→ stage_runs` CASCADE | có |
-| `kh_writes` | hàng chờ ghi worklog (`status` pending/done/failed/skipped, `attempts` ≤ 5, `next_at`) | PK `id` · UNIQUE `output_id` · `→ process_runs/stage_runs/process_outputs` CASCADE · index due `(next_at) WHERE pending` | có |
-| `agents` (sửa) | `knowledge_enabled bool NOT NULL DEFAULT false` | — | như cũ |
+| `kh_settings` | một hàng `id=1`: `base_url`, `version` | PK | không |
+| `kh_tenants` | tenant ↔ `ns` ↔ `secret_id`, `keyspace`, `enabled`, `check_*`, `version` | PK `tenant_id` · UNIQUE `ns` · `secret_id → secrets` RESTRICT | `v_t` |
+| `kh_knowledge` | kho: `name`, `project_id`, `tenant_id` NULL = dùng chung, `read_only`, `version` | PK `id` · UNIQUE `(COALESCE(tenant_id, uuid0), project_id)` · CHECK `tenant_id IS NOT NULL OR read_only` | đọc: system ∨ (user ∧ (`tenant_id IS NULL` ∨ = tenant)); ghi: system |
+| `agent_knowledge` | gắn kho ↔ agent + `position` 0..9 | PK `(agent_id, knowledge_id)` · UNIQUE `(agent_id, position)` · `→ agents` CASCADE · `→ kh_knowledge` RESTRICT | không (như `agents`; lọc tenant nhờ RLS `kh_knowledge`) |
+| `kh_job_knowledge` | tập kho chốt lúc tạo job `items [{id,name,project}]` 1..10 | PK `job_id → jobs` CASCADE | `v_t` |
+| `kh_stage_usage` | đếm `queries` 0..5 + `last_warning` | PK `(stage_run_id, attempt, round)` · `→ stage_runs` CASCADE | `v_t` |
+| `kh_writes` | hàng chờ worklog (`knowledge_id`, `project_id`, `status`, `attempts` ≤ 5, `next_at`) | PK `id` · UNIQUE `output_id` · `→ process_runs/stage_runs/process_outputs` CASCADE · index due | `v_t` |
 
-**Audit CHECK**: DROP + ADD `hub_audit_log_action_check` thêm `check`, `degrade`, `write_fail`; `hub_audit_log_entity_check` thêm `kh_settings`, `kh_tenant`, `kh_binding`, `kh_query`, `kh_worklog` — giữ **toàn bộ** giá trị tới 0028 (gồm `rotate`, `secret`). Hằng `K1_AUDIT_ACTIONS`/`K1_AUDIT_ENTITIES` ở `hub-kh.ts`, trải vào `HUB_AUDIT_*_VALUES`.
+**Audit CHECK**: DROP + ADD giữ mọi giá trị tới 0028 + action `check, degrade, write_fail` / entity `kh_settings, kh_tenant, kh_knowledge, kh_query, kh_worklog` (`K1_AUDIT_*` trải vào `HUB_AUDIT_*_VALUES`).
 
-**`snapshot.kh`** (trong `process_runs.snapshot`, chốt lúc start, vắng = run không dùng KH): `{ stages: ({ project: string, read_only: boolean, summary: boolean } | null)[] }` (độ dài = số stage). ns/credentials/`read_only` **đọc lại lúc gọi** (đổi giữa chừng có hiệu lực ngay; project bị gỡ khỏi tenant ⇒ `disabled`).
+**`snapshot.kh`** (`process_runs.snapshot`, chốt lúc start, vắng = không stage nào có đích ghi): `{ stages: ({ knowledge_id, name, project } | null)[] }` = đích `## Tóm tắt`. ns/credentials đọc lại lúc gọi.
 
-**`used_by` (H4b-1)**: `usedByMany` thêm `knowledge_hub` = `kh_tenants WHERE secret_id = ANY($ids)`, phần tử `{type: "knowledge_hub", id: tenant_id, key: ns}`. Xoá secret đang dùng ⇒ 409 `SECRET_IN_USE` (FK RESTRICT chốt cuối).
+**`used_by` (H4b-1)**: `knowledge_hub` = `kh_tenants WHERE secret_id = ANY($ids)` ⇒ `{type, id: tenant_id, key: ns}`; xoá secret đang dùng ⇒ 409 `SECRET_IN_USE`.
 
-Không xoá dữ liệu cũ; không seed KH (dev dùng mock). Seed quy trình mẫu: plan §6.
+Không seed KH (dev dùng mock). Seed quy trình mẫu: plan §6.
 
 ## 5. UI (frontend-lead)
 **Chưa artboard.** Mockup: https://claude.ai/artifact/MHUei1vhi2WHKqYWi21WFQ (FE chờ người dùng OK). Chi tiết (bố cục, trạng thái, VI/EN, validate, nhãn e2e): [`plan-frontend.md`](plan-frontend.md), đã đối chiếu §3.
@@ -136,7 +136,7 @@ Không xoá dữ liệu cũ; không seed KH (dev dùng mock). Seed quy trình m�
 Quyết định: không thư viện/ADR mới; credentials chỉ chọn `secret_id` (tạo ở Secrets, không có "Toàn nền tảng"); một cờ `enabled` (tenant) + `status=ok`; Kiểm tra kết nối theo hàng đã lưu. Task F1–F4 (`tasks.md`).
 
 ## 6. Hiệu năng
-Mặc định `CONVENTIONS.md` §6 (perf không chặn mốc). Mỗi lời gọi KH ≤ `HUB_KH_TIMEOUT_MS` = 5000 (tổng "Kiểm tra kết nối" ≤ 20 s). `kh-query`: Hub thêm ≤ 50 ms p95 ngoài thời gian KH (2 query: tra job→stage→run theo PK + `kh_stage_usage` upsert theo PK; cấu hình tenant theo PK). `tools/list` giữ 0 query DB. Bộ gửi worklog: mỗi 10 s, lô ≤ 20, `FOR UPDATE SKIP LOCKED` trên `kh_writes_due_idx`. List Studio ≤ 100 hàng/trang.
+Mặc định `CONVENTIONS.md` §6 (perf không chặn mốc). Mỗi lời gọi KH ≤ `HUB_KH_TIMEOUT_MS` = 5000 (tổng "Kiểm tra kết nối" ≤ 20 s). `kh-query`: Hub thêm ≤ 50 ms p95 ngoài thời gian KH (tra `kh_job_knowledge` + job→stage + cấu hình tenant theo PK, upsert `kh_stage_usage`; gọi KH song song theo project). `tools/list` giữ 0 query DB. Bộ gửi worklog: mỗi 10 s, lô ≤ 20, `FOR UPDATE SKIP LOCKED` trên `kh_writes_due_idx`. List Studio ≤ 100 hàng/trang.
 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
@@ -168,21 +168,26 @@ Lệnh xong: `done:k1` = test-plan §6.
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng)
 - 2026-10-13 · Intake Đầy đủ chốt 14 mặc định: CR-067 (chỉ `/v1/{ns}`, ns = tenant, credentials JSON, token trong bộ nhớ, TLS qua proxy, license), CR-068 (`## Tóm tắt` qua worklog, embedder đa ngữ), CR-069 (K2 thu hẹp), CR-070 (seed mẫu). Khảo sát: [`research-ai-sdlc.md`](research-ai-sdlc.md).
-### Câu hỏi trước Gate (backend-lead PLAN 2026-10-13; mặc định đề xuất — chưa có trong CR-067…070)
-| # | Câu hỏi | Mặc định đề xuất |
+### Câu hỏi trước Gate (backend-lead; mặc định đề xuất)
+| # | Câu hỏi | Mặc định |
 |---|---|---|
-| Q1 | Tên tool `kh_query` không khớp `CATALOG_KEY_RE` (`^[a-z0-9-]{2,32}$`) của `payload.mcp.tools` (Runtime/pydantic kiểm cùng regex) | Khoá tool **`kh-query`** (agent thấy `mcp__hub__kh-query`); không đổi contract job/Runtime. "kh_query" giữ làm tên nghiệp vụ trong BA |
-| Q2 | People lanes và `## Tóm tắt` quay lại qua `context/step` (KH chỉ phục vụ tầng `log` khi `include_people_lanes`≠false — `app/caps/retrieval.py`) | **Người dùng chốt 2026-10-13:** cho phép people lanes với project **riêng** của tenant (ns = tenant ⇒ vẫn cách ly) ⇒ agent đọc `## Tóm tắt` qua `kh-query` ngay K1 (KH giới hạn ghi chú người viết ≤ 40% budget). **Project dùng chung vẫn bắt buộc tắt lanes** (chỉ đọc, Hub không ghi Tóm tắt) ⇒ "Kiểm tra kết nối" lỗi `kh_people_lanes_on_shared`. Sửa CR-067/ADR-0012 |
-| Q3 | "Cảnh báo vào output stage" khi hạ cấp | Hiện ở `StageView.knowledge.warning` (+ audit); **không** sửa nội dung file output của agent |
-| Q4 | Allowlist URL KH ở đâu | Env `HUB_KH_ALLOWED_ORIGINS` (vận hành đặt, UI chỉ đọc); URL nằm trong DB qua Studio |
-| Q5 | Khi nào tenant "hiệu lực" | Cần lần "Kiểm tra kết nối" gần nhất `ok`; mọi thay đổi ns/secret/keyspace/project/URL ⇒ `unchecked` ⇒ ngừng gọi KH tới khi kiểm lại |
-| Q6 | Đếm ≤ 5 lần/stage | Theo lần chạy stage `(stage_run, attempt, round)`, nhóm agent dùng chung; lần gọi KH lỗi vẫn tính; tham số sai không tính |
-| Q7 | `kh_api_key` mức nền tảng (`tenant_id` null, H4b-1 Q7 cho phép) | K1 **không nhận** (ns = tenant ⇒ secret phải của chính tenant; 422 `KH_SECRET_INVALID wrong_tenant`) |
-| Q8 | Stage nhóm (`team`) | Không tự thêm `## Tóm tắt` (như `ensureHandoff`); có mục đó trong output thì vẫn ghi |
-| Q9 | Seed `sdlc-delivery`/`bug-fix` dùng agent nào | Dùng lại agent seed sẵn (`intake-analyst`, `docs-architect`, `backend-lead`, `reviewer`, `qc`, `qc-uat`); mở rộng seed schema nhận `after: {review: {back_to_steps}}`; không thêm agent |
+| Q1 | `kh_query` không khớp `CATALOG_KEY_RE` của `payload.mcp.tools` | Khoá tool **`kh-query`** (`mcp__hub__kh-query`); không đổi contract job/Runtime |
+| Q2 | People lanes | **Người dùng chốt 2026-10-13:** cho phép với project riêng của tenant (KH ≤ 40% budget); kho **dùng chung** bắt buộc tắt lanes ⇒ lỗi `kh_people_lanes_on_shared` |
+| Q3 | Cảnh báo hạ cấp ở đâu | `StageView.knowledge.warning` + audit; không sửa file output |
+| Q4 | Allowlist URL | Env `HUB_KH_ALLOWED_ORIGINS` (UI chỉ đọc) |
+| Q5 | Tenant "hiệu lực" | Lần kiểm gần nhất `ok`; đổi ns/secret/keyspace/URL ⇒ `unchecked`. Sửa kho **không** đổi trạng thái tenant (CR-071) |
+| Q6 | Đếm ≤ 5 | Theo `(stage_run, attempt, round)`, nhóm dùng chung; lỗi KH vẫn tính; tham số sai / `disabled` không tính |
+| Q7 | `kh_api_key` nền tảng | Không nhận (422 `KH_SECRET_INVALID wrong_tenant`) |
+| Q8 | Stage nhóm | Không có đích `## Tóm tắt` (không thêm, không ghi); `kh-query` theo kho của agent từng job |
+| Q9 | Agent của seed mẫu | Dùng lại agent seed sẵn; seed schema nhận `after: {review: {back_to_steps}}` |
+| Q10 (CR-071) | `kh-query` cho job không thuộc quy trình (chat trực tiếp)? | **Không** ở K1 (giới hạn "≤ 5/stage" cần stage); mở ở mốc sau |
+| Q11 (CR-071) | Chốt kho lúc nào | `kh-query`: lúc **tạo job** (`kh_job_knowledge`); đích `## Tóm tắt`: lúc **start** run (vì `required_sections` chốt lúc start); bộ gửi kiểm lại trước khi ghi |
+| Q12 (CR-071) | `context/step` nhận một project; agent có nhiều kho | Hub gọi song song mỗi project, chia đều budget (≥ 200), ghép ≤ 4000; một lần tool = một lần đếm |
+| Q13 (CR-071) | Kho dùng chung ↔ tenant chưa gắn project phía KH | Không chặn; [Kiểm tra] kho báo cảnh báo; lúc chạy KH trả lỗi ⇒ hạ cấp phần đó |
+| Q14 (CR-071) | Xoá cấu hình KH của tenant / xoá kho đang gắn agent | Xoá tenant giữ kho; xoá kho đang gắn ⇒ 409 `KH_KNOWLEDGE_IN_USE` |
 
-- 2026-10-13 · Readiness lần 1: mặc định BE (#2–#21, Luật 2b) đã áp vào §3–§4 + plan (đánh dấu `R#`).
-- 2026-10-13 · CR-071: Gate lại; §3–4 viết lại.
+- 2026-10-13 · Readiness lần 1: mặc định BE (#2–#21) đã áp (`R#` trong plan).
+- 2026-10-13 · CR-071: Gate lại; §3–4 + plan viết lại (Q10–Q14).
 ### Trong lúc làm
 Xem [`spec-decisions.md`](spec-decisions.md).
 
