@@ -55,7 +55,7 @@ describe("K01–K02 · KH cạnh ws_* [B9]", () => {
       project: r.result?.structuredContent?.project,
     }).toEqual({
       isError: false,
-      project: "kh-main/proj-a",
+      project: "proj-a",
     });
   }, 45_000);
 });
