@@ -62,3 +62,7 @@ Ghi chú: các dòng 6, 8, 10, 11 không có chi tiết trong yêu cầu giao vi
 Ghi chú: bảng tóm tắt dựng lại từ nhãn trong plan; mức Chặn/Cao/Thấp từng dòng không khôi phục được.
 
 - CR-071/072: readiness cũ hết hiệu lực, chạy lại sau qc.
+
+## CR-073 · 2026-10-13 · NOT READY (0 Chặn, 5 Cao, 12 Thấp) · không câu hỏi mới
+- Cao: #1 `packages/ui` không tồn tại → copy-then-own KnowledgeNotice; #2 `used_by.key` ≤ 64 → `left(name,64)`; #3 job không có stage + `#mcp` trả null sớm → `AgentTask.stageRunId` + gộp `kh-query`; #4 nav `settings`; #5 T5g rủi ro cao. Thấp #6–#17 áp mặc định (BE/FE song song).
+- #15 test-plan G6/G11 đánh dấu đã đóng (điều phối).

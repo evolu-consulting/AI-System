@@ -116,12 +116,12 @@ Fixture SQL K1 chạy trên DDL nháp plan §5 (tx ROLLBACK, DB qc): 0 lỗi. `t
 | G3 | Câu `INVALID_ARGS` của `kh-query` | = H2a "Invalid arguments for this tool." | backend-lead |
 | G4 | `KH_PROJECT`: dấu phân cách nhãn | 1 nhãn: đúng "Pass project as one of: proj-c."; nhiều nhãn: chỉ kiểm tiền tố + chứa nhãn | backend-lead |
 | G5 | `kh_version_too_old.params.found` | chứa "6.3" (chuỗi gốc hoặc chuẩn hoá đều được) | — |
-| G6 | `khCheckShouldContinue` sau `kh_auth_disabled` (lỗi) | không kiểm (plan §3.1 bước 3 mơ hồ) | backend-lead (ghi rõ nếu dừng) |
+| G6 | **Đã đóng (plan §11 G6/G7, `b8200e09`)** — `khCheckShouldContinue` sau `kh_auth_disabled` (lỗi) | không kiểm (plan §3.1 bước 3 mơ hồ) | backend-lead (ghi rõ nếu dừng) |
 | G7 | `KhCheckResult` khi dừng sớm | `kh_version: null`, `projects: []` (R31) | backend-lead |
 | G8 | Audit `check.summary.codes` | mọi mã mục (lỗi + cảnh báo) | backend-lead |
 | G9 | `StageView.knowledge.warning` khi lời gọi sau thành công | = `last_warning` (lỗi gần nhất) của (attempt, round) hiện tại (A51) | backend-lead |
 | G10 | `khPackHits.hits` khi hit cuối bị cắt | đếm cả hit bị cắt (R61: 2) | backend-lead |
-| G11 | **Spec cũ chưa dọn theo CR-073**: §1 (client `/v1/{ns}` + token, `/v1/{ns}/context/step`, "Không làm: dùng `/vector/*` hay khoá chung"), §2 (dòng `capabilities`, `/v1/me`, people lanes), §5 (bảng "Công ty của kết nối", Dialog "Tri thức" admin, nhãn e2e cũ), §8 AC02/AC03 (token, ns), frontmatter `HUB-FR-137` | test theo §3.0/§3.3/§9 Q26–Q34 + plan-frontend §5 (`a24f9df8`) | docs-architect |
+| G11 | **Đã đóng (`b8200e09`, `86ca6994`)** — Spec cũ chưa dọn theo CR-073: §1 (client `/v1/{ns}` + token, `/v1/{ns}/context/step`, "Không làm: dùng `/vector/*` hay khoá chung"), §2 (dòng `capabilities`, `/v1/me`, people lanes), §5 (bảng "Công ty của kết nối", Dialog "Tri thức" admin, nhãn e2e cũ), §8 AC02/AC03 (token, ns), frontmatter `HUB-FR-137` | test theo §3.0/§3.3/§9 Q26–Q34 + plan-frontend §5 (`a24f9df8`) | docs-architect |
 | G12 | Bản chép evolu: Group duyệt / bật | A123 chỉ kiểm có bản chép (`source_template_id`, số stage), acme/beta không có; không kiểm `enabled`/Group | backend-lead (plan §6 ghi `review_group` evolu nếu cần) |
 | G13 | Admin OutputDialog | e2e mở `/processes/:defId/runs/:runId` → [Xem kết quả] → dialog "Kết quả giai đoạn …" (nhãn i18n hiện có) | frontend-lead |
 | G14 | Select "Khoá" lấy secret nền tảng (plan-frontend §7) | mock trả secret nền tảng cho mọi query `/secrets?…` | frontend-lead / backend-lead |
