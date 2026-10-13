@@ -23,6 +23,8 @@ Hub cần RAG (tri thức theo agent, ghi lại tóm tắt stage). KH (v6.4) là
 8. **Ngoài phạm vi ai-system / điều kiện triển khai KH:** KH phải dùng **embedder đa ngữ (bge-m3)** thay bge-small-en để giữ tiếng Việt (mặc định KH chỉ tiếng Anh; `.env.example` lệch code) — ghi PRODUCTION-NOTES; "Kiểm tra kết nối" hiện cảnh báo tĩnh (không đo được). KH không parse PDF/DOCX (CR-069); báo lỗi theo file là việc phía KH.
 9. **License:** không thấy LICENSE trong KH/AISDLC. Xác nhận quyền dùng KH trước khi dùng với tenant thật; **không chặn BUILD K1** (dev/test dùng mock KH, không thêm KH vào docker-compose).
 
+**Nhiều KH (CR-071, 2026-10-13):** có thể cấu hình nhiều kết nối KH (tên + URL allowlist); ns/credentials theo (kết nối, tenant); mỗi kho tri thức thuộc một kết nối, Hub gọi đúng KH; các điều 1–9 áp dụng cho từng kết nối.
+
 ## Hệ quả
 - Thêm một dịch vụ ngoài (HTTP client tới KH, không thêm thư viện mới dự kiến; nếu có sẽ ghi ở spec K1 và trình Gate).
 - Hub chịu tải truy vấn KH của mọi agent: trần 4000 ký tự × 5 lần/stage; KH có rate-limit 1200/phút/ns.
