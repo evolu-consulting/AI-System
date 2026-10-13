@@ -27,6 +27,7 @@ import {
 } from "../core/run-access.rules";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
 import * as repo from "./runs.repo";
+import { autofixViews, withAutofix } from "./view-autofix";
 import {
   backFields,
   decisionBackStep,
@@ -151,7 +152,7 @@ export class ViewService {
   /** `GET /process-runs/:id` (`tenant_id?` cho platform_admin). 404 nếu không thấy / không quyền. */
   async get(u: AuthUser, runId: string, tenantIdQ?: string): Promise<ProcessRunView> {
     const v = await viewerCtx(this.d, u);
-    return withHubScope(this.d.db, scopeOf(v, tenantIdQ), async (tx) => {
+    const got = await withHubScope(this.d.db, scopeOf(v, tenantIdQ), async (tx) => {
       const r = await runRow(tx, runId, u.userId);
       if (!r) throw notFound();
       if (tenantIdQ && v.role === "platform_admin" && r.tenant_id !== tenantIdQ) throw notFound();
@@ -160,8 +161,25 @@ export class ViewService {
       if (!access) throw notFound();
       const snap = r.snapshot as unknown as Snap;
       const vc: ViewCtx = { tx, u, v, r, snap, myIds };
-      return access === "task" ? this.#task(vc) : this.#full(vc);
+      const view = access === "task" ? await this.#task(vc) : await this.#full(vc);
+      return { view, tenantId: r.tenant_id, snap };
     });
+    return this.#autofix(got);
+  }
+
+  /** P-c1 · plan §6.5 · view full ⇒ gắn `autofix` cho stage tự-sửa (scope system SAU kiểm quyền; `view-autofix.ts`). */
+  async #autofix(g: {
+    view: ProcessRunView;
+    tenantId: string;
+    snap: Snap;
+  }): Promise<ProcessRunView> {
+    const { view } = g;
+    if (view.access !== "full" || !g.snap.stages.some((s) => s.autofix)) return view;
+    const run = { id: view.id, tenantId: g.tenantId };
+    const m = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+      autofixViews(tx, run, g.snap),
+    );
+    return m.size > 0 ? { ...view, stages: withAutofix(view.stages, m) } : view;
   }
 
   async #full({ tx, v, r, snap, myIds }: ViewCtx): Promise<ProcessRunView> {

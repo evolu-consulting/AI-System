@@ -5,6 +5,7 @@ import type { ChatRunErrorCode } from "@ai/contracts/chat";
 import {
   type AgentCliJob,
   type HistoryItem,
+  type JobAutofix,
   type JobFailReason,
   type JobOutput,
   type JobSource,
@@ -81,6 +82,8 @@ export type AgentTask = {
   useSession?: boolean;
   /** K1 plan §3.4 bước 0 · `stage_runs.id` do launcher stage truyền (đơn + mọi job nhóm); vắng ⇒ không phải job stage ⇒ không KH. */
   stageRunId?: string;
+  /** P-c1 · PC-R05 · phần `payload.autofix` của job stage tự-sửa (launcher dựng qua `autofixJobPart`). */
+  autofix?: JobAutofix;
   /** Phát `step.started`/`step.finished` (vd `writer.emit`); vắng → không phát. */
   emit?: (ev: SseEventBody) => Promise<unknown>;
 };
@@ -270,6 +273,7 @@ export class JobAgentRunner implements AgentRunner {
       attachments,
       ...(task.role === "agent" && task.sources?.length ? { sources: task.sources } : {}),
       ...(task.useSession === false ? { useSession: false } : {}),
+      ...(task.role === "agent" && task.autofix ? { autofix: task.autofix } : {}),
     });
     return payload && this.#outHint(task, payload);
   }

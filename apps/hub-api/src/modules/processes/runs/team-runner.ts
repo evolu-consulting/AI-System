@@ -60,6 +60,7 @@ export type SnapStage = {
   token_budget: number | null;
   sources?: StageSource[]; // P-b · nguồn + checklist stage (vắng ⇒ P-a)
   must_know?: string[];
+  autofix?: { source_key: string } | null; // P-c1 · stage tự-sửa (vắng/null ⇒ stage thường)
 };
 export type RunHead = {
   tenant_id: string;
@@ -87,6 +88,8 @@ export type ApplyInput = {
   jobId: string | null;
   result: StageResult;
   tokens: number;
+  /** P-c1 · PC-R10 · `hub.jobs.error_reason` khi job lỗi (vd `container`); vắng ⇒ không biết. */
+  jobReason?: string | null;
 };
 export type Ctx = {
   x: ApplyInput;

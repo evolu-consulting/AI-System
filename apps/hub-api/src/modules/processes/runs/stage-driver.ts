@@ -17,13 +17,13 @@ import { budgetHit, totalTokens } from "../core/limits.rules";
 import type { ProcessDeps, StageLauncher } from "../core/ports";
 import { isTerminal, type RunEvent, type RunState, transition } from "../core/process-state.rules";
 import { stageGateStatus, stepCountOf } from "../core/step.rules";
+import { autofixDecision, stageJobExtras } from "./autofix.repo";
 import { commitOutputBlob } from "./output-attachment";
 import { defaultSourceBudget } from "./sources.rules";
 import {
   auditSourceReads,
   loadStageSourceCtx,
   type StageSourceCtx,
-  stageJobSources,
   stageRefsCheck,
 } from "./stage-sources";
 import { type StageRowIdx, stageRowById, stepsOfSnap } from "./step-persist";
@@ -84,9 +84,14 @@ async function drive(
   try {
     const link = await linkOf(d, ctx.writer.run.id);
     if (!link?.process_run_id || !link.stage_run_id) return void ctx.writer.abort();
-    const { result, usage, jobId } = ctx.direct
+    const {
+      result,
+      usage,
+      jobId,
+      jobReason = null,
+    } = ctx.direct
       ? await runAgent(d, ctx, link, o)
-      : await runTeamStage(d, ctx, link);
+      : { ...(await runTeamStage(d, ctx, link)), jobReason: null };
     // D11/P1-37 · `need_input` ⇒ đóng `hub.runs` TRƯỚC khi commit `waiting_answer` (người đọc không thấy cửa sổ
     // `running`); output/failed giữ thứ tự D11 (tx quy trình trước, `finish` sau) rồi `kick` stage kế.
     const needInput = result.kind === "need_input";
@@ -98,6 +103,7 @@ async function drive(
       jobId,
       result,
       tokens: usage,
+      jobReason,
     });
     if (!needInput) await finish(ctx, result);
     if (kick) await launcher.kick(link.process_run_id);
@@ -158,23 +164,33 @@ async function linkOf(d: Deps, hubRunId: string): Promise<Link | null> {
   return r ?? null;
 }
 
+/** PB-R10 · P-c1 PC-R05/R11 · `sources`/`autofix` của job stage (`stageJobExtras`, scope system + tenant tường minh). */
+const jobExtras = (d: Deps, link: Link) =>
+  withHubScope(d.db, { kind: "system" }, (tx) => stageJobExtras(tx, link));
+
+type AgentOut = {
+  result: StageResult;
+  usage: number;
+  jobId: string | null;
+  jobReason: string | null;
+};
+
 /** N4 · một job vai `agent`; `detail` mang `process_run_id/stage_run_id/role` cho usage (PF4). */
 async function runAgent(
   d: Deps,
   ctx: RunContext,
   link: Link,
   opts: StageDriverOpts,
-): Promise<{ result: StageResult; usage: number; jobId: string | null }> {
+): Promise<AgentOut> {
   if (!ctx.direct)
-    return { result: { kind: "failed", reason: "agent_failed" }, usage: 0, jobId: null };
+    return {
+      result: { kind: "failed", reason: "agent_failed" },
+      usage: 0,
+      jobId: null,
+      jobReason: null,
+    };
   const timeoutS = await stageTimeout(d, link);
-  // PB-R10 · nguồn đã ghim của stage → payload.sources (ép Read/Grep/Glob ở runner.rules); vắng ⇒ như P-a.
-  const srcCtx = await withHubScope(d.db, { kind: "system" }, async (tx) => {
-    const pr = link.process_run_id as string;
-    const st = await stageRowById(tx, pr, link.stage_run_id as string, link.tenant_id);
-    return loadStageSourceCtx(tx, pr, st?.stage_idx ?? 0);
-  });
-  const jobSources = stageJobSources(srcCtx);
+  const extras = await jobExtras(d, link);
   const o = await runJob(
     d.runner,
     {
@@ -188,7 +204,7 @@ async function runAgent(
       // K1 §3.4 bước 0 · job stage ⇒ KH của job (`kh-query`).
       ...(link.stage_run_id ? { stageRunId: link.stage_run_id } : {}),
       ...(opts.useSession === false ? { useSession: false } : {}),
-      ...(jobSources.length ? { sources: jobSources } : {}),
+      ...extras,
       detail: {
         process_run_id: link.process_run_id,
         stage_run_id: link.stage_run_id,
@@ -204,6 +220,7 @@ async function runAgent(
     result: resultOf(o),
     usage: o.kind === "aborted" ? 0 : tokensOf(o.usage),
     jobId: o.kind === "aborted" ? null : o.jobId || null,
+    jobReason: o.kind === "failed" ? (o.reason ?? o.code) : null,
   };
 }
 
@@ -279,12 +296,26 @@ async function lockAndLoad(tx: Tx, x: ApplyInput): Promise<Loaded | null> {
 /** Ngữ cảnh stage đã nạp cho đánh giá kết quả job. */
 type EvalCtx = Pick<Loaded, "head" | "def" | "srcCtx">;
 
+/**
+ * PC-R10 · thứ tự: limit (huỷ/ngắt) → lỗi job (stage thường) → ngân sách token → (stage tự-sửa, output/lỗi job) báo cáo
+ * + lý do lỗi job ⇒ "Cần người quyết" → need_input → template.
+ */
 async function eventFor(tx: Tx, x: ApplyInput, c: EvalCtx): Promise<RunEvent> {
   const { def, srcCtx } = c;
-  if (x.result.kind === "failed") return { kind: "limit", reason: x.result.reason };
   if (x.result.kind === "limit") return { kind: "limit", reason: x.result.reason };
+  if (x.result.kind === "failed" && !def.autofix) return { kind: "limit", reason: x.result.reason };
   const over = await budgetReason(tx, x, c);
   if (over) return { kind: "limit", reason: over };
+  if (def.autofix && x.result.kind !== "need_input") {
+    const jobReason = x.result.kind === "failed" ? (x.jobReason ?? x.result.reason) : null;
+    const why = await autofixDecision(tx, {
+      jobId: x.jobId,
+      tenantId: c.head.tenant_id,
+      jobReason,
+    });
+    if (why) return { kind: "limit", reason: why };
+  }
+  if (x.result.kind === "failed") return { kind: "limit", reason: x.result.reason };
   if (x.result.kind === "need_input") return { kind: "need_input" };
   const ok = checkTemplate(
     { requiredSections: def.output.required_sections, fields: def.output.fields as never },
@@ -312,9 +343,10 @@ async function budgetReason(
     from hub.usage_logs ul join hub.runs r on r.id = ul.run_id and r.tenant_id = ul.tenant_id
     where r.process_run_id = ${x.runId}`);
   // PB-R12/C17 · stage có nguồn không đặt budget ⇒ trần 200000; không nguồn ⇒ giữ P-a.
+  // P-c1 · PC-R13 · stage tự-sửa luôn có nguồn (workspace) ⇒ cũng trần 200000 khi không đặt.
   const stageBudget = defaultSourceBudget(
     { token_budget: def.token_budget },
-    srcCtx.stageSources.length > 0,
+    srcCtx.stageSources.length > 0 || Boolean(def.autofix),
   );
   if (budgetHit(Number(row?.stage_sum ?? 0), stageBudget)) return "stage_tokens";
   if (budgetHit(Number(row?.run_sum ?? 0), head.snapshot.token_budget)) return "run_tokens";

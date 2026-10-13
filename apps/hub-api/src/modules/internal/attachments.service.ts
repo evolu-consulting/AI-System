@@ -57,7 +57,9 @@ async function findJobFile(tx: Tx, token: string, jobId: string, attId: string):
     // X2b2-S3b (I54) · run đã huỷ (vd. xoá phòng) ⇒ token không còn tải file, dù Runtime chưa dừng job.
     if (found.job.cancelRequested) return null;
     // So nguyên văn (uuid chữ thường của payload) ⇒ id sai dạng / chữ hoa không tới DB (A89).
-    if (!(found.payload.attachments ?? []).some((a) => a.id === attId)) return null;
+    // P-c1 · PC-R11 · `autofix.base_patch` (diff vòng trước, đã lọc thuộc run lúc dựng job) tải được như file job.
+    const ids = [...(found.payload.attachments ?? []), found.payload.autofix?.base_patch];
+    if (!ids.some((a) => a?.id === attId)) return null;
     const row = await repo.jobAttachment(tx, attId, found.job.tenantId);
     return row ? { row } : null;
   }

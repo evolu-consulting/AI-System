@@ -121,7 +121,13 @@ export const hasKhSummaryTarget = (head: Head, idx: number): boolean =>
  * P-b2 · phần thêm của prompt: `extra` (khối Bàn giao, sau "Đầu vào") và `tail` (hỏi–đáp trước, nối cuối).
  * K1 · `khSummary` ⇒ dòng gợi ý D10 `## Tóm tắt`.
  */
-export type PromptExtra = { extra?: readonly string[]; tail?: string | null; khSummary?: boolean };
+export type PromptExtra = {
+  extra?: readonly string[];
+  tail?: string | null;
+  khSummary?: boolean;
+  /** P-c1 · plan §6.4 · khối `## Workspace` của stage tự-sửa — chèn NGAY sau instruction. */
+  workspace?: string | null;
+};
 
 /**
  * Prompt stage (D6 rút gọn): instruction + input run + MANIFEST/đầu vào/checklist + Bàn giao bước trước + nhắc Bàn giao +
@@ -133,7 +139,9 @@ export function promptOf(
   feedback: string | null,
   x: PromptExtra = {},
 ): string {
-  const parts = [stage.instruction.trim(), head.input.trim()].filter((p) => p.length > 0);
+  const parts = [stage.instruction.trim(), x.workspace ?? "", head.input.trim()].filter(
+    (p) => p.length > 0,
+  );
   parts.push(...extraPromptParts(head, stage), ...(x.extra ?? []));
   const hint = handoffHint(stage);
   if (hint) parts.push(hint);
@@ -154,6 +162,10 @@ export async function gateResolve(tx: Tx, runId: string, head: Head): Promise<bo
       and status in ('queued', 'running') limit 1`);
   if (existing) return true;
   const jobId = crypto.randomUUID();
+  // P-c1 · PC-R04 · nguồn của stage tự-sửa ⇒ `caps: "autofix"` (trần snapshot riêng phía Runtime); vắng = `source`.
+  const afKeys = new Set(
+    head.snapshot.stages.flatMap((s) => (s.autofix ? [s.autofix.source_key] : [])),
+  );
   const payload = {
     v: 1,
     type: "source.resolve",
@@ -166,6 +178,7 @@ export async function gateResolve(tx: Tx, runId: string, head: Head): Promise<bo
       kind: s.kind,
       config: s.config,
       allowlist_union: s.allowlist_union,
+      ...(afKeys.has(s.key) ? { caps: "autofix" as const } : {}),
     })),
     timeout_s: RESOLVE_TIMEOUT_S,
   };

@@ -6,6 +6,8 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ConfigSnapshot } from "../../config/config.rules";
 import { priorStageIdxs } from "../core/step.rules";
+import { retryFailures } from "./autofix.repo";
+import { autofixRetryBlock, autofixWorkspaceBlock } from "./autofix.rules";
 import { askHistoryBlock, type HandoffItem, handoffBlock, handoffOf } from "./handoff.rules";
 import { type Head, hasKhSummaryTarget, promptOf, type SnapStage } from "./launcher-prompt";
 import {
@@ -172,13 +174,32 @@ export async function stagePrompt(
     await tx.execute(sql`delete from hub.cli_sessions where conversation_id = ${c.head.conversation_id}
       and agent_id = ${c.def.executor.agent_id} and tenant_id = ${c.tenantId}`);
   const fb = c.stage.feedback?.trim() ?? "";
-  if (plan.resume && !ctx.continuing && fb.length > 0)
-    return { content: deltaPrompt(fb, c.stage.redo_sections), useSession: plan.useSession };
+  const retry = await autofixRetry(tx, c);
+  if (plan.resume && !ctx.continuing && fb.length > 0) {
+    const delta = deltaPrompt(fb, c.stage.redo_sections);
+    return {
+      content: retry
+        ? `${delta}
+
+${retry}`
+        : delta,
+      useSession: plan.useSession,
+    };
+  }
   const extra: string[] = [];
   const ho = handoffBlock(await handoffItems(tx, c));
   if (ho) extra.push(ho);
+  if (retry) extra.push(retry);
   const tail = ctx.continuing && ctx.executor === "agent" ? await askHistory(tx, c) : null;
   const khSummary = hasKhSummaryTarget(c.head, c.idx); // K1 · D10
-  const content = promptOf(c.def, c.head, c.stage.feedback, { extra, tail, khSummary });
+  const workspace = c.def.autofix ? autofixWorkspaceBlock(c.def.autofix) : null; // P-c1 · §6.4
+  const content = promptOf(c.def, c.head, c.stage.feedback, { extra, tail, khSummary, workspace });
   return { content, useSession: plan.useSession };
+}
+
+/** P-c1 · PC-R10 · stage tự-sửa làm lại sau `autofix_check_failed` ⇒ khối "Lần kiểm trước không đạt"; khác ⇒ null. */
+async function autofixRetry(tx: Tx, c: StagePromptInput): Promise<string | null> {
+  if (!c.def.autofix) return null;
+  const fails = await retryFailures(tx, { stageRunId: c.stage.id, tenantId: c.tenantId });
+  return fails ? autofixRetryBlock(fails) : null;
 }

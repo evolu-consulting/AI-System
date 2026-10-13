@@ -13,6 +13,7 @@ import {
   type HubJobErrorCode,
   JOB_FAIL_REASONS,
   type JobAttachment,
+  type JobAutofix,
   type JobFailReason,
   JobOutputSchema,
   type JobSource,
@@ -60,6 +61,8 @@ export type PayloadInput = {
   sources?: readonly JobSource[];
   /** P-b2 R12 · `false` ⇒ `use_session=false` cho agent (job stage quy trình); vắng ⇒ agent dùng session như cũ. */
   useSession?: boolean;
+  /** P-c1 · PC-R05/R07 · stage tự-sửa ⇒ khoá `autofix`; không nguồn chỉ-đọc ⇒ `allowed_tools=[]` (ghi chỉ qua `ws_*`). */
+  autofix?: JobAutofix;
 };
 
 /** Agent kẹp ≥ 2: structured output tốn một lượt (Runtime đã tự ép, Hub khớp). */
@@ -79,6 +82,16 @@ function allowedTools(opts: Record<string, unknown>, role: AgentRole): AllowedTo
   return ALLOWED_TOOLS.filter((t) => v.includes(t));
 }
 
+/**
+ * PB-R10 · stage có nguồn ⇒ chỉ Read/Grep/Glob (bỏ công cụ rộng của agent). P-c1 · PC-R07 · stage tự-sửa không nguồn
+ * chỉ-đọc ⇒ không công cụ CLI (ghi chỉ qua `ws_*`; không bao giờ Write). Còn lại `allowedTools`.
+ */
+function jobTools(i: PayloadInput, hasSources: boolean): AllowedTool[] {
+  if (hasSources) return ["Read", "Grep", "Glob"];
+  if (i.autofix && i.role === "agent") return [];
+  return allowedTools(i.agent.runtimeOptions, i.role);
+}
+
 const isTrigger = (s: string): s is (typeof FALLBACK_TRIGGERS)[number] =>
   (FALLBACK_TRIGGERS as readonly string[]).includes(s);
 
@@ -94,9 +107,8 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
   const isAgent = i.role === "agent";
   // CR-054: model của agent (alias CLI `haiku`/`sonnet`/`opus` hoặc id) ghi đè model bước profile.
   const model = i.agent.model ?? step.model;
-  // PB-R10 · stage có nguồn ⇒ chỉ Read/Grep/Glob (bỏ công cụ rộng của agent), kèm `sources` chỉ-đọc.
   const hasSources = (i.sources?.length ?? 0) > 0;
-  const tools = hasSources ? ["Read", "Grep", "Glob"] : allowedTools(opts, i.role);
+  const tools = jobTools(i, hasSources);
   const parsed = AgentCliJobSchema.safeParse({
     v: HUB_CONTRACT_VERSION,
     type: "agent.cli",
@@ -127,6 +139,7 @@ export function buildJobPayload(i: PayloadInput): AgentCliJob | null {
     ...(i.stream ? { stream: true } : {}),
     ...(i.attachments?.length ? { attachments: [...i.attachments] } : {}),
     ...(hasSources ? { sources: [...(i.sources ?? [])] } : {}),
+    ...(i.autofix && isAgent ? { autofix: i.autofix } : {}),
   });
   return parsed.success ? parsed.data : null;
 }
