@@ -3,6 +3,7 @@
 // không gọi ⇒ mọi route quy trình 404, `!` là chữ thường.
 import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/chat";
 import type { Env, Hono } from "hono";
+import { KhWriter } from "../kh/kh.writer";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
 import type { ResolveBridge } from "../sources/resolve.bridge";
 import { asksRoutes } from "./asks/asks.routes";
@@ -53,6 +54,8 @@ export type ProcessMounted = { roomSender: RoomProcessSender; conversationStart:
 
 export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps): ProcessMounted {
   const poster = new ThreadPoster(m);
+  // K1 · HUB-FR-133 · bộ gửi `kh_writes` (cùng `KhRuntime` với `kh-query`); vắng KH ⇒ không chạy.
+  const khWriter = m.kh && new KhWriter({ db: m.db, rt: m.kh, log: m.log });
   const base: Omit<ProcessDeps, "start" | "launcher"> = {
     ...m,
     now: clockOf(m.now),
@@ -80,7 +83,11 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     remindOnce: () => remindOnce(d),
     postThreadOnce: () => poster.postThreadOnce(),
     kick: (runId) => d.launcher.kick(runId),
+    khWriteOnce: () => khWriter?.writeOnce() ?? Promise.resolve(0),
   });
-  if (m.processLoops !== false) poster.start(m.signal);
+  if (m.processLoops !== false) {
+    poster.start(m.signal);
+    khWriter?.start(m.signal);
+  }
   return { roomSender: roomStart(d), conversationStart: d.start };
 }

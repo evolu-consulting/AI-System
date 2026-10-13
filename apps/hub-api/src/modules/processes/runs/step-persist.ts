@@ -5,6 +5,7 @@ import type { ProcessRunStatus, StageRunStatus } from "@ai/contracts/chat";
 import { resolveSteps } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { enqueueKhSummary } from "../../kh/kh.writes.repo";
 import type { RunState } from "../core/process-state.rules";
 import { firstIdxOfStep, runStatusOf, stageIdxsOfStep, stepJoin } from "../core/step.rules";
 
@@ -66,6 +67,8 @@ export async function persistStage(tx: Tx, w: StageWrite): Promise<StepOutcome |
     await tx.execute(sql`update hub.stage_runs set status = 'done',
         current_output_id = ${w.outputId ?? sql`current_output_id`}, finished_at = now(), updated_at = now()
       where id = ${w.stageRunId} and tenant_id = ${w.tenantId}`);
+    // K1 · D8 · HUB-FR-133 · auto / gate Đạt / người cho qua ⇒ hàng chờ ghi `## Tóm tắt` (savepoint, lỗi ⇒ warn).
+    await enqueueKhSummary(tx, { tenantId: w.tenantId, stageRunId: w.stageRunId });
   } else {
     const n = w.next.stage;
     const keep = w.outputId && n.hasOutput ? w.outputId : null;

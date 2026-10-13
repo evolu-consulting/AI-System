@@ -20,6 +20,7 @@ import { decisionOptionsFor } from "../core/task.rules";
 import { openDecisions } from "../gates/gates.repo";
 import { idOf, resolveExecutors } from "./executor-ref";
 import { handoffTruncated } from "./handoff.rules";
+import { type SnapKh, stageKnowledge } from "./view-knowledge";
 
 export type SnapStage = {
   key: string;
@@ -29,7 +30,7 @@ export type SnapStage = {
   after: { kind: "review"; group_id: string | null; back_to_steps?: number[] } | { kind: "auto" };
   real_action: boolean;
 };
-export type Snap = { key: string; name: string; stages: SnapStage[] };
+export type Snap = { key: string; name: string; stages: SnapStage[]; kh?: SnapKh };
 export type OutputRow = {
   id: string;
   stage_idx: number;
@@ -93,9 +94,11 @@ export async function stageViews(tx: Tx, r: RunKey, snap: Snap): Promise<StageVi
     snap.stages.map((s) => s.executor),
   );
   const steps = resolveSteps(snap.stages);
+  const knowledgeOf = await stageKnowledge(tx, r, snap.kh); // K1 · HUB-FR-134
   return srs.map((sr): StageView => {
     const i = Number(sr.stage_idx);
     const def = snap.stages[i];
+    const knowledge = knowledgeOf(i, sr.current_output_id);
     return {
       idx: i,
       key: def?.key ?? `#${i + 1}`,
@@ -120,6 +123,7 @@ export async function stageViews(tx: Tx, r: RunKey, snap: Snap): Promise<StageVi
       step: steps[i] ?? i,
       round: Number(sr.round),
       back_to_steps: backStepsOf(def),
+      ...(knowledge ? { knowledge } : {}),
     };
   });
 }

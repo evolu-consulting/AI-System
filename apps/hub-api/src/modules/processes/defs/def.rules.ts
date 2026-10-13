@@ -100,7 +100,8 @@ export function copyFromTemplate(
   };
 }
 
-type HandoffShape = {
+/** Hình tối thiểu của stage cho luật thêm mục (`ensureHandoff`; K1 `khStartPlan` thêm "Tóm tắt"). */
+export type HandoffShape = {
   executor: { kind: string };
   output: { required_sections: string[]; template: string };
 };

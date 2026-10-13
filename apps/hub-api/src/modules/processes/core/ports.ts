@@ -9,6 +9,7 @@ import type { Redis } from "../../../lib/redis";
 import type { UserEvent } from "../../../lib/user-stream";
 import type { AttachmentStorage } from "../../attachments/storage";
 import type { ConfigCache } from "../../config/config.service";
+import type { KhRuntime } from "../../kh/kh.mount";
 import type { AgentRunner } from "../../runner/job/job-agent-runner";
 import type { RunService } from "../../runs/runs.service";
 import type { Bang } from "./bang.rules";
@@ -82,4 +83,6 @@ export type ProcessDeps = {
    */
   storage?: AttachmentStorage;
   signal?: AbortSignal;
+  /** K1 · HUB-FR-133 · runtime KH (`app.h4a`): đích `## Tóm tắt` lúc start + bộ gửi `kh_writes`. Vắng ⇒ không KH. */
+  kh?: KhRuntime;
 };

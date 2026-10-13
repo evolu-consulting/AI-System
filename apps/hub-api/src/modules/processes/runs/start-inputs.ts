@@ -14,6 +14,8 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { validationError } from "../../../lib/http";
+import type { KhRuntime } from "../../kh/kh.mount";
+import { type KhSnapshot, khStartPlan } from "../../kh/kh.start";
 import { processError } from "../core/errors";
 import type { StartDefRow } from "./runs.repo";
 import * as repo from "./runs.repo";
@@ -35,11 +37,12 @@ export async function createRun(
   tx: Tx,
   u: AuthUser,
   p: { def: StartDefRow; input: string; origin: RunOrigin; inputs?: ProcessInputValue[] },
-  cfg: { runsPerTenant: number; now: () => Date },
+  cfg: { runsPerTenant: number; now: () => Date; kh?: KhRuntime },
 ): Promise<{ runId: string; flowId: string }> {
   const inputs = p.inputs ?? [];
   await validateRunInputs(tx, u, p.def.inputs ?? [], inputs);
   const sources = await buildRunSources(tx, u, p.def, inputs);
+  const khPlan = await khStartPlan(tx, p.def.stages, cfg.kh); // K1 · đích `## Tóm tắt` (HUB-FR-133)
   await repo.lockTenant(tx, u.tenantId);
   if ((await repo.countActive(tx, u.tenantId)) >= cfg.runsPerTenant)
     throw processError("TOO_MANY_PROCESS_RUNS", undefined, {
@@ -59,6 +62,8 @@ export async function createRun(
     sources,
     inputs,
     pinnedSources: sources.length > 0 ? null : [],
+    stages: khPlan.stages,
+    kh: khPlan.kh,
     ...p.origin,
   });
   return { runId, flowId };
@@ -92,6 +97,10 @@ export type NewRun = {
   inputs: ProcessInputValue[];
   /** P-b · null = chờ resolve; [] = def không nguồn (ghim ngay). */
   pinnedSources: SourcePin[] | null;
+  /** K1 · stage của snapshot (đã `ensureSummary`); vắng ⇒ `def.stages`. */
+  stages?: unknown[];
+  /** K1 · `snapshot.kh` (đích `## Tóm tắt`); null/vắng ⇒ không có khoá `kh`. */
+  kh?: KhSnapshot | null;
 };
 
 /** Tạo hội thoại nền + flow (= thread) + `process_runs` + `stage_runs` (P-b2 §3.1: stage BƯỚC 0 queued ≤ 3, còn lại
@@ -102,13 +111,15 @@ export async function insertRun(tx: Tx, n: NewRun): Promise<void> {
     values (${n.convId}, ${n.tenantId}, ${n.startedBy}, ${name}, ${name.toLowerCase()}, ${n.id})`);
   await tx.execute(sql`insert into hub.flows (id, tenant_id, user_id, conversation_id, title)
     values (${n.flowId}, ${n.tenantId}, ${n.startedBy}, ${n.convId}, ${name})`);
+  const stages = n.stages ?? n.def.stages;
   const snapshot = {
     key: n.def.key,
     name: n.def.name,
-    stages: n.def.stages,
+    stages,
     token_budget: n.def.token_budget,
     run_group_ids: n.def.run_group_ids,
     sources: n.sources,
+    ...(n.kh ? { kh: n.kh } : {}),
   };
   const pinned =
     n.pinnedSources === null ? sql`null` : sql`${JSON.stringify(n.pinnedSources)}::jsonb`;
@@ -119,7 +130,7 @@ export async function insertRun(tx: Tx, n: NewRun): Promise<void> {
       ${n.originKind}, ${n.originRoomId}, ${n.originConversationId}, ${n.input}, ${n.convId}, ${n.flowId},
       ${n.expiresAt.toISOString()}::timestamptz, ${pinned},
       ${n.pinnedSources === null ? sql`null` : sql`now()`}, ${JSON.stringify(n.inputs)}::jsonb)`);
-  const steps = resolveSteps(n.def.stages as readonly { step?: number }[]);
+  const steps = resolveSteps(stages as readonly { step?: number }[]);
   const rows = sql.join(
     steps.map((st, i) => sql`(${n.tenantId}, ${n.id}, ${i}, ${st === 0 ? "queued" : "pending"})`),
     sql`, `,

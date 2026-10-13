@@ -3,6 +3,8 @@
 import {
   HANDOFF_SECTION,
   HANDOFF_TOKENS_MAX,
+  KH_SUMMARY_SECTION,
+  KH_SUMMARY_WORDS,
   type ProcessInputValue,
   type SourcePin,
   type StageSource,
@@ -35,7 +37,13 @@ export type Head = {
   current_stage_idx: number;
   conversation_id: string;
   input: string;
-  snapshot: { stages: SnapStage[]; token_budget: number | null; sources?: ResolveSource[] };
+  snapshot: {
+    stages: SnapStage[];
+    token_budget: number | null;
+    sources?: ResolveSource[];
+    /** K1 · đích `## Tóm tắt` theo stage (chốt lúc start; vắng = không đích). */
+    kh?: { stages: (object | null)[] };
+  };
   /** P-b · pin đã ghim (song song `snapshot.sources`); NULL = chưa resolve. */
   pinned_sources: SourcePin[] | null;
   /** P-b · đầu vào run (ProcessInputValue[]). */
@@ -99,8 +107,18 @@ function handoffHint(stage: SnapStage): string | null {
     : null;
 }
 
-/** P-b2 · phần thêm của prompt: `extra` (khối Bàn giao, sau "Đầu vào") và `tail` (hỏi–đáp trước, nối cuối). */
-export type PromptExtra = { extra?: readonly string[]; tail?: string | null };
+/** K1 · D10 · stage có đích `## Tóm tắt` (`snapshot.kh.stages[idx]` ≠ null). */
+export const KH_SUMMARY_HINT = `Include a \`## ${KH_SUMMARY_SECTION}\` section (≤ ${KH_SUMMARY_WORDS} words).`;
+
+/** K1 · stage `idx` có đích ghi Tóm tắt vào KnowledgeHub. */
+export const hasKhSummaryTarget = (head: Head, idx: number): boolean =>
+  (head.snapshot.kh?.stages?.[idx] ?? null) !== null;
+
+/**
+ * P-b2 · phần thêm của prompt: `extra` (khối Bàn giao, sau "Đầu vào") và `tail` (hỏi–đáp trước, nối cuối).
+ * K1 · `khSummary` ⇒ dòng gợi ý D10 `## Tóm tắt`.
+ */
+export type PromptExtra = { extra?: readonly string[]; tail?: string | null; khSummary?: boolean };
 
 /**
  * Prompt stage (D6 rút gọn): instruction + input run + MANIFEST/đầu vào/checklist + Bàn giao bước trước + nhắc Bàn giao +
@@ -116,6 +134,7 @@ export function promptOf(
   parts.push(...extraPromptParts(head, stage), ...(x.extra ?? []));
   const hint = handoffHint(stage);
   if (hint) parts.push(hint);
+  if (x.khSummary) parts.push(KH_SUMMARY_HINT);
   if (feedback && feedback.trim().length > 0) parts.push(`Góp ý cần sửa:\n${feedback.trim()}`);
   if (x.tail) parts.push(x.tail);
   return parts.join("\n\n") || stage.name;

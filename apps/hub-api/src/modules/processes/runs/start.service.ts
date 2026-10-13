@@ -345,7 +345,8 @@ export class StartService {
     u: AuthUser,
     p: { def: repo.StartDefRow; input: string; origin: RunOrigin; inputs?: ProcessInputValue[] },
   ): Promise<{ runId: string; flowId: string }> {
-    return createRun(tx, u, p, { runsPerTenant: this.d.runsPerTenant, now: this.d.now });
+    const cfg = { runsPerTenant: this.d.runsPerTenant, now: this.d.now, kh: this.d.kh };
+    return createRun(tx, u, p, cfg);
   }
 
   async #enqueueBlock(tx: Tx, runId: string, def: repo.StartDefRow): Promise<void> {

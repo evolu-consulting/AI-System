@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import type { ConfigSnapshot } from "../../config/config.rules";
 import { priorStageIdxs } from "../core/step.rules";
 import { askHistoryBlock, type HandoffItem, handoffBlock, handoffOf } from "./handoff.rules";
-import { type Head, promptOf, type SnapStage } from "./launcher-prompt";
+import { type Head, hasKhSummaryTarget, promptOf, type SnapStage } from "./launcher-prompt";
 import {
   deltaPrompt,
   SESSION_RESUME_MAX_AGE_S,
@@ -178,6 +178,7 @@ export async function stagePrompt(
   const ho = handoffBlock(await handoffItems(tx, c));
   if (ho) extra.push(ho);
   const tail = ctx.continuing && ctx.executor === "agent" ? await askHistory(tx, c) : null;
-  const content = promptOf(c.def, c.head, c.stage.feedback, { extra, tail });
+  const khSummary = hasKhSummaryTarget(c.head, c.idx); // K1 · D10
+  const content = promptOf(c.def, c.head, c.stage.feedback, { extra, tail, khSummary });
   return { content, useSession: plan.useSession };
 }

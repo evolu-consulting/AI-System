@@ -78,6 +78,15 @@ export function khConnectionUsable(c: { checkStatus: string }): boolean {
   return c.checkStatus === "ok";
 }
 
+/** D3 · "dùng được" đầy đủ lúc dùng = `khConnectionUsable` ∧ URL qua `khUrlPolicy` (start, bộ gửi Tóm tắt). */
+export function khUsableNow(
+  c: { checkStatus: string; baseUrl: string },
+  allowed: readonly string[],
+  env: { dev: boolean },
+): boolean {
+  return khConnectionUsable(c) && khUrlPolicy(c.baseUrl, allowed, env).ok;
+}
+
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
