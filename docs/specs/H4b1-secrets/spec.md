@@ -51,7 +51,19 @@ Dự kiến `hub.secrets(id, kind, tenant_id NULL, name, ciphertext, iv, version
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
-Studio `/studio/secrets` (drawer, SecretField, trạng thái tải/rỗng/lỗi/không quyền). Artboard: chưa có riêng (ui-agent-studio §11) — dựng theo SecretField + DataTable của Admin.
+Chi tiết: [`plan-frontend.md`](plan-frontend.md) (không chép lại). Tóm tắt:
+
+| Mục | Quyết định |
+|---|---|
+| Route | Studio `/secrets` (basepath `/studio`), `?kind=` chọn tab, `?drawer=new\|<id>` mở Sheet; menu "Secrets" từ "Sắp có" thành link |
+| Artboard | Không có riêng; bám mẫu màn Agents + Sheet Orchestrator + SecretField Admin (ui-agent-studio §11). Không cần artboard mới |
+| Bố cục | 3 tab theo loại (`provider_api_key`, `source_credential`, `kh_api_key`); bảng Tên · Tenant (tab nguồn) · Giá trị `•••• •••• Đã lưu` · Được dùng bởi · Cập nhật · [Thay giá trị] [Xoá] |
+| Chỉ ghi | Không nút xem, không last4, ô giá trị `password`, rỗng lại sau lưu; sau lưu Sheet hiện "Đã lưu · v{n}" (AC-H4b1-08) |
+| Tạo | Chỉ `provider_api_key` và `kh_api_key`; tab `source_credential` xem/thay/xoá (Q1: UI tạo ở màn Nguồn) |
+| Xoá | ConfirmDialog; còn `used_by` hoặc `409 SECRET_IN_USE` → hộp "Không xoá được {name}" liệt kê nơi dùng |
+| Trạng thái | tải (skeleton) · rỗng theo tab · lỗi (ErrorState + Thử lại) · không quyền · `VERSION_CONFLICT` → ConflictDialog dùng chung (ẩn diff) |
+| Câu chữ / nhãn e2e / validate | plan-frontend §3–§5 (VI+EN nguyên văn) |
+| Chờ contract BE | plan-frontend §8 (C1–C6: trường metadata, mã lỗi `SECRET_IN_USE`/`NAME_TAKEN`, hằng độ dài `value`) |
 
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6 (không siết thêm; perf không chặn mốc).
@@ -95,7 +107,7 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 | Q10 | Hard stop | Mặc định đã chấp nhận (ADR-0012 §1: khoá chỉ ở Hub, chỉ ghi); không cần dịch vụ trả tiền/secret thật |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+- FE PLAN 2026-10-13: không hiện `last4` (chỉ-ghi tuyệt đối); `name` bất biến sau tạo; tab `source_credential` không có nút tạo (Q1); `ConflictDialog` dùng chung ẩn [Xem khác biệt] khi không có diff; Sheet ở lại sau lưu hiện "Đã lưu · v{n}" (AC-H4b1-08).
 
 ## 10. Tranh chấp test
 - (không)
