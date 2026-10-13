@@ -5,6 +5,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
+import { firstFailureGroup, secondsLabel } from "../lib/autofix-view";
 import { DIFF_LINES_MAX } from "../lib/diff-parse";
 import { AutofixHead } from "./AutofixHead";
 import { DiffView } from "./DiffView";
@@ -57,6 +58,23 @@ function DiffBody({ view, load }: Props) {
   );
 }
 
+/** "Kiểm không đạt · <nhóm>" (nhóm lỗi đầu tiên; không có báo cáo ⇒ chỉ "Kiểm không đạt"). */
+function CheckFailedLine({ view }: { view: AutofixStageView }) {
+  const { t, i18n } = useTranslation();
+  const g = firstFailureGroup(view);
+  const group = g
+    ? t(`${K}group.${g}`, {
+        code: view.test?.exit_code ?? "-",
+        sec: secondsLabel(view.test?.duration_ms ?? 0, i18n.language),
+      })
+    : null;
+  return (
+    <span className="text-sm font-medium text-destructive">
+      {group ? t(`${K}checkFailed.short`, { group }) : t(`${K}checkFailed.label`)}
+    </span>
+  );
+}
+
 function AutofixResultImpl({ view, load }: Props) {
   const { t } = useTranslation();
   return (
@@ -75,9 +93,7 @@ function AutofixResultImpl({ view, load }: Props) {
           <span className="text-caption text-muted-foreground">{t(`${K}noChanges.hint`)}</span>
         </div>
       )}
-      {view.status === "check_failed" && (
-        <span className="text-sm font-medium text-destructive">{t(`${K}checkFailed.label`)}</span>
-      )}
+      {view.status === "check_failed" && <CheckFailedLine view={view} />}
     </section>
   );
 }

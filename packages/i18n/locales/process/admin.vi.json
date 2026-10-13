@@ -249,6 +249,7 @@
     "PROCESS_DEF_INCOMPLETE": "Chọn Group kiểm cho mọi giai đoạn có người kiểm trước khi bật.",
     "PROCESS_REF_INVALID": "Agent/nhóm/Group này đã bị tắt hoặc không còn.",
     "TEMPLATE_READ_ONLY": "Mẫu chỉ do quản trị nền tảng sửa. Hãy chép mẫu.",
+    "SOURCE_NOT_FOUND": "Quy trình dùng nguồn mã mà tenant này chưa có. Tạo nguồn trước (mục Nguồn), rồi lưu lại.",
     "PROCESS_DEF_INVALID": "Quy trình chưa hợp lệ. Kiểm tra các ô báo lỗi.",
     "NOT_PROCESS_DECIDER": "Bạn không có quyền quyết định lượt chạy này.",
     "PROCESS_RUN_STATE": "Lượt chạy đã đổi trạng thái. Đã tải lại.",

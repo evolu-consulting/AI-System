@@ -249,6 +249,7 @@
     "PROCESS_DEF_INCOMPLETE": "Pick a reviewing group for every reviewed stage before enabling.",
     "PROCESS_REF_INVALID": "This agent/team/group is disabled or gone.",
     "TEMPLATE_READ_ONLY": "Only platform admins edit templates. Copy the template instead.",
+    "SOURCE_NOT_FOUND": "This process uses a code source this tenant doesn't have. Create the source first (Sources page), then save again.",
     "PROCESS_DEF_INVALID": "The process isn't valid. Check the fields marked with errors.",
     "NOT_PROCESS_DECIDER": "You aren't allowed to decide this run.",
     "PROCESS_RUN_STATE": "The run's state changed. Reloaded.",

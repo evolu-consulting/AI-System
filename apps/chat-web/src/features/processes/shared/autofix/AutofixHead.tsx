@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { secondsLabel, shortBranch, sourceLabel } from "../lib/autofix-view";
+import { Badge } from "./Badge";
 import { LogDialog } from "./LogDialog";
 import { type LoadContent, useDownload } from "./use-autofix-content";
 
 const K = "process.common.autofix.";
-const chip = "rounded-sm bg-muted px-1.5 py-0.5 text-caption font-medium";
 
 export function AutofixHead({ view, load }: { view: AutofixStageView; load: LoadContent }) {
   const { t, i18n } = useTranslation();
@@ -21,26 +21,26 @@ export function AutofixHead({ view, load }: { view: AutofixStageView; load: Load
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <span className="text-sm font-semibold">{t(`${K}title`)}</span>
-      <span className={chip}>{t(`${K}round`, { n: view.round })}</span>
+      <Badge variant="info">{t(`${K}round`, { n: view.round })}</Badge>
       <span className="font-mono text-caption">{sourceLabel(view)}</span>
       <span title={view.branch} className="font-mono text-caption text-muted-foreground">
         {shortBranch(view.branch)}
       </span>
       {st && (
         <>
-          <span className="text-caption font-medium text-success">{`+${st.insertions}`}</span>
-          <span className="text-caption font-medium text-destructive">{`−${st.deletions}`}</span>
+          <Badge variant="ok">{`+${st.insertions}`}</Badge>
+          <Badge variant="err">{`−${st.deletions}`}</Badge>
           <span className="text-caption text-muted-foreground">
             {t(`${K}diffStat`, { n: st.files })}
           </span>
         </>
       )}
       {test && (
-        <span className={chip}>
+        <Badge variant={test.exit_code === 0 ? "ok" : "err"}>
           {test.exit_code === 0
             ? t(`${K}testOk`, { sec })
             : t(`${K}testFail`, { code: test.exit_code ?? "-", sec })}
-        </span>
+        </Badge>
       )}
       <span className="ml-auto flex flex-wrap gap-1">
         {log && (

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 import { lastCheck, secondsLabel } from "../lib/autofix-view";
+import { Badge } from "./Badge";
 
 const K = "process.common.autofix.";
 
@@ -14,6 +15,8 @@ type Props = {
   onView?: () => void;
   runId?: string;
 };
+
+const CHECK_TONE = { ok: "ok", no_changes: "off", check_failed: "err" } as const;
 
 function checkText(
   view: AutofixStageView,
@@ -36,18 +39,16 @@ export function AutofixSummary({ view, onView, runId }: Props) {
   const st = view.diff_stats;
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption">
-      <span className="rounded-sm bg-muted px-1.5 py-0.5 font-medium">{t(`${K}title`)}</span>
-      <span className="rounded-sm bg-muted px-1.5 py-0.5 font-medium">
-        {t(`${K}round`, { n: view.round })}
-      </span>
+      <Badge variant="info">{t(`${K}title`)}</Badge>
+      <Badge variant="off">{t(`${K}round`, { n: view.round })}</Badge>
       <span className="text-muted-foreground">{t(`${K}lastCheck`)}</span>
-      <span>{checkText(view, i18n.language, t)}</span>
+      <Badge variant={CHECK_TONE[view.status] ?? "ok"}>{checkText(view, i18n.language, t)}</Badge>
       {st && (
         <span className="text-muted-foreground">
           {`+${st.insertions} −${st.deletions} · ${t(`${K}diffStat`, { n: st.files })}`}
         </span>
       )}
-      {onView || !runId ? (
+      {!view.diff_file ? null : onView || !runId ? (
         <Button type="button" size="sm" variant="outline" onClick={onView}>
           {t(`${K}viewDiff`)}
         </Button>

@@ -44,6 +44,9 @@ export function StageAutofix(p: StageFormProps) {
         errs[at("autofix")],
       ].filter((k): k is string => typeof k === "string" && k.startsWith(K))
     : [];
+  const fieldInvalid = ["source_key", "test_cmd", "install_cmd", "write_allowlist"].some(
+    (f) => fieldErr(f) !== undefined,
+  );
   const options = withCurrent(
     defSources.map((k) => ({
       value: k,
@@ -68,7 +71,7 @@ export function StageAutofix(p: StageFormProps) {
         <span className="text-caption text-muted-foreground">
           {t(`${K}switch.${a.on ? "on" : "off"}`)}
         </span>
-        {autofixValid(a, index) && blockErrs.length === 0 ? (
+        {autofixValid(a, index) && blockErrs.length === 0 && !fieldInvalid ? (
           <Badge variant="ok">{t(`${K}valid`)}</Badge>
         ) : null}
       </div>
@@ -76,7 +79,7 @@ export function StageAutofix(p: StageFormProps) {
       {a.on ? (
         <>
           {blockErrs.map((k) => (
-            <Alert key={k} variant="destructive" role="alert">
+            <Alert key={k} variant="destructive" role="alert" className="bg-danger-bg">
               <AlertDescription>{tr(k)}</AlertDescription>
             </Alert>
           ))}

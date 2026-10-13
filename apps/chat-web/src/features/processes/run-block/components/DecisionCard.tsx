@@ -3,18 +3,6 @@ import { type DecisionOption, FORWARD_NOTE_MAX } from "@ai/contracts/chat";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "~/components/ui/alert-dialog";
-import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { fetchAttachmentContent } from "~/features/attachments/api";
 import { ApiError } from "~/lib/http";
@@ -24,6 +12,7 @@ import { stageAutofix } from "../../shared/lib/autofix-view";
 import { isAutofixReason } from "../../shared/lib/decision-reason";
 import type { TaskCardProps } from "../../shared/types";
 import { useDecide } from "../hooks/use-decide";
+import { DecisionButtons } from "./DecisionButtons";
 
 // D6c (UAT 2026-10-11): trong thread, `DecisionMessage` đã in tiêu đề "Quy trình dừng ở giai đoạn…" + lý do ở trên,
 // nên thẻ nhúng ẩn hai dòng đó để không lặp; trang lượt chạy (TaskPanel) không nhúng ⇒ vẫn in đủ.
@@ -82,7 +71,12 @@ export function DecisionCard({
           {t("process.run.decision.title", { stage: task.stage_name })}
         </p>
       )}
-      {!embedded && task.reason && <ReasonLines reason={task.reason} />}
+      {!embedded && task.reason && (
+        <ReasonLines
+          reason={task.reason}
+          round={task.reason === "autofix_check_failed" ? failed?.round : undefined}
+        />
+      )}
       {task.reason === "autofix_check_failed" && (
         <AutofixFailures view={failed} load={fetchAttachmentContent} />
       )}
@@ -97,50 +91,14 @@ export function DecisionCard({
           {t("process.common.validate.tooLong", { max: FORWARD_NOTE_MAX })}
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
-        {options.includes("add_attempt") && (
-          <Button
-            type="button"
-            size="sm"
-            disabled={over || decide.isPending}
-            onClick={() => void run("add_attempt")}
-          >
-            {t("process.common.option.add_attempt")}
-          </Button>
-        )}
-        {options.includes("use_current") && (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={useCurrentDisabled || over}
-            onClick={() => void run("use_current")}
-          >
-            {t("process.common.option.use_current")}
-          </Button>
-        )}
-        {options.includes("cancel") && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button type="button" size="sm" variant="destructive" disabled={decide.isPending}>
-                {t("process.common.option.cancel")}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("process.run.cancel.title")}</AlertDialogTitle>
-                <AlertDialogDescription>{t("process.run.cancel.body")}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t("process.run.cancel.keep")}</AlertDialogCancel>
-                <AlertDialogAction onClick={() => void run("cancel")}>
-                  {t("process.run.cancel.confirm")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-      </div>
+      <DecisionButtons
+        options={options}
+        autofix={autofixReason}
+        over={over}
+        pending={decide.isPending}
+        useCurrentDisabled={useCurrentDisabled}
+        onRun={(o) => void run(o)}
+      />
       {noOutput && (
         <p className="text-caption text-destructive">{t("process.run.decision.noOutput")}</p>
       )}

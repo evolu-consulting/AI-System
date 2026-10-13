@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,14 +28,26 @@ function reasonText(t: ReturnType<typeof useTranslation>["t"], run: ProcessRunFu
     : d.reason;
 }
 
-function ReasonTitle({ run }: { run: ProcessRunFullView }) {
+function ReasonTitle({ run, round }: { run: ProcessRunFullView; round?: number }) {
   const { t } = useTranslation();
   const r = run.decision?.reason;
   if (r === "autofix_check_failed" || r === "sandbox_unavailable") {
-    return <h3 className="text-body font-semibold">{reasonText(t, run)}</h3>;
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="text-body font-semibold">{reasonText(t, run)}</h3>
+        {r === "autofix_check_failed" && round !== undefined && (
+          <Badge variant="info">{t("process.common.autofix.round", { n: round })}</Badge>
+        )}
+      </div>
+    );
   }
   return <p className="text-body text-muted-foreground">{reasonText(t, run)}</p>;
 }
+
+const autofixOrder = <T extends string>(opts: T[], reason: string | undefined): T[] =>
+  reason === "autofix_check_failed" || reason === "sandbox_unavailable"
+    ? [...opts].sort((a, b) => Number(b === "cancel") - Number(a === "cancel"))
+    : opts;
 
 export function RunActions({ run, tenantId }: Props) {
   const { t } = useTranslation();
@@ -55,6 +68,8 @@ export function RunActions({ run, tenantId }: Props) {
   const load = useAttachmentLoader(tenantId);
   // Chỉ lỗi của vòng hiện tại; vòng này không có báo cáo ⇒ AutofixFailures hiện "không có báo cáo chi tiết".
   const failed = d ? currentAutofix(run.stages, d.stage_idx) : undefined;
+  // Mockup Pc-Decision: tự sửa mã ⇒ "Huỷ quy trình" (viền) trước, "Thêm lượt" (nền chính) sau.
+  const options = autofixOrder(d?.options ?? [], d?.reason);
   const hasOutput = (run.stages[d?.stage_idx ?? 0]?.outputs.length ?? 0) > 0;
   return (
     <div className="space-y-3">
@@ -68,7 +83,7 @@ export function RunActions({ run, tenantId }: Props) {
               stage: run.stages[d.stage_idx]?.name ?? "",
             })}
           </h2>
-          <ReasonTitle run={run} />
+          <ReasonTitle run={run} round={failed?.round} />
           {d?.reason === "source_unresolvable" && (
             <p className="text-caption text-muted-foreground">
               {t("process.common.source_unresolvable_hint")}
@@ -92,8 +107,8 @@ export function RunActions({ run, tenantId }: Props) {
                   onChange={(e) => setNote(e.target.value)}
                 />
               </div>
-              <div className="flex flex-wrap gap-2">
-                {d.options.map((o) => (
+              <div className="flex flex-wrap justify-end gap-2">
+                {options.map((o) => (
                   <Button
                     key={o}
                     variant={o === "cancel" ? "outline" : "default"}

@@ -59,9 +59,6 @@ function AutofixFailuresImpl({
   const sec = secondsLabel(view.test?.duration_ms ?? 0, i18n.language);
   return (
     <div className="flex flex-col gap-2">
-      <span className="self-start rounded-sm bg-muted px-1.5 py-0.5 text-caption font-medium">
-        {t(`${K}round`, { n: view.round })}
-      </span>
       {groups.map((g) => (
         <div key={g} className="flex flex-col gap-1">
           <span className="text-caption font-semibold text-destructive">

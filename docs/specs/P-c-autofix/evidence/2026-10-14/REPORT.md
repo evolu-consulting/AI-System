@@ -36,3 +36,6 @@ Chưa kiểm: EN/mobile/dark; diff > 2.000 dòng, trần kích thước/số fil
 - Major 1 — `tools/hub-dev/src/dev.ts` `runtimeEnv`: thêm `RUNTIME_ENV=development`, `RUNTIME_SOURCE_CACHE_DIR` (container `/tmp/hub-dev-srccache`; local `.data/hub-dev-srccache`), `HUB_SOURCE_LOCAL_ROOTS` (container `/work`, ghi đè `HUB_DEV_SOURCE_ROOTS`; local = repo). Guide: `docs/guides/hub-dev.md` mục "Nguồn `repo` trong hub-dev". Cần chạy lại `hub:dev` để Runtime nhận env; nguồn `local_path` trong container khai `/work/...`.
 - Major 2 — `providers/fake/provider.py` `_answer`: có `#fake:sections` thì thân = các mục `## …` rồi tóm tắt ws nối sau (vào mục cuối) ⇒ `fixbug-apply` qua checkTemplate. Test: `test_sections.py` (2 ca). Không đụng test khoá; không có tranh chấp.
 - Minor 3 — Hub đã trả đúng mã: HTTP 404, `code: SOURCE_NOT_FOUND`, message "Source not found", không có `details` (`defs.service.ts #checkSources`, PB-R06; cố ý không lộ key). FE dịch theo `code`.
+
+## Đã sửa FE (Minor #3, #5-#8)
+Xem `plan-frontend.md` FC15. #4 (đếm vòng) là hành vi Hub, chỉ ghi nhận. `mockup/` chưa chụp lại sau sửa.
