@@ -178,8 +178,8 @@ Câu mới của backend-lead (bằng chứng + phương án khác: `spec-decisi
 - **Q8** `key`/`kind`/`vendor` provider, `key` profile bất biến. **Mặc định:** vậy, chốt bằng GRANT cột.
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - 2026-10-13 (PLAN FE): xem `plan-frontend.md` D1–D12 (check đồng bộ ≤ 10 s; "lúc này chạy bằng" = `active_step` server; chỉ Lên/Xuống, kéo-thả TECH-DEBT #162; xoá qua xác nhận; Sheet đóng sau lưu; mockup ở `canvas/H4b2-*`).
-- 2026-10-13 (B1): `name` agent ở ma trận/ô = chuỗi `agents.name.vi` (spec không ghi kiểu; mock e2e qc dùng chuỗi). `DELETE …?version=N` dùng chung `VersionQuerySchema`; `details` theo mã gom ở `STUDIO_MODEL_ERROR_DETAILS` (dùng lại `KeyTakenDetailsSchema`). Drizzle `ModelProfileStep.model` = `string \| null` (khớp `ProfileStepSchema`), chuyển sang `hub-models.ts`. List provider thêm `version` + `slots_in_use` (đếm correlated, `jobs_provider_key_idx`) ngay ở B1 để typecheck xanh (`toProviderItem` có kiểu); list profile thêm trường ở B5.
-- 2026-10-13 (B2): `redactKey` quét tối đa 4 000 ký tự đầu (thông điệp chỉ giữ 500); key < 8 ký tự ⇒ che cả key. `baseUrlProblem`: giao thức khác http(s), `?`/`#` rỗng ⇒ `invalid`. `pickStep` dùng lại `blockedReason` (cooldown không hạn ⇒ quota).
+- 2026-10-13 (B1): `name` agent ở ma trận/ô = chuỗi `name.vi` (khớp mock e2e). `VersionQuerySchema` chung cho DELETE; `STUDIO_MODEL_ERROR_DETAILS` gom details. `ModelProfileStep.model` nullable (`hub-models.ts`). List provider thêm `version`+`slots_in_use` ngay B1 (typecheck); list profile ở B5.
+- 2026-10-13 (B2): `redactKey` quét ≤ 4 000 ký tự; key < 8 ký tự ⇒ che cả key. `baseUrlProblem`: giao thức khác http(s), `?`/`#` rỗng ⇒ `invalid`. `pickStep` dùng lại `blockedReason`.
 
 ## 10. Tranh chấp test
 - (không)
