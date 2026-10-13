@@ -36,7 +36,7 @@ const fullView = (stageKey: string, processKey = "sdlc") => ({
   current_stage_idx: 0,
   stage_count: 1,
   started_by: user,
-  origin: { kind: "none" },
+  origin: { kind: "admin" },
   started_at: AT,
   updated_at: AT,
   finished_at: null,
