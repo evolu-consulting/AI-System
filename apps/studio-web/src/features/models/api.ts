@@ -1,5 +1,6 @@
 // HUB-FR-66 · API Models của Studio (`/studio/api/providers*`). Đường dẫn tương đối; secret chỉ đi bằng `secret_id`.
 import type {
+  ProviderCheckResult,
   ProviderCreate,
   ProviderDetail,
   ProviderItemSchema,
@@ -42,6 +43,13 @@ export const updateProvider = (v: { id: string; body: ProviderUpdate }) =>
   api<ProviderDetail>(`/studio/api/providers/${encodeURIComponent(v.id)}`, {
     method: "PUT",
     body: v.body,
+  });
+
+/** D3 · kiểm key (api) / yêu cầu Runtime probe (subscription): đồng bộ, server hạn 10 s. Phản hồi không bao giờ chứa key. */
+export const checkProvider = (v: { id: string; signal?: AbortSignal }) =>
+  api<ProviderCheckResult>(`/studio/api/providers/${encodeURIComponent(v.id)}/check`, {
+    method: "POST",
+    signal: v.signal,
   });
 
 export const deleteProvider = (v: { id: string; version: number }) =>

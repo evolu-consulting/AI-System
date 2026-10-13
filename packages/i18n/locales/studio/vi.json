@@ -557,6 +557,46 @@
       "providerHasHistory": "Provider đã có lịch sử chạy, chỉ tắt được",
       "providerReadonly": "Provider này do hệ thống quản lý, không sửa được",
       "conflictDelete": "Provider vừa được thay đổi. Đã tải lại danh sách."
+    },
+    "check": {
+      "title": "Kết quả kiểm tra · {key}",
+      "desc": "Hub gọi hãng để kiểm tra. Giá trị key không bao giờ hiện.",
+      "running": "Đang kiểm tra key…",
+      "runningSub": "Đang kiểm tra phiên đăng nhập…",
+      "ok": "Key hợp lệ",
+      "fail": "Key không hợp lệ",
+      "okSub": "Kiểm tra lại: phiên đăng nhập hợp lệ",
+      "failSub": "Phiên đăng nhập chưa hợp lệ",
+      "unsupported": "Chưa hỗ trợ kiểm tra cho hãng này",
+      "timeout": "Không kết nối được tới hãng trong 10 giây",
+      "httpError": "Hãng trả lỗi HTTP {status}",
+      "network": "Không kết nối được tới hãng",
+      "secretUnreadable": "Không đọc được secret. Lưu lại API key ở Secrets",
+      "requested": "Đã yêu cầu kiểm tra. Worker chưa kiểm xong, thử lại sau ít phút",
+      "checkedAt": "Kiểm lúc {time}",
+      "details": "Chi tiết",
+      "again": "Kiểm tra lại",
+      "close": "Đóng"
+    },
+    "guide": {
+      "title": "Đăng nhập CLI · {key}",
+      "lead": "Hết phiên đăng nhập. Trong lúc chờ, profile tự dự phòng sang bước kế.",
+      "step1": "SSH vào máy Worker",
+      "step2": "Chạy lệnh đăng nhập",
+      "step3": "Bấm Kiểm tra lại",
+      "step3Hint": "Hub kiểm tra phiên đăng nhập và cập nhật trạng thái.",
+      "cmd1": "ssh <user>@<worker-host>",
+      "cmd2": {
+        "anthropic": "claude login",
+        "openai": "codex login",
+        "google": "gemini",
+        "other": "Xem runbook Worker"
+      },
+      "copy": "Sao chép",
+      "copyAria": "Sao chép lệnh bước {n}",
+      "copied": "Đã sao chép",
+      "copyFail": "Không sao chép được. Hãy chọn và sao chép thủ công.",
+      "note": "Hub không đăng nhập thay bạn. Nội dung lấy từ runbook Worker."
     }
   },
   "secrets": {

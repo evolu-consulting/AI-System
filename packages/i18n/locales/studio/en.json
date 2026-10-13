@@ -557,6 +557,46 @@
       "providerHasHistory": "Provider has run history; disable it instead",
       "providerReadonly": "This provider is system-managed",
       "conflictDelete": "The provider was just changed. The list has been reloaded."
+    },
+    "check": {
+      "title": "Check result · {key}",
+      "desc": "The Hub calls the vendor to check. The key value is never shown.",
+      "running": "Checking key…",
+      "runningSub": "Checking login session…",
+      "ok": "Key is valid",
+      "fail": "Key is invalid",
+      "okSub": "Login session is valid",
+      "failSub": "Login session is not valid",
+      "unsupported": "Check is not supported for this vendor",
+      "timeout": "Could not reach the vendor within 10 seconds",
+      "httpError": "Vendor returned HTTP {status}",
+      "network": "Could not reach the vendor",
+      "secretUnreadable": "Could not read the secret. Save the API key again in Secrets",
+      "requested": "Check requested. The Worker has not finished yet, try again in a few minutes",
+      "checkedAt": "Checked at {time}",
+      "details": "Details",
+      "again": "Check again",
+      "close": "Close"
+    },
+    "guide": {
+      "title": "CLI login · {key}",
+      "lead": "The login session expired. Meanwhile profiles fall back to the next step.",
+      "step1": "SSH into the Worker machine",
+      "step2": "Run the login command",
+      "step3": "Click Check again",
+      "step3Hint": "The Hub checks the login session and updates the status.",
+      "cmd1": "ssh <user>@<worker-host>",
+      "cmd2": {
+        "anthropic": "claude login",
+        "openai": "codex login",
+        "google": "gemini",
+        "other": "See the Worker runbook"
+      },
+      "copy": "Copy",
+      "copyAria": "Copy step {n} command",
+      "copied": "Copied",
+      "copyFail": "Could not copy. Select and copy it manually.",
+      "note": "The Hub does not sign in for you. Content comes from the Worker runbook."
     }
   },
   "secrets": {

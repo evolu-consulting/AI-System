@@ -33,3 +33,6 @@ C1 — list giữ R13 (Q6): `has_secret` + `slots_in_use`, `secret`/`last_error`
 
 ## Trong lúc làm — FE T6 (Quyền agent)
 - 2026-10-13: key riêng `access.empty`/`access.forbidden` (không dùng `state.*` chung với Models); thêm `access.matrix.corner`, `access.drawer.none`, `access.drawer.subject.*`. Nút "Chi tiết …" chỉ ở ô đã cấp; bộ lọc là `<select>` native theo key. Cấp/thu hồi thành công ⇒ invalidate ma trận + `me` (số grant lấy lại từ server).
+
+## Trong lúc làm — FE T5b (Kiểm tra key + Runbook)
+- 2026-10-13: UI chặn request check ở 15 s (server 10 s) ⇒ `check.timeout`; lỗi request khác 404/READONLY/NOT_CONFIGURED (mạng, 5xx) hiện trong hộp `role=alert` (`login.err.*`), không toast. "Chi tiết" = `HTTP {http_status}` + `message` + `{latency_ms} ms`, chỉ khi ok/error và có HTTP/message. `unsupported` ẩn [Kiểm tra lại]. Thêm key `models.check.{desc,runningSub,httpError,network,secretUnreadable,requested}`, `models.guide.{step3Hint,copyAria,copyFail,cmd2.*}`; lệnh hãng ở i18n. Runbook không có nút X (đã có [Đóng] ở footer). Đóng hộp bị chặn khi đang chạy (cả Esc).
