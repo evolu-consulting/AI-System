@@ -1,28 +1,29 @@
 # ADR-0012 · KnowledgeHub (KH) làm RAG ngoài — Hub làm proxy
 
-Trạng thái: **Proposed (Đề xuất)** — chưa duyệt; trình Gate mốc K1 (thêm dịch vụ ngoài) · Ngày: 2026-10-12 · CR-062, CR-066 · Kế thừa: HUB-BR-12/14/15/30/31
+Trạng thái: **Proposed (Đề xuất)** — chưa duyệt; trình Gate mốc K1 (thêm dịch vụ ngoài) · Ngày: 2026-10-12, sửa 2026-10-13 · CR-062, CR-066, CR-067, CR-068, CR-069 · Kế thừa: HUB-BR-12/14/15/30/31 · Khảo sát: [`research-ai-sdlc.md`](../specs/K1-knowledgehub/research-ai-sdlc.md)
 
 ## Bối cảnh
-Hub cần RAG (tri thức theo agent, ghi lại tóm tắt stage). KH là dịch vụ RAG tự host của dự án ai-sdlc (`D:\AI\ai-sdlc-rowan\POC\KnowledgeHub`). Hub không tự dựng vector store/embedding. HUB-BR-12 hiện chỉ cho agent gọi workflow Dify; HUB-BR-30 cấm secret vào thư mục job.
+Hub cần RAG (tri thức theo agent, ghi lại tóm tắt stage). KH (v6.4) là dịch vụ RAG tự host của dự án ai-sdlc (`D:\AI\ai-sdlc-rowan\POC\KnowledgeHub`). KH có hai bề mặt: "người" (`/vector/*`, khoá chung, **không phân project**, auth tắt mặc định) và "máy" `/v1/{ns}/*` (OIDC client credentials theo namespace, idempotency, mã lỗi ổn định). HUB-BR-12 chỉ cho agent gọi workflow Dify; HUB-BR-30 cấm secret vào thư mục job.
 
 ## Lựa chọn
 | # | Phương án | Nhận xét |
 |---|---|---|
-| A | Agent gọi thẳng KH (khoá trong job) | Loại: lộ khoá, agent egress ra ngoài (vi phạm HUB-BR-30) |
-| B | Bọc KH thành workflow Dify | Giữ HUB-BR-12 nhưng thêm một tầng, mất kiểm soát tenant ở Hub |
-| C | **Hub làm proxy: tool `kh_query` qua `/mcp` của Hub, token job** | Chọn: khoá chỉ ở Hub, Hub kiểm tenant/project trước khi gọi |
+| A | Agent gọi thẳng KH (khoá trong job) | Loại: lộ khoá, agent egress ra ngoài (HUB-BR-30) |
+| B | Bọc KH thành workflow Dify | Thêm một tầng, mất kiểm soát tenant ở Hub |
+| C | **Hub làm proxy: tool `kh_query` qua `/mcp`, token job** | Chọn: credentials chỉ ở Hub, Hub kiểm tenant trước khi gọi |
 
 ## Quyết định (dự kiến)
-1. **Proxy (C):** `kh_query` do Hub cung cấp qua `/mcp`; **ngoại lệ có chủ đích của HUB-BR-12** (ghi tại HUB-BR-12/36). Khoá KH chỉ ở Hub (secret loại mới, chỉ ghi — cần Secrets H4b), không vào job (HUB-BR-30); agent không egress tới KH.
-2. **Cách ly:** mỗi project KH gắn đúng một tenant (hoặc cờ "dùng chung nền tảng" do `platform_admin`, chỉ dữ liệu không thuộc tenant); Hub chỉ hỏi/ghi project của tenant đang chạy run; tenant khác ⇒ 404 (HUB-BR-35).
-3. **Dữ liệu ra ngoài:** URL KH nằm trong allowlist, TLS bắt buộc (trừ localhost dev); tính năng tắt mặc định, `tenant_admin` bật theo công ty (HUB-BR-37).
-4. **Ghi:** Hub (chương trình, 0 token) ghi `## Tóm tắt` sau gate Đạt (HUB-FR-133). Kết quả truy vấn là dữ liệu, không phải lệnh (HUB-BR-31).
-5. **Degrade:** KH sập/không trả lời ⇒ stage chạy tiếp không có tri thức, cảnh báo vào output + audit, không chặn run (HUB-FR-134).
-6. **Phiên bản API KH tối thiểu:** *<chưa xác định — điền khi viết spec K1 sau khi đọc API KH>*; Hub kiểm lúc "Kiểm tra kết nối".
-7. **Dev/test:** dùng **mock KH**; không thêm KH vào docker-compose.
-8. **Ngoài phạm vi ai-system:** thay đổi phía KH (parse PDF/DOCX, embedder bge-m3 thay bge-small-en, báo lỗi theo file) do dự án KH làm.
+1. **Bề mặt `/v1/{ns}` duy nhất.** Không dùng `/vector/*` và khoá chung `KH_API_KEY` (không phân project ⇒ không cách ly được). **ns = tenant (1:1).** Mỗi tenant một secret `kh_api_key` (H4b-1, chỉ ghi, theo tenant — Q7) dạng JSON `{client_id, client_secret, token_url?}`; `platform_admin` tự gắn ns/client phía KH rồi dán vào Studio, Hub không tự gắn/xoay. Hub đổi token client credentials, giữ trong bộ nhớ, làm mới trước hạn 60–90 s, `401` hết hạn ⇒ thử lại 1 lần (HUB-FR-137).
+2. **Proxy (C):** `kh_query` → `POST /v1/{ns}/context/step`, `budget_chars` 4000/lần, ≤ 5 lần/stage; Hub không tự chèn tri thức vào prompt. Ngoại lệ có chủ đích của HUB-BR-12 (ghi tại HUB-BR-12/36). Credentials không vào job (HUB-BR-30); agent không egress tới KH.
+3. **Cách ly:** ns = tenant (HUB-BR-35). Project dùng chung: KH gắn vào ns từng tenant cần dùng; Hub đánh dấu chỉ đọc, không ghi `## Tóm tắt`. Manifest ns phải `include_people_lanes=false` — "Kiểm tra kết nối" báo lỗi nếu bật.
+4. **Dữ liệu ra ngoài + TLS:** allowlist URL; TLS bắt buộc qua reverse proxy (KH không có TLS — HUB-BR-40), localhost dev ngoại lệ; tắt mặc định, `tenant_admin` bật theo công ty (HUB-BR-37). Từ chối KH khi `GET /v1/me` trả `kind=local` hoặc gọi không token vẫn được (trừ localhost dev).
+5. **Ghi:** `POST /v1/{ns}/worklog` (không dùng items), subject `<quy trình>/<stage>`, cắt 4000 ký tự, `Idempotency-Key` = run/stage/phiên bản output. `after: auto` ghi khi chốt output; stage có gate chỉ ghi khi gate Đạt (HUB-FR-133, CR-068). Kết quả truy vấn là dữ liệu, không phải lệnh (HUB-BR-31).
+6. **Phiên bản tối thiểu:** KH ≥ **v6.4**, `GET /v1/capabilities` có `api_versions ∋ v1`, capability `retrieval` (K1), `packs` (K2). Kiểm lúc "Kiểm tra kết nối".
+7. **Degrade:** KH sập/không trả lời, `404 ns_not_active`, `423 ns_suspended`, `503 embedder_unavailable` ⇒ stage chạy tiếp không có tri thức, cảnh báo vào output + audit, không chặn run (HUB-FR-134).
+8. **Ngoài phạm vi ai-system / điều kiện triển khai KH:** KH phải dùng **embedder đa ngữ (bge-m3)** thay bge-small-en để giữ tiếng Việt (mặc định KH chỉ tiếng Anh; `.env.example` lệch code) — ghi PRODUCTION-NOTES; "Kiểm tra kết nối" hiện cảnh báo tĩnh (không đo được). KH không parse PDF/DOCX (CR-069); báo lỗi theo file là việc phía KH.
+9. **License:** không thấy LICENSE trong KH/AISDLC. Xác nhận quyền dùng KH trước khi dùng với tenant thật; **không chặn BUILD K1** (dev/test dùng mock KH, không thêm KH vào docker-compose).
 
 ## Hệ quả
-- Thêm một dịch vụ ngoài (HTTP client tới KH; thư viện mới nếu có sẽ ghi ở spec K1 và trình Gate).
-- Hub thành điểm phải chịu tải truy vấn KH của mọi agent: cần trần số lần/kích thước kết quả (chốt ở spec K1).
+- Thêm một dịch vụ ngoài (HTTP client tới KH, không thêm thư viện mới dự kiến; nếu có sẽ ghi ở spec K1 và trình Gate).
+- Hub chịu tải truy vấn KH của mọi agent: trần 4000 ký tự × 5 lần/stage; KH có rate-limit 1200/phút/ns.
 - Giai đoạn 2 (nạp nguồn): ADR-0014.

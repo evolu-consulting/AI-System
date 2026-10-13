@@ -1,6 +1,6 @@
 # Khảo sát ai-sdlc cho K1/K2 (2026-10-13)
 
-Nguồn (chỉ đọc): `D:\AI\ai-sdlc-rowan\POC\KnowledgeHub` (KH v6.4), `POC\AISDLC`, `handover-demo`. Người dùng 2026-10-13: được tham chiếu AISDLC và handover-demo. Chưa qua Intake — các điểm "Lệch" dưới đây chờ chốt.
+Nguồn (chỉ đọc): `D:\AI\ai-sdlc-rowan\POC\KnowledgeHub` (KH v6.4), `POC\AISDLC`, `handover-demo`. Người dùng 2026-10-13: được tham chiếu AISDLC và handover-demo. Intake Đầy đủ đã chốt 2026-10-13 (14 mặc định): CR-067…070.
 
 ## KnowledgeHub (KH v6.4)
 - FastAPI, cổng 8000, Chroma + Kùzu + SQLite; `GET /health`, `GET /version` (`v6.4`), `GET /v1/capabilities` (semver theo capability).
@@ -23,12 +23,12 @@ Nguồn (chỉ đọc): `D:\AI\ai-sdlc-rowan\POC\KnowledgeHub` (KH v6.4), `POC\A
 - Quy trình mẫu tái dùng được (`seed.py`): agent PM/Architect/Dev/QA/Reviewer; stage Scope Sign-off (gate) → Setup & Plan → Blueprint/Spec (gate) → Architect Design → Implementation (chạy test) → Code Review (fail ⇒ quay lại) → Testing (fail ⇒ quay lại) → UAT (gate) → Release & Close; Bug flow (Bug Intake gate → Code Reading → Bug Fix); workflow New System / New Feature / Bug Fix / Full Delivery.
 - handover-demo = tài liệu bàn giao hệ thống DLC cho khách (Keycloak, cổng) — **không** liên quan `## Bàn giao`.
 
-## Lệch so với CR-062/066 + ADR-0012/0014 (chờ Intake)
-| # | Đã chốt | Thực tế | Mặc định đề xuất |
+## Lệch so với CR-062/066 + ADR-0012/0014 — **Đã chốt CR-067…070 (2026-10-13)**
+| # | Đã chốt | Thực tế | Mặc định đã chốt |
 |---|---|---|---|
-| L1 | KH parse PDF/DOCX (ngoài phạm vi ai-system) | KH không parse | Phụ thuộc phía KH; K2 chỉ nạp text/markdown/code cho tới khi KH hỗ trợ (hoặc Hub trích chữ lại — CR mới) |
-| L2 | Một khoá KH, Hub proxy | Khoá chung không phân project; `/v1` + client credentials theo namespace mới cách ly được | Hub dùng `/v1` + namespace theo tenant, secret `kh_client` theo tenant (H4b-1 đã chừa) |
-| L3 | Allowlist + TLS | KH không TLS, auth tắt mặc định | Hub từ chối KH khi auth tắt (kiểm ở "Kiểm tra kết nối"); TLS qua reverse proxy, localhost dev ngoại lệ |
-| L4 | Tóm tắt tiếng Việt vào KH | Embedder chỉ tiếng Anh | Yêu cầu phía KH bật embedder đa ngữ (bge-m3, đã ghi ADR-0012 §8) |
-| L5 | Ghi `## Tóm tắt` sau gate Đạt | AISDLC ghi worklog mọi stage, knowledge chỉ stage không gate | Giữ quyết định ai-system |
-| L6 | (mới) | Quy trình SDLC mẫu của AISDLC đầy đủ hơn `sdlc` seed hiện tại | Đề xuất cập nhật seed `sdlc` theo `seed.py` (tuỳ chọn) |
+| L1 | KH parse PDF/DOCX (ngoài phạm vi ai-system) | KH không parse | Phụ thuộc phía KH; K2 chỉ nạp text/markdown/code cho tới khi KH hỗ trợ (hoặc Hub trích chữ lại — CR mới) — **Đã chốt CR-069** |
+| L2 | Một khoá KH, Hub proxy | Khoá chung không phân project; `/v1` + client credentials theo namespace mới cách ly được | Hub dùng `/v1` + namespace theo tenant, secret `kh_client` theo tenant (H4b-1 đã chừa) — **Đã chốt CR-067** |
+| L3 | Allowlist + TLS | KH không TLS, auth tắt mặc định | Hub từ chối KH khi auth tắt (kiểm ở "Kiểm tra kết nối"); TLS qua reverse proxy, localhost dev ngoại lệ — **Đã chốt CR-067** |
+| L4 | Tóm tắt tiếng Việt vào KH | Embedder chỉ tiếng Anh | Yêu cầu phía KH bật embedder đa ngữ (bge-m3, đã ghi ADR-0012 §8) — **Đã chốt CR-068** |
+| L5 | Ghi `## Tóm tắt` sau gate Đạt | AISDLC ghi worklog mọi stage, knowledge chỉ stage không gate | Giữ quyết định ai-system — **Đã chốt CR-068** |
+| L6 | (mới) | Quy trình SDLC mẫu của AISDLC đầy đủ hơn `sdlc` seed hiện tại | Đề xuất cập nhật seed `sdlc` theo `seed.py` (tuỳ chọn) — **Đã chốt CR-070** |

@@ -86,7 +86,7 @@ Menu xếp theo thứ tự thiết kế một agent: chọn workflow ở *Tools*
 | Lưu agent mới | Lưu xong mà agent chưa cấp cho tenant nào thì toast nhắc "Chưa tenant nào dùng được agent này" kèm nút [Cấp cho tenant…] |
 | Tắt agent | Toast có Hoàn tác, kèm nhắc: "Orchestrator sẽ không còn chọn agent này. Các yêu cầu tương tự sẽ được chat tự trả lời" |
 | Tri thức (CR-062, K1; chờ artboard) | Mục "Tri thức" trong editor agent: công tắc "Được dùng tri thức (KnowledgeHub)" + chọn loại project. Chỉ hiện khi KnowledgeHub đã kết nối ở Cài đặt. `tenant_admin` chọn project của công ty cho quy trình/stage ở Evolu Control (không ở Studio) |
-| Cài đặt → KnowledgeHub (CR-062, K1; chờ artboard) | Form: URL (phải trong allowlist, TLS), khoá (chỉ ghi, hiện last4), nút "Kiểm tra kết nối" + trạng thái/phiên bản API; tính năng tắt mặc định, `tenant_admin` bật theo công ty. |
+| Cài đặt → KnowledgeHub (CR-062/067, K1; **thiếu artboard** — dựng theo mẫu màn Secrets/Cài đặt) | Khối 1: URL KH (allowlist, TLS) + nút "Kiểm tra kết nối" (phiên bản ≥ v6.4, `api_versions`, capability, `include_people_lanes`, `/v1/me`; cảnh báo tĩnh embedder đa ngữ). Khối 2: **bảng tenant ↔ namespace + credentials** (cột Tenant · Namespace · Credentials `client_id` + `•••• Đã lưu` chỉ ghi, dán JSON `{client_id, client_secret, token_url?}` · Trạng thái · [Thay] [Xoá]); `platform_admin` tự gắn ns/client phía KH rồi dán. Tính năng tắt mặc định, `tenant_admin` bật theo công ty. |
 
 ## 6. Orchestrator
 
