@@ -1,7 +1,8 @@
-// ADM-NFR-06 · `bun run mocks`: chạy mock Dify + Hub trên 2 cổng. Nơi duy nhất có I/O khởi động.
+// ADM-NFR-06 · HUB-FR-131 · `bun run mocks`: chạy mock Dify + Hub + KnowledgeHub trên 3 cổng. Nơi duy nhất có I/O khởi động.
 import { createDifyMock } from "./dify";
 import { loadMockEnv, type MockEnv } from "./env";
 import { createHubMock } from "./hub";
+import { createKhMock } from "./kh";
 
 function readEnvOrExit(): MockEnv {
   try {
@@ -20,6 +21,11 @@ const dify = Bun.serve({
   fetch: createDifyMock(env).fetch,
 });
 const hub = Bun.serve({ port: env.hubPort, idleTimeout: 0, fetch: createHubMock(env).fetch });
+const kh = Bun.serve({
+  port: env.khPort,
+  idleTimeout: 0,
+  fetch: createKhMock({ apiKey: env.khApiKey, timeoutMs: env.timeoutMs }).fetch,
+});
 console.log(
-  `mocks: Dify http://localhost:${dify.port}/v1 · Hub http://localhost:${hub.port} · timeout ${env.timeoutMs} ms`,
+  `mocks: Dify http://localhost:${dify.port}/v1 · Hub http://localhost:${hub.port} · KH http://localhost:${kh.port} · timeout ${env.timeoutMs} ms`,
 );

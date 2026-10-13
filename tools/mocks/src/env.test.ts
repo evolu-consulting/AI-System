@@ -6,6 +6,8 @@ const CHAT_DEFAULTS = {
   flowIdleS: 600,
   eventsRetentionS: 600,
   healthVersion: MOCK_HUB_VERSION,
+  khPort: 4030,
+  khApiKey: "mock-kh-key",
 };
 
 describe("ADM-NFR-06 · loadMockEnv", () => {
@@ -31,6 +33,13 @@ describe("ADM-NFR-06 · loadMockEnv", () => {
     expect(env.healthVersion).toMatch(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
   });
 
+  test("HUB-FR-131 · KH_MOCK_PORT, KH_MOCK_API_KEY", () => {
+    expect(loadMockEnv({ KH_MOCK_PORT: "5030", KH_MOCK_API_KEY: "k" })).toMatchObject({
+      khPort: 5030,
+      khApiKey: "k",
+    });
+  });
+
   test.each([
     ["DIFY_MOCK_PORT", { DIFY_MOCK_PORT: "0" }],
     ["HUB_MOCK_PORT", { HUB_MOCK_PORT: "65536" }],
@@ -40,6 +49,7 @@ describe("ADM-NFR-06 · loadMockEnv", () => {
     ["MOCK_FAST", { MOCK_FAST: "yes" }],
     ["MOCK_FLOW_IDLE_S", { MOCK_FLOW_IDLE_S: "-5" }],
     ["MOCK_EVENTS_RETENTION_S", { MOCK_EVENTS_RETENTION_S: "x9" }],
+    ["KH_MOCK_PORT", { KH_MOCK_PORT: "70000" }],
   ])("sai %s → lỗi nêu tên, không in giá trị", (name, source) => {
     expect(() => loadMockEnv(source)).toThrow(name);
     expect(() => loadMockEnv(source)).not.toThrow(Object.values(source)[0]);
