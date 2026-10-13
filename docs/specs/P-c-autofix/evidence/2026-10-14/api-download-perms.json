@@ -1,0 +1,25 @@
+{
+  "A": {
+    "diff": 200,
+    "log": 200
+  },
+  "B": {
+    "diff": 200,
+    "log": 200
+  },
+  "D": {
+    "diff": 200,
+    "log": 200
+  },
+  "C": {
+    "diff": 404,
+    "log": 404
+  },
+  "R": {
+    "diff": 200,
+    "log": 200
+  },
+  "admin_with_tenant": 200,
+  "admin_no_tenant": 404,
+  "no_token": 401
+}

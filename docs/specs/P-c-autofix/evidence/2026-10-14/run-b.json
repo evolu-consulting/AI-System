@@ -1,0 +1,13 @@
+{
+  "run": "6783e8a0-e440-4bd3-bfbe-4f1469d28e68",
+  "defId": "5d3dbdef-c0ec-410c-9543-36a4a63d3c6a",
+  "afterFirst": "waiting_review",
+  "aCanPass": 0,
+  "dl": [
+    "fix-r1.diff.txt",
+    "fix-r1-test.log.txt"
+  ],
+  "round": "1",
+  "diffId": "d855eafb-7466-4ea8-8c8a-a3c5cc076344",
+  "logId": "4fdd6316-5953-44b3-ab15-16538fa6965f"
+}

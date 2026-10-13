@@ -1,0 +1,53 @@
+[
+  {
+    "name": "executor-not-agent",
+    "status": 422,
+    "code": "PROCESS_DEF_INVALID",
+    "rules": [
+      "AUTOFIX_EXECUTOR"
+    ],
+    "details": "{\"paths\":[\"stages.0.executor\"],\"rules\":[\"AUTOFIX_EXECUTOR\"]}"
+  },
+  {
+    "name": "after-not-review",
+    "status": 422,
+    "code": "PROCESS_DEF_INVALID",
+    "rules": [
+      "AUTOFIX_REVIEW"
+    ],
+    "details": "{\"paths\":[\"stages.0.after\"],\"rules\":[\"AUTOFIX_REVIEW\"]}"
+  },
+  {
+    "name": "two-autofix",
+    "status": 422,
+    "code": "PROCESS_DEF_INVALID",
+    "rules": [
+      "AUTOFIX_MAX"
+    ],
+    "details": "{\"paths\":[\"stages.1.autofix\"],\"rules\":[\"AUTOFIX_MAX\"]}"
+  },
+  {
+    "name": "source-not-in-def",
+    "status": 422,
+    "code": "PROCESS_REF_INVALID",
+    "details": "{\"path\":\"stages.0.autofix.source_key\",\"ref\":\"source\"}"
+  },
+  {
+    "name": "test-cmd-empty",
+    "status": 400,
+    "code": "VALIDATION_ERROR",
+    "details": "{\"issues\":[{\"path\":[\"stages\",0,\"autofix\",\"test_cmd\"],\"code\":\"too_small\",\"message\":\"Too small: expected string to have >=1 characters\"}]}"
+  },
+  {
+    "name": "allow-21",
+    "status": 400,
+    "code": "VALIDATION_ERROR",
+    "details": "{\"issues\":[{\"path\":[\"stages\",0,\"autofix\",\"write_allowlist\"],\"code\":\"too_big\",\"message\":\"Too big: expected array to have <=20 items\"}]}"
+  },
+  {
+    "name": "extra-field",
+    "status": 400,
+    "code": "VALIDATION_ERROR",
+    "details": "{\"issues\":[{\"path\":[\"stages\",0,\"autofix\"],\"code\":\"unrecognized_keys\",\"message\":\"Unrecognized key: \\\"network\\\"\"}]}"
+  }
+]

@@ -1,0 +1,345 @@
+[
+  {
+    "file": "result-a1-editor.json",
+    "id": "A01",
+    "title": "mở def fixbug-apply (bản chép), khối Tự sửa mã hiện bật + ghi chú mạng",
+    "ok": true,
+    "ms": 2219
+  },
+  {
+    "file": "result-a1-editor.json",
+    "id": "A02",
+    "title": "tắt rồi bật lại giữ giá trị đã nhập (FC8); tắt ⇒ lưu autofix=null",
+    "ok": true,
+    "ms": 848
+  },
+  {
+    "file": "result-a1-editor.json",
+    "id": "A03",
+    "title": "nhập đủ (install, allowlist 2 dòng, test) ⇒ badge Hợp lệ ⇒ Lưu 200 ⇒ tải lại đúng giá trị",
+    "ok": true,
+    "ms": 2112
+  },
+  {
+    "file": "result-a1-editor.json",
+    "id": "A04",
+    "title": "xoá lệnh test ⇒ alert 'Nhập lệnh kiểm thử…'; allowlist > 20 mẫu ⇒ alert err.allow",
+    "ok": true,
+    "ms": 403
+  },
+  {
+    "file": "result-a1-editor.json",
+    "id": "A05",
+    "title": "AUTOFIX_EXECUTOR: đổi 'Làm bởi' sang Nhóm ⇒ alert 'phải do agent'",
+    "ok": true,
+    "ms": 1132
+  },
+  {
+    "file": "result-a1-editor.json",
+    "id": "A06",
+    "title": "AUTOFIX_REVIEW: 'Sau giai đoạn' = Tự chạy tiếp ⇒ alert 'luôn phải qua người duyệt'",
+    "ok": true,
+    "ms": 1240
+  },
+  {
+    "file": "result-a1-editor.json",
+    "id": "A07",
+    "title": "AUTOFIX_MAX: thêm giai đoạn 2 bật Tự sửa mã ⇒ alert 'chỉ có một stage tự sửa mã'",
+    "ok": true,
+    "ms": 1883
+  },
+  {
+    "file": "result-a1-editor.json",
+    "id": "A08-info",
+    "title": "PUT status khi lưu def sai",
+    "ok": true,
+    "note": "no-request"
+  },
+  {
+    "file": "result-a1-editor.json",
+    "id": "A08",
+    "title": "Lưu def lỗi (2 stage autofix) ⇒ server/Client chặn, không có 200",
+    "ok": true,
+    "ms": 4534
+  },
+  {
+    "file": "result-a1-editor.json",
+    "id": "A09",
+    "title": "hoàn tác (Huỷ) ⇒ def gốc 1 stage",
+    "ok": true,
+    "ms": 30202
+  },
+  {
+    "file": "result-a3-library.json",
+    "id": "A10",
+    "title": "thêm nguồn uat-lib (library) vào def, chọn ở khối Tự sửa mã ⇒ Lưu 422 ⇒ alert 'thuộc loại library'",
+    "ok": true,
+    "ms": 3654
+  },
+  {
+    "file": "result-a3-library.json",
+    "id": "A11",
+    "title": "tải lại (bỏ thay đổi chưa lưu) ⇒ def trở lại nguồn repo",
+    "ok": true,
+    "ms": 649
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B00",
+    "title": "chuẩn bị: bật def (install=null, allowlist src/**+test/**, review=SDLC-người duyệt), huỷ run dở",
+    "ok": true,
+    "ms": 725
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B01",
+    "title": "[A] thomas.tran bắt đầu !fixbug-apply trong phòng Evolu team (chat-web)",
+    "ok": true,
+    "ms": 6314
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B02",
+    "title": "[A] job chạy trong sandbox Docker => chờ người duyệt; thẻ thread có khối Tự sửa mã + Xem diff",
+    "ok": true,
+    "ms": 5614
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B03",
+    "title": "[A] trang run: khối Tự sửa mã (nhánh ai/<uuid>/fix, +1 −1, 1 file, Test đạt); người khởi chạy KHÔNG có nút Đạt/Chưa đạt (không thuộc nhóm duyệt)",
+    "ok": true,
+    "ms": 1592
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B04",
+    "title": "[A] 'Xem log' mở hộp thoại log test; 'Tải .diff' + 'Tải log' tải đúng tên/nội dung",
+    "ok": true,
+    "ms": 2406
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B06",
+    "title": "[B] vio.ngo (người duyệt) thấy gate: khối kết quả có diff (src/calc.ts, +1 −1), Test đạt, nút Đạt/Chưa đạt",
+    "ok": true,
+    "ms": 2425
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B07",
+    "title": "[B] mục 'Chờ tôi kiểm' trong thanh bên có gate",
+    "ok": true,
+    "ms": 1012
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B08",
+    "title": "quyền tải file: A,B,D 200; C (uat-outsider, ngoài phòng) 403/404; R (rowan, thành viên phòng) ghi nhận; admin+tenant_id 200; không token 401",
+    "ok": true,
+    "ms": 1888
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B09",
+    "title": "[C] uat-outsider (member evolu ngoài phòng) mở trang run của người khác => không thấy khối diff",
+    "ok": true,
+    "ms": 4228
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B10",
+    "title": "[B] 'Chưa đạt' + góp ý => làm lại cùng nhánh, vòng tăng; gate mới",
+    "ok": true,
+    "ms": 11245
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B11",
+    "title": "[B] 'Đạt' => run hoàn thành",
+    "ok": true,
+    "ms": 2247
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B12",
+    "title": "[A] thomas thấy run xong trong phòng",
+    "ok": true,
+    "ms": 3655
+  },
+  {
+    "file": "result-b-happy.json",
+    "id": "B13",
+    "title": "[D] admin-web (julian.bui): trang lượt chạy hiển thị khối Tự sửa mã + diff",
+    "ok": true,
+    "ms": 4278
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C00",
+    "title": "chuẩn bị: allowlist src/** + test/**, install=null, test 'bun test'; huỷ run dở",
+    "ok": true,
+    "ms": 2671
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C01",
+    "title": "[A] ghi docs/NOTE.md (ngoài allowlist) ⇒ Cần người quyết 'Kiểm bản sửa không đạt', nhóm Đường dẫn; chỉ 2 nút",
+    "ok": true,
+    "ms": 8783
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C02",
+    "title": "[A] thread phòng: thẻ run 'Cần người quyết' có dòng 'Kiểm không đạt'",
+    "ok": true,
+    "ms": 3677
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C03",
+    "title": "[D] admin-web cùng run: cùng nhóm lỗi + 2 nút, không 'Dùng bản hiện có'",
+    "ok": true,
+    "ms": 3829
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C04",
+    "title": "quyền quyết định: vio.ngo (người duyệt, không phải người khởi chạy) bị từ chối; use_current => 409; thomas/julian được",
+    "ok": true,
+    "ms": 3477
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C05",
+    "title": "[A] 'Thêm 1 lần làm lại' ⇒ vòng 2 chạy tiếp; lỗi của vòng 1 không còn hiển thị như lỗi hiện tại",
+    "ok": true,
+    "ms": 13419
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C06",
+    "title": "[A] huỷ run C1 từ UI (nút Huỷ lượt chạy / Huỷ) để dọn",
+    "ok": true,
+    "ms": 347
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C10",
+    "title": "[A] ws_secret (dòng AKIA…) ⇒ nhóm 'Bí mật (không hiện giá trị)' chỉ path:line · quy tắc; KHÔNG lộ giá trị (UI, API run view, log, DB)",
+    "ok": true,
+    "ms": 8793
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C11",
+    "title": "[D] admin-web: nhóm Bí mật cùng cách hiển thị, không lộ giá trị; 'Huỷ lượt chạy' => run đã huỷ",
+    "ok": true,
+    "ms": 5802
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C20",
+    "title": "[A] sửa sai (a*b) ⇒ nhóm 'Test đỏ · exit 1', đuôi log + 'Tải log đầy đủ'",
+    "ok": true,
+    "ms": 10327
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C21",
+    "title": "[A] huỷ run C3",
+    "ok": true,
+    "ms": 34982
+  },
+  {
+    "file": "result-c-checks.json",
+    "id": "C30",
+    "title": "nguồn local_path KHÔNG bị ghi ngược: .data/uat-autofix-repo/src/calc.ts còn nguyên bug",
+    "ok": true,
+    "ms": 1
+  },
+  {
+    "file": "result-d-more.json",
+    "id": "D00",
+    "title": "chuẩn bị (install=null) + đăng nhập",
+    "ok": true,
+    "ms": 2032
+  },
+  {
+    "file": "result-d-more.json",
+    "id": "D01",
+    "title": "no_changes (test_cmd=true để test đạt khi không sửa): agent không sửa gì ⇒ gate 'Không có thay đổi' + hướng dẫn, vẫn có Đạt/Chưa đạt",
+    "ok": true,
+    "ms": 9217
+  },
+  {
+    "file": "result-d-more.json",
+    "id": "D02",
+    "title": "[B] Đạt trên no_changes ⇒ run hoàn thành",
+    "ok": true,
+    "ms": 229
+  },
+  {
+    "file": "result-d-more.json",
+    "id": "D10",
+    "title": "lệnh cài lỗi (exit 3) ⇒ nhóm 'Cài phụ thuộc'",
+    "ok": true,
+    "ms": 8137
+  },
+  {
+    "file": "result-d-more.json",
+    "id": "D11",
+    "title": "lệnh cài ok (echo) ⇒ chạy tới gate; trả lại install=null",
+    "ok": true,
+    "ms": 14058
+  },
+  {
+    "file": "result-e-sandbox.json",
+    "id": "E00",
+    "title": "chuẩn bị + đăng nhập",
+    "ok": true,
+    "ms": 1868
+  },
+  {
+    "file": "result-e-sandbox.json",
+    "id": "E01",
+    "title": "Runtime off ⇒ run => sandbox_unavailable; chat-web: heading 'Không có môi trường chạy an toàn', 2 nút, không nhóm lỗi",
+    "ok": true,
+    "ms": 13305
+  },
+  {
+    "file": "result-e-sandbox.json",
+    "id": "E02",
+    "title": "[D] admin-web cùng run: tiêu đề + 2 nút",
+    "ok": true,
+    "ms": 3985
+  },
+  {
+    "file": "result-e-sandbox.json",
+    "id": "E03",
+    "title": "Runtime badimage ⇒ run => sandbox_unavailable; chat-web: heading 'Không có môi trường chạy an toàn', 2 nút, không nhóm lỗi",
+    "ok": true,
+    "ms": 13135
+  },
+  {
+    "file": "result-e-sandbox.json",
+    "id": "E04",
+    "title": "khôi phục Runtime sandbox=docker; run lại thành công tới gate",
+    "ok": true,
+    "ms": 16211
+  },
+  {
+    "file": "result-f-git.json",
+    "id": "F01",
+    "title": "def dùng nguồn git_remote uat-gh; run => gate hiển thị 'uat-gh@7fd1a60' + file mới NOTES.md",
+    "ok": true,
+    "ms": 15313
+  },
+  {
+    "file": "result-f-git.json",
+    "id": "F02",
+    "title": "khôi phục def về nguồn repo + install=null",
+    "ok": true,
+    "ms": 603
+  }
+]
