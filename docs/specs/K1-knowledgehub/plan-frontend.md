@@ -102,3 +102,10 @@ Trang Cài đặt KH < 25 KB gzip (lazy route); bảng phân trang cursor ≤ 10
 
 ## 7. Đối chiếu contract BE (spec §3) · Cần backend-lead
 Khớp: `KhConnection` (`secret {id,name}`, `summary_project`, `agents_count`, `check`), `KhCheckResult` (7+5 mã, `projects`), `GET C → allowed_origins`, `PUT /agents/:id/knowledge`, `AgentSchema.knowledge_connection_ids`, `StageView.knowledge.write_to`. FE cần thêm một điểm: Select "Khoá" lấy secret nền tảng — dùng `HubSecretListQuery` H4b-1 (`kind=kh_api_key`; chưa có lọc nền tảng nên FE lọc `tenant_id=null` phía client, lỗi còn lại do `KH_SECRET_INVALID`). Không cần đổi contract. Artboard: mockup đủ 5 màn, không đề xuất thêm.
+
+## 8. Chốt theo test khoá (qc G13–G15)
+| # | Chốt |
+|---|---|
+| G13 | Admin vào qua `/processes/:defId/runs/:runId` → `button "Xem kết quả"` của stage → `dialog "Kết quả giai đoạn {stage}"` (nhãn i18n hiện có của OutputDialog) chứa `KnowledgeNotice` (`status` + dòng "Tri thức: n/5 lần hỏi · Tóm tắt: …"). Không thêm trang/nút/route admin riêng cho K1. |
+| G14 | Select "Khoá" gọi đúng `GET /studio/api/secrets?kind=kh_api_key` (không tham số lọc nền tảng), rồi **lọc client `tenant_id === null`**; mock/BE có thể trả secret bất kỳ cho query `/secrets?…`, FE vẫn chỉ hiện secret nền tảng. Phân trang: lặp `next_cursor` tới hết (≤ 5 trang) trước khi báo "Chưa có secret KnowledgeHub của nền tảng". |
+| G15 | `KH_URL_NOT_ALLOWED` hiện inline ở ô Địa chỉ, nguyên văn VI **"Địa chỉ không được phép ({reason})"** / EN "Address not allowed ({reason})"; `{reason}` = chuỗi thô `error.details.reason` từ server, **không dịch**, thiếu ⇒ bỏ cả cụm " ({reason})". e2e chỉ khớp phần đầu "Địa chỉ không được phép". |

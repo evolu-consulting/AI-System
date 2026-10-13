@@ -122,6 +122,8 @@ Không seed KH (dev dùng mock). Seed quy trình mẫu: plan §6.
 
 **Nhãn e2e (role "tên")**: `table "Kết nối KnowledgeHub"` (cột Tên · Địa chỉ · Khoá · Project ghi Tóm tắt · Trạng thái · Agent dùng) · `button "Thêm kết nối"` · `button "Kiểm tra|Sửa|Xoá {kết nối}"` · `dialog "Thêm kết nối"|"Sửa kết nối"` (`textbox "Tên"`, `textbox "Địa chỉ"`, `combobox "Khoá"`, `link "Tạo secret"`, `textbox "Project ghi Tóm tắt"`, `button "Lưu"`, `button "Huỷ"`) · `dialog "Kết quả kiểm tra"` (`status`, `list`) · `alertdialog` (xác nhận "Xoá"/"Huỷ") · `region "KnowledgeHub"` (agent; `checkbox "{kết nối}"`, `button "Lưu"`, "Tối đa 5 kết nối") · output `status` "Không truy cập được KnowledgeHub", "Tri thức: 2/5 lần hỏi", "Tóm tắt: đang chờ". Không còn: bảng công ty, `Tenant`/`Namespace`/`Keyspace`, `dialog "Tri thức"`.
 
+Chốt khớp test khoá (plan-frontend §8): admin xem qua `/processes/:defId/runs/:runId` → [Xem kết quả] → dialog "Kết quả giai đoạn …"; Select "Khoá" = `GET /studio/api/secrets?kind=kh_api_key` rồi lọc client `tenant_id=null`; `KH_URL_NOT_ALLOWED` = "Địa chỉ không được phép ({reason})", reason thô từ server.
+
 Quyết định: không thư viện/ADR mới; "Khoá" chỉ chọn `secret_id` nền tảng (tạo ở Secrets); Kiểm tra theo hàng đã lưu.
 
 ## 6. Hiệu năng
