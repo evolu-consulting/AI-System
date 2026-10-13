@@ -3,7 +3,7 @@
 import { type AgentCliJob, JOB_ENQUEUED_CHANNEL, type JobEnqueuedPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { jobs, providerState, runSteps } from "@ai/db/schema/hub";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { insertStep } from "../../../lib/run-steps";
 import type { KhJobItem } from "../../kh/kh.agent.rules";
 import type { JobRow } from "../runner.rules";
@@ -19,6 +19,23 @@ export async function providerStateOf(
     .from(providerState)
     .where(eq(providerState.providerKey, key));
   return row;
+}
+
+/** H4b-2 plan §3.4 · trạng thái mọi provider của profile, một câu (PK `provider_key`); thiếu hàng ⇒ vắng trong Map. */
+export async function providerStatesOf(
+  tx: Tx,
+  keys: readonly string[],
+): Promise<Map<string, { status: string; cooldownUntil: Date | null }>> {
+  if (keys.length === 0) return new Map();
+  const rows = await tx
+    .select({
+      key: providerState.providerKey,
+      status: providerState.status,
+      cooldownUntil: providerState.cooldownUntil,
+    })
+    .from(providerState)
+    .where(inArray(providerState.providerKey, [...keys]));
+  return new Map(rows.map((r) => [r.key, { status: r.status, cooldownUntil: r.cooldownUntil }]));
 }
 
 export type StepInsert = {

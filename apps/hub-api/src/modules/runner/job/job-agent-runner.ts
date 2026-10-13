@@ -28,7 +28,12 @@ import {
   withOutHint,
 } from "../../attachments/run-files.rules";
 import type { CatalogSnapshot } from "../../config/catalog.rules";
-import { type AgentConfig, agentWorkflowIds, type ConfigSnapshot } from "../../config/config.rules";
+import {
+  type AgentConfig,
+  agentWorkflowIds,
+  type ConfigSnapshot,
+  type ProfileConfig,
+} from "../../config/config.rules";
 import { stepLabel } from "../../conversations/conversations.rules";
 import type { KhJobItem } from "../../kh/kh.agent.rules";
 import { KH_QUERY_HINT, type KhJobPreparer } from "../../kh/kh.job";
@@ -38,7 +43,6 @@ import type { DeltaGap, DeltaSink } from "../../stream/delta-sink";
 import type { RunStreamReader } from "../run-stream-reader";
 import {
   type AgentRole,
-  blockedReason,
   buildJobPayload,
   mcpConfigFor,
   type RunRef,
@@ -47,6 +51,7 @@ import {
   ZERO_USAGE,
 } from "../runner.rules";
 import { EventQueue, emitStep, JobFollower } from "./job-follow";
+import { chooseJobStep, type JobStep, stepProviderKeys } from "./job-step.rules";
 import * as repo from "./runner.repo";
 
 /** TD #52 (H2c P18): giữ đường import cũ cho người gọi (`workflow-job-runner.ts`). */
@@ -222,13 +227,30 @@ export class JobAgentRunner implements AgentRunner {
     return this.d.kh({ ...i, runId: task.run.id });
   }
 
+  /**
+   * H4b-2 plan §3.4 · bước profile cho job (`pickStep`; agent có `model` riêng ⇒ chỉ bước 0, Q4). Vắng profile ⇒ null
+   * (payload sai). Có bước bị bỏ ⇒ `job.fallback` (chỉ key/lý do, không dữ liệu nhạy cảm).
+   */
+  async #pickStep(task: AgentTask): Promise<JobStep | null> {
+    const profile = task.snapshot.profiles.find((p) => p.id === task.agent.profileId);
+    if (!profile) return null;
+    const keys = stepProviderKeys(profile);
+    const states = await this.#system((tx) => repo.providerStatesOf(tx, keys));
+    const opts = { now: new Date(), agentHasOwnModel: task.agent.model != null };
+    const r = chooseJobStep(profile, task.snapshot.providers, states, opts);
+    if (r.ok && r.skipped.length > 0) {
+      const to = r.profile.steps[0]?.provider_key;
+      this.d.log.info("job.fallback", { run_id: task.run.id, skipped: r.skipped, to });
+    }
+    return r;
+  }
+
   #payload(
     task: AgentTask,
+    profile: ProfileConfig,
     ids: { jobId: string; stepId: string },
     { mcp, khItems }: JobMcp,
   ): AgentCliJob | null {
-    const profile = task.snapshot.profiles.find((p) => p.id === task.agent.profileId);
-    if (!profile) return null;
     const attachments = jobAttachments(agentFiles(task));
     const block = agentFilesBlock(attachments);
     // K1 D10 · có `kh-query` ⇒ dòng gợi ý cuối prompt nhiệm vụ.
@@ -267,24 +289,19 @@ export class JobAgentRunner implements AgentRunner {
     const jobId = crypto.randomUUID();
     const stepId = task.stepId ?? crypto.randomUUID();
     const jm = await this.#mcp(task);
-    const payload = this.#payload(task, { jobId, stepId }, jm);
+    const pick = await this.#pickStep(task);
+    if (pick && !pick.ok) {
+      const f = { code: "ALL_PROVIDERS_EXHAUSTED", reason: pick.reason } as const;
+      yield syntheticFailed(jobId, { ...f, message: `no usable profile step: ${pick.reason}` });
+      return;
+    }
+    const payload = pick && this.#payload(task, pick.profile, { jobId, stepId }, jm);
     if (!payload) {
       this.d.log.error("job-payload-invalid", { run_id: task.run.id, agent_id: task.agent.id });
       const f = {
         code: "INTERNAL_ERROR",
         reason: "invalid_payload",
         message: "invalid payload",
-      } as const;
-      yield syntheticFailed(jobId, f);
-      return;
-    }
-    const state = await this.#system((tx) => repo.providerStateOf(tx, payload.provider_key));
-    const blocked = blockedReason(state, new Date());
-    if (blocked) {
-      const f = {
-        code: "ALL_PROVIDERS_EXHAUSTED",
-        reason: blocked,
-        message: `provider ${state?.status}`,
       } as const;
       yield syntheticFailed(jobId, f);
       return;

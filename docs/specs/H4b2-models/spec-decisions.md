@@ -67,3 +67,9 @@ C1 — list giữ R13 (Q6): `has_secret` + `slots_in_use`, `secret`/`last_error`
 - 2026-10-13: `agents` ma trận = mọi agent (cả đang tắt) sắp `key`; `only_tenant_id` chỉ khi `is_orchestrator` và không có hàng `orchestrator_settings` chung; `cells` lọc theo agents × tenants đã trả (khi `truncated`). Tenant gồm cả `active = false`.
 - 2026-10-13: `granted_by` của ô = null khi người cấp vắng ở `admin.users`; `granted_at` trả cả khi đã thu hồi (mốc cấp gần nhất), null khi chưa từng có hàng. Subject `user` tên = `display_name ?? username`; `group` = `name.vi`; `tenant` = `admin.tenants.name`.
 - 2026-10-13: đọc `hub_config_version` qua `readHubVersion` (`studio-read.repo`) — không import repo chéo module `agent-settings`.
+
+## Trong lúc làm — BE B6 (giao job theo `pickStep`)
+- 2026-10-13: chọn bước tách hàm thuần `job/job-step.rules.ts` (`chooseJobStep`, `stepProviderKeys`) thay vì `job-payload.ts` (`job-agent-runner.ts` 388 dòng < 400). `ok` ⇒ trả profile chỉ còn bước đã chọn, `buildJobPayload` giữ nguyên (CR-054 `agent.model ?? step.model` sẵn có) ⇒ payload không đổi contract.
+- 2026-10-13: `enabled` lấy từ ảnh cấu hình (`snapshot.providers`, cùng ảnh của run — HUB-BR-06); provider vắng khỏi ảnh ⇒ coi như tắt. `provider_state` đọc trực tiếp một câu `provider_key = ANY` (PK).
+- 2026-10-13: thứ tự trong `run`: profile vắng ⇒ `INTERNAL_ERROR invalid_payload` (như cũ) → `pickStep` (`ok:false` ⇒ `ALL_PROVIDERS_EXHAUSTED` reason của pick) → dựng payload (null ⇒ `invalid_payload`). Khác cũ duy nhất: agent runtime ≠ `agentic-cli` **và** provider chặn ⇒ nay `ALL_PROVIDERS_EXHAUSTED` thay vì `INTERNAL_ERROR` (không có ca thực tế). `message` nội bộ = `no usable profile step: <reason>` (không ra client, P11).
+- 2026-10-13: `job.fallback` mức `info`, trường `{run_id, skipped:[{index, why, provider_key}], to}`; agent có model riêng không bao giờ log (skipped luôn rỗng). `job-follow` (hết hạn `queued`) vẫn đọc state của provider đã chọn — không đổi.
