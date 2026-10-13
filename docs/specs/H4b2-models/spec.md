@@ -171,7 +171,8 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng)
 - 2026-10-13: thứ tự H4b-1 → K1 → H4b-2 → P-c; K2 bỏ (CR-074).
-### Câu hỏi mở (mặc định đề xuất, chờ readiness)
+- 2026-10-13: người dùng **duyệt mockup** (https://claude.ai/artifact/Vmv8GtcmBAN9GyXG7A8fcj) và **chốt Q1–Q8 theo mặc định** dưới đây.
+### Câu hỏi đã chốt (mặc định được người dùng chấp nhận 2026-10-13)
 - Q1 Tab Đơn giá ngoài mốc. Mặc định: ngoài. *backend-lead: đồng ý (không có bảng `price_book`).*
 - Q2 Xoá provider đang được profile dùng → 409 (không cascade). Mặc định: 409. *backend-lead: đồng ý — `PROVIDER_IN_USE{profiles}`; thêm `PROVIDER_HAS_HISTORY` vì `jobs.provider_key` FK RESTRICT (đã chạy job ⇒ chỉ tắt được).*
 - Q3 "Kiểm tra key" gọi endpoint liệt kê model của hãng, timeout 10 s; hãng chưa hỗ trợ → "Chưa hỗ trợ kiểm tra". Mặc định: vậy. *backend-lead: đồng ý; cả 3 hãng Studio chọn được đều hỗ trợ, `fake` kiểm trong tiến trình; `unsupported` chỉ còn cho hàng cũ vendor lạ.*
@@ -182,7 +183,7 @@ Câu mới của backend-lead (bằng chứng + phương án khác: `spec-decisi
 - **Q7** "Kiểm tra key" chỉ với key đã lưu. **Mặc định:** vậy (không thêm đường nhận key thô).
 - **Q8** `key`/`kind`/`vendor` provider, `key` profile bất biến. **Mặc định:** vậy, chốt bằng GRANT cột.
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- 2026-10-13 (PLAN FE): "Kiểm tra" là request đồng bộ ≤ 10 s, không polling; lệnh đăng nhập CLI theo hãng nằm trong i18n (không contract); dòng "lúc này chạy bằng" tính ở client; kéo-thả luôn kèm nút Lên/Xuống. Sau Gate chép 4 mockup vào `docs/design/agent-hub/canvas/`.
+- 2026-10-13 (PLAN FE): "Kiểm tra" là request đồng bộ ≤ 10 s, không polling; lệnh đăng nhập CLI theo hãng nằm trong i18n (không contract); dòng "lúc này chạy bằng" ~~tính ở client~~ → dùng `active_step` của server (điều phối chốt 2026-10-13, khớp `pickStep`); kéo-thả luôn kèm nút Lên/Xuống. Sau Gate chép 4 mockup vào `docs/design/agent-hub/canvas/`.
 
 ## 10. Tranh chấp test
 - (không)
