@@ -23,3 +23,8 @@ Thứ tự khoá: plan §10. PF gọi nhau chỉ qua `core/ports.ts`; tin thread
 - Huỷ `hub.runs` (scope system) **sau COMMIT**: `cancelStageRuns`/`cancelRunsByIds` — RLS `runs_hub_rw` chỉ cho chủ run.
 - Launcher: `runs/launcher-step.ts` (chọn stage chạy), `launcher-session.ts` + `session.rules.ts` (resume Claude, tuổi ≤ 86400 s), `handoff.rules.ts` (`## Bàn giao` ≤ 200 token, cắt không từ chối).
 - Bẫy: stage key regex lệch contract (TECH-DEBT #150); `defs/def.rules.ts` import `runs/template.rules` (#151).
+
+**P-c1 Tự-sửa mã** (HUB-FR-119, 126…130; migration `0031_pc_autofix`; spec `docs/specs/P-c-autofix/`):
+- `runs/autofix.rules.ts` (luật thuần: `autofixDecisionOptions`, `autofixOutcome`, `basePatchOf`, `autofixRetryNote`, `allowlistUnion` nhánh autofix); `runs/autofix.repo.ts` (`stageJobExtras` dựng `payload.autofix`, truy vấn kết quả); `runs/view-autofix.ts` (HUB-FR-128: `StageView.autofix`, chỉ view `full`/stage của người duyệt).
+- Quyết định `autofix_*`: chỉ `add_attempt`/`cancel` (`use_current` ⇒ 409). Ngoài thư mục này: `internal/autofix.*` (nhận báo cáo Runtime), `attachments/autofix-files*` (đọc diff/log theo quyền xem run, PC-R14), seed `fixbug-apply`.
+- Bẫy: `TaskDetail.options` lệch `FORCE_USE_CURRENT` (TD-168); vòng "k" đếm cả lần thử lại do template.
