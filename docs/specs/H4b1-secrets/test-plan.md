@@ -65,7 +65,7 @@ Như H4a §1 (tên test có mã, chờ theo điều kiện, cấm `skip/only/tod
 | A | `no-leak.int.test.ts` | A90–A94 (5) |
 | A | `list.int.test.ts` | A100–A106 (7) |
 | A | `boot.int.test.ts` | A110–A115 (6) |
-| E | `e2e/studio/h4b1-secrets.studio.ts` | E01–E17 (17: E14 Tải thêm · E15 badge KnowledgeHub · E16/E17 Phạm vi tenant; E09 thêm badge "Nguồn · repo-a") |
+| E | `e2e/studio/h4b1-secrets.studio.ts` | E01–E17 (17: E14 Tải thêm · E15 badge KnowledgeHub · E16/E17 Phạm vi tenant; E09 thêm badge "Nguồn · repo-a"); readiness lần 2: E03/E04/E16 bấm [Đóng] footer trước khi kiểm dòng bảng + toast; E08 ghi đè 2 bước; E03/E04/E12 thêm `toBeDisabled()` sau lưu (D9)) |
 
 Tổng **166**: R 50 · A/D 99 · E 17.
 
@@ -113,5 +113,9 @@ Int: 99 ca = 95 đỏ ở `expect` + 4 xanh trước code (A01, A02, A06, A115);
 | G7 | `HubSecretReader` log warn: tên trường `{secret_id, kind, failure}` (plan §2.3) | A87 kiểm đúng các khoá này | backend-lead |
 | G8 | Sau T5a khoá bắt buộc ⇒ boot test cũ cần `HUB_SECRETS_KEY` trong `.env.local` | không sửa test cũ; T5a chạy `keys:dev` | backend-lead (T5a) |
 
+### Spike readiness #4 · 2026-10-13
+Sheet modal ẩn phần còn lại khỏi `getByRole`: mở Sheet "Thêm Orchestrator cho tenant" (studio-web, trang /orchestrator) ⇒ `getByRole("table", {name:"Orchestrator theo tenant"})` đếm 0, `includeHidden:true` đếm 1 (`aria-hidden` đặt trên tổ tiên, không phải `#root`). Xác nhận: phải đóng Sheet trước khi kiểm bảng/toast. File spike đã xoá, không commit.
+
 ## 9. Khoá
 Khoá 2026-10-13 (T2, theo điều phối: khoá trước T3 Gate; Gate đổi spec ⇒ qc mở lại + ghi lý do): `bun run test:lock:write` thêm 16 file (`tests/acceptance/H4b1/**` 15 + `e2e/studio/h4b1-secrets.studio.ts`); `bun run test:lock:verify` OK (690 file).
+Mở khoá lần 2 2026-10-13 (readiness lần 2: #4 đóng Sheet trước khi kiểm, #5 ghi đè 2 bước, #6 `exact:true`, D9 `toBeDisabled`): sửa `h4b1-secrets.studio.ts`, `test:lock:write` + `verify`.

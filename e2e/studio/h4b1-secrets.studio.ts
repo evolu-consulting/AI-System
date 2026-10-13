@@ -185,8 +185,12 @@ test('HUB-FR-68 · AC-H4b1-08 · E03 · Thêm provider key: nhập trong SecretF
     value: V,
   });
   await expect(dlg.getByRole("status").filter({ hasText: "Đã lưu · v1" })).toBeVisible();
-  await expect(dlg.getByRole("button", { name: "Đóng" })).toBeVisible();
   await expect(field).toHaveValue("");
+  await expect(field).toBeDisabled();
+  await expect(dlg.getByRole("textbox", { name: "Tên" })).toBeDisabled();
+  // Sheet là Radix Dialog modal ⇒ `aria-hidden` lên phần còn lại: đóng (nút footer, D10) rồi mới kiểm bảng/toast.
+  await dlg.getByRole("button", { name: "Đóng" }).click();
+  await expect(dlg).toBeHidden();
   await expect(toast(page)).toContainText("Đã thêm anthropic-main");
   await expect(row(page, "anthropic-main")).toContainText("Đã lưu");
   await expectNowhere(page, V);
@@ -211,6 +215,9 @@ test('HUB-FR-69 · AC-H4b1-03 · E04 · Thay giá trị: Sheet "Thay giá trị 
   expect((await put).postDataJSON()).toEqual({ version: 1, value: V });
   await expect(dlg.getByRole("status").filter({ hasText: "Đã lưu · v2" })).toBeVisible();
   await expect(field).toHaveValue("");
+  await expect(field).toBeDisabled();
+  await dlg.getByRole("button", { name: "Đóng" }).click();
+  await expect(dlg).toBeHidden();
   await expect(toast(page)).toContainText("Đã thay giá trị openai-main");
   await expectNowhere(page, V);
   expect(writes(st).map((c) => c.method)).toEqual(["PUT"]);
@@ -297,8 +304,11 @@ test('HUB-FR-69 · AC-H4b1-03 · E08 · PUT 409 VERSION_CONFLICT ⇒ "Có ngư�
   await expect(cf.getByRole("button", { name: "Tải bản mới" })).toBeVisible();
   await expect(cf.getByRole("button", { name: "Ghi đè" })).toBeVisible();
   await expect(cf.getByRole("button", { name: "Xem khác biệt" })).toHaveCount(0);
+  await cf.getByRole("button", { name: "Ghi đè", exact: true }).click();
+  const confirm = page.getByRole("alertdialog", { name: "Ghi đè thay đổi mới nhất?" });
+  await expect(confirm).toBeVisible();
   const again = page.waitForRequest((r) => r.method() === "PUT");
-  await cf.getByRole("button", { name: "Ghi đè" }).click();
+  await confirm.getByRole("button", { name: "Ghi đè", exact: true }).click();
   expect((await again).postDataJSON()).toEqual({ version: 3, value: V });
   expect(st.calls.filter((c) => c.method === "PUT").length).toBe(2);
 });
@@ -379,6 +389,7 @@ test('HUB-FR-68 · Q7 · E12 · tab "Khoá KnowledgeHub" rỗng ⇒ "Chưa có k
   await dlg.getByRole("button", { name: "Lưu" }).click();
   expect((await post).postDataJSON()).toMatchObject({ kind: "kh_api_key", name: "kh-main" });
   await expect(dlg.getByRole("status").filter({ hasText: "Đã lưu · v1" })).toBeVisible();
+  await expect(dlg.getByRole("combobox", { name: "Phạm vi" })).toBeDisabled();
   await expectNowhere(page, "QcE12-xyz");
 });
 
@@ -456,6 +467,10 @@ test('HUB-FR-68 · E16 · khoá KH Phạm vi "Acme Corp" ⇒ POST có tenant_id 
   await open(page);
   const body = await addKh(page, "Acme Corp", "kh-acme");
   expect(body).toMatchObject({ kind: "kh_api_key", name: "kh-acme", tenant_id: ID.acme });
+  const dlg = page.getByRole("dialog", { name: "Thêm secret" });
+  await expect(dlg.getByRole("status").filter({ hasText: "Đã lưu · v1" })).toBeVisible();
+  await dlg.getByRole("button", { name: "Đóng" }).click();
+  await expect(dlg).toBeHidden();
   await expect(row(page, "kh-acme")).toContainText("Acme Corp");
 });
 
