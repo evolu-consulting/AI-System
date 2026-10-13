@@ -1,0 +1,56 @@
+[
+  {
+    "id": "B01",
+    "title": "Tab Profiles: danh sách (claude-sub-1, fake-1), mở fake-1: bước, cảnh báo 'chỉ có bước subscription', dòng 'Lúc này sẽ chạy bằng…'",
+    "ok": true,
+    "ms": 922
+  },
+  {
+    "id": "B02",
+    "title": "Validate: tên 'A' + thiếu model ⇒ lỗi dưới ô, không gửi",
+    "ok": true,
+    "ms": 1214
+  },
+  {
+    "id": "B03",
+    "title": "Tạo profile uat-prof (2 bước: fake-cli m1 → uat-fake-api m2): toast, vào danh sách",
+    "ok": true,
+    "ms": 1900
+  },
+  {
+    "id": "B04",
+    "title": "Mở uat-prof, bước 2 bấm Lên ⇒ thứ tự đổi; Lưu; tải lại vẫn giữ; API trả đúng thứ tự",
+    "ok": true,
+    "ms": 1199
+  },
+  {
+    "id": "B05",
+    "title": "Bước 1 bấm Xuống ⇒ đổi lại; Lưu; nút Lên bước đầu / Xuống bước cuối bị vô hiệu",
+    "ok": true,
+    "ms": 822
+  },
+  {
+    "id": "B06",
+    "title": "Xoá provider uat-fake-api đang là bước của uat-prof ⇒ 'Không xoá được uat-fake-api' + badge uat-prof",
+    "ok": true,
+    "ms": 1240
+  },
+  {
+    "id": "B07",
+    "title": "Tạo profile uat-fb (bước 1 uat-fake-api m1, bước 2 fake-cli m2) cho thử dự phòng; gắn cho agent pb-doc-fake",
+    "ok": true,
+    "ms": 2100
+  },
+  {
+    "id": "B08",
+    "title": "Xoá profile uat-fb đang được agent dùng ⇒ 'Không xoá được uat-fb' + badge pb-doc-fake",
+    "ok": true,
+    "ms": 1537
+  },
+  {
+    "id": "B09",
+    "title": "Xoá profile uat-prof (rảnh): xác nhận → toast 'Đã xoá profile uat-prof'",
+    "ok": true,
+    "ms": 1296
+  }
+]

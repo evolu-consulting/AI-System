@@ -1,0 +1,8 @@
+[
+ {"id":"E01","title":"Tắt provider uat-fake-api (bước 0 của uat-fb); Profiles hiện 'Lúc này sẽ chạy bằng bước 2 · fake-cli'","ok":true},
+ {"id":"E02","title":"Job thomas.tran → @pb-doc-fake: jobs.provider_key=fake-cli, model m2 (bước 1); log job.fallback skipped=[{index 0, why disabled, uat-fake-api}] to=fake-cli","ok":true},
+ {"id":"E03","title":"Agent có model riêng (uat-own-model): không tạo job, không job.fallback; chat hiện ALL_PROVIDERS_EXHAUSTED","ok":true},
+ {"id":"E04","title":"Khôi phục agent về model null + profile fake-1","ok":true},
+ {"id":"F01","title":"PROVIDER_HAS_HISTORY: 'Provider đã có lịch sử chạy, chỉ tắt được'; dòng còn nguyên (script f-history.mjs, chạy riêng)","ok":true},
+ {"id":"F02","title":"Xoá job lịch sử giả rồi Xoá uat-hist thành công","ok":true}
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "D1",
+    "title": "tenant_admin (julian.bui@evolu): API /studio/api/{providers,model-profiles,agent-entitlements,secrets} ⇒ 403; ghi cũng 403",
+    "ok": true,
+    "ms": 165
+  },
+  {
+    "id": "D2",
+    "title": "tenant_admin: đăng nhập Studio rồi vào /studio/models và /studio/access",
+    "ok": true,
+    "ms": 7866
+  },
+  {
+    "id": "D3",
+    "title": "member (thomas.tran@evolu): API /studio/api/{providers,model-profiles,agent-entitlements,secrets} ⇒ 403; ghi cũng 403",
+    "ok": true,
+    "ms": 118
+  },
+  {
+    "id": "D4",
+    "title": "member: đăng nhập Studio rồi vào /studio/models và /studio/access",
+    "ok": true,
+    "ms": 7907
+  }
+]

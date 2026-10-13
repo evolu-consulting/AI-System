@@ -1,0 +1,44 @@
+[
+  {
+    "id": "C01",
+    "title": "Menu 'Quyền agent' → ma trận agent × tenant; lọc theo tenant evolu",
+    "ok": true,
+    "ms": 1684
+  },
+  {
+    "id": "C02",
+    "title": "Cấp ba-analyst cho evolu (bật switch): toast, aria-checked, DB có ô",
+    "ok": true,
+    "ms": 682
+  },
+  {
+    "id": "C03",
+    "title": "Thu hồi ba-analyst (0 grant): hộp 'Thu hồi ba-analyst khỏi evolu?' nêu '0 grant' → xác nhận",
+    "ok": true,
+    "ms": 1364
+  },
+  {
+    "id": "C04",
+    "title": "Thu hồi docs-architect (có grant): nêu '1 grant', Huỷ không đổi; xác nhận ⇒ mất; cấp lại ⇒ grant còn nguyên",
+    "ok": true,
+    "ms": 2046
+  },
+  {
+    "id": "C05",
+    "title": "Thu hồi agent mặc định của evolu ⇒ 'AGENT_IS_DEFAULT' hiển thị đúng câu, switch hoàn về bật",
+    "ok": true,
+    "ms": 1159
+  },
+  {
+    "id": "C06",
+    "title": "Drawer chi tiết consultant × evolu (chỉ đọc): ngày cấp, người cấp, grant trong tenant",
+    "ok": true,
+    "ms": 682
+  },
+  {
+    "id": "C07",
+    "title": "Agent chỉ dùng cho một tenant (orchestrator riêng): ô tenant khác là '—', không có switch",
+    "ok": true,
+    "ms": 44
+  }
+]

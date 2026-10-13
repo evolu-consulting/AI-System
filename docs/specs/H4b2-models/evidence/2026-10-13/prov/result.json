@@ -1,0 +1,86 @@
+[
+  {
+    "id": "A01",
+    "title": "Menu Models → danh sách provider (tiêu đề, tab, cột, nút theo loại)",
+    "ok": true,
+    "ms": 579
+  },
+  {
+    "id": "A02",
+    "title": "Xem chi tiết (Sửa) claude-sub: Loại chỉ đọc, không ô API key, slot = 2",
+    "ok": true,
+    "ms": 736
+  },
+  {
+    "id": "A03",
+    "title": "Sheet Thêm provider: validate (khoá sai, thiếu API key) không gửi",
+    "ok": true,
+    "ms": 3086
+  },
+  {
+    "id": "A04",
+    "title": "Tạo provider API vendor fake uat-fake-api (secret uat-fake-ok): toast + dòng + 'dev'",
+    "ok": true,
+    "ms": 4146
+  },
+  {
+    "id": "A05",
+    "title": "Khoá trùng ⇒ 'Khoá này đã được dùng'",
+    "ok": true,
+    "ms": 2630
+  },
+  {
+    "id": "A06",
+    "title": "Kiểm tra key hợp lệ (fake-ok…): 'Key hợp lệ'",
+    "ok": true,
+    "ms": 946
+  },
+  {
+    "id": "A07",
+    "title": "Tạo uat-fake-bad (secret uat-fake-bad) → Kiểm tra: 'Key không hợp lệ' + Chi tiết; Kiểm tra lại",
+    "ok": true,
+    "ms": 4853
+  },
+  {
+    "id": "A08",
+    "title": "Tạo subscription uat-sub: 'Chưa có Worker kiểm'; Kiểm tra lại ⇒ 'đã yêu cầu' (không Worker)",
+    "ok": true,
+    "ms": 14812
+  },
+  {
+    "id": "A09",
+    "title": "Subscription có Runtime thật: Kiểm tra lại fake-cli → kết quả",
+    "ok": true,
+    "ms": 8297
+  },
+  {
+    "id": "A10",
+    "title": "Runbook: uat-sub logged_out ⇒ 'Hướng dẫn' → sheet, Sao chép, Kiểm tra lại",
+    "ok": true,
+    "ms": 13309
+  },
+  {
+    "id": "A11",
+    "title": "Sửa uat-fake-api: tắt 'Bật provider' → Lưu",
+    "ok": true,
+    "ms": 2572
+  },
+  {
+    "id": "A12",
+    "title": "Bật lại uat-fake-api",
+    "ok": true,
+    "ms": 1219
+  },
+  {
+    "id": "A13",
+    "title": "Provider hệ thống dify (readonly): Xoá bị chặn bằng câu rõ ràng",
+    "ok": true,
+    "ms": 2269
+  },
+  {
+    "id": "A14",
+    "title": "Xoá uat-fake-bad (rảnh): hộp xác nhận → toast → dòng biến mất",
+    "ok": true,
+    "ms": 1171
+  }
+]
