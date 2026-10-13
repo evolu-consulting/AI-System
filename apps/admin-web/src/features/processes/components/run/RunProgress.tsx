@@ -53,7 +53,14 @@ export function RunProgress({ stages, onView }: Props) {
                       key={o.id}
                       size="sm"
                       variant="outline"
-                      onClick={() => onView({ id: o.id, stage: s.name, version: o.version })}
+                      onClick={() =>
+                        onView({
+                          id: o.id,
+                          stage: s.name,
+                          version: o.version,
+                          knowledge: s.knowledge,
+                        })
+                      }
                     >
                       {t("process.admin.run.viewOutput")}
                       <span className="text-muted-foreground">v{o.version}</span>
