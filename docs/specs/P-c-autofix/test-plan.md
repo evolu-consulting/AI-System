@@ -1,0 +1,146 @@
+# Test plan · P-c-autofix (P-c1 diff-only) · qc
+
+Chế độ **WRITE + LOCK** (T3) · 2026-10-13. "Đúng" = spec §2 (PC-R01…R15), §3–§4, §6 (hàng rào), §9 (D/E/B, B9, "Trong lúc làm" 1–3) · plan §1–§5 (chữ ký §4) · plan-frontend §0–§5 (nhãn nguyên văn) · ADR-0011 #1–#5 · BA HUB-FR-119/126…130, HUB-BR-32…34, WRK-FR-28/29, WRK-BR-08. Hộp đen: không đọc code implementation (chỉ contract hiện có + test khoá cũ làm mẫu).
+
+## 1. Quy ước
+| Mục | P-c |
+|---|---|
+| Tên test | `"<mã BA> · [PC-Rxx ·] <ID> · mô tả"`; Python: `test_<mã>_<id>_…` + docstring có mã |
+| Loại | **R** hàm thuần + contract (`bun test`, nạp động — vắng ⇒ đỏ ở `fn()/schema()`) · **A** int Hub thật + DB tag riêng (`bun run test:int`) · **P** pytest Runtime không hạ tầng · **S** container thật (tách riêng) · **E** Playwright (stack P-b2 + `page.route`) |
+| Vị trí | R `tests/acceptance/P-c/rules/` · A `tests/acceptance/P-c/*.int.test.ts` (+ `_support/pc.ts`) · P `apps/agent-runtime/tests/acceptance/pc/test_pc_*.py` (+ `_pc.py`) · S `…/pc/sandbox_check.py` · E `e2e/P-c/{admin,chat}/*.pc.ts` (config `e2e/P-c/playwright.pc.config.ts`, `_pc-support.ts`) |
+| Id cố định | R `c0c0…`, A db `c0c1…`, e2e `c0e2…`; fixture P-b (`b3b3…`, nguồn `app-repo`/`other-repo`/`docs-lib`/`beta-repo`) + `local-app` (SQL) |
+| Chưa có 0031 | `needPc(c)` đầu mỗi ca A ⇒ đỏ ở expect `{migration0031:true}`; fixture def tự-sửa chỉ chạy khi 0031 có (không đỏ ở `beforeAll`) |
+| Chuỗi quét | bí mật `AKIAQCQCQCQCQCQCQCQC`, token host `qc-ghtoken-Zx9Pq7Lm` (không được xuất hiện trong prompt/argv/env/UI) |
+| Cấm | `skip/only/todo`, `sleep` cố định (chờ theo điều kiện), dữ liệu ngẫu nhiên |
+
+## 2. Hạ tầng
+- **A** (`_support/pc.ts`): `start3()` P-b PF-S3 (Hub in-process, kho file local, `ScriptRuntime`, `resolver`) + `seedSources` + `local-app` (`insertSource`). `mkAf/afStage/afDefBody` (stage `hd-read`, review Kế toán, `autofix`), `mkPlain` (đối chứng), `startAf` (resolver ok C1 → job stage → token job như Runtime claim), `postReport` (`POST /internal/jobs/:id/autofix-result`), `reportAndDone` (báo 201 rồi `jobDone` MD_AUTO — đúng thứ tự plan §1 bước 7), `afRows/attRow/stageView/content/internalGet/waitDecision`, `settlePc`. B9 dùng `startK1({seed:"full"})` + nguồn/def qua API + resolver P-b.
+- Fixture SQL `db.int` chạy thử trên DDL nháp plan §2 trong tx ROLLBACK (DB qc): `ok | status_ck | diff_ck | round_ck | sha_ck | job_uq | branch_ck | ok` — đúng tên constraint. Máy móc flow (def thường → resolve → job → token → POST) chạy thử: route báo cáo 404, view/content beta 404.
+- **P/S**: nạp `agent_runtime.autofix.rules` trong thân ca (`importlib`). S dùng `rules.container_args` + CLI `RUNTIME_SANDBOX` (docker/podman) + `RUNTIME_SANDBOX_IMAGE`; KHÔNG khớp `python_files` ⇒ chỉ chạy bằng đường dẫn tường minh.
+- **E**: stack P-b2 (cổng `PC_E2E_PORT_BASE`=4900, Redis DB 12, env `.env.test-pc_e2e.local`); `patchStage` vá `GET /process-runs/:id` thêm `autofix`; `serveAttachment` vá `/attachments/:id/content`; `seedEditor` chèn nguồn `pc-repo`/`pc-lib` + def `pc-edit`/`pc-bad`/`pc-libsrc` (SQL jsonb); `setDecision` đổi lý do decision sang `autofix_*` CHỈ khi 0031 có.
+- DB: `bun run db:test:create pc_qc` (int) · `pc_e2e` (e2e).
+
+## 3. Ma trận luật → ca
+| Luật / FR | R | A | P / S | E |
+|---|---|---|---|---|
+| PC-R01 nguồn git_remote/local_path, library 422, ∈ def.sources | C04 | V01–V04 | — | E01, E02b |
+| PC-R02 AUTOFIX_EXECUTOR/REVIEW/MAX, thêm cuối | C05, I01–I06 | V05–V07 | — | E02 |
+| PC-R03 / D8 mẫu `fixbug-apply` tắt sẵn, `fixbug-evolu` không đổi | — | V08–V09 | — | — |
+| PC-R04 resolve toàn repo (`allowlist_union=[]`, `caps=autofix`) | C09, H03 | F01 | — | — |
+| PC-R05 / E1 / B1 nhánh `ai/<run>/<stage_key>` (STAGE_KEY_RE) | C06–C07, H01, H04 | D03, F01, E05 | — | — |
+| PC-R06 / WRK-BR-08 không container ⇒ `sandbox_unavailable` | H05 | F08 | S01–S08 | E08 |
+| PC-R07 công cụ ép `[]`/R-G-G; hook chặn tool gốc ở workspace/git | H02 | F02 | P20–P23 | — |
+| PC-R08 kiểm diff: đường dẫn → kích thước → bí mật → test | C10–C12 | E05–E06, E09, F11 | P06–P12, P04 | E05–E06 |
+| PC-R09 `no_changes` vẫn qua gate | C10 | F05, E09 | — | E07 |
+| PC-R10 thiếu báo cáo/check_failed ⇒ decision chỉ add_attempt/cancel; ghi chú làm lại không bí mật | C14, H05–H08 | F06–F07 | — | E05, E08 |
+| PC-R11 Chưa đạt ⇒ vòng k+1 cùng nhánh, `base_patch` cộng dồn; `apply_patch` ⇒ base null | H04 | F09–F10 | — | E04 |
+| PC-R12 audit `autofix_results` append-only, log che | — | D02, D06, E08–E09 | P12, P16 | — |
+| PC-R13 trần 200k | — | F12 | — | — |
+| PC-R14 cách ly tenant / token job theo job | H09 | D05, E01, T01–T04, V04 | — | E09 |
+| PC-R15 pha cài có mạng, không secret | C12 (`install`) | F01 (install_cmd) | P03, P05 | E01 (ghi chú mạng) |
+| HUB-BR-32 không ghi ngoài workspace / repo thật / `sources/` | — | — | P02, P15, P21, S02, S06 | — |
+| HUB-BR-33 container `--network none`, cap-drop, read-only, non-root, trần, không secret | H02 | D07 | P01–P05, P13–P14, S01–S08 | — |
+| B9 KH `kh-query` cạnh `ws_*` | — | K01–K02 | — | — |
+| plan §3.3 endpoint (401 một thân, 409×2, 400, 413, no-store) | C13 | E01–E07 | — | — |
+| plan §3.4 view (`pin_sha`, `diff_file`, `test_log_file`, file tải) | C15–C16 | F03–F04, F10–F11, T02 | — | E03, E10–E13 |
+
+FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓, 126 ✓, 127 ✓ (F08, S*), 128 ✓ (trừ rebase), 130 ✓ (trừ `apply_mode`), WRK-FR-28 ✓ (F01, P*, S*), WRK-FR-29 ✓, HUB-BR-32/33/34 ✓, WRK-BR-08 ✓. Ngoài phạm vi (P-c2): HUB-FR-129, HUB-BR-34 phần PR/`apply_mode`, rebase E4.
+
+## 4. Danh sách ca
+| Nhóm | File | Ca |
+|---|---|---|
+| R | `rules/contracts-pc.test.ts` | C01–C16 (16) |
+| R | `rules/autofix-issues.test.ts` | I01–I06 (6) |
+| R | `rules/autofix-rules.test.ts` | H01–H09 (9) |
+| A | `db.int.test.ts` | D01–D08 (8) |
+| A | `defs.int.test.ts` | V01–V09 (9) |
+| A | `report.int.test.ts` | E01–E09 (9) |
+| A | `flow.int.test.ts` | F01–F12 (12) |
+| A | `tenant.int.test.ts` | T01–T04 (4) |
+| A | `kh.int.test.ts` | K01–K02 (2) |
+| P | `pc/test_pc_rules.py` | P01–P16 (42 ca sau parametrize) |
+| P | `pc/test_pc_hook.py` | P20–P23 (9 ca) |
+| S | `pc/sandbox_check.py` | S01–S08 (8) |
+| E | `e2e/P-c/admin/editor.pc.ts` | E01, E02, E02b (3) |
+| E | `e2e/P-c/chat/diff.pc.ts` | E03, E04, E07, E10, E11, E12, E13 (7) |
+| E | `e2e/P-c/chat/decision.pc.ts` | E05, E06, E08, E09 (4) |
+**Tổng 149** = R 31 · A 44 · P 51 · S 8 · E 14 (+ 1 ca E02b tách từ plan-frontend (2)). 11 ca e2e plan-frontend §5: (1) E01 · (2) E02/E02b · (3) E03 · (4) E04 · (5) E05 · (6) E06 · (7) E07 · (8) E08 · (9) E09 · (10) E10 · (11) E12; thêm E11 (lỗi tải) + E13 (thẻ thread).
+
+### Ca chính (kỳ vọng rút gọn)
+| ID | Dữ liệu → kỳ vọng |
+|---|---|
+| C07 | nhánh nhận `ai/<uuid>/{fix,a,fix-2,x×32}`; chặn `main`, `feature/…`, hoa, khoảng trắng, `../main`, `fix/x`, 33 ký tự, không-uuid, rỗng, `;rm` |
+| C11 | `diff≠null ⇔ ok`, `diff_stats≠null ⇔ ok` (cả 2 chiều) |
+| C12 | diff 2 097 152 nhận / +1 chặn; failures 51; check lạ; detail 501; commands 301; tool `bash`; arg 501; log_tail 65 537; sha hoa/`HEAD`; files 301 |
+| H05 | `container` thắng mọi kết quả ⇒ sandbox; `null`/`timeout`/`check_failed` ⇒ check; ok/no_changes ⇒ continue |
+| H07 | ghi chú làm lại có `secrets src/cfg.ts:7 aws_key`, KHÔNG `AKIA…` |
+| D03 | branch_ck nhận khoá STAGE_KEY_RE (1…32 `[a-z0-9-]`), chặn `..`/hoa/không-uuid/`a/b` |
+| D06 | hub_rw INSERT ok; UPDATE/DELETE 42501 · D07 agent_runtime 42501 |
+| E01 | không token / token job khác / token rác ⇒ 401 cùng thân, 0 hàng |
+| E06 | diff 2 MiB+1 ⇒ 413 `PAYLOAD_TOO_LARGE`; thân 3,2 MB ⇒ 413 |
+| E08 | hàng: job, round 1, nguồn, nhánh, ok, exit 0, 12 400 ms, 1 lệnh, pin.sha C1; attachments `output`/`text/plain`/`fix-r1.diff.txt`/`fix-r1-test.log.txt` của job |
+| F01 | `payload.autofix` = {source app-repo git C1 allowlist [], `bun install`, `bun test`, `["src/**"]`, `ai/<run>/fix`, 1, null}; resolve item `caps:"autofix"`, `allowlist_union:[]` |
+| F06 | `decision={reason:autofix_check_failed, options:[add_attempt,cancel]}`; `use_current` ≥ 400, giữ `needs_decision`; add_attempt ⇒ job vòng 2, prompt có `src/cfg.ts:7`, không `AKIA…`, `base_patch` null |
+| F10 | Chưa đạt ⇒ job 2: vòng 2, cùng nhánh, `base_patch.id` = diff vòng 1, tải qua `/internal/jobs/:id/attachments/:aid` = DIFF; view vòng 2 `fix-r2.diff.txt` |
+| T01 | beta: view 404, diff/log 404, thân như uuid không tồn tại |
+| K01 | `mcp.tools ∋ kh-query` cạnh `payload.autofix`; KH không thành nguồn job |
+| P02 | đúng 1 mount `<host_ws>:/workspace:rw`; không `--mount`, socket, `sources`, `git`, privileged, host ns |
+| P03 | env container = `CI=1, HOME=/tmp, LANG=C.UTF-8` ở cả 3 pha; token host không lọt |
+| P06–P07 | tên cấm PB-R07 thắng allowlist `**` (mọi độ sâu, hoa-thường); CI workflow cần ghi rõ; `.gitignore` được |
+| P10–P11 | 10 mẫu §5.4 trên dòng `+` ⇒ `secrets` path:line(file mới)=`src/cfg.ts:2`, rule ≤ 64, không giá trị; dòng `-`/ngữ cảnh/gán < 12 ⇒ không; thêm `.env` ⇒ lỗi |
+| S01–S08 | chỉ `lo`, connect ra ngoài lỗi; rootfs RO, /workspace ghi về host; uid 1000, CapEff 0, NoNewPrivs 1; memory.max 2 GiB, pids.max 512; env không token; /proc/mounts không sources/git/socket; xoá theo nhãn; fork bomb bị trần |
+| E03 | đầu khối: `Vòng 1`, `pc-repo@a1b2c3d`, `+3`, `−1`, `3 file`, `Test đạt · 12,4 giây`; list 3 file (1 `nhị phân`); `autofix-diff-file-0` có dòng sửa; tải `ra-soat-r1.diff.txt`; Đạt ⇒ 200 |
+| E05 | heading `Kiểm bản sửa không đạt`; nhóm `Bí mật (không hiện giá trị)` dòng `src/cfg.ts:7 · quy tắc aws_key`; `AKIA…` không có trên trang; 2 nút |
+
+## 5. Rủi ro chập chờn
+| Rủi ro | Giảm |
+|---|---|
+| `prepareDb` `ALTER ROLE` cấp cụm ⇒ `tuple concurrently updated` khi nhiều file/session | chạy từng file (như K1 §5) |
+| Resolver nền P-b sống qua ca | `settlePc` dừng resolver + huỷ run/job mở + xoá `autofix_results` (owner) |
+| E2E thứ tự nhóm lỗi đo bằng `boundingBox().y` | chỉ so trước/sau, không toạ độ tuyệt đối |
+| S chạy trên máy không có Docker/ảnh | đỏ có thông báo `qc: cần CLI …` / `RUNTIME_SANDBOX_IMAGE` (không skip) — chạy ở bước R4/`done:pc` |
+
+## 6. Chỗ hở spec (mặc định qc đã dùng) · Cần bổ sung
+| # | Hở | Mặc định trong test | Agent |
+|---|---|---|---|
+| G1 | `SandboxSpec` chưa khai báo trường | kwargs `job_id, image, host_workspace, engine, cpus, memory_mb, pids, tmp_mb` (`_pc.py`) | backend-lead (R1) |
+| G2 | `DiffStats`/`Limits`/`Failure` chưa khai báo | `DiffStats(files, insertions, deletions, bytes)`; `Limits()` mặc định 2 MiB/300/4 GiB; `Failure` có `check/path/line/rule/detail` (thuộc tính hoặc khoá) | backend-lead (R1) |
+| G3 | Tên export contract | `StageAutofixSchema` (hub-admin), `JobAutofixSchema` (hub), `AutofixReportSchema` (hub-internal), `AutofixStageViewSchema` (chat); `HUB_INTERNAL_ERRORS.AUTOFIX_*` = 409 | backend-lead (B1) |
+| G4 | plan §2 `branch_ck` = `[a-z0-9][a-z0-9_-]{0,63}` ≠ STAGE_KEY_RE `[a-z0-9-]{1,32}` | contract + DB theo **STAGE_KEY_RE** (C07 chặn 33 ký tự; D03 nhận 32) — đề xuất CHECK `^ai/[0-9a-f-]{36}/[a-z0-9-]{1,32}$` | backend-lead (B2) |
+| G5 | Nhãn hook | `HookDecision.label == "workspace"` cho tool gốc dưới `workspace/` hoặc `git/`; symlink trong `out/` trỏ vào workspace ⇒ deny (P23) | backend-lead (R3) |
+| G6 | Nhãn nút: plan-frontend §5 ghi "Thêm lượt"/"Huỷ quy trình"/"Chưa đạt, làm lại", §3 cuối ghi "giữ khoá sẵn có" | e2e dùng nhãn SẴN CÓ chat: `Đạt`, `Thêm 1 lần làm lại`, `Huỷ lượt chạy`, không `Dùng bản hiện có` | frontend-lead (ghi "Quyết định trong lúc làm") |
+| G7 | Thẻ thread không có role/nhãn | `article` chứa "Tự sửa mã" + nút/link "Xem diff" | frontend-lead |
+| G8 | "Tải .diff"/"Tải log đầy đủ" là button hay link | chấp nhận cả hai (`or`) | — |
+| G9 | Mã lỗi khi chọn `use_current` cho decision `autofix_*` | chỉ kiểm ≥ 400 + run giữ `needs_decision` | backend-lead |
+| G10 | `PAYLOAD_TOO_LARGE` không nằm trong `HUB_INTERNAL_ERRORS` | kiểm `error.code` trong thân 413 | backend-lead |
+| G11 | Runtime đầu-cuối (`AutofixHost` + `RUNTIME_SANDBOX=fake` + `#fake:ws_*` + mock Hub) chưa có chữ ký (`host.py`, `fake_oci.py`, `check.py`, `workspace.py`) | KHÔNG khoá ở T3; phủ bằng P/S + A (Hub) + UAT D2. **Đề xuất**: qc viết bổ sung `pc/autofix_int_test.py` sau R2 khi có chữ ký (mở khoá có chủ đích, ghi §9) | backend-lead (khai báo chữ ký `check.run_checks`, `workspace.prepare`) · qc |
+| G12 | PC-R04 trần `RUNTIME_AUTOFIX_MAX_MB/_FILES` phía Runtime (snapshot `caps=autofix`) | chỉ kiểm phía Hub (`caps`, F01); Runtime theo G11 | backend-lead |
+| G13 | E2E không có persona tenant beta | cách ly tenant ở int T01; e2e E09 dùng người lạ cùng tenant (S) | — |
+| G14 | `test:pc:sandbox` chưa có script | `uv run pytest tests/acceptance/pc/sandbox_check.py` trên Linux có CLI + ảnh (R4) | backend-lead (R4) |
+| G15 | AUTOFIX_EXECUTOR không e2e (cần stage nhóm trên canvas) | phủ R I02 + A V06 | — |
+
+## 7. Lệnh xong mốc — `bun run done:pc` (D1, mẫu `done-k1`)
+| # | Bước | Lệnh |
+|---|---|---|
+| 1 | typecheck | `bun run typecheck` |
+| 2 | R + unit | `bun test packages/contracts apps/hub-api/src/modules/processes tests/acceptance/P-c/rules` |
+| 3 | A (từng file) + hồi quy P-a/P-b/P-b2/K1 | `bun --env-file=.env.test-pc_qc.local --config=bunfig.int.toml test --timeout 60000 tests/acceptance/P-c/<file>.int.test.ts` · `bun run test:int` |
+| 4 | P | `bun apps/agent-runtime/scripts/run.ts "uv run pytest tests/acceptance/pc -q"` |
+| 5 | S | `bun run test:pc:sandbox` (Linux + Docker/Podman + ảnh) |
+| 6 | E | `bunx playwright test -c e2e/P-c/playwright.pc.config.ts --reporter=line` (cần `bun run db:test:create pc_e2e`) |
+| 7 | khoá + vết | `bun run test:lock:verify && bun run trace --check` |
+
+## 8. Đỏ đúng lý do · chạy 2026-10-13 (main `8a90aaea`, chưa B1; DB `ai_system_pc_qc_test`, e2e `ai_system_pc_e2e_test`)
+| Nhóm | File | Ca | Kết quả | Lý do đỏ |
+|---|---|---|---|---|
+| R | 3 file rules | 31 | 31 đỏ | `qc: <hàm> chưa có (plan §4)` / `qc: <Schema> chưa có (plan §3)`; C03–C05, C08–C09, C13–C14, C16, I06 đỏ ở `expect` (trường/mã chưa có) |
+| A | db, defs, report, flow, tenant, kh | 44 | 44 đỏ | `needPc`: `{migration0031:false}`; 0 `PostgresError`/`TypeError` trong `beforeAll` (chạy từng file) |
+| P | `test_pc_rules.py` | 42 | 42 đỏ | `ModuleNotFoundError: agent_runtime.autofix` |
+| P | `test_pc_hook.py` | 9 | 7 đỏ · 2 xanh | P20 (6) + P23: `(True, None) != (False, 'workspace')` (hook chưa có nhãn workspace). **Xanh sẵn (đối chứng, đúng):** P21 Write/Edit (tool không cấp) + P22 `sources/` đọc được |
+| S | `sandbox_check.py` | 8 | 8 lỗi fixture | `qc: cần CLI docker (RUNTIME_SANDBOX)` — container dev `uv` không có CLI; trên máy có Docker sẽ đỏ ở `ModuleNotFoundError` tới R1 |
+| E | `e2e/P-c` (stack P-b2 lên đủ, seed + đăng nhập OK) | 14 | 14 đỏ | E01/E02b: panel mở, `switch "Tự sửa mã"` chưa có; E02: `alert` AUTOFIX_* chưa có; E03/E04/E07/E10–E12: `region "Kết quả tự sửa mã"`/`"Autofix result"` chưa có; E05/E06/E08: lý do giữ `team_calls` (0031 vắng ⇒ `setDecision` không đổi) ⇒ heading/nhóm chưa có; E09: `pcReady()` false; E13: thẻ `article` "Tự sửa mã" chưa có |
+
+`tsc -p tsconfig.tests.json` sạch phần P-c; `biome check` sạch; `ruff check` + `ruff format --check` + `pyright` (tests/acceptance/pc) sạch.
+
+## 9. Khoá
+Khoá lần 1: 2026-10-13 (T3) — `tests/acceptance/P-c/**`, `apps/agent-runtime/tests/acceptance/pc/**`, `e2e/P-c/**`. `bun run test:lock:write` + `bun run test:lock:verify` OK; `bun run trace --check` OK.
