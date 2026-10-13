@@ -1,0 +1,14 @@
+[
+  {
+    "id": "P01",
+    "title": "Admin (tenant_admin julian.bui · evolu): nhóm Beta testers đã có 5 thành viên (gồm người duyệt)",
+    "ok": true,
+    "ms": 3003
+  },
+  {
+    "id": "P-qc",
+    "title": "Admin → Agents → Grant access @qc cho nhóm Beta testers",
+    "ok": true,
+    "ms": 2651
+  }
+]

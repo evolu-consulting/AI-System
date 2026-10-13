@@ -1,0 +1,14 @@
+[
+  {
+    "id": "H01",
+    "title": "Xoá secret kh-main đang được kết nối dùng → chặn ngay, nêu nơi dùng (KnowledgeHub · kh-main)",
+    "ok": true,
+    "ms": 1738
+  },
+  {
+    "id": "H02",
+    "title": "Secret chưa dùng (kh-wrong) vẫn xoá được; secret anthropic-main (provider) hiển thị Chưa dùng",
+    "ok": true,
+    "ms": 554
+  }
+]

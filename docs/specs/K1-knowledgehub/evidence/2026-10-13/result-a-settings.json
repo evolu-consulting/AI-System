@@ -1,0 +1,62 @@
+[
+  {
+    "id": "S01",
+    "title": "Đăng nhập Studio → Cài đặt: tiêu đề, trạng thái rỗng, note rủi ro, chip origin được phép",
+    "ok": true,
+    "ms": 93
+  },
+  {
+    "id": "S02",
+    "title": "Thêm kết nối kh-main (URL mock, khoá kh-main, project evolu): Sheet, Lưu → toast, Sheet đóng",
+    "ok": true,
+    "ms": 2136
+  },
+  {
+    "id": "S03",
+    "title": "Kiểm tra kh-main → Dialog kết quả: Kết nối đạt, phiên bản, project khoá thấy; hàng thành Đạt",
+    "ok": true,
+    "ms": 536
+  },
+  {
+    "id": "S04",
+    "title": "URL ngoài allowlist (https://evil.example.com) → lỗi inline 'Địa chỉ không được phép'",
+    "ok": true,
+    "ms": 1987
+  },
+  {
+    "id": "S05",
+    "title": "Địa chỉ http không loopback (http://example.com) → lỗi client rõ",
+    "ok": true,
+    "ms": 1956
+  },
+  {
+    "id": "S06",
+    "title": "Khoá sai: kết nối kh-wrongkey (127.0.0.1:4030 + khoá kh-wrong) → Kiểm tra báo KH từ chối khoá",
+    "ok": true,
+    "ms": 2468
+  },
+  {
+    "id": "S07",
+    "title": "Sửa kh-wrongkey: đổi khoá sang kh-main → cảnh báo reset, Lưu v2, về Chưa kiểm tra → Kiểm tra Đạt",
+    "ok": true,
+    "ms": 2401
+  },
+  {
+    "id": "S08",
+    "title": "Sửa tên/project (không đổi URL/khoá) không reset trạng thái; project đổi sang shared",
+    "ok": true,
+    "ms": 1549
+  },
+  {
+    "id": "S09",
+    "title": "Tên trùng (kh-main) khi thêm → KH_CONNECTION_EXISTS; project sai định dạng báo lỗi",
+    "ok": true,
+    "ms": 3413
+  },
+  {
+    "id": "S10",
+    "title": "Xoá kh-loopback (chưa agent dùng): alertdialog 'Secret không bị xoá' → Xoá → biến mất",
+    "ok": true,
+    "ms": 524
+  }
+]

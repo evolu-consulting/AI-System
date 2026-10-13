@@ -1,0 +1,50 @@
+[
+  {
+    "id": "01",
+    "title": "Đăng nhập Studio (platform admin) → menu Secrets",
+    "ok": true,
+    "ms": 937
+  },
+  {
+    "id": "02",
+    "title": "Tạo provider_api_key anthropic-main: password, nút Hiện, Sheet ở lại Đã lưu v1, ô rỗng",
+    "ok": true,
+    "ms": 1717
+  },
+  {
+    "id": "03",
+    "title": "Tab Khoá KnowledgeHub: tạo kh-main (nền tảng, = khoá mock) và kh-wrong",
+    "ok": true,
+    "ms": 4287
+  },
+  {
+    "id": "04",
+    "title": "Tab Khoá nguồn (git): chỉ đọc, không có nút thêm (tạo ở Admin > Nguồn)",
+    "ok": true,
+    "ms": 115
+  },
+  {
+    "id": "05",
+    "title": "Danh sách không lộ giá trị: DOM + mọi response /secrets không chứa chuỗi khoá; không có nút Xem",
+    "ok": true,
+    "ms": 118
+  },
+  {
+    "id": "06",
+    "title": "Xoay khoá anthropic-main: Sheet Thay giá trị, ô rỗng, tên không sửa, Lưu → v2",
+    "ok": true,
+    "ms": 1314
+  },
+  {
+    "id": "07",
+    "title": "Validate: trường rỗng báo lỗi; trùng tên không tạo được",
+    "ok": true,
+    "ms": 2315
+  },
+  {
+    "id": "08",
+    "title": "Xoá secret chưa dùng (kh-wrong): ConfirmDialog → Xoá → biến mất",
+    "ok": true,
+    "ms": 2823
+  }
+]

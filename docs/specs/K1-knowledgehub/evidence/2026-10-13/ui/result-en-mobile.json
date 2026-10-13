@@ -1,0 +1,32 @@
+[
+  {
+    "id": "mobile-en-S1",
+    "title": "Cài đặt: bảng kết nối",
+    "ok": true,
+    "ms": 769
+  },
+  {
+    "id": "mobile-en-S2",
+    "title": "Sheet Thêm kết nối (hết tải, không animation)",
+    "ok": true,
+    "ms": 1337
+  },
+  {
+    "id": "mobile-en-S3",
+    "title": "Dialog kết quả kiểm: Đạt",
+    "ok": true,
+    "ms": 1786
+  },
+  {
+    "id": "mobile-en-S4",
+    "title": "Dialog kết quả kiểm: Đạt kèm cảnh báo (embedder tiếng Anh, project rỗng)",
+    "ok": true,
+    "ms": 1987
+  },
+  {
+    "id": "mobile-en-S5",
+    "title": "Agent: section KnowledgeHub",
+    "ok": true,
+    "ms": 1884
+  }
+]

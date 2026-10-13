@@ -1,0 +1,14 @@
+[
+  {
+    "id": "60-01",
+    "title": "Mock KH trả 500 cho /vector/*; thomas bắt đầu !bug-fix có kh-query → stage vẫn chạy (không có tri thức)",
+    "ok": true,
+    "ms": 28531
+  },
+  {
+    "id": "60-02",
+    "title": "Admin OutputDialog: Alert 'Không truy cập được KnowledgeHub — stage đã chạy không có tri thức.' + lý do",
+    "ok": false,
+    "err": "expect(locator).toBeVisible() failed |  | Locator: getByRole('dialog').first().getByRole('status').filter({ hasText: /Không truy cập được KnowledgeHub|KnowledgeHub is unreachable|Cannot reach KnowledgeHub|unreachable/i })"
+  }
+]
