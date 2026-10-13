@@ -2,7 +2,7 @@
 id: H4b1-secrets
 title: H4b-1 · Secrets của Hub (chỉ ghi, AES-256-GCM) — provider key, source_credential, khoá KnowledgeHub
 milestone: H4b-1 (tách từ H4b, người dùng 2026-10-13: ưu tiên ai-sdlc)
-status: plan             # PLAN BE+FE xong 2026-10-13; readiness lần 1 NOT READY → đã áp mặc định (readiness.md)
+status: approved         # Gate tự duyệt 2026-10-13 (Luật 2b), readiness lần 4 READY — xem ../H4b1-gate.md
 requirements: [HUB-FR-68, HUB-FR-69, HUB-BR-30, HUB-BR-15, AC-H4b1-01, AC-H4b1-02, AC-H4b1-03, AC-H4b1-04, AC-H4b1-05, AC-H4b1-06, AC-H4b1-07, AC-H4b1-08]
 design:
   - docs/design/agent-hub/ba-agent-hub.md#HUB-FR-68 (dòng ~211) · HUB-FR-04 (dòng ~137, key riêng, không log) · HUB-FR-69 (audit)
