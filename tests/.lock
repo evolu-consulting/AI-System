@@ -42,7 +42,7 @@ e690de485115d555f63a6844ee32f4fc0f98b00aede5080736412bb5862eb385  apps/agent-run
 4837cabf617311e8c477497c623e74158d784cbc55cab57209ca6b8dac50c12b  apps/agent-runtime/tests/support/test_dify_mock.py
 aac308a156684fef9ca086a76da25c516130c9b66a9bb2a600cbeffe8bc7cdbe  apps/agent-runtime/tests/support/test_mcp_mock.py
 5bdbb6d8e2213e573414c35a437077c2749c3bea7e37143365a282fa95a70bcb  e2e/K1/admin/notice.k1.ts
-68c703495e06ac4e436a7507d1f00bd689039487407deb6917983cedb3b0a5db  e2e/K1/chat/notice.k1.ts
+eaa63d37a3bcb1506bb1048467a0c065ee1c5b71956ad18abdc15d2240e9cd2b  e2e/K1/chat/notice.k1.ts
 dd825133ab18bc62f767467ce64746ab8d307810a3d2a2678f31319cea9dcd7f  e2e/K1/playwright.k1.config.ts
 0b2d5f3c0a82d8633992f089d1a15db10967d4e09be26df974098c0929cfbd39  e2e/P-a/_pa-data.ts
 ace323079e642527c45c86da7d7388b21836ca06695783db981ef0e70cdee95a  e2e/P-a/_pa-runtime.ts
