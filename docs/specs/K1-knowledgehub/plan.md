@@ -20,7 +20,7 @@ Contract: spec §3. Dữ liệu tóm tắt: spec §4 (đầy đủ: §5 dưới)
 | D5 | `## Tóm tắt` thêm vào **snapshot** lúc start (`ensureSummary`), không sửa def | Gắn project độc lập def; AC07 "quy trình khác không đổi" |
 | D6 | Ghi worklog qua **hàng chờ** `kh_writes` (INSERT trong transaction `persistStage(done)`), gửi sau COMMIT bằng vòng nền | Không gọi mạng trong transaction; thử lại có trần; mẫu outbox `process_thread_events` |
 | D7 | Một điểm nối ghi: `persistStage` nhánh `done` (auto, gate Đạt, người quyết, team-runner đều qua đây) | Gate trượt không bao giờ `done` ⇒ không ghi |
-| D8 | Tenant hiệu lực cần `check_status='ok'` (Q5); mọi đổi cấu hình ⇒ `unchecked` | TLS/auth/people-lanes đã kiểm mới egress (HUB-BR-37/40) |
+| D8 | Tenant hiệu lực cần `check_status='ok'` (Q5); mọi đổi cấu hình ⇒ `unchecked` | TLS/auth/(lanes × project dùng chung) đã kiểm mới egress (HUB-BR-37/40) |
 | D9 | Allowlist ở env `HUB_KH_ALLOWED_ORIGINS` (Q4); kiểm URL khi lưu và trước mỗi lời gọi (env có thể đổi) | Egress do vận hành quyết |
 | D10 | Token cache trong bộ nhớ, khoá `(tenant, secret_id, secret.version, token_url)`; single-flight; không bao giờ log | HUB-FR-137, HUB-BR-30 |
 | D11 | Credentials parse **trong** callback `useSecret`; chỉ trả `{clientId, clientSecret, tokenUrl}` cho hàm mint token rồi bỏ; lỗi parse ⇒ mã `kh_credentials_invalid` (không kèm giá trị) | H4b-1 D12 |
@@ -73,7 +73,7 @@ export type KhCredentials = { clientId: string; clientSecret: string; tokenUrl: 
 /** JSON {client_id 1..128, client_secret 1..512, token_url?} — sai ⇒ null (không ném, không lộ giá trị). */
 export function parseKhCredentials(raw: string): KhCredentials | null;
 export function tokenUrlOf(baseUrl: string, c: KhCredentials): string;   // c.tokenUrl ?? `${baseUrl}/v1/token`
-/** Như KH `_settings`: top-level `include_people_lanes`, bị `retrieval.include_people_lanes` ghi đè; bật trừ khi === false. */
+/** Như KH `_settings`: top-level `include_people_lanes`, bị `retrieval.include_people_lanes` ghi đè; bật trừ khi === false. Bật KHÔNG tự là lỗi (Q2): chỉ lỗi khi tenant có project `read_only`. */
 export function peopleLanesOn(manifest: unknown): boolean;
 export type KhTenantCfg = { baseUrl: string | null; secretId: string | null; enabled: boolean; status: "unchecked" | "ok" | "error" };
 export function khEffective(c: KhTenantCfg | null): boolean;
@@ -148,7 +148,7 @@ Ngoài transaction: đọc settings + hàng tenant (scope system) → chạy bư
 | 5 | `useSecret` → `parseKhCredentials` → `khUrlPolicy(token_url)` → `POST token_url` | `kh_credentials_invalid` · `kh_url_not_allowed` · 401 `kh_credentials_rejected` · khác `kh_token_failed {status}` — dừng |
 | 6 | `GET /v1/capabilities` | `api_versions ∌ "v1"` `kh_api_v1_missing` · thiếu/`status=off` `kh_capability_missing {name:"retrieval"}` |
 | 7 | `GET /v1/me` (token) | `kind=local` `kh_auth_disabled` · `kind≠client` `kh_identity_unexpected {kind}` · `ns≠` `kh_ns_mismatch {found}` · 404 `kh_ns_not_active` |
-| 8 | `GET /v1/{ns}/manifest` | `manifest_rev=0` `kh_manifest_missing` · `peopleLanesOn` `kh_people_lanes_on` · keyspace vắng `kh_keyspace_missing {keyspace}` · 423 cảnh báo `kh_ns_suspended` |
+| 8 | `GET /v1/{ns}/manifest` | `manifest_rev=0` `kh_manifest_missing` · `peopleLanesOn` **và** tenant có project `read_only` ⇒ `kh_people_lanes_on_shared {project_id}` (lanes bật mà chỉ có project riêng = OK, Q2) · keyspace vắng `kh_keyspace_missing {keyspace}` · 423 cảnh báo `kh_ns_suspended` |
 | 9 | (từ bước 7) `me.projects` | ≠[] và project ∉ ⇒ `kh_project_not_attached {project_id}` · [] ⇒ cảnh báo `kh_projects_unverified` |
 | 10 | — | cảnh báo `kh_embedder_multilingual` (luôn) |
 Tổng ≤ 20 s (`AbortSignal.timeout` riêng mỗi lời gọi + hạn tổng). `check_result` lưu `{kh_version, keyspace_dims, items}` — không token, không body thô.

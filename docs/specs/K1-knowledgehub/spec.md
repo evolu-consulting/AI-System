@@ -35,7 +35,7 @@ Trỏ BA; chỉ ghi phần cụ thể hoá.
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
 | Phiên bản tối thiểu | `GET /version` ≥ v6.4; `GET /v1/capabilities`: `api_versions ∋ v1` + `retrieval` (K2 thêm `packs`) | ADR-0012 §6 |
-| Kiểm tra kết nối — lỗi | manifest ns `include_people_lanes=true`; `GET /v1/me` `kind=local`; gọi không token vẫn được (trừ localhost dev); `http://` (trừ localhost dev) | HUB-FR-131, HUB-BR-40 |
+| Kiểm tra kết nối — lỗi | ns bật `include_people_lanes` **và** tenant có project dùng chung (`read_only`) — lanes bật ở project riêng là OK (Q2); `GET /v1/me` `kind=local`; gọi không token vẫn được (trừ localhost dev); `http://` (trừ localhost dev) | HUB-FR-131, HUB-BR-40 |
 | Cảnh báo tĩnh | Embedder đa ngữ (bge-m3) là điều kiện triển khai KH; Hub không đo được | ADR-0012 §8 |
 | ns = tenant | Mỗi tenant tối đa một cặp (ns, credentials); run chỉ dùng credentials của tenant mình; tenant khác ⇒ 404 | HUB-BR-35 |
 | Project dùng chung | Đánh dấu chỉ đọc: `kh_query` được, không ghi `## Tóm tắt` | HUB-FR-132 |
@@ -77,7 +77,7 @@ File: `packages/contracts/src/hub-admin/kh.ts` (export qua `@ai/contracts/hub-ad
 | `POST /kh/tenants/:tenant_id/check` | — | 200 `KhCheckResult` (KH lỗi vẫn 200, `status=error`); lưu vào hàng (không tăng `version`) | 404 · 409 `KH_NOT_CONFIGURED` (thiếu `base_url` hoặc `secret_id`) |
 | `PUT /agents/:id/knowledge` | `{ knowledge_enabled: boolean, version }` | 200 `AgentWriteResponse` (H4a); `AgentSchema` thêm `knowledge_enabled: boolean` | 404 · 409 `VERSION_CONFLICT` · 422 `KH_AGENT_RUNTIME` (chỉ `agentic-cli`) |
 
-**"Kiểm tra kết nối"**: 10 bước `/health` → `/version` (≥ 6.4) → `/v1/me` không token (phải 401) → token → `/v1/capabilities` (`v1`, `retrieval`) → `/v1/me` (`kind=client`, đúng ns) → `/v1/{ns}/manifest` (có manifest, people lanes `false`, có keyspace) → project → cảnh báo embedder; mã từng bước: plan §3.1.
+**"Kiểm tra kết nối"**: 10 bước `/health` → `/version` (≥ 6.4) → `/v1/me` không token (phải 401) → token → `/v1/capabilities` (`v1`, `retrieval`) → `/v1/me` (`kind=client`, đúng ns) → `/v1/{ns}/manifest` (có manifest, có keyspace; people lanes bật chỉ lỗi nếu tenant có project dùng chung) → project → cảnh báo embedder; mã từng bước: plan §3.1.
 
 **3.3 Tenant — `/admin/kh*`, `/process-defs/:id/knowledge`** (`tenant_admin` = tenant phiên; `platform_admin` kèm `?tenant_id` — ngữ nghĩa `readTenant`/`writeTenant` của nguồn; `member` ⇒ 403; thêm `/admin/kh` vào `PROTECTED_PREFIXES`)
 | Method · path | Request | 2xx | Lỗi |
@@ -135,7 +135,7 @@ Mặc định `CONVENTIONS.md` §6 (perf không chặn mốc). Mỗi lời gọi
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Cách giả lập khi dev/test |
 |---|---|
-| KH v6.4 `/v1` (health, version, capabilities, me, token, context/step, worklog) | Mock KH (`bun run mocks`), kịch bản: ok, 401 hết hạn, 404/423/503, timeout, `include_people_lanes=true`, `kind=local` |
+| KH v6.4 `/v1` (health, version, capabilities, me, token, context/step, worklog) | Mock KH (`bun run mocks`), kịch bản: ok, 401 hết hạn, 404/423/503, timeout, `include_people_lanes=true` (có/không project dùng chung), `kind=local` |
 | H4b-1 `useSecret` | Secret thật trong DB test |
 
 **Việc chuyển từ H4b-1 sang K1** (H4b1 plan §2/Q12): (a) mở rộng `usedByMany` của `modules/secrets` thêm `type: knowledge_hub` (H4b-1 trả rỗng) để xoá `kh_api_key` đang dùng ⇒ 409 `SECRET_IN_USE`; (b) kiểm phần `work/<job_id>/` của AC-H4b1-07 (giá trị secret không xuất hiện trong thư mục job) bằng job giả dùng `useSecret`.
@@ -147,7 +147,7 @@ Bản nháp theo BA; qc hoàn thiện ở test-plan.
 
 | AC | Given / When / Then | Test |
 |---|---|---|
-| K1-AC01 | KH hợp lệ ⇒ "Kiểm tra kết nối" OK; `include_people_lanes=true` / `kind=local` / http ⇒ lỗi nêu nguyên nhân | <!-- qc --> |
+| K1-AC01 | KH hợp lệ ⇒ "Kiểm tra kết nối" OK; `include_people_lanes=true` + project dùng chung / `kind=local` / http ⇒ lỗi nêu nguyên nhân; lanes bật + chỉ project riêng ⇒ OK | <!-- qc --> |
 | K1-AC02 | Tenant A chạy run ⇒ chỉ credentials ns A; project tenant B ⇒ 404 | <!-- qc --> |
 | K1-AC03 | Token chỉ trong bộ nhớ; 401 ⇒ làm mới và thử lại đúng 1 lần; credentials không có trong job/prompt/log/audit | <!-- qc --> |
 | K1-AC04 | `kh_query` 5 lần OK, lần 6 lỗi tool; ≤ 4000 ký tự/lần | <!-- qc --> |
@@ -166,7 +166,7 @@ Lệnh xong: `done:k1` (backend-lead định nghĩa ở PLAN).
 | # | Câu hỏi | Mặc định đề xuất |
 |---|---|---|
 | Q1 | Tên tool `kh_query` không khớp `CATALOG_KEY_RE` (`^[a-z0-9-]{2,32}$`) của `payload.mcp.tools` (Runtime/pydantic kiểm cùng regex) | Khoá tool **`kh-query`** (agent thấy `mcp__hub__kh-query`); không đổi contract job/Runtime. "kh_query" giữ làm tên nghiệp vụ trong BA |
-| Q2 | **People lanes tắt ⇒ worklog không quay lại qua `context/step`** (KH chỉ phục vụ tầng `log` khi `include_people_lanes`≠false — đọc mã `app/caps/retrieval.py`). Hệ quả: `## Tóm tắt` ghi ở K1 chỉ người dùng KH đọc; `kh-query` K1 chỉ trả item/pack của ns (thường rỗng tới K2) | Giữ CR-067 (people lanes tắt) — chấp nhận K1 là "đường ống" (giá trị truy vấn có từ K2 nạp pack); ghi PRODUCTION-NOTES. Phương án khác (cần người dùng): cho phép people lanes cho project **riêng** của tenant, hoặc ghi item (`/items`, CR-068 đã loại) |
+| Q2 | People lanes và `## Tóm tắt` quay lại qua `context/step` (KH chỉ phục vụ tầng `log` khi `include_people_lanes`≠false — `app/caps/retrieval.py`) | **Người dùng chốt 2026-10-13:** cho phép people lanes với project **riêng** của tenant (ns = tenant ⇒ vẫn cách ly) ⇒ agent đọc `## Tóm tắt` qua `kh-query` ngay K1; chấp nhận ghi chú người viết cùng project lẫn vào kết quả (KH giới hạn ≤ 40% budget). **Project dùng chung vẫn bắt buộc tắt lanes** (chỉ đọc, Hub không ghi Tóm tắt) ⇒ "Kiểm tra kết nối" lỗi `kh_people_lanes_on_shared`. Sửa CR-067/ADR-0012 |
 | Q3 | "Cảnh báo vào output stage" khi hạ cấp | Hiện ở `StageView.knowledge.warning` (+ audit); **không** sửa nội dung file output của agent |
 | Q4 | Allowlist URL KH ở đâu | Env `HUB_KH_ALLOWED_ORIGINS` (vận hành đặt, UI chỉ đọc); URL nằm trong DB qua Studio |
 | Q5 | Khi nào tenant "hiệu lực" | Cần lần "Kiểm tra kết nối" gần nhất `ok`; mọi thay đổi ns/secret/keyspace/project/URL ⇒ `unchecked` ⇒ ngừng gọi KH tới khi kiểm lại |
