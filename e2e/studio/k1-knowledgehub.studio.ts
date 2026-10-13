@@ -90,6 +90,9 @@ test("HUB-FR-131 · E03 · Thêm kết nối: Sheet (Tên, Địa chỉ, Khoá, 
     summary_project: null,
   });
   await expect(toast(page)).toContainText("Đã lưu kết nối kh-new");
+  await expect(dlg.getByRole("status").filter({ hasText: "Đã lưu · v1" })).toBeVisible();
+  await dlg.getByRole("button", { name: "Đóng" }).click();
+  await expect(dlg).toBeHidden();
   await expect(table(page)).toContainText("kh-new");
   expect(writes(st)).toHaveLength(1);
 });
