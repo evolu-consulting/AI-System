@@ -37,7 +37,13 @@ from agent_runtime.autofix.prep import (
 )
 from agent_runtime.autofix.report import Command, HubTarget, ReportMeta, build_report, post_result
 from agent_runtime.autofix.rules import Failure, SandboxSpec
-from agent_runtime.autofix.workspace import Workspace, WorkspaceError, copy_workspace, init_git
+from agent_runtime.autofix.workspace import (
+    Workspace,
+    WorkspaceError,
+    copy_workspace,
+    hand_over,
+    init_git,
+)
 from agent_runtime.autofix.ws_tools import WsTarget, load_commands
 from agent_runtime.contracts.hub import JobAttachment, JobPayload1
 from agent_runtime.db.jobs_sql import ClaimedJob
@@ -159,9 +165,11 @@ class AutofixJobRun(JobRun):
         )
         self.sandbox = sandbox_spec(self.af_cfg, self.job.id, ws_dir, self.cfg.work_root)
         if af.install_cmd is not None:
+            await asyncio.to_thread(hand_over, ws_dir)
             await install(self._box(), ws_dir, af.install_cmd.root)
         patch = await self._fetch_patch(af.base_patch) if af.base_patch is not None else None
         self.ws = await asyncio.to_thread(init_git, self.work, ws_dir, af.branch, patch)
+        await asyncio.to_thread(hand_over, ws_dir)  # sau `base_patch` (file mới do root ghi)
         self.agent_ctr = await self.oci.run(self.sandbox, "agent")
         self.ws_target = self._target(ws_dir, self.agent_ctr)
 

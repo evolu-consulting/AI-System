@@ -11,7 +11,12 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { dockerArgs } from "../../../apps/agent-runtime/scripts/run";
+import {
+  DOCKER_SOCK,
+  dockerArgs,
+  ensureGitImage,
+  SANDBOX_IMAGE,
+} from "../../../apps/agent-runtime/scripts/run";
 import { contractUsersJson, ensureContractFixture, ensureDemoFixture } from "./fixture";
 import { ensureRoomAgents } from "./fixture-agents";
 import { ensureDemoRooms, ensureFixtureRooms } from "./fixture-rooms";
@@ -23,6 +28,7 @@ export const HUB_PORT = "4000";
 /** Tên host của máy chủ nhìn từ container (Docker Desktop / WSL2), kèm `--add-host …:host-gateway`. */
 export const HOST_ALIAS = "host.docker.internal";
 const RT_CONTAINER = "ai-hub-dev-runtime";
+const RT_WORK = "/tmp/hub-dev-work";
 const RT_DB_DEFAULT = "postgres://agent_runtime:agent_runtime_dev_pw@localhost:5432/ai_system";
 
 type Stop = () => Promise<void> | void;
@@ -111,8 +117,35 @@ export function runtimeEnv(inContainer: boolean): Record<string, string> {
     AGENT_RT_HUB_URL: hubUrlForRuntime(inContainer),
     AGENT_RT_WORKER_ID: "hub-dev",
     AGENT_RT_PROVIDERS: "fake-cli",
-    AGENT_RT_WORK_DIR: "/tmp/hub-dev-work",
+    AGENT_RT_WORK_DIR: RT_WORK,
     AGENT_RT_LOG_DIR: "/tmp/hub-dev-logs",
+  };
+}
+
+/** P-c1 R4 (ADR-0011 #1, chỉ dev): sandbox job tự-sửa. Container ⇒ mặc định `docker` qua socket
+ *  Docker Desktop + `RT_WORK` mount CÙNG đường dẫn VM (= `RUNTIME_SANDBOX_HOST_WORKDIR`, đường dẫn
+ *  engine thấy); `RUNTIME_SANDBOX=off` ⇒ không socket. Tiến trình thường ⇒ chuyển tiếp `RUNTIME_SANDBOX*`
+ *  nếu đặt. Ảnh thiếu ⇒ Runtime tự kiểm log `sandbox.unavailable`, coi như `off`. */
+export function sandboxRuntime(
+  inContainer: boolean,
+  env: Record<string, string | undefined> = process.env,
+): { env: Record<string, string>; args: string[] } {
+  const pass = Object.fromEntries(
+    Object.entries(env).filter(
+      (e): e is [string, string] => /^RUNTIME_SANDBOX/.test(e[0]) && !!e[1],
+    ),
+  );
+  if (!inContainer) return { env: pass, args: [] };
+  const mode = env.RUNTIME_SANDBOX || "docker";
+  if (mode === "off") return { env: { RUNTIME_SANDBOX: "off" }, args: [] };
+  return {
+    env: {
+      RUNTIME_SANDBOX_IMAGE: SANDBOX_IMAGE,
+      ...pass,
+      RUNTIME_SANDBOX: "docker",
+      RUNTIME_SANDBOX_HOST_WORKDIR: RT_WORK,
+    },
+    args: ["-v", `${DOCKER_SOCK}:${DOCKER_SOCK}`, "-v", `${RT_WORK}:${RT_WORK}`],
   };
 }
 
@@ -121,13 +154,14 @@ async function startRuntimeContainer(): Promise<Stop> {
   const docker = (args: string[]) =>
     Bun.spawnSync(["docker", ...args], { env: { ...process.env, MSYS_NO_PATHCONV: "1" } });
   docker(["rm", "-f", RT_CONTAINER]);
-  const env = { ...runtimeEnv(true), HOME: "/tmp/hub-dev-home" };
+  const sb = sandboxRuntime(true);
+  const env = { ...runtimeEnv(true), ...sb.env, HOME: "/tmp/hub-dev-home" };
   const cmd = [
     "mkdir -p /tmp/hub-dev-home /tmp/hub-dev-work /tmp/hub-dev-logs",
     "(uv sync --frozen 2>/dev/null || uv sync) >/dev/null 2>&1",
     "exec /opt/venv/bin/python -m agent_runtime",
   ].join("; ");
-  const args = dockerArgs(REPO.split("\\").join("/"), cmd);
+  const args = dockerArgs(REPO.split("\\").join("/"), cmd, false, ensureGitImage());
   const extra = Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
   args.splice(
     1,
@@ -137,6 +171,7 @@ async function startRuntimeContainer(): Promise<Stop> {
     RT_CONTAINER,
     "--add-host",
     `${HOST_ALIAS}:host-gateway`,
+    ...sb.args,
     ...extra,
   );
   const r = docker(args);
@@ -157,7 +192,12 @@ async function startRuntimeContainer(): Promise<Stop> {
 async function startRuntimeLocal(): Promise<Stop> {
   const proc = Bun.spawn(["uv", "run", "python", "-m", "agent_runtime"], {
     cwd: resolve(REPO, "apps/agent-runtime"),
-    env: { ...runtimeEnv(false), PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "" },
+    env: {
+      ...runtimeEnv(false),
+      ...sandboxRuntime(false).env,
+      PATH: process.env.PATH ?? "",
+      HOME: process.env.HOME ?? "",
+    },
     stdout: "inherit",
     stderr: "inherit",
   });

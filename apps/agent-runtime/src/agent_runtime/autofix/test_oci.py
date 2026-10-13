@@ -58,7 +58,8 @@ async def test_wrk_fr_28_oci_cli_run_exec_ps(tmp_path: Path) -> None:
     assert lines[1].endswith("_ a b.txt")
 
 
-async def test_hub_br_33_self_check(tmp_path: Path) -> None:
+async def test_hub_br_33_self_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("os.geteuid", lambda: 0)
     ok = OciCli("docker", _cli(tmp_path, str(2048 * 1024 * 1024)))
     assert await ok.self_check("img", 2048) is None
     assert await OciCli("docker", _cli(tmp_path, "max")).self_check("img", 2048) == "cgroup"
@@ -95,3 +96,12 @@ async def test_wrk_fr_28_fake_oci(tmp_path: Path) -> None:
     await oci.rm(name)
     with pytest.raises(OciError):
         await oci.exec(name, ExecReq(cmd="true"))
+
+
+async def test_hub_br_33_self_check_uid(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """R4: Runtime phải là root (dev) hoặc uid 1000 (= uid container), khác ⇒ `uid`."""
+    cli = OciCli("docker", _cli(tmp_path, str(2048 * 1024 * 1024)))
+    monkeypatch.setattr("os.geteuid", lambda: 1000)
+    assert await cli.self_check("img", 2048) is None
+    monkeypatch.setattr("os.geteuid", lambda: 1001)
+    assert await cli.self_check("img", 2048) == "uid"

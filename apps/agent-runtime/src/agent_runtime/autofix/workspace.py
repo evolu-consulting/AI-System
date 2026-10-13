@@ -24,6 +24,7 @@ from pathlib import Path
 from agent_runtime.autofix.rules import (
     GIT_PATH,
     GIT_SAFE_ARGS,
+    SANDBOX_UID,
     DiffStats,
     Failure,
     Limits,
@@ -148,6 +149,19 @@ def copy_workspace(job_dir: Path, snapshot: Path, key: str, caps: CopyCaps) -> P
         shutil.rmtree(ws_dir, ignore_errors=True)
         raise
     return ws_dir
+
+
+def hand_over(ws_dir: Path) -> None:
+    """Giao workspace cho uid container (1000) trước khi container ghi (pha cài, agent). Runtime
+    root (dev: container Runtime + Docker Desktop) ⇒ `lchown -R 1000:1000` (không theo symlink);
+    Runtime uid 1000 (prod Podman `--userns keep-id`) ⇒ đã đúng chủ, không làm gì. uid khác bị
+    `OciCli.self_check` loại (`uid`) nên không tới đây. Root vẫn đọc/xoá được file container tạo."""
+    if os.geteuid() != 0:
+        return
+    os.chown(ws_dir, SANDBOX_UID, SANDBOX_UID, follow_symlinks=False)
+    for dirpath, dirnames, filenames in os.walk(ws_dir, followlinks=False):
+        for name in (*dirnames, *filenames):
+            os.chown(Path(dirpath, name), SANDBOX_UID, SANDBOX_UID, follow_symlinks=False)
 
 
 def git_entries(ws_dir: Path) -> list[str]:

@@ -21,7 +21,8 @@ from agent_runtime.sources.filter import compile_allowlist, is_secret
 Phase = Literal["prep", "agent", "test"]
 Engine = Literal["docker", "podman"]
 
-UID_GID = "1000:1000"
+SANDBOX_UID = 1000  # uid:gid tiến trình trong container (ảnh sandbox: user `sandbox`)
+UID_GID = f"{SANDBOX_UID}:{SANDBOX_UID}"
 WORKSPACE = "/workspace"
 CONTAINER_ENV = ("HOME=/tmp", "CI=1", "LANG=C.UTF-8")
 LABEL_AUTOFIX = "ai.autofix=1"

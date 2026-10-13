@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 from agent_runtime.autofix.rules import (
+    SANDBOX_UID,
     UID_GID,
     WORKSPACE,
     Engine,
@@ -222,7 +223,11 @@ class OciCli:
         return [n for n in res.stdout.decode("utf-8", "replace").split() if n.startswith("aif-")]
 
     async def self_check(self, image: str, memory_mb: int) -> str | None:
-        """None = đạt; ngược lại mã lý do `cli` | `image` | `cgroup`."""
+        """None = đạt; ngược lại mã lý do `uid` | `cli` | `image` | `cgroup`. `uid`: Runtime phải là
+        root (dev, `hand_over` chown) hoặc uid 1000 (= uid container) — uid khác không ghi/xoá được
+        file container tạo trong workspace."""
+        if os.geteuid() not in (0, SANDBOX_UID):
+            return "uid"
         try:
             if (await self._cli(["version"], _ctl(20))).exit_code != 0:
                 return "cli"

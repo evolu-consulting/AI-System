@@ -166,3 +166,26 @@ def test_wrk_fr_29_dir_bytes(tmp_path: Path) -> None:
     before = ws.ws_bytes()
     (ws.ws_dir / "big").write_bytes(b"x" * 1000)
     assert ws.ws_bytes() == before + 1000
+
+
+def test_wrk_fr_28_hand_over_chowns_only_as_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """R4: root ⇒ lchown cả cây (kể cả gốc, symlink không theo) về 1000; uid khác ⇒ không làm gì."""
+    ws = tmp_path / "ws"
+    (ws / "d").mkdir(parents=True)
+    (ws / "d" / "f").write_text("x")
+    (ws / "ln").symlink_to("/etc/passwd")
+    calls: list[tuple[str, int, int, bool]] = []
+
+    def fake_chown(p: object, uid: int, gid: int, *, follow_symlinks: bool = True) -> None:
+        calls.append((Path(str(p)).name, uid, gid, follow_symlinks))
+
+    monkeypatch.setattr(os, "chown", fake_chown)
+    monkeypatch.setattr(os, "geteuid", lambda: 1000)
+    w.hand_over(ws)
+    assert calls == []
+    monkeypatch.setattr(os, "geteuid", lambda: 0)
+    w.hand_over(ws)
+    assert sorted(c[0] for c in calls) == ["d", "f", "ln", "ws"]
+    assert all(c[1:] == (1000, 1000, False) for c in calls)
