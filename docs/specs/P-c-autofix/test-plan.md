@@ -205,3 +205,11 @@ Chạy: `bun run done:pc` (bước 1–2) → `--from=3` (int, 63,8 phút) → `
 
 **Đỏ bước 8 (e2e)** — `chat/diff.pc.ts:44` **E03** (diff đầy đủ + Tải .diff + Đạt): mọi assertion UI qua; lỗi `apiResponse.json: Response has been disposed` tại `e2e/P-c/_pc-support.ts:113` (`patchStage`: `route.fetch()` còn bay khi `u.close()` đóng context sau POST decision ⇒ rejection chưa bắt ⇒ ca đỏ; lặp lại 2/2). Nghi **test support** (thiếu try/catch quanh `route.fetch/json`), không phải FE/Hub. Việc cho **qc**: bọc handler trong `try { … } catch { return }` hoặc `await page.unrouteAll({behavior:'ignoreErrors'})` trước `close`.
 
+
+**Phân xử qc · 2026-10-14**
+
+| Ca | Kết luận |
+|---|---|
+| P-b2 C-02, P-a R-K01 (`DECISION_REASONS` 18) | contract đúng spec (PC-R10 thêm `autofix_check_failed`, `sandbox_unavailable` CUỐI; P-c C14 khẳng định). Test cũ đổi sang kiểm tiền tố 16 mã (phần tử 16 = `back_limit`). Xanh |
+| P-b2 C-07 (`PROCESS_DEF_RULES`) | đúng spec (PC-R02 thêm 3 luật `AUTOFIX_*` CUỐI; P-c C05). Test cũ kiểm tiền tố 6 luật. Xanh |
+| e2e E03 | sửa `_pc-support.ts` `patchStage`: try/catch quanh `route.fetch/json/fulfill`. e2e P-c 14/14 xanh |

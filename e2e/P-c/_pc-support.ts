@@ -109,10 +109,14 @@ export async function patchStage(
 ): Promise<void> {
   await p.route(new RegExp(`/process-runs/${runId}(\\?.*)?$`), async (route) => {
     if (route.request().method() !== "GET") return route.continue();
-    const res = await route.fetch();
-    const body = (await res.json()) as Json;
-    if (Array.isArray(body?.stages) && body.stages[idx]) body.stages[idx].autofix = autofix;
-    return route.fulfill({ response: res, json: body });
+    try {
+      const res = await route.fetch();
+      const body = (await res.json()) as Json;
+      if (Array.isArray(body?.stages) && body.stages[idx]) body.stages[idx].autofix = autofix;
+      await route.fulfill({ response: res, json: body });
+    } catch {
+      // context đóng khi request còn bay (u.close()) — bỏ qua.
+    }
   });
 }
 /** Vá `GET /attachments/:id/content` — trả `text` (text/plain) hoặc mã lỗi. Đếm số lần gọi. */

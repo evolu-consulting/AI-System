@@ -168,8 +168,9 @@ describe("R-K01–K03 · hằng + mã lỗi [plan-contract §1, §4]", () => {
     ]);
     expect([...(c.TEAM_MODES ?? [])]).toEqual(["sequential", "lead_plan", "parallel_merge"]);
     // P-b2 (plan §1.1, CR-064): +`back_limit` ở CUỐI mảng ⇒ 16.
-    expect([...(c.DECISION_REASONS ?? [])]).toHaveLength(16);
-    expect([...(c.DECISION_REASONS ?? [])].at(-1)).toBe("back_limit");
+    // P-c (PC-R10) thêm 2 mã CUỐI ⇒ kiểm tiền tố 16 mã.
+    expect([...(c.DECISION_REASONS ?? [])].slice(0, 16)).toHaveLength(16);
+    expect([...(c.DECISION_REASONS ?? [])][15]).toBe("back_limit");
     expect([...(c.DECISION_OPTIONS ?? [])]).toEqual(["add_attempt", "use_current", "cancel"]);
     expect([...(c.ROOM_PROCESS_KINDS ?? [])]).toEqual([
       "block",

@@ -90,7 +90,7 @@ e9a64c8733b12868aff5ea371be91a067769888e4645475245054d9c93ead958  e2e/P-b/playwr
 e16c32280bfe314ce3bccb30665586f2bf2dc7d381a048ebfe2b04c633e10c13  e2e/P-b2/admin/canvas.pb2.ts
 04f367a6417f135451446f5ac51fe896724f3cf0b52b3a923bc22bc2d85bf93d  e2e/P-b2/chat/run.pb2.ts
 d6aecb675a57e354bf5703308168d0be1eb43975158cd472d52341c6a1c712ee  e2e/P-b2/playwright.pb2.config.ts
-dee3f830fc1e5dbcf5bbdcacc8bdd3785ef702a914ed47392936f5bd8e5f15b4  e2e/P-c/_pc-support.ts
+8272af8b85a36f7cd69e8fe520c85ef4545edc3aa931db777b22092ae15b05cd  e2e/P-c/_pc-support.ts
 c9562144e93fdc3cd688393eb2fa55ae1645c67b5fd72cefb02a840aabe852a6  e2e/P-c/admin/editor.pc.ts
 af6388a4c228a7d8f0f39586d252570f4bc911703ed2fb3bb5035aea531005af  e2e/P-c/chat/decision.pc.ts
 d669c7faec0163129aff9f8956363d33484293083a10152d993f9d8ee333c3a8  e2e/P-c/chat/diff.pc.ts
@@ -597,7 +597,7 @@ eeff8e81411ac9890271ac70760a1c2dd6f8b3a0fbefa9aee87d558626e07692  tests/acceptan
 26144e8f1e1add0c98dfeaa94b62876d57de783360962bb034775c4933bb6fbb  tests/acceptance/P-a/step0/migration.int.test.ts
 4e02e5fe2717a92a204c4fbc7efd65d7e1428533e8ee71747f6c6e9c036b3ef5  tests/acceptance/P-a/step0/rls.int.test.ts
 233db66ef8c4d6b4441c96b6541252cc2aa80cc57a965e86a412e3a82ee2c7dc  tests/acceptance/P-a/step0/rules/bang.test.ts
-b0b9f69e671761d1b93d3a4cae894ae51a2f44862e2ff75789ee6e6679a339a7  tests/acceptance/P-a/step0/rules/contracts-pa.test.ts
+3950ed83b82d1e50e91d47dd7a0171e853cc03d302660949620fc263ed16e7da  tests/acceptance/P-a/step0/rules/contracts-pa.test.ts
 e56e2605f3003a8e2a1610d7af47d099263b4d38a803b2abe756113d320ff814  tests/acceptance/P-a/step0/rules/def.test.ts
 b1623f719e3d4b946756cc9280a8a1b3f1f17e1a736b55d8df376acc36c9e8c7  tests/acceptance/P-a/step0/rules/limits.test.ts
 85ebe73a662bd6cad967c90e2b02561dc0f1de959be635656b343a45007090dc  tests/acceptance/P-a/step0/rules/process-state.test.ts
@@ -651,7 +651,7 @@ eccbcd0f1b9d7fd89db752b04d69b83d0deac50ce3dd0a9bd5bdd22aa1482cb0  tests/acceptan
 5ed482de4a7fa36b82beab403c149629bb3894d233b8ac59ddd7dd1ebab109f7  tests/acceptance/P-b2/par/race.int.test.ts
 40fe20346d2ca44957b7320991786a20e7f4067002ff575684abdb5f24b68367  tests/acceptance/P-b2/par/team0.int.test.ts
 0d476cd5a6ac53a6d755426da0f5f1d1828a7b042b7bca5c075a54232b98eb2c  tests/acceptance/P-b2/rules/back-rules.test.ts
-75a7192469d341a25d493c43c5ef00d2e5c6a88176adfde3ac5d5991bf2dd7e0  tests/acceptance/P-b2/rules/contracts-pb2.test.ts
+73ca61e6e2c0bed43a77ddc66c372c63a8d90c10a5d4d1a1409d025d8827f074  tests/acceptance/P-b2/rules/contracts-pb2.test.ts
 b109a4c404f1486501104a5dc19747d8835d69793cbe004342ca55a1917e143b  tests/acceptance/P-b2/rules/handoff-session.test.ts
 c4195f5295a2011395e314a09d6defa71b284e7b9d42fc2937496bb9410c6bcb  tests/acceptance/P-b2/rules/process-steps.test.ts
 ee182641e398dfcde2e9ffd35f8c487c9e76f262ffc0e9fe98be6d777ec49955  tests/acceptance/P-b2/rules/step-rules.test.ts

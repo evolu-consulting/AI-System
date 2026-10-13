@@ -115,7 +115,8 @@ describe("C · hằng [HUB-FR-104][HUB-FR-136]", () => {
   });
   it("HUB-FR-118 · C-02 · DECISION_REASONS dài 16, phần tử CUỐI 'back_limit'; DECISION_OPTIONS không đổi", () => {
     const r = [...((c.DECISION_REASONS as string[]) ?? [])];
-    expect({ n: r.length, last: r.at(-1) }).toEqual({ n: 16, last: "back_limit" });
+    // P-c (PC-R10) thêm 2 mã CUỐI ⇒ kiểm tiền tố 16 mã của P-b2.
+    expect({ n: r.slice(0, 16).length, last: r[15] }).toEqual({ n: 16, last: "back_limit" });
     expect([...((c.DECISION_OPTIONS as string[]) ?? [])]).toEqual([
       "add_attempt",
       "use_current",
@@ -168,7 +169,8 @@ describe("C · schema def [HUB-FR-104][AC-PB2-04]", () => {
     expect((r.error?.issues ?? []).map((i) => i.path.join("."))).toContain("stages.3.step");
   });
   it("AC-PB2-04 · C-07 · ProcessDefPathsDetailsSchema nhận `rules` (enum PROCESS_DEF_RULES); rule lạ ⇒ lỗi", () => {
-    expect([...((h.PROCESS_DEF_RULES as string[]) ?? [])]).toEqual([
+    // P-c (PC-R02) thêm 3 luật AUTOFIX_* CUỐI ⇒ kiểm tiền tố 6 luật của P-b2.
+    expect([...((h.PROCESS_DEF_RULES as string[]) ?? [])].slice(0, 6)).toEqual([
       "KEY_DUP",
       "REAL_ACTION",
       "STEP_INCOMPLETE",
