@@ -12,7 +12,8 @@
     "./schema/hub": "./src/schema/hub.ts",
     "./schema/hub-rooms": "./src/schema/hub-rooms.ts",
     "./schema/hub-processes": "./src/schema/hub-processes.ts",
-    "./schema/hub-secrets": "./src/schema/hub-secrets.ts"
+    "./schema/hub-secrets": "./src/schema/hub-secrets.ts",
+    "./schema/hub-kh": "./src/schema/hub-kh.ts"
   },
   "scripts": {
     "typecheck": "tsc -p . --noEmit",

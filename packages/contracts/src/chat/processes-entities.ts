@@ -1,6 +1,7 @@
 // HUB-FR-105…117 · HUB-BR-25 · CR-056 · thực thể dùng chung P-a (plan-contract §2). Mọi object strict; không I/O.
 import { z } from "zod";
 import { DISPLAY_NAME_MAX, IsoDateTime, UuidSchema } from "../common";
+import { StageKnowledgeSchema } from "../hub-admin/kh";
 import { CHAT_ASK_CHOICE_MAX, CHAT_ASK_CHOICES_MAX, CHAT_ASK_QUESTION_MAX } from "./entities";
 import {
   BACK_EVENTS_MAX,
@@ -130,6 +131,8 @@ export const StageViewSchema = z.strictObject({
   round: Int1,
   /** Bước được phép quay lại khi Chưa đạt (`[]` khi auto / không cấu hình). */
   back_to_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX),
+  /** K1 · KnowledgeHub của stage (spec K1 §3.1); vắng ⇒ stage không dùng KH. */
+  knowledge: StageKnowledgeSchema.optional(),
 });
 export type StageView = z.infer<typeof StageViewSchema>;
 

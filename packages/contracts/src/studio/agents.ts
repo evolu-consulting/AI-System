@@ -179,6 +179,8 @@ export const AgentSchema = z.strictObject({
     }),
   ),
   warnings: z.array(AgentWarningSchema),
+  /** K1 · kết nối KH đã tick, theo thứ tự (≤ 5). Vắng ở bản trước K1 (T5d luôn trả). */
+  knowledge_connection_ids: z.array(UuidSchema).max(5).optional(),
 });
 export type Agent = z.infer<typeof AgentSchema>;
 
@@ -196,6 +198,8 @@ export const AgentListItemSchema = z.strictObject({
   entitled_tenant_count: z.number().int().min(0),
   orchestrator_of: OrchestratorOfSchema,
   runnable: z.boolean(),
+  /** K1 · số kết nối KH đã tick. Vắng ở bản trước K1 (T5d luôn trả). */
+  knowledge_count: z.number().int().min(0).max(5).optional(),
 });
 export type AgentListItem = z.infer<typeof AgentListItemSchema>;
 export const AgentListSchema = listMetaSchema(AgentListItemSchema);
