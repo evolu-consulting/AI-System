@@ -63,8 +63,8 @@ def _variants(data: bytes) -> list[bytes]:
     return [data, data.replace(b"\0", b"")] if b"\0" in data else [data]
 
 
-_PEM_BEGIN = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")
-_PEM_END = re.compile(r"-----END [A-Z ]*PRIVATE KEY-----")
+_PEM_BEGIN = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY(?: BLOCK)?-----")
+_PEM_END = re.compile(r"-----END [A-Z ]*PRIVATE KEY(?: BLOCK)?-----")
 
 
 def _new_lines(lines: list[str], base: Counter[str]) -> list[bool]:

@@ -296,8 +296,10 @@ class Workspace:
             if len(parts) != 3:
                 continue  # `<sha> missing`
             size = int(parts[2])
-            out[parts[0].decode()] = raw[pos : pos + size]
+            chunk = raw[pos : pos + size]
             pos += size + 1
+            if len(chunk) == size:  # cụt ⇒ bỏ blob để scan_changes báo `unscannable`
+                out[parts[0].decode()] = chunk
         return out
 
 

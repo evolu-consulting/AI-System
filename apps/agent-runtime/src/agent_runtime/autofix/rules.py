@@ -199,7 +199,10 @@ def check_size(stats: DiffStats, ws_bytes: int, lim: Limits) -> list[Failure]:
 
 SECRET_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("aws_access_key", re.compile(r"AKIA[0-9A-Z]{16}")),
-    ("private_key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
+    (
+        "private_key",
+        re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY(?: BLOCK)?-----|PuTTY-User-Key-File-\d+:"),
+    ),
     ("github_token", re.compile(r"gh[pousr]_[A-Za-z0-9]{36,}")),
     ("github_pat", re.compile(r"github_pat_[A-Za-z0-9_]{60,}")),
     ("gitlab_pat", re.compile(r"glpat-[A-Za-z0-9_-]{20,}")),

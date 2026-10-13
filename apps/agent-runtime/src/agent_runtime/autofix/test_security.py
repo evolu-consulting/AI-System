@@ -322,3 +322,27 @@ def test_hub_br_32_rmtree_ro_unreadable_dir(tmp_path: Path) -> None:
     os.chmod(tree / "d", 0o300)
     rmtree_ro(tree)
     assert not tree.exists()
+
+
+def test_wrk_fr_29_pgp_and_putty_private_keys_caught() -> None:
+    pgp = b"-----BEGIN PGP PRIVATE KEY BLOCK-----\nbW9jaw==\n-----END PGP PRIVATE KEY BLOCK-----\n"
+    assert [f.rule for f in scan_blob("k.asc", pgp, None)] == ["private_key"]
+    putty = b"PuTTY-User-Key-File-3: ssh-ed25519\nEncryption: none\n"
+    assert [f.rule for f in scan_blob("k.ppk", putty, None)] == ["private_key"]
+    base = b"-----BEGIN PGP PRIVATE KEY BLOCK-----\nT0xE\n-----END PGP PRIVATE KEY BLOCK-----\n"
+    new = base.replace(b"T0xE", b"TkVX")
+    assert [f.rule for f in scan_blob("k.asc", new, base)] == ["private_key"]
+
+
+def test_wrk_fr_29_truncated_cat_file_blob_dropped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ws = _ws(tmp_path)
+    sha = "a" * 40
+    raw = f"{sha} blob 10\nabc".encode()  # khai 10 byte nhưng chỉ có 3
+
+    def fake_git(_self: w.Workspace, _args: list[str], _inp: bytes | None = None) -> bytes:
+        return raw
+
+    monkeypatch.setattr(w.Workspace, "git", fake_git)
+    assert ws.blobs([sha]) == {}
