@@ -324,6 +324,151 @@
                 "required": ["key", "kind", "pin", "allowlist"],
                 "additionalProperties": false
               }
+            },
+            "autofix": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9-]{2,32}$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": ["git_remote", "local_path", "library"]
+                    },
+                    "pin": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "git_remote"
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 2048
+                            },
+                            "sha": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{40}$"
+                            }
+                          },
+                          "required": ["kind", "url", "sha"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "local_path"
+                            },
+                            "path": {
+                              "type": "string",
+                              "maxLength": 1024
+                            },
+                            "snapshot_id": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": ["kind", "path", "snapshot_id"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "library"
+                            },
+                            "document_id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "version": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": ["kind", "document_id", "version"],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "allowlist": {
+                      "maxItems": 0,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      }
+                    }
+                  },
+                  "required": ["key", "kind", "pin", "allowlist"],
+                  "additionalProperties": false
+                },
+                "install_cmd": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "test_cmd": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "write_allowlist": {
+                  "maxItems": 20,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  }
+                },
+                "branch": {
+                  "type": "string",
+                  "pattern": "^ai\\/[0-9a-f-]{36}\\/[a-z0-9-]{1,32}$"
+                },
+                "round": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "base_patch": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/JobAttachment"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "source",
+                "install_cmd",
+                "test_cmd",
+                "write_allowlist",
+                "branch",
+                "round",
+                "base_patch"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
@@ -638,7 +783,8 @@
                     "credential",
                     "upstream",
                     "refused",
-                    "attachment"
+                    "attachment",
+                    "container"
                   ]
                 },
                 {
@@ -1322,6 +1468,10 @@
                   "minLength": 1,
                   "maxLength": 256
                 }
+              },
+              "caps": {
+                "type": "string",
+                "enum": ["source", "autofix"]
               }
             },
             "required": ["source_id", "key", "kind", "config", "allowlist_union"],

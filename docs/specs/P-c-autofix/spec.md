@@ -2,7 +2,7 @@
 id: P-c-autofix
 title: P-c · Luồng tự-sửa (autonomous fix) — workspace ghi-được + exec trong container + diff (P-c1) · PR (P-c2)
 milestone: P-c (sau H4b-2)
-status: draft            # PLAN BE+FE + test khoá xong; Q1–Q7 + mockup duyệt; readiness lần 1 NOT READY → đã áp 17 mục (readiness.md), chạy lại readiness
+status: approved         # readiness lần 3 READY + Gate tự duyệt 2026-10-14 (P-c-gate.md); BUILD P-c1 đang chạy (tasks.md)
 requirements: [HUB-FR-119, HUB-FR-126, HUB-FR-127, HUB-FR-128, HUB-FR-129, HUB-FR-130, WRK-FR-28, WRK-FR-29, HUB-BR-32, HUB-BR-33, HUB-BR-34, WRK-BR-08]
 design:
   - docs/CHANGE-REQUESTS.md#CR-061 (Intake Đầy đủ chốt 2026-10-12), #CR-065 (sửa đổi: nhánh, kiểm diff, apply_mode)
@@ -48,7 +48,7 @@ BA là nguồn sự thật (HUB-FR-126…130, HUB-BR-32…34, WRK-FR-28/29, WRK-
 | PC-R13 | Ngân sách token stage tự-sửa: mặc định 200k nếu `token_budget` null (như PB-R12) | HUB-FR-116 |
 | PC-R14 | Cách ly tenant: nguồn/def/kết quả theo `tenant_id` (RLS); id kết quả/diff của run khác ⇒ 404 (HUB-BR-14); token job chỉ báo được cho chính job. Đọc file diff/log qua `GET /attachments/:id/content`: file là `diff_attachment_id`/`test_log_attachment_id` của một `autofix_results` ⇒ đọc được khi `runAccess(viewer, run) ≠ null` (gồm `task`); `platform_admin` truyền `tenant_id` như `/process-runs/:id/outputs`; file khác giữ luật cũ (X2b2-R05/R06). Người dùng chốt 2026-10-13 | HUB-BR-14, 25, 32 |
 | PC-R15 | Pha cài: `install_cmd` (không null) chạy ở container chuẩn bị **có mạng** (Q2), ≤ 600 s, không secret, trước agent; lỗi ⇒ `check_failed{check:"install"}` | ADR-0011 #2 |
-| PC-R16 | Không gọi kiểm hạn mức khi ghi diff/log tự-sửa (`origin='output'`); `quotaUsed` không đổi (file vẫn được cộng vào dung lượng đã dùng) | HUB-FR-130 |
+| PC-R16 | Không gọi kiểm hạn mức khi ghi diff/log tự-sửa (`origin='output'`); hàm `quotaUsed` giữ nguyên; dung lượng đã dùng tăng đúng diff + log | HUB-FR-130 |
 
 ## 3. Contract (backend-lead)
 <!-- Bảng trường đầy đủ: plan.md §3. z.strictObject khắp; không đổi trường cũ. -->
@@ -152,6 +152,8 @@ Ca + kỳ vọng: [`test-plan.md`](test-plan.md) §3 (ma trận luật → ca), 
 - 2026-10-13 (chốt khoảng trống qc G1–G14, theo mặc định test đã khoá; chi tiết plan §2, §3.3, §4, §5.7–5.9): G1/G2 trường `SandboxSpec/DiffStats/Limits/Failure` khai báo ở plan §4. G3 tên export `StageAutofixSchema/JobAutofixSchema/AutofixReportSchema/AutofixStageViewSchema`. G4 `branch_ck` = `^ai/[0-9a-f-]{36}/[a-z0-9-]{1,32}$` (khớp `STAGE_KEY_RE`; thay regex rộng hơn ở plan §2 cũ). G5 hook `label=="workspace"` + symlink `out/`→workspace bị chặn (so `realpath`). G9 `use_current` cho decision `autofix_*` ⇒ 4xx (mã theo lỗi decision sẵn có), run giữ `needs_decision`. G10 `PAYLOAD_TOO_LARGE` không vào `HUB_INTERNAL_ERRORS`, nằm ở `error.code` thân 413. G11 chữ ký `workspace.prepare/check.run_checks/FakeOci/AutofixHost` khai ở plan §5.8; qc mở khoá có chủ đích viết `pc/autofix_int_test.py` sau R2 (task R2b). G12 trần `RUNTIME_AUTOFIX_MAX_MB/_FILES` áp ở `workspace.prepare` (Failure `size`), test Runtime theo G11. G14 script `test:pc:sandbox` (plan §5.9). G6–G8, G13, G15 thuộc FE/qc, không đổi backend.
 - 2026-10-13 (readiness lần 1, `readiness.md`): #1 quyền đọc file diff/log theo quyền xem run (người dùng chốt) → PC-R14, plan §6.6, task B5. #2–#17 áp mặc định (chi tiết `readiness.md`).
 - 2026-10-14 (readiness lần 2): `autofixDecisionOptions` riêng (core trả sớm); PC-R16 = không gọi kiểm hạn mức; `canDecide`; `basePatchOf`; tách B5b; plan §5 → `plan-runtime.md`.
+- 2026-10-14 (readiness lần 3, dọn 7 lỗ hổng Thấp): PC-R16 viết lại (`quotaUsed` giữ nguyên; dung lượng tăng đúng diff + log); ca PC-R16 = `report.int` E10 thuộc B4 (không phải B5b); plan §4 "mọi chỗ gọi"; trạng thái spec/tasks cập nhật. Mục test-plan (bỏ câu lệch dòng 149, tổng ca 152 = R 33 · A 45, tham chiếu `A-E10`/`E-E10`) để qc sửa.
+- 2026-10-14 (B1 contract): (1) kiểu dùng chung đặt ở file MỚI `hub-admin/autofix.ts` (`AutofixCmdSchema`, `AutofixFailureSchema`, `AutofixDiffStatsSchema`, `AutofixStatusSchema`, hằng) — tránh vòng import chat↔hub↔hub-admin; `StageAutofixSchema` ở `processes.ts`, `JobAutofixSchema` ở `hub/job.ts`, `AutofixReportSchema` ở `hub-internal/autofix.ts`, `AutofixFileSchema`+`AutofixStageViewSchema` ở `chat/processes-entities.ts`. (2) `ProcessStageDef` type: `autofix?` optional (snapshot cũ), zod parse ⇒ default null. (3) `JobAutofix.source.allowlist` = `z.array(Glob).max(0)` (không refine ⇒ JSON Schema/pydantic khớp). (4) `AutofixReport.diff` kiểm ≤ 2 MiB theo BYTE bằng superRefine (zod `.max` đếm ký tự) — report không xuất pydantic. (5) `processDefStageIssues` gộp `autofixStageIssues` (stage thiếu `executor` ⇒ coi agent) nên chữ ký cũ vẫn chạy; issue tự-sửa nối SAU issue cũ. (6) `processDefSourcePaths` thêm path `stages.<i>.autofix.source_key`. (7) Sửa test cạnh code: `hub-internal.test.ts` (+2 mã lỗi), `delta.test.ts` (JOB_FAIL_REASONS 16, container cuối); `hub-api/.../thread.rules.ts` REASON thêm 2 câu `autofix_check_failed`/`sandbox_unavailable` (Record bắt buộc đủ khoá). (8) `AUTOFIX_BRANCH_RE` dựng từ `STAGE_KEY_RE` (một nguồn). `contracts:gen` đã sinh lại `hub.schema.json` + `hub.py`; `contracts:check` xanh.
 
 ## 10. Câu hỏi cho người dùng (trình Gate; mỗi câu có mặc định đề xuất)
 | # | Câu hỏi | Mặc định đề xuất |

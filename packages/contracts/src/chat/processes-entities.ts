@@ -1,6 +1,11 @@
 // HUB-FR-105…117 · HUB-BR-25 · CR-056 · thực thể dùng chung P-a (plan-contract §2). Mọi object strict; không I/O.
 import { z } from "zod";
 import { DISPLAY_NAME_MAX, IsoDateTime, UuidSchema } from "../common";
+import {
+  AutofixDiffStatsSchema,
+  AutofixFailureSchema,
+  AutofixStatusSchema,
+} from "../hub-admin/autofix";
 import { StageKnowledgeSchema } from "../hub-admin/kh";
 import { CHAT_ASK_CHOICE_MAX, CHAT_ASK_CHOICES_MAX, CHAT_ASK_QUESTION_MAX } from "./entities";
 import {
@@ -112,6 +117,36 @@ export const ProcessRunSummarySchema = z.strictObject({
 });
 export type ProcessRunSummary = z.infer<typeof ProcessRunSummarySchema>;
 
+/** P-c1 · file diff/log của stage tự-sửa (map từ `hub.attachments`: `filename`→`name`). */
+export const AutofixFileSchema = z.strictObject({
+  id: UuidSchema,
+  name: z.string().min(1).max(255),
+  mime: z.string().min(1).max(255),
+  size: z.number().int().min(0),
+});
+export type AutofixFile = z.infer<typeof AutofixFileSchema>;
+
+/** P-c1 · HUB-FR-128 · kết quả tự-sửa của stage (run view). `pin_sha` chỉ khi pin git_remote (không lộ path/snapshot). */
+export const AutofixStageViewSchema = z.strictObject({
+  source_key: z.string().min(1).max(64),
+  pin_sha: z
+    .string()
+    .regex(/^[0-9a-f]{40}$/)
+    .nullable(),
+  branch: z.string().min(1).max(128),
+  round: z.number().int().min(1),
+  status: AutofixStatusSchema,
+  diff_stats: AutofixDiffStatsSchema.nullable(),
+  diff_file: AutofixFileSchema.nullable(),
+  test_log_file: AutofixFileSchema.nullable(),
+  test: z
+    .strictObject({ exit_code: z.number().int().nullable(), duration_ms: z.number().int().min(0) })
+    .nullable(),
+  failures: z.array(AutofixFailureSchema).max(50),
+  created_at: IsoDateTime,
+});
+export type AutofixStageView = z.infer<typeof AutofixStageViewSchema>;
+
 export const StageViewSchema = z.strictObject({
   idx: StageIdxSchema,
   key: StageKeySchema,
@@ -134,6 +169,8 @@ export const StageViewSchema = z.strictObject({
   back_to_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX),
   /** K1 · KnowledgeHub của stage (spec K1 §3.1); vắng ⇒ stage không dùng KH. */
   knowledge: StageKnowledgeSchema.optional(),
+  /** P-c1 · chỉ khi stage có cấu hình `autofix` VÀ đã có kết quả. */
+  autofix: AutofixStageViewSchema.optional(),
 });
 export type StageView = z.infer<typeof StageViewSchema>;
 

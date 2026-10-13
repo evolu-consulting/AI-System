@@ -13,6 +13,9 @@ export const HUB_INTERNAL_ERRORS = {
   ATTACHMENT_QUOTA_EXCEEDED: 409,
   ATTACHMENT_TOO_LARGE: 413,
   ATTACHMENT_TYPE_NOT_ALLOWED: 415,
+  // P-c1 (plan §3.3): `POST /internal/jobs/:id/autofix-result`.
+  AUTOFIX_NOT_EXPECTED: 409,
+  AUTOFIX_RESULT_EXISTS: 409,
 } as const satisfies Record<string, 400 | 401 | 404 | 409 | 413 | 415 | 422 | 500 | 503>;
 
 export type HubInternalErrorCode = keyof typeof HUB_INTERNAL_ERRORS;

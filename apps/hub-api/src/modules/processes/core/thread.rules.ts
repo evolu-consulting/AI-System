@@ -46,6 +46,8 @@ const REASON: Record<DecisionReason, { vi: string; en: string }> = {
     en: "source could not be resolved",
   },
   back_limit: { vi: "đã quay lại quá số vòng", en: "go-back limit reached" },
+  autofix_check_failed: { vi: "bản sửa không qua kiểm tra", en: "autofix failed its checks" },
+  sandbox_unavailable: { vi: "môi trường chạy cách ly không dùng được", en: "sandbox unavailable" },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);

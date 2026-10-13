@@ -16,6 +16,7 @@ import {
   TeamModeSchema,
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
+import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
 import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
 import {
   BranchSchema,
@@ -45,6 +46,7 @@ export {
   type ProcessRunView,
   ProcessRunViewSchema,
 } from "../chat/processes-entities";
+export * from "./autofix";
 export * from "./process-steps";
 export * from "./sources";
 
@@ -104,6 +106,15 @@ export const ProcessSourceChipListResponseSchema = z.strictObject({
   items: z.array(ProcessSourceChipSchema).max(200),
 });
 
+/** P-c1 · HUB-FR-126 · stage tự-sửa mã trong nguồn git (PC-R01): nguồn + lệnh cài/test + allowlist ghi. */
+export const StageAutofixSchema = z.strictObject({
+  source_key: SourceKeySchema,
+  install_cmd: AutofixCmdSchema.nullable().default(null),
+  test_cmd: AutofixCmdSchema,
+  write_allowlist: AutofixWriteAllowlistSchema.default([]),
+});
+export type StageAutofix = z.infer<typeof StageAutofixSchema>;
+
 export const ProcessStageDefSchema = z.strictObject({
   key: z.string().regex(STAGE_KEY_RE),
   name: NameSchema,
@@ -155,11 +166,15 @@ export const ProcessStageDefSchema = z.strictObject({
   token_budget: z.number().int().min(STAGE_TOKEN_BUDGET.min).max(STAGE_TOKEN_BUDGET.max).nullable(),
   sources: z.array(StageSourceSchema).max(STAGE_SOURCES_MAX).default([]),
   must_know: z.array(z.string().trim().min(1).max(MUST_KNOW_LEN)).max(MUST_KNOW_MAX).default([]),
+  /** P-c1 · vắng/null = stage thường (snapshot cũ đọc `?? null`). */
+  autofix: StageAutofixSchema.nullable().default(null),
 });
 type StageDefParsed = z.infer<typeof ProcessStageDefSchema>;
 type StageAfterParsed = StageDefParsed["after"];
-/** Kiểu stage def: `after.back_to_steps` OPTIONAL — snapshot def cũ (trước P-b2) và bản nháp FE không có; đọc dùng `?? []`. */
-export type ProcessStageDef = Omit<StageDefParsed, "after"> & {
+/** Kiểu stage def: `autofix` + `after.back_to_steps` OPTIONAL — snapshot def cũ (trước P-b2) và bản nháp FE không có; đọc dùng `?? []`. */
+export type ProcessStageDef = Omit<StageDefParsed, "after" | "autofix"> & {
+  /** P-c1 · vắng ở snapshot cũ (trước P-c); đọc dùng `?? null`. */
+  autofix?: StageAutofix | null;
   after:
     | (Omit<Extract<StageAfterParsed, { kind: "review" }>, "back_to_steps"> & {
         back_to_steps?: number[];
@@ -188,7 +203,7 @@ export const ProcessDefInputBaseSchema = z.strictObject({
 /** PB-R06 · stage.sources[].source_key phải ∈ def.sources — path `stages.<i>.sources.<j>.source_key` (R-C15/P-02). */
 export function processDefSourcePaths(d: {
   sources: readonly string[];
-  stages: readonly { sources?: readonly StageSource[] }[];
+  stages: readonly { sources?: readonly StageSource[]; autofix?: { source_key: string } | null }[];
 }): string[] {
   const declared = new Set(d.sources);
   const paths: string[] = [];
@@ -196,6 +211,8 @@ export function processDefSourcePaths(d: {
     (s.sources ?? []).forEach((src, j) => {
       if (!declared.has(src.source_key)) paths.push(`stages.${i}.sources.${j}.source_key`);
     });
+    if (s.autofix && !declared.has(s.autofix.source_key))
+      paths.push(`stages.${i}.autofix.source_key`);
   });
   return paths;
 }

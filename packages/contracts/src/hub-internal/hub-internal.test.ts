@@ -24,6 +24,8 @@ describe("HUB-FR-89 · hub-internal", () => {
       ATTACHMENT_QUOTA_EXCEEDED: 409,
       ATTACHMENT_TOO_LARGE: 413,
       ATTACHMENT_TYPE_NOT_ALLOWED: 415,
+      AUTOFIX_NOT_EXPECTED: 409,
+      AUTOFIX_RESULT_EXISTS: 409,
     });
     for (const code of Object.keys(HUB_INTERNAL_ERRORS)) {
       expect(ErrorResponseSchema.safeParse({ error: { code, message: "m" } }).success).toBe(true);

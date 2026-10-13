@@ -100,6 +100,51 @@ class Source(BaseModel):
     allowlist: Annotated[list[AllowlistItem], Field(max_length=20)]
 
 
+class Pin3(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["git_remote"]
+    url: Annotated[str, Field(max_length=2048)]
+    sha: Annotated[str, Field(pattern="^[0-9a-f]{40}$")]
+
+
+class Pin4(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["local_path"]
+    path: Annotated[str, Field(max_length=1024)]
+    snapshot_id: UUID
+
+
+class Pin5(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["library"]
+    document_id: UUID
+    version: UUID
+
+
+class Source1(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    key: Annotated[str, Field(pattern="^[a-z0-9-]{2,32}$")]
+    kind: Literal["git_remote", "local_path", "library"]
+    pin: Pin3 | Pin4 | Pin5
+    allowlist: Annotated[list[AllowlistItem], Field(max_length=0)]
+
+
+class InstallCmd(RootModel[str]):
+    root: Annotated[str, Field(max_length=1000, min_length=1)]
+
+
+class WriteAllowlistItem(RootModel[str]):
+    root: Annotated[str, Field(max_length=256, min_length=1)]
+
+
 class RunEvent1(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -202,6 +247,7 @@ class RunEvent4(BaseModel):
             "upstream",
             "refused",
             "attachment",
+            "container",
         ]
         | None
     )
@@ -470,6 +516,7 @@ class Item(BaseModel):
     kind: Literal["git_remote", "local_path", "library"]
     config: Config | Config1 | Config2
     allowlist_union: Annotated[list[AllowlistUnionItem], Field(max_length=40)]
+    caps: Literal["source", "autofix"] | None = None
 
 
 class SourceResolveJob(BaseModel):
@@ -483,6 +530,19 @@ class SourceResolveJob(BaseModel):
     process_run_id: UUID | None
     items: Annotated[list[Item], Field(max_length=20, min_length=1)]
     timeout_s: Annotated[int, Field(ge=10, le=300)]
+
+
+class Autofix(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    source: Source1
+    install_cmd: InstallCmd | None
+    test_cmd: Annotated[str, Field(max_length=1000, min_length=1)]
+    write_allowlist: Annotated[list[WriteAllowlistItem], Field(max_length=20)]
+    branch: Annotated[str, Field(pattern="^ai\\/[0-9a-f-]{36}\\/[a-z0-9-]{1,32}$")]
+    round: Annotated[int, Field(ge=1, le=100)]
+    base_patch: JobAttachment | None
 
 
 class JobPayload1(BaseModel):
@@ -518,6 +578,7 @@ class JobPayload1(BaseModel):
     stream: bool | None = None
     attachments: Annotated[list[JobAttachment] | None, Field(max_length=10)] = None
     sources: Annotated[list[Source] | None, Field(max_length=5)] = None
+    autofix: Autofix | None = None
 
 
 class JobPayload(RootModel[JobPayload1 | JobPayloadWorkflowAsync | SourceResolveJob]):

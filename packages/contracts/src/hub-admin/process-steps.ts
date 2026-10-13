@@ -13,6 +13,9 @@ export const PROCESS_DEF_RULES = [
   "STEP_ORDER",
   "STEP_TOO_WIDE",
   "BACK_TARGET_INVALID",
+  "AUTOFIX_EXECUTOR",
+  "AUTOFIX_REVIEW",
+  "AUTOFIX_MAX",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };
@@ -105,7 +108,9 @@ function realAndBackIssues(stages: readonly StepStageShape[], out: Bucket[]): vo
 }
 
 /** Vi phạm luật chéo stage (plan §1.2): i tăng; trong stage key → step → real_action → back; cắt ≤ 20. */
-export function processDefStageIssues(stages: readonly StepStageShape[]): ProcessDefIssue[] {
+export function processDefStageIssues(
+  stages: readonly (StepStageShape & Partial<AutofixStageShape>)[],
+): ProcessDefIssue[] {
   const out: Bucket[] = stages.map(() => ({ key: [], step: [], real: [], back: [] }));
   const seen = new Set<string>();
   stages.forEach((s, i) => {
@@ -113,7 +118,33 @@ export function processDefStageIssues(stages: readonly StepStageShape[]): Proces
     seen.add(s.key);
   });
   if (!stepIssues(stages, out)) realAndBackIssues(stages, out);
-  return out.flatMap((b) => [...b.key, ...b.step, ...b.real, ...b.back]).slice(0, ISSUES_MAX);
+  const base = out.flatMap((b) => [...b.key, ...b.step, ...b.real, ...b.back]);
+  // Chữ ký cũ (P-a) không có `executor`/`autofix` ⇒ coi như stage thường.
+  const auto = autofixStageIssues(
+    stages.map((s) => ({ ...s, executor: s.executor ?? { kind: "agent" } })),
+  );
+  return [...base, ...auto].slice(0, ISSUES_MAX);
+}
+
+/** P-c1 · hình tối thiểu cho luật stage tự-sửa. */
+export type AutofixStageShape = StepStageShape & {
+  executor: { kind: string };
+  autofix?: { source_key: string } | null;
+};
+
+/** PC-R02 · stage tự-sửa: executor agent, `after` review, tối đa 1 stage tự-sửa/def (từ stage thứ 2 ⇒ AUTOFIX_MAX). */
+export function autofixStageIssues(stages: readonly AutofixStageShape[]): ProcessDefIssue[] {
+  const out: ProcessDefIssue[] = [];
+  let seen = 0;
+  stages.forEach((s, i) => {
+    if (!s.autofix) return;
+    if (s.executor.kind !== "agent")
+      out.push({ path: `stages.${i}.executor`, rule: "AUTOFIX_EXECUTOR" });
+    if (s.after.kind !== "review") out.push({ path: `stages.${i}.after`, rule: "AUTOFIX_REVIEW" });
+    seen += 1;
+    if (seen > 1) out.push({ path: `stages.${i}.autofix`, rule: "AUTOFIX_MAX" });
+  });
+  return out;
 }
 
 /** Chữ ký cũ (P-a): chỉ đường dẫn. */

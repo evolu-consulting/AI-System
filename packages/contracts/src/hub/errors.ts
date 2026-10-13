@@ -30,6 +30,8 @@ export const JOB_FAIL_REASONS = [
   "refused",
   // H2c R19: tải file đính kèm thất bại (hết lượt thử/sha256 lệch/vượt kích thước).
   "attachment",
+  // P-c1 (ADR-0011): sandbox container — CLI vắng / dựng container lỗi / tự kiểm cgroup sai.
+  "container",
 ] as const;
 export const JobFailReasonSchema = z.enum(JOB_FAIL_REASONS);
 export type JobFailReason = z.infer<typeof JobFailReasonSchema>;

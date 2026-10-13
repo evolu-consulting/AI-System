@@ -1,6 +1,8 @@
 // HUB-FR-89 · payload `hub.jobs.payload` Hub ghi, Runtime đọc (plan H1 §2.2; H2a §2.2: `workflow.async`, `mcp`).
 import { z } from "zod";
+import { STAGE_KEY_RE } from "../chat/processes";
 import { ATTACH_MAX_BYTES, AttachMimeSchema } from "../common";
+import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "../hub-admin/autofix";
 import {
   GlobSchema,
   RESOLVE_ALLOWLIST_MAX,
@@ -60,6 +62,20 @@ export const JobSourceSchema = z.strictObject({
 });
 export type JobSource = z.infer<typeof JobSourceSchema>;
 
+/** P-c1 · HUB-FR-128 · phần tự-sửa của job: nhánh `ai/<run uuid>/<stage_key>`; nguồn KHÔNG allowlist (ghi qua `write_allowlist`). */
+export const AUTOFIX_ROUND_MAX = 100;
+export const AUTOFIX_BRANCH_RE = new RegExp(`^ai/[0-9a-f-]{36}/${STAGE_KEY_RE.source.slice(1)}`);
+export const JobAutofixSchema = z.strictObject({
+  source: JobSourceSchema.extend({ allowlist: z.array(GlobSchema).max(0) }),
+  install_cmd: AutofixCmdSchema.nullable(),
+  test_cmd: AutofixCmdSchema,
+  write_allowlist: AutofixWriteAllowlistSchema,
+  branch: z.string().regex(AUTOFIX_BRANCH_RE),
+  round: z.number().int().min(1).max(AUTOFIX_ROUND_MAX),
+  base_patch: JobAttachmentSchema.nullable(),
+});
+export type JobAutofix = z.infer<typeof JobAutofixSchema>;
+
 export const ProfileStepSchema = z.strictObject({
   provider_key: AgentKeySchema,
   model: ModelSchema,
@@ -118,6 +134,8 @@ export const AgentCliJobSchema = z.strictObject({
   attachments: z.array(JobAttachmentSchema).max(JOB_ATTACHMENTS_MAX).optional(),
   /** P-b · nguồn tham chiếu chỉ-đọc (PB-R10): mount `work/<job_id>/sources/<key>/`; có nguồn ⇒ Hub ép R/G/G. */
   sources: z.array(JobSourceSchema).max(STAGE_SOURCES_MAX).optional(),
+  /** P-c1 · job tự-sửa trong sandbox container; vắng = job thường (không `default` — pydantic sinh khớp). */
+  autofix: JobAutofixSchema.optional(),
 });
 export type AgentCliJob = z.infer<typeof AgentCliJobSchema>;
 
@@ -128,6 +146,8 @@ export const ResolveItemSchema = z.strictObject({
   kind: SourceKindSchema,
   config: SourceConfigSchema,
   allowlist_union: z.array(GlobSchema).max(RESOLVE_ALLOWLIST_MAX),
+  /** P-c1 · `autofix` ⇒ Runtime dựng thêm bản git sâu cho stage tự-sửa; vắng = `source`. */
+  caps: z.enum(["source", "autofix"]).optional(),
 });
 export type ResolveItem = z.infer<typeof ResolveItemSchema>;
 

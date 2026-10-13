@@ -107,6 +107,8 @@ export const DECISION_REASONS = [
   "interrupted",
   "source_unresolvable",
   "back_limit",
+  "autofix_check_failed",
+  "sandbox_unavailable",
 ] as const;
 export const DECISION_OPTIONS = ["add_attempt", "use_current", "cancel"] as const;
 export const NOTICE_KINDS = [
