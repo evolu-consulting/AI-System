@@ -134,6 +134,7 @@ Mockup P-c1 (chờ người dùng duyệt; chưa viết plan-frontend), trong `d
 | B6 | Diff so với commit **ghim**; rebase (E4) chuyển P-c2 cùng PR |
 | B7 | Repo của stage tự-sửa cố định trong def (`autofix.source_key`, nhánh = nhánh mặc định của nguồn); một repo/job. Chọn repo lúc chạy bằng `source_ref` (PB-R13) để sau — mỗi repo một bản chép quy trình |
 | B8 | Test xác nhận = `test_cmd` exit 0 trong container mới; không chạy test "trước khi sửa" (baseline) ở P-c1 — agent tự chạy qua `ws_exec` nếu cần |
+| B9 | KnowledgeHub (K1, CR-072/073) giữ nguyên ở stage tự-sửa: agent đã tick KH ⇒ job có `kh_query` cạnh 4 tool `ws_*` (gọi qua Hub `/mcp` từ Runtime, ngoài container — container vẫn không mạng; KH là nguồn đọc, không vào workspace); `## Tóm tắt` ghi worklog khi stage `done` (gate duyệt diff Đạt) như K1. Không thêm cấu hình KH riêng cho autofix; mockup không đổi (chọn KH ở Studio → Sửa agent → Tri thức; `KnowledgeNotice` của K1 hiện ở run view). Hỏi người dùng 2026-10-13 |
 ### Trong lúc làm
 - (chưa)
 
