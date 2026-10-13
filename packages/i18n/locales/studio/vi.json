@@ -134,6 +134,19 @@
     "banner": "Mất kết nối, thay đổi chưa được lưu"
   },
   "agents": {
+    "knowledge": {
+      "title": "KnowledgeHub",
+      "hint": "Chọn kết nối KnowledgeHub mà agent được hỏi khi chạy quy trình. Thứ tự tick = thứ tự ưu tiên (tối đa 5).",
+      "max": "Tối đa 5 kết nối",
+      "empty": "Chưa có kết nối KnowledgeHub — vào Cài đặt để thêm",
+      "settings": "Cài đặt",
+      "cliOnly": "Chỉ agent chạy bằng CLI mới dùng được tri thức",
+      "notReady": "Chưa dùng được tới khi kiểm tra đạt",
+      "save": "Lưu",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu kết nối của agent",
+      "order": "Thứ tự {n}"
+    },
     "title": "Agents",
     "subtitle": "Mỗi agent = runtime + model profile + system prompt + workflow được gắn làm tool. Orchestrator chỉ thấy agent mà user được cấp.",
     "create": "+ Tạo agent",

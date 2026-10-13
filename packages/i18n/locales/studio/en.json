@@ -134,6 +134,19 @@
     "banner": "Connection lost, changes not saved"
   },
   "agents": {
+    "knowledge": {
+      "title": "KnowledgeHub",
+      "hint": "Pick the KnowledgeHub connections the agent may query while running a process. Tick order = priority (at most 5).",
+      "max": "At most 5 connections",
+      "empty": "No KnowledgeHub connection yet — go to Settings to add one",
+      "settings": "Settings",
+      "cliOnly": "Only CLI agents can use knowledge",
+      "notReady": "Not usable until the test passes",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Agent connections saved",
+      "order": "Order {n}"
+    },
     "title": "Agents",
     "subtitle": "Each agent = runtime + model profile + system prompt + workflows attached as tools. The Orchestrator only sees agents the user is granted.",
     "create": "+ Create agent",

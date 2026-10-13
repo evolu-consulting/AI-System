@@ -73,3 +73,13 @@ export const createAgent = (body: Record<string, unknown>) =>
 
 export const updateAgent = (id: string, body: Record<string, unknown>) =>
   api<AgentWriteResponse>(`/studio/api/agents/${encodeURIComponent(id)}`, { method: "PUT", body });
+
+/** HUB-FR-132 · gắn kết nối KnowledgeHub (thứ tự = ưu tiên) — `version` agent hiện tại. */
+export const putAgentKnowledge = (
+  id: string,
+  body: { connection_ids: string[]; version: number },
+) =>
+  api<AgentWriteResponse>(`/studio/api/agents/${encodeURIComponent(id)}/knowledge`, {
+    method: "PUT",
+    body,
+  });

@@ -16,6 +16,7 @@ import { useAgentPeers } from "../../hooks/use-agent-peers";
 import { useEditorCatalogs } from "../../hooks/use-editor-catalogs";
 import type { AgentDraft } from "../../lib/draft/draft";
 import { AccessSection } from "../sections/AccessSection";
+import { AgentKnowledgeSection } from "../sections/AgentKnowledgeSection";
 import { DetailsSection } from "../sections/DetailsSection";
 import { PromptSection } from "../sections/PromptSection";
 import { RuntimeSection } from "../sections/RuntimeSection";
@@ -93,6 +94,9 @@ export function EditorForm({ initial, agent }: Props) {
       <StepCard n={5}>
         <AccessSection granted={self?.entitled_tenant_count ?? 0} />
       </StepCard>
+      {agent ? (
+        <AgentKnowledgeSection agent={agent} version={ed.base.version} onSynced={ed.syncVersion} />
+      ) : null}
       <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-3 border-t border-border bg-card px-6 py-3">
         {ed.dirty ? <Badge variant="secondary">{t("editor.dirty")}</Badge> : null}
         <Button type="button" variant="outline" onClick={() => void navigate({ to: "/agents" })}>

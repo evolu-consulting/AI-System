@@ -92,12 +92,15 @@ export function useAgentEditor(opts: Opts) {
     }
   };
 
+  /** Section khác (KnowledgeHub) đã ghi agent → giữ nháp, chỉ nhận version mới để lần Lưu sau không 409. */
+  const syncVersion = (a: Agent) => st.setBase((b) => ({ ...b, version: a.version }));
   const dirty = createdId === null && JSON.stringify(st.draft) !== JSON.stringify(st.base.draft);
   const hadBash = st.base.hadBash;
   return {
     ...st,
     mode,
     save,
+    syncVersion,
     saving: mutation.isPending,
     createdId,
     hadBash,
