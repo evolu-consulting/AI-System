@@ -1,8 +1,9 @@
 // HUB-FR-44 · HUB-FR-75 · H2c-R01, R13 · `POST /attachments` (thân thô + `X-Filename`), `GET /attachments/:id`,
 // `GET /attachments/:id/content` (plan §2.4). JWT ở gốc (`PROTECTED_PREFIXES`, 401 trước 404). Route mỏng: đọc header/
 // tham số → service. `:id` không phải uuid ⇒ 404 giống hệt id không có.
+import { UuidSchema } from "@ai/contracts";
 import { FILENAME_HEADER } from "@ai/contracts/chat";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import type { AuthVars } from "../../lib/auth.middleware";
 import { blobResponse } from "../../lib/blob-body";
 import { parseIdParam } from "../../lib/http";
@@ -13,6 +14,13 @@ export function contentLengthOf(raw: string | undefined): number | null {
   if (raw === undefined || !/^\d{1,16}$/.test(raw.trim())) return null;
   return Number(raw.trim());
 }
+
+/** PC-R14 (B5b) · `?tenant_id` (uuid) — chỉ platform_admin được tôn trọng (`autofixReadTenant`); sai ⇒ bỏ qua. Gương
+ * `tenantIdQuery` của `/process-runs` (không import route module khác). */
+export const tenantIdQ = (c: Context<AuthVars>): string | undefined => {
+  const t = c.req.query("tenant_id");
+  return t && UuidSchema.safeParse(t).success ? t.toLowerCase() : undefined;
+};
 
 export function attachmentRoutes(svc: AttachmentService): Hono<AuthVars> {
   const r = new Hono<AuthVars>();
@@ -31,11 +39,13 @@ export function attachmentRoutes(svc: AttachmentService): Hono<AuthVars> {
   });
 
   // uuid chữ hoa ≡ chữ thường (RV-7) — id chuẩn hoá trước khi tới service.
-  r.get("/:id", async (c) => c.json(await svc.get(c.var.user, parseIdParam(c).toLowerCase())));
+  r.get("/:id", async (c) =>
+    c.json(await svc.get(c.var.user, parseIdParam(c).toLowerCase(), tenantIdQ(c))),
+  );
 
   r.get("/:id/content", async (c) => {
     const id = parseIdParam(c).toLowerCase();
-    const { body, headers } = await svc.content(c.var.user, id, c.var.log);
+    const { body, headers } = await svc.content(c.var.user, id, c.var.log, tenantIdQ(c));
     // Thân `Bun.file` ⇒ Bun tự trả 206 theo `Range` ⇒ có `Range`: thân stream, 200 toàn bộ (R13 "Range bỏ qua"; mất
     // `Content-Length` — Bun gửi chunked). Không `Range`: `blobResponse` giữ `Content-Length` (spec-decisions B3-1).
     if (c.req.header("range") === undefined) return blobResponse(c, body, 200, headers);

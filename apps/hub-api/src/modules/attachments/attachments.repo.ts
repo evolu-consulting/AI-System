@@ -72,30 +72,64 @@ export async function findReadableAttachment(
   tx: Tx,
   o: { tenantId: string; userId: string; id: string },
 ): Promise<ReadableAttachment | null> {
-  const [r] = await tx.execute<{
-    id: string;
-    filename: string;
-    mime: string;
-    size: string | number;
-    created_at: Date | string;
-    purged_at: Date | string | null;
-    storage_key: string;
-  }>(sql`select a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key
+  const [r] =
+    await tx.execute<ReadableRow>(sql`select a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at,
+      a.storage_key
     from hub.attachments a left join hub.conversations c on c.id = a.conversation_id
     where a.id = ${o.id} and a.tenant_id = ${o.tenantId}
       and ((a.room_id is null and a.user_id = ${o.userId} and c.deleted_at is null)
         or (a.room_id is not null and hub.is_room_member(a.room_id)
           and (a.user_id = ${o.userId} or a.room_message_id is null or not hub.room_msg_withheld(a.room_message_id))))`);
-  if (!r) return null;
-  return {
-    id: r.id,
-    filename: r.filename,
-    mime: r.mime,
-    size: Number(r.size),
-    createdAt: new Date(r.created_at),
-    purgedAt: r.purged_at === null ? null : new Date(r.purged_at),
-    storageKey: r.storage_key,
-  };
+  return r ? toReadable(r) : null;
+}
+
+type ReadableRow = {
+  id: string;
+  filename: string;
+  mime: string;
+  size: string | number;
+  created_at: Date | string;
+  purged_at: Date | string | null;
+  storage_key: string;
+};
+
+const toReadable = (r: ReadableRow): ReadableAttachment => ({
+  id: r.id,
+  filename: r.filename,
+  mime: r.mime,
+  size: Number(r.size),
+  createdAt: new Date(r.created_at),
+  purgedAt: r.purged_at === null ? null : new Date(r.purged_at),
+  storageKey: r.storage_key,
+});
+
+/**
+ * PC-R14 · plan §6.6 (B5b) · file diff/log của một `hub.autofix_results` trong tenant `tenantId` + run sở hữu. Scope
+ * `system` (RLS attachments scope user chỉ thấy file của chủ) ⇒ lọc `tenant_id` tường minh cả hai bảng; CHỈ gọi rồi kiểm
+ * quyền xem run trước khi trả file. Index một phần `autofix_results_{diff,log}_att_idx` (BitmapOr). `purged_at` giữ nguyên.
+ */
+export async function findAutofixAttachment(
+  tx: Tx,
+  o: { tenantId: string; id: string },
+): Promise<{ runId: string; file: ReadableAttachment } | null> {
+  const [r] = await tx.execute<
+    ReadableRow & { run_id: string }
+  >(sql`select ar.process_run_id as run_id,
+      a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key
+    from hub.autofix_results ar
+    join hub.attachments a on a.id = ${o.id} and a.tenant_id = ar.tenant_id
+    where ar.tenant_id = ${o.tenantId}
+      and (ar.diff_attachment_id = ${o.id} or ar.test_log_attachment_id = ${o.id})
+    limit 1`);
+  return r ? { runId: r.run_id, file: toReadable(r) } : null;
+}
+
+/** HUB-BR-25 · U5 · quyền xem run của người xem (definer `hub.process_run_viewer`, cùng nguồn với view — scope `user`). */
+export async function processRunViewer(tx: Tx, runId: string): Promise<"full" | "task" | null> {
+  const [r] = await tx.execute<{ access: "full" | "task" | null }>(
+    sql`select hub.process_run_viewer(${runId}::uuid) as access`,
+  );
+  return r?.access ?? null;
 }
 
 /**

@@ -42,6 +42,7 @@ import {
   type ReadableAttachment,
   supersedeJobOutput,
 } from "./attachments.repo";
+import { readableAutofixFile } from "./autofix-files";
 import { countedBody } from "./counted-body";
 import { FileInspector } from "./sniff.rules";
 import {
@@ -332,20 +333,21 @@ export class AttachmentService {
     }
   }
 
-  /** X2b2-R05/R06 · file của chủ (chưa gắn phòng) hoặc file phòng mà người xem đang là thành viên; khác ⇒ 404. */
-  async #readable(u: AuthUser, id: string): Promise<ReadableAttachment> {
-    const row = await withHubScope(
+  /** X2b2-R05/R06 · file của chủ / phòng đang là thành viên; PC-R14 (B5b) · diff/log tự sửa theo quyền xem run; khác ⇒ 404. */
+  async #readable(u: AuthUser, id: string, tenantIdQ?: string): Promise<ReadableAttachment> {
+    const own = await withHubScope(
       this.d.db,
       { kind: "user", tenantId: u.tenantId, userId: u.userId },
       (tx) => findReadableAttachment(tx, { tenantId: u.tenantId, userId: u.userId, id }),
     );
+    const row = own ?? (await readableAutofixFile(this.d.db, u, id, tenantIdQ));
     if (!row) throw appError("NOT_FOUND");
     return row;
   }
 
   /** `GET /attachments/:id` (R13, X2b2-R05): không đọc được (khác chủ / không thành viên / đã xoá) ⇒ 404. */
-  async get(u: AuthUser, id: string): Promise<AttachmentDetail> {
-    const r = await this.#readable(u, id);
+  async get(u: AuthUser, id: string, tenantIdQ?: string): Promise<AttachmentDetail> {
+    const r = await this.#readable(u, id, tenantIdQ);
     return {
       id: r.id,
       filename: r.filename,
@@ -357,8 +359,8 @@ export class AttachmentService {
   }
 
   /** `GET /attachments/:id/content` (R13): `available=false` / file mất ⇒ 404 (+ log `attachment-content-missing`). */
-  async content(u: AuthUser, id: string, log: Logger): Promise<ContentResult> {
-    const r = await this.#readable(u, id);
+  async content(u: AuthUser, id: string, log: Logger, tenantIdQ?: string): Promise<ContentResult> {
+    const r = await this.#readable(u, id, tenantIdQ);
     if (r.purgedAt !== null) throw appError("NOT_FOUND");
     let file: Blob | null;
     try {
