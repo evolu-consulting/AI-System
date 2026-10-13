@@ -1,0 +1,14 @@
+[
+  {
+    "id": "M3",
+    "title": "Thêm kh-noproj (project rỗng) → hàng hiện '— không ghi'; hint dưới ô Khoá (mobile)",
+    "ok": true,
+    "ms": 3128
+  },
+  {
+    "id": "M5",
+    "title": "Mobile 390: nút Kiểm tra/Sửa/Xoá trong viewport, không tràn ngang trang, badge hub config không chồng chữ",
+    "ok": true,
+    "ms": 822
+  }
+]

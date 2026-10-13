@@ -1,0 +1,203 @@
+{
+  "calls": [
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Quy ước đặt tên module và RLS",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Quy ước đặt tên module và RLS",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Quy ước đặt tên module và RLS",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8636b9d7-0787-4c69-af0a-cd109b5771ef-2556709e-b443-480a-8c5c-21956d4611db-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "sdlc-delivery/scope",
+          "topic": "sdlc-delivery/scope",
+          "ts": "2026-10-13T09:00:43.526Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8636b9d7-0787-4c69-af0a-cd109b5771ef-982c6374-b912-4ee9-9bc8-ad5717dbc1fe-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "sdlc-delivery/setup-plan",
+          "topic": "sdlc-delivery/setup-plan",
+          "ts": "2026-10-13T09:00:43.545Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Quy ước đặt tên module và RLS",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Quy ước đặt tên module và RLS",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8636b9d7-0787-4c69-af0a-cd109b5771ef-93138439-c843-4799-9794-a1f8e6291b22-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "sdlc-delivery/spec",
+          "topic": "sdlc-delivery/spec",
+          "ts": "2026-10-13T09:00:53.530Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8636b9d7-0787-4c69-af0a-cd109b5771ef-fee561b5-983c-4fdf-ad57-191a6d875d2a-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "sdlc-delivery/design",
+          "topic": "sdlc-delivery/design",
+          "ts": "2026-10-13T09:00:53.551Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    }
+  ],
+  "vectors": [
+    {
+      "id": "kw-8636b9d7-0787-4c69-af0a-cd109b5771ef-2556709e-b443-480a-8c5c-21956d4611db-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "sdlc-delivery/scope",
+        "topic": "sdlc-delivery/scope",
+        "ts": "2026-10-13T09:00:43.526Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    },
+    {
+      "id": "kw-8636b9d7-0787-4c69-af0a-cd109b5771ef-982c6374-b912-4ee9-9bc8-ad5717dbc1fe-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "sdlc-delivery/setup-plan",
+        "topic": "sdlc-delivery/setup-plan",
+        "ts": "2026-10-13T09:00:43.545Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    },
+    {
+      "id": "kw-8636b9d7-0787-4c69-af0a-cd109b5771ef-93138439-c843-4799-9794-a1f8e6291b22-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "sdlc-delivery/spec",
+        "topic": "sdlc-delivery/spec",
+        "ts": "2026-10-13T09:00:53.530Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    },
+    {
+      "id": "kw-8636b9d7-0787-4c69-af0a-cd109b5771ef-fee561b5-983c-4fdf-ad57-191a6d875d2a-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "sdlc-delivery/design",
+        "topic": "sdlc-delivery/design",
+        "ts": "2026-10-13T09:00:53.551Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    }
+  ]
+}

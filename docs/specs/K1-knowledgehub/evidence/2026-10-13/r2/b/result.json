@@ -1,0 +1,44 @@
+[
+  {
+    "id": "A01",
+    "title": "Sửa agent intake-analyst: section KnowledgeHub hiện kết nối kh-main (địa chỉ, badge Đạt), chưa tick",
+    "ok": true,
+    "ms": 978
+  },
+  {
+    "id": "A02",
+    "title": "Tick kh-main → Lưu → toast 'Đã lưu kết nối của agent'; tải lại vẫn tick",
+    "ok": true,
+    "ms": 1759
+  },
+  {
+    "id": "A03",
+    "title": "Bỏ tick → Lưu → tải lại không tick; Agent dùng ở Cài đặt về 0; rồi tick lại và lưu",
+    "ok": true,
+    "ms": 1349
+  },
+  {
+    "id": "A04",
+    "title": "Tick tiếp docs-architect và backend-lead (các agent chạy stage sdlc-delivery)",
+    "ok": true,
+    "ms": 2590
+  },
+  {
+    "id": "A05",
+    "title": "Agent không phải CLI (Chatbot Dify): section báo 'Chỉ agent chạy bằng CLI…'",
+    "ok": true,
+    "ms": 2595
+  },
+  {
+    "id": "A06",
+    "title": "Cài đặt: kh-main 'Agent dùng' = 3; Xoá kết nối đang dùng bị chặn (alert 'agent đang dùng')",
+    "ok": true,
+    "ms": 2012
+  },
+  {
+    "id": "H01",
+    "title": "[H4b-1] Xoá secret kh-main đang được kết nối dùng → chặn, danh sách nơi dùng (knowledge_hub · kh-main)",
+    "ok": false,
+    "err": "locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('alertdialog', { name: 'Xoá kh-main?' }).getByRole('button', { name: 'Xoá' })\u001b[22m"
+  }
+]

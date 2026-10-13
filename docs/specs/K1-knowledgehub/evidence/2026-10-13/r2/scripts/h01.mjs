@@ -1,0 +1,22 @@
+import { launch, studioLogin, mkSnap, mkStep, expect } from "./lib.mjs";
+const OUT = process.argv[2];
+const { browser, page } = await launch(OUT);
+const snap = mkSnap(OUT);
+const { step, save } = mkStep(OUT, () => ({ A: page }), snap);
+await studioLogin(page);
+await step("H01", "[H4b-1] Xoá secret kh-main đang dùng → chặn kèm 'KnowledgeHub · kh-main' (UI chặn ngay, không qua confirm)", async () => {
+  await page.goto("http://localhost:3200/studio/secrets");
+  await page.getByRole("tablist", { name: "Loại secret" }).getByRole("tab", { name: "Khoá KnowledgeHub" }).click();
+  const row = page.getByRole("table", { name: "Danh sách secret" }).getByRole("row").filter({ hasText: "kh-main" });
+  await expect(row).toContainText("kh-main");
+  await snap(page, "20-A-kh-in-use-badge");
+  await row.getByRole("button", { name: "Xoá" }).click();
+  const c = page.getByRole("alertdialog", { name: "Xoá kh-main?" });
+  if (await c.isVisible().catch(() => false)) await c.getByRole("button", { name: "Xoá" }).click();
+  const dlg = page.getByRole("alertdialog", { name: "Không xoá được kh-main" });
+  await expect(dlg).toContainText("KnowledgeHub · kh-main");
+  await snap(page, "21-A-kh-delete-blocked");
+  await dlg.getByRole("button", { name: "Đóng" }).click();
+  await expect(row).toBeVisible();
+});
+save(); await browser.close();

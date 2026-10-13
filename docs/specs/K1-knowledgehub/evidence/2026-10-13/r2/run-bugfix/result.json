@@ -1,0 +1,50 @@
+[
+  {
+    "id": "50-01",
+    "title": "Chuẩn bị: reset mock KH, hit chứa các mục của stage đầu; thomas.tran (evolu) bắt đầu !bug-fix ở chat-web",
+    "ok": true,
+    "ms": 5908
+  },
+  {
+    "id": "50-02",
+    "title": "Mock KH nhận /vector/query đúng project, có khoá hợp lệ (header), không lộ khoá ở nơi khác",
+    "ok": true,
+    "ms": 16
+  },
+  {
+    "id": "50-03",
+    "title": "chat-web trang Run: KnowledgeNotice hiện 'Tri thức: 1/5 lần hỏi · Tóm tắt…' (plan-frontend màn 5)",
+    "ok": true,
+    "ms": 541
+  },
+  {
+    "id": "50-04",
+    "title": "admin-web (julian.bui): trang run → Xem kết quả → KnowledgeNotice trong dialog",
+    "ok": true,
+    "ms": 4225
+  },
+  {
+    "id": "50-05",
+    "title": "vio.ngo (Beta testers) duyệt gate Đạt → stage xong → /vector/add id kw-<run>-<stage_run>-v<ver>, subject <quy trình>/<stage>",
+    "ok": true,
+    "ms": 9279
+  },
+  {
+    "id": "50-06",
+    "title": "Chạy tiếp tới hết: B duyệt các gate còn lại (Đạt) tới khi run Hoàn tất",
+    "ok": true,
+    "ms": 24403
+  },
+  {
+    "id": "50-07",
+    "title": "Admin: dialog kết quả stage đầu sau khi ghi Tóm tắt: 'Tóm tắt: đã ghi (ghi vào evolu · kh-main)'",
+    "ok": true,
+    "ms": 3175
+  },
+  {
+    "id": "50-08",
+    "title": "Mỗi stage xong có đúng một vector kw-<run>-<stage_run>-v1 (ghi 1 lần), subject <quy trình>/<stage>",
+    "ok": true,
+    "ms": 12017
+  }
+]

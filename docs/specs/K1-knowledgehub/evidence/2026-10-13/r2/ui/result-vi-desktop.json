@@ -1,0 +1,32 @@
+[
+  {
+    "id": "desktop-vi-S1",
+    "title": "Cài đặt: bảng kết nối",
+    "ok": true,
+    "ms": 841
+  },
+  {
+    "id": "desktop-vi-S2",
+    "title": "Sheet Thêm kết nối (hết tải, không animation)",
+    "ok": true,
+    "ms": 1305
+  },
+  {
+    "id": "desktop-vi-S3",
+    "title": "Dialog kết quả kiểm: Đạt",
+    "ok": true,
+    "ms": 2324
+  },
+  {
+    "id": "desktop-vi-S4",
+    "title": "Dialog kết quả kiểm: Đạt kèm cảnh báo (embedder tiếng Anh, project rỗng)",
+    "ok": true,
+    "ms": 2017
+  },
+  {
+    "id": "desktop-vi-S5",
+    "title": "Agent: section KnowledgeHub",
+    "ok": true,
+    "ms": 1970
+  }
+]

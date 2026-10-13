@@ -1,0 +1,282 @@
+{
+  "calls": [
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Mọi query lọc tenant_id",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Mọi query lọc tenant_id",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Mọi query lọc tenant_id",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-549d2d0e-065e-4438-bff6-16ca59e02b2a-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "bug-fix/bug-intake",
+          "topic": "bug-fix/bug-intake",
+          "ts": "2026-10-13T09:01:43.562Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-c8d7fd00-8ab8-46ef-b27b-a1b0f3593d51-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "bug-fix/code-reading",
+          "topic": "bug-fix/code-reading",
+          "ts": "2026-10-13T09:01:43.583Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Mọi query lọc tenant_id",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-b330449c-93ee-4e63-abf7-ef40a7452702-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "bug-fix/bug-fix",
+          "topic": "bug-fix/bug-fix",
+          "ts": "2026-10-13T09:01:53.573Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-7065a62e-e7d6-4a7c-bf9a-fe75b045e61f-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "bug-fix/code-review",
+          "topic": "bug-fix/code-review",
+          "ts": "2026-10-13T09:01:53.604Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Mọi query lọc tenant_id",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/query",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "text": "Mọi query lọc tenant_id",
+        "project": "evolu",
+        "k": 8,
+        "max_chars": 1500
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-7da0bbb1-c323-48ab-afd1-52310834077e-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "bug-fix/testing",
+          "topic": "bug-fix/testing",
+          "ts": "2026-10-13T09:02:03.581Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/vector/add",
+      "sent_key": true,
+      "key_ok": true,
+      "body": {
+        "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-33391e9e-def7-4a75-afc7-e8ee6f779b29-v1",
+        "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành.",
+        "scope": "log",
+        "metadata": {
+          "scope": "log",
+          "project": "evolu",
+          "subject": "bug-fix/release",
+          "topic": "bug-fix/release",
+          "ts": "2026-10-13T09:02:03.606Z",
+          "source": "ai-hub"
+        }
+      },
+      "status": 200
+    }
+  ],
+  "vectors": [
+    {
+      "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-549d2d0e-065e-4438-bff6-16ca59e02b2a-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "bug-fix/bug-intake",
+        "topic": "bug-fix/bug-intake",
+        "ts": "2026-10-13T09:01:43.562Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    },
+    {
+      "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-c8d7fd00-8ab8-46ef-b27b-a1b0f3593d51-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "bug-fix/code-reading",
+        "topic": "bug-fix/code-reading",
+        "ts": "2026-10-13T09:01:43.583Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    },
+    {
+      "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-b330449c-93ee-4e63-abf7-ef40a7452702-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "bug-fix/bug-fix",
+        "topic": "bug-fix/bug-fix",
+        "ts": "2026-10-13T09:01:53.573Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    },
+    {
+      "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-7065a62e-e7d6-4a7c-bf9a-fe75b045e61f-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "bug-fix/code-review",
+        "topic": "bug-fix/code-review",
+        "ts": "2026-10-13T09:01:53.604Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    },
+    {
+      "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-7da0bbb1-c323-48ab-afd1-52310834077e-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "bug-fix/testing",
+        "topic": "bug-fix/testing",
+        "ts": "2026-10-13T09:02:03.581Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    },
+    {
+      "id": "kw-8ca191b3-b51e-4ebd-8ed9-04e7f27770ef-33391e9e-def7-4a75-afc7-e8ee6f779b29-v1",
+      "writes": 1,
+      "metadata": {
+        "scope": "log",
+        "project": "evolu",
+        "subject": "bug-fix/release",
+        "topic": "bug-fix/release",
+        "ts": "2026-10-13T09:02:03.606Z",
+        "source": "ai-hub"
+      },
+      "text": "Tóm tắt của stage: đã dùng tri thức KH (mock) để hoàn thành."
+    }
+  ]
+}
