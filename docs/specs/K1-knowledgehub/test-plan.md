@@ -71,7 +71,7 @@ FR MUST trong phạm vi (HUB-FR-131, 132, 133, 134): **4/4 có test**. HUB-FR-13
 | A | `seed.int.test.ts` | A120–A123 (4) |
 | E | `e2e/studio/k1-knowledgehub.studio.ts` | E01–E12 (12) |
 | E | `e2e/K1/admin/notice.k1.ts` | E20–E21 (2) |
-| E | `e2e/K1/chat/notice.k1.ts` | E30–E31 (2) |
+| E | `e2e/K1/chat/notice.k1.ts` | E30–E32 (3; E32 = run tuyến tính, UAT M1 2026-10-13) |
 **Tổng 127** = R 53 · A 58 · E 16. Bỏ theo CR-073: `tenant.int.test.ts` (route `/admin/kh*`), `e2e/K1/admin/knowledge.k1.ts` (Dialog "Tri thức").
 
 ## 5. Rủi ro chập chờn

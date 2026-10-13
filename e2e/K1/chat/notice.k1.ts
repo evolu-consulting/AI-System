@@ -4,6 +4,7 @@
 // · {connection})"; vắng ⇒ không render. Run seed P-b2 (a) bằng SQL (stack thử nghiệm riêng, không phải dữ liệu evolu); `GET
 // /process-runs/:id` của Hub thật được vá thêm `knowledge` bằng `page.route`.
 import { expect, type Page, test } from "@playwright/test";
+import { withSql } from "../../P-a/_pa-support";
 import { mkRoom, seedPb2Run, settle, users } from "../../P-b2/_pb2-support";
 
 test.afterEach(() => settle());
@@ -77,6 +78,38 @@ test("HUB-FR-132 · E31 · knowledge vắng ⇒ không có KnowledgeNotice; know
     await expect(
       u.A.getByRole("status").filter({ hasText: "Không truy cập được KnowledgeHub" }),
     ).toHaveCount(0);
+  } finally {
+    await u.close();
+  }
+});
+
+// UAT 2026-10-13 M1: run TUYẾN TÍNH (mỗi stage một bước, chưa quay lại) vẫn phải hiện KnowledgeNotice.
+test("HUB-FR-131 · HUB-FR-132 · K1-AC06 · E32 · run tuyến tính (không song song, không quay lại) có knowledge.queries=1 ⇒ 'Tri thức: 1/5 lần hỏi'", async ({
+  browser,
+}) => {
+  const room = await mkRoom("EK1-32");
+  const r = await seedPb2Run(room.id, "a");
+  // biến seed "a" thành tuyến tính: mỗi stage một step riêng (0,1,2,3), step hiện tại = 1
+  await withSql(async (sql) => {
+    const [row] = await sql`select snapshot from hub.process_runs where id = ${r.runId}`;
+    const snap = row?.snapshot;
+    // biome-ignore lint/suspicious/noExplicitAny: snapshot JSON
+    snap.stages.forEach((st: any, i: number) => {
+      st.step = i;
+    });
+    await sql`update hub.process_runs set snapshot = ${sql.json(snap)} where id = ${r.runId}`;
+  });
+  const u = await users(browser, "A");
+  try {
+    await patchView(u.A, r.runId, {
+      write_to: { connection: "kh-main", project: "proj-a" },
+      queries: 1,
+      query_limit: 5,
+      warning: null,
+      summary: "written",
+    });
+    await u.A.goto(`/runs/${r.runId}`);
+    await expect(u.A.getByText("Tri thức: 1/5 lần hỏi")).toBeVisible();
   } finally {
     await u.close();
   }
