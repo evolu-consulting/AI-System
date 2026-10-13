@@ -1,6 +1,7 @@
 // HUB-FR-119 · HUB-FR-126 · HUB-FR-127 · HUB-FR-128 · HUB-FR-115 · HUB-BR-31 · HUB-BR-33 · P-c1 · plan §4 Hub
 // (`processes/runs/autofix.rules.ts`) · spec §2 PC-R04/R07/R10/R11/R14 · test-plan §3 H01–H10. Module vắng ⇒ đỏ ở `fn()`.
 import { describe, expect, it } from "bun:test";
+import { type Loose, loadProcRules } from "../../P-a/_support/modules";
 import {
   ATT,
   AUTOFIX,
@@ -17,6 +18,7 @@ import {
 const m = await loadAutofix();
 const chat = await loadChat();
 const hub = await loadHub();
+const loadCoreTask = (): Promise<Loose> => loadProcRules("core/task.rules.ts");
 const KEY_RE: RegExp = chat.STAGE_KEY_RE;
 
 describe("H01–H04 · nhánh, công cụ, allowlist, phần job", () => {
@@ -97,11 +99,33 @@ describe("H05–H10 · kết quả job, quyết định, ghi chú làm lại, kh
     expect(f({ status: "ok" }, null)).toEqual({ kind: "continue" });
     expect(f({ status: "no_changes" }, null)).toEqual({ kind: "continue" });
   });
-  it("HUB-FR-115 · PC-R10 · H06 · decisionOptionsFor(autofix_*) = [add_attempt, cancel] — KHÔNG use_current", () => {
-    const f = fn(m, "decisionOptionsFor");
+  it("HUB-FR-115 · PC-R10 · H06 · autofixDecisionOptions: autofix_* ⇒ [add_attempt, cancel] (KHÔNG use_current); lý do khác ⇒ đủ DECISION_OPTIONS", () => {
+    const f = fn(m, "autofixDecisionOptions");
     expect(f("autofix_check_failed")).toEqual(["add_attempt", "cancel"]);
     expect(f("sandbox_unavailable")).toEqual(["add_attempt", "cancel"]);
-    expect(f("job_timeout")).toContain("cancel");
+    expect(f("job_timeout")).toEqual([...chat.DECISION_OPTIONS]);
+  });
+  it("HUB-FR-115 · PC-R10 · H06b · core decisionOptionsFor(hasOutput, autofix_*) = [add_attempt, cancel] kể cả hasOutput=true; lý do khác giữ nguyên", async () => {
+    const core = await loadCoreTask();
+    const f = fn(core, "decisionOptionsFor");
+    expect(f(true, "autofix_check_failed")).toEqual(["add_attempt", "cancel"]);
+    expect(f(false, "autofix_check_failed")).toEqual(["add_attempt", "cancel"]);
+    expect(f(true, "job_timeout")).toEqual([...chat.DECISION_OPTIONS]);
+    expect(f(false, "job_timeout")).toEqual(["add_attempt", "cancel"]);
+  });
+  it("HUB-FR-128 · PC-R11 · H10 · basePatchOf: latest null ⇒ null; check_failed có apply_patch ⇒ null; còn lại ⇒ latestOk", () => {
+    const f = fn(m, "basePatchOf");
+    const lat = (status: string, checks: string[]) => ({
+      status,
+      failures: checks.map((check) => ({ check })),
+      diffAttachment: null,
+    });
+    expect(f(null, ATT)).toBeNull();
+    expect(f(lat("check_failed", ["apply_patch"]), ATT)).toBeNull();
+    expect(f(lat("check_failed", ["tests", "apply_patch"]), ATT)).toBeNull();
+    expect(f(lat("check_failed", ["tests"]), ATT)).toEqual(ATT);
+    expect(f(lat("ok", []), ATT)).toEqual(ATT);
+    expect(f(lat("no_changes", []), null)).toBeNull();
   });
   it("WRK-FR-29 · PC-R10 · H07 · autofixRetryNote: mỗi lỗi một dòng `check path:line rule`; secrets KHÔNG mang detail", () => {
     const note = fn(

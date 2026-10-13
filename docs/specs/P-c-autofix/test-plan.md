@@ -32,7 +32,8 @@ Chế độ **WRITE + LOCK** (T3) · 2026-10-13. "Đúng" = spec §2 (PC-R01…R
 | PC-R07 công cụ ép `[]`/R-G-G; hook chặn tool gốc ở workspace/git | H02 | F02 | P20–P23 | — |
 | PC-R08 kiểm diff: đường dẫn → kích thước → bí mật → test | C10–C12 | E05–E06, E09, F11 | P06–P12, P04 | E05–E06 |
 | PC-R09 `no_changes` vẫn qua gate | C10 | F05, E09 | — | E07 |
-| PC-R10 thiếu báo cáo/check_failed ⇒ decision chỉ add_attempt/cancel; ghi chú làm lại không bí mật | C14, H05–H08 | F06–F07 | — | E05, E08 |
+| PC-R16 ghi diff/log không bị chặn hạn mức tenant, vẫn cộng `quotaUsed` | — | E10 | — | — |
+| PC-R10 thiếu báo cáo/check_failed ⇒ decision chỉ add_attempt/cancel; ghi chú làm lại không bí mật | C14, H05–H08, H06b | F06–F07 | — | E05, E08 |
 | PC-R11 Chưa đạt ⇒ vòng k+1 cùng nhánh, `base_patch` cộng dồn; `apply_patch` ⇒ base null | H04 | F09–F10 | — | E04 |
 | PC-R12 audit `autofix_results` append-only, log che | — | D02, D06, E08–E09 | P12, P16 | — |
 | PC-R13 trần 200k | — | F12 | — | — |
@@ -51,10 +52,10 @@ FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓,
 |---|---|---|
 | R | `rules/contracts-pc.test.ts` | C01–C16 (16) |
 | R | `rules/autofix-issues.test.ts` | I01–I06 (6) |
-| R | `rules/autofix-rules.test.ts` | H01–H09 (9) |
+| R | `rules/autofix-rules.test.ts` | H01–H10 (11; H06b, H10 thêm ở T3b) |
 | A | `db.int.test.ts` | D01–D08 (8) |
 | A | `defs.int.test.ts` | V01–V09 (9) |
-| A | `report.int.test.ts` | E01–E09 (9) |
+| A | `report.int.test.ts` | E01–E10 (10; E10 = PC-R16, T3b) |
 | A | `flow.int.test.ts` | F01–F12 (12) |
 | A | `tenant.int.test.ts` | T01–T04 (4) |
 | A | `kh.int.test.ts` | K01–K02 (2) |
@@ -144,3 +145,6 @@ FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓,
 
 ## 9. Khoá
 Khoá lần 1: 2026-10-13 (T3) — `tests/acceptance/P-c/**`, `apps/agent-runtime/tests/acceptance/pc/**`, `e2e/P-c/**`. `bun run test:lock:write` + `bun run test:lock:verify` OK; `bun run trace --check` OK.
+
+Khoá lần 2: 2026-10-14 (T3b, mở khoá có chủ đích theo readiness lần 2). Đổi H06 ⇒ `autofixDecisionOptions` (autofix_* ⇒ `[add_attempt, cancel]`; khác ⇒ `[...DECISION_OPTIONS]` theo yêu cầu điều phối; plan §4 ghi `[]` — lệch, xem "Cần bổ sung"); thêm H06b (core `decisionOptionsFor(hasOutput, autofix_*)`, cả `hasOutput=true`), H10 (`basePatchOf`), E10 (PC-R16: chèn 52×20 MiB `upload` text/plain cho acme ⇒ vượt 1 GiB; report ⇒ 201; tổng `size` sau = trước + diff + log; dọn hàng chèn).
+Đỏ đúng lý do T3b: H06/H10 `qc: <hàm> chưa có (plan §4)`; H06b đỏ ở `expect` (core chưa trả sớm); E10 đỏ ở `needPc` (0031 vắng; SQL chèn đã chạy thử trong tx rollback trên DB qc: tổng 1,090,519,040 B).

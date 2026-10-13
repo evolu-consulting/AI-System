@@ -14,12 +14,14 @@ import {
   mkAf,
   mkPlain,
   needPc,
+  PA,
   postReport,
   reportFor,
   settlePc,
   startAf,
   startPc,
   startPlain,
+  T,
 } from "./_support/pc";
 
 let c: CtxPc;
@@ -206,5 +208,38 @@ describe("E08–E09 · lưu trữ + audit [PC-R12]", () => {
       null,
       null,
     ]);
+  }, 30_000);
+  it("HUB-FR-130 · PC-R16 · E10 · tenant đã vượt hạn mức file (1 GiB) vẫn ghi được diff/log tự-sửa (201); file vẫn cộng vào dung lượng đã dùng", async () => {
+    needPc(c);
+    const used = async (): Promise<number> =>
+      Number(
+        (
+          await c.sql<
+            { u: string }[]
+          >`select coalesce(sum(size),0)::bigint as u from hub.attachments
+            where tenant_id = ${T.acme} and purged_at is null`
+        )[0]?.u,
+      );
+    // 52 × 20 MiB = 1,040 MiB > hạn mức 1 GiB của fixture (start3: tenantMaxBytes 1_073_741_824).
+    await c.sql`insert into hub.attachments (id, tenant_id, user_id, origin, job_id, filename, safe_name, mime, size,
+      sha256, storage_key)
+      select g.id, ${T.acme}, ${PA.A.id}, 'upload', null, 'qc-filler.txt', 'qc-filler.txt', 'text/plain',
+        20971520, ${"c".repeat(64)}, ${T.acme} || '/' || g.id
+      from (select gen_random_uuid() as id from generate_series(1, 52)) g`;
+    try {
+      const before = await used();
+      expect(before).toBeGreaterThan(1_073_741_824);
+      const a = await startAf(c, "pc-rep");
+      const r = await postReport(c, a.job.id, a.token, reportFor(a.job));
+      expect(r.status).toBe(201);
+      const [row] = await afRows(c.sql, a.runId);
+      const diff = await attRow(c.sql, row?.diff_attachment_id);
+      const log = await attRow(c.sql, row?.test_log_attachment_id);
+      expect(diff?.origin).toBe("output");
+      expect(log?.origin).toBe("output");
+      expect(await used()).toBe(before + Number(diff?.size) + Number(log?.size));
+    } finally {
+      await c.sql`delete from hub.attachments where tenant_id = ${T.acme} and filename = 'qc-filler.txt'`;
+    }
   }, 30_000);
 });
