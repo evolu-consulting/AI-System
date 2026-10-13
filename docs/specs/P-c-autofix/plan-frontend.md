@@ -126,7 +126,7 @@ Khoá `data-testid` chỉ cho vùng không có role: `autofix-diff-file-<index>`
 ## 6. A11y / hiệu năng
 `region`/`list` có aria-label; badge không chỉ dùng màu (có chữ); diff dùng `<details><summary>`, +/− có ký tự đầu dòng (không chỉ màu), tương phản theo token (b-ok/b-err đã ≥ 4.5:1 theo canvas); `Switch` có `aria-label`; lỗi `role="alert"` + `aria-invalid`. Hiệu năng: `DiffView` chỉ render file mở (nội dung `<details>` đóng không mount), 2.000 dòng trần; parser chạy một lần/`text`; `AutofixResult`/`DiffView` thuộc chunk route run/gate sẵn có, không import eager vào shell; bundle không thêm thư viện (`check:bundle` giữ).
 
-## 7. Cần backend-lead (không đổi contract; xác nhận)
+## 7. Cần backend-lead — ĐÃ CHỐT 2026-10-13 (spec §9): #1 có log khi `test ≠ null`; #2 thêm `pin_sha` (git_remote ⇒ sha đầy đủ, khác ⇒ null; FE cắt 7); #3 `my_tasks` không có `autofix`, FE dùng run view; #4 đúng như plan §3.3
 | # | Nội dung | Mặc định FE nếu không đổi |
 |---|---|---|
 | 1 | `test_log_file` có được tạo cả khi `check_failed` có chạy test (để Cần người quyết hiện đuôi log + tải log)? plan §6.2 chỉ nói "diff/log" | Giả định có khi `test ≠ null`; vắng ⇒ chỉ hiện exit + thời gian |
