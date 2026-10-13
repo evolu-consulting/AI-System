@@ -96,6 +96,8 @@ Không có route tenant (`/admin/kh*`), không cấu hình theo công ty (CR-073
 
 **3.5 Audit**: entity `kh_connection · kh_query · kh_worklog` (+ `agent`); action thêm `check · degrade · write_fail`. Không khoá. Studio ghi qua `withConfigWrite`; check/hạ cấp/ghi không bump. Bảng: plan §4.
 
+**3.6 Chốt khoảng trống qc G1–G12** (test-plan §8): [plan §11](plan.md) — seam `AppDeps.kh {allowedOrigins, timeoutMs}`, `ProcessHandles.khWriteOnce()`, câu `INVALID_ARGS`/`KH_PROJECT`, dừng sau `kh_auth_disabled`, audit `codes`, `warning` = lỗi gần nhất, `hits` đếm hit bị cắt, bản chép evolu.
+
 ## 4. Dữ liệu (backend-lead)
 Migration `migrations-hub/0029_k1_kh.sql` (sau 0028, idempotent, chỉ THÊM, chưa áp ⇒ viết lại tự do); Drizzle `schema/hub-kh.ts`; RLS mẫu `v_t` (0028) `TO hub_rw`. Cột/CHECK/index: plan §5.
 | Bảng | Vai trò | Khoá · FK (xoá) | RLS |
@@ -139,18 +141,18 @@ Mặc định `CONVENTIONS.md` §6 (không chặn mốc). Mỗi lời gọi KH �
 Env: `HUB_KH_ALLOWED_ORIGINS` (cách dấu phẩy; vắng ⇒ không lưu được kết nối; dev/test vắng ⇒ `http://localhost:4030,http://127.0.0.1:4030`) · `HUB_KH_TIMEOUT_MS` (1000..30000, 5000). Mock: khoá `KH_MOCK_API_KEY` (mặc định `mock-kh-key`); không vào docker-compose.
 
 ## 8. Tiêu chí nghiệm thu (qc)
-Bản nháp theo BA; qc hoàn thiện ở test-plan.
+Theo CR-073; chi tiết + mã ca: test-plan §3 (nguồn chuẩn).
 | AC | Given / When / Then | Test |
 |---|---|---|
-| K1-AC01 | KH hợp lệ ⇒ "Kiểm tra kết nối" OK; `kind=local` / http ⇒ lỗi nêu nguyên nhân; `include_people_lanes=true` ⇒ vẫn OK kèm cảnh báo `kh_people_lanes_on` | R `kh-check-rules`, `kh-rules` · A `check` · E studio (R01–R06, R30–R43 · A30–A47 · E06–E07) |
-| K1-AC02 | (CR-073) `kh-query` dùng khoá của kết nối; project khoá không thấy ⇒ KH từ chối; chỉ KH đã tick; nhiều KH ⇒ đúng KH; không có cách ly theo công ty (rủi ro chấp nhận) | R `kh-check-rules`, `kh-summary-rules` · A `query`, `tenant` (A74–A75, A51, A56, A60 · R61, R64) |
-| K1-AC03 | Token chỉ trong bộ nhớ; 401 ⇒ làm mới và thử lại đúng 1 lần; credentials không có trong job/prompt/log/audit | R `kh-rules` · A `query`, `noleak` (R14–R16 · A77–A79, A110–A111) |
-| K1-AC04 | `kh_query` 5 lần OK, lần 6 lỗi tool; ≤ 4000 ký tự/lần | R `kh-summary-rules`, `contracts-k1` · A `query` (R65–R66, R75, R78 · A73–A75, A84) |
-| K1-AC05 | Stage có gate: Đạt ⇒ ghi worklog đúng subject + khoá idempotent; trượt ⇒ không ghi; Project ghi trống ⇒ không ghi | R `kh-summary-rules` · A `worklog` (R50–R53, R63 · A93–A97) |
-| K1-AC06 | KH sập / 404 / 423 / 503 ⇒ run tiếp tục, cảnh báo + audit | R `kh-rules` · A `query`, `worklog` · E chat (R16–R17 · A80–A83, A98–A101 · E30) |
-| K1-AC07 | KH đầu tiên (thứ tự tick) của agent stage có Project ghi Tóm tắt ⇒ `## Tóm tắt` bắt buộc; không có ⇒ không ghi | R `kh-summary-rules` · A `worklog` · E admin (R55–R62 · A90–A92 · E20, E22) |
-| K1-AC08 | Seed `sdlc-delivery`, `bug-fix` hợp lệ (≤ 10 stage); 12 file test khoá của `sdlc` không đổi | A `seed` (A120–A122) |
-| K1-AC09 (chuyển từ H4b-1) | (a) Xoá `kh_api_key` đang được KH trỏ tới ⇒ 409 `SECRET_IN_USE` có `used_by[type=knowledge_hub]`; (b) job giả dùng `useSecret` ⇒ giá trị không xuất hiện trong `work/<job_id>/` (AC-H4b1-07, Q12) | A `studio` A23 (a) · A `noleak` A112 (b) |
+| K1-AC01 | "Kiểm tra" KH hợp lệ ⇒ ok (`kh_version`, `embedder`, `projects`); 7 lỗi (URL, mạng, timeout, auth tắt, khoá không đọc được, khoá bị từ chối/SSO, version) + 5 cảnh báo (plan §3.1); `/version` không khoá phải 401 | R `kh-check-rules`, `kh-rules` · A `check` · E studio |
+| K1-AC02 | `kh-query` dùng khoá của đúng kết nối; chỉ KH agent đã tick ∩ dùng được; ≥ 2 KH ⇒ nhãn `<kết nối>/<project>`, đúng KH nhận lời gọi; ngoài nhãn ⇒ `KH_PROJECT`; KH từ chối project ⇒ hạ cấp; không cách ly theo công ty (chấp nhận) | R `kh-agent-rules` · A `query` |
+| K1-AC03 | Khoá KH chỉ ở header `X-KH-Key`; không ở response/log/audit/bảng `hub.*`/payload job/prompt/`/mcp`/thân lời gọi | R `kh-rules` · A `noleak`, `check` |
+| K1-AC04 | 5 lần OK (`calls_left` 4…0), lần 6 `KH_LIMIT` không gọi KH; song song vẫn đúng 5; ≤ 4000 ký tự/lần; tham số sai / `KH_PROJECT` / `disabled` không đếm | R `kh-query-rules`, `contracts-k1` · A `query` |
+| K1-AC05 | auto / gate Đạt ⇒ `POST /vector/add` đúng subject + `id` cố định (gửi lại = ghi đè); gate chờ/trượt ⇒ không; không đích ⇒ không | R `kh-summary-rules` · A `worklog` |
+| K1-AC06 | KH 500/429/403/timeout/body sai/origin chết ⇒ `KH_UNAVAILABLE`, run tiếp, `warning` + audit `degrade`; ghi lỗi ⇒ thử lại ≤ 5, 4xx ⇒ `failed`, audit `write_fail`; UI cảnh báo | R `kh-rules` · A `query`, `worklog` · E admin, chat |
+| K1-AC07 | KH đầu tiên (thứ tự tick, dùng được) có Project ghi Tóm tắt ⇒ `## Tóm tắt` bắt buộc + prompt nhắc; không có / stage nhóm ⇒ không | R `kh-agent-rules`, `kh-summary-rules` · A `worklog` · E chat |
+| K1-AC08 | Seed `sdlc-delivery` (9), `bug-fix` (6) hợp lệ; `sdlc` không đổi; seed lần 2 không nhân đôi; chép vào tenant `evolu` (không acme/beta) | A `seed` |
+| K1-AC09 (từ H4b-1) | (a) xoá `kh_api_key` đang được kết nối trỏ ⇒ 409 `SECRET_IN_USE` `used_by[type=knowledge_hub]`; (b) `work/<job_id>/` không chứa khoá (AC-H4b1-07, Q12) | A `studio` (a) · A `noleak` (b) |
 
 Lệnh xong: `done:k1` = test-plan §6.
 ## 9. Quyết định
@@ -183,6 +185,7 @@ Lệnh xong: `done:k1` = test-plan §6.
 
 Bỏ (CR-073): Q2, Q5, Q7, Q16, Q19, Q20, Q21, Q23 (ns, people lanes, cấu hình/công tắc theo tenant, `/v1/me`). Bỏ trước đó: Q12–Q14, Q17, Q18.
 - 2026-10-13 · Readiness lần 1 (`R#` trong plan cũ); CR-071, CR-072 Gate lại; **CR-073**: §3–4, §6–7, §9, plan viết lại siêu tối giản (Q26–Q34); Gate lại.
+- 2026-10-13 · backend-lead chốt khoảng trống qc G1–G12 theo test khoá `457bbf34` ⇒ plan §11 (không đổi contract §3.1–3.2; G6: dừng sau `kh_auth_disabled`; G12: evolu `review_group: beta-testers`, bật); dọn §8 theo CR-073 (G11).
 ### Trong lúc làm
 Xem [`spec-decisions.md`](spec-decisions.md).
 

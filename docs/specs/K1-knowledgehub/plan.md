@@ -121,10 +121,11 @@ Ngoài tx, scope system: đọc kết nối (PK, nhớ `version`) → bước t�
 |---|---|---|
 | 1 | `khUrlPolicy(base_url)` | `kh_url_not_allowed {reason}` — dừng |
 | 2 | `GET /health` | ≠ 200 / network `kh_unreachable {status?}` · timeout `kh_timeout` — dừng; `embedderEnglishOnly(model)` ⇒ cảnh báo `kh_embedder_english {model}` |
-| 3 | `GET /version` không khoá | 401 ⇒ ổn · 2xx ⇒ `kh_auth_disabled` (localDev ⇒ cảnh báo `kh_auth_disabled_dev`) · khác `kh_unreachable {status}` — dừng |
+| 3 | `GET /version` không khoá | 401 ⇒ ổn · 2xx ⇒ `kh_auth_disabled` — **dừng** (localDev ⇒ cảnh báo `kh_auth_disabled_dev`, đi tiếp) · khác `kh_unreachable {status}` — dừng |
 | 4 | `useSecret` | lỗi ⇒ `kh_key_invalid` — dừng |
 | 5 | `GET /version` có khoá | 401/403 `kh_key_rejected` — dừng · `!khVersionOk` `kh_version_too_old {found}` |
 | 6 | `GET /projects` có khoá | non-2xx/body sai `kh_unreachable {status}` · `[]` cảnh báo `kh_projects_empty` · > 50 cảnh báo `kh_projects_many {count}` · `summary_project ∉` cảnh báo `kh_summary_project_missing {project_id}` |
+Dừng sớm ⇒ `evaluateKhCheck` chỉ dùng bước đã chạy: `kh_version: null`, `projects: []`, `embedder` = `model` nếu bước 2 đã đọc (khác `null`). `kh_version_too_old` (bước 5) không dừng — bước 6 vẫn chạy.
 **7 lỗi** (`kh_url_not_allowed, kh_unreachable, kh_timeout, kh_auth_disabled, kh_key_invalid, kh_key_rejected, kh_version_too_old`) + **5 cảnh báo** (`kh_auth_disabled_dev, kh_embedder_english, kh_projects_empty, kh_projects_many, kh_summary_project_missing`).
 
 ### 3.2 Client (`kh.client.ts`)
@@ -169,8 +170,7 @@ Không đụng `hub.agents`, `hub.secrets`. Audit CHECK: DROP + ADD giữ mọi 
 Query → index: list → `kh_connections_name_uq`; xoá kết nối → `agent_kh_conn_idx`; tạo job, start → PK `agent_kh` (tiền tố) + PK `kh_connections`; token MCP → PK `kh_jobs`; `kh-query` → PK `kh_connections`/`stage_runs`; đếm → PK `kh_stage_usage`; writer → `kh_writes_due_idx`; `used_by` → `kh_connections_secret_idx`.
 
 ## 6. Seed mẫu (CR-070, T5g) — giữ nguyên `git show dbf2a017:docs/specs/K1-knowledgehub/plan.md` §6
-Seed vào tenant `evolu`; UAT K1 chạy trên evolu (người dùng 2026-10-13).
-`seed.schema.ts`: `after: "review" | "auto" | { review: { back_to_steps: int[] ≤ 10 } }`, stage `step?: int 0..9`; `sdlc-delivery` (9 stage) + `bug-fix` (6 stage) theo bảng bản đó; không sửa `sdlc`. **Người dùng 2026-10-13: seed hai mẫu này vào tenant `evolu`** (cách P-a chép mẫu vào tenant), UAT K1 chạy trên evolu — không dùng beta/acme.
+`seed.schema.ts`: `after: "review" | "auto" | { review: { back_to_steps: int[] ≤ 10 } }`, stage `step?: int 0..9`; `sdlc-delivery` (9 stage) + `bug-fix` (6 stage) theo bảng bản đó; không sửa `sdlc`. **Người dùng 2026-10-13: seed hai mẫu này vào tenant `evolu`** (cách P-a chép mẫu vào tenant), UAT K1 chạy trên evolu — không dùng beta/acme. Group duyệt/bật/entitlement: §11 G12.
 
 ## 7. Mock KH (`tools/mocks/src/kh/`)
 `createKhMock(opts?)` Hono, bộ nhớ **mỗi instance** (int test dựng 2 instance; dev/e2e một mock, kết nối thứ hai dùng `http://127.0.0.1:4030`). Gate `X-KH-Key` | `Bearer` = `KH_MOCK_API_KEY` (trừ `/health`, 401 `{detail}`). Route: `/health {status, model}`, `/version {version:"v6.4"}`, `/projects`, `/vector/query` (hit theo `project`, `max_chars`), `/vector/add` (upsert theo `id`). Điều khiển `PUT /__mock/kh {scenario, auth?, version?, model?, projects?}`, `PUT /__mock/kh/projects/:id {hits}`, `GET /__mock/kh/calls` (path, header có khoá hay không, body — không giá trị khoá), `POST /__mock/kh/reset`. `scenario`: `ok · key_rejected · server_error · server_error_once · rate_limited · timeout · bad_body`; `auth:false` = tắt xác thực.
@@ -197,3 +197,18 @@ Seed vào tenant `evolu`; UAT K1 chạy trên evolu (người dùng 2026-10-13).
 
 ## 10. Thứ tự task BE
 T4 → T5a → T5b → T5c → T5d → T5e → T5f; T5g song song sau T4 → T7. FE cần T4. qc viết lại test (§8) trước T5a.
+
+## 11. Chốt khoảng trống qc (test-plan §8, test khoá `457bbf34`)
+| # | Chốt (khớp test khoá) | Task |
+|---|---|---|
+| G1 | `AppDeps.kh?: { allowedOrigins: string[]; timeoutMs: number }`; vắng ⇒ `server.ts` đọc env `HUB_KH_ALLOWED_ORIGINS`/`HUB_KH_TIMEOUT_MS` (spec §7). Một nguồn cho `khUrlPolicy` (lưu + mỗi lời gọi), `KhClient` và `GET C {allowed_origins, timeout_ms}`. `env.dev` của `khUrlPolicy` = `appEnv !== "production"` | T5a, T5c |
+| G2 | `ProcessHandles.khWriteOnce(): Promise<number>` = một lô bộ gửi (§3.5), trả số hàng đã xử lý (done/failed/skipped/hẹn lại); `processLoops:false` ⇒ không chạy nhịp 10 s, chỉ qua seam | T5f |
+| G3 | `INVALID_ARGS` dùng nguyên câu H2a `mcp.rules.ts` "Invalid arguments for this tool." (không câu riêng) | T5e |
+| G4 | `KH_PROJECT` = `"Pass project as one of: " + labels.join(", ") + "."` (thứ tự `khProjectOptions`); 1 nhãn ⇒ "Pass project as one of: proj-c." | T5e |
+| G5 | `kh_version_too_old.params.found` = chuỗi gốc của KH (vd "v6.3"); không phải chuỗi ⇒ `String(raw)` | T5b |
+| G6 | `kh_auth_disabled` (lỗi) ⇒ `khCheckShouldContinue` = false (không gửi khoá tới KH tắt xác thực); `kh_auth_disabled_dev` (cảnh báo) ⇒ true | T5b |
+| G7 | Dừng sớm ⇒ `kh_version: null`, `projects: []`, `embedder` theo bước 2 (§3.1) | T5b |
+| G8 | Audit `check.summary = {status, codes}`; `codes` = `items.map(i => i.code)` (lỗi + cảnh báo, giữ thứ tự items, không `level`/`params`) | T5c |
+| G9 | `StageView.knowledge.warning` = `kh_stage_usage.last_warning` của (attempt, round) hiện tại = lỗi gần nhất; lời gọi thành công **không** xoá (upsert đếm chỉ đụng `queries`) | T5e, T5f |
+| G10 | `khPackHits.hits` = số hit có ≥ 1 ký tự trong `text`, **kể cả hit bị cắt** (R61: 2); hết budget trước khi thêm được ký tự nào ⇒ không đếm hit đó | T5b |
+| G12 | `seed/processes.yaml` `tenant_processes` thêm `{tenant_key: evolu, template: sdlc-delivery \| bug-fix, review_group: beta-testers, enabled: true}` (`beta-testers` có ở mọi tenant — trigger Admin 0006); `entitlements`/`team_entitlements` evolu cho agent/team hai mẫu dùng (intake-analyst, docs-architect, backend-lead, reviewer, qc, qc-uat, team dev-team). Tenant evolu vắng ⇒ `seed-process-tenant-unknown` (cảnh báo sẵn có, không lỗi); chép qua `copyToTenants` sẵn có (`source_template_id`, không chép lại khi đã có) | T5g |
