@@ -26,3 +26,7 @@ await reader.useSecret({ id, kind: "kh_api_key", tenantId: run.tenantId }, async
 ## `used_by` (chặn xoá)
 
 `usedByMany(tx, ids)` → `Map<secretId, SecretUsedBy[]>` sắp `(type, key)`. Thêm loại tham chiếu mới = thêm một nhánh vào `USED_BY_BRANCHES` (trả `sid, type, id, key`) + giá trị `type` trong contract `SECRET_USED_BY_TYPES`. FK `providers.secret_id` RESTRICT là chốt cuối.
+
+## Phụ thuộc
+
+`lib/db` (`withConfigWrite`, NOTIFY config), `modules/audit`, `@ai/contracts/hub-admin` (schema, `SECRET_USED_BY_TYPES`), `HUB_SECRETS_KEY` qua deps. Không import module nghiệp vụ khác; bên dùng giá trị chỉ qua `HubSecretReader`.

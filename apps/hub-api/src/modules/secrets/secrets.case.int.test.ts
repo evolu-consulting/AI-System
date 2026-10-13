@@ -10,6 +10,7 @@ import {
   startH4b1,
   studio,
   T,
+  tenantApi,
   val,
 } from "../../../../../tests/acceptance/H4b1/_h4b1";
 import { connectDb, type Db } from "../../lib/db";
@@ -45,5 +46,30 @@ describe("HUB-FR-68 · RV1 #1 · UUID HOA ở biên", () => {
     });
     expect(r.status).toBe(200);
     expect(await reader.useSecret(ref, async (v) => v)).toBe(val("rv1-b"));
+  });
+});
+
+describe("HUB-FR-68 · RV2 #5 · route /admin/source-credentials, platform_admin, tenant_id HOA", () => {
+  it("POST → GET → rotate với tenant_id HOA ⇒ đúng tenant, useSecret đọc được", async () => {
+    const reader = new HubSecretReader({ db, key: HUB_KEY, log: { warn: () => {} } });
+    const up = T.acme.toUpperCase();
+    const c = await tenantApi(x, "padmin", "POST", "", {
+      name: "rv2-upper",
+      value: val("rv2-a"),
+      tenant_id: up,
+    });
+    expect(c.status).toBe(201);
+    const id = idOf(c);
+    const ref = { id, kind: "source_credential" as const, tenantId: T.acme };
+    expect(await reader.useSecret(ref, async (v) => v)).toBe(val("rv2-a"));
+    const g = await tenantApi(x, "padmin", "GET", `/${id}?tenant_id=${up}`);
+    expect(g.status).toBe(200);
+    expect(g.json?.id).toBe(id);
+    const r = await tenantApi(x, "padmin", "PUT", `/${id}?tenant_id=${up}`, {
+      version: 1,
+      value: val("rv2-b"),
+    });
+    expect(r.status).toBe(200);
+    expect(await reader.useSecret(ref, async (v) => v)).toBe(val("rv2-b"));
   });
 });
