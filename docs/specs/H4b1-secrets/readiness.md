@@ -38,3 +38,7 @@ Không có câu hỏi mới; mặc định đã chấp nhận (Luật 2b) và đ
 | 5 | Ghi đè xác nhận hai bước như H4a | plan-frontend D8 |
 | 6 | Option `Phạm vi` = `tenant.name` | plan-frontend §5 |
 | 7-11 | Spec §5 "Tenant (tab nguồn, KnowledgeHub)"; §2 AAD trỏ Q2; test-plan dòng 3; Q7 K1 chỉ khoá tenant; D9 `Phạm vi` disabled sau lưu | spec, test-plan, plan-frontend |
+
+## Lần 3 — 2026-10-13 · NOT READY (0 Chặn, 4 Cao, 3 Thấp) · không câu hỏi mới
+- Mặc định đã áp (điều phối): D4 `form.reset()` chỉ `onSuccess`/đóng Sheet, mutation `gcTime: 0` + `mutation.reset()` + unit test MutationCache không còn `value` (#2, #3); bỏ `bun test tests/acceptance/H4b1` khỏi Lệnh xong T5a (#4); Xoá 204 → đóng ConfirmDialog + toast + invalidate (#5); [Ghi đè] thành công áp D9 (#6).
+- qc: E07 bấm "Đóng" trong `alertdialog` rồi mới kiểm dòng (#1); E09 `toContainText("Acme Corp")` (#7).
