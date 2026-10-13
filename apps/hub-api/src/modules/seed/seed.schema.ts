@@ -2,6 +2,7 @@
 // strictObject: trường lạ (vd `secret`) bị từ chối — yaml không được chứa secret/app-key (H1-R16).
 
 import { USERNAME_RE } from "@ai/contracts";
+import { PROCESS_STEP_MAX, ProcessStepSchema } from "@ai/contracts/chat";
 import { AgentKeySchema, ProfileStepSchema, WorkflowKeySchema } from "@ai/contracts/hub";
 import { z } from "zod";
 
@@ -140,10 +141,25 @@ export const SeedTeamEntitlementSchema = z.strictObject({
   tenant_key: TenantKeySchema,
 });
 
+/**
+ * K1 T5g (CR-070, plan §6): `after` dạng chuỗi (cũ) hoặc `{ review: { back_to_steps } }` — gate người + bước được quay lại
+ * khi Chưa đạt (luật `BACK_TARGET_INVALID` kiểm ở `buildProcessPlan`).
+ */
+export const SeedStageAfterSchema = z.union([
+  z.enum(["review", "auto"]),
+  z.strictObject({
+    review: z.strictObject({
+      back_to_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX),
+    }),
+  }),
+]);
+
 /** Giai đoạn mẫu: executor theo key (đổi sang id lúc seed); Group kiểm của mẫu luôn null (tenant tự gán). */
 export const SeedStageSchema = z.strictObject({
   key: z.string().regex(/^[a-z0-9-]{1,32}$/),
   name: SeedTextSchema,
+  /** P-b2 · bước 0-based (0..9); vắng ở mọi stage ⇒ bước = chỉ số stage. */
+  step: ProcessStepSchema.optional(),
   executor: z.union([
     z.strictObject({ agent: AgentKeySchema }),
     z.strictObject({ team: SeedKeySchema }),
@@ -154,7 +170,7 @@ export const SeedStageSchema = z.strictObject({
     template: z.string().min(1).max(20_000),
     required_sections: z.array(SeedTextSchema).min(1).max(20),
   }),
-  after: z.enum(["review", "auto"]),
+  after: SeedStageAfterSchema,
   real_action: z.boolean().default(false),
   timeout_s: z.number().int().min(60).max(3600).default(600),
 });

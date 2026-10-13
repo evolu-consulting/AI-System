@@ -18,3 +18,6 @@ Nạp cấu hình Hub từ `apps/hub-api/seed/*.yaml` (nguồn cấu hình duy n
   `{workflow_key}` (thừa khoá → lỗi); `workflows.yaml` `agent_workflows` (thêm, không xoá) + `workflow_flags.side_effect`
   (chỉ bật). Workflow vắng trong `admin.workflows` → bỏ dòng + `warn`; agent `dify-*` sai `app_type` hoặc
   `difyAgentInput` = null → `SeedValidationError`, rollback, CLI exit 1.
+- P-a D18 / K1 T5g (`seed.processes.ts`): stage mẫu có `step?` (0..9) và `after: review | auto | { review: { back_to_steps } }`;
+  luật chéo stage (`processDefStageIssues`: step, real_action, `BACK_TARGET_INVALID`) kiểm trước DB. Mẫu `sdlc-delivery`
+  (9) + `bug-fix` (6) chép vào tenant `evolu` (tenant vắng ⇒ `warn`, chạy lại `hub:seed` sau khi `tools/hub-dev` dựng evolu).

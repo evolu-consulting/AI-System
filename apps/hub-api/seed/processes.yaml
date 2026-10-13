@@ -98,6 +98,15 @@ entitlements:
   - { agent: ba-domain-expert, tenant_key: acme }
   - { agent: ba-ux-writer, tenant_key: acme }
   - { agent: ba-lead, tenant_key: acme }
+  # K1 T5g (CR-070, plan §11 G12): tenant `evolu` (UAT K1) — agent của `sdlc-delivery` + `bug-fix`; `frontend-lead` là
+  # thành viên `dev-team` (thành viên cần entitlement để chạy). evolu do tools/hub-dev dựng; vắng ⇒ cảnh báo, không lỗi.
+  - { agent: intake-analyst, tenant_key: evolu }
+  - { agent: docs-architect, tenant_key: evolu }
+  - { agent: backend-lead, tenant_key: evolu }
+  - { agent: frontend-lead, tenant_key: evolu }
+  - { agent: reviewer, tenant_key: evolu }
+  - { agent: qc, tenant_key: evolu }
+  - { agent: qc-uat, tenant_key: evolu }
 
 agent_teams:
   # Spike S1: nhóm BA 4 vai, chế độ mặc định tuần tự. Không thuộc mẫu `sdlc` (ví dụ/spike).
@@ -137,6 +146,7 @@ team_entitlements:
   - { team: plan-team, tenant_key: acme }
   - { team: dev-team, tenant_key: acme }
   - { team: test-team, tenant_key: acme }
+  - { team: dev-team, tenant_key: evolu }
 
 process_templates:
   - key: sdlc
@@ -240,7 +250,158 @@ process_templates:
           required_sections: [Bút toán]
         after: auto
         real_action: true
+  # K1 T5g (CR-070, plan §6): phỏng cấu trúc quy trình AISDLC (thứ tự stage, gate, quay lại khi trượt) — câu chữ tự viết.
+  # Mỗi stage: `required_sections` 2–4 mục + `## Bàn giao` (tuỳ chọn) trong template; `#fake:` phát cả mục Bàn giao.
+  # `after: { review: { back_to_steps: [n] } }` = gate người; Chưa đạt ⇒ được quay lại bước n (bước = chỉ số stage).
+  - key: sdlc-delivery
+    name: Giao tính năng (AISDLC)
+    description: Chốt phạm vi, lập kế hoạch, spec, thiết kế, hiện thực, review mã, kiểm thử, UAT rồi phát hành.
+    input_hint: Mô tả tính năng cần giao
+    stages:
+      - key: scope
+        name: Chốt phạm vi
+        executor: { agent: intake-analyst }
+        instruction: "Làm rõ mục tiêu, thứ nằm trong và ngoài phạm vi, điều kiện để người duyệt ký chốt. #fake:sections=Mục tiêu|Trong phạm vi|Ngoài phạm vi|Điều kiện ký chốt|Bàn giao"
+        output:
+          filename: scope.md
+          template: "## Mục tiêu\n\n## Trong phạm vi\n\n## Ngoài phạm vi\n\n## Điều kiện ký chốt\n\n## Bàn giao\n"
+          required_sections: [Mục tiêu, Trong phạm vi, Ngoài phạm vi, Điều kiện ký chốt]
+        after: review
+      - key: setup-plan
+        name: Chuẩn bị và kế hoạch
+        executor: { agent: docs-architect }
+        instruction: "Chia phạm vi đã chốt thành các mốc, giao việc theo vai và nêu rủi ro chính. #fake:sections=Mốc|Phân công|Rủi ro|Bàn giao"
+        output:
+          filename: setup-plan.md
+          template: "## Mốc\n\n## Phân công\n\n## Rủi ro\n\n## Bàn giao\n"
+          required_sections: [Mốc, Phân công, Rủi ro]
+        after: auto
+      - key: spec
+        name: Spec
+        executor: { agent: docs-architect }
+        instruction: "Viết yêu cầu chức năng, luật nghiệp vụ và tiêu chí chấp nhận đo được. #fake:sections=Yêu cầu|Luật nghiệp vụ|Tiêu chí chấp nhận|Bàn giao"
+        output:
+          filename: spec.md
+          template: "## Yêu cầu\n\n## Luật nghiệp vụ\n\n## Tiêu chí chấp nhận\n\n## Bàn giao\n"
+          required_sections: [Yêu cầu, Luật nghiệp vụ, Tiêu chí chấp nhận]
+        after: review
+      - key: design
+        name: Thiết kế
+        executor: { agent: backend-lead }
+        instruction: "Thiết kế thành phần, contract API và dữ liệu cho spec đã duyệt. #fake:sections=Thành phần|Contract|Dữ liệu|Bàn giao"
+        output:
+          filename: design.md
+          template: "## Thành phần\n\n## Contract\n\n## Dữ liệu\n\n## Bàn giao\n"
+          required_sections: [Thành phần, Contract, Dữ liệu]
+        after: auto
+      - key: implement
+        name: Hiện thực
+        executor: { team: dev-team }
+        instruction: "Hiện thực theo thiết kế; ghi nhánh, task đã xong và lệnh test đã chạy. #fake:sections=Nhánh|Task đã xong|Lệnh test|Bàn giao"
+        output:
+          filename: implement.md
+          template: "## Nhánh\n\n## Task đã xong\n\n## Lệnh test\n\n## Bàn giao\n"
+          required_sections: [Nhánh, Task đã xong, Lệnh test]
+        after: auto
+      - key: code-review
+        name: Review mã
+        executor: { agent: reviewer }
+        instruction: "Review thay đổi của bước hiện thực; kết luận ĐẠT hoặc CẦN SỬA kèm việc phải sửa. #fake:sections=Kết luận|Phát hiện|Việc phải sửa|Bàn giao"
+        output:
+          filename: code-review.md
+          template: "## Kết luận\n\n## Phát hiện\n\n## Việc phải sửa\n\n## Bàn giao\n"
+          required_sections: [Kết luận, Phát hiện, Việc phải sửa]
+        after: { review: { back_to_steps: [4] } }
+      - key: testing
+        name: Kiểm thử
+        executor: { agent: qc }
+        instruction: "Chạy test theo tiêu chí chấp nhận; kết luận ĐẠT hoặc TRƯỢT kèm lỗi tìm thấy. #fake:sections=Kết luận|Độ phủ theo AC|Lỗi tìm thấy|Bàn giao"
+        output:
+          filename: test-report.md
+          template: "## Kết luận\n\n## Độ phủ theo AC\n\n## Lỗi tìm thấy\n\n## Bàn giao\n"
+          required_sections: [Kết luận, Độ phủ theo AC, Lỗi tìm thấy]
+        after: { review: { back_to_steps: [4] } }
+      - key: uat
+        name: UAT
+        executor: { agent: qc-uat }
+        instruction: "Kiểm thử chấp nhận theo kịch bản người dùng, ghi evidence và kết luận. #fake:sections=Kịch bản|Evidence|Kết luận|Bàn giao"
+        output:
+          filename: uat.md
+          template: "## Kịch bản\n\n## Evidence\n\n## Kết luận\n\n## Bàn giao\n"
+          required_sections: [Kịch bản, Evidence, Kết luận]
+        after: review
+      - key: release
+        name: Phát hành
+        executor: { agent: docs-architect }
+        instruction: "Tổng hợp ghi chú phát hành và tài liệu cần cập nhật. #fake:sections=Ghi chú phát hành|Tài liệu cập nhật|Bàn giao"
+        output:
+          filename: release.md
+          template: "## Ghi chú phát hành\n\n## Tài liệu cập nhật\n\n## Bàn giao\n"
+          required_sections: [Ghi chú phát hành, Tài liệu cập nhật]
+        after: auto
+  - key: bug-fix
+    name: Sửa lỗi (AISDLC)
+    description: Tiếp nhận lỗi, đọc mã tìm nguyên nhân, sửa, review mã, kiểm thử rồi phát hành.
+    input_hint: Mô tả lỗi và cách tái hiện
+    stages:
+      - key: bug-intake
+        name: Tiếp nhận lỗi
+        executor: { agent: intake-analyst }
+        instruction: "Mô tả hiện tượng, cách tái hiện và mức ảnh hưởng của lỗi. #fake:sections=Hiện tượng|Cách tái hiện|Mức ảnh hưởng|Bàn giao"
+        output:
+          filename: bug.md
+          template: "## Hiện tượng\n\n## Cách tái hiện\n\n## Mức ảnh hưởng\n\n## Bàn giao\n"
+          required_sections: [Hiện tượng, Cách tái hiện, Mức ảnh hưởng]
+        after: review
+      - key: code-reading
+        name: Đọc mã
+        executor: { agent: backend-lead }
+        instruction: "Khoanh vùng mã liên quan và nêu nguyên nhân gốc của lỗi. #fake:sections=Vị trí liên quan|Nguyên nhân gốc|Bàn giao"
+        output:
+          filename: code-reading.md
+          template: "## Vị trí liên quan\n\n## Nguyên nhân gốc\n\n## Bàn giao\n"
+          required_sections: [Vị trí liên quan, Nguyên nhân gốc]
+        after: auto
+      - key: bug-fix
+        name: Sửa lỗi
+        executor: { agent: backend-lead }
+        instruction: "Sửa theo nguyên nhân gốc và thêm test hồi quy chặn lỗi tái diễn. #fake:sections=Thay đổi|Test hồi quy|Bàn giao"
+        output:
+          filename: fix.md
+          template: "## Thay đổi\n\n## Test hồi quy\n\n## Bàn giao\n"
+          required_sections: [Thay đổi, Test hồi quy]
+        after: auto
+      - key: code-review
+        name: Review mã
+        executor: { agent: reviewer }
+        instruction: "Review bản sửa; kết luận ĐẠT hoặc CẦN SỬA kèm việc phải sửa. #fake:sections=Kết luận|Phát hiện|Việc phải sửa|Bàn giao"
+        output:
+          filename: code-review.md
+          template: "## Kết luận\n\n## Phát hiện\n\n## Việc phải sửa\n\n## Bàn giao\n"
+          required_sections: [Kết luận, Phát hiện, Việc phải sửa]
+        after: { review: { back_to_steps: [2] } }
+      - key: testing
+        name: Kiểm thử
+        executor: { agent: qc }
+        instruction: "Tái hiện lại lỗi trên bản sửa và chạy hồi quy; kết luận ĐẠT hoặc TRƯỢT. #fake:sections=Kết luận|Ca đã chạy|Lỗi còn lại|Bàn giao"
+        output:
+          filename: test-report.md
+          template: "## Kết luận\n\n## Ca đã chạy\n\n## Lỗi còn lại\n\n## Bàn giao\n"
+          required_sections: [Kết luận, Ca đã chạy, Lỗi còn lại]
+        after: { review: { back_to_steps: [2] } }
+      - key: release
+        name: Phát hành
+        executor: { agent: docs-architect }
+        instruction: "Ghi chú phát hành bản sửa và việc cần theo dõi sau phát hành. #fake:sections=Ghi chú phát hành|Theo dõi sau phát hành|Bàn giao"
+        output:
+          filename: release.md
+          template: "## Ghi chú phát hành\n\n## Theo dõi sau phát hành\n\n## Bàn giao\n"
+          required_sections: [Ghi chú phát hành, Theo dõi sau phát hành]
+        after: auto
 
 # Tenant dev: chép `hoa-don`, gán Group "Kế toán" (`ke-toan`) và bật. Group vắng ⇒ chép tắt + cảnh báo.
 tenant_processes:
   - { tenant_key: acme, template: hoa-don, review_group: ke-toan, enabled: true }
+  # K1 T5g (plan §11 G12): UAT K1 trên evolu; `beta-testers` có ở mọi tenant (trigger Admin 0006).
+  - { tenant_key: evolu, template: sdlc-delivery, review_group: beta-testers, enabled: true }
+  - { tenant_key: evolu, template: bug-fix, review_group: beta-testers, enabled: true }

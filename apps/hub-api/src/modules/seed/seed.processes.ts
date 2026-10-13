@@ -2,7 +2,7 @@
 // mẫu quy trình (`process_defs.tenant_id` null) và bản chép cho tenant. Chạy trong transaction của `runHubSeed` SAU agent +
 // entitlement. Idempotent: upsert theo key (không đổi ⇒ giữ `version`); bản chép tenant chỉ thêm khi tenant chưa có key.
 import { TEAM_LIMITS_DEFAULT } from "@ai/contracts/chat";
-import { processDefStagePaths } from "@ai/contracts/hub-admin";
+import { processDefStageIssues, type StepStageShape } from "@ai/contracts/hub-admin";
 import { loadTenantIds, type Tx } from "./seed.repo";
 import { type SeedSource, SeedValidationError } from "./seed.rules";
 import {
@@ -29,13 +29,26 @@ function dupes(issues: SeedIssue[], path: string, keys: readonly string[]): void
   }
 }
 
-/** Shape stage cho luật chéo stage của contract (`real_action` cần stage trước có người kiểm). */
-const stageShape = (t: SeedProcessTemplate) =>
+type SeedStage = SeedProcessTemplate["stages"][number];
+type StageAfterJson =
+  | { kind: "auto" }
+  | { kind: "review"; group_id: null; back_to_steps?: number[] };
+
+/** `after` seed ⇒ def: chuỗi giữ hình cũ (không thêm `back_to_steps` ⇒ mẫu cũ không đổi version); object ⇒ review + bước quay lại. */
+function afterJson(a: SeedStage["after"]): StageAfterJson {
+  if (a === "auto") return { kind: "auto" };
+  if (a === "review") return { kind: "review", group_id: null };
+  return { kind: "review", group_id: null, back_to_steps: a.review.back_to_steps };
+}
+
+/** Shape stage cho luật chéo stage của contract (step, real_action, BACK_TARGET_INVALID). */
+const stageShape = (t: SeedProcessTemplate): StepStageShape[] =>
   t.stages.map((s) => ({
     key: s.key,
+    ...(s.step === undefined ? {} : { step: s.step }),
     real_action: s.real_action,
-    after: s.after === "review" ? { kind: "review" as const } : { kind: "auto" as const },
-  })) as unknown as Parameters<typeof processDefStagePaths>[0];
+    after: afterJson(s.after),
+  }));
 
 type KeySets = { agentKeys: ReadonlySet<string>; teams: ReadonlySet<string> };
 function checkTemplate(t: SeedProcessTemplate, k: KeySets, issues: SeedIssue[]): void {
@@ -53,10 +66,10 @@ function checkTemplate(t: SeedProcessTemplate, k: KeySets, issues: SeedIssue[]):
     `process_templates.${t.key}.stages.key`,
     t.stages.map((s) => s.key),
   );
-  for (const path of processDefStagePaths(stageShape(t)))
+  for (const i of processDefStageIssues(stageShape(t)))
     issues.push({
-      path: `process_templates.${t.key}.${path}`,
-      message: "real_action cần stage trước có người kiểm",
+      path: `process_templates.${t.key}.${i.path}`,
+      message: `vi phạm luật chéo stage ${i.rule}`,
     });
 }
 
@@ -175,13 +188,14 @@ const stageJson = (t: SeedProcessTemplate, ids: Ids) =>
   t.stages.map((s) => ({
     key: s.key,
     name: s.name,
+    ...(s.step === undefined ? {} : { step: s.step }),
     executor:
       "agent" in s.executor
         ? { kind: "agent", agent_id: ids.agents.get(s.executor.agent) }
         : { kind: "team", team_id: ids.teams.get(s.executor.team) },
     instruction: s.instruction,
     output: { ...s.output, fields: [] },
-    after: s.after === "review" ? { kind: "review", group_id: null } : { kind: "auto" },
+    after: afterJson(s.after),
     real_action: s.real_action,
     answerer: { kind: "starter" },
     timeout_s: s.timeout_s,
