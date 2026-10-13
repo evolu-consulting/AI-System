@@ -48,8 +48,8 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
       "dify-tom",
       "dify-tro-ly",
     ]);
-    // P-a D18 (processes.yaml): + hoa-don-doc + 8 agent vai + 4 agent nhóm BA — mọi agent đều fake-1 ở development.
-    expect(p.agents).toHaveLength(17);
+    // P-a D18 (processes.yaml): + hoa-don-doc + 8 agent vai + 4 agent nhóm BA + 3 agent fixbug (P-c1 B6) — mọi agent đều fake-1 ở development.
+    expect(p.agents).toHaveLength(20);
     expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
     expect(p.orchestrator).toMatchObject({ agent: "orchestrator", token_budget: 200_000 });
     expect(p.grants.map((g) => g.subject)).toContain("group:beta-testers");

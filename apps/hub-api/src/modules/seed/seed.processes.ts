@@ -2,7 +2,7 @@
 // mẫu quy trình (`process_defs.tenant_id` null) và bản chép cho tenant. Chạy trong transaction của `runHubSeed` SAU agent +
 // entitlement. Idempotent: upsert theo key (không đổi ⇒ giữ `version`); bản chép tenant chỉ thêm khi tenant chưa có key.
 import { TEAM_LIMITS_DEFAULT } from "@ai/contracts/chat";
-import { processDefStageIssues, type StepStageShape } from "@ai/contracts/hub-admin";
+import { processDefSourcePaths, processDefStageIssues } from "@ai/contracts/hub-admin";
 import { loadTenantIds, type Tx } from "./seed.repo";
 import { type SeedSource, SeedValidationError } from "./seed.rules";
 import {
@@ -42,9 +42,11 @@ function afterJson(a: SeedStage["after"]): StageAfterJson {
 }
 
 /** Shape stage cho luật chéo stage của contract (step, real_action, BACK_TARGET_INVALID). */
-const stageShape = (t: SeedProcessTemplate): StepStageShape[] =>
+const stageShape = (t: SeedProcessTemplate) =>
   t.stages.map((s) => ({
     key: s.key,
+    executor: { kind: "agent" in s.executor ? "agent" : "team" },
+    autofix: s.autofix,
     ...(s.step === undefined ? {} : { step: s.step }),
     real_action: s.real_action,
     after: afterJson(s.after),
@@ -66,6 +68,8 @@ function checkTemplate(t: SeedProcessTemplate, k: KeySets, issues: SeedIssue[]):
     `process_templates.${t.key}.stages.key`,
     t.stages.map((s) => s.key),
   );
+  for (const p of processDefSourcePaths({ sources: t.sources, stages: t.stages }))
+    issues.push({ path: `process_templates.${t.key}.${p}`, message: "nguồn không khai ở sources" });
   for (const i of processDefStageIssues(stageShape(t)))
     issues.push({
       path: `process_templates.${t.key}.${i.path}`,
@@ -199,23 +203,27 @@ const stageJson = (t: SeedProcessTemplate, ids: Ids) =>
     real_action: s.real_action,
     answerer: { kind: "starter" },
     timeout_s: s.timeout_s,
-    token_budget: null,
+    token_budget: s.token_budget,
+    // P-c1 B6 · chỉ ghi khi có ⇒ mẫu cũ giữ nguyên JSON (không tăng version).
+    ...(s.sources.length > 0 ? { sources: s.sources } : {}),
+    ...(s.autofix ? { autofix: s.autofix } : {}),
   }));
 
 async function upsertTemplates(tx: Tx, tpls: SeedProcessTemplate[], ids: Ids): Promise<void> {
   for (const t of tpls) {
     const stages = tx.json(stageJson(t, ids) as unknown as Parameters<typeof tx.json>[0]);
+    const sources = JSON.stringify(t.sources);
     const [cur] = await tx<{ id: string }[]>`select id from hub.process_defs
       where tenant_id is null and key = ${t.key} and deleted_at is null for update`;
     if (!cur) {
-      await tx`insert into hub.process_defs (tenant_id, key, name, description, input_hint, stages, enabled)
-        values (null, ${t.key}, ${t.name}, ${t.description}, ${t.input_hint}, ${stages}, false)`;
+      await tx`insert into hub.process_defs (tenant_id, key, name, description, input_hint, stages, enabled, sources)
+        values (null, ${t.key}, ${t.name}, ${t.description}, ${t.input_hint}, ${stages}, false, ${sources}::jsonb)`;
       continue;
     }
     await tx`update hub.process_defs set name = ${t.name}, description = ${t.description}, input_hint = ${t.input_hint},
-        stages = ${stages}, version = version + 1, updated_at = now()
-      where id = ${cur.id} and (name, description, input_hint, stages)
-        is distinct from (${t.name}::text, ${t.description}::text, ${t.input_hint}::text, ${stages}::jsonb)`;
+        stages = ${stages}, sources = ${sources}::jsonb, version = version + 1, updated_at = now()
+      where id = ${cur.id} and (name, description, input_hint, stages, coalesce(sources, '[]'::jsonb))
+        is distinct from (${t.name}::text, ${t.description}::text, ${t.input_hint}::text, ${stages}::jsonb, ${sources}::jsonb)`;
   }
 }
 
@@ -240,12 +248,12 @@ async function copyToTenants(tx: Tx, rows: SeedTenantProcess[], warn: string[]):
       warn.push(`seed-process-group-unknown: ${x.tenant_key}/${x.review_group}`);
     const enabled = x.enabled && (!x.review_group || Boolean(g));
     await tx`insert into hub.process_defs (tenant_id, key, name, description, input_hint, stages, enabled,
-        source_template_id)
+        source_template_id, sources)
       select ${tid}, t.key, t.name, t.description, t.input_hint,
         (select jsonb_agg(case when s->'after'->>'kind' = 'review'
             then jsonb_set(s, '{after,group_id}', coalesce(to_jsonb(${g?.id ?? null}::uuid), 'null'::jsonb)) else s end
           order by i) from jsonb_array_elements(t.stages) with ordinality as e(s, i)),
-        ${enabled}, t.id
+        ${enabled}, t.id, coalesce(t.sources, '[]'::jsonb)
       from hub.process_defs t
       where t.tenant_id is null and t.key = ${x.template} and t.deleted_at is null
         and not exists (select 1 from hub.process_defs d where d.tenant_id = ${tid} and d.key = t.key

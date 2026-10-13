@@ -4,6 +4,7 @@
 import { USERNAME_RE } from "@ai/contracts";
 import { PROCESS_STEP_MAX, ProcessStepSchema } from "@ai/contracts/chat";
 import { AgentKeySchema, ProfileStepSchema, WorkflowKeySchema } from "@ai/contracts/hub";
+import { SourceKeySchema, StageAutofixSchema, StageSourceSchema } from "@ai/contracts/hub-admin";
 import { z } from "zod";
 
 /** Giá trị `profile` của agent được thay bằng profile seed (`HUB_SEED_PROFILE`, plan §3.6). */
@@ -173,6 +174,10 @@ export const SeedStageSchema = z.strictObject({
   after: SeedStageAfterSchema,
   real_action: z.boolean().default(false),
   timeout_s: z.number().int().min(60).max(3600).default(600),
+  /** P-c1 B6 · vắng ⇒ stage thường (không ghi khoá vào JSON stage ⇒ mẫu cũ giữ nguyên version). */
+  token_budget: z.number().int().min(1000).max(5_000_000).nullable().default(null),
+  sources: z.array(StageSourceSchema).max(20).default([]),
+  autofix: StageAutofixSchema.nullable().default(null),
 });
 
 export const SeedProcessTemplateSchema = z.strictObject({
@@ -180,6 +185,8 @@ export const SeedProcessTemplateSchema = z.strictObject({
   name: SeedTextSchema,
   description: z.string().max(500).default(""),
   input_hint: z.string().max(200).default(""),
+  /** P-b/P-c · key nguồn mẫu (tenant_admin đổi khi chép); stage.sources/autofix.source_key phải ∈ danh sách này. */
+  sources: z.array(SourceKeySchema).max(20).default([]),
   stages: z.array(SeedStageSchema).min(1).max(10),
 });
 
