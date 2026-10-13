@@ -54,7 +54,9 @@ def assert_no_secret(e: AfEnv, job: Job, row: dict[str, Any]) -> None:
     """PC-R12 · HUB-BR-33: không giá trị bí mật / token job trong báo cáo, log Runtime, hàng job."""
     raw = "".join(c.body.decode(errors="replace") for c in e.mock.reports(job))
     logs = e.logs()
-    for where, text in (("báo cáo", raw), ("log", logs), ("job", repr(row))):
+    # `payload` là đầu vào do test ghi (AF05 `test_cmd` chứa khoá giả) ⇒ chỉ quét trường Runtime sinh.
+    out = {k: v for k, v in row.items() if k != "payload"}
+    for where, text in (("báo cáo", raw), ("log", logs), ("job", repr(out))):
         assert not AWS_RE.search(text), f"lộ khoá AWS trong {where}"
     for c in e.mock.reports(job):
         assert c.bearer and c.bearer not in logs, "token job lọt vào log"
