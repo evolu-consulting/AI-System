@@ -1,6 +1,6 @@
 # ADR-0014 · Nạp nguồn vào KH (packs) và công cụ code-graph
 
-Trạng thái: **Proposed (Đề xuất)** — chưa duyệt; trình Gate mốc K2 · Ngày: 2026-10-12, sửa 2026-10-13 · CR-066, CR-069 · Kế thừa: WRK-FR-27, ADR-0007, ADR-0012
+Trạng thái: **Rejected (CR-074, 2026-10-13)** — theo CR-073 tri thức nằm trong KnowledgeHub, nạp tài liệu/code làm trực tiếp bằng công cụ của KH, Hub chỉ đọc qua `kh-query`; không còn mốc K2. (Trước đó: Proposed) · Ngày: 2026-10-12, sửa 2026-10-13 · CR-066, CR-069 · Kế thừa: WRK-FR-27, ADR-0007, ADR-0012
 
 ## Bối cảnh
 Giai đoạn 2 của KnowledgeHub (HUB-FR-135). Khảo sát KH v6.4: `/codegraph/import` thuộc bề mặt "người" (khoá chung, không phân project) — **không** dùng cho tích hợp đa tenant (ADR-0012 §1); KH chưa có route `/v1` cho code-graph; KH **không parse PDF/DOCX**. Bề mặt `/v1/{ns}/packs` nạp được text/markdown/code.
