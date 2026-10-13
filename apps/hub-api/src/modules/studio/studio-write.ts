@@ -2,7 +2,7 @@
 // `system` (P6) → khoá `config_meta` FOR UPDATE ĐẦU TIÊN → `fn` (đọc FOR UPDATE hàng đích, kiểm version, ghi) → bump
 // `hub_config_version` → audit → NOTIFY (giao khi commit). Ném bất kỳ (kể cả audit lỗi — P7) ⇒ rollback cả gói.
 import type { Tx } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
+import { type HubScope, withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
@@ -28,13 +28,15 @@ async function username(tx: Tx, userId: string): Promise<string | null> {
 /**
  * `fn` nhận `v0` (version đang khoá). `audit: null` ⇒ không đổi gì: không bump/audit/NOTIFY, trả `v0`.
  * Retry 40P01/40001 an toàn: NOTIFY chỉ giao khi commit (Q-K7 H3b).
+ * H4b-1 D8 · `scope` mặc định `system`; route tenant (secrets) truyền scope `user` của tenant đích ⇒ RLS chặn thêm một lớp.
  */
 export function withConfigWrite<T>(
   deps: StudioWriteDeps,
   actor: AuthUser,
   fn: (tx: Tx, v0: number) => Promise<WriteOutcome<T>>,
+  scope: HubScope = { kind: "system" },
 ): Promise<WriteResult<T>> {
-  return withHubScope(deps.db, { kind: "system" }, async (tx) => {
+  return withHubScope(deps.db, scope, async (tx) => {
     const v0 = await lockHubConfig(tx);
     const out = await fn(tx, v0);
     if (out.audit === null) return { result: out.result, version: v0 };

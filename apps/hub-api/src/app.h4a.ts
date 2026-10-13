@@ -6,6 +6,8 @@ import { requirePlatformAdmin } from "./lib/admin-role.middleware";
 import type { Db } from "./lib/db";
 import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
 import type { Logger } from "./lib/logger";
+import type { SecretKey } from "./modules/secrets/secrets.crypto";
+import { mountSecrets } from "./modules/secrets/secrets.mount";
 import { agentRoutes } from "./modules/studio/agents/agents.routes";
 import { AgentsService } from "./modules/studio/agents/agents.service";
 import { orchestratorRoutes } from "./modules/studio/orchestrator/orchestrator.routes";
@@ -21,6 +23,8 @@ export type H4aDeps = {
   db?: Db;
   studioDist?: string;
   hubAudit?: HubAuditWriter;
+  /** H4b-1 D11 · khoá secrets Hub; vắng ⇒ POST/PUT secret có `value` 409 `NOT_CONFIGURED`. */
+  hubSecretsKey?: SecretKey | null;
   log: Pick<Logger, "warn">;
 };
 
@@ -35,6 +39,9 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): void {
     app.route(STUDIO_API, studioReadRoutes(new StudioReadService({ db: deps.db })));
     app.route(STUDIO_API, agentRoutes(new AgentsService({ db: deps.db, audit })));
     app.route(STUDIO_API, orchestratorRoutes(new OrchestratorService({ db: deps.db, audit })));
+    // H4b-1 · Studio `/secrets*` + route tenant `/admin/source-credentials*` (cùng service).
+    const key = deps.hubSecretsKey ?? null;
+    mountSecrets(app, { db: deps.db, audit, key, studioBase: STUDIO_API });
   }
   mountH4aStatic(app, deps.studioDist, deps.log);
 }

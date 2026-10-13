@@ -55,6 +55,7 @@ import { type RunDriver, RunService } from "./modules/runs/runs.service";
 import { traceRoutes } from "./modules/runs/trace/trace.routes";
 import { TraceService } from "./modules/runs/trace/trace.service";
 import type { SecretKey } from "./modules/secrets/secrets.crypto";
+import { SECRETS_PROTECTED_PREFIXES } from "./modules/secrets/secrets.mount";
 import type { ResolveBridge } from "./modules/sources/resolve.bridge";
 import { mountSources, SOURCE_PROTECTED_PREFIXES } from "./modules/sources/sources.mount";
 
@@ -123,6 +124,7 @@ const PROTECTED_PREFIXES = [
   ...X2A_PROTECTED_PREFIXES,
   ...PROCESS_PROTECTED_PREFIXES,
   ...SOURCE_PROTECTED_PREFIXES,
+  ...SECRETS_PROTECTED_PREFIXES,
 ];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -211,16 +213,8 @@ function processHooks(
   return proc.conversationStart;
 }
 
-/**
- * JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E14. Vắng `db` (test khung) ⇒ không mount;
- * E12–E14 cần thêm `redis` + cache cấu hình. B6: kèm `/internal/jobs/:job_id/dify-credential` (ngoài `PROTECTED_PREFIXES`,
- * không JWT — token job).
- */
-function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache): void {
-  const auth = requireAuth(deps.jwtPublicKey);
-  for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
-  mountH4a(app, { ...deps, log: logger });
-  if (!deps.db) return;
+/** Route chỉ cần `db` (+ `config` nếu có): phòng X2a, lệnh/`@`, quyền agent, trace, nguồn. Trả phần cần cho vòng run. */
+function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: ConfigCache) {
   const { redis, pingMs, signal } = deps;
   const x2a = mountX2a(app, { db: deps.db, redis, log: logger, pingMs, signal });
   const drivers = commandDrivers(deps, deps.db);
@@ -242,6 +236,21 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     resolveBridge,
     now: deps.now,
   });
+  return { x2a, h2a, h2b, resolveBridge };
+}
+
+/**
+ * JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E14. Vắng `db` (test khung) ⇒ không mount;
+ * E12–E14 cần thêm `redis` + cache cấu hình. B6: kèm `/internal/jobs/:job_id/dify-credential` (ngoài `PROTECTED_PREFIXES`,
+ * không JWT — token job).
+ */
+function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache): void {
+  const auth = requireAuth(deps.jwtPublicKey);
+  for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
+  mountH4a(app, { ...deps, log: logger });
+  if (!deps.db) return;
+  const { signal } = deps;
+  const { x2a, h2a, h2b, resolveBridge } = mountDbRoutes(app, { ...deps, db: deps.db }, config);
   if (!deps.redis || !config || !h2a || !h2b) {
     app.route("/conversations", conversationRoutes(deps.db));
     return;
