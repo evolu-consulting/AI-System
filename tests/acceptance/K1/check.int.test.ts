@@ -1,24 +1,23 @@
-// HUB-FR-131 · HUB-BR-37 · HUB-BR-40 · K1-AC01 · Q2 · spec §3.2 "Kiểm tra kết nối" + plan §3.1 (10 bước, mã) · test-plan K1 §4
-// A30–A47: `POST /studio/api/kh/tenants/:id/check` với KH GIẢ — KH lỗi vẫn 200 `status=error`; lưu `check_status/checked_at/
-// check_result` không tăng `version`, không bump `hub_config_version`; audit `check` {status, codes}; 409 KH_NOT_CONFIGURED.
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+// HUB-FR-131 · HUB-BR-37 · HUB-BR-40 · K1-AC01 · CR-073 · spec §3.0 (giao thức `X-KH-Key`), §3.2 `POST C/:id/check`, §9 Q27/Q28/
+// Q31/Q33 · plan §3.1 (6 bước, 7 lỗi + 5 cảnh báo), §4 (audit `check`) · test-plan K1 §4 A20–A31: "Kiểm tra" trên KH GIẢ qua
+// hub-api thật — luôn 200 `KhCheckResult` (KH lỗi vẫn 200), lưu vào hàng (không tăng version/không bump config), `/version`
+// không khoá phải 401, mọi lời gọi có khoá dùng header `X-KH-Key`, `/health` không gửi khoá.
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import {
   auditMaxK1,
   auditSinceK1,
+  CONN,
   type CtxK1,
   configVersion,
-  errCode,
+  connRow,
   K1,
-  NONE,
-  NS,
-  PROJ,
-  setBaseUrl,
+  KEY,
+  needK1,
+  seedConn,
   startK1,
   studio,
-  T,
-  tenantRow,
 } from "./_k1";
-import { DEFAULT_CAPS, deadOrigin } from "./_khfake";
+import { deadOrigin } from "./_khfake";
 
 let c: CtxK1;
 let dead = "";
@@ -29,243 +28,171 @@ beforeAll(async () => {
 afterAll(async () => {
   await c?.stop();
 });
+beforeEach(async () => {
+  c.khA.reset();
+  c.khB.reset();
+  if (!c.k1 || !c.sec) return;
+  await c.sql`delete from hub.agent_kh`;
+  await c.sql`delete from hub.kh_connections`;
+});
 
-const need = () =>
-  expect({ migration0029: c.k1, hubSecrets: c.sec }).toEqual({
-    migration0029: true,
-    hubSecrets: true,
+const need = () => needK1(c);
+// biome-ignore lint/suspicious/noExplicitAny: KhCheckResult JSON
+type J = any;
+async function check(
+  o: { base?: string; secretId?: string; summary?: string | null } = {},
+): Promise<J> {
+  await seedConn(c.sql, {
+    id: K1.connMain,
+    name: CONN.main,
+    baseUrl: o.base ?? c.khA.base,
+    secretId: o.secretId ?? K1.secMain,
+    summary: o.summary === undefined ? "proj-a" : o.summary,
+    status: "unchecked",
   });
-type P = { id: string; ro?: boolean };
-/** Dọn + URL = KH giả + hàng acme (unchecked) với `secret`/`projects`; KH giả về mặc định. */
-async function prep(
-  o: { secret?: string | null; projects?: P[]; url?: string | null } = {},
-): Promise<void> {
-  need();
-  await c.sql`delete from hub.kh_bindings`;
-  await c.sql`delete from hub.kh_projects`;
-  await c.sql`delete from hub.kh_tenants`;
-  await setBaseUrl(c.sql, o.url === undefined ? c.kh.base : o.url);
-  c.kh.reset();
-  c.kh.set(NS.acme, {
-    scenario: "ok",
-    peopleLanes: false,
-    retrievalLanes: undefined,
-    projects: [PROJ.a, PROJ.b, PROJ.shared],
-    keyspaces: [{ keyspace: "step", dims: ["role", "step"] }],
-    manifestRev: 1,
-    kind: "client",
-    meNs: undefined,
-  });
-  await c.sql`insert into hub.kh_tenants (tenant_id, ns, secret_id) values
-    (${T.acme}, ${NS.acme}, ${o.secret === undefined ? K1.secAcme : o.secret})`;
-  for (const p of o.projects ?? [{ id: PROJ.a }, { id: PROJ.b }])
-    await c.sql`insert into hub.kh_projects (tenant_id, project_id, read_only) values (${T.acme}, ${p.id}, ${p.ro ?? false})`;
+  const r = await studio(c, "POST", `/${K1.connMain}/check`);
+  expect(r.status).toBe(200);
+  return r.json;
 }
-const check = () => studio(c, "POST", `/tenants/${T.acme}/check`);
-// biome-ignore lint/suspicious/noExplicitAny: thân response
-const codes = (r: any, level: "error" | "warning") =>
-  // biome-ignore lint/suspicious/noExplicitAny: item
-  ((r.json?.items ?? []) as any[]).filter((i) => i.level === level).map((i) => i.code);
-// biome-ignore lint/suspicious/noExplicitAny: thân response
-const item = (r: any, code: string) =>
-  (r.json?.items ?? []).find((i: { code: string }) => i.code === code);
+const codes = (r: J): string[] =>
+  ((r?.items ?? []) as J[]).map((i) => `${i.level}:${i.code}`).sort();
+const item = (r: J, code: string): J => ((r?.items ?? []) as J[]).find((i) => i.code === code);
 
-describe("A30–A33 · KH hợp lệ ⇒ OK [K1-AC01]", () => {
-  it("HUB-FR-131 · K1-AC01 · A30 · 10 bước đạt ⇒ 200 status ok, cảnh báo embedder luôn có; lưu hàng (ok, checked_at, keyspace_dims), version không đổi", async () => {
-    await prep();
-    const cv0 = await configVersion(c.sql);
+describe("A20–A23 · đạt + giao thức [plan §3.1 · spec §3.0]", () => {
+  it("HUB-FR-131 · K1-AC01 · A20 · KH hợp lệ ⇒ 200 status ok, kh_version, embedder, projects khoá thấy, items []; lưu hàng (ok, check_result, checked_at)", async () => {
+    need();
     const r = await check();
-    expect(r.status).toBe(200);
-    expect(r.json?.status).toBe("ok");
-    expect(codes(r, "error")).toEqual([]);
-    expect(codes(r, "warning")).toContain("kh_embedder_multilingual");
-    expect(r.json?.kh_version).toBe("v6.4");
-    expect(r.json?.keyspace_dims).toEqual(["role", "step"]);
-    const row = await tenantRow(c.sql, T.acme);
-    expect([row?.check_status, row?.checked_at !== null, row?.version]).toEqual(["ok", true, 1]);
-    expect(row?.check_result?.keyspace_dims).toEqual(["role", "step"]);
-    expect(await configVersion(c.sql)).toBe(cv0);
+    expect(r).toMatchObject({
+      status: "ok",
+      kh_version: "v6.4",
+      embedder: "BAAI/bge-m3",
+      projects: ["proj-a", "proj-b"],
+      items: [],
+    });
+    expect(typeof r.checked_at).toBe("string");
+    const row = await connRow(c.sql, K1.connMain);
+    expect(row?.check_status).toBe("ok");
+    expect(row?.check_result).toMatchObject({ status: "ok", projects: ["proj-a", "proj-b"] });
+    expect(row?.checked_at).not.toBeNull();
+    const g = await studio(c, "GET", "");
+    expect(g.json?.items?.[0]).toMatchObject({ status: "ok", check: { status: "ok" } });
   });
-  it("HUB-BR-40 · A31 · thứ tự gọi: /health → /version → /v1/me KHÔNG token → token (client kh-ns-<ns>) → /v1/capabilities, /v1/me, manifest có Bearer", async () => {
-    await prep();
-    expect((await check()).status).toBe(200);
-    const seq = c.kh.calls.map((x) => `${x.method} ${x.path}${x.token ? " +auth" : ""}`);
-    expect(seq.slice(0, 4)).toEqual([
-      "GET /health",
-      "GET /version",
-      "GET /v1/me",
-      "POST /v1/token",
+  it("HUB-BR-40 · Q26 · A21 · /health không khoá; /version gọi KHÔNG khoá (nhận 401) rồi CÓ khoá; /projects có khoá; mọi khoá qua header X-KH-Key và đúng giá trị", async () => {
+    need();
+    await check();
+    const calls = c.khA.calls;
+    const h = calls.filter((x) => x.path === "/health");
+    expect(h.length).toBeGreaterThanOrEqual(1);
+    expect(h.every((x) => !x.sentKey)).toBe(true);
+    const v = calls.filter((x) => x.path === "/version");
+    expect(v.map((x) => [x.sentKey, x.status])).toEqual([
+      [false, 401],
+      [true, 200],
     ]);
-    const tokenCall = c.kh.calls.find((x) => x.path === "/v1/token");
-    expect(tokenCall?.body?.client_id).toBe(`kh-ns-${NS.acme}`);
-    for (const p of ["/v1/capabilities", `/v1/${NS.acme}/manifest`])
-      expect({ p, auth: c.kh.calls.some((x) => x.path === p && x.token !== null) }).toEqual({
-        p,
-        auth: true,
-      });
-    expect(c.kh.calls.filter((x) => x.path === "/v1/me").map((x) => x.token !== null)).toEqual([
-      false,
-      true,
-    ]);
+    const keyed = calls.filter((x) => x.sentKey);
+    expect(keyed.length).toBeGreaterThanOrEqual(2);
+    expect(keyed.every((x) => x.via === "x-kh-key" && x.keyOk)).toBe(true);
+    expect(calls.filter((x) => x.path === "/projects").map((x) => x.status)).toEqual([200]);
+    expect(c.khB.calls).toEqual([]);
   });
-  it("HUB-FR-131 · HUB-FR-69 · A32 · audit `check` · kh_tenant {status, codes}; không bump hub_config_version", async () => {
-    await prep();
+  it("HUB-FR-131 · A22 · kiểm tra không tăng version kết nối, không bump hub_config_version; audit check {status, codes} không có khoá", async () => {
+    need();
+    const v0 = await configVersion(c.sql);
     const a0 = await auditMaxK1(c.sql);
-    expect((await check()).status).toBe(200);
-    const au = await auditSinceK1(c.sql, a0, "kh_tenant");
-    expect(au.map((x) => [x.action, x.entity_name, x.tenant_id])).toEqual([
-      ["check", `acme:${NS.acme}`, T.acme],
+    c.khA.set({ model: "BAAI/bge-small-en-v1.5" });
+    await check();
+    expect((await connRow(c.sql, K1.connMain))?.version).toBe(1);
+    expect(await configVersion(c.sql)).toBe(v0);
+    const au = await auditSinceK1(c.sql, a0, "kh_connection");
+    expect(au.map((x) => [x.action, x.tenant_id, x.entity_name])).toEqual([
+      ["check", null, CONN.main],
     ]);
-    expect(au[0]?.summary).toMatchObject({ status: "ok" });
-    expect(Array.isArray(au[0]?.summary?.codes)).toBe(true);
+    expect(au[0]?.summary).toMatchObject({ status: "ok", codes: ["kh_embedder_english"] });
+    expect(JSON.stringify(au)).not.toContain(KEY.a);
   });
-  it("HUB-BR-40 · Q2 · K1-AC01 · A33 · people lanes bật + chỉ project riêng ⇒ OK", async () => {
-    await prep();
-    c.kh.set(NS.acme, { peopleLanes: null });
+  it("HUB-FR-131 · Q33 · A23 · embedder chỉ tiếng Anh ⇒ cảnh báo kh_embedder_english {model}, vẫn ok", async () => {
+    need();
+    c.khA.set({ model: "BAAI/bge-small-en-v1.5" });
     const r = await check();
-    expect([r.json?.status, codes(r, "error")]).toEqual(["ok", []]);
+    expect([r.status, codes(r)]).toEqual(["ok", ["warning:kh_embedder_english"]]);
+    expect(item(r, "kh_embedder_english").params).toEqual({ model: "BAAI/bge-small-en-v1.5" });
   });
 });
 
-describe("A34–A45 · lỗi nêu nguyên nhân [K1-AC01 · plan §3.1]", () => {
-  it("HUB-BR-40 · Q2 · K1-AC01 · A34 · lanes bật + tenant có project dùng chung ⇒ error kh_people_lanes_on_shared {project_id}; hàng status error", async () => {
-    await prep({ projects: [{ id: PROJ.a }, { id: PROJ.shared, ro: true }] });
-    c.kh.set(NS.acme, { peopleLanes: true });
+describe("A24–A28 · lỗi xác thực / khoá / phiên bản [Q27 · Q28]", () => {
+  it("HUB-BR-40 · Q28 · A24 · KH tắt xác thực (/version không khoá 2xx) trên loopback dev/test ⇒ chỉ cảnh báo kh_auth_disabled_dev", async () => {
+    need();
+    c.khA.set({ auth: false });
     const r = await check();
-    expect(r.status).toBe(200);
-    expect([r.json?.status, codes(r, "error")]).toEqual(["error", ["kh_people_lanes_on_shared"]]);
-    expect(item(r, "kh_people_lanes_on_shared")?.params).toEqual({ project_id: PROJ.shared });
-    expect((await tenantRow(c.sql, T.acme))?.check_status).toBe("error");
+    expect([r.status, codes(r)]).toEqual(["ok", ["warning:kh_auth_disabled_dev"]]);
   });
-  it("HUB-BR-40 · Q2 · A35 · retrieval.include_people_lanes=false ghi đè top-level true ⇒ OK với project dùng chung", async () => {
-    await prep({ projects: [{ id: PROJ.shared, ro: true }] });
-    c.kh.set(NS.acme, { peopleLanes: true, retrievalLanes: false });
-    expect((await check()).json?.status).toBe("ok");
+  it("HUB-BR-40 · A25 · khoá sai ⇒ kh_key_rejected, status error, hàng lưu error; không gọi /projects", async () => {
+    need();
+    const r = await check({ secretId: K1.secWrong });
+    expect([r.status, codes(r)]).toEqual(["error", ["error:kh_key_rejected"]]);
+    expect((await connRow(c.sql, K1.connMain))?.check_status).toBe("error");
+    expect(c.khA.callsTo("/projects")).toEqual([]);
   });
-  it("HUB-BR-40 · K1-AC01 · A36 · /v1/me kind=local ⇒ error kh_auth_disabled", async () => {
-    await prep();
-    c.kh.set(NS.acme, { kind: "local" });
+  it("HUB-FR-131 · Q27 · A26 · KH chế độ đăng nhập (SSO, khoá tĩnh luôn 401) ⇒ kh_key_rejected", async () => {
+    need();
+    c.khA.set({ sso: true });
     const r = await check();
-    expect([r.json?.status, codes(r, "error")]).toEqual(["error", ["kh_auth_disabled"]]);
+    expect([r.status, codes(r)]).toEqual(["error", ["error:kh_key_rejected"]]);
   });
-  it("HUB-BR-40 · K1-AC01 · A37 · KH tắt xác thực, URL localhost (dev/test) ⇒ chỉ cảnh báo kh_auth_disabled_dev", async () => {
-    await prep();
-    c.kh.g.auth = "off";
+  it("HUB-FR-131 · A27 · phiên bản v6.3 ⇒ kh_version_too_old {found}", async () => {
+    need();
+    c.khA.set({ version: "v6.3" });
     const r = await check();
-    expect(codes(r, "warning")).toContain("kh_auth_disabled_dev");
-    expect(codes(r, "error")).not.toContain("kh_auth_disabled");
+    expect(r.status).toBe("error");
+    expect(codes(r)).toContain("error:kh_version_too_old");
+    expect(String(item(r, "kh_version_too_old")?.params?.found)).toContain("6.3");
   });
-  it("HUB-BR-37 · A38 · base_url ngoài allowlist (env đổi sau khi lưu) ⇒ error kh_url_not_allowed, KH không nhận lời gọi nào", async () => {
-    await prep({ url: "https://kh.example.com" });
-    const r = await check();
-    expect([r.status, r.json?.status, codes(r, "error")]).toEqual([
-      200,
-      "error",
-      ["kh_url_not_allowed"],
-    ]);
-    expect(c.kh.calls).toEqual([]);
-  });
-  it("HUB-FR-131 · A39 · KH không nghe ⇒ kh_unreachable; /health 503 ⇒ kh_unreachable {status:503}", async () => {
-    await prep({ url: dead });
-    expect(codes(await check(), "error")).toEqual(["kh_unreachable"]);
-    await prep();
-    c.kh.g.health = 503;
-    const r = await check();
-    expect(codes(r, "error")).toEqual(["kh_unreachable"]);
-    expect(item(r, "kh_unreachable")?.params).toEqual({ status: 503 });
-  });
-  it("HUB-FR-131 · A40 · /version v6.3 ⇒ kh_version_too_old {found}", async () => {
-    await prep();
-    c.kh.g.version = "v6.3";
-    const r = await check();
-    expect(codes(r, "error")).toContain("kh_version_too_old");
-    expect(item(r, "kh_version_too_old")?.params).toEqual({ found: "v6.3" });
-  });
-  it("HUB-FR-137 · HUB-BR-36 · A41 · secret không phải JSON ⇒ kh_credentials_invalid (không gọi token); client_secret sai ⇒ kh_credentials_rejected; token 500 ⇒ kh_token_failed", async () => {
-    await prep({ secret: K1.secAcmeBad });
-    const bad = await check();
-    expect(codes(bad, "error")).toEqual(["kh_credentials_invalid"]);
-    expect(bad.text.includes("qc-K1-not-json")).toBe(false);
-    expect(c.kh.calls.some((x) => x.path === "/v1/token")).toBe(false);
-    await prep({ secret: K1.secAcmeWrong });
-    expect(codes(await check(), "error")).toEqual(["kh_credentials_rejected"]);
-    await prep();
-    c.kh.g.tokenStatus = 500;
-    const r = await check();
-    expect(codes(r, "error")).toEqual(["kh_token_failed"]);
-    expect(item(r, "kh_token_failed")?.params).toEqual({ status: 500 });
-  });
-  it("HUB-FR-131 · A42 · capabilities thiếu v1 ⇒ kh_api_v1_missing; thiếu retrieval ⇒ kh_capability_missing {name}", async () => {
-    await prep();
-    c.kh.g.capabilities = { ...DEFAULT_CAPS, api_versions: ["v0"] };
-    expect(codes(await check(), "error")).toContain("kh_api_v1_missing");
-    await prep();
-    c.kh.g.capabilities = { ...DEFAULT_CAPS, capabilities: [{ name: "events", status: "beta" }] };
-    const r = await check();
-    expect(codes(r, "error")).toContain("kh_capability_missing");
-    expect(item(r, "kh_capability_missing")?.params).toEqual({ name: "retrieval" });
-  });
-  it("HUB-BR-35 · A43 · khoá thuộc ns khác ⇒ kh_ns_mismatch {found}; ns chưa kích hoạt ⇒ kh_ns_not_active", async () => {
-    await prep();
-    c.kh.set(NS.acme, { meNs: "other_ns" });
-    const r = await check();
-    expect(codes(r, "error")).toContain("kh_ns_mismatch");
-    expect(item(r, "kh_ns_mismatch")?.params).toEqual({ found: "other_ns" });
-    await prep();
-    c.kh.set(NS.acme, { scenario: "ns_not_active" });
-    expect(codes(await check(), "error")).toContain("kh_ns_not_active");
-  });
-  it("HUB-FR-131 · A44 · manifest_rev 0 ⇒ kh_manifest_missing; thiếu keyspace ⇒ kh_keyspace_missing {keyspace}; 423 ⇒ cảnh báo kh_ns_suspended", async () => {
-    await prep();
-    c.kh.set(NS.acme, { manifestRev: 0 });
-    expect(codes(await check(), "error")).toContain("kh_manifest_missing");
-    await prep();
-    c.kh.set(NS.acme, { keyspaces: [{ keyspace: "other", dims: ["role"] }] });
-    const ks = await check();
-    expect(codes(ks, "error")).toEqual(["kh_keyspace_missing"]);
-    expect(item(ks, "kh_keyspace_missing")?.params).toEqual({ keyspace: "step" });
-    await prep();
-    c.kh.set(NS.acme, { scenario: "ns_suspended" });
-    expect(codes(await check(), "warning")).toContain("kh_ns_suspended");
-  });
-  it("HUB-BR-35 · A45 · project khai báo không gắn với khoá ⇒ kh_project_not_attached {project_id}; khoá không liệt kê project ⇒ cảnh báo kh_projects_unverified", async () => {
-    await prep();
-    c.kh.set(NS.acme, { projects: [PROJ.a] });
-    const r = await check();
-    expect(codes(r, "error")).toEqual(["kh_project_not_attached"]);
-    expect(item(r, "kh_project_not_attached")?.params).toEqual({ project_id: PROJ.b });
-    await prep();
-    c.kh.set(NS.acme, { projects: [] });
-    const u = await check();
-    expect([u.json?.status, codes(u, "warning").includes("kh_projects_unverified")]).toEqual([
-      "ok",
-      true,
-    ]);
+  it("HUB-BR-36 · A28 · secret không giải mã được ⇒ kh_key_invalid, không gửi lời gọi có khoá", async () => {
+    need();
+    await c.sql`update hub.secrets set ciphertext = ${Buffer.from("qc-K1-hong")} where id = ${K1.secMain2}`;
+    const r = await check({ secretId: K1.secMain2 });
+    expect([r.status, codes(r)]).toEqual(["error", ["error:kh_key_invalid"]]);
+    expect(c.khA.calls.filter((x) => x.sentKey)).toEqual([]);
   });
 });
 
-describe("A46–A47 · chưa cấu hình [spec §3.2]", () => {
-  it("HUB-FR-131 · A46 · thiếu base_url / thiếu secret_id ⇒ 409 KH_NOT_CONFIGURED; tenant chưa có hàng ⇒ 404", async () => {
-    await prep({ url: null });
+describe("A29–A31 · mạng, URL, project [plan §3.1 bước 1–2, 6]", () => {
+  it("HUB-FR-131 · A29 · /health 503 ⇒ kh_unreachable {status:503}; origin chết ⇒ kh_unreachable; KH chậm hơn timeout ⇒ kh_timeout (vẫn 200)", async () => {
+    need();
+    c.khA.set({ healthStatus: 503 });
     const a = await check();
-    expect([a.status, errCode(a)]).toEqual([409, "KH_NOT_CONFIGURED"]);
-    await prep({ secret: null });
-    const b = await check();
-    expect([b.status, errCode(b)]).toEqual([409, "KH_NOT_CONFIGURED"]);
-    expect((await studio(c, "POST", `/tenants/${T.beta}/check`)).status).toBe(404);
-    expect((await studio(c, "POST", `/tenants/${NONE}/check`)).status).toBe(404);
+    expect([a.status, codes(a)]).toEqual(["error", ["error:kh_unreachable"]]);
+    expect(item(a, "kh_unreachable").params).toEqual({ status: 503 });
+    await c.sql`delete from hub.kh_connections`;
+    const b = await check({ base: dead });
+    expect([b.status, codes(b)]).toEqual(["error", ["error:kh_unreachable"]]);
+    await c.sql`delete from hub.kh_connections`;
+    c.khA.reset();
+    c.khA.set({ slow: true });
+    const t = await check();
+    expect([t.status, codes(t)]).toEqual(["error", ["error:kh_timeout"]]);
   });
-  it("HUB-FR-131 · A47 · kết quả kiểm hiện ở GET /kh/tenants (status + check) và không chứa token/secret", async () => {
-    await prep({ projects: [{ id: PROJ.shared, ro: true }] });
-    c.kh.set(NS.acme, { peopleLanes: true });
-    expect((await check()).json?.status).toBe("error");
-    const l = await studio(c, "GET", "/tenants");
-    const acme = (l.json?.items ?? []).find((i: { ns: string }) => i.ns === NS.acme);
-    expect(acme?.status).toBe("error");
-    expect(
-      acme?.check?.items?.some((i: { code: string }) => i.code === "kh_people_lanes_on_shared"),
-    ).toBe(true);
-    for (const t of c.kh.tokens) expect(l.text.includes(t)).toBe(false);
-    expect(l.text.includes("qc-K1-acme")).toBe(false);
+  it("HUB-BR-37 · A30 · base_url không còn qua allowlist lúc kiểm (đổi trong DB) ⇒ kh_url_not_allowed {reason}, không gọi ra ngoài", async () => {
+    need();
+    const r = await check({ base: "https://evil.example.com" });
+    expect([r.status, codes(r)]).toEqual(["error", ["error:kh_url_not_allowed"]]);
+    expect(item(r, "kh_url_not_allowed").params).toEqual({ reason: "not_in_allowlist" });
+    expect([...c.khA.calls, ...c.khB.calls]).toEqual([]);
+  });
+  it("HUB-FR-132 · HUB-FR-133 · Q31 · A31 · /projects 500 ⇒ kh_unreachable; rỗng ⇒ kh_projects_empty; summary_project khoá không thấy ⇒ kh_summary_project_missing", async () => {
+    need();
+    c.khA.set({ projectsStatus: 500 });
+    const a = await check();
+    expect([a.status, codes(a)]).toEqual(["error", ["error:kh_unreachable"]]);
+    await c.sql`delete from hub.kh_connections`;
+    c.khA.reset();
+    c.khA.set({ projects: [] });
+    const b = await check({ summary: null });
+    expect([b.status, b.projects, codes(b)]).toEqual(["ok", [], ["warning:kh_projects_empty"]]);
+    await c.sql`delete from hub.kh_connections`;
+    c.khA.reset();
+    const d = await check({ summary: "proj-x" });
+    expect([d.status, codes(d)]).toEqual(["ok", ["warning:kh_summary_project_missing"]]);
+    expect(item(d, "kh_summary_project_missing").params).toEqual({ project_id: "proj-x" });
   });
 });

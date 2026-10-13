@@ -1,4 +1,4 @@
-// HUB-FR-132 · HUB-FR-133 · HUB-FR-134 · hạ tầng chạy quy trình K1 (test-plan K1 §2): bắt đầu run ở phòng R, claim job stage
+// HUB-FR-132 · HUB-FR-133 · HUB-FR-134 · CR-073 · hạ tầng chạy quy trình K1 (test-plan K1 §2): bắt đầu run ở phòng R, claim job stage
 // bằng Runtime giả, trả output, chấm gate, gọi `kh-query` qua `/mcp` bằng token job, đọc `kh_writes`/`kh_stage_usage`.
 // Dùng lại helper PF1 (`jobDone`, `review`) và H2a (`toolCall`, `rpcRaw`) — chỉ cần `sql`/`rt`/`call`/`base` (ép kiểu).
 // Không chứa `it(...)`.
@@ -141,3 +141,10 @@ export async function runToJob(
   const sr = await stageRow(c.sql, runId, idx);
   return { runId, job, token, stageRunId: sr?.id };
 }
+/** Hàng `kh_jobs` của job (KH + nhãn chốt lúc tạo job — plan D6). */
+export async function khJobOf(sql: Sql, jobId: string): Promise<Json> {
+  const [r] = await sql`select * from hub.kh_jobs where job_id = ${jobId}`;
+  return r ? { ...r } : undefined;
+}
+/** Nội dung prompt của job (payload.prompt). */
+export const promptOf = (j: Job): string => String((j.payload as Json)?.prompt ?? "");

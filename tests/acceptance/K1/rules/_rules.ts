@@ -1,4 +1,4 @@
-// HUB-FR-131…134 · HUB-FR-137 · nạp động module thuần K1 (plan §2.1–§2.3) — test viết TRƯỚC code: import tĩnh file chưa có
+// HUB-FR-131…134 · nạp động module thuần K1 (plan §2.1–§2.5, CR-073) — test viết TRƯỚC code: import tĩnh file chưa có
 // làm vỡ `bun run typecheck`. Module/export vắng ⇒ `{}` ⇒ ca đỏ ở `fn()` ("qc: <tên> chưa có"). Không DB/env.
 import { join } from "node:path";
 import { type Loose, ROOT } from "../../M1/_modules";
@@ -17,12 +17,12 @@ const DIR = "apps/hub-api/src/modules/kh";
 export const loadRules = () => tryLoad(`${DIR}/kh.rules.ts`);
 /** plan §2.2 */
 export const loadCheck = () => tryLoad(`${DIR}/kh.check.rules.ts`);
-/** plan §2.3 (`summaryForWorklog`, `clipWords`, `worklogSubject`, `worklogIdemKey`, `queryIdemKey`, `khToolText`). */
+/** plan §2.3 */
+export const loadAgent = () => tryLoad(`${DIR}/kh.agent.rules.ts`);
+/** plan §2.4 */
+export const loadQuery = () => tryLoad(`${DIR}/kh.query.rules.ts`);
+/** plan §2.5 */
 export const loadSummary = () => tryLoad(`${DIR}/kh.summary.rules.ts`);
-/** plan §2.3 (`ensureSummary`, `planKhSnapshot`, `shouldWriteSummary`, `khToolAllowed`) — `kh.plan.ts`; tìm cả hai file. */
-export async function loadPlan(): Promise<Loose> {
-  return { ...(await loadSummary()), ...(await tryLoad(`${DIR}/kh.plan.ts`)) };
-}
 export const loadHubAdmin = (): Promise<Loose> => import("@ai/contracts/hub-admin");
 export const loadChat = (): Promise<Loose> => import("@ai/contracts/chat");
 export const loadStudio = (): Promise<Loose> => import("@ai/contracts/studio");
@@ -43,3 +43,12 @@ export function schema(m: Loose, name: string): any {
   return s;
 }
 export const ok = (s: { safeParse: Fn }, v: unknown): boolean => s.safeParse(v).success === true;
+/** Mảng / zod enum / object hằng ⇒ danh sách chuỗi phẳng (hình hằng không ép buộc). */
+export function flat(v: unknown): string[] {
+  if (Array.isArray(v)) return v.flatMap(flat);
+  if (typeof v === "string") return [v];
+  const o = v as { options?: unknown } | null;
+  if (o && Array.isArray(o.options)) return flat(o.options);
+  if (o && typeof o === "object") return [...Object.keys(o), ...Object.values(o).flatMap(flat)];
+  return [];
+}

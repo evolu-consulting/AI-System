@@ -1,355 +1,386 @@
-// HUB-FR-131 · HUB-FR-132 · HUB-BR-35 · HUB-BR-36 · HUB-BR-37 · K1-AC09a · spec §3.2 (Studio `/studio/api/kh*`, chỉ platform_admin)
-// + §3.6 audit + §4 used_by · test-plan K1 §4 A01–A24: cài đặt URL (allowlist, version, đổi URL ⇒ unchecked), tenant ↔ ns ↔
-// secret (tạo/sửa/xoá, mã lỗi), list + cursor, agent `knowledge_enabled`, xoá `kh_api_key` đang dùng ⇒ SECRET_IN_USE.
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+// HUB-FR-131 · HUB-FR-132 · HUB-BR-36 · HUB-BR-37 · K1-AC09a · CR-073 · spec §3.2 (Studio `/kh/connections*`, `PUT
+// /agents/:id/knowledge`), §3.5 (audit), §4 (`used_by` knowledge_hub) · plan §3.3, §4 · test-plan K1 §4 A01–A14: CRUD kết nối
+// (allowlist/https, `KH_SECRET_INVALID` not_found/wrong_kind/not_platform, `KH_CONNECTION_EXISTS`, đổi URL/khoá ⇒ unchecked,
+// `KH_CONNECTION_IN_USE {agents}`), gắn agent (≤ 5, thứ tự, chỉ agentic-cli, version), quyền platform_admin, audit, used_by.
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import {
+  agentKh,
   auditMaxK1,
   auditSinceK1,
+  CONN,
   type CtxK1,
+  checkResult,
   configVersion,
+  connRow,
   errCode,
   errDetails,
   K1,
+  KEY,
   NONE,
-  NS,
+  needK1,
   P1,
-  PROJ,
-  seedBinding,
-  setBaseUrl,
+  putAgentKh,
+  seedConn,
   startK1,
   studio,
-  T,
-  tenantRow,
+  tick,
 } from "./_k1";
 
 let c: CtxK1;
 beforeAll(async () => {
-  c = await startK1({ seed: "secrets" });
+  c = await startK1({ seed: "secrets", extraOrigins: ["http://kh.example.com"] });
 }, 90_000);
 afterAll(async () => {
   await c?.stop();
 });
+beforeEach(async () => {
+  if (!c.k1 || !c.sec) return;
+  await c.sql`delete from hub.agent_kh`;
+  await c.sql`delete from hub.kh_connections`;
+});
 
-const need = () =>
-  expect({ migration0029: c.k1, hubSecrets: c.sec }).toEqual({
-    migration0029: true,
-    hubSecrets: true,
-  });
-async function clean(): Promise<void> {
-  need();
-  await c.sql`delete from hub.kh_bindings`;
-  await c.sql`delete from hub.kh_projects`;
-  await c.sql`delete from hub.kh_tenants`;
-  await setBaseUrl(c.sql, null);
-}
+const need = () => needK1(c);
 const body = (o: Record<string, unknown> = {}) => ({
-  ns: NS.acme,
-  secret_id: K1.secAcme,
-  keyspace: "step",
-  projects: [
-    { project_id: PROJ.a, label: "Dự án A" },
-    { project_id: PROJ.b },
-    { project_id: PROJ.shared, read_only: true },
-  ],
+  name: CONN.main,
+  base_url: `${c.khA.base}/`,
+  secret_id: K1.secMain,
+  summary_project: "proj-a",
   ...o,
 });
-const putTenant = (tenant: string, b: unknown) => studio(c, "PUT", `/tenants/${tenant}`, b);
-async function settingsVersion(): Promise<number> {
-  return Number((await studio(c, "GET", "/settings")).json?.version ?? -1);
+const create = (o: Record<string, unknown> = {}) => studio(c, "POST", "", body(o));
+const seedMain = (status: "ok" | "unchecked" = "ok") =>
+  seedConn(c.sql, {
+    id: K1.connMain,
+    name: CONN.main,
+    baseUrl: c.khA.base,
+    secretId: K1.secMain,
+    summary: "proj-a",
+    status,
+    projects: ["proj-a", "proj-b"],
+  });
+async function agentVersion(id: string): Promise<number> {
+  const [r] = await c.sql<{ v: number }[]>`select version as v from hub.agents where id = ${id}`;
+  return r?.v ?? -1;
 }
 
-describe("A01–A06 · cài đặt URL [spec §3.2 · HUB-BR-37]", () => {
-  it("HUB-FR-131 · A01 · GET /kh/settings ⇒ 200 {base_url null, allowed_origins từ env (chỉ đọc), timeout_ms, version}", async () => {
-    await clean();
-    const r = await studio(c, "GET", "/settings");
-    expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({
-      base_url: null,
-      allowed_origins: [c.kh.origin],
-      timeout_ms: 1000,
-    });
-    expect(Number.isInteger(r.json?.version)).toBe(true);
-  });
-  it("HUB-FR-131 · A02 · tenant_admin / member ⇒ 403 ở mọi route Studio KH (trước parse)", async () => {
+describe("A01–A07 · tạo + đọc kết nối [spec §3.2]", () => {
+  it("HUB-FR-131 · A01 · POST ⇒ 201 KhConnection (unchecked, check null, secret {id,name}, base_url bỏ '/', agents_count 0, v1) + audit create + bump config", async () => {
     need();
-    for (const role of ["Adm", "A"] as const) {
-      const got = [
-        (await studio(c, "GET", "/settings", undefined, role)).status,
-        (await studio(c, "PUT", "/settings", { bad: 1 }, role)).status,
-        (await studio(c, "GET", "/tenants", undefined, role)).status,
-        (await studio(c, "PUT", `/tenants/${T.acme}`, { bad: 1 }, role)).status,
-        (await studio(c, "POST", `/tenants/${T.acme}/check`, undefined, role)).status,
-      ];
-      expect({ role, got }).toEqual({ role, got: [403, 403, 403, 403, 403] });
-    }
-  });
-  it("HUB-FR-131 · HUB-FR-69 · A03 · PUT URL hợp lệ ⇒ 200, version+1, bump hub_config_version, audit update kh_settings {base_url, version}", async () => {
-    await clean();
-    const v = await settingsVersion();
-    const [a0, cv0] = [await auditMaxK1(c.sql), await configVersion(c.sql)];
-    const r = await studio(c, "PUT", "/settings", { base_url: `${c.kh.base}/`, version: v });
-    expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({ base_url: c.kh.base, version: v + 1 });
-    expect(await configVersion(c.sql)).toBeGreaterThan(cv0);
-    const au = await auditSinceK1(c.sql, a0, "kh_settings");
-    expect(au.map((x) => [x.action, x.entity_name, x.tenant_id])).toEqual([["update", "kh", null]]);
-    expect(au[0]?.after).toMatchObject({ base_url: c.kh.base, version: v + 1 });
-  });
-  it("HUB-BR-37 · A04 · URL ngoài allowlist / có userinfo ⇒ 422 KH_URL_NOT_ALLOWED {reason}; 0 ghi", async () => {
-    await clean();
-    const v = await settingsVersion();
     const a0 = await auditMaxK1(c.sql);
-    const out = await studio(c, "PUT", "/settings", {
-      base_url: "https://evil.example.com",
-      version: v,
-    });
-    expect([out.status, errCode(out), errDetails(out)?.reason]).toEqual([
-      422,
-      "KH_URL_NOT_ALLOWED",
-      "not_in_allowlist",
-    ]);
-    const ui = await studio(c, "PUT", "/settings", {
-      base_url: "https://u:p@kh.example.com",
-      version: v,
-    });
-    expect([ui.status, errCode(ui), errDetails(ui)?.reason]).toEqual([
-      422,
-      "KH_URL_NOT_ALLOWED",
-      "invalid",
-    ]);
-    expect(await settingsVersion()).toBe(v);
-    expect(await auditSinceK1(c.sql, a0)).toEqual([]);
-  });
-  it("HUB-FR-69 · A05 · version cũ ⇒ 409 VERSION_CONFLICT; body sai kiểu ⇒ 400", async () => {
-    await clean();
-    const v = await settingsVersion();
-    const r = await studio(c, "PUT", "/settings", { base_url: c.kh.base, version: v + 7 });
-    expect([r.status, errCode(r)]).toEqual([409, "VERSION_CONFLICT"]);
-    expect((await studio(c, "PUT", "/settings", { base_url: 5, version: v })).status).toBe(400);
-  });
-  it("HUB-FR-131 · Q5 · A06 · đổi URL ⇒ mọi tenant về unchecked (check giữ hay null không quan trọng, status phải unchecked)", async () => {
-    await clean();
-    await setBaseUrl(c.sql, c.kh.base);
-    await c.sql`insert into hub.kh_tenants (tenant_id, ns, secret_id, check_status) values
-      (${T.acme}, ${NS.acme}, ${K1.secAcme}, 'ok'), (${T.beta}, ${NS.beta}, ${K1.secBeta}, 'error')`;
-    const v = await settingsVersion();
-    expect(
-      (await studio(c, "PUT", "/settings", { base_url: `${c.kh.base}/kh`, version: v })).status,
-    ).toBe(200);
-    expect([
-      (await tenantRow(c.sql, T.acme))?.check_status,
-      (await tenantRow(c.sql, T.beta))?.check_status,
-    ]).toEqual(["unchecked", "unchecked"]);
-  });
-});
-
-describe("A10–A19 · tenant ↔ ns ↔ secret [spec §3.2 · HUB-BR-35]", () => {
-  it("HUB-FR-131 · HUB-BR-36 · A10 · tạo ⇒ 201 KhTenant (unchecked, enabled false, secret {id,name}, version 1), không giá trị secret; audit create", async () => {
-    await clean();
-    const a0 = await auditMaxK1(c.sql);
-    const r = await putTenant(T.acme, body());
+    const v0 = await configVersion(c.sql);
+    const r = await create();
     expect(r.status).toBe(201);
     expect(r.json).toMatchObject({
-      tenant: { id: T.acme, key: "acme", name: "Acme Corp" },
-      ns: NS.acme,
-      secret: { id: K1.secAcme, name: "kh-acme" },
-      keyspace: "step",
-      enabled: false,
+      name: CONN.main,
+      base_url: c.khA.base,
+      secret: { id: K1.secMain, name: "kh-key-main" },
+      summary_project: "proj-a",
       status: "unchecked",
       check: null,
+      agents_count: 0,
       version: 1,
     });
-    expect(r.json?.projects).toEqual([
-      { project_id: PROJ.a, label: "Dự án A", read_only: false },
-      { project_id: PROJ.b, label: "", read_only: false },
-      { project_id: PROJ.shared, label: "", read_only: true },
+    expect(await configVersion(c.sql)).toBeGreaterThan(v0);
+    const au = await auditSinceK1(c.sql, a0, "kh_connection");
+    expect(au.map((x) => [x.action, x.tenant_id, x.entity_name])).toEqual([
+      ["create", null, CONN.main],
     ]);
-    expect(r.text.includes("client_secret")).toBe(false);
-    const au = await auditSinceK1(c.sql, a0, "kh_tenant");
-    expect(au.map((x) => [x.action, x.entity_name, x.tenant_id])).toEqual([
-      ["create", `acme:${NS.acme}`, T.acme],
-    ]);
+    expect(au[0]?.after).toEqual({
+      name: CONN.main,
+      base_url: c.khA.base,
+      secret_id: K1.secMain,
+      summary_project: "proj-a",
+      version: 1,
+    });
+    expect(JSON.stringify(au)).not.toContain(KEY.a);
   });
-  it("HUB-FR-131 · A11 · tạo lần hai ⇒ 409 KH_TENANT_EXISTS; ns đã dùng bởi tenant khác ⇒ 409 KH_NS_TAKEN", async () => {
-    await clean();
-    expect((await putTenant(T.acme, body())).status).toBe(201);
-    const again = await putTenant(T.acme, body());
-    expect([again.status, errCode(again)]).toEqual([409, "KH_TENANT_EXISTS"]);
-    const taken = await putTenant(T.beta, body({ secret_id: K1.secBeta, projects: [] }));
-    expect([taken.status, errCode(taken)]).toEqual([409, "KH_NS_TAKEN"]);
+  it("HUB-FR-131 · A02 · GET ⇒ items sắp lower(name), allowed_origins + timeout_ms theo cấu hình, phân trang cursor; summary_project vắng ⇒ null", async () => {
+    need();
+    expect((await create({ name: "Zeta" })).status).toBe(201);
+    const b = await create({
+      name: "alpha",
+      base_url: c.khB.base,
+      secret_id: K1.secAlt,
+      summary_project: undefined,
+    });
+    expect([b.status, b.json?.summary_project]).toEqual([201, null]);
+    const r = await studio(c, "GET", "");
+    expect(r.status).toBe(200);
+    expect(r.json.items.map((x: { name: string }) => x.name)).toEqual(["alpha", "Zeta"]);
+    expect([...r.json.allowed_origins].sort()).toEqual([c.khA.origin, c.khB.origin].sort());
+    expect(r.json.timeout_ms).toBe(1000);
+    const p1 = await studio(c, "GET", "?limit=1");
+    expect([p1.json.items.length, typeof p1.json.next_cursor]).toEqual([1, "string"]);
+    const p2 = await studio(c, "GET", `?limit=1&cursor=${encodeURIComponent(p1.json.next_cursor)}`);
+    expect([p2.json.items[0]?.name, p2.json.next_cursor]).toEqual(["Zeta", null]);
   });
-  it("HUB-BR-35 · Q7 · A12 · secret phải là kh_api_key CỦA CHÍNH tenant ⇒ 422 KH_SECRET_INVALID {not_found|wrong_kind|wrong_tenant}", async () => {
-    await clean();
+  it("HUB-FR-131 · A03 · không phải platform_admin ⇒ 403 trước parse (body sai vẫn 403) ở mọi route kết nối + gắn agent", async () => {
+    need();
+    await seedMain();
+    for (const r of ["Adm", "A"] as const) {
+      const res = [
+        await studio(c, "GET", "", undefined, r),
+        await studio(c, "POST", "", { bad: 1 }, r),
+        await studio(c, "PUT", `/${K1.connMain}`, { bad: 1 }, r),
+        await studio(c, "DELETE", `/${K1.connMain}?version=1`, undefined, r),
+        await studio(c, "POST", `/${K1.connMain}/check`, undefined, r),
+        await putAgentKh(c, P1.agM1, { bad: 1 }, r),
+      ];
+      expect({ r, s: res.map((x) => x.status) }).toEqual({ r, s: [403, 403, 403, 403, 403, 403] });
+    }
+    expect(c.khA.calls).toEqual([]);
+  });
+  it("HUB-FR-131 · A04 · body sai ⇒ 400 (tên có '/', tên rỗng, base_url > 512, secret_id không uuid, summary_project sai, trường lạ)", async () => {
+    need();
+    for (const o of [
+      { name: "a/b" },
+      { name: "  " },
+      { base_url: `${c.khA.base}/${"a".repeat(520)}` },
+      { secret_id: "x" },
+      { summary_project: "a/b" },
+      { tenant_id: K1.secMain },
+    ]) {
+      const r = await create(o);
+      expect({ o, s: r.status }).toEqual({ o, s: 400 });
+    }
+  });
+  it("HUB-BR-37 · A05 · 422 KH_URL_NOT_ALLOWED: origin ngoài allowlist / http không loopback ⇒ not_https / userinfo ⇒ invalid", async () => {
+    need();
+    const cases: [string, string][] = [
+      ["https://evil.example.com", "not_in_allowlist"],
+      ["http://kh.example.com", "not_https"],
+      [`http://u:p@${c.khA.origin.slice(7)}`, "invalid"],
+      [`${c.khA.base}/?q=1`, "invalid"],
+    ];
+    for (const [u, reason] of cases) {
+      const r = await create({ base_url: u });
+      expect({ u, r: [r.status, errCode(r), errDetails(r)?.reason] }).toEqual({
+        u,
+        r: [422, "KH_URL_NOT_ALLOWED", reason],
+      });
+    }
+    expect(await c.sql`select id from hub.kh_connections`).toHaveLength(0);
+  });
+  it("HUB-BR-36 · Q29 · A06 · 422 KH_SECRET_INVALID: không có ⇒ not_found; provider_api_key ⇒ wrong_kind; kh_api_key của tenant ⇒ not_platform", async () => {
+    need();
     const cases: [string, string][] = [
       [NONE, "not_found"],
       [K1.secProv, "wrong_kind"],
-      [K1.secAcme, "wrong_tenant"],
-      [K1.secPlatKh, "wrong_tenant"],
+      [K1.secTenant, "not_platform"],
     ];
-    for (const [sid, reason] of cases) {
-      const r = await putTenant(T.beta, body({ ns: NS.beta, secret_id: sid, projects: [] }));
-      expect({ sid, got: [r.status, errCode(r), errDetails(r)?.reason] }).toEqual({
-        sid,
-        got: [422, "KH_SECRET_INVALID", reason],
+    for (const [id, reason] of cases) {
+      const r = await create({ secret_id: id });
+      expect({ id, r: [r.status, errCode(r), errDetails(r)?.reason] }).toEqual({
+        id,
+        r: [422, "KH_SECRET_INVALID", reason],
       });
     }
-    expect(await tenantRow(c.sql, T.beta)).toBeUndefined();
   });
-  it("HUB-BR-35 · A13 · ns sai luật / project trùng / > 50 project / tenant không tồn tại ⇒ 400 (path)", async () => {
-    await clean();
-    for (const ns of ["khacme", "admin", "Ac", "a-b"])
-      expect({ ns, s: (await putTenant(T.acme, body({ ns }))).status }).toEqual({ ns, s: 400 });
-    const dup = await putTenant(
-      T.acme,
-      body({ projects: [{ project_id: "p1" }, { project_id: "p1" }] }),
-    );
-    expect(dup.status).toBe(400);
-    const many = Array.from({ length: 51 }, (_, i) => ({ project_id: `p${i}` }));
-    expect((await putTenant(T.acme, body({ projects: many }))).status).toBe(400);
-    const ghost = await putTenant(NONE, body());
-    expect(ghost.status).toBe(400);
-    expect(JSON.stringify(errDetails(ghost) ?? {}).includes("tenant_id")).toBe(true);
-  });
-  it("HUB-FR-69 · A14 · sửa khi chưa có ⇒ 404; version cũ ⇒ 409 VERSION_CONFLICT {current}", async () => {
-    await clean();
-    expect((await putTenant(T.acme, body({ version: 1 }))).status).toBe(404);
-    expect((await putTenant(T.acme, body())).status).toBe(201);
-    const r = await putTenant(T.acme, body({ version: 5 }));
-    expect([r.status, errCode(r)]).toEqual([409, "VERSION_CONFLICT"]);
-  });
-  it("HUB-FR-131 · Q5 · A15 · đổi secret/project ⇒ 200, version+1, status unchecked, check null (kể cả đang ok)", async () => {
-    await clean();
-    expect((await putTenant(T.acme, body())).status).toBe(201);
-    await c.sql`update hub.kh_tenants set check_status = 'ok', checked_at = now(),
-      check_result = ${c.sql.json({ kh_version: "v6.4", keyspace_dims: ["role"], items: [] })} where tenant_id = ${T.acme}`;
-    const r = await putTenant(T.acme, body({ secret_id: K1.secAcme2, version: 1 }));
-    expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({
-      version: 2,
-      status: "unchecked",
-      check: null,
-      secret: { id: K1.secAcme2 },
-    });
-    expect((await tenantRow(c.sql, T.acme))?.check_status).toBe("unchecked");
-  });
-  it("HUB-FR-132 · A16 · bỏ project còn được gắn ⇒ 409 KH_PROJECT_IN_USE {project_id, process_defs:[{id,key,name}]}", async () => {
-    await clean();
-    expect((await putTenant(T.acme, body())).status).toBe(201);
-    await seedBinding(c.sql, K1.defFree, T.acme, null, { f1: PROJ.b });
-    const r = await putTenant(T.acme, body({ projects: [{ project_id: PROJ.a }], version: 1 }));
-    expect([r.status, errCode(r)]).toEqual([409, "KH_PROJECT_IN_USE"]);
-    expect(errDetails(r)).toMatchObject({
-      project_id: PROJ.b,
-      process_defs: [{ id: K1.defFree, key: "k1-free", name: "K1 tự do" }],
-    });
-  });
-  it("HUB-FR-131 · A17 · GET /kh/tenants sắp theo key, q lọc, limit + next_cursor", async () => {
-    await clean();
-    expect((await putTenant(T.acme, body())).status).toBe(201);
-    expect(
-      (await putTenant(T.beta, body({ ns: NS.beta, secret_id: K1.secBeta, projects: [] }))).status,
-    ).toBe(201);
-    const all = await studio(c, "GET", "/tenants");
-    expect(all.status).toBe(200);
-    expect(all.json?.items?.map((i: { tenant: { key: string } }) => i.tenant.key)).toEqual([
-      "acme",
-      "beta",
+  it("HUB-FR-131 · Q15 · A07 · trùng tên (khác hoa thường) ⇒ 409 KH_CONNECTION_EXISTS {id, field: name}; trùng base_url ⇒ field base_url", async () => {
+    need();
+    const a = await create();
+    expect(a.status).toBe(201);
+    const n = await create({ name: CONN.main.toUpperCase(), base_url: c.khB.base });
+    expect([n.status, errCode(n), errDetails(n)]).toEqual([
+      409,
+      "KH_CONNECTION_EXISTS",
+      { id: a.json.id, field: "name" },
     ]);
-    const q = await studio(c, "GET", "/tenants?q=bet");
-    expect(q.json?.items?.map((i: { ns: string }) => i.ns)).toEqual([NS.beta]);
-    const p1 = await studio(c, "GET", "/tenants?limit=1");
-    expect(p1.json?.items).toHaveLength(1);
-    expect(typeof p1.json?.next_cursor).toBe("string");
-    const p2 = await studio(
-      c,
-      "GET",
-      `/tenants?limit=1&cursor=${encodeURIComponent(p1.json?.next_cursor)}`,
-    );
-    expect(p2.json?.items?.map((i: { ns: string }) => i.ns)).toEqual([NS.beta]);
-    expect((await studio(c, "GET", "/tenants?limit=101")).status).toBe(400);
-  });
-  it("HUB-FR-131 · D16 · A18 · DELETE ?version ⇒ 204, CASCADE project + gắn quy trình, audit delete summary.bindings_removed; version cũ 409; chưa có 404", async () => {
-    await clean();
-    expect((await putTenant(T.acme, body())).status).toBe(201);
-    await seedBinding(c.sql, K1.defFree, T.acme, PROJ.a);
-    const stale = await studio(c, "DELETE", `/tenants/${T.acme}?version=9`);
-    expect([stale.status, errCode(stale)]).toEqual([409, "VERSION_CONFLICT"]);
-    const a0 = await auditMaxK1(c.sql);
-    expect((await studio(c, "DELETE", `/tenants/${T.acme}?version=1`)).status).toBe(204);
-    const [n] =
-      await c.sql`select (select count(*) from hub.kh_projects where tenant_id = ${T.acme})::int as p,
-      (select count(*) from hub.kh_bindings where tenant_id = ${T.acme})::int as b`;
-    expect({ ...n }).toEqual({ p: 0, b: 0 });
-    const au = await auditSinceK1(c.sql, a0, "kh_tenant");
-    expect(au.map((x) => x.action)).toEqual(["delete"]);
-    expect(au[0]?.summary).toMatchObject({ bindings_removed: 1 });
-    expect((await studio(c, "DELETE", `/tenants/${T.acme}?version=1`)).status).toBe(404);
-    expect((await c.sql`select 1 from hub.secrets where id = ${K1.secAcme}`).length).toBe(1);
+    const u = await create({ name: "khac" });
+    expect([u.status, errCode(u), errDetails(u)]).toEqual([
+      409,
+      "KH_CONNECTION_EXISTS",
+      { id: a.json.id, field: "base_url" },
+    ]);
   });
 });
 
-describe("A20–A22 · agent tri thức [D17 · spec §3.2]", () => {
-  const agentVersion = async (id: string) =>
-    Number((await c.sql`select version from hub.agents where id = ${id}`)[0]?.version ?? -1);
-  it("HUB-FR-132 · A20 · PUT /agents/:id/knowledge ⇒ 200 AgentWriteResponse, GET agent knowledge_enabled=true, audit update agent", async () => {
+describe("A08–A09 · sửa + xoá kết nối [spec §3.2 · Q34]", () => {
+  it("HUB-FR-131 · Q34 · A08 · PUT đổi tên / summary_project ⇒ giữ ok + check; đổi base_url hoặc secret_id ⇒ unchecked, check null; version tăng", async () => {
     need();
+    await seedMain("ok");
+    const put = (o: Record<string, unknown>, version: number) =>
+      studio(c, "PUT", `/${K1.connMain}`, { ...body(o), version });
+    const r1 = await put({ name: "kh-main-2", summary_project: "proj-b" }, 1);
+    expect(r1.status).toBe(200);
+    expect(r1.json).toMatchObject({
+      name: "kh-main-2",
+      summary_project: "proj-b",
+      status: "ok",
+      version: 2,
+    });
+    expect(r1.json.check?.status).toBe("ok");
+    const r2 = await put(
+      { name: "kh-main-2", secret_id: K1.secMain2, summary_project: "proj-b" },
+      2,
+    );
+    expect([r2.status, r2.json?.status, r2.json?.check, r2.json?.version]).toEqual([
+      200,
+      "unchecked",
+      null,
+      3,
+    ]);
+    await c.sql`update hub.kh_connections set check_status = 'ok', check_result = ${c.sql.json(checkResult(["proj-a"]))} where id = ${K1.connMain}`;
+    const r3 = await put(
+      {
+        name: "kh-main-2",
+        base_url: c.khB.base,
+        secret_id: K1.secMain2,
+        summary_project: "proj-b",
+      },
+      3,
+    );
+    expect([r3.status, r3.json?.status, r3.json?.check, r3.json?.base_url]).toEqual([
+      200,
+      "unchecked",
+      null,
+      c.khB.base,
+    ]);
+    const row = await connRow(c.sql, K1.connMain);
+    expect([row?.check_status, row?.check_result, row?.checked_at]).toEqual([
+      "unchecked",
+      null,
+      null,
+    ]);
+  });
+  it("HUB-FR-131 · A09 · PUT version cũ ⇒ 409 VERSION_CONFLICT {current, updated_at}; id lạ ⇒ 404; URL/secret sai ⇒ 422 như POST", async () => {
+    need();
+    await seedMain();
+    const stale = await studio(c, "PUT", `/${K1.connMain}`, { ...body(), version: 9 });
+    expect([stale.status, errCode(stale), errDetails(stale)?.current]).toEqual([
+      409,
+      "VERSION_CONFLICT",
+      1,
+    ]);
+    expect(typeof errDetails(stale)?.updated_at).toBe("string");
+    expect((await studio(c, "PUT", `/${NONE}`, { ...body(), version: 1 })).status).toBe(404);
+    const u = await studio(c, "PUT", `/${K1.connMain}`, {
+      ...body({ base_url: "https://evil.example.com" }),
+      version: 1,
+    });
+    expect([u.status, errCode(u)]).toEqual([422, "KH_URL_NOT_ALLOWED"]);
+    const s = await studio(c, "PUT", `/${K1.connMain}`, {
+      ...body({ secret_id: K1.secTenant }),
+      version: 1,
+    });
+    expect([s.status, errCode(s), errDetails(s)?.reason]).toEqual([
+      422,
+      "KH_SECRET_INVALID",
+      "not_platform",
+    ]);
+  });
+  it("HUB-FR-131 · A10 · DELETE: agent đang tick ⇒ 409 KH_CONNECTION_IN_USE {agents}; version sai ⇒ 409 VERSION_CONFLICT; gỡ ⇒ 204 + audit delete; lại ⇒ 404", async () => {
+    need();
+    await seedMain();
+    await tick(c.sql, P1.agM1, [K1.connMain]);
+    await tick(c.sql, P1.agM2, [K1.connMain]);
+    const used = await studio(c, "DELETE", `/${K1.connMain}?version=1`);
+    expect([used.status, errCode(used), errDetails(used)]).toEqual([
+      409,
+      "KH_CONNECTION_IN_USE",
+      { agents: 2 },
+    ]);
+    const list = await studio(c, "GET", "");
+    expect(list.json?.items?.[0]?.agents_count).toBe(2);
+    await c.sql`delete from hub.agent_kh`;
+    const stale = await studio(c, "DELETE", `/${K1.connMain}?version=5`);
+    expect([stale.status, errCode(stale)]).toEqual([409, "VERSION_CONFLICT"]);
+    const a0 = await auditMaxK1(c.sql);
+    expect((await studio(c, "DELETE", `/${K1.connMain}?version=1`)).status).toBe(204);
+    expect(await connRow(c.sql, K1.connMain)).toBeUndefined();
+    const au = await auditSinceK1(c.sql, a0, "kh_connection");
+    expect(au.map((x) => [x.action, x.entity_name])).toEqual([["delete", CONN.main]]);
+    expect((await studio(c, "DELETE", `/${K1.connMain}?version=1`)).status).toBe(404);
+    expect((await studio(c, "POST", `/${NONE}/check`)).status).toBe(404);
+  });
+});
+
+describe("A11–A13 · agent tick kết nối [spec §3.2 · D4]", () => {
+  const seedTwo = async () => {
+    await seedMain();
+    await seedConn(c.sql, {
+      id: K1.connAlt,
+      name: CONN.alt,
+      baseUrl: c.khB.base,
+      secretId: K1.secAlt,
+      summary: null,
+      status: "unchecked",
+    });
+  };
+  it("HUB-FR-132 · A11 · PUT /agents/:id/knowledge {connection_ids theo thứ tự tick, version} ⇒ 200; agent_kh đúng thứ tự; version +1; đọc agent có knowledge_connection_ids; list knowledge_count; audit update agent", async () => {
+    need();
+    await seedTwo();
     const v = await agentVersion(P1.agM1);
     const a0 = await auditMaxK1(c.sql);
-    const r = await c.call("P", "PUT", `/studio/api/agents/${P1.agM1}/knowledge`, {
-      knowledge_enabled: true,
+    const r = await putAgentKh(c, P1.agM1, {
+      connection_ids: [K1.connAlt, K1.connMain],
       version: v,
     });
     expect(r.status).toBe(200);
+    expect(await agentKh(c.sql, P1.agM1)).toEqual([K1.connAlt, K1.connMain]);
+    expect(await agentVersion(P1.agM1)).toBe(v + 1);
     const g = await c.call("P", "GET", `/studio/api/agents/${P1.agM1}`);
-    expect(g.json?.agent?.knowledge_enabled ?? g.json?.knowledge_enabled).toBe(true);
+    expect(g.json?.agent?.knowledge_connection_ids ?? g.json?.knowledge_connection_ids).toEqual([
+      K1.connAlt,
+      K1.connMain,
+    ]);
+    const li = await c.call("P", "GET", "/studio/api/agents");
+    const items = (li.json?.items ?? li.json ?? []) as { id: string; knowledge_count?: number }[];
+    expect(items.find((x) => x.id === P1.agM1)?.knowledge_count).toBe(2);
     const au = await auditSinceK1(c.sql, a0, "agent");
-    expect(au.map((x) => [x.action, x.entity_name])).toEqual([["update", "m1"]]);
-    expect(au[0]?.after).toMatchObject({ knowledge_enabled: true });
+    expect(au.map((x) => x.action)).toEqual(["update"]);
+    expect(au[0]?.after).toMatchObject({ knowledge_connection_ids: [K1.connAlt, K1.connMain] });
+    const clear = await putAgentKh(c, P1.agM1, { connection_ids: [], version: v + 1 });
+    expect(clear.status).toBe(200);
+    expect(await agentKh(c.sql, P1.agM1)).toEqual([]);
   });
-  it("HUB-FR-132 · A21 · version cũ ⇒ 409; agent không phải agentic-cli ⇒ 422 KH_AGENT_RUNTIME; id lạ ⇒ 404; tenant_admin ⇒ 403", async () => {
+  it("HUB-FR-132 · Q22 · A12 · trùng / > 5 ⇒ 400 path connection_ids; id lạ ⇒ 422 KH_CONNECTION_NOT_FOUND {ids}; version cũ ⇒ 409; agent lạ ⇒ 404", async () => {
     need();
-    const stale = await c.call("P", "PUT", `/studio/api/agents/${P1.agM2}/knowledge`, {
-      knowledge_enabled: true,
-      version: 99,
+    await seedTwo();
+    const v = await agentVersion(P1.agM2);
+    const dup = await putAgentKh(c, P1.agM2, {
+      connection_ids: [K1.connMain, K1.connMain],
+      version: v,
     });
+    expect(dup.status).toBe(400);
+    expect(JSON.stringify(dup.json)).toContain("connection_ids");
+    const six = Array.from(
+      { length: 6 },
+      (_, i) => `c1a10000-0000-4000-8000-0000000005${String(i).padStart(2, "0")}`,
+    );
+    expect((await putAgentKh(c, P1.agM2, { connection_ids: six, version: v })).status).toBe(400);
+    const nf = await putAgentKh(c, P1.agM2, { connection_ids: [K1.connMain, NONE], version: v });
+    expect([nf.status, errCode(nf), errDetails(nf)]).toEqual([
+      422,
+      "KH_CONNECTION_NOT_FOUND",
+      { ids: [NONE] },
+    ]);
+    const stale = await putAgentKh(c, P1.agM2, { connection_ids: [K1.connMain], version: v + 9 });
     expect([stale.status, errCode(stale)]).toEqual([409, "VERSION_CONFLICT"]);
-    const llm = await c.call("P", "PUT", `/studio/api/agents/${K1.agLlm}/knowledge`, {
-      knowledge_enabled: true,
-      version: await agentVersion(K1.agLlm),
-    });
-    expect([llm.status, errCode(llm)]).toEqual([422, "KH_AGENT_RUNTIME"]);
-    expect(
-      (
-        await c.call("P", "PUT", `/studio/api/agents/${NONE}/knowledge`, {
-          knowledge_enabled: true,
-          version: 1,
-        })
-      ).status,
-    ).toBe(404);
-    expect(
-      (
-        await c.call("Adm", "PUT", `/studio/api/agents/${P1.agM2}/knowledge`, {
-          knowledge_enabled: true,
-          version: 1,
-        })
-      ).status,
-    ).toBe(403);
+    expect((await putAgentKh(c, NONE, { connection_ids: [], version: 1 })).status).toBe(404);
+    expect(await agentKh(c.sql, P1.agM2)).toEqual([]);
+    expect(await agentVersion(P1.agM2)).toBe(v);
+  });
+  it("HUB-FR-132 · Q10 · A13 · agent runtime ≠ agentic-cli: list ≠ [] ⇒ 422 KH_AGENT_RUNTIME; [] ⇒ 200", async () => {
+    need();
+    await seedTwo();
+    const v = await agentVersion(K1.agLlm);
+    const r = await putAgentKh(c, K1.agLlm, { connection_ids: [K1.connMain], version: v });
+    expect([r.status, errCode(r)]).toEqual([422, "KH_AGENT_RUNTIME"]);
+    expect((await putAgentKh(c, K1.agLlm, { connection_ids: [], version: v })).status).toBe(200);
   });
 });
 
-describe("A23 · used_by knowledge_hub [K1-AC09a · spec §4]", () => {
-  it("HUB-FR-68 · K1-AC09a · A23 · xoá kh_api_key đang được KH trỏ tới ⇒ 409 SECRET_IN_USE, used_by có {type: knowledge_hub, id: tenant, key: ns}", async () => {
-    await clean();
-    expect((await putTenant(T.acme, body())).status).toBe(201);
-    const r = await c.call("P", "DELETE", `/studio/api/secrets/${K1.secAcme}?version=1`);
-    expect([r.status, errCode(r)]).toEqual([409, "SECRET_IN_USE"]);
-    expect(errDetails(r)?.used_by).toContainEqual({
-      type: "knowledge_hub",
-      id: T.acme,
-      key: NS.acme,
-    });
-    const g = await c.call("P", "GET", `/studio/api/secrets/${K1.secAcme}`);
-    expect(g.json?.used_by).toContainEqual({ type: "knowledge_hub", id: T.acme, key: NS.acme });
-    expect((await c.sql`select 1 from hub.secrets where id = ${K1.secAcme}`).length).toBe(1);
+describe("A14 · used_by secret [K1-AC09a · spec §4]", () => {
+  it("HUB-FR-131 · K1-AC09a · A14 · xoá kh_api_key đang được kết nối trỏ tới ⇒ 409 SECRET_IN_USE used_by [{type: knowledge_hub, id: kết nối, key: tên}]; GET secret cũng liệt kê", async () => {
+    need();
+    await seedMain();
+    const ub = [{ type: "knowledge_hub", id: K1.connMain, key: CONN.main }];
+    const g = await c.call("P", "GET", `/studio/api/secrets/${K1.secMain}`);
+    expect(g.json?.used_by).toEqual(ub);
+    const r = await c.call("P", "DELETE", `/studio/api/secrets/${K1.secMain}?version=1`);
+    expect([r.status, errCode(r), errDetails(r)?.used_by]).toEqual([409, "SECRET_IN_USE", ub]);
+    const free = await c.call("P", "GET", `/studio/api/secrets/${K1.secAlt}`);
+    expect(free.json?.used_by).toEqual([]);
   });
 });

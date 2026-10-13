@@ -1,7 +1,8 @@
 // CR-070 · HUB-FR-104 · K1-AC08 · spec §2 "Seed mẫu" + plan §6 (Q9) · test-plan K1 §4 A120–A122: `hub:seed` thư mục seed thật ⇒
 // mẫu `sdlc-delivery` (9 stage) + `bug-fix` (6 stage), ≤ 10 stage, executor/after/back_to_steps đúng plan §6, hợp
 // `ProcessStageDefSchema` + không vi phạm luật chéo stage (`processDefStageIssues`, gồm BACK_TARGET_INVALID); `sdlc` giữ 8 stage
-// như cũ (12 file test khoá của sdlc không đổi = `test:lock:verify`); seed lần 2 không nhân đôi.
+// như cũ (12 file test khoá của sdlc không đổi = `test:lock:verify`); seed lần 2 không nhân đôi. A123 (người dùng 2026-10-13, plan §6):
+// hai mẫu được CHÉP vào tenant `evolu` (cách P-a chép mẫu vào tenant), không chép vào acme/beta.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { ProcessStageDefSchema, processDefStageIssues } from "@ai/contracts/hub-admin";
 import { OWNER_URL } from "../H1/_fixtures";
@@ -36,6 +37,13 @@ async function execKeys(stages: Json[]): Promise<(string | undefined)[]> {
   return stages.map((s) => keyOf.get(s.executor.agent_id ?? s.executor.team_id));
 }
 const backOf = (s: Json) => s.after?.back_to_steps ?? [];
+const EVOLU = "c1a10000-0000-4000-8000-0000000e7010";
+async function ensureEvolu(): Promise<string> {
+  await sql`insert into admin.tenants (id, key, name, active) values (${EVOLU}, 'evolu', 'Evolu', true)
+    on conflict do nothing`;
+  const [t] = await sql<{ id: string }[]>`select id from admin.tenants where key = 'evolu'`;
+  return t?.id ?? EVOLU;
+}
 
 describe("A120–A122 · seed mẫu AISDLC [CR-070 · K1-AC08]", () => {
   it("CR-070 · K1-AC08 · A120 · sdlc-delivery 9 stage: key, executor, after, back_to_steps theo plan §6; hợp contract + luật chéo stage", async () => {
@@ -149,5 +157,28 @@ describe("A120–A122 · seed mẫu AISDLC [CR-070 · K1-AC08]", () => {
     const before = await n();
     await seed();
     expect(await n()).toBe(before);
+  });
+  it("CR-070 · K1-AC08 · A123 · tenant evolu có bản chép sdlc-delivery (9 stage) + bug-fix (6 stage) từ mẫu (source_template_id); acme/beta không có", async () => {
+    expect({ migration0019: ready }).toEqual({ migration0019: true });
+    const evolu = await ensureEvolu();
+    await seed();
+    for (const [key, n] of [
+      ["sdlc-delivery", 9],
+      ["bug-fix", 6],
+    ] as const) {
+      const t = await tpl(key);
+      const [d] = await sql<Json[]>`select * from hub.process_defs
+        where tenant_id = ${evolu} and key = ${key} and deleted_at is null`;
+      expect({ key, copied: d !== undefined }).toEqual({ key, copied: true });
+      expect({ key, src: d?.source_template_id, n: d?.stages?.length }).toEqual({
+        key,
+        src: t?.id,
+        n,
+      });
+      const [o] = await sql<{ n: number }[]>`select count(*)::int as n from hub.process_defs d
+        join admin.tenants x on x.id = d.tenant_id
+        where x.key in ('acme', 'beta') and d.key = ${key} and d.deleted_at is null`;
+      expect({ key, others: o?.n }).toEqual({ key, others: 0 });
+    }
   });
 });

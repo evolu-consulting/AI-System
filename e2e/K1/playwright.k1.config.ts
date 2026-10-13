@@ -1,6 +1,7 @@
-// HUB-FR-132 · HUB-FR-134 · K1 (test-plan K1 §4 E20–E31): dùng lại STACK P-b2 (Hub THẬT + Runtime giả P-a + admin-web +
-// chat-web, `e2e/P-b2/_pb2-stack.ts`); route KH (`/admin/kh*`, `/process-defs/:id/knowledge`, `StageView.knowledge`) giả lập bằng `page.route`. Đuôi `.k1.ts`.
-// Project = thư mục: `admin` (E20–E24), `chat` (E30–E31). Chạy từ gốc repo, 1 worker:
+// HUB-FR-133 · HUB-FR-134 · K1 (test-plan K1 §4 E20–E31, CR-073): dùng lại STACK P-b2 (Hub THẬT + Runtime giả P-a + admin-web +
+// chat-web, `e2e/P-b2/_pb2-stack.ts`; dữ liệu thử nghiệm acme riêng — UAT trên evolu là việc của qc-uat); `StageView.knowledge`
+// giả lập bằng `page.route`. Đuôi `.k1.ts`.
+// Project = thư mục: `admin` (E20–E21), `chat` (E30–E31). Chạy từ gốc repo, 1 worker:
 //   bunx playwright test -c e2e/K1/playwright.k1.config.ts --project=admin --reporter=line | tail -40
 // Env: `K1_E2E_ENV` (mặc định `.env.test-k1_e2e.local`, tạo bằng `bun run db:test:create k1_e2e`) đọc TRƯỚC `.env.local`
 // (không ghi đè) ⇒ DB test riêng. Cổng = `K1_E2E_PORT_BASE` (mặc định 4800): +1 admin-api · +2 hub-api · +3 Runtime giả

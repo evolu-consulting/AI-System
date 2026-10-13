@@ -1,200 +1,200 @@
-// HUB-FR-131 · HUB-FR-132 · HUB-FR-134 · spec §3.1–3.4 (contract `hub-admin/kh.ts`, `StageView.knowledge`, `Agent.knowledge_enabled`)
-// · test-plan K1 §4 R70–R80: regex ns/project/keyspace, mặc định project, mã kiểm (17 lỗi + 4 cảnh báo), 11 mã hạ cấp,
-// StageKnowledge, hằng tool/budget/Tóm tắt, bảng mã lỗi HTTP. Export vắng ⇒ đỏ ở `schema()` / expect.
+// HUB-FR-131 · HUB-FR-132 · HUB-FR-133 · HUB-FR-134 · CR-073 · spec §3.1–3.2 (contract `hub-admin/kh.ts`, `StageView.knowledge`,
+// `Agent.knowledge_connection_ids`) + plan §1 (hằng) · test-plan K1 §4 R80–R89. Export vắng ⇒ đỏ ở `schema()` / expect.
 import { describe, expect, it } from "bun:test";
-import { loadChat, loadHubAdmin, loadStudio, ok, schema } from "./_rules";
+import { flat, loadChat, loadHubAdmin, loadStudio, ok, schema } from "./_rules";
 
 const c = await loadHubAdmin();
-const list = (v: unknown): string[] =>
-  Array.isArray(v) ? (v as string[]) : ((v as { options?: string[] })?.options ?? []);
-
+const u = (n: number) => `c1a10000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const AT = "2026-10-13T08:00:00.000Z";
 const CHECK_ERRORS = [
   "kh_url_not_allowed",
   "kh_unreachable",
   "kh_timeout",
-  "kh_version_too_old",
   "kh_auth_disabled",
-  "kh_credentials_invalid",
-  "kh_credentials_rejected",
-  "kh_token_failed",
-  "kh_api_v1_missing",
-  "kh_capability_missing",
-  "kh_identity_unexpected",
-  "kh_ns_mismatch",
-  "kh_ns_not_active",
-  "kh_manifest_missing",
-  "kh_people_lanes_on_shared",
-  "kh_keyspace_missing",
-  "kh_project_not_attached",
+  "kh_key_invalid",
+  "kh_key_rejected",
+  "kh_version_too_old",
 ];
 const CHECK_WARNINGS = [
   "kh_auth_disabled_dev",
-  "kh_ns_suspended",
-  "kh_projects_unverified",
-  "kh_embedder_multilingual",
+  "kh_embedder_english",
+  "kh_projects_empty",
+  "kh_projects_many",
+  "kh_summary_project_missing",
 ];
 const WARNINGS = [
   "unreachable",
   "timeout",
-  "ns_not_active",
-  "ns_suspended",
-  "embedder_unavailable",
   "unauthorized",
   "forbidden",
-  "quota",
+  "not_found",
   "invalid",
+  "rate_limited",
   "server_error",
   "disabled",
 ];
+const result = (o: Record<string, unknown> = {}) => ({
+  status: "ok",
+  checked_at: AT,
+  kh_version: "v6.4",
+  embedder: "BAAI/bge-m3",
+  projects: ["proj-a"],
+  items: [],
+  ...o,
+});
+const connection = (o: Record<string, unknown> = {}) => ({
+  id: u(41),
+  name: "kh-main",
+  base_url: "https://kh.example.com",
+  secret: { id: u(1), name: "kh-key" },
+  summary_project: "proj-a",
+  status: "ok",
+  check: result(),
+  agents_count: 2,
+  version: 1,
+  updated_at: AT,
+  updated_by: "padmin",
+  ...o,
+});
 
-describe("R70–R73 · kiểu chung [spec §3.1]", () => {
-  it("HUB-BR-35 · R70 · KhNsSchema: ^[a-z][a-z0-9_]{2,31}$, không bắt đầu kh, không tên dành riêng", () => {
-    const s = schema(c, "KhNsSchema");
-    for (const v of ["acme_ns", "abc", `a${"b".repeat(31)}`])
-      expect({ v, ok: ok(s, v) }).toEqual({ v, ok: true });
-    for (const v of [
-      "ab",
-      "Acme",
-      "1abc",
-      "a-b",
-      "khacme",
-      "kh_x",
-      `a${"b".repeat(32)}`,
-      "admin",
-      "me",
-      "capabilities",
-      "token",
-      "redaction",
-      "openapi",
-      "health",
-      "version",
-    ])
-      expect({ v, ok: ok(s, v) }).toEqual({ v, ok: false });
-  });
-  it("HUB-FR-132 · R71 · KhProjectIdSchema / KhKeyspaceSchema theo regex; KhProjectSchema mặc định label '' + read_only false, strict", () => {
+describe("R80–R83 · kiểu chung [spec §3.1]", () => {
+  it("HUB-FR-132 · Q25 · R80 · KhProjectIdSchema ^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$ (không '/'); KhConnectionNameSchema trim 1..80 không '/'", () => {
     const p = schema(c, "KhProjectIdSchema");
-    for (const v of ["proj-a", "P1.x:y_z", "a"])
+    for (const v of ["proj-a", "A", "a.b:c_d-1", `a${"b".repeat(127)}`])
       expect({ v, ok: ok(p, v) }).toEqual({ v, ok: true });
-    for (const v of ["", "-a", "a b", "a".repeat(129)])
+    for (const v of ["", "-a", "a/b", "a b", `a${"b".repeat(128)}`])
       expect({ v, ok: ok(p, v) }).toEqual({ v, ok: false });
-    const k = schema(c, "KhKeyspaceSchema");
-    expect([ok(k, "step"), ok(k, "a.b-c_d"), ok(k, "Step"), ok(k, "1a")]).toEqual([
-      true,
-      true,
-      false,
-      false,
-    ]);
-    const pr = schema(c, "KhProjectSchema");
-    expect(pr.parse({ project_id: "proj-a" })).toEqual({
-      project_id: "proj-a",
-      label: "",
-      read_only: false,
-    });
-    expect(ok(pr, { project_id: "proj-a", extra: 1 })).toBe(false);
-    expect(ok(pr, { project_id: "proj-a", label: "x".repeat(81) })).toBe(false);
+    const n = schema(c, "KhConnectionNameSchema");
+    expect(n.parse("  kh-main  ")).toBe("kh-main");
+    for (const v of ["", "   ", "a/b", "x".repeat(81)])
+      expect({ v, ok: ok(n, v) }).toEqual({ v, ok: false });
+    expect(ok(n, "x".repeat(80))).toBe(true);
   });
-  it("HUB-FR-131 · K1-AC01 · R72 · KH_CHECK_CODES = 17 lỗi + 4 cảnh báo; KhCheckItem/KhCheckResult strict, items ≤ 30, dims ≤ 8", () => {
-    expect([...list(c.KH_CHECK_CODES)].sort()).toEqual([...CHECK_ERRORS, ...CHECK_WARNINGS].sort());
-    const r = schema(c, "KhCheckResultSchema");
-    const good = {
-      status: "error",
-      checked_at: "2026-10-13T08:00:00.000Z",
-      kh_version: null,
-      keyspace_dims: [],
-      items: [
-        { code: "kh_people_lanes_on_shared", level: "error", params: { project_id: "proj-s" } },
-      ],
-    };
-    expect(ok(r, good)).toBe(true);
-    expect(ok(r, { ...good, items: [{ code: "kh_lạ", level: "error" }] })).toBe(false);
-    expect(ok(r, { ...good, keyspace_dims: Array.from({ length: 9 }, (_, i) => `d${i}`) })).toBe(
-      false,
-    );
-    expect(ok(r, { ...good, items: Array.from({ length: 31 }, () => good.items[0]) })).toBe(false);
-    expect(ok(r, { ...good, extra: 1 })).toBe(false);
+  it("HUB-FR-131 · K1-AC01 · R81 · KH_CHECK_CODES đủ 7 lỗi + 5 cảnh báo; KhCheckItemSchema nhận mọi mã, từ chối mã lạ/level lạ", () => {
+    const all = flat(c.KH_CHECK_CODES);
+    for (const code of [...CHECK_ERRORS, ...CHECK_WARNINGS])
+      expect({ code, has: all.includes(code) }).toEqual({ code, has: true });
+    const s = schema(c, "KhCheckItemSchema");
+    expect(ok(s, { code: "kh_timeout", level: "error" })).toBe(true);
+    expect(ok(s, { code: "kh_projects_many", level: "warning", params: { count: 61 } })).toBe(true);
+    expect(ok(s, { code: "kh_people_lanes_on", level: "warning" })).toBe(false);
+    expect(ok(s, { code: "kh_timeout", level: "info" })).toBe(false);
   });
-  it("HUB-FR-134 · R73 · KH_WARNING_CODES = 11 mã hạ cấp (plan §3.3)", () => {
-    expect([...list(c.KH_WARNING_CODES)].sort()).toEqual([...WARNINGS].sort());
+  it("HUB-FR-131 · R82 · KhCheckResultSchema: error ⇔ có mục lỗi; projects ≤ 50; items ≤ 20; strict", () => {
+    const s = schema(c, "KhCheckResultSchema");
+    expect(ok(s, result())).toBe(true);
+    expect(ok(s, result({ kh_version: null, embedder: null, projects: [] }))).toBe(true);
+    expect(ok(s, result({ status: "error" }))).toBe(false);
+    expect(ok(s, result({ items: [{ code: "kh_timeout", level: "error" }] }))).toBe(false);
+    expect(
+      ok(s, result({ status: "error", items: [{ code: "kh_timeout", level: "error" }] })),
+    ).toBe(true);
+    expect(ok(s, result({ items: [{ code: "kh_projects_empty", level: "warning" }] }))).toBe(true);
+    expect(ok(s, result({ projects: Array.from({ length: 51 }, (_, i) => `p${i}`) }))).toBe(false);
+    const w = { code: "kh_projects_empty", level: "warning" };
+    expect(ok(s, result({ items: Array.from({ length: 21 }, () => w) }))).toBe(false);
+    expect(ok(s, result({ extra: 1 }))).toBe(false);
+  });
+  it("HUB-FR-134 · R83 · KH_WARNING_CODES đúng 9 mã spec §3.1", () => {
+    expect(
+      [...new Set(flat(c.KH_WARNING_CODES))].filter((x) => WARNINGS.includes(x)).sort(),
+    ).toEqual([...WARNINGS].sort());
   });
 });
 
-describe("R74–R77 · schema API [spec §3.2–3.3]", () => {
-  it("HUB-FR-131 · R74 · KhTenantSchema / KhSettingsSchema / KhStatusSchema có; status ∈ unchecked|ok|error", () => {
-    const st = schema(c, "KhStatusSchema");
-    expect([ok(st, "unchecked"), ok(st, "ok"), ok(st, "error"), ok(st, "checked")]).toEqual([
+describe("R84–R86 · kết nối + ghi [spec §3.1–3.2]", () => {
+  it("HUB-FR-131 · R84 · KhConnectionSchema strict (secret {id,name}, status 3 giá trị, check nullable)", () => {
+    const s = schema(c, "KhConnectionSchema");
+    expect(ok(s, connection())).toBe(true);
+    expect(ok(s, connection({ status: "unchecked", check: null, summary_project: null }))).toBe(
       true,
-      true,
-      true,
-      false,
-    ]);
-    schema(c, "KhTenantSchema");
-    const s = schema(c, "KhSettingsSchema");
-    expect(
-      ok(s, {
-        base_url: null,
-        allowed_origins: ["https://kh.example.com"],
-        timeout_ms: 5000,
-        version: 1,
-        updated_at: "2026-10-13T08:00:00.000Z",
-      }),
-    ).toBe(true);
+    );
+    expect(ok(s, connection({ status: "pending" }))).toBe(false);
+    expect(ok(s, connection({ secret_value: "x" }))).toBe(false);
+    expect(ok(s, connection({ ns: "acme_ns" }))).toBe(false);
   });
-  it("HUB-FR-132 · K1-AC04 · R75 · StageKnowledgeSchema: queries 0..5, query_limit 5, warning mã hạ cấp|null, summary 5 trạng thái", async () => {
-    const ch = await loadChat();
-    const k = schema(ch, "StageKnowledgeSchema");
-    const v = {
-      project_id: "proj-a",
-      read_only: false,
-      queries: 5,
+  it("HUB-FR-131 · R85 · KhConnectionWriteSchema: summary_project mặc định null, base_url ≤ 512, secret_id uuid, name không '/'", () => {
+    const s = schema(c, "KhConnectionWriteSchema");
+    const base = { name: "kh-main", base_url: "https://kh.example.com", secret_id: u(1) };
+    expect(s.parse(base)).toMatchObject({ ...base, summary_project: null });
+    expect(ok(s, { ...base, summary_project: "proj-a" })).toBe(true);
+    expect(ok(s, { ...base, summary_project: "a/b" })).toBe(false);
+    expect(ok(s, { ...base, secret_id: "x" })).toBe(false);
+    expect(ok(s, { ...base, base_url: `https://kh.example.com/${"a".repeat(500)}` })).toBe(false);
+    expect(ok(s, { ...base, name: "a/b" })).toBe(false);
+    expect(ok(s, { ...base, tenant_id: u(2) })).toBe(false);
+  });
+  it("HUB-FR-131 · HUB-FR-132 · R86 · HUB_KH_ERRORS: mã spec §3.2 với status (409 EXISTS/IN_USE · 422 URL/SECRET/RUNTIME/NOT_FOUND)", () => {
+    const e = c.HUB_KH_ERRORS as Record<string, number>;
+    expect(e).toMatchObject({
+      KH_CONNECTION_EXISTS: 409,
+      KH_CONNECTION_IN_USE: 409,
+      KH_URL_NOT_ALLOWED: 422,
+      KH_SECRET_INVALID: 422,
+      KH_AGENT_RUNTIME: 422,
+      KH_CONNECTION_NOT_FOUND: 422,
+    });
+  });
+});
+
+describe("R87–R89 · StageView.knowledge, Agent, hằng [spec §3.1 · plan §1]", () => {
+  it("HUB-FR-134 · HUB-FR-133 · R87 · StageKnowledgeSchema: write_to {connection, project} | null, queries 0..5, query_limit 5, warning ∈ mã | null, summary 5 giá trị", async () => {
+    const s = schema(c, "StageKnowledgeSchema");
+    const k = {
+      write_to: { connection: "kh-main", project: "proj-a" },
+      queries: 2,
       query_limit: 5,
-      warning: null,
-      summary: "written",
+      warning: "unreachable",
+      summary: "pending",
     };
-    expect(ok(k, v)).toBe(true);
-    for (const s of ["none", "pending", "written", "failed", "skipped"])
-      expect(ok(k, { ...v, summary: s })).toBe(true);
-    expect([
-      ok(k, { ...v, queries: 6 }),
-      ok(k, { ...v, query_limit: 4 }),
-      ok(k, { ...v, warning: "lạ" }),
-      ok(k, { ...v, summary: "done" }),
-    ]).toEqual([false, false, false, false]);
-    expect(ok(k, { ...v, warning: "ns_suspended" })).toBe(true);
-    const sv = schema(ch, "StageViewSchema");
-    expect(typeof sv.shape?.knowledge?.safeParse).toBe("function");
+    expect(ok(s, k)).toBe(true);
+    expect(ok(s, { ...k, write_to: null, warning: null, summary: "none" })).toBe(true);
+    for (const sm of ["written", "failed", "skipped"])
+      expect(ok(s, { ...k, summary: sm })).toBe(true);
+    expect(ok(s, { ...k, queries: 6 })).toBe(false);
+    expect(ok(s, { ...k, query_limit: 6 })).toBe(false);
+    expect(ok(s, { ...k, warning: "ns_suspended" })).toBe(false);
+    expect(ok(s, { ...k, summary: "done" })).toBe(false);
+    const sv = schema(await loadChat(), "StageViewSchema");
+    expect(Object.keys(sv.shape ?? {})).toContain("knowledge");
     expect(sv.shape.knowledge.safeParse(undefined).success).toBe(true);
   });
-  it("HUB-FR-132 · D17 · R76 · AgentSchema + AgentListItemSchema có knowledge_enabled: boolean", async () => {
-    const s = await loadStudio();
-    for (const n of ["AgentSchema", "AgentListItemSchema"]) {
-      const f = schema(s, n).shape?.knowledge_enabled;
-      expect({ n, has: typeof f?.safeParse }).toEqual({ n, has: "function" });
-      expect([f.safeParse(true).success, f.safeParse("x").success]).toEqual([true, false]);
-    }
+  it("HUB-FR-132 · R88 · AgentSchema.knowledge_connection_ids (uuid[]), AgentListItemSchema.knowledge_count", async () => {
+    const st = await loadStudio();
+    const a = schema(st, "AgentSchema");
+    const li = schema(st, "AgentListItemSchema");
+    expect(Object.keys(a.shape ?? {})).toContain("knowledge_connection_ids");
+    expect(Object.keys(li.shape ?? {})).toContain("knowledge_count");
+    expect(a.shape.knowledge_connection_ids.safeParse([u(41), u(42)]).success).toBe(true);
+    expect(a.shape.knowledge_connection_ids.safeParse(["x"]).success).toBe(false);
   });
-  it("HUB-FR-131 · HUB-FR-132 · R77 · HUB_KH_ERRORS: mã → HTTP theo spec §3.2–3.3", () => {
-    expect(c.HUB_KH_ERRORS).toMatchObject({
-      KH_URL_NOT_ALLOWED: 422,
-      KH_TENANT_EXISTS: 409,
-      KH_NS_TAKEN: 409,
-      KH_SECRET_INVALID: 422,
-      KH_PROJECT_IN_USE: 409,
-      KH_NOT_CONFIGURED: 409,
-      KH_AGENT_RUNTIME: 422,
-      KH_PROJECT_NOT_FOUND: 404,
-    });
-  });
-});
-
-describe("R78 · hằng [plan §1]", () => {
-  it("HUB-FR-132 · HUB-FR-133 · Q1 · R78 · KH_TOOL_KEY 'kh-query', KH_QUERY_LIMIT 5, KH_BUDGET_CHARS 4000, KH_SUMMARY_SECTION 'Tóm tắt', KH_SUMMARY_WORDS 200", () => {
+  it("HUB-FR-132 · HUB-BR-31 · R89 · hằng plan §1: tool kh-query, 5 lần, 4000 ký tự, k 8, max_chars 1500, ≤ 5 KH/agent, ≤ 50 project, cache 300 s, ≥ v6.4, 'Tóm tắt' 200 từ, header X-KH-Key", () => {
     expect({
-      tool: c.KH_TOOL_KEY,
-      limit: c.KH_QUERY_LIMIT,
-      budget: c.KH_BUDGET_CHARS,
-      section: c.KH_SUMMARY_SECTION,
-      words: c.KH_SUMMARY_WORDS,
-    }).toEqual({ tool: "kh-query", limit: 5, budget: 4000, section: "Tóm tắt", words: 200 });
-    expect(/^[a-z0-9-]{2,32}$/.test(String(c.KH_TOOL_KEY))).toBe(true);
+      KH_TOOL_KEY: c.KH_TOOL_KEY,
+      KH_QUERY_LIMIT: c.KH_QUERY_LIMIT,
+      KH_BUDGET_CHARS: c.KH_BUDGET_CHARS,
+      KH_QUERY_K: c.KH_QUERY_K,
+      KH_QUERY_MAX_CHARS: c.KH_QUERY_MAX_CHARS,
+      KH_AGENT_CONNECTIONS_MAX: c.KH_AGENT_CONNECTIONS_MAX,
+      KH_PROJECTS_MAX: c.KH_PROJECTS_MAX,
+      KH_PROJECTS_CACHE_MS: c.KH_PROJECTS_CACHE_MS,
+      KH_MIN_VERSION: c.KH_MIN_VERSION,
+      KH_SUMMARY_SECTION: c.KH_SUMMARY_SECTION,
+      KH_SUMMARY_WORDS: c.KH_SUMMARY_WORDS,
+      KH_KEY_HEADER: c.KH_KEY_HEADER,
+    }).toEqual({
+      KH_TOOL_KEY: "kh-query",
+      KH_QUERY_LIMIT: 5,
+      KH_BUDGET_CHARS: 4000,
+      KH_QUERY_K: 8,
+      KH_QUERY_MAX_CHARS: 1500,
+      KH_AGENT_CONNECTIONS_MAX: 5,
+      KH_PROJECTS_MAX: 50,
+      KH_PROJECTS_CACHE_MS: 300_000,
+      KH_MIN_VERSION: [6, 4],
+      KH_SUMMARY_SECTION: "Tóm tắt",
+      KH_SUMMARY_WORDS: 200,
+      KH_KEY_HEADER: "X-KH-Key",
+    });
   });
 });

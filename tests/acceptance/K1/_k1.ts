@@ -1,11 +1,10 @@
-// HUB-FR-131…134 · HUB-FR-137 · HUB-BR-35 · HUB-BR-36 · hạ tầng int K1 (test-plan K1 §2): DB sạch P-a + seed PF1 (agent
-// agentic-cli hd-read/hd-post, persona A lan · B hoa · Adm tadmin · P padmin · Db tadmin_beta) + KH GIẢ của qc (`_khfake.ts`)
-// + hub-api thật in-process (launcher thật, Runtime giả `ScriptRuntime`, `processLoops:false`) với seam:
-//   `kh: {allowedOrigins, timeoutMs}` (= env HUB_KH_ALLOWED_ORIGINS/HUB_KH_TIMEOUT_MS — test-plan §8 G1),
-//   `hubSecretsKey` (H4b-1 D11), `publicInternalUrl` (H2a — `mcp.url` của job).
-// Secret `kh_api_key` dựng bằng owner theo mã hoá đối chứng H4b-1 (`seedSecret`); bảng K1 (spec §4, plan §5) chèn bằng
-// owner CHỈ khi migration 0029 + `hub.secrets` có (`k1`/`sec`) ⇒ trước code ca đỏ ở `needK1` (không PostgresError).
-// Không chứa `it(...)`. jsonb qua `sql.json`.
+// HUB-FR-131…134 · HUB-BR-36 · CR-073 · hạ tầng int K1 (test-plan K1 §2): DB sạch P-a + seed PF1 (agent agentic-cli
+// hd-read/hd-post, persona A lan · B hoa · Adm tadmin · P padmin) + HAI KH GIẢ của qc (`_khfake.ts`: A ở `localhost` khoá
+// KEY.a thấy proj-a/proj-b, B ở `127.0.0.1` khoá KEY.b thấy proj-c) + hub-api thật in-process (Runtime giả `ScriptRuntime`,
+// `processLoops:false`) với seam: `kh: {allowedOrigins, timeoutMs}` (= env HUB_KH_ALLOWED_ORIGINS/HUB_KH_TIMEOUT_MS —
+// test-plan §8 G1), `hubSecretsKey` (H4b-1 D11), `publicInternalUrl` (H2a), `onProcessHandles` (`khWriteOnce`, G2).
+// Secret `kh_api_key` NỀN TẢNG (tenant null) dựng bằng mã hoá đối chứng H4b-1 (`seedSecret`); bảng K1 (spec §4, plan §5) chèn
+// bằng owner CHỈ khi migration 0029 + `hub.secrets` có ⇒ trước code ca đỏ ở `needK1` (không PostgresError). Không `it(...)`.
 import { expect } from "bun:test";
 import { createApp } from "../../../apps/hub-api/src/app";
 import { connectDb, pingDb } from "../../../apps/hub-api/src/lib/db";
@@ -29,7 +28,7 @@ import {
 } from "../P-a/_support/pa";
 import { insertDefPf1, P1, seedPf1 } from "../P-a/pf1/_local";
 import { st } from "../P-b2/_support/stages";
-import { type KhFake, nsDefaults, startKhFake } from "./_khfake";
+import { type KhFake, startKhFake } from "./_khfake";
 
 export { type Job, type Json, P1, PA, PA_FIX, type Res, type Role, type Sql, T, waitFor };
 
@@ -41,30 +40,28 @@ export function idK1(base: number): () => string {
 }
 export const NONE = x(999);
 
-export const NS = { acme: "acme_ns", beta: "beta_ns" } as const;
-export const PROJ = { a: "proj-a", b: "proj-b", shared: "proj-shared", beta: "proj-beta" } as const;
-/** Giá trị client_secret dễ nhận khi rò (quét "không lộ"). */
-export const CS = { acme: "qc-K1-acme-Zx9Pq7Lm-cs", beta: "qc-K1-beta-Zx9Pq7Lm-cs" } as const;
-export const cred = (ns: string, secret: string, extra: Json = {}): string =>
-  JSON.stringify({ client_id: `kh-ns-${ns}`, client_secret: secret, ...extra });
+/** Giá trị khoá dễ nhận khi rò (quét "không lộ"). */
+export const KEY = {
+  a: "qc-K1-keyA-Zx9Pq7Lm-kh",
+  b: "qc-K1-keyB-Zx9Pq7Lm-kh",
+  wrong: "qc-K1-wrong-Zx9Pq7Lm-kh",
+} as const;
+export const PROJ = { a: "proj-a", b: "proj-b", c: "proj-c" } as const;
 
 export const K1 = {
-  secAcme: x(1), // kh_api_key acme — credentials đúng acme_ns
-  secBeta: x(2), // kh_api_key beta — credentials đúng beta_ns
-  secAcmeBad: x(3), // kh_api_key acme — giá trị không phải JSON credentials
-  secAcmeWrong: x(4), // kh_api_key acme — JSON đúng dạng, client_secret sai ⇒ KH 401
-  secProv: x(5), // provider_api_key (nền tảng)
-  secPlatKh: x(6), // kh_api_key tenant null (Q7: K1 không nhận)
-  secAcme2: x(7), // kh_api_key acme thứ hai (đổi secret ⇒ unchecked)
+  secMain: x(1), // kh_api_key nền tảng = KEY.a (khoá của KH A)
+  secAlt: x(2), // kh_api_key nền tảng = KEY.b (khoá của KH B)
+  secTenant: x(3), // kh_api_key của tenant acme (CR-073: không nhận ⇒ not_platform)
+  secWrong: x(4), // kh_api_key nền tảng, giá trị sai ⇒ KH 401 (kh_key_rejected)
+  secProv: x(5), // provider_api_key nền tảng (wrong_kind)
+  secMain2: x(7), // kh_api_key nền tảng thứ hai = KEY.a (đổi khoá ⇒ unchecked)
   agLlm: x(21), // agent runtime llm (KH_AGENT_RUNTIME)
-  defAuto: x(31), // `k1-auto` 2 stage auto, gắn proj-a
-  defGate: x(32), // `k1-gate` stage 0 review Kế toán, stage 1 auto, gắn proj-a
-  defShared: x(33), // `k1-shared` 1 stage auto, gắn proj-shared (chỉ đọc)
-  defNone: x(34), // `k1-none` 1 stage auto, KHÔNG gắn (AC07 quy trình khác)
-  defMixed: x(35), // `k1-mixed` m0 tắt (override null), m1 theo quy trình proj-a
-  defBeta: x(36), // `k1-beta` (tenant beta)
-  defFree: x(37), // `k1-free` (acme) — dùng cho ca PUT binding qua API
+  defAuto: x(31), // `k1-auto` a0 (hd-read) auto, a1 (hd-post) auto
+  defGate: x(32), // `k1-gate` g0 (hd-read) review Kế toán, g1 (hd-read) auto
+  connMain: x(41), // "kh-main" → KH A, secMain, summary_project proj-a, ok
+  connAlt: x(42), // "kh-alt" → KH B, secAlt, summary_project null, ok
 } as const;
+export const CONN = { main: "kh-main", alt: "kh-alt" } as const;
 
 /** Output có `## Tóm tắt` (đủ mục của stage `st()` + Bàn giao). */
 export const SUM_TEXT = "TOM-TAT-K1 Đã đối chiếu hoá đơn HD-12, tổng 12 000 000.";
@@ -93,44 +90,13 @@ export const DEFS = {
       st({ key: "g1", name: "G1", agent: P1.agRead }),
     ],
   },
-  shared: {
-    id: K1.defShared,
-    key: "k1-shared",
-    name: "K1 dùng chung",
-    stages: [st({ key: "r0", name: "R0", agent: P1.agRead })],
-  },
-  none: {
-    id: K1.defNone,
-    key: "k1-none",
-    name: "K1 không tri thức",
-    stages: [st({ key: "n0", name: "N0", agent: P1.agRead })],
-  },
-  mixed: {
-    id: K1.defMixed,
-    key: "k1-mixed",
-    name: "K1 trộn",
-    stages: [
-      st({ key: "m0", name: "M0", agent: P1.agRead }),
-      st({ key: "m1", name: "M1", agent: P1.agRead }),
-    ],
-  },
-  free: {
-    id: K1.defFree,
-    key: "k1-free",
-    name: "K1 tự do",
-    stages: [
-      st({ key: "f0", name: "F0", agent: P1.agRead }),
-      st({ key: "f1", name: "F1", agent: P1.agRead }),
-    ],
-  },
 } as const;
 
 // ---------- schema ----------
 export async function hasK1Schema(sql: Sql): Promise<boolean> {
-  const [r] = await sql<{ ok: boolean }[]>`select to_regclass('hub.kh_tenants') is not null
-      and to_regclass('hub.kh_writes') is not null
-      and exists (select 1 from information_schema.columns where table_schema = 'hub'
-                  and table_name = 'agents' and column_name = 'knowledge_enabled') as ok`;
+  const [r] = await sql<{ ok: boolean }[]>`select to_regclass('hub.kh_connections') is not null
+      and to_regclass('hub.agent_kh') is not null and to_regclass('hub.kh_jobs') is not null
+      and to_regclass('hub.kh_stage_usage') is not null and to_regclass('hub.kh_writes') is not null as ok`;
   return r?.ok === true;
 }
 /** Đầu mỗi ca int: đỏ đúng lý do khi chưa có migration 0029 (K1) / 0028 (H4b-1 `hub.secrets`). */
@@ -142,28 +108,15 @@ export function needK1(c: { k1: boolean; sec: boolean }): void {
 }
 
 // ---------- seed ----------
-async function seedSecrets(sql: Sql): Promise<boolean> {
-  const s = async (
-    id: string,
-    kind: string,
-    tenantId: string | null,
-    name: string,
-    value: string,
-  ) => seedSecret(sql, { id, kind, tenantId, name, value });
-  if (!(await s(K1.secAcme, "kh_api_key", T.acme, "kh-acme", cred(NS.acme, CS.acme)))) return false;
-  await s(K1.secBeta, "kh_api_key", T.beta, "kh-beta", cred(NS.beta, CS.beta));
-  await s(K1.secAcmeBad, "kh_api_key", T.acme, "kh-acme-bad", "qc-K1-not-json-Zx9Pq7Lm");
-  await s(
-    K1.secAcmeWrong,
-    "kh_api_key",
-    T.acme,
-    "kh-acme-wrong",
-    cred(NS.acme, "qc-K1-wrong-Zx9Pq7Lm"),
-  );
+async function seedSecrets(sql: Sql): Promise<void> {
+  const s = (id: string, kind: string, tenantId: string | null, name: string, value: string) =>
+    seedSecret(sql, { id, kind, tenantId, name, value });
+  await s(K1.secMain, "kh_api_key", null, "kh-key-main", KEY.a);
+  await s(K1.secAlt, "kh_api_key", null, "kh-key-alt", KEY.b);
+  await s(K1.secTenant, "kh_api_key", T.acme, "kh-key-acme", KEY.a);
+  await s(K1.secWrong, "kh_api_key", null, "kh-key-wrong", KEY.wrong);
   await s(K1.secProv, "provider_api_key", null, "prov-k1", "qc-K1-prov-Zx9Pq7Lm");
-  await s(K1.secPlatKh, "kh_api_key", null, "kh-platform", cred(NS.acme, CS.acme));
-  await s(K1.secAcme2, "kh_api_key", T.acme, "kh-acme-2", cred(NS.acme, CS.acme));
-  return true;
+  await s(K1.secMain2, "kh_api_key", null, "kh-key-main-2", KEY.a);
 }
 
 async function seedDefs(sql: Sql): Promise<void> {
@@ -176,76 +129,71 @@ async function seedDefs(sql: Sql): Promise<void> {
     profile_id: PROFILE.fake,
     system_prompt: "",
   })}`;
-  for (const d of [DEFS.auto, DEFS.gate, DEFS.shared, DEFS.none, DEFS.mixed, DEFS.free])
-    await insertDefPf1(sql, d as Json);
-  await insertDefPf1(
-    sql,
-    { id: K1.defBeta, key: "k1-beta", name: "K1 beta", stages: [st({ key: "b0" })] },
-    {
-      tenantId: T.beta,
-    },
-  );
+  for (const d of [DEFS.auto, DEFS.gate]) await insertDefPf1(sql, d as Json);
 }
 
-export type TenantSeed = {
+export const checkResult = (projects: string[], at = new Date().toISOString()) => ({
+  status: "ok",
+  checked_at: at,
+  kh_version: "v6.4",
+  embedder: "BAAI/bge-m3",
+  projects,
+  items: [],
+});
+export type ConnSeed = {
+  id: string;
+  name: string;
+  baseUrl: string;
+  secretId: string;
+  summary: string | null;
   status?: "unchecked" | "ok" | "error";
-  enabled?: boolean;
-  secretId?: string | null;
+  projects?: string[];
 };
-/** Hàng `kh_tenants` + project (owner). `check_result` có `keyspace_dims` (D13). */
-export async function seedTenant(
-  sql: Sql,
-  tenant: string,
-  ns: string,
-  projects: { id: string; ro?: boolean }[],
-  o: TenantSeed = {},
-): Promise<void> {
-  const status = o.status ?? "ok";
-  const result = { kh_version: "v6.4", keyspace_dims: ["role", "step"], items: [] };
-  await sql`insert into hub.kh_tenants (tenant_id, ns, secret_id, keyspace, enabled, check_status, checked_at, check_result)
-    values (${tenant}, ${ns}, ${o.secretId === undefined ? (tenant === T.acme ? K1.secAcme : K1.secBeta) : o.secretId},
-      'step', ${o.enabled ?? true}, ${status}, ${status === "unchecked" ? null : new Date()},
-      ${status === "unchecked" ? null : sql.json(result)})`;
-  for (const p of projects)
-    await sql`insert into hub.kh_projects (tenant_id, project_id, label, read_only)
-      values (${tenant}, ${p.id}, ${p.id.toUpperCase()}, ${p.ro ?? false})`;
+/** Hàng `kh_connections` (owner) — `status ok` kèm `check_result`. */
+export async function seedConn(sql: Sql, c: ConnSeed): Promise<void> {
+  const status = c.status ?? "ok";
+  await sql`insert into hub.kh_connections (id, name, base_url, secret_id, summary_project, check_status,
+      checked_at, check_result)
+    values (${c.id}, ${c.name}, ${c.baseUrl}, ${c.secretId}, ${c.summary}, ${status},
+      ${status === "unchecked" ? null : new Date()},
+      ${status === "unchecked" ? null : sql.json(checkResult(c.projects ?? []))})`;
 }
-export async function seedBinding(
-  sql: Sql,
-  defId: string,
-  tenant: string,
-  projectId: string | null,
-  stageProjects: Record<string, string | null> = {},
-): Promise<void> {
-  await sql`insert into hub.kh_bindings (process_def_id, tenant_id, project_id, stage_projects)
-    values (${defId}, ${tenant}, ${projectId}, ${sql.json(stageProjects)})`;
+/** Agent tick kết nối theo thứ tự (thay toàn bộ). */
+export async function tick(sql: Sql, agentId: string, conns: string[]): Promise<void> {
+  await sql`delete from hub.agent_kh where agent_id = ${agentId}`;
+  for (const [i, id] of conns.entries())
+    await sql`insert into hub.agent_kh (agent_id, connection_id, position) values (${agentId}, ${id}, ${i})`;
 }
-export const setBaseUrl = (sql: Sql, url: string | null) =>
-  sql`update hub.kh_settings set base_url = ${url} where id = 1`;
-export const setKnowledge = (sql: Sql, agentId: string, on: boolean) =>
-  sql`update hub.agents set knowledge_enabled = ${on} where id = ${agentId}`;
+export const setStatus = (sql: Sql, id: string, status: "unchecked" | "ok" | "error") =>
+  sql`update hub.kh_connections set check_status = ${status} where id = ${id}`;
 
-/** "full": settings + acme (proj-a, proj-b, proj-shared RO) + beta (proj-beta) hiệu lực + binding 4 def + agent tri thức. */
-async function seedFull(sql: Sql, kh: KhFake): Promise<void> {
-  await setBaseUrl(sql, kh.base);
-  await seedTenant(sql, T.acme, NS.acme, [
-    { id: PROJ.a },
-    { id: PROJ.b },
-    { id: PROJ.shared, ro: true },
-  ]);
-  await seedTenant(sql, T.beta, NS.beta, [{ id: PROJ.beta }]);
-  await seedBinding(sql, K1.defAuto, T.acme, PROJ.a);
-  await seedBinding(sql, K1.defGate, T.acme, PROJ.a);
-  await seedBinding(sql, K1.defShared, T.acme, PROJ.shared);
-  await seedBinding(sql, K1.defMixed, T.acme, PROJ.a, { m0: null });
-  await seedBinding(sql, K1.defBeta, T.beta, PROJ.beta);
-  await setKnowledge(sql, P1.agRead, true);
-  await setKnowledge(sql, P1.agPost, true);
+/** "full": 2 kết nối ok + hd-read tick [main], hd-post tick [alt, main]. */
+export async function seedFull(c: CtxK1): Promise<void> {
+  await c.sql`delete from hub.agent_kh`;
+  await c.sql`delete from hub.kh_connections`;
+  await seedConn(c.sql, {
+    id: K1.connMain,
+    name: CONN.main,
+    baseUrl: c.khA.base,
+    secretId: K1.secMain,
+    summary: PROJ.a,
+    projects: [PROJ.a, PROJ.b],
+  });
+  await seedConn(c.sql, {
+    id: K1.connAlt,
+    name: CONN.alt,
+    baseUrl: c.khB.base,
+    secretId: K1.secAlt,
+    summary: null,
+    projects: [PROJ.c],
+  });
+  await tick(c.sql, P1.agRead, [K1.connMain]);
+  await tick(c.sql, P1.agPost, [K1.connAlt, K1.connMain]);
 }
 
 // ---------- hub-api thật ----------
 export type K1Opts = {
-  /** "secrets" = chỉ secret + def (Studio tự dựng); "full" = thêm cấu hình KH hiệu lực + binding. */
+  /** "secrets" = chỉ secret + def (Studio tự dựng); "full" = thêm 2 kết nối + agent tick. */
   seed?: "secrets" | "full";
   /** origin thêm vào allowlist (vd origin chết cho `unreachable`). */
   extraOrigins?: string[];
@@ -258,7 +206,8 @@ export type CtxK1 = {
   ready: boolean;
   k1: boolean;
   sec: boolean;
-  kh: KhFake;
+  khA: KhFake;
+  khB: KhFake;
   hub: { base: string; handles: () => Json | null; stop: () => Promise<void> };
   rt: ScriptRuntime;
   tok: (r: Role) => Promise<string>;
@@ -266,7 +215,7 @@ export type CtxK1 = {
   stop: () => Promise<void>;
 };
 
-async function startHub(k: Awaited<ReturnType<typeof makeKeys>>, kh: KhFake, o: K1Opts) {
+async function startHub(k: Awaited<ReturnType<typeof makeKeys>>, origins: string[], o: K1Opts) {
   const db = connectDb(HUB_API_URL, 8);
   const redis = createRedis(REDIS_TEST_URL);
   await redis.connect();
@@ -294,10 +243,7 @@ async function startHub(k: Awaited<ReturnType<typeof makeKeys>>, kh: KhFake, o: 
     processLoops: false,
     publicInternalUrl: base,
     hubSecretsKey: HUB_KEY,
-    kh: {
-      allowedOrigins: o.allowedOrigins ?? [kh.origin, ...(o.extraOrigins ?? [])],
-      timeoutMs: o.timeoutMs ?? 1_000,
-    },
+    kh: { allowedOrigins: o.allowedOrigins ?? origins, timeoutMs: o.timeoutMs ?? 1_000 },
     onProcessHandles: (h: Json) => {
       handles = h;
     },
@@ -319,11 +265,10 @@ async function startHub(k: Awaited<ReturnType<typeof makeKeys>>, kh: KhFake, o: 
   };
 }
 
-/** DB sạch + seed + KH giả + hub-api. KH giả có sẵn ns acme_ns/beta_ns (credentials khớp secret), project acme đủ 3. */
+/** DB sạch + seed + 2 KH giả + hub-api. */
 export async function startK1(o: K1Opts = {}): Promise<CtxK1> {
-  const kh = startKhFake();
-  kh.set(NS.acme, { ...nsDefaults(NS.acme, CS.acme), projects: [PROJ.a, PROJ.b, PROJ.shared] });
-  kh.set(NS.beta, { ...nsDefaults(NS.beta, CS.beta), projects: [PROJ.beta] });
+  const khA = startKhFake(KEY.a, [PROJ.a, PROJ.b]);
+  const khB = startKhFake(KEY.b, [PROJ.c], "127.0.0.1");
   const { sql, ready } = await setupPa();
   if (ready) {
     await seedPf1(sql);
@@ -331,21 +276,19 @@ export async function startK1(o: K1Opts = {}): Promise<CtxK1> {
   }
   const k1 = ready && (await hasK1Schema(sql));
   const sec = ready && (await tableExists(sql));
-  if (k1 && sec) {
-    await seedSecrets(sql);
-    if (o.seed === "full") await seedFull(sql, kh);
-  }
+  if (sec) await seedSecrets(sql);
   const k = await makeKeys();
-  const hub = await startHub(k, kh, o);
+  const hub = await startHub(k, [khA.origin, khB.origin, ...(o.extraOrigins ?? [])], o);
   const redis = await testRedis();
   const rt = new ScriptRuntime(sql, redis);
   const tok = (r: Role) => sign(k, PA[r]);
-  return {
+  const c: CtxK1 = {
     sql,
     ready,
     k1,
     sec,
-    kh,
+    khA,
+    khB,
     hub,
     rt,
     tok,
@@ -353,17 +296,23 @@ export async function startK1(o: K1Opts = {}): Promise<CtxK1> {
     stop: async () => {
       await hub.stop();
       redis.disconnect();
-      await kh.close();
+      await khA.close();
+      await khB.close();
       await sql.end();
     },
   };
+  if (k1 && sec && o.seed === "full") await seedFull(c);
+  return c;
 }
 
-/** `/studio/api/kh…` bởi persona (mặc định P = platform_admin). */
+/** `/studio/api/kh/connections…` bởi persona (mặc định P = platform_admin). */
 export const studio = (c: CtxK1, method: string, path: string, body?: unknown, r: Role = "P") =>
-  c.call(r, method, `/studio/api/kh${path}`, body);
+  c.call(r, method, `/studio/api/kh/connections${path}`, body);
+/** `PUT /studio/api/agents/:id/knowledge`. */
+export const putAgentKh = (c: CtxK1, agentId: string, body: unknown, r: Role = "P") =>
+  c.call(r, "PUT", `/studio/api/agents/${agentId}/knowledge`, body);
 
-/** `ProcessHandles.khWriteOnce()` (seam test-plan §8 G2): một lượt bộ gửi worklog. Vắng ⇒ đỏ ở expect. */
+/** `ProcessHandles.khWriteOnce()` (seam test-plan §8 G2): một lượt bộ gửi Tóm tắt. Vắng ⇒ đỏ ở expect. */
 export async function khWriteOnce(c: CtxK1): Promise<number> {
   const h = c.hub.handles();
   expect({ khWriteOnce: typeof h?.khWriteOnce }).toEqual({ khWriteOnce: "function" });
@@ -392,9 +341,15 @@ export async function configVersion(sql: Sql): Promise<number> {
   >`select hub_config_version as v from hub.config_meta where id = 1`;
   return r?.v ?? -1;
 }
-export async function tenantRow(sql: Sql, tenant: string): Promise<Json | undefined> {
-  const [r] = await sql`select * from hub.kh_tenants where tenant_id = ${tenant}`;
+export async function connRow(sql: Sql, id: string): Promise<Json | undefined> {
+  const [r] = await sql`select * from hub.kh_connections where id = ${id}`;
   return r ? { ...r } : undefined;
+}
+export async function agentKh(sql: Sql, agentId: string): Promise<string[]> {
+  const rows = await sql<
+    { connection_id: string }[]
+  >`select connection_id from hub.agent_kh where agent_id = ${agentId} order by position`;
+  return rows.map((r) => r.connection_id);
 }
 export const errCode = (r: Res): string | undefined => r.json?.error?.code;
 export const errDetails = (r: Res): Json => r.json?.error?.details;
