@@ -22,7 +22,7 @@ test('ADM-FR-65 · E-P15a · Adm: nav "Quy trình"; tab Mẫu ⇒ "Chép mẫu" 
     const tpl = p
       .getByRole("table", { name: "Quy trình" })
       .getByRole("row")
-      .filter({ hasText: "!sdlc" });
+      .filter({ hasText: /!sdlc(?!-)/ });
     await expect(tpl).toBeVisible();
     await tpl.getByRole("button", { name: "Chép mẫu" }).click();
     await expect(p.getByText("Đã chép mẫu")).toBeVisible();

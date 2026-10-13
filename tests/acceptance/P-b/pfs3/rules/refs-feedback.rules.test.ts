@@ -151,7 +151,10 @@ describe("RFB-10…12 · stage-sources refsFeedback / stageRefsExplain [PB-R09, 
     expect(stageExplain(ctx([]), "không có mục", [])).toEqual({ ok: true });
   });
   it("PB-R09 · RFB-11 · refsOk ⇒ chỉ 'Thiếu mục: …' các mục template thiếu", () => {
-    const f: string = feedback(["## Kết luận", "## Rủi ro"], true, ctx(["app-repo"]), md(), []);
+    const f: string = feedback(["## Kết luận", "## Rủi ro"], true, ctx(["app-repo"]), {
+      text: md(),
+      reads: [],
+    });
     expect(f).toContain("Thiếu mục");
     expect(f).toContain("## Kết luận");
     expect(f).toContain("## Rủi ro");
@@ -159,11 +162,11 @@ describe("RFB-10…12 · stage-sources refsFeedback / stageRefsExplain [PB-R09, 
   it("PB-R09 · RFB-12 · lỗi nguồn ⇒ mục khác thiếu + thông điệp theo reason; không lặp heading nguồn vào 'Thiếu mục'", () => {
     const text = md(`app-repo:src/zz.ts@${C1}`);
     const reads = [{ source_key: "app-repo", files_read: ["src/a.ts"] }];
-    const f: string = feedback(["## Kết luận", HEAD], false, ctx(["app-repo"]), text, reads);
+    const f: string = feedback(["## Kết luận", HEAD], false, ctx(["app-repo"]), { text, reads });
     expect(f).toContain("## Kết luận");
     expect(f).toContain("src/zz.ts");
     expect(f).not.toContain(`Thiếu mục: ## Kết luận, ${HEAD}`);
-    const onlySrc: string = feedback([HEAD], false, ctx(["app-repo"]), text, reads);
+    const onlySrc: string = feedback([HEAD], false, ctx(["app-repo"]), { text, reads });
     expect(onlySrc).toContain("src/zz.ts");
     expect(onlySrc.startsWith("Thiếu mục")).toBe(false);
   });
