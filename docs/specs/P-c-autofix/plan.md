@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS hub.autofix_results (
   CONSTRAINT autofix_results_diff_ck CHECK (status = 'ok' OR diff_attachment_id IS NULL),
   CONSTRAINT autofix_results_round_ck CHECK (round BETWEEN 1 AND 100),
   CONSTRAINT autofix_results_sha_ck CHECK (base_sha ~ '^[0-9a-f]{40}$' AND head_sha ~ '^[0-9a-f]{40}$'),
-  CONSTRAINT autofix_results_branch_ck CHECK (branch ~ '^ai/[0-9a-f-]{36}/[a-z0-9][a-z0-9_-]{0,63}$'),
+  CONSTRAINT autofix_results_branch_ck CHECK (branch ~ '^ai/[0-9a-f-]{36}/[a-z0-9-]{1,32}$'),
   CONSTRAINT autofix_results_json_ck CHECK (jsonb_typeof(failures)='array' AND jsonb_typeof(commands)='array'
     AND jsonb_typeof(pin)='object' AND (diff_stats IS NULL OR jsonb_typeof(diff_stats)='object')),
   CONSTRAINT autofix_results_run_fk FOREIGN KEY (process_run_id, tenant_id)
@@ -58,7 +58,7 @@ CREATE INDEX IF NOT EXISTS autofix_results_stage_idx ON hub.autofix_results (sta
 CREATE INDEX IF NOT EXISTS autofix_results_run_idx ON hub.autofix_results (process_run_id);
 ```
 - `autofix_results_diff_ck` chỉ một chiều (không `ok` ⇒ không diff). Chiều `ok ⇒ có diff` kiểm ở service + test, KHÔNG CHECK vì FK `ON DELETE SET NULL` (xoá attachment sẽ vi phạm). Sweeper đã chặn xoá output quy trình (`e0c82bd3`) ⇒ khi run còn sống không SET NULL.
-- `branch_ck` dùng regex stage key hiện hành (`STAGE_KEY_RE`, TD #150 đã nới 1 ký tự) — BUILD đọc `chat/processes.ts` và khớp đúng.
+- `branch_ck` = `^ai/[0-9a-f-]{36}/[a-z0-9-]{1,32}$` theo `STAGE_KEY_RE` hiện hành `[a-z0-9-]{1,32}` (G4, chốt 2026-10-13; test C07 chặn 33 ký tự, D03 nhận 32). BUILD vẫn đối chiếu `chat/processes.ts`; nếu `STAGE_KEY_RE` đổi thì đổi cùng lúc.
 - RLS: `ENABLE ROW LEVEL SECURITY`; policy `autofix_results_hub_rw FOR ALL TO hub_rw USING/WITH CHECK v_t` (mẫu 0021 dòng 149–162). `GRANT SELECT, INSERT ON hub.autofix_results TO hub_rw` (append-only ⇒ UPDATE/DELETE 42501). Không GRANT `agent_runtime`, `hub_ro`.
 - Nới CHECK (mẫu 0024 dòng 47–55): `review_tasks_reason_ck` += `'autofix_check_failed','sandbox_unavailable'`; `jobs_error_reason_check` += `'container'` (giữ đủ giá trị 0007).
 - Drizzle: `packages/db/src/schema/hub-autofix.ts` + export `hub.ts`.
@@ -97,7 +97,8 @@ CREATE INDEX IF NOT EXISTS autofix_results_run_idx ON hub.autofix_results (proce
 | `test` | `{exit_code int\|null, duration_ms ≥0, log_tail string ≤ 65_536} \| null` | null = chưa chạy test (trượt trước bước test) |
 | `failures` | `AutofixFailure[] ≤ 50` | `{check: paths\|size\|secrets\|tests\|install\|apply_patch, path?: ≤1024, line?: int, rule?: ≤64, detail: ≤500}` — **không** giá trị bí mật |
 | `commands` | `{tool: exec\|read\|write\|edit, arg ≤ 500 (cắt), exit_code?: int, ms ≥0}[] ≤ 300` | |
-| Phản hồi | 201 `{id}` · 400 `VALIDATION_ERROR` · 401 `UNAUTHORIZED` (một thân, như outputs) · 409 `AUTOFIX_NOT_EXPECTED` · 409 `AUTOFIX_RESULT_EXISTS` · 413 `PAYLOAD_TOO_LARGE`; mọi phản hồi `no-store`; body limit 3 MiB |
+| Tên export (G3) | `StageAutofixSchema` (hub-admin) · `JobAutofixSchema` (hub) · `AutofixReportSchema` (hub-internal) · `AutofixStageViewSchema` (chat); `HUB_INTERNAL_ERRORS.AUTOFIX_NOT_EXPECTED/AUTOFIX_RESULT_EXISTS` = 409 |
+| Phản hồi | 201 `{id}` · 400 `VALIDATION_ERROR` · 401 `UNAUTHORIZED` (một thân, như outputs) · 409 `AUTOFIX_NOT_EXPECTED` · 409 `AUTOFIX_RESULT_EXISTS` · 413 `PAYLOAD_TOO_LARGE`; mọi phản hồi `no-store`; body limit 3 MiB. `PAYLOAD_TOO_LARGE` KHÔNG thêm vào `HUB_INTERNAL_ERRORS` (G10): `error.code` trong thân 413 |
 #### 3.4 `chat/processes-entities.ts` + `chat/processes.ts`
 | Trường | Kiểu |
 |---|---|
@@ -132,6 +133,14 @@ CREATE INDEX IF NOT EXISTS autofix_results_run_idx ON hub.autofix_results (proce
 | `ws_rel_ok(rel: str) -> bool` | tương đối, không `..`, không tuyệt đối, không NUL |
 | `truncate_cmd(cmd: str) -> str` | ≤ 500 |
 
+**Kiểu dùng chung (G1/G2, `autofix/rules.py`, dataclass frozen; test dựng bằng kwargs):**
+| Kiểu | Trường |
+|---|---|
+| `SandboxSpec` | `job_id: str, image: str, host_workspace: str, engine: Literal["docker","podman"]="docker", cpus: float=2.0, memory_mb: int=2048, pids: int=512, tmp_mb: int=256` |
+| `DiffStats` | `files: int, insertions: int, deletions: int, bytes: int` |
+| `Limits` | `max_diff_bytes=2_097_152, max_files=300, max_ws_bytes=4*1024**3` (`Limits()` không đối số) |
+| `Failure` | `check: str, path: str\|None=None, line: int\|None=None, rule: str\|None=None, detail: str=""` (thuộc tính; map 1-1 `AutofixFailure`) |
+
 ### §5 Runtime
 **5.1 Gói mới** `agent_runtime/autofix/`: `rules.py` (thuần), `oci.py` (`OciCli`: `run/exec/rm/ps` qua `subprocess` mảng đối số, timeout, `RUNTIME_SANDBOX`), `fake_oci.py` (chỉ `RUNTIME_ENV=test`), `workspace.py` (copy snapshot, git), `check.py` (PC-R08), `ws_tools.py` (MCP trong tiến trình, `create_sdk_mcp_server`), `report.py` (POST + retry), `host.py` (`AutofixHost` bọc vòng đời quanh `CliJobHost`), `sweeper.py`. `dispatch.py`: `agent.cli` có `autofix` ⇒ `AutofixHost`. Slot riêng `RUNTIME_SANDBOX_MAX` (mặc định 1) trong claimer (job tự-sửa không claim khi đầy).
 **5.2 argv** (`agent`/`test`): `run -d --name aif-<job>[-test] --label ai.autofix=1 --label ai.job=<job> --network none --cpus <c> --memory <m>m --memory-swap <m>m --pids-limit <p> --read-only --tmpfs /tmp:rw,exec,size=<t>m --cap-drop ALL --security-opt no-new-privileges --user 1000:1000 [podman: --userns keep-id] -e HOME=/tmp -e CI=1 -e LANG=C.UTF-8 -v <host_ws>:/workspace:rw -w /workspace <image> sleep infinity`; `exec` có `--user 1000:1000 -w /workspace <ctr> sh -c <cmd>` (cmd qua đối số, không nội suy). `prep`: như trên nhưng bỏ `--network none`, lệnh = `install_cmd`. `<host_ws>` = `RUNTIME_SANDBOX_HOST_WORKDIR` (dev) hoặc đường thật. Khởi động Runtime: `RUNTIME_SANDBOX≠off` ⇒ tự kiểm (CLI chạy được, ảnh có, container thử đọc `memory.max` = trần đặt); sai ⇒ log `sandbox.unavailable` và coi như `off`.
@@ -139,7 +148,17 @@ CREATE INDEX IF NOT EXISTS autofix_results_run_idx ON hub.autofix_results (proce
 **5.4 Mẫu bí mật** (bắt đầu tối thiểu, sửa theo test qc): `AKIA[0-9A-Z]{16}`, `-----BEGIN [A-Z ]*PRIVATE KEY-----`, `gh[pousr]_[A-Za-z0-9]{36,}`, `github_pat_[A-Za-z0-9_]{60,}`, `glpat-[A-Za-z0-9_-]{20,}`, `xox[baprs]-[A-Za-z0-9-]{10,}`, `sk-[A-Za-z0-9]{32,}`, `sk-ant-[A-Za-z0-9_-]{20,}`, `eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}`, `(?i)(password|passwd|secret|api[_-]?key|token)\s*[:=]\s*['"][^'"\s]{12,}['"]`; + file thêm có basename PB-R07. Không entropy (dương tính giả).
 **5.5 Tool `ws`** (MCP trong tiến trình, tên `mcp__ws__*`): `ws_exec{cmd ≤4000, timeout_s 1..600=120}` → `{exit_code, stdout ≤32 KiB đuôi, stderr ≤32 KiB đuôi, truncated, ms}`; `ws_read{path, offset?, limit≤2000 dòng}` → text ≤256 KiB; `ws_write{path, content ≤1 MiB}` (nội dung qua stdin của `exec … sh -c 'cat > "$1"' _ <path>`); `ws_edit{path, old_string, new_string, replace_all=false}` (đọc → thay trong Python → ghi lại; không khớp/khớp nhiều ⇒ lỗi như Edit). Mọi `path` qua `ws_rel_ok`. Sau mỗi `ws_exec`: `du` workspace > trần ⇒ trả lỗi cho agent + đánh dấu `size`.
 **5.6 fake-cli** directive (QC dùng): `#fake:ws_write=<path>|<base64>`, `#fake:ws_edit=<path>|<old>|<new>`, `#fake:ws_exec=<cmd>`, `#fake:ws_secret=<path>` (ghi chuỗi khớp mẫu AKIA… để thử PC-R08(3)).
-**5.7 Hook** `sandbox/hook.py`: nhãn `workspace` (dưới `work/<job>/workspace/` hoặc `git/`) ⇒ deny mọi tool gốc. Cập nhật `sandbox/README.md`.
+**5.7 Hook** `sandbox/hook.py` (G5): `HookDecision.label == "workspace"` (`allowed=False`) cho mọi tool gốc có đường dẫn gốc dưới `work/<job>/workspace/` hoặc `git/`; đường dẫn dưới `out/` là symlink có `realpath` trỏ vào hai vùng đó ⇒ cũng deny `workspace` (so `realpath`, không so chuỗi). Cập nhật `sandbox/README.md`.
+
+**5.8 Chữ ký cho Runtime đầu-cuối (G11/G12; qc viết `pc/autofix_int_test.py` sau R2 — mở khoá có chủ đích, tasks R2b):**
+| Chữ ký | Ghi chú |
+|---|---|
+| `workspace.prepare(job_dir: Path, snapshot: Path, stage_key: str, base_patch: Path\|None) -> Workspace` | copy snapshot → `workspace/<key>`, `git init` cứng (§5.3), commit gốc, áp `base_patch`; lỗi áp ⇒ `WorkspaceError(Failure(check="apply_patch"))` |
+| `Workspace{job_dir, ws_dir, git_dir, base_sha, ws_bytes()}` + `Workspace.diff() -> tuple[str, DiffStats, str]` (diff, stats, head_sha) | commit `ai-autofix` rồi `diff --binary` |
+| `check.run_checks(ws: Workspace, allowlist: list[str], lim: Limits) -> CheckResult{failures: list[Failure], diff: str\|None, stats: DiffStats\|None, head_sha: str}` | PC-R08 (paths/size/secrets); thuần I/O quanh `rules.check_*` |
+| `fake_oci.FakeOci(workdir: Path)` | cùng giao diện `OciCli` (`run/exec/rm/ps`), chạy `sh -c` trong thư mục tạm; chỉ khi `RUNTIME_ENV=test`; trần `RUNTIME_AUTOFIX_MAX_MB/_FILES` áp ở `workspace.prepare` (G12: lỗi ⇒ `Failure(check="size")`) |
+| `host.AutofixHost(cfg, oci: OciCli, hub: HubClient)` + `async run(job: AgentCliJob) -> JobResult` | bọc vòng đời `CliJobHost`: prepare → prep → agent → test → `check.run_checks` → `report.post_result` → dọn container |
+**5.9 Script `test:pc:sandbox` (G14):** `package.json` gốc: `"test:pc:sandbox": "bun apps/agent-runtime/scripts/run.ts \"uv run pytest tests/acceptance/pc/sandbox_check.py\""` (Linux có CLI + ảnh `RUNTIME_SANDBOX_IMAGE`; thiếu ⇒ đỏ có thông báo, không skip). Không thuộc `bun test`; chạy ở R4/`done:pc`.
 
 ### §6 Hub
 **6.1 defs:** `defs.service` lưu/sửa: `autofixStageIssues` (contract) + kiểm loại nguồn (§3.1). Seed `apps/hub-api/seed/processes.yaml`: template `fixbug-apply` (input `source_ref`; stage `fix` executor agent `fixbug-apply` / dev `fake-cli`, `timeout_s 1800`, `token_budget null`, `after: review group null`, `autofix {source_key: <input>…}`) — ⚠ `autofix.source_key` là key tĩnh của def ⇒ template dùng key mẫu `repo`, `tenant_admin` sửa khi chép (giống P-b).
