@@ -28,7 +28,7 @@ Như H4b-1 §1 (tên test có mã, chờ theo điều kiện, cấm `skip/only/t
 |---|---|---|---|
 | AC-H4b2-01 | POST api gắn secret H4b-1 ⇒ 201 `ProviderDetail` (secret `{id,name}`, `has_secret`, v1, `dev_only` cho fake); list có `version`/`slots_in_use`, KHÔNG `secret_id`/`last_error` (H4a A17 xanh); audit create (secret là id); không lộ giá trị; role khác ⇒ 403, không token ⇒ 401 | A `providers`, `role` · R `contracts` · E | A01–A08, A22, A24, Q01–Q03 · R73–R76 · M03 |
 | AC-H4b2-02 | fake `fake-ok…` ⇒ ok; `fake-bad…` ⇒ error/auth_failed + `invalid x-api-key (fake)`; hãng thật qua fetch: URL/header theo bảng, `redirect:"error"`, lỗi vọng key ⇒ `***`, không chuỗi con ≥ 8; timeout/network/secret_unreadable/NOT_CONFIGURED; audit `check` không bump, không `message`; log không key. UI: "Đang kiểm tra key…" → "Key hợp lệ"/"Key không hợp lệ" + `group "Chi tiết"` nguyên văn | A `provider-check` · R `provider-check-rules`, `contracts` · E | C01–C14 · R30–R47, R77 · M07–M10 |
-| AC-H4b2-03 | Profile 2 bước, PUT đảo thứ tự lưu đúng (GET + DB + audit before/after); xoá provider đang được profile dùng ⇒ 409 `PROVIDER_IN_USE{profiles:[{id,key}]}`; UI Lên/Xuống ⇒ PUT đúng thứ tự, alertdialog "Không xoá được …" kèm tên profile | A `profiles`, `providers` · E | P01–P02, A17, A21 · M12, M24 |
+| AC-H4b2-03 | Profile 2 bước, PUT đảo thứ tự lưu đúng (GET + DB + audit before/after); xoá provider đang được profile dùng ⇒ 409 `PROVIDER_IN_USE{profiles:[{id,key}]}`; UI Lên/Xuống ⇒ PUT đúng thứ tự, alertdialog "Không xoá được …" kèm tên profile; "Xoá profile" chỉ ở profile đã lưu, DELETE ?version=N, 409 `PROFILE_IN_USE` kèm badge `agents[].key` | A `profiles`, `providers` · E | P01–P02, A17, A21 · M12, M24, M27–M29 |
 | AC-H4b2-04 | PUT ô (chua × acme) ⇒ `{hub_config_version v+1, affected_grants 0}`, audit `agent_entitlement`/`enable`; tadmin grant được (trước đó NOT_ENTITLED); ≤ 5 s menu lan có agent; UI bật switch không xác nhận | A `entitlements` · E | E03–E04 · M31 |
 | AC-H4b2-05 | DELETE ô có 2 grant ⇒ `affected_grants 2`, grant giữ nguyên, ≤ 5 s biến khỏi menu (effective `no_entitlement`); PUT lại ⇒ grant tự có hiệu lực ≤ 5 s; run đang chạy vẫn `run.finished`; UI alertdialog "Thu hồi … ?" nêu "2 grant … sẽ mất hiệu lực" | A `entitlements` · E | E05–E06 · M32 |
 | AC-H4b2-06 | tadmin acme: mọi `/studio/api/agent-entitlements*` ⇒ 403 (không thấy entitlement tenant khác); sau khi padmin thu hồi qua Studio, tadmin cấp grant ⇒ 409 `NOT_ENTITLED{agent_ids}` | A `entitlements` · E | E09–E10 · M37 |
@@ -60,7 +60,7 @@ Như H4b-1 §1 (tên test có mã, chờ theo điều kiện, cấm `skip/only/t
 | R | `rules/models-rules.test.ts` | R01–R24 (24) |
 | R | `rules/provider-check-rules.test.ts` | R30–R47 (18) |
 | R | `rules/profile-step.test.ts` | R50–R70 (21) |
-| R | `rules/contracts-h4b2.test.ts` | R70–R81 (12) |
+| R | `rules/contracts-h4b2.test.ts` | R71–R82 (12) |
 | A | `providers.int.test.ts` | A01–A24 + A08b (25) |
 | A | `provider-check.int.test.ts` | C01–C14 (14) |
 | A | `profiles.int.test.ts` | P01–P14 (14) |
@@ -69,10 +69,10 @@ Như H4b-1 §1 (tên test có mã, chờ theo điều kiện, cấm `skip/only/t
 | A | `role.int.test.ts` | Q01–Q03 (3) |
 | D | `db-h4b2.int.test.ts` | D20–D26 (7) |
 | E | `e2e/studio/h4b2-models.studio.ts` | M01–M14 (14) |
-| E | `e2e/studio/h4b2-profiles.studio.ts` | M20–M26 + M25b (8) |
+| E | `e2e/studio/h4b2-profiles.studio.ts` | M20–M29 + M25b (11) |
 | E | `e2e/studio/h4b2-access.studio.ts` | M30–M38 (9) |
 
-Tổng **189**: R 75 · A/D 83 · E 31.
+Tổng **192**: R 75 · A/D 83 · E 34.
 
 ## 5. Rủi ro chập chờn
 | Rủi ro | Giảm |
@@ -105,7 +105,7 @@ Chạy tay: `bun test tests/acceptance/H4b2/rules` · `bun --env-file=.env.local
 | A | `role` | 3 | **3 xanh** | Q01–Q03 403/401 xanh trước code (như H4b-1 A01/A02) — khoá hồi quy |
 | A | `dispatch` | 7 | 4 đỏ · **3 xanh** | D01/D02 đỏ ở `ScriptRuntime.next` `toBeDefined` (chưa có dự phòng ⇒ run lỗi ngay, không job); D04 đỏ `provider_key` claude-sub ≠ fake-cli; D07 `active_step` vắng. **D03, D05, D06 xanh trước code**: hành vi cũ trùng luật mới (on [] dừng; không chặn ⇒ bước 0; mọi bước chặn ⇒ hết) — khoá hồi quy B6 |
 | D | `db-h4b2` | 7 | 7 đỏ | SQLSTATE `42703` (cột version chưa có), `42501` (GRANT chưa có), `23514` (audit CHECK chưa có `provider`/`model_profile`), D26 `version` null |
-| E | 3 file `h4b2-*.studio.ts` | 29 | 29 đỏ | `/studio/models`, `/studio/access` chưa có ⇒ link "Models"/"Quyền agent" chưa bấm được (M01, M30), heading "Models"/"Quyền agent" không thấy ở `openModels`/`openAccess`; M37 form đăng nhập không hiện ở route chưa có |
+| E | 3 file `h4b2-*.studio.ts` | 29 (+3 M27–M29 xanh với code H4b-2 T5c) | 29 đỏ (trước code) | `/studio/models`, `/studio/access` chưa có ⇒ link "Models"/"Quyền agent" chưa bấm được (M01, M30), heading "Models"/"Quyền agent" không thấy ở `openModels`/`openAccess`; M37 form đăng nhập không hiện ở route chưa có |
 
 Int: 80 ca = 72 đỏ ở `expect` + 8 xanh trước code (E09, E11, Q01–Q03, D03, D05, D06); **0 ca đỏ do dựng dữ liệu** (không `PostgresError`/`TypeError` trong `beforeAll`/fixture). `tsc -p tsconfig.tests.json` sạch; `biome check` sạch.
 
@@ -115,12 +115,12 @@ Int: 80 ca = 72 đỏ ở `expect` + 8 xanh trước code (E09, E11, Q01–Q03, 
 | G1 | AC-H04 nguyên văn dời H2d (Q4); AC-H4b2-07 do qc đặt chưa có ở frontmatter/§8 spec | test dùng `AC-H4b2-07` (định nghĩa ở đầu file này) | docs-architect: thêm AC-H4b2-07 vào spec frontmatter + §8 | **đã đóng** (readiness lần 2) |
 | G2 | plan-frontend §3 `errors.PROVIDER_KEY_TAKEN` / C2 `PROVIDER_KEY_TAKEN` vs contract `KEY_TAKEN` | mock trả `KEY_TAKEN`; kiểm câu "Khoá này đã được dùng" (M06) | frontend-lead: map `errors.KEY_TAKEN` | **đã đóng** (readiness lần 2) |
 | G3 | plan-frontend §4 regex khoá `^[a-z0-9][a-z0-9-]{1,63}$` vs contract `^[a-z][a-z0-9-]{1,47}$` | dữ liệu e2e hợp cả hai; M05 dùng "A" (sai cả hai) | frontend-lead: dùng `ProviderKeySchema` | **đã đóng** (readiness lần 2) |
-| G4 | "Tên profile" (plan-frontend) nhưng profile chỉ có `key` | `textbox "Tên profile"` ⇒ gửi `key` (M25) | frontend-lead |
+| G4 | "Tên profile" (plan-frontend) nhưng profile chỉ có `key` | `textbox "Tên profile"` ⇒ gửi `key` (M25) | frontend-lead | **đã đóng** (lần 3, FE có "Tên profile") |
 | G5 | Nhãn option Hãng/Loại không có trong bảng §3 | Loại "API"/"Subscription" (provider.kind.*); Hãng "Anthropic"/"OpenAI" (artboard) | frontend-lead giữ đúng nhãn |
-| G6 | Câu chữ cho `status: "requested"` chỉ có ở spec §3 A ("Worker chưa kiểm xong") | M10 kiểm chuỗi con "Worker chưa kiểm xong"; "Kiểm tra lại" ok kiểm "phiên đăng nhập hợp lệ" | frontend-lead: thêm key i18n |
+| G6 | Câu chữ cho `status: "requested"` chỉ có ở spec §3 A ("Worker chưa kiểm xong") | M10 kiểm chuỗi con "Worker chưa kiểm xong"; "Kiểm tra lại" ok kiểm "phiên đăng nhập hợp lệ" | frontend-lead: thêm key i18n | **đã đóng** (readiness lần 1: mặc định áp; i18n có) |
 | G7 | plan-frontend D7 (tính ở client) đã thay bằng `active_step` server (spec §9) | M22: `active_step` null ⇒ "Hiện không bước nào sẵn sàng" dù bước 2 trông sẵn sàng | frontend-lead: sửa D7 | **đã đóng** (readiness lần 2) |
-| G8 | `subscriptionOutcome(state, t0, now)` chưa nêu kiểu `state` | không có ca R; phủ bằng int C10–C13 | backend-lead |
-| G9 | Phân biệt timeout/network từ lỗi `fetch` | C07: `DOMException("TimeoutError")` ⇒ timeout; `TypeError` ⇒ network | backend-lead |
+| G8 | `subscriptionOutcome(state, t0, now)` chưa nêu kiểu `state` | không có ca R; phủ bằng int C10–C13 | backend-lead | **đã đóng** (readiness lần 1: mặc định áp; i18n có) |
+| G9 | Phân biệt timeout/network từ lỗi `fetch` | C07: `DOMException("TimeoutError")` ⇒ timeout; `TypeError` ⇒ network | backend-lead | **đã đóng** (readiness lần 1: mặc định áp; i18n có) |
 | G10 | Định dạng log `job.fallback` | D02: có dòng chứa `job.fallback` và `fake-cli` | backend-lead giữ tên sự kiện |
 | G11 | D8 "biết trước từ danh sách thì không gọi API" (list không có `used_by_profiles`) | M12 chấp nhận cả hai luồng (xác nhận rồi 409, hoặc hộp chặn ngay) | — |
 | G12 | Sheet provider sau Lưu đóng hay ở lại (khác H4b-1) | M03 đóng bằng [Huỷ] nếu còn mở, rồi kiểm dòng | — | **đã đóng** (readiness lần 2) |
@@ -135,3 +135,7 @@ Khoá 2026-10-13 (T2, trước T3 Gate; Gate đổi spec ⇒ qc mở lại + ghi
 - **C10:** `last_ok_at` cũng NULL khi "Kiểm tra lại" (`setState` thêm `lastOk`); **D24:** `UPDATE last_ok_at` ⇒ ok; **P10:** item `steps` hợp `ProfileStepSchema`; **A08/P08:** `KEY_TAKEN` `details = {field:"key"}`; **A08b** (mới) + P08: path param không uuid ⇒ 400 `VALIDATION_ERROR` (providers GET/PUT/PATCH/DELETE/check, profiles GET/PUT/DELETE).
 - **E2E:** M03/M04 khẳng định Sheet đóng sau Lưu (bỏ nhánh "đóng bằng Huỷ" — G12 hết hiệu lực); **M38** (mới) `AGENT_IS_DEFAULT` toast riêng, switch hoàn về, không GET lại ma trận. Đã khớp: câu chữ kết quả kiểm tra M07–M10, nhãn ô `{agent.key} × {tenant.key}` M30–M32, xoá luôn qua xác nhận M12/M13, A01 `secret {id,name}`.
 - Ca mới: R66–R70 (5), D08–D09 (2), A08b (1), M25b, M38 ⇒ +10. R `profile-step` 21 ca đỏ `qc: pickStep chưa có`. Int mới/sửa **chưa chạy được đỏ-đúng-lý-do** vì Docker Desktop không khởi động (Postgres :5432 CONNECT_TIMEOUT); typecheck + biome sạch. Chạy lại khi có Docker (ghi vào VERIFY/B-task đầu).
+
+## 9. Mở khoá bổ sung — e2e Xoá profile (readiness lần 3 #2, #8)
+- `h4b2-profiles.studio.ts` thêm **M27** (nút "Xoá profile" chỉ ở profile đã lưu, cạnh "Lưu profile"), **M28** (alertdialog "Xoá {key}?" ⇒ `DELETE ?version=1` ⇒ toast "Đã xoá profile {key}", biến khỏi danh sách), **M29** (409 `PROFILE_IN_USE` ⇒ alertdialog "Không xoá được {key}" + badge `agents[].key`). Cả ba thuộc AC-H4b2-03; chạy xanh với code `1cb8cf82`.
+- Đổi mã trùng: ca hằng contract `PROVIDER_KINDS` từ R70 thành **R82** (R70 chỉ còn `pickStep` ca 13). G4/G6/G8/G9 đã đóng; M38 thuộc AC-H4b2-05 (đã ghi).

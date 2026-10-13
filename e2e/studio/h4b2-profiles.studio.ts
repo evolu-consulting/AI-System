@@ -2,7 +2,7 @@
 // (cảnh báo toàn subscription) · plan-frontend H4b2 §2–§5 · spec §3 B, §9 (dùng `active_step` server) · artboard
 // `Models.dc.html` (Profiles) + mockup States · test-plan H4b2 §3 M20–M26. Đỏ trước code: `/studio/models` chưa có.
 import { expect, type Page, test } from "@playwright/test";
-import { choose, type Kho, openModels, PF, writes } from "./_h4b2";
+import { choose, type Kho, openModels, PF, toast, writes } from "./_h4b2";
 
 const steps = (page: Page) => page.getByRole("list", { name: "Các bước" }).getByRole("listitem");
 async function openProfile(
@@ -154,4 +154,75 @@ test('HUB-FR-67 · M26 · PUT profile 409 VERSION_CONFLICT ⇒ "Có người v�
   await expect(
     page.getByRole("alertdialog", { name: "Có người vừa lưu bản mới hơn" }),
   ).toBeVisible();
+});
+
+const delBtn = (page: Page) => page.getByRole("button", { name: "Xoá profile" });
+const profList = (page: Page) => page.getByRole("list", { name: "Danh sách profile" });
+
+test('HUB-FR-67 · AC-H4b2-03 · M27 · nút "Xoá profile" cạnh "Lưu profile" chỉ ở profile đã lưu; "+ Profile mới" không có [D8]', async ({
+  page,
+}) => {
+  await openProfile(page, "coder");
+  await expect(delBtn(page)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Lưu profile" })).toBeVisible();
+  await page.getByRole("button", { name: "+ Profile mới" }).click();
+  await expect(page.getByRole("textbox", { name: "Tên profile" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Lưu profile" })).toBeVisible();
+  await expect(delBtn(page)).toHaveCount(0);
+});
+
+test('HUB-FR-67 · AC-H4b2-03 · M28 · "Xoá profile" ⇒ alertdialog "Xoá fake-1?" ⇒ xác nhận ⇒ DELETE ?version=1; toast "Đã xoá profile fake-1", profile biến khỏi danh sách [D8]', async ({
+  page,
+}) => {
+  const k = await openProfile(page, "fake-1");
+  await delBtn(page).click();
+  const dlg = page.getByRole("alertdialog", { name: "Xoá fake-1?" });
+  await expect(dlg).toBeVisible();
+  const del = page.waitForResponse(
+    (r) => r.request().method() === "DELETE" && r.url().includes(`/model-profiles/${PF.fake1}`),
+  );
+  await dlg.getByRole("button", { name: "Xoá" }).click();
+  await del;
+  const c = writes(k).find((w) => w.method === "DELETE");
+  expect(c?.path).toBe(`/model-profiles/${PF.fake1}`);
+  expect(c?.query).toBe("?version=1");
+  await expect(toast(page)).toContainText("Đã xoá profile fake-1");
+  await expect(profList(page).getByRole("link", { name: "fake-1" })).toHaveCount(0);
+  await expect(profList(page).getByRole("link", { name: "coder" })).toBeVisible();
+});
+
+test('HUB-FR-67 · AC-H4b2-03 · M29 · DELETE 409 PROFILE_IN_USE ⇒ alertdialog "Không xoá được coder" kèm badge agents[].key; profile còn trong danh sách [D8]', async ({
+  page,
+}) => {
+  await openProfile(page, "coder", {
+    once: {
+      [`DELETE /model-profiles/${PF.coder}`]: {
+        status: 409,
+        body: {
+          error: {
+            code: "PROFILE_IN_USE",
+            message: "x",
+            details: {
+              agents: [
+                { id: "00000000-0000-4000-8000-0000000000a1", key: "chua" },
+                { id: "00000000-0000-4000-8000-0000000000a2", key: "hub-test" },
+              ],
+            },
+          },
+        },
+      },
+    },
+  });
+  await delBtn(page).click();
+  await page
+    .getByRole("alertdialog", { name: "Xoá coder?" })
+    .getByRole("button", { name: "Xoá" })
+    .click();
+  const blocked = page.getByRole("alertdialog", { name: "Không xoá được coder" });
+  await expect(blocked).toBeVisible();
+  await expect(blocked).toContainText("chua");
+  await expect(blocked).toContainText("hub-test");
+  await blocked.getByRole("button", { name: "Đóng" }).click();
+  await expect(blocked).toBeHidden();
+  await expect(profList(page).getByRole("link", { name: "coder" })).toBeVisible();
 });

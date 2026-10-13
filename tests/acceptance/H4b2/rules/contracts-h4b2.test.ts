@@ -1,4 +1,4 @@
-// HUB-FR-66 · HUB-FR-67 · HUB-FR-78 · spec H4b2 §3 (kiểu chung, A, B, mã lỗi) · test-plan H4b2 §3 R70–R81: contract
+// HUB-FR-66 · HUB-FR-67 · HUB-FR-78 · spec H4b2 §3 (kiểu chung, A, B, mã lỗi) · test-plan H4b2 §3 R71–R82: contract
 // `@ai/contracts/studio` khối models — strict, mặc định, bất biến key/kind/vendor (Q8), list giữ H4a-R13 (Q6), lỗi mới
 // ở hằng riêng. Đỏ trước code: export chưa có ⇒ `expect(typeof …safeParse)`.
 import { describe, expect, it } from "bun:test";
@@ -13,8 +13,8 @@ const schema = (name: string) => {
 };
 const okP = (name: string, v: unknown) => schema(name).safeParse(v).success as boolean;
 
-describe("R70–R72 · hằng [spec §3 Kiểu chung · Mã lỗi]", () => {
-  it("HUB-FR-66 · R70 · PROVIDER_KINDS = [subscription, api]; STUDIO_PROVIDER_VENDORS = [anthropic, openai, google, fake] (không dify)", () => {
+describe("R71–R72 · R82 · hằng [spec §3 Kiểu chung · Mã lỗi]", () => {
+  it("HUB-FR-66 · R82 · PROVIDER_KINDS = [subscription, api]; STUDIO_PROVIDER_VENDORS = [anthropic, openai, google, fake] (không dify)", () => {
     expect(c.PROVIDER_KINDS).toEqual(["subscription", "api"]);
     expect(c.STUDIO_PROVIDER_VENDORS).toEqual(["anthropic", "openai", "google", "fake"]);
   });
