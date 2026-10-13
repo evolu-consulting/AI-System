@@ -212,7 +212,7 @@ const stageJson = (t: SeedProcessTemplate, ids: Ids) =>
 async function upsertTemplates(tx: Tx, tpls: SeedProcessTemplate[], ids: Ids): Promise<void> {
   for (const t of tpls) {
     const stages = tx.json(stageJson(t, ids) as unknown as Parameters<typeof tx.json>[0]);
-    const sources = JSON.stringify(t.sources);
+    const sources = tx.json(t.sources as unknown as Parameters<typeof tx.json>[0]);
     const [cur] = await tx<{ id: string }[]>`select id from hub.process_defs
       where tenant_id is null and key = ${t.key} and deleted_at is null for update`;
     if (!cur) {

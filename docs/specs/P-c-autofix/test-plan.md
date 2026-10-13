@@ -169,3 +169,39 @@ Khoá lần 4: 2026-10-14 (R2b, mở khoá có chủ đích theo tasks R2b / G11
 
 **Chữ ký/hành vi giả định cho R3** (theo plan-runtime §5.1, §5.5–5.8 + R2 e0b5d130): (1) module `agent_runtime.autofix.host` có `AutofixHost`; module `agent_runtime.autofix.ws_tools` tồn tại (`need_r3()` — đỏ tới R3). (2) `dispatch`: job `agent.cli` có `payload.autofix` ⇒ `AutofixHost`; sandbox `None` (off/tự kiểm hỏng) ⇒ vẫn claim, kết thúc `failed` `error_reason="container"` (không treo `queued`). (3) `fake-cli`: `#fake:ws_write=<path>|<base64>`, `#fake:ws_edit=<path>|<old>|<new>`, `#fake:ws_exec=<cmd>`, `#fake:ws_secret=<path>` (ghi dòng khớp `AKIA[0-9A-Z]{16}`); giá trị là `\S+` (cú pháp `#fake:` sẵn có, không khoảng trắng); mỗi lệnh ghi một phần tử `commands` (`edit`/`write`/`exec` + `exit_code` cho exec, `arg` của exec = lệnh nguyên văn). (4) Thứ tự: snapshot `caps=autofix` → `copy_workspace` → pha cài (`install_cmd`, lỗi ⇒ `install`) → `init_git` (+ tải `base_patch` bằng token job, lỗi áp ⇒ `apply_patch`) → agent → `check.run_checks` → test (chỉ khi các nhóm trước qua) → `report.build_report` → `report.post_result` → kết thúc job → dọn `work/<job>`. (5) Trần PC-R04 vượt (ở `snapshot_for` hay `prepare`) ⇒ BÁO CÁO `check_failed{size}` (không chỉ lỗi job). (6) Trượt trước agent (install/apply_patch/size) vẫn POST báo cáo, `test=null`, `diff=null`, job không `container`/`upstream`. (7) `post_result` False ⇒ `failed` `error_reason="upstream"`. (8) `ok`/`no_changes`/`check_failed` ⇒ job kết thúc như cũ (`ok`/`no_changes` = `succeeded`).
 Đỏ đúng lý do R2b (main `50030cb6`): 12/12 đỏ `ModuleNotFoundError: agent_runtime.autofix.host` (`need_r3`). Chạy thử tạm bỏ `need_r3` (đã khôi phục): 12/12 đỏ ở `expect` (không báo cáo / không GET `base_patch` / `succeeded` thay vì `container`), mọi job được claim và kết thúc — 0 `PostgresError`/`TypeError` ở dựng dữ liệu. `ruff check` + `ruff format --check` + `pyright` (tests/acceptance/pc) sạch. `bun run test:lock:write` + `test:lock:verify` OK; `bun run trace --check` OK.
+
+## 10. Kết quả `bun run done:pc` lần đầu · 2026-10-14 (backend-lead D1)
+
+Chạy: `bun run done:pc` (bước 1–2) → `--from=3` (int, 63,8 phút) → `--from=5` → `--from=9`. DB int `pc_done`, e2e `pc_e2e`, pytest `ai_system_h1_test`.
+
+| # | Bước | Kết quả |
+|---|---|---|
+| 1 | typecheck | xanh |
+| 2 | bun test | 3664 pass · 14 skip · 6 đỏ (xem dưới) |
+| 3 | `db:test:create pc_done` | xanh |
+| 4 | test:int | 3156 pass · 3 skip · 6 đỏ (xem dưới) |
+| 5 | Runtime pytest `pc` (51) + `-m int autofix_int_test.py` (12) | xanh |
+| 6 | `test:pc:sandbox` | xanh (8 ca, Docker) |
+| 7 | `db:test:create pc_e2e` | xanh |
+| 8 | e2e P-c (14 ca) | 13 pass · 1 đỏ (E03) |
+| 9 | `trace --check` | xanh |
+| 10 | `test:lock:verify` | xanh |
+
+**Đỏ bước 2 (bun test)**
+
+| Ca | Loại | Ghi chú |
+|---|---|---|
+| H2c R48 (`JOB_FAIL_REASONS.at(-1)` = `container`, test chờ `attachment`) · H2c R49 (`SourceResolveJob.git.json` không có schema) | đã biết (R49 contracts-h2c) | test H2c cũ lệch contract P-c; cần qc cập nhật |
+| P-b2 C-02 · P-a R-K01 (`DECISION_REASONS` dài 18, test chờ 16) · P-b2 C-07 (`PROCESS_DEF_RULES` +3 `AUTOFIX_*`) | mới do P-c (test khoá cũ chưa theo contract P-c) | contract đúng spec P-c; **qc** cập nhật 3 test (không sửa ở đây) |
+| H2a `requeue.stack` S03 | flake | chạy lại file: xanh |
+
+**Đỏ bước 4 (int)**
+
+| Ca | Loại | Ghi chú |
+|---|---|---|
+| SC-2 hoá đơn ×3 (`P-a/scenario/hoa-don.int`) | mới do P-c — **đã sửa** | `seed.processes.ts` (HUB-FR-130, commit 5676e7b0) ghi `sources` bằng `JSON.stringify` + `::jsonb` ⇒ jsonb là chuỗi `"[]"` ⇒ `keys.map is not a function` (500). Sửa: `tx.json(t.sources)`. Chạy lại: 3/3 xanh. Bản chép tenant dev đã có từ trước lần seed lỗi giữ `sources` hỏng tới khi xoá/chép lại (`UPDATE hub.process_defs SET sources='[]' WHERE jsonb_typeof(sources)='string'`) |
+| `hub-rls.int` ×2 (WRK-FR-24, RLS đúng 5 bảng) | đã biết (TD #148) | danh sách bảng RLS cũ |
+| M3 `concurrency` C7 (<5 s: 5,15 s) | flake (tải) | chạy lại file: 13/13 xanh |
+
+**Đỏ bước 8 (e2e)** — `chat/diff.pc.ts:44` **E03** (diff đầy đủ + Tải .diff + Đạt): mọi assertion UI qua; lỗi `apiResponse.json: Response has been disposed` tại `e2e/P-c/_pc-support.ts:113` (`patchStage`: `route.fetch()` còn bay khi `u.close()` đóng context sau POST decision ⇒ rejection chưa bắt ⇒ ca đỏ; lặp lại 2/2). Nghi **test support** (thiếu try/catch quanh `route.fetch/json`), không phải FE/Hub. Việc cho **qc**: bọc handler trong `try { … } catch { return }` hoặc `await page.unrouteAll({behavior:'ignoreErrors'})` trước `close`.
+
