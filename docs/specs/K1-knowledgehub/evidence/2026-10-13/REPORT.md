@@ -29,4 +29,18 @@ Cách cho fake-cli gọi tool: `#fake:tool=kh-query` trong input; hit mock KH ch
 ## Chưa kiểm
 `KH_LIMIT` (5 lần/stage) — fake-cli chỉ gọi tool một lần mỗi job (đã có test int).
 
-**Kết luận: Không đạt (1 Major) — sửa M1 rồi kiểm lại.**
+**Kết luận vòng 1: Không đạt (1 Major) — sửa M1 rồi kiểm lại.**
+
+## Vòng 2 (sau 1f6e37f8, c47ce6aa, 2f85995f) — ảnh `r2/`, evidence 257577e7
+| Mục | Kết quả |
+|---|---|
+| M1: `bug-fix` (tuyến tính) hiện "Tri thức: 1/5 lần hỏi" từng stage, "Tóm tắt: đã ghi" | Đạt |
+| Minor 6: gỡ grant tay, seed tạo lại 7 grant; `bug-fix` 6/6, `sdlc-delivery` 4 stage (dừng stage nhóm do fake-cli), không `permission_lost` | Đạt |
+| Minor 1: Sheet Thêm ở lại "Đã lưu · v1" | Đạt |
+| Minor 3/4: Cài đặt + dialog Kiểm tra khớp mockup, VI/EN | Đạt |
+| Minor 5: mobile 390px badge, nút hành động trong viewport | Đạt |
+| Hồi quy S01–S10, A01–A06 | Đạt |
+
+Góp ý mới (mức Thường → TECH-DEBT): cột "Địa chỉ" bảng kết nối gần như bị che ở 390px; chat-web còn nút "Huỷ lượt chạy" khi run Hoàn tất; người duyệt gate không ở phòng không xem được tiến độ run (cần xác nhận đúng thiết kế); studio-web dev cần `HUB_URL`, `ADMIN_API_URL` (runbook). Chưa kiểm lại Minor 2, `KH_LIMIT`.
+
+**Kết luận vòng 2: Đạt.**

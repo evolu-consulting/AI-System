@@ -18,3 +18,5 @@ Người chạy: qc-uat (Sonnet) · Studio đăng nhập `platform/admin` · Evi
 - Minor: toast xếp chồng đè nút Huỷ/Lưu của Sheet (`13-A-validate-duplicate.png`).
 
 **Kết luận: Đạt.**
+
+Vòng 2 (1f6e37f8, ảnh `r2/`): toast studio-web `top-center` không đè Huỷ/Lưu của Sheet trên desktop và mobile — Đạt. Xoá secret đang dùng nay chặn ngay bằng dialog "Không xoá được …"; trùng tên báo inline trong Sheet.
