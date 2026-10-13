@@ -1,6 +1,7 @@
 // HUB-FR-72 · H4a-R13 · plan §2.5 — đọc catalog (không secret).
 import { z } from "zod";
 import { IsoDateTime, UuidSchema } from "../common";
+import { ProfileStepSchema } from "../hub/job";
 import { LocalizedNameSchema, listMetaSchema } from "./common";
 
 export const CatalogQuerySchema = z.strictObject({
@@ -19,12 +20,15 @@ export const AgentTypeItemSchema = z.strictObject({
   version: z.number().int(),
   available: z.boolean(),
 });
+/** H4b-2 (spec §3 B): `steps` theo `ProfileStepSchema` (model nullable); thêm `version`, `active_step` (pickStep), `all_subscription`, `agent_count`. */
 export const ModelProfileItemSchema = z.strictObject({
   id: UuidSchema,
   key: z.string(),
-  steps: z.array(
-    z.strictObject({ provider_key: z.string(), model: z.string(), on: z.array(z.string()) }),
-  ),
+  steps: z.array(ProfileStepSchema),
+  version: z.number().int().min(1),
+  active_step: z.number().int().min(0).nullable(),
+  all_subscription: z.boolean(),
+  agent_count: z.number().int().min(0),
 });
 export const ProviderItemSchema = z.strictObject({
   id: UuidSchema,
@@ -43,6 +47,9 @@ export const ProviderItemSchema = z.strictObject({
       utilization: z.number().nullable(),
     })
     .nullable(),
+  // H4b-2 (spec §3 A): thêm `version` (khoá lạc quan), `slots_in_use` (job `running`). Vẫn KHÔNG secret_id/last_error (R13).
+  version: z.number().int().min(1),
+  slots_in_use: z.number().int().min(0),
 });
 export const WorkflowItemSchema = z.strictObject({
   id: UuidSchema,

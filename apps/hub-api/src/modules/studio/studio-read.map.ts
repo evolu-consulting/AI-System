@@ -55,6 +55,8 @@ export type ProviderRow = {
   maxConcurrency: number;
   enabled: boolean;
   devOnly: boolean;
+  version: number;
+  slotsInUse: number;
   status: string | null;
   cooldownUntil: Date | null;
   utilization: number | null;
@@ -72,6 +74,8 @@ export function toProviderItem(r: ProviderRow): z.infer<typeof ProviderItemSchem
     max_concurrency: r.maxConcurrency,
     enabled: r.enabled,
     dev_only: r.devOnly,
+    version: r.version,
+    slots_in_use: r.slotsInUse,
     state:
       r.status === null
         ? null

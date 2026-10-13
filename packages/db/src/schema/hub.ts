@@ -15,6 +15,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { EXT_AUDIT_ACTIONS, EXT_AUDIT_ENTITIES } from "./hub-kh";
+import { MODELS_AUDIT_ENTITIES, type ModelProfileStep } from "./hub-models";
 import { PA_AUDIT_ACTIONS, PA_AUDIT_ENTITIES, processRunCols } from "./hub-processes";
 import { hub } from "./hub-readonly";
 
@@ -51,7 +52,7 @@ export const AGENT_RUNTIME_VALUES = [
   "dify-agent",
 ] as const;
 export const ATTACHMENT_ORIGIN_VALUES = ["upload", "output"] as const;
-// H4a (0010), CR-054 (0018), P-a (0019), H4b-1 (0028), K1 (0029): khớp CHECK `hub_audit_log_action_check`/`_entity_check`.
+// H4a (0010), CR-054 (0018), P-a (0019), H4b-1 (0028), K1 (0029), H4b-2 (0030): khớp CHECK `hub_audit_log_action_check`/`_entity_check`.
 export const HUB_AUDIT_ACTION_VALUES = [
   "grant",
   "revoke",
@@ -73,6 +74,7 @@ export const HUB_AUDIT_ENTITY_VALUES = [
   "agent_default",
   ...PA_AUDIT_ENTITIES,
   ...EXT_AUDIT_ENTITIES,
+  ...MODELS_AUDIT_ENTITIES,
 ] as const;
 export const HUB_AUDIT_ACTOR_ROLE_VALUES = ["platform_admin", "tenant_admin", "member"] as const;
 
@@ -81,7 +83,6 @@ export const hubConfigMeta = hub.table("config_meta", {
   id: smallint("id").primaryKey(),
   hubConfigVersion: integer("hub_config_version").notNull().default(0),
 });
-
 export const providers = hub.table("providers", {
   id: uuid("id").primaryKey().defaultRandom(),
   key: text("key").notNull(),
@@ -92,15 +93,14 @@ export const providers = hub.table("providers", {
   maxConcurrency: integer("max_concurrency").notNull().default(1),
   enabled: boolean("enabled").notNull().default(true),
   devOnly: boolean("dev_only").notNull().default(false),
+  version: integer("version").notNull().default(1), // 0030: khoá lạc quan, CHECK ≥ 1
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
-
-export type ModelProfileStep = { provider_key: string; model: string; on: string[] };
-
 export const modelProfiles = hub.table("model_profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   key: text("key").notNull(),
   steps: jsonb("steps").$type<ModelProfileStep[]>().notNull(),
+  version: integer("version").notNull().default(1), // 0030: khoá lạc quan, CHECK ≥ 1
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 
@@ -118,7 +118,7 @@ export const agents = hub.table("agents", {
   timeoutS: integer("timeout_s").notNull().default(600),
   tokenBudget: integer("token_budget"),
   enabled: boolean("enabled").notNull().default(true),
-  version: integer("version").notNull().default(1),
+  version: integer("version").notNull().default(1), // 0030: khoá lạc quan, CHECK ≥ 1
   createdAt: createdAt(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
   /** CR-054 (0018): model ghi đè bước profile (alias `haiku`/`sonnet`/`opus` hoặc id); NULL = theo profile. */
@@ -163,7 +163,7 @@ export const orchestratorSettings = hub.table("orchestrator_settings", {
   onNoMatch: text("on_no_match", { enum: ["answer", "ask"] })
     .notNull()
     .default("answer"),
-  version: integer("version").notNull().default(1),
+  version: integer("version").notNull().default(1), // 0030: khoá lạc quan, CHECK ≥ 1
   updatedBy: uuid("updated_by"),
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });

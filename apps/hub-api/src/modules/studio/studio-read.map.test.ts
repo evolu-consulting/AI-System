@@ -59,6 +59,8 @@ describe("H4a B3 · toProviderItem (R13)", () => {
     maxConcurrency: 2,
     enabled: true,
     devOnly: false,
+    version: 1,
+    slotsInUse: 0,
     status: null,
     cooldownUntil: null,
     utilization: null,

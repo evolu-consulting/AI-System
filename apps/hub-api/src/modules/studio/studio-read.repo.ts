@@ -80,6 +80,10 @@ export function readProviders(tx: Tx) {
       maxConcurrency: providers.maxConcurrency,
       enabled: providers.enabled,
       devOnly: providers.devOnly,
+      version: providers.version,
+      // H4b-2: job `running` theo provider (index `jobs_provider_key_idx`); cột tương quan viết tường minh như readTenants.
+      slotsInUse: sql<number>`(select count(*) from hub.jobs j
+        where j.provider_key = "providers"."key" and j.status = 'running')`.mapWith(Number),
       status: providerState.status,
       cooldownUntil: providerState.cooldownUntil,
       utilization: providerState.utilization,

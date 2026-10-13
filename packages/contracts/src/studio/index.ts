@@ -3,6 +3,8 @@ export { type ErrorResponse, ErrorResponseSchema } from "../errors";
 export * from "./agents";
 export * from "./catalog";
 export * from "./common";
+export * from "./entitlements";
 export * from "./errors";
+export * from "./models";
 export * from "./orchestrator";
 export * from "./overlap";

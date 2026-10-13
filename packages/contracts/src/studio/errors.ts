@@ -22,10 +22,29 @@ export const STUDIO_ERRORS = {
 export type StudioErrorCode = keyof typeof STUDIO_ERRORS;
 
 export const StudioInvalidReferenceDetailsSchema = z.strictObject({
-  field: z.enum(["profile_id", "workflow_ids", "agent_type_key", "agent_id", "tenant_id"]),
+  // H4b-2 (spec §3 Mã lỗi): chỉ THÊM field `secret_id`/`steps`, `index` (bước 0..4), reason `wrong_kind`/`readonly`.
+  field: z.enum([
+    "profile_id",
+    "workflow_ids",
+    "agent_type_key",
+    "agent_id",
+    "tenant_id",
+    "secret_id",
+    "steps",
+  ]),
   ids: z.array(UuidSchema).max(20).optional(),
+  index: z.number().int().min(0).max(4).optional(),
   reason: z
-    .enum(["not_found", "disabled", "app_type", "no_input", "runtime_mismatch", "unavailable"])
+    .enum([
+      "not_found",
+      "disabled",
+      "app_type",
+      "no_input",
+      "runtime_mismatch",
+      "unavailable",
+      "wrong_kind",
+      "readonly",
+    ])
     .optional(),
 });
 export const AgentVersionConflictDetailsSchema = versionConflictDetailsSchema(AgentSchema);
