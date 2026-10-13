@@ -129,3 +129,10 @@ Int: 80 ca = 72 đỏ ở `expect` + 8 xanh trước code (E09, E11, Q01–Q03, 
 
 ## 9. Khoá
 Khoá 2026-10-13 (T2, trước T3 Gate; Gate đổi spec ⇒ qc mở lại + ghi lý do): `bun run test:lock:write` thêm 17 file (`tests/acceptance/H4b2/**` 13 + `e2e/studio/_h4b2.ts` + 3 `h4b2-*.studio.ts`); `bun run test:lock:verify` OK (728 file); `bun run trace --check` OK (244 mã).
+
+### 9.1 Cập nhật sau readiness lần 1 · 2026-10-13 (mở khoá → khoá lại)
+- **#2:** M05 và ca mới **M25b** (Tên profile "A") đòi câu "Bắt đầu bằng chữ thường; chỉ chữ thường, số và - (2–48 ký tự)".
+- **Q4 chốt "Không dự phòng"** (`agentHasOwnModel`): `profile-step.test.ts` truyền `false` cho R50–R65 (helper `pick(..., ownModel=false)`), thêm **R66–R70** (ca 9–13 plan §2.3); `dispatch.int` thêm **D08** (agent.model + bước 0 tắt ⇒ ALL_PROVIDERS_EXHAUSTED, không job, không log `job.fallback`) và **D09** (agent.model thắng `step.model`, giữ bước 0).
+- **C10:** `last_ok_at` cũng NULL khi "Kiểm tra lại" (`setState` thêm `lastOk`); **D24:** `UPDATE last_ok_at` ⇒ ok; **P10:** item `steps` hợp `ProfileStepSchema`; **A08/P08:** `KEY_TAKEN` `details = {field:"key"}`; **A08b** (mới) + P08: path param không uuid ⇒ 400 `VALIDATION_ERROR` (providers GET/PUT/PATCH/DELETE/check, profiles GET/PUT/DELETE).
+- **E2E:** M03/M04 khẳng định Sheet đóng sau Lưu (bỏ nhánh "đóng bằng Huỷ" — G12 hết hiệu lực); **M38** (mới) `AGENT_IS_DEFAULT` toast riêng, switch hoàn về, không GET lại ma trận. Đã khớp: câu chữ kết quả kiểm tra M07–M10, nhãn ô `{agent.key} × {tenant.key}` M30–M32, xoá luôn qua xác nhận M12/M13, A01 `secret {id,name}`.
+- Ca mới: R66–R70 (5), D08–D09 (2), A08b (1), M25b, M38 ⇒ +10. R `profile-step` 21 ca đỏ `qc: pickStep chưa có`. Int mới/sửa **chưa chạy được đỏ-đúng-lý-do** vì Docker Desktop không khởi động (Postgres :5432 CONNECT_TIMEOUT); typecheck + biome sạch. Chạy lại khi có Docker (ghi vào VERIFY/B-task đầu).

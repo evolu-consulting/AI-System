@@ -116,6 +116,19 @@ test('HUB-FR-67 · M25 · "+ Profile mới": Tên profile + 1 bước (Provider 
   });
 });
 
+test('HUB-FR-67 · M25b · Tên profile "A" ⇒ "Bắt đầu bằng chữ thường; chỉ chữ thường, số và - (2–48 ký tự)", không gửi [plan-frontend §4]', async ({
+  page,
+}) => {
+  const k = await openModels(page, {}, "/models?tab=profiles");
+  await page.getByRole("button", { name: "+ Profile mới" }).click();
+  await page.getByRole("textbox", { name: "Tên profile" }).fill("A");
+  await page.getByRole("button", { name: "Lưu profile" }).click();
+  await expect(
+    page.getByText("Bắt đầu bằng chữ thường; chỉ chữ thường, số và - (2–48 ký tự)"),
+  ).toBeVisible();
+  expect(writes(k)).toEqual([]);
+});
+
 test('HUB-FR-67 · M26 · PUT profile 409 VERSION_CONFLICT ⇒ "Có người vừa lưu bản mới hơn" [D10]', async ({
   page,
 }) => {

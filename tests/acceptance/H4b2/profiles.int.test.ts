@@ -4,6 +4,7 @@
 // `active_step` (= pickStep theo `enabled` + `provider_state` lúc đọc), `all_subscription`, `agent_count`.
 // Đỏ trước code: route chưa mount ⇒ 404 ≠ kỳ vọng.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { ProfileStepSchema } from "@ai/contracts/hub";
 import { PROFILE } from "../H1/_hub";
 import {
   apiBody,
@@ -198,7 +199,13 @@ describe("P06–P09 · lỗi bước [spec §3 B stepsProblem · Q8]", () => {
       () => pa(x, "POST", "/model-profiles", { key: "fake-1", steps: [step("fake-cli")] }),
       409,
       "KEY_TAKEN",
-    );
+    ).then((r) => expect(errOf(r).details).toEqual({ field: "key" }));
+    for (const [m, q] of [
+      ["GET", "/model-profiles/abc"],
+      ["PUT", "/model-profiles/abc"],
+      ["DELETE", "/model-profiles/abc?version=1"],
+    ] as const)
+      await noWrite(() => pa(x, m, q, {}), 400, "VALIDATION_ERROR");
   });
 
   it("HUB-FR-67 · P09 · DELETE profile agent đang dùng (fake-1) ⇒ 409 PROFILE_IN_USE{agents:[{id,key}]}; profile rảnh ⇒ 204 + audit delete", async () => {
@@ -224,6 +231,8 @@ describe("P10–P14 · list: version, agent_count, all_subscription, active_step
   it("HUB-FR-67 · P10 · fake-1: version ≥ 1, agent_count = số agent trỏ tới, all_subscription true; hợp ModelProfileListSchema", async () => {
     const r = await pa(x, "GET", "/model-profiles");
     await expectSchema("ModelProfileListSchema", r.json);
+    for (const it of r.json?.items ?? [])
+      for (const st of it.steps) expect(ProfileStepSchema.safeParse(st).success).toBe(true);
     const [n] = await x.sql<{ n: number }[]>`select count(*)::int as n from hub.agents
       where profile_id = ${PROFILE.fake}`;
     expect(await listItem("fake-1")).toMatchObject({

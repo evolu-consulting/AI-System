@@ -105,7 +105,7 @@ describe("D22–D24 · GRANT theo cột cho hub_api [spec §4 #2–#4 · Q8]", (
       ),
     ).toBe("ok");
   });
-  it("HUB-FR-66 · D24 · provider_state: UPDATE last_probe_at ⇒ ok; UPDATE status / updated_at ⇒ 42501 (Runtime sở hữu)", async () => {
+  it("HUB-FR-66 · D24 · provider_state: UPDATE last_probe_at và last_ok_at ⇒ ok; UPDATE status / updated_at ⇒ 42501 (Runtime sở hữu)", async () => {
     await owner`insert into hub.provider_state (provider_key, status, last_probe_at) values ('claude-sub', 'ok', now())
       on conflict (provider_key) do nothing`;
     expect([
@@ -121,7 +121,11 @@ describe("D22–D24 · GRANT theo cột cho hub_api [spec §4 #2–#4 · Q8]", (
         (tx) =>
           tx`update hub.provider_state set updated_at = now() where provider_key = 'claude-sub'`,
       ),
-    ]).toEqual(["ok", "42501", "42501"]);
+      await asApi(
+        (tx) =>
+          tx`update hub.provider_state set last_ok_at = null where provider_key = 'claude-sub'`,
+      ),
+    ]).toEqual(["ok", "42501", "42501", "ok"]);
   });
 });
 

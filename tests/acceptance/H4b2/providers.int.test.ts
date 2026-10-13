@@ -172,7 +172,23 @@ describe("A01–A08 · tạo provider [AC-H4b2-01 · spec §3 A POST · plan §3
   });
 
   it("HUB-FR-66 · A08 · key đã có (claude-sub) ⇒ 409 KEY_TAKEN; 0 ghi", async () => {
-    await noWrite(() => pa(x, "POST", "/providers", subBody("claude-sub")), 409, "KEY_TAKEN");
+    const r = await noWrite(
+      () => pa(x, "POST", "/providers", subBody("claude-sub")),
+      409,
+      "KEY_TAKEN",
+    );
+    expect(errOf(r).details).toEqual({ field: "key" });
+  });
+
+  it("HUB-FR-66 · A08b · :id không phải uuid ⇒ 400 VALIDATION_ERROR (GET/PUT/PATCH/DELETE/check); 0 ghi", async () => {
+    for (const [m, p] of [
+      ["GET", "/providers/abc"],
+      ["PUT", "/providers/abc"],
+      ["PATCH", "/providers/abc/enabled"],
+      ["DELETE", "/providers/abc?version=1"],
+      ["POST", "/providers/abc/check"],
+    ] as const)
+      await noWrite(() => pa(x, m, p, {}), 400, "VALIDATION_ERROR");
   });
 });
 

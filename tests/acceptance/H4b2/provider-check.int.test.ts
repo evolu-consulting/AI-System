@@ -219,14 +219,14 @@ describe('C10–C13 · subscription "Kiểm tra lại" [spec §3 A · D9 · plan
   const PROBE_OLD = "2026-10-13T07:00:00.000Z";
   const stateOf = async (k: string): Promise<Json> => {
     const [s] =
-      await x.sql`select status, last_probe_at, updated_at, last_error from hub.provider_state
+      await x.sql`select status, last_probe_at, last_ok_at, updated_at, last_error from hub.provider_state
       where provider_key = ${k}`;
     return s ? { ...s } : undefined;
   };
 
-  it("HUB-FR-66 · C10 · Hub đặt last_probe_at = NULL, KHÔNG đổi updated_at; Runtime probe mới logged_out ⇒ error, message = last_error", async () => {
+  it("HUB-FR-66 · C10 · Hub đặt last_probe_at = NULL và last_ok_at = NULL, KHÔNG đổi updated_at; Runtime probe mới logged_out ⇒ error, message = last_error", async () => {
     const d = await mkProvider(x, subBody("qc-c10"));
-    await setState(x.sql, "qc-c10", { status: "ok", probe: PROBE_OLD });
+    await setState(x.sql, "qc-c10", { status: "ok", probe: PROBE_OLD, lastOk: PROBE_OLD });
     const before = await stateOf("qc-c10");
     let seen: Json;
     onSleep = async () => {
@@ -246,6 +246,7 @@ describe('C10–C13 · subscription "Kiểm tra lại" [spec §3 A · D9 · plan
       onSleep = null;
     }
     expect(seen?.last_probe_at).toBeNull();
+    expect(seen?.last_ok_at).toBeNull();
     expect(seen?.updated_at?.toISOString?.()).toBe(before?.updated_at?.toISOString?.());
   });
 

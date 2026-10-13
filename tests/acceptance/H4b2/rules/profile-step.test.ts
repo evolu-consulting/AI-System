@@ -1,5 +1,5 @@
 // HUB-FR-67 · HUB-FR-31 (phần lúc giao job, Q4) · AC-H4b2-07 (thay AC-H04 nguyên văn, dời H2d) · plan H4b2 §2.3
-// `runner/profile-step.rules.ts` · test-plan H4b2 §3 R50–R63: `blockedTrigger` + `pickStep` — 8 ca bảng plan §2.3 + biên.
+// `runner/profile-step.rules.ts` · test-plan H4b2 §3 R50–R70: `blockedTrigger` + `pickStep` — 8 ca bảng plan §2.3 + biên.
 // Đỏ trước code: module chưa có ⇒ `qc: <hàm> chưa có`.
 import { describe, expect, it } from "bun:test";
 import { fn, loadPick } from "./_rules";
@@ -14,8 +14,8 @@ const st = (provider_key: string, on: string[] = []) => ({ provider_key, model: 
 const ok: View = { enabled: true, state: { status: "ok", cooldownUntil: null } };
 const off: View = { enabled: false, state: { status: "ok", cooldownUntil: null } };
 const cool: View = { enabled: true, state: { status: "cooldown", cooldownUntil: FUTURE } };
-const pick = (steps: object[], views: Record<string, View | undefined>) =>
-  fn(m, "pickStep")(steps, (k: string) => views[k], NOW);
+const pick = (steps: object[], views: Record<string, View | undefined>, ownModel = false) =>
+  fn(m, "pickStep")(steps, (k: string) => views[k], NOW, ownModel);
 
 describe("R50–R54 · blockedTrigger [plan §2.3]", () => {
   const t = (s: State) => fn(m, "blockedTrigger")(s, NOW);
@@ -129,6 +129,43 @@ describe("R55–R63 · pickStep — bảng ca plan §2.3 [Q4 · AC-H4b2-07]", ()
     expect(pick([st("a"), st("b", ["error"])], { a: off, b: er })).toEqual({
       ok: false,
       reason: "provider_unavailable",
+    });
+  });
+});
+
+describe("R66–R70 · pickStep — agent có model riêng ⇒ không dự phòng [Q4 chốt · AC-H4b2-07]", () => {
+  const lo: View = { enabled: true, state: { status: "logged_out", cooldownUntil: null } };
+  const past: View = { enabled: true, state: { status: "cooldown", cooldownUntil: PAST } };
+  it("HUB-FR-67 · AC-H4b2-07 · R66 · ca 9: bước 0 ok ⇒ index 0, skipped []", () => {
+    expect(pick([st("a", ["quota"]), st("b")], { a: ok, b: ok }, true)).toEqual({
+      ok: true,
+      index: 0,
+      skipped: [],
+    });
+  });
+  it("HUB-FR-67 · AC-H4b2-07 · R67 · ca 10: bước 0 tắt, bước 1 ok ⇒ {ok:false, provider_unavailable}", () => {
+    expect(pick([st("a"), st("b")], { a: off, b: ok }, true)).toEqual({
+      ok: false,
+      reason: "provider_unavailable",
+    });
+  });
+  it("HUB-FR-67 · AC-H4b2-07 · R68 · ca 11: bước 0 cooldown + on [quota], bước 1 ok ⇒ {ok:false, quota, skipped []}", () => {
+    expect(pick([st("a", ["quota"]), st("b")], { a: cool, b: ok }, true)).toMatchObject({
+      ok: false,
+      reason: "quota",
+      skipped: [],
+    });
+  });
+  it("HUB-FR-67 · AC-H4b2-07 · R69 · ca 12: bước 0 logged_out + on [error], bước 1 ok ⇒ {ok:false, provider_unavailable}", () => {
+    expect(pick([st("a", ["error"]), st("b")], { a: lo, b: ok }, true)).toEqual({
+      ok: false,
+      reason: "provider_unavailable",
+    });
+  });
+  it("HUB-FR-67 · AC-H4b2-07 · R70 · ca 13: bước 0 cooldown đã hết hạn ⇒ index 0", () => {
+    expect(pick([st("a"), st("b")], { a: past, b: ok }, true)).toMatchObject({
+      ok: true,
+      index: 0,
     });
   });
 });

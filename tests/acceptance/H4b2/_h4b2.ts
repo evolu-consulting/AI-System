@@ -269,13 +269,20 @@ export async function cfgState(sql: Sql): Promise<Json> {
 export async function setState(
   sql: Sql,
   key: string,
-  o: { status: string; cooldown?: string | null; lastError?: string | null; probe?: string | null },
+  o: {
+    status: string;
+    cooldown?: string | null;
+    lastError?: string | null;
+    probe?: string | null;
+    lastOk?: string | null;
+  },
 ): Promise<void> {
-  await sql`insert into hub.provider_state (provider_key, status, cooldown_until, last_error, last_probe_at)
+  await sql`insert into hub.provider_state (provider_key, status, cooldown_until, last_error, last_probe_at, last_ok_at)
     values (${key}, ${o.status}, ${o.cooldown ?? null}::timestamptz, ${o.lastError ?? null},
-      ${o.probe ?? null}::timestamptz)
+      ${o.probe ?? null}::timestamptz, ${o.lastOk ?? null}::timestamptz)
     on conflict (provider_key) do update set status = excluded.status, cooldown_until = excluded.cooldown_until,
-      last_error = excluded.last_error, last_probe_at = excluded.last_probe_at`;
+      last_error = excluded.last_error, last_probe_at = excluded.last_probe_at,
+      last_ok_at = excluded.last_ok_at`;
 }
 export const clearState = (sql: Sql, key: string) =>
   sql`delete from hub.provider_state where provider_key = ${key}`;

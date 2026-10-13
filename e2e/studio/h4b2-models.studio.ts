@@ -93,7 +93,7 @@ test('HUB-FR-66 · AC-H4b2-01 · M03 · "+ Thêm provider" loại API: chọn se
   });
   expect(Object.keys(b)).not.toContain("value");
   await expect(toast(page)).toContainText("Đã lưu openai-backup");
-  if (await dlg.isVisible()) await dlg.getByRole("button", { name: "Huỷ" }).click();
+  await expect(dlg).toBeHidden();
   await expect(row(page, "openai-backup")).toBeVisible();
   expect(writes(k).length).toBe(1);
 });
@@ -115,6 +115,7 @@ test('HUB-FR-66 · M04 · Sửa subscription: "Sửa provider · claude-sub", Lo
   );
   await dlg.getByRole("button", { name: "Lưu" }).click();
   await put;
+  await expect(dlg).toBeHidden();
   expect(lastWrite(k, "PUT")?.body).toMatchObject({
     version: 1,
     max_concurrency: 3,
@@ -134,7 +135,7 @@ test("HUB-FR-66 · M05 · validate client: khoá sai, thiếu API key, slot 0 �
   await choose(page, dlg.getByRole("combobox", { name: "Loại" }), "API");
   await choose(page, dlg.getByRole("combobox", { name: "Hãng" }), "Anthropic");
   await dlg.getByRole("button", { name: "Lưu" }).click();
-  await expect(dlg).toContainText("Chữ thường, số và - (2–64 ký tự)");
+  await expect(dlg).toContainText("Bắt đầu bằng chữ thường; chỉ chữ thường, số và - (2–48 ký tự)");
   await expect(dlg).toContainText("Chọn API key");
   expect(writes(k)).toEqual([]);
 });

@@ -211,6 +211,30 @@ test('HUB-FR-78 · M35 · PUT 409 ⇒ toast "Quyền vừa được thay đổi.
     .toBeGreaterThan(gets0);
 });
 
+test('HUB-FR-78 · AC-H4b2-05 · M38 · DELETE 409 AGENT_IS_DEFAULT ⇒ toast "Agent đang là mặc định của tenant này. Đổi mặc định ở Admin trước khi thu hồi."; switch hoàn về bật; không GET lại ma trận [D9]', async ({
+  page,
+}) => {
+  const k = await openAccess(page, {
+    [`DELETE /agent-entitlements/${AG.assistant}/${TN.beta}`]: {
+      status: 409,
+      body: { error: { code: "AGENT_IS_DEFAULT", message: "x" } },
+    },
+  });
+  const gets0 = k.calls.filter(
+    (c) => c.method === "GET" && c.path === "/agent-entitlements",
+  ).length;
+  await sw(page, "assistant", "beta-co").click();
+  const dlg = page.getByRole("alertdialog", { name: "Thu hồi assistant khỏi beta-co?" });
+  if (await dlg.isVisible()) await dlg.getByRole("button", { name: "Thu hồi" }).click();
+  await expect(toast(page)).toContainText(
+    "Agent đang là mặc định của tenant này. Đổi mặc định ở Admin trước khi thu hồi.",
+  );
+  await expect(sw(page, "assistant", "beta-co")).toHaveAttribute("aria-checked", "true");
+  expect(k.calls.filter((c) => c.method === "GET" && c.path === "/agent-entitlements").length).toBe(
+    gets0,
+  );
+});
+
 test('HUB-FR-78 · M36 · lọc "Lọc theo agent" = hoadon ⇒ chỉ còn dòng hoadon', async ({ page }) => {
   await openAccess(page);
   const f = page.getByRole("combobox", { name: "Lọc theo agent" });

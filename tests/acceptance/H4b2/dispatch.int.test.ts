@@ -1,5 +1,5 @@
 // HUB-FR-67 · HUB-FR-31 (phần lúc giao job, Q4) · AC-H4b2-07 (thay AC-H04 nguyên văn — dời H2d) · plan H4b2 §2.3, §3.4 ·
-// test-plan H4b2 §3 D01–D07: giao job theo `pickStep` — bước provider tắt bỏ qua vô điều kiện; bước bị chặn (cooldown ⇒
+// test-plan H4b2 §3 D01–D09: giao job theo `pickStep` — bước provider tắt bỏ qua vô điều kiện; bước bị chặn (cooldown ⇒
 // quota, logged_out/error ⇒ error) chỉ chuyển bước kế khi `on` có trigger; không bước nào ⇒ run.failed
 // ALL_PROVIDERS_EXHAUSTED, không tạo job; payload job giữ contract (`profile_steps` = [bước đã chọn], `step_index` 0).
 // Hộp đen: hub-api thật + DB + Redis; test đóng vai Runtime (`ScriptRuntime` H1). Cấu hình đổi bằng owner + bump/NOTIFY,
@@ -118,7 +118,7 @@ async function failsExhausted(content: string): Promise<void> {
   expect(j?.n).toBe(0);
 }
 
-describe("D01–D07 · dự phòng lúc giao job [AC-H4b2-07 · Q4 · plan §3.4]", () => {
+describe("D01–D09 · dự phòng lúc giao job [AC-H4b2-07 · Q4 · plan §3.4]", () => {
   it("HUB-FR-67 · AC-H4b2-07 · D01 · [claude-sub on quota, fake-cli], claude-sub cooldown ⇒ job ở fake-cli; payload profile_steps = [fake-cli], step_index 0", async () => {
     await configure([s("claude-sub", ["quota"]), s("fake-cli")]);
     await state("claude-sub", "cooldown", FUT);
@@ -196,6 +196,38 @@ describe("D01–D07 · dự phòng lúc giao job [AC-H4b2-07 · Q4 · plan §3.4
       expect((await firstJob("Câu D07")).provider_key).toBe("fake-cli");
     } finally {
       await resetStates();
+      await configure([s("fake-cli")], true);
+    }
+  });
+});
+
+describe("D08–D09 · agent có model riêng ⇒ không dự phòng [Q4 chốt · AC-H4b2-07]", () => {
+  const ORCH = "orchestrator";
+  async function setAgentModel(model: string | null) {
+    await sql`update hub.agents set model = ${model} where key = ${ORCH}`;
+  }
+  it("HUB-FR-67 · AC-H4b2-07 · D08 · agent.model = 'haiku', bước 0 (claude-sub) TẮT, bước 1 fake-cli ok ⇒ run.failed ALL_PROVIDERS_EXHAUSTED, không job, không log job.fallback", async () => {
+    await setAgentModel("haiku");
+    await configure([s("claude-sub"), s("fake-cli")], false);
+    const from = log.lines.length;
+    try {
+      await failsExhausted("Câu D08");
+      expect(log.lines.slice(from).some((l) => l.includes("job.fallback"))).toBe(false);
+    } finally {
+      await setAgentModel(null);
+      await configure([s("fake-cli")], true);
+    }
+  });
+
+  it("HUB-FR-67 · AC-H4b2-07 · D09 · agent.model = 'haiku', bước 0 ok ⇒ job ở bước 0; payload.model = 'haiku' (agent.model thắng step.model)", async () => {
+    await setAgentModel("haiku");
+    await configure([{ provider_key: "claude-sub", model: "opus", on: ["quota"] }, s("fake-cli")]);
+    try {
+      const j = await firstJob("Câu D09");
+      expect(j.provider_key).toBe("claude-sub");
+      expect(j.payload.model).toBe("haiku");
+    } finally {
+      await setAgentModel(null);
       await configure([s("fake-cli")], true);
     }
   });
