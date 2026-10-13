@@ -10,8 +10,10 @@ import type { Logger } from "./lib/logger";
 import { type KhRuntime, khRuntime, mountKh } from "./modules/kh/kh.mount";
 import type { SecretKey } from "./modules/secrets/secrets.crypto";
 import { mountSecrets } from "./modules/secrets/secrets.mount";
+import { HubSecretReader } from "./modules/secrets/secrets.use";
 import { agentRoutes } from "./modules/studio/agents/agents.routes";
 import { AgentsService } from "./modules/studio/agents/agents.service";
+import { ProviderCheckService } from "./modules/studio/models/provider-check";
 import { providerRoutes } from "./modules/studio/models/providers.routes";
 import { ProvidersService } from "./modules/studio/models/providers.service";
 import { orchestratorRoutes } from "./modules/studio/orchestrator/orchestrator.routes";
@@ -32,7 +34,11 @@ export type H4aDeps = {
   /** K1 G1 · origin KH được phép + hạn mỗi lời gọi; vắng ⇒ `KH_CONFIG_NONE`. */
   kh?: KhConfig;
   appEnv?: "development" | "test" | "production";
-  log: Pick<Logger, "warn">;
+  /** H4b-2 plan §4 · "Kiểm tra key" gọi hãng; vắng ⇒ `globalThis.fetch`. */
+  fetch?: typeof fetch;
+  /** H4b-2 plan §4 · chờ probe subscription; vắng ⇒ `Bun.sleep`. */
+  sleep?: (ms: number) => Promise<void>;
+  log: Pick<Logger, "warn" | "info">;
 };
 
 /**
@@ -49,9 +55,20 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): KhRuntime 
     app.route(STUDIO_API, orchestratorRoutes(new OrchestratorService({ db: deps.db, audit })));
     // H4b-2 · Models: provider (B3). Fail-closed: vắng `appEnv` ⇒ không dev (http loopback bị chặn).
     const env = { dev: deps.appEnv === "development" || deps.appEnv === "test" };
-    app.route(STUDIO_API, providerRoutes(new ProvidersService({ db: deps.db, audit, env })));
-    // H4b-1 · Studio `/secrets*` + route tenant `/admin/source-credentials*` (cùng service).
     const key = deps.hubSecretsKey ?? null;
+    const checker = new ProviderCheckService({
+      db: deps.db,
+      audit,
+      reader: new HubSecretReader({ db: deps.db, key, log: deps.log }),
+      fetch: deps.fetch ?? globalThis.fetch,
+      sleep: deps.sleep ?? ((ms) => Bun.sleep(ms)),
+      log: deps.log,
+    });
+    app.route(
+      STUDIO_API,
+      providerRoutes(new ProvidersService({ db: deps.db, audit, env }), checker),
+    );
+    // H4b-1 · Studio `/secrets*` + route tenant `/admin/source-credentials*` (cùng service).
     mountSecrets(app, { db: deps.db, audit, key, studioBase: STUDIO_API });
     // K1 · `/kh/connections*`; `KhRuntime` (client + cache project) một instance cho cả process (T5e dùng).
     kh = khRuntime({ ...deps, db: deps.db, key });

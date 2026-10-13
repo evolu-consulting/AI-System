@@ -23,7 +23,7 @@ function app(dev = false): Hono<AuthVars> {
     return c.json(m.body, m.status);
   });
   const svc = new ProvidersService({ db: noDb as never, audit: noDb as never, env: { dev } });
-  a.route("/s", providerRoutes(svc));
+  a.route("/s", providerRoutes(svc, { check: async () => noDb as never }));
   return a;
 }
 type Err = { error: { code: string; details?: { issues?: { path: string[] }[] } } };

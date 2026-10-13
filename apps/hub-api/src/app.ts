@@ -91,6 +91,9 @@ export type AppDeps = {
   secretMasterKey?: string;
   /** H4b-1 D11 · = `HUB_SECRETS_KEY` đã kiểm (server điền). Vắng ⇒ POST/PUT có `value` 409 `NOT_CONFIGURED` (test cũ). */
   hubSecretsKey?: SecretKey | null;
+  /** H4b-2 plan §4 · `fetch` cho "Kiểm tra key" + `sleep` chờ probe subscription (test tiêm; vắng ⇒ global/`Bun.sleep`). */
+  fetch?: typeof fetch;
+  sleep?: (ms: number) => Promise<void>;
   /** H2a · = `HUB_INTERNAL_TOKEN` (vắng → `/internal/test-run` 503). */
   internalToken?: string;
   /** H2a · = `HUB_PUBLIC_INTERNAL_URL` (dựng `mcp.url` = `<url>/mcp`). */

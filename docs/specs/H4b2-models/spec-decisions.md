@@ -45,3 +45,11 @@ C1 — list giữ R13 (Q6): `has_secret` + `slots_in_use`, `secret`/`last_error`
 - 2026-10-13: PUT kiểm secret ref mỗi lần `secret_id ≠ null` (kể cả không đổi) — FK RESTRICT nên chỉ lệch khi kind sai; đơn giản hơn so sánh.
 - 2026-10-13: `env.dev` = `appEnv ∈ {development, test}`, vắng ⇒ không dev (fail-closed như `kh.mount`).
 - 2026-10-13: `GET /providers/:id` `state.last_error` qua `redactKey(…, "")` rồi cắt 500 (Q6).
+
+## Trong lúc làm — BE B4 (Kiểm tra key / Kiểm tra lại)
+- 2026-10-13: mốc `t0` subscription = `now()` của DB (đọc dạng epoch ms trong transaction xoá mốc probe), so với `last_probe_at` do Runtime ghi bằng giờ DB ⇒ không lệch đồng hồ host/container. Hạn 10 s + `latency_ms` đo bằng đồng hồ đơn điệu của tiến trình; `checked_at` = `t0 + đã chờ`.
+- 2026-10-13: vòng chờ = `sleep(500)` rồi đọc (xoá mốc commit trước lần `sleep` đầu); hết 10 s ⇒ `requested`, `latency_ms` = ms đã chờ.
+- 2026-10-13: `NOT_CONFIGURED` chỉ ở nhánh api (khi `useSecret` báo `key_missing`, dùng lại `secretsNotConfigured()`); subscription không cần khoá Hub nên vẫn chạy. `secret_id` null ở hàng api (không thể theo hình dạng) ⇒ `secret_unreadable`.
+- 2026-10-13: 2xx ⇒ huỷ thân không đọc; lỗi ⇒ đọc ≤ 64 KB (`readLimited`), đọc thân lỗi hỏng ⇒ thân rỗng (giữ `http_status`). Request `GET`, key chỉ ở header; `fetch` lỗi ⇒ `hitOfFetchError` (không log `e`).
+- 2026-10-13: audit `check`: `after = {status, error_code, http_status}`, `summary = {kind}`, `hubConfigVersion null`, transaction riêng ngắn; `username` export từ `studio-write.ts` để dùng lại. Log `provider.check` (info) chỉ `{provider_key, status, error_code, http_status, latency_ms}`.
+- 2026-10-13: `H4aDeps.log` mở rộng `Pick<Logger,"warn"|"info">`; reader secret riêng cho check (`new HubSecretReader`, cùng khoá), không dùng lại instance của K1.

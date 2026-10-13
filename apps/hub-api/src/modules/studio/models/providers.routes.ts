@@ -1,5 +1,5 @@
 // HUB-FR-66 · spec H4b2 §3 A · plan §3.1 · `GET/PUT/DELETE /studio/api/providers/:id`, `POST /studio/api/providers`,
-// `PATCH /studio/api/providers/:id/enabled`. `GET /providers` (list) giữ ở `studio.routes.ts` (H4a, D4).
+// `PATCH /studio/api/providers/:id/enabled`, `POST /studio/api/providers/:id/check` (B4, không body). `GET /providers` (list) giữ ở `studio.routes.ts` (H4a, D4).
 // Không logic: role đã chặn ở `app.h4a.ts` (403 trước parse) → `:id` không uuid ⇒ 400 (cả path con chưa mount, vd
 // `/check` của B4) → parse zod (400) → service.
 import {
@@ -12,9 +12,13 @@ import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { parseAdminQuery, parseJson } from "../../../lib/http";
 import { parseUuidParam, uuidParams } from "../studio-params";
+import type { ProviderCheckService } from "./provider-check";
 import type { ProvidersService } from "./providers.service";
 
-export function providerRoutes(svc: ProvidersService): Hono<AuthVars> {
+export function providerRoutes(
+  svc: ProvidersService,
+  checker: Pick<ProviderCheckService, "check">,
+): Hono<AuthVars> {
   const r = new Hono<AuthVars>();
   r.use("/providers/:id", uuidParams("id"));
   r.use("/providers/:id/*", uuidParams("id"));
@@ -37,5 +41,8 @@ export function providerRoutes(svc: ProvidersService): Hono<AuthVars> {
     await svc.remove(c.var.user, id, version);
     return c.body(null, 204);
   });
+  r.post("/providers/:id/check", async (c) =>
+    c.json(await checker.check(c.var.user, parseUuidParam(c))),
+  );
   return r;
 }

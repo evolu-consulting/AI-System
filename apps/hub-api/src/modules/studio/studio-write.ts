@@ -18,7 +18,8 @@ export type StudioAudit = Omit<
 export type WriteOutcome<T> = { result: T; audit: StudioAudit | null };
 export type WriteResult<T> = { result: T; version: number };
 
-async function username(tx: Tx, userId: string): Promise<string | null> {
+/** Tên người thao tác cho audit (dùng lại ở audit không bump, vd `provider.check`). */
+export async function username(tx: Tx, userId: string): Promise<string | null> {
   const [r] = await tx.execute<{ username: string }>(
     sql`select username from admin.users where id = ${userId}`,
   );
