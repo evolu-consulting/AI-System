@@ -147,3 +147,5 @@ Mockup P-c1 (chờ người dùng duyệt; chưa viết plan-frontend), trong `d
 | Q5 | Repo `git_remote` **riêng tư** (`source_credential`) ở P-c1 hay P-c2? | P-c2 (cùng push/PR; P-c1 = repo công khai + `local_path`) |
 | Q6 | Runtime container: **Podman rootless** (prod WSL2) + Docker Desktop (dev), trần mặc định ADR-0011 #3 (2 CPU, 2 GiB, 512 pids, job 30 phút, ≤ 1 job tự-sửa đồng thời)? | Có |
 | Q7 | Ảnh sandbox một bộ công cụ chung (git, rg, python3, node LTS, bun; ~400–600 MB, dựng từ Dockerfile trong repo)? | Có; chọn ảnh theo quy trình để sau |
+
+**Người dùng trả lời 2026-10-13:** chấp nhận mặc định Q1–Q7 (Q1 tách P-c1/P-c2; Q2 cho pha cài có mạng; Q3 `local_path` chỉ trên bản sao; Q4/Q6/Q7 duyệt sandbox ADR-0011 như đề xuất — ADR chuyển Accepted ở Gate; Q5 = P-c2 theo Q1). Mockup `Pc-*.dc.html` chờ người dùng duyệt.
