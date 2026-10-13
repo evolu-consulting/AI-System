@@ -60,7 +60,7 @@ Component ≤ 200 dòng; `StepsEditor` tách `StepRow`. Bước cũ `model = nul
 | provider.status.ok/busy/cooldown/error/logged_out/none | "ok" "bận" "cooldown" "lỗi" "hết phiên" "Chưa có Worker kiểm" | "ok" "busy" "cooldown" "error" "logged out" "Not checked by a Worker yet" |
 | provider.vendor.anthropic/openai/google/fake | "Anthropic" "OpenAI" "Google" "Fake (dev)" | same |
 | provider.note.dev | "dev" (cột Ghi chú khi `dev_only`; cooldown dùng `provider.cooldownUntil`) | "dev" |
-| provider.cooldownUntil | "Mở lại sau {min} phút ({time})" (`{time}` = HH:mm:ss theo locale; `{min}` = làm tròn lên) | "Reopens in {min} min ({time})" |
+| provider.cooldownUntil | "Mở lại sau {min} phút ({time})" (`{time}` = HH:mm:ss theo locale; `{min}` = làm tròn gần nhất, theo M02) | "Reopens in {min} min ({time})" |
 | provider.action.check / recheck / guide / edit / delete | "Kiểm tra key" / "Kiểm tra lại" / "Hướng dẫn" / "Sửa" / "Xoá" | "Check key" / "Check again" / "Guide" / "Edit" / "Delete" |
 | provider.sheet.create / edit | "Thêm provider" / "Sửa provider · {key}" | "Add provider" / "Edit provider · {key}" |
 | provider.field.key / kind / vendor / baseUrl / secret / slots / enabled | "Khoá provider" "Loại" "Hãng" "Base URL (tuỳ chọn)" "API key" "Số slot tối đa" "Bật provider" | "Provider key" "Type" "Vendor" "Base URL (optional)" "API key" "Max slots" "Enable provider" |
