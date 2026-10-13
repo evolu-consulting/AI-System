@@ -177,7 +177,7 @@ Câu mới của backend-lead (bằng chứng + phương án khác: `spec-decisi
 - **Q7** "Kiểm tra key" chỉ với key đã lưu. **Mặc định:** vậy (không thêm đường nhận key thô).
 - **Q8** `key`/`kind`/`vendor` provider, `key` profile bất biến. **Mặc định:** vậy, chốt bằng GRANT cột.
 ### Trong lúc làm (agent tự quyết theo Luật 2)
-- 2026-10-13 (PLAN FE): "Kiểm tra" là request đồng bộ ≤ 10 s, không polling; lệnh đăng nhập CLI theo hãng nằm trong i18n (không contract); dòng "lúc này chạy bằng" ~~tính ở client~~ → dùng `active_step` của server (điều phối chốt 2026-10-13, khớp `pickStep`); chỉ nút Lên/Xuống (kéo-thả → TECH-DEBT); xoá luôn qua xác nhận rồi gọi API (409 ⇒ InUseDialog); Sheet đóng sau lưu. Sau Gate chép 4 mockup vào `docs/design/agent-hub/canvas/`.
+- 2026-10-13 (PLAN FE): xem `plan-frontend.md` D1–D12 (check đồng bộ ≤ 10 s; "lúc này chạy bằng" = `active_step` server; chỉ Lên/Xuống, kéo-thả TECH-DEBT #162; xoá qua xác nhận; Sheet đóng sau lưu; mockup ở `canvas/H4b2-*`).
 
 ## 10. Tranh chấp test
 - (không)
