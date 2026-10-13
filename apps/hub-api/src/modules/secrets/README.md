@@ -1,8 +1,6 @@
 # modules/secrets — Secrets của Hub (HUB-FR-68, HUB-FR-69, HUB-FR-04, HUB-BR-30)
 
-Lưu khoá provider API, khoá KnowledgeHub, credential nguồn — **chỉ ghi**: không endpoint nào trả giá trị; response/audit/log chỉ metadata. Mã hoá AES-256-GCM bằng `HUB_SECRETS_KEY` (KHÁC `SECRET_MASTER_KEY`), AAD `hub.secrets:<id>:<kind>:<tenant|->:<key_version>`. Spec: `docs/specs/H4b1-secrets/` (spec §3–§4, plan §2–§3).
-
-**Mất `HUB_SECRETS_KEY` = mất mọi secret Hub** (sao lưu ngoài repo). Xoay khoá: chưa làm (`key_version` chừa sẵn).
+Lưu khoá provider API, khoá KnowledgeHub, credential nguồn — **chỉ ghi**: không endpoint nào trả giá trị; response/audit/log chỉ metadata. Mã hoá AES-256-GCM bằng `HUB_SECRETS_KEY` (KHÁC `SECRET_MASTER_KEY`), AAD `hub.secrets:<id>:<kind>:<tenant|->:<key_version>`. Spec: `docs/specs/H4b1-secrets/` (spec §3–§4, plan §2–§3). **Mất `HUB_SECRETS_KEY` = mất mọi secret Hub** (sao lưu ngoài repo); xoay khoá chưa làm (`key_version` chừa sẵn).
 
 | File | Vai trò |
 |---|---|
@@ -21,7 +19,6 @@ Lưu khoá provider API, khoá KnowledgeHub, credential nguồn — **chỉ ghi*
 const reader = new HubSecretReader({ db, key: deps.hubSecretsKey ?? null, log });
 await reader.useSecret({ id, kind: "kh_api_key", tenantId: run.tenantId }, async (value) => callKh(value));
 ```
-
 - `tenantId` = tenant **của run** (hoặc `null` cho secret nền tảng) — không lấy từ input người dùng. Sai id/kind/tenant ⇒ `secret_missing`.
 - Lỗi ⇒ `SecretUseError { code: "NOT_CONFIGURED", reason: "credential", failure: key_missing | secret_missing | decrypt_failed }`, message `hub secret: <failure>`; log warn chỉ `{secret_id, kind, failure}`.
 - Không cache bản rõ. Giá trị chỉ sống trong `fn`: không đưa vào payload job, `work/<job_id>/`, prompt, trace, audit, `detail` lỗi, log.
@@ -29,5 +26,3 @@ await reader.useSecret({ id, kind: "kh_api_key", tenantId: run.tenantId }, async
 ## `used_by` (chặn xoá)
 
 `usedByMany(tx, ids)` → `Map<secretId, SecretUsedBy[]>` sắp `(type, key)`. Thêm loại tham chiếu mới = thêm một nhánh vào `USED_BY_BRANCHES` (trả `sid, type, id, key`) + giá trị `type` trong contract `SECRET_USED_BY_TYPES`. FK `providers.secret_id` RESTRICT là chốt cuối.
-
-Phụ thuộc: `lib/{admin-role.middleware,http,errors,hub-audit,logger}`, `studio/studio-write` (`withConfigWrite`), `@ai/contracts/hub-admin`, `@ai/db/hub-scope`.

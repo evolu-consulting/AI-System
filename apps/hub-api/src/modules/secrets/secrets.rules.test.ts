@@ -20,4 +20,14 @@ describe("HUB-BR-15 · secrets.rules", () => {
     const four = Buffer.from(JSON.stringify(["a", "b", "c", "d"])).toString("base64url");
     expect(decodeSecretCursor(four)).toBeUndefined();
   });
+  it("RV1 #2 · cursor kind lạ hoặc id không phải uuid ⇒ undefined (trang đầu)", () => {
+    const enc = (v: unknown) => Buffer.from(JSON.stringify(v)).toString("base64url");
+    expect(decodeSecretCursor(enc(["bogus_kind", "x", A]))).toBeUndefined();
+    expect(decodeSecretCursor(enc(["kh_api_key", "x", "not-a-uuid"]))).toBeUndefined();
+    expect(decodeSecretCursor(enc(["kh_api_key", "x", A]))).toEqual(["kh_api_key", "x", A]);
+  });
+  it("RV1 #3 · credentialTenant so tenant không phân biệt hoa/thường", () => {
+    const u = { userId: A, tenantId: A, role: "tenant_admin" as const };
+    expect(credentialTenant(u, A.toUpperCase(), "write")).toBe(A);
+  });
 });

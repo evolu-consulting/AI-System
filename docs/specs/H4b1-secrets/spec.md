@@ -194,6 +194,9 @@ Lệnh xong: `bun run done:h4b1` (T7 tạo; = typecheck → test → test:int �
 - FE RV1 #8: vì `ConflictDialog` ẩn [Xem khác biệt] khi `rows=[]` (đổi hành vi Agent/Orchestrator H4a), đã bỏ nhánh chết `conflict.diff.empty` trong `DiffTable` của Studio (key i18n giữ nguyên cho test khoá M3/Admin).
 - FE T6: `?drawer=<id>` không có trong danh sách ⇒ không mở Sheet (không tự xoá tham số khỏi URL). `saved` state nằm ở `SecretSheet` ngoài (để `showCloseButton={saved===null}`), xoá khi đóng.
 - FE T6 (ghi nhận): `e2e/studio/k1-knowledgehub.studio.ts` (13 ca) đỏ vì đang chờ code K1; `test:lock:verify` báo UNLOCKED `tests/acceptance/K1/*` — ngoài phạm vi H4b-1.
+- BE RV1 #1: AAD hạ chữ thường id/tenant (`hubSecretAad`); create seal bằng tenant đã `.toLowerCase()`, rotate seal bằng `row.id`/`row.tenantId` (`z.uuid()` nhận UUID HOA, Postgres trả thường). RV1 #2: cursor phải `[kind ∈ HUB_SECRET_KINDS, string, uuid]`, sai ⇒ trang đầu. RV1 #3: `credentialTenant` so tenant không phân biệt hoa/thường.
+- BE T5 (ghi nhận RV1 #6): repo dùng SQL thô liệt kê cột metadata (`secrets.repo.ts`) thay hằng `SECRET_META_COLS` của plan D7 — cùng mục đích (không bao giờ `select *`/`ciphertext`/`iv`).
+- BE RV1 #11: `keys:dev --force` thay `HUB_SECRETS_KEY` đã có ⇒ in cảnh báo (không in giá trị). RV1 #4/#5 (`pg_temp` trong 0028, thư mục 12 file) ⇒ TECH-DEBT #155.
 
 ## 10. Tranh chấp test
 - (không)

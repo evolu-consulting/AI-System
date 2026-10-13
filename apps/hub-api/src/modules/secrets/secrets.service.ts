@@ -134,23 +134,24 @@ export class SecretsService {
   async create(u: AuthUser, t: SecretTarget, b: CreateInput): Promise<HubSecret> {
     if (!canManageSecret(u.role, b.kind, t.route)) throw appError("FORBIDDEN");
     if (!secretScopeOk(b.kind, b.tenantId)) throw tenantIssue("tenant_id not allowed for kind");
+    const tenantId = b.tenantId === null ? null : b.tenantId.toLowerCase(); // RV1 #1: = dạng Postgres trả
     const w = { db: this.d.db, audit: this.d.audit };
     const { result } = await withConfigWrite(
       w,
       u,
       async (tx) => {
-        if (b.tenantId !== null && !(await repo.tenantExists(tx, b.tenantId)))
+        if (tenantId !== null && !(await repo.tenantExists(tx, tenantId)))
           throw tenantIssue("tenant not found");
-        if (await repo.nameTaken(tx, b.kind, b.tenantId, b.name))
+        if (await repo.nameTaken(tx, b.kind, tenantId, b.name))
           throw secretError("SECRET_NAME_TAKEN");
         const key = this.#key();
         const id = crypto.randomUUID(); // D4: id trước khi mã hoá (AAD)
-        const sealed = sealHubSecret(key, { id, kind: b.kind, tenantId: b.tenantId }, b.value);
+        const sealed = sealHubSecret(key, { id, kind: b.kind, tenantId }, b.value);
         await repo
           .insertSecret(tx, {
             id,
             kind: b.kind,
-            tenantId: b.tenantId,
+            tenantId,
             name: b.name,
             sealed,
             actorId: u.userId,
@@ -158,7 +159,7 @@ export class SecretsService {
           .catch((err) => {
             throw pgCode(err) === "23505" ? secretError("SECRET_NAME_TAKEN") : err;
           });
-        const meta = { id, kind: b.kind, tenantId: b.tenantId, name: b.name };
+        const meta = { id, kind: b.kind, tenantId, name: b.name };
         return { result: await this.#view(tx, id), audit: auditOf("create", meta, null, 1) };
       },
       t.scope,
@@ -179,7 +180,11 @@ export class SecretsService {
       async (tx) => {
         const row = await this.#lock(tx, t, id, b.version);
         const key = this.#key();
-        const sealed = sealHubSecret(key, { id, kind: row.kind, tenantId: row.tenantId }, b.value);
+        const sealed = sealHubSecret(
+          key,
+          { id: row.id, kind: row.kind, tenantId: row.tenantId },
+          b.value,
+        );
         await repo.updateSecretValue(tx, id, sealed, u.userId);
         const audit = auditOf("rotate", row, row.version, row.version + 1);
         return { result: await this.#view(tx, id), audit };

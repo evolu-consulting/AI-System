@@ -44,9 +44,13 @@ export function assertDistinctFromMaster(hub: SecretKey, masterB64: string | und
   if (timingSafeEqual(master, hub.key)) throw new Error(MSG_SAME);
 }
 
-/** D3 · AAD gắn bản mã với đúng (id, kind, tenant, key_version) — tráo hàng/loại/tenant ⇒ giải mã hỏng. */
+/**
+ * D3 · AAD gắn bản mã với đúng (id, kind, tenant, key_version) — tráo hàng/loại/tenant ⇒ giải mã hỏng.
+ * id/tenant hạ chữ thường: `z.uuid()` nhận UUID HOA, Postgres trả thường ⇒ AAD phải độc lập kiểu chữ (RV1 #1).
+ */
 export function hubSecretAad(m: SecretMeta, keyVersion: number): Uint8Array {
-  const aad = `hub.secrets:${m.id}:${m.kind}:${m.tenantId ?? "-"}:${keyVersion}`;
+  const tenant = m.tenantId === null ? "-" : m.tenantId.toLowerCase();
+  const aad = `hub.secrets:${m.id.toLowerCase()}:${m.kind}:${tenant}:${keyVersion}`;
   return new Uint8Array(Buffer.from(aad, "utf8"));
 }
 

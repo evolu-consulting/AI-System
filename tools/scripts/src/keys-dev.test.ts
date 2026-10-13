@@ -3,6 +3,7 @@ import { createPrivateKey, createPublicKey, sign, verify } from "node:crypto";
 import {
   fillMissingKey,
   generateDevSecrets,
+  hubKeyReplacedWarning,
   isProduction,
   mergeEnv,
   quotePem,
@@ -94,5 +95,16 @@ describe("HUB-FR-68 · keys:dev HUB_SECRETS_KEY (H4b-1 plan §4)", () => {
   test("TEST_ENV_RE chỉ khớp .env.test-<tag>.local", () => {
     const names = [".env.test-h4b1_qc.local", ".env.local", ".env.test-.local", ".env.example"];
     expect(names.map((n) => TEST_ENV_RE.test(n))).toEqual([true, false, false, false]);
+  });
+});
+
+describe("HUB-FR-68 · RV1 #11 · cảnh báo --force thay HUB_SECRETS_KEY", () => {
+  test("có khoá cũ khác khoá mới ⇒ cảnh báo không chứa giá trị; trống/không đổi ⇒ null", () => {
+    const w = hubKeyReplacedWarning("HUB_SECRETS_KEY=OLDv", "HUB_SECRETS_KEY=NEWv");
+    expect(w).toContain("HUB_SECRETS_KEY");
+    expect(w).not.toContain("OLDv");
+    expect(w).not.toContain("NEWv");
+    expect(hubKeyReplacedWarning("HUB_SECRETS_KEY=", "HUB_SECRETS_KEY=NEWv")).toBeNull();
+    expect(hubKeyReplacedWarning("HUB_SECRETS_KEY=A", "HUB_SECRETS_KEY=A")).toBeNull();
   });
 });

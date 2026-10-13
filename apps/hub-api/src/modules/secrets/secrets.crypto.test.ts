@@ -60,3 +60,17 @@ describe("HUB-FR-68 · seal/open", () => {
     );
   });
 });
+
+describe("HUB-FR-68 · RV1 #1 · AAD độc lập hoa/thường của id/tenant", () => {
+  it("seal bằng id + tenant HOA, open bằng dạng thường (như Postgres trả) ⇒ đọc được", () => {
+    const k = parseHubSecretsKey(b64());
+    const T = "a1000000-0000-4000-8000-00000000abcd";
+    const up = {
+      id: META.id.toUpperCase(),
+      kind: "source_credential",
+      tenantId: T.toUpperCase(),
+    } as const;
+    const low = { id: META.id, kind: "source_credential", tenantId: T } as const;
+    expect(openHubSecret(k, low, sealHubSecret(k, up, "v"))).toBe("v");
+  });
+});

@@ -101,6 +101,13 @@ export function fillMissingKey(text: string, key: string, value: string): string
   return mergeEnv(text, { [key]: value }, false);
 }
 
+/** RV1 #11 · `--force` thay `HUB_SECRETS_KEY` đã có ⇒ secrets Hub cũ không giải được nữa. Chỉ báo, không in giá trị. */
+export function hubKeyReplacedWarning(before: string, after: string): string | null {
+  const old = readEnvValue(before, "HUB_SECRETS_KEY") ?? "";
+  if (old === "" || old === readEnvValue(after, "HUB_SECRETS_KEY")) return null;
+  return "keys:dev: CẢNH BÁO — HUB_SECRETS_KEY đã bị thay; mọi secret Hub mã hoá bằng khoá cũ sẽ không giải được (sao lưu khoá cũ nếu cần).";
+}
+
 /** Chép `HUB_SECRETS_KEY` của .env.local vào mọi `.env.test-*.local` còn thiếu; trả tên file đã sửa. */
 function propagateHubKey(root: string, localText: string): string[] {
   const value = readEnvValue(localText, "HUB_SECRETS_KEY") ?? "";
@@ -141,6 +148,8 @@ function main(argv: string[]): number {
     (k) => readEnvValue(next, k) !== readEnvValue(base, k),
   );
   if (next !== existing) writeFileSync(localPath, next);
+  const warn = hubKeyReplacedWarning(base, next);
+  if (warn) console.warn(warn);
   console.log(
     changed.length
       ? `keys:dev: đã điền ${changed.join(", ")} vào .env.local`
