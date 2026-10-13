@@ -2,7 +2,7 @@
 id: H4b1-secrets
 title: H4b-1 · Secrets của Hub (chỉ ghi, AES-256-GCM) — provider key, source_credential, khoá KnowledgeHub
 milestone: H4b-1 (tách từ H4b, người dùng 2026-10-13: ưu tiên ai-sdlc)
-status: draft            # khung do docs-architect 2026-10-13; chưa PLAN/readiness/Gate
+status: plan             # PLAN BE+FE xong 2026-10-13; readiness lần 1 NOT READY → đã áp mặc định (readiness.md)
 requirements: [HUB-FR-68, HUB-FR-69, HUB-BR-30, HUB-BR-15, AC-H4b1-01, AC-H4b1-02, AC-H4b1-03, AC-H4b1-04, AC-H4b1-05, AC-H4b1-06, AC-H4b1-07, AC-H4b1-08]
 design:
   - docs/design/agent-hub/ba-agent-hub.md#HUB-FR-68 (dòng ~211) · HUB-FR-04 (dòng ~137, key riêng, không log) · HUB-FR-69 (audit)
@@ -16,15 +16,14 @@ owner: backend-lead + frontend-lead + qc
 
 # H4b-1 · Secrets của Hub
 
-Tách từ H4b (ROADMAP). Phần còn lại của H4b (Models, `provider_state` UI, entitlement agent × tenant) → H4b-2. Spec này **chỉ khung**: mục 3–5 do backend-lead/frontend-lead; Gate chưa qua.
-
+Tách từ H4b (ROADMAP). Phần còn lại của H4b (Models, `provider_state` UI, entitlement agent × tenant) → H4b-2.
 ## 1. Phạm vi
 **Làm:**
 - Kho secret của Hub (`hub.secrets`), mã hoá AES-256-GCM bằng `HUB_SECRETS_KEY` (khác master key Admin), **chỉ ghi, không đọc lại**.
 - Ba loại: `provider_api_key` (API key provider), `source_credential` (CR-060: token repo git riêng của nguồn), `kh_api_key` (khoá KnowledgeHub, ADR-0012 §1).
 - API ghi/thay/xoá/liệt kê metadata (không giá trị) + "Được dùng bởi"; audit (không có giá trị) + `hub_config_version`.
 - Hàm nội bộ giải mã tại điểm dùng (`useSecret`) cho các mốc sau (K1, P-c, provider `api`); không endpoint đọc.
-- Studio: màn Secrets (drawer, SecretField, chỉ ghi) — loại `provider_api_key` và `kh_api_key`.
+- Studio: màn Secrets (Sheet, SecretField, chỉ ghi) — 3 tab (`provider_api_key`, `source_credential`, `kh_api_key`); **tạo chỉ `provider_api_key` và `kh_api_key`**, tab `source_credential` xem/thay/xoá (tạo ở màn Nguồn, Q1).
 
 **Không làm:** CRUD provider/profile, "Kiểm tra key" (cần provider → H4b-2); trang KnowledgeHub + kiểm tra kết nối (K1); clone/fetch repo riêng bằng `source_credential` (P-c/sau); xoay `HUB_SECRETS_KEY` (xem Q3); app-key workflow (vẫn ở Admin).
 
@@ -37,6 +36,7 @@ Trỏ BA, chỉ ghi phần cụ thể hoá.
 | Mã hoá | AES-256-GCM, IV 12 byte ngẫu nhiên mỗi lần ghi, AAD = `id‖kind‖tenant_id`; `HUB_SECRETS_KEY` 32 byte, thiếu/sai độ dài ⇒ Hub không khởi động | HUB-FR-68, Q2 |
 | Phạm vi | `provider_api_key`: toàn nền tảng, chỉ `platform_admin`. `kh_api_key`: toàn nền tảng **hoặc** theo tenant (Q7), chỉ `platform_admin` ghi. `source_credential`: gắn `tenant_id` (RLS); ghi bởi `tenant_admin` của tenant đó hoặc `platform_admin` | HUB-BR-15, CR-060, Q1 |
 | Không vào job | Giải mã chỉ trong tiến trình Hub (và Runtime-chương-trình cho `source_credential` ở mốc sau); không bao giờ vào `work/<job_id>/`, prompt, trace, audit | HUB-BR-30, ADR-0012 §1 |
+| Audit không khôi phục | Secret không khôi phục từ audit; chỉ ghi lại giá trị mới (audit không giữ giá trị/bản mã) | HUB-FR-69 |
 | Thay giá trị | Ghi đè = giá trị mới, `version + 1`, audit `secret.rotate` (không giá trị); chống ghi đè đồng thời bằng `version` | HUB-FR-69 |
 | Xoá | Chặn `409` khi còn được dùng (provider/source/KH trỏ tới); trả danh sách "Được dùng bởi" | ui-agent-studio §ràng buộc xoá |
 | Tên | `name` duy nhất theo (kind, tenant); `^[A-Za-z0-9_-]{2,64}$`, duy nhất không phân biệt hoa-thường (khác Admin `^[A-Z0-9_]{2,64}$` — Q4) | Q4 |
@@ -53,7 +53,7 @@ File: `packages/contracts/src/hub-admin/secrets.ts` (export qua `@ai/contracts/h
 | `HubSecretValueSchema` | = `SecretValueSchema` của Admin (8–2048 đơn vị UTF-16, không trim). Chuỗi mờ đục — có thể là JSON nhỏ (vd cặp `client_id`/`client_secret` của KH, Q7); mã hoá nguyên khối, server không parse |
 | `SecretUsedBySchema` | `{ type: "provider" \| "source" \| "knowledge_hub", id: uuid, key: string(1..64) }` (FE gắn nhãn theo `type` + `key`) |
 | `SecretTenantRefSchema` | `{ id: uuid, key: string, name: string }` (như `studio/orchestrator.ts`) |
-| `HubSecretSchema` (response) | `{ id: uuid, kind, tenant: SecretTenantRef \| null, name, version: int ≥ 1, used_by: SecretUsedBy[] (sắp theo type, key), created_at, updated_at: ISO, updated_by: UpdatedBySchema }` — **không** có `value`/`ciphertext`/`iv`/`key_version`/`last4` (chỉ ghi tuyệt đối, Q11) |
+| `HubSecretSchema` (response) | `{ id: uuid, kind, tenant: SecretTenantRef \| null, name, version: int ≥ 1, used_by: SecretUsedBy[] (sắp theo type, key), created_at, updated_at: ISO, updated_by: UpdatedBySchema }` (`updated_by` = JOIN `admin.users.username`; không có user ⇒ `null`, như H4a) — **không** có `value`/`ciphertext`/`iv`/`key_version`/`last4` (chỉ ghi tuyệt đối, Q11) |
 
 **Phạm vi theo loại** (`secretScopeOk(kind, tenantId)`, plan §2): `provider_api_key` ⇒ `tenant_id = null`; `kh_api_key` ⇒ `null` (dùng chung nền tảng) **hoặc** một tenant (Q7); `source_credential` ⇒ bắt buộc tenant. Sai ⇒ 400 `VALIDATION_ERROR` path `tenant_id`.
 
@@ -155,7 +155,7 @@ Env mới: `HUB_SECRETS_KEY` (base64 32 byte).
 | AC-H4b1-07 | Chuỗi giá trị secret không xuất hiện trong log Hub, trace run, `work/<job_id>/` (job giả dùng `useSecret`) | A87–A88, A90–A94 (Q12: phần `work/<job_id>/` ở K1/P-c) |
 | AC-H4b1-08 | e2e Studio: nhập key trong SecretField, lưu ⇒ hiện "Đã lưu" + metadata, không có nút xem; ô nhập rỗng lại | E02, E03, E04, E12 |
 
-Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwright test -c e2e/studio/playwright.config.ts h4b1-secrets && bun run test:lock:verify` (đề xuất `done:h4b1`, test-plan §6). Ca chi tiết: [`test-plan.md`](test-plan.md).
+Lệnh xong: `bun run done:h4b1` (T7 tạo; = typecheck → test → test:int → playwright studio → trace --check → test:lock:verify, test-plan §6). Ca chi tiết: [`test-plan.md`](test-plan.md).
 
 ## 9. Quyết định
 ### Trước Gate — câu hỏi (mặc định đề xuất → trả lời backend-lead 2026-10-13, PLAN)

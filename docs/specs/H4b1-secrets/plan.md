@@ -20,7 +20,7 @@ Contract đầy đủ: spec §3. Dữ liệu: spec §4. Câu hỏi: spec §9 (Q1
 | D5 | `kind`, `tenant_id`, `name` bất biến sau tạo | AAD bất biến; đổi = xoá + tạo |
 | D6 | Cột `ciphertext`/`iv` không GRANT SELECT cho `hub_rw`; đọc chỉ qua `hub.secret_material(...)` SECURITY DEFINER | Lộ SQL injection/`select *` cũng không ra bản mã; mẫu `hub.workflow_secret` (0003) |
 | D7 | Drizzle `hubSecrets` khai đủ cột (để INSERT/UPDATE có kiểu) nhưng repo **chỉ** select danh sách `SECRET_META_COLS`; không `db.select().from(hubSecrets)` | `select *` ⇒ 42501 do GRANT cột |
-| D8 | Mọi ghi qua `withConfigWrite` (khoá `config_meta` → ghi → bump → audit → NOTIFY). Thêm tham số tuỳ chọn `scope?: HubScope` (mặc định `system`); route tenant chạy scope `user` của tenant đích ⇒ RLS chặn thêm một lớp | HUB-FR-69; phòng thủ nhiều lớp cho cách ly tenant |
+| D8 | Mọi ghi qua `withConfigWrite` (khoá `config_meta` → ghi → bump → audit → NOTIFY). Thêm tham số tuỳ chọn `scope?: HubScope` (mặc định `system`); route tenant chạy scope `user` của tenant đích ⇒ RLS chặn thêm một lớp. Giữ nguyên; nếu A44/A45 cho thấy JOIN `admin.*` (tenants/users) bị RLS lọc ở scope `user` thì đọc `admin.*` qua `withHubScope(system)` riêng và ghi "Quyết định trong lúc làm" | HUB-FR-69; phòng thủ nhiều lớp cho cách ly tenant |
 | D9 | XOÁ cứng hàng (bản mã mất cùng hàng); `used_by` kiểm trước, FK RESTRICT (providers) là chốt cuối — 23503 ⇒ `SECRET_IN_USE` | Crypto-shred; không cần soft delete |
 | D10 | `HUB_SECRETS_KEY` bắt buộc trong env schema (mọi môi trường); trùng `SECRET_MASTER_KEY` ⇒ fatal; tự kiểm seal/open lúc boot | Spec §2, AC-06, HUB-FR-04 |
 | D11 | `AppDeps.hubSecretsKey?: SecretKey \| null` — vắng (chỉ test app không truyền) ⇒ POST/PUT có `value` trả 409 `NOT_CONFIGURED`; list/get/delete vẫn chạy | Không phải sửa mọi test `createApp` cũ |
@@ -40,7 +40,8 @@ Contract đầy đủ: spec §3. Dữ liệu: spec §4. Câu hỏi: spec §9 (Q1
 | `packages/db/src/schema/hub.ts` | Trải hai mảng audit vào `HUB_AUDIT_*_VALUES` (file đang 400 dòng ⇒ gộp dòng import/rút comment dòng 2 để giữ ≤ 400) | T4 |
 | `packages/db/src/hub-h4b1.int.test.ts` | GRANT cột (42501 khi select ciphertext bằng `hub_api`), RLS, `secret_material`, FK, CHECK | T4 |
 | `apps/hub-api/src/config/env.ts` · `server.ts` | `HUB_SECRETS_KEY` bắt buộc; `checkHubSecretsKey` (fatal: thiếu/sai/trùng master/tự kiểm hỏng; log chỉ tên biến) | T5a |
-| `tools/scripts/src/keys-dev.ts` · `.env.example` | Sinh `HUB_SECRETS_KEY` khác `SECRET_MASTER_KEY` | T5a |
+| `tools/scripts/src/keys-dev.ts` · `.env.example` | Sinh `HUB_SECRETS_KEY` khác `SECRET_MASTER_KEY`; thêm vào mọi `.env.test-*.local` đang có mà chưa có biến (lấy giá trị từ `.env.local`, không ghi đè). `db:test:create` (`packages/db/src/test-db-cli.ts`) sao từ `.env.local` nên file mới tự có | T5a |
+| `.env.production.example` · `docs/PRODUCTION-NOTES.md` | `HUB_SECRETS_KEY=<base64 32 byte, KHÁC SECRET_MASTER_KEY>` + cảnh báo "mất khoá = mất mọi secret Hub, sao lưu ngoài repo"; dòng PRODUCTION-NOTES | T5a |
 | `apps/hub-api/src/modules/secrets/secrets.crypto.ts` | §2.2 | T5a |
 | `apps/hub-api/src/modules/secrets/secrets.rules.ts` | §2.1 (hàm thuần) | T5a |
 | `…/secrets/secrets.errors.ts` | `secretError(code, details?)` như `sources.errors.ts` | T5 |
@@ -124,14 +125,14 @@ Thứ tự kiểm mọi endpoint: role (middleware, 403) → parse zod (400) →
 Query & index (CONVENTIONS §6 mặc định, perf không chặn mốc):
 | Query | Index |
 |---|---|
-| list (tuỳ `tenant_id`, `kind`) + `q` (ILIKE tên) + cursor `(kind, lower(name), id) > (…)`; JOIN `admin.tenants` lấy `tenant {id,key,name}` | `secrets_list_idx (tenant_id, kind, lower(name), id)` |
+| list (tuỳ `tenant_id`, `kind`) + `q` (ILIKE tên, escape `\` `%` `_` trong `q` + `ESCAPE '\'`) + cursor `(kind, lower(name), id) > (…)`; JOIN `admin.tenants` lấy `tenant {id,key,name}`; `updated_by` = JOIN `admin.users.username`, không có ⇒ null (như H4a) | `secrets_list_idx (tenant_id, kind, lower(name), id)` |
 | `nameTaken` | `secrets_name_uq` |
 | get/update/delete theo id | PK |
 | `usedByMany` provider | `providers_secret_idx` |
 | `usedByMany` source | `sources_tenant_idx` + lọc `config->>'credential_secret_id' = ANY($ids)` (ít hàng/tenant) |
 
 ## 4. Boot & env
-`server.ts` sau bước master key: `checkHubSecretsKey(env)` ⇒ `parseHubSecretsKey` → `assertDistinctFromMaster` → `selfTestHubSecretsKey`; lỗi ⇒ `logger.fatal("hub_secrets_key_invalid", { reason })` (reason ∈ `missing|invalid|same_as_master|self_test`), `process.exit(1)`, không log giá trị. Env schema: `HUB_SECRETS_KEY: z.string().optional()` rồi kiểm ở boot (để thông báo rõ theo reason thay vì lỗi zod chung). `keys:dev`: thêm biến nếu chưa có, không ghi đè khoá cũ (mất khoá = mất mọi secret dev).
+`server.ts` sau bước master key: `checkHubSecretsKey(env)` ⇒ `parseHubSecretsKey` → `assertDistinctFromMaster` → `selfTestHubSecretsKey`; lỗi ⇒ `logger.fatal("hub_secrets_key_invalid", { reason })` (reason ∈ `missing|invalid|same_as_master|self_test`), `process.exit(1)`, không log giá trị. Env schema: `HUB_SECRETS_KEY: z.string().optional()` rồi kiểm ở boot (để thông báo rõ theo reason thay vì lỗi zod chung). `keys:dev`: thêm biến nếu chưa có, không ghi đè khoá cũ (mất khoá = mất mọi secret dev); **cũng thêm `HUB_SECRETS_KEY` (giá trị từ `.env.local`) vào mọi `.env.test-*.local` hiện có mà chưa có biến** (nếu không, Hub boot fatal ở mọi `test:int` cũ). Lệnh xong T5a: chạy `bun run keys:dev` rồi hồi quy `bun run test:int` xanh.
 
 ## 5. Kiểm "không lộ" (gợi ý cho qc, AC-01/07)
 - Response: `JSON.stringify(body)` không chứa `value` ở mọi endpoint (kể cả 409 VERSION_CONFLICT `current`).

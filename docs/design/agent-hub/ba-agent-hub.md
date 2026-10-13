@@ -208,7 +208,7 @@ Client ──POST /conversations/:id/messages (JWT, text, context, attachments)�
 | HUB-FR-65 | Chạy thử workflow đã chọn với input mẫu. Xem trước tool dưới dạng model nhìn thấy (tên, mô tả, JSON schema), lấy từ workflow | **MUST** |
 | HUB-FR-66 | CRUD provider: key, loại (`api` \| `subscription-cli`), hãng, base URL, secret, `max_concurrency`. Hiện trạng thái sống (ok/busy/cooldown/logged_out/error) | **MUST** |
 | HUB-FR-67 | CRUD model profile: các bước theo thứ tự (provider + model), điều kiện chuyển (`error`, `quota`, `timeout`) | **MUST** |
-| HUB-FR-68 | Secret của Hub (API key của provider): chỉ ghi, không đọc lại, mã hoá AES-256-GCM bằng `HUB_SECRETS_KEY`. App-key của workflow là secret của Admin | **MUST** |
+| HUB-FR-68 | Secret của Hub (3 loại: `provider_api_key`, `source_credential`, `kh_api_key`): chỉ ghi, không đọc lại, mã hoá AES-256-GCM bằng `HUB_SECRETS_KEY`. App-key của workflow là secret của Admin | **MUST** |
 | HUB-FR-69 | Audit log riêng cho mọi thay đổi cấu hình của Hub (ai, lúc nào, tenant, trước/sau) và khôi phục bản trước. Mỗi lần lưu thì tăng `hub_config_version` và NOTIFY `hub_config_changed` | **MUST** |
 | HUB-FR-70 | **Playground**: chat thử với toàn bộ luồng điều phối (hoặc chỉ một agent), xem trace trực tiếp. Có thể đổi profile tạm thời cho lượt thử. "Chạy như user" thì áp đúng quyền command và agent của user đó | **MUST** |
 | HUB-FR-71 | Export và import yaml cho agent (kèm key các workflow được gắn), Orchestrator, provider, profile (secret chỉ export tên), có bước xem diff trước khi áp dụng | **SHOULD** |
@@ -354,7 +354,7 @@ Chốt 2026-10-09. Spec: [`specs/P-process-engine/`](../../specs/P-process-engin
 | HUB-BR-12 | Tool của agent chỉ là workflow trong catalog Admin, nên luôn gọi qua Dify (workflow hoặc agent app). Muốn gọi API nội bộ thì bọc nó trong một workflow Dify rồi thêm vào catalog. **[Ngoại lệ CR-062]** Tool `kh_query` do Hub tự cung cấp qua `/mcp` (proxy tới KnowledgeHub), không qua Dify — HUB-BR-36, ADR-0012 |
 | HUB-BR-13 | Không được lưu thay đổi định tuyến khi bộ câu kiểm thử cho tỉ lệ đúng thấp hơn baseline. Muốn lưu thì phải sửa cấu hình cho đạt, hoặc sửa hay xoá câu kiểm thử, hoặc `platform_admin` lưu đè (hai việc sau bắt buộc có lý do, ghi audit). Sai số cho phép 1 câu so với baseline, mỗi câu chạy 3 lần lấy đa số (HUB-FR-73). Bộ câu rỗng thì không chặn |
 | HUB-BR-14 | Truy cập tài nguyên của tenant khác luôn trả 404 (không phải 403), để không lộ việc tài nguyên đó tồn tại |
-| HUB-BR-15 | Command, workflow, secret, provider dùng chung toàn hệ thống. Workflow không được dùng knowledge base hay bộ nhớ chứa dữ liệu của tenant khác (project KH: HUB-BR-35) |
+| HUB-BR-15 | Command, workflow, provider và secret `provider_api_key` dùng chung toàn hệ thống; secret `source_credential` theo tenant, `kh_api_key` toàn nền tảng hoặc theo tenant (H4b-1). Workflow không được dùng knowledge base hay bộ nhớ chứa dữ liệu của tenant khác (project KH: HUB-BR-35) |
 | HUB-BR-16 | Quota **mặc định không chặn** run: vượt quota chỉ sinh cảnh báo và cờ `overage` để tính phí. Chỉ khi `platform_admin` bật `hard_block` cho tenant thì run mới bị từ chối ở 100% (HUB-FR-93) |
 | HUB-BR-17 | `tenant_admin` chỉ cấp được agent đã có entitlement cho tenant mình, và chỉ cho group/user trong tenant mình |
 | HUB-BR-18 | Message bắt đầu bằng `@<agent_key>` **luôn** được hiểu là gọi agent, giống `/` với command (HUB-BR-01): sai tag thì `AGENT_NOT_FOUND`, không bao giờ rơi xuống Orchestrator. Muốn gửi chữ bắt đầu bằng "@" thì gõ `@@` (CR-033) |

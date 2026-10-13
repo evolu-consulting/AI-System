@@ -153,7 +153,7 @@ Agent có hai tầng quyền, giống feature. Studio làm tầng đầu: **enti
 
 Giống hệt mẫu của Admin ([UI/UX Admin](../admin/ui-admin.md#s7), mục 7.8, 7.10, 7.11), chỉ khác phạm vi:
 
-- **Secrets:** chỉ API key của provider. Mã hoá bằng `HUB_SECRETS_KEY`. Chỉ ghi, không đọc lại. App-key của workflow là secret của Admin.
+- **Secrets:** 3 loại (`provider_api_key`, `source_credential`, `kh_api_key`); Studio tạo `provider_api_key` và `kh_api_key`, `source_credential` do tenant admin tạo ở màn Nguồn. Mã hoá bằng `HUB_SECRETS_KEY`. Chỉ ghi, không đọc lại. App-key của workflow là secret của Admin.
 - **Nhật ký:** thay đổi của agent, workflow được gắn, Orchestrator, entitlement agent, provider, profile, đơn giá và secret, có diff và khôi phục. Có thêm các sự kiện `view_trace` (kèm tenant) và `playground_run_as`.
 - **Import/Export:** file `hub-config-v18.yaml` gồm agents (kèm key các workflow được gắn), orchestrator, providers, profiles. `platform_admin` dùng file này để Claude session sinh hoặc sửa cấu hình agent hàng loạt, rồi import có xem diff. Key workflow không có trong catalog Admin thì import báo lỗi dòng đó.
 

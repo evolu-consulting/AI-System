@@ -63,6 +63,8 @@ Mặc định `CONVENTIONS.md` §6. Timeout KH gợi ý 5 s (chốt ở PLAN).
 | KH v6.4 `/v1` (health, version, capabilities, me, token, context/step, worklog) | Mock KH (`bun run mocks`), kịch bản: ok, 401 hết hạn, 404/423/503, timeout, `include_people_lanes=true`, `kind=local` |
 | H4b-1 `useSecret` | Secret thật trong DB test |
 
+**Việc chuyển từ H4b-1 sang K1** (H4b1 plan §2/Q12): (a) mở rộng `usedByMany` của `modules/secrets` thêm `type: knowledge_hub` (H4b-1 trả rỗng) để xoá `kh_api_key` đang dùng ⇒ 409 `SECRET_IN_USE`; (b) kiểm phần `work/<job_id>/` của AC-H4b1-07 (giá trị secret không xuất hiện trong thư mục job) bằng job giả dùng `useSecret`.
+
 Env mới: (backend-lead chốt) allowlist URL KH · timeout.
 
 ## 8. Tiêu chí nghiệm thu (qc)
@@ -78,6 +80,7 @@ Bản nháp theo BA; qc hoàn thiện ở test-plan.
 | K1-AC06 | KH sập / 404 / 423 / 503 ⇒ run tiếp tục, cảnh báo + audit | <!-- qc --> |
 | K1-AC07 | Quy trình đã chọn project KH ⇒ `## Tóm tắt` bắt buộc; quy trình khác không đổi | <!-- qc --> |
 | K1-AC08 | Seed `sdlc-delivery`, `bug-fix` hợp lệ (≤ 10 stage); 12 file test khoá của `sdlc` không đổi | <!-- qc --> |
+| K1-AC09 (chuyển từ H4b-1) | (a) Xoá `kh_api_key` đang được KH trỏ tới ⇒ 409 `SECRET_IN_USE` có `used_by[type=knowledge_hub]`; (b) job giả dùng `useSecret` ⇒ giá trị không xuất hiện trong `work/<job_id>/` (AC-H4b1-07, Q12) | <!-- qc --> |
 
 Lệnh xong: `done:k1` (backend-lead định nghĩa ở PLAN).
 

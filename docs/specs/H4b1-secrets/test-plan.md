@@ -107,8 +107,8 @@ Int: 99 ca = 95 đỏ ở `expect` + 4 xanh trước code (A01, A02, A06, A115);
 | G1 | Q12: AC-07 phần `work/<job_id>/` chưa có bên dùng | **qc chấp nhận mặc định**: H4b-1 kiểm log Hub + console, audit, response, mọi bảng `hub.*`, `useSecret` không ghi job/trace; thư mục job kiểm ở K1/P-c (mốc có bên dùng `useSecret` trong job) | docs-architect: ghi spec Q12 (đã ghi) + K1/P-c test-plan |
 | G2 | spec §8 lệnh e2e `bunx playwright test e2e/H4b1` (và tasks T2/T6 `e2e/H4b1/**`) không khớp hạ tầng studio (config riêng, đuôi `.studio.ts`) | e2e ở `e2e/studio/h4b1-secrets.studio.ts`; lệnh `bunx playwright test -c e2e/studio/playwright.config.ts h4b1-secrets` (spec §8 đã sửa) | frontend-lead: lệnh xong T6 |
 | G3 | Mã HTTP khi audit ném (A65) | chỉ kiểm `≥ 500` + rollback | — |
-| G4 | Nhãn lỗi `NAME_TAKEN` ở plan-frontend §4 vs mã contract `SECRET_NAME_TAKEN` | mock trả `SECRET_NAME_TAKEN` (contract); kiểm câu chữ VI "Tên này đã được dùng cho loại secret này" | frontend-lead: map `errors.SECRET_NAME_TAKEN` |
-| G5 | plan-frontend `used_by` nhãn "Nguồn · {name}" nhưng contract chỉ có `key` | e2e chỉ kiểm `Provider · {key}` | frontend-lead: dùng `key` |
+| G4 | Nhãn lỗi `NAME_TAKEN` ở plan-frontend §4 vs mã contract `SECRET_NAME_TAKEN` | mock trả `SECRET_NAME_TAKEN` (contract); kiểm câu chữ VI "Tên này đã được dùng cho loại secret này" | frontend-lead: map `errors.SECRET_NAME_TAKEN`. **Đã đóng** (plan-frontend b5196233 dùng `SECRET_NAME_TAKEN`) |
+| G5 | plan-frontend `used_by` nhãn "Nguồn · {name}" nhưng contract chỉ có `key` | e2e chỉ kiểm `Provider · {key}` | frontend-lead: dùng `key`. **Đã đóng** (plan-frontend C1: nhãn = `type` + `key`) |
 | G6 | Log boot `hub_secrets_key_invalid` + `reason` (plan §4) là chuỗi kiểm | A110–A114 kiểm `"reason":"<x>"` trong stdout/stderr | backend-lead giữ đúng tên sự kiện |
 | G7 | `HubSecretReader` log warn: tên trường `{secret_id, kind, failure}` (plan §2.3) | A87 kiểm đúng các khoá này | backend-lead |
 | G8 | Sau T5a khoá bắt buộc ⇒ boot test cũ cần `HUB_SECRETS_KEY` trong `.env.local` | không sửa test cũ; T5a chạy `keys:dev` | backend-lead (T5a) |
