@@ -11,6 +11,7 @@ import {
   PROCESS_STEP_MAX,
   ProcessKeySchema,
   ProcessStepSchema,
+  STAGE_KEY_RE,
   STAGE_TIMEOUT_S,
   TeamModeSchema,
 } from "../chat/processes";
@@ -74,8 +75,7 @@ export const STAGE_FIELDS_MAX = 20;
 export const STAGE_TOKEN_BUDGET = { min: 1_000, max: 5_000_000 } as const;
 export const OUTPUT_FILENAME_RE = /^[a-z0-9._-]{1,76}\.md$/;
 export const FIELD_KEY_RE = /^[a-z][a-z0-9_]{0,31}$/;
-/** Key giai đoạn: như key quy trình nhưng cho phép 1 ký tự (duy nhất trong quy trình, không lộ ra `!`). */
-export const STAGE_KEY_RE = /^[a-z0-9-]{1,32}$/;
+export { STAGE_KEY_RE }; // khai báo ở chat/processes (một nguồn, TD #150)
 
 const NameSchema = z.string().trim().min(1).max(PROCESS_NAME_MAX);
 

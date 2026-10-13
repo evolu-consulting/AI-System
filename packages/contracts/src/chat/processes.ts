@@ -3,6 +3,8 @@
 import { z } from "zod";
 
 export const PROCESS_KEY_RE = /^[a-z0-9-]{2,32}$/;
+/** Key giai đoạn: như key quy trình nhưng cho phép 1 ký tự (TD #150; duy nhất trong quy trình). */
+export const STAGE_KEY_RE = /^[a-z0-9-]{1,32}$/;
 export const PROCESS_NAME_MAX = 80;
 export const PROCESS_DESC_MAX = 500;
 export const PROCESS_INPUT_MAX = 8_000;
@@ -134,6 +136,7 @@ export type OriginKind = (typeof ORIGIN_KINDS)[number];
 export type StepRole = (typeof STEP_ROLES)[number];
 
 export const ProcessKeySchema = z.string().regex(PROCESS_KEY_RE);
+export const StageKeySchema = z.string().regex(STAGE_KEY_RE);
 export const ProcessRunStatusSchema = z.enum(PROCESS_RUN_STATUSES);
 export const StageRunStatusSchema = z.enum(STAGE_RUN_STATUSES);
 export const TeamModeSchema = z.enum(TEAM_MODES);

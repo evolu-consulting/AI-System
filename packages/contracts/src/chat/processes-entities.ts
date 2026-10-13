@@ -24,6 +24,7 @@ import {
   ProcessStepSchema,
   StageAfterSchema,
   StageIdxSchema,
+  StageKeySchema,
   StageRunStatusSchema,
   StepRoleSchema,
   TaskKindSchema,
@@ -113,7 +114,7 @@ export type ProcessRunSummary = z.infer<typeof ProcessRunSummarySchema>;
 
 export const StageViewSchema = z.strictObject({
   idx: StageIdxSchema,
-  key: ProcessKeySchema,
+  key: StageKeySchema,
   name: NameSchema,
   executor: ExecutorRefSchema,
   after: StageAfterSchema,
