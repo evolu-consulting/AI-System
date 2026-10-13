@@ -41,6 +41,7 @@ import type { AttachmentDeps } from "./modules/attachments/storage";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
+import type { KhRuntime } from "./modules/kh/kh.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
 import {
   mountProcesses,
@@ -180,7 +181,12 @@ function commandDrivers(deps: AppDeps, db: Db) {
 }
 
 /** P-a N4 · `AgentRunner` cho job stage quy trình (dùng `RunStreamReader` riêng, cùng cấu hình runner chính). */
-function processRunner(deps: AppDeps, base: { db: Db; redis: Redis }, config: ConfigCache) {
+function processRunner(
+  deps: AppDeps,
+  base: { db: Db; redis: Redis },
+  config: ConfigCache,
+  kh?: KhRuntime,
+) {
   return agentRunner({
     db: base.db,
     owner: instanceOwner(deps),
@@ -190,6 +196,7 @@ function processRunner(deps: AppDeps, base: { db: Db; redis: Redis }, config: Co
     log: logger,
     publicInternalUrl: deps.publicInternalUrl,
     secretMasterKey: deps.secretMasterKey,
+    kh,
   });
 }
 
@@ -201,10 +208,11 @@ function processHooks(
     config: ConfigCache;
     messages: X2aMounted["messages"];
     resolveBridge?: ResolveBridge;
+    kh?: KhRuntime;
   },
 ): ProcessStartPort | undefined {
   if (!deps.processEngine) return undefined;
-  const runner = processRunner(deps, m, m.config);
+  const runner = processRunner(deps, m, m.config, m.kh);
   const proc = mountProcesses(app, {
     ...m,
     runner,
@@ -247,16 +255,16 @@ function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: 
  * E12–E14 cần thêm `redis` + cache cấu hình. B6: kèm `/internal/jobs/:job_id/dify-credential` (ngoài `PROTECTED_PREFIXES`,
  * không JWT — token job).
  */
-function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache): void {
+function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache) {
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
-  mountH4a(app, { ...deps, log: logger });
-  if (!deps.db) return;
+  const kh = mountH4a(app, { ...deps, log: logger });
+  if (!deps.db) return kh;
   const { signal } = deps;
   const { x2a, h2a, h2b, resolveBridge } = mountDbRoutes(app, { ...deps, db: deps.db }, config);
   if (!deps.redis || !config || !h2a || !h2b) {
     app.route("/conversations", conversationRoutes(deps.db));
-    return;
+    return kh;
   }
   const { onClosed } = roomPoster({ db: deps.db, redis: deps.redis, log: logger, signal });
   const base = { ...deps, db: deps.db, redis: deps.redis, owner: instanceOwner(deps), log: logger };
@@ -285,12 +293,14 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     // CR-056 · HUB-FR-115 · kho file cho engine ghi blob output stage (vắng ⇒ không tạo hàng attachment output).
     storage: deps.attachments?.storage,
     resolveBridge,
+    kh,
   });
   const prepare = { command: h2a.prepareCommand, mention: h2b.prepareMention, processStart };
   app.route("/conversations", sendMessageRoutes(conversations, runs, prepare));
   app.route("/runs", runRoutes(runs));
   app.route("/runs", cancelRoutes(cancel));
   startRunLoops({ ...base, registry: runs.registry });
+  return kh;
 }
 
 /** request_id → logger child → cache cấu hình; log một dòng mỗi request. Không bao giờ log body, Authorization, Cookie (CONVENTIONS §5, A52). */
@@ -344,8 +354,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   );
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
-  mountProtected(app, deps, config);
-  if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger });
+  const kh = mountProtected(app, deps, config);
+  if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger, kh });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && deps.attachments)
     mountH2c(app, { db: deps.db, attachments: deps.attachments, log: logger, signal: deps.signal });

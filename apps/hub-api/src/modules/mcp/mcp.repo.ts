@@ -14,9 +14,15 @@ export type TokenJob = {
   agentId: string | null;
   type: string;
   payload: unknown;
+  /** K1 D6 · `kh_jobs.items` (null = job không có KH) + stage của run (`runs.stage_run_id`). */
+  khItems: unknown;
+  stageRunId: string | null;
 };
 
-/** plan-db §2 "Token → job" (nguyên văn); index `jobs_token_hash_uq`. Người gọi kiểm `type`. */
+/**
+ * plan-db §2 "Token → job"; index `jobs_token_hash_uq`. Người gọi kiểm `type`. K1 D6: LEFT JOIN `kh_jobs` (PK `job_id`) +
+ * `runs` (PK) ⇒ `ctx.kh` không cần query thêm.
+ */
 export async function jobByTokenHash(tx: Tx, hash: Buffer): Promise<TokenJob | undefined> {
   const rows = await tx.execute<{
     id: string;
@@ -27,8 +33,14 @@ export async function jobByTokenHash(tx: Tx, hash: Buffer): Promise<TokenJob | u
     agent_id: string | null;
     type: string;
     payload: unknown;
-  }>(sql`SELECT id, tenant_id, user_id, run_id, step_id, agent_id, type, payload FROM hub.jobs
-    WHERE token_hash = ${hash} AND status = 'running'`);
+    kh_items: unknown;
+    stage_run_id: string | null;
+  }>(sql`SELECT j.id, j.tenant_id, j.user_id, j.run_id, j.step_id, j.agent_id, j.type, j.payload,
+      kj.items AS kh_items, r.stage_run_id
+    FROM hub.jobs j
+    LEFT JOIN hub.kh_jobs kj ON kj.job_id = j.id
+    LEFT JOIN hub.runs r ON r.id = j.run_id AND r.tenant_id = j.tenant_id
+    WHERE j.token_hash = ${hash} AND j.status = 'running'`);
   const r = rows[0];
   if (!r) return undefined;
   return {
@@ -40,6 +52,8 @@ export async function jobByTokenHash(tx: Tx, hash: Buffer): Promise<TokenJob | u
     agentId: r.agent_id,
     type: r.type,
     payload: r.payload,
+    khItems: r.kh_items,
+    stageRunId: r.stage_run_id,
   };
 }
 

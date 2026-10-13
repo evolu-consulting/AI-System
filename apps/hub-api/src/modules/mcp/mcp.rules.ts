@@ -23,6 +23,10 @@ export type JsonSchemaObject = {
   required: string[];
 };
 export type McpTool = { name: string; description: string; inputSchema: JsonSchemaObject };
+/** K1 · phần tử `tools/list` tổng quát: `kh-query` có inputSchema riêng (`minLength`, `additionalProperties`). */
+export type McpToolDef = Omit<McpTool, "inputSchema"> & {
+  inputSchema: JsonSchemaObject | Readonly<Record<string, unknown>>;
+};
 
 export type McpToolsInput = {
   agentWorkflowIds: ReadonlySet<string>;
@@ -249,7 +253,7 @@ export function discoverResult(params: unknown): Record<string, unknown> {
 }
 
 /** `ttlMs` + `cacheScope:"private"` (danh sách theo token job) — thiếu thì CLI 2.1.286 mất tool im lặng (spike S1). */
-export function toolsListResult(tools: readonly McpTool[]): Record<string, unknown> {
+export function toolsListResult(tools: readonly McpToolDef[]): Record<string, unknown> {
   return { tools: [...tools], ttlMs: 0, cacheScope: "private" };
 }
 

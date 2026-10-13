@@ -185,6 +185,8 @@ async function runAgent(
       prompt: ctx.content,
       history: [],
       files: ctx.files,
+      // K1 §3.4 bước 0 · job stage ⇒ KH của job (`kh-query`).
+      ...(link.stage_run_id ? { stageRunId: link.stage_run_id } : {}),
       ...(opts.useSession === false ? { useSession: false } : {}),
       ...(jobSources.length ? { sources: jobSources } : {}),
       detail: {

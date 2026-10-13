@@ -140,6 +140,29 @@ export async function existingConnIds(tx: Tx, ids: readonly string[]): Promise<S
   return new Set(rows.map((r) => r.id));
 }
 
+export type AgentKhRow = {
+  id: string;
+  name: string;
+  baseUrl: string;
+  secretId: string;
+  version: number;
+  position: number;
+  summaryProject: string | null;
+  checkStatus: string;
+  /** `check_result.projects` (fallback khi `/projects` lỗi, D5). */
+  checkProjects: unknown;
+};
+
+/** HUB-FR-132 · T5e · kết nối agent tick theo thứ tự (PK `agent_kh` tiền tố `agent_id`). Không đọc khoá. */
+export async function agentKhConns(tx: Tx, agentId: string): Promise<AgentKhRow[]> {
+  const rows = await tx.execute<AgentKhRow>(sql`select k.id, k.name, k.base_url as "baseUrl",
+      k.secret_id as "secretId", k.version, a.position, k.summary_project as "summaryProject",
+      k.check_status as "checkStatus", k.check_result->'projects' as "checkProjects"
+    from hub.agent_kh a join hub.kh_connections k on k.id = a.connection_id
+    where a.agent_id = ${agentId}::uuid order by a.position`);
+  return rows.map((r) => ({ ...r, version: Number(r.version), position: Number(r.position) }));
+}
+
 /** HUB-FR-132 · thay toàn bộ `agent_kh` của agent; `position` = chỉ số trong `ids` (thứ tự tick). */
 export async function replaceAgentKh(
   tx: Tx,
@@ -172,4 +195,64 @@ export async function usernameOf(tx: Tx, userId: string): Promise<string | null>
     sql`select username from admin.users where id = ${userId}::uuid`,
   );
   return r?.username ?? null;
+}
+
+// ---------- K1 T5e · đếm `kh-query` theo (stage_run, attempt, round) — plan D7 ----------
+export type KhUsageKey = {
+  stageRunId: string;
+  attempt: number;
+  round: number;
+  tenantId: string;
+  processRunId: string;
+  processKey: string;
+  stageKey: string;
+};
+
+/** Lượt hiện tại của stage (PK `stage_runs`) + key quy trình/stage cho audit. Lọc `tenant_id` của job. */
+export async function usageKeyOf(
+  tx: Tx,
+  stageRunId: string,
+  tenantId: string,
+): Promise<KhUsageKey | undefined> {
+  const [r] = await tx.execute<{
+    attempt: number | string;
+    round: number | string;
+    process_run_id: string;
+    pk: string;
+    sk: string;
+  }>(sql`select s.attempt, s.round, s.process_run_id, coalesce(pr.snapshot->>'key', '') as pk,
+      coalesce(pr.snapshot->'stages'->(s.stage_idx::int)->>'key', '') as sk
+    from hub.stage_runs s join hub.process_runs pr on pr.id = s.process_run_id and pr.tenant_id = s.tenant_id
+    where s.id = ${stageRunId}::uuid and s.tenant_id = ${tenantId}::uuid`);
+  if (!r) return undefined;
+  return {
+    stageRunId,
+    tenantId,
+    attempt: Number(r.attempt),
+    round: Number(r.round),
+    processRunId: r.process_run_id,
+    processKey: r.pk,
+    stageKey: r.sk,
+  };
+}
+
+/** D7 · upsert nguyên tử `queries + 1 WHERE queries < limit`; null = đã hết lượt (KH_LIMIT). PK `kh_stage_usage_pkey`. */
+export async function bumpKhUsage(tx: Tx, k: KhUsageKey, limit: number): Promise<number | null> {
+  const [r] = await tx.execute<{ queries: number | string }>(sql`insert into hub.kh_stage_usage
+      (stage_run_id, attempt, round, tenant_id, queries)
+    values (${k.stageRunId}::uuid, ${k.attempt}, ${k.round}, ${k.tenantId}::uuid, 1)
+    on conflict (stage_run_id, attempt, round) do update
+      set queries = hub.kh_stage_usage.queries + 1, updated_at = now()
+      where hub.kh_stage_usage.queries < ${limit}
+    returning queries`);
+  return r ? Number(r.queries) : null;
+}
+
+/** G9 · `last_warning` = lỗi gần nhất; không đụng `queries` (hàng mới ⇒ 0). */
+export async function setKhWarning(tx: Tx, k: KhUsageKey, code: string): Promise<void> {
+  await tx.execute(sql`insert into hub.kh_stage_usage
+      (stage_run_id, attempt, round, tenant_id, queries, last_warning)
+    values (${k.stageRunId}::uuid, ${k.attempt}, ${k.round}, ${k.tenantId}::uuid, 0, ${code})
+    on conflict (stage_run_id, attempt, round) do update
+      set last_warning = excluded.last_warning, updated_at = now()`);
 }

@@ -5,6 +5,7 @@ import type { Tx } from "@ai/db";
 import { jobs, providerState, runSteps } from "@ai/db/schema/hub";
 import { and, eq, sql } from "drizzle-orm";
 import { insertStep } from "../../../lib/run-steps";
+import type { KhJobItem } from "../../kh/kh.agent.rules";
 import type { JobRow } from "../runner.rules";
 
 const NOW_MS = sql`date_trunc('milliseconds', now())`;
@@ -35,12 +36,13 @@ export type StepInsert = {
  * hub.jobs` → `pg_notify('job_enqueued')` cùng transaction: NOTIFY chỉ giao khi COMMIT nên Runtime nhận NOTIFY là thấy
  * dòng job. Run đã bị huỷ/sweeper đóng → false, không ghi gì (job mới sẽ chạy tới timeout giữ slot). `FOR SHARE` chặn
  * huỷ/kết thúc (`UPDATE runs`) tới COMMIT ⇒ job vừa INSERT luôn được `cancelJobs` của bên đóng nhìn thấy.
- * Trả `seq` của step (P11: DB cấp; SSE `step_id = s<seq>`), null = không ghi.
+ * Trả `seq` của step (P11: DB cấp; SSE `step_id = s<seq>`), null = không ghi. K1 · `khItems` ≠ [] ⇒ `kh_jobs` cùng tx.
  */
 export async function enqueueJob(
   tx: Tx,
   p: AgentCliJob,
   step: StepInsert & { owner: string },
+  khItems: readonly KhJobItem[] = [],
 ): Promise<number | null> {
   const live = await tx.execute(sql`select 1 from hub.runs
     where id = ${p.run_id} and status = 'running' and owner = ${step.owner} for share`);
@@ -74,6 +76,10 @@ export async function enqueueJob(
     providerKey: p.provider_key,
     payload: p,
   });
+  // K1 D6 · KH + nhãn của job chốt cùng tx INSERT job (không khoá).
+  if (khItems.length > 0)
+    await tx.execute(sql`insert into hub.kh_jobs (job_id, tenant_id, items)
+      values (${p.job_id}::uuid, ${p.tenant_id}::uuid, ${JSON.stringify(khItems)}::jsonb)`);
   const note: JobEnqueuedPayload = { v: 1, job_id: p.job_id, provider_key: p.provider_key };
   await tx.execute(sql`select pg_notify(${JOB_ENQUEUED_CHANNEL}, ${JSON.stringify(note)})`);
   return seq;

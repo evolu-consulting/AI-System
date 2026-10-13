@@ -15,6 +15,7 @@ import {
   SYSTEM_PROMPT_MAX,
   type TokenUsage,
 } from "@ai/contracts/hub";
+import { KH_TOOL_KEY } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
@@ -29,6 +30,8 @@ import {
 import type { CatalogSnapshot } from "../../config/catalog.rules";
 import { type AgentConfig, agentWorkflowIds, type ConfigSnapshot } from "../../config/config.rules";
 import { stepLabel } from "../../conversations/conversations.rules";
+import type { KhJobItem } from "../../kh/kh.agent.rules";
+import { KH_QUERY_HINT, type KhJobPreparer } from "../../kh/kh.job";
 import { mcpToolsFor } from "../../mcp/mcp.rules";
 import type { SseEventBody } from "../../runs/sse/sse-writer";
 import type { DeltaGap, DeltaSink } from "../../stream/delta-sink";
@@ -71,6 +74,8 @@ export type AgentTask = {
   sources?: readonly JobSource[];
   /** P-b2 R12 · job stage quy trình: `false` ⇒ `payload.use_session=false` (Hub tự quyết resume); vắng ⇒ như cũ. */
   useSession?: boolean;
+  /** K1 plan §3.4 bước 0 · `stage_runs.id` do launcher stage truyền (đơn + mọi job nhóm); vắng ⇒ không phải job stage ⇒ không KH. */
+  stageRunId?: string;
   /** Phát `step.started`/`step.finished` (vd `writer.emit`); vắng → không phát. */
   emit?: (ev: SseEventBody) => Promise<unknown>;
 };
@@ -112,7 +117,13 @@ export type JobAgentRunnerDeps = {
   pollMs?: number;
   /** H2a · MCP cho agent gắn workflow (R18): `url` = `HUB_PUBLIC_INTERNAL_URL + "/mcp"`; vắng → `mcp: null`. */
   mcp?: { url: string; catalog: () => Promise<CatalogSnapshot> };
+  /** K1 · `khPrepareJob` (KH của job stage); vắng ⇒ không `kh-query`. */
+  kh?: KhJobPreparer;
 };
+
+/** `payload.mcp` + KH của job (`kh_jobs.items`; [] ⇒ không `kh-query`). */
+type JobMcp = { mcp: McpConfig | null; khItems: KhJobItem[] };
+const NO_MCP: JobMcp = { mcp: null, khItems: [] };
 
 /** H2c P9–P11 · file của job: chỉ vai `agent` (Orchestrator thấy khối `<attachments>` trong prompt, không `payload.attachments`). */
 const agentFiles = (task: AgentTask): readonly RunFile[] =>
@@ -171,30 +182,57 @@ export class JobAgentRunner implements AgentRunner {
     return withHubScope(this.d.db, { kind: "system" }, fn);
   }
 
-  /** `payload.mcp` (P4: không token). Chỉ agent (không Orchestrator); catalog lỗi → null + cảnh báo. */
-  async #mcp(task: AgentTask): Promise<McpConfig | null> {
+  /**
+   * `payload.mcp` (P4: không token). Chỉ agent (không Orchestrator); catalog lỗi → không tool workflow + cảnh báo. K1 §3.4
+   * bước 0: khoá catalog gộp `kh-query` TRƯỚC `mcpConfigFor` (catalog rỗng vẫn dựng config khi có KH); quá trần ⇒ bỏ KH.
+   */
+  async #mcp(task: AgentTask): Promise<JobMcp> {
     const m = this.d.mcp;
-    if (!m || task.role !== "agent") return null;
+    if (!m || task.role !== "agent") return NO_MCP;
+    const [keys, kh] = await Promise.all([this.#catalogKeys(task, m), this.#kh(task)]);
+    let khItems = kh;
+    if (khItems.length > 0 && !keys.includes(KH_TOOL_KEY)) {
+      if (keys.length < MCP_TOOLS_MAX) keys.push(KH_TOOL_KEY);
+      else {
+        this.d.log.warn("kh-tool-dropped", { run_id: task.run.id, reason: "mcp_tools_max" });
+        khItems = [];
+      }
+    }
+    const mcp = mcpConfigFor(task.agent, keys, m.url);
+    return { mcp, khItems: mcp ? khItems : [] };
+  }
+
+  async #catalogKeys(
+    task: AgentTask,
+    m: NonNullable<JobAgentRunnerDeps["mcp"]>,
+  ): Promise<string[]> {
     const ids = agentWorkflowIds(task.snapshot, task.agent.id);
-    if (ids.size === 0) return null;
+    if (ids.size === 0) return [];
     try {
-      const keys = agentToolKeys(ids, await m.catalog(), agentFiles(task).length > 0);
-      return mcpConfigFor(task.agent, keys, m.url);
+      return agentToolKeys(ids, await m.catalog(), agentFiles(task).length > 0);
     } catch (err) {
       this.d.log.warn("job-mcp-unavailable", { run_id: task.run.id, ...safeErrorFields(err) });
-      return null;
+      return [];
     }
+  }
+
+  #kh(task: AgentTask): Promise<KhJobItem[]> {
+    if (!this.d.kh || !task.stageRunId) return Promise.resolve([]);
+    const i = { agentId: task.agent.id, runtime: task.agent.runtime, stageJob: true };
+    return this.d.kh({ ...i, runId: task.run.id });
   }
 
   #payload(
     task: AgentTask,
     ids: { jobId: string; stepId: string },
-    mcp: McpConfig | null,
+    { mcp, khItems }: JobMcp,
   ): AgentCliJob | null {
     const profile = task.snapshot.profiles.find((p) => p.id === task.agent.profileId);
     if (!profile) return null;
     const attachments = jobAttachments(agentFiles(task));
     const block = agentFilesBlock(attachments);
+    // K1 D10 · có `kh-query` ⇒ dòng gợi ý cuối prompt nhiệm vụ.
+    const prompt = khItems.length > 0 ? `${task.prompt}\n\n${KH_QUERY_HINT}` : task.prompt;
     const payload = buildJobPayload({
       jobId: ids.jobId,
       stepId: ids.stepId,
@@ -203,7 +241,7 @@ export class JobAgentRunner implements AgentRunner {
       agent: task.agent,
       role: task.role,
       profile,
-      prompt: block ? `${task.prompt}\n\n${block}` : task.prompt,
+      prompt: block ? `${prompt}\n\n${block}` : prompt,
       systemPrompt: task.systemPrompt ?? task.agent.systemPrompt,
       history: task.history,
       stream: task.stream !== undefined,
@@ -228,7 +266,8 @@ export class JobAgentRunner implements AgentRunner {
   async *run(task: AgentTask, signal: AbortSignal): AsyncGenerator<RunEvent> {
     const jobId = crypto.randomUUID();
     const stepId = task.stepId ?? crypto.randomUUID();
-    const payload = this.#payload(task, { jobId, stepId }, await this.#mcp(task));
+    const jm = await this.#mcp(task);
+    const payload = this.#payload(task, { jobId, stepId }, jm);
     if (!payload) {
       this.d.log.error("job-payload-invalid", { run_id: task.run.id, agent_id: task.agent.id });
       const f = {
@@ -257,7 +296,7 @@ export class JobAgentRunner implements AgentRunner {
     try {
       const type = stepType(task.role);
       // Huỷ/mất lease → không INSERT job (job mồ côi giữ slot tới timeout); `runJob` quy về `aborted`.
-      const seq = await this.#enqueue(task, payload, stepId, signal);
+      const seq = await this.#enqueue(task, { payload, khItems: jm.khItems }, stepId, signal);
       if (typeof seq !== "number")
         return this.d.log.info("job-enqueue-skipped", { run_id: task.run.id, reason: seq });
       const label = stepLabel(type, task.run.locale);
@@ -276,13 +315,14 @@ export class JobAgentRunner implements AgentRunner {
   /** `seq` của step khi đã vào hàng đợi (P11: DB cấp); không thì lý do bỏ qua INSERT job. */
   async #enqueue(
     task: AgentTask,
-    payload: AgentCliJob,
+    j: { payload: AgentCliJob; khItems: readonly KhJobItem[] },
     stepId: string,
     signal: AbortSignal,
   ): Promise<number | "aborted" | "not_enqueued"> {
     if (signal.aborted) return "aborted";
     const step = stepInsert(task, stepId, this.d.owner);
-    return (await this.#system((tx) => repo.enqueueJob(tx, payload, step))) ?? "not_enqueued";
+    const seq = await this.#system((tx) => repo.enqueueJob(tx, j.payload, step, j.khItems));
+    return seq ?? "not_enqueued";
   }
 }
 

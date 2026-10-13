@@ -10,6 +10,8 @@ import type { ConfigCache } from "./modules/config/config.service";
 import { DifyAgentRunner } from "./modules/dify/agent/dify-agent-runner";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
 import { DifyClient } from "./modules/dify/dify.client";
+import { khPrepareJob } from "./modules/kh/kh.job";
+import type { KhRuntime } from "./modules/kh/kh.mount";
 import { directDriver } from "./modules/mention/direct-driver";
 import { orchestratorDriver } from "./modules/orchestrator/orchestrator.service";
 import { type AgentRunner, JobAgentRunner } from "./modules/runner/job/job-agent-runner";
@@ -34,6 +36,8 @@ export type AgentRunnerDeps = {
   publicInternalUrl?: string;
   /** = `SECRET_MASTER_KEY`; vắng → agent `dify-*` `NOT_CONFIGURED`. */
   secretMasterKey?: string;
+  /** K1 · client + cache project KH (`mountH4a`); vắng ⇒ job stage không có `kh-query`. */
+  kh?: KhRuntime;
 };
 
 export function agentRunner(d: AgentRunnerDeps): AgentRunner {
@@ -44,6 +48,7 @@ export function agentRunner(d: AgentRunnerDeps): AgentRunner {
     maxWaitS: d.maxWaitS,
     log: d.log,
     mcp: runnerMcp(d.publicInternalUrl, d.config),
+    kh: d.kh && khPrepareJob({ db: d.db, rt: d.kh, log: d.log }),
   });
   const credentials = new CredentialService({
     db: d.db,

@@ -105,6 +105,8 @@ export async function runMember(d: Deps, m: MemberCall): Promise<MemberResult> {
     history: [],
     files: m.files,
     detail: detailOf(m),
+    // K1 §3.4 bước 0 · mọi job nhóm (kể cả `plan` của trưởng nhóm) dùng chung 5 lần của stage.
+    stageRunId: m.stageRunId,
   };
   const o = await runJob(d.runner, task, m.signal, d.log);
   const outcome = outcomeOf(o);

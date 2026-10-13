@@ -8,9 +8,11 @@ Kết nối KH nền tảng (khoá chung `X-KH-Key`), "Kiểm tra", client + cac
 | `kh.check.rules.ts` | Thuần: `khCheckShouldContinue`, `evaluateKhCheck` (6 bước, 7 lỗi + 5 cảnh báo) |
 | `kh.agent.rules.ts` · `kh.query.rules.ts` · `kh.summary.rules.ts` | Thuần cho T5d–T5f |
 | `kh.client.ts` | `KhClient` (`hit` thô cho Kiểm tra; `get/post/projects/query/add` ném `KhCallError`) + `KhProjectsCache` |
-| `kh.repo.ts` | SQL `kh_connections` (+ đếm `agent_kh`, tên secret) |
+| `kh.repo.ts` | SQL `kh_connections` (+ đếm `agent_kh`, tên secret), `agentKhConns`, đếm `kh_stage_usage` (`bumpKhUsage`, `setKhWarning`, `usageKeyOf`) |
 | `kh.studio.service.ts` | CRUD qua `withConfigWrite` (scope system) |
 | `kh.check.service.ts` | `POST …/:id/check`: ngoài tx gọi KH, tx ngắn lưu `check_*` WHERE version + audit `check` |
+| `kh.job.ts` | T5e `khPrepareJob` (KH tick ∩ dùng được ⇒ project qua cache/fallback ⇒ `KhJobItem[]`), `KH_QUERY_HINT`; nối vào `JobAgentRunner` (`deps.kh`) |
+| `kh.query.service.ts` | T5e tool MCP `kh-query`: `khJobCtx` (ctx.kh), `tools`, `accepts` ⇒ args/project ⇒ dùng được ⇒ đếm D7 ⇒ `/vector/query` ⇒ hạ cấp + audit `degrade` |
 | `kh.routes.ts` · `kh.mount.ts` | Route `/studio/api/kh/connections*`; `khRuntime()` dựng client + cache MỘT lần (mountH4a trả về) |
 
 Dùng lại (T5e/T5f): `const kh = mountH4a(...)` ⇒ `kh.client`, `kh.projects`, `kh.cfg`, `kh.dev`.

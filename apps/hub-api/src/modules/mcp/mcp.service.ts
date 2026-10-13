@@ -20,19 +20,19 @@ import { type CredentialService, isCredentialError } from "../dify/credential.se
 import type { DifyClient, DifyRunOutcome } from "../dify/dify.client";
 import { difyUser, maskInputs } from "../dify/dify.rules";
 import { recordDifyUsage } from "../dify/dify.usage";
+import { type KhJobCtx, type KhQueryService, khJobCtx } from "../kh/kh.query.service";
 import * as repo from "./mcp.repo";
 import {
   discoverResult,
   initializeResult,
   isStatelessRequest,
   MCP_UNKNOWN_TOOL,
-  type McpTool,
+  type McpToolDef,
   mcpToolsFor,
   type RpcRequest,
   type RpcResponse,
   rpcError,
   rpcResult,
-  type ToolErrorCode,
   type ToolResult,
   toolCallParams,
   toolError,
@@ -41,6 +41,7 @@ import {
   toolTimeoutS,
   validateToolArgs,
 } from "./mcp.rules";
+import { refuseSideEffect, type StepCode, stepCodeOf } from "./mcp-call";
 import {
   notAttached,
   resolveToolFiles,
@@ -60,6 +61,8 @@ export type McpContext = {
   tools: readonly string[];
   /** H2c · `payload.attachments` (vắng ⇒ []). */
   files: readonly JobAttachment[];
+  /** K1 D6 · `kh_jobs` + stage của job; null ⇒ không `kh-query`. */
+  kh: KhJobCtx | null;
 };
 
 /**
@@ -81,6 +84,7 @@ export type McpServiceDeps = {
   storage?: Pick<AttachmentStorage, "blob"> | null;
   /** Test: `fetch` cho Dify `/files/upload`. */
   fetch?: typeof fetch;
+  kh?: KhQueryService;
 };
 
 type ToolArgs = {
@@ -90,8 +94,6 @@ type ToolArgs = {
 };
 /** Trace thêm vào `detail` bước `tool` (R22: `confirmation: "consumed"`; H2c: `upload` + lỗi upload). */
 type StepTrace = { confirmation?: "consumed"; upload?: UploadTrace } & Record<string, unknown>;
-/** Mã trong `detail` bước `tool`: mã tool, hoặc `CANCELLED` (kết nối `/mcp` đóng) / `INTERNAL_ERROR` (ngoại lệ). */
-type StepCode = ToolErrorCode | "CANCELLED" | "INTERNAL_ERROR";
 /** Một lời gọi tool; `signal` = kết nối `/mcp` của request (đóng = huỷ run → abort Dify + stop). */
 type ToolCall = { ctx: McpContext; wf: CatalogWorkflow; signal?: AbortSignal };
 type Invoke = {
@@ -125,6 +127,7 @@ export class McpService {
       agentId: job.agentId,
       tools: p.data.mcp?.tools ?? [],
       files: p.data.attachments ?? [],
+      kh: khJobCtx(job.khItems, job.stageRunId),
     };
   }
 
@@ -153,17 +156,20 @@ export class McpService {
   }
 
   /** R19 từ cache (0 query DB): workflow gắn agent ∩ `enabled` ∩ `payload.mcp.tools`; H2c `hasFiles` = job có file. */
-  async tools(ctx: McpContext): Promise<McpTool[]> {
+  async tools(ctx: McpContext): Promise<McpToolDef[]> {
     const [snapshot, catalog] = await Promise.all([
       this.d.config.snapshot(),
       this.d.config.catalog(),
     ]);
-    return mcpToolsFor({
-      agentWorkflowIds: agentWorkflowIds(snapshot, ctx.agentId),
-      workflows: [...catalog.workflows.values()],
-      allowed: ctx.tools,
-      hasFiles: ctx.files.length > 0,
-    });
+    return [
+      ...mcpToolsFor({
+        agentWorkflowIds: agentWorkflowIds(snapshot, ctx.agentId),
+        workflows: [...catalog.workflows.values()],
+        allowed: ctx.tools,
+        hasFiles: ctx.files.length > 0,
+      }),
+      ...(this.d.kh?.tools(ctx) ?? []),
+    ];
   }
 
   async #call(
@@ -173,6 +179,8 @@ export class McpService {
     signal?: AbortSignal,
   ): Promise<RpcResponse> {
     const { name, args } = toolCallParams(req.params);
+    const kh = this.d.kh?.accepts(ctx, name);
+    if (kh) return rpcResult(req.id, await kh.call(args), stateless);
     const tools = await this.tools(ctx);
     const catalog = await this.d.config.catalog();
     const wf = [...catalog.workflows.values()].find((w) => w.key === name);
@@ -375,19 +383,4 @@ export class McpService {
       this.d.log.warn("tool-usage-failed", { run_id: ctx.runId, ...safeErrorFields(err) });
     }
   }
-}
-
-/** Kết quả Dify → mã bước (plan-errors §4); xong → null. Huỷ do hết hạn tool → `TIMEOUT`; do kết nối đóng → `CANCELLED`. */
-function stepCodeOf(out: DifyRunOutcome, timedOut: boolean): StepCode | null {
-  if (out.kind === "finished") return null;
-  if (out.kind === "aborted") return timedOut ? "TIMEOUT" : "CANCELLED";
-  return out.code;
-}
-
-/** Mặc định khi không nối cổng: tool `side_effect` không chạy (không có xác nhận ⇒ không gọi Dify). */
-function refuseSideEffect(log: Logger): SideEffectGate {
-  return async (ctx, wf) => {
-    log.warn("tool-side-effect-unconfirmed", { run_id: ctx.runId, workflow_id: wf.id });
-    return toolError("NOT_CONFIGURED");
-  };
 }
