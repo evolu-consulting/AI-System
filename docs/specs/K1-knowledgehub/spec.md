@@ -127,7 +127,15 @@ Cột/kiểu/CHECK đầy đủ: plan §5. Tóm tắt:
 Không xoá dữ liệu cũ; không seed KH (cấu hình qua Studio; dev dùng mock). Seed quy trình mẫu: plan §6.
 
 ## 5. UI (frontend-lead)
-<!-- frontend-lead --> Artboard: **thiếu** (Cài đặt → KnowledgeHub, mục Tri thức, chọn project KH ở Evolu Control) — dựng theo mẫu màn Secrets/Cài đặt (`ui-agent-studio`).
+<!-- frontend-lead --> **Chưa có artboard — bố cục đề xuất, trình Gate người dùng.** Chi tiết (bố cục, trạng thái, VI/EN, validate, nhãn e2e): [`plan-frontend.md`](plan-frontend.md), đã đối chiếu §3.
+| Màn | App | Contract |
+|---|---|---|
+| Cài đặt → KnowledgeHub: URL + bảng tenant ↔ ns, Sheet (secret, keyspace, project), Dialog kết quả kiểm | studio-web `/settings` (platform_admin) | §3.2 `/kh*` |
+| Agent → "Tri thức" (Switch `knowledge_enabled`, chỉ `agentic-cli`; không có "Loại project") | studio-web | `PUT /agents/:id/knowledge` |
+| Quy trình → thẻ "Tri thức" (project mặc định + theo stage, lưu riêng, hiện `effective`) + Dialog "Tri thức" bật theo công ty | admin-web (tenant_admin) | §3.3 |
+| Output stage: cảnh báo hạ cấp + "n/5 lần · Tóm tắt" | admin-web OutputDialog, chat-web run-block/run-page | `StageView.knowledge` |
+
+Quyết định: không thư viện/ADR mới; credentials chỉ chọn `secret_id` (tạo ở Secrets, không có "Toàn nền tảng"); một cờ `enabled` (tenant) + `status=ok`; Kiểm tra kết nối theo hàng đã lưu. Task F1–F4 (`tasks.md`).
 
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6 (perf không chặn mốc). Mỗi lời gọi KH ≤ `HUB_KH_TIMEOUT_MS` = 5000 (tổng "Kiểm tra kết nối" ≤ 20 s). `kh-query`: Hub thêm ≤ 50 ms p95 ngoài thời gian KH (2 query: tra job→stage→run theo PK + `kh_stage_usage` upsert theo PK; cấu hình tenant theo PK). `tools/list` giữ 0 query DB. Bộ gửi worklog: mỗi 10 s, lô ≤ 20, `FOR UPDATE SKIP LOCKED` trên `kh_writes_due_idx`. List Studio ≤ 100 hàng/trang.
