@@ -61,11 +61,12 @@ FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓,
 | A | `kh.int.test.ts` | K01–K02 (2) |
 | P | `pc/test_pc_rules.py` | P01–P16 (42 ca sau parametrize) |
 | P | `pc/test_pc_hook.py` | P20–P23 (9 ca) |
+| P-int | `pc/autofix_int_test.py` (+ `pc/_af.py`) | AF01–AF11 (12 ca sau parametrize; R2b, `-m int`) |
 | S | `pc/sandbox_check.py` | S01–S08 (8) |
 | E | `e2e/P-c/admin/editor.pc.ts` | E01, E02, E02b (3) |
 | E | `e2e/P-c/chat/diff.pc.ts` | E03, E04, E07, E-E10, E11, E12, E13 (7) |
 | E | `e2e/P-c/chat/decision.pc.ts` | E05, E06, E08, E09 (4) |
-**Tổng 152** = R 33 · A 45 · P 51 · S 8 · E 14 (+ 1 ca E02b tách từ plan-frontend (2)). 11 ca e2e plan-frontend §5: (1) E01 · (2) E02/E02b · (3) E03 · (4) E04 · (5) E05 · (6) E06 · (7) E07 · (8) E08 · (9) E09 · (10) E-E10 · (11) E12; thêm E11 (lỗi tải) + E13 (thẻ thread).
+**Tổng 152** = R 33 · A 45 · P 51 · S 8 · E 14 (+ 1 ca E02b tách từ plan-frontend (2)); **+ 12 P-int (R2b) ⇒ 164**. 11 ca e2e plan-frontend §5: (1) E01 · (2) E02/E02b · (3) E03 · (4) E04 · (5) E05 · (6) E06 · (7) E07 · (8) E08 · (9) E09 · (10) E-E10 · (11) E12; thêm E11 (lỗi tải) + E13 (thẻ thread).
 
 ### Ca chính (kỳ vọng rút gọn)
 | ID | Dữ liệu → kỳ vọng |
@@ -114,8 +115,8 @@ FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓,
 | G8 | "Tải .diff"/"Tải log đầy đủ" là button hay link | chấp nhận cả hai (`or`) | — |
 | G9 | Mã lỗi khi chọn `use_current` cho decision `autofix_*` | chỉ kiểm ≥ 400 + run giữ `needs_decision` | backend-lead |
 | G10 | `PAYLOAD_TOO_LARGE` không nằm trong `HUB_INTERNAL_ERRORS` | kiểm `error.code` trong thân 413 | backend-lead |
-| G11 | Runtime đầu-cuối (`AutofixHost` + `RUNTIME_SANDBOX=fake` + `#fake:ws_*` + mock Hub) chưa có chữ ký (`host.py`, `fake_oci.py`, `check.py`, `workspace.py`) | KHÔNG khoá ở T3; phủ bằng P/S + A (Hub) + UAT D2. **Đề xuất**: qc viết bổ sung `pc/autofix_int_test.py` sau R2 khi có chữ ký (mở khoá có chủ đích, ghi §9) | backend-lead (khai báo chữ ký `check.run_checks`, `workspace.prepare`) · qc |
-| G12 | PC-R04 trần `RUNTIME_AUTOFIX_MAX_MB/_FILES` phía Runtime (snapshot `caps=autofix`) | chỉ kiểm phía Hub (`caps`, F01); Runtime theo G11 | backend-lead |
+| G11 | (đã làm R2b, §9) Runtime đầu-cuối (`AutofixHost` + `RUNTIME_SANDBOX=fake` + `#fake:ws_*` + mock Hub) chưa có chữ ký (`host.py`, `fake_oci.py`, `check.py`, `workspace.py`) | KHÔNG khoá ở T3; phủ bằng P/S + A (Hub) + UAT D2. **Đề xuất**: qc viết bổ sung `pc/autofix_int_test.py` sau R2 khi có chữ ký (mở khoá có chủ đích, ghi §9) | backend-lead (khai báo chữ ký `check.run_checks`, `workspace.prepare`) · qc |
+| G12 | (đã làm R2b AF09) PC-R04 trần `RUNTIME_AUTOFIX_MAX_MB/_FILES` phía Runtime (snapshot `caps=autofix`) | chỉ kiểm phía Hub (`caps`, F01); Runtime theo G11 | backend-lead |
 | G13 | E2E không có persona tenant beta | cách ly tenant ở int T01; e2e E09 dùng người lạ cùng tenant (S) | — |
 | G14 | `test:pc:sandbox` chưa có script | `uv run pytest tests/acceptance/pc/sandbox_check.py` trên Linux có CLI + ảnh (R4) | backend-lead (R4) |
 | G15 | AUTOFIX_EXECUTOR không e2e (cần stage nhóm trên canvas) | phủ R I02 + A V06 | — |
@@ -126,7 +127,7 @@ FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓,
 | 1 | typecheck | `bun run typecheck` |
 | 2 | R + unit | `bun test packages/contracts apps/hub-api/src/modules/processes tests/acceptance/P-c/rules` |
 | 3 | A (từng file) + hồi quy P-a/P-b/P-b2/K1 | `bun --env-file=.env.test-pc_qc.local --config=bunfig.int.toml test --timeout 60000 tests/acceptance/P-c/<file>.int.test.ts` · `bun run test:int` |
-| 4 | P | `bun apps/agent-runtime/scripts/run.ts "uv run pytest tests/acceptance/pc -q"` |
+| 4 | P | `bun apps/agent-runtime/scripts/run.ts "uv run pytest tests/acceptance/pc -q"` + int đầu-cuối `… "uv run pytest -m int tests/acceptance/pc/autofix_int_test.py -q"` (DB/Redis Runtime `ai_system_h1_test`) |
 | 5 | S | `bun run test:pc:sandbox` (Linux + Docker/Podman + ảnh) |
 | 6 | E | `bunx playwright test -c e2e/P-c/playwright.pc.config.ts --reporter=line` (cần `bun run db:test:create pc_e2e`) |
 | 7 | khoá + vết | `bun run test:lock:verify && bun run trace --check` |
@@ -150,3 +151,21 @@ Khoá lần 2: 2026-10-14 (T3b, mở khoá có chủ đích theo readiness lần
 Đỏ đúng lý do T3b: H06/H10 `qc: <hàm> chưa có (plan §4)`; H06b đỏ ở `expect` (core chưa trả sớm); A-E10 đỏ ở `needPc` (0031 vắng; SQL chèn đã chạy thử trong tx rollback trên DB qc: tổng 1,090,519,040 B).
 
 Khoá lần 3: 2026-10-14 — phân xử Tranh chấp test B4: test sai (so `name` trên hàng SQL thô; cột DB là `filename`, `name` chỉ có ở view `AutofixFileSchema`). Sửa A-E08 sang `filename`; lock ghi lại.
+
+Khoá lần 4: 2026-10-14 (R2b, mở khoá có chủ đích theo tasks R2b / G11–G12) — thêm `apps/agent-runtime/tests/acceptance/pc/autofix_int_test.py` + helper `pc/_af.py` (không sửa file khoá cũ). Runtime đầu-cuối, `pytestmark=int` (DB/Redis Runtime như `outputs_int_test.py`; chạy `uv run pytest -m int …`): Runtime thật + `RUNTIME_SANDBOX=fake` + `RUNTIME_ENV=test` (`APP_ENV=test` sẵn) + nguồn `local_path` (`HUB_SOURCE_LOCAL_ROOTS`, `RUNTIME_SOURCE_CACHE_DIR`, pin `snapshot_id` cố định — snapshot dựng lười PB-R16) + mock Hub `AfHub` (`POST /internal/jobs/:id/autofix-result` xác thực token bằng DB ⇒ 201 chứng minh báo cáo TRƯỚC khi job rời `running`; GET attachments cho `base_patch`).
+| Ca | Kỳ vọng |
+|---|---|
+| AF01 ok | `install_cmd` `touch .installed` → `ws_edit` sửa `a-b`→`a+b` → test xanh ⇒ `ok`, diff có `src/sum.js` ±1, KHÔNG có `.installed` (base sau pha cài), stats (1,1,1) + `bytes`=len(diff), test exit 0, `commands ∋ edit`, job `succeeded`, repo thật không đổi, `work/<job>` bị dọn |
+| AF02 no_changes | `ws_exec=ls`, test `true` ⇒ `no_changes`, diff/stats null, failures [], commands exec `("ls",0)` |
+| AF03 paths | ghi `docs/note.md` ngoài `src/**` ⇒ `check_failed` paths `docs/note.md`, test null |
+| AF04 secrets | `ws_secret=src/cfg.js` ⇒ secrets path+line, rule 1..64, test null; `AKIA[0-9A-Z]{16}` không có trong báo cáo/log/hàng job; token job không trong log |
+| AF05 tests | file mới hợp lệ + test `echo AKIA…; sh test.sh` exit 1 ⇒ tests, `log_tail` có `1 fail: sum` + `[REDACTED]`, không lộ khoá |
+| AF06 install | `install_cmd` exit 7 ⇒ install, test null |
+| AF07 apply_patch | vòng 2 `base_patch` lệch (đã tải qua GET) ⇒ apply_patch, test null; làm lại vòng 3 `base_patch=null` cùng nhánh ⇒ `ok`, diff 1 file |
+| AF08 cộng dồn | `base_patch` thêm `src/extra.js` + agent sửa ⇒ `ok`, diff 2 file |
+| AF09 PC-R04 | `RUNTIME_AUTOFIX_MAX_FILES=2` (repo 4 file) / `_MAX_MB=1` (file 1,5 MiB) ⇒ `check_failed{size}` (kể cả khi trần chặn ở snapshot `caps=autofix`), test null, job không `container` |
+| AF10 upstream | Hub 503 mọi lần ⇒ đúng 4 POST (1 + 3 retry) rồi job `failed`/`error_reason=upstream` |
+| AF11 container | `RUNTIME_SANDBOX=off` ⇒ job vẫn được nhận, `failed`/`error_reason=container`, không báo cáo `ok`, repo không đổi |
+
+**Chữ ký/hành vi giả định cho R3** (theo plan-runtime §5.1, §5.5–5.8 + R2 e0b5d130): (1) module `agent_runtime.autofix.host` có `AutofixHost`; module `agent_runtime.autofix.ws_tools` tồn tại (`need_r3()` — đỏ tới R3). (2) `dispatch`: job `agent.cli` có `payload.autofix` ⇒ `AutofixHost`; sandbox `None` (off/tự kiểm hỏng) ⇒ vẫn claim, kết thúc `failed` `error_reason="container"` (không treo `queued`). (3) `fake-cli`: `#fake:ws_write=<path>|<base64>`, `#fake:ws_edit=<path>|<old>|<new>`, `#fake:ws_exec=<cmd>`, `#fake:ws_secret=<path>` (ghi dòng khớp `AKIA[0-9A-Z]{16}`); giá trị là `\S+` (cú pháp `#fake:` sẵn có, không khoảng trắng); mỗi lệnh ghi một phần tử `commands` (`edit`/`write`/`exec` + `exit_code` cho exec, `arg` của exec = lệnh nguyên văn). (4) Thứ tự: snapshot `caps=autofix` → `copy_workspace` → pha cài (`install_cmd`, lỗi ⇒ `install`) → `init_git` (+ tải `base_patch` bằng token job, lỗi áp ⇒ `apply_patch`) → agent → `check.run_checks` → test (chỉ khi các nhóm trước qua) → `report.build_report` → `report.post_result` → kết thúc job → dọn `work/<job>`. (5) Trần PC-R04 vượt (ở `snapshot_for` hay `prepare`) ⇒ BÁO CÁO `check_failed{size}` (không chỉ lỗi job). (6) Trượt trước agent (install/apply_patch/size) vẫn POST báo cáo, `test=null`, `diff=null`, job không `container`/`upstream`. (7) `post_result` False ⇒ `failed` `error_reason="upstream"`. (8) `ok`/`no_changes`/`check_failed` ⇒ job kết thúc như cũ (`ok`/`no_changes` = `succeeded`).
+Đỏ đúng lý do R2b (main `50030cb6`): 12/12 đỏ `ModuleNotFoundError: agent_runtime.autofix.host` (`need_r3`). Chạy thử tạm bỏ `need_r3` (đã khôi phục): 12/12 đỏ ở `expect` (không báo cáo / không GET `base_patch` / `succeeded` thay vì `container`), mọi job được claim và kết thúc — 0 `PostgresError`/`TypeError` ở dựng dữ liệu. `ruff check` + `ruff format --check` + `pyright` (tests/acceptance/pc) sạch. `bun run test:lock:write` + `test:lock:verify` OK; `bun run trace --check` OK.
