@@ -27,6 +27,8 @@ Hub cần RAG (tri thức theo agent, ghi lại tóm tắt stage). KH (v6.4) là
 
 **CR-072 (2026-10-13):** thay mô hình kho tri thức của CR-071 bằng "agent dùng KH trực tiếp": agent tick KH được dùng, `kh-query(câu hỏi, project)` theo ns công ty; Project ghi Tóm tắt khai báo theo (KH, công ty). Điều 1–9 giữ.
 
+**CR-073 (2026-10-13) — quyết định Cách ly (điều 1, 3) được thay:** *Hub không cách ly theo tenant — KH/khoá tự phân quyền.* Mỗi kết nối = tên + địa chỉ + một `kh_api_key` mức nền tảng + Project ghi Tóm tắt (tuỳ chọn); không ns = tenant, không bảng công ty, không công tắc `tenant_admin`; `kh-query` dùng khoá của kết nối, thấy project nào hỏi được. Người dùng chấp nhận rõ ràng rủi ro đọc chéo công ty (hard stop bảo mật, xác nhận 2026-10-13); muốn tách thì cấp khoá/KH riêng. Giao thức gọi KH: backend-lead chốt ở spec K1. TLS/allowlist (điều khác) giữ.
+
 ## Hệ quả
 - Thêm một dịch vụ ngoài (HTTP client tới KH, không thêm thư viện mới dự kiến; nếu có sẽ ghi ở spec K1 và trình Gate).
 - Hub chịu tải truy vấn KH của mọi agent: trần 4000 ký tự × 5 lần/stage; KH có rate-limit 1200/phút/ns.
