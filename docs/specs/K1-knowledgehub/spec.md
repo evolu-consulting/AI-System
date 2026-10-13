@@ -2,12 +2,12 @@
 id: K1-knowledgehub
 title: K1 · KnowledgeHub làm RAG ngoài (Hub proxy) + quy trình mẫu AISDLC
 milestone: K1
-status: plan
+status: approved
 requirements: [HUB-FR-131, HUB-FR-132, HUB-FR-133, HUB-FR-134, HUB-FR-137, HUB-BR-35, HUB-BR-36, HUB-BR-37, HUB-BR-40]
 design:
   - docs/design/agent-hub/ba-agent-hub.md HUB-FR-131…134, 137 · HUB-BR-35…37, 40 (ngoại lệ HUB-BR-12)
   - docs/design/agent-hub/ui-agent-studio.md (Cài đặt → KnowledgeHub, Tri thức — thiếu artboard)
-  - docs/adr/0012-knowledgehub-external-rag.md (Proposed) · docs/specs/K1-knowledgehub/research-ai-sdlc.md
+  - docs/adr/0012-knowledgehub-external-rag.md (Accepted) · docs/specs/K1-knowledgehub/research-ai-sdlc.md
   - docs/CHANGE-REQUESTS.md#CR-062 · #CR-067 · #CR-068 · #CR-070
   - nền: H4b-1 Secrets (`kh_api_key` theo tenant, `useSecret`) · P-a/P-b2 (`required_sections`, `## Bàn giao`, gate) · H2a (`/mcp`, token job)
 owner: backend-lead + frontend-lead + qc
@@ -125,7 +125,7 @@ Cột/kiểu/CHECK đầy đủ: plan §5. Tóm tắt:
 Không xoá dữ liệu cũ; không seed KH (dev dùng mock). Seed quy trình mẫu: plan §6.
 
 ## 5. UI (frontend-lead)
-**Chưa có artboard — bố cục đề xuất, trình Gate người dùng.** Chi tiết (bố cục, trạng thái, VI/EN, validate, nhãn e2e): [`plan-frontend.md`](plan-frontend.md), đã đối chiếu §3.
+**Chưa artboard.** Mockup: https://claude.ai/artifact/MHUei1vhi2WHKqYWi21WFQ (FE chờ người dùng OK). Chi tiết (bố cục, trạng thái, VI/EN, validate, nhãn e2e): [`plan-frontend.md`](plan-frontend.md), đã đối chiếu §3.
 | Màn | App | Contract |
 |---|---|---|
 | Cài đặt → KnowledgeHub: URL + bảng tenant ↔ ns, Sheet (secret, keyspace, project), Dialog kết quả kiểm | studio-web `/settings` (platform_admin) | §3.2 `/kh*` |
@@ -182,8 +182,8 @@ Lệnh xong: `done:k1` = test-plan §6.
 | Q9 | Seed `sdlc-delivery`/`bug-fix` dùng agent nào | Dùng lại agent seed sẵn (`intake-analyst`, `docs-architect`, `backend-lead`, `reviewer`, `qc`, `qc-uat`); mở rộng seed schema nhận `after: {review: {back_to_steps}}`; không thêm agent |
 
 - 2026-10-13 · Readiness lần 1: mặc định BE (#2–#21, Luật 2b) đã áp vào §3–§4 + plan (đánh dấu `R#`).
-### Trong lúc làm (agent tự quyết theo Luật 2)
-- (chưa có)
+### Trong lúc làm
+Xem [`spec-decisions.md`](spec-decisions.md).
 
 ## 10. Tranh chấp test
 - (không)

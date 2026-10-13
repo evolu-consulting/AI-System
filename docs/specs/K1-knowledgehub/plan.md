@@ -154,6 +154,7 @@ Ngoài transaction: đọc settings + hàng tenant (scope system; nhớ `v_read`
 | 8 | `GET /v1/{ns}/manifest` | `manifest_rev=0` `kh_manifest_missing` · `peopleLanesOn` **và** tenant có project `read_only` ⇒ `kh_people_lanes_on_shared {project_id}` (lanes bật mà chỉ có project riêng = OK, Q2) · keyspace vắng `kh_keyspace_missing {keyspace}` · 423 cảnh báo `kh_ns_suspended` |
 | 9 | (từ bước 7) `me.projects` | ≠[] và project ∉ ⇒ `kh_project_not_attached {project_id}` · [] ⇒ cảnh báo `kh_projects_unverified` |
 | 10 | — | cảnh báo `kh_embedder_multilingual` (luôn) |
+Bước 6–8: non-2xx chưa ánh xạ ⇒ `kh_unreachable {status}`, timeout ⇒ `kh_timeout`, dừng kiểm.
 G5 (mã KH): `/version` ⇒ `{version, source, model}` (đọc `version`; ≠200 = `kh_version_too_old`); `me.projects` = mảng chuỗi; manifest ⇒ `{ns, manifest_rev, manifest}`. Tổng ≤ 20 s (timeout riêng mỗi lời gọi + hạn tổng). `check_result` = `{kh_version, keyspace_dims, items}` — không token/body thô.
 
 ### 3.2 Client + token (`kh.client.ts`, `kh.token.ts`)
@@ -201,7 +202,7 @@ Tạo job (`job-agent-runner #mcp`): `kh.toolAllowed(run)` (1 query PK: snapshot
 
 ### 3.5 Ghi worklog
 - **Enqueue** (`enqueueKhSummary(tx, w)` cuối nhánh `done` của `persistStage`): đọc `snapshot.kh.stages[idx]`, output hiện tại (`content`, `version`); `shouldWriteSummary` + `summaryForWorklog` ⇒ `INSERT kh_writes … ON CONFLICT (output_id) DO NOTHING`. Lỗi đọc ⇒ log warn, **không** ném.
-- **Gửi** (`KhWriter`, vòng nền processes, 10 s): tx ngắn scope system `SELECT … WHERE status='pending' AND next_at <= now() ORDER BY next_at LIMIT 20 FOR UPDATE SKIP LOCKED` ⇒ `next_at = now()+60s` (thuê) ⇒ COMMIT ⇒ mỗi hàng đọc lại hiệu lực/project/chỉ đọc ⇒ `worklog` ⇒ tx ngắn: `done`+`kh_id` | `attempts+1`, `next_at += writeBackoffMs` | `failed`/`skipped` + audit `write_fail`. Seam (G2): `ProcessHandles.khWriteOnce(): Promise<number>` (một lô, như `sweepOnce`).
+- **Gửi** (`KhWriter`, vòng nền processes, 10 s): tx ngắn scope system `SELECT … WHERE status='pending' AND next_at <= now() ORDER BY next_at LIMIT 20 FOR UPDATE SKIP LOCKED` ⇒ `next_at = now()+60s` (thuê) ⇒ COMMIT ⇒ mỗi hàng đọc lại hiệu lực/project/chỉ đọc ⇒ `worklog` ⇒ tx ngắn: `done`+`kh_id` | `attempts+1`, `next_at = now() + writeBackoffMs(attempts)` | `failed`/`skipped` + audit `write_fail`. Seam (G2): `ProcessHandles.khWriteOnce(): Promise<number>` (một lô, như `sweepOnce`).
 - `StageView.knowledge` (`view-steps.ts`): `snapshot.kh.stages[idx]` + `kh_stage_usage` (attempt/round hiện tại) + `kh_writes` theo `current_output_id` (`none` khi không có hàng).
 
 ### 3.6 Start (`insertRun`)
@@ -227,7 +228,7 @@ Actor null cho dòng hệ thống (hạ cấp/ghi). Studio ghi qua `withConfigWr
 | `hub.kh_tenants` | `tenant_id uuid` · `ns text` CHECK `ns ~ '^[a-z][a-z0-9_]{2,31}$' AND ns !~ '^kh' AND ns NOT IN (8 tên cấm)` · `secret_id uuid NULL` · `keyspace text ='step'` CHECK `'^[a-z][a-z0-9_.-]{0,63}$'` · `enabled bool =false` · `check_status text ='unchecked'` CHECK `IN ('unchecked','ok','error')` · `checked_at timestamptz NULL` · `check_result jsonb NULL` CHECK object · `version int =1` CHECK ≥1 · `created_by, updated_by uuid NULL` · `created_at, updated_at now()` | PK `tenant_id` · UNIQUE `kh_tenants_ns_uq (ns)` · FK `secret_id → hub.secrets(id) ON DELETE RESTRICT` · `kh_tenants_secret_idx (secret_id) WHERE secret_id IS NOT NULL` | RLS · S/I/U/D |
 | `hub.kh_projects` | `tenant_id uuid` · `project_id text` CHECK `'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$'` · `label text =''` CHECK ≤80 · `read_only bool =false` | PK `(tenant_id, project_id)` · FK `tenant_id → kh_tenants ON DELETE CASCADE` | RLS · S/I/U/D |
 | `hub.kh_bindings` | `process_def_id uuid` · `tenant_id uuid` · `project_id text NULL` · `stage_projects jsonb ='{}'` CHECK object · `version int =1` · `updated_by uuid NULL` · `created_at, updated_at now()` | PK `process_def_id` · FK `process_def_id → process_defs ON DELETE CASCADE` · FK `(tenant_id, project_id) → kh_projects ON DELETE RESTRICT` (MATCH SIMPLE) · FK `tenant_id → kh_tenants ON DELETE CASCADE` · `kh_bindings_tenant_idx (tenant_id)` | RLS · S/I/U/D |
-| `hub.kh_stage_usage` | `stage_run_id uuid` · `attempt smallint` · `round smallint` · `tenant_id uuid` · `queries smallint =0` CHECK 0..5 · `last_warning text NULL` CHECK ∈ 11 mã | PK `(stage_run_id, attempt, round)` · FK `stage_run_id → stage_runs ON DELETE CASCADE` · `updated_at now()` | RLS · S/I/U |
+| `hub.kh_stage_usage` | `stage_run_id uuid` · `attempt smallint` · `round smallint` · `tenant_id uuid` · `queries smallint =0` CHECK 0..5 · `last_warning text NULL` CHECK = `KH_WARNING_CODES` (spec §3.1) | PK `(stage_run_id, attempt, round)` · FK `stage_run_id → stage_runs ON DELETE CASCADE` · `updated_at now()` | RLS · S/I/U |
 | `hub.kh_writes` | `id uuid gen_random_uuid()` · `tenant_id` · `process_run_id` · `stage_run_id` · `output_id` (uuid NOT NULL) · `project_id text` · `subject` CHECK 1..128 · `body` CHECK 1..4000 · `idem_key` CHECK 1..255 · `status ='pending'` CHECK 4 giá trị · `attempts smallint =0` CHECK 0..5 · `next_at now()` · `last_code text NULL` ≤64 · `kh_id text NULL` ≤128 · `created_at, updated_at now()` | PK `id` · UNIQUE `kh_writes_output_uq (output_id)` · FK `(process_run_id, tenant_id) → process_runs(id, tenant_id)` CASCADE · `stage_run_id → stage_runs` CASCADE · `output_id → process_outputs` CASCADE · `kh_writes_due_idx (next_at) WHERE status='pending'` | RLS · S/I/U |
 | `hub.agents` | `ADD COLUMN IF NOT EXISTS knowledge_enabled boolean NOT NULL DEFAULT false` | — | — |
 Audit CHECK: DROP + ADD giữ mọi giá trị tới 0028 + `check, degrade, write_fail` / `kh_settings, kh_tenant, kh_binding, kh_query, kh_worklog`. Không bảng nào có cột secret/token.
@@ -248,7 +249,7 @@ Validate bằng `validateProcessDef` (luật `BACK_TARGET_INVALID`) trong test s
 ns chưa đặt (R20) ⇒ `scenario ok`, `keyspaces ["step"]`, lanes off, `projects []`, `kind client`. Điều khiển: `PUT /__mock/kh {version?, auth: "on"|"off"}` · `PUT /__mock/kh/ns/:ns {scenario, kind?: "client"|"local"|"user", people_lanes?, projects?, keyspaces?, pack_text?}` · `GET /__mock/kh/calls?ns=` (method, path, header `Idempotency-Key`/`X-KH-*`, có `Authorization` hay không — **không** trả giá trị token) · `POST /__mock/kh/reset`. `scenario`: `ok` · `token_expired_once` (lời gọi dữ liệu đầu ⇒ 401 "token expired") · `token_expired_always` · `ns_not_active` · `ns_suspended` · `embedder_unavailable` · `forbidden` · `quota` · `timeout` (giữ > `HUB_KH_TIMEOUT_MS`) · `in_progress_once`.
 
 ## 8. Lệnh xong
-`bun run done:k1`: **chuẩn = test-plan §6** (R2). Token mock có tiền tố `khmock_` để quét "không lộ" (AC03/AC09).
+`bun run done:k1`: **chuẩn = test-plan §6** (R2). `khmock_` chỉ UAT/dev; AC03/AC09 quét `khfake_`.
 
 ## 9. Rủi ro
 | Rủi ro | Giảm |

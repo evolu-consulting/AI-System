@@ -1,6 +1,6 @@
 # ADR-0012 · KnowledgeHub (KH) làm RAG ngoài — Hub làm proxy
 
-Trạng thái: **Proposed (Đề xuất)** — chưa duyệt; trình Gate mốc K1 (thêm dịch vụ ngoài) · Ngày: 2026-10-12, sửa 2026-10-13 · CR-062, CR-066, CR-067, CR-068, CR-069 · Kế thừa: HUB-BR-12/14/15/30/31 · Khảo sát: [`research-ai-sdlc.md`](../specs/K1-knowledgehub/research-ai-sdlc.md)
+Trạng thái: **Accepted (Chấp nhận)** — 2026-10-13, người dùng duyệt Gate K1 (`specs/K1-gate.md`) · Ngày: 2026-10-12, sửa 2026-10-13 · CR-062, CR-066, CR-067, CR-068, CR-069 · Kế thừa: HUB-BR-12/14/15/30/31 · Khảo sát: [`research-ai-sdlc.md`](../specs/K1-knowledgehub/research-ai-sdlc.md)
 
 ## Bối cảnh
 Hub cần RAG (tri thức theo agent, ghi lại tóm tắt stage). KH (v6.4) là dịch vụ RAG tự host của dự án ai-sdlc (`D:\AI\ai-sdlc-rowan\POC\KnowledgeHub`). KH có hai bề mặt: "người" (`/vector/*`, khoá chung, **không phân project**, auth tắt mặc định) và "máy" `/v1/{ns}/*` (OIDC client credentials theo namespace, idempotency, mã lỗi ổn định). HUB-BR-12 chỉ cho agent gọi workflow Dify; HUB-BR-30 cấm secret vào thư mục job.
@@ -12,7 +12,7 @@ Hub cần RAG (tri thức theo agent, ghi lại tóm tắt stage). KH (v6.4) là
 | B | Bọc KH thành workflow Dify | Thêm một tầng, mất kiểm soát tenant ở Hub |
 | C | **Hub làm proxy: tool `kh_query` qua `/mcp`, token job** | Chọn: credentials chỉ ở Hub, Hub kiểm tenant trước khi gọi |
 
-## Quyết định (dự kiến)
+## Quyết định
 1. **Bề mặt `/v1/{ns}` duy nhất.** Không dùng `/vector/*` và khoá chung `KH_API_KEY` (không phân project ⇒ không cách ly được). **ns = tenant (1:1).** Mỗi tenant một secret `kh_api_key` (H4b-1, chỉ ghi, theo tenant — Q7) dạng JSON `{client_id, client_secret, token_url?}`; `platform_admin` tự gắn ns/client phía KH rồi dán vào Studio, Hub không tự gắn/xoay. Hub đổi token client credentials, giữ trong bộ nhớ, làm mới trước hạn 60–90 s, `401` hết hạn ⇒ thử lại 1 lần (HUB-FR-137).
 2. **Proxy (C):** `kh_query` → `POST /v1/{ns}/context/step`, `budget_chars` 4000/lần, ≤ 5 lần/stage; Hub không tự chèn tri thức vào prompt. Ngoại lệ có chủ đích của HUB-BR-12 (ghi tại HUB-BR-12/36). Credentials không vào job (HUB-BR-30); agent không egress tới KH.
 3. **Cách ly:** ns = tenant (HUB-BR-35). Project dùng chung: KH gắn vào ns từng tenant cần dùng; Hub đánh dấu chỉ đọc, không ghi `## Tóm tắt`. People lanes (sửa 2026-10-13 theo K1 Q2): **cho phép bật với project riêng của tenant** (ns = tenant nên vẫn cách ly) để agent đọc `## Tóm tắt` qua `context/step`; ghi chú người viết cùng project có thể lẫn vào kết quả (KH giới hạn ≤ 40% budget). **Project dùng chung bắt buộc tắt lanes** — "Kiểm tra kết nối" báo lỗi nếu ns bật lanes mà tenant có project dùng chung.
