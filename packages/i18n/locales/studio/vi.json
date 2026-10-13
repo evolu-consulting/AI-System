@@ -652,6 +652,43 @@
       "valueLen": "Giá trị dài 8–2048 ký tự"
     }
   },
+  "access": {
+    "title": "Quyền agent",
+    "subtitle": "Tenant nào được có agent nào. Grant cho group/user do tenant admin cấp ở Admin › Groups.",
+    "matrix": { "aria": "Ma trận quyền agent", "corner": "Agent \\ Tenant" },
+    "cell": {
+      "label": "{agent} × {tenant}",
+      "na": "Chỉ dùng cho {tenant}",
+      "count": "{n} grant"
+    },
+    "truncated": "Chỉ hiện 200 đầu tiên. Dùng bộ lọc.",
+    "agentOff": "Agent đang tắt",
+    "empty": "Chưa có agent để cấp",
+    "forbidden": "Bạn không có quyền xem mục này",
+    "filter": { "agent": "Lọc theo agent", "tenant": "Lọc theo tenant", "all": "Tất cả" },
+    "drawer": {
+      "title": "Chi tiết {agent} × {tenant}",
+      "grantedAt": "Ngày cấp",
+      "grantedBy": "Người cấp",
+      "grants": "Grant trong tenant",
+      "none": "Chưa có grant",
+      "note": "Grant do tenant_admin cấp trong Admin › Groups.",
+      "subject": { "group": "Group", "user": "User", "tenant": "Cả tenant" }
+    },
+    "revoke": {
+      "title": "Thu hồi {agent} khỏi {tenant}?",
+      "body": "{n} grant trong tenant {tenant} sẽ mất hiệu lực. Grant được giữ lại và tự có hiệu lực khi cấp lại. Run đang chạy vẫn xong.",
+      "confirm": "Thu hồi"
+    },
+    "toast": {
+      "granted": "Đã cấp {agent} cho {tenant}",
+      "revoked": "Đã thu hồi {agent} khỏi {tenant}"
+    },
+    "errors": {
+      "isDefault": "Agent đang là mặc định của tenant này. Đổi mặc định ở Admin trước khi thu hồi.",
+      "conflict": "Quyền vừa được thay đổi. Đã tải lại ma trận."
+    }
+  },
   "knowledgehub": {
     "title": "Cài đặt",
     "section": "Kết nối KnowledgeHub",

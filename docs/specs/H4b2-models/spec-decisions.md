@@ -31,3 +31,5 @@ C1 — list giữ R13 (Q6): `has_secret` + `slots_in_use`, `secret`/`last_error`
 | Agent dùng profile: `agents where profile_id = p` | quét `agents` (≤ 200) |
 | Ma trận: entitlement chưa thu hồi + `count(*) group by agent_id, tenant_id, subject_type` của `agent_grants` | PK `agent_entitlements` · `agent_grants_uq (agent_id, tenant_id, …)` |
 
+## Trong lúc làm — FE T6 (Quyền agent)
+- 2026-10-13: key riêng `access.empty`/`access.forbidden` (không dùng `state.*` chung với Models); thêm `access.matrix.corner`, `access.drawer.none`, `access.drawer.subject.*`. Nút "Chi tiết …" chỉ ở ô đã cấp; bộ lọc là `<select>` native theo key. Cấp/thu hồi thành công ⇒ invalidate ma trận + `me` (số grant lấy lại từ server).

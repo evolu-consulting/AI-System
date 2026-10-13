@@ -13,6 +13,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedAccessRouteImport } from './routes/_authed/access'
 import { Route as AuthedModelsRouteImport } from './routes/_authed/models'
 import { Route as AuthedOrchestratorRouteImport } from './routes/_authed/orchestrator'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
@@ -38,6 +39,11 @@ const LoginRoute = LoginRouteImport.update({
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAccessRoute = AuthedAccessRouteImport.update({
+  id: '/access',
+  path: '/access',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedModelsRoute = AuthedModelsRouteImport.update({
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
+  '/access': typeof AuthedAccessRoute
   '/models': typeof AuthedModelsRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
   '/secrets': typeof AuthedSecretsRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
+  '/access': typeof AuthedAccessRoute
   '/models': typeof AuthedModelsRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
   '/secrets': typeof AuthedSecretsRoute
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
+  '/_authed/access': typeof AuthedAccessRoute
   '/_authed/models': typeof AuthedModelsRoute
   '/_authed/orchestrator': typeof AuthedOrchestratorRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forbidden'
     | '/login'
+    | '/access'
     | '/models'
     | '/orchestrator'
     | '/secrets'
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
   to:
     | '/forbidden'
     | '/login'
+    | '/access'
     | '/models'
     | '/orchestrator'
     | '/secrets'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/forbidden'
     | '/login'
+    | '/_authed/access'
     | '/_authed/models'
     | '/_authed/orchestrator'
     | '/_authed/secrets'
@@ -188,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthedIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/access': {
+      id: '/_authed/access'
+      path: '/access'
+      fullPath: '/access'
+      preLoaderRoute: typeof AuthedAccessRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/models': {
@@ -243,6 +262,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedAccessRoute: typeof AuthedAccessRoute
   AuthedModelsRoute: typeof AuthedModelsRoute
   AuthedOrchestratorRoute: typeof AuthedOrchestratorRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
@@ -254,6 +274,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAccessRoute: AuthedAccessRoute,
   AuthedModelsRoute: AuthedModelsRoute,
   AuthedOrchestratorRoute: AuthedOrchestratorRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,

@@ -652,6 +652,43 @@
       "valueLen": "Value must be 8–2048 characters"
     }
   },
+  "access": {
+    "title": "Agent access",
+    "subtitle": "Which tenants may use which agents. Grants for groups/users are set by tenant admins in Admin › Groups.",
+    "matrix": { "aria": "Agent access matrix", "corner": "Agent \\ Tenant" },
+    "cell": {
+      "label": "{agent} × {tenant}",
+      "na": "Only for {tenant}",
+      "count": "{n} grants"
+    },
+    "truncated": "Showing the first 200 only. Use the filters.",
+    "agentOff": "Agent is off",
+    "empty": "No agents to grant",
+    "forbidden": "You don't have permission to view this",
+    "filter": { "agent": "Filter by agent", "tenant": "Filter by tenant", "all": "All" },
+    "drawer": {
+      "title": "Details {agent} × {tenant}",
+      "grantedAt": "Granted on",
+      "grantedBy": "Granted by",
+      "grants": "Grants in tenant",
+      "none": "No grants yet",
+      "note": "Grants are set by tenant_admin in Admin › Groups.",
+      "subject": { "group": "Group", "user": "User", "tenant": "Whole tenant" }
+    },
+    "revoke": {
+      "title": "Revoke {agent} from {tenant}?",
+      "body": "{n} grants in tenant {tenant} will stop working. Grants are kept and work again when re-granted. Running runs finish.",
+      "confirm": "Revoke"
+    },
+    "toast": {
+      "granted": "Granted {agent} to {tenant}",
+      "revoked": "Revoked {agent} from {tenant}"
+    },
+    "errors": {
+      "isDefault": "This agent is the tenant default. Change the default in Admin before revoking.",
+      "conflict": "Access was just changed. The matrix has been reloaded."
+    }
+  },
   "knowledgehub": {
     "title": "Settings",
     "section": "KnowledgeHub connections",
