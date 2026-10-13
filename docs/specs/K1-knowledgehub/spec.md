@@ -3,13 +3,13 @@ id: K1-knowledgehub
 title: K1 · KnowledgeHub làm RAG ngoài (Hub proxy) + quy trình mẫu AISDLC
 milestone: K1
 status: plan
-requirements: [HUB-FR-131, HUB-FR-132, HUB-FR-133, HUB-FR-134, HUB-FR-137, HUB-BR-35, HUB-BR-36, HUB-BR-37, HUB-BR-40]
+requirements: [HUB-FR-131, HUB-FR-132, HUB-FR-133, HUB-FR-134, HUB-BR-37, HUB-BR-40]
 design:
-  - docs/design/agent-hub/ba-agent-hub.md HUB-FR-131…134, 137 · HUB-BR-35…37, 40 (ngoại lệ HUB-BR-12)
+  - docs/design/agent-hub/ba-agent-hub.md HUB-FR-131…134 · HUB-BR-37, 40 (ngoại lệ HUB-BR-12)
   - docs/design/agent-hub/ui-agent-studio.md (Cài đặt → Kết nối KnowledgeHub, Sửa agent → Tri thức — thiếu artboard)
   - docs/adr/0012-knowledgehub-external-rag.md (Accepted) · docs/specs/K1-knowledgehub/research-ai-sdlc.md
-  - docs/CHANGE-REQUESTS.md#CR-062 · #CR-067 · #CR-068 · #CR-070 · #CR-072 (thay CR-071) · #CR-073 (bỏ cách ly tenant)
-  - nền: H4b-1 Secrets (`kh_api_key` theo tenant, `useSecret`) · P-a/P-b2 (`required_sections`, `## Bàn giao`, gate) · H2a (`/mcp`, token job)
+  - docs/CHANGE-REQUESTS.md#CR-062 · #CR-067 · #CR-068 · #CR-070 · #CR-072 (thay CR-071) · #CR-073 (bỏ cách ly tenant; thay HUB-FR-137, HUB-BR-35/36)
+  - nền: H4b-1 Secrets (`kh_api_key` mức nền tảng, `useSecret`) · P-a/P-b2 (`required_sections`, `## Bàn giao`, gate) · H2a (`/mcp`, token job)
 owner: backend-lead + frontend-lead + qc
 ---
 
@@ -19,30 +19,29 @@ Tách từ BA (Intake 2026-10-13); [`readiness.md`](readiness.md). Sau H4b-1.
 
 ## 1. Phạm vi
 **Làm:**
-- Studio → Cài đặt → **Kết nối KnowledgeHub** (**CR-073**): **danh sách**; mỗi kết nối = tên + địa chỉ (allowlist, https) + khoá (secret `kh_api_key` mức nền tảng) + **Project ghi Tóm tắt** (tuỳ chọn, trống = không ghi) + "Kiểm tra". Không bảng công ty, không ns theo tenant, không công tắc `tenant_admin` (HUB-FR-131).
-- Client KH `/v1/{ns}`: đổi token client credentials, giữ trong bộ nhớ, làm mới 60–90 s, `401` ⇒ thử lại 1 lần (HUB-FR-137).
-- **CR-072/073 (tối giản):** sửa agent = tick KH được dùng (một/nhiều); `kh-query(câu hỏi, project)` dùng khoá của kết nối, khoá thấy project nào hỏi được (HUB-FR-132). Không trang/kho/gắn theo stage. **Hub không cách ly theo tenant — KH/khoá tự phân quyền; người dùng chấp nhận rủi ro đọc chéo công ty (CR-073, PRODUCTION-NOTES).**
-- Tool `kh_query` ở `/mcp` → `POST /v1/{ns}/context/step` (4000 ký tự/lần, ≤ 5 lần/stage).
+- Studio → Cài đặt → **Kết nối KnowledgeHub** (**CR-073**): **danh sách**; mỗi kết nối = tên + địa chỉ (allowlist, https) + khoá (secret `kh_api_key` mức nền tảng) + **Project ghi Tóm tắt** (tuỳ chọn, trống = không ghi) + "Kiểm tra". Không cấu hình theo công ty, không công tắc `tenant_admin` (HUB-FR-131).
+- Client KH: API gốc + header `X-KH-Key` (§3.0), không token/ns (Q26).
+- **CR-072/073 (tối giản):** sửa agent = tick KH được dùng (một/nhiều); `kh-query(câu hỏi, project)` dùng khoá của kết nối, khoá thấy project nào hỏi được (HUB-FR-132). Không trang/kho/gắn theo stage. **Hub không cách ly theo tenant — KH/khoá tự phân quyền; người dùng chấp nhận rủi ro đọc chéo (CR-073, PRODUCTION-NOTES).**
+- Tool `kh_query` ở `/mcp` → `POST /vector/query` (§3.0; 4000 ký tự/lần, ≤ 5 lần/stage).
 - Ghi `## Tóm tắt` (worklog) vào Project ghi Tóm tắt của KH đầu tiên (thứ tự tick) có project ghi; không có ⇒ không ghi, không thêm `## Tóm tắt` (HUB-FR-133).
 - Hạ cấp khi KH lỗi (HUB-FR-134); mock KH.
 - Seed quy trình mẫu `sdlc-delivery` + `bug-fix` (CR-070, chỉ seed; không sửa `sdlc`).
 
-**Không làm:** nạp nguồn/tài liệu vào KH (K2); code-graph (hoãn, CR-069); tự gắn/xoay ns/client phía KH; tự chèn tri thức vào prompt; dùng `/vector/*` hay khoá chung; thêm KH vào docker-compose; đổi phía KH; canvas/template quy trình (P-b2 đã xong).
+**Không làm:** nạp nguồn/tài liệu vào KH (K2); code-graph (hoãn, CR-069); đổi phía KH (gắn/xoay khoá); tự chèn tri thức vào prompt; dùng `/v1/{ns}`; thêm KH vào docker-compose; canvas/template quy trình (P-b2 đã xong).
 
 ## 2. Nghiệp vụ
 Trỏ BA; chỉ ghi phần cụ thể hoá.
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
-| Phiên bản tối thiểu | `GET /version` ≥ v6.4; `GET /v1/capabilities`: `api_versions ∋ v1` + `retrieval` (K2 thêm `packs`) | ADR-0012 §6 |
-| Kiểm tra kết nối — lỗi | `GET /v1/me` `kind=local`; gọi không token vẫn được (trừ localhost dev); `http://` (trừ localhost dev) | HUB-FR-131, HUB-BR-40 |
-| Kiểm tra kết nối — cảnh báo | ns bật `include_people_lanes` ⇒ chỉ **cảnh báo** `kh_people_lanes_on`, không chặn (Q2, CR-072) | HUB-FR-131 |
+| Phiên bản tối thiểu | `GET /version` ≥ v6.4 (§3.0) | ADR-0012 §6 |
+| Kiểm tra kết nối — lỗi | `GET /version` không khoá vẫn được (`kh_auth_disabled`, Q28); `http://` (trừ localhost dev) | HUB-FR-131, HUB-BR-40 |
 | Cảnh báo tĩnh | Embedder đa ngữ (bge-m3) là điều kiện KH; Hub không đo | ADR-0012 §8 |
 | Không cách ly tenant (CR-073) | Một khoá/kết nối; Hub không lọc project theo công ty; khoá không thấy project ⇒ KH từ chối. Đảo HUB-BR-35 (người dùng chấp nhận) | HUB-BR-35, CR-073 |
 | Project ghi Tóm tắt | Khai báo theo kết nối, tuỳ chọn; trống ⇒ không ghi | HUB-FR-133 |
 | `kh-query` | Agent chỉ hỏi KH đã tick; `budget_chars` 4000; ≤ 5 lần/stage (lần 6 ⇒ lỗi tool, không lỗi run)| HUB-FR-132, HUB-BR-31 |
-| Ghi worklog | subject `<quy trình>/<stage>`; cắt 4000 ký tự; `Idempotency-Key` = run/stage/phiên bản output; `after: auto` ghi khi chốt output, có gate ghi khi Đạt | HUB-FR-133 |
+| Ghi worklog | subject `<quy trình>/<stage>`; cắt 4000 ký tự; `id` cố định = run/stage/phiên bản output (Q32); `after: auto` ghi khi chốt output, có gate ghi khi Đạt | HUB-FR-133 |
 | `## Tóm tắt` | ≤ 200 từ, quá thì cắt; chỉ bắt buộc ở stage mà KH đầu tiên (thứ tự tick) của agent có Project ghi Tóm tắt | HUB-FR-133 |
-| Hạ cấp | Mạng/timeout, `404 ns_not_active`, `423 ns_suspended`, `503 embedder_unavailable` ⇒ chạy tiếp + cảnh báo output + audit | HUB-FR-134 |
+| Hạ cấp | Mạng/timeout, 401/403/404/429/5xx từ KH ⇒ chạy tiếp + cảnh báo output + audit | HUB-FR-134 |
 | Seed mẫu | `sdlc-delivery` (≤ 10 stage: Scope Sign-off gate → Setup&Plan → Spec gate → Design → Implementation → Code Review → Testing → UAT gate → Release); `bug-fix` (6 stage, danh sách ở [plan §6](plan.md)). Code Review/Testing trượt ⇒ gate người + `back_to_steps`; phỏng cấu trúc `seed.py`, không chép prompt | CR-070 |
 
 ## 3. Contract (backend-lead · CR-073)
