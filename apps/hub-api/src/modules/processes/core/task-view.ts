@@ -14,6 +14,7 @@ import {
 } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { autofixDecisionOptions, isAutofixReason } from "../runs/autofix.rules";
 import type { RunFacts, Viewer } from "./run-access.rules";
 import { canAct } from "./task.rules";
 
@@ -61,7 +62,11 @@ export function toTaskDetail(
     ...(row.excerpt !== null && { excerpt: row.excerpt }),
     ...(row.reason !== null && { reason: row.reason }),
     ...(decision && {
-      options: DECISION_OPTIONS.filter((o) => o !== "use_current" || x.hasOutput),
+      // P-c1 · PC-R10: autofix_* ⇒ [add_attempt, cancel] kể cả có output (TD: lệch FORCE_USE_CURRENT, xem TECH-DEBT).
+      options:
+        row.reason !== null && isAutofixReason(row.reason)
+          ? autofixDecisionOptions(row.reason)
+          : DECISION_OPTIONS.filter((o) => o !== "use_current" || x.hasOutput),
       has_output: x.hasOutput,
     }),
     forwards: x.forwards.map((f) => ({
