@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next";
 import { StageActions } from "./StageActions";
 import { StageAnswerer } from "./StageAnswerer";
+import { StageAutofix } from "./StageAutofix";
 import { StageGate } from "./StageGate";
 import { StageGeneral, StageLimits } from "./StageGeneral";
 import { StageMustKnow } from "./StageMustKnow";
@@ -31,6 +32,7 @@ export function StageForm(p: StageFormProps) {
         onChange={onChange}
       />
       <StageSourcesField {...p} />
+      <StageAutofix {...p} />
       <StageGate {...p} />
       <StageAnswerer {...p} />
       <StageLimits {...p} />

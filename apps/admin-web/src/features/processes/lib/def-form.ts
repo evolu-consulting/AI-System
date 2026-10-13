@@ -22,6 +22,14 @@ import {
   STAGE_TOKEN_BUDGET,
 } from "@ai/contracts/hub-admin";
 import {
+  AUTOFIX_RULE_ERR,
+  type AutofixDraft,
+  autofixToDef,
+  autofixToDraft,
+  emptyAutofix,
+  validateAutofixPart,
+} from "./autofix-form";
+import {
   type InputDraft,
   inputsToDef,
   inputsToDraft,
@@ -63,6 +71,8 @@ export type StageDraft = {
   sources: StageSourceDraft[];
   /** `must_know`, mỗi dòng một mục. */
   mustKnow: string;
+  /** P-c1 · khối "Tự sửa mã" (tắt ⇒ `autofix: null`, giữ giá trị đã nhập). */
+  autofix: AutofixDraft;
 };
 export type DefDraft = {
   key: string;
@@ -106,6 +116,7 @@ export function emptyStage(step = 0): StageDraft {
     budget: "",
     sources: [],
     mustKnow: "",
+    autofix: emptyAutofix(),
   };
 }
 
@@ -149,6 +160,7 @@ function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     budget: num(s.token_budget),
     sources: stageSourcesToDraft(s.sources),
     mustKnow: mustKnowToDraft(s.must_know),
+    autofix: autofixToDraft(s.autofix),
   };
 }
 
@@ -199,6 +211,7 @@ function stageToInput(s: StageDraft): ProcessStageDef {
     token_budget: intOrNull(s.budget),
     sources: stageSourcesToDef(s.sources),
     must_know: mustKnowToDef(s.mustKnow),
+    autofix: autofixToDef(s.autofix),
   };
 }
 
@@ -282,6 +295,7 @@ export const STEP_ERR: Record<string, string> = {
   STEP_INCOMPLETE: "process.admin.canvas.err.step",
   REAL_ACTION: "process.admin.canvas.err.realStep",
   BACK_TARGET_INVALID: "process.admin.canvas.err.backTarget",
+  ...AUTOFIX_RULE_ERR,
 };
 
 /** `stages.N.after.back_to_steps.K` → ô `stages.N.after.back_to_steps` (một dòng lỗi cho cả nhóm checkbox). */
@@ -319,6 +333,7 @@ export function validateDraft(d: DefDraft, forEnable = d.enabled): DraftErrors {
   });
   validateSteps(d.stages, e);
   validateSourcesPart(d, e);
+  validateAutofixPart(d.stages, e);
   return e;
 }
 

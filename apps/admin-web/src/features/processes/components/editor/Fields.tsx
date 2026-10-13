@@ -30,6 +30,7 @@ export function TextField(
     type?: "text" | "number";
     prefix?: string;
     mono?: boolean;
+    placeholder?: string;
     maxLength?: number;
     min?: number;
     max?: number;
@@ -50,6 +51,7 @@ export function TextField(
               {...c}
               value={p.value}
               rows={p.rows ?? 3}
+              placeholder={p.placeholder}
               readOnly={p.readOnly}
               maxLength={p.maxLength}
               className={p.mono ? "font-mono" : undefined}
@@ -61,6 +63,7 @@ export function TextField(
           <Input
             {...c}
             type={p.type ?? "text"}
+            placeholder={p.placeholder}
             value={p.value}
             readOnly={p.readOnly}
             maxLength={p.maxLength}

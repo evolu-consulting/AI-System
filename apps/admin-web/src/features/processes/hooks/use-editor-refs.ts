@@ -2,6 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { useAgentSettings, useAgentUserOptions } from "@/features/agents/api";
 import { useGroupOptions } from "@/features/groups/api";
+import { type SourceOption, useSourceOptions } from "@/features/sources/api";
 import { pickLocalized } from "@/lib/localized";
 import { useAgentTeams } from "../api";
 import type { Option } from "../components/editor/Fields";
@@ -11,6 +12,8 @@ export type EditorRefs = {
   teams: Option[];
   groups: Option[];
   users: Option[];
+  /** Nguồn của công ty (kind để dựng nhãn ô "Nguồn" của Tự sửa mã). */
+  sources: SourceOption[];
   /** Có danh sách nào còn đang tải. */
   loading: boolean;
 };
@@ -28,6 +31,7 @@ export function useEditorRefs(tenantId: string | undefined, enabled: boolean): E
   const teams = useAgentTeams(tenantId, enabled);
   const groups = useGroupOptions(tenantId, enabled);
   const users = useAgentUserOptions(tenantId, enabled);
+  const sources = useSourceOptions(tenantId, enabled);
   return {
     agents: (settings.data?.agents ?? [])
       .filter((a) => a.entitled && a.enabled)
@@ -35,6 +39,7 @@ export function useEditorRefs(tenantId: string | undefined, enabled: boolean): E
     teams: (teams.data?.items ?? []).map((x) => ({ value: `team:${x.id}`, label: x.name[lang] })),
     groups: (groups.data ?? []).map((g) => ({ value: g.id, label: pickLocalized(g.name, lang) })),
     users: (users.data ?? []).map((u) => ({ value: u.id, label: u.name || u.username })),
+    sources: sources.data ?? [],
     loading: settings.isPending || teams.isPending || groups.isPending || users.isPending,
   };
 }

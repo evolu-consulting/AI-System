@@ -13,6 +13,8 @@ export type StageView = {
   after: "review" | "auto";
   real: boolean;
   backTo: number[];
+  /** P-c1 · stage tự-sửa mã (huy hiệu). */
+  autofix: boolean;
   hasError: boolean;
 };
 
@@ -34,6 +36,7 @@ export function stageViews(
     after: s.after,
     real: s.real,
     backTo: s.backTo,
+    autofix: s.autofix.on,
     hasError: hasStageError(errors, i),
   }));
 }
@@ -47,5 +50,6 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   a.executor === b.executor &&
   a.after === b.after &&
   a.real === b.real &&
+  a.autofix === b.autofix &&
   a.hasError === b.hasError &&
   a.backTo.join() === b.backTo.join();

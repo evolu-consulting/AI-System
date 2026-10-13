@@ -34,6 +34,12 @@ export function StageBody({ v }: { v: StageView }) {
             <Badge variant="info">{t("process.admin.canvas.node.real")}</Badge>
           </>
         ) : null}
+        {v.autofix ? (
+          <>
+            {" "}
+            <Badge variant="info">{t("process.admin.autofix.title")}</Badge>
+          </>
+        ) : null}
         {v.backTo.map((s) => (
           <span key={s}>
             {" "}
