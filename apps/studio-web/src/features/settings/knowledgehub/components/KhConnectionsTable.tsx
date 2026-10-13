@@ -34,12 +34,16 @@ function Row({ c, checking, onCheck, onEdit, onDelete }: Actions & { c: KhConnec
       <TableCell className="font-mono">{c.name}</TableCell>
       <TableCell className="font-mono break-all">{c.base_url}</TableCell>
       <TableCell className="font-mono">{c.secret.name}</TableCell>
-      <TableCell className="font-mono">{c.summary_project ?? "—"}</TableCell>
+      <TableCell className="font-mono">
+        {c.summary_project ?? (
+          <span className="font-sans text-muted-foreground">{t("knowledgehub.noProject")}</span>
+        )}
+      </TableCell>
       <TableCell>
         <Badge variant={VARIANT[c.status]}>{t(`knowledgehub.status.${c.status}`)}</Badge>
       </TableCell>
       <TableCell>{c.agents_count}</TableCell>
-      <TableCell className="space-x-2 whitespace-nowrap">
+      <TableCell className="sticky right-0 space-x-2 whitespace-nowrap border-l border-border bg-card">
         <Button
           variant="outline"
           size="sm"
@@ -55,6 +59,7 @@ function Row({ c, checking, onCheck, onEdit, onDelete }: Actions & { c: KhConnec
         <Button
           variant="outline"
           size="sm"
+          className="border-danger/30 text-danger hover:bg-danger-bg hover:text-danger"
           aria-label={label("delete")}
           onClick={() => onDelete(c)}
         >
@@ -76,7 +81,12 @@ export const KhConnectionsTable = memo(function KhConnectionsTable({
         <TableHeader>
           <TableRow>
             {COLS.map((c) => (
-              <TableHead key={c}>
+              <TableHead
+                key={c}
+                className={
+                  c === "actions" ? "sticky right-0 border-l border-border bg-card" : undefined
+                }
+              >
                 <span className={c === "actions" ? "sr-only" : undefined}>
                   {t(`knowledgehub.col.${c}`)}
                 </span>

@@ -2,10 +2,12 @@
 import type { KhCheckItem, KhCheckResult } from "@ai/contracts/hub-admin";
 import { CircleAlert, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "#/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "#/components/ui/dialog";
@@ -22,10 +24,12 @@ function ItemRow({ item }: { item: KhCheckItem }) {
   return (
     <li className={`flex items-start gap-2 ${err ? "text-danger" : "text-warning"}`}>
       <Icon aria-hidden className="mt-0.5 size-4 shrink-0" />
-      <span className="sr-only">
-        {t(err ? "knowledgehub.check.levelError" : "knowledgehub.check.levelWarning")}:{" "}
+      <span>
+        <span className="font-medium">
+          {t(err ? "knowledgehub.check.levelError" : "knowledgehub.check.levelWarning")} ·{" "}
+        </span>
+        {text}
       </span>
-      <span>{text}</span>
     </li>
   );
 }
@@ -37,7 +41,10 @@ function Result({ r }: { r: KhCheckResult }) {
   const at = new Date(r.checked_at);
   return (
     <div className="space-y-3">
-      <p role="status" className="font-medium">
+      <p
+        role="status"
+        className={`rounded-md px-3 py-2 font-medium ${errors.length === 0 ? "bg-success-bg text-success" : "bg-danger-bg text-danger"}`}
+      >
         {errors.length === 0
           ? t("knowledgehub.check.ok")
           : t("knowledgehub.check.failed", { n: errors.length })}
@@ -89,14 +96,16 @@ function Failure({ code }: { code: string }) {
 export function KhCheckDialog({
   state,
   onClose,
+  onRecheck,
 }: {
   state: CheckState | null;
   onClose: () => void;
+  onRecheck: (c: { id: string; name: string }) => void;
 }) {
   const { t } = useTranslation();
   return (
     <Dialog open={state !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{t("knowledgehub.check.title")}</DialogTitle>
           <DialogDescription>{state?.name ?? t("knowledgehub.check.desc")}</DialogDescription>
@@ -108,6 +117,19 @@ export function KhCheckDialog({
         ) : null}
         {state?.phase === "done" ? <Result r={state.result} /> : null}
         {state?.phase === "error" ? <Failure code={state.code} /> : null}
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!state || state.phase === "running"}
+            onClick={() => state && onRecheck(state)}
+          >
+            {t("knowledgehub.check.recheck")}
+          </Button>
+          <Button type="button" onClick={onClose}>
+            {t("knowledgehub.check.close")}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

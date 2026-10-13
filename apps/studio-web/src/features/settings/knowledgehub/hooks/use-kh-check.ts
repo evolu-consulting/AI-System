@@ -6,9 +6,9 @@ import { checkKhConnection, KH_KEY } from "../api";
 
 export const CHECK_TIMEOUT_MS = 25_000;
 export type CheckState =
-  | { name: string; phase: "running" }
-  | { name: string; phase: "done"; result: KhCheckResult }
-  | { name: string; phase: "error"; code: string };
+  | { id: string; name: string; phase: "running" }
+  | { id: string; name: string; phase: "done"; result: KhCheckResult }
+  | { id: string; name: string; phase: "error"; code: string };
 
 export function useKhCheck() {
   const qc = useQueryClient();
@@ -25,13 +25,13 @@ export function useKhCheck() {
         mine.abort();
       }, CHECK_TIMEOUT_MS);
       const set = (s: CheckState) => (!mine.signal.aborted || timedOut ? setState(s) : undefined);
-      setState({ name: c.name, phase: "running" });
+      setState({ id: c.id, name: c.name, phase: "running" });
       try {
         const result = await checkKhConnection({ id: c.id, signal: mine.signal });
-        set({ name: c.name, phase: "done", result });
+        set({ id: c.id, name: c.name, phase: "done", result });
       } catch (err) {
         const code = timedOut ? "TIMEOUT" : String((err as { code?: unknown } | null)?.code ?? "");
-        set({ name: c.name, phase: "error", code });
+        set({ id: c.id, name: c.name, phase: "error", code });
       } finally {
         clearTimeout(timer);
         void qc.invalidateQueries({ queryKey: KH_KEY });

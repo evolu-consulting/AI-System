@@ -53,9 +53,8 @@ export function KhConnectionForm({ item, saved, onSaved, onClose }: Props) {
       : await m.create(body);
     setSrv({});
     toast.success(t("knowledgehub.toast.saved", { name: res.name }));
-    // Thêm mới: đóng Sheet để thấy dòng mới (e2e E03); Sửa: ở lại "Đã lưu · v{n}" (E06).
-    if (item) onSaved(res.version);
-    else onClose();
+    // Thêm / Sửa: Sheet ở lại "Đã lưu · v{n}" (plan-frontend §2); danh sách phía sau đã làm mới.
+    onSaved(res.version);
   };
   const fail = (err: unknown) => {
     const f = classifyKhSaveError(err);

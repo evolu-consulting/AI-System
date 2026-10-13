@@ -10,7 +10,7 @@ export function ConfigBadge() {
     <span
       role="status"
       aria-label={t("topbar.configBadgeLabel")}
-      className="rounded-md bg-muted px-2 py-0.5 font-mono text-label text-muted-foreground"
+      className="shrink-0 whitespace-nowrap rounded-md bg-muted px-2 py-0.5 font-mono text-label text-muted-foreground"
     >
       {t("topbar.configBadge", { n: data.hub_config_version })}
     </span>

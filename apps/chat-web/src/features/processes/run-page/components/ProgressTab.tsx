@@ -42,6 +42,12 @@ function FullProgress({ view }: { view: ProcessRunFullView }) {
         <StepSections view={view} />
       ) : (
         <>
+          {/* Run tuyến tính: ghi chú tri thức theo từng giai đoạn (HUB-FR-134, UAT M1) */}
+          {view.stages
+            .filter((s) => s.knowledge)
+            .map((s) => (
+              <StageRow key={`kn-${s.idx}`} stage={s} />
+            ))}
           {view.stages
             .filter((s) => s.outputs.length > 0)
             .map((s) => (

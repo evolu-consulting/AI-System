@@ -8,7 +8,7 @@ export const Route = createRootRoute({
     <>
       <SessionWatcher />
       <Outlet />
-      <Toaster position="bottom-right" />
+      <Toaster position="top-center" />
     </>
   ),
   // Trang 404 kéo cả khung nên nạp lười để không vào JS ban đầu (ngân sách 150 KB).

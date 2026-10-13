@@ -544,6 +544,7 @@
   "knowledgehub": {
     "title": "Cài đặt",
     "section": "Kết nối KnowledgeHub",
+    "noProject": "— không ghi",
     "risk": "Agent đọc được mọi project mà khoá của kết nối thấy. Muốn tách dữ liệu giữa các công ty, dùng khoá hoặc KnowledgeHub riêng cho từng công ty.",
     "add": "Thêm kết nối",
     "origins": "Origin được phép",
@@ -579,6 +580,7 @@
       "key": "Khoá",
       "keyLoading": "Đang tải…",
       "keyNone": "Chưa có secret KnowledgeHub của nền tảng",
+      "keyHint": "Chọn secret KnowledgeHub đã lưu ở màn Secrets. Không hiện giá trị.",
       "createSecret": "Tạo secret",
       "project": "Project ghi Tóm tắt",
       "projectHint": "Tuỳ chọn. Để trống thì không ghi Tóm tắt.",
@@ -619,6 +621,8 @@
       "timeout": "Quá thời gian chờ kiểm tra",
       "unknown": "Mục kiểm {code}",
       "levelError": "Lỗi",
+      "recheck": "Kiểm tra lại",
+      "close": "Đóng",
       "levelWarning": "Cảnh báo",
       "code": {
         "kh_url_not_allowed": "Địa chỉ không được phép ({reason})",

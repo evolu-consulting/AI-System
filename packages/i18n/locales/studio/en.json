@@ -544,6 +544,7 @@
   "knowledgehub": {
     "title": "Settings",
     "section": "KnowledgeHub connections",
+    "noProject": "— not written",
     "risk": "Agents can read every project the connection's key can see. To separate data between companies, use a separate key or KnowledgeHub per company.",
     "add": "Add connection",
     "origins": "Allowed origins",
@@ -579,6 +580,7 @@
       "key": "Key",
       "keyLoading": "Loading…",
       "keyNone": "No platform KnowledgeHub secret yet",
+      "keyHint": "Pick a KnowledgeHub secret saved in Secrets. The value is never shown.",
       "createSecret": "Create secret",
       "project": "Summary project",
       "projectHint": "Optional. Leave empty to skip writing Summaries.",
@@ -619,6 +621,8 @@
       "timeout": "The check timed out",
       "unknown": "Check item {code}",
       "levelError": "Error",
+      "recheck": "Test again",
+      "close": "Close",
       "levelWarning": "Warning",
       "code": {
         "kh_url_not_allowed": "Address not allowed ({reason})",

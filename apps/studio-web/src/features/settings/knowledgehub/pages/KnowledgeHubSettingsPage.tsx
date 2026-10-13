@@ -87,11 +87,14 @@ export function KnowledgeHubSettingsPage() {
           </h2>
           {q.items.length > 0 ? add : null}
         </div>
-        <p role="note" className="text-label text-muted-foreground">
-          {t("knowledgehub.risk")}
-        </p>
         {q.isPending || q.error ? null : <Origins origins={q.origins} />}
         {body}
+        <p
+          role="note"
+          className="rounded-md border border-warning-solid/30 bg-warning-bg px-3 py-2.5 text-label text-warning"
+        >
+          {t("knowledgehub.risk")}
+        </p>
         {q.hasNextPage ? (
           <div className="flex justify-center">
             <Button
@@ -106,7 +109,11 @@ export function KnowledgeHubSettingsPage() {
       </section>
       <KhConnectionSheet target={sheet} onClose={() => setSheet(null)} />
       <KhDeleteDialog target={toDelete} onClose={() => setToDelete(null)} />
-      <KhCheckDialog state={check.state} onClose={check.close} />
+      <KhCheckDialog
+        state={check.state}
+        onClose={check.close}
+        onRecheck={(c) => void check.start(c)}
+      />
     </>
   );
 }

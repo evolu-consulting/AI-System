@@ -27,7 +27,12 @@ export function KhKeyField({ value, onChange, current, disabled, error }: Props)
   const options = current && !keys.some((k) => k.id === current.id) ? [current, ...keys] : keys;
   const empty = !loading && options.length === 0;
   return (
-    <KhField id="kh-key" label={t("knowledgehub.sheet.key")} error={error}>
+    <KhField
+      id="kh-key"
+      label={t("knowledgehub.sheet.key")}
+      hint={t("knowledgehub.sheet.keyHint")}
+      error={error}
+    >
       {(p) => (
         <div className="space-y-1.5">
           <Select value={value} onValueChange={onChange} disabled={disabled}>

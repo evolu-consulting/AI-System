@@ -10,7 +10,7 @@ export function Topbar() {
   const { t } = useTranslation();
   const authed = useSession((s) => s.status === "authed");
   return (
-    <header className="flex h-topbar shrink-0 items-center justify-end gap-3 border-b border-border bg-card px-6">
+    <header className="flex h-topbar shrink-0 items-center justify-end gap-2 border-b border-border bg-card px-3 sm:gap-3 sm:px-6">
       {authed ? <ConfigBadge /> : null}
       {ADMIN_URL ? (
         <Button asChild variant="outline" size="sm">
