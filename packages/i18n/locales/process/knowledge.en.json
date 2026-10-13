@@ -1,0 +1,24 @@
+{
+  "queries": "Knowledge: {{queries}}/{{limit}} queries",
+  "summary": {
+    "label": "Summary: {{state}}",
+    "pending": "pending",
+    "written": "written",
+    "failed": "failed",
+    "skipped": "skipped",
+    "none": "none"
+  },
+  "writeTo": "(writing to {{project}} · {{connection}})",
+  "warning": {
+    "head": "KnowledgeHub was unreachable — this stage ran without knowledge.",
+    "unreachable": "Cannot connect",
+    "timeout": "Timed out",
+    "unauthorized": "Key rejected",
+    "forbidden": "Key rejected",
+    "not_found": "Project not found",
+    "invalid": "Request rejected",
+    "rate_limited": "Rate limit exceeded",
+    "server_error": "KnowledgeHub error",
+    "disabled": "Connection no longer usable"
+  }
+}

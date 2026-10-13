@@ -43,7 +43,7 @@ describe("process-locales", () => {
   test("chọn phần: chỉ common + admin", async () => {
     const t = (await loadProcessLocale("en", ["common", "admin"])) as { process: Tree };
     expect(Object.keys(t.process)).toEqual(["common", "admin"]);
-    expect(PROCESS_LOCALE_PARTS).toHaveLength(10);
+    expect(PROCESS_LOCALE_PARTS).toHaveLength(11);
   });
   test("toSingleBrace: {{x}} → {x} đệ quy", () => {
     expect(toSingleBrace({ a: { b: "Chào {{name}}, {{n}}/{{max}}" }, c: 1 })).toEqual({

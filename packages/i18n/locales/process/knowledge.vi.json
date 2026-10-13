@@ -1,0 +1,24 @@
+{
+  "queries": "Tri thức: {{queries}}/{{limit}} lần hỏi",
+  "summary": {
+    "label": "Tóm tắt: {{state}}",
+    "pending": "đang chờ",
+    "written": "đã ghi",
+    "failed": "lỗi",
+    "skipped": "bỏ qua",
+    "none": "không ghi"
+  },
+  "writeTo": "(ghi vào {{project}} · {{connection}})",
+  "warning": {
+    "head": "Không truy cập được KnowledgeHub — stage đã chạy không có tri thức.",
+    "unreachable": "Không kết nối được",
+    "timeout": "Hết thời gian chờ",
+    "unauthorized": "Khoá bị từ chối",
+    "forbidden": "Khoá bị từ chối",
+    "not_found": "Không tìm thấy project",
+    "invalid": "Yêu cầu bị từ chối",
+    "rate_limited": "Vượt giới hạn tần suất",
+    "server_error": "KnowledgeHub gặp lỗi",
+    "disabled": "Kết nối không còn dùng được"
+  }
+}

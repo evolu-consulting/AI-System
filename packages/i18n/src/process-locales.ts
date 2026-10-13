@@ -13,6 +13,7 @@ export const PROCESS_LOCALE_PARTS = [
   "admin",
   "sources",
   "inputs",
+  "knowledge",
 ] as const;
 export type ProcessLocalePart = (typeof PROCESS_LOCALE_PARTS)[number];
 type Tree = Record<string, unknown>;
@@ -29,6 +30,7 @@ const LOADERS: Record<Locale, Record<ProcessLocalePart, () => Promise<{ default:
     admin: () => import("../locales/process/admin.vi.json"),
     sources: () => import("../locales/process/sources.vi.json"),
     inputs: () => import("../locales/process/inputs.vi.json"),
+    knowledge: () => import("../locales/process/knowledge.vi.json"),
   },
   en: {
     common: () => import("../locales/process/common.en.json"),
@@ -41,6 +43,7 @@ const LOADERS: Record<Locale, Record<ProcessLocalePart, () => Promise<{ default:
     admin: () => import("../locales/process/admin.en.json"),
     sources: () => import("../locales/process/sources.en.json"),
     inputs: () => import("../locales/process/inputs.en.json"),
+    knowledge: () => import("../locales/process/knowledge.en.json"),
   },
 };
 
