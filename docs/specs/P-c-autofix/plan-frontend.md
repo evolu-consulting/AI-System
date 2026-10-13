@@ -8,7 +8,7 @@ Mockup đã duyệt 2026-10-13: `docs/design/agent-hub/canvas/Pc-{Editor,Diff,De
 | FC1 | Không thêm thư viện. Diff hiển thị bằng parser thuần ~80 dòng (`diff-parse.ts`) + `<details>` mỗi file; không ADR |
 | FC2 | Hai app không chung code UI (chưa có `packages/ui`) ⇒ `diff-parse.ts` + `AutofixResult` chép mỗi app, test giống nhau; ghi `TECH-DEBT.md` (gộp khi có `packages/ui`) |
 | FC3 | Cắt hiển thị 2.000 dòng đầu của diff (đếm dòng đã tải); còn lại ⇒ cảnh báo "Diff lớn" + "Tải .diff". Không virtualize (trần cứng 2 MiB, 300 file) |
-| FC4 | Nội dung diff/log tải qua `GET /attachments/:id/content` (có Bearer) bằng `fetchAttachmentBlob` sẵn có; `diff_file.id`/`test_log_file.id` từ `AutofixStageView`. Không đưa diff vào cache dài: `staleTime` 5 phút, key `["autofix-diff", attachmentId]` (bất biến theo id) |
+| FC4 | Nội dung diff/log tải qua `GET /attachments/:id/content` (có Bearer; quyền = quyền xem run, spec PC-R14). chat-web: `fetchAttachmentContent(id)` sẵn có (`features/attachments/api.ts:20`). admin-web: thêm `fetchAttachmentContent(id, tenantId?)` ở `features/processes/api.ts` kèm `query: {tenant_id}` (platform_admin), mẫu `fetchDef`. `diff_file.id`/`test_log_file.id` (`AutofixFileSchema {id,name,mime,size}`) từ `AutofixStageView`. Không đưa diff vào cache dài: `staleTime` 5 phút, key `["autofix-diff", attachmentId]` (bất biến theo id) |
 | FC5 | Đuôi log test ở thẻ `autofix_check_failed`: tải `test_log_file` rồi lấy 30 dòng cuối (đã che `[REDACTED]` phía Runtime). Không có `test_log_file` ⇒ chỉ hiện exit + thời gian |
 | FC6 | Nhãn nhóm lỗi dịch theo `failure.check`; `detail` hiện nguyên văn (≤ 500, server bảo đảm không bí mật); `check:"secrets"` **không** hiện `detail`, chỉ `path:line · quy tắc <rule>` |
 | FC7 | Nút "Đạt" / "Chưa đạt" / "Thêm 1 lần làm lại" / "Huỷ lượt chạy" (nhãn sẵn có, G6) dùng thẻ gate/decision sẵn có (`ReviewTaskCard`, `DecisionCard`, `RunActions`); P-c chỉ chèn khối `AutofixResult` vào thẻ có stage tự-sửa. `options` lấy từ `task.options` (server, PC-R10), FE không suy |
@@ -39,7 +39,7 @@ Vào: `stage.autofix: AutofixStageView`. `features/processes/.../autofix/` mỗi
 | đang tải diff | Skeleton (`aria-busy`) |
 | lỗi tải | "Không tải được diff" + `Thử lại` + `Tải .diff`; lỗi 404/403 attachment ⇒ cùng thẻ lỗi |
 | chưa có kết quả (`autofix` vắng) | Không hiện khối (stage đang chạy: `StageStrip` sẵn có) |
-Tải về: blob từ `fetchAttachmentBlob` → `URL.createObjectURL` → `<a download="<name>">` (tên = `diff_file.name`); không `<a href>` trần (cần Bearer). Cắt 2.000 dòng (FC3). Ngôn ngữ số: `Intl.NumberFormat(lang)` (12,4 / 12.4).
+Tải về: blob từ `fetchAttachmentContent` (FC4) → `URL.createObjectURL` → `<a download="<name>">` (tên = `diff_file.name`); không `<a href>` trần (cần Bearer). Cắt 2.000 dòng (FC3). Ngôn ngữ số: `Intl.NumberFormat(lang)` (12,4 / 12.4).
 
 ### 1.3 Cần người quyết (Pc-Decision; chat-web `DecisionCard`, admin-web `RunActions`)
 - `autofix_check_failed`: tiêu đề "Kiểm bản sửa không đạt" + badge Vòng k + câu "Chưa lưu diff…"; component `AutofixFailures.tsx` nhóm `failures[]` theo `check` theo thứ tự: `paths` · `size` · `secrets` · `tests` (exit + thời gian + đuôi log + "Tải log đầy đủ") · `install` · `apply_patch`; chỉ nhóm có lỗi. Nút theo `options` (= Thêm lượt / Huỷ quy trình); ghi chú lượt thêm dùng ô note sẵn có.
@@ -51,7 +51,7 @@ Tải về: blob từ `fetchAttachmentBlob` → `URL.createObjectURL` → `<a do
 ## 2. Hook / state
 | Hook | Việc |
 |---|---|
-| `use-autofix-diff(attachmentId)` | `useQuery(["autofix-diff", id], fetchAttachmentText)`, `staleTime` 5 phút, `enabled` khi khối hiển thị (diff chỉ tải khi mở thẻ); trả `{text,lines,truncated}` qua `parseDiff` |
+| `use-autofix-diff(attachmentId)` | `useQuery(["autofix-diff", id], () => fetchAttachmentContent(id).then((b) => b.text()))`, `staleTime` 5 phút, `enabled` khi khối hiển thị (diff chỉ tải khi mở thẻ); trả `{text,lines,truncated}` qua `parseDiff` |
 | `use-autofix-log(attachmentId, tail=30)` | như trên, cho đuôi log / Xem log |
 | `use-download(file)` | tạo blob URL, thu hồi sau click; lỗi ⇒ `toast.error` |
 | Run/gate data | không hook mới: `autofix` đã nằm trong run view hiện có (invalidate theo realtime sẵn có `process.*`); không thêm sự kiện realtime |

@@ -29,7 +29,7 @@ Kết luận: tách; P-c2 = HUB-FR-129, HUB-BR-34, `apply_mode` + UI màn Nguồ
 |---|---|
 | A. Bash/Edit/Write/Read gốc của Claude CLI trên thư mục mount, Bash bọc `exec` qua hook sửa input | Hook sửa lệnh = chuỗi shell lồng, dễ thoát; Read/Edit gốc chạy trên host ⇒ container tạo symlink đua với kiểm `realpath` (TOCTOU) — **loại** |
 | B. Cả Claude CLI chạy trong container | Phải đưa phiên subscription (`~/.claude`) vào container + mở egress Anthropic; mã repo đọc được token — **loại** (HUB-BR-34, ADR-0011 #4) |
-| C. **4 tool MCP trong tiến trình Runtime, thực thi bằng `exec` trong container** | Mọi đọc/ghi/lệnh trên workspace xảy ra trong container; host chỉ chạy git cứng. Cần ngoại lệ HUB-BR-12 — **chọn** (chờ Q4) |
+| C. **4 tool MCP trong tiến trình Runtime, thực thi bằng `exec` trong container** | Mọi đọc/ghi/lệnh trên workspace xảy ra trong container; host chỉ chạy git cứng. Cần ngoại lệ HUB-BR-12 — **chọn** (Q4 duyệt 2026-10-13) |
 
 ## §4 Ánh xạ "Điểm còn mở" của khung (spec cũ §10) → trả lời
 | # khung | Trả lời |

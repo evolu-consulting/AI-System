@@ -2,13 +2,13 @@
 id: P-c-autofix
 title: P-c · Luồng tự-sửa (autonomous fix) — workspace ghi-được + exec trong container + diff (P-c1) · PR (P-c2)
 milestone: P-c (sau H4b-2)
-status: draft            # PLAN BE+FE 2026-10-13 xong, mockup + Q1–Q7 đã duyệt; chờ qc + spec-readiness + Gate
+status: draft            # PLAN BE+FE + test khoá xong; Q1–Q7 + mockup duyệt; readiness lần 1 NOT READY → đã áp 17 mục (readiness.md), chạy lại readiness
 requirements: [HUB-FR-119, HUB-FR-126, HUB-FR-127, HUB-FR-128, HUB-FR-129, HUB-FR-130, WRK-FR-28, WRK-FR-29, HUB-BR-32, HUB-BR-33, HUB-BR-34, WRK-BR-08]
 design:
   - docs/CHANGE-REQUESTS.md#CR-061 (Intake Đầy đủ chốt 2026-10-12), #CR-065 (sửa đổi: nhánh, kiểm diff, apply_mode)
   - docs/design/agent-hub/ba-agent-hub.md §6.10 (HUB-FR-119, 126…130), §7 HUB-BR-32…34
   - docs/design/worker/ba-worker.md (WRK-FR-28, WRK-FR-29, WRK-BR-08, WRK-NFR-02)
-  - docs/adr/0011-write-exec-sandbox.md (Proposed — khuyến nghị đã điền)
+  - docs/adr/0011-write-exec-sandbox.md (Accepted 2026-10-13 — Q4/Q6/Q7)
   - docs/specs/P-b-sources/spec.md (nguồn chỉ-đọc, snapshot PB-R07 — tái dùng, không đổi hành vi)
 owner: backend-lead + frontend-lead
 ---
@@ -20,7 +20,7 @@ owner: backend-lead + frontend-lead
 ## 1. Phạm vi
 **Bối cảnh:** `fixbug-evolu` (P-b) chỉ tư vấn trên nguồn chỉ-đọc. P-c cho agent **tự áp bản sửa**: đọc repo → sửa file → chạy test → nhánh/diff → (sau duyệt) PR. Là HUB-FR-119 (CR-061).
 
-**Chia pha (CR-061 "phần diff-only làm trước phần PR"; backend-lead đề xuất tách mốc — chờ Gate, Q1):**
+**Chia pha (CR-061 "phần diff-only làm trước phần PR"; tách mốc theo Q1, người dùng duyệt 2026-10-13):**
 | Pha | Làm | Mã |
 |---|---|---|
 | **P-c1 (mốc này)** | Stage có cấu hình `autofix` (một nguồn); workspace ghi-được = bản sao snapshot đã lọc tại commit ghim; container mỗi job `--network none`; 4 tool `ws_*` chạy trong container; Runtime commit nhánh `ai/<run>/<stage>` + tính diff + **kiểm diff bằng chương trình** (đường dẫn, kích thước, bí mật, chạy lại test); Hub lưu diff + log + audit; gate duyệt hiển thị diff; Chưa đạt ⇒ làm lại cộng dồn trên cùng nhánh; mẫu `fixbug-apply` | HUB-FR-119 (một phần), 126, 127, 128 (trừ rebase), 130 (trừ `apply_mode`), WRK-FR-28, 29 (trừ rebase), HUB-BR-32, 33, WRK-BR-08 |
@@ -42,11 +42,12 @@ BA là nguồn sự thật (HUB-FR-126…130, HUB-BR-32…34, WRK-FR-28/29, WRK-
 | PC-R07 | Công cụ: Hub ép `allowed_tools` = `[Read,Grep,Glob]` nếu stage có nguồn chỉ-đọc, ngược lại `[]`; Runtime thêm `ws_exec/ws_read/ws_write/ws_edit` (trong container). Hook chặn tool gốc dưới `workspace/`, `git/` | HUB-BR-31, 33; ADR-0011 |
 | PC-R08 | Kiểm diff (Runtime, không LLM, theo thứ tự, dừng ở nhóm trượt đầu): (1) **đường dẫn** — mọi file đổi khớp `write_allowlist` (rỗng = mọi đường dẫn) VÀ không thuộc danh sách cấm cứng (basename PB-R07; `.github/workflows/**`, `.gitlab-ci.yml` trừ khi allowlist ghi rõ); (2) **kích thước** — diff ≤ 2 MiB, ≤ 300 file, workspace ≤ 4 GiB; (3) **bí mật** — dòng **thêm** khớp mẫu (plan §5.4) hoặc thêm file tên cấm; (4) **test** — `test_cmd` trong container mới, exit 0. Trượt ⇒ `status=check_failed`, **không** lưu diff | WRK-FR-29, E2 |
 | PC-R09 | Diff rỗng sau kiểm ⇒ `status=no_changes` (không file diff); vẫn qua gate như stage thường (người quyết Đạt/Chưa đạt) | HUB-FR-128 |
-| PC-R10 | Kết quả job: thiếu báo cáo hoặc `check_failed` ⇒ run "Cần người quyết" `autofix_check_failed`, lựa chọn **chỉ** `add_attempt` / `cancel` (không `use_current`). Thêm lượt ⇒ prompt kèm tóm tắt lỗi kiểm (không giá trị bí mật) | HUB-FR-115, WRK-FR-29 |
+| PC-R10 | Kết quả job, xét **theo thứ tự**: (a) vượt ngân sách token P-a ⇒ `stage_tokens`/`run_tokens` như cũ (F12); (b) job lỗi `container` ⇒ `sandbox_unavailable`; (c) mọi lỗi job khác (kể cả `timeout`) / thiếu báo cáo / `check_failed` ⇒ `autofix_check_failed`; (d) `ok`/`no_changes` ⇒ gate. Lựa chọn của `autofix_*` **chỉ** `add_attempt` / `cancel`; `use_current` ⇒ 409 `PROCESS_RUN_STATE`, run giữ `needs_decision`. Người quyết `autofix_*` = người bắt đầu hoặc admin (`canCancel`; KHÔNG vào `REVIEW_GROUP_REASONS`). Thêm lượt ⇒ prompt kèm tóm tắt lỗi kiểm (không giá trị bí mật) | HUB-FR-115, WRK-FR-29 |
 | PC-R11 | Chưa đạt ở gate ⇒ làm lại stage: job mới nhận `base_patch` = diff `ok` mới nhất của stage_run; Runtime áp lên commit ghim (commit "vòng 1…k-1"), agent sửa tiếp; diff mới = **cộng dồn** so commit ghim, cùng tên nhánh | E3, HUB-FR-128 |
 | PC-R12 | Audit mỗi job tự-sửa = một hàng `hub.autofix_results` (nguồn, ghim, nhánh, head, trạng thái, lỗi kiểm, thống kê, exit/thời gian test, danh sách lệnh ≤ 300). Không giá trị bí mật; log test che bằng `[REDACTED]` | HUB-FR-130 |
 | PC-R13 | Ngân sách token stage tự-sửa: mặc định 200k nếu `token_budget` null (như PB-R12) | HUB-FR-116 |
-| PC-R14 | Cách ly tenant: nguồn/def/kết quả theo `tenant_id` (RLS); id kết quả/diff của run khác ⇒ 404 (HUB-BR-14); token job chỉ báo được cho chính job | HUB-BR-14, 32 |
+| PC-R14 | Cách ly tenant: nguồn/def/kết quả theo `tenant_id` (RLS); id kết quả/diff của run khác ⇒ 404 (HUB-BR-14); token job chỉ báo được cho chính job. Đọc file diff/log qua `GET /attachments/:id/content`: file là `diff_attachment_id`/`test_log_attachment_id` của một `autofix_results` ⇒ đọc được khi `runAccess(viewer, run) ≠ null` (gồm `task`); `platform_admin` truyền `tenant_id` như `/process-runs/:id/outputs`; file khác giữ luật cũ (X2b2-R05/R06). Người dùng chốt 2026-10-13 | HUB-BR-14, 25, 32 |
+| PC-R16 | Diff/log tự-sửa (`origin='output'` của job tự-sửa) **không** tính vào hạn mức file của tenant | HUB-FR-130 |
 | PC-R15 | Pha cài: `install_cmd` (không null) chạy ở container chuẩn bị **có mạng** (Q2), ≤ 600 s, không secret, trước agent; lỗi ⇒ `check_failed{check:"install"}` | ADR-0011 #2 |
 
 ## 3. Contract (backend-lead)
@@ -56,8 +57,9 @@ BA là nguồn sự thật (HUB-FR-126…130, HUB-BR-32…34, WRK-FR-28/29, WRK-
 | Stage def (`hub-admin/processes.ts`) | `ProcessStageDef.autofix: StageAutofix \| null` (default `null`; snapshot cũ vắng = null). `StageAutofix = {source_key, install_cmd: string 1..1000 \| null, test_cmd: string 1..1000, write_allowlist: Glob[] ≤ 20 (default [])}`. `PROCESS_DEF_RULES += AUTOFIX_EXECUTOR, AUTOFIX_REVIEW, AUTOFIX_MAX` (hàm thuần `autofixStageIssues` trong `process-steps.ts`, FE dùng chung) |
 | Job (`hub/job.ts`) | `AgentCliJob.autofix?: JobAutofix = {source: JobSource (allowlist [])...; install_cmd; test_cmd; write_allowlist; branch; round ≥1; base_patch: JobAttachment \| null}` — vắng = job thường. `JOB_FAIL_REASONS += "container"` |
 | Kênh báo (`hub-internal/autofix.ts`) | `POST /internal/jobs/:job_id/autofix-result` (Bearer token job) body `AutofixReport{status ok\|no_changes\|check_failed, branch, base_sha, head_sha, diff ≤ 2 MiB \| null, diff_stats, test, failures ≤ 50, commands ≤ 300}` → 201 `{id}` · 401 `UNAUTHORIZED` (token sai/job khác) · 409 `AUTOFIX_NOT_EXPECTED` (job không có `autofix` hoặc không `running`) · 409 `AUTOFIX_RESULT_EXISTS` · 413 `PAYLOAD_TOO_LARGE` · 400 `VALIDATION_ERROR`. Bất biến: `diff≠null ⇔ status=ok` |
-| Xem run (`chat/processes-entities.ts`) | Stage view thêm `autofix?: AutofixStageView = {source_key, pin_sha: string \| null, branch, round, status, diff_stats, diff_file: RunFile \| null, test_log_file: RunFile \| null, test: {exit_code, duration_ms} \| null, failures: AutofixFailure[], created_at}` (kết quả mới nhất của stage); nội dung diff tải qua endpoint file run sẵn có |
-| Quyết định | `DECISION_REASONS += "autofix_check_failed", "sandbox_unavailable"` (cuối mảng). Lựa chọn theo PC-R10 |
+| Xem run (`chat/processes-entities.ts`) | Stage view thêm `autofix?: AutofixStageView = {source_key, pin_sha: string \| null, branch, round, status, diff_stats, diff_file: AutofixFile \| null, test_log_file: AutofixFile \| null, test: {exit_code, duration_ms} \| null, failures: AutofixFailure[], created_at}` (kết quả mới nhất của stage). `AutofixFileSchema = z.strictObject({id: uuid, name: string, mime: string, size: int ≥0})` (chat contracts, mới) |
+| Tải diff/log | `GET /attachments/:id/content` sẵn có (+ `?tenant_id=` cho `platform_admin`); quyền đọc theo PC-R14 (`findReadableAttachment` mở rộng, plan §6.6). Không endpoint mới |
+| Quyết định | `DECISION_REASONS += "autofix_check_failed", "sandbox_unavailable"` (cuối mảng). Lựa chọn + người quyết + `use_current` ⇒ 409 `PROCESS_RUN_STATE` theo PC-R10 |
 | Mã lỗi mới | `AUTOFIX_NOT_EXPECTED` 409 · `AUTOFIX_RESULT_EXISTS` 409 (internal). Def dùng `PROCESS_DEF_INVALID`/`PROCESS_REF_INVALID` sẵn có |
 | Luật thuần (QC viết test trước) | Hub `processes/runs/autofix.rules.ts`, contracts `autofixStageIssues`, Runtime `autofix/rules.py` — chữ ký plan.md §4 |
 
@@ -69,7 +71,7 @@ BA là nguồn sự thật (HUB-FR-126…130, HUB-BR-32…34, WRK-FR-28/29, WRK-
 | CHECK nới | `review_tasks_reason_ck += autofix_check_failed, sandbox_unavailable`; `jobs_error_reason_check += container` (chỉ nới, không mất dữ liệu) |
 | Stage `autofix` | Nằm trong `process_defs.stages` jsonb — KHÔNG DDL |
 | Diff/log | `hub.attachments` `origin='output'`, `job_id` = job tự-sửa, `text/plain`, tên `<stage_key>-r<round>.diff.txt` / `<stage_key>-r<round>-test.log.txt` (không thêm MIME) |
-| Seed | Template `fixbug-apply` (1 stage tự-sửa, review) + agent dev `fake-cli` directive `#fake:ws_*`; smoke `claude-sub` riêng |
+| Seed | `apps/hub-api/seed/processes.yaml`: agent `fixbug-apply` + template `fixbug-apply` (1 stage tự-sửa, review) + template `fixbug-evolu` (V08; chỉ-đọc, không `autofix`) — nguyên văn plan §6.1; dev `fake-cli` directive `#fake:ws_*`; smoke `claude-sub` riêng |
 
 ## 5. UI (frontend-lead)
 **Mockup duyệt 2026-10-13** (người dùng). Chi tiết màn, câu chữ VI/EN, map lỗi, nhãn e2e: [`plan-frontend.md`](plan-frontend.md).
@@ -96,10 +98,20 @@ Chốt UI: không thêm thư viện (diff = parser thuần + `<details>`); cắt
 ## 7. Phụ thuộc & giả lập
 - Phụ thuộc: P-b (resolve/snapshot/lọc), P-a/P-b2 (gate, làm lại, "Cần người quyết"), H2c (job token, `attachments` output). Không cần H4b secret ở P-c1 (trừ khi Q5 = có).
 - Giả lập: `RUNTIME_SANDBOX=fake` (chỉ `RUNTIME_ENV=test`) chạy lệnh trong thư mục tạm; `fake-cli` directive `#fake:ws_write=…`, `#fake:ws_exec=…`, `#fake:ws_edit=…` (plan §5.6). Bộ test container thật (`docker`) cô lập mạng/trần: `test:pc:sandbox`, cần Docker.
-- Env mới (Runtime): `RUNTIME_SANDBOX`, `RUNTIME_SANDBOX_IMAGE`, `RUNTIME_SANDBOX_HOST_WORKDIR` (dev), `RUNTIME_SANDBOX_CPUS/MEMORY_MB/PIDS/TMP_MB/DISK_MB`, `RUNTIME_SANDBOX_EXEC_S/INSTALL_S/TEST_S`, `RUNTIME_SANDBOX_MAX`, `RUNTIME_AUTOFIX_MAX_MB/_MAX_FILES`. Hub: không env mới.
+- Env mới (Runtime, đọc ở `config.py`, ghi vào `.env.example` gốc ở R1; Hub: không env mới):
+
+| Biến | Mặc định | Biến | Mặc định |
+|---|---|---|---|
+| `RUNTIME_SANDBOX` (`off\|docker\|podman\|fake`) | `off` | `RUNTIME_SANDBOX_EXEC_S` | `120` (agent xin ≤ 600) |
+| `RUNTIME_SANDBOX_IMAGE` | `ai-autofix-sandbox:0.1.0` | `RUNTIME_SANDBOX_INSTALL_S` | `600` |
+| `RUNTIME_SANDBOX_HOST_WORKDIR` (dev) | rỗng = đường thật | `RUNTIME_SANDBOX_TEST_S` | `900` |
+| `RUNTIME_SANDBOX_CPUS` | `2` | `RUNTIME_SANDBOX_MAX` | `1` |
+| `RUNTIME_SANDBOX_MEMORY_MB` | `2048` | `RUNTIME_AUTOFIX_MAX_MB` | `200` |
+| `RUNTIME_SANDBOX_PIDS` | `512` | `RUNTIME_AUTOFIX_MAX_FILES` | `20000` |
+| `RUNTIME_SANDBOX_TMP_MB` | `256` | `RUNTIME_SANDBOX_DISK_MB` | `4096` |
 
 ## 8. Tiêu chí nghiệm thu
-<!-- qc --> (chờ qc; đề xuất AC-PC-01…: PC-R01…R15 + ADR-0011 #2–#5 + cách ly tenant; `done:pc`)
+Ca + kỳ vọng: [`test-plan.md`](test-plan.md) §3 (ma trận luật → ca), §4 (danh sách ca R/A/P/S/E), §5–§6 (chập chờn, mặc định qc), §7 (lệnh). Mốc đạt khi `bun run done:pc` (test-plan §7, task D1) xanh + review + security review + UAT D2.
 
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng, CR-061, 2026-10-12)
@@ -138,6 +150,7 @@ Chốt UI: không thêm thư viện (diff = parser thuần + `<details>`); cắt
 ### Trong lúc làm
 - 2026-10-13 (chốt theo plan-frontend §7): (1) `test_log_file` được tạo cả khi `check_failed` nếu `test ≠ null` (log_tail đã che bí mật Runtime). (2) Thêm `pin_sha: string | null` vào `AutofixStageView` (git_remote ⇒ `pin.sha`, khác ⇒ null; không lộ path). (3) `my_tasks` không mang `autofix`; FE gọi run view sẵn có (`ProcessBlock`). Cross-check còn lại: không lệch khác; FE chỉ cần thêm `pin_sha` vào type/hiển thị `source_key@sha7` (null ⇒ không `@`).
 - 2026-10-13 (chốt khoảng trống qc G1–G14, theo mặc định test đã khoá; chi tiết plan §2, §3.3, §4, §5.7–5.9): G1/G2 trường `SandboxSpec/DiffStats/Limits/Failure` khai báo ở plan §4. G3 tên export `StageAutofixSchema/JobAutofixSchema/AutofixReportSchema/AutofixStageViewSchema`. G4 `branch_ck` = `^ai/[0-9a-f-]{36}/[a-z0-9-]{1,32}$` (khớp `STAGE_KEY_RE`; thay regex rộng hơn ở plan §2 cũ). G5 hook `label=="workspace"` + symlink `out/`→workspace bị chặn (so `realpath`). G9 `use_current` cho decision `autofix_*` ⇒ 4xx (mã theo lỗi decision sẵn có), run giữ `needs_decision`. G10 `PAYLOAD_TOO_LARGE` không vào `HUB_INTERNAL_ERRORS`, nằm ở `error.code` thân 413. G11 chữ ký `workspace.prepare/check.run_checks/FakeOci/AutofixHost` khai ở plan §5.8; qc mở khoá có chủ đích viết `pc/autofix_int_test.py` sau R2 (task R2b). G12 trần `RUNTIME_AUTOFIX_MAX_MB/_FILES` áp ở `workspace.prepare` (Failure `size`), test Runtime theo G11. G14 script `test:pc:sandbox` (plan §5.9). G6–G8, G13, G15 thuộc FE/qc, không đổi backend.
+- 2026-10-13 (readiness lần 1, `readiness.md`): #1 quyền đọc file diff/log theo quyền xem run (người dùng chốt) → PC-R14, plan §6.6, task B5. #2–#17 áp mặc định: §8 trỏ test-plan; thứ tự kết quả job PC-R10; `AutofixFileSchema`; bảng env §7 (TMP 256); FC4 dùng `fetchAttachmentContent`; diff/log ngoài hạn mức (PC-R16); `ws_edit` `old_string/new_string`; `use_current` ⇒ 409 `PROCESS_RUN_STATE`; người quyết `autofix_*` = người bắt đầu/admin; Dockerfile node 22 + bun `packageManager` + digest; seed nguyên văn plan §6.1 (+ `fixbug-evolu` cho V08); lệnh xong tasks; D3 đồng bộ BA; ADR-0011 Accepted.
 
 ## 10. Câu hỏi cho người dùng (trình Gate; mỗi câu có mặc định đề xuất)
 | # | Câu hỏi | Mặc định đề xuất |
@@ -150,4 +163,4 @@ Chốt UI: không thêm thư viện (diff = parser thuần + `<details>`); cắt
 | Q6 | Runtime container: **Podman rootless** (prod WSL2) + Docker Desktop (dev), trần mặc định ADR-0011 #3 (2 CPU, 2 GiB, 512 pids, job 30 phút, ≤ 1 job tự-sửa đồng thời)? | Có |
 | Q7 | Ảnh sandbox một bộ công cụ chung (git, rg, python3, node LTS, bun; ~400–600 MB, dựng từ Dockerfile trong repo)? | Có; chọn ảnh theo quy trình để sau |
 
-**Người dùng trả lời 2026-10-13:** chấp nhận mặc định Q1–Q7 (Q1 tách P-c1/P-c2; Q2 cho pha cài có mạng; Q3 `local_path` chỉ trên bản sao; Q4/Q6/Q7 duyệt sandbox ADR-0011 như đề xuất — ADR chuyển Accepted ở Gate; Q5 = P-c2 theo Q1). Mockup `Pc-*.dc.html` duyệt 2026-10-13.
+**Người dùng trả lời 2026-10-13:** chấp nhận mặc định Q1–Q7 (Q1 tách P-c1/P-c2; Q2 cho pha cài có mạng; Q3 `local_path` chỉ trên bản sao; Q4/Q6/Q7 duyệt sandbox ADR-0011 như đề xuất — ADR-0011 Accepted 2026-10-13; Q5 = P-c2 theo Q1). Mockup `Pc-*.dc.html` duyệt 2026-10-13.
