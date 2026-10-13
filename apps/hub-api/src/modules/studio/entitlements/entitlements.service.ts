@@ -50,8 +50,8 @@ export class EntitlementsService {
         {
           agents: await readMatrixAgents(tx, ENTITLEMENT_MATRIX_MAX),
           tenants: await readMatrixTenants(tx, ENTITLEMENT_MATRIX_MAX),
-          ents: await readActiveEntitlements(tx),
-          grantCounts: await readGrantCounts(tx),
+          ents: await readActiveEntitlements(tx, ENTITLEMENT_MATRIX_MAX),
+          grantCounts: await readGrantCounts(tx, ENTITLEMENT_MATRIX_MAX),
           version: await readHubVersion(tx),
         },
         ENTITLEMENT_MATRIX_MAX,

@@ -35,10 +35,15 @@ export function readMatrixTenants(tx: Tx, limit: number): Promise<MatrixTenantRo
 
 export type EntRow = { agent_id: string; tenant_id: string; granted_at: Date | string };
 
-/** Entitlement CHƯA thu hồi (index `(tenant_id) WHERE revoked_at IS NULL`). */
-export function readActiveEntitlements(tx: Tx): Promise<EntRow[]> {
+/**
+ * Entitlement CHƯA thu hồi (index `(tenant_id) WHERE revoked_at IS NULL`), chỉ của `limit` agent × `limit` tenant đầu
+ * theo `key` (cùng tập `readMatrixAgents/Tenants` hiển thị) ⇒ tối đa `limit²` hàng, không đọc cả bảng.
+ */
+export function readActiveEntitlements(tx: Tx, limit: number): Promise<EntRow[]> {
   return tx.execute<EntRow>(sql`select agent_id, tenant_id, granted_at from hub.agent_entitlements
-    where revoked_at is null`);
+    where revoked_at is null
+      and agent_id in (select id from hub.agents order by key limit ${limit})
+      and tenant_id in (select id from admin.tenants order by key limit ${limit})`);
 }
 
 export type GrantCountRow = {
@@ -48,10 +53,13 @@ export type GrantCountRow = {
   n: number;
 };
 
-/** Đếm grant theo (agent, tenant, loại) — mọi grant, khớp `affected_grants`. */
-export function readGrantCounts(tx: Tx): Promise<GrantCountRow[]> {
+/** Đếm grant theo (agent, tenant, loại) — mọi grant, khớp `affected_grants`; cùng tập `limit` agent × tenant đầu. */
+export function readGrantCounts(tx: Tx, limit: number): Promise<GrantCountRow[]> {
   return tx.execute<GrantCountRow>(sql`select agent_id, tenant_id, subject_type, count(*)::int as n
-    from hub.agent_grants group by agent_id, tenant_id, subject_type`);
+    from hub.agent_grants
+    where agent_id in (select id from hub.agents order by key limit ${limit})
+      and tenant_id in (select id from admin.tenants order by key limit ${limit})
+    group by agent_id, tenant_id, subject_type`);
 }
 
 export type CellAgentRow = { id: string; key: string; name: { vi: string; en?: string } };
