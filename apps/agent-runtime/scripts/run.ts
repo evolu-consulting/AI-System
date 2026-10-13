@@ -8,7 +8,12 @@ export const NETWORK = "ai-system_default"; // compose.yaml: name ai-system + m�
 const APP_REL = "apps/agent-runtime";
 
 /** Đối số `docker run` (Windows/macOS): venv và cache uv nằm ngoài thư mục mount. */
-export function dockerArgs(repoRoot: string, command: string, tty = false): string[] {
+export function dockerArgs(
+  repoRoot: string,
+  command: string,
+  tty = false,
+  image = IMAGE,
+): string[] {
   return [
     "run",
     "--rm",
@@ -31,10 +36,31 @@ export function dockerArgs(repoRoot: string, command: string, tty = false): stri
     "PYTHONDONTWRITEBYTECODE=1",
     "--entrypoint",
     "sh",
-    IMAGE,
+    image,
     "-c",
     command,
   ];
+}
+
+/** P-c1 (WRK-FR-29): `autofix/workspace` cần `git` trên host Runtime — ảnh uv không có ⇒ ảnh dẫn
+ *  xuất cục bộ (dựng một lần, đổi thẻ khi đổi nội dung). Chỉ nhánh container (Windows/macOS). */
+export const GIT_IMAGE = "ai-system-uv-git:1";
+const GIT_DOCKERFILE = `FROM ${IMAGE}
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+`;
+
+function ensureGitImage(): string {
+  const has = Bun.spawnSync(["docker", "image", "inspect", GIT_IMAGE], {
+    stdout: "ignore",
+    stderr: "ignore",
+  });
+  if (has.exitCode === 0) return GIT_IMAGE;
+  const built = Bun.spawnSync(["docker", "build", "-q", "-t", GIT_IMAGE, "-"], {
+    stdin: new TextEncoder().encode(GIT_DOCKERFILE),
+    stdout: "ignore",
+    stderr: "inherit",
+  });
+  return built.exitCode === 0 ? GIT_IMAGE : IMAGE; // dựng lỗi ⇒ ảnh gốc (test git sẽ đỏ rõ ràng)
 }
 
 export function run(command: string): number {
@@ -43,7 +69,7 @@ export function run(command: string): number {
   const argv =
     process.platform === "linux"
       ? ["sh", "-c", command]
-      : ["docker", ...dockerArgs(root.split("\\").join("/"), command)];
+      : ["docker", ...dockerArgs(root.split("\\").join("/"), command, false, ensureGitImage())];
   const p = Bun.spawnSync(argv, {
     cwd: appDir,
     stdout: "inherit",

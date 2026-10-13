@@ -3,6 +3,10 @@
 Khoá cache = tenant + nguồn + SHA/version + hash(allowlist). Dựng ở thư mục tạm (tên `.bld-*`,
 KHÔNG chứa `tmp` — LM-05) rồi `chmod` chỉ-đọc + `os.replace` nguyên tử. LRU theo `atime`, KHÔNG xoá
 snapshot của run đang mở (sidecar `.refs`). Không DB/HTTP.
+
+P-c1 PC-R04 · WRK-FR-29: `caps="autofix"` (nguồn của stage tự-sửa, toàn repo) dùng trần riêng
+`RUNTIME_AUTOFIX_MAX_MB/_FILES` thay 50 MB/2 000 file, và khoá cache RIÊNG (đoạn `allow_hash` có
+dấu `caps`) ⇒ snapshot dựng theo trần lớn không bao giờ được mount cho nguồn chỉ-đọc thường.
 """
 
 from __future__ import annotations
@@ -16,6 +20,7 @@ from collections.abc import Callable
 from contextlib import suppress
 from hashlib import sha256
 from pathlib import Path
+from typing import Literal
 from uuid import UUID
 
 from agent_runtime.log import get_logger
@@ -26,31 +31,55 @@ from agent_runtime.sources.filter import Ceiling, TooLarge, compile_allowlist, i
 from agent_runtime.sources.filter import allowed as _allowed
 
 _FILE_MODE = 0o444
+_EXEC_MODE = 0o555
 _DIR_MODE = 0o555
+_MIB = 1024 * 1024
+
+Caps = Literal["source", "autofix"]
 
 
-def allow_hash(allowlist: tuple[str, ...] | list[str]) -> str:
+def allow_hash(allowlist: tuple[str, ...] | list[str], caps: Caps = "source") -> str:
     joined = "\n".join(sorted(allowlist))
+    if caps == "autofix":
+        joined += "\x00caps=autofix"  # khoá riêng; `source` giữ hash cũ (cache P-b còn hợp lệ)
     return sha256(joined.encode()).hexdigest()[:16]
+
+
+def as_caps(raw: object) -> Caps:
+    """`ResolveItem.caps` vắng/lạ ⇒ `source` (contract: vắng = source)."""
+    return "autofix" if raw == "autofix" else "source"
+
+
+def ceiling_for(cfg: SourceConfig, caps: Caps = "source") -> Ceiling:
+    if caps == "autofix":
+        return Ceiling(cfg.autofix_max_files, cfg.autofix_max_mb * _MIB)
+    return Ceiling()
 
 
 def _url_key(url: str) -> str:
     return sha256(url.encode()).hexdigest()[:16]
 
 
-def git_dir(cfg: SourceConfig, tenant: str, url: str, sha: str, allowlist: list[str]) -> Path:  # noqa: PLR0913
-    return cfg.snapshots_dir / "git" / tenant / _url_key(url) / sha / allow_hash(allowlist)
+def git_dir(  # noqa: PLR0913
+    cfg: SourceConfig, tenant: str, url: str, sha: str, allowlist: list[str], caps: Caps = "source"
+) -> Path:
+    return cfg.snapshots_dir / "git" / tenant / _url_key(url) / sha / allow_hash(allowlist, caps)
 
 
 def local_dir(  # noqa: PLR0913
-    cfg: SourceConfig, tenant: str, realpath: Path, allowlist: list[str], snapshot_id: str
+    cfg: SourceConfig,
+    tenant: str,
+    realpath: Path,
+    allowlist: list[str],
+    snapshot_id: str,
+    caps: Caps = "source",
 ) -> Path:
     # PB-R05/HUB-BR-27 (AC-H36): khoá theo `pin.snapshot_id` (sinh lúc resolve) ⇒ mọi job cùng pin
     # (stage sau / "làm lại") mount ĐÚNG nội dung lúc ghim; resolve MỚI = snapshot_id mới = nội dung
     # mới. Mất cache ⇒ `ensure` dựng lại từ realpath (PB-R16). Gộp vào đoạn cuối: độ sâu lá = 4.
     key = sha256(str(realpath).encode()).hexdigest()[:16]
     sid = str(UUID(str(snapshot_id)))  # chuẩn hoá + chặn ký tự đường dẫn lạ
-    return cfg.snapshots_dir / "local" / tenant / key / f"{allow_hash(allowlist)}-{sid}"
+    return cfg.snapshots_dir / "local" / tenant / key / f"{allow_hash(allowlist, caps)}-{sid}"
 
 
 def library_dir(  # noqa: PLR0913
@@ -65,18 +94,28 @@ def _new_tmp(cfg: SourceConfig) -> Path:
     return Path(tempfile.mkdtemp(prefix=".bld-", dir=str(cfg.snapshots_dir)))
 
 
-def _write_file(dest_root: Path, rel: str, data: bytes) -> None:
+def _ro_mode(src_mode: int) -> int:
+    """Chỉ-đọc, GIỮ bit thực thi (P-c1: `./gradlew`, script test trong workspace tự-sửa)."""
+    return _EXEC_MODE if src_mode & 0o111 else _FILE_MODE
+
+
+def _write_file(dest_root: Path, rel: str, data: bytes, src_mode: int = 0) -> None:
     out = dest_root / rel
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(data)
-    os.chmod(out, _FILE_MODE)
+    os.chmod(out, _ro_mode(src_mode))
 
 
 def build_git(  # noqa: PLR0913
-    cfg: SourceConfig, dest: Path, mirror: Path, sha: str, allowlist: list[str]
+    cfg: SourceConfig,
+    dest: Path,
+    mirror: Path,
+    sha: str,
+    allowlist: list[str],
+    ceiling: Ceiling | None = None,
 ) -> tuple[int, int]:
     patterns = compile_allowlist(allowlist)
-    ceiling = Ceiling()
+    ceiling = ceiling or Ceiling()
     proc = git_driver.archive_proc(cfg, mirror, sha)
     assert proc.stdout is not None
     completed = False
@@ -90,7 +129,7 @@ def build_git(  # noqa: PLR0913
                     continue
                 ceiling.add(member.size)
                 f = tf.extractfile(member)
-                _write_file(dest, rel, f.read() if f is not None else b"")
+                _write_file(dest, rel, f.read() if f is not None else b"", member.mode)
         completed = True
     except TooLarge as err:
         completed = False
@@ -107,13 +146,15 @@ def build_git(  # noqa: PLR0913
     return ceiling.files, ceiling.bytes
 
 
-def build_local(cfg: SourceConfig, dest: Path, root: Path, allowlist: list[str]) -> tuple[int, int]:
+def build_local(  # noqa: PLR0913
+    cfg: SourceConfig, dest: Path, root: Path, allowlist: list[str], ceiling: Ceiling | None = None
+) -> tuple[int, int]:
     # B3: `walk_files` cắt nhánh + áp allowlist/secret NGAY lúc duyệt ⇒ không quét cả cây repo lớn.
-    ceiling = Ceiling()
+    ceiling = ceiling or Ceiling()
     try:
         for rel, full, size in local_driver.walk_files(root, allowlist):
             ceiling.add(size)
-            _write_file(dest, rel, full.read_bytes())
+            _write_file(dest, rel, full.read_bytes(), full.lstat().st_mode)
     except TooLarge as err:
         raise SourceError("SOURCE_TOO_LARGE", str(err)) from err
     return ceiling.files, ceiling.bytes
@@ -139,7 +180,8 @@ def finalize_ro(root: Path, *, lock_root: bool = True) -> None:
     for dirpath, dirnames, filenames in os.walk(root, topdown=False):
         for name in filenames:
             with suppress(OSError):
-                os.chmod(Path(dirpath, name), _FILE_MODE)
+                p = Path(dirpath, name)
+                os.chmod(p, _ro_mode(p.lstat().st_mode))
         for name in dirnames:
             with suppress(OSError):
                 os.chmod(Path(dirpath, name), _DIR_MODE)

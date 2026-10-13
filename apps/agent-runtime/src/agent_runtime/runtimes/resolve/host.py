@@ -101,13 +101,14 @@ class ResolveHost:
         config = _asdict(raw.get("config"))
         allow = [_s(a) for a in _aslist(raw.get("allowlist_union"))]
         sid = _s(raw.get("source_id"))
+        caps = snapshot.as_caps(raw.get("caps"))  # P-c1 PC-R04: `autofix` ⇒ trần + cache riêng
         try:
             if kind == "git_remote":
                 url, branch = _s(config.get("url")), _s(config.get("branch"))
-                pin, files, size = resolve.resolve_git(self._cfg, tenant, url, branch, allow)
+                pin, files, size = resolve.resolve_git(self._cfg, tenant, url, branch, allow, caps)
             elif kind == "local_path":
                 pin, files, size = resolve.resolve_local(
-                    self._cfg, tenant, _s(config.get("path")), allow
+                    self._cfg, tenant, _s(config.get("path")), allow, caps
                 )
             elif kind == "library":
                 pin, files, size = await self._resolve_library(

@@ -25,7 +25,7 @@ def mount_all(  # noqa: PLR0913
         snapshot.rmtree_ro(base)
     base.mkdir(mode=0o700, parents=True, exist_ok=True)
     for src in sources:
-        snap = _snapshot_for(cfg, tenant, src)
+        snap = snapshot_for(cfg, tenant, src)
         snapshot.add_ref(snap, run_id)
         snapshot.mount(snap, base / src.key)
 
@@ -34,20 +34,29 @@ def _allowlist(src: Source) -> list[str]:
     return [a.root for a in src.allowlist]
 
 
-def _snapshot_for(cfg: SourceConfig, tenant: str, src: Source) -> Path:
+def snapshot_for(
+    cfg: SourceConfig, tenant: str, src: Source, caps: snapshot.Caps = "source"
+) -> Path:
+    """Snapshot (chỉ-đọc, cache) của một nguồn theo pin. `caps="autofix"` (P-c1, `AutofixHost`):
+    trần + khoá cache riêng như lúc resolve (PC-R04) — chỉ git/local."""
     allow = _allowlist(src)
     pin = src.pin
+    ceiling = snapshot.ceiling_for(cfg, caps)
     if pin.kind == "git_remote":
         url, sha = pin.url, pin.sha
         mirror = git_driver.ensure_sha(cfg, url, sha)
-        final = snapshot.git_dir(cfg, tenant, url, sha, allow)
+        final = snapshot.git_dir(cfg, tenant, url, sha, allow, caps)
         return snapshot.ensure(
-            cfg, final, lambda tmp: snapshot.build_git(cfg, tmp, mirror, sha, allow)
+            cfg, final, lambda tmp: snapshot.build_git(cfg, tmp, mirror, sha, allow, ceiling)
         )
     if pin.kind == "local_path":
         root = resolve_root(cfg, pin.path)
-        final = snapshot.local_dir(cfg, tenant, root, allow, str(pin.snapshot_id))
-        return snapshot.ensure(cfg, final, lambda tmp: snapshot.build_local(cfg, tmp, root, allow))
+        final = snapshot.local_dir(cfg, tenant, root, allow, str(pin.snapshot_id), caps)
+        return snapshot.ensure(
+            cfg, final, lambda tmp: snapshot.build_local(cfg, tmp, root, allow, ceiling)
+        )
+    if caps == "autofix":
+        raise SourceError("SOURCE_UNRESOLVABLE", "nguồn tự-sửa phải là git_remote/local_path")
     # library: chỉ dùng cache (resolve đã dựng qua token)
     final = snapshot.library_dir(cfg, tenant, str(pin.document_id), str(pin.version), allow)
     if not final.exists():

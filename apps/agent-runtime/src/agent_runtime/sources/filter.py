@@ -76,16 +76,19 @@ def allowed(relpath: str, patterns: list[re.Pattern[str]]) -> bool:
 
 
 class Ceiling:
-    """Đếm file/byte của các mục GIỮ LẠI (sau allowlist+lọc); vượt ⇒ `TooLarge`."""
+    """Đếm file/byte của các mục GIỮ LẠI (sau allowlist+lọc); vượt ⇒ `TooLarge`.
+    Trần mặc định = nguồn chỉ-đọc P-b; `caps=autofix` (PC-R04) truyền trần riêng."""
 
-    def __init__(self) -> None:
+    def __init__(self, max_files: int = MAX_FILES, max_bytes: int = MAX_BYTES) -> None:
         self.files = 0
         self.bytes = 0
+        self.max_files = max_files
+        self.max_bytes = max_bytes
 
     def add(self, size: int) -> None:
         self.files += 1
         self.bytes += size
-        if self.files > MAX_FILES or self.bytes > MAX_BYTES:
+        if self.files > self.max_files or self.bytes > self.max_bytes:
             raise TooLarge(self.files, self.bytes)
 
 

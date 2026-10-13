@@ -3,7 +3,9 @@
 `HUB_SOURCE_GIT_HOSTS` (allowlist host git, mặc định `github.com,gitlab.com`) ·
 `HUB_SOURCE_LOCAL_ROOTS` (gốc `local_path`, tách `:`/`,`) · `RUNTIME_SOURCE_CACHE_DIR` (mirror +
 snapshot) · `RUNTIME_ENV` (≠`production` ⇒ truyền `GIT_CONFIG_*` xuống git, C6) ·
-`RUNTIME_SOURCE_TEST_MODE` (`1` ⇒ bỏ kiểm DNS-IP-nội-bộ) · `RUNTIME_SOURCE_CACHE_MAX_MB` (LRU, D9).
+`RUNTIME_SOURCE_TEST_MODE` (`1` ⇒ bỏ kiểm DNS-IP-nội-bộ) · `RUNTIME_SOURCE_CACHE_MAX_MB` (LRU, D9) ·
+`RUNTIME_AUTOFIX_MAX_MB/_FILES` (trần snapshot `caps=autofix`, P-c1 PC-R04; biên đã kiểm ở
+`config.py`).
 Tính năng nguồn BẬT khi có `RUNTIME_SOURCE_CACHE_DIR`; thiếu ⇒ `load()` trả None (Runtime cũ).
 """
 
@@ -16,6 +18,8 @@ from pathlib import Path
 
 DEFAULT_GIT_HOSTS = ("github.com", "gitlab.com")
 DEFAULT_CACHE_MAX_MB = 2048
+DEFAULT_AUTOFIX_MAX_MB = 200
+DEFAULT_AUTOFIX_MAX_FILES = 20000
 _SPLIT = re.compile(r"[,:]")
 
 
@@ -29,6 +33,9 @@ class SourceConfig:
     cache_max_mb: int = DEFAULT_CACHE_MAX_MB
     # GIT_CONFIG_* truyền xuống git (chỉ khi runtime_env != production) — C6 insteadOf fixture.
     git_config_env: dict[str, str] = field(default_factory=lambda: dict[str, str]())
+    # P-c1 PC-R04: trần snapshot `caps=autofix` (`RUNTIME_AUTOFIX_MAX_MB/_FILES`, sau lọc PB-R07).
+    autofix_max_mb: int = DEFAULT_AUTOFIX_MAX_MB
+    autofix_max_files: int = DEFAULT_AUTOFIX_MAX_FILES
 
     @property
     def mirrors_dir(self) -> Path:
@@ -69,6 +76,10 @@ def _git_config_env(env: dict[str, str]) -> dict[str, str]:
     return out
 
 
+def _posint(raw: str | None, default: int) -> int:
+    return int(raw) if raw and raw.isdigit() and int(raw) > 0 else default
+
+
 def load(env: dict[str, str] | None = None) -> SourceConfig | None:
     """None ⇒ tính năng nguồn tắt (không `RUNTIME_SOURCE_CACHE_DIR`)."""
     e = env if env is not None else dict(os.environ)
@@ -85,4 +96,6 @@ def load(env: dict[str, str] | None = None) -> SourceConfig | None:
         test_mode=e.get("RUNTIME_SOURCE_TEST_MODE") == "1",
         cache_max_mb=int(max_mb) if max_mb and max_mb.isdigit() else DEFAULT_CACHE_MAX_MB,
         git_config_env=_git_config_env(e) if runtime_env != "production" else {},
+        autofix_max_mb=_posint(e.get("RUNTIME_AUTOFIX_MAX_MB"), DEFAULT_AUTOFIX_MAX_MB),
+        autofix_max_files=_posint(e.get("RUNTIME_AUTOFIX_MAX_FILES"), DEFAULT_AUTOFIX_MAX_FILES),
     )
