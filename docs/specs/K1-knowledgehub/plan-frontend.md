@@ -8,18 +8,17 @@ requirements: [HUB-FR-131, HUB-FR-132, HUB-FR-133, HUB-FR-134, HUB-BR-35, HUB-BR
 
 # Plan frontend · K1 · KnowledgeHub
 
-Nguồn: spec §1–3, §9 · `plan.md` §3.1/§3.3 · `ui-agent-studio` · H4b-1 `plan-frontend.md` (D3–D9) · mẫu: studio-web `features/{agents,secrets}`, admin-web `features/processes`.
-Đã **đối chiếu contract BE** (spec §3, `9e7c5a04`) ngày 2026-10-13. Không có artboard: mọi bố cục là **"chưa có artboard — đề xuất"**, trình Gate.
+Nguồn: spec §1–3, §9 · `plan.md` §3 · `ui-agent-studio` · H4b-1 `plan-frontend.md` · mẫu: studio-web `features/{agents,secrets}`, admin-web `features/processes`. Đã đối chiếu contract BE (spec §3) 2026-10-13. Không có artboard: bố cục là "đề xuất", trình Gate.
 
 ## 0. Quyết định
 | # | Quyết định | Lý do |
 |---|---|---|
 | D1 | Không thêm thư viện, không ADR. Route `/settings` nạp lười | H4a D1 |
-| D2 | **Không nhập credentials ở màn KH.** Sheet tenant chọn một secret `kh_api_key` **của chính tenant** (`GET /studio/api/secrets?kind=kh_api_key&tenant_id=`); tạo/xoay secret ở màn Secrets (H4b-1) qua link. Không có `kh_api_key` mức nền tảng (Q7; `KH_SECRET_INVALID wrong_tenant`) ⇒ **không có lựa chọn "Toàn nền tảng"** trong luồng KH | spec §3.2, Q7 |
+| D2 | **Không nhập credentials ở màn KH.** Sheet tenant chọn một secret `kh_api_key` **của chính tenant** (`GET /studio/api/secrets?kind=kh_api_key&tenant_id=`); tạo/xoay secret ở màn Secrets (H4b-1) qua link. Không có `kh_api_key` mức nền tảng (Q7) ⇒ **không có lựa chọn "Toàn nền tảng"** | spec §3.2, Q7 |
 | D3 | Nav `settings` (nhóm "Hệ thống") → `/settings`, một tab "KnowledgeHub" | ui-agent-studio |
 | D4 | **Một cờ bật**, không có "Cấp": platform cấu hình = có hàng tenant + `status=ok`; `enabled` do `tenant_admin` bật (`PUT /admin/kh/enabled`). Studio chỉ **hiện** `enabled` (badge, chỉ đọc). Hiệu lực = có URL, hàng, secret, `enabled`, `status=ok` (§3.5) | spec §3.3/3.5, Q5 |
 | D5 | **Bỏ "Loại project" của agent** (contract không có kinds). Agent chỉ có `knowledge_enabled`, lưu bằng `PUT /agents/:id/knowledge` (version riêng, **không** nằm trong nút Lưu của form); chỉ `agentic-cli` (`KH_AGENT_RUNTIME`) | spec §3.2 |
-| D6 | Project KH là danh sách **do platform_admin khai báo** trong Sheet tenant (`project_id`, `label`, `read_only`); `read_only` = project dùng chung ⇒ badge "Chỉ đọc". Theo Q2 (đã chốt): people lanes bật được cho project **riêng**; project dùng chung bắt buộc tắt (mã `kh_people_lanes_on_shared`) | spec §9 Q2 |
+| D6 | Project KH là danh sách **do platform_admin khai báo** trong Sheet tenant (`project_id`, `label`, `read_only`); `read_only` = project dùng chung ⇒ badge "Chỉ đọc". People lanes bật được cho project **riêng**; dùng chung phải tắt (`kh_people_lanes_on_shared`) | spec §9 Q2 |
 | D7 | Gắn project ở admin-web là **thao tác riêng** (`GET/PUT /process-defs/:id/knowledge`, version riêng, nút [Lưu tri thức]) — không đi chung `ProcessSaveBar`. Hiện `effective[]` (project, chỉ đọc, "cần Tóm tắt") theo từng stage. Mẫu hệ thống (`tenant_id null`) ⇒ không render thẻ (BE 404) | spec §3.3 |
 | D8 | Cảnh báo hạ cấp là dữ liệu của `StageView.knowledge.warning`, không toast: `Alert` vàng `aria-live="polite"` trong OutputDialog (admin) và run-block/run-page (chat). Không chặn, không đổi trạng thái run | Q3, HUB-FR-134 |
 | D9 | Cảnh báo embedder là mục `kh_embedder_multilingual` (luôn có trong kết quả kiểm) **và** ghi tĩnh dưới khối URL | CR-068, ADR-0012 §8 |
@@ -28,7 +27,7 @@ Nguồn: spec §1–3, §9 · `plan.md` §3.1/§3.3 · `ui-agent-studio` · H4b-
 ## 1. Cấu trúc
 studio-web: `routes/_authed/settings.tsx` (lazy; `validateSearch {tab?, edit?: tenantId|"new"}`) · `features/settings/knowledgehub/{api.ts, hooks/, lib/{schema,check-labels,project-rows}.ts, components/{KhUrlCard,KhTenantTable,KhTenantSheet,KhProjectRows,KhCheckDialog}, pages/KnowledgeHubSettingsPage.tsx, README.md}` · `features/agents/components/AgentKnowledgeSection.tsx` (+ hook trong `agents/api.ts`) · `shell/lib/nav.ts` + settings.
 admin-web: `features/processes/api.ts` (+ khState, setKhEnabled, get/putKhBinding) · `components/knowledge/{KnowledgeBindingCard,TenantKnowledgeDialog}` · hooks `use-kh-state`, `use-kh-binding`.
-`packages/ui`: `KnowledgeNotice` (OutputDialog admin, chat-web run-block/run-page). Component ≤ 200 dòng; gọi API chỉ ở `api.ts`.
+`packages/ui`: `KnowledgeNotice` (OutputDialog admin, chat-web run-block/run-page).
 
 ## 2. Màn, bố cục, trạng thái
 | Màn | Bố cục (chưa có artboard — đề xuất) | Đang tải | Rỗng | Lỗi | Không quyền / 409 |
@@ -62,7 +61,7 @@ admin-web: `features/processes/api.ts` (+ khState, setKhEnabled, get/putKhBindin
 | Project id | `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$`; duy nhất trong danh sách; ≤ 50 hàng | "Mã project không hợp lệ" · "Mã project bị trùng" | "Invalid project ID" · "Duplicate project ID" |
 | Label | ≤ 80 | "Tối đa 80 ký tự" | "At most 80 characters" |
 
-Lỗi server qua `api-error.ts` (KNOWN += `KH_URL_NOT_ALLOWED` (reason: `invalid`/`not_https`/`not_in_allowlist`), `KH_TENANT_EXISTS`, `KH_NS_TAKEN`, `KH_SECRET_INVALID` (reason: `not_found`/`wrong_kind`/`wrong_tenant`), `KH_PROJECT_IN_USE`, `KH_PROJECT_NOT_FOUND`, `KH_NOT_CONFIGURED`, `KH_AGENT_RUNTIME`); câu chữ ở §4.
+Lỗi server qua `api-error.ts` (KNOWN += `KH_URL_NOT_ALLOWED`, `KH_TENANT_EXISTS`, `KH_NS_TAKEN`, `KH_SECRET_INVALID`, `KH_PROJECT_IN_USE`, `KH_PROJECT_NOT_FOUND`, `KH_NOT_CONFIGURED`, `KH_AGENT_RUNTIME`); câu chữ ở §4.
 
 ## 4. Câu chữ (VI / EN; key `knowledgehub.*`, `agents.knowledge.*`, `processes.knowledge.*`)
 | Chỗ | VI | EN |
@@ -98,33 +97,33 @@ Lỗi server qua `api-error.ts` (KNOWN += `KH_URL_NOT_ALLOWED` (reason: `invalid
 | `kh_people_lanes_on_shared` | "Namespace bật include_people_lanes nhưng project dùng chung {project_id} phải tắt — hãy tắt phía KnowledgeHub hoặc bỏ đánh dấu dùng chung" | "Namespace has include_people_lanes on but shared project {project_id} requires it off — turn it off in KnowledgeHub or unmark it as shared" |
 | `kh_project_not_attached` | "Project {project_id} chưa gắn với khoá này" | "Project {project_id} is not attached to this key" |
 
-Cảnh báo: `kh_auth_disabled_dev` "Xác thực đang tắt (chỉ chấp nhận khi phát triển)" · `kh_ns_suspended` "Namespace đang bị tạm ngưng" · `kh_projects_unverified` "Chưa xác minh được project (khoá không liệt kê project)" · `kh_embedder_multilingual` = cảnh báo embedder ở trên. EN tương ứng: "Authentication is off (acceptable in development only)" · "Namespace is suspended" · "Projects could not be verified (the key lists no projects)" · embedder warning. Mã lạ ⇒ "Mục kiểm {code}".
+Cảnh báo: `kh_auth_disabled_dev` "Xác thực đang tắt (chỉ chấp nhận khi phát triển)" / "Authentication is off (acceptable in development only)" · `kh_ns_suspended` "Namespace đang bị tạm ngưng" / "Namespace is suspended" · `kh_projects_unverified` "Chưa xác minh được project (khoá không liệt kê project)" / "Projects could not be verified (the key lists no projects)" · `kh_embedder_multilingual` = cảnh báo embedder ở trên. Mã lạ ⇒ "Mục kiểm {code}".
 
 ## 5. Role + nhãn cho e2e (giữ đúng khi code)
 | Màn | Phần tử |
 |---|---|
 | Settings | `heading "Cài đặt"` · `tab "KnowledgeHub"` · `textbox "Địa chỉ KnowledgeHub"` · `button "Lưu"` · `list "Origin được phép"` · `note` chứa "embedder đa ngữ" |
 | Bảng tenant | `table "Tenant ↔ namespace"` · `button "Thêm tenant"` · mỗi dòng: `button "Kiểm tra {tenant}"` · `button "Kết quả {tenant}"` · `button "Sửa {tenant}"` · `button "Xoá {tenant}"` · `button "Tải thêm"` |
-| Sheet | `dialog "Thêm tenant"` / `"Sửa tenant"` · `combobox "Tenant"` · `textbox "Namespace"` · `combobox "Secret KnowledgeHub"` · `textbox "Keyspace"` · `group "Project"` (hàng: `textbox "Mã project"`, `textbox "Nhãn"`, `checkbox "Chỉ đọc (dùng chung)"`, `button "Xoá project {n}"`) · `button "Thêm project"` · `button "Lưu"` · `button "Huỷ"` · `status` "Đã lưu · v{n}" |
+| Sheet | `dialog "Thêm tenant"` / `"Sửa tenant"` · `combobox "Tenant"` · `textbox "Namespace"` · `combobox "Secret KnowledgeHub"` · `textbox "Keyspace"` · `group "Project"` (hàng: `textbox "Mã project"`, `textbox "Nhãn"`, `checkbox "Chỉ đọc (dùng chung)"`, `button "Xoá project {n}"`) · `button "Thêm project"` · `link "Tạo secret"` · `button "Lưu"` · `button "Huỷ"` · `status` "Đã lưu · v{n}" |
 | Dialog kết quả | `dialog "Kết quả kiểm tra"` · `status` (tổng) · `list` mục kiểm |
+| ConfirmDialog | `alertdialog` (Radix) — đổi URL: chứa câu "Đổi địa chỉ sẽ đặt mọi tenant về Chưa kiểm tra.", nút xác nhận **"Lưu" / "Save"**; xoá tenant: chứa "Xoá cấu hình KnowledgeHub của {tenant}?" + "Secret không bị xoá.", nút xác nhận **"Xoá" / "Delete"** (nút Huỷ / Cancel) · toast: `region "Notifications"` |
 | Agent | `switch "Được dùng tri thức (KnowledgeHub)"` |
-| Admin | `button "Tri thức"` → `dialog "Tri thức"` có `switch "Dùng tri thức cho công ty"` · `region "Tri thức"` có `combobox "Project tri thức"` · mỗi stage `combobox "Project tri thức của stage {stage}"` · `button "Lưu tri thức"` · output: `status` chứa "Không truy cập được KnowledgeHub" |
+| Admin | `button "Tri thức"` → `dialog "Tri thức"` có `switch "Dùng tri thức cho công ty"` · `region "Tri thức"` có `combobox "Project tri thức"` · mỗi stage `combobox "Project tri thức của stage {stage}"` · `button "Lưu tri thức"` · nav `link "Quy trình"` (`navigation "Điều hướng chính"`) · output (admin + chat): `status` chứa "Không truy cập được KnowledgeHub", text "Tri thức: 2/5 lần hỏi", "Tóm tắt: đang chờ" |
+
+**Khớp test khoá T2** (`e2e/studio/k1-knowledgehub.studio.ts`, `e2e/K1/{admin,chat}`): đã rà nhãn/role, chỉ bổ sung ConfirmDialog, link "Tạo secret", toast, nav; không lệch khác.
 
 ## 6. Hiệu năng và a11y
-Chunk `/settings` nạp lười, trang KH < 25 KB gzip; bảng tenant phân trang cursor (≤ 100/lần), không virtualize; `KhCheckDialog` memo. Kết quả kiểm có icon **và** chữ; Switch/Select có nhãn; Alert `aria-live="polite"`; tương phản ≥ 4.5:1.
+Trang KH < 25 KB gzip; bảng phân trang cursor (≤ 100/lần), không virtualize. Kết quả kiểm có icon **và** chữ; Alert `aria-live="polite"`; tương phản ≥ 4.5:1.
 
-## 7. Đối chiếu contract BE (đã khớp spec §3)
-Khác giả định cũ: credentials chỉ qua `secret_id` (D2); kiểm tra theo hàng đã lưu, không nhận URL gõ dở (D10); không `provisioned`, không `kinds` (D4, D5); gắn project là endpoint riêng (D7); `StageView.knowledge` optional với 11 mã `warning` (D8). Mã lỗi: §3.
+## 7. Đối chiếu contract BE (khớp spec §3)
+Credentials qua `secret_id` (D2); kiểm tra theo hàng đã lưu (D10); không `provisioned`/`kinds` (D4, D5); gắn project endpoint riêng (D7); `StageView.knowledge` optional, 11 mã `warning` (D8).
 
 ## 8. Trả lời câu hỏi FE trước đây · Cần backend-lead · Gate
-1. **Cờ bật:** BE chốt `enabled` (tenant_admin) + `status=ok` (kiểm tra) — không có `provisioned` riêng ⇒ D4.
-2. **"Loại project" của agent:** không tồn tại trong contract ⇒ bỏ (D5).
-3. **Artboard mới** (đề xuất theo bố cục §2, trình Gate): Cài đặt → KnowledgeHub (+ Sheet tenant, Dialog kết quả kiểm), thẻ "Tri thức" của quy trình + Dialog "Tri thức", `KnowledgeNotice` trong output.
+Cờ bật ⇒ D4; "Loại project" bỏ ⇒ D5. **Artboard mới** (theo §2, trình Gate): Cài đặt → KnowledgeHub (+ Sheet tenant, Dialog kết quả), thẻ "Tri thức" quy trình + Dialog, `KnowledgeNotice`.
 
 **Cần backend-lead** (không chặn plan; FE có mặc định):
 | # | Đề nghị | Mặc định FE nếu không đổi |
 |---|---|---|
-| B1 | Đã khớp Q2 (`dddbd3f9`): mã `kh_people_lanes_on_shared {project_id}`, chỉ lỗi khi tenant có project `read_only` và ns bật lanes; lanes bật + chỉ project riêng = OK. Không còn việc | Đóng |
-| B2 | `AgentSchema` có trường runtime để tắt trước Switch tri thức? (tên) | Dựa 422 `KH_AGENT_RUNTIME` |
+| B2 | `AgentSchema` có trường runtime để tắt trước Switch tri thức? (tên) | Dựa 422 |
 | B3 | Studio chọn tenant ở Sheet: xác nhận dùng nguồn tenant của SecretSheet (H4b-1) | Dùng lại hook đó |
-| B4 | DELETE tenant không báo số quy trình bị gỡ; `platform_admin` truyền `?tenant_id` như module processes | Câu chung ở ConfirmDialog |
+| B4 | DELETE tenant không báo số quy trình bị gỡ; `platform_admin` truyền `?tenant_id` như module processes | Câu chung |
