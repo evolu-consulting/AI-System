@@ -66,3 +66,6 @@ Ghi chú: bảng tóm tắt dựng lại từ nhãn trong plan; mức Chặn/Cao
 ## CR-073 · 2026-10-13 · NOT READY (0 Chặn, 5 Cao, 12 Thấp) · không câu hỏi mới
 - Cao: #1 `packages/ui` không tồn tại → copy-then-own KnowledgeNotice; #2 `used_by.key` ≤ 64 → `left(name,64)`; #3 job không có stage + `#mcp` trả null sớm → `AgentTask.stageRunId` + gộp `kh-query`; #4 nav `settings`; #5 T5g rủi ro cao. Thấp #6–#17 áp mặc định (BE/FE song song).
 - #15 test-plan G6/G11 đánh dấu đã đóng (điều phối).
+
+## CR-073 lần 2 · 2026-10-13 · NOT READY (0 Chặn, 2 Cao, 4 Thấp) · không câu hỏi mới
+- 5 Cao lần 1 đã đóng. Mới: #1 vòng phụ thuộc F3/F4 (test OutputDialog chuyển sang F3; F4 chạy unit KnowledgeNotice cả 2 app); #2 chat gắn notice tại `StageRow.tsx`, run-block ngoài K1. Thấp: #3 `runner.repo.ts` vào T5e; #4 job `plan` trưởng nhóm cũng có kh-query; #5 union `to` nav; #6 không đổi. Điều phối áp hết.
