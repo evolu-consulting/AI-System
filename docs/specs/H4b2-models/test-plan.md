@@ -122,6 +122,24 @@ Int: 80 ca = 72 đỏ ở `expect` + 8 xanh trước code (E09, E11, Q01–Q03, 
 | `dispatch` | 9/9 | 9/9 | |
 | Hồi quy: H4a ×5, runner, seed ×4, CR-054, H4b1 ×10 | xanh | xanh | |
 
+### 7.x Kết quả `done:h4b2` · 2026-10-13 (DB `h4b2_done`)
+| Bước | Kết quả |
+|---|---|
+| 1 typecheck | xanh |
+| 2 `bun test` | 3574 pass / 1 fail: R49 `contracts-h2c` (có sẵn, đã biết) |
+| 3 `db:test:create h4b2_done` | xanh |
+| 4 `test:int` (3116 ca, 59 phút) | 4 fail (xem dưới); toàn bộ ca H4b2 xanh |
+| 5 e2e studio (toàn bộ, 82 ca) | 81 pass / 1 fail |
+| 6 `trace --check` | OK (244 mã) |
+| 7 `test:lock:verify` | OK (728 file) |
+
+Ca đỏ và phân loại:
+- 2 ca `hub-rls` (WRK-FR-24 `agent_runtime`; HUB-FR-96 RLS 7 policy): có sẵn, TECH-DEBT #148.
+- `hub-k1.int.test.ts` "HUB-FR-131 · 0029 idempotent": **H4b-2 ảnh hưởng** — migration H4b-2 thêm `provider`, `model_profile` vào `hub_audit_log_entity_check`; chạy lại 0029 đưa CHECK về danh sách K1 nên snapshot lệch. Cần backend-lead/qc phân xử (test K1 cũ chưa tính H4b-2 hoặc 0029 nên idempotent theo CHECK mới).
+- `tests/acceptance/K1/query.int.test.ts` A50 (KH vẫn bị gọi khi kết nối hết dùng được): có sẵn K1 — H4b-2 không đụng `modules/kh`.
+- e2e `e2e/studio/auth.studio.ts:53` HUB-FR-72 E04 (H4a): đòi menu "Models" `toHaveCount(0)` / "Sắp có"; H4b-2 bật mục Models ⇒ test khoá H4a lỗi thời, **H4b-2 ảnh hưởng**, qc phải cập nhật test (mở khoá) theo spec H4b-2.
+- Ghi chú: ca `tuple concurrently updated` không xuất hiện ở lần chạy sau (lần đầu 5 fail, lần hai 4).
+
 ## 8. Chỗ hở spec (mặc định qc đã dùng) · Cần bổ sung
 | # | Hở | Mặc định trong test | Agent |
 |---|---|---|---|
