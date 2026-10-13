@@ -72,6 +72,33 @@ describe("T01–T04 · cách ly tenant [PC-R14, HUB-BR-14]", () => {
     expect(r.text).toBe(ghost.text);
     expect(r.text).toContain("UNAUTHORIZED");
   }, 45_000);
+  it("HUB-BR-14 · PC-R14 · T03b · Bearer thiếu/sai dạng + thân > 3 MiB ⇒ 401 (Bearer sai dạng ⇒ 401 trước bodyLimit, không 413; spec §9 review P-c1 (3)), cùng một thân với 401 thân nhỏ (H2c-R17)", async () => {
+    needPc(c);
+    const a = await startAf(c, "pc-t");
+    const huge = JSON.stringify(reportFor(a.job, { pad: "x".repeat(3_300_000) }));
+    const post = async (auth: string | null, body: string) => {
+      const res = await fetch(`${c.base}/internal/jobs/${a.job.id}/autofix-result`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(auth ? { authorization: auth } : {}) },
+        body,
+      });
+      return { status: res.status, text: await res.text() };
+    };
+    const small = JSON.stringify(reportFor(a.job));
+    const base = await post(null, small);
+    const rs = [
+      base,
+      await post(null, huge),
+      await post("Basic abc", huge),
+      await post("Bearer", huge),
+      await post("Bearer ", huge),
+      await post(`Token ${a.token}`, huge),
+    ];
+    expect(rs.map((r) => r.status)).toEqual([401, 401, 401, 401, 401, 401]);
+    expect(new Set(rs.map((r) => r.text)).size).toBe(1);
+    expect(base.text).toContain("UNAUTHORIZED");
+    expect((await afRows(c.sql, a.runId)).length).toBe(0);
+  }, 45_000);
   it("HUB-BR-14 · PC-R14 · T04 · token job đúng nhưng job_id của run khác ⇒ 401; không ghi hàng vào run kia", async () => {
     needPc(c);
     const a = await startAf(c, "pc-t");

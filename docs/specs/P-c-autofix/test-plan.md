@@ -225,3 +225,13 @@ Chạy: `bun run done:pc` (bước 1–2) → `--from=3` (int, 63,8 phút) → `
 | V01–V05 (HUB-FR-128, HUB-FR-115, PC-R10/R14) | `tests/acceptance/P-c/view-task.int.test.ts` | người duyệt B nhận `stages[0].autofix` của stage mình duyệt · stage thường không mang `autofix`, X (không quyền) 404 không lộ nhánh · A có đủ · task decision `autofix_*` (có/không output) ở `my_tasks` và `GET /me/review-tasks` không có `use_current` | 5 xanh trên working tree |
 
 Nghi vấn `use_current`: xác nhận ĐÚNG ở `HEAD` — `core/task-view.ts` `toTaskDetail` lọc `DECISION_OPTIONS` theo `hasOutput` mà không xét `reason` ⇒ decision `autofix_*` có output vẫn nhận `use_current` ở `task.options` (view `decision.options` đã đúng). Working tree của backend đã sửa (`autofixDecisionOptions` trong `toTaskDetail`, chưa commit); V05 khoá lỗi này (đỏ trên `HEAD`, xanh khi có bản sửa). Ghi chú mơ hồ PC-R14: `onlyMyReviewStages` giữ mọi task `review` của người xem kể cả đã đóng ⇒ người đã/đang trong nhóm duyệt stage 0 vẫn thấy `autofix` stage 0 ở view task; spec chưa nói rõ "đang duyệt" ⇒ test không khoá chiều này.
+
+**Bổ sung khoá PEM + 401 trước 413 · qc 2026-10-14** (vá `46d9d6fa` Runtime `gitscan.py`/`check.py`; spec §9 "review P-c1 (3)")
+
+| Mã | File | Ca | Kết quả |
+|---|---|---|---|
+| P30–P33 (WRK-FR-29, PC-R08(3)) | `apps/agent-runtime/tests/acceptance/pc/test_pc_scan.py` | nối khối PEM thật vào file base có khoá mẫu cùng header ⇒ `private_key` · thay thân giữ header/footer ⇒ `private_key` · đối chứng khoá mẫu không đổi ⇒ sạch · dòng bí mật lặp base 1 → new 2 ⇒ báo dòng 2 | 4 xanh (vá đã có) |
+| P34 | cùng file | `cat-file` không trả blob (monkeypatch `Workspace.blobs`) ⇒ `secrets` `unscannable`, không lưu diff | xanh |
+| T03b (HUB-BR-14, PC-R14, H2c-R17) | `tests/acceptance/P-c/tenant.int.test.ts` | thiếu `Authorization` / `Basic` / `Bearer` / `Bearer ` / `Token <tok>` + thân > 3 MiB ⇒ 401 (không 413), cùng một thân với 401 thân nhỏ, không ghi hàng | xanh. Không khoá "Bearer đúng dạng nhưng sai token + thân lớn" (spec §9 chấp nhận 413) |
+
+Không có Tranh chấp test.
