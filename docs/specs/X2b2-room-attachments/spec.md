@@ -2,7 +2,7 @@
 id: X2b2-room-attachments
 title: Đính kèm file trong phòng - composer phòng gửi file, thành viên xem, agent được tag chỉ thấy file của phòng này
 milestone: X2b-2
-status: draft              # draft → ready → approved → in-progress → done
+status: done               # draft → ready → approved → in-progress → done
 requirements: [HUB-FR-44, HUB-FR-101, HUB-BR-21, HUB-BR-22, AC-H26, CHAT-AC-47, CHAT-AC-50, X2b2-R01..R22, X2b2-AC01..AC16]
 design:
   - docs/design/agent-hub/ba-agent-hub.md (§6 FR-44 đính kèm; §6.9 FR-101 "file đính kèm chỉ dùng được nếu đã gửi vào phòng", FR-96; HUB-BR-21, HUB-BR-22; §8 `room_messages` "đính kèm (như HUB-FR-44)")
@@ -184,3 +184,9 @@ Lệnh xong: `bun run typecheck && bun test && bun --env-file=.env.test-qc.local
 ## 12. Tranh chấp test
 - 2026-10-12 · qc · X2b-AC11 (context.int) + K5 (contracts-x2b) thay có chủ đích — đối chiếu BA FR-101 + Q9 X2b: test cũ đúng ở X2b, sai sau X2b-2; không phải code sửa test. Chi tiết: spec-decisions "Tranh chấp test".
 - 2026-10-13 · qc · K-S2 (`tests/contract/chat/stream.contract.test.ts`) sửa có chủ đích — đối chiếu CHAT-AC-33 + CR-054 (spec C1 C1-R04): `step.started.agent`/`StepSummary.agent` = `{key,name,model}` được phép; test cũ cấm mọi key `agent`/`model` nên sai sau CR-054. Nay cho `agent` đúng `StepAgentSchema` ở `step.started` và `steps[]`, mọi chỗ khác vẫn cấm; lock đã ghi lại.
+
+## Kết luận X2b-2 (2026-10-13)
+- **Commit:** B1 `8b90e0fc` · B2 `11270cee` · B3 `f6842722`+`8e31934d` · B4 `a4e3b6f6` · B5 `b847d63b` · B6 `1583efee` · B7 `c21df2d2` · F1 `850d4a5d` · F2 `c95bff12` · F3 `dc45e731` · RV1 `0e16022b` (migration 0026) · RV2 `8017200e` (0027) · refactor `69eab471`. Test qc: A130 `9a6a10f2`, I30 `01839ade`, x2a `958f74ba`, I55–I58 `9e635781`, K-S2 `db93ce9f`. Migration: 0023 · 0026 `hub.room_msg_withheld` · 0027 (definer kiểm thành viên).
+- **Kết quả:** `done:x2b2` xanh trên code cuối trừ R49 (fixture đã biết): int X2b2 78/78, db 19/19, e2e x2b2 8/8, x2b 11/11, x2a 12/12, x1-attachments 9/9, contract chat 49/49. `done:h2c`/`done:pa` (bước 10) đỏ do ngoài X2b-2: R49, ruff E501 `team_spike.py`, hubdev H01 `/agents` (dữ liệu dev), perf; P1-82 chập chờn.
+- **Review:** vòng 1 CHANGES REQUESTED (1 Major: `out/` khi chờ `side_effect` lộ cho thành viên khác ⇒ §10 chọn hướng chặt), vòng 2 APPROVED. Security review SAFE. UAT: 6/7 Đạt ([`evidence/2026-10-13/REPORT.md`](evidence/2026-10-13/REPORT.md)).
+- **Điểm mở:** (1) UAT kịch bản 5 (`side_effect` + `out/`) Chặn do seed thiếu `ghi-so`/fake-cli không phát `side_effect` — phủ bằng int I55–I58, UAT lại khi có agent thật. (2) Security Low chấp nhận: job vẫn tải file đã chốt khi người gửi rời phòng giữa run. (3) B4 sửa ngoài phạm vi dự kiến: `internal/attachments.service.ts` trả 401 khi `cancel_requested` (§ Quyết định B4). (4) Nợ: TECH-DEBT #152, #153.

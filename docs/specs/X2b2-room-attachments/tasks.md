@@ -3,7 +3,7 @@
 Mỗi task: một commit `[FR]`, diff ≈ ≤ 400 dòng. Tick khi lệnh "xong" xanh. `blocked` kèm lý do → báo cáo cuối.
 Cột `Đọc`: đúng các mục tài liệu task cần. Cột `Rủi ro` (`cao` / `thường`) quyết định model khi BUILD — `docs/WORKFLOW.md` "Chính sách model".
 
-Trạng thái (2026-10-12): PLAN BE + FE + test-plan xong; readiness lần 1 = NOT READY (0 Chặn, 7 Cao), mặc định đã chấp nhận và áp ([`spec-decisions.md`](spec-decisions.md)); chờ chạy lại spec-readiness. Thứ tự BE: B1 → B2 → B3 → B4 → B5; B6, B7 sau B2. B2–B6 và F1 chờ Q1 (test khoá); F1 chờ contract B2.
+Trạng thái (2026-10-13): **XONG** (mọi task [x]). Lịch sử 2026-10-12: PLAN BE + FE + test-plan xong; readiness lần 1 = NOT READY (0 Chặn, 7 Cao), mặc định đã chấp nhận và áp ([`spec-decisions.md`](spec-decisions.md)); chờ chạy lại spec-readiness. Thứ tự BE: B1 → B2 → B3 → B4 → B5; B6, B7 sau B2. B2–B6 và F1 chờ Q1 (test khoá); F1 chờ contract B2.
 
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
@@ -17,9 +17,9 @@ Trạng thái (2026-10-12): PLAN BE + FE + test-plan xong; readiness lần 1 = N
 | F1 | Gửi: `RoomComposer`/thread bật đính kèm, `use-send-room-text`/`useFlowSend` nhận `ids`, khoá idempotent, `AttachNote` + i18n | frontend-lead | thường | `plan-frontend §0 D2 D3 D6 D7`, `§1` (send-error: `!key` + 400 `attachment_ids` ⇒ câu `process.composer.error.noAttach`), `§3`, `§4` | `apps/chat-web/src/features/{rooms,composer}`, `packages/i18n/locales/chat` | B2, Q1 (contract C-1, C-2) | `bun run typecheck && bun test && bun run i18n:check` | [x] |
 | F2 | Hiển thị: `AttachmentList` trong `MessageItem` + `AgentBlock` (`out/`), realtime test, README | frontend-lead | thường | `plan-frontend §0 D4 D5 D8 D10`, `§2` | `apps/chat-web/src/features/rooms/components`, `event-router.test.ts` | F1 | `bun run typecheck && bun test` | [x] |
 | F3 | Chạy e2e AC15 của qc, sửa lỗi UI (không sửa test) | frontend-lead | thường | `plan-frontend §5`, `spec §8 AC15` | `apps/chat-web/**` | F2, Q1, B7 | `bunx playwright test -c e2e/chat/playwright.x2b2.config.ts` (= `bun run e2e:chat:x2b2`) | [x] 8/8 xanh; sửa `AttachNote` (E01/E06: luôn có note share, thêm needText khi ô trống). **Tranh chấp test:** `e2e/chat/x2a-shell.x2a.ts:35` (X2a-AC15 E01) `getByRole("button",{name:"Đính kèm"})` count 0 khớp substring "Đính kèm tệp" của X2b-2 ⇒ cần qc đổi sang `exact: true` hoặc bỏ dòng |
-| Q1 | [x] `2181e17e` qc: test-plan + khoá test (thay X2b-AC11 có chủ đích) | qc | cao | `spec §8`, `plan §8` (chữ ký luật), `§11`, `§12` (test khoá thay) | `tests/acceptance/X2b2/**` (gồm `_x2b2.ts`), `e2e/**` (gồm `e2e/chat/playwright.x2b2.config.ts`) | PLAN | đỏ đúng lý do | [ ] |
+| Q1 | [x] `2181e17e` qc: test-plan + khoá test (thay X2b-AC11 có chủ đích) | qc | cao | `spec §8`, `plan §8` (chữ ký luật), `§11`, `§12` (test khoá thay) | `tests/acceptance/X2b2/**` (gồm `_x2b2.ts`), `e2e/**` (gồm `e2e/chat/playwright.x2b2.config.ts`) | PLAN | đỏ đúng lý do | [x] |
 | Q0 | [x] `9097c857` qc: test-plan (`test-plan.md`, 53 int (I01…I54, bỏ I32) + 10 rules + 5 contract-rules + 2 contract + 8 e2e) | qc | cao | `spec §2 §8`, `plan §8 §11 §12`, `plan-frontend §5` | `docs/specs/X2b2-room-attachments/test-plan.md` | PLAN | — | [x] |
-| R1 | Review ≤ 2 vòng + security review riêng + `done:x2b2` + I2 | reviewer / qc | cao | `spec §2 §8 §11` | — | tất cả | `done:x2b2` | [ ] |
+| R1 | Review ≤ 2 vòng + security review riêng + `done:x2b2` + I2 | reviewer / qc | cao | `spec §2 §8 §11` | — | tất cả | `done:x2b2` | [x] 2026-10-13: review 2 vòng APPROVED, security SAFE, UAT 6/7 Đạt (kịch bản 5 chặn, phủ I55–I58); xem spec "Kết luận X2b-2" |
 
 ## Lệnh mốc `done:x2b2` (đề xuất qc — `tools/scripts/src/done-x2b2.ts`, mẫu `done-x2b.ts`; người viết script: backend-lead ở B7, qc duyệt)
 Dừng ở bước đỏ đầu; bước DB/cổng chạy **tuần tự**; DB test tag riêng (`bun run db:test:create <tag>` rồi `--env-file=.env.test-<tag>.local`). `--skip=int,e2e` cho phép như `done:x2b` (không tính là done đủ).
