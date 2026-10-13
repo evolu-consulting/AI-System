@@ -6,8 +6,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
+import { fetchAttachmentContent } from "~/features/attachments/api";
 import { ApiError } from "~/lib/http";
 import { ForwardAction } from "../../ask/components/ForwardAction";
+import { AutofixResult } from "../../shared/autofix/AutofixResult";
 import { useThreadBinding } from "../../shared/thread/thread-binding";
 import type { TaskCardProps } from "../../shared/types";
 import { useReviewDecision } from "../hooks/use-review-actions";
@@ -44,6 +46,7 @@ export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps)
   const [feedback, setFeedback] = useState("");
   const agent = agentOf(view, task.stage_idx, i18n.language);
   const left = reworksLeft(view, task.stage_idx);
+  const autofix = view?.access === "full" ? view.stages[task.stage_idx]?.autofix : undefined;
   const hasBack = (task.back_steps?.length ?? 0) > 0;
 
   const onClosed = useCallback(() => {
@@ -107,6 +110,7 @@ export function ReviewTaskCard({ runId, task, view, onResolved }: TaskCardProps)
       className="flex flex-col gap-2 rounded-xl border border-warning-solid/40 bg-card p-3"
     >
       <p className="text-sm font-medium">{t("process.run.review.title", { agent })}</p>
+      {autofix && <AutofixResult view={autofix} load={fetchAttachmentContent} />}
       {!inlineFail ? (
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" disabled={mut.isPending} onClick={() => void pass()}>

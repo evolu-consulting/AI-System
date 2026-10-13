@@ -1,5 +1,5 @@
 // CHAT-AC-52/53 · plan-frontend-thread §4 + plan-frontend §6: dẫn xuất thuần từ `ProcessRunFullView` cho khối/thanh trạng thái.
-import type { OpenTask, ProcessRunFullView } from "@ai/contracts/chat";
+import type { AutofixStageView, OpenTask, ProcessRunFullView } from "@ai/contracts/chat";
 import type { StageStripBack, StageStripItem } from "../../shared/components/StageStrip";
 
 export type BlockAction = "review" | "answer" | "decide";
@@ -52,4 +52,13 @@ export function waitingOpenTasks(view: ProcessRunFullView): OpenTask[] {
   return view.open_tasks.filter(
     (o) => !mine.has(o.id) && !(o.kind === "decision" && view.decision?.can_decide),
   );
+}
+
+/** P-c1 · kết quả tự sửa gần nhất của run (giai đoạn có `autofix` với idx lớn nhất); không có ⇒ `undefined`. */
+export function latestAutofix(view: ProcessRunFullView): AutofixStageView | undefined {
+  for (let i = view.stages.length - 1; i >= 0; i--) {
+    const a = view.stages[i]?.autofix;
+    if (a) return a;
+  }
+  return undefined;
 }

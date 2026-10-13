@@ -10,6 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { autofixAnchor } from "./autofix/AutofixBlocks";
+import { AutofixSummary } from "./autofix/AutofixSummary";
 import type { OutputTarget } from "./OutputDialog";
 
 const stageStatusKey = (s: StageView["status"]): string =>
@@ -39,6 +41,16 @@ export function RunProgress({ stages, onView }: Props) {
             <TableRow key={s.idx}>
               <TableCell>
                 {s.idx + 1}. {s.name}
+                {s.autofix && (
+                  <AutofixSummary
+                    view={s.autofix}
+                    onView={() =>
+                      document
+                        .getElementById(autofixAnchor(s.idx))
+                        ?.scrollIntoView({ block: "start" })
+                    }
+                  />
+                )}
               </TableCell>
               <TableCell>{s.executor.name[lang]}</TableCell>
               <TableCell>{t(stageStatusKey(s.status))}</TableCell>

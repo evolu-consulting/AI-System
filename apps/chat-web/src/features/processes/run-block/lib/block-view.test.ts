@@ -1,7 +1,7 @@
 // CHAT-AC-52/53 · luật thuần của khối quy trình (myActions, stageItems, currentStage).
 import { describe, expect, test } from "bun:test";
 import type { ProcessRunFullView, TaskDetail } from "@ai/contracts/chat";
-import { backTrail, currentStage, myActions, stageItems } from "./block-view";
+import { backTrail, currentStage, latestAutofix, myActions, stageItems } from "./block-view";
 
 const task = (
   id: string,
@@ -93,5 +93,14 @@ describe("stageItems / backTrail (P-b2)", () => {
       count: 0,
       max: 3,
     });
+  });
+});
+
+describe("latestAutofix (P-c1)", () => {
+  test("không giai đoạn nào có autofix ⇒ undefined; có ⇒ giai đoạn cuối", () => {
+    const af = (round: number) => ({ round }) as never;
+    const mk = (a: unknown[]) => ({ stages: a.map((x) => ({ autofix: x })) }) as never;
+    expect(latestAutofix(mk([undefined, undefined]))).toBeUndefined();
+    expect(latestAutofix(mk([af(1), undefined, af(2)]))?.round).toBe(2);
   });
 });

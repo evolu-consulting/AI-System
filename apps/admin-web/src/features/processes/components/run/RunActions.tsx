@@ -59,6 +59,11 @@ export function RunActions({ run, tenantId }: Props) {
               {t("process.common.source_unresolvable_hint")}
             </p>
           )}
+          {(d.reason === "autofix_check_failed" || d.reason === "sandbox_unavailable") && (
+            <p className="text-caption text-muted-foreground">
+              {t(`process.common.${d.reason}_hint`)}
+            </p>
+          )}
           {deciding ? (
             <>
               <div className="space-y-1.5">

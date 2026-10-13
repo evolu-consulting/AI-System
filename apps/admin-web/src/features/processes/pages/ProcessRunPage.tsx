@@ -15,6 +15,7 @@ import { ApiError } from "@/lib/http";
 import { hubConfigured } from "@/lib/hub";
 import { useRun } from "../api";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
+import { AutofixBlocks } from "../components/run/autofix/AutofixBlocks";
 import { OutputDialog, type OutputTarget } from "../components/run/OutputDialog";
 import { RunActions } from "../components/run/RunActions";
 import { RunLog } from "../components/run/RunLog";
@@ -66,6 +67,7 @@ function RunBody({ runId }: { runId: string }) {
         <TabsContent value="progress" className="space-y-4">
           <RunActions run={run} tenantId={tenant.tenantId} />
           <RunProgress stages={run.stages} onView={setTarget} />
+          <AutofixBlocks stages={run.stages} tenantId={tenant.tenantId} />
         </TabsContent>
         <TabsContent value="usage">
           <UsageTab runId={runId} tenantId={tenant.tenantId} />
