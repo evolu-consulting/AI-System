@@ -1,9 +1,11 @@
 // HUB-FR-66 · D4/D5 · các trường của Sheet Provider theo loại. Tạo: Khoá/Loại/Hãng chọn được; Sửa: chỉ đọc + "không đổi được sau khi tạo".
 // Không có ô nhập giá trị key: API key là `select` secret `provider_api_key` đã lưu ở Secrets.
 import { PROVIDER_KINDS, STUDIO_PROVIDER_VENDORS } from "@ai/contracts/studio";
+import type { ReactNode } from "react";
 import { Controller, type FieldErrors, type UseFormReturn } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { HrefLink } from "#/components/shared/HrefLink";
+import { Badge } from "#/components/ui/badge";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -22,6 +24,7 @@ type Props = {
   form: UseFormReturn<ProviderFormValues>;
   mode: "create" | "edit";
   secrets: readonly Option[];
+  onGuide?: () => void;
 };
 
 function Pick({
@@ -32,6 +35,7 @@ function Pick({
   options,
   error,
   hint,
+  aside,
 }: {
   id: string;
   label: string;
@@ -40,9 +44,10 @@ function Pick({
   options: readonly { id: string; label: string }[];
   error?: string;
   hint?: string;
+  aside?: ReactNode;
 }) {
   return (
-    <FieldFrame id={id} label={label} error={error} hint={hint}>
+    <FieldFrame id={id} label={label} error={error} hint={hint} aside={aside}>
       {(p) => (
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger {...p} className="w-full">
@@ -64,7 +69,7 @@ function Pick({
 const msg = (e: FieldErrors<ProviderFormValues>, k: keyof ProviderFormValues) =>
   e[k]?.message as string | undefined;
 
-export function ProviderFields({ form, mode, secrets }: Props) {
+export function ProviderFields({ form, mode, secrets, onGuide }: Props) {
   const { t } = useTranslation();
   const errs = form.formState.errors;
   const kind = form.watch("kind");
@@ -116,7 +121,11 @@ export function ProviderFields({ form, mode, secrets }: Props) {
             <div key={k}>
               <dt className="text-label text-muted-foreground">{t(k as string)}</dt>
               <dd>
-                {v}{" "}
+                {k === "models.provider.field.kind" ? (
+                  <Badge variant={kind === "api" ? "off" : "info"}>{v}</Badge>
+                ) : (
+                  v
+                )}{" "}
                 <span className="text-label text-muted-foreground">
                   {t("models.provider.field.kindLocked")}
                 </span>
@@ -149,7 +158,14 @@ export function ProviderFields({ form, mode, secrets }: Props) {
             error={msg(errs, "base_url")}
           >
             {(p) => (
-              <Input {...p} {...form.register("base_url")} autoComplete="off" inputMode="url" />
+              <Input
+                {...p}
+                {...form.register("base_url")}
+                autoComplete="off"
+                inputMode="url"
+                placeholder={t("models.provider.field.baseUrlPlaceholder")}
+                className="font-mono"
+              />
             )}
           </FieldFrame>
           <Controller
@@ -164,15 +180,17 @@ export function ProviderFields({ form, mode, secrets }: Props) {
                 options={secrets.map((s) => ({ id: s.id, label: s.name }))}
                 error={msg(errs, "secret_id")}
                 hint={t("models.provider.field.secretHint")}
+                aside={
+                  <HrefLink
+                    path="/secrets?kind=provider_api_key&drawer=new"
+                    className="text-label text-primary underline"
+                  >
+                    {t("models.provider.field.createSecret")}
+                  </HrefLink>
+                }
               />
             )}
           />
-          <HrefLink
-            path="/secrets?kind=provider_api_key&drawer=new"
-            className="text-primary underline"
-          >
-            {t("models.provider.field.createSecret")}
-          </HrefLink>
         </>
       ) : (
         <>
@@ -186,7 +204,14 @@ export function ProviderFields({ form, mode, secrets }: Props) {
               <Input {...p} {...form.register("max_concurrency")} type="number" min={1} max={100} />
             )}
           </FieldFrame>
-          <p className="text-label text-muted-foreground">{t("models.provider.field.subNote")}</p>
+          <p className="rounded-lg bg-muted px-3.5 py-3 text-label text-muted-foreground">
+            {t("models.provider.field.subNote")}{" "}
+            {onGuide ? (
+              <button type="button" className="text-primary underline" onClick={onGuide}>
+                {t("models.provider.field.guideLink")}
+              </button>
+            ) : null}
+          </p>
         </>
       )}
       <div className="flex items-center gap-2">

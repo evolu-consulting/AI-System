@@ -195,6 +195,7 @@
     "rowMenu": "Actions for {key}",
     "orchLocked": "This agent is the Orchestrator; it can't be disabled or deleted.",
     "toast": {
+      "managed": "Managed by the system",
       "disabled": "Disabled {name}. The Orchestrator will no longer pick this agent.",
       "undo": "Undo",
       "enabled": "Enabled {name}",
@@ -481,6 +482,7 @@
         "cooldown": "cooldown",
         "error": "error",
         "logged_out": "logged out",
+        "noneApi": "Not checked yet",
         "none": "Not checked by a Worker yet"
       },
       "vendor": {
@@ -512,6 +514,8 @@
         "key": "Provider key",
         "kind": "Type",
         "vendor": "Vendor",
+        "baseUrlPlaceholder": "empty = vendor default",
+        "guideLink": "Login guide",
         "baseUrl": "Base URL (optional)",
         "secret": "API key",
         "slots": "Max slots",
@@ -586,6 +590,7 @@
       "step1": "SSH into the Worker machine",
       "step2": "Run the login command",
       "step3": "Click Check again",
+      "step3Result": "The result appears in the \"Check result\" box.",
       "step3Hint": "The Hub checks the login session and updates the status.",
       "cmd1": "ssh <user>@<worker-host>",
       "cmd2": {
@@ -758,6 +763,8 @@
     "empty": "No agents to grant",
     "forbidden": "You don't have permission to view this",
     "filter": {
+      "agentLabel": "Agent",
+      "tenantLabel": "Tenant",
       "agent": "Filter by agent",
       "tenant": "Filter by tenant",
       "all": "All"

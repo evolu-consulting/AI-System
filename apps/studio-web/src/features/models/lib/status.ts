@@ -11,5 +11,8 @@ export function cooldownMinutes(p: ProviderItem, now = Date.now()): number | nul
   return Number.isNaN(ms) ? null : Math.max(1, Math.round(ms / 60_000));
 }
 
+/** Khớp hub-api `isReadonlyProvider`: list item không có cờ readonly (chỉ có ở detail). */
+export const isReadonlyVendor = (vendor: string) => vendor === "dify";
+
 export const needsGuide = (p: ProviderItem) =>
   p.kind === "subscription" && (p.state?.status === "logged_out" || p.state?.status === "error");

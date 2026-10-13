@@ -86,7 +86,18 @@ export function ProvidersPanel({ drawer, onDrawer, onCheck, onGuide }: Props) {
           onGuide={onGuide}
         />
       )}
-      <ProviderSheet target={target} onClose={() => onDrawer(undefined)} />
+      <ProviderSheet
+        target={target}
+        onClose={() => onDrawer(undefined)}
+        onGuide={
+          hit && onGuide
+            ? () => {
+                onDrawer(undefined);
+                onGuide(hit);
+              }
+            : undefined
+        }
+      />
       <ConfirmDialog
         open={toDelete !== null}
         onOpenChange={(o) => !o && setToDelete(null)}

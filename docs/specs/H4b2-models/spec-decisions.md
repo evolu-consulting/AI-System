@@ -88,3 +88,12 @@ C1 — list giữ R13 (Q6): `has_secret` + `slots_in_use`, `secret`/`last_error`
 - **TC-2 · E07 (`entitlements.int`)**: `DELETE AGT.orch × acme` kỳ vọng 409 `AGENT_IS_DEFAULT`, nhận 400 `INVALID_REFERENCE{agent_id}`. Fixture H3b cho acme Orchestrator riêng `orchAcme` ⇒ Orchestrator chung `AGT.orch` nằm ngoài catalog của acme (spec-decisions B7: thứ tự kế thừa `putEntitlement` — ngoài catalog 400 trước `AGENT_IS_DEFAULT`); và acme không có hàng `tenant_agent_defaults` ⇒ `blocksDisable` = false, không có agent nào là "mặc định". Đổi hành vi `putEntitlement` (CR-054, dùng chung) = đổi contract đã duyệt ⇒ không sửa. Đề xuất qc: trong ca, ghi `tenant_agent_defaults(acme, default_agent_id = AGT.hoadon)` rồi `DELETE hoadon × acme` ⇒ 409, xoá hàng ở `finally`.
 
 **Phán quyết qc 2026-10-13:** TC-1 test sai, đã sửa (GET không body). TC-2 test sai dữ liệu, đã sửa theo đề xuất (mặc định acme = hoadon, DELETE hoadon × acme ⇒ 409); ý AC giữ nguyên, contract/code không đổi. 3 file xanh 25/25, 14/14, 11/11.
+
+## Dọn Minor UAT H4b-2 (frontend-lead, 2026-10-13)
+- Item list provider không có cờ `readonly` (chỉ ở detail) ⇒ ẩn Sửa/Xoá bằng `isReadonlyVendor(vendor)` (`dify`, khớp hub-api `isReadonlyProvider`), thay bằng chữ "Do hệ thống quản lý". Kiểm tra key vẫn hiện.
+- Provider API chưa có state ⇒ "Chưa kiểm tra" (`status.noneApi`); subscription giữ "Chưa có Worker kiểm".
+- `FieldFrame` (features/secrets) thêm prop tuỳ chọn `aside` để đặt link "Tạo secret" cùng hàng nhãn; không đổi hành vi nơi khác.
+- Link "Hướng dẫn đăng nhập" ở Sheet sửa subscription: đóng Sheet rồi mở Runbook (`onGuide` qua ProvidersPanel → ProviderSheet → ProviderForm → ProviderFields); chỉ hiện ở chế độ sửa.
+- Runbook: banner đỏ (`bg-danger-bg`) chứa badge mã trạng thái + câu "Hết phiên…"; SheetDescription chuyển sr-only để không lặp. Bước 3 nối thêm câu "Kết quả hiện như hộp "Kết quả kiểm tra"".
+- Ma trận Quyền agent: nhãn nhìn thấy "Agent"/"Tenant" (aria-hidden), giữ `aria-label` "Lọc theo agent/tenant" cho tên truy cập (e2e khoá).
+- e2e `h4b2` 34/34 xanh, không có Tranh chấp test.

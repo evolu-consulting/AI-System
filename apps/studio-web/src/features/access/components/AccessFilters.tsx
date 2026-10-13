@@ -18,6 +18,9 @@ export function AccessFilters(p: Props) {
   const { t } = useTranslation();
   return (
     <div className="mb-3 flex flex-wrap items-center gap-3">
+      <span aria-hidden="true" className="text-label text-muted-foreground">
+        {t("access.filter.agentLabel")}
+      </span>
       <select
         aria-label={t("access.filter.agent")}
         className={SELECT}
@@ -31,6 +34,9 @@ export function AccessFilters(p: Props) {
           </option>
         ))}
       </select>
+      <span aria-hidden="true" className="text-label text-muted-foreground">
+        {t("access.filter.tenantLabel")}
+      </span>
       <select
         aria-label={t("access.filter.tenant")}
         className={SELECT}

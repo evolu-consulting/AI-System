@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "#/components/ui/table";
 import type { ProviderItem } from "../hooks/use-providers";
-import { cooldownMinutes, needsGuide, statusKey } from "../lib/status";
+import { cooldownMinutes, isReadonlyVendor, needsGuide, statusKey } from "../lib/status";
 
 type Actions = {
   onEdit: (p: ProviderItem) => void;
@@ -62,7 +62,9 @@ function Row({ p, ...a }: Actions & { p: ProviderItem }) {
       <TableCell>{t(`models.provider.vendor.${p.vendor}`, { defaultValue: p.vendor })}</TableCell>
       <TableCell>
         <Badge variant={STATUS_VARIANT[statusKey(p)] ?? "off"} role="status">
-          {t(`models.provider.status.${statusKey(p)}`)}
+          {t(
+            `models.provider.status.${!sub && statusKey(p) === "none" ? "noneApi" : statusKey(p)}`,
+          )}
         </Badge>
         {p.enabled ? null : (
           <span className="ml-2 text-muted-foreground">{t("models.provider.disabled")}</span>
@@ -77,8 +79,14 @@ function Row({ p, ...a }: Actions & { p: ProviderItem }) {
           a.onCheck?.(p),
         )}
         {needsGuide(p) ? btn(t("models.provider.action.guide"), () => a.onGuide?.(p)) : null}
-        {btn(t("models.provider.action.edit"), () => a.onEdit(p))}
-        {btn(t("models.provider.action.delete"), () => a.onDelete(p))}
+        {isReadonlyVendor(p.vendor) ? (
+          <span className="text-label text-muted-foreground">{t("models.provider.managed")}</span>
+        ) : (
+          <>
+            {btn(t("models.provider.action.edit"), () => a.onEdit(p))}
+            {btn(t("models.provider.action.delete"), () => a.onDelete(p))}
+          </>
+        )}
       </TableCell>
     </TableRow>
   );

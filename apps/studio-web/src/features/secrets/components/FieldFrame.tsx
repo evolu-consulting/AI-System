@@ -8,15 +8,24 @@ type Props = {
   label: string;
   error?: string;
   hint?: string;
+  /** Liên kết/nút cùng hàng với nhãn (căn phải). */
+  aside?: ReactNode;
   children: (a: { id: string; "aria-invalid"?: true; "aria-describedby"?: string }) => ReactNode;
 };
 
-export function FieldFrame({ id, label, error, hint, children }: Props) {
+export function FieldFrame({ id, label, error, hint, aside, children }: Props) {
   const { t } = useTranslation();
   const desc = [hint ? `${id}-hint` : null, error ? `${id}-err` : null].filter(Boolean).join(" ");
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      {aside ? (
+        <div className="flex items-center justify-between">
+          <Label htmlFor={id}>{label}</Label>
+          {aside}
+        </div>
+      ) : (
+        <Label htmlFor={id}>{label}</Label>
+      )}
       {children({
         id,
         ...(error ? { "aria-invalid": true as const } : {}),

@@ -38,9 +38,11 @@ const fromDetail = (d: ProviderDetail): ProviderFormValues => ({
 export function ProviderForm({
   detail,
   onClose,
+  onGuide,
 }: {
   detail: ProviderDetail | null;
   onClose: () => void;
+  onGuide?: () => void;
 }) {
   const { t } = useTranslation();
   const m = useProviderMutations();
@@ -98,7 +100,7 @@ export function ProviderForm({
   return (
     <form noValidate className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
       <div className="flex-1 space-y-4 overflow-y-auto px-4">
-        <ProviderFields form={form} mode={mode} secrets={secrets} />
+        <ProviderFields form={form} mode={mode} secrets={secrets} onGuide={onGuide} />
       </div>
       <SheetFooter className="flex-row justify-end gap-2">
         <Button type="button" variant="outline" onClick={onClose}>

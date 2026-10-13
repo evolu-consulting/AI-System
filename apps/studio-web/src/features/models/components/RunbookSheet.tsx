@@ -87,11 +87,17 @@ export function RunbookSheet({
       <SheetContent className="sm:max-w-md" showCloseButton={false}>
         <SheetHeader>
           <SheetTitle>{t("models.guide.title", { key: provider?.key ?? "" })}</SheetTitle>
-          <SheetDescription>{t("models.guide.lead")}</SheetDescription>
+          <SheetDescription className="sr-only">{t("models.guide.lead")}</SheetDescription>
         </SheetHeader>
         {provider ? (
           <div className="space-y-4 px-4">
-            <Badge variant="warn">{t(`models.provider.status.${statusKey(provider)}`)}</Badge>
+            <p
+              role="status"
+              className="flex items-center gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-danger"
+            >
+              <Badge variant="err">{statusKey(provider)}</Badge>
+              <span>{t("models.guide.lead")}</span>
+            </p>
             <ol className="space-y-4">
               <Step
                 n={1}
@@ -106,7 +112,11 @@ export function RunbookSheet({
                 hint={cmdKey ? undefined : t("models.guide.cmd2.other")}
                 onCopy={copy}
               />
-              <Step n={3} title={t("models.guide.step3")} hint={t("models.guide.step3Hint")} />
+              <Step
+                n={3}
+                title={t("models.guide.step3")}
+                hint={`${t("models.guide.step3Hint")} ${t("models.guide.step3Result")}`}
+              />
             </ol>
             <p
               role="status"

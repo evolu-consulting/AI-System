@@ -195,6 +195,7 @@
     "rowMenu": "Thao tác {key}",
     "orchLocked": "Agent đang là Orchestrator, không tắt hoặc xoá được.",
     "toast": {
+      "managed": "Do hệ thống quản lý",
       "disabled": "Đã tắt {name}. Orchestrator sẽ không còn chọn agent này.",
       "undo": "Hoàn tác",
       "enabled": "Đã bật {name}",
@@ -481,6 +482,7 @@
         "cooldown": "cooldown",
         "error": "lỗi",
         "logged_out": "hết phiên",
+        "noneApi": "Chưa kiểm tra",
         "none": "Chưa có Worker kiểm"
       },
       "vendor": {
@@ -512,6 +514,8 @@
         "key": "Khoá provider",
         "kind": "Loại",
         "vendor": "Hãng",
+        "baseUrlPlaceholder": "để trống = mặc định của hãng",
+        "guideLink": "Hướng dẫn đăng nhập",
         "baseUrl": "Base URL (tuỳ chọn)",
         "secret": "API key",
         "slots": "Số slot tối đa",
@@ -586,6 +590,7 @@
       "step1": "SSH vào máy Worker",
       "step2": "Chạy lệnh đăng nhập",
       "step3": "Bấm Kiểm tra lại",
+      "step3Result": "Kết quả hiện như hộp \"Kết quả kiểm tra\".",
       "step3Hint": "Hub kiểm tra phiên đăng nhập và cập nhật trạng thái.",
       "cmd1": "ssh <user>@<worker-host>",
       "cmd2": {
@@ -758,6 +763,8 @@
     "empty": "Chưa có agent để cấp",
     "forbidden": "Bạn không có quyền xem mục này",
     "filter": {
+      "agentLabel": "Agent",
+      "tenantLabel": "Tenant",
       "agent": "Lọc theo agent",
       "tenant": "Lọc theo tenant",
       "all": "Tất cả"

@@ -14,19 +14,36 @@ import { ProviderForm } from "./ProviderForm";
 
 export type ProviderTarget = { kind: "create" } | { kind: "edit"; id: string; key: string };
 
-function EditLoader({ id, onClose }: { id: string; onClose: () => void }) {
+function EditLoader({
+  id,
+  onClose,
+  onGuide,
+}: {
+  id: string;
+  onClose: () => void;
+  onGuide?: () => void;
+}) {
   const q = useProviderDetail(id);
   if (q.error) return <ErrorState onRetry={() => q.refetch()} />;
   if (!q.data) return <Skeleton aria-busy="true" className="mx-4 h-40" />;
-  return <ProviderForm key={`${q.data.id}:${q.data.version}`} detail={q.data} onClose={onClose} />;
+  return (
+    <ProviderForm
+      key={`${q.data.id}:${q.data.version}`}
+      detail={q.data}
+      onClose={onClose}
+      onGuide={onGuide}
+    />
+  );
 }
 
 export function ProviderSheet({
   target,
   onClose,
+  onGuide,
 }: {
   target: ProviderTarget | null;
   onClose: () => void;
+  onGuide?: () => void;
 }) {
   const { t } = useTranslation();
   const title =
@@ -41,7 +58,7 @@ export function ProviderSheet({
           <SheetDescription className="sr-only">{t("models.subtitle")}</SheetDescription>
         </SheetHeader>
         {target?.kind === "edit" ? (
-          <EditLoader key={target.id} id={target.id} onClose={onClose} />
+          <EditLoader key={target.id} id={target.id} onClose={onClose} onGuide={onGuide} />
         ) : target ? (
           <ProviderForm detail={null} onClose={onClose} />
         ) : null}
