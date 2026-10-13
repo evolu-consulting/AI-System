@@ -2,7 +2,7 @@
 id: K1-knowledgehub
 title: K1 · KnowledgeHub làm RAG ngoài (Hub proxy) + quy trình mẫu AISDLC
 milestone: K1
-status: plan
+status: approved  # Gate 2026-10-13 (CR-073, mockup OK) — ../K1-gate.md
 requirements: [HUB-FR-131, HUB-FR-132, HUB-FR-133, HUB-FR-134, HUB-BR-37, HUB-BR-40]
 design:
   - docs/design/agent-hub/ba-agent-hub.md HUB-FR-131…134 · HUB-BR-37, 40 (ngoại lệ HUB-BR-12)

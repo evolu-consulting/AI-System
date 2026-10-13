@@ -69,3 +69,6 @@ Ghi chú: bảng tóm tắt dựng lại từ nhãn trong plan; mức Chặn/Cao
 
 ## CR-073 lần 2 · 2026-10-13 · NOT READY (0 Chặn, 2 Cao, 4 Thấp) · không câu hỏi mới
 - 5 Cao lần 1 đã đóng. Mới: #1 vòng phụ thuộc F3/F4 (test OutputDialog chuyển sang F3; F4 chạy unit KnowledgeNotice cả 2 app); #2 chat gắn notice tại `StageRow.tsx`, run-block ngoài K1. Thấp: #3 `runner.repo.ts` vào T5e; #4 job `plan` trưởng nhóm cũng có kh-query; #5 union `to` nav; #6 không đổi. Điều phối áp hết.
+
+## CR-073 lần 3 (nhanh) · 2026-10-13 · 1 Cao + 1 Thấp → đã áp → **READY**
+- #1 F3: `OutputTarget.knowledge` qua `RunProgress.onView` → `OutputDialog` (File thêm `RunProgress.tsx`). #2 `StageView.knowledge` contract đã thuộc T4 (đóng). plan-frontend bỏ chữ run-block. Điều phối áp; các điểm còn lại lần 1–3 đều đóng ⇒ READY.

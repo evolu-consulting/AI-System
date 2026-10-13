@@ -29,7 +29,7 @@ Nguồn: spec §1–3 · `plan.md` §3 · H4b-1 `plan-frontend.md` (D3–D9: Con
 ## 1. Cấu trúc
 - studio-web: `routes/_authed/settings.tsx` (lazy) · `features/settings/knowledgehub/{api.ts, hooks/, lib/{schema,check-labels}.ts, components/{KhConnectionsTable,KhConnectionSheet,KhCheckDialog}, pages/KnowledgeHubSettingsPage.tsx, README.md}` · `features/agents/components/AgentKnowledgeSection.tsx` (+ hook trong `agents/api.ts`; chỉ hoạt động khi `runtime=agentic-cli`).
 - Nav studio-web: thêm `settings` (`/settings`) vào nhóm `nav.group.system`.
-- `KnowledgeNotice.tsx` nhân đôi (D9): admin-web `features/processes/components/run/` (OutputDialog gắn) và chat-web `features/processes/run-page/components/` (run-block, run-page).
+- `KnowledgeNotice.tsx` nhân đôi (D9): admin-web `features/processes/components/run/` (OutputDialog gắn) và chat-web `features/processes/run-page/components/` (trang Run, gắn tại `StageRow.tsx`; run-block ngoài K1).
 
 ## 2. Màn và trạng thái (bố cục: mockup)
 | Màn | Nội dung | Đang tải | Rỗng | Lỗi | Quyền / 409 |
@@ -39,7 +39,7 @@ Nguồn: spec §1–3 · `plan.md` §3 · H4b-1 `plan-frontend.md` (D3–D9: Con
 | 1b Xoá kết nối | `alertdialog` "Xoá kết nối {name}? Secret không bị xoá."; `KH_CONNECTION_IN_USE {agents}` ⇒ Alert trong dialog, không đóng | — | — | — | — |
 | 4 Dialog kết quả kiểm | Mở ngay khi bấm [Kiểm tra] và làm mới hàng. Tổng `role="status"`; danh sách mục (lỗi trước, cảnh báo sau; icon + chữ); "Phiên bản KnowledgeHub: {v}", "Kiểm lúc {thời gian}"; "Project khoá thấy: {n}" + chip ≤ 50 | "Đang kiểm tra…" (nút disabled; hạn UI 25 s) | — | `404` ⇒ "Kết nối không còn tồn tại" | — |
 | 3 Sửa agent → section "KnowledgeHub" | Checkbox mọi kết nối (tên + địa chỉ + badge trạng thái), thứ tự tick hiện số 1..n; [Lưu]. Tick thứ 6 ⇒ ô còn lại disabled + "Tối đa 5 kết nối". Kết nối chưa `ok`: tick được, kèm chú "Chưa dùng được tới khi kiểm tra đạt" | Skeleton | "Chưa có kết nối KnowledgeHub — vào Cài đặt để thêm" + link `/settings` | `KH_AGENT_RUNTIME`/`KH_CONNECTION_NOT_FOUND` ⇒ Alert trong section; khác ⇒ toast | Runtime ≠ `agentic-cli`: section disabled + "Chỉ agent chạy bằng CLI mới dùng được tri thức"; `VERSION_CONFLICT` ⇒ ConflictDialog |
-| 5 `KnowledgeNotice` (admin OutputDialog; chat run-block/run-page) | Trên output, chỉ khi `knowledge` có: Alert vàng khi `warning≠null`; dòng phụ "Tri thức: {queries}/{query_limit} lần hỏi · Tóm tắt: {trạng thái}" + (khi `write_to`) " (ghi vào {project} · {connection})" | — | `knowledge` vắng ⇒ không render | — | — |
+| 5 `KnowledgeNotice` (admin OutputDialog qua `OutputTarget.knowledge`; chat trang Run `StageRow`) | Trên output, chỉ khi `knowledge` có: Alert vàng khi `warning≠null`; dòng phụ "Tri thức: {queries}/{query_limit} lần hỏi · Tóm tắt: {trạng thái}" + (khi `write_to`) " (ghi vào {project} · {connection})" | — | `knowledge` vắng ⇒ không render | — | — |
 
 | Tương tác | Hành vi |
 |---|---|

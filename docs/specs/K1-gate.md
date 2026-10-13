@@ -11,3 +11,8 @@
 - CR-072 2026-10-13: K1 tối giản, thay CR-071 (kết nối KH + agent dùng trực tiếp, không kho); Gate lại sau mockup mới https://claude.ai/artifact/MHUei1vhi2WHKqYWi21WFQ
 - CR-073 2026-10-13: K1 siêu tối giản — kết nối KH + khoá nền tảng, KH tự phân quyền; người dùng chấp nhận bỏ cách ly tenant ở Hub (hard stop bảo mật, đã xác nhận); spec §3–5/§9, plan, tasks viết lại rồi Gate lại
 - 2026-10-13: người dùng OK mockup CR-073 (bố cục chuẩn). Gate chính thức sau readiness READY — mặc định Q26–Q34 trình kèm nếu còn câu hỏi mới.
+
+## Gate K1 (CR-073) — 2026-10-13 · DUYỆT
+- Người dùng OK mockup CR-073 và bảo "làm tiếp" (2026-10-13). readiness CR-073 lần 3 READY (`K1-knowledgehub/readiness.md`). ADR-0012 Accepted.
+- Mặc định Q20–Q34 (giao thức `X-KH-Key` + `/vector/*`, SSO chưa hỗ trợ, KH tắt auth ⇒ chặn trừ loopback dev, ≤5 KH/agent, ≤50 project/KH, id cố định cho worklog, embedder tiếng Anh ⇒ cảnh báo, chỉ dùng kết nối kiểm `ok`) đi theo bản tối giản người dùng duyệt; báo người dùng trong tổng kết — đổi được.
+- Thứ tự BUILD: T4 → T5a…T5g (T5g evolu) ∥ F4 (sau T4) → F1 (sau T5c) → F2 (sau T5d) → F3 (sau F4, T5f) → T7 (`done:k1` + review + security review; checklist thêm: `useSecret` tenant = null cho khoá nền tảng, không lấy từ input).
