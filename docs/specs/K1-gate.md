@@ -8,3 +8,4 @@
 - Spec: `K1-knowledgehub/spec.md` (`status: approved`); plan `plan.md`, `plan-frontend.md`; test-plan `test-plan.md`.
 - Thứ tự ưu tiên ai-sdlc (người dùng 2026-10-13): H4b-1 → K1 → K2.
 - CR-071 2026-10-13: Gate cũ hết hiệu lực phần mô hình, Gate lại sau mockup mới https://claude.ai/artifact/MHUei1vhi2WHKqYWi21WFQ (CR-071 bổ sung: nhiều kết nối KH).
+- CR-072 2026-10-13: K1 tối giản, thay CR-071 (kết nối KH + agent dùng trực tiếp, không kho); Gate lại sau mockup mới https://claude.ai/artifact/MHUei1vhi2WHKqYWi21WFQ

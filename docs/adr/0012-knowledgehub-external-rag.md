@@ -25,6 +25,8 @@ Hub cần RAG (tri thức theo agent, ghi lại tóm tắt stage). KH (v6.4) là
 
 **Nhiều KH (CR-071, 2026-10-13):** có thể cấu hình nhiều kết nối KH (tên + URL allowlist); ns/credentials theo (kết nối, tenant); mỗi kho tri thức thuộc một kết nối, Hub gọi đúng KH; các điều 1–9 áp dụng cho từng kết nối.
 
+**CR-072 (2026-10-13):** thay mô hình kho tri thức của CR-071 bằng "agent dùng KH trực tiếp": agent tick KH được dùng, `kh-query(câu hỏi, project)` theo ns công ty; Project ghi Tóm tắt khai báo theo (KH, công ty). Điều 1–9 giữ.
+
 ## Hệ quả
 - Thêm một dịch vụ ngoài (HTTP client tới KH, không thêm thư viện mới dự kiến; nếu có sẽ ghi ở spec K1 và trình Gate).
 - Hub chịu tải truy vấn KH của mọi agent: trần 4000 ký tự × 5 lần/stage; KH có rate-limit 1200/phút/ns.
