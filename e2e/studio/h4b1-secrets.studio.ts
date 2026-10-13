@@ -245,12 +245,14 @@ test('HUB-FR-68 · AC-H4b1-04 · E07 · server trả 409 SECRET_IN_USE {used_by}
       },
     },
   });
+  await expect(table(page)).toBeVisible();
+  await expect(row(page, "openai-main")).toHaveCount(1);
   await row(page, "openai-main").getByRole("button", { name: "Xoá" }).click();
-  await page
-    .getByRole("alertdialog", { name: "Xoá openai-main?" })
-    .getByRole("button", { name: "Xoá" })
-    .click();
+  const confirm = page.getByRole("alertdialog", { name: "Xoá openai-main?" });
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole("button", { name: "Xoá" }).click();
   const dlg = page.getByRole("alertdialog", { name: "Không xoá được openai-main" });
+  await expect(dlg).toBeVisible();
   await expect(dlg).toContainText("Provider · openai-api");
   await expect(row(page, "openai-main")).toHaveCount(1);
 });
@@ -268,12 +270,17 @@ test('HUB-FR-69 · AC-H4b1-03 · E08 · PUT 409 VERSION_CONFLICT ⇒ "Có ngư�
     },
   });
   const V = "sk-openai-qc-E08-Zx9Pq7Lm";
+  await expect(row(page, "openai-main")).toHaveCount(1);
   await row(page, "openai-main").getByRole("button", { name: "Thay giá trị" }).click();
   const sheet = page.getByRole("dialog", { name: "Thay giá trị · openai-main" });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByLabel("Giá trị", { exact: true })).toHaveAttribute("type", "password");
   await sheet.getByLabel("Giá trị", { exact: true }).fill(V);
   await sheet.getByRole("button", { name: "Lưu" }).click();
   const cf = page.getByRole("alertdialog", { name: "Có người vừa lưu bản mới hơn" });
+  await expect(cf).toBeVisible();
   await expect(cf.getByRole("button", { name: "Tải bản mới" })).toBeVisible();
+  await expect(cf.getByRole("button", { name: "Ghi đè" })).toBeVisible();
   await expect(cf.getByRole("button", { name: "Xem khác biệt" })).toHaveCount(0);
   const again = page.waitForRequest((r) => r.method() === "PUT");
   await cf.getByRole("button", { name: "Ghi đè" }).click();
@@ -305,6 +312,9 @@ test('HUB-FR-68 · Q4 · E10 · validate client: trống ⇒ "Nhập tên secret
   const st = await open(page);
   await page.getByRole("button", { name: "+ Thêm secret" }).click();
   const dlg = page.getByRole("dialog", { name: "Thêm secret" });
+  await expect(dlg).toBeVisible();
+  await expect(dlg.getByRole("textbox", { name: "Tên" })).toBeVisible();
+  await expect(dlg.getByLabel("Giá trị", { exact: true })).toBeVisible();
   await dlg.getByRole("button", { name: "Lưu" }).click();
   await expect(dlg).toContainText("Nhập tên secret");
   await expect(dlg).toContainText("Nhập giá trị secret");
@@ -322,10 +332,12 @@ test('HUB-FR-68 · Q4 · E11 · server 409 SECRET_NAME_TAKEN ⇒ lỗi dưới T
   await open(page, { once: { "POST /secrets": { status: 409, body: err("SECRET_NAME_TAKEN") } } });
   await page.getByRole("button", { name: "+ Thêm secret" }).click();
   const dlg = page.getByRole("dialog", { name: "Thêm secret" });
+  await expect(dlg).toBeVisible();
   await dlg.getByRole("textbox", { name: "Tên" }).fill("Anth-Main");
   await dlg.getByLabel("Giá trị", { exact: true }).fill("sk-qc-E11-Zx9Pq7Lm");
   await dlg.getByRole("button", { name: "Lưu" }).click();
   await expect(dlg).toContainText("Tên này đã được dùng cho loại secret này");
+  await expect(dlg).toBeVisible();
   await expect(dlg.getByRole("textbox", { name: "Tên" })).toHaveValue("Anth-Main");
 });
 
@@ -340,6 +352,7 @@ test('HUB-FR-68 · Q7 · E12 · tab "Khoá KnowledgeHub" rỗng ⇒ "Chưa có k
   await expect(page.getByText("Chưa có khoá KnowledgeHub.")).toBeVisible();
   await page.getByRole("button", { name: "+ Thêm secret" }).first().click();
   const dlg = page.getByRole("dialog", { name: "Thêm secret" });
+  await expect(dlg.getByRole("combobox", { name: "Phạm vi" })).toBeVisible();
   await dlg.getByRole("textbox", { name: "Tên" }).fill("kh-main");
   await dlg
     .getByLabel("Giá trị", { exact: true })

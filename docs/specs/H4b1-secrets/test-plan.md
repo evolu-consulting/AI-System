@@ -97,7 +97,7 @@ Chạy tay: `bun test tests/acceptance/H4b1/rules` · `bun --env-file=.env.local
 | D | `db-guard` | 14 | 14 đỏ | SQLSTATE `42P01`/`42883` (bảng/hàm chưa có) ≠ kỳ vọng; D14 `23514` (audit CHECK chưa có `rotate`/`secret`) |
 | A | `use-secret` | 9 | 9 đỏ | `expect(typeof HubSecretReader)` (module chưa có) |
 | A | `boot` | 6 | 5 đỏ · **1 xanh** | A110–A114: `server.ts` chưa kiểm khoá ⇒ chạy tới hết 15 s ⇒ `code` null; **A115** (khoá hợp lệ ⇒ lên) xanh trước code — hồi quy |
-| E | `h4b1-secrets.studio.ts` | 13 | 13 đỏ | `/studio/secrets` chưa có ⇒ không thấy badge khung / link "Secrets" (còn "Sắp có") / form đăng nhập (E13) |
+| E | `h4b1-secrets.studio.ts` | 13 | 13 đỏ · 0 xanh (chạy lại 2026-10-13 sau sửa E07/E08/E10/E11) | `/studio/secrets` chưa có ⇒ `expect(heading "Secrets")` ở `open()` / link "Secrets" (E01) / form đăng nhập (E13) hết giờ. E07/E08/E10/E11 thêm điều kiện tiên quyết dương (bảng + dòng, Sheet/alertdialog hiện, ô `Tên`/`Giá trị` type=password, nút Ghi đè) trước khẳng định chính; E12 thêm `combobox "Phạm vi"` |
 
 Int: 99 ca = 95 đỏ ở `expect` + 4 xanh trước code (A01, A02, A06, A115); **0 ca đỏ do dựng dữ liệu** (không `PostgresError`/`TypeError` trong `beforeAll`/fixture). `tsc -p tsconfig.tests.json` sạch; `biome check` sạch.
 
