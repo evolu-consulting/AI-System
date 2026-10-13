@@ -10,6 +10,8 @@ import type { AttachmentDeps } from "./modules/attachments/storage";
 import { startAttachmentSweeper } from "./modules/attachments/sweeper";
 import { internalAttachmentRoutes } from "./modules/internal/attachments.routes";
 import { InternalAttachmentService } from "./modules/internal/attachments.service";
+import { internalAutofixRoutes } from "./modules/internal/autofix.routes";
+import { InternalAutofixService } from "./modules/internal/autofix.service";
 
 export type H2cMountDeps = {
   db: Db;
@@ -34,6 +36,13 @@ export function mountH2c<E extends Env>(app: Hono<E>, d: H2cMountDeps): void {
     log: d.log,
   });
   app.route("/internal", internalAttachmentRoutes(internal, d.log));
+  // P-c1 B4: báo cáo tự-sửa (token job; blob diff/log cùng kho file).
+  const autofix = new InternalAutofixService({
+    db: d.db,
+    storage: d.attachments.storage,
+    log: d.log,
+  });
+  app.route("/internal", internalAutofixRoutes(autofix, d.log));
   // B10: vòng sweeper nền (R27–R29); `sweep: false` ⇒ tắt (test gọi thẳng `sweepOnce`, L1).
   if (d.attachments.sweep !== false)
     startAttachmentSweeper({
