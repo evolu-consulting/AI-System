@@ -1,7 +1,8 @@
 // HUB-FR-104 · D18 · `buildProcessPlan` (thuần): seed mặc định hợp lệ; tham chiếu lạ / real_action sai chỗ ⇒ lỗi trước DB.
 import { describe, expect, it } from "bun:test";
 import { DEFAULT_SEED_DIR, readSeedDir } from "./seed";
-import { buildProcessPlan } from "./seed.processes";
+import { buildProcessPlan, upsertTemplates } from "./seed.processes";
+import type { Tx } from "./seed.repo";
 import { buildSeedPlan, SeedValidationError } from "./seed.rules";
 import { SeedStageSchema } from "./seed.schema";
 
@@ -110,5 +111,25 @@ describe("seed.processes · K1 T5g after/step [HUB-FR-104]", () => {
     const after = { review: { back_to_steps: [10] } };
     expect(SeedStageSchema.safeParse(stage({ after })).success).toBe(false);
     expect(SeedStageSchema.safeParse(stage({ after: { review: {} } })).success).toBe(false);
+  });
+});
+
+describe("seed.processes · upsertTemplates sources jsonb [HUB-FR-119]", () => {
+  it("sources đi qua tx.json (mảng jsonb), không phải chuỗi JSON.stringify", async () => {
+    const jsonArgs: unknown[] = [];
+    const tx = Object.assign(async () => [] as unknown[], {
+      json: (v: unknown) => {
+        jsonArgs.push(v);
+        return { __json: v };
+      },
+    });
+    const sources = [{ key: "repo", kind: "git_remote" }];
+    const tpl = { key: "t", name: "T", description: "", input_hint: "", stages: [], sources };
+    await upsertTemplates(tx as unknown as Tx, [tpl as never], {
+      agents: new Map(),
+      teams: new Map(),
+    } as never);
+    expect(jsonArgs).toContainEqual(sources);
+    expect(jsonArgs.some((a) => typeof a === "string")).toBe(false);
   });
 });

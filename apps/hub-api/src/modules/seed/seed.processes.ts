@@ -209,7 +209,12 @@ const stageJson = (t: SeedProcessTemplate, ids: Ids) =>
     ...(s.autofix ? { autofix: s.autofix } : {}),
   }));
 
-async function upsertTemplates(tx: Tx, tpls: SeedProcessTemplate[], ids: Ids): Promise<void> {
+/** Xuất cho test (chống tái phát `sources` ghi chuỗi thay vì mảng jsonb). */
+export async function upsertTemplates(
+  tx: Tx,
+  tpls: SeedProcessTemplate[],
+  ids: Ids,
+): Promise<void> {
   for (const t of tpls) {
     const stages = tx.json(stageJson(t, ids) as unknown as Parameters<typeof tx.json>[0]);
     const sources = tx.json(t.sources as unknown as Parameters<typeof tx.json>[0]);

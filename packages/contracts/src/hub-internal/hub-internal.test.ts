@@ -39,7 +39,9 @@ describe("HUB-FR-89 · hub-internal", () => {
     expect(DifyCredentialResponseSchema.safeParse({ ...c, api_key: "" }).success).toBe(false);
     expect(DifyCredentialResponseSchema.safeParse({ ...c, extra: 1 }).success).toBe(false);
   });
+});
 
+describe("ADM-FR-24 · hub-internal test-run", () => {
   test("ADM-FR-24 · TestRunRequest điền mặc định, từ chối trường lạ", () => {
     const req = {
       command: { workflow_id: U, output: { field: "result", render: "markdown" } },
@@ -70,7 +72,9 @@ describe("HUB-FR-89 · hub-internal", () => {
         .success,
     ).toBe(false);
   });
+});
 
+describe("HUB-FR-95 · hub-internal MCP", () => {
   test("HUB-FR-95 · MCP: phiên bản, xác nhận side_effect", () => {
     expect(MCP_PROTOCOL_VERSIONS[0]).toBe("2026-07-28");
     const c = { code: "CONFIRMATION_REQUIRED", question: "Tiếp tục?", choices: ["Đồng ý", "Huỷ"] };

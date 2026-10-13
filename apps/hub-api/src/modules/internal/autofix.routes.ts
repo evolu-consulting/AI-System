@@ -51,6 +51,14 @@ export function internalAutofixRoutes(svc: InternalAutofixService, log: Logger):
   const r = new Hono();
   r.post(
     "/jobs/:job_id/autofix-result",
+    // 401 đồng nhất trước 413: thiếu/sai dạng Bearer ⇒ 401 ngay, không đọc body (token hợp lệ do service kiểm sau).
+    async (c, next) =>
+      /^Bearer \S+$/.test(c.req.header("authorization") ?? "")
+        ? next()
+        : c.json(BODIES.unauthorized, HUB_INTERNAL_ERRORS.UNAUTHORIZED, {
+            ...NO_STORE,
+            "WWW-Authenticate": "Bearer",
+          }),
     bodyLimit({ maxSize: AUTOFIX_BODY_MAX_BYTES, onError: tooLarge }),
     async (c) => {
       try {

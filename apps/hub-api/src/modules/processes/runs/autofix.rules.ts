@@ -3,9 +3,16 @@ import type { DecisionOption, DecisionReason } from "@ai/contracts/chat";
 import { DECISION_OPTIONS } from "@ai/contracts/chat";
 import type { JobAttachment, JobAutofix } from "@ai/contracts/hub";
 import type { AutofixFailure, AutofixStatus, SourceKind, SourcePin } from "@ai/contracts/hub-admin";
-import type { SnapStage } from "./launcher-prompt";
 
 export type AllowedTool = "Read" | "Grep" | "Glob";
+/** Kiểu cấu trúc tối thiểu của `SnapStage.autofix` (không import `launcher-prompt` ⇒ không vòng import). */
+type StageAutofixLike = {
+  source_key: string;
+  install_cmd?: string | null;
+  test_cmd: string;
+  write_allowlist?: readonly string[] | null;
+};
+
 type AutofixStageLike = {
   sources?: readonly { source_key: string }[];
   autofix?: { source_key: string } | null;
@@ -29,7 +36,7 @@ export function autofixAllowlistUnion(
 
 /** PC-R05 · PC-R11 · phần `autofix` của job. */
 export function autofixJobPart(i: {
-  stage: SnapStage;
+  stage: { key: string; autofix?: StageAutofixLike | null };
   pin: SourcePin;
   kind: SourceKind;
   runId: string;

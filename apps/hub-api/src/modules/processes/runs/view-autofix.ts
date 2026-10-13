@@ -2,7 +2,7 @@
 // cấu hình `autofix` (một query cho cả run, index `autofix_results_run_idx` + `_stage_idx`). Chạy scope `system` SAU khi
 // view đã kiểm quyền xem run (definer `process_run_viewer`) — RLS `attachments` scope user chỉ thấy file của chính mình,
 // mà diff/log thuộc người bắt đầu ⇒ lọc `tenant_id` tường minh mọi bảng. `pin_sha` chỉ khi pin git_remote (không lộ path).
-import type { AutofixFile, AutofixStageView, StageView } from "@ai/contracts/chat";
+import type { AutofixFile, AutofixStageView } from "@ai/contracts/chat";
 import type { AutofixDiffStats, AutofixFailure, AutofixStatus } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
@@ -86,11 +86,20 @@ export async function autofixViews(
 }
 
 /** Gắn `autofix` vào `StageView` theo `idx`. */
-export const withAutofix = (
-  stages: readonly StageView[],
+export const withAutofix = <T extends { idx: number }>(
+  stages: readonly T[],
   m: ReadonlyMap<number, AutofixStageView>,
-): StageView[] =>
+): (T & { autofix?: AutofixStageView })[] =>
   stages.map((s) => {
     const af = m.get(s.idx);
     return af ? { ...s, autofix: af } : s;
   });
+
+/** PC-R14 · view task: chỉ giữ autofix của stage có task duyệt của chính người xem (không lộ diff stage khác). */
+export const onlyMyReviewStages = (
+  all: ReadonlyMap<number, AutofixStageView>,
+  myTasks: readonly { kind: string; stage_idx: number }[],
+): Map<number, AutofixStageView> => {
+  const mine = new Set(myTasks.filter((t) => t.kind === "review").map((t) => t.stage_idx));
+  return new Map([...all].filter(([i]) => mine.has(i)));
+};

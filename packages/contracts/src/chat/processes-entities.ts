@@ -285,6 +285,8 @@ export const ProcessRunTaskViewSchema = z.strictObject({
         status: StageRunStatusSchema,
         step: ProcessStepSchema,
         round: Int1,
+        /** P-c1 · PC-R14 · chỉ stage có task duyệt của người xem (`my_tasks`) và có kết quả tự-sửa. */
+        autofix: AutofixStageViewSchema.optional(),
       }),
     )
     .max(PROCESS_STAGES_MAX),

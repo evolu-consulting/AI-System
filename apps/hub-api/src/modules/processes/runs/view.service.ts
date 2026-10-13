@@ -27,7 +27,7 @@ import {
 } from "../core/run-access.rules";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
 import * as repo from "./runs.repo";
-import { autofixViews, withAutofix } from "./view-autofix";
+import { autofixViews, onlyMyReviewStages, withAutofix } from "./view-autofix";
 import {
   backFields,
   decisionBackStep,
@@ -174,11 +174,15 @@ export class ViewService {
     snap: Snap;
   }): Promise<ProcessRunView> {
     const { view } = g;
-    if (view.access !== "full" || !g.snap.stages.some((s) => s.autofix)) return view;
+    if (!g.snap.stages.some((s) => s.autofix)) return view;
     const run = { id: view.id, tenantId: g.tenantId };
-    const m = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+    const all = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
       autofixViews(tx, run, g.snap),
     );
+    if (view.access === "full")
+      return all.size > 0 ? { ...view, stages: withAutofix(view.stages, all) } : view;
+    // View task: chỉ stage có task duyệt của chính người xem (PC-R14, không lộ diff stage khác).
+    const m = onlyMyReviewStages(all, view.my_tasks);
     return m.size > 0 ? { ...view, stages: withAutofix(view.stages, m) } : view;
   }
 
