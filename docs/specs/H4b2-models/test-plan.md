@@ -138,6 +138,7 @@ Ca đỏ và phân loại:
 - `hub-k1.int.test.ts` "HUB-FR-131 · 0029 idempotent": **H4b-2 ảnh hưởng** — migration H4b-2 thêm `provider`, `model_profile` vào `hub_audit_log_entity_check`; chạy lại 0029 đưa CHECK về danh sách K1 nên snapshot lệch. Cần backend-lead/qc phân xử (test K1 cũ chưa tính H4b-2 hoặc 0029 nên idempotent theo CHECK mới).
 - `tests/acceptance/K1/query.int.test.ts` A50 (KH vẫn bị gọi khi kết nối hết dùng được): có sẵn K1 — H4b-2 không đụng `modules/kh`.
 - e2e `e2e/studio/auth.studio.ts:53` HUB-FR-72 E04 (H4a): đòi menu "Models" `toHaveCount(0)` / "Sắp có"; H4b-2 bật mục Models ⇒ test khoá H4a lỗi thời, **H4b-2 ảnh hưởng**, qc phải cập nhật test (mở khoá) theo spec H4b-2.
+- **Phân xử qc (2026-10-13):** (a) hub-k1 0029 idempotent — migration đúng (chạy một lần trong thực tế); test K1 chưa tính 0030 ⇒ sửa test: mỗi lượt chạy lại chuỗi 0029→0030, snapshot khớp; chạy lại `hub-k1.int.test.ts` (DB `ai_system_h4b2_be_test`) 11/11 xanh. (b) auth.studio E04 sửa theo nav hiện tại (Models là link; không còn aria-disabled; vẫn còn mục "Sắp có" khác); `-c e2e/studio/playwright.config.ts auth.studio` 7/7 xanh; `tests/.lock` ghi lại, verify OK (728 file). Còn đỏ đã biết: R49, #148 (2 hub-rls), K1 A50 (TECH-DEBT #165).
 - Ghi chú: ca `tuple concurrently updated` không xuất hiện ở lần chạy sau (lần đầu 5 fail, lần hai 4).
 
 ## 8. Chỗ hở spec (mặc định qc đã dùng) · Cần bổ sung

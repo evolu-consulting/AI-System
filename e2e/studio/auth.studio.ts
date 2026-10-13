@@ -50,7 +50,7 @@ for (const role of ["tenant_admin", "member"] as const) {
   });
 }
 
-test('HUB-FR-72 · E04 · khung: menu Studio có link Agents + Orchestrator; Models là mục aria-disabled "Sắp có"; ⇄ Admin [H4a-AC-02 · spec §1]', async ({
+test('HUB-FR-72 · E04 · khung: menu Studio có link Agents + Orchestrator + Models (bật từ H4b-2); mục chưa làm là "Sắp có" không link; ⇄ Admin [H4a-AC-02 · spec §1]', async ({
   page,
 }) => {
   await mockStudio(page, { session: true });
@@ -58,10 +58,8 @@ test('HUB-FR-72 · E04 · khung: menu Studio có link Agents + Orchestrator; Mod
   const nav = page.getByRole("navigation", { name: "Menu Studio" });
   await expect(nav.getByRole("link", { name: "Agents" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Orchestrator" })).toBeVisible();
-  const models = nav.getByText("Models", { exact: true });
-  await expect(models).toBeVisible();
-  await expect(nav.locator('[aria-disabled="true"]').filter({ hasText: "Models" })).toHaveCount(1);
-  await expect(nav.getByRole("link", { name: "Models" })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Models" })).toBeVisible();
+  await expect(nav.locator('[aria-disabled="true"]').filter({ hasText: "Models" })).toHaveCount(0);
   await expect(nav.getByText("Sắp có").first()).toBeVisible();
   await expect(page.getByRole("link", { name: "⇄ Evolu Control" })).toBeVisible();
 });

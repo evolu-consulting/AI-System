@@ -280,10 +280,13 @@ describe("HUB-FR-131 · audit CHECK 0029", () => {
 
 describe("HUB-FR-131 · 0029 idempotent", () => {
   test("chạy lại toàn bộ câu hai lần ⇒ không lỗi, ràng buộc/index/policy/quyền không đổi", async () => {
-    const stmts = readFileSync(new URL("../migrations-hub/0029_k1_kh.sql", import.meta.url), "utf8")
-      .split("--> statement-breakpoint")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    // Chạy lại chuỗi 0029 → 0030: 0030 (H4b-2) mở rộng CHECK entity của 0029 nên "chạy lại 0029" phải kèm 0030 để trạng thái cuối khớp.
+    const stmts = ["0029_k1_kh.sql", "0030_h4b2_models.sql"].flatMap((f) =>
+      readFileSync(new URL(`../migrations-hub/${f}`, import.meta.url), "utf8")
+        .split("--> statement-breakpoint")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0),
+    );
     const snap = async () =>
       (
         await owner<
