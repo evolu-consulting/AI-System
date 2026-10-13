@@ -1,0 +1,74 @@
+[
+  {
+    "id": "C00",
+    "title": "chuẩn bị: allowlist src/** + test/**, install=null, test 'bun test'; huỷ run dở",
+    "ok": true,
+    "ms": 2314
+  },
+  {
+    "id": "C01",
+    "title": "[A] ghi docs/NOTE.md (ngoài allowlist) ⇒ Cần người quyết 'Kiểm bản sửa không đạt', nhóm Đường dẫn; chỉ 2 nút",
+    "ok": true,
+    "ms": 9330
+  },
+  {
+    "id": "C02",
+    "title": "[A] thread phòng: thẻ run 'Cần người quyết' có dòng 'Kiểm không đạt'",
+    "ok": true,
+    "ms": 3636
+  },
+  {
+    "id": "C03",
+    "title": "[D] admin-web cùng run: cùng nhóm lỗi + 2 nút, không 'Dùng bản hiện có'",
+    "ok": true,
+    "ms": 3837
+  },
+  {
+    "id": "C04",
+    "title": "quyền quyết định: vio.ngo (người duyệt, không phải người khởi chạy) bị từ chối; use_current => 409; thomas/julian được",
+    "ok": true,
+    "ms": 3536
+  },
+  {
+    "id": "C05",
+    "title": "[A] 'Thêm 1 lần làm lại' ⇒ vòng 2 chạy tiếp; lỗi của vòng 1 không còn hiển thị như lỗi hiện tại",
+    "ok": true,
+    "ms": 13420
+  },
+  {
+    "id": "C06",
+    "title": "[A] huỷ run C1 từ UI (nút Huỷ lượt chạy / Huỷ) để dọn",
+    "ok": true,
+    "ms": 352
+  },
+  {
+    "id": "C10",
+    "title": "[A] ws_secret (dòng AKIA…) ⇒ nhóm 'Bí mật (không hiện giá trị)' chỉ path:line · quy tắc; KHÔNG lộ giá trị (UI, API run view, log, DB)",
+    "ok": true,
+    "ms": 9231
+  },
+  {
+    "id": "C11",
+    "title": "[D] admin-web: nhóm Bí mật cùng cách hiển thị, không lộ giá trị; 'Huỷ lượt chạy' => run đã huỷ",
+    "ok": true,
+    "ms": 5785
+  },
+  {
+    "id": "C20",
+    "title": "[A] sửa sai (a*b) ⇒ nhóm 'Test đỏ · exit 1', đuôi log + 'Tải log đầy đủ'",
+    "ok": true,
+    "ms": 11866
+  },
+  {
+    "id": "C21",
+    "title": "[A] huỷ run C3",
+    "ok": true,
+    "ms": 35948
+  },
+  {
+    "id": "C30",
+    "title": "nguồn local_path KHÔNG bị ghi ngược: .data/uat-autofix-repo/src/calc.ts còn nguyên bug",
+    "ok": true,
+    "ms": 2
+  }
+]

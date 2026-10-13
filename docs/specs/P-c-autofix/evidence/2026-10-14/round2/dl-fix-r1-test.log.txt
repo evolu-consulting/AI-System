@@ -1,0 +1,19 @@
+bun test v1.3.14 (0d9b296a)
+
+test/calc.test.ts:
+1 | import { expect, test } from "bun:test";
+2 | import { add } from "../src/calc";
+3 | test("add", () => { expect(add(2, 3)).toBe(5); });
+                                          ^
+error: expect(received).toBe(expected)
+
+Expected: 5
+Received: 6
+
+      at <anonymous> (/workspace/test/calc.test.ts:3:39)
+(fail) add [0.74ms]
+
+ 0 pass
+ 1 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [20.00ms]

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "B00",
+    "title": "chuẩn bị: bật def (install=null, allowlist src/**+test/**, review=SDLC-người duyệt), huỷ run dở",
+    "ok": true,
+    "ms": 600
+  },
+  {
+    "id": "B01",
+    "title": "[A] thomas.tran bắt đầu !fixbug-apply trong phòng Evolu team (chat-web)",
+    "ok": true,
+    "ms": 5763
+  },
+  {
+    "id": "B02",
+    "title": "[A] job chạy trong sandbox Docker => chờ người duyệt; thẻ thread có khối Tự sửa mã + Xem diff",
+    "ok": true,
+    "ms": 5638
+  },
+  {
+    "id": "B03",
+    "title": "[A] trang run: khối Tự sửa mã (nhánh ai/<uuid>/fix, +1 −1, 1 file, Test đạt); người khởi chạy KHÔNG có nút Đạt/Chưa đạt (không thuộc nhóm duyệt)",
+    "ok": true,
+    "ms": 1071
+  },
+  {
+    "id": "B04",
+    "title": "[A] 'Xem log' mở hộp thoại log test; 'Tải .diff' + 'Tải log' tải đúng tên/nội dung",
+    "ok": true,
+    "ms": 1221
+  },
+  {
+    "id": "B06",
+    "title": "[B] vio.ngo (người duyệt) thấy gate: khối kết quả có diff (src/calc.ts, +1 −1), Test đạt, nút Đạt/Chưa đạt",
+    "ok": true,
+    "ms": 2179
+  },
+  {
+    "id": "B07",
+    "title": "[B] mục 'Chờ tôi kiểm' trong thanh bên có gate",
+    "ok": true,
+    "ms": 959
+  },
+  {
+    "id": "B10",
+    "title": "[B] 'Chưa đạt' + góp ý => làm lại cùng nhánh, vòng tăng; gate mới",
+    "ok": true,
+    "ms": 11649
+  },
+  {
+    "id": "B11",
+    "title": "[B] 'Đạt' => run hoàn thành",
+    "ok": true,
+    "ms": 2264
+  },
+  {
+    "id": "B12",
+    "title": "[A] thomas thấy run xong trong phòng",
+    "ok": true,
+    "ms": 3659
+  },
+  {
+    "id": "B13",
+    "title": "[D] admin-web (julian.bui): trang lượt chạy hiển thị khối Tự sửa mã + diff",
+    "ok": true,
+    "ms": 4311
+  }
+]

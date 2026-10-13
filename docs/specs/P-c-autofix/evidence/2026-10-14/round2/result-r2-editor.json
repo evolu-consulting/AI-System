@@ -1,0 +1,62 @@
+[
+  {
+    "id": "A01",
+    "title": "mở def fixbug-apply (bản chép), khối Tự sửa mã hiện bật + ghi chú mạng",
+    "ok": true,
+    "ms": 2101
+  },
+  {
+    "id": "A02",
+    "title": "tắt rồi bật lại giữ giá trị đã nhập (FC8); tắt ⇒ lưu autofix=null",
+    "ok": true,
+    "ms": 781
+  },
+  {
+    "id": "A03",
+    "title": "nhập đủ (install, allowlist 2 dòng, test) ⇒ badge Hợp lệ ⇒ Lưu 200 ⇒ tải lại đúng giá trị",
+    "ok": true,
+    "ms": 2094
+  },
+  {
+    "id": "A04",
+    "title": "xoá lệnh test ⇒ alert 'Nhập lệnh kiểm thử…'; allowlist > 20 mẫu ⇒ alert err.allow",
+    "ok": true,
+    "ms": 415
+  },
+  {
+    "id": "A05",
+    "title": "AUTOFIX_EXECUTOR: đổi 'Làm bởi' sang Nhóm ⇒ alert 'phải do agent'",
+    "ok": true,
+    "ms": 1190
+  },
+  {
+    "id": "A06",
+    "title": "AUTOFIX_REVIEW: 'Sau giai đoạn' = Tự chạy tiếp ⇒ alert 'luôn phải qua người duyệt'",
+    "ok": true,
+    "ms": 1268
+  },
+  {
+    "id": "A07",
+    "title": "AUTOFIX_MAX: thêm giai đoạn 2 bật Tự sửa mã ⇒ alert 'chỉ có một stage tự sửa mã'",
+    "ok": true,
+    "ms": 1981
+  },
+  {
+    "id": "A08-info",
+    "title": "PUT status khi lưu def sai",
+    "ok": true,
+    "note": "no-request"
+  },
+  {
+    "id": "A08",
+    "title": "Lưu def lỗi (2 stage autofix) ⇒ server/Client chặn, không có 200",
+    "ok": true,
+    "ms": 4526
+  },
+  {
+    "id": "A09",
+    "title": "hoàn tác (Huỷ) ⇒ def gốc 1 stage",
+    "ok": true,
+    "ms": 30206
+  }
+]
