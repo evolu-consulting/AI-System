@@ -43,11 +43,77 @@ Trỏ BA, chỉ ghi phần cụ thể hoá.
 
 ## 3. Contract (backend-lead)
 <!-- backend-lead -->
-File dự kiến: `packages/contracts/src/hub-admin/secrets.ts`. Endpoint ngoài `/studio/api/secrets*` cho `source_credential` của tenant: Q1.
+File: `packages/contracts/src/hub-admin/secrets.ts` (export qua `@ai/contracts/hub-admin`). Mọi object `strictObject`. Chi tiết luật/hàm: `plan.md` §1–§3.
+
+**Kiểu chung**
+| Tên | Định nghĩa |
+|---|---|
+| `HUB_SECRET_KINDS` | `["provider_api_key", "kh_api_key", "source_credential"]` |
+| `HubSecretNameSchema` | `string().trim().regex(/^[A-Za-z0-9_-]{2,64}$/)`; duy nhất **không phân biệt hoa-thường** theo (kind, tenant_id) |
+| `HubSecretValueSchema` | = `SecretValueSchema` của Admin (8–2048 đơn vị UTF-16, không trim). Chuỗi mờ đục — có thể là JSON nhỏ (vd cặp `client_id`/`client_secret` của KH, Q7); mã hoá nguyên khối, server không parse |
+| `SecretUsedBySchema` | `{ type: "provider" \| "source" \| "knowledge_hub", id: uuid, key: string(1..64) }` (FE gắn nhãn theo `type` + `key`) |
+| `SecretTenantRefSchema` | `{ id: uuid, key: string, name: string }` (như `studio/orchestrator.ts`) |
+| `HubSecretSchema` (response) | `{ id: uuid, kind, tenant: SecretTenantRef \| null, name, version: int ≥ 1, used_by: SecretUsedBy[] (sắp theo type, key), created_at, updated_at: ISO, updated_by: UpdatedBySchema }` — **không** có `value`/`ciphertext`/`iv`/`key_version`/`last4` (chỉ ghi tuyệt đối, Q11) |
+
+**Phạm vi theo loại** (`secretScopeOk(kind, tenantId)`, plan §2): `provider_api_key` ⇒ `tenant_id = null`; `kh_api_key` ⇒ `null` (dùng chung nền tảng) **hoặc** một tenant (Q7); `source_credential` ⇒ bắt buộc tenant. Sai ⇒ 400 `VALIDATION_ERROR` path `tenant_id`.
+
+**A. Studio — `/studio/api/secrets*`** (chỉ `platform_admin`; role khác ⇒ 403 `FORBIDDEN` trước parse, sẵn ở `mountH4a`)
+| Method · path | Request | 2xx | Lỗi |
+|---|---|---|---|
+| `GET /studio/api/secrets` | query `HubSecretListQuerySchema` `{ kind?, tenant_id?: uuid, q?: string ≤ 64, limit: 1..100 = 100, cursor?: string ≤ 512 }`. `tenant_id` vắng ⇒ mọi secret (nền tảng + mọi tenant); có ⇒ chỉ secret của tenant đó | 200 `{ items: HubSecret[], next_cursor: string \| null }` sắp `(kind, lower(name), id)` | 400 |
+| `POST /studio/api/secrets` | `HubSecretCreateRequestSchema` `{ kind, name, value, tenant_id?: uuid }` | 201 `HubSecret` (`version = 1`) | 400 (gồm `tenant_id` không có trong `admin.tenants` ⇒ path `tenant_id`) · 409 `SECRET_NAME_TAKEN` · 409 `NOT_CONFIGURED` (Hub thiếu khoá, chỉ khi test bỏ khoá) |
+| `GET /studio/api/secrets/:id` | — | 200 `HubSecret` | 404 `NOT_FOUND` |
+| `PUT /studio/api/secrets/:id` | `HubSecretRotateRequestSchema` `{ version: int ≥ 1, value }` (thay giá trị: IV mới, cùng AAD) | 200 `HubSecret` (`version + 1`) | 400 · 404 · 409 `VERSION_CONFLICT` `details = { current: HubSecret, updated_at }` |
+| `DELETE /studio/api/secrets/:id?version=N` | query `{ version: coerce int ≥ 1 }` | 204 | 404 · 409 `VERSION_CONFLICT` · 409 `SECRET_IN_USE` `details = { used_by: SecretUsedBy[] (≥ 1) }` |
+
+Không đổi được `kind`, `tenant_id`, `name` sau khi tạo (đổi = xoá + tạo mới; giữ AAD bất biến). `:id` không phải uuid ⇒ 404 (không rò).
+
+**B. Tenant — `/admin/source-credentials*`** (`tenant_admin` hoặc `platform_admin`; `member` ⇒ 403 qua `requireAdminRole`; thêm prefix vào `PROTECTED_PREFIXES`). Chỉ loại `source_credential`; body **không** có `kind`. Tenant đích theo `writeTenant`/`readTenant` của module nguồn: `tenant_admin` = tenant phiên (gửi `tenant_id` khác ⇒ 404); `platform_admin` phải gửi `tenant_id` (ghi vắng ⇒ 400, đọc vắng ⇒ 404).
+| Method · path | Request | 2xx |
+|---|---|---|
+| `GET /admin/source-credentials` | `{ tenant_id?, q?, limit 1..100 = 50, cursor? }` | 200 list như A |
+| `POST /admin/source-credentials` | `{ name, value, tenant_id? }` | 201 |
+| `GET/PUT/DELETE /admin/source-credentials/:id` | `?tenant_id=` (+ body/query như A) | 200 / 200 / 204 |
+
+Secret thuộc tenant khác hoặc không phải `source_credential` ⇒ 404 `NOT_FOUND` (cùng thân, HUB-BR-14).
+
+**Mã lỗi** `HUB_SECRET_ERRORS` (body = `ErrorResponse` M0, message cố định): `SECRET_NAME_TAKEN` 409 · `SECRET_IN_USE` 409 · dùng lại `NOT_FOUND` 404, `VERSION_CONFLICT` 409 (`details = { current: HubSecret, updated_at }` — có `current.version` như FE cần), `VALIDATION_ERROR` 400, `FORBIDDEN` 403, `NOT_CONFIGURED` 409.
+
+**Audit** (`hub.audit_log`, trong transaction ghi, lỗi ⇒ rollback): entity `secret`; action `create` · `rotate` (PUT) · `delete`. `tenant_id` = tenant của secret (null cho nền tảng); `entity_name` = `<kind>:<name>`; `before`/`after` = `{ name, kind, tenant_id, version }` (không giá trị, không bản mã); `summary = { kind }`. Mỗi ghi tăng `hub_config_version` + NOTIFY `hub_config_changed` (qua `withConfigWrite`).
+
+**Không có endpoint đọc giá trị.** Hub dùng giá trị qua `HubSecretReader.useSecret` nội bộ (plan §2.3).
 
 ## 4. Dữ liệu (backend-lead)
 <!-- backend-lead -->
-Dự kiến `hub.secrets(id, kind, tenant_id NULL, name, ciphertext, iv, version, created_at, updated_at)` + RLS + `REVOKE` cột ciphertext khỏi vai không cần; `hub.providers.secret_id` hiện là `uuid` không FK (`packages/db/src/schema/hub.ts`) — Q5.
+Migration `packages/db/migrations-hub/0028_h4b1_secrets.sql` (viết tay, idempotent như 0021: `IF NOT EXISTS`, `DO $$` kiểm `pg_constraint`/`pg_policies`; chỉ THÊM — không mất dữ liệu). Kiểu Drizzle: file mới `packages/db/src/schema/hub-secrets.ts` (`hub.ts` đã 400 dòng).
+
+**`hub.secrets`**
+| Cột | Kiểu | Null | Default | Ghi chú |
+|---|---|---|---|---|
+| `id` | uuid PK | no | `gen_random_uuid()` | thuộc AAD |
+| `kind` | text | no | — | CHECK `IN ('provider_api_key','kh_api_key','source_credential')`; thuộc AAD |
+| `tenant_id` | uuid | yes | — | null = nền tảng; thuộc AAD. CHECK `secrets_scope_ck`: `(kind='provider_api_key' AND tenant_id IS NULL) OR (kind='source_credential' AND tenant_id IS NOT NULL) OR kind='kh_api_key'` |
+| `name` | text | no | — | CHECK `name ~ '^[A-Za-z0-9_-]{2,64}$'` |
+| `ciphertext` | bytea | no | — | bản mã ‖ tag 16 byte; CHECK `octet_length BETWEEN 16 AND 8208` (2048 UTF-16 × ≤ 4 byte + 16) |
+| `iv` | bytea | no | — | CHECK `octet_length(iv) = 12` |
+| `key_version` | smallint | no | 1 | Q3; CHECK ≥ 1 |
+| `version` | integer | no | 1 | CHECK ≥ 1; khoá lạc quan |
+| `created_by`, `updated_by` | uuid | yes | — | user Admin (không FK chéo schema, như `sources`) |
+| `created_at`, `updated_at` | timestamptz | no | `now()` | |
+
+Index: `secrets_name_uq` UNIQUE `(kind, COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid), lower(name))` (dùng cho kiểm trùng) · `secrets_list_idx` `(tenant_id, kind, lower(name), id)` (list theo tenant + cursor; list toàn bộ của Studio quét bảng nhỏ, ≤ 100 hàng/trang). Xoá = **DELETE cứng** (bản mã mất theo hàng; audit giữ id/tên).
+
+**RLS** (`ENABLE ROW LEVEL SECURITY`, policy `secrets_hub_rw FOR ALL TO hub_rw`): `app.scope='system'` **hoặc** (`app.scope='user'` AND `tenant_id IS NOT NULL` AND `tenant_id = app.tenant_id`). Hàng nền tảng chỉ thấy ở scope `system`.
+
+**GRANT** (bảo vệ cột): `GRANT SELECT (id, kind, tenant_id, name, key_version, version, created_by, updated_by, created_at, updated_at) ON hub.secrets TO hub_rw` — **không** SELECT `ciphertext`/`iv`; `GRANT INSERT, UPDATE, DELETE ON hub.secrets TO hub_rw`. Không GRANT gì cho `hub_ro`, `agent_runtime`, `admin_rw`. Đọc bản mã CHỈ qua hàm:
+
+`hub.secret_material(p_id uuid, p_kind text, p_tenant uuid) RETURNS TABLE(ciphertext bytea, iv bytea, key_version smallint)` — `SECURITY DEFINER`, `SET search_path = pg_catalog, hub`, `STABLE`; trả hàng khi `id = p_id AND kind = p_kind AND tenant_id IS NOT DISTINCT FROM p_tenant` **và** (`app.scope = 'system'` OR `p_tenant IS NULL` OR `p_tenant = app.tenant_id`) — scope `user` không mở được secret tenant khác; ngoài ra 0 hàng. `REVOKE ALL ON FUNCTION … FROM PUBLIC; GRANT EXECUTE … TO hub_rw`.
+
+**FK `hub.providers.secret_id`** (Q5): `providers_secret_fk FOREIGN KEY (secret_id) REFERENCES hub.secrets(id) ON DELETE RESTRICT`, thêm `NOT VALID` rồi `VALIDATE` chỉ khi không có giá trị mồ côi (DO block; mồ côi ⇒ giữ NOT VALID + `RAISE NOTICE`, không sửa dữ liệu). Kind đúng `provider_api_key` kiểm ở service H4b-2. Index `providers_secret_idx (secret_id) WHERE secret_id IS NOT NULL` (cho `used_by`).
+
+**Audit CHECK**: mở rộng `hub_audit_log_action_check` thêm `'rotate'`, `hub_audit_log_entity_check` thêm `'secret'` (DROP + ADD giữ toàn bộ giá trị 0019, như mẫu 0019); `HUB_AUDIT_ACTION_VALUES`/`_ENTITY_VALUES` thêm tương ứng.
+
+**`used_by`** (query, plan §2): `provider` = `hub.providers WHERE secret_id = $id` (index trên) · `source` = `hub.sources WHERE deleted_at IS NULL AND config->>'credential_secret_id' = $id::text AND tenant_id = secret.tenant_id` (tên khoá jsonb chốt trước cho P-c; chưa có trong `GitRemoteConfigSchema`, quét theo `sources_tenant_idx`) · `knowledge_hub` = K1 bổ sung (H4b-1 trả rỗng). Không seed.
 
 ## 5. UI (frontend-lead)
 <!-- frontend-lead -->
@@ -92,19 +158,21 @@ Env mới: `HUB_SECRETS_KEY` (base64 32 byte).
 Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwright test e2e/H4b1` (đề xuất `done:h4b1`).
 
 ## 9. Quyết định
-### Trước Gate — câu hỏi mở (mặc định đề xuất; người dùng/Gate xác nhận)
-| # | Câu hỏi | Mặc định đề xuất |
+### Trước Gate — câu hỏi (mặc định đề xuất → trả lời backend-lead 2026-10-13, PLAN)
+| # | Câu hỏi | Trả lời (backend-lead) |
 |---|---|---|
-| Q1 | Ai ghi `source_credential`: `platform_admin` hay `tenant_admin` của nguồn? UI ở đâu? | Cả hai (RLS theo `tenant_id`). H4b-1 chỉ làm API `/studio/api/secrets` (platform_admin, mọi tenant) + API tenant `POST/PUT/DELETE /secrets/source-credentials` (tenant_admin); UI cho tenant_admin nằm ở màn Nguồn (ADM-FR-68) khi P-c/mốc sau cần, **không** làm trong H4b-1 |
-| Q2 | Khoá & AAD | `HUB_SECRETS_KEY` 32 byte base64; AAD = `id‖kind‖tenant_id` |
-| Q3 | Xoay khoá `HUB_SECRETS_KEY` | Chưa làm; cột `key_version smallint default 1` để chừa chỗ; mốc riêng khi cần |
-| Q4 | Quy ước `name` | Như trên §2; duy nhất theo (kind, tenant_id) |
-| Q5 | `providers.secret_id` thêm FK tới `hub.secrets`? | Thêm FK nullable `ON DELETE RESTRICT` trong migration H4b-1 nếu bảng providers chưa có dữ liệu mồ côi; nếu có ⇒ để H4b-2 |
-| Q6 | Khoá dev | `keys:dev` thêm `HUB_SECRETS_KEY` vào `.env.local`; CI dùng khoá cố định test |
-| Q7 | Loại `kh_api_key`: một bản toàn nền tảng hay theo tenant? | Một bản toàn nền tảng (KH khai báo ở Studio → Cài đặt, HUB-FR-131); project theo tenant do K1 |
-| Q8 | Có "Kiểm tra key" ở H4b-1? | Không (H4b-2, cần provider); `kh_api_key` kiểm kết nối ở K1 |
-| Q9 | Bậc rủi ro task BUILD | Cao (secrets/mã hoá/RLS ⇒ Opus) + security review riêng |
-| Q10 | Hard stop | Mặc định đã chấp nhận (ADR-0012 §1: khoá chỉ ở Hub, chỉ ghi); không cần dịch vụ trả tiền/secret thật |
+| Q1 | Ai ghi `source_credential`? UI ở đâu? | **Giữ mặc định, đổi đường dẫn:** Studio `/studio/api/secrets*` (platform_admin, mọi tenant) + tenant `/admin/source-credentials*` (tenant_admin; platform_admin kèm `tenant_id`) — cùng gốc `/admin/sources` của module nguồn, đủ GET/POST/PUT/DELETE (GET cần cho chọn credential ở form nguồn sau này). UI tenant: không làm ở H4b-1 |
+| Q2 | Khoá & AAD | **Giữ, cụ thể hoá:** AAD = UTF-8 `hub.secrets:<id>:<kind>:<tenant_id \| "-">:<key_version>` (tiền tố miền như Admin `admin.secrets:` ⇒ không tráo bản mã giữa hai bảng; thêm `key_version` chừa xoay khoá). `HUB_SECRETS_KEY` bắt buộc (thiếu/sai ⇒ fatal) và **phải khác** `SECRET_MASTER_KEY` (trùng ⇒ fatal, HUB-FR-04) |
+| Q3 | Xoay khoá | Giữ: chưa làm; `key_version smallint default 1` |
+| Q4 | Quy ước `name` | **Sửa ghi chú:** Admin thật là `^[A-Z0-9_]{2,64}$` + viết HOA, không phải như §2. Giữ regex §2 `^[A-Za-z0-9_-]{2,64}$` (AC-01 dùng "anthropic-main"), duy nhất **không phân biệt hoa-thường** theo (kind, tenant_id) để tránh "Anthropic-Main" ≠ "anthropic-main" |
+| Q5 | FK `providers.secret_id` | **Đổi nhẹ:** luôn thêm FK `ON DELETE RESTRICT` ở 0028, dạng `NOT VALID` + `VALIDATE` khi không mồ côi (mồ côi ⇒ giữ NOT VALID, NOTICE) — không sửa dữ liệu, không phải chờ H4b-2 |
+| Q6 | Khoá dev | Giữ: `keys:dev` sinh `HUB_SECRETS_KEY` (khác `SECRET_MASTER_KEY`); test dùng khoá cố định trong fixture |
+| Q7 | `kh_api_key` nền tảng hay theo tenant? | **Đổi theo khảo sát KH v6.4 (điều phối 2026-10-13):** cho phép **cả** nền tảng (`tenant_id` null) **và** theo tenant (vd client OIDC `kh-ns-<ns>` của namespace tenant). Giá trị là chuỗi mờ đục, có thể JSON nhỏ `{client_id, client_secret}`, mã hoá nguyên khối. Chỉ `platform_admin` ghi (Studio). **K1 chốt** cách dùng/định dạng |
+| Q8 | "Kiểm tra key" | Giữ: không (H4b-2/K1) |
+| Q9 | Rủi ro BUILD | Giữ: cao (Opus) + security review riêng (T7) |
+| Q10 | Hard stop | Giữ: không có; không thư viện mới (`node:crypto`), không ADR |
+| Q11 (mới) | Hiện `last4` như SecretField Admin (ui-admin)? | **Không** — theo spec §2 (metadata không có `last4`) và plan-frontend D3: lộ 4 ký tự là lộ; khác Admin có chủ đích. Cũng không có `note` (không ai dùng) |
+| Q12 (mới) | AC-H4b1-07 phần `work/<job_id>/` | Chưa có bên dùng nào tạo job ở H4b-1 (KH dùng qua Hub proxy, `source_credential` dùng ở P-c). Mặc định đề xuất: H4b-1 kiểm log Hub + audit + mọi response + quét mọi bảng `hub.*` trừ `secrets.ciphertext` (plan §5); phần thư mục job kiểm ở mốc có bên dùng (K1/P-c). qc quyết |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - FE PLAN 2026-10-13: không hiện `last4` (chỉ-ghi tuyệt đối); `name` bất biến sau tạo; tab `source_credential` không có nút tạo (Q1); `ConflictDialog` dùng chung ẩn [Xem khác biệt] khi không có diff; Sheet ở lại sau lưu hiện "Đã lưu · v{n}" (AC-H4b1-08).
