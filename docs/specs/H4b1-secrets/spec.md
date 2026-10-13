@@ -146,16 +146,16 @@ Env mới: `HUB_SECRETS_KEY` (base64 32 byte).
 ## 8. Tiêu chí nghiệm thu (qc)
 | AC | Given / When / Then | Test |
 |---|---|---|
-| AC-H4b1-01 | `platform_admin` tạo `provider_api_key` "anthropic-main" ⇒ 201 chỉ có metadata; mọi GET/list/audit/log không chứa giá trị | <!-- qc --> |
-| AC-H4b1-02 | DB: `ciphertext` ≠ plaintext, IV khác nhau giữa hai lần ghi cùng giá trị; sửa 1 byte ciphertext hoặc đổi `kind`/`tenant_id` ⇒ giải mã thất bại (AAD) | |
-| AC-H4b1-03 | Thay giá trị với `version` cũ ⇒ 409 `VERSION_CONFLICT`; đúng `version` ⇒ `version+1`, audit `secret.rotate` không giá trị | |
-| AC-H4b1-04 | Xoá secret đang được tham chiếu ⇒ 409 kèm `used_by[]`; không tham chiếu ⇒ 204 + audit | |
-| AC-H4b1-05 | `source_credential` của tenant A: tenant_admin B GET/PUT/DELETE ⇒ 404; `tenant_admin` không ghi được `provider_api_key`/`kh_api_key` ⇒ 403 | |
-| AC-H4b1-06 | Hub khởi động thiếu/sai độ dài `HUB_SECRETS_KEY` ⇒ thoát có thông báo rõ, không log khoá | |
-| AC-H4b1-07 | Chuỗi giá trị secret không xuất hiện trong log Hub, trace run, `work/<job_id>/` (job giả dùng `useSecret`) | |
-| AC-H4b1-08 | e2e Studio: nhập key trong SecretField, lưu ⇒ hiện "Đã lưu" + metadata, không có nút xem; ô nhập rỗng lại | |
+| AC-H4b1-01 | `platform_admin` tạo `provider_api_key` "anthropic-main" ⇒ 201 chỉ có metadata; mọi GET/list/audit/log không chứa giá trị | A04–A05, A11, A17, A60, A90–A93 · R11, R55 (test-plan §3) |
+| AC-H4b1-02 | DB: `ciphertext` ≠ plaintext, IV khác nhau giữa hai lần ghi cùng giá trị; sửa 1 byte ciphertext hoặc đổi `kind`/`tenant_id` ⇒ giải mã thất bại (AAD) | A70–A75, A85 · R26–R41 |
+| AC-H4b1-03 | Thay giá trị với `version` cũ ⇒ 409 `VERSION_CONFLICT`; đúng `version` ⇒ `version+1`, audit `secret.rotate` không giá trị | A16–A17, A61, A74 · E04, E08 |
+| AC-H4b1-04 | Xoá secret đang được tham chiếu ⇒ 409 kèm `used_by[]`; không tham chiếu ⇒ 204 + audit | A22–A26, A62 · E05–E07 |
+| AC-H4b1-05 | `source_credential` của tenant A: tenant_admin B GET/PUT/DELETE ⇒ 404; `tenant_admin` không ghi được `provider_api_key`/`kh_api_key` ⇒ 403 | A02–A03, A42, A47–A49, D05, D07, D09, A83 · R04–R07 |
+| AC-H4b1-06 | Hub khởi động thiếu/sai độ dài `HUB_SECRETS_KEY` ⇒ thoát có thông báo rõ, không log khoá | A110–A115 · R20–R25 |
+| AC-H4b1-07 | Chuỗi giá trị secret không xuất hiện trong log Hub, trace run, `work/<job_id>/` (job giả dùng `useSecret`) | A87–A88, A90–A94 (Q12: phần `work/<job_id>/` ở K1/P-c) |
+| AC-H4b1-08 | e2e Studio: nhập key trong SecretField, lưu ⇒ hiện "Đã lưu" + metadata, không có nút xem; ô nhập rỗng lại | E02, E03, E04, E12 |
 
-Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwright test e2e/H4b1` (đề xuất `done:h4b1`).
+Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwright test -c e2e/studio/playwright.config.ts h4b1-secrets && bun run test:lock:verify` (đề xuất `done:h4b1`, test-plan §6). Ca chi tiết: [`test-plan.md`](test-plan.md).
 
 ## 9. Quyết định
 ### Trước Gate — câu hỏi (mặc định đề xuất → trả lời backend-lead 2026-10-13, PLAN)
@@ -172,7 +172,7 @@ Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwrig
 | Q9 | Rủi ro BUILD | Giữ: cao (Opus) + security review riêng (T7) |
 | Q10 | Hard stop | Giữ: không có; không thư viện mới (`node:crypto`), không ADR |
 | Q11 (mới) | Hiện `last4` như SecretField Admin (ui-admin)? | **Không** — theo spec §2 (metadata không có `last4`) và plan-frontend D3: lộ 4 ký tự là lộ; khác Admin có chủ đích. Cũng không có `note` (không ai dùng) |
-| Q12 (mới) | AC-H4b1-07 phần `work/<job_id>/` | Chưa có bên dùng nào tạo job ở H4b-1 (KH dùng qua Hub proxy, `source_credential` dùng ở P-c). Mặc định đề xuất: H4b-1 kiểm log Hub + audit + mọi response + quét mọi bảng `hub.*` trừ `secrets.ciphertext` (plan §5); phần thư mục job kiểm ở mốc có bên dùng (K1/P-c). qc quyết |
+| Q12 (mới) | AC-H4b1-07 phần `work/<job_id>/` | Chưa có bên dùng nào tạo job ở H4b-1 (KH dùng qua Hub proxy, `source_credential` dùng ở P-c). Mặc định đề xuất: H4b-1 kiểm log Hub + audit + mọi response + quét mọi bảng `hub.*` trừ `secrets.ciphertext` (plan §5); phần thư mục job kiểm ở mốc có bên dùng (K1/P-c). qc quyết · **qc 2026-10-13: chấp nhận mặc định** (test-plan §8 G1) |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
 - FE PLAN 2026-10-13: không hiện `last4` (chỉ-ghi tuyệt đối); `name` bất biến sau tạo; tab `source_credential` không có nút tạo (Q1); `ConflictDialog` dùng chung ẩn [Xem khác biệt] khi không có diff; Sheet ở lại sau lưu hiện "Đã lưu · v{n}" (AC-H4b1-08).
