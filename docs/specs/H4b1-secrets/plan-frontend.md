@@ -6,6 +6,8 @@ status: draft
 requirements: [HUB-FR-68, HUB-FR-69, HUB-BR-30, AC-H4b1-01, AC-H4b1-04, AC-H4b1-05, AC-H4b1-08]
 ---
 
+> **Ghi chú e2e:** e2e đóng Sheet trước khi kiểm dòng bảng/toast; không đổi `modal` (qc sửa test).
+>
 > **Đổi nhãn sau T1:** không đổi nhãn/role đã công bố. Chỉ **thêm**: `combobox "Phạm vi"` trong Sheet tạo khoá KnowledgeHub (Q7); cột Tenant cũng hiện ở tab KnowledgeHub; text badge `Nguồn · {key}` / `KnowledgeHub · {key}` (trước đây `{name}` / không key).
 
 # Plan frontend · H4b-1 · Studio → Secrets (`apps/studio-web`)
@@ -22,8 +24,9 @@ Nguồn: spec §1/§2/§5/§9 · ui-agent-studio §2, §11 · ui-admin SecretFie
 | D5 | Ba tab theo `kind` trong URL `?kind=provider_api_key\|source_credential\|kh_api_key` (mặc định `provider_api_key`). Mỗi tab `GET /studio/api/secrets?kind=<tab>&limit=100`; `next_cursor` ≠ null → nút [Tải thêm] (cursor). Không đếm trên tab. Studio là `platform_admin` nên thấy mọi tenant (không gửi `tenant_id`) | spec §3A |
 | D6 | Tạo mới chỉ cho `provider_api_key` (không gửi `tenant_id`) và `kh_api_key` (Sheet có `Phạm vi`: "Toàn nền tảng" mặc định hoặc một tenant → `tenant_id`, Q7; chọn "Toàn nền tảng" ⇒ **bỏ hẳn khoá `tenant_id`** khỏi body (không gửi null/rỗng); danh sách tenant từ `tenantsQuery` của orchestrator, nạp khi mở Sheet). Tab `source_credential` (Q1): **xem + thay + xoá**, có cột Tenant; nút tạo ẩn, dòng chú thích "Khoá nguồn do tenant admin tạo ở màn Nguồn." | spec Q1/§3B: tạo qua route tenant `/admin/source-credentials*` từ màn Nguồn của Admin, **ngoài phạm vi FE H4b-1** (chỉ Studio) |
 | D7 | `name` không đổi sau khi tạo; Sheet thay hiện tên bằng chữ thường (`<p>`/`<dd>`), **không dùng input** (E04 đòi 0 `textbox "Tên"`). Đổi tên = tạo mới + xoá cũ | PUT chỉ nhận `{version, value}`; `kind`/`tenant_id`/`name` bất biến (spec §3A) |
-| D8 | 409 `VERSION_CONFLICT` dùng lại `ConflictDialog` dùng chung với `rows=[]` (secret không có diff). Thay đổi nhỏ ở component chung: khi `rows.length===0` ẩn nút [Xem khác biệt]. Giá trị đang gõ giữ nguyên để [Ghi đè] gửi lại với `version` mới | H4a-R09, HUB-FR-69 |
-| D9 | Sau lưu thành công Sheet **ở lại**: hiện dòng `role=status` "Đã lưu · v{n}", ô nhập rỗng lại, footer chỉ còn [Đóng] (ẩn [Huỷ]/[Lưu]); ô `Giá trị` và `Tên` khoá (disabled/ẩn) tới khi đóng Sheet (AC-H4b1-08) | AC-H4b1-08 |
+| D8 | 409 `VERSION_CONFLICT` dùng lại `ConflictDialog` dùng chung với `rows=[]` (secret không có diff). Thay đổi nhỏ ở component chung: khi `rows.length===0` ẩn nút [Xem khác biệt]. Giá trị đang gõ giữ nguyên để [Ghi đè] gửi lại với `version` mới. Ghi đè xác nhận hai bước như H4a (ConflictDialog dùng chung) | H4a-R09, HUB-FR-69 |
+| D9 | Sau lưu thành công Sheet **ở lại**: hiện dòng `role=status` "Đã lưu · v{n}", ô nhập rỗng lại, footer chỉ còn [Đóng] (ẩn [Huỷ]/[Lưu]); ô `Giá trị`, `Tên` (và `combobox "Phạm vi"` ở chế độ tạo) dùng `disabled`, vẫn trong DOM với value rỗng, tới khi đóng Sheet (AC-H4b1-08) | AC-H4b1-08 |
+| D10 | `SecretSheet` truyền `showCloseButton={!saved}`: sau lưu chỉ còn nút [Đóng] ở footer (không nút X) | AC-H4b1-08 |
 
 ## 1. Cấu trúc & route
 ```
@@ -102,7 +105,7 @@ Xung đột dùng `conflict.*` có sẵn: tiêu đề "Có người vừa lưu b
 |---|---|
 | Menu | `link "Secrets"` trong `navigation "Menu Studio"` (không còn `aria-disabled`) |
 | Trang | `heading "Secrets"` · `tablist "Loại secret"` với `tab "Provider API key"`, `tab "Khoá nguồn (git)"`, `tab "Khoá KnowledgeHub"` · `button "+ Thêm secret"` · `table "Danh sách secret"`, mỗi `row` chứa tên; trong dòng `button "Thay giá trị"`, `button "Xoá"`, text "Đã lưu"; tab KnowledgeHub và tab nguồn có `columnheader "Tenant"`; `button "Tải thêm"` khi còn trang |
-| Sheet | `dialog "Thêm secret"` / `dialog "Thay giá trị · {name}"` · `textbox "Tên"` (tạo) · `combobox "Phạm vi"` (tạo `kh_api_key`; option "Toàn nền tảng" + tên tenant) · ô giá trị là **password nên không có role textbox** → `getByLabel("Giá trị")` (như `Mật khẩu` ở H4a) · `button "Hiện giá trị đang gõ"` (chỉ khi có chữ) · `button "Lưu"` · `button "Huỷ"` · sau lưu: `status` "Đã lưu · v{n}" và `button "Đóng"` |
+| Sheet | `dialog "Thêm secret"` / `dialog "Thay giá trị · {name}"` · `textbox "Tên"` (tạo) · `combobox "Phạm vi"` (tạo `kh_api_key`; option "Toàn nền tảng" + `tenant.name`, không kèm key — ngoại lệ so với mẫu TenantSheet) · ô giá trị là **password nên không có role textbox** → `getByLabel("Giá trị")` (như `Mật khẩu` ở H4a) · `button "Hiện giá trị đang gõ"` (chỉ khi có chữ) · `button "Lưu"` · `button "Huỷ"` · sau lưu: `status` "Đã lưu · v{n}" và `button "Đóng"` |
 | Xoá | `alertdialog "Xoá {name}?"` (`button "Huỷ"`, `button "Xoá"`) · đang dùng: `alertdialog "Không xoá được {name}"` + list + `button "Đóng"` |
 | Xung đột | như H4a: `alertdialog "Có người vừa lưu bản mới hơn"`, `button "Tải bản mới"`, `button "Ghi đè"` (không có "Xem khác biệt") |
 | Không có | mọi nơi **không** có element hiển thị giá trị; DOM không chứa chuỗi giá trị đã nhập sau khi lưu (qc kiểm AC-08) |

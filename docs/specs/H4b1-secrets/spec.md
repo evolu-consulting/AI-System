@@ -33,7 +33,7 @@ Trỏ BA, chỉ ghi phần cụ thể hoá.
 | Luật | Điều kiện chính xác | Nguồn |
 |---|---|---|
 | Chỉ ghi | Không API/log/audit/export nào trả giá trị; chỉ trả metadata (`id`, `kind`, `name`, `version`, `updated_at`, `used_by[]`) | HUB-FR-68, HUB-FR-04 |
-| Mã hoá | AES-256-GCM, IV 12 byte ngẫu nhiên mỗi lần ghi, AAD = `id‖kind‖tenant_id`; `HUB_SECRETS_KEY` 32 byte, thiếu/sai độ dài ⇒ Hub không khởi động | HUB-FR-68, Q2 |
+| Mã hoá | AES-256-GCM, IV 12 byte ngẫu nhiên mỗi lần ghi, AAD = `id‖kind‖tenant_id` (định dạng chính xác: Q2); `HUB_SECRETS_KEY` 32 byte, thiếu/sai độ dài ⇒ Hub không khởi động | HUB-FR-68, Q2 |
 | Phạm vi | `provider_api_key`: toàn nền tảng, chỉ `platform_admin`. `kh_api_key`: toàn nền tảng **hoặc** theo tenant (Q7), chỉ `platform_admin` ghi. `source_credential`: gắn `tenant_id` (RLS); ghi bởi `tenant_admin` của tenant đó hoặc `platform_admin` | HUB-BR-15, CR-060, Q1 |
 | Không vào job | Giải mã chỉ trong tiến trình Hub (và Runtime-chương-trình cho `source_credential` ở mốc sau); không bao giờ vào `work/<job_id>/`, prompt, trace, audit | HUB-BR-30, ADR-0012 §1 |
 | Audit không khôi phục | Secret không khôi phục từ audit; chỉ ghi lại giá trị mới (audit không giữ giá trị/bản mã) | HUB-FR-69 |
@@ -123,7 +123,7 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (không chép lại). Tóm t�
 |---|---|
 | Route | Studio `/secrets` (basepath `/studio`), `?kind=` chọn tab, `?drawer=new\|<id>` mở Sheet; menu "Secrets" từ "Sắp có" thành link |
 | Artboard | Không có riêng; bám mẫu màn Agents + Sheet Orchestrator + SecretField Admin (ui-agent-studio §11). Không cần artboard mới |
-| Bố cục | 3 tab theo loại (`provider_api_key`, `source_credential`, `kh_api_key`); bảng Tên · Tenant (tab nguồn) · Giá trị `•••• •••• Đã lưu` · Được dùng bởi · Cập nhật · [Thay giá trị] [Xoá] |
+| Bố cục | 3 tab theo loại (`provider_api_key`, `source_credential`, `kh_api_key`); bảng Tên · Tenant (tab nguồn, KnowledgeHub) · Giá trị `•••• •••• Đã lưu` · Được dùng bởi · Cập nhật · [Thay giá trị] [Xoá] |
 | Chỉ ghi | Không nút xem, không last4, ô giá trị `password`, rỗng lại sau lưu; sau lưu Sheet hiện "Đã lưu · v{n}" (AC-H4b1-08) |
 | Tạo | Chỉ `provider_api_key` và `kh_api_key`; tab `source_credential` xem/thay/xoá (Q1: UI tạo ở màn Nguồn) |
 | Xoá | ConfirmDialog; còn `used_by` hoặc `409 SECRET_IN_USE` → hộp "Không xoá được {name}" liệt kê nơi dùng |
@@ -167,7 +167,7 @@ Lệnh xong: `bun run done:h4b1` (T7 tạo; = typecheck → test → test:int �
 | Q4 | Quy ước `name` | **Sửa ghi chú:** Admin thật là `^[A-Z0-9_]{2,64}$` + viết HOA, không phải như §2. Giữ regex §2 `^[A-Za-z0-9_-]{2,64}$` (AC-01 dùng "anthropic-main"), duy nhất **không phân biệt hoa-thường** theo (kind, tenant_id) để tránh "Anthropic-Main" ≠ "anthropic-main" |
 | Q5 | FK `providers.secret_id` | **Đổi nhẹ:** luôn thêm FK `ON DELETE RESTRICT` ở 0028, dạng `NOT VALID` + `VALIDATE` khi không mồ côi (mồ côi ⇒ giữ NOT VALID, NOTICE) — không sửa dữ liệu, không phải chờ H4b-2 |
 | Q6 | Khoá dev | Giữ: `keys:dev` sinh `HUB_SECRETS_KEY` (khác `SECRET_MASTER_KEY`); test dùng khoá cố định trong fixture |
-| Q7 | `kh_api_key` nền tảng hay theo tenant? | **Đổi theo khảo sát KH v6.4 (điều phối 2026-10-13):** cho phép **cả** nền tảng (`tenant_id` null) **và** theo tenant (vd client OIDC `kh-ns-<ns>` của namespace tenant). Giá trị là chuỗi mờ đục, có thể JSON nhỏ `{client_id, client_secret}`, mã hoá nguyên khối. Chỉ `platform_admin` ghi (Studio). **K1 chốt** cách dùng/định dạng |
+| Q7 | `kh_api_key` nền tảng hay theo tenant? | **Đổi theo khảo sát KH v6.4 (điều phối 2026-10-13):** cho phép **cả** nền tảng (`tenant_id` null) **và** theo tenant (vd client OIDC `kh-ns-<ns>` của namespace tenant). Giá trị là chuỗi mờ đục, có thể JSON nhỏ `{client_id, client_secret}`, mã hoá nguyên khối. Chỉ `platform_admin` ghi (Studio). **K1 chốt** cách dùng/định dạng. K1 Q7: K1 chỉ dùng khoá theo tenant; khoá nền tảng lưu được nhưng K1 từ chối (`KH_SECRET_INVALID wrong_tenant`). Giữ mặc định "Toàn nền tảng" |
 | Q8 | "Kiểm tra key" | Giữ: không (H4b-2/K1) |
 | Q9 | Rủi ro BUILD | Giữ: cao (Opus) + security review riêng (T7) |
 | Q10 | Hard stop | Giữ: không có; không thư viện mới (`node:crypto`), không ADR |

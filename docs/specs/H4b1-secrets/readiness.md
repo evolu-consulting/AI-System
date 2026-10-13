@@ -24,3 +24,17 @@ Phạm vi: spec, plan, plan-frontend, tasks, test-plan. Không có câu hỏi m�
 | BA | Thấp | HUB-BR-15 (secret theo tenant), HUB-FR-68 + ui-agent-studio (3 loại secret) | ba-agent-hub, ui-agent-studio |
 
 Kết luận sau khi áp: chưa chạy lại spec-readiness (T3 chạy lần 2, sau khi qc xong E14/badge/Phạm vi tenant ở test-plan §7).
+
+## Lần 2 · 2026-10-13 · spec-readiness · **NOT READY** (0 Chặn, 6 Cao, 5 Thấp)
+
+Không có câu hỏi mới; mặc định đã chấp nhận (Luật 2b) và đã áp trong commit `docs(h4b-1): áp mặc định readiness lần 2`. qc sửa e2e cho #4, #5.
+
+| # | Xử lý đã áp | Nơi sửa |
+|---|---|---|
+| 1 | T5a Lệnh xong: chỉ chấp nhận đỏ ở `tests/acceptance/H4b1/*.int.test.ts` trừ `boot.int.test.ts` (A110–A115 phải xanh) | tasks T5a |
+| 2 | Sau lưu `Giá trị`/`Tên` dùng `disabled`, còn trong DOM, value rỗng | plan-frontend D9 |
+| 3 | `showCloseButton={!saved}` | plan-frontend D10 |
+| 4 | e2e đóng Sheet trước khi kiểm dòng bảng/toast; không đổi `modal` (qc sửa) | plan-frontend ghi chú |
+| 5 | Ghi đè xác nhận hai bước như H4a | plan-frontend D8 |
+| 6 | Option `Phạm vi` = `tenant.name` | plan-frontend §5 |
+| 7-11 | Spec §5 "Tenant (tab nguồn, KnowledgeHub)"; §2 AAD trỏ Q2; test-plan dòng 3; Q7 K1 chỉ khoá tenant; D9 `Phạm vi` disabled sau lưu | spec, test-plan, plan-frontend |

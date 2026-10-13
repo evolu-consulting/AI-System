@@ -1,6 +1,6 @@
 # Test plan · H4b1-secrets (qc)
 
-Chế độ **WRITE + LOCK** (T2) · 2026-10-13. "Đúng" = spec §2 (luật), §3 (contract, chuẩn), §4 (DDL/RLS/GRANT), §8 (AC-H4b1-01…08), §9 (Q1–Q12) · `plan.md` §2 (chữ ký hàm thuần), §4 (boot), §5 (cách kiểm "không lộ") · `plan-frontend.md` §4–§5 (câu chữ + nhãn e2e VI). Contract chuẩn = spec §3 (plan-frontend C2/C3 đang được frontend-lead chỉnh cho khớp: `SECRET_NAME_TAKEN`, `DELETE ?version=`, `used_by {type,id,key}`). Hộp đen: chỉ đọc DDL cũ + fixture test cũ + kiểu `AuthUser` để dựng dữ liệu.
+Chế độ **WRITE + LOCK** (T2) · 2026-10-13. "Đúng" = spec §2 (luật), §3 (contract, chuẩn), §4 (DDL/RLS/GRANT), §8 (AC-H4b1-01…08), §9 (Q1–Q12) · `plan.md` §2 (chữ ký hàm thuần), §4 (boot), §5 (cách kiểm "không lộ") · `plan-frontend.md` §4–§5 (câu chữ + nhãn e2e VI). Contract chuẩn = spec §3. Hộp đen: chỉ đọc DDL cũ + fixture test cũ + kiểu `AuthUser` để dựng dữ liệu.
 
 ## 1. Quy ước
 Như H4a §1 (tên test có mã, chờ theo điều kiện, cấm `skip/only/todo`, id cố định dải `a4b1…`/`e4b1…`), thêm:
