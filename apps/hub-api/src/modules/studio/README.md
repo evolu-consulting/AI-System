@@ -28,6 +28,7 @@ API cấu hình Hub cho Agent Studio (H4a). Chỉ `platform_admin` (`requirePlat
 | `models/profiles.routes.ts` · `profiles.service.ts` | H4b-2 B5 · `POST /model-profiles`, `GET/PUT/DELETE /model-profiles/:id?version=`: `withConfigWrite` khoá hàng → `VERSION_CONFLICT` → `stepsProblem` (400 `INVALID_REFERENCE` steps/`steps.<i>`) → giống hệt ⇒ không bump → audit `model_profile`; DELETE còn agent ⇒ `PROFILE_IN_USE{agents}`. `profileItems` dùng cho list |
 | `models/profiles.repo.ts` · `profiles.map.ts` | SQL profile + providers⋈state + đếm agent · hàng → item/`ModelProfile` (`active_step` = `pickStep(…, false)`, `all_subscription`, `normSteps`) |
 | `models/models.errors.ts` | `modelError`: mã `STUDIO_MODEL_ERRORS` (không sửa `STUDIO_ERRORS`) |
+| `entitlements/entitlements.{routes,service,repo,map}.ts` | H4b-2 B7 · `GET /agent-entitlements` (ma trận, REPEATABLE READ), `GET/PUT/DELETE /agent-entitlements/:agent_id/:tenant_id` (drawer · cấp · thu hồi qua nguyên `AgentSettingsService.putEntitlement`, `affected_grants` đếm sau commit); param không uuid ⇒ 400 |
 | `models/models.rules.ts` · `provider-check.rules.ts` | Luật thuần H4b-2 (plan §2.1–§2.2) |
 
 | `orchestrator/orchestrator-settings.rules.ts` | Luật thuần runtime Orchestrator (`ORCHESTRATOR_RUNTIMES` từ `@ai/contracts/studio`, cảnh báo "Chậm") |

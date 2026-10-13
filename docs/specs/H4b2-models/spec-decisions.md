@@ -60,3 +60,10 @@ C1 — list giữ R13 (Q6): `has_secret` + `slots_in_use`, `secret`/`last_error`
 - 2026-10-13: list `GET /model-profiles` dùng chung `profileItems` (`profiles.service.ts`) — bỏ `readModelProfiles` của `studio-read.repo.ts`. `now` của `active_step` = giờ tiến trình Hub (như giao job); `ProfilesService` nhận `now?` để test.
 - 2026-10-13: steps lưu/trả/audit qua `normSteps` (thứ tự trường contract, jsonb đổi thứ tự khoá); "giống hệt" = so chuỗi JSON đã chuẩn hoá (đổi thứ tự `on` ⇒ khác). Audit `before/after = {steps}`, `summary = {steps: số bước}`.
 - 2026-10-13: seed `upsertProviders`/`upsertProfiles` thêm `version = version + 1` trong nhánh `do update … where is distinct from` ⇒ lần đầu INSERT giữ default 1 (D20), chạy lại không đổi ⇒ giữ nguyên. PRODUCTION-NOTES "seed vs Studio" để B8 (theo tasks).
+
+## Trong lúc làm — BE B7 (API Quyền agent)
+- 2026-10-13: ghi PUT/DELETE gọi nguyên `AgentSettingsService.putEntitlement` (D2) ⇒ thứ tự chặn kế thừa: tenant vắng 404 → khoá config → agent ngoài catalog của T (kể cả Orchestrator riêng tenant khác) 400 `INVALID_REFERENCE{agent_id}` → `AGENT_IS_DEFAULT` (chỉ DELETE). `affected_grants` đếm ở transaction đọc riêng sau commit (plan §3.5).
+- 2026-10-13: ma trận đếm **mọi** grant của cặp (kể cả grant mồ côi do group/user đã xoá) ⇒ `grant_count` = `affected_grants` = `count(*)` của `agent_grants`. Drawer cũng hiện grant mồ côi, tên subject vắng ⇒ dùng `subject_id` (khác `/agent-grants` bỏ mồ côi — Studio là bảng đối soát).
+- 2026-10-13: `agents` ma trận = mọi agent (cả đang tắt) sắp `key`; `only_tenant_id` chỉ khi `is_orchestrator` và không có hàng `orchestrator_settings` chung; `cells` lọc theo agents × tenants đã trả (khi `truncated`). Tenant gồm cả `active = false`.
+- 2026-10-13: `granted_by` của ô = null khi người cấp vắng ở `admin.users`; `granted_at` trả cả khi đã thu hồi (mốc cấp gần nhất), null khi chưa từng có hàng. Subject `user` tên = `display_name ?? username`; `group` = `name.vi`; `tenant` = `admin.tenants.name`.
+- 2026-10-13: đọc `hub_config_version` qua `readHubVersion` (`studio-read.repo`) — không import repo chéo module `agent-settings`.

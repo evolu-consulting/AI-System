@@ -7,12 +7,15 @@ import { requirePlatformAdmin } from "./lib/admin-role.middleware";
 import type { Db } from "./lib/db";
 import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
 import type { Logger } from "./lib/logger";
+import { AgentSettingsService } from "./modules/agent-settings/agent-settings.service";
 import { type KhRuntime, khRuntime, mountKh } from "./modules/kh/kh.mount";
 import type { SecretKey } from "./modules/secrets/secrets.crypto";
 import { mountSecrets } from "./modules/secrets/secrets.mount";
 import { HubSecretReader } from "./modules/secrets/secrets.use";
 import { agentRoutes } from "./modules/studio/agents/agents.routes";
 import { AgentsService } from "./modules/studio/agents/agents.service";
+import { entitlementRoutes } from "./modules/studio/entitlements/entitlements.routes";
+import { EntitlementsService } from "./modules/studio/entitlements/entitlements.service";
 import { profileRoutes } from "./modules/studio/models/profiles.routes";
 import { ProfilesService } from "./modules/studio/models/profiles.service";
 import { ProviderCheckService } from "./modules/studio/models/provider-check";
@@ -71,6 +74,9 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): KhRuntime 
       providerRoutes(new ProvidersService({ db: deps.db, audit, env }), checker),
     );
     app.route(STUDIO_API, profileRoutes(new ProfilesService({ db: deps.db, audit })));
+    // H4b-2 B7 · Quyền agent: ghi qua nguyên `AgentSettingsService.putEntitlement` (plan D2).
+    const settings = new AgentSettingsService({ db: deps.db, audit });
+    app.route(STUDIO_API, entitlementRoutes(new EntitlementsService({ db: deps.db, settings })));
     // H4b-1 · Studio `/secrets*` + route tenant `/admin/source-credentials*` (cùng service).
     mountSecrets(app, { db: deps.db, audit, key, studioBase: STUDIO_API });
     // K1 · `/kh/connections*`; `KhRuntime` (client + cache project) một instance cho cả process (T5e dùng).
