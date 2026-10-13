@@ -32,7 +32,7 @@ Chế độ **WRITE + LOCK** (T3) · 2026-10-13. "Đúng" = spec §2 (PC-R01…R
 | PC-R07 công cụ ép `[]`/R-G-G; hook chặn tool gốc ở workspace/git | H02 | F02 | P20–P23 | — |
 | PC-R08 kiểm diff: đường dẫn → kích thước → bí mật → test | C10–C12 | E05–E06, E09, F11 | P06–P12, P04 | E05–E06 |
 | PC-R09 `no_changes` vẫn qua gate | C10 | F05, E09 | — | E07 |
-| PC-R16 ghi diff/log không bị chặn hạn mức tenant, vẫn cộng `quotaUsed` | — | E10 | — | — |
+| PC-R16 ghi diff/log không bị chặn hạn mức tenant, vẫn cộng `quotaUsed` | — | A-E10 | — | — |
 | PC-R10 thiếu báo cáo/check_failed ⇒ decision chỉ add_attempt/cancel; ghi chú làm lại không bí mật | C14, H05–H08, H06b | F06–F07 | — | E05, E08 |
 | PC-R11 Chưa đạt ⇒ vòng k+1 cùng nhánh, `base_patch` cộng dồn; `apply_patch` ⇒ base null | H04 | F09–F10 | — | E04 |
 | PC-R12 audit `autofix_results` append-only, log che | — | D02, D06, E08–E09 | P12, P16 | — |
@@ -43,7 +43,7 @@ Chế độ **WRITE + LOCK** (T3) · 2026-10-13. "Đúng" = spec §2 (PC-R01…R
 | HUB-BR-33 container `--network none`, cap-drop, read-only, non-root, trần, không secret | H02 | D07 | P01–P05, P13–P14, S01–S08 | — |
 | B9 KH `kh-query` cạnh `ws_*` | — | K01–K02 | — | — |
 | plan §3.3 endpoint (401 một thân, 409×2, 400, 413, no-store) | C13 | E01–E07 | — | — |
-| plan §3.4 view (`pin_sha`, `diff_file`, `test_log_file`, file tải) | C15–C16 | F03–F04, F10–F11, T02 | — | E03, E10–E13 |
+| plan §3.4 view (`pin_sha`, `diff_file`, `test_log_file`, file tải) | C15–C16 | F03–F04, F10–F11, T02 | — | E03, E-E10–E13 |
 
 FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓, 126 ✓, 127 ✓ (F08, S*), 128 ✓ (trừ rebase), 130 ✓ (trừ `apply_mode`), WRK-FR-28 ✓ (F01, P*, S*), WRK-FR-29 ✓, HUB-BR-32/33/34 ✓, WRK-BR-08 ✓. Ngoài phạm vi (P-c2): HUB-FR-129, HUB-BR-34 phần PR/`apply_mode`, rebase E4.
 
@@ -55,7 +55,7 @@ FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓,
 | R | `rules/autofix-rules.test.ts` | H01–H10 (11; H06b, H10 thêm ở T3b) |
 | A | `db.int.test.ts` | D01–D08 (8) |
 | A | `defs.int.test.ts` | V01–V09 (9) |
-| A | `report.int.test.ts` | E01–E10 (10; E10 = PC-R16, T3b) |
+| A | `report.int.test.ts` | E01–E10 (10; A-E10 = PC-R16, T3b) |
 | A | `flow.int.test.ts` | F01–F12 (12) |
 | A | `tenant.int.test.ts` | T01–T04 (4) |
 | A | `kh.int.test.ts` | K01–K02 (2) |
@@ -63,9 +63,9 @@ FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓,
 | P | `pc/test_pc_hook.py` | P20–P23 (9 ca) |
 | S | `pc/sandbox_check.py` | S01–S08 (8) |
 | E | `e2e/P-c/admin/editor.pc.ts` | E01, E02, E02b (3) |
-| E | `e2e/P-c/chat/diff.pc.ts` | E03, E04, E07, E10, E11, E12, E13 (7) |
+| E | `e2e/P-c/chat/diff.pc.ts` | E03, E04, E07, E-E10, E11, E12, E13 (7) |
 | E | `e2e/P-c/chat/decision.pc.ts` | E05, E06, E08, E09 (4) |
-**Tổng 149** = R 31 · A 44 · P 51 · S 8 · E 14 (+ 1 ca E02b tách từ plan-frontend (2)). 11 ca e2e plan-frontend §5: (1) E01 · (2) E02/E02b · (3) E03 · (4) E04 · (5) E05 · (6) E06 · (7) E07 · (8) E08 · (9) E09 · (10) E10 · (11) E12; thêm E11 (lỗi tải) + E13 (thẻ thread).
+**Tổng 152** = R 33 · A 45 · P 51 · S 8 · E 14 (+ 1 ca E02b tách từ plan-frontend (2)). 11 ca e2e plan-frontend §5: (1) E01 · (2) E02/E02b · (3) E03 · (4) E04 · (5) E05 · (6) E06 · (7) E07 · (8) E08 · (9) E09 · (10) E-E10 · (11) E12; thêm E11 (lỗi tải) + E13 (thẻ thread).
 
 ### Ca chính (kỳ vọng rút gọn)
 | ID | Dữ liệu → kỳ vọng |
@@ -139,12 +139,14 @@ FR trong phạm vi P-c1 (tất cả **COULD**, không có MUST): HUB-FR-119 ✓,
 | P | `test_pc_rules.py` | 42 | 42 đỏ | `ModuleNotFoundError: agent_runtime.autofix` |
 | P | `test_pc_hook.py` | 9 | 7 đỏ · 2 xanh | P20 (6) + P23: `(True, None) != (False, 'workspace')` (hook chưa có nhãn workspace). **Xanh sẵn (đối chứng, đúng):** P21 Write/Edit (tool không cấp) + P22 `sources/` đọc được |
 | S | `sandbox_check.py` | 8 | 8 lỗi fixture | `qc: cần CLI docker (RUNTIME_SANDBOX)` — container dev `uv` không có CLI; trên máy có Docker sẽ đỏ ở `ModuleNotFoundError` tới R1 |
-| E | `e2e/P-c` (stack P-b2 lên đủ, seed + đăng nhập OK) | 14 | 14 đỏ | E01/E02b: panel mở, `switch "Tự sửa mã"` chưa có; E02: `alert` AUTOFIX_* chưa có; E03/E04/E07/E10–E12: `region "Kết quả tự sửa mã"`/`"Autofix result"` chưa có; E05/E06/E08: lý do giữ `team_calls` (0031 vắng ⇒ `setDecision` không đổi) ⇒ heading/nhóm chưa có; E09: `pcReady()` false; E13: thẻ `article` "Tự sửa mã" chưa có |
+| E | `e2e/P-c` (stack P-b2 lên đủ, seed + đăng nhập OK) | 14 | 14 đỏ | E01/E02b: panel mở, `switch "Tự sửa mã"` chưa có; E02: `alert` AUTOFIX_* chưa có; E03/E04/E07/E-E10–E12: `region "Kết quả tự sửa mã"`/`"Autofix result"` chưa có; E05/E06/E08: lý do giữ `team_calls` (0031 vắng ⇒ `setDecision` không đổi) ⇒ heading/nhóm chưa có; E09: `pcReady()` false; E13: thẻ `article` "Tự sửa mã" chưa có |
 
 `tsc -p tsconfig.tests.json` sạch phần P-c; `biome check` sạch; `ruff check` + `ruff format --check` + `pyright` (tests/acceptance/pc) sạch.
 
 ## 9. Khoá
 Khoá lần 1: 2026-10-13 (T3) — `tests/acceptance/P-c/**`, `apps/agent-runtime/tests/acceptance/pc/**`, `e2e/P-c/**`. `bun run test:lock:write` + `bun run test:lock:verify` OK; `bun run trace --check` OK.
 
-Khoá lần 2: 2026-10-14 (T3b, mở khoá có chủ đích theo readiness lần 2). Đổi H06 ⇒ `autofixDecisionOptions` (autofix_* ⇒ `[add_attempt, cancel]`; khác ⇒ `[...DECISION_OPTIONS]` theo yêu cầu điều phối; plan §4 ghi `[]` — lệch, xem "Cần bổ sung"); thêm H06b (core `decisionOptionsFor(hasOutput, autofix_*)`, cả `hasOutput=true`), H10 (`basePatchOf`), E10 (PC-R16: chèn 52×20 MiB `upload` text/plain cho acme ⇒ vượt 1 GiB; report ⇒ 201; tổng `size` sau = trước + diff + log; dọn hàng chèn).
-Đỏ đúng lý do T3b: H06/H10 `qc: <hàm> chưa có (plan §4)`; H06b đỏ ở `expect` (core chưa trả sớm); E10 đỏ ở `needPc` (0031 vắng; SQL chèn đã chạy thử trong tx rollback trên DB qc: tổng 1,090,519,040 B).
+Khoá lần 2: 2026-10-14 (T3b, mở khoá có chủ đích theo readiness lần 2). Đổi H06 ⇒ `autofixDecisionOptions` (autofix_* ⇒ `[add_attempt, cancel]`; khác ⇒ `[...DECISION_OPTIONS]` theo yêu cầu điều phối); thêm H06b (core `decisionOptionsFor(hasOutput, autofix_*)`, cả `hasOutput=true`), H10 (`basePatchOf`), A-E10 (PC-R16: chèn 52×20 MiB `upload` text/plain cho acme ⇒ vượt 1 GiB; report ⇒ 201; tổng `size` sau = trước + diff + log; dọn hàng chèn).
+Đỏ đúng lý do T3b: H06/H10 `qc: <hàm> chưa có (plan §4)`; H06b đỏ ở `expect` (core chưa trả sớm); A-E10 đỏ ở `needPc` (0031 vắng; SQL chèn đã chạy thử trong tx rollback trên DB qc: tổng 1,090,519,040 B).
+
+Khoá lần 3: 2026-10-14 — phân xử Tranh chấp test B4: test sai (so `name` trên hàng SQL thô; cột DB là `filename`, `name` chỉ có ở view `AutofixFileSchema`). Sửa A-E08 sang `filename`; lock ghi lại.

@@ -172,13 +172,13 @@ describe("E08–E09 · lưu trữ + audit [PC-R12]", () => {
     });
     const diff = await attRow(c.sql, row?.diff_attachment_id);
     const log = await attRow(c.sql, row?.test_log_attachment_id);
-    expect([diff?.origin, diff?.job_id, diff?.mime, diff?.name]).toEqual([
+    expect([diff?.origin, diff?.job_id, diff?.mime, diff?.filename]).toEqual([
       "output",
       a.job.id,
       "text/plain",
       "fix-r1.diff.txt",
     ]);
-    expect([log?.origin, log?.mime, log?.name]).toEqual([
+    expect([log?.origin, log?.mime, log?.filename]).toEqual([
       "output",
       "text/plain",
       "fix-r1-test.log.txt",
