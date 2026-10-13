@@ -65,9 +65,9 @@ Như H4a §1 (tên test có mã, chờ theo điều kiện, cấm `skip/only/tod
 | A | `no-leak.int.test.ts` | A90–A94 (5) |
 | A | `list.int.test.ts` | A100–A106 (7) |
 | A | `boot.int.test.ts` | A110–A115 (6) |
-| E | `e2e/studio/h4b1-secrets.studio.ts` | E01–E13 (13) |
+| E | `e2e/studio/h4b1-secrets.studio.ts` | E01–E17 (17: E14 Tải thêm · E15 badge KnowledgeHub · E16/E17 Phạm vi tenant; E09 thêm badge "Nguồn · repo-a") |
 
-Tổng **162**: R 50 · A/D 99 · E 13.
+Tổng **166**: R 50 · A/D 99 · E 17.
 
 ## 5. Rủi ro chập chờn
 | Rủi ro | Giảm |
@@ -97,7 +97,7 @@ Chạy tay: `bun test tests/acceptance/H4b1/rules` · `bun --env-file=.env.local
 | D | `db-guard` | 14 | 14 đỏ | SQLSTATE `42P01`/`42883` (bảng/hàm chưa có) ≠ kỳ vọng; D14 `23514` (audit CHECK chưa có `rotate`/`secret`) |
 | A | `use-secret` | 9 | 9 đỏ | `expect(typeof HubSecretReader)` (module chưa có) |
 | A | `boot` | 6 | 5 đỏ · **1 xanh** | A110–A114: `server.ts` chưa kiểm khoá ⇒ chạy tới hết 15 s ⇒ `code` null; **A115** (khoá hợp lệ ⇒ lên) xanh trước code — hồi quy |
-| E | `h4b1-secrets.studio.ts` | 13 | 13 đỏ · 0 xanh (chạy lại 2026-10-13 sau sửa E07/E08/E10/E11) | `/studio/secrets` chưa có ⇒ `expect(heading "Secrets")` ở `open()` / link "Secrets" (E01) / form đăng nhập (E13) hết giờ. E07/E08/E10/E11 thêm điều kiện tiên quyết dương (bảng + dòng, Sheet/alertdialog hiện, ô `Tên`/`Giá trị` type=password, nút Ghi đè) trước khẳng định chính; E12 thêm `combobox "Phạm vi"` |
+| E | `h4b1-secrets.studio.ts` | 17 | 17 đỏ · 0 xanh (chạy lại 2026-10-13 sau thêm E14–E17 theo readiness #4–#6) | `/studio/secrets` chưa có ⇒ `expect(heading "Secrets")` ở `open()` / link "Secrets" (E01) / form đăng nhập (E13) hết giờ. E07/E08/E10/E11 thêm điều kiện tiên quyết dương (bảng + dòng, Sheet/alertdialog hiện, ô `Tên`/`Giá trị` type=password, nút Ghi đè) trước khẳng định chính; E12 thêm `combobox "Phạm vi"`; E14–E17 và badge ở E09 cũng đỏ ở `open()`/điều kiện dương (heading chưa có) — điều kiện tiên quyết dương: dòng trang 1 hiện trước khi bấm "Tải thêm", `combobox "Phạm vi"` hiện trước khi chọn |
 
 Int: 99 ca = 95 đỏ ở `expect` + 4 xanh trước code (A01, A02, A06, A115); **0 ca đỏ do dựng dữ liệu** (không `PostgresError`/`TypeError` trong `beforeAll`/fixture). `tsc -p tsconfig.tests.json` sạch; `biome check` sạch.
 

@@ -36,7 +36,10 @@ const seed = (): Item[] => [
     used_by: [{ type: "provider", id: s(90), key: "anth-api" }],
   }),
   item(s(2), "provider_api_key", "openai-main"),
-  item(s(3), "source_credential", "git-acme", { tenant: ACME }),
+  item(s(3), "source_credential", "git-acme", {
+    tenant: ACME,
+    used_by: [{ type: "source", id: s(92), key: "repo-a" }],
+  }),
 ];
 type Call = {
   method: string;
@@ -53,10 +56,38 @@ const err = (code: string, details?: unknown) => ({
   error: { code, message: code, ...(details ? { details } : {}) },
 });
 
+/** Trả danh sách theo `kind` + phân trang giả (`page2` ⇒ trang đầu có next_cursor "c1"). */
+function listResp(st: Sec, url: URL, page2?: Item[]) {
+  const kind = url.searchParams.get("kind");
+  const items = st.items.filter((i) => !kind || i.kind === kind);
+  if (page2 && url.searchParams.get("cursor") === "c1")
+    return { status: 200, json: { items: page2, next_cursor: null } };
+  return { status: 200, json: { items, next_cursor: page2 ? "c1" : null } };
+}
+
+/** POST/GET-một/PUT/DELETE trên bộ nhớ giả. */
+function mutate(st: Sec, method: string, it: Item | undefined, body?: Record<string, unknown>) {
+  if (method === "POST") {
+    const n = item(s(100 + st.items.length), String(body?.kind), String(body?.name), {
+      tenant: body?.tenant_id === ID.acme ? ACME : null,
+    });
+    st.items.push(n);
+    return { status: 201, json: n };
+  }
+  if (!it) return { status: 404, json: err("NOT_FOUND") };
+  if (method === "GET") return { status: 200, json: it };
+  if (method === "PUT") {
+    it.version += 1;
+    return { status: 200, json: it };
+  }
+  st.items = st.items.filter((i) => i !== it);
+  return { status: 204, body: "" };
+}
+
 /** Mock `/studio/api/secrets*` theo contract spec §3 A (đăng ký sau `mockStudio` ⇒ ưu tiên). */
 async function mockSecrets(
   page: Page,
-  o: { items?: Item[]; once?: Sec["once"] } = {},
+  o: { items?: Item[]; once?: Sec["once"]; page2?: Item[] } = {},
 ): Promise<Sec> {
   const st: Sec = { items: o.items ?? seed(), calls: [], once: { ...(o.once ?? {}) } };
   await page.route(/\/studio\/api\/secrets(\/|\?|$)/, async (route) => {
@@ -73,24 +104,8 @@ async function mockSecrets(
     }
     const sid = path.split("/")[2];
     const it = st.items.find((i) => i.id === sid);
-    if (req.method() === "GET" && !sid) {
-      const kind = url.searchParams.get("kind");
-      const items = st.items.filter((i) => !kind || i.kind === kind);
-      return route.fulfill({ status: 200, json: { items, next_cursor: null } });
-    }
-    if (req.method() === "POST") {
-      const n = item(s(100 + st.items.length), String(body?.kind), String(body?.name));
-      st.items.push(n);
-      return route.fulfill({ status: 201, json: n });
-    }
-    if (!it) return route.fulfill({ status: 404, json: err("NOT_FOUND") });
-    if (req.method() === "GET") return route.fulfill({ status: 200, json: it });
-    if (req.method() === "PUT") {
-      it.version += 1;
-      return route.fulfill({ status: 200, json: it });
-    }
-    st.items = st.items.filter((i) => i !== it);
-    return route.fulfill({ status: 204, body: "" });
+    if (req.method() === "GET" && !sid) return route.fulfill(listResp(st, url, o.page2));
+    return route.fulfill(mutate(st, req.method(), it, body));
   });
   return st;
 }
@@ -304,6 +319,7 @@ test('HUB-FR-68 · CR-060 · Q1 · E09 · tab "Khoá nguồn (git)": ?kind=sourc
   await expect(
     page.getByText("Khoá nguồn do tenant admin tạo ở màn Nguồn.", { exact: false }).first(),
   ).toBeVisible();
+  await expect(row(page, "git-acme")).toContainText("Nguồn · repo-a");
 });
 
 test('HUB-FR-68 · Q4 · E10 · validate client: trống ⇒ "Nhập tên secret" + "Nhập giá trị secret"; tên `a` + giá trị 7 ký tự ⇒ câu lỗi regex/độ dài; không POST', async ({
@@ -378,4 +394,76 @@ test('HUB-FR-68 · E13 · tenant_admin mở /studio/secrets rồi đăng nhập 
     page.getByRole("heading", { name: "Bạn không có quyền vào Agent Forge" }),
   ).toBeVisible();
   expect(st.calls).toEqual([]);
+});
+
+test('HUB-FR-68 · E14 · GET đầu trả next_cursor "c1" ⇒ "Tải thêm" ⇒ GET có cursor=c1, dòng trang 2 hiện [plan-frontend D5]', async ({
+  page,
+}) => {
+  const st = await open(page, { page2: [item(s(4), "provider_api_key", "gemini-main")] });
+  await expect(row(page, "anth-main")).toHaveCount(1);
+  await expect(row(page, "gemini-main")).toHaveCount(0);
+  const more = page.waitForRequest(
+    (r) => r.method() === "GET" && new URL(r.url()).searchParams.get("cursor") === "c1",
+  );
+  await page.getByRole("button", { name: "Tải thêm" }).click();
+  expect(new URL((await more).url()).searchParams.get("kind")).toBe("provider_api_key");
+  await expect(row(page, "gemini-main")).toHaveCount(1);
+  await expect(row(page, "anth-main")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Tải thêm" })).toHaveCount(0);
+  expect(writes(st)).toEqual([]);
+});
+
+test('HUB-FR-68 · E15 · used_by knowledge_hub ⇒ badge "KnowledgeHub · kh-prod" ở tab Khoá KnowledgeHub [plan-frontend C1]', async ({
+  page,
+}) => {
+  await open(page, {
+    items: [
+      ...seed(),
+      item(s(5), "kh_api_key", "kh-main", {
+        used_by: [{ type: "knowledge_hub", id: s(93), key: "kh-prod" }],
+      }),
+    ],
+  });
+  await page
+    .getByRole("tablist", { name: "Loại secret" })
+    .getByRole("tab", { name: "Khoá KnowledgeHub" })
+    .click();
+  await expect(row(page, "kh-main")).toContainText("KnowledgeHub · kh-prod");
+});
+
+async function addKh(page: Page, scope: string, name: string) {
+  await page
+    .getByRole("tablist", { name: "Loại secret" })
+    .getByRole("tab", { name: "Khoá KnowledgeHub" })
+    .click();
+  await page.getByRole("button", { name: "+ Thêm secret" }).first().click();
+  const dlg = page.getByRole("dialog", { name: "Thêm secret" });
+  await expect(dlg.getByRole("combobox", { name: "Phạm vi" })).toBeVisible();
+  await dlg.getByRole("combobox", { name: "Phạm vi" }).click();
+  await page.getByRole("option", { name: scope, exact: true }).click();
+  await dlg.getByRole("textbox", { name: "Tên" }).fill(name);
+  await dlg.getByLabel("Giá trị", { exact: true }).fill("kh-secret-qc-Zx9Pq7Lm");
+  const post = page.waitForRequest(
+    (r) => r.method() === "POST" && /\/studio\/api\/secrets$/.test(r.url()),
+  );
+  await dlg.getByRole("button", { name: "Lưu" }).click();
+  return (await post).postDataJSON() as Record<string, unknown>;
+}
+
+test('HUB-FR-68 · E16 · khoá KH Phạm vi "Acme Corp" ⇒ POST có tenant_id acme; dòng mới hiện "Acme Corp" ở cột Tenant [plan-frontend D6]', async ({
+  page,
+}) => {
+  await open(page);
+  const body = await addKh(page, "Acme Corp", "kh-acme");
+  expect(body).toMatchObject({ kind: "kh_api_key", name: "kh-acme", tenant_id: ID.acme });
+  await expect(row(page, "kh-acme")).toContainText("Acme Corp");
+});
+
+test('HUB-FR-68 · E17 · khoá KH Phạm vi "Toàn nền tảng" ⇒ thân POST không có khoá tenant_id [plan-frontend D6]', async ({
+  page,
+}) => {
+  await open(page);
+  const body = await addKh(page, "Toàn nền tảng", "kh-global");
+  expect(body).toMatchObject({ kind: "kh_api_key", name: "kh-global" });
+  expect(Object.keys(body)).not.toContain("tenant_id");
 });
