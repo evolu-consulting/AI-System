@@ -12,6 +12,8 @@ argv dựng bằng `rules.container_args` (plan §5.2) — kiểm hành vi thậ
 
 from __future__ import annotations
 
+import asyncio
+import importlib
 import os
 import shutil
 import subprocess
@@ -130,3 +132,52 @@ def test_hub_br_33_s08_pids_limit_enforced(box: Path) -> None:
     n = int(_exec("ls /proc | grep -c '^[0-9]'").stdout.strip() or "0")
     assert n <= 512
     assert _exec("true").returncode == 0
+
+
+def test_hub_br_32_s09_fsize_ulimit_caps_single_file(box: Path) -> None:
+    """HUB-BR-32 · WRK-NFR-02 · S09 · `--ulimit fsize` = `disk_mb` (mặc định 4096 MiB): RLIMIT_FSIZE
+    trong container đúng trần; core dump tắt."""
+    cap = str(4096 * 1024 * 1024)
+    probe = "import resource as r; print(*r.getrlimit(r.RLIMIT_FSIZE), *r.getrlimit(r.RLIMIT_CORE))"
+    assert _exec(f"python3 -c '{probe}'").stdout.split() == [cap, cap, "0", "0"]
+
+
+def test_hub_br_32_s10_fsize_ulimit_blocks_oversize_write(tmp_path: Path) -> None:
+    """HUB-BR-32 · S10 · `disk_mb=1`: ghi 2 MiB vào một file bị chặn (tiến trình bị SIGXFSZ),
+    1/2 MiB đầu thì được; container vẫn sống."""
+    assert shutil.which(ENGINE) and IMAGE, "qc: cần CLI + RUNTIME_SANDBOX_IMAGE"
+    ws = tmp_path / "workspace"
+    ws.mkdir()
+    ws.chmod(0o777)
+    _cli("rm", "-f", NAME)
+    argv: list[str] = rules().container_args(
+        spec(image=IMAGE, host_workspace=str(ws), engine=ENGINE, disk_mb=1), phase="agent"
+    )
+    assert _cli(*argv).returncode == 0
+    try:
+        assert _exec("head -c 524288 /dev/zero > small.bin").returncode == 0
+        assert _exec("head -c 2097152 /dev/zero > big.bin").returncode != 0
+        assert (ws / "big.bin").stat().st_size <= 1024 * 1024
+        assert _exec("true").returncode == 0
+    finally:
+        _cli("rm", "-f", NAME)
+
+
+def test_hub_br_33_s11_prep_runs_on_aif_prep_network(box: Path) -> None:
+    """HUB-BR-33 · ADR-0011 #3 · S11 · pha cài (`prep`) chạy trên mạng riêng `aif-prep` (không
+    bridge mặc định), vẫn hạ quyền (CapEff 0, uid 1000) và có `fsize`; mạng tồn tại sau đó."""
+    name = f"{NAME}-prep"
+    prep_spec = spec(image=IMAGE, host_workspace=str(box), engine=ENGINE)
+    oci = importlib.import_module("agent_runtime.autofix.oci").OciCli(ENGINE)
+    _cli("rm", "-f", name)
+    try:
+        asyncio.run(oci.run(prep_spec, "prep"))
+        info = _cli("inspect", "--format", "{{.HostConfig.NetworkMode}}", name)
+        assert info.stdout.strip() == "aif-prep", info
+        assert _cli("network", "inspect", "aif-prep").returncode == 0
+        ul = _cli("inspect", "--format", "{{json .HostConfig.Ulimits}}", name).stdout
+        assert "fsize" in ul and "nofile" in ul
+        status = _cli("exec", "--user", "1000:1000", name, "cat", "/proc/self/status").stdout
+        assert "CapEff:\t0000000000000000" in status
+    finally:
+        _cli("rm", "-f", name)

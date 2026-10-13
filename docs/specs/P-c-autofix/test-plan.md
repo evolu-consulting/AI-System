@@ -213,3 +213,15 @@ Chạy: `bun run done:pc` (bước 1–2) → `--from=3` (int, 63,8 phút) → `
 | P-b2 C-02, P-a R-K01 (`DECISION_REASONS` 18) | contract đúng spec (PC-R10 thêm `autofix_check_failed`, `sandbox_unavailable` CUỐI; P-c C14 khẳng định). Test cũ đổi sang kiểm tiền tố 16 mã (phần tử 16 = `back_limit`). Xanh |
 | P-b2 C-07 (`PROCESS_DEF_RULES`) | đúng spec (PC-R02 thêm 3 luật `AUTOFIX_*` CUỐI; P-c C05). Test cũ kiểm tiền tố 6 luật. Xanh |
 | e2e E03 | sửa `_pc-support.ts` `patchStage`: try/catch quanh `route.fetch/json/fulfill`. e2e P-c 14/14 xanh |
+
+**Bổ sung ca vượt kiểm tra bảo mật · qc 2026-10-14** (vá review `826ae84f` Runtime, `65257b6e`/`4706959a` Hub/FE; spec §9 "vá review bảo mật P-c1")
+
+| Mã | File | Ca | Kết quả |
+|---|---|---|---|
+| P24–P28 (WRK-FR-29, PC-R08) | `apps/agent-runtime/tests/acceptance/pc/test_pc_scan.py` | bí mật trong file có NUL ⇒ `secrets` · `.gitattributes -diff` ⇒ `paths git_meta` (không ghi rõ) / `secrets` (ghi rõ) · UTF-16 ⇒ `secrets` · dòng bí mật có sẵn ở base không báo (dòng mới cạnh nó thì báo) · symlink mới ⇒ `paths symlink` | 5 xanh (vá đã có) |
+| P29 (HUB-BR-32) | cùng file | `rmtree_ro` không đổi mode đích symlink ngoài cây | xanh |
+| AF12–AF13 | `.../pc/autofix_int_test.py` (`-m int`) | Runtime đầu-cuối: NUL ⇒ `check_failed{secrets}`; `ln -s` ⇒ `check_failed{paths}` rule `symlink` | 2 xanh. Cũng sửa E501 |
+| S09–S11 (HUB-BR-32/33) | `.../pc/sandbox_check.py` (`test:pc:sandbox`) | `fsize`/core ulimit đúng; `disk_mb=1` chặn ghi 2 MiB; `prep` chạy mạng `aif-prep`, CapEff 0, có `fsize`/`nofile` | 11/11 xanh (container thật) |
+| V01–V05 (HUB-FR-128, HUB-FR-115, PC-R10/R14) | `tests/acceptance/P-c/view-task.int.test.ts` | người duyệt B nhận `stages[0].autofix` của stage mình duyệt · stage thường không mang `autofix`, X (không quyền) 404 không lộ nhánh · A có đủ · task decision `autofix_*` (có/không output) ở `my_tasks` và `GET /me/review-tasks` không có `use_current` | 5 xanh trên working tree |
+
+Nghi vấn `use_current`: xác nhận ĐÚNG ở `HEAD` — `core/task-view.ts` `toTaskDetail` lọc `DECISION_OPTIONS` theo `hasOutput` mà không xét `reason` ⇒ decision `autofix_*` có output vẫn nhận `use_current` ở `task.options` (view `decision.options` đã đúng). Working tree của backend đã sửa (`autofixDecisionOptions` trong `toTaskDetail`, chưa commit); V05 khoá lỗi này (đỏ trên `HEAD`, xanh khi có bản sửa). Ghi chú mơ hồ PC-R14: `onlyMyReviewStages` giữ mọi task `review` của người xem kể cả đã đóng ⇒ người đã/đang trong nhóm duyệt stage 0 vẫn thấy `autofix` stage 0 ở view task; spec chưa nói rõ "đang duyệt" ⇒ test không khoá chiều này.

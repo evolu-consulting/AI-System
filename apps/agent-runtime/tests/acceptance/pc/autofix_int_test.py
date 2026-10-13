@@ -54,7 +54,8 @@ def assert_no_secret(e: AfEnv, job: Job, row: dict[str, Any]) -> None:
     """PC-R12 · HUB-BR-33: không giá trị bí mật / token job trong báo cáo, log Runtime, hàng job."""
     raw = "".join(c.body.decode(errors="replace") for c in e.mock.reports(job))
     logs = e.logs()
-    # `payload` là đầu vào do test ghi (AF05 `test_cmd` chứa khoá giả) ⇒ chỉ quét trường Runtime sinh.
+    # `payload` là đầu vào do test ghi (AF05 `test_cmd` chứa khoá giả) ⇒ chỉ quét trường
+    # do Runtime sinh.
     out = {k: v for k, v in row.items() if k != "payload"}
     for where, text in (("báo cáo", raw), ("log", logs), ("job", repr(out))):
         assert not AWS_RE.search(text), f"lộ khoá AWS trong {where}"
@@ -262,3 +263,35 @@ async def test_wrk_br_08_af11_no_sandbox_job_failed_container(ctx: Ctx) -> None:
         statuses = [json.loads(c.body).get("status") for c in e.mock.reports(job)]
         assert "ok" not in statuses, statuses
         assert (e.repo / "src" / "sum.js").read_text(encoding="utf-8") == SUM_BUG
+
+
+async def test_wrk_fr_29_af12_secret_in_nul_file_caught(ctx: Ctx) -> None:
+    """AF12 · PC-R08 (3) · WRK-FR-29: bí mật trong file có byte NUL (git coi là nhị phân, diff
+    không hiện dòng) ⇒ vẫn `check_failed{secrets}` ở `src/bin.js`; test không chạy; giá trị
+    không lộ."""
+    need_r3()
+    async with af_env(ctx) as e:
+        e.runtime()
+        content = "x" + chr(0) + f"\nconst k = '{SECRET}';\n"
+        job, row = await run_job(e, f"{ws_write('src/bin.js', content)} thêm", test_cmd="true")
+        body = e.mock.report(job)
+        first = assert_failed_report(body, "secrets")
+        assert first["path"] == "src/bin.js", first
+        assert body["test"] is None
+        assert_no_secret(e, job, row)
+
+
+async def test_wrk_fr_29_af13_new_symlink_paths_failure(ctx: Ctx) -> None:
+    """AF13 · PC-R08 (1) · WRK-FR-29 · HUB-BR-32: agent tạo symlink `src/link` -> `/etc/passwd`
+    ⇒ `check_failed{paths}` rule `symlink` (path `src/link`); test không chạy."""
+    need_r3()
+    async with af_env(ctx) as e:
+        e.runtime()
+        # chỉ thị `#fake:` nhận `\S+` ⇒ khoảng trắng của lệnh viết bằng `${IFS}`
+        cmd = "#fake:ws_exec=ln${IFS}-s${IFS}/etc/passwd${IFS}src/link"
+        job, row = await run_job(e, f"{cmd} tạo link", test_cmd="true")
+        body = e.mock.report(job)
+        first = assert_failed_report(body, "paths")
+        assert (first["path"], first.get("rule")) == ("src/link", "symlink"), first
+        assert body["test"] is None
+        assert_not_container(row)
