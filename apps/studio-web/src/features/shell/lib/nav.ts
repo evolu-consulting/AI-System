@@ -18,7 +18,11 @@ export type NavId =
   | "transfer";
 
 export type NavItem =
-  | { id: NavId; kind: "link"; to: "/agents" | "/orchestrator" | "/secrets" | "/settings" }
+  | {
+      id: NavId;
+      kind: "link";
+      to: "/agents" | "/orchestrator" | "/models" | "/secrets" | "/settings";
+    }
   | { id: NavId; kind: "soon"; soon: SoonKind };
 
 export type NavGroup = {
@@ -42,7 +46,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: "agents", kind: "link", to: "/agents" },
       { id: "orchestrator", kind: "link", to: "/orchestrator" },
       soon("tools", "soonH4b"),
-      soon("models", "soonH4b"),
+      { id: "models", kind: "link", to: "/models" },
       { id: "secrets", kind: "link", to: "/secrets" },
     ],
   },

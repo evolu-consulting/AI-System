@@ -236,7 +236,8 @@
     "KH_SECRET_INVALID": "Khoá phải là secret KnowledgeHub của nền tảng",
     "KH_AGENT_RUNTIME": "Chỉ agent chạy bằng CLI mới dùng được tri thức",
     "KH_URL_NOT_ALLOWED": "Địa chỉ không được phép ({reason})",
-    "KH_URL_NOT_ALLOWED_BARE": "Địa chỉ không được phép"
+    "KH_URL_NOT_ALLOWED_BARE": "Địa chỉ không được phép",
+    "NOT_CONFIGURED": "Hub chưa cấu hình HUB_SECRETS_KEY"
   },
   "editor": {
     "titleNew": "Tạo agent",
@@ -446,6 +447,116 @@
       "tokenBudget": "Ngân sách token / run",
       "historyN": "Số tin lịch sử",
       "onNoMatch": "Không có agent nào phù hợp"
+    }
+  },
+  "models": {
+    "title": "Models",
+    "subtitle": "Provider là nơi gọi model (API hoặc CLI subscription). Profile là chuỗi bước dự phòng; agent chỉ trỏ tới profile.",
+    "tab": {
+      "providers": "Providers",
+      "profiles": "Profiles",
+      "aria": "Models"
+    },
+    "provider": {
+      "add": "+ Thêm provider",
+      "table": {
+        "aria": "Danh sách provider"
+      },
+      "kind": {
+        "api": "API",
+        "sub": "Subscription"
+      },
+      "col": {
+        "provider": "Provider",
+        "kind": "Loại",
+        "vendor": "Hãng",
+        "status": "Trạng thái",
+        "slots": "Slot",
+        "notes": "Ghi chú",
+        "actions": "Thao tác"
+      },
+      "status": {
+        "ok": "ok",
+        "busy": "bận",
+        "cooldown": "cooldown",
+        "error": "lỗi",
+        "logged_out": "hết phiên",
+        "none": "Chưa có Worker kiểm"
+      },
+      "vendor": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI",
+        "google": "Google",
+        "fake": "Fake (dev)"
+      },
+      "disabled": "(tắt)",
+      "note": {
+        "dev": "dev"
+      },
+      "cooldownUntil": "Mở lại sau {min} phút ({time})",
+      "action": {
+        "check": "Kiểm tra key",
+        "recheck": "Kiểm tra lại",
+        "guide": "Hướng dẫn",
+        "edit": "Sửa",
+        "delete": "Xoá"
+      },
+      "sheet": {
+        "create": "Thêm provider",
+        "edit": "Sửa provider · {key}",
+        "save": "Lưu",
+        "saving": "Đang lưu…",
+        "cancel": "Huỷ"
+      },
+      "field": {
+        "key": "Khoá provider",
+        "kind": "Loại",
+        "vendor": "Hãng",
+        "baseUrl": "Base URL (tuỳ chọn)",
+        "secret": "API key",
+        "slots": "Số slot tối đa",
+        "enabled": "Bật provider",
+        "secretHint": "Chọn secret loại Provider API key đã lưu ở màn Secrets. Không hiện giá trị.",
+        "subKeyHint": "Khoá phải trùng provider đã cài ở Worker (xem runbook)",
+        "createSecret": "Tạo secret",
+        "kindLocked": "không đổi được sau khi tạo",
+        "slotsHint": "Dùng chung cho mọi tenant. Giới hạn theo tenant đặt ở Admin.",
+        "subNote": "Không dùng API key. Đăng nhập CLI trên máy Worker."
+      },
+      "toast": {
+        "saved": "Đã lưu {key}",
+        "deleted": "Đã xoá {key}"
+      },
+      "delete": {
+        "title": "Xoá {key}?",
+        "body": "Provider sẽ bị xoá.",
+        "confirm": "Xoá"
+      },
+      "inUse": {
+        "title": "Không xoá được {key}",
+        "body": "Provider đang là bước của các profile sau. Gỡ bước, hoặc chỉ tắt provider."
+      }
+    },
+    "state": {
+      "empty": {
+        "providers": "Chưa có provider nào",
+        "profiles": "Chưa có profile nào"
+      },
+      "forbidden": "Bạn không có quyền xem mục này"
+    },
+    "err": {
+      "key": "Bắt đầu bằng chữ thường; chỉ chữ thường, số và - (2–48 ký tự)",
+      "vendor": "Chọn hãng",
+      "secret": "Chọn API key",
+      "baseUrl": "Địa chỉ không hợp lệ",
+      "slots": "Nhập số nguyên từ 1 đến 100"
+    },
+    "errors": {
+      "keyTaken": "Khoá này đã được dùng",
+      "providerInUse": "Provider đang là bước của các profile sau. Gỡ bước, hoặc chỉ tắt provider.",
+      "providerHasHistory": "Provider đã có lịch sử chạy, chỉ tắt được",
+      "providerReadonly": "Provider này do hệ thống quản lý, không sửa được",
+      "conflictDelete": "Provider vừa được thay đổi. Đã tải lại danh sách."
     }
   },
   "secrets": {

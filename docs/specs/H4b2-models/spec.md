@@ -182,4 +182,4 @@ Câu mới của backend-lead (bằng chứng + phương án khác: `spec-decisi
 - 2026-10-13 (B2): `redactKey` quét ≤ 4 000 ký tự; key < 8 ký tự ⇒ che cả key. `baseUrlProblem`: giao thức khác http(s), `?`/`#` rỗng ⇒ `invalid`. `pickStep` dùng lại `blockedReason`.
 
 ## 10. Tranh chấp test
-- (không)
+- M02 (T5): plan-frontend ghi `{min}` làm tròn lên, nhưng seed `now+42m20s` + regex `4[12] phút` chỉ khớp khi làm tròn gần nhất (ceil ⇒ 43). FE dùng `Math.round` để xanh; qc xác nhận lại luật hoặc sửa seed.

@@ -236,7 +236,8 @@
     "KH_SECRET_INVALID": "The key must be a platform KnowledgeHub secret",
     "KH_AGENT_RUNTIME": "Only CLI agents can use knowledge",
     "KH_URL_NOT_ALLOWED": "Address not allowed ({reason})",
-    "KH_URL_NOT_ALLOWED_BARE": "Address not allowed"
+    "KH_URL_NOT_ALLOWED_BARE": "Address not allowed",
+    "NOT_CONFIGURED": "The Hub has no HUB_SECRETS_KEY configured"
   },
   "editor": {
     "titleNew": "Create agent",
@@ -446,6 +447,116 @@
       "tokenBudget": "Token budget per run",
       "historyN": "History messages",
       "onNoMatch": "When no agent fits"
+    }
+  },
+  "models": {
+    "title": "Models",
+    "subtitle": "A provider is where models are called (API or CLI subscription). A profile is a fallback chain; agents only point to a profile.",
+    "tab": {
+      "providers": "Providers",
+      "profiles": "Profiles",
+      "aria": "Models"
+    },
+    "provider": {
+      "add": "+ Add provider",
+      "table": {
+        "aria": "Provider list"
+      },
+      "kind": {
+        "api": "API",
+        "sub": "Subscription"
+      },
+      "col": {
+        "provider": "Provider",
+        "kind": "Type",
+        "vendor": "Vendor",
+        "status": "Status",
+        "slots": "Slots",
+        "notes": "Notes",
+        "actions": "Actions"
+      },
+      "status": {
+        "ok": "ok",
+        "busy": "busy",
+        "cooldown": "cooldown",
+        "error": "error",
+        "logged_out": "logged out",
+        "none": "Not checked by a Worker yet"
+      },
+      "vendor": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI",
+        "google": "Google",
+        "fake": "Fake (dev)"
+      },
+      "disabled": "(off)",
+      "note": {
+        "dev": "dev"
+      },
+      "cooldownUntil": "Reopens in {min} min ({time})",
+      "action": {
+        "check": "Check key",
+        "recheck": "Check again",
+        "guide": "Guide",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "sheet": {
+        "create": "Add provider",
+        "edit": "Edit provider · {key}",
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel"
+      },
+      "field": {
+        "key": "Provider key",
+        "kind": "Type",
+        "vendor": "Vendor",
+        "baseUrl": "Base URL (optional)",
+        "secret": "API key",
+        "slots": "Max slots",
+        "enabled": "Enable provider",
+        "secretHint": "Pick a Provider API key secret saved on the Secrets screen. The value is never shown.",
+        "subKeyHint": "The key must match the provider installed on the Worker (see runbook)",
+        "createSecret": "Create secret",
+        "kindLocked": "cannot change after creation",
+        "slotsHint": "Shared by all tenants. Per-tenant limits are set in Admin.",
+        "subNote": "No API key. Sign in to the CLI on the Worker machine."
+      },
+      "toast": {
+        "saved": "Saved {key}",
+        "deleted": "Deleted {key}"
+      },
+      "delete": {
+        "title": "Delete {key}?",
+        "body": "The provider will be deleted.",
+        "confirm": "Delete"
+      },
+      "inUse": {
+        "title": "Cannot delete {key}",
+        "body": "The provider is a step in the profiles below. Remove the step, or just disable the provider."
+      }
+    },
+    "state": {
+      "empty": {
+        "providers": "No providers yet",
+        "profiles": "No profiles yet"
+      },
+      "forbidden": "You don't have permission to view this"
+    },
+    "err": {
+      "key": "Start with a lowercase letter; only lowercase letters, digits and - (2–48 characters)",
+      "vendor": "Choose a vendor",
+      "secret": "Choose an API key",
+      "baseUrl": "Invalid URL",
+      "slots": "Enter an integer from 1 to 100"
+    },
+    "errors": {
+      "keyTaken": "This key is already used",
+      "providerInUse": "The provider is a step in the profiles below. Remove the step, or just disable the provider.",
+      "providerHasHistory": "Provider has run history; disable it instead",
+      "providerReadonly": "This provider is system-managed",
+      "conflictDelete": "The provider was just changed. The list has been reloaded."
     }
   },
   "secrets": {
