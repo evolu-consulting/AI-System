@@ -16,20 +16,32 @@ import {
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
+import { fetchAttachmentContent } from "~/features/attachments/api";
 import { ApiError } from "~/lib/http";
-import { ReasonHint } from "../../shared/components/ReasonHint";
-import { reasonKey, reasonParams } from "../../shared/lib/decision-reason";
+import { AutofixFailures } from "../../shared/autofix/AutofixFailures";
+import { ReasonLines } from "../../shared/components/ReasonLines";
+import { isAutofixReason } from "../../shared/lib/decision-reason";
 import type { TaskCardProps } from "../../shared/types";
 import { useDecide } from "../hooks/use-decide";
 
 // D6c (UAT 2026-10-11): trong thread, `DecisionMessage` đã in tiêu đề "Quy trình dừng ở giai đoạn…" + lý do ở trên,
 // nên thẻ nhúng ẩn hai dòng đó để không lặp; trang lượt chạy (TaskPanel) không nhúng ⇒ vẫn in đủ.
-export function DecisionCard({ runId, task, embedded }: TaskCardProps & { embedded?: boolean }) {
+export function DecisionCard({
+  runId,
+  task,
+  view,
+  embedded,
+}: TaskCardProps & { embedded?: boolean }) {
   const { t } = useTranslation();
   const decide = useDecide(runId);
   const [note, setNote] = useState("");
   const [noOutput, setNoOutput] = useState(false);
-  const options = task.options ?? [];
+  const autofixReason = isAutofixReason(task.reason);
+  const failed =
+    task.reason === "autofix_check_failed" && view?.access === "full"
+      ? view.stages[task.stage_idx]?.autofix
+      : undefined;
+  const options = (task.options ?? []).filter((o) => !(autofixReason && o === "use_current"));
   const over = note.length > FORWARD_NOTE_MAX;
 
   const run = useCallback(
@@ -69,12 +81,10 @@ export function DecisionCard({ runId, task, embedded }: TaskCardProps & { embedd
           {t("process.run.decision.title", { stage: task.stage_name })}
         </p>
       )}
-      {!embedded && task.reason && (
-        <p className="text-caption text-secondary-foreground">
-          {t(reasonKey(task.reason), reasonParams(task.reason))}
-        </p>
+      {!embedded && task.reason && <ReasonLines reason={task.reason} />}
+      {task.reason === "autofix_check_failed" && (
+        <AutofixFailures view={failed} load={fetchAttachmentContent} />
       )}
-      {!embedded && task.reason && <ReasonHint reason={task.reason} />}
       <Textarea
         aria-label={t("process.run.decision.note")}
         value={note}

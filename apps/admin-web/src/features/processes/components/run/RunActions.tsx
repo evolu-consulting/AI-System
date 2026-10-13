@@ -1,15 +1,17 @@
 // ADM-FR-67 · CR-056 · P-a F5: "Cần người quyết" (3 lựa chọn + ghi chú, `can_decide`) và "Huỷ lượt chạy" (`can_cancel`).
 import type { ProcessRunFullView } from "@ai/contracts/chat";
 import { DECISION_REASONS } from "@ai/contracts/hub-admin";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { fetchAttachmentContent } from "../../api";
 import { useRunAction } from "../../hooks/use-run-data";
 import { processErrorSpec } from "../../lib/errors";
+import { AutofixFailures } from "./autofix/AutofixFailures";
 
 type Props = { run: ProcessRunFullView; tenantId: string | undefined };
 const NOTE_MAX = 500;
@@ -22,6 +24,15 @@ function reasonText(t: ReturnType<typeof useTranslation>["t"], run: ProcessRunFu
   return known
     ? t(`process.common.${d.reason}`, { max: stage?.attempt_limit ?? stage?.ask_limit ?? 0 })
     : d.reason;
+}
+
+function ReasonTitle({ run }: { run: ProcessRunFullView }) {
+  const { t } = useTranslation();
+  const r = run.decision?.reason;
+  if (r === "autofix_check_failed" || r === "sandbox_unavailable") {
+    return <h3 className="text-body font-semibold">{reasonText(t, run)}</h3>;
+  }
+  return <p className="text-body text-muted-foreground">{reasonText(t, run)}</p>;
 }
 
 export function RunActions({ run, tenantId }: Props) {
@@ -40,6 +51,9 @@ export function RunActions({ run, tenantId }: Props) {
       { option, note },
       { onSuccess: () => notifySuccess(t("process.admin.run.decision.done")), onError: fail },
     );
+  const load = useCallback((id: string) => fetchAttachmentContent(id, tenantId), [tenantId]);
+  const autofixReason = d?.reason === "autofix_check_failed" || d?.reason === "sandbox_unavailable";
+  const failed = d ? run.stages[d.stage_idx]?.autofix : undefined;
   const hasOutput = (run.stages[d?.stage_idx ?? 0]?.outputs.length ?? 0) > 0;
   return (
     <div className="space-y-3">
@@ -53,7 +67,7 @@ export function RunActions({ run, tenantId }: Props) {
               stage: run.stages[d.stage_idx]?.name ?? "",
             })}
           </h2>
-          <p className="text-body text-muted-foreground">{reasonText(t, run)}</p>
+          <ReasonTitle run={run} />
           {d?.reason === "source_unresolvable" && (
             <p className="text-caption text-muted-foreground">
               {t("process.common.source_unresolvable_hint")}
@@ -64,6 +78,7 @@ export function RunActions({ run, tenantId }: Props) {
               {t(`process.common.${d.reason}_hint`)}
             </p>
           )}
+          {d.reason === "autofix_check_failed" && <AutofixFailures view={failed} load={load} />}
           {deciding ? (
             <>
               <div className="space-y-1.5">
@@ -77,16 +92,18 @@ export function RunActions({ run, tenantId }: Props) {
                 />
               </div>
               <div className="flex flex-wrap gap-2">
-                {d.options.map((o) => (
-                  <Button
-                    key={o}
-                    variant={o === "cancel" ? "outline" : "default"}
-                    disabled={act.isPending || (o === "use_current" && !hasOutput)}
-                    onClick={() => decide(o)}
-                  >
-                    {t(`process.common.option.${o}`)}
-                  </Button>
-                ))}
+                {d.options
+                  .filter((o) => !(autofixReason && o === "use_current"))
+                  .map((o) => (
+                    <Button
+                      key={o}
+                      variant={o === "cancel" ? "outline" : "default"}
+                      disabled={act.isPending || (o === "use_current" && !hasOutput)}
+                      onClick={() => decide(o)}
+                    >
+                      {t(`process.common.option.${o}`)}
+                    </Button>
+                  ))}
               </div>
             </>
           ) : (
