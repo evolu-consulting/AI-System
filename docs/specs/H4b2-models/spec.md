@@ -3,7 +3,7 @@ id: H4b2-models
 title: H4b-2 · Models (provider, profile, trạng thái sống) + Quyền agent (entitlement agent × tenant)
 milestone: H4b-2 (phần còn lại của H4b; mở 2026-10-13 sau CR-074 bỏ K2)
 status: draft            # chưa PLAN/qc/readiness/Gate
-requirements: [HUB-FR-66, HUB-FR-67, HUB-FR-78, HUB-FR-77, HUB-BR-17, AC-H04, AC-H4b2-01, AC-H4b2-02, AC-H4b2-03, AC-H4b2-04, AC-H4b2-05, AC-H4b2-06]
+requirements: [HUB-FR-66, HUB-FR-67, HUB-FR-78, HUB-FR-77, HUB-BR-17, AC-H04, AC-H4b2-01, AC-H4b2-02, AC-H4b2-03, AC-H4b2-04, AC-H4b2-05, AC-H4b2-06, AC-H4b2-07]
 design:
   - docs/design/agent-hub/ba-agent-hub.md HUB-FR-66, HUB-FR-67 (dòng ~209–210) · HUB-FR-77, HUB-FR-78 (~227–228) · HUB-BR-17 (~359) · AC-H04 · bảng `providers`, `provider_state` (~378, ~388)
   - docs/design/agent-hub/ui-agent-studio.md §8 Models (dòng 120) · §9 Quyền agent (130) · flow F3, F5 · §13 Validation & trạng thái
@@ -158,7 +158,8 @@ Từ BA/UI; qc bổ sung dữ liệu cụ thể khi viết test (trước code).
 
 | AC | Given / When / Then | Test |
 |---|---|---|
-| AC-H04 | Theo BA AC-H04: profile *smart* = anthropic-api → openai-api, anthropic trả 429 → trả lời từ openai, trace ghi `provider=openai-api` + lý do dự phòng | <!-- qc --> |
+| AC-H04 | **Dời H2d (Q4).** Theo BA AC-H04: 429 giữa chừng → chuyển bước kế. Thay trong mốc này bằng AC-H4b2-07 | — |
+| AC-H4b2-07 | Dự phòng **lúc giao job** (`pickStep`, plan §2.3): bước có provider tắt bị bỏ; provider đang chặn bị bỏ khi `on` của bước có trigger tương ứng; log `job.fallback` + provider đích | `rules/profile-step` R50–R65, `dispatch.int` D01–D07 |
 | AC-H4b2-01 | `platform_admin` tạo provider `api` gắn secret H4b-1 → có trong danh sách với `secret_id`, không lộ giá trị; role khác → 403 | <!-- qc --> |
 | AC-H4b2-02 | "Kiểm tra key" key sai/đúng (mock) → khối Chi tiết hiện lỗi nguyên văn / ok; log + audit không chứa key | <!-- qc --> |
 | AC-H4b2-03 | Profile 2 bước, thứ tự kéo-thả lưu đúng; xoá provider đang được profile dùng → 409 kèm tên profile | <!-- qc --> |
@@ -166,7 +167,7 @@ Từ BA/UI; qc bổ sung dữ liệu cụ thể khi viết test (trước code).
 | AC-H4b2-05 | Thu hồi entitlement có 2 grant → ConfirmDialog nêu "2 grant"; sau xác nhận agent biến khỏi danh sách user; cấp lại → grant tự có hiệu lực; run đang chạy vẫn xong | <!-- qc --> |
 | AC-H4b2-06 | `tenant_admin` `acme` cấp agent chưa có entitlement → từ chối (HUB-BR-17); không thấy entitlement tenant khác | <!-- qc --> |
 
-Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwright test h4b2` (`done:h4b` theo ROADMAP).
+Lệnh xong: `bun run typecheck && bun test && bun run test:int && bunx playwright test -c e2e/studio/playwright.config.ts h4b2` (`done:h4b2`, alias `done:h4b` theo ROADMAP). Chi tiết: `test-plan.md`.
 
 ## 9. Quyết định
 ### Trước Gate (đã chốt với người dùng)
