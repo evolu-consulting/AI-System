@@ -37,7 +37,7 @@ src/features/access/api.ts      ma trận + drawer + cấp/thu hồi
   components/{AccessMatrix,CellDrawer,RevokeDialog}.tsx · pages/AccessPage.tsx · README.md
 src/features/shell/lib/nav.ts   models, access: soon → link
 ```
-Mỗi component ≤ 200 dòng; `StepsEditor` tách `StepRow`. Bước cũ có `model = null`: ô Model để trống, bắt nhập khi lưu.
+Component ≤ 200 dòng; `StepsEditor` tách `StepRow`. Bước cũ `model = null`: ô trống, bắt nhập khi lưu.
 
 ## 2. Màn hình
 | Màn | Bố cục | Đang tải | Rỗng | Lỗi | Không quyền / 409 |
@@ -132,13 +132,13 @@ Lỗi API (không đụng `errors.KEY_TAKEN` cũ của Agent; dùng lại `error
 | Xoá | `alertdialog "Xoá {key}?"` (`button "Huỷ"`, `button "Xoá"`) · đang dùng: `alertdialog "Không xoá được {key}"` + badge tên profile + `button "Đóng"` |
 | Profiles | `list "Danh sách profile"` (mỗi `link` = tên) · `button "+ Profile mới"` · `textbox "Tên profile"` · `list "Các bước"`, mỗi `listitem` có `combobox "Provider"`, `textbox "Model"`, `group "Chuyển bước kế khi"` (3 `checkbox` lỗi/hết quota/quá giờ), `button "Lên"`, `button "Xuống"`, `button "Xoá bước"` · `button "+ Thêm bước"` · `button "Lưu profile"` · `button "Xoá profile"` → `alertdialog "Xoá {key}?"` / `"Không xoá được {key}"` (badge agent) · `status` "Lúc này sẽ chạy bằng…" |
 | Quyền agent | `heading "Quyền agent"` · `table "Ma trận quyền agent"`; hàng = agent, cột = tenant; mỗi ô `switch "{agent.key} × {tenant.key}"` (aria-checked; ô `only_tenant_id` không có switch, chỉ "—") · `combobox "Lọc theo agent"`, `combobox "Lọc theo tenant"` · `button "Chi tiết {agent.key} × {tenant.key}"` mở drawer · `dialog "Chi tiết {agent} × {tenant}"` (+ `button "Đóng"`) · `alertdialog "Thu hồi {agent} khỏi {tenant}?"` (`button "Huỷ"`, `button "Thu hồi"`) |
-| Không có | không element hiện giá trị key; DOM không chứa key sau "Kiểm tra key" |
+| Không có | DOM không chứa giá trị key |
 
 ## 6. Accessibility
-Sheet/Dialog trả focus về nút gọi; `Kết quả kiểm tra` là `status` `aria-live=polite`, trạng thái không chỉ dựa màu (có chữ); công tắc ma trận là `button role=switch` có nhãn đủ; chỉ nút Lên/Xuống (bàn phím), không kéo-thả; copy báo bằng `status`; tương phản ≥ 4.5:1 theo token.
+Sheet/Dialog trả focus về nút gọi; kết quả kiểm tra là `status` `aria-live=polite`, không chỉ dựa màu; công tắc ma trận `role=switch` có nhãn đủ; Lên/Xuống bằng bàn phím; copy báo bằng `status`; tương phản ≥ 4.5:1.
 
 ## 7. Hiệu năng
-Hai chunk lazy, ước ≤ 14 KB gzip tổng (không chặn mốc). Ma trận: số agent × tenant nhỏ, không virtualize; `AccessCell` memo theo `(agentId, tenantId, on, count)`. Bảng provider poll trạng thái sống `refetchInterval` 10 s khi tab hiển thị (tạm dừng khi ẩn).
+Hai chunk lazy (≤ 14 KB gzip, không chặn mốc). Ma trận không virtualize; `AccessCell` memo `(agentId, tenantId, on, count)`. Bảng provider `refetchInterval` 10 s khi tab hiển thị.
 
 ## 8. Đối chiếu đề nghị C1–C7 với contract spec §3 (backend-lead đã chốt)
 | # | Đề nghị | Dùng cho |
@@ -150,7 +150,7 @@ Hai chunk lazy, ước ≤ 14 KB gzip tổng (không chặn mốc). Ma trận: s
 | C5 | `GET /agent-entitlements` → `{agents:[{id,name,enabled}],tenants:[{id,name}],cells:[{agent_id,tenant_id,granted_at,granted_by,grant_count}]}` (chỉ ô đã cấp; chưa cấp không có trong `cells`) | Ma trận |
 | C6 | `PUT /agent-entitlements/:agent_id/:tenant_id` (cấp, idempotent) · `DELETE` (thu hồi, trả `{affected_grants:n}`) | Cấp/thu hồi |
 | C7 | `GET /agent-entitlements/:agent_id/:tenant_id/grants` → `[{subject_type:"group"\|"user",subject_name,granted_by,granted_at}]` | Drawer |
-C5–C7: path nhận; drawer gộp grants vào `GET /agent-entitlements/:agent_id/:tenant_id`; cell có `grants:{group,user,tenant}`, agent có `is_orchestrator`/`only_tenant_id`. Hình chính xác: spec §3, không chép lại.
+C5–C7: hình chính xác theo spec §3 (drawer gộp grants vào `GET /agent-entitlements/:agent_id/:tenant_id`).
 
 ## 9. Đối chiếu AC
 | AC | FE chứng minh bằng |
