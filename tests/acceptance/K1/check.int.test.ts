@@ -149,7 +149,7 @@ describe("A24–A28 · lỗi xác thực / khoá / phiên bản [Q27 · Q28]", (
   });
   it("HUB-BR-36 · A28 · secret không giải mã được ⇒ kh_key_invalid, không gửi lời gọi có khoá", async () => {
     need();
-    await c.sql`update hub.secrets set ciphertext = ${Buffer.from("qc-K1-hong")} where id = ${K1.secMain2}`;
+    await c.sql`update hub.secrets set ciphertext = ${Buffer.from("qc-K1-hong-hong-hong")} where id = ${K1.secMain2}`;
     const r = await check({ secretId: K1.secMain2 });
     expect([r.status, codes(r)]).toEqual(["error", ["error:kh_key_invalid"]]);
     expect(c.khA.calls.filter((x) => x.sentKey)).toEqual([]);

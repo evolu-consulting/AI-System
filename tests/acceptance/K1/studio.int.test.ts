@@ -247,11 +247,11 @@ describe("A08–A09 · sửa + xoá kết nối [spec §3.2 · Q34]", () => {
     need();
     await seedMain();
     const stale = await studio(c, "PUT", `/${K1.connMain}`, { ...body(), version: 9 });
-    expect([stale.status, errCode(stale), errDetails(stale)?.current]).toEqual([
-      409,
-      "VERSION_CONFLICT",
-      1,
-    ]);
+    expect([
+      stale.status,
+      errCode(stale),
+      (errDetails(stale)?.current as { version?: number } | undefined)?.version,
+    ]).toEqual([409, "VERSION_CONFLICT", 1]);
     expect(typeof errDetails(stale)?.updated_at).toBe("string");
     expect((await studio(c, "PUT", `/${NONE}`, { ...body(), version: 1 })).status).toBe(404);
     const u = await studio(c, "PUT", `/${K1.connMain}`, {
