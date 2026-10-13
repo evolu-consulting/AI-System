@@ -2,7 +2,7 @@
 id: P-c-autofix
 title: P-c · Luồng tự-sửa (autonomous fix) — workspace ghi-được + exec trong container + diff (P-c1) · PR (P-c2)
 milestone: P-c (sau H4b-2)
-status: draft            # PLAN backend 2026-10-13 xong; chờ mockup FE + câu hỏi người dùng (§10) + qc + spec-readiness + Gate
+status: draft            # PLAN BE+FE 2026-10-13 xong, mockup + Q1–Q7 đã duyệt; chờ qc + spec-readiness + Gate
 requirements: [HUB-FR-119, HUB-FR-126, HUB-FR-127, HUB-FR-128, HUB-FR-129, HUB-FR-130, WRK-FR-28, WRK-FR-29, HUB-BR-32, HUB-BR-33, HUB-BR-34, WRK-BR-08]
 design:
   - docs/CHANGE-REQUESTS.md#CR-061 (Intake Đầy đủ chốt 2026-10-12), #CR-065 (sửa đổi: nhánh, kiểm diff, apply_mode)
@@ -149,4 +149,4 @@ Mockup P-c1 (chờ người dùng duyệt; chưa viết plan-frontend), trong `d
 | Q6 | Runtime container: **Podman rootless** (prod WSL2) + Docker Desktop (dev), trần mặc định ADR-0011 #3 (2 CPU, 2 GiB, 512 pids, job 30 phút, ≤ 1 job tự-sửa đồng thời)? | Có |
 | Q7 | Ảnh sandbox một bộ công cụ chung (git, rg, python3, node LTS, bun; ~400–600 MB, dựng từ Dockerfile trong repo)? | Có; chọn ảnh theo quy trình để sau |
 
-**Người dùng trả lời 2026-10-13:** chấp nhận mặc định Q1–Q7 (Q1 tách P-c1/P-c2; Q2 cho pha cài có mạng; Q3 `local_path` chỉ trên bản sao; Q4/Q6/Q7 duyệt sandbox ADR-0011 như đề xuất — ADR chuyển Accepted ở Gate; Q5 = P-c2 theo Q1). Mockup `Pc-*.dc.html` chờ người dùng duyệt.
+**Người dùng trả lời 2026-10-13:** chấp nhận mặc định Q1–Q7 (Q1 tách P-c1/P-c2; Q2 cho pha cài có mạng; Q3 `local_path` chỉ trên bản sao; Q4/Q6/Q7 duyệt sandbox ADR-0011 như đề xuất — ADR chuyển Accepted ở Gate; Q5 = P-c2 theo Q1). Mockup `Pc-*.dc.html` duyệt 2026-10-13.
