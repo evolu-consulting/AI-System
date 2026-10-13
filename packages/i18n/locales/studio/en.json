@@ -24,7 +24,8 @@
     "cost": "Cost & usage",
     "jobs": "Jobs & Worker",
     "audit": "Change log",
-    "transfer": "Import / Export"
+    "transfer": "Import / Export",
+    "settings": "Settings"
   },
   "soon": "Coming soon",
   "soonH4b": "Coming soon (H4b)",
@@ -214,7 +215,14 @@
     "ORCHESTRATOR_DEFAULT_PROTECTED": "The default Orchestrator can't be deleted.",
     "TENANT_INACTIVE": "This tenant is locked.",
     "SECRET_IN_USE": "The secret is in use and cannot be deleted",
-    "SECRET_NAME_TAKEN": "This name is already used for this secret type"
+    "SECRET_NAME_TAKEN": "This name is already used for this secret type",
+    "KH_CONNECTION_EXISTS": "Name or address is used by another connection",
+    "KH_CONNECTION_IN_USE": "The connection is still used by {agents} agents",
+    "KH_CONNECTION_NOT_FOUND": "The connection no longer exists",
+    "KH_SECRET_INVALID": "The key must be a platform KnowledgeHub secret",
+    "KH_AGENT_RUNTIME": "Only CLI agents can use knowledge",
+    "KH_URL_NOT_ALLOWED": "Address not allowed ({reason})",
+    "KH_URL_NOT_ALLOWED_BARE": "Address not allowed"
   },
   "editor": {
     "titleNew": "Create agent",
@@ -518,6 +526,101 @@
       "nameFormat": "Use letters, digits, - and _ only (2–64 characters)",
       "valueEmpty": "Enter the secret value",
       "valueLen": "Value must be 8–2048 characters"
+    }
+  },
+  "knowledgehub": {
+    "title": "Settings",
+    "section": "KnowledgeHub connections",
+    "risk": "Agents can read every project the connection's key can see. To separate data between companies, use a separate key or KnowledgeHub per company.",
+    "add": "Add connection",
+    "origins": "Allowed origins",
+    "noOrigins": "Operations has not declared HUB_KH_ALLOWED_ORIGINS — addresses cannot be saved",
+    "empty": "No KnowledgeHub connection yet",
+    "loadMore": "Load more",
+    "forbidden": "Only platform admins can view these settings.",
+    "col": {
+      "name": "Name",
+      "url": "Address",
+      "key": "Key",
+      "project": "Summary project",
+      "status": "Status",
+      "agents": "Agents using",
+      "actions": "Actions"
+    },
+    "action": {
+      "check": "Test",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "status": {
+      "unchecked": "Not tested",
+      "ok": "OK",
+      "error": "Error"
+    },
+    "sheet": {
+      "create": "Add connection",
+      "edit": "Edit connection",
+      "desc": "Connect to a KnowledgeHub using a platform key.",
+      "name": "Name",
+      "url": "Address",
+      "key": "Key",
+      "keyLoading": "Loading…",
+      "keyNone": "No platform KnowledgeHub secret yet",
+      "createSecret": "Create secret",
+      "project": "Summary project",
+      "projectHint": "Optional. Leave empty to skip writing Summaries.",
+      "resetWarn": "Saving resets the status to Not tested; agents stop using the connection until re-tested.",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "close": "Close",
+      "saved": "Saved · v{n}"
+    },
+    "err": {
+      "name": "Enter a name (at most 80 characters, no /)",
+      "urlInvalid": "Invalid address",
+      "urlScheme": "Only https:// is allowed (except localhost in development)",
+      "urlParts": "Address must not contain credentials, query or fragment",
+      "key": "Select a KnowledgeHub key",
+      "project": "Invalid project ID"
+    },
+    "delete": {
+      "title": "Delete connection {name}?",
+      "body": "Delete connection {name}? The secret is not deleted.",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "saved": "Connection {name} saved",
+      "deleted": "Connection {name} deleted",
+      "conflictDelete": "The connection was just changed. The list has been reloaded."
+    },
+    "check": {
+      "title": "Check result",
+      "desc": "Result of the KnowledgeHub connection check.",
+      "running": "Testing…",
+      "ok": "Connection OK",
+      "failed": "Connection failed: {n} errors",
+      "version": "KnowledgeHub version: {v}",
+      "at": "Checked at {time}",
+      "projects": "Projects the key sees: {n}",
+      "timeout": "The check timed out",
+      "unknown": "Check item {code}",
+      "levelError": "Error",
+      "levelWarning": "Warning",
+      "code": {
+        "kh_url_not_allowed": "Address not allowed ({reason})",
+        "kh_unreachable": "Cannot reach KnowledgeHub (HTTP {status})",
+        "kh_timeout": "KnowledgeHub did not respond in time",
+        "kh_auth_disabled": "KnowledgeHub answers without a key — enable KH_API_KEY",
+        "kh_key_invalid": "Cannot read the key secret",
+        "kh_key_rejected": "KnowledgeHub rejected the key (or runs in SSO mode)",
+        "kh_version_too_old": "KnowledgeHub must be ≥ v6.4 (found {found})",
+        "kh_auth_disabled_dev": "Authentication is off (acceptable in development only)",
+        "kh_embedder_english": "Embedder {model} is English-only — a multilingual embedder (e.g. bge-m3) is needed for Vietnamese",
+        "kh_projects_empty": "The key sees no project",
+        "kh_projects_many": "The key sees {count} projects (only the first 50 are used)",
+        "kh_summary_project_missing": "Summary project {project_id} is not among the projects the key sees"
+      }
     }
   }
 }

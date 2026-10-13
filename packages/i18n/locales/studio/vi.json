@@ -24,7 +24,8 @@
     "cost": "Chi phí & usage",
     "jobs": "Jobs & Worker",
     "audit": "Nhật ký thay đổi",
-    "transfer": "Import / Export"
+    "transfer": "Import / Export",
+    "settings": "Cài đặt"
   },
   "soon": "Sắp có",
   "soonH4b": "Sắp có (H4b)",
@@ -214,7 +215,14 @@
     "ORCHESTRATOR_DEFAULT_PROTECTED": "Không xoá được Orchestrator mặc định.",
     "TENANT_INACTIVE": "Tenant đang bị khoá.",
     "SECRET_IN_USE": "Secret đang được sử dụng nên không xoá được",
-    "SECRET_NAME_TAKEN": "Tên này đã được dùng cho loại secret này"
+    "SECRET_NAME_TAKEN": "Tên này đã được dùng cho loại secret này",
+    "KH_CONNECTION_EXISTS": "Tên hoặc địa chỉ đã được kết nối khác dùng",
+    "KH_CONNECTION_IN_USE": "Kết nối còn {agents} agent đang dùng",
+    "KH_CONNECTION_NOT_FOUND": "Kết nối không còn tồn tại",
+    "KH_SECRET_INVALID": "Khoá phải là secret KnowledgeHub của nền tảng",
+    "KH_AGENT_RUNTIME": "Chỉ agent chạy bằng CLI mới dùng được tri thức",
+    "KH_URL_NOT_ALLOWED": "Địa chỉ không được phép ({reason})",
+    "KH_URL_NOT_ALLOWED_BARE": "Địa chỉ không được phép"
   },
   "editor": {
     "titleNew": "Tạo agent",
@@ -518,6 +526,101 @@
       "nameFormat": "Chỉ dùng chữ, số, - và _ (2–64 ký tự)",
       "valueEmpty": "Nhập giá trị secret",
       "valueLen": "Giá trị dài 8–2048 ký tự"
+    }
+  },
+  "knowledgehub": {
+    "title": "Cài đặt",
+    "section": "Kết nối KnowledgeHub",
+    "risk": "Agent đọc được mọi project mà khoá của kết nối thấy. Muốn tách dữ liệu giữa các công ty, dùng khoá hoặc KnowledgeHub riêng cho từng công ty.",
+    "add": "Thêm kết nối",
+    "origins": "Origin được phép",
+    "noOrigins": "Vận hành chưa khai báo HUB_KH_ALLOWED_ORIGINS — không lưu được địa chỉ",
+    "empty": "Chưa có kết nối KnowledgeHub",
+    "loadMore": "Tải thêm",
+    "forbidden": "Chỉ quản trị nền tảng mới xem được cài đặt này.",
+    "col": {
+      "name": "Tên",
+      "url": "Địa chỉ",
+      "key": "Khoá",
+      "project": "Project ghi Tóm tắt",
+      "status": "Trạng thái",
+      "agents": "Agent dùng",
+      "actions": "Thao tác"
+    },
+    "action": {
+      "check": "Kiểm tra",
+      "edit": "Sửa",
+      "delete": "Xoá"
+    },
+    "status": {
+      "unchecked": "Chưa kiểm tra",
+      "ok": "Đạt",
+      "error": "Lỗi"
+    },
+    "sheet": {
+      "create": "Thêm kết nối",
+      "edit": "Sửa kết nối",
+      "desc": "Kết nối tới một KnowledgeHub dùng khoá của nền tảng.",
+      "name": "Tên",
+      "url": "Địa chỉ",
+      "key": "Khoá",
+      "keyLoading": "Đang tải…",
+      "keyNone": "Chưa có secret KnowledgeHub của nền tảng",
+      "createSecret": "Tạo secret",
+      "project": "Project ghi Tóm tắt",
+      "projectHint": "Tuỳ chọn. Để trống thì không ghi Tóm tắt.",
+      "resetWarn": "Lưu sẽ đặt trạng thái về Chưa kiểm tra; agent ngừng dùng kết nối tới khi kiểm tra lại.",
+      "save": "Lưu",
+      "saving": "Đang lưu…",
+      "cancel": "Huỷ",
+      "close": "Đóng",
+      "saved": "Đã lưu · v{n}"
+    },
+    "err": {
+      "name": "Nhập tên (tối đa 80 ký tự, không chứa /)",
+      "urlInvalid": "Địa chỉ không hợp lệ",
+      "urlScheme": "Chỉ chấp nhận https:// (trừ localhost khi phát triển)",
+      "urlParts": "Địa chỉ không được chứa tài khoản, query hay fragment",
+      "key": "Chọn khoá KnowledgeHub",
+      "project": "Mã project không hợp lệ"
+    },
+    "delete": {
+      "title": "Xoá kết nối {name}?",
+      "body": "Xoá kết nối {name}? Secret không bị xoá.",
+      "confirm": "Xoá"
+    },
+    "toast": {
+      "saved": "Đã lưu kết nối {name}",
+      "deleted": "Đã xoá kết nối {name}",
+      "conflictDelete": "Kết nối vừa được thay đổi. Đã tải lại danh sách."
+    },
+    "check": {
+      "title": "Kết quả kiểm tra",
+      "desc": "Kết quả kiểm tra kết nối KnowledgeHub.",
+      "running": "Đang kiểm tra…",
+      "ok": "Kết nối đạt",
+      "failed": "Kết nối chưa đạt: {n} lỗi",
+      "version": "Phiên bản KnowledgeHub: {v}",
+      "at": "Kiểm lúc {time}",
+      "projects": "Project khoá thấy: {n}",
+      "timeout": "Quá thời gian chờ kiểm tra",
+      "unknown": "Mục kiểm {code}",
+      "levelError": "Lỗi",
+      "levelWarning": "Cảnh báo",
+      "code": {
+        "kh_url_not_allowed": "Địa chỉ không được phép ({reason})",
+        "kh_unreachable": "Không kết nối được KnowledgeHub (HTTP {status})",
+        "kh_timeout": "KnowledgeHub không trả lời kịp",
+        "kh_auth_disabled": "KnowledgeHub trả lời khi không có khoá — hãy bật KH_API_KEY",
+        "kh_key_invalid": "Không đọc được secret khoá",
+        "kh_key_rejected": "KnowledgeHub từ chối khoá (hoặc đang ở chế độ đăng nhập SSO)",
+        "kh_version_too_old": "Phiên bản KnowledgeHub phải ≥ v6.4 (hiện {found})",
+        "kh_auth_disabled_dev": "Xác thực đang tắt (chỉ chấp nhận khi phát triển)",
+        "kh_embedder_english": "Embedder {model} chỉ hỗ trợ tiếng Anh — cần embedder đa ngữ (ví dụ bge-m3) để tìm tiếng Việt chính xác",
+        "kh_projects_empty": "Khoá chưa thấy project nào",
+        "kh_projects_many": "Khoá thấy {count} project (chỉ dùng 50 đầu)",
+        "kh_summary_project_missing": "Project ghi Tóm tắt {project_id} không nằm trong project khoá thấy"
+      }
     }
   }
 }

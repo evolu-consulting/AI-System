@@ -13,6 +13,7 @@ import {
   Network,
   Play,
   Server,
+  Settings,
   ShieldCheck,
   Wrench,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const ICONS: Record<NavId, LucideIcon> = {
   tools: Wrench,
   models: Cpu,
   secrets: KeyRound,
+  settings: Settings,
   access: ShieldCheck,
   playground: FlaskConical,
   runs: Play,

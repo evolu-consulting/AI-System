@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedOrchestratorRouteImport } from './routes/_authed/orchestrator'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
+import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedAgentsIndexRouteImport } from './routes/_authed/agents.index'
 import { Route as AuthedAgentsAgentIdRouteImport } from './routes/_authed/agents.$agentId'
 import { Route as AuthedAgentsNewRouteImport } from './routes/_authed/agents.new'
@@ -48,6 +49,11 @@ const AuthedSecretsRoute = AuthedSecretsRouteImport.update({
   path: '/secrets',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedAgentsIndexRoute = AuthedAgentsIndexRouteImport.update({
   id: '/agents/',
   path: '/agents/',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
   '/secrets': typeof AuthedSecretsRoute
+  '/settings': typeof AuthedSettingsRoute
   '/agents/$agentId': typeof AuthedAgentsAgentIdRoute
   '/agents/new': typeof AuthedAgentsNewRoute
   '/agents/': typeof AuthedAgentsIndexRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
   '/secrets': typeof AuthedSecretsRoute
+  '/settings': typeof AuthedSettingsRoute
   '/': typeof AuthedIndexRoute
   '/agents/$agentId': typeof AuthedAgentsAgentIdRoute
   '/agents/new': typeof AuthedAgentsNewRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/orchestrator': typeof AuthedOrchestratorRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
+  '/_authed/settings': typeof AuthedSettingsRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/agents/$agentId': typeof AuthedAgentsAgentIdRoute
   '/_authed/agents/new': typeof AuthedAgentsNewRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/orchestrator'
     | '/secrets'
+    | '/settings'
     | '/agents/$agentId'
     | '/agents/new'
     | '/agents/'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/orchestrator'
     | '/secrets'
+    | '/settings'
     | '/'
     | '/agents/$agentId'
     | '/agents/new'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authed/orchestrator'
     | '/_authed/secrets'
+    | '/_authed/settings'
     | '/_authed/'
     | '/_authed/agents/$agentId'
     | '/_authed/agents/new'
@@ -180,6 +192,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSecretsRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/settings': {
+      id: '/_authed/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedSettingsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/agents/': {
       id: '/_authed/agents/'
       path: '/agents'
@@ -207,6 +226,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedOrchestratorRoute: typeof AuthedOrchestratorRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
+  AuthedSettingsRoute: typeof AuthedSettingsRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAgentsAgentIdRoute: typeof AuthedAgentsAgentIdRoute
   AuthedAgentsNewRoute: typeof AuthedAgentsNewRoute
@@ -216,6 +236,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedOrchestratorRoute: AuthedOrchestratorRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,
+  AuthedSettingsRoute: AuthedSettingsRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAgentsAgentIdRoute: AuthedAgentsAgentIdRoute,
   AuthedAgentsNewRoute: AuthedAgentsNewRoute,

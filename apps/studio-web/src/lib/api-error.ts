@@ -19,6 +19,12 @@ const KNOWN = new Set([
   "TENANT_INACTIVE",
   "SECRET_IN_USE",
   "SECRET_NAME_TAKEN",
+  "KH_CONNECTION_EXISTS",
+  "KH_CONNECTION_IN_USE",
+  "KH_CONNECTION_NOT_FOUND",
+  "KH_SECRET_INVALID",
+  "KH_AGENT_RUNTIME",
+  "KH_URL_NOT_ALLOWED",
 ]);
 
 export function describeApiError(err: unknown): MessageSpec {
@@ -26,8 +32,14 @@ export function describeApiError(err: unknown): MessageSpec {
   if (err.code === "NETWORK_ERROR") return { key: "login.err.network" };
   if (err.code === "VERSION_CONFLICT") return { key: "errors.VERSION_CONFLICT" };
   if (KNOWN.has(err.code)) {
-    const field = (err.details as { field?: unknown } | null | undefined)?.field;
-    return { key: `errors.${err.code}`, params: { field: typeof field === "string" ? field : "" } };
+    const d = (err.details ?? {}) as { field?: unknown; reason?: unknown; agents?: unknown };
+    const str = (v: unknown) => (typeof v === "string" || typeof v === "number" ? String(v) : "");
+    if (err.code === "KH_URL_NOT_ALLOWED" && str(d.reason) === "")
+      return { key: "errors.KH_URL_NOT_ALLOWED_BARE" };
+    return {
+      key: `errors.${err.code}`,
+      params: { field: str(d.field), reason: str(d.reason), agents: str(d.agents) },
+    };
   }
   return {
     key: "login.err.server",
