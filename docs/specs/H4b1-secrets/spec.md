@@ -129,7 +129,7 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (không chép lại). Tóm t�
 | Xoá | ConfirmDialog; còn `used_by` hoặc `409 SECRET_IN_USE` → hộp "Không xoá được {name}" liệt kê nơi dùng |
 | Trạng thái | tải (skeleton) · rỗng theo tab · lỗi (ErrorState + Thử lại) · không quyền · `VERSION_CONFLICT` → ConflictDialog dùng chung (ẩn diff) |
 | Câu chữ / nhãn e2e / validate | plan-frontend §3–§5 (VI+EN nguyên văn) |
-| Chờ contract BE | plan-frontend §8 (C1–C6: trường metadata, mã lỗi `SECRET_IN_USE`/`NAME_TAKEN`, hằng độ dài `value`) |
+| Contract | plan-frontend §8 (C1–C8 đã đối chiếu spec §3: `Phạm vi` tenant cho khoá KH, cột Tenant, DELETE `?version=`, `SECRET_NAME_TAKEN`) |
 
 ## 6. Hiệu năng
 Mặc định `CONVENTIONS.md` §6 (không siết thêm; perf không chặn mốc).
