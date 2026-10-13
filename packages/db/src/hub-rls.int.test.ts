@@ -148,6 +148,8 @@ const PA_POLICY_TABLES = [
   ...Array(3).fill("process_thread_events"),
   // P-b2 (0024): nhật ký quay lại append-only — 1 policy T.
   "process_back_events",
+  // P-c1 (0031): kết quả tự-sửa append-only — 1 policy T.
+  "autofix_results",
 ];
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
