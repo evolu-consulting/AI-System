@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tự sửa mã — khối panel stage (P-c1)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px;padding:16px;box-sizing:border-box}
+.btn{font:inherit;font-size:14px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.sub{font-size:12px;color:#635C78}
+.fld{display:flex;flex-direction:column;gap:4px;margin-top:10px}.fld label{font-weight:500;font-size:13px}
+.inp{font:inherit;padding:8px 10px;border:1px solid #D9D5E3;border-radius:8px;background:#fff}
+.inp.bad{border-color:#9B1C1C}.err{color:#9B1C1C;font-size:12px}
+.cap{font-size:12px;font-weight:600;margin-bottom:6px;color:#635C78}
+.note{margin:10px 0 0;padding:8px 10px;border-radius:8px;background:#EDE6FB;color:#4A3278;font-size:12px}
+.al{margin:0;padding:10px 12px;border-radius:10px;font-size:13px}
+.al-err{background:#FDE8E8;color:#9B1C1C}.al-warn{background:#FDF0DF;color:#7F3C04}
+.g{display:grid;gap:20px;padding:28px;box-sizing:border-box;align-content:start}
+pre{margin:6px 0 0;padding:10px;background:#F7F6FA;border-radius:8px;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:12px}
+.df{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;border:1px solid #E6E3EE;border-radius:8px;overflow:hidden;margin-top:6px}
+.df div{padding:0 10px;white-space:pre}
+.df .h{background:#F7F6FA;color:#4F4865}.df .a{background:#E3F4EC;color:#05603F}.df .d{background:#FDE8E8;color:#9B1C1C}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sk{height:14px;background:#EFEDF3;border-radius:6px}
+</style>
+</helmet>
+<div class="g" style="width:1320px;height:1000px;grid-template-columns:1fr 1fr 1fr">
+
+<div><div class="cap">1 · Tắt (mặc định)</div><div class="card">
+<div class="row" style="justify-content:space-between"><strong>Tự sửa mã</strong><label class="row"><input type="checkbox" role="switch"  aria-label="Tự sửa mã" > <span class="sub">Tắt</span></label></div>
+<span class="sub">Agent sửa file trong bản sao của nguồn và chỉ ra diff để người duyệt. Không push.</span>
+</div></div>
+
+<div><div class="cap">2 · Bật, còn trống</div><div class="card">
+<div class="row" style="justify-content:space-between"><strong>Tự sửa mã</strong><label class="row"><input type="checkbox" role="switch" checked aria-label="Tự sửa mã" > <span class="sub">Bật</span></label></div>
+<div class="fld"><label>Nguồn</label><select class="inp"><option>Chọn nguồn…</option></select><span class="sub">Chỉ nguồn git_remote hoặc local_path.</span></div>
+<div class="fld"><label>Lệnh kiểm thử <span class="err">*</span></label><input class="inp mono" placeholder="vd: bun test"></div>
+<div class="fld"><label>Lệnh cài phụ thuộc</label><input class="inp mono" placeholder="vd: bun install (bỏ trống = không cài)"></div>
+<div class="fld"><label>Đường dẫn được sửa</label><input class="inp mono" placeholder="vd: src/**  (bỏ trống = mọi đường dẫn)"></div>
+<p class="note">Container chạy agent và test không có mạng. Lệnh cài chạy trước, có mạng, tối đa 600 giây. Không đặt lệnh cài thì không có mạng.</p>
+</div></div>
+
+<div><div class="cap">3 · Hợp lệ</div><div class="card">
+<div class="row" style="justify-content:space-between"><strong>Tự sửa mã</strong><span class="badge b-ok">Hợp lệ</span></div>
+<div class="fld"><label>Nguồn</label><select class="inp"><option>repo-app (git_remote)</option></select></div>
+<div class="fld"><label>Lệnh kiểm thử</label><input class="inp mono" value="bun test"></div>
+<div class="fld"><label>Lệnh cài phụ thuộc</label><input class="inp mono" value="bun install --frozen-lockfile"></div>
+<div class="fld"><label>Đường dẫn được sửa</label><input class="inp mono" value="src/**, tests/**"><span class="sub">Tối đa 20 mẫu. Không cho sửa .github/workflows trừ khi ghi rõ.</span></div>
+<p class="note">Container chạy agent và test không có mạng. Lệnh cài chạy trước, có mạng, tối đa 600 giây. Không đặt lệnh cài thì không có mạng.</p>
+</div></div>
+
+<div><div class="cap">4 · Lỗi AUTOFIX_EXECUTOR</div><div class="card">
+<strong>Tự sửa mã</strong>
+<div class="fld"><label>Người thực hiện</label><select class="inp bad" aria-invalid="true"><option>Con người (human)</option></select></div>
+<p class="al al-err" role="alert" style="margin-top:8px">Stage tự sửa mã phải do agent thực hiện.</p>
+</div></div>
+
+<div><div class="cap">5 · Lỗi AUTOFIX_REVIEW</div><div class="card">
+<strong>Tự sửa mã</strong>
+<div class="fld"><label>Sau stage</label><select class="inp bad" aria-invalid="true"><option>Chạy tiếp (không duyệt)</option></select></div>
+<p class="al al-err" role="alert" style="margin-top:8px">Stage tự sửa mã luôn phải qua người duyệt. Chọn "Duyệt" ở mục Sau stage.</p>
+</div></div>
+
+<div><div class="cap">6 · Lỗi AUTOFIX_MAX (stage tự sửa thứ 2)</div><div class="card">
+<div class="row" style="justify-content:space-between"><strong>Tự sửa mã</strong><label class="row"><input type="checkbox" role="switch" checked aria-label="Tự sửa mã" aria-invalid="true"> <span class="sub">Bật</span></label></div>
+<p class="al al-err" role="alert" style="margin-top:8px">Mỗi quy trình chỉ có một stage tự sửa mã. Đã có ở stage "fix".</p>
+</div></div>
+
+<div><div class="cap">7 · Nguồn loại library (422 PROCESS_REF_INVALID)</div><div class="card">
+<strong>Tự sửa mã</strong>
+<div class="fld"><label>Nguồn</label><select class="inp bad" aria-invalid="true"><option>docs-lib (library)</option></select>
+<span class="err" role="alert">Nguồn "docs-lib" thuộc loại library, không sửa được. Chọn nguồn git_remote hoặc local_path.</span></div>
+</div></div>
+
+<div><div class="cap">8 · Lệnh kiểm thử trống</div><div class="card">
+<strong>Tự sửa mã</strong>
+<div class="fld"><label>Lệnh kiểm thử</label><input class="inp mono bad" aria-invalid="true"><span class="err" role="alert">Nhập lệnh kiểm thử (tối đa 1000 ký tự).</span></div>
+</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1320,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

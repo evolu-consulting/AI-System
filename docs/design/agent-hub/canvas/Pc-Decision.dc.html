@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tự sửa mã — cần người quyết, run view, thẻ thread (P-c1)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px;padding:16px;box-sizing:border-box}
+.btn{font:inherit;font-size:14px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.sub{font-size:12px;color:#635C78}
+.fld{display:flex;flex-direction:column;gap:4px;margin-top:10px}.fld label{font-weight:500;font-size:13px}
+.inp{font:inherit;padding:8px 10px;border:1px solid #D9D5E3;border-radius:8px;background:#fff}
+.inp.bad{border-color:#9B1C1C}.err{color:#9B1C1C;font-size:12px}
+.cap{font-size:12px;font-weight:600;margin-bottom:6px;color:#635C78}
+.note{margin:10px 0 0;padding:8px 10px;border-radius:8px;background:#EDE6FB;color:#4A3278;font-size:12px}
+.al{margin:0;padding:10px 12px;border-radius:10px;font-size:13px}
+.al-err{background:#FDE8E8;color:#9B1C1C}.al-warn{background:#FDF0DF;color:#7F3C04}
+.g{display:grid;gap:20px;padding:28px;box-sizing:border-box;align-content:start}
+pre{margin:6px 0 0;padding:10px;background:#F7F6FA;border-radius:8px;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:12px}
+.df{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;border:1px solid #E6E3EE;border-radius:8px;overflow:hidden;margin-top:6px}
+.df div{padding:0 10px;white-space:pre}
+.df .h{background:#F7F6FA;color:#4F4865}.df .a{background:#E3F4EC;color:#05603F}.df .d{background:#FDE8E8;color:#9B1C1C}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sk{height:14px;background:#EFEDF3;border-radius:6px}
+</style>
+</helmet>
+<div class="g" style="width:1320px;height:1300px;grid-template-columns:1.3fr 1fr">
+
+<div><div class="cap">1 · Cần người quyết: autofix_check_failed (chat-web và admin-web)</div>
+<section class="card" role="region" aria-label="Cần người quyết">
+<div class="row"><span class="badge b-warn">Cần người quyết</span><strong>Kiểm bản sửa không đạt</strong><span class="badge b-info">Vòng 2</span></div>
+<p class="sub">Chưa lưu diff. Chọn thêm một lượt (agent nhận tóm tắt lỗi dưới đây) hoặc huỷ quy trình.</p>
+<div class="cap" style="margin-top:10px">Đường dẫn</div><ul class="mono" style="margin:0;padding-left:18px"><li>.github/workflows/ci.yml · không nằm trong đường dẫn được sửa</li><li>docs/x.md · không khớp "src/**"</li></ul>
+<div class="cap" style="margin-top:10px">Kích thước</div><ul class="mono" style="margin:0;padding-left:18px"><li>Diff 2,6 MiB vượt trần 2 MiB</li></ul>
+<div class="cap" style="margin-top:10px">Bí mật (không hiện giá trị)</div><ul class="mono" style="margin:0;padding-left:18px"><li>src/config.ts:14 · quy tắc aws-key</li><li>.env:2 · tên file bị cấm</li></ul>
+<div class="cap" style="margin-top:10px">Test đỏ · exit 1 · 9,8 giây</div><pre>FAIL tests/login.test.ts
+  expected null to equal {id: 1}
+  at login.test.ts:21
+1 fail, 11 pass</pre><a href="#" class="sub">Tải log đầy đủ</a>
+<div class="cap" style="margin-top:10px">Cài phụ thuộc</div><ul class="mono" style="margin:0;padding-left:18px"><li>bun install thoát mã 1</li></ul>
+<div class="cap" style="margin-top:10px">Áp bản vá lượt trước</div><ul class="mono" style="margin:0;padding-left:18px"><li>Không áp được bản vá của vòng 1 lên mã gốc</li></ul>
+<p class="sub" style="margin-top:8px">Mẫu hiển thị đủ mọi nhóm; thực tế chỉ hiện nhóm có lỗi (kiểm dừng ở nhóm trượt đầu tiên).</p>
+<div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn">Huỷ quy trình</button><button class="btn btn-p">Thêm lượt</button></div>
+</section></div>
+
+<div style="display:flex;flex-direction:column;gap:20px">
+<div><div class="cap">2 · sandbox_unavailable</div><section class="card" role="region" aria-label="Cần người quyết">
+<div class="row"><span class="badge b-warn">Cần người quyết</span><strong>Không có môi trường chạy an toàn</strong></div>
+<p class="sub">Máy chạy chưa dựng được container cô lập nên không thể tự sửa mã. Liên hệ quản trị rồi chọn thêm lượt, hoặc huỷ.</p>
+<div class="row" style="justify-content:flex-end"><button class="btn">Huỷ quy trình</button><button class="btn btn-p">Thêm lượt</button></div></section></div>
+
+<div><div class="cap">3 · Run view (admin-web): dòng stage</div><div class="card">
+<div class="row" style="justify-content:space-between"><div class="row"><strong class="mono">fix</strong><span class="badge b-info">Tự sửa mã</span><span class="badge b-off">Vòng 2</span></div><span class="badge b-warn">Chờ duyệt</span></div>
+<div class="row" style="margin-top:8px"><span class="sub">Kiểm gần nhất:</span><span class="badge b-ok">Test đạt</span><span class="sub">+42 −17 · 3 file</span><a href="#" class="sub">Xem diff</a></div>
+<div class="row" style="margin-top:8px"><span class="sub">Vòng 1:</span><span class="badge b-err">Kiểm không đạt · test đỏ</span></div></div></div>
+
+<div><div class="cap">4 · Thẻ thread (chat-web)</div><div class="card" style="max-width:420px">
+<div class="row"><strong>!fixbug-apply</strong><span class="badge b-info">Tự sửa mã</span><span class="badge b-off">Vòng 2</span></div>
+<div class="row" style="margin-top:6px"><span class="badge b-ok">Test đạt</span><span class="sub">+42 −17 · 3 file</span></div>
+<div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn btn-p">Xem diff</button></div></div>
+<div class="card" style="max-width:420px;margin-top:10px"><div class="row"><strong>!fixbug-apply</strong><span class="badge b-info">Tự sửa mã</span><span class="badge b-off">Vòng 1</span></div>
+<div class="row" style="margin-top:6px"><span class="badge b-err">Kiểm không đạt</span><span class="sub">test đỏ</span></div></div></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1320,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

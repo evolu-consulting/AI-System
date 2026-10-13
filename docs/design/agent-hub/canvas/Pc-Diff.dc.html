@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tự sửa mã — duyệt diff (P-c1)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px;padding:16px;box-sizing:border-box}
+.btn{font:inherit;font-size:14px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.sub{font-size:12px;color:#635C78}
+.fld{display:flex;flex-direction:column;gap:4px;margin-top:10px}.fld label{font-weight:500;font-size:13px}
+.inp{font:inherit;padding:8px 10px;border:1px solid #D9D5E3;border-radius:8px;background:#fff}
+.inp.bad{border-color:#9B1C1C}.err{color:#9B1C1C;font-size:12px}
+.cap{font-size:12px;font-weight:600;margin-bottom:6px;color:#635C78}
+.note{margin:10px 0 0;padding:8px 10px;border-radius:8px;background:#EDE6FB;color:#4A3278;font-size:12px}
+.al{margin:0;padding:10px 12px;border-radius:10px;font-size:13px}
+.al-err{background:#FDE8E8;color:#9B1C1C}.al-warn{background:#FDF0DF;color:#7F3C04}
+.g{display:grid;gap:20px;padding:28px;box-sizing:border-box;align-content:start}
+pre{margin:6px 0 0;padding:10px;background:#F7F6FA;border-radius:8px;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:12px}
+.df{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;border:1px solid #E6E3EE;border-radius:8px;overflow:hidden;margin-top:6px}
+.df div{padding:0 10px;white-space:pre}
+.df .h{background:#F7F6FA;color:#4F4865}.df .a{background:#E3F4EC;color:#05603F}.df .d{background:#FDE8E8;color:#9B1C1C}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sk{height:14px;background:#EFEDF3;border-radius:6px}
+</style>
+</helmet>
+<div class="g" style="width:1320px;height:1100px;grid-template-columns:1.6fr 1fr">
+
+<div><div class="cap">1 · Có diff. Gate "Chờ tôi kiểm" (chat-web) và trang run (admin-web) dùng chung khối này</div>
+<section class="card" aria-label="Kết quả tự sửa mã">
+<div class="row"><strong>Tự sửa mã</strong><span class="badge b-info">Vòng 2</span><span class="mono">repo-app@a1b2c3d</span><span class="mono">ai/9f3c…/fix</span></div>
+<div class="row" style="margin-top:8px"><span class="badge b-ok">+42</span><span class="badge b-err">−17</span><span class="sub">3 file</span><span class="badge b-ok">Test đạt · 12,4 giây</span><a href="#" class="sub">Xem log</a><a href="#" class="sub">Tải log</a><a href="#" class="sub">Tải .diff</a></div>
+<div style="margin-top:12px;display:grid;grid-template-columns:220px 1fr;gap:12px">
+<ul role="list" aria-label="Danh sách file" style="margin:0;padding:0;list-style:none;font-size:13px;display:flex;flex-direction:column;gap:4px">
+<li class="mono"><b>src/auth/login.ts</b> <span class="sub">+30 −12</span></li>
+<li class="mono">tests/login.test.ts <span class="sub">+12 −5</span></li>
+<li class="mono">assets/logo.png <span class="badge b-off">nhị phân</span></li></ul>
+<div>
+<details open><summary class="mono"><b>src/auth/login.ts</b> · +30 −12</summary>
+<div class="df"><div class="h">@@ -18,7 +18,9 @@ export function login(u: User) {</div><div> const t = await find(u.id);</div><div class="d">-  if (t.expired) return null;</div><div class="a">+  if (!t || t.expired) {</div><div class="a">+    return refresh(u);</div><div class="a">+  }</div><div> return t;</div></div></details>
+<details style="margin-top:8px"><summary class="mono">tests/login.test.ts · +12 −5 <span class="sub">(thu gọn)</span></summary></details>
+<details style="margin-top:8px" open><summary class="mono">assets/logo.png</summary><p class="sub" style="margin:6px 0 0">File nhị phân, không hiển thị nội dung.</p></details>
+</div></div>
+<p class="al al-warn" style="margin-top:12px"><b>Diff lớn:</b> chỉ hiển thị 2.000 dòng đầu, còn 3.400 dòng. <a href="#">Tải .diff</a> để xem đủ.</p>
+<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn">Chưa đạt, làm lại</button><button class="btn btn-p">Đạt</button></div>
+</section></div>
+
+<div style="display:flex;flex-direction:column;gap:20px">
+<div><div class="cap">2 · no_changes</div><div class="card"><div class="row"><strong>Tự sửa mã</strong><span class="badge b-info">Vòng 1</span><span class="badge b-off">Không có thay đổi</span></div>
+<p class="sub">Agent không sửa file nào, hoặc bản sửa trùng nguồn. Chọn "Chưa đạt, làm lại" nếu cần thêm lượt.</p>
+<div class="row" style="justify-content:flex-end"><button class="btn">Chưa đạt, làm lại</button><button class="btn btn-p">Đạt</button></div></div></div>
+
+<div><div class="cap">3 · Đang tải</div><div class="card" aria-busy="true" style="display:flex;flex-direction:column;gap:10px"><div class="sk" style="width:60%"></div><div class="sk"></div><div class="sk"></div><div class="sk" style="width:80%"></div></div></div>
+
+<div><div class="cap">4 · Lỗi tải diff</div><div class="card" style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><strong style="color:#9B1C1C">Không tải được diff</strong><span class="sub">Kiểm tra kết nối rồi thử lại. Vẫn có thể tải file .diff.</span><div class="row"><button class="btn">Thử lại</button><button class="btn">Tải .diff</button></div></div></div>
+
+<div class="sub">Kiểm không đạt (check_failed) không lưu diff: xem artboard Pc-Decision.</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1320,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
