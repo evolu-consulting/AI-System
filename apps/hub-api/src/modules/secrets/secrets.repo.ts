@@ -135,8 +135,9 @@ export async function deleteSecret(tx: Tx, id: string): Promise<void> {
 }
 
 /**
- * Nhánh `used_by` (mỗi nhánh trả `sid, type, id, key`). K1 thêm nhánh `knowledge_hub` (`kh_tenants ⋈ kh_connections`,
- * spec K1 §4) vào mảng này. `source`: nguồn còn sống, CÙNG tenant với secret (`config.credential_secret_id`).
+ * Nhánh `used_by` (mỗi nhánh trả `sid, type, id, key`). `source`: nguồn còn sống, CÙNG tenant với secret
+ * (`config.credential_secret_id`). K1 (CR-073) `knowledge_hub`: kết nối KH nền tảng trỏ `secret_id`
+ * (`kh_connections_secret_idx`), `key = left(name, 64)` (`SecretUsedBySchema.key` ≤ 64).
  */
 const USED_BY_BRANCHES: ((ids: readonly string[]) => SQL)[] = [
   (ids) => sql`select p.secret_id as sid, 'provider' as type, p.id, p.key
@@ -145,6 +146,8 @@ const USED_BY_BRANCHES: ((ids: readonly string[]) => SQL)[] = [
     from hub.sources so join hub.secrets sec
       on sec.id::text = so.config->>'credential_secret_id' and so.tenant_id = sec.tenant_id
     where so.deleted_at is null and so.config->>'credential_secret_id' = any(${textArr(ids)})`,
+  (ids) => sql`select k.secret_id as sid, 'knowledge_hub' as type, k.id, left(k.name, 64) as key
+    from hub.kh_connections k where k.secret_id = any(${uuidArr(ids)})`,
 ];
 
 /** D14 · `used_by` của nhiều secret bằng MỘT query (không N+1); mỗi danh sách sắp (type, key). */

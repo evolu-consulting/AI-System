@@ -2,7 +2,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   classifyKhFailure,
+  decodeKhCursor,
+  encodeKhCursor,
+  khResetsCheck,
+  khSecretReject,
   khUrlPolicy,
+  khUsableOrigins,
   khVersionOk,
   khWriteRetryable,
   parseKhProjects,
@@ -57,5 +62,46 @@ describe("phiên bản, project, lỗi", () => {
     expect(classifyKhFailure(504)).toBe("server_error");
     expect([khWriteRetryable(504), khWriteRetryable(404)]).toEqual([true, false]);
     expect(writeBackoffMs(0)).toBe(30_000);
+  });
+});
+
+describe("HUB-FR-131 · luật Studio kết nối (T5c)", () => {
+  const id = "c1a10000-0000-4000-8000-000000000041";
+  test("cursor (lower(name), id) khứ hồi; rác ⇒ undefined", () => {
+    expect(decodeKhCursor(encodeKhCursor(["kh-main", id]))).toEqual(["kh-main", id]);
+    expect(decodeKhCursor(undefined)).toBeUndefined();
+    expect(decodeKhCursor("!!")).toBeUndefined();
+    expect(decodeKhCursor(Buffer.from('["a","x"]').toString("base64url"))).toBeUndefined();
+    expect(decodeKhCursor(Buffer.from("{").toString("base64url"))).toBeUndefined();
+  });
+  test("HUB-BR-36 · khSecretReject: not_found / wrong_kind / not_platform / hợp lệ", () => {
+    expect(khSecretReject(undefined)).toBe("not_found");
+    expect(khSecretReject({ kind: "provider_api_key", tenantId: null })).toBe("wrong_kind");
+    expect(khSecretReject({ kind: "kh_api_key", tenantId: id })).toBe("not_platform");
+    expect(khSecretReject({ kind: "kh_api_key", tenantId: null })).toBeNull();
+  });
+  test("Q34 · khResetsCheck: đổi URL hoặc khoá ⇒ true; chỉ khác hoa thường của uuid ⇒ false", () => {
+    const a = { baseUrl: "https://kh.example.com", secretId: id };
+    expect(khResetsCheck(a, { ...a })).toBe(false);
+    expect(khResetsCheck(a, { ...a, secretId: id.toUpperCase() })).toBe(false);
+    expect(khResetsCheck(a, { ...a, baseUrl: "https://kh.example.com/v" })).toBe(true);
+    expect(khResetsCheck(a, { ...a, secretId: id.replace("41", "42") })).toBe(true);
+  });
+});
+
+describe("HUB-FR-131 · khUsableOrigins (GET C allowed_origins)", () => {
+  test("bỏ http không loopback, rác; dev giữ http loopback; production bỏ mọi http; chuẩn hoá + bỏ trùng", () => {
+    const cfg = [
+      "https://KH.example.com/",
+      "http://kh.example.com",
+      "http://localhost:4030",
+      "x",
+      "https://kh.example.com",
+    ];
+    expect(khUsableOrigins(cfg, { dev: true })).toEqual([
+      "https://kh.example.com",
+      "http://localhost:4030",
+    ]);
+    expect(khUsableOrigins(cfg, { dev: false })).toEqual(["https://kh.example.com"]);
   });
 });

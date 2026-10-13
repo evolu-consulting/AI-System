@@ -46,6 +46,16 @@ export function khUrlPolicy(
   return { ok: true, baseUrl: `${u.origin}${u.pathname.replace(/\/+$/, "")}`, localDev };
 }
 
+/** Origin cấu hình mà `khUrlPolicy` nhận được (bỏ rác, http không loopback / http ở production) — `GET C allowed_origins`. */
+export function khUsableOrigins(allowed: readonly string[], env: { dev: boolean }): string[] {
+  const out = new Set<string>();
+  for (const o of allowed) {
+    const r = khUrlPolicy(o, allowed, env);
+    if (r.ok) out.add(new URL(r.baseUrl).origin);
+  }
+  return [...out];
+}
+
 const VERSION_RE = /^v?(\d{1,4})\.(\d{1,4})(?:[.\-+][0-9A-Za-z.\-+]*)?$/;
 
 /** "v6.4" | "6.4.1" ⇒ [6, 4]; khác (không phải chuỗi, rác) ⇒ null. */
@@ -130,4 +140,51 @@ export function khConnectionAudit(c: {
     summary_project: c.summaryProject,
     version: c.version,
   };
+}
+
+/** Cursor list kết nối = `(lower(name), id)` (thứ tự ORDER BY, spec §3.2). */
+export type KhConnCursor = [string, string];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function encodeKhCursor(k: KhConnCursor): string {
+  return Buffer.from(JSON.stringify(k), "utf8").toString("base64url");
+}
+
+/** Hỏng / sai hình ⇒ undefined (trang đầu, không ném) — như cursor secrets. */
+export function decodeKhCursor(raw: string | undefined): KhConnCursor | undefined {
+  if (raw === undefined || !/^[A-Za-z0-9_-]+$/.test(raw)) return undefined;
+  try {
+    const v: unknown = JSON.parse(Buffer.from(raw, "base64url").toString("utf8"));
+    if (
+      Array.isArray(v) &&
+      v.length === 2 &&
+      typeof v[0] === "string" &&
+      UUID_RE.test(String(v[1]))
+    )
+      return [v[0], String(v[1])];
+  } catch {
+    // JSON hỏng ⇒ trang đầu
+  }
+  return undefined;
+}
+
+export type KhSecretRow = { kind: string; tenantId: string | null };
+export type KhSecretReject = "not_found" | "wrong_kind" | "not_platform";
+
+/** Q29 · khoá kết nối phải `kh_api_key` ∧ nền tảng (`tenant_id IS NULL`). Hợp lệ ⇒ null. */
+export function khSecretReject(s: KhSecretRow | undefined): KhSecretReject | null {
+  if (!s) return "not_found";
+  if (s.kind !== "kh_api_key") return "wrong_kind";
+  return s.tenantId === null ? null : "not_platform";
+}
+
+/** Q34/D3 · đổi `base_url` (đã chuẩn hoá) hoặc `secret_id` ⇒ kết quả kiểm cũ không còn giá trị. */
+export function khResetsCheck(
+  before: { baseUrl: string; secretId: string },
+  after: { baseUrl: string; secretId: string },
+): boolean {
+  return (
+    before.baseUrl !== after.baseUrl ||
+    before.secretId.toLowerCase() !== after.secretId.toLowerCase()
+  );
 }

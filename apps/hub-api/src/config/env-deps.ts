@@ -3,7 +3,7 @@ import type { AppDeps } from "../app";
 import type { Logger } from "../lib/logger";
 import { type AttachEnv, parseAttachEnv } from "../modules/attachments/attach-env.rules";
 import { parseMaxConcurrentRuns } from "../modules/runs/run-limit.rules";
-import type { Env } from "./env";
+import { type Env, khConfigOf } from "./env";
 
 export type EnvAppDeps = Required<
   Pick<
@@ -14,6 +14,7 @@ export type EnvAppDeps = Required<
     | "configPollS"
     | "difyTimeoutMaxS"
     | "maxConcurrentRuns"
+    | "kh"
   >
 > &
   Pick<
@@ -40,6 +41,7 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
     maxConcurrentRuns: parseMaxConcurrentRuns(env.HUB_MAX_CONCURRENT_RUNS),
     studioDist: env.HUB_STUDIO_DIST,
     processEngine: env.HUB_PROCESS_ENGINE === "on",
+    kh: khConfigOf(env),
   };
 }
 

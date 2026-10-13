@@ -28,6 +28,7 @@ import {
   X2A_PROTECTED_PREFIXES,
   type X2aMounted,
 } from "./app.x2a";
+import type { KhConfig } from "./config/env";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
@@ -108,6 +109,8 @@ export type AppDeps = {
   processEngine?: boolean;
   /** P-b C13 · = `HUB_SOURCE_CHECK_TIMEOUT_MS`; "Kiểm tra kết nối" chờ Runtime resolve (mặc định 60000). */
   sourceCheckTimeoutMs?: number;
+  /** K1 G1 · = `khConfigOf(env)` (server điền); vắng ⇒ không origin KH nào được phép. */
+  kh?: KhConfig;
 } & ProcessSeams;
 
 const DEFAULT_CONFIG_POLL_S = 60;
