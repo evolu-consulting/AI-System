@@ -135,11 +135,10 @@ export function refsFeedback(
   missing: string[],
   refsOk: boolean,
   ctx: StageSourceCtx | undefined,
-  text: string,
-  reads: readonly JobSourceRead[] | undefined,
+  out: { text: string; reads: readonly JobSourceRead[] | undefined },
 ): string {
   if (refsOk || !ctx) return `Thiếu mục: ${missing.join(", ")}`;
-  const chk = stageRefsExplain(ctx, text, reads);
+  const chk = stageRefsExplain(ctx, out.text, out.reads);
   const others = missing.filter((m) => m !== "## Nguồn tham chiếu");
   const head = others.length > 0 ? `Thiếu mục: ${others.join(", ")}. ` : "";
   return chk.ok ? head : head + refCheckMessage(chk, ctx.pins);

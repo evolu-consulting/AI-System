@@ -197,7 +197,7 @@ async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
       ${ok}, ${missingArray(missing)}, ${att?.id ?? null},
       (select round from hub.stage_runs where id = ${c.x.stageRunId}))`);
   if (missing.length > 0)
-    await tx.execute(sql`update hub.stage_runs set feedback = ${refsFeedback(missing, refs.ok, c.srcCtx, text, reads)}
+    await tx.execute(sql`update hub.stage_runs set feedback = ${refsFeedback(missing, refs.ok, c.srcCtx, { text, reads })}
       where id = ${c.x.stageRunId}`);
   return { out: { id, version, ok, missing }, pending: att?.pending ?? null };
 }
