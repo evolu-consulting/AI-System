@@ -108,6 +108,17 @@ entitlements:
   - { agent: qc, tenant_key: evolu }
   - { agent: qc-uat, tenant_key: evolu }
 
+# K1 UAT Minor 6: nhóm `beta-testers` (review_group của bản chép evolu) dùng được mọi agent của `sdlc-delivery` + `bug-fix`
+# (kể cả thành viên `dev-team`) — thiếu grant ⇒ run dừng `permission_lost` sau gate đầu. Idempotent (on conflict do nothing).
+grants:
+  - { agent: intake-analyst, tenant_key: evolu, subject: "group:beta-testers" }
+  - { agent: docs-architect, tenant_key: evolu, subject: "group:beta-testers" }
+  - { agent: backend-lead, tenant_key: evolu, subject: "group:beta-testers" }
+  - { agent: frontend-lead, tenant_key: evolu, subject: "group:beta-testers" }
+  - { agent: reviewer, tenant_key: evolu, subject: "group:beta-testers" }
+  - { agent: qc, tenant_key: evolu, subject: "group:beta-testers" }
+  - { agent: qc-uat, tenant_key: evolu, subject: "group:beta-testers" }
+
 agent_teams:
   # Spike S1: nhóm BA 4 vai, chế độ mặc định tuần tự. Không thuộc mẫu `sdlc` (ví dụ/spike).
   - key: ba-team

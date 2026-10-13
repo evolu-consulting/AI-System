@@ -57,3 +57,7 @@ Agent tự quyết theo Luật 2 (spec → BA → ADR → CONVENTIONS → code �
 - 2026-10-13 · hồi quy · E-P15a: `hasText:"!sdlc"` khớp cả `!sdlc-delivery` (T5g seed, CR-070) ⇒ strict mode. qc: test sai — regex `/!sdlc(?!-)/`; lock ghi lại.
 - 2026-10-13 · hồi quy · RFB-12: `69eab471` đổi `refsFeedback` 5→4 tham số (`{text,reads}`), test khoá gọi 5 tham số (TECH-DEBT #149). Không do K1. qc: test sai — gọi theo chữ ký mới; lock ghi lại.
 - RV1-FE: agent không `agentic-cli` đã tick KH ⇒ chỉ được bỏ tick; bỏ một ô = gỡ hết (`clear`, server nhận `[]`), [Lưu] section hiện khi dirty. OutputTarget giữ `stageIdx`, `knowledge` đọc sống từ `run.stages`.
+
+## UAT 2026-10-13 · Minor 6–7 (fix seed + mặc định dev)
+- Minor 6: thêm `grants` (group `beta-testers`, tenant evolu) cho 7 agent `intake-analyst, docs-architect, backend-lead, frontend-lead, reviewer, qc, qc-uat` vào `seed/processes.yaml` (đã gộp được vì `SeedFileSchema` cho `grants` ở mọi file; không đổi code seed). Idempotent nhờ `on conflict do nothing`. Đã kiểm mọi executor trong YAML: agent + thành viên `dev-team` (`backend-lead`, `frontend-lead`); `test-team` không dùng ở evolu.
+- Minor 7: `.env.example` đã có `HUB_PROCESS_ENGINE=on` và `HUB_CORS_ORIGINS` gồm `:3000`; bổ sung `PUBLIC_HUB_URL=http://localhost:4000`; runbook ở `docs/guides/hub-dev.md` (mục mới cuối file).
