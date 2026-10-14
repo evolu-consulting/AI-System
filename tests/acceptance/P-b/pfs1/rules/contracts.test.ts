@@ -299,7 +299,7 @@ describe("R-C16…R-C23 · input, job, kênh resolve [HUB-FR-122, HUB-FR-124, PB
 });
 
 describe("R-C24 · mã lỗi nguồn [PB-R01..R03, HUB-BR-14]", () => {
-  it("HUB-FR-120 · R-C24 · SOURCE_ERRORS: 7 mã + HTTP", () => {
+  it("HUB-FR-120 · R-C24 · SOURCE_ERRORS: 9 mã + HTTP (7 mã P-b + 2 mã P-c2 thêm cuối)", () => {
     const e = (hit() as Record<string, number> | undefined) ?? {};
     expect(e).toEqual({
       SOURCE_KEY_TAKEN: 409,
@@ -309,6 +309,8 @@ describe("R-C24 · mã lỗi nguồn [PB-R01..R03, HUB-BR-14]", () => {
       SOURCE_FORBIDDEN_KIND: 403,
       SOURCE_TOO_LARGE: 422,
       SOURCE_NOT_FOUND: 404,
+      SOURCE_CREDENTIAL_INVALID: 422,
+      SOURCE_APPLY_UNSUPPORTED: 422,
     });
     function hit(): unknown {
       return pools.map((p) => p.SOURCE_ERRORS).find((v) => v !== undefined);

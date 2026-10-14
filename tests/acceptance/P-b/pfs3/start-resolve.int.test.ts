@@ -113,7 +113,7 @@ describe("ST-02…04 · cổng launcher enqueue source.resolve [PB-R05]", () => 
       source_id: c.ids.app,
       key: "app-repo",
       kind: "git_remote",
-      config: { kind: "git_remote", url: URL_APP, branch: "main" },
+      config: { kind: "git_remote", url: URL_APP, branch: "main", credential_secret_id: null },
       allowlist_union: ["docs/**", "src/**"],
     });
     expect(p.timeout_s).toBeGreaterThanOrEqual(10);
