@@ -60,6 +60,10 @@
 | D6 | B1 | `applyModeIssue`/`effectiveApplyMode` nhận `{kind, url?, apply_mode?}` (SourceConfig gán được) để FE dùng với bản nháp; thứ tự issue trong một stage Áp: REAL → AFTER → NO_AUTOFIX → MAX → FIELDS |
 | D7 | B1 | `SourceApplyJob` đăng ký `$defs` riêng trong `hubJsonSchemaBundle` (như `SourceResolveJob`, không vào `HUB_JSON_SCHEMAS`); fixture `SourceApplyJob.{pr,branch-only}` valid + `{branch-main,timeout-low}` invalid; fixture `SourceResolveJob` thêm `credential_secret_id` |
 | D8 | B1 | Ngoài danh sách file B1 phải chạm để typecheck xanh: `tools/mocks/.../actions.ts` (`steps("apply")` ⇒ `[]`), `sources/{check.service,source.rules}.ts`, `runs/launcher-prompt.ts` (D2) |
+| D9 | F2 | Option "Áp bản sửa" nằm trong chính `combobox "Người thực hiện"` (giá trị `apply`); nhãn editor đổi VI "Làm bởi" → "Người thực hiện" (EN "Performed by") theo G13/mockup (cột `col.executor` của bảng chạy giữ nguyên) |
+| D10 | F2 | Stage Áp vẫn hiện khối Kết quả (tên tệp/mẫu/mục), Người trả lời, Hạn giai đoạn (contract bắt buộc `output`; mockup không nói ẩn); ẩn instruction, nguồn, tự sửa mã, Sau stage (khoá auto), ngân sách, must_know |
+| D11 | F2 | Ô ẩn của stage Áp giữ trong draft; `normalizeApply` xoá chúng khi gửi/validate nên `APPLY_REAL/AFTER/FIELDS` chỉ còn từ server với def cũ |
+| D12 | F2 | Ghi chú nhánh (`apply.note`) lấy nguyên văn từ mockup, thêm khoá i18n `process.admin.apply.note` ngoài bảng plan §3 |
 
 ## Tranh chấp test
 | # | Test khoá | Vì sao | Đề nghị qc |
