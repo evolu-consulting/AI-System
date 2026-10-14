@@ -46,7 +46,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | ADM-FR-54 | SHOULD | docs/specs/M4-ops/spec.md | 28 file | 14 file | có test |
 | ADM-FR-55 | MUST | docs/specs/M3-permissions/spec.md | 24 file | 18 file | có test |
 | ADM-FR-65 | — | docs/specs/P-process-engine/spec.md | 21 file | 3 file | có test |
-| ADM-FR-66 | — | docs/specs/P-process-engine/spec.md | 23 file | 3 file | có test |
+| ADM-FR-66 | — | docs/specs/P-process-engine/spec.md | 24 file | 3 file | có test |
 | ADM-FR-67 | MUST | docs/specs/P-process-engine/spec.md | 22 file | 5 file | có test |
 | ADM-FR-68 | — | docs/specs/P-b-sources/spec.md | 33 file | 2 file | có test |
 | ADM-FR-69 | — | docs/specs/P-b-sources/spec.md | 6 file | 1 file | có test |
@@ -118,7 +118,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-65 | MUST |  |  |  | chưa spec |
 | HUB-FR-66 | MUST | docs/specs/H4b2-models/spec.md | 31 file | 13 file | có test |
 | HUB-FR-67 | MUST | docs/specs/H4b2-models/spec.md | 23 file | 9 file | có test |
-| HUB-FR-68 | MUST | docs/specs/H4b1-secrets/spec.md | 28 file | 22 file | có test |
+| HUB-FR-68 | MUST | docs/specs/H4b1-secrets/spec.md<br>docs/specs/P-c2-pr/spec.md | 33 file | 26 file | có test |
 | HUB-FR-69 | MUST | docs/specs/H4a-studio-shell-agents/spec.md<br>docs/specs/H4b1-secrets/spec.md | 28 file | 17 file | có test |
 | HUB-FR-70 | MUST |  |  |  | chưa spec |
 | HUB-FR-71 | SHOULD |  |  |  | chưa spec |
@@ -159,16 +159,16 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-FR-112 | MUST | docs/specs/P-process-engine/spec.md | 16 file | 6 file | có test |
 | HUB-FR-113 | MUST | docs/specs/P-b2-canvas/spec.md<br>docs/specs/P-process-engine/spec.md | 21 file | 18 file | có test |
 | HUB-FR-114 | — | docs/specs/P-process-engine/spec.md | 12 file | 8 file | có test |
-| HUB-FR-115 | MUST | docs/specs/P-process-engine/spec.md | 11 file | 13 file | có test |
+| HUB-FR-115 | MUST | docs/specs/P-process-engine/spec.md | 13 file | 18 file | có test |
 | HUB-FR-116 | MUST | docs/specs/P-process-engine/spec.md | 8 file | 3 file | có test |
 | HUB-FR-117 | MUST | docs/specs/P-process-engine/spec.md | 7 file | 2 file | có test |
 | HUB-FR-118 | — | docs/specs/P-b2-canvas/spec.md<br>docs/specs/P-process-engine/spec.md | 12 file | 7 file | có test |
 | HUB-FR-119 | — | docs/specs/P-c-autofix/spec.md<br>docs/specs/P-process-engine/spec.md | 9 file |  | có code |
 | HUB-FR-126 | — | docs/specs/P-c-autofix/spec.md | 6 file | 7 file | có test |
-| HUB-FR-127 | — | docs/specs/P-c-autofix/spec.md | 2 file | 1 file | có test |
-| HUB-FR-128 | — | docs/specs/P-c-autofix/spec.md | 33 file | 11 file | có test |
-| HUB-FR-129 | — | docs/specs/P-c-autofix/spec.md |  |  | có spec |
-| HUB-FR-130 | — | docs/specs/P-c-autofix/spec.md | 7 file | 9 file | có test |
+| HUB-FR-127 | — | docs/specs/P-c-autofix/spec.md | 2 file | 2 file | có test |
+| HUB-FR-128 | — | docs/specs/P-c-autofix/spec.md<br>docs/specs/P-c2-pr/spec.md | 35 file | 15 file | có test |
+| HUB-FR-129 | — | docs/specs/P-c-autofix/spec.md<br>docs/specs/P-c2-pr/spec.md | 43 file | 16 file | có test |
+| HUB-FR-130 | — | docs/specs/P-c-autofix/spec.md<br>docs/specs/P-c2-pr/spec.md | 18 file | 13 file | có test |
 | HUB-FR-120 | — | docs/specs/P-b-sources/spec.md | 11 file | 3 file | có test |
 | HUB-FR-121 | — | docs/specs/P-b-sources/spec.md | 2 file | 2 file | có test |
 | HUB-FR-122 | — | docs/specs/P-b-sources/spec.md | 8 file | 6 file | có test |
@@ -195,7 +195,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-BR-11 | — | docs/specs/H2a-dify-command/spec.md |  |  | có spec |
 | HUB-BR-12 | — | docs/specs/H2a-dify-command/spec.md |  | 1 file | có test |
 | HUB-BR-13 | — |  |  |  | chưa spec |
-| HUB-BR-14 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H3b-agent-grants/spec.md<br>docs/specs/X2a-rooms/spec.md | 9 file | 12 file | có test |
+| HUB-BR-14 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H3b-agent-grants/spec.md<br>docs/specs/X2a-rooms/spec.md | 12 file | 18 file | có test |
 | HUB-BR-15 | — | docs/specs/H4b1-secrets/spec.md | 5 file | 6 file | có test |
 | HUB-BR-16 | — |  |  |  | chưa spec |
 | HUB-BR-17 | — | docs/specs/H3b-agent-grants/spec.md<br>docs/specs/H4b2-models/spec.md | 4 file | 4 file | có test |
@@ -233,7 +233,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | WRK-FR-26 | MUST |  | 2 file |  | chưa spec |
 | WRK-FR-27 | — | docs/specs/P-b-sources/spec.md | 3 file | 8 file | có test |
 | WRK-FR-28 | — | docs/specs/P-c-autofix/spec.md | 10 file | 11 file | có test |
-| WRK-FR-29 | — | docs/specs/P-c-autofix/spec.md | 14 file | 15 file | có test |
+| WRK-FR-29 | — | docs/specs/P-c-autofix/spec.md<br>docs/specs/P-c2-pr/spec.md | 24 file | 19 file | có test |
 | WRK-FR-30 | — |  |  |  | chưa spec |
 | WRK-BR-01 | — |  |  |  | chưa spec |
 | WRK-BR-02 | — | docs/specs/H1-hub-core/spec.md | 9 file | 5 file | có test |
