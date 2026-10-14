@@ -74,8 +74,12 @@ export function autofixOutcome(
   return { kind: "continue" };
 }
 
+// P-c2 · PC2-R08 · stage Áp dùng chung máy quyết định tự-sửa: `apply_conflict`/`apply_failed` ⇒ [add_attempt, cancel].
 export const isAutofixReason = (r: DecisionReason): boolean =>
-  r === "autofix_check_failed" || r === "sandbox_unavailable";
+  r === "autofix_check_failed" ||
+  r === "sandbox_unavailable" ||
+  r === "apply_conflict" ||
+  r === "apply_failed";
 
 /** PC-R10 · quyết định sau lỗi tự-sửa: thêm lượt hoặc huỷ (KHÔNG `use_current`: không có output hợp lệ để dùng). */
 export const autofixDecisionOptions = (reason: DecisionReason): DecisionOption[] =>
