@@ -54,3 +54,20 @@ Lần 1 đã đóng: #1–#4, #6, #8, #10, #12–#20, #22, #24. Còn hở: #5, #
 | 11 | Thấp | `done:pc2` bước 4 `test:int` toàn bộ | Liệt kê thư mục; P-c2 từng file |
 
 Áp mặc định lần 2: #1–#8, #10 áp vào spec §9 (C36–C44; C19–C35 chuyển sang spec-decisions), plan, tasks; #9 qc, #11 để test-plan (commit xem git log).
+
+## Lần 3 · 2026-10-14 · main 48e47332 · NOT READY (0 Chặn, 5 Cao, 5 Thấp; 0 câu hỏi mới)
+
+Lần 2 đã đóng: #1–#11. Spec 24 686 B, plan 30 714 B (sát trần).
+
+| # | Mức | Vấn đề | Mặc định |
+|---|---|---|---|
+| 1 | Cao | B1 `typecheck` đỏ: `thread.rules.ts` Record<DecisionReason>, `sources.errors.ts` Record<SourceErrorCode>, admin `def-form.ts:146` | B1 thêm 3 file; thread `apply_conflict` "bản sửa xung đột với mã mới"/"the fix conflicts with the new code", `apply_failed` "áp bản sửa không thành công"/"applying the fix failed"; MESSAGES = EN `apiError.SOURCE_*`; def-form `apply` ⇒ `"apply"` |
+| 2 | Cao | DB pc2_qc/pc2_e2e tạo trước 0032 | B2: `bun run db:test:create pc2_qc` trước int; F3: `db:test:create pc2_e2e` |
+| 3 | Cao | Lệnh e2e F1–F3 sai config | `bunx playwright test -c e2e/P-c2/playwright.pc2.config.ts --reporter=line` + `admin/sources.pc2.ts` (F1) / `admin/editor.pc2.ts` (F2) / `chat/` (F3) |
+| 4 | Cao | Hàng không job (C20/invalid): mode/status/source_key | `failed`+`provider_error`; mode = effectiveApplyMode(nguồn còn) hoặc `branch_only`; source_key/branch/pin từ autofix_results; result null ⇒ key nguồn stage tự-sửa, branch/pin null |
+| 5 | Cao | `withHandoff` thêm "Bàn giao" vào stage Áp | `ensureHandoff` chỉ cho `agent`; B7 thêm `defs/def.rules.ts` |
+| 6 | Thấp | Job Áp lỗi container ghi cột nào | `apply_sql.py` FINISH ghi `error_reason='container'` |
+| 7 | Thấp | plan §5.2 hai bước "7." | Đánh lại |
+| 8 | Thấp | Chữ trạng thái cũ plan:3, tasks:3 | Cập nhật |
+| 9 | Thấp | plan còn 6 B tới trần | Tách §5 sang `plan-runtime.md` |
+| 10 | Thấp | D1 thiếu file script | `tools/scripts/src/done-pc2.ts` |
