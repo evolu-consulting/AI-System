@@ -34,3 +34,21 @@ Mọi lỗ hổng có mặc định an toàn, tự quyết theo Luật 2 (ghi sp
 Chưa kiểm: nội dung mockup (người dùng đã duyệt), chi tiết từng ca test khoá, kích thước plan/test-plan.
 
 Áp mặc định: #1, #3–#11, #13–#22, #24 và phần #23 của spec/plan/tasks (spec §9 C19–C35; #2, #12 thuộc frontend-lead/docs-architect; #23 plan-frontend/BA ngoài phạm vi) — commit 51f3af2a
+
+## Lần 2 · 2026-10-14 · main 63da2dfe · NOT READY (1 Chặn, 5 Cao, 5 Thấp; 0 câu hỏi mới)
+
+Lần 1 đã đóng: #1–#4, #6, #8, #10, #12–#20, #22, #24. Còn hở: #5, #7, #9, #21, #23. Spec 25 139 B (đạt).
+
+| # | Mức | Vấn đề | Mặc định |
+|---|---|---|---|
+| 1 | Chặn | C34 `no_credential` vs `classify_push_error`/AP09 | `has_credential=false` + lỗi `auth` ⇒ `no_credential`; `push_rejected`/`network` giữ; đổi ở `ApplyHost` |
+| 2 | Cao | `applyOutcome` khi có báo cáo + `jobReason`; trạng thái kết thúc job | Có báo cáo ⇒ theo `r.status` (trừ `container`); báo cáo được nhận ⇒ job `succeeded` |
+| 3 | Cao | R2 "slot chỉ khi retest" ↔ C22 | Claim `source.apply` đòi (autofix + apply đang chạy) < `RUNTIME_SANDBOX_MAX`; sửa R2 |
+| 4 | Cao | R2 migrate nhầm DB dev | `db:test:drop h1 && db:test:create h1` trước pytest (R2 + `done:pc2`) |
+| 5 | Cao | B2/B3 `test:int` kéo ca đỏ P-c2 | B2: `packages/db` + `db.int.test.ts`; B3: thư mục hồi quy P-b + sources |
+| 6 | Cao | B7 trỏ `sweeper*.ts`, thiếu `runs/autofix.rules.ts` | `runs/sweeps.ts` + `runs/autofix.rules.ts` |
+| 7 | Thấp | `realActionPreconfirm` | `realActionPre` |
+| 8 | Thấp | `apply_mode`/`apply_base` khi nguồn xoá/đổi kind | Cả hai `null` |
+| 9 | Thấp | test-plan tham chiếu cũ; G7/G8/G16 | qc sửa câu chữ |
+| 10 | Thấp | Chữ trạng thái cũ (spec-decisions:17, tasks T1, spec §5) | Cập nhật |
+| 11 | Thấp | `done:pc2` bước 4 `test:int` toàn bộ | Liệt kê thư mục; P-c2 từng file |
