@@ -135,3 +135,5 @@ qc viết `test-plan.md` + test khoá theo PC2-R01…R16 và plan §4. Mốc đ�
 | Q8 | Ai đặt `apply_mode` (kể cả `auto_merge`)? | **tenant_admin** của tenant (như sửa nguồn); `local_path` cố định `branch_only` |
 | Q9 | Smoke với GitHub thật (repo thử + fine-grained PAT: Contents RW, Pull requests RW, chỉ repo đó)? | **Không chặn mốc**: P-c2 đạt bằng mock + bare repo; người dùng cấp repo/PAT thì `qc-uat` chạy thêm (hard stop: secret thật) |
 | Q10 | Khoá nguồn dùng cho cả nguồn **chỉ-đọc** P-b (vd `fixbug-evolu` đọc repo riêng)? | **Có** — cùng đường resolve, không thêm việc |
+
+**Người dùng trả lời 2026-10-14:** chấp nhận mặc định Q1–Q10 (Q1 chỉ GitHub; Q2 Runtime nhận khoá qua kênh nội bộ, chỉ ngoài container; Q3 stage "Áp" riêng sau gate; Q4–Q10 như bảng). Còn chờ: mockup `Pc2-*` (T1) trước khi qc viết test.
