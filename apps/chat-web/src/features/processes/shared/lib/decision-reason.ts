@@ -12,9 +12,16 @@ export const reasonKey = (r: DecisionReason) => `process.common.${r}`;
 export const isAutofixReason = (r: DecisionReason | undefined): boolean =>
   r === "autofix_check_failed" || r === "sandbox_unavailable";
 
+/** P-c2: hai lý do của stage Áp (cũng dạng heading, chỉ 2 nút Thêm lượt / Huỷ). */
+export const isApplyReason = (r: DecisionReason | undefined): boolean =>
+  r === "apply_conflict" || r === "apply_failed";
+
 /** Dòng giải thích dưới lý do: `source_unresolvable` (P-b), `autofix_check_failed` / `sandbox_unavailable` (P-c1); mã khác ⇒ `null`. */
 export const reasonHintKey = (r: DecisionReason): string | null =>
-  r === "source_unresolvable" || r === "autofix_check_failed" || r === "sandbox_unavailable"
+  r === "source_unresolvable" ||
+  r === "autofix_check_failed" ||
+  r === "sandbox_unavailable" ||
+  r === "apply_conflict"
     ? `process.common.${r}_hint`
     : null;
 

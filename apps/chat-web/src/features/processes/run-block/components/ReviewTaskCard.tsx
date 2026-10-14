@@ -9,6 +9,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { fetchAttachmentContent } from "~/features/attachments/api";
 import { ApiError } from "~/lib/http";
 import { ForwardAction } from "../../ask/components/ForwardAction";
+import { ApplyGateLine } from "../../shared/apply/ApplyGateLine";
 import { AutofixResult } from "../../shared/autofix/AutofixResult";
 import { stageAutofix } from "../../shared/lib/autofix-view";
 import { useThreadBinding } from "../../shared/thread/thread-binding";
@@ -112,6 +113,7 @@ export function ReviewTaskCard({ runId, task, view, taskView, onResolved }: Task
     >
       <p className="text-sm font-medium">{t("process.run.review.title", { agent })}</p>
       {autofix && <AutofixResult view={autofix} load={fetchAttachmentContent} />}
+      <ApplyGateLine autofix={autofix} />
       {!inlineFail ? (
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" disabled={mut.isPending} onClick={() => void pass()}>

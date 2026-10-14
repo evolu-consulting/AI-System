@@ -121,5 +121,54 @@
   "autofix_check_failed": "The change did not pass checks",
   "autofix_check_failed_hint": "No diff was saved. Add another round (the agent gets the error summary below) or cancel the process.",
   "sandbox_unavailable": "No safe runtime available",
-  "sandbox_unavailable_hint": "The runner could not start an isolated container, so autofix cannot run. Contact your administrator, then add a round or cancel."
+  "sandbox_unavailable_hint": "The runner could not start an isolated container, so autofix cannot run. Contact your administrator, then add a round or cancel.",
+  "apply": {
+    "title": "Apply the fix",
+    "region": "Apply result",
+    "status": {
+      "pr_opened": "PR opened",
+      "pushed": "Branch pushed",
+      "branch_only": "Branch only",
+      "no_changes": "No changes",
+      "conflict": "Conflict · {{n}} files",
+      "check_failed": "Check failed",
+      "failed": "Apply failed"
+    },
+    "pr": "PR #{{n}}",
+    "rebased": "Rebased onto {{sha}}",
+    "rebasedHint": "The default branch changed, so the fix was re-applied and the tests were run again before pushing.",
+    "auto": {
+      "on": "Auto-merge: on",
+      "failed": "Auto-merge: could not enable",
+      "failedHint": "The PR stays open and needs a manual merge. Check that the repo has \"Allow auto-merge\" on."
+    },
+    "branch": "Branch {{branch}}",
+    "commit": "commit {{sha}}",
+    "prAria": "Open PR #{{n}} on GitHub (new tab)",
+    "pushedOnly": "The source is set to \"Branch only\", so no PR was opened.",
+    "localHint": "A local path source is not pushed anywhere. Download the fix and apply it on your machine:",
+    "downloadDiff": "Download .diff",
+    "noChangesHint": "The fix matches the source, so there is nothing to push.",
+    "gate": {
+      "pr": "Passing will open a PR into {{base}}.",
+      "auto_merge": "Passing will open a PR into {{base}} and auto-merge when it is allowed.",
+      "branch_only": "Passing will push a branch to the repo without opening a PR.",
+      "local": "Passing only approves the fix. Download the .diff to apply it yourself."
+    },
+    "conflictFiles": "Conflicting files",
+    "genericErr": "The fix could not be applied. Retry or cancel.",
+    "err": {
+      "auth": "GitHub rejected the source credential (wrong, expired or lacking permission). Replace the credential on the Sources page, then retry.",
+      "no_credential": "The source has no credential, so the branch cannot be pushed. Assign one on the Sources page, then retry.",
+      "push_rejected": "GitHub refused the branch (protected or blocked). Retry or cancel.",
+      "network": "Could not reach GitHub. Try again later.",
+      "rate_limited": "GitHub is rate-limiting requests. Wait a few minutes, then retry.",
+      "provider_error": "GitHub reported an error while opening the PR. Try again later.",
+      "check_failed": "After merging with the latest code the fix did not pass the checks again (tests, paths, size or secrets). Run the process again on the new code, or cancel.",
+      "unsupported_provider": "The source's git host does not support opening PRs. Change the source's apply mode to \"Branch only\"."
+    }
+  },
+  "apply_conflict": "The fix conflicts with the new code",
+  "apply_conflict_hint": "The default branch changed and the fix cannot be re-applied. To fix against the new code, run the process again. Adding a round only helps once the conflict is resolved in the repo.",
+  "apply_failed": "Applying the fix failed"
 }

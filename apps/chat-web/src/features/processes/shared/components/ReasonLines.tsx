@@ -2,14 +2,14 @@
 import type { DecisionReason } from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
 import { Badge } from "../autofix/Badge";
-import { isAutofixReason, reasonKey, reasonParams } from "../lib/decision-reason";
+import { isApplyReason, isAutofixReason, reasonKey, reasonParams } from "../lib/decision-reason";
 import { ReasonHint } from "./ReasonHint";
 
 export function ReasonLines({ reason, round }: { reason: DecisionReason; round?: number }) {
   const { t } = useTranslation();
   return (
     <>
-      {isAutofixReason(reason) ? (
+      {isAutofixReason(reason) || isApplyReason(reason) ? (
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-sm font-semibold">{t(reasonKey(reason))}</h3>
           {round !== undefined && (

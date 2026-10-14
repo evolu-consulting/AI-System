@@ -6,10 +6,12 @@ import { toast } from "sonner";
 import { Textarea } from "~/components/ui/textarea";
 import { fetchAttachmentContent } from "~/features/attachments/api";
 import { ApiError } from "~/lib/http";
+import { LazyApplyIssue } from "../../shared/apply/lazy";
 import { AutofixFailures } from "../../shared/autofix/AutofixFailures";
 import { ReasonLines } from "../../shared/components/ReasonLines";
+import { applyOf } from "../../shared/lib/apply-view";
 import { stageAutofix } from "../../shared/lib/autofix-view";
-import { isAutofixReason } from "../../shared/lib/decision-reason";
+import { isApplyReason, isAutofixReason } from "../../shared/lib/decision-reason";
 import type { TaskCardProps } from "../../shared/types";
 import { useDecide } from "../hooks/use-decide";
 import { DecisionButtons } from "./DecisionButtons";
@@ -29,9 +31,13 @@ export function DecisionCard({
   const [noOutput, setNoOutput] = useState(false);
   // Chỉ hiện lỗi của vòng hiện tại; vòng này không có báo cáo (job lỗi / hết giờ) ⇒ "không có báo cáo chi tiết".
   const autofixReason = isAutofixReason(task.reason);
+  const applyReason = isApplyReason(task.reason);
+  const apply = view ? applyOf(view.stages, task.stage_idx) : undefined;
   const failed = stageAutofix(view, taskView, task.stage_idx).current;
   // Phòng thủ: lý do autofix không có `use_current` (không có output để dùng); Hub đã lọc, giữ lọc ở FE phòng khi lệch.
-  const options = (task.options ?? []).filter((o) => !(autofixReason && o === "use_current"));
+  const options = (task.options ?? []).filter(
+    (o) => !((autofixReason || applyReason) && o === "use_current"),
+  );
   const over = note.length > FORWARD_NOTE_MAX;
 
   const run = useCallback(
@@ -80,6 +86,9 @@ export function DecisionCard({
       {task.reason === "autofix_check_failed" && (
         <AutofixFailures view={failed} load={fetchAttachmentContent} />
       )}
+      {applyReason && (
+        <LazyApplyIssue reason={task.reason} apply={apply} load={fetchAttachmentContent} />
+      )}
       <Textarea
         aria-label={t("process.run.decision.note")}
         value={note}
@@ -93,7 +102,7 @@ export function DecisionCard({
       )}
       <DecisionButtons
         options={options}
-        autofix={autofixReason}
+        autofix={autofixReason || applyReason}
         over={over}
         pending={decide.isPending}
         useCurrentDisabled={useCurrentDisabled}

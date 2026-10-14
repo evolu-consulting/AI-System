@@ -10,8 +10,12 @@ import { type LoadContent, useAutofixLog, useDownload } from "./use-autofix-cont
 
 const K = "process.common.autofix.";
 type Failure = AutofixStageView["failures"][number];
+/** P-c2: dùng chung cho `ApplyStageView` (cùng `failures`/`test_log_file`, không có `test`). */
+type FailView = Pick<AutofixStageView, "failures" | "test_log_file"> & {
+  test?: AutofixStageView["test"];
+};
 
-function TestLog({ view, load }: { view: AutofixStageView; load: LoadContent }) {
+function TestLog({ view, load }: { view: FailView; load: LoadContent }) {
   const { t } = useTranslation();
   const file = view.test_log_file;
   const log = useAutofixLog(file?.id ?? null, load, true, 30);
@@ -44,13 +48,7 @@ function lineText(f: Failure, t: (k: string, o?: Record<string, unknown>) => str
   return f.path ? `${f.path} · ${f.detail}` : f.detail;
 }
 
-function AutofixFailuresImpl({
-  view,
-  load,
-}: {
-  view: AutofixStageView | undefined;
-  load: LoadContent;
-}) {
+function AutofixFailuresImpl({ view, load }: { view: FailView | undefined; load: LoadContent }) {
   const { t, i18n } = useTranslation();
   const groups = view ? failureGroups(view) : [];
   if (!view || groups.length === 0) {

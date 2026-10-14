@@ -121,5 +121,54 @@
   "autofix_check_failed": "Kiểm bản sửa không đạt",
   "autofix_check_failed_hint": "Chưa lưu diff. Chọn thêm một lượt (agent nhận tóm tắt lỗi dưới đây) hoặc huỷ quy trình.",
   "sandbox_unavailable": "Không có môi trường chạy an toàn",
-  "sandbox_unavailable_hint": "Máy chạy chưa dựng được container cô lập nên không thể tự sửa mã. Liên hệ quản trị rồi chọn thêm lượt, hoặc huỷ."
+  "sandbox_unavailable_hint": "Máy chạy chưa dựng được container cô lập nên không thể tự sửa mã. Liên hệ quản trị rồi chọn thêm lượt, hoặc huỷ.",
+  "apply": {
+    "title": "Áp bản sửa",
+    "region": "Kết quả áp bản sửa",
+    "status": {
+      "pr_opened": "Đã mở PR",
+      "pushed": "Đã đẩy nhánh",
+      "branch_only": "Chỉ nhánh",
+      "no_changes": "Không có thay đổi",
+      "conflict": "Xung đột · {{n}} file",
+      "check_failed": "Kiểm không đạt",
+      "failed": "Lỗi áp"
+    },
+    "pr": "PR #{{n}}",
+    "rebased": "Đã rebase lên {{sha}}",
+    "rebasedHint": "Nhánh mặc định đã đổi nên bản sửa được áp lại và chạy lại test trước khi đẩy.",
+    "auto": {
+      "on": "Tự gộp: bật",
+      "failed": "Tự gộp: không bật được",
+      "failedHint": "PR vẫn mở, cần gộp tay. Kiểm tra repo đã bật \"Allow auto-merge\" chưa."
+    },
+    "branch": "Nhánh {{branch}}",
+    "commit": "commit {{sha}}",
+    "prAria": "Mở PR #{{n}} trên GitHub (tab mới)",
+    "pushedOnly": "Nguồn đặt chế độ \"Chỉ nhánh\" nên không mở PR.",
+    "localHint": "Nguồn đường dẫn cục bộ không đẩy lên đâu. Tải bản sửa rồi áp vào máy của bạn:",
+    "downloadDiff": "Tải .diff",
+    "noChangesHint": "Bản sửa trùng nguồn nên không có gì để đẩy.",
+    "gate": {
+      "pr": "Đạt sẽ mở PR vào {{base}}.",
+      "auto_merge": "Đạt sẽ mở PR vào {{base}} và tự gộp khi đủ điều kiện.",
+      "branch_only": "Đạt sẽ đẩy nhánh lên repo, không mở PR.",
+      "local": "Đạt chỉ chốt bản sửa. Tải .diff để tự áp vào máy."
+    },
+    "conflictFiles": "File xung đột",
+    "genericErr": "Không áp được bản sửa. Thử lại hoặc huỷ.",
+    "err": {
+      "auth": "GitHub từ chối khoá nguồn (sai, hết hạn hoặc không đủ quyền). Thay khoá ở trang Nguồn rồi thử lại.",
+      "no_credential": "Nguồn chưa có khoá nguồn nên không đẩy được nhánh. Gán khoá ở trang Nguồn rồi thử lại.",
+      "push_rejected": "GitHub từ chối nhận nhánh (bị bảo vệ hoặc bị chặn). Thử lại hoặc huỷ.",
+      "network": "Không kết nối được tới GitHub. Thử lại sau.",
+      "rate_limited": "GitHub giới hạn tần suất gọi. Đợi vài phút rồi thử lại.",
+      "provider_error": "GitHub báo lỗi khi mở PR. Thử lại sau.",
+      "check_failed": "Sau khi gộp với mã mới nhất, bản sửa không qua kiểm lại (test, đường dẫn, kích thước hoặc bí mật). Chạy lại quy trình trên mã mới, hoặc huỷ.",
+      "unsupported_provider": "Máy chủ git của nguồn chưa hỗ trợ mở PR. Đổi chế độ áp của nguồn sang \"Chỉ nhánh\"."
+    }
+  },
+  "apply_conflict": "Bản sửa xung đột với mã mới",
+  "apply_conflict_hint": "Nhánh main đã đổi và bản sửa không áp lại được. Muốn sửa trên mã mới thì chạy lại quy trình. Chọn thêm lượt chỉ có ích khi đã xử lý xung đột ở repo.",
+  "apply_failed": "Áp bản sửa không thành công"
 }

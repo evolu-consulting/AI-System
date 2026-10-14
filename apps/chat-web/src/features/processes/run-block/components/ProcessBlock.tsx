@@ -12,11 +12,13 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { FlowRecent } from "~/features/rooms/components/agent/FlowRecent";
 import { FlowFooter } from "~/features/thread/components/FlowFooter";
 import { relativeTime } from "~/features/thread/lib/thread-logic";
+import { ApplySummary } from "../../shared/apply/ApplySummary";
 import { AutofixSummary } from "../../shared/autofix/AutofixSummary";
 import { RunStatusBadge } from "../../shared/components/RunStatusBadge";
 import { StageStrip } from "../../shared/components/StageStrip";
 import { TaskWaitingNote } from "../../shared/components/TaskWaitingNote";
 import { useThreadRun } from "../../shared/hooks/use-thread-run";
+import { applyOf } from "../../shared/lib/apply-view";
 import type { ThreadMessageProps } from "../../shared/types";
 import {
   type BlockAction,
@@ -95,10 +97,12 @@ function BlockBody({ view, isError, refetch, openThread, actions, showWaiting }:
   if (!view) return <Skeleton aria-busy="true" className="h-5 w-2/3" />;
   const waiting = showWaiting ? waitingOpenTasks(view) : [];
   const autofix = latestAutofix(view);
+  const apply = applyOf(view.stages);
   return (
     <>
       <StatusLine view={view} />
       <StageStrip stages={stageItems(view)} back={backTrail(view)} />
+      {apply && <ApplySummary view={apply} />}
       {autofix && <AutofixSummary view={autofix} onView={openThread} runId={view.id} />}
       {actions.length > 0 && openThread && (
         <div className="flex flex-wrap gap-2">

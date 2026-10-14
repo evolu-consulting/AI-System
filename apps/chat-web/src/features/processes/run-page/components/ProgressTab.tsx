@@ -23,6 +23,7 @@ import {
 } from "../../shared/lib/steps";
 import { pendingDecisionTask } from "../../shared/lib/thread-task";
 import { BackTimeline } from "./BackTimeline";
+import { StageApply } from "./StageApply";
 import { StageAutofix } from "./StageAutofix";
 import { StageOutputs } from "./StageOutputs";
 import { StageRow } from "./StageRow";
@@ -57,6 +58,9 @@ function FullProgress({ view }: { view: ProcessRunFullView }) {
           {view.stages.map((s) => (
             <StageAutofix key={`af-${s.idx}`} view={view} stage={s} />
           ))}
+          {view.stages.map((s) => (
+            <StageApply key={`ap-${s.idx}`} view={view} stage={s} />
+          ))}
           {view.my_tasks.map((task) => (
             <TaskPanel key={task.id} runId={view.id} task={task} view={view} />
           ))}
@@ -78,6 +82,7 @@ function StepSections({ view }: { view: ProcessRunFullView }) {
           <StageRow stage={s} />
           {s.outputs.length > 0 && <StageOutputs runId={view.id} stage={s} />}
           <StageAutofix view={view} stage={s} />
+          <StageApply view={view} stage={s} />
         </div>
       ))}
       {view.my_tasks

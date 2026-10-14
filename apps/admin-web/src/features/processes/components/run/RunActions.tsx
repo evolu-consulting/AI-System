@@ -11,8 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAttachmentLoader } from "../../hooks/use-attachment-loader";
 import { useRunAction } from "../../hooks/use-run-data";
+import { applyOf } from "../../lib/apply-view";
 import { currentAutofix } from "../../lib/autofix-view";
 import { processErrorSpec } from "../../lib/errors";
+import { ApplyIssue } from "./apply/ApplyIssue";
 import { AutofixFailures } from "./autofix/AutofixFailures";
 
 type Props = { run: ProcessRunFullView; tenantId: string | undefined };
@@ -31,7 +33,7 @@ function reasonText(t: ReturnType<typeof useTranslation>["t"], run: ProcessRunFu
 function ReasonTitle({ run, round }: { run: ProcessRunFullView; round?: number }) {
   const { t } = useTranslation();
   const r = run.decision?.reason;
-  if (r === "autofix_check_failed" || r === "sandbox_unavailable") {
+  if (isHeadingReason(r)) {
     return (
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-body font-semibold">{reasonText(t, run)}</h3>
@@ -44,10 +46,49 @@ function ReasonTitle({ run, round }: { run: ProcessRunFullView; round?: number }
   return <p className="text-body text-muted-foreground">{reasonText(t, run)}</p>;
 }
 
+const isHeadingReason = (r: string | undefined): boolean =>
+  r === "autofix_check_failed" ||
+  r === "sandbox_unavailable" ||
+  r === "apply_conflict" ||
+  r === "apply_failed";
+
 const autofixOrder = <T extends string>(opts: T[], reason: string | undefined): T[] =>
-  reason === "autofix_check_failed" || reason === "sandbox_unavailable"
+  isHeadingReason(reason)
     ? [...opts].sort((a, b) => Number(b === "cancel") - Number(a === "cancel"))
     : opts;
+
+const HINTED = new Set<string>([
+  "source_unresolvable",
+  "autofix_check_failed",
+  "sandbox_unavailable",
+  "apply_conflict",
+]);
+
+function ReasonBody({
+  run,
+  failed,
+  load,
+}: {
+  run: ProcessRunFullView;
+  failed: ReturnType<typeof currentAutofix>;
+  load: ReturnType<typeof useAttachmentLoader>;
+}) {
+  const { t } = useTranslation();
+  const d = run.decision;
+  if (!d) return null;
+  const hint = HINTED.has(d.reason) ? (
+    <p className="text-caption text-muted-foreground">{t(`process.common.${d.reason}_hint`)}</p>
+  ) : null;
+  return (
+    <>
+      {hint}
+      {(d.reason === "apply_conflict" || d.reason === "apply_failed") && (
+        <ApplyIssue reason={d.reason} apply={applyOf(run.stages, d.stage_idx)} load={load} />
+      )}
+      {d.reason === "autofix_check_failed" && <AutofixFailures view={failed} load={load} />}
+    </>
+  );
+}
 
 export function RunActions({ run, tenantId }: Props) {
   const { t } = useTranslation();
@@ -84,17 +125,7 @@ export function RunActions({ run, tenantId }: Props) {
             })}
           </h2>
           <ReasonTitle run={run} round={failed?.round} />
-          {d?.reason === "source_unresolvable" && (
-            <p className="text-caption text-muted-foreground">
-              {t("process.common.source_unresolvable_hint")}
-            </p>
-          )}
-          {(d.reason === "autofix_check_failed" || d.reason === "sandbox_unavailable") && (
-            <p className="text-caption text-muted-foreground">
-              {t(`process.common.${d.reason}_hint`)}
-            </p>
-          )}
-          {d.reason === "autofix_check_failed" && <AutofixFailures view={failed} load={load} />}
+          <ReasonBody run={run} failed={failed} load={load} />
           {deciding ? (
             <>
               <div className="space-y-1.5">

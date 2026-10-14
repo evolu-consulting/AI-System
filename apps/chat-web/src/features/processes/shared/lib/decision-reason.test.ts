@@ -1,7 +1,13 @@
 // CHAT-AC-60 · AC-PB2-07 · ánh xạ lý do "Cần người quyết" (P-b2 thêm back_limit).
 import { describe, expect, test } from "bun:test";
 import { DECISION_REASONS, PROCESS_BACK_ROUNDS_MAX } from "@ai/contracts/chat";
-import { isAutofixReason, reasonHintKey, reasonKey, reasonParams } from "./decision-reason";
+import {
+  isApplyReason,
+  isAutofixReason,
+  reasonHintKey,
+  reasonKey,
+  reasonParams,
+} from "./decision-reason";
 
 describe("decision-reason", () => {
   test("back_limit ⇒ khoá common + max = hằng contract", () => {
@@ -17,6 +23,16 @@ describe("decision-reason", () => {
       expect(reasonParams(r)).toEqual({});
     }
     expect(reasonHintKey("redo_limit")).toBeNull();
+  });
+  test("P-c2: 2 mã Áp ⇒ nhãn; chỉ apply_conflict có hướng dẫn", () => {
+    for (const r of ["apply_conflict", "apply_failed"] as const) {
+      expect(DECISION_REASONS).toContain(r);
+      expect(reasonKey(r)).toBe(`process.common.${r}`);
+      expect(isApplyReason(r)).toBe(true);
+    }
+    expect(reasonHintKey("apply_conflict")).toBe("process.common.apply_conflict_hint");
+    expect(reasonHintKey("apply_failed")).toBeNull();
+    expect(isApplyReason("redo_limit")).toBe(false);
   });
   test("mã khác giữ nguyên", () => {
     expect(reasonParams("source_unresolvable")).toEqual({});

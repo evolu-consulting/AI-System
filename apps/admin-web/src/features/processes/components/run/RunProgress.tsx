@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ApplySummary } from "./apply/ApplySummary";
 import { autofixAnchor } from "./autofix/AutofixBlocks";
 import { AutofixSummary } from "./autofix/AutofixSummary";
 import type { OutputTarget } from "./OutputDialog";
@@ -51,6 +52,7 @@ export function RunProgress({ stages, onView }: Props) {
                     }
                   />
                 )}
+                {s.apply && <ApplySummary view={s.apply} />}
               </TableCell>
               <TableCell>{s.executor.name[lang]}</TableCell>
               <TableCell>{t(stageStatusKey(s.status))}</TableCell>
