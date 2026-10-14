@@ -61,7 +61,7 @@ BA là nguồn sự thật; chỉ ghi phần BA chưa nói. Luật P-c1 (PC-R01�
 | Stage def (`hub-admin/processes.ts`, `process-steps.ts`) | `executor` += `{kind:"apply"}`; `EXECUTOR_KINDS += "apply"`; `PROCESS_DEF_RULES += APPLY_REAL, APPLY_AFTER, APPLY_NO_AUTOFIX, APPLY_MAX, APPLY_FIELDS` (cuối); hàm thuần `applyStageIssues` (FE dùng chung) |
 | Job (`hub/job.ts`) | `SourceApplyJob{type:"source.apply", source{source_id,key,url,branch,has_credential}, pin_sha, branch, apply_mode, push_only, patch: JobAttachment, install_cmd, test_cmd, write_allowlist, timeout_s}`; `JobPayload` union += ; `ResolveItem.config` mang `credential_secret_id` (chỉ id) |
 | Kênh nội bộ (`hub-internal/`) | `POST /internal/jobs/:id/source-credential {source_id}` → 200 `{username, token}` · 401 · 404 `NOT_FOUND` · 409 `NOT_CONFIGURED` (khoá hỏng/mất). `POST /internal/jobs/:id/apply-result` body `ApplyReport{status pushed\|conflict\|check_failed\|failed, target_sha, head_sha\|null, rebased, code\|null, conflict_files ≤50, failures ≤50, test\|null}` → 201 `{id}` · 400 · 401 · 409 `APPLY_NOT_EXPECTED` · 409 `APPLY_RESULT_EXISTS` |
-| Xem run (`chat/processes-entities.ts`) | Stage view `apply?: ApplyStageView{mode, status, branch\|null, target_sha\|null, head_sha\|null, rebased, provider\|null, pr_number\|null, pr_url\|null, auto_merge: "on"\|"failed"\|null, error_code\|null, conflict_files, failures, created_at}`; `AutofixStageView += apply_mode: ApplyMode \| null` (null = def không có stage Áp) — để gate hiện "Đạt sẽ mở PR vào `<branch>`" |
+| Xem run (`chat/processes-entities.ts`) | Stage view `apply?: ApplyStageView{mode, status, branch\|null, target_sha\|null, head_sha\|null, rebased, provider\|null, pr_number\|null, pr_url\|null, auto_merge: "on"\|"failed"\|null, error_code\|null, conflict_files, failures, created_at}`; `AutofixStageView += apply_mode: ApplyMode \| null` (null = def không có stage Áp), `apply_base: string \| null` (= `config.branch` nguồn hiện tại khi `apply_mode ≠ null` và nguồn `git_remote`) — để gate hiện "Đạt sẽ mở PR vào `<apply_base>`"; `ApplyStageView.test_log_file: {id,name} \| null`. Luật: `status ∈ {failed, check_failed}` ⇒ `error_code ≠ null` (`check_failed` ⇒ `error_code="check_failed"`); `conflict` ⇒ null |
 | Quyết định | `DECISION_REASONS += "apply_conflict", "apply_failed"` (cuối); `autofixDecisionOptions` mở rộng: hai lý do mới ⇒ `[add_attempt, cancel]` |
 | `APPLY_ERROR_CODES` | `auth` · `no_credential` · `push_rejected` · `network` · `rate_limited` · `provider_error` · `check_failed` · `unsupported_provider` |
 | Luật thuần (QC viết test trước) | contracts `gitProviderOf`, `effectiveApplyMode`, `applyStageIssues`; Hub `processes/runs/apply.rules.ts`; Runtime `apply/rules.py` — chữ ký plan §4 |
@@ -118,6 +118,14 @@ qc viết `test-plan.md` + test khoá theo PC2-R01…R16 và plan §4. Mốc đ�
 | C6 | Một bảng `autofix_applies` có UPDATE theo cột (push → PR) thay vì hai bảng/append-only | Ít bảng; cột sửa được giới hạn bằng GRANT |
 | C7 | `AutofixStageView.apply_mode` để gate nói rõ hậu quả của Đạt | Người duyệt biết Đạt = mở PR |
 | C8 | `apply_mode` đọc **lúc Áp** (không ghim lúc bắt đầu run); hàng `autofix_applies.mode` ghi giá trị thật | Đơn giản; đổi nguồn là việc của tenant_admin |
+
+### Chốt contract theo đề nghị FE (2026-10-14)
+| # | Quyết định |
+|---|---|
+| C9 | `AutofixStageView.apply_base` = `config.branch` nguồn hiện tại (cùng chỗ đọc với `apply_mode`); `local_path`/`apply_mode=null` ⇒ null. Người duyệt không cần quyền `/admin/sources` |
+| C10 | `ApplyStageView.test_log_file` nhận: file log như `autofix_results` (`<stage_key>-apply-test.log.txt`, `{id,name}`), tải qua route attachment sẵn có; quyền đọc theo PC-R14 mở rộng |
+| C11 | `error_code ≠ null` khi `status ∈ {failed, check_failed}` (DB CHECK `autofix_applies_err_req_ck`); thiếu báo cáo/lỗi job khác ⇒ driver ghi hàng `failed` + `provider_error`; `check_failed` ⇒ `check_failed`; `conflict` ⇒ null |
+| C12 | `GET/POST/PUT/DELETE /admin/source-credentials*`: tenant_admin không gửi `tenant_id` (dùng tenant phiên; gửi khác ⇒ bỏ qua/403 theo `credentialTenant`); platform_admin bắt buộc `tenant_id` (thiếu ⇒ 400 path `tenant_id`). Không đổi code BE (đã có `credentialTenant`) |
 
 ### Trong lúc làm
 (trống)
