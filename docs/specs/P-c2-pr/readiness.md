@@ -87,3 +87,6 @@ Lần 3 đã đóng: #1, #3–#10; #2 đóng một phần.
 | 5 | Thấp | plan.md:15 "(khoá?)" | "(nếu `has_credential`)" |
 
 Áp mặc định lần 4: #1–#5 (điều phối, commit kèm dòng này).
+
+## Lần 5 · 2026-10-14 · main c79fd05a · READY
+5 mục lần 4 đã đóng; không lỗ hổng Chặn/Cao mới. Gate: `docs/specs/P-c2-gate.md` (tự duyệt Luật 2b).

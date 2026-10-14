@@ -2,7 +2,7 @@
 id: P-c2-pr
 title: P-c2 · Áp bản sửa — push nhánh + PR / apply_mode / rebase khi main đổi / repo git riêng tư
 milestone: P-c2 (sau P-c1, xong 2026-10-14)
-status: draft            # PLAN BE+FE + test khoá xong; readiness lần 2 đã áp (chạy lại readiness → Gate)
+status: approved         # Gate tự duyệt Luật 2b 2026-10-14 (readiness lần 5 READY); BUILD
 requirements: [HUB-FR-129, HUB-FR-128, HUB-FR-130, HUB-BR-34, HUB-BR-30, HUB-BR-32, HUB-FR-68, WRK-FR-29]
 design:
   - docs/CHANGE-REQUESTS.md#CR-061 (D4 PR sau duyệt), #CR-065 (E4 rebase, E5 apply_mode)
