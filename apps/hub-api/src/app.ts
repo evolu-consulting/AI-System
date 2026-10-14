@@ -41,6 +41,7 @@ import type { AttachmentDeps } from "./modules/attachments/storage";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
+import { mountApplyResult } from "./modules/internal/apply.routes";
 import { mountSourceCredential } from "./modules/internal/source-credential.routes";
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
@@ -366,6 +367,9 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   // P-c2 B4 · `/internal/jobs/:id/source-credential` (token job, không JWT/CORS; khoá nguồn riêng cho Runtime).
   if (deps.db)
     mountSourceCredential(app, { db: deps.db, key: deps.hubSecretsKey ?? null, log: logger });
+  // P-c2 B5 · `/internal/jobs/:id/apply-result` (token job; blob log test cùng kho file — chỉ khi có `attachments`).
+  if (deps.db && deps.attachments)
+    mountApplyResult(app, { db: deps.db, storage: deps.attachments.storage, log: logger });
 
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
