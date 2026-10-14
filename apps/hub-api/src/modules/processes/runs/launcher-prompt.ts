@@ -9,6 +9,7 @@ import {
   type SourcePin,
   type StageAutofix,
   type StageSource,
+  sourceConfigOut,
 } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
@@ -176,7 +177,8 @@ export async function gateResolve(tx: Tx, runId: string, head: Head): Promise<bo
       source_id: s.source_id,
       key: s.key,
       kind: s.kind,
-      config: s.config,
+      // P-c2 · snapshot/nguồn cũ thiếu `credential_secret_id` ⇒ null (pydantic Runtime đòi trường).
+      config: sourceConfigOut(s.config),
       allowlist_union: s.allowlist_union,
       ...(afKeys.has(s.key) ? { caps: "autofix" as const } : {}),
     })),

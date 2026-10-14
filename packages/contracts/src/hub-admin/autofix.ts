@@ -46,3 +46,37 @@ export const AutofixDiffStatsSchema = z.strictObject({
   bytes: z.number().int().min(0),
 });
 export type AutofixDiffStats = z.infer<typeof AutofixDiffStatsSchema>;
+
+// ── P-c2 · HUB-FR-129 · stage Áp (plan §3.5–§3.6): dùng chung báo cáo job (hub-internal) + view (chat) ──
+export const APPLY_STATUSES = [
+  "no_changes",
+  "branch_only",
+  "pushed",
+  "pr_opened",
+  "conflict",
+  "check_failed",
+  "failed",
+] as const;
+export const ApplyStatusSchema = z.enum(APPLY_STATUSES);
+export type ApplyStatus = z.infer<typeof ApplyStatusSchema>;
+/** Trạng thái báo cáo job `source.apply` (Runtime gửi). */
+export const APPLY_REPORT_STATUSES = ["pushed", "conflict", "check_failed", "failed"] as const;
+/** Mã lỗi Áp (hàng/view) — Runtime chỉ gửi 4 mã đầu (`APPLY_JOB_CODES`); còn lại Hub sinh. */
+export const APPLY_ERROR_CODES = [
+  "auth",
+  "no_credential",
+  "push_rejected",
+  "network",
+  "rate_limited",
+  "provider_error",
+  "check_failed",
+  "unsupported_provider",
+] as const;
+export const ApplyErrorCodeSchema = z.enum(APPLY_ERROR_CODES);
+export type ApplyErrorCode = z.infer<typeof ApplyErrorCodeSchema>;
+export const APPLY_JOB_CODES = ["auth", "no_credential", "push_rejected", "network"] as const;
+export const ApplyJobCodeSchema = z.enum(APPLY_JOB_CODES);
+export type ApplyJobCode = z.infer<typeof ApplyJobCodeSchema>;
+export const APPLY_CONFLICT_FILES_MAX = 50;
+export const APPLY_FILE_PATH_MAX = 1024;
+export const APPLY_DETAIL_MAX = 300;

@@ -109,6 +109,9 @@ export const DECISION_REASONS = [
   "back_limit",
   "autofix_check_failed",
   "sandbox_unavailable",
+  // P-c2 · PC2-R08 · stage Áp.
+  "apply_conflict",
+  "apply_failed",
 ] as const;
 export const DECISION_OPTIONS = ["add_attempt", "use_current", "cancel"] as const;
 export const NOTICE_KINDS = [
@@ -121,7 +124,7 @@ export const NOTICE_KINDS = [
 ] as const;
 export const ORIGIN_KINDS = ["room", "conversation", "admin"] as const;
 export const STAGE_AFTER_KINDS = ["review", "auto"] as const;
-export const EXECUTOR_KINDS = ["agent", "team"] as const;
+export const EXECUTOR_KINDS = ["agent", "team", "apply"] as const;
 export const STEP_ROLES = ["agent", "plan", "member"] as const;
 
 export type ProcessRunStatus = (typeof PROCESS_RUN_STATUSES)[number];

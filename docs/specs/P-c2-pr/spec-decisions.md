@@ -48,3 +48,22 @@
 | C50 | (#5) `ensureHandoff` chỉ cho executor `agent` (stage Áp không có "Bàn giao"); B7 sửa `defs/def.rules.ts` |
 | C51 | (#2) B2: `bun run db:test:create pc2_qc` trước int (F3: `db:test:create pc2_e2e`, lệnh của frontend-lead) |
 | C52 | (#7–#10) plan §5.2 đánh lại bước 1–8; trạng thái plan/tasks cập nhật; §5 tách `plan-runtime.md`; D1 thêm `tools/scripts/src/done-pc2.ts` |
+
+## Quyết định trong lúc làm (BUILD)
+| # | Task | Quyết định |
+|---|---|---|
+| D1 | B1 | `SourceConfig`/`SourceCreateRequest`/`SourceUpdateRequest` = `z.input` (`credential_secret_id` optional — config cũ trong DB/bản nháp FE); thêm `SourceConfigParsed` + `sourceConfigOut()` để chuẩn hoá về kiểu sau parse (null) |
+| D2 | B1 | Payload `source.resolve` (launcher-prompt, check.service) + `SourceView.config` (`publicConfig`) đi qua `sourceConfigOut` — pydantic `hub.py` đòi `credential_secret_id` (UUID\|None, bắt buộc); job resolve cũ còn trong hàng đợi lúc deploy (≤ 300 s) chấp nhận lỗi |
+| D3 | B1 | `AutofixStageView.apply_mode`/`apply_base` = `.nullable().optional()` (fixture FE `satisfies AutofixStageView` không sửa được ở B1); Hub luôn gửi (B7), FE đọc `?? null` |
+| D4 | B1 | `AutofixFileSchema` + `AutofixStageViewSchema` + `ApplyStageViewSchema` chuyển sang `chat/processes-autofix.ts` (giữ `processes-entities.ts` ≤ 400 dòng); export qua `@ai/contracts/chat` như cũ |
+| D5 | B1 | `APPLY_STATUSES` (thứ tự CHECK DB), `APPLY_REPORT_STATUSES`, `APPLY_JOB_CODES`, trần `APPLY_*` đặt ở `hub-admin/autofix.ts`; `ApplyReport.failures` chỉ khi `check_failed` (plan §3.5); `APPLY_BODY_MAX_BYTES = 256 KiB` |
+| D6 | B1 | `applyModeIssue`/`effectiveApplyMode` nhận `{kind, url?, apply_mode?}` (SourceConfig gán được) để FE dùng với bản nháp; thứ tự issue trong một stage Áp: REAL → AFTER → NO_AUTOFIX → MAX → FIELDS |
+| D7 | B1 | `SourceApplyJob` đăng ký `$defs` riêng trong `hubJsonSchemaBundle` (như `SourceResolveJob`, không vào `HUB_JSON_SCHEMAS`); fixture `SourceApplyJob.{pr,branch-only}` valid + `{branch-main,timeout-low}` invalid; fixture `SourceResolveJob` thêm `credential_secret_id` |
+| D8 | B1 | Ngoài danh sách file B1 phải chạm để typecheck xanh: `tools/mocks/.../actions.ts` (`steps("apply")` ⇒ `[]`), `sources/{check.service,source.rules}.ts`, `runs/launcher-prompt.ts` (D2) |
+
+## Tranh chấp test
+| # | Test khoá | Vì sao | Đề nghị qc |
+|---|---|---|---|
+| T1 | `tests/acceptance/P-c/rules/contracts-pc.test.ts` C05 (`PROCESS_DEF_RULES` toEqual 9 mã), C14 (`DECISION_REASONS` toEqual 18 mã) | P-c2 (plan §3.2, §3.6; test P-c2 C07/C12) bắt buộc thêm CUỐI 5 + 2 mã — hai bộ test khoá mâu thuẫn | đổi sang `slice(0, n)` (giữ thứ tự cũ) |
+| T2 | `tests/acceptance/P-b/pfs1/rules/contracts.test.ts` R-C24 (`SOURCE_ERRORS` đúng 7 mã) | P-c2 C03 thêm cuối `SOURCE_CREDENTIAL_INVALID`, `SOURCE_APPLY_UNSUPPORTED` | so 7 mã đầu |
+| — | `tests/acceptance/H2c/rules/contracts-h2c.test.ts` R48, R49 | đỏ SẴN trước B1 (`JOB_FAIL_REASONS` cuối = `container` từ P-c1; fixture `SourceResolveJob` không thuộc `HUB_JSON_SCHEMAS` từ P-b) — không do P-c2 | ghi nhận |

@@ -56,7 +56,7 @@ export function addOutput(s: ProcessState, r: MockRun): OutputRef {
 }
 
 /** Nhóm: 1 bước plan + 3 thành viên (fixture usage `done`). */
-function steps(kind: "agent" | "team") {
+function steps(kind: "agent" | "team" | "apply") {
   const one = (role: "agent" | "plan" | "member", key: string, member: string | null) => ({
     role,
     member_key: member,
@@ -65,6 +65,7 @@ function steps(kind: "agent" | "team") {
     ms: 1200,
     tokens: 900,
   });
+  if (kind === "apply") return []; // P-c2 · stage Áp: Hub tự chạy, không bước agent.
   if (kind === "agent") return [one("agent", "hd-read", null)];
   return [
     one("plan", "lead", null),

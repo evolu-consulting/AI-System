@@ -48,6 +48,11 @@ const REASON: Record<DecisionReason, { vi: string; en: string }> = {
   back_limit: { vi: "đã quay lại quá số vòng", en: "go-back limit reached" },
   autofix_check_failed: { vi: "bản sửa không qua kiểm tra", en: "autofix failed its checks" },
   sandbox_unavailable: { vi: "môi trường chạy cách ly không dùng được", en: "sandbox unavailable" },
+  apply_conflict: {
+    vi: "bản sửa xung đột với mã mới",
+    en: "the fix conflicts with the new code",
+  },
+  apply_failed: { vi: "áp bản sửa không thành công", en: "applying the fix failed" },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);

@@ -11,6 +11,9 @@ const MESSAGES: Record<SourceErrorCode, string> = {
   SOURCE_FORBIDDEN_KIND: "You cannot manage this source kind",
   SOURCE_TOO_LARGE: "Source is too large",
   SOURCE_NOT_FOUND: "Source not found",
+  SOURCE_CREDENTIAL_INVALID:
+    "This credential cannot be used. Choose another credential of this company.",
+  SOURCE_APPLY_UNSUPPORTED: 'This git host does not support opening PRs yet. Choose "Branch only".',
 };
 
 export function sourceError(code: SourceErrorCode, details?: unknown): AppError {

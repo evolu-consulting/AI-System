@@ -143,7 +143,11 @@ function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     key: s.key,
     name: s.name,
     executor:
-      s.executor.kind === "agent" ? `agent:${s.executor.agent_id}` : `team:${s.executor.team_id}`,
+      s.executor.kind === "agent"
+        ? `agent:${s.executor.agent_id}`
+        : s.executor.kind === "team"
+          ? `team:${s.executor.team_id}`
+          : "apply",
     instruction: s.instruction,
     filename: s.output.filename,
     template: s.output.template,

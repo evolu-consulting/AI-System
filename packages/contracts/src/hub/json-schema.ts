@@ -1,7 +1,7 @@
 // HUB-FR-89 · gói JSON Schema của HUB_JSON_SCHEMAS cho C2 (`contracts:gen`): một tài liệu, mỗi key = một `$defs`.
 import { z } from "zod";
 import { HUB_JSON_SCHEMAS } from "./export";
-import { SourceResolveJobSchema } from "./job";
+import { SourceApplyJobSchema, SourceResolveJobSchema } from "./job";
 
 /** Draft 2020-12, `io: "output"`, ném khi có kiểu không biểu diễn được; key sắp theo thứ tự khai báo. */
 export function hubJsonSchemaBundle(): Record<string, unknown> {
@@ -10,6 +10,8 @@ export function hubJsonSchemaBundle(): Record<string, unknown> {
   // P-b · đăng ký thêm để pydantic sinh class `SourceResolveJob` (JobPayload tham chiếu $ref); KHÔNG thêm vào
   // HUB_JSON_SCHEMAS ⇒ test đếm/fixtures H1 giữ nguyên (R-C25 chỉ cần tên class trong hub.py).
   reg.add(SourceResolveJobSchema, { id: "SourceResolveJob" });
+  // P-c2 · tương tự: class `SourceApplyJob` cho `ApplyHost`.
+  reg.add(SourceApplyJobSchema, { id: "SourceApplyJob" });
   const out = z.toJSONSchema(reg, {
     target: "draft-2020-12",
     io: "output",

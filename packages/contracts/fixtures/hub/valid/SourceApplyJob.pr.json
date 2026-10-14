@@ -1,0 +1,29 @@
+{
+  "v": 1,
+  "type": "source.apply",
+  "job_id": "c2c20000-0000-4000-8000-000000000031",
+  "tenant_id": "a1000000-0000-4000-8000-000000000001",
+  "process_run_id": "c2c20000-0000-4000-8000-000000000001",
+  "source": {
+    "source_id": "c2c20000-0000-4000-8000-000000000002",
+    "key": "app-repo",
+    "url": "https://github.com/acme/app.git",
+    "branch": "main",
+    "has_credential": true
+  },
+  "pin_sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+  "branch": "ai/c2c20000-0000-4000-8000-000000000001/fix",
+  "apply_mode": "pr",
+  "push_only": false,
+  "patch": {
+    "id": "c2c20000-0000-4000-8000-000000000021",
+    "name": "fix-r1.diff.txt",
+    "mime": "text/plain",
+    "size": 120,
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "install_cmd": null,
+  "test_cmd": "bun test",
+  "write_allowlist": [],
+  "timeout_s": 600
+}

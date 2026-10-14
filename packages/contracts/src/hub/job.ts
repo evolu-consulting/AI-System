@@ -4,9 +4,13 @@ import { STAGE_KEY_RE } from "../chat/processes";
 import { ATTACH_MAX_BYTES, AttachMimeSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "../hub-admin/autofix";
 import {
+  ApplyModeSchema,
+  BranchSchema,
+  GitUrlSchema,
   GlobSchema,
   RESOLVE_ALLOWLIST_MAX,
   RESOLVE_ITEMS_MAX,
+  SOURCE_SHA_RE,
   SourceConfigSchema,
   SourceKeySchema,
   SourceKindSchema,
@@ -162,9 +166,44 @@ export const SourceResolveJobSchema = z.strictObject({
 });
 export type SourceResolveJob = z.infer<typeof SourceResolveJobSchema>;
 
+// ── P-c2 · HUB-FR-129 · WRK-FR-29 · job `source.apply` (plan §3.3): Runtime áp diff đã duyệt lên nhánh `ai/…` rồi push ──
+export const SourceApplyJobSchema = z
+  .strictObject({
+    v: VersionSchema,
+    type: z.literal("source.apply"),
+    job_id: HubUuidSchema,
+    tenant_id: HubUuidSchema,
+    process_run_id: HubUuidSchema,
+    /** Chỉ `git_remote`; khoá lấy qua `/internal/jobs/:id/source-credential` khi `has_credential` (không có giá trị ở đây). */
+    source: z.strictObject({
+      source_id: HubUuidSchema,
+      key: SourceKeySchema,
+      url: GitUrlSchema,
+      branch: BranchSchema,
+      has_credential: z.boolean(),
+    }),
+    pin_sha: z.string().regex(SOURCE_SHA_RE),
+    branch: z.string().regex(AUTOFIX_BRANCH_RE),
+    /** C8 · chế độ hiệu lực lúc launch. */
+    apply_mode: ApplyModeSchema,
+    push_only: z.boolean(),
+    /** Diff của kết quả tự-sửa `ok` (thuộc run — PB-R18). */
+    patch: JobAttachmentSchema,
+    install_cmd: AutofixCmdSchema.nullable(),
+    test_cmd: AutofixCmdSchema,
+    write_allowlist: AutofixWriteAllowlistSchema,
+    timeout_s: z.number().int().min(60).max(3600),
+  })
+  .superRefine((j, ctx) => {
+    if (j.push_only !== (j.apply_mode === "branch_only"))
+      ctx.addIssue({ code: "custom", path: ["push_only"], message: "push_only iff branch_only" });
+  });
+export type SourceApplyJob = z.infer<typeof SourceApplyJobSchema>;
+
 export const JobPayloadSchema = z.discriminatedUnion("type", [
   AgentCliJobSchema,
   WorkflowAsyncJobSchema,
   SourceResolveJobSchema,
+  SourceApplyJobSchema,
 ]);
 export type JobPayload = z.infer<typeof JobPayloadSchema>;

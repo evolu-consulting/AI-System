@@ -485,6 +485,8 @@ class Config(BaseModel):
     kind: Literal["git_remote"]
     url: Annotated[str, Field(max_length=2048)]
     branch: Annotated[str, Field(max_length=255, min_length=1, pattern="^[^-]")]
+    credential_secret_id: UUID | None
+    apply_mode: Literal["pr", "auto_merge", "branch_only"] | None = None
 
 
 class Config1(BaseModel):
@@ -530,6 +532,38 @@ class SourceResolveJob(BaseModel):
     process_run_id: UUID | None
     items: Annotated[list[Item], Field(max_length=20, min_length=1)]
     timeout_s: Annotated[int, Field(ge=10, le=300)]
+
+
+class Source2(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    source_id: UUID
+    key: Annotated[str, Field(pattern="^[a-z0-9-]{2,32}$")]
+    url: Annotated[str, Field(max_length=2048)]
+    branch: Annotated[str, Field(max_length=255, min_length=1, pattern="^[^-]")]
+    has_credential: bool
+
+
+class SourceApplyJob(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    v: Literal[1]
+    type: Literal["source.apply"]
+    job_id: UUID
+    tenant_id: UUID
+    process_run_id: UUID
+    source: Source2
+    pin_sha: Annotated[str, Field(pattern="^[0-9a-f]{40}$")]
+    branch: Annotated[str, Field(pattern="^ai\\/[0-9a-f-]{36}\\/[a-z0-9-]{1,32}$")]
+    apply_mode: Literal["pr", "auto_merge", "branch_only"]
+    push_only: bool
+    patch: JobAttachment
+    install_cmd: InstallCmd | None
+    test_cmd: Annotated[str, Field(max_length=1000, min_length=1)]
+    write_allowlist: Annotated[list[WriteAllowlistItem], Field(max_length=20)]
+    timeout_s: Annotated[int, Field(ge=60, le=3600)]
 
 
 class Autofix(BaseModel):
@@ -581,8 +615,10 @@ class JobPayload1(BaseModel):
     autofix: Autofix | None = None
 
 
-class JobPayload(RootModel[JobPayload1 | JobPayloadWorkflowAsync | SourceResolveJob]):
-    root: JobPayload1 | JobPayloadWorkflowAsync | SourceResolveJob
+class JobPayload(
+    RootModel[JobPayload1 | JobPayloadWorkflowAsync | SourceResolveJob | SourceApplyJob]
+):
+    root: JobPayload1 | JobPayloadWorkflowAsync | SourceResolveJob | SourceApplyJob
 
 
 class Output(BaseModel):

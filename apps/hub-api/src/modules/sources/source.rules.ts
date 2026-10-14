@@ -1,9 +1,11 @@
 // HUB-FR-120 · ADM-FR-68 · PB-R02/R21 · C1 · luật thuần nguồn (không I/O): phạm vi tenant, host allowlist, ẩn path, cursor.
-import type {
-  SourceConfig,
-  SourceConfigPublic,
-  SourcePin,
-  SourcePinPublic,
+import {
+  type SourceConfig,
+  type SourceConfigParsed,
+  type SourceConfigPublic,
+  type SourcePin,
+  type SourcePinPublic,
+  sourceConfigOut,
 } from "@ai/contracts/hub-admin";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";
@@ -59,8 +61,8 @@ export function readTenant(u: AuthUser, provided: string | undefined): string {
 export function publicConfig(
   config: SourceConfig,
   platform: boolean,
-): SourceConfig | SourceConfigPublic {
-  if (platform || config.kind !== "local_path") return config;
+): SourceConfigParsed | SourceConfigPublic {
+  if (platform || config.kind !== "local_path") return sourceConfigOut(config);
   return { kind: "local_path" };
 }
 

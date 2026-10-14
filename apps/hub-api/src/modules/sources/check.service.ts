@@ -1,7 +1,11 @@
 // HUB-FR-120 · PB-R05 · C13 · "Kiểm tra kết nối": enqueue job `source.resolve` 1 item (process_run_id null), chờ đồng bộ
 // (JobFollower qua `CheckWaiters`) tới `sourceCheckTimeoutMs` → 200 `SourceCheckResult` / 422 mã lỗi / 422 SOURCE_UNRESOLVABLE.
 import type { SourceResolveJob } from "@ai/contracts/hub";
-import type { SourceCheckResult, SourceErrorCode } from "@ai/contracts/hub-admin";
+import {
+  type SourceCheckResult,
+  type SourceErrorCode,
+  sourceConfigOut,
+} from "@ai/contracts/hub-admin";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
@@ -36,7 +40,7 @@ export class SourceCheckService {
           source_id: row.id,
           key: row.key,
           kind: row.kind,
-          config: row.config,
+          config: sourceConfigOut(row.config),
           allowlist_union: [],
         },
       ],

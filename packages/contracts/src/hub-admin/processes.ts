@@ -123,6 +123,8 @@ export const ProcessStageDefSchema = z.strictObject({
   executor: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("agent"), agent_id: UuidSchema }),
     z.strictObject({ kind: z.literal("team"), team_id: UuidSchema }),
+    /** P-c2 · PC2-R01 · stage "Áp bản sửa" — Hub tự chạy (luật `APPLY_*` ở `applyStageIssues`). */
+    z.strictObject({ kind: z.literal("apply") }),
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({

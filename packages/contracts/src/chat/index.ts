@@ -32,6 +32,7 @@ export * from "./me-stream";
 export * from "./me-stream-process";
 export * from "./processes";
 export * from "./processes-api";
+export * from "./processes-autofix";
 export * from "./processes-entities";
 export * from "./processes-errors";
 export * from "./room-process";

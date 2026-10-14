@@ -105,10 +105,21 @@ export const PathSchema = z
   .refine((v) => !v.includes("\0"), { message: "null byte" });
 
 // ---------- config ----------
+// P-c2 · HUB-FR-129 · PC2-R02/R10: chế độ áp + khoá nguồn riêng (chỉ id `source_credential`, không giá trị).
+export const APPLY_MODES = ["pr", "auto_merge", "branch_only"] as const;
+export const ApplyModeSchema = z.enum(APPLY_MODES);
+export type ApplyMode = z.infer<typeof ApplyModeSchema>;
+export const GIT_PROVIDERS = ["github"] as const;
+export type GitProvider = (typeof GIT_PROVIDERS)[number];
+
 export const GitRemoteConfigSchema = z.strictObject({
   kind: z.literal("git_remote"),
   url: GitUrlSchema,
   branch: BranchSchema,
+  /** P-c2 · khoá `source_credential` cùng tenant; vắng (nguồn cũ) ⇒ null. */
+  credential_secret_id: UuidSchema.nullable().default(null),
+  /** P-c2 · vắng ⇒ mặc định theo provider (`effectiveApplyMode`). */
+  apply_mode: ApplyModeSchema.optional(),
 });
 export const LocalPathConfigSchema = z.strictObject({
   kind: z.literal("local_path"),
@@ -123,7 +134,20 @@ export const SourceConfigSchema = z.discriminatedUnion("kind", [
   LocalPathConfigSchema,
   LibraryConfigSchema,
 ]);
-export type SourceConfig = z.infer<typeof SourceConfigSchema>;
+/**
+ * P-c2 · kiểu theo INPUT: `credential_secret_id` optional (config cũ trong DB / bản nháp FE không có) — đọc `?? null`.
+ * Sau `parse` luôn có (default null). Ngoài trường này input ≡ output.
+ */
+export type SourceConfig = z.input<typeof SourceConfigSchema>;
+/** Sau parse: `git_remote` luôn có `credential_secret_id` (null nếu không khoá). */
+export type SourceConfigParsed = z.output<typeof SourceConfigSchema>;
+
+/** P-c2 · chuẩn hoá config đọc từ DB (nguồn cũ thiếu `credential_secret_id`) về kiểu sau parse — không I/O. */
+export function sourceConfigOut(c: SourceConfig): SourceConfigParsed {
+  return c.kind === "git_remote"
+    ? { ...c, credential_secret_id: c.credential_secret_id ?? null }
+    : c;
+}
 
 /** C1: ẩn `path` cho non-platform_admin. */
 export const LocalPathConfigPublicSchema = z.strictObject({ kind: z.literal("local_path") });
@@ -195,14 +219,15 @@ export const SourceCreateRequestSchema = z.strictObject({
   description: DescriptionSchema,
   tenant_id: UuidSchema.optional(),
 });
-export type SourceCreateRequest = z.infer<typeof SourceCreateRequestSchema>;
+/** Kiểu body client gửi (input — `credential_secret_id` optional). */
+export type SourceCreateRequest = z.input<typeof SourceCreateRequestSchema>;
 
 export const SourceUpdateRequestSchema = z.strictObject({
   config: SourceConfigSchema,
   description: DescriptionSchema,
   version: z.number().int().min(1),
 });
-export type SourceUpdateRequest = z.infer<typeof SourceUpdateRequestSchema>;
+export type SourceUpdateRequest = z.input<typeof SourceUpdateRequestSchema>;
 
 export const SourceListQuerySchema = z.strictObject({
   tenant_id: UuidSchema.optional(),
@@ -271,5 +296,37 @@ export const SOURCE_ERRORS = {
   SOURCE_FORBIDDEN_KIND: 403,
   SOURCE_TOO_LARGE: 422,
   SOURCE_NOT_FOUND: 404,
+  // P-c2 · `details.path` = `config.credential_secret_id` / `config.apply_mode`.
+  SOURCE_CREDENTIAL_INVALID: 422,
+  SOURCE_APPLY_UNSUPPORTED: 422,
 } as const satisfies Record<string, 403 | 404 | 409 | 422>;
 export type SourceErrorCode = keyof typeof SOURCE_ERRORS;
+
+// ---------- P-c2 · luật thuần chế độ áp (plan §4) ----------
+/** Q1 · host (chữ thường) đúng `github.com` ⇒ `github`; URL hỏng / host khác ⇒ null. */
+export function gitProviderOf(url: string): GitProvider | null {
+  try {
+    return new URL(url).hostname.toLowerCase() === "github.com" ? "github" : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Nhận cả `SourceConfig` lẫn bản nháp FE. */
+type ApplyModeInput = { kind: SourceKind; url?: string; apply_mode?: ApplyMode };
+
+/** PC2-R02 · chế độ hiệu lực: không phải git ⇒ `branch_only`; khai ⇒ giá trị đó; vắng ⇒ `pr` (có provider) | `branch_only`. */
+export function effectiveApplyMode(config: ApplyModeInput): ApplyMode {
+  if (config.kind !== "git_remote") return "branch_only";
+  if (config.apply_mode) return config.apply_mode;
+  return gitProviderOf(config.url ?? "") ? "pr" : "branch_only";
+}
+
+/** PC2-R02 · `pr`/`auto_merge` trên host không có provider ⇒ `SOURCE_APPLY_UNSUPPORTED`. */
+export function applyModeIssue(config: ApplyModeInput): "SOURCE_APPLY_UNSUPPORTED" | null {
+  if (config.kind !== "git_remote") return null;
+  const m = config.apply_mode;
+  if ((m === "pr" || m === "auto_merge") && gitProviderOf(config.url ?? "") === null)
+    return "SOURCE_APPLY_UNSUPPORTED";
+  return null;
+}

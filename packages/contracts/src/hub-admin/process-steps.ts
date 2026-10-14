@@ -16,6 +16,12 @@ export const PROCESS_DEF_RULES = [
   "AUTOFIX_EXECUTOR",
   "AUTOFIX_REVIEW",
   "AUTOFIX_MAX",
+  // P-c2 · PC2-R01 · stage Áp (`applyStageIssues`).
+  "APPLY_REAL",
+  "APPLY_AFTER",
+  "APPLY_NO_AUTOFIX",
+  "APPLY_MAX",
+  "APPLY_FIELDS",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };
@@ -109,7 +115,7 @@ function realAndBackIssues(stages: readonly StepStageShape[], out: Bucket[]): vo
 
 /** Vi phạm luật chéo stage (plan §1.2): i tăng; trong stage key → step → real_action → back; cắt ≤ 20. */
 export function processDefStageIssues(
-  stages: readonly (StepStageShape & Partial<AutofixStageShape>)[],
+  stages: readonly (StepStageShape & Partial<Omit<ApplyStageShape, keyof StepStageShape>>)[],
 ): ProcessDefIssue[] {
   const out: Bucket[] = stages.map(() => ({ key: [], step: [], real: [], back: [] }));
   const seen = new Set<string>();
@@ -120,10 +126,9 @@ export function processDefStageIssues(
   if (!stepIssues(stages, out)) realAndBackIssues(stages, out);
   const base = out.flatMap((b) => [...b.key, ...b.step, ...b.real, ...b.back]);
   // Chữ ký cũ (P-a) không có `executor`/`autofix` ⇒ coi như stage thường.
-  const auto = autofixStageIssues(
-    stages.map((s) => ({ ...s, executor: s.executor ?? { kind: "agent" } })),
-  );
-  return [...base, ...auto].slice(0, ISSUES_MAX);
+  const shaped = stages.map((s) => ({ ...s, executor: s.executor ?? { kind: "agent" } }));
+  const auto = autofixStageIssues(shaped);
+  return [...base, ...auto, ...applyStageIssues(shaped)].slice(0, ISSUES_MAX);
 }
 
 /** P-c1 · hình tối thiểu cho luật stage tự-sửa. */
@@ -143,6 +148,43 @@ export function autofixStageIssues(stages: readonly AutofixStageShape[]): Proces
     if (s.after.kind !== "review") out.push({ path: `stages.${i}.after`, rule: "AUTOFIX_REVIEW" });
     seen += 1;
     if (seen > 1) out.push({ path: `stages.${i}.autofix`, rule: "AUTOFIX_MAX" });
+  });
+  return out;
+}
+
+/** P-c2 · hình tối thiểu cho luật stage Áp (executor `apply`). */
+export type ApplyStageShape = AutofixStageShape & {
+  real_action: boolean;
+  sources?: readonly unknown[];
+  token_budget?: number | null;
+  must_know?: readonly unknown[];
+};
+
+/** APPLY_FIELDS: stage Áp không nguồn / tự-sửa / ngân sách token / điều cần biết. */
+const applyFieldsSet = (s: ApplyStageShape): boolean =>
+  (s.sources?.length ?? 0) > 0 ||
+  (s.autofix ?? null) !== null ||
+  (s.token_budget ?? null) !== null ||
+  (s.must_know?.length ?? 0) > 0;
+
+/**
+ * PC2-R01 · stage Áp: `real_action` bật, `after` auto, bước liền trước có stage tự-sửa, tối đa 1 stage Áp/def
+ * (từ stage Áp thứ 2 ⇒ APPLY_MAX), các trường agent để trống. Bước theo `resolveSteps`.
+ */
+export function applyStageIssues(stages: readonly ApplyStageShape[]): ProcessDefIssue[] {
+  const st = resolveSteps(stages);
+  const out: ProcessDefIssue[] = [];
+  let seen = 0;
+  stages.forEach((s, i) => {
+    if (s.executor.kind !== "apply") return;
+    const step = st[i] as number;
+    if (!s.real_action) out.push({ path: `stages.${i}.real_action`, rule: "APPLY_REAL" });
+    if (s.after.kind !== "auto") out.push({ path: `stages.${i}.after`, rule: "APPLY_AFTER" });
+    if (!stages.some((p, j) => st[j] === step - 1 && Boolean(p.autofix)))
+      out.push({ path: `stages.${i}.executor`, rule: "APPLY_NO_AUTOFIX" });
+    seen += 1;
+    if (seen > 1) out.push({ path: `stages.${i}.executor`, rule: "APPLY_MAX" });
+    if (applyFieldsSet(s)) out.push({ path: `stages.${i}`, rule: "APPLY_FIELDS" });
   });
   return out;
 }
