@@ -15,10 +15,15 @@ from agent_runtime.db import resolve_sql
 from agent_runtime.db.pool import Pool
 from agent_runtime.log import get_logger
 from agent_runtime.runtimes.cli.files.fetch import job_url
-from agent_runtime.runtimes.hub_http import make_hub_client
+from agent_runtime.runtimes.hub_http import (
+    SourceCredentialError,
+    make_hub_client,
+    source_credential,
+)
 from agent_runtime.sources import resolve, snapshot
 from agent_runtime.sources.config import SourceConfig
 from agent_runtime.sources.errors import SourceError
+from agent_runtime.sources.git_driver import GitAuth
 
 _HTTP_OK = 200
 _LIB_TIMEOUT = httpx2.Timeout(60.0)
@@ -105,7 +110,11 @@ class ResolveHost:
         try:
             if kind == "git_remote":
                 url, branch = _s(config.get("url")), _s(config.get("branch"))
-                pin, files, size = resolve.resolve_git(self._cfg, tenant, url, branch, allow, caps)
+                has_cred = config.get("credential_secret_id") is not None
+                auth = await self._git_auth(job, sid) if has_cred else None
+                pin, files, size = resolve.resolve_git(
+                    self._cfg, tenant, url, branch, allow, caps, sid, has_cred, auth
+                )
             elif kind == "local_path":
                 pin, files, size = resolve.resolve_local(
                     self._cfg, tenant, _s(config.get("path")), allow, caps
@@ -124,6 +133,19 @@ class ResolveHost:
                 "message": err.message[:500],
             }
         return {"status": "ok", "source_id": sid, "pin": pin, "files": files, "bytes": size}
+
+    async def _git_auth(self, job: resolve_sql.ResolveJob, source_id: str) -> GitAuth:
+        """PC2-R11: lấy khoá nguồn qua kênh nội bộ (Bearer token job), giữ trong bộ nhớ, truyền cho
+        git qua `auth_env`. Thất bại ⇒ `SOURCE_UNRESOLVABLE` (không rơi về mirror khác, PC2-R12)."""
+        if not self._hub_url:
+            raise SourceError("SOURCE_UNRESOLVABLE", "không có hub_url")
+        try:
+            username, token = await source_credential(
+                self._hub_url, job.id, job.token, source_id, self._transport
+            )
+        except SourceCredentialError as err:
+            raise SourceError("SOURCE_UNRESOLVABLE", "không lấy được khoá nguồn") from err
+        return GitAuth(username=username, token=token)
 
     async def _resolve_library(
         self, job: resolve_sql.ResolveJob, tenant: str, document_id: str, allow: list[str]

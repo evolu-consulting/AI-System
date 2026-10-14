@@ -9,6 +9,7 @@ import uuid
 
 from agent_runtime.sources import git_driver, snapshot
 from agent_runtime.sources.config import SourceConfig
+from agent_runtime.sources.git_driver import GitAuth
 from agent_runtime.sources.local_driver import resolve_root
 
 Pin = dict[str, object]
@@ -21,9 +22,14 @@ def resolve_git(  # noqa: PLR0913
     branch: str,
     allowlist: list[str],
     caps: snapshot.Caps = "source",
+    source_id: str = "",
+    has_credential: bool = False,
+    auth: GitAuth | None = None,
 ) -> tuple[Pin, int, int]:
+    """PC2-R11/R12: nguồn có khoá ⇒ `auth` (lấy qua kênh nội bộ ở host) + mirror riêng theo
+    `source_id`; snapshot cache vẫn theo `tenant` (cách ly repo riêng giữa tenant)."""
     git_driver.validate_branch(branch)  # fail-fast (SS-04) trước khi clone
-    mirror = git_driver.ensure_mirror_fresh(cfg, url)
+    mirror = git_driver.ensure_mirror_fresh(cfg, url, source_id, has_credential, auth)
     sha = git_driver.resolve_sha(cfg, mirror, branch)
     final = snapshot.git_dir(cfg, tenant, url, sha, allowlist, caps)
     ceiling = snapshot.ceiling_for(cfg, caps)

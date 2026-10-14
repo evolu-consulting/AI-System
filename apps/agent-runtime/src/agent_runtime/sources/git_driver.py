@@ -16,16 +16,41 @@ import shutil
 import socket
 import subprocess
 from collections.abc import Generator
-from hashlib import sha256
+from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from agent_runtime.apply import rules
 from agent_runtime.sources.config import SourceConfig
 from agent_runtime.sources.errors import SourceError
 
 CLONE_TIMEOUT_S = 120
 _GIT_TIMEOUT_S = 120
 _SHA_RE = __import__("re").compile(r"^[0-9a-f]{40}$")
+
+
+@dataclass(frozen=True)
+class GitAuth:
+    """PC2-R11: khoá nguồn giữ trong bộ nhớ Runtime, vào git chỉ qua env `GIT_CONFIG_*`.
+
+    `username` = `x-access-token` (github) / `oauth2` (host khác); `token` = PAT. Không bao giờ qua
+    argv/URL/file, không vào `work/<job>/`, log, báo cáo (`__repr__` che).
+    """
+
+    username: str
+    token: str
+
+    def __repr__(self) -> str:  # không rò token nếu lọt vào traceback/log
+        return f"GitAuth(username={self.username!r}, token='***')"
+
+
+def _origin(url: str) -> str:
+    """`scheme://host[:port]` cho khoá `http.<origin>/.extraHeader` (PC2-R11)."""
+    parts = urlsplit(url)
+    host = parts.hostname or ""
+    if parts.port and parts.port != 443:
+        return f"{parts.scheme}://{host}:{parts.port}"
+    return f"{parts.scheme}://{host}"
 
 
 def validate_git_url(url: str, cfg: SourceConfig) -> str:
@@ -65,7 +90,9 @@ def validate_branch(branch: str) -> str:
     return branch
 
 
-def git_env(cfg: SourceConfig) -> dict[str, str]:
+def git_env(
+    cfg: SourceConfig, auth: GitAuth | None = None, origin: str | None = None
+) -> dict[str, str]:
     env = {
         "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
         "HOME": os.environ.get("HOME", "/tmp"),
@@ -76,14 +103,23 @@ def git_env(cfg: SourceConfig) -> dict[str, str]:
         "GIT_ALLOW_PROTOCOL": "https:file" if cfg.git_config_env else "https",
     }
     env.update(cfg.git_config_env)
+    if auth is not None and origin is not None:
+        # PC2-R11: khoá vào git chỉ qua `GIT_CONFIG_*` extraHeader (nối sau cặp C6 insteadOf).
+        env = rules.auth_env(env, origin, auth.username, auth.token)
     return env
 
 
-def _run_git(cfg: SourceConfig, args: list[str], timeout: int = _GIT_TIMEOUT_S) -> str:
+def _run_git(  # noqa: PLR0913
+    cfg: SourceConfig,
+    args: list[str],
+    timeout: int = _GIT_TIMEOUT_S,
+    auth: GitAuth | None = None,
+    origin: str | None = None,
+) -> str:
     try:
         proc = subprocess.run(  # noqa: S603 — execFile mảng, không shell
             ["git", *args],
-            env=git_env(cfg),
+            env=git_env(cfg, auth, origin),
             capture_output=True,
             timeout=timeout,
             check=False,
@@ -92,18 +128,22 @@ def _run_git(cfg: SourceConfig, args: list[str], timeout: int = _GIT_TIMEOUT_S) 
     except subprocess.TimeoutExpired as err:
         raise SourceError("SOURCE_UNRESOLVABLE", "git quá hạn") from err
     if proc.returncode != 0:
+        # PC2-R11: không bao giờ đưa stderr thô (có thể lẫn khoá) vào thông báo lỗi.
         raise SourceError("SOURCE_UNRESOLVABLE", "git thất bại")
     return proc.stdout
 
 
-def mirror_path(cfg: SourceConfig, url: str) -> Path:
-    return cfg.mirrors_dir / sha256(url.encode()).hexdigest()
+def mirror_path(
+    cfg: SourceConfig, url: str, source_id: str = "", has_credential: bool = False
+) -> Path:
+    # PC2-R12: nguồn có khoá ⇒ mirror riêng theo `source_id`; không khoá ⇒ `sha256(url)` như P-b.
+    return cfg.mirrors_dir / rules.mirror_key(url, source_id, has_credential)
 
 
 @contextlib.contextmanager
-def _mirror_lock(cfg: SourceConfig, url: str) -> Generator[None, None, None]:
+def _mirror_lock(cfg: SourceConfig, key: str) -> Generator[None, None, None]:
     cfg.mirrors_dir.mkdir(parents=True, exist_ok=True)
-    lock = cfg.mirrors_dir / f"{sha256(url.encode()).hexdigest()}.lock"
+    lock = cfg.mirrors_dir / f"{key}.lock"
     fd = os.open(lock, os.O_CREAT | os.O_RDWR, 0o600)
     try:
         fcntl.flock(fd, fcntl.LOCK_EX)
@@ -113,40 +153,67 @@ def _mirror_lock(cfg: SourceConfig, url: str) -> Generator[None, None, None]:
         os.close(fd)
 
 
-def _clone_mirror(cfg: SourceConfig, url: str, dest: Path) -> None:
+def _clone_mirror(cfg: SourceConfig, url: str, dest: Path, auth: GitAuth | None) -> None:
     tmp = dest.parent / f".bld-{os.urandom(8).hex()}"
+    origin = _origin(url)
     try:
-        _run_git(cfg, ["clone", "--mirror", "--quiet", url, str(tmp)], timeout=CLONE_TIMEOUT_S)
+        _run_git(
+            cfg,
+            ["clone", "--mirror", "--quiet", url, str(tmp)],
+            timeout=CLONE_TIMEOUT_S,
+            auth=auth,
+            origin=origin,
+        )
         os.replace(tmp, dest)
     finally:
         if tmp.exists():
             shutil.rmtree(tmp, ignore_errors=True)
 
 
-def ensure_mirror_fresh(cfg: SourceConfig, url: str) -> Path:
-    """Resolve (check): clone nếu thiếu, else fetch — để bắt được HEAD mới nhất của branch."""
+def ensure_mirror_fresh(  # noqa: PLR0913
+    cfg: SourceConfig,
+    url: str,
+    source_id: str = "",
+    has_credential: bool = False,
+    auth: GitAuth | None = None,
+) -> Path:
+    """Resolve (check): clone nếu thiếu, else fetch — để bắt được HEAD mới nhất của branch. Nguồn có
+    khoá ⇒ mirror riêng + fetch/clone kèm `auth` (PC2-R11/R12)."""
     validate_git_url(url, cfg)
-    dest = mirror_path(cfg, url)
-    with _mirror_lock(cfg, url):
+    dest = mirror_path(cfg, url, source_id, has_credential)
+    origin = _origin(url)
+    with _mirror_lock(cfg, rules.mirror_key(url, source_id, has_credential)):
         if dest.exists():
-            _run_git(cfg, ["-C", str(dest), "fetch", "--quiet", "--prune"])
+            _run_git(
+                cfg, ["-C", str(dest), "fetch", "--quiet", "--prune"], auth=auth, origin=origin
+            )
         else:
-            _clone_mirror(cfg, url, dest)
+            _clone_mirror(cfg, url, dest, auth)
     return dest
 
 
-def ensure_sha(cfg: SourceConfig, url: str, sha: str) -> Path:
+def ensure_sha(  # noqa: PLR0913
+    cfg: SourceConfig,
+    url: str,
+    sha: str,
+    source_id: str = "",
+    has_credential: bool = False,
+    auth: GitAuth | None = None,
+) -> Path:
     """Stage (mount theo pin): bảo đảm `sha` có trong mirror; thiếu ⇒ clone/fetch; vẫn thiếu ⇒ lỗi."""  # noqa: E501
     validate_git_url(url, cfg)
     if not _SHA_RE.match(sha):
         raise SourceError("SOURCE_UNRESOLVABLE", "sha không hợp lệ")
-    dest = mirror_path(cfg, url)
-    with _mirror_lock(cfg, url):
+    dest = mirror_path(cfg, url, source_id, has_credential)
+    origin = _origin(url)
+    with _mirror_lock(cfg, rules.mirror_key(url, source_id, has_credential)):
         if not dest.exists():
-            _clone_mirror(cfg, url, dest)
+            _clone_mirror(cfg, url, dest, auth)
         if not _has_commit(cfg, dest, sha):
             with contextlib.suppress(SourceError):
-                _run_git(cfg, ["-C", str(dest), "fetch", "--quiet", "--prune"])
+                _run_git(
+                    cfg, ["-C", str(dest), "fetch", "--quiet", "--prune"], auth=auth, origin=origin
+                )
         if not _has_commit(cfg, dest, sha):
             raise SourceError("SOURCE_UNRESOLVABLE", "sha không còn trong repo")
     return dest
