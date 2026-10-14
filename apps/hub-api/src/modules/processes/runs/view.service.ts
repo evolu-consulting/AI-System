@@ -27,6 +27,7 @@ import {
 } from "../core/run-access.rules";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
 import * as repo from "./runs.repo";
+import { applyViews, withApply } from "./view-apply";
 import { autofixViews, onlyMyReviewStages, withAutofix } from "./view-autofix";
 import {
   backFields,
@@ -164,7 +165,19 @@ export class ViewService {
       const view = access === "task" ? await this.#task(vc) : await this.#full(vc);
       return { view, tenantId: r.tenant_id, snap };
     });
-    return this.#autofix(got);
+    const withAf = await this.#autofix(got);
+    return this.#apply({ ...got, view: withAf });
+  }
+
+  /** P-c2 · plan §6.6 · view full ⇒ gắn `apply` cho stage Áp (scope system SAU kiểm quyền; `view-apply.ts`). */
+  async #apply(g: { view: ProcessRunView; tenantId: string; snap: Snap }): Promise<ProcessRunView> {
+    const { view } = g;
+    if (view.access !== "full" || !g.snap.stages.some((s) => s.executor.kind === "apply"))
+      return view;
+    const all = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+      applyViews(tx, { id: view.id, tenantId: g.tenantId }, g.snap),
+    );
+    return all.size > 0 ? { ...view, stages: withApply(view.stages, all) } : view;
   }
 
   /** P-c1 · plan §6.5 · view full ⇒ gắn `autofix` cho stage tự-sửa (scope system SAU kiểm quyền; `view-autofix.ts`). */

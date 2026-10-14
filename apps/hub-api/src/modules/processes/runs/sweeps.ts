@@ -13,6 +13,7 @@ import type { ProcessDeps } from "../core/ports";
 import { firstIdxOfStep } from "../core/step.rules";
 import { decisionAssignees, decisionOptionsFor } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
+import { advanceApply } from "./apply-driver";
 import { stepsOfSnap } from "./step-persist";
 import { toDecision as trToDecision } from "./team-runner";
 
@@ -38,8 +39,32 @@ export async function sweepOnce(d: ProcessDeps): Promise<SweepResult> {
   const expired = await expireRuns(d);
   const interrupted = await reconcileRuns(d);
   await resolveTimeouts(d);
+  await advanceApplies(d);
   const queued = await requeueOrphans(d);
   return { queued, interrupted, expired };
+}
+
+/**
+ * P-c2 · C14/C27 · stage Áp `running` có job `source.apply` đã kết thúc (hoặc đã báo cáo hàng) ⇒ `advanceApply`
+ * (mở PR / "Cần người quyết"; không hàng mà job kết thúc ⇒ ghi failed+provider_error). Idempotent (advanceApply re-khoá).
+ */
+async function advanceApplies(d: ProcessDeps): Promise<void> {
+  const rows = await withHubScope(d.db, SYSTEM, (tx) =>
+    tx.execute<{ process_run_id: string; stage_run_id: string }>(sql`
+      select s.process_run_id, s.id as stage_run_id from hub.stage_runs s
+      where s.status = 'running' and exists (
+        select 1 from hub.jobs j where j.step_id = s.id and j.type = 'source.apply' and j.tenant_id = s.tenant_id
+          and (j.status not in ('queued', 'running')
+            or exists (select 1 from hub.autofix_applies aa where aa.job_id = j.id and aa.tenant_id = s.tenant_id)))
+      order by s.updated_at limit ${BATCH}`),
+  );
+  for (const r of rows)
+    await advanceApply(d, { runId: r.process_run_id, stageRunId: r.stage_run_id }).catch((err) =>
+      d.log.warn("apply-advance-sweep-failed", {
+        run_id: r.process_run_id,
+        ...safeErrorFields(err),
+      }),
+    );
 }
 
 /** PB-R05 · run chờ resolve mà không còn job resolve còn sống (failed/timeout/orphan) ⇒ needs_decision source_unresolvable. */

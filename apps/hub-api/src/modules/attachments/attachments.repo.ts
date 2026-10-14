@@ -112,15 +112,20 @@ export async function findAutofixAttachment(
   tx: Tx,
   o: { tenantId: string; id: string },
 ): Promise<{ runId: string; file: ReadableAttachment } | null> {
+  // P-c2 · plan §6.6 · mở rộng PC-R14: file diff/log của `autofix_results` HOẶC log test của stage Áp
+  // (`autofix_applies.test_log_attachment_id`) — cùng run + tenant; UNION để BitmapOr hai index một phần.
   const [r] = await tx.execute<
     ReadableRow & { run_id: string }
-  >(sql`select ar.process_run_id as run_id,
-      a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key
-    from hub.autofix_results ar
-    join hub.attachments a on a.id = ${o.id} and a.tenant_id = ar.tenant_id
-    where ar.tenant_id = ${o.tenantId}
-      and (ar.diff_attachment_id = ${o.id} or ar.test_log_attachment_id = ${o.id})
-    limit 1`);
+  >(sql`select run_id, id, filename, mime, size, created_at, purged_at, storage_key from (
+      select ar.process_run_id as run_id, a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key
+      from hub.autofix_results ar join hub.attachments a on a.id = ${o.id} and a.tenant_id = ar.tenant_id
+      where ar.tenant_id = ${o.tenantId}
+        and (ar.diff_attachment_id = ${o.id} or ar.test_log_attachment_id = ${o.id})
+      union all
+      select aa.process_run_id as run_id, a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key
+      from hub.autofix_applies aa join hub.attachments a on a.id = ${o.id} and a.tenant_id = aa.tenant_id
+      where aa.tenant_id = ${o.tenantId} and aa.test_log_attachment_id = ${o.id}
+    ) hit limit 1`);
   return r ? { runId: r.run_id, file: toReadable(r) } : null;
 }
 

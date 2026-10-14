@@ -60,6 +60,7 @@ import { traceRoutes } from "./modules/runs/trace/trace.routes";
 import { TraceService } from "./modules/runs/trace/trace.service";
 import type { SecretKey } from "./modules/secrets/secrets.crypto";
 import { SECRETS_PROTECTED_PREFIXES } from "./modules/secrets/secrets.mount";
+import { HubSecretReader } from "./modules/secrets/secrets.use";
 import type { ResolveBridge } from "./modules/sources/resolve.bridge";
 import { mountSources, SOURCE_PROTECTED_PREFIXES } from "./modules/sources/sources.mount";
 
@@ -162,6 +163,14 @@ function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {
   return r;
 }
 
+/** P-c2 · C13 · endpoint GitHub: seam `deps.github` ưu tiên; ngược lại env `HUB_GITHUB_*` (vắng ⇒ undefined ⇒ không mở PR). */
+function githubEndpointOf(deps: AppDeps): { apiUrl: string; webHost: string } | undefined {
+  if (deps.github) return deps.github;
+  const apiUrl = process.env.HUB_GITHUB_API_URL;
+  const webHost = process.env.HUB_GITHUB_WEB_HOST;
+  return apiUrl && webHost ? { apiUrl, webHost } : undefined;
+}
+
 /** Seam N3 (plan-contract §7.1) chuyển nguyên cho module quy trình. */
 const seamsOf = (d: AppDeps): ProcessSeams => ({
   processRunsPerTenant: d.processRunsPerTenant,
@@ -224,6 +233,9 @@ function processHooks(
     signal: deps.signal,
     ...seamsOf(deps),
     resolveBridge: m.resolveBridge,
+    // P-c2 · C13 · endpoint GitHub (seam ưu tiên env) + reader khoá nguồn cho driver stage Áp (mở PR).
+    github: githubEndpointOf(deps),
+    secrets: new HubSecretReader({ db: m.db, key: deps.hubSecretsKey ?? null, log: logger }),
   });
   m.messages.useProcesses(proc.roomSender);
   return proc.conversationStart;

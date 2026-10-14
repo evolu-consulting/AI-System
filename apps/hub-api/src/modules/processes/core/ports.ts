@@ -12,6 +12,7 @@ import type { ConfigCache } from "../../config/config.service";
 import type { KhRuntime } from "../../kh/kh.mount";
 import type { AgentRunner } from "../../runner/job/job-agent-runner";
 import type { RunService } from "../../runs/runs.service";
+import type { HubSecretReader } from "../../secrets/secrets.use";
 import type { Bang } from "./bang.rules";
 import type { Clock } from "./clock";
 
@@ -85,4 +86,8 @@ export type ProcessDeps = {
   signal?: AbortSignal;
   /** K1 · HUB-FR-133 · runtime KH (`app.h4a`): đích `## Tóm tắt` lúc start + bộ gửi `kh_writes`. Vắng ⇒ không KH. */
   kh?: KhRuntime;
+  /** P-c2 · C13 · seam endpoint GitHub (ưu tiên hơn env `HUB_GITHUB_*`). Vắng ⇒ driver Áp coi như không mở PR được. */
+  github?: { apiUrl: string; webHost: string };
+  /** P-c2 · HUB-FR-129 · đọc khoá nguồn (`source_credential`) cho `openPullRequest`. Vắng ⇒ không mở PR (fail-closed). */
+  secrets?: Pick<HubSecretReader, "useSecret">;
 };

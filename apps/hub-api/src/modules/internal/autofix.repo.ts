@@ -27,7 +27,11 @@ export async function jobByTokenAnyStatus(tx: Tx, hash: Buffer): Promise<Autofix
     user_id: string;
     process_run_id: string | null;
     stage_run_id: string | null;
-  }>(sql`SELECT j.id, j.type, j.status, j.payload, j.tenant_id, j.user_id, r.process_run_id, r.stage_run_id
+  }>(sql`SELECT j.id, j.type, j.status, j.payload, j.tenant_id, j.user_id,
+      COALESCE(r.process_run_id,
+        CASE WHEN j.type = 'source.apply' THEN (j.payload->>'process_run_id')::uuid END) AS process_run_id,
+      COALESCE(r.stage_run_id,
+        CASE WHEN j.type = 'source.apply' THEN j.step_id END) AS stage_run_id
     FROM hub.jobs j LEFT JOIN hub.runs r ON r.id = j.run_id AND r.tenant_id = j.tenant_id
     WHERE j.token_hash = ${hash}`);
   const r = rows[0];

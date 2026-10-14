@@ -3,7 +3,13 @@
 // view đã kiểm quyền xem run (definer `process_run_viewer`) — RLS `attachments` scope user chỉ thấy file của chính mình,
 // mà diff/log thuộc người bắt đầu ⇒ lọc `tenant_id` tường minh mọi bảng. `pin_sha` chỉ khi pin git_remote (không lộ path).
 import type { AutofixFile, AutofixStageView } from "@ai/contracts/chat";
-import type { AutofixDiffStats, AutofixFailure, AutofixStatus } from "@ai/contracts/hub-admin";
+import {
+  type AutofixDiffStats,
+  type AutofixFailure,
+  type AutofixStatus,
+  effectiveApplyMode,
+  type SourceKind,
+} from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { iso, type Snap } from "./view-steps";
@@ -54,7 +60,43 @@ export function toAutofixView(r: Row): AutofixStageView {
         : { exit_code: r.test_exit_code, duration_ms: Number(r.test_duration_ms) },
     failures: Array.isArray(r.failures) ? r.failures : [],
     created_at: r.created_at,
+    // C7/C43/C9 · Hub LUÔN gửi (null khi def không có stage Áp); enrich ở `autofixViews`.
+    apply_mode: null,
+    apply_base: null,
   };
+}
+
+type SrcCfg = {
+  kind: SourceKind;
+  url?: string;
+  branch?: string;
+  apply_mode?: "pr" | "auto_merge" | "branch_only";
+};
+
+/** C7/C43/C9 · def có stage Áp ⇒ `apply_mode`=`effectiveApplyMode(nguồn hiện tại)`, `apply_base`=branch khi git_remote. */
+async function enrichApplyMode(
+  tx: Tx,
+  run: { tenantId: string },
+  out: Map<number, AutofixStageView>,
+): Promise<void> {
+  const keys = [...new Set([...out.values()].map((v) => v.source_key))];
+  if (keys.length === 0) return;
+  const rows = await tx.execute<{ key: string; config: SrcCfg }>(sql`select key, config
+    from hub.sources where tenant_id = ${run.tenantId} and deleted_at is null
+      and key in (${sql.join(
+        keys.map((k) => sql`${k}`),
+        sql`, `,
+      )})`);
+  const byKey = new Map(rows.map((r) => [r.key, r.config] as const));
+  for (const [i, v] of out) {
+    const cfg = byKey.get(v.source_key);
+    if (!cfg) continue;
+    out.set(i, {
+      ...v,
+      apply_mode: effectiveApplyMode(cfg),
+      apply_base: cfg.kind === "git_remote" ? (cfg.branch ?? null) : null,
+    });
+  }
 }
 
 /** stage_idx → view tự-sửa mới nhất (stage không cấu hình `autofix` / chưa có kết quả ⇒ không có khoá). */
@@ -82,6 +124,7 @@ export async function autofixViews(
     const i = Number(r.stage_idx);
     if (snap.stages[i]?.autofix) out.set(i, toAutofixView(r));
   }
+  if (snap.stages.some((s) => s.executor.kind === "apply")) await enrichApplyMode(tx, run, out);
   return out;
 }
 

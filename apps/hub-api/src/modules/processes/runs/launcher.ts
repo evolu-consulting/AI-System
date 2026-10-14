@@ -19,6 +19,7 @@ import { processUpdated } from "../core/events";
 import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/ports";
 import { isTerminal } from "../core/process-state.rules";
 import { stageIdxsOfStep } from "../core/step.rules";
+import { launchApplyStage } from "./apply-launch";
 import { gateResolve, type Head, type SnapStage } from "./launcher-prompt";
 import { stagePrompt } from "./launcher-session";
 import { auditRealAction, priorFiles, realActionPre } from "./launcher-step";
@@ -47,10 +48,12 @@ export function createStageLauncher(d?: LauncherDeps): StageLauncher {
   return self;
 }
 
-const execOf = (s: SnapStage): StageExecutor =>
-  s.executor.kind === "agent"
-    ? { kind: "agent", agentId: s.executor.agent_id }
-    : { kind: "team", teamId: s.executor.team_id };
+const execOf = (s: SnapStage): StageExecutor => {
+  if (s.executor.kind === "agent") return { kind: "agent", agentId: s.executor.agent_id };
+  if (s.executor.kind === "team") return { kind: "team", teamId: s.executor.team_id };
+  // Stage Áp không chạy qua `hub.runs`/agent (nhánh riêng trong `plan`); execOf không được gọi.
+  throw new Error("apply stage không dùng execOf");
+};
 
 async function headOf(tx: Tx, runId: string): Promise<Head | null> {
   const [r] = await tx.execute<Head>(sql`select tenant_id, started_by, status, current_stage_idx,
@@ -152,6 +155,17 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
     runId,
   });
   if (!team.ok) return { ...(await lost("permission_lost")), more };
+  // P-c2 · PC2-R03 · stage Áp: nhánh riêng (audit + applyPlan + job/không-job), KHÔNG tạo `hub.runs`/agent.
+  if (def.executor.kind === "apply") {
+    const r = await launchApplyStage(d, tx, {
+      runId,
+      idx,
+      head,
+      stage: { id: stage.id, attempt: Number(stage.attempt) },
+      def,
+    });
+    return { ...r, more };
+  }
   const ctx = { runId, idx, head, stage, def, teamRunId: team.teamRunId, lost };
   return { ...(await launchStage(d, tx, u, ctx)), more };
 }

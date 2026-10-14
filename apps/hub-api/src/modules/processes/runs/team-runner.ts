@@ -43,7 +43,10 @@ export type StageResult =
 export type SnapStage = {
   name: string;
   step?: number; // P-b2 · vắng (def cũ) ⇒ mỗi stage một bước
-  executor: { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
+  executor:
+    | { kind: "agent"; agent_id: string }
+    | { kind: "team"; team_id: string }
+    | { kind: "apply" };
   output: {
     filename: string;
     template: string;

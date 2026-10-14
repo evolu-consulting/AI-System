@@ -43,6 +43,8 @@ export type ProcessSeams = {
   onProcessHandles?: (h: ProcessHandles) => void;
   /** PB-R05 · cầu nối từ `/sources-resolved`; engine gắn `onReport` để ghim/kick/needs_decision. */
   resolveBridge?: ResolveBridge;
+  /** P-c2 · C13 · endpoint GitHub (seam ưu tiên env `HUB_GITHUB_*`); vắng ⇒ driver Áp không mở PR. */
+  github?: { apiUrl: string; webHost: string };
 };
 export type ProcessMountDeps = Omit<
   ProcessDeps,

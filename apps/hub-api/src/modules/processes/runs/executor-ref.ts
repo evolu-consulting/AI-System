@@ -6,13 +6,25 @@ import type { ExecutorRef } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 
-export type Executor = { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
+export type Executor =
+  | { kind: "agent"; agent_id: string }
+  | { kind: "team"; team_id: string }
+  | { kind: "apply" };
 
 type NameRow = { id: string; key: string; vi: string | null; en: string | null };
 
 const NAME_MAX = 100; // = AgentNameSchema (contracts)
 const clip = (s: string): string => (s.length > NAME_MAX ? s.slice(0, NAME_MAX) : s);
-export const idOf = (e: Executor): string => (e.kind === "agent" ? e.agent_id : e.team_id);
+/** P-c2 · C19 · stage Áp không có agent/team ⇒ khoá cố định `apply`. */
+export const idOf = (e: Executor): string =>
+  e.kind === "agent" ? e.agent_id : e.kind === "team" ? e.team_id : "apply";
+
+/** P-c2 · C19 · ExecutorRef cố định của stage Áp (Hub tự chạy, không catalog). */
+export const APPLY_EXECUTOR_REF: ExecutorRef = {
+  kind: "apply",
+  key: "apply",
+  name: { vi: "Áp bản sửa", en: "Apply the fix" },
+};
 const idsArr = (ids: readonly string[]) => sql.raw(`'{${ids.join(",")}}'::uuid[]`);
 
 /** ExecutorRef từ hàng catalog (vi/en → key → id); key giữ id như cũ để FE khớp. */
@@ -31,6 +43,7 @@ const teamNames = (tx: Tx, ids: readonly string[]) =>
 
 /** Một executor (ghi tin thread cho một stage). */
 export async function executorRefOf(tx: Tx, e: Executor): Promise<ExecutorRef> {
+  if (e.kind === "apply") return APPLY_EXECUTOR_REF;
   const id = idOf(e);
   const [r] = e.kind === "agent" ? await agentNames(tx, [id]) : await teamNames(tx, [id]);
   return refOf(e.kind, id, r);
@@ -43,7 +56,9 @@ export async function resolveExecutors(
   execs: readonly Executor[],
 ): Promise<Map<string, ExecutorRef>> {
   const map = new Map<string, ExecutorRef>();
-  for (const e of execs) if (!map.has(idOf(e))) map.set(idOf(e), refOf(e.kind, idOf(e)));
+  for (const e of execs)
+    if (!map.has(idOf(e)))
+      map.set(idOf(e), e.kind === "apply" ? APPLY_EXECUTOR_REF : refOf(e.kind, idOf(e)));
   const agentIds = [...new Set(execs.filter((e) => e.kind === "agent").map(idOf))];
   const teamIds = [...new Set(execs.filter((e) => e.kind === "team").map(idOf))];
   if (agentIds.length)

@@ -20,7 +20,10 @@ export type SnapStage = {
   key: string;
   name: string;
   instruction: string;
-  executor: { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
+  executor:
+    | { kind: "agent"; agent_id: string }
+    | { kind: "team"; team_id: string }
+    | { kind: "apply" };
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
   output: { filename: string; required_sections?: string[] };
   real_action: boolean;

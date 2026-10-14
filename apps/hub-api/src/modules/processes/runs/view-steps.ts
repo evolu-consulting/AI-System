@@ -26,7 +26,10 @@ export type SnapStage = {
   key: string;
   name: string;
   step?: number;
-  executor: { kind: "agent"; agent_id: string } | { kind: "team"; team_id: string };
+  executor:
+    | { kind: "agent"; agent_id: string }
+    | { kind: "team"; team_id: string }
+    | { kind: "apply" };
   after: { kind: "review"; group_id: string | null; back_to_steps?: number[] } | { kind: "auto" };
   real_action: boolean;
   autofix?: { source_key: string } | null; // P-c1 · stage tự-sửa (view gắn `autofix` — view-autofix.ts)

@@ -2,7 +2,7 @@
 // job-token). Sai token/job/loại/lease ⇒ 401 cùng thân (PB-R18); `source_id ∉ job.items` / `pin.kind ≠ item.kind` ⇒ 422
 // (không ghim). Check (process_run_id null) ⇒ ghi `last_pin` + đánh thức `CheckWaiters`. Run ⇒ qua `ResolveBridge` (engine
 // ghim `pinned_sources` / `needs_decision` + kick). [HUB-FR-122]
-import { SourceResolveJobSchema } from "@ai/contracts/hub";
+import { SourceApplyJobSchema, SourceResolveJobSchema } from "@ai/contracts/hub";
 import type { SourcesResolvedRequest } from "@ai/contracts/hub-internal";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
@@ -127,6 +127,11 @@ export class SourcesResolvedService {
     );
     if (!job || job.id !== jobId) return false;
     if (job.type === "agent.cli") return true;
+    // P-c2 · PC2-R06 · job `source.apply`: nhường H2c khi `attId` là `patch.id` (diff đã duyệt) ⇒ `findApplyPatch`.
+    if (job.type === "source.apply") {
+      const p = SourceApplyJobSchema.safeParse(job.payload);
+      return p.success && p.data.patch.id === attId;
+    }
     if (job.type !== "source.resolve") return false;
     const parsed = SourceResolveJobSchema.safeParse(job.payload);
     return (

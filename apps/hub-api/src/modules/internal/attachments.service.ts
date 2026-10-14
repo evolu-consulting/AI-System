@@ -4,7 +4,12 @@
 // `purged_at` / file mất trên kho → `not_found`. Output (R25): ∧ `payload.agent.role='agent'` → `AttachmentService.ingestOutput`
 // (≤ 5/lần claim, luồng tải lên). Mọi sai xác thực → cùng `unauthorized` (không lộ tồn tại). Không log token/Authorization.
 import type { Attachment } from "@ai/contracts/chat";
-import { type AgentCliJob, AgentCliJobSchema, SourceResolveJobSchema } from "@ai/contracts/hub";
+import {
+  type AgentCliJob,
+  AgentCliJobSchema,
+  SourceApplyJobSchema,
+  SourceResolveJobSchema,
+} from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
@@ -63,7 +68,19 @@ async function findJobFile(tx: Tx, token: string, jobId: string, attId: string):
     const row = await repo.jobAttachment(tx, attId, found.job.tenantId);
     return row ? { row } : null;
   }
-  return findResolveLibrary(tx, token, jobId, attId);
+  return (
+    (await findResolveLibrary(tx, token, jobId, attId)) ?? findApplyPatch(tx, token, jobId, attId)
+  );
+}
+
+/** P-c2 · PC2-R06 · job `source.apply`: `attId` phải là `payload.patch.id` (diff đã duyệt, đã lọc thuộc run lúc dựng job). */
+async function findApplyPatch(tx: Tx, token: string, jobId: string, attId: string): Promise<Found> {
+  const job = await repo.jobByTokenHash(tx, hashJobToken(token));
+  if (!job || job.id !== jobId || job.type !== "source.apply") return null;
+  const parsed = SourceApplyJobSchema.safeParse(job.payload);
+  if (!parsed.success || parsed.data.patch.id !== attId) return null;
+  const row = await repo.jobAttachment(tx, attId, job.tenantId);
+  return row ? { row } : null;
 }
 
 /** P-b PF-S2 · C15 · job `source.resolve`: `attId` phải là `document_id` của item library trong job;

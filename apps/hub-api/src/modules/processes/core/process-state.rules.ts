@@ -155,8 +155,15 @@ function onDecide(s: RunState, option: DecisionOption): Transition {
       attemptLimit: Math.max(s.stage.attemptLimit + (reason === "redo_limit" ? 1 : 0), attempt),
     });
   }
-  // P-c1 · PC-R10 · `autofix_*` chỉ add_attempt/cancel ⇒ `use_current` 409 PROCESS_RUN_STATE (kể cả có output cũ).
-  if (reason === "autofix_check_failed" || reason === "sandbox_unavailable") return BAD;
+  // P-c1 · PC-R10 · P-c2 · PC2-R08 · `autofix_*`/`apply_*` chỉ add_attempt/cancel ⇒ `use_current` 409 PROCESS_RUN_STATE
+  // (kể cả có output cũ): không có bản sửa/PR hợp lệ để "dùng hiện tại".
+  if (
+    reason === "autofix_check_failed" ||
+    reason === "sandbox_unavailable" ||
+    reason === "apply_conflict" ||
+    reason === "apply_failed"
+  )
+    return BAD;
   if (!s.stage.hasOutput) return { ok: false, code: "NO_OUTPUT" };
   // P-b2 D8 · `back_limit` + `use_current` ⇒ stage nguồn coi Đạt như `redo_limit` (`add_attempt` do gates/back.effects).
   if (reason === "redo_limit" || reason === "back_limit") return advance(s, ["close_open_tasks"]);

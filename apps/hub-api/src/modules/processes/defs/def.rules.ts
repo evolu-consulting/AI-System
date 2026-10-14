@@ -135,7 +135,8 @@ const hasHandoffHeading = (tpl: string): boolean => sectionMap(tpl).has(HANDOFF_
  * thêm phần đó. Thuần, idempotent.
  */
 export function ensureHandoff<S extends HandoffShape>(s: S): S {
-  if (s.executor.kind === "team") return s;
+  // C50 · chỉ stage `agent` có mục "Bàn giao"; `team` + `apply` (Hub tự chạy, không bàn giao) bỏ qua.
+  if (s.executor.kind !== "agent") return s;
   const o = s.output;
   const hasReq = o.required_sections.some((x) => normSection(x) === HANDOFF_NORM);
   const addTpl =
