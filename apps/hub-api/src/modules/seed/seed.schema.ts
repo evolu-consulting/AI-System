@@ -164,6 +164,8 @@ export const SeedStageSchema = z.strictObject({
   executor: z.union([
     z.strictObject({ agent: AgentKeySchema }),
     z.strictObject({ team: SeedKeySchema }),
+    /** P-c2 B8 · stage Áp (executor hệ thống, không agent/team). */
+    z.strictObject({ kind: z.literal("apply") }),
   ]),
   instruction: z.string().max(4000).default(""),
   output: z.strictObject({

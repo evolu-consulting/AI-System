@@ -476,6 +476,38 @@ process_templates:
         timeout_s: 1800
         token_budget: null
         autofix: { source_key: repo, install_cmd: null, test_cmd: "bun test", write_allowlist: [] }
+  # P-c2 B8 (HUB-FR-129, plan §6.7) · = fixbug-apply + stage Áp (đẩy nhánh ai/… + mở PR theo `apply_mode` của nguồn). Tắt sẵn.
+  # `fixbug-apply` (P-c1) giữ nguyên, không có stage Áp.
+  - key: fixbug-pr
+    name: Sửa lỗi tự áp (PR)
+    description: Agent tự sửa mã, người duyệt diff, hệ thống đẩy nhánh ai/… và mở PR theo chế độ áp của nguồn.
+    input_hint: Mô tả lỗi, cách tái hiện, file nghi ngờ (nếu biết)
+    sources: [repo]
+    stages:
+      - key: fix
+        name: Tự sửa mã
+        executor: { agent: fixbug-apply }
+        instruction: "Tái hiện lỗi theo mô tả, tìm nguyên nhân gốc và sửa trong /workspace bằng ws_*; chạy lệnh test tới khi xanh rồi tóm tắt thay đổi. #fake:sections=Thay đổi|Test|Bàn giao"
+        output:
+          filename: fix.md
+          template: "## Thay đổi\n\n## Test\n\n## Bàn giao\n"
+          required_sections: [Thay đổi, Test]
+        after: review
+        timeout_s: 1800
+        token_budget: null
+        autofix: { source_key: repo, install_cmd: null, test_cmd: "bun test", write_allowlist: [] }
+      - key: apply
+        name: Áp bản sửa (PR)
+        executor: { kind: apply }
+        instruction: ""
+        output:
+          filename: apply.md
+          template: "## Kết quả áp\n"
+          required_sections: [Kết quả áp]
+        after: auto
+        real_action: true
+        timeout_s: 600
+        token_budget: null
   # P-b evidence 2026-10-11 · luồng 4 bước chỉ-đọc: chẩn đoán, kế hoạch, patch dạng tài liệu, rà soát. Không `autofix`.
   - key: fixbug-evolu
     name: Sửa lỗi evolu (4 bước)

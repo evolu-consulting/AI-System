@@ -45,7 +45,7 @@ function afterJson(a: SeedStage["after"]): StageAfterJson {
 const stageShape = (t: SeedProcessTemplate) =>
   t.stages.map((s) => ({
     key: s.key,
-    executor: { kind: "agent" in s.executor ? "agent" : "team" },
+    executor: { kind: "agent" in s.executor ? "agent" : "team" in s.executor ? "team" : "apply" },
     autofix: s.autofix,
     ...(s.step === undefined ? {} : { step: s.step }),
     real_action: s.real_action,
@@ -56,7 +56,11 @@ type KeySets = { agentKeys: ReadonlySet<string>; teams: ReadonlySet<string> };
 function checkTemplate(t: SeedProcessTemplate, k: KeySets, issues: SeedIssue[]): void {
   for (const s of t.stages) {
     const ok =
-      "agent" in s.executor ? k.agentKeys.has(s.executor.agent) : k.teams.has(s.executor.team);
+      "agent" in s.executor
+        ? k.agentKeys.has(s.executor.agent)
+        : "team" in s.executor
+          ? k.teams.has(s.executor.team)
+          : true; // stage Áp: executor hệ thống
     if (!ok)
       issues.push({
         path: `process_templates.${t.key}.${s.key}.executor`,
@@ -196,7 +200,9 @@ const stageJson = (t: SeedProcessTemplate, ids: Ids) =>
     executor:
       "agent" in s.executor
         ? { kind: "agent", agent_id: ids.agents.get(s.executor.agent) }
-        : { kind: "team", team_id: ids.teams.get(s.executor.team) },
+        : "team" in s.executor
+          ? { kind: "team", team_id: ids.teams.get(s.executor.team) }
+          : { kind: "apply" },
     instruction: s.instruction,
     output: { ...s.output, fields: [] },
     after: afterJson(s.after),
