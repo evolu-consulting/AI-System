@@ -150,6 +150,8 @@ const PA_POLICY_TABLES = [
   "process_back_events",
   // P-c1 (0031): kết quả tự-sửa append-only — 1 policy T.
   "autofix_results",
+  // P-c2 (0032): kết quả Áp — 1 policy T (UPDATE theo cột, C6).
+  "autofix_applies",
 ];
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {

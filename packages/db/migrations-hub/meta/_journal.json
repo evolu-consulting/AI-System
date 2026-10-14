@@ -225,6 +225,13 @@
       "when": 1793750400000,
       "tag": "0031_pc_autofix",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793836800000,
+      "tag": "0032_pc2_apply",
+      "breakpoints": true
     }
   ]
 }

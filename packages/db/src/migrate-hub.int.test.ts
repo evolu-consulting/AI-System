@@ -47,6 +47,7 @@ const HUB_TABLES = [
   "agents",
   "attachments",
   "audit_log",
+  "autofix_applies",
   "autofix_results",
   "cli_sessions",
   "config_meta",

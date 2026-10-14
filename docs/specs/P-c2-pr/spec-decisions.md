@@ -64,6 +64,7 @@
 | D10 | F2 | Stage Áp vẫn hiện khối Kết quả (tên tệp/mẫu/mục), Người trả lời, Hạn giai đoạn (contract bắt buộc `output`; mockup không nói ẩn); ẩn instruction, nguồn, tự sửa mã, Sau stage (khoá auto), ngân sách, must_know |
 | D11 | F2 | Ô ẩn của stage Áp giữ trong draft; `normalizeApply` xoá chúng khi gửi/validate nên `APPLY_REAL/AFTER/FIELDS` chỉ còn từ server với def cũ |
 | D12 | F2 | Ghi chú nhánh (`apply.note`) lấy nguyên văn từ mockup, thêm khoá i18n `process.admin.apply.note` ngoài bảng plan §3 |
+| D13 | B2 | Cập nhật danh sách bảng/policy trong hai test BE-sở-hữu khi thêm bảng RLS mới (như P-c1 làm cho `autofix_results`): `migrate-hub.int.test.ts` `HUB_TABLES += autofix_applies`; `hub-rls.int.test.ts` `PA_POLICY_TABLES += autofix_applies`. 2 ca `hub-rls.int.test.ts:185` đỏ SẴN trên `main` (xác minh bằng stash: full `packages/db` = 189p/2f cả khi chưa có B2) — hiện vật tranh chấp DB dùng chung giữa file test chạy song song, KHÔNG do B2; ghi TECH-DEBT, không sửa trong B2 (ngoài phạm vi) |
 
 ## Tranh chấp test
 | # | Test khoá | Vì sao | Đề nghị qc |
