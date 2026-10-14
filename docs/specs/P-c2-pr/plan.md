@@ -12,7 +12,7 @@ Backend-lead PLAN 2026-10-14 (readiness lần 1–3 đã áp: spec §9 C19–C44
 | 2 | Hub | launcher bước k+1: stage `executor.kind="apply"` ⇒ preconfirm D4 `authorize_real_action` (mở rộng cho `apply`) ⇒ `applyPlan(...)` | §6.2 |
 | 3a | Hub | `no_changes` / `branch_only` cho `local_path` ⇒ tx: insert `autofix_applies` + output `apply.md` + stage `done` (không job) | PC2-R03 |
 | 3b | Hub | `git_remote` ⇒ job `source.apply` (§3.3), `push_only = mode==="branch_only"` | |
-| 4 | Runtime | claim → (khoá?) `POST …/source-credential` → fetch mirror → `target` = `rev-parse refs/heads/<branch>` → checkout `target` ở `work/<job>/repo/` → tải `patch` → `git apply --3way --index --binary` → commit | §5.2 |
+| 4 | Runtime | claim → (nếu `has_credential`) `POST …/source-credential` → fetch mirror → `target` = `rev-parse refs/heads/<branch>` → checkout `target` ở `work/<job>/repo/` → tải `patch` → `git apply --3way --index --binary` → commit | §5.2 |
 | 5 | Runtime | `target≠pin` ⇒ xuất cây đã lọc PB-R07 → `work/<job>/workspace/<key>/` → kiểm PC-R08 (paths/size/secrets trên diff `target..HEAD`, rồi install + test trong container) | dùng lại `check.run_checks`, `AutofixHost` pha prep/test |
 | 6 | Runtime | push `+HEAD:refs/heads/<branch>` (bỏ qua nếu `ls-remote` = head) → `POST …/apply-result` (retry 1/2/4 s; 409 `APPLY_RESULT_EXISTS` = thành công) → kết thúc job → dọn `work/<job>/` + container | PC2-R06 |
 | 7 | Hub | endpoint lưu hàng `autofix_applies` (+ blob log test nếu có) | §6.3 |

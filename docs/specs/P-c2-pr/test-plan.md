@@ -1,6 +1,6 @@
 # Test plan · P-c2-pr (push nhánh + PR / apply_mode / rebase / repo riêng) · qc
 
-Chế độ **WRITE + LOCK** (T3) · 2026-10-14. "Đúng" = spec §2 (PC2-R01…R16), §3–§4, §6 (hàng rào), §7 (giả lập), §9 (C1–C35+) và `spec-decisions.md` (Q1–Q10 đã chấp nhận) · plan §1–§6 (chữ ký §4) · plan-frontend §0–§5 (nhãn nguyên văn) · BA HUB-FR-128…130, HUB-FR-68, HUB-BR-30/34/38(b), WRK-FR-29. Hộp đen: chỉ contract hiện có + test khoá cũ làm mẫu.
+Chế độ **WRITE + LOCK** (T3) · 2026-10-14. "Đúng" = spec §2 (PC2-R01…R16), §3–§4, §6 (hàng rào), §7 (giả lập), spec §9 (C36–C44) và `spec-decisions.md` (Q1–Q10 đã chấp nhận; C1–C35, C45–C52) · plan §1–§6 (chữ ký §4) · plan-frontend §0–§5 (nhãn nguyên văn) · BA HUB-FR-128…130, HUB-FR-68, HUB-BR-30/34/38(b), WRK-FR-29. Hộp đen: chỉ contract hiện có + test khoá cũ làm mẫu.
 
 ## 1. Quy ước
 | Mục | P-c2 |

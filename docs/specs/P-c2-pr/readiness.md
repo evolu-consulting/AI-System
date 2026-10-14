@@ -73,3 +73,17 @@ Lần 2 đã đóng: #1–#11. Spec 24 686 B, plan 30 714 B (sát trần).
 | 10 | Thấp | D1 thiếu file script | `tools/scripts/src/done-pc2.ts` |
 
 Áp mặc định lần 3: #1, #2 (B2), #4–#10 → spec-decisions C45–C52, `plan-runtime.md` (tách §5), tasks B1/B2/B7/R1/R2/R3/D1; #3 và F3 của #2 thuộc frontend-lead (commit: xem git log `docs(pc2): áp mặc định readiness lần 3`).
+
+## Lần 4 · 2026-10-14 · main 823c5f9a · NOT READY (0 Chặn, 1 Cao, 4 Thấp; 0 câu hỏi mới)
+
+Lần 3 đã đóng: #1, #3–#10; #2 đóng một phần.
+
+| # | Mức | Vấn đề | Mặc định |
+|---|---|---|---|
+| 1 | Cao | F1/F2 e2e chạy trên DB pc2_e2e chưa có 0032 | `bun run db:test:create pc2_e2e &&` trước playwright ở F1, F2 |
+| 2 | Thấp | B1 cột Đọc thiếu spec-decisions C47–C49 | Thêm |
+| 3 | Thấp | B7 cột Đọc thiếu spec-decisions C45, C50 | Thêm |
+| 4 | Thấp | test-plan:3 "§9 (C1–C35+)" cũ | spec §9 C36–C44 + spec-decisions C1–C35, C45–C52 |
+| 5 | Thấp | plan.md:15 "(khoá?)" | "(nếu `has_credential`)" |
+
+Áp mặc định lần 4: #1–#5 (điều phối, commit kèm dòng này).
