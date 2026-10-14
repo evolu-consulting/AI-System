@@ -30,6 +30,8 @@ export type SourceFormProps = {
   formId: string;
   mode: SourceFormMode;
   isPlatform: boolean;
+  /** Công ty đang xem — để tải khoá nguồn của đúng tenant (ô "Khoá nguồn"). */
+  tenantId: string | undefined;
   defaults: SourceFormValues;
   tenants: { id: string; key: string }[];
   picker: LibraryDocPickerData;
@@ -108,7 +110,13 @@ export function SourceForm(p: SourceFormProps) {
         </RadioGroup>
       </div>
       {showFields ? (
-        <KindFields form={form} formId={p.formId} error={error} picker={p.picker} />
+        <KindFields
+          form={form}
+          formId={p.formId}
+          error={error}
+          picker={p.picker}
+          tenantId={p.tenantId}
+        />
       ) : null}
       {isNew && p.isPlatform ? (
         <FormField

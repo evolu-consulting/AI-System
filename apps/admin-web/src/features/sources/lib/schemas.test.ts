@@ -89,6 +89,7 @@ describe("ánh xạ form và request", () => {
       kind: "git_remote",
       url: "https://h/x",
       branch: "dev",
+      credential_secret_id: null,
     });
     expect(toConfig(git({ kind: "local_path", path: " /srv " }))).toEqual({
       kind: "local_path",
@@ -98,6 +99,36 @@ describe("ánh xạ form và request", () => {
       kind: "library",
       document_id: "d1",
     });
+  });
+  test("toConfig git: credential_secret_id (id|null) + apply_mode chỉ khi chọn (FC6)", () => {
+    expect(
+      toConfig(git({ credential_secret_id: "cred-1", apply_mode: "auto_merge" })),
+    ).toMatchObject({
+      kind: "git_remote",
+      credential_secret_id: "cred-1",
+      apply_mode: "auto_merge",
+    });
+    const noMode = toConfig(git({ credential_secret_id: "", apply_mode: "" }));
+    expect(noMode).toMatchObject({ kind: "git_remote", credential_secret_id: null });
+    expect("apply_mode" in noMode).toBe(false);
+  });
+  test("toFormValues git: đọc credential_secret_id ?? '' và apply_mode ?? ''", () => {
+    const withCred = toFormValues(
+      { key: "k", kind: "git_remote", description: "d" },
+      {
+        kind: "git_remote",
+        url: "https://h/x",
+        branch: "main",
+        credential_secret_id: "cred-9",
+        apply_mode: "pr",
+      },
+    );
+    expect(withCred).toMatchObject({ credential_secret_id: "cred-9", apply_mode: "pr" });
+    const noCred = toFormValues(
+      { key: "k", kind: "git_remote", description: "d" },
+      { kind: "git_remote", url: "https://h/x", branch: "main" },
+    );
+    expect(noCred).toMatchObject({ credential_secret_id: "", apply_mode: "" });
   });
   test("toCreateRequest: tenant_id chỉ khi có; key chuẩn hoá", () => {
     const a = toCreateRequest(git({ key: " Docs " }), undefined);

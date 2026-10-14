@@ -52,6 +52,7 @@ export function CheckPanel({ state, blocked, onRun }: Props) {
       {state.phase === "error" ? (
         <Alert variant="destructive">
           <p>{tr(state.key)}</p>
+          {state.hintKey ? <p className="mt-1 text-caption">{tr(state.hintKey)}</p> : null}
         </Alert>
       ) : null}
     </section>

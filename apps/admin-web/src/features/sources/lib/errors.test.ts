@@ -2,11 +2,13 @@
 import { describe, expect, test } from "bun:test";
 import { ApiError } from "@/lib/http";
 import {
+  classifyCredentialError,
   classifySaveError,
   fieldForCode,
   hasCode,
   refsFromDetails,
   sourceErrorKey,
+  sourceUsedByCount,
 } from "./errors";
 
 const err = (code: string, status = 422, details?: unknown) =>
@@ -34,7 +36,15 @@ describe("helper", () => {
   test("fieldForCode", () => {
     expect(fieldForCode("SOURCE_KEY_TAKEN")).toBe("key");
     expect(fieldForCode("SOURCE_HOST_NOT_ALLOWED")).toBe("url");
+    expect(fieldForCode("SOURCE_CREDENTIAL_INVALID")).toBe("credential_secret_id");
+    expect(fieldForCode("SOURCE_APPLY_UNSUPPORTED")).toBe("apply_mode");
     expect(fieldForCode("SOURCE_FORBIDDEN_KIND")).toBeNull();
+  });
+  test("sourceUsedByCount đếm đúng nguồn (type=source)", () => {
+    expect(sourceUsedByCount([{ type: "source" }, { type: "provider" }, { type: "source" }])).toBe(
+      2,
+    );
+    expect(sourceUsedByCount(undefined)).toBe(0);
   });
   test("hasCode", () => {
     expect(hasCode(err("SOURCE_IN_USE", 409), "SOURCE_IN_USE")).toBe(true);
@@ -71,10 +81,42 @@ describe("classifySaveError", () => {
     expect(classifySaveError(err("SOURCE_NOT_FOUND", 404), "x")).toEqual({ type: "gone" });
     expect(classifySaveError(err("UNAUTHORIZED", 401), "x")).toEqual({ type: "ignore" });
   });
+  test("SOURCE_CREDENTIAL_INVALID → ô Khoá nguồn; SOURCE_APPLY_UNSUPPORTED → ô Chế độ áp", () => {
+    expect(classifySaveError(err("SOURCE_CREDENTIAL_INVALID"), "x")).toMatchObject({
+      type: "field",
+      field: "credential_secret_id",
+      key: "process.sources.apiError.SOURCE_CREDENTIAL_INVALID",
+    });
+    expect(classifySaveError(err("SOURCE_APPLY_UNSUPPORTED"), "x")).toMatchObject({
+      type: "field",
+      field: "apply_mode",
+      key: "process.sources.apiError.SOURCE_APPLY_UNSUPPORTED",
+    });
+  });
   test("mạng → câu chung", () => {
     expect(classifySaveError(new Error("x"), "x")).toEqual({
       type: "alert",
       key: "process.sources.apiError.GENERIC",
     });
+  });
+});
+
+describe("classifyCredentialError", () => {
+  test("SECRET_NAME_TAKEN → ô tên; VERSION_CONFLICT → conflict; lạ → alert", () => {
+    expect(classifyCredentialError(err("SECRET_NAME_TAKEN", 409))).toEqual({
+      type: "field",
+      field: "name",
+      key: "process.sources.credential.err.taken",
+    });
+    expect(classifyCredentialError(err("VERSION_CONFLICT", 409))).toEqual({ type: "conflict" });
+    expect(classifyCredentialError(err("INTERNAL_ERROR", 500))).toMatchObject({ type: "alert" });
+  });
+  test("VALIDATION_ERROR theo path → ô", () => {
+    expect(
+      classifyCredentialError(err("VALIDATION_ERROR", 422, { issues: [{ path: ["name"] }] })),
+    ).toMatchObject({ type: "field", field: "name" });
+    expect(
+      classifyCredentialError(err("VALIDATION_ERROR", 422, { issues: [{ path: ["value"] }] })),
+    ).toMatchObject({ type: "field", field: "value" });
   });
 });

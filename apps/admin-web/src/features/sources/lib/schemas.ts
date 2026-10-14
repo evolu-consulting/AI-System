@@ -1,6 +1,11 @@
 // ADM-FR-68 · PB-R02/R19 · validate form nguồn phía client (plan-frontend §3). Thông điệp là KEY i18n; luật khớp contract
 // (`SOURCE_KEY_RE`, `GitUrlSchema`, `BranchSchema`, `PathSchema`). Hàm thuần để test, không phụ thuộc React.
-import type { SourceConfig, SourceCreateRequest, SourceKind } from "@ai/contracts/hub-admin";
+import type {
+  ApplyMode,
+  SourceConfig,
+  SourceCreateRequest,
+  SourceKind,
+} from "@ai/contracts/hub-admin";
 import {
   SOURCE_BRANCH_MAX,
   SOURCE_DESC_MAX,
@@ -11,6 +16,7 @@ import {
 import type { Resolver } from "react-hook-form";
 
 export type SourceFormMode = "new" | "edit";
+/** P-c2 · `credential_secret_id`: "" = không (repo công khai) | uuid. `apply_mode`: "" = mặc định theo host (không gửi) | chế độ. */
 export type SourceFormValues = {
   key: string;
   kind: SourceKind;
@@ -21,6 +27,8 @@ export type SourceFormValues = {
   /** Mã công ty (`tenant.key`) — chỉ platform_admin khi tạo mới. */
   tenant: string;
   description: string;
+  credential_secret_id: string;
+  apply_mode: "" | ApplyMode;
 };
 export type SourceField = keyof SourceFormValues;
 export type SourceFormErrors = Partial<Record<SourceField, string>>;
@@ -37,6 +45,8 @@ export const EMPTY_SOURCE_FORM: SourceFormValues = {
   document_id: "",
   tenant: "",
   description: "",
+  credential_secret_id: "",
+  apply_mode: "",
 };
 
 /** Ký hiệu: trim + chữ thường (người dùng dán "Docs " vẫn hợp lệ). */
@@ -108,10 +118,16 @@ export function sourceResolver(ctx: SourceFormContext): Resolver<SourceFormValue
   };
 }
 
-/** Form → `config` gửi server theo loại (đã trim). */
+/** Form → `config` gửi server theo loại (đã trim). FC6: chỉ gửi `apply_mode` khi người dùng chọn; `credential_secret_id` = id | null. */
 export function toConfig(v: SourceFormValues): SourceConfig {
   if (v.kind === "git_remote") {
-    return { kind: "git_remote", url: v.url.trim(), branch: v.branch.trim() };
+    return {
+      kind: "git_remote",
+      url: v.url.trim(),
+      branch: v.branch.trim(),
+      credential_secret_id: v.credential_secret_id === "" ? null : v.credential_secret_id,
+      ...(v.apply_mode ? { apply_mode: v.apply_mode } : {}),
+    };
   }
   if (v.kind === "local_path") return { kind: "local_path", path: v.path.trim() };
   return { kind: "library", document_id: v.document_id };
@@ -138,7 +154,14 @@ export function toFormValues(
 ): SourceFormValues {
   const base = { ...EMPTY_SOURCE_FORM, key: src.key, kind: src.kind, description: src.description };
   if (!config) return base;
-  if (config.kind === "git_remote") return { ...base, url: config.url, branch: config.branch };
+  if (config.kind === "git_remote")
+    return {
+      ...base,
+      url: config.url,
+      branch: config.branch,
+      credential_secret_id: config.credential_secret_id ?? "",
+      apply_mode: config.apply_mode ?? "",
+    };
   if (config.kind === "local_path") return { ...base, path: config.path };
   return { ...base, document_id: config.document_id };
 }

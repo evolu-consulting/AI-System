@@ -8,7 +8,11 @@
     "desc": "Description",
     "target": "Target",
     "usedBy": "Used by",
+    "applyMode": "Apply mode",
     "status": "Status"
+  },
+  "badge": {
+    "private": "Private"
   },
   "table": "Sources",
   "filter": {
@@ -92,7 +96,70 @@
     "running": "Testing…",
     "okGit": "Connected: {{branch}} → {{sha}} · {{files}} files · {{size}}",
     "okLibrary": "Document is readable · version {{version}} · {{size}}",
-    "okLocal": "Path is valid · {{files}} files · {{size}}"
+    "okLocal": "Path is valid · {{files}} files · {{size}}",
+    "unresolvable": {
+      "private": "Could not read the repo. The credential is wrong, expired or lacks permission."
+    },
+    "privateNoKey": "This private source has no credential. Assign one to read it and push branches."
+  },
+  "credential": {
+    "manage": "Source credential",
+    "label": "Source credential",
+    "none": "None — public repo",
+    "new": "+ Create new credential…",
+    "gone": "Credential no longer exists",
+    "hint": "Used to read private repos and to push branches / open PRs. The token is not shown again after saving.",
+    "set": "Set",
+    "empty": "No source credentials yet.",
+    "loadError": "Could not load source credentials.",
+    "usedBy": "Used by",
+    "create": {
+      "title": "Create source credential",
+      "action": "Create credential"
+    },
+    "name": "Credential name",
+    "name.ph": "e.g. gh-acme-pat",
+    "token": "Token",
+    "token.ph": "github_pat_…",
+    "token.hint": "Write-only. It cannot be viewed after saving.",
+    "pat": "Minimum PAT permissions (fine-grained, only the repos you need): Contents: Read and write · Pull requests: Read and write. A public repo that is only read needs no credential.",
+    "save": "Save credential",
+    "cancel": "Cancel",
+    "rotate": {
+      "action": "Replace token",
+      "token": "New token",
+      "token.ph": "Enter a new token to replace it (the old token is overwritten)",
+      "save": "Save"
+    },
+    "delete": "Delete credential",
+    "delete.title": "Delete credential \"{{name}}\"?",
+    "delete.body": "The credential is permanently deleted and cannot be restored.",
+    "inUse": "The credential is used by {{n}} sources, so it cannot be deleted yet. Remove it from those sources first.",
+    "conflict": "Someone else just changed this credential. The latest version was reloaded.",
+    "toast": {
+      "created": "Source credential created",
+      "rotated": "Source credential token replaced",
+      "deleted": "Source credential deleted"
+    },
+    "err": {
+      "name": "The name must be 2–64 characters: letters, digits, underscore or hyphen.",
+      "valueRequired": "Enter a token (8–2048 characters).",
+      "valueLen": "The token must be 8–2048 characters.",
+      "taken": "A credential with this name already exists in this company."
+    }
+  },
+  "applyMode": {
+    "label": "Apply mode",
+    "pr": "Open a PR",
+    "pr.hint": "Push an ai/… branch and open a pull request for the repo team to review.",
+    "auto_merge": "Open a PR and auto-merge",
+    "auto_merge.hint": "Enables auto-merge (squash). \"Allow auto-merge\" and branch protection must be on in GitHub; otherwise the PR stays open for a manual merge.",
+    "branch_only": "Branch only",
+    "branch_only.hint": "Pushes an ai/… branch without opening a PR.",
+    "default": "Default",
+    "hostHint": "Only GitHub (github.com) supports opening PRs. Other git hosts can only push a branch.",
+    "local": "Branch only (fixed)",
+    "local.hint": "A local path source is not pushed anywhere. The reviewer downloads the .diff file and runs git apply."
   },
   "err": {
     "key": { "invalid": "The key must be 2–32 characters: lowercase letters, digits or hyphens." },
@@ -123,6 +190,8 @@
     "SOURCE_TOO_LARGE": "The source is too large: at most 50 MB and 2,000 files after filtering. Narrow the source or the allowed paths.",
     "SOURCE_NOT_FOUND": "This source no longer exists.",
     "SOURCE_IN_USE": "You cannot change the type of a source that processes use.",
+    "SOURCE_CREDENTIAL_INVALID": "This credential cannot be used. Choose another credential of this company.",
+    "SOURCE_APPLY_UNSUPPORTED": "This git host does not support opening PRs yet. Choose \"Branch only\".",
     "TIMEOUT": "No response from the Runtime. Try again later.",
     "GENERIC": "The action could not be completed. Try again later."
   },

@@ -12,7 +12,7 @@ import { useLibraryDocPicker } from "../hooks/use-library-doc-picker";
 import { useSourceCheck } from "../hooks/use-source-check";
 import { useSourceSave } from "../hooks/use-source-save";
 import { EMPTY_SOURCE_FORM, type SourceFormValues, toFormValues } from "../lib/schemas";
-import { isViewOnly, toFullConfig } from "../lib/source-view";
+import { gitCredState, isViewOnly, toFullConfig } from "../lib/source-view";
 
 type Props = {
   mode: "new" | "edit" | "view";
@@ -50,15 +50,16 @@ export function SourceDrawerController(p: Props) {
   const notFound = !isNew && lookup.isError;
   const ready = isNew || !!src;
   const savedBranch = src?.config.kind === "git_remote" ? src.config.branch : undefined;
-  const runCheck = () => src && void check.run(src.key, savedBranch);
+  const gitCred = src ? gitCredState(src.config) : null; // PC2-R10 · map SOURCE_UNRESOLVABLE khi kiểm tra
+  const runCheck = () => src && void check.run(src.key, savedBranch, gitCred);
 
   const started = useRef(false);
   const { run } = check;
   useEffect(() => {
     if (started.current || !p.autoCheck || !src || viewOnly) return;
     started.current = true;
-    void run(src.key, savedBranch);
-  }, [p.autoCheck, src, viewOnly, savedBranch, run]);
+    void run(src.key, savedBranch, gitCred);
+  }, [p.autoCheck, src, viewOnly, savedBranch, gitCred, run]);
 
   const defaults: SourceFormValues = src
     ? toFormValues(src, toFullConfig(src.config))
@@ -89,6 +90,7 @@ export function SourceDrawerController(p: Props) {
             formId: FORM_ID,
             mode: isNew ? "new" : "edit",
             isPlatform,
+            tenantId: p.tenantId,
             defaults,
             tenants: p.tenants,
             picker,

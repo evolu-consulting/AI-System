@@ -3,6 +3,7 @@
 
 import type { Role } from "@ai/contracts";
 import type {
+  ApplyMode,
   SourceCheckResult,
   SourceConfig,
   SourceConfigPublic,
@@ -11,6 +12,7 @@ import type {
   SourcePinPublic,
   SourceView,
 } from "@ai/contracts/hub-admin";
+import { effectiveApplyMode } from "@ai/contracts/hub-admin";
 
 export type AnyConfig = SourceConfig | SourceConfigPublic;
 export type AnyPin = SourcePin | SourcePinPublic;
@@ -89,6 +91,29 @@ export function summarizeCheck(res: SourceCheckResult, branch: string | undefine
     };
   }
   return { key: "check.okLocal", params: { files: res.files, size } };
+}
+
+/** P-c2 · nguồn git riêng tư = có khoá nguồn (`credential_secret_id ≠ null`). Loại khác ⇒ false. */
+export function isPrivateSource(config: AnyConfig): boolean {
+  return config.kind === "git_remote" && (config.credential_secret_id ?? null) !== null;
+}
+
+/** P-c2 · git có khoá ⇒ "has", git chưa khoá ⇒ "none", loại khác ⇒ null (map `SOURCE_UNRESOLVABLE` khi kiểm tra). */
+export function gitCredState(config: AnyConfig): "has" | "none" | null {
+  if (config.kind !== "git_remote") return null;
+  return (config.credential_secret_id ?? null) !== null ? "has" : "none";
+}
+
+/** P-c2 · chế độ áp để hiển thị ở bảng: git ⇒ `effectiveApplyMode`; local ⇒ `"local"`; library ⇒ `null`. */
+export function displayApplyMode(config: AnyConfig): ApplyMode | "local" | null {
+  if (config.kind === "git_remote")
+    return effectiveApplyMode({
+      kind: "git_remote",
+      url: config.url,
+      apply_mode: config.apply_mode,
+    });
+  if (config.kind === "local_path") return "local";
+  return null;
 }
 
 /** Lọc phía client theo ký hiệu (API không có tham số `q`). */

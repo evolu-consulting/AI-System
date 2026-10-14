@@ -15,7 +15,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { isViewOnly, localPathOf, pinLabel, shortGitTarget } from "../lib/source-view";
+import {
+  displayApplyMode,
+  isPrivateSource,
+  isViewOnly,
+  localPathOf,
+  pinLabel,
+  shortGitTarget,
+} from "../lib/source-view";
 
 export type SourceAction = "edit" | "view" | "check" | "delete";
 
@@ -51,6 +58,14 @@ function Target({ s, role }: { s: SourceView; role: Role | undefined }) {
       {path}
     </span>
   );
+}
+
+function ApplyModeCell({ config }: { config: SourceView["config"] }) {
+  const { t } = useTranslation();
+  const mode = displayApplyMode(config);
+  if (mode === null) return <span className="text-muted-foreground">—</span>;
+  const key = mode === "local" ? "local" : mode;
+  return <span>{t(`process.sources.applyMode.${key}`)}</span>;
 }
 
 function Status({ s }: { s: SourceView }) {
@@ -127,7 +142,19 @@ export function SourceTable({
       {
         id: "kind",
         header: t("process.sources.col.kind"),
-        cell: (s) => <Badge variant="info">{t(`process.sources.kind.${s.kind}`)}</Badge>,
+        cell: (s) => (
+          <span className="flex flex-wrap items-center gap-1">
+            <Badge variant="info">{t(`process.sources.kind.${s.kind}`)}</Badge>
+            {isPrivateSource(s.config) ? (
+              <Badge variant="warn">{t("process.sources.badge.private")}</Badge>
+            ) : null}
+          </span>
+        ),
+      },
+      {
+        id: "applyMode",
+        header: t("process.sources.col.applyMode"),
+        cell: (s) => <ApplyModeCell config={s.config} />,
       },
       {
         id: "desc",

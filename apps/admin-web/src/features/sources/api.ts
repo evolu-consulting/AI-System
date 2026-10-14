@@ -1,9 +1,13 @@
 // ADM-FR-68 · HUB-FR-120 · gọi Hub `/admin/sources*` (NƠI DUY NHẤT; editor quy trình dùng `useSourceOptions`, FS3).
 // platform_admin luôn kèm `tenant_id` (server: vắng ⇒ 404/422); tenant_admin không truyền. Không log/URL nào chứa `config.path`.
 import type {
+  HubSecret,
+  HubSecretListResponse,
+  HubSecretRotateRequest,
   LibraryDocListResponse,
   SourceCheckResult,
   SourceCreateRequest,
+  SourceCredentialCreateRequest,
   SourceKind,
   SourceListResponse,
   SourceUpdateRequest,
@@ -12,6 +16,7 @@ import type {
 import {
   keepPreviousData,
   useInfiniteQuery,
+  useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -134,6 +139,73 @@ export function useSourceOptions(tenantId: string | undefined, enabled: boolean)
       }
       return out;
     },
+  });
+}
+
+// ---------- khoá nguồn (source_credential · route H4b-1 `/admin/source-credentials*`) ----------
+// FC3: token chỉ ở body; mutation `gcTime: 0` để không giữ giá trị trong cache. platform_admin kèm `tenant_id`; tenant_admin không.
+export const CREDENTIALS_PAGE_SIZE = 100;
+const CRED_BASE = "/admin/source-credentials";
+
+export const CKEYS = {
+  all: ["source-credentials"] as const,
+  list: (tenantId: string | undefined) => ["source-credentials", "list", tenantId ?? ""] as const,
+};
+
+/** Mọi khoá nguồn của tenant (≤ 100, không phân trang trong UI). */
+export function useCredentials(tenantId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: CKEYS.list(tenantId),
+    enabled: enabled && hubConfigured(),
+    staleTime: STALE_MS,
+    queryFn: (): Promise<HubSecretListResponse> =>
+      api<HubSecretListResponse>(url(CRED_BASE), {
+        query: { tenant_id: tenantId, limit: CREDENTIALS_PAGE_SIZE },
+      }),
+  });
+}
+
+export function useInvalidateCredentials() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries({ queryKey: CKEYS.all });
+}
+
+export function useCreateCredential(tenantId: string | undefined) {
+  const invalidate = useInvalidateCredentials();
+  return useMutation({
+    gcTime: 0,
+    mutationFn: (body: SourceCredentialCreateRequest): Promise<HubSecret> =>
+      api<HubSecret>(url(CRED_BASE), {
+        method: "POST",
+        body: { ...body, ...(tenantId ? { tenant_id: tenantId } : {}) },
+      }),
+    onSuccess: () => invalidate(),
+  });
+}
+
+export function useRotateCredential(id: string, tenantId: string | undefined) {
+  const invalidate = useInvalidateCredentials();
+  return useMutation({
+    gcTime: 0,
+    mutationFn: (body: HubSecretRotateRequest): Promise<HubSecret> =>
+      api<HubSecret>(url(`${CRED_BASE}/${encodeURIComponent(id)}`), {
+        method: "PUT",
+        query: { tenant_id: tenantId },
+        body,
+      }),
+    onSuccess: () => invalidate(),
+  });
+}
+
+export function useDeleteCredential(tenantId: string | undefined) {
+  const invalidate = useInvalidateCredentials();
+  return useMutation({
+    mutationFn: (p: { id: string; version: number }): Promise<undefined> =>
+      api<undefined>(url(`${CRED_BASE}/${encodeURIComponent(p.id)}`), {
+        method: "DELETE",
+        query: { tenant_id: tenantId, version: p.version },
+      }),
+    onSuccess: () => invalidate(),
   });
 }
 

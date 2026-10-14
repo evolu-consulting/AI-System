@@ -105,3 +105,14 @@
 | — | `tests/acceptance/H2c/rules/contracts-h2c.test.ts` R48, R49 | đỏ SẴN trước B1 (`JOB_FAIL_REASONS` cuối = `container` từ P-c1; fixture `SourceResolveJob` không thuộc `HUB_JSON_SCHEMAS` từ P-b) — không do P-c2 | ghi nhận |
 
 **Phân xử qc (2026-10-14):** T2, T3 = test khoá lỗi thời, KHÔNG phải code sai. Contract B1 (`8cc608a2`, đã qua Gate) chỉ THÊM (2 mã `SOURCE_ERRORS` cuối; `credential_secret_id` `.default(null)`), hành vi nguồn cũ không vỡ (S06 xanh). Đã sửa: R-C24 → 9 mã; ST-02 expected thêm `credential_secret_id: null`. Lock cập nhật theo sửa của qc.
+
+| T4 (F1) | `e2e/P-c2/admin/sources.pc2.ts` E04 (`sheet.getByText(credential.inUse)` toBeVisible) | E04 chạy SAU E02 (1 worker, DB chung). E02 tạo `gh-e2e-pat` + gán cho `pc2-e02` ⇒ ở E04 có **2** khoá đang dùng (`gh-e2e-pat` 1 nguồn, `gh-e2e-used` 1 nguồn), câu `credential.inUse` ("…1 nguồn…") render ở **cả hai thẻ** (đúng mockup/plan §1.1 — cảnh báo theo từng thẻ) ⇒ `sheet.getByText` strict-mode thấy 2 phần tử. E04 XANH khi chạy riêng (`-g E04`). Không impl hợp lý nào làm câu "…1 nguồn…" duy nhất khi 2 khoá đều dùng-bởi-1. | scope về `row.getByText(...)` (thay `sheet`), hoặc để E02 dùng khoá mà E04 bỏ qua |
+
+## Quyết định trong lúc làm — F1 (frontend-lead, 2026-10-15)
+| # | Quyết định |
+|---|---|
+| FB1 | Ô token (tạo + thay) dùng `type="text"` (không `password`) vì e2e khoá `getByRole("textbox", {name:"Token"/"Token mới"})` — `input[type=password]` không có role `textbox` (đối chiếu `m2-flow.spec` dùng `getByLabel`). Token chỉ ghi, không vào URL/log/query-key; `autoComplete="off"`. |
+| FB2 | Giữ nhãn loại `kind.git_remote` = "Git công khai" (e2e `newGit` chọn `radio "Git công khai"`). Gỡ `Alert git.publicOnly` khỏi form git (mâu thuẫn repo riêng tư nay hỗ trợ qua khoá); key i18n giữ lại (parity). Bảng: thẻ "Riêng tư" cạnh thẻ loại khi có khoá — chấp nhận lệch nghĩa "Git công khai"+"Riêng tư" (nhãn loại bị e2e khoá). |
+| FB3 | Bảng "Tạo khoá nguồn" render INLINE (`role="dialog"` + `aria-label`, KHÔNG dùng Radix `Dialog`/`Sheet` lồng) và KHÔNG bọc `<form>` (nút "Lưu khoá" `type=button` + `onClick`): Radix modal lồng trong Sheet đóng nhầm drawer cha; `<form>` lồng trong `<form>` nguồn bị trình duyệt làm phẳng ⇒ bấm "Lưu khoá" submit nhầm form nguồn. |
+| FB4 | `CredentialField`: Radix `Select` bỏ mount nội dung khi đóng ⇒ `SelectValue` tự dựng nhãn từ giá trị (không chờ item mount) để hiện tên khoá vừa tạo (auto-select). Sentinel `__none__`/`__new__` không lọt vào giá trị form. |
+| FB5 | `apply_mode`/`credential_secret_id` chỉ gửi khi người dùng chọn (FC6): `apply_mode=""` ⇒ bỏ khỏi config; `credential_secret_id=""` ⇒ `null`. Lỗi `SOURCE_CREDENTIAL_INVALID`/`SOURCE_APPLY_UNSUPPORTED` map vào ô (FormField `alert` ⇒ `role=alert`). |

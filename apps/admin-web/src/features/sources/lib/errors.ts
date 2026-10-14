@@ -20,6 +20,8 @@ export function sourceErrorKey(err: unknown): string {
 export function fieldForCode(code: string): SourceField | null {
   if (code === "SOURCE_KEY_TAKEN") return "key";
   if (code === "SOURCE_HOST_NOT_ALLOWED") return "url";
+  if (code === "SOURCE_CREDENTIAL_INVALID") return "credential_secret_id";
+  if (code === "SOURCE_APPLY_UNSUPPORTED") return "apply_mode";
   return null;
 }
 
@@ -48,6 +50,33 @@ export function refsFromDetails(details: unknown): SourceRef[] {
 /** Kết quả kiểm tra thất bại do hết thời gian chờ phía client (mạng/abort do timeout) hay Hub trả lỗi. */
 export const isTimeout = (err: unknown): boolean =>
   err instanceof ApiError && (err.code === "NETWORK_ERROR" || err.status === 504);
+
+const C = "process.sources.credential";
+
+/** `details.used_by` (409 SECRET_IN_USE) hoặc `used_by` của HubSecret → số nguồn đang dùng. */
+export function sourceUsedByCount(usedBy: { type: string }[] | undefined): number {
+  return (usedBy ?? []).filter((u) => u.type === "source").length;
+}
+
+export type CredentialFailure =
+  | { type: "field"; field: "name" | "value"; key: string }
+  | { type: "alert"; key: string }
+  | { type: "conflict" };
+
+/** Lỗi tạo/thay khoá → ô (tên/token) hoặc alert. Câu tĩnh theo mã (không in `message` server). */
+export function classifyCredentialError(err: unknown): CredentialFailure {
+  if (!(err instanceof ApiError)) return { type: "alert", key: `${C}.err.name` };
+  if (err.code === "VALIDATION_ERROR") {
+    const path = (err.details as { issues?: { path?: unknown[] }[] } | null)?.issues?.[0]
+      ?.path?.[0];
+    if (path === "name") return { type: "field", field: "name", key: `${C}.err.name` };
+    if (path === "value") return { type: "field", field: "value", key: `${C}.err.valueLen` };
+  }
+  if (hasCode(err, "SECRET_NAME_TAKEN"))
+    return { type: "field", field: "name", key: `${C}.err.taken` };
+  if (hasCode(err, "VERSION_CONFLICT")) return { type: "conflict" };
+  return { type: "alert", key: sourceErrorKey(err) };
+}
 
 export type SaveFailure =
   | { type: "ignore" }

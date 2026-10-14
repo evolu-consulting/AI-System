@@ -8,7 +8,11 @@
     "desc": "Mô tả",
     "target": "Đích",
     "usedBy": "Dùng bởi",
+    "applyMode": "Chế độ áp",
     "status": "Trạng thái"
+  },
+  "badge": {
+    "private": "Riêng tư"
   },
   "table": "Nguồn",
   "filter": {
@@ -92,7 +96,70 @@
     "running": "Đang kiểm tra…",
     "okGit": "Kết nối được: {{branch}} → {{sha}} · {{files}} tệp · {{size}}",
     "okLibrary": "Tài liệu đọc được · phiên bản {{version}} · {{size}}",
-    "okLocal": "Đường dẫn hợp lệ · {{files}} tệp · {{size}}"
+    "okLocal": "Đường dẫn hợp lệ · {{files}} tệp · {{size}}",
+    "unresolvable": {
+      "private": "Không đọc được repo. Khoá nguồn sai, hết hạn hoặc không đủ quyền."
+    },
+    "privateNoKey": "Nguồn riêng tư chưa có khoá nguồn. Gán khoá để đọc và đẩy nhánh."
+  },
+  "credential": {
+    "manage": "Khoá nguồn",
+    "label": "Khoá nguồn",
+    "none": "Không — repo công khai",
+    "new": "+ Tạo khoá mới…",
+    "gone": "Khoá không còn",
+    "hint": "Dùng để đọc repo riêng tư và đẩy nhánh / mở PR. Token không hiện lại sau khi lưu.",
+    "set": "Đã đặt",
+    "empty": "Chưa có khoá nguồn.",
+    "loadError": "Không tải được danh sách khoá nguồn.",
+    "usedBy": "Đang dùng bởi",
+    "create": {
+      "title": "Tạo khoá nguồn",
+      "action": "Tạo khoá"
+    },
+    "name": "Tên khoá",
+    "name.ph": "vd: gh-acme-pat",
+    "token": "Token",
+    "token.ph": "github_pat_…",
+    "token.hint": "Chỉ ghi. Sau khi lưu không xem lại được.",
+    "pat": "Quyền tối thiểu của PAT (fine-grained, chỉ repo cần dùng): Contents: Read and write · Pull requests: Read and write. Repo công khai chỉ đọc thì không cần khoá.",
+    "save": "Lưu khoá",
+    "cancel": "Huỷ",
+    "rotate": {
+      "action": "Thay token",
+      "token": "Token mới",
+      "token.ph": "Nhập token mới để thay (token cũ bị ghi đè)",
+      "save": "Lưu"
+    },
+    "delete": "Xoá khoá",
+    "delete.title": "Xoá khoá \"{{name}}\"?",
+    "delete.body": "Khoá bị xoá vĩnh viễn, không khôi phục được.",
+    "inUse": "Khoá đang được {{n}} nguồn dùng nên chưa xoá được. Gỡ khoá khỏi các nguồn đó trước.",
+    "conflict": "Khoá vừa được người khác sửa. Đã tải lại bản mới.",
+    "toast": {
+      "created": "Đã tạo khoá nguồn",
+      "rotated": "Đã thay token khoá nguồn",
+      "deleted": "Đã xoá khoá nguồn"
+    },
+    "err": {
+      "name": "Tên khoá gồm 2–64 ký tự: chữ, số, gạch dưới hoặc gạch nối.",
+      "valueRequired": "Nhập token (8–2048 ký tự).",
+      "valueLen": "Token dài 8–2048 ký tự.",
+      "taken": "Tên khoá đã có trong công ty này."
+    }
+  },
+  "applyMode": {
+    "label": "Chế độ áp",
+    "pr": "Mở PR",
+    "pr.hint": "Đẩy nhánh ai/… và mở pull request để người trong repo duyệt.",
+    "auto_merge": "Mở PR và tự gộp",
+    "auto_merge.hint": "Bật auto-merge (squash). Cần bật \"Allow auto-merge\" và branch protection trên GitHub; nếu không, PR vẫn mở và chờ gộp tay.",
+    "branch_only": "Chỉ nhánh",
+    "branch_only.hint": "Đẩy nhánh ai/…, không mở PR.",
+    "default": "Mặc định",
+    "hostHint": "Chỉ GitHub (github.com) hỗ trợ mở PR. Máy chủ git khác chỉ đẩy nhánh.",
+    "local": "Chỉ nhánh (cố định)",
+    "local.hint": "Nguồn đường dẫn cục bộ không đẩy lên đâu cả. Người duyệt tải file .diff và tự git apply."
   },
   "err": {
     "key": { "invalid": "Ký hiệu gồm 2–32 ký tự: chữ thường, số hoặc dấu gạch ngang." },
@@ -123,6 +190,8 @@
     "SOURCE_TOO_LARGE": "Nguồn quá lớn: tối đa 50 MB và 2.000 tệp sau khi lọc. Thu hẹp nguồn hoặc đường dẫn cho phép.",
     "SOURCE_NOT_FOUND": "Nguồn không còn tồn tại.",
     "SOURCE_IN_USE": "Không thể đổi loại nguồn đang được quy trình dùng.",
+    "SOURCE_CREDENTIAL_INVALID": "Khoá nguồn không dùng được. Chọn khoá khác của công ty này.",
+    "SOURCE_APPLY_UNSUPPORTED": "Máy chủ git này chưa hỗ trợ mở PR. Chọn \"Chỉ nhánh\".",
     "TIMEOUT": "Không nhận được phản hồi từ Runtime. Thử lại sau.",
     "GENERIC": "Không thực hiện được. Thử lại sau."
   },

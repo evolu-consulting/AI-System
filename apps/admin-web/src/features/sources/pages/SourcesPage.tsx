@@ -1,7 +1,7 @@
 // ADM-FR-68 · PB-R21 · `/sources`: tiêu đề + lọc (Công ty [platform] · Loại nguồn · tìm ký hiệu) + bảng + drawer + xoá.
 // Cờ engine off ⇒ NotFound; `member` ⇒ Forbidden (không gọi API). Drawer/bộ lọc nằm trên URL, không có `path`.
 import type { SourceView } from "@ai/contracts/hub-admin";
-import { useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -27,6 +27,7 @@ import { SOURCE_KINDS_UI } from "../lib/source-kinds";
 import { SourceDrawerController } from "./SourceDrawerController";
 
 const ALL = "all";
+const CredentialSheet = lazy(() => import("../components/CredentialSheet"));
 
 function Filters({ v }: { v: SourcesView }) {
   const { t } = useTranslation();
@@ -73,6 +74,7 @@ function SourcesContent() {
   const v = useSourcesView();
   const del = useSourceDelete(v.tenantId);
   const [autoCheck, setAutoCheck] = useState<string | null>(null);
+  const [credOpen, setCredOpen] = useState(false);
   const { nav, search } = v;
   const err = v.list.error instanceof ApiError ? v.list.error : null;
   const filtered = !!search.q || !!search.kind;
@@ -92,6 +94,14 @@ function SourcesContent() {
       {t("process.sources.add")}
     </Button>
   );
+  const actions = (
+    <div className="flex items-center gap-2">
+      <Button variant="outline" disabled={v.needsTenant} onClick={() => setCredOpen(true)}>
+        {t("process.sources.credential.manage")}
+      </Button>
+      {create}
+    </div>
+  );
   const clear = () => nav.patch({ q: undefined, kind: undefined });
   if (!v.me) return null;
 
@@ -100,7 +110,7 @@ function SourcesContent() {
       <PageHeader
         title={t("process.sources.title")}
         description={t("process.sources.subtitle")}
-        actions={create}
+        actions={actions}
       />
       <Filters v={v} />
       {v.needsTenant ? (
@@ -156,6 +166,11 @@ function SourcesContent() {
         />
       ) : null}
       {del.dialogs}
+      {credOpen ? (
+        <Suspense fallback={null}>
+          <CredentialSheet tenantId={v.tenantId} onClose={() => setCredOpen(false)} />
+        </Suspense>
+      ) : null}
     </>
   );
 }
