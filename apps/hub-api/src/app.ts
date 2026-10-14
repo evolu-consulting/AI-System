@@ -41,6 +41,7 @@ import type { AttachmentDeps } from "./modules/attachments/storage";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
+import { mountSourceCredential } from "./modules/internal/source-credential.routes";
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
 import {
@@ -362,6 +363,9 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && deps.attachments)
     mountH2c(app, { db: deps.db, attachments: deps.attachments, log: logger, signal: deps.signal });
+  // P-c2 B4 · `/internal/jobs/:id/source-credential` (token job, không JWT/CORS; khoá nguồn riêng cho Runtime).
+  if (deps.db)
+    mountSourceCredential(app, { db: deps.db, key: deps.hubSecretsKey ?? null, log: logger });
 
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
