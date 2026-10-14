@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Cần người quyết — Áp bản sửa (P-c2)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px;padding:16px;box-sizing:border-box}
+.btn{font:inherit;font-size:14px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.sub{font-size:12px;color:#635C78}
+.cap{font-size:12px;font-weight:600;margin-bottom:6px;color:#635C78}
+.g{display:grid;gap:20px;padding:28px;box-sizing:border-box;align-content:start}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:20px}
+pre{margin:6px 0 0;padding:10px;background:#F7F6FA;border-radius:8px;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;font-size:12px;color:#635C78;padding:6px 8px;border-bottom:1px solid #E6E3EE}td{padding:8px;border-bottom:1px solid #F0EEF5;vertical-align:top}
+</style>
+</helmet>
+<div class="g" style="width:1320px;height:1100px;grid-template-columns:1fr 1fr">
+
+<div class="col">
+<div><div class="cap">1 · apply_conflict</div><section class="card" role="region" aria-label="Cần người quyết">
+<div class="row"><span class="badge b-warn">Cần người quyết</span><strong>Bản sửa xung đột với mã mới</strong></div>
+<p class="sub">Nhánh main đã đổi và bản sửa không áp lại được. Muốn sửa trên mã mới thì chạy lại quy trình. Chọn thêm lượt chỉ có ích khi đã xử lý xung đột ở repo.</p>
+<div class="cap" style="margin-top:10px">File xung đột</div><ul class="mono" style="margin:0;padding-left:18px"><li>src/login.ts</li><li>src/config.ts</li></ul>
+<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn">Huỷ lượt chạy</button><button class="btn btn-p">Thêm 1 lần làm lại</button></div></section></div>
+<div><div class="cap">2 · apply_failed · check_failed (kiểm lại sau rebase trượt)</div><section class="card" role="region" aria-label="Cần người quyết">
+<div class="row"><span class="badge b-warn">Cần người quyết</span><strong>Áp bản sửa không thành công</strong></div>
+<p class="sub">Sau khi gộp với mã mới nhất, bản sửa không qua kiểm lại (test, đường dẫn, kích thước hoặc bí mật). Chạy lại quy trình trên mã mới, hoặc huỷ.</p>
+<div class="cap" style="margin-top:10px">Test đỏ · exit 1 · 8,2 giây</div><pre>FAIL tests/login.test.ts
+1 fail, 11 pass</pre>
+<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn">Huỷ lượt chạy</button><button class="btn btn-p">Thêm 1 lần làm lại</button></div></section></div>
+<div><div class="cap">4 · Ví dụ apply_failed · auth</div><section class="card" role="region" aria-label="Cần người quyết">
+<div class="row"><span class="badge b-warn">Cần người quyết</span><strong>Áp bản sửa không thành công</strong></div>
+<p class="sub">GitHub từ chối khoá nguồn (sai, hết hạn hoặc không đủ quyền). Thay khoá ở trang Nguồn rồi thử lại.</p>
+<div class="row" style="justify-content:flex-end"><button class="btn">Huỷ lượt chạy</button><button class="btn btn-p">Thêm 1 lần làm lại</button></div></section></div>
+</div>
+
+<div class="col">
+<div><div class="cap">3 · apply_failed — câu theo error_code (8 mã)</div><div class="card"><table><thead><tr><th>Mã</th><th>Câu hiện</th></tr></thead><tbody>
+<tr><td class="mono">auth</td><td>GitHub từ chối khoá nguồn (sai, hết hạn hoặc không đủ quyền). Thay khoá ở trang Nguồn rồi thử lại.</td></tr>
+<tr><td class="mono">no_credential</td><td>Nguồn chưa có khoá nguồn nên không đẩy được nhánh. Gán khoá ở trang Nguồn rồi thử lại.</td></tr>
+<tr><td class="mono">push_rejected</td><td>GitHub từ chối nhận nhánh (bị bảo vệ hoặc bị chặn). Thử lại hoặc huỷ.</td></tr>
+<tr><td class="mono">network</td><td>Không kết nối được tới GitHub. Thử lại sau.</td></tr>
+<tr><td class="mono">rate_limited</td><td>GitHub giới hạn tần suất gọi. Đợi vài phút rồi thử lại.</td></tr>
+<tr><td class="mono">provider_error</td><td>GitHub báo lỗi khi mở PR. Thử lại sau.</td></tr>
+<tr><td class="mono">check_failed</td><td>Bản sửa không qua kiểm lại sau khi gộp với mã mới (xem thẻ 2).</td></tr>
+<tr><td class="mono">unsupported_provider</td><td>Máy chủ git của nguồn chưa hỗ trợ mở PR. Đổi chế độ áp của nguồn sang "Chỉ nhánh".</td></tr></tbody></table></div></div>
+<div><div class="cap">5 · Run view + thẻ thread khi chờ quyết</div><div class="card">
+<div class="row" style="justify-content:space-between"><div class="row"><strong class="mono">apply</strong><span class="badge b-info">Áp bản sửa</span></div><span class="badge b-warn">Cần người quyết</span></div>
+<div class="row" style="margin-top:8px"><span class="badge b-err">Xung đột · 2 file</span></div></div>
+<article class="card" style="margin-top:10px;max-width:420px"><div class="row"><strong>!fixbug-pr</strong><span class="badge b-info">Áp bản sửa</span></div>
+<div class="row" style="margin-top:6px"><span class="badge b-err">Xung đột · 2 file</span></div></article></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1320,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

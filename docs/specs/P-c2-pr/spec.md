@@ -76,7 +76,7 @@ BA là nguồn sự thật; chỉ ghi phần BA chưa nói. Luật P-c1 (PC-R01�
 | Seed | Template **mới** `fixbug-pr` (= `fixbug-apply` + stage `apply` bước 1) — **không** sửa `fixbug-apply` (test P-c1 khoá) |
 
 ## 5. UI (frontend-lead)
-Chờ frontend-lead viết + mockup. Màn cần mockup (artboard đề xuất `docs/design/agent-hub/canvas/Pc2-*.dc.html`):
+PLAN FE: [`plan-frontend.md`](plan-frontend.md) (FC1…FC15, câu chữ VI/EN, nhãn e2e §5, đề nghị contract §7). Mockup chờ duyệt: `docs/design/agent-hub/canvas/Pc2-{Sources,Credential,Editor,Result,Decision}.dc.html`. Màn đã vẽ (artboard đề xuất `docs/design/agent-hub/canvas/Pc2-*.dc.html`):
 | Màn | Nội dung cần vẽ | App |
 |---|---|---|
 | `Pc2-Sources` | Form nguồn `git_remote`: ô **Khoá nguồn** (chọn khoá có sẵn / "Tạo khoá mới" mở sheet / "Không — repo công khai") + **Chế độ áp** (3 lựa chọn, `pr`/`auto_merge` mờ khi host không hỗ trợ, ghi chú auto-merge cần bật ở GitHub); `local_path` hiện "Chỉ nhánh (cố định)"; danh sách nguồn có nhãn "riêng tư" + chế độ; lỗi `SOURCE_CREDENTIAL_INVALID`, `SOURCE_APPLY_UNSUPPORTED`, `SOURCE_UNRESOLVABLE` (khoá sai khi "Kiểm tra kết nối") | admin-web `/sources` |

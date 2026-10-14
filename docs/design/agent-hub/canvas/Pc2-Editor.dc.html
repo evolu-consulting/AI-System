@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Quy trình — stage Áp bản sửa (P-c2)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px;padding:16px;box-sizing:border-box}
+.sub{font-size:12px;color:#635C78}
+.fld{display:flex;flex-direction:column;gap:4px;margin-top:10px}.fld label{font-weight:500;font-size:13px}
+.inp{font:inherit;padding:8px 10px;border:1px solid #D9D5E3;border-radius:8px;background:#fff}
+.cap{font-size:12px;font-weight:600;margin-bottom:6px;color:#635C78}
+.note{margin:10px 0 0;padding:8px 10px;border-radius:8px;background:#EDE6FB;color:#4A3278;font-size:12px}
+.al{margin:0;padding:10px 12px;border-radius:10px;font-size:13px}
+.al-err{background:#FDE8E8;color:#9B1C1C}
+.g{display:grid;gap:20px;padding:28px;box-sizing:border-box;align-content:start}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+</style>
+</helmet>
+<div class="g" style="width:1320px;height:640px;grid-template-columns:1fr 1fr 1fr">
+
+<div><div class="cap">1 · Hợp lệ (chọn "Áp bản sửa" ở Người thực hiện: ẩn agent, chỉ dẫn, nguồn, ngân sách)</div><div class="card">
+<div class="row" style="justify-content:space-between"><strong>Áp bản sửa</strong><span class="badge b-ok">Hợp lệ</span></div>
+<span class="sub">Đẩy nhánh và mở PR bằng bản sửa người vừa duyệt ở bước trước. Chạy bằng chương trình, không dùng agent. Chế độ áp lấy theo nguồn của stage tự sửa mã.</span>
+<div class="fld"><label>Người thực hiện</label><select class="inp"><option>Agent</option><option>Con người (human)</option><option selected>Áp bản sửa</option></select></div>
+<div class="fld"><label>Hành động thật</label><label class="row"><input type="checkbox" role="switch" checked disabled aria-label="Hành động thật"> <span class="sub">Bật (cố định)</span></label></div>
+<div class="fld"><label>Sau stage</label><select class="inp" disabled><option>Chạy tiếp (cố định)</option></select></div>
+<p class="note">Nhánh đẩy lên có tên ai/&lt;run&gt;/&lt;stage&gt;. Không bao giờ đẩy thẳng nhánh mặc định.</p>
+</div></div>
+
+<div><div class="cap">2 · Lỗi APPLY_NO_AUTOFIX</div><div class="card">
+<strong>Áp bản sửa</strong>
+<p class="al al-err" role="alert" style="margin-top:8px">Stage Áp phải đứng ngay sau stage tự sửa mã.</p></div>
+<div class="cap" style="margin-top:20px">3 · Lỗi APPLY_MAX</div><div class="card">
+<strong>Áp bản sửa</strong>
+<p class="al al-err" role="alert" style="margin-top:8px">Mỗi quy trình chỉ có một stage Áp. Đã có ở stage "apply".</p></div></div>
+
+<div><div class="cap">4 · APPLY_REAL / APPLY_AFTER / APPLY_FIELDS (ô đã khoá; chỉ gặp với def cũ hoặc gọi API)</div><div class="card">
+<strong>Áp bản sửa</strong>
+<p class="al al-err" role="alert" style="margin-top:8px">Stage Áp phải bật "Hành động thật".</p>
+<p class="al al-err" role="alert" style="margin-top:8px">Stage Áp phải chạy tiếp sau khi xong, không có bước duyệt.</p>
+<p class="al al-err" role="alert" style="margin-top:8px">Stage Áp không có nguồn, tự sửa mã, ngân sách token hay kiến thức cần biết.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1320,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

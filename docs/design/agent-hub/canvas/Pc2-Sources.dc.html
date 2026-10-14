@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nguồn — khoá nguồn và chế độ áp (P-c2)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6FA;color:#1D1733;font-family:'Be Vietnam Pro',sans-serif;font-size:14px}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:#E3F4EC;color:#05603F}.b-warn{background:#FDF0DF;color:#7F3C04}.b-err{background:#FDE8E8;color:#9B1C1C}.b-info{background:#EDE6FB;color:#4A3278}.b-off{background:#EFEDF3;color:#4F4865}
+.card{background:#fff;border:1px solid #E6E3EE;border-radius:12px;padding:16px;box-sizing:border-box}
+.btn{font:inherit;font-size:14px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid #D9D5E3;background:#fff;color:#1D1733;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:#6B4FA0;border-color:#6B4FA0;color:#fff}
+.sub{font-size:12px;color:#635C78}
+.fld{display:flex;flex-direction:column;gap:4px;margin-top:10px}.fld label{font-weight:500;font-size:13px}
+.inp{font:inherit;padding:8px 10px;border:1px solid #D9D5E3;border-radius:8px;background:#fff}
+.inp.bad{border-color:#9B1C1C}.err{color:#9B1C1C;font-size:12px}
+.cap{font-size:12px;font-weight:600;margin-bottom:6px;color:#635C78}
+.al{margin:0;padding:10px 12px;border-radius:10px;font-size:13px}
+.al-err{background:#FDE8E8;color:#9B1C1C}.al-warn{background:#FDF0DF;color:#7F3C04}
+.g{display:grid;gap:20px;padding:28px;box-sizing:border-box;align-content:start}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.opt{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1px solid #E6E3EE;border-radius:8px;margin-top:6px}
+.opt.dis{opacity:.55}.opt b{font-weight:500;font-size:13px}
+.col{display:flex;flex-direction:column;gap:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;font-size:12px;color:#635C78;padding:6px 8px;border-bottom:1px solid #E6E3EE}td{padding:8px;border-bottom:1px solid #F0EEF5}
+</style>
+</helmet>
+<div class="g" style="width:1320px;height:1100px;grid-template-columns:1fr 1fr 1fr">
+
+<div><div class="cap">1 · Form git_remote (sửa)</div><div class="card">
+<strong>Sửa nguồn · repo-app</strong>
+<div class="fld"><label>URL</label><input class="inp mono" value="https://github.com/acme/app.git"></div>
+<div class="fld"><label>Nhánh</label><input class="inp mono" value="main"></div>
+<div class="fld"><label for="k1">Khoá nguồn</label><select id="k1" class="inp"><option>gh-acme-pat</option><option>Không — repo công khai</option><option>+ Tạo khoá mới…</option></select><span class="sub">Dùng để đọc repo riêng tư và đẩy nhánh / mở PR. Token không hiện lại sau khi lưu.</span></div>
+<div class="fld" role="radiogroup" aria-label="Chế độ áp"><label>Chế độ áp</label>
+<label class="opt"><input type="radio" name="am1" checked><span><b>Mở PR</b> <span class="badge b-info">Mặc định</span><br><span class="sub">Đẩy nhánh ai/… và mở pull request để người trong repo duyệt.</span></span></label>
+<label class="opt"><input type="radio" name="am1"><span><b>Mở PR và tự gộp</b><br><span class="sub">Bật auto-merge (squash). Cần bật "Allow auto-merge" và branch protection trên GitHub; nếu không, PR vẫn mở và chờ gộp tay.</span></span></label>
+<label class="opt"><input type="radio" name="am1"><span><b>Chỉ nhánh</b><br><span class="sub">Đẩy nhánh ai/…, không mở PR.</span></span></label></div>
+<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn">Kiểm tra kết nối</button><button class="btn btn-p">Lưu</button></div>
+</div></div>
+
+<div class="col">
+<div><div class="cap">2 · Host chưa hỗ trợ (trên) · local_path (dưới)</div><div class="card">
+<div class="fld" style="margin-top:0" role="radiogroup" aria-label="Chế độ áp"><label>Chế độ áp</label>
+<label class="opt dis"><input type="radio" name="am2" disabled><span><b>Mở PR</b></span></label>
+<label class="opt dis"><input type="radio" name="am2" disabled><span><b>Mở PR và tự gộp</b></span></label>
+<label class="opt"><input type="radio" name="am2" checked><span><b>Chỉ nhánh</b></span></label></div>
+<span class="sub">Chỉ GitHub (github.com) hỗ trợ mở PR. Máy chủ git khác chỉ đẩy nhánh.</span>
+<hr style="border:0;border-top:1px solid #E6E3EE;margin:12px 0">
+<div class="fld" style="margin-top:0"><label>Chế độ áp</label><div class="row"><span class="badge b-off">Chỉ nhánh (cố định)</span></div><span class="sub">Nguồn đường dẫn cục bộ không đẩy lên đâu cả. Người duyệt tải file .diff và tự git apply.</span></div>
+</div></div>
+<div><div class="cap">3 · Danh sách nguồn</div><div class="card"><table><thead><tr><th>Ký hiệu</th><th>Loại</th><th>Chế độ áp</th></tr></thead><tbody>
+<tr><td class="mono">repo-app</td><td><span class="badge b-info">Git</span> <span class="badge b-warn">Riêng tư</span></td><td>Mở PR</td></tr>
+<tr><td class="mono">repo-tools</td><td><span class="badge b-info">Git</span> <span class="badge b-warn">Riêng tư</span></td><td>Mở PR và tự gộp</td></tr>
+<tr><td class="mono">oss-lib</td><td><span class="badge b-info">Git</span></td><td>Chỉ nhánh</td></tr>
+<tr><td class="mono">notes</td><td><span class="badge b-off">Đường dẫn</span></td><td>Chỉ nhánh (cố định)</td></tr></tbody></table></div></div>
+</div>
+
+<div class="col"><div class="cap">4 · Lỗi</div>
+<div class="card"><div class="fld" style="margin-top:0"><label>Khoá nguồn</label><select class="inp bad" aria-invalid="true"><option>gh-other</option></select><span class="err" role="alert">Khoá nguồn không dùng được. Chọn khoá khác của công ty này.</span></div></div>
+<div class="card"><div class="fld" style="margin-top:0"><label>Chế độ áp</label><div class="opt" style="border-color:#9B1C1C"><b>Mở PR</b></div><span class="err" role="alert">Máy chủ git này chưa hỗ trợ mở PR. Chọn "Chỉ nhánh".</span></div></div>
+<div class="card"><strong>Kiểm tra kết nối</strong><p class="al al-err" role="alert" style="margin-top:8px">Không đọc được repo. Khoá nguồn sai, hết hạn hoặc không đủ quyền.</p></div>
+<div class="card"><strong>Kiểm tra kết nối</strong><p class="al al-warn" role="status" style="margin-top:8px">Nguồn riêng tư chưa có khoá nguồn. Gán khoá để đọc và đẩy nhánh.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1320,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
