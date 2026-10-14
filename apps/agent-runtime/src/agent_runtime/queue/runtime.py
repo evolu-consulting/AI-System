@@ -20,6 +20,7 @@ from typing import Any
 from redis.asyncio import Redis
 
 from agent_runtime.agents.manifest import manifests
+from agent_runtime.apply.fake import FakeApplyHost
 from agent_runtime.apply.host import ApplyCfg, ApplyHost
 from agent_runtime.autofix.oci import Oci
 from agent_runtime.autofix.sweeper import run_container_sweeper
@@ -174,7 +175,8 @@ async def start(  # noqa: PLR0913
     )
     if resolve is not None and src_cfg is not None:
         log.info("resolve.enabled", cache_dir=str(src_cfg.cache_dir))
-    apply_host = ApplyHost(pool, apply_cfg, sandbox) if apply_cfg is not None else None
+    apply_cls = ApplyHost if settings.app_env == "production" else FakeApplyHost  # R3: #fake:apply
+    apply_host = apply_cls(pool, apply_cfg, sandbox) if apply_cfg is not None else None
     if apply_host is not None:
         log.info("apply.enabled", sandbox=sandbox is not None)
     rt = QueueRuntime(settings, pool, listen, redis, events, sup, claimer, probe, resolve)
