@@ -22,6 +22,13 @@ import {
   STAGE_TOKEN_BUDGET,
 } from "@ai/contracts/hub-admin";
 import {
+  APPLY_RULE_ERR,
+  applyCrossErrors,
+  executorToDef,
+  isApply,
+  normalizeApply,
+} from "./apply-form";
+import {
   AUTOFIX_RULE_ERR,
   type AutofixDraft,
   autofixToDef,
@@ -40,6 +47,7 @@ import {
   stageSourcesToDraft,
   validateSourcesPart,
 } from "./sources-form";
+import { slugKey } from "./stage-key";
 
 export type FieldDraft = { key: string; type: "number" | "string" | "date"; required: boolean };
 export type StageDraft = {
@@ -89,6 +97,8 @@ export type DefDraft = {
 };
 /** path (`stages.0.output.filename`) → khoá i18n của câu lỗi. */
 export type DraftErrors = Record<string, string>;
+
+export { slugKey };
 
 let seq = 0;
 const nextUid = (): string => `s${++seq}`;
@@ -186,13 +196,13 @@ export function toDraft(d: ProcessDefInput | ProcessDef): DefDraft {
 
 const intOrNull = (s: string): number | null => (s.trim() === "" ? null : Number(s.trim()));
 
-function stageToInput(s: StageDraft): ProcessStageDef {
-  const [kind, id = ""] = s.executor.split(":");
+function stageToInput(draft: StageDraft): ProcessStageDef {
+  const s = normalizeApply(draft);
   return {
     key: s.key,
     name: s.name.trim(),
     step: s.step,
-    executor: kind === "team" ? { kind: "team", team_id: id } : { kind: "agent", agent_id: id },
+    executor: executorToDef(s.executor),
     instruction: s.instruction,
     output: {
       filename: s.filename,
@@ -235,22 +245,6 @@ export function toInput(d: DefDraft): ProcessDefInput {
   };
 }
 
-/** Mã giai đoạn gợi ý từ tên: bỏ dấu, chữ thường, `-`; trùng ⇒ thêm `-2`, `-3`… */
-export function slugKey(name: string, taken: readonly string[]): string {
-  const base =
-    name
-      .normalize("NFD")
-      .replace(/\p{M}/gu, "")
-      .replace(/đ/gi, "d")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 28) || "stage";
-  let key = base;
-  for (let n = 2; taken.includes(key); n++) key = `${base}-${n}`;
-  return key;
-}
-
 /** Giai đoạn `i` có được bật "Hành động thật"? Bước ≥ 1 và MỌI giai đoạn của bước liền trước có người kiểm (PB2-R03). */
 export function canRealAction(stages: readonly StageDraft[], i: number): boolean {
   const step = stages[i]?.step ?? 0;
@@ -285,12 +279,13 @@ function validateStage(s: StageDraft, i: number, all: readonly StageDraft[], e: 
   if (!STAGE_KEY_RE.test(s.key)) e[at("key")] = `${P}stageKey`;
   else if (all.some((o, j) => j < i && o.key === s.key)) e[at("key")] = `${P}stageKeyDup`;
   if (s.executor === "") e[at("executor")] = `${P}executor`;
-  if (s.instruction.length > STAGE_INSTRUCTION_MAX) e[at("instruction")] = `${P}tooLong`;
+  if (!isApply(s) && s.instruction.length > STAGE_INSTRUCTION_MAX)
+    e[at("instruction")] = `${P}tooLong`;
   validateOutput(s, at, e);
   if (s.answerer !== "starter" && s.answererId === "") e[at("answerer")] = `${P}answerer`;
   if (!inRange(s.timeout, STAGE_TIMEOUT_S.min, STAGE_TIMEOUT_S.max))
     e[at("timeout_s")] = `${P}timeout`;
-  if (!budgetOk(s.budget)) e[at("token_budget")] = `${P}budget`;
+  if (!isApply(s) && !budgetOk(s.budget)) e[at("token_budget")] = `${P}budget`;
 }
 
 export const STEP_ERR: Record<string, string> = {
@@ -300,6 +295,7 @@ export const STEP_ERR: Record<string, string> = {
   REAL_ACTION: "process.admin.canvas.err.realStep",
   BACK_TARGET_INVALID: "process.admin.canvas.err.backTarget",
   ...AUTOFIX_RULE_ERR,
+  ...APPLY_RULE_ERR,
 };
 
 /** `stages.N.after.back_to_steps.K` → ô `stages.N.after.back_to_steps` (một dòng lỗi cho cả nhóm checkbox). */
@@ -335,9 +331,11 @@ export function validateDraft(d: DefDraft, forEnable = d.enabled): DraftErrors {
     if (forEnable && s.after === "review" && s.groupId === "")
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";
   });
-  validateSteps(d.stages, e);
-  validateSourcesPart(d, e);
-  validateAutofixPart(d.stages, e);
+  const eff = d.stages.map(normalizeApply);
+  validateSteps(eff, e);
+  validateSourcesPart({ ...d, stages: eff }, e);
+  validateAutofixPart(eff, e);
+  Object.assign(e, applyCrossErrors(d.stages));
   return e;
 }
 

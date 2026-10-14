@@ -1,8 +1,10 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-b2: khung form một giai đoạn — `region "Giai đoạn n: <tên>"` (plan-frontend §1, e2e §2).
 // Chi tiết từng phần ở StageGeneral/StageStepFields/StageGate/StageAnswerer/StageActions (tách — TECH-DEBT #136).
 import { useTranslation } from "react-i18next";
+import { isApply } from "../../lib/apply-form";
 import { StageActions } from "./StageActions";
 import { StageAnswerer } from "./StageAnswerer";
+import { StageApply } from "./StageApply";
 import { StageAutofix } from "./StageAutofix";
 import { StageGate } from "./StageGate";
 import { StageGeneral, StageLimits } from "./StageGeneral";
@@ -31,12 +33,18 @@ export function StageForm(p: StageFormProps) {
         readOnly={readOnly}
         onChange={onChange}
       />
-      <StageSourcesField {...p} />
-      <StageAutofix {...p} />
-      <StageGate {...p} />
+      {isApply(stage) ? (
+        <StageApply {...p} />
+      ) : (
+        <>
+          <StageSourcesField {...p} />
+          <StageAutofix {...p} />
+          <StageGate {...p} />
+        </>
+      )}
       <StageAnswerer {...p} />
       <StageLimits {...p} />
-      <StageMustKnow {...p} />
+      {isApply(stage) ? null : <StageMustKnow {...p} />}
       <StageActions {...p} />
     </section>
   );

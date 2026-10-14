@@ -70,7 +70,7 @@
       "aria": "Stage {{n}}: {{name}}",
       "name": "Stage name",
       "key": "Stage key",
-      "executor": "Done by",
+      "executor": "Performed by",
       "kind": {
         "agent": "Agent",
         "team": "Agent team"
@@ -371,6 +371,25 @@
       "AUTOFIX_REVIEW": "An autofix stage always needs a person to review it. Choose \"Review\" under After stage.",
       "AUTOFIX_MAX": "A process can have only one autofix stage. It is already set on stage \"{{stage}}\".",
       "sourceKind": "Source \"{{key}}\" is of kind {{kind}} and cannot be edited. Choose a git_remote or local_path source."
+    }
+  },
+  "apply": {
+    "title": "Apply the fix",
+    "kind": "Apply the fix",
+    "hint": "Pushes a branch and opens a PR with the fix the reviewer just approved. Runs as a program, with no agent. The apply mode comes from the source of the autofix stage.",
+    "realAction": "Real action",
+    "fixed": "On (fixed)",
+    "after": {
+      "fixed": "Continue (fixed)"
+    },
+    "valid": "Valid",
+    "note": "The pushed branch is named ai/<run>/<stage>. The default branch is never pushed to directly.",
+    "err": {
+      "APPLY_NO_AUTOFIX": "The apply stage must come right after the autofix stage.",
+      "APPLY_MAX": "A process can have only one apply stage. It is already set on stage \"{{stage}}\".",
+      "APPLY_REAL": "The apply stage must have \"Real action\" on.",
+      "APPLY_AFTER": "The apply stage must continue when done, with no review step.",
+      "APPLY_FIELDS": "The apply stage has no sources, autofix, token budget or must-know."
     }
   }
 }

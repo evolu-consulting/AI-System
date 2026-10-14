@@ -70,7 +70,7 @@
       "aria": "Giai đoạn {{n}}: {{name}}",
       "name": "Tên giai đoạn",
       "key": "Mã giai đoạn",
-      "executor": "Làm bởi",
+      "executor": "Người thực hiện",
       "kind": {
         "agent": "Agent",
         "team": "Nhóm agent"
@@ -371,6 +371,25 @@
       "AUTOFIX_REVIEW": "Stage tự sửa mã luôn phải qua người duyệt. Chọn \"Duyệt\" ở mục Sau stage.",
       "AUTOFIX_MAX": "Mỗi quy trình chỉ có một stage tự sửa mã. Đã có ở stage \"{{stage}}\".",
       "sourceKind": "Nguồn \"{{key}}\" thuộc loại {{kind}}, không sửa được. Chọn nguồn git_remote hoặc local_path."
+    }
+  },
+  "apply": {
+    "title": "Áp bản sửa",
+    "kind": "Áp bản sửa",
+    "hint": "Đẩy nhánh và mở PR bằng bản sửa người vừa duyệt ở bước trước. Chạy bằng chương trình, không dùng agent. Chế độ áp lấy theo nguồn của stage tự sửa mã.",
+    "realAction": "Hành động thật",
+    "fixed": "Bật (cố định)",
+    "after": {
+      "fixed": "Chạy tiếp (cố định)"
+    },
+    "valid": "Hợp lệ",
+    "note": "Nhánh đẩy lên có tên ai/<run>/<stage>. Không bao giờ đẩy thẳng nhánh mặc định.",
+    "err": {
+      "APPLY_NO_AUTOFIX": "Stage Áp phải đứng ngay sau stage tự sửa mã.",
+      "APPLY_MAX": "Mỗi quy trình chỉ có một stage Áp. Đã có ở stage \"{{stage}}\".",
+      "APPLY_REAL": "Stage Áp phải bật \"Hành động thật\".",
+      "APPLY_AFTER": "Stage Áp phải chạy tiếp sau khi xong, không có bước duyệt.",
+      "APPLY_FIELDS": "Stage Áp không có nguồn, tự sửa mã, ngân sách token hay kiến thức cần biết."
     }
   }
 }

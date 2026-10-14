@@ -1,5 +1,7 @@
 // HUB-FR-129 · PC2-R01 · P-c2 F2 (plan-frontend FC9/FC10): stage "Áp bản sửa" của editor — ép giá trị khoá + luật chéo dùng chung server.
 // Hàm thuần: không React, không gọi API. Đổi kiểu giữ draft ô đã ẩn (FC9); ô ẩn chỉ bị bỏ qua khi gửi/validate (`normalizeApply`).
+
+import type { ProcessStageDef } from "@ai/contracts/hub-admin";
 import { type ApplyStageShape, applyStageIssues } from "@ai/contracts/hub-admin";
 import { emptyAutofix } from "./autofix-form";
 import type { StageDraft } from "./def-form";
@@ -100,3 +102,10 @@ export function applyBlockErrors(
 
 /** Khoá lỗi APPLY_*? (ô executor không in trùng — StageApply đã hiện). */
 export const applyKeyOnly = (k: string | undefined): boolean => k?.startsWith(A) === true;
+
+/** `StageDraft.executor` (`agent:<id>` | `team:<id>` | `apply`) → `executor` của contract. */
+export function executorToDef(executor: string): ProcessStageDef["executor"] {
+  if (executor === APPLY_EXECUTOR) return { kind: "apply" };
+  const [kind, id = ""] = executor.split(":");
+  return kind === "team" ? { kind: "team", team_id: id } : { kind: "agent", agent_id: id };
+}

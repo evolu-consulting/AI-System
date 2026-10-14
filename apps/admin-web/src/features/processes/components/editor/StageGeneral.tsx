@@ -1,6 +1,7 @@
 // ADM-FR-66 · P-a F5: phần chung của giai đoạn — tên, mã, người làm, hướng dẫn; và hạn/ngân sách token.
 import { useTranslation } from "react-i18next";
 import { withCurrent } from "../../hooks/use-editor-refs";
+import { APPLY_EXECUTOR, APPLY_PATCH, applyKeyOnly, isApply } from "../../lib/apply-form";
 import { SelectField, TextField } from "./Fields";
 import type { StageFormProps } from "./stage-form-props";
 
@@ -17,7 +18,11 @@ export function StageGeneral(p: StageFormProps) {
   const { stage, readOnly, refs, onChange } = p;
   const e = useStageError(p);
   const executors = withCurrent(
-    [...refs.agents, ...refs.teams],
+    [
+      ...refs.agents,
+      ...refs.teams,
+      { value: APPLY_EXECUTOR, label: t("process.admin.apply.kind") },
+    ],
     stage.executor,
     t("process.admin.editor.gone"),
   );
@@ -47,20 +52,22 @@ export function StageGeneral(p: StageFormProps) {
         label={t("process.admin.editor.stage.executor")}
         value={stage.executor}
         readOnly={readOnly}
-        error={e("executor")}
+        error={applyKeyOnly(p.errors[`stages.${p.index}.executor`]) ? undefined : e("executor")}
         options={executors}
-        onChange={(v) => onChange({ executor: v })}
+        onChange={(v) => onChange(v === APPLY_EXECUTOR ? APPLY_PATCH : { executor: v })}
       />
-      <TextField
-        id={`${stage.uid}-instr`}
-        label={t("process.admin.editor.stage.instruction")}
-        value={stage.instruction}
-        error={e("instruction")}
-        readOnly={readOnly}
-        multiline
-        rows={4}
-        onChange={(v) => onChange({ instruction: v })}
-      />
+      {isApply(stage) ? null : (
+        <TextField
+          id={`${stage.uid}-instr`}
+          label={t("process.admin.editor.stage.instruction")}
+          value={stage.instruction}
+          error={e("instruction")}
+          readOnly={readOnly}
+          multiline
+          rows={4}
+          onChange={(v) => onChange({ instruction: v })}
+        />
+      )}
     </>
   );
 }
@@ -80,15 +87,17 @@ export function StageLimits(p: StageFormProps) {
         readOnly={readOnly}
         onChange={(v) => onChange({ timeout: v })}
       />
-      <TextField
-        id={`${stage.uid}-budget`}
-        label={t("process.admin.editor.stage.budget")}
-        type="number"
-        value={stage.budget}
-        error={e("token_budget")}
-        readOnly={readOnly}
-        onChange={(v) => onChange({ budget: v })}
-      />
+      {isApply(stage) ? null : (
+        <TextField
+          id={`${stage.uid}-budget`}
+          label={t("process.admin.editor.stage.budget")}
+          type="number"
+          value={stage.budget}
+          error={e("token_budget")}
+          readOnly={readOnly}
+          onChange={(v) => onChange({ budget: v })}
+        />
+      )}
     </div>
   );
 }
