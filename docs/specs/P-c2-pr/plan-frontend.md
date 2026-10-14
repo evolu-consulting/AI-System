@@ -1,6 +1,6 @@
 # Plan FE · P-c2 Áp bản sửa (admin-web + chat-web)
 
-Mockup chờ duyệt (T1, 2026-10-14): `docs/design/agent-hub/canvas/Pc2-{Sources,Credential,Editor,Result,Decision}.dc.html` (đã đăng ký `canvas.json`; sau khi duyệt là chuẩn). Mẫu: `P-c-autofix/plan-frontend.md`. Luật: spec §2 PC2-R01/02/03/07/08/10/15. Contract: `plan.md` §3 (FE không đổi).
+Mockup đã duyệt (2026-10-14): `docs/design/agent-hub/canvas/Pc2-{Sources,Credential,Editor,Result,Decision}.dc.html` (đã đăng ký `canvas.json`; sau khi duyệt là chuẩn). Mẫu: `P-c-autofix/plan-frontend.md`. Luật: spec §2 PC2-R01/02/03/07/08/10/15. Contract: `plan.md` §3 (FE không đổi).
 
 ## 0. Quyết định FE (Luật 2)
 | # | Quyết định |
@@ -16,7 +16,7 @@ Mockup chờ duyệt (T1, 2026-10-14): `docs/design/agent-hub/canvas/Pc2-{Source
 | FC10 | `APPLY_NO_AUTOFIX`/`APPLY_MAX` hiện live (`role=alert`) trong khối stage bằng `applyStageIssues(stages)` (contract, dùng chung server); 5 mã `APPLY_*` từ 422 `PROCESS_DEF_INVALID.rules[]` map cùng bảng (`serverPaths`) |
 | FC11 | `ApplyResult` mỗi app một bản (nợ gộp đã ghi TECH-DEBT từ P-c); nhận `stage.apply` + `diff_file` của stage tự sửa mã liền trước (cho "Tải .diff") |
 | FC12 | Liên kết PR: render `<a>` **chỉ khi** `pr_url` bắt đầu `https://` (server đã kiểm PC2-R15; client kiểm lại phòng thủ), `target="_blank" rel="noopener noreferrer"`, nội dung `PR #n` (không in URL thô). URL không hợp lệ ⇒ chỉ chữ `PR #n`, không link |
-| FC13 | Dòng gate "Đạt sẽ…" lấy từ `AutofixStageView.apply_mode` (+ `apply_base` nếu backend chấp nhận đề nghị #1). `apply_mode=null` ⇒ không hiện dòng. Không có `apply_base` ⇒ dùng câu không nêu nhánh (`gate.pr.nobase`) |
+| FC13 | Dòng gate "Đạt sẽ…" lấy từ `AutofixStageView.apply_mode` + `apply_base` (backend đã chấp nhận C9–C12). Luật: `apply_mode=null` ⇒ không hiện dòng · `branch_only` và `apply_base===null` ⇒ `gate.local` · `branch_only` có `apply_base` ⇒ `gate.branch_only` · `pr` ⇒ `gate.pr` · `auto_merge` ⇒ `gate.auto_merge` (`{{base}}`=`apply_base`). `pr`/`auto_merge` mà `apply_base===null` (không xảy ra) ⇒ không hiện dòng |
 | FC14 | `apply_conflict`/`apply_failed`: nút theo `task.options` (`[add_attempt, cancel]`), giữ nhãn sẵn có "Thêm 1 lần làm lại" / "Huỷ lượt chạy" (lệch mockup "Thêm lượt" có chủ đích, như P-c FC10). Câu `apply_failed` theo `apply.error_code`; mã lạ ⇒ `decision.failed.generic` |
 | FC15 | `error_code=check_failed` dùng lại `AutofixFailures`; `conflict_files` ≤ 50 dòng `mono`, `break-all` |
 
@@ -47,7 +47,7 @@ Mockup chờ duyệt (T1, 2026-10-14): `docs/design/agent-hub/canvas/Pc2-{Source
 | `no_changes` | "Không có thay đổi" + câu |
 | `conflict`/`check_failed`/`failed` | Dòng run view: "Xung đột · n file" / "Kiểm không đạt" / "Lỗi áp"; chi tiết ở §1.4 |
 | Chưa có `apply` | Không hiện khối (`StageStrip` sẵn có) |
-Gate stage tự sửa mã: dòng `note` theo `apply_mode` (FC13). Thread (`RunCard`/`StatusLine`) + admin `RunProgress`: badge "Áp bản sửa" + trạng thái + `#n ↗` (FC12).
+Gate stage tự sửa mã: dòng `note` theo luật FC13 (`apply_mode` + `apply_base`). Thread (`RunCard`/`StatusLine`) + admin `RunProgress`: badge "Áp bản sửa" + trạng thái + `#n ↗` (FC12).
 
 ### 1.4 Cần người quyết (Pc2-Decision)
 `decision-reason.ts` (chat-web + bản admin) thêm `apply_conflict`, `apply_failed` (`reasonKey` + `reasonHintKey`). `ApplyIssue.tsx` cạnh `AutofixFailures`: conflict ⇒ danh sách file; failed ⇒ câu theo `error_code` (+ `AutofixFailures` khi `check_failed`). Nút theo `options` (FC14). `process-locales.test.ts` 14 → 16.
@@ -139,9 +139,7 @@ Khoá: nguồn/khoá `process.sources.*` (`packages/i18n/locales/process/sources
 | `downloadDiff` | Tải .diff | Download .diff |
 | `noChanges.hint` | Bản sửa trùng nguồn nên không có gì để đẩy. | The fix matches the source, so there is nothing to push. |
 | `gate.pr` | Đạt sẽ mở PR vào {{base}}. | Passing will open a PR into {{base}}. |
-| `gate.pr.nobase` | Đạt sẽ mở PR vào nhánh mặc định của nguồn. | Passing will open a PR into the source's default branch. |
 | `gate.auto_merge` | Đạt sẽ mở PR vào {{base}} và tự gộp khi đủ điều kiện. | Passing will open a PR into {{base}} and auto-merge when it is allowed. |
-| `gate.auto_merge.nobase` | Đạt sẽ mở PR vào nhánh mặc định của nguồn và tự gộp khi đủ điều kiện. | Passing will open a PR into the source's default branch and auto-merge when it is allowed. |
 | `gate.branch_only` | Đạt sẽ đẩy nhánh lên repo, không mở PR. | Passing will push a branch to the repo without opening a PR. |
 | `gate.local` | Đạt chỉ chốt bản sửa. Tải .diff để tự áp vào máy. | Passing only approves the fix. Download the .diff to apply it yourself. |
 | `decision.conflict.title` | Bản sửa xung đột với mã mới | The fix conflicts with the new code |
@@ -177,13 +175,14 @@ Bảng lỗi ở §1.1 (`errors.ts`) và FC10/FC14. Khác: tải `.diff` lỗi �
 ## 6. Hiệu năng / a11y
 `CredentialSheet` lazy (chỉ mở theo yêu cầu); danh sách khoá ≤ 100, không virtualize; `ApplyResult` thuần, `memo`. Token: `autoComplete="off"`, không vào query key/URL/log, reset form khi đóng. Badge kèm chữ; link ngoài có `aria-label` + `rel`; lỗi `role=alert`; tương phản ≥ 4.5:1 theo token canvas.
 
-## 7. Cần backend-lead (đề nghị; không tự đổi contract)
-| # | Nội dung | Mặc định FE nếu không đổi |
+## 7. Đã thống nhất với backend-lead (readiness lần 1; không còn đề nghị mở, không mặc định dự phòng)
+| # | Nội dung | FE dùng |
 |---|---|---|
-| 1 | `AutofixStageView += apply_base: string \| null` (= `config.branch` nguồn khi `apply_mode ≠ null`) cho gate "Đạt sẽ mở PR vào main"; người duyệt ở chat-web không đọc được `/admin/sources` | Câu `gate.*.nobase`; không chặn |
-| 2 | `ApplyStageView += test_log_file: {id,name} \| null` (như `AutofixStageView`) cho đuôi log khi `check_failed` sau rebase | Chỉ nhóm `failures[]`, không đuôi log |
-| 3 | `error_code` luôn có khi `status ∈ {failed, check_failed}` | `null` ⇒ `decision.failed.generic` |
-| 4 | Xác nhận `GET /admin/source-credentials`: tenant_admin không cần `tenant_id`, platform_admin gửi `tenant_id` | Theo `secrets.ts` hiện có |
+| C9 | `AutofixStageView.apply_base: string \| null` (= `config.branch` nguồn khi `apply_mode ≠ null`) | Luật gate FC13 |
+| C10 | `ApplyStageView.test_log_file: {id,name} \| null` | Đuôi log khi `check_failed` sau rebase (`AutofixFailures`) |
+| C11 | `error_code` luôn có khi `status ∈ {failed, check_failed}` | Câu `err.<code>` (FC14) |
+| C12 | `GET /admin/source-credentials`: tenant_admin không cần `tenant_id`, platform_admin gửi `tenant_id` | FC3 |
+| R1 | Stage Áp: `executor = {kind:"apply", key:"apply", name:{vi:"Áp bản sửa", en:"Apply the fix"}}` | Nhãn stage Áp đọc từ `process.admin.apply.kind` (không lấy `executor.name`) |
 
 ## 8. Bẫy
 - `fieldForCode` mở rộng (`errors.test.ts`); `SOURCE_*` mới ngoài union `ApiErrorCode` ⇒ dùng `hasCode`.
