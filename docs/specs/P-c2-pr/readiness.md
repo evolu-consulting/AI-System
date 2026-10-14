@@ -52,3 +52,5 @@ Lần 1 đã đóng: #1–#4, #6, #8, #10, #12–#20, #22, #24. Còn hở: #5, #
 | 9 | Thấp | test-plan tham chiếu cũ; G7/G8/G16 | qc sửa câu chữ |
 | 10 | Thấp | Chữ trạng thái cũ (spec-decisions:17, tasks T1, spec §5) | Cập nhật |
 | 11 | Thấp | `done:pc2` bước 4 `test:int` toàn bộ | Liệt kê thư mục; P-c2 từng file |
+
+Áp mặc định lần 2: #1–#8, #10 áp vào spec §9 (C36–C44; C19–C35 chuyển sang spec-decisions), plan, tasks; #9 qc, #11 để test-plan (commit xem git log).
