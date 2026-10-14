@@ -33,4 +33,4 @@ Mọi lỗ hổng có mặc định an toàn, tự quyết theo Luật 2 (ghi sp
 
 Chưa kiểm: nội dung mockup (người dùng đã duyệt), chi tiết từng ca test khoá, kích thước plan/test-plan.
 
-Áp mặc định: #1, #3–#11, #13–#22, #24 và phần #23 của spec/plan/tasks (spec §9 C19–C35; #2, #12 thuộc frontend-lead/docs-architect; #23 plan-frontend/BA ngoài phạm vi) — commit COMMIT_HASH
+Áp mặc định: #1, #3–#11, #13–#22, #24 và phần #23 của spec/plan/tasks (spec §9 C19–C35; #2, #12 thuộc frontend-lead/docs-architect; #23 plan-frontend/BA ngoài phạm vi) — commit 51f3af2a
