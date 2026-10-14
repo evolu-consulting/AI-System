@@ -1,6 +1,6 @@
 # Plan · P-c2-pr (push nhánh + PR / apply_mode / rebase / repo riêng)
 
-Backend-lead PLAN 2026-10-14. Luật: spec §2 PC2-R01…R16 (P-c1 PC-R* giữ). Q1–Q10 đã chấp nhận (`spec-decisions.md`); readiness lần 1 áp = spec §9 C19–C35. Không chép BA — trỏ mã. Migration kế tiếp: `0032`.
+Backend-lead PLAN 2026-10-14 (readiness lần 1–3 đã áp: spec §9 C19–C44, `spec-decisions.md` C45–C52). Luật: spec §2 PC2-R01…R16 (P-c1 PC-R* giữ). Q1–Q10 đã chấp nhận (`spec-decisions.md`); Không chép BA — trỏ mã. Migration kế tiếp: `0032`.
 
 ## Backend (backend-lead)
 
@@ -140,7 +140,7 @@ CREATE INDEX IF NOT EXISTS autofix_applies_log_att_idx ON hub.autofix_applies (t
 | Stage view `.apply` | optional `ApplyStageView{mode: ApplyMode, status: ApplyStatus, branch: string\|null, target_sha, head_sha: string\|null, rebased: boolean, provider: "github"\|null, pr_number: int\|null, pr_url: string\|null, auto_merge: "on"\|"failed"\|null, error_code: ApplyErrorCode\|null, conflict_files: string[], failures: AutofixFailure[], test_log_file: AutofixFile\|null, created_at}` — chỉ khi stage Áp đã có hàng; không `detail` thô (chỉ `error_code`) |
 | `AutofixStageView.apply_mode` | `ApplyMode \| null` — `effectiveApplyMode(nguồn hiện tại)` nếu def có stage Áp, ngược lại null; nguồn xoá/đổi kind ⇒ `apply_mode` và `apply_base` đều null (C43) |
 | `AutofixStageView.apply_base` | `string \| null` — `config.branch` của nguồn hiện tại (cùng lần đọc nguồn) khi `apply_mode ≠ null` và nguồn `git_remote`; ngược lại null (C9) |
-| `error_code` bất biến | `status ∈ {failed, check_failed}` ⇒ `error_code ≠ null`; `check_failed` ⇒ `"check_failed"`; thiếu báo cáo/lỗi job khác ⇒ hàng `failed`+`provider_error`; `conflict` ⇒ null (C11) |
+| `error_code` bất biến | `status ∈ {failed, check_failed}` ⇒ `error_code ≠ null`; `check_failed` ⇒ `"check_failed"`; thiếu báo cáo/lỗi job khác ⇒ hàng `failed`+`provider_error` (C45: mode = `effectiveApplyMode` nguồn còn, hoặc `branch_only`; source_key/branch/pin từ `autofix_results`; result null ⇒ key nguồn stage tự-sửa, branch/pin null); `conflict` ⇒ null (C11) |
 | `GET /admin/source-credentials` (xác nhận, C12) | `credentialTenant`: tenant_admin dùng tenant phiên (không cần `tenant_id`); platform_admin bắt buộc `?tenant_id=` (thiếu ⇒ 404 `NOT_FOUND`, C26); không đổi BE |
 | Decision view | `options` = `autofixDecisionOptions(reason)` (mở rộng: `apply_*` ⇒ `[add_attempt, cancel]`); `use_current` ⇒ 409 `PROCESS_RUN_STATE` |
 
@@ -181,18 +181,7 @@ CREATE INDEX IF NOT EXISTS autofix_applies_log_att_idx ON hub.autofix_applies (t
 | `needs_retest(pin_sha: str, target_sha: str) -> bool` | `pin != target` |
 
 ### §5 Runtime
-**5.1 Repo riêng (P-b resolve + Áp):** `sources/git_driver.py` nhận `auth: GitAuth | None` (`username`, `token`, giữ trong bộ nhớ); `_run_git` ghép `auth_env`; `mirror_path` dùng `mirror_key`. `sources/resolve.py`: item `config.credential_secret_id` ≠ null ⇒ `hub.source_credential(job_id, source_id)` (httpx, no-store, retry 2 lần) trước fetch; 404/409 ⇒ `SOURCE_UNRESOLVABLE` (message chung). `GIT_TERMINAL_PROMPT=0` giữ ⇒ không treo hỏi mật khẩu. Lỗi git đi qua `redact_auth` trước log/báo cáo.
-**5.2 Gói mới `agent_runtime/apply/`:** `rules.py` (§4), `host.py` (`ApplyHost(cfg, oci, hub)`, `async run(job: SourceApplyJob) -> JobResult`), `report.py` (POST + retry như `autofix/report.py`). Slot (C22/C38): job `source.apply` không có `provider_key` ⇒ không qua `CLAIM_SELECT` (JOIN providers) — claim riêng `db/apply_sql.py` (mẫu `resolve_sql.py`), nối ở `queue/runtime.py`, đòi (job `running` của worker có `payload.autofix` object **hoặc** `type='source.apply'`) < `RUNTIME_SANDBOX_MAX`; `SANDBOX_SLOT` (`db/jobs_sql.py`) đếm thêm `type='source.apply'` để claim tự-sửa thấy job Áp. Không xin slot giữa job.
-Các bước `ApplyHost.run` (git cứng P-c1 §5.3 trên `GIT_DIR=work/<job>/repo/.git`, ngoài mọi mount):
-1. `ensure_mirror_fresh` (khoá nếu `has_credential`) → `target = rev-parse refs/heads/<branch>`; lỗi ⇒ `failed{code: auth|network|no_credential}` (C34).
-2. `git clone --no-checkout --no-hardlinks <mirror> work/<job>/repo` → `checkout -B <ai branch> <target>`.
-3. Tải `patch` → `git apply --3way --index --binary` → lỗi ⇒ `git status --porcelain` → `conflict{files}`.
-4. Commit tác giả `ai-autofix <noreply@local>`, thông điệp cố định `ai-autofix: <branch>` (không đưa chữ tự do vào git).
-5. `needs_retest` ⇒ `git archive HEAD` → giải nén + lọc PB-R07 (hàm lọc `sources/snapshot.py`) vào `work/<job>/workspace/<key>/` → `workspace.prepare` (git riêng, base = target) → `check.run_checks` (diff `target..HEAD`) với prep/test container như `AutofixHost` (P-c1 §5.2) → trượt ⇒ `check_failed`; không sandbox ⇒ job lỗi `container`.
-6. `ls-remote <url> refs/heads/<branch>` = HEAD ⇒ bỏ push; ngược lại `push <url> push_refspec(branch)` (timeout 120 s) → lỗi ⇒ `failed{classify_push_error}`; `has_credential=false` + `auth` ⇒ `no_credential` (đổi ở `ApplyHost`, C34).
-7. Báo cáo được Hub nhận (201/409 `APPLY_RESULT_EXISTS`) ⇒ job `succeeded` kể cả `conflict`/`failed`/`check_failed` (C37); không sandbox ⇒ job `failed` reason `container`, không báo cáo.
-7. Báo cáo → `finally`: xoá container + `work/<job>/`; xoá khoá khỏi bộ nhớ.
-**5.3 Kiểm thử Runtime:** bare repo trong thư mục tạm (`git init --bare`), `GIT_CONFIG_*` insteadOf `https://github.com/acme/` → `file://…` (C6, `RUNTIME_ENV=test`); push thật vào bare repo; kiểm `refs/heads/ai/...` và nhánh mặc định không đổi. Khoá giả: bare repo không đòi auth ⇒ test `auth_env` bằng hàm thuần + ca "khoá được lấy và không xuất hiện trong `work/`, log, báo cáo".
+Chi tiết (5.1 repo riêng, 5.2 `ApplyHost`, 5.3 kiểm thử): [`plan-runtime.md`](plan-runtime.md).
 
 ### §6 Hub
 **6.1 Nguồn** (`sources.service #checkConfig`): `git_remote` + `credential_secret_id` ⇒ đọc `hub.secrets` scope system, `id=$1 AND kind='source_credential' AND tenant_id=$tenant AND deleted_at IS NULL` (cột thật theo H4b-1) — không có ⇒ 422 `SOURCE_CREDENTIAL_INVALID`; `applyModeIssue` ⇒ 422 `SOURCE_APPLY_UNSUPPORTED`. `used_by` của secret (H4b-1, `config->>'credential_secret_id'`) đã có ⇒ xoá khoá đang dùng ⇒ `SECRET_IN_USE`. `ResolveItem` đã chép `config` ⇒ không sửa launcher resolve.

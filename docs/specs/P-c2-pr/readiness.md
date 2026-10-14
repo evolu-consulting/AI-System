@@ -71,3 +71,5 @@ Lần 2 đã đóng: #1–#11. Spec 24 686 B, plan 30 714 B (sát trần).
 | 8 | Thấp | Chữ trạng thái cũ plan:3, tasks:3 | Cập nhật |
 | 9 | Thấp | plan còn 6 B tới trần | Tách §5 sang `plan-runtime.md` |
 | 10 | Thấp | D1 thiếu file script | `tools/scripts/src/done-pc2.ts` |
+
+Áp mặc định lần 3: #1, #2 (B2), #4–#10 → spec-decisions C45–C52, `plan-runtime.md` (tách §5), tasks B1/B2/B7/R1/R2/R3/D1; #3 và F3 của #2 thuộc frontend-lead (commit: xem git log `docs(pc2): áp mặc định readiness lần 3`).

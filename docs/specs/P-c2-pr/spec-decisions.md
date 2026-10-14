@@ -36,3 +36,15 @@
 | C33 | `<stage_key>` log test Áp = key stage Áp; lỗi `container` ⇒ hàng `failed`+`provider_error`, decision theo `applyOutcome` |
 | C34 | `has_credential=false` + lỗi `auth` ⇒ `no_credential`; `push_rejected`/`network` giữ; đổi ở `ApplyHost` (C36) |
 | C35 | Env test mock: `GITHUB_MOCK_PORT`, `GITHUB_MOCK_TOKEN` thêm `.env.example` (B8) |
+
+## Áp mặc định readiness lần 3 (2026-10-14) — C45–C52
+| # | Quyết định |
+|---|---|
+| C45 | (#4) Hàng không job (C20/invalid): `failed`+`provider_error`; mode = `effectiveApplyMode(nguồn còn)` hoặc `branch_only`; source_key/branch/pin từ `autofix_results`; result null ⇒ key nguồn stage tự-sửa, branch/pin null |
+| C46 | (#6) `apply_sql.py` FINISH ghi `error_reason='container'` khi job Áp lỗi container |
+| C47 | (#1) `thread.rules.ts` (Record<DecisionReason>): `apply_conflict` = "bản sửa xung đột với mã mới" / "the fix conflicts with the new code"; `apply_failed` = "áp bản sửa không thành công" / "applying the fix failed" |
+| C48 | (#1) `sources.errors.ts` (Record<SourceErrorCode>) thêm mã `SOURCE_*` mới; MESSAGES = EN `apiError.SOURCE_*` |
+| C49 | (#1) `def-form.ts:146` (admin-web): executor `apply` ⇒ `"apply"` (B1 chạm 3 file này để `typecheck` xanh) |
+| C50 | (#5) `ensureHandoff` chỉ cho executor `agent` (stage Áp không có "Bàn giao"); B7 sửa `defs/def.rules.ts` |
+| C51 | (#2) B2: `bun run db:test:create pc2_qc` trước int (F3: `db:test:create pc2_e2e`, lệnh của frontend-lead) |
+| C52 | (#7–#10) plan §5.2 đánh lại bước 1–8; trạng thái plan/tasks cập nhật; §5 tách `plan-runtime.md`; D1 thêm `tools/scripts/src/done-pc2.ts` |
