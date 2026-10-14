@@ -35,48 +35,62 @@ type SnapStage = {
 };
 
 type StageCand = { process_run_id: string; stage_run_id: string };
+type DueRow = StageCand & { interrupted: boolean; apply_ready: boolean };
 
 /**
  * Mọi vòng của một lượt (plan-contract §7.1 `sweepOnce`).
- * P-c2 fix (regression sweep chung): các SELECT phát hiện `interrupted` + stage Áp dùng CHUNG MỘT kết nối của nhịp
- * (không mở `withHubScope` riêng cho `advanceApplies`) — tránh ghì pool khi nhiều sweep chạy song song (P1-82/P2-11).
- * Phần xử lý mỗi ứng viên vẫn tx riêng (toDecision / advanceApply re-khoá), chạy 0 lần khi không có việc.
+ * P-c2 fix (regression sweep chung): MỘT lần quét `stage_runs` `running` phát hiện cả ứng viên `interrupted` lẫn stage
+ * Áp (`scanDue`) trên CHUNG một kết nối của nhịp — không mở `withHubScope`/seq-scan `stage_runs` riêng cho
+ * `advanceApplies` (B7 làm P1-82/P2-11 flaky do ghì pool + quét đôi khi nhiều sweep chạy song song). Phần xử lý mỗi ứng
+ * viên vẫn tx riêng (toDecision / advanceApply re-khoá), chạy 0 lần khi không có việc.
  */
 export async function sweepOnce(d: ProcessDeps): Promise<SweepResult> {
   const expired = await expireRuns(d);
   const now = d.now();
   const cutoff = new Date(now.getTime() - INTERRUPT_GRACE_MS);
-  const { interrupted: toReconcile, applies } = await withHubScope(d.db, SYSTEM, async (tx) => ({
-    interrupted: await scanInterrupted(tx, cutoff),
-    applies: await scanApplyReady(tx),
-  }));
+  const due = await withHubScope(d.db, SYSTEM, (tx) => scanDue(tx, cutoff));
   let interrupted = 0;
-  for (const r of toReconcile)
-    if (await toDecision(d, { runId: r.process_run_id, stageRunId: r.stage_run_id }, now))
+  for (const r of due)
+    if (
+      r.interrupted &&
+      (await toDecision(d, { runId: r.process_run_id, stageRunId: r.stage_run_id }, now))
+    )
       interrupted++;
   await resolveTimeouts(d);
-  for (const r of applies)
-    await advanceApply(d, { runId: r.process_run_id, stageRunId: r.stage_run_id }).catch((err) =>
-      d.log.warn("apply-advance-sweep-failed", {
-        run_id: r.process_run_id,
-        ...safeErrorFields(err),
-      }),
-    );
+  // Áp: bỏ qua nếu stage đã bị `toDecision` chuyển khỏi `running` (advanceApply tự re-khoá + re-kiểm, idempotent).
+  for (const r of due)
+    if (r.apply_ready && !r.interrupted)
+      await advanceApply(d, { runId: r.process_run_id, stageRunId: r.stage_run_id }).catch((err) =>
+        d.log.warn("apply-advance-sweep-failed", {
+          run_id: r.process_run_id,
+          ...safeErrorFields(err),
+        }),
+      );
   const queued = await requeueOrphans(d);
   return { queued, interrupted, expired };
 }
 
 /**
- * P-c2 · C14/C27 · (chỉ ĐỌC, dùng tx chung của nhịp) stage Áp `running` có job `source.apply` đã kết thúc (hoặc đã báo
- * cáo hàng) ⇒ ứng viên cho `advanceApply` (mở PR / "Cần người quyết"; không hàng mà job kết thúc ⇒ failed+provider_error).
+ * (chỉ ĐỌC, dùng tx chung của nhịp) Một lần quét `stage_runs` `running` trả ứng viên cần xử lý, kèm cờ:
+ * - `interrupted` (D11 · P-b2 §3.8): `hub.runs` của stage kết thúc > 60 s không kết quả ⇒ needs_decision{interrupted}.
+ * - `apply_ready` (P-c2 · C14/C27): có job `source.apply` đã kết thúc (hoặc đã báo cáo hàng) ⇒ `advanceApply`
+ *   (mở PR / "Cần người quyết"; job kết thúc mà không hàng ⇒ failed+provider_error).
  */
-function scanApplyReady(tx: Tx): Promise<StageCand[]> {
-  return tx.execute<StageCand>(sql`
-    select s.process_run_id, s.id as stage_run_id from hub.stage_runs s
-    where s.status = 'running' and exists (
-      select 1 from hub.jobs j where j.step_id = s.id and j.type = 'source.apply' and j.tenant_id = s.tenant_id
-        and (j.status not in ('queued', 'running')
-          or exists (select 1 from hub.autofix_applies aa where aa.job_id = j.id and aa.tenant_id = s.tenant_id)))
+function scanDue(tx: Tx, cutoff: Date): Promise<DueRow[]> {
+  const cut = sql`${cutoff.toISOString()}::timestamptz`;
+  // Tập job Áp "đã xong" (quét `jobs`/`autofix_applies` MỘT lần, băm) ⇒ LEFT JOIN để suy `apply_ready` thay vì EXISTS
+  // tương quan trong SELECT (EXISTS-trong-SELECT ép subplan quét `jobs` MỖI hàng stage ⇒ N×M khi nhiều stage `running`).
+  const applyReady = sql`(select distinct j.step_id, j.tenant_id from hub.jobs j
+    where j.type = 'source.apply' and (j.status not in ('queued', 'running')
+      or exists (select 1 from hub.autofix_applies aa where aa.job_id = j.id and aa.tenant_id = j.tenant_id)))`;
+  const interrupted = sql`(r.id is not null and r.status <> 'running' and r.finished_at < ${cut})`;
+  return tx.execute<DueRow>(sql`
+    select s.process_run_id, s.id as stage_run_id,
+      ${interrupted} as interrupted, (ja.step_id is not null) as apply_ready
+    from hub.stage_runs s
+    left join hub.runs r on r.id = s.current_run_id
+    left join ${applyReady} ja on ja.step_id = s.id and ja.tenant_id = s.tenant_id
+    where s.status = 'running' and (${interrupted} or ja.step_id is not null)
     order by s.updated_at limit ${BATCH}`);
 }
 
@@ -171,18 +185,6 @@ async function endRun(
   await publishUserEvents(d.redis, events, d.log);
   await d.postThread(runId).catch(() => {});
   return true;
-}
-
-/**
- * D11 · P-b2 §3.8 · (chỉ ĐỌC, dùng tx chung của nhịp) MỌI stage `running` (bước song song: nhiều stage) mà `hub.runs`
- * kết thúc > 60 s không có kết quả ⇒ ứng viên needs_decision{interrupted} — mỗi stage một decision.
- */
-function scanInterrupted(tx: Tx, cutoff: Date): Promise<StageCand[]> {
-  return tx.execute<StageCand>(sql`
-    select s.process_run_id, s.id as stage_run_id from hub.stage_runs s
-    join hub.runs r on r.id = s.current_run_id
-    where s.status = 'running' and r.status <> 'running' and r.finished_at < ${cutoff.toISOString()}::timestamptz
-    order by s.updated_at limit ${BATCH}`);
 }
 
 /** needs_decision với lý do; mở task `decision` (người bắt đầu; group chỉ khi `redo_limit`). */
