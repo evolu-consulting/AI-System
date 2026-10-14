@@ -71,7 +71,7 @@ BA là nguồn sự thật; chỉ ghi phần BA chưa nói. Luật P-c1 (PC-R01�
 | Đối tượng | Tóm tắt |
 |---|---|
 | `hub.autofix_applies` (mới, RLS "T") | `tenant_id, process_run_id, stage_run_id, job_id NULL UNIQUE, autofix_result_id NULL, source_key, mode, status CHECK(no_changes\|branch_only\|pushed\|pr_opened\|conflict\|check_failed\|failed), branch, pin_sha, target_sha, head_sha, rebased, provider, pr_number, pr_url, auto_merge, error_code, detail, conflict_files, failures, test_*, created_at, updated_at`; GRANT `SELECT, INSERT` + `UPDATE (status, provider, pr_number, pr_url, auto_merge, error_code, detail, updated_at)` cho `hub_rw` (không DELETE) |
-| CHECK nới | `review_tasks_reason_ck += apply_conflict, apply_failed`; `jobs_type_check += source.apply` |
+| CHECK nới | `review_tasks_reason_ck += apply_conflict, apply_failed`; `jobs_type_ck += source.apply`, `jobs_agent_ck` cho phép job `source.apply` không agent |
 | Nguồn / stage | `sources.config` jsonb + `process_defs.stages` jsonb — KHÔNG DDL (đọc cũ: `credential_secret_id ?? null`, `apply_mode` vắng) |
 | Seed | Template **mới** `fixbug-pr` (= `fixbug-apply` + stage `apply` bước 1) — **không** sửa `fixbug-apply` (test P-c1 khoá) |
 
@@ -125,7 +125,17 @@ qc viết `test-plan.md` + test khoá theo PC2-R01…R16 và plan §4. Mốc đ�
 | C9 | `AutofixStageView.apply_base` = `config.branch` nguồn hiện tại (cùng chỗ đọc với `apply_mode`); `local_path`/`apply_mode=null` ⇒ null. Người duyệt không cần quyền `/admin/sources` |
 | C10 | `ApplyStageView.test_log_file` nhận: file log như `autofix_results` (`<stage_key>-apply-test.log.txt`, `{id,name}`), tải qua route attachment sẵn có; quyền đọc theo PC-R14 mở rộng |
 | C11 | `error_code ≠ null` khi `status ∈ {failed, check_failed}` (DB CHECK `autofix_applies_err_req_ck`); thiếu báo cáo/lỗi job khác ⇒ driver ghi hàng `failed` + `provider_error`; `check_failed` ⇒ `check_failed`; `conflict` ⇒ null |
-| C12 | `GET/POST/PUT/DELETE /admin/source-credentials*`: tenant_admin không gửi `tenant_id` (dùng tenant phiên; gửi khác ⇒ bỏ qua/403 theo `credentialTenant`); platform_admin bắt buộc `tenant_id` (thiếu ⇒ 400 path `tenant_id`). Không đổi code BE (đã có `credentialTenant`) |
+| C12 | `GET/POST/PUT/DELETE /admin/source-credentials*`: tenant_admin không gửi `tenant_id` (dùng tenant phiên; gửi khác ⇒ bỏ qua/403 theo `credentialTenant`); platform_admin thiếu `tenant_id`: GET ⇒ 404 `NOT_FOUND`, POST ⇒ 400 path `tenant_id` (khớp test khoá H4b-1 A51). Không đổi code BE (đã có `credentialTenant`) |
+
+### Chốt theo test khoá (2026-10-14, G1–G16 của test-plan §6)
+| # | Quyết định |
+|---|---|
+| C13 (G1) | Seam GitHub của Hub: `AppDeps.github?: {apiUrl, webHost}`; vắng ⇒ env `HUB_GITHUB_API_URL`/`HUB_GITHUB_WEB_HOST` ⇒ mặc định `api.github.com`/`github.com`. Đọc một lần ở `createApp`; config e2e đặt khoá `HUB_SECRETS_KEY` test khi vắng (G14) |
+| C14 (G2) | Runtime kết thúc job `source.apply` bằng UPDATE `hub.jobs` (như `finish_resolve`); POST `apply-result` xong ⇒ Hub chạy `advanceApply(job_id)` (driver); job kết thúc không báo cáo ⇒ `sweepOnce` thấy job `source.apply` đã kết thúc mà chưa có hàng ⇒ ghi `failed`+`provider_error` (C11). Không thêm kênh mới (giống `autofix-result` P-c1) |
+| C15 (G3) | Migration 0032 nới `jobs_type_ck` **và** `jobs_agent_ck` (0021) |
+| C16 (G4–G6) | Tên export contract theo test-plan §6 G4; log test Áp `<stage_key>-apply-test.log.txt`; Runtime `agent_runtime.apply.host.ApplyHost`, claim `source.apply` riêng, nhánh ngoài `ai/` ⇒ failed không push, báo cáo trước khi kết thúc, tác giả `ai-autofix`, test sau rebase đỏ ⇒ `failures[0].check="tests"` |
+| C17 (G15) | `done:pc2` migrate/tạo lại DB Runtime H1 (0032) trước Runtime int (D1/R2) |
+| C18 (G8–G13,G16) | Nhận mặc định qc, không trái spec (G8/G16 không khoá; G9–G12 theo test-plan §6; G13 F2 giữ `combobox "Người thực hiện"`) |
 
 ### Trong lúc làm
 (trống)
