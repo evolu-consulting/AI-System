@@ -108,6 +108,8 @@
 
 | T4 (F1) | `e2e/P-c2/admin/sources.pc2.ts` E04 (`sheet.getByText(credential.inUse)` toBeVisible) | E04 chạy SAU E02 (1 worker, DB chung). E02 tạo `gh-e2e-pat` + gán cho `pc2-e02` ⇒ ở E04 có **2** khoá đang dùng (`gh-e2e-pat` 1 nguồn, `gh-e2e-used` 1 nguồn), câu `credential.inUse` ("…1 nguồn…") render ở **cả hai thẻ** (đúng mockup/plan §1.1 — cảnh báo theo từng thẻ) ⇒ `sheet.getByText` strict-mode thấy 2 phần tử. E04 XANH khi chạy riêng (`-g E04`). Không impl hợp lý nào làm câu "…1 nguồn…" duy nhất khi 2 khoá đều dùng-bởi-1. | scope về `row.getByText(...)` (thay `sheet`), hoặc để E02 dùng khoá mà E04 bỏ qua |
 
+**Phân xử qc (2026-10-15):** T1, T4 = test khoá lỗi thời, KHÔNG phải code sai. T1: B1 chỉ THÊM mã cuối; C05 → `slice(0, 9)`, C14 → `slice(16, 18)` (16 mã cũ + 2 mã P-c1 giữ thứ tự). T4: cảnh báo "đang dùng" render theo từng thẻ (đúng mockup/plan); E04 scope `row.getByText`. Đã sửa; chạy lại xanh (contracts-pc 16/16; sources.pc2.ts 5/5 trên DB sạch); lock cập nhật.
+
 ## Quyết định trong lúc làm — F1 (frontend-lead, 2026-10-15)
 | # | Quyết định |
 |---|---|

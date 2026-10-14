@@ -78,7 +78,7 @@ describe("C01–C05 · StageAutofix + ProcessStageDef.autofix [plan §3.1]", () 
     expect(issuePaths(s, bad)).toContain("stages.0.autofix.source_key");
   });
   it("HUB-BR-34 · PC-R02 · C05 · PROCESS_DEF_RULES thêm CUỐI: AUTOFIX_EXECUTOR, AUTOFIX_REVIEW, AUTOFIX_MAX (giữ thứ tự cũ)", () => {
-    expect(ha.PROCESS_DEF_RULES).toEqual([
+    expect((ha.PROCESS_DEF_RULES as string[]).slice(0, 9)).toEqual([
       "KEY_DUP",
       "REAL_ACTION",
       "STEP_INCOMPLETE",
@@ -275,7 +275,7 @@ describe("C14–C16 · chat view + quyết định [plan §3.4]", () => {
       "source_unresolvable",
       "back_limit",
     ]);
-    expect(r.slice(16)).toEqual(["autofix_check_failed", "sandbox_unavailable"]);
+    expect(r.slice(16, 18)).toEqual(["autofix_check_failed", "sandbox_unavailable"]);
   });
   it("HUB-FR-128 · C15 · AutofixStageViewSchema: pin_sha null (local_path) hợp lệ; status ngoài enum / thiếu branch ⇒ lỗi", () => {
     const s = schema(chat, "AutofixStageViewSchema");

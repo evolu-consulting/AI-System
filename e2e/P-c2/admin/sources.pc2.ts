@@ -112,7 +112,7 @@ test("HUB-FR-68 · PC2-R10 · E04 · sheet 'Khoá nguồn': khoá đang dùng �
     .or(sheet.getByRole("row").filter({ hasText: "gh-e2e-used" }));
   await expect(row.getByRole("button", { name: "Xoá khoá" })).toBeDisabled();
   await expect(
-    sheet.getByText(
+    row.getByText(
       "Khoá đang được 1 nguồn dùng nên chưa xoá được. Gỡ khoá khỏi các nguồn đó trước.",
     ),
   ).toBeVisible();
