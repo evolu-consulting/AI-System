@@ -1,6 +1,6 @@
 # Test plan · P-c2-pr (push nhánh + PR / apply_mode / rebase / repo riêng) · qc
 
-Chế độ **WRITE + LOCK** (T3) · 2026-10-14. "Đúng" = spec §2 (PC2-R01…R16), §3–§4, §6 (hàng rào), §7 (giả lập), §9 (C1–C12), §10 (Q1–Q10 đã chấp nhận) · plan §1–§6 (chữ ký §4) · plan-frontend §0–§5 (nhãn nguyên văn) · BA HUB-FR-128…130, HUB-FR-68, HUB-BR-30/34/38(b), WRK-FR-29. Hộp đen: chỉ contract hiện có + test khoá cũ làm mẫu.
+Chế độ **WRITE + LOCK** (T3) · 2026-10-14. "Đúng" = spec §2 (PC2-R01…R16), §3–§4, §6 (hàng rào), §7 (giả lập), §9 (C1–C35+) và `spec-decisions.md` (Q1–Q10 đã chấp nhận) · plan §1–§6 (chữ ký §4) · plan-frontend §0–§5 (nhãn nguyên văn) · BA HUB-FR-128…130, HUB-FR-68, HUB-BR-30/34/38(b), WRK-FR-29. Hộp đen: chỉ contract hiện có + test khoá cũ làm mẫu.
 
 ## 1. Quy ước
 | Mục | P-c2 |
@@ -117,8 +117,8 @@ FR trong phạm vi: HUB-FR-129 ✓ (MUST của mốc), HUB-FR-128 ✓ (rebase E4
 | G4 | Tên export contract | `SourceApplyJobSchema` (hub) · `SourceCredentialRequestSchema`, `SourceCredentialResponseSchema`, `ApplyReportSchema` (hub-internal) · `ApplyStageViewSchema` (chat) · `APPLY_MODES`, `GIT_PROVIDERS`, `APPLY_ERROR_CODES`, `gitProviderOf`, `effectiveApplyMode`, `applyModeIssue`, `applyStageIssues` (hub-admin) | backend-lead (B1) |
 | G5 | Tên log test Áp `<stage_key>-apply-test.log.txt` — stage nào | chấp nhận `apply-` hoặc `fix-` | backend-lead (B5) |
 | G6 | Runtime: chữ ký/hành vi | `agent_runtime.apply.host.ApplyHost`; claim `source.apply` riêng (provider_key NULL); nhánh ngoài ai/ ⇒ job failed không push; báo cáo trước khi kết thúc; tác giả commit `ai-autofix`; `failures[0].check="tests"` khi test sau rebase đỏ | backend-lead (R1–R2) |
-| G7 | C12 nói platform_admin GET thiếu `tenant_id` ⇒ 400, nhưng test khoá H4b-1 A51 = 404 và C12 "không đổi BE" | S08: GET ⇒ 404 NOT_FOUND, POST ⇒ 400 path `tenant_id` | docs-architect (sửa câu C12) |
-| G8 | `StageView.executor` (ExecutorRef cần key/name) cho stage Áp chưa định nghĩa | không khoá; e2e chỉ vá `apply` | backend-lead + frontend-lead |
+| G7 | C12 nói platform_admin GET thiếu `tenant_id` ⇒ 400, nhưng test khoá H4b-1 A51 = 404 và C12 "không đổi BE" | S08: GET ⇒ 404 NOT_FOUND, POST ⇒ 400 path `tenant_id` | Đã chốt: 404 theo C12/C26 (hết chờ) |
+| G8 | `StageView.executor` (ExecutorRef cần key/name) cho stage Áp chưa định nghĩa | Đã định nghĩa ở C19: executor `{kind:"apply", key:"apply", name…}` | Đã chốt (C19) |
 | G9 | GitHub 3xx: mã lỗi; thân > 1 MiB | G09 khoá "không theo redirect + không pr_opened"; G10 ⇒ provider_error | backend-lead |
 | G10 | PC2-R15 `pr_url` sai: status hàng | khoá `pr_url` null + `error_code=provider_error`, không khoá status | — |
 | G11 | Quyền đọc log test Áp cho người duyệt stage tự-sửa | khoá A đọc được, X/Db 404; B không khoá | — |
@@ -126,7 +126,7 @@ FR trong phạm vi: HUB-FR-129 ✓ (MUST của mốc), HUB-FR-128 ✓ (rebase E4
 | G13 | Editor hiện chưa có `combobox "Người thực hiện"` | e2e theo plan-frontend §5 (combobox + option "Áp bản sửa") | frontend-lead (F2) |
 | G14 | Stack e2e cần `HUB_SECRETS_KEY` | config đặt khoá test cố định khi vắng | — |
 | G15 | DB Runtime H1 (`ensure_schema` chỉ migrate khi chưa có `hub.jobs`) cần 0032 | `done:pc2` phải tạo lại / migrate DB H1 trước P-int | backend-lead (D1) |
-| G16 | Gate `local_path` (`gate.local`) — FE nhận diện bằng gì | không khoá câu `gate.local` | frontend-lead |
+| G16 | Gate `local_path` (`gate.local`) — FE nhận diện bằng gì | Đã trả lời ở FC13 plan-frontend (luật `apply_mode`/`apply_base`); không khoá câu `gate.local` | Đã chốt (FC13) |
 
 ## 7. Lệnh xong mốc — `bun run done:pc2` (D1, mẫu `done-pc`)
 | # | Bước | Lệnh |
@@ -134,8 +134,8 @@ FR trong phạm vi: HUB-FR-129 ✓ (MUST của mốc), HUB-FR-128 ✓ (rebase E4
 | 1 | typecheck | `bun run typecheck` |
 | 2 | R + unit + mock | `bun test packages/contracts apps/hub-api/src/modules/processes tests/acceptance/P-c2/rules tools/mocks` |
 | 3 | DB int | `bun run db:test:create pc2_done` |
-| 4 | A (từng file) + hồi quy | `bun --env-file=.env.test-pc2_done.local --config=bunfig.int.toml test --timeout 60000 tests/acceptance/P-c2/<file>.int.test.ts` · `bun run test:int` (P-a/P-b/P-c/H4b1 xanh) |
-| 5 | P + P-int | `bun apps/agent-runtime/scripts/run.ts "uv run pytest tests/acceptance/pc2 tests/acceptance/pc -q && uv run pytest -m int tests/acceptance/pc2/apply_int_test.py -q"` (DB H1 có 0032 — G15) |
+| 4 | A (từng file) + hồi quy | `bun --env-file=.env.test-pc2_done.local --config=bunfig.int.toml test --timeout 60000 tests/acceptance/P-c2/<file>.int.test.ts` · hồi quy (không chạy `test:int` toàn bộ): `bun --env-file=.env.test-pc2_done.local --config=bunfig.int.toml test --timeout 60000 tests/acceptance/P-a tests/acceptance/P-b tests/acceptance/P-c tests/acceptance/H4b1` (xanh); mỗi file P-c2 chạy riêng |
+| 5 | P + P-int | `bun apps/agent-runtime/scripts/run.ts "uv run pytest tests/acceptance/pc2 tests/acceptance/pc -q && uv run pytest -m int tests/acceptance/pc2/apply_int_test.py -q"` (trước pytest: `bun run db:test:drop h1 && bun run db:test:create h1` để H1 có 0032 — G15) |
 | 6 | sandbox (hồi quy retest) | `bun run test:pc:sandbox` (Linux + Docker/Podman) |
 | 7 | DB e2e | `bun run db:test:create pc2_e2e` |
 | 8 | E | `bunx playwright test -c e2e/P-c2/playwright.pc2.config.ts --reporter=line` (+ hồi quy `e2e/P-c`) |
