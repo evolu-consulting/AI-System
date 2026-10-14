@@ -34,37 +34,50 @@ type SnapStage = {
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
 };
 
-/** Mọi vòng của một lượt (plan-contract §7.1 `sweepOnce`). */
-export async function sweepOnce(d: ProcessDeps): Promise<SweepResult> {
-  const expired = await expireRuns(d);
-  const interrupted = await reconcileRuns(d);
-  await resolveTimeouts(d);
-  await advanceApplies(d);
-  const queued = await requeueOrphans(d);
-  return { queued, interrupted, expired };
-}
+type StageCand = { process_run_id: string; stage_run_id: string };
 
 /**
- * P-c2 · C14/C27 · stage Áp `running` có job `source.apply` đã kết thúc (hoặc đã báo cáo hàng) ⇒ `advanceApply`
- * (mở PR / "Cần người quyết"; không hàng mà job kết thúc ⇒ ghi failed+provider_error). Idempotent (advanceApply re-khoá).
+ * Mọi vòng của một lượt (plan-contract §7.1 `sweepOnce`).
+ * P-c2 fix (regression sweep chung): các SELECT phát hiện `interrupted` + stage Áp dùng CHUNG MỘT kết nối của nhịp
+ * (không mở `withHubScope` riêng cho `advanceApplies`) — tránh ghì pool khi nhiều sweep chạy song song (P1-82/P2-11).
+ * Phần xử lý mỗi ứng viên vẫn tx riêng (toDecision / advanceApply re-khoá), chạy 0 lần khi không có việc.
  */
-async function advanceApplies(d: ProcessDeps): Promise<void> {
-  const rows = await withHubScope(d.db, SYSTEM, (tx) =>
-    tx.execute<{ process_run_id: string; stage_run_id: string }>(sql`
-      select s.process_run_id, s.id as stage_run_id from hub.stage_runs s
-      where s.status = 'running' and exists (
-        select 1 from hub.jobs j where j.step_id = s.id and j.type = 'source.apply' and j.tenant_id = s.tenant_id
-          and (j.status not in ('queued', 'running')
-            or exists (select 1 from hub.autofix_applies aa where aa.job_id = j.id and aa.tenant_id = s.tenant_id)))
-      order by s.updated_at limit ${BATCH}`),
-  );
-  for (const r of rows)
+export async function sweepOnce(d: ProcessDeps): Promise<SweepResult> {
+  const expired = await expireRuns(d);
+  const now = d.now();
+  const cutoff = new Date(now.getTime() - INTERRUPT_GRACE_MS);
+  const { interrupted: toReconcile, applies } = await withHubScope(d.db, SYSTEM, async (tx) => ({
+    interrupted: await scanInterrupted(tx, cutoff),
+    applies: await scanApplyReady(tx),
+  }));
+  let interrupted = 0;
+  for (const r of toReconcile)
+    if (await toDecision(d, { runId: r.process_run_id, stageRunId: r.stage_run_id }, now))
+      interrupted++;
+  await resolveTimeouts(d);
+  for (const r of applies)
     await advanceApply(d, { runId: r.process_run_id, stageRunId: r.stage_run_id }).catch((err) =>
       d.log.warn("apply-advance-sweep-failed", {
         run_id: r.process_run_id,
         ...safeErrorFields(err),
       }),
     );
+  const queued = await requeueOrphans(d);
+  return { queued, interrupted, expired };
+}
+
+/**
+ * P-c2 · C14/C27 · (chỉ ĐỌC, dùng tx chung của nhịp) stage Áp `running` có job `source.apply` đã kết thúc (hoặc đã báo
+ * cáo hàng) ⇒ ứng viên cho `advanceApply` (mở PR / "Cần người quyết"; không hàng mà job kết thúc ⇒ failed+provider_error).
+ */
+function scanApplyReady(tx: Tx): Promise<StageCand[]> {
+  return tx.execute<StageCand>(sql`
+    select s.process_run_id, s.id as stage_run_id from hub.stage_runs s
+    where s.status = 'running' and exists (
+      select 1 from hub.jobs j where j.step_id = s.id and j.type = 'source.apply' and j.tenant_id = s.tenant_id
+        and (j.status not in ('queued', 'running')
+          or exists (select 1 from hub.autofix_applies aa where aa.job_id = j.id and aa.tenant_id = s.tenant_id)))
+    order by s.updated_at limit ${BATCH}`);
 }
 
 /** PB-R05 · run chờ resolve mà không còn job resolve còn sống (failed/timeout/orphan) ⇒ needs_decision source_unresolvable. */
@@ -161,23 +174,15 @@ async function endRun(
 }
 
 /**
- * D11 · P-b2 §3.8 · MỌI stage `running` (bước song song: nhiều stage) mà `hub.runs` kết thúc > 60 s không có kết quả ⇒
- * needs_decision{interrupted} — mỗi stage một decision.
+ * D11 · P-b2 §3.8 · (chỉ ĐỌC, dùng tx chung của nhịp) MỌI stage `running` (bước song song: nhiều stage) mà `hub.runs`
+ * kết thúc > 60 s không có kết quả ⇒ ứng viên needs_decision{interrupted} — mỗi stage một decision.
  */
-async function reconcileRuns(d: ProcessDeps): Promise<number> {
-  const now = d.now();
-  const cutoff = new Date(now.getTime() - INTERRUPT_GRACE_MS);
-  const rows = await withHubScope(d.db, SYSTEM, (tx) =>
-    tx.execute<{ process_run_id: string; stage_run_id: string }>(sql`
-      select s.process_run_id, s.id as stage_run_id from hub.stage_runs s
-      join hub.runs r on r.id = s.current_run_id
-      where s.status = 'running' and r.status <> 'running' and r.finished_at < ${cutoff.toISOString()}::timestamptz
-      order by s.updated_at limit ${BATCH}`),
-  );
-  let n = 0;
-  for (const r of rows)
-    if (await toDecision(d, { runId: r.process_run_id, stageRunId: r.stage_run_id }, now)) n++;
-  return n;
+function scanInterrupted(tx: Tx, cutoff: Date): Promise<StageCand[]> {
+  return tx.execute<StageCand>(sql`
+    select s.process_run_id, s.id as stage_run_id from hub.stage_runs s
+    join hub.runs r on r.id = s.current_run_id
+    where s.status = 'running' and r.status <> 'running' and r.finished_at < ${cutoff.toISOString()}::timestamptz
+    order by s.updated_at limit ${BATCH}`);
 }
 
 /** needs_decision với lý do; mở task `decision` (người bắt đầu; group chỉ khi `redo_limit`). */
