@@ -1,13 +1,14 @@
 // HUB-FR-120 · ADM-FR-68 · PB-R01/R02/R08/R10/R21 · C1/C7/C10/C11 · nghiệp vụ CRUD `/admin/sources`. Mọi ghi trong tx
 // `system` (repo lọc tenant); quyền local_path = platform_admin; ẩn path cho non-platform; library kiểm kho H2c cùng tenant.
-import type {
-  LibraryDocListResponse,
-  ProcessSourceChip,
-  SourceConfig,
-  SourceCreateRequest,
-  SourceListResponse,
-  SourceUpdateRequest,
-  SourceView,
+import {
+  applyModeIssue,
+  type LibraryDocListResponse,
+  type ProcessSourceChip,
+  type SourceConfig,
+  type SourceCreateRequest,
+  type SourceListResponse,
+  type SourceUpdateRequest,
+  type SourceView,
 } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -65,10 +66,20 @@ export class SourcesService {
     return withHubScope(this.db, { kind: "system" }, fn);
   }
 
-  /** Kiểm config theo loại: git host allowlist (422), library tồn tại cùng tenant (422 không rò). */
+  /**
+   * Kiểm config theo loại: git host allowlist (422), chế độ áp hợp provider (PC2-R02, 422), khoá nguồn cùng tenant
+   * (PC2-R10, 422 một thân — không rò), library tồn tại cùng tenant (422 không rò).
+   */
   async #checkConfig(tx: Tx, tenantId: string, config: SourceConfig): Promise<void> {
-    if (config.kind === "git_remote" && !gitHostAllowed(config.url))
-      throw sourceError("SOURCE_HOST_NOT_ALLOWED");
+    if (config.kind === "git_remote") {
+      if (!gitHostAllowed(config.url)) throw sourceError("SOURCE_HOST_NOT_ALLOWED");
+      if (applyModeIssue(config))
+        throw sourceError("SOURCE_APPLY_UNSUPPORTED", { path: "config.apply_mode" });
+      const credId = config.credential_secret_id ?? null;
+      if (credId !== null && !(await repo.sourceCredentialExists(tx, tenantId, credId)))
+        throw sourceError("SOURCE_CREDENTIAL_INVALID", { path: "config.credential_secret_id" });
+      return;
+    }
     if (
       config.kind === "library" &&
       !(await repo.libraryDocExists(tx, tenantId, config.document_id))

@@ -151,6 +151,20 @@ export async function listLibraryDocs(
     order by s.filename asc, s.id asc limit ${o.limit + 1}`);
 }
 
+/**
+ * PC2-R10 · khoá `source_credential` dùng được cho nguồn: tồn tại, đúng kind, CÙNG tenant (scope system ⇒ lọc tenant ở repo).
+ * `hub.secrets` xoá cứng (không `deleted_at`) ⇒ còn hàng tức chưa xoá. Chỉ đếm (không cột bản mã) — không rò tồn tại.
+ */
+export async function sourceCredentialExists(
+  tx: Tx,
+  tenantId: string,
+  secretId: string,
+): Promise<boolean> {
+  const [r] = await tx.execute<{ n: number }>(sql`select count(*)::int as n from hub.secrets
+    where id = ${secretId}::uuid and kind = 'source_credential' and tenant_id = ${tenantId}::uuid`);
+  return (r?.n ?? 0) > 0;
+}
+
 /** PB-R04/C10 · tài liệu library còn sống của tenant (kho H2c). */
 export async function libraryDocExists(
   tx: Tx,
