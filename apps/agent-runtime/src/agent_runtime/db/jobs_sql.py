@@ -39,9 +39,11 @@ FOR UPDATE OF j SKIP LOCKED;"""  # noqa: E501 — nguyên văn plan-db §5.4
 
 # P-c1 plan-runtime §5.1 (`RUNTIME_SANDBOX_MAX`): job tự-sửa (`payload.autofix` là object) chỉ
 # claim khi số job tự-sửa `running` của worker này < $3 ($2 = worker_id); job thường không đổi.
+# P-c2 C22/C38: slot đếm thêm job `source.apply` đang chạy (Áp rebase dựng container test như
+# tự-sửa) ⇒ claim tự-sửa thấy được job Áp đang chiếm slot và ngược lại (`db/apply_sql.py`).
 SANDBOX_SLOT = """  AND (jsonb_typeof(j.payload->'autofix') IS DISTINCT FROM 'object'
        OR (SELECT count(*) FROM hub.jobs a WHERE a.status = 'running' AND a.worker_id = $2
-           AND jsonb_typeof(a.payload->'autofix') = 'object') < $3)
+           AND (jsonb_typeof(a.payload->'autofix') = 'object' OR a.type = 'source.apply')) < $3)
 """
 CLAIM_SELECT_SANDBOX = CLAIM_SELECT.replace("ORDER BY", SANDBOX_SLOT + "ORDER BY", 1)
 

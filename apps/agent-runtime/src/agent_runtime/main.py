@@ -18,6 +18,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from agent_runtime.apply.host import ApplyCfg
 from agent_runtime.autofix.host import AutofixHost
 from agent_runtime.autofix.oci import SandboxCfg, open_sandbox
 from agent_runtime.autofix.prep import AutofixCfg
@@ -122,6 +123,21 @@ def autofix_cfg(settings: Settings) -> AutofixCfg:
     )
 
 
+def apply_cfg(settings: Settings) -> ApplyCfg | None:
+    """P-c2: job `source.apply` (plan-runtime §5.2). None ⇒ tính năng nguồn tắt (như resolve)."""
+    src_cfg = source_config.load()
+    if src_cfg is None:
+        return None
+    return ApplyCfg(
+        source_cfg=src_cfg,
+        af=autofix_cfg(settings),
+        work_root=settings.work_dir,
+        worker_id=settings.worker_id,
+        sandbox_max=settings.sandbox_max,
+        hub_url=settings.hub_url,
+    )
+
+
 def probe_host_config(settings: Settings) -> ProbeHostCfg:
     """H3a `rt §6` (PY-03e): cấu hình probe phía cha từ `Settings`."""
     s = settings
@@ -175,7 +191,7 @@ async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRunti
         return make_router(pool, events, cfg, dify, autofix_cfg(settings))
 
     probe = probe_host_config(settings)
-    return await queue_runtime.start(settings, make_host, probe, cfg.sandbox)
+    return await queue_runtime.start(settings, make_host, probe, cfg.sandbox, apply_cfg(settings))
 
 
 async def _start_unless_stopped(settings: Settings, stop: asyncio.Event) -> QueueRuntime | None:

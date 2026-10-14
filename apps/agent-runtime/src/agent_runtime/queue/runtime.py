@@ -20,6 +20,7 @@ from typing import Any
 from redis.asyncio import Redis
 
 from agent_runtime.agents.manifest import manifests
+from agent_runtime.apply.host import ApplyCfg, ApplyHost
 from agent_runtime.autofix.oci import Oci
 from agent_runtime.autofix.sweeper import run_container_sweeper
 from agent_runtime.config import Settings
@@ -78,6 +79,7 @@ class QueueRuntime:
     claimer: Claimer
     probe: ProbeLoop | None = None
     resolve: ResolveHost | None = None
+    apply: ApplyHost | None = None  # P-c2: job `source.apply` (claim riêng, slot sandbox chung)
     sandbox: Oci | None = None  # P-c1: dọn container `aif-*` mồ côi (`autofix/sweeper.py`)
 
     @property
@@ -101,6 +103,8 @@ class QueueRuntime:
             services.append(self.probe.run)
         if self.resolve is not None:
             services.append(lambda: self.resolve.run_loop(s.poll_s))  # type: ignore[union-attr]
+        if self.apply is not None:
+            services.append(lambda: self.apply.run_loop(s.poll_s))  # type: ignore[union-attr]
         if self.sandbox is not None:
             oci = self.sandbox
             services.append(lambda: run_container_sweeper(oci, self.pool))
@@ -136,11 +140,12 @@ def probe_loop_cfg(
     return ProbeLoopCfg(host, rules, keys, s.cooldown_default_s)
 
 
-async def start(
+async def start(  # noqa: PLR0913
     settings: Settings,
     make_host: HostFactory,
     probe_host: ProbeHostCfg | None = None,
     sandbox: Oci | None = None,
+    apply_cfg: ApplyCfg | None = None,
 ) -> QueueRuntime:
     log = get_logger()
     dsn = settings.database_url.get_secret_value()
@@ -169,6 +174,10 @@ async def start(
     )
     if resolve is not None and src_cfg is not None:
         log.info("resolve.enabled", cache_dir=str(src_cfg.cache_dir))
+    apply_host = ApplyHost(pool, apply_cfg, sandbox) if apply_cfg is not None else None
+    if apply_host is not None:
+        log.info("apply.enabled", sandbox=sandbox is not None)
     rt = QueueRuntime(settings, pool, listen, redis, events, sup, claimer, probe, resolve)
+    rt.apply = apply_host
     rt.sandbox = sandbox
     return rt
