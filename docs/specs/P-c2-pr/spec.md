@@ -2,7 +2,7 @@
 id: P-c2-pr
 title: P-c2 · Áp bản sửa — push nhánh + PR / apply_mode / rebase khi main đổi / repo git riêng tư
 milestone: P-c2 (sau P-c1, xong 2026-10-14)
-status: draft            # PLAN backend 2026-10-14; chờ mockup FE + qc + spec-readiness + Gate
+status: draft            # PLAN BE+FE + test khoá xong; readiness lần 1 đã áp (chạy lại readiness → Gate)
 requirements: [HUB-FR-129, HUB-FR-128, HUB-FR-130, HUB-BR-34, HUB-BR-30, HUB-BR-32, HUB-FR-68, WRK-FR-29]
 design:
   - docs/CHANGE-REQUESTS.md#CR-061 (D4 PR sau duyệt), #CR-065 (E4 rebase, E5 apply_mode)
@@ -76,7 +76,7 @@ BA là nguồn sự thật; chỉ ghi phần BA chưa nói. Luật P-c1 (PC-R01�
 | Seed | Template **mới** `fixbug-pr` (= `fixbug-apply` + stage `apply` bước 1) — **không** sửa `fixbug-apply` (test P-c1 khoá) |
 
 ## 5. UI (frontend-lead)
-PLAN FE: [`plan-frontend.md`](plan-frontend.md) (FC1…FC15, câu chữ VI/EN, nhãn e2e §5, đề nghị contract §7). Mockup chờ duyệt: `docs/design/agent-hub/canvas/Pc2-{Sources,Credential,Editor,Result,Decision}.dc.html`. Màn đã vẽ (artboard đề xuất `docs/design/agent-hub/canvas/Pc2-*.dc.html`):
+PLAN FE: [`plan-frontend.md`](plan-frontend.md) (FC1…FC15, câu chữ VI/EN, nhãn e2e §5, đề nghị contract §7). Mockup đã duyệt: `docs/design/agent-hub/canvas/Pc2-{Sources,Credential,Editor,Result,Decision}.dc.html`. Màn đã vẽ:
 | Màn | Nội dung cần vẽ | App |
 |---|---|---|
 | `Pc2-Sources` | Form nguồn `git_remote`: ô **Khoá nguồn** (chọn khoá có sẵn / "Tạo khoá mới" mở sheet / "Không — repo công khai") + **Chế độ áp** (3 lựa chọn, `pr`/`auto_merge` mờ khi host không hỗ trợ, ghi chú auto-merge cần bật ở GitHub); `local_path` hiện "Chỉ nhánh (cố định)"; danh sách nguồn có nhãn "riêng tư" + chế độ; lỗi `SOURCE_CREDENTIAL_INVALID`, `SOURCE_APPLY_UNSUPPORTED`, `SOURCE_UNRESOLVABLE` (khoá sai khi "Kiểm tra kết nối") | admin-web `/sources` |
@@ -137,21 +137,26 @@ qc viết `test-plan.md` + test khoá theo PC2-R01…R16 và plan §4. Mốc đ�
 | C17 (G15) | `done:pc2` migrate/tạo lại DB Runtime H1 (0032) trước Runtime int (D1/R2) |
 | C18 (G8–G13,G16) | Nhận mặc định qc, không trái spec (G8/G16 không khoá; G9–G12 theo test-plan §6; G13 F2 giữ `combobox "Người thực hiện"`) |
 
-### Trong lúc làm
-(trống)
+### Áp mặc định readiness lần 1 (2026-10-14; chi tiết plan)
+| # | Quyết định |
+|---|---|
+| C19 | Stage Áp `executor` view = `{kind:"apply",key:"apply",name:{vi:"Áp bản sửa",en:"Apply the fix"}}` |
+| C20 | Job Áp lấy url/branch từ nguồn **hiện tại**; nguồn xoá / `url≠pin.url` / đổi kind ⇒ không job, hàng `failed`+`provider_error`, `apply_failed` |
+| C21 | `advanceApply` kiểm run + stage còn `running` trước khi gọi provider; run đã huỷ ⇒ chỉ lưu hàng |
+| C22 | `SANDBOX_SLOT` đếm cả `type='source.apply'` lúc claim (không xin slot giữa job) |
+| C23 | Đường dẫn Runtime thật: R1 `runtimes/resolve/host.py`, `sources/{git_driver,resolve}.py`; R2 `db/apply_sql.py`, `queue/runtime.py` |
+| C24 | Lệnh xong R2: migrate 0032 DB H1 rồi pytest `pc2` + `-m int apply_int_test.py` qua `run.ts` |
+| C25 | F1 rủi ro `cao`; lệnh xong B2/B7 thêm file test khoá; hồi quy liệt kê thư mục (không `test:int` toàn bộ) |
+| C26 | GET thiếu `tenant_id` (platform_admin) ⇒ 404 `NOT_FOUND` (plan §3.6 sửa theo C12) |
+| C27 | Sweep: `sweepOnce` gọi `advanceApply` cho job `source.apply` đã kết thúc mà stage còn `running`; bỏ "interrupted" |
+| C28 | `advanceApply` chạy trong tx khoá `process_runs FOR UPDATE` + kiểm lại trạng thái (mẫu `lockAndLoad`) |
+| C29 | `unsupported_provider`: Hub sinh khi mode ∈ {pr, auto_merge} mà `githubRepoOf(url)` null |
+| C30 | `apply-result`: 401 trước 413, 413 `PAYLOAD_TOO_LARGE` (thân > 256 KiB), theo `autofix.routes.ts` |
+| C31 | Chân PR "vòng k" = `autofix_results.round` của kết quả được áp |
+| C32 | `auditRealAction` cho Áp: `agent_id:null, workflow_ids:[], executor:"apply"` |
+| C33 | `<stage_key>` log test Áp = key stage Áp; lỗi `container` ⇒ hàng `failed`+`provider_error`, decision theo `applyOutcome` |
+| C34 | Không khoá mà push bị từ chối ⇒ `no_credential` (`has_credential=false`) |
+| C35 | Env test mock: `GITHUB_MOCK_PORT`, `GITHUB_MOCK_TOKEN` thêm `.env.example` (B8) |
 
-## 10. Câu hỏi cho người dùng (trình Gate; mỗi câu có mặc định đề xuất tối giản)
-| # | Câu hỏi | Mặc định đề xuất |
-|---|---|---|
-| Q1 | Provider ở P-c2? | **Chỉ GitHub (`github.com`)**. GitLab/GHES để sau (thêm `gitProviderOf` + client). Nguồn host khác: mặc định `branch_only` |
-| Q2 | Runtime nhận token `source_credential` qua kênh nội bộ (như `dify-credential`) để clone/fetch/push repo riêng? (HUB-BR-30 hiện nói "clone/fetch") | **Có** — chỉ trong bộ nhớ + env của tiến trình git; mở rộng HUB-BR-30 thêm "push" |
-| Q3 | "Áp" là **stage riêng** (executor `apply`, sau stage tự-sửa) hay tự áp ngay khi gate stage tự-sửa Đạt? | **Stage riêng** (C1) — thấy được trên canvas, có kết quả/quyết định riêng |
-| Q4 | Nghĩa của `branch_only`? | `local_path`: **không push, không clone lâu dài** — "nhánh" = diff đã duyệt ở Hub (tải `.diff`, `git apply`), vì Runtime không giữ trạng thái (B3) và cấm ghi `local_path`. `git_remote` + `branch_only`: **push nhánh `ai/…`, không mở PR** |
-| Q5 | Rebase khi `main` đổi: chỉ xét lúc Áp; xung đột ⇒ chỉ "Thử lại / Huỷ"? | **Có**. Muốn sửa trên `main` mới ⇒ chạy lại quy trình. Tự quay lại stage tự-sửa trên `main` mới để sau |
-| Q6 | `auto_merge`: bật auto-merge của GitHub kiểu **squash**; repo chưa bật "Allow auto-merge"/không có branch protection ⇒ PR vẫn mở, ghi "auto-merge không bật được", không "Cần người quyết"? | **Có** |
-| Q7 | Nội dung PR: tiêu đề + mục `## Thay đổi`/`## Test` của output đã duyệt, không tên người duyệt, không đầu vào người dùng (PC2-R14)? | **Có** |
-| Q8 | Ai đặt `apply_mode` (kể cả `auto_merge`)? | **tenant_admin** của tenant (như sửa nguồn); `local_path` cố định `branch_only` |
-| Q9 | Smoke với GitHub thật (repo thử + fine-grained PAT: Contents RW, Pull requests RW, chỉ repo đó)? | **Không chặn mốc**: P-c2 đạt bằng mock + bare repo; người dùng cấp repo/PAT thì `qc-uat` chạy thêm (hard stop: secret thật) |
-| Q10 | Khoá nguồn dùng cho cả nguồn **chỉ-đọc** P-b (vd `fixbug-evolu` đọc repo riêng)? | **Có** — cùng đường resolve, không thêm việc |
-
-**Người dùng trả lời 2026-10-14:** chấp nhận mặc định Q1–Q10 (Q1 chỉ GitHub; Q2 Runtime nhận khoá qua kênh nội bộ, chỉ ngoài container; Q3 stage "Áp" riêng sau gate; Q4–Q10 như bảng). Còn chờ: mockup `Pc2-*` (T1) trước khi qc viết test.
+## 10. Câu hỏi Q1–Q10
+Đã chốt 2026-10-14 (người dùng chấp nhận mặc định): xem [`spec-decisions.md`](spec-decisions.md).

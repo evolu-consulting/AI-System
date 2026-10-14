@@ -1,6 +1,6 @@
 # Plan · P-c2-pr (push nhánh + PR / apply_mode / rebase / repo riêng)
 
-Backend-lead PLAN 2026-10-14. Luật: spec §2 PC2-R01…R16 (P-c1 PC-R* giữ). Mặc định Q1–Q10 giả định đã chấp nhận; câu trả lời khác ⇒ sửa mục tương ứng. Không chép BA — trỏ mã. Migration kế tiếp: `0032`.
+Backend-lead PLAN 2026-10-14. Luật: spec §2 PC2-R01…R16 (P-c1 PC-R* giữ). Q1–Q10 đã chấp nhận (`spec-decisions.md`); readiness lần 1 áp = spec §9 C19–C35. Không chép BA — trỏ mã. Migration kế tiếp: `0032`.
 
 ## Backend (backend-lead)
 
@@ -130,17 +130,18 @@ CREATE INDEX IF NOT EXISTS autofix_applies_log_att_idx ON hub.autofix_applies (t
 | `failures` | `AutofixFailure[] ≤ 50` | chỉ khi `check_failed` |
 | `test` | `{exit_code int\|null, duration_ms ≥0, log_tail ≤ 65_536} \| null` | khi đã chạy test sau rebase |
 | `detail` | `string ≤ 300` optional | đã che (Runtime `redact` + `redact_auth`) |
-| Phản hồi | 201 `{id}` · 400 · 401 · 409 `APPLY_NOT_EXPECTED` (job không `source.apply`/không `running`) · 409 `APPLY_RESULT_EXISTS`; `no-store`; body limit 256 KiB | `HUB_INTERNAL_ERRORS +=` 2 mã 409 |
+| Phản hồi | 201 `{id}` · 400 · 401 · 409 `APPLY_NOT_EXPECTED` (job không `source.apply`/không `running`) · 409 `APPLY_RESULT_EXISTS`; `no-store`; 413 `PAYLOAD_TOO_LARGE` (thân > 256 KiB; 401 xét trước 413 — mẫu `autofix.routes.ts`, C30) | `HUB_INTERNAL_ERRORS +=` 2 mã 409 |
 #### 3.6 `chat/processes-entities.ts` + `chat/processes.ts`
 | Trường | Kiểu |
 |---|---|
 | `DECISION_REASONS` | += `apply_conflict`, `apply_failed` (cuối) |
 | `APPLY_ERROR_CODES` (export từ `hub-admin/autofix.ts`, dùng chung) | `auth, no_credential, push_rejected, network, rate_limited, provider_error, check_failed, unsupported_provider` |
+| Stage view `executor` (Áp) | `{kind:"apply", key:"apply", name:{vi:"Áp bản sửa", en:"Apply the fix"}}` (C19) |
 | Stage view `.apply` | optional `ApplyStageView{mode: ApplyMode, status: ApplyStatus, branch: string\|null, target_sha, head_sha: string\|null, rebased: boolean, provider: "github"\|null, pr_number: int\|null, pr_url: string\|null, auto_merge: "on"\|"failed"\|null, error_code: ApplyErrorCode\|null, conflict_files: string[], failures: AutofixFailure[], test_log_file: AutofixFile\|null, created_at}` — chỉ khi stage Áp đã có hàng; không `detail` thô (chỉ `error_code`) |
 | `AutofixStageView.apply_mode` | `ApplyMode \| null` — `effectiveApplyMode(nguồn hiện tại)` nếu def có stage Áp, ngược lại null |
 | `AutofixStageView.apply_base` | `string \| null` — `config.branch` của nguồn hiện tại (cùng lần đọc nguồn) khi `apply_mode ≠ null` và nguồn `git_remote`; ngược lại null (C9) |
 | `error_code` bất biến | `status ∈ {failed, check_failed}` ⇒ `error_code ≠ null`; `check_failed` ⇒ `"check_failed"`; thiếu báo cáo/lỗi job khác ⇒ hàng `failed`+`provider_error`; `conflict` ⇒ null (C11) |
-| `GET /admin/source-credentials` (xác nhận, C12) | `credentialTenant`: tenant_admin dùng tenant phiên (không cần `tenant_id`); platform_admin bắt buộc `?tenant_id=` (thiếu ⇒ 400 path `tenant_id`); không đổi BE |
+| `GET /admin/source-credentials` (xác nhận, C12) | `credentialTenant`: tenant_admin dùng tenant phiên (không cần `tenant_id`); platform_admin bắt buộc `?tenant_id=` (thiếu ⇒ 404 `NOT_FOUND`, C26); không đổi BE |
 | Decision view | `options` = `autofixDecisionOptions(reason)` (mở rộng: `apply_*` ⇒ `[add_attempt, cancel]`); `use_current` ⇒ 409 `PROCESS_RUN_STATE` |
 
 ### §4 Luật thuần (chữ ký — QC viết test trước)
@@ -161,7 +162,7 @@ CREATE INDEX IF NOT EXISTS autofix_applies_log_att_idx ON hub.autofix_applies (t
 | `githubRepoOf(url: string): {owner: string; repo: string} \| null` | path `/<owner>/<repo>[.git]`, owner/repo `^[A-Za-z0-9_.-]{1,100}$`; khác ⇒ null |
 | `mapProviderError(i: {status: number; retryAfter: string \| null; rateRemaining: string \| null; rateReset: string \| null; nowMs: number; body422AlreadyExists: boolean}): {kind:"exists"} \| {kind:"retry"; waitMs: number} \| {kind:"fail"; code: ApplyErrorCode}` | PC2-R09; `retry` cho rate limit chỉ khi `waitMs ≤ 60_000` |
 | `prTitle(processName: string, stageName: string, runId: string): string` | PC2-R14, ≤ 256 (cắt tên quy trình trước) |
-| `prBody(output: string \| null, runId: string, round: number): string` | lấy mục `## Thay đổi` + `## Test` (tách theo heading cấp 2), che bằng `redactSecrets` (bản TS của mẫu P-c1 §5.4, đặt ở `apply.rules.ts`), ≤ 8000 + chân |
+| `prBody(output: string \| null, runId: string, round: number /* autofix_results.round, C31 */): string` | lấy mục `## Thay đổi` + `## Test` (tách theo heading cấp 2), che bằng `redactSecrets` (bản TS của mẫu P-c1 §5.4, đặt ở `apply.rules.ts`), ≤ 8000 + chân |
 | `prUrlOk(url: string, webHost: string): boolean` | PC2-R15 |
 | `applyOutputMd(r: {mode; status; branch; head_sha; target_sha; rebased; pr_url; pr_number; auto_merge}): string` | Markdown có `## Kết quả áp` (đạt template seed); `branch_only` local ⇒ hướng dẫn `git apply` (không đường dẫn máy) |
 | `credentialUsername(provider: GitProvider \| null): string` | `github` ⇒ `x-access-token`; null ⇒ `oauth2` |
@@ -181,9 +182,9 @@ CREATE INDEX IF NOT EXISTS autofix_applies_log_att_idx ON hub.autofix_applies (t
 
 ### §5 Runtime
 **5.1 Repo riêng (P-b resolve + Áp):** `sources/git_driver.py` nhận `auth: GitAuth | None` (`username`, `token`, giữ trong bộ nhớ); `_run_git` ghép `auth_env`; `mirror_path` dùng `mirror_key`. `sources/resolve.py`: item `config.credential_secret_id` ≠ null ⇒ `hub.source_credential(job_id, source_id)` (httpx, no-store, retry 2 lần) trước fetch; 404/409 ⇒ `SOURCE_UNRESOLVABLE` (message chung). `GIT_TERMINAL_PROMPT=0` giữ ⇒ không treo hỏi mật khẩu. Lỗi git đi qua `redact_auth` trước log/báo cáo.
-**5.2 Gói mới `agent_runtime/apply/`:** `rules.py` (§4), `host.py` (`ApplyHost(cfg, oci, hub)`, `async run(job: SourceApplyJob) -> JobResult`), `report.py` (POST + retry như `autofix/report.py`). `dispatch.py`: `source.apply` ⇒ `ApplyHost`. Slot: **chỉ khi cần retest** mới chiếm slot `RUNTIME_SANDBOX_MAX` (nhận job trước, xin slot khi tới bước 5; đầy ⇒ chờ tới `timeout_s`).
+**5.2 Gói mới `agent_runtime/apply/`:** `rules.py` (§4), `host.py` (`ApplyHost(cfg, oci, hub)`, `async run(job: SourceApplyJob) -> JobResult`), `report.py` (POST + retry như `autofix/report.py`). Slot (C22): `SANDBOX_SLOT` (`db/jobs_sql.py`) đếm cả `type='source.apply'` lúc claim `RUNTIME_SANDBOX_MAX`; không xin slot giữa job. Claim riêng `db/apply_sql.py`, nối ở `queue/runtime.py`.
 Các bước `ApplyHost.run` (git cứng P-c1 §5.3 trên `GIT_DIR=work/<job>/repo/.git`, ngoài mọi mount):
-1. `ensure_mirror_fresh` (khoá nếu `has_credential`) → `target = rev-parse refs/heads/<branch>`; lỗi ⇒ `failed{code: auth|network|no_credential}`.
+1. `ensure_mirror_fresh` (khoá nếu `has_credential`) → `target = rev-parse refs/heads/<branch>`; lỗi ⇒ `failed{code: auth|network|no_credential}` (push bị từ chối mà `has_credential=false` ⇒ `no_credential`, C34).
 2. `git clone --no-checkout --no-hardlinks <mirror> work/<job>/repo` → `checkout -B <ai branch> <target>`.
 3. Tải `patch` → `git apply --3way --index --binary` → lỗi ⇒ `git status --porcelain` → `conflict{files}`.
 4. Commit tác giả `ai-autofix <noreply@local>`, thông điệp cố định `ai-autofix: <branch>` (không đưa chữ tự do vào git).
@@ -194,9 +195,9 @@ Các bước `ApplyHost.run` (git cứng P-c1 §5.3 trên `GIT_DIR=work/<job>/re
 
 ### §6 Hub
 **6.1 Nguồn** (`sources.service #checkConfig`): `git_remote` + `credential_secret_id` ⇒ đọc `hub.secrets` scope system, `id=$1 AND kind='source_credential' AND tenant_id=$tenant AND deleted_at IS NULL` (cột thật theo H4b-1) — không có ⇒ 422 `SOURCE_CREDENTIAL_INVALID`; `applyModeIssue` ⇒ 422 `SOURCE_APPLY_UNSUPPORTED`. `used_by` của secret (H4b-1, `config->>'credential_secret_id'`) đã có ⇒ xoá khoá đang dùng ⇒ `SECRET_IN_USE`. `ResolveItem` đã chép `config` ⇒ không sửa launcher resolve.
-**6.2 Launcher stage Áp** (`processes/runs/apply-launch.ts` mới, gọi từ nhánh executor ở `launcher.ts`/`executor-ref.ts`): `realActionStepCheck` + audit `authorize_real_action` mở rộng điều kiện `executor.kind ∈ {agent, apply}` (`launcher-step.ts:45`). Tìm stage tự-sửa bước k−1 (def snapshot) → `stage_run` của nó → `autofix_results` mới nhất → nguồn hiện tại (scope system + `tenant_id`) → `applyPlan`. `no_changes`/`branch_only`/`invalid`: một tx — insert `autofix_applies` (+ `error_code` nếu invalid) + output `apply.md` (`output-attachment.ts`) + stage `done`/decision. `job`: insert job `source.apply` (§3.3) + stage `running` như job resolve.
+**6.2 Launcher stage Áp** (`processes/runs/apply-launch.ts` mới, gọi từ nhánh executor ở `launcher.ts`/`executor-ref.ts`): `realActionStepCheck` + audit `authorize_real_action` mở rộng điều kiện `executor.kind ∈ {agent, apply}` (`launcher-step.ts:45`). `launcher-step.ts` `realActionPreconfirm` đọc `executor.agent_id` ⇒ rẽ nhánh `apply` (không agent); `auditRealAction` nhận `agentId: null` (C32: `agent_id:null, workflow_ids:[], executor:"apply"`). Tìm stage tự-sửa bước k−1 (def snapshot) → `stage_run` → `autofix_results` mới nhất → nguồn **hiện tại** (scope system + `tenant_id`) → `applyPlan`; nguồn xoá / `config.url ≠ pin.url` / đổi kind ⇒ không job, hàng `failed`+`provider_error` + decision `apply_failed` (C20). `no_changes`/`branch_only`/`invalid`: một tx — insert `autofix_applies` (+ `error_code` nếu invalid) + output `apply.md` (`output-attachment.ts`) + stage `done`/decision. `job`: insert job `source.apply` (§3.3) + stage `running` như job resolve.
 **6.3 Internal** `apps/hub-api/src/modules/internal/{source-credential,apply}.{routes,service,repo}.ts`: xác thực token job (mẫu `autofix.routes.ts`). `source-credential`: `credentialJobAllows` → nguồn (tenant job) → `HubSecretReader.useSecret({id, kind:"source_credential", tenantId: job.tenant_id}, v => v)` — **ngoại lệ có chủ đích:** giá trị rời Hub tới Runtime (Q2); phản hồi `no-store`. `apply-result`: log test (nếu có) qua `commitOutputBlob` ngoài tx → tx system + `tenant_id`: attachment (origin `output`, tên `<stage_key>-apply-test.log.txt`) + insert `autofix_applies` (`mode` = `payload.apply_mode` — chế độ hiệu lực lúc launch, không đọc lại nguồn; C8). Unique ⇒ 409. Sau commit: `advanceApply(job_id)` (C14).
-**6.4 Stage-driver Áp** (`processes/runs/apply-driver.ts` mới; `stage-driver.ts` chỉ rẽ nhánh — giữ ≤ 400 dòng): sau job: đọc hàng theo `job_id` → `applyOutcome` → decision (`toDecision`, feedback = nhãn `error_code`/`conflict_files`) / `push_only` ⇒ UPDATE `status` giữ `pushed` + output + `done` / provider ⇒ `github-client.ts` (§6.5) → UPDATE (`pr_opened`/`failed`) → output + `done` hoặc decision `apply_failed`. Chạy từ `apply-result` và `sweepOnce` (job kết thúc không hàng ⇒ `failed`+`provider_error`) (C14). Gọi provider **ngoài** tx; UPDATE + output + chuyển trạng thái trong một tx. `add_attempt` ⇒ job `source.apply` mới (cùng branch, idempotent).
+**6.4 Stage-driver Áp** (`processes/runs/apply-driver.ts` mới; `stage-driver.ts` chỉ rẽ nhánh — giữ ≤ 400 dòng): sau job: đọc hàng theo `job_id` → `applyOutcome` → decision (`toDecision`, feedback = nhãn `error_code`/`conflict_files`) / `push_only` ⇒ UPDATE `status` giữ `pushed` + output + `done` / provider ⇒ `github-client.ts` (§6.5) → UPDATE (`pr_opened`/`failed`) → output + `done` hoặc decision `apply_failed`. Chạy từ `apply-result` và `sweepOnce` (job `source.apply` đã kết thúc mà stage còn `running`: không hàng ⇒ `failed`+`provider_error`, C14/C27). Tx khoá `process_runs FOR UPDATE` + kiểm lại trạng thái (`core.lockRun`, C28); run/stage không còn `running` (huỷ) ⇒ chỉ lưu hàng, không gọi provider (C21). Mode ∈ {pr, auto_merge} mà `githubRepoOf` null ⇒ `unsupported_provider` (C29). Lỗi `container` ⇒ hàng `failed`+`provider_error`, decision `sandbox_unavailable` (C33). Gọi provider **ngoài** tx; UPDATE + output + chuyển trạng thái trong một tx. `add_attempt` ⇒ job `source.apply` mới (cùng branch, idempotent).
 **6.5 `processes/runs/github-client.ts`** (fetch Bun, không thư viện): `findOpenPr(repo, branch)` `GET /repos/{o}/{r}/pulls?head={o}:{branch}&state=open&per_page=1`; `createPr` `POST /repos/{o}/{r}/pulls {title, head: branch, base, body, draft:false, maintainer_can_modify:false}`; `enableAutoMerge(node_id)` `POST /graphql` mutation `enablePullRequestAutoMerge(input:{pullRequestId, mergeMethod: SQUASH})`. Header: `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28`, `User-Agent: ai-system-hub`. Token chỉ trong callback `useSecret` (bọc cả chuỗi gọi). `redirect:"manual"`, `AbortSignal.timeout(15000)`, đọc thân ≤ 1 MiB. Lỗi ⇒ `mapProviderError`. Nguồn không khoá + `pr` ⇒ `apply_failed{no_credential}` (API cần token kể cả repo công khai).
 **6.6 View** (`view-autofix.ts` mở rộng → `view-apply.ts` mới): stage executor `apply` ⇒ query §2(a) → `ApplyStageView`; `AutofixStageView.apply_mode` + `apply_base` (cùng đọc nguồn); `ApplyStageView.test_log_file` từ `test_log_attachment_id`. Quyền đọc log test của hàng Áp: mở rộng nhánh `findReadableAttachment` P-c1 (PC-R14) thêm `autofix_applies.test_log_attachment_id`.
 **6.7 Seed** `apps/hub-api/seed/processes.yaml`: template `fixbug-pr` = `fixbug-apply` (stage `fix` nguyên văn P-c plan §6.1, `step: 0`) + stage `apply`: `name: Áp bản sửa (PR)`, `step: 1`, `executor: {kind: apply}`, `instruction: ""`, `output: {filename: apply.md, template: "## Kết quả áp\n", required_sections: [Kết quả áp], fields: []}`, `after: auto`, `real_action: true`, `answerer: starter`, `timeout_s: 600`, `token_budget: null`; `name: Sửa lỗi tự áp (PR)`, `description: Agent tự sửa mã, người duyệt diff, hệ thống đẩy nhánh ai/… và mở PR theo chế độ áp của nguồn.`; tắt sẵn.
@@ -207,12 +208,12 @@ Kế thừa CONVENTIONS §6; không ngân sách riêng. View +1 query/stage Áp 
 
 ## Frontend (frontend-lead)
 ### §8 Frontend
-Chờ frontend-lead: `plan-frontend.md` + mockup `Pc2-*` (spec §5). Contract FE dùng: `effectiveApplyMode`, `gitProviderOf`, `applyStageIssues`, `APPLY_ERROR_CODES`, `ApplyStageView`, `AutofixStageView.apply_mode`; route khoá nguồn H4b-1 `/admin/source-credentials*` (BE sẵn có, FE chưa có).
+`plan-frontend.md` + mockup `Pc2-*` (spec §5). Contract FE dùng: `effectiveApplyMode`, `gitProviderOf`, `applyStageIssues`, `APPLY_ERROR_CODES`, `ApplyStageView`, `AutofixStageView.apply_mode`; route khoá nguồn H4b-1 `/admin/source-credentials*` (BE sẵn có, FE chưa có).
 
 ## Edge case xử lý
 | Ca | Xử lý |
 |---|---|
-| Hub chết sau `pushed`, trước PR | stage còn `running`, job xong ⇒ sweep `interrupted` (P-a) ⇒ Thêm lượt ⇒ job Áp mới: push bỏ qua (ref = head) hoặc force trong `ai/`; PR tìm thấy ⇒ dùng lại |
+| Hub chết sau `pushed`, trước PR | stage còn `running`, job xong ⇒ `sweepOnce` gọi `advanceApply` (C27) ⇒ nếu `apply_failed` ⇒ Thêm lượt ⇒ job Áp mới: push bỏ qua (ref = head) hoặc force trong `ai/`; PR tìm thấy ⇒ dùng lại |
 | PR cũ đã đóng/merge cùng nhánh | `findOpenPr` rỗng ⇒ tạo PR mới (GitHub cho phép) |
 | Quay lại bước tự-sửa sau khi đã Áp (back_to của stage sau) | stage tự-sửa làm lại → Áp lại cùng branch: force trong `ai/<run>/` ⇒ PR mở cập nhật tự động |
 | Khoá bị xoá/thay giữa resolve và Áp | `useSecret` lỗi ⇒ 409 `NOT_CONFIGURED` ⇒ Runtime `failed{no_credential}` / Hub `apply_failed{no_credential}` |
