@@ -72,6 +72,11 @@
   --chart-4: #a5b4fc;
   --chart-5: #e08bb4;
 
+  /* Mention đầu tin (@agent / /command / !process) */
+  --mention-agent: #4f46e5;
+  --mention-command: #92400e;
+  --mention-process: #0f766e;
+
   --radius: 8px;
 
   /* Code (plan-frontend-theme.md §3, §5) */
@@ -140,6 +145,10 @@
   --sidebar-border: #283344;
   --sidebar-ring: #8b93f8;
 
+  --mention-agent: #a5b4fc;
+  --mention-command: #fbbf24;
+  --mention-process: #5eead4;
+
   --chart-1: #818cf8;
   --chart-2: #6366f1;
   --chart-3: #a5b4fc;
@@ -180,6 +189,9 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-strong: var(--primary-strong);
+  --color-mention-agent: var(--mention-agent);
+  --color-mention-command: var(--mention-command);
+  --color-mention-process: var(--mention-process);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);

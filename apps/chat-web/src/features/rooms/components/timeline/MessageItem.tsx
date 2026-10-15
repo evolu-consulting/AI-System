@@ -40,7 +40,7 @@ function MessageItemImpl({ message, mine, group }: Props) {
             mine ? "bg-primary text-primary-foreground" : "border border-border bg-card",
           )}
         >
-          <MessageText text={message.content} />
+          <MessageText text={message.content} onPrimary={mine} />
         </p>
         {message.attachments && message.attachments.length > 0 && (
           <div className="mt-1.5">
