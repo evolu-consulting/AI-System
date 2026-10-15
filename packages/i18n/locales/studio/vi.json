@@ -475,6 +475,7 @@
         "fake": "Fake (dev)"
       },
       "disabled": "(tắt)",
+      "managed": "Do hệ thống quản lý",
       "note": {
         "dev": "dev"
       },

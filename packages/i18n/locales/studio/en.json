@@ -475,6 +475,7 @@
         "fake": "Fake (dev)"
       },
       "disabled": "(off)",
+      "managed": "Managed by the system",
       "note": {
         "dev": "dev"
       },
