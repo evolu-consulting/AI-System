@@ -48,8 +48,10 @@ export function FlowAside({ running, onClose, children }: FlowFrameProps) {
         tabIndex={0}
         {...panel.handleProps}
         className={cn(
-          "absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none outline-none transition-colors hover:bg-ring/40 focus-visible:bg-ring/60",
-          panel.dragging && "bg-ring/60",
+          "absolute inset-y-0 -left-1 z-10 w-3 cursor-col-resize touch-none outline-none",
+          "after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-border after:opacity-0 after:transition-opacity",
+          "hover:after:opacity-100 focus-visible:after:bg-ring focus-visible:after:opacity-100",
+          panel.dragging && "after:bg-ring after:opacity-100",
         )}
       />
       {children({ mobile: false })}
