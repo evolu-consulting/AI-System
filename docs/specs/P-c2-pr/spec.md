@@ -156,3 +156,10 @@ C19–C35 (lần 1) chuyển sang [`spec-decisions.md`](spec-decisions.md) (gi�
 
 ## 10. Câu hỏi Q1–Q10
 Đã chốt 2026-10-14 (người dùng chấp nhận mặc định): xem [`spec-decisions.md`](spec-decisions.md).
+
+## Cập nhật CR-081 (2026-10-16) — seed tối giản, fixture opt-in
+
+- C5: template `fixbug-pr` (và `fixbug-apply` giữ cho diff-only) + agent `fixbug-*` seed thành **fixture opt-in**; feature áp bản sửa/PR giữ nguyên.
+- Test khoá cần qc đặt cờ: P-c2 defs/seed.
+Cơ chế: file `*.full.yaml` chỉ nạp khi `HUB_SEED_FIXTURES=1` (`readSeedDir`); mặc định (cờ tắt) = minimal (`orchestrator`, `assistant`, `dify-*`, providers, workflows). Chi tiết + lý do: [CR-081](../../CHANGE-REQUESTS.md). **Gate lại: CÓ** (đổi tiền điều kiện dữ liệu của test khoá; qc đặt `HUB_SEED_FIXTURES=1`). Lịch sử bên trên giữ nguyên.
+

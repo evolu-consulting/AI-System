@@ -47,6 +47,8 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 | `guides/combine-test.md` | Hướng dẫn người dùng test tích hợp 3 app (S1–S10, seed Dify thật) |
 | `guides/filebox-test.md` | Hướng dẫn người dùng config + test FileBox (đính kèm chat + output tiến trình) |
 | `guides/autofix-pr-test.md` | Hướng dẫn config + test Autofix → PR GitHub thật (P-c2 S1): source+PAT, env, sandbox, chạy, sự cố |
+| `guides/deploy.md` | Runbook deploy đầy đủ (staging/production): 5 tiến trình + 3 web tĩnh + PG16/Redis7 + reverse proxy; khoá/secret, migrate+role+seed, build, systemd, agent-runtime, TLS; phụ lục host EvoBuzz |
+| `TECHNICAL.md` | Tổng quan kỹ thuật toàn hệ thống (kiến trúc, thành phần, stack, bảo mật/RLS, data model, agent runtime, tích hợp) |
 | `specs/_template/` | Mẫu cho spec mới |
 | `readiness/` | Báo cáo spec-readiness trước khi có spec (vd `2026-10-01-admin-m1-m4.md`) |
 

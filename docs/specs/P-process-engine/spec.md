@@ -229,3 +229,10 @@ Lệnh xong: `bun run done:pa` (qc + backend-lead định nghĩa ở PLAN, mẫu
 - **useFlowKind (Bước-0):** ưu tiên `sender_type="process"` giữa các tin cùng `flow_id` ở main (tin gọi user đứng trước) ⇒ pane rẽ đúng `ProcessFlowContent`. Ngoài danh sách shared-FE-infra được giao ban đầu nhưng là gap Bước-0 chặn toàn bộ F2; đã giữ nguyên hành vi thread agent X2b (77 test rooms xanh). Session chính/RV1 soát.
 
 Readiness: [`readiness.md`](readiness.md) READY lần 5 (2026-10-10). Gate: [`P-a-gate.md`](../P-a-gate.md) tự duyệt (Luật 2b). Trạng thái `approved`.
+
+## Cập nhật CR-081 (2026-10-16) — seed tối giản, fixture opt-in
+
+- Quyết định seed (D18 / plan-seed): mẫu `sdlc` và `hoa-don` (+ agent vai, `entitlements/grants/agent_teams/team_entitlements/tenant_processes` liên quan trong `processes.yaml`) chuyển sang `processes.full.yaml`/`access.full.yaml` = **fixture opt-in**; tính năng engine không đổi.
+- Test khoá cần qc đặt cờ: P-a `seed.int`/scenario, e2e P-a (nếu dựa mẫu seed).
+Cơ chế: file `*.full.yaml` chỉ nạp khi `HUB_SEED_FIXTURES=1` (`readSeedDir`); mặc định (cờ tắt) = minimal (`orchestrator`, `assistant`, `dify-*`, providers, workflows). Chi tiết + lý do: [CR-081](../../CHANGE-REQUESTS.md). **Gate lại: CÓ** (đổi tiền điều kiện dữ liệu của test khoá; qc đặt `HUB_SEED_FIXTURES=1`). Lịch sử bên trên giữ nguyên.
+

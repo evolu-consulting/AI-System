@@ -177,3 +177,10 @@ Ca + kỳ vọng: [`test-plan.md`](test-plan.md) §3 (ma trận luật → ca), 
 - `done:pc` xanh từng chặng (chưa một lượt liền — TD #169); review code 2 vòng APPROVED; review bảo mật 3 vòng SAFE (`826ae84f`, `46d9d6fa`, `e74c15c4`).
 - UAT `qc-uat` (`evidence/2026-10-14/REPORT.md`): vòng 1 Đạt có điều kiện (`e27072da`, `942dba3d`); **vòng 2 Đạt** (`d99db5ae`, `20d2863a`): Major 1–2 hết, Minor 3, 5–8 đã sửa; Minor 4 chỉ ghi nhận (TD #173).
 - Nợ: TD #168–#175. Kế tiếp: P-c2 — cần PLAN + spec-readiness.
+
+## Cập nhật CR-081 (2026-10-16) — seed tối giản, fixture opt-in
+
+- §4 Seed: agent `fixbug-apply`/`fixbug-engineer`/`fixbug-reviewer` + template `fixbug-apply` (+ `fixbug-evolu`) thành **fixture opt-in**; feature tự-sửa giữ nguyên, QC tự tạo agent/process def (stage autofix/apply) khi cần.
+- Test khoá cần qc đặt cờ: P-c defs/seed.
+Cơ chế: file `*.full.yaml` chỉ nạp khi `HUB_SEED_FIXTURES=1` (`readSeedDir`); mặc định (cờ tắt) = minimal (`orchestrator`, `assistant`, `dify-*`, providers, workflows). Chi tiết + lý do: [CR-081](../../CHANGE-REQUESTS.md). **Gate lại: CÓ** (đổi tiền điều kiện dữ liệu của test khoá; qc đặt `HUB_SEED_FIXTURES=1`). Lịch sử bên trên giữ nguyên.
+

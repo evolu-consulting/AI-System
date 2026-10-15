@@ -198,3 +198,10 @@ Xem [`spec-decisions.md`](spec-decisions.md) mục "Tranh chấp test".
 - UAT `evolu`: vòng 1 có lỗi, sửa `1f6e37f8`/`c47ce6aa`/`2f85995f`; vòng 2 Đạt ([REPORT](evidence/2026-10-13/REPORT.md)).
 - Code: `apps/hub-api/src/modules/kh`, `apps/studio-web/src/features/settings/knowledgehub`, `tools/mocks/src/kh`. Nợ: TECH-DEBT #154, #156–#161.
 - Kế: K2 (CR-069) — lên kế hoạch lại theo CR-073 (KH nền tảng, không ns theo tenant).
+
+## Cập nhật CR-081 (2026-10-16) — seed tối giản, fixture opt-in
+
+- CR-070 §2 seed: `sdlc-delivery`, `bug-fix` + bản chép vào tenant `evolu` (K1-AC08) thành **fixture opt-in** (chỉ khi `HUB_SEED_FIXTURES=1`); QAS mặc định không có. Tính năng KnowledgeHub không đổi.
+- Test khoá cần qc đặt cờ: K1 `seed.int` (K1-AC08).
+Cơ chế: file `*.full.yaml` chỉ nạp khi `HUB_SEED_FIXTURES=1` (`readSeedDir`); mặc định (cờ tắt) = minimal (`orchestrator`, `assistant`, `dify-*`, providers, workflows). Chi tiết + lý do: [CR-081](../../CHANGE-REQUESTS.md). **Gate lại: CÓ** (đổi tiền điều kiện dữ liệu của test khoá; qc đặt `HUB_SEED_FIXTURES=1`). Lịch sử bên trên giữ nguyên.
+

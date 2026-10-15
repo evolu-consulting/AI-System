@@ -116,3 +116,12 @@ Agent Studio = `apps/studio-web` (base `/studio`) + API `/studio/api/*` trên Hu
 
 ## Nguồn `repo` trong hub-dev (P-c1 UAT)
 - `hub:dev` đặt cho Runtime `RUNTIME_ENV=development`, `RUNTIME_SOURCE_CACHE_DIR` và `HUB_SOURCE_LOCAL_ROOTS` (thiếu cache dir ⇒ tính năng nguồn tắt, `source.resolve` kẹt `queued`). Container: cache `/tmp/hub-dev-srccache`, gốc `local_path` = `/work` (repo mount) ⇒ nguồn `local_path` khai `/work/<thư mục>` (ghi đè gốc: `HUB_DEV_SOURCE_ROOTS`). Linux/WSL2: cache `.data/hub-dev-srccache`, gốc = repo (ghi đè bằng `RUNTIME_SOURCE_CACHE_DIR` / `HUB_SOURCE_LOCAL_ROOTS`). `HUB_DEV_RUNTIME=none`: tự đặt ba biến này khi chạy Runtime (xem `rt.sh` mẫu ở P-b evidence).
+
+## Seed mặc định tối giản + fixture đầy đủ (CR-081)
+
+- Mặc định (`HUB_SEED_FIXTURES` tắt): tenant `platform` + `evolu` (5 user); agent `orchestrator`, `assistant`, `dify-tom`/`dify-tro-ly`; providers + workflows. Không có mẫu quy trình/agent vai (QC tự tạo agent ở Studio, process def ở Admin canvas); không phòng "Evolu team"/agent demo. `acme`/`beta` chỉ khi `HUB_DEV_CONTRACT_FIXTURE=1`; tenant `uatb` không tồn tại (CR-082).
+- Demo đầy đủ (AISDLC `sdlc`/`sdlc-delivery`/`hoa-don`/`bug-fix`/`fixbug-*`, 16 agent vai, grants): `HUB_SEED_FIXTURES=1 bun run hub:dev` — nạp thêm `*.full.yaml`. Khác `HUB_SEED_PROFILE` (chọn model `fake-1`/`claude-sub-1`).
+- `initial.sh`/`start.sh`: cần fixture đầy đủ thì đặt `HUB_SEED_FIXTURES=1` trước khi chạy (backend-lead sẽ thêm khi BUILD; tài liệu chỉ mô tả).
+- Đổi seed không xoá dữ liệu cũ trong DB; QAS sạch cần `db:reset`/migrate.
+- Các dòng bên trên nhắc seed `processes.yaml`/grants evolu (vd mục quyền agent `sdlc-delivery`+`bug-fix`) nay chỉ đúng khi bật cờ.
+

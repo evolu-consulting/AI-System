@@ -31,3 +31,8 @@ Xoá sạch DB dev: `./initial.sh --reset` (gọi `db:reset:dev -- --yes`, FLUSH
 - `acme` (chỉ khi có fixture contract): DM `lan`–`hoa` (3 tin), nhóm "Nhóm dự án" (`lan` chủ, `hoa`, 2 tin).
 - `evolu`: nhóm "Evolu team" (5 người, `julian.bui` chủ) + DM `julian.bui`–`thomas.tran`; chưa có tin.
 Chạy lại dev không nhân đôi (nhóm theo id cố định, DM theo `dm_key`, tin chỉ ghi khi phòng chưa có tin).
+
+## Seed mặc định (CR-081)
+
+Mặc định tối giản: `orchestrator`, `assistant`, `dify-*`, providers, workflows; tenant `platform` + `evolu` (5 user); không phòng "Evolu team"/agent demo evolu. Bật mẫu quy trình + agent vai + demo: `HUB_SEED_FIXTURES=1` (nạp `*.full.yaml`). Phần "Phòng mẫu" `evolu` ở trên chỉ áp dụng khi bật cờ hoặc sau khi mốc dọn-seed xong; `acme`/`beta` vẫn `HUB_DEV_CONTRACT_FIXTURE=1`. Chi tiết: `docs/guides/hub-dev.md`.
+
