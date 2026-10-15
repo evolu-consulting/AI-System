@@ -19,6 +19,9 @@ owner: backend-lead + frontend-lead
 
 > Contract chi tiết, DDL, luồng Hub + Runtime, chữ ký hàm thuần: [`plan.md`](plan.md). Task: [`tasks.md`](tasks.md).
 
+## Trạng thái (2026-10-15)
+Đạt chức năng qua mock GitHub + bare repo: D1 `done:pc2`, D2 review APPROVED + bảo mật SAFE, D3 UAT vòng 2 Đạt ([`REPORT.md`](evidence/2026-10-15/REPORT.md)). **Chưa đóng mốc**: S1 smoke GitHub thật là hard stop, chờ người dùng cấp repo thử + PAT (Contents RW + Pull requests RW); `status` giữ `approved` tới khi S1 Đạt. Nợ: TD #176–#179.
+
 ## 1. Phạm vi
 **Bối cảnh:** P-c1 cho stage tự-sửa trả **diff đã kiểm** + gate người. P-c2 làm phần "áp" (HUB-FR-129, HUB-BR-34): sau gate Đạt, đẩy nhánh `ai/<run>/<stage>` lên repo và mở PR bằng `source_credential` (H4b-1); chế độ áp theo nguồn; rebase khi nhánh mặc định đã đổi (E4); clone/fetch repo **riêng tư** (Q5 của P-c).
 
