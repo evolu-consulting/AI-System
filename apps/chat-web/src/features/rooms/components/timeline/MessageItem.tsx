@@ -36,7 +36,7 @@ function MessageItemImpl({ message, mine, group }: Props) {
         </p>
         <p
           className={cn(
-            "rounded-xl px-3 py-2 text-sm leading-6 break-words whitespace-pre-wrap",
+            "rounded-xl px-3 py-2 text-sm leading-6 wrap-anywhere whitespace-pre-wrap",
             mine ? "bg-primary text-primary-foreground" : "border border-border bg-card",
           )}
         >

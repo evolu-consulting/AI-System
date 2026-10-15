@@ -16,13 +16,13 @@ export function ForwardedToYou({
   return (
     <div className="flex flex-col gap-2">
       <p className="font-medium">{t("process.ask.fromYou", { from: forward.from.display_name })}</p>
-      {forward.note && <p className="whitespace-pre-wrap">{forward.note}</p>}
+      {forward.note && <p className="whitespace-pre-wrap wrap-anywhere">{forward.note}</p>}
       {excerpt && (
         <div className="rounded-md bg-muted px-3 py-2">
           <p className="text-caption font-medium text-muted-foreground">
             {t("process.ask.context")}
           </p>
-          <p className="whitespace-pre-wrap text-caption">{excerpt}</p>
+          <p className="whitespace-pre-wrap wrap-anywhere text-caption">{excerpt}</p>
         </div>
       )}
       <p className="text-caption text-muted-foreground">

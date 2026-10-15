@@ -80,7 +80,7 @@ export function FlowBlock({
         live || footer.openHere ? "border-primary/40" : "border-border",
       )}
     >
-      <div className="max-w-[80%] self-end whitespace-pre-wrap break-words rounded-xl bg-row-divider px-3.5 py-2.5 leading-normal">
+      <div className="max-w-[80%] self-end whitespace-pre-wrap wrap-anywhere rounded-xl bg-row-divider px-3.5 py-2.5 leading-normal">
         <MessageText text={question} />
       </div>
       <AttachmentList items={questionAttachments} />

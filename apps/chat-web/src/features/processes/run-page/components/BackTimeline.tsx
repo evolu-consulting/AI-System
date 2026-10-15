@@ -23,7 +23,10 @@ function Item({ e, stage, lng }: { e: BackEvent; stage: string; lng: string }) {
           time: formatDateTime(e.at, lng),
         })}
       </span>
-      <q id={textId} className={cn("whitespace-pre-wrap text-foreground", !open && "line-clamp-2")}>
+      <q
+        id={textId}
+        className={cn("whitespace-pre-wrap wrap-anywhere text-foreground", !open && "line-clamp-2")}
+      >
         {e.feedback}
       </q>
       {long && !open && (

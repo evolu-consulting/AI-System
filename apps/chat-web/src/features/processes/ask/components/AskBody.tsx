@@ -26,7 +26,7 @@ type BodyProps = {
 export function AskBody({ question, choices, onPick, disabled, titles }: BodyProps) {
   return (
     <>
-      {question && <p className="whitespace-pre-wrap">{question}</p>}
+      {question && <p className="whitespace-pre-wrap wrap-anywhere">{question}</p>}
       {choices.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {choices.map((c) => (

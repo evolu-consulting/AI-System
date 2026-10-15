@@ -123,7 +123,7 @@ function AskClosed({ task, view }: Pick<TaskCardProps, "task" | "view">) {
   return (
     <div className="flex flex-col gap-1 text-sm">
       <p className="font-medium">✓ {t("process.ask.answered", { who, time: hhmm(hit.at) })}</p>
-      <p className="whitespace-pre-wrap">{hit.answer}</p>
+      <p className="whitespace-pre-wrap wrap-anywhere">{hit.answer}</p>
     </div>
   );
 }

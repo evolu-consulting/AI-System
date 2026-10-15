@@ -42,12 +42,12 @@ export function TaskResultMessage({ message, part, myId }: TaskResultMessageProp
           )}
         </p>
         {part.result === "fail" && part.feedback && (
-          <blockquote className="border-l-2 border-border pl-2 text-sm whitespace-pre-wrap text-secondary-foreground">
+          <blockquote className="border-l-2 border-border pl-2 text-sm whitespace-pre-wrap wrap-anywhere text-secondary-foreground">
             {part.feedback}
           </blockquote>
         )}
         {part.result === "answer" && (part.answer || part.choice) && (
-          <p className="text-sm whitespace-pre-wrap text-secondary-foreground">
+          <p className="text-sm whitespace-pre-wrap wrap-anywhere text-secondary-foreground">
             {part.answer || part.choice}
           </p>
         )}

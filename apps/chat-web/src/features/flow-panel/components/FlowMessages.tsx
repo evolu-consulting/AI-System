@@ -16,7 +16,7 @@ import type { PanelItem } from "../lib/flow-panel-logic";
 function Question({ text, attachments }: { text: string; attachments?: AttachmentRef[] }) {
   return (
     <>
-      <div className="max-w-[85%] self-end whitespace-pre-wrap break-words rounded-[10px] bg-row-divider px-3 py-2">
+      <div className="max-w-[85%] self-end whitespace-pre-wrap wrap-anywhere rounded-[10px] bg-row-divider px-3 py-2">
         <MessageText text={text} />
       </div>
       <AttachmentList items={attachments} />

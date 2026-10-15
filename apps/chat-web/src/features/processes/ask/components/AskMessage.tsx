@@ -40,7 +40,7 @@ export function AskMessage({ message, part }: AskMessageProps) {
       className="flex flex-col gap-1 py-1 text-sm"
     >
       <p className="text-caption font-medium text-muted-foreground">{agent}</p>
-      <p className="whitespace-pre-wrap">{part.question}</p>
+      <p className="whitespace-pre-wrap wrap-anywhere">{part.question}</p>
     </article>
   );
 }
