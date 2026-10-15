@@ -45,6 +45,7 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 | `../apps/admin-web/README.md`, `../apps/admin-web/src/features/{auth,shell,tenants,users,secrets,workflows,commands,features}/README.md` | App web và feature: FR, file vào, bẫy |
 | `specs/X2b-room-agents/manual-test-I2.md` | Hướng dẫn người dùng kiểm tay `@agent` trong phòng (X2b I2, tenant evolu A/B/C) |
 | `guides/combine-test.md` | Hướng dẫn người dùng test tích hợp 3 app (S1–S10, seed Dify thật) |
+| `guides/filebox-test.md` | Hướng dẫn người dùng config + test FileBox (đính kèm chat + output tiến trình) |
 | `specs/_template/` | Mẫu cho spec mới |
 | `readiness/` | Báo cáo spec-readiness trước khi có spec (vd `2026-10-01-admin-m1-m4.md`) |
 
