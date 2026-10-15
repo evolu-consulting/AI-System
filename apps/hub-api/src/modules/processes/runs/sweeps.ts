@@ -6,6 +6,7 @@ import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
+import { startLoop } from "../../../lib/loop";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import type { SweepResult } from "../core/handles";
@@ -23,6 +24,13 @@ const RESOLVE_STALE_MS = 240_000;
 const SYSTEM = { kind: "system" } as const;
 const BATCH = 100;
 const INTERRUPT_GRACE_MS = 60_000;
+
+/**
+ * B2 (P-c2 D3 UAT): chu kỳ vòng nền `sweepOnce` của Hub thật (mở PR stage Áp, `interrupted`, `resolveTimeouts`,
+ * `requeueOrphans`). ~3 s — đủ nhanh để stage Áp tự mở PR, chậm hơn `scanDue` (một lượt quét có index) nên không ghì pool
+ * như B7. `startLoop` tự chặn chồng lượt; mỗi ứng viên re-khoá hàng ⇒ an toàn khi test cũng gọi `sweepOnce` qua handle.
+ */
+export const PROCESS_SWEEP_EVERY_MS = 3_000;
 
 const activeList = sql`(${sql.join(
   PROCESS_RUN_ACTIVE.map((s) => sql`${s}`),
@@ -68,6 +76,23 @@ export async function sweepOnce(d: ProcessDeps): Promise<SweepResult> {
       );
   const queued = await requeueOrphans(d);
   return { queued, interrupted, expired };
+}
+
+/**
+ * B2 · vòng nền (`lib/loop.ts`) gọi `sweepOnce` mỗi `everyMs` trên instance Hub thật — song song `startAttachmentSweeper`.
+ * Mount gọi khi `processLoops !== false`; `signal` abort ⇒ dừng. Lỗi một lượt chỉ log (`process-sweep-failed`).
+ */
+export function startProcessSweeper(
+  d: ProcessDeps,
+  o: { everyMs?: number; signal?: AbortSignal } = {},
+): void {
+  startLoop({
+    name: "process-sweep",
+    everyMs: o.everyMs ?? PROCESS_SWEEP_EVERY_MS,
+    tick: () => sweepOnce(d),
+    log: d.log,
+    signal: o.signal,
+  });
 }
 
 /**

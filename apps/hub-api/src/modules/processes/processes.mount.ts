@@ -21,7 +21,7 @@ import { createStageLauncher } from "./runs/launcher";
 import { applyResolveReport } from "./runs/resolve-apply";
 import { roomStart } from "./runs/room-start";
 import { processRunsRoutes } from "./runs/runs.routes";
-import { sweepOnce } from "./runs/sweeps";
+import { startProcessSweeper, sweepOnce } from "./runs/sweeps";
 import { usageRoutes } from "./usage/usage.routes";
 
 /** Gốc route quy trình cần JWT (`app.ts` gắn `requireAuth`; `/me/*` đã có ở X2a). */
@@ -90,6 +90,9 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   if (m.processLoops !== false) {
     poster.start(m.signal);
     khWriter?.start(m.signal);
+    // B2 · PF1: vòng nền `sweepOnce` thật (mở PR stage Áp, interrupted, resolveTimeouts, requeueOrphans). Khi
+    // `processLoops:false` (test), bỏ qua — test gọi qua `onProcessHandles.sweepOnce`.
+    startProcessSweeper(d, { signal: m.signal });
   }
   return { roomSender: roomStart(d), conversationStart: d.start };
 }
