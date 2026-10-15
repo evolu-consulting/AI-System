@@ -162,6 +162,8 @@ export class InternalAutofixService {
         size: staged.size,
         sha256: staged.sha256,
         storageKey: key,
+        fileboxFileId: staged.fileId ?? null,
+        fileboxVersionId: staged.versionId ?? null,
       },
     });
     return id;

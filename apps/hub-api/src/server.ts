@@ -12,7 +12,9 @@ import { importJwtPublicKey } from "./lib/jwt";
 import { logger, setMinLevel } from "./lib/logger";
 import { createRedis, pingRedis, type Redis } from "./lib/redis";
 import { MAX_REQUEST_BODY_BYTES } from "./lib/unread-body";
+import { envFileboxToken } from "./modules/attachments/filebox-token";
 import type { AttachmentDeps } from "./modules/attachments/storage";
+import { createFileboxStorage } from "./modules/attachments/storage.filebox";
 import { createLocalStorage } from "./modules/attachments/storage.local";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
 import { missingAdminColumns } from "./modules/config/schema-check";
@@ -78,7 +80,20 @@ async function openAttachments(env: Env): Promise<AttachmentDeps | undefined> {
     fail("env", err);
   }
   if (!a) return undefined;
-  const storage = await createLocalStorage({ dir: a.dir }).catch((err) => fail("attachments", err));
+  if (a.driver === "local") {
+    const storage = await createLocalStorage({ dir: a.dir }).catch((err) =>
+      fail("attachments", err),
+    );
+    return { storage, tenantMaxBytes: a.tenantMaxBytes, sweepS: a.sweepS };
+  }
+  // FB1 (HUB-FR-138, core-only): kho FileBox; Bearer từ ENV `FILEBOX_TOKEN` (fail-closed khi vắng). Không dispatcher.
+  const storage = createFileboxStorage({
+    url: a.url,
+    org: a.org,
+    token: envFileboxToken(env.FILEBOX_TOKEN),
+    timeoutMs: a.timeoutMs,
+    log: logger,
+  });
   return { storage, tenantMaxBytes: a.tenantMaxBytes, sweepS: a.sweepS };
 }
 

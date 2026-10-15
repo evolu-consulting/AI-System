@@ -23,6 +23,7 @@ import {
   type ChunkInspector,
   isUuidName,
   keyUnder,
+  type RemoveResult,
   type Staged,
   StorageKeyError,
   StorageRejected,
@@ -189,11 +190,12 @@ class LocalStorage implements AttachmentStorage {
     return { path: p.file, size: st.size, blob: Bun.file(p.file) };
   }
 
-  async remove(key: string): Promise<void> {
+  async remove(key: string): Promise<RemoveResult> {
     const p = await this.#paths(key, false);
-    if (!p) return;
+    if (!p) return "missing";
     await rm(p.file, { force: true });
     await rm(p.part, { force: true });
+    return "deleted";
   }
 
   async promote(key: string): Promise<void> {

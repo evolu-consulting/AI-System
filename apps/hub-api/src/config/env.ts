@@ -51,6 +51,12 @@ export const EnvSchema = z.object({
   HUB_ATTACH_DIR: z.string().optional(),
   HUB_ATTACH_TENANT_MAX_BYTES: z.string().optional(),
   HUB_ATTACH_SWEEP_S: z.string().optional(),
+  // FB1 (HUB-FR-138/141, core-only): driver `filebox` (kiểm ở `parseAttachEnv`). Bearer đọc thẳng từ `FILEBOX_TOKEN` (không log).
+  FILEBOX_URL: z.string().optional(),
+  FILEBOX_ORG: z.string().optional(),
+  FILEBOX_CA: z.string().optional(),
+  FILEBOX_TOKEN: z.string().optional(),
+  FILEBOX_TIMEOUT_MS: z.string().optional(),
   // H4a plan §9 · bản build Studio (đường dẫn tuyệt đối); thiếu `index.html` ⇒ warn `studio-dist-missing`, không mount.
   HUB_STUDIO_DIST: z
     .string()

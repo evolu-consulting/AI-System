@@ -65,14 +65,17 @@ export type FileRow = {
   size: number;
   sha256: string;
   storageKey: string;
+  // FB1 (HUB-FR-138): tham chiếu FileBox khi kho = driver `filebox` (null ⇒ local).
+  fileboxFileId?: string | null;
+  fileboxVersionId?: string | null;
 };
 
 /** Attachment `origin='output'` text/plain của job (PC-R16: KHÔNG qua kiểm hạn mức; vẫn cộng vào dung lượng đã dùng). */
 export async function insertOutputFile(tx: Tx, f: FileRow): Promise<void> {
   await tx.execute(sql`INSERT INTO hub.attachments (id, tenant_id, user_id, origin, job_id, filename, safe_name, mime,
-      size, sha256, storage_key)
+      size, sha256, storage_key, filebox_file_id, filebox_version_id)
     VALUES (${f.id}, ${f.tenantId}, ${f.userId}, 'output', ${f.jobId}, ${f.name}, ${f.name}, 'text/plain', ${f.size},
-      ${f.sha256}, ${f.storageKey})`);
+      ${f.sha256}, ${f.storageKey}, ${f.fileboxFileId ?? null}, ${f.fileboxVersionId ?? null})`);
 }
 
 export async function insertResult(tx: Tx, row: NewAutofixResult): Promise<string> {

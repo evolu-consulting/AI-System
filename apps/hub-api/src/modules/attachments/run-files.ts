@@ -43,7 +43,15 @@ export async function checkSendable(
   return ids.map((id) => {
     const r = byId.get(id) as (typeof rows)[number];
     const mime = r.mime as AttachMime;
-    return toRunFile({ id, safeName: r.safe_name, mime, size: Number(r.size), sha256: r.sha256 });
+    return toRunFile({
+      id,
+      safeName: r.safe_name,
+      mime,
+      size: Number(r.size),
+      sha256: r.sha256,
+      fileboxFileId: r.filebox_file_id,
+      fileboxVersionId: r.filebox_version_id,
+    });
   });
 }
 
@@ -81,6 +89,8 @@ async function candidates(tx: Tx, p: RunFilesInput): Promise<FileRow[]> {
     mime: r.mime as AttachMime,
     size: Number(r.size),
     sha256: r.sha256,
+    fileboxFileId: r.filebox_file_id,
+    fileboxVersionId: r.filebox_version_id,
   }));
 }
 

@@ -10,6 +10,7 @@ import { CONTENT_SHA256_HEADER } from "@ai/contracts/hub-internal";
 import { createApp } from "../../../../apps/hub-api/src/app";
 import { connectDb, pingDb } from "../../../../apps/hub-api/src/lib/db";
 import { createRedis, pingRedis } from "../../../../apps/hub-api/src/lib/redis";
+import type { AttachmentStorage } from "../../../../apps/hub-api/src/modules/attachments/storage";
 import { createLocalStorage } from "../../../../apps/hub-api/src/modules/attachments/storage.local";
 import { HUB_API_URL, type HubDeps, makeKeys, REDIS_TEST_URL, sign } from "../../H1/_fixtures";
 import { testRedis } from "../../H1/_hub";
@@ -125,7 +126,7 @@ const onRejection = (e: unknown) => {
   rejections.push(e);
 };
 
-export async function startPfs4(): Promise<Ctx4> {
+export async function startPfs4(o: { storage?: AttachmentStorage } = {}): Promise<Ctx4> {
   process.on("unhandledRejection", onRejection);
   const { sql, ready } = await setupPa();
   if (ready) {
@@ -134,7 +135,7 @@ export async function startPfs4(): Promise<Ctx4> {
   }
   const k = await makeKeys();
   const dir = await mkdtemp(join(tmpdir(), "pb-pfs4-"));
-  const storage = await createLocalStorage({ dir });
+  const storage = o.storage ?? (await createLocalStorage({ dir })); // FB1: o.storage = driver FileBox
   const db = connectDb(HUB_API_URL, 8);
   const redis = createRedis(REDIS_TEST_URL);
   await redis.connect();

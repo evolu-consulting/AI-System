@@ -50,6 +50,9 @@ export type JobAttachmentRow = {
   sha256: string;
   safe_name: string;
   purged_at: Date | string | null;
+  // FB1 (HUB-FR-139): dựng locator đọc bytes (null ⇒ kho local).
+  filebox_file_id: string | null;
+  filebox_version_id: string | null;
 };
 
 export async function jobAttachment(
@@ -58,7 +61,8 @@ export async function jobAttachment(
   tenantId: string,
 ): Promise<JobAttachmentRow | undefined> {
   const rows = await tx.execute<JobAttachmentRow>(
-    sql`SELECT id, storage_key, size::int AS size, sha256, safe_name, purged_at FROM hub.attachments
+    sql`SELECT id, storage_key, size::int AS size, sha256, safe_name, purged_at,
+        filebox_file_id, filebox_version_id FROM hub.attachments
       WHERE id = ${attId} AND tenant_id = ${tenantId}`,
   );
   return rows[0];
@@ -71,7 +75,8 @@ export async function libraryAttachment(
   tenantId: string,
 ): Promise<JobAttachmentRow | undefined> {
   const rows = await tx.execute<JobAttachmentRow>(
-    sql`SELECT id, storage_key, size::int AS size, sha256, safe_name, purged_at FROM hub.attachments
+    sql`SELECT id, storage_key, size::int AS size, sha256, safe_name, purged_at,
+        filebox_file_id, filebox_version_id FROM hub.attachments
       WHERE id = ${docId} AND tenant_id = ${tenantId} AND origin = 'library'`,
   );
   return rows[0];

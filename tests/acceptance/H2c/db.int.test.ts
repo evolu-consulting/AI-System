@@ -70,6 +70,8 @@ describe("A130–A134 · migration 0007 [spec §4 · plan-db §1]", () => {
         "bound_at",
         "conversation_id",
         "created_at",
+        "filebox_file_id", // FB1 (0033, spec §3.2)
+        "filebox_version_id", // FB1 (0033, spec §3.2)
         "filename",
         "flow_id",
         "id",

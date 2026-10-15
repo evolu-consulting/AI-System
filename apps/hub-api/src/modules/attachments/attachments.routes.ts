@@ -45,7 +45,12 @@ export function attachmentRoutes(svc: AttachmentService): Hono<AuthVars> {
 
   r.get("/:id/content", async (c) => {
     const id = parseIdParam(c).toLowerCase();
-    const { body, headers } = await svc.content(c.var.user, id, c.var.log, tenantIdQ(c));
+    const out = await svc.content(c.var.user, id, c.var.log, tenantIdQ(c), {
+      navigate: isNavigate(c),
+    });
+    // FB1 (HUB-FR-139): kho FileBox + điều hướng ⇒ 302 tới link FileBox (không log URL).
+    if (out.kind === "redirect") return c.redirect(out.url, 302);
+    const { body, headers } = out;
     // Thân `Bun.file` ⇒ Bun tự trả 206 theo `Range` ⇒ có `Range`: thân stream, 200 toàn bộ (R13 "Range bỏ qua"; mất
     // `Content-Length` — Bun gửi chunked). Không `Range`: `blobResponse` giữ `Content-Length` (spec-decisions B3-1).
     if (c.req.header("range") === undefined) return blobResponse(c, body, 200, headers);
@@ -54,4 +59,11 @@ export function attachmentRoutes(svc: AttachmentService): Hono<AuthVars> {
   });
 
   return r;
+}
+
+/** FB1 §3.4: trình duyệt điều hướng tài liệu (mở tab/`<iframe>`/`<a>`) ⇒ nhánh 302; `fetch` của FE (cors) ⇒ inline. */
+export function isNavigate(c: Context<AuthVars>): boolean {
+  const mode = c.req.header("sec-fetch-mode");
+  const dest = c.req.header("sec-fetch-dest");
+  return mode === "navigate" || dest === "document" || dest === "iframe";
 }

@@ -1,5 +1,5 @@
-// HUB-FR-44 · H2c-R04, AC-15 · env `HUB_ATTACH_*` (plan §7, plan-rules §4). Lỗi: `Error` không chứa giá trị env (chỉ tên
-// biến, không chữ số — giá trị có thể là đường dẫn/secret).
+// HUB-FR-44 · HUB-FR-138 · HUB-FR-141 · H2c-R04 · FB1 §3.6, §3.8 · env `HUB_ATTACH_*` + `FILEBOX_*` (driver `local`|`filebox`).
+// Lỗi: `Error` chỉ chứa TÊN biến, không chứa giá trị (có thể là đường dẫn/secret/URL — AC-09 e3).
 import { ATTACH_MAX_BYTES } from "@ai/contracts/chat";
 
 export type AttachEnvInput = {
@@ -7,15 +7,38 @@ export type AttachEnvInput = {
   HUB_ATTACH_DIR?: string;
   HUB_ATTACH_TENANT_MAX_BYTES?: string;
   HUB_ATTACH_SWEEP_S?: string;
+  FILEBOX_URL?: string;
+  FILEBOX_ORG?: string;
+  FILEBOX_CA?: string;
+  FILEBOX_TOKEN?: string;
+  FILEBOX_TIMEOUT_MS?: string;
 };
 
-export type AttachEnv = { driver: "local"; dir: string; tenantMaxBytes: number; sweepS: number };
+export type LocalAttachEnv = {
+  driver: "local";
+  dir: string;
+  tenantMaxBytes: number;
+  sweepS: number;
+};
+/** FB1 (core-only): kho FileBox; Bearer đọc từ ENV `FILEBOX_TOKEN` ở server (không parse ở đây để không vào AttachEnv/log). */
+export type FileboxAttachEnv = {
+  driver: "filebox";
+  url: string;
+  org: string;
+  caPath?: string;
+  timeoutMs: number;
+  tenantMaxBytes: number;
+  sweepS: number;
+};
+export type AttachEnv = LocalAttachEnv | FileboxAttachEnv;
 
 export const DEFAULT_TENANT_MAX_BYTES = 5_368_709_120;
 export const DEFAULT_SWEEP_S = 600;
+export const DEFAULT_FILEBOX_TIMEOUT_MS = 30_000;
 const SWEEP_MIN_S = 10;
 const SWEEP_MAX_S = 86_400;
 const DECIMAL_RE = /^[0-9]+$/;
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
 /** = `path.win32.isAbsolute` / `path.posix.isAbsolute` (rules thuần: không import `node:path`). */
 const WIN_ABS_RE = /^([A-Za-z]:)?[\\/]/;
 
@@ -31,13 +54,7 @@ function intIn(raw: string | undefined, fallback: number, min: number, max: numb
   return Number.isSafeInteger(n) && n >= min && n <= max ? n : null;
 }
 
-/** driver = `local`; dir tuyệt đối (theo `platform`); hạn tenant ≥ `ATTACH_MAX_BYTES` (vắng 5 GiB); sweep 10–86 400 s (vắng 600). */
-export function parseAttachEnv(e: AttachEnvInput, platform: NodeJS.Platform): AttachEnv {
-  if (e.HUB_ATTACH_DRIVER !== "local")
-    throw new Error("HUB_ATTACH_DRIVER không hợp lệ (driver hỗ trợ: local)");
-  const dir = e.HUB_ATTACH_DIR;
-  if (!dir || !isAbsoluteFor(dir, platform))
-    throw new Error("HUB_ATTACH_DIR phải là đường dẫn tuyệt đối");
+function commonLimits(e: AttachEnvInput): { tenantMaxBytes: number; sweepS: number } {
   const tenantMaxBytes = intIn(
     e.HUB_ATTACH_TENANT_MAX_BYTES,
     DEFAULT_TENANT_MAX_BYTES,
@@ -51,5 +68,51 @@ export function parseAttachEnv(e: AttachEnvInput, platform: NodeJS.Platform): At
   const sweepS = intIn(e.HUB_ATTACH_SWEEP_S, DEFAULT_SWEEP_S, SWEEP_MIN_S, SWEEP_MAX_S);
   if (sweepS === null)
     throw new Error("HUB_ATTACH_SWEEP_S phải là số nguyên giây trong khoảng cho phép");
-  return { driver: "local", dir, tenantMaxBytes, sweepS };
+  return { tenantMaxBytes, sweepS };
+}
+
+function requireDir(dir: string | undefined, platform: NodeJS.Platform): string {
+  if (!dir || !isAbsoluteFor(dir, platform))
+    throw new Error("HUB_ATTACH_DIR phải là đường dẫn tuyệt đối");
+  return dir;
+}
+
+/** `https` bắt buộc trừ khi host loopback (http dev/mock). Chỉ nêu TÊN biến khi lỗi (không giá trị). */
+function parseFileboxUrl(raw: string | undefined): string {
+  if (!raw) throw new Error("FILEBOX_URL bắt buộc khi HUB_ATTACH_DRIVER=filebox");
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    throw new Error("FILEBOX_URL không phải URL hợp lệ");
+  }
+  const loop = LOOPBACK.has(u.hostname);
+  if (u.protocol !== "https:" && !(u.protocol === "http:" && loop))
+    throw new Error("FILEBOX_URL phải là https (http chỉ cho loopback)");
+  return raw;
+}
+
+function parseFilebox(e: AttachEnvInput): FileboxAttachEnv {
+  const url = parseFileboxUrl(e.FILEBOX_URL);
+  if (!e.FILEBOX_ORG) throw new Error("FILEBOX_ORG bắt buộc khi HUB_ATTACH_DRIVER=filebox");
+  // Chỉ kiểm sự hiện diện (fail-closed sớm); KHÔNG lưu giá trị vào AttachEnv (tránh lọt log). Server đọc thẳng `env.FILEBOX_TOKEN`.
+  if (!e.FILEBOX_TOKEN) throw new Error("FILEBOX_TOKEN bắt buộc khi HUB_ATTACH_DRIVER=filebox");
+  const timeoutMs = intIn(e.FILEBOX_TIMEOUT_MS, DEFAULT_FILEBOX_TIMEOUT_MS, 1_000, 600_000);
+  if (timeoutMs === null) throw new Error("FILEBOX_TIMEOUT_MS phải là số nguyên mili-giây");
+  return {
+    driver: "filebox",
+    url,
+    org: e.FILEBOX_ORG,
+    ...(e.FILEBOX_CA ? { caPath: e.FILEBOX_CA } : {}),
+    timeoutMs,
+    ...commonLimits(e),
+  };
+}
+
+/** driver `local` (dir tuyệt đối) hoặc `filebox` (FILEBOX_URL https/loopback + org); driver lạ ⇒ ném. */
+export function parseAttachEnv(e: AttachEnvInput, platform: NodeJS.Platform): AttachEnv {
+  if (e.HUB_ATTACH_DRIVER === "filebox") return parseFilebox(e);
+  if (e.HUB_ATTACH_DRIVER !== "local")
+    throw new Error("HUB_ATTACH_DRIVER không hợp lệ (driver hỗ trợ: local, filebox)");
+  return { driver: "local", dir: requireDir(e.HUB_ATTACH_DIR, platform), ...commonLimits(e) };
 }

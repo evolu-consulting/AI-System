@@ -32,15 +32,19 @@ export type NewAttachment = {
   mime: string;
   size: number;
   sha256: string;
+  /** FB1 (HUB-FR-138): tham chiếu FileBox (null ⇒ kho local). */
+  fileboxFileId?: string | null;
+  fileboxVersionId?: string | null;
 };
 
-/** INSERT (chưa gắn; `storage_key = tenant/id`) → `created_at`. */
+/** INSERT (chưa gắn; `storage_key = tenant/id`; FB1 cột `filebox_*` khi kho FileBox) → `created_at`. */
 export async function insertAttachment(tx: Tx, a: NewAttachment): Promise<Date> {
   const [r] = await tx.execute<{ created_at: Date | string }>(sql`insert into hub.attachments
       (id, tenant_id, user_id, origin, job_id, conversation_id, flow_id, filename, safe_name, mime, size, sha256,
-       storage_key)
+       storage_key, filebox_file_id, filebox_version_id)
     values (${a.id}, ${a.tenantId}, ${a.userId}, ${a.origin}, ${a.jobId}, ${a.conversationId}, ${a.flowId},
-       ${a.filename}, ${a.safeName}, ${a.mime}, ${a.size}, ${a.sha256}, ${a.tenantId}::text || '/' || ${a.id}::text)
+       ${a.filename}, ${a.safeName}, ${a.mime}, ${a.size}, ${a.sha256}, ${a.tenantId}::text || '/' || ${a.id}::text,
+       ${a.fileboxFileId ?? null}, ${a.fileboxVersionId ?? null})
     returning created_at`);
   return new Date(r?.created_at ?? Date.now());
 }
@@ -60,6 +64,9 @@ export type ReadableAttachment = {
   createdAt: Date;
   purgedAt: Date | null;
   storageKey: string;
+  /** FB1 (HUB-FR-139): dựng locator đọc (null ⇒ kho local). */
+  fileboxFileId: string | null;
+  fileboxVersionId: string | null;
 };
 
 /**
@@ -74,7 +81,7 @@ export async function findReadableAttachment(
 ): Promise<ReadableAttachment | null> {
   const [r] =
     await tx.execute<ReadableRow>(sql`select a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at,
-      a.storage_key
+      a.storage_key, a.filebox_file_id, a.filebox_version_id
     from hub.attachments a left join hub.conversations c on c.id = a.conversation_id
     where a.id = ${o.id} and a.tenant_id = ${o.tenantId}
       and ((a.room_id is null and a.user_id = ${o.userId} and c.deleted_at is null)
@@ -91,6 +98,8 @@ type ReadableRow = {
   created_at: Date | string;
   purged_at: Date | string | null;
   storage_key: string;
+  filebox_file_id: string | null;
+  filebox_version_id: string | null;
 };
 
 const toReadable = (r: ReadableRow): ReadableAttachment => ({
@@ -101,6 +110,8 @@ const toReadable = (r: ReadableRow): ReadableAttachment => ({
   createdAt: new Date(r.created_at),
   purgedAt: r.purged_at === null ? null : new Date(r.purged_at),
   storageKey: r.storage_key,
+  fileboxFileId: r.filebox_file_id,
+  fileboxVersionId: r.filebox_version_id,
 });
 
 /**
@@ -116,13 +127,16 @@ export async function findAutofixAttachment(
   // (`autofix_applies.test_log_attachment_id`) — cùng run + tenant; UNION để BitmapOr hai index một phần.
   const [r] = await tx.execute<
     ReadableRow & { run_id: string }
-  >(sql`select run_id, id, filename, mime, size, created_at, purged_at, storage_key from (
-      select ar.process_run_id as run_id, a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key
+  >(sql`select run_id, id, filename, mime, size, created_at, purged_at, storage_key,
+      filebox_file_id, filebox_version_id from (
+      select ar.process_run_id as run_id, a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key,
+        a.filebox_file_id, a.filebox_version_id
       from hub.autofix_results ar join hub.attachments a on a.id = ${o.id} and a.tenant_id = ar.tenant_id
       where ar.tenant_id = ${o.tenantId}
         and (ar.diff_attachment_id = ${o.id} or ar.test_log_attachment_id = ${o.id})
       union all
-      select aa.process_run_id as run_id, a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key
+      select aa.process_run_id as run_id, a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at, a.storage_key,
+        a.filebox_file_id, a.filebox_version_id
       from hub.autofix_applies aa join hub.attachments a on a.id = ${o.id} and a.tenant_id = aa.tenant_id
       where aa.tenant_id = ${o.tenantId} and aa.test_log_attachment_id = ${o.id}
     ) hit limit 1`);
@@ -157,6 +171,8 @@ type SendRow = {
   mime: string;
   size: string | number;
   sha256: string;
+  filebox_file_id: string | null;
+  filebox_version_id: string | null;
 };
 
 /** E12 R09 (plan-db §2.1, PL7) · file gửi được của chủ trong `ids`; scope `user`, ngoài transaction tạo run. */
@@ -165,7 +181,8 @@ export async function sendableFiles(
   o: { tenantId: string; userId: string },
   ids: readonly string[],
 ): Promise<SendRow[]> {
-  return tx.execute<SendRow>(sql`select id, safe_name, mime, size, sha256 from hub.attachments
+  return tx.execute<SendRow>(sql`select id, safe_name, mime, size, sha256,
+      filebox_file_id, filebox_version_id from hub.attachments
     where id = any(${uuidArray(ids)}::uuid[]) and tenant_id = ${o.tenantId} and user_id = ${o.userId}
       and message_id is null and room_id is null and purged_at is null and created_at > now() - interval '24 hours'`);
 }
@@ -196,6 +213,8 @@ export type RunFileRow = {
   mime: string;
   size: string | number;
   sha256: string;
+  filebox_file_id: string | null;
+  filebox_version_id: string | null;
 };
 
 /** R14 (plan-db §2.3) · ứng viên tập file của run (≤ 11 hàng, `available`); `command` → chỉ tin hiện tại. */
@@ -204,7 +223,7 @@ export async function runFileRows(
   p: { flowId: string; currentMessageId: string; command: boolean },
 ): Promise<RunFileRow[]> {
   return tx.execute<RunFileRow>(sql`select a.id, a.message_id, m.created_at as message_created_at, a.position,
-      a.safe_name, a.mime, a.size, a.sha256
+      a.safe_name, a.mime, a.size, a.sha256, a.filebox_file_id, a.filebox_version_id
     from hub.messages m join hub.attachments a on a.message_id = m.id
     where m.flow_id = ${p.flowId} and a.purged_at is null
       and (${!p.command}::boolean or m.id = ${p.currentMessageId})

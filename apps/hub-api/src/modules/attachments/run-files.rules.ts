@@ -17,10 +17,20 @@ export type FileRow = {
   mime: AttachMime;
   size: number;
   sha256: string;
+  fileboxFileId?: string | null;
+  fileboxVersionId?: string | null;
 };
 
-/** File của run (`name` = `safe_name`). */
-export type RunFile = { id: string; name: string; mime: AttachMime; size: number; sha256: string };
+/** File của run (`name` = `safe_name`). FB1: `fileboxFileId`/`fileboxVersionId` để đọc bytes qua FileBox (không vào job payload). */
+export type RunFile = {
+  id: string;
+  name: string;
+  mime: AttachMime;
+  size: number;
+  sha256: string;
+  fileboxFileId?: string | null;
+  fileboxVersionId?: string | null;
+};
 
 export type FileBrief = { name: string; mime: string; size: number };
 
@@ -140,7 +150,18 @@ export function withOutHint(system: string, max: number): { text: string; droppe
 
 /** Hàng R14 → `RunFile` (`name` = `safe_name`). */
 export function toRunFile(
-  r: Pick<FileRow, "id" | "safeName" | "mime" | "size" | "sha256">,
+  r: Pick<
+    FileRow,
+    "id" | "safeName" | "mime" | "size" | "sha256" | "fileboxFileId" | "fileboxVersionId"
+  >,
 ): RunFile {
-  return { id: r.id, name: r.safeName, mime: r.mime, size: r.size, sha256: r.sha256 };
+  return {
+    id: r.id,
+    name: r.safeName,
+    mime: r.mime,
+    size: r.size,
+    sha256: r.sha256,
+    fileboxFileId: r.fileboxFileId ?? null,
+    fileboxVersionId: r.fileboxVersionId ?? null,
+  };
 }

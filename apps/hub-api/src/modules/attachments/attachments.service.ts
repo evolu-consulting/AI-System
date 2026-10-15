@@ -19,11 +19,10 @@ import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
-import { AppError, appError, safeErrorFields } from "../../lib/errors";
+import { AppError, appError } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import {
   type AttachExt,
-  contentDisposition,
   displayName,
   extOf,
   mimeOf,
@@ -31,6 +30,7 @@ import {
   parseFilenameHeader,
   safeName,
 } from "./attachment.rules";
+import { type ContentResult, resolveContent } from "./attachment-content";
 import {
   claimHeld,
   countJobOutputs,
@@ -99,12 +99,6 @@ export class OutputClaimLost extends Error {
     super("output claim lost");
   }
 }
-
-/**
- * Nội dung + header R13 của `/content` (plan §5.7). `Blob` (đọc lười từ đĩa) thay vì stream: Bun chỉ gửi `Content-Length`
- * khi thân có kích thước biết trước (stream ⇒ chunked) — spec-decisions "BUILD — B2/B3" B3-1.
- */
-export type ContentResult = { body: Blob; headers: Record<string, string> };
 
 const SYSTEM = { kind: "system" } as const;
 const tooLarge = () => appError("ATTACHMENT_TOO_LARGE", { max_bytes: ATTACH_MAX_BYTES });
@@ -316,6 +310,8 @@ export class AttachmentService {
         mime: o.mime,
         size: o.staged.size,
         sha256: o.staged.sha256,
+        fileboxFileId: o.staged.fileId ?? null,
+        fileboxVersionId: o.staged.versionId ?? null,
       });
     });
   }
@@ -358,34 +354,19 @@ export class AttachmentService {
     };
   }
 
-  /** `GET /attachments/:id/content` (R13): `available=false` / file mất ⇒ 404 (+ log `attachment-content-missing`). */
-  async content(u: AuthUser, id: string, log: Logger, tenantIdQ?: string): Promise<ContentResult> {
+  /**
+   * `GET /attachments/:id/content` (R13; FB1 §3.4 HUB-FR-139): kho FileBox + điều hướng (navigate) ⇒ 302 tới `/link`;
+   * ngược lại (local, hoặc fetch cors/vắng Sec-Fetch) ⇒ phát inline. `available=false` / file mất ⇒ 404.
+   */
+  async content(
+    u: AuthUser,
+    id: string,
+    log: Logger,
+    tenantIdQ?: string,
+    o?: { navigate?: boolean },
+  ): Promise<ContentResult> {
     const r = await this.#readable(u, id, tenantIdQ);
     if (r.purgedAt !== null) throw appError("NOT_FOUND");
-    let file: Blob | null;
-    try {
-      file = await this.d.storage.blob(r.storageKey, r.mime);
-    } catch (e) {
-      if (e instanceof StorageKeyError) log.error("attachment-path-escape", { key: r.id });
-      else log.error("attachment-open-failed", { attachment_id: r.id, ...safeErrorFields(e) });
-      throw appError("INTERNAL_ERROR");
-    }
-    if (!file) {
-      log.error("attachment-content-missing", { attachment_id: r.id });
-      throw appError("NOT_FOUND");
-    }
-    return { body: file, headers: contentHeaders(r, file.size) };
+    return resolveContent(this.d.storage, r, o ?? {}, log);
   }
-}
-
-/** Header tải về (R13, plan §5.7): không đoán kiểu, sandbox, luôn `attachment`, không cache dùng chung. */
-export function contentHeaders(r: { filename: string; mime: string }, size: number) {
-  return {
-    "Content-Type": r.mime,
-    "Content-Length": String(size),
-    "Content-Disposition": contentDisposition(r.filename),
-    "X-Content-Type-Options": "nosniff",
-    "Content-Security-Policy": "default-src 'none'; sandbox",
-    "Cache-Control": "private, no-store",
-  };
 }

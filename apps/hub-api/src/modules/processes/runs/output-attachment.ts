@@ -71,6 +71,27 @@ export async function commitOutputBlob(d: Deps, p: PendingBlob): Promise<void> {
   } catch (e) {
     d.log.error("process-output-commit-failed", safeErrorFields(e));
     await staged.discard().catch(() => {});
+    return;
+  }
+  // FB1 (HUB-FR-138): INSERT (outputAttachment) chạy TRƯỚC stage ⇒ ghi tham chiếu FileBox sau khi có `file_id` (bất biến hàng⟺file §4.2).
+  if (staged.fileId) await setFileboxRef(d, p.key, staged.fileId, staged.versionId ?? null);
+}
+
+/** UPDATE 2 cột FileBox lên hàng đã INSERT (khoá = `tenant/id`); lỗi ⇒ log (hàng còn, blob ở `process_outputs.content`). */
+async function setFileboxRef(
+  d: Deps,
+  key: string,
+  fileId: string,
+  versionId: string | null,
+): Promise<void> {
+  const id = key.slice(key.indexOf("/") + 1);
+  try {
+    await withHubScope(d.db, { kind: "system" }, (tx) =>
+      tx.execute(sql`update hub.attachments
+        set filebox_file_id = ${fileId}, filebox_version_id = ${versionId} where id = ${id}`),
+    );
+  } catch (e) {
+    d.log.error("process-output-filebox-ref-failed", { attachment_id: id, ...safeErrorFields(e) });
   }
 }
 

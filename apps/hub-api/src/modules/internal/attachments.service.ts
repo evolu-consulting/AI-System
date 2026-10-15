@@ -21,7 +21,7 @@ import {
   type OutputJob,
   type UploadInput,
 } from "../attachments/attachments.service";
-import type { AttachmentStorage } from "../attachments/storage";
+import { type AttachmentStorage, storageLocatorOf } from "../attachments/storage";
 import * as repo from "./credential.repo";
 import { bearerJobToken } from "./credential.service";
 
@@ -134,7 +134,7 @@ export class InternalAttachmentService {
     const { row } = found;
     if (row.purged_at !== null) return NOT_FOUND;
     // `Blob` (đọc lười từ đĩa) thay vì stream: Bun giữ `Content-Length` (thân stream ⇒ chunked, mất độ dài).
-    const file = await this.d.storage.blob(row.storage_key, OCTET);
+    const file = await this.d.storage.blob(storageLocatorOf(row), OCTET);
     if (!file) {
       this.d.log.error("attachment-content-missing", { attachment_id: row.id });
       return NOT_FOUND;

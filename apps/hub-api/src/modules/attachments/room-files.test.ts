@@ -50,6 +50,8 @@ describe("roomRunFiles [X2b2-D9/D10]", () => {
       mime: "application/pdf",
       size: 10,
       sha256: "ab",
+      fileboxFileId: null,
+      fileboxVersionId: null,
     });
     expect(f.updates).toEqual([["{f-trig,f-new,f-old}", "run1", "t1", "u1"]]);
   });

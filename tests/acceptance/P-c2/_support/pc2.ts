@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { createApp } from "../../../../apps/hub-api/src/app";
 import { connectDb, pingDb } from "../../../../apps/hub-api/src/lib/db";
 import { createRedis, pingRedis } from "../../../../apps/hub-api/src/lib/redis";
+import type { AttachmentStorage } from "../../../../apps/hub-api/src/modules/attachments/storage";
 import { createLocalStorage } from "../../../../apps/hub-api/src/modules/attachments/storage.local";
 import { createGithubMock, type GithubMock } from "../../../../tools/mocks/src/github";
 import { HUB_API_URL, type HubDeps, makeKeys, REDIS_TEST_URL, sign } from "../../H1/_fixtures";
@@ -149,7 +150,9 @@ async function seedSources2(c: CtxPc2): Promise<void> {
 }
 
 // ---------- dựng Hub ----------
-export async function startPc2(o: { webHost?: string } = {}): Promise<CtxPc2> {
+export async function startPc2(
+  o: { webHost?: string; storage?: AttachmentStorage } = {},
+): Promise<CtxPc2> {
   const { sql, ready } = await setupPa();
   if (ready) await seedPf1(sql);
   await seedSecrets(sql);
@@ -161,7 +164,7 @@ export async function startPc2(o: { webHost?: string } = {}): Promise<CtxPc2> {
   process.env.HUB_GITHUB_WEB_HOST = webHost;
   const k = await makeKeys();
   const dir = await mkdtemp(join(tmpdir(), "pc2-"));
-  const storage = await createLocalStorage({ dir });
+  const storage = o.storage ?? (await createLocalStorage({ dir })); // FB1: o.storage = driver FileBox
   const db = connectDb(HUB_API_URL, 8);
   const redis = createRedis(REDIS_TEST_URL);
   await redis.connect();

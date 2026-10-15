@@ -51,7 +51,6 @@ export const AGENT_RUNTIME_VALUES = [
   "dify-workflow",
   "dify-agent",
 ] as const;
-export const ATTACHMENT_ORIGIN_VALUES = ["upload", "output"] as const;
 // H4a (0010), CR-054 (0018), P-a (0019), H4b-1 (0028), K1 (0029), H4b-2 (0030): khớp CHECK `hub_audit_log_action_check`/`_entity_check`.
 export const HUB_AUDIT_ACTION_VALUES = [
   "grant",
@@ -353,29 +352,8 @@ export const agentTypes = hub.table("agent_types", {
   registeredAt: ts("registered_at").notNull().defaultNow(),
 });
 
-// ── H2c (0007_h2c_attachments): file đính kèm (RLS như bảng hội thoại; FK message_id SET NULL; CHECK ở SQL) ──
-export const attachments = hub.table("attachments", {
-  ...owned(),
-  origin: text("origin", { enum: ATTACHMENT_ORIGIN_VALUES }).notNull(),
-  /** NOT NULL ⇔ origin = output (CHECK `attachments_output_job_ck`). */
-  jobId: uuid("job_id"),
-  conversationId: uuid("conversation_id"),
-  flowId: uuid("flow_id"),
-  messageId: uuid("message_id"),
-  roomId: uuid("room_id"), // 0023 X2b-2: NOT NULL ⇔ gắn tin phòng (message/conversation/flow NULL)
-  roomMessageId: uuid("room_message_id"), // 0023: FK (room_message_id, room_id), SET NULL khi tin bị xoá
-  position: smallint("position"), // thứ tự trong tin (0–9), đặt khi gắn (R12)
-  filename: text("filename").notNull(),
-  safeName: text("safe_name").notNull(),
-  mime: text("mime").notNull(),
-  size: bigint("size", { mode: "number" }).notNull(),
-  sha256: text("sha256").notNull(),
-  /** `<tenant_id>/<id>` (CHECK `attachments_key_ck`). */
-  storageKey: text("storage_key").notNull(),
-  createdAt: createdAt(),
-  boundAt: ts("bound_at"),
-  purgedAt: ts("purged_at"),
-});
+// H2c/X2b-2/FB1 · `hub.attachments` tách ra `hub-attachments.ts` (trần 400 dòng); re-export giữ import cũ không đổi.
+export { ATTACHMENT_ORIGIN_VALUES, attachments } from "./hub-attachments";
 
 // ── H3b (0009_h3b_agent_grants): audit Hub append-only (trigger chặn UPDATE/DELETE/TRUNCATE kể cả owner; CHECK ở SQL). Tên `hubAuditLog` tránh trùng `auditLog` (admin.audit_log, `ops.ts`). Không RLS — cách ly tenant ở repo (PL6).
 export const hubAuditLog = hub.table("audit_log", {
