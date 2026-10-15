@@ -8,28 +8,15 @@
     "group": {
       "config": "Agent configuration",
       "access": "Access",
-      "test": "Testing",
-      "ops": "Operations",
       "system": "System"
     },
-    "overview": "Overview",
     "agents": "Agents",
     "orchestrator": "Orchestrator",
-    "tools": "Tools",
     "models": "Models",
     "secrets": "Secrets",
     "access": "Agent access",
-    "playground": "Playground",
-    "runs": "Runs",
-    "cost": "Cost & usage",
-    "jobs": "Jobs & Worker",
-    "audit": "Change log",
-    "transfer": "Import / Export",
     "settings": "Settings"
   },
-  "soon": "Coming soon",
-  "soonH4b": "Coming soon (H4b)",
-  "soonH4c": "Coming soon (H4c)",
   "topbar": {
     "configBadge": "hub config v{n}",
     "toAdmin": "⇄ Evolu Control",
@@ -185,8 +172,6 @@
     "menu": {
       "duplicate": "Duplicate",
       "setOrch": "Set as Orchestrator",
-      "playground": "Try in Playground",
-      "grant": "Grant to tenant…",
       "enable": "Enable",
       "disable": "Disable",
       "delete": "Delete"
@@ -248,7 +233,6 @@
     "cancel": "Cancel",
     "save": "Save",
     "saving": "Saving…",
-    "tryRun": "Test run",
     "loadError": "Couldn't load the agent",
     "step": {
       "1": "Details",
@@ -317,8 +301,7 @@
       "typeAll": "All types"
     },
     "access": {
-      "count": "Granted to {n} tenants. Tenant admins grant groups in Admin › Groups.",
-      "manage": "Manage agent access"
+      "count": "Granted to {n} tenants. Tenant admins grant groups in Admin › Groups."
     },
     "orchView": {
       "title": "View as the Orchestrator sees it",

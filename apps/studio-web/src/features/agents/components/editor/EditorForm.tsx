@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ConflictDialog } from "#/components/shared/conflict/ConflictDialog";
 import { PageHeader } from "#/components/shared/PageHeader";
-import { SoonBadge } from "#/components/shared/SoonBadge";
 import { UnsavedGuard } from "#/components/shared/UnsavedGuard";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
@@ -48,12 +47,7 @@ export function EditorForm({ initial, agent }: Props) {
 
   const section = { draft: ed.draft, set: ed.set, errors: ed.errors, mode: ed.mode };
   const actions = (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button type="button" variant="outline" disabled>
-        {t("editor.tryRun")} <SoonBadge kind="soonH4c" />
-      </Button>
-      <OrchestratorView draftKey={ed.draft.key} description={ed.draft.description} peers={peers} />
-    </div>
+    <OrchestratorView draftKey={ed.draft.key} description={ed.draft.description} peers={peers} />
   );
   return (
     <form

@@ -21,7 +21,7 @@ owner: backend-lead + frontend-lead
 
 ## 1. Phạm vi
 **Làm:**
-- **App mới `apps/studio-web`** (Rsbuild + React + Tailwind + shadcn, TanStack Router/Query, react-hook-form + zod, i18n VI/EN — ADR-0001). Khung (topbar "✦ Agent Studio", menu theo [ui §2](../../design/agent-hub/ui-agent-studio.md), badge `hub config vN`), trang đăng nhập, trang "không có quyền", trạng thái tải/rỗng/lỗi. Mục menu chưa làm hiện mờ "Sắp có" (không route chết).
+- **App mới `apps/studio-web`** (Rsbuild + React + Tailwind + shadcn, TanStack Router/Query, react-hook-form + zod, i18n VI/EN — ADR-0001). Khung (topbar "✦ Agent Studio", menu theo [ui §2](../../design/agent-hub/ui-agent-studio.md), badge `hub config vN`), trang đăng nhập, trang "không có quyền", trạng thái tải/rỗng/lỗi. Mục menu chưa làm hiện mờ "Sắp có" (không route chết). [CR-080: đã gỡ khỏi UI 2026-10-15 — nav chỉ còn link thật; tương lai khi làm sẽ thêm link thật]
 - **`/studio/api/*` trong `apps/hub-api`** (role `platform_admin`): `agents` (CRUD + bật/tắt), `orchestrator` (bản mặc định + theo tenant), và đọc: `agent-types`, `model-profiles`, `providers` (kèm `provider_state`), `workflows` (catalog Admin, chỉ workflow bật), `tenants` (chọn tenant cho Orchestrator), `me`.
 - **Ghi cấu hình an toàn:** mỗi lần lưu: kiểm `version` (409 `VERSION_CONFLICT`), ghi `hub.audit_log` (trước/sau), tăng `hub_config_version`, NOTIFY `hub_config_changed` — cùng giao dịch (mẫu H3b).
 - Editor agent theo runtime (`llm`, `agentic-cli`, `dify-workflow`, `dify-agent`, `python` — form dựng từ `agent_types.config_schema`), picker workflow từ catalog, `agentic-cli`: CLI/tool/MCP/cwd + tick xác nhận Bash (FR-61).
@@ -99,9 +99,9 @@ Chi tiết: [`plan-frontend.md`](plan-frontend.md) (route, trạng thái, valida
 |---|---|---|---|
 | Đăng nhập (+ bước TOTP) | `/login?next=` | **mới**, mẫu Admin ui-admin §7.1 | `POST /auth/login`, `/auth/totp/verify`; `password_change_required` → chuyển sang Admin |
 | Không có quyền | `/forbidden` | **mới**, mẫu Admin `state.forbidden` | `me` 403 ⇒ tới đây, không gọi API khác |
-| Khung + menu | mọi route `_authed` | Main (sidebar/topbar) | mục chưa làm `aria-disabled` + "Sắp có"; badge `hub config vN`; "⇄ Admin" |
+| Khung + menu | mọi route `_authed` | Main (sidebar/topbar) | mục chưa làm `aria-disabled` + "Sắp có" [CR-080: đã gỡ]; badge `hub config vN`; "⇄ Admin" |
 | Agents | `/agents`, `/` → `/agents` | Main, bỏ cột "24 giờ", bỏ Import yaml | lọc client; bật/tắt có Hoàn tác; menu Nhân bản / Đặt làm Orchestrator / Xoá |
-| Agent editor | `/agents/new[?from=<id>]`, `/agents/$agentId` | AgentEditor, nút "Lưu" (không kiểm thử định tuyến) | Chạy thử, "Xem như model thấy" disabled "Sắp có (H4c)"; bước 5 chỉ số tenant |
+| Agent editor | `/agents/new[?from=<id>]`, `/agents/$agentId` | AgentEditor, nút "Lưu" (không kiểm thử định tuyến) | Chạy thử, "Xem như model thấy" disabled "Sắp có (H4c)" [CR-080: nút Chạy thử/Xem như model thấy đã gỡ]; bước 5 chỉ số tenant |
 | Orchestrator | `/orchestrator[?tenant=<id>\|new]` | Orchestrator, bỏ tab Kiểm thử, Dry-run, cột Kiểm thử | bản tenant trong Sheet |
 | 404 | `*` | mẫu Admin `state.notFound` | — |
 
@@ -174,6 +174,7 @@ Lệnh xong: `done:h4a` (qc, mẫu `done:h3b`) = `bun run typecheck && bun test 
 | QB7 | Tool `Edit`/`Bash` (Runtime chỉ chạy `Read/Grep/Glob/Write`); JSON Schema của `python` | Lưu được + `warnings`; Hub không kiểm JSON Schema (không ajv, không ADR) | ADR thêm ajv |
 
 ### Trong lúc làm (agent tự quyết theo Luật 2)
+- [CR-080] 2026-10-15: gỡ mọi phần tử UI "Sắp có" (mục nav chưa làm, nút Thử trong Playground / Cấp cho tenant / Chạy thử / Quản lý quyền agent, `SoonBadge`, key i18n `soon*`); nav chỉ còn link thật. Không đổi contract/AC backend; e2e E04/E11 do qc cập nhật.
 - B1: `packages/db/src/hub-h3b.int.test.ts` (test unit/int của backend, không phải QC) sửa kỳ vọng `audit_log.tenant_id` NOT NULL → nullable theo D3.
 - B3: `GET me` đọc DB một câu (`admin.users` ⋈ `admin.tenants` + `hub.config_meta`) thay vì "không query" (plan §5.4) — cache cấu hình chỉ giữ trạng thái, không có `username`/`display_name`/`tenant_key` mà `MeSchema` bắt buộc; `hub_config_version` của `me` và mọi list catalog đọc trong cùng transaction read only (khớp DB ngay sau ghi, không chờ NOTIFY).
 - B3: `usable_for` = `tool` cho mọi workflow bật; `dify-workflow` ⇔ app `workflow` ∧ `difyAgentInput ≠ null`; `dify-agent` ⇔ app `chat|agent` ∧ `difyAgentInput ≠ null` (QB3). Lọc `q` catalog: chứa chuỗi, không phân biệt hoa thường, trên key/tên (agent-types thêm mô tả vi/en; providers thêm vendor/kind).

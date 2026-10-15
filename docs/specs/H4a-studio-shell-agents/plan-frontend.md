@@ -32,7 +32,7 @@ apps/studio-web/  rsbuild.config.ts · index.html (lang="vi") · scripts/check-b
 src/app/          router.tsx (basepath /studio) · providers.tsx (Query, i18n, Toaster) · AppShell (Sidebar, Topbar)
 src/routes/       __root · login · forbidden · _authed (guard) · _authed/index (→ agents) · _authed/agents.{index,new,$agentId} · _authed/orchestrator · $ (404)
 src/components/ui/        primitive (D7)
-src/components/shared/    DataTable (nhẹ, không virtualize), PageHeader, EmptyState, ErrorState, ForbiddenState, ConflictDialog, ConfirmDialog, SoonBadge, UnsavedGuard
+src/components/shared/    DataTable (nhẹ, không virtualize), PageHeader, EmptyState, ErrorState, ForbiddenState, ConflictDialog, ConfirmDialog, UnsavedGuard [CR-080: đã xoá SoonBadge]
 src/lib/          http.ts (Bearer, 401→refresh 1 lần, map lỗi `{error:{code,message,details}}`) · auth/session.ts · env.ts · i18n.ts
 src/features/auth/          api.ts, pages/LoginPage, components/{LoginForm,TotpForm}
 src/features/shell/         api.ts (me), components/{Sidebar,Topbar,ConfigBadge,UserMenu}
@@ -53,7 +53,7 @@ Giới hạn CONVENTIONS §4: `EditorSteps/` tách mỗi bước một file; `fe
 | `/orchestrator` | Orchestrator | idem | Sheet bản tenant: `?tenant=<tenant_id>\|new` |
 | `*` | 404 "Không tìm thấy trang" | — | nút về Agents |
 
-Menu (ui §2) giữ đủ thứ tự; chỉ **Agents**, **Orchestrator** là link; còn lại `<span aria-disabled="true">` + `SoonBadge` "Sắp có" (không route chết). Badge số ở Agents = tổng agent; không badge Models/Runs.
+Menu (ui §2) giữ đủ thứ tự; chỉ **Agents**, **Orchestrator** là link; còn lại `<span aria-disabled="true">` + `SoonBadge` "Sắp có" (không route chết). [CR-080: đã gỡ 2026-10-15 — nav chỉ giữ link thật Agents, Orchestrator, Models, Secrets, Quyền agent, Cài đặt; tương lai thêm lại khi làm] Badge số ở Agents = tổng agent; không badge Models/Runs.
 
 ## 3. Màn ↔ artboard ↔ trạng thái
 | Màn | Artboard / mẫu | Đang tải | Rỗng | Lỗi | Không quyền / 409 |
@@ -62,7 +62,7 @@ Menu (ui §2) giữ đủ thứ tự; chỉ **Agents**, **Orchestrator** là lin
 | Đăng nhập | **mới — mẫu Admin ui-admin §7.1**, bỏ hero, thêm logo "✦ Agent Studio" | nút "Đang đăng nhập…" disabled | — | câu lỗi (phụ lục copy) dưới form (`role=alert`) | `password_change_required` → Alert "Bạn cần đổi mật khẩu ở Admin trước khi vào Studio." + link Admin |
 | Không có quyền | **mới — mẫu Admin `state.forbidden`** | — | — | — | (chính nó) |
 | Agents | Main; **bỏ cột "24 giờ"** (R11), bỏ nút Import yaml | Skeleton 6 dòng bảng | EmptyState ui §13 + [+ Tạo agent đầu tiên]; lọc không ra → "Không có agent nào khớp bộ lọc" + [Xoá bộ lọc] | ErrorState + [Thử lại] | PATCH/DELETE 409 → toast lỗi theo mã (phụ lục copy); 409 VERSION → toast + refetch |
-| Agent editor | AgentEditor; "Chạy thử", "Lưu · kiểm thử định tuyến" → nút **"Lưu"**; panel Chạy thử ẩn; "Xem như model thấy" (workflow) disabled `SoonBadge` "Sắp có (H4c)"; bước 5 Quyền: chỉ số tenant + nút "Quản lý quyền agent" disabled "Sắp có (H4b)" | Skeleton form | — | 404 → NotFound; lỗi tải agent-types/profiles/workflows → Alert inline trong bước tương ứng + [Thử lại] (form vẫn sửa được phần khác) | 409 VERSION → ConflictDialog; 422/400 → lỗi gắn trường |
+| Agent editor | AgentEditor; "Chạy thử", "Lưu · kiểm thử định tuyến" → nút **"Lưu"**; panel Chạy thử ẩn; "Xem như model thấy" (workflow) disabled `SoonBadge` "Sắp có (H4c)"; bước 5 Quyền: chỉ số tenant + nút "Quản lý quyền agent" disabled "Sắp có (H4b)" [CR-080: các nút Chạy thử / Xem như model thấy / Quản lý quyền agent đã gỡ] | Skeleton form | — | 404 → NotFound; lỗi tải agent-types/profiles/workflows → Alert inline trong bước tương ứng + [Thử lại] (form vẫn sửa được phần khác) | 409 VERSION → ConflictDialog; 422/400 → lỗi gắn trường |
 | Orchestrator | Orchestrator; **bỏ tab Kiểm thử, Dry-run, cột Kiểm thử, câu "Lưu… chạy bộ câu kiểm thử", công tắc kế thừa bộ câu**; nút "Lưu" | Skeleton form + bảng | Bảng tenant chỉ có dòng Mặc định → dòng chú thích "Chưa tenant nào có Orchestrator riêng." | ErrorState | 409 VERSION → ConflictDialog; 409 `ORCHESTRATOR_EXISTS` → lỗi ở ô tenant |
 | Mất mạng (mọi màn) | mẫu Admin `state.offline` | — | — | banner "Mất kết nối, thay đổi chưa được lưu" | — |
 
@@ -71,7 +71,7 @@ Menu (ui §2) giữ đủ thứ tự; chỉ **Agents**, **Orchestrator** là lin
 |---|---|---|
 | Agents | Tìm / lọc | Client-side trên danh sách (`limit` 200, §8); tìm theo key + tên VI/EN, không phân biệt hoa thường. **`truncated=true`** → Alert vàng `agents.truncated` (copy) và ô tìm/lọc chuyển sang server: gửi `?q=&runtime=&enabled=` (debounce 300 ms), không lọc client nữa |
 | Agents | Công tắc Bật/Tắt | PATCH optimistic; tắt → toast "Đã tắt {name}. Orchestrator sẽ không còn chọn agent này." + [Hoàn tác] (PATCH ngược với version mới); lỗi → trả trạng thái + toast mã lỗi |
-| Agents | Menu `⋯` | Nhân bản (→ `/agents/new?from=`), Đặt làm Orchestrator (chỉ agent bật, runtime ∈ `ORCHESTRATOR_RUNTIMES`; ConfirmDialog → PUT orchestrator/default với version hiện có), Bật/Tắt, Xoá (ConfirmDialog). "Thử trong Playground", "Cấp cho tenant…" disabled "Sắp có" |
+| Agents | Menu `⋯` | Nhân bản (→ `/agents/new?from=`), Đặt làm Orchestrator (chỉ agent bật, runtime ∈ `ORCHESTRATOR_RUNTIMES`; ConfirmDialog → PUT orchestrator/default với version hiện có), Bật/Tắt, Xoá (ConfirmDialog). "Thử trong Playground", "Cấp cho tenant…" disabled "Sắp có" [CR-080: hai mục này đã gỡ khỏi menu] |
 | Agents | Badge | "Orchestrator" (mặc định) / "Orchestrator · {n} tenant"; "Chưa cấp" khi `entitled_tenant_count=0`; "Mô tả trùng ý" (D11); công tắc + Xoá disabled kèm tooltip khi đang là Orchestrator |
 | Agents | Banner "Cần chú ý" | Chỉ hiện khi có agent **bật** mà chưa cấp tenant: "{n} agent đang bật nhưng chưa cấp cho tenant nào: {keys}". Vế provider dự phòng hiện khi contract có E3, không thì bỏ |
 | Editor | Đổi runtime | Bước ② ③ đổi theo ui §5.2; trường không áp dụng ẩn nhưng giữ giá trị trong state, **khi gửi lọc theo runtime** (vd `dify-*` bỏ `profile_id`) |

@@ -1,12 +1,11 @@
 // HUB-FR-60 · HUB-FR-62 · H4a-R06, R07, R12 · menu ⋯: Nhân bản, Đặt làm Orchestrator (ẩn khi runtime ∉ ORCHESTRATOR_RUNTIMES),
-// Bật/Tắt, Xoá (khoá khi đang là Orchestrator). Playground / Cấp cho tenant: disabled "Sắp có".
+// Bật/Tắt, Xoá (khoá khi đang là Orchestrator). CR-080: đã gỡ mục "Sắp có".
 import type { AgentListItem } from "@ai/contracts/studio";
 import { useRouter } from "@tanstack/react-router";
 import { Ellipsis } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "#/components/shared/ConfirmDialog";
-import { SoonBadge } from "#/components/shared/SoonBadge";
 import { Button } from "#/components/ui/button";
 import {
   DropdownMenu,
@@ -57,12 +56,6 @@ export function AgentRowMenu({ agent, name, onToggle, onSetOrchestrator, onDelet
               {t("agents.menu.setOrch")}
             </DropdownMenuItem>
           ) : null}
-          <DropdownMenuItem disabled>
-            {t("agents.menu.playground")} <SoonBadge kind="soonH4c" />
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            {t("agents.menu.grant")} <SoonBadge kind="soonH4b" />
-          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem disabled={locked} onSelect={onToggle}>
             {agent.enabled ? t("agents.menu.disable") : t("agents.menu.enable")}

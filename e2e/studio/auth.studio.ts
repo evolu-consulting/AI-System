@@ -1,5 +1,5 @@
 // HUB-FR-72 · H4a-AC-01, AC-02 · H4a-R01, R02, R14 · plan-frontend §2, §6 · test-plan H4a §3 E01–E05: đăng nhập Studio,
-// trang "không có quyền" cho role khác (không gọi API cấu hình), khung + menu (mục chưa làm "Sắp có", badge hub config),
+// trang "không có quyền" cho role khác (không gọi API cấu hình), khung + menu (nav chỉ còn link thật, không "Sắp có" — CR-080; badge hub config),
 // URL đích giữ qua đăng nhập (`next`), 404; E14 bước TOTP (QF2).
 import { expect, test } from "@playwright/test";
 import { login, mockStudio, openAuthed, TOTP_CODE } from "./_support";
@@ -50,7 +50,7 @@ for (const role of ["tenant_admin", "member"] as const) {
   });
 }
 
-test('HUB-FR-72 · E04 · khung: menu Studio có link Agents + Orchestrator + Models (bật từ H4b-2); mục chưa làm là "Sắp có" không link; ⇄ Admin [H4a-AC-02 · spec §1]', async ({
+test('HUB-FR-72 · E04 · khung: menu Studio có link Agents + Orchestrator + Models (bật từ H4b-2); nav chỉ còn link thật, không còn mục "Sắp có"; ⇄ Admin [H4a-AC-02 · spec §1 · CR-080]', async ({
   page,
 }) => {
   await mockStudio(page, { session: true });
@@ -60,7 +60,8 @@ test('HUB-FR-72 · E04 · khung: menu Studio có link Agents + Orchestrator + Mo
   await expect(nav.getByRole("link", { name: "Orchestrator" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Models" })).toBeVisible();
   await expect(nav.locator('[aria-disabled="true"]').filter({ hasText: "Models" })).toHaveCount(0);
-  await expect(nav.getByText("Sắp có").first()).toBeVisible();
+  await expect(nav.getByText("Sắp có")).toHaveCount(0);
+  await expect(nav.locator('[aria-disabled="true"]')).toHaveCount(0);
   await expect(page.getByRole("link", { name: "⇄ Evolu Control" })).toBeVisible();
 });
 

@@ -172,3 +172,5 @@ Tổng **154 ca**: R 44 · A 91 · E 19 (readiness 1/M3: +7 e2e). Int: 88/91 đ�
 
 ## 9. Khoá
 Đã khoá 2026-10-06 sau Gate (`H4a-gate.md`, 10efe00): `bun run test:lock:write` thêm 17 file (`tests/acceptance/H4a/**` + `e2e/studio/**`) vào `tests/.lock`; `bun run test:lock:verify` OK (404 file). Chạy lại trước khoá: int 94 ca = 3 xanh trước code (A64, A70, A72) + 91 đỏ `expect`, 0 lỗi dựng dữ liệu (không `PostgresError`/`TypeError`/`beforeAll`); 3 file rules đỏ do thiếu module; e2e đỏ do `studio-web` chưa có — khớp §7. N4: Q10 §4 đã sửa.
+
+> [CR-080] 2026-10-15: UI "Sắp có" đã gỡ; e2e auth E04 (menu) và agents E11 (menu ⋯/editor) kỳ vọng nav/nút cũ do `qc` cập nhật (test khoá).

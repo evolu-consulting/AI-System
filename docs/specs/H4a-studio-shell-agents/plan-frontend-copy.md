@@ -13,7 +13,7 @@ Key trong namespace `studio` (`packages/i18n/locales/studio/{vi,en}.json`). Câu
 | app.name | ✦ Agent Studio | ✦ Agent Studio |
 | nav.group.config / access / test / ops / system | Cấu hình agent / Truy cập / Thử nghiệm / Vận hành / Hệ thống | Agent configuration / Access / Testing / Operations / System |
 | nav.overview, agents, orchestrator, tools, models, secrets, access, playground, runs, cost, jobs, audit, transfer | Tổng quan, Agents, Orchestrator, Tools, Models, Secrets, Quyền agent, Playground, Runs, Chi phí & usage, Jobs & Worker, Nhật ký thay đổi, Import / Export | Overview, Agents, Orchestrator, Tools, Models, Secrets, Agent access, Playground, Runs, Cost & usage, Jobs & Worker, Change log, Import / Export |
-| soon / soonH4b / soonH4c | Sắp có / Sắp có (H4b) / Sắp có (H4c) | Coming soon / Coming soon (H4b) / Coming soon (H4c) |
+| ~~soon / soonH4b / soonH4c~~ | [CR-080: đã xoá 2026-10-15, cùng các key nav/menu/editor "Sắp có" đã gỡ] | |
 | topbar.configBadge | hub config v{n} | hub config v{n} |
 | topbar.toAdmin | ⇄ Admin | ⇄ Admin |
 | user.logout / language | Đăng xuất / Ngôn ngữ | Sign out / Language |

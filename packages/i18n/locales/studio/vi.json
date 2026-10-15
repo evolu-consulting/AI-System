@@ -8,28 +8,15 @@
     "group": {
       "config": "Cấu hình agent",
       "access": "Truy cập",
-      "test": "Thử nghiệm",
-      "ops": "Vận hành",
       "system": "Hệ thống"
     },
-    "overview": "Tổng quan",
     "agents": "Agents",
     "orchestrator": "Orchestrator",
-    "tools": "Tools",
     "models": "Models",
     "secrets": "Secrets",
     "access": "Quyền agent",
-    "playground": "Playground",
-    "runs": "Runs",
-    "cost": "Chi phí & usage",
-    "jobs": "Jobs & Worker",
-    "audit": "Nhật ký thay đổi",
-    "transfer": "Import / Export",
     "settings": "Cài đặt"
   },
-  "soon": "Sắp có",
-  "soonH4b": "Sắp có (H4b)",
-  "soonH4c": "Sắp có (H4c)",
   "topbar": {
     "configBadge": "hub config v{n}",
     "toAdmin": "⇄ Evolu Control",
@@ -185,8 +172,6 @@
     "menu": {
       "duplicate": "Nhân bản",
       "setOrch": "Đặt làm Orchestrator",
-      "playground": "Thử trong Playground",
-      "grant": "Cấp cho tenant…",
       "enable": "Bật",
       "disable": "Tắt",
       "delete": "Xoá"
@@ -248,7 +233,6 @@
     "cancel": "Huỷ",
     "save": "Lưu",
     "saving": "Đang lưu…",
-    "tryRun": "Chạy thử",
     "loadError": "Không tải được agent",
     "step": {
       "1": "Thông tin",
@@ -317,8 +301,7 @@
       "typeAll": "Tất cả loại"
     },
     "access": {
-      "count": "Đã cấp cho {n} tenant. Tenant admin tự cấp cho group trong Admin › Groups.",
-      "manage": "Quản lý quyền agent"
+      "count": "Đã cấp cho {n} tenant. Tenant admin tự cấp cho group trong Admin › Groups."
     },
     "orchView": {
       "title": "Xem như Orchestrator thấy",

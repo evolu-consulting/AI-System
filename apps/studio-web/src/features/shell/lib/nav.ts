@@ -1,60 +1,27 @@
-// HUB-FR-72 · menu Studio theo ui-agent-studio §2; H4a chỉ Agents + Orchestrator là link, còn lại "Sắp có" (plan-frontend §2).
-import type { SoonKind } from "#/components/shared/SoonBadge";
+// HUB-FR-72 · CR-080 · menu Studio: chỉ các mục đã làm (link thật); mục chưa làm không hiển thị.
+export type NavId = "agents" | "orchestrator" | "models" | "secrets" | "settings" | "access";
 
-export type NavId =
-  | "overview"
-  | "agents"
-  | "orchestrator"
-  | "tools"
-  | "models"
-  | "secrets"
-  | "settings"
-  | "access"
-  | "playground"
-  | "runs"
-  | "cost"
-  | "jobs"
-  | "audit"
-  | "transfer";
-
-export type NavItem =
-  | {
-      id: NavId;
-      kind: "link";
-      to: "/agents" | "/orchestrator" | "/models" | "/secrets" | "/settings" | "/access";
-    }
-  | { id: NavId; kind: "soon"; soon: SoonKind };
+export type NavItem = {
+  id: NavId;
+  kind: "link";
+  to: "/agents" | "/orchestrator" | "/models" | "/secrets" | "/settings" | "/access";
+};
 
 export type NavGroup = {
-  labelKey:
-    | "nav.group.config"
-    | "nav.group.access"
-    | "nav.group.test"
-    | "nav.group.ops"
-    | "nav.group.system"
-    | null;
+  labelKey: "nav.group.config" | "nav.group.access" | "nav.group.system";
   items: NavItem[];
 };
 
-const soon = (id: NavId, kind: SoonKind = "soon"): NavItem => ({ id, kind: "soon", soon: kind });
-
 export const NAV_GROUPS: NavGroup[] = [
-  { labelKey: null, items: [soon("overview")] },
   {
     labelKey: "nav.group.config",
     items: [
       { id: "agents", kind: "link", to: "/agents" },
       { id: "orchestrator", kind: "link", to: "/orchestrator" },
-      soon("tools", "soonH4b"),
       { id: "models", kind: "link", to: "/models" },
       { id: "secrets", kind: "link", to: "/secrets" },
     ],
   },
   { labelKey: "nav.group.access", items: [{ id: "access", kind: "link", to: "/access" }] },
-  { labelKey: "nav.group.test", items: [soon("playground", "soonH4c")] },
-  { labelKey: "nav.group.ops", items: [soon("runs"), soon("cost"), soon("jobs")] },
-  {
-    labelKey: "nav.group.system",
-    items: [soon("audit"), soon("transfer"), { id: "settings", kind: "link", to: "/settings" }],
-  },
+  { labelKey: "nav.group.system", items: [{ id: "settings", kind: "link", to: "/settings" }] },
 ];

@@ -142,12 +142,11 @@ test('HUB-FR-69 · E10 · hai tab cùng sửa `hoadon`: tab 1 lưu (v2), tab 2 l
   await ctx.close();
 });
 
-test("HUB-FR-60 · E11 · sửa agent: Key readonly; nút Chạy thử disabled (Sắp có H4c) [plan-frontend §3 · QB5]", async ({
+test("HUB-FR-60 · E11 · sửa agent: Key readonly [plan-frontend §3 · QB5 · CR-080]", async ({
   page,
 }) => {
   await mockStudio(page, { session: true });
   await openAuthed(page, `/agents/${ID.hoadon}`);
   await expect(page.getByRole("heading", { name: "Sửa agent" })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Key" })).toHaveAttribute("readonly", "");
-  await expect(page.getByRole("button", { name: "Chạy thử" })).toBeDisabled();
 });
