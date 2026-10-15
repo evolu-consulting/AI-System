@@ -81,11 +81,18 @@ export function DataTable<T>({
   const showEmpty = !isLoading && rows !== undefined && rows.length === 0 && empty;
   if (showEmpty) return <>{empty}</>;
   return (
-    <div className="rounded-lg border border-border bg-card" aria-busy={isLoading || undefined}>
+    // Khung cuộn: thân bảng cuộn trong khung (cao ≤ viewport − header trang), thead sticky; ngang cuộn cùng khung.
+    <div
+      className="max-h-[max(20rem,calc(100dvh-20rem))] overflow-auto rounded-lg border border-border bg-card"
+      aria-busy={isLoading || undefined}
+    >
       {isLoading ? <LoadingState onRetry={onRetry}>{null}</LoadingState> : null}
-      <Table className={cn(isFetching && !isLoading && "opacity-60 transition-opacity")}>
+      <Table
+        containerClassName="overflow-visible"
+        className={cn(isFetching && !isLoading && "opacity-60 transition-opacity")}
+      >
         <caption className="sr-only">{caption}</caption>
-        <TableHeader>
+        <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_var(--color-border)]">
           <TableRow>
             {columns.map((c) => (
               <TableHead key={c.id} className={c.className}>
