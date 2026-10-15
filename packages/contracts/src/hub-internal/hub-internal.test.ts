@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  ApplyReportSchema,
   DifyCredentialResponseSchema,
   ErrorResponseSchema,
   HUB_INTERNAL_ERRORS,
@@ -40,6 +41,27 @@ describe("HUB-FR-89 · hub-internal", () => {
     expect(DifyCredentialResponseSchema.safeParse({ ...c, base_url: "d/v1" }).success).toBe(false);
     expect(DifyCredentialResponseSchema.safeParse({ ...c, api_key: "" }).success).toBe(false);
     expect(DifyCredentialResponseSchema.safeParse({ ...c, extra: 1 }).success).toBe(false);
+  });
+});
+
+describe("HUB-FR-129 · B1 · ApplyReport.detail nhận null (Runtime gửi null)", () => {
+  const base = {
+    status: "pushed" as const,
+    target_sha: "a".repeat(40),
+    head_sha: "b".repeat(40),
+    rebased: false,
+    code: null,
+    conflict_files: [],
+    failures: [],
+    test: null,
+  };
+  test("HUB-FR-129 · detail: null | undefined | chuỗi ≤ 300 đều hợp lệ; > 300 từ chối", () => {
+    // B1 (D3 UAT): `report.py` gửi `"detail": null` ⇒ trước đây `.optional()` chặn ⇒ Hub 400, job failed, run kẹt.
+    expect(ApplyReportSchema.safeParse({ ...base, detail: null }).success).toBe(true);
+    expect(ApplyReportSchema.safeParse({ ...base, detail: undefined }).success).toBe(true);
+    expect(ApplyReportSchema.safeParse(base).success).toBe(true);
+    expect(ApplyReportSchema.safeParse({ ...base, detail: "x".repeat(300) }).success).toBe(true);
+    expect(ApplyReportSchema.safeParse({ ...base, detail: "x".repeat(301) }).success).toBe(false);
   });
 });
 

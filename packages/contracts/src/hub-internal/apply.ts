@@ -29,7 +29,9 @@ export const ApplyReportSchema = z
       .max(APPLY_CONFLICT_FILES_MAX),
     failures: z.array(AutofixFailureSchema).max(AUTOFIX_FAILURES_MAX),
     test: AutofixTestSchema.nullable(),
-    detail: z.string().max(APPLY_DETAIL_MAX).optional(),
+    // B1 (P-c2 D3 UAT): Runtime `report.py` luôn gửi key `detail` = null khi không có chi tiết (các field anh em đều
+    // `.nullable()`); `.nullish()` = nullable + optional để nhận cả null, bỏ trống, lẫn chuỗi ≤ 300.
+    detail: z.string().max(APPLY_DETAIL_MAX).nullish(),
   })
   .superRefine((r, ctx) => {
     const add = (path: string, message: string) =>
