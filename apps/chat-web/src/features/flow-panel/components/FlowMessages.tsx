@@ -72,7 +72,7 @@ export function FlowMessages({ data }: { data: FlowPanelData }) {
       aria-label={t("flow.log")}
       className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain"
     >
-      <div ref={contentRef} className="flex flex-col gap-4 p-4 text-body leading-[1.55]">
+      <div ref={contentRef} className="flex flex-col gap-4 p-4 pb-6 text-body leading-[1.55]">
         {data.loading ? (
           <PanelSkeleton />
         ) : (

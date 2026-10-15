@@ -1,10 +1,11 @@
 // CHAT-AC-19, CHAT-AC-21 · `nav "Hội thoại"` 260px: logo + "AI Chat · công ty", Hội thoại mới, tìm, danh sách, người dùng.
 // CR-050: danh sách = 3 mục thu gọn được — Nhóm (`+` = Nhóm mới) · Users · Hỏi AI.
 import { Link } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { PanelLeftClose, Plus } from "lucide-react";
 import type { Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandLogo } from "~/components/shared/BrandLogo";
+import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { ProcessDmRow } from "~/features/processes/inbox/components/ProcessDmRow";
 import { TodoGroup } from "~/features/processes/inbox/components/TodoGroup";
@@ -12,6 +13,7 @@ import { useProcessEngineOn } from "~/features/processes/shared/engine";
 import { ConversationList } from "./ConversationList";
 import { RoomSections } from "./RoomSections";
 import { SidebarGroup } from "./SidebarGroup";
+import { SidebarRail } from "./SidebarRail";
 import { UserMenu } from "./UserMenu";
 
 type Props = {
@@ -29,16 +31,42 @@ type Props = {
   onNewGroup?: () => void;
   onNavigate?: () => void;
   onOpenSettings: () => void;
+  /** Chỉ desktop: có `onToggleCollapse` thì hiện nút thu gọn; `collapsed` → rail. */
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 };
 
 export function Sidebar(p: Props) {
   const { t } = useTranslation();
   const processOn = useProcessEngineOn(); // P-a FD8: "Chờ tôi kiểm" + DM "Quy trình" chỉ khi engine on
+  if (p.collapsed && p.onToggleCollapse) {
+    return (
+      <SidebarRail
+        activeId={p.activeId}
+        activeRoomId={p.activeRoomId}
+        onExpand={p.onToggleCollapse}
+        onOpenSettings={p.onOpenSettings}
+      />
+    );
+  }
   return (
     <nav
       aria-label={t("shell.nav")}
-      className="flex h-full w-[260px] shrink-0 flex-col gap-3 border-r border-sidebar-border bg-card px-3 py-4"
+      className="relative flex h-full w-[260px] shrink-0 flex-col gap-3 border-r border-sidebar-border bg-card px-3 py-4"
     >
+      {p.onToggleCollapse && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={t("shell.collapseSidebar")}
+          title={t("shell.collapseSidebar")}
+          onClick={p.onToggleCollapse}
+          className="absolute top-2 right-2 size-8 text-muted-foreground"
+        >
+          <PanelLeftClose aria-hidden />
+        </Button>
+      )}
       <div className="flex flex-col gap-0.5 px-1">
         <BrandLogo
           className="min-h-[62px] items-center"

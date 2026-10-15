@@ -45,7 +45,7 @@ export function ThreadView(props: ThreadViewProps) {
       >
         <div
           ref={contentRef}
-          className="mx-auto flex w-full max-w-[800px] flex-col gap-4 p-4 sm:p-6"
+          className="mx-auto flex w-full max-w-[800px] flex-col gap-4 p-4 pb-6 sm:p-6 sm:pb-8"
         >
           {props.loading && <ThreadSkeleton />}
           {props.loadingOlder && (

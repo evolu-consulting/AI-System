@@ -44,7 +44,7 @@ export function RoomTimeline(p: Props) {
     >
       <div
         ref={p.contentRef}
-        className="mx-auto flex w-full max-w-[800px] flex-col px-4 py-4 sm:px-6"
+        className="mx-auto flex w-full max-w-[800px] flex-col px-4 pt-4 pb-6 sm:px-6"
       >
         {p.loadingOlder && <p className="py-2 text-center text-caption text-muted-foreground">…</p>}
         {!p.hasOlder && p.messages.length > 0 && (

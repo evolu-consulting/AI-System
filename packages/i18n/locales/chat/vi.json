@@ -61,6 +61,8 @@
     "settings": "Cài đặt",
     "nav": "Hội thoại",
     "openList": "Danh sách hội thoại",
+    "collapseSidebar": "Thu gọn thanh bên",
+    "expandSidebar": "Mở rộng thanh bên",
     "newGroup": "Nhóm mới"
   },
   "group": {
@@ -136,6 +138,7 @@
     "panel": "Flow đang mở",
     "log": "Tin nhắn trong flow",
     "dragClose": "Kéo để đóng",
+    "resize": "Đổi độ rộng khung flow",
     "cold": "Đang mở lại flow, lần đầu có thể mất vài giây…",
     "noClose": "Flow không có nút đóng. Rảnh lâu thì hệ thống tự nghỉ, chat lại thì tự mở lại đủ ngữ cảnh."
   },

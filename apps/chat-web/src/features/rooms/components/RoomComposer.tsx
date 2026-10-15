@@ -36,7 +36,7 @@ export function RoomComposer({ roomId, target, group, onSent }: Props) {
     void qc.invalidateQueries({ queryKey: ["agents", "menu"] });
   }, [qc, roomId]);
   return (
-    <div className="mx-auto w-full max-w-[800px] px-4 pb-5 sm:px-6">
+    <div className="mx-auto w-full max-w-[800px] px-4 pt-3 pb-5 sm:px-6">
       <Composer
         variant="room"
         draftKey={draftKey}

@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTitle } from "~/components/ui/sheet";
 import type { ComposerHandle } from "~/features/composer/components/Composer";
 import { cn } from "~/lib/utils";
 import { useMinWidth } from "../hooks/use-min-width";
+import { PANEL_MAX_PX, PANEL_MIN_PX, usePanelWidth } from "../hooks/use-panel-width";
 import { useSheetDrag } from "../hooks/use-sheet-drag";
 
 export const FLOW_PANEL_MIN_PX = 640;
@@ -28,12 +29,29 @@ export function FlowAside({ running, onClose, children }: FlowFrameProps) {
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Escape" && !running && !e.defaultPrevented) onClose();
   };
+  const panel = usePanelWidth();
   return (
     <aside
       aria-label={t("flow.panel")}
       onKeyDown={onKeyDown}
-      className="flex min-h-0 min-w-0 max-w-[480px] flex-[1_1_420px] flex-col border-l border-border bg-card shadow-lg"
+      style={{ width: panel.width, maxWidth: "70%" }}
+      className="relative flex min-h-0 min-w-0 shrink-0 flex-col border-l border-border bg-card shadow-lg"
     >
+      {/* biome-ignore lint/a11y/useSemanticElements: window splitter focusable (WAI-ARIA), <hr> không kéo/focus được */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={t("flow.resize")}
+        aria-valuemin={PANEL_MIN_PX}
+        aria-valuemax={PANEL_MAX_PX}
+        aria-valuenow={panel.width}
+        tabIndex={0}
+        {...panel.handleProps}
+        className={cn(
+          "absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none outline-none transition-colors hover:bg-ring/40 focus-visible:bg-ring/60",
+          panel.dragging && "bg-ring/60",
+        )}
+      />
       {children({ mobile: false })}
     </aside>
   );

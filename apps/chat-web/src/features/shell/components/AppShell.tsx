@@ -15,6 +15,7 @@ import { useDebouncedValue } from "../hooks/use-debounced-value";
 import { useIsDesktop } from "../hooks/use-is-desktop";
 import { useSettings } from "../hooks/use-settings";
 import { useShortcuts } from "../hooks/use-shortcuts";
+import { useSidebarCollapsed } from "../hooks/use-sidebar-collapsed";
 import { conversationIdOf, roomIdOf } from "../lib/conversation-path";
 import { SettingsDialog } from "./SettingsDialog";
 import { Sidebar } from "./Sidebar";
@@ -40,6 +41,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const desktop = useIsDesktop();
   const settings = useSettings();
+  const rail = useSidebarCollapsed();
   useSessionRedirect();
   useMeStream();
   const conn = useConnection();
@@ -66,6 +68,8 @@ export function AppShell() {
 
   const sidebar = (onNavigate?: () => void) => (
     <Sidebar
+      collapsed={desktop && rail.collapsed}
+      onToggleCollapse={desktop ? rail.toggle : undefined}
       tenantName={tenantName}
       displayName={settings.displayName}
       username={settings.username}
