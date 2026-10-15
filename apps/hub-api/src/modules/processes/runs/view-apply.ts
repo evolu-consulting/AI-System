@@ -36,6 +36,8 @@ type Row = {
   error_code: ApplyErrorCode | null;
   conflict_files: string[] | null;
   failures: AutofixFailure[] | null;
+  test_exit_code: number | null;
+  test_duration_ms: string | number | null;
   created_at: string;
   l_id: string | null;
   l_name: string | null;
@@ -59,6 +61,11 @@ function toApplyView(r: Row): ApplyStageView {
     conflict_files: Array.isArray(r.conflict_files) ? r.conflict_files : [],
     failures: Array.isArray(r.failures) ? r.failures : [],
     test_log_file: fileOf(r.l_id, r.l_name, r.l_mime, r.l_size),
+    // M-test-field · {exit_code, duration_ms} khi job có chạy test (duration non-null); ngược lại null.
+    test:
+      r.test_duration_ms === null
+        ? null
+        : { exit_code: r.test_exit_code, duration_ms: Number(r.test_duration_ms) },
     created_at: r.created_at,
   };
 }
@@ -73,6 +80,7 @@ export async function applyViews(
   const rows = await tx.execute<Row>(sql`
     select distinct on (aa.stage_run_id) s.stage_idx, aa.mode, aa.status, aa.branch, aa.target_sha, aa.head_sha,
       aa.rebased, aa.provider, aa.pr_number, aa.pr_url, aa.auto_merge, aa.error_code, aa.conflict_files, aa.failures,
+      aa.test_exit_code, aa.test_duration_ms,
       ${iso("aa.created_at")} as created_at,
       la.id as l_id, la.filename as l_name, la.mime as l_mime, la.size as l_size
     from hub.autofix_applies aa

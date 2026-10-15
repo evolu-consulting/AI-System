@@ -69,6 +69,18 @@ export const ApplyStageViewSchema = z
       .max(APPLY_CONFLICT_FILES_MAX),
     failures: z.array(AutofixFailureSchema).max(AUTOFIX_FAILURES_MAX),
     test_log_file: AutofixFileSchema.nullable(),
+    /**
+     * M-test-field (P-c2 D3 UAT) · kết cục chạy test của job Áp (`autofix_applies.test_exit_code/test_duration_ms`),
+     * giống `AutofixStageView.test`. FE (`AutofixFailures.tsx`) đọc `view.test?.exit_code`/`duration_ms`. Optional để
+     * fixture/view cũ (trước bản vá) vẫn hợp lệ; Hub luôn gửi (null khi không chạy test).
+     */
+    test: z
+      .strictObject({
+        exit_code: z.number().int().nullable(),
+        duration_ms: z.number().int().min(0),
+      })
+      .nullable()
+      .optional(),
     created_at: IsoDateTime,
   })
   .superRefine((v, ctx) => {
