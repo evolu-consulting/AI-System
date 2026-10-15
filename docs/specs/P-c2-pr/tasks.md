@@ -25,8 +25,8 @@ Cột `Đọc`: đúng các mục cần. `Rủi ro`: `docs/WORKFLOW.md` "Chính 
 | F2 | FE editor executor `apply` + lỗi `APPLY_*`; giữ nhãn/role `combobox "Người thực hiện"` + option "Áp bản sửa" (plan-frontend §5, G13) | frontend-lead | thường | `plan-frontend.md` | `apps/admin-web/src/features/processes/**` | B1, T2 | xem `plan-frontend.md` §9 | [x] |
 | F3 | FE kết quả Áp + decision `apply_*` + dòng gate `apply_mode` (chat-web + admin-web) | frontend-lead | thường | `plan-frontend.md` | `apps/chat-web/**`, `apps/admin-web/**` | B7, T2 | xem `plan-frontend.md` §9 | [x] |
 | D1 | `done:pc2` (script gộp test-plan §7) + CODEMAP/TRACE (docs-architect) | backend-lead + docs-architect | thường | `test-plan §7` | `tools/scripts/src/done-pc2.ts`, `package.json`, `docs/CODEMAP.md`, `docs/TRACE.md` | B8, R3, F3 | `bun run done:pc2` | [x] 2026-10-15 D1a script done:pc2 (22 bước §7, backend-lead; chặng env-gated TD #177) + D1b CODEMAP/TRACE/STATE/INDEX (docs-architect) |
-| D2 | review code + security review (khoá nguồn, egress, refspec, cách ly mirror) | reviewer | cao | spec §6 | — | D1 | — | [ ] |
-| D3 | UAT `qc-uat` (mock GitHub + bare repo, nhiều user/tenant) | qc-uat | thường | spec §8, test-plan | `evidence/<ngày>/REPORT.md` | D2 | — | [ ] |
+| D2 | review code + security review (khoá nguồn, egress, refspec, cách ly mirror) | reviewer | cao | spec §6 | — | D1 | — | [x] 2026-10-15 APPROVED, bảo mật SAFE 6 hàng rào; Minor không gate → TD #178 |
+| D3 | UAT `qc-uat` (mock GitHub + bare repo, nhiều user/tenant) | qc-uat | thường | spec §8, test-plan | `evidence/<ngày>/REPORT.md` | D2 | — | [x] 2026-10-15 vòng 1 không đạt (B1/B2) → vá `4609ef1a`/`ef316ff2`/`0ed49421`; **vòng 2 ĐẠT** (`0a34ad5e`, REPORT "Vòng 2") bằng mock GitHub + bare repo |
 | S1 | Smoke GitHub thật — **hard stop**: cần repo thử + PAT của người dùng (Q9) | qc-uat | cao | spec §7 | `evidence/` | D3 + người dùng cấp | — | [ ] chờ người dùng |
 
 ## Bàn giao khi xin merge
