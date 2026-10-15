@@ -8,6 +8,11 @@ describe("describeApiError", () => {
       "errors.AGENT_HAS_HISTORY",
     );
   });
+  test("NOT_CONFIGURED (thiếu HUB_SECRETS_KEY) → errors.NOT_CONFIGURED, không hiện mã thô", () => {
+    expect(describeApiError(new ApiError(409, "NOT_CONFIGURED", "x")).key).toBe(
+      "errors.NOT_CONFIGURED",
+    );
+  });
   test("INVALID_REFERENCE mang field", () => {
     const e = new ApiError(400, "INVALID_REFERENCE", "x", { field: "profile_id" });
     expect(describeApiError(e).params?.field).toBe("profile_id");
