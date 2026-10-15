@@ -129,7 +129,10 @@ describe("V08–V09 · seed mẫu [PC-R03, HUB-FR-130]", () => {
   it("HUB-FR-130 · PC-R03 · D8 · V08 · seed ⇒ template `fixbug-apply` tắt sẵn, 1 stage tự-sửa (agent, review), hợp contract + autofixStageIssues = []; `fixbug-evolu` không autofix", async () => {
     needPc(c);
     const s = await loadSeed();
-    await fn(s, "runHubSeed")({ url: OWNER_URL, dir: s.DEFAULT_SEED_DIR, appEnv: "development" });
+    await fn(
+      s,
+      "runHubSeed",
+    )({ url: OWNER_URL, dir: s.DEFAULT_SEED_DIR, appEnv: "development", fixtures: true });
     const tpl = async (key: string): Promise<Json> =>
       (
         await c.sql<
@@ -159,7 +162,10 @@ describe("V08–V09 · seed mẫu [PC-R03, HUB-FR-130]", () => {
   it("HUB-FR-130 · V09 · seed lần 2 không nhân đôi fixbug-apply", async () => {
     needPc(c);
     const s = await loadSeed();
-    await fn(s, "runHubSeed")({ url: OWNER_URL, dir: s.DEFAULT_SEED_DIR, appEnv: "development" });
+    await fn(
+      s,
+      "runHubSeed",
+    )({ url: OWNER_URL, dir: s.DEFAULT_SEED_DIR, appEnv: "development", fixtures: true });
     const [n] = await c.sql<{ n: number }[]>`select count(*)::int as n from hub.process_defs
       where tenant_id is null and key = 'fixbug-apply' and deleted_at is null`;
     expect(n?.n).toBe(1);

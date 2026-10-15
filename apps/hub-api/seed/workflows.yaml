@@ -8,9 +8,8 @@
 #     side_effect: [create-trello-card]
 # LƯU Ý (X1): `workflow_flags.side_effect` KHÔNG còn hiệu lực — Hub đọc cột `admin.workflows.side_effect` (đặt qua Admin).
 # HUB-FR-109 · SC-2: giai đoạn `ghi-so` (real_action) của mẫu `hoa-don` do agent `hoa-don-doc` chạy — gắn workflow Admin
-# `ghi-so` (tool MCP, `side_effect` đặt ở `admin.workflows.side_effect`) để Hub xác nhận trước + audit `authorize_real_action`
-# (`launcher.realActionPre`). Admin chưa tạo workflow `ghi-so` ⇒ seed bỏ dòng + cảnh báo (an toàn), không gắn.
-agent_workflows:
-  - { agent: hoa-don-doc, workflow: ghi-so }
+# `ghi-so`. CR-081: agent `hoa-don-doc` là fixture opt-in ⇒ `agent_workflows` của nó chuyển sang `processes.full.yaml`
+# (chỉ nạp khi HUB_SEED_FIXTURES=1), tránh tham chiếu agent không có trong seed tối giản.
+agent_workflows: []
 workflow_flags:
   side_effect: []

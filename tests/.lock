@@ -58,7 +58,7 @@ eaa63d37a3bcb1506bb1048467a0c065ee1c5b71956ad18abdc15d2240e9cd2b  e2e/K1/chat/no
 dd825133ab18bc62f767467ce64746ab8d307810a3d2a2678f31319cea9dcd7f  e2e/K1/playwright.k1.config.ts
 0b2d5f3c0a82d8633992f089d1a15db10967d4e09be26df974098c0929cfbd39  e2e/P-a/_pa-data.ts
 ace323079e642527c45c86da7d7388b21836ca06695783db981ef0e70cdee95a  e2e/P-a/_pa-runtime.ts
-e0837d8686b7104d1770bdf80a23a50b7e0188b83d56aeb45a43e81877b0397e  e2e/P-a/_pa-stack.ts
+96ae38ee8114baa40a47b96a701b506319a65ab2ade90dfddfb0968244bdb9d9  e2e/P-a/_pa-stack.ts
 5da445965ca78d1a6f13d9e8d7b62ff1cab00dd3324409a59008ea10eaf45f56  e2e/P-a/_pa-support.ts
 3b77b3f70b3a8b0320cbe305e70052dd793df49b9f3d57107f97b38f82d7c8ae  e2e/P-a/pf1/ask-ai.pa.ts
 fc05c48f9cbf2931403f9075f094863f44783b256a23ef1bbbd3284dd892b33e  e2e/P-a/pf1/composer.pa.ts
@@ -451,7 +451,7 @@ e5bf08f75e96a4883ddd1054f522f12c9cf0e503ed815d0fc975d0b0cc276bd1  tests/acceptan
 d7cf316ae66576d50699255d5025e59864d72eaafd480eb689aa77dd4808db1c  tests/acceptance/K1/rules/kh-query-rules.test.ts
 9e7cd98a1fb42286549f748e7905cbca551b0b2d9b406f366071132fa05a7b7a  tests/acceptance/K1/rules/kh-rules.test.ts
 96fea51aa64dc0671beac43e4d23713b7f94cf3ff8992c2a61dfdad3db58196d  tests/acceptance/K1/rules/kh-summary-rules.test.ts
-8691b85dda5980512ff0896d32ad4f6a5307d5adf4a371d28b12500d16925a9b  tests/acceptance/K1/seed.int.test.ts
+07c345dc1221423f02dd0488564be913ea7c4186f0e16cd4395301077651fbc3  tests/acceptance/K1/seed.int.test.ts
 71103009398bb4d0caca5f7ac9f8ead6edb10936b92110595242064cd6824fe4  tests/acceptance/K1/studio.int.test.ts
 9fd9b4ccc1fba679d297e13055cdc1310cfbb954fb7105508bff6c12bd182a9c  tests/acceptance/K1/worklog.int.test.ts
 485e75650171f0003c62315cf010b16fdbd214e0fdad48ada5952f13b9b583f3  tests/acceptance/M1/_data.ts
@@ -615,7 +615,7 @@ fd855cf575dea61ae2e30b4b8363448552827c8d03a00a834ec1e05f944864c2  tests/acceptan
 1ca003276c1a80d581c16d3ef5a168fa902b6b8923383ff92e5b3fe7d75c03a0  tests/acceptance/P-a/pf4/rules/usage.test.ts
 2ebf7308b153d5161257424d48bf9c723e79b329cf293cf05577401764b7a83d  tests/acceptance/P-a/pf4/usage-real.int.test.ts
 f09c82f9bb24629c0305a7c5f8c7d0f981210ec894683e2ab509e0fb830bff61  tests/acceptance/P-a/pf4/usage.int.test.ts
-c8a74cb95a355fee86c3957fd5cb24619146a851735f0579df8cfd8392ab53ab  tests/acceptance/P-a/scenario/_local.ts
+675353b87e73fd37a173db9a131c212a99f9d0b3324f613af044107117eeb911  tests/acceptance/P-a/scenario/_local.ts
 31e8348e60df9de4f0e9e6688bac7bc2b18e6a9520f6acf67cc39d548dd49e11  tests/acceptance/P-a/scenario/hoa-don.int.test.ts
 0efa9b5ca300a340f9c3a67e9ac0236ed28776a00b0fab9fff4031c417e09bcf  tests/acceptance/P-a/scenario/sdlc.int.test.ts
 96c5338c2a60727c8cb34db385ed1e683a937e64c2e62e785353c4fe64e8ae4c  tests/acceptance/P-a/step0/defs.int.test.ts
@@ -630,7 +630,7 @@ b1623f719e3d4b946756cc9280a8a1b3f1f17e1a736b55d8df376acc36c9e8c7  tests/acceptan
 e564ac5b68a2675b8b5383cc008818799f547e29ff11d2e6febbe04723fe60f4  tests/acceptance/P-a/step0/rules/run-access.test.ts
 94d2378967e2d1f3d55fcabcd5cfd56cfc4e9b179bd49da6d241464aec8f085f  tests/acceptance/P-a/step0/rules/task.test.ts
 2e978db7060bcc3ed03d7168a3a08a445d4952496a004fdffa4d85eacea3d97e  tests/acceptance/P-a/step0/rules/thread.test.ts
-46bb96e134ab30888ba045f7d4c784ad832890b3d6edfb395291d2907d3dca9f  tests/acceptance/P-a/step0/seed.int.test.ts
+f087c50942c7c2f01f62e0ec6d50b1222807cc453ed458cc90bfbc889a99ff5b  tests/acceptance/P-a/step0/seed.int.test.ts
 4b4db708d297f033384b1d9a7f3623146967ae4e27a2774b45d461052d8ee83f  tests/acceptance/P-a/step0/thread-poster.int.test.ts
 b55fa55271aa881b6579e02b4b26635c07b34be141a476f398549a4997840c3c  tests/acceptance/P-a/step0/thread-read.int.test.ts
 70a5e4d358e2d49d336c181e0ad7238325d18c689e41e8af05236e0a5c043036  tests/acceptance/P-a/step0/thread-route.int.test.ts
@@ -681,13 +681,13 @@ eccbcd0f1b9d7fd89db752b04d69b83d0deac50ce3dd0a9bd5bdd22aa1482cb0  tests/acceptan
 b109a4c404f1486501104a5dc19747d8835d69793cbe004342ca55a1917e143b  tests/acceptance/P-b2/rules/handoff-session.test.ts
 c4195f5295a2011395e314a09d6defa71b284e7b9d42fc2937496bb9410c6bcb  tests/acceptance/P-b2/rules/process-steps.test.ts
 ee182641e398dfcde2e9ffd35f8c487c9e76f262ffc0e9fe98be6d777ec49955  tests/acceptance/P-b2/rules/step-rules.test.ts
-c3c3ddd7f4bb32f64f015c732b7a9087c9afd112330947fff84694031b9688bf  tests/acceptance/P-b2/s0/defs.int.test.ts
+0f25a7b1d205b8c442092bb73914bc4d633c91c91de28c845462a3a04776951e  tests/acceptance/P-b2/s0/defs.int.test.ts
 5382acd80286025109ac48ac924c4c2b0f7b46ad40ee4b4311195fba26f023d2  tests/acceptance/P-b2/s0/migration.int.test.ts
 3fa363ef700de8ad0cb16485ccf8549862cf96e78229abca65e07c812296a2c0  tests/acceptance/P-b2/tok/handoff.int.test.ts
 e5afe7da5d733bb43d11d621a01dd1e1b2772bac26bbcee47243405fc6859f10  tests/acceptance/P-b2/tok/resume.int.test.ts
 817f57d505d47b3a4fc38d383669a6479b8c8f89c3567a3d5bdc920c2f82f171  tests/acceptance/P-c/_support/pc.ts
 31163b9d8e5c10eb95015f58c9951c83fae331978f16d20b1260c6a769162af2  tests/acceptance/P-c/db.int.test.ts
-ae05582e71e7b8b7a120b446fdd6dcc015f51ee77c4775bbeae31efc821f98aa  tests/acceptance/P-c/defs.int.test.ts
+a8455530d8bc05a407944b1c4fa965a4ac89e23763bd885bafb8f46c25550fd2  tests/acceptance/P-c/defs.int.test.ts
 7d8722ed3153f4f69a396babcbaa6b93134fc64b9b256e8bfbcb630eb39c7653  tests/acceptance/P-c/flow.int.test.ts
 862f9fc9f86ac8a97d415cc336da67acc5338eacc4ef7121b6a97115bae6702d  tests/acceptance/P-c/kh.int.test.ts
 1d65164aa5861e63be7228765497f1344f44fe7013be1fe6bb5750e5b00d5de8  tests/acceptance/P-c/report.int.test.ts
@@ -701,7 +701,7 @@ dea08557abe79936ed347bb0177ad8942a7912c1410e1d2ad4c5b825ff605cea  tests/acceptan
 2ee32052b6b815ea3b6e9992f02ec15802006ac0c871bd0408831974c8bd5db7  tests/acceptance/P-c2/credential.int.test.ts
 77e49902693bb476c0dae17914cee41abdd050e619bfa2cf1bf71143bef9dca5  tests/acceptance/P-c2/db.int.test.ts
 25cffb4645dcc1b1e4997b00188257d21f3a899144fe8932b49c61b925c0006c  tests/acceptance/P-c2/decision.int.test.ts
-8c3c72f62813c0624beef269c15150c8e1cf93396f2a8a902b154be4b7cabd87  tests/acceptance/P-c2/defs.int.test.ts
+9b5a473dd5721f3be412092a1a4e9c7dd2f7ab2d2f1cda442228df33c08ddbb7  tests/acceptance/P-c2/defs.int.test.ts
 0433e224a0e527f4a4183400625f58879ba110671b35b8bc80e2fe6ded39eecc  tests/acceptance/P-c2/flow.int.test.ts
 72e41048103b8650398d7f7e28864f1d19892a831ddebcbcfe8c954c358f05bc  tests/acceptance/P-c2/provider.int.test.ts
 8776d7cd42530b3dfb86e519009909904920ca1503f1d46997e0e6b3f8bede38  tests/acceptance/P-c2/report.int.test.ts

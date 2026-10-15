@@ -248,13 +248,15 @@ async function fixtureStep(notes: string[], contract: boolean): Promise<void> {
   }
 }
 
-/** Phòng mẫu (X2a B8) sau `db:migrate` + user fixture; ghi trực tiếp DB bằng `DATABASE_URL` (owner). */
-async function roomsStep(notes: string[], contract: boolean): Promise<void> {
+/** Phòng mẫu (X2a B8) sau `db:migrate` + user fixture; ghi trực tiếp DB bằng `DATABASE_URL` (owner).
+ *  CR-081: phòng "Evolu team" là demo opt-in — chỉ dựng khi `fixtures` (HUB_SEED_FIXTURES=1). */
+async function roomsStep(notes: string[], contract: boolean, fixtures: boolean): Promise<void> {
   const url = process.env.DATABASE_URL;
   if (!url) return void notes.push("phòng mẫu: thiếu DATABASE_URL — bỏ qua");
   try {
     if (contract) await ensureFixtureRooms(url);
-    if (!(await ensureDemoRooms(url))) notes.push("phòng mẫu evolu: chưa có tenant — bỏ qua");
+    if (fixtures && !(await ensureDemoRooms(url)))
+      notes.push("phòng mẫu evolu: chưa có tenant — bỏ qua");
   } catch (err) {
     notes.push(`phòng mẫu: ${(err as Error).message}`);
   }
@@ -332,6 +334,13 @@ function tempAttachDir(stops: Stop[]): string {
 export const contractFixtureFromEnv = (env: Record<string, string | undefined> = process.env) =>
   env.HUB_DEV_CONTRACT_FIXTURE === "1";
 
+/**
+ * CR-081 (seed-minimal-gate) · `HUB_SEED_FIXTURES=1` ⇒ nạp phần opt-in: `hub:seed` đọc thêm `*.full.yaml` (mẫu quy trình +
+ * agent vai) và hub-dev dựng demo evolu (agent Evolu Consultant/Invoices + phòng "Evolu team"). Mặc định (vắng) = tối giản.
+ */
+export const seedFixturesFromEnv = (env: Record<string, string | undefined> = process.env) =>
+  env.HUB_SEED_FIXTURES === "1" || env.HUB_SEED_FIXTURES === "true";
+
 /** Dựng toàn bộ; trả `stop` cho phần đã bật. Bước hạ tầng hỏng → ném lỗi (đã dừng phần đã bật). */
 export async function startHubDev(o: { contract?: boolean } = {}): Promise<HubDev> {
   const contract = o.contract ?? true;
@@ -341,12 +350,17 @@ export async function startHubDev(o: { contract?: boolean } = {}): Promise<HubDe
     for (const s of stops.reverse()) await s();
   };
   const mode = runtimeMode();
+  const fixtures = seedFixturesFromEnv();
   try {
     if (bunRun(["packages/db/src/migrate.ts"]) !== 0) throw new Error("db:migrate lỗi");
     if (await adminStep(stops, notes)) await fixtureStep(notes, contract);
-    await roomsStep(notes, contract);
+    await roomsStep(notes, contract, fixtures);
     if (bunRun(["apps/hub-api/src/modules/seed/seed.ts"]) !== 0) throw new Error("hub:seed lỗi");
-    await agentsStep(notes);
+    if (fixtures) await agentsStep(notes);
+    else
+      notes.push(
+        "seed tối giản (HUB_SEED_FIXTURES≠1): không mẫu quy trình/agent vai, không demo evolu — bật bằng HUB_SEED_FIXTURES=1",
+      );
     if (!(await healthy(HUB_URL))) {
       const env = hubApiEnv(process.env, tempAttachDir(stops), mode);
       stops.push(await startServer("hub-api", "apps/hub-api/src/server.ts", HUB_URL, env));

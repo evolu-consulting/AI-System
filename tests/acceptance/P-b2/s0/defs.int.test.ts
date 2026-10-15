@@ -184,7 +184,10 @@ describe("DF · Bàn giao tự thêm khi lưu [AC-PB2-09][HUB-FR-136]", () => {
   it("AC-PB2-09 · DF-07 · mẫu platform (seed) KHÔNG bị thêm 'Bàn giao' (seed/migration không qua ensureHandoff)", async () => {
     needPb2(c.pb2);
     const m = await loadSeed();
-    await fn(m, "runHubSeed")({ url: OWNER_URL, dir: m.DEFAULT_SEED_DIR, appEnv: "development" });
+    await fn(
+      m,
+      "runHubSeed",
+    )({ url: OWNER_URL, dir: m.DEFAULT_SEED_DIR, appEnv: "development", fixtures: true });
     const [tpl] = await c.sql<
       Json[]
     >`select id from hub.process_defs where tenant_id is null and key = 'sdlc'`;

@@ -20,7 +20,10 @@ afterAll(async () => {
 
 async function seed(): Promise<void> {
   const m = await loadSeed();
-  await fn(m, "runHubSeed")({ url: OWNER_URL, dir: m.DEFAULT_SEED_DIR, appEnv: "development" });
+  await fn(
+    m,
+    "runHubSeed",
+  )({ url: OWNER_URL, dir: m.DEFAULT_SEED_DIR, appEnv: "development", fixtures: true });
 }
 const tpl = async (key: string): Promise<Json> =>
   (

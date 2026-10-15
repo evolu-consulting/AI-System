@@ -64,6 +64,9 @@ export const EnvSchema = z.object({
     .optional(),
   // P-a D15 · cờ Process Engine: `off` (mặc định) ⇒ không mount route quy trình, `!` là chữ thường. Dev bật ở F6.
   HUB_PROCESS_ENGINE: z.enum(["on", "off"]).default("off"),
+  // CR-081 · seed opt-in fixtures: "1"/"true" ⇒ `hub:seed` nạp THÊM `*.full.yaml` (16 agent vai, 7 mẫu quy trình, teams,
+  // entitlements/grants, tenant_processes); vắng ⇒ seed TỐI GIẢN (orchestrator + assistant + dify-* + providers + workflows).
+  HUB_SEED_FIXTURES: z.string().optional(),
   // K1 spec §7, plan §11 G1 · origin KnowledgeHub được phép (cách dấu phẩy). Vắng: production ⇒ [] (không lưu được kết nối);
   // development/test ⇒ mock KH loopback (`khConfigOf`).
   HUB_KH_ALLOWED_ORIGINS: z

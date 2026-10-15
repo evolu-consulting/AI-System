@@ -10,6 +10,8 @@ import {
 } from "./seed.rules";
 
 const defaults = (): SeedSource[] => readSeedDir(DEFAULT_SEED_DIR);
+/** CR-081 · nạp kèm `*.full.yaml` (fixtures opt-in). */
+const full = (): SeedSource[] => readSeedDir(DEFAULT_SEED_DIR, true);
 
 /** Phần tử thứ i (ném nếu thiếu, khỏi dùng `!`). */
 function at<T>(arr: T[], i: number): T {
@@ -39,20 +41,34 @@ function patched(name: string, edit: (d: Record<string, unknown>) => void): Seed
 }
 
 describe("HUB-FR-60 · seed yaml mặc định", () => {
-  it("HUB-FR-60 · development: có fake-cli + dify, mọi agent dùng fake-1", () => {
+  it("HUB-FR-60 · CR-081 · development tối giản: fake-cli + dify, đúng 4 agent, mọi agent fake-1", () => {
     const p = buildSeedPlan(defaults(), { appEnv: "development" });
     expect(p.providers.map((x) => x.key).sort()).toEqual(["claude-sub", "dify", "fake-cli"]);
+    // CR-081: mặc định bỏ `*.full.yaml` ⇒ chỉ agent của agents.yaml, không agent vai.
+    expect(p.agents.map((a) => a.key)).toEqual([
+      "orchestrator",
+      "assistant",
+      "dify-tom",
+      "dify-tro-ly",
+    ]);
+    expect(p.agents).toHaveLength(4);
+    expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
+    expect(p.orchestrator).toMatchObject({ agent: "orchestrator", token_budget: 200_000 });
+    // grant assistant × acme/beta (access.yaml) vẫn ở seed tối giản.
+    expect(p.grants.map((g) => g.subject)).toContain("group:beta-testers");
+  });
+
+  it("HUB-FR-60 · CR-081 · HUB_SEED_FIXTURES ⇒ nạp thêm processes.full.yaml: 20 agent", () => {
+    const p = buildSeedPlan(full(), { appEnv: "development" });
     expect(p.agents.slice(0, 4).map((a) => a.key)).toEqual([
       "orchestrator",
       "assistant",
       "dify-tom",
       "dify-tro-ly",
     ]);
-    // P-a D18 (processes.yaml): + hoa-don-doc + 8 agent vai + 4 agent nhóm BA + 3 agent fixbug (P-c1 B6) — mọi agent đều fake-1 ở development.
+    // + hoa-don-doc + 8 agent vai + 4 agent nhóm BA + 3 agent fixbug (P-c1 B6) — mọi agent fake-1 ở development.
     expect(p.agents).toHaveLength(20);
     expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
-    expect(p.orchestrator).toMatchObject({ agent: "orchestrator", token_budget: 200_000 });
-    expect(p.grants.map((g) => g.subject)).toContain("group:beta-testers");
   });
 
   it("HUB-FR-61 · production: bỏ provider dev_only và profile hết step, agent dùng claude-sub-1", () => {
@@ -162,5 +178,13 @@ describe("HUB-FR-62 · tiện ích", () => {
       HUB_SEED_PROFILE: "",
     });
     expect(o).toMatchObject({ dir: DEFAULT_SEED_DIR, appEnv: "test", profile: undefined });
+    // CR-081: HUB_SEED_FIXTURES vắng ⇒ fixtures=false; "1" ⇒ true.
+    expect(o.fixtures).toBe(false);
+    const f = loadSeedCliEnv({
+      DATABASE_URL: "postgres://u:p@h/db",
+      APP_ENV: "test",
+      HUB_SEED_FIXTURES: "1",
+    });
+    expect(f.fixtures).toBe(true);
   });
 });

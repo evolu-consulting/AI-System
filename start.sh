@@ -5,6 +5,8 @@
 #   --no-runtime      không bật Agent Runtime WSL (chỉ Dify mock / lệnh /)
 #   --kill-orphan     tự dừng tiến trình cũ còn giữ cổng :4000/:3001
 #   WSL_DISTRO=Ubuntu WSL_USER=worker   SKIP_CLAUDE_CHECK=1 (bỏ gọi thử claude -p)
+# Seed mặc định TỐI GIẢN (orchestrator + assistant + dify-* + providers + workflows). Muốn thêm mẫu quy trình + agent vai +
+# demo evolu (Evolu Consultant/Invoices, phòng "Evolu team"): đặt HUB_SEED_FIXTURES=1 trong .env.local (CR-081).
 set -uo pipefail
 cd "$(dirname "$0")"
 

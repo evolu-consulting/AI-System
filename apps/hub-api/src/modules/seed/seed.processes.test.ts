@@ -16,8 +16,15 @@ const stage = (o: Record<string, unknown>) => ({
 });
 
 describe("seed.processes · buildProcessPlan [HUB-FR-104]", () => {
-  it("D18 · K1 T5g · seed mặc định: 4 nhóm, mẫu sdlc 8 + hoa-don + sdlc-delivery 9 + bug-fix 6 + fixbug-apply 1 + fixbug-pr 2 (P-c2 B8) + fixbug-evolu 4 (P-c1 B6); chép cho acme/evolu", () => {
+  it("CR-081 · seed tối giản (mặc định): không nhóm/mẫu/bản chép/entitlement nhóm", () => {
     const src = readSeedDir(DEFAULT_SEED_DIR);
+    const agents = new Set(buildSeedPlan(src, { appEnv: "development" }).agents.map((a) => a.key));
+    const p = buildProcessPlan(src, agents);
+    expect([p.teams, p.templates, p.tenantProcesses, p.teamEntitlements]).toEqual([[], [], [], []]);
+  });
+
+  it("D18 · K1 T5g · HUB_SEED_FIXTURES ⇒ 4 nhóm, mẫu sdlc 8 + hoa-don + sdlc-delivery 9 + bug-fix 6 + fixbug-apply 1 + fixbug-pr 2 (P-c2 B8) + fixbug-evolu 4 (P-c1 B6); chép cho acme/evolu", () => {
+    const src = readSeedDir(DEFAULT_SEED_DIR, true);
     const agents = new Set(buildSeedPlan(src, { appEnv: "development" }).agents.map((a) => a.key));
     const p = buildProcessPlan(src, agents);
     expect(p.teams.map((t) => t.key).sort()).toEqual([

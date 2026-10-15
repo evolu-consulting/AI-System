@@ -49,7 +49,7 @@ async function prepare(): Promise<void> {
   execFileSync("bun", ["apps/hub-api/src/modules/seed/seed.ts"], {
     cwd: REPO,
     stdio: "inherit",
-    env: { ...process.env, DATABASE_URL: url },
+    env: { ...process.env, DATABASE_URL: url, HUB_SEED_FIXTURES: "1" },
   });
   const hash = await hashPw(PW);
   const sql = postgres(url, { max: 1, onnotice: () => {} });

@@ -157,7 +157,10 @@ export async function seedReal(c: Scenario): Promise<void> {
     values ('ghi-so', 'WFNAME-ghi-so-qc', 'Ghi sổ kế toán (thử P-a).', 'workflow', 'http://127.0.0.1:9', ${sec?.id ?? ""},
       ${c.sql.json([{ name: "title", type: "text", required: true, description: "Biến title" }])}, null, true, true)
     on conflict (key) do update set side_effect = true`;
-  await fn(m, "runHubSeed")({ url: OWNER_URL, dir: m.DEFAULT_SEED_DIR, appEnv: "development" });
+  await fn(
+    m,
+    "runHubSeed",
+  )({ url: OWNER_URL, dir: m.DEFAULT_SEED_DIR, appEnv: "development", fixtures: true });
   await c.sql`insert into hub.agent_entitlements (agent_id, tenant_id)
     select id, ${T.acme}::uuid from hub.agents on conflict do nothing`;
   await c.sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)

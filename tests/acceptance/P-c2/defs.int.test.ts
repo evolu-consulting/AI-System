@@ -95,7 +95,10 @@ describe("V05–V06 · seed mẫu fixbug-pr [C5, HUB-FR-130]", () => {
   it("HUB-FR-129 · C5 · V05 · seed ⇒ template `fixbug-pr` tắt sẵn: stage 0 tự-sửa (agent, review) + stage 1 Áp (apply, real_action, auto, apply.md `## Kết quả áp`); hợp contract + applyStageIssues = []", async () => {
     needPc2(c);
     const s = await loadSeed();
-    await fn(s, "runHubSeed")({ url: OWNER_URL, dir: s.DEFAULT_SEED_DIR, appEnv: "development" });
+    await fn(
+      s,
+      "runHubSeed",
+    )({ url: OWNER_URL, dir: s.DEFAULT_SEED_DIR, appEnv: "development", fixtures: true });
     const [pr] = await c.sql<Json[]>`select * from hub.process_defs
       where tenant_id is null and key = 'fixbug-pr' and deleted_at is null`;
     expect({ has: pr !== undefined, enabled: pr?.enabled }).toEqual({ has: true, enabled: false });
@@ -125,7 +128,10 @@ describe("V05–V06 · seed mẫu fixbug-pr [C5, HUB-FR-130]", () => {
   it("HUB-FR-130 · C5 · V06 · `fixbug-apply` (P-c1) không có stage Áp; seed lần 2 không nhân đôi fixbug-pr", async () => {
     needPc2(c);
     const s = await loadSeed();
-    await fn(s, "runHubSeed")({ url: OWNER_URL, dir: s.DEFAULT_SEED_DIR, appEnv: "development" });
+    await fn(
+      s,
+      "runHubSeed",
+    )({ url: OWNER_URL, dir: s.DEFAULT_SEED_DIR, appEnv: "development", fixtures: true });
     const [ap] = await c.sql<Json[]>`select stages from hub.process_defs
       where tenant_id is null and key = 'fixbug-apply' and deleted_at is null`;
     expect(((ap?.stages ?? []) as Json[]).some((x) => x.executor?.kind === "apply")).toBe(false);

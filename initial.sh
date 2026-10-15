@@ -84,7 +84,8 @@ if [ "$RESET" = 1 ]; then
   docker compose exec -T redis redis-cli FLUSHALL >/dev/null && ok "Redis đã xoá"
 fi
 bun run db:setup
-ok "tenant evolu + 5 user, agent Evolu Consultant/Invoices, phòng 'Evolu team' được seed khi ./start.sh bật hub-dev"
+ok "tenant evolu + 5 user được seed khi ./start.sh bật hub-dev (seed TỐI GIẢN: orchestrator + assistant + dify-*)"
+ok "muốn mẫu quy trình + agent vai + demo evolu (Evolu Consultant/Invoices, phòng 'Evolu team'): đặt HUB_SEED_FIXTURES=1 trong .env.local rồi ./start.sh"
 
 if [ -n "${DIFY_SEED_ENV_FILE:-}" ]; then
   step "5. Seed Dify thật (DIFY_SEED_ENV_FILE)"

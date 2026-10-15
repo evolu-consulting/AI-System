@@ -31,15 +31,29 @@ import {
 } from "./seed.rules";
 import { resolveWorkflows, workflowKeysOf } from "./seed.workflows";
 
-export type RunHubSeedOptions = { url: string; dir: string; appEnv: string; profile?: string };
+export type RunHubSeedOptions = {
+  url: string;
+  dir: string;
+  appEnv: string;
+  profile?: string;
+  // CR-081 · true ⇒ nạp thêm `*.full.yaml` (mẫu quy trình + agent vai, opt-in). Vắng/false ⇒ seed tối giản.
+  fixtures?: boolean;
+};
 
 /** Thư mục seed mặc định (`apps/hub-api/seed`), không phụ thuộc cwd. */
 export const DEFAULT_SEED_DIR = resolve(import.meta.dir, "../../../seed");
 
-/** Đọc mọi `*.yaml|*.yml` (sắp theo tên). yaml hỏng cú pháp → `SeedValidationError` nêu file. */
-export function readSeedDir(dir: string): SeedSource[] {
+/** CR-081 · cờ `HUB_SEED_FIXTURES` bật fixtures (`*.full.yaml`): "1" hoặc "true". Đọc an toàn (vắng ⇒ false). */
+export const seedFixturesEnabled = (v?: string): boolean => v === "1" || v === "true";
+
+/**
+ * Đọc mọi `*.yaml|*.yml` (sắp theo tên). yaml hỏng cú pháp → `SeedValidationError` nêu file.
+ * CR-081: mặc định BỎ QUA `*.full.yaml` (fixtures opt-in); `fixtures=true` mới nạp kèm.
+ */
+export function readSeedDir(dir: string, fixtures = false): SeedSource[] {
   const files = readdirSync(dir)
     .filter((f) => /\.ya?ml$/.test(f))
+    .filter((f) => fixtures || !/\.full\.ya?ml$/.test(f))
     .sort();
   if (!files.length)
     throw new SeedValidationError([{ path: dir, message: "không có file *.yaml" }]);
@@ -76,7 +90,7 @@ async function planTenants(tx: Tx, plan: SeedPlan) {
 }
 
 export async function runHubSeed(o: RunHubSeedOptions): Promise<{ version: number }> {
-  const sources = readSeedDir(o.dir);
+  const sources = readSeedDir(o.dir, o.fixtures ?? false);
   const plan = buildSeedPlan(sources, { appEnv: o.appEnv, profile: o.profile });
   const processes = buildProcessPlan(sources, new Set(plan.agents.map((a) => a.key)));
   const sql = postgres(o.url, { max: 1, onnotice: () => {} });
@@ -110,6 +124,8 @@ const SeedCliEnvSchema = z.object({
   APP_ENV: z.enum(["development", "test", "production"]),
   HUB_SEED_DIR: z.string().optional(),
   HUB_SEED_PROFILE: z.string().optional(),
+  // CR-081 · opt-in fixtures (`*.full.yaml`); "1"/"true" ⇒ nạp mẫu quy trình + agent vai.
+  HUB_SEED_FIXTURES: z.string().optional(),
 });
 
 /** Env CLI; lỗi chỉ nêu tên biến, không in giá trị (URL có mật khẩu). */
@@ -125,6 +141,7 @@ export function loadSeedCliEnv(src: Record<string, string | undefined>): RunHubS
     appEnv: e.APP_ENV,
     dir: e.HUB_SEED_DIR ? resolve(e.HUB_SEED_DIR) : DEFAULT_SEED_DIR,
     profile: e.HUB_SEED_PROFILE || undefined,
+    fixtures: seedFixturesEnabled(e.HUB_SEED_FIXTURES),
   };
 }
 

@@ -1,5 +1,9 @@
 # HUB-FR-104 · HUB-FR-114 · P-a D18 (docs/specs/P-process-engine/plan-seed.md) · nhóm agent + mẫu quy trình + bản chép tenant dev.
 # Mẫu (`tenant_id` null) luôn tắt, Group kiểm để trống — tenant chép rồi gán Group của mình mới bật được (ADM-FR-66).
+#
+# CR-081 (seed-minimal-gate): FILE FIXTURE OPT-IN. `hub:seed` mặc định BỎ QUA mọi `*.full.yaml` ⇒ seed tối giản
+# (orchestrator + assistant + dify-* + providers + workflows). Đặt `HUB_SEED_FIXTURES=1` để nạp THÊM file này:
+# 16 agent vai + entitlements/grants + agent_teams/team_entitlements + 7 process_templates + tenant_processes.
 
 # Agent của quy trình khai ngay trong file này (không ở agents.yaml) để thư mục seed thay agents.yaml vẫn hợp lệ.
 # Agent vai mang đúng tên `.claude/agents/`; dev/test chạy `fake-cli` qua `$HUB_SEED_PROFILE` (fake-1); prompt thật lấy từ
@@ -124,6 +128,11 @@ agents:
       feature-first); tác dụng phụ & hồi quy; **bảo mật & cách-ly tenant** (RLS, auth, rò dữ liệu tenant khác); độ phủ
       test. Nguyên tắc: **KHÔNG dễ dãi / không rubber-stamp**; mọi nhận định dẫn `file:dòng`; thiếu bằng chứng thì nói
       "chưa kiểm được", KHÔNG đoán. Kết luận rõ **Đạt / Cần sửa**. Viết tiếng Việt. Kết thúc bằng `## Nguồn tham chiếu`.
+
+# HUB-FR-109 · SC-2 · CR-081: agent `hoa-don-doc` (fixture) gắn workflow Admin `ghi-so` làm tool MCP cho stage real_action
+# của mẫu `hoa-don`. Admin chưa tạo workflow `ghi-so` ⇒ seed bỏ dòng + cảnh báo (an toàn). Chuyển từ `workflows.yaml`.
+agent_workflows:
+  - { agent: hoa-don-doc, workflow: ghi-so }
 
 # Tenant dev được dùng agent vai (bản chép `sdlc` hợp lệ khi bật). Không bỏ thu hồi đã đặt.
 entitlements:
