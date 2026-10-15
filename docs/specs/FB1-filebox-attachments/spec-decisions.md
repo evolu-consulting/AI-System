@@ -17,3 +17,8 @@ Nguồn: [ADR-0015](../../adr/0015-filebox-external-file-storage.md) (Proposed) 
 Ghi chú: ADR-0015 liệt kê D1…D8; D9 ở đây = dòng "Phạm vi v1" của ADR/CR-076, tách riêng cho dễ tra.
 
 Security review dự kiến: cách ly tenant NHẸ (xác nhận RLS route cũ không đổi + chấp nhận shared org); egress/secret ĐẦY ĐỦ.
+
+## Quyết định trong lúc làm (Luật 2, sau Gate)
+
+- **2026-10-15 · Vá cho retest thật (HS1):** khi dọn stack để người dùng retest kho FileBox thật, phát hiện `FILEBOX_CA` đã được `parseAttachEnv` cho ra `caPath` nhưng `server.ts` + `createFileboxStorage` **bỏ rơi** ⇒ pin CA (spec §3.1 đã ghi `caPath?`) không bao giờ áp, TLS tới cert tự ký `149.202.83.5:9443` sẽ fail. Đã thêm `caPath` vào `FileboxStorageCfg` và chuyển `a.caPath` từ server xuống client (đưa code về đúng chữ ký spec). Mock dùng `http://` nên 68/68 không đổi.
+- **2026-10-15 · Dev stack hon `HUB_ATTACH_DRIVER=filebox`:** `tools/hub-dev/src/dev.ts hubApiEnv` trước đây hard-code `HUB_ATTACH_DRIVER=local` ⇒ đặt FileBox env trong `.env.local` rồi `./start.sh` vẫn chạy driver local (im lặng). Đã cho `hubApiEnv` chuyển thẳng `FILEBOX_*` (có mặt) xuống hub-api khi `.env.local` đặt `HUB_ATTACH_DRIVER=filebox`; mặc định vẫn `local`. Token chỉ truyền qua env tiến trình con, không log. Có test khoá hành vi (`tools/scripts/src/done-h2c.test.ts`). `.env.example` + `initial.sh` thêm khối FileBox (chú thích) để người dùng điền; `start.sh` không đổi.

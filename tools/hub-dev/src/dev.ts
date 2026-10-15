@@ -276,8 +276,28 @@ async function agentsStep(notes: string[]): Promise<void> {
  * không chạm 429; ghi đè bằng env `HUB_MAX_CONCURRENT_RUNS`. Stack H2b đặt 2 tường minh (`test:h2b:stack`, L6). */
 export const HUB_DEV_MAX_CONCURRENT_RUNS = "20";
 
-/** Env hub-api của hub-dev. H2c (plan §7, MK): `HUB_ATTACH_DRIVER=local`; `HUB_ATTACH_DIR` = env (tuyệt đối) nếu
+/** FB1 (HUB-FR-138): khi `.env.local` đặt `HUB_ATTACH_DRIVER=filebox`, chuyển thẳng `FILEBOX_*` (có mặt) xuống hub-api
+ * để retest thật; vắng giá trị nào thì bỏ qua (server fail-closed). Token KHÔNG log (chỉ truyền qua env tiến trình con). */
+const FILEBOX_PASSTHROUGH = [
+  "FILEBOX_URL",
+  "FILEBOX_ORG",
+  "FILEBOX_CA",
+  "FILEBOX_TOKEN",
+  "FILEBOX_TIMEOUT_MS",
+] as const;
+
+function fileboxEnv(env: Record<string, string | undefined>): Record<string, string> {
+  const out: Record<string, string> = { HUB_ATTACH_DRIVER: "filebox" };
+  for (const k of FILEBOX_PASSTHROUGH) {
+    const v = env[k]?.trim();
+    if (v) out[k] = v;
+  }
+  return out;
+}
+
+/** Env hub-api của hub-dev. H2c (plan §7, MK): mặc định `HUB_ATTACH_DRIVER=local`; `HUB_ATTACH_DIR` = env (tuyệt đối) nếu
  * có, không thì `attachDir` (thư mục tạm mỗi lần `startHubDev`, xoá khi dừng). Hạn mức/sweeper: mặc định của Hub.
+ * FB1: `HUB_ATTACH_DRIVER=filebox` ⇒ chuyển `FILEBOX_*` thay cho DIR (retest kho thật).
  * `HUB_PUBLIC_INTERNAL_URL` = `hubUrlForRuntime` theo `runtime` (I1 — ghi đè `.env.local`, vì hub-dev quyết định topo). */
 export function hubApiEnv(
   env: Record<string, string | undefined> = process.env,
@@ -285,7 +305,7 @@ export function hubApiEnv(
   runtime: RuntimeMode = "local",
 ): Record<string, string> {
   const dir = env.HUB_ATTACH_DIR?.trim() || attachDir;
-  return {
+  const base = {
     APP_ENV: "development",
     HUB_PORT,
     // `none` (Runtime tự chạy ngoài, vd WSL NAT): tôn trọng env nếu có; còn lại hub-dev quyết định topo.
@@ -293,9 +313,9 @@ export function hubApiEnv(
       (runtime === "none" && env.HUB_PUBLIC_INTERNAL_URL?.trim()) ||
       hubUrlForRuntime(runtime === "container"),
     HUB_MAX_CONCURRENT_RUNS: env.HUB_MAX_CONCURRENT_RUNS?.trim() || HUB_DEV_MAX_CONCURRENT_RUNS,
-    HUB_ATTACH_DRIVER: "local",
-    ...(dir ? { HUB_ATTACH_DIR: dir } : {}),
   };
+  if (env.HUB_ATTACH_DRIVER === "filebox") return { ...base, ...fileboxEnv(env) };
+  return { ...base, HUB_ATTACH_DRIVER: "local", ...(dir ? { HUB_ATTACH_DIR: dir } : {}) };
 }
 
 /** Thư mục file đính kèm tạm cho một lần hub-dev; `stop` xoá. */

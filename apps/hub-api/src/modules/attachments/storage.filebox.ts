@@ -21,6 +21,7 @@ export type FileboxStorageCfg = {
   url: string;
   org: string;
   token: FileboxTokenSource;
+  caPath?: string;
   timeoutMs?: number;
   retryDelaysMs?: number[];
   log?: Logger;
@@ -130,6 +131,7 @@ export function createFileboxStorage(cfg: FileboxStorageCfg): AttachmentStorage 
     url: cfg.url,
     org: cfg.org,
     token: cfg.token,
+    ...(cfg.caPath ? { caPath: cfg.caPath } : {}),
     timeoutMs: cfg.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     retryDelaysMs: cfg.retryDelaysMs ?? DEFAULT_RETRY_MS,
     log: cfg.log ?? rootLogger,

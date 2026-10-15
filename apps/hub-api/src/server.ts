@@ -91,6 +91,7 @@ async function openAttachments(env: Env): Promise<AttachmentDeps | undefined> {
     url: a.url,
     org: a.org,
     token: envFileboxToken(env.FILEBOX_TOKEN),
+    ...(a.caPath ? { caPath: a.caPath } : {}),
     timeoutMs: a.timeoutMs,
     log: logger,
   });

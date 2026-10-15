@@ -122,4 +122,26 @@ describe("MK H2c · script + bunfig + env", () => {
     expect(hubApiEnv({ HUB_ATTACH_DIR: "/srv/a" }, "/tmp/t").HUB_ATTACH_DIR).toBe("/srv/a");
     expect(hubApiEnv({}, "/tmp/t").HUB_MAX_CONCURRENT_RUNS).toBe("20");
   });
+
+  it("FB1: HUB_ATTACH_DRIVER=filebox ⇒ chuyển FILEBOX_* (có mặt), bỏ DIR", () => {
+    const e = hubApiEnv(
+      {
+        HUB_ATTACH_DRIVER: "filebox",
+        FILEBOX_URL: "https://149.202.83.5:9443",
+        FILEBOX_ORG: "ai-system",
+        FILEBOX_CA: "D:/AI/Filebox-INTEGRATION/filebox.crt",
+        FILEBOX_TOKEN: "secret",
+        HUB_ATTACH_DIR: "/srv/a",
+      },
+      "/tmp/t",
+    );
+    expect(e.HUB_ATTACH_DRIVER).toBe("filebox");
+    expect(e.FILEBOX_URL).toBe("https://149.202.83.5:9443");
+    expect(e.FILEBOX_ORG).toBe("ai-system");
+    expect(e.FILEBOX_CA).toBe("D:/AI/Filebox-INTEGRATION/filebox.crt");
+    expect(e.FILEBOX_TOKEN).toBe("secret");
+    expect(e.HUB_ATTACH_DIR).toBeUndefined();
+    // vắng FILEBOX_TIMEOUT_MS ⇒ không chèn (server dùng mặc định)
+    expect(e.FILEBOX_TIMEOUT_MS).toBeUndefined();
+  });
 });

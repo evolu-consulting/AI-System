@@ -57,6 +57,22 @@ set_env SEED_ADMIN_PASSWORD "$DEV_PASSWORD"
 set_env SEED_ADMIN_EMAIL admin@evolu.com
 ok "platform admin dev: admin / $DEV_PASSWORD (admin@evolu.com)"
 
+# FB1 (HUB-FR-138): chèn khối FileBox (bị chú thích) để retest kho thật — chỉ thêm 1 lần, không bật sẵn.
+if ! grep -q 'FILEBOX_URL' .env.local; then
+  cat >> .env.local <<'FBEOF'
+
+# --- FileBox (FB1, retest kho thật) — bỏ dấu # và điền giá trị, rồi ./start.sh ---
+# HUB_ATTACH_DRIVER=filebox
+# FILEBOX_URL=https://149.202.83.5:9443
+# FILEBOX_ORG=ai-system
+# FILEBOX_CA=D:/AI/Filebox-INTEGRATION/filebox.crt
+# FILEBOX_TOKEN=<Filebox key từ D:/AI/Filebox-INTEGRATION/filebox.env — BÍ MẬT, không commit>
+FBEOF
+  ok "khối FileBox (chú thích) đã thêm vào .env.local — bỏ # + điền để retest driver filebox"
+else
+  warn ".env.local đã có FILEBOX_* — giữ nguyên"
+fi
+
 step "3. Cài package"
 bun install
 
