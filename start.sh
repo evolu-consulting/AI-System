@@ -72,9 +72,12 @@ if [ "$RUNTIME" = 1 ]; then
   fi
   stop_runtime  # dọn Runtime cũ nếu còn
 
+  # RUNTIME_SOURCE_CACHE_DIR bật tính năng nguồn (P-b/P-c): runtime claim job source.resolve/source.apply (resolve repo,
+  # mirror, mở PR). Thiếu ⇒ các job đó kẹt `queued` (vd "Kiểm tra kết nối" nguồn git_remote timeout). RUNTIME_ENV mặc định
+  # `production` ⇒ không chèn GIT_CONFIG insteadOf ⇒ đi GitHub thật. Bước tự-sửa (chạy test) vẫn cần RUNTIME_SANDBOX riêng.
   cat > "$RT_SCRIPT" <<EOF
-mkdir -p ~/combine/work ~/combine/logs && cd /mnt/d/AI/ai-system/apps/agent-runtime
-export UV_PROJECT_ENVIRONMENT=\$HOME/.venvs/agent-runtime APP_ENV=development AGENT_RT_PROVIDERS=claude-sub,dify AGENT_RT_HUB_URL=$HUB_PUBLIC_INTERNAL_URL AGENT_RT_DATABASE_URL=postgres://agent_runtime:agent_runtime_dev_pw@localhost:5432/ai_system REDIS_URL=redis://localhost:6379 AGENT_RT_WORKER_ID=combine AGENT_RT_WORK_DIR=\$HOME/combine/work AGENT_RT_LOG_DIR=\$HOME/combine/logs
+mkdir -p ~/combine/work ~/combine/logs ~/combine/source-cache && cd /mnt/d/AI/ai-system/apps/agent-runtime
+export UV_PROJECT_ENVIRONMENT=\$HOME/.venvs/agent-runtime APP_ENV=development AGENT_RT_PROVIDERS=claude-sub,dify AGENT_RT_HUB_URL=$HUB_PUBLIC_INTERNAL_URL AGENT_RT_DATABASE_URL=postgres://agent_runtime:agent_runtime_dev_pw@localhost:5432/ai_system REDIS_URL=redis://localhost:6379 AGENT_RT_WORKER_ID=combine AGENT_RT_WORK_DIR=\$HOME/combine/work AGENT_RT_LOG_DIR=\$HOME/combine/logs RUNTIME_SOURCE_CACHE_DIR=\$HOME/combine/source-cache
 exec uv run --frozen --no-sync python -m agent_runtime
 EOF
 fi

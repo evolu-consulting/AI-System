@@ -34,6 +34,8 @@ Bước `fix` chạy agent sửa code **trong sandbox container** rồi `bun tes
 
 Thiếu sandbox ⇒ bước `fix` báo lỗi sandbox (job `orphaned`), không tới được bước apply.
 
+**Tính năng nguồn (resolve/clone/mở PR) phải bật ở Runtime:** cần env `RUNTIME_SOURCE_CACHE_DIR` — `start.sh` nay tự set (`~/combine/source-cache`). Thiếu nó ⇒ Runtime **không claim** job `source.resolve`/`source.apply` ⇒ **"Kiểm tra kết nối" nguồn git_remote timeout 60s** (`SOURCE_UNRESOLVABLE`) và bước apply không chạy. Khởi động Runtime thủ công thì phải tự set. `RUNTIME_ENV` để mặc định (`production`) ⇒ đi GitHub thật (không chèn GIT_CONFIG insteadOf).
+
 ---
 
 ## 3. Config Hub (`.env.local`, không commit)
