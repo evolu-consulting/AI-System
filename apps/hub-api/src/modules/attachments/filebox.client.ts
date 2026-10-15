@@ -44,25 +44,25 @@ export class FileboxClient {
 
   constructor(private readonly cfg: FileboxClientCfg) {}
 
-  /** `POST /files?org=&name=` (1 request, không retry). 201 ⇒ {fileId, versionId}; 413 ⇒ `StorageTooLarge`; khác ⇒ fail-closed. */
+  /** `POST /files?org=&name=` (1 request, không retry). 2xx ⇒ {fileId, versionId}; 413 ⇒ `StorageTooLarge`; khác ⇒ fail-closed.
+   * FileBox thật trả 200 (không 201); nhận mọi 2xx cho tương thích cả server thật lẫn mock (201). */
   async postFile(name: string, bytes: Uint8Array): Promise<{ fileId: string; versionId: string }> {
     const q = `/files?org=${encodeURIComponent(this.cfg.org)}&name=${encodeURIComponent(name)}`;
     const res = await this.#send("POST", q, { body: bytes, retryable: false });
     if (res.status === 413) throw new StorageTooLarge("filebox 413");
-    if (res.status !== 201) throw new FileboxUnavailable(`filebox post ${res.status}`);
+    if (!res.ok) throw new FileboxUnavailable(`filebox post ${res.status}`);
     const j = (await res.json()) as { file_id?: string; version_id?: string };
     if (!j.file_id || !j.version_id) throw new FileboxUnavailable("filebox post: missing ids");
     return { fileId: j.file_id, versionId: j.version_id };
   }
 
-  /** `GET /files/{id}/content` (idempotent) ⇒ toàn bộ byte; 404 ⇒ null (content-missing). */
+  /** `GET /files/{id}/content` (idempotent) ⇒ toàn bộ byte (200/206); 404 ⇒ null (content-missing); khác ⇒ fail-closed. */
   async getContent(fileId: string): Promise<Uint8Array | null> {
     const res = await this.#send("GET", `/files/${encodeURIComponent(fileId)}/content`, {
       retryable: true,
     });
     if (res.status === 404) return null;
-    if (res.status !== 200 && res.status !== 206)
-      throw new FileboxUnavailable(`filebox content ${res.status}`);
+    if (!res.ok) throw new FileboxUnavailable(`filebox content ${res.status}`);
     return new Uint8Array(await res.arrayBuffer());
   }
 
@@ -72,19 +72,19 @@ export class FileboxClient {
       retryable: true,
     });
     if (res.status === 404) return null;
-    if (res.status !== 200) throw new FileboxUnavailable(`filebox link ${res.status}`);
+    if (!res.ok) throw new FileboxUnavailable(`filebox link ${res.status}`);
     const j = (await res.json()) as { url?: string };
     if (!j.url) throw new FileboxUnavailable("filebox link: missing url");
     return `${this.cfg.url}${j.url}`;
   }
 
-  /** `DELETE /files/{id}` (idempotent) ⇒ 204 `deleted`; 404 ⇒ `missing` (đã xoá, không ném). */
+  /** `DELETE /files/{id}` (idempotent) ⇒ 2xx `deleted` (server thật 200, mock 204); 404 ⇒ `missing` (đã xoá, không ném). */
   async deleteFile(fileId: string): Promise<"deleted" | "missing"> {
     const res = await this.#send("DELETE", `/files/${encodeURIComponent(fileId)}`, {
       retryable: true,
     });
-    if (res.status === 204) return "deleted";
     if (res.status === 404) return "missing";
+    if (res.ok) return "deleted";
     throw new FileboxUnavailable(`filebox delete ${res.status}`);
   }
 
