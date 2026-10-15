@@ -1,0 +1,3 @@
+{"level":"info","time":"2026-10-14T23:25:20.654Z","msg":"request","request_id":"1d55f15e-1af1-46d1-8fed-fca7fe5534e5","method":"POST","path":"/internal/jobs/f6aab3b1-bbf4-458b-86be-d5adb62ba33e/apply-result","status":400,"ms":8}
+{"level":"info","time":"2026-10-14T23:30:09.707Z","msg":"apply-result-saved","job_id":"dcd31aeb-3a9c-4ef4-b4ed-68fa956deb5b","status":"pushed"}
+{"level":"info","time":"2026-10-14T23:30:09.708Z","msg":"request","request_id":"69a28c3f-8c3c-4571-88ff-bef6930996ad","method":"POST","path":"/internal/jobs/dcd31aeb-3a9c-4ef4-b4ed-68fa956deb5b/apply-result","status":201,"ms":73.9}

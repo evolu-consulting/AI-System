@@ -1,0 +1,17 @@
+import { launch, mkSnap, mkStep } from "./lib.mjs";
+import { OUT, prepare, startToGate, passGate, region, applyRow, cancelOpen } from "./flow.mjs";
+import { tok, putSource, getSource, setDef, ghCfg, sql } from "./cfg2.mjs";
+const A = await launch(OUT), B = await launch(OUT);
+const snap = mkSnap(OUT);
+await prepare(A, B);
+await cancelOpen();
+const t = await tok();
+await setDef(t, { testCmd: "bun test #fake:apply=pushed" });
+const runId = await startToGate(A, snap, "t1");
+console.log("run", runId);
+const st = await passGate(B, runId, snap, "t1");
+console.log("status", st, applyRow(runId));
+await A.page.goto(`http://localhost:3100/runs/${runId}`); await A.page.waitForTimeout(2500);
+await snap(A.page, "t1-A-result", true);
+console.log(await region(A.page).innerText().catch((e) => "NO REGION"));
+await A.browser.close(); await B.browser.close();

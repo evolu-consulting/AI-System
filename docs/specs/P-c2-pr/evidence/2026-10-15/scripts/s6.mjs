@@ -1,0 +1,31 @@
+// S6: diff rỗng (agent không ghi file) ⇒ qua cổng → Áp 'no_changes' (không job)
+import { launch, mkSnap, mkStep, adminLogin, CHAT, ADMIN, waitRun } from "./lib.mjs";
+import { OUT, prepare, passGate, region, applyRow, cancelOpen } from "./flow.mjs";
+import { tok, hub, putSource, setDef, ghCfg, sql } from "./cfg2.mjs";
+import { startRun } from "./lib.mjs";
+const A = await launch(OUT), B = await launch(OUT), D = await launch(OUT);
+const snap = mkSnap(OUT);
+const { step, save } = mkStep(OUT, () => ({ A: A.page, B: B.page }), snap);
+const T = await tok();
+const cred = (await hub(T, "GET", "/admin/source-credentials")).json.items.find((x) => x.name === "uat-pat").id;
+const defId = (await hub(T, "GET", "/process-defs?include_templates=false&limit=100")).json.items.find((d) => d.key === "fixbug-pr").id;
+await prepare(A, B); await adminLogin(D.page, "julian.bui", "evolu");
+let runId;
+await step("S6", "diff rỗng ⇒ cổng → Đạt → Áp 'no_changes' ('Không có thay đổi'), không job Áp", async () => {
+  await cancelOpen();
+  await putSource(T, "repo", ghCfg({ credential_secret_id: cred, apply_mode: "pr" })); await setDef(T, { testCmd: "true" });
+  ({ runId } = await startRun(A.page, "fixbug-pr", "Không cần sửa gì (UAT S6 không ghi file)", snap, "s6-A"));
+  const st = await waitRun(runId, /needs_decision|waiting_review|done|failed|cancel/, 240);
+  console.log("  tới cổng:", st, sql(`select decision->>'reason' from hub.process_runs where id='${runId}'`), sql(`select status from hub.autofix_results where process_run_id='${runId}'`));
+  await B.page.goto(`${CHAT}/runs/${runId}`); await B.page.waitForTimeout(3000); await snap(B.page, "s6-B-gate-diff-rong", true);
+  if (st !== "waiting_review") throw new Error("không tới cổng: " + st);
+  await B.page.getByRole("button", { name: "Đạt", exact: true }).click();
+  await waitRun(runId, /done|failed|cancel|needs_decision/, 120);
+  console.log("  hàng:", applyRow(runId), "| job Áp:", sql(`select count(*) from hub.jobs where type='source.apply' and payload->>'process_run_id'='${runId}'`));
+  await A.page.goto(`${CHAT}/runs/${runId}`); await region(A.page).waitFor(); await region(A.page).scrollIntoViewIfNeeded();
+  await snap(A.page, "s6-A-run-ket-qua"); await region(A.page).screenshot({ path: `${OUT}/s6-A-region.png` });
+  const t = await region(A.page).innerText(); if (!/Không có thay đổi/.test(t)) throw new Error(t);
+  await D.page.goto(`${ADMIN}/processes/${defId}/runs/${runId}`); await D.page.waitForTimeout(3000); await snap(D.page, "s6-D-admin-run");
+});
+save("result-s6");
+for (const x of [A, B, D]) await x.browser.close();

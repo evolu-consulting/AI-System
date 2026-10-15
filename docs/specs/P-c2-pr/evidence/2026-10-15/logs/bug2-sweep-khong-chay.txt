@@ -1,0 +1,5 @@
+BUG2 (quan sát 2026-10-15 23:30-23:35 UTC, Hub chạy bằng hub:dev KHÔNG shim):
+- run c3f8a759-5bc6-4e77-b037-6371eeb4b760: job source.apply = succeeded, hub.autofix_applies = (pr, pushed, pr_url NULL) lúc 23:30:09.
+- 23:33:43 (3,5 phút sau): process_runs.status = running, stage 1 = running, autofix_applies vẫn 'pushed' — không PR nào được mở, mock GitHub không nhận lời gọi.
+- apps/hub-api/src/server.ts không truyền `onProcessHandles`; processes.mount.ts:90-92 chỉ `poster.start` + `khWriter?.start`; không nơi nào gọi `sweepOnce` định kỳ ngoài test.
+- Có shim (scripts/uat-server.ts: setInterval(sweepOnce, 3s)) ⇒ 3 giây sau run chuyển done, PR #1 được mở (autofix_applies: pr_opened, pr_number 1).

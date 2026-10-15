@@ -1,0 +1,140 @@
+[
+  {
+    "id": "P0",
+    "title": "đăng nhập A (thomas), B (vio.ngo), D (julian admin-web), O (tenant khác)",
+    "ok": true,
+    "ms": 3683
+  },
+  {
+    "id": "S1",
+    "title": "pr: Đạt → Áp → 'Đã mở PR' + link PR (https, tab mới)",
+    "ok": true,
+    "ms": 18374
+  },
+  {
+    "id": "S1b",
+    "title": "gate (B): câu 'Đạt sẽ mở PR vào main.' hiện trên cổng tự sửa (xem ảnh s1-pr-B-gate)",
+    "ok": true,
+    "ms": 2584
+  },
+  {
+    "id": "S1c",
+    "title": "[F3] admin-web run view: khối 'Kết quả áp bản sửa' + PR link",
+    "ok": true,
+    "ms": 3717
+  },
+  {
+    "id": "S1d",
+    "title": "thread phòng: thẻ 'Áp bản sửa' + 'Đã mở PR'; mobile 390px",
+    "ok": true,
+    "ms": 7758
+  },
+  {
+    "id": "S2",
+    "title": "auto_merge: 'Đã mở PR' + 'Tự gộp: bật'",
+    "ok": true,
+    "ms": 22071
+  },
+  {
+    "id": "S3",
+    "title": "branch_only: 'Đã đẩy nhánh', không PR, không link PR",
+    "ok": true,
+    "ms": 17922
+  },
+  {
+    "id": "S4",
+    "title": "nguồn local_path: ép Chỉ nhánh; khối 'Chỉ nhánh' + 'Tải .diff'",
+    "ok": true,
+    "ms": 19321
+  },
+  {
+    "id": "S5",
+    "title": "rebased: 'Đã rebase lên …' + chạy lại test",
+    "ok": true,
+    "ms": 20422
+  },
+  {
+    "id": "S6",
+    "title": "no_changes: 'Không có thay đổi'",
+    "ok": false,
+    "err": "Áp bản sửa | Đã mở PR | PR #9 ↗"
+  },
+  {
+    "id": "E1",
+    "title": "conflict ⇒ 'Bản sửa xung đột với mã mới' + file xung đột; 2 nút",
+    "ok": true,
+    "ms": 21872
+  },
+  {
+    "id": "E2",
+    "title": "check_failed ⇒ 'Áp bản sửa không thành công'",
+    "ok": true,
+    "ms": 24311
+  },
+  {
+    "id": "E3",
+    "title": "failed:auth",
+    "ok": true,
+    "ms": 24665
+  },
+  {
+    "id": "E4",
+    "title": "failed:no_credential",
+    "ok": true,
+    "ms": 23250
+  },
+  {
+    "id": "E5",
+    "title": "failed:push_rejected",
+    "ok": true,
+    "ms": 24028
+  },
+  {
+    "id": "E6",
+    "title": "failed:network ⇒ 'Thêm 1 lần làm lại' tạo job Áp mới ⇒ 'Huỷ lượt chạy' ⇒ cancelled",
+    "ok": true,
+    "ms": 40799
+  },
+  {
+    "id": "E7",
+    "title": "provider_error: GitHub 5xx khi mở PR",
+    "ok": true,
+    "ms": 30074
+  },
+  {
+    "id": "E8",
+    "title": "rate_limited: GitHub 403 hết hạn mức",
+    "ok": true,
+    "ms": 24508
+  },
+  {
+    "id": "E9",
+    "title": "auth (qua UI): 'Thay token' sang token sai ⇒ mở PR 401 ⇒ 'auth'; trả token đúng",
+    "ok": true,
+    "ms": 32236
+  },
+  {
+    "id": "T1",
+    "title": "tenant khác (uatb) không thấy run/kết quả Áp/nguồn/khoá của evolu (API + UI)",
+    "ok": true,
+    "ms": 13268
+  },
+  {
+    "id": "K1",
+    "title": "UI khoá nguồn: tạo khoá, chọn vào nguồn, Lưu; không lộ token; Thay token; khoá đang dùng không xoá được",
+    "ok": true,
+    "ms": 14965
+  },
+  {
+    "id": "K2",
+    "title": "form nguồn: gitlab ⇒ 'Mở PR' tắt + gợi ý (chụp)",
+    "ok": true,
+    "ms": 3246
+  },
+  {
+    "id": "X1",
+    "title": "dữ liệu hỏng: pr_url https khác host GitHub ⇒ UI không link (tamper SQL)",
+    "ok": false,
+    "err": "UI trỏ tới host lạ: https://evil.example/pc2-uat/app/pull/1"
+  }
+]

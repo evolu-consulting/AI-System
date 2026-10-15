@@ -1,0 +1,14 @@
+import { launch, mkSnap, chatLogin, CHAT } from "./lib.mjs";
+import { OUT } from "./flow.mjs";
+import { sql } from "./sql.mjs";
+const id = process.argv[2];
+const A = await launch(OUT); const snap = mkSnap(OUT);
+await chatLogin(A.page, "thomas.tran");
+await A.page.goto(`${CHAT}/runs/${id}`); await A.page.waitForTimeout(3000);
+A.page.on("response", async (r) => { if (r.request().method() !== "GET") console.log(r.status(), r.request().method(), r.url().slice(0, 100), (await r.text().catch(() => "")).slice(0, 200)); });
+const btns = A.page.getByRole("button", { name: "Huỷ lượt chạy" });
+console.log("số nút", await btns.count());
+await btns.last().scrollIntoViewIfNeeded(); await snap(A.page, "dbg-decision-card");
+await btns.last().click(); await A.page.waitForTimeout(2000); await snap(A.page, "dbg-sau-click");
+console.log("dialog", await A.page.getByRole("dialog").count(), sql(`select status from hub.process_runs where id='${id}'`));
+await A.browser.close();
