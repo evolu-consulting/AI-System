@@ -53,6 +53,13 @@ export const EnvSchema = z.object({
   FILEBOX_TOKEN: z.string().optional(),
   FILEBOX_ORG: z.string().optional(),
   FILEBOX_CA: z.string().optional(),
+  // DLC-R11 · engine AI SDLC (agent `dlc`) cho `/dlc/*` (sidebar Workspaces, modal Process). Vắng URL ⇒ `engine:
+  // not_configured`. Client Keycloak (client_credentials) tuỳ chọn, đặt đủ ba biến; CA = PEM của Keycloak tự ký.
+  HUB_DLC_URL: z.url({ protocol: /^https?$/ }).optional(),
+  HUB_DLC_TOKEN_URL: z.url({ protocol: /^https?$/ }).optional(),
+  HUB_DLC_CLIENT_ID: z.string().min(1).optional(),
+  HUB_DLC_CLIENT_SECRET: z.string().min(1).optional(),
+  HUB_DLC_CA_FILE: z.string().optional(),
   // H4a plan §9 · bản build Studio (đường dẫn tuyệt đối); thiếu `index.html` ⇒ warn `studio-dist-missing`, không mount.
   HUB_STUDIO_DIST: z
     .string()

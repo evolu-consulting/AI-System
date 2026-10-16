@@ -33,6 +33,9 @@ import type { AttachmentDeps } from "./modules/attachments/storage";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
+import type { DlcEngine } from "./modules/dlc/dlc.engine";
+import { dlcRoutes } from "./modules/dlc/dlc.routes";
+import { dlcAdminRoutes } from "./modules/dlc/dlc-admin.routes";
 import { cancelRoutes } from "./modules/runs/close/cancel.routes";
 import { CancelService } from "./modules/runs/close/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
@@ -83,6 +86,8 @@ export type AppDeps = {
   /** X2a · nhịp `: ping` của `/me/stream` (ms). Vắng ⇒ 15000; test truyền 500. */
   pingMs?: number;
   studioDist?: string; // H4a · = `HUB_STUDIO_DIST` (dist Studio; vắng ⇒ `/studio` 404, P12).
+  /** DLC-R11 · engine AI SDLC (`HUB_DLC_*`, server dựng). Vắng ⇒ `/dlc/*` trả `engine: not_configured`. */
+  dlc?: DlcEngine;
 };
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -96,6 +101,7 @@ const PROTECTED_PREFIXES = [
   "/agent-grants",
   "/agent-settings",
   "/studio/api",
+  "/dlc",
   ...X2A_PROTECTED_PREFIXES,
 ];
 
@@ -149,6 +155,8 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
   mountH4a(app, { ...deps, log: logger });
   if (!deps.db) return;
+  app.route("/dlc", dlcRoutes(deps.db, deps.dlc));
+  app.route("/dlc", dlcAdminRoutes(deps.db, deps.dlc));
   const { redis, pingMs, signal } = deps;
   const x2a = mountX2a(app, { db: deps.db, redis, log: logger, pingMs, signal });
   const drivers = commandDrivers(deps, deps.db);

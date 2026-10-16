@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import type { AgentActions } from "../hooks/use-agent-actions";
-import { runtimeKey } from "../lib/agents";
+import { orderForDlc, runtimeKey } from "../lib/agents";
 import { AgentCell } from "./AgentCell";
 import { EntitledSwitch, ModelCell, RowActions, WhoCell } from "./AgentCells";
 
@@ -45,6 +45,8 @@ function infoColumns(p: Props, t: Tr): Column<AgentSettingsItem>[] {
       id: "runtime",
       header: t("agents.col.runtime"),
       cell: (row) => {
+        if (row.dlc?.kind === "supervisor") return t("agents.dlc.engine");
+        if (row.dlc) return t("agents.dlc.runsOn", { step: row.dlc.step });
         const key = runtimeKey(row.runtime);
         return key ? t(key) : row.runtime;
       },
@@ -100,7 +102,7 @@ export function AgentsTable(p: Props) {
     <DataTable
       caption={t("agents.list.title")}
       columns={columns}
-      rows={p.items}
+      rows={p.items ? orderForDlc(p.items) : undefined}
       getRowKey={(row) => row.agent.id}
       isLoading={p.loading}
       empty={<EmptyState message={t("agents.list.empty")} />}

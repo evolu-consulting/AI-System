@@ -1,11 +1,13 @@
 // ADM-FR-14 · /workflows (canvas Workflows): hướng dẫn 3 bước, chip có số, ô tìm, bảng phân trang server 50 dòng, hành động hàng.
 import { getRouteApi, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { Button } from "@/components/ui/button";
+import { AddWorkflowMenu, DlcFlowSection } from "@/features/dlc-admin/components/DlcFlowSection";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useWorkflowList, WORKFLOWS_PAGE_SIZE } from "../api";
@@ -35,20 +37,20 @@ function WorkflowsContent() {
   );
   const err = list.error instanceof ApiError ? list.error : null;
   const filtered = !!search.q || !!search.status || !!search.secret;
-  const create = (
-    <Button asChild>
-      <Link to="/workflows/new">{t("workflows.list.create")}</Link>
-    </Button>
-  );
+  // DLC-R14 · Workflow Process: hai loại workflow — "Thêm workflow" chọn Dify (editor có sẵn) hoặc flow AI SDLC.
+  const [addingDlc, setAddingDlc] = useState(false);
+  const create = <AddWorkflowMenu onAddDlc={() => setAddingDlc(true)} />;
   const clear = () => patch({ q: undefined, status: undefined, secret: undefined });
 
   return (
     <>
       <PageHeader
-        title={t("workflows.list.title")}
-        description={t("workflows.list.subtitle")}
+        title={t("dlcAdmin.processTitle")}
+        description={t("dlcAdmin.processSubtitle")}
         actions={create}
       />
+      <DlcFlowSection adding={addingDlc} onAdded={() => setAddingDlc(false)} />
+      <h2 className="mb-3 text-section-title font-semibold">{t("dlcAdmin.difySection")}</h2>
       <WorkflowGuide />
       <WorkflowFilters
         status={search.status ?? "all"}

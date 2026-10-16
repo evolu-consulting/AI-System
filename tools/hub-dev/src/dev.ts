@@ -14,6 +14,7 @@ import { join, resolve } from "node:path";
 import { dockerArgs } from "../../../apps/agent-runtime/scripts/run";
 import { contractUsersJson, ensureContractFixture, ensureDemoFixture } from "./fixture";
 import { ensureRoomAgents } from "./fixture-agents";
+import { ensureDlcAgent } from "./fixture-dlc";
 import { ensureDemoRooms, ensureFixtureRooms } from "./fixture-rooms";
 
 export const REPO = resolve(import.meta.dir, "../../..");
@@ -213,6 +214,8 @@ async function agentsStep(notes: string[]): Promise<void> {
   try {
     if (!(await ensureRoomAgents(url)))
       notes.push("agent phòng evolu: chưa có tenant/profile — bỏ qua");
+    // DLC-R10: agent `dlc` (AI SDLC) — Runtime cần `dlc` trong AGENT_RT_PROVIDERS mới chạy được job.
+    if (!(await ensureDlcAgent(url))) notes.push("agent dlc evolu: chưa có tenant — bỏ qua");
   } catch (err) {
     notes.push(`agent phòng: ${(err as Error).message}`);
   }

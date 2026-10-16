@@ -207,7 +207,9 @@
     "access": "Access",
     "usage": "Usage & quota",
     "audit": "Audit log",
-    "transfer": "Import / Export"
+    "transfer": "Import / Export",
+    "workflowSteps": "Workflow Steps",
+    "workflowProcess": "Workflow Process"
   },
   "topbar": {
     "platform": "Platform",
@@ -471,6 +473,18 @@
     },
     "error": {
       "isDefault": "Can't disable the default or fallback agent. Set another agent as default first."
+    },
+    "dlc": {
+      "supervisor": "AI SDLC supervisor",
+      "team": "AI SDLC team",
+      "runsOn": "AI SDLC · step {step}",
+      "engine": "AI SDLC engine",
+      "inRun": "Runs inside @{supervisor}'s runs",
+      "kind": {
+        "agentic": "agentic",
+        "complete": "complete",
+        "supervisor": "supervisor"
+      }
     }
   },
   "hubErrors": {
@@ -1871,6 +1885,89 @@
     "toast": {
       "downloaded": "Downloaded {file}",
       "imported": "Imported · {a} added · {u} updated · v{n}"
+    }
+  },
+  "dlcAdmin": {
+    "stepsTitle": "Workflow Steps",
+    "stepsSubtitle": "The AI SDLC line's steps in running order: the agents working in each step, the model they use and the hooks at the step's boundary. Models change with the engine's LINE_ROLE_MODELS; hooks are edited in the DLC engine admin.",
+    "defaultModel": "Engine default model: {model}",
+    "optional": "Optional",
+    "agents": "Agents",
+    "hooks": "Hooks",
+    "noHooks": "No hooks",
+    "hookEvent": "Events: {events}",
+    "engineDown": "The AI SDLC engine cannot be reached.",
+    "engineOff": "The Hub has no AI SDLC engine configured (HUB_DLC_URL).",
+    "loading": "Loading…",
+    "kindTitle": {
+      "agentic": "agentic · a tool session in a worktree",
+      "complete": "complete · one JSON answer"
+    },
+    "processTitle": "Workflow Process",
+    "processSubtitle": "Two kinds of workflow: flows on Dify (called by commands / agents) and AI SDLC internal flows (run by agent @dlc). Add either from Add workflow.",
+    "add": "+ Add workflow",
+    "addDify": "Dify workflow",
+    "addDifyHint": "A Dify workflow / chat / agent app",
+    "addDlc": "AI SDLC flow",
+    "addDlcHint": "An internal process of the DLC engine",
+    "dlcSection": "AI SDLC internal flows",
+    "dlcSectionHint": "In chat, start a message with #key to pick a flow; otherwise the process default is used.",
+    "difySection": "Flows on Dify",
+    "type": {
+      "dify": "Dify",
+      "dlc": "AI SDLC"
+    },
+    "col": {
+      "name": "Flow",
+      "process": "Process",
+      "human": "Ask people",
+      "lane": "Lane",
+      "default": "Default",
+      "enabled": "On",
+      "actions": "Actions"
+    },
+    "process": {
+      "new-system": "New System",
+      "enhancement": "Enhancement",
+      "bug-fix": "Bug Fix"
+    },
+    "human": {
+      "engine": "Engine default",
+      "ask": "Ask people (ask)",
+      "decide": "Model decides (decide)"
+    },
+    "lane": {
+      "auto": "Engine sizes it",
+      "trivial": "trivial",
+      "small": "small",
+      "full": "full"
+    },
+    "empty": "No AI SDLC flow yet.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete flow {name}?",
+    "dialogNew": "Add AI SDLC flow",
+    "dialogEdit": "Edit AI SDLC flow",
+    "field": {
+      "key": "Key",
+      "keyHint": "Used in chat as #key. Lower case, digits, hyphens.",
+      "name": "Name",
+      "description": "Description",
+      "process": "Process",
+      "human": "Questions that need a person",
+      "lane": "How much reading a change needs (lane)",
+      "isDefault": "Process default",
+      "enabled": "On"
+    },
+    "preview": "Steps that will run",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Flow saved",
+    "deleted": "Flow deleted",
+    "error": {
+      "keyTaken": "Another flow uses this key.",
+      "conflict": "Someone just changed this flow. Reload and try again.",
+      "generic": "Could not save: {message}"
     }
   }
 }

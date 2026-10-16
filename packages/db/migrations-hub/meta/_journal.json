@@ -141,6 +141,20 @@
       "when": 1792713600000,
       "tag": "0019_filebox_blobs",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792800000000,
+      "tag": "0020_dlc_provider",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792886400000,
+      "tag": "0021_dlc_workflows",
+      "breakpoints": true
     }
   ]
 }

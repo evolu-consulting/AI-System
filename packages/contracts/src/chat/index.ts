@@ -25,6 +25,7 @@ export * from "./agents";
 export * from "./attachments";
 export * from "./commands";
 export * from "./directory";
+export * from "./dlc";
 export * from "./entities";
 export * from "./errors";
 export * from "./events";

@@ -5,6 +5,9 @@
 #   --no-runtime      không bật Agent Runtime WSL (chỉ Dify mock / lệnh /)
 #   --kill-orphan     tự dừng tiến trình cũ còn giữ cổng :4000/:3001
 #   WSL_DISTRO=Ubuntu WSL_USER=worker   SKIP_CLAUDE_CHECK=1 (bỏ gọi thử claude -p)
+#   AGENT_RT_PROVIDERS=claude-sub,dify,dlc   provider Runtime claim (mặc định claude-sub,dify)
+#   AGENT_RT_DLC_URL=http://<ip>:8796 (+ AGENT_RT_DLC_TOKEN_URL, _CLIENT_ID, _CLIENT_SECRET, _CA_FILE, _POLL_S,
+#     _HUMAN_MODE)   engine AI SDLC cho agent `dlc` (DLC-R10), chỉ dùng khi có `dlc` trong AGENT_RT_PROVIDERS
 set -uo pipefail
 cd "$(dirname "$0")"
 
@@ -72,9 +75,18 @@ if [ "$RUNTIME" = 1 ]; then
   fi
   stop_runtime  # dọn Runtime cũ nếu còn
 
+  # Repo dưới /mnt/<ổ>/… theo nơi clone (không cố định một đường dẫn).
+  WIN_REPO=$(pwd -W)
+  RT_DIR="/mnt/$(printf '%s' "${WIN_REPO:0:1}" | tr '[:upper:]' '[:lower:]')${WIN_REPO:2}/apps/agent-runtime"
+  RT_PROVIDERS="${AGENT_RT_PROVIDERS:-claude-sub,dify}"
+  DLC_ENV=""
+  for v in AGENT_RT_DLC_URL AGENT_RT_DLC_TOKEN_URL AGENT_RT_DLC_CLIENT_ID AGENT_RT_DLC_CLIENT_SECRET \
+           AGENT_RT_DLC_CA_FILE AGENT_RT_DLC_POLL_S AGENT_RT_DLC_HUMAN_MODE; do
+    [ -n "${!v:-}" ] && DLC_ENV+=" $v=$(printf '%q' "${!v}")"
+  done
   cat > "$RT_SCRIPT" <<EOF
-mkdir -p ~/combine/work ~/combine/logs && cd /mnt/d/AI/ai-system/apps/agent-runtime
-export UV_PROJECT_ENVIRONMENT=\$HOME/.venvs/agent-runtime APP_ENV=development AGENT_RT_PROVIDERS=claude-sub,dify AGENT_RT_HUB_URL=$HUB_PUBLIC_INTERNAL_URL AGENT_RT_DATABASE_URL=postgres://agent_runtime:agent_runtime_dev_pw@localhost:5432/ai_system REDIS_URL=redis://localhost:6379 AGENT_RT_WORKER_ID=combine AGENT_RT_WORK_DIR=\$HOME/combine/work AGENT_RT_LOG_DIR=\$HOME/combine/logs
+mkdir -p ~/combine/work ~/combine/logs && cd $RT_DIR
+export UV_PROJECT_ENVIRONMENT=\$HOME/.venvs/agent-runtime APP_ENV=development AGENT_RT_PROVIDERS=$RT_PROVIDERS$DLC_ENV AGENT_RT_HUB_URL=$HUB_PUBLIC_INTERNAL_URL AGENT_RT_DATABASE_URL=postgres://agent_runtime:agent_runtime_dev_pw@localhost:5432/ai_system REDIS_URL=redis://localhost:6379 AGENT_RT_WORKER_ID=combine AGENT_RT_WORK_DIR=\$HOME/combine/work AGENT_RT_LOG_DIR=\$HOME/combine/logs
 exec uv run --frozen --no-sync python -m agent_runtime
 EOF
 fi

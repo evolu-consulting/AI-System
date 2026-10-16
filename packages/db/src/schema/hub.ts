@@ -83,7 +83,9 @@ export const providers = hub.table("providers", {
   id: uuid("id").primaryKey().defaultRandom(),
   key: text("key").notNull(),
   kind: text("kind", { enum: ["subscription", "api"] }).notNull(),
-  vendor: text("vendor", { enum: ["anthropic", "openai", "google", "fake", "dify"] }).notNull(),
+  vendor: text("vendor", {
+    enum: ["anthropic", "openai", "google", "fake", "dify", "evolu"],
+  }).notNull(),
   baseUrl: text("base_url"),
   secretId: uuid("secret_id"),
   maxConcurrency: integer("max_concurrency").notNull().default(1),

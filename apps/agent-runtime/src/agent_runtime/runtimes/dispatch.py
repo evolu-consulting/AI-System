@@ -1,8 +1,11 @@
 """WRK-FR-04 · WRK-FR-06 · `JobRouter`: chọn job host theo `job.payload["type"]` (`plan-runtime`
 §3.1): `agent.cli` → `CliJobHost` (process con), `workflow.async` → `DifyJobHost` (process cha).
 
-Type lạ/thiếu, hoặc type có host chưa bật (vd `workflow.async` khi `dify` ∉ `AGENT_RT_PROVIDERS`)
-→ host mặc định (`CliJobHost`): validate `JobPayload1` thất bại → `failed`
+DLC-R01: `agent.cli` có `provider_key` thuộc `by_provider` (vd `dlc` → `DlcJobHost`, HTTP trong
+process cha) chọn host đó trước khi xét `type`.
+
+Type lạ/thiếu, hoặc type có host chưa bật (vd `workflow.async` khi `dify` ∉ `AGENT_RT_PROVIDERS`) →
+host mặc định (`CliJobHost`): validate `JobPayload1` thất bại → `failed`
 `INTERNAL_ERROR`/`invalid_payload` như H1.
 """
 
@@ -29,10 +32,21 @@ class TypedHost(Protocol):
 
 
 class JobRouter:
-    def __init__(self, hosts: Mapping[str, TypedHost], default: TypedHost) -> None:
+    def __init__(
+        self,
+        hosts: Mapping[str, TypedHost],
+        default: TypedHost,
+        by_provider: Mapping[str, TypedHost] | None = None,
+    ) -> None:
         self._hosts, self._default = dict(hosts), default
+        self._by_provider = dict(by_provider or {})
 
     def host_for(self, job: ClaimedJob) -> TypedHost:
+        provider = job.payload.get("provider_key")
+        if job.payload.get("type") == "agent.cli" and isinstance(provider, str):
+            host = self._by_provider.get(provider)
+            if host is not None:
+                return host
         kind = job.payload.get("type")
         return self._hosts.get(kind, self._default) if isinstance(kind, str) else self._default
 

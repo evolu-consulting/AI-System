@@ -11,6 +11,8 @@ export type NavId =
   | "features"
   | "commands"
   | "workflows"
+  | "workflowSteps"
+  | "workflowProcess"
   | "groups"
   | "access"
   | "secrets"
@@ -27,6 +29,7 @@ type NavTo =
   | "/features"
   | "/commands"
   | "/workflows"
+  | "/workflows/steps"
   | "/secrets"
   | "/usage"
   | "/audit"
@@ -34,6 +37,8 @@ type NavTo =
 export type NavItem = {
   id: NavId;
   to: NavTo;
+  /** DLC-R15 · mục có menu con sổ xuống (Workflows → Workflow Steps · Workflow Process). */
+  children?: NavItem[];
   labelKey:
     | "nav.overview"
     | "nav.agents"
@@ -42,6 +47,8 @@ export type NavItem = {
     | "nav.features"
     | "nav.commands"
     | "nav.workflows"
+    | "nav.workflowSteps"
+    | "nav.workflowProcess"
     | "nav.groups"
     | "nav.access"
     | "nav.secrets"
@@ -66,7 +73,11 @@ const USERS = item("users", "/users");
 const AGENTS = item("agents", "/agents");
 const FEATURES = item("features", "/features");
 const COMMANDS = item("commands", "/commands");
-const WORKFLOWS = item("workflows", "/workflows");
+// DLC-R15 · Workflows sổ xuống: Steps (các bước AI SDLC) · Process (danh sách flow Dify + flow AI SDLC).
+const WORKFLOWS: NavItem = {
+  ...item("workflows", "/workflows"),
+  children: [item("workflowSteps", "/workflows/steps"), item("workflowProcess", "/workflows")],
+};
 const GROUPS = item("groups", "/groups");
 const ACCESS = item("access", "/access");
 const SECRETS = item("secrets", "/secrets");
@@ -138,6 +149,8 @@ export function crumbsFor(pathname: string): Crumb[] {
   if (pathname === "/usage") return [{ labelKey: "nav.usage" }];
   if (pathname === "/transfer") return [{ labelKey: "nav.transfer" }];
   if (pathname === "/audit") return [{ labelKey: "nav.audit" }];
+  if (pathname === "/workflows/steps")
+    return [{ labelKey: "nav.workflows", to: "/workflows" }, { labelKey: "nav.workflowSteps" }];
   if (pathname.startsWith("/audit/")) return [{ labelKey: "nav.audit", to: "/audit" }];
   if (pathname === "/tenants") return [{ labelKey: "nav.tenants" }];
   if (pathname === "/tenants/new") {

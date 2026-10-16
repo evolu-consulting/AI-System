@@ -458,5 +458,29 @@
   },
   "app": {
     "name": "Evolu Copilot"
+  },
+  "dlc": {
+    "workspaces": "Workspaces",
+    "workspacesEmpty": "No AI SDLC project yet. Send a spec to @dlc to start.",
+    "viewProcess": "View process",
+    "processTitle": "Process",
+    "processHint": "Progress of each step of the current run",
+    "noRun": "This conversation has no AI SDLC run yet.",
+    "engineDown": "The AI SDLC engine cannot be reached.",
+    "engineOff": "The Hub has no AI SDLC engine configured (HUB_DLC_URL).",
+    "loading": "Loading…",
+    "calls": "{{count}} agent calls",
+    "tokens": "{{in}} in · {{out}} out tokens",
+    "units": "{{merged}}/{{units}} units",
+    "total": "Total: {{calls}} calls · {{usd}} · {{tokens}} tokens",
+    "state": {
+      "pending": "Waiting",
+      "running": "Running",
+      "paused": "Paused",
+      "done": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "run": "Run {{run}} · {{state}}"
   }
 }

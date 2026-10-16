@@ -8,7 +8,7 @@ import { z } from "zod";
 /** Giá trị `profile` của agent được thay bằng profile seed (`HUB_SEED_PROFILE`, plan §3.6). */
 export const SEED_PROFILE_TOKEN = "$HUB_SEED_PROFILE";
 export const PROVIDER_KINDS = ["subscription", "api"] as const;
-export const PROVIDER_VENDORS = ["anthropic", "openai", "google", "fake", "dify"] as const;
+export const PROVIDER_VENDORS = ["anthropic", "openai", "google", "fake", "dify", "evolu"] as const;
 export const SEED_AGENT_RUNTIMES = [
   "agentic-cli",
   "llm",

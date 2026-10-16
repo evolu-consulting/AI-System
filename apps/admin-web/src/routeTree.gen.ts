@@ -39,6 +39,7 @@ import { Route as AuthedTenantsNewRouteImport } from './routes/_authed/tenants/n
 import { Route as AuthedWorkflowsIndexRouteImport } from './routes/_authed/workflows/index'
 import { Route as AuthedWorkflowsWorkflowIdRouteImport } from './routes/_authed/workflows/$workflowId'
 import { Route as AuthedWorkflowsNewRouteImport } from './routes/_authed/workflows/new'
+import { Route as AuthedWorkflowsStepsRouteImport } from './routes/_authed/workflows/steps'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -190,6 +191,11 @@ const AuthedWorkflowsNewRoute = AuthedWorkflowsNewRouteImport.update({
   path: '/workflows/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedWorkflowsStepsRoute = AuthedWorkflowsStepsRouteImport.update({
+  id: '/workflows/steps',
+  path: '/workflows/steps',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/tenants/new': typeof AuthedTenantsNewRoute
   '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
   '/workflows/new': typeof AuthedWorkflowsNewRoute
+  '/workflows/steps': typeof AuthedWorkflowsStepsRoute
   '/commands/': typeof AuthedCommandsIndexRoute
   '/features/': typeof AuthedFeaturesIndexRoute
   '/groups/': typeof AuthedGroupsIndexRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/tenants/new': typeof AuthedTenantsNewRoute
   '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
   '/workflows/new': typeof AuthedWorkflowsNewRoute
+  '/workflows/steps': typeof AuthedWorkflowsStepsRoute
   '/commands': typeof AuthedCommandsIndexRoute
   '/features': typeof AuthedFeaturesIndexRoute
   '/groups': typeof AuthedGroupsIndexRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/_authed/tenants/new': typeof AuthedTenantsNewRoute
   '/_authed/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
   '/_authed/workflows/new': typeof AuthedWorkflowsNewRoute
+  '/_authed/workflows/steps': typeof AuthedWorkflowsStepsRoute
   '/_authed/commands/': typeof AuthedCommandsIndexRoute
   '/_authed/features/': typeof AuthedFeaturesIndexRoute
   '/_authed/groups/': typeof AuthedGroupsIndexRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/tenants/new'
     | '/workflows/$workflowId'
     | '/workflows/new'
+    | '/workflows/steps'
     | '/commands/'
     | '/features/'
     | '/groups/'
@@ -344,6 +354,7 @@ export interface FileRouteTypes {
     | '/tenants/new'
     | '/workflows/$workflowId'
     | '/workflows/new'
+    | '/workflows/steps'
     | '/commands'
     | '/features'
     | '/groups'
@@ -376,6 +387,7 @@ export interface FileRouteTypes {
     | '/_authed/tenants/new'
     | '/_authed/workflows/$workflowId'
     | '/_authed/workflows/new'
+    | '/_authed/workflows/steps'
     | '/_authed/commands/'
     | '/_authed/features/'
     | '/_authed/groups/'
@@ -601,6 +613,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedWorkflowsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/workflows/steps': {
+      id: '/_authed/workflows/steps'
+      path: '/workflows/steps'
+      fullPath: '/workflows/steps'
+      preLoaderRoute: typeof AuthedWorkflowsStepsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
@@ -637,6 +656,7 @@ interface AuthedRouteChildren {
   AuthedTenantsNewRoute: typeof AuthedTenantsNewRoute
   AuthedWorkflowsWorkflowIdRoute: typeof AuthedWorkflowsWorkflowIdRoute
   AuthedWorkflowsNewRoute: typeof AuthedWorkflowsNewRoute
+  AuthedWorkflowsStepsRoute: typeof AuthedWorkflowsStepsRoute
   AuthedCommandsIndexRoute: typeof AuthedCommandsIndexRoute
   AuthedFeaturesIndexRoute: typeof AuthedFeaturesIndexRoute
   AuthedGroupsIndexRoute: typeof AuthedGroupsIndexRoute
@@ -666,6 +686,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedTenantsNewRoute: AuthedTenantsNewRoute,
   AuthedWorkflowsWorkflowIdRoute: AuthedWorkflowsWorkflowIdRoute,
   AuthedWorkflowsNewRoute: AuthedWorkflowsNewRoute,
+  AuthedWorkflowsStepsRoute: AuthedWorkflowsStepsRoute,
   AuthedCommandsIndexRoute: AuthedCommandsIndexRoute,
   AuthedFeaturesIndexRoute: AuthedFeaturesIndexRoute,
   AuthedGroupsIndexRoute: AuthedGroupsIndexRoute,

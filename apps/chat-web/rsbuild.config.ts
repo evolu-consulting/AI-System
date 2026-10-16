@@ -25,6 +25,7 @@ const proxy = {
   "/agents": HUB_URL,
   "/commands": HUB_URL,
   "/attachments": HUB_URL,
+  "/dlc": HUB_URL,
   "/directory": spaNavigation,
   "/rooms": spaNavigation,
   "/me": spaNavigation,

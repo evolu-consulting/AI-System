@@ -121,9 +121,15 @@ forbidden_modules = [
 ]
 
 [[tool.importlinter.contracts]]
-name = "runtimes.cli và runtimes.dify độc lập; dispatch chỉ ghép ở main (plan-runtime 3.1)"
+name = "runtimes.cli, runtimes.dify, runtimes.dlc độc lập; dispatch chỉ ghép ở main (plan-runtime 3.1)"
 type = "independence"
-modules = ["agent_runtime.runtimes.cli", "agent_runtime.runtimes.dify"]
+modules = ["agent_runtime.runtimes.cli", "agent_runtime.runtimes.dify", "agent_runtime.runtimes.dlc"]
+
+[[tool.importlinter.contracts]]
+name = "runtimes.dlc không import providers, sandbox (DLC-R01: chỉ HTTP trong process cha)"
+type = "forbidden"
+source_modules = ["agent_runtime.runtimes.dlc"]
+forbidden_modules = ["agent_runtime.providers", "agent_runtime.sandbox"]
 
 [[tool.importlinter.contracts]]
 name = "Lõi thuần H2b không import SDK (plan-runtime H2b 3.2-5: cha dùng lại không kéo SDK)"

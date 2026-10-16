@@ -27,6 +27,9 @@ from agent_runtime.runtimes.cli.probe import ProbeHostCfg
 from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
 from agent_runtime.runtimes.dify.host import DifyConfig, DifyJobHost
 from agent_runtime.runtimes.dispatch import JobRouter, TypedHost
+from agent_runtime.runtimes.dlc.client import TokenSource
+from agent_runtime.runtimes.dlc.host import PROVIDER_KEY as DLC_KEY
+from agent_runtime.runtimes.dlc.host import DlcConfig, DlcJobHost
 from agent_runtime.sandbox.process import disable_dumpable, enable_subreaper
 
 Service = Callable[[], Coroutine[Any, Any, None]]
@@ -113,14 +116,34 @@ def dify_config(settings: Settings) -> DifyConfig | None:
     )
 
 
+def dlc_config(settings: Settings) -> DlcConfig | None:
+    """None khi `dlc` ∉ `AGENT_RT_PROVIDERS` (DLC-R01)."""
+    s = settings
+    if DLC_KEY not in s.providers or not s.dlc_url:
+        return None
+    tokens = None
+    if s.dlc_token_url and s.dlc_client_id and s.dlc_client_secret:
+        ca = str(s.dlc_ca_file) if s.dlc_ca_file else None
+        secret = s.dlc_client_secret.get_secret_value()
+        tokens = TokenSource(s.dlc_token_url, s.dlc_client_id, secret, ca)
+    return DlcConfig(s.worker_id, s.dlc_url, s.hub_url, tokens, s.dlc_poll_s, s.dlc_human_mode)
+
+
 def make_router(
-    pool: Pool, events: RunEvents, cfg: HostConfig, dify: DifyConfig | None
+    pool: Pool,
+    events: RunEvents,
+    cfg: HostConfig,
+    extra: tuple[DifyConfig | None, DlcConfig | None] = (None, None),
 ) -> JobRouter:
+    dify, dlc = extra
     cli = CliJobHost(pool, events, cfg)
     hosts: dict[str, TypedHost] = {"agent.cli": cli}
     if dify is not None:
         hosts["workflow.async"] = DifyJobHost(pool, events, dify)
-    return JobRouter(hosts, default=cli)
+    by_provider: dict[str, TypedHost] = {}
+    if dlc is not None:
+        by_provider[DLC_KEY] = DlcJobHost(pool, events, dlc)
+    return JobRouter(hosts, default=cli, by_provider=by_provider)
 
 
 async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRuntime:
@@ -129,10 +152,10 @@ async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRunti
     enable_subreaper()
     disable_dumpable()
     cfg = host_config(settings, stopping)
-    dify = dify_config(settings)
+    extra = (dify_config(settings), dlc_config(settings))
 
     def make_host(pool: Pool, events: RunEvents) -> JobRouter:
-        return make_router(pool, events, cfg, dify)
+        return make_router(pool, events, cfg, extra)
 
     return await queue_runtime.start(settings, make_host, probe_host_config(settings))
 

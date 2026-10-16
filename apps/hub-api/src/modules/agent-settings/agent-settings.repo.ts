@@ -16,6 +16,8 @@ export type SettingsAgentRow = {
   is_orch: boolean;
   model: string | null;
   model_name: string | null;
+  agent_type_key: string | null;
+  runtime_options: Record<string, unknown> | null;
 };
 
 /** Tối đa = `AgentSettingsResponseSchema.agents`. */
@@ -36,7 +38,7 @@ export function listAgents(
       select a.id, coalesce(a.model, p.steps -> 0 ->> 'model') as model,
         p.steps -> 0 ->> 'provider_key' as provider_key
       from hub.agents a left join hub.model_profiles p on p.id = a.profile_id)
-    select a.id, a.key, a.name, a.description, a.runtime, a.enabled,
+    select a.id, a.key, a.name, a.description, a.runtime, a.enabled, a.agent_type_key, a.runtime_options,
       (e.agent_id is not null and e.revoked_at is null) as entitled,
       exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id) as is_orch,
       m.model,

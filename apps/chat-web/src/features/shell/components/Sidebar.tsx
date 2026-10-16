@@ -6,6 +6,7 @@ import type { Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandLogo } from "~/components/shared/BrandLogo";
 import { Input } from "~/components/ui/input";
+import { WorkspaceList } from "~/features/dlc/components/WorkspaceList";
 import { ConversationList } from "./ConversationList";
 import { RoomSections } from "./RoomSections";
 import { SidebarGroup } from "./SidebarGroup";
@@ -68,6 +69,11 @@ export function Sidebar(p: Props) {
           onNavigate={p.onNavigate}
           onNewGroup={p.onNewGroup}
         />
+        <div className="mt-1">
+          <SidebarGroup id="workspaces" title={t("dlc.workspaces")}>
+            <WorkspaceList activeId={p.activeId} onNavigate={p.onNavigate} />
+          </SidebarGroup>
+        </div>
         <div className="mt-1">
           <SidebarGroup id="ai" title={t("rooms.sectionAi")}>
             <ConversationList
