@@ -14,6 +14,8 @@ export type NavId =
   | "workflows"
   | "processes"
   | "sources"
+  | "workflowSteps"
+  | "workflowProcess"
   | "groups"
   | "access"
   | "secrets"
@@ -32,6 +34,7 @@ type NavTo =
   | "/workflows"
   | "/processes"
   | "/sources"
+  | "/workflows/steps"
   | "/secrets"
   | "/usage"
   | "/audit"
@@ -39,6 +42,8 @@ type NavTo =
 export type NavItem = {
   id: NavId;
   to: NavTo;
+  /** DLC-R15 · mục có menu con sổ xuống (Workflows → Workflow Steps · Workflow Process). */
+  children?: NavItem[];
   labelKey:
     | "nav.overview"
     | "nav.agents"
@@ -49,6 +54,8 @@ export type NavItem = {
     | "nav.workflows"
     | "nav.processes"
     | "nav.sources"
+    | "nav.workflowSteps"
+    | "nav.workflowProcess"
     | "nav.groups"
     | "nav.access"
     | "nav.secrets"
@@ -73,7 +80,11 @@ const USERS = item("users", "/users");
 const AGENTS = item("agents", "/agents");
 const FEATURES = item("features", "/features");
 const COMMANDS = item("commands", "/commands");
-const WORKFLOWS = item("workflows", "/workflows");
+// DLC-R15 · Workflows sổ xuống: Steps (các bước AI SDLC) · Process (danh sách flow Dify + flow AI SDLC).
+const WORKFLOWS: NavItem = {
+  ...item("workflows", "/workflows"),
+  children: [item("workflowSteps", "/workflows/steps"), item("workflowProcess", "/workflows")],
+};
 const PROCESSES = item("processes", "/processes");
 const SOURCES = item("sources", "/sources");
 const GROUPS = item("groups", "/groups");
@@ -142,24 +153,32 @@ function catalogCrumbs(pathname: string): Crumb[] {
   return rest === "new" ? [list, { labelKey: entry.newKey }] : [list];
 }
 
+/** Breadcrumb của đường dẫn khớp chính xác (không phải danh sách/editor M2). */
+const EXACT_CRUMBS: Record<string, Crumb[]> = {
+  "/": [{ labelKey: "nav.overview" }],
+  "/users": [{ labelKey: "nav.users" }],
+  "/agents": [{ labelKey: "nav.agents" }],
+  "/access": [{ labelKey: "nav.access" }],
+  "/sources": [{ labelKey: "nav.sources" }],
+  "/secrets": [{ labelKey: "nav.secrets" }],
+  "/account/password": [{ labelKey: "account.changePassword" }],
+  "/account/2fa": [{ labelKey: "account.twofa" }],
+  "/usage": [{ labelKey: "nav.usage" }],
+  "/transfer": [{ labelKey: "nav.transfer" }],
+  "/audit": [{ labelKey: "nav.audit" }],
+  "/workflows/steps": [
+    { labelKey: "nav.workflows", to: "/workflows" },
+    { labelKey: "nav.workflowSteps" },
+  ],
+  "/tenants": [{ labelKey: "nav.tenants" }],
+  "/tenants/new": [{ labelKey: "nav.tenants", to: "/tenants" }, { labelKey: "tenants.new.title" }],
+};
+
 /** Breadcrumb theo đường dẫn hiện tại. */
 export function crumbsFor(pathname: string): Crumb[] {
-  if (pathname === "/") return [{ labelKey: "nav.overview" }];
-  if (pathname === "/users") return [{ labelKey: "nav.users" }];
-  if (pathname === "/agents") return [{ labelKey: "nav.agents" }];
-  if (pathname === "/access") return [{ labelKey: "nav.access" }];
-  if (pathname === "/sources") return [{ labelKey: "nav.sources" }];
-  if (pathname === "/secrets") return [{ labelKey: "nav.secrets" }];
-  if (pathname === "/account/password") return [{ labelKey: "account.changePassword" }];
-  if (pathname === "/account/2fa") return [{ labelKey: "account.twofa" }];
-  if (pathname === "/usage") return [{ labelKey: "nav.usage" }];
-  if (pathname === "/transfer") return [{ labelKey: "nav.transfer" }];
-  if (pathname === "/audit") return [{ labelKey: "nav.audit" }];
+  const exact = EXACT_CRUMBS[pathname];
+  if (exact) return exact;
   if (pathname.startsWith("/audit/")) return [{ labelKey: "nav.audit", to: "/audit" }];
-  if (pathname === "/tenants") return [{ labelKey: "nav.tenants" }];
-  if (pathname === "/tenants/new") {
-    return [{ labelKey: "nav.tenants", to: "/tenants" }, { labelKey: "tenants.new.title" }];
-  }
   if (pathname.startsWith("/tenants/")) return [{ labelKey: "nav.tenants", to: "/tenants" }];
   return catalogCrumbs(pathname.replace(/\/$/, ""));
 }

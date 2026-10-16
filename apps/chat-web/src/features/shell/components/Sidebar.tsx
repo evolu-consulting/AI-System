@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { BrandLogo } from "~/components/shared/BrandLogo";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { WorkspaceList } from "~/features/dlc/components/WorkspaceList";
 import { ProcessDmRow } from "~/features/processes/inbox/components/ProcessDmRow";
 import { TodoGroup } from "~/features/processes/inbox/components/TodoGroup";
 import { useProcessEngineOn } from "~/features/processes/shared/engine";
@@ -102,6 +103,11 @@ export function Sidebar(p: Props) {
           onNavigate={p.onNavigate}
           onNewGroup={p.onNewGroup}
         />
+        <div className="mt-1">
+          <SidebarGroup id="workspaces" title={t("dlc.workspaces")}>
+            <WorkspaceList activeId={p.activeId} onNavigate={p.onNavigate} />
+          </SidebarGroup>
+        </div>
         <div className="mt-1">
           <SidebarGroup id="ai" title={t("rooms.sectionAi")}>
             <ConversationList

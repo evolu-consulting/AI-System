@@ -210,7 +210,9 @@
     "access": "Phân quyền",
     "usage": "Chi phí & quota",
     "audit": "Nhật ký",
-    "transfer": "Import / Export"
+    "transfer": "Import / Export",
+    "workflowSteps": "Workflow Steps",
+    "workflowProcess": "Workflow Process"
   },
   "topbar": {
     "platform": "Nền tảng",
@@ -474,6 +476,18 @@
     },
     "error": {
       "isDefault": "Không tắt được agent đang là mặc định hoặc dự phòng. Đặt agent khác làm mặc định trước."
+    },
+    "dlc": {
+      "supervisor": "Supervisor AI SDLC",
+      "team": "Đội AI SDLC",
+      "runsOn": "AI SDLC · bước {step}",
+      "engine": "AI SDLC engine",
+      "inRun": "Chạy trong run của @{supervisor}",
+      "kind": {
+        "agentic": "agentic",
+        "complete": "complete",
+        "supervisor": "supervisor"
+      }
     }
   },
   "hubErrors": {
@@ -1876,6 +1890,89 @@
     "toast": {
       "downloaded": "Đã tải {file}",
       "imported": "Đã import · Thêm {a} · Sửa {u} · v{n}"
+    }
+  },
+  "dlcAdmin": {
+    "stepsTitle": "Workflow Steps",
+    "stepsSubtitle": "Các bước của dây chuyền AI SDLC theo chiều chạy: agent làm việc ở mỗi bước, model đang dùng và hook gắn ở biên bước. Model đổi bằng LINE_ROLE_MODELS của engine; hook sửa ở admin engine DLC.",
+    "defaultModel": "Model mặc định của engine: {model}",
+    "optional": "Tuỳ chọn",
+    "agents": "Agent",
+    "hooks": "Hook",
+    "noHooks": "Chưa có hook",
+    "hookEvent": "Sự kiện: {events}",
+    "engineDown": "Không kết nối được engine AI SDLC.",
+    "engineOff": "Hub chưa cấu hình engine AI SDLC (HUB_DLC_URL).",
+    "loading": "Đang tải…",
+    "kindTitle": {
+      "agentic": "agentic · phiên có tool trong worktree",
+      "complete": "complete · một câu trả lời JSON"
+    },
+    "processTitle": "Workflow Process",
+    "processSubtitle": "Hai loại workflow: flow trên Dify (gọi qua command / agent) và flow nội tại của AI SDLC (agent @dlc chạy). Thêm loại nào cũng từ nút Thêm workflow.",
+    "add": "+ Thêm workflow",
+    "addDify": "Workflow Dify",
+    "addDifyHint": "App workflow / chat / agent trên Dify",
+    "addDlc": "Flow AI SDLC",
+    "addDlcHint": "Process nội tại của engine DLC",
+    "dlcSection": "Flow nội tại AI SDLC",
+    "dlcSectionHint": "Trong chat gõ #key ở đầu tin để chọn flow; không chọn thì dùng flow mặc định của process.",
+    "difySection": "Flow trên Dify",
+    "type": {
+      "dify": "Dify",
+      "dlc": "AI SDLC"
+    },
+    "col": {
+      "name": "Flow",
+      "process": "Process",
+      "human": "Hỏi người",
+      "lane": "Lane",
+      "default": "Mặc định",
+      "enabled": "Bật",
+      "actions": "Thao tác"
+    },
+    "process": {
+      "new-system": "New System",
+      "enhancement": "Enhancement",
+      "bug-fix": "Bug Fix"
+    },
+    "human": {
+      "engine": "Theo engine",
+      "ask": "Hỏi người (ask)",
+      "decide": "Model tự quyết (decide)"
+    },
+    "lane": {
+      "auto": "Engine tự định cỡ",
+      "trivial": "trivial",
+      "small": "small",
+      "full": "full"
+    },
+    "empty": "Chưa có flow AI SDLC.",
+    "edit": "Sửa",
+    "delete": "Xoá",
+    "deleteConfirm": "Xoá flow {name}?",
+    "dialogNew": "Thêm flow AI SDLC",
+    "dialogEdit": "Sửa flow AI SDLC",
+    "field": {
+      "key": "Key",
+      "keyHint": "Dùng trong chat: #key. Chữ thường, số, gạch nối.",
+      "name": "Tên",
+      "description": "Mô tả",
+      "process": "Process",
+      "human": "Câu hỏi cần người quyết định",
+      "lane": "Mức đọc thay đổi (lane)",
+      "isDefault": "Mặc định của process",
+      "enabled": "Bật"
+    },
+    "preview": "Các bước sẽ chạy",
+    "save": "Lưu",
+    "cancel": "Huỷ",
+    "saved": "Đã lưu flow",
+    "deleted": "Đã xoá flow",
+    "error": {
+      "keyTaken": "Key đã có flow khác dùng.",
+      "conflict": "Flow vừa được người khác sửa. Tải lại rồi thử lại.",
+      "generic": "Không lưu được: {message}"
     }
   }
 }

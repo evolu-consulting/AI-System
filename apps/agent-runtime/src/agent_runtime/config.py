@@ -61,6 +61,15 @@ class Settings(BaseSettings):
     hub_url: str | None = Field(default=None, pattern=r"^https?://[^\s]+$", max_length=2048)
     dify_read_timeout_s: float = Field(default=30.0, gt=0)
     dify_stop_timeout_s: float = Field(default=2.0, gt=0)
+    # DLC-R01/R02: engine AI SDLC (provider `dlc`). Không đặt CLIENT_* = engine không đăng nhập
+    # (chỉ mạng riêng).
+    dlc_url: str | None = Field(default=None, pattern=r"^https?://[^\s]+$", max_length=2048)
+    dlc_token_url: str | None = Field(default=None, pattern=r"^https?://[^\s]+$", max_length=2048)
+    dlc_client_id: str | None = Field(default=None, max_length=200)
+    dlc_client_secret: SecretStr | None = None
+    dlc_ca_file: Path | None = None
+    dlc_poll_s: float = Field(default=15.0, ge=1.0, le=300.0)
+    dlc_human_mode: Literal["ask", "decide"] | None = None
     # H2b plan-runtime §8: gom `job.delta` (`DeltaPump`) — xả theo giờ / theo số ký tự.
     delta_flush_ms: int = Field(default=100, ge=10, le=1000)
     delta_flush_chars: int = Field(default=200, ge=1, le=4000)
@@ -186,6 +195,19 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _dlc_settings(self) -> Self:
+        if "dlc" not in self.providers:
+            return self
+        if not self.dlc_url:
+            raise ValueError("AGENT_RT_DLC_URL bắt buộc khi AGENT_RT_PROVIDERS có dlc")
+        auth = (self.dlc_token_url, self.dlc_client_id, self.dlc_client_secret)
+        if any(auth) and not all(auth):
+            raise ValueError(
+                "AGENT_RT_DLC_TOKEN_URL, _CLIENT_ID, _CLIENT_SECRET: đặt đủ cả ba hoặc không đặt"
+            )
+        return self
+
+    @model_validator(mode="after")
     def _orphan_vs_heartbeat(self) -> Self:
         """Review 1 C2: ngưỡng orphan phải ≥ 2 nhịp heartbeat (một nhịp trễ không thành orphan), và
         heartbeat < 30 s vì Hub quét orphan với ngưỡng cố định 60 s (= 2 × 30)."""
@@ -220,6 +242,8 @@ class Settings(BaseSettings):
             "cooldown_default_s": self.cooldown_default_s,
             "sandbox": self.sandbox,
             "sandbox_image": self.sandbox_image,
+            "dlc_url": redact_url(self.dlc_url) if self.dlc_url else None,
+            "dlc_auth": bool(self.dlc_client_id),
         }
 
 

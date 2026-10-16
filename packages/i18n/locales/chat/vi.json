@@ -470,5 +470,29 @@
   },
   "processRoute": {
     "notFound": "Không tìm thấy"
+  },
+  "dlc": {
+    "workspaces": "Workspaces",
+    "workspacesEmpty": "Chưa có dự án AI SDLC. Gửi spec cho @dlc để bắt đầu.",
+    "viewProcess": "Xem Process",
+    "processTitle": "Process",
+    "processHint": "Tiến độ từng bước của run hiện tại",
+    "noRun": "Hội thoại này chưa có run AI SDLC.",
+    "engineDown": "Không kết nối được engine AI SDLC.",
+    "engineOff": "Hub chưa cấu hình engine AI SDLC (HUB_DLC_URL).",
+    "loading": "Đang tải…",
+    "calls": "{{count}} lần gọi agent",
+    "tokens": "{{in}} vào · {{out}} ra token",
+    "units": "{{merged}}/{{units}} phần",
+    "total": "Tổng: {{calls}} lần gọi · {{usd}} · {{tokens}} token",
+    "state": {
+      "pending": "Chờ",
+      "running": "Đang chạy",
+      "paused": "Tạm dừng",
+      "done": "Xong",
+      "failed": "Lỗi",
+      "skipped": "Bỏ qua"
+    },
+    "run": "Run {{run}} · {{state}}"
   }
 }

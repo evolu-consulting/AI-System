@@ -13,6 +13,7 @@ import type { Db } from "../../lib/db";
 import { appError } from "../../lib/errors";
 import type { HubAuditWriter } from "../../lib/hub-audit";
 import { bumpHubConfig, lockHubConfig, notifyHubConfig } from "../../lib/hub-config-write";
+import { dlcInfoOf } from "./agent-settings.dlc";
 import * as repo from "./agent-settings.repo";
 import {
   type AgentState,
@@ -60,6 +61,7 @@ export class AgentSettingsService {
           enabled: r.enabled,
           entitled: r.entitled,
           is_orchestrator: r.is_orch,
+          ...dlcInfoOf(r),
         })),
         hub_config_version: version,
       };

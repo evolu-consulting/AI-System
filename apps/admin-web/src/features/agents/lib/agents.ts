@@ -112,3 +112,44 @@ export function filterAgents(
     return [a.agent.key, name, a.description].some((s) => s.toLowerCase().includes(needle));
   });
 }
+
+/** DLC-R13 · thứ tự bước của dây chuyền AI SDLC (`line/catalog.py`). */
+export const DLC_STEP_ORDER = [
+  "size",
+  "understand",
+  "tests",
+  "plan",
+  "build",
+  "review",
+  "merge",
+  "qas",
+  "deliver",
+  "result",
+] as const;
+
+/** Vai trò engine DLC (chạy trong run, không chat, không cấp quyền / đặt mặc định). */
+export const isDlcRole = (a: AgentSettingsItem): boolean =>
+  a.dlc !== undefined && a.dlc.kind !== "supervisor";
+
+const stepRank = (a: AgentSettingsItem): number => {
+  const i = (DLC_STEP_ORDER as readonly string[]).indexOf(a.dlc?.step ?? "");
+  return i < 0 ? DLC_STEP_ORDER.length : i;
+};
+
+/** Đội DLC đứng ngay dưới supervisor của nó, theo thứ tự bước; agent khác giữ thứ tự. */
+export function orderForDlc(items: readonly AgentSettingsItem[]): AgentSettingsItem[] {
+  const team = items.filter(isDlcRole);
+  const rest = items.filter((a) => !isDlcRole(a));
+  const out: AgentSettingsItem[] = [];
+  for (const a of rest) {
+    out.push(a);
+    if (a.dlc?.kind === "supervisor") {
+      const mine = team.filter((r) => r.dlc?.supervisor === a.agent.key);
+      out.push(
+        ...mine.sort((x, y) => stepRank(x) - stepRank(y) || x.agent.key.localeCompare(y.agent.key)),
+      );
+    }
+  }
+  const placed = new Set(out.map((a) => a.agent.id));
+  return [...out, ...team.filter((r) => !placed.has(r.agent.id))];
+}

@@ -19,7 +19,20 @@ import { createLocalStorage } from "./modules/attachments/storage.local";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
 import { missingAdminColumns } from "./modules/config/schema-check";
 import { loadMasterKey, probeMasterKey } from "./modules/dify/credential.service";
+import { DlcEngine } from "./modules/dlc/dlc.engine";
 import { checkHubSecretsKey, type SecretKey } from "./modules/secrets/secrets.crypto";
+
+/** DLC-R11 · `HUB_DLC_URL` vắng ⇒ không có engine (`/dlc/*` trả `not_configured`). */
+function dlcEngineOf(env: Env): DlcEngine | undefined {
+  if (!env.HUB_DLC_URL) return undefined;
+  return new DlcEngine({
+    url: env.HUB_DLC_URL,
+    tokenUrl: env.HUB_DLC_TOKEN_URL,
+    clientId: env.HUB_DLC_CLIENT_ID,
+    clientSecret: env.HUB_DLC_CLIENT_SECRET,
+    caFile: env.HUB_DLC_CA_FILE,
+  });
+}
 
 function fail(step: string, err: unknown): never {
   logger.fatal(step, safeErrorFields(err));
@@ -190,6 +203,7 @@ async function main(): Promise<void> {
       ...fromEnv,
       attachments,
       hubSecretsKey,
+      dlc: dlcEngineOf(env),
       signal: stop.signal,
     },
   );

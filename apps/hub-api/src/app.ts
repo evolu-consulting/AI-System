@@ -41,6 +41,9 @@ import type { AttachmentDeps } from "./modules/attachments/storage";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
+import type { DlcEngine } from "./modules/dlc/dlc.engine";
+import { dlcRoutes } from "./modules/dlc/dlc.routes";
+import { dlcAdminRoutes } from "./modules/dlc/dlc-admin.routes";
 import { mountApplyResult } from "./modules/internal/apply.routes";
 import { mountSourceCredential } from "./modules/internal/source-credential.routes";
 import type { KhRuntime } from "./modules/kh/kh.mount";
@@ -118,6 +121,8 @@ export type AppDeps = {
   sourceCheckTimeoutMs?: number;
   /** K1 G1 · = `khConfigOf(env)` (server điền); vắng ⇒ không origin KH nào được phép. */
   kh?: KhConfig;
+  /** DLC-R11 · engine AI SDLC (`HUB_DLC_*`, server dựng). Vắng ⇒ `/dlc/*` trả `engine: not_configured`. */
+  dlc?: DlcEngine;
 } & ProcessSeams;
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -131,6 +136,7 @@ const PROTECTED_PREFIXES = [
   "/agent-grants",
   "/agent-settings",
   "/studio/api",
+  "/dlc",
   ...X2A_PROTECTED_PREFIXES,
   ...PROCESS_PROTECTED_PREFIXES,
   ...SOURCE_PROTECTED_PREFIXES,
@@ -243,6 +249,9 @@ function processHooks(
 
 /** Route chỉ cần `db` (+ `config` nếu có): phòng X2a, lệnh/`@`, quyền agent, trace, nguồn. Trả phần cần cho vòng run. */
 function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: ConfigCache) {
+  // DLC-R11 · Workspaces/Process (AI SDLC) — chỉ cần db; engine vắng ⇒ route trả engine: not_configured.
+  app.route("/dlc", dlcRoutes(deps.db, deps.dlc));
+  app.route("/dlc", dlcAdminRoutes(deps.db, deps.dlc));
   const { redis, pingMs, signal } = deps;
   const x2a = mountX2a(app, { db: deps.db, redis, log: logger, pingMs, signal });
   const drivers = commandDrivers(deps, deps.db);

@@ -20,7 +20,8 @@
     "HUB_BASE_URL",
     "MOCK_TIMEOUT_MS",
     "DIFY_MOCK_PORT",
-    "HUB_MOCK_PORT"
+    "HUB_MOCK_PORT",
+    "HUB_DLC_URL"
   ],
   "tasks": {
     "build": {

@@ -100,11 +100,13 @@ step "6. Agent Runtime trong WSL ($WSL_DISTRO, user $WSL_USER)"
 if ! command -v wsl.exe >/dev/null; then
   warn "Không có wsl.exe — Chat Orchestrator / @agent sẽ không chạy"
 else
-  wsl.exe -d "$WSL_DISTRO" -u "$WSL_USER" -- bash -l -s <<'EOF' || warn "Chuẩn bị WSL chưa xong (xem trên)"
+  # Repo dưới /mnt/<ổ>/… theo nơi clone (không cố định một đường dẫn).
+  WIN_REPO=$(pwd -W)
+  RT_DIR="/mnt/$(printf '%s' "${WIN_REPO:0:1}" | tr '[:upper:]' '[:lower:]')${WIN_REPO:2}/apps/agent-runtime"
+  { printf 'cd %q || exit 1\n' "$RT_DIR"; cat <<'EOF'; } | wsl.exe -d "$WSL_DISTRO" -u "$WSL_USER" -- bash -l -s || warn "Chuẩn bị WSL chưa xong (xem trên)"
 set -e
 command -v uv >/dev/null || { echo "  ✗ thiếu uv trong WSL (curl -LsSf https://astral.sh/uv/install.sh | sh)"; exit 1; }
 echo "  ✓ uv $(uv --version | cut -d' ' -f2)"
-cd /mnt/d/AI/ai-system/apps/agent-runtime
 UV_PROJECT_ENVIRONMENT=$HOME/.venvs/agent-runtime uv sync --frozen
 echo "  ✓ venv ~/.venvs/agent-runtime"
 mkdir -p ~/combine/work ~/combine/logs
