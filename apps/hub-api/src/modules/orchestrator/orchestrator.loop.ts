@@ -179,6 +179,22 @@ function streamedDecision(
   return { kind: "end", end: streamEnd(o, final) };
 }
 
+/** Phần chung của mọi lần gọi Orchestrator trong một step (system prompt, stream theo §5.5 trừ khi luật file đang chờ). */
+function orchestratorJob(c: LoopInput, s: State) {
+  return {
+    agent: c.orchestrator,
+    role: "orchestrator" as const,
+    systemPrompt: orchestratorSystemPrompt(c.orchestrator.systemPrompt, c.noMatch, hasFiles(c)),
+    history: [],
+    stepId: crypto.randomUUID(),
+    ...(c.stepDetail ? { detail: c.stepDetail } : {}),
+    // Tin có file, chưa agent nào xử lý: không stream để `fileHandler` còn chặn được `answer` trước khi người dùng thấy.
+    ...(fileHandlerPending(c, s)
+      ? {}
+      : acceptOf(c, { role: "orchestrator", runKind: "orchestrated", firstDelegate: false })),
+  };
+}
+
 /**
  * Một step Orchestrator; JSON hỏng → thử lại 1 lần cùng step kèm câu nhắc; vẫn hỏng → `UPSTREAM_ERROR` (H1-R06). H2b
  * P11–P12: run stream → job `stream=["answer"]`; đã phát thì không thử lại (R21).
@@ -197,15 +213,7 @@ async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
       },
       retry,
     );
-  const base = {
-    agent: c.orchestrator,
-    role: "orchestrator" as const,
-    systemPrompt: orchestratorSystemPrompt(c.orchestrator.systemPrompt, c.noMatch),
-    history: [],
-    stepId: crypto.randomUUID(),
-    ...(c.stepDetail ? { detail: c.stepDetail } : {}),
-    ...acceptOf(c, { role: "orchestrator", runKind: "orchestrated", firstDelegate: false }),
-  };
+  const base = orchestratorJob(c, s);
   const first = prompt(false);
   s.steps++;
   for (const retry of [false, true]) {
@@ -274,7 +282,47 @@ function afterAgent(s: State, agent: AgentConfig, r: AgentResult): LoopEnd | nul
   return null;
 }
 
+const hasFiles = (c: LoopInput): boolean => (c.attachments?.length ?? 0) > 0;
+
+/** Tin có file và chưa agent nào xử lý (Orchestrator không đọc được file nên chưa được tự trả lời). */
+const fileHandlerPending = (c: LoopInput, s: State): boolean => hasFiles(c) && s.delegates === 0;
+
+/**
+ * H2c-R15 · luật cứng: tin có file, chưa agent nào xử lý mà Orchestrator `answer` ⇒ agent sẽ đọc file thay nó — agent dự
+ * phòng của tenant (CR-054) → `assistant` → agent đầu trong quyền người gửi (kiểm lại bằng `canDelegate`, HUB-BR-03). Không
+ * agent nào / hết `max_steps` ⇒ undefined (giữ câu trả lời của Orchestrator).
+ */
+function fileHandler(c: LoopInput, s: State): AgentConfig | undefined {
+  if (!fileHandlerPending(c, s) || s.steps >= c.settings.maxSteps) return undefined;
+  const fallback = c.noMatch?.kind === "fallback" ? c.noMatch.agent.key : undefined;
+  const others = c.visible.filter((v) => v.id !== c.orchestrator.id).map((v) => v.key);
+  for (const key of [fallback, "assistant", ...others]) {
+    const ref = key ? canDelegate(c.access, key) : null;
+    const agent = ref ? c.agents.find((a) => a.id === ref.id) : undefined;
+    if (agent) return agent;
+  }
+  return undefined;
+}
+/** `answer` của Orchestrator: kết thúc run, trừ khi luật file giao cho agent (null = quay lại Orchestrator). */
+async function onAnswer(io: LoopIo, c: LoopInput, s: State, text: string): Promise<LoopEnd | null> {
+  const handler = fileHandler(c, s);
+  if (!handler) return { kind: "text", text };
+  return delegate(io, c, s, { agent: handler, task: c.message });
+}
 type Delegate = Extract<OrchestratorDecision, { decision: "delegate" }>;
+
+/** Một quyết định của Orchestrator → kết thúc run, hoặc null = quay lại Orchestrator (sau delegate / luật file). */
+function onDecision(
+  io: LoopIo,
+  c: LoopInput,
+  s: State,
+  dec: OrchestratorDecision,
+): Promise<LoopEnd | null> {
+  if (dec.decision === "answer") return onAnswer(io, c, s, dec.text);
+  if (dec.decision === "ask")
+    return Promise.resolve({ kind: "ask", ask: { question: dec.question, choices: dec.choices } });
+  return onDelegate(io, c, s, dec);
+}
 
 /** Delegate: hết `max_steps` → dừng; ngoài quyền (kiểm lại mỗi lần, HUB-BR-03) → step `skipped`; còn lại chạy agent. */
 async function onDelegate(
@@ -314,11 +362,7 @@ export async function runLoop(io: LoopIo, c: LoopInput): Promise<LoopEnd> {
     const d = await decide(io, c, s);
     if (d.kind === "end") return d.end;
     if (d.kind !== "decision") return d;
-    const dec = d.decision;
-    if (dec.decision === "answer") return { kind: "text", text: dec.text };
-    if (dec.decision === "ask")
-      return { kind: "ask", ask: { question: dec.question, choices: dec.choices } };
-    const end = await onDelegate(io, c, s, dec);
+    const end = await onDecision(io, c, s, d.decision);
     if (end) return end;
   }
 }

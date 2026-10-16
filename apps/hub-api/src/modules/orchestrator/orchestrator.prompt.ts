@@ -57,9 +57,20 @@ const tag = (name: string, body: string): string => `<${name}>\n${body}\n</${nam
 /** JSON không chứa `<` thô: nội dung người dùng không đóng được khối (vd `</message>`). */
 const json = (v: unknown): string => JSON.stringify(v).replace(/</g, "\\u003c");
 
-export function orchestratorSystemPrompt(base: string, noMatch?: NoMatchPolicy): string {
-  const block = formatBlock(noMatch);
-  return base ? `${base}\n\n${block}` : block;
+/**
+ * Tin có `<attachments>`: Orchestrator chỉ thấy tên/cỡ file, không đọc được nội dung ⇒ phải giao agent (luật cứng ở
+ * `orchestrator.loop.ts` `fileHandler` bắt trường hợp model vẫn `answer`).
+ */
+export const FILES_RULE =
+  "Tin có <attachments>: bạn KHÔNG đọc được nội dung file. Không `answer` thay cho việc đọc file — `delegate` agent phù hợp nhất để đọc và xử lý file.";
+
+/** `files` = tin có file ⇒ thêm `FILES_RULE` trước khối định dạng; vắng/false ⇒ như cũ. */
+export function orchestratorSystemPrompt(
+  base: string,
+  noMatch?: NoMatchPolicy,
+  files = false,
+): string {
+  return [base, files ? FILES_RULE : "", formatBlock(noMatch)].filter(Boolean).join("\n\n");
 }
 
 /** §6.2 · các khối theo thứ tự, nội dung JSON. */
