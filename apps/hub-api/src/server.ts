@@ -12,7 +12,10 @@ import { importJwtPublicKey } from "./lib/jwt";
 import { logger, setMinLevel } from "./lib/logger";
 import { createRedis, pingRedis, type Redis } from "./lib/redis";
 import { MAX_REQUEST_BODY_BYTES } from "./lib/unread-body";
+import type { AttachEnv } from "./modules/attachments/attach-env.rules";
 import type { AttachmentDeps } from "./modules/attachments/storage";
+import { createFileboxStorage, fileboxClient } from "./modules/attachments/storage.filebox";
+import { sqlBlobIndex } from "./modules/attachments/storage.filebox.index";
 import { createLocalStorage } from "./modules/attachments/storage.local";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
 import { missingAdminColumns } from "./modules/config/schema-check";
@@ -66,10 +69,13 @@ function readEnvDeps(env: Env): ReturnType<typeof envAppDeps> {
 }
 
 /**
- * H2c R04 · AC-15: `HUB_ATTACH_*` sai hoặc thư mục không tạo/ghi được → fatal (log không chứa giá trị env/đường dẫn).
- * Vắng cả driver lẫn dir ngoài production → không có storage (route file không mount, PL14).
+ * H2c R04 · AC-15: `HUB_ATTACH_*` / `FILEBOX_*` sai hoặc thư mục không tạo/ghi được → fatal (log không chứa giá trị
+ * env/đường dẫn/khoá). Vắng cả driver lẫn dir ngoài production → không có storage (route file không mount, PL14).
+ * Driver `local` mở ngay (như trước); `filebox` cần DB (bảng ánh xạ) ⇒ mở sau `openDb` bằng `openFileboxAttachments`.
  */
-async function openAttachments(env: Env): Promise<AttachmentDeps | undefined> {
+async function openAttachments(
+  env: Env,
+): Promise<{ env: AttachEnv; deps?: AttachmentDeps } | undefined> {
   let a: ReturnType<typeof attachEnvOf>;
   try {
     a = attachEnvOf(env, logger);
@@ -77,7 +83,23 @@ async function openAttachments(env: Env): Promise<AttachmentDeps | undefined> {
     fail("env", err);
   }
   if (!a) return undefined;
+  if (a.driver !== "local") return { env: a };
   const storage = await createLocalStorage({ dir: a.dir }).catch((err) => fail("attachments", err));
+  return { env: a, deps: { storage, tenantMaxBytes: a.tenantMaxBytes, sweepS: a.sweepS } };
+}
+
+/** CR-filebox: kiểm khoá FileBox lúc khởi động (sai ⇒ fatal, lỗi chỉ có mã HTTP). */
+async function openFileboxAttachments(
+  opened: Awaited<ReturnType<typeof openAttachments>>,
+  db: Db,
+): Promise<AttachmentDeps | undefined> {
+  if (!opened || opened.deps || opened.env.driver !== "filebox") return opened?.deps;
+  const a = opened.env;
+  const client = fileboxClient({ url: a.url, token: a.token, org: a.org, ca: a.ca });
+  const storage = await createFileboxStorage({ client, index: sqlBlobIndex(db) }).catch((err) =>
+    fail("attachments", err),
+  );
+  logger.info("attachments", { driver: "filebox" });
   return { storage, tenantMaxBytes: a.tenantMaxBytes, sweepS: a.sweepS };
 }
 
@@ -140,11 +162,12 @@ function serve(
 async function main(): Promise<void> {
   const env = readEnv();
   const fromEnv = readEnvDeps(env);
-  const attachments = await openAttachments(env);
+  const opened = await openAttachments(env);
   const jwtPublicKey = await importJwtPublicKey(env.JWT_PUBLIC_KEY).catch((err) =>
     fail("jwt", err),
   );
   const db = await openDb(env).catch((err) => fail("db", err));
+  const attachments = await openFileboxAttachments(opened, db);
   await assertAdminSchema(db);
   await assertOrchestrator(db);
   await checkMasterKey(env, db);

@@ -134,6 +134,13 @@
       "when": 1792627200000,
       "tag": "0018_cr054_agent_defaults",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792713600000,
+      "tag": "0019_filebox_blobs",
+      "breakpoints": true
     }
   ]
 }

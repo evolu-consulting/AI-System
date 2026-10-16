@@ -1,4 +1,5 @@
-// HUB-FR-44 · H2c-R04, R05, R29 · PL1 · interface lưu nội dung file (driver `local`: `storage.local.ts`) + khoá
+// HUB-FR-44 · H2c-R04, R05, R29 · PL1 · interface lưu nội dung file (driver `local`: `storage.local.ts`, `filebox`:
+// `storage.filebox.ts` — CR-filebox) + khoá
 // `<tenant_id>/<id>` (plan-rules §4). Hàm thuần ở đây; I/O (`realpath` + so gốc) ở driver.
 
 /** Kiểm từng chunk khi ghi (`sniff.rules.ts` `FileInspector`); `false` = từ chối. */
@@ -19,7 +20,7 @@ export type StoredEntry = { key: string; partial: boolean; size: number; mtimeMs
 export type StoreCursor = Pick<StoredEntry, "key" | "partial">;
 
 export interface AttachmentStorage {
-  readonly driver: "local";
+  readonly driver: "local" | "filebox";
   stage(
     key: string,
     body: ReadableStream<Uint8Array>,

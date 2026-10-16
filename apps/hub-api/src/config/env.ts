@@ -48,6 +48,11 @@ export const EnvSchema = z.object({
   HUB_ATTACH_DIR: z.string().optional(),
   HUB_ATTACH_TENANT_MAX_BYTES: z.string().optional(),
   HUB_ATTACH_SWEEP_S: z.string().optional(),
+  // CR-filebox · driver `filebox` (`HUB_ATTACH_DRIVER=filebox`): kiểm ở `parseAttachEnv`. Khoá chỉ dùng phía server, không log.
+  FILEBOX_URL: z.string().optional(),
+  FILEBOX_TOKEN: z.string().optional(),
+  FILEBOX_ORG: z.string().optional(),
+  FILEBOX_CA: z.string().optional(),
   // H4a plan §9 · bản build Studio (đường dẫn tuyệt đối); thiếu `index.html` ⇒ warn `studio-dist-missing`, không mount.
   HUB_STUDIO_DIST: z
     .string()

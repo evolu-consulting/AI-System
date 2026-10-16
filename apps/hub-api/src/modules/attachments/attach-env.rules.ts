@@ -7,9 +7,23 @@ export type AttachEnvInput = {
   HUB_ATTACH_DIR?: string;
   HUB_ATTACH_TENANT_MAX_BYTES?: string;
   HUB_ATTACH_SWEEP_S?: string;
+  /** Driver `filebox` (CR-filebox): API v1 của FileBox — xem `storage.filebox.ts`. */
+  FILEBOX_URL?: string;
+  FILEBOX_TOKEN?: string;
+  FILEBOX_ORG?: string;
+  FILEBOX_CA?: string;
 };
 
-export type AttachEnv = { driver: "local"; dir: string; tenantMaxBytes: number; sweepS: number };
+type Limits = { tenantMaxBytes: number; sweepS: number };
+export type LocalAttachEnv = { driver: "local"; dir: string } & Limits;
+export type FileboxAttachEnv = {
+  driver: "filebox";
+  url: string;
+  token: string;
+  org: string;
+  ca?: string;
+} & Limits;
+export type AttachEnv = LocalAttachEnv | FileboxAttachEnv;
 
 export const DEFAULT_TENANT_MAX_BYTES = 5_368_709_120;
 export const DEFAULT_SWEEP_S = 600;
@@ -31,13 +45,23 @@ function intIn(raw: string | undefined, fallback: number, min: number, max: numb
   return Number.isSafeInteger(n) && n >= min && n <= max ? n : null;
 }
 
-/** driver = `local`; dir tuyệt đối (theo `platform`); hạn tenant ≥ `ATTACH_MAX_BYTES` (vắng 5 GiB); sweep 10–86 400 s (vắng 600). */
+/**
+ * driver `local`: dir tuyệt đối (theo `platform`). driver `filebox`: `FILEBOX_URL` https (http chỉ máy cục bộ), `FILEBOX_TOKEN`,
+ * `FILEBOX_ORG` 1–200 ký tự, `FILEBOX_CA` tuỳ chọn (tuyệt đối). Chung: hạn tenant ≥ `ATTACH_MAX_BYTES` (vắng 5 GiB); sweep
+ * 10–86 400 s (vắng 600).
+ */
 export function parseAttachEnv(e: AttachEnvInput, platform: NodeJS.Platform): AttachEnv {
+  if (e.HUB_ATTACH_DRIVER === "filebox")
+    return { driver: "filebox", ...parseFilebox(e, platform), ...parseLimits(e) };
   if (e.HUB_ATTACH_DRIVER !== "local")
-    throw new Error("HUB_ATTACH_DRIVER không hợp lệ (driver hỗ trợ: local)");
+    throw new Error("HUB_ATTACH_DRIVER không hợp lệ (driver hỗ trợ: local, filebox)");
   const dir = e.HUB_ATTACH_DIR;
   if (!dir || !isAbsoluteFor(dir, platform))
     throw new Error("HUB_ATTACH_DIR phải là đường dẫn tuyệt đối");
+  return { driver: "local", dir, ...parseLimits(e) };
+}
+
+function parseLimits(e: AttachEnvInput): Limits {
   const tenantMaxBytes = intIn(
     e.HUB_ATTACH_TENANT_MAX_BYTES,
     DEFAULT_TENANT_MAX_BYTES,
@@ -51,5 +75,34 @@ export function parseAttachEnv(e: AttachEnvInput, platform: NodeJS.Platform): At
   const sweepS = intIn(e.HUB_ATTACH_SWEEP_S, DEFAULT_SWEEP_S, SWEEP_MIN_S, SWEEP_MAX_S);
   if (sweepS === null)
     throw new Error("HUB_ATTACH_SWEEP_S phải là số nguyên giây trong khoảng cho phép");
-  return { driver: "local", dir, tenantMaxBytes, sweepS };
+  return { tenantMaxBytes, sweepS };
+}
+
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+/** Ký tự của khoá Bearer (RFC 6750 b64token), 16–512. */
+const TOKEN_RE = /^[A-Za-z0-9._~+/=-]{16,512}$/;
+const ORG_MAX = 200;
+
+/** URL gốc FileBox (bỏ `/` cuối), khoá, org (trim), CA tuyệt đối. Lỗi chỉ nêu tên biến. */
+function parseFilebox(
+  e: AttachEnvInput,
+  platform: NodeJS.Platform,
+): Pick<FileboxAttachEnv, "url" | "token" | "org" | "ca"> {
+  const url = URL.canParse(e.FILEBOX_URL ?? "") ? new URL(e.FILEBOX_URL as string) : null;
+  const okUrl =
+    url !== null &&
+    (url.protocol === "https:" || (url.protocol === "http:" && LOCAL_HOSTS.has(url.hostname)));
+  if (!okUrl) throw new Error("FILEBOX_URL phải là URL https của FileBox");
+  if (!TOKEN_RE.test(e.FILEBOX_TOKEN ?? "")) throw new Error("FILEBOX_TOKEN thiếu hoặc sai dạng");
+  const org = (e.FILEBOX_ORG ?? "").trim();
+  if (org.length < 1 || org.length > ORG_MAX) throw new Error("FILEBOX_ORG phải dài 1–200 ký tự");
+  const ca = e.FILEBOX_CA;
+  if (ca !== undefined && !isAbsoluteFor(ca, platform))
+    throw new Error("FILEBOX_CA phải là đường dẫn tuyệt đối");
+  const out = {
+    url: url.origin + url.pathname.replace(/\/+$/, ""),
+    token: e.FILEBOX_TOKEN as string,
+    org,
+  };
+  return ca === undefined ? out : { ...out, ca };
 }
