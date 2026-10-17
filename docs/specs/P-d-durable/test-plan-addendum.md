@@ -28,3 +28,14 @@ Ghi chú: `_rules2.ts:25` chỉ đổi đích loader; `loadAutofix` ở dòng 23
 - `teamResumePlan`: PD-U93…U98 trong [test-plan-rules](test-plan-rules.md) (đầu vào có `cursor`; theo A5; đã đếm vào test-plan §9).
 - PD-I47 (`ESCALATE_INVALID` 422 chỉ khi trùng Group duyệt; `escalate` ở stage `auto` và `after_h` sai qua API ⇒ 400 `VALIDATION_ERROR`): [test-plan-int](test-plan-int.md).
 - e2e: [test-plan-e2e](test-plan-e2e.md) viết lại theo `plan-frontend.md` §7, `plan-frontend-d2.md` §13, `plan-frontend-i18n.md`.
+
+## 2. Hiệu năng vòng nền + nhắc nhiều Hub (CR-093, A9, A10, #190)
+| # | Test | Loại | Đạt khi |
+|---|---|---|---|
+| PD-P10 | nhắc 2 Hub song song, 250 task tới hạn | int | đúng 250 lượt nhắc, notice = 250 × người nhận (không trùng — #190) |
+| PD-P11 | một lượt vòng nhắc với 250 task tới hạn | int | một lượt nhắc đủ 250 (xả nhiều lô — A9) |
+| PD-P12 | hết hạn 250 run (đồng hồ giả +ttl) | int | 250 `expired`, task `closed/expired`, mỗi run đúng một sự kiện `run_end`; không gọi `postThread` trong vòng (đếm qua stub) |
+| PD-P13 | lô nhắc 100 | perf (`test:perf`) | p95 ≤ 50 ms qua 20 lô; 10.000 task ≤ 6 s |
+| PD-P14 | lô hết hạn 100 | perf | p95 ≤ 50 ms qua 20 lô; 20.000 run ≤ 12 s |
+| PD-P15 | đếm truy vấn mỗi lô | int | nhắc ≤ 6 câu SQL/lô, hết hạn ≤ 6 câu/lô, không phụ thuộc số hàng (bọc `tx.execute` đếm) |
+Đồng hồ giả (`d.now`), không chờ thời gian thật. Bài 10.000 chỉ trong `test:perf`, không trong `test:int`.

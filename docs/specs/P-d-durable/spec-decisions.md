@@ -124,3 +124,4 @@ Nguồn đầy đủ: [plan.md §0](plan.md), [plan-d2.md §1](plan-d2.md), [pla
 - **ADR-0017 (điều kiện Gate P-d1):** người dùng chọn **chờ staging** — Accepted chỉ sau spike trên Redis thật + bài tải 10.000 run trên staging. Dựng staging/deploy là việc ra ngoài, hỏi người dùng trước. Câu hỏi mở về ADR-0017 ở spec §9 coi như đã trả lời.
 - **ADR-0017 Accepted (2026-10-17, người dùng chốt sau staging N=10.000, Redis thật):** phương án (a); điều kiện sửa TECH-DEBT #190 (nhắc trùng nhiều Hub) ở T9 kèm int test hai Hub. ADR đã sửa câu `attempt_limit` theo D3. Điều kiện Gate D0a đóng.
 - **Mockup (D13):** người dùng **duyệt** mockup/01–04 ngày 2026-10-17 (điều kiện Gate số 2 đạt).
+- **CR-093 (2026-10-17, người dùng chốt):** vòng nền nhắc/hết hạn xử lý theo tập; NFR lô 100 p95 ≤ 50 ms, 10.000 nhắc ≤ 6 s, 20.000 hết hạn ≤ 12 s ⇒ `plan-addendum` A10, `test-plan-addendum` §2 (PD-P10…P15), T9/T10.

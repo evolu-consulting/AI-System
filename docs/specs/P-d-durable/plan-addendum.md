@@ -181,3 +181,13 @@ Qua API (`POST/PUT` process-def): ngưỡng `afterH` sai và `escalate` ở stag
 ## A9. Nhịp vòng nhắc theo staging ADR-0017 (2026-10-17, tự quyết theo Luật 2)
 
 Staging N=10.000: một lô 100 task mất p95 1,09 s. Vòng nhắc D-PD10 chạy 300 s/lượt, mỗi lượt chỉ một lô ⇒ tồn 10.000 task tới hạn cùng lúc cần ~100 lượt ≈ 8 giờ (vượt PD-R18 "trễ ≤ 5 phút"). Sửa ở T9: mỗi lượt `startProcessReminder` **xả tới khi lô < 100 hoặc hết ngân sách 60 s** (≈ 5.000 task/lượt theo số đo), rồi chờ lượt sau. Int test: 250 task tới hạn ⇒ một lượt nhắc đủ 250. Cùng T9 sửa #190 (khoá hàng, kiểm `rowCount`) để xả song song nhiều Hub không trùng. Hết hạn run (`sweepOnce` 3 s, 20.000 run ≈ 201 lượt) giữ nguyên: hạn tính theo ngày nên trễ vài phút chấp nhận được.
+
+## A10. Vòng nền xử lý theo tập + NFR (CR-093, người dùng chốt 2026-10-17) — thắng A9 chỗ lệch
+
+Staging N=10.000 cho thấy chậm do **lặp từng hàng**: hết hạn ≈ 15 lượt DB/Redis mỗi run (tx riêng, `head`+`lockRun`+3 update+`enqueueThread`+notifier+`publishUserEvents`+`postThread` trong vòng) ⇒ p95 2,99 s/lô 100; nhắc 5 câu/task ⇒ p95 1,09 s/lô 100.
+
+**Nhắc (T9, cùng #190 và A9):** một tx mỗi lô: CTE `claim` = `select … from hub.review_tasks … for update of t skip locked limit 100` ⇒ `update … set reminded_at/remind_at/remind_count … returning`; người nhận lấy một câu (`review_task_assignees` ∪ `admin.group_members` theo `= any(task_ids)`, lọc `tenant_id` tường minh — K3); `insert hub.process_notices` một câu nhiều hàng; `unread` một câu `group by tenant_id, user_id`. Luật thuần (`noticeRecipients`, lịch nhắc/chuyển cấp) chạy trên mảng trong bộ nhớ (lớp 1). Sau COMMIT phát Redis **một lần** (pipeline). Lượt xả lô tới khi < 100 hoặc hết 60 s (A9).
+**Hết hạn (T10):** một tx mỗi lô: `update hub.process_runs … where id in (select … for update skip locked limit 100) returning id, tenant_id`; `stage_runs` và `review_tasks` cập nhật bằng `process_run_id = any(ids)`; `enqueueThread` nhiều hàng một câu; `notifier.runFinished` bản mảng (`runsFinished(tx, ids)`). **Không** gọi `postThread` trong vòng — `thread-poster` (`THREAD_RECONCILE_MS`) đăng. Phát Redis một lần sau COMMIT.
+**Index:** kiểm `explain` cho `dueTasks`, câu chọn run hết hạn, `unread` (cần `process_notices (tenant_id, user_id) where read_at is null` nếu chưa có — thêm vào DDL 0036, plan-db).
+**NFR (Lệnh xong T9/T10 thêm `bun run test:perf -- P-d`):** lô 100 p95 ≤ **50 ms** (20 lô, Postgres local, Redis thật hoặc fakeredis — đo riêng phần DB, Redis ghi kèm); 10.000 task nhắc ≤ 6 s; 20.000 run hết hạn ≤ 12 s. Không đạt ⇒ task chưa xong. Staging chạy lại `load.spike` sau T10 để xác nhận trên Redis thật.
+**Không đổi hành vi:** cùng trạng thái, notice, sự kiện, audit như bản lặp; test khoá P-a PF1/PF3 phải xanh nguyên.
