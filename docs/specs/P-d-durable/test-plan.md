@@ -196,4 +196,4 @@ Fixture SQL: theo "Bẫy đã gặp" CONVENTIONS §2 (`sql.json`, ép kiểu, kh
 | Q10 | backend-lead | **Đã trả lời** (A7): `SweepResult.timers` | PD-I01, PD-I60 kiểm thêm `timers`; DB vẫn kiểm chính |
 
 ## 11. Kết quả "đỏ đúng lý do"
-Chưa chạy (bước này chỉ viết test-plan). Ghi `<đỏ đúng>/<tổng>` mỗi file ở đây trước LOCK.
+T3/T3a 2026-10-18: [test-plan-addendum §3](test-plan-addendum.md) (420 ca + 7 perf, 8 xanh, còn lại đỏ đúng lý do).
