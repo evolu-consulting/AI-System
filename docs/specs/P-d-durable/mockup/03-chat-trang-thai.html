@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P-d1/P-d2 · Chat · Nhãn trạng thái quy trình, thẻ quyết, ô ngày, chuyển cấp</title>
+<style>
+/* Token lấy từ apps/chat-web/src/styles/globals.css (Sáng và Tối "Midnight"). Không tải tài nguyên ngoài. */
+:root,.light{--background:#f4f4f9;--foreground:#0a0a0a;--card:#fff;--muted:#f5f5f5;--muted-fg:#6b6b6b;--muted-strong:#525252;--secondary-fg:#404040;--primary:#4f46e5;--primary-fg:#fff;--accent:#eef2ff;--accent-fg:#4338ca;--border:#e5e5e5;--input:#d4d4d8;--err-border:#d92d20;--destructive:#b42318;--success:#05603f;--success-bg:#e3f4ec;--warning:#7f3c04;--warning-bg:#fdf0df;--warning-solid:#b45309;--danger:#9b1c1c;--danger-bg:#fde8e8;--mention-process:#0f766e}
+.dark{--background:#0e131b;--foreground:#e6ecf3;--card:#161e2a;--muted:#1f2937;--muted-fg:#9eabbb;--muted-strong:#c3ccd8;--secondary-fg:#d0d8e4;--primary:#5b5bd6;--primary-fg:#fff;--accent:#1b2542;--accent-fg:#c3cffd;--border:#283344;--input:#5b6b82;--err-border:#f97066;--destructive:#b42318;--success:#6ee7b7;--success-bg:#0f2a22;--warning:#f5c06b;--warning-bg:#2c2310;--warning-solid:#f59e0b;--danger:#fca5a5;--danger-bg:#3a1518;--mention-process:#5eead4}
+*{box-sizing:border-box}
+body{margin:0;background:#e9e9f1;color:#0a0a0a;font:14px/20px "Be Vietnam Pro",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:28px}
+h1{font-size:22px;line-height:30px;margin:0 0 4px}.lead{color:#525252;margin:0 0 24px;max-width:880px}
+.board{margin:0 0 40px}.cap{font-size:12px;line-height:16px;font-weight:600;color:#525252;margin:0 0 8px;text-transform:uppercase;letter-spacing:.02em}
+.cols{display:grid;gap:20px;align-items:start}.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}
+@media (max-width:1000px){.c2,.c3{grid-template-columns:1fr}}
+.theme{background:var(--background);color:var(--foreground);padding:16px;border-radius:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;color:var(--foreground)}
+.card h3{margin:0;font-size:14px;font-weight:600}
+.cap2{font-size:12px;color:var(--muted-fg);margin:0 0 6px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+.small{font-size:12px;line-height:16px}.mut{color:var(--muted-fg)}.sec{color:var(--secondary-fg)}
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.t-info{background:var(--accent);color:var(--accent-fg)}.t-warn{background:var(--warning-bg);color:var(--warning)}.t-succ{background:var(--success-bg);color:var(--success)}.t-dang{background:color-mix(in srgb,var(--destructive) 10%,transparent);color:var(--destructive)}.t-neu{background:var(--muted);color:var(--muted-strong)}
+.dark .t-dang{color:#fca5a5}
+.strip{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0;padding:0;list-style:none;font-size:12px;color:var(--secondary-fg)}
+.strip li{display:flex;gap:6px;align-items:flex-start}.st{display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--border)}.d-done{background:var(--success)}.d-run{background:var(--primary)}.d-que{background:color-mix(in srgb,var(--primary) 50%,transparent)}.d-wait{background:var(--warning-solid)}.d-dang{background:var(--destructive)}
+.d-timer{background:transparent;border:2px solid var(--primary)}
+.pend{color:var(--muted-fg)}.skipped{color:var(--muted-fg);text-decoration:line-through}
+.tagx{background:var(--muted);color:var(--secondary-fg);border-radius:4px;padding:0 4px;font-weight:500}
+.btn{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:500;background:var(--primary);color:var(--primary-fg)}
+.btn.out{background:transparent;color:var(--foreground);border-color:var(--input)}.btn.dis{opacity:.5}
+.note{display:flex;align-items:center;gap:6px;background:var(--muted);color:var(--secondary-fg);border-radius:8px;padding:8px 12px;font-size:12px}
+.err{color:var(--destructive);font-size:12px}.dark .err{color:#fca5a5}
+.inp{width:100%;height:36px;border:1px solid var(--input);border-radius:6px;background:var(--card);color:var(--foreground);padding:0 10px;font:inherit}
+.inp.bad{border-color:var(--err-border)}
+.lbl{font-size:14px;font-weight:500}.req{font-size:12px;color:var(--muted-fg)}
+a.lnk{font-size:12px;font-weight:500;color:var(--primary);text-decoration:none}.dark a.lnk{color:#a5b4fc}
+svg.ic{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sendr{font-size:12px;font-weight:600;color:var(--mention-process)}
+.tabs{display:flex;gap:4px;font-size:13px;margin-bottom:6px}.tabs span{padding:4px 10px;border-radius:6px;color:var(--muted-fg)}.tabs .on{background:var(--accent);color:var(--accent-fg);font-weight:500}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="hour" viewBox="0 0 24 24"><path d="M6 3h12M6 21h12M7 3c0 6 10 6 10 9s-10 3-10 9"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"/></symbol>
+</svg>
+<div class="wrap">
+<h1>Chat · Nhãn trạng thái của engine chạy bền</h1>
+<p class="lead">Giữ khối quy trình hiện có: huy hiệu trạng thái, dòng trạng thái, <code>StageStrip</code> (chấm + tên + chữ), thẻ "Cần người quyết", form <code>!key</code>, thẻ thông báo DM "Quy trình". Chỉ thêm nhãn/chữ mới. Mọi trạng thái có chữ, không chỉ màu; chấm "Chờ hẹn" là vòng rỗng (khác chấm đặc).</p>
+
+<!-- ======== D1 ======== -->
+<section class="board">
+<p class="cap">D1 · Khối quy trình: chờ tới ngày / đang thử lại (P-d1) và bỏ qua (P-d2)</p>
+<div class="cols c3 theme">
+  <div class="card" aria-label="Quy trình Duyệt hợp đồng và nhắc thanh toán">
+    <div class="row between"><h3>Quy trình · Duyệt hợp đồng và nhắc thanh toán</h3><span class="badge t-info">Đang chờ hẹn</span></div>
+    <p class="small sec" style="margin:0" aria-live="polite">Chờ tới 14/12/2026 09:00 · Giai đoạn 2/3 · Chờ tới ngày thanh toán</p>
+    <ol class="strip" aria-label="Tiến độ quy trình">
+      <li><span class="st"><span class="dot d-done"></span>Soát hợp đồng</span></li>
+      <li><span class="st" title="Chờ tới 14/12/2026 09:00 (Asia/Ho_Chi_Minh)"><span class="dot d-timer"></span><svg class="ic"><use href="#clock"/></svg>Chờ tới ngày thanh toán · Chờ tới 14/12/2026</span></li>
+      <li><span class="st pend"><span class="dot"></span>Nhắc thanh toán</span></li>
+    </ol>
+    <div class="row"><a class="lnk" href="#">Xem tiến độ</a><span class="small mut">Chạy bằng quyền của Nguyễn Thu Hà</span></div>
+  </div>
+  <div class="card" aria-label="Quy trình Duyệt hợp đồng và nhắc thanh toán">
+    <div class="row between"><h3>Quy trình · Duyệt hợp đồng và nhắc thanh toán</h3><span class="badge t-info">Đang chạy</span></div>
+    <p class="small sec" style="margin:0" aria-live="polite">Đang thử lại (2/3) · Giai đoạn 1/3 · Soát hợp đồng</p>
+    <ol class="strip" aria-label="Tiến độ quy trình">
+      <li><span class="st"><span class="dot d-que"></span><svg class="ic"><use href="#hour"/></svg>Soát hợp đồng · Đang thử lại (2/3) · 10:42</span></li>
+      <li><span class="st pend"><span class="dot"></span>Chờ tới ngày thanh toán</span></li>
+      <li><span class="st pend"><span class="dot"></span>Nhắc thanh toán</span></li>
+    </ol>
+    <p class="small mut" style="margin:0">Lỗi tạm thời (mất kết nối, quá thời gian). Hệ thống tự chạy lại, không cần làm gì.</p>
+  </div>
+  <div class="card" aria-label="Quy trình Hợp đồng giá trị lớn">
+    <div class="row between"><h3>Quy trình · Hợp đồng giá trị lớn</h3><span class="badge t-succ">Hoàn tất</span></div>
+    <ol class="strip" aria-label="Tiến độ quy trình">
+      <li><span class="st"><span class="dot d-done"></span>Phân loại giá trị</span></li>
+      <li><span class="st skipped"><span class="dot"></span>Duyệt cấp phòng · Bỏ qua</span></li>
+      <li><span class="st"><span class="dot d-done"></span>Duyệt Giám đốc tài chính</span></li>
+    </ol>
+    <p class="small mut" style="margin:0">P-d2: giai đoạn bị nhảy qua hiện "Bỏ qua" (gạch ngang + chữ).</p>
+    <p class="small" style="margin:0;color:var(--warning)">↪ Rẽ nhánh: tới bước 3 (luật 1)</p>
+  </div>
+</div>
+</section>
+
+<!-- ======== D2 ======== -->
+<section class="board">
+<p class="cap">D2 · Thẻ "Cần người quyết": lý do mới</p>
+<div class="cols c3 theme">
+  <div class="card" role="region" aria-label="Cần người quyết">
+    <div class="row between"><h3>Quy trình dừng ở giai đoạn Soát hợp đồng</h3><span class="badge t-dang">Cần người quyết</span></div>
+    <p class="small" style="margin:0">Đã thử lại tối đa 3 lần mà vẫn lỗi.</p>
+    <p class="small mut" style="margin:0">Lỗi tạm thời (mất kết nối, quá thời gian…) vẫn chưa hết. Thử lại ngay, hoặc huỷ lượt chạy.</p>
+    <input class="inp" placeholder="Ghi chú (tuỳ chọn)" aria-label="Ghi chú (tuỳ chọn)">
+    <div class="row"><button class="btn">Thử lại ngay</button><button class="btn out dis" disabled title="Chưa có bản nào để dùng">Dùng bản hiện có</button><button class="btn out">Huỷ lượt chạy</button></div>
+  </div>
+  <div class="card" role="region" aria-label="Cần người quyết">
+    <div class="row between"><h3>Quy trình dừng ở giai đoạn Chờ tới ngày thanh toán</h3><span class="badge t-dang">Cần người quyết</span></div>
+    <p class="small" style="margin:0">Ngày hẹn không hợp lệ hoặc đã quá hạn lượt chạy.</p>
+    <p class="small mut" style="margin:0">Thiếu ngày, ngày sai, xa quá 730 ngày hoặc sau ngày hết hạn của lượt chạy. Chọn tính lại ngày hẹn, bỏ chờ để đi tiếp, hoặc huỷ.</p>
+    <input class="inp" placeholder="Ghi chú (tuỳ chọn)" aria-label="Ghi chú (tuỳ chọn)">
+    <div class="row"><button class="btn">Tính lại ngày hẹn</button><button class="btn out">Bỏ chờ, đi tiếp</button><button class="btn out">Huỷ lượt chạy</button></div>
+  </div>
+  <div class="card" role="region" aria-label="Cần người quyết">
+    <div class="row between"><h3>Quy trình dừng ở giai đoạn Gửi nhắc thanh toán</h3><span class="badge t-dang">Cần người quyết</span></div>
+    <p class="small" style="margin:0">Gọi tool bị lỗi.</p>
+    <p class="small mut" style="margin:0">Tool đã bị tắt cho công ty, hoặc trả lỗi hay kết quả sai mẫu. Xem lại rồi chọn cách xử lý.</p>
+    <input class="inp" placeholder="Ghi chú (tuỳ chọn)" aria-label="Ghi chú (tuỳ chọn)">
+    <div class="row"><button class="btn">Thêm 1 lần làm lại</button><button class="btn out dis" disabled>Dùng bản hiện có</button><button class="btn out">Huỷ lượt chạy</button></div>
+    <p class="small mut" style="margin:0">P-d2. Tool có tác dụng phụ đã gửi thì hệ thống không tự gọi lại.</p>
+  </div>
+</div>
+</section>
+
+<!-- ======== D3 ======== -->
+<section class="board">
+<p class="cap">D3 · Form !hop-dong: trường kiểu Ngày (input type=date)</p>
+<div class="cols c2 theme">
+  <div class="card">
+    <h3>Thông tin cho quy trình Duyệt hợp đồng</h3>
+    <p class="small mut" style="margin:0">Điền những gì bạn đã biết. Thiếu gì, agent sẽ hỏi lại.</p>
+    <div><div class="row between"><span class="lbl">Tên hợp đồng</span><span class="req">Nên điền</span></div><input class="inp" value="HĐ cung cấp thép số 118/2026" aria-label="Tên hợp đồng"></div>
+    <div><div class="row between"><span class="lbl">Ngày thanh toán</span><span class="req">Nên điền</span></div><input class="inp" type="date" value="2026-12-17" aria-label="Ngày thanh toán"></div>
+    <div class="row"><button class="btn">Bắt đầu quy trình</button><button class="btn out">Huỷ</button></div>
+  </div>
+  <div class="card">
+    <h3>Lỗi</h3>
+    <div><div class="row between"><span class="lbl">Ngày thanh toán</span><span class="req">Nên điền</span></div><input class="inp bad" type="date" aria-label="Ngày thanh toán" aria-invalid="true"><p class="err" role="alert" style="margin:4px 0 0">Chọn một ngày hợp lệ.</p></div>
+    <p class="small mut" style="margin:0">Trường để trống không chặn gửi (agent hỏi lại). Ngày không có thật (30/02) bị chặn ngay ở form; nếu vẫn lọt lên server (400) thì hiện cùng câu này dưới đúng trường.</p>
+    <div class="row"><button class="btn">Bắt đầu quy trình</button><button class="btn out">Huỷ</button></div>
+  </div>
+</div>
+</section>
+
+<!-- ======== D4 ======== -->
+<section class="board">
+<p class="cap">D4 · Chuyển cấp và nhắc: thẻ kiểm, dòng chờ, DM "Quy trình", trang lượt chạy</p>
+<div class="cols c2 theme">
+  <div style="display:grid;gap:12px">
+    <div class="card" role="region" aria-label="Kiểm Soát hợp đồng">
+      <div class="row between"><h3>Pháp chế cần bạn kiểm trước khi chạy tiếp</h3><span class="badge t-warn">Đã chuyển cấp</span></div>
+      <p class="small mut" style="margin:0">Việc này được chuyển cấp tới nhóm Giám đốc tài chính vì chưa ai kiểm sau 24 giờ. Nhóm Kế toán vẫn kiểm được.</p>
+      <div class="row"><button class="btn">Đạt</button><button class="btn out">Chưa đạt</button></div>
+    </div>
+    <div class="note" role="status">⏳ Đang chờ nhóm Kế toán hoặc nhóm Giám đốc tài chính (đã chuyển cấp) kiểm — chỉ người kiểm mới bấm được.</div>
+  </div>
+  <div style="display:grid;gap:12px">
+    <div class="card"><span class="sendr">Quy trình</span>
+      <h3>Việc ở Duyệt hợp đồng và nhắc thanh toán · Soát hợp đồng đã chuyển cấp tới nhóm của bạn</h3>
+      <button class="btn out" style="align-self:flex-start">Xem &amp; xử lý</button>
+      <a class="lnk" href="#" style="align-self:flex-start">Mở trang lượt chạy ›</a></div>
+    <div class="card"><span class="sendr">Quy trình</span>
+      <h3>Nhắc: việc ở Duyệt hợp đồng và nhắc thanh toán vẫn đang chờ bạn</h3>
+      <a class="lnk" href="#" style="align-self:flex-start">Mở trang lượt chạy ›</a></div>
+    <div class="card"><div class="tabs"><span>Tiến độ</span><span>Token</span><span class="on">Nhật ký</span></div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:22px"><li>Hệ thống chuyển cấp tới nhóm Giám đốc tài chính · 18/10/2026 09:02</li><li>Hệ thống nhắc nhóm Kế toán · 17/10/2026 17:02</li><li>Rẽ nhánh: tới bước 3 (luật 1) · 17/10/2026 11:30</li></ul></div>
+  </div>
+</div>
+</section>
+
+<!-- ======== D5 ======== -->
+<section class="board">
+<p class="cap">D5 · Chế độ Tối (Midnight) của D1</p>
+<div class="cols c2 dark theme">
+  <div class="card" aria-label="Quy trình Duyệt hợp đồng và nhắc thanh toán">
+    <div class="row between"><h3>Quy trình · Duyệt hợp đồng và nhắc thanh toán</h3><span class="badge t-info">Đang chờ hẹn</span></div>
+    <p class="small sec" style="margin:0">Chờ tới 14/12/2026 09:00 · Giai đoạn 2/3 · Chờ tới ngày thanh toán</p>
+    <ol class="strip"><li><span class="st"><span class="dot d-done"></span>Soát hợp đồng</span></li><li><span class="st"><span class="dot d-timer"></span><svg class="ic"><use href="#clock"/></svg>Chờ tới ngày thanh toán · Chờ tới 14/12/2026</span></li><li><span class="st pend"><span class="dot"></span>Nhắc thanh toán</span></li></ol>
+  </div>
+  <div class="card" role="region" aria-label="Cần người quyết">
+    <div class="row between"><h3>Quy trình dừng ở giai đoạn Soát hợp đồng</h3><span class="badge t-dang">Cần người quyết</span></div>
+    <p class="small" style="margin:0">Đã thử lại tối đa 3 lần mà vẫn lỗi.</p>
+    <div class="row"><button class="btn">Thử lại ngay</button><button class="btn out">Huỷ lượt chạy</button></div>
+  </div>
+</div>
+</section>
+</div>
+</body>
+</html>

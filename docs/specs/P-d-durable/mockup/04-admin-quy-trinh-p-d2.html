@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P-d2 · Admin · Panel giai đoạn (Gọi tool, Rẽ nhánh) và canvas</title>
+<style>
+/* Token lấy từ apps/admin-web/src/styles/globals.css. Không tải tài nguyên ngoài. */
+:root{--background:#f4f4f9;--foreground:#0a0a0a;--card:#fff;--muted:#f5f5f5;--muted-fg:#6b6b6b;--muted-strong:#525252;--primary:#4f46e5;--primary-fg:#fff;--accent:#eef2ff;--accent-fg:#4338ca;--border:#e5e5e5;--input:#d4d4d8;--err-border:#d92d20;--destructive:#b42318;--success:#05603f;--success-bg:#e3f4ec;--warning:#7f3c04;--warning-bg:#fdf0df;--warning-solid:#b45309;--danger:#9b1c1c;--danger-bg:#fde8e8;--shadow-drawer:-12px 0 32px rgb(30 27 75/.18)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--background);color:var(--foreground);font:14px/20px "Be Vietnam Pro",system-ui,sans-serif}
+h1{font-size:22px;line-height:30px;margin:0 0 4px}.wrap{max-width:1320px;margin:0 auto;padding:28px}
+.lead{color:var(--muted-fg);margin:0 0 24px;max-width:900px}.board{margin:0 0 40px}
+.cap{font-size:12px;line-height:16px;font-weight:600;color:var(--muted-strong);margin:0 0 8px;text-transform:uppercase;letter-spacing:.02em}
+.cols{display:grid;gap:20px;align-items:start}.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}.cpanel{grid-template-columns:1fr 420px}
+@media (max-width:1100px){.c2,.c3,.cpanel{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}.card h3{margin:0 0 10px;font-size:16px;line-height:24px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+.sub{font-size:12px;line-height:16px;color:var(--muted-fg)}.help{font-size:12px;line-height:16px;color:var(--muted-fg)}
+.fld{display:flex;flex-direction:column;gap:4px;margin-top:12px}.fld:first-child{margin-top:0}.lbl{font-size:13px;font-weight:500}
+.inp,.sel{height:36px;font:inherit;padding:0 10px;border:1px solid var(--input);border-radius:8px;background:var(--card);color:var(--foreground);width:100%}
+.inp.bad,.sel.bad{border-color:var(--err-border)}.inp.sm,.sel.sm{height:32px;font-size:13px}
+.sel{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted-fg) 50%),linear-gradient(135deg,var(--muted-fg) 50%,transparent 50%);background-position:calc(100% - 16px) 15px,calc(100% - 11px) 15px;background-size:5px 5px;background-repeat:no-repeat}
+.sel.sm{background-position:calc(100% - 16px) 13px,calc(100% - 11px) 13px}.sel:disabled{background-color:var(--muted);color:var(--muted-strong)}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}.etxt{font-size:12px;line-height:16px;color:var(--destructive)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:var(--success-bg);color:var(--success)}.b-off{background:var(--muted);color:var(--muted-strong)}.b-warn{background:var(--warning-bg);color:var(--warning)}.b-info{background:var(--accent);color:var(--accent-fg)}.b-err{background:var(--danger-bg);color:var(--danger)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;border:1px solid transparent;font:inherit;font-weight:500;background:var(--primary);color:var(--primary-fg)}
+.btn.out{background:var(--card);color:var(--foreground);border-color:var(--input)}.btn.sm{height:30px;padding:0 10px;font-size:13px}
+.alert{margin:12px 0 0;padding:10px 12px;border-radius:10px;font-size:13px}.alert.err{background:var(--danger-bg);color:var(--danger)}.alert.note{background:var(--accent);color:var(--accent-fg)}.alert.warn{background:var(--warning-bg);color:var(--warning)}
+.sw{position:relative;width:36px;height:20px;border-radius:999px;background:var(--input);flex:none;display:inline-block}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff}.sw.on{background:var(--primary)}.sw.on::after{left:18px}.sw.dis{opacity:.55}
+.skel{background:var(--muted);border-radius:6px;height:14px;animation:p 1.4s infinite}@keyframes p{50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+.canvas{position:relative;background:var(--card);border:1px solid var(--border);border-radius:12px;height:430px;overflow:hidden;background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:20px 20px}
+.step{position:absolute;top:12px;width:240px;font-size:12px;font-weight:600;color:var(--muted-strong)}
+.node{position:absolute;width:240px;height:88px;background:var(--card);border:1px solid var(--input);border-radius:10px;padding:10px 12px}
+.node.sel{border:2px solid var(--primary);padding:9px 11px}.node.skp{opacity:.75}
+.node b{display:block;font-size:13px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node .badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.edge{position:absolute;height:2px;background:var(--input)}
+svg.ic{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-1px}
+svg.lay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.panelbox{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow-drawer)}
+.fs{border:0;margin:0;padding:0}.fs legend{font-size:14px;font-weight:600;padding:0}
+.arg{border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:10px}
+.rule{border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:10px;display:grid;grid-template-columns:1.3fr 1.1fr 1fr 1.1fr auto;gap:8px;align-items:end}
+@media (max-width:1100px){.rule{grid-template-columns:1fr 1fr}}
+.req{color:var(--danger)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 005 5l-9.6 9.6a2.1 2.1 0 01-3-3z"/><path d="M14.7 6.3L17 4l3 3"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></symbol>
+  <symbol id="branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 7v10M6 12h10"/></symbol>
+  <symbol id="bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4"/></symbol>
+</svg>
+<div class="wrap">
+<h1>P-d2 · Admin · Gọi tool và Rẽ nhánh trong canvas hiện có</h1>
+<p class="lead">Không có node kiểu mới: stage "Gọi tool" là node giai đoạn có huy hiệu; "Rẽ nhánh" vẽ mũi tên <b>nét đứt</b> từ giai đoạn tới tiêu đề bước đích (màu chính, nhãn chữ "Rẽ nhánh · luật n"; mũi tên "Quay lại" của P-b2 vẫn nét đứt màu cảnh báo, hướng ngược lại). Dữ liệu mẫu: quy trình "Hợp đồng giá trị lớn" ngưỡng 20.000.000 đ.</p>
+
+<!-- ============ E1 ============ -->
+<section class="board">
+<p class="cap">E1 · Canvas có rẽ nhánh + panel giai đoạn 2 "Tra cứu hợp đồng" (Gọi tool) hợp lệ</p>
+<div class="cols cpanel">
+  <div class="canvas" role="application" aria-label="Canvas quy trình">
+    <div class="step" style="left:20px">Bước 1</div><div class="step" style="left:290px">Bước 2</div><div class="step" style="left:560px">Bước 3</div>
+    <div class="edge" style="left:260px;top:112px;width:30px"></div><div class="edge" style="left:530px;top:112px;width:30px"></div>
+    <div class="node" style="left:20px;top:68px"><b>Giai đoạn 1: Phân loại giá trị</b><span class="sub">Agent Pháp chế</span><div class="badges"><span class="badge b-off"><svg class="ic"><use href="#bolt"/></svg>Tự động</span><span class="badge b-info"><svg class="ic"><use href="#branch"/></svg>Rẽ nhánh · 2 luật</span></div></div>
+    <div class="node skp" style="left:290px;top:68px"><b>Giai đoạn 2: Duyệt cấp phòng</b><span class="sub">Agent Kế toán</span><div class="badges"><span class="badge b-info"><svg class="ic"><use href="#shield"/></svg>Có người kiểm</span></div></div>
+    <div class="node sel" style="left:560px;top:68px"><b>Giai đoạn 3: Tra cứu hợp đồng</b><span class="sub">Tra cứu hợp đồng</span><div class="badges"><span class="badge b-info"><svg class="ic"><use href="#wrench"/></svg>Gọi tool</span><span class="badge b-off"><svg class="ic"><use href="#bolt"/></svg>Tự động</span></div></div>
+    <svg class="lay" viewBox="0 0 1000 430" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M163 156 C163 215 700 160 800 68" fill="none" stroke="#4f46e5" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="330" y="196" font-size="11" fill="#4338ca" font-family="system-ui">Rẽ nhánh · luật 1</text>
+    </svg>
+  </div>
+  <aside class="panelbox" aria-label="Chi tiết giai đoạn">
+    <section aria-label="Giai đoạn 3: Tra cứu hợp đồng">
+      <div class="fld"><label class="lbl">Tên giai đoạn</label><input class="inp" value="Tra cứu hợp đồng" readonly></div>
+      <div class="fld"><label class="lbl">Người thực hiện</label><select class="sel"><option>Gọi tool</option></select></div>
+      <fieldset class="fs" aria-label="Gọi tool" style="margin-top:14px">
+        <div class="row between"><legend>Gọi tool</legend><span class="badge b-ok">Hợp lệ</span></div>
+        <p class="help" style="margin:4px 0 0">Gọi một workflow của công ty bằng quyền của người bắt đầu, không dùng agent. Kết quả được lọc theo các trường bạn khai báo ở mục Kết quả.</p>
+        <div class="fld"><label class="lbl">Tool</label><select class="sel"><option>Tra cứu hợp đồng · tra-cuu-hd</option></select></div>
+        <div class="arg"><div class="row between"><b class="mono" style="font-size:13px">so_hop_dong <span class="req" aria-label="bắt buộc">*</span></b><span class="sub">Chữ</span></div><p class="help" style="margin:2px 0 6px">Số hiệu hợp đồng cần tra.</p>
+          <div class="row" style="flex-wrap:nowrap"><select class="sel sm" aria-label="Nguồn của tham số so_hop_dong" style="max-width:190px"><option>Thông tin đầu vào</option></select><select class="sel sm" aria-label="Giá trị của tham số so_hop_dong"><option>so_hd · Số hợp đồng</option></select></div></div>
+        <div class="arg"><div class="row between"><b class="mono" style="font-size:13px">tong_tien</b><span class="sub">Số</span></div>
+          <div class="row" style="flex-wrap:nowrap"><select class="sel sm" aria-label="Nguồn của tham số tong_tien" style="max-width:190px"><option>Kết quả giai đoạn trước</option></select><select class="sel sm" aria-label="Giá trị của tham số tong_tien"><option>Giai đoạn 1 · tong_tien</option></select></div></div>
+        <div class="arg"><div class="row between"><b class="mono" style="font-size:13px">che_do</b><span class="sub">Chọn</span></div>
+          <div class="row" style="flex-wrap:nowrap"><select class="sel sm" aria-label="Nguồn của tham số che_do" style="max-width:190px"><option>Giá trị cố định</option></select><input class="inp sm" aria-label="Giá trị của tham số che_do" value="day_du"></div></div>
+      </fieldset>
+    </section>
+  </aside>
+</div>
+</section>
+
+<!-- ============ E2 ============ -->
+<section class="board">
+<p class="cap">E2 · Panel "Gọi tool": trạng thái rỗng / lỗi / tác dụng phụ</p>
+<div class="cols c3">
+  <div class="card"><h3>Chưa có tool nào được bật</h3>
+    <div class="fld"><label class="lbl">Tool</label><select class="sel" disabled><option>Chọn tool…</option></select></div>
+    <p class="alert warn" role="status">Chưa có tool nào được bật cho công ty — liên hệ quản trị nền tảng</p>
+    <h3 style="margin-top:20px">Đang tải / lỗi tải danh sách</h3>
+    <div class="fld"><label class="lbl">Tool</label><select class="sel" disabled aria-busy="true"><option>Đang tải tool…</option></select></div>
+    <p class="alert err" role="alert">Không tải được danh sách tool. <button class="btn out sm" style="margin-left:6px">Thử lại</button></p></div>
+  <div class="card"><h3>Tool có tác dụng phụ</h3>
+    <div class="row between"><b>Gửi nhắc thanh toán</b><span class="badge b-warn">Tác dụng phụ</span></div>
+    <p class="alert note">Tool này tạo tác dụng thật. Giai đoạn cần bật "Hành động thật", và mọi giai đoạn ở bước trước phải có người kiểm.</p>
+    <div class="fld"><div class="row"><span class="sw dis" aria-hidden="true"></span><span class="lbl">Hành động thật</span></div><span class="help">Cần mọi giai đoạn ở bước trước có người kiểm</span></div>
+    <p class="alert err" role="alert">Tool có tác dụng phụ chỉ dùng được khi giai đoạn bật "Hành động thật".</p>
+    <p class="help" style="margin-top:8px">Chọn tool có tác dụng phụ ở bước đủ điều kiện thì "Hành động thật" tự bật; bước 1 thì không bật được và hiện lỗi này.</p></div>
+  <div class="card"><h3>Lỗi tham số / tool</h3>
+    <div class="arg"><div class="row between"><b class="mono" style="font-size:13px">so_hop_dong <span class="req">*</span></b><span class="sub">Chữ</span></div>
+      <select class="sel sm bad" aria-label="Nguồn của tham số so_hop_dong"><option>Chọn nguồn…</option></select><span class="etxt" role="alert">Tool chưa khai báo đủ: điền mọi tham số bắt buộc từ nguồn có thật (tối đa 20 tham số, không dùng tham số tệp).</span></div>
+    <div class="arg"><div class="row between"><b class="mono" style="font-size:13px">tep_dinh_kem</b><span class="sub">Tệp</span></div><span class="help">Tham số tệp chưa dùng được trong quy trình, nên tool này chưa chọn được.</span></div>
+    <p class="alert err" role="alert">Tool này chưa được bật cho công ty hoặc không còn. <span class="sub" style="color:inherit">(PROCESS_REF_INVALID · ref tool)</span></p>
+    <p class="alert note">Quy trình mẫu không chọn được "Gọi tool". Chép mẫu về công ty để chọn tool.</p></div>
+</div>
+</section>
+
+<!-- ============ E3 ============ -->
+<section class="board">
+<p class="cap">E3 · Khối "Rẽ nhánh" trong panel (dưới "Sau giai đoạn"), giai đoạn 1 "Phân loại giá trị"</p>
+<div class="cols c2">
+  <div class="card"><h3>Hợp lệ</h3>
+    <fieldset class="fs" aria-label="Rẽ nhánh"><legend>Rẽ nhánh</legend>
+      <p class="help" style="margin:4px 0 0">Luật đầu tiên khớp được dùng. Không khớp luật nào thì sang bước kế. Giai đoạn bị nhảy qua hiện là "Bỏ qua".</p>
+      <div class="rule"><div class="fld" style="margin:0"><label class="lbl">Nếu trường</label><select class="sel sm"><option>tong_tien (Số)</option></select></div>
+        <div class="fld" style="margin:0"><label class="lbl">Phép so sánh</label><select class="sel sm"><option>lớn hơn</option></select></div>
+        <div class="fld" style="margin:0"><label class="lbl">Giá trị</label><input class="inp sm" type="number" value="20000000"></div>
+        <div class="fld" style="margin:0"><label class="lbl">Thì tới bước</label><select class="sel sm"><option>Bước 3</option></select></div>
+        <button class="btn out sm" aria-label="Xoá luật 1">Xoá</button></div>
+      <div class="rule"><div class="fld" style="margin:0"><label class="lbl">Nếu trường</label><select class="sel sm"><option>ngay_het_han (Ngày)</option></select></div>
+        <div class="fld" style="margin:0"><label class="lbl">Phép so sánh</label><select class="sel sm"><option>nhỏ hơn hoặc bằng</option></select></div>
+        <div class="fld" style="margin:0"><label class="lbl">Giá trị</label><input class="inp sm" type="date" value="2026-11-30"></div>
+        <div class="fld" style="margin:0"><label class="lbl">Thì tới bước</label><select class="sel sm"><option>Bước 3</option></select></div>
+        <button class="btn out sm" aria-label="Xoá luật 2">Xoá</button></div>
+      <button class="btn out sm" style="margin-top:10px">Thêm luật rẽ nhánh</button>
+    </fieldset></div>
+  <div class="card"><h3>Lỗi / bị khoá</h3>
+    <div class="rule"><div class="fld" style="margin:0"><label class="lbl">Nếu trường</label><select class="sel sm"><option>ghi_chu (Chuỗi)</option></select></div>
+        <div class="fld" style="margin:0"><label class="lbl">Phép so sánh</label><select class="sel sm bad"><option>lớn hơn</option></select></div>
+        <div class="fld" style="margin:0"><label class="lbl">Giá trị</label><input class="inp sm" value="abc"></div>
+        <div class="fld" style="margin:0"><label class="lbl">Thì tới bước</label><select class="sel sm bad"><option>Chọn…</option></select></div>
+        <button class="btn out sm" aria-label="Xoá luật 1">Xoá</button></div>
+    <span class="etxt" role="alert">Luật 1: phép so sánh này chỉ dùng cho trường Số hoặc Ngày.</span><br>
+    <span class="etxt" role="alert">Luật 1: chọn bước đích, phải đứng sau giai đoạn này.</span>
+    <p class="alert err" role="alert">Luật rẽ nhánh chưa hợp lệ: kiểm tra trường, phép so sánh, giá trị và bước đích.</p>
+    <p class="alert err" role="alert">Bước đích có Hành động thật nên giai đoạn này phải do người duyệt (Sau giai đoạn = Duyệt bởi Group).</p>
+    <h3 style="margin-top:20px">Giai đoạn song song (bị khoá)</h3>
+    <fieldset class="fs" disabled aria-label="Rẽ nhánh"><legend>Rẽ nhánh</legend><p class="alert warn" role="status" style="margin-top:6px">Chỉ giai đoạn đứng một mình trong bước mới rẽ nhánh được.</p><button class="btn out sm" disabled style="margin-top:8px">Thêm luật rẽ nhánh</button></fieldset>
+    <p class="help" style="margin-top:8px">Chưa khai báo trường có cấu trúc: "Khai báo trường có cấu trúc ở mục Kết quả trước." · Đủ 10 luật: "Tối đa 10 luật."</p></div>
+</div>
+</section>
+
+<!-- ============ E4 ============ -->
+<section class="board">
+<p class="cap">E4 · Chế độ "Danh sách" (StepList, đường bàn phím) và trang lượt chạy Admin</p>
+<div class="cols c2">
+  <div class="card" role="list" aria-label="Danh sách giai đoạn">
+    <div class="row between"><b>Bước 1</b></div><div style="padding:8px 0;border-bottom:1px solid var(--muted)">Giai đoạn 1: Phân loại giá trị <span class="badge b-off">Rẽ nhánh: luật 1 tới bước 3 · luật 2 tới bước 3</span></div>
+    <div class="row between" style="margin-top:8px"><b>Bước 2</b></div><div style="padding:8px 0;border-bottom:1px solid var(--muted)">Giai đoạn 2: Duyệt cấp phòng</div>
+    <div class="row between" style="margin-top:8px"><b>Bước 3</b></div><div style="padding:8px 0">Giai đoạn 3: Tra cứu hợp đồng <span class="badge b-info">Gọi tool</span></div></div>
+  <div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--muted-fg);font-weight:500">Giai đoạn</th><th style="text-align:left;font-size:12px;color:var(--muted-fg);font-weight:500">Làm bởi</th><th style="text-align:left;font-size:12px;color:var(--muted-fg);font-weight:500">Trạng thái</th></tr></thead>
+    <tbody><tr><td style="padding:10px 12px;border-top:1px solid var(--muted)">1. Phân loại giá trị</td><td style="border-top:1px solid var(--muted)">Pháp chế</td><td style="border-top:1px solid var(--muted)">Hoàn tất</td></tr>
+    <tr><td style="padding:10px 12px;border-top:1px solid var(--muted)">2. Duyệt cấp phòng</td><td style="border-top:1px solid var(--muted)">Kế toán</td><td style="border-top:1px solid var(--muted)"><span class="badge b-off">Bỏ qua</span></td></tr>
+    <tr><td style="padding:10px 12px;border-top:1px solid var(--muted)">3. Tra cứu hợp đồng</td><td style="border-top:1px solid var(--muted)">Tra cứu hợp đồng</td><td style="border-top:1px solid var(--muted)">Hoàn tất</td></tr></tbody></table></div>
+</div>
+</section>
+</div>
+</body>
+</html>

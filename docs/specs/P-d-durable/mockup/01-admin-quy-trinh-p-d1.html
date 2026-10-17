@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P-d1 · Admin · Panel giai đoạn (Chờ tới ngày, nhắc lặp/chuyển cấp, thời hạn)</title>
+<style>
+/* Token lấy từ apps/admin-web/src/styles/globals.css (tokens-map.md, UI-1). Không tải tài nguyên ngoài; font rơi về system-ui nếu máy không có Be Vietnam Pro. */
+:root{--background:#f4f4f9;--foreground:#0a0a0a;--card:#fff;--muted:#f5f5f5;--muted-fg:#6b6b6b;--muted-strong:#525252;--primary:#4f46e5;--primary-fg:#fff;--primary-strong:#4338ca;--secondary-fg:#404040;--accent:#eef2ff;--accent-fg:#4338ca;--border:#e5e5e5;--input:#d4d4d8;--ring:#4f46e5;--err-border:#d92d20;--destructive:#b42318;--success:#05603f;--success-bg:#e3f4ec;--warning:#7f3c04;--warning-bg:#fdf0df;--warning-solid:#b45309;--danger:#9b1c1c;--danger-bg:#fde8e8;--ink:#1e1b4b;--shadow-drawer:-12px 0 32px rgb(30 27 75/.18)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--background);color:var(--foreground);font:14px/20px "Be Vietnam Pro",system-ui,sans-serif}
+h1{font-size:22px;line-height:30px;margin:0 0 4px}
+.wrap{max-width:1320px;margin:0 auto;padding:28px}
+.lead{color:var(--muted-fg);margin:0 0 24px;max-width:880px}
+.board{margin:0 0 40px}
+.cap{font-size:12px;line-height:16px;font-weight:600;color:var(--muted-strong);margin:0 0 8px;text-transform:uppercase;letter-spacing:.02em}
+.cols{display:grid;gap:20px;align-items:start}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}.cpanel{grid-template-columns:1fr 420px}
+@media (max-width:1100px){.c2,.c3,.cpanel{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.card h3{margin:0 0 12px;font-size:16px;line-height:24px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+.sub{font-size:12px;line-height:16px;color:var(--muted-fg)}
+.fld{display:flex;flex-direction:column;gap:4px;margin-top:12px}.fld:first-child{margin-top:0}
+.lbl{font-size:13px;font-weight:500}
+.inp,.sel{height:36px;font:inherit;padding:0 10px;border:1px solid var(--input);border-radius:8px;background:var(--card);color:var(--foreground);width:100%}
+.inp.ro{background:var(--muted);color:var(--muted-strong)}
+.inp.bad{border-color:var(--err-border)}
+.sel{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted-fg) 50%),linear-gradient(135deg,var(--muted-fg) 50%,transparent 50%);background-position:calc(100% - 16px) 15px,calc(100% - 11px) 15px;background-size:5px 5px;background-repeat:no-repeat}
+.sel:disabled{background-color:var(--muted);color:var(--muted-strong)}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+.etxt{font-size:12px;line-height:16px;color:var(--destructive)}
+.help{font-size:12px;line-height:16px;color:var(--muted-fg)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:var(--success-bg);color:var(--success)}.b-off{background:var(--muted);color:var(--muted-strong)}.b-warn{background:var(--warning-bg);color:var(--warning)}.b-info{background:var(--accent);color:var(--accent-fg)}.b-err{background:var(--danger-bg);color:var(--danger)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;border:1px solid transparent;font:inherit;font-weight:500;background:var(--primary);color:var(--primary-fg)}
+.btn.out{background:var(--card);color:var(--foreground);border-color:var(--input)}.btn.sm{height:30px;padding:0 10px;font-size:13px}
+.alert{margin:12px 0 0;padding:10px 12px;border-radius:10px;font-size:13px;line-height:20px}
+.alert.err{background:var(--danger-bg);color:var(--danger)}.alert.note{background:var(--accent);color:var(--accent-fg)}.alert.warn{background:var(--warning-bg);color:var(--warning)}
+.sw{position:relative;width:36px;height:20px;border-radius:999px;background:var(--input);flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.sw.on{background:var(--primary)}.sw.on::after{left:18px}.sw.dis{opacity:.55}
+.chk{width:16px;height:16px;border:1px solid var(--input);border-radius:4px;background:var(--card);flex:none;position:relative}
+.chk.on{background:var(--primary);border-color:var(--primary)}.chk.on::after{content:"";position:absolute;left:4px;top:1px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.skel{background:var(--muted);border-radius:6px;height:14px;animation:p 1.4s infinite}@keyframes p{50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+/* canvas */
+.canvas{position:relative;background:var(--card);border:1px solid var(--border);border-radius:12px;height:340px;overflow:hidden;background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:20px 20px}
+.step{position:absolute;top:12px;width:240px;font-size:12px;font-weight:600;color:var(--muted-strong)}
+.node{position:absolute;width:240px;height:88px;background:var(--card);border:1px solid var(--input);border-radius:10px;padding:10px 12px;text-align:left}
+.node.sel{border:2px solid var(--primary);padding:9px 11px}
+.node b{display:block;font-size:13px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node .badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.edge{position:absolute;height:2px;background:var(--input)}
+.canvas svg.ic{width:12px;height:12px;vertical-align:-1px}
+svg.ic{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.panelbox{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow-drawer)}
+.fs{border:0;margin:0;padding:0}.fs legend{font-size:14px;font-weight:600;padding:0}
+table{width:100%;border-collapse:collapse}th{font-size:12px;color:var(--muted-fg);text-align:left;font-weight:500}th,td{padding:10px 12px;border-bottom:1px solid #f5f5f5;font-size:14px}
+.tag{font-size:11px;color:var(--muted-fg)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></symbol>
+  <symbol id="bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01"/></symbol>
+</svg>
+<div class="wrap">
+<h1>P-d1 · Admin · Panel giai đoạn trong canvas hiện có</h1>
+<p class="lead">Giữ nguyên bố cục canvas P-b2: vùng canvas + panel phải 420 px (<code>complementary "Chi tiết giai đoạn"</code>). Chỉ thêm: người thực hiện "Chờ tới ngày", hai ô nhắc/chuyển cấp ở khối "Sau giai đoạn", và thẻ Thông tin có "Thời hạn lượt chạy". Dữ liệu mẫu: quy trình <span class="mono">!hop-dong</span> "Duyệt hợp đồng và nhắc thanh toán", công ty đặt múi giờ <span class="mono">Asia/Ho_Chi_Minh</span>.</p>
+
+<!-- ============ A1 ============ -->
+<section class="board" aria-label="A1">
+<p class="cap">A1 · Canvas + panel: giai đoạn "Chờ tới ngày thanh toán" hợp lệ</p>
+<div class="cols cpanel">
+  <div class="canvas" role="application" aria-label="Canvas quy trình">
+    <div class="step" style="left:20px">Bước 1</div><div class="step" style="left:290px">Bước 2</div><div class="step" style="left:560px">Bước 3</div>
+    <div class="edge" style="left:260px;top:100px;width:30px"></div><div class="edge" style="left:530px;top:100px;width:30px"></div>
+    <div class="node" style="left:20px;top:56px"><b>Giai đoạn 1: Soát hợp đồng</b><span class="sub">Agent Pháp chế</span><div class="badges"><span class="badge b-info"><svg class="ic"><use href="#shield"/></svg>Có người kiểm</span></div></div>
+    <div class="node sel" style="left:290px;top:56px"><b>Giai đoạn 2: Chờ tới ngày thanh toán</b><span class="sub">Chờ tới ngày</span><div class="badges"><span class="badge b-info"><svg class="ic"><use href="#clock"/></svg>Chờ tới ngày</span><span class="badge b-off"><svg class="ic"><use href="#bolt"/></svg>Tự động</span></div></div>
+    <div class="node" style="left:560px;top:56px"><b>Giai đoạn 3: Nhắc thanh toán</b><span class="sub">Agent Kế toán</span><div class="badges"><span class="badge b-off"><svg class="ic"><use href="#bolt"/></svg>Tự động</span></div></div>
+  </div>
+  <aside class="panelbox" aria-label="Chi tiết giai đoạn">
+    <section aria-label="Giai đoạn 2: Chờ tới ngày thanh toán">
+      <div class="fld"><label class="lbl">Tên giai đoạn</label><input class="inp" value="Chờ tới ngày thanh toán" readonly></div>
+      <div class="fld"><label class="lbl">Người thực hiện</label><select class="sel"><option>Chờ tới ngày</option></select></div>
+      <fieldset class="fs" aria-label="Chờ tới ngày" style="margin-top:14px">
+        <div class="row between"><legend>Chờ tới ngày</legend><span class="badge b-ok">Hợp lệ</span></div>
+        <p class="help" style="margin:4px 0 0">Dừng giai đoạn này tới một ngày hẹn rồi tự chạy tiếp. Không dùng agent và không có bước duyệt.</p>
+        <div class="fld"><label class="lbl">Lấy ngày từ</label><select class="sel"><option>Kết quả giai đoạn 1 · Soát hợp đồng · ngay_het_han</option></select></div>
+        <div class="row" style="align-items:flex-start;margin-top:12px">
+          <div class="fld" style="flex:1;margin:0"><label class="lbl">Chênh lệch (ngày)</label><input class="inp" type="number" value="-3"></div>
+          <div class="fld" style="flex:1;margin:0"><label class="lbl">Giờ trong ngày</label><input class="inp" type="time" value="09:00"></div>
+        </div>
+        <p class="help" style="margin:4px 0 0">Số âm = trước ngày gốc, 0 = đúng ngày, số dương = sau.</p>
+        <p class="alert note" style="margin-top:12px">Theo múi giờ công ty: <b class="mono">Asia/Ho_Chi_Minh</b> (UTC+07:00). Ngày hẹn được chốt lúc lượt chạy vào giai đoạn này; đổi múi giờ công ty sau đó không tính lại.</p>
+        <p class="sub" style="margin:8px 0 0">Tới hạn lúc 09:00, 3 ngày trước ngày lấy từ trường ngay_het_han của "Soát hợp đồng".</p>
+      </fieldset>
+      <div class="fld"><label class="lbl">Sau giai đoạn</label><select class="sel" disabled><option>Chạy tiếp (cố định)</option></select></div>
+    </section>
+  </aside>
+</div>
+</section>
+
+<!-- ============ A2 ============ -->
+<section class="board" aria-label="A2">
+<p class="cap">A2 · Panel "Chờ tới ngày": các trạng thái lỗi / rỗng / tải</p>
+<div class="cols c3">
+  <div class="card">
+    <h3>Lỗi nhập (live, cùng luật server)</h3>
+    <div class="fld"><label class="lbl">Lấy ngày từ</label><select class="sel bad" style="border-color:var(--err-border)"><option>Chọn nguồn ngày…</option></select><span class="etxt" role="alert">Chọn nguồn ngày.</span></div>
+    <div class="fld"><label class="lbl">Chênh lệch (ngày)</label><input class="inp bad" type="number" value="400"><span class="etxt" role="alert">Từ −365 đến 365 ngày.</span></div>
+    <div class="fld"><label class="lbl">Giờ trong ngày</label><input class="inp bad" value="25:70"><span class="etxt" role="alert">Nhập giờ dạng HH:mm, ví dụ 09:00.</span></div>
+  </div>
+  <div class="card">
+    <h3>Lỗi server WAIT_INVALID (422)</h3>
+    <div class="row between"><b>Chờ tới ngày</b></div>
+    <p class="alert err" role="alert">Nguồn ngày không hợp lệ. Chọn trường nhập kiểu Ngày hoặc trường Ngày của giai đoạn ở bước trước.</p>
+    <div class="fld"><label class="lbl">Lấy ngày từ</label><select class="sel"><option>Kết quả giai đoạn 1 · Soát hợp đồng · ngay_het_han</option></select></div>
+    <h3 style="margin-top:20px">Quá thời hạn lượt chạy</h3>
+    <p class="help">Không lưu được lỗi này: khi chạy, ngày hẹn quá hạn lượt chạy thì lượt chạy dừng ở "Cần người quyết · Ngày hẹn không hợp lệ" (xem file chat).</p>
+  </div>
+  <div class="card">
+    <h3>Rỗng · chưa có nguồn ngày</h3>
+    <div class="fld"><label class="lbl">Lấy ngày từ</label><select class="sel" disabled><option>Chọn nguồn ngày…</option></select></div>
+    <p class="alert warn" role="status">Chưa có nguồn ngày nào. Thêm trường đầu vào kiểu Ngày, hoặc khai báo trường kiểu Ngày ở giai đoạn trước.</p>
+    <h3 style="margin-top:20px">Tải múi giờ công ty</h3>
+    <p class="sub" aria-busy="true">Đang tải múi giờ…</p><div class="skel" style="width:60%;margin-top:6px"></div>
+    <p class="alert err" role="alert" style="margin-top:12px">Không tải được múi giờ công ty. <button class="btn out sm" style="margin-left:6px">Thử lại</button></p>
+    <h3 style="margin-top:20px">Quy trình mẫu (không thuộc công ty)</h3>
+    <p class="alert note">Quy trình mẫu: tính theo múi giờ của công ty chạy quy trình (mặc định Asia/Ho_Chi_Minh).</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ A3 ============ -->
+<section class="board" aria-label="A3">
+<p class="cap">A3 · Khối "Sau giai đoạn" = Duyệt bởi Group: nhắc lặp và chuyển cấp</p>
+<div class="cols c2">
+  <div class="card">
+    <h3>Hợp lệ</h3>
+    <div class="row" style="align-items:flex-start">
+      <div class="fld" style="flex:1;margin:0"><label class="lbl">Sau giai đoạn</label><select class="sel"><option>Duyệt bởi Group</option></select></div>
+      <div class="fld" style="flex:1;margin:0"><label class="lbl">Nhóm kiểm</label><select class="sel"><option>Kế toán</option></select></div>
+    </div>
+    <div class="fld"><label class="lbl">Nhắc mỗi (giờ)</label><input class="inp" type="number" value="4" style="max-width:160px"><span class="help">Để trống = nhắc một lần sau 24 giờ. Nhắc tối đa 10 lần.</span></div>
+    <div class="fld"><label class="row" style="gap:8px"><span class="chk on" aria-hidden="true"></span><span class="lbl">Chuyển cấp nếu chưa ai kiểm</span></label>
+      <div class="row" style="align-items:flex-start;margin-left:24px">
+        <div class="fld" style="flex:1;margin:0"><label class="lbl">Chuyển cấp sau (giờ)</label><input class="inp" type="number" value="24"></div>
+        <div class="fld" style="flex:2;margin:0"><label class="lbl">Chuyển cấp tới nhóm</label><select class="sel"><option>Giám đốc tài chính</option></select></div>
+      </div>
+      <span class="help" style="margin-left:24px">Nhóm này được thêm vào việc kiểm; nhóm kiểm ban đầu vẫn duyệt được. Chỉ chuyển cấp một lần và không tự chấm Đạt.</span>
+    </div>
+    <div class="fld"><div class="row"><span class="sw dis" aria-hidden="true"></span><span class="lbl">Hành động thật</span></div><span class="help">Cần mọi giai đoạn ở bước trước có người kiểm</span></div>
+  </div>
+  <div class="card">
+    <h3>Lỗi</h3>
+    <div class="fld"><label class="lbl">Nhắc mỗi (giờ)</label><input class="inp bad" type="number" value="2" style="max-width:160px"><span class="etxt" role="alert">Từ 4 đến 168 giờ.</span></div>
+    <div class="fld"><label class="row" style="gap:8px"><span class="chk on" aria-hidden="true"></span><span class="lbl">Chuyển cấp nếu chưa ai kiểm</span></label>
+      <div class="row" style="align-items:flex-start;margin-left:24px">
+        <div class="fld" style="flex:1;margin:0"><label class="lbl">Chuyển cấp sau (giờ)</label><input class="inp bad" type="number" value="3000"><span class="etxt" role="alert">Từ 4 đến 2.160 giờ.</span></div>
+        <div class="fld" style="flex:2;margin:0"><label class="lbl">Chuyển cấp tới nhóm</label><select class="sel bad"><option>Chọn…</option></select><span class="etxt" role="alert">Chọn nhóm khác với nhóm kiểm.</span></div>
+      </div>
+    </div>
+    <p class="alert err" role="alert">Nhóm này đã bị tắt hoặc không còn. <span class="sub" style="color:inherit">(PROCESS_REF_INVALID · nhóm chuyển cấp thuộc công ty khác hoặc đã xoá)</span></p>
+    <p class="alert err" role="alert">Cấu hình chuyển cấp chưa hợp lệ: chọn nhóm khác nhóm kiểm và thời gian từ 4 đến 2.160 giờ.</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ A4 ============ -->
+<section class="board" aria-label="A4">
+<p class="cap">A4 · Thẻ "Thông tin" + thẻ "Giới hạn": thời hạn lượt chạy (ttl_days)</p>
+<div class="cols c3">
+  <div class="card">
+    <h3>Mặc định (quy trình mới / cũ = 7)</h3>
+    <div class="fld"><label class="lbl">Thời hạn lượt chạy (ngày)</label><input class="inp" type="number" value="7"><span class="help">Lượt chạy chưa xong quá số ngày này sẽ hết hạn. Lượt đang chạy không đổi khi bạn sửa.</span></div>
+    <label class="row" style="gap:8px;margin-top:10px"><span class="chk" aria-hidden="true"></span><span class="lbl">Không hết hạn</span></label>
+    <div class="alert note" style="margin-top:16px"><b>Giới hạn của một lượt chạy</b><br>Tối đa 7 ngày · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.</div>
+  </div>
+  <div class="card">
+    <h3>Không hết hạn</h3>
+    <div class="fld"><label class="lbl">Thời hạn lượt chạy (ngày)</label><input class="inp ro" type="number" value="" disabled></div>
+    <label class="row" style="gap:8px;margin-top:10px"><span class="chk on" aria-hidden="true"></span><span class="lbl">Không hết hạn</span></label>
+    <div class="alert note" style="margin-top:16px"><b>Giới hạn của một lượt chạy</b><br>Không hết hạn · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.</div>
+    <p class="help" style="margin-top:8px">Lượt đang "Chờ tới ngày" không tính vào 5 lượt cùng lúc.</p>
+  </div>
+  <div class="card">
+    <h3>Lỗi</h3>
+    <div class="fld"><label class="lbl">Thời hạn lượt chạy (ngày)</label><input class="inp bad" type="number" value="500"><span class="etxt" role="alert">Từ 1 đến 365 ngày, hoặc chọn Không hết hạn.</span></div>
+    <label class="row" style="gap:8px;margin-top:10px"><span class="chk" aria-hidden="true"></span><span class="lbl">Không hết hạn</span></label>
+    <h3 style="margin-top:20px">Chỉ xem (mẫu)</h3>
+    <div class="fld"><label class="lbl">Thời hạn lượt chạy (ngày)</label><input class="inp ro" value="7" readonly></div>
+  </div>
+</div>
+</section>
+
+<!-- ============ A5 ============ -->
+<section class="board" aria-label="A5">
+<p class="cap">A5 · Trang lượt chạy (Admin) · tab Tiến độ: trạng thái giai đoạn mới</p>
+<div class="card" style="padding:0;overflow:hidden">
+<table>
+  <caption style="position:absolute;left:-9999px">Tiến độ</caption>
+  <thead><tr><th>Giai đoạn</th><th>Làm bởi</th><th>Trạng thái</th><th style="text-align:right">Lần chạy</th><th>Kết quả</th></tr></thead>
+  <tbody>
+    <tr><td>1. Soát hợp đồng</td><td>Pháp chế</td><td>Hoàn tất</td><td style="text-align:right">1/3</td><td><span class="btn out sm">Xem kết quả <span class="sub">v1</span></span></td></tr>
+    <tr><td>2. Chờ tới ngày thanh toán</td><td>Chờ tới ngày</td><td><span class="badge b-info"><svg class="ic"><use href="#clock"/></svg>Chờ tới 14/12/2026 09:00 (Asia/Ho_Chi_Minh)</span></td><td style="text-align:right">1/3</td><td>—</td></tr>
+    <tr><td>3. Nhắc thanh toán</td><td>Kế toán</td><td>Chưa tới</td><td style="text-align:right">0/3</td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="cap" style="margin-top:16px">Một lượt chạy khác: giai đoạn lỗi tạm</p>
+<div class="card" style="padding:0;overflow:hidden">
+<table>
+  <thead><tr><th>Giai đoạn</th><th>Làm bởi</th><th>Trạng thái</th><th style="text-align:right">Lần chạy</th><th>Kết quả</th></tr></thead>
+  <tbody>
+    <tr><td>1. Soát hợp đồng</td><td>Pháp chế</td><td><span class="badge b-warn">Đang thử lại (2/3) · 10:42</span></td><td style="text-align:right">1/3</td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="help" style="margin-top:8px">"Đang thử lại (n/3)" hiện khi giai đoạn lỗi tạm (mất kết nối, quá thời gian…) và đang chờ lần chạy lại; sau 3 lần vẫn lỗi lượt chạy dừng ở "Cần người quyết". Giờ "10:42" là giờ chạy lại kế tiếp theo giờ máy người xem.</p>
+</section>
+</div>
+</body>
+</html>

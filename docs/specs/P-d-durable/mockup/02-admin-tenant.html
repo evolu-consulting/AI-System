@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P-d1/P-d2 · Admin · Chi tiết tenant (Múi giờ, tab Tool quy trình)</title>
+<style>
+/* Token lấy từ apps/admin-web/src/styles/globals.css. Không tải tài nguyên ngoài. */
+:root{--background:#f4f4f9;--foreground:#0a0a0a;--card:#fff;--muted:#f5f5f5;--muted-fg:#6b6b6b;--muted-strong:#525252;--primary:#4f46e5;--primary-fg:#fff;--accent:#eef2ff;--accent-fg:#4338ca;--border:#e5e5e5;--input:#d4d4d8;--err-border:#d92d20;--destructive:#b42318;--success:#05603f;--success-bg:#e3f4ec;--warning:#7f3c04;--warning-bg:#fdf0df;--danger:#9b1c1c;--danger-bg:#fde8e8;--shadow-dialog:0 20px 48px rgb(30 27 75/.28);--shadow-drawer:-12px 0 32px rgb(30 27 75/.18)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--background);color:var(--foreground);font:14px/20px "Be Vietnam Pro",system-ui,sans-serif}
+h1{font-size:22px;line-height:30px;margin:0 0 4px}.wrap{max-width:1320px;margin:0 auto;padding:28px}
+.lead{color:var(--muted-fg);margin:0 0 24px;max-width:880px}.board{margin:0 0 40px}
+.cap{font-size:12px;line-height:16px;font-weight:600;color:var(--muted-strong);margin:0 0 8px;text-transform:uppercase;letter-spacing:.02em}
+.cols{display:grid;gap:20px;align-items:start}.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}
+@media (max-width:1100px){.c2,.c3{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+.sub{font-size:12px;line-height:16px;color:var(--muted-fg)}.help{font-size:12px;line-height:16px;color:var(--muted-fg)}
+.fld{display:flex;flex-direction:column;gap:4px;margin-top:14px}.fld:first-child{margin-top:0}.lbl{font-size:13px;font-weight:500}
+.inp{height:36px;font:inherit;padding:0 10px;border:1px solid var(--input);border-radius:8px;background:var(--card);color:var(--foreground);width:100%}
+.inp.ro{background:var(--muted);color:var(--muted-strong)}.inp.bad{border-color:var(--err-border)}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}.etxt{font-size:12px;line-height:16px;color:var(--destructive)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.b-ok{background:var(--success-bg);color:var(--success)}.b-off{background:var(--muted);color:var(--muted-strong)}.b-warn{background:var(--warning-bg);color:var(--warning)}.b-info{background:var(--accent);color:var(--accent-fg)}.b-err{background:var(--danger-bg);color:var(--danger)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;border:1px solid transparent;font:inherit;font-weight:500;background:var(--primary);color:var(--primary-fg)}
+.btn.out{background:var(--card);color:var(--foreground);border-color:var(--input)}.btn.sm{height:30px;padding:0 10px;font-size:13px}.btn.del{background:var(--destructive)}
+.alert{margin:12px 0 0;padding:10px 12px;border-radius:10px;font-size:13px}.alert.err{background:var(--danger-bg);color:var(--danger)}.alert.note{background:var(--accent);color:var(--accent-fg)}
+.tabs{display:flex;gap:4px;background:var(--muted);padding:4px;border-radius:10px;width:fit-content;max-width:100%;overflow:auto;margin-bottom:16px}
+.tab{padding:6px 12px;border-radius:7px;font-size:13px;font-weight:500;color:var(--muted-strong);white-space:nowrap}.tab.on{background:var(--card);color:var(--foreground);box-shadow:0 1px 2px rgb(0 0 0/.08)}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}.head h2{margin:0;font-size:24px;line-height:32px}
+.sw{position:relative;width:36px;height:20px;border-radius:999px;background:var(--input);flex:none;display:inline-block;vertical-align:middle}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff}.sw.on{background:var(--primary)}.sw.on::after{left:18px}
+.skel{background:var(--muted);border-radius:6px;height:14px;animation:p 1.4s infinite}@keyframes p{50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+table{width:100%;border-collapse:collapse}th{font-size:12px;color:var(--muted-fg);text-align:left;font-weight:500}th,td{padding:10px 12px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+.savebar{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);background:var(--card);padding:12px 20px;box-shadow:var(--shadow-drawer);margin-top:16px;border-radius:0 0 12px 12px}
+.pop{border:1px solid var(--border);border-radius:10px;background:var(--card);box-shadow:var(--shadow-dialog);padding:8px;width:320px}
+.opt{padding:6px 8px;border-radius:6px}.opt.on{background:var(--accent);color:var(--accent-fg)}.opt .h{margin-left:8px;font-size:12px;color:var(--muted-fg)}
+.dlg{background:var(--card);border-radius:12px;box-shadow:var(--shadow-dialog);padding:20px;max-width:440px}
+.dlg h3{margin:0 0 6px;font-size:18px;line-height:28px}.dim{background:rgba(30,27,75,.35);padding:28px;border-radius:12px}
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;border:1px dashed var(--border);border-radius:12px;background:var(--card);padding:36px 24px;text-align:center;color:var(--muted-fg)}
+.search{height:36px;width:260px;border:1px solid var(--input);border-radius:8px;padding:0 10px;font:inherit}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Admin · Chi tiết tenant</h1>
+<p class="lead">Chỉ <code>platform_admin</code> vào được (tenant_admin thấy 403 trong khung như hiện nay). P-d1 thêm ô "Múi giờ" vào tab Thông tin; P-d2 thêm tab "Tool quy trình" sau tab Agent. Mẫu bảng/Switch/ConfirmDialog/EmptyState/ErrorState là component sẵn có.</p>
+
+<!-- ============ B1 ============ -->
+<section class="board">
+<p class="cap">B1 · P-d1 · Tab Thông tin: ô "Múi giờ" (mặc định, đang sửa chưa lưu)</p>
+<div class="cols c2">
+  <div>
+    <div class="head"><div><h2>Công ty Hòa Phát Xây Dựng</h2><span class="sub">Tạo lúc 03/09/2026 · 42 user</span></div><span class="badge b-ok">Đang hoạt động</span></div>
+    <div class="tabs" role="tablist"><span class="tab on" role="tab">Thông tin</span><span class="tab" role="tab">Feature</span><span class="tab" role="tab">Agent</span><span class="tab" role="tab">Tool quy trình</span><span class="tab" role="tab">Quota</span><span class="tab" role="tab">Users</span></div>
+    <div class="card" style="max-width:560px">
+      <div class="fld"><label class="lbl">Mã công ty</label><input class="inp ro mono" value="hoaphat-xd" readonly><span class="help">Người dùng gõ mã này khi đăng nhập. Không đổi được sau khi tạo.</span></div>
+      <div class="fld"><label class="lbl">Tên công ty</label><input class="inp" value="Công ty Hòa Phát Xây Dựng"></div>
+      <div class="fld"><label class="lbl">Giới hạn slot subscription</label><input class="inp" type="number" value="" placeholder=""><span class="help">Để trống = không giới hạn</span></div>
+      <div class="fld"><label class="lbl" for="tz">Múi giờ</label>
+        <div class="row" style="flex-wrap:nowrap"><input id="tz" class="inp ro mono" value="Asia/Ho_Chi_Minh (UTC+07:00)" readonly><button class="btn out" style="flex:none">Đổi múi giờ</button></div>
+        <span class="help">Dùng để tính ngày giờ hẹn của quy trình (ví dụ giờ 09:00). Đổi múi giờ không tính lại các hẹn đã lưu.</span></div>
+      <div class="row sub" style="margin-top:14px;font-size:14px">Trạng thái <span class="badge b-ok">Đang hoạt động</span></div>
+    </div>
+  </div>
+  <div>
+    <p class="cap">Sau khi chọn "Europe/Berlin" → thanh lưu dính đáy</p>
+    <div class="card" style="max-width:560px;padding-bottom:0">
+      <div class="fld"><label class="lbl">Múi giờ</label>
+        <div class="row" style="flex-wrap:nowrap"><input class="inp ro mono" value="Europe/Berlin (UTC+01:00)" readonly><button class="btn out" style="flex:none">Đổi múi giờ</button></div>
+        <span class="help">Dùng để tính ngày giờ hẹn của quy trình (ví dụ giờ 09:00). Đổi múi giờ không tính lại các hẹn đã lưu.</span></div>
+      <div class="savebar" style="margin:16px -16px 0"><span class="sub" style="font-size:13px">Có thay đổi chưa lưu</span><div class="row"><button class="btn out">Huỷ</button><button class="btn">Lưu</button></div></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ B2 ============ -->
+<section class="board">
+<p class="cap">B2 · Chọn múi giờ (RefPicker nút mở Popover + ô tìm, tối đa 50 mục)</p>
+<div class="cols c3">
+  <div><p class="sub">Mở, gõ "ber"</p>
+    <div class="pop"><input class="inp" type="search" value="ber" aria-label="Tìm múi giờ" style="margin-bottom:8px">
+      <div role="listbox" aria-label="Đổi múi giờ"><div class="opt on" role="option">Europe/Berlin<span class="h mono">UTC+01:00</span></div><div class="opt" role="option">Asia/Kolkata<span class="h mono">UTC+05:30</span></div><div class="opt" role="option">America/Bogota<span class="h mono">UTC−05:00</span></div></div></div></div>
+  <div><p class="sub">Không khớp</p>
+    <div class="pop"><input class="inp" type="search" value="xyz" aria-label="Tìm múi giờ" style="margin-bottom:8px"><p class="sub" style="padding:0 8px">Không có kết quả.</p></div></div>
+  <div><p class="sub">Để trống (còn nhiều)</p>
+    <div class="pop"><input class="inp" type="search" placeholder="Tìm múi giờ" aria-label="Tìm múi giờ" style="margin-bottom:8px">
+      <div role="listbox"><div class="opt on" role="option">Africa/Abidjan<span class="h mono">UTC+00:00</span></div><div class="opt" role="option">Africa/Accra<span class="h mono">UTC+00:00</span></div><div class="opt" role="option">Africa/Addis_Ababa<span class="h mono">UTC+03:00</span></div></div><p class="sub" style="padding:6px 8px 0">Còn 397 kết quả</p></div></div>
+</div>
+</section>
+
+<!-- ============ B3 ============ -->
+<section class="board">
+<p class="cap">B3 · Lỗi lưu múi giờ và tạo tenant</p>
+<div class="cols c3">
+  <div class="card"><b>Server từ chối (400, path timezone)</b>
+    <div class="fld"><label class="lbl">Múi giờ</label><div class="row" style="flex-wrap:nowrap"><input class="inp ro mono bad" value="America/Ciudad_X (UTC+00:00)" readonly><button class="btn out" style="flex:none">Đổi múi giờ</button></div><span class="etxt" role="alert">Múi giờ này chưa được hỗ trợ. Chọn một múi giờ khác trong danh sách.</span></div></div>
+  <div class="card"><b>Xung đột phiên bản (409)</b><p class="sub">Dùng <code>ConflictDialog</code> sẵn có "Có người vừa lưu…" — không đổi.</p>
+    <p class="alert err" role="alert" style="margin-top:8px">Không có quyền? Tenant_admin vào trang này thấy khung "Bạn không có quyền" (403) như hiện nay.</p></div>
+  <div class="card"><b>Trang "Tạo tenant" · khối Công ty</b>
+    <div class="fld"><label class="lbl">Mã công ty</label><input class="inp mono" value="abc-corp"></div>
+    <div class="fld"><label class="lbl">Tên công ty</label><input class="inp" value="ABC Corp"></div>
+    <div class="fld"><label class="lbl">Múi giờ</label><div class="row" style="flex-wrap:nowrap"><input class="inp ro mono" value="Asia/Ho_Chi_Minh (UTC+07:00)" readonly><button class="btn out" style="flex:none">Đổi múi giờ</button></div><span class="help">Dùng để tính ngày giờ hẹn của quy trình (ví dụ giờ 09:00). Đổi múi giờ không tính lại các hẹn đã lưu.</span></div></div>
+</div>
+</section>
+
+<!-- ============ C1 ============ -->
+<section class="board">
+<p class="cap">C1 · P-d2 · Tab "Tool quy trình": bảng workflow catalog, một công tắc mỗi dòng</p>
+<div class="tabs" role="tablist"><span class="tab" role="tab">Thông tin</span><span class="tab" role="tab">Feature</span><span class="tab" role="tab">Agent</span><span class="tab on" role="tab">Tool quy trình</span><span class="tab" role="tab">Quota</span><span class="tab" role="tab">Users</span></div>
+<div class="card" style="padding:0;overflow:hidden">
+  <div class="row between" style="padding:12px 16px;border-bottom:1px solid var(--border)"><div><b>Tool quy trình</b><div class="sub">Bật workflow nào thì quy trình của công ty này gọi được workflow đó ở giai đoạn "Gọi tool".</div></div><input class="search" placeholder="Tìm tool" aria-label="Tìm tool"></div>
+  <table aria-label="Tool quy trình">
+    <thead><tr><th>Tên</th><th>Ký hiệu</th><th>Ghi chú</th><th>Bật bởi</th><th style="text-align:right">Bật cho công ty</th></tr></thead>
+    <tbody>
+      <tr><td>Tra cứu hợp đồng</td><td class="mono">tra-cuu-hd</td><td></td><td class="sub">Trần Minh Anh · 05/10/2026</td><td style="text-align:right"><span class="sw on" role="switch" aria-checked="true" aria-label="Bật tool Tra cứu hợp đồng"></span></td></tr>
+      <tr><td>Gửi nhắc thanh toán</td><td class="mono">nhac-tt</td><td><span class="badge b-warn">Tác dụng phụ</span></td><td class="sub">Trần Minh Anh · 05/10/2026</td><td style="text-align:right"><span class="sw on" role="switch" aria-checked="true" aria-label="Bật tool Gửi nhắc thanh toán"></span></td></tr>
+      <tr><td>Tạo phiếu chi</td><td class="mono">tao-phieu-chi</td><td><span class="badge b-warn">Tác dụng phụ</span></td><td class="sub">—</td><td style="text-align:right"><span class="sw" role="switch" aria-checked="false" aria-label="Bật tool Tạo phiếu chi"></span></td></tr>
+      <tr><td>Đối chiếu công nợ</td><td class="mono">doi-chieu-cn</td><td><span class="badge b-off">Workflow đang tắt</span></td><td class="sub">Lê Thu Hà · 01/10/2026</td><td style="text-align:right"><span class="sw on" role="switch" aria-checked="true" aria-label="Bật tool Đối chiếu công nợ"></span></td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="help" style="margin-top:8px">Bật: áp dụng ngay, toast "Đã bật tool Tra cứu hợp đồng cho Công ty Hòa Phát Xây Dựng". Tắt: hộp xác nhận (C2). "Workflow đang tắt" có tooltip: Workflow đang tắt toàn hệ thống nên tool chưa dùng được dù đã bật cho công ty.</p>
+</section>
+
+<section class="board">
+<p class="cap">C2–C5 · Xác nhận tắt, rỗng, đang tải, lỗi</p>
+<div class="cols c2">
+  <div class="dim"><div class="dlg" role="alertdialog" aria-label="Tắt tool Gửi nhắc thanh toán?"><h3>Tắt tool Gửi nhắc thanh toán?</h3><p style="margin:0 0 16px;color:var(--muted-strong)">Lượt chạy đang chờ gọi tool này sẽ dừng ở "Cần người quyết".</p><div class="row" style="justify-content:flex-end"><button class="btn out">Huỷ</button><button class="btn del">Tắt tool</button></div></div></div>
+  <div class="empty"><b style="color:var(--foreground)">Chưa có workflow nào trong catalog</b><span>Tạo workflow ở mục Workflows, rồi bật cho công ty ở đây.</span><button class="btn out">Mở Workflows</button></div>
+  <div class="card"><b>Đang tải</b><div style="margin-top:12px;display:grid;gap:12px" aria-busy="true"><div class="skel" style="width:90%"></div><div class="skel" style="width:70%"></div><div class="skel" style="width:80%"></div></div></div>
+  <div class="card"><p class="alert err" role="alert" style="margin:0">Không tải được dữ liệu <span class="sub" style="color:inherit">(Mất kết nối… mã NETWORK_ERROR)</span> <button class="btn out sm" style="margin-left:8px">Thử lại</button></p>
+    <p class="sub" style="margin-top:12px">Lỗi khi bật/tắt một dòng (mạng, 404 workflow đã xoá): toast lỗi, công tắc quay về trạng thái cũ, danh sách tải lại. Tìm không thấy: "Không có tool nào khớp." (EmptyState).</p></div>
+</div>
+</section>
+</div>
+</body>
+</html>
