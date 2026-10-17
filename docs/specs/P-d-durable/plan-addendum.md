@@ -177,3 +177,7 @@ Qua API (`POST/PUT` process-def): ngưỡng `afterH` sai và `escalate` ở stag
 |---|---|
 | #64 PD2-I06 | Hub đọc `base_url` của workflow từ cache `config.catalog()` (`mcp.service.ts:185,258`) ⇒ ca "cổng đóng rồi ok" **giữ `base_url` cố định** trên cổng P đã giữ trước. Lần 1 chưa có server ở P (ECONNREFUSED ⇒ `connectFailed`); **dựng fake trên P trước** khi hẹn retry bắn. Không đổi `base_url` giữa chừng (cache không thấy) |
 | #65 PD-I75 | Ép 40P01 ở UoW: callback lần đầu ném `Object.assign(new Error("deadlock"), { code: "40P01" })`, lần sau chạy bình thường. Mẫu: `packages/db/src/hub-rls.int.test.ts:162`; mã retry: `RETRYABLE` ở `hub-scope.ts:21` |
+
+## A9. Nhịp vòng nhắc theo staging ADR-0017 (2026-10-17, tự quyết theo Luật 2)
+
+Staging N=10.000: một lô 100 task mất p95 1,09 s. Vòng nhắc D-PD10 chạy 300 s/lượt, mỗi lượt chỉ một lô ⇒ tồn 10.000 task tới hạn cùng lúc cần ~100 lượt ≈ 8 giờ (vượt PD-R18 "trễ ≤ 5 phút"). Sửa ở T9: mỗi lượt `startProcessReminder` **xả tới khi lô < 100 hoặc hết ngân sách 60 s** (≈ 5.000 task/lượt theo số đo), rồi chờ lượt sau. Int test: 250 task tới hạn ⇒ một lượt nhắc đủ 250. Cùng T9 sửa #190 (khoá hàng, kiểm `rowCount`) để xả song song nhiều Hub không trùng. Hết hạn run (`sweepOnce` 3 s, 20.000 run ≈ 201 lượt) giữ nguyên: hạn tính theo ngày nên trễ vài phút chấp nhận được.
