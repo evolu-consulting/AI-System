@@ -51,6 +51,30 @@ module.exports = {
       to: { path: ["\\.routes\\.ts$", NPM("hono")] },
     },
     {
+      name: "ca-domain-builtin-only",
+      comment:
+        "ADR-0023 (CR-088): lớp 1 `domain/` chỉ dùng built-in ECMAScript — chỉ import file trong `domain/`; cấm package npm, @ai/contracts, node:*/bun:*",
+      severity: "error",
+      from: { path: "(^|/)(apps|packages)/.+/domain/", pathNot: "\\.test\\.tsx?$" },
+      to: { pathNot: "(^|/)(apps|packages)/.+/domain/" },
+    },
+    {
+      name: "ca-application-inward-only",
+      comment:
+        "ADR-0023 (CR-088): lớp 2 `application/` chỉ import `domain/`, `application/`; cấm package npm, @ai/contracts, @ai/db, node:*/bun:*",
+      severity: "error",
+      from: { path: "(^|/)apps/.+/application/", pathNot: "\\.test\\.tsx?$" },
+      to: { pathNot: "(^|/)apps/.+/(domain|application)/" },
+    },
+    {
+      name: "ca-inner-no-cross-module",
+      comment:
+        "ADR-0023 (CR-088): lớp 1–2 của module A không import lớp 1–2 của module B; nối qua port ở <m>.mount.ts",
+      severity: "error",
+      from: { path: "modules/([^/]+)/(domain|application)/", pathNot: "\\.test\\.tsx?$" },
+      to: { path: "modules/[^/]+/", pathNot: "modules/$1/" },
+    },
+    {
       name: "component-no-fetch",
       comment: "T-DEP-5: component chỉ trình bày; gọi API qua features/<f>/api.ts ở page/hook",
       severity: "error",

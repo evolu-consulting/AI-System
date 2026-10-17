@@ -9,6 +9,7 @@ design:
   - docs/design/agent-hub/ba-agent-hub.md §6.10 (HUB-FR-143…147, sửa HUB-FR-105/107/109/115), HUB-BR-41…43, sửa HUB-BR-12/25/26/38, §8 (`process_timers`), §11 AC-H39…H47
   - docs/design/admin/ba-admin.md §5.2 ADM-FR-72 (múi giờ tenant), §5.3 ADM-FR-73 (công tắc tool), §11 AC-A14, AC-A15 · spec-tz-tools.md
   - docs/adr/0017-durable-process-engine.md (Proposed — **phải Accepted trước Gate**) · docs/adr/0018-single-identity-sso.md (P-d2, tool gói) · docs/adr/0022-dify-hybrid-transitional.md (P-d2, tool Dify)
+  - docs/CHANGE-REQUESTS.md#CR-088 · #CR-089 · #CR-090 (+ CR-091 web) · docs/adr/0023-clean-architecture.md (Accepted) — đặt code theo bốn lớp: spec-ca.md
   - spike: docs/platform/spike-engine.md · spikes/engine/engine.spike.test.ts (bài 1, 3b, 4, 4b đỏ)
   - nền: P-process-engine · P-b-sources · P-b2-canvas · P-c-autofix · P-c2-pr · spec-decisions.md · spec-d2.md · spec-ac.md
   - UI: CHƯA có mockup/artboard — frontend-lead tự dựng trong T2/T14, duyệt ở Gate (readiness câu 4)
@@ -17,7 +18,7 @@ owner: backend-lead + frontend-lead + qc
 
 # P-d · Engine quy trình chạy bền
 
-Mở rộng engine hiện có (ADR-0017 (a)). Hai lát tuần tự: **P-d1** (CR-083…086) rồi **P-d2** (CR-087, chi tiết ở [`spec-d2.md`](spec-d2.md)). Quyết định đã chốt: [`spec-decisions.md`](spec-decisions.md) (D1…D15, A1–A12, Q1–Q7, B1–B7). Múi giờ + công tắc tool theo tenant (Admin): [`spec-tz-tools.md`](spec-tz-tools.md). AC + test khoá: [`spec-ac.md`](spec-ac.md).
+Mở rộng engine hiện có (ADR-0017 (a)). Hai lát tuần tự: **P-d1** (CR-083…086) rồi **P-d2** (CR-087, chi tiết ở [`spec-d2.md`](spec-d2.md)). Quyết định đã chốt: [`spec-decisions.md`](spec-decisions.md) (D1…D15, A1–A12, Q1–Q7, B1–B7). Múi giờ + công tắc tool theo tenant (Admin): [`spec-tz-tools.md`](spec-tz-tools.md). AC + test khoá: [`spec-ac.md`](spec-ac.md). **Đặt code (bốn lớp, ADR-0023, CR-090):** [`spec-ca.md`](spec-ca.md) — code mới vào `processes/{domain,application,adapters}`, file cũ chỉ tách phần chạm tới.
 
 ## 1. Phạm vi
 
@@ -162,7 +163,7 @@ RLS `process_timers`: **ENABLE, không FORCE** (như `migrations-hub/0019`, read
 | ADR-0017 **Accepted** | Điều kiện Gate P-d1 (D1); còn thiếu Redis thật + tải 10.000 run trên staging. Mâu thuẫn ADR-0017:32 "thử lại tới `attempt_limit`" ↔ D3: giữ D3, sửa ADR khi Accepted |
 | ADR-0022 Accepted **hoặc** cách gọi workflow hiện có của `/mcp` | Điều kiện Gate P-d2 (T16); ADR-0018 không cần (tool gói để sau) — readiness #18 |
 | Mốc dọn-seed (CR-081) đóng | Bắt đầu P-d1 sau khi đóng (D14) |
-| Giả lập | đồng hồ giả `AppDeps.now` (`core/clock.ts`); `fake-cli` `#fake:` thêm ca lỗi tạm theo lượt. Env mới: không |
+| Giả lập | đồng hồ giả `AppDeps.now` qua port `Clock` ([spec-ca §4](spec-ca.md)); `fake-cli` `#fake:` thêm ca lỗi tạm theo lượt. Env mới: không |
 
 ## 8. Tiêu chí nghiệm thu
 AC-H39…H46 + test khoá bị ảnh hưởng (việc của qc): [`spec-ac.md`](spec-ac.md). Lệnh xong: `done:pd1`, `done:pd2` + chạy lại `done:pa/pb/pb2/pc/pc2`.

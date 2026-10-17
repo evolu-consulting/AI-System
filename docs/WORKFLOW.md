@@ -83,6 +83,7 @@ Mọi yêu cầu/thay đổi mới (đầu phiên hay giữa phiên) đi qua **I
 Bước 4 lần 2 trở đi: spec-readiness chỉ kiểm **phần đã đổi** (`git diff` thư mục spec từ lần trước) + lỗ hổng còn mở trong `readiness.md`, không đọc lại toàn bộ.
 Bước 9 sửa review: commit sửa phải chạy lại `lock-order`/`concurrency` int test (nếu chạm khoá/transaction), `check:fn` và `depcruise --all` cho file đổi; reviewer vòng 2 chỉ đọc diff của các commit sửa + mục lỗi vòng 1.
 Bước 7–9: mỗi task một lần gọi agent, model theo cột `Rủi ro` (mục "Chính sách model").
+**Kiểm lớp (ADR-0023, CR-088/089):** mỗi task BE/FE có file trong `domain/`/`application/` chạy `bun run depcruise` cho file đổi (luật `ca-*`); task Python chạy `uv run lint-imports && uv run python scripts/check_layers.py`. Reviewer kiểm thêm: lớp 1–2 không có giá trị không tất định ngoài port `Clock`/`IdGen`, mapper có test khớp kiểu, file cũ chỉ tách phần chạm tới (`CONVENTIONS.md` §10). **Module mẫu Clean Architecture** (`hub-api/processes`, CR-090): port `UnitOfWork` (tx/RLS/scope `system`) phải qua **security review** riêng trước khi module khác dùng làm khuôn — hard stop cách ly tenant.
 
 ## Làm song song nhiều session (CR-059)
 
@@ -126,6 +127,7 @@ Nhánh · task đã xong · file đã sửa ngoài cột `File` (nếu có, kèm
 - Sau Gate, `tests/acceptance/**` và `e2e/**` bị khoá bằng `tests/.lock` (sha256 từng file). Chỉ `qc` được cập nhật lock.
 - `bun run test:lock:verify` chạy trong CI và trước khi báo xong; checksum lệch → đỏ.
 - backend-lead / frontend-lead **không bao giờ** sửa, xoá, `skip` test bị khoá để cho xanh.
+- **Dời file khi chuyển bốn lớp (CR-089):** task dời file mà test khoá trỏ tới ⇒ `qc` sửa đường dẫn `tryLoad`/import + cập nhật lock **cùng task** (một commit qc mỗi lần dời); không shim re-export. Helper `tryLoad` phải báo rõ khi module vắng, không trả `{}` lặng lẽ (`CONVENTIONS.md` §10).
 
 ## Tranh chấp test
 

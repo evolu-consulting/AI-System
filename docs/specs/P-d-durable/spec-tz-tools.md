@@ -31,6 +31,8 @@ Thay mặc định readiness #6 (tool khả dụng qua agent grant). Tool của 
 | TT-R07 | Tắt công tắc khi run đang chờ (stage `tool` chưa gọi, đang backoff, hoặc bước trước chưa xong) ⇒ khi tới lượt gọi ⇒ `tool_failed`. Lời gọi đã gửi không bị huỷ | câu 3 |
 | TT-R08 | Cách ly: công tắc của tenant B không ảnh hưởng tenant A; truy vấn công tắc luôn theo `(workflow_id, tenant_id = run.tenant_id)`. **Hard stop bảo mật** — gộp vào security review tool (T20) | câu 3, S5 |
 
+**Đặt code** (ADR-0023, CR-090, [spec-ca §6](spec-ca.md)): §1 chỉ thêm trường vào luồng `tenants` sẵn có ⇒ không bắt buộc tách lớp; Hub tính `due_at` ở `processes/domain/timers/due-at.rules.ts`, đọc múi giờ qua port `TenantTzReader`. §2 là logic mới ⇒ admin-api viết bốn lớp (`domain/`, `application/`, `adapters/`; module mới `workflow-tools/` hoặc lớp trong `tenants/`, plan chốt); Hub đọc công tắc qua port `ToolSwitchReader`.
+
 **Dữ liệu:** cùng migration admin với §1 nếu làm chung, hoặc migration admin kế tiếp lúc làm P-d2 (dự kiến `0012_pd2_tenant_workflow_tools.sql`); Drizzle `schema/admin.ts`.
 
 **UI** (mockup trong T14): chi tiết tenant (`TenantDetailPage`) thêm **tab "Tool quy trình"** (B2) sau tab Agents: bảng workflow catalog (tên, `key`, nhãn "Tác dụng phụ" khi `side_effect`, nhãn "Workflow đang tắt" khi `enabled=false`), một công tắc mỗi dòng; tắt ⇒ hộp xác nhận "Run đang chờ gọi tool này sẽ dừng ở Cần người quyết". Panel "Gọi tool" (editor quy trình) chỉ liệt kê tool khả dụng; rỗng ⇒ "Chưa có tool nào được bật cho công ty — liên hệ quản trị nền tảng".

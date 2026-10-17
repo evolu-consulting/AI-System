@@ -1,6 +1,6 @@
 # P-d2 · Stage `tool` (MCP) + rẽ nhánh theo `output.fields` (CR-087)
 
-Phần lát P-d2 của [`spec.md`](spec.md) (frontmatter, phạm vi chung, enum chung §3, bảo mật chung §5, phụ thuộc §7 ở đó). Bắt đầu sau khi P-d1 xong. Quyết định: [`spec-decisions.md`](spec-decisions.md) D10–D12, B1–B7. Công tắc tool theo tenant (Admin): [`spec-tz-tools.md` §2](spec-tz-tools.md) (ADM-FR-73). AC: [`spec-ac.md`](spec-ac.md) (AC-H44, AC-H45, AC-H47, AC-A15).
+Phần lát P-d2 của [`spec.md`](spec.md) (frontmatter, phạm vi chung, enum chung §3, bảo mật chung §5, phụ thuộc §7 ở đó). Bắt đầu sau khi P-d1 xong. Quyết định: [`spec-decisions.md`](spec-decisions.md) D10–D12, B1–B7. Công tắc tool theo tenant (Admin): [`spec-tz-tools.md` §2](spec-tz-tools.md) (ADM-FR-73). AC: [`spec-ac.md`](spec-ac.md) (AC-H44, AC-H45, AC-H47, AC-A15). **Đặt code** (ADR-0023, CR-090): [`spec-ca.md` §3](spec-ca.md) — luật `tool`/nhánh ở `processes/domain/{tools,branch,defs}/`, use case + port `ToolInvoker`/`ToolSwitchReader` ở `application/tools/`, gọi `/mcp` + công tắc + routes catalog ở `adapters/tools/`; file cũ chạm (`step.rules.ts`, `step-persist.ts`, `back.effects.ts`) tách theo [spec-ca §5](spec-ca.md).
 
 ## 1. Mục tiêu
 Flow nghiệp vụ (duyệt hợp đồng, nhắc thanh toán) cần (a) bước gọi hệ thống khác không qua agent LLM, (b) rẽ nhánh theo dữ liệu có cấu trúc. **Đảo** mục "Stage lồng/rẽ nhánh theo điều kiện" trong "Không làm" của [P-b2 §1.2](../P-b2-canvas/spec.md).

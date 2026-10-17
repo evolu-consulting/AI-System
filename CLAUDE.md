@@ -53,6 +53,7 @@ Mỗi lần tự quyết: một dòng trong mục "Quyết định trong lúc l�
 ## Luật 4 — Chuẩn và phạm vi sửa
 - Theo `docs/CONVENTIONS.md`: feature-first, file ≤ 400 dòng, hàm ≤ 50 dòng, component ≤ 200 dòng.
 - Format/lint **chỉ file thay đổi**. Không refactor ngoài phạm vi task; thấy nợ → `docs/TECH-DEBT.md`.
+- Ngoại lệ (CR-089, ADR-0023): khi task sửa logic trong một module chưa theo Clean Architecture, được tách phần chạm tới sang `domain/`/`application/`/`adapters/` trong cùng task; qc sửa đường dẫn test khoá trong cùng task.
 
 ## Luật 5 — Truy vết
 - Mã yêu cầu (`ADM-FR-xx`, `HUB-FR-xx`, `WRK-FR-xx`, AC) có trong: frontmatter spec, comment đầu module, tên test, commit `[ADM-FR-xx]`.

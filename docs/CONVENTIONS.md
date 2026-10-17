@@ -1,7 +1,7 @@
 # Conventions — chuẩn code và format
 
 Nguồn duy nhất cho chuẩn code. Agent trỏ tới file này, không chép lại. Đổi chuẩn: sửa ở đây và ghi một dòng vào `PRODUCTION-NOTES.md`.
-Trạng thái: **tạm duyệt 2026-10-01**.
+Trạng thái: **tạm duyệt 2026-10-01**; sửa 2026-10-17 theo ADR-0023 (bốn lớp, CR-088…091: §2, §3, §4, §5, §9, §10).
 
 ## 1. Format & lint — chỉ đụng phần mình sửa
 
@@ -12,30 +12,40 @@ Trạng thái: **tạm duyệt 2026-10-01**.
 - Chỉ sửa lỗi lint trong file task có chạm tới. Lỗi ở file khác → ghi `docs/TECH-DEBT.md`, không sửa.
 - Cần format lại một file lớn → commit riêng `style: …`, không trộn với thay đổi logic.
 
-## 2. Cấu trúc: feature-first, colocation
+## 2. Cấu trúc: feature-first, Clean Architecture bốn lớp ([ADR-0023](adr/0023-clean-architecture.md), CR-088)
 
-Chia theo feature trước, trong feature mới chia lớp. Một thứ chỉ ra thư mục dùng chung khi **≥ 2 feature** dùng nó.
+Chia theo feature/module trước, trong module chia **bốn lớp**. Một thứ chỉ ra thư mục dùng chung khi **≥ 2 feature** dùng nó. Code cũ chưa chuyển giữ cấu trúc `routes → service → repo` cũ tới khi task chạm tới (§10).
+
+| Lớp | Thư mục / file | Được import |
+|---|---|---|
+| 1 Domain | `domain/` — kiểu tự khai, `*.rules.ts` thuần, `errors.ts` | chỉ `domain/` + **built-in** |
+| 2 Application | `application/` — `*.usecase.ts`, `ports.ts` | `domain/`, `application/` + **built-in** |
+| 3 Adapters | `adapters/` — `*.routes.ts` (Hono mỏng), `*.repo.ts` (Drizzle cài port), `<m>.mapper.ts`, `*.presenter.ts` | lớp 1–2, `@ai/contracts`, Hono, Drizzle |
+| 4 Khung | `<m>.mount.ts`, `lib/`, `app.ts`, `server.ts`, `config/`, `packages/db` | mọi thứ |
+
+**Built-in** ở lớp 1–2 (TS): mọi built-in ECMAScript (`Map`, `Set`, `Intl`, `structuredClone`, `Date` làm giá trị). **Cấm** `node:*`, `bun:*`, mọi package npm — gồm `@ai/contracts`, `@ai/db`, `zod`, kể cả `import type`. `Date.now()`, `new Date()` không tham số, `crypto.randomUUID()`, `Math.random()` chỉ qua port `Clock`/`IdGen`. API web không thuộc ECMAScript (`TextEncoder`, `fetch`, `URL`…) cũng không dùng — adapter tính rồi truyền vào.
 
 ### Backend (`apps/*-api`, Hono)
 
 ```
 src/
-├─ app.ts · server.ts          # dựng app, mount route các module
-├─ config/env.ts                # env đọc + validate bằng zod
-├─ lib/                         # db client, logger, errors, middleware auth + tenant context
-└─ modules/<module>/
+├─ app.ts · server.ts · config/env.ts   # lớp 4
+├─ lib/                                  # lớp 4: db client, redis, logger, AppError/HTTP, middleware auth + tenant
+└─ modules/<m>/
    ├─ README.md                 # ≤ 30 dòng: FR phụ trách, điểm vào, phụ thuộc
-   ├─ <module>.routes.ts        # parse bằng contract → gọi service → trả response. Không logic
-   ├─ <module>.service.ts       # nghiệp vụ, transaction. Không biết HTTP
-   ├─ <module>.repo.ts          # Drizzle query, luôn lọc tenant
-   ├─ <module>.rules.ts         # luật BR dạng hàm thuần (QC viết test trước)
-   ├─ <module>.errors.ts        # mã lỗi của module
-   └─ <module>.test.ts
-packages/contracts/src/<module>.ts   # zod request/response/lỗi — backend-lead sở hữu
-packages/db/src/schema/<module>.ts   # Drizzle schema + migration
+   ├─ <m>.mount.ts              # lớp 4: dựng adapter, truyền port vào use case, mount route
+   ├─ domain/                   # <x>.ts (kiểu) · <x>.rules.ts (QC viết test trước) · errors.ts
+   ├─ application/              # <x>.usecase.ts · ports.ts (repo port, UnitOfWork, Clock, IdGen, Notifier, Logger)
+   └─ adapters/                 # <m>.routes.ts · <x>.repo.ts · <m>.mapper.ts (+ .test.ts) · <x>.presenter.ts
+packages/contracts/src/<m>.ts   # lớp 3: zod request/response/lỗi — backend-lead sở hữu
+packages/db/src/schema/<m>.ts   # lớp 4: Drizzle schema + migration
 ```
 
-Chiều phụ thuộc: `routes → service → repo`; `rules` thuần, không import I/O. Module không import `repo` của module khác — đi qua `service` của module đó.
+- Module lớn (vd `processes`) chia thư mục con theo nhóm **bên trong** từng lớp: `domain/runs/…`, `application/timers/…`.
+- Chiều phụ thuộc: `routes → use case → port ← repo`; use case không biết HTTP, Drizzle, Redis. Route ≤ 30 dòng: parse bằng mapper → gọi use case → presenter → response.
+- Lớp 1–2 của module A **không** import lớp 1–2 của module B: A khai port, `<m>.mount.ts` nối port tới use case của B. Module không import `repo` của module khác (như cũ).
+- Port chuẩn: `UnitOfWork` (một use case = một tx theo scope tenant, hoặc `system` cho vòng nền — khi đó mọi truy vấn lọc `tenant_id` tường minh; cài bằng `withScope`/`withHubScope`), `Clock`, `IdGen`, `Notifier` (phát sự kiện **sau COMMIT**), `Logger`. `UnitOfWork` chạm RLS ⇒ security review khi đổi.
+- Không có package domain dùng chung ở v1: hằng nghiệp vụ domain cần (vd trần, backoff) khai lại trong `domain/` và mapper test khẳng định bằng hằng contract.
 
 ### Frontend (`apps/*-web`, React + Rsbuild)
 
@@ -48,12 +58,15 @@ src/
 ├─ lib/                        # http client, auth, format số/ngày
 └─ features/<feature>/
    ├─ README.md
+   ├─ domain/                  # luật/kiểu thuần (CR-091): chỉ built-in — cấm React, @ai/contracts, zod
    ├─ api.ts                   # hook TanStack Query dựa trên contract — NƠI DUY NHẤT gọi API
    ├─ pages/<Name>Page.tsx     # chỉ ghép component
    ├─ components/<Name>.tsx    # trình bày, nhận props, không fetch
-   ├─ lib/                     # helper thuần
+   ├─ lib/                     # helper gắn UI/contract (map contract → kiểu domain đặt ở đây hoặc api.ts)
    └─ *.test.tsx
 ```
+
+Web **áp nhẹ** (CR-091): chỉ tách `features/<f>/domain/`; `api.ts`, component, page, hook coi là lớp 3–4, giữ như trên. Chuyển logic thuần sang `domain/` khi task sửa logic đó (§10).
 
 ### Test
 
@@ -91,6 +104,9 @@ Tên test: `"<mã> · mô tả"` (mã FR/NFR/AC) để `trace` nối test với 
 |---|---|---|
 | Component, page | `PascalCase.tsx`, 1 component export mỗi file | `CommandEditorPage.tsx` |
 | File khác | `kebab-case.ts` hoặc `<module>.<lớp>.ts` | `commands.service.ts` |
+| Hậu tố theo lớp (CR-088) | lớp 1 `*.rules.ts`, `errors.ts` · lớp 2 `*.usecase.ts`, `ports.ts` · lớp 3 `*.routes.ts`, `*.repo.ts`, `*.mapper.ts`, `*.presenter.ts` · lớp 4 `<m>.mount.ts` | `retry.rules.ts`, `fire-timer.usecase.ts` |
+| Kiểu domain | `PascalCase`, **không** hậu tố `Schema`/`Input` (đó là contract) | `StageRun`, `RetryDecision` |
+| Mã lỗi domain | union chuỗi `SCREAMING_SNAKE` trong `domain/errors.ts` | `type ProcessError = "STAGE_LOCKED" \| …` |
 | Hàm, biến | `camelCase`, động từ cho hàm | `canUseCommand()` |
 | Kiểu, schema zod | `PascalCase` + hậu tố | `CommandCreateInput`, `CommandSchema` |
 | Hằng | `SCREAMING_SNAKE` | `MAX_LOGIN_ATTEMPTS` |
@@ -111,13 +127,14 @@ Tên test: `"<mã> · mô tả"` (mã FR/NFR/AC) để `trace` nối test với 
 
 File chạm tới đã vượt giới hạn từ trước: chỉ tách khi phần đang sửa nằm trong đoạn đó; nếu không → `TECH-DEBT.md`.
 
-Thực thi: luật Biome · `bun run check:size` (đỏ khi > 400 dòng) · `dependency-cruiser` (đỏ khi import sai chiều: route→repo, component→fetch, module→repo module khác). Tất cả chạy trên file thay đổi.
+Thực thi: luật Biome · `bun run check:size` (đỏ khi > 400 dòng) · `dependency-cruiser` (đỏ khi import sai chiều: route→repo, component→fetch, module→repo module khác; **`ca-domain-builtin-only`**: file trong `domain/` import ngoài `domain/`; **`ca-application-inward-only`**: file trong `application/` import ngoài `domain/`/`application/` — ADR-0023). Tất cả chạy trên file thay đổi. Luật lớp chỉ áp thư mục `domain/`, `application/` ⇒ code cũ chưa chuyển không bị chặn. Giá trị không tất định ở lớp 1–2 chưa có luật máy — reviewer kiểm.
 
 ## 5. Code
 
 - TypeScript `strict`. Không `any` (dùng `unknown` + thu hẹp). Không `@ts-ignore` (nếu buộc phải: `@ts-expect-error` + lý do).
-- Validate bằng zod **ở biên** (request, env, dữ liệu đọc từ jsonb). Bên trong tin kiểu.
-- Lỗi: ném lỗi có mã (`AppError(code, status, details?)`); response lỗi `{error:{code,message,details?}}`.
+- Validate bằng zod **ở biên** (request, env, dữ liệu đọc từ jsonb) — chỉ ở lớp 3–4. Bên trong tin kiểu.
+- **Mapper** (`adapters/<m>.mapper.ts`): parse bằng schema contract rồi **dựng kiểu domain**; chiều ra domain → DTO contract. Kèm `adapters/<m>.mapper.test.ts` khẳng định khớp kiểu: `const _t: AssertEqual<Domain, z.infer<typeof Schema>> = true` (domain cố ý khác, vd `Date` thay chuỗi ISO ⇒ so trên kiểu đã chuyển đổi, ghi lý do một dòng) và hằng domain = hằng contract. Contract đổi ⇒ `typecheck`/test đỏ ở mapper, không lan vào domain.
+- Lỗi domain: mã là union chuỗi trong `domain/errors.ts` + lớp `DomainError` (kế thừa `Error`, mang `code`); kết quả nghiệp vụ bình thường trả giá trị, không ném. Adapter map mã domain → mã contract + HTTP bằng bảng `Record<DomainCode, {code, status}>` trong mapper (thiếu mã ⇒ `typecheck` đỏ), rồi ném `AppError(code, status, details?)` (lớp 4 `lib/`). Response lỗi `{error:{code,message,details?}}`; mã contract hiện có không đổi.
 - Không log secret, token, mật khẩu, nội dung file. Log có `request_id`, `tenant_id`, `module`.
 - Không dead code, không code comment-out. TODO phải có mã: `// TODO(ADM-FR-54): …`.
 - Comment giải thích **vì sao**, không kể lại code. Đầu mỗi module/feature: một dòng mã FR phụ trách.
@@ -154,8 +171,9 @@ Theo [ADR-0007](adr/0007-hub-ts-agent-runtime-python.md). Chỉ áp cho `apps/ag
 | Format + lint | Biome | `ruff format` + `ruff check`, chỉ file thay đổi (như §1) |
 | Kiểu | `tsc` strict | `pyright` strict, cấm `Any` ngầm |
 | Test | `bun test` | `pytest` + `pytest-asyncio` |
-| Chiều import | dependency-cruiser | `import-linter` (`lint-imports`) |
-| Validate ở biên | zod | pydantic v2 |
+| Chiều import | dependency-cruiser | `import-linter` (`lint-imports`) + `scripts/check_layers.py` (lớp 1–2) |
+| Validate ở biên | zod (lớp 3–4) | pydantic v2 (lớp 3–4) |
+| Lớp 1–2 chỉ dùng | built-in ECMAScript | stdlib **trừ I/O** (§9 "Bốn lớp") |
 | Log | logger có `request_id` | `structlog`/logging JSON có `job_id`, `run_id`, `tenant_id` (WRK-NFR-04); cấm `print` |
 | Tên | camelCase / kebab-case | `snake_case` module + hàm, `PascalCase` class, hằng `UPPER_SNAKE` |
 
@@ -175,13 +193,20 @@ Turborepo gọi qua scripts trong `apps/agent-runtime/package.json` (`check`, `t
 | `db/` | SQL thuần cho bảng `hub` (không ORM, không migration; migration vẫn ở `packages/db` Drizzle, §8) |
 | `config.py` · `main.py` | env (pydantic-settings) · điểm vào |
 
+### Bốn lớp trong Python (ADR-0023, CR-088)
+
+Mỗi ctx đã chuyển (`src/agent_runtime/<ctx>/`): `domain/` (dataclass `frozen=True`, `typing.Literal`, `enum`, `*_rules.py`, `errors.py`) · `application/` (`*_usecase.py`, `ports.py` — `typing.Protocol`) · `adapters/` (`*_repo.py` asyncpg/SQL thuần, `*_mapper.py` pydantic ↔ dataclass + test so tập trường, client provider/Redis) · `mount.py` (lớp 4, dựng phụ thuộc). `main.py`, `config.py`, `db/` (pool) = lớp 4; `contracts/` (pydantic sinh) = lớp 3.
+- Lớp 1–2: stdlib trừ I/O — cấm `os`, `subprocess`, `socket`, `asyncio` (I/O), `pathlib` (I/O), `shutil`, `tempfile`, `logging`… (danh sách: `scripts/check_layers.py`); cấm `pydantic`, `asyncpg`, `redis`, `structlog`, `claude_agent_sdk`. Log qua port `Logger`; giờ/id qua `Clock`/`IdGen`. `async def` + `typing.Protocol` được dùng (không I/O).
+- Cưỡng chế: giữ contract import-linter hiện có; thêm một contract `layers` cho mỗi ctx khi chuyển (`<ctx>.adapters` → `<ctx>.application` → `<ctx>.domain`); `uv run python scripts/check_layers.py` chạy trong `check`.
+- Ctx chưa chuyển giữ cấu trúc bảng dưới tới khi task chạm tới (§10).
+
 Test: unit `test_*.py` đặt cạnh file code; test cần Postgres/Redis thật là `*_int_test.py` cạnh file, gắn marker `int` (`pytest -m int` = `bun run test:int`). Mỗi thư mục có `README.md` ≤ 30 dòng như §2.
 
 ### Giới hạn và luật code
 
 - Cỡ: file ≤ 400 dòng, hàm ≤ 50 dòng, ≤ 4 tham số ngoài `self` (§4). Ruff: `PLR0913`, `PLR0915`, `C901`; chạy trong `check`.
-- asyncio async/await; type hint đầy đủ; pydantic v2 cho dữ liệu qua biên.
-- Lỗi: mã dùng chung với Hub (`ALL_PROVIDERS_EXHAUSTED`, `TIMEOUT`, `CANCELLED`, `UPSTREAM_ERROR`…) lấy từ `contracts/` sinh ra, không tự đặt chuỗi.
+- asyncio async/await; type hint đầy đủ; pydantic v2 cho dữ liệu qua biên (lớp 3–4).
+- Lỗi: mã gửi ra Hub (`ALL_PROVIDERS_EXHAUSTED`, `TIMEOUT`, `CANCELLED`, `UPSTREAM_ERROR`…) lấy từ `contracts/` sinh ra, không tự đặt chuỗi ở lớp 3–4. Lớp 1–2 khai mã domain bằng `Literal` trong `domain/errors.py`; adapter map sang mã contract (thiếu mã ⇒ test mapper đỏ).
 - Không log secret, nội dung file.
 - Subprocess: luôn `start_new_session=True` (process group riêng, huỷ = SIGTERM group, 3 giây sau SIGKILL), `env` tường minh (không kế thừa `os.environ`), cấm `shell=True`. Agent nội bộ chạy process con không mang secret (WRK-FR-26).
 - Mã yêu cầu ở docstring đầu module (`"""WRK-FR-01 · HUB-FR-89 · …"""`); test đặt tên chứa mã (`test_wrk_fr_05_cancel_kills_group`). TODO: `# TODO(WRK-FR-xx): …`.
@@ -196,6 +221,14 @@ Test: unit `test_*.py` đặt cạnh file code; test cần Postgres/Redis thật
 ```
 cd apps/agent-runtime
 uv run ruff check --diff <file đổi> && uv run ruff format --check <file đổi> \
-  && uv run pyright && uv run pytest && uv run lint-imports
+  && uv run pyright && uv run pytest && uv run lint-imports && uv run python scripts/check_layers.py
 ```
 Thêm `uv run pytest -m int` khi chạm DB/Redis.
+
+## 10. Chuyển dần sang bốn lớp (CR-089, ADR-0023)
+
+- Code **mới** viết theo §2 ngay. Code cũ **không** big-bang: task **sửa logic** trong một file cũ ⇒ tách phần chạm tới (hàm bị sửa và thứ nó cần) sang `domain/`/`application/`/`adapters/` trong cùng task (ngoại lệ Luật 4 `CLAUDE.md`). Chỉ thêm lời gọi tới code mới ⇒ không bắt buộc tách. Commit tách riêng `refactor(<m>): tách <x> sang lớp [CR-089]`, không đổi hành vi, trước commit đổi logic.
+- Thứ tự module: `hub-api/processes` (mẫu, qua P-d; phần còn lại = mốc CA-processes) → `mcp`, `runs` → phần còn lại hub-api → admin-api → agent-runtime (`autofix`, `sources`, lõi thuần `runtimes/cli` trước) → web (§2 Frontend).
+- Module chưa chuyển: một dòng `TECH-DEBT.md` (gom theo app). Chuyển xong cả module ⇒ xoá khỏi dòng đó, cập nhật `CODEMAP.md`.
+- **Test khoá khi dời file:** `qc` sửa đường dẫn trong helper `tryLoad`/import của test khoá **cùng task dời** (một commit qc cho mỗi lần dời, cập nhật `tests/.lock`). **Không** để shim re-export ở đường dẫn cũ.
+- **Luật `tryLoad` (qc):** helper nạp module theo đường dẫn phải **báo rõ** khi file vắng (ném/`expect` với thông điệp "module vắng: <đường dẫn>"), không trả `{}` lặng lẽ. Áp khi qc chạm helper đó lần đầu (mẫu: `tests/acceptance/P-a/_support/modules.ts`).

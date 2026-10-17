@@ -61,3 +61,4 @@ Phạm vi: 6/6 file spec, CLAUDE.md, WORKFLOW, BA §6.10 / BR-12, 25, 26, 38, 41
 Lần chạy 2: chỉ kiểm diff thư mục spec cùng plan/plan-frontend/test-plan mới và các mục #1–#26 còn mở.
 
 > 2026-10-17 · Đã áp trả lời người dùng, chờ T1–T3 rồi readiness lần 2.
+> 2026-10-17 · Áp ADR-0023 (CR-088…091): thêm [`spec-ca.md`](spec-ca.md), task T3a/T6b/T6c/T7s…T19s trong `tasks.md`; chờ T1–T3 rồi readiness lần 2 (kiểm cả phần đặt code theo lớp).

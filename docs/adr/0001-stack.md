@@ -90,5 +90,5 @@ Tra ngày 2026-10-01 bằng `npm view <pkg> version` (dist-tag `latest`). Ghim c
 | @fontsource-variable/jetbrains-mono | 5.3.0 | = | admin-web | Font mono canvas, tự host |
 
 ## Hệ quả
-- Mọi app/package TypeScript; contract zod ở `packages/contracts` là nguồn chung.
+- Mọi app/package TypeScript; contract zod ở `packages/contracts` là nguồn chung — chỉ ở lớp 3–4, xem [ADR-0023](0023-clean-architecture.md) (lớp `domain/`, `application/` không import contract/zod).
 - Đổi một dòng Accepted cần ADR mới thay thế.
