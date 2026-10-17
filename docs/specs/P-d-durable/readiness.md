@@ -6,11 +6,29 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-17 | READY (lần 4) | 0 (+điều kiện Gate ADR-0017 — chờ staging) | 0 | 9 | Đóng #54–#70, #72; #55–#58 đã đóng. Còn Thấp: #71, #73, #74–#80 (sửa khi BUILD, T4 chạy lại readiness chỉ diff). Không hỏi người dùng. Gate P-d1 chờ điều kiện ngoài spec (ADR-0017 staging, mockup, security review T6c/T12/T20, CR-081). |
 | 2026-10-17 | NOT READY (lần 3) | 0 (+1 điều kiện Gate ADR-0017 — chờ staging) | 4 | 19 | Đóng #33–#35, #37–#39, #41–#48, #50–#52; #40 sinh mâu thuẫn mới. Còn: plan-addendum chưa được trỏ từ tasks/plan (#55), escalate ở stage auto 422↔400 (#56), PD-U68↔plan-domain:119 (#57), path WAIT phía contract + PD-C13 (#58). Mọi mục (a) sửa theo mặc định (Luật 2b); không hỏi người dùng. |
 | 2026-10-17 | NOT READY (lần 2) | 4 (1 là điều kiện Gate ADR-0017) | 10 | 8 | Đã có plan/plan-frontend/test-plan/mockup; đóng #1,#3,#6,#8–#12,#14,#15,#17,#19–#21,#24,#25,#27–#32. Còn: lệch spec↔plan (400/422, run_steps 'tool', vị trí step.rules/T18s, ngưỡng escalate, audit grant/revoke, quyết định plan chưa vào spec), ADR-0023 khi dời file import contract, e2e lệch nhãn FE, G1–G7, teamResumePlan, T10 rủi ro. Mọi mục (a) sửa theo mặc định (Luật 2b); hỏi người dùng 1 câu (ADR-0017). |
 | 2026-10-17 | NOT READY (lần 1) | 6 | 13 | 6 (+7 Vừa) | Chưa có plan/plan-frontend/test-plan/mockup; phân loại lỗi (Q2), side_effect, team retry (Q1), quyền tool P-d2; khoá idempotency va chạm; thứ tự khoá timer↔run; FORCE RLS sai; thiếu nới CHECK audit/thread; ESCALATE_INVALID↔PROCESS_REF_INVALID; AC-H41 sai trần. Hỏi người dùng 4 câu. |
 
 ## Lần chạy
+
+### Lần 4 · 2026-10-17 · READY
+
+Phạm vi: diff 4034d4f..40e6ca9 (17 file P-d-durable) + #54–#73; đối chiếu plan-contract:60–79, plan-domain:121–123, plan-addendum A2–A3/A8, plan-frontend:58/93/115, plan-frontend-i18n:62, `admin-web/.../StageGeneral.tsx:83`. Trần: spec 25584/25600 · plan 30708/30720 · plan-frontend 24826/25600 · test-plan 30423/30720 (đạt, sát).
+
+Đóng: #54–#70, #72. Cao #55–#58 đã đóng (tasks:3 + cột Đọc; 400 qua API cho escalate ở auto; PD-U68 bốn ca; path WAIT phía contract theo A2/A8 + PD-C13/C15).
+
+#### Thấp (sửa khi BUILD)
+74 A8:168 `escalateIssues` ⇒ `escalateStageIssues` · 75 PD-C13/C15 thiếu path `stages.<i>.executor` (A8 nói 5 ca) · 76 Đọc T5/T9/T11 + A8 · 77 Đọc T15 + A1/A2/A7 · 78 Đọc T4 "lần 3" cũ · 79 plan-frontend-d2 ô timeout_s dùng lại `process.admin.editor.stage.timeout`, ẩn budget · 80 câu i18n ESCALATE_INVALID (vô hại) · 71 trùng nhãn A (giữ tiền tố) · 73 trần sát
+
+#### Câu hỏi người dùng
+Không có.
+
+#### Điều kiện Gate (ngoài spec)
+1. ADR-0017 Accepted (chờ staging: Redis thật + tải 10.000 run). 2. Người dùng duyệt `mockup/01–04`. 3. Security review T6c, T12, T20. 4. CR-081 đóng. 5. P-d2: ADR-0022 Accepted hoặc dùng `/mcp` hiện có. 6. Báo ở Gate: vòng nhắc bật lần đầu nhắc ngay task cũ quá hạn; retry `parallel_merge` tốn token.
+
+Spec/plan/tasks đổi sau lần này (kể cả khi sửa #74–#80) ⇒ T4 chạy lại readiness, chỉ kiểm diff.
 
 ### Lần 3 · 2026-10-17 · NOT READY
 
